@@ -14,4 +14,10 @@
   - 네이트판: 로그인 없이 공개된 게시판을 정상 속도로 열람, robots.txt·이용약관 점검을 통과할 때만 소재(한 줄 요약·유형)만 기록, 원문·닉네임·URL 저장 금지, 차단·로그인 요구 시 중단. insane-search의 차단 우회 기능은 쓰지 않음(SPEC-002 안 할 것 유지)
   - 80억 분의 1: 구조·흐름만 참고, 그래픽·로고·고유 문구 복제 금지. 캡처 이미지는 공개 저장소에 올리지 않음
   - 자유 기록 입력: 특수문자·이모지·초장문 등 입력 공격 테스트 대상, 기록은 이 기기에만 저장(서버 전송 없음)
-- 다음 단계: GitHub 저장소 준비(형진 님이 빈 공개 저장소를 만들고 주소·사용자 이름을 알려 주면 마스터가 첫 푸시 — 로그인 창은 형진 님이 직접), planner가 SPEC-003 초안(SPEC-002 흡수) → 형진 님 확정 → designer 시안 → developer 구현
+- 후속(같은 날):
+  - GitHub: 형진 님이 공개 저장소 `hyungjin87c-ux/spoongame` 생성 → 마스터가 첫 커밋·푸시(작성자: GitHub noreply 주소). developer가 Pages 자동 배포(`.github/workflows/deploy.yml`, base는 `PAGES_BASE` 환경변수로만)·피드백 이슈 양식·README 작성 → 마스터가 워크플로 확인 후 푸시 → 형진 님이 Settings > Pages > Source = GitHub Actions → Actions 실행 성공, https://hyungjin87c-ux.github.io/spoongame/ 응답·화면 확인
+  - planner가 SPEC-003 초안 작성(docs/spec/SPEC-003-개편.md)
+  - 마스터가 네이트판 확인: https://pann.nate.com/robots.txt 가 `User-agent: * / Disallow: /`, ClaudeBot도 `Disallow: /` → SPEC-002 T1 점검 실패, 자동 수집 불가
+  - 형진 님 2차 답: 사연 소재 = **형진 님이 직접 읽고 한 줄 요약 제공 + AI 창작 보충** / 지금 세상 = **2026년 출생 고정** / 자산 = **실제 원 단위** / 릴리스 = **1차·2차 분할**
+  - 마스터 기본값(형진 님께 알림, 이견 없으면 확정): 지역 시도 룰렛 + 출생신고 시군구 / 「흙수저(하위 25% 안쪽)」식 표기 / 자유 기록 엔딩 반영 / 일시정지 추가·다음 결정으로·자동 유지·12·16배 미추가 / 인생 기록 합쇼체 통일 / 라이선스 미지정 / 새로고침 시 복원·나가기는 첫 화면 / `main`은 검수 승인분만 배포
+- 다음 단계(갱신 전 기록): GitHub 저장소 준비(형진 님이 빈 공개 저장소를 만들고 주소·사용자 이름을 알려 주면 마스터가 첫 푸시 — 로그인 창은 형진 님이 직접), planner가 SPEC-003 초안(SPEC-002 흡수) → 형진 님 확정 → designer 시안 → developer 구현
