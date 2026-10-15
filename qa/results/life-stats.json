@@ -1,0 +1,3638 @@
+[
+ {
+  "era": "past",
+  "choices": 11,
+  "deathAge": 86,
+  "narrative": 6,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 13,
+  "deathAge": 91,
+  "narrative": 6,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 12,
+  "deathAge": 80,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 14,
+  "deathAge": 83,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "어려워진 집안 형편",
+    "text": 46,
+    "labels": 23,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 9,
+  "deathAge": 81,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 9,
+  "deathAge": 67,
+  "narrative": 6,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 12,
+  "deathAge": 73,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "어려워진 집안 형편",
+    "text": 46,
+    "labels": 23,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 10,
+  "deathAge": 77,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 13,
+  "deathAge": 78,
+  "narrative": 6,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "어려워진 집안 형편",
+    "text": 46,
+    "labels": 23,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 12,
+  "deathAge": 90,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 14,
+  "deathAge": 87,
+  "narrative": 7,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 12,
+  "deathAge": 88,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 8,
+  "deathAge": 63,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 13,
+  "deathAge": 87,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "어려워진 집안 형편",
+    "text": 46,
+    "labels": 23,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "past",
+  "choices": 13,
+  "deathAge": 84,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "어려워진 집안 형편",
+    "text": 46,
+    "labels": 23,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 11,
+  "deathAge": 93,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 12,
+  "deathAge": 77,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 13,
+  "deathAge": 88,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 13,
+  "deathAge": 95,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 8,
+  "deathAge": 39,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 14,
+  "deathAge": 89,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 14,
+  "deathAge": 93,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 12,
+  "deathAge": 90,
+  "narrative": 6,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 11,
+  "deathAge": 88,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 21,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 13,
+  "deathAge": 80,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 13,
+  "deathAge": 79,
+  "narrative": 2,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 11,
+  "deathAge": 78,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 13,
+  "deathAge": 83,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 9,
+  "deathAge": 78,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "present",
+  "choices": 14,
+  "deathAge": 88,
+  "narrative": 6,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 14,
+  "deathAge": 93,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 11,
+  "deathAge": 86,
+  "narrative": 1,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 10,
+  "deathAge": 96,
+  "narrative": 2,
+  "chars": [
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 14,
+  "deathAge": 90,
+  "narrative": 2,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 15,
+  "deathAge": 87,
+  "narrative": 6,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 11,
+  "deathAge": 57,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 14,
+  "deathAge": 96,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 13,
+  "deathAge": 90,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 15,
+  "deathAge": 88,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 45,
+    "n": 3
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 25,
+    "n": 3
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 39,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 15,
+  "deathAge": 96,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 9,
+  "deathAge": 81,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 14,
+  "deathAge": 90,
+  "narrative": 4,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 10,
+  "deathAge": 100,
+  "narrative": 2,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "자꾸 눈에 들어오는 사람",
+    "text": 52,
+    "labels": 18,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 11,
+  "deathAge": 77,
+  "narrative": 3,
+  "chars": [
+   {
+    "title": "맡겨지는 낮",
+    "text": 63,
+    "labels": 28,
+    "n": 2
+   },
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   }
+  ]
+ },
+ {
+  "era": "future",
+  "choices": 14,
+  "deathAge": 95,
+  "narrative": 5,
+  "chars": [
+   {
+    "title": "성적표를 받은 저녁",
+    "text": 54,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "전학 온 아이",
+    "text": 60,
+    "labels": 24,
+    "n": 3
+   },
+   {
+    "title": "입시를 앞둔 해",
+    "text": 50,
+    "labels": 48,
+    "n": 3
+   },
+   {
+    "title": "첫 일자리",
+    "text": 44,
+    "labels": 24,
+    "n": 2
+   },
+   {
+    "title": "소개받은 자리",
+    "text": 52,
+    "labels": 19,
+    "n": 2
+   },
+   {
+    "title": "함께 사는 일",
+    "text": 55,
+    "labels": 31,
+    "n": 3
+   },
+   {
+    "title": "부모님의 병환",
+    "text": 56,
+    "labels": 33,
+    "n": 3
+   },
+   {
+    "title": "함께 가게를 열자는 제안",
+    "text": 54,
+    "labels": 30,
+    "n": 3
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "바뀌는 일의 방식",
+    "text": 53,
+    "labels": 22,
+    "n": 2
+   },
+   {
+    "title": "검진 결과표",
+    "text": 49,
+    "labels": 14,
+    "n": 2
+   },
+   {
+    "title": "넉넉해진 시간",
+    "text": 37,
+    "labels": 28,
+    "n": 3
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   },
+   {
+    "title": "오래가는 통증",
+    "text": 36,
+    "labels": 26,
+    "n": 2
+   }
+  ]
+ }
+]

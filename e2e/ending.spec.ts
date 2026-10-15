@@ -1,0 +1,587 @@
+import { expect, test, type Page } from '@playwright/test';
+import type { GameState } from '../src/core/types';
+import {
+  KNOWN_SEED,
+  RAPID_METHODS,
+  activeTestId,
+  evalCore,
+  eraSelectState,
+  findPendingState,
+  injectSave,
+  lifeSnapshot,
+  lifeState,
+  noHorizontalOverflow,
+  oracleAuto,
+  oracleLife,
+  readSave,
+  readSettings,
+  recordClicks,
+  recordedClicks,
+  replaceSaveAndReload,
+  settle,
+  startPageHidden,
+} from './helpers';
+
+/**
+ * 엔딩 (SPEC-001 M5): 담담한 회고(생애 연표·최종 스탯·출발선 대비)와 "다시 태어나기".
+ * 계산은 core/ending.ts의 순수 함수가 하고, 여기서는 실제 브라우저에서 (1) 보이는 것이 core의 회고와 같은지, (2) 새로고침해도 그대로인지,
+ * (3) 다시 태어나기가 새 시드의 시대 선택 화면으로 가고 설정을 유지하는지, (4) 더블탭·3연타가 시대 선택을 건너뛰게 하지 않는지(R-030 M5 몫),
+ * (5) 키보드만으로 되는지, (6) 긴 연표·20세 전 사망이 360px에서 읽히는지를 본다.
+ */
+
+const SETTINGS = { speed: 8, autoMode: true } as const;
+/** 엔딩 출발선 문장의 구간 표현 (R-091): 하위 N% 안쪽 / 상위 N% 안쪽 / 상위 A~B% 사이 / 하위 A%와 상위 B% 사이 (끝에 "의 집에서 태어" 가 이어진다) */
+const BAND_SENTENCE = /^(하위 \d+% 안쪽|상위 \d+% 안쪽|상위 \d+~\d+% 사이|하위 \d+~\d+% 사이|하위 \d+%와 상위 \d+% 사이)의 집에서 태어(났|나, )/;
+/** 등급명(흙/동/은/금/다이아 수저)·느낌표·이모지 */
+const FORBIDDEN = /(흙|동|은|금|다이아)\s*수저|다이아|[!！]|\p{Extended_Pictographic}/u;
+
+/** 알려진 시드의 엔딩 상태(core 자동 진행 결과)를 만든다. 앱 페이지가 열려 있어야 한다. */
+async function endedState(page: Page, seed = KNOWN_SEED, era: 'past' | 'present' | 'future' = 'present'): Promise<GameState> {
+  await page.goto('/');
+  const ended = await oracleAuto(page, await oracleLife(page, seed, era));
+  expect(ended.phase).toBe('ending');
+  return ended;
+}
+
+interface ReviewOracle {
+  journey: string;
+  movement: string | null;
+  death: string;
+  picked: string[];
+  choiceCount: number;
+}
+
+/** core가 계산한 회고와 문구 (개발 서버의 실제 모듈을 브라우저에서 불러 같은 코드를 쓴다) */
+async function reviewOracle(page: Page, state: GameState): Promise<ReviewOracle> {
+  return page.evaluate<ReviewOracle>(`(async () => {
+    const core = await import('/src/core/index.ts');
+    const text = await import('/src/data/endingText.ts');
+    const state = ${JSON.stringify(state)};
+    const r = core.reviewEnding(state);
+    return {
+      journey: text.journeyText(r.journey),
+      movement: r.journey.kind === 'compared' ? text.MOVEMENT_TEXT[r.journey.movement] : null,
+      death: text.deathLineText(state.death),
+      picked: state.history.filter((h) => h.kind === 'choice').map((h) => h.choice),
+      choiceCount: r.choiceCount,
+    };
+  })()`);
+}
+
+/** 한 요소의 글이 화면에서 몇 줄로 나뉘는지(글자 단위 위치로 잰다). 줄마다 그 줄의 글을 돌려준다. */
+async function visualLines(page: Page, selector: string): Promise<string[][]> {
+  return page.evaluate((sel) => {
+    return [...document.querySelectorAll(sel)].map((el) => {
+      const lines: string[] = [];
+      let lastTop: number | null = null;
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        const text = node.textContent ?? '';
+        for (let i = 0; i < text.length; i++) {
+          if (text[i].trim() === '') continue;
+          const range = document.createRange();
+          range.setStart(node, i);
+          range.setEnd(node, i + 1);
+          const top = Math.round(range.getBoundingClientRect().top);
+          if (lastTop === null || Math.abs(top - lastTop) > 4) lines.push('');
+          lastTop = top;
+          lines[lines.length - 1] += text[i];
+        }
+      }
+      return lines;
+    });
+  }, selector);
+}
+
+// ---------- 엔딩 화면의 내용 ----------
+
+test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·출발선 대비가 보이고 core의 회고와 같다. 등급명·감탄사가 없고 가로로 넘치지 않는다', async ({ page }) => {
+  await page.goto('/');
+  const found = await findPendingState(page, 'present');
+  const start = await oracleLife(page, found.seed, 'present');
+  await injectSave(page, start, '/?__timescale=2000', SETTINGS);
+  await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 30_000 });
+  const save = (await readSave(page)).data;
+  expect(save).toEqual(await oracleAuto(page, start));
+  const c = save.character!;
+  const oracle = await reviewOracle(page, save);
+
+  // 제목(이름)에 포커스가 있다 (R-030)
+  await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe(`H1:${c.name}`);
+  await expect(page.getByTestId('ending-born')).toContainText(`${c.birthYear}년, ${c.gender === 'male' ? '남자아이' : '여자아이'}로 태어났다.`);
+  await expect(page.getByTestId('ending-death')).toHaveText(oracle.death);
+  await expect(page.getByTestId('ending-choices')).toContainText(`${oracle.choiceCount}번의 선택`);
+
+  // 출발선 대비: 같은 세상 안의 자리 문장 + 방향 + 설명
+  await expect(page.getByTestId('ending-journey')).toHaveText(oracle.journey);
+  expect(oracle.journey).toMatch(/의 집에서 태어나, .+의 형편으로 생을 마쳤다\.$/);
+  expect(oracle.journey, '출발선은 재력 단계의 구간 표현 (R-091)').toMatch(BAND_SENTENCE);
+  await expect(page.getByTestId('ending-movement')).toHaveText(oracle.movement!);
+  await expect(page.getByTestId('ending-note')).toContainText('같은 세상 안의 자리로 견주었습니다');
+  for (const m of oracle.journey.matchAll(/(\d+)%/g)) expect(Number(m[1])).toBeLessThanOrEqual(50);
+  expect(oracle.journey).not.toMatch(/약 (0|100)%/);
+
+  // 최종 스탯: 마지막 값. 처음 값은 학력·행복·관계에만 (재산은 집안 형편 → 내가 가진 것이라 원값을 견주지 않는다)
+  for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships'] as const) await expect(page.getByTestId(`final-${key}`)).toHaveText(String(save.stats[key]));
+  await expect(page.getByTestId('final-looks')).toHaveText(String(c.looks));
+  for (const key of ['education', 'happiness', 'relationships'] as const) await expect(page.getByTestId(`started-${key}`)).toHaveText(`처음 ${save.birthStats![key]}`);
+  for (const key of ['wealth', 'health', 'looks']) await expect(page.getByTestId(`started-${key}`)).toHaveCount(0);
+
+  // 생애 연표: 연표의 모든 항목, 선택한 순간마다 고른 문구
+  await expect(page.getByTestId('timeline-entry')).toHaveCount(save.history.length);
+  await expect(page.getByTestId('timeline-picked')).toHaveCount(oracle.choiceCount);
+  expect(oracle.choiceCount).toBeGreaterThan(5);
+  const pickedTexts = await page.getByTestId('timeline-picked').allInnerTexts();
+  expect(pickedTexts).toEqual(oracle.picked.map((p) => `선택: ${p}`));
+  await expect(page.getByTestId('timeline-infant')).toBeVisible(); // 출생은 영유아 단계의 첫 줄
+  await expect(page.getByTestId('timeline-entry').first()).toContainText('로 태어났다');
+  await expect(page.getByTestId('timeline-entry').last()).toContainText('세상을 떠났다');
+
+  // 위에서 아래로: 출발선 대비 → 최종 스탯 → 연표 → 다시 태어나기
+  const tops = await page.evaluate(() => ['ending-journey-section', 'ending-stats', 'ending-timeline', 'rebirth'].map((id) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect().top + window.scrollY));
+  expect(tops).toEqual([...tops].sort((a, b) => a - b));
+
+  // 금지된 것: 등급명·느낌표·이모지, 링크·이미지·공유, 가로 넘침. 버튼은 "다시 태어나기" 하나뿐
+  const text = await page.getByTestId('ending-screen').innerText();
+  expect(text).not.toMatch(FORBIDDEN);
+  expect(text).not.toMatch(/공유|SNS|복사|이미지로 저장/);
+  expect(await page.locator('a, img, canvas, audio, video, svg').count()).toBe(0);
+  await expect(page.getByRole('button')).toHaveCount(1);
+  expect(await noHorizontalOverflow(page)).toBe(true);
+  expect(countOf(save, 'death')).toBe(1);
+});
+
+function countOf(save: GameState, kind: string): number {
+  return save.history.filter((h) => h.kind === kind).length;
+}
+
+test('엔딩 화면은 새로고침해도 그대로다: 같은 회고, 저장 불변, 엔딩이 되살아나거나 진행이 다시 시작되지 않는다', async ({ page }) => {
+  const ended = await endedState(page);
+  await injectSave(page, ended, '/?__timescale=2000', SETTINGS);
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  const journey = await page.getByTestId('ending-journey').innerText();
+  const before = (await readSave(page)).data;
+  expect(before).toEqual(ended);
+  for (let i = 0; i < 3; i++) {
+    await page.reload();
+    await expect(page.getByTestId('ending-screen')).toBeVisible();
+    await expect(page.getByTestId('ending-journey')).toHaveText(journey);
+    await expect(page.getByTestId('timeline-entry')).toHaveCount(ended.history.length);
+    await expect(page.getByTestId('error-screen')).toHaveCount(0);
+  }
+  // 자동 모드(8배속)가 켜져 있어도 엔딩에서는 아무 것도 진행되지 않는다: 잠시 기다려도 저장이 그대로다
+  await page.waitForTimeout(800);
+  await settle(page);
+  expect((await readSave(page)).data).toEqual(ended);
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  await expect(page.getByTestId('life-screen')).toHaveCount(0);
+});
+
+test('스무 살 전에 끝난 인생: 도착 자리를 말하지 않고 집안 형편만 말한다 (재산이 아직 집안 형편이다)', async ({ page }) => {
+  const base = lifeState(KNOWN_SEED);
+  const early: GameState = {
+    ...base,
+    phase: 'ending',
+    age: 9,
+    history: [
+      { age: 0, kind: 'stage', text: '2012년, 남자아이로 태어났다.' },
+      { age: 3, kind: 'event', title: '첫 말', text: '아이가 처음으로 또렷한 말을 했다.', eventId: 'infant-first-word' },
+      { age: 7, kind: 'stage', text: '학교에 들어갈 나이가 되었다.' },
+      { age: 9, kind: 'death', text: '세상을 떠났다. 원인: 갑작스러운 병.' },
+    ],
+    death: { age: 9, cause: '갑작스러운 병' },
+  };
+  await page.goto('/');
+  await injectSave(page, early, '/');
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  await expect(page.getByTestId('ending-death')).toHaveText('9세에 세상을 떠났다. 원인: 갑작스러운 병.');
+  // R-083: 출발선만 담담하게 — 게임 용어("내가 가진 것")도, 윗줄이 이미 말한 "생이 끝났다"도 되풀이하지 않는다
+  await expect(page.getByTestId('ending-journey')).toHaveText(/^.+의 집에서 태어났다\.$/);
+  await expect(page.getByTestId('ending-journey')).toHaveText(BAND_SENTENCE); // R-091: 20세 전 사망 줄도 구간 표현
+  await expect(page.getByTestId('ending-journey')).toHaveText((await reviewOracle(page, early)).journey);
+  await expect(page.getByTestId('ending-journey')).not.toContainText(/내가 가진 것|생이 끝|견줄|스무 살/);
+  await expect(page.getByTestId('ending-journey')).not.toContainText('형편으로 생을 마쳤다');
+  await expect(page.getByTestId('ending-movement')).toHaveCount(0);
+  await expect(page.getByTestId('ending-stats')).toContainText('집안 형편');
+  await expect(page.getByTestId('timeline-entry')).toHaveCount(4);
+  expect(await noHorizontalOverflow(page)).toBe(true);
+  expect(await page.getByTestId('ending-screen').innerText()).not.toMatch(FORBIDDEN);
+});
+
+test('가장 긴 연표(세 시대에서 찾은 가장 긴 인생)도 360px와 320px에서 읽힌다: 가로 넘침·잘림 없고, 다시 태어나기 버튼에 스크롤로 닿는다', async ({ page }) => {
+  await page.goto('/');
+  const longest = await evalCore<GameState>(
+    page,
+    `let best = null;
+     for (const era of ['past', 'present', 'future']) {
+       for (let seed = 1; seed <= 150; seed++) {
+         const s = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), era)));
+         const f = core.playToEnd(s, null).state;
+         if (best === null || f.history.length > best.history.length) best = f;
+       }
+     }
+     return best;`,
+  );
+  expect(longest.history.length).toBeGreaterThanOrEqual(40);
+  for (const width of [360, 320]) {
+    await page.setViewportSize({ width, height: 640 });
+    await injectSave(page, longest, '/');
+    await expect(page.getByTestId('ending-screen')).toBeVisible();
+    await expect(page.getByTestId('timeline-entry')).toHaveCount(longest.history.length);
+    expect(await noHorizontalOverflow(page), `${width}px 가로 넘침`).toBe(true);
+    const clipped = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.timeline li, .ending-section p, .ending-head p, .stat')].filter((el) => el.scrollWidth > el.clientWidth + 1).length);
+    expect(clipped, `${width}px 잘린 줄`).toBe(0);
+    // 글자 크기는 읽을 만하다 (14px 이상)
+    const minFont = await page.evaluate(() => Math.min(...[...document.querySelectorAll<HTMLElement>('.timeline li, .ending-section p')].map((el) => parseFloat(getComputedStyle(el).fontSize))));
+    expect(minFont).toBeGreaterThanOrEqual(13);
+    // 끝까지 내려가면 다시 태어나기 버튼이 화면 안에 온전히 보인다
+    const rebirth = page.getByTestId('rebirth');
+    await rebirth.scrollIntoViewIfNeeded();
+    const box = (await rebirth.boundingBox())!;
+    const vp = page.viewportSize()!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(vp.height);
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(vp.width);
+  }
+});
+
+test('엔딩의 제목·문장은 단어 중간에서 끊기지 않고 한 글자만 홀로 남는 줄이 없다 (360px)', async ({ page }) => {
+  const ended = await endedState(page);
+  await page.setViewportSize({ width: 360, height: 740 });
+  await injectSave(page, ended, '/');
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  const groups = await visualLines(page, 'h1, h2, .ending-head p, [data-testid="ending-journey"], [data-testid="ending-movement"], [data-testid="ending-note"]');
+  expect(groups.length).toBeGreaterThan(6);
+  for (const lines of groups) {
+    if (lines.length < 2) continue;
+    for (const line of lines) expect(line.length, `한 글자 줄: ${lines.join(' / ')}`).toBeGreaterThan(1);
+  }
+  const wordBreak = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="ending-journey"]')!).wordBreak);
+  expect(wordBreak).toBe('keep-all');
+  // 순위 표현("상위 약 23%의")이 "%"와 조사 사이에서 쪼개져 "의"가 다음 줄 맨 앞에 오지 않는다 (ui/KeepStanding)
+  const journey = (await visualLines(page, '[data-testid="ending-journey"]'))[0];
+  for (const line of journey) expect(line, `줄머리의 조사: ${journey.join(' / ')}`).not.toMatch(/^[의%]/);
+  // 덩어리 수는 문장이 말하는 순위 표현의 수다(출발선 구간이 "하위 25%와 상위 45% 사이의"처럼 두 덩어리면 3개) — 같은 규칙(KeepStanding)에서 구한다
+  const units = await page.evaluate<number>(`(async () => {
+    const { splitStanding } = await import('/src/ui/KeepStanding.tsx');
+    return (splitStanding(document.querySelector('[data-testid="ending-journey"]').textContent).length - 1) / 2;
+  })()`);
+  expect(units).toBeGreaterThanOrEqual(2);
+  expect(await page.locator('[data-testid="ending-journey"] .nowrap').count()).toBe(units);
+});
+
+test('출발선 구간 문장(맨 아래·가운데·한쪽 절반·맨 위 단계 × 360px·320px): 숫자 중간에서 끊기지 않고, 조사가 줄머리에 오지 않으며, 덩어리가 화면 밖으로 나가지 않는다 (R-091)', async ({ page }) => {
+  const ended = await endedState(page);
+  const labels: string[] = [];
+  for (const [wealth, final] of [
+    [1, 45],
+    [2, 10],
+    [3, 5],
+    [4, 90],
+    [5, 30],
+  ] as const) {
+    const state: GameState = { ...ended, character: { ...ended.character!, parentWealth: wealth }, stats: { ...ended.stats, wealth: final } };
+    const oracle = await reviewOracle(page, state);
+    expect(oracle.journey).toMatch(BAND_SENTENCE);
+    labels.push(`${wealth}단계: ${oracle.journey}`);
+    for (const width of [360, 320]) {
+      await page.setViewportSize({ width, height: 740 });
+      await injectSave(page, state, '/');
+      await expect(page.getByTestId('ending-screen')).toBeVisible();
+      await expect(page.getByTestId('ending-journey')).toHaveText(oracle.journey);
+      await expect(page.getByTestId('ending-movement')).toHaveText(oracle.movement!);
+      expect(await noHorizontalOverflow(page), `${wealth}단계 ${width}px 가로 넘침`).toBe(true);
+      const journey = (await visualLines(page, '[data-testid="ending-journey"]'))[0];
+      for (const line of journey) {
+        expect(line.length, `한 글자 줄 ${width}px: ${journey.join(' / ')}`).toBeGreaterThan(1);
+        expect(line, `줄머리의 조사 ${width}px: ${journey.join(' / ')}`).not.toMatch(/^[의%와]/);
+      }
+      // 한 덩어리(.nowrap)는 줄 하나 안에 온전히 들어간다: 자기 부모 폭을 넘지 않는다
+      const overflowing = await page.evaluate(() => {
+        const box = document.querySelector<HTMLElement>('[data-testid="ending-journey"]')!.getBoundingClientRect();
+        return [...document.querySelectorAll<HTMLElement>('[data-testid="ending-journey"] .nowrap')].filter((el) => el.getBoundingClientRect().right > box.right + 1).map((el) => el.textContent);
+      });
+      expect(overflowing, `${wealth}단계 ${width}px`).toEqual([]);
+    }
+  }
+  expect(new Set(labels.map((l) => l.split('의 집에서')[0])).size, labels.join(' / ')).toBe(5); // 다섯 단계의 출발선 구간 표현이 모두 다르다
+});
+
+// ---------- 다시 태어나기 ----------
+
+test('다시 태어나기: 새 시드의 새 판이 시대 선택 화면(기본 지금 세상)에서 시작되고, 설정(배속·자동 모드)은 유지되며, 이전 판의 저장은 대체된다', async ({ page }) => {
+  const ended = await endedState(page);
+  await startPageHidden(page); // 새 판이 자동 모드로 곧바로 흐르지 않게 타이머를 멈춰 둔다
+  await injectSave(page, ended, '/', SETTINGS);
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  const rebirth = page.getByTestId('rebirth');
+  await expect(rebirth).toBeEnabled(); // 화면 진입 가드가 풀릴 때까지
+  await expect(rebirth).toHaveText('다시 태어나기');
+  await rebirth.click();
+
+  // 타이틀을 거치지 않고 곧바로 시대 선택 화면, 기본 선택은 "지금 세상", 포커스는 새 화면 제목 (R-030 M5 몫)
+  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await expect(page.getByTestId('title-screen')).toHaveCount(0);
+  await expect(page.locator('[data-era="present"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-era="past"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('[data-era="future"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:어느 세상에서 태어날까');
+
+  // 저장: 새 시드, 이전 판의 흔적 없음 (이전 판은 대체돼 되돌릴 수 없다)
+  await expect.poll(async () => (await readSave(page)).data.phase).toBe('eraSelect');
+  const fresh = (await readSave(page)).data;
+  expect(fresh.seed).not.toBe(ended.seed);
+  expect(fresh.era).toBeNull();
+  expect(fresh.character).toBeNull();
+  expect(fresh.history).toEqual([]);
+  expect(fresh.death).toBeNull();
+  expect(fresh.flags).toEqual([]);
+  expect(JSON.stringify(fresh)).not.toContain(ended.character!.name);
+  // 설정은 그대로
+  expect(await readSettings(page)).toEqual(SETTINGS);
+
+  // 새로고침해도 시대 선택 화면에서 이어진다 (엔딩이 되살아나지 않는다)
+  await page.reload();
+  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await expect(page.getByTestId('ending-screen')).toHaveCount(0);
+
+  // 시대를 확정하면 새 인물: 같은 시드의 core 출생 결과와 같다
+  const expected = await evalCore<GameState>(page, 'return core.beginBirth(core.selectEra(arg, "present"));', fresh);
+  const confirm = page.getByTestId('confirm-era');
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  const born = (await readSave(page)).data;
+  expect(born.character).toEqual(expected.character);
+  expect(born.era).toBe('present');
+  // 살아가기 → 새 인생: 설정(8배속·자동 모드)이 그대로 눌려 있고 0세다
+  const next = page.getByTestId('next-life');
+  await expect(next).toBeEnabled();
+  await next.click();
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  const snap = await lifeSnapshot(page);
+  expect(snap.speed).toBe('8');
+  expect(snap.auto).toBe('true');
+  expect(snap.age).toBe('0세');
+  expect(snap.hasChoice).toBe(false);
+});
+
+test('다시 태어나기를 거친 새 판도 끝까지 가서 다시 엔딩이 된다 (죽음 → 다시 태어나기 → 죽음)', async ({ page }) => {
+  test.setTimeout(120_000);
+  const ended = await endedState(page);
+  await injectSave(page, ended, '/?__timescale=3000', SETTINGS);
+  await page.getByTestId('rebirth').click();
+  await page.getByTestId('confirm-era').click();
+  await page.getByTestId('next-life').click();
+  // 자동 모드(8배속)가 켜져 있으니 새 판은 스스로 끝까지 간다
+  await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 60_000 });
+  const second = (await readSave(page)).data;
+  expect(second.phase).toBe('ending');
+  expect(second.seed).not.toBe(ended.seed);
+  expect(second.character!.name).toBeTruthy();
+  await expect(page.getByTestId('timeline-entry')).toHaveCount(second.history.length);
+});
+
+for (const fraction of [1 / 4, 1 / 2, 3 / 4]) {
+  for (const method of RAPID_METHODS) {
+    test(`다시 태어나기 ${method === 'dblclick' ? '더블클릭' : method === 'mouse2' ? '더블탭' : method === 'mouse3' ? '3연타' : '사람 속도 더블탭(150ms)'} — 버튼 폭 ${Math.round(fraction * 100)}% 지점: 새 판은 하나뿐이고 시대 선택을 건너뛰지 않으며 외부 링크로 가지 않는다 (R-030)`, async ({ page, context }) => {
+      const ended = await endedState(page);
+      await recordClicks(page);
+      await replaceSaveAndReload(page, ended, SETTINGS);
+      await expect(page.getByTestId('ending-screen')).toBeVisible();
+      const rebirth = page.getByTestId('rebirth');
+      await expect(rebirth).toBeEnabled();
+      const url = page.url();
+      await rebirth.scrollIntoViewIfNeeded();
+      const box = (await rebirth.boundingBox())!;
+      const x = box.x + box.width * fraction;
+      const y = box.y + box.height / 2;
+      const taps = method === 'mouse3' ? 3 : 2;
+      for (let i = 0; i < taps; i++) {
+        if (method === 'dblclick' && i === 0) {
+          await page.mouse.dblclick(x, y);
+          break;
+        }
+        await page.mouse.click(x, y);
+        if (method === 'human150' && i < taps - 1) await page.waitForTimeout(150);
+      }
+      await expect(page.getByTestId('era-screen')).toBeVisible();
+      await settle(page);
+      await page.waitForTimeout(500); // 가드가 풀린 뒤에도 시대 선택에 머무른다 (늦게 도착한 입력이 없다)
+      await expect(page.getByTestId('era-screen')).toBeVisible();
+      await expect(page.getByTestId('birth-screen')).toHaveCount(0);
+      expect(page.url(), '외부 링크로 이동하지 않았다').toBe(url);
+      expect(context.pages().length, '새 창이 열리지 않았다').toBe(1);
+      const save = (await readSave(page)).data;
+      expect(save.phase).toBe('eraSelect');
+      expect(save.era, '시대 선택이 바뀌지 않았다').toBeNull();
+      expect(save.history).toEqual([]);
+      // 첫 입력은 "다시 태어나기", 이후 입력은 새 화면의 닫힌 버튼(가드)이나 버튼이 아닌 곳에 떨어졌다
+      const clicks = await recordedClicks(page);
+      expect(clicks[0]).toBe('rebirth');
+      for (const c of clicks.slice(1)) expect(c.endsWith('(가드)') || c.startsWith('비버튼:'), `둘째 이후 입력이 열린 버튼에 떨어졌다: ${c}`).toBe(true);
+    });
+  }
+}
+
+test('키보드만으로 엔딩 → 다시 태어나기: Tab으로 버튼에 닿고 Enter(또는 Space)로 시대 선택 화면에 가며, 새 화면 제목에 포커스가 가고 다음 Tab은 첫 시대 카드로 간다', async ({ page }) => {
+  const ended = await endedState(page);
+  for (const key of ['Enter', 'Space'] as const) {
+    await injectSave(page, ended, '/', SETTINGS);
+    await expect(page.getByTestId('ending-screen')).toBeVisible();
+    await expect(page.getByTestId('rebirth')).toBeEnabled();
+    await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('H1'); // 제목에 포커스
+    await page.keyboard.press('Tab'); // 연표는 Tab 정지점이 아니다: 다음이 바로 버튼
+    expect(await activeTestId(page)).toBe('rebirth');
+    await page.keyboard.press(key);
+    await expect(page.getByTestId('era-screen')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:어느 세상에서 태어날까');
+    // 곧바로 같은 키를 또 눌러도(제목에 포커스가 있다) 시대 선택을 건너뛰지 않는다
+    await page.keyboard.press(key);
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId('era-screen')).toBeVisible();
+    expect((await readSave(page)).data.phase).toBe('eraSelect');
+    // 다음 Tab은 외부 링크가 아니라 첫 시대 카드
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => `${document.activeElement?.tagName}:${(document.activeElement as HTMLElement | null)?.dataset.era}`)).toBe('BUTTON:past');
+  }
+});
+
+// ---------- 다시 태어나기 더블탭: 겹침을 측정으로 정한다 (R-050 방식) ----------
+
+const SWEEP_VIEWPORTS = [
+  { width: 360, height: 480 },
+  { width: 360, height: 568 },
+  { width: 320, height: 568 },
+  { width: 360, height: 640 },
+  { width: 360, height: 667 },
+  { width: 667, height: 375 },
+] as const;
+const MIN_OVERLAP_PX = 4;
+/** 겹침이 관측돼야 하는 하한(공허 통과 방지). 이 개발 환경의 측정값은 여섯 뷰포트 모두 겹친다(시대 카드 또는 "이 세상에서 태어나기"). */
+const MIN_OVERLAPPED_VIEWPORTS = 4;
+
+interface Hit {
+  id: string;
+  x: number;
+  y: number;
+}
+
+/** 이 뷰포트에서 "다시 태어나기" 버튼(맨 아래까지 스크롤한 위치)이 시대 선택 화면의 카드·확정 버튼과 겹치는 곳의 한가운데를 잰다 */
+async function measureOverlap(page: Page, ended: GameState): Promise<{ rect: { x: number; y: number; width: number; height: number }; hits: Hit[] }> {
+  await replaceSaveAndReload(page, ended, SETTINGS);
+  const rebirth = page.getByTestId('rebirth');
+  await expect(rebirth).toBeEnabled();
+  await rebirth.scrollIntoViewIfNeeded();
+  const rect = (await rebirth.boundingBox())!;
+  await replaceSaveAndReload(page, eraSelectState(KNOWN_SEED), SETTINGS);
+  await expect(page.getByTestId('era-screen')).toBeVisible();
+  const els = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('[data-era], [data-testid="confirm-era"]')].map((b) => {
+      const r = b.getBoundingClientRect();
+      return { id: b.dataset.era ?? 'confirm-era', left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    }),
+  );
+  const hits: Hit[] = [];
+  for (const e of els) {
+    const left = Math.max(rect.x, e.left);
+    const right = Math.min(rect.x + rect.width, e.right);
+    const top = Math.max(rect.y, e.top);
+    const bottom = Math.min(rect.y + rect.height, e.bottom);
+    if (right - left >= MIN_OVERLAP_PX && bottom - top >= MIN_OVERLAP_PX) hits.push({ id: e.id, x: (left + right) / 2, y: (top + bottom) / 2 });
+  }
+  return { rect, hits };
+}
+
+async function burst(page: Page, ended: GameState, at: { x: number; y: number }, method: 'mouse3' | 'human150', url: string): Promise<{ eraStillShown: boolean; birth: boolean; eraChosen: string | null; landed: string[] }> {
+  await replaceSaveAndReload(page, ended, SETTINGS);
+  await page.goto(url);
+  const rebirth = page.getByTestId('rebirth');
+  await expect(rebirth).toBeEnabled();
+  await rebirth.scrollIntoViewIfNeeded(); // 점을 잰 때와 같은 스크롤 위치
+  await page.evaluate(() => ((window as unknown as { __clicks: string[] }).__clicks.length = 0)); // 이 연타의 입력만 기록
+  const taps = method === 'mouse3' ? 3 : 2;
+  for (let i = 0; i < taps; i++) {
+    await page.mouse.click(at.x, at.y);
+    if (method === 'human150' && i < taps - 1) await page.waitForTimeout(150);
+  }
+  await settle(page);
+  await page.waitForTimeout(600);
+  const save = (await readSave(page)).data;
+  return {
+    eraStillShown: save.phase === 'eraSelect' && (await page.getByTestId('era-screen').count()) === 1,
+    birth: save.phase !== 'eraSelect',
+    eraChosen: save.era,
+    landed: (await recordedClicks(page)).slice(1), // 첫 입력(다시 태어나기)을 뺀 나머지
+  };
+}
+
+test('낮은 화면(겹침을 측정): 다시 태어나기 더블탭의 둘째 입력이 시대 카드·"이 세상에서 태어나기"에 떨어져도 시대 선택은 그대로다. 가드를 끈 대조군에서는 실제로 건너뛰거나 바뀐다 (R-030 M5 몫)', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+  test.setTimeout(240_000);
+  await page.goto('/');
+  const ended = await oracleAuto(page, await oracleLife(page, KNOWN_SEED, 'present'));
+  let overlapped = 0;
+  let controlChanged = 0;
+  const report: string[] = [];
+  await startPageHidden(page);
+  await recordClicks(page);
+  for (const vp of SWEEP_VIEWPORTS) {
+    await page.setViewportSize(vp);
+    const { rect, hits } = await measureOverlap(page, ended);
+    report.push(`${vp.width}x${vp.height}: ${hits.length > 0 ? hits.map((h) => h.id).join('·') : '겹침 없음'}`);
+    // 버튼 폭의 좌·우 1/4 지점도 함께 누른다. 겹치는 곳이 있으면 그 한가운데도 누른다.
+    const points = [
+      { x: rect.x + rect.width / 4, y: rect.y + rect.height / 2 },
+      { x: rect.x + (rect.width * 3) / 4, y: rect.y + rect.height / 2 },
+      ...hits.map((h) => ({ x: h.x, y: h.y })),
+    ];
+    for (const method of ['human150', 'mouse3'] as const) {
+      for (const p of points) {
+        const r = await burst(page, ended, p, method, '/');
+        expect(r.eraStillShown, `${vp.width}x${vp.height} ${method} (${Math.round(p.x)},${Math.round(p.y)}): 시대 선택이 건너뛰어졌다`).toBe(true);
+        expect(r.birth).toBe(false);
+        expect(r.eraChosen, `${vp.width}x${vp.height} ${method}: 시대 선택이 바뀌었다`).toBeNull();
+        for (const c of r.landed) expect(c.endsWith('(가드)') || c.startsWith('비버튼:'), `${vp.width}x${vp.height} ${method}: 열린 버튼에 떨어졌다 (${c})`).toBe(true);
+      }
+    }
+    if (hits.length === 0) continue;
+    overlapped++;
+    // 대조군: 가드를 끄면(?__guard=0, 개발 서버 전용) 같은 조작이 시대 선택을 건너뛰거나 선택을 바꾼다
+    const control = await burst(page, ended, hits[0], 'mouse3', '/?__guard=0');
+    if (control.birth || control.eraChosen !== null) controlChanged++;
+  }
+  testInfo.annotations.push({ type: '측정', description: report.join(' | ') });
+  expect(overlapped, `겹침이 관측된 뷰포트가 너무 적다 (공허 통과 방지): ${report.join(' | ')}`).toBeGreaterThanOrEqual(MIN_OVERLAPPED_VIEWPORTS);
+  expect(controlChanged, `가드를 끈 대조군에서 변화가 관측된 뷰포트가 너무 적다 (공허 통과 방지): ${report.join(' | ')}`).toBeGreaterThanOrEqual(MIN_OVERLAPPED_VIEWPORTS - 1);
+});
+
+test('엔딩이 막 떴을 때(진입 가드가 닫혀 있는 동안)의 클릭은 "다시 태어나기"에 떨어지지 않고, 가드가 풀리면 같은 버튼이 눌린다 (R-086: 가드를 시간에 기대지 않고 닫아 둔다)', async ({ page }) => {
+  const ended = await endedState(page);
+  await startPageHidden(page);
+  await recordClicks(page);
+  // 개발 서버 전용 탐침 ?__guard=600000: 진입 가드가 사실상 풀리지 않는다 = "엔딩이 막 뜬 순간"이 계속된다. 조건부 단언이 없다.
+  await injectSave(page, ended, '/?__guard=600000', SETTINGS);
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  const rebirth = page.getByTestId('rebirth');
+  await expect(rebirth, '진입 가드가 닫혀 있다').toHaveAttribute('aria-disabled', 'true');
+  await rebirth.scrollIntoViewIfNeeded();
+  const box = (await rebirth.boundingBox())!;
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await page.mouse.click(center.x, center.y); // 더블클릭의 둘째 입력이 떨어지는 순간
+  await page.mouse.click(center.x, center.y);
+  await settle(page);
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  await expect(page.getByTestId('era-screen')).toHaveCount(0);
+  expect((await readSave(page)).data.phase, '저장은 아직 엔딩이다').toBe('ending');
+  expect((await recordedClicks(page)).slice(0, 2), '두 입력 모두 닫힌 버튼에 닿았다').toEqual(['rebirth(가드)', 'rebirth(가드)']);
+
+  // 가드가 정상 시간(400ms)이면 같은 버튼이 눌리고, 다시 태어나기가 된다
+  await page.goto('/');
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  await expect(rebirth).toBeEnabled();
+  await expect(rebirth).not.toHaveAttribute('aria-disabled', 'true');
+  await rebirth.click();
+  await expect(page.getByTestId('era-screen')).toBeVisible();
+});

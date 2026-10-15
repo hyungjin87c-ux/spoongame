@@ -1,0 +1,22 @@
+import { DEV, PROD, launch, mkctx, shot, sleep } from './lib.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { RES_DIR, resultFile } from './lib.mjs';
+const b = await launch();
+const ctx = await mkctx(b, { viewport: { width: 360, height: 740 } });
+const p = await ctx.newPage();
+await p.goto(PROD + '/harness/guard.html'); await sleep(700);
+const s97 = await shot(p, 'M3-A97', 'prod-harness-url');
+await p.goto(PROD + '/src/main.tsx'); await sleep(700);
+const s97b = await shot(p, 'M3-A97', 'prod-src-url');
+await p.goto(DEV + '/'); await sleep(700);
+const s111 = await shot(p, 'M3-A111');
+await b.close();
+const upd = (file, id, shots) => {
+  const L = fs.readFileSync(resultFile(file), 'utf8').trim().split('\n').map(JSON.parse);
+  const r = L.filter((x) => x.id === id).pop();
+  fs.appendFileSync(resultFile(file), JSON.stringify({ ...r, shots, at: new Date().toISOString() }) + '\n');
+};
+upd('a-prod', 'M3-A97', [s97, s97b]);
+upd('a-race', 'M3-A111', [s111]);
+console.log(s97, s97b, s111);

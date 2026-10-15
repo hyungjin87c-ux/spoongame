@@ -1,0 +1,598 @@
+{
+  "note": "노년(65세 이상) 이벤트. 커뮤니티 사연을 모티브로만 새로 쓴 글이다. 작성법: docs/data/events-schema.md",
+  "events": [
+    {
+      "id": "senior-retire",
+      "title": "일에서 물러나다",
+      "text": "일을 내려놓는 날이 왔다. 정리할 것은 생각보다 많지 않았고, 돌아오는 길이 유난히 길게 느껴졌다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 65, "max": 70 },
+      "weight": 40,
+      "once": true,
+      "effects": { "stats": { "wealth": -2, "happiness": -1 } },
+      "bonuses": [
+        { "when": { "stats": { "wealth": { "min": 60 } } }, "effects": { "stats": { "happiness": 3 } } },
+        { "when": { "stats": { "wealth": { "max": 30 } } }, "effects": { "stats": { "happiness": -3, "wealth": -2 } } },
+        { "when": { "flags": ["own_business"] }, "effects": { "stats": { "wealth": 3 } } }
+      ]
+    },
+    {
+      "id": "senior-gathering",
+      "title": "넉넉해진 시간",
+      "text": "시간이 넉넉해졌다. 하루를 무엇으로 채울지가 새로운 숙제가 되었다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 82 },
+      "weight": 15,
+      "once": true,
+      "choices": [
+        {
+          "id": "club",
+          "label": "동네 모임에 나간다",
+          "result": "아침마다 같은 얼굴들과 인사를 나누었다. 안부를 묻는 일이 하루의 시작이 되었다.",
+          "effects": { "stats": { "relationships": 5, "health": 2 } },
+          "bonuses": [{ "when": { "flags": ["cared_parents"] }, "effects": { "stats": { "happiness": 2 } } }]
+        },
+        {
+          "id": "home",
+          "label": "집에서 조용히 지낸다",
+          "result": "책과 산책과 낮잠으로 하루가 지나갔다. 조용했고, 가끔은 적막했다.",
+          "effects": { "stats": { "happiness": 1, "relationships": -2 } },
+          "bonuses": [
+            { "when": { "flags": ["grandparent_close"] }, "effects": { "stats": { "happiness": 1 } } },
+            { "when": { "flags": ["hobby"] }, "effects": { "stats": { "happiness": 2 } } }
+          ]
+        },
+        {
+          "id": "grandchildren",
+          "label": "손주를 돌본다",
+          "result": "아이들의 웃음소리로 집이 다시 시끄러워졌다. 몸은 힘들었지만 마음은 따뜻했다.",
+          "effects": { "stats": { "relationships": 4, "health": -3, "happiness": 3 } },
+          "requires": { "flags": ["has_child"], "notFlags": ["child_distant", "child_late", "in_care"] }
+        }
+      ]
+    },
+    {
+      "id": "senior-illness",
+      "title": "오래가는 통증",
+      "text": "몸 어딘가가 오래 아팠다. 병원에서는 검사를 더 해 보자고 했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 68, "max": 90 },
+      "weight": 14,
+      "once": true,
+      "conditions": { "stats": { "health": { "max": 50 } } },
+      "choices": [
+        {
+          "id": "treat",
+          "label": "적극적으로 치료받는다",
+          "result": "입원과 통원을 오가며 시간을 보냈다. 몸은 조금 나아졌고, 통장은 가벼워졌다.",
+          "effects": { "stats": { "health": 8, "wealth": -6, "happiness": -1 } }
+        },
+        {
+          "id": "routine",
+          "label": "일상을 지키며 약으로 버틴다",
+          "result": "병원 대신 몸에 밴 일상 속에서 하루를 보냈다. 아픈 날과 괜찮은 날이 섞여 있었다.",
+          "effects": { "stats": { "health": 1, "happiness": 2 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-illness-later",
+      "title": "점점 깊어지는 병",
+      "text": "병은 더 이상 쉽게 물러가지 않았다. 앞으로 어떻게 지낼지 스스로 마음을 정해야 했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 78, "max": 100 },
+      "weight": 16,
+      "once": true,
+      "conditions": { "stats": { "health": { "max": 40 } } },
+      "choices": [
+        {
+          "id": "treat",
+          "label": "할 수 있는 치료를 모두 받는다",
+          "result": "가능한 치료를 모두 받았다. 몸은 버텼지만 기력은 눈에 띄게 줄었다.",
+          "effects": { "stats": { "health": 6, "wealth": -8, "happiness": -2 } }
+        },
+        {
+          "id": "comfort",
+          "label": "편안하게 지내는 데 마음을 쏟는다",
+          "result": "치료보다 하루하루의 편안함을 택했다. 좋아하는 음식과 햇살과 이야기가 곁에 있었다.",
+          "effects": { "stats": { "happiness": 4, "health": -2, "relationships": 2 } }
+        },
+        {
+          "id": "home",
+          "label": "익숙한 집에서 지낸다",
+          "result": "마지막까지 집에서 지내기로 했다. 익숙한 이불 냄새가 곁에 있어 마음이 놓였다.",
+          "effects": { "stats": { "happiness": 3, "relationships": 3, "health": -3 } },
+          "requires": { "notFlags": ["moved_home"] }
+        }
+      ]
+    },
+    {
+      "id": "senior-grandchildren",
+      "title": "손주를 맡아 달라는 부탁",
+      "text": "아이가 일 때문에 손주를 맡아 줄 수 있느냐고 물어 왔다. 몸은 예전 같지 않았다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 68, "max": 82 },
+      "weight": 16,
+      "once": true,
+      "conditions": { "flags": ["has_child"], "notFlags": ["child_distant", "in_care"] },
+      "choices": [
+        {
+          "id": "raise",
+          "label": "기꺼이 맡아 돌본다",
+          "result": "손주의 손을 잡고 아침마다 길을 나섰다. 몸은 힘들었지만 집 안에 웃음이 가득했다.",
+          "effects": { "stats": { "relationships": 5, "happiness": 3, "health": -4 } }
+        },
+        {
+          "id": "part",
+          "label": "낮 시간만 돌본다",
+          "result": "낮 동안만 손주를 돌보기로 했다. 서로 무리하지 않는 선에서 시간을 나누었다.",
+          "effects": { "stats": { "relationships": 3, "happiness": 2, "health": -1 } }
+        },
+        {
+          "id": "decline",
+          "label": "몸이 힘들다고 사양한다",
+          "result": "내 몸 상태를 솔직히 말했다. 서운해하는 기색이 있었지만 이해해 주었다.",
+          "effects": { "stats": { "health": 1, "relationships": -2 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-estate",
+      "title": "남길 것과 쓸 것",
+      "text": "가진 것을 어떻게 정리할지 생각하는 날이 늘었다. 남길지, 내가 쓸지 정해야 했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 68, "max": 85 },
+      "weight": 12,
+      "once": true,
+      "conditions": { "stats": { "wealth": { "min": 35 } } },
+      "choices": [
+        {
+          "id": "give",
+          "label": "가까운 이들에게 미리 나눈다",
+          "result": "가까운 이들에게 몫을 나누어 주었다. 가벼워진 마음 한편에 허전함이 스쳤다.",
+          "effects": { "stats": { "wealth": -10, "relationships": 1 } },
+          "bonuses": [{ "when": { "flags": ["has_child"] }, "effects": { "stats": { "relationships": 3 } } }]
+        },
+        {
+          "id": "spend",
+          "label": "남은 시간을 위해 쓴다",
+          "result": "미뤄 두었던 일들에 돈을 썼다. 쓰는 만큼 하루가 풍성해졌다.",
+          "effects": { "stats": { "wealth": -6, "happiness": 4, "health": 1 } }
+        },
+        {
+          "id": "donate",
+          "label": "뜻 있는 곳에 기부한다",
+          "result": "오래 생각해 둔 곳에 일부를 내놓았다. 내 이름이 남지 않아도 마음은 편안했고 새로운 인연이 닿았다.",
+          "effects": { "stats": { "wealth": -6, "happiness": 3, "relationships": 2 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-move-home",
+      "title": "어디서 살 것인가",
+      "text": "살던 집이 점점 버거워졌다. 어디에서 남은 시간을 보낼지 생각이 깊어졌다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 70, "max": 90 },
+      "weight": 12,
+      "once": true,
+      "choices": [
+        {
+          "id": "stay",
+          "label": "살던 집에 머문다",
+          "result": "익숙한 집에 남기로 했다. 불편은 늘었지만 어디에 무엇이 있는지 눈 감고도 알았다.",
+          "effects": { "stats": { "happiness": 2, "health": -2 } }
+        },
+        {
+          "id": "child",
+          "label": "자식 곁으로 옮긴다",
+          "result": "자식이 사는 동네로 옮겼다. 낯선 거리였지만 가까이에 자식이 있다는 사실이 든든했다.",
+          "effects": { "stats": { "relationships": 3, "health": 1 }, "setFlags": ["moved_home"] },
+          "requires": { "flags": ["has_child"], "notFlags": ["child_distant"] }
+        },
+        {
+          "id": "facility",
+          "label": "돌봄이 있는 곳으로 간다",
+          "result": "돌봄을 받을 수 있는 곳으로 옮겼다. 식사와 약을 챙겨 주는 손길이 늘 곁에 있었다.",
+          "effects": { "stats": { "health": 3, "wealth": -5, "happiness": -1 }, "setFlags": ["moved_home", "in_care"] }
+        }
+      ]
+    },
+    {
+      "id": "senior-travel",
+      "title": "미뤄 둔 여행",
+      "text": "젊을 때부터 가 보고 싶던 곳이 있었다. 다리가 더 약해지기 전에 떠날 수 있을지 고민이 되었다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 78 },
+      "weight": 12,
+      "once": true,
+      "choices": [
+        {
+          "id": "go",
+          "label": "무리해서라도 다녀온다",
+          "result": "짐을 꾸려 먼 길을 떠났다. 몸은 지쳤지만 눈앞의 풍경이 오랜 숙제를 풀어 주었다.",
+          "effects": { "stats": { "happiness": 5, "health": -2, "wealth": -5 } }
+        },
+        {
+          "id": "near",
+          "label": "가까운 곳으로 바꿔 다녀온다",
+          "result": "멀지 않은 곳으로 계획을 바꿨다. 소박했지만 하루가 알찼다.",
+          "effects": { "stats": { "happiness": 3, "wealth": -2 } }
+        },
+        {
+          "id": "photo",
+          "label": "사진첩으로 대신한다",
+          "result": "오래된 사진첩을 펼쳐 놓고 여행을 대신했다. 사진마다 그날의 날씨가 되살아났다.",
+          "effects": { "stats": { "happiness": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-estranged-child",
+      "title": "소원해진 자식",
+      "text": "자식과의 연락이 끊긴 지 오래되었다. 번호를 누르다 말기를 몇 번이나 되풀이했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 85 },
+      "weight": 30,
+      "once": true,
+      "conditions": { "flags": ["has_child", "child_distant"] },
+      "choices": [
+        {
+          "id": "call",
+          "label": "먼저 전화를 건다",
+          "result": "떨리는 손으로 번호를 눌렀다. 어색한 침묵 끝에 아이의 목소리가 조용히 흘러나왔다.",
+          "effects": { "stats": { "relationships": 6, "happiness": 3 }, "clearFlags": ["child_distant"] }
+        },
+        {
+          "id": "letter",
+          "label": "편지로 마음을 적어 보낸다",
+          "result": "하고 싶은 말을 편지에 적어 보냈다. 한참 뒤 짧은 답장이 왔다.",
+          "effects": { "stats": { "relationships": 3, "happiness": 2, "education": 1 }, "clearFlags": ["child_distant"] }
+        },
+        {
+          "id": "wait",
+          "label": "아이가 먼저 연락하기를 기다린다",
+          "result": "기다리는 동안 계절이 바뀌었다. 전화는 오지 않았고, 일상은 조용히 이어졌다.",
+          "effects": { "stats": { "relationships": -2, "happiness": -3, "health": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-spouse-care",
+      "title": "곁을 지키는 일",
+      "text": "함께 늙어 온 사람이 몸져눕는 날이 잦아졌다. 간병을 어떻게 나눌지 정해야 했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 70, "max": 90 },
+      "weight": 22,
+      "once": true,
+      "conditions": { "flags": ["married"] },
+      "choices": [
+        {
+          "id": "care",
+          "label": "내가 직접 곁을 지킨다",
+          "result": "밤낮으로 곁을 지켰다. 몸은 지쳐 갔지만 서로의 손을 놓지 않았다.",
+          "effects": { "stats": { "relationships": 5, "happiness": 1, "health": -5 } }
+        },
+        {
+          "id": "help",
+          "label": "도움을 받아 함께 돌본다",
+          "result": "도움을 받아 번갈아 돌보았다. 조금 덜 지치고 조금 더 오래 버틸 수 있었다.",
+          "effects": { "stats": { "relationships": 3, "wealth": -4, "health": -1 } }
+        },
+        {
+          "id": "facility",
+          "label": "전문 돌봄에 맡긴다",
+          "result": "돌봄이 갖춰진 곳으로 옮겼다. 매일 찾아가 손을 잡아 주는 것이 내 일이 되었다.",
+          "effects": { "stats": { "relationships": 1, "wealth": -6, "happiness": -2 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-alone",
+      "title": "혼자 사는 집",
+      "text": "혼자 지내는 집은 조용했다. 하루 종일 한마디도 하지 않은 날이 생겼다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 70, "max": 90 },
+      "weight": 14,
+      "once": true,
+      "conditions": { "notFlags": ["married", "moved_home"] },
+      "choices": [
+        {
+          "id": "go",
+          "label": "이웃에게 먼저 말을 건다",
+          "result": "용기를 내 이웃에게 먼저 인사를 건넸다. 어색한 인사가 오가다 차 한 잔을 나누는 사이가 되었다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 3 } }
+        },
+        {
+          "id": "pet",
+          "label": "작은 동물을 들인다",
+          "result": "작은 생명을 집에 들였다. 아침마다 나를 기다리는 소리가 하루를 열어 주었다.",
+          "effects": { "stats": { "happiness": 4, "health": 1, "wealth": -1 } }
+        },
+        {
+          "id": "quiet",
+          "label": "조용한 시간을 즐긴다",
+          "result": "혼자 있는 시간을 있는 그대로 받아들였다. 외롭지만 평화로운 날도 많았다.",
+          "effects": { "stats": { "happiness": 1, "relationships": -1, "health": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-new-device",
+      "title": "낯선 기계",
+      "text": "세상의 일들이 점점 작은 기계 속으로 옮겨 갔다. 배우지 않으면 불편한 일이 늘고 있었다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 82 },
+      "weight": 12,
+      "once": true,
+      "choices": [
+        {
+          "id": "learn",
+          "label": "가까운 사람에게 배운다",
+          "result": "하나씩 물어가며 익혔다. 처음엔 답답했지만 어느새 먼 곳 사람의 얼굴도 볼 수 있게 되었다.",
+          "effects": { "stats": { "education": 3, "relationships": 3, "happiness": 1, "health": -1 } }
+        },
+        {
+          "id": "avoid",
+          "label": "쓰지 않고 버틴다",
+          "result": "쓰지 않고 버텼다. 불편은 늘었지만 눈은 덜 피로했고 내 방식은 지킬 수 있었다.",
+          "effects": { "stats": { "relationships": -2, "wealth": -1, "health": 1 } }
+        },
+        {
+          "id": "ask",
+          "label": "필요할 때마다 도움을 청한다",
+          "result": "필요한 일만 그때그때 부탁했다. 미안한 마음이 있었으나 서로 조금씩 가까워졌다.",
+          "effects": { "stats": { "relationships": 2 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-long-life",
+      "title": "예상보다 긴 시간",
+      "text": "생각보다 오래 사는 세상이 되었다. 남은 시간이 길다는 사실이 기쁨이자 숙제였다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 72, "max": 95 },
+      "eras": ["future"],
+      "weight": 14,
+      "once": true,
+      "choices": [
+        {
+          "id": "work",
+          "label": "다시 일을 시작해 본다",
+          "result": "작은 일을 다시 맡았다. 몸은 바빠졌고 마음은 오래 쓰지 않던 근육처럼 깨어났다.",
+          "effects": { "stats": { "wealth": 3, "happiness": 2, "health": -2 } }
+        },
+        {
+          "id": "learn",
+          "label": "새로운 것을 배운다",
+          "result": "배워 본 적 없는 것을 새로 익혔다. 서투름이 오히려 즐거웠다.",
+          "effects": { "stats": { "education": 3, "happiness": 3 } }
+        },
+        {
+          "id": "rest",
+          "label": "쉬며 하루하루를 즐긴다",
+          "result": "서두를 이유가 없는 하루를 보냈다. 느리게 흐르는 시간이 나쁘지 않았다.",
+          "effects": { "stats": { "happiness": 2, "health": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-last-wishes",
+      "title": "마지막 정리",
+      "text": "이제는 정리할 때라는 생각이 들었다. 가까운 이들에게 남길 말을 생각했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 80, "max": 100 },
+      "weight": 16,
+      "once": true,
+      "choices": [
+        {
+          "id": "words",
+          "label": "하고 싶은 말을 전한다",
+          "result": "한 사람씩 불러 마음에 담아 둔 말을 건넸다. 눈물이 오갔지만 가슴은 가벼워졌다.",
+          "effects": { "stats": { "relationships": 5, "happiness": 4 } }
+        },
+        {
+          "id": "things",
+          "label": "물건과 사진을 정리한다",
+          "result": "오래된 물건을 하나씩 정리했다. 쓰지 않는 것은 내놓고 이야기가 얽힌 것은 곁에 두었다.",
+          "effects": { "stats": { "happiness": 2, "relationships": 1, "wealth": 1 } }
+        },
+        {
+          "id": "quiet",
+          "label": "조용히 하루를 보낸다",
+          "result": "특별한 일을 하지 않고 하루를 보냈다. 창밖을 오래 바라보며 몸을 쉬었다.",
+          "effects": { "stats": { "happiness": 1, "health": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-old-friend",
+      "title": "오래된 친구의 소식",
+      "text": "오랜 친구의 건강이 좋지 않다는 소식이 들려왔다. 먼 길을 가야 했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 85 },
+      "weight": 14,
+      "once": true,
+      "conditions": { "flags": ["close_friend"] },
+      "choices": [
+        {
+          "id": "visit",
+          "label": "직접 찾아가 만난다",
+          "result": "먼 길을 달려 친구를 찾아갔다. 손을 맞잡고 한참 말없이 앉아 있었다.",
+          "effects": { "stats": { "relationships": 5, "happiness": 3, "health": -2, "wealth": -2 } }
+        },
+        {
+          "id": "call",
+          "label": "자주 전화를 건다",
+          "result": "시간이 날 때마다 전화로 안부를 물었다. 목소리가 닿는 것만으로도 위로가 되었다.",
+          "effects": { "stats": { "relationships": 3, "happiness": 1 } }
+        },
+        {
+          "id": "wait",
+          "label": "몸이 좋지 않아 가지 못한다",
+          "result": "마음은 갔지만 몸이 따라 주지 않았다. 집에서 몸을 추스르며 그 일을 오래 아쉬워했다.",
+          "effects": { "stats": { "relationships": -2, "happiness": -2, "health": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-fall",
+      "title": "미끄러진 겨울날",
+      "text": "얼어붙은 길에서 발이 미끄러져 넘어졌다. 일어나 보니 무릎과 손목이 욱신거렸다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 72, "max": 92 },
+      "weight": 12,
+      "once": true,
+      "choices": [
+        {
+          "id": "hospital",
+          "label": "곧바로 병원에서 살펴본다",
+          "result": "병원에서 이곳저곳을 살펴보았다. 큰 이상은 없었지만 한동안 조심하라는 말을 들었다.",
+          "effects": { "stats": { "health": 3, "wealth": -3 } }
+        },
+        {
+          "id": "tell",
+          "label": "가까운 사람에게 알린다",
+          "result": "멋쩍게 사정을 털어놓았다. 걱정하는 연락이 이어졌고 한동안 누군가 곁을 오갔다.",
+          "effects": { "stats": { "relationships": 3, "health": 1 } }
+        },
+        {
+          "id": "ignore",
+          "label": "괜찮다며 그냥 넘긴다",
+          "result": "괜찮다고 말하며 넘겼다. 병원비는 아꼈고 통증도 가셨지만 걸음이 조금 불안해졌다.",
+          "effects": { "stats": { "health": -4, "wealth": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-classmates",
+      "title": "오랜만의 동창 모임",
+      "text": "오래 소식이 끊겼던 동창들이 모임을 연다는 소식을 보내왔다. 이름이 하나둘 줄어드는 나이였다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 82 },
+      "weight": 13,
+      "once": true,
+      "choices": [
+        {
+          "id": "go",
+          "label": "모임에 나가 얼굴을 본다",
+          "result": "머리가 하얗게 센 얼굴들이 둘러앉았다. 이름을 부르는 순간 교실의 소란이 되살아났다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 3, "wealth": -1 } }
+        },
+        {
+          "id": "send",
+          "label": "안부 글만 보낸다",
+          "result": "안부 글을 적어 보냈다. 몇 사람이 답을 해 왔고 나머지는 소식이 닿지 않았다.",
+          "effects": { "stats": { "relationships": 1 } }
+        },
+        {
+          "id": "skip",
+          "label": "몸이 귀찮아 나가지 않는다",
+          "result": "집에 머물렀다. 모임이 있었다는 이야기를 며칠 뒤에야 전해 들었다. 차비는 아꼈다.",
+          "effects": { "stats": { "relationships": -2, "happiness": -1, "wealth": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-diet",
+      "title": "식탁 위의 약",
+      "text": "병원에서 약과 식단을 꼼꼼히 지키라는 당부를 들었다. 입맛은 예전 그대로였다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 88 },
+      "weight": 12,
+      "once": true,
+      "choices": [
+        {
+          "id": "keep",
+          "label": "약과 식단을 철저히 지킨다",
+          "result": "정해진 시간에 약을 먹고 식단을 지켰다. 몸이 가벼워졌지만 식탁은 조금 심심해졌다.",
+          "effects": { "stats": { "health": 4, "happiness": -1 } }
+        },
+        {
+          "id": "eat",
+          "label": "먹고 싶은 것을 먹으며 지낸다",
+          "result": "좋아하는 음식을 마음껏 먹었다. 그날그날은 즐거웠고 병원에 가는 날은 가시방석이었다.",
+          "effects": { "stats": { "happiness": 3, "health": -3 } }
+        },
+        {
+          "id": "mix",
+          "label": "적당히 섞어 가며 지낸다",
+          "result": "지킬 것은 지키고 풀 것은 풀었다. 크게 좋지도 나쁘지도 않은 하루하루가 이어졌다.",
+          "effects": { "stats": { "health": 1, "happiness": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-memoir",
+      "title": "남기고 싶은 이야기",
+      "text": "살아온 이야기를 누군가에게 남기고 싶다는 생각이 들었다. 어떻게 남길지는 정하지 못했다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 68, "max": 90 },
+      "weight": 10,
+      "once": true,
+      "choices": [
+        {
+          "id": "write",
+          "label": "직접 글로 적어 둔다",
+          "result": "공책에 하루 한 쪽씩 적어 나갔다. 잊고 있던 얼굴들이 문장 속에서 다시 살아났다.",
+          "effects": { "stats": { "happiness": 3, "education": 1 } }
+        },
+        {
+          "id": "tell",
+          "label": "가까운 사람들에게 들려준다",
+          "result": "가까운 사람들을 앉혀 놓고 옛이야기를 들려주었다. 건성으로 듣던 이들도 몇몇 대목에서는 눈을 반짝였다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 2 } }
+        },
+        {
+          "id": "none",
+          "label": "굳이 남기지 않기로 한다",
+          "result": "남길 것이 없다고 마음먹고 일상을 이어 갔다. 몸은 한결 편했지만 가끔은 그 이야기들이 아쉬웠다.",
+          "effects": { "stats": { "happiness": -1, "health": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "senior-stairs",
+      "title": "높아진 계단",
+      "text": "예전에는 한달음에 오르던 계단이 높게 느껴졌다. 난간을 잡는 손에 힘이 들어갔다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 68, "max": 90 },
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "health": -2, "happiness": -1 } },
+      "bonuses": [{ "when": { "flags": ["healthy_habit"] }, "effects": { "stats": { "health": 2 } } }]
+    },
+    {
+      "id": "senior-photo",
+      "title": "오래된 사진",
+      "text": "서랍 깊은 곳에서 오래된 사진이 나왔다. 사진 속 얼굴들은 모두 젊었고, 그중 몇은 이제 곁에 없었다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 66, "max": 92 },
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "happiness": -1, "relationships": -1 } },
+      "bonuses": [{ "when": { "flags": ["close_friend"] }, "effects": { "stats": { "happiness": 3 } } }]
+    },
+    {
+      "id": "senior-grandchild-visit",
+      "title": "찾아온 아이들",
+      "text": "자식이 손주를 데리고 찾아왔다. 오랜만에 웃음소리가 가득했고, 떠난 뒤의 고요가 더 길게 느껴졌다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 68, "max": 88 },
+      "weight": 14,
+      "once": true,
+      "conditions": { "flags": ["has_child"], "notFlags": ["child_distant"], "stats": { "relationships": { "min": 46 } } },
+      "effects": { "stats": { "relationships": 3, "happiness": 2 } }
+    },
+    {
+      "id": "senior-quiet-pride",
+      "title": "지나온 일",
+      "text": "지나온 일을 돌아보며 문득 고개를 끄덕이는 날이 있었다. 서툴렀지만 나쁘지 않은 시간이었다.",
+      "stages": ["senior"],
+      "ageRange": { "min": 70, "max": 95 },
+      "weight": 12,
+      "once": true,
+      "conditions": { "stats": { "happiness": { "min": 50 } } },
+      "effects": { "stats": { "happiness": 3 } }
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+ "measured": {
+  "F-N01": {
+   "era": "present",
+   "viewport": "360x740 모바일",
+   "base": "http://127.0.0.1:5290",
+   "mode": "1배 manual",
+   "choices": 23,
+   "deathAge": 85,
+   "totalSec": 875,
+   "harnessDwellAtChoicesSec": 13.1,
+   "pureSec": 862,
+   "pureMin": 14.4,
+   "stepBuckets": {
+    "quiet7s": 49,
+    "resolved13s": 23,
+    "narrative17s": 12
+   },
+   "gapsMs": 0
+  },
+  "F-N02": {
+   "era": "past",
+   "viewport": "1280x800 데스크톱",
+   "base": "http://127.0.0.1:5290",
+   "mode": "8배 skip",
+   "choices": 25,
+   "deathAge": 89,
+   "totalSec": 27,
+   "harnessDwellAtChoicesSec": 13.7,
+   "pureSec": 13,
+   "pureMin": 0.2,
+   "gapsMs": 0
+  },
+  "F-N03": {
+   "era": "future",
+   "viewport": "360x740 모바일",
+   "base": "http://127.0.0.1:5290",
+   "mode": "8배 auto",
+   "choices": 26,
+   "deathAge": 94,
+   "totalSec": 123,
+   "harnessDwellAtChoicesSec": 0,
+   "pureSec": 123,
+   "pureMin": 2,
+   "autoPanelVisibleMs": {
+    "mean": 324,
+    "min": 272,
+    "max": 390
+   },
+   "gapsMs": 0
+  },
+  "F-P01": {
+   "era": "past",
+   "viewport": "360x740 모바일",
+   "base": "http://127.0.0.1:4290",
+   "mode": "1배 manual",
+   "choices": 15,
+   "deathAge": 76,
+   "totalSec": 729,
+   "harnessDwellAtChoicesSec": 8.7,
+   "pureSec": 721,
+   "pureMin": 12,
+   "stepBuckets": {
+    "quiet7s": 51,
+    "resolved13s": 15,
+    "narrative17s": 9
+   },
+   "gapsMs": 0
+  },
+  "F-P02": {
+   "era": "future",
+   "viewport": "1280x800 데스크톱",
+   "base": "http://127.0.0.1:4290",
+   "mode": "8배 skip",
+   "choices": 16,
+   "deathAge": 49,
+   "totalSec": 18,
+   "harnessDwellAtChoicesSec": 8.8,
+   "pureSec": 9,
+   "pureMin": 0.1,
+   "gapsMs": 0
+  },
+  "F-P03": {
+   "era": "present",
+   "viewport": "360x740 모바일",
+   "base": "http://127.0.0.1:4290",
+   "mode": "8배 auto",
+   "choices": 24,
+   "deathAge": 84,
+   "totalSec": 118,
+   "harnessDwellAtChoicesSec": 0,
+   "pureSec": 118,
+   "pureMin": 2,
+   "autoPanelVisibleMs": {
+    "mean": 335,
+    "min": 283,
+    "max": 384
+   },
+   "gapsMs": 0
+  }
+ },
+ "estimate": {
+  "choicesPerPlayMean": 23.2,
+  "panelCharsPerChoice": 88.2,
+  "resultCharsPerChoice": 44.5,
+  "pure1xSec": 862,
+  "rows": [
+   {
+    "cpm": 500,
+    "pickSec": 5,
+    "panelReadSec": 10.6,
+    "resultReadSec": 5.3,
+    "perChoiceSec": 15.6,
+    "manual1x_min": 20.4,
+    "fastSkip_noReadResult_min": 6.4,
+    "fastSkip_readResult_min": 8.5
+   },
+   {
+    "cpm": 500,
+    "pickSec": 10,
+    "panelReadSec": 10.6,
+    "resultReadSec": 5.3,
+    "perChoiceSec": 20.6,
+    "manual1x_min": 22.3,
+    "fastSkip_noReadResult_min": 8.3,
+    "fastSkip_readResult_min": 10.4
+   },
+   {
+    "cpm": 500,
+    "pickSec": 15,
+    "panelReadSec": 10.6,
+    "resultReadSec": 5.3,
+    "perChoiceSec": 25.6,
+    "manual1x_min": 24.3,
+    "fastSkip_noReadResult_min": 10.3,
+    "fastSkip_readResult_min": 12.3
+   },
+   {
+    "cpm": 600,
+    "pickSec": 5,
+    "panelReadSec": 8.8,
+    "resultReadSec": 4.5,
+    "perChoiceSec": 13.8,
+    "manual1x_min": 19.7,
+    "fastSkip_noReadResult_min": 5.7,
+    "fastSkip_readResult_min": 7.5
+   },
+   {
+    "cpm": 600,
+    "pickSec": 10,
+    "panelReadSec": 8.8,
+    "resultReadSec": 4.5,
+    "perChoiceSec": 18.8,
+    "manual1x_min": 21.6,
+    "fastSkip_noReadResult_min": 7.7,
+    "fastSkip_readResult_min": 9.4
+   },
+   {
+    "cpm": 600,
+    "pickSec": 15,
+    "panelReadSec": 8.8,
+    "resultReadSec": 4.5,
+    "perChoiceSec": 23.8,
+    "manual1x_min": 23.6,
+    "fastSkip_noReadResult_min": 9.6,
+    "fastSkip_readResult_min": 11.3
+   },
+   {
+    "cpm": 700,
+    "pickSec": 5,
+    "panelReadSec": 7.6,
+    "resultReadSec": 3.8,
+    "perChoiceSec": 12.6,
+    "manual1x_min": 19.2,
+    "fastSkip_noReadResult_min": 5.2,
+    "fastSkip_readResult_min": 6.7
+   },
+   {
+    "cpm": 700,
+    "pickSec": 10,
+    "panelReadSec": 7.6,
+    "resultReadSec": 3.8,
+    "perChoiceSec": 17.6,
+    "manual1x_min": 21.2,
+    "fastSkip_noReadResult_min": 7.2,
+    "fastSkip_readResult_min": 8.7
+   },
+   {
+    "cpm": 700,
+    "pickSec": 15,
+    "panelReadSec": 7.6,
+    "resultReadSec": 3.8,
+    "perChoiceSec": 22.6,
+    "manual1x_min": 23.1,
+    "fastSkip_noReadResult_min": 9.1,
+    "fastSkip_readResult_min": 10.6
+   }
+  ]
+ }
+}

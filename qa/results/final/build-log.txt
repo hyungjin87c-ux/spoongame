@@ -1,0 +1,19 @@
+
+> suzeo-game@0.1.0 build
+> npm run typecheck && vite-node scripts/validateEvents.ts && vite build
+
+
+> suzeo-game@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json
+
+이벤트 데이터 검증 통과(스키마 + 문구 점검): 파일 5개, 이벤트 112개 (선택지 78 + 서술 34)
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 73 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.39 kB[22m[1m[22m[2m │ gzip:   0.28 kB[22m
+[2mdist/[22m[35massets/index-cY9FSJJ7.css  [39m[1m[2m  6.93 kB[22m[1m[22m[2m │ gzip:   1.96 kB[22m
+[2mdist/[22m[36massets/index-DKOibeYp.js   [39m[1m[2m299.35 kB[22m[1m[22m[2m │ gzip: 101.92 kB[22m
+[32m✓ built in 842ms[39m
+exit=0

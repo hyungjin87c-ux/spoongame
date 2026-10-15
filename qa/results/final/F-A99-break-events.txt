@@ -1,0 +1,37 @@
+== 0) 복사본 그대로 (기대: 통과, exit=0)
+이벤트 데이터 검증 통과(스키마 + 문구 점검): 파일 5개, 이벤트 112개 (선택지 78 + 서술 34)
+exit=0
+== 1) JSON 문법 깨기: school.json 첫 '{' 뒤 쉼표 삭제 흉내 (기대: 실패 exit!=0)
+[2m오후 11:14:22[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to parse JSON file, invalid JSON syntax found at position 97
+이벤트 데이터 검증 실패: 빌드를 중단합니다.
+Failed to parse JSON file, invalid JSON syntax found at position 97
+exit=1
+== 2) 느낌표 넣기: infant.json 이벤트 본문에 ! 추가 (기대: 실패)
+이벤트 문구 오류 2건:
+- infant-first-word.text: 느낌표가 있다 — "처음으로 또렷한 말을 했다. 곁에 있던 어른들이 한참을 웃었다.!"
+- infant-first-word.text: "~다."로 끝나는 서술체가 아니다 — "처음으로 또렷한 말을 했다. 곁에 있던 어른들이 한참을 웃었다.!"
+exit=1
+== 2b) npm run build 도 같은 상태에서 실패하고 dist가 만들어지지 않아야 한다
+build exit=1
+이벤트 문구 오류 2건:
+- infant-first-word.text: 느낌표가 있다 — "처음으로 또렷한 말을 했다. 곁에 있던 어른들이 한참을 웃었다.!"
+- infant-first-word.text: "~다."로 끝나는 서술체가 아니다 — "처음으로 또렷한 말을 했다. 곁에 있던 어른들이 한참을 웃었다.!"
+dist 없음(정상)
+== 3) 선택지 1개로 줄이기(스키마 위반): middle.json 첫 선택지 이벤트 (기대: 실패)
+이벤트 데이터 검증 실패: 빌드를 중단합니다.
+이벤트 데이터 오류 1건:
+- ./middle.json events[0](middle-business).choices: 선택지는 2~3개여야 한다 (서술 이벤트는 choices를 아예 쓰지 않는다. 지금 1개)
+exit=1
+== 4) 존재하지 않는 시대 id 넣기: youth.json (기대: 실패)
+이벤트 데이터 검증 실패: 빌드를 중단합니다.
+이벤트 데이터 오류 1건:
+- ./youth.json events[0](youth-military).eras[0]: 허용되지 않는 값 "mars" (허용: past, present, future)
+exit=1
+== 5) 원복 확인: 복사본이 원본과 같아졌는가 (기대: 통과, 바이트 동일)
+이벤트 데이터 검증 통과(스키마 + 문구 점검): 파일 5개, 이벤트 112개 (선택지 78 + 서술 34)
+exit=0
+infant.json 복사본 = 원본(바이트 동일)
+school.json 복사본 = 원본(바이트 동일)
+youth.json 복사본 = 원본(바이트 동일)
+middle.json 복사본 = 원본(바이트 동일)
+senior.json 복사본 = 원본(바이트 동일)

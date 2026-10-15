@@ -1,0 +1,11 @@
+node_modules
+dist
+test-results
+playwright-report
+# 로컬 전용
+.claude/settings.local.json
+*.log
+# QA 대량 원자료(수 MB) — 요약·케이스 표는 커밋
+qa/results/final/mass-*.json
+qa/results/final/cases.jsonl
+qa/results/final/end-table.json

@@ -1,0 +1,327 @@
+{
+ "id": "M3-N02",
+ "era": "past",
+ "vw": 1280,
+ "vh": 800,
+ "speed": 8,
+ "mode": "skip",
+ "pick": "rotate",
+ "shots": [
+  "qa/screenshots/001/M3-N02-title.png",
+  "qa/screenshots/001/M3-N02-era-default.png",
+  "qa/screenshots/001/M3-N02-era-past.png",
+  "qa/screenshots/001/M3-N02-birth.png",
+  "qa/screenshots/001/M3-N02-life-enter.png",
+  "qa/screenshots/001/M3-N02-choice-1.png",
+  "qa/screenshots/001/M3-N02-after-choice-1.png",
+  "qa/screenshots/001/M3-N02-choice-2.png",
+  "qa/screenshots/001/M3-N02-after-choice-2.png",
+  "qa/screenshots/001/M3-N02-choice-3.png",
+  "qa/screenshots/001/M3-N02-after-choice-3.png",
+  "qa/screenshots/001/M3-N02-choice-4.png",
+  "qa/screenshots/001/M3-N02-after-choice-4.png",
+  "qa/screenshots/001/M3-N02-choice-5.png",
+  "qa/screenshots/001/M3-N02-after-choice-5.png",
+  "qa/screenshots/001/M3-N02-choice-6.png",
+  "qa/screenshots/001/M3-N02-after-choice-6.png",
+  "qa/screenshots/001/M3-N02-ending.png",
+  "qa/screenshots/001/M3-N02-ending-full.png",
+  "qa/screenshots/001/M3-N02-ending-reload.png"
+ ],
+ "choices": [
+  {
+   "n": 1,
+   "age": "11세",
+   "title": "성적표를 받은 저녁",
+   "textLen": 54,
+   "labels": [
+    "학원에 다닌다",
+    "혼자 공부한다"
+   ],
+   "labelLen": 14,
+   "text": "성적표를 받은 날 저녁, 식탁에서 공부 이야기가 나왔다. 이번 학기부터 어떻게 할지 정해야 했다.",
+   "active": 714,
+   "picked": 0
+  },
+  {
+   "n": 2,
+   "age": "18세",
+   "title": "입시를 앞둔 해",
+   "textLen": 50,
+   "labels": [
+    "지금 성적으로 갈 수 있는 곳에 지원한다",
+    "한 해 더 준비한다",
+    "대학 대신 일을 먼저 시작한다"
+   ],
+   "labelLen": 48,
+   "text": "입시가 코앞으로 다가왔다. 지금까지의 성적으로 어디까지 갈 수 있는지는 대강 알고 있었다.",
+   "active": 1535,
+   "picked": 1
+  },
+  {
+   "n": 3,
+   "age": "30세",
+   "title": "소개받은 자리",
+   "textLen": 52,
+   "labels": [
+    "약속 장소에 나간다",
+    "일이 바빠 미룬다"
+   ],
+   "labelLen": 19,
+   "text": "아는 사람이 만나 볼 사람이 있다며 자리를 만들었다. 약속 장소는 부담 없는 가까운 곳이었다.",
+   "active": 2368,
+   "picked": 0
+  },
+  {
+   "n": 4,
+   "age": "33세",
+   "title": "함께 사는 일",
+   "textLen": 55,
+   "labels": [
+    "함께 살기로 한다",
+    "조금 더 기다리자고 말한다",
+    "헤어지기로 한다"
+   ],
+   "labelLen": 31,
+   "text": "함께한 시간이 쌓였다. 주변에서는 슬슬 결혼 이야기를 꺼냈고, 두 사람도 같은 생각을 하고 있었다.",
+   "active": 3141,
+   "picked": 0
+  },
+  {
+   "n": 5,
+   "age": "45세",
+   "title": "부모님의 병환",
+   "textLen": 56,
+   "labels": [
+    "직접 모시고 돌본다",
+    "전문 시설을 알아본다",
+    "형제들과 나누어 맡는다"
+   ],
+   "labelLen": 33,
+   "text": "부모님의 몸이 눈에 띄게 불편해지셨다. 누가, 어디서, 어떻게 돌볼지 형제들과 이야기를 나눠야 했다.",
+   "active": 3954,
+   "picked": 1
+  },
+  {
+   "n": 6,
+   "age": "67세",
+   "title": "넉넉해진 시간",
+   "textLen": 37,
+   "labels": [
+    "동네 모임에 나간다",
+    "집에서 조용히 지낸다",
+    "손주를 돌본다"
+   ],
+   "labelLen": 28,
+   "text": "시간이 넉넉해졌다. 하루를 무엇으로 채울지가 새로운 숙제가 되었다.",
+   "active": 4745,
+   "picked": 2
+  }
+ ],
+ "timeline": [
+  [
+   "0세",
+   505,
+   ""
+  ],
+  [
+   "11세",
+   712,
+   "choice"
+  ],
+  [
+   "12세",
+   1327,
+   ""
+  ],
+  [
+   "18세",
+   1533,
+   "choice"
+  ],
+  [
+   "19세",
+   2155,
+   ""
+  ],
+  [
+   "30세",
+   2367,
+   "choice"
+  ],
+  [
+   "31세",
+   2954,
+   ""
+  ],
+  [
+   "33세",
+   3140,
+   "choice"
+  ],
+  [
+   "34세",
+   3754,
+   ""
+  ],
+  [
+   "45세",
+   3952,
+   "choice"
+  ],
+  [
+   "46세",
+   4551,
+   ""
+  ],
+  [
+   "67세",
+   4743,
+   "choice"
+  ],
+  [
+   "68세",
+   5371,
+   ""
+  ]
+ ],
+ "notes": [],
+ "overflow": [],
+ "base": "http://localhost:5290",
+ "birthText": "지난 세상\n\n김성민\n\n1977년, 남자아이로 태어났다.\n\n평범한 집이었다. 큰 걱정도, 큰 여유도 없었다.\n\n우리나라 출생아 중 상위 약 28%의 집안 형편이었다.\n\n교육방식: 엄격. 집에는 지켜야 할 규칙이 많았고, 부모님은 엄했다.\n\n외모 31점 (하위 약 15%). 평범한 편에서 조금 아래였다.\n\n살아가기",
+ "activeMs": 5563,
+ "pausedMs": 0,
+ "totalMs": 5563,
+ "ended": true,
+ "endingText": "김성민\n\n71세에 세상을 떠났다. 원인: 노환.\n\n회고 화면은 아직 준비 중입니다.",
+ "saveAfterEnd": {
+  "phase": "ending",
+  "age": 71,
+  "histLen": 16
+ },
+ "history": [
+  {
+   "age": 0,
+   "kind": "stage",
+   "text": "1977년, 남자아이로 태어났다."
+  },
+  {
+   "age": 1,
+   "kind": "event",
+   "title": "첫 말",
+   "text": "돌이 지나 처음으로 또렷한 말을 했다. 곁에 있던 어른들이 한참을 웃었다.",
+   "eventId": "infant-first-word"
+  },
+  {
+   "age": 7,
+   "kind": "stage",
+   "text": "학교에 들어갈 나이가 되었다."
+  },
+  {
+   "age": 10,
+   "kind": "event",
+   "title": "각자의 점심",
+   "text": "점심시간이 되면 아이들은 저마다 다른 얼굴로 책상을 붙였다. 누구의 밥이 어떤지는 말하지 않아도 보였다.",
+   "eventId": "school-lunch"
+  },
+  {
+   "age": 11,
+   "kind": "choice",
+   "title": "성적표를 받은 저녁",
+   "text": "방과 후마다 학원 버스에 올랐다. 숙제가 늘었고, 성적도 천천히 올랐다.",
+   "choice": "학원에 다닌다",
+   "eventId": "school-tutoring"
+  },
+  {
+   "age": 18,
+   "kind": "choice",
+   "title": "입시를 앞둔 해",
+   "text": "한 해를 더 책상 앞에서 보냈다. 친구들이 먼저 떠난 자리에 혼자 남은 기분이 들었다.",
+   "choice": "한 해 더 준비한다",
+   "eventId": "school-exam"
+  },
+  {
+   "age": 20,
+   "kind": "stage",
+   "text": "스무 살이 되었다. 이제 집안 형편이 아니라 내가 가진 것으로 살아가야 한다."
+  },
+  {
+   "age": 21,
+   "kind": "event",
+   "title": "정해진 날짜",
+   "text": "정해진 날짜에 짐을 싸서 집을 나섰다. 낯선 사람들과 같은 방에서 지내는 날들이 시작되었다.",
+   "eventId": "youth-military"
+  },
+  {
+   "age": 30,
+   "kind": "choice",
+   "title": "소개받은 자리",
+   "text": "두 번째 만남이 있었고 세 번째 만남이 있었다. 어느새 서로의 연락이 하루의 습관이 되었다.",
+   "choice": "약속 장소에 나간다",
+   "eventId": "youth-meeting"
+  },
+  {
+   "age": 33,
+   "kind": "choice",
+   "title": "함께 사는 일",
+   "text": "작게 식을 올리고 한 집에서 살기 시작했다. 생활비와 집안 사정이 한꺼번에 합쳐졌다.",
+   "choice": "함께 살기로 한다",
+   "eventId": "youth-marriage"
+  },
+  {
+   "age": 40,
+   "kind": "stage",
+   "text": "어느덧 마흔이 되었다."
+  },
+  {
+   "age": 45,
+   "kind": "choice",
+   "title": "부모님의 병환",
+   "text": "여러 곳을 둘러본 끝에 한 곳을 정했다. 면회를 다니며 비용을 감당해 나갔다.",
+   "choice": "전문 시설을 알아본다",
+   "eventId": "middle-parents-care"
+  },
+  {
+   "age": 65,
+   "kind": "stage",
+   "text": "예순다섯. 일에서 한 걸음 물러설 나이가 되었다."
+  },
+  {
+   "age": 65,
+   "kind": "event",
+   "title": "일에서 물러나다",
+   "text": "마지막 출근날, 책상을 정리하는 데는 생각보다 시간이 걸리지 않았다. 돌아오는 길이 유난히 길게 느껴졌다.",
+   "eventId": "senior-retire"
+  },
+  {
+   "age": 67,
+   "kind": "choice",
+   "title": "넉넉해진 시간",
+   "text": "아이들의 웃음소리로 집이 다시 시끄러워졌다. 몸은 힘들었지만 마음은 따뜻했다.",
+   "choice": "손주를 돌본다",
+   "eventId": "senior-gathering"
+  },
+  {
+   "age": 71,
+   "kind": "death",
+   "text": "세상을 떠났다. 원인: 노환."
+  }
+ ],
+ "finalStats": {
+  "wealth": 46,
+  "education": 75,
+  "health": 56,
+  "happiness": 42,
+  "relationships": 65
+ },
+ "name": "김성민",
+ "settings": {
+  "version": 1,
+  "data": {
+   "speed": 8,
+   "autoMode": false
+  }
+ },
+ "console": [],
+ "skipClicks": 7
+}

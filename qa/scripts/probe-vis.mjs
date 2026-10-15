@@ -1,0 +1,12 @@
+import { launch, DEV, sleep } from './lib.mjs';
+const b = await launch();
+const ctx = await b.newContext();
+const A = await ctx.newPage(); await A.goto(DEV + '/');
+const B = await ctx.newPage(); await B.goto(DEV + '/');
+const v = async (p) => p.evaluate(() => document.visibilityState + '/' + document.hasFocus());
+console.log('after open B:', await v(A), await v(B));
+await A.bringToFront(); await sleep(300);
+console.log('A front:', await v(A), await v(B));
+await B.bringToFront(); await sleep(300);
+console.log('B front:', await v(A), await v(B));
+await b.close();

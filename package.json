@@ -1,0 +1,34 @@
+{
+  "name": "suzeo-game",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite-node scripts/validateEvents.ts && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "sim": "vite-node scripts/simulate.ts",
+    "sim:1000": "vite-node scripts/simulate1000.ts",
+    "check:events": "vite-node scripts/validateEvents.ts",
+    "check:dist": "vite-node scripts/checkFinalDistribution.ts",
+    "check:todo": "vite-node scripts/checkTodoEvidence.ts",
+    "e2e:prod": "npm run build && playwright test -c playwright.prod.config.ts"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vite-node": "^2.1.9",
+    "vitest": "^2.1.8"
+  }
+}

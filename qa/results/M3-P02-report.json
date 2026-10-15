@@ -1,0 +1,512 @@
+{
+ "id": "M3-P02",
+ "era": "past",
+ "vw": 1280,
+ "vh": 800,
+ "speed": 8,
+ "mode": "skip",
+ "pick": "rotate",
+ "shots": [
+  "qa/screenshots/001/M3-P02-title.png",
+  "qa/screenshots/001/M3-P02-era-default.png",
+  "qa/screenshots/001/M3-P02-era-past.png",
+  "qa/screenshots/001/M3-P02-birth.png",
+  "qa/screenshots/001/M3-P02-life-enter.png",
+  "qa/screenshots/001/M3-P02-choice-1.png",
+  "qa/screenshots/001/M3-P02-after-choice-1.png",
+  "qa/screenshots/001/M3-P02-choice-2.png",
+  "qa/screenshots/001/M3-P02-after-choice-2.png",
+  "qa/screenshots/001/M3-P02-ending.png",
+  "qa/screenshots/001/M3-P02-ending-full.png",
+  "qa/screenshots/001/M3-P02-ending-reload.png"
+ ],
+ "choices": [
+  {
+   "n": 1,
+   "age": "1세",
+   "title": "맡겨지는 낮",
+   "textLen": 63,
+   "labels": [
+    "조부모님 곁에서 지낸다",
+    "아이를 돌봐 주는 곳에 보낸다"
+   ],
+   "labelLen": 28,
+   "text": "부모님이 일하러 나가는 낮 동안 아이를 어디에 맡길지 정해야 했다. 집안 사정에 따라 고를 수 있는 길이 달랐다.",
+   "active": 675,
+   "picked": 0
+  },
+  {
+   "n": 2,
+   "age": "12세",
+   "title": "성적표를 받은 저녁",
+   "textLen": 54,
+   "labels": [
+    "학원에 다닌다",
+    "혼자 공부한다"
+   ],
+   "labelLen": 14,
+   "text": "성적표를 받은 날 저녁, 식탁에서 공부 이야기가 나왔다. 이번 학기부터 어떻게 할지 정해야 했다.",
+   "active": 1456,
+   "picked": 1
+  },
+  {
+   "n": 3,
+   "age": "15세",
+   "title": "자꾸 눈에 들어오는 사람",
+   "textLen": 52,
+   "labels": [
+    "마음을 전한다",
+    "마음속에만 담아 둔다"
+   ],
+   "labelLen": 18,
+   "text": "같은 반의 한 아이가 자꾸 눈에 들어왔다. 복도에서 마주칠 때마다 괜히 시선을 피하게 되었다.",
+   "active": 2261,
+   "picked": 0
+  },
+  {
+   "n": 4,
+   "age": "18세",
+   "title": "입시를 앞둔 해",
+   "textLen": 50,
+   "labels": [
+    "지금 성적으로 갈 수 있는 곳에 지원한다",
+    "한 해 더 준비한다",
+    "대학 대신 일을 먼저 시작한다"
+   ],
+   "labelLen": 48,
+   "text": "입시가 코앞으로 다가왔다. 지금까지의 성적으로 어디까지 갈 수 있는지는 대강 알고 있었다.",
+   "active": 3104,
+   "picked": 0
+  },
+  {
+   "n": 5,
+   "age": "24세",
+   "title": "소개받은 자리",
+   "textLen": 52,
+   "labels": [
+    "약속 장소에 나간다",
+    "일이 바빠 미룬다"
+   ],
+   "labelLen": 19,
+   "text": "아는 사람이 만나 볼 사람이 있다며 자리를 만들었다. 약속 장소는 부담 없는 가까운 곳이었다.",
+   "active": 3940,
+   "picked": 0
+  },
+  {
+   "n": 6,
+   "age": "27세",
+   "title": "첫 일자리",
+   "textLen": 44,
+   "labels": [
+    "안정적인 곳을 고른다",
+    "하고 싶은 일을 따라간다"
+   ],
+   "labelLen": 24,
+   "text": "처음으로 일자리를 고를 수 있는 처지가 되었다. 기준을 어디에 둘지가 문제였다.",
+   "active": 4776,
+   "picked": 1
+  },
+  {
+   "n": 7,
+   "age": "29세",
+   "title": "함께 사는 일",
+   "textLen": 55,
+   "labels": [
+    "함께 살기로 한다",
+    "조금 더 기다리자고 말한다",
+    "헤어지기로 한다"
+   ],
+   "labelLen": 31,
+   "text": "함께한 시간이 쌓였다. 주변에서는 슬슬 결혼 이야기를 꺼냈고, 두 사람도 같은 생각을 하고 있었다.",
+   "active": 5491,
+   "picked": 0
+  },
+  {
+   "n": 8,
+   "age": "42세",
+   "title": "함께 가게를 열자는 제안",
+   "textLen": 54,
+   "labels": [
+    "사업을 시작한다",
+    "지금의 자리를 지킨다",
+    "가족과 먼저 의논한다"
+   ],
+   "labelLen": 30,
+   "text": "오래 알고 지낸 사람이 함께 가게를 열어 보자고 했다. 가진 돈을 거의 다 넣어야 하는 일이었다.",
+   "active": 6205,
+   "picked": 1
+  },
+  {
+   "n": 9,
+   "age": "47세",
+   "title": "부모님의 병환",
+   "textLen": 56,
+   "labels": [
+    "직접 모시고 돌본다",
+    "전문 시설을 알아본다",
+    "형제들과 나누어 맡는다"
+   ],
+   "labelLen": 33,
+   "text": "부모님의 몸이 눈에 띄게 불편해지셨다. 누가, 어디서, 어떻게 돌볼지 형제들과 이야기를 나눠야 했다.",
+   "active": 7041,
+   "picked": 2
+  },
+  {
+   "n": 10,
+   "age": "52세",
+   "title": "검진 결과표",
+   "textLen": 49,
+   "labels": [
+    "생활을 바꾼다",
+    "바빠서 미룬다"
+   ],
+   "labelLen": 14,
+   "text": "건강검진 결과표에 처음으로 눈에 띄는 수치가 있었다. 의사는 생활을 바꿔 보자고 말했다.",
+   "active": 7760,
+   "picked": 1
+  },
+  {
+   "n": 11,
+   "age": "62세",
+   "title": "검진 결과표",
+   "textLen": 49,
+   "labels": [
+    "생활을 바꾼다",
+    "바빠서 미룬다"
+   ],
+   "labelLen": 14,
+   "text": "건강검진 결과표에 처음으로 눈에 띄는 수치가 있었다. 의사는 생활을 바꿔 보자고 말했다.",
+   "active": 8565,
+   "picked": 0
+  },
+  {
+   "n": 12,
+   "age": "67세",
+   "title": "넉넉해진 시간",
+   "textLen": 37,
+   "labels": [
+    "동네 모임에 나간다",
+    "집에서 조용히 지낸다",
+    "손주를 돌본다"
+   ],
+   "labelLen": 28,
+   "text": "시간이 넉넉해졌다. 하루를 무엇으로 채울지가 새로운 숙제가 되었다.",
+   "active": 9284,
+   "picked": 2
+  }
+ ],
+ "timeline": [
+  [
+   "0세",
+   478,
+   ""
+  ],
+  [
+   "1세",
+   674,
+   "choice"
+  ],
+  [
+   "2세",
+   1262,
+   ""
+  ],
+  [
+   "12세",
+   1454,
+   "choice"
+  ],
+  [
+   "13세",
+   2053,
+   ""
+  ],
+  [
+   "15세",
+   2261,
+   "choice"
+  ],
+  [
+   "16세",
+   2904,
+   ""
+  ],
+  [
+   "18세",
+   3102,
+   "choice"
+  ],
+  [
+   "19세",
+   3740,
+   ""
+  ],
+  [
+   "24세",
+   3938,
+   "choice"
+  ],
+  [
+   "25세",
+   4577,
+   ""
+  ],
+  [
+   "27세",
+   4775,
+   "choice"
+  ],
+  [
+   "28세",
+   5290,
+   ""
+  ],
+  [
+   "29세",
+   5490,
+   "choice"
+  ],
+  [
+   "30세",
+   6007,
+   ""
+  ],
+  [
+   "42세",
+   6204,
+   "choice"
+  ],
+  [
+   "43세",
+   6842,
+   ""
+  ],
+  [
+   "47세",
+   7040,
+   "choice"
+  ],
+  [
+   "48세",
+   7559,
+   ""
+  ],
+  [
+   "52세",
+   7759,
+   "choice"
+  ],
+  [
+   "53세",
+   8380,
+   ""
+  ],
+  [
+   "62세",
+   8564,
+   "choice"
+  ],
+  [
+   "63세",
+   9082,
+   ""
+  ],
+  [
+   "67세",
+   9283,
+   "choice"
+  ],
+  [
+   "68세",
+   9817,
+   ""
+  ]
+ ],
+ "notes": [],
+ "overflow": [],
+ "base": "http://localhost:4290",
+ "birthText": "지난 세상\n\n박은희\n\n1974년, 여자아이로 태어났다.\n\n평범한 집이었다. 큰 걱정도, 큰 여유도 없었다.\n\n우리나라 출생아 중 상위 약 28%의 집안 형편이었다.\n\n교육방식: 방임. 부모님은 일에 매여 아이에게 시간을 내기 어려웠다. 아이는 대체로 스스로 자랐다.\n\n외모 59점 (상위 약 31%). 평범한 얼굴이었다.\n\n살아가기",
+ "activeMs": 10016,
+ "pausedMs": 0,
+ "totalMs": 10016,
+ "ended": true,
+ "endingText": "박은희\n\n73세에 세상을 떠났다. 원인: 조용한 잠.\n\n회고 화면은 아직 준비 중입니다.",
+ "saveAfterEnd": {
+  "phase": "ending",
+  "age": 73,
+  "histLen": 22
+ },
+ "history": [
+  {
+   "age": 0,
+   "kind": "stage",
+   "text": "1974년, 여자아이로 태어났다."
+  },
+  {
+   "age": 1,
+   "kind": "choice",
+   "title": "맡겨지는 낮",
+   "text": "낮에는 조부모님 곁에서 지냈다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었다.",
+   "choice": "조부모님 곁에서 지낸다",
+   "eventId": "infant-care"
+  },
+  {
+   "age": 7,
+   "kind": "stage",
+   "text": "학교에 들어갈 나이가 되었다."
+  },
+  {
+   "age": 11,
+   "kind": "event",
+   "title": "각자의 점심",
+   "text": "점심시간이 되면 아이들은 저마다 다른 얼굴로 책상을 붙였다. 누구의 밥이 어떤지는 말하지 않아도 보였다.",
+   "eventId": "school-lunch"
+  },
+  {
+   "age": 12,
+   "kind": "choice",
+   "title": "성적표를 받은 저녁",
+   "text": "책상 앞에서 스스로 계획을 세웠다. 더디지만 내 속도로 나아갔다.",
+   "choice": "혼자 공부한다",
+   "eventId": "school-tutoring"
+  },
+  {
+   "age": 15,
+   "kind": "choice",
+   "title": "자꾸 눈에 들어오는 사람",
+   "text": "쪽지를 건넸다. 답을 듣기까지 며칠 동안 아무것도 손에 잡히지 않았다.",
+   "choice": "마음을 전한다",
+   "eventId": "school-first-love"
+  },
+  {
+   "age": 18,
+   "kind": "choice",
+   "title": "입시를 앞둔 해",
+   "text": "원서를 내고 결과를 기다렸다. 큰 기쁨도 큰 후회도 아닌, 조용한 결과였다.",
+   "choice": "지금 성적으로 갈 수 있는 곳에 지원한다",
+   "eventId": "school-exam"
+  },
+  {
+   "age": 20,
+   "kind": "stage",
+   "text": "스무 살이 되었다. 이제 집안 형편이 아니라 내가 가진 것으로 살아가야 한다."
+  },
+  {
+   "age": 24,
+   "kind": "choice",
+   "title": "소개받은 자리",
+   "text": "두 번째 만남이 있었고 세 번째 만남이 있었다. 어느새 서로의 연락이 하루의 습관이 되었다.",
+   "choice": "약속 장소에 나간다",
+   "eventId": "youth-meeting"
+  },
+  {
+   "age": 27,
+   "kind": "choice",
+   "title": "첫 일자리",
+   "text": "벌이는 시원치 않았지만 하루하루가 내 일처럼 느껴졌다.",
+   "choice": "하고 싶은 일을 따라간다",
+   "eventId": "youth-first-job"
+  },
+  {
+   "age": 29,
+   "kind": "choice",
+   "title": "함께 사는 일",
+   "text": "작게 식을 올리고 한 집에서 살기 시작했다. 생활비와 집안 사정이 한꺼번에 합쳐졌다.",
+   "choice": "함께 살기로 한다",
+   "eventId": "youth-marriage"
+  },
+  {
+   "age": 32,
+   "kind": "event",
+   "title": "끝나지 않는 일",
+   "text": "일은 끝이 없었다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었다.",
+   "eventId": "youth-work-pressure"
+  },
+  {
+   "age": 39,
+   "kind": "event",
+   "title": "끝나지 않는 일",
+   "text": "일은 끝이 없었다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었다.",
+   "eventId": "youth-work-pressure"
+  },
+  {
+   "age": 40,
+   "kind": "stage",
+   "text": "어느덧 마흔이 되었다."
+  },
+  {
+   "age": 42,
+   "kind": "choice",
+   "title": "함께 가게를 열자는 제안",
+   "text": "위험을 피했다. 벌이는 그대로였고 마음은 평온했다.",
+   "choice": "지금의 자리를 지킨다",
+   "eventId": "middle-business"
+  },
+  {
+   "age": 47,
+   "kind": "choice",
+   "title": "부모님의 병환",
+   "text": "순번을 정해 돌아가며 찾아뵈었다. 크고 작은 서운함이 오갔지만 결국 서로를 챙겼다.",
+   "choice": "형제들과 나누어 맡는다",
+   "eventId": "middle-parents-care"
+  },
+  {
+   "age": 52,
+   "kind": "choice",
+   "title": "검진 결과표",
+   "text": "다음 검진 때 보자며 결과표를 서랍에 넣었다. 일은 계속 밀려 있었다.",
+   "choice": "바빠서 미룬다",
+   "eventId": "middle-health-check"
+  },
+  {
+   "age": 62,
+   "kind": "choice",
+   "title": "검진 결과표",
+   "text": "술자리를 줄이고 저녁마다 걸었다. 몸이 가벼워지는 데는 시간이 걸렸다.",
+   "choice": "생활을 바꾼다",
+   "eventId": "middle-health-check"
+  },
+  {
+   "age": 65,
+   "kind": "stage",
+   "text": "예순다섯. 일에서 한 걸음 물러설 나이가 되었다."
+  },
+  {
+   "age": 67,
+   "kind": "choice",
+   "title": "넉넉해진 시간",
+   "text": "아이들의 웃음소리로 집이 다시 시끄러워졌다. 몸은 힘들었지만 마음은 따뜻했다.",
+   "choice": "손주를 돌본다",
+   "eventId": "senior-gathering"
+  },
+  {
+   "age": 68,
+   "kind": "event",
+   "title": "일에서 물러나다",
+   "text": "마지막 출근날, 책상을 정리하는 데는 생각보다 시간이 걸리지 않았다. 돌아오는 길이 유난히 길게 느껴졌다.",
+   "eventId": "senior-retire"
+  },
+  {
+   "age": 73,
+   "kind": "death",
+   "text": "세상을 떠났다. 원인: 조용한 잠."
+  }
+ ],
+ "finalStats": {
+  "wealth": 45,
+  "education": 34,
+  "health": 50,
+  "happiness": 56,
+  "relationships": 67
+ },
+ "name": "박은희",
+ "settings": {
+  "version": 1,
+  "data": {
+   "speed": 8,
+   "autoMode": false
+  }
+ },
+ "console": [],
+ "skipClicks": 13
+}

@@ -1,0 +1,305 @@
+import { expect, type Locator, type Page } from '@playwright/test';
+import type { Character, Era, GameState, Settings } from '../src/core/types';
+import { GAME_KEY, SAVE_VERSION, SETTINGS_KEY } from './saves';
+
+/**
+ * e2e 공용 헬퍼 (R-022 d): 알려진 시드의 저장을 주입해 실패를 재현 가능하게 만든다.
+ *
+ * Playwright는 src/core를 직접 import할 수 없다(names.json이 import attribute 없는 JSON import라
+ * Node ESM이 거부한다). 그래서
+ *  - 저장 데이터는 손으로 만든 순수 객체로 주입하고(타입만 가져온다),
+ *  - "core가 계산했을 기대값"은 개발 서버의 실제 모듈(/src/core/index.ts)을 브라우저에서 불러 구한다.
+ * 키·버전이 core와 어긋나지 않는지는 tests/e2eHelpers.test.ts가 vitest에서 대조한다.
+ */
+
+export { GAME_KEY, KNOWN_SEED, SAVE_VERSION, SETTINGS_KEY, birthState, eraSelectState, lifeState } from './saves';
+
+/**
+ * 이 페이지의 앱이 더 이상 저장하지 않게 한다: "다른 탭이 저장을 바꿨다"는 storage 이벤트를 흉내 낸다(R-011 동작).
+ * 테스트가 같은 탭에서 localStorage를 직접 바꾼 뒤 이동/새로고침하면, 떠나는 앱이 pagehide에서 자기 상태를 다시 저장해
+ * 심어 둔 값을 덮어쓰기 때문이다(사람이 같은 탭의 저장을 직접 바꾸는 일은 없다).
+ */
+async function stopAppSaving(page: Page): Promise<void> {
+  await page.evaluate((key) => window.dispatchEvent(new StorageEvent('storage', { key })), GAME_KEY);
+}
+
+/** 게임 저장만 지운다(설정은 남긴다). 이 페이지의 앱이 지워진 저장을 되살리지 않게 한 뒤 호출하는 쪽이 이동/새로고침한다. */
+export async function clearGameSave(page: Page): Promise<void> {
+  await page.evaluate((key) => localStorage.removeItem(key), GAME_KEY);
+  await stopAppSaving(page);
+}
+
+/**
+ * 저장을 심고 target 경로를 연다. 먼저 앱을 한 번 연 뒤(같은 origin 확보) localStorage를 덮어쓰고
+ * 다시 연다. addInitScript와 달리 이후 이동·리셋에서 저장이 되살아나지 않는다.
+ */
+export async function injectSave(page: Page, state: GameState, target = '/', settings?: Settings): Promise<void> {
+  await page.goto('/');
+  // 앱이 첫 렌더 뒤 자기 초기 상태를 저장한다. 그 저장이 우리가 심은 값을 덮어쓰지 않도록 기다린다.
+  await page.waitForFunction((key) => localStorage.getItem(key) !== null, GAME_KEY);
+  await page.evaluate(
+    ([key, value, settingsKey, settingsValue]) => {
+      localStorage.setItem(key, value);
+      if (settingsValue !== null) localStorage.setItem(settingsKey, settingsValue);
+    },
+    [
+      GAME_KEY,
+      JSON.stringify({ version: SAVE_VERSION, data: state }),
+      SETTINGS_KEY,
+      settings ? JSON.stringify({ version: 1, data: settings }) : null,
+    ] as const,
+  );
+  await stopAppSaving(page);
+  await page.goto(target);
+}
+
+/** 이미 심어 둔 페이지에서 저장(과 선택적으로 설정)만 바꾸고 새로고침(뷰포트 반복 실험용). 현재 주소의 쿼리(?__guard 등)는 그대로 유지된다. */
+export async function replaceSaveAndReload(page: Page, state: GameState, settings?: Settings): Promise<void> {
+  await page.evaluate(
+    ([key, value, settingsKey, settingsValue]) => {
+      localStorage.setItem(key, value);
+      if (settingsValue !== null) localStorage.setItem(settingsKey, settingsValue);
+    },
+    [
+      GAME_KEY,
+      JSON.stringify({ version: SAVE_VERSION, data: state }),
+      SETTINGS_KEY,
+      settings ? JSON.stringify({ version: 1, data: settings }) : null,
+    ] as const,
+  );
+  await stopAppSaving(page);
+  await page.reload();
+}
+
+export interface Save {
+  version: number;
+  data: GameState;
+}
+
+export async function readSave(page: Page): Promise<Save> {
+  const raw = await page.evaluate((k) => localStorage.getItem(k), GAME_KEY);
+  expect(raw, '저장이 있어야 한다').not.toBeNull();
+  return JSON.parse(raw!) as Save;
+}
+
+export async function noHorizontalOverflow(page: Page): Promise<boolean> {
+  return page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+}
+
+export interface BirthOracle {
+  /** 주입한 상태에 core의 beginBirth를 정확히 한 번 적용한 결과 */
+  once: GameState;
+  /** 만약 한 번 더 뽑았다면 나왔을 인물 — 1회/2회를 가르는 판별력 확인용 */
+  second: Character;
+}
+
+/**
+ * core 순수 함수가 계산한 기대값. 개발 서버의 실제 모듈을 브라우저에서 불러 같은 코드를 쓴다.
+ * 앱 페이지가 열려 있어야 한다(같은 origin).
+ */
+export async function expectedBirth(page: Page, before: GameState): Promise<BirthOracle> {
+  return page.evaluate<BirthOracle>(`(async () => {
+    const core = await import('/src/core/index.ts');
+    const before = ${JSON.stringify(before)};
+    const once = core.beginBirth(before);
+    const second = core.generateBirth(core.createRng(once.rngState), once.era).character;
+    return { once, second };
+  })()`);
+}
+
+/** 사람의 더블클릭·연타에 해당하는 입력 방식 */
+export type RapidMethod = 'dblclick' | 'mouse2' | 'mouse3' | 'human150';
+
+export const RAPID_METHODS: readonly RapidMethod[] = ['dblclick', 'mouse2', 'mouse3', 'human150'];
+
+/**
+ * 버튼 중심 좌표에 빠르게 연속 입력한다. 첫 입력 직후 화면이 바뀌어도 같은 좌표에 둘째 이후 입력이 들어간다.
+ * (Locator.click과 달리 좌표 입력은 요소의 활성 여부를 기다리지 않으므로, 호출 전에
+ *  버튼이 활성화됐음을 expect(...).toBeEnabled()로 확인해야 한다.)
+ */
+export async function rapidInput(page: Page, method: RapidMethod, target: Locator): Promise<void> {
+  // 낮은 화면에서는 버튼이 접힌 곳 아래에 있다. 좌표 입력 전에 보이는 위치로 스크롤해 둔다.
+  await target.scrollIntoViewIfNeeded();
+  const box = await target.boundingBox();
+  expect(box, '버튼이 화면에 있어야 한다').not.toBeNull();
+  const x = box!.x + box!.width / 2;
+  const y = box!.y + box!.height / 2;
+  if (method === 'dblclick') {
+    await target.dblclick();
+  } else if (method === 'mouse2') {
+    await page.mouse.click(x, y);
+    await page.mouse.click(x, y);
+  } else if (method === 'mouse3') {
+    await page.mouse.click(x, y);
+    await page.mouse.click(x, y);
+    await page.mouse.click(x, y);
+  } else {
+    // 사람이 실제로 더블클릭하는 간격(약 150ms)
+    await page.mouse.click(x, y);
+    await page.waitForTimeout(150);
+    await page.mouse.click(x, y);
+  }
+}
+
+/**
+ * 페이지의 모든 click(캡처 단계)을 기록한다: window.__clicks = ["next-life", "speed-2", "auto(가드)", "비버튼:MAIN", ...].
+ * "(가드)"는 그 버튼이 입력 가드로 닫혀 있었다(aria-disabled=true)는 뜻이다. addInitScript라서 새로고침해도 다시 설치된다.
+ * 더블탭의 둘째 입력이 어디에 떨어졌는지를 눈으로 확인하는 용도(R-035).
+ */
+export async function recordClicks(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __clicks: string[] };
+    w.__clicks = [];
+    document.addEventListener(
+      'click',
+      (e) => {
+        const b = e.target instanceof Element ? e.target.closest('button') : null;
+        const name = b === null ? `비버튼:${(e.target as Element).tagName}` : b.dataset.testid ?? (b.dataset.speed ? `speed-${b.dataset.speed}` : (b.textContent ?? '').trim());
+        w.__clicks.push(b !== null && b.getAttribute('aria-disabled') === 'true' ? `${name}(가드)` : name);
+      },
+      true,
+    );
+  });
+}
+
+export async function recordedClicks(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as { __clicks: string[] }).__clicks.slice());
+}
+
+/** React가 상태를 반영하고 저장 효과까지 돌 시간을 준다(고정 대기가 아니라 렌더 두 프레임). */
+export async function settle(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+}
+
+/** 인생 화면의 컨트롤·진행 상태를 화면(DOM)에서 읽는다 */
+export interface LifeSnapshot {
+  speed: string | null;
+  auto: string | null;
+  age: string;
+  hasChoice: boolean;
+}
+
+export async function lifeSnapshot(page: Page): Promise<LifeSnapshot> {
+  return page.evaluate(() => ({
+    speed: document.querySelector('[data-speed][aria-pressed="true"]')?.getAttribute('data-speed') ?? null,
+    auto: document.querySelector('[data-testid="auto"]')?.getAttribute('aria-pressed') ?? null,
+    age: document.querySelector('[data-testid="life-age"] strong')?.textContent?.trim() ?? '',
+    hasChoice: document.querySelector('[data-testid="choice-panel"]') !== null,
+  }));
+}
+
+/**
+ * 이 페이지의 앱을 "가려진 탭"처럼 멈춰 둔 채로 시작한다(visibilityState를 'hidden'으로 속임). 앱은 가려진 동안 진행·자동 선택 타이머를 걸지 않으므로
+ * 테스트가 시간 경쟁 없이 화면을 준비할 수 있다. addInitScript라서 이동·새로고침 때마다 다시 설치된다. setPageVisible(page, true)로 다시 흐르게 한다.
+ */
+export async function startPageHidden(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __vis: string };
+    w.__vis = 'hidden';
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => w.__vis });
+  });
+}
+
+export async function setPageVisible(page: Page, visible: boolean): Promise<void> {
+  await page.evaluate((v) => {
+    (window as unknown as { __vis: string }).__vis = v ? 'visible' : 'hidden';
+    document.dispatchEvent(new Event('visibilitychange'));
+  }, visible);
+}
+
+/** 포커스된 요소의 data-testid(속도 버튼은 speed-N, 없으면 태그 이름) */
+export async function activeTestId(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const a = document.activeElement;
+    if (a === null) return 'none';
+    return a.getAttribute('data-testid') ?? (a.getAttribute('data-speed') ? `speed-${a.getAttribute('data-speed')}` : a.tagName);
+  });
+}
+
+export async function readSettings(page: Page): Promise<Settings> {
+  const raw = await page.evaluate((k) => localStorage.getItem(k), SETTINGS_KEY);
+  expect(raw, '설정 저장이 있어야 한다').not.toBeNull();
+  return (JSON.parse(raw!) as { data: Settings }).data;
+}
+
+/**
+ * 개발 서버의 실제 core 모듈을 브라우저에서 불러 순수 함수를 실행한다(기대값 계산용 "오라클").
+ * body는 async 함수 본문이다: core(모듈)와 arg(JSON 직렬화 가능한 인자)를 쓰고 return 한다.
+ */
+export async function evalCore<T>(page: Page, body: string, arg: unknown = null): Promise<T> {
+  return page.evaluate<T>(`(async () => {
+    const core = await import('/src/core/index.ts');
+    const arg = ${JSON.stringify(arg)};
+    ${body}
+  })()`);
+}
+
+/** 시드·시대로 만든 "인생 0세" 상태 (core 순수 함수로 계산) */
+export async function oracleLife(page: Page, seed: number, era: Era): Promise<GameState> {
+  return evalCore<GameState>(
+    page,
+    'return core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(arg.seed)), arg.era)));',
+    { seed, era },
+  );
+}
+
+/** 다음 결정(선택지 또는 사망)까지 진행한 상태 */
+export async function oracleDecision(page: Page, state: GameState): Promise<GameState> {
+  return evalCore<GameState>(page, 'return core.advanceUntilDecision(arg).state;', state);
+}
+
+/** 끝(사망)까지 자동 모드로 진행한 상태 */
+export async function oracleAuto(page: Page, state: GameState): Promise<GameState> {
+  return evalCore<GameState>(page, 'return core.playToEnd(arg, null).state;', state);
+}
+
+/**
+ * 첫 결정(선택지)이 있는 시드를 찾아 그 상태(대기 중인 선택지 포함)를 돌려준다.
+ * minChoices: 보이는 선택지가 최소 이만큼인 것(3개짜리 레이아웃 검사용). 앱 페이지가 열려 있어야 한다(같은 origin).
+ */
+export async function findPendingState(page: Page, era: Era, opts: { minChoices?: number; fromSeed?: number } = {}): Promise<GameState> {
+  const found = await evalCore<GameState | null>(
+    page,
+    `for (let seed = arg.from; seed < arg.from + 400; seed++) {
+       const start = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), arg.era)));
+       const s = core.advanceUntilDecision(start).state;
+       if (s.phase === 'life' && s.pending && s.pending.choiceIds.length >= arg.min) return s;
+     }
+     return null;`,
+    { era, from: opts.fromSeed ?? 1000, min: opts.minChoices ?? 2 },
+  );
+  expect(found, `${era}: 선택지가 있는 시드를 찾지 못했다`).not.toBeNull();
+  return found!;
+}
+
+/** 저장의 history에서 특정 종류의 항목 수 */
+export function countKind(save: Save, kind: string): number {
+  return save.data.history.filter((h) => h.kind === kind).length;
+}
+
+/** Tab을 count번 눌러, 누를 때마다 포커스가 닿은 요소(activeTestId)를 순서대로 돌려준다 */
+export async function tabWalk(page: Page, count: number): Promise<string[]> {
+  const stops: string[] = [];
+  for (let i = 0; i < count; i++) {
+    await page.keyboard.press('Tab');
+    stops.push(await activeTestId(page));
+  }
+  return stops;
+}
+
+/**
+ * 인생 화면 컨트롤 그룹 안에서 Tab으로 포커스를 받을 수 있는 요소를 DOM 순서대로(속도 버튼은 speed-N). disabled 버튼과 tabindex<0 요소는 빠진다 —
+ * 선택지가 뜨든 사라지든 이 목록이 같아야 한다(R-036).
+ */
+export async function controlFocusables(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const root = document.querySelector('[data-testid="controls"]');
+    if (root === null) return [];
+    return [...root.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]')]
+      .filter((el) => !(el as HTMLButtonElement).disabled && el.tabIndex >= 0)
+      .map((el) => el.getAttribute('data-testid') ?? (el.getAttribute('data-speed') ? `speed-${el.getAttribute('data-speed')}` : el.tagName));
+  });
+}
+
+/** 컨트롤 그룹의 Tab 순서(DOM 순서)가 이래야 한다: 속도 4개 → 다음 결정으로 → 자동 모드. 선택지·자동 모드와 무관하다. */
+export const CONTROL_TAB_ORDER = ['speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto'] as const;

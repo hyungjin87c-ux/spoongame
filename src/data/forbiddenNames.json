@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "title": "수저 게임 금지 이름 목록 (민감한 실존 인물과 같은 성+이름)",
+    "decision": "REV-001-M2-1 R-023 / SPEC-001 '캐릭터 이름' — 정치적으로 민감한 소수만 막는다(형진 님 결정, 2026-10-13). 연예인·운동선수·기업인 등으로 넓히지 않는다.",
+    "scope": "대한민국 역대·현직 대통령과 그 배우자, 북한 최고지도자 일가(김일성·김정일·김정은과 김정남). 마스터 결정(REV-001-M2-2 R-028)으로 범위를 고정했고, 연예인·운동선수·기업인 등으로 넓히지 않는다.",
+    "matching": "성+이름 전체 문자열이 name과 정확히 같을 때만 걸린다. 성씨 하나나 이름 하나만 같은 경우는 허용한다. 걸리면 출생 시 같은 이름 풀에서 이름(given name)을 다시 뽑는다(성씨는 다시 뽑지 않는다). 플레이어에게 보이는 기능이 아니다.",
+    "groups": {
+      "president": "대한민국 역대·현직 대통령",
+      "president-spouse": "대한민국 역대·현직 대통령의 배우자",
+      "north-korea-leader": "북한 최고지도자 일가"
+    },
+    "notes": [
+      "현재 성씨 표(김·이·박·최·정·강·조·윤·장·임)와 이름 풀로 실제 만들어질 수 있는 조합은 tests/forbiddenNames.test.ts에 열거해 두었다. 성씨나 풀이 바뀌어 그 열거가 달라지면 테스트가 실패하므로, 새로 생긴 조합이 이 목록에 있는지 다시 확인한다.",
+      "만들어질 수 없는 이름(성씨 표에 없는 성, 풀에 없는 이름)도 일부러 목록에 둔다. 성씨 표나 풀이 넓어져도 막히도록 하기 위함이다.",
+      "외국 출신 배우자의 한글 표기는 성+이름 형태가 아니어서 넣지 않았다."
+    ]
+  },
+  "names": [
+    { "name": "이승만", "group": "president" },
+    { "name": "윤보선", "group": "president" },
+    { "name": "박정희", "group": "president" },
+    { "name": "최규하", "group": "president" },
+    { "name": "전두환", "group": "president" },
+    { "name": "노태우", "group": "president" },
+    { "name": "김영삼", "group": "president" },
+    { "name": "김대중", "group": "president" },
+    { "name": "노무현", "group": "president" },
+    { "name": "이명박", "group": "president" },
+    { "name": "박근혜", "group": "president" },
+    { "name": "문재인", "group": "president" },
+    { "name": "윤석열", "group": "president" },
+    { "name": "이재명", "group": "president" },
+    { "name": "육영수", "group": "president-spouse" },
+    { "name": "공덕귀", "group": "president-spouse" },
+    { "name": "홍기", "group": "president-spouse" },
+    { "name": "이순자", "group": "president-spouse" },
+    { "name": "김옥숙", "group": "president-spouse" },
+    { "name": "손명순", "group": "president-spouse" },
+    { "name": "이희호", "group": "president-spouse" },
+    { "name": "권양숙", "group": "president-spouse" },
+    { "name": "김윤옥", "group": "president-spouse" },
+    { "name": "김정숙", "group": "president-spouse" },
+    { "name": "김건희", "group": "president-spouse" },
+    { "name": "김혜경", "group": "president-spouse" },
+    { "name": "김일성", "group": "north-korea-leader" },
+    { "name": "김정일", "group": "north-korea-leader" },
+    { "name": "김정은", "group": "north-korea-leader" },
+    { "name": "김정남", "group": "north-korea-leader" }
+  ]
+}

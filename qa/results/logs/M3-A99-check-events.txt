@@ -1,0 +1,7 @@
+# 프로젝트 복사본(임시 폴더)에서 src/data/events/school.json 을 바꿔 npm run check:events 실행 (원본 파일 무변경)
+기준(정상): 이벤트 데이터 검증 통과: 파일 5개, 이벤트 20개 (선택지 15 + 서술 5) — exit 0
+(1) school-exam 선택지를 1개로: exit 1 — "./school.json events[4](school-exam).choices: 선택지는 2~3개여야 한다 (… 지금 1개)"
+(2) "id" 줄의 쉼표 삭제(JSON 문법 오류): exit 1 — "Failed to parse JSON file, invalid JSON syntax found at position 4355"
+(3) 문구에 '! 🔥' 추가: exit 0 — 이벤트 데이터 검증 통과 (느낌표·이모지는 check:events가 검사하지 않음; vitest tests/events.test.ts 몫)
+(4) school-friend 의 id 를 school-exam 으로: exit 1 — "id "school-exam"가 ./school.json에도 있다 (id는 모든 파일에서 하나뿐이어야 한다)"
+복원 후 sha256 e7997fd98f95db3025d76959e68324194cf060e6e0bc6c895e7ae11c6655ac91 (원본 school.json 과 동일), 검증 통과.

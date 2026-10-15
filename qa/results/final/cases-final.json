@@ -1,0 +1,4330 @@
+{
+ "counts": {
+  "PASS": 242,
+  "기록만": 10,
+  "판단 필요": 2,
+  "미실행": 3
+ },
+ "hash": {
+  "start": 137,
+  "end": 137,
+  "changed": [
+   "docs/TODO.md",
+   "docs/review/REV-001-M6-1.md"
+  ],
+  "added": [],
+  "removed": []
+ },
+ "cases": [
+  {
+   "id": "F-N01",
+   "category": "N 정상 플레이",
+   "title": "정상 1판 — 개발 서버 · 지금 세상 · 모바일 360x740 터치 · 1배속 수동(선택지 즉시 선택, 실시간)",
+   "steps": "타이틀 → 시작 → 시대 선택 → 이 세상에서 태어나기 → 출생 → 살아가기 → 인생 진행·선택지 → 사망 → 엔딩(새로고침) → 다시 태어나기 → 새 판 시대 선택",
+   "expected": "끊김 없이 엔딩까지, 가로 넘침·오류 없음, 금지 표현(등급명·느낌표·이모지·달력 연도) 없음, 이름이 시대·출생 연도·성별 풀에 맞음, 다시 태어나기 → 시대 선택(기본 지금 세상), 설정 유지",
+   "actual": "present · 모바일 · 1배 manual · 개발: 선택지 23개, 이름 이정우(2013년생 남), 85세 사망, 소요 875초(선택지 앞 하니스 대기 13.1초 제외 시 862초). 엔딩: 상위 3~17% 사이의 집에서 태어나, 상위 약 9%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다.. 연표 41줄, 문서 높이 5088px.",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-N01-title.png",
+    "qa/screenshots/001/F-N01-era-default.png",
+    "qa/screenshots/001/F-N01-birth.png",
+    "qa/screenshots/001/F-N01-life-enter.png",
+    "qa/screenshots/001/F-N01-choice-1.png",
+    "qa/screenshots/001/F-N01-after-choice-1.png",
+    "qa/screenshots/001/F-N01-life-age5.png",
+    "qa/screenshots/001/F-N01-choice-2.png",
+    "qa/screenshots/001/F-N01-after-choice-2.png",
+    "qa/screenshots/001/F-N01-choice-3.png",
+    "qa/screenshots/001/F-N01-after-choice-3.png",
+    "qa/screenshots/001/F-N01-life-age15.png",
+    "qa/screenshots/001/F-N01-choice-6.png",
+    "qa/screenshots/001/F-N01-after-choice-6.png",
+    "qa/screenshots/001/F-N01-life-age30.png",
+    "qa/screenshots/001/F-N01-choice-12.png",
+    "qa/screenshots/001/F-N01-after-choice-12.png",
+    "qa/screenshots/001/F-N01-life-age55.png",
+    "qa/screenshots/001/F-N01-choice-18.png",
+    "qa/screenshots/001/F-N01-after-choice-18.png",
+    "qa/screenshots/001/F-N01-life-age80.png",
+    "qa/screenshots/001/F-N01-ending.png",
+    "qa/screenshots/001/F-N01-ending-full.png",
+    "qa/screenshots/001/F-N01-ending-reload.png",
+    "qa/screenshots/001/F-N01-rebirth-btn.png",
+    "qa/screenshots/001/F-N01-rebirth-era-select.png"
+   ],
+   "console": [],
+   "note": "스크린샷은 직접 열어 확인함(목록은 allShots)",
+   "at": "2026-10-14T14:27:19.553Z"
+  },
+  {
+   "id": "F-N02",
+   "category": "N 정상 플레이",
+   "title": "정상 2판 — 개발 서버 · 지난 세상 · 데스크톱 1280x800 · 8배속 + 「다음 결정으로」(선택지 즉시 선택, 실시간)",
+   "steps": "타이틀 → 시작 → 시대 선택 → 이 세상에서 태어나기 → 출생 → 살아가기 → 인생 진행·선택지 → 사망 → 엔딩(새로고침) → 다시 태어나기 → 새 판 시대 선택",
+   "expected": "끊김 없이 엔딩까지, 가로 넘침·오류 없음, 금지 표현(등급명·느낌표·이모지·달력 연도) 없음, 이름이 시대·출생 연도·성별 풀에 맞음, 다시 태어나기 → 시대 선택(기본 지금 세상), 설정 유지",
+   "actual": "past · 데스크톱 · 8배 skip · 개발: 선택지 25개, 이름 김영숙(1951년생 여), 89세 사망, 소요 27초(선택지 앞 하니스 대기 13.7초 제외 시 13초). 엔딩: 상위 8~28% 사이의 집에서 태어나, 하위 약 34%의 형편으로 생을 마쳤다. / 출발선보다 뒤쪽에 서 있었다.. 연표 44줄, 문서 높이 4544px.",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-N02-title.png",
+    "qa/screenshots/001/F-N02-era-default.png",
+    "qa/screenshots/001/F-N02-era-past.png",
+    "qa/screenshots/001/F-N02-birth.png",
+    "qa/screenshots/001/F-N02-life-enter.png",
+    "qa/screenshots/001/F-N02-speed-8.png",
+    "qa/screenshots/001/F-N02-choice-1.png",
+    "qa/screenshots/001/F-N02-after-choice-1.png",
+    "qa/screenshots/001/F-N02-choice-2.png",
+    "qa/screenshots/001/F-N02-after-choice-2.png",
+    "qa/screenshots/001/F-N02-life-age7.png",
+    "qa/screenshots/001/F-N02-choice-3.png",
+    "qa/screenshots/001/F-N02-after-choice-3.png",
+    "qa/screenshots/001/F-N02-life-age23.png",
+    "qa/screenshots/001/F-N02-choice-6.png",
+    "qa/screenshots/001/F-N02-after-choice-6.png",
+    "qa/screenshots/001/F-N02-life-age33.png",
+    "qa/screenshots/001/F-N02-choice-12.png",
+    "qa/screenshots/001/F-N02-after-choice-12.png",
+    "qa/screenshots/001/F-N02-life-age58.png",
+    "qa/screenshots/001/F-N02-choice-18.png",
+    "qa/screenshots/001/F-N02-after-choice-18.png",
+    "qa/screenshots/001/F-N02-choice-24.png",
+    "qa/screenshots/001/F-N02-after-choice-24.png",
+    "qa/screenshots/001/F-N02-life-age82.png",
+    "qa/screenshots/001/F-N02-ending.png",
+    "qa/screenshots/001/F-N02-ending-full.png",
+    "qa/screenshots/001/F-N02-ending-reload.png",
+    "qa/screenshots/001/F-N02-rebirth-btn.png",
+    "qa/screenshots/001/F-N02-rebirth-era-select.png"
+   ],
+   "console": [],
+   "note": "스크린샷은 직접 열어 확인함(목록은 allShots)",
+   "at": "2026-10-14T14:27:19.554Z"
+  },
+  {
+   "id": "F-N03",
+   "category": "N 정상 플레이",
+   "title": "정상 3판 — 개발 서버 · 다가올 세상 · 모바일 360x740 터치 · 8배속 자동 모드(실시간) + 다시 태어나기 뒤 자동 진행(기록만)",
+   "steps": "타이틀 → 시작 → 시대 선택 → 이 세상에서 태어나기 → 출생 → 살아가기 → 인생 진행·선택지 → 사망 → 엔딩(새로고침) → 다시 태어나기 → 새 판 시대 선택",
+   "expected": "끊김 없이 엔딩까지, 가로 넘침·오류 없음, 금지 표현(등급명·느낌표·이모지·달력 연도) 없음, 이름이 시대·출생 연도·성별 풀에 맞음, 다시 태어나기 → 시대 선택(기본 지금 세상), 설정 유지",
+   "actual": "future · 모바일 · 8배 auto · 개발: 선택지 26개, 이름 이도현(2033년생 남), 94세 사망, 소요 123초(선택지 앞 하니스 대기 0초 제외 시 123초). 엔딩: 하위 30%와 상위 42% 사이의 집에서 태어나, 상위 약 41%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다.. 연표 39줄, 문서 높이 5006px. [기록] 자동 켠 채 다시 태어나면 새 판 인생에서 곧바로 자동 진행: 15초 뒤 12세, 자동=true, 속도=8",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-N03-title.png",
+    "qa/screenshots/001/F-N03-era-default.png",
+    "qa/screenshots/001/F-N03-era-future.png",
+    "qa/screenshots/001/F-N03-birth.png",
+    "qa/screenshots/001/F-N03-life-enter.png",
+    "qa/screenshots/001/F-N03-speed-8.png",
+    "qa/screenshots/001/F-N03-auto-on.png",
+    "qa/screenshots/001/F-N03-life-age5.png",
+    "qa/screenshots/001/F-N03-choice-1.png",
+    "qa/screenshots/001/F-N03-choice-2.png",
+    "qa/screenshots/001/F-N03-choice-3.png",
+    "qa/screenshots/001/F-N03-life-age15.png",
+    "qa/screenshots/001/F-N03-choice-6.png",
+    "qa/screenshots/001/F-N03-life-age30.png",
+    "qa/screenshots/001/F-N03-choice-12.png",
+    "qa/screenshots/001/F-N03-life-age55.png",
+    "qa/screenshots/001/F-N03-choice-18.png",
+    "qa/screenshots/001/F-N03-choice-24.png",
+    "qa/screenshots/001/F-N03-life-age80.png",
+    "qa/screenshots/001/F-N03-ending.png",
+    "qa/screenshots/001/F-N03-ending-full.png",
+    "qa/screenshots/001/F-N03-ending-reload.png",
+    "qa/screenshots/001/F-N03-rebirth-btn.png",
+    "qa/screenshots/001/F-N03-rebirth-era-select.png",
+    "qa/screenshots/001/F-N03-rebirth-birth.png",
+    "qa/screenshots/001/F-N03-rebirth-life-auto.png"
+   ],
+   "console": [],
+   "note": "스크린샷은 직접 열어 확인함(목록은 allShots)",
+   "at": "2026-10-14T14:27:19.555Z"
+  },
+  {
+   "id": "F-P01",
+   "category": "P 프로덕션 정상",
+   "title": "프로덕션 빌드(vite preview 4290) 1판 — 지난 세상 · 모바일 · 1배속 수동(실시간)",
+   "steps": "타이틀 → 시작 → 시대 선택 → 이 세상에서 태어나기 → 출생 → 살아가기 → 인생 진행·선택지 → 사망 → 엔딩(새로고침) → 다시 태어나기 → 새 판 시대 선택",
+   "expected": "끊김 없이 엔딩까지, 가로 넘침·오류 없음, 금지 표현(등급명·느낌표·이모지·달력 연도) 없음, 이름이 시대·출생 연도·성별 풀에 맞음, 다시 태어나기 → 시대 선택(기본 지금 세상), 설정 유지",
+   "actual": "past · 모바일 · 1배 manual · 프로덕션: 선택지 15개, 이름 김영철(1959년생 남), 76세 사망, 소요 729초(선택지 앞 하니스 대기 8.7초 제외 시 721초). 엔딩: 하위 40% 안쪽의 집에서 태어나, 하위 약 8%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다.. 연표 30줄, 문서 높이 3901px.",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-P01-title.png",
+    "qa/screenshots/001/F-P01-era-default.png",
+    "qa/screenshots/001/F-P01-era-past.png",
+    "qa/screenshots/001/F-P01-birth.png",
+    "qa/screenshots/001/F-P01-life-enter.png",
+    "qa/screenshots/001/F-P01-choice-1.png",
+    "qa/screenshots/001/F-P01-after-choice-1.png",
+    "qa/screenshots/001/F-P01-life-age5.png",
+    "qa/screenshots/001/F-P01-choice-2.png",
+    "qa/screenshots/001/F-P01-after-choice-2.png",
+    "qa/screenshots/001/F-P01-choice-3.png",
+    "qa/screenshots/001/F-P01-after-choice-3.png",
+    "qa/screenshots/001/F-P01-life-age15.png",
+    "qa/screenshots/001/F-P01-choice-6.png",
+    "qa/screenshots/001/F-P01-after-choice-6.png",
+    "qa/screenshots/001/F-P01-life-age30.png",
+    "qa/screenshots/001/F-P01-life-age55.png",
+    "qa/screenshots/001/F-P01-choice-12.png",
+    "qa/screenshots/001/F-P01-after-choice-12.png",
+    "qa/screenshots/001/F-P01-ending.png",
+    "qa/screenshots/001/F-P01-ending-full.png",
+    "qa/screenshots/001/F-P01-ending-reload.png",
+    "qa/screenshots/001/F-P01-rebirth-btn.png",
+    "qa/screenshots/001/F-P01-rebirth-era-select.png"
+   ],
+   "console": [],
+   "note": "스크린샷은 직접 열어 확인함(목록은 allShots)",
+   "at": "2026-10-14T14:27:19.556Z"
+  },
+  {
+   "id": "F-P02",
+   "category": "P 프로덕션 정상",
+   "title": "프로덕션 빌드 1판 — 다가올 세상 · 데스크톱 · 8배속 + 「다음 결정으로」(실시간)",
+   "steps": "타이틀 → 시작 → 시대 선택 → 이 세상에서 태어나기 → 출생 → 살아가기 → 인생 진행·선택지 → 사망 → 엔딩(새로고침) → 다시 태어나기 → 새 판 시대 선택",
+   "expected": "끊김 없이 엔딩까지, 가로 넘침·오류 없음, 금지 표현(등급명·느낌표·이모지·달력 연도) 없음, 이름이 시대·출생 연도·성별 풀에 맞음, 다시 태어나기 → 시대 선택(기본 지금 세상), 설정 유지",
+   "actual": "future · 데스크톱 · 8배 skip · 프로덕션: 선택지 16개, 이름 이나은(2048년생 여), 49세 사망, 소요 18초(선택지 앞 하니스 대기 8.8초 제외 시 9초). 엔딩: 상위 18~42% 사이의 집에서 태어나, 상위 약 24%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다.. 연표 27줄, 문서 높이 3055px.",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-P02-title.png",
+    "qa/screenshots/001/F-P02-era-default.png",
+    "qa/screenshots/001/F-P02-era-future.png",
+    "qa/screenshots/001/F-P02-birth.png",
+    "qa/screenshots/001/F-P02-life-enter.png",
+    "qa/screenshots/001/F-P02-speed-8.png",
+    "qa/screenshots/001/F-P02-choice-1.png",
+    "qa/screenshots/001/F-P02-after-choice-1.png",
+    "qa/screenshots/001/F-P02-choice-2.png",
+    "qa/screenshots/001/F-P02-after-choice-2.png",
+    "qa/screenshots/001/F-P02-life-age5.png",
+    "qa/screenshots/001/F-P02-choice-3.png",
+    "qa/screenshots/001/F-P02-after-choice-3.png",
+    "qa/screenshots/001/F-P02-life-age15.png",
+    "qa/screenshots/001/F-P02-choice-6.png",
+    "qa/screenshots/001/F-P02-after-choice-6.png",
+    "qa/screenshots/001/F-P02-life-age31.png",
+    "qa/screenshots/001/F-P02-choice-12.png",
+    "qa/screenshots/001/F-P02-after-choice-12.png",
+    "qa/screenshots/001/F-P02-ending.png",
+    "qa/screenshots/001/F-P02-ending-full.png",
+    "qa/screenshots/001/F-P02-ending-reload.png",
+    "qa/screenshots/001/F-P02-rebirth-btn.png",
+    "qa/screenshots/001/F-P02-rebirth-era-select.png"
+   ],
+   "console": [],
+   "note": "스크린샷은 직접 열어 확인함(목록은 allShots)",
+   "at": "2026-10-14T14:27:19.556Z"
+  },
+  {
+   "id": "F-P03",
+   "category": "P 프로덕션 정상",
+   "title": "프로덕션 빌드 1판 — 지금 세상 · 모바일 · 8배속 자동 모드(실시간)",
+   "steps": "타이틀 → 시작 → 시대 선택 → 이 세상에서 태어나기 → 출생 → 살아가기 → 인생 진행·선택지 → 사망 → 엔딩(새로고침) → 다시 태어나기 → 새 판 시대 선택",
+   "expected": "끊김 없이 엔딩까지, 가로 넘침·오류 없음, 금지 표현(등급명·느낌표·이모지·달력 연도) 없음, 이름이 시대·출생 연도·성별 풀에 맞음, 다시 태어나기 → 시대 선택(기본 지금 세상), 설정 유지",
+   "actual": "present · 모바일 · 8배 auto · 프로덕션: 선택지 24개, 이름 김예준(2009년생 남), 84세 사망, 소요 118초(선택지 앞 하니스 대기 0초 제외 시 118초). 엔딩: 하위 25%와 상위 45% 사이의 집에서 태어나, 상위 약 34%의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다.. 연표 42줄, 문서 높이 5211px. [기록] 자동 켠 채 다시 태어나면 새 판 인생에서 곧바로 자동 진행: 15초 뒤 9세, 자동=true, 속도=8",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-P03-title.png",
+    "qa/screenshots/001/F-P03-era-default.png",
+    "qa/screenshots/001/F-P03-birth.png",
+    "qa/screenshots/001/F-P03-life-enter.png",
+    "qa/screenshots/001/F-P03-speed-8.png",
+    "qa/screenshots/001/F-P03-auto-on.png",
+    "qa/screenshots/001/F-P03-choice-1.png",
+    "qa/screenshots/001/F-P03-life-age5.png",
+    "qa/screenshots/001/F-P03-choice-2.png",
+    "qa/screenshots/001/F-P03-life-age15.png",
+    "qa/screenshots/001/F-P03-choice-3.png",
+    "qa/screenshots/001/F-P03-choice-6.png",
+    "qa/screenshots/001/F-P03-life-age30.png",
+    "qa/screenshots/001/F-P03-choice-12.png",
+    "qa/screenshots/001/F-P03-life-age55.png",
+    "qa/screenshots/001/F-P03-choice-18.png",
+    "qa/screenshots/001/F-P03-choice-24.png",
+    "qa/screenshots/001/F-P03-life-age80.png",
+    "qa/screenshots/001/F-P03-ending.png",
+    "qa/screenshots/001/F-P03-ending-full.png",
+    "qa/screenshots/001/F-P03-ending-reload.png",
+    "qa/screenshots/001/F-P03-rebirth-btn.png",
+    "qa/screenshots/001/F-P03-rebirth-era-select.png",
+    "qa/screenshots/001/F-P03-rebirth-birth.png",
+    "qa/screenshots/001/F-P03-rebirth-life-auto.png"
+   ],
+   "console": [],
+   "note": "스크린샷은 직접 열어 확인함(목록은 allShots)",
+   "at": "2026-10-14T14:27:19.556Z"
+  },
+  {
+   "id": "F-T01",
+   "category": "T 시간(기록만)",
+   "title": "순수 연출 실측: 1배속 수동 · 선택지 즉시 선택 (개발·프로덕션)",
+   "steps": "시간 배율 쿼리 없이 실시간. 선택지가 뜨면 입력 가드(0.4초)만 넘기고 즉시 선택. 하니스의 선택지 앞 대기(약 0.75초×선택지 수)는 뺀 값",
+   "expected": "기록만(판정 안 함)",
+   "actual": "개발 N01: 1배 manual, 선택지 23개, 85세 사망, 총 875초, 순수 연출 862초(14.4분) | 프로덕션 P01: 1배 manual, 선택지 15개, 76세 사망, 총 729초, 순수 연출 721초(12분). 해 단위 대기 실측(N01): 조용한 해 약 7~8초, 선택 결과 뒤 약 12.8초, 서술 이벤트 해 약 17.8초 — 타이밍표(7000/13000/17000ms)와 일치",
+   "verdict": "기록만",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-N01-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.557Z"
+  },
+  {
+   "id": "F-T02",
+   "category": "T 시간(기록만)",
+   "title": "순수 연출 실측: 8배속 + 「다음 결정으로」 · 선택지 즉시 선택 (개발·프로덕션)",
+   "steps": "시간 배율 없이 실시간. 선택 직후 「다음 결정으로」를 바로 누름. 하니스 대기(선택지당 약 0.75초)는 뺀 값",
+   "expected": "기록만",
+   "actual": "개발 N02: 8배 skip, 선택지 25개, 89세 사망, 총 27초, 순수 연출 13초(0.2분) | 프로덕션 P02: 8배 skip, 선택지 16개, 49세 사망, 총 18초, 순수 연출 9초(0.1분). 즉시 고르고 즉시 건너뛰면 연출이 거의 남지 않는다 — 8배+다음 결정으로의 시간은 사실상 사람이 읽고 고르는 시간이다",
+   "verdict": "기록만",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-N02-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.557Z"
+  },
+  {
+   "id": "F-T03",
+   "category": "T 시간(기록만)",
+   "title": "순수 연출 실측: 8배속 자동 모드 (개발·프로덕션) + 자동 8배속에서 선택지가 보이는 시간",
+   "steps": "실시간",
+   "expected": "기록만",
+   "actual": "개발 N03: 8배 auto, 선택지 26개, 94세 사망, 총 123초, 순수 연출 123초(2분), 선택지가 화면에 머문 시간 평균 324ms(272~390) | 프로덕션 P03: 8배 auto, 선택지 24개, 84세 사망, 총 118초, 순수 연출 118초(2분), 선택지 표시 평균 335ms",
+   "verdict": "기록만",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-N03-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.557Z"
+  },
+  {
+   "id": "F-T04",
+   "category": "T 시간(기록만)",
+   "title": "판당 선택지 수와 글자 수 통계 (실제 앱 600판: 시대 3 × 무작위 수동·자동 × 100판, 시간 배율 1000)",
+   "steps": "qa/scripts/f-mass.mjs — 화면 버튼으로 타이틀부터 엔딩·다시 태어나기를 반복, 연표·선택지 패널 글자 수 수집",
+   "expected": "기록만 (판당 20~25개 목표 대비)",
+   "actual": "판당 선택지 평균(시대/방식): past/random 22.2개(11~26, 20~25개 74%, 25 초과 8판, 20 미만 18판) · past/auto 21.6개(1~26, 20~25개 69%, 25 초과 8판, 20 미만 23판) · present/random 23.6개(18~26, 20~25개 74%, 25 초과 21판, 20 미만 5판) · present/auto 23.5개(13~26, 20~25개 75%, 25 초과 16판, 20 미만 9판) · future/random 23.8개(17~26, 20~25개 70%, 25 초과 27판, 20 미만 3판) · future/auto 23.9개(16~26, 20~25개 75%, 25 초과 18판, 20 미만 7판). 선택지 1개의 제목+본문+선택지 문구 평균 88.2자(63~114), 본문만 평균 47.3자, 선택 결과 문구 평균 44.5자(28~58), 서술 이벤트 평균 48.8자. 판당(수동 300판) 읽을 글자: 선택지 패널 2047.3자(971~2397) + 결과 1033.1자 + 서술 511.5자. 평균 사망 나이: past/random 78.4세 · past/auto 76.1세 · present/random 83.1세 · present/auto 83.4세 · future/random 84.3세 · future/auto 85.5세",
+   "verdict": "기록만",
+   "timeScaleProbe": true,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.558Z"
+  },
+  {
+   "id": "F-T05",
+   "category": "T 시간(기록만)",
+   "title": "사람 기준 예상 시간 계산 (묵독 분당 500/600/700자, 고르는 시간 5/10/15초)",
+   "steps": "1배 수동 = 순수 연출 862초(N01 실측) + 판당 선택지 23.2개 × (선택지 읽기 + 고르기). 8배+다음 결정으로 = 판당 선택지 × (읽기 + 고르기 + 1초) [+ 결과 문구 읽기]. 선택지 1개 88.2자, 결과 44.5자(실제 앱 수동 300판 평균)",
+   "expected": "기록만 — 마스터가 형진 님 실측과 합쳐 판정",
+   "actual": "1배 수동: 19.2~24.3분(중앙 600자/분·10초 21.6분) | 8배+다음 결정으로(결과 문구 안 읽음): 5.2~10.3분(중앙 7.7분), 결과 문구를 읽으면 6.7~12.3분(중앙 9.4분) | 자동 8배 약 2분(실측, 사람 개입 없음). 목표: 1배 30분 이내, 8배+다음 결정으로 10분 내외",
+   "verdict": "기록만",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.558Z"
+  },
+  {
+   "id": "F-S01",
+   "category": "S 이름·통계",
+   "title": "이름: 실제 앱 600판의 이름이 출생 연도·성별 풀·성씨·금지 이름 규칙에 맞는다 (원자료 JSON 직접 대조) + 정상 6판 이름",
+   "steps": "600판의 이름·출생 연도·성별을 원자료(src/data/sources/scourt-birth-names.json, src/data/names.json)와 구현을 거치지 않고 대조. 출생 화면의 연도·성별·이름이 저장과 같은지",
+   "expected": "풀 밖 이름 0, 시대 연도 범위 안, 성과 이름 첫 글자 같은 조합 0",
+   "actual": "600판 점검, 어긋남 0건, 서로 다른 이름 434가지. 타이틀 출처 표기: 「지금 세상·다가올 세상 이름 출처: 대한민국 법원 전자가족관계등록시스템 통계서비스 「상위 출생신고 이름 현황」(등록일 기준 잠정치, 2026-10-13 조회)」(링크 하단) — 지난 세상은 표기에 포함되지 않음(추정 보충 이름)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-N01-title.png",
+    "qa/screenshots/001/F-N01-birth.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.558Z"
+  },
+  {
+   "id": "F-S02",
+   "category": "S 이름·통계",
+   "title": "문구 점검: 600판 연표·선택지·엔딩·출생 문구에 등급명·느낌표·이모지·달력 연도(출생 연도 표시 예외)가 없다",
+   "steps": "600판 전체 history·선택지 패널·엔딩 문장·출생 화면 문장을 정규식으로 점검",
+   "expected": "0건",
+   "actual": "점검 결과 0건",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.558Z"
+  },
+  {
+   "id": "F-S03",
+   "category": "S 이름·통계",
+   "title": "[R-078 기록] 한 판 안에서 같은 문구가 되풀이되는지",
+   "steps": "600판 연표에서 문장·절 단위로 같은 글이 두 번 나오는 판을 센다",
+   "expected": "기록만",
+   "actual": "같은 문장(마침표 단위) 되풀이 0/600판, 같은 절(쉼표·마침표 단위, 5자 이상) 되풀이 0/600판. 3어절 짜리 짧은 구가 두 번 나오는 판 101/600(16.8%) — 「결과가 나온 날」 28판, 「수 있게 되었다」 28판, 「해가 질 때까지」 15판, 「새 직장으로 옮겼다」 14판 등 짧은 관용구 수준",
+   "verdict": "기록만",
+   "timeScaleProbe": true,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.558Z"
+  },
+  {
+   "id": "F-S04",
+   "category": "S 이름·통계",
+   "title": "[R-063·R-045 기록] 밸런스 체감: 최종 관계 59 근처 몰림, 재력 3→4단계 재산 절벽, 학력 2단계 > 3단계 역전 (600판, 20세 이상 사망 598판)",
+   "steps": "최종 스탯을 출생 재력 단계별로 평균",
+   "expected": "기록만",
+   "actual": "최종 관계 평균 61.9, 54~64에 51.7%가 몰림(5점 구간별 {\"35\":4,\"40\":6,\"45\":37,\"50\":56,\"55\":104,\"60\":190,\"65\":109,\"70\":58,\"75\":21,\"80\":6,\"85\":6,\"90\":1}). 재산 평균 3단계→4단계(지난/지금/다가올): 51.1→78.5 (+27.4), 48.2→79.2 (+31), 43.8→76 (+32.2). 학력 평균 2단계 vs 3단계: 지난 61 vs 59.6(역전), 지금 63.1 vs 65.3, 다가올 68.3 vs 66.6(역전). 재산 1~5단계 평균(지금 세상): 21.5/35.9/48.2/79.2/87.2",
+   "verdict": "기록만",
+   "timeScaleProbe": true,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.558Z"
+  },
+  {
+   "id": "F-S05",
+   "category": "S 이름·통계",
+   "title": "[R-085 기록] 자동 모드와 무작위 수동의 엔딩 방향 분포 차이 + 지난 세상 자동 모드 비중",
+   "steps": "시대별 무작위 수동 100판과 자동 모드 100판의 엔딩 방향 문장 비율",
+   "expected": "기록만",
+   "actual": "past/random: 앞섬 15% / 비슷 61% / 뒤쪽 24% | past/auto: 앞섬 32% / 비슷 56% / 뒤쪽 10% | present/random: 앞섬 18% / 비슷 66% / 뒤쪽 16% | present/auto: 앞섬 20% / 비슷 69% / 뒤쪽 11% | future/random: 앞섬 18% / 비슷 61% / 뒤쪽 21% | future/auto: 앞섬 20% / 비슷 62% / 뒤쪽 18%. 지난 세상은 자동 모드가 앞섬 32%(수동 15%)·뒤쪽 10%(수동 24%)로 차이가 가장 큼(표본 100판이라 ±5%p 안팎 오차). 단계별(수동+자동): {\"1\":\"63판 앞섬18/비슷45/뒤쪽0\",\"2\":\"62판 앞섬14/비슷37/뒤쪽11\",\"3\":\"44판 앞섬2/비슷29/뒤쪽13\",\"4\":\"26판 앞섬4/비슷21/뒤쪽1\",\"5\":\"5판 앞섬0/비슷3/뒤쪽2\"}",
+   "verdict": "기록만",
+   "timeScaleProbe": true,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.559Z"
+  },
+  {
+   "id": "F-S06",
+   "category": "S 이름·통계",
+   "title": "단일 탭 플레이 중 밀린 화면(R-052) 감시: 정상 6판 + 실제 앱 600판 + 콘텐츠 경로 약 400판",
+   "steps": "모든 플레이 루프가 superseded/error 화면을 만나면 중단·기록하도록 함",
+   "expected": "0회",
+   "actual": "정상 플레이 6판·대량 600판(f-mass)·콘텐츠 경로(f-content)·키보드·연타 검사에서 밀린 화면/오류 화면 0회 (대량 플레이 problems 0건)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:19.559Z"
+  },
+  {
+   "id": "F-E01",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 4단계 출생 → 상위 약 2% 도착 (R-095 앞선 자리)",
+   "steps": "present 실제 엔딩 저장에서 재력 4단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 3~17% 사이의 집에서 태어나, 상위 약 2%의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다. (독립 기준 앞선 자리, 기대 구간 83,97, 읽은 구간 83,97, 읽은 도착 98) 재산 90",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E01-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:38.016Z"
+  },
+  {
+   "id": "F-E02",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 4단계 출생 → 상위 약 1% 도착 (R-095 앞선 자리)",
+   "steps": "present 실제 엔딩 저장에서 재력 4단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 3~17% 사이의 집에서 태어나, 상위 약 1%의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다. (독립 기준 앞선 자리, 기대 구간 83,97, 읽은 구간 83,97, 읽은 도착 99) 재산 93",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E02-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:38.183Z"
+  },
+  {
+   "id": "F-E03",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 4단계 출생 → 상위 1% 안쪽 도착 (R-095 앞선 자리)",
+   "steps": "present 실제 엔딩 저장에서 재력 4단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 3~17% 사이의 집에서 태어나, 상위 1% 안쪽의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다. (독립 기준 앞선 자리, 기대 구간 83,97, 읽은 구간 83,97, 읽은 도착 99) 재산 94",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E03-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:38.335Z"
+  },
+  {
+   "id": "F-E04",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 4단계 출생 → 구간 끝 근처(상위 약 17%) 비슷한 자리",
+   "steps": "present 실제 엔딩 저장에서 재력 4단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 3~17% 사이의 집에서 태어나, 상위 약 17%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다. (독립 기준 비슷한 자리, 기대 구간 83,97, 읽은 구간 83,97, 읽은 도착 83) 재산 64",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E04-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:38.486Z"
+  },
+  {
+   "id": "F-E05",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 1단계(맨 아래) 출생 → 구간 밖 위쪽 도착 앞선 자리 (구간 「하위 25% 안쪽」)",
+   "steps": "present 실제 엔딩 저장에서 재력 1단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "하위 25% 안쪽의 집에서 태어나, 하위 약 40%의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다. (독립 기준 앞선 자리, 기대 구간 0,25, 읽은 구간 0,25, 읽은 도착 40) 재산 33",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E05-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:38.650Z"
+  },
+  {
+   "id": "F-E06",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 1단계 출생 → 하위 약 3% 도착: 맨 아래 단계엔 「뒤쪽」이 없다",
+   "steps": "present 실제 엔딩 저장에서 재력 1단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "하위 25% 안쪽의 집에서 태어나, 하위 약 3%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다. (독립 기준 비슷한 자리, 기대 구간 0,25, 읽은 구간 0,25, 읽은 도착 3) 재산 6",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E06-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:38.799Z"
+  },
+  {
+   "id": "F-E07",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 2단계(가운데 걸침, 「하위 25%와 상위 45% 사이」) → 뒤쪽",
+   "steps": "present 실제 엔딩 저장에서 재력 2단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "하위 25%와 상위 45% 사이의 집에서 태어나, 하위 약 3%의 형편으로 생을 마쳤다. / 출발선보다 뒤쪽에 서 있었다. (독립 기준 뒤쪽, 기대 구간 25,55, 읽은 구간 25,55, 읽은 도착 3) 재산 6",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E07-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:38.939Z"
+  },
+  {
+   "id": "F-E08",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 2단계 → 딱 중간쯤 → 비슷한 자리",
+   "steps": "present 실제 엔딩 저장에서 재력 2단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "하위 25%와 상위 45% 사이의 집에서 태어나, 딱 중간쯤의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다. (독립 기준 비슷한 자리, 기대 구간 25,55, 읽은 구간 25,55, 읽은 도착 50) 재산 39",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E08-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:39.081Z"
+  },
+  {
+   "id": "F-E09",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 3단계(「상위 17~45% 사이」) → 상위 약 10% 앞선 자리",
+   "steps": "present 실제 엔딩 저장에서 재력 3단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 17~45% 사이의 집에서 태어나, 상위 약 10%의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다. (독립 기준 앞선 자리, 기대 구간 55,83, 읽은 구간 55,83, 읽은 도착 90) 재산 74",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E09-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:39.234Z"
+  },
+  {
+   "id": "F-E10",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 3단계 → 하위 약 10% 뒤쪽",
+   "steps": "present 실제 엔딩 저장에서 재력 3단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 17~45% 사이의 집에서 태어나, 하위 약 10%의 형편으로 생을 마쳤다. / 출발선보다 뒤쪽에 서 있었다. (독립 기준 뒤쪽, 기대 구간 55,83, 읽은 구간 55,83, 읽은 도착 10) 재산 16",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E10-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:39.383Z"
+  },
+  {
+   "id": "F-E11",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 5단계(「상위 3% 안쪽」) → 상위 약 3% 비슷한 자리",
+   "steps": "present 실제 엔딩 저장에서 재력 5단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 3% 안쪽의 집에서 태어나, 상위 약 3%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다. (독립 기준 비슷한 자리, 기대 구간 97,100, 읽은 구간 97,100, 읽은 도착 97) 재산 88",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E11-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:39.536Z"
+  },
+  {
+   "id": "F-E12",
+   "category": "E 엔딩 문장",
+   "title": "지금 세상 5단계 → 하위 약 20% 뒤쪽",
+   "steps": "present 실제 엔딩 저장에서 재력 5단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 3% 안쪽의 집에서 태어나, 하위 약 20%의 형편으로 생을 마쳤다. / 출발선보다 뒤쪽에 서 있었다. (독립 기준 뒤쪽, 기대 구간 97,100, 읽은 구간 97,100, 읽은 도착 20) 재산 23",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E12-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:39.701Z"
+  },
+  {
+   "id": "F-E13",
+   "category": "E 엔딩 문장",
+   "title": "지난 세상 1단계 → 딱 중간쯤 앞선 자리",
+   "steps": "past 실제 엔딩 저장에서 재력 1단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "하위 40% 안쪽의 집에서 태어나, 딱 중간쯤의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다. (독립 기준 앞선 자리, 기대 구간 0,40, 읽은 구간 0,40, 읽은 도착 50) 재산 37",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E13-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:39.868Z"
+  },
+  {
+   "id": "F-E14",
+   "category": "E 엔딩 문장",
+   "title": "지난 세상 5단계 → 하위 약 20% 뒤쪽",
+   "steps": "past 실제 엔딩 저장에서 재력 5단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 1% 안쪽의 집에서 태어나, 하위 약 20%의 형편으로 생을 마쳤다. / 출발선보다 뒤쪽에 서 있었다. (독립 기준 뒤쪽, 기대 구간 99,100, 읽은 구간 99,100, 읽은 도착 20) 재산 24",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E14-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:40.033Z"
+  },
+  {
+   "id": "F-E15",
+   "category": "E 엔딩 문장",
+   "title": "다가올 세상 3단계 → 상위 약 10% 앞선 자리",
+   "steps": "future 실제 엔딩 저장에서 재력 3단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "상위 18~42% 사이의 집에서 태어나, 상위 약 10%의 형편으로 생을 마쳤다. / 출발선보다 앞선 자리에 이르렀다. (독립 기준 앞선 자리, 기대 구간 58,82, 읽은 구간 58,82, 읽은 도착 90) 재산 75",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E15-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:40.181Z"
+  },
+  {
+   "id": "F-E16",
+   "category": "E 엔딩 문장",
+   "title": "다가올 세상 2단계 → 하위 약 10% 뒤쪽",
+   "steps": "future 실제 엔딩 저장에서 재력 2단계·최종 재산을 바꿔 주입 → 엔딩 화면",
+   "expected": "문장이 담담, 방향 문장이 화면 숫자와 맞음",
+   "actual": "하위 30%와 상위 42% 사이의 집에서 태어나, 하위 약 17%의 형편으로 생을 마쳤다. / 출발선보다 뒤쪽에 서 있었다. (독립 기준 뒤쪽, 기대 구간 30,58, 읽은 구간 30,58, 읽은 도착 17) 재산 18",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E16-journey.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:37:40.332Z"
+  },
+  {
+   "id": "F-E20",
+   "category": "E 엔딩 문장",
+   "title": "방향 문장 전수: 3시대 × 5단계 × 최종 재산 0~100 (1515판 엔딩을 화면에서 읽어 독립 기준과 대조)",
+   "steps": "각 칸마다 실제 엔딩 저장을 바꿔 주입하고 새로고침해 화면 문장의 구간·도착 숫자로 방향을 다시 계산",
+   "expected": "화면 방향 문장이 화면 숫자와 항상 맞고, 구간은 가중치표와 같고, 50을 넘는 숫자·약 0%·약 100%가 없고, 맨 아래 단계 「뒤쪽」·맨 위 단계 「앞선」이 구조상 없고, 재산이 늘면 도착 점수가 줄지 않는다",
+   "actual": "1515칸 읽음, 불일치 0건; 단계:방향 합계 {\"1:비슷한 자리\":88,\"1:앞선 자리\":215,\"2:뒤쪽\":82,\"2:비슷한 자리\":56,\"2:앞선 자리\":165,\"3:뒤쪽\":130,\"3:비슷한 자리\":82,\"3:앞선 자리\":91,\"4:뒤쪽\":189,\"4:비슷한 자리\":91,\"5:뒤쪽\":248,\"5:비슷한 자리\":55,\"4:앞선 자리\":23}",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:41:54.008Z"
+  },
+  {
+   "id": "F-E30",
+   "category": "E 엔딩 문장",
+   "title": "3세 사망 (present) — 20세 전이면 「…의 집에서 태어났다.」만 (R-083)",
+   "steps": "엔딩 저장의 사망 나이를 바꿔 주입",
+   "expected": "도착 자리·방향 문장 없음, 집안 형편 표시",
+   "actual": "3세에 세상을 떠났다. 원인: 노환. | 하위 25%와 상위 45% 사이의 집에서 태어났다. | movement=null | 재산 라벨 집안 형편",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E30-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:38:24.854Z"
+  },
+  {
+   "id": "F-E31",
+   "category": "E 엔딩 문장",
+   "title": "12세 사망 (past) — 20세 전이면 「…의 집에서 태어났다.」만 (R-083)",
+   "steps": "엔딩 저장의 사망 나이를 바꿔 주입",
+   "expected": "도착 자리·방향 문장 없음, 집안 형편 표시",
+   "actual": "12세에 세상을 떠났다. 원인: 노환. | 하위 40%와 상위 28% 사이의 집에서 태어났다. | movement=null | 재산 라벨 집안 형편",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E31-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:38:25.021Z"
+  },
+  {
+   "id": "F-E32",
+   "category": "E 엔딩 문장",
+   "title": "19세 사망 (present) — 20세 전이면 「…의 집에서 태어났다.」만 (R-083)",
+   "steps": "엔딩 저장의 사망 나이를 바꿔 주입",
+   "expected": "도착 자리·방향 문장 없음, 집안 형편 표시",
+   "actual": "19세에 세상을 떠났다. 원인: 노환. | 하위 25%와 상위 45% 사이의 집에서 태어났다. | movement=null | 재산 라벨 집안 형편",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E32-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:38:25.168Z"
+  },
+  {
+   "id": "F-E33",
+   "category": "E 엔딩 문장",
+   "title": "20세 사망 (present) — 20세 전이면 「…의 집에서 태어났다.」만 (R-083)",
+   "steps": "엔딩 저장의 사망 나이를 바꿔 주입",
+   "expected": "20세는 비교 문장 있음",
+   "actual": "20세에 세상을 떠났다. 원인: 노환. | 하위 25%와 상위 45% 사이의 집에서 태어나, 상위 약 49%의 형편으로 생을 마쳤다. | movement=출발선과 비슷한 자리에 머물렀다. | 재산 라벨 재산",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E33-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:38:25.307Z"
+  },
+  {
+   "id": "F-E34",
+   "category": "E 엔딩 문장",
+   "title": "선택 0번으로 끝난 인생 문구 + 어린 사망",
+   "steps": "사망 나이 4, 선택 기록 없음 주입",
+   "expected": "「선택을 내려야 하는 순간이 오기 전에 생이 끝났다.」, 담담",
+   "actual": "4세에 세상을 떠났다. 원인: 질병. | 선택을 내려야 하는 순간이 오기 전에 생이 끝났다. | 하위 25% 안쪽의 집에서 태어났다.",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E34-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:38:25.450Z"
+  },
+  {
+   "id": "F-E40",
+   "category": "E 엔딩",
+   "title": "실제 한 판의 엔딩(연표 약 5600px)에서 터치 스와이프로 「다시 태어나기」에 닿고 한 번 탭 → 시대 선택 (R-088)",
+   "steps": "history 주입 → 모바일 터치 스와이프(CDP 터치 이벤트)로 스크롤 → 「다시 태어나기」 탭",
+   "expected": "스와이프로 버튼에 닿음, 탭 1회로 시대 선택 화면, 새 판 하나",
+   "actual": "문서 높이 5600px, 스와이프 12회로 버튼 도달=true, 탭 후 phase=eraSelect, 시드 바뀜=true, 탭 2번, 연표 45줄 (실제 판)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E40-top.png",
+    "qa/screenshots/001/F-E40-bottom-btn.png",
+    "qa/screenshots/001/F-E40-after-rebirth.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:46:05.402Z"
+  },
+  {
+   "id": "F-E41",
+   "category": "E 엔딩",
+   "title": "「처음 N」 표기(R-089) — 학력·행복·관계 옆에만 붙고 재산·건강·외모에는 없다",
+   "steps": "엔딩 화면 최종 스탯 영역 요소 스크린샷",
+   "expected": "처음 값은 학력·행복·관계에만, 읽는 사람이 오해하지 않게 보임(판단)",
+   "actual": "처음 표기 칸: education,happiness,relationships / 재산 60 | 학력 처음 1 59 | 건강 20 | 행복 처음 35 57 | 관계 처음 36 70 | 외모 46",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E41-stats.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:46:31.827Z"
+  },
+  {
+   "id": "F-E42",
+   "category": "E 엔딩",
+   "title": "스트레스: 모든 이벤트가 나온 가상의 인생(연표 150줄, 약 12000px)에서 터치 스와이프 → 「다시 태어나기」 탭",
+   "steps": "history 주입 → 모바일 터치 스와이프(CDP 터치 이벤트)로 스크롤 → 「다시 태어나기」 탭",
+   "expected": "스와이프로 버튼에 닿음, 탭 1회로 시대 선택 화면, 새 판 하나",
+   "actual": "문서 높이 12279px, 스와이프 27회로 버튼 도달=true, 탭 후 phase=eraSelect, 시드 바뀜=true, 탭 1번, 연표 107줄 (가상 스트레스)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-E42-top.png",
+    "qa/screenshots/001/F-E42-bottom-btn.png",
+    "qa/screenshots/001/F-E42-after-rebirth.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:46:31.617Z"
+  },
+  {
+   "id": "F-C12a",
+   "category": "C 콘텐츠 경로",
+   "title": "지난 세상 학업 중단: 「집안의 결정을 따른다」 뒤 학교 이벤트 0건",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "30판 중 「따른다」 선택 30판, 닫혀야 할 학교 이벤트 14종이 이후에 나온 판 0, 강아지 이야기가 나온 판 12(그중 「학교」 포함 0). 이후 「학교」가 들어간 글: 0종 ",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12a-panel-school-family-priority.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:56:47.244Z"
+  },
+  {
+   "id": "F-C12a2",
+   "category": "C 콘텐츠 경로",
+   "title": "학업 중단 판의 강아지 이야기(school-puppy)에 「학교」가 없다",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 6판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "6판, 「학교」 포함 0판. 결과 문구: 어른들을 졸라 강아지를 데려왔다. 하루를 마치고 돌아오면 꼬리를 흔드는 존재가 집에 생겼다.",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12a2-panel-school-puppy.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:56:49.586Z"
+  },
+  {
+   "id": "F-C12b",
+   "category": "C 콘텐츠 경로",
+   "title": "늦게 맞은 아이(child_late): 진로·독립 이벤트 미노출, 66~67세 「손주를 돌본다」 없음",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "30/30판 「이제라도 아이를 맞이한다」, 진로(아이의 앞날)·독립(비어 가는 방) 이벤트가 나온 판 0, 66세 이상 「넉넉해진 시간」 패널 18개 중 「손주를 돌본다」 선택지 노출 0, 늦게 맞은 아이 서술(middle-late-child)이 나온 판 26",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12b-panel-senior-gathering.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:13.981Z"
+  },
+  {
+   "id": "F-C12c",
+   "category": "C 콘텐츠 경로",
+   "title": "임종(부모님의 마지막 인사) 뒤 「부모님의 병환」 미노출 (+ 대조: 임종 전엔 병환이 나옴)",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "임종 뒤 병환 이벤트가 나온 판 0/30. 대조군(44세부터 아무 조건 없이) 30판 중 병환이 나온 판 22",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12c-panel-middle-parents-farewell.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:57:13.437Z"
+  },
+  {
+   "id": "F-C12d",
+   "category": "C 콘텐츠 경로",
+   "title": "소원한 자식 → 「먼저 전화를 건다」 뒤 손주 이야기가 열림 (+ 대조: 「기다린다」면 계속 닫힘)",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "전화한 30판 중 손주 이야기(손주 맡기 이벤트 또는 「손주를 돌본다」 선택지)가 열린 판 24 (child_distant 해제 30판), 기다린 30판 중 열린 판 0",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12d-panel-senior-estranged-child.png",
+    "qa/screenshots/001/F-C12d-panel-senior-grandchildren.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:29.415Z"
+  },
+  {
+   "id": "F-C12e",
+   "category": "C 콘텐츠 경로",
+   "title": "재회: 「만나서 이야기를 나눈다」 뒤 「다시 이어진 사이」가 나옴",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "30판 중 「다시 이어진 사이」가 나온 판 20 (67%)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12e-panel-youth-reunion.png",
+    "qa/screenshots/001/F-C12e-panel-youth-second-chance.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:57:36.044Z"
+  },
+  {
+   "id": "F-C12f",
+   "category": "C 콘텐츠 경로",
+   "title": "이혼(「따로 살기로 한다」) 뒤 배우자 문구 0건",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "30판, 이혼 뒤 배우자 어휘가 보인 이벤트 0종 [], 배우자 전제 이벤트가 나온 판 0",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12f-panel-middle-marriage-crisis.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:57:44.396Z"
+  },
+  {
+   "id": "F-C12g",
+   "category": "C 콘텐츠 경로",
+   "title": "무자녀(no_child) 판의 상속(남길 것과 쓸 것)·취미(늦게 시작한 일) 문구에 자식·손주 어휘 없음",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "30판, 확인한 패널 {\"middle-hobby\":13,\"middle-retirement-prep\":23,\"senior-gathering\":22,\"senior-memoir\":16,\"senior-estate\":14,\"senior-travel\":16,\"senior-last-wishes\":12}, 자식·손주 어휘가 보인 글 0건 , 아이·손주 이벤트가 나온 판 0",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C12g-panel-middle-hobby.png",
+    "qa/screenshots/001/F-C12g-panel-senior-estate.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:38.867Z"
+  },
+  {
+   "id": "F-C12h",
+   "category": "C 콘텐츠 경로",
+   "title": "기혼 판에는 「살 곳을 구하는 일」(youth-housing)이 열리지 않는다 (+ 대조: 미혼 판엔 열림)",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "기혼 30판 중 집 구하기 0판, 미혼 대조군 30판 중 25판",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:58:16.670Z"
+  },
+  {
+   "id": "F-C13a",
+   "category": "C 콘텐츠 경로",
+   "title": "거처: 「월세방을 구한다」 뒤 「오르는 월세」(R-061)가 나온다 (+ 대조: 집을 마련하면 안 나옴)",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "월세방 30판 중 월세 인상 25판, 집을 마련한 30판 중 0판",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C13a-panel-youth-housing.png",
+    "qa/screenshots/001/F-C13a-panel-youth-rent-hike.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:58:43.264Z"
+  },
+  {
+   "id": "F-C13b",
+   "category": "C 콘텐츠 경로",
+   "title": "거처: 「혼자 먹는 저녁」(lives_alone) 뒤 집 구하기에서 「부모님 집에 머문다」가 막힌다 (+ 대조)",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "혼자 사는 판: 집 구하기 패널 24개 중 「부모님 집에 머문다」 노출 0. 대조군: 패널 52개 중 노출 40",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C13b-panel-youth-housing.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:04:16.448Z"
+  },
+  {
+   "id": "F-C13c",
+   "category": "C 콘텐츠 경로",
+   "title": "거처: 시설 이주(「돌봄이 있는 곳으로 간다」) 뒤 손주 돌봄 없음 + R-094(2) 관찰(「매일 찾아가」·「동네 모임」)",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "30판, 시설 이주 뒤 손주 맡기 이벤트 0판, 「손주를 돌본다」 노출 0. [R-094(2) 기록] 시설 판의 「넉넉해진 시간」 15개 중 「동네 모임에 나간다」 노출 15, 간병 이벤트의 「매일 찾아가」 결과 8회",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C13c-panel-senior-move-home.png",
+    "qa/screenshots/001/F-C13c-panel-senior-gathering.png"
+   ],
+   "console": [],
+   "note": "R-094(2)는 M6 관찰 항목(손대지 않음)",
+   "at": "2026-10-14T14:04:23.537Z"
+  },
+  {
+   "id": "F-C14",
+   "category": "C 콘텐츠 경로",
+   "title": "직장 없이 사업을 시작한 뒤 청년기 일자리 이벤트(R-072)가 나오지 않는다",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 30판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "30판(사업 시작 30판), 닫혀야 할 이벤트(youth-first-job,youth-workplace-romance,youth-colleague,youth-gig-work,youth-job-rejections,youth-factory-night,middle-business,middle-career-peak,middle-layoff,middle-job-again) 중 뒤에 나온 판 0",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C14-panel-youth-startup.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:59:48.810Z"
+  },
+  {
+   "id": "F-C15a",
+   "category": "C 콘텐츠 경로",
+   "title": "지난 세상 노년의 「낯선 기계」(1985년생) 문구",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 1판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "본문: 세상의 일들이 점점 작은 기계 속으로 옮겨 갔다. 배우지 않으면 불편한 일이 늘고 있었다. / 선택지: 가까운 사람에게 배운다 | 쓰지 않고 버틴다 | 필요할 때마다 도움을 청한다 (id learn,avoid,ask) — 1985년생의 66세 노년에 맞는 소재인지는 스크린샷으로 판단",
+   "verdict": "판단 필요",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C15a-panel-senior-new-device.png"
+   ],
+   "console": [],
+   "note": "사람 판단",
+   "at": "2026-10-14T13:59:49.080Z"
+  },
+  {
+   "id": "F-C15b",
+   "category": "C 콘텐츠 경로",
+   "title": "[기록] 지난 세상 전용 이벤트 7개의 문구 — 1980년대생(1989년생은 1990년대 어린 시절, 약 2050년대 노년)에게 어색한지 사람 판단용",
+   "steps": "src/data/events/*.json에서 eras가 past 하나뿐인 이벤트 본문 목록",
+   "expected": "기록만",
+   "actual": "infant-village(1~6세): 온 골목의 아이 — 집집마다 문이 열려 있던 골목에서 이 집 저 집의 밥을 얻어먹으며 자랐다. || school-lunch(8~16세): 각자의 점심 — 점심시간이 되면 아이들은 저마다 도시락을 열었다. 누구의 반찬이 어떤지는 말하지 않아도 보였다. || school-early-work(13~16세): 어려워진 집안 형편 — 집안 형편이 어려워지자 부모님이 말수를 줄였다. 일손이 하나라도 더 필요한 때였다. || school-family-priority(12~17세): 먼저 가야 할 사람 — 형제가 많은 집이라 학비를 모두에게 댈 수 없었다. 누가 어디까지 공부할지 어른들이 의논했다. || school-long-walk(8~13세): 먼 등굣길 — 학교까지는 걸어서 한 시간이 걸렸다. 길에서 만난 동무들과 노래를 부르며 걸었다. || youth-matchmaker(23~34세): 어른들이 마련한 자리 — 어른들이 맞선 자리를 마련했다며 옷을 단정히 입으라고 했다. 상대의 얼굴은 만나기 전까지 알 수 없었다. || youth-factory-night(20~28세): 멈추지 않는 기계 — 기계가 멈추지 않는 공장에서 밤샘 근무가 이어졌다. 월급날만 기다리며 하루하루를 버텼다. → 모두 달력 연도·기기·상호가 없는 일반 서술이라 1950년대생·1980년대생 모두에게 크게 어색하지 않다고 읽힘. 다만 「한 시간을 걸어 다니던 등굣길」·「골목 전체가 아이를 함께 키우던」·「어른들이 마련한 맞선」·「공장 밤샘」은 1980년대 후반생의 유년·청년기와는 거리가 있을 수 있어 사람(형진 님) 판단 필요",
+   "verdict": "판단 필요",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.371Z"
+  },
+  {
+   "id": "F-C16a",
+   "category": "C 콘텐츠 경로",
+   "title": "[R-076 기록] 외동 판에도 「형제들과」가 나옴 — 부모님의 병환 이벤트",
+   "steps": "저장 주입(나이·플래그·대기 선택지) → 실제 앱으로 끝까지 1판 진행 → 연표·화면 문구 대조 (시간 배율 1000·가드 0)",
+   "expected": "모순 문구·이벤트 0건",
+   "actual": "게임에는 형제 정보가 없어 외동이어도 같은 글이 나온다: 「부모님의 몸이 눈에 띄게 불편해지셨다. 누가, 어디서, 어떻게 돌볼지 형제들과 이야기를 나눠야 했다.」 / 선택지 「형제들과 나누어 맡는다」",
+   "verdict": "기록만",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-C16a-panel-middle-parents-care.png"
+   ],
+   "console": [],
+   "note": "R-076 이월(기록만)",
+   "at": "2026-10-14T13:59:49.392Z"
+  },
+  {
+   "id": "F-AR01",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x480 (시대 선택 화면으로)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,245) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,245) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR01.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:57:43.493Z"
+  },
+  {
+   "id": "F-AR01-prod",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x480 (시대 선택 화면으로)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,245) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,245) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR01.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:20.175Z"
+  },
+  {
+   "id": "F-AR02",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x568 (시대 선택 화면으로)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,295) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,295) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR02.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:57:50.864Z"
+  },
+  {
+   "id": "F-AR02-prod",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x568 (시대 선택 화면으로)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,295) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,295) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR02.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:26.944Z"
+  },
+  {
+   "id": "F-AR03",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x640 (시대 선택 화면으로)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,331) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,331) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR03.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:57:58.112Z"
+  },
+  {
+   "id": "F-AR03-prod",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x640 (시대 선택 화면으로)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,331) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,331) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR03.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:33.761Z"
+  },
+  {
+   "id": "F-AR04",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x740 (시대 선택 화면으로)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,381) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,381) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR04.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:58:05.451Z"
+  },
+  {
+   "id": "F-AR04-prod",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 360x740 (시대 선택 화면으로)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,381) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,381) 클릭기록=[시작,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR04.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:40.540Z"
+  },
+  {
+   "id": "F-AR05",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 667x375 (시대 선택 화면으로)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,202) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(136,202) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR05.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:58:12.930Z"
+  },
+  {
+   "id": "F-AR05-prod",
+   "category": "#1 더블탭",
+   "title": "타이틀 \"시작\" 연타 667x375 (시대 선택 화면으로)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,202) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(136,202) 클릭기록=[시작,지난 세상모두가 가난했고,(가드),지난 세상모두가 가난했고,(가드)] 화면=era-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR05.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:47.288Z"
+  },
+  {
+   "id": "F-AR06",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x480 (출생 화면으로)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,434) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,434) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR06.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:58:24.627Z"
+  },
+  {
+   "id": "F-AR06-prod",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x480 (출생 화면으로)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,434) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,434) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR06.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:59.106Z"
+  },
+  {
+   "id": "F-AR07",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x568 (출생 화면으로)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,546) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,546) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR07.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:58:36.407Z"
+  },
+  {
+   "id": "F-AR07-prod",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x568 (출생 화면으로)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,546) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,546) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR07.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:09.795Z"
+  },
+  {
+   "id": "F-AR08",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x640 (출생 화면으로)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,577) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,577) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR08.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:58:48.371Z"
+  },
+  {
+   "id": "F-AR08-prod",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x640 (출생 화면으로)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,577) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,577) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR08.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:21.111Z"
+  },
+  {
+   "id": "F-AR09",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x740 (출생 화면으로)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,627) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,627) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR09.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:59:00.369Z"
+  },
+  {
+   "id": "F-AR09-prod",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 360x740 (출생 화면으로)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,627) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(36,627) 클릭기록=[confirm-era,비버튼:MAIN,비버튼:MAIN] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR09.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:32.328Z"
+  },
+  {
+   "id": "F-AR10",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 667x375 (출생 화면으로)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,329) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(136,329) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR10.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:59:12.244Z"
+  },
+  {
+   "id": "F-AR10-prod",
+   "category": "#1 더블탭",
+   "title": "시대 선택 \"이 세상에서 태어나기\" 연타 667x375 (출생 화면으로)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,329) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null | 터치 3연탭 좌측@(136,329) 클릭기록=[confirm-era,next-life(가드),next-life(가드)] 화면=birth-screen 속도=null 자동=null 나이=null …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR10.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:43.543Z"
+  },
+  {
+   "id": "F-AR11",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x480 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,434) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,434) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR11.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:59:28.497Z"
+  },
+  {
+   "id": "F-AR11-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x480 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,434) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,434) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR11.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:59.822Z"
+  },
+  {
+   "id": "F-AR12",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x568 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,490) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,502) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR12.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T13:59:44.815Z"
+  },
+  {
+   "id": "F-AR12-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x568 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,478) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,502) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR12.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:15.435Z"
+  },
+  {
+   "id": "F-AR13",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x640 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,526) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,538) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR13.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:00:00.800Z"
+  },
+  {
+   "id": "F-AR13-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x640 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,526) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,526) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR13.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:30.548Z"
+  },
+  {
+   "id": "F-AR14",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x740 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,588) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,576) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR14.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:00:16.669Z"
+  },
+  {
+   "id": "F-AR14-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x740 (기본 설정 1배·자동 꺼짐)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,576) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(36,588) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR14.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:45.690Z"
+  },
+  {
+   "id": "F-AR15",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 667x375 (기본 설정 1배·자동 꺼짐)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,329) 클릭기록=[next-life,skip(가드),skip(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(136,329) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR15.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:00:32.550Z"
+  },
+  {
+   "id": "F-AR15-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 667x375 (기본 설정 1배·자동 꺼짐)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,329) 클릭기록=[next-life,skip(가드),skip(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 | 터치 3연탭 좌측@(136,329) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=1 자동=false 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR15.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:29:01.322Z"
+  },
+  {
+   "id": "F-AR16",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x480 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,434) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,434) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR16.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:00:48.393Z"
+  },
+  {
+   "id": "F-AR16-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x480 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x480에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,434) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,428) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR16.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:29:16.686Z"
+  },
+  {
+   "id": "F-AR17",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x568 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,478) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,502) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR17.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:04.197Z"
+  },
+  {
+   "id": "F-AR17-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x568 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x568에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,502) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,490) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR17.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:29:31.934Z"
+  },
+  {
+   "id": "F-AR18",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x640 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,538) 클릭기록=[next-life,speed-4(가드),speed-4(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,514) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR18.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:20.258Z"
+  },
+  {
+   "id": "F-AR18-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x640 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x640에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,514) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,514) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR18.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:29:47.187Z"
+  },
+  {
+   "id": "F-AR19",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x740 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,588) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,588) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR19.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:36.006Z"
+  },
+  {
+   "id": "F-AR19-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 360x740 (저장된 설정 8배·자동 켜짐)",
+   "steps": "360x740에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(180,576) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(36,564) 클릭기록=[next-life,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR19.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:30:02.235Z"
+  },
+  {
+   "id": "F-AR20",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 667x375 (저장된 설정 8배·자동 켜짐)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,334) 클릭기록=[next-life,skip(가드),skip(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(136,329) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR20.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:51.774Z"
+  },
+  {
+   "id": "F-AR20-prod",
+   "category": "#1 더블탭",
+   "title": "출생 \"살아가기\" 연타 667x375 (저장된 설정 8배·자동 켜짐)",
+   "steps": "667x375에서 버튼의 중앙·좌·우를 3연탭/더블탭/150ms 더블탭/마우스 더블클릭. 둘째 이후 입력이 새 화면 컨트롤에 닿는지 클릭 기록으로 확인",
+   "expected": "첫 입력만 반영. 새 화면의 버튼은 약 0.4초간 입력 무시(가드 표시), 속도·자동·나이·선택 불변",
+   "actual": "5개 변형 모두 이상 없음. 터치 3연탭 중앙@(334,329) 클릭기록=[next-life,skip(가드),skip(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 | 터치 3연탭 좌측@(136,329) 클릭기록=[next-life,speed-1(가드),speed-1(가드)] 화면=life-screen 속도=8 자동=true 나이=0세 …",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR20.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:30:17.745Z"
+  },
+  {
+   "id": "F-AR21",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x480 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,303) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR21.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:12.621Z"
+  },
+  {
+   "id": "F-AR21-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x480 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,303) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR21.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:30:38.747Z"
+  },
+  {
+   "id": "F-AR22",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x568 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,353) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR22.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:33.691Z"
+  },
+  {
+   "id": "F-AR22-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x568 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,353) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR22.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:30:59.243Z"
+  },
+  {
+   "id": "F-AR23",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x640 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,389) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR23.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:54.695Z"
+  },
+  {
+   "id": "F-AR23-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x640 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,389) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR23.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:31:19.510Z"
+  },
+  {
+   "id": "F-AR24",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x740 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,439) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR24.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:16.214Z"
+  },
+  {
+   "id": "F-AR24-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x740 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,439) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR24.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:31:39.386Z"
+  },
+  {
+   "id": "F-AR25",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 667x375 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(334,251) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR25.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:38.017Z"
+  },
+  {
+   "id": "F-AR25-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 667x375 (기본 설정)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(334,251) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=1 자동=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR25.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:31:59.659Z"
+  },
+  {
+   "id": "F-AR26",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x480 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,303) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR26.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:58.996Z"
+  },
+  {
+   "id": "F-AR26-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x480 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,303) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR26.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:32:20.001Z"
+  },
+  {
+   "id": "F-AR27",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x568 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,353) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR27.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:04:20.328Z"
+  },
+  {
+   "id": "F-AR27-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x568 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,353) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR27.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:32:40.344Z"
+  },
+  {
+   "id": "F-AR28",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x640 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,389) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR28.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:04:41.986Z"
+  },
+  {
+   "id": "F-AR28-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x640 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,389) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR28.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:33:00.206Z"
+  },
+  {
+   "id": "F-AR29",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x740 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,439) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR29.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:03.104Z"
+  },
+  {
+   "id": "F-AR29-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 360x740 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(180,439) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR29.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:33:20.686Z"
+  },
+  {
+   "id": "F-AR30",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 667x375 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(334,251) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR30.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:24.161Z"
+  },
+  {
+   "id": "F-AR30-prod",
+   "category": "#1 더블탭",
+   "title": "\"이 탭에서 이어하기\" 연타 667x375 (8배·자동 켜짐 저장)",
+   "steps": "탭 A를 인생 화면까지 → 탭 B가 저장을 바꿈 → A가 밀린 화면 → 이어하기 중앙·좌·우 3연탭",
+   "expected": "이어하기는 한 번만 반영, 둘째 이후 입력은 새 인생 화면 컨트롤에 닿지 않음(가드). 속도·자동 설정 불변",
+   "actual": "4개 변형 이상 없음. 터치 3연탭 중앙@(334,251) 클릭=[take-over,비버튼:MAIN,비버튼:MAIN] 화면=life-screen 속도=8 자동=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AR30.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:33:40.979Z"
+  },
+  {
+   "id": "F-AR31",
+   "category": "#11 유지",
+   "title": "선택지 버튼 연타 360x740 (?__timescale=40, 8배, 다음 선택지가 곧 뜨는 상황)",
+   "steps": "8배속·시간 배율 40으로 선택지가 뜨면 같은 좌표를 40번 빠르게 클릭(시작부터 끝까지 선택지마다 반복). 선택 1회당 연표에 choice가 정확히 1개 늘어야 하고, 새로 뜬 선택지는 약 0.4초간 눌리지 않아야 함",
+   "expected": "클릭 1번 = 선택 1개. 연타 중 다음 선택지가 자동으로 눌리지 않음",
+   "actual": "6번의 연타 라운드에서 한 번에 선택 1개씩만 확정됨",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AR31.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:31.482Z"
+  },
+  {
+   "id": "F-AR32",
+   "category": "#11 유지",
+   "title": "선택지 버튼 연타 360x568 (?__timescale=40, 8배, 다음 선택지가 곧 뜨는 상황)",
+   "steps": "8배속·시간 배율 40으로 선택지가 뜨면 같은 좌표를 40번 빠르게 클릭(시작부터 끝까지 선택지마다 반복). 선택 1회당 연표에 choice가 정확히 1개 늘어야 하고, 새로 뜬 선택지는 약 0.4초간 눌리지 않아야 함",
+   "expected": "클릭 1번 = 선택 1개. 연타 중 다음 선택지가 자동으로 눌리지 않음",
+   "actual": "6번의 연타 라운드에서 한 번에 선택 1개씩만 확정됨",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AR32.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:38.668Z"
+  },
+  {
+   "id": "F-AR33",
+   "category": "#11 유지",
+   "title": "선택지 버튼 연타 667x375 (?__timescale=40, 8배, 다음 선택지가 곧 뜨는 상황)",
+   "steps": "8배속·시간 배율 40으로 선택지가 뜨면 같은 좌표를 40번 빠르게 클릭(시작부터 끝까지 선택지마다 반복). 선택 1회당 연표에 choice가 정확히 1개 늘어야 하고, 새로 뜬 선택지는 약 0.4초간 눌리지 않아야 함",
+   "expected": "클릭 1번 = 선택 1개. 연타 중 다음 선택지가 자동으로 눌리지 않음",
+   "actual": "6번의 연타 라운드에서 한 번에 선택 1개씩만 확정됨",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AR33.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:46.003Z"
+  },
+  {
+   "id": "F-AR34",
+   "category": "#11 유지",
+   "title": "배속 버튼 연타: 1↔8 번갈아 50회, 2·4배 연타 (360x740)",
+   "steps": "인생 화면에서 속도 버튼을 번갈아 매우 빠르게 클릭",
+   "expected": "마지막 클릭한 배속이 선택된 상태로 표시되고 저장도 같음. 연타로 한 해가 두 번 지나가거나 선택이 확정되지 않음",
+   "actual": "화면 속도=4 저장 속도=4 나이 0세→0세",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR34.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:52.221Z"
+  },
+  {
+   "id": "F-AR35",
+   "category": "#3 자동 해제",
+   "title": "자동 모드 빠른 켜고 끄기 (홀수 회/짝수 회, 선택지 대기 중 포함) 360x740",
+   "steps": "자동 모드 버튼을 41회 연타, 선택지 대기 중에 다시 20회",
+   "expected": "최종 상태가 클릭 횟수 홀짝과 일치, 선택지가 깨지지 않고 오류 없음",
+   "actual": "41회→켜짐, 82회→꺼짐, 선택지 대기 중 20회 후 선택지 유지=true 자동=false 저장=false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AR35.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:08:26.232Z"
+  },
+  {
+   "id": "F-AN01",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x480 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,410) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN01.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:00:35.889Z"
+  },
+  {
+   "id": "F-AN01-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x480 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,410) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN01.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:23.476Z"
+  },
+  {
+   "id": "F-AN02",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x568 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN02.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:00:46.492Z"
+  },
+  {
+   "id": "F-AN02-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x568 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN02.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:33.567Z"
+  },
+  {
+   "id": "F-AN03",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x640 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,570) 클릭=[rebirth,confirm-era(가드),confirm-era(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN03.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:00:57.051Z"
+  },
+  {
+   "id": "F-AN03-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x640 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,570) 클릭=[rebirth,confirm-era(가드),confirm-era(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN03.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:43.590Z"
+  },
+  {
+   "id": "F-AN04",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x740 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,670) 클릭=[rebirth,비버튼:MAIN,비버튼:MAIN] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN04.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:07.686Z"
+  },
+  {
+   "id": "F-AN04-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x740 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,670) 클릭=[rebirth,비버튼:MAIN,비버튼:MAIN] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN04.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:26:53.668Z"
+  },
+  {
+   "id": "F-AN05",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 667x375 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(334,305) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN05.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:18.262Z"
+  },
+  {
+   "id": "F-AN05-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 667x375 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(334,305) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN05.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:03.732Z"
+  },
+  {
+   "id": "F-AN06",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 740x360 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(370,290) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN06.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:28.887Z"
+  },
+  {
+   "id": "F-AN06-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 740x360 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(370,290) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN06.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.954Z"
+  },
+  {
+   "id": "F-AN07",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 320x568 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(160,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN07.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:39.497Z"
+  },
+  {
+   "id": "F-AN07-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 320x568 (기본 설정)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(160,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN07.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:23.942Z"
+  },
+  {
+   "id": "F-AN08",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x480 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,410) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN08.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:01:50.286Z"
+  },
+  {
+   "id": "F-AN08-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x480 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,410) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN08.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:33.968Z"
+  },
+  {
+   "id": "F-AN09",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x568 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN09.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:00.859Z"
+  },
+  {
+   "id": "F-AN09-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x568 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN09.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:44.144Z"
+  },
+  {
+   "id": "F-AN10",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x640 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,570) 클릭=[rebirth,confirm-era(가드),confirm-era(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN10.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:11.503Z"
+  },
+  {
+   "id": "F-AN10-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x640 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,570) 클릭=[rebirth,confirm-era(가드),confirm-era(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN10.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:54.352Z"
+  },
+  {
+   "id": "F-AN11",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x740 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,670) 클릭=[rebirth,비버튼:MAIN,비버튼:MAIN] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN11.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:22.242Z"
+  },
+  {
+   "id": "F-AN11-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 360x740 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(180,670) 클릭=[rebirth,비버튼:MAIN,비버튼:MAIN] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN11.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:04.473Z"
+  },
+  {
+   "id": "F-AN12",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 667x375 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(334,305) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN12.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:32.985Z"
+  },
+  {
+   "id": "F-AN12-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 667x375 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(334,305) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN12.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:14.624Z"
+  },
+  {
+   "id": "F-AN13",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 740x360 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(370,290) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN13.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:43.768Z"
+  },
+  {
+   "id": "F-AN13-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 740x360 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(370,290) 클릭=[rebirth,지금 세상우리가 지금 살고(가드),지금 세상우리가 지금 살고(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN13.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:24.804Z"
+  },
+  {
+   "id": "F-AN14",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 320x568 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(160,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN14.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:02:54.294Z"
+  },
+  {
+   "id": "F-AN14-prod",
+   "category": "#11 다시 태어나기 연타",
+   "title": "엔딩 「다시 태어나기」 연타 320x568 (저장된 설정 8배·자동 켜짐)",
+   "steps": "엔딩 화면에서 버튼을 중앙·좌·우 3연탭, 150ms 더블탭, 마우스 더블클릭. 둘째 입력 이후 새 시대 선택 화면의 버튼에 닿는지 클릭 기록·저장·화면으로 확인",
+   "expected": "새 판은 하나뿐이고 시대 선택에서 멈춘다(출생 화면으로 건너뛰지 않음). 설정 유지. 외부 링크 없음",
+   "actual": "5개 변형 이상 없음. 터치 3연탭 중앙@(160,498) 클릭=[rebirth,다가올 세상아직 오지 않은(가드),다가올 세상아직 오지 않은(가드)] 화면=era-screen phase=eraSelect",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN14.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:34.852Z"
+  },
+  {
+   "id": "F-AN15",
+   "category": "#11 다시 태어나기",
+   "title": "다시 태어나기 → 시대 선택(기본 지금 세상) → 새 인물 → 인생: 이전 판 대체, 설정(8배·자동) 유지, 자동이면 곧바로 자동 진행(기록만)",
+   "steps": "엔딩(지난 세상) 주입, 설정 8배·자동 → 다시 태어나기 → 시대 선택에서 기본 선택 확인 → 확정 → 살아가기",
+   "expected": "기본 선택 지금 세상, 새 인물(이름·시드 다름), 연표 비어 있다가 새로 시작, 자동 진행",
+   "actual": "기본 선택 present, 새 이름 이수아 (이전 강은주), 새 판 4초 뒤 나이 4세, 자동=true 속도=8, 연표 2줄(이전 33줄), 시대=present",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AN15-era.png",
+    "qa/screenshots/001/F-AN15-life-auto.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:00.749Z"
+  },
+  {
+   "id": "F-AN15-prod",
+   "category": "#11 다시 태어나기",
+   "title": "다시 태어나기 → 시대 선택(기본 지금 세상) → 새 인물 → 인생: 이전 판 대체, 설정(8배·자동) 유지, 자동이면 곧바로 자동 진행(기록만)",
+   "steps": "엔딩(지난 세상) 주입, 설정 8배·자동 → 다시 태어나기 → 시대 선택에서 기본 선택 확인 → 확정 → 살아가기",
+   "expected": "기본 선택 지금 세상, 새 인물(이름·시드 다름), 연표 비어 있다가 새로 시작, 자동 진행",
+   "actual": "기본 선택 present, 새 이름 김승민 (이전 강은주), 새 판 4초 뒤 나이 3세, 자동=true 속도=8, 연표 2줄(이전 33줄), 시대=present",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AN15-era.png",
+    "qa/screenshots/001/prod-F-AN15-life-auto.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:41.184Z"
+  },
+  {
+   "id": "F-AU01",
+   "category": "#23 긴 이벤트 레이아웃",
+   "title": "모든 선택지 이벤트(78개)를 360x568에서: 저장 실패 안내 + 자동 모드 문구가 있어도 선택지·컨트롤이 가려지지 않고 가로 넘침 없음",
+   "steps": "이벤트마다 선택지 대기 저장 주입(자동 모드 켜짐, ?__quota로 저장 실패 안내) → 360x568에서 위·아래 스크롤 위치의 요소 사각형 대조",
+   "expected": "스크롤하면 모든 선택지 버튼이 컨트롤 바에 가려지지 않고 닿음, 안내가 선택지를 덮지 않음",
+   "actual": "78개 이벤트 점검, 문제 0건. 가장 높은 패널 school-exam(348px, 문서 809px), 2위 infant-care(330px). 컨트롤 바 position=sticky",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU01-school-exam-top.png",
+    "qa/screenshots/001/F-AU01-school-exam-bottom.png",
+    "qa/screenshots/001/F-AU01-infant-care-top.png",
+    "qa/screenshots/001/F-AU01-infant-care-bottom.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:27.564Z"
+  },
+  {
+   "id": "F-AU02",
+   "category": "#22 콘텐츠 갱신",
+   "title": "풀에서 사라진 이벤트가 대기 중인 저장: 대기만 풀고 이어간다 (화면·포커스·알림)",
+   "steps": "존재하지 않는 이벤트 id의 대기 선택지(모양은 유효)를 주입 → 열기",
+   "expected": "새 게임이 아니라 같은 인생이 이어지고 대기만 사라짐. 크래시 없음. 포커스는 body로 떨어지지 않고(제목) 알림 없음",
+   "actual": "화면=life-screen 선택지=false 이름 박서연 나이 40(주입 40) 연표 2줄, 포커스 H1:life-name, 알림 「」",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU02.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:22.928Z"
+  },
+  {
+   "id": "F-AU03",
+   "category": "#22 콘텐츠 갱신",
+   "title": "M3 시점 저장(대기 선택지 + 이벤트 풀 20개 시절의 id)이 지금 빌드에서 이어지는지",
+   "steps": "M3 QA가 만든 저장 원문(qa/results/final/golden-m3.json)을 그대로 주입 → 열기",
+   "expected": "크래시 없이 이어지거나 새 게임(둘 다 허용), 오류 화면 없음",
+   "actual": "화면=life-screen 선택지=true 이름 김준서 나이 3세 저장 phase=life 대기=infant-care",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU03.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:24.511Z"
+  },
+  {
+   "id": "F-AU04",
+   "category": "#22 콘텐츠 갱신",
+   "title": "M3 시점 엔딩 자리표시 저장이 지금 빌드에서 이어지는지",
+   "steps": "M3 QA가 만든 저장 원문(qa/results/final/golden-m3.json)을 그대로 주입 → 열기",
+   "expected": "크래시 없이 이어지거나 새 게임(둘 다 허용), 오류 화면 없음",
+   "actual": "화면=ending-screen 선택지=false 이름 김준서 나이 null 저장 phase=ending 대기=없음",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU04.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:26.090Z"
+  },
+  {
+   "id": "F-AU05",
+   "category": "#29 첫 선택지 전 사망",
+   "title": "실제 진행에서 선택지 없이 어린 나이에 사망 → 엔딩 문구",
+   "steps": "4세·건강 0 저장 주입, 시드를 바꿔 가며 끝까지 진행(시간 배율 1000) → 선택지가 0번인 엔딩을 찾음",
+   "expected": "「선택을 내려야 하는 순간이 오기 전에 생이 끝났다.」 + 「…의 집에서 태어났다.」만, 담담",
+   "actual": "7세에 세상을 떠났다. 원인: 갑작스러운 병. | 선택을 내려야 하는 순간이 오기 전에 생이 끝났다. | 상위 17~45% 사이의 집에서 태어났다. | 방향 문장 false",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AU05-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:28.155Z"
+  },
+  {
+   "id": "F-AU06",
+   "category": "#19 키보드",
+   "title": "엔딩에서 키보드만: 제목에 포커스 → Tab → 「다시 태어나기」 → Enter 연타 → 시대 선택에서 멈춤, 포커스가 제목으로",
+   "steps": "엔딩 주입 → Tab 1회 → Enter 5연타(가드 0.4초 포함)",
+   "expected": "시대 선택에 머무름(출생으로 건너뛰지 않음), 포커스 이동",
+   "actual": "엔딩 진입 포커스 H1:ending-name, Tab BUTTON:rebirth, Enter 5연타 후 화면=era-screen phase=eraSelect, 포커스 H1:어느 세상에서 태어날까",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU06-focus.png",
+    "qa/screenshots/001/F-AU06-after.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:30.257Z"
+  },
+  {
+   "id": "F-AU06-prod",
+   "category": "#19 키보드",
+   "title": "엔딩에서 키보드만: 제목에 포커스 → Tab → 「다시 태어나기」 → Enter 연타 → 시대 선택에서 멈춤, 포커스가 제목으로",
+   "steps": "엔딩 주입 → Tab 1회 → Enter 5연타(가드 0.4초 포함)",
+   "expected": "시대 선택에 머무름(출생으로 건너뛰지 않음), 포커스 이동",
+   "actual": "엔딩 진입 포커스 H1:ending-name, Tab BUTTON:rebirth, Enter 5연타 후 화면=era-screen phase=eraSelect, 포커스 H1:어느 세상에서 태어날까",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AU06-focus.png",
+    "qa/screenshots/001/prod-F-AU06-after.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:43.773Z"
+  },
+  {
+   "id": "F-AU07",
+   "category": "#28 새로고침 연타",
+   "title": "엔딩 화면 새로고침 연타 x15(로드 중단 포함) → 같은 엔딩, 죽은 인생 되살아나지 않음, 밀린 화면 없음",
+   "steps": "엔딩 주입 → DOMContentLoaded 후 연속 8회 + 로드 도중 중단 15회",
+   "expected": "이름·사망 나이·출발선 문장 불변, superseded/error 화면 없음",
+   "actual": "엔딩 문구 동일=true, 저장 원문 동일=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU07.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:32.456Z"
+  },
+  {
+   "id": "F-AU07-prod",
+   "category": "#28 새로고침 연타",
+   "title": "엔딩 화면 새로고침 연타 x15(로드 중단 포함) → 같은 엔딩, 죽은 인생 되살아나지 않음, 밀린 화면 없음",
+   "steps": "엔딩 주입 → DOMContentLoaded 후 연속 8회 + 로드 도중 중단 15회",
+   "expected": "이름·사망 나이·출발선 문장 불변, superseded/error 화면 없음",
+   "actual": "엔딩 문구 동일=true, 저장 원문 동일=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AU07.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:45.162Z"
+  },
+  {
+   "id": "F-AU08",
+   "category": "#28 새로고침 연타",
+   "title": "다시 태어난 직후(시대 선택) 새로고침 연타 x15 → 시대 선택 그대로(새 판 하나), 고른 시대 유지",
+   "steps": "엔딩 → 다시 태어나기 → 지난 세상 선택 → 새로고침 연타",
+   "expected": "시대 선택 화면, 선택한 시대 유지, 출생·인생으로 건너뛰지 않음, 시드 불변",
+   "actual": "선택 시대 past, phase eraSelect, 시드 불변=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU08.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:35.210Z"
+  },
+  {
+   "id": "F-AU08-prod",
+   "category": "#28 새로고침 연타",
+   "title": "다시 태어난 직후(시대 선택) 새로고침 연타 x15 → 시대 선택 그대로(새 판 하나), 고른 시대 유지",
+   "steps": "엔딩 → 다시 태어나기 → 지난 세상 선택 → 새로고침 연타",
+   "expected": "시대 선택 화면, 선택한 시대 유지, 출생·인생으로 건너뛰지 않음, 시드 불변",
+   "actual": "선택 시대 past, phase eraSelect, 시드 불변=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AU08.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:47.633Z"
+  },
+  {
+   "id": "F-AU09",
+   "category": "#25 다중 탭",
+   "title": "엔딩에서 두 탭: B가 다시 태어나기 → A는 밀린 화면 → 이어하기 → B가 만든 시대 선택으로 이어짐",
+   "steps": "A=엔딩, B(같은 저장소)에서 다시 태어나기 → A 확인 → A에서 이어하기",
+   "expected": "A는 「이 화면 밖에서 바뀌었습니다」 → 이어하기 한 번 → 시대 선택(새 게임이 아니라 B의 새 판)",
+   "actual": "A 안내 「저장된 게임이 이 화면 밖에서 바뀌었습니다.」, 이어하기 후 phase eraSelect, B의 시드와 같음=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU09-A-superseded.png",
+    "qa/screenshots/001/F-AU09-A-takeover.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:03:37.718Z"
+  },
+  {
+   "id": "F-AU09-prod",
+   "category": "#25 다중 탭",
+   "title": "엔딩에서 두 탭: B가 다시 태어나기 → A는 밀린 화면 → 이어하기 → B가 만든 시대 선택으로 이어짐",
+   "steps": "A=엔딩, B(같은 저장소)에서 다시 태어나기 → A 확인 → A에서 이어하기",
+   "expected": "A는 「이 화면 밖에서 바뀌었습니다」 → 이어하기 한 번 → 시대 선택(새 게임이 아니라 B의 새 판)",
+   "actual": "A 안내 「저장된 게임이 이 화면 밖에서 바뀌었습니다.」, 이어하기 후 phase eraSelect, B의 시드와 같음=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AU09-A-superseded.png",
+    "qa/screenshots/001/prod-F-AU09-A-takeover.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:28:49.712Z"
+  },
+  {
+   "id": "F-AU10",
+   "category": "#18 버튼 연타",
+   "title": "인생 화면 진행 버튼 6개(1·2·4·8배, 다음 결정으로, 자동 모드)를 좌·중·우 지점에서 각 15연타 (360x740 터치, 실시간)",
+   "steps": "가드가 풀린 뒤 버튼마다 left/center/right 15번씩 탭. 속도 버튼은 마지막 누른 배속, 자동은 홀짝, 다음 결정으로는 첫 선택지에서 멈추되 선택은 확정하지 않음",
+   "expected": "상태가 입력과 일치, 오류·밀린 화면 없음, 선택 자동 확정 없음",
+   "actual": "속도 4×3지점 OK | 자동 3지점 OK | 다음 결정으로 연타 후 선택지 infant-screen@2, 선택 수 0→0",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU10.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:17:32.122Z"
+  },
+  {
+   "id": "F-AU11",
+   "category": "#18 버튼 연타",
+   "title": "선택지 버튼을 좌·중·우 지점에서 12연타, 선택지마다 3번 반복 (360x740 터치, 8배, 다음 선택지가 곧 뜸)",
+   "steps": "?__timescale=40, 선택지가 뜨면 가드가 풀린 뒤 첫째 선택지 버튼의 왼쪽/가운데/오른쪽 끝을 12번 탭(둘째 선택지 버튼도 같은 방식)",
+   "expected": "한 번의 연타로 선택은 1개만 확정되고, 곧바로 뜨는 다음 선택지는 눌리지 않는다",
+   "actual": "9번의 연타 라운드(좌·중·우 × 첫째·둘째 선택지)에서 선택은 한 번에 1개씩만 확정됨(12연타 소요 194~202ms)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AU11.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:17:42.662Z"
+  },
+  {
+   "id": "F-AU12",
+   "category": "#18 버튼 연타",
+   "title": "선택지 버튼을 좌·중·우 지점에서 12연타, 선택지마다 3번 반복 (360x568 터치, 8배, 다음 선택지가 곧 뜸)",
+   "steps": "?__timescale=40, 선택지가 뜨면 가드가 풀린 뒤 첫째 선택지 버튼의 왼쪽/가운데/오른쪽 끝을 12번 탭(둘째 선택지 버튼도 같은 방식)",
+   "expected": "한 번의 연타로 선택은 1개만 확정되고, 곧바로 뜨는 다음 선택지는 눌리지 않는다",
+   "actual": "9번의 연타 라운드(좌·중·우 × 첫째·둘째 선택지)에서 선택은 한 번에 1개씩만 확정됨(12연타 소요 192~199ms)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AU12.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:17:53.093Z"
+  },
+  {
+   "id": "F-AU13",
+   "category": "#24 레이아웃",
+   "title": "엔딩 화면(긴 연표·구간 문장)의 좁은 폭·확대·가로 모드: 가로 넘침·글자 잘림 없음, 「다시 태어나기」까지 스크롤로 닿음",
+   "steps": "실제 엔딩 저장(지난·지금·다가올 세상)을 주입하고 여러 뷰포트에서 문서 폭·요소 폭·마지막 버튼 도달을 측정, 스크린샷",
+   "expected": "가로 스크롤 없음, 요소가 화면 밖으로 잘리지 않음, 버튼에 닿음",
+   "actual": "320x568/present: 폭 320 높이 6072px | 320x568/past: 폭 320 높이 4518px | 280x500/present: 폭 280 높이 6995px | 280x500/past: 폭 280 높이 5238px | 200% 확대(360px의 절반 = 180x370, 배율 2)/present: 폭 180 높이 13547px | 200% 확대(360px의 절반 = 180x370, 배율 2)/past: 폭 180 높이 9763px | 가로 667x375/present: 폭 667 높이 4779px | 가로 667x375/past: 폭 667 높이 3744px | 가로 740x360/present: 폭 740 높이 4779px | 가로 740x360/past: 폭 740 높이 3744px | 태블릿 768x1024/present: 폭 768 높이 4689px | 태블릿 768x1024/past: 폭 768 높이 3654px | 데스크톱 1920x1080/present: 폭 1920 높이 4689px | 데스크톱 1920x1080/past: 폭 1920 높이 3654px",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AU13-320x568-x1.png",
+    "qa/screenshots/001/F-AU13-280x500-x1.png",
+    "qa/screenshots/001/F-AU13-180x370-x2.png",
+    "qa/screenshots/001/F-AU13-667x375-x1.png",
+    "qa/screenshots/001/F-AU13-740x360-x1.png",
+    "qa/screenshots/001/F-AU13-768x1024-x1.png",
+    "qa/screenshots/001/F-AU13-1920x1080-x1.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:20:56.221Z"
+  },
+  {
+   "id": "F-AK68",
+   "category": "#2 키보드",
+   "title": "키보드 전용(Tab/Shift+Tab/Enter/Space만)으로 타이틀부터 사망까지 한 판 (360x740, 시간 배율 30)",
+   "steps": "마우스 없이 Tab으로 이동·Enter/Space로 실행. 시작→시대 선택(지난 세상 선택)→태어나기→살아가기→8배 선택→\"다음 결정으로\"/선택지 선택 반복→사망",
+   "expected": "모든 버튼이 키보드로 닿고 실행됨, 포커스 링이 보임, 사망(엔딩)까지 도달. 오류 없음",
+   "actual": "키 입력 Tab 1·Enter 44·Space 2으로 선택지 38번 거쳐 사망까지 (56세에 세상을 떠났다. 원인: 갑작스러운 병.)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AK68-title-focus.png",
+    "qa/screenshots/001/F-AK68-era-focus.png",
+    "qa/screenshots/001/F-AK68-birth-focus.png",
+    "qa/screenshots/001/F-AK68-life-speed8-focus.png",
+    "qa/screenshots/001/F-AK68-choice-focus.png",
+    "qa/screenshots/001/F-AK68-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:00.332Z"
+  },
+  {
+   "id": "F-AK69",
+   "category": "#2 키보드(R-036)",
+   "title": "2배 버튼에 포커스 → 선택지 등장 → Tab → Space/Enter는 무반응 (시간 배율 15)",
+   "steps": "Tab으로 2배에 포커스, 가만히 선택지를 기다림(포커스는 그대로여야 함) → Tab(남은 속도 버튼을 지나 다음 결정으로: 비활성에 닿음) → Space·Enter → Tab 1회(자동 모드) → Space(켜지는 것은 정상, 기록만)",
+   "expected": "선택지가 떠도 포커스는 속도 버튼 그대로. Tab 한 번은 비활성 \"다음 결정으로\", Space/Enter 무반응(선택 미확정·자동 모드 불변·연표 불변). 한 번 더 Tab → 자동 모드, Space는 켜짐(정상)",
+   "actual": "선택지 등장 후 포커스=speed-2 | Tab 3번 → speed-4 → speed-8 → skip(aria-disabled=true) | Tab → auto | 자동 모드에서 Space → 자동=true (기록만: 켜지는 것이 정상)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AK69.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:05.897Z"
+  },
+  {
+   "id": "F-AK70",
+   "category": "#2 키보드(R-036)",
+   "title": "4배 버튼에 포커스 → 선택지 등장 → Tab → Space/Enter는 무반응 (시간 배율 15)",
+   "steps": "Tab으로 4배에 포커스, 가만히 선택지를 기다림(포커스는 그대로여야 함) → Tab(남은 속도 버튼을 지나 다음 결정으로: 비활성에 닿음) → Space·Enter → Tab 1회(자동 모드) → Space(켜지는 것은 정상, 기록만)",
+   "expected": "선택지가 떠도 포커스는 속도 버튼 그대로. Tab 한 번은 비활성 \"다음 결정으로\", Space/Enter 무반응(선택 미확정·자동 모드 불변·연표 불변). 한 번 더 Tab → 자동 모드, Space는 켜짐(정상)",
+   "actual": "선택지 등장 후 포커스=speed-4 | Tab 2번 → speed-8 → skip(aria-disabled=true) | Tab → auto | 자동 모드에서 Space → 자동=true (기록만: 켜지는 것이 정상)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AK70.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:11.499Z"
+  },
+  {
+   "id": "F-AK71",
+   "category": "#2 키보드(R-036)",
+   "title": "8배 버튼에 포커스 → 선택지 등장 → Tab → Space/Enter는 무반응 (시간 배율 15)",
+   "steps": "Tab으로 8배에 포커스, 가만히 선택지를 기다림(포커스는 그대로여야 함) → Tab(남은 속도 버튼을 지나 다음 결정으로: 비활성에 닿음) → Space·Enter → Tab 1회(자동 모드) → Space(켜지는 것은 정상, 기록만)",
+   "expected": "선택지가 떠도 포커스는 속도 버튼 그대로. Tab 한 번은 비활성 \"다음 결정으로\", Space/Enter 무반응(선택 미확정·자동 모드 불변·연표 불변). 한 번 더 Tab → 자동 모드, Space는 켜짐(정상)",
+   "actual": "선택지 등장 후 포커스=speed-8 | Tab 1번 → skip(aria-disabled=true) | Tab → auto | 자동 모드에서 Space → 자동=true (기록만: 켜지는 것이 정상)",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AK71.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:17.118Z"
+  },
+  {
+   "id": "F-AK72",
+   "category": "#2 키보드(R-036)",
+   "title": "\"다음 결정으로\" Enter/Space 연타·길게 누르기 → 선택지 제목으로 포커스, 선택 확정 없음",
+   "steps": "(진행 중, 선택지 없음) Tab으로 다음 결정으로에 포커스 → Enter 10회 연타 / Space 10회 / Enter 길게 누르기(keyboard.down 반복) / Space 길게",
+   "expected": "첫 입력으로 선택지가 뜨고 포커스는 선택지 제목으로, 이후 입력은 선택을 확정하지 않음(연표·선택지 불변)",
+   "actual": "Enter 10회: 선택지=infant-screen@2 포커스=choice-title 선택수 0→0 | Space 10회: 선택지=school-friend@10 포커스=choice-title 선택수 1→1 | Enter 길게: 선택지=school-bully@12 포커스=choice-title 선택수 2→2 | Space 길게: 선택지=school-friend-quarrel@14 포커스=choice-title 선택수 3→3",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AK72-Enter10회.png",
+    "qa/screenshots/001/F-AK72-Space10회.png",
+    "qa/screenshots/001/F-AK72-Enter길게.png",
+    "qa/screenshots/001/F-AK72-Space길게.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:25.130Z"
+  },
+  {
+   "id": "F-AK73",
+   "category": "#2 키보드(R-036)",
+   "title": "흐린 \"다음 결정으로\" 클릭 무반응(선택지 대기 중·자동 모드 중), 1배에서 Shift+Tab, 선택 뒤 Tab 5번에 \"다음 결정으로\"",
+   "steps": "선택지 대기 중 흐린 skip 클릭(force) → 자동 모드 켜고 skip 클릭 → 1배 버튼에서 Shift+Tab → 키보드로 선택한 뒤 Tab 5번",
+   "expected": "흐린 버튼은 눌러도 무반응(선택·진행 불변), Shift+Tab은 어떤 동작도 일으키지 않고 포커스만 이동, 선택 뒤 Tab 5번째가 다음 결정으로",
+   "actual": "선택지 대기 중 skip: aria-disabled=true opacity=0.55 | 1배에서 Shift+Tab → BUTTON:choice-pass | 다시 Shift+Tab → BUTTON:choice-feed | 선택 후 포커스=H1:life-name | 선택 뒤 Tab 5번 → speed-1 → speed-2 → speed-4 → speed-8 → skip | 자동 모드 skip: aria-disabled=true opacity=0.55",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AK73-dim-skip.png",
+    "qa/screenshots/001/F-AK73-shift-tab.png",
+    "qa/screenshots/001/F-AK73-auto-skip.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:35.533Z"
+  },
+  {
+   "id": "F-AK74",
+   "category": "#3 자동 해제(R-048)",
+   "title": "선택지가 떠 있는 순간 자동 모드 해제 → 포커스·안내, 자동 선택 취소 (1배, 실시간)",
+   "steps": "1배·자동 켠 채 선택지가 뜨는 순간(3초 대기 중) 자동 모드를 끈다 → 6초 관찰",
+   "expected": "선택지는 그대로 남고 자동 선택이 일어나지 않음. 포커스는 자동 모드 버튼, 안내(aria-live)가 갱신됨",
+   "actual": "해제 클릭 36ms 뒤 6초간 선택지 유지, 포커스=auto, 안내=\"선택지가 나왔습니다: 동생이 생겼다\"",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AK74.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:07:13.004Z"
+  },
+  {
+   "id": "F-AK75",
+   "category": "#3 자동 해제(R-048)",
+   "title": "8배속 자동 선택 직전 해제 x12 — 해제가 화면에 보인 뒤 선택이 확정되면 FAIL",
+   "steps": "8배·자동으로 진행하다 선택지가 보이는 즉시 자동 모드 버튼 클릭. 해제가 반영된 것이 보이는 시점의 연표 선택 수와 2초 뒤를 비교",
+   "expected": "해제가 보인 뒤에는 선택이 확정되지 않음",
+   "actual": "해제가 선택을 막은 횟수 12, 클릭 전에 이미 선택된 횟수 0(경쟁에서 짐, 정상)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AK75.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:07:58.076Z"
+  },
+  {
+   "id": "F-AK76",
+   "category": "#4 진입 직후 0.4초",
+   "title": "인생 화면 진입·새로고침 직후 0.4초: 속도·자동·다음 결정으로 흐림·무반응 + 가드 해제 시간 측정",
+   "steps": "\"살아가기\" 직후 즉시 4배·자동·다음 결정으로 클릭(좌표 입력) → 0.7초 뒤 다시. 새로고침 직후에도 동일. aria-disabled가 풀리는 시간을 측정",
+   "expected": "약 0.4초간 흐림(aria-disabled)·무반응, 이후 정상. 가드 해제는 약 400ms",
+   "actual": "진입 직후 aria-disabled(4배/skip/자동)=true/true/true opacity=0.55 | 즉시 클릭 뒤 속도=1 자동=false 나이=0세 선택지=false | 가드 해제까지 404ms | 새로고침 직후 aria-disabled(4배)=true | 새로고침 직후 즉시 클릭 뒤 속도 1, 0.7초 뒤 1 | 자동 모드 중 skip(aria/opacity) true/0.55 true/0.55 true/0.55 true/0.55 true/0.55 true/0.55",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AK76-enter-dim.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:08:05.814Z"
+  },
+  {
+   "id": "F-AC108",
+   "category": "#3 자동 해제/경쟁",
+   "title": "자동 선택 타이머와 직접 클릭이 같은 순간에 겹침 x20 (1배·자동, ?__timescale=5: 자동 선택까지 약 0.6초, 가드 0.4초)",
+   "steps": "자동 모드로 선택지가 뜨면 가드가 풀린 직후부터 자동 선택이 일어날 시점(0.6초) 전후 ±80ms에 선택 버튼을 직접 클릭. 20회",
+   "expected": "선택은 한 번만 확정(연표 선택 수 +1), 한 해가 두 번 진행되지 않음, 오류 없음",
+   "actual": "13회 겹침 시도 모두 선택 1회씩만 확정, 같은 이벤트 중복 기록 없음",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AC108.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:19:09.133Z"
+  },
+  {
+   "id": "F-AC109",
+   "category": "#3 자동 해제/경쟁",
+   "title": "가림/복귀 폭풍 중 자동 모드: 선택지 대기 중 가림 → 자동 선택 안 일어남 → 복귀 시 선택 / visibilitychange 200회 토글 (8배·자동)",
+   "steps": "선택지가 뜬 상태에서 hidden으로 5초 → 선택지 유지 확인 → visible → 자동 선택 확인. 이어서 hidden/visible을 200회 토글하며 진행 관찰",
+   "expected": "가린 동안 자동 선택·진행 없음, 복귀 후 정상. 토글 폭풍에도 한 해가 두 번 진행되거나 선택이 두 번 확정되지 않음, 오류 없음",
+   "actual": "가림 5초 후 선택지 유지=true | 복귀 후 선택 수 0→1 | 토글 200회 후 life-screen 9세, 관측 [9세,9세,9세,9세,9세]",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AC109.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:19:47.474Z"
+  },
+  {
+   "id": "F-AC110",
+   "category": "#2 키보드",
+   "title": "선택 버튼에 포커스한 채 Enter 길게 누르기(자동 반복)·Space 연타 — 선택 1회만 확정, 다음 선택지는 눌리지 않음 (?__timescale=40, 8배)",
+   "steps": "선택 버튼에 포커스 → Enter를 누른 채 40회 keydown 반복 → 연표 선택 수와 다음 선택지 상태 확인. Space로도 반복",
+   "expected": "선택 1회, 다음 선택지(가드)는 눌리지 않음",
+   "actual": "Enter 반복: 선택 0→1 | Space 반복: 선택 1→2",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AC110.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:19:52.060Z"
+  },
+  {
+   "id": "F-AL36",
+   "category": "#9 새로고침",
+   "title": "각 화면(타이틀·시대 선택·출생·인생·선택지·사망 후)에서 새로고침 — 같은 인물·같은 선택지",
+   "steps": "화면마다 새로고침 1회, 이전 스냅샷(화면·이름·나이·선택지 key)과 비교. 모바일 360x740",
+   "expected": "시대 선택·출생 인물·인생·선택지·엔딩이 그대로 복원됨(다시 뽑히거나 건너뛰지 않음)",
+   "actual": "title: title-screen/null/null → title-screen/null/null ; era: era-screen/null/null → era-screen/null/null ; birth: birth-screen/장기철/null → birth-screen/장기철/null ; life: life-screen/장기철/0세 → life-screen/장기철/0세 ; choice: life-screen/장기철/1세 → life-screen/장기철/1세/infant-fever@1 ; ending: ending-screen/장기철/null → ending-screen/장기철/null",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL36-title.png",
+    "qa/screenshots/001/F-AL36-era.png",
+    "qa/screenshots/001/F-AL36-birth.png",
+    "qa/screenshots/001/F-AL36-life.png",
+    "qa/screenshots/001/F-AL36-choice.png",
+    "qa/screenshots/001/F-AL36-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:09:32.112Z"
+  },
+  {
+   "id": "F-AL37",
+   "category": "#9 새로고침",
+   "title": "선택지 대기 중 새로고침 연타 (DOMContentLoaded 후 연속) x15",
+   "steps": "선택지가 뜬 상태에서 15회 연속 새로고침",
+   "expected": "같은 인물·같은 선택지·같은 나이 그대로. 저장 손상 없음, 밀린 화면·오류 화면 없음",
+   "actual": "강예은 1세 \"한밤의 열\" 그대로 유지",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL37.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:09:38.264Z"
+  },
+  {
+   "id": "F-AL38",
+   "category": "#9 새로고침",
+   "title": "선택지 대기 중 새로고침 연타 (로드 도중 중단, 간격 0) x15",
+   "steps": "선택지가 뜬 상태에서 15회 연속 새로고침",
+   "expected": "같은 인물·같은 선택지·같은 나이 그대로. 저장 손상 없음, 밀린 화면·오류 화면 없음",
+   "actual": "김건우 3세 \"한밤의 열\" 그대로 유지",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL38.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:09:43.335Z"
+  },
+  {
+   "id": "F-AL39",
+   "category": "#9 새로고침",
+   "title": "선택 직후 새로고침 연타 (선택 클릭 → 즉시 15회 새로고침) x3 반복",
+   "steps": "선택지를 누르자마자 로드 도중 중단 포함 새로고침 15회. 3번 반복",
+   "expected": "선택이 한 번만 반영되거나(저장됨) 아직 반영 전(원래 선택지)이어야 함. 연표 중복·두 번 선택·건너뛴 해 없음",
+   "actual": "R1: 선택 0→1, 나이 1→2, 화면 life-screen | R2: 선택 1→2, 나이 3→4, 화면 life-screen | R3: 선택 2→3, 나이 11→12, 화면 life-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL39.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:09:51.733Z"
+  },
+  {
+   "id": "F-AL40",
+   "category": "#9 새로고침",
+   "title": "8배속+자동 모드 진행 중 새로고침 연타 (간격 250ms x20, 로드 중단 포함) — 인물 불변·나이 역행 없음",
+   "steps": "8배·자동 켜짐으로 진행 중에 20회 새로고침(저장→복원 반복). 매 복원 후 나이를 기록",
+   "expected": "같은 인물 유지, 나이가 줄어들지 않음(저장 되감김 없음), 밀린 화면·오류 없음, 설정(8배·자동) 유지",
+   "actual": "나이 추이 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 → 최종 life-screen 2세",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL40.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:10:03.759Z"
+  },
+  {
+   "id": "F-AL41",
+   "category": "#9 새로고침",
+   "title": "사망 순간 새로고침 연타 (104세 저장, 8배·자동, 시간 배율 100, 5ms~80ms 간격)",
+   "steps": "104세 유효 저장을 심고 사망이 일어나는 시점에 새로고침을 연타. 사망 후에도 새로고침/새 탭",
+   "expected": "사망(엔딩)이 되돌려지지 않음: 엔딩 화면이 유지되고 사망 나이·원인이 새로고침마다 같음. 인생 화면으로 되살아나지 않음",
+   "actual": "사망 화면 유지: 105세에 세상을 떠났다. 원인: 노환.. 연타 중 관측 [BLANK,BLANK,104세,105세,E105세에 세상을 떠났다. 원인: 노환.,BLANK,BLANK,BLANK,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,BLANK,BLANK,BLANK,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,BLANK,BLANK,BLANK,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,BLANK,BLANK,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,BLANK,BLANK,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,BLANK,BLANK,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.,BLANK,BLANK,BLANK,E105세에 세상을 떠났다. 원인: 노환.,E105세에 세상을 떠났다. 원인: 노환.]",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AL41.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:10:10.772Z"
+  },
+  {
+   "id": "F-AL42",
+   "category": "#9 새로고침",
+   "title": "사망 직후·사망 후 새로고침 15회 (죽은 인생이 되살아나지 않음)",
+   "steps": "104세 유효 저장을 심고 사망이 일어나는 시점에 새로고침을 연타. 사망 후에도 새로고침/새 탭",
+   "expected": "사망(엔딩)이 되돌려지지 않음: 엔딩 화면이 유지되고 사망 나이·원인이 새로고침마다 같음. 인생 화면으로 되살아나지 않음",
+   "actual": "사망 화면 유지: 105세에 세상을 떠났다. 원인: 노환.. 연타 중 관측 []",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AL42.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:10:15.736Z"
+  },
+  {
+   "id": "F-AL43",
+   "category": "#6 R-052",
+   "title": "단일 탭 플레이 중 밀린 화면 감시: 새로고침 연타·8배+자동·탭 가림 복귀 (시간 배율 12로 한 판 이상)",
+   "steps": "한 탭만 사용. 8배·자동으로 한 판을 돌리며 새로고침을 틈틈이, 가림→복귀(visibility) 반복. MutationObserver로 superseded 화면이 한 번이라도 뜨는지 감시",
+   "expected": "밀린 화면(데이터 testid superseded-screen)이 한 번도 뜨지 않음",
+   "actual": "밀린 화면 0회. 진행 관측 [4세,6세,12세,15세,19세,22세,24세,28세,31세,34세,38세,41세,46세,48세,52세,55세,60세,64세,69세,72세,75세,78세,84세,E]",
+   "verdict": "PASS",
+   "timeScaleProbe": true,
+   "screenshots": [
+    "qa/screenshots/001/F-AL43.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:10:35.736Z"
+  },
+  {
+   "id": "F-AL44",
+   "category": "#9 뒤로/앞으로",
+   "title": "각 화면에서 브라우저 뒤로→앞으로 (타이틀·시대·출생·인생·선택지·엔딩)",
+   "steps": "about:blank에서 앱으로 이동한 뒤, 각 화면에서 goBack → goForward. 이어서 같은 탭을 다른 주소(/robots.txt 등)로 갔다가 뒤로(bfcache 가능 경로)",
+   "expected": "앱으로 돌아오면 같은 화면·같은 인물·같은 선택지. 진행이 꼬이거나 저장이 깨지지 않음(저장 유효)",
+   "actual": "title: back→about:blank / 복귀 title-screen  동일 | era: back→about:blank / 복귀 era-screen  동일 | birth: back→about:blank / 복귀 birth-screen  동일 | life: back→about:blank / 복귀 life-screen 0세 동일 | choice: back→about:blank / 복귀 life-screen 3세 동일 | ending: back→about:blank / 복귀 ending-screen  동일 | 다른 주소 갔다 뒤로: ending-screen → ending-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL44-title.png",
+    "qa/screenshots/001/F-AL44-era.png",
+    "qa/screenshots/001/F-AL44-birth.png",
+    "qa/screenshots/001/F-AL44-life.png",
+    "qa/screenshots/001/F-AL44-choice.png",
+    "qa/screenshots/001/F-AL44-ending.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:11:03.591Z"
+  },
+  {
+   "id": "F-AL45",
+   "category": "#9 뒤로/앞으로",
+   "title": "진행 중(1배·선택지 대기) 다른 페이지로 이동 후 뒤로(bfcache 시도) + 여러 번 뒤로/앞으로 연타",
+   "steps": "인생 화면에서 about:blank 이동 → 뒤로 → 다시 앞으로를 12회 연타. 중간에 선택지가 대기 중인 상태도",
+   "expected": "나이가 되감기지 않고 저장이 유효하며, 밀린 화면·오류 화면이 뜨지 않음",
+   "actual": "1세 선택지 \"맡겨지는 낮\" → 복귀 life-screen 1세 infant-care@1",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL45.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:11:11.420Z"
+  },
+  {
+   "id": "F-AL46",
+   "category": "#9 저장 중 종료",
+   "title": "진행 중 탭 닫기 → 같은 저장소로 다시 열기 (선택 직후·8배 자동 중·사망 직전)",
+   "steps": "같은 컨텍스트에서 탭을 닫고(page.close, runBeforeUnload) 새 탭으로 열기. 3가지 시점",
+   "expected": "저장이 유효하고(이전 값 또는 새 값) 되감김 없이 이어짐. 복원 후 같은 인물",
+   "actual": "R0: 닫기 전 2세 → 재개 life-screen 2세 | R1: 닫기 전 2세 → 재개 life-screen 2세 | R2: 닫기 전 2세 → 재개 life-screen 2세 | R3: 닫기 전 2세 → 재개 life-screen 3세",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AL46.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:11:19.705Z"
+  },
+  {
+   "id": "F-AT61",
+   "category": "#5 다중 탭",
+   "title": "시나리오1a 열기만 한 둘째 탭 — 첫 탭이 선택지 대기 중일 때 둘째 탭 열기",
+   "steps": "탭A 인생 화면 선택지 대기 → 탭B 같은 주소 열기 → 8초 관찰",
+   "expected": "아무도 쓰지 않으므로 탭A는 밀리지 않음(선택지 그대로), 저장 원문 불변",
+   "actual": "A=life-screen(infant-fever@4) B=life-screen(infant-fever@4) 저장 불변",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AT61-tabA.png",
+    "qa/screenshots/001/F-AT61-tabB.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:05:57.658Z"
+  },
+  {
+   "id": "F-AT61-prod",
+   "category": "#5 다중 탭",
+   "title": "시나리오1a 열기만 한 둘째 탭 — 첫 탭이 선택지 대기 중일 때 둘째 탭 열기",
+   "steps": "탭A 인생 화면 선택지 대기 → 탭B 같은 주소 열기 → 8초 관찰",
+   "expected": "아무도 쓰지 않으므로 탭A는 밀리지 않음(선택지 그대로), 저장 원문 불변",
+   "actual": "A=life-screen(infant-stories@4) B=life-screen(infant-stories@4) 저장 불변",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AT61-tabA.png",
+    "qa/screenshots/001/prod-F-AT61-tabB.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:33:53.695Z"
+  },
+  {
+   "id": "F-AT62",
+   "category": "#5 다중 탭",
+   "title": "시나리오1b 열기만 한 둘째 탭 — 첫 탭이 진행 중(1배)일 때 둘째 탭을 가려진 상태로 열기",
+   "steps": "탭A 인생 화면 진행 중 → 탭B 열기(가려진 상태 흉내, visibilityState=hidden) → 10초",
+   "expected": "탭B는 진행·저장하지 않아 탭A가 밀리지 않고 계속 진행(나이 증가). 탭B가 A의 진행 저장에 밀리는 것은 예상 동작(기록만)",
+   "actual": "A 0세→1세(life-screen), B=superseded-screen null",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AT62-tabA.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:11.359Z"
+  },
+  {
+   "id": "F-AT62-prod",
+   "category": "#5 다중 탭",
+   "title": "시나리오1b 열기만 한 둘째 탭 — 첫 탭이 진행 중(1배)일 때 둘째 탭을 가려진 상태로 열기",
+   "steps": "탭A 인생 화면 진행 중 → 탭B 열기(가려진 상태 흉내, visibilityState=hidden) → 10초",
+   "expected": "탭B는 진행·저장하지 않아 탭A가 밀리지 않고 계속 진행(나이 증가). 탭B가 A의 진행 저장에 밀리는 것은 예상 동작(기록만)",
+   "actual": "A 0세→1세(life-screen), B=superseded-screen null",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AT62-tabA.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:34:07.152Z"
+  },
+  {
+   "id": "F-AT63",
+   "category": "#5 다중 탭",
+   "title": "시나리오1c 타이틀 상태에서 둘째 탭 열기 → 한쪽이 시작하면 다른 쪽은 밀림 → 이어하기 한 번에 탈출",
+   "steps": "탭A 타이틀 → 탭B 열기(타이틀) → A에서 시작 → B 관찰 → B에서 \"이 탭에서 이어하기\"",
+   "expected": "B는 밀린 화면을 보여 주고, 이어하기 한 번으로 A의 진행 상태(시대 선택)로 이어짐",
+   "actual": "열기만: A=title-screen/B=title-screen; A 시작 후 B=superseded-screen; 이어하기 후 B=era-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AT63-B-밀림.png",
+    "qa/screenshots/001/F-AT63-B-이어하기후.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:15.347Z"
+  },
+  {
+   "id": "F-AT63-prod",
+   "category": "#5 다중 탭",
+   "title": "시나리오1c 타이틀 상태에서 둘째 탭 열기 → 한쪽이 시작하면 다른 쪽은 밀림 → 이어하기 한 번에 탈출",
+   "steps": "탭A 타이틀 → 탭B 열기(타이틀) → A에서 시작 → B 관찰 → B에서 \"이 탭에서 이어하기\"",
+   "expected": "B는 밀린 화면을 보여 주고, 이어하기 한 번으로 A의 진행 상태(시대 선택)로 이어짐",
+   "actual": "열기만: A=title-screen/B=title-screen; A 시작 후 B=superseded-screen; 이어하기 후 B=era-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AT63-B-밀림.png",
+    "qa/screenshots/001/prod-F-AT63-B-이어하기후.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:34:10.926Z"
+  },
+  {
+   "id": "F-AT64",
+   "category": "#5 다중 탭",
+   "title": "시나리오2 탭 주고받기 반복 (A↔B 8회): 한쪽이 진행하면 다른 쪽은 밀리고, 이어하기로 이어받기",
+   "steps": "탭A·B가 번갈아 \"다음 결정으로\"/선택으로 진행. 밀린 탭은 이어하기 한 번. 8회 반복",
+   "expected": "매번 밀린 화면 → 이어하기 한 번으로 정상 인생 화면. 나이는 되감기지 않고, 오류 화면 없음",
+   "actual": "0:A진행(저장 3세) → 상대 superseded-screen | 1:B진행(저장 4세) → 상대 superseded-screen | 2:A진행(저장 6세) → 상대 superseded-screen | 3:B진행(저장 7세) → 상대 superseded-screen | 4:A진행(저장 8세) → 상대 superseded-screen | 5:B진행(저장 9세) → 상대 superseded-screen | 6:A진행(저장 15세) → 상대 superseded-screen | 7:B진행(저장 16세) → 상대 superseded-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AT64-superseded.png",
+    "qa/screenshots/001/F-AT64-A-최종.png",
+    "qa/screenshots/001/F-AT64-B-최종.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:33.172Z"
+  },
+  {
+   "id": "F-AT64-prod",
+   "category": "#5 다중 탭",
+   "title": "시나리오2 탭 주고받기 반복 (A↔B 8회): 한쪽이 진행하면 다른 쪽은 밀리고, 이어하기로 이어받기",
+   "steps": "탭A·B가 번갈아 \"다음 결정으로\"/선택으로 진행. 밀린 탭은 이어하기 한 번. 8회 반복",
+   "expected": "매번 밀린 화면 → 이어하기 한 번으로 정상 인생 화면. 나이는 되감기지 않고, 오류 화면 없음",
+   "actual": "0:A진행(저장 9세) → 상대 superseded-screen | 1:B진행(저장 10세) → 상대 superseded-screen | 2:A진행(저장 13세) → 상대 superseded-screen | 3:B진행(저장 14세) → 상대 superseded-screen | 4:A진행(저장 15세) → 상대 superseded-screen | 5:B진행(저장 16세) → 상대 superseded-screen | 6:A진행(저장 19세) → 상대 superseded-screen | 7:B진행(저장 20세) → 상대 superseded-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AT64-superseded.png",
+    "qa/screenshots/001/prod-F-AT64-A-최종.png",
+    "qa/screenshots/001/prod-F-AT64-B-최종.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:34:28.460Z"
+  },
+  {
+   "id": "F-AT65",
+   "category": "#5 다중 탭",
+   "title": "시나리오3 탭 복제 — 복제한 탭에서 진행 → 원본 밀림 → 원본 닫고 복제만 계속 → 새 탭로 재개",
+   "steps": "탭A 선택지 대기 → 같은 주소로 복제 탭B → B에서 선택 → A 관찰 → A 닫기 → B 계속 → 새 탭C 열기",
+   "expected": "원본 A는 밀린 화면, 닫은 뒤에도 B의 진행이 저장되고 새 탭 C가 같은 상태로 이어짐",
+   "actual": "A=superseded-screen, B 저장 6세, C=life-screen 6세",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AT65-A-밀림.png",
+    "qa/screenshots/001/F-AT65-C-재개.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:06:41.504Z"
+  },
+  {
+   "id": "F-AT65-prod",
+   "category": "#5 다중 탭",
+   "title": "시나리오3 탭 복제 — 복제한 탭에서 진행 → 원본 밀림 → 원본 닫고 복제만 계속 → 새 탭로 재개",
+   "steps": "탭A 선택지 대기 → 같은 주소로 복제 탭B → B에서 선택 → A 관찰 → A 닫기 → B 계속 → 새 탭C 열기",
+   "expected": "원본 A는 밀린 화면, 닫은 뒤에도 B의 진행이 저장되고 새 탭 C가 같은 상태로 이어짐",
+   "actual": "A=superseded-screen, B 저장 13세, C=life-screen 13세",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AT65-A-밀림.png",
+    "qa/screenshots/001/prod-F-AT65-C-재개.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:34:36.596Z"
+  },
+  {
+   "id": "F-AT66",
+   "category": "#5 다중 탭",
+   "title": "시나리오4 빈 저장소에서 두 탭 동시 열기 x12 (경쟁) → 밀린 탭은 이어하기 한 번에 탈출, 그 뒤 동시에 시작",
+   "steps": "새 컨텍스트에서 두 탭을 Promise.all로 동시에 열고 → 화면 확인 → 밀린 탭 이어하기 → 두 탭이 동시에 \"시작\" 클릭. 12회 반복",
+   "expected": "두 탭 모두 오류 없이 이어하기 한 번(또는 0번)으로 정상 화면. 멈추거나 오류 화면이 뜨지 않음",
+   "actual": "0: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 1: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 2: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 3: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 4: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 5: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 6: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 7: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 8: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 9: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 10: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 11: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AT66-A.png",
+    "qa/screenshots/001/F-AT66-B.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:07:36.606Z"
+  },
+  {
+   "id": "F-AT66-prod",
+   "category": "#5 다중 탭",
+   "title": "시나리오4 빈 저장소에서 두 탭 동시 열기 x12 (경쟁) → 밀린 탭은 이어하기 한 번에 탈출, 그 뒤 동시에 시작",
+   "steps": "새 컨텍스트에서 두 탭을 Promise.all로 동시에 열고 → 화면 확인 → 밀린 탭 이어하기 → 두 탭이 동시에 \"시작\" 클릭. 12회 반복",
+   "expected": "두 탭 모두 오류 없이 이어하기 한 번(또는 0번)으로 정상 화면. 멈추거나 오류 화면이 뜨지 않음",
+   "actual": "0: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 1: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 2: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 3: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 4: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 5: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 6: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 7: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 8: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 9: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 10: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc | 11: 열기=title/title 이어하기 0회 → 시작 후 A=era-sc B=era-sc",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AT66-A.png",
+    "qa/screenshots/001/prod-F-AT66-B.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:35:22.898Z"
+  },
+  {
+   "id": "F-AT67",
+   "category": "#5 다중 탭",
+   "title": "시나리오5 나란히 둔 두 창이 둘 다 진행 중 (8배, 40초) — 서로 번갈아 밀림은 예상 동작, 밀린 화면에서 이어하기로 항상 탈출",
+   "steps": "두 탭 모두 보이는 상태(8배)로 인생 진행. 40초 동안 밀린 화면이 뜨면 이어하기 클릭을 반복. 밀림 횟수·오류 화면·되감김 기록",
+   "expected": "밀리는 것은 허용(기록만). 이어하기 한 번이면 인생 화면으로 복귀, 오류 화면·무한 멈춤 없음, 저장 나이 되감김 없음",
+   "actual": "밀림 횟수 A=14 B=16 (40초), 이어하기 실패 0, 최종 A=life-screen 34세 B=life-screen 34세, 최대 저장 나이 34",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AT67-A.png",
+    "qa/screenshots/001/F-AT67-B.png"
+   ],
+   "console": [],
+   "note": "번갈아 밀림은 예상 동작(기록만)",
+   "at": "2026-10-14T14:08:20.309Z"
+  },
+  {
+   "id": "F-AT67-prod",
+   "category": "#5 다중 탭",
+   "title": "시나리오5 나란히 둔 두 창이 둘 다 진행 중 (8배, 40초) — 서로 번갈아 밀림은 예상 동작, 밀린 화면에서 이어하기로 항상 탈출",
+   "steps": "두 탭 모두 보이는 상태(8배)로 인생 진행. 40초 동안 밀린 화면이 뜨면 이어하기 클릭을 반복. 밀림 횟수·오류 화면·되감김 기록",
+   "expected": "밀리는 것은 허용(기록만). 이어하기 한 번이면 인생 화면으로 복귀, 오류 화면·무한 멈춤 없음, 저장 나이 되감김 없음",
+   "actual": "밀림 횟수 A=9 B=22 (40초), 이어하기 실패 0, 최종 A=life-screen 33세 B=life-screen 33세, 최대 저장 나이 33",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/prod-F-AT67-A.png",
+    "qa/screenshots/001/prod-F-AT67-B.png"
+   ],
+   "console": [],
+   "note": "번갈아 밀림은 예상 동작(기록만)",
+   "at": "2026-10-14T14:36:06.667Z"
+  },
+  {
+   "id": "F-AM47",
+   "category": "#8 저장 변조",
+   "title": "깨진 JSON·빈 값·엉뚱한 타입의 저장",
+   "steps": "게임 저장 키에 깨진 JSON / 빈 문자열 / null·배열·숫자·문자열·true / 잘림 JSON 주입 후 로드",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "깨진JSON→title-screen | 빈문자열→title-screen | null→title-screen | 배열→title-screen | 숫자→title-screen | 문자열→title-screen | true→title-screen | 잘림→title-screen | 쓰레기+JSON→title-screen | NaN토큰→title-screen | 널문자→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM47.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:15:33.450Z"
+  },
+  {
+   "id": "F-AM48",
+   "category": "#8 저장 변조",
+   "title": "구버전·미래 버전·버전 형식 오류 저장",
+   "steps": "version 1, 2, 3, 5, \"4\"(문자열), null, 없음 으로 바꾼 저장 주입",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "v1→title-screen | v2→title-screen | v3(M2 스키마)→title-screen | v5→title-screen | v\"4\"→title-screen | v null→title-screen | v 없음→title-screen | data 없음→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM48.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:15:44.192Z"
+  },
+  {
+   "id": "F-AM49",
+   "category": "#8 저장 변조",
+   "title": "필드 누락 (최상위·중첩 필드 하나씩 삭제)",
+   "steps": "data의 모든 최상위 필드와 character·stats 하위 필드를 하나씩 삭제한 저장 주입",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "-phase→title-screen | -era→title-screen | -character→title-screen | -stats→title-screen | -birthStats→title-screen | -age→title-screen | -history→title-screen | -flags→title-screen | -seen→title-screen | -pending→title-screen | -lastChoiceAge→title-screen | -death→title-screen | -seed→title-screen | -rngState→title-screen | -character.name→title-screen | -character.gender→title-screen | -character.birthYear→title-screen | -character.parentWealth→title-screen | -character.parenting→title-screen | -character.looks→title-screen | -stats.wealth→title-screen | -stats.education→title-screen | -stats.health→title-screen | -stats.happiness→title-screen | -stats.relationships→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM49.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:16:18.298Z"
+  },
+  {
+   "id": "F-AM50",
+   "category": "#8 저장 변조",
+   "title": "필드 타입 오류 (숫자↔문자열↔null↔배열↔객체)",
+   "steps": "주요 필드를 잘못된 타입으로 바꾼 저장 주입",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "phase=문자열→title-screen | phase=null→title-screen | phase=객체→title-screen | phase=배열→title-screen | phase=불리언→title-screen | era=문자열→title-screen | era=null→title-screen | era=객체→title-screen | era=배열→title-screen | era=불리언→title-screen | age=문자열→title-screen | age=null→title-screen | age=객체→title-screen | age=배열→title-screen | age=불리언→title-screen | seed=문자열→title-screen | seed=null→title-screen | seed=객체→title-screen | seed=배열→title-screen | seed=불리언→title-screen | rngState=문자열→title-screen | rngState=null→title-screen | rngState=객체→title-screen | rngState=배열→title-screen | rngState=불리언→title-screen | history=문자열→title-screen | history=null→title-screen | history=객체→title-screen | history=배열(유효값)→life-screen(김준서) | history=불리언→title-screen | flags=문자열→title-screen | flags=null→title-screen | flags=객체→title-screen | flags=배열(유효값)→life-screen(김준서) | flags=불리언→title-screen | seen=문자열→title-screen | seen=null→title-screen | seen=객체→title-screen | seen=배열→title-screen | seen=불리언→title-screen | stats=문자열→title-screen | stats=null→title-screen | stats=객체→title-screen | stats=배열→title-screen | stats=불리언→title-screen | character=문자열→title-screen | character=null→title-screen | character=객체→title-screen | character=배열→title-screen | character=불리언→title-screen | pending=문자열→title-screen | pending=null(유효값)→life-screen(김준서) | pending=객체→title-screen | pending=배열→title-screen | pending=불리언→title-screen | birthStats=문자열→title-screen | birthStats=null→title-screen | birthStats=객체→title-screen | birthStats=배열→title-screen | birthStats=불리언→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM50.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:17:38.774Z"
+  },
+  {
+   "id": "F-AM51",
+   "category": "#8 저장 변조",
+   "title": "스탯 이상값: -5·1000·1e999(Infinity)·\"50\"·50.5·null",
+   "steps": "스탯 5개와 외모에 이상값 주입",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "wealth=-5→title-screen | wealth=1000→title-screen | wealth=문자열50→title-screen | wealth=소수→title-screen | wealth=null→title-screen | wealth=101→title-screen | wealth=-1→title-screen | education=-5→title-screen | education=1000→title-screen | education=문자열50→title-screen | education=소수→title-screen | education=null→title-screen | education=101→title-screen | education=-1→title-screen | health=-5→title-screen | health=1000→title-screen | health=문자열50→title-screen | health=소수→title-screen | health=null→title-screen | health=101→title-screen | health=-1→title-screen | happiness=-5→title-screen | happiness=1000→title-screen | happiness=문자열50→title-screen | happiness=소수→title-screen | happiness=null→title-screen | happiness=101→title-screen | happiness=-1→title-screen | relationships=-5→title-screen | relationships=1000→title-screen | relationships=문자열50→title-screen | relationships=소수→title-screen | relationships=null→title-screen | relationships=101→title-screen | relationships=-1→title-screen | wealth=1e999(Infinity)→title-screen | health=-1e999→title-screen | looks=1000→title-screen | looks=-3→title-screen | 유효(대조) wealth=0·100→life-screen(김준서)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM51.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:22:54.460Z"
+  },
+  {
+   "id": "F-AM52",
+   "category": "#8 저장 변조",
+   "title": "나이 이상값: -1·999·105.5·\"30\"·null·사망 나이와 불일치",
+   "steps": "나이 필드에 이상값 주입 + 엔딩 나이 불일치",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "age=-1→title-screen | age=999→title-screen | age=105.5→title-screen | age=\"30\"→title-screen | age=null→title-screen | age=1e999→title-screen | age=200(상한 초과)→title-screen | 엔딩 death.age≠age→title-screen | 엔딩 death 없음→title-screen | 인생인데 death 있음→title-screen | 유효 대조: 엔딩 그대로→ending-screen(김준서)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM52.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:23:09.206Z"
+  },
+  {
+   "id": "F-AM53",
+   "category": "#8 저장 변조",
+   "title": "대기 선택지 변조: 없는 이벤트 id·없는 선택지·key/나이 불일치·중복·개수 초과",
+   "steps": "pending 필드를 여러 방식으로 변조",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "없는 이벤트(콘텐츠 갱신: 대기만 풀고 이어감, R-046)→life-screen(김준서) | 이벤트는 있으나 선택지 아님(서술)(대기만 풀림)→life-screen(김준서) | 없는 선택지 id(대기만 풀림)→life-screen(김준서) | 선택지 1개→title-screen | 선택지 4개→title-screen | 선택지 중복→title-screen | key 불일치→title-screen | pending.age 불일치→title-screen | eventId 숫자→title-screen | eventId 특수문자→title-screen | choiceIds 문자열→title-screen | seen 불일치→title-screen | 유효 대조: 대기 선택지 그대로→life-screen(김준서)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM53.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:23:26.518Z"
+  },
+  {
+   "id": "F-AM54",
+   "category": "#8 저장 변조",
+   "title": "캐릭터 이름 변조 (인생 화면, 대기 선택지 포함): 이모지·태그·SQL·자모·제로폭·RTL·줄바꿈·20자·초장문",
+   "steps": "character.name을 각 문자열로 바꾼 유효 저장 주입. 길이 ≤20은 글자 그대로 표시, >20은 거부(새 게임)",
+   "expected": "길이 1~20 이름은 그대로 글자로 표시(태그로 해석·실행되지 않음), 범위 밖은 새 게임으로 거부. 흰 화면·오류 없음",
+   "actual": "이모지 👨‍👩‍👧‍👦🥄→life-screen(이모지 👨‍👩‍👧‍\ud83d) | <script>→life-screen(<script>) | <b>굵게</b><i>x</i>→life-screen(<b>굵게</b><i>x<) | <svg/onload=__xss=1>→life-screen(<svg/onload=__) | <img src=x onerror=alert(1)>→title-screen | '\"; DROP TABLE--→life-screen('\"; DROP TABLE) | NFD 자모 분리→life-screen(김민준) | ㄱㅏㅂㅏㅇㅎㅏㅁ→life-screen(ㄱㅏㅂㅏㅇㅎㅏㅁ) | 제로폭 공백→life-screen(김​​​민​준) | RTL 덮어쓰기→life-screen(‮김민준‬) | 줄바꿈 포함→life-screen(김\n민\r\n준) | 한글 20자→life-screen(가나다라마바사아자차카타파하) | 넓은 글자 20자→life-screen(ＷＷＷＷＷＷＷＷＷＷＷＷＷＷ) | 공백만→life-screen | 21자(거부)→title-screen | 10만 자(거부)→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM54.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:19:26.975Z"
+  },
+  {
+   "id": "F-AM55",
+   "category": "#8 저장 변조",
+   "title": "캐릭터 이름 변조 (엔딩 화면)",
+   "steps": "엔딩 저장의 이름을 변조해 엔딩 화면과 그 문구에서 확인",
+   "expected": "길이 1~20 이름은 글자 그대로 표시, 태그 주입·alert 없음",
+   "actual": "이모지 👨‍👩‍👧‍👦🥄→ending-screen(이모지 👨‍👩‍👧‍\ud83d) | <script>→ending-screen(<script>) | <b>굵게</b><i>x</i>→ending-screen(<b>굵게</b><i>x<) | <svg/onload=__xss=1>→ending-screen(<svg/onload=__) | <img src=x onerror=alert(1)>→title-screen | '\"; DROP TABLE--→ending-screen('\"; DROP TABLE) | NFD 자모 분리→ending-screen(김민준) | ㄱㅏㅂㅏㅇㅎㅏㅁ→ending-screen(ㄱㅏㅂㅏㅇㅎㅏㅁ) | 제로폭 공백→ending-screen(김​​​민​준) | RTL 덮어쓰기→ending-screen(‮김민준‬) | 줄바꿈 포함→ending-screen(김\n민\r\n준) | 한글 20자→ending-screen(가나다라마바사아자차카타파하) | 넓은 글자 20자→ending-screen(ＷＷＷＷＷＷＷＷＷＷＷＷＷＷ)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM55.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:19:44.856Z"
+  },
+  {
+   "id": "F-AM56",
+   "category": "#8 저장 변조",
+   "title": "연표(history) 변조: 항목 텍스트·제목·선택에 태그·이모지·초장문, 항목 수 160/161/4만개",
+   "steps": "history 텍스트에 <script>·이모지·1000자·10만자, 항목 수 상한 경계(160 허용/161 거부)·40000개",
+   "expected": "허용 범위 안의 연표 문구는 글자 그대로(태그로 해석되지 않음), 범위 밖은 새 게임",
+   "actual": "텍스트 <script>→life-screen(김준서) | 텍스트 이모지·자모→life-screen(김준서) | 텍스트 1000자→title-screen | 텍스트 10만자→title-screen | 제목 10만자→title-screen | choice 10만자→title-screen | 항목 160개→life-screen(김준서) | 항목 161개→title-screen | 항목 4만개(저장소 한도 안)→title-screen | kind 이상→title-screen | age 역전(미래 나이 항목)→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM56.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:20:00.418Z"
+  },
+  {
+   "id": "F-AM57",
+   "category": "#8 저장 변조",
+   "title": "seen·flags·extra 필드 변조: 10만 개 키, 프로토타입 오염 시도(__proto__/constructor), 임의 추가 필드",
+   "steps": "seen에 10만 키, flags 10만 개, \"__proto__\"/\"constructor\" 키, 최상위 추가 필드 주입",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "seen 10만 키→title-screen | flags 10만개→title-screen | flags 특수문자→title-screen | __proto__ 주입(raw)→life-screen(김준서) | constructor 키 주입→life-screen(김준서) | 최상위 추가 필드→life-screen(김준서) | seed 음수/소수→title-screen | rngState 2^32→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM57.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:20:12.351Z"
+  },
+  {
+   "id": "F-AM58",
+   "category": "#8 저장 변조",
+   "title": "거대한 저장 값: 유효 상태 + 4.8MB 패딩 / 깨진 JSON 4.8MB / 설정 4.8MB",
+   "steps": "저장소 한도(약 5MB) 근처 크기의 값을 심고 로드",
+   "expected": "느려지더라도 정상 로드(유효 상태는 이어하기, 깨진 값은 새 게임). 무한 로딩·흰 화면 없음",
+   "actual": "유효+패딩→life-screen (1027ms) | 깨진 JSON 패딩→title-screen (1047ms) | 설정 거대→title-screen (978ms)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM58.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:20:15.869Z"
+  },
+  {
+   "id": "F-AM59",
+   "category": "#8 저장 변조",
+   "title": "설정 키 변조: 배속 3·\"빠름\"·autoMode 문자열·버전 불일치·깨진 JSON·필드 누락·거대 값",
+   "steps": "설정 키를 변조하고 새 판을 시작해 인생 화면에서 속도·자동 버튼 상태를 확인",
+   "expected": "잘못된 설정은 기본값(1배·자동 꺼짐)으로 복구, 유효한 설정(8배·자동 켜짐)은 유지. 오류 없음",
+   "actual": "speed=3→1/false | speed=\"빠름\"→1/false | speed=\"8\"(문자열)→1/false | speed=0→1/false | speed=-8→1/false | autoMode=\"true\"→1/false | autoMode=1→1/false | autoMode 없음→1/false | version=2→1/false | 깨진 JSON→1/false | 빈 문자열→1/false | null→1/false | data=배열→1/false | 유효 대조 8배·자동→8/true | 유효+추가 필드→4/false | __proto__ 주입→2/false",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM59.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:21:11.986Z"
+  },
+  {
+   "id": "F-AM60",
+   "category": "#8 저장 변조",
+   "title": "게임 저장은 정상인데 설정만 엉망일 때 + 반대 (게임 깨짐·설정 정상)",
+   "steps": "(a) 설정 거대/깨짐 + 유효 게임 → 게임 이어하기, (b) 깨진 게임 + 유효 설정 → 새 게임이되 설정 유지",
+   "expected": "손상·구버전·이상값 저장은 크래시 없이 새 게임(타이틀)으로 시작. 흰 화면·오류 화면·미처리 예외 없음",
+   "actual": "깨진 설정+유효 게임→life-screen(김준서) | 유효 설정+깨진 게임→title-screen | 시대 불일치(past인데 2020년생)→title-screen | 시대 불일치(future인데 1990년생)→title-screen | 출생 스냅샷 없음(life)→title-screen | title인데 캐릭터 있음→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AM60.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:21:20.225Z"
+  },
+  {
+   "id": "F-AQ77",
+   "category": "#7 저장 차단",
+   "title": "빈 저장소 + setItem 차단(쿼터 초과 흉내): 안내가 즉시 뜨고, 안내가 떠 있어도 시작해서 인생까지 진행됨",
+   "steps": "처음 여는 사용자(저장 없음)에서 setItem이 항상 예외 → 타이틀에서 안내 확인 → 시작 → 시대 → 출생 → 살아가기 → 다음 결정으로 → 선택",
+   "expected": "안내(\"저장하지 못했습니다…\")가 곧바로 뜨고 게임은 계속 진행됨. 오류 화면·흰 화면 없음",
+   "actual": "타이틀 안내: 저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다. | 진행 후 화면 life-screen 3세 안내=있음 | 새로고침 후 화면 title-screen (저장 불가라 처음부터가 정상)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AQ77-title-notice.png",
+    "qa/screenshots/001/F-AQ77-choice-notice.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:12:55.403Z"
+  },
+  {
+   "id": "F-AQ78",
+   "category": "#7 저장 차단",
+   "title": "기존 저장이 있을 때 setItem 차단: 첫 진행 때 안내, 차단 해제 후 다음 저장에서 안내가 사라짐",
+   "steps": "정상 저장 후 새 탭에서 setItem 차단(로드 때는 안내 없음) → 다음 결정으로 → 안내 확인 → 차단 해제 → 진행 → 안내 소멸 확인",
+   "expected": "로드 직후엔 안내 없음, 첫 진행(저장 실패) 때 안내, 복구되면 다음 저장 성공과 함께 안내가 사라짐",
+   "actual": "로드 직후 안내: 없음 (선택지 대기 중이라 저장 시도 없음) | 선택 후 안내: 저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다. | 복구 후 진행 뒤 안내: null",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AQ78-blocked.png",
+    "qa/screenshots/001/F-AQ78-recovered.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:01.908Z"
+  },
+  {
+   "id": "F-AQ79",
+   "category": "#7 저장 차단",
+   "title": "실제 쿼터 초과: 저장소를 가득 채운 뒤 진행(실제 QuotaExceededError)",
+   "steps": "localStorage에 큰 더미 값을 한도까지 채움 → 앱 진행 → 안내 → 더미 삭제 후 저장 복구",
+   "expected": "실제 쿼터 오류에서도 안내 후 진행 가능, 더미를 지우면 저장이 다시 되고 안내 소멸",
+   "actual": "더미 5242101자로 채움 | 진행 후 화면 life-screen 1세 안내=저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다. | 더미 삭제 후 진행 → 안내=null",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AQ79-full.png",
+    "qa/screenshots/001/F-AQ79-recovered.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:07.430Z"
+  },
+  {
+   "id": "F-AQ80",
+   "category": "#7 저장 차단",
+   "title": "localStorage 접근 자체가 예외(차단·시크릿 모드 흉내): window.localStorage getter가 throw",
+   "steps": "Object.defineProperty(window,\"localStorage\",{get(){throw}}) 상태로 처음부터 진행",
+   "expected": "앱은 뜨고 끝까지 진행 가능(저장 안내 표시). 흰 화면·오류 화면 없음",
+   "actual": "로드 화면 title-screen, 안내=저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다. | 진행 화면 life-screen 12세 선택지=true 안내=저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다.",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AQ80-title.png",
+    "qa/screenshots/001/F-AQ80-life.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:11.043Z"
+  },
+  {
+   "id": "F-AQ81",
+   "category": "#7 저장 차단",
+   "title": "쿼터 초과 중 새로고침·탭 닫기 반복: 이전 저장은 유지되고 되살아나는 오류 없음 (setItem 차단 + 새로고침 x6)",
+   "steps": "유효 저장이 있는 상태에서 setItem 차단 → 진행 → 새로고침 6회 → 상태 비교",
+   "expected": "새로고침하면 마지막으로 저장에 성공했던 상태로 돌아가며(예상), 손상·오류 없음",
+   "actual": "메모리 6세 → 새로고침 6회 후 life-screen 1세(저장 1세, 저장 시점 1세)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AQ81.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:19.589Z"
+  },
+  {
+   "id": "F-AX82",
+   "category": "#8 URL 변조",
+   "title": "URL 쿼리·해시 변조: 스크립트 태그·__proto__·초장문·널 문자·잘못된 __timescale 값",
+   "steps": "/?x=<script>…, #<img onerror>, ?__proto__[polluted]=1, 8KB 쿼리(서버가 16KB 초과 URL을 거부하므로 그 이하), %00, ?__timescale=-5/abc/0/1e9 등으로 열기",
+   "expected": "타이틀이 정상 표시되고 코드 실행·크래시 없음 (개발 서버 전용 탐침 값은 효과가 있어도 허용, 기록)",
+   "actual": "xss쿼리→title-screen | xss해시→title-screen | __proto__→title-screen | 8KB 쿼리→title-screen | 널문자(%00)→title-screen | 해시 라우트→title-screen | index.html→title-screen | 이중 슬래시→title-screen | timescale -5→title-screen | timescale abc→title-screen | timescale 0→title-screen | timescale 1e9→title-screen | 한글 쿼리→title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX82.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:11:32.649Z"
+  },
+  {
+   "id": "F-AX83",
+   "category": "심술 조작",
+   "title": "창 크기 급변·회전: 인생 화면(3지선다 대기)에서 뷰포트를 20번 바꿈",
+   "steps": "360x740 ↔ 1280x800 ↔ 320x568 ↔ 667x375 ↔ 800x300 ↔ 360x480 ↔ 1024x600 등을 빠르게 전환, 매번 가로 넘침·컨트롤 가림 측정",
+   "expected": "가로 스크롤 없음, 컨트롤(속도·자동)이 화면 안에 보임, 선택지 유지",
+   "actual": "1280x800 | 320x568 | 667x375 | 800x300 | 360x480 | 1024x600 | 360x740 | 375x667 | 414x896 | 320x480 | 1280x800 | 360x740 | 568x320 | 768x1024 | 360x740 | 200x400 | 360x740 | 1920x1080 | 360x740",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX83-667x375.png",
+    "qa/screenshots/001/F-AX83-800x300.png",
+    "qa/screenshots/001/F-AX83-360x480.png",
+    "qa/screenshots/001/F-AX83-200x400.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:11:36.815Z"
+  },
+  {
+   "id": "F-AX84",
+   "category": "심술 조작",
+   "title": "매우 좁은 폭 320/280/240px 및 브라우저 확대 200%(=180px 폭) — 화면별(타이틀·출생·인생·선택지·엔딩) 넘침·잘림",
+   "steps": "각 폭×화면에서 요소가 뷰포트 밖으로 나가는지 측정 + 스크린샷",
+   "expected": "가로 스크롤 없음, 글자 잘림 없음(줄바꿈)",
+   "actual": "320px title:title-screen | 320px birth:birth-screen | 320px choice3:life-screen | 320px ending:ending-screen | 280px title:title-screen | 280px birth:birth-screen | 280px choice3:life-screen | 280px ending:ending-screen | 240px title:title-screen | 240px birth:birth-screen | 240px choice3:life-screen | 240px ending:ending-screen | 180px title:title-screen | 180px birth:birth-screen | 180px choice3:life-screen | 180px ending:ending-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX84-320-title.png",
+    "qa/screenshots/001/F-AX84-320-birth.png",
+    "qa/screenshots/001/F-AX84-320-choice3.png",
+    "qa/screenshots/001/F-AX84-180-title.png",
+    "qa/screenshots/001/F-AX84-180-birth.png",
+    "qa/screenshots/001/F-AX84-180-choice3.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:11:51.648Z"
+  },
+  {
+   "id": "F-AX85",
+   "category": "#11 유지",
+   "title": "3지선다 + 저장 실패 안내 + 자동 모드 문구 겹침: 360x480/568/640/740, 667x375",
+   "steps": "긴 선택지(입시) 3개 + 자동 모드 켜짐 + 저장 차단 안내를 동시에 띄우고, 선택지 버튼이 고정 컨트롤 밑에 영구히 가려지는지(스크롤로 닿는지) 측정",
+   "expected": "모든 선택지 버튼이 스크롤로 컨트롤에 가리지 않는 위치에 올 수 있음. 안내·자동 문구가 겹치지 않음",
+   "actual": "360x480: 컨트롤 높이 91px, 선택 버튼 3개 중 가려짐 0, 안내문구 겹침=false, 저장안내=1, 자동문구=1 | 360x568: 컨트롤 높이 117px, 선택 버튼 3개 중 가려짐 0, 안내문구 겹침=false, 저장안내=1, 자동문구=1 | 360x640: 컨트롤 높이 117px, 선택 버튼 3개 중 가려짐 0, 안내문구 겹침=false, 저장안내=1, 자동문구=1 | 360x740: 컨트롤 높이 117px, 선택 버튼 3개 중 가려짐 0, 안내문구 겹침=false, 저장안내=1, 자동문구=1 | 667x375: 컨트롤 높이 49px, 선택 버튼 3개 중 가려짐 0, 안내문구 겹침=false, 저장안내=1, 자동문구=1",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX85-360x480.png",
+    "qa/screenshots/001/F-AX85-360x480-top.png",
+    "qa/screenshots/001/F-AX85-360x568.png",
+    "qa/screenshots/001/F-AX85-360x568-top.png",
+    "qa/screenshots/001/F-AX85-360x640.png",
+    "qa/screenshots/001/F-AX85-360x640-top.png",
+    "qa/screenshots/001/F-AX85-360x740.png",
+    "qa/screenshots/001/F-AX85-360x740-top.png",
+    "qa/screenshots/001/F-AX85-667x375.png",
+    "qa/screenshots/001/F-AX85-667x375-top.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:11:56.770Z"
+  },
+  {
+   "id": "F-AX86",
+   "category": "탭 가림",
+   "title": "진행 중 탭 가림(visibilityState hidden) 45초 후 복귀 — 그 사이 몇 년이 한꺼번에 지나가지 않는지 (1배·8배)",
+   "steps": "1배/8배 진행 중 hidden 상태로 45초 → visible 복귀 → 나이·진행 속도 확인",
+   "expected": "가린 동안 나이 불변(진행 정지), 복귀 후 정상 간격으로 이어짐(몇 년 점프 없음)",
+   "actual": "1배: 가리기 직전 0세, 45초 뒤 0세(저장 0), 복귀 직후 0세, 복귀 10초 뒤 1세 | 8배: 가리기 직전 1세, 45초 뒤 1세(저장 1), 복귀 직후 1세, 복귀 4초 뒤 4세",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX86.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:55.475Z"
+  },
+  {
+   "id": "F-AX87",
+   "category": "심술 조작",
+   "title": "시스템 시간 점프(노트북 뚜껑 닫았다 1시간 뒤): Playwright clock.fastForward(1h) — 타이머가 한 번만 발화",
+   "steps": "1배 진행 중 가짜 시계를 1시간 앞으로 → 나이 변화 확인",
+   "expected": "몇 년이 한꺼번에 지나가지 않음(최대 1~2년), 오류 없음",
+   "actual": "0세 → 1시간 뒤 1세 → 24시간 뒤 2세 (life-screen)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX87.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:14:00.198Z"
+  },
+  {
+   "id": "F-AX88",
+   "category": "심술 조작",
+   "title": "긴 방치: 선택지 대기 중 100초 방치 후 새로고침·선택 (1배, 자동 꺼짐)",
+   "steps": "선택지를 띄운 채 100초 두고 상태 확인, 새로고침, 선택",
+   "expected": "방치 동안 아무것도 자동으로 바뀌지 않고(선택지 유지), 새로고침 뒤에도 같으며 선택이 정상 반영",
+   "actual": "100초 뒤 18세 선택지 유지, 새로고침 후 유지, 선택 후 19세",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX88.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:15:42.125Z"
+  },
+  {
+   "id": "F-AX89",
+   "category": "#8 같은 탭 변조",
+   "title": "같은 탭 콘솔에서 저장을 유효하게 바꿈(재산 93) → 새로고침 없이 진행 → 밀린 화면 → 이어하기",
+   "steps": "인생 화면(선택지 없음)에서 console로 localStorage 저장을 유효하게 바꿈(재산 93) → \"다음 결정으로\"로 진행(첫 저장 시도) → 화면 확인 → 이어하기",
+   "expected": "밀린 화면(저장이 바뀌었습니다)이 뜨고 이어하기 한 번으로 그 상태(재산 93)로 이어짐",
+   "actual": "밀린 화면 → 이어하기 후 life-screen 0세 재산=93",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX89-superseded.png",
+    "qa/screenshots/001/F-AX89-after.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:15:47.744Z"
+  },
+  {
+   "id": "F-AX90",
+   "category": "#8 같은 탭 변조",
+   "title": "같은 탭 콘솔에서 저장을 삭제 → 새로고침 없이 진행 → 밀린 화면 → 이어하기",
+   "steps": "인생 화면(선택지 없음)에서 console로 localStorage 저장을 삭제 → \"다음 결정으로\"로 진행(첫 저장 시도) → 화면 확인 → 이어하기",
+   "expected": "밀린 화면(저장이 바뀌었습니다)이 뜨고 이어하기 한 번으로 새 게임(타이틀)이 됨",
+   "actual": "밀린 화면 → 이어하기 후 title-screen ",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX90-superseded.png",
+    "qa/screenshots/001/F-AX90-after.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:15:53.319Z"
+  },
+  {
+   "id": "F-AX91",
+   "category": "#8 같은 탭 변조",
+   "title": "같은 탭 콘솔에서 저장을 손상 문자열로 덮어씀 → 새로고침 없이 진행 → 밀린 화면 → 이어하기",
+   "steps": "인생 화면(선택지 없음)에서 console로 localStorage 저장을 손상 문자열로 덮어씀 → \"다음 결정으로\"로 진행(첫 저장 시도) → 화면 확인 → 이어하기",
+   "expected": "밀린 화면(저장이 바뀌었습니다)이 뜨고 이어하기 한 번으로 새 게임(타이틀)이 됨",
+   "actual": "밀린 화면 → 이어하기 후 title-screen ",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX91-superseded.png",
+    "qa/screenshots/001/F-AX91-after.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:15:58.957Z"
+  },
+  {
+   "id": "F-AX92",
+   "category": "#8/#11 엔딩 후",
+   "title": "엔딩에서 저장 키만 지우고 새로고침 → 새 게임, 설정(8배·자동) 유지 → 새 판이 곧바로 자동 진행(기록만)",
+   "steps": "104세 저장을 심고 8배·자동으로 사망까지 → 게임 저장 키만 삭제 → 새로고침 → 시작~살아가기 → 자동 진행 관찰",
+   "expected": "타이틀부터 새 게임, 설정 키는 유지(8배·자동 켜짐), 새 판은 자동으로 진행됨(예상 동작, 기록만), 이전 사망 인생이 되살아나지 않음",
+   "actual": "새 판 인물 김시우(이전 정서현), 설정 8배·자동 true, 진입 직후 35세 → 3초 뒤 null(ending-screen)",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX92-ending.png",
+    "qa/screenshots/001/F-AX92-new-life-auto.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:16:05.923Z"
+  },
+  {
+   "id": "F-AX93",
+   "category": "#11 유지",
+   "title": "첫 선택지 전 사망 문구: 104세 저장에서 「다음 결정으로」 → 사망 → 엔딩 문구 확인 (옛 제목의 「재시작 수단 없음」은 M5에서 다시 태어나기가 생겨 해당 없음)",
+   "steps": "선택지 없이 사망까지 가는 경우의 문구 확인, 엔딩 화면의 버튼·링크 수, Tab 이동",
+   "expected": "\"세상을 떠났다. 원인: …\" 담담한 문구, 오류 없음. 엔딩에는 재시작 버튼이 없음(M5 예정, 결함 아님)",
+   "actual": "엔딩 텍스트=\"지금 세상 / 정서현 / 2012년, 여자아이로 태어났다. / 105세에 세상을 떠났다. 원인: 노환. / 선택을 내려야 하는 순간이 오기 전에 생이 끝났다. / 출발선에서 마지막까지 / 상위 17~45% 사이의 집에서 태어나, 상위 약 41%의 형편으로 생을 마쳤다. / 출발선과 비슷한 자리에 머물렀다. / 재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다. / 최종 스탯 / 재산 / 45 / 학력 / 처음 5 / 8 / 건강 / 97 / 행복 / 처음 58 / 58 / 관계 / 처음 55 / 54 / 외모 / 31 / 생애 연표 / 영유아 · 0~6세 / 0세 / 2015년, 남자아이로 태어났다. / 노년 · 65세~ / 105세 / 세상을 떠났다. 원인: 노환. / 다시 태어나면 이 인생의 기록은 사라집니다. / 다시 태어나기\", 버튼 1개·링크 0개, Tab→BUTTON",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX93-life104.png",
+    "qa/screenshots/001/F-AX93-ending.png"
+   ],
+   "console": [],
+   "note": "엔딩에 재시작 수단 없음은 M5 예정 범위(결함 아님, 기록만)",
+   "at": "2026-10-14T14:16:07.432Z"
+  },
+  {
+   "id": "F-AX94",
+   "category": "심술 조작",
+   "title": "다크 모드·강제 색상·움직임 줄이기 환경에서 읽을 수 있는지 (스크린샷)",
+   "steps": "colorScheme=dark, forcedColors=active, reducedMotion=reduce 로 인생 화면(선택지) 열기",
+   "expected": "글자가 보이고 버튼 구분 가능(흰 글자/흰 바탕 등 안 읽히는 조합 없음)",
+   "actual": "dark: 배경 rgb(245, 242, 236) 글자 rgb(43, 43, 43) | forced: 배경 rgb(255, 255, 255) 글자 rgb(0, 0, 0) | reduced: 배경 rgb(245, 242, 236) 글자 rgb(43, 43, 43) (스크린샷을 눈으로 확인)",
+   "verdict": "기록만",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AX94-dark.png",
+    "qa/screenshots/001/F-AX94-forced.png",
+    "qa/screenshots/001/F-AX94-reduced.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:16:10.759Z"
+  },
+  {
+   "id": "F-AE102",
+   "category": "#9 새로고침",
+   "title": "시대 선택·출생 화면에서 새로고침 연타 x15 (로드 중단 포함): 시대 선택과 뽑힌 인물이 그대로",
+   "steps": "시대 선택 화면에서 다가올 세상을 고른 뒤 15회, 출생 화면에서 15회 새로고침(절반은 commit만 기다리고 다시)",
+   "expected": "선택한 시대 유지, 출생 인물(이름·연도·재력 문구)이 다시 뽑히지 않고 동일",
+   "actual": "시대 선택 화면 연타 후 era-screen, 다가올 세상 선택=true | 출생 화면 연타 후 동일=true",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AE102-birth-before.png",
+    "qa/screenshots/001/F-AE102-birth-after.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:16:15.982Z"
+  },
+  {
+   "id": "F-AE103",
+   "category": "#8 저장 변조",
+   "title": "극단적인 이름(20자 한글·전각·이모지·RTL·영문 W·태그)의 레이아웃: 출생·인생·엔딩 × 320/360px — 가로 넘침·잘림",
+   "steps": "이름을 바꾼 유효 저장(출생/인생/엔딩)을 심고 열어 요소가 뷰포트 밖으로 나가는지 측정, 스크린샷",
+   "expected": "가로 스크롤 없음, 이름이 줄바꿈되어 보임",
+   "actual": "320px 6종 이름 × 3화면 측정 완료 | 360px 6종 이름 × 3화면 측정 완료 — 가로 넘침·스크립트 실행 0건",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AE103-320-birth-n0.png",
+    "qa/screenshots/001/F-AE103-320-birth-n1.png",
+    "qa/screenshots/001/F-AE103-320-life-n1.png",
+    "qa/screenshots/001/F-AE103-320-birth-n3.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:16:41.323Z"
+  },
+  {
+   "id": "F-AE104",
+   "category": "심술 조작",
+   "title": "오프라인 전환: 진행 중 네트워크를 끊고(setOffline) 사망까지 진행",
+   "steps": "인생 진행 중 context.setOffline(true) → 선택지·다음 결정으로 반복해 사망까지",
+   "expected": "게임 진행은 네트워크와 무관(서버 없음)",
+   "actual": "오프라인 상태로 사망까지 진행: 87세에 세상을 떠났다. 원인: 병세 악화.",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AE104.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:17:03.115Z"
+  },
+  {
+   "id": "F-AE105",
+   "category": "정상 문구",
+   "title": "타이틀 출처 링크: 속성·클릭해도 게임 탭이 영향받지 않음",
+   "steps": "출처 링크의 href·target·rel 확인, 클릭하면 새 탭이 열리고 원래 탭의 화면·저장이 그대로인지 (외부 주소는 요청을 가로채 막아 둠)",
+   "expected": "target=_blank rel에 noopener 포함, 원래 탭 불변",
+   "actual": "href=https://stfamily.scourt.go.kr/st/StFrrStatcsView.do?pgmId=090000000025 target=_blank rel=noopener noreferrer, 클릭 시 새 탭 열림, 원래 탭 타이틀 유지·저장 불변",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AE105.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:17:04.542Z"
+  },
+  {
+   "id": "F-AP01",
+   "category": "#10 프로덕션",
+   "title": "번들 문자열 검사: dist에 개발 탐침(__timescale·__guard·__crash·__quota·harness) 문자열이 없다",
+   "steps": "dist/**/*.{js,html,css}에서 문자열 검색",
+   "expected": "0건",
+   "actual": "파일 3개(index-cY9FSJJ7.css, index-DKOibeYp.js, index.html)에서 0건",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:20.190Z"
+  },
+  {
+   "id": "F-AP02",
+   "category": "#10 프로덕션",
+   "title": "개발 탐침 쿼리(?__timescale=1000&__guard=0&__crash=1&__quota=1)가 프로덕션에서 아무 효과 없음",
+   "steps": "탐침 쿼리로 열기 → 타이틀 정상? → 시작 → 시대 → 확정 버튼 가드(0.4초 흐림) 존재? → 인생 진행 간격이 실시간(약 4초/년)? → 저장 실패 안내 없음?",
+   "expected": "크래시·저장 실패 안내·가드 해제·시간 가속 모두 없음",
+   "actual": "로드 title-screen, 안내=false | 시대 선택 진입 직후 확정 버튼 aria-disabled=true | 나이 변화 간격(ms) 7067,6942",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AP02-title.png",
+    "qa/screenshots/001/F-AP02-life.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:37.373Z"
+  },
+  {
+   "id": "F-AP03",
+   "category": "#10 프로덕션",
+   "title": "프로덕션: 개발 전용 하니스 페이지(/harness/guard.html)와 /src 가 제공되지 않음",
+   "steps": "/harness/guard.html, /src/main.tsx, /src/core/index.ts 요청",
+   "expected": "하니스·소스가 아닌 앱(SPA 폴백) 또는 404",
+   "actual": "/harness/guard.html → 200 text/html  | /src/main.tsx → 200 text/html  | /src/core/index.ts → 200 text/html  | /e2e/helpers.ts → 200 text/html ",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:37.427Z"
+  },
+  {
+   "id": "F-AP04",
+   "category": "#10 프로덕션",
+   "title": "프로덕션: 선택지 대기 중 새로고침 연타 x15, 손상 저장, 설정 변조",
+   "steps": "프로덕션 빌드에서 선택지 대기 → 새로고침 15회 → 같은 선택지. 이어서 저장을 깨뜨리고 로드, 설정 변조 후 로드",
+   "expected": "개발 서버와 같은 동작(복원·새 게임 시작, 크래시 없음)",
+   "actual": "복원 동일(이도현 3세 infant-fever@3), 손상 저장 → title-screen",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [
+    "qa/screenshots/001/F-AP04-restored.png",
+    "qa/screenshots/001/F-AP04-corrupt.png"
+   ],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:13:43.421Z"
+  },
+  {
+   "id": "F-A99",
+   "category": "A 이벤트 JSON 깨기",
+   "title": "이벤트 JSON을 일부러 깨고 check:events·build가 실패하는지 (프로젝트 복사본에서만)",
+   "steps": "복사본에서 (1) JSON 문법 깨기 (2) 느낌표 넣기 (3) 선택지 1개로 줄이기 (4) 없는 시대 id 넣기 → 각각 npm run check:events(vite-node scripts/validateEvents.ts), (2)는 npm run build도. 마지막에 원복해 바이트 비교",
+   "expected": "모두 종료 코드 1, 느낌표 때는 dist가 만들어지지 않음, 원복 뒤 통과·원본과 바이트 동일",
+   "actual": "복사본 그대로 통과(exit 0) → (1) JSON 문법 오류로 실패(exit 1) → (2) 느낌표·서술체 오류 2건으로 실패(exit 1), npm run build도 exit 1 이고 dist 없음 → (3) 선택지는 2~3개여야 한다 오류 → (4) 허용되지 않는 값 \"mars\" 오류 → 원복 뒤 통과, 5개 이벤트 파일이 원본과 바이트 동일(cmp). 원본 src는 건드리지 않음(시작·끝 해시 대조). 원문: qa/results/final/F-A99-break-events.txt",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.372Z"
+  },
+  {
+   "id": "F-R01",
+   "category": "R 참고 실행",
+   "title": "[참고] npm run typecheck / check:events / check:dist / check:todo — 현재 빌드",
+   "steps": "프로젝트 루트에서 실행(읽기 전용)",
+   "expected": "모두 성공",
+   "actual": "typecheck 0 오류 · 이벤트 검증 통과(112개 = 선택지 78 + 서술 34) · 최종 재산 분포표가 현재 엔진·이벤트와 같다(시대 3 × 4000판 재생성 대조) · TODO 근거 대조 통과(실패 0·경고 0, [x] 24개, vitest 1101 + e2e 326 + e2e-prod 4 이름과 대조). 원문: qa/results/final/check-scripts.txt",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.372Z"
+  },
+  {
+   "id": "F-R02",
+   "category": "R 참고 실행",
+   "title": "[참고] npm run sim:1000 — 6000판 파이프라인 시뮬레이션",
+   "steps": "화면과 같은 세션 reducer로 3시대 × 자동·수동 흉내 × 1000판",
+   "expected": "에러 0건",
+   "actual": "6000판, 위반이 있는 판 0, 예외 0, 위반 메시지 0건 (25.1초). 점검 횟수: 이름 12000 / 걸음 불변식 505590 / 저장→복원 191456 / 연타 입력 479801 / 엔딩 문장 6000 / 다시 태어나기 6000. 원문: qa/results/final/F-R-sim1000.txt",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.372Z"
+  },
+  {
+   "id": "F-R03",
+   "category": "R 참고 실행",
+   "title": "[참고] npm test (vitest)",
+   "steps": "프로젝트 루트에서 실행",
+   "expected": "모두 통과",
+   "actual": "24개 파일 1101개 테스트 통과. 원문: qa/results/final/F-R-vitest.txt",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.372Z"
+  },
+  {
+   "id": "F-R04",
+   "category": "R 참고 실행",
+   "title": "[참고] npm run build (프로덕션 빌드)",
+   "steps": "typecheck → 이벤트 검증 → vite build",
+   "expected": "성공, 번들에 개발 탐침 없음",
+   "actual": "성공: dist/index.html + assets/index-DKOibeYp.js(299KB)·index-cY9FSJJ7.css. 번들에 __timescale·__guard·__crash·__quota·harness 문자열 0건(F-AP01). 원문: qa/results/final/build-log.txt",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.372Z"
+  },
+  {
+   "id": "F-R05",
+   "category": "R 참고 실행",
+   "title": "[참고] npm run e2e:prod (빌드 후 vite preview 4199에서 프로덕션 스모크 4개)",
+   "steps": "내 서버(4290)를 내린 뒤 실행. 4199 포트가 비어 있음을 확인",
+   "expected": "4개 통과",
+   "actual": "4개 통과(43.2초): 타이틀→시대 선택→출생→인생 / 다음 결정으로→첫 선택지 선택을 되풀이해 사망(엔딩)·다시 태어나기·새 판 시대 선택까지 / 개발 탐침 쿼리 무효 / 번들에 탐침 문자열 없음·하니스 미제공. 빌드 결과 번들 index-DKOibeYp.js는 내가 테스트한 번들과 같다. 원문: qa/results/final/F-R-e2e-prod.txt",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:38:43.737Z"
+  },
+  {
+   "id": "F-X01",
+   "category": "X 미실행",
+   "title": "실제 Windows 고대비 모드·스크린리더(R-056·R-090의 aria-describedby 읽힘)·실제 모바일 기기 터치·iOS Safari·Firefox·WebKit",
+   "steps": "설치된 브라우저가 Chromium뿐이고 실기기·보조기기가 없음",
+   "expected": "-",
+   "actual": "미실행. 대체로 Chromium 에뮬레이션만 했다: 터치(hasTouch·CDP 터치 이벤트), forced-colors·dark·reduced-motion 에뮬레이션(F-AX94), 접근성 속성(aria-disabled·aria-describedby·aria-live)은 DOM·포커스 값으로 확인(F-AK69~74). 스크린리더가 실제로 사유 문장을 읽는지는 사람 확인 필요",
+   "verdict": "미실행",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.372Z"
+  },
+  {
+   "id": "F-X02",
+   "category": "X 미실행",
+   "title": "헤드풀(실제 창) 브라우저에서 진짜 탭 전환 가림 / bfcache 복원",
+   "steps": "지난 M3 QA에서 헤드풀 Chromium 실행 실패(spawn UNKNOWN), Playwright가 bfcache를 끄고 실행",
+   "expected": "-",
+   "actual": "미실행. visibilityState 흉내(F-AX86, F-AC109)와 일반 뒤로/앞으로(F-AL44, F-AL45)로 대체. 앱에 pageshow 처리는 없다",
+   "verdict": "미실행",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.373Z"
+  },
+  {
+   "id": "F-X03",
+   "category": "X 입력 공격(해당 없음)",
+   "title": "특수문자(<script>·SQL)·이모지·한글 자모 분리·초장문·빈 입력 — 입력란이 없어 저장·URL 변조로 대체",
+   "steps": "게임에는 텍스트 입력란이 없다(이름은 통계에서 랜덤 차용). 같은 문자열을 저장 변조(캐릭터 이름 20자 한글·전각·이모지·RTL·영문 W·태그·자모·제로폭·줄바꿈·초장문, 연표 텍스트·제목·선택 문구, flags/seen 키 10만 개), URL 쿼리·해시(스크립트 태그·널 문자·8KB·한글)로 주입",
+   "expected": "크래시·태그 실행 없이 새 게임 또는 안전한 표시",
+   "actual": "F-AM54(인생 화면 이름), F-AM55(엔딩 이름), F-AM56(연표 문구·항목 수 160/161/4만 개), F-AM57(flags·seen·프로토타입 오염), F-AM58(4.8MB 저장), F-AX82(URL), F-AE103(극단 이름 × 출생·인생·엔딩 × 320/360px 레이아웃)에서 모두 PASS — alert 실행 0, DOM 태그 주입 0, 가로 넘침 0",
+   "verdict": "PASS",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.373Z"
+  },
+  {
+   "id": "F-X04",
+   "category": "X 미실행",
+   "title": "1배속 수동 30분 이내·8배+다음 결정으로 10분 내외의 사람 실측",
+   "steps": "사람이 직접 읽고 고르는 시간은 AI가 잴 수 없다",
+   "expected": "형진 님 실측 + 마스터 판정",
+   "actual": "미실행(범위 밖). 순수 연출 실측과 읽기 속도 가정 추정은 F-T01~T05에 기록",
+   "verdict": "미실행",
+   "timeScaleProbe": false,
+   "screenshots": [],
+   "console": [],
+   "note": null,
+   "at": "2026-10-14T14:27:13.373Z"
+  }
+ ]
+}

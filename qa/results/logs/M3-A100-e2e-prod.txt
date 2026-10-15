@@ -1,0 +1,7 @@
+npm run e2e:prod → typecheck OK, 이벤트 데이터 검증 통과(파일 5개, 이벤트 20개), vite build OK (index-BMzGapIQ.js 235.52 kB)
+Running 4 tests using 1 worker
+  ok 1 e2e-prod\smoke.spec.ts:30 프로덕션 번들: 타이틀 → 시대 선택 → 출생 → 인생 화면까지 오류 없이 간다
+  ok 2 e2e-prod\smoke.spec.ts:46 프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되풀이해 사망(엔딩 자리표시)까지 간다
+  ok 3 e2e-prod\smoke.spec.ts:89 개발 탐침 쿼리(?__timescale·__guard·__crash·__quota)는 프로덕션에서 아무 효과가 없다
+  ok 4 e2e-prod\smoke.spec.ts:124 제품 번들 파일에 개발 탐침 문자열이 없고, 개발 전용 하니스 페이지는 제공되지 않는다
+4 passed (28.4s)

@@ -1,0 +1,28 @@
+=== npm run typecheck
+
+> suzeo-game@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json
+
+exit=0
+=== npm run check:events
+
+> suzeo-game@0.1.0 check:events
+> vite-node scripts/validateEvents.ts
+
+이벤트 데이터 검증 통과(스키마 + 문구 점검): 파일 5개, 이벤트 112개 (선택지 78 + 서술 34)
+exit=0
+=== npm run check:dist
+
+> suzeo-game@0.1.0 check:dist
+> vite-node scripts/checkFinalDistribution.ts
+
+최종 재산 분포표는 현재 엔진·이벤트와 같다 (시대 3개 × 4000판 다시 만들어 견줌)
+exit=0
+=== npm run check:todo
+> suzeo-game@0.1.0 check:todo
+> vite-node scripts/checkTodoEvidence.ts
+
+테스트 목록: vitest 1101 + e2e 326 + e2e-prod 4 (이름 1431개)
+[x] 항목 24개 대조: 파일 경로 355, 심볼 212, npm 스크립트 18, 따옴표 속 테스트 제목 404 (제목-파일 짝 391) → 실패 0, 경고 0
+TODO 근거 대조 통과 (경고 0)
+exit=0
