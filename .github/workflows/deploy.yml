@@ -1,0 +1,80 @@
+# GitHub Pages 자동 배포 — main에 push되면(또는 Actions 탭에서 수동 실행하면)
+#   npm ci → typecheck → 단위 테스트 → 빌드(이벤트 데이터 검증 포함) → Pages 배포
+# 배포 주소: https://hyungjin87c-ux.github.io/spoongame/
+#
+# 비밀값·토큰은 쓰지 않는다. 기본 GITHUB_TOKEN 권한만 사용한다(아래 permissions).
+# 형진 님이 한 번 해 둘 설정: 저장소 Settings > Pages > Build and deployment > Source = "GitHub Actions" (README 참고).
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 한 번에 하나만. 진행 중인 배포는 끊지 않고(cancel-in-progress: false) 뒤에 온 것을 대기시킨다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # GitHub Pages는 https://<사용자>.github.io/<저장소>/ 하위에서 서빙되므로 배포 빌드만 base를 바꾼다.
+  # 로컬(dev·e2e·e2e:prod·preview)은 이 값 없이 base '/' 그대로다. (vite.config.ts, scripts/pagesBase.ts)
+  PAGES_BASE: /spoongame/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20 # npm test(1100여 개)가 로컬에서 약 80초 — CI에서는 느려질 수 있어 넉넉히 둔다
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # 로컬 개발 환경과 같은 메이저 버전
+          cache: npm
+
+      - name: 의존성 설치 (package-lock.json 그대로)
+        run: npm ci
+
+      - name: 타입 검사
+        run: npm run typecheck
+
+      - name: 단위 테스트
+        run: npm test
+
+      # Playwright e2e(npm run e2e · e2e:prod)는 CI에 넣지 않는다: 브라우저(Chromium) 설치가 무겁고 시간이 오래 걸린다.
+      # 로컬·QA 단계에서 push 전에 돌린다. 필요해지면 `npx playwright install --with-deps chromium` 단계와 함께 별도 워크플로로 추가한다.
+
+      - name: 빌드 (타입 검사 + 이벤트 데이터 검증 + vite build)
+        run: npm run build
+
+      - name: 빌드 산출물이 /spoongame/ 하위를 가리키는지 확인
+        run: |
+          test -f dist/index.html
+          grep -q 'src="/spoongame/assets/' dist/index.html
+          if grep -E '(src|href)="/assets/' dist/index.html; then
+            echo "dist/index.html에 base 없는 /assets/ 경로가 남아 있다" >&2
+            exit 1
+          fi
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

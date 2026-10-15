@@ -1,0 +1,55 @@
+name: 의견 보내기
+description: 플레이하면서 본 문제나 아쉬운 점, 바라는 점을 알려 주세요.
+title: "[의견] "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        플레이해 주셔서 고맙습니다. 아는 만큼만 적어 주셔도 됩니다.
+        **이 저장소는 공개입니다. 이름·연락처·주소 같은 개인정보는 적지 말아 주세요.** 스크린샷에도 개인정보가 보이지 않게 가려 주세요.
+  - type: input
+    id: screen
+    attributes:
+      label: 어떤 화면에서
+      description: 예) 첫 화면, 시대 선택, 태어나기, 인생 진행 중, 엔딩
+      placeholder: "예) 인생 진행 중 — 12세 선택지 화면"
+    validations:
+      required: true
+  - type: textarea
+    id: action
+    attributes:
+      label: 무엇을 했을 때
+      description: 눌렀거나 입력한 것, 그 직전에 있었던 일을 순서대로 적어 주세요.
+      placeholder: "예) 8배속으로 바꾸고 선택지를 빠르게 연속으로 눌렀다"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 것
+      description: 이렇게 될 거라고 생각했던 모습
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제로 일어난 것
+      description: 실제로 보인 모습. 오류 문구가 있으면 그대로 적어 주세요.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 기기·브라우저
+      description: 예) 갤럭시 S23 / 크롬, 아이폰 15 / 사파리, 윈도 PC / 엣지
+      placeholder: "기기 이름 / 브라우저 이름"
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 스크린샷 (선택)
+      description: 이 칸에 이미지를 끌어다 놓거나 붙여 넣을 수 있습니다. 개인정보가 보이면 가려 주세요.
+    validations:
+      required: false
