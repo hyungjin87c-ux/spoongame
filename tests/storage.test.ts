@@ -3,13 +3,18 @@ import {
   DEFAULT_SETTINGS,
   clearGame,
   GAME_KEY,
+  LIFE_LENGTHS,
   PHASES,
   SCHEMA_VERSION,
+  SELECTABLE_LIFE_LENGTHS,
   SETTINGS_VERSION,
   SETTINGS_KEY,
+  beginBirth,
+  classifySavedGame,
   createInitialState,
   decideSave,
   getBrowserStorage,
+  isLifeLengthSelectable,
   isSupersedingChange,
   isTitleSave,
   loadGame,
@@ -18,8 +23,9 @@ import {
   parseSettings,
   saveGame,
   saveSettings,
+  selectableLifeLength,
   serializeGame,
-  startGame,
+  serializeSettings,
   type GameState,
   type StorageLike,
 } from '../src/core';
@@ -51,6 +57,7 @@ function richState(): GameState {
     ...createInitialState(2024),
     phase: 'life',
     era: 'present',
+    lifeLength: 'long60',
     character: {
       name: '김서연',
       gender: 'female',
@@ -73,6 +80,7 @@ describe('초기 상태', () => {
     const s = createInitialState(77);
     expect(s.phase).toBe('title');
     expect(s.era).toBeNull();
+    expect(s.lifeLength).toBeNull();
     expect(s.character).toBeNull();
     expect(s.age).toBe(0);
     expect(s.history).toEqual([]);
@@ -81,8 +89,9 @@ describe('초기 상태', () => {
     expect(PHASES).toContain(s.phase);
   });
 
-  it('시작하면 시대 선택 단계로 간다', () => {
-    expect(startGame(createInitialState(1)).phase).toBe('eraSelect');
+  it('화면 단계에 시대 선택(eraSelect)이 없다: title → birth → life → ending (SPEC-003 FS1, 룰렛은 M3)', () => {
+    expect([...PHASES]).toEqual(['title', 'birth', 'life', 'ending']);
+    expect(beginBirth(createInitialState(1)).phase).toBe('birth');
   });
 });
 
@@ -145,9 +154,37 @@ describe('손상 데이터 복구', () => {
       d.character = null;
     }),
     '정합성: title인데 character 있음': withData((d) => (d.phase = 'title')),
-    '정합성: eraSelect인데 birthStats 있음': withData((d) => {
+    '정합성: title인데 birthStats 있음': withData((d) => {
+      d.phase = 'title';
+      d.character = null;
+      d.era = null;
+      d.lifeLength = null;
+    }),
+    // v5: 인생 길이(lifeLength). 시대 선택 단계(eraSelect)는 없어졌다
+    '정합성: life인데 lifeLength null': withData((d) => (d.lifeLength = null)),
+    '정합성: lifeLength 필드 없음(v4 모양)': withData((d) => delete d.lifeLength),
+    'lifeLength: 이상값': withData((d) => (d.lifeLength = 'long120')),
+    'lifeLength: 숫자': withData((d) => (d.lifeLength = 30)),
+    '정합성: title인데 lifeLength 있음': withData((d) => {
+      d.phase = 'title';
+      d.character = null;
+      d.birthStats = null;
+      d.era = null;
+      d.age = 0;
+      d.history = [];
+      d.flags = [];
+      d.seen = {};
+    }),
+    '구 단계 eraSelect(v4까지의 시대 선택 화면)는 알 수 없는 단계': withData((d) => {
       d.phase = 'eraSelect';
       d.character = null;
+      d.birthStats = null;
+      d.lifeLength = null;
+      d.era = null;
+      d.age = 0;
+      d.history = [];
+      d.flags = [];
+      d.seen = {};
     }),
     '정합성: 출생연도가 시대 범위 밖': withData((d) => (d.era = 'past')),
     '정합성: birth 단계인데 age != 0': withData((d) => (d.phase = 'birth')),
@@ -273,25 +310,73 @@ describe('손상 데이터 복구', () => {
     }
   });
 
-  it('스키마 버전은 4이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008)', () => {
-    expect(SCHEMA_VERSION).toBe(4);
-    expect(JSON.parse(serializeGame(richState())).version).toBe(4);
+  it('스키마 버전은 5이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이)', () => {
+    expect(SCHEMA_VERSION).toBe(5);
+    expect(JSON.parse(serializeGame(richState())).version).toBe(5);
   });
 
-  it('title/eraSelect 상태(캐릭터 없음, era는 null 또는 선택값)는 통과', () => {
-    for (const phase of ['title', 'eraSelect'] as const) {
-      const s: GameState = { ...createInitialState(3), phase, era: phase === 'title' ? null : 'future' };
-      expect(parseGame(serializeGame(s))).toEqual(s);
+  it('v4 이하 저장은 새 게임으로 시작한다 (C6) — 같은 모양이어도 버전이 낮으면 읽지 않는다', () => {
+    for (const version of [1, 2, 3, 4]) {
+      const raw = JSON.stringify({ version, data: createInitialState(5) });
+      expect(parseGame(raw), `v${version}`).toBeNull();
+      // 진행 전(title)이던 이전 버전 저장은 잃은 것이 없어 안내하지 않는다(R-214) — 안내가 필요한 저장은 아래 「진행한 판이 있던」 항목
+      expect(classifySavedGame(raw), `v${version}`).toBe('old-version-empty');
+      const progressed = JSON.stringify({ version, data: { ...createInitialState(5), phase: 'life' } });
+      expect(parseGame(progressed), `v${version} 진행`).toBeNull();
+      expect(classifySavedGame(progressed), `v${version} 진행`).toBe('old-version');
+    }
+    // v4 시절의 진행 중 저장(인생 길이 없음)
+    const v4Life: Record<string, unknown> = { ...richState() };
+    delete v4Life.lifeLength;
+    expect(parseGame(JSON.stringify({ version: 4, data: v4Life }))).toBeNull();
+    expect(classifySavedGame(JSON.stringify({ version: 4, data: v4Life }))).toBe('old-version');
+    // 시대 선택 화면이던 v4 저장
+    expect(parseGame(JSON.stringify({ version: 4, data: { ...createInitialState(5), phase: 'eraSelect' } }))).toBeNull();
+  });
+
+  it('classifySavedGame(R-214): 이전 버전이라도 진행 전 단계(title·eraSelect)였으면 안내가 필요 없는 old-version-empty, 진행했던 단계나 알 수 없는 단계면 old-version', () => {
+    const v4 = (phase: unknown) => JSON.stringify({ version: 4, data: { ...createInitialState(5), phase } });
+    expect(classifySavedGame(v4('title'))).toBe('old-version-empty');
+    expect(classifySavedGame(v4('eraSelect'))).toBe('old-version-empty');
+    for (const phase of ['birth', 'life', 'ending']) expect(classifySavedGame(v4(phase)), phase).toBe('old-version');
+    // 단계를 알 수 없으면 보수적으로 안내한다
+    expect(classifySavedGame(v4(undefined))).toBe('old-version');
+    expect(classifySavedGame(v4(7))).toBe('old-version');
+    expect(classifySavedGame(v4('낯선 단계'))).toBe('old-version');
+    expect(classifySavedGame(JSON.stringify({ version: 4 }))).toBe('old-version');
+    expect(classifySavedGame(JSON.stringify({ version: 4, data: null }))).toBe('old-version');
+    // 지금 버전의 저장은 단계와 무관하게 valid, 미래 버전은 broken
+    expect(classifySavedGame(serializeGame(createInitialState(2)))).toBe('valid');
+    expect(classifySavedGame(JSON.stringify({ version: 6, data: createInitialState(2) }))).toBe('broken');
+  });
+
+  it('classifySavedGame: 없음 / 지금 버전 / 이전 버전 / 손상', () => {
+    expect(classifySavedGame(null)).toBe('none');
+    expect(classifySavedGame(serializeGame(richState()))).toBe('valid');
+    expect(classifySavedGame(serializeGame(createInitialState(1)))).toBe('valid');
+    expect(classifySavedGame('###')).toBe('broken');
+    expect(classifySavedGame(JSON.stringify({ version: SCHEMA_VERSION, data: { phase: 'life' } }))).toBe('broken');
+    expect(classifySavedGame(JSON.stringify({ version: 999, data: createInitialState(1) }))).toBe('broken');
+    expect(classifySavedGame('null')).toBe('broken');
+  });
+
+  it('title 상태(캐릭터·세상·인생 길이 없음)와 인생 길이가 값인 출생 이후 상태는 통과', () => {
+    const t = createInitialState(3);
+    expect(parseGame(serializeGame(t))).toEqual(t);
+    for (const length of LIFE_LENGTHS) {
+      const born = beginBirth(createInitialState(3), 'future', length);
+      expect(parseGame(serializeGame(born))).toEqual(born);
+      expect(parseGame(serializeGame(born))!.lifeLength).toBe(length);
     }
   });
 
   it('clearGame은 게임 저장만 지우고 설정은 남긴다', () => {
     const st = memoryStorage();
     saveGame(st, richState());
-    saveSettings(st, { speed: 8, autoMode: true });
+    saveSettings(st, { ...DEFAULT_SETTINGS, speed: 8, autoMode: true });
     expect(clearGame(st)).toBe(true);
     expect(loadGame(st)).toBeNull();
-    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true });
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true });
     expect(clearGame(null)).toBe(false);
     expect(clearGame(throwing)).toBe(false);
   });
@@ -321,33 +406,75 @@ describe('설정은 게임과 독립', () => {
     expect(SETTINGS_KEY).not.toBe(GAME_KEY);
   });
 
-  it('기본값: 1배속, 자동 꺼짐', () => {
-    expect(loadSettings(memoryStorage())).toEqual({ speed: 1, autoMode: false });
+  it('기본값: 1배속, 자동 꺼짐, 지금 세상, 약 30분', () => {
+    expect(loadSettings(memoryStorage())).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30' });
+    expect(DEFAULT_SETTINGS).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30' });
   });
 
-  it('설정 저장 왕복', () => {
+  it('설정 저장 왕복 (배속·자동 모드·태어날 세상·인생 길이)', () => {
     const st = memoryStorage();
-    saveSettings(st, { speed: 8, autoMode: true });
-    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true });
+    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
+    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
+  });
+
+  it('저장된 설정의 인생 길이가 아직 고를 수 없는 「약 1시간」(long60)이면 short30으로 읽는다 — 다른 필드는 그대로 (R-202)', () => {
+    // 이 테스트가 바뀐 기대: 예전에는 long60이 그대로 읽혔다(M2 1회차). 1시간 모드는 2차(M8)라 지금은 고를 수 없어 약 30분으로 읽는다.
+    expect(SELECTABLE_LIFE_LENGTHS).toEqual(['short30']);
+    expect(selectableLifeLength('long60')).toBe('short30');
+    expect(selectableLifeLength('short30')).toBe('short30');
+    expect(isLifeLengthSelectable('long60')).toBe(false);
+    const st = memoryStorage();
+    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'long60' });
+    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
+    // 현재 설정 봉투(v2)의 원문을 그대로 읽어도 같다 (v1 봉투에는 인생 길이 필드가 없어 이 검사 대상이 아니다 — 아래 「설정 v1 …」 테스트)
+    for (const version of [2]) {
+      expect(parseSettings(JSON.stringify({ version, data: { speed: 4, autoMode: false, era: 'past', lifeLength: 'long60' } }))).toEqual({ speed: 4, autoMode: false, era: 'past', lifeLength: 'short30' });
+    }
+    // 알 수 없는 값은 기본값(이전 동작 그대로)
+    expect(parseSettings(JSON.stringify({ version: 2, data: { speed: 4, autoMode: false, era: 'past', lifeLength: 'x' } })).lifeLength).toBe('short30');
+    // 판에 고정되는 값은 영향받지 않는다: 게임 저장의 long60은 그대로 통과한다(이미 태어난 판)
+    const born = beginBirth(createInitialState(3), 'future', 'long60');
+    expect(parseGame(serializeGame(born))).toEqual(born);
+  });
+
+  it('설정 v1(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — v5 게임 스키마 전환에서 설정을 잃지 않는다', () => {
+    expect(SETTINGS_VERSION).toBe(2);
+    const st = memoryStorage();
+    st.map.set(SETTINGS_KEY, JSON.stringify({ version: 1, data: { speed: 4, autoMode: true } }));
+    expect(loadSettings(st)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30' });
+    // 읽은 뒤 저장하면 v2로 올라간다
+    saveSettings(st, loadSettings(st));
+    expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(2);
+    // v2에서 알 수 없는 세상·인생 길이는 그 필드만 기본값(배속·자동 모드는 유지)
+    st.map.set(SETTINGS_KEY, JSON.stringify({ version: 2, data: { speed: 2, autoMode: true, era: 'mars', lifeLength: 7 } }));
+    expect(loadSettings(st)).toEqual({ speed: 2, autoMode: true, era: 'present', lifeLength: 'short30' });
+    // 게임이 v4 저장이라 새 게임이 돼도 설정은 그대로다
+    st.map.set(GAME_KEY, JSON.stringify({ version: 4, data: createInitialState(1) }));
+    expect(loadGame(st)).toBeNull();
+    expect(loadSettings(st)).toEqual({ speed: 2, autoMode: true, era: 'present', lifeLength: 'short30' });
+  });
+
+  it('serializeSettings는 현재 버전 봉투로 쓴다', () => {
+    expect(JSON.parse(serializeSettings(DEFAULT_SETTINGS))).toEqual({ version: SETTINGS_VERSION, data: DEFAULT_SETTINGS });
   });
 
   it('게임을 리셋/삭제/손상시켜도 설정은 유지', () => {
     const st = memoryStorage();
-    saveSettings(st, { speed: 4, autoMode: false });
+    saveSettings(st, { ...DEFAULT_SETTINGS, speed: 4, autoMode: false });
     saveGame(st, richState());
     // 새 판(리셋)
     saveGame(st, createInitialState(123));
-    expect(loadSettings(st)).toEqual({ speed: 4, autoMode: false });
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: false });
     // 게임 저장이 손상돼도
     st.map.set(GAME_KEY, '###');
     expect(loadGame(st)).toBeNull();
-    expect(loadSettings(st)).toEqual({ speed: 4, autoMode: false });
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: false });
   });
 
   it('손상된 설정은 기본값, 게임에는 영향 없음', () => {
     const st = memoryStorage();
     saveGame(st, richState());
-    for (const raw of ['{{', JSON.stringify({ version: SETTINGS_VERSION, data: { speed: 3, autoMode: false } }), JSON.stringify({ version: 2, data: { speed: 2, autoMode: true } })]) {
+    for (const raw of ['{{', JSON.stringify({ version: SETTINGS_VERSION, data: { speed: 3, autoMode: false } }), JSON.stringify({ version: 3, data: { speed: 2, autoMode: true } })]) {
       st.map.set(SETTINGS_KEY, raw);
       expect(loadSettings(st)).toEqual(DEFAULT_SETTINGS);
     }
@@ -360,10 +487,10 @@ describe('설정은 게임과 독립', () => {
  * 표는 사람이 적은 기대값이다. 실제 화면 동작(밀린 화면·실패 안내 지움)은 e2e/robust.spec.ts가 본다.
  */
 describe('decideSave: 쓰기 직전 판단 (R-052)', () => {
-  // 세 값은 모두 진행이 있는 상태(시대 선택)다. 진행 없는 타이틀끼리는 충돌로 보지 않는다(A66, 아래 블록) — 이 블록은 진행이 있는 쪽의 충돌 감지가 그대로임을 지킨다.
-  const A = serializeGame(startGame(createInitialState(1))); // 이 탭이 아는 값
-  const B = serializeGame(startGame(createInitialState(2))); // 다른 탭이 쓴 값
-  const C = serializeGame(startGame(createInitialState(3))); // 이 탭의 지금 상태
+  // 세 값은 모두 진행이 있는 상태(태어난 직후)다. 진행 없는 타이틀끼리는 충돌로 보지 않는다(A66, 아래 블록) — 이 블록은 진행이 있는 쪽의 충돌 감지가 그대로임을 지킨다.
+  const A = serializeGame(beginBirth(createInitialState(1))); // 이 탭이 아는 값
+  const B = serializeGame(beginBirth(createInitialState(2))); // 다른 탭이 쓴 값
+  const C = serializeGame(beginBirth(createInitialState(3))); // 이 탭의 지금 상태
 
   it('내가 아는 값 그대로인 저장소에 새 상태를 쓴다 (진행)', () => {
     expect(decideSave(A, A, C)).toBe('write');
@@ -416,8 +543,8 @@ describe('A66: 잃을 진행이 없는 첫 저장은 충돌이 아니다 (진행
   const T1 = serializeGame(createInitialState(1)); // 타이틀(진행 없음)
   const T2 = serializeGame(createInitialState(2));
   const T3 = serializeGame(createInitialState(3));
-  const P1 = serializeGame(startGame(createInitialState(1))); // 시대 선택(진행 있음)
-  const P2 = serializeGame(startGame(createInitialState(2)));
+  const P1 = serializeGame(beginBirth(createInitialState(1))); // 태어난 직후(진행 있음)
+  const P2 = serializeGame(beginBirth(createInitialState(2)));
   const L = serializeGame(richState()); // 인생 진행 중
 
   it('빈 저장소를 읽은 두 탭: 먼저 쓴 탭의 타이틀이 저장소에 있어도 나중 탭은 자기 타이틀을 쓴다 (밀리지 않는다)', () => {
@@ -425,7 +552,7 @@ describe('A66: 잃을 진행이 없는 첫 저장은 충돌이 아니다 (진행
     expect(decideSave(T2, T1, T1)).toBe('write'); // 이 탭이 아는 값이 타이틀이어도 마찬가지
   });
 
-  it('이 탭이 시작을 눌러 진행한 첫 저장(시대 선택)도, 저장소에 다른 탭의 타이틀뿐이면 쓴다', () => {
+  it('이 탭이 태어나기를 눌러 진행한 첫 저장(출생)도, 저장소에 다른 탭의 타이틀뿐이면 쓴다', () => {
     expect(decideSave(T2, null, P1)).toBe('write');
     expect(decideSave(T2, T1, P1)).toBe('write');
   });
@@ -434,7 +561,7 @@ describe('A66: 잃을 진행이 없는 첫 저장은 충돌이 아니다 (진행
     expect(decideSave(T2, '###', T1)).toBe('write');
   });
 
-  it('약화하지 않았다 (1): 저장소에 다른 탭의 진행(시대 선택 이후)이 있으면 이 탭이 비었든 타이틀이든 충돌이다', () => {
+  it('약화하지 않았다 (1): 저장소에 다른 탭의 진행(출생 이후)이 있으면 이 탭이 비었든 타이틀이든 충돌이다', () => {
     expect(decideSave(P2, null, T1)).toBe('conflict');
     expect(decideSave(P2, T1, T3)).toBe('conflict');
     expect(decideSave(P2, T1, P1)).toBe('conflict');

@@ -3,7 +3,7 @@
 > vitest run
 
 
-[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/aica_/Desktop/인공지능사관학교/2. 프로젝트/5. 수저프로젝트[39m
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m<프로젝트 루트>[39m
 
  [32m✓[39m tests/checkTodoEvidence.test.ts [2m([22m[2m39 tests[22m[2m)[22m[90m 22[2mms[22m[39m
  [32m✓[39m tests/storage.test.ts [2m([22m[2m98 tests[22m[2m)[22m[90m 38[2mms[22m[39m

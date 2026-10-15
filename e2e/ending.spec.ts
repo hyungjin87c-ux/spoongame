@@ -5,7 +5,6 @@ import {
   RAPID_METHODS,
   activeTestId,
   evalCore,
-  eraSelectState,
   findPendingState,
   injectSave,
   lifeSnapshot,
@@ -13,6 +12,7 @@ import {
   noHorizontalOverflow,
   oracleAuto,
   oracleLife,
+  pressBegin,
   readSave,
   readSettings,
   recordClicks,
@@ -20,12 +20,13 @@ import {
   replaceSaveAndReload,
   settle,
   startPageHidden,
+  titleState,
 } from './helpers';
 
 /**
  * 엔딩 (SPEC-001 M5): 담담한 회고(생애 연표·최종 스탯·출발선 대비)와 "다시 태어나기".
  * 계산은 core/ending.ts의 순수 함수가 하고, 여기서는 실제 브라우저에서 (1) 보이는 것이 core의 회고와 같은지, (2) 새로고침해도 그대로인지,
- * (3) 다시 태어나기가 새 시드의 시대 선택 화면으로 가고 설정을 유지하는지, (4) 더블탭·3연타가 시대 선택을 건너뛰게 하지 않는지(R-030 M5 몫),
+ * (3) 다시 태어나기가 새 시드의 첫 화면(마지막에 고른 세상·인생 길이가 그대로 눌려 있다)으로 가고 설정을 유지하는지, (4) 더블탭·3연타가 첫 화면을 건너뛰거나 세상·인생 길이 선택을 바꾸지 않는지(R-030 M5 몫),
  * (5) 키보드만으로 되는지, (6) 긴 연표·20세 전 사망이 360px에서 읽히는지를 본다.
  */
 
@@ -215,7 +216,7 @@ test('가장 긴 연표(세 시대에서 찾은 가장 긴 인생)도 360px와 3
     `let best = null;
      for (const era of ['past', 'present', 'future']) {
        for (let seed = 1; seed <= 150; seed++) {
-         const s = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), era)));
+         const s = core.enterLife(core.beginBirth(core.createInitialState(seed), era));
          const f = core.playToEnd(s, null).state;
          if (best === null || f.history.length > best.history.length) best = f;
        }
@@ -310,51 +311,54 @@ test('출발선 구간 문장(맨 아래·가운데·한쪽 절반·맨 위 단�
 
 // ---------- 다시 태어나기 ----------
 
-test('다시 태어나기: 새 시드의 새 판이 시대 선택 화면(기본 지금 세상)에서 시작되고, 설정(배속·자동 모드)은 유지되며, 이전 판의 저장은 대체된다', async ({ page }) => {
+test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고른 세상·인생 길이)에서 시작되고, 설정(배속·자동 모드·세상·인생 길이)은 유지되며, 이전 판의 저장은 대체된다', async ({ page }) => {
   const ended = await endedState(page);
   await startPageHidden(page); // 새 판이 자동 모드로 곧바로 흐르지 않게 타이머를 멈춰 둔다
-  await injectSave(page, ended, '/', SETTINGS);
+  // 이 판은 지금 세상이었지만 첫 화면의 마지막 선택은 다가올 세상·약 30분. (「약 1시간」은 준비 중이라 고를 수 없다 — R-202. 이 테스트의 인생 길이 쪽 값이 long60에서 short30으로 바뀐 이유.)
+  const SETTINGS_CHOSEN = { ...SETTINGS, era: 'future', lifeLength: 'short30' } as const;
+  await injectSave(page, ended, '/', SETTINGS_CHOSEN);
   await expect(page.getByTestId('ending-screen')).toBeVisible();
   const rebirth = page.getByTestId('rebirth');
   await expect(rebirth).toBeEnabled(); // 화면 진입 가드가 풀릴 때까지
   await expect(rebirth).toHaveText('다시 태어나기');
   await rebirth.click();
 
-  // 타이틀을 거치지 않고 곧바로 시대 선택 화면, 기본 선택은 "지금 세상", 포커스는 새 화면 제목 (R-030 M5 몫)
-  await expect(page.getByTestId('era-screen')).toBeVisible();
-  await expect(page.getByTestId('title-screen')).toHaveCount(0);
-  await expect(page.locator('[data-era="present"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('[data-era="past"]')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('[data-era="future"]')).toHaveAttribute('aria-pressed', 'false');
-  await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:어느 세상에서 태어날까');
+  // 곧바로 첫 화면: 마지막에 고른 세상(다가올 세상)·인생 길이(약 30분)가 눌려 있고, 포커스는 새 화면 제목 (R-030 M5 몫)
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  await expect(page.getByTestId('era-future')).toBeChecked();
+  await expect(page.getByTestId('era-present')).not.toBeChecked();
+  await expect(page.getByTestId('era-past')).not.toBeChecked();
+  await expect(page.getByTestId('life-short30')).toBeChecked();
+  await expect(page.getByTestId('life-long60')).not.toBeChecked();
+  await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:수저 게임');
 
   // 저장: 새 시드, 이전 판의 흔적 없음 (이전 판은 대체돼 되돌릴 수 없다)
-  await expect.poll(async () => (await readSave(page)).data.phase).toBe('eraSelect');
+  await expect.poll(async () => (await readSave(page)).data.phase).toBe('title');
   const fresh = (await readSave(page)).data;
   expect(fresh.seed).not.toBe(ended.seed);
-  expect(fresh.era).toBeNull();
+  expect(fresh.era).toBeNull(); // 세상·인생 길이는 설정에 있고, 판에는 태어날 때 들어간다
+  expect(fresh.lifeLength).toBeNull();
   expect(fresh.character).toBeNull();
   expect(fresh.history).toEqual([]);
   expect(fresh.death).toBeNull();
   expect(fresh.flags).toEqual([]);
   expect(JSON.stringify(fresh)).not.toContain(ended.character!.name);
   // 설정은 그대로
-  expect(await readSettings(page)).toEqual(SETTINGS);
+  expect(await readSettings(page)).toEqual(SETTINGS_CHOSEN);
 
-  // 새로고침해도 시대 선택 화면에서 이어진다 (엔딩이 되살아나지 않는다)
+  // 새로고침해도 첫 화면에서 이어진다 (엔딩이 되살아나지 않는다)
   await page.reload();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await expect(page.getByTestId('title-screen')).toBeVisible();
   await expect(page.getByTestId('ending-screen')).toHaveCount(0);
 
-  // 시대를 확정하면 새 인물: 같은 시드의 core 출생 결과와 같다
-  const expected = await evalCore<GameState>(page, 'return core.beginBirth(core.selectEra(arg, "present"));', fresh);
-  const confirm = page.getByTestId('confirm-era');
-  await expect(confirm).toBeEnabled();
-  await confirm.click();
+  // 태어나기를 누르면 새 인물: 같은 시드·마지막 선택(다가올 세상·약 30분)의 core 출생 결과와 같다
+  const expected = await evalCore<GameState>(page, 'return core.beginBirth(arg, "future", "short30");', fresh);
+  await pressBegin(page);
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   const born = (await readSave(page)).data;
   expect(born.character).toEqual(expected.character);
-  expect(born.era).toBe('present');
+  expect(born.era).toBe('future');
+  expect(born.lifeLength).toBe('short30');
   // 살아가기 → 새 인생: 설정(8배속·자동 모드)이 그대로 눌려 있고 0세다
   const next = page.getByTestId('next-life');
   await expect(next).toBeEnabled();
@@ -367,12 +371,33 @@ test('다시 태어나기: 새 시드의 새 판이 시대 선택 화면(기본 
   expect(snap.hasChoice).toBe(false);
 });
 
+test('색 구성표(R-208): 다크 OS에서 엔딩(옛 화면)은 라이트, 「다시 태어나기」로 첫 화면에 돌아오면 다시 시스템(다크)을 따른다', async ({ page }) => {
+  const ended = await endedState(page);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await startPageHidden(page);
+  await injectSave(page, ended, '/', SETTINGS);
+  await expect(page.getByTestId('ending-screen')).toBeVisible();
+  const state = () =>
+    page.evaluate(() => ({
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+      dataTheme: document.documentElement.getAttribute('data-theme'),
+      metaScheme: document.querySelector('meta[name="color-scheme"]')!.getAttribute('content'),
+      themeMedia: [...document.querySelectorAll('meta[name="theme-color"]')].map((m) => m.getAttribute('media')),
+    }));
+  expect(await state()).toEqual({ scheme: 'light', dataTheme: 'light', metaScheme: 'light', themeMedia: [null, null] });
+  await expect(page.getByTestId('rebirth')).toBeEnabled();
+  await page.getByTestId('rebirth').click();
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  // 첫 화면: 처음 상태 그대로 복원 (data-theme 없음, 두 메타의 원래 값과 media)
+  expect(await state()).toEqual({ scheme: 'dark', dataTheme: null, metaScheme: 'light dark', themeMedia: ['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)'] });
+});
+
 test('다시 태어나기를 거친 새 판도 끝까지 가서 다시 엔딩이 된다 (죽음 → 다시 태어나기 → 죽음)', async ({ page }) => {
   test.setTimeout(120_000);
   const ended = await endedState(page);
   await injectSave(page, ended, '/?__timescale=3000', SETTINGS);
   await page.getByTestId('rebirth').click();
-  await page.getByTestId('confirm-era').click();
+  await pressBegin(page);
   await page.getByTestId('next-life').click();
   // 자동 모드(8배속)가 켜져 있으니 새 판은 스스로 끝까지 간다
   await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 60_000 });
@@ -385,7 +410,7 @@ test('다시 태어나기를 거친 새 판도 끝까지 가서 다시 엔딩이
 
 for (const fraction of [1 / 4, 1 / 2, 3 / 4]) {
   for (const method of RAPID_METHODS) {
-    test(`다시 태어나기 ${method === 'dblclick' ? '더블클릭' : method === 'mouse2' ? '더블탭' : method === 'mouse3' ? '3연타' : '사람 속도 더블탭(150ms)'} — 버튼 폭 ${Math.round(fraction * 100)}% 지점: 새 판은 하나뿐이고 시대 선택을 건너뛰지 않으며 외부 링크로 가지 않는다 (R-030)`, async ({ page, context }) => {
+    test(`다시 태어나기 ${method === 'dblclick' ? '더블클릭' : method === 'mouse2' ? '더블탭' : method === 'mouse3' ? '3연타' : '사람 속도 더블탭(150ms)'} — 버튼 폭 ${Math.round(fraction * 100)}% 지점: 새 판은 하나뿐이고 첫 화면을 건너뛰거나 선택을 바꾸지 않으며 외부 링크로 가지 않는다 (R-030)`, async ({ page, context }) => {
       const ended = await endedState(page);
       await recordClicks(page);
       await replaceSaveAndReload(page, ended, SETTINGS);
@@ -406,17 +431,19 @@ for (const fraction of [1 / 4, 1 / 2, 3 / 4]) {
         await page.mouse.click(x, y);
         if (method === 'human150' && i < taps - 1) await page.waitForTimeout(150);
       }
-      await expect(page.getByTestId('era-screen')).toBeVisible();
+      await expect(page.getByTestId('title-screen')).toBeVisible();
       await settle(page);
-      await page.waitForTimeout(500); // 가드가 풀린 뒤에도 시대 선택에 머무른다 (늦게 도착한 입력이 없다)
-      await expect(page.getByTestId('era-screen')).toBeVisible();
+      await page.waitForTimeout(500); // 가드가 풀린 뒤에도 첫 화면에 머무른다 (늦게 도착한 입력이 없다)
+      await expect(page.getByTestId('title-screen')).toBeVisible();
       await expect(page.getByTestId('birth-screen')).toHaveCount(0);
       expect(page.url(), '외부 링크로 이동하지 않았다').toBe(url);
       expect(context.pages().length, '새 창이 열리지 않았다').toBe(1);
       const save = (await readSave(page)).data;
-      expect(save.phase).toBe('eraSelect');
-      expect(save.era, '시대 선택이 바뀌지 않았다').toBeNull();
+      expect(save.phase).toBe('title');
+      expect(save.era, '태어나기가 눌리지 않았다(판에는 아직 세상이 없다)').toBeNull();
       expect(save.history).toEqual([]);
+      const chosen = await readSettings(page);
+      expect([chosen.era, chosen.lifeLength], '세상·인생 길이 선택이 바뀌지 않았다').toEqual(['present', 'short30']);
       // 첫 입력은 "다시 태어나기", 이후 입력은 새 화면의 닫힌 버튼(가드)이나 버튼이 아닌 곳에 떨어졌다
       const clicks = await recordedClicks(page);
       expect(clicks[0]).toBe('rebirth');
@@ -425,7 +452,7 @@ for (const fraction of [1 / 4, 1 / 2, 3 / 4]) {
   }
 }
 
-test('키보드만으로 엔딩 → 다시 태어나기: Tab으로 버튼에 닿고 Enter(또는 Space)로 시대 선택 화면에 가며, 새 화면 제목에 포커스가 가고 다음 Tab은 첫 시대 카드로 간다', async ({ page }) => {
+test('키보드만으로 엔딩 → 다시 태어나기: Tab으로 버튼에 닿고 Enter(또는 Space)로 첫 화면에 가며, 새 화면 제목에 포커스가 가고 다음 Tab은 눌려 있는 세상 카드로 간다', async ({ page }) => {
   const ended = await endedState(page);
   for (const key of ['Enter', 'Space'] as const) {
     await injectSave(page, ended, '/', SETTINGS);
@@ -435,16 +462,16 @@ test('키보드만으로 엔딩 → 다시 태어나기: Tab으로 버튼에 닿
     await page.keyboard.press('Tab'); // 연표는 Tab 정지점이 아니다: 다음이 바로 버튼
     expect(await activeTestId(page)).toBe('rebirth');
     await page.keyboard.press(key);
-    await expect(page.getByTestId('era-screen')).toBeVisible();
-    await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:어느 세상에서 태어날까');
-    // 곧바로 같은 키를 또 눌러도(제목에 포커스가 있다) 시대 선택을 건너뛰지 않는다
+    await expect(page.getByTestId('title-screen')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:수저 게임');
+    // 곧바로 같은 키를 또 눌러도(제목에 포커스가 있다) 첫 화면을 건너뛰지 않는다
     await page.keyboard.press(key);
     await page.waitForTimeout(500);
-    await expect(page.getByTestId('era-screen')).toBeVisible();
-    expect((await readSave(page)).data.phase).toBe('eraSelect');
-    // 다음 Tab은 외부 링크가 아니라 첫 시대 카드
+    await expect(page.getByTestId('title-screen')).toBeVisible();
+    expect((await readSave(page)).data.phase).toBe('title');
+    // 다음 Tab은 외부 링크가 아니라 눌려 있는 세상 카드(라디오 묶음은 Tab 정지점이 하나)
     await page.keyboard.press('Tab');
-    expect(await page.evaluate(() => `${document.activeElement?.tagName}:${(document.activeElement as HTMLElement | null)?.dataset.era}`)).toBe('BUTTON:past');
+    expect(await activeTestId(page)).toBe('era-present');
   }
 });
 
@@ -459,7 +486,7 @@ const SWEEP_VIEWPORTS = [
   { width: 667, height: 375 },
 ] as const;
 const MIN_OVERLAP_PX = 4;
-/** 겹침이 관측돼야 하는 하한(공허 통과 방지). 이 개발 환경의 측정값은 여섯 뷰포트 모두 겹친다(시대 카드 또는 "이 세상에서 태어나기"). */
+/** 겹침이 관측돼야 하는 하한(공허 통과 방지). 겹치는 대상은 세상·인생 길이 카드, 캐러셀 조작 버튼, 하단 고정 「태어나기」다 — 뷰포트마다 측정해 report에 남긴다(여섯 개 모두 겹침이 관측되어야 할 필요는 없고 4개 이상이면 된다). */
 const MIN_OVERLAPPED_VIEWPORTS = 4;
 
 interface Hit {
@@ -468,19 +495,20 @@ interface Hit {
   y: number;
 }
 
-/** 이 뷰포트에서 "다시 태어나기" 버튼(맨 아래까지 스크롤한 위치)이 시대 선택 화면의 카드·확정 버튼과 겹치는 곳의 한가운데를 잰다 */
+/** 이 뷰포트에서 "다시 태어나기" 버튼(맨 아래까지 스크롤한 위치)이 첫 화면의 세상·인생 길이 카드·캐러셀 버튼·하단 「태어나기」와 겹치는 곳의 한가운데를 잰다 */
 async function measureOverlap(page: Page, ended: GameState): Promise<{ rect: { x: number; y: number; width: number; height: number }; hits: Hit[] }> {
   await replaceSaveAndReload(page, ended, SETTINGS);
   const rebirth = page.getByTestId('rebirth');
   await expect(rebirth).toBeEnabled();
   await rebirth.scrollIntoViewIfNeeded();
   const rect = (await rebirth.boundingBox())!;
-  await replaceSaveAndReload(page, eraSelectState(KNOWN_SEED), SETTINGS);
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await replaceSaveAndReload(page, titleState(KNOWN_SEED), SETTINGS);
+  await expect(page.getByTestId('title-screen')).toBeVisible();
   const els = await page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>('[data-era], [data-testid="confirm-era"]')].map((b) => {
+    [...document.querySelectorAll<HTMLElement>('.radio-card, [data-testid="start-birth"], [data-testid="carousel-prev"], [data-testid="carousel-next"], [data-testid="carousel-pause"], [data-testid^="carousel-dot-"]')].map((b) => {
       const r = b.getBoundingClientRect();
-      return { id: b.dataset.era ?? 'confirm-era', left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      const id = b.dataset.testid ?? b.querySelector('input')?.dataset.testid ?? b.tagName;
+      return { id, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
     }),
   );
   const hits: Hit[] = [];
@@ -495,6 +523,7 @@ async function measureOverlap(page: Page, ended: GameState): Promise<{ rect: { x
 }
 
 async function burst(page: Page, ended: GameState, at: { x: number; y: number }, method: 'mouse3' | 'human150', url: string): Promise<{ eraStillShown: boolean; birth: boolean; eraChosen: string | null; landed: string[] }> {
+  // eraStillShown = 첫 화면에 머문다 / birth = 태어나기가 눌렸다 / eraChosen = 세상·인생 길이 선택이 기본(지금 세상·약 30분)에서 바뀌었다면 그 값
   await replaceSaveAndReload(page, ended, SETTINGS);
   await page.goto(url);
   const rebirth = page.getByTestId('rebirth');
@@ -509,15 +538,16 @@ async function burst(page: Page, ended: GameState, at: { x: number; y: number },
   await settle(page);
   await page.waitForTimeout(600);
   const save = (await readSave(page)).data;
+  const chosen = await readSettings(page);
   return {
-    eraStillShown: save.phase === 'eraSelect' && (await page.getByTestId('era-screen').count()) === 1,
-    birth: save.phase !== 'eraSelect',
-    eraChosen: save.era,
+    eraStillShown: save.phase === 'title' && (await page.getByTestId('title-screen').count()) === 1,
+    birth: save.phase !== 'title',
+    eraChosen: chosen.era !== 'present' || chosen.lifeLength !== 'short30' ? `${chosen.era}/${chosen.lifeLength}` : null,
     landed: (await recordedClicks(page)).slice(1), // 첫 입력(다시 태어나기)을 뺀 나머지
   };
 }
 
-test('낮은 화면(겹침을 측정): 다시 태어나기 더블탭의 둘째 입력이 시대 카드·"이 세상에서 태어나기"에 떨어져도 시대 선택은 그대로다. 가드를 끈 대조군에서는 실제로 건너뛰거나 바뀐다 (R-030 M5 몫)', async ({ page }, testInfo) => {
+test('낮은 화면(겹침을 측정): 다시 태어나기 더블탭의 둘째 입력이 세상·인생 길이 카드·캐러셀 버튼·「태어나기」에 떨어져도 첫 화면은 그대로다. 가드를 끈 대조군에서는 실제로 건너뛰거나 바뀐다 (R-030 M5 몫)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   test.setTimeout(240_000);
   await page.goto('/');
@@ -540,15 +570,15 @@ test('낮은 화면(겹침을 측정): 다시 태어나기 더블탭의 둘째 �
     for (const method of ['human150', 'mouse3'] as const) {
       for (const p of points) {
         const r = await burst(page, ended, p, method, '/');
-        expect(r.eraStillShown, `${vp.width}x${vp.height} ${method} (${Math.round(p.x)},${Math.round(p.y)}): 시대 선택이 건너뛰어졌다`).toBe(true);
+        expect(r.eraStillShown, `${vp.width}x${vp.height} ${method} (${Math.round(p.x)},${Math.round(p.y)}): 첫 화면이 건너뛰어졌다`).toBe(true);
         expect(r.birth).toBe(false);
-        expect(r.eraChosen, `${vp.width}x${vp.height} ${method}: 시대 선택이 바뀌었다`).toBeNull();
+        expect(r.eraChosen, `${vp.width}x${vp.height} ${method}: 세상·인생 길이 선택이 바뀌었다`).toBeNull();
         for (const c of r.landed) expect(c.endsWith('(가드)') || c.startsWith('비버튼:'), `${vp.width}x${vp.height} ${method}: 열린 버튼에 떨어졌다 (${c})`).toBe(true);
       }
     }
     if (hits.length === 0) continue;
     overlapped++;
-    // 대조군: 가드를 끄면(?__guard=0, 개발 서버 전용) 같은 조작이 시대 선택을 건너뛰거나 선택을 바꾼다
+    // 대조군: 가드를 끄면(?__guard=0, 개발 서버 전용) 같은 조작이 첫 화면을 건너뛰거나 선택을 바꾼다
     const control = await burst(page, ended, hits[0], 'mouse3', '/?__guard=0');
     if (control.birth || control.eraChosen !== null) controlChanged++;
   }
@@ -573,7 +603,7 @@ test('엔딩이 막 떴을 때(진입 가드가 닫혀 있는 동안)의 클릭�
   await page.mouse.click(center.x, center.y);
   await settle(page);
   await expect(page.getByTestId('ending-screen')).toBeVisible();
-  await expect(page.getByTestId('era-screen')).toHaveCount(0);
+  await expect(page.getByTestId('title-screen')).toHaveCount(0);
   expect((await readSave(page)).data.phase, '저장은 아직 엔딩이다').toBe('ending');
   expect((await recordedClicks(page)).slice(0, 2), '두 입력 모두 닫힌 버튼에 닿았다').toEqual(['rebirth(가드)', 'rebirth(가드)']);
 
@@ -583,5 +613,5 @@ test('엔딩이 막 떴을 때(진입 가드가 닫혀 있는 동안)의 클릭�
   await expect(rebirth).toBeEnabled();
   await expect(rebirth).not.toHaveAttribute('aria-disabled', 'true');
   await rebirth.click();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await expect(page.getByTestId('title-screen')).toBeVisible();
 });

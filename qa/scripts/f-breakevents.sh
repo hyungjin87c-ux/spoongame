@@ -1,6 +1,7 @@
 #!/bin/sh
 # F-A99: 이벤트 JSON을 일부러 깨고 check:events·build가 실패하는지 확인한다. 프로젝트 복사본(임시 폴더)에서만 한다 — 원본은 건드리지 않는다.
-ROOT="C:/Users/aica_/Desktop/인공지능사관학교/2. 프로젝트/5. 수저프로젝트"
+# 프로젝트 루트 = 이 스크립트 위치(qa/scripts)의 두 단계 위. Windows(Git Bash)에서는 PowerShell도 읽는 C:/… 꼴(pwd -W), 그 밖에서는 보통 경로.
+ROOT="$(cd "$(dirname "$0")/../.." && { pwd -W 2>/dev/null || pwd; })"
 COPY="$1"
 OUT="$ROOT/qa/results/final/F-A99-break-events.txt"
 rm -rf "$COPY"; mkdir -p "$COPY"

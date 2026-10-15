@@ -5,7 +5,6 @@ import {
   KNOWN_SEED,
   SAVE_VERSION,
   birthState,
-  eraSelectState,
   evalCore,
   findPendingState,
   injectSave,
@@ -59,8 +58,18 @@ async function lines(page: Page, selector: string): Promise<Array<{ text: string
 test('프로그램이 제목으로 옮긴 포커스에는 링이 없고, 키보드로 닿은 버튼의 포커스 링은 그대로다 (QA 사용감 2)', async ({ page }) => {
   await page.goto('/');
   await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('H1'); // 화면이 뜨면 제목으로 포커스가 간다
-  await page.keyboard.press('Tab'); // 키보드 사용 시작(:focus-visible 모드): 제목 다음의 시작 버튼
-  const start = page.getByRole('button', { name: '시작' });
+  await page.keyboard.press('Tab'); // 키보드 사용 시작(:focus-visible 모드): 제목 다음은 눌려 있는 세상 카드(라디오)
+  await expect(page.getByTestId('era-present')).toBeFocused();
+  // 라디오 입력은 보이지 않고 카드(label)가 :focus-within 링을 그린다
+  const cardRing = await page.evaluate(() => {
+    const cs = getComputedStyle(document.activeElement!.closest('.radio-card')!);
+    return { outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth };
+  });
+  expect(cardRing.outlineStyle).toBe('solid');
+  expect(parseFloat(cardRing.outlineWidth)).toBeGreaterThanOrEqual(2);
+  // 하단 「태어나기」까지 Tab으로 간다(캐러셀의 점·버튼을 지나서)
+  for (let i = 0; i < 40 && (await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))) !== 'start-birth'; i++) await page.keyboard.press('Tab');
+  const start = page.getByTestId('start-birth');
   await expect(start).toBeFocused();
   const ring = (selector: string) =>
     page.evaluate((sel) => {
@@ -68,34 +77,35 @@ test('프로그램이 제목으로 옮긴 포커스에는 링이 없고, 키보�
       const cs = getComputedStyle(el);
       return { tag: el.tagName, focused: document.activeElement === el, outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth };
     }, selector);
-  const btn = await ring('button');
+  const btn = await ring('[data-testid="start-birth"]');
   expect(btn.outlineStyle).toBe('solid');
   expect(parseFloat(btn.outlineWidth)).toBeGreaterThanOrEqual(2);
   await expect(start).toBeEnabled();
-  await page.keyboard.press('Enter'); // 시대 선택 화면: 프로그램이 제목으로 포커스를 옮긴다
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await page.keyboard.press('Enter'); // 출생 화면: 프로그램이 제목으로 포커스를 옮긴다
+  await expect(page.getByTestId('birth-screen')).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('H1');
   const h1 = await ring('h1');
   expect(h1.focused).toBe(true);
   expect(h1.outlineStyle, '제목 포커스 링').toBe('none');
-  // 키보드로 닿은 다음 컨트롤(시대 카드)에는 링이 있다
+  // 키보드로 닿은 다음 컨트롤(살아가기 버튼)에는 링이 있다
   await page.keyboard.press('Tab');
-  const card = await page.evaluate(() => {
+  const next = await page.evaluate(() => {
     const el = document.activeElement as HTMLElement;
     const cs = getComputedStyle(el);
-    return { tag: el.tagName, era: el.dataset.era, outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth };
+    return { tag: el.tagName, id: el.dataset.testid, outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth };
   });
-  expect(card.tag).toBe('BUTTON');
-  expect(card.outlineStyle).toBe('solid');
-  expect(parseFloat(card.outlineWidth)).toBeGreaterThanOrEqual(2);
+  expect(next.tag).toBe('BUTTON');
+  expect(next.id).toBe('next-life');
+  expect(next.outlineStyle).toBe('solid');
+  expect(parseFloat(next.outlineWidth)).toBeGreaterThanOrEqual(2);
 });
 
 // ---------- 사용감 3: 줄바꿈 ----------
 
-test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all, 시대 선택·출생 화면의 제목·문장이 띄어쓰기에서만 줄을 바꾼다 (360px, QA 사용감 3)', async ({ page }) => {
+test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all, 첫 화면·출생 화면의 제목·문장이 띄어쓰기에서만 줄을 바꾼다 (360px, QA 사용감 3)', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
-  await injectSave(page, eraSelectState(KNOWN_SEED), '/');
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await page.goto('/');
+  await expect(page.getByTestId('title-screen')).toBeVisible();
   const check = async (selector: string) => {
     const groups = await lines(page, selector);
     expect(groups.length, selector).toBeGreaterThan(0);
@@ -105,10 +115,13 @@ test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all,
       if (g.lines.length > 1) for (const l of g.lines) expect(l.length, `한 글자 줄: ${g.lines.join(' / ')}`).toBeGreaterThan(1);
     }
   };
-  await check('h1');
-  await check('.sub');
-  await check('.era-card strong, .era-card span');
+  await check('.hero__tag');
+  await check('.hero__pop');
+  await check('.hero__note');
+  await check('.radio-card__title, .radio-card__desc, .radio-card__meta');
+  await check('.slide.is-active .t-sm');
   expect(await page.evaluate(() => getComputedStyle(document.body).wordBreak)).toBe('keep-all');
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.title-page')!).wordBreak)).toBe('keep-all');
   // 출생 화면
   await injectSave(page, birthState(KNOWN_SEED, 'present', 3, 50), '/');
   await expect(page.getByTestId('birth-screen')).toBeVisible();
@@ -116,6 +129,80 @@ test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all,
   await check('.facts p');
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
+
+/**
+ * `lines`와 같은 줄 나누기인데 **눈에 보이는 글자만** 센다 — 두 줄로 나뉜 짧은 쌍에서 `display: none`인 「· 」 조각은 건너뛰고(상자가 없다), 글자 원문도 보이는 글자로 만든다.
+ * 줄바꿈이 띄어쓰기에서만 일어났다면 `lines.join(' ')`이 `text`와 같다. 낱말 중간에서 끊겼다면 줄 사이에 원문에 없던 공백이 끼어 달라진다.
+ */
+async function visibleLines(page: Page, selector: string): Promise<Array<{ text: string; lines: string[] }>> {
+  return page.evaluate((sel) => {
+    return [...document.querySelectorAll(sel)].map((el) => {
+      const out: string[] = [];
+      let visible = '';
+      let lastTop: number | null = null;
+      let pendingSpace = false;
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        if (parent === null || parent.getClientRects().length === 0) continue; // display: none 안의 글자
+        const t = node.textContent ?? '';
+        for (let i = 0; i < t.length; i++) {
+          visible += t[i];
+          if (t[i].trim() === '') {
+            pendingSpace = true;
+            continue;
+          }
+          const r = document.createRange();
+          r.setStart(node, i);
+          r.setEnd(node, i + 1);
+          const top = Math.round(r.getBoundingClientRect().top);
+          if (lastTop === null || Math.abs(top - lastTop) > 4) out.push('');
+          else if (pendingSpace) out[out.length - 1] += ' ';
+          pendingSpace = false;
+          lastTop = top;
+          out[out.length - 1] += t[i];
+        }
+      }
+      return { text: visible.replace(/\s+/g, ' ').trim(), lines: out };
+    });
+  }, selector);
+}
+
+for (const width of [320, 360] as const) {
+  test(`한국어는 단어 중간에서 끊기지 않는다 — 캐러셀 14장의 모든 글자 블록 (${width}px, 글자 100%, REV-003-M2-4 R-244: 혼인 건수 정의의 「(신고월 기준) / 으로」)`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width, height: 740 });
+    await page.goto('/');
+    await expect(page.getByTestId('start-birth')).toBeEnabled();
+    await page.getByTestId('carousel-pause').click();
+    const slides = await page.locator('.slide').count();
+    expect(slides).toBe(14);
+    // 값 줄(큰 숫자 + 작은 단위)은 글자 크기가 달라 줄 나누기 기준이 맞지 않으므로 뺀다 — 값 줄은 nowrap이라 갈라질 수 없다
+    const BLOCKS = '.slide.is-active h3, .slide.is-active .slide__caption, .slide.is-active .slide__side, .slide.is-active .slide__basis, .slide.is-active .legend li, .slide.is-active .slide__meta, .slide.is-active p.t-muted, .slide.is-active .slide__help p';
+    const problems: string[] = [];
+    let blocks = 0;
+    let multiLine = 0;
+    let marriageDefinition = '';
+    for (let i = 0; i < slides; i++) {
+      const id = await page.evaluate(() => document.querySelector('.slide.is-active')!.getAttribute('data-slide-id')!);
+      for (const g of await visibleLines(page, BLOCKS)) {
+        blocks++;
+        if (g.lines.length > 1) multiLine++;
+        if (id === 'marriage-count' && g.text.startsWith('혼인 건수는')) marriageDefinition = g.lines.join(' / ');
+        // 줄을 이어 붙였을 때 원문과 같아야 한다 = 줄이 바뀐 자리마다 원문에 공백이 있다 (낱말이 쪼개지지 않았다)
+        if (g.lines.join(' ') !== g.text) problems.push(`${width}px ${id}: 단어 중간에서 끊김 — ${g.lines.join(' / ')}`);
+      }
+      if (i < slides - 1) await page.getByTestId('carousel-next').click();
+    }
+    expect(problems).toEqual([]);
+    // 공허 통과 방지: 14장 × 블록 여러 개를 실제로 봤고, 여러 줄로 나뉜 블록도 많이 봤다. 혼인 건수 정의는 여러 줄이다
+    expect(blocks, '검사한 글자 블록 수').toBeGreaterThan(70);
+    expect(multiLine, '여러 줄로 나뉜 블록 수').toBeGreaterThan(20);
+    expect(marriageDefinition, '혼인 건수 정의가 여러 줄로 나뉘었다').toContain(' / ');
+    testInfo.annotations.push({ type: 'marriage-definition', description: `${width}px: ${marriageDefinition}` });
+  });
+}
 
 test('긴 단어(공백 없는 긴 글)는 keep-all이어도 넘치지 않고 줄바꿈된다 (overflow-wrap)', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
@@ -218,23 +305,24 @@ for (const vp of [
   { width: 360, height: 740 },
   { width: 360, height: 568 },
 ] as const) {
-  test(`${vp.width}x${vp.height}: 저장 실패 안내 바는 따라다니지 않고 타이틀에 세로 스크롤을 만들지 않으며 출처 표기를 밀어내지 않는다 (QA 사용감 6)`, async ({ page }, testInfo) => {
+  test(`${vp.width}x${vp.height}: 저장 실패 안내 바는 따라다니지 않고 첫 화면의 하단 고정 「태어나기」와 겹치지 않는다 (QA 사용감 6)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize(vp);
     await page.goto('/?__quota=1'); // 저장이 항상 실패하는 저장소(개발 서버 전용 탐침)
     await expect(page.getByTestId('save-notice')).toBeVisible();
     await expect(page.getByTestId('title-screen')).toBeVisible();
     const m = await page.evaluate(() => ({
-      docH: document.documentElement.scrollHeight,
       vh: innerHeight,
-      noticeH: document.querySelector('[data-testid="save-notice"]')!.getBoundingClientRect().height,
+      notice: document.querySelector('[data-testid="save-notice"]')!.getBoundingClientRect().toJSON(),
       noticePosition: getComputedStyle(document.querySelector('[data-testid="save-notice"]')!).position,
-      creditBottom: document.querySelector('[data-testid="names-credit"]')!.getBoundingClientRect().bottom,
+      bar: document.querySelector('[data-testid="bottom-bar"]')!.getBoundingClientRect().toJSON(),
+      barPosition: getComputedStyle(document.querySelector('[data-testid="bottom-bar"]')!).position,
     }));
     expect(m.noticePosition, '안내 바가 화면에 고정(sticky/fixed)되지 않는다').toBe('static');
-    expect(m.noticeH).toBeLessThanOrEqual(64);
-    expect(m.docH, '타이틀에 세로 스크롤이 생기지 않는다').toBeLessThanOrEqual(m.vh);
-    expect(m.creditBottom, '출처 표기가 화면 안에 있다').toBeLessThanOrEqual(m.vh);
+    expect(m.notice.height).toBeLessThanOrEqual(64);
+    expect(m.barPosition, '태어나기 띠는 화면에 고정된다(FS6)').toBe('fixed');
+    expect(m.bar.bottom, '태어나기 띠가 화면 안에 있다').toBeLessThanOrEqual(m.vh + 0.5);
+    expect(m.notice.bottom, '안내 바가 위, 태어나기 띠가 아래라 서로 겹치지 않는다').toBeLessThanOrEqual(m.bar.top);
     expect(await noHorizontalOverflow(page)).toBe(true);
   });
 }
@@ -244,8 +332,7 @@ test('저장 실패 안내는 인생 화면에서도 화면 위에 고정되지 
   await page.setViewportSize({ width: 667, height: 375 });
   await page.goto('/?__quota=1');
   await expect(page.getByTestId('save-notice')).toBeVisible();
-  await page.getByRole('button', { name: '시작' }).click();
-  await page.getByTestId('confirm-era').click();
+  await page.getByTestId('start-birth').click();
   await page.getByTestId('next-life').click();
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await expect(page.getByTestId('save-notice')).toBeVisible();
@@ -289,12 +376,11 @@ test('강제 색상 모드: 눌린 속도·자동 상태가 눌리지 않은 것
   expect(bar.trackBorder).toBe('solid');
 });
 
-test('강제 색상 모드: 시대 선택 카드의 선택 상태도 구분된다', async ({ page }) => {
+test('강제 색상 모드: 첫 화면의 세상 카드 선택 상태도 구분된다', async ({ page }) => {
   await page.emulateMedia({ forcedColors: 'active' });
   await page.goto('/');
-  await injectSave(page, eraSelectState(KNOWN_SEED), '/');
-  await expect(page.getByTestId('era-screen')).toBeVisible();
-  const border = (era: string) => page.evaluate((e) => getComputedStyle(document.querySelector(`[data-era="${e}"]`)!).borderTopStyle, era);
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  const border = (era: string) => page.evaluate((e) => getComputedStyle(document.querySelector(`[data-testid="era-${e}"]`)!.closest('.radio-card')!).borderTopStyle, era);
   expect(await border('present')).toBe('double');
   expect(await border('past')).toBe('solid');
 });
@@ -376,31 +462,31 @@ test('A66: 빈 저장소에서 두 탭을 동시에 열어도 둘 다 타이틀�
     await a.waitForTimeout(300);
     await expect(a.getByTestId('superseded-screen')).toHaveCount(0);
     await expect(b.getByTestId('superseded-screen')).toHaveCount(0);
-    // A가 진행하면(시작) 저장에 진행이 생기고, 아직 타이틀인 B는 그 진행에 밀린다 (진행이 있는 쪽의 충돌 감지는 그대로)
-    const startA = a.getByRole('button', { name: '시작' });
+    // A가 진행하면(태어나기) 저장에 진행이 생기고, 아직 타이틀인 B는 그 진행에 밀린다 (진행이 있는 쪽의 충돌 감지는 그대로)
+    const startA = a.getByTestId('start-birth');
     await expect(startA).toBeEnabled();
     await startA.click();
-    await expect(a.getByTestId('era-screen')).toBeVisible();
+    await expect(a.getByTestId('birth-screen')).toBeVisible();
     await expect(b.getByTestId('superseded-screen')).toBeVisible();
-    await expect.poll(async () => (await readSave(a)).data.phase).toBe('eraSelect');
-    // B의 이어하기 한 번으로 A의 진행(시대 선택)을 이어받는다
+    await expect.poll(async () => (await readSave(a)).data.phase).toBe('birth');
+    // B의 이어하기 한 번으로 A의 진행(출생)을 이어받는다
     await expect(b.getByTestId('take-over')).toBeEnabled();
     await b.getByTestId('take-over').click();
-    await expect(b.getByTestId('era-screen')).toBeVisible();
-    await expect(a.getByTestId('era-screen')).toBeVisible();
+    await expect(b.getByTestId('birth-screen')).toBeVisible();
+    await expect(a.getByTestId('birth-screen')).toBeVisible();
     await expect(a.getByTestId('superseded-screen')).toHaveCount(0);
     await context.close();
   }
 });
 
-test('A66 (결정적): 앱이 빈 저장소를 읽은 직후 다른 탭이 "진행 없는 타이틀"을 쓰면 밀리지 않고 자기 타이틀을 저장한다. 다른 탭이 진행(시대 선택)을 썼다면 전처럼 밀린다', async ({ page, browser }) => {
+test('A66 (결정적): 앱이 빈 저장소를 읽은 직후 다른 탭이 "진행 없는 타이틀"을 쓰면 밀리지 않고 자기 타이틀을 저장한다. 다른 탭이 진행(출생)을 썼다면 전처럼 밀린다', async ({ page, browser }) => {
   await page.goto('/');
   const titleRaw = JSON.stringify({ version: SAVE_VERSION, data: await evalCore<GameState>(page, 'return core.createInitialState(7);') });
-  const progressRaw = JSON.stringify({ version: SAVE_VERSION, data: eraSelectState(8) });
+  const progressRaw = JSON.stringify({ version: SAVE_VERSION, data: birthState(8, 'present', 3, 50) });
 
   for (const [label, raw, superseded] of [
     ['다른 탭이 타이틀을 썼다', titleRaw, false],
-    ['다른 탭이 시대 선택까지 진행했다', progressRaw, true],
+    ['다른 탭이 출생까지 진행했다', progressRaw, true],
   ] as const) {
     const context = await browser.newContext();
     const page2 = await context.newPage();
@@ -433,9 +519,9 @@ test('A66 (결정적): 앱이 빈 저장소를 읽은 직후 다른 탭이 "진�
       expect(saved.phase).toBe('title');
       expect(saved.seed, '이 탭의 새 게임이 저장됐다(다른 탭의 타이틀을 대체)').not.toBe(7);
       // 이 탭이 진행해도 문제없다
-      await page2.getByRole('button', { name: '시작' }).click();
-      await expect(page2.getByTestId('era-screen')).toBeVisible();
-      await expect.poll(async () => (await readSave(page2)).data.phase).toBe('eraSelect');
+      await page2.getByTestId('start-birth').click();
+      await expect(page2.getByTestId('birth-screen')).toBeVisible();
+      await expect.poll(async () => (await readSave(page2)).data.phase).toBe('birth');
     }
     await context.close();
   }

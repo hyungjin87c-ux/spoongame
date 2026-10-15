@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>수저 게임</title>
+    <meta name="description" content="태어난 집에 따라 달라지는, 한국인의 한 번의 인생을 살아 보는 시뮬레이션 게임" />
+    <meta name="application-name" content="수저 게임" />
+    <meta name="apple-mobile-web-app-title" content="수저 게임" />
+    <!-- 첫 화면은 시스템 설정(밝게/어둡게)을 따른다(src/styles/tokens.css). 주소 표시줄 색도 같은 바탕색을 쓴다.
+         출생 이후의 옛 화면(아직 고정 색의 라이트 디자인)이 떠 있는 동안에는 src/ui/legacyTheme.tsx가 아래 두 메타와 <html data-theme>를 라이트로 바꿨다가 첫 화면에서 되돌린다(R-208). -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14171f" media="(prefers-color-scheme: dark)" />
+    <!-- 파비콘·터치 아이콘: 형진 님이 고른 심볼 A안 「담긴 땅」(src/assets/brand/a). 경로는 vite가 빌드 때 base를 붙여 준다. -->
+    <link rel="icon" type="image/svg+xml" href="/src/assets/brand/a/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/src/assets/brand/a/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/src/assets/brand/a/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>

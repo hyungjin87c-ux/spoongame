@@ -1,0 +1,364 @@
+/*
+ * 수저 게임 디자인 토큰 (SPEC-003 DS3, designer). 값만 정의한다 — 기존 화면 코드는 이 파일을 아직 읽지 않는다.
+ * 문서: docs/design/design-system.md   대비 점검: scripts/checkContrast.ts (이 파일의 색 쌍 전수 계산, 실패 0이어야 한다)
+ *
+ * 테마 선택 규칙 (DB6)
+ *   1) 기본: 시스템 설정(prefers-color-scheme)을 따른다.
+ *   2) 수동 선택: <html data-theme="light|dark">. 이 값이 있으면 시스템 설정보다 우선한다.
+ *   3) 강제 색상(고대비) 모드: forced-colors: active 에서는 아래 맨 끝의 시스템 색 매핑이 이긴다.
+ * 다크 토큰은 두 곳(미디어쿼리 / data-theme)에 같은 값으로 적혀 있다 — CSS만으로는 한 번에 못 쓰기 때문이다.
+ * 두 블록이 어긋나지 않는지도 scripts/checkContrast.ts 가 점검한다.
+ *
+ * 이름 규칙: --c-* 색, --sp-* 간격, --r-* 모서리, --fs-* 글자 크기, --lh-* 줄 높이, --fw-* 굵기,
+ *            --shadow-* 그림자, --dur-*·--ease 움직임, --z-* 겹침 순서, --hit 터치 대상 최소 크기
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- 색: 바탕·면 ---------- */
+  --c-bg: #f6f3ec; /* 화면 바탕 (한지색) */
+  --c-surface: #fffdf8; /* 카드·입력란·모달 */
+  --c-surface-2: #efeae0; /* 파인 면(트랙·표 줄무늬·보조 버튼) */
+  --c-border: #d8d1c2; /* 장식용 구분선 (대비 요구 없음) */
+  --c-border-strong: #857d6b; /* 컨트롤 경계(입력란·라디오 카드·바 트랙 테두리): 인접색과 3:1 이상 */
+  --c-scrim: rgba(20, 18, 14, 0.56); /* 모달 뒤 어둠 */
+
+  /* ---------- 색: 글자 ---------- */
+  --c-text: #23211d; /* 본문·제목 */
+  --c-text-2: #4f4a41; /* 보조 설명 */
+  --c-text-3: #6a6458; /* 아주 작은 주석·출처 (바탕 위에서도 4.5:1 이상) */
+
+  /* ---------- 색: 브랜드 (쪽빛) ---------- */
+  --c-brand: #26324a; /* 로고·주요 버튼 면·강조 */
+  --c-brand-hover: #1b2438;
+  --c-on-brand: #ffffff; /* 브랜드 면 위의 글자 */
+  --c-brand-soft: #e4e8f1; /* 브랜드 색조의 옅은 면(선택된 카드·인용 박스) */
+  --c-on-brand-soft: #26324a; /* 옅은 면 위의 글자 */
+  --c-accent: #8a6a14; /* 놋쇠색 강조 글자·선 (바탕 위 4.5:1 이상) */
+  --c-accent-soft: #f3e9cc;
+  --c-on-accent-soft: #5f4808;
+
+  /* ---------- 색: 상호작용·상태 ---------- */
+  --c-focus: #1d5bd6; /* 포커스 링 (바탕·면 어디서든 3:1 이상, 3px 실선) */
+  --c-up: #1e6b45; /* ▲ 늘어남 */
+  --c-down: #a12b2b; /* ▼ 줄어듦 */
+  --c-notice-bg: #fff3cd; /* 안내 띠 */
+  --c-on-notice: #5c4400;
+  --c-link: #1d4fb0;
+
+  /* ---------- 색: 상태 바(건강·행복·지식·관계). 바 면 ↔ 트랙 3:1 이상 + 숫자·이름을 항상 함께 적는다.
+     건강 연지(장밋빛 붉은색)·행복 자주(자줏빛)·지식 파랑(밝은 파랑 — 브랜드 쪽빛 --c-brand와 다른 색)·관계 보라.
+     규칙(모두 tests/designAssets.test.ts가 단언, 두 테마 각각):
+       ① 자리별 금지(REV-003-D-2 R-172(e) 취지, REV-003-D-4에서 좁힘): 건강은 녹 90~170° 금지, 행복은 황 35~70° 금지, 네 색의 색상 순서가
+          참고 캡처의 녹·황·청록·적갈 순서가 아닐 것, 서로 색상 20° 이상.
+       ② 뜻이 다른 토큰(수저 5색 solid·▲ --c-up·▼ --c-down)과 ΔE2000 ≥ 15, 상태색끼리 ≥ 12(REV-003-D-3 R-192). 크롬 색(--c-link·--c-focus)과는 ≥ 10.
+       ③ 이웃 쌍 명도 차 ΔL* ≥ 12(지식↔관계·행복↔관계)와 적록 색각 시뮬레이션(Machado 2009 protan·deutan 1.0)에서 모든 쌍 ΔE2000 ≥ 8(REV-003-D-4 R-195).
+          트랙과 3:1을 지키는 범위(라이트 L* ≤ 53, 다크 L* ≥ 52) 안에서 명도를 엇갈리게 둔다 — 라이트 L* 45·53·53·35, 다크 58·53·55·69.
+     지식 파랑이 밝고 선명한 까닭: 라이트에서 은(#6a7886)·다이아(#1b83a8)가 L* 50 언저리의 파란 기를 띤 회색·청록이고 --c-link·--c-focus가 L* 36~41의
+     중간 파랑이라, ②를 모두 만족하는 파랑 자리는 L* 52~53의 채도 높은 하늘빛 파랑뿐이다(docs/design/design-system.md §2). ---------- */
+  --c-stat-health: #cb2360;
+  --c-stat-happy: #d048a9;
+  --c-stat-knowledge: #2778ff;
+  --c-stat-relation: #6232b8;
+  --c-meter-track: #e6e0d3;
+
+  /* ---------- 색: 수저 5단계 (재질 색 + 이름 + 점 개수를 함께 쓴다. 색만으로 구분하지 않고, 아이콘 머리 안에 선 무늬를 두지 않는다 — R-121) ----------
+     solid = 아이콘·점·테두리 면(인접 바탕과 3:1 이상), soft = 칩 배경, ink = soft 위 글자(4.5:1 이상) */
+  --c-grade-1: #7b5b3e; /* 흙수저 */
+  --c-grade-1-soft: #efe4d6;
+  --c-grade-1-ink: #5a3f26;
+  --c-grade-2: #b05a2b; /* 동수저 */
+  --c-grade-2-soft: #f6e2d3;
+  --c-grade-2-ink: #7c3a14;
+  --c-grade-3: #6a7886; /* 은수저 */
+  --c-grade-3-soft: #e6eaee;
+  --c-grade-3-ink: #3f4a56;
+  --c-grade-4: #a67c00; /* 금수저 */
+  --c-grade-4-soft: #f8ecc0;
+  --c-grade-4-ink: #6b4f00;
+  --c-grade-5: #1b83a8; /* 다이아몬드수저 */
+  --c-grade-5-soft: #d9f0f7;
+  --c-grade-5-ink: #0e5670;
+
+  /* ---------- 색: 로고·심볼 ---------- */
+  --c-logo: #26324a; /* 로고 SVG가 var(--c-logo)를 읽는다 (없으면 SVG 안의 기본값) */
+  --c-logo-tile: #26324a; /* 앱 아이콘 타일 바탕 */
+  --c-on-logo-tile: #f3eee2;
+
+  /* ---------- 색: 얼굴 (피부색은 외모 단계와 연동하지 않는다. 단일 톤) ---------- */
+  --c-face-skin: #f1c9a5;
+  --c-face-skin-shade: #e3b38c;
+  --c-face-line: #4a362c; /* 이목구비 선 (선명도 단계가 이 색의 섞임 비율을 정한다) */
+  --c-face-hair: #2b2420;
+  --c-face-hair-gray: #85817b;
+  --c-face-hair-white: #d6d2ca;
+  --c-face-hair-edge: #4a453d; /* 밝은 머리색(흰머리)이 피부 위에서 사라지지 않도록 두르는 윤곽 */
+  --c-face-blush: #e8998d;
+  --c-face-cloth: #6c7f9e;
+  --c-face-bg: #e8e3d6;
+
+  /* ---------- 간격 (4px 기준) ---------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 48px;
+  --sp-10: 64px;
+  --gutter: 16px; /* 화면 좌우 여백 (모바일 360px 기준) */
+
+  /* ---------- 모서리·그림자 ---------- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+  --shadow-1: 0 1px 2px rgba(35, 33, 29, 0.08);
+  --shadow-2: 0 2px 4px rgba(35, 33, 29, 0.06), 0 8px 24px rgba(35, 33, 29, 0.1);
+  --shadow-bar: 0 -6px 18px rgba(35, 33, 29, 0.08); /* 하단 고정 버튼 띠 */
+
+  /* ---------- 글꼴·글자 ----------
+     외부 글꼴을 받지 않는다(외부 요청 0, 라이선스 의무 0). 기기에 있는 한글 글꼴을 쓴다. 근거는 design-system.md 「글꼴」. */
+  --font-sans: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'D2Coding', 'Noto Sans Mono', monospace;
+  --fs-xs: 0.75rem; /* 12px: 출처·작은 주석 (이보다 작게 쓰지 않는다) */
+  --fs-sm: 0.875rem; /* 14px: 영향 표기·보조 */
+  --fs-md: 1rem; /* 16px: 본문 */
+  --fs-lg: 1.125rem; /* 18px */
+  --fs-xl: 1.375rem; /* 22px: 카드 제목 */
+  --fs-2xl: 1.75rem; /* 28px: 화면 제목 */
+  --fs-3xl: 2.25rem; /* 36px: 큰 숫자(나이) */
+  --fs-display: clamp(2.5rem, 9vw, 4rem); /* 첫 화면 큰 문구 */
+  --lh-tight: 1.25;
+  --lh-snug: 1.4;
+  --lh-body: 1.6; /* 한글 본문 */
+  --fw-regular: 400;
+  --fw-bold: 700;
+  --ls-heading: -0.01em;
+
+  /* ---------- 크기·겹침 ---------- */
+  --hit: 44px; /* 터치 대상 최소 크기 */
+  --face-size: 72px; /* 프로필 카드 얼굴 최소 크기 (DS4: 360px에서 ≥ 72px) */
+  --logo-h-hero: 48px; /* 첫 화면 로고 높이 (DS1: 360px에서 워드마크 글자 높이 ≥ 40px — 시안은 세로 로고 236px, 글자 약 62px) */
+  --logo-h-header: 40px; /* 일반 헤더 로고 높이 — brand/a/logo-header.svg(단순화 심볼 + 워드마크). 40px에서 워드마크 글자 높이 ≈ 23px (DS1·R-128: ≥ 22px) */
+  --w-doc: 720px; /* 출생신고 문서 폭 */
+  --w-page: 1200px; /* 3열 화면 최대 폭 */
+  --z-sticky: 10;
+  --z-bar: 20;
+  --z-modal: 40;
+  --z-toast: 50;
+  /* 반응형 기준 폭(px) — CSS 변수는 미디어쿼리에 못 쓰므로 숫자로 적어 둔다: 640(넓은 폰·세로 태블릿), 960(2열·3열 시작), 1200(최대 폭) */
+
+  /* ---------- 움직임 ---------- */
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 400ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ---------- 다크: 시스템 설정을 따르되, 수동으로 라이트를 고른 경우는 제외 ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --c-bg: #14171f;
+    --c-surface: #1c212c;
+    --c-surface-2: #262c3a;
+    --c-border: #323a4b;
+    --c-border-strong: #7a8499;
+    --c-scrim: rgba(0, 0, 0, 0.64);
+    --c-text: #ece8de;
+    --c-text-2: #c4bfb2;
+    --c-text-3: #a29d90;
+    --c-brand: #b3c2e8;
+    --c-brand-hover: #cbd6f2;
+    --c-on-brand: #14171f;
+    --c-brand-soft: #262f47;
+    --c-on-brand-soft: #d5def5;
+    --c-accent: #dcb85c;
+    --c-accent-soft: #3a3118;
+    --c-on-accent-soft: #f0dc9c;
+    --c-focus: #8ab4ff;
+    --c-up: #6fcf9a;
+    --c-down: #f08a8a;
+    --c-notice-bg: #3d3410;
+    --c-on-notice: #f5e3a3;
+    --c-link: #9dbcff;
+    --c-stat-health: #ef4d92;
+    --c-stat-happy: #d243b8;
+    --c-stat-knowledge: #3d7ff0;
+    --c-stat-relation: #bb9ade;
+    --c-meter-track: #2c3343;
+    --c-grade-1: #c49a72;
+    --c-grade-1-soft: #3a2e22;
+    --c-grade-1-ink: #ecd3b9;
+    --c-grade-2: #e08a52;
+    --c-grade-2-soft: #402a1d;
+    --c-grade-2-ink: #f5c9a8;
+    --c-grade-3: #a9b6c4;
+    --c-grade-3-soft: #2d343e;
+    --c-grade-3-ink: #dde3ea;
+    --c-grade-4: #e0b43c;
+    --c-grade-4-soft: #3b3112;
+    --c-grade-4-ink: #f2dc94;
+    --c-grade-5: #55c0e2;
+    --c-grade-5-soft: #17323b;
+    --c-grade-5-ink: #b6e6f5;
+    --c-logo: #e9e4d6;
+    --c-logo-tile: #26324a;
+    --c-on-logo-tile: #f3eee2;
+    --c-face-skin: #f1c9a5;
+    --c-face-skin-shade: #e3b38c;
+    --c-face-line: #4a362c;
+    --c-face-hair: #2b2420;
+    --c-face-hair-gray: #85817b;
+    --c-face-hair-white: #d6d2ca;
+    --c-face-hair-edge: #4a453d;
+    --c-face-blush: #e8998d;
+    --c-face-cloth: #6c7f9e;
+    --c-face-bg: #e8e3d6;
+    --shadow-1: none;
+    --shadow-2: none;
+    --shadow-bar: 0 -1px 0 #323a4b;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-bg: #14171f;
+  --c-surface: #1c212c;
+  --c-surface-2: #262c3a;
+  --c-border: #323a4b;
+  --c-border-strong: #7a8499;
+  --c-scrim: rgba(0, 0, 0, 0.64);
+  --c-text: #ece8de;
+  --c-text-2: #c4bfb2;
+  --c-text-3: #a29d90;
+  --c-brand: #b3c2e8;
+  --c-brand-hover: #cbd6f2;
+  --c-on-brand: #14171f;
+  --c-brand-soft: #262f47;
+  --c-on-brand-soft: #d5def5;
+  --c-accent: #dcb85c;
+  --c-accent-soft: #3a3118;
+  --c-on-accent-soft: #f0dc9c;
+  --c-focus: #8ab4ff;
+  --c-up: #6fcf9a;
+  --c-down: #f08a8a;
+  --c-notice-bg: #3d3410;
+  --c-on-notice: #f5e3a3;
+  --c-link: #9dbcff;
+  --c-stat-health: #ef4d92;
+  --c-stat-happy: #d243b8;
+  --c-stat-knowledge: #3d7ff0;
+  --c-stat-relation: #bb9ade;
+  --c-meter-track: #2c3343;
+  --c-grade-1: #c49a72;
+  --c-grade-1-soft: #3a2e22;
+  --c-grade-1-ink: #ecd3b9;
+  --c-grade-2: #e08a52;
+  --c-grade-2-soft: #402a1d;
+  --c-grade-2-ink: #f5c9a8;
+  --c-grade-3: #a9b6c4;
+  --c-grade-3-soft: #2d343e;
+  --c-grade-3-ink: #dde3ea;
+  --c-grade-4: #e0b43c;
+  --c-grade-4-soft: #3b3112;
+  --c-grade-4-ink: #f2dc94;
+  --c-grade-5: #55c0e2;
+  --c-grade-5-soft: #17323b;
+  --c-grade-5-ink: #b6e6f5;
+  --c-logo: #e9e4d6;
+  --c-logo-tile: #26324a;
+  --c-on-logo-tile: #f3eee2;
+  --c-face-skin: #f1c9a5;
+  --c-face-skin-shade: #e3b38c;
+  --c-face-line: #4a362c;
+  --c-face-hair: #2b2420;
+  --c-face-hair-gray: #85817b;
+  --c-face-hair-white: #d6d2ca;
+  --c-face-hair-edge: #4a453d;
+  --c-face-blush: #e8998d;
+  --c-face-cloth: #6c7f9e;
+  --c-face-bg: #e8e3d6;
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-bar: 0 -1px 0 #323a4b;
+}
+
+/* ---------- 움직임 줄이기: 시스템 설정 또는 앱 설정(<html data-motion="reduce">) ----------
+   CSS 전환·애니메이션은 이 토큰만 쓰므로 여기서 0으로 만들면 함께 꺼진다.
+   룰렛 회전·캐러셀 자동 전환·진행률 바 애니메이션은 JS가 같은 신호(matchMedia + data-motion)를 읽어 끈다. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
+}
+:root[data-motion='reduce'] {
+  --dur-fast: 0.01ms;
+  --dur: 0.01ms;
+  --dur-slow: 0.01ms;
+}
+
+/* ---------- 강제 색상(고대비) 모드 ----------
+   배경·글자색은 시스템이 덮어쓴다. 의미는 색이 아니라 모양(테두리 굵기·무늬·아이콘·글자)이 전한다.
+   색이 의미를 가진 요소(상태 바 면·수저 단계 아이콘·얼굴·로고)는 해당 요소에서만 forced-color-adjust: none 으로
+   시스템 색(CanvasText·Highlight·GrayText)을 직접 지정한다 — design-system.md 「강제 색상」. */
+@media (forced-colors: active) {
+  :root {
+    --c-bg: Canvas;
+    --c-surface: Canvas;
+    --c-surface-2: Canvas;
+    --c-border: CanvasText;
+    --c-border-strong: CanvasText;
+    --c-scrim: transparent;
+    --c-text: CanvasText;
+    --c-text-2: CanvasText;
+    --c-text-3: CanvasText;
+    --c-brand: ButtonText;
+    --c-brand-hover: ButtonText;
+    --c-on-brand: ButtonFace;
+    --c-brand-soft: Canvas;
+    --c-on-brand-soft: CanvasText;
+    --c-accent: CanvasText;
+    --c-accent-soft: Canvas;
+    --c-on-accent-soft: CanvasText;
+    --c-focus: Highlight;
+    --c-up: CanvasText;
+    --c-down: CanvasText;
+    --c-notice-bg: Canvas;
+    --c-on-notice: CanvasText;
+    --c-link: LinkText;
+    --c-stat-health: CanvasText;
+    --c-stat-happy: CanvasText;
+    --c-stat-knowledge: CanvasText;
+    --c-stat-relation: CanvasText;
+    --c-meter-track: Canvas;
+    --c-grade-1: CanvasText;
+    --c-grade-2: CanvasText;
+    --c-grade-3: CanvasText;
+    --c-grade-4: CanvasText;
+    --c-grade-5: CanvasText;
+    --c-grade-1-soft: Canvas;
+    --c-grade-2-soft: Canvas;
+    --c-grade-3-soft: Canvas;
+    --c-grade-4-soft: Canvas;
+    --c-grade-5-soft: Canvas;
+    --c-grade-1-ink: CanvasText;
+    --c-grade-2-ink: CanvasText;
+    --c-grade-3-ink: CanvasText;
+    --c-grade-4-ink: CanvasText;
+    --c-grade-5-ink: CanvasText;
+    --c-logo: CanvasText;
+    /* 수저 아이콘 큰 변형(sp-3-lg 은·sp-4-lg 금)의 밝은 표식 색. 이름은 간격 토큰(--sp-N)과 겹치지만 스프라이트가 읽는 변수라 그대로 둔다(평상시에는 정의하지 않아 기본 흰빛).
+       강제 색상에서는 바탕색(Canvas)으로 두어 검은 글자·흰 글자 두 극성 모두에서 몸체(CanvasText) 위에 표식이 남는다(REV-003-D-4 관찰 (a)). */
+    --sp-mark: Canvas;
+    --shadow-1: none;
+    --shadow-2: none;
+    --shadow-bar: 0 -1px 0 CanvasText;
+  }
+}

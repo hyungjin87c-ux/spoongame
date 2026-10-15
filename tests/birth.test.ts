@@ -4,6 +4,7 @@ import stateSrc from '../src/core/state.ts?raw';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ERA,
+  DEFAULT_LIFE_LENGTH,
   ERAS,
   GENDERS,
   MIN_BIRTH_HEALTH,
@@ -19,9 +20,7 @@ import {
   generateBirthFromSeed,
   looksPmf,
   looksTopPercent,
-  selectEra,
   standingOf,
-  startGame,
   wealthBottomPercent,
   wealthTopPercent,
   type Era,
@@ -211,7 +210,7 @@ describe('범위·스냅샷', () => {
   });
 
   it('beginBirth: 출생 시점 스탯 스냅샷이 저장되고 stats와 별개 객체다', () => {
-    const s = beginBirth(selectEra(startGame(createInitialState(5)), 'present'));
+    const s = beginBirth(createInitialState(5), 'present');
     expect(s.birthStats).toEqual(s.stats);
     expect(s.birthStats).not.toBe(s.stats);
     s.stats.wealth += 10;
@@ -336,32 +335,54 @@ describe('재력 누적 %는 가중치 합으로 정규화된다 (R-031: 합이 
 });
 
 describe('상태 전이', () => {
-  it('타이틀 → 시대 선택(기본 지금 세상) → 출생 → 인생', () => {
+  it('첫 화면(타이틀, 기본 지금 세상·약 30분) → 출생 → 인생. 시대 선택 단계는 없다 (SPEC-003 FS1)', () => {
     expect(DEFAULT_ERA).toBe('present');
-    let s = startGame(createInitialState(1));
-    expect(s.phase).toBe('eraSelect');
-    expect(s.era).toBeNull();
+    expect(DEFAULT_LIFE_LENGTH).toBe('short30');
+    let s = createInitialState(1);
+    expect(s.phase).toBe('title');
+    expect(s.era).toBeNull(); // 고르는 값은 설정에 있다. 판에는 출생 때 정해진다
+    expect(s.lifeLength).toBeNull();
     s = beginBirth(s); // 아무것도 안 고르면 기본값
     expect(s.phase).toBe('birth');
     expect(s.era).toBe('present');
+    expect(s.lifeLength).toBe('short30');
     expect(s.character).not.toBeNull();
     s = enterLife(s);
     expect(s.phase).toBe('life');
+    expect(s.lifeLength).toBe('short30'); // 진행 중에도 그대로(LM3)
   });
 
-  it('beginBirth 연타해도 한 번만 뽑힌다 / eraSelect 밖에서 selectEra는 무시', () => {
-    const born = beginBirth(selectEra(startGame(createInitialState(9)), 'future'));
-    expect(beginBirth(born)).toBe(born);
-    expect(selectEra(born, 'past')).toBe(born);
+  it('고른 세상·인생 길이가 판에 그대로 들어가고, 인생 길이는 인생이 시작돼도 바뀌지 않는다 (LM3)', () => {
+    for (const era of ERAS) {
+      for (const length of ['short30', 'long60'] as const) {
+        const born = beginBirth(createInitialState(77), era, length);
+        expect(born.era, `${era}/${length}`).toBe(era);
+        expect(born.lifeLength, `${era}/${length}`).toBe(length);
+        expect(enterLife(born).lifeLength).toBe(length);
+      }
+    }
+  });
+
+  it('인생 길이가 달라도 출생 결과(인물·스탯)는 같다 — 인생 길이는 출생 확률에 영향을 주지 않는다', () => {
+    const a = beginBirth(createInitialState(123), 'present', 'short30');
+    const b = beginBirth(createInitialState(123), 'present', 'long60');
+    expect(b.character).toEqual(a.character);
+    expect(b.stats).toEqual(a.stats);
+    expect(b.rngState).toBe(a.rngState);
+  });
+
+  it('beginBirth 연타해도 한 번만 뽑힌다 / 첫 화면(title) 밖에서는 아무 일도 없다', () => {
+    const born = beginBirth(createInitialState(9), 'future');
+    expect(beginBirth(born, 'past')).toBe(born);
     expect(enterLife(enterLife(born))).toEqual(enterLife(born));
-    const t = createInitialState(9);
-    expect(selectEra(t, 'past')).toBe(t);
-    expect(beginBirth(t)).toBe(t);
+    const life = enterLife(born);
+    expect(beginBirth(life, 'past', 'long60')).toBe(life);
+    expect(enterLife(createInitialState(9))).toEqual(createInitialState(9)); // 출생 전에는 인생이 시작되지 않는다
   });
 
   it('beginBirth는 정확히 한 번 뽑은 결과이고 rngState가 그만큼 전진한다 (R-022)', () => {
-    const before = selectEra(startGame(createInitialState(9)), 'future');
-    const born = beginBirth(before);
+    const before = createInitialState(9);
+    const born = beginBirth(before, 'future');
 
     // 같은 상태에서 generateBirth를 직접 한 번 돌린 결과와 같다
     const ref = createRng(before.rngState);
@@ -385,7 +406,7 @@ describe('상태 전이', () => {
 
   it('세 시대 모두 출생까지 도달하고 시대 범위의 연도가 나온다', () => {
     for (const era of ERAS) {
-      const s = beginBirth(selectEra(startGame(createInitialState(42)), era));
+      const s = beginBirth(createInitialState(42), era);
       expect(s.era).toBe(era);
       const y = s.character!.birthYear;
       expect(y).toBeGreaterThanOrEqual(ERA_CONFIG[era].birthYears.min);

@@ -1,10 +1,33 @@
-/** 화면 단계. M2 이후 마일스톤이 이 단계 위에 화면을 얹는다. */
-export const PHASES = ['title', 'eraSelect', 'birth', 'life', 'ending'] as const;
+/**
+ * 저장되는 화면 단계. SPEC-003 FS1: title → (roulette: M3) → birth → life → ending. 별도 시대 선택 단계(eraSelect)는 없어졌다 — 세상·인생 길이는 첫 화면(title)에서 고른다.
+ * 「첫 화면 다시 열기」(나가기)는 저장되는 단계가 아니라 세션 상태다(core/session.ts#Session.showTitle, 마스터 결정 C3).
+ */
+export const PHASES = ['title', 'birth', 'life', 'ending'] as const;
 export type Phase = (typeof PHASES)[number];
 
 /** 시대: 지난 세상 / 지금 세상 / 다가올 세상 */
 export const ERAS = ['past', 'present', 'future'] as const;
 export type Era = (typeof ERAS)[number];
+
+/** 인생 길이: 약 30분 / 약 1시간 (SPEC-003 FS5·LM1). 이번 마일스톤(M2)은 선택값을 저장하는 데까지이고 실제 시간 모델은 M8 몫이다. */
+export const LIFE_LENGTHS = ['short30', 'long60'] as const;
+export type LifeLength = (typeof LIFE_LENGTHS)[number];
+
+/**
+ * 지금 고를 수 있는 인생 길이 (REV-003-M2-1 R-202). 「약 1시간」은 2차(M8)라 1차에서는 첫 화면에 카드는 보이되 선택할 수 없고(「준비 중」),
+ * 저장된 설정이 long60이어도 short30으로 읽는다(core/storage.ts#parseSettings). M8이 시간 모델을 만들면 여기에 'long60'을 더하면 된다.
+ * 판에 고정되는 값(GameState.lifeLength)과 core 함수(beginBirth 등)는 두 값을 모두 안다 — 이 목록은 「화면에서 고를 수 있는가」만 정한다.
+ */
+export const SELECTABLE_LIFE_LENGTHS: readonly LifeLength[] = ['short30'];
+
+export function isLifeLengthSelectable(lifeLength: LifeLength): boolean {
+  return SELECTABLE_LIFE_LENGTHS.includes(lifeLength);
+}
+
+/** 고를 수 있는 값이면 그대로, 아니면 고를 수 있는 첫 값(약 30분)으로 읽는다. */
+export function selectableLifeLength(lifeLength: LifeLength): LifeLength {
+  return isLifeLengthSelectable(lifeLength) ? lifeLength : SELECTABLE_LIFE_LENGTHS[0];
+}
 
 export const GENDERS = ['male', 'female'] as const;
 export type Gender = (typeof GENDERS)[number];
@@ -87,6 +110,8 @@ export interface Death {
 export interface GameState {
   phase: Phase;
   era: Era | null;
+  /** 이 판의 인생 길이(LM3: 판을 시작할 때 정해지고 진행 중에는 바뀌지 않는다). 출생 전(title)에는 null. */
+  lifeLength: LifeLength | null;
   character: Character | null;
   stats: Stats;
   /** 출생 시점 스탯 스냅샷 (엔딩의 "출발선 대비"용). 출생 전에는 null. */
@@ -117,4 +142,11 @@ export type Speed = (typeof SPEEDS)[number];
 export interface Settings {
   speed: Speed;
   autoMode: boolean;
+  /** 첫 화면에서 마지막으로 고른 태어날 세상 — 다음 판의 기본 선택(FS4) */
+  era: Era;
+  /** 첫 화면에서 마지막으로 고른 인생 길이 — 다음 판의 기본 선택(FS5·LM1) */
+  lifeLength: LifeLength;
 }
+
+/** 인생 화면이 읽는 재생 설정(배속·자동 모드). Settings의 일부다. */
+export type PlaySettings = Pick<Settings, 'speed' | 'autoMode'>;

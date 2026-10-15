@@ -1,0 +1,12 @@
+# 줄바꿈 통일(여러 도구가 CRLF로 저장해도 저장소에는 LF)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+# 생성기가 UTF-8 BOM·CRLF로 만드는 CSV(테스트가 바이트 그대로 대조) — 변환하지 않음
+docs/data/korea-life-data-sources.csv -text

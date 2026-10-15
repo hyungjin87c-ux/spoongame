@@ -42,9 +42,10 @@ describe('resolvePagesBase: base 경로는 환경변수 PAGES_BASE로만 바뀐�
     expect(viteConfig).not.toMatch(/base:\s*['"]/); // 하드코딩된 base가 아니다
   });
 
-  it('index.html은 루트 상대 경로(/src/main.tsx) 하나만 쓴다 — vite가 빌드 때 base를 붙여 준다 (그 밖에 손으로 쓴 절대 경로 없음)', () => {
+  it('index.html은 루트 상대 경로(/src/…)만 쓴다 — 진입 파일과 아이콘(심볼 A안) 세 개뿐이고, vite가 빌드 때 base를 붙여 준다 (그 밖에 손으로 쓴 절대 경로 없음)', () => {
     const refs = [...indexHtml.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]);
-    expect(refs).toEqual(['/src/main.tsx']);
+    expect(refs).toEqual(['/src/assets/brand/a/favicon.svg', '/src/assets/brand/a/favicon-32.png', '/src/assets/brand/a/apple-touch-icon.png', '/src/main.tsx']);
+    for (const ref of refs) expect(ref.startsWith('/src/'), ref).toBe(true);
   });
 });
 

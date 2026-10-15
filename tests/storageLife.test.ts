@@ -181,8 +181,10 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
     'history: 항목 나이가 현재 나이보다 큼': d(mid, (x) => x.history.push({ age: x.age + 1, kind: 'event', text: '미래' })),
     'history: 161개(상한 초과)': d(mid, (x) => (x.history = Array.from({ length: 161 }, () => ({ age: 0, kind: 'event', text: 'x' })))),
     // 인생 시작 전에는 진행 기록이 비어 있어야 한다
-    'eraSelect인데 연표가 있음': d(mid, (x) => {
-      x.phase = 'eraSelect';
+    'title인데 연표가 있음': d(mid, (x) => {
+      x.phase = 'title';
+      x.era = null;
+      x.lifeLength = null;
       x.character = null;
       x.birthStats = null;
       x.age = 0;

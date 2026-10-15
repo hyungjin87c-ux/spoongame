@@ -5,26 +5,30 @@ import { NAMES } from '../src/data/names';
 import { TitleScreen } from '../src/screens/TitleScreen';
 
 /**
- * 타이틀 화면의 이름 통계 출처 표기 (법원 자료 이용 조건). 실제 폭 360px에서 넘치지 않는지는 e2e/title.spec.ts가 본다.
- * 여기서는 서버 렌더로 표기 문구·링크를 원자료 권장 표기와 대조한다.
+ * 첫 화면의 이름 통계 출처 표기 (법원 자료 이용 조건). 실제 폭 360px에서 넘치지 않는지는 e2e/title.spec.ts가 본다.
+ * 여기서는 서버 렌더로 표기 문구·링크를 원자료 권장 표기와 대조한다. 첫 화면 전체(FS·VP·SC)는 tests/titleScreen.test.tsx.
  */
 const scourt = scourtJson as unknown as { meta: { url: string; suggestedAttribution: string } };
 
-describe('타이틀 화면 출처 표기', () => {
-  const html = renderToStaticMarkup(<TitleScreen onStart={() => {}} />);
+describe('첫 화면 출처 표기', () => {
+  const html = renderToStaticMarkup(
+    <TitleScreen era="present" lifeLength="short30" onSelectEra={() => {}} onSelectLifeLength={() => {}} onBegin={() => {}} minute={29_850_000} />,
+  );
 
-  it('타이틀이 뜨고 제목·시작 버튼 아래에 출처 표기(names-credit)가 있다', () => {
+  it('첫 화면이 뜨고, 이름 통계 출처 표기(names-credit)가 「태어나기」 버튼보다 뒤(푸터)에 있다', () => {
     expect(html).toContain('data-testid="title-screen"');
     expect(html).toContain('수저 게임');
     const credit = html.indexOf('data-testid="names-credit"');
-    expect(credit).toBeGreaterThan(html.indexOf('시작'));
+    expect(credit).toBeGreaterThan(html.indexOf('data-testid="era-group"'));
+    expect(credit).toBeGreaterThan(html.indexOf('data-testid="carousel"'));
   });
 
   it('표기 문구는 names.json의 attribution이고 원자료 권장 표기의 기관·서비스·기준·조회일을 담는다', () => {
-    expect(html).toContain(NAMES.meta.attribution.text);
+    // 줄바꿈 묶음(QM2-5, ui/Glue.tsx)의 span은 글자를 바꾸지 않고 감싸기만 하므로, 표기 문구 전체는 태그를 뺀 글자로 대조한다(조회일 같은 묶음이 span 안에 있다)
+    expect(html.replace(/<[^>]+>/g, '')).toContain(NAMES.meta.attribution.text);
     for (const part of ['대한민국 법원 전자가족관계등록시스템', '통계서비스', '상위 출생신고 이름 현황', '등록일 기준 잠정치', '2026-10-13']) {
       expect(scourt.meta.suggestedAttribution).toContain(part);
-      expect(html).toContain(part);
+      expect(html.replace(/<[^>]+>/g, ''), part).toContain(part); // 묶음 span이 낱말 중간에 걸릴 수 있어 태그를 뺀 글자로
     }
   });
 

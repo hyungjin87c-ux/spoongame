@@ -54,7 +54,7 @@ export const ERA_CONFIG: Record<Era, EraConfig> = {
   },
   future: {
     label: '다가올 세상',
-    blurb: '아직 오지 않은 시간. 격차는 더 벌어졌다고들 한다',
+    blurb: '아직 오지 않은 시간. 격차는 더 벌어졌다고들 합니다',
     birthYears: { min: 2030, max: 2060 },
     wealthWeights: [30, 28, 24, 13, 5],
     parentingWeights: { neglect: 10, free: 35, helicopter: 30, strict: 25 },

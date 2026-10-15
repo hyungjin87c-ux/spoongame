@@ -101,7 +101,7 @@ test('선택 버튼을 연타해도 첫 클릭만 반영되고, 바로 다음에
   const a = await evalCore<GameState | null>(
     page,
     `for (let seed = 3000; seed < 3400; seed++) {
-       const start = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), 'present')));
+       const start = core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
        const s = core.advanceUntilDecision(start).state;
        if (s.phase !== 'life' || !s.pending) continue;
        const t = core.advanceUntilDecision(core.resolveChoice(s, s.pending.key, s.pending.choiceIds[0])).state;
@@ -136,7 +136,7 @@ test('키보드만으로 타이틀부터 사망까지 진행할 수 있다 (Tab�
   const errors = trackErrors(page);
   await page.goto('/?__timescale=500');
   const focusedId = () => page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? document.activeElement?.textContent?.trim() ?? '');
-  const tabTo = async (matches: (id: string) => boolean, max = 14) => {
+  const tabTo = async (matches: (id: string) => boolean, max = 40) => { // 첫 화면에는 세상·인생 길이·캐러셀(이전·다음·일시정지·슬라이드)·출처 링크가 있어 「태어나기」까지 Tab이 더 필요하다
     for (let i = 0; i < max; i++) {
       await page.keyboard.press('Tab');
       if (matches(await focusedId())) return;
@@ -144,12 +144,8 @@ test('키보드만으로 타이틀부터 사망까지 진행할 수 있다 (Tab�
     throw new Error('Tab으로 원하는 요소에 도달하지 못했다');
   };
 
-  await expect(page.getByRole('button', { name: '시작' })).toBeEnabled();
-  await tabTo((id) => id === '시작');
-  await page.keyboard.press('Enter');
-  await expect(page.getByTestId('era-screen')).toBeVisible();
-  await expect(page.getByTestId('confirm-era')).toBeEnabled();
-  await tabTo((id) => id === 'confirm-era');
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
+  await tabTo((id) => id === 'start-birth');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   await expect(page.getByTestId('next-life')).toBeEnabled();
@@ -353,8 +349,8 @@ test('저장소가 비어 있고 쓰기가 막혀 있으면(처음 연 사용자
   // 읽은 값(없음)과 지금 상태가 달라 첫 상태를 쓰려고 하고, 그 쓰기가 실패한다 → 진행이 없어도 곧바로 안내한다
   await expect(page.getByTestId('save-notice')).toBeVisible();
   await expect(page.getByTestId('save-notice')).toContainText('저장하지 못했습니다');
-  await page.getByRole('button', { name: '시작' }).click();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await page.getByTestId('start-birth').click();
+  await expect(page.getByTestId('birth-screen')).toBeVisible();
   await expect(page.getByTestId('save-notice')).toBeVisible();
   expect(await page.evaluate((k) => localStorage.getItem(k), GAME_KEY), '저장은 실제로 일어나지 않았다').toBeNull();
   expect(await noHorizontalOverflow(page)).toBe(true);
@@ -532,7 +528,7 @@ test('개발자 도구로 같은 탭의 저장을 지우고 새로고침하면 �
   const other = await oracleLife(page, 4242, 'past');
   await page.evaluate(
     ([key, value]) => localStorage.setItem(key, value),
-    [GAME_KEY, JSON.stringify({ version: 4, data: other })],
+    [GAME_KEY, JSON.stringify({ version: SAVE_VERSION, data: other })],
   );
   await page.reload();
   await expect(page.getByTestId('life-screen')).toBeVisible();

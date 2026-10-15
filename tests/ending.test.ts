@@ -4,6 +4,7 @@ import finalDistributionSrc from '../src/data/finalDistribution.ts?raw';
 import {
   COMPARABLE_STATS,
   DEFAULT_ERA,
+  DEFAULT_SETTINGS,
   ERAS,
   BAND_GRACE,
   STAGES,
@@ -18,7 +19,6 @@ import {
   reachedIndependence,
   rebirth,
   reviewEnding,
-  selectEra,
   serializeGame,
   sessionReducer,
   createSession,
@@ -29,7 +29,6 @@ import {
   stageRangeOf,
   standingOf,
   standingScore,
-  startGame,
   startBandOf,
   validateFinalDistribution,
   wealthStanding,
@@ -1077,17 +1076,19 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
   });
 });
 
-describe('다시 태어나기 (rebirth): 새 시드로 새 판, 시대 선택에서 시작', () => {
+describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title)에서 시작 (SPEC-003 규칙 19)', () => {
   const ended = (seed = 77): GameState => playToEnd(startLife(seed, 'present'), chooserFor('random', seed)).state;
 
-  it('ending → 시대 선택 화면(eraSelect): 새 시드, 시대 미선택(기본 선택 지금 세상), 이전 판의 흔적이 하나도 없다', () => {
+  it('ending → 첫 화면(title): 새 시드, 세상·인생 길이 미정(첫 화면의 선택은 설정에 있다), 이전 판의 흔적이 하나도 없다', () => {
     const before = ended();
     expect(before.phase).toBe('ending');
     const r = rebirth(before, 9001);
-    expect(r).toEqual({ ...createInitialState(9001), phase: 'eraSelect' });
+    expect(r).toEqual(createInitialState(9001));
+    expect(r.phase).toBe('title');
     expect(r.seed).toBe(9001);
     expect(r.rngState).toBe(9001);
-    expect(r.era).toBeNull(); // 화면의 기본 선택 = DEFAULT_ERA
+    expect(r.era).toBeNull(); // 첫 화면의 기본 선택 = DEFAULT_ERA (설정)
+    expect(r.lifeLength).toBeNull();
     expect(DEFAULT_ERA).toBe('present');
     for (const key of ['character', 'birthStats', 'death', 'pending', 'lastChoiceAge'] as const) expect(r[key], key).toBeNull();
     expect(r.history).toEqual([]);
@@ -1098,17 +1099,16 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 시대 선택에
     expect(r.seed).not.toBe(before.seed);
   });
 
-  it('ending이 아닐 때는 같은 객체를 돌려준다 (title·eraSelect·birth·life에서 호출돼도 아무 일도 없다)', () => {
+  it('ending이 아닐 때는 같은 객체를 돌려준다 (title·birth·life에서 호출돼도 아무 일도 없다)', () => {
     const title = createInitialState(1);
-    const era = startGame(title);
-    const birth = beginBirth(selectEra(era, 'past'));
+    const birth = beginBirth(title, 'past');
     const life = enterLife(birth);
-    for (const s of [title, era, birth, life]) expect(rebirth(s, 5)).toBe(s);
+    for (const s of [title, birth, life]) expect(rebirth(s, 5)).toBe(s);
   });
 
-  it('연타·더블탭: 두 번째부터는 같은 객체라 두 판이 시작되거나 시대 선택을 건너뛰지 않는다', () => {
+  it('연타·더블탭: 두 번째부터는 같은 객체라 두 판이 시작되거나 첫 화면을 건너뛰지 않는다', () => {
     const r1 = rebirth(ended(), 11);
-    expect(r1.phase).toBe('eraSelect');
+    expect(r1.phase).toBe('title');
     const r2 = rebirth(r1, 22);
     expect(r2).toBe(r1);
     expect(r2.seed).toBe(11); // 둘째 입력의 시드는 버려진다
@@ -1117,28 +1117,28 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 시대 선택에
     const s1 = sessionReducer(s0, { type: 'rebirth', seed: 11 });
     const s2 = sessionReducer(s1, { type: 'rebirth', seed: 22 });
     const s3 = sessionReducer(s2, { type: 'rebirth', seed: 33 });
-    expect(s1.game.phase).toBe('eraSelect');
+    expect(s1.game.phase).toBe('title');
     expect(s2).toBe(s1);
     expect(s3).toBe(s1);
-    // 새 판이 시작되려면 시대를 확정해야 하고, 그 전의 진행 입력은 전부 무시된다
-    for (const a of [{ type: 'enterLife' }, { type: 'skip' }, { type: 'advance', fromAge: 0 }, { type: 'start' }] as const) expect(sessionReducer(s1, a), a.type).toBe(s1);
+    // 새 판이 시작되려면 첫 화면에서 「태어나기」를 눌러야 하고, 그 전의 진행·이동 입력은 전부 무시된다
+    for (const a of [{ type: 'enterLife' }, { type: 'skip' }, { type: 'advance', fromAge: 0 }, { type: 'resume' }, { type: 'openTitle' }] as const) expect(sessionReducer(s1, a), a.type).toBe(s1);
   });
 
-  it('설정(배속·자동 모드)은 그대로 유지된다, tick은 비워진다, 인생 도중의 rebirth는 무시된다', () => {
-    const s0 = createSession(ended(), { speed: 4, autoMode: true });
+  it('설정(배속·자동 모드·고른 세상과 인생 길이)은 그대로 유지된다, tick은 비워진다, 인생 도중의 rebirth는 무시된다', () => {
+    const s0 = createSession(ended(), { speed: 4, autoMode: true, era: 'future', lifeLength: 'long60' });
     const s1 = sessionReducer(s0, { type: 'rebirth', seed: 5 });
     expect(s1.settings).toBe(s0.settings);
-    expect(s1.settings).toEqual({ speed: 4, autoMode: true });
+    expect(s1.settings).toEqual({ speed: 4, autoMode: true, era: 'future', lifeLength: 'long60' });
     expect(s1.tick).toBeNull();
     const life = createSession(startLife(3, 'present'), { speed: 2, autoMode: false });
     expect(sessionReducer(life, { type: 'rebirth', seed: 5 })).toBe(life);
   });
 
-  it('새 판: 시대를 고르지 않고 확정하면 지금 세상, 고르면 그 시대로 태어난다. 같은 시드면 같은 인물이고 시드가 다르면 다른 인물이다', () => {
+  it('새 판: 세상을 고르지 않고 태어나면 지금 세상, 고르면 그 세상으로 태어난다. 같은 시드면 같은 인물이고 시드가 다르면 다른 인물이다', () => {
     const born = (seed: number, era?: Era) => {
       let s = sessionReducer(createSession(ended(), { speed: 1, autoMode: false }), { type: 'rebirth', seed });
-      if (era !== undefined) s = sessionReducer(s, { type: 'selectEra', era });
-      return sessionReducer(s, { type: 'confirmEra' }).game;
+      if (era !== undefined) s = sessionReducer(s, { type: 'setEra', era });
+      return sessionReducer(s, { type: 'begin' }).game;
     };
     const a = born(1001);
     expect(a.phase).toBe('birth');
@@ -1148,10 +1148,10 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 시대 선택에
     expect(born(1001, 'future').era).toBe('future');
     expect(born(1001, 'past').era).toBe('past');
     // 이전 판과 상관없이 시드에서만 정해진다
-    expect(sessionReducer(sessionReducer(createSession(ended(5), { speed: 1, autoMode: false }), { type: 'rebirth', seed: 1001 }), { type: 'confirmEra' }).game).toEqual(a);
+    expect(sessionReducer(sessionReducer(createSession(ended(5), { speed: 1, autoMode: false }), { type: 'rebirth', seed: 1001 }), { type: 'begin' }).game).toEqual(a);
   });
 
-  it('새 판 상태는 저장·복원이 된다 (시대 선택 단계로 새로고침해도 같은 새 판)', () => {
+  it('새 판 상태는 저장·복원이 된다 (첫 화면 단계로 새로고침해도 같은 새 판)', () => {
     const r = rebirth(ended(), 4242);
     expect(parseGame(serializeGame(r))).toEqual(r);
   });
@@ -1161,7 +1161,7 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 시대 선택에
     const seeds: number[] = [];
     for (let round = 0; round < 4; round++) {
       session = sessionReducer(session, { type: 'rebirth', seed: 500 + round });
-      session = sessionReducer(session, { type: 'confirmEra' });
+      session = sessionReducer(session, { type: 'begin' });
       session = sessionReducer(session, { type: 'enterLife' });
       seeds.push(session.game.seed);
       const end = playToEnd(session.game, null).state;
@@ -1169,7 +1169,7 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 시대 선택에
       session = { ...session, game: end };
     }
     expect(seeds).toEqual([500, 501, 502, 503]);
-    expect(session.settings).toEqual({ speed: 8, autoMode: true });
+    expect(session.settings).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true });
   });
 });
 
@@ -1197,7 +1197,7 @@ describe('저장 검증: 엔딩 상태', () => {
 
   it('엔딩 상태에서는 진행도 선택도 되지 않는다 (엔딩이 되살아나거나 진행이 다시 시작되지 않는다)', () => {
     const s0 = createSession(ended, { speed: 8, autoMode: true });
-    for (const a of [{ type: 'advance', fromAge: ended.age }, { type: 'skip' }, { type: 'autoChoose', key: 'x@1' }, { type: 'choose', key: 'x@1', choiceId: 'a' }, { type: 'enterLife' }, { type: 'confirmEra' }, { type: 'start' }] as const) {
+    for (const a of [{ type: 'advance', fromAge: ended.age }, { type: 'skip' }, { type: 'autoChoose', key: 'x@1' }, { type: 'choose', key: 'x@1', choiceId: 'a' }, { type: 'enterLife' }, { type: 'begin' }, { type: 'resume' }, { type: 'openTitle' }] as const) {
       expect(sessionReducer(s0, a), a.type).toBe(s0);
     }
   });

@@ -7,6 +7,7 @@ import timingSrc from '../src/core/timing.ts?raw';
 import historySrc from '../src/core/history.ts?raw';
 import {
   AUTO_TEMPERATURE,
+  DEFAULT_SETTINGS,
   ERAS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
@@ -965,8 +966,8 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
     expect(sessionReducer(s, { type: 'setSpeed', speed: 1 })).toBe(s);
     expect(sessionReducer(s, { type: 'setAuto', auto: false })).toBe(s);
     expect(sessionReducer(s, { type: 'setSpeed', speed: 3 as never })).toBe(s);
-    expect(sessionReducer(s, { type: 'setSpeed', speed: 8 }).settings).toEqual({ speed: 8, autoMode: false });
-    expect(sessionReducer(s, { type: 'setAuto', auto: true }).settings).toEqual({ speed: 1, autoMode: true });
+    expect(sessionReducer(s, { type: 'setSpeed', speed: 8 }).settings).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: false });
+    expect(sessionReducer(s, { type: 'setAuto', auto: true }).settings).toEqual({ ...DEFAULT_SETTINGS, speed: 1, autoMode: true });
     // 속도·자동 변경이 게임 상태를 건드리지 않는다
     expect(sessionReducer(s, { type: 'setSpeed', speed: 4 }).game).toBe(s.game);
   });
@@ -979,17 +980,17 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
     expect(adopted.tick).toBeNull();
   });
 
-  it('화면 전환 액션(start/selectEra/confirmEra/enterLife)이 core 함수와 같고 연타는 같은 객체를 돌려준다', () => {
+  it('화면 전환 액션(setEra/begin/enterLife)이 core 함수와 같고 연타는 같은 객체를 돌려준다', () => {
     let s = createSession(createInitialState(9), { speed: 1, autoMode: false });
-    s = sessionReducer(s, { type: 'start' });
-    expect(s.game.phase).toBe('eraSelect');
-    const again = sessionReducer(s, { type: 'start' });
-    expect(again).toBe(s);
-    s = sessionReducer(s, { type: 'selectEra', era: 'future' });
-    s = sessionReducer(s, { type: 'confirmEra' });
+    expect(s.game.phase).toBe('title'); // 첫 화면에서 곧바로 세상을 고르고 태어난다 — 시대 선택 화면은 없다
+    s = sessionReducer(s, { type: 'setEra', era: 'future' });
+    expect(s.settings.era).toBe('future');
+    expect(sessionReducer(s, { type: 'setEra', era: 'future' })).toBe(s); // 같은 선택은 같은 객체
+    s = sessionReducer(s, { type: 'begin' });
     expect(s.game.phase).toBe('birth');
+    expect(s.game.era).toBe('future');
     const born = s;
-    expect(sessionReducer(s, { type: 'confirmEra' })).toBe(born); // 이중 추첨 없음
+    expect(sessionReducer(s, { type: 'begin' })).toBe(born); // 이중 추첨 없음
     s = sessionReducer(s, { type: 'enterLife' });
     expect(s.game.phase).toBe('life');
     expect(sessionReducer(s, { type: 'enterLife' })).toBe(s);
@@ -1023,7 +1024,7 @@ describe('설정(배속·자동 여부)은 게임과 독립으로 저장되고 �
     const { saveSettings, loadSettings, clearGame } = await import('../src/core');
     const st = memoryStorage();
     let s = createSession(createInitialState(1), loadSettings(st));
-    expect(s.settings).toEqual({ speed: 1, autoMode: false });
+    expect(s.settings).toEqual(DEFAULT_SETTINGS);
     s = sessionReducer(s, { type: 'setSpeed', speed: 8 });
     s = sessionReducer(s, { type: 'setAuto', auto: true });
     saveSettings(st, s.settings);
@@ -1032,7 +1033,7 @@ describe('설정(배속·자동 여부)은 게임과 독립으로 저장되고 �
     clearGame(st);
     const next = createSession(loadGame(st) ?? createInitialState(2), loadSettings(st));
     expect(next.game.phase).toBe('title');
-    expect(next.settings).toEqual({ speed: 8, autoMode: true });
+    expect(next.settings).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true });
   });
 });
 

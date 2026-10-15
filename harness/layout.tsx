@@ -21,6 +21,7 @@ function stateFor(pool: EventPool, eventId: string): GameState & { character: Ch
   return {
     phase: 'life',
     era: 'present',
+    lifeLength: 'short30',
     character,
     stats,
     birthStats: { ...stats },

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import type { Character, Era, GameState, Settings } from '../src/core/types';
-import { GAME_KEY, SAVE_VERSION, SETTINGS_KEY } from './saves';
+import type { Character, Era, GameState, LifeLength, Settings } from '../src/core/types';
+import { DEFAULT_ERA_CHOICE, DEFAULT_LIFE_LENGTH_CHOICE, GAME_KEY, SAVE_VERSION, SETTINGS_KEY, settingsEnvelope, type InjectedSettings } from './saves';
 
 /**
  * e2e 공용 헬퍼 (R-022 d): 알려진 시드의 저장을 주입해 실패를 재현 가능하게 만든다.
@@ -12,7 +12,7 @@ import { GAME_KEY, SAVE_VERSION, SETTINGS_KEY } from './saves';
  * 키·버전이 core와 어긋나지 않는지는 tests/e2eHelpers.test.ts가 vitest에서 대조한다.
  */
 
-export { GAME_KEY, KNOWN_SEED, SAVE_VERSION, SETTINGS_KEY, birthState, eraSelectState, lifeState } from './saves';
+export { GAME_KEY, KNOWN_SEED, SAVE_VERSION, SETTINGS_KEY, SETTINGS_VERSION, birthState, lifeState, settingsEnvelope, titleState, type InjectedSettings } from './saves';
 
 /**
  * 이 페이지의 앱이 더 이상 저장하지 않게 한다: "다른 탭이 저장을 바꿨다"는 storage 이벤트를 흉내 낸다(R-011 동작).
@@ -21,6 +21,12 @@ export { GAME_KEY, KNOWN_SEED, SAVE_VERSION, SETTINGS_KEY, birthState, eraSelect
  */
 async function stopAppSaving(page: Page): Promise<void> {
   await page.evaluate((key) => window.dispatchEvent(new StorageEvent('storage', { key })), GAME_KEY);
+  // 앱이 실제로 「밀린 화면」으로 바뀌어 저장을 멈출 때까지 기다린다. 기다리지 않고 곧바로 이동하면 떠나는 앱의 pagehide 저장이 심어 둔 값을 덮어쓸 수 있다:
+  // 심은 값이 진행 없는 타이틀이고 앱이 아는 값도 타이틀이면 A66(잃을 진행이 없는 첫 저장은 충돌이 아니다)에 따라 덮어쓰기가 허용되기 때문이다.
+  // 밀린 화면이 끝내 뜨지 않으면 조용히 넘어가지 않고 그 자리에서 실패한다(R-217 ④: 예전에는 시간 초과를 삼켜서, 덮어쓰기 경합이 생겨도 테스트가 다른 곳에서 엉뚱하게 실패했다).
+  await page.getByTestId('superseded-screen').waitFor({ state: 'attached', timeout: 3000 }).catch((error: unknown) => {
+    throw new Error('앱이 「밀린 화면」으로 바뀌지 않았다(storage 이벤트를 받지 못했다): 심어 둔 저장이 떠나는 앱의 pagehide 저장에 덮일 수 있어 이어갈 수 없다', { cause: error });
+  });
 }
 
 /** 게임 저장만 지운다(설정은 남긴다). 이 페이지의 앱이 지워진 저장을 되살리지 않게 한 뒤 호출하는 쪽이 이동/새로고침한다. */
@@ -33,7 +39,7 @@ export async function clearGameSave(page: Page): Promise<void> {
  * 저장을 심고 target 경로를 연다. 먼저 앱을 한 번 연 뒤(같은 origin 확보) localStorage를 덮어쓰고
  * 다시 연다. addInitScript와 달리 이후 이동·리셋에서 저장이 되살아나지 않는다.
  */
-export async function injectSave(page: Page, state: GameState, target = '/', settings?: Settings): Promise<void> {
+export async function injectSave(page: Page, state: GameState, target = '/', settings?: InjectedSettings): Promise<void> {
   await page.goto('/');
   // 앱이 첫 렌더 뒤 자기 초기 상태를 저장한다. 그 저장이 우리가 심은 값을 덮어쓰지 않도록 기다린다.
   await page.waitForFunction((key) => localStorage.getItem(key) !== null, GAME_KEY);
@@ -46,7 +52,7 @@ export async function injectSave(page: Page, state: GameState, target = '/', set
       GAME_KEY,
       JSON.stringify({ version: SAVE_VERSION, data: state }),
       SETTINGS_KEY,
-      settings ? JSON.stringify({ version: 1, data: settings }) : null,
+      settings ? settingsEnvelope(settings) : null,
     ] as const,
   );
   await stopAppSaving(page);
@@ -54,7 +60,7 @@ export async function injectSave(page: Page, state: GameState, target = '/', set
 }
 
 /** 이미 심어 둔 페이지에서 저장(과 선택적으로 설정)만 바꾸고 새로고침(뷰포트 반복 실험용). 현재 주소의 쿼리(?__guard 등)는 그대로 유지된다. */
-export async function replaceSaveAndReload(page: Page, state: GameState, settings?: Settings): Promise<void> {
+export async function replaceSaveAndReload(page: Page, state: GameState, settings?: InjectedSettings): Promise<void> {
   await page.evaluate(
     ([key, value, settingsKey, settingsValue]) => {
       localStorage.setItem(key, value);
@@ -64,7 +70,7 @@ export async function replaceSaveAndReload(page: Page, state: GameState, setting
       GAME_KEY,
       JSON.stringify({ version: SAVE_VERSION, data: state }),
       SETTINGS_KEY,
-      settings ? JSON.stringify({ version: 1, data: settings }) : null,
+      settings ? settingsEnvelope(settings) : null,
     ] as const,
   );
   await stopAppSaving(page);
@@ -97,14 +103,42 @@ export interface BirthOracle {
  * core 순수 함수가 계산한 기대값. 개발 서버의 실제 모듈을 브라우저에서 불러 같은 코드를 쓴다.
  * 앱 페이지가 열려 있어야 한다(같은 origin).
  */
-export async function expectedBirth(page: Page, before: GameState): Promise<BirthOracle> {
+export async function expectedBirth(page: Page, before: GameState, era: Era = DEFAULT_ERA_CHOICE, lifeLength: LifeLength = DEFAULT_LIFE_LENGTH_CHOICE): Promise<BirthOracle> {
   return page.evaluate<BirthOracle>(`(async () => {
     const core = await import('/src/core/index.ts');
     const before = ${JSON.stringify(before)};
-    const once = core.beginBirth(before);
+    const once = core.beginBirth(before, ${JSON.stringify(era)}, ${JSON.stringify(lifeLength)});
     const second = core.generateBirth(core.createRng(once.rngState), once.era).character;
     return { once, second };
   })()`);
+}
+
+/** 첫 화면에서 세상·인생 길이를 고른다(라디오 카드). 이미 골라져 있어도 된다. */
+/**
+ * 라디오 카드를 가운데로 스크롤한 뒤 누른다. 하단 고정 「태어나기」 띠가 화면 아래쪽 카드를 덮을 수 있어(사람은 스크롤해서 누른다),
+ * 자동 스크롤(보이면 그대로 둔다)에 맡기지 않고 띠 위로 올려 둔다.
+ */
+async function checkRadio(page: Page, testId: string): Promise<void> {
+  const input = page.getByTestId(testId);
+  await expect(page.getByTestId('start-birth')).toBeEnabled(); // 화면 진입 입력 가드가 풀린 뒤(가드 중의 클릭은 선택을 바꾸지 않는다)
+  await input.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await input.check();
+  await expect(input).toBeChecked();
+}
+
+export async function chooseEra(page: Page, era: Era): Promise<void> {
+  await checkRadio(page, `era-${era}`);
+}
+
+export async function chooseLifeLength(page: Page, lifeLength: LifeLength): Promise<void> {
+  await checkRadio(page, `life-${lifeLength}`);
+}
+
+/** 첫 화면의 하단 고정 「태어나기」 (진입 가드가 풀릴 때까지 기다린 뒤 누른다) */
+export async function pressBegin(page: Page): Promise<void> {
+  const begin = page.getByTestId('start-birth');
+  await expect(begin).toBeEnabled();
+  await begin.click();
 }
 
 /** 사람의 더블클릭·연타에 해당하는 입력 방식 */
@@ -238,7 +272,7 @@ export async function evalCore<T>(page: Page, body: string, arg: unknown = null)
 export async function oracleLife(page: Page, seed: number, era: Era): Promise<GameState> {
   return evalCore<GameState>(
     page,
-    'return core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(arg.seed)), arg.era)));',
+    'return core.enterLife(core.beginBirth(core.createInitialState(arg.seed), arg.era));',
     { seed, era },
   );
 }
@@ -261,7 +295,7 @@ export async function findPendingState(page: Page, era: Era, opts: { minChoices?
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = arg.from; seed < arg.from + 400; seed++) {
-       const start = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), arg.era)));
+       const start = core.enterLife(core.beginBirth(core.createInitialState(seed), arg.era));
        const s = core.advanceUntilDecision(start).state;
        if (s.phase === 'life' && s.pending && s.pending.choiceIds.length >= arg.min) return s;
      }

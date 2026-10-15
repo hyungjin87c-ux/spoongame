@@ -3,16 +3,17 @@ import {
   GAME_KEY as CORE_GAME_KEY,
   SETTINGS_KEY as CORE_SETTINGS_KEY,
   SCHEMA_VERSION,
+  DEFAULT_SETTINGS,
+  SETTINGS_VERSION as CORE_SETTINGS_VERSION,
   beginBirth,
   createInitialState,
   createRng,
   generateBirth,
   parseGame,
-  selectEra,
-  startGame,
+  parseSettings,
   ERAS,
 } from '../src/core';
-import { GAME_KEY, KNOWN_SEED, SAVE_VERSION, SETTINGS_KEY, birthState, eraSelectState, lifeState } from '../e2e/saves';
+import { DEFAULT_ERA_CHOICE, DEFAULT_LIFE_LENGTH_CHOICE, GAME_KEY, KNOWN_SEED, SAVE_VERSION, SETTINGS_KEY, SETTINGS_VERSION, birthState, lifeState, settingsEnvelope, titleState } from '../e2e/saves';
 
 /**
  * e2e가 localStorage에 주입하는 저장(e2e/saves.ts)이 core와 어긋나지 않는지 대조한다.
@@ -23,17 +24,22 @@ describe('e2e 저장 주입 헬퍼', () => {
     expect(GAME_KEY).toBe(CORE_GAME_KEY);
     expect(SETTINGS_KEY).toBe(CORE_SETTINGS_KEY);
     expect(SAVE_VERSION).toBe(SCHEMA_VERSION);
+    expect(SETTINGS_VERSION).toBe(CORE_SETTINGS_VERSION);
+    expect(DEFAULT_ERA_CHOICE).toBe(DEFAULT_SETTINGS.era);
+    expect(DEFAULT_LIFE_LENGTH_CHOICE).toBe(DEFAULT_SETTINGS.lifeLength);
   });
 
-  it('eraSelectState는 core의 startGame + selectEra 결과와 같고 core 검증기를 통과한다', () => {
-    for (const era of ERAS) {
-      const made = eraSelectState(KNOWN_SEED, era);
-      expect(made).toEqual(selectEra(startGame(createInitialState(KNOWN_SEED)), era));
-      expect(parseGame(JSON.stringify({ version: SAVE_VERSION, data: made }))).toEqual(made);
-    }
-    const noEra = eraSelectState(KNOWN_SEED);
-    expect(noEra).toEqual(startGame(createInitialState(KNOWN_SEED)));
-    expect(parseGame(JSON.stringify({ version: SAVE_VERSION, data: noEra }))).toEqual(noEra);
+  it('titleState는 core의 createInitialState와 같고 core 검증기를 통과한다 (새 게임 = 첫 화면)', () => {
+    const made = titleState(KNOWN_SEED);
+    expect(made).toEqual(createInitialState(KNOWN_SEED));
+    expect(parseGame(JSON.stringify({ version: SAVE_VERSION, data: made }))).toEqual(made);
+  });
+
+  it('settingsEnvelope는 core 설정 검증기가 그대로 읽는 v2 봉투이고, 비어 있는 필드는 기본값으로 채운다', () => {
+    expect(parseSettings(settingsEnvelope({ speed: 8, autoMode: true }))).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true });
+    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' }))).toEqual({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
+    // 아직 고를 수 없는 「약 1시간」(long60)이 저장돼 있으면 약 30분으로 읽는다(R-202: 이 단언이 바뀐 이유 — 예전에는 long60이 그대로 읽혔다)
+    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'long60' }))).toEqual({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
   });
 
   it('lifeState는 core 검증기를 통과하는 유효한 저장이다 (ErrorBoundary e2e가 clearGame을 실제로 검증하려면 유효해야 한다)', () => {
@@ -61,7 +67,7 @@ describe('e2e 저장 주입 헬퍼', () => {
 
   it('KNOWN_SEED는 세 시대 모두 "1회 추첨"과 "2회 추첨"의 결과가 달라서 e2e가 둘을 가른다', () => {
     for (const era of ERAS) {
-      const once = beginBirth(eraSelectState(KNOWN_SEED, era));
+      const once = beginBirth(titleState(KNOWN_SEED), era);
       const second = generateBirth(createRng(once.rngState), era).character;
       expect(once.character, era).not.toBeNull();
       expect(second, era).not.toEqual(once.character);

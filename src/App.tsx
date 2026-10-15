@@ -3,10 +3,12 @@ import {
   GAME_KEY,
   SETTINGS_KEY,
   autoChoiceDelayMs,
+  classifySavedGame,
   createInitialState,
   createSession,
   decideSave,
   getBrowserStorage,
+  hasProgress,
   holdDelayMs,
   isSupersedingChange,
   parseGame,
@@ -21,11 +23,11 @@ import {
 } from './core';
 import { BirthScreen } from './screens/BirthScreen';
 import { EndingScreen } from './screens/EndingScreen';
-import { EraSelectScreen } from './screens/EraSelectScreen';
 import { ErrorBoundary } from './screens/ErrorBoundary';
 import { LifeScreen } from './screens/LifeScreen';
 import { SupersededScreen } from './screens/SupersededScreen';
 import { TitleScreen } from './screens/TitleScreen';
+import { LegacyLight } from './ui/legacyTheme';
 
 /**
  * 개발 서버 전용 탐침 (프로덕션 빌드에서는 import.meta.env.DEV가 false라 아래 값들이 상수로 접히고 문자열째 제거된다.
@@ -33,9 +35,11 @@ import { TitleScreen } from './screens/TitleScreen';
  *  - ?__quota : 저장이 항상 실패하는 저장소 (저장 실패 안내 e2e, R-006)
  *  - ?__timescale=N : 연출 시간을 N배 빠르게 (e2e가 실제 30분을 기다리지 않게)
  *  - ?__crash : 렌더 중 예외 (ErrorBoundary 탈출구 e2e)
+ *  - ?__exit : 진행 중인 저장이 있어도 첫 화면을 다시 연 상태로 시작한다 (「나가기」(M4)가 같은 상태를 만든다 — 첫 화면의 「이어서 살기」 e2e)
  */
 const PROBE_QUOTA = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__quota');
 const PROBE_CRASH = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__crash');
+const PROBE_EXIT = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__exit');
 const TIME_SCALE = import.meta.env.DEV ? readTimeScale() : 1;
 
 function readTimeScale(): number {
@@ -83,6 +87,8 @@ function newSeed(): number {
 interface Boot {
   session: Session;
   written: WrittenRaw;
+  /** 이전 버전(v4 이하) 저장을 읽지 못해 새 게임으로 시작했는가 — 첫 화면에 안내 한 줄(C6) */
+  oldSave: boolean;
 }
 
 /**
@@ -93,7 +99,13 @@ interface Boot {
 function readBoot(): Boot {
   const game = readRaw(GAME_KEY);
   const settings = readRaw(SETTINGS_KEY);
-  return { session: createSession(parseGame(game) ?? createInitialState(newSeed()), parseSettings(settings)), written: { game, settings } };
+  const parsed = parseGame(game) ?? createInitialState(newSeed());
+  // 진행 중인 판이 저장돼 있으면 새로고침해도 저장된 화면이 그대로 복원된다(C3). 첫 화면은 「나가기」로 다시 연 때에만 보인다(개발 서버 탐침 ?__exit은 그 상태로 시작).
+  return {
+    session: createSession(parsed, parseSettings(settings), PROBE_EXIT && hasProgress(parsed)),
+    written: { game, settings },
+    oldSave: classifySavedGame(game) === 'old-version',
+  };
 }
 
 /** 개발 서버에서만: ?__crash=1 이면 렌더 중 예외를 던져 ErrorBoundary 탈출구를 e2e로 검증한다. */
@@ -134,9 +146,14 @@ function useSuperseded(written: WrittenRaw): [boolean, (v: boolean) => void] {
 
 function Game() {
   // 저장소는 여기서 한 번만 읽는다(lazy 초기값). 이 탭이 마지막으로 읽거나 쓴 원문(written)은 아래 effect들이 갱신하는 가변 객체다.
-  const [{ session: initial, written }] = useState(readBoot);
+  const [{ session: initial, written, oldSave }] = useState(readBoot);
   const [session, dispatch] = useReducer(sessionReducer, initial);
-  const { game, settings, tick } = session;
+  const { game, settings, tick, showTitle } = session;
+  // 이전 버전 저장 안내는 첫 화면에 한 번만: 새 판이 시작되면(첫 화면을 떠나면) 다시 보이지 않는다.
+  const [showOldNotice, setShowOldNotice] = useState(oldSave);
+  useEffect(() => {
+    if (game.phase !== 'title') setShowOldNotice(false);
+  }, [game.phase]);
   const visible = usePageVisible();
   const [superseded, setSuperseded] = useSuperseded(written);
   const [gameSaveFailed, setGameSaveFailed] = useState(false);
@@ -210,21 +227,21 @@ function Game() {
   // 'advance'는 자기가 알던 나이(fromAge)를 들고 가서 상황이 달라졌으면 무시되므로, 겹치거나 지연된 타이머가 한 해를 두 번 진행하지 못한다.
   // 선택지가 대기 중이거나 사망했거나 탭이 가려져 있으면 타이머를 걸지 않는다(배속·자동 모드와 무관하게 선택지에서 멈춘다).
   useEffect(() => {
-    if (game.phase !== 'life' || game.pending !== null || superseded || !visible) return;
+    if (game.phase !== 'life' || game.pending !== null || superseded || !visible || showTitle) return;
     const delay = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE);
     if (delay === null) return;
     const fromAge = game.age;
     const id = window.setTimeout(() => dispatch({ type: 'advance', fromAge }), delay);
     return () => window.clearTimeout(id);
-  }, [game.phase, game.age, game.pending, tick, settings.speed, superseded, visible]);
+  }, [game.phase, game.age, game.pending, tick, settings.speed, superseded, visible, showTitle]);
 
   // 자동 모드: 선택지를 잠깐 보여 준 뒤 성향대로 고른다. 해제하면 타이머가 정리되고 선택지는 그대로 남는다.
   useEffect(() => {
-    if (!settings.autoMode || game.pending === null || superseded || !visible) return;
+    if (!settings.autoMode || game.pending === null || superseded || !visible || showTitle) return;
     const key = game.pending.key;
     const id = window.setTimeout(() => dispatch({ type: 'autoChoose', key }), autoChoiceDelayMs(settings.speed, TIME_SCALE));
     return () => window.clearTimeout(id);
-  }, [settings.autoMode, settings.speed, game.pending, superseded, visible]);
+  }, [settings.autoMode, settings.speed, game.pending, superseded, visible, showTitle]);
 
   const takeOver = useCallback(() => {
     // 저장소를 한 번만 읽어, 그 원문을 파싱해 이어받고 "내가 아는 값"으로도 기록한다(R-052). 이어받은 값은 저장소에 이미 있는 값이라 같은 값을 다시 쓰지 않는다.
@@ -235,16 +252,21 @@ function Game() {
   }, [setSuperseded, written]);
 
   let screen;
+  // 첫 화면만 새 디자인(시스템의 라이트·다크를 따른다)이고, 나머지는 아직 고정 색의 옛 화면이라 그동안 색 구성표를 라이트로 고정한다(R-208)
+  const onFirstScreen = !superseded && (game.phase === 'title' || showTitle);
   if (superseded) {
     screen = <SupersededScreen onTakeOver={takeOver} />;
-  } else if (game.phase === 'title') {
-    screen = <TitleScreen onStart={() => dispatch({ type: 'start' })} />;
-  } else if (game.phase === 'eraSelect') {
+  } else if (game.phase === 'title' || showTitle) {
+    // 첫 화면: 새 판의 시작(title 단계) 또는 진행 중인 판을 둔 채 다시 연 화면(showTitle, 「나가기」). 후자는 「이어서 살기」가 기본 버튼이다.
     screen = (
-      <EraSelectScreen
-        selected={game.era}
-        onSelect={(era) => dispatch({ type: 'selectEra', era })}
-        onConfirm={() => dispatch({ type: 'confirmEra' })}
+      <TitleScreen
+        era={settings.era}
+        lifeLength={settings.lifeLength}
+        onSelectEra={(era) => dispatch({ type: 'setEra', era })}
+        onSelectLifeLength={(lifeLength) => dispatch({ type: 'setLifeLength', lifeLength })}
+        onBegin={() => dispatch({ type: 'begin' })}
+        saved={showTitle && hasProgress(game) ? { onResume: () => dispatch({ type: 'resume' }), onBeginNew: () => dispatch({ type: 'beginNew', seed: newSeed() }) } : null}
+        oldSaveNotice={showOldNotice && game.phase === 'title'}
       />
     );
   } else if (game.phase === 'birth' && game.era && game.character) {
@@ -281,6 +303,7 @@ function Game() {
           저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다.
         </p>
       ) : null}
+      {onFirstScreen ? null : <LegacyLight />}
       {screen}
     </>
   );

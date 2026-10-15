@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { GAME_KEY, SAVE_VERSION, injectSave, lifeState, noHorizontalOverflow, readSave } from './helpers';
+import { GAME_KEY, SAVE_VERSION, chooseEra, injectSave, lifeState, noHorizontalOverflow, pressBegin, readSave, readSettings } from './helpers';
 import { loadRawNames } from './rawNames';
 
-test('타이틀 화면과 탭 제목이 "수저 게임"', async ({ page }) => {
+test('첫 화면과 탭 제목이 "수저 게임", 「태어나기」 버튼이 있다 (이전의 「시작」 버튼은 없다)', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('수저 게임');
   await expect(page.getByRole('heading', { name: '수저 게임' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '시작' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '태어나기', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '시작', exact: true })).toHaveCount(0);
 });
 
 test('가로 스크롤 없이 화면에 맞는다 (타이틀)', async ({ page }) => {
@@ -14,28 +15,32 @@ test('가로 스크롤 없이 화면에 맞는다 (타이틀)', async ({ page })
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 
-test('시작을 누른 뒤 새로고침하면 시대 선택 화면에서 이어진다', async ({ page }) => {
+test('태어나기를 누른 뒤 새로고침하면 출생 화면이 그대로 복원된다 (저장된 화면 복원, C3)', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: '시작' }).click();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await pressBegin(page);
+  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  const before = await page.getByTestId('birth-name').innerText();
   await page.reload();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
+  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('birth-name')).toHaveText(before);
+  await expect(page.getByTestId('title-screen')).toHaveCount(0);
 });
 
 test('새로고침 연타(로드 도중 중단 포함) 후에도 저장이 복원된다 (R-004)', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: '시작' }).click();
-  await page.getByRole('button', { name: /다가올 세상/ }).click();
-  await expect(page.getByRole('button', { name: /다가올 세상/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀린 뒤(선택이 바뀌는 때)
+  await chooseEra(page, 'future');
+  await expect.poll(async () => (await readSettings(page)).era).toBe('future'); // 설정 저장이 끝난 뒤
   // 로드가 끝나기를 기다리지 않고 다시 새로고침한다 — 이전 로드/저장이 중간에 끊긴다.
   for (const gap of [0, 0, 5, 10, 20, 40, 0, 80]) {
     await page.reload({ waitUntil: 'commit' });
     await page.waitForTimeout(gap);
   }
   await page.reload();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
-  await expect(page.getByRole('button', { name: /다가올 세상/ })).toHaveAttribute('aria-pressed', 'true');
-  expect((await readSave(page)).data.era).toBe('future');
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  await expect(page.getByTestId('era-future')).toBeChecked();
+  expect((await readSettings(page)).era).toBe('future');
+  expect((await readSave(page)).data.phase).toBe('title');
 });
 
 test('손상된 localStorage 값이 있어도 앱이 뜬다', async ({ page }) => {
@@ -130,10 +135,12 @@ test('타이틀 하단에 법원 통계 출처가 표기되고 원자료의 권�
   const link = credit.getByRole('link');
   await expect(link).toHaveAttribute('href', scourt.meta.url);
   await expect(link).toHaveAttribute('rel', /noopener/);
-  // 시작 버튼 아래(하단)에 있고 작게 표시된다
-  const startBox = (await page.getByRole('button', { name: '시작' }).boundingBox())!;
+  // 첫 화면의 본문(세상·인생 길이 선택과 캐러셀) 아래, 푸터에 있고 작게 표시된다
+  const carouselBox = (await page.getByTestId('carousel').boundingBox())!;
+  const eraBox = (await page.getByTestId('life-length-group').boundingBox())!;
   const creditBox = (await credit.boundingBox())!;
-  expect(creditBox.y).toBeGreaterThan(startBox.y + startBox.height);
+  expect(creditBox.y).toBeGreaterThan(eraBox.y + eraBox.height);
+  expect(creditBox.y).toBeGreaterThan(carouselBox.y + carouselBox.height);
   const fontSize = await credit.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   expect(fontSize).toBeLessThan(14);
 });

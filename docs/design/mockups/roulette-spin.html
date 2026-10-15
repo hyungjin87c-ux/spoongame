@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수저 게임 · 시안 · 룰렛 (회전 중)</title>
+<!-- 시안(정적 HTML, 가짜 데이터): 디자인 시스템 토큰·컴포넌트 스타일을 그대로 불러 쓴다. 주소 끝에 ?theme=dark 를 붙이면 다크 테마, &motion=reduce 면 움직임 줄이기. -->
+<link rel="stylesheet" href="../../../src/styles/tokens.css">
+<link rel="stylesheet" href="ds.css">
+<script>(function(){var q=new URLSearchParams(location.search);var t=q.get('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(q.get('motion')==='reduce')document.documentElement.setAttribute('data-motion','reduce');
+/* 시안 전용: 다크 테마면 도구 줄의 다크모드 버튼을 켜짐 상태(aria-pressed + 아이콘 달→해)로 보인다. 구현에서는 상태값이 정한다(R-136②). */
+document.addEventListener('DOMContentLoaded',function(){var dark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);if(!dark)return;document.querySelectorAll('[data-tool="dark"]').forEach(function(b){b.setAttribute('aria-pressed','true');var u=b.querySelector('use');if(u)u.setAttribute('href','#i-sun');var s=b.querySelector('.sr-only');if(s)s.textContent='켜짐';});});})();</script>
+
+</head>
+<body class="">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24"><path d="M4 6l8 6-8 6zM12 6l8 6-8 6z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-auto" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.2M4 13a8 8 0 0 0 14.5 4.2"/><path d="M18.5 3v4.5H14M5.5 21v-4.5H10"/></symbol>
+<symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4.5L16.5 4a2 2 0 0 1 3 3L8 18.5z"/><path d="M14.5 6l3 3"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></symbol>
+<symbol id="i-message" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></symbol>
+<symbol id="i-exit" viewBox="0 0 24 24"><path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/></symbol>
+<symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-forward" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.3 3.5 2.3s2.5-.7 3.5-2.3"/><path d="M9 9.8h.01M15 9.8h.01" stroke-width="3"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4.5 5.5H10a2 2 0 0 1 2 2V20a2 2 0 0 0-2-2H4.5zM19.5 5.5H14a2 2 0 0 0-2 2V20a2 2 0 0 1 2-2h5.5z"/></symbol>
+<symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.4-3.2 2.6-5 5.5-5s5.1 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.5 14c2.4 0 3.8 1.5 4.2 4"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6h.01" stroke-width="2.6"/></symbol>
+<symbol id="sp-1" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/></symbol>
+<symbol id="sp-2" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/></symbol>
+<symbol id="sp-3" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/></symbol>
+<symbol id="sp-4" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/></symbol>
+<symbol id="sp-5" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/></symbol>
+<symbol id="sp-1-lg" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2ZM14 7.12C14 9.61 12.21 11.62 10 11.62C7.79 11.62 6 9.61 6 7.12C6 4.64 7.79 2.62 10 2.62C12.21 2.62 14 4.64 14 7.12Z" fill="currentColor" fill-rule="evenodd"/><path d="M6.09 8.06C6.8 4.82 8.6 4.22 9.6 5.12C10.8 6.12 12.6 6.92 13.88 8.21C13.43 10.24 11.79 11.66 9.93 11.62C8.07 11.58 6.47 10.11 6.09 8.06Z" fill="currentColor"/></symbol>
+<symbol id="sp-2-lg" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/></symbol>
+<symbol id="sp-3-lg" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/><path d="M5.68 5.38C6.26 3.61 7.68 2.33 9.36 2.07C9.62 4.09 7.41 6.08 5.68 5.38Z" fill="#fff" style="fill:var(--sp-mark,#fff)"/></symbol>
+<symbol id="sp-4-lg" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2Z" fill="currentColor"/><path d="M9.2 4.82C9.2 5.32 8.66 5.72 8 5.72C7.34 5.72 6.8 5.32 6.8 4.82C6.8 4.32 7.34 3.92 8 3.92C8.66 3.92 9.2 4.32 9.2 4.82Z" fill="#fff" style="fill:var(--sp-mark,#fff)"/></symbol>
+<symbol id="sp-5-lg" viewBox="0 0 20 32"><path d="M10 1.2C13.4 1.2 15.8 3.3 15.8 7.1C15.8 11.3 13.6 13.3 11.3 13.8C11 14.4 10.9 14.9 10.9 16L11 24C11 26.8 11.9 27.5 11.9 28.7C11.9 29.7 11 30.6 10 30.6C9 30.6 8.1 29.7 8.1 28.7C8.1 27.5 9 26.8 9 24L9.2 16C9.2 14.9 9 14.4 8.7 13.8C6.4 13.3 4.2 11.3 4.2 7.1C4.2 3.3 6.6 1.2 10 1.2ZM10 4.12L12.5 7.12L10 10.12L7.5 7.12Z" fill="currentColor" fill-rule="evenodd"/></symbol>
+</defs></svg>
+<header class="site-head"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" class="logo logo--header " role="img" aria-label="수저 게임"><path transform="translate(-15.4 -4.1) scale(0.2631)" d="M393.9 41.5C454.7 84.1 471.3 154.2 422.9 223.4C369.6 299.5 303.9 308.6 259 290.8C247 295 238.5 301.5 226.8 318.3L156.8 423.8C136.2 453.3 146.2 471.2 137.6 483.5C123.8 503.2 96.6 508 77 494.2C57.3 480.4 52.5 453.3 66.3 433.6C74.9 421.3 95.2 424.6 115.9 395.1L191 293.3C202.8 276.5 206 266.3 205.9 253.6C173.8 217.5 159.9 152.7 213.1 76.6C261.6 7.4 333.2 -1 393.9 41.5ZM258.36 127.39C260.26 135.17 264.94 143.97 269.4 152.87C273.86 161.76 281.6 170.43 285.11 180.77C288.62 191.12 287.55 203.89 290.45 214.95C293.36 226.01 295.66 242.17 302.52 247.15C309.37 252.13 323.86 249.87 331.59 244.84C339.32 239.8 347.09 228.65 348.9 216.93C350.72 205.21 344.91 189.11 342.45 174.5C339.99 159.9 332.56 144.63 334.13 129.31C335.69 113.99 347.51 96.74 351.84 82.59C356.18 68.44 363.92 50.06 360.12 44.4C356.32 38.74 341.36 43.22 329.05 48.64C316.74 54.05 298.12 67.3 286.27 76.88C274.42 86.47 262.61 97.73 257.96 106.15C253.3 114.56 256.45 119.6 258.36 127.39Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(121.236 23.04) scale(0.819)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></svg><span class="site-head__name">출생</span></header>
+<main class="roulette">
+  <div class="roulette__lead">
+    <h1 class="t-title">태어날 집과 땅을 고르는 중</h1>
+    <p class="t-muted" >어느 집, 어느 땅에 태어날지는 고를 수 없어요. 확률대로 돌아갑니다.</p>
+    
+  </div>
+  <div class="reels">
+    <div class="reel-col"><h2 class="reel-col__title">수저</h2>
+      <div class="reel is-spinning" aria-hidden="true"><div class="reel__window"></div><ul class="reel__list" style="padding-top:4px"><li class="reel__item"><span class="grade grade--reel grade--4"><svg class="spoon " aria-hidden="true" focusable="false"><use href="#sp-4"/></svg><span>금수저</span></span></li><li class="reel__item"><span class="grade grade--reel grade--5"><svg class="spoon " aria-hidden="true" focusable="false"><use href="#sp-5"/></svg><span>다이아몬드<br>수저</span></span></li><li class="reel__item"><span class="grade grade--reel grade--1"><svg class="spoon " aria-hidden="true" focusable="false"><use href="#sp-1"/></svg><span>흙수저</span></span></li><li class="reel__item"><span class="grade grade--reel grade--2"><svg class="spoon " aria-hidden="true" focusable="false"><use href="#sp-2"/></svg><span>동수저</span></span></li><li class="reel__item"><span class="grade grade--reel grade--3"><svg class="spoon " aria-hidden="true" focusable="false"><use href="#sp-3"/></svg><span>은수저</span></span></li></ul></div>
+      <div class="odds"><table><caption class="sr-only">수저별 확률</caption><tbody><tr><th scope="row">흙수저</th><td>25%</td></tr><tr><th scope="row">동수저</th><td>30%</td></tr><tr><th scope="row">은수저</th><td>28%</td></tr><tr><th scope="row">금수저</th><td>14%</td></tr><tr><th scope="row">다이아몬드수저</th><td>3%</td></tr></tbody></table>
+    <p class="odds__note">게임의 설계값이에요(통계가 아님).</p></div></div>
+    <div class="reel-col"><h2 class="reel-col__title">태어나는 지역</h2>
+      <div class="reel is-spinning" aria-hidden="true"><div class="reel__window"></div><ul class="reel__list" style="padding-top:4px"><li class="reel__item">울산</li><li class="reel__item">세종</li><li class="reel__item">경기</li><li class="reel__item">강원</li><li class="reel__item">충북</li></ul></div>
+      <div class="odds odds--cols"><table><caption class="sr-only">지역별 확률</caption><tbody><tr><th scope="row">서울</th><td>17.9%</td></tr><tr><th scope="row">부산</th><td>5.5%</td></tr><tr><th scope="row">대구</th><td>4.3%</td></tr><tr><th scope="row">인천</th><td>6.5%</td></tr><tr><th scope="row">대전</th><td>3.0%</td></tr><tr><th scope="row">울산</th><td>2.2%</td></tr><tr><th scope="row">세종</th><td>1.2%</td></tr><tr><th scope="row">경기</th><td>30.0%</td></tr><tr><th scope="row">강원</th><td>2.6%</td></tr><tr><th scope="row">충북</th><td>3.2%</td></tr><tr><th scope="row">충남</th><td>4.0%</td></tr><tr><th scope="row">전북</th><td>2.8%</td></tr><tr><th scope="row">전남광주</th><td>6.0%</td></tr><tr><th scope="row">경북</th><td>4.1%</td></tr><tr><th scope="row">경남</th><td>5.4%</td></tr><tr><th scope="row">제주</th><td>1.3%</td></tr></tbody></table>
+    <p class="odds__note">2025년 시·도별 출생아 수 비율(국가데이터처, 2025년 출생 통계). 광주·전남은 통합(2026)에 맞춰 합산. 이름은 줄여 적었어요.</p></div></div>
+  </div>
+  
+</main>
+<div class="page-end-space"></div>
+<div class="bottom-bar"><button class="btn btn--secondary btn--lg" type="button">건너뛰기</button></div>
+</body>
+</html>

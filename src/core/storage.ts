@@ -7,10 +7,12 @@ import {
   ERAS,
   GENDERS,
   HISTORY_KINDS,
+  LIFE_LENGTHS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
   PHASES,
   SPEEDS,
+  selectableLifeLength,
   type Character,
   type GameState,
   type Settings,
@@ -22,12 +24,18 @@ import { DEFAULT_SETTINGS } from './state';
  * 게임 진행과 설정은 별도 키. 스키마(또는 저장 검증 규칙)가 바뀌면 SCHEMA_VERSION을 올린다.
  * v3: 지금 세상 출생 연도 범위가 1990~2025 → 2008~2025로 바뀜(R-012). 구 저장은 새 게임으로 시작한다.
  * v4: 인생 진행(M3) — 플래그·본 이벤트·대기 중인 선택지·사망 정보 추가, 연표 항목 형태 변경, 스탯 0~100 정수 검증(R-024).
+ * v5: 개편(SPEC-003 M2) — 화면 단계에서 시대 선택(eraSelect)이 빠지고(세상·인생 길이는 첫 화면에서 고른다), 판마다 인생 길이(lifeLength)가 고정된다. v4 이하 저장은 새 게임으로 시작한다(C6).
  */
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SCHEMA_VERSION = 4;
-/** 설정 스키마는 게임 스키마와 따로 버전을 관리한다(게임 스키마가 바뀌어도 설정은 유지). */
-export const SETTINGS_VERSION = 1;
+export const SCHEMA_VERSION = 5;
+/**
+ * 설정 스키마는 게임 스키마와 따로 버전을 관리한다(게임 스키마가 바뀌어도 설정은 유지).
+ * v2: 첫 화면에서 고른 세상(era)·인생 길이(lifeLength)가 더해졌다. v1 설정(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — 배속·자동 모드를 잃지 않는다.
+ */
+export const SETTINGS_VERSION = 2;
+/** 읽을 수 있는 설정 버전 (현재 + 이전 버전). 이 밖의 버전은 기본값. */
+const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2];
 
 /** localStorage와 같은 최소 인터페이스 (테스트에서 가짜를 주입). */
 export interface StorageLike {
@@ -170,6 +178,7 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   const basic =
     isOneOf(PHASES, v.phase) &&
     (v.era === null || isOneOf(ERAS, v.era)) &&
+    (v.lifeLength === null || isOneOf(LIFE_LENGTHS, v.lifeLength)) &&
     (v.character === null || validCharacter(v.character)) &&
     validStats(v.stats) &&
     (v.birthStats === null || validStats(v.birthStats)) &&
@@ -198,7 +207,7 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   const afterBirth = phase === 'birth' || phase === 'life' || phase === 'ending';
   const age = v.age as number;
   if (afterBirth) {
-    if (v.era === null || v.character === null || v.birthStats === null) return 'invalid';
+    if (v.era === null || v.lifeLength === null || v.character === null || v.birthStats === null) return 'invalid';
     const era = v.era as keyof typeof ERA_CONFIG;
     const range = ERA_CONFIG[era].birthYears;
     const year = (v.character as Character).birthYear;
@@ -207,11 +216,12 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   } else if (v.character !== null || v.birthStats !== null) {
     return 'invalid';
   }
-  if (phase === 'title' && v.era !== null) return 'invalid';
+  // 첫 화면(title)에서는 세상·인생 길이가 아직 정해지지 않았다(고르는 값은 설정에 있다). 판 상태에 있으면 변조·손상이다.
+  if (phase === 'title' && (v.era !== null || v.lifeLength !== null)) return 'invalid';
 
   // 인생 진행 필드 (M3): 인생이 시작되기 전에는 진행 기록이 모두 비어 있어야 하고,
   // 대기 중인 선택지는 life에서만, 사망 정보는 ending에서만(그리고 ending에는 반드시) 있다.
-  const fresh = phase === 'title' || phase === 'eraSelect' || phase === 'birth';
+  const fresh = phase === 'title' || phase === 'birth';
   const pending = v.pending as unknown;
   const seen = v.seen as Record<string, number>;
   if (fresh) {
@@ -230,19 +240,59 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   return 'valid';
 }
 
-function validSettings(v: unknown): v is Settings {
-  return isObj(v) && isOneOf(SPEEDS, v.speed) && typeof v.autoMode === 'boolean';
+/**
+ * 설정 하나를 읽는다. 배속·자동 모드가 형태에 맞지 않으면 null(설정 전체 기본값). 세상·인생 길이는 v1에는 없고(v2에서 추가),
+ * 없거나 알 수 없는 값이면 그 필드만 기본값으로 채운다(이미 고른 배속·자동 모드를 잃지 않는다).
+ */
+function readSettings(v: unknown): Settings | null {
+  if (!isObj(v) || !isOneOf(SPEEDS, v.speed) || typeof v.autoMode !== 'boolean') return null;
+  return {
+    speed: v.speed as Settings['speed'],
+    autoMode: v.autoMode,
+    era: isOneOf(ERAS, v.era) ? (v.era as Settings['era']) : DEFAULT_SETTINGS.era,
+    // 아직 고를 수 없는 인생 길이(1차에서는 「약 1시간」)가 저장돼 있으면 고를 수 있는 값(약 30분)으로 읽는다(R-202)
+    lifeLength: isOneOf(LIFE_LENGTHS, v.lifeLength) ? selectableLifeLength(v.lifeLength as Settings['lifeLength']) : DEFAULT_SETTINGS.lifeLength,
+  };
 }
 
-function parseEnvelope(raw: string | null, version: number): unknown {
+/** 봉투를 풀어 data를 돌려준다. versions에 없는 버전·손상은 undefined. */
+function parseEnvelope(raw: string | null, versions: number | readonly number[]): unknown {
   if (raw === null) return undefined;
   try {
     const env: unknown = JSON.parse(raw);
-    if (!isObj(env) || env.version !== version) return undefined;
-    return env.data;
+    if (!isObj(env) || typeof env.version !== 'number') return undefined;
+    const accepted = typeof versions === 'number' ? env.version === versions : versions.includes(env.version);
+    return accepted ? env.data : undefined;
   } catch {
     return undefined;
   }
+}
+
+/**
+ * 저장된 게임 원문을 분류한다(순수 함수). 첫 화면이 「이전 버전 저장은 새 게임으로 시작합니다」 안내(C6)를 보일지 정하는 데 쓴다.
+ *  - 'none' 저장이 없다 / 'valid' 지금 버전으로 읽힌다 / 'broken' 손상·알 수 없는 형태
+ *  - 'old-version' 이전 스키마(v4 이하)라 읽지 않고, **진행한 판이 있었다**(출생 이후 단계) — 안내가 필요하다
+ *  - 'old-version-empty' 이전 스키마이지만 진행 전 단계(첫 화면 title·시대 선택 eraSelect)였다 — 잃은 것이 없으므로 안내하지 않는다(REV-003-M2-1 R-214).
+ *    단계를 알 수 없으면(data.phase가 없거나 낯선 값) 보수적으로 'old-version'이다.
+ */
+export type SavedGameKind = 'none' | 'valid' | 'old-version' | 'old-version-empty' | 'broken';
+
+/** 이전 스키마(v4 이하)에서 아직 태어나기 전이던 화면 단계 이름 (v4의 eraSelect는 지금은 없는 단계) */
+const OLD_SCHEMA_NO_PROGRESS_PHASES: readonly string[] = ['title', 'eraSelect'];
+
+export function classifySavedGame(raw: string | null, pool: EventPool = EVENT_POOL): SavedGameKind {
+  if (raw === null) return 'none';
+  if (parseGame(raw, pool) !== null) return 'valid';
+  try {
+    const env: unknown = JSON.parse(raw);
+    if (isObj(env) && isInt(env.version) && env.version < SCHEMA_VERSION) {
+      const phase = isObj(env.data) ? env.data.phase : undefined;
+      return typeof phase === 'string' && OLD_SCHEMA_NO_PROGRESS_PHASES.includes(phase) ? 'old-version-empty' : 'old-version';
+    }
+  } catch {
+    // 아래 'broken'
+  }
+  return 'broken';
 }
 
 /**
@@ -259,8 +309,7 @@ export function parseGame(raw: string | null, pool: EventPool = EVENT_POOL): Gam
 
 /** 문자열 → 설정. 문제가 있으면 기본값. */
 export function parseSettings(raw: string | null): Settings {
-  const data = parseEnvelope(raw, SETTINGS_VERSION);
-  return validSettings(data) ? { speed: data.speed, autoMode: data.autoMode } : { ...DEFAULT_SETTINGS };
+  return readSettings(parseEnvelope(raw, READABLE_SETTINGS_VERSIONS)) ?? { ...DEFAULT_SETTINGS };
 }
 
 // ---------- 저장 직전 판단 (R-052) ----------

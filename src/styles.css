@@ -1,9 +1,12 @@
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; margin: 0; }
+/* 바탕·글자색은 디자인 토큰(styles/tokens.css)이 정한다(REV-003-M2-2 R-223): 시스템이 다크 모드면 JS가 뜨기 전 첫 그림부터 다크 바탕이라 첫 화면이 라이트로 번쩍이지 않는다.
+   옛 화면(출생·인생·엔딩)은 떠 있는 동안 ui/legacyTheme.tsx의 LegacyLight가 <html data-theme="light">를 걸어 라이트 토큰을 받는다(색 구성표·주소 표시줄 색도 함께 라이트).
+   옛 화면을 새로고침으로 직접 열면 React가 뜨기 전 한 프레임은 시스템 다크가 보일 수 있다 — 옛 화면이 새 디자인으로 바뀌는 M3·M4에서 사라지는 임시 문제로 받아들인다. */
 body {
   font-family: system-ui, -apple-system, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  background: #f5f2ec;
-  color: #2b2b2b;
+  background: var(--c-bg);
+  color: var(--c-text);
   line-height: 1.5;
   /* 한국어는 띄어쓰기 단위로만 줄을 바꾼다(단어 중간에서 끊기거나 한 글자가 홀로 남는 줄을 줄인다, QA 사용감 3). 한 단어가 줄보다 길 때만 아래 overflow-wrap이 끊는다. */
   word-break: keep-all;
@@ -22,20 +25,19 @@ body {
   gap: 12px;
   text-align: center;
 }
-h1 { margin: 0; font-size: 2rem; overflow-wrap: anywhere; }
+/* 옛 화면(.screen: 출생·인생·엔딩·밀린 화면·오류 화면) 전용 규칙. 새 첫 화면(.title-page)은 src/styles/title.css가 자기 규칙을 가지므로 h1·button 같은 요소 규칙이 새어 들지 않게
+   `:where(.screen)`로 옛 화면 범위에 한정한다(우선순위는 전과 같다 — :where는 0이라 옛 화면 안의 겹침 순서가 그대로다, REV-003-M2-1 R-215). */
+:where(.screen) h1 { margin: 0; font-size: 2rem; overflow-wrap: anywhere; }
 p { margin: 0; overflow-wrap: anywhere; }
 /* 제목은 줄 길이를 고르게, 본문은 마지막 줄에 한 글자만 남지 않게 (지원하는 브라우저에서만) */
-h1, h2 { text-wrap: balance; }
+:where(.screen) :is(h1, h2) { text-wrap: balance; }
 p { text-wrap: pretty; }
 .sub { margin: 0 0 16px; color: #666; }
 /* 순위 표현("상위 약 23%의")은 줄이 바뀌어도 쪼개지지 않는다 (ui/KeepStanding.tsx) */
 .nowrap { white-space: nowrap; }
-/* 타이틀: 본문은 가운데, 출처 표기는 맨 아래에 작게. 좁은 화면(360px)에서도 줄바꿈되어 넘치지 않는다. */
-.screen.title { justify-content: space-between; }
-.title-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
-.credit { margin: 24px 0 0; font-size: 0.75rem; line-height: 1.5; color: #666; overflow-wrap: anywhere; }
-.credit a { color: inherit; text-decoration: underline; text-decoration-color: #b5b0a3; }
-button {
+/* (옛 타이틀·시대 선택 화면의 규칙 .screen.title·.title-body·.credit·.era-list·.era-card는 첫 화면 개편(SPEC-003 M2)으로 쓰는 곳이 없어 지웠다 — R-215.
+   첫 화면의 출처·카드는 styles/title.css의 .title-foot·.radio-card가 정한다.) */
+:where(.screen) button {
   min-height: 44px;
   padding: 10px 20px;
   font-size: 1rem;
@@ -45,18 +47,11 @@ button {
   color: #fff;
   cursor: pointer;
 }
-button.secondary { background: #ddd8cc; color: #2b2b2b; }
+:where(.screen) button.secondary { background: #ddd8cc; color: #2b2b2b; }
 /* 화면 전환 직후 입력 가드(GuardedButton) 중에는 살짝 흐리게 — 곧 눌러도 된다는 신호.
    호출자가 누를 수 없다고 한 버튼("다음 결정으로"가 선택지 대기·자동 모드일 때)도 같은 aria-disabled라 같은 모양이다(R-036). */
-button { transition: opacity 0.2s; }
-button[aria-disabled='true'] { opacity: 0.55; cursor: default; }
-.era-list { display: flex; flex-direction: column; gap: 10px; }
-.era-card {
-  display: flex; flex-direction: column; gap: 4px; align-items: center;
-  background: #fff; color: #2b2b2b; border: 2px solid #ddd8cc; padding: 14px 12px;
-  text-align: center; overflow-wrap: anywhere;
-}
-.era-card.on { border-color: #3a3a3a; background: #ece7db; }
+:where(.screen) button { transition: opacity 0.2s; }
+:where(.screen) button[aria-disabled='true'] { opacity: 0.55; cursor: default; }
 .muted { color: #777; font-size: 0.875rem; }
 .facts { display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 8px 0 16px; }
 /* ---------- 인생 화면 (M3) ---------- */
@@ -67,9 +62,9 @@ button[aria-disabled='true'] { opacity: 0.55; cursor: default; }
 }
 /* 화면이 바뀔 때 프로그램이 제목(tabindex=-1)으로 옮기는 포커스는 Tab으로 닿는 곳이 아니라서 링을 그리지 않는다 — 장식처럼 보였다(QA 사용감 2).
    스크린리더는 제목을 읽고, 키보드 사용자가 닿는 버튼·링크의 포커스 링은 아래에서 그대로 유지한다. */
-h1:focus, h2:focus, h1:focus-visible, h2:focus-visible { outline: none; }
-button:focus-visible, a:focus-visible { outline: 3px solid #1f6feb; outline-offset: 2px; }
-button:disabled { opacity: 0.55; cursor: default; } /* aria-disabled와 같은 흐림: 어느 쪽으로 막혀도 같은 모양 */
+:where(.screen) :is(h1, h2):is(:focus, :focus-visible) { outline: none; }
+:where(.screen) :is(button, a):focus-visible { outline: 3px solid #1f6feb; outline-offset: 2px; }
+:where(.screen) button:disabled { opacity: 0.55; cursor: default; } /* aria-disabled와 같은 흐림: 어느 쪽으로 막혀도 같은 모양 */
 /* 저장 실패 안내: 화면 위에 한 줄로 놓이고, 따라다니지 않는다(예전에는 위에 고정돼 낮은 화면을 계속 가렸다, QA 사용감 1·6). 스크롤을 올리면 다시 보이고 role=status로 처음 뜰 때 읽힌다. */
 .notice {
   flex: none; margin: 0; padding: 6px 16px;
@@ -104,7 +99,7 @@ button:disabled { opacity: 0.55; cursor: default; } /* aria-disabled와 같은 �
 /* 속도 컨트롤은 화면 아래에 붙어 있어 선택지가 길어져도 언제나 보이고 누를 수 있다. */
 .controls {
   position: sticky; bottom: 0; z-index: 10; margin: auto -16px 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  background: #f5f2ec; border-top: 1px solid #ddd8cc; display: flex; flex-direction: column; gap: 8px;
+  background: var(--c-bg); border-top: 1px solid #ddd8cc; display: flex; flex-direction: column; gap: 8px;
 }
 .speed-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .speed-row button { padding: 10px 0; background: #ddd8cc; color: #2b2b2b; }
@@ -135,7 +130,7 @@ button:disabled { opacity: 0.55; cursor: default; } /* aria-disabled와 같은 �
 .ending-rebirth { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 24px; text-align: center; }
 @media (min-width: 768px) {
   .screen { max-width: 560px; }
-  h1 { font-size: 2.5rem; }
+  :where(.screen) h1 { font-size: 2.5rem; }
   .screen.life .life-head h1 { font-size: 1.75rem; }
   .screen.ending .ending-head h1 { font-size: 2rem; }
   /* 데스크톱: 선택지가 떠도 스탯이 접힘 아래로 밀려나지 않도록 스탯은 3열(두 줄), 컨트롤 바는 한 줄로 줄인다(QA 사용감 1). 800px 높이에서 모두 보인다. */
@@ -172,14 +167,14 @@ button:disabled { opacity: 0.55; cursor: default; } /* aria-disabled와 같은 �
 /* ---------- 강제 색상(고대비) 모드 — QA 사용감 5 ---------- */
 /* 이 모드에서는 배경색이 시스템 색으로 덮여 눌린 버튼과 스탯 막대가 사라졌다. 색이 아니라 모양(굵은 이중 테두리)과 시스템 색(Highlight)으로 구분한다. */
 @media (forced-colors: active) {
-  button { border: 2px solid ButtonText; }
-  button[aria-pressed='true'] {
+  :where(.screen) button { border: 2px solid ButtonText; }
+  :where(.screen) button[aria-pressed='true'] {
     forced-color-adjust: none;
     background: Highlight;
     color: HighlightText;
     border: 4px double ButtonText;
   }
-  button[aria-disabled='true'], button:disabled { border-color: GrayText; color: GrayText; }
+  :where(.screen) button[aria-disabled='true'], :where(.screen) button:disabled { border-color: GrayText; color: GrayText; }
   .bar { background: Canvas; border: 1px solid CanvasText; }
   .bar-fill { forced-color-adjust: none; background: CanvasText; }
   .bar-fill.fixed { background: GrayText; }

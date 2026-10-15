@@ -6,8 +6,6 @@ import {
   generateBirth,
   loadGame,
   saveGame,
-  selectEra,
-  startGame,
   type StorageLike,
 } from '../src/core';
 
@@ -47,13 +45,13 @@ describe('RNG', () => {
 
   it('저장 후 복원해도 수열이 이어진다 (출생이 난수를 실제로 소비하고, 복원한 RNG가 끊김 없이 이어 쓴 RNG와 같다)', () => {
     const storage = memoryStorage();
-    const before = selectEra(startGame(createInitialState(999)), 'past');
+    const before = createInitialState(999);
 
     // 기준: 같은 시드의 RNG로 출생 추첨을 직접 한 번 돌린 뒤 이어서 계속 쓰는 RNG
     const continuous = createRng(before.rngState);
     generateBirth(continuous, 'past');
 
-    const born = beginBirth(before);
+    const born = beginBirth(before, 'past');
     // 출생이 난수를 소비해 상태가 전진했다 (시드 그대로가 아니다)
     expect(born.rngState).not.toBe(before.rngState);
     expect(born.rngState).toBe(continuous.getState());
@@ -73,8 +71,8 @@ describe('RNG', () => {
 
   it('beginBirth는 rngState를 전진시킨다 (시대별로 모두)', () => {
     for (const era of ['past', 'present', 'future'] as const) {
-      const before = selectEra(startGame(createInitialState(31)), era);
-      const after = beginBirth(before);
+      const before = createInitialState(31);
+      const after = beginBirth(before, era);
       expect(after.rngState, era).not.toBe(before.rngState);
       expect(after.seed, era).toBe(before.seed); // 시드는 그대로, 진행 상태만 전진
       expect(createRng(after.rngState).next(), era).not.toBe(createRng(before.rngState).next());

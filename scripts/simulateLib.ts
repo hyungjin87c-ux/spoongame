@@ -9,13 +9,12 @@ import {
   enterLife,
   estimatePlaySeconds,
   playToEnd,
-  selectEra,
   stageOfAge,
-  startGame,
   type Chooser,
   type Era,
   type EventPool,
   type GameState,
+  type LifeLength,
   type ParentWealth,
   type Stage,
   type StatKey,
@@ -34,8 +33,8 @@ export type Strategy = 'auto' | 'first' | 'random';
  * 시대·시드로 인생 시작 직전(life, 0세)까지 만든다.
  * looks를 주면 외모를 그 값으로 고정한다(외모 구간별 조우율 비교용: 시드·시대가 같은 인생에서 외모만 다르게 한다).
  */
-export function startLife(seed: number, era: Era, opts: { looks?: number } = {}): GameState {
-  const s = enterLife(beginBirth(selectEra(startGame(createInitialState(seed)), era)));
+export function startLife(seed: number, era: Era, opts: { looks?: number; lifeLength?: LifeLength } = {}): GameState {
+  const s = enterLife(beginBirth(createInitialState(seed), era, opts.lifeLength));
   if (opts.looks === undefined || s.character === null) return s;
   return { ...s, character: { ...s.character, looks: opts.looks } };
 }

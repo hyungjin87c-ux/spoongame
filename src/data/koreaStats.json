@@ -1,0 +1,4780 @@
+{
+  "meta": {
+    "updatedOn": "2026-10-15",
+    "accessedOn": "2026-10-15",
+    "schemaVersion": 2,
+    "agencyNote": "통계청은 2025년 10월 1일 「처」로 승격해 국가데이터처로 출범했다(mods.go.kr 기관소개 > 연혁에서 직접 확인: 2025-10-01 국가데이터처 출범, 2025-02-25 통계개발원→국가통계연구원, 2025-12-30 국가통계연구원→국가데이터연구원). 이 파일의 source.org는 현재 명칭이고, 2025년 9월까지 발표된 자료는 「통계청(현 국가데이터처)」처럼 당시 명칭을 함께 적는다. kostat.go.kr 주소는 mods.go.kr로 이동(301)했다. 지역 값은 지표마다 기준이 다르다: 2025년 출생·인구주택총조사 지표는 2025년 17개 시도, 2026년 9월 주민등록 인구는 2026년 16개 시도(광주·전남 통합, 2026-07-01)다 — meta.regionChanges2026.",
+    "verificationRule": "verification.status가 verified인 값만 usable true. unverified 항목은 latest null·series 비움·usable false이며 게임은 읽지 않는다.",
+    "accessRule": "로그인·가입·인증키 없이 공개된 보도자료·통계표·기관 누리집만 사용한다. 요청 사이 1초 이상, 사이트당 한 작업 300회 이하(넘으면 마스터 승인), 위장하지 않는 식별 User-Agent를 기록하고, 봇별 robots.txt(ClaudeBot·Claude-User·*) 확인을 본문 요청 전 별도 단계로 한다. robots.txt가 막는 경로(예: kca.go.kr, academyinfo.go.kr)와 문서 뷰어의 쪽 단위 대량 내려받기는 쓰지 않는다. 차단·CAPTCHA·로그인 요구를 만나면 중단하고 우회하지 않는다(docs/data/korea-stats-sources.md 2절).",
+    "docs": [
+      "docs/data/korea-stats-sources.md",
+      "docs/data/events-stats-basis.md"
+    ],
+    "regionChanges2026": {
+      "source": {
+        "org": "행정안전부",
+        "table": "주민등록인구현황 — KOSIS 「행정구역(시군구)별, 성별 인구수」(DT_1B040A3) 주석정보와 2026.06~2026.09 총인구수",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B040A3",
+        "accessedOn": "2026-10-15"
+      },
+      "note": "2026년에 바뀐 행정구역. 출생 통계(2025)는 이 변경 전 구분이라 변경된 곳은 인구 비례로 옮긴 설계값으로 맞춘다(birth-by-sido.rows16·eraRegions, birth-by-sigungu.regionChanges2026).",
+      "sido": [
+        {
+          "name": "전남광주통합특별시",
+          "shortName": "전남광주",
+          "effectiveOn": "2026-07-01",
+          "mergedFrom": [
+            "광주",
+            "전남"
+          ],
+          "footnote": "전남광주통합특별시 2026.7.1.일자로 신설 / 광주광역시·전라남도 2026.7.1.일자로 전남광주통합특별시로 통합"
+        }
+      ],
+      "sigungu": [
+        {
+          "sido": "인천",
+          "effectiveOn": "2026-07-01",
+          "retired": [
+            "중구",
+            "동구",
+            "서구"
+          ],
+          "created": [
+            "제물포구",
+            "영종구",
+            "서해구",
+            "검단구"
+          ],
+          "footnote": "중구·동구·서구 2026.7.1.일자로 폐지, 제물포구·영종구·서해구·검단구 2026.7.1.일자로 신설"
+        },
+        {
+          "sido": "경기",
+          "parent": "화성시",
+          "effectiveOn": "2026-02-01",
+          "created": [
+            "만세구",
+            "효행구",
+            "병점구",
+            "동탄구"
+          ],
+          "footnote": "만세구·효행구·병점구·동탄구 2026.2.1일자로 신설(화성시 일반구)"
+        }
+      ],
+      "unchanged": [
+        "안양시 만안구·동안구(1991년 이전부터 출장소였다는 주석만 있고 변경 없음)"
+      ],
+      "footnoteText": "출생 통계는 2025년 행정구역 기준이며, 2026년에 바뀐 시·도와 시·군·구는 인구 비례로 옮긴 설계값입니다."
+    },
+    "birthStatsBasisFootnote": "출생 통계는 2025년 행정구역 기준이며, 2026년에 바뀐 시·도와 시·군·구는 인구 비례로 옮긴 설계값입니다.",
+    "fields": {
+      "unit": "시리즈 값(series·extraSeries)의 단위. 표(table)는 null이고 열 이름·행의 단위를 따른다.",
+      "latest": "캐러셀 큰 숫자. latestUnit이 그 값의 단위이고, 지표 제목과 다른 값이면 latestLabel로 무엇인지 적는다(표·막대는 필수).",
+      "decimals": "공식 표기 소수 자릿수(0.80명 → 2). 열(columns[].decimals)·행(rows[].decimals)·보조 시리즈(extraSeries[].decimals)에도 있을 수 있다.",
+      "headline": "큰 숫자가 둘 이상일 때(예: 초혼 연령 남자·여자) 함께 보일 값 목록.",
+      "axis": "연도 시계열의 축 정보. step은 모든 점이 같은 간격일 때 그 간격(해), 아니면 null. regular는 간격이 모두 1년인지, gaps는 간격이 1년을 넘는 구간, breaks는 시계열 단절(조사 방식 변경 등). 차트는 years를 비례 축에 놓고 gaps 구간을 선으로 잇지 않아도 된다.",
+      "scopeLabel": "카드에 함께 적을 기준 문구(예: 2025년 기준(17개 시·도)).",
+      "verification.unverifiedParts": "지표 안에서 아직 원문과 대조하지 못한 하위 항목([{part: \"extraSeries:라벨\" | \"field:경로\" | \"row:열=값\", reason}]). 접근자(src/data/koreaStatsAccess.ts)는 이 항목을 잘라 내고 돌려준다. 인용(refs)이 이런 항목을 가리키면 테스트가 실패한다.",
+      "designValue": "통계가 아니라 게임이 정한 설계값(재배분 등)임을 뜻한다. 화면에는 「설계값」으로 표기한다."
+    }
+  },
+  "indicators": [
+    {
+      "id": "tfr",
+      "title": "합계출산율",
+      "unit": "명",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 0.8
+      },
+      "latestUnit": "명",
+      "decimals": 2,
+      "series": [
+        {"year":1970,"value":4.53},
+        {"year":1971,"value":4.54},
+        {"year":1972,"value":4.12},
+        {"year":1973,"value":4.07},
+        {"year":1974,"value":3.77},
+        {"year":1975,"value":3.43},
+        {"year":1976,"value":3},
+        {"year":1977,"value":2.99},
+        {"year":1978,"value":2.64},
+        {"year":1979,"value":2.9},
+        {"year":1980,"value":2.82},
+        {"year":1981,"value":2.57},
+        {"year":1982,"value":2.39},
+        {"year":1983,"value":2.06},
+        {"year":1984,"value":1.74},
+        {"year":1985,"value":1.66},
+        {"year":1986,"value":1.58},
+        {"year":1987,"value":1.53},
+        {"year":1988,"value":1.55},
+        {"year":1989,"value":1.56},
+        {"year":1990,"value":1.57},
+        {"year":1991,"value":1.71},
+        {"year":1992,"value":1.76},
+        {"year":1993,"value":1.65},
+        {"year":1994,"value":1.66},
+        {"year":1995,"value":1.63},
+        {"year":1996,"value":1.57},
+        {"year":1997,"value":1.54},
+        {"year":1998,"value":1.46},
+        {"year":1999,"value":1.43},
+        {"year":2000,"value":1.48},
+        {"year":2001,"value":1.31},
+        {"year":2002,"value":1.18},
+        {"year":2003,"value":1.19},
+        {"year":2004,"value":1.16},
+        {"year":2005,"value":1.09},
+        {"year":2006,"value":1.13},
+        {"year":2007,"value":1.26},
+        {"year":2008,"value":1.19},
+        {"year":2009,"value":1.15},
+        {"year":2010,"value":1.23},
+        {"year":2011,"value":1.24},
+        {"year":2012,"value":1.3},
+        {"year":2013,"value":1.19},
+        {"year":2014,"value":1.21},
+        {"year":2015,"value":1.24},
+        {"year":2016,"value":1.17},
+        {"year":2017,"value":1.05},
+        {"year":2018,"value":0.98},
+        {"year":2019,"value":0.92},
+        {"year":2020,"value":0.84},
+        {"year":2021,"value":0.81},
+        {"year":2022,"value":0.78},
+        {"year":2023,"value":0.72},
+        {"year":2024,"value":0.75},
+        {"year":2025,"value":0.8}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "definition": "합계출산율은 한 여자가 가임 기간(15~49세) 동안 낳을 것으로 예상되는 평균 출생아 수입니다.",
+      "basisId": "s-001",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 통계표 1 「출생아 수, 조(粗)출생률 및 합계출산율, 1970~2025」(보도자료 부록)",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표(국가데이터처 문서 뷰어 텍스트층)에서 연도별 값을 읽음",
+        "crossChecks": [
+          "본문 요약 「합계출산율 0.80명」과 일치",
+          "KOSIS 홈 위젯의 2025년 0.799명(반올림 0.80)과 일치",
+          "2015~2025 값이 [표 1]·[표 2]와 일치",
+          "KOSIS 「출생아수, 합계출산율, 자연증가 등」(INH_1B8000F_01) 1970~2025 재열람(2026-10-15): 합계출산율 56개 값(소수 둘째 자리 반올림)이 모두 일치"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "births",
+      "title": "연간 출생아 수",
+      "unit": "명",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 254341
+      },
+      "latestUnit": "명",
+      "decimals": 0,
+      "series": [
+        {"year":1970,"value":1006645},
+        {"year":1971,"value":1024773},
+        {"year":1972,"value":952780},
+        {"year":1973,"value":965521},
+        {"year":1974,"value":922823},
+        {"year":1975,"value":874030},
+        {"year":1976,"value":796331},
+        {"year":1977,"value":825339},
+        {"year":1978,"value":750728},
+        {"year":1979,"value":862669},
+        {"year":1980,"value":862835},
+        {"year":1981,"value":867409},
+        {"year":1982,"value":848312},
+        {"year":1983,"value":769155},
+        {"year":1984,"value":674793},
+        {"year":1985,"value":655489},
+        {"year":1986,"value":636019},
+        {"year":1987,"value":623831},
+        {"year":1988,"value":633092},
+        {"year":1989,"value":639431},
+        {"year":1990,"value":649738},
+        {"year":1991,"value":709275},
+        {"year":1992,"value":730678},
+        {"year":1993,"value":715826},
+        {"year":1994,"value":721185},
+        {"year":1995,"value":715020},
+        {"year":1996,"value":691226},
+        {"year":1997,"value":675394},
+        {"year":1998,"value":641594},
+        {"year":1999,"value":620668},
+        {"year":2000,"value":640089},
+        {"year":2001,"value":559934},
+        {"year":2002,"value":496911},
+        {"year":2003,"value":495036},
+        {"year":2004,"value":476958},
+        {"year":2005,"value":438707},
+        {"year":2006,"value":451759},
+        {"year":2007,"value":496822},
+        {"year":2008,"value":465892},
+        {"year":2009,"value":444849},
+        {"year":2010,"value":470171},
+        {"year":2011,"value":471265},
+        {"year":2012,"value":484550},
+        {"year":2013,"value":436455},
+        {"year":2014,"value":435435},
+        {"year":2015,"value":438420},
+        {"year":2016,"value":406243},
+        {"year":2017,"value":357771},
+        {"year":2018,"value":326822},
+        {"year":2019,"value":302676},
+        {"year":2020,"value":272337},
+        {"year":2021,"value":260562},
+        {"year":2022,"value":249186},
+        {"year":2023,"value":230028},
+        {"year":2024,"value":238317},
+        {"year":2025,"value":254341}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "perDay2025": 697,
+      "definition": "출생아 수는 그해에 발생한 출생을 신고 자료로 집계한 값입니다(2025년은 2026년 4월까지 신고분 기준 확정치).",
+      "basisId": "s-002",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 통계표 1 「출생아 수, 조(粗)출생률 및 합계출산율, 1970~2025」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표에서 연도별 값을 읽음",
+        "crossChecks": [
+          "본문 요약 「25만 4천 3백 명」과 일치",
+          "KOSIS 월별 출생 합계(2023 230,028 / 2024 238,317 / 2025 254,341)와 일치",
+          "KOSIS INH_1B8000F_01 재열람(2026-10-15): 출생아 수 56개 값 모두 일치"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "cdr",
+      "title": "조사망률",
+      "unit": "인구 1천 명당 명",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 7.1
+      },
+      "latestUnit": "인구 1천 명당 명",
+      "decimals": 1,
+      "series": [
+        {"year":1970,"value":8},
+        {"year":1971,"value":7.2},
+        {"year":1972,"value":6.3},
+        {"year":1973,"value":7.8},
+        {"year":1974,"value":7.2},
+        {"year":1975,"value":7.7},
+        {"year":1976,"value":7.4},
+        {"year":1977,"value":6.8},
+        {"year":1978,"value":6.8},
+        {"year":1979,"value":6.4},
+        {"year":1980,"value":7.3},
+        {"year":1981,"value":6.1},
+        {"year":1982,"value":6.2},
+        {"year":1983,"value":6.4},
+        {"year":1984,"value":5.9},
+        {"year":1985,"value":5.9},
+        {"year":1986,"value":5.8},
+        {"year":1987,"value":5.9},
+        {"year":1988,"value":5.6},
+        {"year":1989,"value":5.6},
+        {"year":1990,"value":5.6},
+        {"year":1991,"value":5.6},
+        {"year":1992,"value":5.4},
+        {"year":1993,"value":5.2},
+        {"year":1994,"value":5.4},
+        {"year":1995,"value":5.3},
+        {"year":1996,"value":5.2},
+        {"year":1997,"value":5.3},
+        {"year":1998,"value":5.2},
+        {"year":1999,"value":5.3},
+        {"year":2000,"value":5.2},
+        {"year":2001,"value":5.1},
+        {"year":2002,"value":5.1},
+        {"year":2003,"value":5.1},
+        {"year":2004,"value":5.1},
+        {"year":2005,"value":5.1},
+        {"year":2006,"value":5},
+        {"year":2007,"value":5},
+        {"year":2008,"value":5},
+        {"year":2009,"value":5},
+        {"year":2010,"value":5.1},
+        {"year":2011,"value":5.1},
+        {"year":2012,"value":5.3},
+        {"year":2013,"value":5.3},
+        {"year":2014,"value":5.3},
+        {"year":2015,"value":5.4},
+        {"year":2016,"value":5.5},
+        {"year":2017,"value":5.6},
+        {"year":2018,"value":5.8},
+        {"year":2019,"value":5.7},
+        {"year":2020,"value":5.9},
+        {"year":2021,"value":6.2},
+        {"year":2022,"value":7.3},
+        {"year":2023,"value":6.9},
+        {"year":2024,"value":7},
+        {"year":2025,"value":7.1}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "deaths2025": 362968,
+      "crudeDeathRatePer100k2025": 712.6,
+      "perDay2025": 994,
+      "definition": "조사망률은 인구 1천 명당 그해 사망자 수입니다.",
+      "basisId": "s-003",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 사망자수, 조사망률, 기대수명 (INH_1B8000F_02, 인구동향조사·생명표)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=INH_1B8000F_02",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(1970~2025)에서 값을 읽음",
+        "crossChecks": [
+          "2025년 사망자 362,968명·조사망률 712.6명(인구 10만 명당)이 사망원인통계 보도자료 [표 1]과 일치(7.1 = 712.6/100)",
+          "1983년 사망자 254,563명이 보도자료 [표 1]과 일치",
+          "KOSIS 「사망자수, 조사망률, 기대수명」(INH_1B8000F_02) 재열람(2026-10-15): 조사망률 56개 값 모두 일치"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "elderly-poverty",
+      "title": "66세 이상 상대적 빈곤율",
+      "unit": "%",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2024,
+        "value": 37.7
+      },
+      "latestUnit": "%",
+      "decimals": 1,
+      "series": [
+        {"year":2011,"value":47.9},
+        {"year":2012,"value":46.8},
+        {"year":2013,"value":47.5},
+        {"year":2014,"value":45.9},
+        {"year":2015,"value":44.2},
+        {"year":2016,"value":44.8},
+        {"year":2017,"value":43.8},
+        {"year":2018,"value":43.3},
+        {"year":2019,"value":43.2},
+        {"year":2020,"value":40.5},
+        {"year":2021,"value":39.3},
+        {"year":2022,"value":39.7},
+        {"year":2023,"value":39.8},
+        {"year":2024,"value":37.7}
+      ],
+      "seriesLabel": "66세 이상(은퇴연령인구)",
+      "extraSeries": [
+        {
+          "label": "18~65세(근로연령인구)",
+          "series": [
+            {"year":2017,"value":12.3},
+            {"year":2018,"value":11.5},
+            {"year":2019,"value":10.9},
+            {"year":2020,"value":10.3},
+            {"year":2021,"value":10.1},
+            {"year":2022,"value":10},
+            {"year":2023,"value":9.8},
+            {"year":2024,"value":10.3}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "definition": "66세 이상 상대적 빈곤율은 균등화 처분가능소득이 전체 인구 중위소득의 50% 이하인 66세 이상 인구의 비율입니다(은퇴연령인구 기준).",
+      "basisId": "s-004",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2026 고령자 통계 「14. 은퇴연령층 빈곤율」 표와 통계표(출처 자료: 가계금융복지조사)",
+        "url": "https://mods.go.kr/board.es?act=view&bid=10820&list_no=447294&mid=a10301010000",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "고령자 통계 원문 표(문서 뷰어 텍스트층) 두 곳(본문 표·통계표 75쪽)에서 같은 값을 읽음",
+        "crossChecks": [
+          "2024년 37.7%, 전년 대비 2.1%p 감소(2023년 39.8%) 본문 서술과 일치",
+          "2017~2024 값이 본문 표와 통계표에서 같음"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "「노인빈곤율」은 기준 연령에 따라 값이 다르다. 여기서는 소득분배지표의 66세 이상(은퇴연령인구) 값을 쓴다. 가계금융복지조사 2024년 소득 기준."
+    },
+    {
+      "id": "suicide-rate",
+      "title": "자살률",
+      "unit": "인구 10만 명당 명",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 27.8
+      },
+      "latestUnit": "인구 10만 명당 명",
+      "decimals": 1,
+      "series": [
+        {"year":2015,"value":26.5},
+        {"year":2017,"value":24.3},
+        {"year":2019,"value":26.9},
+        {"year":2021,"value":26},
+        {"year":2023,"value":27.3},
+        {"year":2024,"value":29.1},
+        {"year":2025,"value":27.8}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": null,
+        "regular": false,
+        "gaps": [
+          {"from":2015,"to":2017},
+          {"from":2017,"to":2019},
+          {"from":2019,"to":2021},
+          {"from":2021,"to":2023}
+        ],
+        "breaks": [],
+        "note": "2015·2017·2019·2021·2023년은 2년 간격이고 2023·2024·2025년은 1년 간격이다. 연도 비례 축에 그대로 놓는다."
+      },
+      "definition": "자살률은 인구 10만 명당 그해 고의적 자해(자살)로 숨진 사람의 수입니다.",
+      "basisId": "s-005",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 사망원인통계 결과 「주요 사망원인별 사망률 추이, 2015~2025」(통계표 6)·본문 [표 12]",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=218&act=view&list_no=447102",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "사망원인통계 원문 표(문서 뷰어 텍스트층)에서 열 머리(연도)와 값을 함께 확인",
+        "crossChecks": [
+          "본문 「27.8명, 전년 대비 1.4명(-4.7%) 감소」와 값이 같고(2025 27.8), 2024년 값은 29.1 — 표의 반올림 값끼리 빼면 1.3명이라 본문 1.4명과 0.1명 차이가 나는데 본문은 반올림 전 값으로 계산한 것으로 본다(원자료 소수 둘째 자리는 보지 못함)",
+          "[표 12]의 2015·2024·2025 값(26.5·29.1·27.8)과 일치",
+          "자살자 수 2025 14,144명 / 사망원인통계 통계표 5와 일치"
+        ]
+      },
+      "safety": "suicide-help",
+      "helpLine": {
+        "name": "자살예방 상담전화",
+        "number": "109",
+        "hours": "24시간",
+        "note": "보건복지부 자살예방 상담전화. 한국생명존중희망재단 누리집 첫 화면에 「24 HOURS OPEN」과 함께 안내되어 있다. 정신건강 위기 상담전화 1577-0199도 함께 안내된다.",
+        "source": {
+          "org": "한국생명존중희망재단",
+          "table": "한국생명존중희망재단 누리집 첫 화면·「자살예방 전화상담 및 SNS 상담 운영」 안내",
+          "url": "https://www.kfsp.or.kr/",
+          "accessedOn": "2026-10-15"
+        }
+      },
+      "usable": true,
+      "notes": "통계표 6의 열은 2015·2017·2019·2021·2023·2024·2025년이다(사이 연도는 이 표에 없음). 자살 보도는 「자살보도 권고기준 4.0」(보건복지부, 2024)을 따르라는 안내가 보도자료에 있다. 방법·장소·동기는 쓰지 않는다."
+    },
+    {
+      "id": "region-population",
+      "title": "지역별 인구수(2025 인구주택총조사, 17개 시도)",
+      "unit": "천 명",
+      "kind": "bar",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 51817
+      },
+      "latestUnit": "천 명",
+      "latestLabel": "전국 총인구(17개 시도 값의 합이 아니라 전국 값)",
+      "decimals": 0,
+      "scopeLabel": "2025년 기준(17개 시·도)",
+      "series": [
+        {"label":"서울","value":9315},
+        {"label":"부산","value":3235},
+        {"label":"대구","value":2364},
+        {"label":"인천","value":3094},
+        {"label":"광주","value":1432},
+        {"label":"대전","value":1469},
+        {"label":"울산","value":1104},
+        {"label":"세종","value":392},
+        {"label":"경기","value":13968},
+        {"label":"강원","value":1519},
+        {"label":"충북","value":1657},
+        {"label":"충남","value":2249},
+        {"label":"전북","value":1752},
+        {"label":"전남","value":1779},
+        {"label":"경북","value":2568},
+        {"label":"경남","value":3253},
+        {"label":"제주","value":669}
+      ],
+      "capitalRegion": {
+        "members": [
+          "서울",
+          "인천",
+          "경기"
+        ],
+        "valueThousand": 26377,
+        "sharePct": 50.9,
+        "note": "수도권 = 서울·인천·경기(보도자료 본문 「수도권 2,638만 명(50.9%)」, 26,377천 명). 시도 값 합과 일치."
+      },
+      "definition": "지역별 인구수는 2025년 11월 1일 0시 기준 시도별 총인구입니다(등록센서스 방식).",
+      "basisId": "s-006",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 인구주택총조사 결과 「표 5 시도별 인구, 2020~2025년」",
+        "url": "https://mods.go.kr/board.es?mid=a10301020200&bid=203&act=view&list_no=446219",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "인구주택총조사 보도자료 원문 표에서 시도별 값을 읽음",
+        "crossChecks": [
+          "본문 「경기 27.0%(13,968천명), 서울 18.0%(9,315천명), 경남 6.3%(3,253천명), 부산 6.2%(3,235천명)」와 일치",
+          "전국 51,817천 명 = 요약 「5,182만 명」과 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "값은 천 명 단위로 반올림돼 17개 시도 합(51,819)이 전국(51,817)과 2천 명 어긋난다(보도자료 이용 주의 사항). 2025년 11월 1일 기준 17개 시도라 2026년 7월 1일에 광주·전남이 「전남광주통합특별시」로 합쳐진 행정구역과 다르다(meta.regionChanges2026). 캐러셀 「지역별 인구수」 카드는 이 지표가 아니라 주민등록 16개 시·도 지표(region-population-registered)를 쓴다(마스터 결정 2026-10-15); 이 지표는 또래 지역 가중(VP3) 같은 내부 근거로 쓴다."
+    },
+    {
+      "id": "life-expectancy",
+      "title": "기대수명",
+      "unit": "년",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2024,
+        "value": 83.7
+      },
+      "latestUnit": "년",
+      "decimals": 1,
+      "series": [
+        {"year":1970,"value":62.3},
+        {"year":1971,"value":62.7},
+        {"year":1972,"value":63.1},
+        {"year":1973,"value":63.5},
+        {"year":1974,"value":63.9},
+        {"year":1975,"value":64.2},
+        {"year":1976,"value":64.6},
+        {"year":1977,"value":65},
+        {"year":1978,"value":65.3},
+        {"year":1979,"value":65.6},
+        {"year":1980,"value":66.1},
+        {"year":1981,"value":66.7},
+        {"year":1982,"value":67.2},
+        {"year":1983,"value":67.7},
+        {"year":1984,"value":68.3},
+        {"year":1985,"value":68.9},
+        {"year":1986,"value":69.5},
+        {"year":1987,"value":70.1},
+        {"year":1988,"value":70.7},
+        {"year":1989,"value":71.2},
+        {"year":1990,"value":71.7},
+        {"year":1991,"value":72.2},
+        {"year":1992,"value":72.6},
+        {"year":1993,"value":73.1},
+        {"year":1994,"value":73.5},
+        {"year":1995,"value":73.8},
+        {"year":1996,"value":74.2},
+        {"year":1997,"value":74.7},
+        {"year":1998,"value":75.1},
+        {"year":1999,"value":75.5},
+        {"year":2000,"value":76},
+        {"year":2001,"value":76.5},
+        {"year":2002,"value":76.8},
+        {"year":2003,"value":77.3},
+        {"year":2004,"value":77.8},
+        {"year":2005,"value":78.2},
+        {"year":2006,"value":78.8},
+        {"year":2007,"value":79.2},
+        {"year":2008,"value":79.6},
+        {"year":2009,"value":80},
+        {"year":2010,"value":80.2},
+        {"year":2011,"value":80.6},
+        {"year":2012,"value":80.9},
+        {"year":2013,"value":81.4},
+        {"year":2014,"value":81.8},
+        {"year":2015,"value":82.1},
+        {"year":2016,"value":82.4},
+        {"year":2017,"value":82.7},
+        {"year":2018,"value":82.7},
+        {"year":2019,"value":83.3},
+        {"year":2020,"value":83.5},
+        {"year":2021,"value":83.6},
+        {"year":2022,"value":82.7},
+        {"year":2023,"value":83.5},
+        {"year":2024,"value":83.7}
+      ],
+      "seriesLabel": "남녀 전체",
+      "extraSeries": [
+        {
+          "label": "남자",
+          "series": [
+            {"year":1970,"value":58.7},
+            {"year":1971,"value":59.1},
+            {"year":1972,"value":59.4},
+            {"year":1973,"value":59.7},
+            {"year":1974,"value":60},
+            {"year":1975,"value":60.3},
+            {"year":1976,"value":60.6},
+            {"year":1977,"value":60.9},
+            {"year":1978,"value":61.1},
+            {"year":1979,"value":61.4},
+            {"year":1980,"value":61.9},
+            {"year":1981,"value":62.4},
+            {"year":1982,"value":62.9},
+            {"year":1983,"value":63.4},
+            {"year":1984,"value":64},
+            {"year":1985,"value":64.6},
+            {"year":1986,"value":65.3},
+            {"year":1987,"value":65.9},
+            {"year":1988,"value":66.5},
+            {"year":1989,"value":67},
+            {"year":1990,"value":67.5},
+            {"year":1991,"value":67.9},
+            {"year":1992,"value":68.4},
+            {"year":1993,"value":68.9},
+            {"year":1994,"value":69.3},
+            {"year":1995,"value":69.7},
+            {"year":1996,"value":70.2},
+            {"year":1997,"value":70.7},
+            {"year":1998,"value":71.2},
+            {"year":1999,"value":71.8},
+            {"year":2000,"value":72.3},
+            {"year":2001,"value":72.9},
+            {"year":2002,"value":73.4},
+            {"year":2003,"value":73.8},
+            {"year":2004,"value":74.3},
+            {"year":2005,"value":74.9},
+            {"year":2006,"value":75.4},
+            {"year":2007,"value":75.9},
+            {"year":2008,"value":76.2},
+            {"year":2009,"value":76.7},
+            {"year":2010,"value":76.8},
+            {"year":2011,"value":77.3},
+            {"year":2012,"value":77.6},
+            {"year":2013,"value":78.1},
+            {"year":2014,"value":78.6},
+            {"year":2015,"value":79},
+            {"year":2016,"value":79.3},
+            {"year":2017,"value":79.7},
+            {"year":2018,"value":79.7},
+            {"year":2019,"value":80.3},
+            {"year":2020,"value":80.5},
+            {"year":2021,"value":80.6},
+            {"year":2022,"value":79.9},
+            {"year":2023,"value":80.6},
+            {"year":2024,"value":80.8}
+          ]
+        },
+        {
+          "label": "여자",
+          "series": [
+            {"year":1970,"value":65.8},
+            {"year":1971,"value":66.3},
+            {"year":1972,"value":66.8},
+            {"year":1973,"value":67.3},
+            {"year":1974,"value":67.8},
+            {"year":1975,"value":68.2},
+            {"year":1976,"value":68.6},
+            {"year":1977,"value":69.1},
+            {"year":1978,"value":69.5},
+            {"year":1979,"value":69.9},
+            {"year":1980,"value":70.4},
+            {"year":1981,"value":70.9},
+            {"year":1982,"value":71.5},
+            {"year":1983,"value":71.9},
+            {"year":1984,"value":72.6},
+            {"year":1985,"value":73.2},
+            {"year":1986,"value":73.8},
+            {"year":1987,"value":74.3},
+            {"year":1988,"value":74.8},
+            {"year":1989,"value":75.3},
+            {"year":1990,"value":75.9},
+            {"year":1991,"value":76.4},
+            {"year":1992,"value":76.8},
+            {"year":1993,"value":77.3},
+            {"year":1994,"value":77.7},
+            {"year":1995,"value":77.9},
+            {"year":1996,"value":78.3},
+            {"year":1997,"value":78.7},
+            {"year":1998,"value":79},
+            {"year":1999,"value":79.2},
+            {"year":2000,"value":79.7},
+            {"year":2001,"value":80.1},
+            {"year":2002,"value":80.3},
+            {"year":2003,"value":80.8},
+            {"year":2004,"value":81.2},
+            {"year":2005,"value":81.6},
+            {"year":2006,"value":82.1},
+            {"year":2007,"value":82.5},
+            {"year":2008,"value":83},
+            {"year":2009,"value":83.4},
+            {"year":2010,"value":83.6},
+            {"year":2011,"value":84},
+            {"year":2012,"value":84.2},
+            {"year":2013,"value":84.6},
+            {"year":2014,"value":85},
+            {"year":2015,"value":85.2},
+            {"year":2016,"value":85.4},
+            {"year":2017,"value":85.7},
+            {"year":2018,"value":85.7},
+            {"year":2019,"value":86.3},
+            {"year":2020,"value":86.5},
+            {"year":2021,"value":86.6},
+            {"year":2022,"value":85.6},
+            {"year":2023,"value":86.4},
+            {"year":2024,"value":86.6}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "definition": "기대수명은 그해 태어난 아이가 앞으로 살 것으로 기대되는 평균 햇수(출생 시 기대여명)입니다. 해당 연도의 연령별 사망 수준이 그대로 유지된다고 가정해 계산합니다.",
+      "basisId": "s-007",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 사망자수, 조사망률, 기대수명(INH_1B8000F_02) 1970~2024 / 2024년 생명표 보도자료",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=INH_1B8000F_02",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(1970~2024)에서 값을 읽음",
+        "crossChecks": [
+          "2024년 생명표 보도자료 인포그래픽(이미지)의 83.7·80.8·86.6, 1970년 62.3·58.7·65.8, 1985년 68.9, 2000년 76.0과 일치",
+          "60세 기대여명 남 23.7·여 28.4는 같은 인포그래픽에서 확인",
+          "KOSIS INH_1B8000F_02 재열람(2026-10-15): 전체·남·여 기대수명 55개 연도 값 모두 일치(2025년은 표에 값 없음 「-」)"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "single-household",
+      "title": "1인 가구 비율",
+      "unit": "%",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 36.6
+      },
+      "latestUnit": "%",
+      "decimals": 1,
+      "series": [
+        {"year":1980,"value":4.8},
+        {"year":1985,"value":6.9},
+        {"year":1990,"value":9},
+        {"year":1995,"value":12.7},
+        {"year":2000,"value":15.5},
+        {"year":2005,"value":20},
+        {"year":2010,"value":23.9},
+        {"year":2015,"value":27.2},
+        {"year":2016,"value":27.9},
+        {"year":2017,"value":28.6},
+        {"year":2018,"value":29.3},
+        {"year":2019,"value":30.2},
+        {"year":2020,"value":31.7},
+        {"year":2021,"value":33.4},
+        {"year":2022,"value":34.5},
+        {"year":2023,"value":35.5},
+        {"year":2024,"value":36.1},
+        {"year":2025,"value":36.6}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": null,
+        "regular": false,
+        "gaps": [
+          {"from":1980,"to":1985},
+          {"from":1985,"to":1990},
+          {"from":1990,"to":1995},
+          {"from":1995,"to":2000},
+          {"from":2000,"to":2005},
+          {"from":2005,"to":2010},
+          {"from":2010,"to":2015}
+        ],
+        "breaks": [
+          {"year":2015,"note":"2010년까지는 전통적 현장조사 방식, 2015년부터는 등록센서스 방식이라 직접 비교에 유의(보도자료 이용 주의 사항)"}
+        ]
+      },
+      "definition": "1인 가구 비율은 일반가구 중 가구원이 1명인 가구가 차지하는 비율입니다.",
+      "basisId": "s-008",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 인구주택총조사 결과 「표 49 1인가구, 1980~2025년」",
+        "url": "https://mods.go.kr/board.es?mid=a10301020200&bid=203&act=view&list_no=446219",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "인구주택총조사 보도자료 원문 표에서 값을 읽음",
+        "crossChecks": [
+          "본문 「1인가구 824만 가구(36.6%)」와 일치",
+          "8,244천 가구 / 22,495천 일반가구 = 36.6% 직접 계산과 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "2010년까지는 전통적 현장조사 방식, 2015년부터는 등록센서스 방식이라 직접 비교에 유의해야 한다(보도자료 이용 주의 사항)."
+    },
+    {
+      "id": "first-marriage-age",
+      "title": "평균 초혼 연령(남자·여자)",
+      "unit": "세",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 33.85
+      },
+      "latestUnit": "세",
+      "latestLabel": "남자 평균 초혼 연령",
+      "decimals": 1,
+      "headline": [
+        {"label":"남자","year":2025,"value":33.85},
+        {"label":"여자","year":2025,"value":31.62}
+      ],
+      "series": [
+        {"year":2005,"value":30.87},
+        {"year":2006,"value":30.96},
+        {"year":2007,"value":31.11},
+        {"year":2008,"value":31.38},
+        {"year":2009,"value":31.61},
+        {"year":2010,"value":31.84},
+        {"year":2011,"value":31.9},
+        {"year":2012,"value":32.13},
+        {"year":2013,"value":32.21},
+        {"year":2014,"value":32.42},
+        {"year":2015,"value":32.57},
+        {"year":2016,"value":32.79},
+        {"year":2017,"value":32.94},
+        {"year":2018,"value":33.15},
+        {"year":2019,"value":33.37},
+        {"year":2020,"value":33.23},
+        {"year":2021,"value":33.35},
+        {"year":2022,"value":33.72},
+        {"year":2023,"value":33.97},
+        {"year":2024,"value":33.86},
+        {"year":2025,"value":33.85}
+      ],
+      "seriesLabel": "남편(남자)",
+      "extraSeries": [
+        {
+          "label": "아내(여자)",
+          "latest": {
+            "year": 2025,
+            "value": 31.62
+          },
+          "series": [
+            {"year":2005,"value":27.72},
+            {"year":2006,"value":27.79},
+            {"year":2007,"value":28.09},
+            {"year":2008,"value":28.32},
+            {"year":2009,"value":28.71},
+            {"year":2010,"value":28.91},
+            {"year":2011,"value":29.14},
+            {"year":2012,"value":29.41},
+            {"year":2013,"value":29.59},
+            {"year":2014,"value":29.81},
+            {"year":2015,"value":29.96},
+            {"year":2016,"value":30.11},
+            {"year":2017,"value":30.24},
+            {"year":2018,"value":30.4},
+            {"year":2019,"value":30.59},
+            {"year":2020,"value":30.78},
+            {"year":2021,"value":31.08},
+            {"year":2022,"value":31.26},
+            {"year":2023,"value":31.45},
+            {"year":2024,"value":31.55},
+            {"year":2025,"value":31.62}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "definition": "평균 초혼 연령은 초혼으로 혼인신고를 한 사람의 평균 나이이며 남자와 여자를 따로 집계합니다.",
+      "basisId": "s-009",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 시도별 평균초혼연령(DT_1B83A05) 2005~2025 / 2025년 혼인·이혼 통계 보도자료 [표 3]",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B83A05",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(2005~2025)에서 소수 둘째 자리까지 읽음",
+        "crossChecks": [
+          "혼인·이혼 통계 보도자료 [표 3](이미지)의 2015~2025 값(32.6·30.0 … 33.9·31.6)과 반올림 일치",
+          "2025년 남 33.9·여 31.6",
+          "혼인·이혼 통계 보도자료 요약 쪽 이미지(재열람 2026-10-15): 「평균초혼연령은 남자 33.9세로 전년과 유사, 여자 31.6세로 전년대비 0.1세 상승」, 그래프 2005 남 30.9·여 27.7, 2015 32.6·30.0, 2025 33.9·31.6 — 시리즈와 반올림 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "공식 보도자료는 남자 33.9세·여자 31.6세(소수 첫째 자리)로 표기하고 KOSIS 표에는 소수 둘째 자리(33.85·31.62)까지 있다. 화면 표기는 decimals(1)를 따라 한 자리로 쓴다. 남녀 두 값을 함께 보인다(headline)."
+    },
+    {
+      "id": "youth-employment",
+      "title": "청년(15~29세) 고용률",
+      "unit": "%",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 45
+      },
+      "latestUnit": "%",
+      "decimals": 1,
+      "series": [
+        {"year":2015,"value":41.2},
+        {"year":2016,"value":41.7},
+        {"year":2017,"value":42.1},
+        {"year":2018,"value":42.7},
+        {"year":2019,"value":43.5},
+        {"year":2020,"value":42.2},
+        {"year":2021,"value":44.2},
+        {"year":2022,"value":46.6},
+        {"year":2023,"value":46.5},
+        {"year":2024,"value":46.1},
+        {"year":2025,"value":45}
+      ],
+      "seriesLabel": "15~29세",
+      "extraSeries": [
+        {
+          "label": "15세 이상 전체",
+          "series": [
+            {"year":2015,"value":60.5},
+            {"year":2016,"value":60.6},
+            {"year":2017,"value":60.8},
+            {"year":2018,"value":60.7},
+            {"year":2019,"value":60.9},
+            {"year":2020,"value":60.1},
+            {"year":2021,"value":60.5},
+            {"year":2022,"value":62.1},
+            {"year":2023,"value":62.6},
+            {"year":2024,"value":62.7},
+            {"year":2025,"value":62.9}
+          ]
+        },
+        {
+          "label": "20~29세",
+          "series": [
+            {"year":2015,"value":57.9},
+            {"year":2016,"value":58.2},
+            {"year":2017,"value":57.6},
+            {"year":2018,"value":57.9},
+            {"year":2019,"value":58.2},
+            {"year":2020,"value":55.7},
+            {"year":2021,"value":57.4},
+            {"year":2022,"value":60.4},
+            {"year":2023,"value":60.9},
+            {"year":2024,"value":61},
+            {"year":2025,"value":60.2}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "definition": "고용률은 해당 연령 인구 중 취업자가 차지하는 비율입니다(경제활동인구조사, 연간).",
+      "basisId": "s-010",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 연령별 경제활동인구 총괄 (DT_1DA7002S, 경제활동인구조사)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1DA7002S",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(연간 2015~2025)에서 셀 값을 읽음",
+        "crossChecks": [
+          "연간 2025 15~29세 취업자 3,578천 명·인구 7,953천 명 = 45.0%(직접 계산)",
+          "15세 이상 전체 62.9%",
+          "KOSIS 표 재열람(2026-10-15, 연간 2015~2025): 15~29세 2015 41.2·2016 41.7·2024 46.1·2025 45.0 등 33개 값 모두 일치. 취업자÷인구 직접 계산도 같다(2015 3,864÷9,380=41.2, 2016 3,908÷9,363=41.7, 2024 3,755÷8,152=46.1). 검수 추천 표본의 기억 값(41.5·42.3·45.8)은 KOSIS 표 값과 달라 데이터를 고치지 않았다"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "연령계층 15~29세 값이라 재학생이 포함된다(20~29세 값을 함께 둔다)."
+    },
+    {
+      "id": "private-education",
+      "title": "사교육 참여율",
+      "unit": "%",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 75.7
+      },
+      "latestUnit": "%",
+      "decimals": 1,
+      "series": [
+        {"year":2007,"value":77},
+        {"year":2008,"value":75.1},
+        {"year":2009,"value":75},
+        {"year":2010,"value":73.6},
+        {"year":2011,"value":71.7},
+        {"year":2012,"value":69.4},
+        {"year":2013,"value":68.8},
+        {"year":2014,"value":68.6},
+        {"year":2015,"value":68.8},
+        {"year":2016,"value":67.8},
+        {"year":2017,"value":71.2},
+        {"year":2018,"value":72.8},
+        {"year":2019,"value":74.8},
+        {"year":2020,"value":67.1},
+        {"year":2021,"value":75.5},
+        {"year":2022,"value":78.3},
+        {"year":2023,"value":78.5},
+        {"year":2024,"value":80},
+        {"year":2025,"value":75.7}
+      ],
+      "extraSeries": [
+        {
+          "label": "학생 1인당 월평균 사교육비(전체학생, 만 원, 명목)",
+          "latest": {
+            "year": 2025,
+            "value": 45.8
+          },
+          "series": [
+            {"year":2007,"value":22.2},
+            {"year":2008,"value":23.3},
+            {"year":2009,"value":24.2},
+            {"year":2010,"value":24},
+            {"year":2011,"value":24},
+            {"year":2012,"value":23.6},
+            {"year":2013,"value":23.9},
+            {"year":2014,"value":24.2},
+            {"year":2015,"value":24.4},
+            {"year":2016,"value":25.6},
+            {"year":2017,"value":27.2},
+            {"year":2018,"value":29.1},
+            {"year":2019,"value":32.1},
+            {"year":2020,"value":30.2},
+            {"year":2021,"value":36.7},
+            {"year":2022,"value":41},
+            {"year":2023,"value":43.4},
+            {"year":2024,"value":47.4},
+            {"year":2025,"value":45.8}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "definition": "사교육 참여율은 초·중·고 학생 중 학교 밖 보충교육(학원, 개인과외, 그룹과외, 방문학습지, 인터넷 강좌 등)을 받은 학생의 비율입니다.",
+      "basisId": "s-011",
+      "source": {
+        "org": "국가데이터처·교육부",
+        "table": "2025년 초중고사교육비조사 결과 통계표 21 「연도별 초중고사교육비조사 주요 결과 및 증감률」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=245&act=view&list_no=443953",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표에서 2007~2025 값을 읽음",
+        "crossChecks": [
+          "본문 「사교육 참여율 75.7%(4.3%p 감소)」, 「월평균 사교육비 45만 8천 원」과 일치",
+          "2024년 80.0%와 증감 4.3%p가 서로 맞음"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "사교육비 금액은 물가 상승분이 포함된 명목 금액이다(보도자료 유의 사항). 학교급별 2025년 참여율은 초 84.4%·중 73.0%·고 63.0%."
+    },
+    {
+      "id": "aging-rate",
+      "title": "고령인구(65세 이상) 비율",
+      "unit": "%",
+      "kind": "line",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 20.7
+      },
+      "latestUnit": "%",
+      "decimals": 1,
+      "series": [
+        {"year":2020,"value":16},
+        {"year":2021,"value":16.8},
+        {"year":2022,"value":17.7},
+        {"year":2023,"value":18.6},
+        {"year":2024,"value":19.5},
+        {"year":2025,"value":20.7}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "projection": {
+        "note": "장래인구추계(2022~2072) 기준 2026년 65세 이상 고령인구는 1,112만 5천 명(21.6%), 2036년 30%, 2050년 40% 초과 전망(2026 고령자 통계). 다가올 세상 문구에서만 「지금 기준 전망」으로 쓴다.",
+        "year": 2026,
+        "value": 21.6
+      },
+      "definition": "고령인구 비율은 총인구 중 65세 이상 인구가 차지하는 비율입니다(11월 1일 0시 기준, 등록센서스).",
+      "basisId": "s-012",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 인구주택총조사 결과 「표 1 총인구 및 연령별 인구, 2020~2025년」",
+        "url": "https://mods.go.kr/board.es?mid=a10301020200&bid=203&act=view&list_no=446219",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "인구주택총조사 보도자료 원문 표에서 값을 읽음",
+        "crossChecks": [
+          "본문 「고령인구 1,072만 명(20.7%)」과 일치",
+          "2025년 처음으로 20% 초과(본문)"
+        ]
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "tfr-by-sido",
+      "title": "시·도별 합계출산율(2025년 기준, 17개 시·도)",
+      "unit": "명",
+      "kind": "bar",
+      "use": [
+        "carousel",
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 0.8
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 합계출산율",
+      "decimals": 2,
+      "scopeLabel": "2025년 기준(17개 시·도)",
+      "series": [
+        {"label":"서울","value":0.63},
+        {"label":"부산","value":0.74},
+        {"label":"대구","value":0.81},
+        {"label":"인천","value":0.82},
+        {"label":"광주","value":0.76},
+        {"label":"대전","value":0.83},
+        {"label":"울산","value":0.92},
+        {"label":"세종","value":1.06},
+        {"label":"경기","value":0.84},
+        {"label":"강원","value":0.91},
+        {"label":"충북","value":0.96},
+        {"label":"충남","value":0.92},
+        {"label":"전북","value":0.85},
+        {"label":"전남","value":1.09},
+        {"label":"경북","value":0.93},
+        {"label":"경남","value":0.88},
+        {"label":"제주","value":0.87}
+      ],
+      "definition": "시도별 합계출산율은 각 시도에 사는 가임 여자 1명이 평생 낳을 것으로 예상되는 평균 출생아 수입니다.",
+      "basisId": "s-013",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 「표 23 시도별 합계출산율 및 모의 연령별 출산율, 2024~2025」·통계표 11",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표에서 시도별 값을 읽음",
+        "crossChecks": [
+          "본문 「전남 1.09·세종 1.06 높고, 서울 0.63·부산 0.74 낮음」과 일치",
+          "시군구 표(통계표 12)의 시도 행 값과 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "2025년 통계라 17개 시·도 기준이다(2026년 7월 광주·전남 통합 이전). 카드에는 「2025년 기준(17개 시·도)」로 표기한다(마스터 결정 2026-10-15)."
+    },
+    {
+      "id": "death-age",
+      "title": "연령별 사망자 수(2025)",
+      "unit": "명",
+      "kind": "bar",
+      "use": [
+        "death"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 362968
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 전체 사망자 수(연령미상 25명 포함)",
+      "decimals": 0,
+      "series": [
+        {"label":"0세","value":512},
+        {"label":"1~9세","value":252},
+        {"label":"10~19세","value":780},
+        {"label":"20~29세","value":2261},
+        {"label":"30~39세","value":4406},
+        {"label":"40~49세","value":10249},
+        {"label":"50~59세","value":24846},
+        {"label":"60~69세","value":48499},
+        {"label":"70~79세","value":72596},
+        {"label":"80세 이상","value":198542}
+      ],
+      "extraSeries": [
+        {
+          "label": "연령별 사망률(인구 10만 명당 명)",
+          "series": [
+            {"label":"0세","value":210},
+            {"label":"1~9세","value":9},
+            {"label":"10~19세","value":16.9},
+            {"label":"20~29세","value":39},
+            {"label":"30~39세","value":66.5},
+            {"label":"40~49세","value":134.8},
+            {"label":"50~59세","value":288.7},
+            {"label":"60~69세","value":619.8},
+            {"label":"70~79세","value":1672.5},
+            {"label":"80세 이상","value":8044.2}
+          ]
+        }
+      ],
+      "definition": "연령별 사망자 수와 사망률은 사망원인통계(주민등록지 기준 사망신고 집계)의 값입니다. 연령미상 25명이 따로 있어 연령별 합계는 362,943명입니다.",
+      "basisId": "s-014",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 사망원인통계 결과 「[표 2] 성·연령별 사망자 수 추이」「[표 3] 성·연령별 사망률 추이」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=218&act=view&list_no=447102",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "사망원인통계 원문 표에서 값을 읽고 합계로 열 순서를 확인",
+        "crossChecks": [
+          "연령별 합계 + 연령미상 25 = 362,968",
+          "80세 이상 198,542/362,968 = 54.7%(본문과 일치)"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "80세 이상이 전체의 54.7%(본문). 연령 열 머리가 글자 겹침으로 읽기 어려워 합계(362,943+연령미상 25=362,968)와 80세 이상 비중 54.7%로 열 순서를 확인했다."
+    },
+    {
+      "id": "top-causes",
+      "title": "주요 사망원인별 사망률(2025)",
+      "unit": "인구 10만 명당 명",
+      "kind": "bar",
+      "use": [
+        "death"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 712.6
+      },
+      "latestUnit": "인구 10만 명당 명",
+      "latestLabel": "전국 전체 사망률(조사망률, 자살 포함)",
+      "decimals": 1,
+      "series": [
+        {"label":"악성신생물(암)","value":177.1},
+        {"label":"심장 질환","value":66.3},
+        {"label":"폐렴","value":60.8},
+        {"label":"뇌혈관 질환","value":48.7},
+        {"label":"알츠하이머병","value":26.8},
+        {"label":"당뇨병","value":22.4},
+        {"label":"패혈증","value":17.2},
+        {"label":"고혈압성 질환","value":17},
+        {"label":"간 질환","value":14.9}
+      ],
+      "definition": "주요 사망원인별 사망률은 원사인(사망에 이르게 한 근원 요인) 기준으로 집계한 인구 10만 명당 사망자 수입니다.",
+      "basisId": "s-015",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 사망원인통계 결과 「사망원인 순위 추이」(요약 표)",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=218&act=view&list_no=447102",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "사망원인통계 요약 표(순위·사망률)에서 값을 읽음",
+        "crossChecks": [
+          "본문 「암 사망률 177.1명, 암으로 숨진 비율 24.9%」와 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "10대 사인 중 고의적 자해(자살) 항목(27.8)은 이 표에서 뺐다(게임 사건·선택지에 자살·자해를 쓰지 않는다는 규칙, 자살률은 s-005 슬라이드에서만 안내와 함께 다룬다). 암·심장 질환·폐렴 3대 사인이 전체 사망의 42.7%(본문)."
+    },
+    {
+      "id": "birth-by-sido",
+      "title": "시도별 출생아 수·비율(2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "roulette"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 254341
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 출생아 수",
+      "decimals": 0,
+      "columns": [
+        {"key":"sido","label":"시도"},
+        {"key":"births","label":"출생아 수(명)"},
+        {"key":"sharePct","label":"비율(%) — 합 100.0이 되도록 가장 큰 나머지 방식으로 보정한 파생값","decimals":1}
+      ],
+      "rows": [
+        {"sido":"서울","births":45516,"sharePct":17.9},
+        {"sido":"부산","births":14010,"sharePct":5.5},
+        {"sido":"대구","births":10819,"sharePct":4.3},
+        {"sido":"인천","births":16581,"sharePct":6.5},
+        {"sido":"광주","births":6495,"sharePct":2.6},
+        {"sido":"대전","births":7673,"sharePct":3},
+        {"sido":"울산","births":5574,"sharePct":2.2},
+        {"sido":"세종","births":2954,"sharePct":1.2},
+        {"sido":"경기","births":76309,"sharePct":30},
+        {"sido":"강원","births":6677,"sharePct":2.6},
+        {"sido":"충북","births":8229,"sharePct":3.2},
+        {"sido":"충남","births":10242,"sharePct":4},
+        {"sido":"전북","births":7045,"sharePct":2.8},
+        {"sido":"전남","births":8719,"sharePct":3.4},
+        {"sido":"경북","births":10417,"sharePct":4.1},
+        {"sido":"경남","births":13802,"sharePct":5.4},
+        {"sido":"제주","births":3279,"sharePct":1.3}
+      ],
+      "rows16": [
+        {
+          "sido": "서울",
+          "births": 45516,
+          "sharePct": 17.9,
+          "from": [
+            "서울"
+          ]
+        },
+        {
+          "sido": "부산",
+          "births": 14010,
+          "sharePct": 5.5,
+          "from": [
+            "부산"
+          ]
+        },
+        {
+          "sido": "대구",
+          "births": 10819,
+          "sharePct": 4.3,
+          "from": [
+            "대구"
+          ]
+        },
+        {
+          "sido": "인천",
+          "births": 16581,
+          "sharePct": 6.5,
+          "from": [
+            "인천"
+          ]
+        },
+        {
+          "sido": "전남광주",
+          "births": 15214,
+          "sharePct": 6,
+          "from": [
+            "광주",
+            "전남"
+          ]
+        },
+        {
+          "sido": "대전",
+          "births": 7673,
+          "sharePct": 3,
+          "from": [
+            "대전"
+          ]
+        },
+        {
+          "sido": "울산",
+          "births": 5574,
+          "sharePct": 2.2,
+          "from": [
+            "울산"
+          ]
+        },
+        {
+          "sido": "세종",
+          "births": 2954,
+          "sharePct": 1.2,
+          "from": [
+            "세종"
+          ]
+        },
+        {
+          "sido": "경기",
+          "births": 76309,
+          "sharePct": 30,
+          "from": [
+            "경기"
+          ]
+        },
+        {
+          "sido": "강원",
+          "births": 6677,
+          "sharePct": 2.6,
+          "from": [
+            "강원"
+          ]
+        },
+        {
+          "sido": "충북",
+          "births": 8229,
+          "sharePct": 3.2,
+          "from": [
+            "충북"
+          ]
+        },
+        {
+          "sido": "충남",
+          "births": 10242,
+          "sharePct": 4,
+          "from": [
+            "충남"
+          ]
+        },
+        {
+          "sido": "전북",
+          "births": 7045,
+          "sharePct": 2.8,
+          "from": [
+            "전북"
+          ]
+        },
+        {
+          "sido": "경북",
+          "births": 10417,
+          "sharePct": 4.1,
+          "from": [
+            "경북"
+          ]
+        },
+        {
+          "sido": "경남",
+          "births": 13802,
+          "sharePct": 5.4,
+          "from": [
+            "경남"
+          ]
+        },
+        {
+          "sido": "제주",
+          "births": 3279,
+          "sharePct": 1.3,
+          "from": [
+            "제주"
+          ]
+        }
+      ],
+      "rows16Note": "2025년 출생아(17개 시·도)를 2026년 16개 시·도로 합친 파생값이다(광주 + 전남 = 전남광주). 합 254,341, 비율 합 100.0(가장 큰 나머지 방식).",
+      "eraRegions": [
+        {
+          "id": "past-1950-1962",
+          "label": "1950~1962년생",
+          "kind": "past",
+          "birthYears": [
+            1950,
+            1962
+          ],
+          "regions": [
+            {
+              "name": "서울",
+              "from": [
+                "서울"
+              ],
+              "births": 45516,
+              "sharePct": 17.9
+            },
+            {
+              "name": "경기",
+              "from": [
+                "경기",
+                "인천"
+              ],
+              "births": 92890,
+              "sharePct": 36.5
+            },
+            {
+              "name": "강원",
+              "from": [
+                "강원"
+              ],
+              "births": 6677,
+              "sharePct": 2.6
+            },
+            {
+              "name": "충북",
+              "from": [
+                "충북"
+              ],
+              "births": 8229,
+              "sharePct": 3.2
+            },
+            {
+              "name": "충남",
+              "from": [
+                "충남",
+                "대전",
+                "세종"
+              ],
+              "births": 20869,
+              "sharePct": 8.2
+            },
+            {
+              "name": "전북",
+              "from": [
+                "전북"
+              ],
+              "births": 7045,
+              "sharePct": 2.8
+            },
+            {
+              "name": "전남",
+              "from": [
+                "전남",
+                "광주"
+              ],
+              "births": 15214,
+              "sharePct": 6
+            },
+            {
+              "name": "경북",
+              "from": [
+                "경북",
+                "대구"
+              ],
+              "births": 21236,
+              "sharePct": 8.4
+            },
+            {
+              "name": "경남",
+              "from": [
+                "경남",
+                "부산",
+                "울산"
+              ],
+              "births": 33386,
+              "sharePct": 13.1
+            },
+            {
+              "name": "제주",
+              "from": [
+                "제주"
+              ],
+              "births": 3279,
+              "sharePct": 1.3
+            }
+          ],
+          "note": "서울+9개 도. 직할시가 없던 시기라 부산·대구·인천·광주·대전은 도에 포함."
+        },
+        {
+          "id": "past-1963-1980",
+          "label": "1963~1980년생",
+          "kind": "past",
+          "birthYears": [
+            1963,
+            1980
+          ],
+          "regions": [
+            {
+              "name": "서울",
+              "from": [
+                "서울"
+              ],
+              "births": 45516,
+              "sharePct": 17.9
+            },
+            {
+              "name": "부산",
+              "from": [
+                "부산"
+              ],
+              "births": 14010,
+              "sharePct": 5.5
+            },
+            {
+              "name": "경기",
+              "from": [
+                "경기",
+                "인천"
+              ],
+              "births": 92890,
+              "sharePct": 36.5
+            },
+            {
+              "name": "강원",
+              "from": [
+                "강원"
+              ],
+              "births": 6677,
+              "sharePct": 2.6
+            },
+            {
+              "name": "충북",
+              "from": [
+                "충북"
+              ],
+              "births": 8229,
+              "sharePct": 3.2
+            },
+            {
+              "name": "충남",
+              "from": [
+                "충남",
+                "대전",
+                "세종"
+              ],
+              "births": 20869,
+              "sharePct": 8.2
+            },
+            {
+              "name": "전북",
+              "from": [
+                "전북"
+              ],
+              "births": 7045,
+              "sharePct": 2.8
+            },
+            {
+              "name": "전남",
+              "from": [
+                "전남",
+                "광주"
+              ],
+              "births": 15214,
+              "sharePct": 6
+            },
+            {
+              "name": "경북",
+              "from": [
+                "경북",
+                "대구"
+              ],
+              "births": 21236,
+              "sharePct": 8.4
+            },
+            {
+              "name": "경남",
+              "from": [
+                "경남",
+                "울산"
+              ],
+              "births": 19376,
+              "sharePct": 7.6
+            },
+            {
+              "name": "제주",
+              "from": [
+                "제주"
+              ],
+              "births": 3279,
+              "sharePct": 1.3
+            }
+          ],
+          "note": "부산이 직할시로 독립(1963)."
+        },
+        {
+          "id": "past-1981-1985",
+          "label": "1981~1985년생",
+          "kind": "past",
+          "birthYears": [
+            1981,
+            1985
+          ],
+          "regions": [
+            {
+              "name": "서울",
+              "from": [
+                "서울"
+              ],
+              "births": 45516,
+              "sharePct": 17.9
+            },
+            {
+              "name": "부산",
+              "from": [
+                "부산"
+              ],
+              "births": 14010,
+              "sharePct": 5.5
+            },
+            {
+              "name": "대구",
+              "from": [
+                "대구"
+              ],
+              "births": 10819,
+              "sharePct": 4.3
+            },
+            {
+              "name": "인천",
+              "from": [
+                "인천"
+              ],
+              "births": 16581,
+              "sharePct": 6.5
+            },
+            {
+              "name": "경기",
+              "from": [
+                "경기"
+              ],
+              "births": 76309,
+              "sharePct": 30
+            },
+            {
+              "name": "강원",
+              "from": [
+                "강원"
+              ],
+              "births": 6677,
+              "sharePct": 2.6
+            },
+            {
+              "name": "충북",
+              "from": [
+                "충북"
+              ],
+              "births": 8229,
+              "sharePct": 3.2
+            },
+            {
+              "name": "충남",
+              "from": [
+                "충남",
+                "대전",
+                "세종"
+              ],
+              "births": 20869,
+              "sharePct": 8.2
+            },
+            {
+              "name": "전북",
+              "from": [
+                "전북"
+              ],
+              "births": 7045,
+              "sharePct": 2.8
+            },
+            {
+              "name": "전남",
+              "from": [
+                "전남",
+                "광주"
+              ],
+              "births": 15214,
+              "sharePct": 6
+            },
+            {
+              "name": "경북",
+              "from": [
+                "경북"
+              ],
+              "births": 10417,
+              "sharePct": 4.1
+            },
+            {
+              "name": "경남",
+              "from": [
+                "경남",
+                "울산"
+              ],
+              "births": 19376,
+              "sharePct": 7.6
+            },
+            {
+              "name": "제주",
+              "from": [
+                "제주"
+              ],
+              "births": 3279,
+              "sharePct": 1.3
+            }
+          ],
+          "note": "대구·인천이 직할시로 독립(1981)."
+        },
+        {
+          "id": "past-1986-1988",
+          "label": "1986~1988년생",
+          "kind": "past",
+          "birthYears": [
+            1986,
+            1988
+          ],
+          "regions": [
+            {
+              "name": "서울",
+              "from": [
+                "서울"
+              ],
+              "births": 45516,
+              "sharePct": 17.9
+            },
+            {
+              "name": "부산",
+              "from": [
+                "부산"
+              ],
+              "births": 14010,
+              "sharePct": 5.5
+            },
+            {
+              "name": "대구",
+              "from": [
+                "대구"
+              ],
+              "births": 10819,
+              "sharePct": 4.3
+            },
+            {
+              "name": "인천",
+              "from": [
+                "인천"
+              ],
+              "births": 16581,
+              "sharePct": 6.5
+            },
+            {
+              "name": "광주",
+              "from": [
+                "광주"
+              ],
+              "births": 6495,
+              "sharePct": 2.6
+            },
+            {
+              "name": "경기",
+              "from": [
+                "경기"
+              ],
+              "births": 76309,
+              "sharePct": 30
+            },
+            {
+              "name": "강원",
+              "from": [
+                "강원"
+              ],
+              "births": 6677,
+              "sharePct": 2.6
+            },
+            {
+              "name": "충북",
+              "from": [
+                "충북"
+              ],
+              "births": 8229,
+              "sharePct": 3.2
+            },
+            {
+              "name": "충남",
+              "from": [
+                "충남",
+                "대전",
+                "세종"
+              ],
+              "births": 20869,
+              "sharePct": 8.2
+            },
+            {
+              "name": "전북",
+              "from": [
+                "전북"
+              ],
+              "births": 7045,
+              "sharePct": 2.8
+            },
+            {
+              "name": "전남",
+              "from": [
+                "전남"
+              ],
+              "births": 8719,
+              "sharePct": 3.4
+            },
+            {
+              "name": "경북",
+              "from": [
+                "경북"
+              ],
+              "births": 10417,
+              "sharePct": 4.1
+            },
+            {
+              "name": "경남",
+              "from": [
+                "경남",
+                "울산"
+              ],
+              "births": 19376,
+              "sharePct": 7.6
+            },
+            {
+              "name": "제주",
+              "from": [
+                "제주"
+              ],
+              "births": 3279,
+              "sharePct": 1.3
+            }
+          ],
+          "note": "광주가 직할시로 독립(1986)."
+        },
+        {
+          "id": "past-1989",
+          "label": "1989년생",
+          "kind": "past",
+          "birthYears": [
+            1989,
+            1989
+          ],
+          "regions": [
+            {
+              "name": "서울",
+              "from": [
+                "서울"
+              ],
+              "births": 45516,
+              "sharePct": 17.9
+            },
+            {
+              "name": "부산",
+              "from": [
+                "부산"
+              ],
+              "births": 14010,
+              "sharePct": 5.5
+            },
+            {
+              "name": "대구",
+              "from": [
+                "대구"
+              ],
+              "births": 10819,
+              "sharePct": 4.3
+            },
+            {
+              "name": "인천",
+              "from": [
+                "인천"
+              ],
+              "births": 16581,
+              "sharePct": 6.5
+            },
+            {
+              "name": "광주",
+              "from": [
+                "광주"
+              ],
+              "births": 6495,
+              "sharePct": 2.6
+            },
+            {
+              "name": "대전",
+              "from": [
+                "대전"
+              ],
+              "births": 7673,
+              "sharePct": 3
+            },
+            {
+              "name": "경기",
+              "from": [
+                "경기"
+              ],
+              "births": 76309,
+              "sharePct": 30
+            },
+            {
+              "name": "강원",
+              "from": [
+                "강원"
+              ],
+              "births": 6677,
+              "sharePct": 2.6
+            },
+            {
+              "name": "충북",
+              "from": [
+                "충북"
+              ],
+              "births": 8229,
+              "sharePct": 3.2
+            },
+            {
+              "name": "충남",
+              "from": [
+                "충남",
+                "세종"
+              ],
+              "births": 13196,
+              "sharePct": 5.2
+            },
+            {
+              "name": "전북",
+              "from": [
+                "전북"
+              ],
+              "births": 7045,
+              "sharePct": 2.8
+            },
+            {
+              "name": "전남",
+              "from": [
+                "전남"
+              ],
+              "births": 8719,
+              "sharePct": 3.4
+            },
+            {
+              "name": "경북",
+              "from": [
+                "경북"
+              ],
+              "births": 10417,
+              "sharePct": 4.1
+            },
+            {
+              "name": "경남",
+              "from": [
+                "경남",
+                "울산"
+              ],
+              "births": 19376,
+              "sharePct": 7.6
+            },
+            {
+              "name": "제주",
+              "from": [
+                "제주"
+              ],
+              "births": 3279,
+              "sharePct": 1.3
+            }
+          ],
+          "note": "대전이 직할시로 독립(1989). 울산(1997 광역시)·세종(2012)은 아직 없어 경남·충남에 포함."
+        },
+        {
+          "id": "present-2026",
+          "label": "2026년생(지금 세상)·2030~2060년생(다가올 세상)",
+          "kind": "present",
+          "birthYears": [
+            2026,
+            2060
+          ],
+          "regions": [
+            {
+              "name": "서울",
+              "from": [
+                "서울"
+              ],
+              "births": 45516,
+              "sharePct": 17.9
+            },
+            {
+              "name": "부산",
+              "from": [
+                "부산"
+              ],
+              "births": 14010,
+              "sharePct": 5.5
+            },
+            {
+              "name": "대구",
+              "from": [
+                "대구"
+              ],
+              "births": 10819,
+              "sharePct": 4.3
+            },
+            {
+              "name": "인천",
+              "from": [
+                "인천"
+              ],
+              "births": 16581,
+              "sharePct": 6.5
+            },
+            {
+              "name": "전남광주",
+              "from": [
+                "광주",
+                "전남"
+              ],
+              "births": 15214,
+              "sharePct": 6
+            },
+            {
+              "name": "대전",
+              "from": [
+                "대전"
+              ],
+              "births": 7673,
+              "sharePct": 3
+            },
+            {
+              "name": "울산",
+              "from": [
+                "울산"
+              ],
+              "births": 5574,
+              "sharePct": 2.2
+            },
+            {
+              "name": "세종",
+              "from": [
+                "세종"
+              ],
+              "births": 2954,
+              "sharePct": 1.2
+            },
+            {
+              "name": "경기",
+              "from": [
+                "경기"
+              ],
+              "births": 76309,
+              "sharePct": 30
+            },
+            {
+              "name": "강원",
+              "from": [
+                "강원"
+              ],
+              "births": 6677,
+              "sharePct": 2.6
+            },
+            {
+              "name": "충북",
+              "from": [
+                "충북"
+              ],
+              "births": 8229,
+              "sharePct": 3.2
+            },
+            {
+              "name": "충남",
+              "from": [
+                "충남"
+              ],
+              "births": 10242,
+              "sharePct": 4
+            },
+            {
+              "name": "전북",
+              "from": [
+                "전북"
+              ],
+              "births": 7045,
+              "sharePct": 2.8
+            },
+            {
+              "name": "경북",
+              "from": [
+                "경북"
+              ],
+              "births": 10417,
+              "sharePct": 4.1
+            },
+            {
+              "name": "경남",
+              "from": [
+                "경남"
+              ],
+              "births": 13802,
+              "sharePct": 5.4
+            },
+            {
+              "name": "제주",
+              "from": [
+                "제주"
+              ],
+              "births": 3279,
+              "sharePct": 1.3
+            }
+          ],
+          "note": "2026년 행정구역 16개 시·도. 광주+전남 = 전남광주(통합특별시). 비율은 2025년 출생 통계 기준."
+        }
+      ],
+      "eraRegionsNote": "지난 세상(1950~1989년생)의 시·도 목록은 게임이 정한 설계값이다: 그 시기에 있던 시·도(직할시 독립 연도는 일반 연혁 지식이며 공식 연혁 원문과는 대조하지 않았다)로 목록을 만들고, 현재 17개 시도의 2025년 출생아를 당시 구분에 맞게 합쳐 비율을 낸다(실제 당시 출생 분포가 아니다 — RL3). 현재→당시 대응은 regions[].from에 있다. 지금 세상·다가올 세상은 16개 시·도(rows16)다.",
+      "definition": "시도별 출생아 수는 2025년에 발생한 출생을 출생자의 주소지 기준 시도로 집계한 값입니다(인구동향조사 통계설명자료).",
+      "basisId": "s-016",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 통계표 10 「시도별 출생아 수, 2015~2025」·「표 22」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 시군구 표(통계표 12)의 시도 행과 통계표 10에서 읽음",
+        "crossChecks": [
+          "17개 시도 합 = 전국 254,341",
+          "시도 행 값 = 해당 시도 시군구 출생아 수 합(전 시도 일치)",
+          "본문 [표 22](천 명 단위: 서울 45.5·경기 76.3 …)와 일치",
+          "rows16: 광주(6,495) + 전남(8,719) = 전남광주 15,214명, 16개 시·도 합 254,341, 비율 합 100.0(가장 큰 나머지 방식)"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "룰렛 확률의 기준 연도는 2025년(확정). 지난·다가올 세상은 「지금 통계를 바탕으로 한 설계값」으로 표기한다(RL3). sharePct는 원자료가 아니라 출생아 수에서 계산한 값이다. 시도 구분은 출생자의 주소지 기준이다(인구동향조사 통계설명자료 「시도 통계표의 출생·사망은 출생자·사망자의 주소지 기준」). 2025년 17개 시도 기준이라 2026년에 합쳐진 광주·전남은 rows16(16개 시·도, 파생값)에서 한 행으로 합산한다."
+    },
+    {
+      "id": "birth-by-sigungu",
+      "title": "시군구별 출생아 수·합계출산율(2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 254341
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 출생아 수",
+      "decimals": 0,
+      "columns": [
+        {"key":"sido","label":"시도"},
+        {"key":"name","label":"시군구(일반구가 있는 시는 구 단위)"},
+        {"key":"births","label":"출생아 수(명)"},
+        {"key":"tfr","label":"합계출산율(명)","decimals":2}
+      ],
+      "rows": [
+        {"sido":"서울","name":"종로구","births":459,"tfr":0.47},
+        {"sido":"서울","name":"중구","births":687,"tfr":0.66},
+        {"sido":"서울","name":"용산구","births":1130,"tfr":0.62},
+        {"sido":"서울","name":"성동구","births":1898,"tfr":0.8},
+        {"sido":"서울","name":"광진구","births":1345,"tfr":0.48},
+        {"sido":"서울","name":"동대문구","births":1730,"tfr":0.68},
+        {"sido":"서울","name":"중랑구","births":1780,"tfr":0.63},
+        {"sido":"서울","name":"성북구","births":1869,"tfr":0.66},
+        {"sido":"서울","name":"강북구","births":790,"tfr":0.47},
+        {"sido":"서울","name":"도봉구","births":1085,"tfr":0.6},
+        {"sido":"서울","name":"노원구","births":2348,"tfr":0.77},
+        {"sido":"서울","name":"은평구","births":2007,"tfr":0.59},
+        {"sido":"서울","name":"서대문구","births":1452,"tfr":0.64},
+        {"sido":"서울","name":"마포구","births":1936,"tfr":0.58},
+        {"sido":"서울","name":"양천구","births":1674,"tfr":0.63},
+        {"sido":"서울","name":"강서구","births":2841,"tfr":0.6},
+        {"sido":"서울","name":"구로구","births":2150,"tfr":0.73},
+        {"sido":"서울","name":"금천구","births":922,"tfr":0.53},
+        {"sido":"서울","name":"영등포구","births":2511,"tfr":0.71},
+        {"sido":"서울","name":"동작구","births":1987,"tfr":0.67},
+        {"sido":"서울","name":"관악구","births":1649,"tfr":0.43},
+        {"sido":"서울","name":"서초구","births":1966,"tfr":0.64},
+        {"sido":"서울","name":"강남구","births":2898,"tfr":0.68},
+        {"sido":"서울","name":"송파구","births":3541,"tfr":0.65},
+        {"sido":"서울","name":"강동구","births":2861,"tfr":0.76},
+        {"sido":"부산","name":"중구","births":69,"tfr":0.36},
+        {"sido":"부산","name":"서구","births":339,"tfr":0.67},
+        {"sido":"부산","name":"동구","births":367,"tfr":0.7},
+        {"sido":"부산","name":"영도구","births":325,"tfr":0.76},
+        {"sido":"부산","name":"부산진구","births":1897,"tfr":0.72},
+        {"sido":"부산","name":"동래구","births":1362,"tfr":0.85},
+        {"sido":"부산","name":"남구","births":922,"tfr":0.7},
+        {"sido":"부산","name":"북구","births":1238,"tfr":0.83},
+        {"sido":"부산","name":"해운대구","births":1406,"tfr":0.68},
+        {"sido":"부산","name":"사하구","births":1041,"tfr":0.71},
+        {"sido":"부산","name":"금정구","births":582,"tfr":0.59},
+        {"sido":"부산","name":"강서구","births":1097,"tfr":1.1},
+        {"sido":"부산","name":"연제구","births":1161,"tfr":0.82},
+        {"sido":"부산","name":"수영구","births":625,"tfr":0.55},
+        {"sido":"부산","name":"사상구","births":711,"tfr":0.66},
+        {"sido":"부산","name":"기장군","births":868,"tfr":0.92},
+        {"sido":"대구","name":"중구","births":921,"tfr":1.05},
+        {"sido":"대구","name":"동구","births":1743,"tfr":0.85},
+        {"sido":"대구","name":"서구","births":659,"tfr":0.77},
+        {"sido":"대구","name":"남구","births":509,"tfr":0.65},
+        {"sido":"대구","name":"북구","births":1774,"tfr":0.78},
+        {"sido":"대구","name":"수성구","births":1420,"tfr":0.68},
+        {"sido":"대구","name":"달서구","births":2225,"tfr":0.77},
+        {"sido":"대구","name":"달성군","births":1508,"tfr":1.02},
+        {"sido":"대구","name":"군위군","births":60,"tfr":1.31},
+        {"sido":"인천","name":"중구","births":1174,"tfr":0.92},
+        {"sido":"인천","name":"동구","births":244,"tfr":0.84},
+        {"sido":"인천","name":"연수구","births":2503,"tfr":0.9},
+        {"sido":"인천","name":"남동구","births":1866,"tfr":0.65},
+        {"sido":"인천","name":"부평구","births":2759,"tfr":0.78},
+        {"sido":"인천","name":"계양구","births":1045,"tfr":0.6},
+        {"sido":"인천","name":"서구","births":4478,"tfr":0.94},
+        {"sido":"인천","name":"미추홀구","births":2218,"tfr":0.83},
+        {"sido":"인천","name":"강화군","births":247,"tfr":1.12},
+        {"sido":"인천","name":"옹진군","births":47,"tfr":0.81},
+        {"sido":"광주","name":"동구","births":617,"tfr":0.89},
+        {"sido":"광주","name":"서구","births":1081,"tfr":0.65},
+        {"sido":"광주","name":"남구","births":839,"tfr":0.72},
+        {"sido":"광주","name":"북구","births":2060,"tfr":0.79},
+        {"sido":"광주","name":"광산구","births":1898,"tfr":0.79},
+        {"sido":"대전","name":"동구","births":1042,"tfr":0.88},
+        {"sido":"대전","name":"중구","births":924,"tfr":0.73},
+        {"sido":"대전","name":"서구","births":2390,"tfr":0.75},
+        {"sido":"대전","name":"유성구","births":2544,"tfr":0.93},
+        {"sido":"대전","name":"대덕구","births":773,"tfr":0.88},
+        {"sido":"울산","name":"중구","births":904,"tfr":0.81},
+        {"sido":"울산","name":"남구","births":1546,"tfr":0.83},
+        {"sido":"울산","name":"동구","births":698,"tfr":0.96},
+        {"sido":"울산","name":"북구","births":1266,"tfr":0.98},
+        {"sido":"울산","name":"울주군","births":1160,"tfr":1.1},
+        {"sido":"경기","name":"수원시 장안구","births":1203,"tfr":0.71},
+        {"sido":"경기","name":"수원시 권선구","births":2112,"tfr":0.79},
+        {"sido":"경기","name":"수원시 팔달구","births":1133,"tfr":0.76},
+        {"sido":"경기","name":"수원시 영통구","births":2522,"tfr":0.84},
+        {"sido":"경기","name":"성남시 수정구","births":1309,"tfr":0.79},
+        {"sido":"경기","name":"성남시 중원구","births":1064,"tfr":0.74},
+        {"sido":"경기","name":"성남시 분당구","births":2580,"tfr":0.76},
+        {"sido":"경기","name":"의정부시","births":2159,"tfr":0.73},
+        {"sido":"경기","name":"안양시 만안구","births":1461,"tfr":0.92},
+        {"sido":"경기","name":"안양시 동안구","births":2319,"tfr":0.93},
+        {"sido":"경기","name":"부천시 원미구","births":1701,"tfr":0.62},
+        {"sido":"경기","name":"부천시 소사구","births":1121,"tfr":0.76},
+        {"sido":"경기","name":"부천시 오정구","births":409,"tfr":0.48},
+        {"sido":"경기","name":"광명시","births":1734,"tfr":0.9},
+        {"sido":"경기","name":"평택시","births":4253,"tfr":1.02},
+        {"sido":"경기","name":"동두천시","births":276,"tfr":0.7},
+        {"sido":"경기","name":"안산시 상록구","births":1277,"tfr":0.67},
+        {"sido":"경기","name":"안산시 단원구","births":1514,"tfr":0.78},
+        {"sido":"경기","name":"고양시 덕양구","births":2898,"tfr":0.82},
+        {"sido":"경기","name":"고양시 일산동구","births":1317,"tfr":0.65},
+        {"sido":"경기","name":"고양시 일산서구","births":1175,"tfr":0.71},
+        {"sido":"경기","name":"과천시","births":632,"tfr":0.98},
+        {"sido":"경기","name":"구리시","births":846,"tfr":0.69},
+        {"sido":"경기","name":"남양주시","births":3557,"tfr":0.85},
+        {"sido":"경기","name":"오산시","births":1460,"tfr":0.86},
+        {"sido":"경기","name":"시흥시","births":2910,"tfr":0.85},
+        {"sido":"경기","name":"군포시","births":1236,"tfr":0.76},
+        {"sido":"경기","name":"의왕시","births":1033,"tfr":0.91},
+        {"sido":"경기","name":"하남시","births":2075,"tfr":0.83},
+        {"sido":"경기","name":"용인시 처인구","births":1504,"tfr":0.9},
+        {"sido":"경기","name":"용인시 기흥구","births":2194,"tfr":0.84},
+        {"sido":"경기","name":"용인시 수지구","births":2066,"tfr":0.83},
+        {"sido":"경기","name":"파주시","births":2889,"tfr":0.86},
+        {"sido":"경기","name":"이천시","births":1209,"tfr":0.9},
+        {"sido":"경기","name":"안성시","births":926,"tfr":0.9},
+        {"sido":"경기","name":"김포시","births":2543,"tfr":0.81},
+        {"sido":"경기","name":"화성시","births":8012,"tfr":1.09},
+        {"sido":"경기","name":"광주시","births":2045,"tfr":0.84},
+        {"sido":"경기","name":"양주시","births":1839,"tfr":0.98},
+        {"sido":"경기","name":"포천시","births":549,"tfr":0.89},
+        {"sido":"경기","name":"여주시","births":394,"tfr":0.75},
+        {"sido":"경기","name":"연천군","births":178,"tfr":1.05},
+        {"sido":"경기","name":"가평군","births":222,"tfr":0.9},
+        {"sido":"경기","name":"양평군","births":453,"tfr":0.91},
+        {"sido":"강원","name":"춘천시","births":1461,"tfr":0.87},
+        {"sido":"강원","name":"원주시","births":1975,"tfr":0.88},
+        {"sido":"강원","name":"강릉시","births":799,"tfr":0.83},
+        {"sido":"강원","name":"동해시","births":360,"tfr":1.01},
+        {"sido":"강원","name":"태백시","births":91,"tfr":0.76},
+        {"sido":"강원","name":"속초시","births":360,"tfr":0.94},
+        {"sido":"강원","name":"삼척시","births":240,"tfr":1.09},
+        {"sido":"강원","name":"홍천군","births":261,"tfr":1.12},
+        {"sido":"강원","name":"횡성군","births":89,"tfr":0.7},
+        {"sido":"강원","name":"영월군","births":81,"tfr":0.79},
+        {"sido":"강원","name":"평창군","births":94,"tfr":0.86},
+        {"sido":"강원","name":"정선군","births":66,"tfr":0.7},
+        {"sido":"강원","name":"철원군","births":180,"tfr":1.05},
+        {"sido":"강원","name":"화천군","births":121,"tfr":1.22},
+        {"sido":"강원","name":"양구군","births":111,"tfr":1.21},
+        {"sido":"강원","name":"인제군","births":178,"tfr":1.24},
+        {"sido":"강원","name":"고성군","births":122,"tfr":1.24},
+        {"sido":"강원","name":"양양군","births":88,"tfr":1},
+        {"sido":"충북","name":"충주시","births":897,"tfr":0.92},
+        {"sido":"충북","name":"제천시","births":438,"tfr":0.84},
+        {"sido":"충북","name":"청주시 상당구","births":1127,"tfr":0.98},
+        {"sido":"충북","name":"청주시 서원구","births":837,"tfr":0.82},
+        {"sido":"충북","name":"청주시 흥덕구","births":2329,"tfr":1.06},
+        {"sido":"충북","name":"청주시 청원구","births":1174,"tfr":1},
+        {"sido":"충북","name":"보은군","births":75,"tfr":0.98},
+        {"sido":"충북","name":"옥천군","births":138,"tfr":0.91},
+        {"sido":"충북","name":"영동군","births":123,"tfr":1.04},
+        {"sido":"충북","name":"진천군","births":461,"tfr":1.05},
+        {"sido":"충북","name":"괴산군","births":72,"tfr":0.78},
+        {"sido":"충북","name":"음성군","births":304,"tfr":0.79},
+        {"sido":"충북","name":"단양군","births":63,"tfr":0.87},
+        {"sido":"충북","name":"증평군","births":191,"tfr":0.98},
+        {"sido":"충남","name":"천안시 동남구","births":1275,"tfr":0.83},
+        {"sido":"충남","name":"천안시 서북구","births":2398,"tfr":0.82},
+        {"sido":"충남","name":"공주시","births":295,"tfr":0.79},
+        {"sido":"충남","name":"보령시","births":282,"tfr":0.85},
+        {"sido":"충남","name":"아산시","births":2359,"tfr":1.04},
+        {"sido":"충남","name":"서산시","births":813,"tfr":1.03},
+        {"sido":"충남","name":"논산시","births":358,"tfr":0.87},
+        {"sido":"충남","name":"계룡시","births":249,"tfr":1.04},
+        {"sido":"충남","name":"당진시","births":895,"tfr":1.12},
+        {"sido":"충남","name":"금산군","births":117,"tfr":0.85},
+        {"sido":"충남","name":"부여군","births":99,"tfr":0.61},
+        {"sido":"충남","name":"서천군","births":111,"tfr":0.91},
+        {"sido":"충남","name":"청양군","births":69,"tfr":0.85},
+        {"sido":"충남","name":"홍성군","births":494,"tfr":1.08},
+        {"sido":"충남","name":"예산군","births":303,"tfr":1.03},
+        {"sido":"충남","name":"태안군","births":125,"tfr":0.72},
+        {"sido":"전북","name":"전주시 완산구","births":1140,"tfr":0.62},
+        {"sido":"전북","name":"전주시 덕진구","births":1482,"tfr":0.79},
+        {"sido":"전북","name":"군산시","births":1065,"tfr":0.89},
+        {"sido":"전북","name":"익산시","births":1108,"tfr":0.86},
+        {"sido":"전북","name":"정읍시","births":313,"tfr":0.84},
+        {"sido":"전북","name":"남원시","births":228,"tfr":0.85},
+        {"sido":"전북","name":"김제시","births":376,"tfr":1.22},
+        {"sido":"전북","name":"완주군","births":627,"tfr":1.2},
+        {"sido":"전북","name":"진안군","births":86,"tfr":1.22},
+        {"sido":"전북","name":"무주군","births":58,"tfr":0.87},
+        {"sido":"전북","name":"장수군","births":70,"tfr":1.28},
+        {"sido":"전북","name":"임실군","births":116,"tfr":1.61},
+        {"sido":"전북","name":"순창군","births":88,"tfr":1.05},
+        {"sido":"전북","name":"고창군","births":157,"tfr":1.08},
+        {"sido":"전북","name":"부안군","births":131,"tfr":0.95},
+        {"sido":"전남","name":"목포시","births":761,"tfr":0.77},
+        {"sido":"전남","name":"여수시","births":1205,"tfr":0.96},
+        {"sido":"전남","name":"순천시","births":1494,"tfr":0.96},
+        {"sido":"전남","name":"나주시","births":794,"tfr":1.17},
+        {"sido":"전남","name":"광양시","births":1152,"tfr":1.32},
+        {"sido":"전남","name":"담양군","births":152,"tfr":0.98},
+        {"sido":"전남","name":"곡성군","births":98,"tfr":1.2},
+        {"sido":"전남","name":"구례군","births":59,"tfr":0.93},
+        {"sido":"전남","name":"고흥군","births":184,"tfr":1.3},
+        {"sido":"전남","name":"보성군","births":120,"tfr":1.32},
+        {"sido":"전남","name":"화순군","births":262,"tfr":1.08},
+        {"sido":"전남","name":"장흥군","births":137,"tfr":1.35},
+        {"sido":"전남","name":"강진군","births":161,"tfr":1.65},
+        {"sido":"전남","name":"해남군","births":221,"tfr":1.22},
+        {"sido":"전남","name":"영암군","births":183,"tfr":1.06},
+        {"sido":"전남","name":"무안군","births":603,"tfr":1.13},
+        {"sido":"전남","name":"함평군","births":115,"tfr":1.43},
+        {"sido":"전남","name":"영광군","births":420,"tfr":1.79},
+        {"sido":"전남","name":"장성군","births":261,"tfr":1.69},
+        {"sido":"전남","name":"완도군","births":150,"tfr":1.18},
+        {"sido":"전남","name":"진도군","births":101,"tfr":1.17},
+        {"sido":"전남","name":"신안군","births":86,"tfr":0.9},
+        {"sido":"경북","name":"포항시 남구","births":817,"tfr":0.85},
+        {"sido":"경북","name":"포항시 북구","births":1483,"tfr":1.06},
+        {"sido":"경북","name":"경주시","births":971,"tfr":0.94},
+        {"sido":"경북","name":"김천시","births":658,"tfr":1.12},
+        {"sido":"경북","name":"안동시","births":587,"tfr":0.89},
+        {"sido":"경북","name":"구미시","births":2035,"tfr":0.81},
+        {"sido":"경북","name":"영주시","births":323,"tfr":0.97},
+        {"sido":"경북","name":"영천시","births":385,"tfr":1.09},
+        {"sido":"경북","name":"상주시","births":238,"tfr":0.87},
+        {"sido":"경북","name":"문경시","births":178,"tfr":0.86},
+        {"sido":"경북","name":"경산시","births":1338,"tfr":0.95},
+        {"sido":"경북","name":"의성군","births":125,"tfr":1.16},
+        {"sido":"경북","name":"청송군","births":52,"tfr":0.92},
+        {"sido":"경북","name":"영양군","births":24,"tfr":0.61},
+        {"sido":"경북","name":"영덕군","births":96,"tfr":1.17},
+        {"sido":"경북","name":"청도군","births":103,"tfr":1.08},
+        {"sido":"경북","name":"고령군","births":89,"tfr":1.07},
+        {"sido":"경북","name":"성주군","births":135,"tfr":1.18},
+        {"sido":"경북","name":"칠곡군","births":251,"tfr":0.58},
+        {"sido":"경북","name":"예천군","births":277,"tfr":1.27},
+        {"sido":"경북","name":"봉화군","births":49,"tfr":0.81},
+        {"sido":"경북","name":"울진군","births":186,"tfr":1.13},
+        {"sido":"경북","name":"울릉군","births":17,"tfr":0.63},
+        {"sido":"경남","name":"진주시","births":1855,"tfr":1.01},
+        {"sido":"경남","name":"통영시","births":291,"tfr":0.69},
+        {"sido":"경남","name":"사천시","births":453,"tfr":1.04},
+        {"sido":"경남","name":"김해시","births":2614,"tfr":0.88},
+        {"sido":"경남","name":"밀양시","births":249,"tfr":0.76},
+        {"sido":"경남","name":"거제시","births":838,"tfr":0.83},
+        {"sido":"경남","name":"양산시","births":1910,"tfr":0.92},
+        {"sido":"경남","name":"창원시 의창구","births":922,"tfr":0.79},
+        {"sido":"경남","name":"창원시 성산구","births":1396,"tfr":0.86},
+        {"sido":"경남","name":"창원시 마산합포구","births":818,"tfr":0.94},
+        {"sido":"경남","name":"창원시 마산회원구","births":643,"tfr":0.76},
+        {"sido":"경남","name":"창원시 진해구","births":863,"tfr":0.94},
+        {"sido":"경남","name":"의령군","births":58,"tfr":0.88},
+        {"sido":"경남","name":"함안군","births":130,"tfr":0.73},
+        {"sido":"경남","name":"창녕군","births":152,"tfr":1},
+        {"sido":"경남","name":"고성군","births":78,"tfr":0.7},
+        {"sido":"경남","name":"남해군","births":60,"tfr":0.65},
+        {"sido":"경남","name":"하동군","births":76,"tfr":0.81},
+        {"sido":"경남","name":"산청군","births":59,"tfr":0.8},
+        {"sido":"경남","name":"함양군","births":61,"tfr":0.67},
+        {"sido":"경남","name":"거창군","births":216,"tfr":1.05},
+        {"sido":"경남","name":"합천군","births":60,"tfr":0.72},
+        {"sido":"제주","name":"제주시","births":2573,"tfr":0.88},
+        {"sido":"제주","name":"서귀포시","births":706,"tfr":0.83},
+        {"sido":"세종","name":"세종특별자치시","births":2954,"tfr":1.06}
+      ],
+      "parentCities": [
+        {"sido":"경기","name":"수원시","births":6970,"tfr":0.79},
+        {"sido":"경기","name":"성남시","births":4953,"tfr":0.76},
+        {"sido":"경기","name":"안양시","births":3780,"tfr":0.93},
+        {"sido":"경기","name":"부천시","births":3231,"tfr":0.64},
+        {"sido":"경기","name":"안산시","births":2791,"tfr":0.73},
+        {"sido":"경기","name":"고양시","births":5390,"tfr":0.75},
+        {"sido":"경기","name":"용인시","births":5764,"tfr":0.85},
+        {"sido":"충북","name":"청주시","births":5467,"tfr":0.99},
+        {"sido":"충남","name":"천안시","births":3673,"tfr":0.82},
+        {"sido":"전북","name":"전주시","births":2622,"tfr":0.7},
+        {"sido":"경북","name":"포항시","births":2300,"tfr":0.97},
+        {"sido":"경남","name":"창원시","births":4642,"tfr":0.86}
+      ],
+      "regionChanges2026": {
+        "status": "design",
+        "source": {
+          "org": "행정안전부",
+          "table": "주민등록인구현황 — KOSIS 「행정구역(시군구)별, 성별 인구수」(DT_1B040A3) 주석정보와 2026.06~2026.09 총인구수",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B040A3",
+          "accessedOn": "2026-10-15"
+        },
+        "note": "2026년에 새로 생긴 구에는 출생 통계가 아직 없어, 2025년 출생아를 인구 비례로 옮긴 설계값이다(통계 아님). 합계출산율은 옮겨 온 옛 구의 값을 그대로 쓴다(제물포구는 중구 몫과 동구의 출생아 가중 평균). 시도 합과 전국 합은 그대로다.",
+        "retired": [
+          "인천 중구",
+          "인천 동구",
+          "인천 서구",
+          "경기 화성시"
+        ],
+        "populationBasis": {
+          "인천중구_2026_06": 179030,
+          "영종구_2026_07": 138091,
+          "서해구_2026_07": 392173,
+          "검단구_2026_07": 273735,
+          "만세구_2026_07": 234363,
+          "효행구_2026_07": 160788,
+          "병점구_2026_07": 175045,
+          "동탄구_2026_07": 429477
+        },
+        "rules": [
+          "영종구 = round(중구 출생아 × 영종구 인구(2026.07) ÷ 중구 인구(2026.06)), 제물포구 = 중구 출생아 − 영종구 + 동구 출생아",
+          "서해구·검단구 = 서구 출생아를 두 구의 인구(2026.07) 비율로 나눔(가장 큰 나머지 방식, 합 유지)",
+          "만세구·효행구·병점구·동탄구 = 화성시 출생아를 네 구의 인구(2026.07) 비율로 나눔(가장 큰 나머지 방식, 합 유지)"
+        ],
+        "rows": [
+          {
+            "sido": "인천",
+            "name": "제물포구",
+            "births": 512,
+            "tfr": 0.88,
+            "from": [
+              "중구",
+              "동구"
+            ]
+          },
+          {
+            "sido": "인천",
+            "name": "영종구",
+            "births": 906,
+            "tfr": 0.92,
+            "from": [
+              "중구"
+            ]
+          },
+          {
+            "sido": "인천",
+            "name": "서해구",
+            "births": 2637,
+            "tfr": 0.94,
+            "from": [
+              "서구"
+            ]
+          },
+          {
+            "sido": "인천",
+            "name": "검단구",
+            "births": 1841,
+            "tfr": 0.94,
+            "from": [
+              "서구"
+            ]
+          },
+          {
+            "sido": "경기",
+            "name": "만세구",
+            "births": 1878,
+            "tfr": 1.09,
+            "from": [
+              "화성시"
+            ],
+            "parent": "화성시"
+          },
+          {
+            "sido": "경기",
+            "name": "효행구",
+            "births": 1289,
+            "tfr": 1.09,
+            "from": [
+              "화성시"
+            ],
+            "parent": "화성시"
+          },
+          {
+            "sido": "경기",
+            "name": "병점구",
+            "births": 1403,
+            "tfr": 1.09,
+            "from": [
+              "화성시"
+            ],
+            "parent": "화성시"
+          },
+          {
+            "sido": "경기",
+            "name": "동탄구",
+            "births": 3442,
+            "tfr": 1.09,
+            "from": [
+              "화성시"
+            ],
+            "parent": "화성시"
+          }
+        ]
+      },
+      "definition": "시군구별 출생아 수는 2025년 출생을 시군구 단위(일반구가 있는 시는 구 단위)로 집계한 값입니다. 세종특별자치시는 하위 시군구가 없어 한 행입니다.",
+      "basisId": "s-017",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 통계표 12 「시군구별 출생아 수 및 합계출산율, 2025」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 통계표 12(3단 표)를 글자 좌표로 열을 나누어 읽음",
+        "crossChecks": [
+          "시도별 시군구 출생아 수 합 = 시도 행 값(17개 시도 전부 일치)",
+          "전국 254,341 일치",
+          "일반구 합 = 시 값(12개 시 전부 일치)",
+          "본문 상하위 10순위(영광군 420명 1.79 … 부산 중구 69명 0.36, 상위 10순위 53.7천 명 21.1%)와 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "일반구가 있는 12개 시(수원·성남·안양·부천·안산·고양·용인·청주·천안·포항·창원·전주)는 구 35개 행으로 나누어 담았고 시 전체 값은 parentCities에 따로 둔다(구 합 = 시 값 일치 확인). 보도자료의 「228개 시군구」는 시 단위 12개를 포함하고 구 35개와 세종을 뺀 수이다. 2026년 행정구역에 맞춘 행은 regionChanges2026.rows(설계값)에 있고, 옛 구(인천 중·동·서구, 화성시)는 거기서 제외하고 쓴다(src/data/koreaStatsAccess.ts#getSigunguRows2026)."
+    },
+    {
+      "id": "birth-by-month",
+      "title": "월별 출생아 수(2023~2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 254341
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 출생아 수",
+      "decimals": 0,
+      "columns": [
+        {"key":"month","label":"월"},
+        {"key":"y2023","label":"2023년(명)"},
+        {"key":"y2024","label":"2024년(명)"},
+        {"key":"y2025","label":"2025년(명)"}
+      ],
+      "rows": [
+        {"month":1,"y2023":23198,"y2024":21412,"y2025":24054},
+        {"month":2,"y2023":20012,"y2024":19375,"y2025":20116},
+        {"month":3,"y2023":21193,"y2024":19671,"y2025":21088},
+        {"month":4,"y2023":18515,"y2024":19037,"y2025":20764},
+        {"month":5,"y2023":19047,"y2024":19541,"y2025":20356},
+        {"month":6,"y2023":18585,"y2024":18244,"y2025":19996},
+        {"month":7,"y2023":19085,"y2024":20580,"y2025":21854},
+        {"month":8,"y2023":18974,"y2024":20103,"y2025":20983},
+        {"month":9,"y2023":18706,"y2024":20589,"y2025":22382},
+        {"month":10,"y2023":18878,"y2024":21426,"y2025":21994},
+        {"month":11,"y2023":17530,"y2024":20083,"y2025":20702},
+        {"month":12,"y2023":16305,"y2024":18256,"y2025":20052}
+      ],
+      "definition": "월별 출생아 수는 출생이 발생한 달을 기준으로 집계한 전국 값입니다.",
+      "basisId": "s-018",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 시군구/성/월별 출생 (DT_1B81A01, 인구동향조사)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B81A01",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표에서 기간을 2023.01~2025.12로 골라 전국 행을 읽음",
+        "crossChecks": [
+          "연 합계 2023 230,028 / 2024 238,317 / 2025 254,341이 보도자료 연간 출생아 수와 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "출생 월 추첨(남은 결정 R1)의 가중으로 쓴다. 1년 값 합이 연간 출생아 수와 같다."
+    },
+    {
+      "id": "birth-weight",
+      "title": "성별 출생 체중 분포(2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 254341
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 출생아 수",
+      "decimals": 0,
+      "columns": [
+        {"key":"bin","label":"체중 구간"},
+        {"key":"male","label":"남자(명)"},
+        {"key":"female","label":"여자(명)"},
+        {"key":"all","label":"전체(명)"}
+      ],
+      "rows": [
+        {"bin":"1.5kg 미만","male":1029,"female":1062,"all":2091},
+        {"bin":"1.5~1.9kg","male":1685,"female":1882,"all":3567},
+        {"bin":"2.0~2.4kg","male":6827,"female":7933,"all":14760},
+        {"bin":"2.5~2.9kg","male":31196,"female":38751,"all":69947},
+        {"bin":"3.0~3.4kg","male":61490,"female":55765,"all":117255},
+        {"bin":"3.5~3.9kg","male":24882,"female":15982,"all":40864},
+        {"bin":"4.0~4.4kg","male":2511,"female":1296,"all":3807},
+        {"bin":"4.5kg 이상","male":188,"female":94,"all":282},
+        {"bin":"미상","male":941,"female":827,"all":1768}
+      ],
+      "meanWeightKg": {
+        "male": 3.2,
+        "female": 3.1,
+        "all": 3.1,
+        "note": "보도자료 표 17의 소수 첫째 자리 값"
+      },
+      "shares": {
+        "under25kg": 8.1,
+        "normal25to40kg": 90.3,
+        "over40kg": 1.6,
+        "note": "미상 제외, 전체 출생아 중 비중(%)"
+      },
+      "definition": "출생 체중은 출생아의 출생 시 체중입니다. 2.5kg 미만은 저체중아, 4.0kg 이상은 과체중아로 분류됩니다.",
+      "basisId": "s-019",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 시도/성/출산순위/출생시 체중별 출생(DT_1B80A03), 전국·출산순위 총계, 2025 / 2025년 출생 통계 [표 17]·[표 18]",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B80A03",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표에서 전국·성별·출산순위 총계 행을 읽음",
+        "crossChecks": [
+          "남+여 = 전체(구간별 전부 일치)",
+          "구간 합 = 성별 총계 = 보도자료 출생아 수(남 130,749·여 123,592·전체 254,341)",
+          "보도자료 [표 18]의 2.5kg 미만 20.4천 명(2,091+3,567+14,760=20,418)·4.0kg 이상 4.1천 명(3,807+282=4,089)과 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "구간이 0.5kg 단위여서 백분위는 구간 안 균등 분포를 가정한 근사다(설계 보정). 다태아 포함 전체 출생아 기준. 체중 미상 1,768명 포함."
+    },
+    {
+      "id": "birth-mother-age",
+      "title": "모(母)의 출산연령(2025)",
+      "unit": "천 명",
+      "kind": "bar",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 33.8
+      },
+      "latestUnit": "세",
+      "latestLabel": "모의 평균 출산연령",
+      "decimals": 1,
+      "series": [
+        {"label":"20세 미만","value":0.4},
+        {"label":"20~24세","value":4.7},
+        {"label":"25~29세","value":33.2},
+        {"label":"30~34세","value":121.1},
+        {"label":"35~39세","value":78.5},
+        {"label":"40~44세","value":15.8},
+        {"label":"45세 이상","value":0.6}
+      ],
+      "seriesLabel": "모의 연령별 출생아 수(천 명)",
+      "averages": {
+        "all": 33.8,
+        "all2015": 32.2,
+        "first": 33.2,
+        "second": 34.7,
+        "thirdPlus": 35.8,
+        "bySido": {
+          "서울": 34.8,
+          "부산": 34,
+          "대구": 33.7,
+          "인천": 33.8,
+          "광주": 33.5,
+          "대전": 33.5,
+          "울산": 33.4,
+          "세종": 34,
+          "경기": 33.9,
+          "강원": 33.1,
+          "충북": 33.1,
+          "충남": 33.1,
+          "전북": 33.2,
+          "전남": 33.1,
+          "경북": 33.3,
+          "경남": 33.5,
+          "제주": 33.6
+        },
+        "over35Share": 37.3
+      },
+      "definition": "모의 평균 출산연령은 출생아를 낳은 어머니의 평균 나이입니다. 어머니 나이를 모르는 출생은 제외합니다.",
+      "basisId": "s-020",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 「표 5 모의 평균 출산연령 및 연령별 출생아 수」·「표 25 시도별 모의 평균 출산연령」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표에서 값을 읽음",
+        "crossChecks": [
+          "연령별 출생아 수 합 254.3천 명 = 출생아 수",
+          "본문 「평균 출산연령 33.8세, 첫째아 33.2세·둘째아 34.7세·셋째아 35.8세, 35세 이상 37.3%」와 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "birth-father-age",
+      "title": "부(父)의 연령(2025)",
+      "unit": "%",
+      "kind": "bar",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 36.1
+      },
+      "latestUnit": "세",
+      "latestLabel": "부의 평균 연령",
+      "decimals": 1,
+      "series": [
+        {"label":"20세 미만","value":0},
+        {"label":"20~24세","value":0.6},
+        {"label":"25~29세","value":6.6},
+        {"label":"30~34세","value":35.9},
+        {"label":"35~39세","value":38.5},
+        {"label":"40~44세","value":14.3},
+        {"label":"45~49세","value":3},
+        {"label":"50세 이상","value":1}
+      ],
+      "seriesLabel": "부의 연령별 출생아 비중(%, 부 연령 미상 제외)",
+      "averages": {
+        "all": 36.1,
+        "first": 35.4
+      },
+      "definition": "부(父)의 평균 연령은 출생아 아버지의 평균 나이입니다. 아버지 나이를 모르는 출생은 제외합니다.",
+      "basisId": "s-021",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 「표 6 출생아 부의 평균 연령」·「표 7 부의 연령별 출생아 비중」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표에서 값을 읽음",
+        "crossChecks": [
+          "비중 합 99.9%(반올림)",
+          "본문 「30대 후반 38.5%, 30대 초반 35.9%, 40대 초반 14.3%」와 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "birth-order",
+      "title": "출산 순위별 출생(2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 254341
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 출생아 수(출산 순위 비중의 기준)",
+      "decimals": 0,
+      "columns": [
+        {"key":"label","label":"구분"},
+        {"key":"first","label":"첫째아(%)","decimals":1},
+        {"key":"second","label":"둘째아(%)","decimals":1},
+        {"key":"thirdPlus","label":"셋째아 이상(%)","decimals":1}
+      ],
+      "rows": [
+        {"label":"전국","first":62.4,"second":31.2,"thirdPlus":6.4},
+        {"label":"서울","first":69.8,"second":26.4,"thirdPlus":3.7},
+        {"label":"부산","first":63,"second":31.5,"thirdPlus":5.5},
+        {"label":"대구","first":62.5,"second":31.1,"thirdPlus":6.4},
+        {"label":"인천","first":61.4,"second":31.9,"thirdPlus":6.7},
+        {"label":"광주","first":58.7,"second":33.6,"thirdPlus":7.7},
+        {"label":"대전","first":61.1,"second":32.7,"thirdPlus":6.2},
+        {"label":"울산","first":61.5,"second":32.3,"thirdPlus":6.3},
+        {"label":"세종","first":60.6,"second":34.3,"thirdPlus":5.1},
+        {"label":"경기","first":62.4,"second":31.5,"thirdPlus":6},
+        {"label":"강원","first":57.6,"second":33.3,"thirdPlus":9.1},
+        {"label":"충북","first":59.9,"second":32.5,"thirdPlus":7.6},
+        {"label":"충남","first":58,"second":32.5,"thirdPlus":9.5},
+        {"label":"전북","first":58,"second":32.6,"thirdPlus":9.5},
+        {"label":"전남","first":57.8,"second":32.7,"thirdPlus":9.6},
+        {"label":"경북","first":57.8,"second":33.8,"thirdPlus":8.3},
+        {"label":"경남","first":59.3,"second":32.9,"thirdPlus":7.9},
+        {"label":"제주","first":54.6,"second":35.3,"thirdPlus":10.1}
+      ],
+      "counts": {
+        "unit": "천 명",
+        "total": 254.3,
+        "first": 158.7,
+        "second": 79.2,
+        "thirdPlus": 16.3,
+        "note": "출산순위 미상 포함 합계(미상 약 0.1천 명)"
+      },
+      "definition": "출산 순위는 어머니가 낳은 출생아 가운데 몇째 아이인지를 뜻합니다. 비중은 출산순위 미상을 뺀 값입니다.",
+      "basisId": "s-022",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 「표 3 출산순위별 출생아 수」「표 4 출산순위별 출생아 비중」「표 24 시도별 출산순위별 출생」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표에서 값을 읽음",
+        "crossChecks": [
+          "전국 첫째 62.4%·둘째 31.2%·셋째 이상 6.4%가 본문과 일치",
+          "시도별 세 비중 합이 100%에서 0.3%p 이내(반올림)",
+          "출생아 수 158.7+79.2+16.3 = 254.2(미상 0.1 제외, 반올림)"
+        ]
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "birth-traits",
+      "title": "출생 성비·다태아·혼인 외·조산(2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 254341
+      },
+      "latestUnit": "명",
+      "latestLabel": "전국 출생아 수",
+      "decimals": 0,
+      "columns": [
+        {"key":"key","label":"항목"},
+        {"key":"value","label":"값"},
+        {"key":"unit","label":"단위"}
+      ],
+      "rows": [
+        {"key":"남아 출생아 수","value":130749,"unit":"명","decimals":0},
+        {"key":"여아 출생아 수","value":123592,"unit":"명","decimals":0},
+        {"key":"출생 성비(여아 100명당 남아)","value":105.8,"unit":"명","decimals":1},
+        {"key":"다태아(쌍태아 이상) 비중","value":6.1,"unit":"%","decimals":1},
+        {"key":"혼인 외 출생아 비중","value":5.5,"unit":"%","decimals":1},
+        {"key":"37주 미만 출생(조산) 비중","value":10.8,"unit":"%","decimals":1},
+        {"key":"결혼 후 2년 이내 출산 비중(첫째아)","value":53.2,"unit":"%","decimals":1},
+        {"key":"첫째아 출산 시 평균 결혼생활 기간","value":2.4,"unit":"년","decimals":1}
+      ],
+      "definition": "출생아의 성별·다태 여부·부모의 법적 혼인상태·임신 기간을 집계한 값입니다.",
+      "basisId": "s-023",
+      "source": {
+        "org": "국가데이터처",
+        "table": "2025년 출생 통계 「8. 출생 성비」「9. 다태아 출생」「7. 법적 혼인상태별 출생」「10. 임신 기간별 출생」「6. 결혼생활 기간별 출생」",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=204&act=view&list_no=446625",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표와 KOSIS 화면 표에서 읽음",
+        "crossChecks": [
+          "남 130,749 + 여 123,592 = 254,341",
+          "130,749/123,592 = 1.058(성비 105.8과 일치)"
+        ]
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "housing-tenure",
+      "title": "점유형태별 일반가구(2024)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth",
+        "economy"
+      ],
+      "latest": {
+        "year": 2024,
+        "value": 58.4
+      },
+      "latestUnit": "%",
+      "latestLabel": "전국 일반가구 중 자가 점유 비율",
+      "decimals": 1,
+      "columns": [
+        {"key":"label","label":"구분"},
+        {"key":"own","label":"자가(%)","decimals":1},
+        {"key":"rent","label":"임차(%)","decimals":1},
+        {"key":"free","label":"무상(%)","decimals":1}
+      ],
+      "rows": [
+        {"label":"전국","own":58.4,"rent":38,"free":3.6},
+        {"label":"서울","own":44.1,"rent":53.4,"free":2.5},
+        {"label":"부산","own":60.8,"rent":36.1,"free":3.1},
+        {"label":"대구","own":60.2,"rent":36.6,"free":3.3},
+        {"label":"인천","own":61.5,"rent":35.3,"free":3.2},
+        {"label":"광주","own":62.5,"rent":34.4,"free":3.1},
+        {"label":"대전","own":53.1,"rent":43.8,"free":3.1},
+        {"label":"울산","own":64.1,"rent":32.2,"free":3.7},
+        {"label":"세종","own":58.4,"rent":38.9,"free":2.8},
+        {"label":"경기","own":57.2,"rent":39.8,"free":3},
+        {"label":"강원","own":63.2,"rent":30.1,"free":6.7},
+        {"label":"충북","own":62.8,"rent":32.4,"free":4.7},
+        {"label":"충남","own":64.2,"rent":30.2,"free":5.7},
+        {"label":"전북","own":67.4,"rent":28,"free":4.6},
+        {"label":"전남","own":72.1,"rent":22.2,"free":5.7},
+        {"label":"경북","own":69.5,"rent":25.4,"free":5.1},
+        {"label":"경남","own":66.8,"rent":29,"free":4.2},
+        {"label":"제주","own":58.5,"rent":34.4,"free":7},
+        {"label":"전국·저소득층","own":46.7,"rent":48,"free":5.3},
+        {"label":"전국·중소득층","own":63.6,"rent":33.7,"free":2.7},
+        {"label":"전국·고소득층","own":74.8,"rent":23.5,"free":1.7}
+      ],
+      "definition": "점유형태는 가구가 사는 집을 자기 집(자가)으로 쓰는지, 돈을 내고 빌려 쓰는지(임차), 무상으로 쓰는지를 나눈 것입니다(주거실태조사 일반가구).",
+      "basisId": "s-024",
+      "source": {
+        "org": "국토교통부",
+        "table": "KOSIS (일반가구)행정구역별 점유형태 (DT_MLTM_6909)·지역별 소득계층별 점유형태 (DT_MLTM_6908), 주거실태조사",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=116&tblId=DT_MLTM_6909",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(2024)에서 값을 읽음",
+        "crossChecks": [
+          "행마다 자가+임차+무상이 100.0(±0.1)",
+          "전국 자가 58.4·임차 38.0·무상 3.6"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "출생아 가구가 아니라 일반가구 전체 기준이다(출생신고 「주거」 항목의 근사). 임차를 전세·보증부월세·월세로 나눈 값은 이번에 원문 확인하지 못해 비워 둔다(s-037)."
+    },
+    {
+      "id": "occupation-proxy",
+      "title": "30대·40대 취업자의 직업 대분류별 분포(근사)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2024,
+        "value": 5444
+      },
+      "latestUnit": "천 명",
+      "latestLabel": "30~39세 취업자(2024년 상반기)",
+      "decimals": 0,
+      "columns": [
+        {"key":"label","label":"직업 대분류(한국표준직업분류 8차)"},
+        {"key":"a30","label":"30~39세 취업자(천 명)"},
+        {"key":"a40","label":"40~49세 취업자(천 명)"}
+      ],
+      "rows": [
+        {"label":"관리자","a30":21,"a40":90},
+        {"label":"전문가 및 관련 종사자","a30":1775,"a40":1749},
+        {"label":"사무 종사자","a30":1415,"a40":1430},
+        {"label":"서비스 종사자","a30":534,"a40":580},
+        {"label":"판매 종사자","a30":430,"a40":566},
+        {"label":"농림·어업 숙련 종사자","a30":40,"a40":91},
+        {"label":"기능원 및 관련 기능 종사자","a30":388,"a40":540},
+        {"label":"장치·기계 조작 및 조립 종사자","a30":489,"a40":664},
+        {"label":"단순노무 종사자","a30":352,"a40":494}
+      ],
+      "definition": "직업 대분류별 취업자 수입니다(지역별고용조사, 2024년 상반기). 출생아 부모의 직업을 직접 집계한 통계가 아니라 부모 나이대(30~40대) 취업자의 직업 분포로 근사합니다.",
+      "basisId": "s-025",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 전국 직업/연령/교육정도/종사지위별 취업자(DT_1ES3B28S), 2024.1/2(상반기)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1ES3B28S",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표에서 대분류 행을 읽음",
+        "crossChecks": [
+          "30대 9개 직업 대분류 합 = 계 5,444천 명",
+          "40대 합 6,204 ≈ 계 6,203(반올림)"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "출생통계에는 부모 직업 항목이 없어(KOSIS에서 「부 직업별 출생」 검색 결과 0건) 대체 근거를 쓴다. 성별 구분이 없어 아버지·어머니를 나누려면 설계 보정이 필요하다. 군인은 이 표에 없다. 표시 기간이 2024년 상반기인 것은 KOSIS 화면이 처음 보여 준 기간이며 더 최근 기간이 있는지는 확인하지 못했다."
+    },
+    {
+      "id": "household-by-age",
+      "title": "가구주 연령대별 소득·자산·부채(2025 조사)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 47144
+      },
+      "latestUnit": "만 원",
+      "latestLabel": "전체 가구 평균 순자산(2025년 3월말)",
+      "decimals": 0,
+      "columns": [
+        {"key":"group","label":"가구주 연령"},
+        {"key":"households","label":"가구 분포(%)","decimals":1},
+        {"key":"size","label":"평균 가구원 수(명)","decimals":1},
+        {"key":"incomeMean","label":"경상소득 평균(만 원, 2024년)"},
+        {"key":"incomeMedian","label":"경상소득 중앙값(만 원)"},
+        {"key":"assetMean","label":"자산 평균(전 가구, 만 원)"},
+        {"key":"assetMedian","label":"자산 중앙값(만 원)"},
+        {"key":"debtMean","label":"부채 평균(부채가 없는 가구를 포함한 전 가구 평균, 만 원)"},
+        {"key":"debtMedian","label":"부채 중앙값(부채가 있는 가구만, 만 원)"},
+        {"key":"debtHoldingPct","label":"부채 보유 가구 비율(%)","decimals":1},
+        {"key":"netWorthMean","label":"순자산 평균(만 원)"},
+        {"key":"netWorthMedian","label":"순자산 중앙값(만 원)"}
+      ],
+      "rows": [
+        {"group":"전체","households":100,"size":2.3,"incomeMean":7427,"incomeMedian":5800,"assetMean":56678,"assetMedian":30270,"debtMean":9534,"debtMedian":8000,"debtHoldingPct":58.9,"netWorthMean":47144,"netWorthMedian":23860},
+        {"group":"29세 이하","households":4,"size":1.3,"incomeMean":4509,"incomeMedian":3873,"assetMean":15500,"assetMedian":7260,"debtMean":4703,"debtMedian":7000,"debtHoldingPct":50.2,"netWorthMean":10796,"netWorthMedian":5000},
+        {"group":"30~39세","households":14.4,"size":2.1,"incomeMean":7386,"incomeMedian":6219,"assetMean":35958,"assetMedian":24910,"debtMean":10899,"debtMedian":10732,"debtHoldingPct":69,"netWorthMean":25060,"netWorthMedian":15585},
+        {"group":"40~49세","households":18.6,"size":2.9,"incomeMean":9333,"incomeMedian":7801,"assetMean":62714,"assetMedian":39990,"debtMean":14325,"debtMedian":11000,"debtHoldingPct":73.5,"netWorthMean":48389,"netWorthMedian":28384},
+        {"group":"50~59세","households":22.3,"size":2.7,"incomeMean":9416,"incomeMedian":7805,"assetMean":66205,"assetMedian":38005,"debtMean":11044,"debtMedian":7500,"debtHoldingPct":67,"netWorthMean":55161,"netWorthMedian":31685},
+        {"group":"60세 이상","households":40.7,"size":2,"incomeMean":5767,"incomeMedian":3978,"assetMean":60095,"assetMedian":28060,"debtMean":6504,"debtMedian":5000,"debtHoldingPct":45.1,"netWorthMean":53591,"netWorthMedian":25000},
+        {"group":"65세 이상","households":28.7,"size":1.8,"incomeMean":4728,"incomeMedian":3198,"assetMean":54272,"assetMedian":24400,"debtMean":4993,"debtMedian":4000,"debtHoldingPct":38.9,"netWorthMean":49279,"netWorthMedian":22100}
+      ],
+      "definition": "가구주 연령대별 평균·중앙값입니다. 자산·부채·순자산은 2025년 3월말, 경상소득은 2024년 한 해 값입니다. 평균은 부채가 없는 가구까지 포함한 전 가구 평균이고, 부채 중앙값은 부채가 있는 가구만의 값입니다.",
+      "basisId": "s-030",
+      "source": {
+        "org": "국가데이터처·금융감독원·한국은행",
+        "table": "KOSIS 가구주연령계층별(10세) 자산, 부채, 소득 현황 (DT_1HDAAA06, 가계금융복지조사)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1HDAAA06",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표에서 읽고 가계금융복지조사 보도자료 요약(이미지)과 대조",
+        "crossChecks": [
+          "전체 평균 자산 56,678·부채 9,534·순자산 47,144·소득 7,427(2024)이 보도자료 요약 쪽과 일치",
+          "자산 평균 − 부채 평균 = 순자산 평균(±1만 원 반올림)",
+          "연령대 가구 분포 합 = 100.0%",
+          "KOSIS 표 열 머리(재열람 2026-10-15): 「전가구 평균(만원)」「보유가구 중앙값(만원)」「보유가구 비율(%)」 — 29세 이하·30~39세 행의 값이 모두 일치"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "「60세 이상」과 「65세 이상」은 겹치는 구간이다(합산 금지). 연령 구간 「39세 이하」 행은 29세 이하+30~39세의 합이라 따로 두지 않았다(원자료에는 있음: 평균 순자산 21,950만 원). 시대 보정(지난·다가올 세상)은 EC0 설계 문서에서 한다."
+    },
+    {
+      "id": "household-finance-misc",
+      "title": "가구 소득 원천·은퇴 연령(2025 조사)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 7427
+      },
+      "latestUnit": "만 원",
+      "latestLabel": "가구 평균 소득(2024년)",
+      "decimals": 0,
+      "columns": [
+        {"key":"key","label":"항목"},
+        {"key":"value","label":"값"},
+        {"key":"unit","label":"단위"}
+      ],
+      "rows": [
+        {"key":"가구 평균 소득(2024년)","value":7427,"unit":"만 원","decimals":0},
+        {"key":"가구 중위소득(2024년)","value":5800,"unit":"만 원","decimals":0},
+        {"key":"가구 평균 처분가능소득(2024년)","value":6032,"unit":"만 원","decimals":0},
+        {"key":"근로소득(평균)","value":4747,"unit":"만 원","decimals":0},
+        {"key":"사업소득(평균)","value":1299,"unit":"만 원","decimals":0},
+        {"key":"공적이전소득(평균)","value":660,"unit":"만 원","decimals":0},
+        {"key":"가구주 예상 은퇴 연령","value":68.6,"unit":"세","decimals":1},
+        {"key":"가구주 실제 은퇴 연령","value":62.7,"unit":"세","decimals":1},
+        {"key":"순자산 3억 원 미만 가구 비율","value":57,"unit":"%","decimals":1},
+        {"key":"순자산 10억 원 이상 가구 비율","value":11.8,"unit":"%","decimals":1},
+        {"key":"자산 대비 부채 비율","value":16.8,"unit":"%","decimals":1}
+      ],
+      "definition": "가계금융복지조사(2025년 3월말 기준 자산·부채, 2024년 소득)의 요약 지표입니다.",
+      "basisId": "s-031",
+      "source": {
+        "org": "국가데이터처·금융감독원·한국은행",
+        "table": "2025년 가계금융복지조사 결과(요약) 쪽",
+        "url": "https://mods.go.kr/board.es?act=view&bid=215&list_no=439535&mid=a10301010000",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 요약 쪽(이미지 4장)을 눈으로 읽어 값을 옮김. 2026-10-15 같은 쪽 이미지를 다시 읽어 11개 값을 모두 대조(일치)",
+        "crossChecks": [
+          "평균 소득 7,427만 원이 KOSIS 표(DT_1HDAAA06)와 일치",
+          "중위소득 5,800만 원이 KOSIS 표의 경상소득 중앙값과 일치",
+          "재판독 11개: 소득 7,427·중위 5,800(요약 쪽 그래프)·처분가능소득 6,032·근로소득 4,747·사업소득 1,299·공적이전소득 660·예상 은퇴 68.6세·실제 은퇴 62.7세·순자산 3억 원 미만 57.0%·10억 원 이상 11.8%·자산 대비 부채 16.8% — 요약 쪽 본문 서술·인포그래픽과 모두 일치(정정 0건)"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "예상 은퇴 연령(68.6세)과 실제 은퇴 연령(62.7세)은 같은 사람의 기대와 현실을 비교한 값이 아니다 — 실제 은퇴 연령은 이미 은퇴한 가구주만 해당하고(은퇴하지 않은 가구가 83.0%), 예상 은퇴 연령의 모집단은 보도자료 요약 쪽에서 확인하지 못했다. 두 값의 차이를 「기대와 현실의 어긋남」으로 쓰지 않는다."
+    },
+    {
+      "id": "minimum-wage",
+      "title": "최저임금(시간급)",
+      "unit": "원",
+      "kind": "line",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2026,
+        "value": 10320
+      },
+      "latestUnit": "원",
+      "decimals": 0,
+      "series": [
+        {"year":2015,"value":5580},
+        {"year":2016,"value":6030},
+        {"year":2017,"value":6470},
+        {"year":2018,"value":7530},
+        {"year":2019,"value":8350},
+        {"year":2020,"value":8590},
+        {"year":2021,"value":8720},
+        {"year":2022,"value":9160},
+        {"year":2023,"value":9620},
+        {"year":2024,"value":9860},
+        {"year":2025,"value":10030},
+        {"year":2026,"value":10320}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "decided": {
+        "appliesFrom": 2027,
+        "value": 10700,
+        "deliberatedOn": "2026-07-14",
+        "announcedOn": "2026-08-05",
+        "note": "2027년 적용분은 이미 의결·고시됨(최저임금위원회 표). 지금 세상(2026)에는 2026년 값을 쓴다."
+      },
+      "definition": "최저임금은 사용자가 근로자에게 지급해야 하는 법정 최저 시간급입니다. 월 환산액(209시간 기준)은 2026년 2,156,880원입니다.",
+      "basisId": "s-032",
+      "source": {
+        "org": "최저임금위원회",
+        "table": "연도별 최저임금 결정현황",
+        "url": "https://www.minimumwage.go.kr/minWage/policy/decisionMain.do",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "최저임금위원회 「연도별 최저임금 결정현황」 표(공식 누리집 원문)에서 읽음",
+        "crossChecks": [
+          "2026년 시간급 10,320원·일급 82,560원·월 2,156,880원이 같은 행에 있음",
+          "2025년 10,030원·인상률 1.7%"
+        ]
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "university-tuition",
+      "title": "대학 연간 평균 등록금(2026학년도)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2026,
+        "value": 7270.3
+      },
+      "latestUnit": "천 원",
+      "latestLabel": "4년제 일반·교육대학 평균 등록금(2026학년도)",
+      "decimals": 1,
+      "columns": [
+        {"key":"label","label":"구분"},
+        {"key":"value","label":"평균 등록금(천 원)","decimals":1},
+        {"key":"prev","label":"전년(천 원)","decimals":1}
+      ],
+      "rows": [
+        {"label":"4년제 일반·교육대학 전체(192개교)","value":7270.3,"prev":7123.1},
+        {"label":"4년제·사립","value":8231.5,"prev":null},
+        {"label":"4년제·국공립","value":4250,"prev":null},
+        {"label":"4년제·수도권","value":8270,"prev":null},
+        {"label":"4년제·비수도권","value":6619.6,"prev":null},
+        {"label":"4년제·인문사회","value":6433.7,"prev":null},
+        {"label":"4년제·자연과학","value":7323.3,"prev":null},
+        {"label":"4년제·공학","value":7677.4,"prev":null},
+        {"label":"4년제·예체능","value":8338.1,"prev":null},
+        {"label":"4년제·의학","value":10325.9,"prev":null},
+        {"label":"전문대학 전체(125개교)","value":6653.1,"prev":6478.7}
+      ],
+      "definition": "학생 1인이 한 해에 내는 평균 등록금입니다. 학과별·학년별 등록금에 입학정원을 곱해 합한 뒤 전체 입학정원 합으로 나눈 값입니다.",
+      "basisId": "s-033",
+      "source": {
+        "org": "교육부·한국대학교육협의회",
+        "table": "2026년 4월 대학정보공시 분석 결과 발표(교육부 보도자료)",
+        "url": "https://www.moe.go.kr/boardCnts/viewRenew.do?boardID=294&boardSeq=106020&lev=0&searchType=null&statusYN=W&page=1&s=moe&m=020402&opType=N",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "교육부 보도자료 원문 페이지 본문에서 읽음",
+        "crossChecks": [
+          "전년 7,123.1천 원 대비 「147.1천 원(2.1%) 상승」 서술과 방향·비율이 같다(표의 반올림 값끼리 빼면 147.2천 원이라 0.1천 원 차이 — 반올림 전 값으로 계산한 것으로 본다)",
+          "본문 계열별 순서(의학>예체능>공학>자연과학>인문사회)와 값이 맞음"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "대학알리미(academyinfo.go.kr)는 robots.txt가 전체 경로를 막아 이용하지 않았다. 교육부 보도자료 본문(HTML)에서 읽었다. 학자금 대출 규모·금리는 이번에 수집하지 못했다."
+    },
+    {
+      "id": "private-education-by-income",
+      "title": "가구 소득수준별 사교육 참여율·사교육비(2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "birth",
+        "economy"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 75.7
+      },
+      "latestUnit": "%",
+      "latestLabel": "전체 학생 사교육 참여율",
+      "decimals": 1,
+      "columns": [
+        {"key":"band","label":"가구 월평균 소득"},
+        {"key":"participationPct","label":"사교육 참여율(%)","decimals":1},
+        {"key":"monthlyCostMan","label":"전체학생 1인당 월평균 사교육비(만 원)","decimals":1}
+      ],
+      "rows": [
+        {"band":"전체","participationPct":75.7,"monthlyCostMan":45.8},
+        {"band":"300만 원 미만","participationPct":52.8,"monthlyCostMan":19.2},
+        {"band":"300~400만 원 미만","participationPct":64.2,"monthlyCostMan":25.3},
+        {"band":"400~500만 원 미만","participationPct":71,"monthlyCostMan":33.6},
+        {"band":"500~600만 원 미만","participationPct":74.9,"monthlyCostMan":40.5},
+        {"band":"600~700만 원 미만","participationPct":78.9,"monthlyCostMan":46.3},
+        {"band":"700~800만 원 미만","participationPct":83.1,"monthlyCostMan":53},
+        {"band":"800만 원 이상","participationPct":84.9,"monthlyCostMan":66.2}
+      ],
+      "definition": "가구 월평균 소득 구간별 초·중·고 학생의 사교육 참여율과 전체학생 1인당 월평균 사교육비(명목)입니다.",
+      "basisId": "s-026",
+      "source": {
+        "org": "국가데이터처·교육부",
+        "table": "2025년 초중고사교육비조사 결과 「표 11 가구 소득수준별 전체학생 1인당 월평균 사교육비 및 참여율」·통계표 6·7",
+        "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=245&act=view&list_no=443953",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표에서 값을 읽음",
+        "crossChecks": [
+          "본문 「800만 원 이상 66만 2천 원·84.9%, 300만 원 미만 19만 2천 원·52.8%」와 일치",
+          "통계표 6·7의 같은 값과 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true
+    },
+    {
+      "id": "life-expectancy-income-gap",
+      "title": "소득 상·하위 20%의 기대수명 차이",
+      "unit": "세",
+      "kind": "line",
+      "use": [
+        "birth"
+      ],
+      "latest": {
+        "year": 2017,
+        "value": 6.48
+      },
+      "latestUnit": "세",
+      "decimals": 2,
+      "series": [
+        {"year":2004,"value":6.24},
+        {"year":2017,"value":6.48}
+      ],
+      "axis": {
+        "scale": "year",
+        "step": null,
+        "regular": false,
+        "gaps": [
+          {"from":2004,"to":2017}
+        ],
+        "breaks": [],
+        "note": "2004년과 2017년 두 점만 있다(13년 간격). 선으로 잇지 않고 점 두 개로 보이는 것이 맞다."
+      },
+      "projection": {
+        "year": 2030,
+        "value": 6.73,
+        "note": "같은 추세가 이어질 경우의 예측(글 본문)"
+      },
+      "definition": "건강보험료를 소득 지표로 삼아 소득 상위 20%와 하위 20% 집단의 출생 시 기대수명(0세 기대여명) 차이를 구한 값입니다(Khang et al., 2019).",
+      "basisId": "s-027",
+      "source": {
+        "org": "통계청 통계개발원(현 국가데이터처 국가데이터연구원)",
+        "table": "한국의 사회동향 2019 「건강불평등」(강영호, 2019-12-19 게시)",
+        "url": "https://mods.go.kr/board.es?act=view&bid=12305&list_no=379494&mid=a90104010304",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "한국의 사회동향 2019 「건강불평등」 원문(문서 뷰어 텍스트층)에서 읽음",
+        "crossChecks": [
+          "본문 「2004년 6.24세에서 2017년 6.48세」, 「2030년 6.73세」 서술"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "2017년까지의 자료라 최신 값이 아니다. 같은 글에 「학력수준이 낮고 육체직에 종사하는 부모에게서 태어난 아기는 출생 시 평균 체중이 낮다」는 서술이 있으나 수치는 없다."
+    },
+    {
+      "id": "divorce",
+      "title": "이혼 건수와 미성년 자녀가 있는 이혼 비중",
+      "unit": "건",
+      "kind": "line",
+      "use": [
+        "satire"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 88130
+      },
+      "latestUnit": "건",
+      "decimals": 0,
+      "series": [
+        {"year":1970,"value":11615},
+        {"year":1971,"value":11361},
+        {"year":1972,"value":12188},
+        {"year":1973,"value":12719},
+        {"year":1974,"value":14073},
+        {"year":1975,"value":16453},
+        {"year":1976,"value":17178},
+        {"year":1977,"value":20280},
+        {"year":1978,"value":19734},
+        {"year":1979,"value":17178},
+        {"year":1980,"value":23662},
+        {"year":1981,"value":24278},
+        {"year":1982,"value":26124},
+        {"year":1983,"value":28549},
+        {"year":1984,"value":35772},
+        {"year":1985,"value":38187},
+        {"year":1986,"value":39132},
+        {"year":1987,"value":42268},
+        {"year":1988,"value":42757},
+        {"year":1989,"value":44017},
+        {"year":1990,"value":45694},
+        {"year":1991,"value":49205},
+        {"year":1992,"value":53539},
+        {"year":1993,"value":59313},
+        {"year":1994,"value":65015},
+        {"year":1995,"value":68279},
+        {"year":1996,"value":79895},
+        {"year":1997,"value":91160},
+        {"year":1998,"value":116294},
+        {"year":1999,"value":117449},
+        {"year":2000,"value":119455},
+        {"year":2001,"value":134608},
+        {"year":2002,"value":144910},
+        {"year":2003,"value":166617},
+        {"year":2004,"value":138932},
+        {"year":2005,"value":128035},
+        {"year":2006,"value":124524},
+        {"year":2007,"value":124072},
+        {"year":2008,"value":116535},
+        {"year":2009,"value":123999},
+        {"year":2010,"value":116858},
+        {"year":2011,"value":114284},
+        {"year":2012,"value":114316},
+        {"year":2013,"value":115292},
+        {"year":2014,"value":115510},
+        {"year":2015,"value":109153},
+        {"year":2016,"value":107328},
+        {"year":2017,"value":106032},
+        {"year":2018,"value":108684},
+        {"year":2019,"value":110831},
+        {"year":2020,"value":106500},
+        {"year":2021,"value":101673},
+        {"year":2022,"value":93232},
+        {"year":2023,"value":92394},
+        {"year":2024,"value":91151},
+        {"year":2025,"value":88130}
+      ],
+      "seriesLabel": "이혼 건수(건, 이혼신고 기준)",
+      "extraSeries": [
+        {
+          "label": "미성년 자녀가 있는 이혼 건수(천 건)",
+          "latest": {
+            "year": 2025,
+            "value": 37.4
+          },
+          "series": [
+            {"year":2015,"value":52.8},
+            {"year":2016,"value":51},
+            {"year":2017,"value":50.1},
+            {"year":2018,"value":49.4},
+            {"year":2019,"value":49},
+            {"year":2020,"value":45},
+            {"year":2021,"value":41.2},
+            {"year":2022,"value":38.9},
+            {"year":2023,"value":39.6},
+            {"year":2024,"value":39},
+            {"year":2025,"value":37.4}
+          ],
+          "unit": "천 건",
+          "decimals": 1
+        },
+        {
+          "label": "조이혼율(인구 1천 명당 건)",
+          "unit": "인구 1천 명당 건",
+          "decimals": 1,
+          "latest": {
+            "year": 2025,
+            "value": 1.7
+          },
+          "series": [
+            {"year":1970,"value":0.4},
+            {"year":1971,"value":0.3},
+            {"year":1972,"value":0.4},
+            {"year":1973,"value":0.4},
+            {"year":1974,"value":0.4},
+            {"year":1975,"value":0.5},
+            {"year":1976,"value":0.5},
+            {"year":1977,"value":0.6},
+            {"year":1978,"value":0.5},
+            {"year":1979,"value":0.5},
+            {"year":1980,"value":0.6},
+            {"year":1981,"value":0.6},
+            {"year":1982,"value":0.7},
+            {"year":1983,"value":0.7},
+            {"year":1984,"value":0.9},
+            {"year":1985,"value":0.9},
+            {"year":1986,"value":0.9},
+            {"year":1987,"value":1},
+            {"year":1988,"value":1},
+            {"year":1989,"value":1},
+            {"year":1990,"value":1.1},
+            {"year":1991,"value":1.1},
+            {"year":1992,"value":1.2},
+            {"year":1993,"value":1.3},
+            {"year":1994,"value":1.4},
+            {"year":1995,"value":1.5},
+            {"year":1996,"value":1.7},
+            {"year":1997,"value":2},
+            {"year":1998,"value":2.5},
+            {"year":1999,"value":2.5},
+            {"year":2000,"value":2.5},
+            {"year":2001,"value":2.8},
+            {"year":2002,"value":3},
+            {"year":2003,"value":3.4},
+            {"year":2004,"value":2.9},
+            {"year":2005,"value":2.6},
+            {"year":2006,"value":2.5},
+            {"year":2007,"value":2.5},
+            {"year":2008,"value":2.4},
+            {"year":2009,"value":2.5},
+            {"year":2010,"value":2.3},
+            {"year":2011,"value":2.3},
+            {"year":2012,"value":2.3},
+            {"year":2013,"value":2.3},
+            {"year":2014,"value":2.3},
+            {"year":2015,"value":2.1},
+            {"year":2016,"value":2.1},
+            {"year":2017,"value":2.1},
+            {"year":2018,"value":2.1},
+            {"year":2019,"value":2.2},
+            {"year":2020,"value":2.1},
+            {"year":2021,"value":2},
+            {"year":2022,"value":1.8},
+            {"year":2023,"value":1.8},
+            {"year":2024,"value":1.8},
+            {"year":2025,"value":1.7}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "crudeDivorceRate2025": 1.7,
+      "shares": {
+        "withMinorChildren2025Pct": 42.5,
+        "withMinorChildren2015Pct": 48.4,
+        "oneChildPct": 22.4,
+        "twoChildrenPct": 16.6,
+        "threeOrMorePct": 3.4
+      },
+      "definition": "이혼 건수는 이혼신고 기준으로 집계한 값입니다(신고월 기준). 미성년 자녀가 있는 이혼은 이혼한 부부에게 미성년 자녀가 있는 경우입니다.",
+      "basisId": "s-028",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 이혼건수, 조이혼율 (INH_1B8000F_04, 인구동향조사) 1970~2025 / 2025년 혼인·이혼 통계 「[표 23] 미성년 자녀 유무별 이혼건수, 2015~2025」(보도자료)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=INH_1B8000F_04",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 표 쪽 이미지를 눈으로 읽음(이 문서는 글자층에 숫자가 없음)",
+        "crossChecks": [
+          "미성년 자녀 있음 37.4 + 없음 49.4 + 미상 = 88.1(천 건)",
+          "본문 「3만 7천 건, 42.5%」「4만 9천 건, 56.1%」와 일치",
+          "KOSIS 표(재열람 2026-10-15) 1970~2025 이혼건수·조이혼율 56개 값을 읽어 기존 2015~2025 값(천 건 단위 반올림)이 모두 일치함을 확인하고 시리즈를 1970년까지 넓힘",
+          "보도자료 요약 쪽 그래프(이미지 재판독): 1.2만건(1970)·9.1만건(1997)·16.7만건(2003)·10.2만건(2021)·8.8만건(2025), 조이혼율 0.4·2.0·3.4·2.0·1.8·1.7 — KOSIS 값과 반올림 일치"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "이혼 건수를 혼인 건수와 나누어 「이혼율」처럼 말하지 않는다(인구동향조사 통계설명자료 이용 시 유의사항). 시도 통계의 이혼은 남편의 주소지 기준. KOSIS 1976년(17,178건)과 1979년(17,178건) 값이 같게 나오나 원표 값 그대로다. 미성년 자녀 있는 이혼(extraSeries[0])은 보도자료 [표 23]을 눈으로 읽은 값이고 천 건 단위다."
+    },
+    {
+      "id": "region-population-registered",
+      "title": "지역별 주민등록 인구수(2026년 9월, 16개 시·도)",
+      "unit": "명",
+      "kind": "bar",
+      "use": [
+        "carousel"
+      ],
+      "latest": {
+        "year": 2026,
+        "value": 51082431
+      },
+      "latestUnit": "명",
+      "latestLabel": "2026년 9월 전국 주민등록 인구",
+      "decimals": 0,
+      "scopeLabel": "2026년 9월 기준(16개 시·도, 주민등록)",
+      "series": [
+        {"label":"서울","value":9279861},
+        {"label":"전남광주통합특별시","value":3154398},
+        {"label":"부산","value":3228188},
+        {"label":"대구","value":2345828},
+        {"label":"인천","value":3068328},
+        {"label":"대전","value":1443122},
+        {"label":"울산","value":1086077},
+        {"label":"세종","value":390585},
+        {"label":"경기","value":13777186},
+        {"label":"강원","value":1506701},
+        {"label":"충북","value":1601942},
+        {"label":"충남","value":2139558},
+        {"label":"전북","value":1716229},
+        {"label":"경북","value":2491506},
+        {"label":"경남","value":3190549},
+        {"label":"제주","value":662373}
+      ],
+      "period": "2026.09",
+      "definition": "지역별 주민등록 인구수는 행정안전부가 주민등록 자료로 집계한 2026년 9월 시도별 총인구입니다.",
+      "basisId": "s-051",
+      "source": {
+        "org": "행정안전부",
+        "table": "KOSIS 행정구역(시군구)별, 성별 인구수 (DT_1B040A3, 주민등록 인구통계)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B040A3",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(2026.07~09)에서 값을 읽음",
+        "crossChecks": [
+          "16개 시도 합 = 전국 51,082,431명(정확히 일치)",
+          "자료갱신일 2026-10-02(KOSIS 표 머리)",
+          "KOSIS 주석정보(재열람 2026-10-15): 「전남광주통합특별시 2026.7.1.일자로 신설」「광주광역시 2026.7.1.일자로 전남광주통합특별시로 통합」「전라남도 2026.7.1.일자로 전남광주통합특별시로 통합」"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "행정안전부 주민등록인구현황 표 주석정보(KOSIS)로 확인: 전남광주통합특별시는 2026.7.1 신설, 광주광역시·전라남도는 2026.7.1 전남광주통합특별시로 통합. 그래서 2026년 7월 열부터 16개 시도다. 2025년 17개 시도 인구(region-population, 인구주택총조사)와는 기준(주민등록 vs 센서스)과 지역 구분이 다르다. 캐러셀 「지역별 인구수」 카드는 이 지표를 쓴다(마스터 결정 2026-10-15)."
+    },
+    {
+      "id": "income-mobility",
+      "title": "소득 이동성(소득분위 이동, 2022→2023)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy",
+        "birth"
+      ],
+      "latest": {
+        "year": 2023,
+        "value": 34.1
+      },
+      "latestUnit": "%",
+      "latestLabel": "전체 소득이동성(2022→2023)",
+      "decimals": 1,
+      "columns": [
+        {"key":"group","label":"구분"},
+        {"key":"mobility","label":"소득이동성(%)","decimals":1},
+        {"key":"up","label":"상향 이동 비율(%)","decimals":1},
+        {"key":"down","label":"하향 이동 비율(%)","decimals":1}
+      ],
+      "rows": [
+        {"group":"전체","mobility":34.1,"up":17.3,"down":16.8},
+        {"group":"남자","mobility":33.3,"up":16.6,"down":16.6},
+        {"group":"여자","mobility":35.2,"up":18.1,"down":17.1},
+        {"group":"청년층","mobility":40.4,"up":23,"down":17.4},
+        {"group":"중장년층","mobility":31.5,"up":14.7,"down":16.8},
+        {"group":"노년층","mobility":25,"up":9.9,"down":15.1}
+      ],
+      "persistence": {
+        "firstQuintileExitRate2023": 29.9,
+        "firstQuintileStayRate2023": 70.1,
+        "fifthQuintileStayRate2023": 85.9,
+        "entryToFifthFromQuintiles1to4_2023": 3.5,
+        "firstQuintile2017StillFirst2023": 27.8,
+        "fifthQuintile2017StillFifth2023": 59.3,
+        "youthFirstQuintileExitRate2023": 38.4,
+        "midAgedFifthQuintileStayRate2023": 87.1,
+        "note": "유지율·탈출률은 전년(t-1) 소득분위가 그 해(t)에 어떻게 바뀌었는지의 비율. 2017년 1분위(5분위)였던 사람 중 2023년까지 7년 내내 그 분위에 머문 비율이 27.8%(59.3%)이고, 2017~2023년 7년 모두 소득이 있는 사람만 대상."
+      },
+      "definition": "소득이동성은 같은 사람의 개인 소득(근로소득+사업소득, 세전 명목) 5분위가 한 해 사이에 바뀐 비율입니다. 소득 1분위는 하위 20%, 5분위는 상위 20%입니다.",
+      "basisId": "s-052",
+      "source": {
+        "org": "국가데이터처(국가통계연구원, 현 국가데이터연구원)",
+        "table": "2023년 소득이동통계 결과 보도자료(2025-10-27)",
+        "url": "https://mods.go.kr/board.es?mid=a10301061000&bid=0067&act=view&list_no=438997",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "보도자료 원문 표·본문(문서 뷰어 텍스트층)에서 값을 읽음",
+        "crossChecks": [
+          "본문 「소득이동성 34.1%, 상향 17.3%·하향 16.8%」, 「1분위 탈출률 29.9%·5분위 유지율 85.9%」, 「2017년 1분위 중 27.8%는 2023년까지 1분위 유지, 5분위 59.3% 유지」와 표가 일치",
+          "1분위 유지율 70.1 + 탈출률 29.9 = 100"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "세대 간(부모→자녀) 계층 이동이 아니라 개인의 1년 사이 소득분위 이동이다. 소득 하위분위가 곧 빈곤층은 아니다(가구원·재산소득·이전소득 미포함 — 보도자료 유의사항). 등록센서스와 국세청 소득자료를 결합한 약 1,100만 명 표본."
+    },
+    {
+      "id": "lifecycle-account",
+      "title": "나이별 1인당 소비·노동소득(2024년 국민이전계정)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2024,
+        "value": 46508
+      },
+      "latestUnit": "천 원",
+      "latestLabel": "45세 1인당 노동소득 최대(명목, 2024)",
+      "decimals": 0,
+      "columns": [
+        {"key":"ageLabel","label":"나이(세)"},
+        {"key":"consumption","label":"1인당 소비(천 원)"},
+        {"key":"laborIncome","label":"1인당 노동소득(천 원)"},
+        {"key":"lifeCycleDeficit","label":"1인당 생애주기적자 = 소비 − 노동소득(천 원, 음수는 흑자)"}
+      ],
+      "rows": [
+        {"ageLabel":"0세","consumption":17040,"laborIncome":0,"lifeCycleDeficit":17040},
+        {"ageLabel":"1세","consumption":16971,"laborIncome":0,"lifeCycleDeficit":16971},
+        {"ageLabel":"2세","consumption":16901,"laborIncome":0,"lifeCycleDeficit":16901},
+        {"ageLabel":"3세","consumption":16832,"laborIncome":0,"lifeCycleDeficit":16832},
+        {"ageLabel":"4세","consumption":16762,"laborIncome":0,"lifeCycleDeficit":16762},
+        {"ageLabel":"5세","consumption":16728,"laborIncome":0,"lifeCycleDeficit":16728},
+        {"ageLabel":"6세","consumption":36584,"laborIncome":0,"lifeCycleDeficit":36584},
+        {"ageLabel":"7세","consumption":41465,"laborIncome":0,"lifeCycleDeficit":41465},
+        {"ageLabel":"8세","consumption":40322,"laborIncome":0,"lifeCycleDeficit":40322},
+        {"ageLabel":"9세","consumption":40878,"laborIncome":0,"lifeCycleDeficit":40878},
+        {"ageLabel":"10세","consumption":41753,"laborIncome":0,"lifeCycleDeficit":41753},
+        {"ageLabel":"11세","consumption":42358,"laborIncome":0,"lifeCycleDeficit":42358},
+        {"ageLabel":"12세","consumption":40939,"laborIncome":0,"lifeCycleDeficit":40939},
+        {"ageLabel":"13세","consumption":41330,"laborIncome":0,"lifeCycleDeficit":41330},
+        {"ageLabel":"14세","consumption":43164,"laborIncome":0,"lifeCycleDeficit":43164},
+        {"ageLabel":"15세","consumption":43564,"laborIncome":0,"lifeCycleDeficit":43564},
+        {"ageLabel":"16세","consumption":46044,"laborIncome":0,"lifeCycleDeficit":46044},
+        {"ageLabel":"17세","consumption":45054,"laborIncome":0,"lifeCycleDeficit":45054},
+        {"ageLabel":"18세","consumption":30047,"laborIncome":1665,"lifeCycleDeficit":28382},
+        {"ageLabel":"19세","consumption":31037,"laborIncome":3567,"lifeCycleDeficit":27471},
+        {"ageLabel":"20세","consumption":31077,"laborIncome":5468,"lifeCycleDeficit":25608},
+        {"ageLabel":"21세","consumption":32290,"laborIncome":8341,"lifeCycleDeficit":23949},
+        {"ageLabel":"22세","consumption":29978,"laborIncome":11193,"lifeCycleDeficit":18785},
+        {"ageLabel":"23세","consumption":29757,"laborIncome":14426,"lifeCycleDeficit":15331},
+        {"ageLabel":"24세","consumption":28826,"laborIncome":17036,"lifeCycleDeficit":11790},
+        {"ageLabel":"25세","consumption":27375,"laborIncome":20568,"lifeCycleDeficit":6807},
+        {"ageLabel":"26세","consumption":28436,"laborIncome":23817,"lifeCycleDeficit":4619},
+        {"ageLabel":"27세","consumption":28491,"laborIncome":26902,"lifeCycleDeficit":1589},
+        {"ageLabel":"28세","consumption":28808,"laborIncome":30382,"lifeCycleDeficit":-1574},
+        {"ageLabel":"29세","consumption":29183,"laborIncome":33133,"lifeCycleDeficit":-3950},
+        {"ageLabel":"30세","consumption":29522,"laborIncome":35549,"lifeCycleDeficit":-6028},
+        {"ageLabel":"31세","consumption":29993,"laborIncome":37570,"lifeCycleDeficit":-7577},
+        {"ageLabel":"32세","consumption":29877,"laborIncome":38385,"lifeCycleDeficit":-8508},
+        {"ageLabel":"33세","consumption":30415,"laborIncome":39351,"lifeCycleDeficit":-8936},
+        {"ageLabel":"34세","consumption":30249,"laborIncome":39664,"lifeCycleDeficit":-9416},
+        {"ageLabel":"35세","consumption":30138,"laborIncome":40857,"lifeCycleDeficit":-10719},
+        {"ageLabel":"36세","consumption":29814,"laborIncome":41073,"lifeCycleDeficit":-11259},
+        {"ageLabel":"37세","consumption":29418,"laborIncome":41632,"lifeCycleDeficit":-12213},
+        {"ageLabel":"38세","consumption":28893,"laborIncome":42415,"lifeCycleDeficit":-13522},
+        {"ageLabel":"39세","consumption":28494,"laborIncome":42699,"lifeCycleDeficit":-14204},
+        {"ageLabel":"40세","consumption":28235,"laborIncome":43463,"lifeCycleDeficit":-15228},
+        {"ageLabel":"41세","consumption":27988,"laborIncome":43910,"lifeCycleDeficit":-15922},
+        {"ageLabel":"42세","consumption":27762,"laborIncome":44246,"lifeCycleDeficit":-16484},
+        {"ageLabel":"43세","consumption":27553,"laborIncome":45236,"lifeCycleDeficit":-17683},
+        {"ageLabel":"44세","consumption":27412,"laborIncome":45936,"lifeCycleDeficit":-18524},
+        {"ageLabel":"45세","consumption":27192,"laborIncome":46508,"lifeCycleDeficit":-19317},
+        {"ageLabel":"46세","consumption":27292,"laborIncome":46446,"lifeCycleDeficit":-19154},
+        {"ageLabel":"47세","consumption":27084,"laborIncome":46268,"lifeCycleDeficit":-19184},
+        {"ageLabel":"48세","consumption":27110,"laborIncome":45864,"lifeCycleDeficit":-18754},
+        {"ageLabel":"49세","consumption":27232,"laborIncome":45481,"lifeCycleDeficit":-18249},
+        {"ageLabel":"50세","consumption":27448,"laborIncome":44608,"lifeCycleDeficit":-17160},
+        {"ageLabel":"51세","consumption":27575,"laborIncome":44517,"lifeCycleDeficit":-16941},
+        {"ageLabel":"52세","consumption":27870,"laborIncome":43799,"lifeCycleDeficit":-15929},
+        {"ageLabel":"53세","consumption":28018,"laborIncome":42668,"lifeCycleDeficit":-14650},
+        {"ageLabel":"54세","consumption":28097,"laborIncome":41000,"lifeCycleDeficit":-12903},
+        {"ageLabel":"55세","consumption":28128,"laborIncome":39770,"lifeCycleDeficit":-11642},
+        {"ageLabel":"56세","consumption":28298,"laborIncome":38113,"lifeCycleDeficit":-9815},
+        {"ageLabel":"57세","consumption":28228,"laborIncome":36600,"lifeCycleDeficit":-8372},
+        {"ageLabel":"58세","consumption":28349,"laborIncome":34372,"lifeCycleDeficit":-6024},
+        {"ageLabel":"59세","consumption":28347,"laborIncome":32621,"lifeCycleDeficit":-4274},
+        {"ageLabel":"60세","consumption":28503,"laborIncome":29814,"lifeCycleDeficit":-1311},
+        {"ageLabel":"61세","consumption":28423,"laborIncome":27662,"lifeCycleDeficit":761},
+        {"ageLabel":"62세","consumption":28294,"laborIncome":24656,"lifeCycleDeficit":3638},
+        {"ageLabel":"63세","consumption":28091,"laborIncome":22378,"lifeCycleDeficit":5713},
+        {"ageLabel":"64세","consumption":27950,"laborIncome":20259,"lifeCycleDeficit":7691},
+        {"ageLabel":"65세","consumption":27683,"laborIncome":17985,"lifeCycleDeficit":9698},
+        {"ageLabel":"66세","consumption":27396,"laborIncome":15586,"lifeCycleDeficit":11810},
+        {"ageLabel":"67세","consumption":27092,"laborIncome":13787,"lifeCycleDeficit":13305},
+        {"ageLabel":"68세","consumption":26883,"laborIncome":12027,"lifeCycleDeficit":14857},
+        {"ageLabel":"69세","consumption":26614,"laborIncome":10663,"lifeCycleDeficit":15952},
+        {"ageLabel":"70세","consumption":26464,"laborIncome":9183,"lifeCycleDeficit":17281},
+        {"ageLabel":"71세","consumption":26145,"laborIncome":8522,"lifeCycleDeficit":17623},
+        {"ageLabel":"72세","consumption":25926,"laborIncome":7584,"lifeCycleDeficit":18342},
+        {"ageLabel":"73세","consumption":25691,"laborIncome":6555,"lifeCycleDeficit":19136},
+        {"ageLabel":"74세","consumption":25595,"laborIncome":5558,"lifeCycleDeficit":20037},
+        {"ageLabel":"75세","consumption":25344,"laborIncome":4331,"lifeCycleDeficit":21014},
+        {"ageLabel":"76세","consumption":25462,"laborIncome":3940,"lifeCycleDeficit":21522},
+        {"ageLabel":"77세","consumption":25440,"laborIncome":3212,"lifeCycleDeficit":22228},
+        {"ageLabel":"78세","consumption":25660,"laborIncome":2570,"lifeCycleDeficit":23090},
+        {"ageLabel":"79세","consumption":25963,"laborIncome":2053,"lifeCycleDeficit":23910},
+        {"ageLabel":"80세","consumption":26175,"laborIncome":1795,"lifeCycleDeficit":24381},
+        {"ageLabel":"81세","consumption":26387,"laborIncome":1448,"lifeCycleDeficit":24939},
+        {"ageLabel":"82세","consumption":26599,"laborIncome":1101,"lifeCycleDeficit":25498},
+        {"ageLabel":"83세","consumption":26812,"laborIncome":755,"lifeCycleDeficit":26057},
+        {"ageLabel":"84세","consumption":27024,"laborIncome":408,"lifeCycleDeficit":26616},
+        {"ageLabel":"85세이상","consumption":27249,"laborIncome":61,"lifeCycleDeficit":27187}
+      ],
+      "milestones": {
+        "surplusFromAge": 28,
+        "deficitAgainFromAge": 61,
+        "consumptionPeakAge": 16,
+        "consumptionPeak": 46044,
+        "laborIncomePeakAge": 45,
+        "laborIncomePeak": 46508,
+        "note": "0~27세 소비>노동소득(적자), 28~60세 흑자, 61세부터 적자(보도자료 본문)"
+      },
+      "definition": "국민이전계정의 경제적 생애주기입니다. 나이별 1인당 연평균 소비와 노동소득(명목, 2024년)과 그 차이(생애주기적자)를 보여 줍니다.",
+      "basisId": "s-053",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 생애주기적자계정(1인규모) (DT_1NTA2003, 국민이전계정) / 2024년 국민이전계정 보도자료(2026-09-17)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1NTA2003",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(2024)에서 나이별 값을 읽고 보도자료 글자층과 대조",
+        "crossChecks": [
+          "보도자료 본문 「16세 소비 4,604만 원 최대, 45세 노동소득 4,651만 원 최대, 28세 흑자 진입, 61세 적자 전환」과 일치",
+          "보도자료 표의 0세 소비 17,040·28세 노동소득 30,382·45세 46,508과 일치",
+          "소비 − 노동소득 = 생애주기적자(전 연령 ±2천 원 이내, 반올림)"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "국민 평균 곡선이라 개인·가정 형편별 차이를 담지 않는다. 85세 이상은 한 행. 소비는 공공소비(교육·보건·기타)+민간소비 합. 금액은 물가 상승분을 포함한 명목 값이다."
+    },
+    {
+      "id": "future-projection",
+      "title": "장래인구추계(2022년 기준, 중위 추계)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "future"
+      ],
+      "latest": {
+        "year": 2072,
+        "value": 36222
+      },
+      "latestUnit": "천 명",
+      "latestLabel": "2072년 추계 총인구(2022년 기준 중위 추계)",
+      "decimals": 0,
+      "columns": [
+        {"key":"year","label":"연도(추계)"},
+        {"key":"populationThousand","label":"총인구(천 명)"},
+        {"key":"birthsThousand","label":"출생아 수(천 명)"},
+        {"key":"tfr","label":"합계출산율(명)","decimals":2},
+        {"key":"lifeExpectancy","label":"기대수명 전체(년)","decimals":1},
+        {"key":"lifeExpectancyMale","label":"남자(년)","decimals":1},
+        {"key":"lifeExpectancyFemale","label":"여자(년)","decimals":1}
+      ],
+      "rows": [
+        {"year":2025,"populationThousand":51685,"birthsThousand":218,"tfr":0.65,"lifeExpectancy":84.5,"lifeExpectancyMale":81.6,"lifeExpectancyFemale":87.3},
+        {"year":2026,"populationThousand":51609,"birthsThousand":229,"tfr":0.68,"lifeExpectancy":84.7,"lifeExpectancyMale":81.9,"lifeExpectancyFemale":87.5},
+        {"year":2030,"populationThousand":51306,"birthsThousand":263,"tfr":0.82,"lifeExpectancy":85.5,"lifeExpectancyMale":82.8,"lifeExpectancyFemale":88.1},
+        {"year":2040,"populationThousand":50059,"birthsThousand":259,"tfr":1.05,"lifeExpectancy":87.2,"lifeExpectancyMale":84.8,"lifeExpectancyFemale":89.5},
+        {"year":2050,"populationThousand":47107,"birthsThousand":212,"tfr":1.08,"lifeExpectancy":88.6,"lifeExpectancyMale":86.5,"lifeExpectancyFemale":90.7},
+        {"year":2060,"populationThousand":42302,"birthsThousand":156,"tfr":1.08,"lifeExpectancy":89.8,"lifeExpectancyMale":88,"lifeExpectancyFemale":91.7},
+        {"year":2072,"populationThousand":36222,"birthsThousand":160,"tfr":1.08,"lifeExpectancy":91.1,"lifeExpectancyMale":89.5,"lifeExpectancyFemale":92.7}
+      ],
+      "aging": {
+        "year2026Share65Plus": 21.6,
+        "shareAbove30By": 2036,
+        "shareAbove40By": 2050,
+        "note": "2026 고령자 통계(장래인구추계 2022~2072 기반): 2026년 65세 이상 1,112만 5천 명(21.6%), 2036년 30%·2050년 40% 초과 전망."
+      },
+      "definition": "장래인구추계는 현재 인구·출산·사망·국제이동 추세를 가정해 계산한 미래 인구입니다(2022년 기준, 중위 추계). 실제 값이 아닌 전망입니다.",
+      "basisId": "s-054",
+      "source": {
+        "org": "통계청(현 국가데이터처)",
+        "table": "KOSIS 장래인구추계(2022년 기준) 중위 추계: 장래 인구변동요인(DT_1BPA004)·장래 합계출산율(DT_1BPA101)·장래 기대수명(DT_1BPA201)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1BPA004",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표 3개(인구변동요인·합계출산율·기대수명, 중위 추계)에서 값을 읽음",
+        "crossChecks": [
+          "합계출산율 표의 2022년 0.78명이 실제(2022 출생 통계 0.78명)와 같다. 인구변동요인 표의 2022년 출생아는 추계 246천 명이고 실제는 249,186명이다(차이 있음)",
+          "2026 고령자 통계(보도자료)의 2026년 고령인구 21.6%가 같은 추계에서 나온 값"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "2022년 기준 추계는 이미 실제와 어긋난다: 2025년 합계출산율 추계 0.65명(실제 0.80명), 2024년 기대수명 추계 84.3년(생명표 83.7년). 「다가올 세상」 문구에는 「2022년 기준 추계」·「지금 기준으로는」을 붙이고 시나리오(높은/낮은 출산율 등)가 여럿 있음을 밝힌다. 자료갱신 2023-12-14. 2025년 인구주택총조사 등 최신 값과 비교하면 2025년 총인구 추계 51,685천 vs 실제 51,817천."
+    },
+    {
+      "id": "parental-leave",
+      "title": "출생아 부모의 육아휴직 사용률(대상자 기준)",
+      "unit": "%",
+      "kind": "line",
+      "use": [
+        "economy",
+        "satire"
+      ],
+      "latest": {
+        "year": 2024,
+        "value": 34.7
+      },
+      "latestUnit": "%",
+      "decimals": 1,
+      "series": [
+        {"year":2015,"value":19.1},
+        {"year":2016,"value":20},
+        {"year":2017,"value":21.6},
+        {"year":2018,"value":22.5},
+        {"year":2019,"value":24},
+        {"year":2020,"value":25.5},
+        {"year":2021,"value":27},
+        {"year":2022,"value":31.2},
+        {"year":2023,"value":33},
+        {"year":2024,"value":34.7}
+      ],
+      "seriesLabel": "출생아 부모 계(육아휴직 대상 조건을 충족한 부모 중)",
+      "extraSeries": [
+        {
+          "label": "아버지",
+          "latest": {
+            "year": 2024,
+            "value": 10.2
+          },
+          "series": [
+            {"year":2015,"value":0.6},
+            {"year":2016,"value":0.9},
+            {"year":2017,"value":1.8},
+            {"year":2018,"value":2.4},
+            {"year":2019,"value":3},
+            {"year":2020,"value":3.6},
+            {"year":2021,"value":4.3},
+            {"year":2022,"value":7.1},
+            {"year":2023,"value":7.5},
+            {"year":2024,"value":10.2}
+          ]
+        },
+        {
+          "label": "어머니",
+          "latest": {
+            "year": 2024,
+            "value": 72.2
+          },
+          "series": [
+            {"year":2015,"value":59.1},
+            {"year":2016,"value":60.4},
+            {"year":2017,"value":62.2},
+            {"year":2018,"value":62.9},
+            {"year":2019,"value":64.6},
+            {"year":2020,"value":65.7},
+            {"year":2021,"value":66.9},
+            {"year":2022,"value":71.1},
+            {"year":2023,"value":73.2},
+            {"year":2024,"value":72.2}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "provisionalYears": [
+        2024
+      ],
+      "definition": "출생아 부모의 육아휴직 사용률은 그해 아이를 낳은 부모 가운데 육아휴직 대상 조건을 충족한 사람 중 같은 해에 육아휴직을 쓴 사람의 비율입니다(성별 구분).",
+      "basisId": "s-055",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 출생아 부모의 육아휴직 사용률 (DT_CC2024D001, 육아휴직통계)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_CC2024D001",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(2015~2024)에서 값을 읽고, 같은 표의 「통계설명자료」(국가데이터처 육아휴직통계, 승인번호 101092, k-stat.go.kr)에서 분모·분자 정의를 확인",
+        "crossChecks": [
+          "부 0.6→10.2%, 모 59.1→72.2%, 계 19.1→34.7%로 2015~2024 전 구간이 한 표에서 읽힘(재열람 2026-10-15 — 30개 값 모두 일치)",
+          "2024년 잠정(p) 표시 확인(공표시기: 익년 12월 잠정, 익익년 12월 확정)",
+          "분모 확인: 통계설명자료 「출생아 부모의 출생연도 육아휴직 사용률 = (t년도 출생아 부모 중 t년도에 육아휴직을 사용한 사람 ÷ t년도 출생아 부모 중 육아휴직 대상 조건을 충족시키는 사람) × 100」 — 출생아 부모 전체가 분모가 아니다",
+          "계(34.7)가 부(10.2)와 모(72.2)의 평균(41.2)이 아닌 것은 아버지·어머니의 분모(대상자 수)가 서로 달라 합친 비율이기 때문(같은 정의로 설명됨)"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "분모는 「출생아 부모 전체」가 아니라 육아휴직 대상 조건을 충족한 부모다(작성대상: 법률상 육아휴직 대상인 근로자·공무원, 군인 제외). 분자는 아이가 태어난 해 안에 육아휴직을 쓴 사람이라 그 뒤에 쓰는 육아휴직은 들어 있지 않다. 군인 등 행정자료로 파악되지 않는 경우는 집계에서 빠져 현실보다 적게 잡힌다(통계설명자료). 2024년은 잠정치(p)이며 2026년 12월 확정 예정. 자료갱신 2025-12-17. 통계설명자료 작성연혁에 2021년 작성방법 개선이 있으나 2015~2020년 값이 개선 전 방식인지는 표에서 확인하지 못했다."
+    },
+    {
+      "id": "youth-health",
+      "title": "중·고생 스트레스 인지율·수면(2025)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "satire"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 50.3
+      },
+      "latestUnit": "%",
+      "latestLabel": "여학생 스트레스 인지율",
+      "decimals": 1,
+      "columns": [
+        {"key":"key","label":"항목"},
+        {"key":"male","label":"남학생"},
+        {"key":"female","label":"여학생"},
+        {"key":"unit","label":"단위"}
+      ],
+      "rows": [
+        {"key":"스트레스 인지율","male":32.9,"female":50.3,"unit":"%","decimals":1},
+        {"key":"주관적 수면충족률","male":28.3,"female":16.9,"unit":"%","decimals":1},
+        {"key":"주중 평균 수면시간","male":6.6,"female":5.9,"unit":"시간","decimals":1},
+        {"key":"주중 스마트폰 사용시간","male":253.9,"female":293.2,"unit":"분","decimals":1}
+      ],
+      "weekdayStudySittingMinutes": 437.5,
+      "definition": "스트레스 인지율은 평상시 스트레스를 「대단히 많이」 또는 「많이」 느끼는 중·고등학생의 비율입니다. 청소년건강행태조사는 2025년 6월 9일~7월 11일 전국 800개 중·고교 재학생 약 6만 명을 익명 온라인으로 조사했습니다.",
+      "basisId": "s-056",
+      "source": {
+        "org": "질병관리청",
+        "table": "청소년건강행태조사 2025년 주요결과 발표(보도자료, 2025-12-04 발표)",
+        "url": "https://www.kdca.go.kr/bbs/kdca/41/215505/artclView.do?layout=unknown",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "질병관리청 보도자료 원문 본문(HTML)에서 읽음",
+        "crossChecks": [
+          "본문 「스트레스 인지율 남 32.9%·여 50.3%, 수면충족률 남 28.3%·여 16.9%, 주중 수면시간 남 6.6시간·여 5.9시간, 스마트폰 남 253.9분·여 293.2분」과 일치",
+          "조사 참여율 93.9%(57,682명 중 54,170명)"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "우울감·자살 관련 지표는 이 보도자료에 있으나 게임 규칙(자살·자해 언급 금지)에 따라 담지 않았다. 자기기입식 설문이라 응답 편향이 있을 수 있다. 중·고등학생만 대상."
+    },
+    {
+      "id": "school-violence",
+      "title": "학교폭력 피해응답률(2025년 1차 전수조사)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "satire"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 2.5
+      },
+      "latestUnit": "%",
+      "latestLabel": "전체 학교폭력 피해응답률(2025년 1차)",
+      "decimals": 1,
+      "columns": [
+        {"key":"level","label":"학교급"},
+        {"key":"rate","label":"피해응답률(%)","decimals":1}
+      ],
+      "rows": [
+        {"level":"전체","rate":2.5},
+        {"level":"초등학교","rate":5},
+        {"level":"중학교","rate":2.1},
+        {"level":"고등학교","rate":0.7}
+      ],
+      "definition": "학교폭력 피해응답률은 조사에 응답한 학생 가운데 학교폭력 피해를 겪었다고 답한 학생의 비율입니다(2025년 4월 14일~5월 13일 17개 시도교육청 전수조사).",
+      "basisId": "s-057",
+      "source": {
+        "org": "교육부",
+        "table": "2025년 1차 학교폭력 실태조사 결과 발표(보도자료, 2025-09-16)",
+        "url": "https://www.moe.go.kr/boardCnts/viewRenew.do?boardID=294&lev=0&statusYN=W&s=moe&m=020402&opType=N&boardSeq=104106",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "교육부 보도자료 원문 페이지(HTML) 요약문에서 읽음",
+        "crossChecks": [
+          "본문 「피해응답률 2.5%, 초 5.0% > 중 2.1% > 고 0.7% 순」과 일치"
+        ]
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "보도자료 제목 요약에 「전년 대비 증가」, 유형별로 언어·신체폭력 감소와 집단 따돌림·사이버폭력 증가가 서술된다. 전년 값은 이 페이지 본문에 숫자로 없어 담지 않았다(검색 요약에서 본 값은 쓰지 않음). 폭력 장면 묘사는 게임에 쓰지 않는다."
+    },
+    {
+      "id": "marriage-count",
+      "title": "혼인 건수와 조혼인율",
+      "unit": "건",
+      "kind": "line",
+      "use": [
+        "carousel",
+        "satire"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 240326
+      },
+      "latestUnit": "건",
+      "decimals": 0,
+      "series": [
+        {"year":1970,"value":295137},
+        {"year":1971,"value":239457},
+        {"year":1972,"value":244780},
+        {"year":1973,"value":259112},
+        {"year":1974,"value":259604},
+        {"year":1975,"value":283226},
+        {"year":1976,"value":285910},
+        {"year":1977,"value":303156},
+        {"year":1978,"value":343013},
+        {"year":1979,"value":353824},
+        {"year":1980,"value":403031},
+        {"year":1981,"value":406795},
+        {"year":1982,"value":387468},
+        {"year":1983,"value":412984},
+        {"year":1984,"value":385188},
+        {"year":1985,"value":384686},
+        {"year":1986,"value":390229},
+        {"year":1987,"value":390276},
+        {"year":1988,"value":410129},
+        {"year":1989,"value":410708},
+        {"year":1990,"value":399312},
+        {"year":1991,"value":416872},
+        {"year":1992,"value":419774},
+        {"year":1993,"value":402593},
+        {"year":1994,"value":393121},
+        {"year":1995,"value":398484},
+        {"year":1996,"value":434911},
+        {"year":1997,"value":388960},
+        {"year":1998,"value":373500},
+        {"year":1999,"value":360407},
+        {"year":2000,"value":332090},
+        {"year":2001,"value":318407},
+        {"year":2002,"value":304877},
+        {"year":2003,"value":302503},
+        {"year":2004,"value":308598},
+        {"year":2005,"value":314304},
+        {"year":2006,"value":330634},
+        {"year":2007,"value":343559},
+        {"year":2008,"value":327715},
+        {"year":2009,"value":309759},
+        {"year":2010,"value":326104},
+        {"year":2011,"value":329087},
+        {"year":2012,"value":327073},
+        {"year":2013,"value":322807},
+        {"year":2014,"value":305507},
+        {"year":2015,"value":302828},
+        {"year":2016,"value":281635},
+        {"year":2017,"value":264455},
+        {"year":2018,"value":257622},
+        {"year":2019,"value":239159},
+        {"year":2020,"value":213502},
+        {"year":2021,"value":192507},
+        {"year":2022,"value":191690},
+        {"year":2023,"value":193657},
+        {"year":2024,"value":222412},
+        {"year":2025,"value":240326}
+      ],
+      "seriesLabel": "혼인 건수(건, 혼인신고 기준)",
+      "extraSeries": [
+        {
+          "label": "조혼인율(인구 1천 명당 건)",
+          "unit": "인구 1천 명당 건",
+          "decimals": 1,
+          "latest": {
+            "year": 2025,
+            "value": 4.7
+          },
+          "series": [
+            {"year":1970,"value":9.2},
+            {"year":1971,"value":7.3},
+            {"year":1972,"value":7.3},
+            {"year":1973,"value":7.6},
+            {"year":1974,"value":7.5},
+            {"year":1975,"value":8},
+            {"year":1976,"value":8},
+            {"year":1977,"value":8.3},
+            {"year":1978,"value":9.3},
+            {"year":1979,"value":9.4},
+            {"year":1980,"value":10.6},
+            {"year":1981,"value":10.5},
+            {"year":1982,"value":9.9},
+            {"year":1983,"value":10.3},
+            {"year":1984,"value":9.5},
+            {"year":1985,"value":9.4},
+            {"year":1986,"value":9.5},
+            {"year":1987,"value":9.4},
+            {"year":1988,"value":9.8},
+            {"year":1989,"value":9.7},
+            {"year":1990,"value":9.3},
+            {"year":1991,"value":9.6},
+            {"year":1992,"value":9.6},
+            {"year":1993,"value":9},
+            {"year":1994,"value":8.7},
+            {"year":1995,"value":8.7},
+            {"year":1996,"value":9.4},
+            {"year":1997,"value":8.4},
+            {"year":1998,"value":8},
+            {"year":1999,"value":7.6},
+            {"year":2000,"value":7},
+            {"year":2001,"value":6.7},
+            {"year":2002,"value":6.3},
+            {"year":2003,"value":6.3},
+            {"year":2004,"value":6.4},
+            {"year":2005,"value":6.5},
+            {"year":2006,"value":6.8},
+            {"year":2007,"value":7},
+            {"year":2008,"value":6.6},
+            {"year":2009,"value":6.2},
+            {"year":2010,"value":6.5},
+            {"year":2011,"value":6.6},
+            {"year":2012,"value":6.5},
+            {"year":2013,"value":6.4},
+            {"year":2014,"value":6},
+            {"year":2015,"value":5.9},
+            {"year":2016,"value":5.5},
+            {"year":2017,"value":5.2},
+            {"year":2018,"value":5},
+            {"year":2019,"value":4.7},
+            {"year":2020,"value":4.2},
+            {"year":2021,"value":3.8},
+            {"year":2022,"value":3.7},
+            {"year":2023,"value":3.8},
+            {"year":2024,"value":4.4},
+            {"year":2025,"value":4.7}
+          ]
+        }
+      ],
+      "axis": {
+        "scale": "year",
+        "step": 1,
+        "regular": true,
+        "gaps": [],
+        "breaks": []
+      },
+      "crudeMarriageRate": {
+        "year": 2025,
+        "value": 4.7,
+        "unit": "인구 1천 명당 건",
+        "releaseChange": 0.4,
+        "note": "보도자료 본문은 「전년대비 0.4건 증가」인데 같은 보도자료 그래프의 2024년 4.4와 KOSIS 표(2024 4.4·2025 4.7)로는 0.3건 차이다 — 반올림 전 값 또는 2024년 값 개정 때문으로 보이나 확인하지 못했다. 카드 문장에는 증감 건수를 쓰지 않는다."
+      },
+      "change": {
+        "vsPreviousPct": 8.1,
+        "vsPreviousCount": 17914,
+        "note": "240,326건 − 222,412건 = 17,914건(보도자료 「1만 8천 건, 8.1%」)"
+      },
+      "definition": "혼인 건수는 혼인신고 기준(신고월 기준)으로 집계한 값이고, 조혼인율은 인구 1천 명당 혼인 건수입니다.",
+      "basisId": "s-058",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 혼인건수, 조혼인율 (INH_1B8000F_03, 인구동향조사) 1970~2025 / 2025년 혼인·이혼 통계 요약(보도자료 1쪽)",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=INH_1B8000F_03",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(년 1970~2025, 자료갱신 2026-09-22)에서 시점을 전체 선택해 혼인건수·조혼인율 56개 값을 읽음. 처음에 보도자료 요약 쪽 그래프 6개 값을 눈으로 읽었던 것을 KOSIS 연속 시리즈로 교체(검수 R-147(c))",
+        "crossChecks": [
+          "그래프 표시값 6개(1970 29.5만·1980 40.3만·1996 43.5만·2003 30.3만·2013 32.3만·2025 24.0만 건)가 KOSIS 값(295,137·403,031·434,911·302,503·322,807·240,326)과 반올림 일치",
+          "2025 혼인 240,326건 = 2024 222,412건 + 17,914건(+8.05% → 보도자료 8.1%·1만 8천 건)",
+          "조혼인율 2023 3.8·2024 4.4·2025 4.7(KOSIS)와 보도자료 그래프 표시값(4.4·4.7) 일치. 보도자료 본문 「0.4건 증가」는 표 반올림 값으로는 0.3건 차이(crudeMarriageRate.note)"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "1970년(295,137건)과 1971년(239,457건)의 값 차이가 커서 불연속처럼 보이나 KOSIS 표에 시계열 불연속(▽) 표시는 없었다(원인은 확인하지 못함). 이혼 건수를 혼인 건수와 나누어 「이혼율」처럼 말하지 않는다(인구동향조사 통계설명자료 이용 시 유의사항)."
+    },
+    {
+      "id": "household-credit",
+      "title": "가계신용(가계부채) 잔액",
+      "unit": null,
+      "kind": "number",
+      "use": [
+        "economy"
+      ],
+      "latest": null,
+      "series": [],
+      "candidateSources": [
+        "한국은행 「가계신용(잠정)」 분기 보도자료",
+        "ECOS 경제통계시스템 가계신용(화면 조회)"
+      ],
+      "definition": "가계신용은 금융기관 가계대출과 판매신용을 합한 가계의 빚 잔액입니다.",
+      "basisId": "s-036",
+      "source": null,
+      "verification": {
+        "status": "unverified",
+        "reason": "한국은행 보도자료 원문(공식 누리집 첨부)을 열어 값을 대조하지 못했다. 신문 기사에 2026년 2분기 가계신용 2,019조 8천억 원이라는 값이 있으나 기사 값은 길잡이로만 쓰고 쓰지 않는다. 한국은행 누리집은 /portal/ 경로만 허용(robots)하는데 보도자료 목록이 스크립트로 채워져 화면 조회로 값을 얻지 못했다."
+      },
+      "safety": null,
+      "usable": false
+    },
+    {
+      "id": "wedding-cost",
+      "title": "결혼 비용(예식·주거 포함)",
+      "unit": null,
+      "kind": "number",
+      "use": [
+        "economy",
+        "satire"
+      ],
+      "latest": null,
+      "series": [],
+      "candidateSources": [
+        "한국보건사회연구원 결혼·출산 동향조사(확인 필요)"
+      ],
+      "definition": "",
+      "basisId": "s-034",
+      "source": null,
+      "verification": {
+        "status": "unverified",
+        "reason": "정부·공공기관의 공식 통계가 확인되지 않았다. 확인된 값은 결혼정보회사 조사(민간)뿐이다. 한국소비자원의 결혼서비스 가격조사는 누리집 robots.txt가 전체를 막아(Disallow: /) 이용하지 않았다."
+      },
+      "safety": null,
+      "usable": false
+    },
+    {
+      "id": "childcare-cost",
+      "title": "자녀 양육비(영유아·학령기)",
+      "unit": null,
+      "kind": "number",
+      "use": [
+        "economy",
+        "satire"
+      ],
+      "latest": null,
+      "series": [],
+      "candidateSources": [
+        "한국보건사회연구원 전국 출산력 및 가족보건·복지 실태조사(확인 필요)"
+      ],
+      "definition": "",
+      "basisId": "s-035",
+      "source": null,
+      "verification": {
+        "status": "unverified",
+        "reason": "공공기관 원문에서 직접 확인한 양육비 총액·월평균 값이 없다. 사교육비(s-011)는 확인했으나 양육비 전체는 아니다."
+      },
+      "safety": null,
+      "usable": false
+    },
+    {
+      "id": "rent-type-split",
+      "title": "임차 가구의 전세·월세 구분",
+      "unit": null,
+      "kind": "number",
+      "use": [
+        "birth",
+        "economy"
+      ],
+      "latest": null,
+      "series": [],
+      "candidateSources": [
+        "국토교통부 주거실태조사 보도자료(확인 필요)"
+      ],
+      "definition": "",
+      "basisId": "s-037",
+      "source": null,
+      "verification": {
+        "status": "unverified",
+        "reason": "주거실태조사 일반가구의 자가·임차·무상(s-024)만 확인했다. 임차를 전세·보증부월세·월세로 나눈 KOSIS 표를 찾지 못했다."
+      },
+      "safety": null,
+      "usable": false
+    },
+    {
+      "id": "korean-children-panel",
+      "title": "한국아동패널(육아정책연구소) 영유아 발달·양육 수치",
+      "unit": null,
+      "kind": "number",
+      "use": [
+        "research"
+      ],
+      "latest": null,
+      "series": [],
+      "candidateSources": [
+        "육아정책연구소 한국아동패널(2008년생 2,150명 추적) 기초분석 보고서(원문 확인 필요)"
+      ],
+      "definition": "",
+      "basisId": "s-049",
+      "source": null,
+      "verification": {
+        "status": "unverified",
+        "reason": "공공데이터포털의 한국아동패널 설문 응답 데이터는 OpenAPI(인증키 신청 필요)라서 쓰지 않는다(C4). 육아정책연구소 누리집은 robots.txt가 게시판 경로(Disallow: /*/*board*)를 막아 공개 보고서를 열람하지 않았다. 영유아 발달·양육 수치를 원문에서 직접 대조하지 못해 검토 후보로만 기록한다."
+      },
+      "safety": null,
+      "usable": false
+    },
+    {
+      "id": "income-college-gap",
+      "title": "대학 진학률의 소득별 차이(BR5 후보)",
+      "unit": null,
+      "kind": "number",
+      "use": [
+        "birth"
+      ],
+      "latest": null,
+      "series": [],
+      "candidateSources": [
+        "교육부·한국교육개발원 교육통계(확인 필요)"
+      ],
+      "definition": "",
+      "basisId": "s-029",
+      "source": null,
+      "verification": {
+        "status": "unverified",
+        "reason": "소득 구간별 대학 진학률을 공공 원문에서 확인하지 못했다."
+      },
+      "safety": null,
+      "usable": false
+    },
+    {
+      "id": "household-consumption",
+      "title": "가구당 월평균 소비지출(전국 1인 이상, 소득5분위별)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2025,
+        "value": 2939091
+      },
+      "latestUnit": "원",
+      "latestLabel": "전국 1인 이상 가구의 가구당 월평균 소비지출(2025년 연간)",
+      "decimals": 0,
+      "columns": [
+        {"key":"group","label":"구분(월소득 5분위)"},
+        {"key":"householdSize","label":"평균 가구원 수(명)","decimals":2},
+        {"key":"expenditure","label":"가계지출(원/월)"},
+        {"key":"consumption","label":"소비지출(원/월)"}
+      ],
+      "rows": [
+        {"group":"전체 평균","householdSize":2.19,"expenditure":4014817,"consumption":2939091},
+        {"group":"1분위","householdSize":1.34,"expenditure":1557366,"consumption":1361265},
+        {"group":"2분위","householdSize":1.67,"expenditure":2441755,"consumption":1979446},
+        {"group":"3분위","householdSize":2.14,"expenditure":3504166,"consumption":2670797},
+        {"group":"4분위","householdSize":2.69,"expenditure":4965915,"consumption":3644258},
+        {"group":"5분위","householdSize":3.1,"expenditure":7601834,"consumption":5037696}
+      ],
+      "items2025": {
+        "unit": "원/월(가구당, 전체 평균)",
+        "식료품·비주류음료": 449087,
+        "주류·담배": 37626,
+        "의류·신발": 141084,
+        "주거·수도·광열": 360650,
+        "가정용품·가사서비스": 119823,
+        "보건": 227576,
+        "교통·운송": 336795,
+        "정보통신": 167025,
+        "오락·문화": 175330,
+        "교육": 208599,
+        "음식·숙박": 465329,
+        "기타상품·서비스": 250168
+      },
+      "previous": {
+        "year": 2024,
+        "consumption": 2890478,
+        "expenditure": 3930506
+      },
+      "definition": "가계동향조사의 가구당 월평균 소비지출입니다. 식료품·주거·교통·교육·음식 등 가계가 생활에 쓴 돈이며 세금·보험료·이자 같은 비소비지출은 들어 있지 않습니다.",
+      "basisId": "s-059",
+      "source": {
+        "org": "국가데이터처",
+        "table": "KOSIS 소득5분위별 가구당 가계수지(전국,1인이상) (DT_1L9U103, 가계동향조사 2019년~, 명목) 2025년 연간 전체가구",
+        "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1L9U103",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "KOSIS 화면 표(분기·년, 자료갱신 2026-08-27)에서 시점을 2024·2025년으로 골라 「전체가구」 열의 소비지출·가계지출·항목별 값을 읽음",
+        "crossChecks": [
+          "소비지출 12개 항목 합 2,939,092원 = 소비지출 2,939,091원(1원 반올림 차이)",
+          "소득 1~5분위 가구원 수(1.34·1.67·2.14·2.69·3.10)가 분위가 높을수록 늘고 소비지출도 단조 증가(1,361,265 → 5,037,696)"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "금액은 물가 상승분이 포함된 명목 값이다. 연간 소득 항목은 표에 「-」(분기 값만 제공)라 소득은 담지 않았다. 1인 이상 가구(농림어가 포함) 기준이라 2인 이상 가구 값과 다르다. 분기 값(2026년 1/4 3,104,827원, 2/4 2,932,317원)은 계절 차이가 있어 연간 값을 쓴다."
+    },
+    {
+      "id": "base-rate",
+      "title": "한국은행 기준금리 변경 이력",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2026,
+        "value": 3
+      },
+      "latestUnit": "%",
+      "latestLabel": "한국은행 기준금리(2026-08-27 변경 후, 연 %)",
+      "decimals": 2,
+      "columns": [
+        {"key":"changedOn","label":"변경일자"},
+        {"key":"ratePct","label":"기준금리(연 %)","decimals":2}
+      ],
+      "rows": [
+        {"changedOn":"2026-08-27","ratePct":3},
+        {"changedOn":"2026-07-16","ratePct":2.75},
+        {"changedOn":"2025-05-29","ratePct":2.5},
+        {"changedOn":"2025-02-25","ratePct":2.75},
+        {"changedOn":"2024-11-28","ratePct":3},
+        {"changedOn":"2024-10-11","ratePct":3.25},
+        {"changedOn":"2023-01-13","ratePct":3.5},
+        {"changedOn":"2022-11-24","ratePct":3.25},
+        {"changedOn":"2022-10-12","ratePct":3},
+        {"changedOn":"2022-08-25","ratePct":2.5},
+        {"changedOn":"2022-07-13","ratePct":2.25},
+        {"changedOn":"2022-05-26","ratePct":1.75},
+        {"changedOn":"2022-04-14","ratePct":1.5},
+        {"changedOn":"2022-01-14","ratePct":1.25},
+        {"changedOn":"2021-11-25","ratePct":1},
+        {"changedOn":"2021-08-26","ratePct":0.75},
+        {"changedOn":"2020-05-28","ratePct":0.5},
+        {"changedOn":"2020-03-17","ratePct":0.75},
+        {"changedOn":"2019-10-16","ratePct":1.25},
+        {"changedOn":"2019-07-18","ratePct":1.5},
+        {"changedOn":"2018-11-30","ratePct":1.75},
+        {"changedOn":"2017-11-30","ratePct":1.5},
+        {"changedOn":"2016-06-09","ratePct":1.25},
+        {"changedOn":"2015-06-11","ratePct":1.5},
+        {"changedOn":"2015-03-12","ratePct":1.75}
+      ],
+      "definition": "기준금리는 한국은행이 금융기관과 환매조건부증권(RP) 매매 등의 거래를 할 때 기준이 되는 정책금리입니다.",
+      "basisId": "s-060",
+      "source": {
+        "org": "한국은행",
+        "table": "한국은행 기준금리 추이(목록) — 변경일자별 기준금리, 2015-03-12 이후 변경분",
+        "url": "https://www.bok.or.kr/portal/singl/baseRate/list.do?dataSeCd=01&menuNo=200643",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "한국은행 누리집(robots.txt가 /portal/ 경로를 허용) 「기준금리 추이(목록)」 표에서 변경일자와 금리를 읽음",
+        "crossChecks": [
+          "기준금리 변동 페이지의 그래프 점 날짜([2026.08]·[2026.07]·[2025.05]·[2025.02]·…)가 표의 변경일과 같다"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "기준금리는 은행의 주택담보대출·신용대출 금리 자체가 아니다(은행 대출금리는 household-loan-rate, 미확인). 표는 2008년 이후 전체가 있으나 2015-03 이후 변경 25건만 담았다."
+    },
+    {
+      "id": "student-loan-rate",
+      "title": "학자금대출 금리(2026년 2학기)",
+      "unit": null,
+      "kind": "table",
+      "use": [
+        "economy"
+      ],
+      "latest": {
+        "year": 2026,
+        "value": 1.7
+      },
+      "latestUnit": "%",
+      "latestLabel": "학자금대출 금리(2026년도 2학기, 연 %)",
+      "decimals": 1,
+      "columns": [
+        {"key":"type","label":"구분"},
+        {"key":"rateType","label":"금리 유형"},
+        {"key":"ratePct","label":"금리(연 %)","decimals":1}
+      ],
+      "rows": [
+        {"type":"일반 상환 학자금대출","rateType":"고정금리","ratePct":1.7},
+        {"type":"취업 후 상환 학자금대출(AI학업장려 학자금대출 포함)","rateType":"변동금리","ratePct":1.7}
+      ],
+      "definition": "한국장학재단이 대학(원)생에게 빌려주는 학자금대출의 연 이자율입니다.",
+      "basisId": "s-061",
+      "source": {
+        "org": "한국장학재단",
+        "table": "학자금대출 금리 안내 — 학자금대출 금리 현황(2026년도 2학기)",
+        "url": "https://www.kosaf.go.kr/ko/tuition.do?pg=tuition13&naviParam=HD,01,02,01,05",
+        "accessedOn": "2026-10-15"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "한국장학재단 누리집(robots.txt 허용) 「학자금대출 금리」 페이지의 2026년도 2학기 표에서 읽음",
+        "crossChecks": [
+          "페이지의 학기 선택(2009~2026년·1/2학기)에서 2026년 2학기 표가 열려 있었다"
+        ],
+        "recheckedOn": "2026-10-15"
+      },
+      "safety": null,
+      "usable": true,
+      "notes": "학기마다 바뀌는 값이다(1학기와 2학기). 일반상환은 고정금리, 취업 후 상환은 변동금리로 표에 구분돼 있다. 대학 등록금(university-tuition)과 같은 학기 기준이 아니라 2026년 2학기 값이다."
+    },
+    {
+      "id": "household-loan-rate",
+      "title": "은행 가계대출 금리(주택담보·신용대출)",
+      "unit": null,
+      "kind": "number",
+      "use": [
+        "economy"
+      ],
+      "latest": null,
+      "series": [],
+      "candidateSources": [
+        "한국은행 경제통계시스템(ECOS) 예금은행 대출금리(신규취급액 기준)",
+        "한국은행 「금융기관 가중평균금리」 월간 보도자료"
+      ],
+      "definition": "",
+      "basisId": "s-062",
+      "source": null,
+      "verification": {
+        "status": "unverified",
+        "reason": "은행 주택담보대출·신용대출 금리의 원문 값을 확인하지 못했다. 한국은행 ECOS는 인증키가 필요한 OpenAPI라 쓰지 않고(C4), 누리집의 월간 보도자료 목록(robots 허용 경로 /portal/)에서 해당 자료 위치를 찾지 못했다. 경제 모델의 대출 이자는 기준금리(base-rate)·학자금대출 금리(student-loan-rate)에서 정한 설계값으로 표기한다."
+      },
+      "safety": null,
+      "usable": false
+    }
+  ]
+}

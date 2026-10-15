@@ -2,6 +2,7 @@ import namesJson from '../src/data/names.json';
 import forbiddenJson from '../src/data/forbiddenNames.json';
 import scourtJson from '../src/data/sources/scourt-birth-names.json';
 import {
+  DEFAULT_SETTINGS,
   ERAS,
   STAT_KEYS,
   createInitialState,
@@ -19,6 +20,7 @@ import {
   type Era,
   type Gender,
   type GameState,
+  type LifeLength,
   type Session,
   type SessionAction,
   type Settings,
@@ -36,7 +38,7 @@ import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
  * 1000판 전체 파이프라인 (SPEC-001 M6 "1000판 자동 시뮬레이션에서 에러 0건").  테스트(tests/pipeline.test.ts)와 `npm run sim:1000`(scripts/simulate1000.ts)이 함께 쓴다.
  *
  * 한 판 = 화면(UI)이 쓰는 **세션 reducer**(core/session.ts#sessionReducer)로 사람이 누르는 순서 그대로 끝까지 간다:
- *   타이틀 → 시작(시대 선택) → 시대 고르기 → 출생(확정) → 인생 시작 → [한 해씩 진행 / 다음 결정으로 / 선택 / 자동 선택] → 사망(엔딩) → 엔딩 회고(reviewEnding) → 다시 태어나기 → 새 판 출생·첫 결정까지
+ *   첫 화면(타이틀) → 세상·인생 길이 고르기 → 태어나기(출생) → 인생 시작 → [한 해씩 진행 / 다음 결정으로 / 선택 / 자동 선택] → 사망(엔딩) → 엔딩 회고(reviewEnding) → 다시 태어나기 → 새 판 출생·첫 결정까지
  * 선택 전략 두 가지: auto = 자동 모드(한 해씩 진행 + 성향 자동 선택), manual = 수동 흉내(무작위 선택, 한 해씩 진행과 "다음 결정으로"를 섞어 쓴다).
  * 난수는 시드 RNG뿐이다(Math.random·Date 없음) — 같은 인자면 같은 판이 나온다.
  *
@@ -362,7 +364,7 @@ export function pipelineSeed(i: number, era: Era, strategy: PipelineStrategy): n
   return (i * 2654435761 + 12345 + salt) >>> 0;
 }
 
-const SETTINGS: Settings = { speed: 8, autoMode: false };
+const SETTINGS: Settings = { ...DEFAULT_SETTINGS, speed: 8, autoMode: false };
 
 /**
  * 한 판을 처음(타이틀)부터 끝(다시 태어나기 뒤 새 판의 첫 결정)까지 세션 reducer로 돌리며 점검한다.
@@ -378,8 +380,12 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
   const MAX_STEPS = 1500;
 
   try {
-    let session: Session = createSession(createInitialState(seed), { ...SETTINGS, autoMode: auto });
-    const settings0 = session.settings;
+    // 인생 길이는 시드 짝홀로 두 값을 모두 돈다(LM1: 판을 시작할 때 정해져 판에 고정된다).
+    // 「약 1시간」(long60)은 지금 고를 수 없어 reducer의 setLifeLength가 무시한다(REV-003-M2-2) — 그래서 두 값 모두 **설정에 이미 들어 있는 값**으로 시작해
+    // core의 출생·인생·엔딩·저장이 두 값 모두에서 에러 없이 도는지(M8이 long60을 열 때를 대비) 계속 본다. 고르는 입력 자체는 short30일 때만 따로 확인한다(아래 2번).
+    const lifeLength: LifeLength = seed % 2 === 0 ? 'short30' : 'long60';
+    let session: Session = createSession(createInitialState(seed), { ...SETTINGS, autoMode: auto, lifeLength });
+    let settings0 = session.settings;
     const send = (action: SessionAction, label: string): Session => {
       const next = sessionReducer(session, action);
       if (next === session) problems.push(`${tag} ${label}: 입력이 적용되지 않았다`);
@@ -392,24 +398,35 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       return stepSerialize ? r.restored : state; // 매 걸음 모드에서는 복원한 상태로 이어간다
     };
 
-    // 1. 타이틀: 시대 선택을 건너뛰는 입력은 모두 무시된다
+    // 1. 첫 화면(타이틀): 출생 전에는 인생을 진행하거나 첫 화면 이동·이어하기를 하는 입력이 모두 무시된다
     if (session.game.phase !== 'title') problems.push(`${tag}: 새 게임이 타이틀이 아니다 (${session.game.phase})`);
-    for (const a of [{ type: 'confirmEra' }, { type: 'enterLife' }, { type: 'advance', fromAge: 0 }, { type: 'skip' }] as const) {
+    if (session.game.era !== null || session.game.lifeLength !== null) problems.push(`${tag}: 새 게임에 세상·인생 길이가 이미 정해져 있다`);
+    for (const a of [{ type: 'enterLife' }, { type: 'advance', fromAge: 0 }, { type: 'skip' }, { type: 'resume' }, { type: 'openTitle' }, { type: 'beginNew', seed: 1 }] as const) {
       if (sessionReducer(session, a) !== session) problems.push(`${tag}: 타이틀에서 ${a.type} 입력이 무시되지 않았다`);
     }
-    // 2. 시작 → 시대 선택 (지금 세상은 절반을 시대를 고르지 않고 기본 선택 그대로 확정한다)
-    session = send({ type: 'start' }, '시작');
-    if (session.game.phase !== 'eraSelect' || session.game.era !== null) problems.push(`${tag}: 시작 뒤 시대 선택 화면이 아니다`);
-    session = { ...session, game: keep(session.game, '시대 선택 화면') };
-    if (!(era === 'present' && seed % 2 === 0)) {
-      session = send({ type: 'selectEra', era }, '시대 고르기');
-      if (session.game.era !== era) problems.push(`${tag}: 고른 시대가 반영되지 않았다`);
+    session = { ...session, game: keep(session.game, '첫 화면') };
+    // 2. 세상·인생 길이 고르기 (지금 세상·약 30분은 기본 선택 그대로 확정하는 판도 있다 — 기본값이면 입력이 바뀌는 것이 없다)
+    if (era !== session.settings.era) {
+      session = send({ type: 'setEra', era }, '세상 고르기');
+      if (session.settings.era !== era) problems.push(`${tag}: 고른 세상이 설정에 반영되지 않았다`);
     }
-    // 3. 출생
-    session = send({ type: 'confirmEra' }, '출생 확정');
+    if (lifeLength !== session.settings.lifeLength) {
+      session = send({ type: 'setLifeLength', lifeLength }, '인생 길이 고르기');
+      if (session.settings.lifeLength !== lifeLength) problems.push(`${tag}: 고른 인생 길이가 설정에 반영되지 않았다`);
+    }
+    // 고를 수 없는 값(약 1시간)을 눌러도 설정이 바뀌지 않는다 — 이미 long60이 들어 있던 설정에서도 같은 객체다(REV-003-M2-2 reducer 규칙)
+    if (lifeLength === 'long60' && sessionReducer(session, { type: 'setLifeLength', lifeLength: 'long60' }) !== session) problems.push(`${tag}: 고를 수 없는 인생 길이 입력이 무시되지 않았다`);
+    if (lifeLength === 'short30') {
+      const rejected = sessionReducer(session, { type: 'setLifeLength', lifeLength: 'long60' });
+      if (rejected !== session) problems.push(`${tag}: 고를 수 없는 인생 길이(long60)가 설정에 들어갔다`);
+    }
+    settings0 = session.settings;
+    // 3. 태어나기(출생): 연타해도 한 번만 일어난다
+    session = send({ type: 'begin' }, '태어나기');
+    if (sessionReducer(session, { type: 'begin' }) !== session) problems.push(`${tag}: 태어나기 연타가 같은 객체를 돌려주지 않았다`);
     const birth = session.game;
-    if (birth.phase !== 'birth' || birth.era !== era || birth.character === null) {
-      problems.push(`${tag}: 출생 상태가 이상하다 (phase ${birth.phase}, era ${birth.era})`);
+    if (birth.phase !== 'birth' || birth.era !== era || birth.lifeLength !== lifeLength || birth.character === null) {
+      problems.push(`${tag}: 출생 상태가 이상하다 (phase ${birth.phase}, era ${birth.era}, 인생 길이 ${birth.lifeLength})`);
       return finish();
     }
     const nameProblems = checkCharacterName(era, birth.character.name, birth.character.birthYear, birth.character.gender);
@@ -464,7 +481,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     result.deathAge = ended.death.age;
 
     // 6. 기준 실행과 같은 결과: 세션 reducer 경로 = playToEnd 경로 (같은 시드·같은 선택)
-    const reference = playToEnd(startLife(seed, era), auto ? null : chooserFor('random', seed));
+    const reference = playToEnd(startLife(seed, era, { lifeLength }), auto ? null : chooserFor('random', seed));
     if (!deepEqual(reference.state, ended)) problems.push(`${tag}: 세션 reducer로 간 인생이 playToEnd로 간 인생과 다르다`);
     result.choices = reference.counts.choice;
     result.minutes1x = estimatePlaySeconds(reference.counts, { speed: 1, skipToDecision: false }, READ_SEC.median) / 60;
@@ -482,22 +499,22 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     const review = reviewEnding(endingGame);
     result.journey = review.journey.kind === 'early' ? 'early' : review.journey.movement;
     // 엔딩에서는 진행·선택 입력이 모두 무시된다
-    for (const a of [{ type: 'advance', fromAge: ended.age }, { type: 'skip' }, { type: 'autoChoose', key: 'x@1' }, { type: 'enterLife' }, { type: 'confirmEra' }, { type: 'start' }] as const) {
+    for (const a of [{ type: 'advance', fromAge: ended.age }, { type: 'skip' }, { type: 'autoChoose', key: 'x@1' }, { type: 'enterLife' }, { type: 'begin' }, { type: 'resume' }, { type: 'openTitle' }] as const) {
       if (sessionReducer(session, a) !== session) problems.push(`${tag}: 엔딩에서 ${a.type} 입력이 무시되지 않았다`);
     }
 
-    // 8. 다시 태어나기: 새 시드, 시대 선택에서 시작, 설정은 그대로, 연타는 같은 객체
+    // 8. 다시 태어나기: 새 시드, 첫 화면에서 시작, 설정(세상·인생 길이 포함)은 그대로, 연타는 같은 객체
     const newSeed = (seed * 48271 + 11) >>> 0;
     const reborn = sessionReducer(session, { type: 'rebirth', seed: newSeed });
     checks.rebirths++;
     if (reborn === session) problems.push(`${tag}: 다시 태어나기가 적용되지 않았다`);
     else {
-      if (!deepEqual(reborn.game, { ...createInitialState(newSeed), phase: 'eraSelect' })) problems.push(`${tag}: 다시 태어난 상태가 새 시드의 시대 선택 화면이 아니다`);
+      if (!deepEqual(reborn.game, createInitialState(newSeed))) problems.push(`${tag}: 다시 태어난 상태가 새 시드의 첫 화면이 아니다`);
       if (reborn.settings !== settings0 && !deepEqual(reborn.settings, settings0)) problems.push(`${tag}: 다시 태어나도 설정이 그대로여야 한다`);
       if (reborn.tick !== null) problems.push(`${tag}: 다시 태어난 뒤 tick이 남아 있다`);
       if (sessionReducer(reborn, { type: 'rebirth', seed: newSeed + 1 }) !== reborn) problems.push(`${tag}: 다시 태어나기 연타가 같은 객체를 돌려주지 않았다`);
-      for (const a of [{ type: 'enterLife' }, { type: 'skip' }, { type: 'advance', fromAge: 0 }] as const) {
-        if (sessionReducer(reborn, a) !== reborn) problems.push(`${tag}: 시대 선택 화면에서 ${a.type} 입력이 시대 선택을 건너뛰었다`);
+      for (const a of [{ type: 'enterLife' }, { type: 'skip' }, { type: 'advance', fromAge: 0 }, { type: 'resume' }] as const) {
+        if (sessionReducer(reborn, a) !== reborn) problems.push(`${tag}: 첫 화면에서 ${a.type} 입력이 첫 화면을 건너뛰었다`);
       }
       checks.roundTrips++;
       problems.push(...roundTrip(reborn.game, `${tag} 다시 태어난 직후`).problems);
@@ -508,10 +525,9 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
         if (n === next) problems.push(`${tag} 새 판 ${label}: 입력이 적용되지 않았다`);
         next = n;
       };
-      go({ type: 'selectEra', era }, '시대 고르기');
-      go({ type: 'confirmEra' }, '출생 확정');
+      go({ type: 'begin' }, '태어나기');
       const born = next.game;
-      if (born.phase !== 'birth' || born.era !== era || born.character === null) problems.push(`${tag}: 새 판 출생 상태가 이상하다`);
+      if (born.phase !== 'birth' || born.era !== era || born.lifeLength !== lifeLength || born.character === null) problems.push(`${tag}: 새 판 출생 상태가 이상하다(고른 세상·인생 길이가 그대로 이어져야 한다)`);
       else {
         checks.names++;
         problems.push(...checkCharacterName(era, born.character.name, born.character.birthYear, born.character.gender).map((p) => `${tag} 새 판: ${p}`));

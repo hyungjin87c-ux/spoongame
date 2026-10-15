@@ -1,4 +1,4 @@
-import type { Character, Era, GameState, ParentWealth } from '../src/core/types';
+import type { Character, Era, GameState, LifeLength, ParentWealth, PlaySettings, Settings } from '../src/core/types';
 
 /**
  * e2e가 주입하는 저장 데이터(순수 객체). Playwright에 의존하지 않으므로 vitest에서도
@@ -7,20 +7,33 @@ import type { Character, Era, GameState, ParentWealth } from '../src/core/types'
 
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
+/** 설정 봉투 버전(core/storage.ts#SETTINGS_VERSION)과 첫 화면의 기본 선택(core/state.ts#DEFAULT_SETTINGS) — tests/e2eHelpers.test.ts가 core와 같은지 대조한다. */
+export const SETTINGS_VERSION = 2;
+export const DEFAULT_ERA_CHOICE: Era = 'present';
+export const DEFAULT_LIFE_LENGTH_CHOICE: LifeLength = 'short30';
 /** 재현 가능한 실패를 위한 기본 시드 */
 export const KNOWN_SEED = 20261013;
 
 const PLACEHOLDER_STATS = { wealth: 50, education: 50, health: 50, happiness: 50, relationships: 50 };
 
-/** 인생이 시작되기 전(title·eraSelect·birth)에는 진행 기록이 모두 비어 있다. */
+/** 인생이 시작되기 전(title·birth)에는 진행 기록이 모두 비어 있다. */
 const FRESH = { flags: [] as string[], seen: {} as Record<string, number>, pending: null, lastChoiceAge: null, death: null };
 
-/** 타이틀을 막 넘긴 상태(시대 선택 화면). era가 null이면 화면의 기본값(지금 세상)이 눌려 있다. */
-export function eraSelectState(seed: number, era: Era | null = null): GameState {
+/** e2e가 주입하는 설정: 배속·자동 모드만 줘도 되고(세상·인생 길이는 첫 화면의 기본 선택) 첫 화면의 선택까지 줄 수도 있다. */
+export type InjectedSettings = PlaySettings & Partial<Settings>;
+
+/** 설정 봉투(JSON 문자열). 비어 있는 필드는 기본값으로 채운다. */
+export function settingsEnvelope(settings: InjectedSettings): string {
+  return JSON.stringify({ version: SETTINGS_VERSION, data: { era: DEFAULT_ERA_CHOICE, lifeLength: DEFAULT_LIFE_LENGTH_CHOICE, ...settings } });
+}
+
+/** 새 게임: 첫 화면(title). 세상·인생 길이는 아직 정해지지 않았다(첫 화면의 선택은 설정에 있다). */
+export function titleState(seed: number): GameState {
   return {
-    phase: 'eraSelect',
-    era,
+    phase: 'title',
+    era: null,
+    lifeLength: null,
     character: null,
     stats: { ...PLACEHOLDER_STATS },
     birthStats: null,
@@ -46,6 +59,7 @@ export function lifeState(seed: number): GameState {
   return {
     phase: 'life',
     era: 'present',
+    lifeLength: 'short30',
     character,
     stats,
     birthStats: { ...stats },
@@ -74,6 +88,7 @@ export function birthState(seed: number, era: Era, parentWealth: ParentWealth, l
   return {
     phase: 'birth',
     era,
+    lifeLength: 'short30',
     character,
     stats,
     birthStats: { ...stats },

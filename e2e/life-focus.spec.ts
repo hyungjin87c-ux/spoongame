@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { GameState, Settings } from '../src/core/types';
+import type { GameState, PlaySettings } from '../src/core/types';
 import {
   CONTROL_TAB_ORDER,
   activeTestId,
@@ -31,8 +31,8 @@ import {
  * 시간 경쟁을 없애려고 "가려진 탭"(startPageHidden)으로 앱 타이머를 멈춘 채 화면을 준비한 뒤 풀어 준다. 고정 대기는 "일어나지 않아야 하는 일"을 지켜볼 때만 쓴다.
  */
 
-const SETTINGS_MANUAL: Settings = { speed: 1, autoMode: false };
-const SETTINGS_AUTO: Settings = { speed: 1, autoMode: true };
+const SETTINGS_MANUAL: PlaySettings = { speed: 1, autoMode: false };
+const SETTINGS_AUTO: PlaySettings = { speed: 1, autoMode: true };
 
 /** 첫 선택지가 나오기까지 시간이 걸리는(0세에서 시작하는) 시드의 인생 시작 상태와 그 결정 상태 */
 async function lifeWithDecision(page: Page): Promise<{ start: GameState; decision: GameState }> {
@@ -167,7 +167,7 @@ test('컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록과 실제
 test('컨트롤 그룹의 Tab 순서는 (수동·자동) × (선택지 없음·있음) 네 상태에서 모두 같다. 자동 모드가 켜지고 꺼져도 목록이 변하지 않는다 (R-036 e3)', async ({ page }) => {
   await startPageHidden(page);
   const { start, decision } = await lifeWithDecision(page);
-  const states: Array<[string, GameState, Settings]> = [
+  const states: Array<[string, GameState, PlaySettings]> = [
     ['수동 / 선택지 없음', start, SETTINGS_MANUAL],
     ['수동 / 선택지 있음', decision, SETTINGS_MANUAL],
     ['자동 / 선택지 없음', start, SETTINGS_AUTO],
@@ -298,7 +298,7 @@ test('8배속 + 자동 모드: 선택지가 몇 번 떠도 포커스는 자동 �
   const start = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 400; seed++) {
-       const s = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), 'present')));
+       const s = core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
        if (core.playToEnd(s, null).counts.choice >= 12) return s;
      }
      return null;`,

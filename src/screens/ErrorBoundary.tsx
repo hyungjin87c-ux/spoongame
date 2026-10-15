@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { clearGame, getBrowserStorage } from '../core';
+import { LegacyLight } from '../ui/legacyTheme';
 
 interface Props {
   children: ReactNode;
@@ -26,6 +27,7 @@ export class ErrorBoundary extends Component<Props, BoundaryState> {
     if (!this.state.failed) return this.props.children;
     return (
       <main className="screen" data-testid="error-screen">
+        <LegacyLight />
         <h1 tabIndex={-1} ref={(el) => el?.focus()}>
           수저 게임
         </h1>

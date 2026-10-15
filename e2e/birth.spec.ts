@@ -6,13 +6,15 @@ import {
   KNOWN_SEED,
   birthState,
   RAPID_METHODS,
-  eraSelectState,
+  chooseEra,
   expectedBirth,
   injectSave,
   noHorizontalOverflow,
+  pressBegin,
   rapidInput,
   readSave,
   replaceSaveAndReload,
+  titleState,
 } from './helpers';
 
 const ERA_NAMES = { past: '지난 세상', present: '지금 세상', future: '다가올 세상' } as const;
@@ -20,49 +22,28 @@ const ERAS = ['past', 'present', 'future'] as const;
 /** 화면에 나오는 교육방식 이름. src의 상수를 거치지 않고 독립적으로 적는다. */
 const PARENTING_LABELS = { neglect: '방임', free: '자유', helicopter: '헬리콥터', strict: '엄격' } as const;
 
-async function toEraScreen(page: Page) {
-  await page.goto('/');
-  await page.getByRole('button', { name: '시작' }).click();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
-}
+/** 첫 화면의 선택(설정)과 함께 주입하는 재생 설정 */
+const settingsFor = (era: (typeof ERAS)[number]) => ({ speed: 1, autoMode: false, era }) as const;
 
-test('시대 선택 화면: 기본 선택은 "지금 세상", 세 시대가 모두 보인다', async ({ page }) => {
-  await toEraScreen(page);
-  for (const name of Object.values(ERA_NAMES)) {
-    await expect(page.getByRole('button', { name: new RegExp(name) })).toBeVisible();
-  }
-  await expect(page.getByRole('button', { name: /지금 세상/ })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('button', { name: /지난 세상/ })).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByRole('button', { name: /다가올 세상/ })).toHaveAttribute('aria-pressed', 'false');
-  expect(await noHorizontalOverflow(page)).toBe(true);
-});
-
-test('시대 선택은 새로고침해도 유지된다', async ({ page }) => {
-  await toEraScreen(page);
-  await page.getByRole('button', { name: /지난 세상/ }).click();
-  await expect(page.getByRole('button', { name: /지난 세상/ })).toHaveAttribute('aria-pressed', 'true');
-  await page.reload();
-  await expect(page.getByRole('button', { name: /지난 세상/ })).toHaveAttribute('aria-pressed', 'true');
-});
+// 세상·인생 길이를 고르는 첫 화면 자체(기본 선택·새로고침 유지)는 e2e/first-screen.spec.ts가 본다 (시대 선택 화면은 없어졌다).
 
 for (const era of ERAS) {
   test(`${ERA_NAMES[era]}: 알려진 시드로 출생 — 화면·저장이 core 기대값과 일치, 외모 상위 %·등급명 노출·가로 넘침 확인`, async ({ page }) => {
-    await injectSave(page, eraSelectState(KNOWN_SEED));
-    await expect(page.getByTestId('era-screen')).toBeVisible();
-    const card = page.getByRole('button', { name: new RegExp(ERA_NAMES[era]) });
-    await card.click();
-    await expect(card).toHaveAttribute('aria-pressed', 'true');
+    await injectSave(page, titleState(KNOWN_SEED));
+    await expect(page.getByTestId('title-screen')).toBeVisible();
+    await chooseEra(page, era);
 
-    const oracle = await expectedBirth(page, eraSelectState(KNOWN_SEED, era));
-    await page.getByTestId('confirm-era').click();
+    const oracle = await expectedBirth(page, titleState(KNOWN_SEED), era);
+    await pressBegin(page);
     await expect(page.getByTestId('birth-screen')).toBeVisible();
 
-    // 저장 전체가 core의 beginBirth를 한 번 적용한 결과와 같다 (rngState 전진 포함)
+    // 저장 전체가 core의 beginBirth를 한 번 적용한 결과와 같다 (rngState 전진·인생 길이 포함)
     const save = await readSave(page);
     expect(save.data).toEqual(oracle.once);
     const c = save.data.character!;
     expect(save.data.phase).toBe('birth');
     expect(save.data.era).toBe(era);
+    expect(save.data.lifeLength).toBe('short30');
     expect(c.birthYear).toBeGreaterThanOrEqual(ERA_CONFIG[era].birthYears.min);
     expect(c.birthYear).toBeLessThanOrEqual(ERA_CONFIG[era].birthYears.max);
     expect(save.data.birthStats).toEqual(save.data.stats);
@@ -131,8 +112,8 @@ test('외모 순위 표현: 0·10·23·49·50·51·90·100점이 전수 열거 �
 });
 
 test('출생 화면에서 새로고침해도 같은 인물 (다시 뽑히지 않는다)', async ({ page }) => {
-  await injectSave(page, eraSelectState(KNOWN_SEED));
-  await page.getByTestId('confirm-era').click();
+  await injectSave(page, titleState(KNOWN_SEED));
+  await pressBegin(page);
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   const before = await page.getByTestId('birth-screen').innerText();
   const saveBefore = await readSave(page);
@@ -142,14 +123,14 @@ test('출생 화면에서 새로고침해도 같은 인물 (다시 뽑히지 않
   expect(await readSave(page)).toEqual(saveBefore);
 });
 
-test('알려진 시드: "이 세상에서 태어나기" 더블클릭해도 core가 한 번 뽑은 결과와 저장·화면이 같다 (R-022 b)', async ({ page }) => {
-  const before = eraSelectState(KNOWN_SEED, 'present');
-  await injectSave(page, before);
-  const oracle = await expectedBirth(page, before);
+test('알려진 시드: 「태어나기」 더블클릭해도 core가 한 번 뽑은 결과와 저장·화면이 같다 (R-022 b)', async ({ page }) => {
+  const before = titleState(KNOWN_SEED);
+  await injectSave(page, before, '/', settingsFor('present'));
+  const oracle = await expectedBirth(page, before, 'present');
   // 판별력: 이 시드는 두 번 뽑으면 다른 인물이 된다 → 아래 일치는 "정확히 1회 추첨"을 실제로 가른다
   expect(oracle.second).not.toEqual(oracle.once.character);
 
-  const confirm = page.getByTestId('confirm-era');
+  const confirm = page.getByTestId('start-birth');
   await expect(confirm).toBeEnabled();
   await confirm.dblclick();
   await expect(page.getByTestId('birth-screen')).toBeVisible();
@@ -167,9 +148,10 @@ test('알려진 시드: "이 세상에서 태어나기" 더블클릭해도 core�
 // ---------- R-014: 화면 전환 직후 연타 ----------
 
 /**
- * 실측 결과(가드 없음): 높이 568 이상에서는 연타가 출생 화면을 건너뛰지 않았지만,
- * 높이가 낮아 화면이 스크롤되는 경우(360폭 높이 520 이하, 가로 모드 휴대폰 667x375·740x360 등)에서는
- * 4가지 입력 방식 모두 60/60으로 건너뛰었다. 아래 뷰포트 훑기는 그 둘을 모두 포함한다.
+ * 실측 결과(가드 없음, 첫 화면 개편 이후의 흐름 = 첫 화면 하단 고정 「태어나기」 → 출생 화면): 하단 고정 「태어나기」의 중심이 출생 화면의 「살아가기」 안에 드는
+ * 낮은 화면(360x480)에서만 더블클릭이 출생 화면을 건너뛴다(아래 대조군). 다른 뷰포트(가로 모드 휴대폰 667x375·740x360 포함)는 두 버튼이 겹치지 않아 가드가 없어도 건너뛰지 않았다.
+ * 그래도 아래 훑기는 높이가 낮아 화면이 스크롤되는 경우와 그렇지 않은 경우를 모두 돌며, 어느 뷰포트에서든 연타 뒤에 출생 화면에 머무는지(가드가 입력을 막는지)를 같은 방식으로 본다.
+ * (옛 시대 선택 화면 시절의 「높이 520 이하·가로 모드 모두 60/60 건너뜀」 실측은 그 화면과 함께 사라졌다.)
  */
 const SWEEP_VIEWPORTS = [
   { width: 360, height: 480 }, // 낮은 화면: 가드가 없으면 재현되는 구간
@@ -180,7 +162,7 @@ const SWEEP_VIEWPORTS = [
   { width: 360, height: 800 },
   { width: 360, height: 844 },
   { width: 360, height: 915 },
-  { width: 667, height: 375 }, // 가로 모드 휴대폰: 가드가 없으면 재현
+  { width: 667, height: 375 }, // 가로 모드 휴대폰: 겹치지 않는다(측정) — 낮은 가로 화면의 스크롤 배치에서도 머무는지 훑는다
   { width: 740, height: 360 },
 ];
 
@@ -190,12 +172,12 @@ for (const [i, vp] of SWEEP_VIEWPORTS.entries()) {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하는 훑기는 mobile-360에서만 실행');
     test.setTimeout(60_000);
     await page.setViewportSize(vp);
-    await injectSave(page, eraSelectState(KNOWN_SEED));
+    await injectSave(page, titleState(KNOWN_SEED));
     const era = ERAS[i % ERAS.length];
 
     for (const method of RAPID_METHODS) {
-      await replaceSaveAndReload(page, eraSelectState(KNOWN_SEED + i, era));
-      const confirm = page.getByTestId('confirm-era');
+      await replaceSaveAndReload(page, titleState(KNOWN_SEED + i), settingsFor(era));
+      const confirm = page.getByTestId('start-birth');
       await expect(confirm).toBeEnabled(); // 가드가 풀릴 때까지 고정 대기 없이 기다린다
       await rapidInput(page, method, confirm);
       await expect(page.getByTestId('birth-screen'), `${method}`).toBeVisible();
@@ -209,8 +191,8 @@ for (const [i, vp] of SWEEP_VIEWPORTS.entries()) {
 }
 
 test('R-014 프로젝트 기본 뷰포트에서도 연타해도 출생 결과 화면에 머문다', async ({ page }) => {
-  await injectSave(page, eraSelectState(KNOWN_SEED, 'future'));
-  const confirm = page.getByTestId('confirm-era');
+  await injectSave(page, titleState(KNOWN_SEED), '/', settingsFor('future'));
+  const confirm = page.getByTestId('start-birth');
   await expect(confirm).toBeEnabled();
   await rapidInput(page, 'mouse3', confirm);
   await expect(page.getByTestId('birth-screen')).toBeVisible();
@@ -219,11 +201,13 @@ test('R-014 프로젝트 기본 뷰포트에서도 연타해도 출생 결과 �
   expect((await readSave(page)).data.phase).toBe('birth');
 });
 
-test('R-014 대조군: 가드를 끄면(?__guard=0) 낮은 화면(667x375)에서 더블클릭이 출생 화면을 건너뛴다 — 위 테스트가 가드를 실제로 가른다는 증거', async ({ page }, testInfo) => {
+// 첫 화면의 「태어나기」는 화면 아래에 고정돼 있어, 출생 화면의 「살아가기」와 같은 자리에 놓이는 뷰포트가 예전(시대 선택의 확정 버튼, 667x375 등)과 달라졌다.
+// 측정(360폭, 높이 480~844와 가로 모드)으로 겹치는 곳을 찾았다: 360x480에서 「태어나기」 중심(180,446)이 「살아가기」(406~450) 안에 든다. 위 훑기(R-014)는 두 버튼이 겹치지 않는 뷰포트도 함께 돈다.
+test('R-014 대조군: 가드를 끄면(?__guard=0) 낮은 화면(360x480)에서 더블클릭이 출생 화면을 건너뛴다 — 위 테스트가 가드를 실제로 가른다는 증거', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하는 실험은 mobile-360에서만 실행');
-  await page.setViewportSize({ width: 667, height: 375 });
-  await injectSave(page, eraSelectState(KNOWN_SEED, 'present'), '/?__guard=0');
-  const confirm = page.getByTestId('confirm-era');
+  await page.setViewportSize({ width: 360, height: 480 });
+  await injectSave(page, titleState(KNOWN_SEED), '/?__guard=0', settingsFor('present'));
+  const confirm = page.getByTestId('start-birth');
   await expect(confirm).toBeEnabled();
   await confirm.dblclick();
   // 가드가 없으면 둘째 클릭이 같은 좌표의 "살아가기"에 떨어져 출생 결과를 보지도 못하고 넘어간다.
@@ -235,7 +219,7 @@ test('R-014 대조군: 가드를 끄면(?__guard=0) 낮은 화면(667x375)에서
 async function confirmThenImmediatelyNext(page: Page) {
   return page.evaluate(async () => {
     const q = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
-    q('confirm-era')!.click();
+    q('start-birth')!.click();
     // React는 이벤트 직후(마이크로태스크)에 새 화면을 그린다.
     for (let n = 0; n < 50 && !q('next-life'); n++) await Promise.resolve();
     const next = q('next-life');
@@ -246,8 +230,8 @@ async function confirmThenImmediatelyNext(page: Page) {
 }
 
 test('R-014 결정적 검증: 화면이 바뀐 직후(같은 JS 작업 안)의 진행 버튼 입력은 무시되고, 가드가 풀리면 정상 동작한다', async ({ page }) => {
-  await injectSave(page, eraSelectState(KNOWN_SEED, 'past'));
-  await expect(page.getByTestId('confirm-era')).toBeEnabled();
+  await injectSave(page, titleState(KNOWN_SEED), '/', settingsFor('past'));
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
   const r = await confirmThenImmediatelyNext(page);
   expect(r.birthShown).toBe(true);
   expect(r.nextGuarded).toBe(true); // 새 화면의 버튼은 비활성(aria-disabled) 상태로 떴다
@@ -262,8 +246,8 @@ test('R-014 결정적 검증: 화면이 바뀐 직후(같은 JS 작업 안)의 �
 });
 
 test('R-014 결정적 검증 대조군: 가드를 끄면(?__guard=0) 같은 연속 입력이 출생 화면을 건너뛴다', async ({ page }) => {
-  await injectSave(page, eraSelectState(KNOWN_SEED, 'past'), '/?__guard=0');
-  await expect(page.getByTestId('confirm-era')).toBeEnabled();
+  await injectSave(page, titleState(KNOWN_SEED), '/?__guard=0', settingsFor('past'));
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
   const r = await confirmThenImmediatelyNext(page);
   expect(r.birthShown).toBe(true);
   expect(r.nextGuarded).toBe(false);
@@ -273,7 +257,7 @@ test('R-014 결정적 검증 대조군: 가드를 끄면(?__guard=0) 같은 연�
 test('R-014 가드가 열리지 않는 동안(?__guard=600000)에는 강제 클릭도 연타도 무시된다', async ({ page }) => {
   const born = await (async () => {
     await page.goto('/');
-    return (await expectedBirth(page, eraSelectState(KNOWN_SEED, 'present'))).once;
+    return (await expectedBirth(page, titleState(KNOWN_SEED), 'present')).once;
   })();
   await injectSave(page, born, '/?__guard=600000');
   const next = page.getByTestId('next-life');
@@ -285,44 +269,13 @@ test('R-014 가드가 열리지 않는 동안(?__guard=600000)에는 강제 클�
   expect((await readSave(page)).data.phase).toBe('birth');
 });
 
-test('R-014 타이틀 "시작" 더블클릭이 시대 카드 선택을 바꾸지 않는다 (낮은 화면 360x360 포함)', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하는 실험은 mobile-360에서만 실행');
-  for (const vp of [
-    { width: 360, height: 360 },
-    { width: 360, height: 740 },
-    { width: 667, height: 375 },
-  ]) {
-    await page.setViewportSize(vp);
-    await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
-    await page.reload();
-    const start = page.getByRole('button', { name: '시작' });
-    await expect(start).toBeEnabled();
-    await start.dblclick();
-    await expect(page.getByTestId('era-screen')).toBeVisible();
-    // 시대 선택 화면의 버튼이 활성화될 때까지 기다린 뒤에도 카드는 고르지 않은 상태(era=null)
-    await expect(page.getByTestId('confirm-era')).toBeEnabled();
-    const d = (await readSave(page)).data;
-    expect(d.phase, `${vp.width}x${vp.height}`).toBe('eraSelect');
-    expect(d.era, `${vp.width}x${vp.height}`).toBeNull();
-    await expect(page.getByRole('button', { name: /지금 세상/ })).toHaveAttribute('aria-pressed', 'true'); // 화면 기본값 그대로
-  }
-});
-
-test('R-014 대조군: 가드를 끄면(?__guard=0) 360x360에서 "시작" 더블클릭이 시대 카드를 골라 버린다', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하는 실험은 mobile-360에서만 실행');
-  await page.setViewportSize({ width: 360, height: 360 });
-  await page.goto('/?__guard=0');
-  await page.evaluate(() => localStorage.clear());
-  await page.reload();
-  await page.getByRole('button', { name: '시작' }).dblclick();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
-  await expect.poll(async () => (await readSave(page)).data.era).not.toBeNull();
-});
+// 예전의 「타이틀 시작 더블클릭이 시대 카드를 고르지 않는다」(R-014)는 시대 선택 화면이 없어지면서 같은 경계를 두 곳에서 지킨다:
+//  - 첫 화면의 「태어나기」 더블클릭이 출생 화면의 「살아가기」를 누르지 않는다 → 위의 R-014 훑기·결정적 검증
+//  - 엔딩의 「다시 태어나기」 더블탭이 첫 화면의 「태어나기」·세상·인생 길이 카드를 누르지 않는다 → e2e/ending.spec.ts (겹침을 측정)
 
 test('출생 → 살아가기 → 인생 화면, 새로고침해도 유지된다 (자리표시·"처음으로"는 없다, R-021)', async ({ page }) => {
-  await toEraScreen(page);
-  await page.getByTestId('confirm-era').click();
+  await page.goto('/');
+  await pressBegin(page);
   await page.getByTestId('next-life').click();
   await expect(page.getByTestId('life-screen')).toBeVisible();
   expect(await noHorizontalOverflow(page)).toBe(true);
@@ -334,7 +287,9 @@ test('출생 → 살아가기 → 인생 화면, 새로고침해도 유지된다
 test('손상된 저장(출생 단계인데 연도가 시대 범위 밖)은 새 게임으로 복구', async ({ page }) => {
   const stats = { wealth: 1, education: 1, health: 50, happiness: 1, relationships: 1 };
   const bad = {
-    ...eraSelectState(1, 'past'),
+    ...titleState(1),
+    era: 'past' as const,
+    lifeLength: 'short30' as const,
     phase: 'birth' as const,
     character: { name: '김민준', gender: 'male' as const, birthYear: 2010, parentWealth: 3 as const, parenting: 'free' as const, looks: 50 },
     stats,

@@ -2,6 +2,8 @@
 
 태어날 때 받은 '수저'(부모 재력·교육, 외모, 시대)로 시작해 한국식 인생을 끝까지 살아 보는 웹 시뮬레이션 게임입니다. 서버 없이 브라우저에서만 돌아갑니다.
 
+> **비공식 학습 프로젝트입니다. 다른 게임·서비스와 무관합니다.**
+
 - **플레이**: <https://hyungjin87c-ux.github.io/spoongame/> (모바일 브라우저에서도 됩니다)
 - **의견 보내기**: [GitHub 이슈로 남겨 주세요](https://github.com/hyungjin87c-ux/spoongame/issues/new?template=feedback.yml). 어떤 화면에서 무엇을 했는지, 기기·브라우저를 함께 적어 주시면 고치기 쉽습니다. 이슈는 공개이니 개인정보는 적지 말아 주세요.
 
@@ -40,6 +42,7 @@ Playwright를 처음 쓰면 `npx playwright install chromium`이 한 번 필요�
 | `CLAUDE.md` | 이 프로젝트의 AI 운영 규칙(역할, 명세 → 구현 → 검수 → QA 순서) |
 | `docs/spec/` | 요청 명세서(SPEC): 할 것 / 안 할 것 / 완료 기준 |
 | `docs/TODO.md` | 할 일과 완료 근거 |
+| `docs/data/` | 통계 근거·출처 기록(`events-stats-basis.md`, `korea-stats-sources.md`)과 인생 단계별 데이터 소스 표(`korea-life-data-sources.csv`), 기준선(`spec-003-baseline.md`) |
 | `docs/review/` | 검수 기록 (REV-*) |
 | `qa/reports/` | QA 리포트 (스크린샷은 `qa/screenshots/`) |
 | `ai-log/` | 단계별 실행 기록 |
@@ -51,3 +54,9 @@ Playwright를 처음 쓰면 `npx playwright install chromium`이 한 번 필요�
 <https://stfamily.scourt.go.kr/st/StFrrStatcsView.do?pgmId=090000000025>
 
 (`src/data/names.json`의 `meta.attribution`과 같은 내용이며, 게임 첫 화면 하단에도 표기합니다.)
+
+통계 수치(출생·사망·인구·소득 등)는 국가데이터처(2025년 10월 1일 이전 발표분은 통계청)와 관계 기관의 공개 자료에서 원문과 대조해 옮겼으며, 기관·통계표·주소·열람일은 `docs/data/korea-stats-sources.md`에 적었습니다. 원문 대조를 못 한 값은 게임에 쓰지 않습니다.
+
+## 라이선스
+
+All rights reserved — 공개 열람만, 재사용 불가.

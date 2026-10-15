@@ -62,6 +62,17 @@ jobs:
             exit 1
           fi
 
+      # 푸터의 빌드 버전(`v<버전> (<커밋 7자>)`, FS7·QM2-7)은 **이 빌드를 만든 커밋**(GITHUB_SHA 앞 7자)이다. vite.config.ts가 GITHUB_SHA를 읽어 산출물 JS에 상수로 넣으므로
+      # (GitHub Actions가 모든 단계에 GITHUB_SHA를 자동으로 준다 — 따로 넘길 환경변수가 없다) 그 7자가 산출물에 없으면 「개발 빌드」나 다른 커밋이 배포되는 것이라 멈춘다.
+      - name: 빌드 산출물에 배포 커밋(GITHUB_SHA 앞 7자)이 들어 있는지 확인
+        run: |
+          short="${GITHUB_SHA::7}"
+          test "${#short}" -eq 7
+          if ! grep -rqF "$short" dist/assets; then
+            echo "dist/assets의 JS에 배포 커밋 $short 가 없다 — 푸터의 빌드 버전이 배포한 커밋과 어긋난다" >&2
+            exit 1
+          fi
+
       - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5

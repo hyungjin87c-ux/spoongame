@@ -6,7 +6,7 @@ import {
   type Character,
   type EventPool,
   type GameState,
-  type Settings,
+  type PlaySettings,
   type Speed,
   type TickInfo,
 } from '../core';
@@ -27,7 +27,7 @@ export const LOG_VISIBLE = 6;
 
 interface Props {
   game: GameState & { character: Character };
-  settings: Settings;
+  settings: PlaySettings;
   /** 직전에 처리한 걸음 (조용한 해 문구용) */
   tick: TickInfo | null;
   pool?: EventPool;

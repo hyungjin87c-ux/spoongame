@@ -22,13 +22,9 @@ const FAST = '/?__timescale=1000';
 
 async function startFromTitle(page: Page, url = '/') {
   await page.goto(url);
-  const start = page.getByRole('button', { name: '시작' });
-  await expect(start).toBeEnabled();
-  await start.click();
-  await expect(page.getByTestId('era-screen')).toBeVisible();
-  const confirm = page.getByTestId('confirm-era');
-  await expect(confirm).toBeEnabled();
-  await confirm.click();
+  const begin = page.getByTestId('start-birth');
+  await expect(begin).toBeEnabled();
+  await begin.click();
   const next = page.getByTestId('next-life');
   await expect(next).toBeEnabled();
   await next.click();
@@ -61,14 +57,10 @@ test('출생 → 살아가기 → 인생 화면: 이름·나이·단계·스탯 
 test('화면이 바뀔 때마다 새 화면의 제목으로 포커스가 옮겨진다 (R-030)', async ({ page }) => {
   const activeText = () => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`);
   await page.goto('/');
-  await expect.poll(activeText).toBe('H1:수저 게임');
-  const start = page.getByRole('button', { name: '시작' });
-  await expect(start).toBeEnabled();
-  await start.click();
-  await expect.poll(activeText).toBe('H1:어느 세상에서 태어날까');
-  const confirm = page.getByTestId('confirm-era');
-  await expect(confirm).toBeEnabled();
-  await confirm.click();
+  await expect.poll(activeText).toBe('H1:수저 게임'); // 첫 화면의 제목(읽히는 글자는 게임명, 로고는 장식)
+  const begin = page.getByTestId('start-birth');
+  await expect(begin).toBeEnabled();
+  await begin.click();
   await expect.poll(async () => (await activeText()).startsWith('H1:')).toBe(true);
   expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('birth-name');
   const next = page.getByTestId('next-life');
@@ -244,7 +236,7 @@ test('사건 로그는 최근 항목 위주로 보이고(최신이 맨 위), 긴
   await page.goto('/');
   const mid = await evalCore<GameState>(
     page,
-    `let s = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(777)), 'present')));
+    `let s = core.enterLife(core.beginBirth(core.createInitialState(777), 'present'));
      while (s.phase === 'life' && s.age < 50) s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
      return s;`,
   );
@@ -266,10 +258,10 @@ async function quietStart(page: Page, years: number): Promise<GameState> {
   const s = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 2000; seed++) {
-       let s = core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), 'present')));
+       let s = core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
        let ok = true;
        for (let i = 0; i < arg.years; i++) { const r = core.stepYear(s); if (r.tick.kind !== 'quiet') { ok = false; break; } s = r.state; }
-       if (ok) return core.enterLife(core.beginBirth(core.selectEra(core.startGame(core.createInitialState(seed)), 'present')));
+       if (ok) return core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
      }
      return null;`,
     { years },

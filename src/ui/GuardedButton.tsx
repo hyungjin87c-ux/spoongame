@@ -1,4 +1,4 @@
-import { useEffect, useState, type ButtonHTMLAttributes, type MouseEvent } from 'react';
+import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type MouseEvent } from 'react';
 
 /**
  * 화면 전환 직후 입력 가드 (R-014). UI 계층 전용 — core 순수 함수는 건드리지 않는다.
@@ -90,7 +90,8 @@ export interface GuardedButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
   guardMs?: number;
 }
 
-export function GuardedButton({ guardKey, guardMs, onClick, 'aria-disabled': callerAriaDisabled, ...rest }: GuardedButtonProps) {
+/** 버튼 요소를 가리키는 ref를 받는다(포커스를 옮겨야 하는 호출자용, R-212). */
+export const GuardedButton = forwardRef<HTMLButtonElement, GuardedButtonProps>(function GuardedButton({ guardKey, guardMs, onClick, 'aria-disabled': callerAriaDisabled, ...rest }, ref) {
   const ready = useInputGuard(guardKey, guardMs);
   const inert = isButtonInert(ready, callerAriaDisabled);
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
@@ -100,5 +101,5 @@ export function GuardedButton({ guardKey, guardMs, onClick, 'aria-disabled': cal
     }
     onClick?.(e);
   };
-  return <button type="button" {...rest} aria-disabled={inert ? true : undefined} onClick={handleClick} />;
-}
+  return <button type="button" {...rest} ref={ref} aria-disabled={inert ? true : undefined} onClick={handleClick} />;
+});

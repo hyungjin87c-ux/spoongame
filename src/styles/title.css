@@ -1,0 +1,312 @@
+/*
+ * 첫 화면(타이틀)의 스타일 — SPEC-003 M2. docs/design/mockups/ds.css(디자인 참고 구현)에서 첫 화면이 쓰는 블록을 그대로 옮겼다
+ * (클래스 이름·구조를 바꾸지 않아 시안 title-a.html·title-continue.html과 1:1로 대조된다. 단 하나, 푸터를 같은 격자에 넣은 R-220 구조는 아래 `.title` 주석). 색·간격·글자 크기는 src/styles/tokens.css의 토큰만 쓴다.
+ *
+ * body의 기본 바탕·글자색은 styles.css가 토큰(`--c-bg`·`--c-text`)으로 정한다(R-223) — 시스템이 다크 모드면 JS가 뜨기 전 첫 그림부터 다크 바탕이라 라이트가 번쩍이지 않는다.
+ * 옛 화면(출생·인생·엔딩)은 아직 styles.css의 고정 색 디자인이라(M3·M4에서 새 디자인으로 교체) 떠 있는 동안 ui/legacyTheme.tsx의 LegacyLight가 `<html data-theme="light">`를 걸어 라이트 토큰을 받게 한다.
+ * 이 파일의 `body.theme-surface`(첫 화면이 떠 있는 동안 TitleScreen이 붙인다)와 `.title-page`는 첫 화면의 글꼴·줄 높이만 정한다.
+ * 다크·강제 색상·움직임 줄이기는 tokens.css가 값을 바꾸고 이 파일은 토큰만 읽는다.
+ *
+ * 시안 대비 달라진 곳은 ai-log/2026-10-15_SPEC-003_dev-M2.md 「시안과 다른 점」·dev-M2-r3.md에 적었다.
+ */
+
+body.theme-surface {
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.title-page {
+  flex: 1 0 auto;
+  width: 100%;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+:where(.title-page) :is(h1, h2, h3, p, dl, dd, ol, ul, fieldset) { margin: 0; }
+:where(.title-page) fieldset { padding: 0; border: 0; min-width: 0; }
+:where(.title-page) legend { padding: 0; }
+:where(.title-page) :is(ol, ul) { padding: 0; list-style: none; }
+/* :where()로 감싼 규칙은 우선순위가 0이라 .btn 같은 클래스 규칙이 항상 이긴다(글자 크기·색을 덮어쓰지 않는다) */
+:where(.title-page, .bottom-bar) :is(button, input) { font: inherit; color: inherit; }
+:where(.title-page) svg { display: block; }
+:where(.title-page) :is(h1, h2, h3) { letter-spacing: var(--ls-heading); text-wrap: balance; font-size: inherit; }
+.title-page :focus-visible,
+.bottom-bar :focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.title-page h1:focus,
+.title-page h1:focus-visible { outline: none; }
+
+.title-page .sr-only,
+.bottom-bar .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- 글자 ---------- */
+.t-h3 { font-size: var(--fs-lg); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.t-sm { font-size: var(--fs-sm); }
+.t-muted { color: var(--c-text-2); }
+
+/* ---------- 로고·아이콘 ---------- */
+.logo-wrap { display: block; max-width: 100%; }
+.logo-wrap > svg { height: var(--logo-h, var(--logo-h-header)); width: auto; max-width: 100%; flex: none; }
+svg.icon { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* 수저 아이콘: 칩 변형(sp-N)은 15x24, 큰 변형(sp-N-lg)은 32x52 이상에서만 — 첫 화면 띠는 큰 변형 */
+svg.spoon { width: 15px; height: 24px; flex: none; }
+svg.spoon--lg { width: 32px; height: 52px; }
+/* 아이콘·수저 도형이 들어 있는 보이지 않는 스프라이트 (시안의 맨 위 <svg width="0">와 같은 역할) */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ---------- 버튼 ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: var(--hit); min-width: var(--hit); padding: 0 var(--sp-4);
+  border: 2px solid transparent; border-radius: var(--r-md);
+  background: var(--c-surface-2); color: var(--c-text);
+  font-weight: var(--fw-bold); font-size: var(--fs-md); line-height: 1.2; text-align: center; cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.btn--primary { background: var(--c-brand); color: var(--c-on-brand); }
+.btn--primary:hover { background: var(--c-brand-hover); }
+.btn--secondary { background: var(--c-surface); border-color: var(--c-border-strong); }
+.btn--ghost { background: transparent; border-color: var(--c-border-strong); }
+.btn--lg { min-height: 52px; padding: 0 var(--sp-8); font-size: var(--fs-lg); }
+.btn--sm { font-size: var(--fs-sm); padding: 0 var(--sp-3); }
+.btn[aria-pressed='true'], .btn.is-on { background: var(--c-brand); color: var(--c-on-brand); box-shadow: inset 0 -4px 0 currentColor; }
+.btn[aria-disabled='true'], .btn:disabled { opacity: 0.55; cursor: default; }
+.btn--icon { padding: 0; }
+
+/* ---------- 카드 ---------- */
+.card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg); padding: var(--sp-4); box-shadow: var(--shadow-1); min-width: 0; }
+.card__title { font-size: var(--fs-lg); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+
+/* ---------- 라디오 카드 (세상·인생 길이) ---------- */
+.radio-card { position: relative; display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); cursor: pointer; min-width: 0; }
+.radio-card input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.radio-card:focus-within { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.radio-card__mark { flex: none; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; border: 2px solid var(--c-border-strong); display: grid; place-items: center; background: var(--c-surface); }
+.radio-card__mark .icon { width: 16px; height: 16px; stroke-width: 3; opacity: 0; }
+.radio-card__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.radio-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.radio-card__meta { font-size: var(--fs-sm); color: var(--c-text-2); }
+.radio-card.is-selected .radio-card__meta { color: var(--c-on-brand-soft); }
+.radio-card__title { font-weight: var(--fw-bold); font-size: var(--fs-lg); line-height: var(--lh-snug); }
+.radio-card__desc { font-size: var(--fs-sm); color: var(--c-text-2); }
+.radio-card.is-selected { border: 3px solid var(--c-brand); background: var(--c-brand-soft); color: var(--c-on-brand-soft); padding: calc(var(--sp-3) - 2px) calc(var(--sp-4) - 2px); }
+.radio-card.is-selected .radio-card__desc { color: var(--c-on-brand-soft); }
+.radio-card.is-selected .radio-card__mark { background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-brand); }
+.radio-card.is-selected .radio-card__mark .icon { opacity: 1; }
+/* 고를 수 없는 카드(「약 1시간」 — 준비 중): 점선 테두리·옅은 글자·「준비 중」 표식으로 색에만 의존하지 않고 드러낸다. 카드는 라디오 그룹 안에 그대로 있다. */
+.radio-card.is-disabled { cursor: not-allowed; border-style: dashed; }
+.radio-card.is-disabled input { cursor: not-allowed; }
+.radio-card.is-disabled .radio-card__title, .radio-card.is-disabled .radio-card__desc { color: var(--c-text-3); }
+.radio-card.is-disabled .radio-card__mark { border-style: dashed; }
+.radio-card.is-disabled .radio-card__meta { color: var(--c-text-2); font-weight: var(--fw-bold); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); padding: 0 var(--sp-2); }
+.group-title { font-size: var(--fs-md); font-weight: var(--fw-bold); margin-bottom: var(--sp-2); }
+
+/* ---------- 수저 단계 (색 + 모양 + 이름) ---------- */
+.grade--1 { --grade-solid: var(--c-grade-1); --grade-soft: var(--c-grade-1-soft); --grade-ink: var(--c-grade-1-ink); }
+.grade--2 { --grade-solid: var(--c-grade-2); --grade-soft: var(--c-grade-2-soft); --grade-ink: var(--c-grade-2-ink); }
+.grade--3 { --grade-solid: var(--c-grade-3); --grade-soft: var(--c-grade-3-soft); --grade-ink: var(--c-grade-3-ink); }
+.grade--4 { --grade-solid: var(--c-grade-4); --grade-soft: var(--c-grade-4-soft); --grade-ink: var(--c-grade-4-ink); }
+.grade--5 { --grade-solid: var(--c-grade-5); --grade-soft: var(--c-grade-5-soft); --grade-ink: var(--c-grade-5-ink); }
+
+/* ---------- 하단 고정 버튼 ---------- */
+.bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-bar); display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--gutter) calc(var(--sp-2) + env(safe-area-inset-bottom)); background: var(--c-bg); box-shadow: var(--shadow-bar); color: var(--c-text); font-family: var(--font-sans); }
+.bottom-bar .btn--lg { width: min(100%, 360px); }
+.bottom-bar__ask { font-size: var(--fs-sm); font-weight: var(--fw-bold); text-align: center; margin: 0; }
+/* 확인 단계: 맨 아래 줄은 안전한 「돌아가기」, 그 위가 이전 판을 지우는 확인(R-204) */
+.bottom-bar__stack { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); width: 100%; }
+.bottom-bar__stack .btn { width: min(100%, 360px); }
+/* 본문 끝 여백 = 하단 띠의 실제 높이(--bar-h는 TitleScreen이 ResizeObserver로 잰다: 새 판 68px·이어하기 120px·확인 단계 약 156px 등) + 숨 쉴 틈. 재지 못하는 환경에서는 가장 큰 상태를 가정한다(R-203). */
+.page-end-space { height: calc(var(--bar-h, 164px) + var(--sp-2)); }
+/* 키보드 포커스가 고정 띠에 가리지 않는다(CM10, QA-003-M2 M2-N14): 포커스가 요소를 화면 안으로 스크롤할 때 띠(--bar-h, 상태마다 다름) 위에 머물도록 아래 스크롤 여백을 띠 높이만큼 둔다.
+   위(scroll-padding-top)도 같은 여유를 둔다 — Shift+Tab으로 위로 올라올 때 포커스 링이 화면 위로 삐져나가지 않게 한다. 여유 var(--sp-3)(12px)는 포커스 링(굵기 3px + 간격 2~4px)보다 크다. 클래스는 첫 화면이 떠 있는 동안 TitleScreen이 <html>에 건다(옛 화면에는 띠가 없다).
+   같은 패턴(고정 요소 높이를 변수로 노출 + 스크롤 컨테이너의 scroll-padding)을 룰렛·출생신고·대시보드의 고정 요소도 따른다. */
+html.has-bottom-bar { scroll-padding-top: var(--sp-3); scroll-padding-bottom: calc(var(--bar-h, 164px) + var(--sp-3)); }
+/* 낮은 화면에서 띠가 뷰포트 높이의 절반을 넘으면(QM2-12, R-233; 판정은 ui/barRelease.ts가 띠 높이와 window.innerHeight를 재서 <html>에 bar-released를 건다) 고정을 풀어 본문 끝(푸터 다음)에 둔다.
+   고정이 풀리면 **함께 풀 것**: 스크롤 여백(더는 가릴 띠가 없다 → 기본 간격), 본문 끝 여백(띠 높이만큼 빈 칸이 남지 않게), 오른쪽 열의 max-height(아래 960px 이상 규칙). 포커스는 클래스만 바뀌므로 그대로다.
+   풀린 띠는 계산된 position이 static이라 포커스 가림 e2e의 고정 요소 수집(CM10)에서 자연히 빠진다. */
+html.bar-released.has-bottom-bar { scroll-padding-bottom: var(--sp-3); }
+html.bar-released .bottom-bar { position: static; box-shadow: 0 -1px 0 var(--c-border-strong); } /* 위끝에 가는 선만 — 테두리가 아니라 그림자로 그려 띠 높이(--bar-h)가 풀리면서 달라지지 않는다 */
+html.bar-released .page-end-space { display: none; }
+
+/* ---------- 첫 화면 ---------- */
+/* 한 격자에 본문(main)·통계 카드(aside)·푸터(footer)가 차례로 놓인다(R-220). 좁은 화면은 한 칸(본문 → 카드 → 푸터)이고,
+   넓은 화면(아래 min-width: 960px)은 왼쪽 열에 본문·푸터, 오른쪽 열에 카드가 두 줄에 걸쳐 놓여 카드가 따라다니는 범위가 푸터 줄(문서 끝)까지 이어진다. */
+.title { max-width: 1120px; margin: 0 auto; padding: var(--sp-6) var(--gutter) 0; display: grid; gap: var(--sp-6); grid-template-columns: minmax(0, 1fr); }
+.title__main { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
+.title__notice { padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--c-notice-bg); color: var(--c-on-notice); font-size: var(--fs-sm); }
+.hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-4); }
+.hero .logo--stacked { --logo-h: 236px; max-width: 100%; }
+.hero .logo--row { --logo-h: 108px; display: none; max-width: 100%; }
+.hero__tag { font-size: var(--fs-lg); line-height: var(--lh-snug); color: var(--c-text-2); max-width: 22em; }
+/* 줄바꿈 묶음(QM2-5, core/glue.ts): 「A · B」 같은 구분 기호 묶음과 한 줄 설명의 끝 구절(「한국인의 한 번의 인생」)은 줄이 바뀌어도 쪼개지지 않게 묶되(inline-block — 줄에 안 들어가면 통째로 다음 줄로 내려간다),
+   묶음 자체가 한 줄보다 길어지는 큰 글자(200%)·좁은 폭(320px)에서는 묶음 안에서 줄을 바꾼다. white-space: nowrap으로 묶으면 그 폭에서 가로로 넘쳤다(CM11, QA-003-M2 M2-V04).
+   짧은 숫자+단위·날짜 묶음(.nowrap)만 줄이 바뀌지 않는다. */
+.keep-phrase { display: inline-block; max-width: 100%; }
+.nowrap { white-space: nowrap; }
+/* 링크 안의 묶음(inline-block)에는 링크의 밑줄이 전파되지 않아 푸터 출처 링크의 밑줄이 묶음 자리에서 끊겼다 — 링크 색이 글자색 그대로(inherit)라 밑줄이 유일한 링크 표시다(R-236).
+   묶음이 링크와 같은 text-decoration을 상속해 자기 상자 안의 글자에 밑줄을 직접 긋는다(선 색·굵기도 같이 상속). */
+.title-page a .keep-phrase { text-decoration: inherit; }
+/* 짧은 쌍 「A · B」(QM2-10 규칙 3, ui/Pair.tsx): 한 줄에 들어가는 폭에서는 「A · B」 한 줄, 칸이 좁거나 글자가 커서 한 줄을 넘으면 기호를 감추고 A·B를 따로 줄로 나눈다 — 「·」가 줄 끝·첫머리에 혼자 남지 않는다.
+   문턱은 슬라이드 칸(.slide, container-type: inline-size)의 폭을 em으로 견준다 — em은 칸의 글자 크기(= 루트 글자 크기)라 글자를 키우면 문턱 폭도 함께 커진다. 쌍의 한 줄 폭은 글자 크기에 비례하기 때문이다.
+   문턱의 근거(Windows Chromium 실측, 글자 크기 16px 기준 em): 기준 줄 「인구 10만 명당 · 2025년 기준」의 한 줄 폭 11.6em → 문턱 14em, 보조 줄 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」 15.0em → 문턱 16.5em
+   (글꼴이 다른 기기에서 폭이 10% 넘게 달라도 한 줄 모양에서 넘치지 않는 여유). 문턱보다 좁으면 한 줄에 들어갈 폭이어도 나눈다 — 줄이 하나 늘 뿐 기호가 가장자리에 서는 일은 없다.
+   (컨테이너 쿼리를 모르는 브라우저는 항상 한 줄 모양이다.) */
+.pair__item { display: inline; }
+@container (max-width: 14em) {
+  .pair--basis .pair__item { display: block; }
+  .pair--basis .pair__sep { display: none; }
+}
+@container (max-width: 16.5em) {
+  .pair--meta .pair__item { display: block; }
+  .pair--meta .pair__sep { display: none; }
+}
+/* 수저 다섯 자루 줄: 같은 숟가락, 재질(색·무늬)만 다르다. 이름을 항상 함께 적는다 */
+/* 수저 다섯 자루 줄: 보통 폭에서는 한 줄에 다섯 칸(앞 넷은 같은 폭, 다이아몬드는 1.3배 — 이전 격자와 같다). 글자가 커지거나 폭이 좁아 한 줄에 못 들어가면 가로로 밀지 않고 다음 줄로 접는다
+   (칸마다 최소 폭 = 이름의 가장 긴 낱말, flex-wrap — CM11, 이름표가 서로 겹치거나 띠 밖으로 나가지 않는다). */
+.spoon-lineup { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2) var(--sp-1); width: 100%; max-width: 420px; padding: var(--sp-3) 0 var(--sp-2); border-top: 1px solid var(--c-border-strong); border-bottom: 1px solid var(--c-border-strong); }
+.spoon-fig { flex: 1 1 0; min-width: min-content; display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); color: var(--grade-solid); }
+.spoon-fig.grade--5 { flex-grow: 1.3; }
+.spoon-fig__name { font-size: var(--fs-xs); line-height: 1.2; color: var(--c-text-2); text-align: center; font-weight: var(--fw-bold); overflow-wrap: normal; word-break: keep-all; }
+.hero__pop { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-regular); max-width: 22em; }
+.hero__pop strong { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
+.hero__note { font-size: var(--fs-sm); color: var(--c-text-3); margin-top: calc(var(--sp-2) * -1); }
+.choices { display: grid; gap: var(--sp-2); }
+.choices--1, .choices--2 { grid-template-columns: minmax(0, 1fr); }
+.title__side { min-width: 0; }
+.title-foot { min-width: 0; font-size: var(--fs-xs); color: var(--c-text-3); display: flex; flex-direction: column; gap: var(--sp-1); }
+.title-foot .credit { margin: 0; font-size: var(--fs-xs); line-height: 1.5; color: var(--c-text-3); }
+.title-foot a { color: inherit; text-decoration: underline; text-decoration-color: var(--c-border-strong); }
+
+/* ---------- 통계 캐러셀 ---------- */
+.carousel { display: flex; flex-direction: column; gap: var(--sp-2); }
+/* 카드 머리: 제목·안내(왼쪽)와 조작 줄(이전·위치·다음·일시정지, 오른쪽). 슬라이드의 높이가 달라도 조작 줄은 같은 자리에 있고, 하단 띠에 가려지지 않는다(R-200).
+   좁아서 한 줄에 안 들어가면 조작 줄이 아래로 내려와 가로 전체를 쓴다(일시정지는 오른쪽 끝). */
+.carousel__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1) var(--sp-3); }
+.carousel__heading { display: flex; flex-direction: column; min-width: 0; }
+.carousel__note { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+.carousel__viewport { min-width: 0; touch-action: pan-y; }
+.carousel__viewport:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 4px; border-radius: var(--r-md); }
+/* 좁은 화면(한 칸 레이아웃): 모든 슬라이드를 같은 칸에 겹쳐 두고 보이는 하나만 드러낸다 — 카드 높이가 가장 큰 슬라이드에 맞춰 고정되어 전환 때 아래 내용(푸터)이 흔들리지 않는다.
+   짧은 슬라이드에 남는 빈 칸은 카드 끝에 생긴다(슬라이드 안의 줄은 위에서부터 차례로 놓이고 「통계 기준」 줄을 아래로 끌어내리지 않는다 — 빈 칸이 출처와 통계 기준 사이에 끼는 깨진 배치를 피한다, REV-003-M2-2 마스터 결정). */
+.slides { display: grid; }
+.slide { container-type: inline-size; grid-area: 1 / 1; display: flex; flex-direction: column; gap: calc(var(--sp-2) - 2px); min-width: 0; visibility: hidden; opacity: 0; transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur); }
+.slide.is-active { visibility: visible; opacity: 1; transition: opacity var(--dur) var(--ease); }
+.slide .t-sm { line-height: var(--lh-snug); }
+.slide__caption { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+/* 큰 값 줄: 「값 + 단위 낱말」은 한 줄에서 끊기지 않는다(white-space: nowrap). 대신 글자 크기를 슬라이드 칸 폭에 맞춰 줄인다 — 값 글자 폭(--value-em)과 단위 글자 수(--unit-chars)는 StatsCarousel이 슬라이드마다 넣는다.
+   보통 크기에서는 36px(--fs-3xl) 그대로이고, 글자 크기를 200%로 키우거나 폭이 아주 좁을 때만 줄어 숫자가 중간에서 끊기거나 칸을 넘치지 않는다(CM11, QM2-5). */
+.slide__value { font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: var(--lh-tight); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@supports (width: 1cqw) {
+  .slide__value { font-size: min(var(--fs-3xl), calc((100cqw - var(--fs-md) * var(--unit-chars, 1) - var(--sp-1)) / var(--value-em, 6))); }
+}
+.slide__unit { font-size: var(--fs-md); font-weight: var(--fw-regular); color: var(--c-text-2); margin-left: var(--sp-1); }
+.slide__num { white-space: nowrap; }
+.slide__basis { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+/* 큰 값 바로 아래 줄에 글자로 보이는 보조 계열 값(QM2-11): 「조혼인율 인구 1천 명당 4.7건」. 선 무늬(범례) 없이 글자만이고, 기준 줄 앞이라 「2025년 기준」이 두 값을 함께 가리킨다. */
+.slide__side { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+.slide__value--multi { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-1) var(--sp-6); }
+.slide__hv { display: flex; flex-direction: column; }
+.slide__label { font-size: var(--fs-sm); font-weight: var(--fw-regular); color: var(--c-text-2); }
+.slide__meta { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+.slide__help { padding: var(--sp-3); border: 1px solid var(--c-border-strong); border-left: 5px solid var(--c-accent); border-radius: var(--r-md); background: var(--c-accent-soft); color: var(--c-on-accent-soft); font-size: var(--fs-sm); }
+.slide__help strong { font-size: var(--fs-md); }
+.slide__help a { color: inherit; font-weight: var(--fw-bold); }
+.chart { width: 100%; height: auto; color: var(--c-brand); }
+/* 글자 뒤에 카드 바탕색 테두리(paint-order: stroke)를 깔아, 선이 글자 가까이 지나가는 촘촘한 그래프(평균 수명처럼 선 셋이 겹치는 것)에서도 값이 읽힌다(R-225).
+   값 글자 자리는 core/carousel.ts#placeFirstLabels가 선·점을 피해 고르고, 피할 자리가 없을 때만 이 테두리가 일을 한다. */
+.chart text { font-family: var(--font-sans); font-size: 13px; fill: var(--c-text-2); paint-order: stroke; stroke: var(--c-surface); stroke-width: 3px; stroke-linejoin: round; }
+.chart .axis { stroke: var(--c-border-strong); stroke-width: 1; }
+.chart .grid { stroke: var(--c-border); stroke-width: 1; }
+.chart .line { fill: none; stroke: var(--c-brand); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart .line--dashed { stroke: var(--c-accent); stroke-dasharray: 7 4; }
+.chart .line--dotted { stroke: var(--c-text-2); stroke-dasharray: 2 4; }
+.chart .dot { fill: var(--c-surface); stroke: var(--c-brand); stroke-width: 2.5; }
+.chart .dot--dashed { stroke: var(--c-accent); }
+.chart .dot--dotted { stroke: var(--c-text-2); }
+.chart .dot--last { fill: var(--c-brand); }
+.chart .dot--last.dot--dashed { fill: var(--c-accent); }
+.chart .dot--last.dot--dotted { fill: var(--c-text-2); }
+.chart .val { font-weight: 700; fill: var(--c-text); }
+.chart .chart-bar { fill: var(--c-brand); }
+.chart .bar-label { text-anchor: end; fill: var(--c-text); }
+.chart .bar-value { fill: var(--c-text-2); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); color: var(--c-text-2); }
+.legend li { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.legend svg { width: 28px; height: 10px; }
+.legend .swatch-line { stroke: var(--c-brand); stroke-width: 2.5; fill: none; }
+.legend .swatch-line--dashed { stroke: var(--c-accent); stroke-dasharray: 7 4; }
+.legend .swatch-line--dotted { stroke: var(--c-text-2); stroke-dasharray: 2 4; }
+.legend strong { color: var(--c-text); font-variant-numeric: tabular-nums; }
+.carousel__ctrl { display: flex; align-items: center; gap: var(--sp-1); flex: 1 1 auto; min-width: 0; }
+.carousel__ctrl .carousel__status { flex: none; min-width: 3.6em; text-align: center; font-size: var(--fs-sm); color: var(--c-text-2); }
+.carousel__ctrl .btn--icon { flex: none; }
+.carousel__ctrl .carousel__pause { margin-left: auto; }
+/* 점은 한 줄로만 놓는다(칸이 모자라면 점 칸이 같이 좁아진다 — 두 줄로 꺾이지 않는다) */
+.dots { display: flex; flex-wrap: nowrap; justify-content: center; gap: 0; }
+.dots button { flex: 1 1 0; min-width: 14px; max-width: 24px; height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.dots button i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--c-border-strong); background: transparent; box-sizing: content-box; }
+.dots button[aria-current='true'] i { width: 12px; border-radius: var(--r-pill); background: var(--c-brand); border-color: var(--c-brand); }
+
+/* ---------- 넓은 화면 ---------- */
+@media (min-width: 640px) {
+  .choices--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 960px) {
+  .title { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); column-gap: var(--sp-8); padding-top: var(--sp-6); align-items: start; }
+  .title__main { grid-column: 1; grid-row: 1; }
+  .title-foot { grid-column: 1; grid-row: 2; }
+  /* 넓은 화면의 캐러셀(R-200): 카드 높이는 보이는 슬라이드만큼이다 — 가장 큰 슬라이드에 맞춰 고정하면 짧은 슬라이드 아래가 비고, 카드 전체가 하단 띠에 가려졌다.
+     오른쪽 열이라 카드 높이가 바뀌어도 아래 내용은 흔들리지 않는다. 안 보이는 슬라이드는 겹쳐 두되 흐름에서 빠지고(absolute), 넘치는 부분은 잘라 문서 높이에 보태지 않는다. */
+  .slides { display: block; position: relative; overflow: hidden; }
+  .slide { grid-area: auto; }
+  .slide:not(.is-active) { position: absolute; top: 0; left: 0; right: 0; }
+  .title__main, .hero { gap: var(--sp-4); }
+  .hero { align-items: flex-start; text-align: left; }
+  .spoon-lineup { max-width: 460px; }
+  .hero__tag { max-width: none; }
+  .hero .logo--stacked { display: none; }
+  .hero .logo--row { display: block; }
+  .hero__pop { max-width: none; }
+  /* 따라다니는 카드가 하단 띠 위에 머문다: 낮은 화면(예: 높이 650px의 노트북 창)에서 카드가 더 크면 카드 안쪽이 스크롤된다(안쪽 스크롤 전에는 조작 줄이 카드 머리라 보이고, 안쪽을 내리면 머리도 함께 올라가며 PageUp·휠로 되돌린다 — R-224).
+     바깥 여백 3px은 카드 그림자·테두리가 스크롤 영역에 잘리지 않게 하려는 것이다.
+     R-220: 카드가 놓인 격자 영역은 본문 줄과 푸터 줄을 합친 높이(grid-row: 1 / span 2)라서 따라다니는 범위가 문서 끝까지 이어진다 — 맨 아래까지 내려도 카드가 열 끝에 밀려 올라가지 않고
+     늘 같은 자리에 있어 슬라이드가 바뀌어도 조작 줄이 움직이지 않는다. max-height(−3px)는 카드(바깥 여백 포함)가 격자 끝 = 하단 띠 위끝 − 8px(본문 끝 여백)에 1px도 걸려 밀려 올라가지 않게 잡았다
+     (이전 값 −1px에서는 확인 단계(띠 약 150px)의 안쪽 스크롤 슬라이드가 맨 아래에서 1px 밀렸다 — R-224 e2e가 잡았다). */
+  .title__side { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: calc(var(--sp-6) - 3px); margin: -3px; padding: 3px; max-height: calc(100vh - var(--bar-h, 164px) - var(--sp-6) - 3px); overflow-y: auto; scroll-padding: var(--sp-3) 0; }
+  /* ↑ scroll-padding: 카드 안쪽을 스크롤해 포커스를 보일 때 포커스 링(최대 7px)이 카드의 위·아래 가장자리에 잘리거나 하단 띠에 닿지 않게 한다(CM10) */
+  /* 띠가 풀리면(위 html.bar-released) 카드가 피할 하단 띠가 없다 — --bar-h에 묶인 max-height를 푼다(QM2-12) */
+  html.bar-released .title__side { max-height: calc(100vh - var(--sp-6) - 3px); }
+}
+
+/* ---------- 강제 색상(고대비) ---------- */
+@media (forced-colors: active) {
+  .btn, .card, .radio-card, .tag { border-color: CanvasText; }
+  .radio-card.is-disabled { border-color: GrayText; color: GrayText; }
+  .radio-card.is-disabled .radio-card__title, .radio-card.is-disabled .radio-card__desc, .radio-card.is-disabled .radio-card__meta { color: GrayText; }
+  .btn--primary { forced-color-adjust: none; background: ButtonFace; color: ButtonText; border: 3px solid ButtonText; }
+  /* 상태 규칙도 시스템 색 짝으로 덮는다: 강제 색상에서 tokens.css가 --c-brand-hover를 ButtonText로 매핑해, 위의 보통 모드 규칙 `.btn--primary:hover { background: var(--c-brand-hover) }`가
+     hover 때 배경을 ButtonText로 칠했고 글자색도 ButtonText라 주 버튼(「태어나기」·「돌아가기」)의 글자가 사라졌다(배경 = 글자 = rgb(0, 0, 0), REV-003-M2-4 r6 후속).
+     forced-color-adjust: none인 이 버튼은 상태마다 배경·글자를 **한 짝**으로 정한다: hover·active는 Highlight / HighlightText(눌릴 수 있다는 변화가 보인다), 키보드 포커스는 기본 짝 그대로(링은 outline이 그린다). */
+  .btn--primary:hover, .btn--primary:active { background: Highlight; color: HighlightText; }
+  .btn--primary:focus-visible { background: ButtonFace; color: ButtonText; }
+  .btn--primary:focus-visible:hover, .btn--primary:focus-visible:active { background: Highlight; color: HighlightText; }
+  .btn[aria-pressed='true'], .btn.is-on { forced-color-adjust: none; background: Highlight; color: HighlightText; border: 4px double ButtonText; box-shadow: none; }
+  .radio-card.is-selected { forced-color-adjust: none; border: 4px double CanvasText; background: Canvas; color: CanvasText; }
+  .radio-card.is-selected .radio-card__mark { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  .dots button[aria-current='true'] i { forced-color-adjust: none; background: CanvasText; border-color: CanvasText; }
+  .slide__help { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  .logo-wrap > svg { forced-color-adjust: none; }
+  /* 하단 띠의 위끝 구분선은 box-shadow(--shadow-bar·풀린 띠의 0 -1px 0)로 그리는데 강제 색상은 그림자를 지운다 — 띠가 본문과 구분되지 않는다(QA-003-M2 3회차 기록 5).
+     시스템 색 CanvasText의 1px 실선 테두리로 대신한다. 고정·해제 **둘 다 같은 규칙**(.bottom-bar 한 곳)이라 두 상태의 띠 높이가 같다 — 해제 때 --bar-h가 어긋나지 않는다(QM2-12). */
+  .bottom-bar { border-top: 1px solid CanvasText; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide, .slide.is-active { transition: none; }
+}
