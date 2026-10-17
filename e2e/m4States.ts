@@ -1,11 +1,12 @@
 import { expect, type Page } from '@playwright/test';
 import type { GameState } from '../src/core/types';
-import { GAME_KEY, KNOWN_SEED, evalCore, findPendingState, injectSave, lifeState, oracleAuto, oracleLife, startPageHidden } from './helpers';
+import { findImpactState } from './m5States';
+import { GAME_KEY, KNOWN_SEED, evalCore, injectSave, lifeState, oracleAuto, oracleLife, startPageHidden } from './helpers';
 
 /**
  * M4 새 화면(대시보드·엔딩·밀린 화면·오류 화면)의 상태 (SPEC-003 CM10·CM11·QM2-10·QM3-1, M3의 `m3States.ts`와 같은 역할).
  *  - dash-infant    인생 0세(영아, 선택지 없음): 얼굴 영아, 학력 「취학 전」, 자산 현황은 스무 살 전 안내, 기록은 출생 한 줄
- *  - dash-decision  선택지 3개가 떠 있는 대시보드(중대 결정 카드가 맨 위): 카드·선택지가 고정 머리·진행 줄과 겹치는 대표 상태
+ *  - dash-decision  선택지 3개 이상이 떠 있는 대시보드(중대 결정 카드가 맨 위): 카드·선택지가 고정 머리·진행 줄과 겹치는 대표 상태. M5부터 **영향 줄이 가장 긴 성인 결정**(선택지 중 하나가 5항목)이라 영향 줄·안내 한 줄까지 모든 M4 감사(고정 요소·포커스·낱말 끊김·색)가 함께 잰다
  *  - dash-adult     50세(성인, 선택지 없음): 얼굴 중년, 기록이 길고 식구(배우자·자녀)·또래 라벨이 다양
  *  - dash-exit-ask  50세 대시보드에 **나가기 확인 단계**가 열려 있다(R-322): 긴 안내문 + 버튼 둘(「첫 화면으로 나가기」·「돌아가기」, 포커스는 「돌아가기」) — 프로그램 포커스·낱말 줄바꿈·넘침(R-336)·대비 감사의 대상
  *  - dash-tools-open 50세 대시보드에 **도구 줄이 모두 열려 있다**(R-322): BGM 켜짐(볼륨 슬라이더·읽기 전용 「켜짐」) + 「준비 중」 표식이 있는 생각 남기기 — 슬라이더 가림·넘침·대비 감사의 대상
@@ -82,7 +83,7 @@ export async function openM4Screen(page: Page, screen: M4Screen | M4ExtraScreen,
   if (screen === 'dash-infant') {
     await injectSave(page, lifeState(seed), '/', { speed: 1, autoMode: false });
   } else if (screen === 'dash-decision') {
-    await injectSave(page, await findPendingState(page, 'present', { minChoices: 3 }), '/', { speed: 1, autoMode: false });
+    await injectSave(page, await findImpactState(page, 'adult'), '/', { speed: 1, autoMode: false });
     await expect(page.getByTestId('choice-panel')).toBeVisible();
   } else if (screen === 'dash-adult' || screen === 'dash-exit-ask' || screen === 'dash-tools-open' || screen === 'dash-diamond') {
     const base = await adultState(page);

@@ -9,6 +9,7 @@ import {
   PEER_STATUSES,
   PEER_STATUS_AGES,
   PEER_STATUS_LABEL,
+  PEER_STATUS_TABLE,
   peerBandOf,
   peerStatusSeries,
   type ParentWealth,
@@ -202,5 +203,90 @@ describe('대량 표본: 평생 고정 인생 운이 만들던 하위 꼬리가 
     };
     const share = lives(1, N, 64).filter(heavy).length / N;
     expect(share, '10년 중 8년 이상 구직 중').toBeLessThanOrEqual(0.01);
+  });
+});
+
+/**
+ * M5 착수 때 함께(REV-003-M4-3 관찰, 2026-10-17): N10c의 분포 대가가 큰 나이(20·56·65세)의 상한 시험과 20세 G3 단조성.
+ * 「분포 대가」 = 같은 시드의 같은 표본을 N10c 이전 모델(`minHoldYears: 1`)과 지금 모델로 만들었을 때 라벨 비율이 달라진 크기(%p). 측정(표본 4000명, 시드는 `lives`와 같다):
+ * 3%p 넘게 달라진 나이는 20(9.9)·24(9.7)·25(7.5)·45(3.1)·56(10.3)·64(4.3)·65(8.4)·76(3.4)세뿐이고 최대 10.3%p(수저 3단계 56세 「일하는 사람」 46.7 → 36.4)다.
+ * 같은 표본의 표(`PEER_STATUS_TABLE`) 대비 편차는 20세 10.7·56세 9.8·65세 9.3%p(5수저 중 최대). 시드가 같아 표본이 결정적이므로 측정값 바로 위에 상한을 둔다 —
+ * 규칙이나 표를 고쳐 대가가 커지면 이 시험이 먼저 알린다. (참고: 표 대비 편차가 가장 큰 곳은 23~26세 흙수저의 18~23%p — 「구직 중」 상한(R-328)과 N10c가 함께 만든 것이고 이 파일 위쪽 시험의 허용 밖이라 대상이 아니다.)
+ */
+describe('N10c 분포 대가 상한과 20세 G3 단조성 (REV-003-M4-3 관찰, M5 착수)', () => {
+  const share = (sample: PeerStatus[][], age: number, st: PeerStatus) => sample.filter((series) => series[age] === st).length / sample.length;
+  /** 같은 시드·수저의 지금 모델과 N10c 이전 모델의 라벨 비율 차이 최댓값(모든 수저·라벨) */
+  const costAt = (age: number): number => {
+    let worst = 0;
+    for (const w of PARENT_WEALTHS) {
+      const now = lives(w, N, 120);
+      const old = lives(w, N, 120, { minHoldYears: 1 });
+      for (const st of PEER_STATUSES) worst = Math.max(worst, Math.abs(share(now, age, st) - share(old, age, st)));
+    }
+    return worst;
+  };
+  const tableDeviationAt = (age: number): number => {
+    let worst = 0;
+    for (const w of PARENT_WEALTHS) {
+      const sample = lives(w, N, age);
+      const weights = peerBandOf(age).byWealth[w - 1];
+      for (const st of PEER_STATUSES) worst = Math.max(worst, Math.abs(share(sample, age, st) - (weights[st] ?? 0) / 100));
+    }
+    return worst;
+  };
+
+  it('N10c가 3%p 넘게 바꾼 나이는 20·24·25·45·56·64·65·76세뿐이고, 가장 큰 변화도 11%p 이하다 (모든 나이 0~120 × 5수저 × 6라벨)', () => {
+    const KNOWN = new Set([20, 24, 25, 45, 56, 64, 65, 76]);
+    const samples = PARENT_WEALTHS.map((w) => ({ now: lives(w, N, 120), old: lives(w, N, 120, { minHoldYears: 1 }) }));
+    let worst = 0;
+    const over3: number[] = [];
+    for (let age = 0; age <= 120; age++) {
+      let atAge = 0;
+      for (const s of samples) for (const st of PEER_STATUSES) atAge = Math.max(atAge, Math.abs(share(s.now, age, st) - share(s.old, age, st)));
+      if (atAge > 0.03) over3.push(age);
+      worst = Math.max(worst, atAge);
+    }
+    expect(over3.filter((a) => !KNOWN.has(a)), `3%p 넘게 달라진 나이 ${over3.join('·')}`).toEqual([]);
+    expect(over3.length, '공허 통과 방지: 대가가 실제로 있는 나이가 있다').toBeGreaterThanOrEqual(5);
+    expect(worst, `최대 변화 ${(worst * 100).toFixed(1)}%p`).toBeLessThanOrEqual(0.11);
+  });
+
+  it('20·56·65세: N10c 이전 대비 변화가 각각 11%p·11%p·9.5%p 이하이고, 표 대비 편차도 12%p·11%p·10.5%p 이하다 (측정 9.9·10.3·8.4 / 10.7·9.8·9.3)', () => {
+    for (const [age, costMax, tableMax] of [
+      [20, 0.11, 0.12],
+      [56, 0.11, 0.11],
+      [65, 0.095, 0.105],
+    ] as const) {
+      const cost = costAt(age);
+      const dev = tableDeviationAt(age);
+      expect(cost, `${age}세 N10c 변화 ${(cost * 100).toFixed(1)}%p`).toBeLessThanOrEqual(costMax);
+      expect(cost, `${age}세: 대가가 있는 나이라는 전제 — 3%p 넘는다`).toBeGreaterThan(0.03);
+      expect(dev, `${age}세 표 대비 편차 ${(dev * 100).toFixed(1)}%p`).toBeLessThanOrEqual(tableMax);
+    }
+  });
+
+  it('20세 G3 단조성: 수저가 높을수록 「학교에 다님」의 몫이 크고(표 35·46·58·70·80) 구직 중·일하는 사람의 몫은 작다 — 이웃 단계 사이 학교 몫 차이가 9%p 이상(측정 9.8~13.8)', () => {
+    const at20 = PARENT_WEALTHS.map((w) => lives(w, N, 20));
+    const school = at20.map((s) => share(s, 20, 'school'));
+    const seeking = at20.map((s) => share(s, 20, 'seeking'));
+    const working = at20.map((s) => share(s, 20, 'working'));
+    for (let i = 1; i < 5; i++) {
+      expect(school[i] - school[i - 1], `학교 20세 ${school.map((x) => x.toFixed(2)).join('/')}`).toBeGreaterThanOrEqual(0.09);
+      expect(seeking[i], `구직 중 20세 ${seeking.map((x) => x.toFixed(2)).join('/')}`).toBeLessThan(seeking[i - 1]);
+      expect(working[i], `일하는 사람 20세 ${working.map((x) => x.toFixed(2)).join('/')}`).toBeLessThan(working[i - 1]);
+    }
+    expect(school[4] - school[0], '흙수저와 다이아몬드수저의 20세 학교 몫 차이').toBeGreaterThan(0.4);
+  });
+
+  it('19~29세에서도 같은 방향이다: 학교 몫은 수저가 높을수록 줄지 않는다(구간 표 단조 + 표본) — 이웃 단계 사이 0.5%p까지 표본 오차 허용', () => {
+    for (let age = 19; age <= 29; age++) {
+      const school = PARENT_WEALTHS.map((w) => share(lives(w, N, age), age, 'school'));
+      for (let i = 1; i < 5; i++) expect(school[i], `${age}세 학교 몫 ${school.map((x) => x.toFixed(3)).join('/')}`).toBeGreaterThanOrEqual(school[i - 1] - 0.005);
+    }
+    // 표 자체도 단조(설계값 점검): 모든 구간에서 학교 가중치가 수저 단계에 대해 줄지 않는다
+    for (const band of PEER_STATUS_TABLE) {
+      const weights = band.byWealth.map((x) => x.school ?? 0);
+      for (let i = 1; i < 5; i++) expect(weights[i], `${band.from}~${band.to}세 표`).toBeGreaterThanOrEqual(weights[i - 1]);
+    }
   });
 });

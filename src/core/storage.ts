@@ -1,12 +1,14 @@
 import { ERA_CONFIG } from '../data/birthTable';
 import { EVENT_POOL } from '../data/events';
-import { HISTORY_LIMITS, STATE_LIMITS } from '../data/lifeTable';
+import { LIMITS } from '../data/economyTable';
+import { HISTORY_LIMITS, STAGE_TABLE, STATE_LIMITS } from '../data/lifeTable';
 import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
 import { isValidBirthReport } from './birthReport';
 import { isValidStat } from './stats';
 import {
   BGM_VOLUME_MAX,
   BGM_VOLUME_MIN,
+  DWELLINGS,
   ERAS,
   GENDERS,
   HISTORY_KINDS,
@@ -15,6 +17,7 @@ import {
   PARENT_WEALTHS,
   PHASES,
   SPEEDS,
+  STAT_KEYS,
   THEMES,
   selectableLifeLength,
   type Character,
@@ -22,6 +25,7 @@ import {
   type Settings,
   type Stats,
 } from './types';
+import { isValidAssets } from './economy';
 import { DEFAULT_SETTINGS } from './state';
 
 /**
@@ -33,10 +37,12 @@ import { DEFAULT_SETTINGS } from './state';
  *     (ERA_CONFIG.present.birthYears) M2 시기의 v5 저장(지금 세상 2008~2025년생)은 새 게임으로 시작한다 — 버전을 올려 「손상」이 아니라 「이전 버전」으로 분류하고 첫 화면에 안내 한 줄(C6)을 보인다(REV-003-M2-1 R-213).
  * v7: 개편(SPEC-003 M4) — 판 상태에 일시정지 여부(`paused`, DB3·DB8: 「나가기」가 일시정지 상태로 저장하고 새로고침해도 멈춘 채 열린다)가 더해졌다. 일시정지는 인생(life) 단계에서만 true일 수 있다.
  *     연표 상한도 160 → 300줄로 올랐다(data/lifeTable.ts#HISTORY_LIMITS, DB12). v6 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6).
+ * v8: 개편(SPEC-003 M5) — **재산(wealth) 스탯이 없어지고** 20세부터의 자산 현황(`assets`: 순자산·연 소득·부채·소득 보정·주거 형태, 만 원 정수)과 20세 미만의 집안 살림(`familyFund`)이 판 상태에 더해졌다.
+ *     v7 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6 — `classifySavedGame`이 `version < SCHEMA_VERSION`을 이전 버전으로 분류한다). docs/data/economy-model.md 10절.
  */
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 /**
  * 설정 스키마는 게임 스키마와 따로 버전을 관리한다(게임 스키마가 바뀌어도 설정은 유지).
  * v2: 첫 화면에서 고른 세상(era)·인생 길이(lifeLength)가 더해졌다. v1 설정(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — 배속·자동 모드를 잃지 않는다.
@@ -85,16 +91,9 @@ const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInt
 const isUint32 = (v: unknown): v is number => isInt(v) && v >= 0 && v <= 0xffffffff;
 const isOneOf = (list: readonly unknown[], v: unknown): boolean => list.includes(v);
 
-/** 스탯 5개가 모두 0~100의 정수 (범위 정책은 core/stats.ts 한 곳, R-024) */
+/** 스탯 4개가 모두 0~100의 정수이고 그 밖의 키는 없다 (범위 정책은 core/stats.ts 한 곳, R-024). 재산 스탯은 v8에서 없어졌다 — 옛 `wealth` 키가 남은 저장은 손상으로 본다. */
 function validStats(v: unknown): v is Stats {
-  return (
-    isObj(v) &&
-    isValidStat(v.wealth) &&
-    isValidStat(v.education) &&
-    isValidStat(v.health) &&
-    isValidStat(v.happiness) &&
-    isValidStat(v.relationships)
-  );
+  return isObj(v) && Object.keys(v).length === STAT_KEYS.length && STAT_KEYS.every((k) => isValidStat(v[k]));
 }
 
 function validCharacter(v: unknown): v is Character {
@@ -192,6 +191,10 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
     (v.birthReport === null || isObj(v.birthReport)) &&
     (v.peerSeed === null || isUint32(v.peerSeed)) &&
     typeof v.paused === 'boolean' &&
+    isInt(v.familyFund) &&
+    v.familyFund >= -LIMITS.familyFundMax &&
+    v.familyFund <= LIMITS.familyFundMax &&
+    (v.assets === null || isValidAssets(v.assets, DWELLINGS)) &&
     validStats(v.stats) &&
     (v.birthStats === null || validStats(v.birthStats)) &&
     isInt(v.age) &&
@@ -230,6 +233,11 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   } else if (v.character !== null || v.birthStats !== null || v.birthReport !== null || v.peerSeed !== null) {
     return 'invalid';
   }
+  // 자산(v8): 20세 이상에서만 있고(독립이 만든다) 20세 미만에는 없다. 집안 살림은 20세 미만에서만 쌓이고 독립 때 0이 된다.
+  if ((v.assets !== null) !== (afterBirth && age >= STAGE_TABLE.youth.startAge)) return 'invalid';
+  if (age >= STAGE_TABLE.youth.startAge && v.familyFund !== 0) return 'invalid';
+  // 출생 전 단계(title·roulette·birth)에는 집안 살림이 쌓일 수 없다(R-357): 변조한 첫 화면 저장의 familyFund가 새 판의 20세 자산에 합쳐지지 않게 막는다
+  if (!(phase === 'life' || phase === 'ending') && v.familyFund !== 0) return 'invalid';
   // 첫 화면(title)에서는 세상·인생 길이가 아직 정해지지 않았다(고르는 값은 설정에 있다). 판 상태에 있으면 변조·손상이다.
   if (phase === 'title' && (v.era !== null || v.lifeLength !== null)) return 'invalid';
   // 일시정지는 인생(life) 단계에서만 있을 수 있다(DB3). 다른 단계에 켜져 있으면 변조·손상이다.

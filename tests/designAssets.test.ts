@@ -36,6 +36,7 @@ async function readText(relative: string): Promise<string> {
 }
 const tokensCss = await readText('../src/styles/tokens.css');
 const dsCss = await readText('../docs/design/mockups/ds.css');
+const economyMockHtml = await readText('../docs/design/mockups/economy-m5.html');
 
 const TIERS: LooksTier[] = [1, 2, 3, 4, 5];
 const GENDERS: Gender[] = ['female', 'male'];
@@ -617,10 +618,14 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
    */
   it('R-190: 화면 시안의 수저 아이콘은 모두 칩·띠 안에 있고 바로 뒤에 같은 단계의 이름이 따른다 — 단독 사용 0', () => {
     const mockups = import.meta.glob('../docs/design/mockups/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
-    // 설명판(components·spoon-sizes·symbols·faces)과 수저가 나오지 않는 밀린·오류 화면 시안(system — 공통 헤더 + 카드 하나, 2026-10-17 M4 착수 정리)은 제외
-    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system)\.html$/.test(n));
-    expect(screens.length).toBe(12);
-    expect(mockups[Object.keys(mockups).find((n) => n.endsWith('/system.html')) ?? ''] ?? '', 'system.html: 수저 아이콘 없음').not.toMatch(/<svg class="spoon/);
+    // 설명판(components·spoon-sizes·symbols·faces)과 수저가 나오지 않는 화면 시안 — 밀린·오류 화면(system — 공통 헤더 + 카드 하나, 2026-10-17 M4 착수 정리),
+    // M5 경제 모델 시안(economy-m5 — 선택지 영향 줄·자산 카드·엔딩 최종 순자산 줄, 2026-10-17 designer; 「자산 현황」에는 칩을 두지 않는다는 규칙 그대로)은 제외하고 아이콘이 정말 없음을 따로 단언한다
+    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5)\.html$/.test(n));
+    expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장').toBe(12);
+    for (const bare of ['system', 'economy-m5']) {
+      expect(mockups[Object.keys(mockups).find((n) => n.endsWith(`/${bare}.html`)) ?? ''] ?? '', `${bare}.html: 시안이 있고 수저 아이콘 없음`).not.toMatch(/<svg class="spoon/);
+      expect(Object.keys(mockups).some((n) => n.endsWith(`/${bare}.html`)), `${bare}.html 존재`).toBe(true);
+    }
     let total = 0;
     for (const [name, html] of screens) {
       const icons = html.match(/<svg class="spoon[^"]*"/g) ?? [];
@@ -649,5 +654,148 @@ describe('저작권·문구 기록 (DS8, R-123)', () => {
     // 「접속자」는 금지 규칙을 적은 자리(R-131 행)에만 있고, 화면 문구 칸(「」 안의 첫 화면 보조 설명)에는 없다
     expect(copyMd).toContain('「접속자」 낱말을 쓰지 않는다');
     expect(copyMd).toContain('「이 기기 안에서 계산한 가상의 사람들이에요. 실제로 게임하는 사람 수가 아니에요.」');
+  });
+});
+
+/**
+ * M5 영향 줄·자산 카드·최종 순자산 줄 계약 (SPEC-003 EC5·DB11, economy-model.md 7·9-2·11·15절, designer 2026-10-17 — copy.md 4절 ↔ ds.css ↔ 시안 economy-m5.html).
+ * developer는 ds.css 블록을 dash.css로 글자 그대로 옮기고 문장은 copy.md 4-2절 표를 쓴다. 여기서는 세 산출물이 서로 어긋나지 않았는지만 본다(구현 화면은 developer의 시험·e2e 몫).
+ */
+describe('M5 영향 줄·자산 카드·최종 순자산 줄 계약 (designer 산출물 사이의 일치)', () => {
+  const NAME: Record<string, string> = { assets: '자산', family: '집안 살림', debt: '부채', relationships: '관계', happiness: '행복', health: '건강', education: '지식' };
+  const JOSA: Record<string, string> = { assets: '이', family: '이', debt: '가', relationships: '가', happiness: '이', health: '이', education: '이' };
+  const STEP = ['', '조금 ', '', '크게 '];
+  const sentence = (kind: string, dir: 'up' | 'down', n: 1 | 2 | 3) => `${NAME[kind]}${JOSA[kind]} ${STEP[n]}${dir === 'up' ? '늘어납니다.' : '줄어듭니다.'}`;
+
+  it('copy.md 4-2절: 항목 7개 × 방향 2 × 칸 수 3 = 42문장이 모두 합쇼체로 적혀 있고, 해요체 영향 문장은 없다 (D17)', () => {
+    let count = 0;
+    for (const kind of Object.keys(NAME)) {
+      for (const dir of ['up', 'down'] as const) {
+        for (const n of [1, 2, 3] as const) {
+          expect(copyMd, `${kind} ${dir} ${n}`).toContain(sentence(kind, dir, n));
+          count++;
+        }
+      }
+    }
+    expect(count).toBe(42);
+    expect(copyMd).toContain('자산이 크게 줄어듭니다.');
+    expect(copyMd).toContain('부채가 크게 늘어납니다.');
+    expect(copyMd).not.toMatch(/줄어요|늘어요/);
+  });
+
+  it('copy.md 4절: 자산 카드·도움말·엔딩 줄 문구 — 「약」 없는 formatWon 금액, 가구 기준 한 문장, 「지금 가치로 환산」, 최종 순자산 세 경우', () => {
+    for (const phrase of [
+      '「상태와 자산의 뜻 보기」',
+      '순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.',
+      '순자산은 가진 것에서 부채를 뺀 값입니다. 0보다 작으면 부채가 가진 것보다 많다는 뜻입니다.',
+      '「지금 가치로 환산」',
+      '「같은 세상 안에서 {standingLabel}」',
+      '「스무 살이 되기 전이라 자산을 세지 않았습니다.」',
+      '▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.',
+    ]) {
+      expect(copyMd, phrase).toContain(phrase);
+    }
+    // 금액 옆에 「약」을 붙이지 않는다(정확한 모델 값) — 4절 예시 금액 어디에도 「약 N만 원」 꼴이 없다
+    const section = copyMd.slice(copyMd.indexOf('## 4. M5 경제 모델'));
+    expect(section.length).toBeGreaterThan(2000);
+    expect(section).not.toMatch(/약 [\d,]+(억|만) 원/);
+  });
+
+  it('ds.css M5 블록: 항목은 한 덩어리(nowrap), 「·」는 접근성 트리에 없는 CSS 생성 글자이고 컨테이너(overflow hidden + column-gap)가 줄 첫머리 기호를 가린다, 지속 비활성 선택지·금액 크기 3단계·폴백·강제 색상 쌍이 있다', () => {
+    const rule = (selector: string): string => {
+      const stripped = dsCss.replace(/\/\*[^]*?\*\//g, '');
+      const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const m = new RegExp(`(?:^|\\}|\\n)\\s*${escaped}\\s*\\{([^}]*)\\}`).exec(stripped);
+      expect(m, `규칙 ${selector}`).not.toBeNull();
+      return m![1];
+    };
+    expect(rule('.impact')).toMatch(/display: flex/);
+    expect(rule('.impact')).toMatch(/flex-wrap: wrap/);
+    expect(rule('.impact')).toMatch(/column-gap: var\(--impact-gap\)/);
+    expect(rule('.impact')).toMatch(/overflow: hidden/);
+    expect(rule('.impact__item')).toMatch(/white-space: nowrap/);
+    expect(rule('.impact__item')).toMatch(/position: relative/);
+    expect(rule('.impact__item::before')).toMatch(/content: '·' \/ ''/);
+    expect(rule('.impact__item::before')).toMatch(/left: calc\(-1 \* var\(--impact-gap\)\)/);
+    // 기호의 색 = 톤(이로움 --c-up / 해로움 --c-down) — 방향 클래스가 아니다(r2 마스터 결정 D-37: 부채 ▲는 해로운 색)
+    expect(rule('.impact__step--good')).toMatch(/color: var\(--c-up\)/);
+    expect(rule('.impact__step--bad')).toMatch(/color: var\(--c-down\)/);
+    expect(dsCss.replace(/\/\*[^]*?\*\//g, '')).not.toMatch(/\.impact__step--(up|down)\b/);
+    expect(rule(".choice[data-unavailable='true']")).toMatch(/color: var\(--c-text-3\)/);
+    expect(rule(".choice[data-unavailable='true']")).toMatch(/border-style: dashed/);
+    expect(rule(".choice[data-unavailable='true']")).not.toMatch(/opacity/);
+    expect(rule('.card--assets')).toMatch(/container-type: inline-size/);
+    expect(dsCss).toMatch(/@container assets \(max-width: 14rem\) \{ \.assets__row dd \{ font-size: var\(--fs-md\); \} \}/);
+    expect(dsCss).toMatch(/@container assets \(max-width: 9\.5rem\) \{ \.assets__row dd \{ font-size: var\(--fs-sm\); \} \}/);
+    expect(dsCss).toMatch(/@container facts \(max-width: 14rem\) \{ \.final-net__value \{ font-size: var\(--fs-md\); \} \}/);
+    expect(rule('.final-net')).toMatch(/border-top: 1px solid var\(--c-border\)/);
+    // 컨테이너 질의 폴백(11-6)과 강제 색상 쌍
+    const fallback = dsCss.slice(dsCss.indexOf('@supports not (container-type: inline-size)'));
+    expect(fallback).toMatch(/\.assets__row dd, \.final-net__value \{ font-size: var\(--fs-md\); \}/);
+    expect(dsCss).toMatch(/@media \(forced-colors: active\) \{\s*\.choice\[data-unavailable='true'\][^}]*color: GrayText; border-color: GrayText;/);
+    // 색 값을 직접 적지 않는다(토큰만) — M5 규칙 본문에 16진 색이 0
+    for (const sel of ['.impact', '.impact__item', '.impact__item::before', '.impact__step--good', '.impact__step--bad', ".choice[data-unavailable='true']", '.choice-panel__hint', '.card--assets', '.assets__note', '.final-net', '.final-net__value', '.final-net__standing', '.final-net__none']) {
+      expect(rule(sel), sel).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    }
+  });
+
+  it('시안 economy-m5.html(생성기 economyPage가 만든다, D-35): 상태 9개를 품고, 영향 줄·자산 카드·최종 순자산 줄이 구현 컴포넌트가 만든 마크업이며 copy.md와 같은 7항목·합쇼체 문장이다', () => {
+    for (const state of ['choice', 'choice-young', 'impact-samples', 'assets', 'assets-past', 'assets-big', 'ending', 'ending-past', 'ending-early']) {
+      expect(economyMockHtml, state).toContain(`id="s-${state}"`);
+    }
+    expect(economyMockHtml).not.toMatch(/줄어요|늘어요/);
+    // 영향 줄은 구현 컴포넌트(ui/dash/Impact.tsx)의 마크업이다: 이름·기호는 aria-hidden, 문장은 sr-only, 데이터 속성 key·direction·steps
+    expect(economyMockHtml).toContain('<span class="impact__show" aria-hidden="true"><span class="impact__name">자산</span><span class="impact__step impact__step--bad">▼▼▼</span></span>');
+    expect(economyMockHtml).toContain('<span class="sr-only">자산이 크게 줄어듭니다.</span>');
+    expect(economyMockHtml).not.toContain('data-impact=');
+    // 기호 색은 톤 한 식으로: 부채만 ▲가 해로움(bad) — copy.md 4-8 impactTone과 같은 식(구현 impactTone 출력), 방향 클래스(--up/--down)는 쓰지 않는다 (r2, D-37)
+    expect(economyMockHtml).toContain('<span class="impact__name">부채</span><span class="impact__step impact__step--bad">▲▲</span>');
+    expect(economyMockHtml).toContain('<span class="impact__name">부채</span><span class="impact__step impact__step--good">▼▼</span>'); // 부채 ▼(초록) 견본
+    expect(economyMockHtml).toContain('<span class="impact__name">관계</span><span class="impact__step impact__step--good">▲</span>');
+    // 20세 미만 선택지에도 독립 때 확정되는 부채가 오면 「집안 살림 → 부채」 순서로 한 줄에 선다(M5 r4, R-351 (a)안 — copy.md 4-1·4-8)
+    expect(economyMockHtml).toMatch(/<span class="impact" data-testid="impact"><span class="impact__item" data-key="family"[^]*?<\/span><span class="impact__item" data-key="debt" data-direction="up" data-steps="2">/);
+    expect(economyMockHtml).not.toMatch(/impact__step--(up|down)\b/);
+    expect(copyMd).toContain('**부채만 반대**');
+    expect(copyMd).toContain("item.key === 'debt' ? (item.direction === 'up' ? 'bad' : 'good') : (item.direction === 'up' ? 'good' : 'bad')");
+    for (const name of Object.values(NAME)) expect(economyMockHtml, name).toContain(`impact__name">${name}<`);
+    // 문장 42개가 모두 견본 목록에 있다(구현 IMPACT_SR 그대로)
+    for (const kind of Object.keys(NAME)) for (const dir of ['up', 'down'] as const) for (const n of [1, 2, 3] as const) expect(economyMockHtml, `${kind} ${dir} ${n}`).toContain(sentence(kind, dir, n));
+    // 자산 카드·상태 도움말·안내 한 줄·최종 순자산 줄도 구현 출력이다
+    expect(economyMockHtml).toContain('<section class="card card--assets" aria-labelledby="assets-title"');
+    expect(economyMockHtml).toContain('<span class="tag" id="assets-basis"');
+    expect(economyMockHtml).toContain('<dl class="assets" aria-describedby="assets-basis"');
+    expect(economyMockHtml).toContain('>−1,200만 원<');
+    expect(economyMockHtml).toContain('<summary>상태와 자산의 뜻 보기</summary>');
+    expect(economyMockHtml).toContain('선택지 아래 글씨는 지금 이서연에게 일어날 변화입니다.');
+    expect(economyMockHtml).toContain('스무 살이 되기 전이라 자산을 세지 않았습니다.');
+    expect(economyMockHtml).toContain('같은 세상 안에서 <span class="nowrap">상위 약 38%</span>'); // 순위 표현은 줄바꿈 없는 묶음(KeepStanding)
+    expect(economyMockHtml).toContain('>1억 2,345만 원<');
+    expect(economyMockHtml).not.toContain('class="neg');
+    // 시안 글자에 사용자 폴더 절대경로가 없다(repoHygiene와 같은 뜻)
+    expect(economyMockHtml).not.toMatch(/[A-Za-z]:[\\/]Users[\\/]/);
+  });
+
+  it('다른 시안(decision-*·components·dashboard-*·note)도 M1 초안 영향 마크업(해요체 sr 문장·방향 색 클래스)·옛 상태 도움말 문장·옛 자산 카드(「올해 가치 기준」 태그·.neg)가 0이고, 영향 줄이 있는 곳은 구현 ImpactLine 출력이다 (r3, D-31·D-32·D-36)', () => {
+    const mockups = import.meta.glob('../docs/design/mockups/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const names = Object.keys(mockups);
+    expect(names.length).toBeGreaterThanOrEqual(13);
+    let withImpact = 0;
+    for (const [name, html] of Object.entries(mockups)) {
+      expect(html, `${name}: 해요체 영향 문장`).not.toMatch(/줄어요|늘어요/);
+      expect(html, `${name}: 방향 색 클래스`).not.toMatch(/class="(up|down)"|impact__step--(up|down)\b/);
+      expect(html, `${name}: 옛 도움말 제목`).not.toContain('상태 네 가지의 뜻 보기');
+      expect(html, `${name}: 옛 자산 카드`).not.toMatch(/class="neg|<span class="tag">올해 가치 기준<\/span>|마이너스는 빚이/);
+      if (html.includes('class="impact"')) {
+        withImpact++;
+        // 구현 ImpactLine 출력의 꼴: 항목에 data-key·direction·steps, 보이는 글자는 aria-hidden, 문장은 sr-only
+        expect(html, name).toMatch(/<span class="impact__item" data-key="[a-z]+" data-direction="(up|down)" data-steps="[123]"><span class="impact__show" aria-hidden="true">/);
+        expect(html, name).toMatch(/<span class="sr-only">[가-힣 ]+(늘어납니다|줄어듭니다)\.<\/span>/);
+      }
+    }
+    // economy-m5 · decision-adult · decision-infant · components 네 시안에 영향 줄이 있다(공허 통과 방지)
+    expect(withImpact).toBeGreaterThanOrEqual(4);
+    const dash = mockups[names.find((n) => n.endsWith('/dashboard-adult.html')) ?? ''] ?? '';
+    expect(dash).toContain('<summary>상태와 자산의 뜻 보기</summary>');
+    expect(dash).toContain('<section class="card card--assets" aria-labelledby="assets-title"');
   });
 });

@@ -39,7 +39,7 @@
           "id": "home",
           "label": "집에서 한 사람이 전담해 돌본다",
           "result": "한 사람이 곁에서 하루를 함께했다. 아이는 어른들의 말을 일찍 알아들었다.",
-          "effects": { "stats": { "education": 4, "happiness": 2, "wealth": -3 } },
+          "effects": { "stats": { "education": 4, "happiness": 2 }, "family": -450 },
           "requires": { "parentWealth": { "min": 4 } }
         }
       ]
@@ -57,8 +57,8 @@
           "id": "hospital",
           "label": "바로 병원으로 간다",
           "result": "밤길을 달려 병원에 갔다. 열은 새벽에 내렸고, 어른들은 아침까지 아이 곁을 지켰다.",
-          "effects": { "stats": { "health": 3, "wealth": -2 } },
-          "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "wealth": -2, "happiness": -1 } } }]
+          "effects": { "stats": { "health": 3 }, "family": -300 },
+          "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "happiness": -1 }, "family": -300 } }]
         },
         {
           "id": "watch",
@@ -70,7 +70,7 @@
           "id": "dismiss",
           "label": "별일 아니라며 넘긴다",
           "result": "어른들은 별일 아니라고 했다. 아이는 이틀을 앓고 털고 일어났지만 그 기억은 오래 남았다.",
-          "effects": { "stats": { "health": -3, "happiness": -2, "wealth": 1 } },
+          "effects": { "stats": { "health": -3, "happiness": -2 }, "family": 150 },
           "bonuses": [{ "when": { "parenting": ["free"] }, "effects": { "stats": { "happiness": 1 } } }]
         }
       ]
@@ -94,7 +94,7 @@
           "id": "book",
           "label": "그림책을 사다 준다",
           "result": "그림책이 한 권씩 늘어 갔다. 글자를 모르는 아이가 책장을 넘기며 혼자 이야기를 지어냈다.",
-          "effects": { "stats": { "education": 4, "wealth": -2 } },
+          "effects": { "stats": { "education": 4 }, "family": -300 },
           "requires": { "parentWealth": { "min": 3 } }
         },
         {

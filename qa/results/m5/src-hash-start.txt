@@ -1,0 +1,11 @@
+QA-003-M5 src/ 해시 기록 (해시 = src 아래 모든 파일의 경로+내용 sha256, 134개 파일. 계산: qa/scripts/m5-srchash.mjs)
+
+[S0] 시작(2026-10-18 04:07 KST)  06efd5dc0f5d6c87b30d246042be130f8405d3eb0c925899d94f62893d225400
+     → 이 해시의 코드로 첫 패스(수확·재생·프로브·정상 플레이·감사 일부)를 돌렸다. 결과는 *-s0 이름의 파일로 남겼다(cases-s0.jsonl, samples-s0-*.jsonl, journey-s0-*.json 등).
+[S1] 첫 패스 끝(05:33 KST)       c12582e8e5ef90979c1e0f182f7923556e8be8eb10106c2ab566995d5c2bdd21
+     → QA가 코드를 건드리지 않았는데 해시가 달라졌다: developer M5 r4(R-351~R-358)가 QA가 도는 동안 src를 고쳤다(마스터 지시).
+       바뀐 파일 9개: src/core/economy.ts · eventLint.ts · impact.ts · state.ts · storage.ts · src/data/economyTable.ts · events/senior.json · events/youth.json · finalDistribution.ts
+       바뀐 시각: 04:33~05:06 KST
+     → 이 해시로 prod 번들을 새로 만들어(index-DGd2pooQ.js) 전 케이스를 다시 돌렸다(05:35~06:35). 현재 cases.jsonl의 모든 케이스가 이 코드(S1 ≡ S2)에서 돌았다.
+[S2] 최종(06:32 KST)              46c22f794370f9c8965641e8040114af612ecdd9774e16aed80f166d49070187
+     → S1과 src/data/economyTable.ts 주석 한 줄만 다르다(06:16 developer). prod 번들(JS·CSS)은 S1과 바이트 단위로 같다(index-DGd2pooQ.js 동일) — 동작 차이 없음.

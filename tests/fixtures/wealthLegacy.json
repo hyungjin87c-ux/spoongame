@@ -1,0 +1,1218 @@
+[
+ {
+  "event": "infant-care",
+  "choice": "home",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "infant-fever",
+  "choice": "hospital",
+  "base": -2,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "max": 2
+     }
+    },
+    "wealth": -2
+   }
+  ]
+ },
+ {
+  "event": "infant-fever",
+  "choice": "dismiss",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "infant-stories",
+  "choice": "book",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "school-tutoring",
+  "choice": "academy",
+  "base": -3,
+  "bonuses": [
+   {
+    "idx": 1,
+    "when": {
+     "parentWealth": {
+      "max": 2
+     }
+    },
+    "wealth": -2
+   }
+  ]
+ },
+ {
+  "event": "school-tutoring",
+  "choice": "tutor",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "school-exam",
+  "choice": "apply",
+  "base": null,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 70
+      }
+     }
+    },
+    "wealth": 2
+   },
+   {
+    "idx": 3,
+    "when": {
+     "flags": [
+      "scholar"
+     ]
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "school-exam",
+  "choice": "retry",
+  "base": -3,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "school-exam",
+  "choice": "work",
+  "base": 4,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "flags": [
+      "skilled_trade"
+     ]
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "school-early-work",
+  "choice": "help",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "school-club",
+  "choice": "home",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "school-scholarship",
+  "choice": "apply",
+  "base": 3,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 60
+      }
+     }
+    },
+    "wealth": 2
+   }
+  ]
+ },
+ {
+  "event": "school-academy-night",
+  "choice": "many",
+  "base": -3,
+  "bonuses": [
+   {
+    "idx": 1,
+    "when": {
+     "parentWealth": {
+      "max": 2
+     }
+    },
+    "wealth": -2
+   }
+  ]
+ },
+ {
+  "event": "school-academy-night",
+  "choice": "one",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "school-family-priority",
+  "choice": "accept",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "school-family-priority",
+  "choice": "plead",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "school-career-choice",
+  "choice": "study",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "school-career-choice",
+  "choice": "skill",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "school-parttime",
+  "choice": "weekend",
+  "base": 4,
+  "bonuses": []
+ },
+ {
+  "event": "school-parttime",
+  "choice": "study",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "school-parttime",
+  "choice": "vacation",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "school-puppy",
+  "choice": "keep",
+  "base": -1,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "max": 2
+     }
+    },
+    "wealth": -1
+   }
+  ]
+ },
+ {
+  "event": "school-puppy",
+  "choice": "pass",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-work-pressure",
+  "choice": null,
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-first-job",
+  "choice": "stable",
+  "base": 4,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 70
+      }
+     }
+    },
+    "wealth": 3
+   },
+   {
+    "idx": 1,
+    "when": {
+     "flags": [
+      "early_work"
+     ]
+    },
+    "wealth": 2
+   },
+   {
+    "idx": 2,
+    "when": {
+     "flags": [
+      "skilled_trade"
+     ]
+    },
+    "wealth": 2
+   }
+  ]
+ },
+ {
+  "event": "youth-first-job",
+  "choice": "dream",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-first-job",
+  "choice": "family",
+  "base": 8,
+  "bonuses": []
+ },
+ {
+  "event": "youth-meeting",
+  "choice": "meet",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-meeting",
+  "choice": "later",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-marriage",
+  "choice": "marry",
+  "base": -4,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 5
+   },
+   {
+    "idx": 1,
+    "when": {
+     "parentWealth": {
+      "max": 2
+     }
+    },
+    "wealth": -2
+   }
+  ]
+ },
+ {
+  "event": "youth-marriage",
+  "choice": "part",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-marriage-again",
+  "choice": "marry",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "youth-marriage-again",
+  "choice": "part",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-reunion",
+  "choice": "meet",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-second-chance",
+  "choice": "marry",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "youth-second-chance",
+  "choice": "stay",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-second-chance",
+  "choice": "part",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-meeting-again",
+  "choice": "later",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-matchmaker",
+  "choice": "decline",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-approached",
+  "choice": "polite",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-child",
+  "choice": "have",
+  "base": -5,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 3
+   },
+   {
+    "idx": 1,
+    "when": {
+     "parentWealth": {
+      "max": 2
+     }
+    },
+    "wealth": -2
+   }
+  ]
+ },
+ {
+  "event": "youth-child",
+  "choice": "later",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-child",
+  "choice": "none",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-child-again",
+  "choice": "have",
+  "base": -5,
+  "bonuses": []
+ },
+ {
+  "event": "youth-child-again",
+  "choice": "none",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-workplace-romance",
+  "choice": "keep",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-housing",
+  "choice": "rent",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "youth-housing",
+  "choice": "parents",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-housing",
+  "choice": "loan",
+  "base": -4,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 6
+   },
+   {
+    "idx": 1,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 60
+      }
+     }
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "youth-exam-prep",
+  "choice": "persist",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "youth-exam-prep",
+  "choice": "work",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-exam-passed",
+  "choice": null,
+  "base": 5,
+  "bonuses": []
+ },
+ {
+  "event": "youth-exam-failed",
+  "choice": null,
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-friend-wedding",
+  "choice": "go",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-friend-wedding",
+  "choice": "gift",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-colleague",
+  "choice": "object",
+  "base": -1,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 60
+      }
+     }
+    },
+    "wealth": 2
+   }
+  ]
+ },
+ {
+  "event": "youth-colleague",
+  "choice": "endure",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-colleague",
+  "choice": "leave",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-startup",
+  "choice": "start",
+  "base": -3,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 8
+   },
+   {
+    "idx": 1,
+    "when": {
+     "looks": {
+      "min": 70
+     }
+    },
+    "wealth": 3
+   },
+   {
+    "idx": 2,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 60
+      }
+     }
+    },
+    "wealth": 4
+   }
+  ]
+ },
+ {
+  "event": "youth-startup",
+  "choice": "side",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-night-study",
+  "choice": "work",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "youth-night-study",
+  "choice": "save",
+  "base": 4,
+  "bonuses": []
+ },
+ {
+  "event": "youth-return-school",
+  "choice": null,
+  "condition": "conditions",
+  "wealth": {
+   "min": 20
+  }
+ },
+ {
+  "event": "youth-return-school",
+  "choice": "return",
+  "base": -6,
+  "bonuses": []
+ },
+ {
+  "event": "youth-return-school",
+  "choice": "stay",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-rent-hike",
+  "choice": "pay",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "youth-rent-hike",
+  "choice": "move",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-rent-hike",
+  "choice": "share",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-gig-work",
+  "choice": "juggle",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "youth-gig-work",
+  "choice": "settle",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-gig-work",
+  "choice": "learn",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-machine-partner",
+  "choice": "adapt",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "youth-machine-partner",
+  "choice": "human",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-machine-partner",
+  "choice": "resist",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "youth-job-rejections",
+  "choice": null,
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "youth-factory-night",
+  "choice": null,
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-business",
+  "choice": "start",
+  "base": -4,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 10
+   },
+   {
+    "idx": 1,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 70
+      }
+     }
+    },
+    "wealth": 6
+   },
+   {
+    "idx": 2,
+    "when": {
+     "looks": {
+      "min": 70
+     }
+    },
+    "wealth": 4
+   },
+   {
+    "idx": 3,
+    "when": {
+     "flags": [
+      "family_business"
+     ]
+    },
+    "wealth": 5
+   }
+  ]
+ },
+ {
+  "event": "middle-business",
+  "choice": "stay",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-parents-care",
+  "choice": "home",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-parents-care",
+  "choice": "facility",
+  "base": -6,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "wealth": {
+       "min": 70
+      }
+     }
+    },
+    "wealth": 3
+   },
+   {
+    "idx": 1,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "middle-parents-care",
+  "choice": "share",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-health-check",
+  "choice": "postpone",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-health-check-later",
+  "choice": "treat",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-health-check-later",
+  "choice": "ignore",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-health-crisis",
+  "choice": "rest",
+  "base": -5,
+  "bonuses": []
+ },
+ {
+  "event": "middle-health-crisis",
+  "choice": "push",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-new-skills",
+  "choice": "learn",
+  "base": null,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 70
+      }
+     }
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "middle-new-skills",
+  "choice": "keep",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "middle-remote-work",
+  "choice": "blur",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-remote-work",
+  "choice": "meet",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-child-school",
+  "choice": "support",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-child-school",
+  "choice": "push",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-child-school",
+  "choice": "fund",
+  "base": -8,
+  "bonuses": []
+ },
+ {
+  "event": "middle-child-school",
+  "choice": "fund",
+  "condition": "requires",
+  "wealth": {
+   "min": 30
+  }
+ },
+ {
+  "event": "middle-child-leaves",
+  "choice": null,
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-home-loan",
+  "choice": "move",
+  "base": -4,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 65
+      }
+     }
+    },
+    "wealth": 3
+   },
+   {
+    "idx": 1,
+    "when": {
+     "parentWealth": {
+      "min": 4
+     }
+    },
+    "wealth": 4
+   }
+  ]
+ },
+ {
+  "event": "middle-home-loan",
+  "choice": "stay",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-home-loan",
+  "choice": "shrink",
+  "base": 5,
+  "bonuses": []
+ },
+ {
+  "event": "middle-career-peak",
+  "choice": "accept",
+  "base": 6,
+  "bonuses": [
+   {
+    "idx": 0,
+    "when": {
+     "stats": {
+      "education": {
+       "min": 65
+      }
+     }
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "middle-career-peak",
+  "choice": "change",
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-layoff",
+  "choice": "hold",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-layoff",
+  "choice": "leave",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-layoff",
+  "choice": "open",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "middle-layoff",
+  "choice": "open",
+  "condition": "requires",
+  "wealth": {
+   "min": 25
+  }
+ },
+ {
+  "event": "middle-job-again",
+  "choice": "any",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-job-again",
+  "choice": "skill",
+  "base": 5,
+  "bonuses": []
+ },
+ {
+  "event": "middle-job-again",
+  "choice": "rest",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-friend-reunion",
+  "choice": "meet",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-friend-reunion",
+  "choice": "later",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-marriage-crisis",
+  "choice": "apart",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "middle-hobby",
+  "choice": "start",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-hobby",
+  "choice": "join",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-parents-farewell",
+  "choice": "stay",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-parents-farewell",
+  "choice": "share",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-debt-guarantee",
+  "choice": "sign",
+  "base": -10,
+  "bonuses": []
+ },
+ {
+  "event": "middle-debt-guarantee",
+  "choice": "lend",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "middle-debt-guarantee",
+  "choice": "refuse",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "middle-retirement-prep",
+  "choice": "save",
+  "base": 5,
+  "bonuses": []
+ },
+ {
+  "event": "middle-retirement-prep",
+  "choice": "learn",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "middle-retirement-prep",
+  "choice": "work",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-both-working",
+  "choice": null,
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "middle-own-shop-year",
+  "choice": null,
+  "base": 2,
+  "bonuses": []
+ },
+ {
+  "event": "senior-retire",
+  "choice": null,
+  "base": -2,
+  "bonuses": [
+   {
+    "idx": 1,
+    "when": {
+     "stats": {
+      "wealth": {
+       "max": 30
+      }
+     }
+    },
+    "wealth": -2
+   },
+   {
+    "idx": 2,
+    "when": {
+     "flags": [
+      "own_business"
+     ]
+    },
+    "wealth": 3
+   }
+  ]
+ },
+ {
+  "event": "senior-illness",
+  "choice": "treat",
+  "base": -6,
+  "bonuses": []
+ },
+ {
+  "event": "senior-illness-later",
+  "choice": "treat",
+  "base": -8,
+  "bonuses": []
+ },
+ {
+  "event": "senior-estate",
+  "choice": null,
+  "condition": "conditions",
+  "wealth": {
+   "min": 35
+  }
+ },
+ {
+  "event": "senior-estate",
+  "choice": "give",
+  "base": -10,
+  "bonuses": []
+ },
+ {
+  "event": "senior-estate",
+  "choice": "spend",
+  "base": -6,
+  "bonuses": []
+ },
+ {
+  "event": "senior-estate",
+  "choice": "donate",
+  "base": -6,
+  "bonuses": []
+ },
+ {
+  "event": "senior-move-home",
+  "choice": "facility",
+  "base": -5,
+  "bonuses": []
+ },
+ {
+  "event": "senior-travel",
+  "choice": "go",
+  "base": -5,
+  "bonuses": []
+ },
+ {
+  "event": "senior-travel",
+  "choice": "near",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "senior-spouse-care",
+  "choice": "help",
+  "base": -4,
+  "bonuses": []
+ },
+ {
+  "event": "senior-spouse-care",
+  "choice": "facility",
+  "base": -6,
+  "bonuses": []
+ },
+ {
+  "event": "senior-alone",
+  "choice": "pet",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "senior-new-device",
+  "choice": "avoid",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "senior-long-life",
+  "choice": "work",
+  "base": 3,
+  "bonuses": []
+ },
+ {
+  "event": "senior-last-wishes",
+  "choice": "things",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "senior-old-friend",
+  "choice": "visit",
+  "base": -2,
+  "bonuses": []
+ },
+ {
+  "event": "senior-fall",
+  "choice": "hospital",
+  "base": -3,
+  "bonuses": []
+ },
+ {
+  "event": "senior-fall",
+  "choice": "ignore",
+  "base": 1,
+  "bonuses": []
+ },
+ {
+  "event": "senior-classmates",
+  "choice": "go",
+  "base": -1,
+  "bonuses": []
+ },
+ {
+  "event": "senior-classmates",
+  "choice": "skip",
+  "base": 1,
+  "bonuses": []
+ }
+]

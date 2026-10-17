@@ -464,15 +464,34 @@ describe('선택지 균형 (R-069): 정답이 정해져 있거나 효과가 같�
   });
 
   it('보너스로 뒤집힐 수 있으면 통과한다 (위험을 지는 선택: 기본은 손해지만 조건이 맞으면 크게 낫다)', () => {
-    const risky = choiceOf('risk', { effects: { stats: { wealth: -4 } }, bonuses: [{ when: { parentWealth: { min: 4 } }, effects: { stats: { wealth: 10 } } }] });
-    const safe = choiceOf('safe', { effects: { stats: { wealth: 1 } } });
+    const risky = choiceOf('risk', { effects: { assets: { net: -1600 } }, bonuses: [{ when: { parentWealth: { min: 4 } }, effects: { assets: { net: 4000 } } }] });
+    const safe = choiceOf('safe', { effects: { assets: { net: 400 } } });
     expect(choiceBalanceProblems(evOf(risky, safe))).toEqual([]);
   });
 
   it('보너스를 최악으로 쳐도 낫다면 걸린다 (보너스가 손해만 더하는 경우)', () => {
-    const better = choiceOf('a', { effects: { stats: { wealth: 3 } }, bonuses: [{ when: { parentWealth: { max: 2 } }, effects: { stats: { wealth: -1 } } }] });
-    const worse = choiceOf('b', { effects: { stats: { wealth: 1 } } });
+    const better = choiceOf('a', { effects: { assets: { net: 1200 } }, bonuses: [{ when: { parentWealth: { max: 2 } }, effects: { assets: { net: -400 } } }] });
+    const worse = choiceOf('b', { effects: { assets: { net: 400 } } });
     expect(choiceBalanceProblems(evOf(better, worse)).join('\n')).toContain('a가 b보다');
+  });
+
+  // SPEC-003 M5: 재산 스탯이 없어진 뒤에도 돈이 한 축으로 남는다 — 돈 축 = 순자산 변화 + 3 × 연 소득 변화 + 집안 살림 변화(만 원), 부채는 빼고 본다
+  it('돈 축: 순자산(assets.net)·연 소득(assets.income, 3년치)·집안 살림(family)을 한 축으로 센다', () => {
+    // 한쪽이 돈에서 확실히 낫고 다른 축은 같으면 걸린다
+    expect(choiceBalanceProblems(evOf(choiceOf('a', { effects: { assets: { net: 300 } } }), choiceOf('b', { effects: { assets: { net: -900 } } }))).join('\n')).toContain('a가 b보다');
+    // 소득 +200/년은 순자산 +600과 같은 크기다(3년치): 같은 돈 축이면 효과가 같은 선택지다
+    expect(choiceBalanceProblems(evOf(choiceOf('a', { effects: { assets: { income: 200 } } }), choiceOf('b', { effects: { assets: { net: 600 } } }))).join('\n')).toContain('효과가 완전히 같다');
+    // 20세 미만: 집안 살림도 같은 축
+    expect(choiceBalanceProblems(evOf(choiceOf('a', { effects: { family: 300 } }), choiceOf('b', { effects: { family: -450 } }))).join('\n')).toContain('a가 b보다');
+    // 돈을 쓰고 다른 것을 얻는 선택은 통과한다 (교환 관계)
+    expect(choiceBalanceProblems(evOf(choiceOf('a', { effects: { stats: { happiness: 3 }, assets: { net: -900 } } }), choiceOf('b', { effects: { assets: { net: 300 } } })))).toEqual([]);
+    expect(choiceBalanceProblems(evOf(choiceOf('a', { effects: { stats: { education: 6 }, family: -450 } }), choiceOf('b', { effects: { stats: { education: 4 } } })))).toEqual([]);
+  });
+
+  it('부채는 돈 축에 세지 않는다: 순자산이 같고 부채만 다른 두 선택은 「효과가 같다」로 걸린다 (집을 사는 빚은 같은 값의 자산을 만든다)', () => {
+    const loan = choiceOf('a', { effects: { assets: { net: -800, debt: 9000 } } });
+    const rent = choiceOf('b', { effects: { assets: { net: -800 } } });
+    expect(choiceBalanceProblems(evOf(loan, rent)).join('\n')).toContain('효과가 완전히 같다');
   });
 
   it('스탯 효과가 없는 선택지는 비교하지 않는다 (기준 이벤트 변형 시험용 선택지가 걸리지 않는다)', () => {
@@ -492,9 +511,21 @@ describe('선택지 균형 (R-069): 정답이 정해져 있거나 효과가 같�
     expect(out).not.toContain('a가 b보다');
   });
 
-  it('예외 목록은 비어 있다 — 실제 풀의 모든 선택지 쌍에서 한쪽이 전 스탯에서 우월하지 않고, 같은 효과의 선택지도 없다', () => {
-    expect(DOMINANCE_EXCEPTIONS).toEqual([]);
+  /** 예외 사유 표 (R-352): 예외를 두려면 여기에 이유를 적는다 */
+  const DOMINANCE_REASONS: Record<string, string> = {
+    'youth-gig-work:learn>settle': '명시 효과로는 learn(지식 +4)이 settle(지식 +1·행복 −1)보다 낫지만 settle의 has_career 파생 소득(자산 ▲▲▲)은 이 점검이 못 본다 — 표기 기준 지배 점검은 통과(R-352 마스터 결정)',
+  };
+
+  it('예외 목록은 사유가 적힌 한 쌍뿐이다 — 실제 풀의 모든 선택지 쌍은 이 예외를 빼면 한쪽이 전 스탯에서 우월하지 않고, 같은 효과의 선택지도 없다', () => {
+    expect([...DOMINANCE_EXCEPTIONS].sort()).toEqual(Object.keys(DOMINANCE_REASONS).sort());
     expect(EVENT_POOL.events.flatMap(choiceBalanceProblems)).toEqual([]);
+  });
+
+  it('예외는 살아 있다: youth-gig-work의 id를 바꿔 예외에서 벗어나게 하면 정확히 learn > settle 한 쌍이 걸린다', () => {
+    const ev = EVENT_POOL.byId.get('youth-gig-work')!;
+    const problems = choiceBalanceProblems({ ...ev, id: 'youth-gig-work-copy' });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('learn가 settle보다');
   });
 
   it('REV-001-M4-1이 든 옛 값(youth-reunion reply/ignore 동일, senior-last-wishes 정답형)이 그대로면 걸린다', () => {

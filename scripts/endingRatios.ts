@@ -32,7 +32,7 @@ for (const era of ERAS as readonly Era[]) {
   for (const l of finalLivesOf(era)) {
     if (!reachedIndependence(l.deathAge)) continue;
     const band = startBandOf(era, l.parentWealth);
-    const end = finalWealthStanding(era, l.wealth);
+    const end = finalWealthStanding(era, l.net);
     const t = tallies[l.parentWealth - 1];
     const score = standingScore(end);
     t.n++;

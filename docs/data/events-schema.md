@@ -44,7 +44,8 @@
 
 ```json
 {
-  "stats": { "wealth": { "min": 30 }, "health": { "max": 60 } },
+  "stats": { "education": { "min": 30 }, "health": { "max": 60 } },
+  "assets": { "netMin": 0, "debtMax": 5000 },
   "looks": { "min": 70 },
   "parentWealth": { "min": 4 },
   "birthOrder": { "max": 1 },
@@ -56,7 +57,8 @@
   "notFlags": ["married"]
 }
 ```
-- `stats`: `wealth` `education` `health` `happiness` `relationships`(0~100), `{min, max}` 중 하나 이상(경계 포함).
+- `stats`: `education` `health` `happiness` `relationships`(0~100), `{min, max}` 중 하나 이상(경계 포함). **재산(`wealth`) 스탯은 없어졌다**(SPEC-003 M5, 저장 v8).
+- `assets`: 자산 조건 `{ netMin, netMax, debtMax, incomeMin }`(만 원 정수, 하나 이상). 순자산·부채·연 소득을 본다. **20세 이상으로만 일어나는 이벤트(청년·중년·노년)에서만** 쓸 수 있다(20세 미만에는 자산이 없다). 20세 미만의 돈 조건은 `parentWealth`(부모 재력)를 쓴다. 값의 범위는 `src/data/economyTable.ts#LIMITS`.
 - `looks`: 외모 0~100. `parentWealth`: 1~5. `parenting`: `neglect`(방임) `free`(자유) `helicopter`(헬리콥터) `strict`(엄격) 중 하나라도. `gender`: `male` `female`.
 - `flags`: 모두 켜져 있어야. `notFlags`: 하나도 켜져 있지 않아야.
 - `birthOrder`: 형제 순서 1(첫째)~5(다섯째). 출생신고에서 정해진 값이다(SPEC-003 BR6). 예: `{ "max": 1 }`은 첫째인 판에서만.
@@ -67,11 +69,13 @@
 ## 4. 효과(`effects`)와 보너스(`bonuses`)
 
 ```json
-{ "stats": { "wealth": -3, "happiness": 2 }, "setFlags": ["married"], "clearFlags": ["has_partner"] }
+{ "stats": { "happiness": 2 }, "assets": { "net": -1200 }, "setFlags": ["married"], "clearFlags": ["has_partner"] }
 ```
 - 스탯 변화량은 0이 아닌 정수(절댓값 50 이하). 결과는 항상 0~100으로 잘린다(`src/core/stats.ts` 한 곳).
 - **한 스탯에 더해질 수 있는 변화량의 최악의 합(기본 효과 + 모든 보너스를 조건과 무관하게 전부 더한 값)은 ±50 이내**여야 한다(R-046). 자동 모드가 점수의 지수(`Math.exp`)를 가중치로 쓰므로 합이 한없이 커지면 `Infinity`가 된다. 런타임도 지수를 ±40으로 제한해 이중으로 막는다(`src/core/life.ts#AUTO_EXPONENT_LIMIT`).
+- **돈 효과 (SPEC-003 M5, docs/data/economy-model.md 5절)**: 20세 이상 이벤트는 `assets: { net, income, debt }`(만 원 정수, 하나 이상)를, 20세 미만 이벤트는 `family`(집안 살림, 만 원 정수)를 쓴다. `net`은 순자산의 일회성 변화(거래·지출), `income`은 연 소득 보정(`incomeAdj`)의 변화, `debt`는 부채의 변화다. 한 효과의 절댓값 상한은 `net` 50000 · `income` 5000 · `debt` 50000 · `family` 3000이고(`src/core/events.ts#ASSET_DELTA_CAP`·`FAMILY_DELTA_CAP`), 스탯과 같이 **기본 효과 + 모든 보너스의 최악의 합**도 그 안이어야 한다. `assets`는 20세 이상으로만, `family`는 20세 미만으로만 일어나는 이벤트에서만 쓸 수 있다.
 - `setFlags` 플래그 켜기, `clearFlags` 끄기(같은 효과에서 같은 플래그를 켜고 끄면 오류).
+- 주거 형태(`dwelling`)는 효과가 아니라 **플래그**로 바뀐다: `in_care`→돌봄, `own_home`→자가, `renting`→월세, `lives_with_parents`·`moved_home`→집안 얹혀 삶(economy-model.md 3-2). 결혼(`married`)은 집안에서 나올 때 부모 재력에 따라 자가·전세·월세로 정해진다.
 - **보너스**: `"bonuses": [{ "when": 조건, "effects": 효과 }]` — 조건이 맞을 때 효과를 더한다. 부모 재력·교육방식·외모 같은 **캐릭터 속성을 효과에 반영**하는 방법이다. 보너스 조건은 효과를 적용하기 **전** 상태로 판정하며 보너스끼리 연쇄하지 않는다.
 
 ## 5. 선택지(`choices`)
@@ -81,13 +85,14 @@
   "id": "academy",
   "label": "방과 후에 따로 배운다",
   "result": "방과 후마다 따로 공부를 더 했다. 숙제가 늘었고, 성적도 천천히 올랐다.",
-  "effects": { "stats": { "education": 6, "happiness": -3 } },
+  "effects": { "stats": { "education": 6, "happiness": -3 }, "family": -450 },
   "bonuses": [ { "when": { "parenting": ["strict"] }, "effects": { "stats": { "education": 2 } } } ],
   "requires": { "parentWealth": { "min": 4 } }
 }
 ```
 - `id`(소문자로 시작, 소문자·숫자·하이픈 1~32자, 이벤트 안에서 유일) · `label` 1~40자(권장 24자 이하) · `result` 6~300자(권장 80자 이하, 고른 뒤 사건 기록에 남는 문구)는 필수.
 - `requires`가 있으면 조건을 만족할 때만 선택지가 **보인다**. 화면에는 항상 2~3개가 보여야 하므로 **`requires`가 없는 선택지가 2개 이상** 있어야 한다.
+- **돈이 드는 선택지 게이팅 (SPEC-003 EC4)**: 큰돈이 드는 선택지는 `requires`에 자산·부모 재력 조건을 건다 — 지금 10개 — 부모 재력 조건 5개(`infant-care/home` · `infant-stories/book` · `school-tutoring/tutor` · `school-exam/retry` · `youth-first-job/family`)와 순자산 조건 5개(`youth-exam-prep/persist` 순자산 −5000 이상 · `middle-parents-care/facility` · `middle-child-school/fund` · `middle-layoff/open` 0 이상 · `senior-travel/go` 5000 이상, 만 원). 근거는 `docs/data/economy-model.md` 6절(EC4)이다. 게이트가 닫혀도 `requires` 없는 선택지가 2개 이상 남는다.
 - 선택지는 이벤트가 일어난 순간 보이는 목록이 정해져 **저장 상태에 들어간다**(새로고침해도 같은 선택지).
 
 ## 6. 플래그 (이후 이벤트를 여닫는다)
@@ -99,6 +104,7 @@
 - **현재 켜는 플래그와 켜고 읽는 이벤트의 전체 표는 `docs/data/events-distribution.md` 4절**(데이터에서 자동으로 만든다)에 있다. `tests/events.test.ts` "플래그 연결"과 `tests/flow.test.ts`가 연결이 실제로 이어지는지 확인한다.
 - **한 판 안에서 이미 일어난 일과 모순되는 이벤트가 나오지 않게** 한다(REV-001-M4-1 R-057~R-060, R-062, R-065). 이벤트는 "그 사건이 일어난 판의 상태"를 플래그로 닫고 열어 쓴다:
   - 부모님의 임종(`middle-parents-farewell`)은 `parents_gone`을 켜고, 부모님이 나오는 중년·노년 이벤트(병환)는 `notFlags: ["parents_gone"]`으로 닫는다.
+    **`parents_gone`을 켜는 선택은 해 끝에 간이 상속(M5 r3, `src/core/inherit.ts`·`life.ts#finishYear`)을 일으킨다**: 부모가 처음 모두 떠나는 해의 끝에 `INHERIT[재력 단계] ÷ (형제 수 + 1)`이 순자산에 더해지고 인생 기록에 한 줄이 남는다. 상속은 **선택의 효과가 아니라 해마다 규칙**이므로 효과 목록에도, `previewChoice`·영향 줄에도 들어가지 않는다(r2에서는 영향 줄에 「자산 ▲▲▲」가 보였으나 r3에서 뺐다 — economy-model.md 4-1절·5-C). 나이 상한(어머니·아버지 모두 100세 초과)으로도 같은 자리에서 같은 상속이 일어난다. **새 이벤트는 같은 이벤트 안에서 `parents_gone`을 켜는 선택지와 안 켜는 선택지를 섞지 않는다**(섞으면 선택에 따라 상속 여부가 갈리는데 영향 줄은 이를 말하지 않는다) — `tests/inherit.test.ts`의 점검 시험이 막는다.
   - 아이는 `has_child`(+ 늦게 맞았으면 `child_late`)로 시작하고, 독립(`middle-child-leaves`)이 `child_left`를 켜서 자라난 아이·아이의 앞날을 닫는다. 아이가 어린 시점에 "진로·독립"이 나오지 않게 창은 아이를 맞은 나이(청년 27~39세)에서 가장 이른 경우로 잡고, 늦게 맞은 아이(`child_late`)는 별도 이벤트(`middle-late-child`)로 시점을 옮긴다. 손주 이야기는 `child_distant`(연락이 끊긴 자식)일 때 닫히고, 먼저 연락해 화해하면(`senior-estranged-child`) 풀린다.
   - 학업을 접으면(`school-family-priority` "집안의 결정을 따른다") `left_school`이 켜져 입시·학교 생활 이벤트가 닫힌다. 집은 `renting`(월세방)·`own_home`(자가)으로 갈라, 월세 인상은 월세방을 구한 판에서만 나온다.
   - 이혼(`middle-marriage-crisis` "따로 살기로 한다")은 `married`뿐 아니라 `has_partner`도 끈다. 헤어졌다 다시 만난 사이는 `reunited`로 표시해 결혼 이야기(`youth-second-chance`)가 다시 열린다.
@@ -158,7 +164,7 @@ QA가 지적한 "학원 버스"(시대 중립 문구)·"텃밭과 라디오"(다
 
 영유아·학창기의 "아이"는 나 자신이나 또래라 가족어가 아니다. "받아들이다·잦아들다"의 "아들", "딸기"의 "딸", "아이디어"의 "아이", "학부모"의 "부모"도 걸리지 않는다.
 
-**선택지 균형 (R-069)** — 같은 이벤트의 두 선택지에서 한쪽이 **모든 스탯에서 낫거나 같고** 어딘가는 확실히 낫다면 '정답형'이라 걸린다(보너스는 최악·최선으로 쳐서 비교한다: 보너스로 뒤집힐 수 있는 위험 선택은 통과). 효과가 완전히 같은 두 선택지도 걸린다. 소극적 선택(미루기·사양·모른 척·넘기기)에는 작은 이득을 준다 — 시간·돈·몸을 아끼는 쪽(재산 +1, 건강 +1, 학력 +1)으로. 예외 목록(`DOMINANCE_EXCEPTIONS`)은 비어 있다.
+**선택지 균형 (R-069)** — 같은 이벤트의 두 선택지에서 한쪽이 **모든 축(스탯 4개 + 돈)에서 낫거나 같고** 어딘가는 확실히 낫다면 '정답형'이라 걸린다(보너스는 최악·최선으로 쳐서 비교한다: 보너스로 뒤집힐 수 있는 위험 선택은 통과). 효과가 완전히 같은 두 선택지도 걸린다. 소극적 선택(미루기·사양·모른 척·넘기기)에는 작은 이득을 준다 — 시간·돈·몸을 아끼는 쪽(돈 +, 건강 +1, 학력 +1)으로. **돈 축**은 `assets.net + 3 × assets.income + family`(만 원)로 센다(`src/core/eventLint.ts#moneyOf`) — 부채는 빼고 본다. 예외 목록(`DOMINANCE_EXCEPTIONS`)은 비어 있다.
 
 **영유아 문구는 3인칭 (R-070)** — 영유아 이벤트는 "아이"로 쓰고 "나·내"를 쓰지 않는다(학창기부터는 회고하는 "나").
 
@@ -168,7 +174,7 @@ QA가 지적한 "학원 버스"(시대 중립 문구)·"텃밭과 라디오"(다
 npm run check:events          # 스키마 + 문구 점검 (빌드가 먼저 돌린다)
 npm test                      # 위 + 이벤트 단위 시험, 흐름 시험, 시뮬레이션
 npx vite-node scripts/eventDistribution.ts   # docs/data/events-distribution.md 다시 만들기 (이벤트를 고치면 한 번 돌린다)
-npx vite-node scripts/finalDistribution.ts   # 엔딩 "출발선 대비"의 최종 재산 분포표(src/data/finalDistribution.ts) 다시 만들기 — 이벤트·밸런스를 고치면 반드시 (10절, 약 12초)
+npx vite-node scripts/finalDistribution.ts   # 엔딩 "출발선 대비"의 최종 순자산 분위수표(src/data/finalDistribution.ts) 다시 만들기 — 이벤트·밸런스를 고치면 반드시 (10절, 약 12초)
 npm run check:dist            # 위 분포표가 낡았는지 점검만 한다 (다시 만들어 견주고, 다르면 종료 코드 1, 약 12초)
 npm run sim -- 300 random     # 판당 선택지 수·단계별 분포, 1배속/8배속+다음 결정으로 예상 시간(읽는 시간 18·24·30초), 밸런스, 외모 구간별 조우율
 ```
@@ -180,13 +186,13 @@ npm run sim -- 300 random     # 판당 선택지 수·단계별 분포, 1배속/
 
 ## 9. 상태에 남는 것 (참고)
 
-저장 상태(`GameState`, 스키마 v4)에는 `flags`(켜진 플래그) · `seen`(이벤트 id → 마지막으로 일어난 나이) · `pending`(대기 중인 선택지: 이벤트 id, 인스턴스 키 `id@나이`, 보이는 선택지 id) · `lastChoiceAge` · `death`가 있고, `history`에 연표(나이·종류·문구·고른 선택)가 쌓인다(상한 160개, `HISTORY_LIMITS`). 엔딩(M5)은 이 연표를 읽는다.
+저장 상태(`GameState`, 스키마 v8 — SPEC-003 M5에서 재산 스탯이 없어지고 `assets`·`familyFund`가 더해졌다)에는 `flags`(켜진 플래그) · `seen`(이벤트 id → 마지막으로 일어난 나이) · `pending`(대기 중인 선택지: 이벤트 id, 인스턴스 키 `id@나이`, 보이는 선택지 id) · `lastChoiceAge` · `death`가 있고, `history`에 연표(나이·종류·문구·고른 선택)가 쌓인다(상한 160개, `HISTORY_LIMITS`). 엔딩(M5)은 이 연표를 읽는다.
 
-**콘텐츠를 갱신해도 저장이 날아가지 않는다 (R-046).** 대기 중이던 선택지가 가리키는 이벤트가 풀에서 사라졌거나, 선택지가 바뀌었거나, 선택지 이벤트가 아니게 되었으면 저장 전체를 버리지 않고 **대기만 풀어** 이어간다(그 해는 다시 진행된다). 저장의 모양이 어긋난 것(키·나이·본 이벤트 기록·선택지 개수 불일치 — 손상·변조)만 새 게임이 된다(`src/core/storage.ts#parseGame`). 저장 형식은 그대로라 `SCHEMA_VERSION`은 4이다. 그래도 **이미 쓴 이벤트·선택지 id는 바꾸지 않는다** — 바꾸면 그 이벤트가 `seen`에서 맥락을 잃고 대기 중이던 사용자는 그 선택지를 잃는다. M3의 표본 20개 id는 모두 그대로 남아 있다(`tests/events.test.ts`가 확인).
+**콘텐츠를 갱신해도 저장이 날아가지 않는다 (R-046).** 대기 중이던 선택지가 가리키는 이벤트가 풀에서 사라졌거나, 선택지가 바뀌었거나, 선택지 이벤트가 아니게 되었으면 저장 전체를 버리지 않고 **대기만 풀어** 이어간다(그 해는 다시 진행된다). 저장의 모양이 어긋난 것(키·나이·본 이벤트 기록·선택지 개수 불일치 — 손상·변조)만 새 게임이 된다(`src/core/storage.ts#parseGame`). (이 절의 대기 풀기 규칙은 v8에서도 그대로다. 저장 모양이 바뀌는 M5 개편은 `SCHEMA_VERSION`을 올려 옛 저장을 새 게임으로 보낸다.) 그래도 **이미 쓴 이벤트·선택지 id는 바꾸지 않는다** — 바꾸면 그 이벤트가 `seen`에서 맥락을 잃고 대기 중이던 사용자는 그 선택지를 잃는다. M3의 표본 20개 id는 모두 그대로 남아 있다(`tests/events.test.ts`가 확인).
 
 ## 10. 이벤트·밸런스를 고친 뒤 다시 만들 것 (분포표, R-085)
 
-엔딩의 "출발선 대비"는 같은 시대의 헤드리스 시뮬레이션 판들이 남긴 **최종 재산 분포표**(`src/data/finalDistribution.ts`)에서 도착 자리를 구한다. 이 표는 **현재 이벤트·진행 규칙·밸런스 표로 돌린 결과**라서, 아래를 고치면 낡는다.
+엔딩의 "출발선 대비"는 같은 시대의 헤드리스 시뮬레이션 판들이 남긴 **최종 순자산 분위수표**(`src/data/finalDistribution.ts`, 만 원 0~100번째 백분위 101칸)에서 도착 자리를 구한다. 이 표는 **현재 이벤트·진행 규칙·밸런스 표로 돌린 결과**라서, 아래를 고치면 낡는다.
 
 - 이벤트 데이터(`src/data/events/*.json`)의 효과·조건·가중치·플래그, 이벤트 추가·삭제
 - 진행 규칙과 표: `src/core/life.ts`, `src/data/lifeTable.ts`, `src/data/birthTable.ts`의 값 (`timingTable.ts`는 시뮬레이션 결과에 영향이 없다)
@@ -195,7 +201,7 @@ npm run sim -- 300 random     # 판당 선택지 수·단계별 분포, 1배속/
 
 1. `npm run check:events` — 데이터 검증(빌드가 먼저 돌리는 것과 같다)
 2. `npx vite-node scripts/eventDistribution.ts` — 이벤트 분포 문서(`docs/data/events-distribution.md`) 다시 만들기
-3. `npx vite-node scripts/finalDistribution.ts` — 최종 재산 분포표 다시 만들기 (시대별 4000판, 약 12초)
+3. `npx vite-node scripts/finalDistribution.ts` — 최종 순자산 분위수표 다시 만들기 (시대별 4000판, 약 12초)
 4. `npm test` — 표가 낡았는지는 `tests/ending.test.ts` "현재 엔진·이벤트로 같은 시드·판 수로 다시 만들면 같은 표다"가 잡는다. 점검만 따로 하려면 `npm run check:dist`
 
 `npm run build`에는 넣지 않았다: 표를 다시 만들어 견주는 데 10초대가 걸려 빌드가 느려지기 때문이다(`check:events`는 수 초). 배포 전에는 `npm test`(필수)가 같은 것을 잡는다. SPEC-002로 이벤트를 +50 추가하면 반드시 3번을 한다.

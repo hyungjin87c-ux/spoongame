@@ -1,4 +1,4 @@
-import type { StatKey } from '../core/types';
+import type { Era, StatKey } from '../core/types';
 import { longestWordLength } from './birthReportText';
 
 /**
@@ -44,17 +44,24 @@ export const SYSTEM_TITLE_CHARS = titleCharsFor(SYSTEM_TITLE.superseded, SYSTEM_
 // ---------- 자산 금액이 화면에 있는가 (M5) ----------
 
 /**
- * 자산 금액(순자산·연 소득·부채)이 대시보드에 보이는가. **M5(경제 모델)가 금액을 넣는 변경에서 `true`로 켠다** — 켜기 전에는 상태 도움말이 자산을 설명하는 문장을 싣지 않는다
+ * 자산 금액(순자산·연 소득·부채)이 대시보드에 보이는가. **M5(경제 모델) 2b가 금액을 넣는 변경에서 `true`로 켰다** — 켜기 전에는 상태 도움말이 자산을 설명하는 문장을 싣지 않았다
  * (R-333, QM3-3의 정신: 화면 문구는 없는 기능을 가리키지 않는다. `DASHBOARD_PEERS_SHIPPED`와 같은 패턴). 켜면 tests/dashText.test.ts가 문장이 돌아오는 것을 단언한다.
  */
-export const ASSETS_AMOUNTS_SHIPPED = false;
+export const ASSETS_AMOUNTS_SHIPPED = true;
 
 const STATUS_HELP_BASE = '0에서 100 사이의 값입니다. 건강은 몸의 상태, 행복은 마음의 만족, 지식은 배우고 익힌 정도, 관계는 가족·친구와의 유대입니다.';
-const STATUS_HELP_ASSETS = '자산은 올해 가치 기준의 원 단위입니다.';
+/** 자산의 단위 문장 (docs/design/copy.md 4-5절): 지금 세상은 올해 가치 기준, 지난·다가올 세상은 지금 가치로 환산한 원 단위 */
+const STATUS_HELP_ASSETS: Record<Era, string> = {
+  present: '자산은 올해 가치 기준의 원 단위입니다.',
+  past: '자산은 지금 가치로 환산한 원 단위입니다.',
+  future: '자산은 지금 가치로 환산한 원 단위입니다.',
+};
+/** 가구 기준 한 문장 (M-3): 결혼 전에는 나 혼자의 가구임이 드러난다 */
+const STATUS_HELP_HOUSEHOLD = '순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.';
 
-/** 상태 카드의 접이식 도움말. 자산 금액이 있을 때만 마지막 문장(자산 단위 설명)이 붙는다 */
-export function statusHelpText(assetsShipped: boolean): string {
-  return assetsShipped ? `${STATUS_HELP_BASE} ${STATUS_HELP_ASSETS}` : STATUS_HELP_BASE;
+/** 상태 카드의 접이식 도움말. 자산 금액이 있을 때만 자산 문장(시대별 단위 + 가구 기준)이 붙는다 */
+export function statusHelpText(assetsShipped: boolean, era: Era): string {
+  return assetsShipped ? `${STATUS_HELP_BASE} ${STATUS_HELP_ASSETS[era]} ${STATUS_HELP_HOUSEHOLD}` : STATUS_HELP_BASE;
 }
 
 export const DASH_TEXT = {
@@ -109,8 +116,6 @@ export const DASH_TEXT = {
   /** 엔딩 h1 = 「{이름}의 인생」 (copy.md 엔딩 헤더 행) */
   endingTitleSuffix: '의 인생',
   endingSummaryLabel: '사망과 선택',
-  /** 엔딩 최종 스탯의 재산 줄 이름(스무 살 전에는 endingText.ts#EARLY_WEALTH_LABEL 「집안 형편」) */
-  endingWealth: '재산',
 
   // ---------- 프로필 카드 (DB9) ----------
   profileLabel: '프로필',
@@ -122,16 +127,21 @@ export const DASH_TEXT = {
 
   // ---------- 상태 카드 (DB10) ----------
   statusTitle: '상태',
-  statusHelpSummary: '상태 네 가지의 뜻 보기',
-  /** 자산 금액이 생기기 전(M5 전)에는 자산 설명 문장을 싣지 않는다 (R-333, `ASSETS_AMOUNTS_SHIPPED`) */
-  statusHelp: statusHelpText(ASSETS_AMOUNTS_SHIPPED),
+  /** M5부터 자산 설명이 함께 들어 제목이 바뀌었다 (copy.md 4-5절, r2 마스터 결정 1). 본문은 `statusHelpText(ASSETS_AMOUNTS_SHIPPED, era)` */
+  statusHelpSummary: '상태와 자산의 뜻 보기',
 
-  // ---------- 자산 현황 (DB11 — M4는 자리만) ----------
+  // ---------- 자산 현황 (DB11) ----------
   assetsTitle: '자산 현황',
   /** 20세 미만 (copy.md): 수저 칩 없음 */
   assetsYoung: '자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.',
-  /** 20세 이후 (copy.md 「자산 현황(20세 이후, M5 전 자리)」 행 — 값은 경제 모델 M5가 채운다. 자리와 이름만 두고 준비 중임을 밝힌다. 「스무 살 이후의」는 군더더기라 뺐다: 쉰 살 화면에서 어색하다, designer 제안) */
-  assetsSoon: '순자산, 연 소득, 부채는 아직 준비 중입니다.',
+  /** 20세 이후 (copy.md 4-5절): 이름 셋 — 「(가구)」를 붙이지 않는다(M-3) */
+  assetsNet: '순자산',
+  assetsIncome: '연 소득',
+  assetsDebt: '부채',
+  /** 지난·다가올 세상에서만 카드 머리에 붙는 태그 (DB11) */
+  assetsBasis: '지금 가치로 환산',
+  /** 금액 아래 작은 글: 음수를 「빚」으로 바꿔 쓰지 않고 항목 이름 「부채」로 말한다 */
+  assetsNote: '순자산은 가진 것에서 부채를 뺀 값입니다. 0보다 작으면 부채가 가진 것보다 많다는 뜻입니다.',
 
   // ---------- 인생 기록 (DB12·DB14) ----------
   logTitle: '인생 기록',

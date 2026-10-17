@@ -3,7 +3,7 @@ import { ERAS, validateFinalDistribution } from '../src/core';
 import { buildFinalDistribution, renderFinalDistributionModule } from './finalDistributionLib';
 
 /**
- * 최종 재산 분포표(엔딩 "출발선 대비"의 도착 자리) 생성.  실행: npx vite-node scripts/finalDistribution.ts
+ * 최종 순자산 분위수표(엔딩 "출발선 대비"의 도착 자리, SPEC-003 M5 D12) 생성.  실행: npx vite-node scripts/finalDistribution.ts
  * src/data/finalDistribution.ts 를 현재 엔진·이벤트로 다시 만든다. 이벤트나 밸런스 표를 고친 뒤에는 이 명령을 한 번 돌린다
  * (tests/ending.test.ts "분포표 재생성"이 표가 낡았는지 잡는다).
  */

@@ -155,18 +155,17 @@ const GRADE_NAMES = /(흙|동|은|금|다이아)\s*수저|다이아/;
  * 분포표(FINAL_DISTRIBUTION)에서 직접 센 도착 점수 (core의 shareAtLeast/standingOf를 부르지 않는다): 이 값 이상 비율 ≤ 50이면 상위(점수 100 - N), 아니면 이 값 이하 비율 ≤ 50이면 하위(점수 N),
  * 둘 다 50 초과면 딱 중간쯤(50). N은 반올림하되 1% 미만은 1 (약 0%를 말하지 않는다).
  */
+/** 최종 순자산(만 원)의 도착 점수. 분위수표 101칸에서 직접 센다 — 이 값 이상인 칸 수 ÷ 101 = 이 값 이상 비율. */
 export function expectedEndScore(era: Era, wealth: number): number {
-  const hist = FINAL_DISTRIBUTION[era].wealth;
-  let total = 0;
+  const quantiles = FINAL_DISTRIBUTION[era].quantiles;
   let atLeast = 0;
   let atMost = 0;
-  for (let v = 0; v < hist.length; v++) {
-    total += hist[v];
-    if (v >= wealth) atLeast += hist[v];
-    if (v <= wealth) atMost += hist[v];
+  for (const q of quantiles) {
+    if (q >= wealth) atLeast++;
+    if (q <= wealth) atMost++;
   }
-  const top = (atLeast * 100) / total;
-  const bottom = (atMost * 100) / total;
+  const top = (atLeast * 100) / quantiles.length;
+  const bottom = (atMost * 100) / quantiles.length;
   const n = (share: number) => (share < 1 ? 1 : Math.round(share));
   if (top <= 50) return 100 - n(top);
   if (bottom <= 50) return n(bottom);
@@ -194,6 +193,29 @@ export function checkStats(stats: Stats | null, label: string): string[] {
   for (const k of STAT_KEYS) {
     const v = stats[k];
     if (!Number.isInteger(v) || v < 0 || v > 100) out.push(`${label}: 스탯 ${k}=${v}가 0~100 정수가 아니다`);
+  }
+  return out;
+}
+
+/**
+ * 돈 상태 불변식 (SPEC-003 M5 EC1): 20세 미만에는 자산이 없고(집안 살림만 있다), 20세 이상에는 자산이 있고 집안 살림은 0이다.
+ * 자산은 모두 정수이고 부채는 0 이상이며 부채가 −순자산보다 작을 수 없다(총자산 net + debt ≥ 0).
+ */
+export function checkMoney(game: GameState, label: string): string[] {
+  const out: string[] = [];
+  const young = game.age < 20;
+  if (!Number.isInteger(game.familyFund) || Math.abs(game.familyFund) > 3000) out.push(`${label}: 집안 살림 ${game.familyFund}가 ±3000 정수가 아니다`);
+  if (young && game.assets !== null) out.push(`${label}: 20세 미만(${game.age}세)인데 자산이 있다`);
+  if (!young && game.phase !== 'title' && game.phase !== 'roulette' && game.phase !== 'birth') {
+    if (game.assets === null) out.push(`${label}: 20세 이상(${game.age}세)인데 자산이 없다`);
+    if (game.familyFund !== 0) out.push(`${label}: 20세 이상인데 집안 살림이 ${game.familyFund}다 (독립 때 자산에 합쳐져 0이어야 한다)`);
+  }
+  const a = game.assets;
+  if (a !== null) {
+    for (const k of ['net', 'income', 'debt', 'incomeAdj'] as const) if (!Number.isInteger(a[k])) out.push(`${label}: 자산 ${k}=${a[k]}가 정수가 아니다`);
+    if (a.debt < 0) out.push(`${label}: 부채 ${a.debt}가 음수다`);
+    if (a.debt < -a.net) out.push(`${label}: 부채 ${a.debt}가 -순자산 ${-a.net}보다 작다 (총자산 < 0)`);
+    if (a.income < 0) out.push(`${label}: 연 소득 ${a.income}가 음수다`);
   }
   return out;
 }
@@ -371,6 +393,7 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
   const out: string[] = [];
   const bad = (msg: string) => out.push(`${where}: ${msg}`);
   out.push(...checkStats(next.stats, where));
+  out.push(...checkMoney(next, where));
   if (next.era !== prev.era) bad(`시대가 바뀌었다 ${prev.era} → ${next.era}`);
   if (next.seed !== prev.seed) bad('시드가 바뀌었다');
   const pc = prev.character;
@@ -504,8 +527,8 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
       bad((e as Error).message);
       return out;
     }
-    const want = expectedEndScore(era, game.stats.wealth);
-    if (end !== want) bad(`문구에서 읽은 도착 점수 ${end}가 분포표에서 직접 센 ${want}와 다르다 (재산 ${game.stats.wealth}): ${text}`);
+    const want = expectedEndScore(era, game.assets?.net ?? 0);
+    if (end !== want) bad(`문구에서 읽은 도착 점수 ${end}가 분포표에서 직접 센 ${want}와 다르다 (최종 순자산 ${game.assets?.net ?? 0}만 원): ${text}`);
     const movement = expectedMovement(read[0], read[1], end, EXPECTED_GRACE);
     if (movement !== j.movement) bad(`숫자와 판정이 어긋난다: ${text} → ${MOVEMENT_TEXT[j.movement]} (문장의 숫자로는 ${MOVEMENT_TEXT[movement]})`);
     out.push(...checkPlainText(MOVEMENT_TEXT[j.movement], `${where} 방향 문장`));

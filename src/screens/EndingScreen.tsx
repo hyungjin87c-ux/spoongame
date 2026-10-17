@@ -5,7 +5,6 @@ import { BIRTH_TEXT } from '../data/birthReportText';
 import { standingLabel } from '../data/birthText';
 import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/dashText';
 import {
-  EARLY_WEALTH_LABEL,
   ENDING_HEADINGS,
   JOURNEY_NOTE,
   MOVEMENT_TEXT,
@@ -22,6 +21,7 @@ import { SiteHead, Icon, Sprite } from '../ui/Brand';
 import { Face } from '../ui/Face';
 import { Glue } from '../ui/Glue';
 import { GuardedButton } from '../ui/GuardedButton';
+import { FinalNetLine } from '../ui/dash/FinalNet';
 import { KeepStanding } from '../ui/KeepStanding';
 import { useFocusOnChange } from '../ui/useFocus';
 import { useScrollTopOnMount, useThemeSurface } from '../ui/useBottomBar';
@@ -40,7 +40,7 @@ interface Props {
   review?: EndingReview;
 }
 
-/** 재산(집안 형편 → 내가 가진 것)의 막대 색: 상태 4색에 없는 중립 쪽빛 */
+/** 최종 상태 막대 한 줄 (건강·행복·지식·관계) */
 function FinalMeter({ stat, label, value, tone, icon, started }: { stat: StatKey; label: string; value: number; tone: string; icon: string | null; started?: number }) {
   return (
     <div className={`meter meter--${tone}`} data-stat={stat}>
@@ -91,7 +91,6 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
   useThemeSurface();
   useScrollTopOnMount();
   const c = game.character;
-  const early = review.journey.kind === 'early';
   const title = `${c.name}${DASH_TEXT.endingTitleSuffix}`;
   return (
     <div className="page ending-page" data-testid="ending-screen">
@@ -148,8 +147,8 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
             const started = change !== undefined && (COMPARABLE_STATS as readonly string[]).includes(key) ? change.from : undefined;
             return <FinalMeter key={key} stat={key} label={STATUS_LABEL[key]} value={game.stats[key]} tone={tone} icon={icon} started={started} />;
           })}
-          {/* 재산: 스무 살 전에는 아직 집안 형편이고 스무 살부터는 내가 가진 것이다(원값 비교 금지). 자산 모델(M5)이 오면 이 줄이 자산 현황으로 바뀐다. */}
-          <FinalMeter stat="wealth" label={early ? EARLY_WEALTH_LABEL : DASH_TEXT.endingWealth} value={game.stats.wealth} tone="wealth" icon={null} />
+          {/* 「재산」 막대 자리: 최종 순자산 한 줄(M5) — 위끝 1px 선이 네 막대와 가른다 */}
+          <FinalNetLine era={game.era} net={review.journey.kind === 'compared' && game.assets !== null ? game.assets.net : null} standing={review.journey.kind === 'compared' ? review.journey.end : null} />
           <dl className="facts">
             <dt>{DASH_TEXT.profileLooks}</dt>
             <dd data-testid="final-looks">

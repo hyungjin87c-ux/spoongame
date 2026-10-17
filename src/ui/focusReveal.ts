@@ -29,6 +29,22 @@ export function revealTopOfTallFocus(el: HTMLElement, ringExtra = 7, focused: HT
   if (el.getBoundingClientRect().height + ringExtra * 2 > available) el.scrollIntoView({ block: 'start', inline: 'nearest' });
 }
 
+/** 문서 루트의 스크롤 여백(`scroll-padding-top·bottom`)이 고정 요소 높이에 더하는 틈 — `--sp-3`(12px). styles/title.css·dash.css의 `calc(고정 요소 높이 + var(--sp-3))`와 같은 값 */
+const SCROLL_GAP = 12;
+
+/**
+ * 선택지 카드처럼 **글자 크기를 따라 커지는 큰 버튼**이 가용 높이(화면 − 위·아래 고정 띠)보다 커질 때만 키보드 포커스에서 위쪽 변을 화면에 맞춘다 (SPEC-003 CM10 예외 ②, M5 D-38).
+ * `revealTopOfTallFocus`는 가용 높이를 **스크롤 여백**(고정 띠 + 위·아래 12px씩)으로 재서, 카드가 띠 바로 위에 딱 들어가는 높이(여백 24px 안쪽)에서도 위쪽을 맞춰 링이 띠에 1px 겹친다.
+ * 이 함수는 판정(e2e/focusGeometry.ts)과 같은 문턱을 쓴다 — 링 상자(요소 + 링 두께)가 **고정 띠를 뺀** 가용 높이를 넘을 때만 「크다」고 보고, 그 밖에는 브라우저의 기본 포커스 스크롤(띠 바로 위에 맞춤)에 맡긴다.
+ * 링 두께는 계산된 outline(두께 + offset)에서 읽는다.
+ */
+export function revealTopOfTallCard(el: HTMLElement): void {
+  if (typeof window === 'undefined') return;
+  const cs = window.getComputedStyle(el);
+  const ring = (Number.parseFloat(cs.outlineWidth) || 0) + (Number.parseFloat(cs.outlineOffset) || 0);
+  revealTopOfTallFocus(el, ring - SCROLL_GAP);
+}
+
 /**
  * 풀린 하단 띠(문서 흐름의 맨 끝, QM2-12)에서 포커스를 받은 요소와 확인 단계 안내문의 첫 줄이 **함께** 화면 안에 오게 스크롤한다.
  * 고정된 띠는 늘 화면 아래에 있어 필요 없지만, 풀린 띠는 본문 끝에 있어 확인 단계를 열면(띠가 커지며 고정 → 해제로 바뀌는 경우 포함) 스크롤 아래에 남을 수 있다.

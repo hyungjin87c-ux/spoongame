@@ -3,7 +3,6 @@ import type { StatKey } from '../core/types';
 /** 인생 화면·연표에 쓰는 문구. 담담한 어조, 느낌표와 이모지는 쓰지 않는다. */
 
 export const STAT_LABEL: Record<StatKey, string> = {
-  wealth: '재산',
   education: '학력',
   health: '건강',
   happiness: '행복',

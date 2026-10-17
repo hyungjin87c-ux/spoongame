@@ -47,7 +47,8 @@ describe('vite-node 선언 (R-049)', () => {
     // sim:1000(세 시대 × 두 전략 × 1000판 전체 파이프라인 수치 보고, SPEC-001 M6)은 M6에서 더했다
     // check:motifs(소재 목록 점검 — 형식·금지 패턴·원문 겹침, SPEC-003 M6c)는 M6c에서 더했다
     // check:basis·gen:basis(근거 문서·CSV를 JSON에서 다시 만들어 맞는지 확인·재생성, SPEC-003 M6a-r2 R-148)는 M6a 검수 반영에서 더했다
-    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:dist', 'check:events', 'check:motifs', 'check:todo', 'gen:basis', 'sim', 'sim:1000']);
+    // check:economy(경제 모델 밸런스 점검 — 연령대별 순자산·부채·소득을 통계 목표와 견줌, SPEC-003 M5 EC7)는 M5 2a에서 더했다
+    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:basis', 'sim', 'sim:1000']);
   });
 });
 

@@ -203,10 +203,10 @@ describe('범위·스냅샷', () => {
     }
   });
 
-  it('재력이 높을수록 평균 초기 재산이 높다', () => {
+  it('재력이 높을수록 평균 초기 학력이 높다 (재산 스탯은 없어졌다 — 집안 형편은 부모 재력 단계와 집안 살림이 맡는다, SPEC-003 M5)', () => {
     const births = sample('present');
     const avg = (t: number) => {
-      const xs = births.filter((b) => b.character.parentWealth === t).map((b) => b.stats.wealth);
+      const xs = births.filter((b) => b.character.parentWealth === t).map((b) => b.stats.education);
       return xs.reduce((a, b) => a + b, 0) / xs.length;
     };
     for (let t = 1; t < 5; t++) expect(avg(t + 1)).toBeGreaterThan(avg(t));
@@ -216,8 +216,8 @@ describe('범위·스냅샷', () => {
     const s = beginBirth(createInitialState(5), 'present');
     expect(s.birthStats).toEqual(s.stats);
     expect(s.birthStats).not.toBe(s.stats);
-    s.stats.wealth += 10;
-    expect(s.birthStats!.wealth).not.toBe(s.stats.wealth);
+    s.stats.education += 10;
+    expect(s.birthStats!.education).not.toBe(s.stats.education);
   });
 });
 

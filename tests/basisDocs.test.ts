@@ -55,20 +55,20 @@ describe('근거 문서·CSV는 JSON에서 만든 생성기의 결과와 같다 
     expect(buildBasisDoc(mut3, citationsJson, LIFE_ROWS.length)).toContain('조사망률 — 시험용 정의입니다.');
   });
 
-  it('근거 행은 s-001부터 s-062까지 빠짐없이 있고(LAST_ROW), 모든 지표의 basisId가 그 안에 있다', () => {
-    expect(LAST_ROW).toBe(62);
+  it('근거 행은 s-001부터 s-063까지 빠짐없이 있고(LAST_ROW), 모든 지표의 basisId가 그 안에 있다', () => {
+    expect(LAST_ROW).toBe(63);
     for (let n = 1; n <= LAST_ROW; n++) expect(basisDoc).toContain(`### s-${String(n).padStart(3, '0')} `);
     const ids = (statsJson as { indicators: Array<{ basisId: string }> }).indicators.map((i) => i.basisId);
     for (const id of ids) expect(Number(id.slice(2))).toBeLessThanOrEqual(LAST_ROW);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('요약 표의 행 수(확인 54·미확인 8·합계 62)가 지표의 usable과 맞는다', () => {
-    expect(basisDoc).toContain('| 확인(원문 직접 대조) | 54 |');
-    expect(basisDoc).toContain('| 미확인(사유 적음, 게임에서 쓰지 않음) | 8 |');
-    expect(basisDoc).toContain('| 합계 | 62 |');
+  it('요약 표의 행 수(확인 56·미확인 7·합계 63)가 지표의 usable과 맞는다 (s-037 임차 세분 2019년 값 확인, s-063 주거비 부담 추가 — 2026-10-17)', () => {
+    expect(basisDoc).toContain('| 확인(원문 직접 대조) | 56 |');
+    expect(basisDoc).toContain('| 미확인(사유 적음, 게임에서 쓰지 않음) | 7 |');
+    expect(basisDoc).toContain('| 합계 | 63 |');
     const unusable = (statsJson as { indicators: Array<{ usable: boolean }> }).indicators.filter((i) => !i.usable).length;
-    expect(unusable).toBe(7); // 지표 7개 + 서지 미확인 행 s-050 = 미확인 8
+    expect(unusable).toBe(6); // 지표 6개 + 서지 미확인 행 s-050 = 미확인 7
   });
 
   it('생성기는 네트워크·시간·난수를 쓰지 않는다: 같은 입력으로 두 번 만들면 글자까지 같다', () => {

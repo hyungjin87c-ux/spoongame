@@ -22,7 +22,7 @@
       "weight": 10,
       "once": true,
       "conditions": { "flags": ["has_career"] },
-      "effects": { "stats": { "wealth": 2, "health": -2, "happiness": -1 } }
+      "effects": { "stats": { "health": -2, "happiness": -1 }, "assets": { "income": 400 } }
     },
     {
       "id": "youth-first-job",
@@ -38,25 +38,25 @@
           "id": "stable",
           "label": "안정적인 곳을 고른다",
           "result": "월급날이 일정한 곳에 자리를 잡았다. 큰 기대는 없었지만 불안도 작았다.",
-          "effects": { "stats": { "wealth": 4, "happiness": -1 }, "setFlags": ["has_career"] },
+          "effects": { "stats": { "happiness": -1 }, "assets": { "income": 800 }, "setFlags": ["has_career"] },
           "bonuses": [
-            { "when": { "stats": { "education": { "min": 70 } } }, "effects": { "stats": { "wealth": 3 } } },
-            { "when": { "flags": ["early_work"] }, "effects": { "stats": { "wealth": 2 } } },
-            { "when": { "flags": ["skilled_trade"] }, "effects": { "stats": { "wealth": 2 } } }
+            { "when": { "stats": { "education": { "min": 70 } } }, "effects": { "assets": { "income": 600 } } },
+            { "when": { "flags": ["early_work"] }, "effects": { "assets": { "income": 400 } } },
+            { "when": { "flags": ["skilled_trade"] }, "effects": { "assets": { "income": 400 } } }
           ]
         },
         {
           "id": "dream",
           "label": "하고 싶은 일을 따라간다",
           "result": "벌이는 시원치 않았지만 하루하루가 내 일처럼 느껴졌다.",
-          "effects": { "stats": { "happiness": 4, "wealth": 1 }, "setFlags": ["has_career"] },
+          "effects": { "stats": { "happiness": 4 }, "assets": { "income": 200 }, "setFlags": ["has_career"] },
           "bonuses": [{ "when": { "flags": ["college"] }, "effects": { "stats": { "happiness": 1 } } }]
         },
         {
           "id": "family",
           "label": "가족이 하는 일을 이어받는다",
           "result": "이미 자리가 마련돼 있던 곳이었다. 배울 것은 많았지만 출발선이 달랐다.",
-          "effects": { "stats": { "wealth": 8, "happiness": -1 }, "setFlags": ["has_career", "family_business"] },
+          "effects": { "stats": { "happiness": -1 }, "assets": { "income": 1600 }, "setFlags": ["has_career", "family_business"] },
           "requires": { "parentWealth": { "min": 4 } }
         }
       ]
@@ -80,14 +80,14 @@
           "id": "meet",
           "label": "약속 장소에 나간다",
           "result": "두 번째 만남이 있었고 세 번째 만남이 있었다. 어느새 서로의 연락이 하루의 습관이 되었다.",
-          "effects": { "stats": { "relationships": 5, "happiness": 3, "wealth": -1 }, "setFlags": ["has_partner", "met_intro"] },
+          "effects": { "stats": { "relationships": 5, "happiness": 3 }, "assets": { "net": -400 }, "setFlags": ["has_partner", "met_intro"] },
           "bonuses": [{ "when": { "looks": { "min": 70 } }, "effects": { "stats": { "happiness": 1 } } }]
         },
         {
           "id": "later",
           "label": "바쁘다며 미룬다",
           "result": "일정을 핑계로 약속을 미뤘다. 한동안은 마음이 편했다.",
-          "effects": { "stats": { "wealth": 1, "happiness": -1 }, "setFlags": ["met_intro"] }
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": 400 }, "setFlags": ["met_intro"] }
         }
       ]
     },
@@ -109,10 +109,10 @@
           "id": "marry",
           "label": "함께 살기로 한다",
           "result": "작게 식을 올리고 한 집에서 살기 시작했다. 생활비와 집안 사정이 한꺼번에 합쳐졌다.",
-          "effects": { "stats": { "relationships": 6, "happiness": 4, "wealth": -4 }, "setFlags": ["married"] },
+          "effects": { "stats": { "relationships": 6, "happiness": 4 }, "assets": { "net": -800 }, "setFlags": ["married"] },
           "bonuses": [
-            { "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "wealth": 5 } } },
-            { "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "wealth": -2 } } }
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 2000 } } },
+            { "when": { "parentWealth": { "max": 2 } }, "effects": { "assets": { "net": -800 } } }
           ]
         },
         {
@@ -125,7 +125,7 @@
           "id": "part",
           "label": "헤어지기로 한다",
           "result": "오래 고민한 끝에 정리하기로 했다. 한동안 집이 유난히 조용했고, 생활비는 가벼워졌다.",
-          "effects": { "stats": { "happiness": -5, "relationships": -3, "wealth": 2 }, "clearFlags": ["has_partner"], "setFlags": ["broke_up"] }
+          "effects": { "stats": { "happiness": -5, "relationships": -3 }, "assets": { "net": 800 }, "clearFlags": ["has_partner"], "setFlags": ["broke_up"] }
         }
       ]
     },
@@ -147,7 +147,7 @@
           "id": "marry",
           "label": "이번에는 함께 살기로 한다",
           "result": "작게 식을 올렸다. 늦었다고 생각했지만 늦은 만큼 서로를 잘 알고 있었다.",
-          "effects": { "stats": { "relationships": 6, "happiness": 4, "wealth": -3 }, "setFlags": ["married"], "clearFlags": ["marriage_waited"] }
+          "effects": { "stats": { "relationships": 6, "happiness": 4 }, "assets": { "net": -600 }, "setFlags": ["married"], "clearFlags": ["marriage_waited"] }
         },
         {
           "id": "wait",
@@ -159,7 +159,7 @@
           "id": "part",
           "label": "이쯤에서 헤어지기로 한다",
           "result": "긴 시간 끝에 서로를 놓아 주기로 했다. 아쉬움보다 담담함이 먼저 왔고 살림은 가벼워졌다.",
-          "effects": { "stats": { "happiness": -3, "relationships": -3, "wealth": 2 }, "clearFlags": ["has_partner", "marriage_waited"], "setFlags": ["broke_up"] }
+          "effects": { "stats": { "happiness": -3, "relationships": -3 }, "assets": { "net": 800 }, "clearFlags": ["has_partner", "marriage_waited"], "setFlags": ["broke_up"] }
         }
       ]
     },
@@ -189,7 +189,7 @@
           "id": "meet",
           "label": "만나서 이야기를 나눈다",
           "result": "마주 앉아 차를 마셨다. 서로 달라진 얼굴을 보며 그간의 시간이 천천히 풀렸다.",
-          "effects": { "stats": { "relationships": 3, "happiness": 2, "wealth": -1 }, "setFlags": ["has_partner", "reunited"], "clearFlags": ["broke_up"] }
+          "effects": { "stats": { "relationships": 3, "happiness": 2 }, "assets": { "net": -400 }, "setFlags": ["has_partner", "reunited"], "clearFlags": ["broke_up"] }
         },
         {
           "id": "reply",
@@ -223,19 +223,19 @@
           "id": "marry",
           "label": "이번에는 함께 살기로 한다",
           "result": "작게 식을 올리고 한 집에서 살기 시작했다. 한 번 돌아온 사이라 서로의 말을 오래 들었다.",
-          "effects": { "stats": { "relationships": 6, "happiness": 4, "wealth": -3 }, "setFlags": ["married"], "clearFlags": ["reunited"] }
+          "effects": { "stats": { "relationships": 6, "happiness": 4 }, "assets": { "net": -600 }, "setFlags": ["married"], "clearFlags": ["reunited"] }
         },
         {
           "id": "stay",
           "label": "지금처럼 만나며 지낸다",
           "result": "함께 살지는 않기로 했다. 각자의 집에서 주말마다 얼굴을 보는 사이가 이어졌다.",
-          "effects": { "stats": { "relationships": 1, "wealth": 1 }, "clearFlags": ["reunited"] }
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 400 }, "clearFlags": ["reunited"] }
         },
         {
           "id": "part",
           "label": "이쯤에서 다시 정리한다",
           "result": "오래 이야기한 끝에 다시 갈라서기로 했다. 두 번째 이별은 첫 번째보다 조용했다.",
-          "effects": { "stats": { "happiness": -3, "relationships": -3, "wealth": 2 }, "clearFlags": ["has_partner", "reunited"] }
+          "effects": { "stats": { "happiness": -3, "relationships": -3 }, "assets": { "net": 800 }, "clearFlags": ["has_partner", "reunited"] }
         }
       ]
     },
@@ -263,7 +263,7 @@
           "id": "later",
           "label": "정중히 사양한다",
           "result": "정중히 사양했다. 혼자인 시간이 더 편하다는 생각도 들었다.",
-          "effects": { "stats": { "happiness": -1, "wealth": 1 } }
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": 400 } }
         }
       ]
     },
@@ -292,7 +292,7 @@
           "id": "decline",
           "label": "아직 이르다며 사양한다",
           "result": "어른들께 아직 마음이 없다고 말씀드렸다. 한동안 집안 분위기가 서늘했지만 내 일에 집중할 수 있었다.",
-          "effects": { "stats": { "relationships": -2, "happiness": 1, "wealth": 1 }, "setFlags": ["met_intro"] }
+          "effects": { "stats": { "relationships": -2, "happiness": 1 }, "assets": { "net": 400 }, "setFlags": ["met_intro"] }
         }
       ]
     },
@@ -316,7 +316,7 @@
           "id": "polite",
           "label": "정중히 사양한다",
           "result": "마음이 없다고 정중히 말했다. 상대는 고개를 숙이고 돌아섰고, 나는 하던 일로 돌아갔다.",
-          "effects": { "stats": { "relationships": 1, "wealth": 1 } }
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 400 } }
         }
       ]
     },
@@ -334,23 +334,23 @@
           "id": "have",
           "label": "아이를 갖기로 한다",
           "result": "새 식구가 태어났다. 집 안은 바빠지고 밤은 짧아졌지만 아이 웃음이 하루를 채웠다.",
-          "effects": { "stats": { "happiness": 4, "relationships": 4, "wealth": -5, "health": -2 }, "setFlags": ["has_child"] },
+          "effects": { "stats": { "happiness": 4, "relationships": 4, "health": -2 }, "assets": { "net": -1000 }, "setFlags": ["has_child"] },
           "bonuses": [
-            { "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "wealth": 3 } } },
-            { "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "wealth": -2 } } }
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 1200 } } },
+            { "when": { "parentWealth": { "max": 2 } }, "effects": { "assets": { "net": -800 } } }
           ]
         },
         {
           "id": "later",
           "label": "조금 더 기다리기로 한다",
           "result": "형편이 나아지면 생각하기로 했다. 시간은 소리 없이 지나갔고, 둘은 서로에게 더 기댔다.",
-          "effects": { "stats": { "wealth": 1, "relationships": 1 }, "setFlags": ["child_postponed"] }
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 400 }, "setFlags": ["child_postponed"] }
         },
         {
           "id": "none",
           "label": "아이 없이 살기로 한다",
           "result": "둘이서 살아가는 모습을 그려 보았다. 서로에게 쓸 시간과 돈이 오래 남았다.",
-          "effects": { "stats": { "wealth": 2, "happiness": 1 }, "setFlags": ["no_child"] }
+          "effects": { "stats": { "happiness": 1 }, "assets": { "net": 800 }, "setFlags": ["no_child"] }
         }
       ]
     },
@@ -368,13 +368,13 @@
           "id": "have",
           "label": "이제라도 아이를 맞이한다",
           "result": "늦은 나이에 아이를 맞이했다. 체력은 달렸지만 아이를 바라보는 눈이 깊어졌다.",
-          "effects": { "stats": { "happiness": 4, "relationships": 4, "wealth": -5, "health": -3 }, "setFlags": ["has_child", "child_late"], "clearFlags": ["child_postponed"] }
+          "effects": { "stats": { "happiness": 4, "relationships": 4, "health": -3 }, "assets": { "net": -1000 }, "setFlags": ["has_child", "child_late"], "clearFlags": ["child_postponed"] }
         },
         {
           "id": "none",
           "label": "둘이서 살기로 마음을 굳힌다",
           "result": "오래 이야기한 끝에 둘이서 살기로 했다. 한동안 마음이 허전했지만 곧 일상이 채워졌다.",
-          "effects": { "stats": { "wealth": 2, "relationships": 1 }, "setFlags": ["no_child"], "clearFlags": ["child_postponed"] }
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 800 }, "setFlags": ["no_child"], "clearFlags": ["child_postponed"] }
         }
       ]
     },
@@ -402,7 +402,7 @@
           "id": "keep",
           "label": "일터에서는 선을 지킨다",
           "result": "선을 넘지 않기로 했다. 서로 편한 동료로 남았고, 일에 쏟는 마음은 더 단단해졌다.",
-          "effects": { "stats": { "relationships": 1, "happiness": -1, "wealth": 1 } }
+          "effects": { "stats": { "relationships": 1, "happiness": -1 }, "assets": { "net": 400 } }
         }
       ]
     },
@@ -420,23 +420,23 @@
           "id": "rent",
           "label": "보증금이 낮은 월세방을 구한다",
           "result": "좁은 방에 짐을 풀었다. 매달 빠져나가는 돈은 아팠지만 빚 없이 얻은 내 방이 든든했다.",
-          "effects": { "stats": { "wealth": -3, "happiness": 1 }, "setFlags": ["renting"] }
+          "effects": { "stats": { "happiness": 1 }, "assets": { "net": -600 }, "setFlags": ["renting"] }
         },
         {
           "id": "parents",
           "label": "부모님 집에 머문다",
           "result": "집을 나서지 않기로 했다. 돈은 아꼈지만 독립은 조금씩 미뤄졌다.",
-          "effects": { "stats": { "wealth": 2, "relationships": 1, "happiness": -1 }, "setFlags": ["lives_with_parents"] },
+          "effects": { "stats": { "relationships": 1, "happiness": -1 }, "assets": { "net": 400 }, "setFlags": ["lives_with_parents"] },
           "requires": { "notFlags": ["lives_alone"] }
         },
         {
           "id": "loan",
           "label": "빚을 내서라도 집을 마련한다",
           "result": "빚을 얻어 작은 집을 마련했다. 이자 날짜가 올 때마다 가슴이 내려앉았지만 문을 열면 내 집이었다.",
-          "effects": { "stats": { "wealth": -4, "happiness": 2, "health": -1 }, "setFlags": ["own_home"] },
+          "effects": { "stats": { "happiness": 2, "health": -1 }, "assets": { "net": -800, "debt": 9000 }, "setFlags": ["own_home"] },
           "bonuses": [
-            { "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "wealth": 6 } } },
-            { "when": { "stats": { "education": { "min": 60 } } }, "effects": { "stats": { "wealth": 3 } } }
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 2400 } } },
+            { "when": { "stats": { "education": { "min": 60 } } }, "effects": { "assets": { "net": 600 } } }
           ]
         }
       ]
@@ -456,13 +456,14 @@
           "id": "persist",
           "label": "기한을 두지 않고 계속 준비한다",
           "result": "도서관에서 보내는 하루가 이어졌다. 통장은 비어 갔고 마음은 자꾸 좁아졌다.",
-          "effects": { "stats": { "education": 5, "wealth": -4, "happiness": -3 }, "setFlags": ["exam_prep"] }
+          "effects": { "stats": { "education": 5, "happiness": -3 }, "assets": { "net": -1600 }, "setFlags": ["exam_prep"] },
+          "requires": { "assets": { "netMin": -5000 } }
         },
         {
           "id": "work",
           "label": "일을 하며 틈틈이 준비한다",
           "result": "낮에는 일하고 밤에 책을 폈다. 몸은 고단했지만 생활은 무너지지 않았다.",
-          "effects": { "stats": { "education": 2, "wealth": 2, "health": -2 }, "setFlags": ["has_career", "exam_prep"] }
+          "effects": { "stats": { "education": 2, "health": -2 }, "assets": { "income": 400 }, "setFlags": ["has_career", "exam_prep"] }
         },
         {
           "id": "quit",
@@ -481,7 +482,7 @@
       "weight": 50,
       "once": true,
       "conditions": { "flags": ["exam_prep"], "stats": { "education": { "min": 50 } } },
-      "effects": { "stats": { "wealth": 5, "happiness": 5 }, "setFlags": ["has_career", "passed_exam"], "clearFlags": ["exam_prep"] }
+      "effects": { "stats": { "happiness": 5 }, "assets": { "income": 1000 }, "setFlags": ["has_career", "passed_exam"], "clearFlags": ["exam_prep"] }
     },
     {
       "id": "youth-exam-failed",
@@ -492,7 +493,7 @@
       "weight": 50,
       "once": true,
       "conditions": { "flags": ["exam_prep"], "stats": { "education": { "max": 49 } } },
-      "effects": { "stats": { "happiness": -4, "wealth": -1 }, "setFlags": ["failed_exam"], "clearFlags": ["exam_prep"] }
+      "effects": { "stats": { "happiness": -4 }, "assets": { "income": -200 }, "setFlags": ["failed_exam"], "clearFlags": ["exam_prep"] }
     },
     {
       "id": "youth-friend-wedding",
@@ -508,13 +509,13 @@
           "id": "go",
           "label": "먼 길을 가서 참석한다",
           "result": "새벽 기차를 타고 식장에 갔다. 친구의 환한 얼굴을 보며 함께 보낸 시간이 떠올랐다.",
-          "effects": { "stats": { "relationships": 4, "happiness": 2, "wealth": -2 } }
+          "effects": { "stats": { "relationships": 4, "happiness": 2 }, "assets": { "net": -800 } }
         },
         {
           "id": "gift",
           "label": "축하금만 보낸다",
           "result": "사정을 적어 축하금을 보냈다. 마음은 갔지만 내 자리는 비어 있었다.",
-          "effects": { "stats": { "relationships": -1, "wealth": -1 } }
+          "effects": { "stats": { "relationships": -1 }, "assets": { "net": -400 } }
         },
         {
           "id": "skip",
@@ -538,20 +539,20 @@
           "id": "object",
           "label": "분명하게 이의를 제기한다",
           "result": "회의에서 내 생각을 말했다. 분위기는 서늘해졌지만 몇몇 동료가 뒤에서 고개를 끄덕였다.",
-          "effects": { "stats": { "relationships": 2, "happiness": 1, "wealth": -1 } },
-          "bonuses": [{ "when": { "stats": { "education": { "min": 60 } } }, "effects": { "stats": { "wealth": 2 } } }]
+          "effects": { "stats": { "relationships": 2, "happiness": 1 }, "assets": { "income": -200 } },
+          "bonuses": [{ "when": { "stats": { "education": { "min": 60 } } }, "effects": { "assets": { "income": 400 } } }]
         },
         {
           "id": "endure",
           "label": "참고 맡은 일을 한다",
           "result": "입을 닫고 일을 이어 갔다. 평온하게 지냈지만 그날 이후 퇴근길이 조금 무거웠다.",
-          "effects": { "stats": { "happiness": -2, "wealth": 1 } }
+          "effects": { "stats": { "happiness": -2 }, "assets": { "income": 200 } }
         },
         {
           "id": "leave",
           "label": "다른 곳을 알아본다",
           "result": "몇 달 뒤 새 직장으로 옮겼다. 낯선 곳이었지만 숨통이 트이는 기분이 들었다.",
-          "effects": { "stats": { "wealth": -1, "happiness": 2 }, "setFlags": ["job_changed"] }
+          "effects": { "stats": { "happiness": 2 }, "assets": { "income": -200 }, "setFlags": ["job_changed"] }
         }
       ]
     },
@@ -574,18 +575,18 @@
           "id": "start",
           "label": "사업을 시작한다",
           "result": "작은 사무실을 얻어 일을 시작했다. 잠을 줄이며 한 해를 보내고서야 윤곽이 잡혀 갔다.",
-          "effects": { "stats": { "wealth": -3, "happiness": -1, "health": -2 }, "setFlags": ["own_business"] },
+          "effects": { "stats": { "happiness": -1, "health": -2 }, "assets": { "net": -1200 }, "setFlags": ["own_business"] },
           "bonuses": [
-            { "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "wealth": 8 } } },
-            { "when": { "looks": { "min": 70 } }, "effects": { "stats": { "wealth": 3 } } },
-            { "when": { "stats": { "education": { "min": 60 } } }, "effects": { "stats": { "wealth": 4 } } }
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 3200 } } },
+            { "when": { "looks": { "min": 70 } }, "effects": { "assets": { "income": 600 } } },
+            { "when": { "stats": { "education": { "min": 60 } } }, "effects": { "assets": { "income": 800 } } }
           ]
         },
         {
           "id": "side",
           "label": "본업을 두고 조금씩 해 본다",
           "result": "퇴근 뒤와 주말에 작게 일을 벌였다. 크게 벌지는 못했지만 가능성을 가늠할 수 있었다.",
-          "effects": { "stats": { "wealth": 1, "health": -2, "happiness": 1 } },
+          "effects": { "stats": { "health": -2, "happiness": 1 }, "assets": { "net": 400 } },
           "requires": { "flags": ["has_career"] }
         },
         {
@@ -617,13 +618,13 @@
           "id": "work",
           "label": "일에만 매달린다",
           "result": "배움은 접고 일을 늘렸다. 당장은 손에 쥐는 돈이 늘었다.",
-          "effects": { "stats": { "wealth": 3, "education": -1 } }
+          "effects": { "stats": { "education": -1 }, "assets": { "income": 600 } }
         },
         {
           "id": "save",
           "label": "돈을 모아 나중에 돌아가기로 한다",
           "result": "배움을 미루고 돈을 모았다. 돌아갈 날이 올지는 알 수 없었지만 통장은 조금씩 두꺼워졌다.",
-          "effects": { "stats": { "wealth": 4, "happiness": -1 }, "setFlags": ["saving_for_school"] }
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": 1600 }, "setFlags": ["saving_for_school"] }
         }
       ]
     },
@@ -635,19 +636,19 @@
       "ageRange": { "min": 23, "max": 36 },
       "weight": 30,
       "once": true,
-      "conditions": { "flags": ["saving_for_school"], "stats": { "wealth": { "min": 20 } } },
+      "conditions": { "flags": ["saving_for_school"], "assets": { "netMin": 0 } },
       "choices": [
         {
           "id": "return",
           "label": "일을 줄이고 공부로 돌아간다",
           "result": "일을 줄이고 책상 앞에 다시 앉았다. 늦은 만큼 한 줄 한 줄이 절실했다.",
-          "effects": { "stats": { "education": 12, "wealth": -6, "happiness": 1 }, "setFlags": ["late_learner"], "clearFlags": ["saving_for_school"] }
+          "effects": { "stats": { "education": 12, "happiness": 1 }, "assets": { "net": -2400 }, "setFlags": ["late_learner"], "clearFlags": ["saving_for_school"] }
         },
         {
           "id": "stay",
           "label": "그냥 일을 이어 간다",
           "result": "돌아가지 않기로 했다. 모아 둔 돈은 다른 곳에 쓰였고 그 계획은 조용히 접혔다.",
-          "effects": { "stats": { "wealth": 2, "happiness": -2 }, "clearFlags": ["saving_for_school"] }
+          "effects": { "stats": { "happiness": -2 }, "assets": { "net": 800 }, "clearFlags": ["saving_for_school"] }
         }
       ]
     },
@@ -666,19 +667,19 @@
           "id": "pay",
           "label": "오른 값을 감당하며 머문다",
           "result": "오른 월세를 감당하기로 했다. 다른 지출을 줄이며 한 해를 보냈다.",
-          "effects": { "stats": { "wealth": -4, "happiness": -1 } }
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": -1600 } }
         },
         {
           "id": "move",
           "label": "더 먼 곳으로 옮긴다",
           "result": "오가는 길이 먼 동네로 옮겼다. 방은 넓어졌지만 하루가 길 위에서 줄어들었다.",
-          "effects": { "stats": { "wealth": -1, "health": -1, "relationships": -2 } }
+          "effects": { "stats": { "health": -1, "relationships": -2 }, "assets": { "net": -400 } }
         },
         {
           "id": "share",
           "label": "함께 살 사람을 구한다",
           "result": "함께 살 사람을 구해 방값을 나눴다. 생활 습관이 달라 부딪혔지만 서로 맞춰 갔다.",
-          "effects": { "stats": { "wealth": -1, "happiness": -2, "relationships": 1 } },
+          "effects": { "stats": { "happiness": -2, "relationships": 1 }, "assets": { "net": -400 } },
           "requires": { "notFlags": ["married"] }
         }
       ]
@@ -697,20 +698,20 @@
         {
           "id": "juggle",
           "label": "여러 일을 이어 붙여 버틴다",
-          "result": "일과 일 사이를 뛰어다녔다. 통장은 겨우 유지됐지만 몸은 어느새 지쳐 있었다.",
-          "effects": { "stats": { "wealth": 3, "health": -3, "happiness": -2 } }
+          "result": "일과 일 사이를 뛰어다니며 여러 사람을 알게 됐다. 통장은 겨우 유지됐지만 몸은 어느새 지쳐 있었다.",
+          "effects": { "stats": { "health": -3, "happiness": -2, "relationships": 2 }, "assets": { "income": 600 } }
         },
         {
           "id": "settle",
           "label": "한 곳에 자리 잡을 길을 찾는다",
-          "result": "여러 곳에 이력서를 냈다. 몇 달 뒤 한 곳에서 오래 일할 자리를 얻었다.",
-          "effects": { "stats": { "wealth": -1, "happiness": 1, "education": 1 }, "setFlags": ["has_career"] }
+          "result": "여러 곳에 이력서를 냈다. 수입이 끊긴 몇 달은 불안했지만, 한 곳에서 오래 일할 자리를 얻었다.",
+          "effects": { "stats": { "happiness": -1, "education": 1 }, "assets": { "net": -800 }, "setFlags": ["has_career"] }
         },
         {
           "id": "learn",
           "label": "틈틈이 새로운 기술을 익힌다",
           "result": "일이 비는 시간마다 새로운 기술을 익혔다. 당장 눈에 띄는 변화는 없었지만 선택지가 늘었다.",
-          "effects": { "stats": { "education": 4, "wealth": -2 } }
+          "effects": { "stats": { "education": 4 }, "assets": { "net": -800 } }
         }
       ]
     },
@@ -729,19 +730,19 @@
           "id": "adapt",
           "label": "새 도구를 익혀 함께 일한다",
           "result": "새 도구를 익히느라 몇 달을 고생했다. 그 뒤로는 같은 시간에 훨씬 많은 일을 할 수 있었다.",
-          "effects": { "stats": { "education": 3, "wealth": 2, "health": -1 } }
+          "effects": { "stats": { "education": 3, "health": -1 }, "assets": { "income": 400 } }
         },
         {
           "id": "human",
           "label": "사람이 해야 할 부분에 집중한다",
           "result": "사람이 맡아야 할 일을 더 깊게 파고들었다. 기계가 못 하는 일이 곧 내 자리가 되었다.",
-          "effects": { "stats": { "wealth": 1, "happiness": 1, "relationships": 1 } }
+          "effects": { "stats": { "happiness": 1, "relationships": 1 }, "assets": { "income": 200 } }
         },
         {
           "id": "resist",
           "label": "기계에 맡기는 것을 거부한다",
           "result": "익숙한 방식을 고집했다. 새로 배우는 수고는 덜었지만 내 몫의 일은 해마다 조금씩 줄어들었다.",
-          "effects": { "stats": { "wealth": -3, "health": 1 } }
+          "effects": { "stats": { "health": 1 }, "assets": { "income": -600 } }
         }
       ]
     },
@@ -777,7 +778,7 @@
       "weight": 12,
       "once": true,
       "conditions": { "notFlags": ["has_career", "own_business"] },
-      "effects": { "stats": { "happiness": -3, "wealth": -1, "education": 1 } }
+      "effects": { "stats": { "happiness": -3, "education": 1 }, "assets": { "income": -200 } }
     },
     {
       "id": "youth-factory-night",
@@ -789,7 +790,7 @@
       "weight": 14,
       "once": true,
       "conditions": { "parentWealth": { "max": 3 }, "notFlags": ["own_business", "passed_exam"] },
-      "effects": { "stats": { "wealth": 3, "health": -3, "happiness": -1 } }
+      "effects": { "stats": { "health": -3, "happiness": -1 }, "assets": { "income": 600 } }
     }
   ]
 }

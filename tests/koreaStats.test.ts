@@ -83,12 +83,12 @@ describe('구조 검증 (SC3: 필수 필드·출처 형식·기준 연도)', () 
     expect(String(FILE.meta.accessRule)).toContain('robots.txt');
   });
 
-  it('지표 id는 유일하고 kebab-case이며 지표가 30개 미만으로 줄어들지 않는다(현재 50개)', () => {
+  it('지표 id는 유일하고 kebab-case이며 지표가 30개 미만으로 줄어들지 않는다(현재 51개)', () => {
     const ids = ALL.map((i) => i.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id, id).toMatch(/^[a-z][a-z0-9-]{2,40}$/);
     expect(ALL.length).toBeGreaterThanOrEqual(40);
-    expect(ALL).toHaveLength(50);
+    expect(ALL).toHaveLength(51);
   });
 
   it('모든 지표에 필수 필드가 있다: id·title·kind·use·latest(또는 null)·definition(미확인은 빈 문자열 허용)·basisId·verification·usable', () => {
@@ -182,7 +182,7 @@ describe('미확인 항목은 게임에 쓰이지 않는다 (usable 플래그)',
   });
 
   it('미확인 항목: usable false, latest null, 값(series·rows) 없음, 사유 있음, 출처 null — 값이 새어 들어가지 않는다', () => {
-    expect(UNVERIFIED.map((i) => i.id).sort()).toEqual(['childcare-cost', 'household-credit', 'household-loan-rate', 'income-college-gap', 'korean-children-panel', 'rent-type-split', 'wedding-cost']);
+    expect(UNVERIFIED.map((i) => i.id).sort()).toEqual(['childcare-cost', 'household-credit', 'household-loan-rate', 'income-college-gap', 'korean-children-panel', 'wedding-cost']);
     for (const i of UNVERIFIED) {
       expect(i.latest, i.id).toBeNull();
       expect(i.series ?? [], i.id).toHaveLength(0);
@@ -939,9 +939,11 @@ describe('정의·표기 정정 (R-152·R-153·R-154)', () => {
   });
 
   it('교차 참조·기관 명칭 정정: 임차 전세·월세 사유는 s-024를 가리키고, 국가통계연구원은 현 명칭(국가데이터연구원)을 병기한다(R-153)', () => {
-    const reason = get('rent-type-split').verification.reason!;
-    expect(reason).toContain('(s-024)');
-    expect(reason).not.toContain('(s-025)');
+    // s-037은 2026-10-17에 2019년 값으로 확인됐다(R-267) — 이제 사유(reason) 대신 notes·근거 문서가 s-024를 가리킨다
+    const notes = String(get('rent-type-split').notes);
+    expect(notes).toContain('2019');
+    expect(notes).not.toContain('(s-025)');
+    expect(basisDoc).toContain('임차의 전세·월세 구분은 2024년 값이 없고 2019년 값만 있다(s-037)');
     expect(basisDoc).not.toContain('자가·임차·무상(s-025)');
     for (const i of ALL) {
       const org = i.source?.org ?? '';
@@ -1116,5 +1118,168 @@ describe('경제 근거 보충: 생활비·금리 (R-157)', () => {
   it('직업 근사값(occupation-proxy)이 2024 상반기인 이유: KOSIS 표 수록 기간이 거기까지(자료갱신 2024-10-08)임을 문서가 밝힌다', () => {
     expect(basisBlock('s-025')).toContain('수록 기간이 2024 상반기까지');
     expect(sourcesDoc).toContain('2024-10-08');
+  });
+});
+
+describe('임차 전세·월세 구분 s-037 (R-267, M5 착수 조건, 2019년 값)', () => {
+  type RentRow = { label: string; own: number; jeonse: number; depositMonthly: number; plainMonthly: number; free: number };
+  const rent = rowsOf('rent-type-split') as unknown as RentRow[];
+  const byRow = (label: string): RentRow => {
+    const r = rent.find((x) => x.label === label);
+    if (!r) throw new Error(`행 없음: ${label}`);
+    return r;
+  };
+  const total = (r: RentRow): number => r.own + r.jeonse + r.depositMonthly + r.plainMonthly + r.free;
+
+  it('확인된 표다: usable·verified, 기준 연도 2019, 출처가 종료된 점유형태 표(DT_MLTM_5402)이고 두 사이트 대조가 방법에 적혀 있다', () => {
+    const i = get('rent-type-split');
+    expect(i.usable).toBe(true);
+    expect(i.verification.status).toBe('verified');
+    expect(i.latest).toEqual({ year: 2019, value: 15.1 });
+    expect(i.source!.url).toContain('DT_MLTM_5402');
+    expect(i.source!.accessedOn).toBe('2026-10-17');
+    expect(i.verification.method).toContain('통계누리');
+    expect(i.verification.method).toContain('KOSIS');
+    expect(i.basisId).toBe('s-037');
+  });
+
+  it('행 33개: 전국 + 17개 시도 + 소득계층(전국 저·중·고) + 수도권·광역시 등·도지역 × (전체·저·중·고). 행마다 합이 100.0±0.25(5개 열 각각 반올림, 전국·고소득층은 99.8)', () => {
+    expect(rent).toHaveLength(33);
+    expect(rent.slice(0, 18).map((r) => r.label)).toEqual(['전국', ...SIDO]);
+    for (const r of rent) expect(Math.abs(total(r) - 100), r.label).toBeLessThanOrEqual(0.25);
+  });
+
+  it('전국 행은 원문 값 그대로다: 자가 58.0·전세 15.1·보증금 있는 월세 19.7·월세 3.3·무상 3.9 — 임차 합 38.1%는 2024년 임차 38.0%(s-024)와 거의 같다', () => {
+    expect(byRow('전국')).toMatchObject({ own: 58, jeonse: 15.1, depositMonthly: 19.7, plainMonthly: 3.3, free: 3.9 });
+    const r = byRow('전국');
+    const rentTotal = r.jeonse + r.depositMonthly + r.plainMonthly;
+    expect(Math.round(rentTotal * 10) / 10).toBe(38.1);
+    const housing = rowsOf('housing-tenure') as Array<{ label: string; own: number; rent: number; free: number }>;
+    const national2024 = housing.find((h) => h.label === '전국')!;
+    expect(national2024.rent).toBe(38);
+    expect(Math.abs(rentTotal - national2024.rent), '2019 임차 합 ↔ 2024 임차').toBeLessThanOrEqual(0.3);
+  });
+
+  it('서로 다른 두 표가 일치한다: 소득계층별 표에 전국 전체 행이 없어도, 저·중·고 가구 비중으로 가중한 전국 값이 시도별 표의 전국 행과 크게 다르지 않다(자가 ±1.0%p)', () => {
+    // 소득 1~4분위 40%·5~8분위 40%·9~10분위 20%(주석정보) — 가구 수 가중이 아닌 분위 비중 근사
+    const w = { '전국·저소득층': 0.4, '전국·중소득층': 0.4, '전국·고소득층': 0.2 } as const;
+    const own = (Object.entries(w) as Array<[keyof typeof w, number]>).reduce((s, [k, v]) => s + byRow(k).own * v, 0);
+    expect(Math.abs(own - byRow('전국').own)).toBeLessThanOrEqual(1);
+  });
+
+  it('G3 방향: 저소득층일수록 자가가 낮고 월세(보증금 있는 월세+월세) 비중이 높다 — 전국·수도권·광역시 등·도지역에서 모두', () => {
+    for (const area of ['전국', '수도권', '광역시 등', '도지역']) {
+      const low = byRow(area === '전국' ? '전국·저소득층' : `${area}·저소득층`);
+      const high = byRow(area === '전국' ? '전국·고소득층' : `${area}·고소득층`);
+      expect(low.own, area).toBeLessThan(high.own);
+      expect(low.depositMonthly + low.plainMonthly, area).toBeGreaterThan(high.depositMonthly + high.plainMonthly);
+    }
+  });
+
+  it('임차 안의 구성비(파생값): 전국 전세 39.6%·월세 60.4%, 저소득층 전세 22.9%·고소득층 69.9% — 설계 문서가 쓰는 값이 원자료에서 그대로 계산된다', () => {
+    const share = (r: RentRow): { jeonse: number; monthly: number } => {
+      const rt = r.jeonse + r.depositMonthly + r.plainMonthly;
+      return { jeonse: r.jeonse / rt, monthly: (r.depositMonthly + r.plainMonthly) / rt };
+    };
+    expect(Math.round(share(byRow('전국')).jeonse * 1000) / 10).toBe(39.6);
+    expect(Math.round(share(byRow('전국')).monthly * 1000) / 10).toBe(60.4);
+    expect(Math.round(share(byRow('전국·저소득층')).jeonse * 1000) / 10).toBe(22.9);
+    expect(Math.round(share(byRow('전국·중소득층')).jeonse * 1000) / 10).toBe(50.1);
+    expect(Math.round(share(byRow('전국·고소득층')).jeonse * 1000) / 10).toBe(69.9);
+  });
+
+  it('한계가 데이터·근거 문서·수집 기록에 적혀 있다: 2019년 값(종료된 표)이고 2024 구성과 같다고 단정하지 않으며, 2024 보고서 PDF는 열람하지 않았다', () => {
+    const notes = String(get('rent-type-split').notes);
+    expect(notes).toContain('2019');
+    expect(notes).toContain('단정하지 않는다');
+    expect(notes).toContain('내려받지 않아');
+    const block = basisBlock('s-037');
+    expect(block).toContain('2019년 값이다');
+    expect(block).toContain('**상태**: **확인**');
+    expect(sourcesDoc).toContain('rent-type-split');
+    expect(sourcesDoc).toContain('DT_MLTM_5402');
+    expect(sourcesDoc).toContain('DT_MLTM_5405');
+  });
+});
+
+describe('extraSeries 단위 (R-185): 주 단위와 다른 extraSeries는 unit이 필수', () => {
+  // 라벨에 단위 풀이가 있는 보조 계열 — 「만 원」「천 건」「천 명」「인구 N명당 …」은 주 시리즈 단위(%·명·건 등)와 다르다.
+  const UNIT_HINT = /(만 원|천 건|천 명|인구 [^,)]*당[^,)]*)/;
+  const extras = USABLE.flatMap((i) => (i.extraSeries ?? []).map((e) => ({ id: i.id, main: i.unit, e: e as { label: string; unit?: string; decimals?: number } })));
+
+  it('보조 계열이 있는 지표를 읽는다(공허 통과 방지)', () => {
+    expect(extras.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('라벨에 단위 풀이(만 원·천 건·천 명·인구 N명당)가 있으면 unit이 있고, 그 unit이 라벨 안에 그대로 있다 — 주 시리즈 단위로 잘못 읽히지 않는다', () => {
+    let checked = 0;
+    for (const { id, e } of extras) {
+      const hint = UNIT_HINT.exec(e.label);
+      if (hint === null) continue;
+      checked++;
+      expect(typeof e.unit, `${id}/${e.label}: unit 필수`).toBe('string');
+      expect(e.label, `${id}/${e.label}: 라벨 안 단위`).toContain(e.unit!);
+      expect(Number.isInteger(e.decimals), `${id}/${e.label}: decimals`).toBe(true);
+    }
+    expect(checked).toBeGreaterThanOrEqual(5); // 사교육비·연령별 사망률·이혼 건수·조이혼율·조혼인율
+  });
+
+  it('private-education 월평균 사교육비 보조 계열: unit 「만 원」·decimals 1 — 주 시리즈 「%」로 읽히지 않는다', () => {
+    const p = get('private-education');
+    const cost = p.extraSeries![0] as { unit?: string; decimals?: number; label: string };
+    expect(p.unit).toBe('%');
+    expect(cost.unit).toBe('만 원');
+    expect(cost.decimals).toBe(1);
+  });
+
+  it('unit을 적은 보조 계열은 주 단위와 같은 말을 되풀이하지 않는다(적은 이유가 있다): unit ≠ 주 시리즈 unit', () => {
+    for (const { id, main, e } of extras) {
+      if (e.unit !== undefined) expect(e.unit, `${id}/${e.label}`).not.toBe(main);
+    }
+  });
+});
+
+describe('주거비 부담 s-063 (M5 2a, 2024 주거실태조사 보도자료)', () => {
+  type Row = { label: string; rirPct: number; rirPrev: number; pir: number; pirPrev: number };
+  const rows = rowsOf('housing-cost-burden') as unknown as Row[];
+  const row = (label: string): Row => {
+    const r = rows.find((x) => x.label === label);
+    if (!r) throw new Error(`행 없음: ${label}`);
+    return r;
+  };
+
+  it('확인된 표다: usable, 2024, 출처가 국토교통부 보도자료 본문, 첨부 파일을 내려받지 않았다고 방법에 적혀 있다', () => {
+    const i = get('housing-cost-burden');
+    expect(i.usable).toBe(true);
+    expect(i.latest).toEqual({ year: 2024, value: 15.8 });
+    expect(i.basisId).toBe('s-063');
+    expect(i.source!.org).toBe('국토교통부');
+    expect(i.source!.url).toContain('molit.go.kr');
+    expect(i.verification.method).toContain('내려받지 않');
+    expect(rows).toHaveLength(7);
+  });
+
+  it('값이 보도자료와 같다: 전국 15.8%·6.3배, 수도권 18.4·8.7, 광역시 등 15.2·6.3, 도지역 12.7·4.0, 청년 16.0·6.0, 신혼 17.7·6.0, 고령 25.4·9.1', () => {
+    expect([row('전국').rirPct, row('전국').pir]).toEqual([15.8, 6.3]);
+    expect([row('수도권').rirPct, row('수도권').pir]).toEqual([18.4, 8.7]);
+    expect([row('광역시 등').rirPct, row('광역시 등').pir]).toEqual([15.2, 6.3]);
+    expect([row('도지역').rirPct, row('도지역').pir]).toEqual([12.7, 4]);
+    expect([row('청년 가구').rirPct, row('청년 가구').pir]).toEqual([16, 6]);
+    expect([row('신혼부부 가구').rirPct, row('신혼부부 가구').pir]).toEqual([17.7, 6]);
+    expect([row('고령 가구').rirPct, row('고령 가구').pir]).toEqual([25.4, 9.1]);
+  });
+
+  it('본문의 서술과 맞는다: 수도권 > 광역시 등 > 도지역(월임대료 비율·주택가격 배수), 지역 RIR은 모두 전년보다 줄었고, 청년 RIR은 1.4%p 낮아졌다(17.4 → 16.0)', () => {
+    expect(row('수도권').rirPct).toBeGreaterThan(row('광역시 등').rirPct);
+    expect(row('광역시 등').rirPct).toBeGreaterThan(row('도지역').rirPct);
+    expect(row('수도권').pir).toBeGreaterThan(row('광역시 등').pir);
+    expect(row('광역시 등').pir).toBeGreaterThan(row('도지역').pir);
+    for (const k of ['수도권', '광역시 등', '도지역']) expect(row(k).rirPct, k).toBeLessThan(row(k).rirPrev);
+    expect(Math.round((row('청년 가구').rirPrev - row('청년 가구').rirPct) * 10) / 10).toBe(1.4);
+  });
+
+  it('경제 모델이 쓰는 월세 비율(src/data/economyTable.ts)은 이 표의 전국 15.8%에서 온다', async () => {
+    const { ECONOMY } = await import('../src/data/economyTable');
+    expect(ECONOMY.housing.rentRate).toBe(row('전국').rirPct / 100);
   });
 });

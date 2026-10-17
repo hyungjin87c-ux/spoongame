@@ -18,7 +18,7 @@ import '../src/styles/dash.css';
  */
 /** 지금 세상은 2026년생만 있다(SPEC-003 Q1) — 대시보드 또래 칸이 출생 연도에서 시대를 읽으므로 실제와 같은 연도를 쓴다 */
 const character: Character = { name: '김민준', gender: 'male', birthYear: 2026, parentWealth: 3, parenting: 'free', looks: 50 };
-const stats = { wealth: 45, education: 40, health: 60, happiness: 50, relationships: 50 };
+const stats = { education: 40, health: 60, happiness: 50, relationships: 50 };
 /** 출생신고 상세(대시보드 프로필·식구가 읽는다) — 이 하니스는 이벤트 카드의 레이아웃만 보지만 화면이 받는 모양은 실제와 같다 */
 const birthReport: BirthReport = { month: 3, region: '서울', sigunguSido: '서울', sigungu: '종로구', mother: { age: 31, job: 'clerk' }, father: { age: 34, job: 'professional' }, housing: 'own', birthWeightKg: 3.2, birthOrder: 2 };
 /** 서버·타이머 없이 고정된 올해 시계(진행률 0) */
@@ -36,6 +36,8 @@ function stateFor(pool: EventPool, eventId: string): LifeGame {
     stats,
     birthStats: { ...stats },
     age,
+    assets: { net: 3000, income: 4500, debt: 0, incomeAdj: 0, dwelling: 'rent' }, // 스키마 v8: 30세라 자산이 있다
+    familyFund: 0,
     history: [
       { age: 0, kind: 'stage', text: '2026년, 남자아이로 태어났다.' },
       { age: 20, kind: 'stage', text: '스무 살이 되었다. 이제 집안 형편이 아니라 내가 가진 것으로 살아가야 한다.' },

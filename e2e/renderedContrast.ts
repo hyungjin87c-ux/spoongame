@@ -84,7 +84,7 @@ async function collectBoxes(page: Page): Promise<Collected> {
   });
 }
 
-interface TextRect {
+export interface TextRect {
   text: string;
   /** 상자 안 좌표(상자 왼쪽 위가 0,0) */
   x: number;
@@ -144,7 +144,7 @@ async function textRectsOf(page: Page, index: number): Promise<{ width: number; 
   }, index);
 }
 
-interface RegionResult {
+export interface RegionResult {
   text: string;
   ratio: number;
   bg: string;
@@ -152,7 +152,7 @@ interface RegionResult {
 }
 
 /** 스크린샷(PNG)을 브라우저에서 풀어 글자 자리마다 바탕 색·글자 색·명도 대비를 잰다 */
-async function analyze(page: Page, png: PngBytes, rects: TextRect[], boxSize: { width: number; height: number }): Promise<RegionResult[]> {
+export async function analyze(page: Page, png: PngBytes, rects: TextRect[], boxSize: { width: number; height: number }): Promise<RegionResult[]> {
   return page.evaluate(
     async ([b64, regions, size]) => {
       const bytes = Uint8Array.from(atob(b64 as string), (c) => c.charCodeAt(0));

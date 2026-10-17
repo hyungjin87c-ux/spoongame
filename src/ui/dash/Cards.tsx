@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { looksStanding } from '../../core/birth';
+import { formatMan } from '../../core/format';
 import { reportPlaceLabel } from '../../core/birthReport';
 import { startBandOf } from '../../core/ending';
 import { familyOf, type ParentView, type SiblingView } from '../../core/family';
@@ -9,7 +10,7 @@ import type { Character, BirthReport, Era, GameState } from '../../core/types';
 import { OCCUPATION_LABEL } from '../../data/birthReportTable';
 import { BIRTH_TEXT, genderLabel, yearMonthText } from '../../data/birthReportText';
 import { standingLabel } from '../../data/birthText';
-import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER } from '../../data/dashText';
+import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, statusHelpText } from '../../data/dashText';
 import { bandLabel } from '../../data/endingText';
 import { CHILD_LABEL, GONE_LABEL, PARENT_STATE_LABEL, SPOUSE_LABEL, siblingGapText, siblingLabel } from '../../data/familyText';
 import { placeLabel } from '../../data/regionNames';
@@ -68,7 +69,7 @@ export function ProfileCard({ game }: { game: LifeGame }) {
 
 // ---------- 상태 (DB10) ----------
 
-export function StatusCard({ stats }: { stats: GameState['stats'] }) {
+export function StatusCard({ stats, era }: { stats: GameState['stats']; era: Era }) {
   return (
     <section className="card stack stack--sm" aria-label={DASH_TEXT.statusTitle} data-testid="stats">
       <div className="card__head card__head--flush">
@@ -91,23 +92,68 @@ export function StatusCard({ stats }: { stats: GameState['stats'] }) {
       <details className="disclosure">
         <summary>{DASH_TEXT.statusHelpSummary}</summary>
         <p>
-          <Glue text={DASH_TEXT.statusHelp} />
+          <Glue text={statusHelpText(ASSETS_AMOUNTS_SHIPPED, era)} />
         </p>
       </details>
     </section>
   );
 }
 
-// ---------- 자산 현황 (DB11 — M4는 자리만) ----------
+// ---------- 자산 현황 (DB11, M5) ----------
 
-export function AssetsCard({ age }: { age: number }) {
+/**
+ * 자산 현황 카드 (SPEC-003 DB11·M5 — 문구·DOM은 docs/design/copy.md 4-5절, CSS는 styles/dash.css 「자산 현황」). 20세 미만은 안내 한 줄만(집안 살림 누적값은 화면에 없다).
+ * 20세부터 순자산·연 소득·부채를 `formatMan`(= `formatWon`)으로 보인다. `.neg`(▼ 접두)는 쓰지 않는다 — ▼는 영향 줄의 「줄어듦」 기호라 수준(음수)에 쓰면 변화로 읽힌다(D-32).
+ * 지난·다가올 세상은 카드 머리에 「지금 가치로 환산」 태그가 있고 금액 묶음이 `aria-describedby`로 그것을 가리킨다. 지금 세상은 태그가 없다(기준은 상태 도움말이 밝힌다).
+ */
+export function AssetsCard({ age, assets, era }: { age: number; assets: GameState['assets']; era: Era }) {
+  if (age < 20 || assets === null) {
+    return (
+      <section className="card" aria-label={DASH_TEXT.assetsTitle} data-testid="assets-card">
+        <div className="card__head">
+          <h2 className="card__title">{DASH_TEXT.assetsTitle}</h2>
+        </div>
+        <p className="t-sm t-muted" data-testid="assets-note">
+          {DASH_TEXT.assetsYoung}
+        </p>
+      </section>
+    );
+  }
+  const converted = era !== 'present';
   return (
-    <section className="card" aria-label={DASH_TEXT.assetsTitle} data-testid="assets-card">
+    <section className="card card--assets" aria-labelledby="assets-title" data-testid="assets-card">
       <div className="card__head">
-        <h2 className="card__title">{DASH_TEXT.assetsTitle}</h2>
+        <h2 id="assets-title" className="card__title">
+          {DASH_TEXT.assetsTitle}
+        </h2>
+        {converted ? (
+          <span className="tag" id="assets-basis" data-testid="assets-basis">
+            {DASH_TEXT.assetsBasis}
+          </span>
+        ) : null}
       </div>
-      <p className="t-sm t-muted" data-testid="assets-note">
-        {age < 20 ? DASH_TEXT.assetsYoung : DASH_TEXT.assetsSoon}
+      <dl className="assets" aria-describedby={converted ? 'assets-basis' : undefined} data-testid="assets">
+        <div className="assets__row">
+          <dt>{DASH_TEXT.assetsNet}</dt>
+          <dd className="nowrap" data-testid="assets-net">
+            {formatMan(assets.net)}
+          </dd>
+        </div>
+        <div className="assets__row">
+          <dt>{DASH_TEXT.assetsIncome}</dt>
+          <dd className="nowrap" data-testid="assets-income">
+            {formatMan(assets.income)}
+          </dd>
+        </div>
+        <div className="assets__row">
+          <dt>{DASH_TEXT.assetsDebt}</dt>
+          <dd className="nowrap" data-testid="assets-debt">
+            {formatMan(assets.debt)}
+          </dd>
+        </div>
+      </dl>
+      <p className="assets__note" data-testid="assets-note">
+        {DASH_TEXT.assetsNote}
       </p>
     </section>
   );

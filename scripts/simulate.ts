@@ -51,7 +51,7 @@ if (!synthetic) {
   console.log(`[밸런스] 세 시대 합 ${b.lives}판 — 부모 재력 단계별 최종 스탯 평균 (사망 시점)`);
   for (const t of b.tiers) {
     console.log(
-      `  재력 ${t.tier}단계 n=${String(t.n).padStart(4)} | 재산 ${f(t.mean.wealth).padStart(5)} (98↑ ${t.wealthNear100Pct}%) | 학력 ${f(t.mean.education).padStart(5)} (40↑ ${t.education40Pct}% 70↑ ${t.education70Pct}%) | 건강 ${f(t.mean.health).padStart(5)} | 행복 ${f(t.mean.happiness).padStart(5)} | 관계 ${f(t.mean.relationships).padStart(5)}`,
+      `  재력 ${t.tier}단계 n=${String(t.n).padStart(4)} | 순자산 중앙값 ${String(t.netMedian).padStart(7)}만 원 (음수 ${t.netNegativePct}%) | 학력 ${f(t.mean.education).padStart(5)} (40↑ ${t.education40Pct}% 70↑ ${t.education70Pct}%) | 건강 ${f(t.mean.health).padStart(5)} | 행복 ${f(t.mean.happiness).padStart(5)} | 관계 ${f(t.mean.relationships).padStart(5)}`,
     );
   }
   console.log(`  행복 최종 평균 ${f(b.happiness.mean)} (표준편차 ${f(b.happiness.sd)}) · 관계 최종 평균 ${f(b.relationships.mean)} (표준편차 ${f(b.relationships.sd)})`);

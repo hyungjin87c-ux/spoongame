@@ -63,12 +63,13 @@ describe('스탯은 0~100의 정수여야 한다 (R-024)', () => {
     return raw(d);
   };
   const cases: Record<string, string> = {
-    'wealth 101': stat((d) => (d.stats.wealth = 101)),
+    'wealth 키(옛 v7 모양) → 손상': stat((d) => (d.stats.wealth = 50)),
     'education -1': stat((d) => (d.stats.education = -1)),
     'health 100.5': stat((d) => (d.stats.health = 100.5)),
     'happiness 50.5(소수)': stat((d) => (d.stats.happiness = 50.5)),
     'relationships 1000': stat((d) => (d.stats.relationships = 1000)),
-    'birthStats wealth 101': stat((d) => (d.birthStats.wealth = 101)),
+    'birthStats wealth 키(옛 v7 모양) → 손상': stat((d) => (d.birthStats.wealth = 45)),
+    'birthStats happiness 101': stat((d) => (d.birthStats.happiness = 101)),
     'birthStats education -3': stat((d) => (d.birthStats.education = -3)),
     'birthStats health 70.2(소수)': stat((d) => (d.birthStats.health = 70.2)),
   };

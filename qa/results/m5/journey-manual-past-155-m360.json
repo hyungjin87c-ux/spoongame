@@ -1,0 +1,1918 @@
+{
+ "era": "past",
+ "seed": 155,
+ "vpName": "m360",
+ "mode": "manual",
+ "errors": [],
+ "shots": [
+  "qa/screenshots/003/M5-N01-past-choice-young-m360.png",
+  "qa/screenshots/003/M5-N01-past-choice-young-full-m360.png",
+  "qa/screenshots/003/M5-N03-past-assets-card-age20-m360.png",
+  "qa/screenshots/003/M5-N04-past-help-open-m360.png",
+  "qa/screenshots/003/M5-N01-past-choice-adult-m360.png",
+  "qa/screenshots/003/M5-N01-past-choice-adult-full-m360.png",
+  "qa/screenshots/003/M5-N05-past-ending-top-m360.png",
+  "qa/screenshots/003/M5-N05-past-ending-full-m360.png",
+  "qa/screenshots/003/M5-N05-past-ending-finalnet-m360.png",
+  "qa/screenshots/003/M5-N01-manual-past-after-rebirth-m360.png"
+ ],
+ "ageSeries": [
+  {
+   "age": 0,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 1,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 2,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 3,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 4,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 5,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 6,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 7,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 8,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 9,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 10,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 11,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 12,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 13,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 14,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 15,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 16,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 17,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 18,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 19,
+   "assets": null,
+   "hasCard": false
+  },
+  {
+   "age": 20,
+   "assets": {
+    "net": "−150만 원",
+    "income": "171만 원",
+    "debt": "150만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 21,
+   "assets": {
+    "net": "−938만 원",
+    "income": "171만 원",
+    "debt": "938만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 22,
+   "assets": {
+    "net": "−3,461만 원",
+    "income": "95만 원",
+    "debt": "3,461만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 23,
+   "assets": {
+    "net": "−4,375만 원",
+    "income": "128만 원",
+    "debt": "4,375만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 24,
+   "assets": {
+    "net": "−5,275만 원",
+    "income": "164만 원",
+    "debt": "5,275만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 25,
+   "assets": {
+    "net": "−5,575만 원",
+    "income": "794만 원",
+    "debt": "5,575만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 26,
+   "assets": {
+    "net": "−5,875만 원",
+    "income": "834만 원",
+    "debt": "5,875만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 27,
+   "assets": {
+    "net": "−5,143만 원",
+    "income": "872만 원",
+    "debt": "5,835만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 28,
+   "assets": {
+    "net": "−4,775만 원",
+    "income": "907만 원",
+    "debt": "5,791만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 29,
+   "assets": {
+    "net": "−4,367만 원",
+    "income": "946만 원",
+    "debt": "5,742만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 30,
+   "assets": {
+    "net": "−3,926만 원",
+    "income": "978만 원",
+    "debt": "5,689만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 31,
+   "assets": {
+    "net": "−5,826만 원",
+    "income": "1,127만 원",
+    "debt": "5,826만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 32,
+   "assets": {
+    "net": "−6,126만 원",
+    "income": "1,931만 원",
+    "debt": "6,126만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 33,
+   "assets": {
+    "net": "−6,026만 원",
+    "income": "1,964만 원",
+    "debt": "6,126만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 34,
+   "assets": {
+    "net": "−6,326만 원",
+    "income": "2,004만 원",
+    "debt": "6,326만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 35,
+   "assets": {
+    "net": "−7,626만 원",
+    "income": "2,017만 원",
+    "debt": "7,626만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 36,
+   "assets": {
+    "net": "−7,926만 원",
+    "income": "2,065만 원",
+    "debt": "7,926만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 37,
+   "assets": {
+    "net": "−8,226만 원",
+    "income": "2,074만 원",
+    "debt": "8,226만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 38,
+   "assets": {
+    "net": "−8,526만 원",
+    "income": "2,097만 원",
+    "debt": "8,526만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 39,
+   "assets": {
+    "net": "−8,826만 원",
+    "income": "2,129만 원",
+    "debt": "8,826만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 40,
+   "assets": {
+    "net": "−9,126만 원",
+    "income": "2,140만 원",
+    "debt": "9,126만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 41,
+   "assets": {
+    "net": "−9,426만 원",
+    "income": "2,171만 원",
+    "debt": "9,426만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 42,
+   "assets": {
+    "net": "−9,726만 원",
+    "income": "2,190만 원",
+    "debt": "9,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 43,
+   "assets": {
+    "net": "−1억 26만 원",
+    "income": "2,203만 원",
+    "debt": "1억 26만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 44,
+   "assets": {
+    "net": "−1억 326만 원",
+    "income": "2,244만 원",
+    "debt": "1억 326만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 45,
+   "assets": {
+    "net": "−1억 1,226만 원",
+    "income": "2,272만 원",
+    "debt": "1억 1,226만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 46,
+   "assets": {
+    "net": "−1억 1,526만 원",
+    "income": "2,295만 원",
+    "debt": "1억 1,526만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 47,
+   "assets": {
+    "net": "−1억 3,026만 원",
+    "income": "2,293만 원",
+    "debt": "1억 3,026만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 48,
+   "assets": {
+    "net": "−1억 3,326만 원",
+    "income": "2,286만 원",
+    "debt": "1억 3,326만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 49,
+   "assets": {
+    "net": "−1억 3,626만 원",
+    "income": "2,269만 원",
+    "debt": "1억 3,626만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 50,
+   "assets": {
+    "net": "−1억 3,926만 원",
+    "income": "2,254만 원",
+    "debt": "1억 3,926만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 51,
+   "assets": {
+    "net": "−1억 4,226만 원",
+    "income": "2,218만 원",
+    "debt": "1억 4,226만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 52,
+   "assets": {
+    "net": "−1억 4,526만 원",
+    "income": "2,214만 원",
+    "debt": "1억 4,526만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 53,
+   "assets": {
+    "net": "−1억 4,826만 원",
+    "income": "2,185만 원",
+    "debt": "1억 4,826만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 54,
+   "assets": {
+    "net": "−1억 5,126만 원",
+    "income": "2,139만 원",
+    "debt": "1억 5,126만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 55,
+   "assets": {
+    "net": "−1억 5,426만 원",
+    "income": "2,071만 원",
+    "debt": "1억 5,426만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 56,
+   "assets": {
+    "net": "−1억 5,726만 원",
+    "income": "2,021만 원",
+    "debt": "1억 5,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 57,
+   "assets": {
+    "net": "−1억 7,826만 원",
+    "income": "1,953만 원",
+    "debt": "1억 7,826만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 58,
+   "assets": {
+    "net": "−1억 8,126만 원",
+    "income": "1,892만 원",
+    "debt": "1억 8,126만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 59,
+   "assets": {
+    "net": "−1억 8,426만 원",
+    "income": "1,801만 원",
+    "debt": "1억 8,426만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 60,
+   "assets": {
+    "net": "−1억 8,726만 원",
+    "income": "1,729만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 61,
+   "assets": {
+    "net": "−1억 6,026만 원",
+    "income": "1,615만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 62,
+   "assets": {
+    "net": "−1억 6,326만 원",
+    "income": "1,527만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 63,
+   "assets": {
+    "net": "−1억 6,626만 원",
+    "income": "1,405만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 64,
+   "assets": {
+    "net": "−1억 6,926만 원",
+    "income": "1,312만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 65,
+   "assets": {
+    "net": "−1억 7,226만 원",
+    "income": "1,226만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 66,
+   "assets": {
+    "net": "−1억 7,226만 원",
+    "income": "1,513만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 67,
+   "assets": {
+    "net": "−1억 7,726만 원",
+    "income": "1,355만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 68,
+   "assets": {
+    "net": "−1억 7,726만 원",
+    "income": "1,282만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 69,
+   "assets": {
+    "net": "−1억 7,726만 원",
+    "income": "1,210만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 70,
+   "assets": {
+    "net": "−1억 7,976만 원",
+    "income": "1,155만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 71,
+   "assets": {
+    "net": "−1억 7,976만 원",
+    "income": "1,094만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 72,
+   "assets": {
+    "net": "−1억 7,976만 원",
+    "income": "1,067만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 73,
+   "assets": {
+    "net": "−1억 7,976만 원",
+    "income": "1,029만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 74,
+   "assets": {
+    "net": "−1억 7,976만 원",
+    "income": "987만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 75,
+   "assets": {
+    "net": "−1억 7,976만 원",
+    "income": "947만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 76,
+   "assets": {
+    "net": "−1억 7,726만 원",
+    "income": "897만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 77,
+   "assets": {
+    "net": "−1억 7,726만 원",
+    "income": "881만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 78,
+   "assets": {
+    "net": "−1억 7,726만 원",
+    "income": "851만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 79,
+   "assets": {
+    "net": "−1억 8,726만 원",
+    "income": "825만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 80,
+   "assets": {
+    "net": "−1억 8,726만 원",
+    "income": "804만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 81,
+   "assets": {
+    "net": "−1억 8,476만 원",
+    "income": "793만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 82,
+   "assets": {
+    "net": "−1억 8,476만 원",
+    "income": "779만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 83,
+   "assets": {
+    "net": "−1억 8,476만 원",
+    "income": "765만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 84,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "751만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 85,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "737만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 86,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "722만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 87,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "722만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 88,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "722만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 89,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "722만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 90,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "722만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  },
+  {
+   "age": 91,
+   "assets": {
+    "net": "−1억 8,226만 원",
+    "income": "722만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "hasCard": true
+  }
+ ],
+ "decisions": [
+  {
+   "age": 3,
+   "title": "자기 전의 이야기",
+   "picked": "alone",
+   "choices": [
+    {
+     "id": "tell",
+     "impact": [
+      "관계▲",
+      "행복▲",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "alone",
+     "impact": [
+      "관계▼",
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": null,
+   "statsBefore": {
+    "health": 71,
+    "happiness": 38,
+    "education": 3,
+    "relationships": 50
+   }
+  },
+  {
+   "age": 9,
+   "title": "전학 온 아이",
+   "picked": "ignore",
+   "choices": [
+    {
+     "id": "greet",
+     "impact": [
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "watch",
+     "impact": [
+      "관계▲",
+      "지식▲"
+     ]
+    },
+    {
+     "id": "ignore",
+     "impact": [
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": null,
+   "statsBefore": {
+    "health": 72,
+    "happiness": 39,
+    "education": 9,
+    "relationships": 49
+   }
+  },
+  {
+   "age": 12,
+   "title": "성적표를 받은 저녁",
+   "picked": "academy",
+   "choices": [
+    {
+     "id": "academy",
+     "impact": [
+      "집안 살림▼▼",
+      "행복▼▼",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "alone",
+     "impact": [
+      "행복▲",
+      "지식▲▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": null,
+   "statsBefore": {
+    "health": 73,
+    "happiness": 41,
+    "education": 12,
+    "relationships": 50
+   }
+  },
+  {
+   "age": 14,
+   "title": "틀어진 사이",
+   "picked": "cut",
+   "choices": [
+    {
+     "id": "apologize",
+     "impact": [
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "wait",
+     "impact": [
+      "관계▲",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "cut",
+     "impact": [
+      "관계▼▼",
+      "행복▼",
+      "지식▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": null,
+   "statsBefore": {
+    "health": 73,
+    "happiness": 39,
+    "education": 20,
+    "relationships": 50
+   }
+  },
+  {
+   "age": 16,
+   "title": "눈여겨보신 선생님",
+   "picked": "accept",
+   "choices": [
+    {
+     "id": "accept",
+     "impact": [
+      "행복▲",
+      "지식▲▲▲"
+     ]
+    },
+    {
+     "id": "ask",
+     "impact": [
+      "관계▲",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "decline",
+     "impact": [
+      "관계▲",
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": null,
+   "statsBefore": {
+    "health": 73,
+    "happiness": 38,
+    "education": 23,
+    "relationships": 49
+   }
+  },
+  {
+   "age": 19,
+   "title": "입시를 앞둔 해",
+   "picked": "work",
+   "choices": [
+    {
+     "id": "apply",
+     "impact": [
+      "부채▲▲",
+      "행복▲",
+      "지식▲▲▲"
+     ]
+    },
+    {
+     "id": "work",
+     "impact": [
+      "집안 살림▲▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": null,
+   "statsBefore": {
+    "health": 73,
+    "happiness": 39,
+    "education": 37,
+    "relationships": 49
+   }
+  },
+  {
+   "age": 21,
+   "title": "길어지는 준비",
+   "picked": "persist",
+   "choices": [
+    {
+     "id": "persist",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "행복▼▼",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "work",
+     "impact": [
+      "자산▲▲▲",
+      "건강▼",
+      "지식▲"
+     ]
+    },
+    {
+     "id": "quit",
+     "impact": [
+      "행복▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−938만 원",
+    "income": "171만 원",
+    "debt": "938만 원"
+   },
+   "statsBefore": {
+    "health": 73,
+    "happiness": 40,
+    "education": 39,
+    "relationships": 49
+   }
+  },
+  {
+   "age": 26,
+   "title": "살 곳을 구하는 일",
+   "picked": "parents",
+   "choices": [
+    {
+     "id": "rent",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "parents",
+     "impact": [
+      "자산▲▲▲",
+      "관계▲",
+      "행복▼"
+     ]
+    },
+    {
+     "id": "loan",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲▲",
+      "행복▲",
+      "건강▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−5,875만 원",
+    "income": "834만 원",
+    "debt": "5,875만 원"
+   },
+   "statsBefore": {
+    "health": 70,
+    "happiness": 36,
+    "education": 46,
+    "relationships": 49
+   }
+  },
+  {
+   "age": 28,
+   "title": "어른들이 마련한 자리",
+   "picked": "meet",
+   "choices": [
+    {
+     "id": "meet",
+     "impact": [
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "decline",
+     "impact": [
+      "자산▲",
+      "관계▼",
+      "행복▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−4,775만 원",
+    "income": "907만 원",
+    "debt": "5,791만 원"
+   },
+   "statsBefore": {
+    "health": 70,
+    "happiness": 35,
+    "education": 47,
+    "relationships": 50
+   }
+  },
+  {
+   "age": 30,
+   "title": "함께 사는 일",
+   "picked": "marry",
+   "choices": [
+    {
+     "id": "marry",
+     "impact": [
+      "자산▼▼▼",
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "wait",
+     "impact": [
+      "관계▼",
+      "행복▼"
+     ]
+    },
+    {
+     "id": "part",
+     "impact": [
+      "자산▲▲",
+      "관계▼▼",
+      "행복▼▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−3,926만 원",
+    "income": "978만 원",
+    "debt": "5,689만 원"
+   },
+   "statsBefore": {
+    "health": 70,
+    "happiness": 37,
+    "education": 48,
+    "relationships": 53
+   }
+  },
+  {
+   "age": 32,
+   "title": "아이를 맞을 것인가",
+   "picked": "later",
+   "choices": [
+    {
+     "id": "have",
+     "impact": [
+      "자산▼▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▲▲",
+      "건강▼"
+     ]
+    },
+    {
+     "id": "later",
+     "impact": [
+      "자산▲",
+      "관계▲"
+     ]
+    },
+    {
+     "id": "none",
+     "impact": [
+      "자산▲▲",
+      "행복▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−6,126만 원",
+    "income": "1,931만 원",
+    "debt": "6,126만 원"
+   },
+   "statsBefore": {
+    "health": 69,
+    "happiness": 37,
+    "education": 48,
+    "relationships": 59
+   }
+  },
+  {
+   "age": 34,
+   "title": "늦어진 이야기",
+   "picked": "have",
+   "choices": [
+    {
+     "id": "have",
+     "impact": [
+      "자산▼▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▲▲",
+      "건강▼▼"
+     ]
+    },
+    {
+     "id": "none",
+     "impact": [
+      "자산▲▲",
+      "관계▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−6,326만 원",
+    "income": "2,004만 원",
+    "debt": "6,326만 원"
+   },
+   "statsBefore": {
+    "health": 69,
+    "happiness": 37,
+    "education": 48,
+    "relationships": 60
+   }
+  },
+  {
+   "age": 40,
+   "title": "검진 결과표",
+   "picked": "change",
+   "choices": [
+    {
+     "id": "change",
+     "impact": [
+      "행복▼",
+      "건강▲▲"
+     ]
+    },
+    {
+     "id": "postpone",
+     "impact": [
+      "자산▲▲",
+      "건강▼▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−9,126만 원",
+    "income": "2,140만 원",
+    "debt": "9,126만 원"
+   },
+   "statsBefore": {
+    "health": 65,
+    "happiness": 41,
+    "education": 48,
+    "relationships": 64
+   }
+  },
+  {
+   "age": 44,
+   "title": "늦게 시작한 일",
+   "picked": "join",
+   "choices": [
+    {
+     "id": "start",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "행복▲▲",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "join",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "pass",
+     "impact": [
+      "행복▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 326만 원",
+    "income": "2,244만 원",
+    "debt": "1억 326만 원"
+   },
+   "statsBefore": {
+    "health": 69,
+    "happiness": 39,
+    "education": 48,
+    "relationships": 64
+   }
+  },
+  {
+   "age": 46,
+   "title": "부모님의 병환",
+   "picked": "home",
+   "choices": [
+    {
+     "id": "home",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▼",
+      "건강▼▼"
+     ]
+    },
+    {
+     "id": "share",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲",
+      "건강▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 1,526만 원",
+    "income": "2,295만 원",
+    "debt": "1억 1,526만 원"
+   },
+   "statsBefore": {
+    "health": 69,
+    "happiness": 41,
+    "education": 48,
+    "relationships": 67
+   }
+  },
+  {
+   "age": 51,
+   "title": "서먹해진 식탁",
+   "picked": "talk",
+   "choices": [
+    {
+     "id": "talk",
+     "impact": [
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "space",
+     "impact": [
+      "관계▼",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "apart",
+     "impact": [
+      "자산▲▲",
+      "부채▲▲",
+      "관계▼▼",
+      "행복▼▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 4,226만 원",
+    "income": "2,218만 원",
+    "debt": "1억 4,226만 원"
+   },
+   "statsBefore": {
+    "health": 63,
+    "happiness": 40,
+    "education": 48,
+    "relationships": 70
+   }
+  },
+  {
+   "age": 53,
+   "title": "마지막 인사",
+   "picked": "late",
+   "choices": [
+    {
+     "id": "stay",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲▲"
+     ]
+    },
+    {
+     "id": "late",
+     "impact": [
+      "관계▼",
+      "행복▼▼"
+     ]
+    },
+    {
+     "id": "share",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 4,826만 원",
+    "income": "2,185만 원",
+    "debt": "1억 4,826만 원"
+   },
+   "statsBefore": {
+    "health": 61,
+    "happiness": 44,
+    "education": 48,
+    "relationships": 75
+   }
+  },
+  {
+   "age": 56,
+   "title": "다시 받은 결과",
+   "picked": "treat",
+   "choices": [
+    {
+     "id": "treat",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "건강▲▲"
+     ]
+    },
+    {
+     "id": "exercise",
+     "impact": [
+      "행복▲",
+      "건강▲▲"
+     ]
+    },
+    {
+     "id": "ignore",
+     "impact": [
+      "자산▲▲",
+      "건강▼▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 5,726만 원",
+    "income": "2,021만 원",
+    "debt": "1억 5,726만 원"
+   },
+   "statsBefore": {
+    "health": 60,
+    "happiness": 39,
+    "education": 48,
+    "relationships": 74
+   }
+  },
+  {
+   "age": 60,
+   "title": "내려놓을 때를 생각하며",
+   "picked": "save",
+   "choices": [
+    {
+     "id": "save",
+     "impact": [
+      "자산▲▲▲",
+      "행복▼"
+     ]
+    },
+    {
+     "id": "learn",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "행복▲",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "work",
+     "impact": [
+      "자산▲▲",
+      "건강▼▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 8,726만 원",
+    "income": "1,729만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 65,
+    "happiness": 39,
+    "education": 48,
+    "relationships": 73
+   }
+  },
+  {
+   "age": 67,
+   "title": "미뤄 둔 여행",
+   "picked": "photo",
+   "choices": [
+    {
+     "id": "near",
+     "impact": [
+      "자산▼▼",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "photo",
+     "impact": [
+      "행복▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 7,726만 원",
+    "income": "1,355만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 61,
+    "happiness": 33,
+    "education": 48,
+    "relationships": 71
+   }
+  },
+  {
+   "age": 69,
+   "title": "낯선 기계",
+   "picked": "avoid",
+   "choices": [
+    {
+     "id": "learn",
+     "impact": [
+      "자산▲",
+      "관계▲▲",
+      "행복▲",
+      "건강▼",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "avoid",
+     "impact": [
+      "자산▼",
+      "관계▼",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "ask",
+     "impact": [
+      "관계▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 7,726만 원",
+    "income": "1,210만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 59,
+    "happiness": 35,
+    "education": 48,
+    "relationships": 69
+   }
+  },
+  {
+   "age": 71,
+   "title": "남기고 싶은 이야기",
+   "picked": "none",
+   "choices": [
+    {
+     "id": "write",
+     "impact": [
+      "행복▲▲",
+      "지식▲"
+     ]
+    },
+    {
+     "id": "tell",
+     "impact": [
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "none",
+     "impact": [
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 7,976만 원",
+    "income": "1,094만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 58,
+    "happiness": 35,
+    "education": 48,
+    "relationships": 67
+   }
+  },
+  {
+   "age": 75,
+   "title": "미끄러진 겨울날",
+   "picked": "ignore",
+   "choices": [
+    {
+     "id": "hospital",
+     "impact": [
+      "자산▼▼",
+      "건강▲▲"
+     ]
+    },
+    {
+     "id": "tell",
+     "impact": [
+      "관계▲▲",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "ignore",
+     "impact": [
+      "자산▲",
+      "건강▼▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 7,976만 원",
+    "income": "947만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 55,
+    "happiness": 35,
+    "education": 48,
+    "relationships": 65
+   }
+  },
+  {
+   "age": 78,
+   "title": "곁을 지키는 일",
+   "picked": "help",
+   "choices": [
+    {
+     "id": "care",
+     "impact": [
+      "관계▲▲",
+      "행복▲",
+      "건강▼▼"
+     ]
+    },
+    {
+     "id": "help",
+     "impact": [
+      "자산▼▼",
+      "관계▲▲",
+      "건강▼"
+     ]
+    },
+    {
+     "id": "facility",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲",
+      "행복▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 7,726만 원",
+    "income": "851만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 48,
+    "happiness": 36,
+    "education": 48,
+    "relationships": 63
+   }
+  },
+  {
+   "age": 80,
+   "title": "오랜만의 동창 모임",
+   "picked": "skip",
+   "choices": [
+    {
+     "id": "go",
+     "impact": [
+      "자산▼",
+      "부채▲",
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "send",
+     "impact": [
+      "관계▲"
+     ]
+    },
+    {
+     "id": "skip",
+     "impact": [
+      "자산▲",
+      "관계▼",
+      "행복▼"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 8,726만 원",
+    "income": "804만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 45,
+    "happiness": 35,
+    "education": 48,
+    "relationships": 65
+   }
+  },
+  {
+   "age": 83,
+   "title": "마지막 정리",
+   "picked": "things",
+   "choices": [
+    {
+     "id": "words",
+     "impact": [
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "things",
+     "impact": [
+      "자산▲",
+      "관계▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "quiet",
+     "impact": [
+      "행복▲",
+      "건강▲"
+     ]
+    }
+   ],
+   "hint": "선택지 아래 글씨는 지금 강영식에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "assetsBefore": {
+    "net": "−1억 8,476만 원",
+    "income": "765만 원",
+    "debt": "1억 8,726만 원"
+   },
+   "statsBefore": {
+    "health": 40,
+    "happiness": 36,
+    "education": 48,
+    "relationships": 65
+   }
+  }
+ ],
+ "flags": {},
+ "birth": {
+  "name": "강영식",
+  "sentence": "1964년 7월, 충청남도 대전 서구의 형편이 빠듯한 가정에서 2.9kg 남자아이로 태어났습니다. 둘째입니다. (2.9kg은 하위 약 31%)",
+  "fields": {
+   "gender": {
+    "label": "성별",
+    "value": "남성"
+   },
+   "month": {
+    "label": "출생 연월",
+    "value": "1964년 7월"
+   },
+   "place": {
+    "label": "태어난 곳",
+    "value": "충청남도 대전 서구"
+   },
+   "wealth": {
+    "label": "집안 형편",
+    "value": "흙수저(하위 40% 안쪽)"
+   },
+   "mother": {
+    "label": "어머니",
+    "value": "26세 · 서비스직"
+   },
+   "father": {
+    "label": "아버지",
+    "value": "24세 기계 조작직"
+   },
+   "housing": {
+    "label": "사는 집",
+    "value": "임차(전세, 월세)"
+   },
+   "weight": {
+    "label": "출생 체중",
+    "value": "2.9kg (하위 약 31%)"
+   },
+   "order": {
+    "label": "형제 순서",
+    "value": "둘째"
+   },
+   "looks": {
+    "label": "외모",
+    "value": "하위 약 50% 또래 사이에서"
+   },
+   "parenting": {
+    "label": "교육방식",
+    "value": "방임 부모님은 먹고사는 일에 쫓겨 아이를 돌볼 여유가 없었습니다. 아이는 대체로 스스로 자랐습니다."
+   }
+  },
+  "peers": [
+   {
+    "name": "박미숙",
+    "gender": "여성",
+    "place": "경상남도 창원시 성산구",
+    "chip": "박미숙 여성경상남도 창원시 성산구금수저"
+   },
+   {
+    "name": "윤경숙",
+    "gender": "여성",
+    "place": "경기도 안산시 단원구",
+    "chip": "윤경숙 여성경기도 안산시 단원구금수저"
+   },
+   {
+    "name": "장영순",
+    "gender": "여성",
+    "place": "전라남도 나주시",
+    "chip": "장영순 여성전라남도 나주시흙수저"
+   },
+   {
+    "name": "강명숙",
+    "gender": "여성",
+    "place": "부산직할시 연제구",
+    "chip": "강명숙 여성부산직할시 연제구동수저"
+   }
+  ],
+  "peersNote": "네 사람도 같은 세상에서 나이를 먹습니다. 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.",
+  "bodyText": "출생 신고\n출생 신고\n수저 게임 · 가상의 서류\n접수\n\n이름\n\n강영식\n\n1964년 7월, 충청남도 대전 서구의 형편이 빠듯한 가정에서 2.9kg 남자아이로 태어났습니다. 둘째입니다. (2.9kg은 하위 약 31%)\n\n성별\n남성\n출생 연월\n1964년 7월\n태어난 곳\n충청남도 대전 서구\n집안 형편\n흙수저\n(하위 40% 안쪽)\n어머니\n26세 · 서비스직\n아버지\n24세\n기계 조작직\n사는 집\n임차(전세, 월세)\n출생 체중\n2.9kg (하위 약 31%)\n형제 순서\n둘째\n외모\n하위 약 50% 또래 사이에서\n교육방식\n방임 부모님은 먹고사는 일에 쫓겨 아이를 돌볼 여유가 없었습니다. 아이는 대체로 스스로 자랐습니다.\n같은 해 태어난 사람들\n박미숙 여성\n경상남도 창원시 성산구\n금수저\n윤경숙 여성\n경기도 안산시 단원구\n금수저\n장영순 여성\n전라남도 나주시\n흙수저\n강명숙 여성\n부산직할시 연제구\n동수저\n\n네 사람도 같은 세상에서 나이를 먹습니다. 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.\n\n시·군·구 이름은 지금(2025년) 행정구역 이름이며 당시와 다를 수 있습니다.\n\n출생 월, 출생 체중, 부모의 나이, 형제 순서는 2025년 출생 통계(국가데이터처), 부모의 직업은 30·40대 취업자 직업 분포(2024년), 사는 집은 주거실태조사 점유형태(국토교통부, 2024년)를 바탕으로 했습니다. 출생 체중 순위는 같은 성별 출생아 가운데 값입니다.\n\n사는 집은 출생아 가구가 아니라 일반 가구 전체의 점유형태를 바탕으로 한 근사입니다.\n\n수저 단계에 따른 부모 나이, 직업, 사는 집의 차이는 게임의 설계값이며 통계가 아닙니다.\n\n지난 세상의 출생 월, 출생 체중, 부모의 나이와 직업, 형제 순서, 사는 집은 지금(2025년) 통계를 바탕으로 한 설계값이며 실제 당시 통계가 아닙니다. 부모의 나이, 직업, 형제 순서는 그 시대에 맞게 조정했습니다.\n\n살아가기"
+ },
+ "help": {
+  "summary": "상태와 자산의 뜻 보기",
+  "body": "상태와 자산의 뜻 보기0에서 100 사이의 값입니다. 건강은 몸의 상태, 행복은 마음의 만족, 지식은 배우고 익힌 정도, 관계는 가족·친구와의 유대입니다. 자산은 지금 가치로 환산한 원 단위입니다. 순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.",
+  "open": true
+ },
+ "end": {
+  "finalNet": "최종 순자산−1억 8,226만 원지금 가치로 환산같은 세상 안에서 하위 약 5%",
+  "value": "−1억 8,226만 원",
+  "basis": "지금 가치로 환산",
+  "standing": "같은 세상 안에서 하위 약 5%",
+  "none": null,
+  "journey": "하위 40% 안쪽의 집에서 태어나, 하위 약 5%의 형편으로 생을 마쳤다.",
+  "movement": "출발선과 비슷한 자리에 머물렀다.",
+  "note": "재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다.",
+  "hasWealthMeter": false,
+  "hasOldWealthLabel": false,
+  "meters": [
+   "health",
+   "happiness",
+   "education",
+   "relationships"
+  ],
+  "labels": [
+   "건강",
+   "행복",
+   "지식",
+   "관계",
+   "최종 순자산"
+  ],
+  "timelineN": 44,
+  "inheritLines": []
+ },
+ "saw19": {
+  "note": "자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.",
+  "assets": null,
+  "basis": null
+ },
+ "saw20": {
+  "note": "순자산은 가진 것에서 부채를 뺀 값입니다. 0보다 작으면 부채가 가진 것보다 많다는 뜻입니다.",
+  "assets": {
+   "net": "−150만 원",
+   "income": "171만 원",
+   "debt": "150만 원"
+  },
+  "basis": "지금 가치로 환산",
+  "at": 29126
+ },
+ "helpDone": true,
+ "ms": 128947,
+ "endSave": {
+  "phase": "ending",
+  "assets": {
+   "net": -18226,
+   "income": 722,
+   "debt": 18726,
+   "incomeAdj": 200,
+   "dwelling": "rent"
+  },
+  "age": 91
+ },
+ "console": [],
+ "externalRequests": []
+}

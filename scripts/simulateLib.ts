@@ -21,6 +21,7 @@ import {
   type StatKey,
   type TickCounts,
 } from '../src/core';
+import { LIMITS } from '../src/data/economyTable';
 import { READ_SEC } from '../src/data/timingTable';
 
 /**
@@ -123,6 +124,11 @@ export function distOf(values: readonly number[]): Dist {
 }
 
 const mean = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
+const median = (xs: readonly number[]): number => {
+  if (xs.length === 0) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
+};
 const sd = (xs: readonly number[]) => {
   const m = mean(xs);
   return Math.sqrt(mean(xs.map((x) => (x - m) ** 2)));
@@ -219,8 +225,12 @@ export interface TierBalance {
   n: number;
   /** 최종 스탯 평균 */
   mean: Record<StatKey, number>;
-  /** 최종 재산이 98 이상인 비율(%) — 100에 붙는지 */
-  wealthNear100Pct: number;
+  /** 스무 살 넘어 마친 판의 최종 순자산(만 원) 중앙값 — 재산 스탯이 없어진 뒤(M5)의 「재산」 지표 */
+  netMedian: number;
+  /** 스무 살 넘어 마친 판 중 최종 순자산이 음수인 비율(%) */
+  netNegativePct: number;
+  /** 스무 살 넘어 마친 판 중 최종 순자산이 데이터 상한(LIMITS.netMax)에 닿은 비율(%) — 위쪽이 폭주하지 않는지 */
+  netAtCapPct: number;
   /** 최종 학력이 40 이상 / 70 이상인 비율(%) — 소득 문턱(INCOME_BY_EDUCATION) */
   education40Pct: number;
   education70Pct: number;
@@ -244,7 +254,15 @@ export function balanceOf(lives: readonly LifeSummary[]): BalanceReport {
       tier,
       n: g.length,
       mean: Object.fromEntries(STAT_KEYS.map((k) => [k, mean(g.map((l) => l.final.stats[k]))])) as Record<StatKey, number>,
-      wealthNear100Pct: pct(g, (l) => l.final.stats.wealth >= 98),
+      netMedian: median(g.filter((l) => l.final.assets !== null).map((l) => l.final.assets!.net)),
+      netNegativePct: pct(
+        g.filter((l) => l.final.assets !== null),
+        (l) => l.final.assets!.net < 0,
+      ),
+      netAtCapPct: pct(
+        g.filter((l) => l.final.assets !== null),
+        (l) => l.final.assets!.net >= LIMITS.netMax,
+      ),
       education40Pct: pct(g, (l) => l.final.stats.education >= 40),
       education70Pct: pct(g, (l) => l.final.stats.education >= 70),
     };

@@ -1,5 +1,5 @@
 import type { ChoiceDef, Condition, EventDef } from './events';
-import { STAT_KEYS, type Era, type Stage } from './types';
+import { STAT_KEYS, type Effects, type Era, type Stage } from './types';
 
 /**
  * 이벤트 문구 점검 (어조·길이·시대 소재·상태 어휘·선택지 균형). React·DOM과 무관한 순수 모듈.
@@ -216,19 +216,36 @@ const FIRST_PERSON = /(?:^|[\s,.])(?:나는|나의|나도|나를|나에게|내�
  * 한쪽이 모든 수치에서 낫거나 같기만 한 선택지 쌍의 예외 목록 ("이벤트id:나은선택지>못한선택지"). 비어 있어야 한다 — 소극적 선택에는 작은 이득을 준다.
  * 예외를 두려면 여기에 적고 tests/eventLint.test.ts의 예외 사유 표에도 이유를 적는다.
  */
-export const DOMINANCE_EXCEPTIONS: readonly string[] = [];
+export const DOMINANCE_EXCEPTIONS: readonly string[] = [
+  // youth-gig-work: learn(지식 +4·순자산 −800)이 settle(지식 +1·행복 −1·순자산 −800)보다 **명시 효과로는** 모든 수치에서 낫거나 같다. settle이 켜는 has_career(일 상태 0.55 → 1.0)의 파생 소득은
+  // 명시 효과가 아니라 이 점검이 못 본다 — 화면의 영향 줄 기준(자산 ▲▲▲)으로는 settle이 낫거나 달라서 지배가 아니다(tests/impact.test.ts 「표기 기준 지배 점검」).
+  // R-352 마스터 결정(2026-10-18: settle 소득 보정 −200 → 순자산 −800·행복 +1 → −1)이 정한 값이며 콘텐츠 판단은 마스터에게 보고했다.
+  'youth-gig-work:learn>settle',
+];
 
-type StatRange = Record<(typeof STAT_KEYS)[number], [lo: number, hi: number]>;
+/** 균형을 보는 축: 스탯 4개 + 돈('money' — 아래 moneyOf). 재산 스탯이 없어진 뒤(SPEC-003 M5)에도 돈이 한 축으로 남는다. */
+const BALANCE_KEYS = [...STAT_KEYS, 'money'] as const;
+type BalanceKey = (typeof BALANCE_KEYS)[number];
+type StatRange = Record<BalanceKey, [lo: number, hi: number]>;
 
-/** 선택지가 한 스탯에 줄 수 있는 변화량의 [최소, 최대] (기본 효과 + 보너스를 최악·최선으로 더한다) */
+/**
+ * 효과가 돈 축에 주는 변화(만 원): 순자산 변화 + 연 소득 변화의 3년치(economy-model.md 7절의 자산 점수와 같은 비율) + 집안 살림 변화.
+ * 부채는 따로 세지 않는다 — 부채가 늘 때는 같은 값만큼 집·사업 같은 자산이 생겨 순자산이 그대로이기 때문이다(5-B).
+ */
+function moneyOf(eff: Effects | undefined): number {
+  return (eff?.assets?.net ?? 0) + 3 * (eff?.assets?.income ?? 0) + (eff?.family ?? 0);
+}
+
+/** 선택지가 한 축에 줄 수 있는 변화량의 [최소, 최대] (기본 효과 + 보너스를 최악·최선으로 더한다) */
 function statRangeOf(c: ChoiceDef): StatRange {
   const out = {} as StatRange;
-  for (const k of STAT_KEYS) {
-    const base = c.effects?.stats?.[k] ?? 0;
+  for (const k of BALANCE_KEYS) {
+    const pick = (e: Effects | undefined): number => (k === 'money' ? moneyOf(e) : e?.stats?.[k] ?? 0);
+    const base = pick(c.effects);
     let lo = base;
     let hi = base;
     for (const b of c.bonuses ?? []) {
-      const d = b.effects.stats?.[k] ?? 0;
+      const d = pick(b.effects);
       if (d < 0) lo += d;
       else hi += d;
     }
@@ -237,7 +254,8 @@ function statRangeOf(c: ChoiceDef): StatRange {
   return out;
 }
 
-const hasStatEffect = (c: ChoiceDef): boolean => c.effects?.stats !== undefined && Object.keys(c.effects.stats).length > 0;
+const hasStatEffect = (c: ChoiceDef): boolean =>
+  (c.effects?.stats !== undefined && Object.keys(c.effects.stats).length > 0) || c.effects?.assets !== undefined || c.effects?.family !== undefined;
 
 /**
  * a가 b를 "지배"하는가: 모든 스탯에서 a의 최악이 b의 최선 이상이고, 어딘가에서는 확실히 낫다.
@@ -250,7 +268,7 @@ function relation(a: ChoiceDef, b: ChoiceDef): 'dominates' | 'same' | 'none' {
   let allGe = true;
   let strict = false;
   let same = true;
-  for (const k of STAT_KEYS) {
+  for (const k of BALANCE_KEYS) {
     if (ra[k][0] < rb[k][1]) allGe = false;
     if (ra[k][0] > rb[k][1] || ra[k][0] > rb[k][0]) strict = true;
     if (ra[k][0] !== rb[k][0] || ra[k][1] !== rb[k][1]) same = false;

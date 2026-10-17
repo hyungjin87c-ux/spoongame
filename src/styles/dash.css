@@ -121,7 +121,15 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
 .assets__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--sp-1) var(--sp-3); }
 .assets__row dt { font-size: var(--fs-sm); color: var(--c-text-2); }
 .assets__row dd { margin-left: auto; font-weight: var(--fw-bold); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
-.assets__row dd.neg::before { content: '▼ '; font-size: 0.7em; color: var(--c-down); }
+/* M5(DB11, economy-model.md 11절) 자산 카드 — 2026-10-17 designer. 마크업은 copy.md 4절 「구현 노트」:
+   section.card.card--assets > .card__head(h2 「자산 현황」 + 지난·다가올 세상에서만 .tag 「지금 가치로 환산」) > dl.assets(순자산·연 소득·부채) > p.assets__note.
+   - 금액은 formatWon 출력 그대로(「−1,200만 원」「0원」「1억 2,345만 원」 — 「약」 없음, 음수는 U+2212), 한 덩어리 .nowrap. 위 `.neg`(▼ 접두)는 M5에서 **쓰지 않는다**: ▼는 영향 줄의 「줄어듦」 기호라 수준(음수)에 쓰면 변화로 읽힌다 — 부호 「−」와 주석 문장이 뜻을 전한다.
+   - 지금 세상에는 태그가 없다(단위·기준은 상태 카드 도움말 「자산은 올해 가치 기준의 원 단위입니다.」가 밝힌다, DB11). 지난·다가올 세상은 태그가 **항상** 보이고 dl이 aria-describedby로 그 태그를 가리킨다.
+   - 금액 글자 크기는 카드 내용 폭(컨테이너 `assets`, rem)에 따라 lg → md → sm 세 단계: 가장 긴 값 「−19억 9,999만 원」(약 8.05em, 3-1절 범위의 끝)이 글자 200% × 폭 320의 카드 내용 폭 254px(7.9rem)에서도 넘치지 않는다(28px × 8.05 = 225px). 100%에서는 폭 320도 15.9rem이라 lg 그대로 */
+.card--assets { container-type: inline-size; container-name: assets; }
+.assets__note { margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--c-text-3); }
+@container assets (max-width: 14rem) { .assets__row dd { font-size: var(--fs-md); } }
+@container assets (max-width: 9.5rem) { .assets__row dd { font-size: var(--fs-sm); } }
 .disclosure { font-size: var(--fs-sm); color: var(--c-text-2); }
 .disclosure summary { cursor: pointer; min-height: var(--hit); display: flex; align-items: center; } /* 접이식 도움말도 터치 대상 44px(DB3) */
 .log { display: flex; flex-direction: column; min-height: 0; }
@@ -176,9 +184,40 @@ html.head-released { --head-fixed-h: 0px; }
 .choice { display: flex; gap: var(--sp-3); align-items: flex-start; width: 100%; padding: var(--sp-3) var(--sp-4); text-align: left; border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); color: var(--c-text); cursor: pointer; min-height: var(--hit); font-size: var(--fs-md); }
 .choice:hover { border-color: var(--c-brand); background: var(--c-brand-soft); }
 .choice[aria-disabled='true'] { opacity: 0.55; cursor: default; }
-.choice__no { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--c-brand); color: var(--c-brand); display: grid; place-items: center; font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+/* 번호 원은 글자 크기에 묶는다(D-38): 글자 100%는 26px 그대로, 200%는 40px. 숫자는 본문 줄 높이(1.6)를 물려받지 않게 line-height: 1 — 안 그러면 글자 200%에서 숫자의 줄 상자가 원 안쪽을 1px 넘어 scrollHeight > clientHeight가 된다 */
+.choice__no { flex: none; width: calc(var(--fs-sm) + 12px); height: calc(var(--fs-sm) + 12px); line-height: 1; border-radius: 50%; border: 2px solid var(--c-brand); color: var(--c-brand); display: grid; place-items: center; font-size: var(--fs-sm); font-weight: var(--fw-bold); }
 .choice__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .choice__label { font-weight: var(--fw-bold); font-size: var(--fs-md); }
+
+/* ---------- 영향 표기 (선택지 아래 작은 글씨 — SPEC-003 EC5 · economy-model.md 7절, M5 규격 2026-10-17 designer. 구현 src/styles/dash.css가 이 블록을 그대로 받는다) ----------
+   구조(docs/design/copy.md 4절 「구현 노트」):
+     .impact > .impact__item*              항목 = 이름 + 기호 **한 덩어리**(white-space: nowrap — 「집안 살림」의 공백에서도 끊지 않는다). 항목 순서는 자산(집안 살림)·부채·관계·행복·건강·지식, 변화가 있는 것만.
+     .impact__item > .impact__show[aria-hidden="true"] (눈에 보이는 「자산 ▼▼」: .impact__name + .impact__step--good|bad — 톤 = 이로움·해로움, r2) + .sr-only(스크린리더 문장 「자산이 크게 줄어듭니다.」)
+   「·」는 CSS가 그린다(.impact__item::before — `content: '·' / ''`라 접근성 트리에는 빈 대체 글자, DOM 글자에도 없다): 항목 왼쪽 간격(column-gap) 한가운데에 놓이고, **줄 첫머리 항목의 것은 컨테이너 왼쪽 가장자리 밖(left: −gap)에 그려져 overflow: hidden에 가려진다.**
+   그래서 줄이 몇 번 접혀도 기호가 줄 끝·첫머리에 남지 않는다(QM2-5 규칙 1 · QM2-10 규칙 4 「수단은 자유, 기준은 측정」 — 항목 수가 1~6으로 변하는 사슬을 쉼표 나열로 바꾸지 않고 「·」를 지키는 방법).
+   줄바꿈(CM11·QM3-1): 항목 단위로만 접힌다(flex-wrap). 가장 긴 항목 「집안 살림 ▼▼▼」(약 7.3em)이 폭 320 · 글자 200%의 선택지 내용 폭(약 8.2em)에 들어 낱말 끊김 0. 줄 높이는 --lh-snug(1.4)라 글자 200%에서 세 줄이 되어도 선택지가 지나치게 높아지지 않는다(R9).
+   색은 보조다(EC5): 방향은 ▲/▼ 모양이, 크기는 개수(1~3)가 전하고, 색은 그 변화가 이로운지(초록)·해로운지(붉음)를 돕는다 — 부채만 ▲가 해로운 색이다(r2 마스터 결정, 아래 .impact__step--good|bad). 강제 색상에서는 --c-up·--c-down·--c-text-3이 모두 CanvasText라 글자만 남는다.
+   대비(라이트/다크, contrast-report.md + design-system.md 2절 M5 쌍): 이름 --c-text-2 면 8.65/8.78 · hover 면(--c-brand-soft) 7.16/7.24, ▲ --c-up 면 6.37/8.49 · hover 5.27/7.00, ▼ --c-down 면 7.13/6.68 · hover 5.91/5.51, 「·」 --c-text-3 면 5.78/5.96 · hover 4.78/4.91. */
+.impact { --impact-gap: 1.25em; display: flex; flex-wrap: wrap; column-gap: var(--impact-gap); row-gap: 2px; overflow: hidden; font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); font-weight: var(--fw-regular); }
+.impact__item { position: relative; display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0.3em; white-space: nowrap; }
+.impact__item::before { content: '·'; content: '·' / ''; position: absolute; top: 0; left: calc(-1 * var(--impact-gap)); width: var(--impact-gap); text-align: center; color: var(--c-text-3); }
+/* 항목 안 flex-wrap은 **항목 하나가 한 줄 전체보다 길 때만** 작동하는 안전판이다(바깥 flex가 항목을 줄 폭으로 줄이면 기호 묶음이 이름 아래 줄로 내려간다 — 「집안 살림」 자체는 nowrap이라 끊기지 않는다).
+   실측(economy-m5.html impact-samples, 320 · 글자 200%): 선택지 내용 폭 180px(6.4em)에 「집안 살림 ▼▼▼」 191px(6.8em)이 안 들어가 이 안전판이 한 번 작동한다 — 그 밖의 항목(「자산 ▼▼▼」 ≈ 4.4em)은 모두 한 줄 */
+.impact__show { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0.3em; }
+.impact__step { font-size: 0.8em; letter-spacing: -0.1em; line-height: 1; }
+/* 색 = 그 변화가 **이로운지(--c-up 초록)·해로운지(--c-down 붉음)** — M5 r2 마스터 결정(2026-10-17): 방향은 기호 모양(▲ 늘어남 / ▼ 줄어듦)이 전하고 색은 이로움·해로움을 돕는 보조 표시다.
+   다른 항목은 늘어남이 이로운 쪽이지만 **부채만 반대**(부채 ▲ = 빚이 늘어남 = 해로운 색, 부채 ▼ = 이로운 색). 그래서 클래스는 방향이 아니라 톤이고, 톤은 그리는 쪽이 한 함수로 정한다(copy.md 4-8절 `impactTone`):
+   key === 'debt' ? (up → bad, down → good) : (up → good, down → bad). SR 문장·강제 색상(모두 CanvasText)·배치 규칙은 색과 무관하게 같다 */
+.impact__step--good { color: var(--c-up); }
+.impact__step--bad { color: var(--c-down); }
+/* **예비 규칙** — M5에는 지속 비활성 선택지를 만들지 않는다(r2 마스터 결정 4: 자금 조건 선택지는 숨기고(EC4), 자동 모드 동작은 지금 그대로). 앞으로 생긴다면 버튼 `.btn[data-unavailable='true']`(design-system.md 2절 「비활성 컨트롤의 대비」, R-337)과 같은 모양 — 불투명도 없이 --c-text-3 글자 + 점선 테두리.
+   영향 줄의 ▲▼도 --c-text-3(면 5.78/5.96:1 — 색이 빠져도 모양·개수가 방향·크기를 전한다). 0.4초 입력 가드(aria-disabled만, 0.55 흐림)는 과도 상태라 그대로(D-26). 구현 dash.css는 `.choice[data-unavailable='true'] { opacity: 1 }`도 함께 둔다(가드 규칙보다 뒤) */
+.choice[data-unavailable='true'] { color: var(--c-text-3); border-style: dashed; cursor: default; }
+.choice[data-unavailable='true']:hover { border-color: var(--c-border-strong); background: var(--c-surface); }
+.choice[data-unavailable='true'] .choice__no { border-color: var(--c-border-strong); color: var(--c-text-3); }
+.choice[data-unavailable='true'] .impact, .choice[data-unavailable='true'] .impact__step { color: var(--c-text-3); }
+/* 선택지 묶음 아래 안내 한 줄(copy.md 「중대 결정 카드 · 아래 안내」 M5 행): 「선택지 아래 글씨는 지금 {이름}에게 일어날 변화입니다. ▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.」 — 보조색 작은 글씨, 기호 설명 문장은 aria-hidden(스크린리더는 항목 문장을 그대로 듣는다) */
+.choice-panel__hint { font-size: var(--fs-sm); color: var(--c-text-2); }
 
 /* ---------- 엔딩 ---------- */
 .ending { max-width: 760px; margin: 0 auto; padding: var(--sp-6) var(--gutter) var(--sp-8); display: flex; flex-direction: column; gap: var(--sp-6); }
@@ -192,6 +231,19 @@ html.head-released { --head-fixed-h: 0px; }
 .timeline li { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); padding: var(--sp-2) var(--sp-1); border-bottom: 1px solid var(--c-border); font-size: var(--fs-sm); }
 .timeline li > .log__age { flex: 0 0 3.1rem; }
 .timeline li.is-choice { border-left: 3px solid var(--c-brand); padding-left: var(--sp-2); }
+/* 엔딩 「최종 순자산」 줄 (economy-model.md 9-2절 · SPEC EC5 M5 EC0 승인, 2026-10-17 designer) — M4의 「재산」 미터(role=meter, 0~100) **자리에** 들어가는 한 줄. 엔딩 나머지의 새 디자인은 M7e라 이 줄만 다룬다.
+   마크업(copy.md 4절): dl.final-net > dt 「최종 순자산」 + dd( .final-net__value 금액(formatWon, .nowrap) [+ .tag 「지금 가치로 환산」(지난·다가올 세상)] + .final-net__standing 「같은 세상 안에서 {standingLabel}」 ).
+   스무 살 전에 끝난 인생(reachedIndependence = false)은 dl.final-net.final-net--early > dt + dd.final-net__none 「스무 살이 되기 전이라 자산을 세지 않았습니다.」 — 자리(상위/하위)를 말하지 않는다.
+   같은 카드(.ending-stats)는 컨테이너 `facts`라 금액 글자 크기 단계가 자산 카드와 같다(lg → md → sm). 음수도 부호 「−」만(「빚」으로 바꿔 쓰지 않는다), 0은 「0원」 */
+.final-net { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--sp-1) var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--c-border); }
+.final-net dt { font-size: var(--fs-sm); color: var(--c-text-2); }
+.final-net dd { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; text-align: right; }
+.final-net__value { font-weight: var(--fw-bold); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
+.final-net__standing { font-size: var(--fs-sm); color: var(--c-text-2); }
+.final-net--early dd { margin-left: 0; align-items: flex-start; text-align: left; flex: 1 1 12em; }
+.final-net__none { font-size: var(--fs-sm); color: var(--c-text-2); }
+@container facts (max-width: 14rem) { .final-net__value { font-size: var(--fs-md); } }
+@container facts (max-width: 9.5rem) { .final-net__value { font-size: var(--fs-sm); } }
 .timeline li[data-kind='death'] { font-weight: var(--fw-bold); }
 .timeline li > span:last-child { flex: 1 1 11em; min-width: min(11em, 100%); display: flex; flex-direction: column; gap: 1px; }
 .tl-group h3 { font-size: var(--fs-md); color: var(--c-text-2); margin: var(--sp-3) 0 var(--sp-1); }
@@ -270,6 +322,7 @@ html.head-released { --head-fixed-h: 0px; }
 /* ---------- 강제 색상(고대비) ---------- */
 @media (forced-colors: active) {
   .choice, .exit-ask { border-color: CanvasText; }
+  .choice[data-unavailable='true'], .choice[data-unavailable='true'] .choice__no, .choice[data-unavailable='true'] .impact, .choice[data-unavailable='true'] .impact__step { color: GrayText; border-color: GrayText; }
   .choice-panel { border-color: CanvasText; }
   .choice__no { border-color: CanvasText; color: CanvasText; }
   .meter__track, .year-progress { border-color: CanvasText; background: Canvas; }
@@ -283,3 +336,12 @@ html.head-released { --head-fixed-h: 0px; }
   .log__list { scroll-behavior: auto; }
 }
 :root[data-motion='reduce'] .log__list { scroll-behavior: auto; }
+
+/* ---------- M5 금액 글자 크기의 컨테이너 질의 폴백 (design-system.md 11-6) ----------
+   자산 카드(`assets`)와 엔딩 줄(`facts`)의 금액 크기 단계는 컨테이너 질의로 정해진다. 컨테이너 질의를 모르는 브라우저(Safari 16 미만)는 좁은 뷰포트에서 한 단계(md)만 내린다 —
+   글자 확대에는 반응하지 않는 알려진 한계(R-310과 같다). ds.css의 같은 블록과 글자가 같다 */
+@supports not (container-type: inline-size) {
+  @media (max-width: 359px) {
+    .assets__row dd, .final-net__value { font-size: var(--fs-md); }
+  }
+}

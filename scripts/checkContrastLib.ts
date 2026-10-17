@@ -261,6 +261,10 @@ export const PAIRS: Pair[] = [
   ...T('--c-link', ['--c-bg', '--c-surface'], '링크'),
   ...T('--c-up', SURFACES, '▲ 영향 표기'),
   ...T('--c-down', SURFACES, '▼ 영향 표기'),
+  // M5 영향 줄(D-34): 선택지에 hover·포커스가 오면 면이 --c-brand-soft가 된다 — 그 위의 ▲ ▼ 「·」(영향 줄 기호 색)도 4.5:1을 지킨다
+  ...T('--c-up', ['--c-brand-soft'], '▲ 영향 표기(선택지 hover·포커스 면)'),
+  ...T('--c-down', ['--c-brand-soft'], '▼ 영향 표기(선택지 hover·포커스 면)'),
+  ...T('--c-text-3', ['--c-brand-soft'], '영향 줄 「·」(선택지 hover·포커스 면)'),
   ...T('--c-on-notice', ['--c-notice-bg'], '안내 띠 글자'),
   ...GRADES.flatMap((n) => T(`--c-grade-${n}-ink`, [`--c-grade-${n}-soft`], `수저 ${n}단계 칩 글자`)),
   // 컨트롤 경계·그래픽 (3:1)

@@ -1,16 +1,18 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { startLife } from '../scripts/simulateLib';
-import { DEFAULT_SETTINGS, SPEEDS, advanceUntilDecision, calendarYear, educationLabel, familyOf, peersOf, stepYear, type GameState, type Settings } from '../src/core';
+import { DEFAULT_SETTINGS, IMPACT_KEYS, SPEEDS, advanceUntilDecision, calendarYear, educationLabel, familyOf, peersOf, previewPending, resolveChoice, stepYear, type GameState, type Settings } from '../src/core';
 import { looksStanding } from '../src/core/birth';
 import { reportPlaceLabel } from '../src/core/birthReport';
 import { startBandOf } from '../src/core/ending';
-import { formatCount } from '../src/core/format';
+import { formatCount, formatMan } from '../src/core/format';
 import { tryVirtualPopulation } from '../src/core/population';
 import { PEER_STATUS_LABEL, peersNow } from '../src/core/peerNow';
 import { DASHBOARD_PEERS_SHIPPED, BIRTH_TEXT, GRADE_NAME, genderLabel, peersNoteText, yearMonthText } from '../src/data/birthReportText';
 import { standingLabel } from '../src/data/birthText';
-import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER } from '../src/data/dashText';
+import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, statusHelpText } from '../src/data/dashText';
+import { EVENT_POOL } from '../src/data/events';
+import { choiceAccessibleName } from '../src/data/impactText';
 import { bandLabel } from '../src/data/endingText';
 import { placeLabel } from '../src/data/regionNames';
 import { LifeScreen } from '../src/screens/LifeScreen';
@@ -376,24 +378,203 @@ describe('상태 카드 (DB10)', () => {
     expect(card).toContain(DASH_TEXT.statusHelpSummary);
   });
 
-  it('상태 도움말은 자산 금액이 생기기 전(M5 전)에는 자산을 설명하는 문장을 싣지 않는다 — 없는 기능을 설명하지 않는다 (R-333)', () => {
-    const card = text(sectionOf(render(adult), 'stats'));
-    expect(card).toContain('0에서 100 사이의 값입니다.');
-    expect(card).toContain('관계는 가족·친구와의 유대입니다.');
-    expect(card).not.toMatch(/자산|원 단위/);
+  it('상태 도움말: 자산 금액이 화면에 있으므로 시대별 단위 문장과 가구 기준 한 문장이 있다 — 지금 세상은 「올해 가치 기준」, 지난·다가올 세상은 「지금 가치로 환산」 (M5 2b, copy.md 4-5절)', () => {
+    const present = text(sectionOf(render(adult), 'stats'));
+    expect(present).toContain('0에서 100 사이의 값입니다.');
+    expect(present).toContain('관계는 가족·친구와의 유대입니다.');
+    expect(present).toContain(DASH_TEXT.statusHelpSummary);
+    expect(present).toContain(statusHelpText(ASSETS_AMOUNTS_SHIPPED, 'present'));
+    expect(present).toContain('자산은 올해 가치 기준의 원 단위입니다.');
+    expect(present).toContain('순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.');
+    for (const era of ['past', 'future'] as const) {
+      const other = text(sectionOf(render(ageTo(startLife(11, era), 31)), 'stats'));
+      expect(other, era).toContain('자산은 지금 가치로 환산한 원 단위입니다.');
+      expect(other, era).not.toContain('올해 가치 기준');
+    }
   });
 });
 
-describe('자산 현황 자리 (DB11)', () => {
-  it('스무 살 전: 안내만 (수저 칩 없음). 스무 살부터: 값은 준비 중이라는 자리 표시 (숫자 없음)', () => {
+describe('자산 현황 (DB11, M5 2b)', () => {
+  const amounts = (html: string) => ['assets-net', 'assets-income', 'assets-debt'].map((id) => new RegExp(`data-testid="${id}">([^<]*)<`).exec(html)![1]);
+
+  it('스무 살 전: 안내만 (수저 칩 없음, 금액 없음)', () => {
     const young = sectionOf(render(infant), 'assets-card');
     expect(text(openTagBlock(young, 'assets-note'))).toBe(DASH_TEXT.assetsYoung);
     expect(young).not.toContain('class="grade');
-    const old = sectionOf(render(adult), 'assets-card');
-    expect(text(openTagBlock(old, 'assets-note'))).toBe(DASH_TEXT.assetsSoon);
-    expect(text(old), '자리 표시 문구에는 금액·숫자가 없다').not.toMatch(/\d/);
-    // copy.md 「자산 현황(20세 이후, M5 전 자리)」 행: 「스무 살 이후의」는 군더더기라 뺐다 (designer 제안, R-333 이어서)
-    expect(DASH_TEXT.assetsSoon).toBe('순자산, 연 소득, 부채는 아직 준비 중입니다.');
+    expect(young).not.toContain('data-testid="assets-net"');
+    expect(young).not.toContain('class="tag"');
+  });
+
+  it('스무 살부터 지금 세상: 순자산·연 소득·부채가 formatWon 그대로(「약」 없음)이고 태그가 없다 — dl은 aria-describedby가 없다. 이름에 「(가구)」가 없다', () => {
+    const asset = adult.assets!;
+    const html = sectionOf(render(adult), 'assets-card');
+    expect(html).toContain('class="card card--assets"');
+    expect(html).toContain('aria-labelledby="assets-title"');
+    expect(html).toContain(`>${DASH_TEXT.assetsTitle}</h2>`);
+    expect(html).not.toContain('class="tag"');
+    expect(html).not.toContain('aria-describedby');
+    expect(html).not.toContain('class="neg"');
+    expect(html).not.toMatch(/dd class="[^"]*neg/);
+    const t = text(html);
+    expect(t).toContain(`${DASH_TEXT.assetsNet} ${formatMan(asset.net)}`);
+    expect(t).toContain(`${DASH_TEXT.assetsIncome} ${formatMan(asset.income)}`);
+    expect(t).toContain(`${DASH_TEXT.assetsDebt} ${formatMan(asset.debt)}`);
+    expect(t).toContain(DASH_TEXT.assetsNote);
+    expect(t).not.toContain('(가구)');
+    expect(t).not.toContain('약 ');
+    expect(t).not.toContain('빚');
+    expect(t).not.toContain('아직 준비 중');
+    // 금액은 줄바꿈 없는 한 덩어리(.nowrap)다
+    for (const id of ['assets-net', 'assets-income', 'assets-debt']) expect(openTag(html, id)).toContain('class="nowrap"');
+    expect(amounts(html)).toEqual([formatMan(asset.net), formatMan(asset.income), formatMan(asset.debt)]);
+  });
+
+  it('지난·다가올 세상: 카드 머리에 「지금 가치로 환산」 태그가 항상 있고 금액 묶음(dl)이 aria-describedby로 그 태그를 가리킨다', () => {
+    for (const era of ['past', 'future'] as const) {
+      const g = ageTo(startLife(11, era), 31);
+      const html = sectionOf(render(g), 'assets-card');
+      const tag = openTag(html, 'assets-basis');
+      expect(tag, era).toContain('class="tag"');
+      const id = attr(tag, 'id');
+      expect(id, era).toBe('assets-basis');
+      expect(attr(openTag(html, 'assets'), 'aria-describedby'), era).toBe(id);
+      expect(text(html), era).toContain(DASH_TEXT.assetsBasis);
+      expect((html.match(/지금 가치로 환산/g) ?? []).length, `${era}: 금액마다 되풀이하지 않는다`).toBe(1);
+    }
+  });
+
+  it('경계: 0은 「0원」, 음수는 U+2212 「−」로 시작하고 「빚」·「▼」로 바꿔 쓰지 않는다 (순자산 −1,200만 원 · 부채 4,800만 원 · 0)', () => {
+    const base = adult;
+    const g: GameState = { ...base, assets: { ...base.assets!, net: -1200, income: 0, debt: 4800 } };
+    const html = sectionOf(render(g), 'assets-card');
+    expect(amounts(html)).toEqual(['−1,200만 원', '0원', '4,800만 원']);
+    expect(amounts(html)[0].startsWith('\u2212')).toBe(true);
+    expect(text(html)).not.toContain('▼');
+    expect(text(html)).not.toContain('빚');
+    // 아주 큰 수도 단위가 이어진다 (가장 긴 값 −19억 9,999만 원)
+    const big: GameState = { ...base, assets: { ...base.assets!, net: -199_999, debt: 199_999 } };
+    expect(amounts(sectionOf(render(big), 'assets-card'))[0]).toBe('−19억 9,999만 원');
+  });
+});
+
+describe('선택지 영향 줄 (M5 2b, copy.md 4-3·4-4)', () => {
+  /** aria-hidden 요소를 빼고 남은 글자 = 접근 가능한 이름(정적 마크업 근사). 블록 경계는 공백으로 센다 */
+  function accessibleText(html: string): string {
+    let out = '';
+    let hiddenDepth = 0;
+    for (const m of html.matchAll(/<(\/?)([a-z0-9]+)([^>]*)>|([^<]+)/g)) {
+      if (m[4] !== undefined) {
+        if (hiddenDepth === 0) out += m[4];
+        continue;
+      }
+      const closing = m[1] === '/';
+      const attrs = m[3] ?? '';
+      if (hiddenDepth > 0) {
+        hiddenDepth += closing ? -1 : attrs.endsWith('/') ? 0 : 1;
+        continue;
+      }
+      if (!closing && /aria-hidden="true"/.test(attrs)) hiddenDepth = 1;
+      else out += ' ';
+    }
+    return out.replace(/\s+/g, ' ').trim();
+  }
+  const impactItemsOf = (html: string) => [...html.matchAll(/data-key="([a-z]+)" data-direction="(up|down)" data-steps="([123])"/g)].map((m) => ({ key: m[1], direction: m[2], steps: Number(m[3]) }));
+  /** 선택지가 뜬 상태 하나(minAge 이상) */
+  function decisionFrom(minAge: number, maxAge = 120): GameState {
+    for (let seed = 1; seed <= 60; seed++) {
+      let s: GameState = startLife(seed, 'present');
+      for (let guard = 0; guard < 60 && s.phase === 'life'; guard++) {
+        s = advanceUntilDecision(s).state;
+        if (s.phase !== 'life' || s.pending === null) break;
+        if (s.age >= minAge && s.age <= maxAge && previewPending(s, EVENT_POOL)!.some((p) => p.impact.items.length > 0)) return s;
+        s = resolveChoice(s, s.pending.key, s.pending.choiceIds[0]);
+      }
+    }
+    throw new Error('선택지 상태를 찾지 못했다');
+  }
+  const adultDecision = decisionFrom(25);
+  const youngDecision = decisionFrom(8, 18);
+
+  it('선택지마다 영향 줄이 있고, 항목·방향·칸 수가 previewChoice(= 인생 진행이 선택을 적용하는 계산)와 같다', () => {
+    for (const g of [adultDecision, youngDecision]) {
+      const panel = sectionOf(render(g), 'choice-panel');
+      const pool = EVENT_POOL;
+      const previews = previewPending(g, pool)!;
+      const buttons = [...panel.matchAll(/<button\b[\s\S]*?<\/button>/g)].map((m) => m[0]);
+      expect(buttons).toHaveLength(previews.length);
+      let withImpact = 0;
+      buttons.forEach((b, i) => {
+        const want = previews[i].impact.items.map((it) => ({ key: it.key, direction: it.direction, steps: it.steps }));
+        expect(impactItemsOf(b), `${g.age}세 ${previews[i].choiceId}`).toEqual(want);
+        if (want.length > 0) {
+          withImpact++;
+          expect(b).toContain('data-testid="impact"');
+        } else expect(b).not.toContain('data-testid="impact"'); // 변화가 없으면 요소 자체가 없다
+      });
+      expect(withImpact, '영향이 있는 선택지가 하나는 있다').toBeGreaterThan(0);
+    }
+  });
+
+  it('선택지 버튼의 접근 가능한 이름 = 「{선택지 이름} {영향 문장들}」 — 번호와 눈에 보이는 기호(aria-hidden)는 이름에 들지 않는다', () => {
+    for (const g of [adultDecision, youngDecision]) {
+      const ev = EVENT_POOL.byId.get(g.pending!.eventId)!;
+      const previews = previewPending(g, EVENT_POOL)!;
+      const panel = sectionOf(render(g), 'choice-panel');
+      const buttons = [...panel.matchAll(/<button\b[\s\S]*?<\/button>/g)].map((m) => m[0]);
+      buttons.forEach((b, i) => {
+        const choice = ev.choices!.find((c) => c.id === previews[i].choiceId)!;
+        expect(accessibleText(b), choice.id).toBe(choiceAccessibleName(choice.label, previews[i].impact.items));
+        expect(accessibleText(b)).not.toMatch(/[▲▼]/);
+        expect(accessibleText(b).startsWith(String(i + 1))).toBe(false);
+      });
+    }
+  });
+
+  it('20세 미만은 첫 항목이 「집안 살림」이고 「자산」·「부채」는 없다, 20세 이후는 「집안 살림」이 없다 (한 선택지에 둘이 함께 나오지 않는다)', () => {
+    const young = previewPending(youngDecision, EVENT_POOL)!.flatMap((p) => p.impact.items.map((it) => it.key));
+    expect(young).not.toContain('assets');
+    expect(young).not.toContain('debt');
+    const adult = previewPending(adultDecision, EVENT_POOL)!.flatMap((p) => p.impact.items.map((it) => it.key));
+    expect(adult).not.toContain('family');
+    for (const p of previewPending(adultDecision, EVENT_POOL)!) {
+      const keys = p.impact.items.map((it) => it.key);
+      expect(keys, `${p.choiceId}`).toEqual(IMPACT_KEYS.filter((k) => keys.includes(k))); // 순서 = IMPACT_KEYS
+    }
+  });
+
+  it('안내 한 줄: 선택지 묶음 바로 아래, 자동 모드 안내보다 앞이다 — 「지금 {이름}에게」 + 기호 설명(aria-hidden)과 스크린리더 대체 글자. 영향 줄이 하나도 없으면 안내도 없다', () => {
+    const g = adultDecision;
+    const html = render(g, { settings: { autoMode: true } });
+    const panel = sectionOf(html, 'choice-panel');
+    const list = panel.indexOf('role="group"');
+    const hint = panel.indexOf('data-testid="choice-hint"');
+    const auto = panel.indexOf('data-testid="auto-note"');
+    expect(list).toBeGreaterThan(-1);
+    expect(hint).toBeGreaterThan(list);
+    expect(auto).toBeGreaterThan(hint);
+    const hintHtml = panel.slice(panel.lastIndexOf('<p', hint), panel.indexOf('</p>', hint) + 4);
+    expect(text(hintHtml)).toContain(`선택지 아래 글씨는 지금 ${g.character!.name}에게 일어날 변화입니다.`);
+    expect(hintHtml).toContain('aria-hidden="true">▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.</span>');
+    expect(hintHtml).toContain('위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.');
+    // 영향이 하나도 없는 선택지 묶음에는 안내를 두지 않는다 (없는 것을 설명하지 않는다)
+    const ev = EVENT_POOL.byId.get(g.pending!.eventId)!;
+    const quietPool = { ...EVENT_POOL, byId: new Map(EVENT_POOL.byId).set(ev.id, { ...ev, choices: ev.choices!.map((c) => ({ ...c, effects: undefined, bonuses: undefined })) }) };
+    const quiet = renderToStaticMarkup(
+      <LifeScreen game={asLife(g)} settings={settingsOf()} clock={CLOCK} exitOpen={false} onExitOpen={noop} onChoose={noop} onSkip={noop} onSpeed={noop} onAuto={noop} onPause={noop} onBgm={noop} onTheme={noop} onExit={noop} minute={MINUTE} repoUrl={REPO} buildLabel={BUILD} pool={quietPool} />,
+    );
+    expect(quiet).not.toContain('data-testid="impact"');
+    expect(quiet).not.toContain('data-testid="choice-hint"');
+  });
+
+  it('지속 비활성 선택지는 M5에 없다 (r2 마스터 결정 4): 선택지 버튼에 data-unavailable이 없다 — 자금이 모자라면 선택지를 숨기고(EC4) 비활성으로 두지 않는다', () => {
+    for (const g of [adultDecision, youngDecision]) expect(sectionOf(render(g), 'choice-panel')).not.toContain('data-unavailable');
+  });
+
+  it('금액과 퍼센트가 영향 줄에 없다: 선택지 아래에는 기호와 이름뿐이다 (SPEC EC5 — 문장에 금액 없음)', () => {
+    for (const g of [adultDecision, youngDecision]) {
+      const impactTexts = [...sectionOf(render(g), 'choice-panel').matchAll(/data-testid="impact"[\s\S]*?<\/span><\/span><\/span>/g)].map((m) => text(m[0]));
+      for (const t of impactTexts) expect(t).not.toMatch(/\d|원|%|만/);
+    }
   });
 });
 

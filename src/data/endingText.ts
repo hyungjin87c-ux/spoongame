@@ -1,6 +1,7 @@
 import type { Death, Stage } from '../core/types';
 import type { Movement, StartBand, WealthJourney } from '../core/ending';
 import { stageRangeOf } from '../core/ending';
+import type { Standing } from '../core/standing';
 import { standingLabel } from './birthText';
 import { STAGE_TABLE } from './lifeTable';
 
@@ -76,8 +77,22 @@ export const MOVEMENT_TEXT: Record<Movement, string> = {
 /** 왜 숫자를 빼서 견주지 않았는가 (R-045 c) */
 export const JOURNEY_NOTE = '재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다.';
 
-/** 스무 살 전에 끝난 인생의 재산 이름: 그때까지 재산은 집안 형편이다 */
-export const EARLY_WEALTH_LABEL = '집안 형편';
+/**
+ * 엔딩 「최종 순자산」 줄의 문구 (SPEC-003 M5, docs/design/copy.md 4-6절): M4의 「재산」 미터(0~100)와 스무 살 전의 이름 「집안 형편」을 대신한다. 금액은 `formatWon` 출력 그대로(「약」 없음, 음수 U+2212),
+ * 자리는 `standingLabel(finalWealthStanding(era, 순자산))` 출력 그대로다(「딱 중간쯤」「상위 1% 안쪽」도 그대로 붙는다).
+ */
+export const FINAL_NET_TEXT = {
+  label: '최종 순자산',
+  /** 지난·다가올 세상에서만 금액 바로 아래에 붙는 태그 */
+  basis: '지금 가치로 환산',
+  /** 스무 살 전에 끝난 인생: 자리를 말하지 않는다 */
+  early: '스무 살이 되기 전이라 자산을 세지 않았습니다.',
+} as const;
+
+/** 최종 순자산의 자리 한 줄: 「같은 세상 안에서 상위 약 38%」 (출발선 카드 주석 「같은 세상 안의 자리로 견주었습니다」와 같은 말) */
+export function finalNetStandingText(end: Standing): string {
+  return `같은 세상 안에서 ${standingLabel(end)}`;
+}
 
 /** 학력·행복·관계 옆에 붙이는 출발선 값 */
 export function startedAtText(from: number): string {

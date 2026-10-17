@@ -60,8 +60,8 @@ function fake(over: Partial<RawIndicator> & { id: string }): RawIndicator {
 }
 
 describe('usable: false 는 어떤 접근 함수로도 나오지 않는다 (R-147(e))', () => {
-  it('실제 데이터: 미확인 지표 7개는 getUsableIndicator가 undefined이고 목록(전체·캐러셀·용도별)에 없다', () => {
-    expect(UNUSABLE_IDS.sort()).toEqual(['childcare-cost', 'household-credit', 'household-loan-rate', 'income-college-gap', 'korean-children-panel', 'rent-type-split', 'wedding-cost']);
+  it('실제 데이터: 미확인 지표 6개는 getUsableIndicator가 undefined이고 목록(전체·캐러셀·용도별)에 없다', () => {
+    expect(UNUSABLE_IDS.sort()).toEqual(['childcare-cost', 'household-credit', 'household-loan-rate', 'income-college-gap', 'korean-children-panel', 'wedding-cost']);
     const listed = new Set(getUsableIndicators().map((i) => i.id));
     const uses = ['carousel', 'roulette', 'birth', 'economy', 'death', 'satire', 'future', 'research'] as const;
     const listedByUse = new Set(uses.flatMap((u) => getUsableIndicators(u).map((i) => i.id)));

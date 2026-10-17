@@ -311,11 +311,13 @@ test('인생 기록: 새 줄이 맨 아래에 쌓이고, 맨 아래를 보고 �
   await expect(page.getByTestId('log-jump')).toHaveCount(0);
 
   // 맨 아래를 보고 있으면 새 줄이 와도 따라간다(버튼 없음)
-  const pinBefore = await page.getByTestId('log-pin').boundingBox();
+  // 고정 줄이 「기록 카드 안에서」 제자리인지 본다: 화면 좌표는 선택지 카드(M5부터 영향 줄이 있어 더 높다)가 떴다 사라질 때 달라지는 스크롤 위치에도 흔들리므로 카드 윗변에서의 거리로 잰다
+  const pinOffset = async () => (await page.getByTestId('log-pin').boundingBox())!.y - (await page.getByTestId('log').boundingBox())!.y;
+  const pinBefore = await pinOffset();
   await addRows();
   await expect(page.getByTestId('log-jump')).toHaveCount(0);
   expect(await gap(), '새 줄을 따라 맨 아래').toBeLessThanOrEqual(24);
-  expect((await page.getByTestId('log-pin').boundingBox())!.y, '가상 인구 줄은 기록이 쌓여도 제자리').toBe(pinBefore!.y);
+  expect(await pinOffset(), '가상 인구 줄은 기록이 쌓여도 제자리').toBe(pinBefore);
   await expect(page.getByTestId('log-row').last()).toHaveClass(/latest/);
 
   // 위로 올려 읽는 중이면 따라가지 않고 개수만 센다
@@ -708,7 +710,7 @@ test('나가기 확인 단계의 더블탭: 「나가기」를 두 번 눌러도
 // ---------- C6: 이전 버전 저장 ----------
 
 test('이전 버전(v6) 인생 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄이 한 번 뜬다. 설정(BGM·테마는 기본값)은 이어진다 (C6)', async ({ page }) => {
-  expect(SAVE_VERSION).toBe(7);
+  expect(SAVE_VERSION).toBe(8); // M5 2a에서 7 → 8 (재산 스탯 폐지) — 여기서 쓰는 v6 저장은 지금도 「이전 버전」이다
   await page.addInitScript(
     ([gameKey, settingsKey, life]) => {
       if (localStorage.getItem(gameKey) === null) {

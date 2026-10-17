@@ -27,7 +27,7 @@ import { chooserFor, correlation, startLife } from '../scripts/simulateLib';
 /** M4 밸런스 장치: 행복·관계의 출생 편차 걷어 내기(R-045 b, R-063), 한 판의 선택지 수 조절, 자동 선택 가중치의 지수 제한(R-046). */
 
 const character = (over: Partial<Character> = {}): Character => ({ name: '김민준', gender: 'male', birthYear: 2012, parentWealth: 3, parenting: 'free', looks: 50, ...over });
-const stats = (over: Partial<Stats> = {}): Stats => ({ wealth: 50, education: 50, health: 50, happiness: 50, relationships: 50, ...over });
+const stats = (over: Partial<Stats> = {}): Stats => ({ education: 50, health: 50, happiness: 50, relationships: 50, ...over });
 const drift = (age: number, over: Partial<Stats>, birth?: Pick<Stats, 'happiness' | 'relationships'>) =>
   naturalDeltas(age, character(), stats(over), 'present', birth);
 const birthOf = (happiness: number, relationships: number = happiness) => ({ happiness, relationships });
@@ -255,8 +255,8 @@ describe('한 판의 선택지 수 조절 (CHOICE_PACING)', () => {
           weight: 10,
           once: true,
           choices: [
-            { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { wealth: 1 } } },
-            { id: 'b', label: '둘째', result: '둘째를 골랐다. 결과 문장.', effects: { stats: { wealth: -1 } } },
+            { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { education: 1 } } },
+            { id: 'b', label: '둘째', result: '둘째를 골랐다. 결과 문장.', effects: { stats: { education: -1 } } },
           ],
         });
         if (withNarrative) {
@@ -348,8 +348,8 @@ describe('자동 선택 가중치의 지수 제한 (R-046): 비정상적으로 �
     weight: 10,
     once: true,
     choices: [
-      { id: 'up', label: '크게 오른다', result: '크게 올랐다. 결과 문장이다.', effects: { stats: { wealth: 1e9, education: 1e9, happiness: 1e9 } } },
-      { id: 'down', label: '크게 내린다', result: '크게 내렸다. 결과 문장이다.', effects: { stats: { wealth: -1e9, education: -1e9, happiness: -1e9 } } },
+      { id: 'up', label: '크게 오른다', result: '크게 올랐다. 결과 문장이다.', effects: { stats: { health: 1e9, education: 1e9, happiness: 1e9 } } },
+      { id: 'down', label: '크게 내린다', result: '크게 내렸다. 결과 문장이다.', effects: { stats: { health: -1e9, education: -1e9, happiness: -1e9 } } },
     ],
   };
   const pool = createEventPool([huge]);

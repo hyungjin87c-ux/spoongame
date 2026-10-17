@@ -9,11 +9,11 @@
       "ageRange": { "min": 65, "max": 70 },
       "weight": 40,
       "once": true,
-      "effects": { "stats": { "wealth": -2, "happiness": -1 } },
+      "effects": { "stats": { "happiness": -1 }, "assets": { "income": -200 } },
       "bonuses": [
-        { "when": { "stats": { "wealth": { "min": 60 } } }, "effects": { "stats": { "happiness": 3 } } },
-        { "when": { "stats": { "wealth": { "max": 30 } } }, "effects": { "stats": { "happiness": -3, "wealth": -2 } } },
-        { "when": { "flags": ["own_business"] }, "effects": { "stats": { "wealth": 3 } } }
+        { "when": { "assets": { "netMin": 90000 } }, "effects": { "stats": { "happiness": 3 } } },
+        { "when": { "assets": { "netMax": -1500 } }, "effects": { "stats": { "happiness": -3 }, "assets": { "net": -500 } } },
+        { "when": { "flags": ["own_business"] }, "effects": { "assets": { "income": 300 } } }
       ]
     },
     {
@@ -65,7 +65,7 @@
           "id": "treat",
           "label": "적극적으로 치료받는다",
           "result": "입원과 통원을 오가며 시간을 보냈다. 몸은 조금 나아졌고, 통장은 가벼워졌다.",
-          "effects": { "stats": { "health": 8, "wealth": -6, "happiness": -1 } }
+          "effects": { "stats": { "health": 8, "happiness": -1 }, "assets": { "net": -1500 } }
         },
         {
           "id": "routine",
@@ -89,7 +89,7 @@
           "id": "treat",
           "label": "할 수 있는 치료를 모두 받는다",
           "result": "가능한 치료를 모두 받았다. 몸은 버텼지만 기력은 눈에 띄게 줄었다.",
-          "effects": { "stats": { "health": 6, "wealth": -8, "happiness": -2 } }
+          "effects": { "stats": { "health": 6, "happiness": -2 }, "assets": { "net": -2000 } }
         },
         {
           "id": "comfort",
@@ -144,26 +144,26 @@
       "ageRange": { "min": 68, "max": 85 },
       "weight": 12,
       "once": true,
-      "conditions": { "stats": { "wealth": { "min": 35 } } },
+      "conditions": { "assets": { "netMin": 15000 } },
       "choices": [
         {
           "id": "give",
           "label": "가까운 이들에게 미리 나눈다",
           "result": "가까운 이들에게 몫을 나누어 주었다. 가벼워진 마음 한편에 허전함이 스쳤다.",
-          "effects": { "stats": { "wealth": -10, "relationships": 1 } },
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": -2500 } },
           "bonuses": [{ "when": { "flags": ["has_child"] }, "effects": { "stats": { "relationships": 3 } } }]
         },
         {
           "id": "spend",
           "label": "남은 시간을 위해 쓴다",
           "result": "미뤄 두었던 일들에 돈을 썼다. 쓰는 만큼 하루가 풍성해졌다.",
-          "effects": { "stats": { "wealth": -6, "happiness": 4, "health": 1 } }
+          "effects": { "stats": { "happiness": 4, "health": 1 }, "assets": { "net": -1500 } }
         },
         {
           "id": "donate",
           "label": "뜻 있는 곳에 기부한다",
           "result": "오래 생각해 둔 곳에 일부를 내놓았다. 내 이름이 남지 않아도 마음은 편안했고 새로운 인연이 닿았다.",
-          "effects": { "stats": { "wealth": -6, "happiness": 3, "relationships": 2 } }
+          "effects": { "stats": { "happiness": 3, "relationships": 2 }, "assets": { "net": -1500 } }
         }
       ]
     },
@@ -193,7 +193,7 @@
           "id": "facility",
           "label": "돌봄이 있는 곳으로 간다",
           "result": "돌봄을 받을 수 있는 곳으로 옮겼다. 식사와 약을 챙겨 주는 손길이 늘 곁에 있었다.",
-          "effects": { "stats": { "health": 3, "wealth": -5, "happiness": -1 }, "setFlags": ["moved_home", "in_care"] }
+          "effects": { "stats": { "health": 3, "happiness": -1 }, "assets": { "net": -625 }, "setFlags": ["moved_home", "in_care"] }
         }
       ]
     },
@@ -210,13 +210,14 @@
           "id": "go",
           "label": "무리해서라도 다녀온다",
           "result": "짐을 꾸려 먼 길을 떠났다. 몸은 지쳤지만 눈앞의 풍경이 오랜 숙제를 풀어 주었다.",
-          "effects": { "stats": { "happiness": 5, "health": -2, "wealth": -5 } }
+          "effects": { "stats": { "happiness": 5, "health": -2 }, "assets": { "net": -1250 } },
+          "requires": { "assets": { "netMin": 5000 } }
         },
         {
           "id": "near",
           "label": "가까운 곳으로 바꿔 다녀온다",
           "result": "멀지 않은 곳으로 계획을 바꿨다. 소박했지만 하루가 알찼다.",
-          "effects": { "stats": { "happiness": 3, "wealth": -2 } }
+          "effects": { "stats": { "happiness": 3 }, "assets": { "net": -500 } }
         },
         {
           "id": "photo",
@@ -276,13 +277,13 @@
           "id": "help",
           "label": "도움을 받아 함께 돌본다",
           "result": "도움을 받아 번갈아 돌보았다. 조금 덜 지치고 조금 더 오래 버틸 수 있었다.",
-          "effects": { "stats": { "relationships": 3, "wealth": -4, "health": -1 } }
+          "effects": { "stats": { "relationships": 3, "health": -1 }, "assets": { "net": -1000 } }
         },
         {
           "id": "facility",
           "label": "전문 돌봄에 맡긴다",
           "result": "돌봄이 갖춰진 곳으로 옮겼다. 매일 찾아가 손을 잡아 주는 것이 내 일이 되었다.",
-          "effects": { "stats": { "relationships": 1, "wealth": -6, "happiness": -2 } }
+          "effects": { "stats": { "relationships": 1, "happiness": -2 }, "assets": { "net": -1500 } }
         }
       ]
     },
@@ -306,7 +307,7 @@
           "id": "pet",
           "label": "작은 동물을 들인다",
           "result": "작은 생명을 집에 들였다. 아침마다 나를 기다리는 소리가 하루를 열어 주었다.",
-          "effects": { "stats": { "happiness": 4, "health": 1, "wealth": -1 } }
+          "effects": { "stats": { "happiness": 4, "health": 1 }, "assets": { "net": -250 } }
         },
         {
           "id": "quiet",
@@ -335,7 +336,7 @@
           "id": "avoid",
           "label": "쓰지 않고 버틴다",
           "result": "쓰지 않고 버텼다. 불편은 늘었지만 눈은 덜 피로했고 내 방식은 지킬 수 있었다.",
-          "effects": { "stats": { "relationships": -2, "wealth": -1, "health": 1 } }
+          "effects": { "stats": { "relationships": -2, "health": 1 }, "assets": { "net": -250 } }
         },
         {
           "id": "ask",
@@ -359,7 +360,7 @@
           "id": "work",
           "label": "다시 일을 시작해 본다",
           "result": "작은 일을 다시 맡았다. 몸은 바빠졌고 마음은 오래 쓰지 않던 근육처럼 깨어났다.",
-          "effects": { "stats": { "wealth": 3, "happiness": 2, "health": -2 } }
+          "effects": { "stats": { "happiness": 2, "health": -2 }, "assets": { "income": 300 } }
         },
         {
           "id": "learn",
@@ -394,7 +395,7 @@
           "id": "things",
           "label": "물건과 사진을 정리한다",
           "result": "오래된 물건을 하나씩 정리했다. 쓰지 않는 것은 내놓고 이야기가 얽힌 것은 곁에 두었다.",
-          "effects": { "stats": { "happiness": 2, "relationships": 1, "wealth": 1 } }
+          "effects": { "stats": { "happiness": 2, "relationships": 1 }, "assets": { "net": 250 } }
         },
         {
           "id": "quiet",
@@ -418,7 +419,7 @@
           "id": "visit",
           "label": "직접 찾아가 만난다",
           "result": "먼 길을 달려 친구를 찾아갔다. 손을 맞잡고 한참 말없이 앉아 있었다.",
-          "effects": { "stats": { "relationships": 5, "happiness": 3, "health": -2, "wealth": -2 } }
+          "effects": { "stats": { "relationships": 5, "happiness": 3, "health": -2 }, "assets": { "net": -500 } }
         },
         {
           "id": "call",
@@ -447,7 +448,7 @@
           "id": "hospital",
           "label": "곧바로 병원에서 살펴본다",
           "result": "병원에서 이곳저곳을 살펴보았다. 큰 이상은 없었지만 한동안 조심하라는 말을 들었다.",
-          "effects": { "stats": { "health": 3, "wealth": -3 } }
+          "effects": { "stats": { "health": 3 }, "assets": { "net": -750 } }
         },
         {
           "id": "tell",
@@ -459,7 +460,7 @@
           "id": "ignore",
           "label": "괜찮다며 그냥 넘긴다",
           "result": "괜찮다고 말하며 넘겼다. 병원비는 아꼈고 통증도 가셨지만 걸음이 조금 불안해졌다.",
-          "effects": { "stats": { "health": -4, "wealth": 1 } }
+          "effects": { "stats": { "health": -4 }, "assets": { "net": 250 } }
         }
       ]
     },
@@ -476,7 +477,7 @@
           "id": "go",
           "label": "모임에 나가 얼굴을 본다",
           "result": "머리가 하얗게 센 얼굴들이 둘러앉았다. 이름을 부르는 순간 교실의 소란이 되살아났다.",
-          "effects": { "stats": { "relationships": 4, "happiness": 3, "wealth": -1 } }
+          "effects": { "stats": { "relationships": 4, "happiness": 3 }, "assets": { "net": -250 } }
         },
         {
           "id": "send",
@@ -488,7 +489,7 @@
           "id": "skip",
           "label": "몸이 귀찮아 나가지 않는다",
           "result": "집에 머물렀다. 모임이 있었다는 이야기를 며칠 뒤에야 전해 들었다. 차비는 아꼈다.",
-          "effects": { "stats": { "relationships": -2, "happiness": -1, "wealth": 1 } }
+          "effects": { "stats": { "relationships": -2, "happiness": -1 }, "assets": { "net": 250 } }
         }
       ]
     },

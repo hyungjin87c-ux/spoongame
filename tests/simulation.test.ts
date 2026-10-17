@@ -463,14 +463,17 @@ describe('밸런스 (R-045 b): 행복·관계는 출생값에 종속되지 않�
     expect(b.relationships.mean).toBeLessThan(65);
   });
 
-  it('최상위 재산이 100에 붙지 않는다: 부모 재력 4·5단계의 최종 재산 98 이상 비율이 10% 이하', () => {
+  it('최상위 재산이 폭주하지 않는다 (옛 「재산 100에 붙지 않는다」의 새 모델 판): 부모 재력 4·5단계의 최종 순자산이 데이터 상한(200억 원)에 닿은 판이 1% 이하이고 중앙값은 30억 원(300,000만 원) 미만이다', () => {
     const b = balanceLazy();
     const top = b.tiers.filter((t) => t.tier >= 4);
     const n = top.reduce((a, t) => a + t.n, 0);
-    const near100 = top.reduce((a, t) => a + (t.wealthNear100Pct * t.n) / 100, 0);
+    const atCap = top.reduce((a, t) => a + (t.netAtCapPct * t.n) / 100, 0);
     expect(n).toBeGreaterThan(100);
-    expect(near100 / n).toBeLessThanOrEqual(0.1);
-    expect(top.every((t) => t.mean.wealth < 90)).toBe(true);
+    expect(atCap / n).toBeLessThanOrEqual(0.01);
+    expect(top.every((t) => t.netMedian < 300_000)).toBe(true);
+    // 대조: 위쪽이 실제로 두텁다(4·5단계 중앙값은 1단계보다 크다) — G3 방향
+    const t1 = b.tiers.find((t) => t.tier === 1)!;
+    expect(top.every((t) => t.netMedian > t1.netMedian)).toBe(true);
   });
 
   it('최하위 계층(재력 1단계)도 학력 문턱(40)에 닿는 판이 70% 이상이다', () => {

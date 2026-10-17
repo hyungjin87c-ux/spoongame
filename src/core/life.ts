@@ -1,17 +1,16 @@
 import { ERA_CONFIG } from '../data/birthTable';
 import { EVENT_POOL } from '../data/events';
+import { AUTO_ASSET } from '../data/economyTable';
 import {
   EDUCATION_GROWTH,
   EVENT_FREQUENCY,
   HEALTH_DECAY,
-  INCOME_BY_EDUCATION,
+  INHERIT_NOTE_TEXT,
   CHOICE_PACING,
-  INDEPENDENCE,
   MIN_YEARS_BETWEEN_CHOICES,
   MOOD_DRIFT,
   MORTALITY,
   SENIOR_RELATIONSHIP_DECAY_EVERY,
-  SENIOR_WEALTH_DRAIN_BASE,
   STAGE_ENTRY_TEXT,
 } from '../data/lifeTable';
 import { deathCauseCandidates, deathEntryText } from '../data/lifeText';
@@ -25,12 +24,15 @@ import {
   type CondContext,
   type EventDef,
   type EventPool,
-  type ResolvedEffects,
 } from './events';
+import { applyResolved, condContextOf, economyContextOf } from './apply';
+import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
+import { impactOfEffects } from './impact';
+import { inheritanceAmount, inheritanceDue, parentsAllGone, siblingCountOf } from './inherit';
 import { createRng, type Rng } from './rng';
-import { applyStatDeltas, clampStat, type StatDeltas } from './stats';
-import { PARENT_WEALTHS, type Character, type Era, type GameState, type Stage, type StatKey, type Stats } from './types';
+import { applyStatDeltas, type StatDeltas } from './stats';
+import { PARENT_WEALTHS, type Character, type Era, type GameState, type HistoryEntry, type Stage, type StatKey, type Stats } from './types';
 
 /**
  * 인생 진행 루프(순수 함수). React·타이머·Date·Math.random을 쓰지 않고 시드 RNG만 쓴다.
@@ -68,11 +70,6 @@ export function educationGrowthPerYear(c: Pick<Character, 'parentWealth' | 'pare
   return Math.min(g.max, Math.max(g.min, raw));
 }
 
-function incomeStep(stage: 'youth' | 'middle', education: number, age: number): number {
-  const rule = INCOME_BY_EDUCATION[stage].find(([minEdu]) => education >= minEdu);
-  return rule !== undefined && age % rule[1] === 0 ? 1 : 0;
-}
-
 function healthDecay(stage: 'youth' | 'middle' | 'senior', age: number): number {
   let total = 0;
   for (const r of HEALTH_DECAY[stage]) if (age >= r.fromAge && (age - r.fromAge) % r.every === 0) total += r.amount;
@@ -98,7 +95,7 @@ export function birthFadeDelta(birthValue: number, age: number): number {
  * 나이 a를 살고 난 뒤의 단계별 자연 변화(정수, 스케줄 방식이라 RNG를 쓰지 않는다).
  * birth(출생 스탯)를 주면 학창기에 행복·관계의 출생 편차를 걷어 낸다(birthFadeDelta). 주지 않으면 학창기 회귀는 없다.
  */
-export function naturalDeltas(age: number, character: Character, stats: Stats, era: Era, birth?: Pick<Stats, 'happiness' | 'relationships'> | null): StatDeltas {
+export function naturalDeltas(age: number, character: Character, stats: Stats, _era: Era, birth?: Pick<Stats, 'happiness' | 'relationships'> | null): StatDeltas {
   const stage = stageOfAge(age);
   const d: StatDeltas = {};
   const add = (k: StatKey, v: number) => {
@@ -113,20 +110,15 @@ export function naturalDeltas(age: number, character: Character, stats: Stats, e
       break;
     case 'youth':
       if (age <= EDUCATION_GROWTH.youthUntilAge && age % 2 === 0) add('education', 1);
-      add('wealth', incomeStep('youth', stats.education, age));
       add('health', -healthDecay('youth', age));
       break;
     case 'middle':
-      add('wealth', incomeStep('middle', stats.education, age));
       add('health', -healthDecay('middle', age));
       break;
-    case 'senior': {
+    case 'senior':
       add('health', -healthDecay('senior', age));
-      const drainEvery = Math.max(2, Math.round(SENIOR_WEALTH_DRAIN_BASE / ERA_CONFIG[era].priceIndex));
-      if (age % drainEvery === 0) add('wealth', -1);
       if (age % SENIOR_RELATIONSHIP_DECAY_EVERY === 0) add('relationships', -1);
       break;
-    }
   }
   // 평균으로의 회귀(R-045 b, R-063): 행복·관계는 출생값(부모 재력·교육방식이 정한 값)에 평생 묶이지 않는다. 표와 이유는 data/lifeTable.ts#MOOD_DRIFT.
   if (stage === 'school') {
@@ -144,37 +136,6 @@ export function naturalDeltas(age: number, character: Character, stats: Stats, e
     }
   }
   return d;
-}
-
-/** 스무 살 독립: 재산이 집안 형편에서 내가 가진 것으로 바뀐다. */
-export function independenceWealth(wealth: number, education: number): number {
-  return clampStat(INDEPENDENCE.familyShare * wealth + INDEPENDENCE.educationShare * education + INDEPENDENCE.base);
-}
-
-// ---------- 상태 갱신 도우미 ----------
-
-function ctxOf(state: GameState): CondContext {
-  if (state.character === null) throw new Error('ctxOf: 캐릭터가 없다');
-  const r = state.birthReport;
-  return {
-    character: state.character,
-    stats: state.stats,
-    flags: new Set(state.flags),
-    age: state.age,
-    family: r === null ? null : { birthOrder: r.birthOrder, motherBirthAge: r.mother.age, fatherBirthAge: r.father.age },
-  };
-}
-
-/** 플래그를 끄고(clear) 켠다(set). 정렬·중복 없는 배열. 같은 플래그가 둘 다 있으면 켜는 쪽이 이긴다. */
-export function applyFlags(flags: readonly string[], setFlags: readonly string[], clearFlags: readonly string[]): string[] {
-  const s = new Set(flags);
-  for (const f of clearFlags) s.delete(f);
-  for (const f of setFlags) s.add(f);
-  return [...s].sort();
-}
-
-function applyResolved(state: GameState, eff: ResolvedEffects): GameState {
-  return { ...state, stats: applyStatDeltas(state.stats, eff.stats), flags: applyFlags(state.flags, eff.setFlags, eff.clearFlags) };
 }
 
 /**
@@ -230,13 +191,27 @@ function noop(state: GameState): StepResult {
   return { state, tick: { kind: 'none', fromAge: state.age } };
 }
 
-function finishYear(s: GameState, rng: Rng): { state: GameState; died: boolean } {
+/** 상속을 받는 해 연표에 한 줄을 남긴다 (금액은 적지 않는다 — D8) */
+const inheritanceLine = (age: number): HistoryEntry => ({ age, kind: 'event', text: INHERIT_NOTE_TEXT });
+
+/**
+ * 한 해 마무리. `before`는 **이 해를 시작할 때의 상태**(그 해의 사건·선택 효과를 적용하기 전)다 — 간이 상속(D10 변경, r3)이 「부모가 처음 모두 떠나는 해」를 가르는 기준이다.
+ * 상속은 선택의 효과가 아니라 해 끝 규칙이다: 원인이 사건(`parents_gone`)이든 나이 상한(어머니·아버지 모두 100세 초과)이든 이 함수 한 곳에서 한 번 더한다(영향 표기에 들어가지 않는다).
+ * 연표 한 줄은 그 해 사건·선택 기록 바로 뒤에 남는다(나이 상한으로 처음 떠나는 해는 한 살 많은 나이의 줄).
+ */
+function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: GameState; died: boolean } {
   if (s.character === null || s.era === null) throw new Error('finishYear: 캐릭터/시대가 없다');
   const age = s.age;
   const stats = applyStatDeltas(s.stats, naturalDeltas(age, s.character, s.stats, s.era, s.birthStats));
+  // 20세 이상: 이 해의 경제(소득 − 생활비 − 주거비 − 이자, 상환, 자동 대출). 자연 변화로 바뀐 지식(학력 배수)을 반영한다. 난수를 쓰지 않는다.
+  const assets = s.assets === null ? null : yearlyAssets(s.assets, { ...economyContextOf(s), education: stats.education });
   // 난수는 해마다 정확히 한 번 쓴다(상한 나이에서도 소비해 수열이 일정하다).
   const roll = rng.next();
   const died = age >= maxAgeOf(s.era) || roll < deathChance(age, stats.health, s.era);
+  // 간이 상속(해 끝 규칙): 이 해 끝(사망이면 같은 나이, 아니면 한 살 많은 나이 — 부모의 나이도 한 해 오른다)에 부모가 처음 모두 떠났다면 정산 뒤 순자산에 한 번 더한다. 난수를 쓰지 않는다.
+  const inherited = assets === null ? 0 : inheritanceDue(before, { ...s, age: died ? age : age + 1, assets });
+  const settled = inherited > 0 && assets !== null ? settleAssets({ ...assets, net: assets.net + inherited }) : assets;
+  const history = inherited > 0 ? appendHistory(s.history, inheritanceLine(parentsAllGone({ ...s, age }) ? age : age + 1)) : s.history;
   if (died) {
     const cause = rng.pick(deathCauseCandidates(age, stats.health));
     return {
@@ -245,10 +220,11 @@ function finishYear(s: GameState, rng: Rng): { state: GameState; died: boolean }
         ...s,
         phase: 'ending',
         stats,
+        assets: settled,
         pending: null,
         paused: false, // 일시정지는 인생 단계에서만 있을 수 있다(저장 검증, DB3) — 일시정지 중 고른 선택이 마지막이었어도 엔딩에는 남지 않는다
         death: { age, cause },
-        history: appendHistory(s.history, { age, kind: 'death', text: deathEntryText(cause) }),
+        history: appendHistory(history, { age, kind: 'death', text: deathEntryText(cause) }),
         rngState: rng.getState(),
       },
     };
@@ -256,11 +232,18 @@ function finishYear(s: GameState, rng: Rng): { state: GameState; died: boolean }
   const newAge = age + 1;
   const oldStage = stageOfAge(age);
   const newStage = stageOfAge(newAge);
-  let next: GameState = { ...s, stats, age: newAge, rngState: rng.getState() };
+  let next: GameState = { ...s, stats, assets: settled, history, age: newAge, rngState: rng.getState() };
   if (newStage !== oldStage && newStage !== 'infant') {
     next = { ...next, history: appendHistory(next.history, { age: newAge, kind: 'stage', text: STAGE_ENTRY_TEXT[newStage] }) };
     if (newStage === 'youth') {
-      next = { ...next, stats: { ...next.stats, wealth: independenceWealth(next.stats.wealth, next.stats.education) } };
+      // 독립(20세): 부모 지원 + 집안 살림 − 학자금 대출로 시작 자산을 만든다(M-1: 집안 살림에 하한이 없다 — 모자란 몫은 시작 부채)
+      next = { ...next, assets: initialAssets(economyContextOf(next), next.familyFund), familyFund: 0 };
+      // 20세 전에 부모가 모두 떠난 판(지금 규칙으로는 사별 이벤트가 52세부터라 드물다 — 저장에 이미 사별 플래그가 있는 판): 자산이 없는 동안은 받을 곳이 없으니
+      // 집안 살림(familyFund)에 더하지 않고 **독립 때 순자산에 한 번** 더한다. 이 전환에서만 일어나므로 두 번 더해지지 않는다(그 뒤 해 끝 규칙은 「처음 떠나는 해」에만 받는다).
+      if (parentsAllGone(next) && next.assets !== null && next.character !== null) {
+        const early = inheritanceAmount(next.character.parentWealth, siblingCountOf(next));
+        if (early > 0) next = { ...next, assets: settleAssets({ ...next.assets, net: next.assets.net + early }), history: appendHistory(next.history, inheritanceLine(newAge)) };
+      }
     }
   }
   return { state: next, died: false };
@@ -279,7 +262,7 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
   const rollChoice = rng.next();
   const rollNarrative = rng.next();
 
-  const ctx = ctxOf(state);
+  const ctx = condContextOf(state);
   const view = { ...ctx, age, era: state.era, seen: state.seen };
   const eligible = eventsForStage(pool, stageOfAge(age)).filter((ev) => isEventEligible(ev, view));
   // 선택지는 간격을 두고, 한 판의 선택지 수 조절(CHOICE_PACING)을 따른다. 지금까지 푼 선택지 수는 연표의 선택 기록 수다.
@@ -314,7 +297,7 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
       history: appendHistory(s.history, { age, kind: 'event', title: picked.title, text: picked.text, eventId: picked.id }),
     };
   }
-  const { state: next, died } = finishYear(s, rng);
+  const { state: next, died } = finishYear(s, rng, state);
   return { state: next, tick: { kind: died ? 'death' : picked !== null ? 'narrative' : 'quiet', fromAge: age, eventId: picked?.id } };
 }
 
@@ -335,7 +318,7 @@ export function resolveChoiceStep(state: GameState, key: string, choiceId: strin
   const choice = ev?.choices?.find((c) => c.id === choiceId);
   if (ev === undefined || choice === undefined) throw new Error(`resolveChoice: 이벤트/선택지를 찾을 수 없다 (${pending.eventId}/${choiceId})`);
 
-  const ctx = ctxOf(state);
+  const ctx = condContextOf(state);
   let s = applyResolved(state, resolveEffects(choice.effects, choice.bonuses, ctx));
   s = {
     ...s,
@@ -356,7 +339,7 @@ export function resolveChoiceStep(state: GameState, key: string, choiceId: strin
   // 지금의 단순함(저장 스키마·복원 규칙 그대로)을 지키려고 같은 수열에서 한 칸을 예약하는 쪽을 골랐다.
   const rng = createRng(state.rngState);
   rng.next();
-  const { state: next, died } = finishYear(s, rng);
+  const { state: next, died } = finishYear(s, rng, state);
   return { state: next, tick: { kind: died ? 'death' : 'resolved', fromAge: pending.age, eventId: ev.id } };
 }
 
@@ -370,12 +353,18 @@ export function resolveChoice(state: GameState, key: string, choiceId: string, p
  * 자동 모드의 "성향": 부모의 교육방식이 캐릭터의 가치관을 만들고(어디에 무게를 두는가),
  * 지금 스탯이 낮을수록 그 스탯을 올리는 선택에 끌린다. 결정은 점수에 비례한 확률로 시드 RNG가 뽑는다(항상 같은 답만 고르지 않는다).
  */
-export const AUTO_PRIORITY: Record<Character['parenting'], Record<StatKey, number>> = {
+/** 자동 선택이 돈(자산·집안 살림)에 두는 무게의 이름 `wealth` — 재산 스탯은 없어졌어도 성향 표의 이름은 그대로다(economy-model.md 8절). */
+export type AutoPriorityKey = StatKey | 'wealth';
+
+export const AUTO_PRIORITY: Record<Character['parenting'], Record<AutoPriorityKey, number>> = {
   strict: { wealth: 1.2, education: 1.5, health: 1.0, happiness: 0.7, relationships: 0.8 },
   free: { wealth: 0.9, education: 0.8, health: 1.0, happiness: 1.5, relationships: 1.2 },
   helicopter: { wealth: 1.0, education: 1.3, health: 1.3, happiness: 0.9, relationships: 1.0 },
   neglect: { wealth: 1.4, education: 0.9, health: 0.9, happiness: 1.0, relationships: 0.8 },
 };
+/** 20세 미만의 「집안 살림」 항에 곱하는 절실함의 기준: 옛 재산 스탯의 재력 단계별 출발값(8·22·45·70·92)에서 1 + (50 − 값) ÷ 100 — 가난한 집일수록 집안 살림 효과에 민감하다(옛 동작 보존). */
+const FAMILY_NEED_BASE = [8, 22, 45, 70, 92] as const;
+
 /** 점수 → 가중치(exp(점수 / 온도)). 클수록 무작위에 가깝다. */
 export const AUTO_TEMPERATURE = 6;
 /** exp()에 넣는 값의 절댓값 상한 (exp(40) ≈ 2.4e17 — 선택지 3개를 더해도 유한하다) */
@@ -387,8 +376,13 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = EVENT_POOL
   if (state.phase !== 'life' || pending === null || state.character === null) return null;
   const ev = pool.byId.get(pending.eventId);
   if (ev === undefined) throw new Error(`autoChoiceWeights: 이벤트를 찾을 수 없다 (${pending.eventId})`);
-  const ctx = ctxOf(state);
+  const ctx = condContextOf(state);
   const priority = AUTO_PRIORITY[state.character.parenting];
+  // 돈 항의 절실함: 순자산이 음수일수록 커진다(1 ~ 1 + needCap). 20세 미만은 재력 단계로 정한다.
+  const moneyNeed =
+    state.assets === null
+      ? 1 + (50 - FAMILY_NEED_BASE[state.character.parentWealth - 1]) / 100
+      : 1 + Math.min(AUTO_ASSET.needCap, Math.max(0, -state.assets.net) / AUTO_ASSET.needSpan);
   const weights = pending.choiceIds.map((id) => {
     const choice = ev.choices?.find((c) => c.id === id);
     if (choice === undefined) throw new Error(`autoChoiceWeights: 선택지를 찾을 수 없다 (${id})`);
@@ -398,6 +392,9 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = EVENT_POOL
       const need = 1 + (50 - state.stats[key]) / 100; // 이미 높은 스탯보다 낮은 스탯이 더 절실하다(0.5~1.5)
       score += delta * priority[key] * need;
     }
+    // 자산 점수(Δ순자산 + 3×Δ연 현금흐름)와 집안 살림을 옛 「점수」 크기로 환산해 더한다(EC6: 부채 판에서는 자산을 깎는 선택에서 멀어진다).
+    const money = impactOfEffects(state, eff).detail;
+    score += (money.assetScore / AUTO_ASSET.pointMan + money.dFamily / AUTO_ASSET.familyPointMan) * priority.wealth * moneyNeed;
     // 점수가 비정상적으로 커져도 가중치가 Infinity·0이 되지 않게 지수를 제한한다(R-046: 데이터 검증이 합산 상한을 두지만 런타임도 방어한다).
     return Math.exp(Math.max(-AUTO_EXPONENT_LIMIT, Math.min(AUTO_EXPONENT_LIMIT, score / AUTO_TEMPERATURE)));
   });

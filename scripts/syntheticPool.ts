@@ -18,6 +18,10 @@ export function syntheticEvents(): unknown[] {
   const events: unknown[] = [];
   for (const stage of STAGES) {
     const spec = PER_STAGE[stage];
+    // 돈 효과: 20세 이상은 자산(assets), 20세 미만은 집안 살림(family) — 스키마가 단계에 맞는 쪽만 허용한다 (SPEC-003 M5)
+    const young = stage === 'infant' || stage === 'school';
+    const gain = young ? { family: 300 } : { assets: { net: 800 } };
+    const loss = young ? { family: -150 } : { assets: { net: -400 } };
     for (let i = 0; i < spec.choice; i++) {
       events.push({
         id: `syn-${stage}-c${i}`,
@@ -28,8 +32,8 @@ export function syntheticEvents(): unknown[] {
         weight: 10,
         once: true,
         choices: [
-          { id: 'a', label: '앞으로 나아간다', result: '앞으로 나아갔다. 합성 결과 문장이다.', effects: { stats: { wealth: 2, happiness: -1 } } },
-          { id: 'b', label: '잠시 멈춘다', result: '잠시 멈춰 섰다. 합성 결과 문장이다.', effects: { stats: { happiness: 2, wealth: -1 } } },
+          { id: 'a', label: '앞으로 나아간다', result: '앞으로 나아갔다. 합성 결과 문장이다.', effects: { ...gain, stats: { happiness: -1 } } },
+          { id: 'b', label: '잠시 멈춘다', result: '잠시 멈춰 섰다. 합성 결과 문장이다.', effects: { ...loss, stats: { happiness: 2 } } },
         ],
       });
     }

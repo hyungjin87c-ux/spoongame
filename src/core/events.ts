@@ -1,4 +1,5 @@
 import { DEFAULT_COOLDOWN, STAGE_TABLE } from '../data/lifeTable';
+import { LIMITS } from '../data/economyTable';
 import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
 import {
   ERAS,
@@ -7,6 +8,8 @@ import {
   PARENT_WEALTHS,
   STAGES,
   STAT_KEYS,
+  type AssetDeltas,
+  type Assets,
   type Character,
   type Effects,
   type Era,
@@ -34,11 +37,21 @@ export interface Range {
   max?: number;
 }
 
+/** 20세 이상 이벤트의 자산 조건(만 원): 순자산 하한·상한, 부채 상한, 연 소득 하한. 자산이 없는 20세 미만 상태에서는 맞지 않는다. */
+export interface AssetCondition {
+  netMin?: number;
+  netMax?: number;
+  debtMax?: number;
+  incomeMin?: number;
+}
+
 /** 조건: 적힌 항목이 모두 맞아야(AND) 참이다. 배열 항목(parenting·gender)은 그중 하나면 맞다. */
 export interface Condition {
   stats?: Partial<Record<StatKey, Range>>;
   looks?: Range;
   parentWealth?: Range;
+  /** 자산 조건(순자산·부채·연 소득, 만 원) — 20세 이상 이벤트에서만 쓴다 (SPEC-003 EC3·EC4) */
+  assets?: AssetCondition;
   /** 형제 순서(1 첫째 ~ 5 다섯째) — 출생신고에서 정해진 값 (SPEC-003 BR6) */
   birthOrder?: Range;
   /** 두 부모 중 나이가 많은 쪽의 지금 나이 = 태어났을 때 나이 + 아이의 지금 나이 (SPEC-003 BR6). 부모의 병환·임종처럼 부모 나이와 어긋나면 안 되는 사건에 쓴다. */
@@ -132,6 +145,8 @@ export interface CondContext {
   age?: number;
   /** 출생 가족 정보 (birthOrder·parentAge 조건에 필요). 없으면 그 조건은 맞지 않는 것으로 본다. */
   family?: FamilyView | null;
+  /** 자산 현황 (assets 조건에 필요). 20세 미만은 null이고, 모르면(undefined) 그 조건은 맞지 않는다. */
+  assets?: Assets | null;
 }
 
 const inRange = (value: number, r: Range | undefined): boolean =>
@@ -144,6 +159,15 @@ export function meetsCondition(cond: Condition | undefined, ctx: CondContext): b
   }
   if (!inRange(ctx.character.looks, cond.looks)) return false;
   if (!inRange(ctx.character.parentWealth, cond.parentWealth)) return false;
+  if (cond.assets !== undefined) {
+    const a = ctx.assets;
+    if (a === undefined || a === null) return false;
+    const c = cond.assets;
+    if (c.netMin !== undefined && a.net < c.netMin) return false;
+    if (c.netMax !== undefined && a.net > c.netMax) return false;
+    if (c.debtMax !== undefined && a.debt > c.debtMax) return false;
+    if (c.incomeMin !== undefined && a.income < c.incomeMin) return false;
+  }
   if (cond.birthOrder !== undefined || cond.parentAge !== undefined || cond.motherAge !== undefined) {
     // 가족 정보를 모르는데 가족 조건이 걸려 있으면 맞지 않는다(말이 안 되는 사건이 일어나는 쪽보다 안 일어나는 쪽이 안전하다)
     const family = ctx.family;
@@ -212,6 +236,10 @@ export function eventWeight(ev: EventDef, ctx: CondContext): number {
 
 export interface ResolvedEffects {
   stats: StatDeltas;
+  /** 자산 변화(만 원, 20세 이상 이벤트). 없으면 0 */
+  assets: Required<AssetDeltas>;
+  /** 집안 살림 변화(만 원, 20세 미만 이벤트). 없으면 0 */
+  family: number;
   setFlags: string[];
   clearFlags: string[];
 }
@@ -219,15 +247,21 @@ export interface ResolvedEffects {
 /** 기본 효과 + 조건이 맞는 보너스 효과를 합친다. 보너스 조건은 효과를 적용하기 전 상태로 판정한다(보너스끼리 연쇄하지 않는다). */
 export function resolveEffects(base: Effects | undefined, bonuses: Bonus[] | undefined, ctx: CondContext): ResolvedEffects {
   let stats: StatDeltas = { ...(base?.stats ?? {}) };
+  const assets = { net: base?.assets?.net ?? 0, income: base?.assets?.income ?? 0, debt: base?.assets?.debt ?? 0 };
+  let family = base?.family ?? 0;
   const setFlags = [...(base?.setFlags ?? [])];
   const clearFlags = [...(base?.clearFlags ?? [])];
   for (const b of bonuses ?? []) {
     if (!meetsCondition(b.when, ctx)) continue;
     stats = addDeltas(stats, b.effects.stats ?? {});
+    assets.net += b.effects.assets?.net ?? 0;
+    assets.income += b.effects.assets?.income ?? 0;
+    assets.debt += b.effects.assets?.debt ?? 0;
+    family += b.effects.family ?? 0;
     setFlags.push(...(b.effects.setFlags ?? []));
     clearFlags.push(...(b.effects.clearFlags ?? []));
   }
-  return { stats, setFlags, clearFlags };
+  return { stats, assets, family, setFlags, clearFlags };
 }
 
 // ---------- 스키마 검증 ----------
@@ -255,6 +289,9 @@ export const MIN_EFFECTIVE_WEIGHT = 0.01;
 export const MAX_EFFECTIVE_WEIGHT = 10000;
 export const MAX_BONUSES = 8;
 export const MAX_TOTAL_DELTA = 50;
+/** 자산 효과의 절댓값 상한(만 원): 순자산·부채 ±50,000, 소득 보정 ±5,000, 집안 살림 ±3,000. 한 선택지의 기본 + 모든 보너스의 최악의 합도 이 안이어야 한다. */
+export const ASSET_DELTA_CAP = { net: 50_000, income: 5_000, debt: 50_000 } as const;
+export const FAMILY_DELTA_CAP = 3_000;
 
 /**
  * 이벤트 id 예약어 (R-046): 본 이벤트 기록(seen)은 평범한 객체라 `constructor` 같은 이름이 상속 속성으로 읽힐 수 있다.
@@ -344,9 +381,24 @@ function checkEnumList<T extends string>(v: unknown, all: readonly T[], path: st
   });
 }
 
+function checkAssetCondition(v: unknown, path: string, p: Problems): void {
+  if (!isObj(v)) return void p.add(path, '{ netMin, netMax, debtMax, incomeMin } 객체여야 한다');
+  checkKeys(v, ['netMin', 'netMax', 'debtMax', 'incomeMin'], [], path, p);
+  if (Object.keys(v).length === 0) p.add(path, '비어 있다');
+  const bounded = (k: string, lo: number, hi: number): void => {
+    const x = v[k];
+    if (x !== undefined && (!isInt(x) || x < lo || x > hi)) p.add(`${path}.${k}`, `${lo}~${hi}의 정수여야 한다 (만 원)`);
+  };
+  bounded('netMin', LIMITS.netMin, LIMITS.netMax);
+  bounded('netMax', LIMITS.netMin, LIMITS.netMax);
+  bounded('debtMax', 0, LIMITS.debtMax);
+  bounded('incomeMin', 0, LIMITS.incomeMax);
+  if (isInt(v.netMin) && isInt(v.netMax) && v.netMin > v.netMax) p.add(path, `netMin(${v.netMin})이 netMax(${v.netMax})보다 크다`);
+}
+
 function checkCondition(v: unknown, path: string, p: Problems): void {
   if (!isObj(v)) return void p.add(path, '조건 객체여야 한다');
-  checkKeys(v, ['stats', 'looks', 'parentWealth', 'birthOrder', 'parentAge', 'motherAge', 'parenting', 'gender', 'flags', 'notFlags'], [], path, p);
+  checkKeys(v, ['stats', 'looks', 'parentWealth', 'assets', 'birthOrder', 'parentAge', 'motherAge', 'parenting', 'gender', 'flags', 'notFlags'], [], path, p);
   if (Object.keys(v).length === 0) p.add(path, '빈 조건이다 (항목을 쓰거나 조건 자체를 빼야 한다)');
   if (v.stats !== undefined) {
     if (!isObj(v.stats)) p.add(`${path}.stats`, '{ 스탯이름: { min, max } } 객체여야 한다');
@@ -360,6 +412,7 @@ function checkCondition(v: unknown, path: string, p: Problems): void {
   }
   if (v.looks !== undefined) checkRange(v.looks, `${path}.looks`, 0, 100, p);
   if (v.parentWealth !== undefined) checkRange(v.parentWealth, `${path}.parentWealth`, PARENT_WEALTHS[0], PARENT_WEALTHS[PARENT_WEALTHS.length - 1], p);
+  if (v.assets !== undefined) checkAssetCondition(v.assets, `${path}.assets`, p);
   if (v.birthOrder !== undefined) checkRange(v.birthOrder, `${path}.birthOrder`, 1, BIRTH_ORDER_MAX, p);
   if (v.parentAge !== undefined) checkRange(v.parentAge, `${path}.parentAge`, 0, PARENT_AGE_MAX, p);
   if (v.motherAge !== undefined) checkRange(v.motherAge, `${path}.motherAge`, 0, PARENT_AGE_MAX, p);
@@ -374,8 +427,21 @@ function checkCondition(v: unknown, path: string, p: Problems): void {
 
 function checkEffects(v: unknown, path: string, p: Problems): void {
   if (!isObj(v)) return void p.add(path, '효과 객체여야 한다');
-  checkKeys(v, ['stats', 'setFlags', 'clearFlags'], [], path, p);
+  checkKeys(v, ['stats', 'assets', 'family', 'setFlags', 'clearFlags'], [], path, p);
   if (Object.keys(v).length === 0) p.add(path, '빈 효과다');
+  if (v.assets !== undefined) {
+    if (!isObj(v.assets) || Object.keys(v.assets).length === 0) p.add(`${path}.assets`, '{ net, income, debt } 객체여야 한다 (만 원, 하나 이상)');
+    else {
+      checkKeys(v.assets, ['net', 'income', 'debt'], [], `${path}.assets`, p);
+      for (const [k, d] of Object.entries(v.assets)) {
+        const cap = ASSET_DELTA_CAP[k as keyof typeof ASSET_DELTA_CAP];
+        if (cap !== undefined && (!isInt(d) || d === 0 || Math.abs(d) > cap)) p.add(`${path}.assets.${k}`, `0이 아닌 정수 (절댓값 ${cap} 이하, 만 원)여야 한다 (지금 ${JSON.stringify(d)})`);
+      }
+    }
+  }
+  if (v.family !== undefined && (!isInt(v.family) || v.family === 0 || Math.abs(v.family) > FAMILY_DELTA_CAP)) {
+    p.add(`${path}.family`, `0이 아닌 정수 (절댓값 ${FAMILY_DELTA_CAP} 이하, 만 원)여야 한다 (지금 ${JSON.stringify(v.family)})`);
+  }
   if (v.stats !== undefined) {
     if (!isObj(v.stats) || Object.keys(v.stats).length === 0) p.add(`${path}.stats`, '{ 스탯이름: 변화량 } 객체여야 한다');
     else {
@@ -411,6 +477,33 @@ function checkTotalDelta(base: unknown, bonuses: unknown, path: string, p: Probl
   if (Array.isArray(bonuses)) for (const b of bonuses) if (isObj(b)) add(b.effects);
   for (const k of Object.keys(pos)) if (pos[k] > MAX_TOTAL_DELTA) p.add(path, `스탯 ${k}의 변화량 최대 합계(+${pos[k]})가 상한 ${MAX_TOTAL_DELTA}을 넘는다 (기본 효과 + 모든 보너스)`);
   for (const k of Object.keys(neg)) if (neg[k] < -MAX_TOTAL_DELTA) p.add(path, `스탯 ${k}의 변화량 최소 합계(${neg[k]})가 하한 -${MAX_TOTAL_DELTA}을 넘는다 (기본 효과 + 모든 보너스)`);
+  checkTotalMoney(base, bonuses, path, p);
+}
+
+/** 자산·집안 살림의 최악의 합(기본 + 모든 보너스)이 ASSET_DELTA_CAP·FAMILY_DELTA_CAP 이내인지 본다 */
+function checkTotalMoney(base: unknown, bonuses: unknown, path: string, p: Problems): void {
+  const sums: Record<string, { pos: number; neg: number; cap: number }> = {
+    net: { pos: 0, neg: 0, cap: ASSET_DELTA_CAP.net },
+    income: { pos: 0, neg: 0, cap: ASSET_DELTA_CAP.income },
+    debt: { pos: 0, neg: 0, cap: ASSET_DELTA_CAP.debt },
+    family: { pos: 0, neg: 0, cap: FAMILY_DELTA_CAP },
+  };
+  const add = (eff: unknown): void => {
+    if (!isObj(eff)) return;
+    const put = (k: string, d: unknown): void => {
+      if (!isInt(d)) return;
+      if (d > 0) sums[k].pos += d;
+      else sums[k].neg += d;
+    };
+    if (isObj(eff.assets)) for (const k of ['net', 'income', 'debt']) put(k, eff.assets[k]);
+    put('family', eff.family);
+  };
+  add(base);
+  if (Array.isArray(bonuses)) for (const b of bonuses) if (isObj(b)) add(b.effects);
+  for (const [k, s] of Object.entries(sums)) {
+    if (s.pos > s.cap) p.add(path, `${k}의 변화량 최대 합계(+${s.pos})가 상한 ${s.cap}을 넘는다 (기본 효과 + 모든 보너스, 만 원)`);
+    if (s.neg < -s.cap) p.add(path, `${k}의 변화량 최소 합계(${s.neg})가 하한 -${s.cap}을 넘는다 (기본 효과 + 모든 보너스, 만 원)`);
+  }
 }
 
 function checkBonuses(v: unknown, path: string, p: Problems): void {
@@ -449,6 +542,37 @@ function stageSpan(stage: Stage): [number, number] {
   return [STAGE_TABLE[stage].startAge, next ? STAGE_TABLE[next].startAge - 1 : MAX_AGE_ABS];
 }
 
+/**
+ * 자산 효과·조건은 20세 이상으로만 일어나는 이벤트에서만, 집안 살림 효과는 20세 미만(영유아·학창)으로만 일어나는 이벤트에서만 쓴다 —
+ * 20세 미만에는 자산이 없고(집안 살림만 쌓는다), 20세 이상에는 집안 살림이 없다(SPEC-003 EC1).
+ */
+function checkMoneyKinds(ev: Obj, path: string, p: Problems): void {
+  if (!Array.isArray(ev.stages)) return;
+  const stages = ev.stages.filter((s): s is Stage => (STAGES as readonly unknown[]).includes(s));
+  if (stages.length === 0) return;
+  const youngStages: readonly Stage[] = ['infant', 'school'];
+  const young = stages.every((s) => youngStages.includes(s));
+  const adult = stages.every((s) => !youngStages.includes(s));
+  const effects: unknown[] = [ev.effects, ...((Array.isArray(ev.bonuses) ? ev.bonuses : []) as unknown[]).map((b) => (isObj(b) ? b.effects : undefined))];
+  const conds: unknown[] = [ev.conditions, ...((Array.isArray(ev.modifiers) ? ev.modifiers : []) as unknown[]).map((m) => (isObj(m) ? m.when : undefined))];
+  for (const b of (Array.isArray(ev.bonuses) ? ev.bonuses : []) as unknown[]) if (isObj(b)) conds.push(b.when);
+  for (const c of (Array.isArray(ev.choices) ? ev.choices : []) as unknown[]) {
+    if (!isObj(c)) continue;
+    effects.push(c.effects);
+    conds.push(c.requires);
+    for (const b of (Array.isArray(c.bonuses) ? c.bonuses : []) as unknown[]) {
+      if (!isObj(b)) continue;
+      effects.push(b.effects);
+      conds.push(b.when);
+    }
+  }
+  const usesAssets = effects.some((e) => isObj(e) && e.assets !== undefined);
+  const usesFamily = effects.some((e) => isObj(e) && e.family !== undefined);
+  const usesAssetCond = conds.some((c) => isObj(c) && c.assets !== undefined);
+  if (usesFamily && !young) p.add(path, 'effects.family(집안 살림)는 20세 미만(영유아·학창)으로만 일어나는 이벤트에서만 쓸 수 있다');
+  if ((usesAssets || usesAssetCond) && !adult) p.add(path, 'assets(자산) 효과·조건은 20세 이상(청년·중년·노년)으로만 일어나는 이벤트에서만 쓸 수 있다');
+}
+
 function checkEvent(ev: unknown, path: string, p: Problems): void {
   if (!isObj(ev)) return void p.add(path, '이벤트 객체여야 한다');
   checkKeys(ev, EVENT_KEYS, ['id', 'title', 'text', 'stages', 'weight', 'once'], path, p);
@@ -457,6 +581,7 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
   if (ev.title !== undefined) checkText(ev.title, `${path}.title`, 1, 30, p);
   if (ev.text !== undefined) checkText(ev.text, `${path}.text`, 10, 400, p);
   if (ev.stages !== undefined) checkEnumList(ev.stages, STAGES, `${path}.stages`, p);
+  checkMoneyKinds(ev, path, p);
   if (ev.eras !== undefined) checkEnumList(ev.eras, ERAS, `${path}.eras`, p);
   if (ev.ageRange !== undefined) {
     checkRange(ev.ageRange, `${path}.ageRange`, 0, MAX_AGE_ABS, p);

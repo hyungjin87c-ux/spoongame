@@ -2,19 +2,18 @@ import { FINAL_DISTRIBUTION } from '../data/finalDistribution';
 import { STAGE_TABLE } from '../data/lifeTable';
 import { standingOf, wealthBottomPercent, wealthTopPercent, type Standing } from './birth';
 import { stageOfAge } from './events';
-import { STAT_MAX, STAT_MIN } from './stats';
 import { STAGES, type Character, type Death, type Era, type GameState, type HistoryEntry, type ParentWealth, type Stage, type Stats } from './types';
 
 /**
  * 엔딩 회고의 계산 (순수 함수). React·타이머·Date·Math.random을 쓰지 않는다. 문구는 data/endingText.ts, 화면은 screens/EndingScreen.tsx.
  *
  * ## 출발선 대비 (R-045 c, R-091)
- * 출생 때의 재산(`birthStats.wealth`)은 **집안 형편**이고 최종 재산은 **내가 가진 것**이다(스무 살에 바뀐다: core/life.ts#independenceWealth).
+ * 출발은 **집안 형편**(재력 단계의 수저 구간)이고 도착은 **내가 가진 것**(최종 순자산, 만 원 — 스무 살에 core/economy.ts#initialAssets가 만든 자산)이다.
  * 뜻이 다른 값이라 원값을 빼서 견주지 않는다. 대신 **같은 시대 안에서의 자리(백분위)** 로 견준다.
  *  - 출발선: 재력 가중치표의 누적 비율로 구한 이 재력 단계의 **구간**(startBandOf). 출생 결과 화면은 구간의 한쪽 끝값("하위 약 40%")만 말하지만,
  *    엔딩은 구간 그대로("하위 40% 안쪽", "상위 8~28% 사이")를 말한다 — 방향 판정이 쓰는 숫자와 화면의 숫자가 같은 것이 되도록(R-091).
- *  - 도착: 같은 시대의 헤드리스 시뮬레이션 판들이 남긴 **최종 재산 분포표**(data/finalDistribution.ts, scripts/finalDistribution.ts로 생성)에서
- *    이 인생의 최종 재산이 상위/하위 몇 %인지. 같은 표현 규칙(core/birth.ts#standingOf)을 그대로 쓰므로 50을 넘는 숫자도 "약 0%/약 100%"도 나오지 않는다.
+ *  - 도착: 같은 시대의 헤드리스 시뮬레이션 판들이 남긴 **최종 순자산 분위수표**(data/finalDistribution.ts, scripts/finalDistribution.ts로 생성, 0~100번째 백분위 101칸)에서
+ *    이 인생의 최종 순자산이 상위/하위 몇 %인지. 같은 표현 규칙(core/birth.ts#standingOf)을 그대로 쓰므로 50을 넘는 숫자도 "약 0%/약 100%"도 나오지 않는다.
  *  - 스무 살이 되기 전에 끝난 인생은 재산이 아직 집안 형편이라 도착 자리를 말하지 않는다(reachedIndependence).
  *  - 방향(앞섬·비슷함·뒤쪽)은 도착 자리가 출발 구간의 위·안·아래 어디인지로 정한다(movementOf). 화면에 말한 숫자만 쓰므로 문장과 방향이 어긋날 수 없다.
  * 학력·행복·관계는 뜻이 변하지 않는 값이라 "처음 → 마지막" 원값을 그대로 보여 준다. 건강(나이 들며 줄 뿐)·외모(고정)는 견주지 않는다.
@@ -22,54 +21,51 @@ import { STAGES, type Character, type Death, type Era, type GameState, type Hist
 
 // ---------- 분포표에서 자리 구하기 ----------
 
-/** 한 시대의 최종 재산 분포표 (data/finalDistribution.ts, scripts/finalDistributionLib.ts#buildFinalDistribution이 만든다) */
+/** 한 시대의 최종 순자산 분위수표 (data/finalDistribution.ts, scripts/finalDistributionLib.ts#buildFinalDistribution이 만든다) */
 export interface FinalDistribution {
   /** 시뮬레이션한 판 수 */
   simulated: number;
-  /** 그중 스무 살 넘어 마친 판 수 (= wealth 칸의 합). 스무 살 전에 끝난 판은 재산이 아직 집안 형편이라 세지 않는다. */
+  /** 그중 스무 살 넘어 마친 판 수. 스무 살 전에 끝난 판은 자산이 아직 없어(집안 살림뿐이라) 세지 않는다. */
   lives: number;
-  /** wealth[v] = 최종 재산이 v인 판의 수 (v = 0..100, 101칸) */
-  wealth: readonly number[];
+  /** quantiles[p] = 스무 살 넘어 마친 판들의 최종 순자산(만 원)을 작은 것부터 놓았을 때 p번째 백분위 값 (p = 0..100, 101칸, 줄지 않는다. 0 = 최솟값, 100 = 최댓값) */
+  quantiles: readonly number[];
 }
 
-/** 스무 살(청년 단계 진입) 이후까지 산 인생인가: 이때부터 재산이 "내가 가진 것"이다. 분포표도 이런 인생만 센다. */
+/** 분위수표의 칸 수(0~100번째 백분위) */
+export const QUANTILE_COUNT = 101;
+
+/** 스무 살(청년 단계 진입) 이후까지 산 인생인가: 이때부터 자산이 있다. 분포표도 이런 인생만 센다. */
 export function reachedIndependence(deathAge: number): boolean {
   return deathAge >= STAGE_TABLE.youth.startAge;
 }
 
-function totalOf(hist: readonly number[]): number {
-  let total = 0;
-  for (const n of hist) total += n;
-  if (!(total > 0)) throw new RangeError('분포표의 판 수 합이 0 이하다');
-  return total;
+function checkQuantiles(q: readonly number[]): void {
+  if (q.length !== QUANTILE_COUNT) throw new RangeError(`분위수표의 칸 수가 ${q.length}개다 (${QUANTILE_COUNT}칸이어야 한다)`);
 }
 
-const clampIndex = (value: number, hist: readonly number[]) => Math.min(hist.length, Math.max(0, Math.ceil(value)));
-
-/** 이 값 이상으로 마친 인생의 비율(%) — 분포표 기준, 0~100 */
-export function shareAtLeast(hist: readonly number[], value: number): number {
-  const total = totalOf(hist);
-  let sum = 0;
-  for (let i = clampIndex(value, hist); i < hist.length; i++) sum += hist[i];
-  return Math.min(100, Math.max(0, (sum * 100) / total));
+/** 이 값 이상으로 마친 인생의 비율(%) — 분위수표 기준(1%포인트 해상도), 0~100 */
+export function shareAtLeast(quantiles: readonly number[], value: number): number {
+  checkQuantiles(quantiles);
+  let n = 0;
+  for (const q of quantiles) if (q >= value) n++;
+  return (n * 100) / QUANTILE_COUNT;
 }
 
-/** 이 값 이하로 마친 인생의 비율(%) — 분포표 기준, 0~100 */
-export function shareAtMost(hist: readonly number[], value: number): number {
-  const total = totalOf(hist);
-  let sum = 0;
-  const end = Math.min(hist.length, Math.max(0, Math.floor(value) + 1));
-  for (let i = 0; i < end; i++) sum += hist[i];
-  return Math.min(100, Math.max(0, (sum * 100) / total));
+/** 이 값 이하로 마친 인생의 비율(%) — 분위수표 기준(1%포인트 해상도), 0~100 */
+export function shareAtMost(quantiles: readonly number[], value: number): number {
+  checkQuantiles(quantiles);
+  let n = 0;
+  for (const q of quantiles) if (q <= value) n++;
+  return (n * 100) / QUANTILE_COUNT;
 }
 
 /**
- * 같은 시대의 최종 재산 분포표에서 이 최종 재산의 자리. 표현 규칙은 출생 화면과 같다(standingOf).
+ * 같은 시대의 최종 순자산 분위수표에서 이 최종 순자산(만 원)의 자리. 표현 규칙은 출생 화면과 같다(standingOf).
  * 표(table)를 주입할 수 있어 단위 테스트가 직접 적은 작은 표로 경계를 확인한다.
  */
-export function finalWealthStanding(era: Era, wealth: number, table: Record<Era, FinalDistribution> = FINAL_DISTRIBUTION): Standing {
-  const hist = table[era].wealth;
-  return standingOf(shareAtLeast(hist, wealth), shareAtMost(hist, wealth));
+export function finalWealthStanding(era: Era, net: number, table: Record<Era, FinalDistribution> = FINAL_DISTRIBUTION): Standing {
+  const q = table[era].quantiles;
+  return standingOf(shareAtLeast(q, net), shareAtMost(q, net));
 }
 
 /** 자리 → 0~100 점수(높을수록 앞선 자리): 상위 N% → 100-N, 하위 N% → N, 중앙 → 50. 화면에 말한 자리 그대로에서 만든다. */
@@ -224,8 +220,8 @@ export interface EndingReview {
 export function reviewEnding(game: EndingGame, table: Record<Era, FinalDistribution> = FINAL_DISTRIBUTION): EndingReview {
   const start = startBandOf(game.era, game.character.parentWealth);
   let journey: WealthJourney = { kind: 'early', start };
-  if (reachedIndependence(game.death.age)) {
-    const end = finalWealthStanding(game.era, game.stats.wealth, table);
+  if (reachedIndependence(game.death.age) && game.assets !== null) {
+    const end = finalWealthStanding(game.era, game.assets.net, table);
     journey = { kind: 'compared', start, end, movement: movementOf(start, end) };
   }
   return {
@@ -236,16 +232,21 @@ export function reviewEnding(game: EndingGame, table: Record<Era, FinalDistribut
   };
 }
 
-/** 분포표의 모양이 맞는가 (생성 스크립트와 테스트가 쓴다): 시대마다 0~100의 101칸, 음이 아닌 정수, 합이 lives */
+/** 분포표의 모양이 맞는가 (생성 스크립트와 테스트가 쓴다): 시대마다 0~100번째 백분위 101칸, 정수, 줄지 않음, lives는 1 이상이고 simulated 이하 */
 export function validateFinalDistribution(table: Record<Era, FinalDistribution>): string[] {
   const problems: string[] = [];
   for (const era of Object.keys(table) as Era[]) {
     const d = table[era];
-    if (d.wealth.length !== STAT_MAX - STAT_MIN + 1) problems.push(`${era}: 칸 수가 ${d.wealth.length}개다 (101칸이어야 한다)`);
-    if (!d.wealth.every((n) => Number.isInteger(n) && n >= 0)) problems.push(`${era}: 음이 아닌 정수가 아닌 칸이 있다`);
-    const sum = d.wealth.reduce((a, b) => a + b, 0);
-    if (sum !== d.lives) problems.push(`${era}: 칸의 합 ${sum}이 lives ${d.lives}와 다르다`);
+    if (d.quantiles.length !== QUANTILE_COUNT) problems.push(`${era}: 칸 수가 ${d.quantiles.length}개다 (${QUANTILE_COUNT}칸이어야 한다)`);
+    if (!d.quantiles.every((n) => Number.isInteger(n))) problems.push(`${era}: 정수가 아닌 칸이 있다`);
+    for (let i = 1; i < d.quantiles.length; i++) {
+      if (d.quantiles[i] < d.quantiles[i - 1]) {
+        problems.push(`${era}: ${i}번째 백분위가 앞 칸보다 작다 (줄지 않아야 한다)`);
+        break;
+      }
+    }
     if (!(d.lives > 0)) problems.push(`${era}: lives가 0 이하다`);
+    if (d.lives > d.simulated) problems.push(`${era}: lives ${d.lives}가 simulated ${d.simulated}보다 크다`);
   }
   return problems;
 }

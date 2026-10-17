@@ -204,7 +204,8 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(page.getByTestId('ending-death')).toContainText(`${saved.data.death.age}세에 세상을 떠났다`);
   await expect(page.getByTestId('ending-journey')).toContainText('의 집에서 태어');
   await expect(page.getByTestId('ending-movement')).toBeVisible();
-  for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
+  // 재산 스탯은 없어졌다(M5 2a, 저장 v8) — 최종 순자산 줄은 2b에서 더해진다
+  for (const key of ['education', 'health', 'happiness', 'relationships']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
   // 바뀐 기대(M4): 외모는 점수 숫자가 아니라 「상위/하위 약 N%」 한 가지로만 (R-135)
   await expect(page.getByTestId('final-looks')).toContainText(/상위|하위|딱 중간쯤/);
   await expect(page.getByTestId('timeline-entry')).toHaveCount(history.length);

@@ -1,9 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ERAS, bandFromRange, looksStanding, playToEnd, reviewEnding, startBandOf, type EndingGame, type EndingReview, type Era } from '../src/core';
+import { ERAS, bandFromRange, finalWealthStanding, formatMan, formatWon, looksStanding, playToEnd, reviewEnding, startBandOf, type EndingGame, type EndingReview, type Era } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
 import { BIRTH_TEXT } from '../src/data/birthReportText';
 import { standingLabel } from '../src/data/birthText';
+import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import { ENDING_HEADINGS, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, journeyText } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { splitStanding } from '../src/ui/KeepStanding';
@@ -70,8 +71,9 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(text).toContain('숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다');
   });
 
-  it('최종 스탯: 재산·지식(학력)·건강·행복·관계의 마지막 값과 외모(「상위/하위 약 N%」)가 있다. "처음 N"은 지식·행복·관계에만 붙는다 (재산·건강·외모는 원값 비교 금지) — 외모는 원점수 없이 순위 문구만 (R-135, M4)', () => {
-    for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships'] as const) {
+  it('최종 스탯: 지식(학력)·건강·행복·관계의 마지막 값과 외모(「상위/하위 약 N%」)가 있다. "처음 N"은 지식·행복·관계에만 붙는다 (건강·외모는 원값 비교 금지) — 외모는 원점수 없이 순위 문구만 (R-135, M4). 재산 막대는 재산 스탯이 없어지면서 임시로 빠졌다(SPEC-003 M5 2a) — 최종 순자산 줄은 2b에서 화면에 더해진다', () => {
+    expect(html).not.toContain('data-testid="final-wealth"');
+    for (const key of ['education', 'health', 'happiness', 'relationships'] as const) {
       expect(html).toMatch(new RegExp(`data-testid="final-${key}">${game.stats[key]}<`));
     }
     // 바뀐 기대(M4): 예전에는 외모 막대에 원점수(「외모 53」)가 있었다. 엔딩 어디에도 원점수가 없고 「상위/하위 약 N%」(또는 가운데 문구)만 있다.
@@ -111,6 +113,88 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(button).toContain('aria-disabled="true"');
     expect(textOf(html)).toContain(REBIRTH_NOTE);
     expect(REBIRTH_LABEL).toBe('다시 태어나기');
+  });
+});
+
+describe('엔딩 「최종 순자산」 줄 (M5 2b, copy.md 4-6절 · design-system.md 6절)', () => {
+  const FINAL_NET = (html: string) => html.slice(html.indexOf('<dl class="final-net'), html.indexOf('</dl>', html.indexOf('<dl class="final-net')) + 5);
+  const valueOf = (html: string) => /data-testid="final-net-value">([^<]*)</.exec(html)?.[1];
+  const withNet = (g: EndingGame, net: number): EndingGame => ({ ...g, assets: { ...g.assets!, net, debt: Math.max(g.assets!.debt, -net) } });
+
+  it('「재산」 막대 자리에 한 줄이 있다: 최종 스탯 네 막대 뒤, 외모 앞 — 이름 「최종 순자산」, 금액은 formatWon 그대로(「약」 없음), 자리는 「같은 세상 안에서 …」', () => {
+    for (const era of ERAS) {
+      const game = endingOf(2024, era);
+      expect(game.death.age, era).toBeGreaterThanOrEqual(20);
+      const html = render(game);
+      const net = game.assets!.net;
+      const block = FINAL_NET(html);
+      expect(block, era).toContain('<dl class="final-net" data-testid="final-net">');
+      expect(textOf(block), era).toContain('최종 순자산');
+      expect(valueOf(block), era).toBe(formatMan(net));
+      expect(valueOf(block)).toBe(formatWon(net * 10_000));
+      expect(block).toContain('class="final-net__value nowrap"');
+      const end = finalWealthStanding(era, net);
+      expect(textOf(block.slice(block.indexOf('final-net__standing'))), era).toContain(`같은 세상 안에서 ${standingLabel(end)}`);
+      expect(textOf(block)).not.toContain('약 ' + formatMan(net));
+      // 자리: 막대 네 개 뒤, 외모 앞
+      const at = (m: string) => html.indexOf(m);
+      expect(at('data-testid="final-relationships"')).toBeLessThan(at('data-testid="final-net"'));
+      expect(at('data-testid="final-net"')).toBeLessThan(at('data-testid="final-looks"'));
+      // 옛 「재산」 막대와 「집안 형편」은 없다
+      expect(html).not.toContain('data-testid="final-wealth"');
+      expect(html).not.toContain('data-stat="wealth"');
+      // (출발선 카드의 주석 JOURNEY_NOTE는 M7e까지 「집안 형편」을 말한다 — 최종 스탯 카드에는 없다)
+      const statsCard = html.slice(html.indexOf('data-testid="ending-stats"'), html.indexOf('data-testid="ending-timeline"'));
+      expect(textOf(statsCard)).not.toContain('집안 형편');
+    }
+  });
+
+  it('지난·다가올 세상만 금액 바로 아래에 태그 「지금 가치로 환산」이 있다 (지금 세상은 없다). 금액 → 태그 → 자리 순서', () => {
+    for (const era of ERAS) {
+      const block = FINAL_NET(render(endingOf(2024, era)));
+      if (era === 'present') expect(block).not.toContain('class="tag"');
+      else {
+        expect(block, era).toContain('<span class="tag" data-testid="final-net-basis">지금 가치로 환산</span>');
+        const order = ['final-net-value', 'final-net-basis', 'final-net-standing'].map((id) => block.indexOf(id));
+        expect(order, era).toEqual([...order].sort((a, b) => a - b));
+      }
+    }
+  });
+
+  it('경계: 음수는 U+2212 「−」로 시작하고 「빚」으로 바꿔 쓰지 않으며, 0은 「0원」이다 — 자리는 분포표가 정한다', () => {
+    const game = endingOf(2024, 'present');
+    const neg = render(withNet(game, -1200));
+    expect(valueOf(FINAL_NET(neg))).toBe('−1,200만 원');
+    expect(valueOf(FINAL_NET(neg))!.startsWith('−')).toBe(true);
+    expect(textOf(FINAL_NET(neg))).not.toContain('빚');
+    expect(textOf(FINAL_NET(neg))).toContain(`같은 세상 안에서 ${standingLabel(finalWealthStanding('present', -1200))}`);
+    const zero = render(withNet(game, 0));
+    expect(valueOf(FINAL_NET(zero))).toBe('0원');
+    expect(textOf(FINAL_NET(zero))).toContain(`같은 세상 안에서 ${standingLabel(finalWealthStanding('present', 0))}`);
+    expect(valueOf(FINAL_NET(render(withNet(game, -199_999))))).toBe('−19억 9,999만 원');
+    expect(valueOf(FINAL_NET(render(withNet(game, 123_456))))).toBe('12억 3,456만 원');
+  });
+
+  it('스무 살 전에 끝난 인생: 금액도 자리도 없이 한 문장만 — 「스무 살이 되기 전이라 자산을 세지 않았습니다.」 (시대와 무관, 태그 없음)', () => {
+    for (const era of ERAS) {
+      const base = endingOf(2024, era);
+      const early: EndingGame = { ...base, age: 15, assets: null, death: { ...base.death, age: 15 } };
+      const html = render(early);
+      const block = FINAL_NET(html);
+      expect(block, era).toContain('<dl class="final-net final-net--early" data-testid="final-net">');
+      expect(textOf(block), era).toBe('최종 순자산 스무 살이 되기 전이라 자산을 세지 않았습니다.');
+      expect(block).toContain('class="final-net__none"');
+      expect(block).not.toContain('final-net__value');
+      expect(block).not.toContain('final-net__standing');
+      expect(block).not.toContain('class="tag"');
+      expect(html).not.toContain('data-testid="final-wealth"');
+    }
+  });
+
+  it('금액을 말하는 곳은 이 줄뿐이다: 엔딩의 다른 문장(출발선·도착 자리·연표)에는 만 원 단위 금액이 없다 (D8 — 인생 기록에 금액 접미 없음)', () => {
+    const html = render(endingOf(2024, 'present'));
+    const outside = html.replace(FINAL_NET(html), '');
+    expect(textOf(outside)).not.toMatch(/d만 원|d억/);
   });
 });
 
@@ -157,7 +241,7 @@ describe('엔딩 화면: 스무 살 전에 끝난 인생', () => {
   const young: EndingGame = { ...base, age: 9, death: { age: 9, cause: '갑작스러운 병' }, history: base.history.filter((h) => h.age < 9).concat([{ age: 9, kind: 'death', text: '세상을 떠났다. 원인: 갑작스러운 병.' }]) };
   const html = render(young);
 
-  it('도착 자리·방향·설명 대신 출발선(집안 형편)만 말한다. 재산 이름은 "집안 형편"이다', () => {
+  it('도착 자리·방향·설명 대신 출발선(집안 형편)만 말한다 (재산 막대는 2a에서 임시로 빠졌다)', () => {
     expect(html).not.toContain('data-testid="ending-movement"');
     expect(html).not.toContain('data-testid="ending-note"');
     const text = textOf(html);
@@ -166,8 +250,8 @@ describe('엔딩 화면: 스무 살 전에 끝난 인생', () => {
     expect(journey).toMatch(/^.+의 집에서 태어났다\.$/);
     expect(journey).not.toMatch(/내가 가진 것|생이 끝|견줄|스무 살/);
     expect(text).not.toContain('형편으로 생을 마쳤다');
-    expect(html).toMatch(/<span class="meter__label">집안 형편<\/span>/);
-    expect(html).not.toMatch(/<span class="meter__label">재산<\/span>/);
+    // 재산 막대는 M5 2a에서 임시로 빠졌다(재산 스탯이 없어졌다): 「재산」이든 「집안 형편」이든 막대가 없다. 2b가 20세 전은 「집안 살림」, 20세부터는 「최종 순자산」 줄로 되살린다.
+    expect(html).not.toMatch(/<span class="meter__label">(재산|집안 형편)<\/span>/);
   });
 
   it('연표와 최종 스탯은 그대로 나온다 (선택 기록 수만큼)', () => {
@@ -217,9 +301,9 @@ describe('순위 표현은 줄이 바뀌어도 쪼개지지 않는다 (ui/KeepSt
 
 describe('엔딩 화면: 출발선이 재력 단계의 구간으로 보인다 (R-091)', () => {
   const base = endingOf(2024, 'present');
-  /** 지금 세상의 부모 재력 단계(1~5)와 최종 재산으로 회고를 만들어 그린다 */
+  /** 지금 세상의 부모 재력 단계(1~5)와 최종 순자산(만 원)으로 회고를 만들어 그린다 */
   const html = (wealth: 1 | 2 | 3 | 4 | 5, final: number) => {
-    const game: EndingGame = { ...base, character: { ...base.character, parentWealth: wealth }, stats: { ...base.stats, wealth: final } };
+    const game: EndingGame = { ...base, character: { ...base.character, parentWealth: wealth }, assets: { ...base.assets!, net: final, debt: Math.max(base.assets!.debt, -final) } };
     return { html: render(game), review: reviewEnding(game) };
   };
   const journeyOf = (h: string) => textOf(h.match(/data-testid="ending-journey">([^]*?)<\/p>/)![1]);
@@ -228,7 +312,7 @@ describe('엔딩 화면: 출발선이 재력 단계의 구간으로 보인다 (R
   it('지금 세상 다섯 단계: 출발선 문구가 구간이고, 방향 문장이 그 아래에 이어진다 (맨 아래·가운데·한쪽 절반·맨 위)', () => {
     const labels = ['하위 25% 안쪽의 집에서 태어나, ', '하위 25%와 상위 45% 사이의 집에서 태어나, ', '상위 17~45% 사이의 집에서 태어나, ', '상위 3~17% 사이의 집에서 태어나, ', '상위 3% 안쪽의 집에서 태어나, '];
     for (let w = 1; w <= 5; w++) {
-      const { html: h, review } = html(w as 1, 40);
+      const { html: h, review } = html(w as 1, 5000);
       const journey = journeyOf(h);
       expect(journey.startsWith(labels[w - 1]), `${w}단계: ${journey}`).toBe(true);
       expect(journey.endsWith('의 형편으로 생을 마쳤다.'), journey).toBe(true);
@@ -237,14 +321,15 @@ describe('엔딩 화면: 출발선이 재력 단계의 구간으로 보인다 (R
     }
   });
 
-  it('같은 구간에서 도착만 달라지면 방향만 달라진다: 지금 세상 3단계(상위 17~45% 사이)에서 재산 5(뒤쪽) / 재산 45(비슷함) / 재산 95(앞섬)', () => {
+  it('같은 구간에서 도착만 달라지면 방향만 달라진다: 지금 세상 3단계(상위 17~45% 사이)에서 최종 순자산이 분위수표의 5번째(뒤쪽) / 70번째(비슷함) / 95번째(앞섬) 백분위 값일 때', () => {
+    const q = FINAL_DISTRIBUTION.present.quantiles;
     const verdict = (final: number) => {
       const r = html(3, final).review as EndingReview;
       return r.journey.kind === 'compared' ? r.journey.movement : 'early';
     };
-    expect(verdict(5)).toBe('down');
-    expect(verdict(45)).toBe('same');
-    expect(verdict(95)).toBe('up');
+    expect(verdict(q[5])).toBe('down');
+    expect(verdict(q[70])).toBe('same');
+    expect(verdict(q[95])).toBe('up');
   });
 
   it('20세 전 사망의 출발선도 같은 구간 표현이다', () => {

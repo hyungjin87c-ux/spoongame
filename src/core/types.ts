@@ -95,13 +95,14 @@ export interface Character {
   looks: number;
 }
 
-/** 스탯 5개. 모두 정수이고 범위는 core/stats.ts의 STAT_MIN~STAT_MAX(0~100) 하나뿐이다. */
-export const STAT_KEYS = ['wealth', 'education', 'health', 'happiness', 'relationships'] as const;
+/**
+ * 스탯 4개. 모두 정수이고 범위는 core/stats.ts의 STAT_MIN~STAT_MAX(0~100) 하나뿐이다.
+ * 재산(wealth) 스탯은 없어졌다(SPEC-003 M5, 저장 v8): 20세부터는 `Assets`(순자산·연 소득·부채, 만 원), 20세 미만은 `GameState.familyFund`(집안 살림)다 — docs/data/economy-model.md.
+ */
+export const STAT_KEYS = ['education', 'health', 'happiness', 'relationships'] as const;
 export type StatKey = (typeof STAT_KEYS)[number];
 
 export interface Stats {
-  /** 재산: 어릴 때는 집안 형편, 스무 살(INDEPENDENCE) 이후에는 내가 가진 것 */
-  wealth: number;
   /** 학력: 지금까지 쌓은 학업 성취. 출생 시에는 0에 가까운 낮은 값이고 살아가며 자란다(R-025). */
   education: number;
   health: number;
@@ -109,9 +110,43 @@ export interface Stats {
   relationships: number;
 }
 
-/** 이벤트·선택지가 스탯과 플래그에 주는 효과 */
+/**
+ * 내 삶의 주거 형태 (경제 모델 EC2): 가족 집(무상)·월세·전세·자가·요양. 출생신고의 `Housing`(출생 시점 부모 집의 점유 형태)과 다른 값이다.
+ */
+export const DWELLINGS = ['family', 'rent', 'jeonse', 'own', 'care'] as const;
+export type Dwelling = (typeof DWELLINGS)[number];
+
+/**
+ * 20세 이상의 자산 현황 (SPEC-003 EC1, docs/data/economy-model.md 3절). **모두 만 원 정수**(dwelling 제외). 화면에 보이는 값은 net·income·debt 셋이고
+ * incomeAdj(이벤트가 남긴 소득 보정)·dwelling(주거 형태)은 계산에 필요한 내부 상태다. 불변식: debt ≥ max(0, −net) (자산이 바닥나면 부족분이 부채가 된다).
+ */
+export interface Assets {
+  /** 순자산(= 총자산 − 부채, 음수 가능) */
+  net: number;
+  /** 연 소득(해마다 다시 계산한 값을 저장한다) */
+  income: number;
+  /** 부채(≥ 0) */
+  debt: number;
+  /** 이벤트가 남긴 소득 보정(연, 만 원) */
+  incomeAdj: number;
+  dwelling: Dwelling;
+}
+
+/** 선택지·이벤트가 자산에 주는 변화(만 원): 순자산·연 소득 보정·부채. 20세 이상 이벤트에서만 쓴다. */
+export interface AssetDeltas {
+  net?: number;
+  income?: number;
+  debt?: number;
+}
+
+/** 이벤트·선택지가 스탯·자산과 플래그에 주는 효과 */
 export interface Effects {
   stats?: Partial<Record<StatKey, number>>;
+  /** 20세 이상 이벤트: 자산 변화(순자산·소득 보정·부채, 만 원) */
+  assets?: AssetDeltas;
+  /** 20세 미만 이벤트: 집안 살림 변화(만 원) — 20세 시작 자산에 그대로 더해진다 */
+  family?: number;
+
   setFlags?: string[];
   clearFlags?: string[];
 }
@@ -178,6 +213,12 @@ export interface GameState {
    * 켜져 있으면 해마다 진행하는 타이머와 자동 선택 타이머가 멈추고, 탭이 다시 보여도 저절로 풀리지 않는다(사용자가 정지한 상태 유지). 인생(life) 단계에서만 true일 수 있다.
    */
   paused: boolean;
+  /**
+   * 20세 이상의 자산 현황(순자산·연 소득·부채, SPEC-003 EC1, 저장 스키마 v8). 20세가 되는 해(독립)에 `core/economy.ts#initialAssets`가 만들고, 그 전에는 null이다.
+   */
+  assets: Assets | null;
+  /** 20세 미만의 「집안 살림」 누적(만 원, −3,000~3,000). 독립(20세)에 시작 자산에 더해지고 0이 된다. 20세 미만 이벤트의 `effects.family`가 쌓는다. */
+  familyFund: number;
   /** 최초 난수 시드 (재현용) */
   seed: number;
   /** 현재 RNG 내부 상태. 저장에 포함되어 새로고침 후에도 수열이 이어진다. */

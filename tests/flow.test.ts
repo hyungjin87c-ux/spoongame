@@ -174,13 +174,13 @@ describe('일·학업·건강: 선택이 이후 이벤트를 연다 (R-045 e)', 
       { 'youth-exam-prep': 'persist' },
       (f) => saw(f, 'youth-exam-failed'),
       (f) => saw(f, 'youth-first-job'),
-      500,
+      2000, // M5(EC4): 준비를 이어 가는 선택이 순자산 −5000 이상일 때만 보이고 이벤트 흐름이 조금 달라져, 500판에서는 불합격 판이 57개뿐이라 표본 오차(±7%p)가 기준(50%)에 걸려 흔들렸다(47%) — 판 수를 늘려 같은 기준을 안정적으로 본다
     );
     expect(t.n).toBeGreaterThan(50);
     expect(t.hit / t.n).toBeGreaterThanOrEqual(0.5);
   });
 
-  it('배움을 미루고 돈을 모은 판의 75% 이상에서 "다시 돌아갈 자리"가 열린다', () => {
+  it('배움을 미루고 돈을 모은 판의 35% 이상에서 "다시 돌아갈 자리"가 열린다 (R-355: 조건 순자산 ≥ 0, 옛 75%)', () => {
     const t = tally(
       { 'youth-night-study': 'save' },
       (f) => chose(f, 'youth-night-study', 'save'),
@@ -188,7 +188,7 @@ describe('일·학업·건강: 선택이 이후 이벤트를 연다 (R-045 e)', 
       300,
     );
     expect(t.n).toBeGreaterThan(60);
-    expect(t.hit / t.n).toBeGreaterThanOrEqual(0.75);
+    expect(t.hit / t.n).toBeGreaterThanOrEqual(0.35); // R-355(마스터 수용): 조건이 순자산 ≥ 0으로 바뀌어 옛 75% 이상 → 약 44%(문구 「모아 둔 돈이 어느 정도 쌓였다」 우선)
   });
 
   it('퇴직금을 받고 나온 판의 50% 이상에서 "다시 구하는 일자리"가 나온다', () => {

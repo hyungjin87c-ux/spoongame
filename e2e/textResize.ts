@@ -97,12 +97,20 @@ export async function measureTextResize(page: Page): Promise<TextResizeMeasure> 
       if (cs.display !== 'inline' && cs.display !== 'contents') {
         const hasText = Array.from(el.childNodes).some((n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== '');
         if (hasText) {
+          // 눈에 보이는 글자만 센다: 시각적으로 숨긴 글자(.sr-only — 한 줄로 이어 붙인 읽기 전용 문장은 상자보다 길다)가 같은 요소 안에 있어도 잘림으로 잡지 않는다 (M5 안내 줄 .choice-panel__hint)
           const range = document.createRange();
-          range.selectNodeContents(el);
-          for (const tr of Array.from(range.getClientRects())) {
-            if (tr.width > 0 && tr.right > r.right + 1) {
-              clipped.push(`${name(el)}: 글자 ${Math.round(tr.right)} > 상자 ${Math.round(r.right)}`);
-              break;
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          let hit = false;
+          for (let n = walker.nextNode(); n !== null && !hit; n = walker.nextNode()) {
+            const holder = (n as Text).parentElement;
+            if (holder === null || (n.textContent ?? '').trim() === '' || skip(holder)) continue;
+            range.selectNodeContents(n);
+            for (const tr of Array.from(range.getClientRects())) {
+              if (tr.width > 0 && tr.right > r.right + 1) {
+                clipped.push(`${name(el)}: 글자 ${Math.round(tr.right)} > 상자 ${Math.round(r.right)}`);
+                hit = true;
+                break;
+              }
             }
           }
         }

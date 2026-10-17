@@ -6,7 +6,6 @@ import { DEFAULT_BGM, type Era, type GameState, type LifeLength, type Settings, 
 
 /** 출생 전 자리표시 스탯. 실제 값은 beginBirth가 채운다(건강은 0이 되지 않게 중립값). */
 export const INITIAL_STATS: Stats = {
-  wealth: 50,
   education: 50,
   health: 50,
   happiness: 50,
@@ -46,6 +45,8 @@ export function createInitialState(seed: number): GameState {
     birthReport: null,
     peerSeed: null,
     paused: false,
+    assets: null,
+    familyFund: 0,
     seed: s,
     rngState: s,
   };
@@ -95,6 +96,9 @@ export function beginBirth(state: GameState, era: Era = DEFAULT_ERA, lifeLength:
     pending: null,
     lastChoiceAge: null,
     death: null,
+    // 새 판은 집안 살림·자산이 비어 있다 — 첫 화면 상태에 무엇이 들어 있었든 20세 자산에 새어 들지 않는다(R-357)
+    familyFund: 0,
+    assets: null,
     rngState: rng.getState(),
   };
 }

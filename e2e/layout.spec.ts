@@ -232,6 +232,9 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
   const state = {
     ...base,
     age,
+    // 스키마 v8: 20세 이상 인생에는 자산이 있고 집안 살림은 0이다 (M5 2a)
+    assets: { net: 5000, income: 4500, debt: 0, incomeAdj: 0, dwelling: 'rent' as const },
+    familyFund: 0,
     seen: { [tallest.id]: age },
     pending: { eventId: tallest.id, key: `${tallest.id}@${age}`, age, choiceIds },
     lastChoiceAge: age,

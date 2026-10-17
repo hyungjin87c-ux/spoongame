@@ -24,7 +24,8 @@ mkdirSync(OUT, { recursive: true });
 
 const VIEW = { mobile: { width: 360, height: 740, dpr: 2 }, desktop: { width: 1280, height: 800, dpr: 1 }, 320: { width: 320, height: 640, dpr: 2 }, low: { width: 320, height: 256, dpr: 2 } };
 /** [파일, 이름, { m: 모바일 변형[], d: 데스크톱 변형[], n: 320 변형[], l: low(320×256) 변형[] }] 변형 옵션: dark, forced, reduced, full(전체 길이), bottom(맨 아래로 스크롤), to(이 선택자의 요소가 화면 위에 오게 스크롤), query(시안 주소의 질의 문자열 — 예 'slide=marriage-count', 'state=confirm', 'era=past'), text(글자 크기 %, 예 200),
- *  el(이 선택자의 **요소만** 찍는다 — 비활성 버튼처럼 작은 부분을 확대 없이 또렷이 볼 때. 넘침 점검은 페이지 전체에 그대로 돈다) */
+ *  el(이 선택자의 **요소만** 찍는다 — 비활성 버튼처럼 작은 부분을 확대 없이 또렷이 볼 때. 넘침 점검은 페이지 전체에 그대로 돈다),
+ *  tag(파일 이름 꼬리 — 같은 상태의 전체 샷과 el 샷이 같은 이름으로 덮어쓰지 않게: economy-* 의 'panel'·'card'·'list') */
 const SHOTS = [
   // 첫 화면 (확정 A안). 캐러셀은 구현과 같은 모델의 14장을 모두 품고 `?slide=<id>`로 보이는 슬라이드를 고른다(기본 1/14 합계출산율)
   ['title-a.html', 'title-a', { m: [{}, { dark: true }, { forced: true }, { full: true }], d: [{}, { dark: true }], n: [{}] }],
@@ -80,6 +81,19 @@ const SHOTS = [
   ['note.html', 'note', { m: [{}, { dark: true }], d: [{}] }],
   // 엔딩: 머리 = 얼굴 96px 정사각 + 텍스트 칸 `.ending__who`(R-320), 320 · 글자 200% = 제목 「이서연의 인생」 글자 크기 상한(R-321 — 낱말이 끊기지 않고 칸이 좁으면 얼굴 아래 줄로)
   ['ending.html', 'ending', { m: [{}, { full: true }, { dark: true }], d: [{}], n: [{}, { text: 200 }] }],
+  // M5 경제 모델 (economy-m5.html — 생성기 economyPage()가 만든다, D-35. 영향 줄·자산 카드·최종 순자산 줄은 구현 컴포넌트가 만든 마크업이다): `?state=`로 상태를 고른다.
+  // 영향 줄: 47세 보증 결정(항목 4개, 부채 ▲ 붉음) 라이트·다크·강제 색상·320·낮은 화면, 글자 200%에서 선택지 카드 요소 샷(줄마다 항목이 접히는 모습 — 「집안 살림 ▼▼▼」만 기호 묶음이 이름 아래로)
+  ['economy-m5.html', 'economy-choice', { m: [{}, { dark: true }, { forced: true }, { text: 200, el: '.choice-panel', tag: 'panel' }], d: [{}, { dark: true }], n: [{}, { text: 200, el: '.choice-panel', tag: 'panel' }, { dark: true, text: 200, el: '.choice-panel', tag: 'panel' }], l: [{}, { text: 200 }] }],
+  ['economy-m5.html', 'economy-choice-young', { m: [{ query: 'state=choice-young' }], n: [{ query: 'state=choice-young', text: 200 }, { query: 'state=choice-young', text: 200, el: '.choice-panel', tag: 'panel' }] }],
+  ['economy-m5.html', 'economy-impact-samples', { m: [{ query: 'state=impact-samples', full: true }, { query: 'state=impact-samples', full: true, dark: true }, { query: 'state=impact-samples', full: true, forced: true }], d: [{ query: 'state=impact-samples', full: true }], n: [{ query: 'state=impact-samples', el: '.choices-list', tag: 'list' }, { query: 'state=impact-samples', text: 200, el: '.choices-list', tag: 'list' }, { query: 'state=impact-samples', text: 200, full: true }] }],
+  // 자산 카드: 지금 세상(태그 없음, 음수 순자산) / 지난 세상(「지금 가치로 환산」 태그) / 가장 긴 금액(폭 320 · 글자 200%에서도 한 덩어리)
+  ['economy-m5.html', 'economy-assets', { m: [{ query: 'state=assets' }, { query: 'state=assets', dark: true }, { query: 'state=assets', el: '.card--assets', tag: 'card' }], d: [{ query: 'state=assets' }], n: [{ query: 'state=assets', text: 200 }, { query: 'state=assets', text: 200, el: '.card--assets', tag: 'card' }] }],
+  ['economy-m5.html', 'economy-assets-past', { m: [{ query: 'state=assets-past' }, { query: 'state=assets-past', forced: true }], n: [{ query: 'state=assets-past', dark: true, text: 200 }] }],
+  ['economy-m5.html', 'economy-assets-big', { m: [{ query: 'state=assets-big' }], n: [{ query: 'state=assets-big' }, { query: 'state=assets-big', text: 200 }] }],
+  // 엔딩 「최종 순자산」 줄: 지금 세상 / 지난 세상 음수(태그) / 스무 살 전
+  ['economy-m5.html', 'economy-ending', { m: [{ query: 'state=ending' }, { query: 'state=ending', dark: true }], d: [{ query: 'state=ending' }], n: [{ query: 'state=ending', text: 200 }, { query: 'state=ending', text: 200, el: '.ending-stats', tag: 'card' }] }],
+  ['economy-m5.html', 'economy-ending-past', { m: [{ query: 'state=ending-past' }, { query: 'state=ending-past', forced: true }], n: [{ query: 'state=ending-past', text: 200 }] }],
+  ['economy-m5.html', 'economy-ending-early', { m: [{ query: 'state=ending-early' }], n: [{ query: 'state=ending-early', text: 200 }, { query: 'state=ending-early', text: 200, el: '.ending-stats', tag: 'card' }] }],
   // 디자인 시스템
   ['components.html', 'components', { m: [{ full: true }], d: [{ full: true }, { dark: true, full: true }] }],
   ['symbols.html', 'symbols', { m: [{ full: true }], d: [{ full: true }] }],
@@ -165,7 +179,8 @@ async function shoot(file, name, kind, opt) {
     }, opt.to);
     await page.waitForTimeout(150);
   }
-  const path = `${OUT}${name}-${kind}${suffix}.png`;
+  // tag = 파일 이름 꼬리(예 'panel'·'card'·'list'): 같은 상태의 전체 샷과 요소 단위 샷(el)이 같은 이름으로 서로 덮어쓰지 않게 한다(2026-10-18 M5 r3 — economy-* 등록에서 el 샷이 전체 샷을 덮던 것)
+  const path = `${OUT}${name}-${kind}${suffix}${opt.tag ? `-${opt.tag}` : ''}.png`;
   if (opt.el) {
     // 요소 단위 샷: 그 요소의 경계 상자만(고정 요소·스크림이 위에 있으면 보이는 그대로 찍힌다)
     const target = page.locator(opt.el).first();

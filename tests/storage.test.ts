@@ -69,8 +69,10 @@ function richState(): GameState {
       parenting: 'helicopter',
       looks: 71,
     },
-    stats: { wealth: 10, education: 20, health: 30, happiness: 40, relationships: 50 },
-    birthStats: { wealth: 45, education: 6, health: 70, happiness: 52, relationships: 56 },
+    stats: { education: 20, health: 30, happiness: 40, relationships: 50 },
+    birthStats: { education: 6, health: 70, happiness: 52, relationships: 56 },
+    familyFund: 450, // v8: 20세 미만에는 자산 대신 집안 살림(만 원)이 쌓인다
+    assets: null,
     age: 17,
     history: [{ age: 7, kind: 'stage', text: '학교에 들어갈 나이가 되었다.' }],
     flags: ['college'],
@@ -144,6 +146,16 @@ describe('손상 데이터 복구', () => {
     patch(d);
     return JSON.stringify({ version: SCHEMA_VERSION, data: d });
   };
+  /** 20세 이상 인생 저장에 들어가는 유효한 자산 (v8) */
+  const ADULT_ASSETS = { net: 1200, income: 3000, debt: 0, incomeAdj: 0, dwelling: 'rent' };
+  /** 25세 life 상태에서 자산 하나만 망가뜨린 저장. asArray면 자산을 배열로 바꾼다 */
+  const adultWith = (patch: (a: Doc) => void, asArray = false): string =>
+    withData((d) => {
+      d.age = 25;
+      d.familyFund = 0;
+      d.assets = asArray ? [] : { ...ADULT_ASSETS };
+      if (!asArray) patch(d.assets);
+    });
   Object.assign(bad, {
     // R-001 필드 간 정합성
     '정합성: life인데 character null': withData((d) => (d.character = null)),
@@ -214,9 +226,93 @@ describe('손상 데이터 복구', () => {
     'character: 배열': withData((d) => (d.character = [])),
     // stats
     'stats: 필드 누락': withData((d) => delete d.stats.health),
-    'stats: 값이 null(NaN 직렬화)': withData((d) => (d.stats.wealth = null)),
+    'stats: 값이 null(NaN 직렬화)': withData((d) => (d.stats.education = null)),
+    'stats: 옛 wealth 키가 남아 있다(v7 모양은 손상으로 본다)': withData((d) => (d.stats.wealth = 10)),
     'stats: 값이 문자열': withData((d) => (d.stats.happiness = '40')),
-    'birthStats: 형태 오류': withData((d) => (d.birthStats = { wealth: 1 })),
+    'birthStats: 형태 오류': withData((d) => (d.birthStats = { education: 1 })),
+    // v8: 집안 살림(familyFund)과 자산(assets)
+    'familyFund: 필드 없음(v7 모양)': withData((d) => delete d.familyFund),
+    'familyFund: 문자열': withData((d) => (d.familyFund = '450')),
+    'familyFund: 소수': withData((d) => (d.familyFund = 450.5)),
+    'familyFund: 상한 초과(3001)': withData((d) => (d.familyFund = 3001)),
+    'familyFund: 하한 미달(-3001)': withData((d) => (d.familyFund = -3001)),
+    'familyFund: null': withData((d) => (d.familyFund = null)),
+    'assets: 필드 없음(v7 모양)': withData((d) => delete d.assets),
+    'assets: 20세 미만인데 자산이 있다': withData((d) => (d.assets = ADULT_ASSETS)),
+    'assets: 20세 이상 인생인데 자산이 없다': withData((d) => {
+      d.age = 25;
+      d.familyFund = 0;
+      d.assets = null;
+    }),
+    'familyFund: 20세 이상인데 0이 아니다(독립 때 자산에 합쳐진다)': withData((d) => {
+      d.age = 25;
+      d.assets = ADULT_ASSETS;
+    }),
+    'assets: 부채가 음수': adultWith((a) => (a.debt = -1)),
+    'assets: 불변식 위반(순자산 -500인데 부채 100)': adultWith((a) => {
+      a.net = -500;
+      a.debt = 100;
+    }),
+    'assets: 주거 형태 이상값': adultWith((a) => (a.dwelling = 'castle')),
+    'assets: 순자산 소수': adultWith((a) => (a.net = 100.5)),
+    'assets: 순자산 하한 미달(-200001)': adultWith((a) => {
+      a.net = -200001;
+      a.debt = 200001;
+    }),
+    'assets: 순자산 상한 초과(2000001)': adultWith((a) => (a.net = 2000001)),
+    'assets: 연 소득 음수': adultWith((a) => (a.income = -1)),
+    'assets: 소득 보정 상한 초과': adultWith((a) => (a.incomeAdj = 10001)),
+    'assets: 배열': adultWith(() => undefined, true),
+    // R-357: 자산 필드의 문자열 숫자·여분 키·변조한 출생 전 집안 살림
+    'assets: 순자산이 문자열 숫자(「1200」)': adultWith((a) => (a.net = '1200')),
+    'assets: 연 소득이 문자열 숫자': adultWith((a) => (a.income = '3000')),
+    'assets: 부채가 문자열 숫자': adultWith((a) => (a.debt = '0')),
+    'assets: 소득 보정이 문자열 숫자': adultWith((a) => (a.incomeAdj = '0')),
+    'assets: 여분 키 하나': adultWith((a) => (a.bonus = 1)),
+    'assets: 여분 키 __proto__(JSON.parse가 자기 키로 만든다)': adultWith(() => undefined).replace('"dwelling":"rent"', '"dwelling":"rent","__proto__":{"net":1}'),
+    'assets: 키 하나 빠짐(incomeAdj 없음)': adultWith((a) => delete a.incomeAdj),
+    'familyFund: 첫 화면(title)에 3000(변조) — 새 판 20세 자산에 새어 들 수 있었다': withData((d) => {
+      d.phase = 'title';
+      d.character = null;
+      d.birthStats = null;
+      d.birthReport = null;
+      d.peerSeed = null;
+      d.era = null;
+      d.lifeLength = null;
+      d.age = 0;
+      d.history = [];
+      d.flags = [];
+      d.seen = {};
+      d.pending = null;
+      d.lastChoiceAge = null;
+      d.death = null;
+      d.assets = null;
+      d.familyFund = 3000;
+    }),
+    'familyFund: 룰렛 단계에 450': withData((d) => {
+      d.phase = 'roulette';
+      d.age = 0;
+      d.history = [];
+      d.flags = [];
+      d.seen = {};
+      d.pending = null;
+      d.lastChoiceAge = null;
+      d.death = null;
+      d.assets = null;
+      d.familyFund = 450;
+    }),
+    'familyFund: 출생신고(birth) 단계에 -1': withData((d) => {
+      d.phase = 'birth';
+      d.age = 0;
+      d.history = [];
+      d.flags = [];
+      d.seen = {};
+      d.pending = null;
+      d.lastChoiceAge = null;
+      d.death = null;
+      d.assets = null;
+      d.familyFund = -1;
+    }),
     // age 경계
     'age: 음수': withData((d) => (d.age = -1)),
     'age: 151': withData((d) => (d.age = 151)),
@@ -274,9 +370,44 @@ describe('손상 데이터 복구', () => {
     });
   }
 
+  it('R-357 대조: 같은 모양에서 변조만 뺀 저장은 통과한다 — 출생 전 단계의 familyFund 0, 키가 정확히 다섯 개인 자산', () => {
+    const title = (fund: number): string =>
+      withData((d) => {
+        d.phase = 'title';
+        for (const k of ['character', 'birthStats', 'birthReport', 'peerSeed', 'era', 'lifeLength', 'pending', 'lastChoiceAge', 'death', 'assets']) d[k] = null;
+        d.age = 0;
+        d.history = [];
+        d.flags = [];
+        d.seen = {};
+        d.familyFund = fund;
+      });
+    const st = memoryStorage();
+    st.map.set(GAME_KEY, title(0));
+    expect(loadGame(st)).not.toBeNull();
+    st.map.set(GAME_KEY, title(3000));
+    expect(loadGame(st)).toBeNull();
+    st.map.set(GAME_KEY, adultWith(() => undefined));
+    expect(loadGame(st)).not.toBeNull();
+  });
+
+  it('R-357: beginBirth는 집안 살림·자산을 비운다 — 첫 화면 상태에 familyFund가 있었어도(메모리에서 변조) 새 판은 0·null로 시작해 20세 자산에 새어 들지 않는다', () => {
+    const tampered: GameState = { ...createInitialState(5), familyFund: 3000 };
+    const born = beginBirth(tampered);
+    expect(born.phase).toBe('roulette');
+    expect(born.familyFund).toBe(0);
+    expect(born.assets).toBeNull();
+    // 20세에 합쳐지는 시작 자산은 부모 지원 + 0이다: 새어 든 3,000만 원이 없다
+    const clean = beginBirth(createInitialState(5));
+    expect(born).toEqual(clean);
+  });
+
   it('경계값은 통과: age 105(지금 세상 상한), seed·rngState 0 / 2^32-1, looks 0·100, 연표 비어 있음', () => {
     const patches: Array<(d: Doc) => void> = [
-      (d) => (d.age = 105),
+      (d) => {
+        d.age = 105; // 20세 이상이라 자산이 있고 집안 살림은 0이다 (v8)
+        d.familyFund = 0;
+        d.assets = ADULT_ASSETS;
+      },
       (d) => {
         d.seed = 0;
         d.rngState = 0;
@@ -317,9 +448,29 @@ describe('손상 데이터 복구', () => {
     }
   });
 
-  it('스키마 버전은 7이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이 / 6: 개편 M3 — 룰렛 단계·출생신고 상세·또래 시드, 지금 세상 2026 고정 / 7: 개편 M4 — 일시정지 여부(paused), 연표 상한 300)', () => {
-    expect(SCHEMA_VERSION).toBe(7);
-    expect(JSON.parse(serializeGame(richState())).version).toBe(7);
+  it('스키마 버전은 8이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이 / 6: 개편 M3 — 룰렛 단계·출생신고 상세·또래 시드, 지금 세상 2026 고정 / 7: 개편 M4 — 일시정지 여부(paused), 연표 상한 300 / 8: 개편 M5 — 재산 스탯 폐지, 자산(assets)·집안 살림(familyFund))', () => {
+    expect(SCHEMA_VERSION).toBe(8);
+    expect(JSON.parse(serializeGame(richState())).version).toBe(8);
+  });
+
+  it('v8 저장 왕복: 20세 이상 인생(자산 있음, 집안 살림 0)도 그대로 복원된다 — 순자산이 음수이고 부채가 있는 판도 (EC1 불변식)', () => {
+    const adult = (assets: GameState['assets']): GameState => ({ ...richState(), age: 25, familyFund: 0, assets });
+    for (const assets of [
+      { net: 1200, income: 3000, debt: 0, incomeAdj: 0, dwelling: 'rent' as const },
+      { net: -2300, income: 477, debt: 2300, incomeAdj: -200, dwelling: 'family' as const },
+      { net: -2300, income: 477, debt: 5000, incomeAdj: 0, dwelling: 'own' as const }, // 부채는 −순자산보다 커도 된다(집을 산 빚)
+      { net: 0, income: 0, debt: 0, incomeAdj: 0, dwelling: 'care' as const },
+    ]) {
+      const st = adult(assets);
+      expect(parseGame(serializeGame(st)), JSON.stringify(assets)).toEqual(st);
+    }
+  });
+
+  it('v7 저장(M4 배포분, 재산 스탯이 있던 모양)은 「손상」이 아니라 이전 버전으로 분류되어 새 게임으로 시작하고 안내가 필요하다 (C6) — 진행 전(첫 화면)이던 v7은 안내하지 않는다', () => {
+    const v7Life = JSON.stringify({ version: 7, data: { ...richState(), stats: { wealth: 10, education: 20, health: 30, happiness: 40, relationships: 50 }, familyFund: undefined, assets: undefined } });
+    expect(parseGame(v7Life), 'v7은 읽지 않는다').toBeNull();
+    expect(classifySavedGame(v7Life)).toBe('old-version');
+    expect(classifySavedGame(JSON.stringify({ version: 7, data: { ...createInitialState(7), familyFund: undefined, assets: undefined } }))).toBe('old-version-empty');
   });
 
   it('v6 저장(M3 배포분)은 「손상」이 아니라 이전 버전으로 분류되어 새 게임으로 시작하고 안내가 필요하다 (C6) — 진행 전(첫 화면)이던 v6은 안내하지 않는다', () => {

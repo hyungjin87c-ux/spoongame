@@ -18,6 +18,7 @@ import {
   stageOfAge,
   validateEventFiles,
   visibleChoices,
+  type Assets,
   type Character,
   type CondContext,
   type EligibilityView,
@@ -49,8 +50,8 @@ const choiceEvent = (over: Record<string, unknown> = {}) => ({
   weight: 10,
   once: true,
   choices: [
-    { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { wealth: 1 } } },
-    { id: 'b', label: '둘째', result: '둘째를 골랐다. 결과 문장.', effects: { stats: { wealth: -1 } } },
+    { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { education: 1 } } },
+    { id: 'b', label: '둘째', result: '둘째를 골랐다. 결과 문장.', effects: { stats: { education: -1 } } },
   ],
   ...over,
 });
@@ -74,11 +75,14 @@ const character = (over: Partial<Character> = {}): Character => ({
   looks: 50,
   ...over,
 });
-const stats = (over: Partial<Stats> = {}): Stats => ({ wealth: 50, education: 50, health: 50, happiness: 50, relationships: 50, ...over });
-const ctx = (over: { character?: Partial<Character>; stats?: Partial<Stats>; flags?: string[] } = {}): CondContext => ({
+const stats = (over: Partial<Stats> = {}): Stats => ({ education: 50, health: 50, happiness: 50, relationships: 50, ...over });
+/** 20세 이상 자산 (SPEC-003 M5 EC1): 기본은 순자산 3000만 원·부채 없음 */
+const assetsOf = (over: Partial<Assets> = {}): Assets => ({ net: 3000, income: 4000, debt: 0, incomeAdj: 0, dwelling: 'rent', ...over });
+const ctx = (over: { character?: Partial<Character>; stats?: Partial<Stats>; flags?: string[]; assets?: Assets | null } = {}): CondContext => ({
   character: character(over.character),
   stats: stats(over.stats),
   flags: new Set(over.flags ?? []),
+  assets: over.assets,
 });
 const view = (age: number, era: Era, over: Parameters<typeof ctx>[0] = {}, seen: Record<string, number> = {}): EligibilityView => ({
   ...ctx(over),
@@ -116,7 +120,8 @@ describe('이벤트 스키마 검증: 유효한 데이터', () => {
       cooldown: undefined,
       once: false,
       conditions: {
-        stats: { wealth: { min: 10, max: 90 }, health: { min: 20 } },
+        stats: { education: { min: 10, max: 90 }, health: { min: 20 } },
+        assets: { netMin: 0, netMax: 50000, debtMax: 5000, incomeMin: 1000 },
         looks: { min: 10 },
         parentWealth: { max: 4 },
         parenting: ['free', 'strict'],
@@ -125,7 +130,7 @@ describe('이벤트 스키마 검증: 유효한 데이터', () => {
         notFlags: ['flag_b'],
       },
       modifiers: [{ when: { looks: { min: 70 } }, weight: 2 }],
-      bonuses: [{ when: { parenting: ['strict'] }, effects: { stats: { education: 2 }, setFlags: ['flag_c'], clearFlags: ['flag_d'] } }],
+      bonuses: [{ when: { parenting: ['strict'] }, effects: { stats: { education: 2 }, assets: { net: -500, income: 100, debt: 1000 }, setFlags: ['flag_c'], clearFlags: ['flag_d'] } }],
       effects: { stats: { happiness: -2 }, setFlags: ['flag_a', 'flag_b', 'flag_d'] },
     });
     delete (rich as Record<string, unknown>).cooldown;
@@ -172,11 +177,32 @@ describe('이벤트 스키마 검증: 잘못된 데이터는 개발 중 바로 �
     ['flags와 notFlags가 같은 플래그', file(narrative({ conditions: { flags: ['x_flag'], notFlags: ['x_flag'] } }), narrative({ id: 'setter', effects: { setFlags: ['x_flag'] } })), '절대 참이 될 수 없다'],
     ['효과가 빈 객체', file(narrative({ effects: {} })), '빈 효과'],
     ['효과의 알 수 없는 스탯', file(narrative({ effects: { stats: { luck: 3 } } })), '알 수 없는 스탯'],
-    ['효과 변화량 0', file(narrative({ effects: { stats: { wealth: 0 } } })), '0이 아닌 정수'],
-    ['효과 변화량 소수', file(narrative({ effects: { stats: { wealth: 1.5 } } })), '0이 아닌 정수'],
-    ['효과 변화량 절댓값 51', file(narrative({ effects: { stats: { wealth: 51 } } })), '절댓값 50 이하'],
+    ['효과 변화량 0', file(narrative({ effects: { stats: { education: 0 } } })), '0이 아닌 정수'],
+    ['효과 변화량 소수', file(narrative({ effects: { stats: { education: 1.5 } } })), '0이 아닌 정수'],
+    ['효과 변화량 절댓값 51', file(narrative({ effects: { stats: { education: 51 } } })), '절댓값 50 이하'],
+    ['옛 재산 스탯(wealth)은 알 수 없는 스탯 (SPEC-003 M5, 저장 v8에서 폐지)', file(narrative({ effects: { stats: { wealth: 3 } } })), '알 수 없는 스탯'],
+    ['조건에도 옛 재산 스탯(wealth)은 없다', file(narrative({ stages: ['youth'], conditions: { stats: { wealth: { min: 30 } } } })), '알 수 없는 스탯'],
+    // M5 돈 효과·조건(assets·family)의 형태와 한도 — 20세 이상 이벤트의 assets, 20세 미만 이벤트의 family
+    ['assets 변화량 0', file(narrative({ stages: ['youth'], effects: { assets: { net: 0 } } })), '0이 아닌 정수'],
+    ['assets 변화량 소수', file(narrative({ stages: ['youth'], effects: { assets: { income: 1.5 } } })), '0이 아닌 정수'],
+    ['assets.net 절댓값 50001(상한 50000)', file(narrative({ stages: ['youth'], effects: { assets: { net: 50001 } } })), '절댓값 50000 이하'],
+    ['assets.income 절댓값 5001(상한 5000)', file(narrative({ stages: ['youth'], effects: { assets: { income: 5001 } } })), '절댓값 5000 이하'],
+    ['assets.debt 절댓값 50001(상한 50000)', file(narrative({ stages: ['youth'], effects: { assets: { debt: 50001 } } })), '절댓값 50000 이하'],
+    ['assets 알 수 없는 항목(cash)', file(narrative({ stages: ['youth'], effects: { assets: { cash: 100 } } })), '알 수 없는 항목 "cash"'],
+    ['assets가 빈 객체', file(narrative({ stages: ['youth'], effects: { assets: {} } })), '하나 이상'],
+    ['family 변화량 0', file(narrative({ effects: { family: 0 } })), '0이 아닌 정수'],
+    ['family 절댓값 3001(상한 3000)', file(narrative({ effects: { family: 3001 } })), '절댓값 3000 이하'],
+    ['assets 효과는 20세 미만 이벤트에서 쓸 수 없다(자산이 아직 없다)', file(narrative({ stages: ['school'], effects: { assets: { net: 100 } } })), '20세 이상'],
+    ['family 효과는 20세 이상 이벤트에서 쓸 수 없다(집안 살림은 독립 때 자산에 합쳐진다)', file(narrative({ stages: ['youth'], effects: { family: 100 } })), '20세 미만'],
+    ['assets 효과는 20세 미만과 이상을 함께 걸친 이벤트에서도 쓸 수 없다', file(narrative({ stages: ['school', 'youth'], effects: { assets: { net: 100 } } })), '20세 이상'],
+    ['assets 조건도 20세 이상 이벤트에서만', file(narrative({ stages: ['school'], conditions: { assets: { netMin: 0 } } })), '20세 이상'],
+    ['assets 조건 netMin이 netMax보다 큼', file(narrative({ stages: ['youth'], conditions: { assets: { netMin: 100, netMax: 50 } } })), 'netMin(100)이 netMax(50)보다 크다'],
+    ['assets 조건 netMin 범위 밖(-200001)', file(narrative({ stages: ['youth'], conditions: { assets: { netMin: -200001 } } })), '정수여야 한다 (만 원)'],
+    ['assets 조건 알 수 없는 항목(net)', file(narrative({ stages: ['youth'], conditions: { assets: { net: 1 } } })), '알 수 없는 항목 "net"'],
+    ['assets 조건이 빈 객체', file(narrative({ stages: ['youth'], conditions: { assets: {} } })), '비어 있다'],
+    ['서술 이벤트의 assets.net 최대 합계가 50000 초과(기본 +30000, 보너스 +30000)', file(narrative({ stages: ['youth'], effects: { assets: { net: 30000 } }, bonuses: [{ when: { looks: { min: 1 } }, effects: { assets: { net: 30000 } } }] })), '최대 합계(+60000)'],
     ['같은 효과에서 플래그를 켜고 끔', file(narrative({ effects: { setFlags: ['same_flag'], clearFlags: ['same_flag'] } })), '켜고 끈다'],
-    ['보너스에 when 없음', file(narrative({ bonuses: [{ effects: { stats: { wealth: 1 } } }] })), '필수 항목 "when"'],
+    ['보너스에 when 없음', file(narrative({ bonuses: [{ effects: { stats: { education: 1 } } }] })), '필수 항목 "when"'],
     ['모디파이어 weight 11', file(narrative({ modifiers: [{ when: { looks: { min: 1 } }, weight: 11 }] })), '배수'],
     ['선택지 1개', file(choiceEvent({ choices: [{ id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.' }] })), '선택지는 2~3개'],
     [
@@ -200,7 +226,7 @@ describe('이벤트 스키마 검증: 잘못된 데이터는 개발 중 바로 �
       ),
       '조건(requires) 없는 선택지가 2개 이상',
     ],
-    ['선택지 이벤트에 이벤트 단위 effects', file(choiceEvent({ effects: { stats: { wealth: 1 } } })), '이벤트 단위의 effects'],
+    ['선택지 이벤트에 이벤트 단위 effects', file(choiceEvent({ effects: { stats: { education: 1 } } })), '이벤트 단위의 effects'],
     ['선택지의 알 수 없는 항목', file(choiceEvent({ choices: [{ id: 'a', label: '가', result: '가를 골랐다. 문장.', cost: 3 }, { id: 'b', label: '나', result: '나를 골랐다. 문장.' }] })), '알 수 없는 항목 "cost"'],
     // R-046: 검증은 통과하지만 런타임을 깨는 비현실적 입력
     ['weight가 0에 가까운 양수(1e-300)', file(narrative({ weight: 1e-300 })), '0.1 이상'],
@@ -213,7 +239,7 @@ describe('이벤트 스키마 검증: 잘못된 데이터는 개발 중 바로 �
     ['보너스 9개(상한 8개)', file(narrative({ bonuses: Array.from({ length: 9 }, (_, i) => ({ when: { looks: { min: i + 1 } }, effects: { stats: { happiness: 1 } } })) })), '보너스는 최대 8개'],
     [
       '서술 이벤트의 한 스탯 최대 합계가 50 초과(기본 +30, 보너스 +30)',
-      file(narrative({ effects: { stats: { wealth: 30 } }, bonuses: [{ when: { looks: { min: 1 } }, effects: { stats: { wealth: 30 } } }] })),
+      file(narrative({ effects: { stats: { education: 30 } }, bonuses: [{ when: { looks: { min: 1 } }, effects: { stats: { education: 30 } } }] })),
       '최대 합계(+60)',
     ],
     [
@@ -275,7 +301,7 @@ describe('이벤트 스키마 검증: 잘못된 데이터는 개발 중 바로 �
     for (const patch of [
       { conditions: { notFlags: ['typo_flag'] } },
       { modifiers: [{ when: { flags: ['typo_flag'] }, weight: 2 }] },
-      { bonuses: [{ when: { flags: ['typo_flag'] }, effects: { stats: { wealth: 1 } } }] },
+      { bonuses: [{ when: { flags: ['typo_flag'] }, effects: { stats: { education: 1 } } }] },
     ]) {
       expect(problemsOf(file(narrative({ id: 'reader', ...patch }))).join('\n')).toContain('typo_flag');
     }
@@ -502,23 +528,46 @@ describe('R-046: 예약어 id와 상속 속성 (런타임 방어)', () => {
 });
 
 describe('조건 평가', () => {
-  const c = ctx({ character: { looks: 70, parentWealth: 4, parenting: 'strict', gender: 'female' }, stats: { wealth: 30, health: 80 }, flags: ['married', 'has_career'] });
+  const c = ctx({ character: { looks: 70, parentWealth: 4, parenting: 'strict', gender: 'female' }, stats: { education: 30, health: 80 }, flags: ['married', 'has_career'], assets: assetsOf({ net: 3000, debt: 800, income: 4200 }) });
 
   it('조건이 없으면 항상 참', () => {
     expect(meetsCondition(undefined, c)).toBe(true);
   });
 
   it('스탯 범위: min·max 경계 포함, 둘 중 하나만 있어도 된다', () => {
-    expect(meetsCondition({ stats: { wealth: { min: 30 } } }, c)).toBe(true);
-    expect(meetsCondition({ stats: { wealth: { min: 31 } } }, c)).toBe(false);
-    expect(meetsCondition({ stats: { wealth: { max: 30 } } }, c)).toBe(true);
-    expect(meetsCondition({ stats: { wealth: { max: 29 } } }, c)).toBe(false);
+    expect(meetsCondition({ stats: { education: { min: 30 } } }, c)).toBe(true);
+    expect(meetsCondition({ stats: { education: { min: 31 } } }, c)).toBe(false);
+    expect(meetsCondition({ stats: { education: { max: 30 } } }, c)).toBe(true);
+    expect(meetsCondition({ stats: { education: { max: 29 } } }, c)).toBe(false);
     expect(meetsCondition({ stats: { health: { min: 80, max: 80 } } }, c)).toBe(true);
   });
 
   it('여러 스탯 조건은 모두 맞아야 한다(AND)', () => {
-    expect(meetsCondition({ stats: { wealth: { max: 40 }, health: { min: 70 } } }, c)).toBe(true);
-    expect(meetsCondition({ stats: { wealth: { max: 40 }, health: { min: 90 } } }, c)).toBe(false);
+    expect(meetsCondition({ stats: { education: { max: 40 }, health: { min: 70 } } }, c)).toBe(true);
+    expect(meetsCondition({ stats: { education: { max: 40 }, health: { min: 90 } } }, c)).toBe(false);
+  });
+
+  it('자산 조건(순자산·부채·연 소득, 만 원): 경계 포함, 항목끼리는 AND, 자산이 없으면(20세 미만·모름) 맞지 않는다 (EC3·EC4)', () => {
+    // c의 자산: 순자산 3000 · 부채 800 · 연 소득 4200
+    expect(meetsCondition({ assets: { netMin: 3000 } }, c)).toBe(true);
+    expect(meetsCondition({ assets: { netMin: 3001 } }, c)).toBe(false);
+    expect(meetsCondition({ assets: { netMax: 3000 } }, c)).toBe(true);
+    expect(meetsCondition({ assets: { netMax: 2999 } }, c)).toBe(false);
+    expect(meetsCondition({ assets: { debtMax: 800 } }, c)).toBe(true);
+    expect(meetsCondition({ assets: { debtMax: 799 } }, c)).toBe(false);
+    expect(meetsCondition({ assets: { incomeMin: 4200 } }, c)).toBe(true);
+    expect(meetsCondition({ assets: { incomeMin: 4201 } }, c)).toBe(false);
+    expect(meetsCondition({ assets: { netMin: 0, debtMax: 1000, incomeMin: 4000 } }, c)).toBe(true);
+    expect(meetsCondition({ assets: { netMin: 0, debtMax: 500, incomeMin: 4000 } }, c)).toBe(false); // 하나라도 틀리면 거짓
+    // 음수 순자산(빚)도 같은 규칙이다
+    const indebted = ctx({ assets: assetsOf({ net: -1500, debt: 1500 }) });
+    expect(meetsCondition({ assets: { netMin: -2000 } }, indebted)).toBe(true);
+    expect(meetsCondition({ assets: { netMin: 0 } }, indebted)).toBe(false);
+    expect(meetsCondition({ assets: { netMax: -1 } }, indebted)).toBe(true);
+    // 20세 미만(자산 null)이거나 자산을 모르면(undefined) 자산 조건은 맞지 않는다 — 다른 조건은 영향이 없다
+    expect(meetsCondition({ assets: { netMin: -200000 } }, ctx({ assets: null }))).toBe(false);
+    expect(meetsCondition({ assets: { netMin: -200000 } }, ctx())).toBe(false);
+    expect(meetsCondition({ looks: { min: 10 } }, ctx({ assets: null }))).toBe(true);
   });
 
   it('외모 조건', () => {
@@ -731,27 +780,38 @@ describe('확률 가중치와 효과에 캐릭터 속성이 반영된다', () =>
   it('resolveEffects: 보너스는 조건이 맞을 때만 더해지고 같은 스탯은 합산된다', () => {
     const tutoring = EVENT_POOL.byId.get('school-tutoring')!.choices!.find((c) => c.id === 'academy')!;
     const eff = (parenting: Character['parenting'], parentWealth: Character['parentWealth']) =>
-      resolveEffects(tutoring.effects, tutoring.bonuses, ctx({ character: { parenting, parentWealth } })).stats;
-    expect(eff('free', 3)).toEqual({ education: 6, happiness: -3, wealth: -3 });
-    expect(eff('strict', 3)).toEqual({ education: 8, happiness: -3, wealth: -3 }); // 엄격한 교육방식: 학력 +2
-    expect(eff('free', 1)).toEqual({ education: 6, happiness: -3, wealth: -5 }); // 형편이 어려우면 학원비 부담 -2
-    expect(eff('strict', 2)).toEqual({ education: 8, happiness: -3, wealth: -5 }); // 둘 다
+      resolveEffects(tutoring.effects, tutoring.bonuses, ctx({ character: { parenting, parentWealth } }));
+    // 학원비는 집안 살림(만 원)에서 나간다: 기본 -450, 형편이 어려우면(재력 1~2단계) 부담이 -300 더 (옛 재산 -3 / 추가 -2점 × 150)
+    expect(eff('free', 3).stats).toEqual({ education: 6, happiness: -3 });
+    expect(eff('free', 3).family).toBe(-450);
+    expect(eff('strict', 3).stats).toEqual({ education: 8, happiness: -3 }); // 엄격한 교육방식: 학력 +2
+    expect(eff('strict', 3).family).toBe(-450);
+    expect(eff('free', 1).stats).toEqual({ education: 6, happiness: -3 });
+    expect(eff('free', 1).family).toBe(-750); // 형편이 어려우면 학원비 부담 -300
+    expect(eff('strict', 2).stats).toEqual({ education: 8, happiness: -3 }); // 둘 다
+    expect(eff('strict', 2).family).toBe(-750);
+    expect(eff('strict', 2).assets).toEqual({ net: 0, income: 0, debt: 0 }); // 20세 미만 이벤트는 자산을 건드리지 않는다
   });
 
   it('resolveEffects: 보너스 조건은 효과 적용 전 상태로 판정한다 (보너스끼리 연쇄하지 않는다) / 플래그도 합친다', () => {
     const e = one(
       narrative({
-        effects: { stats: { wealth: 5 }, setFlags: ['base_flag'] },
+        stages: ['youth'],
+        effects: { stats: { education: 5 }, assets: { net: 500 }, setFlags: ['base_flag'] },
         bonuses: [
-          { when: { stats: { wealth: { min: 60 } } }, effects: { stats: { happiness: 3 }, setFlags: ['rich_flag'] } },
+          { when: { stats: { education: { min: 60 } } }, effects: { stats: { happiness: 3 }, assets: { net: 200, income: 50 }, setFlags: ['rich_flag'] } },
           { when: { flags: ['rich_flag'] }, effects: { stats: { health: 3 } } },
         ],
       }),
     );
-    const r = resolveEffects(e.effects, e.bonuses, ctx({ stats: { wealth: 60 } }));
-    expect(r.stats).toEqual({ wealth: 5, happiness: 3 }); // 두 번째 보너스(rich_flag)는 아직 켜지지 않은 상태로 판정 → 적용 안 됨
+    const r = resolveEffects(e.effects, e.bonuses, ctx({ stats: { education: 60 } }));
+    expect(r.stats).toEqual({ education: 5, happiness: 3 }); // 두 번째 보너스(rich_flag)는 아직 켜지지 않은 상태로 판정 → 적용 안 됨
+    expect(r.assets).toEqual({ net: 700, income: 50, debt: 0 }); // 자산 효과도 같은 자리에서 합산된다 (기본 + 맞는 보너스)
     expect(r.setFlags.sort()).toEqual(['base_flag', 'rich_flag']);
-    expect(resolveEffects(e.effects, e.bonuses, ctx({ stats: { wealth: 10 } })).stats).toEqual({ wealth: 5 });
+    const low = resolveEffects(e.effects, e.bonuses, ctx({ stats: { education: 10 } }));
+    expect(low.stats).toEqual({ education: 5 });
+    expect(low.assets).toEqual({ net: 500, income: 0, debt: 0 });
+    expect(low.family).toBe(0);
   });
 
   it('createEventPool: 같은 id가 둘이면 throw, 조회 맵이 id로 찾아진다', () => {

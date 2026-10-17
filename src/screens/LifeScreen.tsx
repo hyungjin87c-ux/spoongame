@@ -1,13 +1,15 @@
-import { useEffect, useRef, type RefObject } from 'react';
-import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, type BgmSettings, type EventPool, type Settings, type Speed, type ThemeChoice } from '../core';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, previewPending, type BgmSettings, type EventPool, type Settings, type Speed, type ThemeChoice } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { EVENT_POOL } from '../data/events';
 import { DASH_TEXT } from '../data/dashText';
 import { BUILD_LABEL, REPO_URL } from '../buildInfo';
 import { HeaderLogo, Icon, Sprite } from '../ui/Brand';
 import { FeedbackLink } from '../ui/FeedbackLink';
+import { revealTopOfTallCard } from '../ui/focusReveal';
 import { GuardedButton } from '../ui/GuardedButton';
 import { AssetsCard, FamilyCard, PeersNowCard, ProfileCard, StatusCard, type LifeGame } from '../ui/dash/Cards';
+import { ImpactHint, ImpactLine } from '../ui/dash/Impact';
 import { LogCard } from '../ui/dash/LogCard';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
 import { useStickyHead } from '../ui/headRelease';
@@ -75,8 +77,12 @@ function ChoicePanel({
 }) {
   const pending = game.pending;
   const ev = pending ? pool.byId.get(pending.eventId) : undefined;
+  // 선택지마다의 영향(항목·방향·칸 수): 인생 진행이 선택을 적용하는 코드와 같은 코드로 미리 계산한다(core/impact.ts, 숨은 효과 0). 대기 중인 선택지와 상태가 같은 동안은 다시 계산하지 않는다.
+  const previews = useMemo(() => (pending && ev ? previewPending(game, pool) : null), [game, pool, pending, ev]);
   if (!pending || !ev) return null;
   const choices = pending.choiceIds.map((id) => ev.choices?.find((c) => c.id === id)).filter((c) => c !== undefined);
+  const impactOf = (id: string) => previews?.find((p) => p.choiceId === id)?.impact.items ?? [];
+  const anyImpact = choices.some((c) => impactOf(c.id).length > 0);
   return (
     <section className="card choice-panel" aria-labelledby="choice-title" data-testid="choice-panel" data-key={pending.key}>
       <span className="choice-panel__kind">{DASH_TEXT.choiceKind}</span>
@@ -88,16 +94,19 @@ function ChoicePanel({
       <div className="choices-list" role="group" aria-label={DASH_TEXT.choiceGroup}>
         {choices.map((c, i) => (
           // guardKey = 이 이벤트 인스턴스의 고유 키: 다음 선택지가 같은 자리에 떠도 새로 가드가 걸려 연타가 자동으로 눌리지 않는다.
-          <GuardedButton key={c.id} className="choice" guardKey={pending.key} data-testid={`choice-${c.id}`} onClick={() => onChoose(pending.key, c.id)}>
+          // 글자 200%·좁은 폭에서 선택지 카드가 가용 높이(화면 − 하단 띠)보다 커지면(번호 원이 글자 크기를 따라 커져 D-38) 키보드 포커스 때 카드의 위쪽 변을 화면에 맞춘다(CM10 예외 ②, ui/focusReveal.ts#revealTopOfTallCard)
+          <GuardedButton key={c.id} className="choice" guardKey={pending.key} data-testid={`choice-${c.id}`} onFocus={(e) => revealTopOfTallCard(e.currentTarget)} onClick={() => onChoose(pending.key, c.id)}>
             <span className="choice__no" aria-hidden="true">
               {i + 1}
             </span>
             <span className="choice__body">
               <span className="choice__label">{c.label}</span>
+              <ImpactLine items={impactOf(c.id)} />
             </span>
           </GuardedButton>
         ))}
       </div>
+      {anyImpact ? <ImpactHint name={game.character.name} /> : null}
       {auto ? (
         <p className="t-sm t-muted" data-testid="auto-note">
           {DASH_TEXT.autoNote}
@@ -376,8 +385,8 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
       <main className="dash">
         <div className="col col--left">
           <ProfileCard game={game} />
-          <StatusCard stats={game.stats} />
-          <AssetsCard age={game.age} />
+          <StatusCard stats={game.stats} era={game.era} />
+          <AssetsCard age={game.age} assets={game.assets} era={game.era} />
         </div>
         <div className="col col--center">
           <ChoicePanel game={game} pool={pool} auto={settings.autoMode} titleRef={choiceTitleRef} onChoose={onChoose} />

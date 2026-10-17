@@ -30,6 +30,7 @@ import {
   checkCharacterName,
   checkEnding,
   checkFamilyRules,
+  checkMoney,
   checkStats,
   checkTransition,
   deepEqual,
@@ -77,13 +78,33 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
   });
 
   it('checkStats: 0~100 정수만 통과한다 (101, -1, 50.5, NaN은 잡는다)', () => {
-    const ok = { wealth: 0, education: 100, health: 50, happiness: 1, relationships: 99 };
+    const ok = { education: 100, health: 50, happiness: 1, relationships: 99 };
     expect(checkStats(ok, 'x')).toEqual([]);
-    expect(checkStats({ ...ok, wealth: 101 }, 'x')).toHaveLength(1);
+    expect(checkStats({ ...ok, education: 101 }, 'x')).toHaveLength(1);
     expect(checkStats({ ...ok, health: -1 }, 'x')).toHaveLength(1);
     expect(checkStats({ ...ok, happiness: 50.5 }, 'x')).toHaveLength(1);
     expect(checkStats({ ...ok, education: Number.NaN, relationships: 200 }, 'x')).toHaveLength(2);
     expect(checkStats(null, 'x')).toHaveLength(1);
+  });
+
+  it('checkMoney: 20세 미만의 자산·20세 이상의 자산 없음·남은 집안 살림·부채 < −순자산·정수가 아닌 값을 각각 잡고, 정상 상태는 통과한다 (SPEC-003 M5 EC1 불변식)', () => {
+    const young = lifeAt(21, 'present', 12);
+    const adult = lifeAt(21, 'present', 30);
+    expect(young.phase).toBe('life');
+    expect(adult.phase).toBe('life');
+    expect(young.assets).toBeNull();
+    expect(adult.assets).not.toBeNull();
+    expect(checkMoney(young, 'x')).toEqual([]);
+    expect(checkMoney(adult, 'x')).toEqual([]);
+    expect(checkMoney({ ...young, assets: adult.assets }, 'x').join()).toContain('20세 미만');
+    expect(checkMoney({ ...adult, assets: null }, 'x').join()).toContain('자산이 없다');
+    expect(checkMoney({ ...adult, familyFund: 300 }, 'x').join()).toContain('집안 살림');
+    expect(checkMoney({ ...young, familyFund: 3001 }, 'x').join()).toContain('±3000');
+    expect(checkMoney({ ...adult, assets: { ...adult.assets!, net: -500, debt: 100 } }, 'x').join()).toContain('총자산 < 0');
+    expect(checkMoney({ ...adult, assets: { ...adult.assets!, debt: -1 } }, 'x').join()).toContain('음수');
+    expect(checkMoney({ ...adult, assets: { ...adult.assets!, net: 10.5 } }, 'x').join()).toContain('정수');
+    // 빚이 순자산보다 큰 것(집을 산 빚)은 괜찮다
+    expect(checkMoney({ ...adult, assets: { ...adult.assets!, net: -500, debt: 9000 } }, 'x')).toEqual([]);
   });
 
   it('checkCharacterName: 맞는 이름은 통과하고, 풀 밖 이름·다른 성별 풀·시대 밖 연도·없는 성·금지 이름·성과 첫 글자가 같은 이름은 각각 잡는다', () => {
@@ -247,7 +268,7 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
     });
 
     it('스탯이 범위를 벗어나거나 정수가 아니면 잡는다', () => {
-      expect(check({ ...next, stats: { ...next.stats, wealth: 101 } }).join()).toContain('wealth');
+      expect(check({ ...next, stats: { ...next.stats, education: 101 } }).join()).toContain('education');
       expect(check({ ...next, stats: { ...next.stats, health: 30.5 } }).join()).toContain('health');
     });
 
@@ -270,7 +291,7 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
       expect(check({ ...next, era: next.era === 'past' ? 'future' : 'past' }).join()).toContain('시대가 바뀌었다');
       expect(check({ ...next, seed: next.seed + 1 }).join()).toContain('시드');
       expect(check({ ...next, character: { ...next.character!, looks: (next.character!.looks + 1) % 101 } }).join()).toContain('캐릭터가 바뀌었다');
-      expect(check({ ...next, birthStats: { ...next.birthStats!, wealth: (next.birthStats!.wealth + 1) % 101 } }).join()).toContain('출생 스냅샷');
+      expect(check({ ...next, birthStats: { ...next.birthStats!, education: (next.birthStats!.education + 1) % 101 } }).join()).toContain('출생 스냅샷');
     });
 
     it('대기 중인 선택지가 현재 나이·실제 이벤트·선택지와 맞지 않거나, 엔딩인데 사망 정보가 없거나 대기가 남아 있으면 잡는다', () => {
@@ -294,7 +315,7 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
     const s = lifeAt(17, 'future', 9);
     expect(roundTrip(s, 'x').problems).toEqual([]);
     expect(roundTrip(s, 'x').restored).toEqual(s);
-    expect(roundTrip({ ...s, stats: { ...s.stats, wealth: 101 } }, 'x').problems.join()).toContain('저장 검증');
+    expect(roundTrip({ ...s, stats: { ...s.stats, education: 101 } }, 'x').problems.join()).toContain('저장 검증');
     // 모양은 맞지만 풀에 없는 이벤트가 대기 중이면 parseGame이 대기를 풀어 상태가 달라진다 (콘텐츠 갱신 규칙) — 복원 결과가 다르다고 잡는다
     const age = s.age;
     const stale: GameState = { ...s, seen: { ...s.seen, 'gone-event': age }, lastChoiceAge: age, pending: { eventId: 'gone-event', key: `gone-event@${age}`, age, choiceIds: ['a', 'b'] } };
@@ -442,9 +463,12 @@ describe('1000판 전체 파이프라인 (SPEC-001 M6): 세 시대 × 자동 모
           expect(r.deathAge.max).toBeLessThanOrEqual(maxAgeOf(era));
           expect(r.deathAge.min).toBeGreaterThanOrEqual(0);
           // 엔딩 회고의 세 방향이 모두 실제로 나왔다 (공허한 통과가 아니다)
-          expect(r.journeys.up).toBeGreaterThan(50);
+          // 측정(M5 r3·r4, `npm run sim:1000` — 분포표는 수동 흉내로 만든다): 여섯 칸(세 시대 × 자동·수동 흉내) 모두 앞섬 250~325·비슷함 390~447·뒤쪽 270~337(1000판 중).
+          // 2a에서는 자동 모드가 돈에 무게를 둔 선택을 해 앞섬 약 52%·비슷함 27~31%였고 그래서 하한을 200으로 낮췄다. r2의 자동 모드 가드(앞섬 ≤ 45%, 관측 26~32%)가 그 근거를 없애
+          // 하한을 300으로 되돌렸다(R-356). 앞섬·뒤쪽의 하한은 관측의 절반 이하인 100이다.
+          expect(r.journeys.up).toBeGreaterThan(100);
           expect(r.journeys.same).toBeGreaterThan(300);
-          expect(r.journeys.down).toBeGreaterThan(50);
+          expect(r.journeys.down).toBeGreaterThan(100);
           expect(r.journeys.up + r.journeys.same + r.journeys.down + r.journeys.early).toBe(LIVES);
           // 서로 다른 인물이 나온다 (같은 인물만 반복하지 않는다)
           expect(r.distinctNames).toBeGreaterThan(100);

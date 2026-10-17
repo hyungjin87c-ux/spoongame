@@ -129,8 +129,8 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   for (const m of oracle.journey.matchAll(/(\d+)%/g)) expect(Number(m[1])).toBeLessThanOrEqual(50);
   expect(oracle.journey).not.toMatch(/약 (0|100)%/);
 
-  // 최종 스탯: 마지막 값. 처음 값은 학력·행복·관계에만 (재산은 집안 형편 → 내가 가진 것이라 원값을 견주지 않는다)
-  for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships'] as const) await expect(page.getByTestId(`final-${key}`)).toHaveText(String(save.stats[key]));
+  // 최종 스탯: 마지막 값. 처음 값은 학력·행복·관계에만 (재산 스탯은 없어졌고 최종 순자산 줄은 M5 2b에서 화면에 더해진다)
+  for (const key of ['education', 'health', 'happiness', 'relationships'] as const) await expect(page.getByTestId(`final-${key}`)).toHaveText(String(save.stats[key]));
   // M4(R-135): 외모는 원점수가 아니라 「상위/하위 약 N%」 한 가지로만 보인다(얼굴 그림 옆). 원점수 숫자는 화면 어디에도 없다.
   await expect(page.getByTestId('final-looks')).toContainText(expectedLooksLabel(c.looks));
   expect(await page.getByTestId('final-looks').innerText()).not.toMatch(/(?<![\d.])\d+\s*점/);
@@ -214,7 +214,9 @@ test('스무 살 전에 끝난 인생: 도착 자리를 말하지 않고 집안 
   await expect(page.getByTestId('ending-journey')).not.toContainText(/내가 가진 것|생이 끝|견줄|스무 살/);
   await expect(page.getByTestId('ending-journey')).not.toContainText('형편으로 생을 마쳤다');
   await expect(page.getByTestId('ending-movement')).toHaveCount(0);
-  await expect(page.getByTestId('ending-stats')).toContainText('집안 형편');
+  // 재산 막대는 M5 2a에서 임시로 빠졌다(재산 스탯 폐지) — 「재산」이든 「집안 형편」이든 막대가 없다. 2b가 20세 전은 「집안 살림」 줄로 되살린다.
+  await expect(page.getByTestId('ending-stats')).not.toContainText(/재산|집안 형편/);
+  await expect(page.getByTestId('final-health')).toBeVisible();
   await expect(page.getByTestId('timeline-entry')).toHaveCount(4);
   expect(await noHorizontalOverflow(page)).toBe(true);
   expect(await page.getByTestId('ending-screen').innerText()).not.toMatch(FORBIDDEN);
@@ -293,13 +295,15 @@ test('출발선 구간 문장(맨 아래·가운데·한쪽 절반·맨 위 단�
   const ended = await endedState(page);
   const labels: string[] = [];
   for (const [wealth, final] of [
-    [1, 45],
-    [2, 10],
-    [3, 5],
-    [4, 90],
-    [5, 30],
+    [1, 12000],
+    [2, 0],
+    [3, -3000],
+    [4, 80000],
+    [5, 3000],
   ] as const) {
-    const state: GameState = { ...ended, character: { ...ended.character!, parentWealth: wealth }, stats: { ...ended.stats, wealth: final } };
+    // 최종 순자산(만 원) — 음수이면 불변식(debt ≥ −net)을 지키도록 부채를 맞춘다
+    const assets = { ...ended.assets!, net: final, debt: Math.max(ended.assets!.debt, -final) };
+    const state: GameState = { ...ended, character: { ...ended.character!, parentWealth: wealth }, assets };
     const oracle = await reviewOracle(page, state);
     expect(oracle.journey).toMatch(BAND_SENTENCE);
     labels.push(`${wealth}단계: ${oracle.journey}`);

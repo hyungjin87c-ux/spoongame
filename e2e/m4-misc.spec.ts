@@ -373,7 +373,7 @@ for (const looks of [88, 97]) {
     await startPageHidden(page);
     await page.goto('/');
     const base = lifeState(KNOWN_SEED);
-    const life: GameState = { ...base, character: { ...base.character!, looks }, stats: { ...base.stats, wealth: 31, education: 12, health: 64, happiness: 41, relationships: 22 } };
+    const life: GameState = { ...base, character: { ...base.character!, looks }, stats: { ...base.stats, education: 12, health: 64, happiness: 41, relationships: 22 } };
     await injectSave(page, life, '/', MANUAL);
     await expect(page.getByTestId('auto')).toBeEnabled();
     const textOf = async (testId: string) => (await page.getByTestId(testId).innerText()).replace(/\s+/g, ' ');

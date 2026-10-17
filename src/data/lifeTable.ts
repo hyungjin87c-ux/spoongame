@@ -31,6 +31,9 @@ export const STAGE_ENTRY_TEXT: Record<Exclude<Stage, 'infant'>, string> = {
   senior: '예순다섯. 일에서 한 걸음 물러설 나이가 되었다.',
 };
 
+/** 부모가 모두 떠난 해 상속을 받으면 연표에 남기는 한 줄 (D10 변경, 금액 없음) */
+export const INHERIT_NOTE_TEXT = '부모님이 남기신 재산을 물려받았습니다.';
+
 // ---------- 이벤트 빈도 ----------
 
 /**

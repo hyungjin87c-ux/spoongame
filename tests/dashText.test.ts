@@ -46,22 +46,36 @@ describe('대시보드 이름(h1)은 줄일 상한 없이 가장 좁은 조합�
   });
 });
 
-describe('상태 도움말과 자산 (R-333)', () => {
-  it('자산 금액이 아직 없으므로(M5 전) 도움말은 자산 단위 문장 없이 네 가지만 설명한다. 켜면 문장이 돌아온다', () => {
-    expect(ASSETS_AMOUNTS_SHIPPED).toBe(false);
-    expect(DASH_TEXT.statusHelp).toBe(statusHelpText(false));
-    expect(DASH_TEXT.statusHelp).not.toMatch(/자산|원 단위/);
-    expect(statusHelpText(true)).toBe(`${statusHelpText(false)} 자산은 올해 가치 기준의 원 단위입니다.`);
+describe('상태 도움말과 자산 (R-333 → M5 2b)', () => {
+  it('자산 금액이 화면에 있으므로(M5 2b) ASSETS_AMOUNTS_SHIPPED가 켜졌고, 도움말은 시대별 단위 문장 + 가구 기준 한 문장을 싣는다 (copy.md 4-5절)', () => {
+    expect(ASSETS_AMOUNTS_SHIPPED).toBe(true);
+    const base = statusHelpText(false, 'present');
+    expect(base).not.toMatch(/자산|원 단위/);
+    for (const era of ['past', 'future'] as const) expect(statusHelpText(false, era)).toBe(base); // 자산 문장을 켜지 않으면 시대와 무관하다
+    const household = '순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.';
+    expect(statusHelpText(true, 'present')).toBe(`${base} 자산은 올해 가치 기준의 원 단위입니다. ${household}`);
+    expect(statusHelpText(true, 'past')).toBe(`${base} 자산은 지금 가치로 환산한 원 단위입니다. ${household}`);
+    expect(statusHelpText(true, 'future')).toBe(statusHelpText(true, 'past'));
     // 건강·행복·지식·관계 네 가지 설명은 두 경우 모두 있다
     for (const word of ['건강은', '행복은', '지식은', '관계는']) {
-      expect(statusHelpText(false)).toContain(word);
-      expect(statusHelpText(true)).toContain(word);
+      expect(statusHelpText(false, 'present')).toContain(word);
+      expect(statusHelpText(true, 'present')).toContain(word);
     }
   });
 
-  it('자산 자리표시 문구: 「순자산, 연 소득, 부채는 아직 준비 중입니다.」(숫자 없음), 20세 전 안내는 그대로 (designer 제안 반영)', () => {
-    expect(DASH_TEXT.assetsSoon).toBe('순자산, 연 소득, 부채는 아직 준비 중입니다.');
+  it('접이식 제목은 「상태와 자산의 뜻 보기」(r2 마스터 결정 1, D-36)이고, 옛 제목 「상태 네 가지의 뜻 보기」는 없다', () => {
+    expect(DASH_TEXT.statusHelpSummary).toBe('상태와 자산의 뜻 보기');
+    expect(JSON.stringify(DASH_TEXT)).not.toContain('상태 네 가지의 뜻 보기');
+  });
+
+  it('자산 현황 문구 (copy.md 4-5절): 이름 셋에 「(가구)」를 붙이지 않고, 지난·다가올 세상의 태그는 「지금 가치로 환산」, 주석은 「빚」 대신 「부채」로 말한다. 20세 전 안내는 그대로, 준비 중 자리표시는 사라졌다', () => {
+    expect([DASH_TEXT.assetsNet, DASH_TEXT.assetsIncome, DASH_TEXT.assetsDebt]).toEqual(['순자산', '연 소득', '부채']);
+    expect(DASH_TEXT.assetsBasis).toBe('지금 가치로 환산');
+    expect(DASH_TEXT.assetsNote).toBe('순자산은 가진 것에서 부채를 뺀 값입니다. 0보다 작으면 부채가 가진 것보다 많다는 뜻입니다.');
+    expect(DASH_TEXT.assetsNote).not.toContain('빚');
     expect(DASH_TEXT.assetsYoung).toBe('자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.');
+    expect(Object.keys(DASH_TEXT)).not.toContain('assetsSoon');
+    expect(JSON.stringify(DASH_TEXT)).not.toContain('아직 준비 중입니다');
   });
 });
 

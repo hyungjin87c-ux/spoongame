@@ -29,3 +29,11 @@ export function formatWon(won: number): string {
   if (man > 0) parts.push(`${formatCount(man)}만`);
   return `${sign}${parts.join(' ')} 원`;
 }
+
+/**
+ * 만 원 단위 정수(경제 모델의 모든 금액, `Assets.net·income·debt`)를 화면 금액으로 적는다: `formatWon(만 원 × 10,000)` 출력 그대로(「약」 없음, 음수는 U+2212, 0은 「0원」).
+ * 자산 현황 카드·엔딩 「최종 순자산」 줄이 같은 함수를 쓴다 — 순자산이 음수여도 「빚」으로 바꿔 쓰지 않는다(docs/design/copy.md 4-5절).
+ */
+export function formatMan(man: number): string {
+  return formatWon(man * 10_000);
+}

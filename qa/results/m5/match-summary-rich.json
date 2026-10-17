@@ -1,0 +1,48 @@
+{
+ "summary": {
+  "replays": 1070,
+  "replayErrors": 0,
+  "fixtures": 395,
+  "events": 55,
+  "eras": [
+   "future",
+   "past",
+   "present"
+  ],
+  "tiers": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "ageRange": [
+   20,
+   97
+  ],
+  "tally": {
+   "statPairs": 3813,
+   "statViol": 0,
+   "familyPairs": 0,
+   "familyViol": 0,
+   "debtPairs": 955,
+   "debtViol": 0,
+   "assetPurePairs": 516,
+   "assetPureViol": 0,
+   "assetCashPairs": 361,
+   "assetCashViol": 0,
+   "hiddenAssetCand": 0,
+   "hiddenDebtCand": 0,
+   "uiMismatch": 0,
+   "uiChecks": 1054,
+   "debtExplainedByYearRule": 125,
+   "assetCashAmbiguous": 76,
+   "assetCashNoProbe": 2
+  },
+  "violations": 0,
+  "hiddenCandidates": 0
+ },
+ "viol": [],
+ "notes": [],
+ "errors": []
+}

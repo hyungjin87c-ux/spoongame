@@ -49,6 +49,9 @@ for (const vp of STANDARD_VIEWPORTS) {
       for (const screen of M4_SCREENS) {
         test(`${vp.name} · 글자 ${percent}% · ${screen}: Tab·Shift+Tab 전체 순회·프로그램 focus()·제목 포커스에서 가려진 포커스 0 (CM10)`, async ({ page }, testInfo) => {
           test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+          // SPEC-003 QM2-1 r5 메모 4: 320×256에 글자 200%를 겹친 조합(800% 확대 상당)은 CM10 포커스 측정에서 제외한다(WCAG 1.4.10의 400% 기준을 넘는다 — focus-not-obscured.spec.ts와 같다).
+          // M5부터 선택지 카드에 영향 줄·안내 한 줄이 붙어 선택지 하나가 그 높이(가용 높이 약 100px)보다 커졌으므로 선택지 카드가 있는 상태만 빼고 나머지 화면은 그대로 잰다.
+          test.skip(percent === 200 && vp.name === '320x256-zoom400' && screen === 'dash-decision', 'CM10 측정 제외 조합(QM2-1 r5 메모 4): 320×256 × 글자 200% × 선택지 카드');
           test.setTimeout(180_000);
           await openM4Screen(page, screen);
           if (percent !== 100) await setRootFontPercent(page, percent);

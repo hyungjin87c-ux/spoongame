@@ -63,10 +63,10 @@
           "id": "academy",
           "label": "방과 후에 따로 배운다",
           "result": "방과 후마다 따로 공부를 더 했다. 숙제가 늘었고, 성적도 천천히 올랐다.",
-          "effects": { "stats": { "education": 6, "happiness": -3, "wealth": -3 } },
+          "effects": { "stats": { "education": 6, "happiness": -3 }, "family": -450 },
           "bonuses": [
             { "when": { "parenting": ["strict"] }, "effects": { "stats": { "education": 2 } } },
-            { "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "wealth": -2 } } }
+            { "when": { "parentWealth": { "max": 2 } }, "effects": { "family": -300 } }
           ]
         },
         {
@@ -80,7 +80,7 @@
           "id": "tutor",
           "label": "과외 선생님을 붙인다",
           "result": "집으로 오는 선생님이 모르는 부분을 하나씩 짚어 주었다. 성적이 눈에 띄게 올랐다.",
-          "effects": { "stats": { "education": 10, "wealth": -4, "happiness": -1 } },
+          "effects": { "stats": { "education": 10, "happiness": -1 }, "family": -600 },
           "requires": { "parentWealth": { "min": 4 } }
         }
       ]
@@ -134,10 +134,10 @@
           "result": "원서를 내고 결과를 기다렸다. 큰 기쁨도 큰 후회도 아닌, 조용한 결과였다.",
           "effects": { "stats": { "education": 4, "happiness": 1 }, "setFlags": ["college"] },
           "bonuses": [
-            { "when": { "stats": { "education": { "min": 70 } } }, "effects": { "stats": { "education": 4, "wealth": 2 } } },
+            { "when": { "stats": { "education": { "min": 70 } } }, "effects": { "stats": { "education": 4 }, "family": 300 } },
             { "when": { "stats": { "education": { "max": 30 } } }, "effects": { "stats": { "education": -2 } } },
             { "when": { "flags": ["mentor_teacher"] }, "effects": { "stats": { "education": 3 } } },
-            { "when": { "flags": ["scholar"] }, "effects": { "stats": { "wealth": 3 } } },
+            { "when": { "flags": ["scholar"] }, "effects": { "family": 450 } },
             { "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "education": 2 } } }
           ]
         },
@@ -145,15 +145,16 @@
           "id": "retry",
           "label": "한 해 더 준비한다",
           "result": "한 해를 더 책상 앞에서 보냈다. 친구들이 먼저 떠난 자리에 혼자 남은 기분이 들었다.",
-          "effects": { "stats": { "education": 7, "happiness": -4, "wealth": -3 }, "setFlags": ["college"] },
-          "bonuses": [{ "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "wealth": 3, "happiness": 1 } } }]
+          "effects": { "stats": { "education": 7, "happiness": -4 }, "family": -450, "setFlags": ["college"] },
+          "bonuses": [{ "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "happiness": 1 }, "family": 450 } }],
+          "requires": { "parentWealth": { "min": 2 } }
         },
         {
           "id": "work",
           "label": "대학 대신 일을 먼저 시작한다",
           "result": "졸업과 함께 일을 구했다. 일터의 하루는 학교의 하루와 전혀 달랐다.",
-          "effects": { "stats": { "wealth": 4 }, "setFlags": ["early_work"] },
-          "bonuses": [{ "when": { "flags": ["skilled_trade"] }, "effects": { "stats": { "wealth": 3 } } }]
+          "effects": { "family": 600, "setFlags": ["early_work"] },
+          "bonuses": [{ "when": { "flags": ["skilled_trade"] }, "effects": { "family": 450 } }]
         }
       ]
     },
@@ -178,7 +179,7 @@
           "id": "help",
           "label": "학교를 쉬고 일을 돕는다",
           "result": "한동안 가게 일을 돕거나 공장에 나갔다. 손에 쥐는 돈은 적었지만 집안에는 보탬이 되었다.",
-          "effects": { "stats": { "wealth": 3, "education": -4, "happiness": -2, "relationships": 2 } }
+          "effects": { "stats": { "education": -4, "happiness": -2, "relationships": 2 }, "family": 450 }
         }
       ]
     },
@@ -239,7 +240,7 @@
           "id": "home",
           "label": "곧장 집으로 돌아간다",
           "result": "방과 후에는 곧장 집으로 돌아왔다. 혼자 보내는 시간이 늘었고 집안일을 도울 수 있었다.",
-          "effects": { "stats": { "relationships": -1, "wealth": 1 } }
+          "effects": { "stats": { "relationships": -1 }, "family": 150 }
         }
       ]
     },
@@ -290,8 +291,8 @@
           "id": "apply",
           "label": "서류를 준비해 신청한다",
           "result": "며칠을 서류 준비에 쏟았다. 결과가 나온 날 학비의 한몫을 덜 수 있게 되었다.",
-          "effects": { "stats": { "wealth": 3, "education": 4 }, "setFlags": ["scholar"] },
-          "bonuses": [{ "when": { "stats": { "education": { "min": 60 } } }, "effects": { "stats": { "wealth": 2 } } }]
+          "effects": { "stats": { "education": 4 }, "family": 450, "setFlags": ["scholar"] },
+          "bonuses": [{ "when": { "stats": { "education": { "min": 60 } } }, "effects": { "family": 300 } }]
         },
         {
           "id": "pass",
@@ -347,17 +348,17 @@
           "id": "many",
           "label": "밤늦은 수업까지 챙겨 듣는다",
           "result": "저녁은 학원 가방과 함께 지나갔다. 점수는 올랐지만 잠은 자꾸 모자랐다.",
-          "effects": { "stats": { "education": 8, "health": -3, "happiness": -4, "wealth": -3 } },
+          "effects": { "stats": { "education": 8, "health": -3, "happiness": -4 }, "family": -450 },
           "bonuses": [
             { "when": { "parenting": ["strict"] }, "effects": { "stats": { "education": 2 } } },
-            { "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "wealth": -2 } } }
+            { "when": { "parentWealth": { "max": 2 } }, "effects": { "family": -300 } }
           ]
         },
         {
           "id": "one",
           "label": "저녁 수업까지만 듣는다",
           "result": "저녁 수업이 끝나면 곧장 돌아왔다. 남는 시간에는 숙제를 하고 일찍 잠들었다.",
-          "effects": { "stats": { "education": 4, "happiness": -1, "wealth": -1 } }
+          "effects": { "stats": { "education": 4, "happiness": -1 }, "family": -150 }
         },
         {
           "id": "friends",
@@ -383,13 +384,13 @@
           "id": "accept",
           "label": "집안의 결정을 따른다",
           "result": "말없이 어른들의 뜻을 따랐다. 책가방을 접어 넣던 날의 마음은 오래 가라앉았다.",
-          "effects": { "stats": { "education": -4, "wealth": 2, "happiness": -3, "relationships": 1 }, "setFlags": ["left_school", "early_work"] }
+          "effects": { "stats": { "education": -4, "happiness": -3, "relationships": 1 }, "family": 300, "setFlags": ["left_school", "early_work"] }
         },
         {
           "id": "plead",
           "label": "공부를 계속하고 싶다고 말한다",
           "result": "처음으로 어른들 앞에서 내 뜻을 말했다. 한참 뒤에야 허락이 떨어졌고 그만큼 책임도 무거웠다.",
-          "effects": { "stats": { "education": 3, "happiness": 1, "wealth": -2 }, "setFlags": ["fought_for_school"] }
+          "effects": { "stats": { "education": 3, "happiness": 1 }, "family": -300, "setFlags": ["fought_for_school"] }
         },
         {
           "id": "secret",
@@ -413,14 +414,14 @@
           "id": "study",
           "label": "공부의 길을 계속 간다",
           "result": "공부하는 쪽을 택했다. 앞길이 길어진 만큼 당장 눈에 보이는 것은 적었다.",
-          "effects": { "stats": { "education": 4, "wealth": -1 } },
+          "effects": { "stats": { "education": 4 }, "family": -150 },
           "bonuses": [{ "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "education": 2 } } }]
         },
         {
           "id": "skill",
           "label": "손에 쥘 기술을 배운다",
           "result": "손으로 하는 일을 배우기 시작했다. 일찍 몸에 익힌 기술은 이후 오래 쓸모가 있었다.",
-          "effects": { "stats": { "wealth": 3, "education": -2, "happiness": 1 }, "setFlags": ["skilled_trade"] },
+          "effects": { "stats": { "education": -2, "happiness": 1 }, "family": 450, "setFlags": ["skilled_trade"] },
           "bonuses": [{ "when": { "parenting": ["strict", "helicopter"] }, "effects": { "stats": { "happiness": -1 } } }]
         },
         {
@@ -446,19 +447,19 @@
           "id": "weekend",
           "label": "주말마다 일한다",
           "result": "주말은 일터에서 지나갔다. 처음 받은 월급의 무게가 생각보다 컸다.",
-          "effects": { "stats": { "wealth": 4, "education": -2, "happiness": 1, "health": -1 } }
+          "effects": { "stats": { "education": -2, "happiness": 1, "health": -1 }, "family": 600 }
         },
         {
           "id": "study",
           "label": "공부에 집중한다",
           "result": "일은 접고 책상에 앉았다. 주머니는 가벼웠지만 마음은 한결 놓였다.",
-          "effects": { "stats": { "education": 4, "wealth": -1 } }
+          "effects": { "stats": { "education": 4 }, "family": -150 }
         },
         {
           "id": "vacation",
           "label": "방학에만 일한다",
           "result": "방학마다 짧게 일했다. 번 돈으로 필요한 것을 사고 나머지는 모아 두었다.",
-          "effects": { "stats": { "wealth": 2, "happiness": 1 } }
+          "effects": { "stats": { "happiness": 1 }, "family": 300 }
         }
       ]
     },
@@ -475,8 +476,8 @@
           "id": "keep",
           "label": "데려와 기른다",
           "result": "어른들을 졸라 강아지를 데려왔다. 하루를 마치고 돌아오면 꼬리를 흔드는 존재가 집에 생겼다.",
-          "effects": { "stats": { "happiness": 4, "wealth": -1, "health": 1 } },
-          "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "wealth": -1, "happiness": -1 } } }]
+          "effects": { "stats": { "happiness": 4, "health": 1 }, "family": -150 },
+          "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "happiness": -1 }, "family": -150 } }]
         },
         {
           "id": "feed",
@@ -488,7 +489,7 @@
           "id": "pass",
           "label": "못 본 척 지나간다",
           "result": "못 본 척 지나쳤다. 군것질 값은 고스란히 남았지만 그 눈빛은 한참 뒤에도 문득 떠올랐다.",
-          "effects": { "stats": { "happiness": -1, "wealth": 1 } }
+          "effects": { "stats": { "happiness": -1 }, "family": 150 }
         }
       ]
     },

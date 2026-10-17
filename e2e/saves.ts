@@ -7,7 +7,7 @@ import type { BirthReport, Character, Era, GameState, LifeLength, ParentWealth, 
 
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 /** 설정 봉투 버전(core/storage.ts#SETTINGS_VERSION)과 첫 화면의 기본 선택(core/state.ts#DEFAULT_SETTINGS) — tests/e2eHelpers.test.ts가 core와 같은지 대조한다. */
 export const SETTINGS_VERSION = 3;
 export const DEFAULT_ERA_CHOICE: Era = 'present';
@@ -15,10 +15,12 @@ export const DEFAULT_LIFE_LENGTH_CHOICE: LifeLength = 'short30';
 /** 재현 가능한 실패를 위한 기본 시드 */
 export const KNOWN_SEED = 20261013;
 
-const PLACEHOLDER_STATS = { wealth: 50, education: 50, health: 50, happiness: 50, relationships: 50 };
+const PLACEHOLDER_STATS = { education: 50, health: 50, happiness: 50, relationships: 50 };
 
 /** 인생이 시작되기 전(title·roulette·birth)에는 진행 기록이 모두 비어 있다. */
 const FRESH = { flags: [] as string[], seen: {} as Record<string, number>, pending: null, lastChoiceAge: null, death: null };
+/** 20세 미만의 돈 상태(스키마 v8): 자산은 없고 집안 살림만 있다 */
+const YOUNG_MONEY = { assets: null, familyFund: 0 };
 
 /** e2e가 주입하는 설정: 배속·자동 모드만 줘도 되고(세상·인생 길이는 첫 화면의 기본 선택) 첫 화면의 선택까지 줄 수도 있다. */
 export type InjectedSettings = PlaySettings & Partial<Settings>;
@@ -40,6 +42,7 @@ export function titleState(seed: number): GameState {
     age: 0,
     history: [],
     ...FRESH,
+    ...YOUNG_MONEY,
     birthReport: null,
     peerSeed: null,
     paused: false,
@@ -80,7 +83,7 @@ export function lifeState(seed: number): GameState {
     parenting: 'free',
     looks: 50,
   };
-  const stats = { wealth: 45, education: 6, health: 70, happiness: 52, relationships: 54 };
+  const stats = { education: 6, health: 70, happiness: 52, relationships: 54 };
   return {
     phase: 'life',
     era: 'present',
@@ -91,6 +94,7 @@ export function lifeState(seed: number): GameState {
     age: 0,
     history: [{ age: 0, kind: 'stage', text: '2026년 1월, 서울특별시 종로구의 평범한 가정에서 3.2kg 남자아이로 태어났습니다. 첫째입니다. (3.2kg은 상위 약 50%)' }],
     ...FRESH,
+    ...YOUNG_MONEY,
     birthReport: report(),
     peerSeed: PEER_SEED,
     paused: false,
@@ -112,7 +116,7 @@ export function birthState(seed: number, era: Era, parentWealth: ParentWealth, l
     parenting: 'free',
     looks,
   };
-  const stats = { wealth: 45, education: 6, health: 70, happiness: 52, relationships: 54 };
+  const stats = { education: 6, health: 70, happiness: 52, relationships: 54 };
   return {
     phase: 'birth',
     era,
@@ -123,6 +127,7 @@ export function birthState(seed: number, era: Era, parentWealth: ParentWealth, l
     age: 0,
     history: [],
     ...FRESH,
+    ...YOUNG_MONEY,
     birthReport: report(reportOverrides),
     peerSeed: PEER_SEED,
     paused: false,

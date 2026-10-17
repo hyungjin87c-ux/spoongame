@@ -226,13 +226,12 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 
 /**
  * 출생 시 재산·학력의 의미 (R-025):
- *  - 재산(wealth)은 어릴 때는 "집안 형편"이다. 스무 살(독립)에 "내가 가진 것"으로 바뀐다(core/life.ts#independenceWealth).
+ *  - 재산 스탯은 없어졌다(SPEC-003 M5). 어릴 때의 집안 형편은 재력 단계(parentWealth)와 20세 미만의 집안 살림(GameState.familyFund)이고, 스무 살(독립)에 core/economy.ts#initialAssets가 내 자산을 만든다.
  *  - 학력(education)은 "지금까지 쌓은 학업 성취"다. 0세에 높게 시작하는 건 이상하므로 출생 값은 0~15의 낮은 값이고,
  *    가정의 교육 여건(부모 재력·교육방식)은 출생 값이 아니라 **성장 속도**(core/life.ts#educationGrowthPerYear)와
  *    이벤트 확률/효과로 반영된다. birthStats(엔딩의 "출발선 대비")도 같은 뜻의 값을 쓴다:
  *    학력의 출발선은 거의 같고, 얼마나 올라왔는지가 비교 대상이다.
  */
-const BASE_WEALTH = [8, 22, 45, 70, 92] as const;
 const BASE_EDUCATION = [2, 4, 6, 8, 10] as const;
 const HAPPY_BY_WEALTH = [-6, -2, 0, 3, 5] as const;
 const EDU_MOD: Record<ParentingStyle, number> = { neglect: -2, free: 0, helicopter: 3, strict: 2 };
@@ -244,8 +243,9 @@ export const MIN_BIRTH_HEALTH = 30;
 
 export function rollBirthStats(rng: Rng, wealth: ParentWealth, parenting: ParentingStyle): Stats {
   const i = wealth - 1;
+  // 재산 스탯은 없어졌지만(SPEC-003 M5, 저장 v8) 옛 재산 몫의 난수 한 번은 그대로 소비한다 — 같은 시드의 이름·부모·외모·스탯 등 이후 난수 흐름을 보존한다.
+  rng.int(-5, 5);
   return {
-    wealth: clamp(BASE_WEALTH[i] + rng.int(-5, 5), 0, 100),
     education: clamp(BASE_EDUCATION[i] + EDU_MOD[parenting] + rng.int(-2, 2), 0, 100),
     health: clamp(70 + (wealth >= 4 ? 3 : 0) + rng.int(-10, 10), MIN_BIRTH_HEALTH, 100),
     happiness: clamp(50 + HAPPY_BY_WEALTH[i] + HAPPY_MOD[parenting] + rng.int(-5, 5), 0, 100),

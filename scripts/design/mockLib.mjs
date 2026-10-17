@@ -181,15 +181,7 @@ export const spoonLineup = () =>
     .join('')}</ul>`;
 
 // ---------- 영향 표기 ----------
-const STEP_WORD = ['', '조금', '크게', '아주 크게'];
-export function impact(items) {
-  const parts = items.map(([name, dir, n]) => {
-    const arrows = (dir === 'up' ? '▲' : '▼').repeat(n);
-    const sr = `${name}이(가) ${STEP_WORD[n]} ${dir === 'up' ? '늘어요' : '줄어요'}`;
-    return `<span class="impact__item"><span>${name}</span><span class="${dir}" aria-hidden="true">${arrows}</span><span class="sr-only">${sr}</span></span>`;
-  });
-  return `<span class="impact">${parts.join('')}</span>`;
-}
+// M1 초안 `impact()`(해요체 sr 문장·방향 색 클래스)는 2026-10-18 M5 r3에서 지웠다 — 영향 줄은 구현 컴포넌트(src/ui/dash/Impact.tsx#ImpactLine)를 buildMockups.mjs가 renderToStaticMarkup으로 그린다(D-31·D-35).
 
 // ---------- 로고 (파일을 그대로 인라인 — 색은 --c-logo 토큰을 따른다) ----------
 /**

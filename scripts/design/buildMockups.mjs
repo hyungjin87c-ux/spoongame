@@ -11,6 +11,8 @@
  * core·data의 순수 함수(buildRoulette·birthSentence·peersOf·buildComparison·REPORT_NOTES …)가 글자를 만든다(손으로 적은 문장이 없다). 구현과 남은 차이는 docs/design/diff-003.md.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { AGE_GROUPS, faceSvg } from '../../src/assets/faces/faceLayers.ts';
 import { generateBirthFromSeed, looksStanding } from '../../src/core/birth.ts';
 import { birthSentence, isValidBirthReport, reportPlaceLabel, weightStanding } from '../../src/core/birthReport.ts';
@@ -20,7 +22,7 @@ import { glueSegments, splitPair } from '../../src/core/glue.ts';
 import { peersOf } from '../../src/core/peers.ts';
 import { ROULETTE_TIMING, buildRoulette, reelPosition } from '../../src/core/roulette.ts';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN, DEFAULT_BGM, ERAS, LIFE_LENGTHS, isLifeLengthSelectable } from '../../src/core/types.ts';
-import { DASH_TEXT, SYSTEM_TITLE, SYSTEM_TITLE_CHARS, titleCharsFor } from '../../src/data/dashText.ts';
+import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, SYSTEM_TITLE, SYSTEM_TITLE_CHARS, statusHelpText, titleCharsFor } from '../../src/data/dashText.ts';
 import { STAGE_ENTRY_TEXT } from '../../src/data/lifeTable.ts';
 import { buildComparison, compareShown, lifeGapLine } from '../../src/data/birthCompare.ts';
 import { OCCUPATION_LABEL } from '../../src/data/birthReportTable.ts';
@@ -33,10 +35,18 @@ import { deathEntryText } from '../../src/data/lifeText.ts';
 import { placeLabel } from '../../src/data/regionNames.ts';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../../src/data/titleText.ts';
 import { restCells, spinCells, spinCycles } from '../../src/ui/Reel.tsx';
-import { DEFAULT_KEY, GRADES, ROOT, esc, face, fitPair, gradeChip, gradeLine, gradeText, headerLogo, icon, impact, logo, MOCK_TAG, meter, page, reelSpoon, spoon, spoonLineup } from './mockLib.mjs';
+import { AssetsCard, StatusCard } from '../../src/ui/dash/Cards.tsx';
+import { FinalNetLine } from '../../src/ui/dash/FinalNet.tsx';
+import { ImpactHint, ImpactLine } from '../../src/ui/dash/Impact.tsx';
+import { IMPACT_HINT, IMPACT_LABEL, IMPACT_SR, impactSrText } from '../../src/data/impactText.ts';
+import { DEFAULT_KEY, GRADES, ROOT, esc, face, fitPair, gradeChip, gradeLine, gradeText, headerLogo, icon, logo, MOCK_TAG, meter, page, reelSpoon, spoon, spoonLineup } from './mockLib.mjs';
 
 const OUT = ROOT + 'docs/design/mockups/';
-const write = (name, html) => writeFileSync(OUT + name, html, 'utf-8');
+/** `--only=<파일이름>`이면 그 시안만 쓴다(다른 시안은 건드리지 않는다 — 한 시안만 다시 만들 때, 예: `--only=economy-m5.html`) */
+const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length) ?? null;
+const write = (name, html) => {
+  if (ONLY === null || ONLY === name) writeFileSync(OUT + name, html, 'utf-8');
+};
 const NAMES_META = JSON.parse(readFileSync(ROOT + 'src/data/names.json', 'utf-8')).meta;
 /** 수저 구간 글자의 단일 출처(R-170): bandLabel(startBandOf(era, wealth)). 시안은 이 함수 출력만 적는다 — 「약 N%」(standingLabel)는 외모·체중·엔딩 도착 자리 전용 */
 const band = (era, wealth) => bandLabel(startBandOf(era, wealth));
@@ -491,7 +501,7 @@ function dashHead({ age, year, progress, paused, pending = false, noteReady = fa
       <span class="year-row__pct num">${progress}%</span></div>
   </div></header>
   <div class="toolbar"><div class="toolbar__inner">
-    <div class="controls-fixed" role="group" aria-label="${T.controlsGroup}">
+    <div class="controls-fixed" role="group" aria-label="${T.controlsGroup}" data-testid="bottom-bar">
       <div class="controls__speed">
         <button class="btn btn--sm" type="button">${icon(paused ? 'play' : 'pause', 'icon--sm')}<span>${paused ? T.play : T.pause}</span></button>
         <button class="btn btn--sm" type="button" aria-pressed="true">1${T.speedUnit}</button><button class="btn btn--sm" type="button">2${T.speedUnit}</button><button class="btn btn--sm" type="button">4${T.speedUnit}</button><button class="btn btn--sm" type="button">8${T.speedUnit}</button>
@@ -535,17 +545,11 @@ function profileCard({ ageGroup, edu }) {
   </dl></section>`;
 }
 
-const statusCard = (v) => `<section class="card stack--sm stack" aria-label="상태"><div class="card__head" style="margin:0"><h2 class="card__title">상태</h2></div>
-  ${meter('health', v[0])}${meter('happy', v[1])}${meter('knowledge', v[2])}${meter('relation', v[3])}
-  <details class="disclosure"><summary>상태 네 가지의 뜻 보기</summary><p>0에서 100 사이의 값입니다. 건강은 몸의 상태, 행복은 마음의 만족, 지식은 배우고 익힌 정도, 관계는 가족·친구와의 유대입니다. 자산은 올해 가치 기준의 원 단위입니다.</p></details></section>`;
+/** 상태 카드 = 구현 StatusCard 출력(M5 2b부터 도움말 제목 「상태와 자산의 뜻 보기」 + 시대별 단위 문장 + 가구 기준 한 문장, copy.md 4-5절 — 손으로 적은 문장 없음, 2026-10-18 r3). 접이식은 닫힌 채(펼친 모습은 economy-m5.html?state=assets) */
+const statusCard = (v) => html(StatusCard, { stats: { health: v[0], happiness: v[1], education: v[2], relationships: v[3] }, era: 'present' });
 
-/** 20세 미만 자산 현황: 문장만. 수저 칩은 두지 않는다(출신 가정은 프로필 카드에만 — C4·R-136 허용 목록, REV-003-D-2 R-170 마스터 결정) */
-const assetsInfant = `<section class="card" aria-label="자산 현황"><h2 class="card__title" style="margin-bottom:var(--sp-2)">자산 현황</h2>
-  <p class="t-sm t-muted">자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.</p></section>`;
-
-const assetsAdult = `<section class="card" aria-label="자산 현황"><div class="card__head" style="margin-bottom:var(--sp-3)"><h2 class="card__title">자산 현황</h2><span class="tag">올해 가치 기준</span></div>
-  <dl class="assets"><div class="assets__row"><dt>순자산</dt><dd class="neg nowrap">−1,200만 원</dd></div><div class="assets__row"><dt>연 소득</dt><dd class="nowrap">3,200만 원</dd></div><div class="assets__row"><dt>부채</dt><dd class="nowrap">4,800만 원</dd></div></dl>
-  <p class="t-xs t-faint" style="margin-top:var(--sp-2)">순자산 = 가진 것 − 부채. 마이너스는 빚이 더 많다는 뜻입니다.</p></section>`;
+/** 자산 현황 = 구현 AssetsCard 출력(copy.md 4-5절, 2026-10-18 r3 — 옛 M4 초안의 「올해 가치 기준」 태그·`.neg` ▼ 접두·「마이너스는 빚이」 주석은 D-32로 폐기). 20세 미만은 문장만(수저 칩 없음 — C4·R-136 허용 목록, R-170 마스터 결정) */
+const assetsCardOf = (age) => (age < 20 ? html(AssetsCard, { age, era: 'present', assets: null }) : econAssets('present', age, { net: -1200, income: 3200, debt: 4800 }));
 
 const logRow = (age, text, extra = '', cls = '') => `<li class="log__row ${cls}"><span class="log__age">${age}세</span><span class="log__text">${text}${extra ? ` <em>${extra}</em>` : ''}</span></li>`;
 // 「나의 기록 · {주제}」 같은 짧은 쌍은 줄바꿈 묶음(Glue)으로 — 「·」가 줄 끝·첫머리에 혼자 남지 않는다(QM2-5·QM2-10, 11-4절)
@@ -588,10 +592,11 @@ function infantSheet() {
       <p>${HERO.name}은 동생을 처음 봤습니다. 부모님의 애정이 줄어든 것처럼 느껴집니다.</p></div>
       <div class="cite"><p class="cite__text">동생이 태어난 뒤 첫째가 관심을 끌려는 행동이나 이전 행동으로 돌아가는 모습을 보이는 일은 흔한 것으로 알려져 있습니다. <span class="t-faint" style="color:inherit;opacity:.8">(시안용 문구)</span></p><p class="cite__src">기관·저자(연도), 자료 이름 · 구현 때 근거 행에서 채움</p></div>
       <div class="choices-list" role="group" aria-label="선택지">
-        <button class="choice" type="button"><span class="choice__no">1</span><span class="choice__body"><span class="choice__label">엄마가 동생을 살피면 운다</span>${impact([['관계', 'down', 1], ['행복', 'up', 1]])}</span></button>
-        <button class="choice" type="button"><span class="choice__no">2</span><span class="choice__body"><span class="choice__label">동생을 예뻐해 준다</span>${impact([['관계', 'up', 2], ['행복', 'down', 1]])}</span></button>
-        <button class="choice" type="button"><span class="choice__no">3</span><span class="choice__body"><span class="choice__label">동생의 장난감을 빼앗는다</span>${impact([['행복', 'up', 1], ['관계', 'down', 2]])}</span></button>
+        ${choiceBtn(1, '엄마가 동생을 살피면 운다', 'relationships:down:1,happiness:up:1')}
+        ${choiceBtn(2, '동생을 예뻐해 준다', 'relationships:up:2,happiness:down:1')}
+        ${choiceBtn(3, '동생의 장난감을 빼앗는다', 'relationships:down:2,happiness:up:1')}
       </div>
+      ${sheetHint()}
       <p class="sheet__hint">자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.</p>
     </div></div></div>`;
 }
@@ -604,11 +609,11 @@ function adultSheet() {
       <p>${HERO.name}은 같은 일터의 동료와 가까워졌습니다. 상대도 싫지 않은 눈치입니다. 통장에는 갚아야 할 대출이 남아 있습니다.</p></div>
       <div class="cite"><p class="cite__text">청년 가구의 상당수가 소득과 주거 비용 때문에 연애와 결혼을 미룬다고 답한 조사가 있습니다. <span style="opacity:.8">(시안용 문구)</span></p><p class="cite__src">기관·저자(연도), 자료 이름 · 구현 때 근거 행에서 채움</p></div>
       <div class="choices-list" role="group" aria-label="선택지">
-        <button class="choice" type="button"><span class="choice__no">1</span><span class="choice__body"><span class="choice__label">연애를 시작한다</span>${impact([['자산', 'down', 2], ['관계', 'up', 2], ['행복', 'up', 1]])}</span></button>
-        <button class="choice" type="button"><span class="choice__no">2</span><span class="choice__body"><span class="choice__label">썸으로 남긴다</span>${impact([['관계', 'up', 1], ['행복', 'down', 1]])}</span></button>
-        <button class="choice" type="button"><span class="choice__no">3</span><span class="choice__body"><span class="choice__label">마음을 접는다</span>${impact([['자산', 'up', 1], ['행복', 'down', 2]])}</span></button>
+        ${choiceBtn(1, '연애를 시작한다', 'assets:down:2,relationships:up:2,happiness:up:1')}
+        ${choiceBtn(2, '썸으로 남긴다', 'relationships:up:1,happiness:down:1')}
+        ${choiceBtn(3, '마음을 접는다', 'assets:up:1,happiness:down:2')}
       </div>
-      <p class="sheet__hint">선택지 아래 글씨는 지금 ${HERO.name}에게 일어날 변화입니다.</p>
+      ${sheetHint()}
     </div></div></div>`;
 }
 
@@ -655,7 +660,7 @@ function dashboardPage(kind, overlay = '', infantAge = 3, { noteReady = false } 
   <div class="col">
     ${profileCard({ ageGroup: infant ? 'toddler' : 'young', edu: infant ? '취학 전' : '대학교 졸업' })}
     ${statusCard(infant ? [82, 70, 38, 61] : [74, 58, 66, 62])}
-    ${infant ? assetsInfant : assetsAdult}
+    ${assetsCardOf(age)}
   </div>
   <div class="col">${logCard(infant ? rowsInfant : rowsAdult, infant ? 0 : 2)}</div>
   <div class="col">
@@ -753,6 +758,178 @@ function endingPage() {
   return page({ title: '수저 게임 · 시안 · 엔딩', body });
 }
 
+// ---------- 5-1. M5 경제 모델: 영향 줄 · 자산 카드 · 최종 순자산 (economy-m5.html, D-35) ----------
+/**
+ * M5 시안(SPEC-003 EC5·DB11, docs/design/copy.md 4절): `?state=`로 상태를 고른다 — choice(기본, 47세 보증 결정) · choice-young(13세, 첫 항목 「집안 살림」) · impact-samples(영향 줄 견본 + 문장 42개) ·
+ * assets(지금 세상, 음수 순자산) · assets-past(지난 세상, 「지금 가치로 환산」 태그) · assets-big(폭 점검 극단값) · ending · ending-past(음수 + 태그) · ending-early(스무 살 전).
+ * 2026-10-18 M5 2b 구현 뒤 손으로 쓰던 파일을 이 생성기로 옮겼다(D-35): 영향 줄·안내 한 줄·자산 카드·상태 도움말·최종 순자산 줄은 **구현의 React 컴포넌트·문구 함수가 만든 마크업 그대로**다
+ * (ImpactLine·ImpactHint·AssetsCard·StatusCard·FinalNetLine·IMPACT_SR) — 손으로 적은 문장이 없다. 상태 고르기·엔딩 머리 바꾸기만 시안 전용 스크립트다.
+ */
+const impactItems = (spec) =>
+  spec.split(',').map((part) => {
+    const [key, direction, steps] = part.split(':');
+    return { key, direction, steps: Number(steps), sr: `${key}.${direction}.${steps}` };
+  });
+const html = (component, props) => renderToStaticMarkup(createElement(component, props));
+const choiceBtn = (n, label, spec, extra = '') =>
+  `<button class="choice" type="button"${extra}><span class="choice__no" aria-hidden="true">${n}</span><span class="choice__body"><span class="choice__label">${esc(label)}</span>${html(ImpactLine, { items: impactItems(spec) })}</span></button>`;
+/** M7b 시트 시안의 안내 한 줄(copy.md 4-4, r2 마스터 결정 3): 구현 IMPACT_HINT 글자 그대로 — 첫 문장 + 기호 설명(aria-hidden) + 스크린리더 대체 글자. 시트는 가운데 정렬 `.sheet__hint` */
+const sheetHint = () => `<p class="sheet__hint">${esc(IMPACT_HINT.lead(HERO.name))} <span aria-hidden="true">${esc(IMPACT_HINT.symbols)}</span><span class="sr-only">${esc(IMPACT_HINT.symbolsSr)}</span></p>`;
+const choiceCard = (title, text, buttons) =>
+  `<section class="card choice-panel" aria-labelledby="choice-title">
+      <span class="choice-panel__kind">${esc(DASH_TEXT.choiceKind)}</span>
+      <h2 id="choice-title" class="choice-panel__title">${esc(title)}</h2>
+      <p>${esc(text)}</p>
+      <div class="choices-list" role="group" aria-label="${esc(DASH_TEXT.choiceGroup)}">
+        ${buttons.join('\n        ')}
+      </div>
+      ${html(ImpactHint, { name: HERO.name })}
+    </section>`;
+/** 상태 카드(구현 StatusCard — 접이식 도움말은 시안에서 펼쳐 보인다) */
+const econStatus = (era, v) => {
+  const card = html(StatusCard, { stats: { health: v[0], happiness: v[1], education: v[2], relationships: v[3] }, era });
+  return card.replace('<details class="disclosure">', '<details class="disclosure" open>');
+};
+const econAssets = (era, age, assets) => html(AssetsCard, { age, era, assets: { incomeAdj: 0, dwelling: 'rent', ...assets } });
+const econEnding = ({ era, birth, death, net, standing, tail }) => {
+  const title = `${HERO.name}${DASH_TEXT.endingTitleSuffix}`;
+  return `<div class="ending__head"><div class="ending__who"><p class="label">생애 기록</p><h1 class="t-title" style="--title-chars:${titleCharsFor(title)}">${esc(title)}</h1><p class="t-muted">${birth} ~ ${death}</p></div></div>
+  <section class="card stack stack--sm ending-stats" aria-labelledby="ending-stats-title"><h2 id="ending-stats-title" class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>
+    ${meter('health', tail[0])}${meter('happy', tail[1])}${meter('knowledge', tail[2])}${meter('relation', tail[3])}
+    ${html(FinalNetLine, { era, net, standing })}
+    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd>${tail[4]} <small>${esc(BIRTH_TEXT.looksSub)}</small></dd></dl>
+  </section>`;
+};
+function economyPage() {
+  const T = DASH_TEXT;
+  const tpl = (id, attrs, inner) => `<template id="s-${id}"${attrs}>\n${inner}\n</template>`;
+  const col = (...parts) => `<div class="col">\n${parts.join('\n')}\n</div>`;
+  const tag = (text) => `<p class="mock-tag">${text}</p>`;
+  const logPlain = (rows) => `<section class="card log" aria-label="${esc(T.logTitle)}"><h2 class="card__title" style="margin-bottom:var(--sp-2)">${esc(T.logTitle)}</h2><ol class="log__list" role="region" aria-label="${esc(T.logTitle)}" tabindex="0">${rows}</ol></section>`;
+  const srList = Object.entries(IMPACT_SR)
+    .map(([key, sentence]) => {
+      const [k, dir, n] = key.split('.');
+      return `<li>${esc(IMPACT_LABEL[k])} ${(dir === 'up' ? '▲' : '▼').repeat(Number(n))} → ${esc(sentence)}</li>`;
+    })
+    .join('');
+  const states = [
+    tpl(
+      'choice',
+      ` data-name="${HERO.name}" data-age="47" data-year="2073"`,
+      col(
+        choiceCard('보증을 서 달라는 부탁', '가까운 지인이 급하게 돈이 필요하다며 보증을 서 달라고 했다. 거절하기 어려운 사이였다.', [
+          choiceBtn(1, '믿고 보증을 선다', 'assets:down:3,debt:up:2,relationships:up:1,happiness:down:2'),
+          choiceBtn(2, '빌려줄 만큼만 빌려준다', 'assets:down:2,relationships:up:1'),
+          choiceBtn(3, '어렵다고 거절한다', 'assets:up:1,relationships:down:2'),
+        ]),
+        logPlain(logRow(44, '아이가 중학교에 들어갔습니다.') + logRow(46, '회사에서 맡는 일이 바뀌었습니다.') + logRow(47, '가까운 지인에게 연락이 왔습니다.', '', 'log__row--latest')),
+        tag('시안 · 가짜 데이터. 영향 칸 수는 economy-model.md 5-D 변환표에서 읽은 예시이고, 구현에서는 previewChoice 출력이 정본입니다. 첫 선택지의 「부채 ▲▲」는 자산이 모자라 자동 대출이 생기는 사람의 모습이고(EC4), 빚이 늘어나는 해로운 변화라 붉은색입니다(r2).'),
+      ),
+    ),
+    tpl(
+      'choice-young',
+      ` data-name="${HERO.name}" data-age="13" data-year="2039"`,
+      col(
+        choiceCard('성적표를 받은 저녁', '성적표를 받은 날 저녁, 식탁에서 공부 이야기가 나왔다. 이번 학기부터 어떻게 할지 정해야 했다.', [
+          choiceBtn(1, '방과 후에 따로 배운다', 'family:down:1,happiness:down:2,education:up:2'),
+          choiceBtn(2, '혼자 공부한다', 'happiness:up:1,education:up:2'),
+        ]),
+        tag('시안 · 가짜 데이터. 20세 미만이라 첫 항목 이름이 「집안 살림」입니다. 이 가정 형편(1단계)에서는 자금 조건이 붙은 셋째 선택지(과외)가 보이지 않습니다(EC4, 따로 안내하지 않는다).'),
+      ),
+    ),
+    tpl(
+      'impact-samples',
+      ` data-name="${HERO.name}" data-age="47" data-year="2073"`,
+      col(
+        `<section class="card stack stack--sm" aria-label="영향 줄 견본">
+      <h2 class="card__title">영향 줄 견본: 항목 1개, 3개, 20세 미만 부채, 6개, 부채 줄어듦, 예비 비활성</h2>
+      <p class="t-sm t-muted">같은 줄에서 이웃한 항목 사이에만 「·」가 보이고, 줄이 접히면 첫머리의 기호는 가려진다. 항목(이름 + 기호)은 한 덩어리라 낱말이 끊기지 않는다. 색은 이로운 쪽은 초록, 해로운 쪽은 붉은색으로 돕는 보조 표시라 부채만 ▲가 붉다.</p>
+      <div class="choices-list" role="group" aria-label="견본 선택지">
+        ${choiceBtn(1, '항목 하나', 'happiness:up:1')}
+        ${choiceBtn(2, '항목 셋 (20세 미만)', 'family:down:3,happiness:down:1,education:up:3')}
+        ${choiceBtn(3, '20세 미만 대학 진학 (집안 살림과 부채가 함께)', 'family:down:1,debt:up:2,education:up:3')}
+        ${choiceBtn(4, '항목 여섯 (가장 긴 경우)', 'assets:down:3,debt:up:3,relationships:down:1,happiness:down:2,health:down:1,education:up:1')}
+        ${choiceBtn(5, '부채가 줄어드는 경우', 'assets:down:1,debt:down:2,happiness:up:1')}
+        ${choiceBtn(6, '(예비) 지속 비활성 선택지', 'assets:down:2,debt:up:1,happiness:up:1', ' aria-disabled="true" data-unavailable="true"')}
+      </div>
+    </section>`,
+        `<section class="card stack stack--sm" aria-label="스크린리더 문장 견본">
+      <h2 class="card__title">읽기 전용 문장 (항목 × 방향 × 칸 수)</h2>
+      <p class="t-sm t-muted">눈에 보이는 「자산 ▼▼▼」 대신 스크린리더는 아래 문장을 듣는다. 전체 줄 = 항목 문장을 공백 한 칸으로 이은 것: 「${esc(impactSrText(impactItems('assets:down:3,debt:up:2,relationships:up:1,happiness:down:2')))}」</p>
+      <ul class="t-sm" id="sr-samples">${srList}</ul>
+    </section>`,
+        tag('시안 · 가짜 데이터'),
+      ),
+    ),
+    tpl(
+      'assets',
+      ` data-name="${HERO.name}" data-age="31" data-year="2057"`,
+      col(econStatus('present', [74, 58, 52, 61]), econAssets('present', 31, { net: -1200, income: 3200, debt: 4800 }), tag('시안 · 가짜 데이터. 지금 세상(태그 없음, 단위와 기준은 상태 도움말이 밝힌다). 음수 순자산은 부호 「−」만 쓰고 「빚」으로 바꿔 쓰지 않는다.')),
+    ),
+    tpl(
+      'assets-past',
+      ` data-name="${HERO.name}" data-age="51" data-year="2006"`,
+      col(econStatus('past', [63, 66, 47, 70]), econAssets('past', 51, { net: 23500, income: 4100, debt: 0 }), tag('시안 · 가짜 데이터. 지난 세상(1955년생): 태그 「지금 가치로 환산」이 금액 묶음 머리에 늘 보이고, 도움말의 단위 문장도 「지금 가치로 환산한」으로 바뀐다. 부채 없음은 「0원」.')),
+    ),
+    tpl(
+      'assets-big',
+      ` data-name="${HERO.name}" data-age="64" data-year="2090"`,
+      col(econAssets('present', 64, { net: -199999, income: 12000, debt: 324500 }), tag('시안 · 가짜 데이터. 폭 점검용 극단값(3-1절 범위의 끝 −20억). 글자 200% × 폭 320에서 금액 글자 크기가 sm까지 내려가 한 덩어리가 칸에 든다.')),
+    ),
+    tpl(
+      'ending',
+      ` data-main-class="ending" data-chrome="ending"`,
+      `${econEnding({ era: 'present', birth: '2026년 1월 ~ 2110년 · 84세', death: '', net: 12345, standing: END_STANDING, tail: [41, 72, 55, 63, '상위 약 32%'] })}
+  ${tag('시안 · 가짜 데이터. 엔딩에서 M5가 바꾸는 것은 이 「최종 순자산」 한 줄(M4 「재산」 미터 자리)뿐이다. 나머지 엔딩 디자인은 M7e.')}`,
+    ),
+    tpl(
+      'ending-past',
+      ` data-main-class="ending" data-chrome="ending"`,
+      `${econEnding({ era: 'past', birth: '1955년 3월 ~ 2031년 · 76세', death: '', net: -1200, standing: { kind: 'bottom', percent: 12, within: false }, tail: [22, 48, 39, 57, '하위 약 41%'] })}
+  ${tag('시안 · 가짜 데이터. 지난 세상, 음수: 부호 「−」와 태그 「지금 가치로 환산」, 자리는 같은 세상(지난 세상) 분포 안의 자리.')}`,
+    ),
+    tpl(
+      'ending-early',
+      ` data-main-class="ending" data-chrome="ending"`,
+      `${econEnding({ era: 'present', birth: '2026년 1월 ~ 2043년 · 17세', death: '', net: null, standing: null, tail: [18, 54, 46, 60, '딱 중간쯤'] })}
+  ${tag('시안 · 가짜 데이터. 스무 살 전에 끝난 인생: 금액도 자리도 말하지 않는다.')}`,
+    ),
+  ].join('\n\n');
+  const script = `<script>
+/* 시안 전용: ?state= 로 고른 본문을 <main>에 끼운다(구현은 React 화면). 엔딩 상태는 대시보드 머리·도구 줄 대신 공통 헤더(.site-head)를 둔다. */
+(function () {
+  var q = new URLSearchParams(location.search); var s = q.get('state') || 'choice';
+  var t = document.getElementById('s-' + s) || document.getElementById('s-choice');
+  var main = document.getElementById('m5-main');
+  main.appendChild(t.content.cloneNode(true));
+  main.className = t.getAttribute('data-main-class') || 'dash';
+  document.documentElement.setAttribute('data-state', s);
+  var head = document.querySelector('.dash-head'), bar = document.querySelector('.toolbar');
+  if (t.getAttribute('data-chrome') === 'ending') {
+    head.style.display = 'none'; bar.style.display = 'none'; document.querySelector('.page-end-space').style.display = 'none';
+    var logo = head.querySelector('svg.logo').cloneNode(true);
+    var sh = document.createElement('header'); sh.className = 'site-head'; sh.appendChild(logo);
+    var nm = document.createElement('span'); nm.className = 'site-head__name'; nm.textContent = '엔딩'; sh.appendChild(nm);
+    main.parentNode.insertBefore(sh, main);
+    document.body.classList.remove('is-dash');
+  } else {
+    head.querySelector('.who__name').textContent = t.getAttribute('data-name');
+    head.querySelector('.who__age b').textContent = t.getAttribute('data-age');
+    head.querySelector('.year-row .num').textContent = t.getAttribute('data-year') + '년';
+  }
+})();
+</script>`;
+  const body = `${dashHead({ age: 31, year: 2057, progress: 38, paused: true, pending: true })}
+<main class="dash" id="m5-main"></main>
+<div class="page-end-space"></div>
+
+<!-- ===== 상태별 본문 (?state=choice | choice-young | impact-samples | assets | assets-past | assets-big | ending | ending-past | ending-early). 기본은 choice. 영향 줄·카드는 구현 컴포넌트가 만든 마크업이다 ===== -->
+${states}
+
+${script}`;
+  return page({ title: '수저 게임 · 시안 · M5 경제 모델 (영향 줄 · 자산 카드 · 최종 순자산)', body, bodyClass: 'is-dash' });
+}
+
 // ---------- 6. 컴포넌트 갤러리 ----------
 const TOKENS = {
   '바탕·면': ['--c-bg', '--c-surface', '--c-surface-2', '--c-border', '--c-border-strong'],
@@ -784,7 +961,7 @@ function componentsPage() {
     <p class="t-sm t-muted" style="margin-top:var(--sp-2)">실제 픽셀 크기(DPR 1) 시트: <code>screens/003/spoon-sizes-dpr1.png</code>.</p></section>
   <section><h2>선택 카드 / 라디오</h2><div class="choices choices--2">${radioCard({ name: 'x', title: '선택됨', desc: '두꺼운 테두리 + 체크 + 옅은 면', selected: true })}${radioCard({ name: 'x', title: '선택 안 됨', desc: '얇은 테두리, 체크 없음' })}</div></section>
   <section><h2>상태 바 · 진행률</h2><div class="card stack--sm stack" style="max-width:420px">${meter('health', 82)}${meter('happy', 70)}${meter('knowledge', 38)}${meter('relation', 61)}<div class="year-row"><span class="num">2029년</span><div class="year-progress"><div class="year-progress__fill" style="width:62%"></div></div><span class="year-row__pct num">62%</span></div></div></section>
-  <section><h2>영향 표기</h2><div class="stack--sm stack">${impact([['자산', 'down', 2], ['행복', 'up', 1]])}${impact([['관계', 'up', 3], ['건강', 'down', 1], ['지식', 'up', 2]])}</div></section>
+  <section><h2>영향 표기</h2><p class="t-sm t-muted">구현 ImpactLine 출력(M5, copy.md 4절): 항목은 한 덩어리, 「·」는 CSS, 색은 이로움(초록)·해로움(붉음) — 부채만 ▲가 붉다.</p><div class="stack--sm stack">${html(ImpactLine, { items: impactItems('assets:down:2,happiness:up:1') })}${html(ImpactLine, { items: impactItems('relationships:up:3,health:down:1,education:up:2') })}${html(ImpactLine, { items: impactItems('assets:down:3,debt:up:2,happiness:down:1') })}${html(ImpactLine, { items: impactItems('family:down:1,education:up:2') })}</div></section>
   <section><h2>표 · 입력 · 토글</h2><div class="row row--wrap" style="align-items:flex-start;gap:var(--sp-6)">
     <div style="min-width:280px;flex:1"><table class="table"><thead><tr><th>항목</th><th class="num">올해 출생아 평균</th><th class="num">이 아이</th></tr></thead><tbody><tr><th scope="row">기대수명</th><td class="num">84.0세</td><td class="num"><strong>81.2세</strong></td></tr><tr><th scope="row">대학 진학률</th><td class="num">73%</td><td class="num"><strong>58%</strong></td></tr></tbody></table></div>
     <div style="min-width:240px;flex:1" class="stack--sm stack"><div class="field"><label class="label" for="c1">기록</label><textarea id="c1" class="field__input" rows="2">입력란은 2px 강한 테두리</textarea><div class="field__hint"><span>안내 문구</span><span class="num">13/140</span></div></div>
@@ -907,6 +1084,7 @@ write('decision-adult.html', dashboardPage('adult', adultSheet()));
 write('note.html', dashboardPage('infant', noteSheet(), 5, { noteReady: true })); // M7c 목표 모습: 자유 기록 카드가 떠 있으므로 도구 줄의 「생각 남기기」는 보통 버튼
 write('ending.html', endingPage());
 write('components.html', componentsPage());
+write('economy-m5.html', economyPage());
 write('symbols.html', symbolsPage());
 write('faces.html', faceSheetPage(false));
 write('faces-all.html', faceSheetPage(true));

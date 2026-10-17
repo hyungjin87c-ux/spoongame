@@ -27,8 +27,9 @@ import {
   createRng,
   createSession,
   deathChance,
+  economyContextOf,
   educationGrowthPerYear,
-  independenceWealth,
+  initialAssets,
   isValidStat,
   loadGame,
   maxAgeOf,
@@ -75,7 +76,7 @@ const choiceEvent = (over: Record<string, unknown> = {}) => ({
   weight: 10,
   once: true,
   choices: [
-    { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { wealth: 3, happiness: -2 }, setFlags: ['picked_a'] } },
+    { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { happiness: -2 }, family: 450, setFlags: ['picked_a'] } },
     { id: 'b', label: '둘째', result: '둘째를 골랐다. 결과 문장.', effects: { stats: { happiness: 4 } } },
   ],
   ...over,
@@ -118,11 +119,11 @@ describe('스탯 범위 정책 (한 곳: core/stats.ts, R-024)', () => {
   });
 
   it('applyStatDeltas: 더한 뒤 범위로 자른다(원본은 그대로), 적지 않은 스탯은 그대로', () => {
-    const base = { wealth: 95, education: 3, health: 50, happiness: 50, relationships: 50 };
-    const out = applyStatDeltas(base, { wealth: 20, education: -10, health: 7 });
-    expect(out).toEqual({ wealth: 100, education: 0, health: 57, happiness: 50, relationships: 50 });
-    expect(base.wealth).toBe(95);
-    expect(addDeltas({ wealth: 2 }, { wealth: 3, health: -1 })).toEqual({ wealth: 5, health: -1 });
+    const base = { education: 95, health: 3, happiness: 50, relationships: 50 };
+    const out = applyStatDeltas(base, { education: 20, health: -10, happiness: 7 });
+    expect(out).toEqual({ education: 100, health: 0, happiness: 57, relationships: 50 });
+    expect(base.education).toBe(95);
+    expect(addDeltas({ education: 2 }, { education: 3, health: -1 })).toEqual({ education: 5, health: -1 });
   });
 
   it('범위 숫자(0·100)를 직접 쓰는 곳은 stats.ts 하나뿐이다: 진행 로직 소스가 clamp를 직접 구현하지 않는다', () => {
@@ -250,7 +251,7 @@ describe('선택지 이벤트: 대기 → 선택 → 효과·연표·플래그',
       ageRange: { min: 0, max: 6 },
       weight: 100,
       choices: [
-        { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { wealth: 3, happiness: -2 }, setFlags: ['picked_a'] } },
+        { id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.', effects: { stats: { happiness: -2 }, family: 450, setFlags: ['picked_a'] } },
         { id: 'b', label: '둘째', result: '둘째를 골랐다. 결과 문장.', effects: { stats: { happiness: 4 } } },
         {
           id: 'c',
@@ -297,8 +298,9 @@ describe('선택지 이벤트: 대기 → 선택 → 효과·연표·플래그',
     expect(r.tick).toMatchObject({ kind: 'resolved', eventId: 'c-event', fromAge: d.age });
     const entry = s.history[s.history.length - 1];
     expect(entry).toMatchObject({ kind: 'choice', eventId: 'c-event', age: d.age, title: '선택', choice: '첫째', text: '첫째를 골랐다. 결과 문장.' });
-    // 재산 +3, 행복 -2 (나이를 한 해 먹으며 자연 변화도 있으므로 방향만 확인)
-    expect(s.stats.wealth).toBeGreaterThanOrEqual(d.stats.wealth + 3);
+    // 집안 살림 +450(20세 미만의 돈 — 자산이 아니라 집안 살림에 쌓인다), 행복 -2
+    expect(s.familyFund).toBe(d.familyFund + 450);
+    expect(s.assets).toBeNull();
     expect(s.stats.happiness).toBe(d.stats.happiness - 2);
   });
 
@@ -490,7 +492,7 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
   const c = (parentWealth: Character['parentWealth'], parenting: Character['parenting']): Character => ({
     name: '김민준', gender: 'male', birthYear: 2012, parentWealth, parenting, looks: 50,
   });
-  const st = { wealth: 50, education: 50, health: 50, happiness: 50, relationships: 50 };
+  const st = { education: 50, health: 50, happiness: 50, relationships: 50 };
 
   it('학창기 연간 학력 증가: 재력·교육방식 표를 직접 적은 값과 같다 (기본 2 + 재력 보정 + 방식 보정, 1~4로 자름)', () => {
     // 재력 보정 [-1, 0, 0, +1, +1], 방식 보정 {방임 -1, 자유 0, 헬리콥터 +1, 엄격 +1}
@@ -518,7 +520,7 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
     expect(naturalDeltas(82, c(3, 'free'), st, 'present').health).toBe(-2);
   });
 
-  it('청년·중년: 건강은 간격을 두고 조금씩 줄고, 재산은 학력이 높을수록 자주 늘어난다', () => {
+  it('청년·중년: 건강은 간격을 두고 조금씩 줄어든다 (재산은 자연 변화가 아니라 자산 정산이 맡는다 — tests/economy.test.ts)', () => {
     expect(naturalDeltas(30, c(3, 'free'), st, 'present').health).toBe(-1);
     expect(naturalDeltas(31, c(3, 'free'), st, 'present').health).toBeUndefined();
     expect(naturalDeltas(35, c(3, 'free'), st, 'present').health).toBe(-1);
@@ -526,33 +528,17 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
     expect(naturalDeltas(40, c(3, 'free'), st, 'present').health).toBe(-1);
     expect(naturalDeltas(41, c(3, 'free'), st, 'present').health).toBeUndefined();
     expect(naturalDeltas(43, c(3, 'free'), st, 'present').health).toBe(-1);
-    // 청년기 소득 간격: 학력 70 이상 2년, 40 이상 3년, 그 미만 6년마다 +1
-    expect(naturalDeltas(22, c(3, 'free'), { ...st, education: 80 }, 'present').wealth).toBe(1);
-    expect(naturalDeltas(23, c(3, 'free'), { ...st, education: 80 }, 'present').wealth).toBeUndefined();
-    expect(naturalDeltas(24, c(3, 'free'), { ...st, education: 50 }, 'present').wealth).toBe(1);
-    expect(naturalDeltas(22, c(3, 'free'), { ...st, education: 50 }, 'present').wealth).toBeUndefined();
-    expect(naturalDeltas(25, c(3, 'free'), { ...st, education: 10 }, 'present').wealth).toBeUndefined();
-    expect(naturalDeltas(24, c(3, 'free'), { ...st, education: 10 }, 'present').wealth).toBe(1); // 24는 6의 배수
-    expect(naturalDeltas(27, c(3, 'free'), { ...st, education: 10 }, 'present').wealth).toBeUndefined();
   });
 
-  it('노년 생활비: 물가(priceIndex)가 높은 시대일수록 재산이 더 자주 줄어든다 (지난 13년 / 지금 4년 / 다가올 3년마다 -1)', () => {
-    const wealthDeltaAges = (era: Era) => Array.from({ length: 36 }, (_, i) => 65 + i).filter((age) => naturalDeltas(age, c(3, 'free'), st, era).wealth === -1);
-    expect(wealthDeltaAges('present').every((a) => a % 4 === 0)).toBe(true);
-    expect(wealthDeltaAges('future').every((a) => a % 3 === 0)).toBe(true);
-    expect(wealthDeltaAges('past').every((a) => a % 13 === 0)).toBe(true);
-    expect(wealthDeltaAges('future').length).toBeGreaterThan(wealthDeltaAges('present').length);
-    expect(wealthDeltaAges('present').length).toBeGreaterThan(wealthDeltaAges('past').length);
+  it('재산 스탯은 없다: 어떤 나이·시대·학력에서도 자연 변화에 재산(wealth) 항목이 없다 (SPEC-003 M5 — 청년기 소득 간격·노년 생활비는 자산 정산으로 옮겨 갔다)', () => {
+    for (const era of ERAS) {
+      for (let age = 0; age <= 110; age++) {
+        for (const education of [10, 50, 80]) expect(Object.keys(naturalDeltas(age, c(3, 'free'), { ...st, education }, era)), `${era} ${age}세`).not.toContain('wealth');
+      }
+    }
   });
 
-  it('독립(20세): 재산이 집안 형편에서 내가 가진 것으로 바뀐다 — 직접 적은 값과 같다', () => {
-    expect(independenceWealth(92, 60)).toBe(68); // 0.5×92 + 0.2×60 + 10
-    expect(independenceWealth(8, 40)).toBe(22); // 4 + 8 + 10
-    expect(independenceWealth(0, 0)).toBe(10);
-    expect(independenceWealth(100, 100)).toBe(80);
-  });
-
-  it('이벤트 없는 풀에서 단계 진입 문구가 7·20·40·65세에 한 번씩 남고, 20세에 독립 변환이 정확히 한 번 일어난다', () => {
+  it('이벤트 없는 풀에서 단계 진입 문구가 7·20·40·65세에 한 번씩 남고, 20세에 독립(자산 생성)이 정확히 한 번 일어난다', () => {
     let checked = 0;
     for (let seed = 1; seed <= 300 && checked < 3; seed++) {
       const start = life(seed, 'future');
@@ -567,8 +553,8 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
       checked++;
       const stageLines = s.history.filter((h) => h.kind === 'stage');
       expect(stageLines.map((h) => h.age)).toEqual([0, 7, 20, 40, 65]);
-      // 19세 마지막 해의 자연 변화가 끝난 직후 독립 변환이 적용된 값
-      const after19 = applyStatDeltas(before20.stats, naturalDeltas(19, before20.character!, before20.stats, 'future'));
+      // 19세까지는 자산이 없고(집안 살림만 있다) 20세에 처음 생긴다
+      expect(before20.assets).toBeNull();
       const at20 = [...s.history].find((h) => h.kind === 'stage' && h.age === 20);
       expect(at20).toBeDefined();
       const state20 = (() => {
@@ -576,7 +562,9 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
         while (t.age < 20) t = advanceYear(t, EMPTY_POOL);
         return t;
       })();
-      expect(state20.stats.wealth).toBe(independenceWealth(after19.wealth, after19.education));
+      // 독립 때 집안 살림은 시작 자산에 합쳐지고 0이 된다 (M-1, economy-model.md 3-3) — 이벤트 없는 풀이라 집안 살림이 쌓이지 않았다
+      expect(state20.familyFund).toBe(0);
+      expect(state20.assets).toEqual(initialAssets(economyContextOf(state20), before20.familyFund));
     }
     expect(checked).toBeGreaterThan(0);
   });
