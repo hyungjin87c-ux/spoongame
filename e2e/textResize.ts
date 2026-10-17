@@ -66,10 +66,18 @@ export async function measureTextResize(page: Page): Promise<TextResizeMeasure> 
       const t = el.getAttribute('data-testid');
       return `${el.tagName}${cls}${t ? `#${t}` : ''}`;
     };
+    // 시각적으로 숨긴 표 머리글처럼 `position: absolute` + `clip: rect(0,0,0,0)`로 1px에 접은 요소(와 그 안쪽)도 `sr-only`와 같이 뺀다 (M3 출생신고의 비교 표 머리글)
+    const clipHidden = (el: Element): boolean => {
+      for (let cur: Element | null = el; cur !== null && cur !== document.body; cur = cur.parentElement) {
+        const c = getComputedStyle(cur);
+        if (c.position === 'absolute' && /^rect\(0(px)?,? ?0(px)?,? ?0(px)?,? ?0(px)?\)$/.test(c.clip)) return true;
+      }
+      return false;
+    };
     const skip = (el: Element): boolean => {
       if (el.closest('.sprite, .sr-only, [aria-hidden="true"] defs')) return true;
       const cs = getComputedStyle(el);
-      return cs.visibility === 'hidden' || cs.display === 'none';
+      return cs.visibility === 'hidden' || cs.display === 'none' || clipHidden(el);
     };
     const offenders: string[] = [];
     const clipped: string[] = [];
@@ -116,7 +124,8 @@ export async function measureTextResize(page: Page): Promise<TextResizeMeasure> 
     }
     const barEl = document.querySelector('[data-testid="bottom-bar"]');
     const barFixed = barEl !== null && ['fixed', 'sticky'].includes(getComputedStyle(barEl).position);
-    const footEl = document.querySelector('[data-testid="title-foot"]');
+    // 본문 마지막 줄: 첫 화면은 푸터(title-foot), 룰렛·출생신고(M3)는 하단 안내(page-foot)
+    const footEl = document.querySelector('[data-testid="title-foot"], [data-testid="page-foot"]');
     const scrollY = window.scrollY;
     const barRect = barEl?.getBoundingClientRect();
     const bar =

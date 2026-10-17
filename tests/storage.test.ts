@@ -29,6 +29,7 @@ import {
   type GameState,
   type StorageLike,
 } from '../src/core';
+import { PEER_SEED, report } from '../e2e/saves';
 
 function memoryStorage(): StorageLike & { map: Map<string, string> } {
   const map = new Map<string, string>();
@@ -61,7 +62,7 @@ function richState(): GameState {
     character: {
       name: '김서연',
       gender: 'female',
-      birthYear: 2012, // 지금 세상 출생 연도 범위(2008~2025) 안
+      birthYear: 2026, // 지금 세상 출생 연도(2026 고정, SPEC-003 Q1)
       parentWealth: 3,
       parenting: 'helicopter',
       looks: 71,
@@ -72,6 +73,8 @@ function richState(): GameState {
     history: [{ age: 7, kind: 'stage', text: '학교에 들어갈 나이가 되었다.' }],
     flags: ['college'],
     seen: { 'school-friend': 10 },
+    birthReport: report(), // v6: 출생신고 상세(룰렛 이후 모든 단계에 있다) — e2e 주입용 유효한 값(e2e/saves.ts#report)
+    peerSeed: PEER_SEED,
   };
 }
 
@@ -89,9 +92,9 @@ describe('초기 상태', () => {
     expect(PHASES).toContain(s.phase);
   });
 
-  it('화면 단계에 시대 선택(eraSelect)이 없다: title → birth → life → ending (SPEC-003 FS1, 룰렛은 M3)', () => {
-    expect([...PHASES]).toEqual(['title', 'birth', 'life', 'ending']);
-    expect(beginBirth(createInitialState(1)).phase).toBe('birth');
+  it('화면 단계에 시대 선택(eraSelect)이 없다: title → roulette → birth → life → ending (SPEC-003 FS1, M3에서 룰렛이 더해졌다)', () => {
+    expect([...PHASES]).toEqual(['title', 'roulette', 'birth', 'life', 'ending']);
+    expect(beginBirth(createInitialState(1)).phase).toBe('roulette');
   });
 });
 
@@ -235,7 +238,10 @@ describe('손상 데이터 복구', () => {
     // R-012: 지금 세상 출생 연도 범위가 1990~2025 → 2008~2025로 바뀌었다
     '정합성: 지금 세상인데 2007년생(새 범위 밖)': withData((d) => (d.character.birthYear = 2007)),
     '정합성: 지금 세상인데 1995년생(구 범위에서는 유효)': withData((d) => (d.character.birthYear = 1995)),
-    '정합성: 지금 세상인데 2026년생': withData((d) => (d.character.birthYear = 2026)),
+    // R-213(M3): 지금 세상 출생 연도가 2026 한 해로 고정됐다 — M2 시기의 2008~2025년생은 범위 밖이다(스키마 v6이라 v5 저장은 아예 읽지 않지만 같은 규칙을 검증기도 지킨다)
+    '정합성: 지금 세상인데 2025년생(M2 시기 범위의 끝, 2026 고정 뒤에는 범위 밖)': withData((d) => (d.character.birthYear = 2025)),
+    '정합성: 지금 세상인데 2008년생(M2 시기 범위의 처음)': withData((d) => (d.character.birthYear = 2008)),
+    '정합성: 지금 세상인데 2027년생': withData((d) => (d.character.birthYear = 2027)),
     '정합성: 지난 세상인데 1990년생': withData((d) => {
       d.era = 'past';
       d.character.birthYear = 1990;
@@ -288,12 +294,11 @@ describe('손상 데이터 복구', () => {
     }
   });
 
-  it('시대별 출생 연도 경계는 통과: 지난 1950·1989 / 지금 2008·2025 / 다가올 2030·2060 (R-012)', () => {
+  it('시대별 출생 연도 경계는 통과: 지난 1950·1989 / 지금 2026(한 해뿐) / 다가올 2030·2060 (R-012, SPEC-003 Q1)', () => {
     const cases: Array<[string, number]> = [
       ['past', 1950],
       ['past', 1989],
-      ['present', 2008],
-      ['present', 2025],
+      ['present', 2026],
       ['future', 2030],
       ['future', 2060],
     ];
@@ -310,13 +315,26 @@ describe('손상 데이터 복구', () => {
     }
   });
 
-  it('스키마 버전은 5이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이)', () => {
-    expect(SCHEMA_VERSION).toBe(5);
-    expect(JSON.parse(serializeGame(richState())).version).toBe(5);
+  it('스키마 버전은 6이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이 / 6: 개편 M3 — 룰렛 단계·출생신고 상세·또래 시드, 지금 세상 2026 고정)', () => {
+    expect(SCHEMA_VERSION).toBe(6);
+    expect(JSON.parse(serializeGame(richState())).version).toBe(6);
+  });
+
+  it('M2 시기의 v5 저장(지금 세상 2008~2025년생)은 「손상」이 아니라 이전 버전으로 분류되어 새 게임으로 시작하고 안내가 필요하다 (REV-003-M2-1 R-213, C6)', () => {
+    const v5Life = JSON.stringify({ version: 5, data: { ...richState(), character: { ...richState().character, birthYear: 2012 }, birthReport: undefined, peerSeed: undefined } });
+    expect(parseGame(v5Life), 'v5는 읽지 않는다').toBeNull();
+    expect(classifySavedGame(v5Life), '진행한 판이 있던 이전 버전').toBe('old-version');
+    const v5Birth = JSON.stringify({ version: 5, data: { ...createInitialState(5), phase: 'birth' } });
+    expect(classifySavedGame(v5Birth)).toBe('old-version');
+    // 진행 전(첫 화면)이던 v5 저장은 잃은 것이 없어 안내하지 않는다
+    expect(classifySavedGame(JSON.stringify({ version: 5, data: createInitialState(5) }))).toBe('old-version-empty');
+    // 지금 버전(v6)의 같은 인물이 2012년생이면 손상이다(안내 대상이 아니라 broken)
+    const broken = JSON.stringify({ version: 6, data: { ...richState(), character: { ...richState().character, birthYear: 2012 } } });
+    expect(classifySavedGame(broken)).toBe('broken');
   });
 
   it('v4 이하 저장은 새 게임으로 시작한다 (C6) — 같은 모양이어도 버전이 낮으면 읽지 않는다', () => {
-    for (const version of [1, 2, 3, 4]) {
+    for (const version of [1, 2, 3, 4, 5]) {
       const raw = JSON.stringify({ version, data: createInitialState(5) });
       expect(parseGame(raw), `v${version}`).toBeNull();
       // 진행 전(title)이던 이전 버전 저장은 잃은 것이 없어 안내하지 않는다(R-214) — 안내가 필요한 저장은 아래 「진행한 판이 있던」 항목
@@ -347,7 +365,7 @@ describe('손상 데이터 복구', () => {
     expect(classifySavedGame(JSON.stringify({ version: 4, data: null }))).toBe('old-version');
     // 지금 버전의 저장은 단계와 무관하게 valid, 미래 버전은 broken
     expect(classifySavedGame(serializeGame(createInitialState(2)))).toBe('valid');
-    expect(classifySavedGame(JSON.stringify({ version: 6, data: createInitialState(2) }))).toBe('broken');
+    expect(classifySavedGame(JSON.stringify({ version: SCHEMA_VERSION + 1, data: createInitialState(2) }))).toBe('broken');
   });
 
   it('classifySavedGame: 없음 / 지금 버전 / 이전 버전 / 손상', () => {

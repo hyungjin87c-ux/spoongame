@@ -12,7 +12,7 @@ import { DEFAULT_ERA_CHOICE, DEFAULT_LIFE_LENGTH_CHOICE, GAME_KEY, SAVE_VERSION,
  * 키·버전이 core와 어긋나지 않는지는 tests/e2eHelpers.test.ts가 vitest에서 대조한다.
  */
 
-export { GAME_KEY, KNOWN_SEED, SAVE_VERSION, SETTINGS_KEY, SETTINGS_VERSION, birthState, lifeState, settingsEnvelope, titleState, type InjectedSettings } from './saves';
+export { GAME_KEY, KNOWN_SEED, PEER_SEED, SAVE_VERSION, SETTINGS_KEY, SETTINGS_VERSION, birthState, lifeState, report, rouletteState, settingsEnvelope, titleState, type InjectedSettings } from './saves';
 
 /**
  * 이 페이지의 앱이 더 이상 저장하지 않게 한다: "다른 탭이 저장을 바꿨다"는 storage 이벤트를 흉내 낸다(R-011 동작).
@@ -93,8 +93,10 @@ export async function noHorizontalOverflow(page: Page): Promise<boolean> {
 }
 
 export interface BirthOracle {
-  /** 주입한 상태에 core의 beginBirth를 정확히 한 번 적용한 결과 */
+  /** 주입한 상태에 core의 beginBirth를 정확히 한 번 적용한 결과 = 「태어나기」 직후의 저장(룰렛 단계, 출생 결과가 이미 확정돼 있다) */
   once: GameState;
+  /** once에 enterBirth를 적용한 결과 = 「출생신고 보기」 뒤의 저장(출생 단계). 출생 결과는 once와 같다. */
+  born: GameState;
   /** 만약 한 번 더 뽑았다면 나왔을 인물 — 1회/2회를 가르는 판별력 확인용 */
   second: Character;
 }
@@ -108,8 +110,9 @@ export async function expectedBirth(page: Page, before: GameState, era: Era = DE
     const core = await import('/src/core/index.ts');
     const before = ${JSON.stringify(before)};
     const once = core.beginBirth(before, ${JSON.stringify(era)}, ${JSON.stringify(lifeLength)});
+    const born = core.enterBirth(once);
     const second = core.generateBirth(core.createRng(once.rngState), once.era).character;
-    return { once, second };
+    return { once, born, second };
   })()`);
 }
 
@@ -139,6 +142,45 @@ export async function pressBegin(page: Page): Promise<void> {
   const begin = page.getByTestId('start-birth');
   await expect(begin).toBeEnabled();
   await begin.click();
+}
+
+/**
+ * 룰렛 화면에서 「건너뛰기」를 눌러 결과 상태로 간다(연출은 4~6초라 흐름 테스트는 건너뛴다. 연출 자체는 e2e/roulette.spec.ts가 본다).
+ * 회전 중이 아니면(움직임 줄이기·복원) 이미 결과 상태이므로 아무것도 누르지 않는다.
+ */
+export async function skipRoulette(page: Page): Promise<void> {
+  const roulette = page.getByTestId('roulette-screen');
+  await expect(roulette).toBeVisible();
+  if ((await roulette.getAttribute('data-state')) === 'spinning') {
+    const skip = page.getByTestId('skip-roulette');
+    await expect(skip).toBeEnabled(); // 화면 진입 입력 가드가 풀린 뒤
+    await skip.click();
+  }
+  await expect(roulette).toHaveAttribute('data-state', 'result');
+}
+
+/** 룰렛 결과 화면의 「출생신고 보기」 (진입 가드가 풀릴 때까지 기다린 뒤 누른다) */
+export async function toBirthReport(page: Page): Promise<void> {
+  const next = page.getByTestId('to-birth');
+  await expect(next).toBeEnabled();
+  await next.click();
+  await expect(page.getByTestId('birth-screen')).toBeVisible();
+}
+
+/** 첫 화면 「태어나기」 → 룰렛 건너뛰기 → 「출생신고 보기」: 출생신고 화면까지 간다 */
+export async function pressBeginToBirth(page: Page): Promise<void> {
+  await pressBegin(page);
+  await skipRoulette(page);
+  await toBirthReport(page);
+}
+
+/** 첫 화면 「태어나기」 → 룰렛 → 출생신고 → 「살아가기」: 인생 화면까지 간다 */
+export async function pressBeginToLife(page: Page): Promise<void> {
+  await pressBeginToBirth(page);
+  const live = page.getByTestId('next-life');
+  await expect(live).toBeEnabled();
+  await live.click();
+  await expect(page.getByTestId('life-screen')).toBeVisible();
 }
 
 /** 사람의 더블클릭·연타에 해당하는 입력 방식 */
@@ -272,7 +314,7 @@ export async function evalCore<T>(page: Page, body: string, arg: unknown = null)
 export async function oracleLife(page: Page, seed: number, era: Era): Promise<GameState> {
   return evalCore<GameState>(
     page,
-    'return core.enterLife(core.beginBirth(core.createInitialState(arg.seed), arg.era));',
+    'return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), arg.era)));',
     { seed, era },
   );
 }
@@ -295,7 +337,7 @@ export async function findPendingState(page: Page, era: Era, opts: { minChoices?
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = arg.from; seed < arg.from + 400; seed++) {
-       const start = core.enterLife(core.beginBirth(core.createInitialState(seed), arg.era));
+       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), arg.era)));
        const s = core.advanceUntilDecision(start).state;
        if (s.phase === 'life' && s.pending && s.pending.choiceIds.length >= arg.min) return s;
      }

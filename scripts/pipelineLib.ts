@@ -1,16 +1,20 @@
 import namesJson from '../src/data/names.json';
 import forbiddenJson from '../src/data/forbiddenNames.json';
 import scourtJson from '../src/data/sources/scourt-birth-names.json';
+import statsJson from '../src/data/koreaStats.json';
 import {
   DEFAULT_SETTINGS,
   ERAS,
   STAT_KEYS,
+  birthSentence,
+  buildRoulette,
   createInitialState,
   createRng,
   createSession,
   estimatePlaySeconds,
   maxAgeOf,
   parseGame,
+  peersOf,
   playToEnd,
   reviewEnding,
   serializeGame,
@@ -38,7 +42,7 @@ import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
  * 1000판 전체 파이프라인 (SPEC-001 M6 "1000판 자동 시뮬레이션에서 에러 0건").  테스트(tests/pipeline.test.ts)와 `npm run sim:1000`(scripts/simulate1000.ts)이 함께 쓴다.
  *
  * 한 판 = 화면(UI)이 쓰는 **세션 reducer**(core/session.ts#sessionReducer)로 사람이 누르는 순서 그대로 끝까지 간다:
- *   첫 화면(타이틀) → 세상·인생 길이 고르기 → 태어나기(출생) → 인생 시작 → [한 해씩 진행 / 다음 결정으로 / 선택 / 자동 선택] → 사망(엔딩) → 엔딩 회고(reviewEnding) → 다시 태어나기 → 새 판 출생·첫 결정까지
+ *   첫 화면(타이틀) → 세상·인생 길이 고르기 → 태어나기(출생 결과 확정·룰렛) → 출생신고 보기(건너뛰기 포함) → 살아가기(인생 시작) → [한 해씩 진행 / 다음 결정으로 / 선택 / 자동 선택] → 사망(엔딩) → 엔딩 회고(reviewEnding) → 다시 태어나기 → 새 판 출생·첫 결정까지
  * 선택 전략 두 가지: auto = 자동 모드(한 해씩 진행 + 성향 자동 선택), manual = 수동 흉내(무작위 선택, 한 해씩 진행과 "다음 결정으로"를 섞어 쓴다).
  * 난수는 시드 RNG뿐이다(Math.random·Date 없음) — 같은 인자면 같은 판이 나온다.
  *
@@ -54,7 +58,7 @@ export const PIPELINE_STRATEGIES: readonly PipelineStrategy[] = ['auto', 'manual
 /** SPEC '시대 선택': 시대별 출생 연도 (구현이 읽는 ERA_CONFIG 표가 아니라 SPEC의 리터럴) */
 export const EXPECTED_BIRTH_YEARS: Record<Era, { min: number; max: number }> = {
   past: { min: 1950, max: 1989 },
-  present: { min: 2008, max: 2025 },
+  present: { min: 2026, max: 2026 }, // 올해(2026) 출생 고정 (SPEC-003 Q1)
   future: { min: 2030, max: 2060 },
 };
 
@@ -77,10 +81,56 @@ export function allowedGiven(birthYear: number, gender: Gender): string[] | null
     const d = names.decades[String(Math.floor(birthYear / 10) * 10)][gender];
     return [...d.verified, ...d.estimated];
   }
-  if (birthYear >= 2008 && birthYear <= 2025) return officialNames(birthYear, gender);
+  if (birthYear === 2026) return officialNames(2025, gender); // 지금 세상: 가장 최근 연도(2025) 풀 하나 (EV7 R1)
   if (birthYear >= 2030 && birthYear <= 2060) return [...new Set(FUTURE_SOURCE_YEARS.flatMap((y) => officialNames(y, gender)))];
   return null;
 }
+
+// ---------- 독립 기준: 출생신고 상세·룰렛·또래 (koreaStats.json 원자료를 직접 읽는다) ----------
+
+interface RawRegion {
+  name: string;
+  from: string[];
+  sharePct: number;
+}
+interface RawInd {
+  id: string;
+  rows?: Array<Record<string, unknown>>;
+  eraRegions?: Array<{ kind: 'past' | 'present'; birthYears: [number, number]; regions: RawRegion[] }>;
+  regionChanges2026?: { retired: string[]; rows: Array<{ sido: string; name: string; parent?: string }> };
+}
+const RAW_STATS = (statsJson as unknown as { indicators: RawInd[] }).indicators;
+const rawInd = (id: string): RawInd => RAW_STATS.find((i) => i.id === id)!;
+
+/** 출생 연도의 룰렛 지역 목록(원자료 eraRegions에서 직접). 지난 세상은 해당 연대 목록, 지금(2026)·다가올(2030~2060) 세상은 16개 시·도. 시대 밖 연도는 null. */
+export function rawRegions(birthYear: number): RawRegion[] | null {
+  const eras = rawInd('birth-by-sido').eraRegions!;
+  const era = eras.find((e) => birthYear >= e.birthYears[0] && birthYear <= e.birthYears[1] && (e.kind === 'past' || birthYear === 2026 || (birthYear >= 2030 && birthYear <= 2060)));
+  return era === undefined ? null : era.regions;
+}
+
+/** 이 출생 연도·지역에서 허용되는 시군구 키 「시도|이름」 (원자료에서 직접: 지금·다가올 세상은 2026 개편 반영, 지난 세상은 2025 행정구역을 그 시기 시·도 구분에 맞춰) */
+export function rawSigungu(birthYear: number, region: string): Set<string> {
+  const regions = rawRegions(birthYear);
+  const def = regions?.find((r) => r.name === region);
+  const out = new Set<string>();
+  if (def === undefined) return out;
+  const rows = rawInd('birth-by-sigungu').rows as Array<{ sido: string; name: string }>;
+  const changes = rawInd('birth-by-sigungu').regionChanges2026!;
+  if (birthYear >= 2026) {
+    const retired = new Set(changes.retired);
+    const sido2026 = (s: string) => (s === '광주' || s === '전남' ? '전남광주' : s);
+    for (const r of rows) if (!retired.has(r.sido + ' ' + r.name) && sido2026(r.sido) === region) out.add(r.sido + '|' + r.name);
+    for (const r of changes.rows) if (sido2026(r.sido) === region) out.add(r.sido + '|' + (r.parent === undefined ? r.name : r.parent + ' ' + r.name));
+  } else {
+    for (const r of rows) if (def.from.includes(r.sido)) out.add(r.sido + '|' + r.name);
+  }
+  return out;
+}
+
+const RAW_JOBS = ['manager', 'professional', 'clerk', 'service', 'sales', 'agri', 'craft', 'machine', 'labor'];
+const RAW_HOUSINGS = ['own', 'rent', 'free'];
+const SENTENCE_FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (남자아이|여자아이)로 태어났습니다\. (첫째|둘째|셋째|넷째|다섯째 이상)입니다\. \(\d\.\dkg은 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|딱 중간쯤)\)$/;
 
 // ---------- 독립 기준: 엔딩 ----------
 
@@ -163,6 +213,130 @@ export function checkCharacterName(era: Era, name: string, birthYear: number, ge
   return out;
 }
 
+/**
+ * 출생 결과(룰렛 단계)의 출생신고 상세·룰렛·또래를 원자료 기준으로 독립 점검한다(SPEC-003 BR2~BR4·RL2·VP3). 구현의 접근자·표를 거치지 않는다.
+ *  - 월 1~12, 지역은 원자료 eraRegions 목록 안, 시군구는 원자료에서 만든 후보 안, 부모 나이·직업·주거·체중 격자·형제 순서가 범위 안
+ *  - 룰렛: 멈출 자리 = 저장된 결과(RL2), 확률표 합 = 정확히 100(수저 정수 %, 지역 소수 1자리), 지역 확률은 원자료 sharePct
+ *  - 서술문: 형식(BR3)이 맞고 수저 이름·구간이 없다. 또래 4명: 이름이 시대 풀과 100% 일치·서로 겹치지 않음·주인공과도 다름, 지역·시군구·수저가 유효
+ */
+export function checkBirthReport(game: GameState, where: string): string[] {
+  const out: string[] = [];
+  const bad = (msg: string) => out.push(`${where}: ${msg}`);
+  const c = game.character;
+  const r = game.birthReport;
+  if (c === null || r === null || game.era === null) return [`${where}: 출생 결과가 비어 있다`];
+  if (game.peerSeed === null || !Number.isInteger(game.peerSeed)) bad('또래 시드가 없다');
+  if (!Number.isInteger(r.month) || r.month < 1 || r.month > 12) bad(`출생 월 ${r.month}`);
+  const regions = rawRegions(c.birthYear);
+  if (regions === null) return [...out, `${where}: ${c.birthYear}년생의 룰렛 지역 목록이 원자료에 없다`];
+  if (!regions.some((x) => x.name === r.region)) bad(`지역 ${r.region}이 룰렛 목록에 없다`);
+  if (!rawSigungu(c.birthYear, r.region).has(`${r.sigunguSido}|${r.sigungu}`)) bad(`시군구 ${r.sigunguSido} ${r.sigungu}이 ${r.region}의 후보가 아니다`);
+  for (const [who, p] of [['어머니', r.mother], ['아버지', r.father]] as const) {
+    if (!Number.isInteger(p.age) || p.age < 16 || p.age > 56) bad(`${who} 나이 ${p.age}`);
+    if (!RAW_JOBS.includes(p.job)) bad(`${who} 직업 ${p.job}`);
+  }
+  if (!RAW_HOUSINGS.includes(r.housing)) bad(`주거 ${r.housing}`);
+  const tenth = Math.round(r.birthWeightKg * 10);
+  if (tenth < 10 || tenth > 49 || Math.abs(r.birthWeightKg * 10 - tenth) > 1e-9) bad(`체중 ${r.birthWeightKg}kg이 0.1kg 격자(1.0~4.9) 밖이다`);
+  if (!Number.isInteger(r.birthOrder) || r.birthOrder < 1 || r.birthOrder > 5) bad(`형제 순서 ${r.birthOrder}`);
+
+  // 점검 하나가 예외로 끊기지 않게(지역이 목록에 없어 룰렛을 못 만드는 등) 예외도 위반으로 모아서 알린다
+  const guard = (label: string, f: () => void): void => {
+    try {
+      f();
+    } catch (e) {
+      bad(`${label}: 예외 ${(e as Error).message}`);
+    }
+  };
+  const era = game.era;
+
+  // 룰렛(RL2·RL3)
+  guard('룰렛', () => {
+    const view = buildRoulette(era, c, r);
+    if (view.wealthIndex !== c.parentWealth - 1) bad(`룰렛 수저 멈출 자리 ${view.wealthIndex} ≠ 출생 결과 ${c.parentWealth - 1}`);
+    if (view.regionOdds[view.regionIndex]?.name !== r.region) bad(`룰렛 지역 멈출 자리가 출생 결과 ${r.region}와 다르다`);
+    if (view.wealthOdds.reduce((a2, o) => a2 + o.percent, 0) !== 100) bad('수저 확률표 합이 100이 아니다');
+    if (view.regionOdds.reduce((a2, o) => a2 + Math.round(o.percent * 10), 0) !== 1000) bad('지역 확률표 합이 100.0이 아니다');
+    if (view.regionOdds.length !== regions.length) bad(`지역 확률표 칸 수 ${view.regionOdds.length} ≠ 원자료 ${regions.length}`);
+    for (const o of view.regionOdds) if (Math.abs(o.percent - regions.find((x) => x.name === o.name)!.sharePct) > 1e-9) bad(`지역 확률 ${o.name} ${o.percent}이 원자료 비율과 다르다`);
+    if (view.basis !== (era === 'present' ? 'statistic-derived' : 'design')) bad(`지역 확률의 성격(basis) ${view.basis}`);
+  });
+
+  // 서술문(BR3)
+  guard('서술문', () => {
+    const sentence = birthSentence(c, r, era);
+    if (!SENTENCE_FORMAT.test(sentence)) bad(`서술문 형식이 다르다: ${sentence}`);
+    if (/수저|다이아|분위/.test(sentence) || /[!！]/.test(sentence)) bad(`서술문에 등급명·소득 분위·느낌표가 있다: ${sentence}`);
+  });
+
+  // 또래(VP3)
+  const peerSeed = game.peerSeed;
+  if (peerSeed !== null) {
+    guard('또래', () => {
+      const peers = peersOf(peerSeed, c.birthYear, r.month, c.name);
+      if (!deepEqual(peers, peersOf(peerSeed, c.birthYear, r.month, c.name))) bad('같은 시드인데 또래가 다르다');
+      if (peers.length !== 4) bad(`또래 수 ${peers.length}`);
+      const names = new Set<string>([c.name]);
+      for (const p of peers) {
+        if (names.has(p.name)) bad(`또래 이름 ${p.name}이 겹친다`);
+        names.add(p.name);
+        for (const msg of checkCharacterName(era, p.name, c.birthYear, p.gender)) bad(`또래: ${msg}`);
+        if (!regions.some((x) => x.name === p.region)) bad(`또래 지역 ${p.region}`);
+        if (!rawSigungu(c.birthYear, p.region).has(`${p.sigunguSido}|${p.sigungu}`)) bad(`또래 시군구 ${p.sigungu}`);
+        if (![1, 2, 3, 4, 5].includes(p.wealth)) bad(`또래 수저 ${p.wealth}`);
+      }
+    });
+  }
+  return out;
+}
+
+/**
+ * 가족 정합 규칙 (SPEC-003 BR6·CM9, REV-003-M3-1 R-272)의 판 끝 점검. **이벤트 데이터의 조건 값을 읽지 않고** 여기에 규칙을 따로 적어 독립으로 대조한다 —
+ * 데이터의 조건이 빠지거나 틀리면 이 점검이 잡는다. 규칙(출생신고 상세 `birthReport`와 연표 `history`로 본다):
+ *  - 부모 병환(middle-parents-care): 일어난 나이에 두 부모 중 나이 많은 쪽이 60~100세 / 임종(middle-parents-farewell): 65~100세
+ *  - 동생이 생겼다(infant-new-sibling): 형제 순서가 첫째이고, 그때 어머니(출생 때 나이 + 아이 나이)가 45세 이하
+ *  - 사별 플래그(parents_gone)가 있으면 임종 사건이 연표에 있다
+ *  - 연표 0세 첫 줄(출생신고 서술문)이 말하는 형제 순서 = 저장된 형제 순서
+ * applied = 실제로 대조한 규칙 수(공허 통과 방지 — 이벤트가 하나도 안 나온 판만 보면 0이다).
+ */
+const ORDER_WORDS = ['첫째', '둘째', '셋째', '넷째', '다섯째 이상'] as const; // 형제 순서 1~5의 서술문 낱말 (구현의 표를 읽지 않고 따로 적었다)
+export const FAMILY_RULES = {
+  olderParentAtEvent: { 'middle-parents-care': [60, 100], 'middle-parents-farewell': [65, 100] } as Readonly<Record<string, readonly [number, number]>>,
+  siblingMotherMax: 45,
+} as const;
+
+export function checkFamilyRules(game: GameState, where: string): { problems: string[]; applied: number } {
+  const problems: string[] = [];
+  let applied = 0;
+  const bad = (msg: string) => problems.push(`${where}: ${msg}`);
+  const r = game.birthReport;
+  if (r === null) return { problems: [`${where}: 출생신고 상세가 없어 가족 규칙을 점검할 수 없다`], applied };
+  const older = (age: number) => Math.max(r.mother.age, r.father.age) + age;
+  for (const h of game.history) {
+    if (h.eventId === undefined) continue;
+    const range = FAMILY_RULES.olderParentAtEvent[h.eventId];
+    if (range !== undefined) {
+      applied++;
+      const o = older(h.age);
+      if (o < range[0] || o > range[1]) bad(`${h.eventId}가 ${h.age}세에 일어났는데 나이 많은 부모는 ${o}세다(허용 ${range[0]}~${range[1]}세, 출생 때 어머니 ${r.mother.age}·아버지 ${r.father.age})`);
+    }
+    if (h.eventId === 'infant-new-sibling') {
+      applied++;
+      if (r.birthOrder !== 1) bad(`동생이 생겼다 사건인데 형제 순서가 ${r.birthOrder}번째다`);
+      const mother = r.mother.age + h.age;
+      if (mother > FAMILY_RULES.siblingMotherMax) bad(`동생이 생겼다가 ${h.age}세에 일어났는데 어머니는 ${mother}세다(${FAMILY_RULES.siblingMotherMax}세 이하여야 한다)`);
+    }
+  }
+  if (game.flags.includes('parents_gone')) {
+    applied++;
+    if (!game.history.some((h) => h.eventId === 'middle-parents-farewell')) bad('사별(parents_gone)인데 임종 사건이 연표에 없다');
+  }
+  const first = game.history[0]?.text ?? '';
+  applied++;
+  if (!first.includes(`${ORDER_WORDS[r.birthOrder - 1]}입니다.`)) bad(`연표 첫 줄의 형제 순서가 저장된 형제 순서(${ORDER_WORDS[r.birthOrder - 1]})와 다르다: ${first}`);
+  return { problems, applied };
+}
+
 /** 한 걸음 전후의 불변식. kind: 한 해씩(advance/choose/autoChoose)이면 'single', 다음 결정으로(skip)면 'skip' */
 export function checkTransition(prev: GameState, next: GameState, kind: 'single' | 'skip', where: string): string[] {
   const out: string[] = [];
@@ -175,6 +349,7 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
   if (pc === null || nc === null) bad('캐릭터가 없다');
   else if (nc.name !== pc.name || nc.gender !== pc.gender || nc.birthYear !== pc.birthYear || nc.parentWealth !== pc.parentWealth || nc.parenting !== pc.parenting || nc.looks !== pc.looks) bad('캐릭터가 바뀌었다');
   if (!deepEqual(next.birthStats, prev.birthStats)) bad('출생 스냅샷이 바뀌었다');
+  if (!deepEqual(next.birthReport, prev.birthReport) || next.peerSeed !== prev.peerSeed) bad('출생신고 상세·또래 시드가 바뀌었다');
   // 나이: 줄지 않고, 한 해씩이면 최대 +1
   if (next.age < prev.age) bad(`나이가 줄었다 ${prev.age} → ${next.age}`);
   if (kind === 'single' && next.age - prev.age > 1) bad(`한 걸음에 나이가 ${next.age - prev.age}살 올랐다`);
@@ -355,7 +530,7 @@ export interface PipelineLife {
   minutesFast: number;
   journey: 'early' | 'up' | 'same' | 'down' | 'none';
   /** 점검 횟수 (보고용) */
-  checks: { names: number; roundTrips: number; transitions: number; duplicateInputs: number; rebirths: number; endingTexts: number };
+  checks: { names: number; roundTrips: number; transitions: number; duplicateInputs: number; rebirths: number; endingTexts: number; familyRules: number };
 }
 
 /** 시드 → 파이프라인 시드: 시대·전략마다 서로 다른 시드 줄을 쓴다(uint32) */
@@ -374,7 +549,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
   const { seed, era, strategy, stepSerialize } = opts;
   const auto = strategy === 'auto';
   const problems: string[] = [];
-  const checks = { names: 0, roundTrips: 0, transitions: 0, duplicateInputs: 0, rebirths: 0, endingTexts: 0 };
+  const checks = { names: 0, roundTrips: 0, transitions: 0, duplicateInputs: 0, rebirths: 0, endingTexts: 0, familyRules: 0 };
   const tag = `${era}/${strategy} 시드 ${seed}`;
   const result: PipelineLife = { seed, era, strategy, problems, threw: false, name: '', deathAge: -1, choices: 0, steps: 0, minutes1x: 0, minutesFast: 0, journey: 'none', checks };
   const MAX_STEPS = 1500;
@@ -401,7 +576,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     // 1. 첫 화면(타이틀): 출생 전에는 인생을 진행하거나 첫 화면 이동·이어하기를 하는 입력이 모두 무시된다
     if (session.game.phase !== 'title') problems.push(`${tag}: 새 게임이 타이틀이 아니다 (${session.game.phase})`);
     if (session.game.era !== null || session.game.lifeLength !== null) problems.push(`${tag}: 새 게임에 세상·인생 길이가 이미 정해져 있다`);
-    for (const a of [{ type: 'enterLife' }, { type: 'advance', fromAge: 0 }, { type: 'skip' }, { type: 'resume' }, { type: 'openTitle' }, { type: 'beginNew', seed: 1 }] as const) {
+    for (const a of [{ type: 'enterLife' }, { type: 'enterBirth' }, { type: 'finishSpin' }, { type: 'advance', fromAge: 0 }, { type: 'skip' }, { type: 'resume' }, { type: 'openTitle' }, { type: 'beginNew', seed: 1 }] as const) {
       if (sessionReducer(session, a) !== session) problems.push(`${tag}: 타이틀에서 ${a.type} 입력이 무시되지 않았다`);
     }
     session = { ...session, game: keep(session.game, '첫 화면') };
@@ -421,14 +596,35 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       if (rejected !== session) problems.push(`${tag}: 고를 수 없는 인생 길이(long60)가 설정에 들어갔다`);
     }
     settings0 = session.settings;
-    // 3. 태어나기(출생): 연타해도 한 번만 일어난다
+    // 3. 태어나기(출생): 연타해도 한 번만 일어난다. 이 순간 출생 결과가 정해져 저장되고 룰렛 화면(roulette)이 연출 중(spin)으로 시작한다(RL5)
     session = send({ type: 'begin' }, '태어나기');
     if (sessionReducer(session, { type: 'begin' }) !== session) problems.push(`${tag}: 태어나기 연타가 같은 객체를 돌려주지 않았다`);
-    const birth = session.game;
-    if (birth.phase !== 'birth' || birth.era !== era || birth.lifeLength !== lifeLength || birth.character === null) {
-      problems.push(`${tag}: 출생 상태가 이상하다 (phase ${birth.phase}, era ${birth.era}, 인생 길이 ${birth.lifeLength})`);
+    const rolled = session.game;
+    if (rolled.phase !== 'roulette' || !session.spin || rolled.era !== era || rolled.lifeLength !== lifeLength || rolled.character === null) {
+      problems.push(`${tag}: 룰렛 상태가 이상하다 (phase ${rolled.phase}, spin ${session.spin}, era ${rolled.era}, 인생 길이 ${rolled.lifeLength})`);
       return finish();
     }
+    // 룰렛: 출생신고 상세·룰렛 결과·또래를 원자료 기준으로 점검(RL2·BR2~BR4·VP3)하고, 룰렛 도중 새로고침해도 결과가 같고 연출 중이 아니다(RL5)
+    problems.push(...checkBirthReport(rolled, `${tag} 룰렛`));
+    const reloaded = parseGame(serializeGame(rolled));
+    const resumed = reloaded === null ? null : createSession(reloaded, session.settings);
+    if (resumed === null || resumed.spin || !deepEqual(resumed.game, rolled)) problems.push(`${tag}: 룰렛 도중 새로고침한 상태가 연출 중이거나 결과가 다르다`);
+    // 연출 중에는 「출생신고 보기」가 무시되고, 건너뛰기(연타 포함)는 한 번만 동작하며, 다시 굴리기는 없다
+    if (sessionReducer(session, { type: 'enterBirth' }) !== session) problems.push(`${tag}: 연출 중 「출생신고 보기」가 무시되지 않았다`);
+    if (sessionReducer(session, { type: 'enterLife' }) !== session) problems.push(`${tag}: 룰렛에서 「살아가기」가 무시되지 않았다`);
+    session = { ...session, game: keep(session.game, '룰렛') };
+    session = send({ type: 'finishSpin' }, '건너뛰기');
+    if (session.game !== rolled && !deepEqual(session.game, rolled)) problems.push(`${tag}: 건너뛰기가 출생 결과를 바꿨다`);
+    if (sessionReducer(session, { type: 'finishSpin' }) !== session) problems.push(`${tag}: 건너뛰기 연타가 같은 객체를 돌려주지 않았다`);
+    if (sessionReducer(session, { type: 'begin' }) !== session) problems.push(`${tag}: 룰렛 중 「태어나기」(다시 굴리기)가 무시되지 않았다`);
+    session = send({ type: 'enterBirth' }, '출생신고 보기');
+    if (sessionReducer(session, { type: 'enterBirth' }) !== session) problems.push(`${tag}: 「출생신고 보기」 연타가 같은 객체를 돌려주지 않았다`);
+    const birth = session.game;
+    if (birth.phase !== 'birth' || !deepEqual(birth.character, rolled.character) || !deepEqual(birth.birthReport, rolled.birthReport) || birth.peerSeed !== rolled.peerSeed) {
+      problems.push(`${tag}: 출생신고 상태가 이상하다 (phase ${birth.phase}) — 출생 결과가 룰렛과 같아야 한다`);
+      return finish();
+    }
+    if (birth.character === null) return finish();
     const nameProblems = checkCharacterName(era, birth.character.name, birth.character.birthYear, birth.character.gender);
     checks.names++;
     problems.push(...nameProblems.map((p) => `${tag}: ${p}`));
@@ -440,6 +636,9 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     // 4. 인생 시작
     session = send({ type: 'enterLife' }, '인생 시작');
     if (session.game.phase !== 'life' || session.game.history.length !== 1) problems.push(`${tag}: 인생 시작 상태가 이상하다`);
+    else if (session.game.birthReport !== null && session.game.character !== null && session.game.history[0].text !== birthSentence(session.game.character, session.game.birthReport, era)) {
+      problems.push(`${tag}: 인생 기록 0세 첫 줄이 출생신고의 한 줄 서술문과 다르다`);
+    }
     session = { ...session, game: keep(session.game, '인생 시작') };
 
     // 5. 인생: 한 걸음씩
@@ -479,6 +678,10 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       return finish();
     }
     result.deathAge = ended.death.age;
+    // 가족 정합(BR6·R-272): 부모 병환·임종 시점의 부모 나이, 동생 사건 ⇒ 첫째·어머니 나이, 사별 ⇒ 임종 사건, 연표 첫 줄의 형제 순서
+    const family = checkFamilyRules(ended, `${tag} 가족 규칙`);
+    checks.familyRules += family.applied;
+    problems.push(...family.problems);
 
     // 6. 기준 실행과 같은 결과: 세션 reducer 경로 = playToEnd 경로 (같은 시드·같은 선택)
     const reference = playToEnd(startLife(seed, era, { lifeLength }), auto ? null : chooserFor('random', seed));
@@ -527,13 +730,16 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       };
       go({ type: 'begin' }, '태어나기');
       const born = next.game;
-      if (born.phase !== 'birth' || born.era !== era || born.lifeLength !== lifeLength || born.character === null) problems.push(`${tag}: 새 판 출생 상태가 이상하다(고른 세상·인생 길이가 그대로 이어져야 한다)`);
+      if (born.phase !== 'roulette' || !next.spin || born.era !== era || born.lifeLength !== lifeLength || born.character === null) problems.push(`${tag}: 새 판 출생 상태가 이상하다(고른 세상·인생 길이가 그대로 이어져야 하고 룰렛이 다시 돈다)`);
       else {
         checks.names++;
+        problems.push(...checkBirthReport(born, `${tag} 새 판 룰렛`));
         problems.push(...checkCharacterName(era, born.character.name, born.character.birthYear, born.character.gender).map((p) => `${tag} 새 판: ${p}`));
         problems.push(...checkStats(born.stats, `${tag} 새 판 출생 스탯`));
         if (born.seed !== newSeed) problems.push(`${tag}: 새 판의 시드가 넘긴 시드가 아니다`);
       }
+      go({ type: 'finishSpin' }, '건너뛰기');
+      go({ type: 'enterBirth' }, '출생신고 보기');
       go({ type: 'enterLife' }, '인생 시작');
       for (let k = 0; k < MAX_STEPS && next.game.phase === 'life' && next.game.pending === null; k++) {
         const prev = next.game;
@@ -603,7 +809,7 @@ export function runPipelineCell(era: Era, strategy: PipelineStrategy, params: Pi
     lives.push(life);
     params.onLife?.(life);
   }
-  const checks = { names: 0, roundTrips: 0, transitions: 0, duplicateInputs: 0, rebirths: 0, endingTexts: 0 };
+  const checks = { names: 0, roundTrips: 0, transitions: 0, duplicateInputs: 0, rebirths: 0, endingTexts: 0, familyRules: 0 };
   const journeys = { early: 0, up: 0, same: 0, down: 0, none: 0 };
   const problems: string[] = [];
   let problemCount = 0;

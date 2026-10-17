@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { slideCount } from './carouselHelpers';
-import { measureLineBreaks, type LineReport } from './lineBreaks';
+import { FORCED_BREAK_WORDS } from './intendedBreaks';
+import { describeWordBreak, measureLineBreaks, measureWordBreaks, type LineReport, type WordBreakReport } from './lineBreaks';
 import { setRootFontPercent } from './textResize';
 import { BAR_STATES, openBarState, type BarState } from './titleStates';
 
@@ -13,6 +14,9 @@ import { BAR_STATES, openBarState, type BarState } from './titleStates';
  * 이 감사는 **구분 기호 단언을 글자 100·150·200% 모두에서 켠다**(r4까지는 150·200%에서 `separators: false`라 글자 200% 푸터의 「· 교육부」를 못 잡았다 — QA-003-M2 2회차 M2-C02).
  * 이전 구현(푸터 기관 목록을 `orgs.join(' · ')`)에서 실패함을 확인했다 — 360×740·글자 200%에서 「· 교육부」로 줄이 시작(ai-log 「변이 점검」).
  * 이어하기·확인 단계는 개발 서버의 ?__exit 탐침으로만 열린다(e2e/titleStates.ts).
+ *
+ * **낱말 중간 끊김(QM3-1, QA-003-M3 M3-L02)**: 같은 조합마다 공통 감사기 `measureWordBreaks`(e2e/lineBreaks.ts)로 첫 화면(새 판·이어하기·확인 단계)과 캐러셀 14장의 눈에 보이는 **모든 낱말**을 잰다.
+ * 낱말이 한 줄 전체보다 짧은데 중간에서 끊기면(`broken`) 결함이고, 한 줄보다 긴 낱말(`unavoidable`)은 글자 100%에서 0이어야 한다(R-281 유지). 첫 화면의 의도된 `<wbr>` 낱말은 없고, 강제 줄바꿈 `<br>`는 수저 띠의 「다이아몬드수저」 하나뿐이다(등록제 — e2e/intendedBreaks.ts `FORCED_BREAKS`, 감사기가 `forced`로 따로 보고하고 이 시험이 집합을 고정한다, R-300).
  */
 
 const SHOTS = 'qa/screenshots/003';
@@ -27,6 +31,19 @@ interface Tally {
   chars: number;
   keeps: number;
   parts: string[];
+  /** 낱말 끊김 감사(QM3-1)에서 잰 낱말 수 */
+  words: number;
+}
+
+/** 낱말 끊김 감사 결과를 모은다: 결함(broken) 0, 글자 100%에서는 한 줄 전체보다 긴 낱말(unavoidable)도 0 */
+function addWords(tally: Tally, label: string, r: WordBreakReport, percent: number, expectedForced: readonly string[] = []): void {
+  tally.words += r.checked;
+  for (const b of r.broken) tally.problems.push(`${label}: 끊긴 낱말(결함) ${describeWordBreak(b)}`);
+  if (percent === 100) for (const u of r.unavoidable) tally.problems.push(`${label}: 글자 100%인데 한 줄보다 긴 낱말 ${describeWordBreak(u)}`);
+  for (const i of r.intended) tally.problems.push(`${label}: 첫 화면에는 의도된 줄바꿈 낱말이 없다 ${describeWordBreak(i)}`);
+  // 강제 줄바꿈 `<br>`(R-300): 등록 낱말이 기대한 곳에서만 `forced`로 보고되고 그 밖에는 없다 — 첫 화면 본문은 수저 띠의 「다이아몬드수저」 하나, 캐러셀 슬라이드는 없다
+  const forcedWords = r.forced.map((f) => f.word).sort();
+  if (forcedWords.join('|') !== [...expectedForced].sort().join('|')) tally.problems.push(`${label}: 강제 줄바꿈(<br>) 낱말이 기대와 다르다 — 기대 [${expectedForced.join(', ')}] / 실제 [${forcedWords.join(', ')}]`);
 }
 
 function add(tally: Tally, label: string, r: LineReport): void {
@@ -38,11 +55,12 @@ function add(tally: Tally, label: string, r: LineReport): void {
 }
 
 /** 캐러셀 14장을 모두 넘기며 장마다 잰다 (일시정지 상태에서) */
-async function measureSlides(page: Page, label: string, tally: Tally): Promise<number> {
+async function measureSlides(page: Page, label: string, tally: Tally, percent: number): Promise<number> {
   const n = await slideCount(page);
   for (let i = 0; i < n; i++) {
     const id = await page.evaluate(() => document.querySelector('.slide.is-active')!.getAttribute('data-slide-id')!);
     add(tally, `${label} ${i + 1}/${n} ${id}`, await measureLineBreaks(page, '.slide.is-active', { separators: true, keeps: true }));
+    addWords(tally, `${label} ${i + 1}/${n} ${id}`, await measureWordBreaks(page, { scope: '.slide.is-active' }), percent);
     if (i < n - 1) await page.getByTestId('carousel-next').click();
   }
   return n;
@@ -55,7 +73,7 @@ for (const width of WIDTHS) {
       test.skip(mobile !== (width < 960), width < 960 ? 'mobile-360에서만 실행' : 'desktop에서만 실행');
       test.setTimeout(180_000);
       await page.setViewportSize({ width, height: mobile ? 740 : 800 });
-      const tally: Tally = { problems: [], lines: 0, chars: 0, keeps: 0, parts: [] };
+      const tally: Tally = { problems: [], lines: 0, chars: 0, keeps: 0, parts: [], words: 0 };
       const label = `${width}px/${percent}%`;
 
       // 새 판: 본문 · 푸터 · 캐러셀 14장 · 띠
@@ -67,7 +85,8 @@ for (const width of WIDTHS) {
       add(tally, `${label} 첫 화면 본문`, main);
       add(tally, `${label} 하단 띠(new)`, await measureLineBreaks(page, '[data-testid="bottom-bar"]'));
       add(tally, `${label} 푸터`, await measureLineBreaks(page, '[data-testid="title-foot"]'));
-      const slides = await measureSlides(page, label, tally);
+      addWords(tally, `${label} 첫 화면(새 판)`, await measureWordBreaks(page), percent, FORCED_BREAK_WORDS); // 본문·띠·푸터·지금 보이는 슬라이드의 모든 낱말
+      const slides = await measureSlides(page, label, tally, percent);
       expect(slides).toBe(14);
 
       // 이어하기 · 확인 단계의 띠 글자
@@ -75,6 +94,7 @@ for (const width of WIDTHS) {
         await openBarState(page, state);
         if (percent !== 100) await setRootFontPercent(page, percent);
         add(tally, `${label} 하단 띠(${state})`, await measureLineBreaks(page, '[data-testid="bottom-bar"]'));
+        addWords(tally, `${label} 첫 화면(${state})`, await measureWordBreaks(page), percent, FORCED_BREAK_WORDS);
       }
 
       // 공허 통과 방지: 실제로 잰 줄·글자·묶음 수(100% 기준 이전 하한 이상)
@@ -82,6 +102,7 @@ for (const width of WIDTHS) {
       expect(tally.chars, '실제로 잰 글자 수').toBeGreaterThan(2000);
       expect(tally.keeps, '숫자+단위·날짜·keepWords 묶음을 실제로 잰 개수').toBeGreaterThan(50);
       expect(main.keepChecked, '첫 화면 본문에서 「한 번의」를 실제로 잰 개수').toBeGreaterThanOrEqual(1);
+      expect(tally.words, '낱말 끊김 감사에서 실제로 잰 낱말 수(공허 통과 방지: 화면 3상태 + 슬라이드 14장)').toBeGreaterThan(600);
       expect(tally.problems).toEqual([]);
     });
   }

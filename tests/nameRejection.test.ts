@@ -52,7 +52,7 @@ function forcedRng(surname: string, picks: string[]) {
 /** 실제 풀에서 "성과 첫 글자가 같은 이름"이 있는 (성, 연도, 성별, 이름) 목록 */
 function sameLetterCases(): Array<{ surname: string; year: number; gender: Gender; given: string }> {
   const out: Array<{ surname: string; year: number; gender: Gender; given: string }> = [];
-  const years = [1955, 1965, 1975, 1985, 2008, 2012, 2018, 2025, 2040];
+  const years = [1955, 1965, 1975, 1985, 2026, 2040];
   for (const year of years) {
     for (const gender of GENDERS) {
       for (const given of namePoolFor(year, gender)) {
@@ -137,7 +137,7 @@ describe('걸리면 같은 풀에서 이름만 다시 뽑는다 (강제 RNG)', (
   });
 
   it('성과 첫 글자가 다른 이름은 그대로 허용된다 (예: 이 + 서준, 박 + 민준)', () => {
-    for (const [surname, year, gender, given] of [['이', 2012, 'male', '서준'], ['박', 2012, 'male', '민준'], ['정', 2015, 'female', '서연']] as const) {
+    for (const [surname, year, gender, given] of [['이', 2026, 'male', '서준'], ['박', 2026, 'male', '민준'], ['정', 2026, 'female', '서연']] as const) {
       if (!namePoolFor(year, gender).includes(given)) continue;
       const { rng, log } = forcedRng(surname, [given]);
       expect(pickFullName(rng, year, gender)).toBe(surname + given);

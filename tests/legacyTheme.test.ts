@@ -94,10 +94,10 @@ describe('enterLegacyLight: 옛 화면 동안 라이트 고정 → 돌아오면 
 });
 
 describe('옛 화면에 LegacyLight가 함께 그려진다', () => {
-  it('App: 첫 화면(title·다시 연 첫 화면)이 아닐 때만 그린다 — 출생·인생·엔딩·밀린 화면', () => {
+  it('App: 새 디자인 화면(첫 화면·다시 연 첫 화면·룰렛·출생신고)이 아닐 때만 그린다 — 인생·엔딩·밀린 화면 (SPEC-003 M3: 룰렛·출생신고가 새 디자인이 되어 목록에 들었다, M4가 대시보드·엔딩을 더한다)', () => {
     expect(appSrc).toContain("import { LegacyLight } from './ui/legacyTheme';");
-    expect(appSrc).toContain('const onFirstScreen = !superseded && (game.phase === \'title\' || showTitle);');
-    expect(appSrc).toContain('{onFirstScreen ? null : <LegacyLight />}');
+    expect(appSrc).toContain("const onNewDesign = !superseded && (game.phase === 'title' || game.phase === 'roulette' || game.phase === 'birth' || showTitle);");
+    expect(appSrc).toContain('{onNewDesign ? null : <LegacyLight />}');
   });
 
   it('오류 화면(ErrorBoundary)도 옛 화면이라 라이트로 고정한다', () => {

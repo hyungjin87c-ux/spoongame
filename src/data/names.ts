@@ -4,7 +4,7 @@ import scourtJson from './sources/scourt-birth-names.json';
 
 /**
  * 이름 데이터. 시대마다 출처가 다르다(자세한 설명은 names.json의 meta, docs/data/names-source.md).
- *  - 지금 세상(2008~2025년생): 출생 연도별 법원 통계서비스 상위 20위. 원자료 파일을 실행 시점에 그대로 읽는다.
+ *  - 지금 세상(올해 2026년생 고정): 가장 최근 연도(`PRESENT_POOL_YEAR` = 2025) 하나의 법원 통계서비스 상위 20위. 원자료 파일을 실행 시점에 그대로 읽는다(SPEC-003 EV7: 2026년은 진행 중이라 수집하지 않는다).
  *  - 다가올 세상(2030~2060년생): 통계가 없어 최근 5개 연도(meta.eras.future.sourceYears) 공식 풀의 합집합.
  *  - 지난 세상(1950~1989년생): names.json의 decades(언론 인용 확인분 + 추정 보충, 통계 아님).
  */
@@ -114,6 +114,12 @@ const OFFICIAL: ReadonlyMap<number, Readonly<Record<Gender, readonly string[]>>>
   }
   return out;
 })();
+
+/**
+ * 지금 세상(올해 2026년생)이 쓰는 이름 풀의 기준 연도 — 가장 최근 연도 하나(SPEC-003 EV7 R1). 올해(2026)는 진행 중이라 통계가 없다.
+ * names.json의 meta.eras.present.poolYear와 같은 값이다(tests/names.test.ts가 대조한다).
+ */
+export const PRESENT_POOL_YEAR = 2025;
 
 /** 그 해 출생(등록)아의 공식 통계 이름 풀. 원자료에 없는 연도는 null. */
 export function officialPool(year: number, gender: Gender): readonly string[] | null {

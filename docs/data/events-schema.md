@@ -47,6 +47,9 @@
   "stats": { "wealth": { "min": 30 }, "health": { "max": 60 } },
   "looks": { "min": 70 },
   "parentWealth": { "min": 4 },
+  "birthOrder": { "max": 1 },
+  "parentAge": { "min": 60, "max": 100 },
+  "motherAge": { "max": 45 },
   "parenting": ["strict", "helicopter"],
   "gender": ["male"],
   "flags": ["has_partner"],
@@ -56,6 +59,10 @@
 - `stats`: `wealth` `education` `health` `happiness` `relationships`(0~100), `{min, max}` 중 하나 이상(경계 포함).
 - `looks`: 외모 0~100. `parentWealth`: 1~5. `parenting`: `neglect`(방임) `free`(자유) `helicopter`(헬리콥터) `strict`(엄격) 중 하나라도. `gender`: `male` `female`.
 - `flags`: 모두 켜져 있어야. `notFlags`: 하나도 켜져 있지 않아야.
+- `birthOrder`: 형제 순서 1(첫째)~5(다섯째). 출생신고에서 정해진 값이다(SPEC-003 BR6). 예: `{ "max": 1 }`은 첫째인 판에서만.
+- `parentAge`: **두 부모 중 나이가 많은 쪽의 지금 나이**(태어났을 때 나이 + 아이의 지금 나이) 0~130. 부모의 병환·임종처럼 부모 나이와 어긋나면 안 되는 사건에 쓴다(BR6).
+- `motherAge`: **어머니의 지금 나이**(태어났을 때 어머니 나이 + 아이의 지금 나이) 0~130. 어머니 나이가 한계를 넘으면 말이 안 되는 사건에 쓴다(BR6, R-268). 예: `infant-new-sibling`(동생이 생겼다)은 `{ "max": 45 }` — 출생 때 어머니가 47~51세였던 판에서 49~57세에 동생을 낳는 일이 없게.
+- 출생 가족 정보를 모르는 상태에서는 `birthOrder`·`parentAge`·`motherAge` 조건이 맞지 않는 것으로 본다(사건이 일어나지 않는 쪽이 안전하다).
 
 ## 4. 효과(`effects`)와 보너스(`bonuses`)
 

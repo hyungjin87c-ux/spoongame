@@ -15,6 +15,8 @@ import {
   oracleLife,
   readSave,
   readSettings,
+  skipRoulette,
+  toBirthReport,
 } from './helpers';
 
 /** 개발 서버 전용 탐침: 연출 시간을 N배 빠르게(실제 30분을 기다리지 않는다) */
@@ -25,6 +27,8 @@ async function startFromTitle(page: Page, url = '/') {
   const begin = page.getByTestId('start-birth');
   await expect(begin).toBeEnabled();
   await begin.click();
+  await skipRoulette(page); // 룰렛(M3): 연출은 건너뛴다
+  await toBirthReport(page);
   const next = page.getByTestId('next-life');
   await expect(next).toBeEnabled();
   await next.click();
@@ -48,8 +52,8 @@ test('출생 → 살아가기 → 인생 화면: 이름·나이·단계·스탯 
   await expect(page.getByTestId('life-placeholder')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '처음으로' })).toHaveCount(0);
   expect(await noHorizontalOverflow(page)).toBe(true);
-  // 사건 로그 첫 줄은 출생
-  await expect(page.getByTestId('log')).toContainText('로 태어났다');
+  // 사건 로그 첫 줄은 출생신고의 한 줄 서술문(합쇼체, SPEC-003 BR3)
+  await expect(page.getByTestId('log')).toContainText('로 태어났습니다');
   // 사운드·복잡한 애니메이션 없음: audio/video 요소 없음
   expect(await page.locator('audio, video, canvas').count()).toBe(0);
 });
@@ -62,7 +66,11 @@ test('화면이 바뀔 때마다 새 화면의 제목으로 포커스가 옮겨�
   await expect(begin).toBeEnabled();
   await begin.click();
   await expect.poll(async () => (await activeText()).startsWith('H1:')).toBe(true);
-  expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('birth-name');
+  expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('roulette-heading');
+  await skipRoulette(page);
+  await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('to-birth'); // 같은 자리의 같은 버튼 요소라 포커스가 그대로 남는다(키보드로 건너뛰어도 포커스를 잃지 않는다)
+  await toBirthReport(page);
+  await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('birth-heading');
   const next = page.getByTestId('next-life');
   await expect(next).toBeEnabled();
   await next.click();
@@ -236,7 +244,7 @@ test('사건 로그는 최근 항목 위주로 보이고(최신이 맨 위), 긴
   await page.goto('/');
   const mid = await evalCore<GameState>(
     page,
-    `let s = core.enterLife(core.beginBirth(core.createInitialState(777), 'present'));
+    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'present')));
      while (s.phase === 'life' && s.age < 50) s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
      return s;`,
   );
@@ -258,10 +266,10 @@ async function quietStart(page: Page, years: number): Promise<GameState> {
   const s = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 2000; seed++) {
-       let s = core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
        let ok = true;
        for (let i = 0; i < arg.years; i++) { const r = core.stepYear(s); if (r.tick.kind !== 'quiet') { ok = false; break; } s = r.state; }
-       if (ok) return core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
+       if (ok) return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
      }
      return null;`,
     { years },

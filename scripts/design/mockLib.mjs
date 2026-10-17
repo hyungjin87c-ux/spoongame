@@ -150,17 +150,30 @@ export const GRADES = {
   5: { name: '다이아몬드수저', short: '다이아몬드' },
 };
 /**
+ * 칩 안의 이름 마크업(구현 ui/Grade.tsx와 같다): 가장 긴 이름 「다이아몬드수저」(7글자)에만 낱말 사이 줄바꿈 지점 `<wbr>`을 둔다 — 좁은 칩·릴 칸(글자 150%+·폭 320)에서 「다이아몬드 / 수저」로만 끊기고
+ * 칩이 칸 밖으로 넘치지 않는다(R-262 표본). `<wbr>`는 글자를 더하지 않으므로 읽는 이름·복사되는 글자는 「다이아몬드수저」 그대로이고, e2e/intendedBreaks.ts#INTENDED_BREAKS의 유일한 항목이다(QM3-1 (b)).
+ * D-05(docs/design/diff-003.md): tests/designAssets.test.ts R-190 정규식이 `<wbr>`를 허용하게 된 뒤(dev-M3-r4) 시안 생성기도 같은 마크업을 쓴다 — 글로만 적는 자리(gradeText)에는 넣지 않는다.
+ */
+export const gradeNameHtml = (n) => (n === 5 ? '다이아몬드<wbr>수저' : GRADES[n].name);
+/**
  * 수저 칩: 아이콘(실루엣) + 이름 + 점 5개 중 N개. range = 수저 구간 글자(`bandLabel(startBandOf(era, wealth))`의 출력, 예 「하위 25% 안쪽」) — 칩 바로 뒤에
  * 「(하위 25% 안쪽)」으로 붙어 글로 적으면 SPEC 형식 「흙수저(하위 25% 안쪽)」이 된다(R-170). 구간은 줄이 길어 칩 밖에 두고 줄바꿈을 허용한다.
  */
 export function gradeChip(n, { range = '', lg = false, dots: showDots = true } = {}) {
   const dots = showDots ? [1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('') : '';
-  return `<span class="grade grade--${n}${lg ? ' grade--lg' : ''}">${spoon(n)}<span>${GRADES[n].name}</span>${showDots ? `<span class="grade__dots" role="img" aria-label="5단계 중 ${n}단계">${dots}</span>` : ''}</span>${range ? `<span class="grade-line__range">(${esc(range)})</span>` : ''}`;
+  return `<span class="grade grade--${n}${lg ? ' grade--lg' : ''}">${spoon(n)}<span>${gradeNameHtml(n)}</span>${showDots ? `<span class="grade__dots" role="img" aria-label="5단계 중 ${n}단계">${dots}</span>` : ''}</span>${range ? `<span class="grade-line__range">(${esc(range)})</span>` : ''}`;
 }
-/** 글로만 적을 때의 수저 구간 표기: 「흙수저(하위 25% 안쪽)」 — 이름과 괄호 사이를 띄지 않는다 */
+/** 글로만 적을 때의 수저 구간 표기: 「흙수저(하위 25% 안쪽)」 — 이름과 괄호 사이를 띄지 않는다(`<wbr>` 없음) */
 export const gradeText = (n, range) => `${GRADES[n].name}(${range})`;
-export const reelSpoon = (n) => `<span class="grade grade--reel grade--${n}">${spoon(n)}<span>${n === 5 ? '다이아몬드<br>수저' : GRADES[n].name}</span></span>`;
-export const gradeLine = (n, range) => `<span class="grade-line">${gradeChip(n, { range })}</span>`;
+/** 룰렛 릴 칸(구현 ui/Grade.tsx size="reel"): 아이콘 + 이름, 점 없음. 이름은 칩과 같은 마크업(「다이아몬드<wbr>수저」 — 폭 320의 릴 칸 79px에서 낱말 단위로만 끊긴다) */
+export const reelSpoon = (n) => `<span class="grade grade--reel grade--${n}">${spoon(n)}<span>${gradeNameHtml(n)}</span></span>`;
+export const gradeLine = (n, range, opt = {}) => `<span class="grade-line">${gradeChip(n, { range, ...opt })}</span>`;
+/**
+ * 짧은 쌍 「A · B」(구현 ui/FitPair.tsx, QM2-10 규칙 3): 한 줄에 들어가면 「A · B」, 안 들어가면 기호 없이 A와 B를 따로 줄로. 내용 길이가 판마다 다른 쌍(룰렛 결과 한 줄·출생신고 「29세 · 판매직」·문서 띠 표기)에 쓴다.
+ * 보이지 않는 탐침(.fit-pair__probe, CSS content: attr(data-text))으로 한 줄 폭을 재서 칸 폭과 견준다 — 시안은 page()의 흉내 스크립트가 재고(data-a·data-b는 그 스크립트용), 구현은 ResizeObserver로 잰다.
+ */
+export const fitPair = (a, b) =>
+  `<span class="fit-pair" data-split="false" data-a="${esc(a)}" data-b="${esc(b)}"><span class="fit-pair__probe" data-text="${esc(`${a} · ${b}`)}" aria-hidden="true"></span>${esc(a)} · ${esc(b)}</span>`;
 /** 첫 화면의 수저 다섯 자루 줄: 큰 숟가락(큰 변형, 32×52) + 이름 (색·표식·이름을 함께) */
 export const spoonLineup = () =>
   `<ul class="spoon-lineup" aria-label="수저 다섯 단계: 흙수저, 동수저, 은수저, 금수저, 다이아몬드수저">${[1, 2, 3, 4, 5]
@@ -231,7 +244,12 @@ export function page({ title, body, bodyClass = '', lang = 'ko', head = '', moti
 <link rel="stylesheet" href="ds.css">
 <script>(function(){var q=new URLSearchParams(location.search);var t=q.get('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(q.get('motion')==='reduce')document.documentElement.setAttribute('data-motion','reduce');
 /* 시안 전용: 다크 테마면 도구 줄의 다크모드 버튼을 켜짐 상태(aria-pressed + 아이콘 달→해)로 보인다. 구현에서는 상태값이 정한다(R-136②). */
-document.addEventListener('DOMContentLoaded',function(){var dark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);if(!dark)return;document.querySelectorAll('[data-tool="dark"]').forEach(function(b){b.setAttribute('aria-pressed','true');var u=b.querySelector('use');if(u)u.setAttribute('href','#i-sun');var s=b.querySelector('.sr-only');if(s)s.textContent='켜짐';});});})();</script>
+document.addEventListener('DOMContentLoaded',function(){var dark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);if(!dark)return;document.querySelectorAll('[data-tool="dark"]').forEach(function(b){b.setAttribute('aria-pressed','true');var u=b.querySelector('use');if(u)u.setAttribute('href','#i-sun');var s=b.querySelector('.sr-only');if(s)s.textContent='켜짐';});});
+/* 시안 전용 흉내(구현은 src/ui/barRelease.ts#watchBarRelease): 하단 고정 띠(.bottom-bar)의 실제 높이를 <html>의 --bar-h로 알려 본문 끝 여백·scroll-padding이 따르게 하고(CM10),
+   띠가 작은 뷰포트 높이(100svh 탐침)의 절반을 넘으면 <html class="bar-released">로 고정을 푼다(QM2-12, R-240 — innerHeight로 재지 않는다). 디자인 시스템 11절. */
+document.addEventListener('DOMContentLoaded',function(){var bar=document.querySelector('.bottom-bar');if(!bar)return;var root=document.documentElement;root.classList.add('has-bottom-bar');var probe=document.createElement('div');probe.setAttribute('aria-hidden','true');probe.style.cssText='position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none';document.body.appendChild(probe);function apply(){var h=bar.offsetHeight;var vh=probe.offsetHeight||root.clientHeight||window.innerHeight;root.style.setProperty('--bar-h',h+'px');root.classList.toggle('bar-released',h>vh*0.5);}apply();if(window.ResizeObserver)new ResizeObserver(apply).observe(bar);window.addEventListener('resize',apply);});
+/* 시안 전용 흉내(구현은 src/ui/FitPair.tsx): 짧은 쌍 「A · B」(.fit-pair)가 한 줄에 들어가면 「A · B」, 안 들어가면 기호 없이 두 항목을 따로 줄로(QM2-10 규칙 3). 보이지 않는 탐침(.fit-pair__probe)의 폭을 칸 폭과 견준다 — 글자 크기·칸 폭이 바뀌면 다시 잰다 */
+document.addEventListener('DOMContentLoaded',function(){var pairs=document.querySelectorAll('.fit-pair');if(!pairs.length)return;function render(p){var probe=p.querySelector('.fit-pair__probe');if(!probe)return;var split=probe.getBoundingClientRect().width>p.getBoundingClientRect().width+0.5;if(split===(p.getAttribute('data-split')==='true'))return;p.setAttribute('data-split',split?'true':'false');p.classList.toggle('is-split',split);var a=p.getAttribute('data-a')||'',b=p.getAttribute('data-b')||'';while(probe.nextSibling)p.removeChild(probe.nextSibling);if(split){var s1=document.createElement('span');s1.className='fit-pair__item';s1.textContent=a;var s2=document.createElement('span');s2.className='fit-pair__item';s2.textContent=b;p.appendChild(s1);p.appendChild(document.createTextNode(' '));p.appendChild(s2);}else{p.appendChild(document.createTextNode(a+' · '+b));}}function all(){pairs.forEach(render);}all();window.addEventListener('resize',all);if(window.ResizeObserver){var ro=new ResizeObserver(all);pairs.forEach(function(p){ro.observe(p);});}});})();</script>
 ${head}
 </head>
 <body class="${bodyClass}">

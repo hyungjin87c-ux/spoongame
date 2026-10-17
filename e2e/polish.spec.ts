@@ -11,7 +11,9 @@ import {
   lifeState,
   noHorizontalOverflow,
   oracleLife,
+  pressBeginToLife,
   readSave,
+  rouletteState,
   settle,
 } from './helpers';
 
@@ -81,7 +83,23 @@ test('프로그램이 제목으로 옮긴 포커스에는 링이 없고, 키보�
   expect(btn.outlineStyle).toBe('solid');
   expect(parseFloat(btn.outlineWidth)).toBeGreaterThanOrEqual(2);
   await expect(start).toBeEnabled();
-  await page.keyboard.press('Enter'); // 출생 화면: 프로그램이 제목으로 포커스를 옮긴다
+  await page.keyboard.press('Enter'); // 룰렛 화면: 프로그램이 제목으로 포커스를 옮긴다
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('H1');
+  const rouletteH1 = await ring('h1');
+  expect(rouletteH1.focused).toBe(true);
+  expect(rouletteH1.outlineStyle, '룰렛 제목 포커스 링').toBe('none');
+  // 키보드로 닿은 다음 컨트롤(건너뛰기 버튼)에는 링이 있다
+  await page.keyboard.press('Tab');
+  const skipRing = await ring('[data-testid="skip-roulette"]');
+  expect(skipRing.focused).toBe(true);
+  expect(skipRing.outlineStyle).toBe('solid');
+  expect(parseFloat(skipRing.outlineWidth)).toBeGreaterThanOrEqual(2);
+  await expect(page.getByTestId('skip-roulette')).toBeEnabled();
+  await page.keyboard.press('Enter'); // 건너뛰기 → 같은 버튼 요소가 「출생신고 보기」가 된다(포커스 유지)
+  await expect(page.getByTestId('to-birth')).toBeFocused();
+  await expect(page.getByTestId('to-birth')).toBeEnabled();
+  await page.keyboard.press('Enter'); // 출생신고 화면: 프로그램이 제목으로 포커스를 옮긴다
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('H1');
   const h1 = await ring('h1');
@@ -102,7 +120,7 @@ test('프로그램이 제목으로 옮긴 포커스에는 링이 없고, 키보�
 
 // ---------- 사용감 3: 줄바꿈 ----------
 
-test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all, 첫 화면·출생 화면의 제목·문장이 띄어쓰기에서만 줄을 바꾼다 (360px, QA 사용감 3)', async ({ page }) => {
+test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all, 첫 화면·룰렛·출생신고 화면의 제목·문장이 띄어쓰기에서만 줄을 바꾼다 (360px, QA 사용감 3)', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await page.goto('/');
   await expect(page.getByTestId('title-screen')).toBeVisible();
@@ -122,11 +140,18 @@ test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all,
   await check('.slide.is-active .t-sm');
   expect(await page.evaluate(() => getComputedStyle(document.body).wordBreak)).toBe('keep-all');
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.title-page')!).wordBreak)).toBe('keep-all');
-  // 출생 화면
+  // 룰렛(결과 상태)과 출생신고 화면 (M3: 새 디자인 — 제목·상태 줄·서술문·안내 글)
+  await injectSave(page, rouletteState(KNOWN_SEED, 'present', 3, 50), '/');
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  await check('h1');
+  await check('.roulette__lead p');
+  await check('.roulette__after');
+  expect(await noHorizontalOverflow(page)).toBe(true);
   await injectSave(page, birthState(KNOWN_SEED, 'present', 3, 50), '/');
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   await check('h1');
-  await check('.facts p');
+  await check('.doc__sentence');
+  await check('.card__note');
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 
@@ -332,9 +357,7 @@ test('저장 실패 안내는 인생 화면에서도 화면 위에 고정되지 
   await page.setViewportSize({ width: 667, height: 375 });
   await page.goto('/?__quota=1');
   await expect(page.getByTestId('save-notice')).toBeVisible();
-  await page.getByTestId('start-birth').click();
-  await page.getByTestId('next-life').click();
-  await expect(page.getByTestId('life-screen')).toBeVisible();
+  await pressBeginToLife(page); // 첫 화면 → 룰렛 → 출생신고 → 인생
   await expect(page.getByTestId('save-notice')).toBeVisible();
   const position = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="save-notice"]')!).position);
   expect(position, '안내 바가 화면 위에 고정(sticky/fixed)되지 않는다').toBe('static');
@@ -466,14 +489,14 @@ test('A66: 빈 저장소에서 두 탭을 동시에 열어도 둘 다 타이틀�
     const startA = a.getByTestId('start-birth');
     await expect(startA).toBeEnabled();
     await startA.click();
-    await expect(a.getByTestId('birth-screen')).toBeVisible();
+    await expect(a.getByTestId('roulette-screen')).toBeVisible();
     await expect(b.getByTestId('superseded-screen')).toBeVisible();
-    await expect.poll(async () => (await readSave(a)).data.phase).toBe('birth');
-    // B의 이어하기 한 번으로 A의 진행(출생)을 이어받는다
+    await expect.poll(async () => (await readSave(a)).data.phase).toBe('roulette');
+    // B의 이어하기 한 번으로 A의 진행(출생 결과가 정해진 룰렛 단계)을 이어받는다
     await expect(b.getByTestId('take-over')).toBeEnabled();
     await b.getByTestId('take-over').click();
-    await expect(b.getByTestId('birth-screen')).toBeVisible();
-    await expect(a.getByTestId('birth-screen')).toBeVisible();
+    await expect(b.getByTestId('roulette-screen')).toBeVisible();
+    await expect(a.getByTestId('roulette-screen')).toBeVisible();
     await expect(a.getByTestId('superseded-screen')).toHaveCount(0);
     await context.close();
   }
@@ -520,8 +543,8 @@ test('A66 (결정적): 앱이 빈 저장소를 읽은 직후 다른 탭이 "진�
       expect(saved.seed, '이 탭의 새 게임이 저장됐다(다른 탭의 타이틀을 대체)').not.toBe(7);
       // 이 탭이 진행해도 문제없다
       await page2.getByTestId('start-birth').click();
-      await expect(page2.getByTestId('birth-screen')).toBeVisible();
-      await expect.poll(async () => (await readSave(page2)).data.phase).toBe('birth');
+      await expect(page2.getByTestId('roulette-screen')).toBeVisible();
+      await expect.poll(async () => (await readSave(page2)).data.phase).toBe('roulette');
     }
     await context.close();
   }

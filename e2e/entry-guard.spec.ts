@@ -318,28 +318,32 @@ test.describe('시작 화면 더블탭이 인생 화면 컨트롤에 떨어지�
     expect(birth.filter((r) => r.changingChanged === true).length, `그중 대조군에서 상태가 실제로 바뀐 뷰포트: ${summary('birth')}`).toBeGreaterThanOrEqual(MIN_OVERLAPPED_BIRTH_VIEWPORTS);
     expect(takeOver.filter((r) => r.overlapped).length, `"이 탭에서 이어하기"와 컨트롤이 겹친 뷰포트: ${summary('takeOver')}`).toBeGreaterThanOrEqual(MIN_OVERLAPPED_TAKEOVER_VIEWPORTS);
     expect(takeOver.filter((r) => r.changingChanged === true).length, `그중 대조군에서 상태가 실제로 바뀐 뷰포트: ${summary('takeOver')}`).toBeGreaterThanOrEqual(MIN_OVERLAPPED_TAKEOVER_VIEWPORTS);
-    // 겹치지 않는 뷰포트도 있어야 측정이 무언가를 가른다(모든 곳이 겹친다고 나오면 측정이 의미 없다)
-    expect(birth.some((r) => !r.overlapped), `"살아가기"가 컨트롤과 겹치지 않는 뷰포트: ${summary('birth')}`).toBe(true);
+    // 겹치지 않는 뷰포트도 있어야 측정이 무언가를 가른다(모든 곳이 겹친다고 나오면 측정이 의미 없다).
+    // M3: 출생신고의 「살아가기」가 하단 고정 띠로 옮겨 가(화면 아래 가운데) 인생 화면의 컨트롤 줄과 11개 뷰포트 모두에서 겹친다 — 예전에는 360x667·360x740에서 안 겹쳤다.
+    // 그래서 이 확인은 두 시작 화면(「살아가기」·「이 탭에서 이어하기」)을 함께 본다: 「이 탭에서 이어하기」는 대부분의 뷰포트에서 겹치지 않는다. 가르는 힘의 핵심은 아래 대조군(겹친 곳은 가드를 끄면 실제로 상태가 바뀐다)이다.
+    expect(rows.some((r) => !r.overlapped), `컨트롤과 겹치지 않는 (뷰포트, 시작 화면): 살아가기 [${summary('birth')}] / 이어하기 [${summary('takeOver')}]`).toBe(true);
     // 대조군에서 변화가 없어야 하는 곳은 없다: 겹치고 바뀌는 컨트롤이 있는 곳은 전부 바뀌었다
     expect(rows.filter((r) => r.changingChanged === false).map((r) => `${r.viewport} ${r.kind}`), '겹치는데 대조군에서도 안 바뀐 곳').toEqual([]);
   });
 });
 
-test('데스크톱: 시작 버튼 영역이 인생 화면 컨트롤과 겹치지 않는 것을 재고, 어느 지점을 더블클릭해도 인생 화면 상태는 그대로다 (R-035)', async ({ page }, testInfo) => {
+test('데스크톱: 하단 고정 「살아가기」 자리와 인생 화면 컨트롤이 겹치는 곳을 재고, 어느 지점을 더블클릭해도 인생 화면 상태는 그대로다 — 둘째 입력은 닫힌 컨트롤에 닿고, 가드를 끄면 실제로 바뀐다 (R-035, M3)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', '기본 뷰포트(1280x800)를 쓰므로 desktop에서만 실행');
   await startPageHidden(page);
   await recordClicks(page);
   await injectSave(page, BIRTH_SAVE, '/', SETTINGS);
   const controls = await measureControls(page);
   const measured = await measureEntry(page, ENTRIES[0], controls);
-  expect(measured.overlapIds, '데스크톱에서는 시작 버튼 영역에 컨트롤이 겹치지 않는다').toEqual([]);
+  // M3 이전에는 출생 화면의 「살아가기」가 본문 안에 있어 데스크톱에서 컨트롤과 겹치지 않았다. 이제 화면 아래 고정 띠라 인생 화면의 컨트롤 줄과 겹친다 — 그래서 가드가 막아야 하는 경우로 바뀌었다.
+  expect(measured.overlapIds.length, '데스크톱에서도 하단 고정 「살아가기」가 인생 화면 컨트롤과 겹친다(측정)').toBeGreaterThan(0);
 
   const trials = await sweep(page, ENTRIES[0], measured.points, true);
-  expect(trials).toHaveLength(FRACTIONS.length);
-  for (const t of trials) {
-    expect(isChanged(t), describeTrial(t)).toBe(false);
-    expect(wasIntercepted(t), describeTrial(t)).toBe(false);
-  }
+  expect(trials.length).toBeGreaterThan(FRACTIONS.length); // 분수 지점 + 겹침 한가운데 지점들
+  for (const t of trials) expect(isChanged(t), describeTrial(t)).toBe(false);
+  expect(trials.filter(wasIntercepted).length, '겹치는 곳을 눌렀는데 둘째 입력이 닫힌 컨트롤에 닿은 적이 없다').toBeGreaterThan(0);
+  // 대조군: 가드를 끄면 같은 조작이 실제로 상태를 바꾼다 — 위 단언이 가드를 가른다는 증거
+  const unguarded = await sweep(page, ENTRIES[0], measured.points, false);
+  expect(unguarded.filter(isChanged).length, '대조군(가드 없음)에서 더블클릭이 컨트롤을 눌러 상태가 바뀌어야 한다').toBeGreaterThan(0);
 });
 
 test('가드는 화면이 뜰 때 한 번만 걸린다: 플레이 중 배속 버튼 연타·나이가 오를 때·자동 모드 해제에서 컨트롤이 다시 닫히지 않는다 (R-035)', async ({ page }) => {

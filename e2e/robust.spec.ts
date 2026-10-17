@@ -101,7 +101,7 @@ test('선택 버튼을 연타해도 첫 클릭만 반영되고, 바로 다음에
   const a = await evalCore<GameState | null>(
     page,
     `for (let seed = 3000; seed < 3400; seed++) {
-       const start = core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
+       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
        const s = core.advanceUntilDecision(start).state;
        if (s.phase !== 'life' || !s.pending) continue;
        const t = core.advanceUntilDecision(core.resolveChoice(s, s.pending.key, s.pending.choiceIds[0])).state;
@@ -146,6 +146,13 @@ test('키보드만으로 타이틀부터 사망까지 진행할 수 있다 (Tab�
 
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   await tabTo((id) => id === 'start-birth');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('roulette-screen')).toBeVisible(); // 룰렛(M3): 키보드로 건너뛴다
+  await expect(page.getByTestId('skip-roulette')).toBeEnabled();
+  await tabTo((id) => id === 'skip-roulette');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('to-birth')).toBeEnabled(); // 같은 버튼 요소가 「출생신고 보기」가 된다
+  await tabTo((id) => id === 'to-birth');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   await expect(page.getByTestId('next-life')).toBeEnabled();
@@ -350,7 +357,7 @@ test('저장소가 비어 있고 쓰기가 막혀 있으면(처음 연 사용자
   await expect(page.getByTestId('save-notice')).toBeVisible();
   await expect(page.getByTestId('save-notice')).toContainText('저장하지 못했습니다');
   await page.getByTestId('start-birth').click();
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
   await expect(page.getByTestId('save-notice')).toBeVisible();
   expect(await page.evaluate((k) => localStorage.getItem(k), GAME_KEY), '저장은 실제로 일어나지 않았다').toBeNull();
   expect(await noHorizontalOverflow(page)).toBe(true);

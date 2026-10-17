@@ -68,8 +68,8 @@ test('확정 버튼 「이전 판 지우고 태어나기」를 누르면 이전 
   const yes = page.getByRole('button', { name: '이전 판 지우고 태어나기', exact: true });
   await expect(yes).toBeEnabled();
   await yes.click();
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible(); // 새 판은 룰렛에서 시작한다(M3)
   const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? 'null') as { data: { phase: string; age: number } } | null, GAME_KEY);
-  expect(after?.data.phase, '확정하면 새 판(출생 단계)으로 바뀌어 저장된다').toBe('birth');
+  expect(after?.data.phase, '확정하면 새 판(룰렛 단계 — 출생 결과가 정해져 저장된다)으로 바뀌어 저장된다').toBe('roulette');
   expect(after?.data.age).toBe(0);
 });

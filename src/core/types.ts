@@ -1,8 +1,9 @@
 /**
- * 저장되는 화면 단계. SPEC-003 FS1: title → (roulette: M3) → birth → life → ending. 별도 시대 선택 단계(eraSelect)는 없어졌다 — 세상·인생 길이는 첫 화면(title)에서 고른다.
- * 「첫 화면 다시 열기」(나가기)는 저장되는 단계가 아니라 세션 상태다(core/session.ts#Session.showTitle, 마스터 결정 C3).
+ * 저장되는 화면 단계. SPEC-003 FS1: title → roulette → birth → life → ending. 별도 시대 선택 단계(eraSelect)는 없어졌다 — 세상·인생 길이는 첫 화면(title)에서 고른다.
+ * roulette(룰렛 화면)는 「태어나기」를 누르는 순간 출생 결과가 정해져 저장된 상태다(RL5): 룰렛 도중·직후에 새로고침해도 다시 돌지 않고 결과가 확정된 모습으로 복원된다.
+ * birth는 출생신고 화면이다(BR). 「첫 화면 다시 열기」(나가기)는 저장되는 단계가 아니라 세션 상태다(core/session.ts#Session.showTitle, 마스터 결정 C3).
  */
-export const PHASES = ['title', 'birth', 'life', 'ending'] as const;
+export const PHASES = ['title', 'roulette', 'birth', 'life', 'ending'] as const;
 export type Phase = (typeof PHASES)[number];
 
 /** 시대: 지난 세상 / 지금 세상 / 다가올 세상 */
@@ -43,6 +44,45 @@ export type ParentingStyle = (typeof PARENTING_STYLES)[number];
 /** 생애 단계 5개: 영유아·학창·청년·중년·노년 (나이 경계는 data/lifeTable.ts#STAGE_TABLE) */
 export const STAGES = ['infant', 'school', 'youth', 'middle', 'senior'] as const;
 export type Stage = (typeof STAGES)[number];
+
+/**
+ * 출생신고의 직업 대분류 (SPEC-003 BR2·BR4). 한국표준직업분류(8차) 대분류 중 근거 통계표(occupation-proxy, 30·40대 취업자)에 있는 9개.
+ * 군인은 그 표에 없어 두지 않는다. 화면 이름과 통계표 이름의 대응은 data/birthReportTable.ts.
+ */
+export const OCCUPATIONS = ['manager', 'professional', 'clerk', 'service', 'sales', 'agri', 'craft', 'machine', 'labor'] as const;
+export type Occupation = (typeof OCCUPATIONS)[number];
+
+/** 사는 집의 점유 형태: 자가 / 임차(전세·월세) / 무상 (주거실태조사 일반가구 점유형태). 임차를 전세·월세로 나눈 값은 원문 확인을 못 해 두지 않았다. */
+export const HOUSINGS = ['own', 'rent', 'free'] as const;
+export type Housing = (typeof HOUSINGS)[number];
+
+export interface Parent {
+  /** 아이가 태어난 해의 나이 */
+  age: number;
+  job: Occupation;
+}
+
+/**
+ * 출생신고 상세 (SPEC-003 BR2~BR4, 저장 스키마 v6). 출생 로직(core/birth.ts#generateBirth)이 한 번에 정하고, 룰렛(RL2)과 출생신고(BR)가 이 값을 그대로 보인다.
+ * 지역(region)은 룰렛 지역 릴의 값(시·도 줄임 이름), 시군구는 출생신고에서 시도 안의 출생아 비율로 뽑은 값이다.
+ */
+export interface BirthReport {
+  /** 출생 월 1~12 (월별 출생아 수 가중 추첨, 남은 결정 R1) */
+  month: number;
+  /** 룰렛이 정한 시·도 — 줄임 이름(서울·부산…·전남광주·제주). 지난 세상은 그 시기의 시·도 구분(경기 = 경기+인천 등) */
+  region: string;
+  /** 시군구가 통계에서 속한 시·도(줄임 이름). 합쳐진 지역(전남광주·지난 세상의 경기 등) 안에서 같은 이름의 구를 가르는 데 쓴다. */
+  sigunguSido: string;
+  /** 시군구 이름. 일반구가 있는 시는 「수원시 장안구」처럼 시 이름을 함께 적는다. */
+  sigungu: string;
+  mother: Parent;
+  father: Parent;
+  housing: Housing;
+  /** 출생 체중(kg), 소수 첫째 자리 */
+  birthWeightKg: number;
+  /** 형제 순서: 1 첫째 · 2 둘째 · 3 셋째 · 4 넷째 · 5 다섯째 이상 */
+  birthOrder: number;
+}
 
 export interface Character {
   /** 성+이름 (예: 김민준) */
@@ -129,6 +169,10 @@ export interface GameState {
   lastChoiceAge: number | null;
   /** 사망 정보 (phase가 ending일 때만 non-null) */
   death: Death | null;
+  /** 출생신고 상세(출생 연월·지역·부모·주거·체중·형제 순서). 출생 전(title)에는 null. */
+  birthReport: BirthReport | null;
+  /** 같은 해 태어난 사람들(VP3)을 만드는 시드. 상태에는 시드만 저장하고 인물은 매번 같은 함수로 다시 만든다. 출생 전에는 null. */
+  peerSeed: number | null;
   /** 최초 난수 시드 (재현용) */
   seed: number;
   /** 현재 RNG 내부 상태. 저장에 포함되어 새로고침 후에도 수열이 이어진다. */

@@ -114,6 +114,12 @@ svg.spoon--lg { width: 32px; height: 52px; }
 .radio-card.is-selected .radio-card__desc { color: var(--c-on-brand-soft); }
 .radio-card.is-selected .radio-card__mark { background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-brand); }
 .radio-card.is-selected .radio-card__mark .icon { opacity: 1; }
+/* 고를 수 없는 카드(「약 1시간」 — 준비 중): 점선 테두리·옅은 글자·「준비 중」 표식으로 색에만 의존하지 않고 드러낸다. 카드는 라디오 그룹 안에 그대로 있고 표식 글자는 접근 가능한 이름에 든다(R-202) */
+.radio-card.is-disabled { cursor: not-allowed; border-style: dashed; }
+.radio-card.is-disabled input { cursor: not-allowed; }
+.radio-card.is-disabled .radio-card__title, .radio-card.is-disabled .radio-card__desc { color: var(--c-text-3); }
+.radio-card.is-disabled .radio-card__mark { border-style: dashed; }
+.radio-card.is-disabled .radio-card__meta { color: var(--c-text-2); font-weight: var(--fw-bold); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); padding: 0 var(--sp-2); }
 .group-title { font-size: var(--fs-md); font-weight: var(--fw-bold); margin-bottom: var(--sp-2); }
 
 /* ---------- 상태 바·진행률 ---------- */
@@ -130,9 +136,16 @@ svg.spoon--lg { width: 32px; height: 52px; }
 .year-progress { position: relative; height: 12px; border-radius: var(--r-pill); background: var(--c-meter-track); border: 1px solid var(--c-border-strong); overflow: hidden; }
 .year-progress__fill { height: 100%; background: var(--c-brand); border-radius: var(--r-pill); }
 
-/* ---------- 수저 단계 칩 ---------- */
-.grade { --grade-solid: var(--c-grade-1); --grade-soft: var(--c-grade-1-soft); --grade-ink: var(--c-grade-1-ink); display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px 1px 6px; border-radius: var(--r-pill); border: 1.5px solid var(--grade-solid); background: var(--grade-soft); color: var(--grade-ink); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.6; white-space: nowrap; }
+/* ---------- 수저 단계 칩 (구현 src/styles/doc.css와 같은 블록) ---------- */
+.grade { --grade-solid: var(--c-grade-1); --grade-soft: var(--c-grade-1-soft); --grade-ink: var(--c-grade-1-ink); display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px 1px 6px; border-radius: var(--r-pill); border: 1.5px solid var(--grade-solid); background: var(--grade-soft); color: var(--grade-ink); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.6; white-space: nowrap; max-width: 100%; }
 .grade svg.spoon { color: var(--grade-solid); }
+/* 칩이 칸보다 넓어질 때(글자 150%+·폭 320의 「다이아몬드수저 ●●●●●」, REV-003-M3-1 R-262 표본이 잡은 결함): 점이 다음 줄로 내려가고 이름은 낱말(「다이아몬드 / 수저」) 단위로만 끊긴다 — 칩이 칸 밖으로 넘치지 않는다.
+   이름은 flex-basis 0 + 최소 폭(가장 긴 덩어리)이라 아이콘·이름이 한 줄에 놓이고 점만 먼저 밀려 나간다. overflow-wrap: anywhere(전역)는 최소 폭을 글자 하나로 줄여 점이 밀리기 전에 이름이 중간에서 끊기므로 이름은 normal + keep-all —
+   낱말 사이의 줄바꿈 기회는 「다이아몬드<wbr>수저」(구현 ui/Grade.tsx, 시안 생성기 mockLib.mjs#gradeChip·reelSpoon도 같다 — D-05, 2026-10-16 r4 뒤). `<wbr>`는 글자가 없어 읽는 이름은 「다이아몬드수저」이고 e2e/intendedBreaks.ts의 유일한 허용 낱말이다(design-system.md 11-8절). 한 줄에 다 들어가는 평소 폭은 그대로 한 줄 알약이다 */
+.grade:not(.grade--reel) { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+.grade:not(.grade--reel) > svg.spoon { flex: none; }
+.grade:not(.grade--reel) > span:not(.grade__dots) { flex: 1 1 0; min-width: min-content; overflow-wrap: normal; word-break: keep-all; }
+.grade:not(.grade--reel) > .grade__dots { flex: none; }
 .grade__dots { display: inline-flex; gap: 3px; margin-left: 2px; }
 .grade__dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--grade-solid); }
 .grade__dots i.on { background: var(--grade-solid); }
@@ -144,9 +157,11 @@ svg.spoon--lg { width: 32px; height: 52px; }
 .grade--lg { font-size: var(--fs-lg); padding: 3px 14px 3px 8px; }
 .grade--lg svg.spoon { width: 20px; height: 32px; }
 .grade--lg .grade__dots i { width: 10px; height: 10px; }
+/* 룰렛 릴 칸: 점 없이 아이콘 + 이름. 좁은 칸에서는 이름이 줄을 바꾼다 */
+.grade--reel { font-size: var(--fs-sm); line-height: 1.25; padding: 4px 10px 4px 6px; border-radius: var(--r-md); white-space: normal; text-align: left; }
 .grade-line { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
 /* 구간 글자는 어디서나 굵게(출생신고·프로필은 dd가 굵고, 엔딩 범례도 같게 — REV-003-D-3 관찰). 줄이 길면 칩 아래로 내려가되 .grade-line 안이라 칩 시작점에 맞춰 들여쓰기된다 */
-.grade-line__range { font-size: var(--fs-sm); color: var(--c-text-2); font-weight: var(--fw-bold); }
+.grade-line__range { font-size: var(--fs-sm); color: var(--c-text-2); font-weight: var(--fw-bold); min-width: 0; }
 
 /* ---------- 영향 표기 (선택지 아래 작은 글씨) ---------- */
 .impact { display: flex; flex-wrap: wrap; gap: 2px var(--sp-2); font-size: var(--fs-sm); color: var(--c-text-2); font-weight: var(--fw-regular); }
@@ -155,13 +170,28 @@ svg.spoon--lg { width: 32px; height: 52px; }
 .impact .up { color: var(--c-up); font-size: 0.8em; letter-spacing: -0.1em; }
 .impact .down { color: var(--c-down); font-size: 0.8em; letter-spacing: -0.1em; }
 
-/* ---------- 표 ---------- */
+/* ---------- 표 (구현 src/styles/doc.css와 같은 블록) ---------- */
 .table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .table th, .table td { padding: var(--sp-2) var(--sp-3); text-align: left; border-bottom: 1px solid var(--c-border); vertical-align: top; }
 .table thead th { font-weight: var(--fw-bold); color: var(--c-text-2); border-bottom: 2px solid var(--c-border-strong); }
-.table td.num, .table th.num { text-align: right; white-space: nowrap; }
+.table td.num, .table th.num { text-align: right; }
 .table tbody th { font-weight: var(--fw-regular); color: var(--c-text); }
 .table td strong { font-weight: var(--fw-bold); }
+/* 비교 표(출생신고 「다른 집 아이들과 견주면」, BR5): 항목 아래 출처 줄, 「이 가정 형편」 값 아래 어떤 집단의 값인지 한 줄 */
+.cmp__source, .cmp__note { display: block; margin-top: 2px; font-weight: var(--fw-regular); }
+/* 비교 카드는 컨테이너다(QM3-1, M3-L02 — 2026-10-16 r4): 표를 한 행 한 덩어리로 쌓는 기준을 뷰포트 폭(px)이 아니라 **카드 내용 폭(rem)**으로 둔다. 글자 200%의 폭 640대 화면에서는 표 첫 칸이 출처 줄의 긴 낱말(「초중고사교육비조사」)을 못 담아 칸 안에서 끊겼다 */
+.card--cmp { container-type: inline-size; container-name: cmp; }
+/* 좁은 카드(< 35rem — 글자 100%에서 카드 내용 폭 560px, 뷰포트 약 592px 아래; 글자가 커지면 rem이 커져 더 넓은 화면까지 쌓인다): 한 행이 한 덩어리 — 항목(굵게)·출처 아래에 「전체 평균 | 이 가정 형편」 두 칸(머리글은 읽기 전용으로 숨기고 칸마다 data-label로 다시 적는다).
+   표 의미는 role로 유지한다(display를 바꾸면 표 의미가 사라지는 브라우저가 있다) */
+@container cmp (max-width: 35rem) {
+  .table--cmp, .table--cmp tbody { display: block; }
+  .table--cmp thead { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .table--cmp tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--c-border); }
+  .table--cmp tbody th { grid-column: 1 / -1; padding: 0; border: 0; font-weight: var(--fw-bold); }
+  .table--cmp td { padding: 0; border: 0; text-align: left; }
+  .table--cmp td::before { content: attr(data-label); display: block; font-size: var(--fs-xs); color: var(--c-text-3); }
+  .table--cmp td.num { white-space: normal; }
+}
 
 /* ---------- 입력 ---------- */
 .field { display: flex; flex-direction: column; gap: var(--sp-2); }
@@ -179,128 +209,242 @@ svg.spoon--lg { width: 32px; height: 52px; }
 .toggle.is-on .toggle__thumb .icon { opacity: 1; }
 .toggle__state { font-size: var(--fs-sm); font-weight: var(--fw-bold); min-width: 2em; }
 
-/* ---------- 하단 고정 버튼 ---------- */
+/* ---------- 하단 고정 띠 (design-system.md 11절 공통 패턴 — 구현 src/styles/title.css와 같다) ---------- */
 .bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-bar); display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--gutter) calc(var(--sp-2) + env(safe-area-inset-bottom)); background: var(--c-bg); box-shadow: var(--shadow-bar); }
 .bottom-bar .btn--lg { width: min(100%, 360px); }
-.page-end-space { height: calc(88px + env(safe-area-inset-bottom)); }
+.bottom-bar__ask { font-size: var(--fs-sm); font-weight: var(--fw-bold); text-align: center; margin: 0; }
+/* 확인 단계(R-204): 맨 아래 줄은 안전한 「돌아가기」(기본·큰 버튼, 먼저 포커스), 그 위가 이전 판을 지우는 확인(보조) — 방금 누른 「새로 태어나기」 자리에는 안전한 쪽이 온다 */
+.bottom-bar__stack { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); width: 100%; }
+.bottom-bar__stack .btn { width: min(100%, 360px); }
+/* 본문 끝 여백 = 띠의 실제 높이(--bar-h: 상태·글자 크기마다 다르다 — 새 판 68px·이어하기 120px·확인 단계 약 150px·글자 200% 확인 단계 254px) + 숨 쉴 틈. 띠 높이는 ui/barRelease.ts#watchBarRelease가 ResizeObserver로 재서 <html>에 건다(시안은 page()의 흉내 스크립트). 재지 못하면 가장 큰 상태(164px)를 가정한다(R-203). 88px 같은 고정값을 쓰지 않는다 */
+.page-end-space { height: calc(var(--bar-h, 164px) + var(--sp-2)); }
+/* 키보드 포커스가 고정 띠에 가리지 않는다(CM10·QM2-1): 포커스가 요소를 화면 안으로 스크롤할 때 띠 위에 머물도록 문서 루트의 아래 스크롤 여백을 띠 높이 + 12px(포커스 링 3px + 간격 2~4px보다 큼)로, 위도 12px(Shift+Tab 때 링이 화면 위로 나가지 않게). 상단 고정 헤더가 생기면 scroll-padding-top에 그 높이(--head-h)를 더한다 */
+html.has-bottom-bar { scroll-padding-top: var(--sp-3); scroll-padding-bottom: calc(var(--bar-h, 164px) + var(--sp-3)); }
+/* 낮은 화면에서 띠가 작은 뷰포트 높이(100svh)의 절반을 넘으면(QM2-12, R-233·R-240) 고정을 풀어 본문 끝(푸터 다음)에 둔다 — 높이 미디어 쿼리로 풀지 않는다(띠 높이는 상태마다 다르고 rem 미디어 쿼리는 글자 확대 시험에 반응하지 않는다).
+   함께 풀 것: 스크롤 여백(기본 간격으로), 본문 끝 여백(빈 칸이 남지 않게), --bar-h에 묶인 다른 계산(아래 960px 이상의 오른쪽 열 max-height). 풀린 띠의 위끝 선은 테두리가 아니라 그림자 — 고정·해제 띠 높이가 같아야 --bar-h가 어긋나지 않는다 */
+html.bar-released.has-bottom-bar { scroll-padding-bottom: var(--sp-3); }
+html.bar-released .bottom-bar { position: static; box-shadow: 0 -1px 0 var(--c-border-strong); }
+html.bar-released .page-end-space { display: none; }
 
 /* ---------- 헤더(첫 화면 외) — 로고는 헤더용 가로 로고(단순화 심볼 + 워드마크) 40px ---------- */
 .site-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--gutter); border-bottom: 1px solid var(--c-border); background: var(--c-bg); min-height: 56px; }
 .site-head .logo { --logo-h: var(--logo-h-header); }
 .site-head__name { font-size: var(--fs-sm); color: var(--c-text-2); white-space: nowrap; }
 
-/* ---------- 첫 화면 ---------- */
+/* ---------- 첫 화면 (구현 src/styles/title.css와 같은 블록 — 구조 R-220: 한 격자에 본문(main) → 통계 카드(aside) → 푸터(footer)) ---------- */
 .title { max-width: 1120px; margin: 0 auto; padding: var(--sp-6) var(--gutter) 0; display: grid; gap: var(--sp-6); grid-template-columns: minmax(0, 1fr); }
 .title__main { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
+.title__notice { padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--c-notice-bg); color: var(--c-on-notice); font-size: var(--fs-sm); }
 .hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-4); }
+.hero h1 { font-size: inherit; max-width: 100%; }
 .hero .logo--stacked { --logo-h: 236px; max-width: 100%; }
-.hero__tag { font-size: var(--fs-lg); line-height: var(--lh-snug); color: var(--c-text-2); max-width: 22em; }
-.hero__tag .nowrap { white-space: nowrap; }
-.spoon-row { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
-/* 수저 다섯 자루 줄: 같은 숟가락(큰 변형 sp-N-lg), 재질(색·닫힌 채움 표식)만 다르다. 이름을 항상 함께 적는다 */
-.spoon-lineup { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.3fr); gap: var(--sp-1); width: 100%; max-width: 420px; padding: var(--sp-3) 0 var(--sp-2); border-top: 1px solid var(--c-border-strong); border-bottom: 1px solid var(--c-border-strong); }
-.spoon-fig { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); color: var(--grade-solid); min-width: 0; }
-.spoon-fig__name { font-size: var(--fs-xs); line-height: 1.2; color: var(--c-text-2); text-align: center; font-weight: var(--fw-bold); overflow-wrap: normal; word-break: keep-all; }
 .hero .logo--row { --logo-h: 108px; display: none; max-width: 100%; }
+.hero__tag { font-size: var(--fs-lg); line-height: var(--lh-snug); color: var(--c-text-2); max-width: 22em; }
+/* 줄바꿈 묶음(QM2-5, core/glue.ts): 「A · B」 사슬·괄호 낱말·한 줄 설명의 끝 구절은 줄이 바뀌어도 쪼개지지 않게 묶되(inline-block — 줄에 안 들어가면 통째로 다음 줄로),
+   묶음 자체가 한 줄보다 길어지는 큰 글자(200%)·좁은 폭(320px)에서는 묶음 안에서 줄을 바꾼다(white-space: nowrap으로 묶으면 그 폭에서 가로로 넘쳤다 — CM11). 짧은 숫자+단위·날짜 묶음(.nowrap)만 줄이 바뀌지 않는다 */
+.keep-phrase { display: inline-block; max-width: 100%; }
+/* 링크 안의 묶음(inline-block)에는 링크의 밑줄이 전파되지 않아 끊겼다(R-236) — 같은 text-decoration을 상속해 자기 상자 안의 글자에 직접 긋는다 */
+.title-foot a .keep-phrase { text-decoration: inherit; }
+/* 짧은 쌍 「A · B」(QM2-10 규칙 3, ui/Pair.tsx): 한 줄에 들어가는 폭에서는 「A · B」, 칸이 좁거나 글자가 커서 한 줄을 넘으면 기호를 감추고 두 항목을 따로 줄로 — 「·」가 줄 끝·첫머리에 혼자 남지 않는다.
+   문턱은 슬라이드 칸(.slide, container-type: inline-size)의 폭을 em으로 견준다(em = 칸의 글자 크기라 글자를 키우면 문턱도 함께 커진다). 실측(Windows Chromium, 16px): 기준 줄 「인구 10만 명당 · 2025년 기준」 11.6em → 문턱 14em, 보조 줄 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」 15.0em → 16.5em.
+   새 쌍을 만들면 같은 방법으로 실측해 문턱을 더한다. 컨테이너 쿼리를 모르는 브라우저는 항상 한 줄 모양(묶음이 기호를 앞뒤 낱말과 붙인다) */
+.pair__item { display: inline; }
+@container (max-width: 14em) {
+  .pair--basis .pair__item { display: block; }
+  .pair--basis .pair__sep { display: none; }
+}
+@container (max-width: 16.5em) {
+  .pair--meta .pair__item { display: block; }
+  .pair--meta .pair__sep { display: none; }
+}
+/* 짧은 쌍 「A · B」의 둘째 방식(구현 ui/FitPair.tsx, M3): **내용 길이가 판마다 다른** 쌍(룰렛 결과 한 줄 「흙수저(하위 25% 안쪽) · 서울」, 출생신고 「29세 · 판매직」, 문서 띠 「수저 게임 · 가상의 서류」)은 정해진 em 문턱 대신
+   보이지 않는 탐침(::before content: attr(data-text))으로 「A · B」 한 줄 폭을 재서 칸 폭과 견준다 — 넘치면 기호를 감추고 두 항목을 따로 줄로(.is-split). 탐침은 fixed: absolute이면 한 줄 폭만큼 문서의 가로 스크롤 범위를 늘린다(CM11).
+   시안은 page()의 흉내 스크립트가, 구현은 ResizeObserver가 잰다 */
+.fit-pair { display: block; position: relative; min-width: 0; }
+.fit-pair__probe { position: fixed; left: 0; top: 0; visibility: hidden; pointer-events: none; white-space: nowrap; }
+.fit-pair__probe::before { content: attr(data-text); }
+.fit-pair.is-split .fit-pair__item { display: block; }
+.spoon-row { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
+/* 수저 다섯 자루 줄: 같은 숟가락(큰 변형 sp-N-lg), 재질(색·닫힌 채움 표식)만 다르다. 이름을 항상 함께 적는다.
+   보통 폭에서는 한 줄에 다섯 칸(앞 넷은 같은 폭, 다이아몬드 1.3배). 글자가 커지거나 폭이 좁아 한 줄에 못 들어가면 가로로 밀지 않고 다음 줄로 접는다(칸 최소 폭 = 이름의 가장 긴 낱말, flex-wrap — CM11) */
+.spoon-lineup { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2) var(--sp-1); width: 100%; max-width: 420px; padding: var(--sp-3) 0 var(--sp-2); border-top: 1px solid var(--c-border-strong); border-bottom: 1px solid var(--c-border-strong); }
+.spoon-fig { flex: 1 1 0; min-width: min-content; display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); color: var(--grade-solid); }
+.spoon-fig.grade--5 { flex-grow: 1.3; }
+.spoon-fig__name { font-size: var(--fs-xs); line-height: 1.2; color: var(--c-text-2); text-align: center; font-weight: var(--fw-bold); overflow-wrap: normal; word-break: keep-all; }
 .hero__pop { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-regular); max-width: 22em; }
 .hero__pop strong { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
-.hero__note { font-size: var(--fs-sm); color: var(--c-text-3); margin-top: calc(var(--sp-2) * -1); max-width: 24em; }
+.hero__note { font-size: var(--fs-sm); color: var(--c-text-3); margin-top: calc(var(--sp-2) * -1); }
 .choices { display: grid; gap: var(--sp-2); }
 .choices--1 { grid-template-columns: minmax(0, 1fr); }
 .choices--3 { grid-template-columns: minmax(0, 1fr); }
 .choices--2 { grid-template-columns: minmax(0, 1fr); }
 .title__side { min-width: 0; }
-.title-foot { max-width: 1120px; margin: var(--sp-6) auto 0; padding: 0 var(--gutter); font-size: var(--fs-xs); color: var(--c-text-3); display: flex; flex-direction: column; gap: var(--sp-1); }
+.title-foot { min-width: 0; font-size: var(--fs-xs); color: var(--c-text-3); display: flex; flex-direction: column; gap: var(--sp-1); }
+.title-foot .credit { margin: 0; font-size: var(--fs-xs); line-height: 1.5; color: var(--c-text-3); }
+.title-foot a { color: inherit; text-decoration: underline; text-decoration-color: var(--c-border-strong); }
 
-/* ---------- 통계 캐러셀 ---------- */
-.carousel { display: flex; flex-direction: column; gap: var(--sp-3); }
-.carousel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-.carousel__count { font-size: var(--fs-sm); color: var(--c-text-2); }
-.slide { display: flex; flex-direction: column; gap: var(--sp-2); }
-.slide__value { font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: var(--lh-tight); font-variant-numeric: tabular-nums; }
-.slide__value small { font-size: var(--fs-md); font-weight: var(--fw-regular); color: var(--c-text-2); margin-left: 4px; }
-.slide__meta { font-size: var(--fs-xs); color: var(--c-text-3); }
+/* ---------- 통계 캐러셀 (구현 ui/StatsCarousel.tsx·title.css와 같은 블록) ---------- */
+.carousel { display: flex; flex-direction: column; gap: var(--sp-2); }
+/* 카드 머리: 제목·안내(왼쪽)와 조작 줄(이전·위치·다음·일시정지, 오른쪽). 슬라이드 높이가 달라도 조작 줄은 같은 자리이고 하단 띠에 가려지지 않는다(R-200). 좁아서 한 줄에 안 들어가면 조작 줄이 아래로 내려와 가로 전체를 쓴다(일시정지는 오른쪽 끝) */
+.carousel__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1) var(--sp-3); }
+.carousel__heading { display: flex; flex-direction: column; min-width: 0; }
+.carousel__note { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+.carousel__viewport { min-width: 0; touch-action: pan-y; }
+.carousel__viewport:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 4px; border-radius: var(--r-md); }
+/* 좁은 화면(한 칸 레이아웃): 모든 슬라이드를 같은 칸에 겹쳐 두고 보이는 하나만 드러낸다 — 카드 높이가 가장 큰 슬라이드에 맞춰 고정되어 전환 때 아래 내용(푸터)이 흔들리지 않는다. 짧은 슬라이드의 빈 칸은 카드 끝에 생긴다(REV-003-M2-2 마스터 결정) */
+.slides { display: grid; }
+.slide { container-type: inline-size; grid-area: 1 / 1; display: flex; flex-direction: column; gap: calc(var(--sp-2) - 2px); min-width: 0; visibility: hidden; opacity: 0; transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur); }
+.slide.is-active { visibility: visible; opacity: 1; transition: opacity var(--dur) var(--ease); }
+.slide .t-sm { line-height: var(--lh-snug); }
+.slide__caption { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+/* 큰 값 줄: 「값 + 단위 낱말」은 한 줄에서 끊기지 않는다(nowrap). 대신 글자 크기를 슬라이드 칸 폭에 맞춰 줄인다 — 값 글자 폭(--value-em)과 단위 글자 수(--unit-chars)는 슬라이드마다 인라인 변수로.
+   보통 크기에서는 36px(--fs-3xl) 그대로이고, 글자 200%·아주 좁은 폭에서만 줄어 숫자가 중간에서 끊기거나 칸을 넘치지 않는다(CM11, QM2-5). 값 옆 칸에는 단위 낱말만 — 분모 문구는 기준 줄(QM2-4) */
+.slide__value { font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: var(--lh-tight); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@supports (width: 1cqw) {
+  .slide__value { font-size: min(var(--fs-3xl), calc((100cqw - var(--fs-md) * var(--unit-chars, 1) - var(--sp-1)) / var(--value-em, 6))); }
+}
+.slide__unit { font-size: var(--fs-md); font-weight: var(--fw-regular); color: var(--c-text-2); margin-left: var(--sp-1); }
+.slide__num { white-space: nowrap; }
+.slide__basis { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+/* 큰 값 바로 아래 줄에 글자로 보이는 보조 계열 값(QM2-11): 「조혼인율 인구 1천 명당 4.7건」. 선 무늬(범례) 없이 글자만이고, 기준 줄 앞이라 「2025년 기준」이 두 값을 함께 가리킨다 */
+.slide__side { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+.slide__value--multi { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-1) var(--sp-6); }
+.slide__hv { display: flex; flex-direction: column; }
+.slide__label { font-size: var(--fs-sm); font-weight: var(--fw-regular); color: var(--c-text-2); }
+.slide__meta { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+.slide__help { padding: var(--sp-3); border: 1px solid var(--c-border-strong); border-left: 5px solid var(--c-accent); border-radius: var(--r-md); background: var(--c-accent-soft); color: var(--c-on-accent-soft); font-size: var(--fs-sm); }
+.slide__help strong { font-size: var(--fs-md); }
+.slide__help a { color: inherit; font-weight: var(--fw-bold); }
 .chart { width: 100%; height: auto; color: var(--c-brand); }
-.chart text { font-family: var(--font-sans); font-size: 11px; fill: var(--c-text-2); }
+/* 글자 뒤에 카드 바탕색 테두리(paint-order: stroke)를 깔아, 선이 글자 가까이 지나가는 촘촘한 그래프에서도 값이 읽힌다(R-225·QM2-8). 글자 13px(R-206: 좌표계 폭 = 그려지는 폭) */
+.chart text { font-family: var(--font-sans); font-size: 13px; fill: var(--c-text-2); paint-order: stroke; stroke: var(--c-surface); stroke-width: 3px; stroke-linejoin: round; }
 .chart .axis { stroke: var(--c-border-strong); stroke-width: 1; }
 .chart .grid { stroke: var(--c-border); stroke-width: 1; }
 .chart .line { fill: none; stroke: var(--c-brand); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart .line--dashed { stroke: var(--c-accent); stroke-dasharray: 7 4; }
+.chart .line--dotted { stroke: var(--c-text-2); stroke-dasharray: 2 4; }
 .chart .dot { fill: var(--c-surface); stroke: var(--c-brand); stroke-width: 2.5; }
+.chart .dot--dashed { stroke: var(--c-accent); }
+.chart .dot--dotted { stroke: var(--c-text-2); }
 .chart .dot--last { fill: var(--c-brand); }
+.chart .dot--last.dot--dashed { fill: var(--c-accent); }
+.chart .dot--last.dot--dotted { fill: var(--c-text-2); }
+.chart .val { font-weight: 700; fill: var(--c-text); }
+.chart .chart-bar { fill: var(--c-brand); }
+.chart .bar-label { text-anchor: end; fill: var(--c-text); }
+.chart .bar-value { fill: var(--c-text-2); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); color: var(--c-text-2); }
+.legend li { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.legend svg { width: 28px; height: 10px; }
+.legend .swatch-line { stroke: var(--c-brand); stroke-width: 2.5; fill: none; }
+.legend .swatch-line--dashed { stroke: var(--c-accent); stroke-dasharray: 7 4; }
+.legend .swatch-line--dotted { stroke: var(--c-text-2); stroke-dasharray: 2 4; }
+.legend strong { color: var(--c-text); font-variant-numeric: tabular-nums; }
 /* 캐러셀 조작 줄: 이전 · 「{i} / {N}」 · 다음 · 일시정지(N = koreaStats.json의 캐러셀 지표 수, 자동 넘김 7초 = SC5). 지표가 10개를 넘으므로 점 대신 번호 표기(점은 5개 이하일 때만) — R-133 */
-.carousel__ctrl { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); }
-.carousel__ctrl .carousel__count { min-width: 4.5em; text-align: center; font-variant-numeric: tabular-nums; }
-.carousel__ctrl .btn--icon:last-child { margin-left: auto; }
-.dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 0; }
-.dots button { width: 24px; height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; }
-.dots button i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--c-border-strong); background: transparent; }
-.dots button[aria-current='true'] i { width: 14px; border-radius: var(--r-pill); background: var(--c-brand); border-color: var(--c-brand); }
+.carousel__ctrl { display: flex; align-items: center; gap: var(--sp-1); flex: 1 1 auto; min-width: 0; }
+.carousel__ctrl .carousel__status { flex: none; min-width: 3.6em; text-align: center; font-size: var(--fs-sm); color: var(--c-text-2); }
+.carousel__ctrl .btn--icon { flex: none; }
+.carousel__ctrl .carousel__pause { margin-left: auto; }
+/* 점은 한 줄로만 놓는다(칸이 모자라면 점 칸이 같이 좁아진다 — 두 줄로 꺾이지 않는다) */
+.dots { display: flex; flex-wrap: nowrap; justify-content: center; gap: 0; }
+.dots button { flex: 1 1 0; min-width: 14px; max-width: 24px; height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.dots button i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--c-border-strong); background: transparent; box-sizing: content-box; }
+.dots button[aria-current='true'] i { width: 12px; border-radius: var(--r-pill); background: var(--c-brand); border-color: var(--c-brand); }
 
-/* ---------- 룰렛 ---------- */
+/* ---------- 룰렛 (구현 src/styles/doc.css와 같은 블록 — 2026-10-16 M3 맞춤, r4(QM3-2 제목 상한) 반영) ---------- */
 .roulette { max-width: 760px; margin: 0 auto; padding: var(--sp-5) var(--gutter) 0; display: flex; flex-direction: column; gap: var(--sp-5); }
-.roulette__lead { text-align: center; display: flex; flex-direction: column; gap: var(--sp-2); }
-.reels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-3); align-items: start; }
+.roulette__lead { text-align: center; display: flex; flex-direction: column; gap: var(--sp-2); container-type: inline-size; }
+/* 제목(h1) 글자 크기 상한(QM3-2, M3-L02): 가장 긴 낱말(「정해졌습니다」 6글자)이 폭 320 · 글자 200%에서도 한 줄에 들어가도록 **줄 폭 ÷ (글자 수 + 여유 1)**로 줄인다.
+   상한은 rem 고정값이 아니다 — 루트 글자 200%에서는 rem이 두 배라 rem 상한만으로는 부족하다. 줄 폭은 제목을 담은 상자(.roulette__lead)의 내용 폭(100cqi). 글자 수(--title-chars)는 문구 상수에서 계산해 인라인으로 넘긴다
+   (data/birthReportText.ts#ROULETTE_TITLE_CHARS — 시안 생성기도 같은 상수를 읽는다). 바닥은 --fs-lg(본문보다 큰 18px)라 상한 때문에 제목이 본문보다 작아지지 않고, 낱말 사이에서 여러 줄로 접히는 것은 괜찮다(design-system.md 11-8절) */
+.roulette__lead .t-title { font-size: max(var(--fs-lg), min(var(--fs-2xl), calc(100cqi / var(--title-chars, 8)))); }
+/* 두 릴 열: 열 최소 폭(rem)이라 글자를 키우면 한 열씩 쌓인다(CM11 — 가로로 밀지 않는다). 보통 폭(320·360px)에서는 나란히 */
+.reels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); gap: var(--sp-3); align-items: start; }
 .reel-col { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
 .reel-col__title { text-align: center; font-weight: var(--fw-bold); font-size: var(--fs-md); }
-.reel { position: relative; height: 288px; overflow: hidden; border: 2px solid var(--c-border-strong); border-radius: var(--r-lg); background: var(--c-surface); }
-.reel__list { display: flex; flex-direction: column; }
-.reel__item { height: 56px; display: flex; align-items: center; justify-content: center; gap: var(--sp-2); padding: 0 var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-lg); color: var(--c-text-2); }
-.reel__item .grade { font-size: var(--fs-md); }
-.grade--reel { font-size: var(--fs-sm); line-height: 1.25; padding: 4px 10px 4px 6px; border-radius: var(--r-md); white-space: normal; text-align: left; }
-.reel__item .grade--reel { font-size: var(--fs-sm); }
+/* 릴: 5칸이 보이고 가운데 칸이 창이다. 칸 높이는 rem 기반 변수(3.5rem = 56px)라 글자를 키워도 칸 안의 글자가 잘리지 않는다(CM11). 수저 릴 칸 순서는 왕복(흙 동 은 금 다이아몬드 금 은 동, core/roulette.ts#WEALTH_REEL_ORDER — R-274) */
+.reel { --reel-item-h: 3.5rem; position: relative; height: calc(var(--reel-item-h) * 5 + 8px); overflow: hidden; border: 2px solid var(--c-border-strong); border-radius: var(--r-lg); background: var(--c-surface); }
+.reel__list { display: flex; flex-direction: column; padding-top: 4px; position: relative; z-index: 1; will-change: transform; }
+.reel__item { height: var(--reel-item-h); display: flex; align-items: center; justify-content: center; gap: var(--sp-2); padding: 0 var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-lg); color: var(--c-text-2); }
+.reel__item .grade { font-size: var(--fs-sm); }
 .reel__item.is-result { color: var(--c-text); }
-.reel__window { position: absolute; left: 6px; right: 6px; top: 116px; height: 56px; border: 3px solid var(--c-brand); border-radius: var(--r-md); background: var(--c-brand-soft); mix-blend-mode: normal; }
+.reel__window { position: absolute; left: 6px; right: 6px; top: calc(var(--reel-item-h) * 2 + 4px); height: var(--reel-item-h); border: 3px solid var(--c-brand); border-radius: var(--r-md); background: var(--c-brand-soft); }
 /* 창 양쪽의 작은 화살표는 창 안쪽에 둔다(바깥으로 내밀면 요소 넘침으로 잡힌다) */
 .reel__window::before, .reel__window::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; margin-top: -6px; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
 .reel__window::before { left: 2px; border-left: 7px solid var(--c-brand); }
 .reel__window::after { right: 2px; border-right: 7px solid var(--c-brand); }
-.reel__list { position: relative; z-index: 1; }
-.reel.is-spinning .reel__list { filter: blur(2.2px); }
-.reel.is-spinning::after { content: ''; position: absolute; inset: 0; z-index: 2; background: repeating-linear-gradient(to bottom, transparent 0, transparent 6px, var(--c-surface) 6px, var(--c-surface) 8px); opacity: 0.55; pointer-events: none; }
 .reel::before { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(to bottom, var(--c-surface) 0, transparent 28%, transparent 72%, var(--c-surface) 100%); }
+/* 빠르게 도는 동안만 흐리게 + 가로 줄무늬(.is-fast — 구현 ui/Reel.tsx가 속도로 켜고 끈다. 감속해 천천히 지나갈 때는 칸이 읽힌다). 회전 중 시안(roulette-spin.html)은 가장 빠른 구간의 한 프레임을 고정해 둔 그림이다 */
+.reel.is-fast .reel__list { filter: blur(2.2px); }
+.reel.is-fast::after { content: ''; position: absolute; inset: 0; z-index: 2; background: repeating-linear-gradient(to bottom, transparent 0, transparent 6px, var(--c-surface) 6px, var(--c-surface) 8px); opacity: 0.55; pointer-events: none; }
 .odds { font-size: var(--fs-xs); color: var(--c-text-2); }
 .odds table { width: 100%; border-collapse: collapse; }
 .odds th, .odds td { padding: 2px 0; text-align: left; font-weight: var(--fw-regular); line-height: 1.5; white-space: nowrap; }
 .odds td { text-align: right; font-variant-numeric: tabular-nums; }
-/* 지역 확률표(16개 시·도): 좁은 화면은 한 줄에 하나, ≥ 640px은 두 칸 — 「전남광주」가 끊기지 않게 */
+/* 지역 확률표(16개 시·도): 좁은 화면은 한 줄에 하나, ≥ 640px은 두 칸(아래 넓은 화면 블록) — 「전남광주」가 끊기지 않게 */
 .odds--cols table, .odds--cols tbody { display: block; }
 .odds--cols tbody { display: grid; grid-template-columns: 1fr; column-gap: var(--sp-3); }
 .odds--cols tr { display: flex; justify-content: space-between; gap: 4px; }
-@media (min-width: 640px) { .odds--cols tbody { grid-template-columns: 1fr 1fr; } }
 .odds__note { margin-top: var(--sp-1); color: var(--c-text-3); }
+/* 결과 뒤에만 보이는 고지(R-132): 회전 중에는 자리만 차지하고 보이지 않아(visibility: hidden) 결과로 바뀔 때 화면 길이가 변하지 않는다 */
+.roulette__after { text-align: center; }
+.roulette-page.is-spinning .roulette__after { visibility: hidden; }
 /* 룰렛의 「건너뛰기」(회전 중) → 「출생신고 보기」(결과)는 같은 자리의 하단 고정 바(.bottom-bar)에 둔다 — R-127 */
 /* 움직임 줄이기(R-132·R-171): 회전 화면을 거치지 않고 곧바로 결과 상태(제목 「태어날 곳이 정해졌습니다」·결과·작은 글·「출생신고 보기」)를 보이며
-   제목 아래 안내 한 줄(.motion-note)을 더한다. 혹시 회전 상태가 그려지더라도 흐림·줄무늬는 끈다 */
+   제목 아래 안내 한 줄(.motion-note)을 더한다(구현은 움직임 줄이기를 알 때만 그 줄을 그린다). 혹시 회전 상태가 그려지더라도 흐림·줄무늬는 끈다 */
 .motion-note { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .reel.is-spinning .reel__list { filter: none; }
-  .reel.is-spinning::after { display: none; }
+  .reel.is-fast .reel__list { filter: none; }
+  .reel.is-fast::after { display: none; }
   .motion-note { display: block; }
 }
-:root[data-motion='reduce'] .reel.is-spinning .reel__list { filter: none; }
-:root[data-motion='reduce'] .reel.is-spinning::after { display: none; }
+:root[data-motion='reduce'] .reel.is-fast .reel__list { filter: none; }
+:root[data-motion='reduce'] .reel.is-fast::after { display: none; }
 :root[data-motion='reduce'] .motion-note { display: block; }
 
-/* ---------- 출생신고 문서 ---------- */
+/* ---------- 출생신고 문서 (구현 src/styles/doc.css와 같은 블록 — 2026-10-16 M3 맞춤) ---------- */
 .doc-page { max-width: var(--w-doc); margin: 0 auto; padding: var(--sp-5) var(--gutter) 0; display: flex; flex-direction: column; gap: var(--sp-5); }
 .doc { position: relative; background: var(--c-surface); border: 1px solid var(--c-border-strong); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow-2); }
-.doc__band { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-5); background: var(--c-brand); color: var(--c-on-brand); }
-.doc__band h1 { font-size: var(--fs-lg); letter-spacing: 0.04em; }
-.doc__band span { font-size: var(--fs-xs); opacity: 0.92; }
-.doc__body { padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-4); }
+/* 띠: 제목과 오른쪽 표기(「수저 게임 · 가상의 서류」 짧은 쌍). 좁거나 글자가 크면(폭 320·글자 200%) 표기가 제목 아래 줄로 내려온다(flex-wrap) */
+.doc__band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) var(--sp-5); background: var(--c-brand); color: var(--c-on-brand); }
+.doc__band h1 { font-size: var(--fs-lg); letter-spacing: 0.04em; flex: none; }
+/* 띠 오른쪽 표기: 칸을 나눠 받아야(flex: 1) 한 줄에 들어가는지 재는 FitPair가 칸 폭을 본다 */
+.doc__tag { flex: 1 1 8rem; min-width: 0; text-align: right; font-size: var(--fs-xs); opacity: 0.92; }
+/* 본문은 컨테이너(docbody): 서류 격자의 열 수를 뷰포트가 아니라 본문 폭(rem)으로 정한다(QM3-1 — 아래 격자 규칙) */
+.doc__body { position: relative; padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-4); container-type: inline-size; container-name: docbody; }
 .doc__name { font-size: clamp(2rem, 9vw, 3rem); line-height: var(--lh-tight); font-weight: var(--fw-bold); letter-spacing: 0.02em; }
 .doc__sentence { font-size: var(--fs-lg); line-height: var(--lh-body); color: var(--c-text-2); }
-.doc__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4) var(--sp-4); padding-top: var(--sp-4); border-top: 1px dashed var(--c-border-strong); }
+.doc__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); padding-top: var(--sp-4); border-top: 1px dashed var(--c-border-strong); }
 .doc__grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .doc__grid dt { font-size: var(--fs-sm); color: var(--c-text-2); }
-.doc__grid dd { font-weight: var(--fw-bold); }
+.doc__grid dd { font-weight: var(--fw-bold); min-width: 0; }
 .doc__grid .wide { grid-column: 1 / -1; }
-.stamp { position: absolute; right: var(--sp-4); top: 56px; width: 64px; height: 64px; transform: rotate(-9deg); color: var(--c-accent); border: 2.5px solid currentColor; border-radius: 50%; display: grid; place-items: center; font-weight: var(--fw-bold); font-size: var(--fs-sm); line-height: 1.15; text-align: center; opacity: 0.85; background: transparent; }
+/* 「태어난 곳」은 두 칸을 쓴다 — 좁은 화면(2열)에서는 한 줄 전체, 넓은 화면(3열)에서는 3분의 2. 「전남광주통합특별시」(9글자) 같은 긴 낱말이 한 칸에서 중간에 끊기지 않게(R-269, R-281 마스터 결정).
+   3열에서는 성별 · 출생 연월이 한 줄, 태어난 곳이 다음 줄 두 칸이고 그 오른쪽 한 칸은 빈다(읽는 순서 = 화면 순서, dense 배치는 쓰지 않는다) */
+.doc__grid .span-2 { grid-column: span 2; }
+/* 칸 폭이 내용을 못 담으면 격자를 한 줄 전체로(QM3-1, M3-L02 — 2026-10-16 r4): 반쪽 칸의 「단순노무직」·「서비스직」이 글자 150~200%에서 중간에 끊겼다. 문턱은 **rem**(컨테이너 질의의 rem은 루트 글자 크기를 따른다)이라
+   글자를 키우면 문턱 폭도 함께 커진다: 반쪽 칸(= (본문 폭 − 간격) ÷ 2)이 가장 긴 5글자 낱말(5rem)에 여유를 더한 5.25rem보다 좁아지는 11.5rem 아래에서 1열로 쌓는다(폭 320 · 글자 150%+, 폭 360 · 글자 200% — 서류가 그만큼 길어진다).
+   1열에서는 「태어난 곳」(span 2)도 한 줄 전체(1 / -1)다 — span 2가 남으면 보이지 않는 둘째 열이 생긴다. 넓은 화면의 3열은 아래 넓은 화면 블록이 같은 이유로 칸 폭(rem)을 함께 본다 */
+@container docbody (max-width: 11.5rem) {
+  .doc__grid { grid-template-columns: minmax(0, 1fr); }
+  .doc__grid .span-2 { grid-column: 1 / -1; }
+}
+/* 칸 안의 보조 글자(체중 순위 괄호·「또래 사이에서」·교육방식 설명): 값과 같은 줄에서 시작하는 보통 굵기 */
+.cell-sub { font-size: var(--fs-sm); font-weight: var(--fw-regular); color: var(--c-text-2); }
+/* 도장은 본문(.doc__body) 위쪽 모서리 기준 — 띠 높이가 글자 크기에 따라 커져도(폭 320·글자 200%의 띠 표기 여러 줄) 띠 글자를 가리지 않는다. 장식(aria-hidden)이고 크기는 64px 고정(글자 200%에서 「접수」가 원을 꽉 채운다 — REV-003-M3-2 관찰, D-09).
+   장식이지만 눈에 보이는 글자라 DS3 대비 기준을 면제받지 않는다(QM3-5, M3-O02): 불투명도 0.85를 걸면 라이트에서 3.72:1이었다 — 불투명도 없이 놋쇠색 그대로(라이트 4.97:1·다크 8.48:1, contrast-report.md 「장식 도장」 3쌍) */
+.stamp { position: absolute; right: var(--sp-4); top: var(--sp-1); width: 64px; height: 64px; transform: rotate(-9deg); color: var(--c-accent); border: 2.5px solid currentColor; border-radius: 50%; display: grid; place-items: center; font-weight: var(--fw-bold); font-size: var(--fs-sm); line-height: 1.15; text-align: center; background: transparent; pointer-events: none; }
 .stamp::before { content: ''; position: absolute; inset: 4px; border: 1px solid currentColor; border-radius: 50%; }
-.people li { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-3) 0; border-bottom: 1px solid var(--c-border); }
+.card__note { margin-top: var(--sp-2); }
+/* 또래 목록(R-269): 이름 묶음(이름 + 「여성/남성」, 아래 줄 장소)이 최소 14rem(글자 크기를 따라 커진다)을 못 받으면 수저 칩이 이름 아래 줄로 내려간다 — 좁은 폭에서 「전남광주통합특별시」 같은 낱말이 칩에 밀려 중간에서 끊기지 않는다 */
+.people li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--c-border); }
 .people li:last-child { border-bottom: 0; }
+.people__who { flex: 1 1 14rem; min-width: 0; }
+.people li > .grade { flex: none; }
 .people .name { font-weight: var(--fw-bold); }
 .people .sub { font-size: var(--fs-sm); color: var(--c-text-2); }
+/* 하단 표기(BR4): 지역 표기 · 통계 출처 · 주거 한계 · 설계 보정 (+ 지난·다가올 세상은 시대 보정 한 줄) */
+.doc-notes { display: flex; flex-direction: column; gap: var(--sp-1); line-height: 1.5; }
 
 /* ---------- 대시보드 ---------- */
 .dash-head { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--c-bg); border-bottom: 1px solid var(--c-border); }
@@ -442,13 +586,28 @@ svg.spoon--lg { width: 32px; height: 52px; }
 @media (min-width: 640px) {
   .choices--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .choices--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .doc__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .odds--cols tbody { grid-template-columns: 1fr 1fr; }
+  /* 넓은 화면의 표: 숫자 칸은 한 줄(좁은 화면에서는 비교 표가 덩어리로 접히므로 nowrap을 두지 않는다) */
+  .table td.num, .table th.num { white-space: nowrap; }
+  .table--cmp td.num { white-space: normal; }
   .overlay { align-items: center; }
   .sheet { border-radius: var(--r-lg); border-bottom: 1px solid var(--c-border-strong); }
   .sheet__body { padding: var(--sp-6); }
 }
+/* 서류 격자의 3열: 화면이 640px 이상이고 칸 셋이 각각 5.25rem 이상일 때만(본문 폭 17.75rem 이상). 글자를 키워 칸이 좁아지면 2열(기본)로 돌아간다 — 구현 doc.css와 같은 중첩 규칙(QM3-1) */
+@media (min-width: 640px) {
+  @container docbody (min-width: 17.75rem) {
+    .doc__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+}
 @media (min-width: 960px) {
-  .title { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: var(--sp-8); padding-top: var(--sp-6); align-items: start; }
+  .title { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); column-gap: var(--sp-8); padding-top: var(--sp-6); align-items: start; }
+  .title__main { grid-column: 1; grid-row: 1; }
+  .title-foot { grid-column: 1; grid-row: 2; }
+  /* 넓은 화면의 캐러셀(R-200): 카드 높이는 보이는 슬라이드만큼이다 — 가장 큰 슬라이드에 맞춰 고정하면 짧은 슬라이드 아래가 비고 카드 전체가 하단 띠에 가려졌다. 오른쪽 열이라 카드 높이가 바뀌어도 아래 내용은 흔들리지 않는다 */
+  .slides { display: block; position: relative; overflow: hidden; }
+  .slide { grid-area: auto; }
+  .slide:not(.is-active) { position: absolute; top: 0; left: 0; right: 0; }
   .title__main, .hero { gap: var(--sp-4); }
   .hero { align-items: flex-start; text-align: left; }
   .spoon-row { justify-content: flex-start; }
@@ -457,7 +616,10 @@ svg.spoon--lg { width: 32px; height: 52px; }
   .hero .logo--stacked { display: none; }
   .hero .logo--row { display: block; }
   .hero__pop { max-width: none; }
-  .title__side { position: sticky; top: var(--sp-6); }
+  /* 따라다니는 카드가 하단 띠 위에 머문다: 낮은 창에서 카드가 더 크면 카드 안쪽이 스크롤된다(R-224). 격자 영역이 본문 줄 + 푸터 줄(grid-row: 1 / span 2)이라 따라다니는 범위가 문서 끝까지 이어진다(R-220).
+     max-height는 --bar-h(띠 높이)에 묶여 있고 띠가 풀리면(html.bar-released) 함께 푼다(QM2-12). 안쪽 scroll-padding은 포커스 링이 카드 가장자리에 잘리지 않게(CM10) */
+  .title__side { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: calc(var(--sp-6) - 3px); margin: -3px; padding: 3px; max-height: calc(100vh - var(--bar-h, 164px) - var(--sp-6) - 3px); overflow-y: auto; scroll-padding: var(--sp-3) 0; }
+  html.bar-released .title__side { max-height: calc(100vh - var(--sp-6) - 3px); }
   .dash { grid-template-columns: 300px minmax(0, 1fr) 300px; }
   .dash .log__list { max-height: calc(100vh - 330px); min-height: 420px; }
   .dash-head__inner { flex-direction: row; align-items: center; gap: var(--sp-6); }
@@ -492,9 +654,20 @@ svg.spoon--lg { width: 32px; height: 52px; }
 @media (forced-colors: active) {
   .btn, .card, .radio-card, .choice, .note-choice, .field__input, .sheet, .doc, .reel, .tag { border-color: CanvasText; }
   .btn--primary { forced-color-adjust: none; background: ButtonFace; color: ButtonText; border: 3px solid ButtonText; }
+  /* 상태(hover·active·focus)도 시스템 색 **한 짝**으로(design-system.md 11-5): forced-color-adjust: none인 요소에 보통 모드의 `:hover { background: var(--c-brand-hover) }`가 남으면 토큰 매핑(ButtonText)이 배경에 칠해져
+     글자(ButtonText)와 같은 색이 된다(REV-003-M2-4 r6 후속 — 주 버튼 글자가 사라졌다). hover·active = Highlight / HighlightText, 키보드 포커스는 쉬는 짝 그대로(링은 outline이 그린다) */
+  .btn--primary:hover, .btn--primary:active { background: Highlight; color: HighlightText; }
+  .btn--primary:focus-visible { background: ButtonFace; color: ButtonText; }
+  .btn--primary:focus-visible:hover, .btn--primary:focus-visible:active { background: Highlight; color: HighlightText; }
   .btn[aria-pressed='true'], .btn.is-on { forced-color-adjust: none; background: Highlight; color: HighlightText; border: 4px double ButtonText; box-shadow: none; }
   .radio-card.is-selected { forced-color-adjust: none; border: 4px double CanvasText; background: Canvas; color: CanvasText; }
   .radio-card.is-selected .radio-card__mark { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  .radio-card.is-disabled { border-color: GrayText; color: GrayText; }
+  .radio-card.is-disabled .radio-card__title, .radio-card.is-disabled .radio-card__desc, .radio-card.is-disabled .radio-card__meta { color: GrayText; }
+  .slide__help { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  svg.logo { forced-color-adjust: none; }
+  /* 띠의 위끝 구분선은 그림자(--shadow-bar·풀린 띠의 0 -1px 0)인데 강제 색상은 그림자를 지운다 — CanvasText 1px 실선으로 대신한다. 고정·해제 **둘 다 같은 규칙**(.bottom-bar 한 곳)이라 두 상태의 띠 높이가 같다(QM2-12) */
+  .bottom-bar { border-top: 1px solid CanvasText; }
   .meter__track, .year-progress { border-color: CanvasText; background: Canvas; }
   .meter__fill, .year-progress__fill { forced-color-adjust: none; background: CanvasText; }
   .grade { border-color: CanvasText; background: Canvas; color: CanvasText; }
@@ -506,6 +679,11 @@ svg.spoon--lg { width: 32px; height: 52px; }
   .grade__dots i { border-color: CanvasText; }
   .grade__dots i.on { forced-color-adjust: none; background: CanvasText; }
   .reel__window { border-color: CanvasText; background: Canvas; }
+  .reel__window::before { border-left-color: CanvasText; }
+  .reel__window::after { border-right-color: CanvasText; }
+  /* 쪽빛 띠: 토큰이 --c-brand: ButtonText(시스템 색)라 강제 색상에서도 띠 바탕이 검게 **남고**(저자가 쓴 시스템 색은 브라우저가 덮어쓰지 않는다) 글자(ButtonFace) 뒤에 Canvas 백플레이트가 깔려 글자가 사라졌다
+     (2026-10-16 시안·구현 강제 색상 스크린샷 모두 — docs/design/diff-003.md D-07). 그래서 바탕·글자를 Canvas / CanvasText로 못 박고 아래 굵은 선으로 문서 머리를 구분한다 */
+  .doc__band { background: Canvas; color: CanvasText; border-bottom: 3px solid CanvasText; }
   .cite, .log__pin, .log__row--note { background: Canvas; color: CanvasText; border-color: CanvasText; }
   .toggle__track { border-color: CanvasText; }
   .toggle.is-on .toggle__track { forced-color-adjust: none; background: Highlight; }

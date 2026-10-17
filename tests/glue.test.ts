@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { buildCarousel, commaList, glueSegments, segmentsText, splitPair, type GlueSegment } from '../src/core';
+import { ERAS, PARENT_WEALTHS, buildCarousel, commaList, glueSegments, segmentsText, splitPair, type GlueSegment } from '../src/core';
+import { startBandOf } from '../src/core/ending';
+import { GRADE_NAME } from '../src/data/birthReportText';
+import { bandLabel } from '../src/data/endingText';
 import { footerStatsText, TITLE_TEXT } from '../src/data/titleText';
 import { Glue } from '../src/ui/Glue';
 import { Pair } from '../src/ui/Pair';
@@ -247,7 +250,7 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     expect(files.length, '공허 통과 방지: src 전체를 읽었다').toBeGreaterThan(40);
   });
 
-  it('코드 안의 「 · 」(공백 + 가운뎃점 + 공백) 문구 조립은 항목이 고정된 짧은 쌍 다섯 곳뿐이다 — 기준 줄·통계 기준 줄(둘 다 ui/Pair가 좁은 폭에서 두 줄로 나눈다)·분해 코드·옛 엔딩·인생 화면의 단계 줄 (ui/Pair.tsx는 공백을 기호 조각 밖에 두어 「· 」만 그린다 — R-242)', () => {
+  it('코드 안의 「 · 」(공백 + 가운뎃점 + 공백) 문구 조립은 항목이 고정된 짧은 쌍 여섯 곳뿐이다 — 기준 줄·통계 기준 줄(둘 다 ui/Pair가 좁은 폭에서 두 줄로 나눈다)·분해 코드·옛 엔딩·인생 화면의 단계 줄·룰렛/출생신고의 짧은 쌍(ui/FitPair — 한 줄에 들어갈 때만 「A · B」이고 안 들어가면 기호 없이 두 줄) (ui/Pair.tsx는 공백을 기호 조각 밖에 두어 「· 」만 그린다 — R-242)', () => {
     const hits: Record<string, number> = {};
     for (const f of files) {
       const n = [...f.code.matchAll(/ · /g)].length;
@@ -259,10 +262,71 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       'data/endingText.ts': 1, // 옛 엔딩 화면: 단계 · 나이 범위
       'data/koreaStatsAccess.ts': 2, // 「통계 기준: {연도}년 · 마지막 갱신 {날짜}」, 카드 출처 줄(화면에 쓰이지 않는 접근자 값)
       'screens/LifeScreen.tsx': 1, // 옛 인생 화면: {나이}세 · {단계}
+      // SPEC-003 M3: 항목이 둘로 고정된 짧은 쌍(룰렛 결과 「{수저(구간)} · {시·도}」, 출생신고의 「나이 · 직업」·「장소 · 성별」·「수저 게임 · 가상의 서류」)을 그린다 — 탐침 글자(data-text)와 한 줄 모양의 JSX 두 곳.
+      // 한 줄에 들어가는지 재서(탐침) 안 들어가면 기호 없이 두 항목을 따로 줄로 나눈다(QM2-10 규칙 3) — 기호가 줄 끝·첫머리에 혼자 남지 않는다.
+      'ui/FitPair.tsx': 2,
     });
     // 쌍을 그리는 곳(ui/Pair.tsx)은 공백이 기호 조각 밖에 있어 「 · 」 문자열이 없다 — 대신 기호 조각이 「· 」이고 앞에 일반 공백이 따로 있음을 본다
     const pair = files.find((f) => f.file === 'ui/Pair.tsx')!;
     expect(pair.code).toContain('<span className="pair__sep">· </span>');
     expect(pair.code).toContain("{' '}");
+  });
+});
+
+/**
+ * 괄호 안 짧은 구간 표기 (QA-003-M3 M3-O13, M3 r5): 룰렛 결과 문장 「다이아몬드수저(상위 3% 안쪽)」가 글자 200%·좁은 폭에서 「(상위 / 3% 안쪽)」으로 갈라지던 것을 막는다.
+ * 괄호 구간(상위·하위로 시작하는 24글자 이하)은 괄호째 한 묶음이고, 앞 낱말은 묶음 밖이다. 실제 줄 모양은 e2e/m3-band-glue.spec.ts가 잰다.
+ */
+describe('괄호 안 짧은 구간은 괄호째 한 묶음이다 (M3-O13)', () => {
+  it('「다이아몬드수저(상위 3% 안쪽)」: 앞 낱말은 묶음 밖, 「(상위 3% 안쪽)」은 한 묶음이고 안에서 「3%」는 그대로 묶인다', () => {
+    const segs = glueSegments('다이아몬드수저(상위 3% 안쪽)');
+    expect(kinds(segs)).toEqual(['plain:다이아몬드수저', 'chain:(상위 3% 안쪽)']);
+    const chain = segs[1];
+    expect(chain.kind).toBe('chain');
+    if (chain.kind === 'chain') expect(kinds(chain.parts)).toEqual(['plain:(상위 ', 'nowrap:3%', 'plain: 안쪽)']);
+  });
+
+  it('구간의 세 꼴을 모두 묶는다: 「안쪽」「~ 사이」「A와 B 사이」 — 그리고 뒤에 붙은 조사·구두점(「)의」「),」)도 묶음 안이다', () => {
+    expect(kinds(glueSegments('흙수저(하위 30% 안쪽)'))).toEqual(['plain:흙수저', 'chain:(하위 30% 안쪽)']);
+    expect(kinds(glueSegments('금수저(상위 17~45% 사이)'))).toEqual(['plain:금수저', 'chain:(상위 17~45% 사이)']);
+    expect(kinds(glueSegments('은수저(하위 25%와 상위 45% 사이)'))).toEqual(['plain:은수저', 'chain:(하위 25%와 상위 45% 사이)']);
+    expect(kinds(glueSegments('동수저(하위 25% 안쪽)의 집에서'))).toEqual(['plain:동수저', 'chain:(하위 25% 안쪽)의', 'plain: 집에서']);
+    expect(kinds(glueSegments('흙수저(하위 30% 안쪽), 서울'))).toEqual(['plain:흙수저', 'chain:(하위 30% 안쪽),', 'plain: 서울']);
+  });
+
+  it('앞 낱말이 없어도(괄호 구간만) 묶는다: 출생신고 「집안 형편」의 구간 글자 「(하위 25% 안쪽)」', () => {
+    expect(kinds(glueSegments('(하위 25% 안쪽)'))).toEqual(['chain:(하위 25% 안쪽)']);
+  });
+
+  it('우리 문구의 모든 구간이 묶인다: 세 시대 × 수저 5단계의 「{수저}({구간})」는 구간 하나가 한 묶음이고 그 밖에는 괄호가 없다 — 묶음은 글자를 바꾸지 않는다', () => {
+    let seen = 0;
+    for (const era of ERAS) {
+      for (const grade of PARENT_WEALTHS) {
+        const band = bandLabel(startBandOf(era, grade));
+        const sentence = `${GRADE_NAME[grade]}(${band})`;
+        const segs = glueSegments(sentence);
+        expect(segmentsText(segs), sentence).toBe(sentence);
+        const chains = segs.filter((s) => s.kind === 'chain');
+        expect(chains.map((c) => segmentsText([c])), `${era} ${grade}단계: ${sentence}`).toEqual([`(${band})`]);
+        const outside = segs.filter((s) => s.kind !== 'chain').map((s) => (s.kind === 'plain' || s.kind === 'nowrap' ? s.text : ''));
+        expect(outside.join(''), `${era} ${grade}단계: 묶음 밖에는 괄호가 없다`).toBe(GRADE_NAME[grade]);
+        seen++;
+      }
+    }
+    expect(seen, '공허 통과 방지').toBe(ERAS.length * PARENT_WEALTHS.length);
+  });
+
+  it('범위 밖은 건드리지 않는다: 상위·하위로 시작하지 않는 괄호, 24글자를 넘는 괄호, 닫히지 않은 괄호는 이 규칙의 묶음이 아니다', () => {
+    expect(kinds(glueSegments('(통계표 6) 참고'))).toEqual(['plain:(통계표 6) 참고']);
+    expect(kinds(glueSegments('끝 (통계표 6). 참고'))).toEqual(['plain:끝 (통계표 6). 참고']);
+    const long = `(상위 ${'가'.repeat(30)})`;
+    expect(glueSegments(long).some((s) => s.kind === 'chain' && segmentsText([s]) === long)).toBe(false);
+    expect(kinds(glueSegments('(상위 3% 안쪽'))).not.toContain('chain:(상위 3% 안쪽');
+  });
+
+  it('<Glue>: 괄호 구간만 keep-phrase로 감싸고 글자는 그대로다 — 마크업의 글자(태그 제외)가 원래 글자와 같다', () => {
+    const html = renderToStaticMarkup(Glue({ text: '다이아몬드수저(상위 3% 안쪽)' }));
+    expect(html).toBe('다이아몬드수저<span class="keep-phrase">(상위 <span class="nowrap">3%</span> 안쪽)</span>');
+    expect(html.replace(/<[^>]+>/g, '')).toBe('다이아몬드수저(상위 3% 안쪽)');
   });
 });

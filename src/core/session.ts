@@ -1,7 +1,7 @@
 import { EVENT_POOL } from '../data/events';
 import type { EventPool } from './events';
 import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type TickInfo } from './life';
-import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterLife, rebirth } from './state';
+import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth } from './state';
 import { ERAS, SPEEDS, isLifeLengthSelectable, type Era, type GameState, type LifeLength, type PlaySettings, type Settings, type Speed } from './types';
 
 /**
@@ -14,7 +14,10 @@ import { ERAS, SPEEDS, isLifeLengthSelectable, type Era, type GameState, type Li
  *  - autoChoose: 자동 모드가 꺼져 있으면 무시 → 타이머가 울리기 직전에 사용자가 자동 모드를 해제했다면 그 선택은 일어나지 않는다(R-038)
  *  - skip(다음 결정으로): 자동 모드에서는 무시 → 자동 모드의 선택은 타이머(autoChoose)로만 일어난다. 화면도 자동 모드에서는 이 버튼을 비활성화한다(R-038)
  *  - begin / beginNew: 첫 화면의 「태어나기」. title 단계(begin) 또는 첫 화면을 다시 연 상태(beginNew)에서만 동작하고 한 번 동작하면 단계가 바뀌어
- *    더블탭·연타의 둘째 입력은 같은 객체를 돌려받는다 → 출생은 한 번만 일어난다(FS6).
+ *    더블탭·연타의 둘째 입력은 같은 객체를 돌려받는다 → 출생은 한 번만 일어난다(FS6). 이 순간 출생 결과가 정해져 저장되고 화면은 룰렛(roulette 단계)으로 간다(RL5).
+ *  - finishSpin: 룰렛 연출이 끝났거나 「건너뛰기」를 눌렀다. 연출 중임을 나타내는 세션 상태(spin)를 끈다 — 이미 꺼져 있으면 무시(건너뛰기 연타). 저장되는 값이 아니라서
+ *    룰렛 도중·직후 새로고침하면 spin이 꺼진 채 열려 룰렛이 다시 돌지 않고 결과가 확정된 모습으로 복원된다(RL5).
+ *  - enterBirth(「출생신고 보기」): roulette 단계에서만 동작하고 한 번 동작하면 단계가 바뀌어 연타해도 한 번이다. 연출 중(spin)에는 무시 — 건너뛰기를 먼저 눌러야 한다(결과가 확정되어 보이기 전에 넘어가지 않는다).
  *  - rebirth(seed): ending 단계에서만 동작하고 새 판은 첫 화면(title)에서 시작한다 → 더블탭·연타의 둘째 입력은 같은 객체를 돌려받아 두 판이 시작되지 않는다. 설정(배속·자동 모드·세상·인생 길이)은 그대로다.
  * 무시되는 경우에는 같은 객체를 돌려준다(React가 다시 그리지 않는다).
  *
@@ -29,6 +32,8 @@ export interface Session {
   tick: TickInfo | null;
   /** 첫 화면을 다시 열어 둔 상태(위 설명). 저장하지 않는다. */
   showTitle: boolean;
+  /** 룰렛이 돌고 있는 중인가(「태어나기」를 막 눌렀고 연출이 끝나지 않았다). 저장하지 않으며 복원 직후에는 false다(RL5). */
+  spin: boolean;
 }
 
 export type SessionAction =
@@ -44,6 +49,10 @@ export type SessionAction =
   | { type: 'resume' }
   /** 첫 화면에서 「새로 태어나기」: 이전 판을 버리고 새 시드로 새 판을 시작한다(첫 화면을 다시 연 상태에서만). 시드는 UI가 정해 넘긴다. */
   | { type: 'beginNew'; seed: number }
+  /** 룰렛 연출이 끝났다/건너뛰었다: 회전 중 상태를 끈다. */
+  | { type: 'finishSpin' }
+  /** 룰렛 → 출생신고(「출생신고 보기」). roulette 단계에서만. */
+  | { type: 'enterBirth' }
   | { type: 'enterLife' }
   | { type: 'advance'; fromAge: number }
   | { type: 'choose'; key: string; choiceId: string }
@@ -58,12 +67,12 @@ export type SessionAction =
 
 /** 설정은 재생 설정(배속·자동 모드)만 줘도 된다 — 세상·인생 길이는 기본값으로 채운다. */
 export function createSession(game: GameState, settings: PlaySettings & Partial<Settings>, showTitle = false): Session {
-  return { game, settings: { ...DEFAULT_SETTINGS, ...settings }, tick: null, showTitle };
+  return { game, settings: { ...DEFAULT_SETTINGS, ...settings }, tick: null, showTitle, spin: false };
 }
 
-/** 첫 화면에서 「이어서 살기」를 보일 만큼 진행된 판인가(출생 결과 이후, 엔딩 전). */
+/** 첫 화면에서 「이어서 살기」를 보일 만큼 진행된 판인가(출생 결과 이후, 엔딩 전 — 룰렛 단계도 결과가 이미 정해진 판이다). */
 export function hasProgress(game: GameState): boolean {
-  return game.phase === 'birth' || game.phase === 'life';
+  return game.phase === 'roulette' || game.phase === 'birth' || game.phase === 'life';
 }
 
 function withGame(s: Session, game: GameState, tick: TickInfo | null = null): Session {
@@ -72,7 +81,7 @@ function withGame(s: Session, game: GameState, tick: TickInfo | null = null): Se
 
 export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = EVENT_POOL): Session {
   // 첫 화면을 다시 연 동안에는 인생이 흐르지 않는다(늦게 울린 타이머·입력이 와도 무시).
-  if (s.showTitle && (a.type === 'advance' || a.type === 'choose' || a.type === 'autoChoose' || a.type === 'skip' || a.type === 'enterLife')) return s;
+  if (s.showTitle && (a.type === 'advance' || a.type === 'choose' || a.type === 'autoChoose' || a.type === 'skip' || a.type === 'enterLife' || a.type === 'enterBirth' || a.type === 'finishSpin')) return s;
   switch (a.type) {
     case 'setEra':
       return !(ERAS as readonly string[]).includes(a.era) || a.era === s.settings.era ? s : { ...s, settings: { ...s.settings, era: a.era } };
@@ -83,16 +92,21 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
     case 'begin': {
       if (s.showTitle) return s; // 진행 중인 판이 있는 첫 화면에서는 beginNew(이전 판을 버린다는 확인을 거친 길)만 새 판을 시작한다
       const game = beginBirth(s.game, s.settings.era, s.settings.lifeLength);
-      return game === s.game ? s : { ...s, game, tick: null };
+      return game === s.game ? s : { ...s, game, tick: null, spin: true };
     }
     case 'openTitle':
-      return s.showTitle || !hasProgress(s.game) ? s : { ...s, showTitle: true, tick: null };
+      return s.showTitle || !hasProgress(s.game) ? s : { ...s, showTitle: true, tick: null, spin: false };
     case 'resume':
       return s.showTitle ? { ...s, showTitle: false } : s;
     case 'beginNew': {
       if (!s.showTitle) return s;
-      return { ...s, game: beginBirth(createInitialState(a.seed), s.settings.era, s.settings.lifeLength), tick: null, showTitle: false };
+      return { ...s, game: beginBirth(createInitialState(a.seed), s.settings.era, s.settings.lifeLength), tick: null, showTitle: false, spin: true };
     }
+    case 'finishSpin':
+      return s.spin ? { ...s, spin: false } : s;
+    case 'enterBirth':
+      // 연출 중에는 넘어가지 않는다: 「건너뛰기」(또는 연출 끝)가 결과를 확정해 보인 뒤에만 「출생신고 보기」가 동작한다
+      return s.spin ? s : withGame(s, enterBirth(s.game));
     case 'enterLife':
       return withGame(s, enterLife(s.game));
     case 'advance': {
@@ -124,6 +138,6 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
     case 'rebirth':
       return withGame(s, rebirth(s.game, a.seed));
     case 'adopt':
-      return { ...s, game: a.game, tick: null, showTitle: false };
+      return { ...s, game: a.game, tick: null, showTitle: false, spin: false };
   }
 }

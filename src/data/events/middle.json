@@ -51,7 +51,7 @@
       "ageRange": { "min": 45, "max": 62 },
       "weight": 15,
       "once": true,
-      "conditions": { "notFlags": ["parents_gone"] },
+      "conditions": { "notFlags": ["parents_gone"], "parentAge": { "min": 60, "max": 100 } },
       "choices": [
         {
           "id": "home",
@@ -505,6 +505,7 @@
       "ageRange": { "min": 52, "max": 64 },
       "weight": 18,
       "once": true,
+      "conditions": { "parentAge": { "min": 65, "max": 100 } },
       "choices": [
         {
           "id": "stay",

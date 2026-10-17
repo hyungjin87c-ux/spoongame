@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { checkTheme, darkMismatch, formatReport, readThemeBlocks, themeTokens, type PairResult } from './checkContrastLib';
+import { PAIRS, checkTheme, darkMismatch, docCssPairs, formatReport, readThemeBlocks, themeTokens, type PairResult } from './checkContrastLib';
 
 /**
  * 색 토큰 대비 점검 실행기 (SPEC-003 DS3, designer).
@@ -8,11 +8,14 @@ import { checkTheme, darkMismatch, formatReport, readThemeBlocks, themeTokens, t
  * 계산은 scripts/checkContrastLib.ts (새 의존성 없음, 순수 함수).
  */
 const TOKENS_PATH = 'src/styles/tokens.css';
+const DOC_CSS_PATH = 'src/styles/doc.css';
 const REPORT_PATH = 'docs/design/contrast-report.md';
 
 const blocks = readThemeBlocks(readFileSync(TOKENS_PATH, 'utf-8'));
 const mismatch = darkMismatch(blocks);
-const results: PairResult[] = [...checkTheme(themeTokens(blocks, 'light'), 'light'), ...checkTheme(themeTokens(blocks, 'dark'), 'dark')];
+// 토큰 쌍 + 화면 CSS가 불투명도로 합성하는 장식 글자·도형(도장 「접수」 등 — 면제 없음, QM3-5)
+const pairs = [...PAIRS, ...docCssPairs(readFileSync(DOC_CSS_PATH, 'utf-8'))];
+const results: PairResult[] = [...checkTheme(themeTokens(blocks, 'light'), 'light', pairs), ...checkTheme(themeTokens(blocks, 'dark'), 'dark', pairs)];
 const fails = results.filter((r) => !r.pass);
 
 for (const r of fails) {

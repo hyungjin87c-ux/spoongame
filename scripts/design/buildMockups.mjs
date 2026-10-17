@@ -1,252 +1,463 @@
 /**
  * 화면 시안 HTML을 만든다 (SPEC-003 DS6, designer). 가짜 데이터(한 인물 「이서연」의 데이터는 화면 사이에서 일치한다), 정적 HTML.
- * 실행: npx vite-node scripts/design/buildMockups.mjs   → docs/design/mockups/*.html  (faceLayers.ts를 읽으므로 vite-node)
+ * 실행: npx vite-node scripts/design/buildMockups.mjs   → docs/design/mockups/*.html  (faceLayers.ts·Reel.tsx를 읽으므로 vite-node)
  * 스크린샷: npx vite-node scripts/design/shootMockups.mjs
  * 순서: buildBrand → buildIcons → buildMockups → shootMockups (자산이 바뀌면 처음부터)
  *
  * 시안은 src/styles/tokens.css 와 docs/design/mockups/ds.css 만 쓴다. 화면 구현은 이 구조·클래스를 기준으로 옮긴다.
  * 문구는 docs/design/copy.md 가 기준이다(80억 분의 1 고유 문구와 겹치지 않게 자체 작성, REV-003-D-1 R-123·R-124).
  * 통계 값은 src/data/koreaStats.json(usable: true)에서 읽는다 — 시안에 가짜 수치를 적지 않는다(R-133).
+ * 구현이 끝난 화면(첫 화면 M2, 룰렛·출생신고 M3)은 **구현과 같은 모델·같은 문구 함수**로 그린다 — 시안 주인공의 저장 상태(Character·BirthReport)를 두고
+ * core·data의 순수 함수(buildRoulette·birthSentence·peersOf·buildComparison·REPORT_NOTES …)가 글자를 만든다(손으로 적은 문장이 없다). 구현과 남은 차이는 docs/design/diff-003.md.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { AGE_GROUPS, faceSvg } from '../../src/assets/faces/faceLayers.ts';
+import { generateBirthFromSeed, looksStanding } from '../../src/core/birth.ts';
+import { birthSentence, isValidBirthReport, reportPlaceLabel, weightStanding } from '../../src/core/birthReport.ts';
+import { AUTO_ADVANCE_MS, LINE_H_STACKED, LINE_W, buildCarousel, valueWidthEm } from '../../src/core/carousel.ts';
 import { startBandOf } from '../../src/core/ending.ts';
-import { standingLabel } from '../../src/data/birthText.ts';
+import { glueSegments, splitPair } from '../../src/core/glue.ts';
+import { peersOf } from '../../src/core/peers.ts';
+import { ROULETTE_TIMING, buildRoulette, reelPosition } from '../../src/core/roulette.ts';
+import { ERAS, LIFE_LENGTHS, isLifeLengthSelectable } from '../../src/core/types.ts';
+import { buildComparison, compareShown, lifeGapLine } from '../../src/data/birthCompare.ts';
+import { OCCUPATION_LABEL } from '../../src/data/birthReportTable.ts';
+import { BIRTH_TEXT, GRADE_NAME, REPORT_NOTES, ROULETTE_TEXT, ROULETTE_TITLE_CHARS, formatKg, genderLabel, housingText, orderText, parentingDocText, regionOddsNote, yearMonthText } from '../../src/data/birthReportText.ts';
+import { PARENTING_LABEL, standingLabel } from '../../src/data/birthText.ts';
+import { ERA_CONFIG } from '../../src/data/birthTable.ts';
 import { ENDING_HEADINGS, JOURNEY_NOTE, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, bandLabel, choiceCountText, deathLineText, journeyText } from '../../src/data/endingText.ts';
-import { formatIndicatorValue, getCarouselIndicators } from '../../src/data/koreaStatsAccess.ts';
+import { getCarouselIndicators, getRegionFootnote, getUsableIndicator } from '../../src/data/koreaStatsAccess.ts';
 import { deathEntryText } from '../../src/data/lifeText.ts';
-import { DEFAULT_KEY, GRADES, ROOT, esc, face, gradeChip, gradeText, headerLogo, icon, impact, logo, MOCK_TAG, meter, page, reelSpoon, spoon, spoonLineup } from './mockLib.mjs';
+import { placeLabel } from '../../src/data/regionNames.ts';
+import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../../src/data/titleText.ts';
+import { restCells, spinCells, spinCycles } from '../../src/ui/Reel.tsx';
+import { DEFAULT_KEY, GRADES, ROOT, esc, face, fitPair, gradeChip, gradeLine, gradeText, headerLogo, icon, impact, logo, MOCK_TAG, meter, page, reelSpoon, spoon, spoonLineup } from './mockLib.mjs';
 
 const OUT = ROOT + 'docs/design/mockups/';
 const write = (name, html) => writeFileSync(OUT + name, html, 'utf-8');
-const STATS = JSON.parse(readFileSync(ROOT + 'src/data/koreaStats.json', 'utf-8'));
-const indicator = (id) => {
-  const s = STATS.indicators.find((i) => i.id === id);
-  if (!s || !s.usable) throw new Error(`koreaStats.json: ${id} 가 없거나 usable이 아니다`);
-  return s;
-};
+const NAMES_META = JSON.parse(readFileSync(ROOT + 'src/data/names.json', 'utf-8')).meta;
 /** 수저 구간 글자의 단일 출처(R-170): bandLabel(startBandOf(era, wealth)). 시안은 이 함수 출력만 적는다 — 「약 N%」(standingLabel)는 외모·체중·엔딩 도착 자리 전용 */
 const band = (era, wealth) => bandLabel(startBandOf(era, wealth));
 
 // ---------- 가짜 인물 데이터 (화면 사이에서 일치) ----------
+/** 가상 인구(시안용 고정값 — 구현은 core/population.ts#tryVirtualPopulation이 이 기기의 시각으로 계산한다). 첫 화면·대시보드 인생 기록 고정 줄이 같은 값을 쓴다 */
 const N_POP = '51,284';
 /** 엔딩 도착 자리(시안용 가짜 값) — 화면 글자·읽기용 설명 모두 standingLabel(END_STANDING) 출력으로 적는다(R-191(d)) */
 const END_STANDING = { kind: 'top', percent: 38, within: false };
-const HERO = {
-  name: '이서연', gender: '여성', birth: '2026년 1월', birthYear: 2026, era: 'present', region: '경기도 화성시', regionShort: '경기', grade: 1,
-  motherAge: 29, motherJob: '판매직', fatherAge: 32, fatherJob: '운송업', housing: '월세 · 다세대주택', weight: '3.3kg', weightRank: '상위 약 38%',
-  order: '첫째', parenting: '엄격', looks: '상위 약 46%', // 외모 원점수는 어디에도 적지 않는다(R-135①)
-  endRank: standingLabel(END_STANDING), // 「상위 약 38%」
+/**
+ * 시안 주인공의 **저장 상태**(구현 core/types.ts#Character·BirthReport와 같은 모양, 2026-10-16 M3 맞춤). 룰렛·출생신고 시안은 이 상태를 구현의 순수 함수에 넣어 그린다 —
+ * 지역·시군구·체중 격자는 저장 검증(core/birthReport.ts#isValidBirthReport)을 통과해야 한다(2026년 경기도의 시군구는 일반구 단위라 「화성시 병점구」).
+ * 값의 뜻: 2026년 1월 경기도 화성시 병점구, 흙수저, 어머니 29세 판매직·아버지 32세 기계 조작직, 임차, 3.3kg 첫째, 엄격한 교육방식, 외모는 「상위 약 46%」가 나오는 점수(원점수는 어디에도 적지 않는다, R-135①).
+ * 또래 시드 61 = peersOf(61, 2026, 1, '이서연')가 R-125 조건(지역 4곳 서로 다름·서울 1명 이하·계층 상징 지명 없음·금수저 이상 1명은 수도권 밖·흙·동 1명 이상·남녀 섞임·「전남광주통합특별시」 1명)을 만족하는 **첫 시드**(결정적 탐색, 생성기가 다시 확인한다).
+ */
+const HERO_STATE = {
+  era: 'present',
+  character: { name: '이서연', gender: 'female', birthYear: 2026, parentWealth: 1, parenting: 'strict', looks: 52 },
+  report: { month: 1, region: '경기', sigunguSido: '경기', sigungu: '화성시 병점구', mother: { age: 29, job: 'sales' }, father: { age: 32, job: 'machine' }, housing: 'rent', birthWeightKg: 3.3, birthOrder: 1 },
+  peerSeed: 61,
 };
-HERO.gradeRange = band(HERO.era, HERO.grade); // 「하위 25% 안쪽」 — 룰렛 결과·출생신고·프로필·엔딩 출발선이 모두 이 값
-/** 같은 해 태어난 네 사람 — 지역과 수저를 고정관념과 어긋나게 섞고, 계층 상징 지명(강남·해운대 등)과 특정 구 묶음의 통념(이른바 노도강 등)을 피한다(R-125, REV-003-D-2 관찰) */
-const PEERS = [
-  ['김도윤', '대전광역시 서구', '남', 1],
-  ['박서윤', '부산광역시 연제구', '여', 2],
-  ['최민재', '전남광주통합특별시 순천시', '남', 4],
-  ['정하린', '경상북도 안동시', '여', 3],
-];
-const CREDIT = '지금 세상·다가올 세상 이름 출처: 대한민국 법원 전자가족관계등록시스템 통계서비스 「상위 출생신고 이름 현황」(등록일 기준 잠정치, 2026-10-13 조회)';
-
+if (!isValidBirthReport(HERO_STATE.report, HERO_STATE.character.birthYear, HERO_STATE.character.gender)) throw new Error('시안 주인공의 출생신고 상세가 저장 검증을 통과하지 못한다');
+/** 다른 화면(대시보드·카드·엔딩 시안)이 쓰는 주인공 글자 — 모두 저장 상태에서 구현 함수로 만든 값이다 */
+const HERO = (() => {
+  const { era, character: c, report } = HERO_STATE;
+  return {
+    name: c.name,
+    gender: genderLabel(c.gender),
+    birth: yearMonthText(c.birthYear, report.month),
+    birthYear: c.birthYear,
+    era,
+    region: reportPlaceLabel(report, era), // 「경기도 화성시 병점구」
+    regionShort: report.region,
+    grade: c.parentWealth,
+    gradeRange: band(era, c.parentWealth), // 「하위 25% 안쪽」 — 룰렛 결과·출생신고·프로필·엔딩 출발선이 모두 이 값
+    motherAge: report.mother.age,
+    motherJob: OCCUPATION_LABEL[report.mother.job],
+    fatherAge: report.father.age,
+    fatherJob: OCCUPATION_LABEL[report.father.job],
+    weight: formatKg(report.birthWeightKg),
+    weightRank: standingLabel(weightStanding(report.birthWeightKg, c.gender)),
+    order: orderText(report.birthOrder),
+    parenting: PARENTING_LABEL[c.parenting],
+    looks: standingLabel(looksStanding(c.looks)), // 「상위 약 46%」 — 외모 원점수는 어디에도 적지 않는다(R-135①)
+    sentence: birthSentence(c, report, era), // BR3 한 줄 서술문 = 인생 기록 0세 첫 줄
+    endRank: standingLabel(END_STANDING), // 「상위 약 38%」
+  };
+})();
+/**
+ * 같은 해 태어난 네 사람 — 구현과 같은 함수(core/peers.ts#peersOf)의 출력. 시드 61은 지역과 수저를 고정관념과 어긋나게 섞고 계층 상징 지명(강남·해운대 등)과
+ * 특정 구 묶음의 통념(이른바 노도강 등)을 피하는 조건(R-125, REV-003-D-2 관찰)을 만족하는 첫 시드다 — 아래가 그 조건을 다시 확인한다(데이터·함수가 바뀌어 어긋나면 실패해서 드러난다).
+ */
+const PEER_BAN = new Set(['강남구', '서초구', '송파구', '해운대구', '노원구', '도봉구', '강북구', '용산구', '성남시 분당구', '과천시']);
+const PEER_LIST = peersOf(HERO_STATE.peerSeed, HERO_STATE.character.birthYear, HERO_STATE.report.month, HERO_STATE.character.name);
+{
+  const ok =
+    new Set(PEER_LIST.map((p) => p.region)).size === 4 &&
+    PEER_LIST.filter((p) => p.region === '서울').length <= 1 &&
+    !PEER_LIST.some((p) => PEER_BAN.has(p.sigungu)) &&
+    PEER_LIST.some((p) => p.wealth >= 4 && p.region !== '서울' && p.region !== '경기') &&
+    PEER_LIST.some((p) => p.wealth <= 2) &&
+    new Set(PEER_LIST.map((p) => p.gender)).size === 2 &&
+    PEER_LIST.filter((p) => p.region === '전남광주').length === 1;
+  if (!ok) throw new Error(`또래 시드 ${HERO_STATE.peerSeed}가 R-125 조건을 만족하지 않는다: ${JSON.stringify(PEER_LIST)}`);
+}
+/** 대시보드 시안이 쓰는 또래 글자: [이름, 장소(정식 시·도 + 시군구), 성별, 수저] */
+const PEERS = PEER_LIST.map((p) => [p.name, placeLabel(p, HERO_STATE.era), genderLabel(p.gender), p.wealth]);
 // ---------- 공통 조각 ----------
-const radioCard = ({ title, desc, selected, name, meta = '' }) => `<label class="radio-card${selected ? ' is-selected' : ''}">
-  <input type="radio" name="${name}" ${selected ? 'checked' : ''}>
+/**
+ * 라디오 카드. disabled = 고를 수 없는 카드(「약 1시간」 — 준비 중): 라디오 그룹 안에 그대로 두고 점선 테두리·옅은 글자·「준비 중」 표식(meta)으로 드러낸다 —
+ * 색에만 의존하지 않고, meta 글자는 카드의 접근 가능한 이름에 들어간다(구현 TitleScreen#RadioCard과 같은 구조, REV-003-M2-1 R-202).
+ */
+const radioCard = ({ title, desc, selected, name, meta = '', disabled = false }) => `<label class="radio-card${selected ? ' is-selected' : ''}${disabled ? ' is-disabled' : ''}">
+  <input type="radio" name="${name}" ${selected ? 'checked' : ''}${disabled ? ' disabled' : ''}>
   <span class="radio-card__mark">${icon('check')}</span>
   <span class="radio-card__body"><span class="radio-card__head"><span class="radio-card__title">${title}</span>${meta ? `<span class="radio-card__meta">${meta}</span>` : ''}</span><span class="radio-card__desc">${desc}</span></span>
   ${selected ? '<span class="sr-only">선택됨</span>' : ''}
 </label>`;
 
-function lineChart(values, years, unit) {
-  const W = 320, H = 156, L = 10, R = 40, T = 26, B = 26;
-  const min = Math.min(...values), max = Math.max(...values);
-  const x = (i) => L + ((W - L - R) * i) / (values.length - 1);
-  const y = (v) => T + ((H - T - B) * (max - v)) / (max - min);
-  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const last = values.length - 1;
-  const grid = [0, 0.5, 1].map((k) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${(T + (H - T - B) * k).toFixed(1)}" y2="${(T + (H - T - B) * k).toFixed(1)}"/>`).join('');
-  const dots = values.map((v, i) => `<circle class="dot${i === last ? ' dot--last' : ''}" cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i === last ? 4.5 : 3}"/>`).join('');
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${years[0]}년부터 ${years[last]}년까지 합계출산율 추이 그래프. 처음 ${values[0].toFixed(2)}${unit}, 마지막 ${values[last].toFixed(2)}${unit}">
-  ${grid}<line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>
-  <polyline class="line" points="${pts}"/>${dots}
-  <text x="${L}" y="${H - 8}">${years[0]}</text><text x="${W - R}" y="${H - 8}" text-anchor="end">${years[last]}</text>
-  <text x="${(x(0) + 8).toFixed(1)}" y="${(y(values[0]) - 8).toFixed(1)}" text-anchor="start">${values[0].toFixed(2)}</text>
-  <text x="${W - R + 6}" y="${(y(values[last]) + 4).toFixed(1)}" font-weight="700" style="fill:var(--c-text)">${values[last].toFixed(2)}</text>
-</svg>`;
+/**
+ * 줄바꿈 묶음(QM2-5·QM2-10, core/glue.ts — 구현의 ui/Glue.tsx와 같은 마크업): 「A · B」 사슬·괄호 낱말은 .keep-phrase(inline-block), 숫자+단위·날짜는 .nowrap.
+ * 글자는 그대로고 감싸는 표시만 더한다.
+ */
+const glueHtml = (text) => renderGlue(glueSegments(text));
+function renderGlue(segments) {
+  return segments.map((s) => (s.kind === 'plain' ? esc(s.text) : s.kind === 'nowrap' ? `<span class="nowrap">${esc(s.text)}</span>` : `<span class="keep-phrase">${renderGlue(s.parts)}</span>`)).join('');
+}
+/**
+ * 짧은 쌍 「A · B」(QM2-10 규칙 3, 구현의 ui/Pair.tsx): 한 줄에 들어가면 「A · B」, 칸이 좁거나 글자가 커서 넘치면 기호를 감추고 두 줄(ds.css의 컨테이너 쿼리 — basis 14em·meta 16.5em).
+ * 두 항목 사이 공백 하나는 기호 조각 밖에 둔다(R-242). 쌍이 아니면 일반 묶음.
+ */
+function pairHtml(text, kind) {
+  const pair = splitPair(text);
+  if (pair === null) return glueHtml(text);
+  return `<span class="pair pair--${kind}"><span class="pair__item">${glueHtml(pair[0])}</span> <span class="pair__sep">· </span><span class="pair__item">${glueHtml(pair[1])}</span></span>`;
 }
 
+// ---------- 통계 그래프 (구현의 ui/StatsChart.tsx와 같은 마크업, 좌표는 core/carousel.ts 모델) ----------
+const r1 = (v) => Math.round(v * 10) / 10;
+function marker(shape, x, y, last) {
+  const cls = `dot${shape === 'solid' ? '' : ` dot--${shape}`}${last ? ' dot--last' : ''}`;
+  const r = last ? 4.5 : 3;
+  if (shape === 'dashed') return `<rect class="${cls}" x="${r1(x - r)}" y="${r1(y - r)}" width="${r * 2}" height="${r * 2}"/>`;
+  if (shape === 'dotted') return `<polygon class="${cls}" points="${x},${r1(y - r - 1)} ${r1(x + r + 1)},${y} ${x},${r1(y + r + 1)} ${r1(x - r - 1)},${y}"/>`;
+  return `<circle class="${cls}" cx="${x}" cy="${y}" r="${r}"/>`;
+}
+function lineChartSvg(chart, label) {
+  const grid = chart.grid.map((y) => `<line class="grid" x1="${chart.plotLeft}" x2="${chart.plotRight}" y1="${y}" y2="${y}"/>`).join('');
+  const series = chart.series
+    .map((s) => {
+      const cls = `line${s.dash === 'solid' ? '' : ` line--${s.dash}`}`;
+      const lines = s.segments.filter((seg) => seg.length >= 2).map((seg) => `<polyline class="${cls}" points="${seg.map((p) => `${p.x},${p.y}`).join(' ')}"/>`).join('');
+      const dots = s.points.length <= 20 ? s.points.map((p) => marker(s.dash, p.x, p.y, p === s.last)).join('') : marker(s.dash, s.last.x, s.last.y, true);
+      return `<g data-series="${s.key}">${lines}${dots}</g>`;
+    })
+    .join('');
+  const text = (l, cls = '') => `<text${cls ? ` class="${cls}"` : ''} x="${l.x}" y="${l.y}" text-anchor="${l.anchor}">${esc(l.text)}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-label="${esc(label)}" focusable="false">${grid}<line class="axis" x1="${chart.plotLeft}" x2="${chart.plotRight}" y1="${chart.axisY}" y2="${chart.axisY}"/>${series}${chart.xLabels.map((l) => text(l)).join('')}${chart.labels.map((l) => text(l, l.bold ? 'val' : '')).join('')}</svg>`;
+}
+function barChartSvg(chart, label) {
+  const rows = chart.rows
+    .map(
+      (r) =>
+        `<g><text class="bar-label" x="${chart.labelWidth}" y="${r.y + chart.rowHeight - 3}">${esc(r.label)}</text><rect class="chart-bar" x="${chart.barX}" y="${r.y + 2}" width="${r.barWidth}" height="${chart.rowHeight - 5}" rx="2"/><text class="bar-value" x="${r1(chart.barX + r.barWidth + 4)}" y="${r.y + chart.rowHeight - 3}">${esc(r.text)}</text></g>`,
+    )
+    .join('');
+  return `<svg class="chart" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-label="${esc(label)}" focusable="false">${rows}</svg>`;
+}
+/** 막대 그래프의 모든 값을 읽기 전용 표로(R-207) */
+const barTable = (chart, caption) =>
+  `<div class="sr-only"><table><caption>${esc(caption)}</caption><thead><tr><th scope="col">항목</th><th scope="col">값</th></tr></thead><tbody>${chart.rows.map((r) => `<tr><th scope="row">${esc(r.fullLabel)}</th><td>${esc(r.valueWithUnit)}</td></tr>`).join('')}</tbody></table></div>`;
+const swatch = (dash) => `<svg viewBox="0 0 28 10" aria-hidden="true" focusable="false"><line class="swatch-line${dash === 'solid' ? '' : ` swatch-line--${dash}`}" x1="1" x2="27" y1="5" y2="5"/></svg>`;
+
 /**
- * 첫 화면 통계 캐러셀 — 실제 값. 지표 목록·순서·수(N)는 구현과 같은 접근자 src/data/koreaStatsAccess.ts#getCarouselIndicators(CAROUSEL_ORDER)에서 읽는다
- * (2026-10-15 기준 14개 — 문서·컴포넌트판도 이 값). 큰 숫자 표기는 formatIndicatorValue. 자동 넘김 간격은 SPEC SC5 7초.
+ * 첫 화면 통계 캐러셀 — **구현과 같은 모델**(src/core/carousel.ts#buildCarousel: 값 줄·단위 낱말·기준 줄·조혼인율 줄·범례·출처·「통계 기준」 줄·그래프 좌표)을 그대로 그린다.
+ * 지표 목록·순서·수(N)는 접근자 getCarouselIndicators에서 오고(2026-10-15 기준 14개) 자동 넘김 간격은 SPEC SC5 7초(AUTO_ADVANCE_MS).
+ * 구조(구현 ui/StatsCarousel.tsx와 같다): 조작 줄(이전 · 「{i} / {N}」 · 다음 · 자동 넘김 일시정지)은 **카드 머리**(R-200 — 슬라이드 높이가 달라도 같은 자리, 하단 띠에 가려지지 않는다),
+ * 14장을 모두 `.slides`에 겹쳐 두고 보이는 하나만 `.is-active`(좁은 화면은 카드 높이 = 가장 큰 슬라이드, 넓은 화면은 보이는 슬라이드만큼). 시안 주소 끝 `?slide=<id>`로 보이는 슬라이드를 고른다(예 `suicide-rate`·`marriage-count`).
+ * 그래프 좌표는 좁은 화면 기준(폭 320·높이 232)으로 한 번 만들고 SVG가 칸 폭에 맞춰 비율로 늘어난다 — 구현은 화면에 그려지는 폭으로 좌표를 다시 만든다(R-206).
  */
-const CAROUSEL = getCarouselIndicators();
-const CAROUSEL_TOTAL = CAROUSEL.length;
-const CAROUSEL_SEC = 7;
+const CAROUSEL_DATA = buildCarousel(undefined, { width: LINE_W, lineHeight: LINE_H_STACKED });
+const CAROUSEL_TOTAL = CAROUSEL_DATA.slides.length;
+const CAROUSEL_SEC = AUTO_ADVANCE_MS / 1000;
+if (CAROUSEL_TOTAL !== getCarouselIndicators().length) throw new Error(`캐러셀 슬라이드 수(${CAROUSEL_TOTAL})가 접근자 지표 수와 다르다`);
+/** 큰 값 줄의 글자 크기를 칸 폭에 맞추는 변수(ds.css .slide__value, CM11·QM2-5): 값 글자 폭(em)·단위 글자 수 */
+const valueSizing = (values, unitText) => `--value-em:${Math.max(...values.map(valueWidthEm), 1)};--unit-chars:${Math.max(unitText.length, 1)}`;
+function slideHtml(s, i, n, active) {
+  const unit = s.unitText !== '' ? `<small class="slide__unit">${esc(s.unitText)}</small>` : '';
+  let value = '';
+  if (s.headlines.length > 1) {
+    value = `<p class="slide__value slide__value--multi" style="${valueSizing(s.headlines.map((h) => h.value), s.unitText)}">${s.headlines
+      .map((h) => `<span class="slide__hv"><small class="slide__label">${esc(h.label)}</small><span class="slide__num"><span>${esc(h.value)}</span>${unit}</span></span>`)
+      .join('')}</p>`;
+  } else if (s.valueText !== null) {
+    value = `<p class="slide__value" style="${valueSizing([s.valueText], s.unitText)}"><span>${esc(s.valueText)}</span>${unit}</p>`;
+  }
+  // 큰 값 바로 아래 줄: 제목에 이름이 든 보조 계열의 값(조혼인율) — 글자만, 기준 줄 앞(QM2-11, 마스터 결정 R-230)
+  const side = s.sideValues.map((v) => `<p class="slide__side">${glueHtml(v.text)}</p>`).join('');
+  const chart = s.chart.kind === 'line' ? lineChartSvg(s.chart, s.chartLabel) : barChartSvg(s.chart, s.chartLabel) + barTable(s.chart, `${s.title} — 큰 값부터`);
+  const legend = s.legend.length >= 2 ? `<ul class="legend" aria-label="그래프 범례와 최근 값">${s.legend.map((l) => `<li>${swatch(l.dash)}<span>${glueHtml(l.label)} <strong>${esc(l.valueText)}</strong></span></li>`).join('')}</ul>` : '';
+  const note = s.seriesNote !== null ? `<p class="slide__meta">${glueHtml(s.seriesNote)}</p>` : '';
+  const help = s.safety !== null ? `<aside class="slide__help" aria-label="${esc(s.safety.name)}"><p>${esc(TITLE_TEXT.helpLead)}</p><p><strong>${esc(s.safety.name)}</strong> <a href="tel:${esc(s.safety.number)}">${esc(s.safety.number)}</a> (${esc(s.safety.hours)})</p></aside>` : '';
+  return `<article class="slide${active ? ' is-active' : ''}" data-slide-id="${s.id}" aria-roledescription="슬라이드" aria-label="${i + 1}/${n} ${esc(s.title)}">
+      <h3 class="t-h3">${glueHtml(s.title)}</h3>
+      ${s.caption !== null ? `<p class="slide__caption">${glueHtml(s.caption)}</p>` : ''}
+      ${value}${side}
+      <p class="slide__basis">${pairHtml(s.basisText, 'basis')}</p>
+      ${chart}${legend}${note}
+      <p class="t-sm t-muted">${glueHtml(s.definition)}</p>
+      ${help}
+      <p class="slide__meta">출처: ${glueHtml(s.sourceText)}</p>
+      <p class="slide__meta">${pairHtml(s.basisLine, 'meta')}</p>
+    </article>`;
+}
 function carousel() {
-  const tfr = CAROUSEL.find((i) => i.id === 'tfr') ?? indicator('tfr');
-  const total = CAROUSEL_TOTAL;
-  const series = tfr.series.filter((p) => p.year >= 2014);
-  const values = series.map((p) => p.value);
-  const years = series.map((p) => p.year);
-  const idx = CAROUSEL.findIndex((i) => i.id === 'tfr') + 1;
-  const fv = formatIndicatorValue(tfr);
-  return `<section class="card carousel" aria-roledescription="캐러셀" aria-label="한국 사회 통계">
-  <div class="carousel__head"><h2 class="card__title">한국 사회 통계</h2><span class="t-xs t-faint">${CAROUSEL_SEC}초마다 다음 지표</span></div>
-  <article class="slide" aria-live="off">
-    <h3 class="t-h3">${esc(tfr.title)}</h3>
-    <p class="slide__value">${esc(fv.value)}<small>${esc(fv.unit)} · ${fv.year}년</small></p>
-    ${lineChart(values, years, tfr.unit)}
-    <p class="t-sm t-muted">${esc(tfr.definition)}</p>
-    <p class="slide__meta">출처: ${esc(tfr.source.org)}, ${esc(tfr.source.table)} (${tfr.source.accessedOn} 조회)</p>
-  </article>
-  <div class="carousel__ctrl">
-    <button class="btn btn--secondary btn--icon" type="button" aria-label="이전 지표">${icon('prev')}</button>
-    <span class="carousel__count num" aria-live="polite">${idx} / ${total}</span>
-    <button class="btn btn--secondary btn--icon" type="button" aria-label="다음 지표">${icon('forward')}</button>
-    <button class="btn btn--secondary btn--icon" type="button" aria-label="자동 넘김 일시정지">${icon('pause')}</button>
+  const n = CAROUSEL_TOTAL;
+  return `<section class="card carousel" aria-roledescription="캐러셀" aria-label="${esc(TITLE_TEXT.carouselRegionLabel)}">
+  <div class="carousel__head">
+    <div class="carousel__heading"><h2 class="card__title">${esc(TITLE_TEXT.carouselTitle)}</h2><span class="carousel__note">${esc(TITLE_TEXT.carouselAutoNote(CAROUSEL_SEC))}</span></div>
+    <div class="carousel__ctrl">
+      <button class="btn btn--secondary btn--icon" type="button" aria-label="${esc(TITLE_TEXT.carouselPrev)}">${icon('prev')}</button>
+      <span class="carousel__status num" aria-hidden="true">1 / ${n}</span>
+      <button class="btn btn--secondary btn--icon" type="button" aria-label="${esc(TITLE_TEXT.carouselNext)}">${icon('forward')}</button>
+      <button class="btn btn--secondary btn--icon carousel__pause" type="button" aria-label="${esc(TITLE_TEXT.carouselPause)}">${icon('pause')}</button>
+    </div>
   </div>
-</section>`;
+  <div class="carousel__viewport" role="group" tabindex="0" aria-label="${esc(TITLE_TEXT.carouselViewport)}">
+    <div class="slides">
+    ${CAROUSEL_DATA.slides.map((s, i) => slideHtml(s, i, n, i === 0)).join('\n    ')}
+    </div>
+  </div>
+</section>
+<script>(function(){var id=new URLSearchParams(location.search).get('slide');if(!id)return;var all=document.querySelectorAll('.slide');var at=-1;all.forEach(function(s,k){var on=s.getAttribute('data-slide-id')===id;s.classList.toggle('is-active',on);if(on)at=k;});if(at<0){all[0].classList.add('is-active');return;}var st=document.querySelector('.carousel__status');if(st)st.textContent=(at+1)+' / '+all.length;})();</script>`;
 }
 
 // ---------- 1. 첫 화면 ----------
+/**
+ * state: 'new' 새 판(「태어나기」) / 'continue' 진행 중인 판이 있을 때(「이어서 살기」 + 보조 「새로 태어나기」). 이어하기 시안은 주소 끝 `?state=confirm`으로 확인 단계(안내문 + 「이전 판 지우고 태어나기」 / 「돌아가기」)를 보인다.
+ * 구조는 구현 src/screens/TitleScreen.tsx와 같다(R-220): 한 격자 .title에 본문(main) → 통계 카드(aside) → 푸터(footer)가 차례로, 넓은 화면은 왼쪽 열 본문·푸터 / 오른쪽 열 카드(두 줄에 걸쳐 따라다닌다).
+ * 문구는 구현과 같은 곳(src/data/titleText.ts·birthTable.ts#ERA_CONFIG·names.json meta.attribution)에서 읽는다 — 시안과 화면의 글자가 어긋나지 않는다. 지금 세상 카드의 작은 글씨만 M3 목표값(올해(2026) 출생 고정, SPEC Q1)으로 적는다.
+ */
 function titlePage(key, state = 'new') {
+  const tag = heroTagKeepParts();
   const hero = `<header class="hero">
-    ${logo(key, 'stacked')}${logo(key, 'row')}
-    <p class="hero__tag">태어난 집에 따라 달라지는, <span class="nowrap">한국인의 한 번의 인생</span></p>
+    <h1><span class="sr-only">수저 게임</span>${logo(key, 'stacked')}${logo(key, 'row')}</h1>
+    <p class="hero__tag">${esc(TITLE_TEXT.heroTagLead)}<span class="keep-phrase">${esc(tag[0])}${tag[1] === '' ? '' : `<span class="nowrap">${esc(tag[1])}</span>`}${esc(tag[2])}</span></p>
     ${spoonLineup()}
-    <p class="hero__pop"><strong>${N_POP}명</strong>이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요.</p>
-    <p class="hero__note">이 기기 안에서 계산한 가상의 사람들이에요. 실제로 게임하는 사람 수가 아니에요.</p>
+    <p class="hero__pop"><strong>${N_POP}${TITLE_TEXT.populationUnit}</strong>${esc(TITLE_TEXT.populationSuffix)}</p>
+    <p class="hero__note">${esc(TITLE_TEXT.populationNote)}</p>
   </header>`;
-  const world = `<fieldset><legend class="group-title">태어날 세상</legend>
-    <div class="choices choices--1" role="radiogroup" aria-label="태어날 세상">
-      ${radioCard({ name: 'era', title: '지난 세상', meta: '1950~1989년생', desc: '모두가 가난했고, 모두가 바빴던 시절' })}
-      ${radioCard({ name: 'era', title: '지금 세상', meta: '올해(2026) 태어나는 아이', desc: '우리가 지금 살고 있는 시간', selected: true })}
-      ${radioCard({ name: 'era', title: '다가올 세상', meta: '2030~2060년생', desc: '아직 오지 않은 시간. 격차는 더 벌어졌다고들 합니다' })}
+  const eraMeta = (e) => eraMetaText(e, e === 'present' ? { min: 2026, max: 2026 } : ERA_CONFIG[e].birthYears);
+  const world = `<fieldset><legend class="group-title">${esc(TITLE_TEXT.eraGroup)}</legend>
+    <div class="choices choices--1" role="radiogroup" aria-label="${esc(TITLE_TEXT.eraGroup)}">
+      ${ERAS.map((e) => radioCard({ name: 'era', title: ERA_CONFIG[e].label, meta: eraMeta(e), desc: ERA_CONFIG[e].blurb, selected: e === 'present' })).join('\n      ')}
     </div></fieldset>`;
-  const length = `<fieldset><legend class="group-title">인생 길이</legend>
-    <div class="choices choices--2" role="radiogroup" aria-label="인생 길이">
-      ${radioCard({ name: 'len', title: '약 30분', desc: '가볍게 한 판', selected: true })}
-      ${radioCard({ name: 'len', title: '약 1시간', desc: '결정을 더 많이' })}
+  const length = `<fieldset><legend class="group-title">${esc(TITLE_TEXT.lifeLengthGroup)}</legend>
+    <div class="choices choices--2" role="radiogroup" aria-label="${esc(TITLE_TEXT.lifeLengthGroup)}">
+      ${LIFE_LENGTHS.map((l) => radioCard({ name: 'len', title: LIFE_LENGTH_TEXT[l].title, desc: LIFE_LENGTH_TEXT[l].desc, selected: l === 'short30', disabled: !isLifeLengthSelectable(l), meta: isLifeLengthSelectable(l) ? '' : NOT_READY_TEXT })).join('\n      ')}
     </div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">평균 수명까지 살아 보는 데 걸리는 시간이에요. 도중에 나가도 진행은 이 기기에 남습니다.</p></fieldset>`;
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">${esc(TITLE_TEXT.lifeLengthHint)}</p></fieldset>`;
+  // 하단 띠 — 확인 단계(R-204): 맨 아래(방금 누른 「새로 태어나기」 자리)는 안전한 「돌아가기」(기본·큰 버튼, 먼저 포커스), 그 위 줄이 이전 판을 지우는 확인(보조)
+  const barNew = `<button class="btn btn--primary btn--lg" type="button">${esc(TITLE_TEXT.begin)}</button>`;
+  const barContinue = `<button class="btn btn--primary btn--lg" type="button">${esc(TITLE_TEXT.resume)}</button><button class="btn btn--ghost btn--sm" type="button">${esc(TITLE_TEXT.beginNew)}</button>`;
+  const barConfirm = `<p class="bottom-bar__ask" role="alert">${esc(TITLE_TEXT.confirmNewTitle)}</p><div class="bottom-bar__stack"><button class="btn btn--secondary" type="button">${esc(TITLE_TEXT.confirmNewYes)}</button><button class="btn btn--primary btn--lg" type="button">${esc(TITLE_TEXT.confirmNewNo)}</button></div>`;
   const bar =
     state === 'continue'
-      ? `<div class="bottom-bar"><button class="btn btn--primary btn--lg" type="button">이어서 살기</button><button class="btn btn--ghost btn--sm" type="button">새로 태어나기</button></div>`
-      : `<div class="bottom-bar"><button class="btn btn--primary btn--lg" type="button">태어나기</button></div>`;
-  const body = `<main class="title">
-  <div class="title__main">${hero}${world}${length}</div>
+      ? `<div class="bottom-bar">${barContinue}</div>
+<template id="bar-confirm">${barConfirm}</template>
+<script>(function(){if(new URLSearchParams(location.search).get('state')!=='confirm')return;var bar=document.querySelector('.bottom-bar');bar.replaceChildren(document.getElementById('bar-confirm').content.cloneNode(true));})();</script>`
+      : `<div class="bottom-bar">${barNew}</div>`;
+  const foot = `<footer class="title-foot">
+  <p class="credit"><a href="${esc(NAMES_META.attribution.url)}" target="_blank" rel="noopener noreferrer">${glueHtml(NAMES_META.attribution.text)}</a></p>
+  <p>${glueHtml(footerStatsText(CAROUSEL_DATA.orgs))}</p>
+  <p>${glueHtml(TITLE_TEXT.populationInfo)}</p>
+  <p class="num">v0.1.0 (a1b2c3d)</p>
+</footer>`;
+  const body = `<div class="title">
+  <main class="title__main">${hero}${world}${length}</main>
   <aside class="title__side">${carousel()}</aside>
-</main>
-<footer class="title-foot"><p>${CREDIT}</p><p>통계 기준 연도·출처는 카드마다 적혀 있습니다. 시안 · 가상 인구 수는 가짜 값</p><p class="num">v0.2.0 (a1b2c3d)</p></footer>
+  ${foot}
+</div>
 <div class="page-end-space"></div>
 ${bar}`;
-  return page({ title: `수저 게임 · 시안 · 첫 화면`, body });
+  return page({ title: `수저 게임 · 시안 · 첫 화면${state === 'continue' ? ' (이어하기)' : ''}`, body });
 }
 
-// ---------- 2. 룰렛 ----------
-/** 지금 세상 = 2026년 현행 16개 시·도(광주·전남은 전남광주통합특별시로 합산, 마스터 결정). 비율은 2025년 시도별 출생아 수(koreaStats.json birth-by-sido) */
-const SIDO_16 = [
-  ['서울', ['서울']], ['부산', ['부산']], ['대구', ['대구']], ['인천', ['인천']], ['대전', ['대전']], ['울산', ['울산']], ['세종', ['세종']], ['경기', ['경기']],
-  ['강원', ['강원']], ['충북', ['충북']], ['충남', ['충남']], ['전북', ['전북']], ['전남광주', ['광주', '전남']], ['경북', ['경북']], ['경남', ['경남']], ['제주', ['제주']],
-];
-function oddsRegions() {
-  const rows = indicator('birth-by-sido').rows;
-  const births = SIDO_16.map(([name, parts]) => [name, parts.reduce((a, p) => a + rows.find((r) => r.sido === p).births, 0)]);
-  const total = births.reduce((a, b) => a + b[1], 0);
-  // 소수 첫째 자리까지, 합이 100.0이 되도록 가장 큰 나머지 방식
-  const raw = births.map(([n, b]) => [n, (b / total) * 1000]);
-  const floors = raw.map(([n, v]) => [n, Math.floor(v), v - Math.floor(v)]);
-  let rest = 1000 - floors.reduce((a, r) => a + r[1], 0);
-  for (const r of [...floors].sort((a, b) => b[2] - a[2])) if (rest-- > 0) r[1] += 1;
-  return floors.map(([n, v]) => [n, v / 10]);
+// ---------- 2. 룰렛 — 구현(src/screens/RouletteScreen.tsx·ui/Reel.tsx)과 같은 모델 core/roulette.ts#buildRoulette ----------
+/** 회전 중 시안이 고정해 둔 프레임의 시각(ms): 가속이 끝나고 가장 빠른 구간 — 구현의 .is-fast(흐림 + 줄무늬)가 켜진 모습 */
+const SPIN_FRAME_MS = 2000;
+/** 릴 창 위에 보이는 칸 수(ui/Reel.tsx#SLOT_BEFORE — 릴 높이 = 5칸, 가운데가 창) */
+const SLOT_BEFORE = 2;
+/**
+ * 릴 하나(구현 ui/Reel.tsx의 마크업). 멈춘 릴 = restCells(결과 칸을 가운데, 앞뒤 두 칸), 회전 중 = spinCells(여러 바퀴 목록)를 reelPosition(SPIN_FRAME_MS)만큼 밀어 올린 한 프레임.
+ * 수저 릴은 왕복 순서(core/roulette.ts#WEALTH_REEL_ORDER: 흙 동 은 금 다이아몬드 금 은 동, R-274)라 멈춘 창의 위아래가 늘 이웃 단계(흙수저 결과: 은 · 동 · [흙] · 동 · 은)다.
+ * 릴은 두 상태 모두 aria-hidden(RL6 — 결과는 상태 문장이 읽는다). 칸 높이는 CSS 변수 --reel-item-h(rem).
+ */
+function reelHtml(items, resultIndex, stopMs, spinning) {
+  const n = items.length;
+  if (spinning) {
+    const total = spinCycles(n) * n;
+    const pos = reelPosition(SPIN_FRAME_MS, total, stopMs);
+    const cells = spinCells(n, resultIndex, total);
+    return `<div class="reel is-spinning is-fast" aria-hidden="true" data-state="spinning"><div class="reel__window"></div><ul class="reel__list" style="transform:translate3d(0, calc(var(--reel-item-h) * ${-r1(pos)}), 0)">${cells.map((i) => `<li class="reel__item">${items[i]}</li>`).join('')}</ul></div>`;
+  }
+  const cells = restCells(n, resultIndex);
+  return `<div class="reel" aria-hidden="true" data-state="stopped"><div class="reel__window"></div><ul class="reel__list">${cells.map((i, e) => `<li class="reel__item${e === SLOT_BEFORE ? ' is-result' : ''}">${items[i]}</li>`).join('')}</ul></div>`;
 }
 
 /**
  * state: 'spin' 회전 중 / 'stop' 결과 / 'reduced' 움직임 줄이기(= 결과 상태 그대로 + 안내 한 줄, 회전 화면을 거치지 않는다 — R-171).
- * 릴 순서는 확률표 순서로 하나다(수저: 흙→동→은→금→다이아 순환, 지역: 서울·부산·…·제주). 결과(흙수저·경기)가 창 가운데 오도록 같은 다섯 칸을 모든 상태에서 보인다.
+ * 확률표·릴 순서·멈출 자리는 모두 buildRoulette(지금 세상·시안 주인공의 저장 상태)에서 읽는다: 수저 = ERA_CONFIG 설계값(정수 %, 합 100), 지역 = 2025년 시·도 출생아 비율(소수 1자리, 합 100.0),
+ * 지역 릴·확률표 순서 = REGION_ORDER, 수저 릴 = 왕복 순서. 문구는 data/birthReportText.ts#ROULETTE_TEXT·regionOddsNote(지금 세상 = 통계 파생, 지난·다가올 세상 = 설계값 문구).
+ * 제목(h1)은 구현 RouletteScreen과 같이 `--title-chars`(ROULETTE_TITLE_CHARS = 가장 긴 낱말 글자 수 + 1)를 인라인으로 넘겨 ds.css의 글자 크기 상한(줄 폭 ÷ 칸 수)이 폭 320 · 글자 200%에서도 「정해졌습니다」를 한 줄에 둔다(QM3-2).
  */
 function roulettePage(state) {
   const spinning = state === 'spin';
   const reduced = state === 'reduced';
-  const spoonRows = [4, 5, 1, 2, 3]; // 확률표 순서(1→5)의 순환에서 결과 1(흙)이 가운데
-  const spoonItems = spoonRows.map((n, i) => `<li class="reel__item${!spinning && i === 2 ? ' is-result' : ''}">${reelSpoon(n)}</li>`).join('');
-  const regionOrder = SIDO_16.map(([n]) => n);
-  const at = regionOrder.indexOf(HERO.regionShort);
-  const regionRows = [-2, -1, 0, 1, 2].map((k) => regionOrder[(at + k + regionOrder.length) % regionOrder.length]); // 울산·세종·[경기]·강원·충북
-  const regionItems = regionRows.map((n, i) => `<li class="reel__item${!spinning && i === 2 ? ' is-result' : ''}">${esc(n)}</li>`).join('');
-  const odds = [[1, 25], [2, 30], [3, 28], [4, 14], [5, 3]];
-  const spoonOdds = `<table><caption class="sr-only">수저별 확률</caption><tbody>${odds.map(([n, p]) => `<tr><th scope="row">${GRADES[n].name}</th><td>${p}%</td></tr>`).join('')}</tbody></table>
-    <p class="odds__note">게임의 설계값이에요(통계가 아님).</p>`;
-  const src = indicator('birth-by-sido').source;
-  const regionOdds = `<table><caption class="sr-only">지역별 확률</caption><tbody>${oddsRegions().map(([n, p]) => `<tr><th scope="row">${esc(n)}</th><td>${p.toFixed(1)}%</td></tr>`).join('')}</tbody></table>
-    <p class="odds__note">2025년 시·도별 출생아 수 비율(${esc(src.org)}, 2025년 출생 통계). 광주·전남은 통합(2026)에 맞춰 합산. 이름은 줄여 적었어요.</p>`;
-  // 결과 부제: 「{수저}({구간}) · {시·도 줄임}」 — 구간은 bandLabel 출력(R-170)
-  const result = `<span class="nowrap">${esc(gradeText(HERO.grade, HERO.gradeRange))}</span> · <span class="nowrap">${esc(HERO.regionShort)}</span>`;
-  const body = `<header class="site-head">${headerLogo()}<span class="site-head__name">출생</span></header>
+  const { era, character: c, report } = HERO_STATE;
+  const view = buildRoulette(era, c, report);
+  const stats = getUsableIndicator('birth-by-sido');
+  const note = regionOddsNote(view.basis, era, { org: stats?.source.org ?? '', year: stats?.latest.year ?? 0 });
+  const wealthItems = view.wealthReel.map((w) => reelSpoon(w));
+  const regionItems = view.regionOdds.map((o) => esc(o.name));
+  const spoonOdds = `<table><caption class="sr-only">${esc(ROULETTE_TEXT.wealthOddsCaption)}</caption><tbody>${view.wealthOdds.map((o) => `<tr><th scope="row">${esc(GRADE_NAME[o.wealth])}</th><td>${o.percent}%</td></tr>`).join('')}</tbody></table>
+    <p class="odds__note">${esc(ROULETTE_TEXT.wealthOddsNote)}</p>`;
+  const regionOdds = `<table><caption class="sr-only">${esc(ROULETTE_TEXT.regionOddsCaption)}</caption><tbody>${view.regionOdds.map((o) => `<tr><th scope="row">${esc(o.name)}</th><td>${o.percent.toFixed(1)}%</td></tr>`).join('')}</tbody></table>
+    <p class="odds__note">${glueHtml(note)}</p>`;
+  // 결과 부제: 「{수저}({구간}) · {시·도 줄임}」 — 구간은 bandLabel 출력(R-170), 짧은 쌍은 FitPair(한 줄에 안 들어가면 기호 없이 두 줄)
+  const result = fitPair(gradeText(c.parentWealth, band(era, c.parentWealth)), view.regionOdds[view.regionIndex].name);
+  const body = `<div class="page roulette-page${spinning ? ' is-spinning' : ''}" data-state="${spinning ? 'spinning' : 'result'}">
+<header class="site-head">${headerLogo()}<span class="site-head__name">${esc(ROULETTE_TEXT.headName)}</span></header>
 <main class="roulette">
   <div class="roulette__lead">
-    <h1 class="t-title">${spinning ? '태어날 집과 땅을 고르는 중' : '태어날 곳이 정해졌습니다'}</h1>
-    <p class="t-muted" ${spinning ? '' : 'role="status"'}>${spinning ? '어느 집, 어느 땅에 태어날지는 고를 수 없어요. 확률대로 돌아갑니다.' : result}</p>
-    ${reduced ? '<p class="motion-note t-sm t-muted">움직임 줄이기가 켜져 있어 돌림판을 돌리지 않고 결과만 보여 드려요.</p>' : ''}
+    <h1 class="t-title" style="--title-chars:${ROULETTE_TITLE_CHARS}">${esc(spinning ? ROULETTE_TEXT.spinTitle : ROULETTE_TEXT.doneTitle)}</h1>
+    <p class="t-muted" role="status">${spinning ? esc(ROULETTE_TEXT.spinNote) : result}</p>
+    ${reduced ? `<p class="motion-note t-sm t-muted">${esc(ROULETTE_TEXT.motionNote)}</p>` : ''}
   </div>
   <div class="reels">
-    <div class="reel-col"><h2 class="reel-col__title">수저</h2>
-      <div class="reel${spinning ? ' is-spinning' : ''}" aria-hidden="${spinning}"><div class="reel__window"></div><ul class="reel__list" style="padding-top:4px">${spoonItems}</ul></div>
+    <div class="reel-col"><h2 class="reel-col__title">${esc(ROULETTE_TEXT.wealthTitle)}</h2>
+      ${reelHtml(wealthItems, view.wealthReelIndex, ROULETTE_TIMING.wealthStopMs, spinning)}
       <div class="odds">${spoonOdds}</div></div>
-    <div class="reel-col"><h2 class="reel-col__title">태어나는 지역</h2>
-      <div class="reel${spinning ? ' is-spinning' : ''}" aria-hidden="${spinning}"><div class="reel__window"></div><ul class="reel__list" style="padding-top:4px">${regionItems}</ul></div>
+    <div class="reel-col"><h2 class="reel-col__title">${esc(ROULETTE_TEXT.regionTitle)}</h2>
+      ${reelHtml(regionItems, view.regionIndex, ROULETTE_TIMING.regionStopMs, spinning)}
       <div class="odds odds--cols">${regionOdds}</div></div>
   </div>
-  ${spinning ? '' : '<p class="t-xs t-faint" style="text-align:center">돌림판은 연출이고, 결과는 돌기 전에 정해진 값이에요.</p>'}
+  <p class="t-xs t-faint roulette__after"${spinning ? ' aria-hidden="true"' : ''}>${esc(ROULETTE_TEXT.afterNote)}</p>
 </main>
 <div class="page-end-space"></div>
-<div class="bottom-bar">${spinning ? '<button class="btn btn--secondary btn--lg" type="button">건너뛰기</button>' : '<button class="btn btn--primary btn--lg" type="button">출생신고 보기</button>'}</div>`;
+<div class="bottom-bar">${spinning ? `<button class="btn btn--secondary btn--lg" type="button">${esc(ROULETTE_TEXT.skip)}</button>` : `<button class="btn btn--primary btn--lg" type="button">${esc(ROULETTE_TEXT.toBirth)}</button>`}</div>
+</div>`;
   return page({ title: `수저 게임 · 시안 · 룰렛 (${spinning ? '회전 중' : reduced ? '움직임 줄이기 — 결과만' : '결과'})`, body, motion: reduced ? 'reduce' : '' });
 }
 
-// ---------- 3. 출생신고 ----------
-const birthSentence = () => `${HERO.birth}, ${HERO.region}의 형편이 빠듯한 가정에서 ${HERO.weight} 여자아이로 태어났습니다. ${HERO.order}입니다. <span class="nowrap">(${HERO.weight}은 ${HERO.weightRank})</span>`;
+// ---------- 3. 출생신고 — 구현(src/screens/BirthScreen.tsx)과 같은 모델·같은 문구 함수 ----------
+/**
+ * 지난·다가올 세상 출생신고 시안의 인물: 구현의 출생 생성기(core/birth.ts#generateBirthFromSeed) 출력(인물·출생신고 상세·또래 시드)을 그대로 쓴다 — 손으로 만든 값이 없다.
+ * 시드는 보여 줄 조건을 만족하는 첫 시드다(결정적 탐색): 지난 세상 12 = 흙수저·셋째 이상·일반구가 있는 장소(1961년생 「경기도 용인시 처인구」, 또래 장소에 「경기도 인천 미추홀구」 같은 지난 세상 표기),
+ * 다가올 세상 229 = 다이아몬드수저(가장 긴 수저 이름 칩)·「전남광주통합특별시」(9글자 낱말 — 넓은 화면 격자의 두 칸, R-281). 아래가 조건을 다시 확인한다.
+ */
+const ERA_SEEDS = { past: 12, future: 229 };
+function eraModel(era) {
+  const r = generateBirthFromSeed(ERA_SEEDS[era], era);
+  const ok = era === 'past' ? r.character.parentWealth === 1 && r.report.birthOrder >= 3 : r.character.parentWealth === 5 && r.report.region === '전남광주';
+  if (!ok) throw new Error(`${era} 세상 시안 시드 ${ERA_SEEDS[era]}의 출생 결과가 보여 줄 조건과 다르다: ${JSON.stringify(r.character)} ${JSON.stringify(r.report)}`);
+  return { era, character: r.character, report: r.report, peerSeed: r.peerSeed };
+}
 
-function birthPage() {
+/**
+ * 출생신고 본문(main) 하나. 구조·클래스는 구현과 같다: 서류(.doc — 띠 + 「가상의 서류」 FitPair, 본문 기준 도장, 큰 이름, 서술문(끝 괄호는 .keep-phrase), 격자 11칸 — 「태어난 곳」 두 칸(.span-2), 집안 형편·교육방식 한 줄(.wide);
+ * 열 수는 본문 컨테이너 폭(rem)이 정한다 — 칸이 11.5rem 미만이면 1열, QM3-1) → 같은 해 태어난 사람들(.people — 이름 옆 「여성/남성」, 칩은 좁은 폭에서 이름 아래, R-269; 안내는 첫 문장 하나 — 둘째 문장은 M4의 또래 칸이 배포될 때 켠다, QM3-3) →
+ * 비교 카드(.card--cmp 컨테이너 — 내용 폭 35rem 미만이면 표가 한 행씩 쌓인다; 지금 세상만, R-263: 행 3개 + 합쇼체 안내(QM3-4) + 기대수명 한 줄 서술, R-260·R-261) → 하단 표기(.doc-notes 4~5줄).
+ * 글자는 전부 구현 함수의 출력이다: birthSentence·reportPlaceLabel·bandLabel(startBandOf)·standingLabel(looksStanding/weightStanding)·peersOf·placeLabel·buildComparison·lifeGapLine·REPORT_NOTES·getRegionFootnote.
+ */
+function birthMain({ era, character: c, report, peerSeed }) {
+  if (!isValidBirthReport(report, c.birthYear, c.gender)) throw new Error(`${era} 세상 시안의 출생신고 상세가 저장 검증을 통과하지 못한다`);
+  const sentence = birthSentence(c, report, era);
+  const sm = /^(.*?)(\([^()]*\))$/.exec(sentence); // 구현 BirthScreen#Sentence: 끝의 「(3.3kg은 상위 약 N%)」를 .keep-phrase로 묶는다
+  const sentenceHtml = sm === null ? esc(sentence) : `${esc(sm[1])}<span class="keep-phrase">${esc(sm[2])}</span>`;
+  const place = reportPlaceLabel(report, era);
+  const range = band(era, c.parentWealth);
+  const looks = standingLabel(looksStanding(c.looks));
+  const weight = formatKg(report.birthWeightKg);
+  const weightRank = standingLabel(weightStanding(report.birthWeightKg, c.gender));
+  const peers = peersOf(peerSeed, c.birthYear, report.month, c.name);
+  const showCompare = compareShown(era);
+  const rows = showCompare ? buildComparison(c.parentWealth) : [];
+  const gap = showCompare ? lifeGapLine() : null;
+  const L = BIRTH_TEXT.gridLabels;
+  const field = (label, value, cls = '') => `<div${cls === '' ? '' : ` class="${cls}"`}><dt>${esc(label)}</dt><dd>${value}</dd></div>`;
   const grid = `<dl class="doc__grid">
-    <div><dt>성별</dt><dd>${HERO.gender}</dd></div>
-    <div><dt>출생 연월</dt><dd>${HERO.birth}</dd></div>
-    <div><dt>태어난 곳</dt><dd>${HERO.region}</dd></div>
-    <div class="wide"><dt>집안 형편</dt><dd class="grade-line">${gradeChip(HERO.grade, { lg: true, range: HERO.gradeRange })}</dd></div>
-    <div><dt>어머니</dt><dd>${HERO.motherAge}세 · ${HERO.motherJob}</dd></div>
-    <div><dt>아버지</dt><dd>${HERO.fatherAge}세 · ${HERO.fatherJob}</dd></div>
-    <div><dt>사는 집</dt><dd>${HERO.housing}</dd></div>
-    <div><dt>출생 체중</dt><dd>${HERO.weight} <span class="t-sm t-muted" style="font-weight:400">(${HERO.weightRank})</span></dd></div>
-    <div><dt>형제 순서</dt><dd>${HERO.order}</dd></div>
-    <div><dt>외모</dt><dd>${HERO.looks} <span class="t-sm t-muted" style="font-weight:400">또래 사이에서</span></dd></div>
-    <div class="wide"><dt>교육방식</dt><dd>${HERO.parenting} <span class="t-sm t-muted" style="font-weight:400">집에는 지켜야 할 규칙이 많았고, 부모님은 엄했습니다.</span></dd></div>
+    ${field(L.gender, esc(genderLabel(c.gender)))}
+    ${field(L.month, esc(yearMonthText(c.birthYear, report.month)))}
+    ${field(L.place, esc(place), 'span-2')}
+    ${field(L.wealth, gradeLine(c.parentWealth, range, { lg: true }), 'wide')}
+    ${field(L.mother, fitPair(`${report.mother.age}세`, OCCUPATION_LABEL[report.mother.job]))}
+    ${field(L.father, fitPair(`${report.father.age}세`, OCCUPATION_LABEL[report.father.job]))}
+    ${field(L.housing, esc(housingText(report.housing)))}
+    ${field(L.weight, `${esc(weight)} <span class="cell-sub">(${esc(weightRank)})</span>`)}
+    ${field(L.order, esc(orderText(report.birthOrder)))}
+    ${field(L.looks, `${esc(looks)} <span class="cell-sub">${esc(BIRTH_TEXT.looksSub)}</span>`)}
+    ${field(L.parenting, `${esc(PARENTING_LABEL[c.parenting])} <span class="cell-sub">${esc(parentingDocText(c.parenting, c.parentWealth))}</span>`, 'wide')}
   </dl>`;
-  const people = `<ul class="people">${PEERS.map(([n, s, g, grade]) => `<li><div><div class="name">${n}</div><div class="sub">${s} · ${g}</div></div>${gradeChip(grade)}</li>`).join('')}</ul>`;
-  const compare = `<table class="table"><caption class="sr-only">올해 태어난 아이 평균과 이 아이의 비교</caption>
-    <thead><tr><th scope="col">항목</th><th scope="col" class="num">올해 출생아 평균</th><th scope="col" class="num">이 아이</th></tr></thead>
-    <tbody>
-      <tr><th scope="row">기대수명<br><span class="t-xs t-faint">출처 자리</span></th><td class="num">84.0세</td><td class="num"><strong>81.2세</strong></td></tr>
-      <tr><th scope="row">사교육 참여율<br><span class="t-xs t-faint">출처 자리</span></th><td class="num">78%</td><td class="num"><strong>61%</strong></td></tr>
-      <tr><th scope="row">대학 진학률<br><span class="t-xs t-faint">출처 자리</span></th><td class="num">73%</td><td class="num"><strong>58%</strong></td></tr>
-    </tbody></table>
-    <p class="t-xs t-faint" style="margin-top:var(--sp-2)">출처가 확인된 행만 넣습니다. 이 표의 숫자는 시안용 가짜 값입니다.</p>`;
-  const body = `<header class="site-head">${headerLogo()}<span class="site-head__name">출생</span></header>
-<main class="doc-page">
+  const people = `<ul class="people">${peers
+    .map(
+      (p) =>
+        `<li><div class="people__who"><div class="people__line"><span class="name">${esc(p.name)}</span> <span class="sub">${esc(genderLabel(p.gender))}</span></div><div class="sub">${esc(placeLabel(p, era))}</div></div>${gradeChip(p.wealth)}</li>`,
+    )
+    .join('')}</ul>`;
+  const compare =
+    !showCompare || rows.length === 0
+      ? ''
+      : `<section class="card card--cmp" aria-labelledby="cmp-t"><div class="card__head"><h2 id="cmp-t" class="card__title">${esc(BIRTH_TEXT.compareTitle)}</h2></div>
+    <table class="table table--cmp" role="table"><caption class="sr-only">${esc(BIRTH_TEXT.compareCaption)}</caption>
+      <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">${esc(BIRTH_TEXT.compareColItem)}</th><th scope="col" role="columnheader" class="num">${esc(BIRTH_TEXT.compareColAll)}</th><th scope="col" role="columnheader" class="num">${esc(BIRTH_TEXT.compareColThis)}</th></tr></thead>
+      <tbody role="rowgroup">${rows
+        .map(
+          (r) =>
+            `<tr role="row" data-row-id="${r.id}"><th scope="row" role="rowheader">${esc(r.label)}<span class="cmp__source t-xs t-faint">${glueHtml(r.source)}</span></th><td role="cell" class="num" data-label="${esc(BIRTH_TEXT.compareColAll)}">${esc(r.average)}</td><td role="cell" class="num" data-label="${esc(BIRTH_TEXT.compareColThis)}"><strong>${esc(r.child)}</strong><span class="cmp__note t-xs t-faint">${esc(r.childNote)}</span></td></tr>`,
+        )
+        .join('')}</tbody></table>
+    <p class="t-xs t-faint card__note">${glueHtml(BIRTH_TEXT.compareNote)}</p>
+    ${gap === null ? '' : `<p class="t-sm card__note">${glueHtml(gap.text)}</p>\n    <p class="t-xs t-faint">${glueHtml(gap.source)}</p>`}</section>`;
+  const notes = `<div class="doc-notes t-xs t-faint">
+    <p>${glueHtml(era === 'past' ? REPORT_NOTES.regionPast : getRegionFootnote())}</p>
+    <p>${glueHtml(REPORT_NOTES.stats)}</p>
+    <p>${glueHtml(REPORT_NOTES.housing)}</p>
+    <p>${glueHtml(REPORT_NOTES.design)}</p>
+    ${era === 'present' ? '' : `<p>${glueHtml(era === 'past' ? REPORT_NOTES.eraPast : REPORT_NOTES.eraFuture)}</p>`}
+  </div>`;
+  return `<main class="doc-page" data-era="${era}">
   <article class="doc" aria-labelledby="doc-title">
-    <div class="doc__band"><h1 id="doc-title">출생 신고</h1><span>수저 게임 · 가상의 서류</span></div>
-    <div class="stamp" aria-hidden="true">접수</div>
+    <div class="doc__band"><h1 id="doc-title">${esc(BIRTH_TEXT.docTitle)}</h1><span class="doc__tag">${fitPair(BIRTH_TEXT.docTag[0], BIRTH_TEXT.docTag[1])}</span></div>
     <div class="doc__body">
-      <div><p class="label">이름</p><p class="doc__name">${HERO.name}</p></div>
-      <p class="doc__sentence">${birthSentence()}</p>
+      <div class="stamp" aria-hidden="true">${esc(BIRTH_TEXT.stamp)}</div>
+      <div><p class="label">${esc(BIRTH_TEXT.nameLabel)}</p><p class="doc__name">${esc(c.name)}</p></div>
+      <p class="doc__sentence">${sentenceHtml}</p>
       ${grid}
     </div>
   </article>
-  <section class="card" aria-labelledby="peers-t"><div class="card__head"><h2 id="peers-t" class="card__title">같은 해 태어난 사람들</h2></div>${people}
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">네 사람도 같은 세상에서 나이를 먹습니다. 대시보드 오른쪽 칸에서 요즘 모습을 볼 수 있습니다.</p></section>
-  <section class="card" aria-labelledby="cmp-t"><div class="card__head"><h2 id="cmp-t" class="card__title">다른 집 아이들과 견주면</h2></div>${compare}</section>
+  <section class="card" aria-labelledby="peers-t"><div class="card__head"><h2 id="peers-t" class="card__title">${esc(BIRTH_TEXT.peersTitle)}</h2></div>${people}
+    <p class="t-sm t-muted card__note">${glueHtml(BIRTH_TEXT.peersNote)}</p></section>
+  ${compare}
+  ${notes}
   ${MOCK_TAG}
-</main>
+</main>`;
+}
+
+/**
+ * 출생신고 시안 한 장에 세 시대를 담는다: 기본은 지금 세상(시안 주인공), 주소 끝 `?era=past` / `?era=future`는 <template>에 둔 지난·다가올 세상 본문으로 바꿔 끼운다(첫 화면의 `?state=confirm`과 같은 방식).
+ * 지난·다가올 세상은 비교 카드가 없고(R-263) 하단 표기가 한 줄 더 많다(시대 보정, 지난 세상은 지역 표기도 다르다 — R-264).
+ */
+function birthPage() {
+  const header = `<header class="site-head">${headerLogo()}<span class="site-head__name">${esc(BIRTH_TEXT.headName)}</span></header>`;
+  const bar = `<div class="bottom-bar"><button class="btn btn--primary btn--lg" type="button">${esc(BIRTH_TEXT.next)}</button></div>`;
+  const body = `<div class="page birth-page">
+${header}
+${birthMain(HERO_STATE)}
 <div class="page-end-space"></div>
-<div class="bottom-bar"><button class="btn btn--primary btn--lg" type="button">살아가기</button></div>`;
+${bar}
+</div>
+<template id="era-past">${birthMain(eraModel('past'))}</template>
+<template id="era-future">${birthMain(eraModel('future'))}</template>
+<script>(function(){var era=new URLSearchParams(location.search).get('era');if(era!=='past'&&era!=='future')return;var t=document.getElementById('era-'+era);var main=document.querySelector('main.doc-page');if(!t||!main)return;main.replaceWith(t.content.cloneNode(true));document.title+=era==='past'?' (지난 세상)':' (다가올 세상)';})();</script>`;
   return page({ title: '수저 게임 · 시안 · 출생신고', body });
 }
 
@@ -324,7 +535,8 @@ const familyCard = (age) => `<section class="card family" aria-label="식구"><h
   </dl></section>`;
 
 function peersCard(labels) {
-  const rows = PEERS.map(([n, s, g], i) => `<li><div><div class="name">${n}</div><div class="sub">${s} · ${g}</div></div><span class="t-sm t-muted">${labels[i]}</span></li>`).join('');
+  // 또래 한 줄의 구조는 출생신고(M3 구현)와 같다: 이름 옆 「여성/남성」, 장소는 다음 줄(R-269). 「요즘 모습」 라벨 자리는 M4 몫
+  const rows = PEERS.map(([n, s, g], i) => `<li><div class="people__who"><div class="people__line"><span class="name">${esc(n)}</span> <span class="sub">${esc(g)}</span></div><div class="sub">${esc(s)}</div></div><span class="t-sm t-muted">${labels[i]}</span></li>`).join('');
   return `<section class="card" aria-label="같은 해 태어난 사람들"><div class="card__head" style="margin-bottom:var(--sp-1)"><h2 class="card__title">같은 해 태어난 사람들</h2><span class="t-xs t-faint" style="flex-basis:100%">요즘 모습</span></div><ul class="people">${rows}</ul><p class="t-xs t-faint">나이와 수저에 따라 정한 설계값입니다(통계가 아님).</p></section>`;
 }
 
@@ -382,7 +594,7 @@ function dashboardPage(kind, overlay = '', infantAge = 3) {
   const age = infant ? infantAge : 31;
   const head = dashHead({ age, year: HERO.birthYear + age, progress: infant ? 62 : 38, paused: overlay !== '' });
   const rowsInfant =
-    logRow(0, birthSentence()) +
+    logRow(0, esc(HERO.sentence)) + // 인생 기록 0세 첫 줄 = 출생신고 서술문(BR3, core/birthReport.ts#birthSentence)
     logRow(0, '기본 예방접종을 받았습니다.') +
     logRow(1, '첫 걸음마를 뗐습니다. 온 가족이 박수를 쳤습니다.') +
     logRow(1, '첫 단어를 말했습니다. ‘엄마’라는 뜻의 말이었습니다.') +
@@ -447,7 +659,7 @@ function endingPage() {
   <section class="card stack--sm stack" aria-label="${esc(ENDING_HEADINGS.stats)}"><h2 class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>${meter('health', 41)}${meter('happy', 72)}${meter('knowledge', 66)}${meter('relation', 80)}</section>
   <section class="card" aria-labelledby="t-t"><h2 id="t-t" class="card__title" style="margin-bottom:var(--sp-2)">${esc(ENDING_HEADINGS.timeline)}</h2>
     <ol class="timeline">
-      ${tl(0, `${HERO.birth}, ${HERO.region}의 형편이 빠듯한 가정에서 ${HERO.weight} 여자아이로 태어났습니다.`)}
+      ${tl(0, esc(HERO.sentence))}
       ${tl(5, '<strong>나의 기록 · 영유아기 기억</strong><br>할머니 집 마루에서 수박을 먹던 여름. 매미 소리가 시끄러웠습니다.', 'is-note')}
       ${tl(19, '학자금 대출을 받아 대학에 들어갔습니다.', 'is-choice')}
       ${tl(29, '<strong>나의 기록 · 청년기 연애담</strong><br>퇴근길에 같이 걷던 저녁이 오래 남았다.', 'is-note')}
@@ -499,9 +711,11 @@ function componentsPage() {
     <div style="min-width:240px;flex:1" class="stack--sm stack"><div class="field"><label class="label" for="c1">기록</label><textarea id="c1" class="field__input" rows="2">입력란은 2px 강한 테두리</textarea><div class="field__hint"><span>안내 문구</span><span class="num">13/140</span></div></div>
       <span class="toggle is-on"><span class="toggle__track"><span class="toggle__thumb">${icon('check')}</span></span><span class="toggle__state">켬</span><span>BGM</span></span>
       <span class="toggle"><span class="toggle__track"><span class="toggle__thumb">${icon('check')}</span></span><span class="toggle__state">끔</span><span>자동 모드</span></span></div></div></section>
-  <section><h2>캐러셀 조작 줄(자동 넘김 ${CAROUSEL_SEC}초, 지표 ${CAROUSEL_TOTAL}개) · 점(5개 이하일 때만)</h2><div class="carousel__ctrl" style="max-width:320px"><button class="btn btn--secondary btn--icon" type="button" aria-label="이전 지표">${icon('prev')}</button><span class="carousel__count num">3 / ${CAROUSEL_TOTAL}</span><button class="btn btn--secondary btn--icon" type="button" aria-label="다음 지표">${icon('forward')}</button><button class="btn btn--secondary btn--icon" type="button" aria-label="자동 넘김 일시정지">${icon('pause')}</button></div>
+  <section><h2>캐러셀 카드 머리(자동 넘김 ${CAROUSEL_SEC}초, 지표 ${CAROUSEL_TOTAL}개) · 점(5개 이하일 때만)</h2><div class="carousel__head" style="max-width:420px"><div class="carousel__heading"><span class="card__title">한국 사회 통계</span><span class="carousel__note">${CAROUSEL_SEC}초마다 다음 지표</span></div><div class="carousel__ctrl"><button class="btn btn--secondary btn--icon" type="button" aria-label="이전 지표">${icon('prev')}</button><span class="carousel__status num" aria-hidden="true">3 / ${CAROUSEL_TOTAL}</span><button class="btn btn--secondary btn--icon" type="button" aria-label="다음 지표">${icon('forward')}</button><button class="btn btn--secondary btn--icon carousel__pause" type="button" aria-label="자동 넘김 일시정지">${icon('pause')}</button></div></div>
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">조작 줄은 카드 머리에 있다(R-200) — 슬라이드 높이가 달라도 같은 자리, 하단 띠에 가려지지 않는다. 좁으면 조작 줄이 아래로 내려와 가로 전체를 쓴다. 값 줄과 기준 줄은 나눈다: 「27.8<small>명</small>」 / 「인구 10만 명당 · 2025년 기준」(QM2-4), 짧은 쌍은 칸이 좁으면 두 줄(QM2-10).</p>
     <div class="dots" style="max-width:320px;margin-top:var(--sp-3)">${Array.from({ length: 5 }, (_, i) => `<button type="button" aria-label="${i + 1}/5" ${i === 3 ? 'aria-current="true"' : ''}><i></i></button>`).join('')}</div></section>
-  <section><h2>하단 고정 버튼 (본문을 가리지 않게 아래 여백을 둔다)</h2><div class="card" style="position:relative;height:150px;overflow:hidden"><p class="t-muted">본문…</p><div class="bottom-bar" style="position:absolute"><button class="btn btn--primary btn--lg" type="button">태어나기</button></div></div></section>
+  <section><h2>하단 고정 띠 (높이를 --bar-h로 알리고 본문 끝 여백·scroll-padding이 따른다 — CM10·QM2-12)</h2><div class="card" style="position:relative;height:150px;overflow:hidden"><p class="t-muted">본문…</p><div class="bottom-bar" style="position:absolute"><button class="btn btn--primary btn--lg" type="button">태어나기</button></div></div>
+    <div class="card" style="position:relative;height:200px;overflow:hidden;margin-top:var(--sp-3)"><p class="t-muted">확인 단계 — 맨 아래는 안전한 「돌아가기」(기본), 그 위가 이전 판을 지우는 확인(보조)</p><div class="bottom-bar" style="position:absolute"><p class="bottom-bar__ask" role="alert">이전 판이 사라집니다. 새로 태어날까요?</p><div class="bottom-bar__stack"><button class="btn btn--secondary" type="button">이전 판 지우고 태어나기</button><button class="btn btn--primary btn--lg" type="button">돌아가기</button></div></div></div></section>
   <section><h2>인용 박스 · 프로필 얼굴</h2><div class="row row--wrap" style="align-items:flex-start;gap:var(--sp-6)"><div class="cite" style="max-width:420px"><p class="cite__text">통계·연구 요약 문장(100자 이하).</p><p class="cite__src">기관·저자(연도), 자료 이름</p></div>${face('young', 'male', 4, '청년 남성 얼굴 예시', 'face--lg')}${face('middle', 'female', 2, '중년 여성 얼굴 예시', 'face--lg')}</div></section>
 </main>`;
   return page({ title: '수저 게임 · 디자인 시스템 · 컴포넌트', body });

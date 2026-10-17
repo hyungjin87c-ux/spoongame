@@ -1,9 +1,9 @@
 import rawJson from '../src/data/names.json';
 import scourtJson from '../src/data/sources/scourt-birth-names.json';
 import { describe, expect, it } from 'vitest';
-import { ERAS, createRng, generateBirthFromSeed, namePoolFor, namePoolIdOf, pickFullName, surnameWeights, type Gender } from '../src/core';
+import { ERAS, createRng, generateBirthFromSeed, isRejectedName, namePoolFor, namePoolIdOf, pickFullName, surnameWeights, type Gender } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
-import { validateOfficialRows } from '../src/data/names';
+import { PRESENT_POOL_YEAR, validateOfficialRows } from '../src/data/names';
 import { EPS, sigmaTolerancePct } from './helpers/stats';
 
 /**
@@ -21,7 +21,7 @@ const raw = rawJson as unknown as {
     structure: string;
     how: string;
     eras: {
-      present: { birthYears: { min: number; max: number }; level: string; derivation: string; source: string; rawFile: string };
+      present: { birthYears: { min: number; max: number }; poolYear: number; level: string; derivation: string; source: string; rawFile: string };
       future: { birthYears: { min: number; max: number }; level: string; source: string; sourceYears: number[]; derivation: string; note: string };
       past: { birthYears: { min: number; max: number }; level: string; source: string; derivation: string };
     };
@@ -69,7 +69,7 @@ function expectedPastPool(birthYear: number, gender: Gender): string[] {
 /** 시대별 기대 풀: 구현을 거치지 않는 독립 계산 */
 function allowedGiven(birthYear: number, gender: Gender): string[] {
   if (birthYear >= 1950 && birthYear <= 1989) return expectedPastPool(birthYear, gender);
-  if (birthYear >= 2008 && birthYear <= 2025) return officialNames(birthYear, gender);
+  if (birthYear === 2026) return officialNames(2025, gender); // 지금 세상: 올해(2026) 출생 고정, 풀은 가장 최근 연도(2025) 하나(EV7 R1)
   if (birthYear >= 2030 && birthYear <= 2060) return expectedFuturePool(gender);
   throw new Error(`테스트 오류: ${birthYear}년은 어느 시대에도 속하지 않는다`);
 }
@@ -234,7 +234,7 @@ describe('names.json 구조 — 지난 세상 연대 풀과 메타', () => {
   it('meta.eras의 출생 연도 범위가 시대 표(ERA_CONFIG)와 같다 — 문서와 설정이 어긋나지 않는다', () => {
     for (const era of ERAS) expect(raw.meta.eras[era].birthYears, era).toEqual(ERA_CONFIG[era].birthYears);
     expect(raw.meta.eras.past.birthYears).toEqual({ min: 1950, max: 1989 });
-    expect(raw.meta.eras.present.birthYears).toEqual({ min: 2008, max: 2025 });
+    expect(raw.meta.eras.present.birthYears).toEqual({ min: 2026, max: 2026 });
     expect(raw.meta.eras.future.birthYears).toEqual({ min: 2030, max: 2060 });
   });
 
@@ -333,18 +333,25 @@ describe('타이틀 출처 표기(meta.attribution)는 원자료의 권장 표�
   });
 });
 
-describe('지금 세상 풀 (2008~2025년생): 출생 연도별 공식 통계 상위 20, 원자료와 일치', () => {
-  for (const y of PRESENT_YEARS) {
-    it(`${y}년생 남/녀 풀 = 원자료 ${y}년 행의 이름 전부 (순서까지), 20개 이상, 중복 없음`, () => {
-      for (const g of ['male', 'female'] as const) {
-        const pool = namePoolFor(y, g);
-        expect(pool, `${y} ${g}`).toEqual(officialNames(y, g));
-        expect(pool.length).toBeGreaterThanOrEqual(20);
-        expect(new Set(pool).size).toBe(pool.length);
-        expect(namePoolIdOf(y)).toEqual({ kind: 'present', year: y });
-      }
-    });
-  }
+describe('지금 세상 풀 (올해 2026년생 고정): 가장 최근 연도(2025) 하나의 공식 통계 상위 20, 원자료와 일치 (SPEC-003 EV7 R1)', () => {
+  it('2026년생 남/녀 풀 = 원자료 2025년 행의 이름 전부 (순서까지), 20개 이상, 중복 없음 — 풀의 기준 연도는 PRESENT_POOL_YEAR(2025)이고 names.json 설명과 같다', () => {
+    expect(PRESENT_POOL_YEAR).toBe(2025);
+    expect(raw.meta.eras.present.poolYear).toBe(PRESENT_POOL_YEAR);
+    for (const g of ['male', 'female'] as const) {
+      const pool = namePoolFor(2026, g);
+      expect(pool, g).toEqual(officialNames(2025, g));
+      expect(pool.length).toBeGreaterThanOrEqual(20);
+      expect(new Set(pool).size).toBe(pool.length);
+    }
+    expect(namePoolIdOf(2026)).toEqual({ kind: 'present', year: 2025 });
+  });
+
+  it('2008~2025년생은 더 이상 지금 세상이 아니다 — 연도별 풀로 조용히 보내지 않고 throw한다 (M2 시기의 연도별 풀은 없어졌다)', () => {
+    for (const y of PRESENT_YEARS) {
+      expect(() => namePoolIdOf(y), `${y}년생`).toThrow(RangeError);
+      expect(() => namePoolFor(y, 'male'), `${y}년생`).toThrow(RangeError);
+    }
+  });
 
   it('풀에는 비공식(estimated) 이름이 없다: 연도별 풀 = 그 해 원자료뿐이며, 지난 세상 추정 전용 이름은 어느 연도 풀에도 없다', () => {
     const everOfficial = new Set(PRESENT_YEARS.flatMap((y) => [...officialNames(y, 'male'), ...officialNames(y, 'female')]));
@@ -352,20 +359,16 @@ describe('지금 세상 풀 (2008~2025년생): 출생 연도별 공식 통계 �
       PAST_DECADES.flatMap((d) => [...raw.decades[d].male.estimated, ...raw.decades[d].female.estimated]).filter((n) => !everOfficial.has(n)),
     );
     expect(estimatedOnly.size).toBeGreaterThan(10); // 판별력: 추정 전용 이름이 실제로 존재한다
-    for (const y of PRESENT_YEARS) {
-      for (const g of ['male', 'female'] as const) {
-        for (const n of namePoolFor(y, g)) expect(estimatedOnly.has(n), `${y} ${g} ${n}`).toBe(false);
-      }
+    for (const g of ['male', 'female'] as const) {
+      for (const n of namePoolFor(2026, g)) expect(estimatedOnly.has(n), `2026 ${g} ${n}`).toBe(false);
     }
     for (const g of ['male', 'female'] as const) for (const n of namePoolFor(2040, g)) expect(estimatedOnly.has(n)).toBe(false);
   });
 
-  it('성별이 풀에 반영된다: 연도별 남자 풀과 여자 풀의 겹침은 절반 미만', () => {
-    for (const y of PRESENT_YEARS) {
-      const m = new Set(namePoolFor(y, 'male'));
-      const overlap = namePoolFor(y, 'female').filter((n) => m.has(n)).length;
-      expect(overlap, `${y}`).toBeLessThan(10);
-    }
+  it('성별이 풀에 반영된다: 남자 풀과 여자 풀의 겹침은 절반 미만', () => {
+    const m = new Set(namePoolFor(2026, 'male'));
+    const overlap = namePoolFor(2026, 'female').filter((n) => m.has(n)).length;
+    expect(overlap).toBeLessThan(10);
   });
 });
 
@@ -422,8 +425,7 @@ describe('풀을 찾는 연도 경계 — 기대값을 직접 적는다 (R-016)'
   const ok: [number, ReturnType<typeof namePoolIdOf>][] = [
     [1950, { kind: 'past', decade: 1950 }], // 지난 세상 첫 해
     [1989, { kind: 'past', decade: 1980 }], // 지난 세상 마지막 해
-    [2008, { kind: 'present', year: 2008 }], // 지금 세상 첫 해 (법원 통계서비스의 첫 해)
-    [2025, { kind: 'present', year: 2025 }], // 지금 세상 마지막 해
+    [2026, { kind: 'present', year: 2025 }], // 지금 세상: 올해 2026 고정 — 풀의 기준 연도는 가장 최근 연도 2025
     [2030, { kind: 'future' }], // 다가올 세상 첫 해
     [2060, { kind: 'future' }], // 다가올 세상 마지막 해
   ];
@@ -435,7 +437,7 @@ describe('풀을 찾는 연도 경계 — 기대값을 직접 적는다 (R-016)'
     });
   }
 
-  for (const year of [1949, 1990, 2007, 2026, 2029]) {
+  for (const year of [1949, 1990, 2007, 2025, 2029]) {
     it(`${year}년생은 풀이 없어 throw한다 (다른 풀로 조용히 보내지 않는다)`, () => {
       expect(() => namePoolIdOf(year)).toThrow(RangeError);
       expect(() => namePoolFor(year, 'male')).toThrow(RangeError);
@@ -444,10 +446,10 @@ describe('풀을 찾는 연도 경계 — 기대값을 직접 적는다 (R-016)'
     });
   }
 
-  it('지난 세상과 지금 세상 사이(1990~2007), 지금과 다가올 사이(2026~2029), 그 밖(1949 이하·2061 이상)은 전부 throw', () => {
+  it('지난 세상과 지금 세상 사이(1990~2025), 지금과 다가올 사이(2027~2029), 그 밖(1949 이하·2061 이상)은 전부 throw', () => {
     const missing = [
-      ...Array.from({ length: 2007 - 1990 + 1 }, (_, i) => 1990 + i),
-      ...[2026, 2027, 2028, 2029],
+      ...Array.from({ length: 2025 - 1990 + 1 }, (_, i) => 1990 + i),
+      ...[2027, 2028, 2029],
       ...[2061, 2100, 2200],
       ...[1949, 1940, 1900, 0, -5],
     ];
@@ -460,7 +462,7 @@ describe('풀을 찾는 연도 경계 — 기대값을 직접 적는다 (R-016)'
 
   it('시대 표의 출생 연도 범위는 직접 적은 값과 같고, 그 범위의 모든 연도는 throw 없이 풀을 찾는다', () => {
     expect(ERA_CONFIG.past.birthYears).toEqual({ min: 1950, max: 1989 });
-    expect(ERA_CONFIG.present.birthYears).toEqual({ min: 2008, max: 2025 });
+    expect(ERA_CONFIG.present.birthYears).toEqual({ min: 2026, max: 2026 });
     expect(ERA_CONFIG.future.birthYears).toEqual({ min: 2030, max: 2060 });
     for (const era of ERAS) {
       const { min, max } = ERA_CONFIG[era].birthYears;
@@ -484,7 +486,7 @@ describe('성씨 가중 랜덤', () => {
     const n = 20000;
     const counts = new Map<string, number>();
     for (let i = 0; i < n; i++) {
-      const sur = pickFullName(rng, 2010, 'male')[0];
+      const sur = pickFullName(rng, 2026, 'male')[0];
       counts.set(sur, (counts.get(sur) ?? 0) + 1);
     }
     const total = raw.surnames.items.reduce((a, s) => a + s.populationThousands, 0);
@@ -503,27 +505,39 @@ describe('성씨 가중 랜덤', () => {
 });
 
 describe('풀 안에서 균등 추첨 (시드 RNG)', () => {
-  it('2015년 남자 풀(20개)을 20000번 뽑으면 20개 모두 나오고 각 비율이 1/20과 4σ 이내다', () => {
+  it('지금 세상(2026년생)의 남자 풀 = 2025년 공식 풀(20개)을 20000번 뽑으면 20개 모두 나오고 각 비율이 1/20과 4σ 이내다', () => {
     const rng = createRng(2015);
     const n = 20000;
     const counts = new Map<string, number>();
     for (let i = 0; i < n; i++) {
-      const given = pickFullName(rng, 2015, 'male').slice(1);
+      const given = pickFullName(rng, 2026, 'male').slice(1);
       counts.set(given, (counts.get(given) ?? 0) + 1);
     }
-    const pool = officialNames(2015, 'male');
+    const pool = officialNames(2025, 'male');
     expect([...counts.keys()].sort()).toEqual([...pool].sort());
+    // 풀 안에서 균등이지만, 성과 이름 첫 글자가 같은 조합(이 + 이준 등, R-027)은 이름만 다시 뽑는다 — 그 성에서는 그 이름이 나오지 않는다.
+    // 그래서 기대 비율 = Σ_성 (성 비율 × [그 이름이 그 성에서 허용] ÷ 그 성에서 허용되는 이름 수). 2025년 풀에는 이런 이름(예: 이준)이 있어 정확히 1/20이 아니다.
+    const surnames = surnameWeights();
+    const totalWeight = surnames.reduce((a, s) => a + s.weight, 0);
+    let rejectedCombos = 0;
     for (const name of pool) {
+      let expected = 0;
+      for (const s of surnames) {
+        const safe = pool.filter((g) => !isRejectedName(s.name, g));
+        if (!safe.includes(name)) rejectedCombos++;
+        else expected += (s.weight / totalWeight) * (1 / safe.length) * 100;
+      }
       const observed = ((counts.get(name) ?? 0) / n) * 100;
-      expect(Math.abs(observed - 5), `${name}: ${observed.toFixed(2)}%`).toBeLessThanOrEqual(sigmaTolerancePct(5, n) + EPS);
+      expect(Math.abs(observed - expected), `${name}: ${observed.toFixed(2)}% / 기대 ${expected.toFixed(2)}%`).toBeLessThanOrEqual(sigmaTolerancePct(expected, n) + EPS);
     }
+    expect(rejectedCombos, '판별력: 2025년 풀에는 성과 첫 글자가 같아 다시 뽑히는 조합이 실제로 있다').toBeGreaterThan(0);
   });
 });
 
-/** SPEC-001 '시대 선택': 시대별 출생 연도 (지난 1950~1989 / 지금 2008~2025 / 다가올 2030~2060) */
+/** 시대별 출생 연도 (지난 1950~1989 / 지금 2026 한 해 — SPEC-003 규칙 10·형진 님 결정 Q1 / 다가올 2030~2060) */
 const EXPECTED_BIRTH_YEARS = {
   past: { min: 1950, max: 1989 },
-  present: { min: 2008, max: 2025 },
+  present: { min: 2026, max: 2026 },
   future: { min: 2030, max: 2060 },
 } as const;
 
@@ -563,7 +577,7 @@ describe('이름이 출생 연도·성별 풀과 100% 일치 (1000판 시뮬레�
         // 지금 세상·다가올 세상에서 나온 이름 중 estimated/비공식 이름은 0개
         expect(estimatedHits).toBe(0);
       }
-      if (era === 'present') expect(years.size).toBeGreaterThanOrEqual(15); // 2008~2025 대부분의 연도 풀을 실제로 썼다
+      if (era === 'present') expect([...years]).toEqual([2026]); // 모든 판이 올해(2026)에 태어나 2025년 풀 하나를 쓴다
       if (era === 'future') expect(years.size).toBeGreaterThanOrEqual(25);
     });
   }

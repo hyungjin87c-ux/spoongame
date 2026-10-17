@@ -38,7 +38,7 @@ for (const era of ERAS) {
     console.log(dist('8배속+다음결정(분,18초)', r.minutesFast));
     console.log(`    엔딩 회고: 20세 전 사망 ${j.early} / 앞섬 ${j.up} / 비슷함 ${j.same} / 뒤쪽 ${j.down}${j.none > 0 ? ` / 끝까지 못 감 ${j.none}` : ''} | 서로 다른 이름 ${r.distinctNames}개`);
     console.log(
-      `    점검: 이름 ${r.checks.names}회, 걸음 불변식 ${r.checks.transitions}회, 저장→복원 ${r.checks.roundTrips}회(매 걸음 저장한 판 ${r.stepSerializedLives}), 연타 입력 ${r.checks.duplicateInputs}회, 엔딩 문장 ${r.checks.endingTexts}판, 다시 태어나기 ${r.checks.rebirths}회\n`,
+      `    점검: 이름 ${r.checks.names}회, 걸음 불변식 ${r.checks.transitions}회, 저장→복원 ${r.checks.roundTrips}회(매 걸음 저장한 판 ${r.stepSerializedLives}), 연타 입력 ${r.checks.duplicateInputs}회, 엔딩 문장 ${r.checks.endingTexts}판, 다시 태어나기 ${r.checks.rebirths}회, 가족 규칙 ${r.checks.familyRules}회\n`,
     );
     for (const p of r.problems) console.log(`    위반: ${p}`);
   }
@@ -51,7 +51,7 @@ const problemCount = reports.reduce((a, r) => a + r.problemCount, 0);
 const sum = (f2: (r: CellReport) => number) => reports.reduce((a, r) => a + f2(r), 0);
 console.log(`합계: ${total}판, 위반이 있는 판 ${failed}, 예외 ${exceptions}, 위반 메시지 ${problemCount}건 — 걸린 시간 ${f((Date.now() - started) / 1000)}초`);
 console.log(
-  `점검 횟수: 이름 ${sum((r) => r.checks.names)} / 걸음 불변식 ${sum((r) => r.checks.transitions)} / 저장→복원 ${sum((r) => r.checks.roundTrips)} / 연타 입력 ${sum((r) => r.checks.duplicateInputs)} / 엔딩 문장 ${sum((r) => r.checks.endingTexts)} / 다시 태어나기 ${sum((r) => r.checks.rebirths)}`,
+  `점검 횟수: 이름 ${sum((r) => r.checks.names)} / 걸음 불변식 ${sum((r) => r.checks.transitions)} / 저장→복원 ${sum((r) => r.checks.roundTrips)} / 연타 입력 ${sum((r) => r.checks.duplicateInputs)} / 엔딩 문장 ${sum((r) => r.checks.endingTexts)} / 다시 태어나기 ${sum((r) => r.checks.rebirths)} / 가족 규칙 ${sum((r) => r.checks.familyRules)}`,
 );
 if (failed > 0 || exceptions > 0 || problemCount > 0) {
   console.error('실패: 위 위반 메시지를 확인한다');

@@ -145,6 +145,7 @@
       "ageRange": { "min": 2, "max": 6 },
       "weight": 10,
       "once": true,
+      "conditions": { "birthOrder": { "max": 1 }, "motherAge": { "max": 45 } },
       "choices": [
         {
           "id": "help",

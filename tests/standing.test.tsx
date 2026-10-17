@@ -14,11 +14,15 @@ import {
   type Era,
 } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
-import { MIDDLE_LABEL, looksScoreText, standingLabel, wealthStandingText } from '../src/data/birthText';
+import { MIDDLE_LABEL, standingLabel } from '../src/data/birthText';
+import { GRADE_NAME } from '../src/data/birthReportText';
+import { bandLabel } from '../src/data/endingText';
+import { startBandOf } from '../src/core/ending';
 import { BirthScreen } from '../src/screens/BirthScreen';
+import { PEER_SEED, report as sampleReport } from '../e2e/saves';
 import { EPS, sigmaTolerancePct } from './helpers/stats';
 import { exactTopPercent, expectedLooksStanding, looksHeadCount, LOOKS_COMBINATIONS } from './helpers/looksReference';
-import { WEALTH_LABELS, expectedLooksLabel, expectedLooksSentence, expectedWealthSentence } from './helpers/standingExpectations';
+import { WEALTH_LABELS, expectedLooksLabel } from './helpers/standingExpectations';
 
 /**
  * R-018 "상위 약 N%" 표현 규칙.
@@ -100,12 +104,11 @@ describe('재력: 세 시대 × 5단계의 기대 표현 (표에 직접 적은 �
   });
 
   for (const era of ERAS) {
-    it(`${era}: 5단계 표현이 표와 같다 / 문장도 같다`, () => {
+    it(`${era}: 5단계 표현이 표와 같다`, () => {
       for (const tier of PARENT_WEALTHS) {
         const expected = WEALTH_LABELS[era][tier];
         const standing = wealthStanding(era, tier);
         expect(standingLabel(standing), `${era} ${tier}단계`).toBe(expected);
-        expect(wealthStandingText(standing), `${era} ${tier}단계`).toBe(expectedWealthSentence(era, tier));
       }
     });
   }
@@ -163,7 +166,6 @@ describe('외모: 0점 / 중앙 / 100점과 경계', () => {
     for (let l = 0; l <= 100; l++) {
       expect(looksStanding(l), `${l}점`).toEqual(expectedLooksStanding(l));
       expect(standingLabel(looksStanding(l)), `${l}점`).toBe(expectedLooksLabel(l));
-      expect(looksScoreText(l, looksStanding(l)), `${l}점`).toBe(expectedLooksSentence(l));
     }
   });
 
@@ -220,10 +222,10 @@ describe('외모: 0점 / 중앙 / 100점과 경계', () => {
 
 describe('표시 문자열 전수 확인: 50을 넘는 숫자도, 약 0%/약 100%도 없다', () => {
   const labels: string[] = [];
-  for (const era of ERAS) for (const tier of PARENT_WEALTHS) labels.push(wealthStandingText(wealthStanding(era, tier)));
-  for (let l = 0; l <= 100; l++) labels.push(looksScoreText(l, looksStanding(l)));
+  for (const era of ERAS) for (const tier of PARENT_WEALTHS) labels.push(standingLabel(wealthStanding(era, tier)));
+  for (let l = 0; l <= 100; l++) labels.push(standingLabel(looksStanding(l)));
 
-  it('재력 15개 + 외모 101개 문장의 모든 "N%"는 50 이하다', () => {
+  it('재력 15개 + 외모 101개 표현의 모든 "N%"는 50 이하다', () => {
     expect(labels).toHaveLength(15 + 101);
     for (const text of labels) for (const n of percentsIn(text)) expect(n, text).toBeLessThanOrEqual(50);
   });
@@ -237,50 +239,53 @@ describe('표시 문자열 전수 확인: 50을 넘는 숫자도, 약 0%/약 100
   });
 
   it('중간 문구는 숫자·느낌표·이모지가 없는 담담한 한 줄이다', () => {
-    const middle = wealthStandingText({ kind: 'middle' });
-    expect(middle).toBe('우리나라 출생아 가운데 딱 중간쯤의 집안 형편이었다.');
-    for (const text of [middle, looksScoreText(50, { kind: 'middle' }), MIDDLE_LABEL]) {
-      expect(text).not.toMatch(/\d%|!|[\u{1F300}-\u{1FAFF}]/u);
-    }
-    expect(looksScoreText(50, { kind: 'middle' })).toBe('외모 50점 (딱 중간쯤).');
+    expect(standingLabel({ kind: 'middle' })).toBe(MIDDLE_LABEL);
+    expect(MIDDLE_LABEL).not.toMatch(/\d%|!|[🌀-🫿]/u);
   });
 });
 
-describe('화면은 core의 결과만 그린다 (BirthScreen 서버 렌더 전수)', () => {
+describe('출생신고 화면은 core의 결과만 그린다 (BirthScreen 서버 렌더 전수, SPEC-003 BR·R-135·R-170)', () => {
   const html = (era: Era, wealth: Character['parentWealth'], looks: number): string => {
     const character: Character = { name: '김민준', gender: 'male', birthYear: ERA_CONFIG[era].birthYears.min, parentWealth: wealth, parenting: 'free', looks };
-    return renderToStaticMarkup(<BirthScreen era={era} character={character} onNext={() => {}} />);
+    return renderToStaticMarkup(<BirthScreen era={era} character={character} report={sampleReport()} peerSeed={PEER_SEED} onNext={() => {}} />);
   };
-  /** 그 요소(p)의 글. 순위 표현을 줄바꿈 없는 span으로 감싸도(ui/KeepStanding.tsx) 글 자체는 같아야 하므로 태그를 걷어 낸 텍스트를 본다. */
-  const part = (markup: string, testId: string): string => {
-    const m = new RegExp(`data-testid="${testId}">([^]*?)</p>`).exec(markup); // [^] = 줄바꿈을 포함한 모든 글자
+  /** 그 칸(dd)의 글: 태그를 걷어 낸 텍스트. 줄바꿈 기회 표시(<wbr>, 「다이아몬드<wbr>수저」)는 눈에 보이는 공백이 아니라서 먼저 지운다(R-262: 좁은 칩에서 이름을 두 줄로 나누려고 모든 크기에 둔다). */
+  const field = (markup: string, testId: string): string => {
+    const m = new RegExp(`data-testid="${testId}">([^]*?)</dd>`).exec(markup); // [^] = 줄바꿈을 포함한 모든 글자
     expect(m, testId).not.toBeNull();
-    return m![1].replace(/<[^>]+>/g, '');
+    return m![1].replace(/<wbr\s*\/?>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   };
 
-  it('세 시대 × 재력 5단계: 화면의 순위 문장이 기대표와 같다', () => {
+  it('세 시대 × 재력 5단계: 「집안 형편」 칸에 수저 이름과 bandLabel(startBandOf())의 구간이 그대로 나온다 — 「흙수저(하위 25% 안쪽)」 형식, 「소득 N분위」는 없다 (R-170, Q4)', () => {
     for (const era of ERAS) {
       for (const tier of PARENT_WEALTHS) {
-        expect(part(html(era, tier, 50), 'birth-standing'), `${era} ${tier}단계`).toBe(expectedWealthSentence(era, tier));
+        const markup = html(era, tier, 50);
+        const text = field(markup, 'birth-wealth');
+        expect(text, `${era} ${tier}단계`).toContain(GRADE_NAME[tier]);
+        expect(text.replace(/\s+/g, ''), `${era} ${tier}단계`).toBe(`${GRADE_NAME[tier]}(${bandLabel(startBandOf(era, tier))})`.replace(/\s+/g, ''));
+        expect(markup.replace(/<[^>]+>/g, ' ')).not.toMatch(/소득\s*\d\s*분위/);
       }
     }
   });
 
-  it('외모 0~100점 전부: 화면의 외모 문장이 기대 문장으로 시작하고, 어디에도 50 초과 퍼센트가 없다', () => {
+  it('외모 0~100점 전부: 「외모」 칸은 「상위/하위 약 N%」(전수 열거 기준값)뿐이고 점수(N점)가 어디에도 없다 (R-135)', () => {
     for (let l = 0; l <= 100; l++) {
-      const text = part(html('present', 3, l), 'birth-looks');
-      expect(text.startsWith(expectedLooksSentence(l)), `${l}점: ${text}`).toBe(true);
+      const markup = html('present', 3, l);
+      const text = field(markup, 'birth-looks');
+      expect(text.startsWith(expectedLooksLabel(l)), `${l}점: ${text}`).toBe(true);
       for (const n of percentsIn(text)) expect(n, text).toBeLessThanOrEqual(50);
+      expect(markup.replace(/<[^>]+>/g, ' '), `${l}점`).not.toMatch(/외모\s*\d+\s*점/);
     }
   });
 
-  it('화면 전체(이름·형편·순위·교육방식·외모)에도 50 초과 퍼센트·약 0%·약 100%가 없다 (3시대 × 5단계 × 외모 11점)', () => {
+  it('화면 전체(이름·형편·서술문·격자·또래·비교 표)에도 50 초과 퍼센트(순위 표현 자리)·약 0%·약 100%·「외모 N점」이 없다 (3시대 × 5단계 × 외모 11점)', () => {
     for (const era of ERAS) {
       for (const tier of PARENT_WEALTHS) {
         for (const looks of [0, 10, 23, 40, 49, 50, 51, 60, 77, 90, 100]) {
           const text = html(era, tier, looks).replace(/<[^>]+>/g, ' ');
-          for (const n of percentsIn(text)) expect(n, `${era} ${tier} ${looks}`).toBeLessThanOrEqual(50);
           expect(text).not.toMatch(/약 (0|100)%/);
+          expect(text).not.toMatch(/(상위|하위) 약 (5[1-9]|[6-9]\d|100)%/);
+          expect(text).not.toMatch(/외모\s*\d+\s*점/);
         }
       }
     }

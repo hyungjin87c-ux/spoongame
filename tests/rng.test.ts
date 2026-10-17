@@ -3,7 +3,9 @@ import {
   beginBirth,
   createInitialState,
   createRng,
+  forkRng,
   generateBirth,
+  mixSeed,
   loadGame,
   saveGame,
   type StorageLike,
@@ -115,5 +117,52 @@ describe('RNG 인자 검증 (R-002)', () => {
     expect(() => r.weightedIndex([1, -1])).toThrow();
     expect(() => r.weightedIndex([1, NaN])).toThrow();
     for (let i = 0; i < 500; i++) expect(r.weightedIndex([0, 5, 0, 1])).not.toBe(0);
+  });
+});
+
+describe('forkRng·mixSeed: 부모를 건드리지 않고 갈라낸 수열 (R-273)', () => {
+  const draw = (r: ReturnType<typeof createRng>, n: number) => Array.from({ length: n }, () => r.next());
+
+  it('부모 RNG의 상태를 바꾸지 않는다: 갈래를 만들고 몇 개를 뽑아도 부모의 상태·이후 수열은 갈래가 없었던 것과 같다', () => {
+    const parent = createRng(12345);
+    const control = createRng(12345);
+    draw(parent, 7);
+    draw(control, 7);
+    const before = parent.getState();
+    const fork = forkRng(parent, 0x52505254);
+    expect(parent.getState(), '갈래를 만드는 것만으로 부모가 전진하지 않는다').toBe(before);
+    draw(fork, 1000); // 갈래를 아무리 써도
+    expect(parent.getState(), '갈래를 쓰는 것이 부모에 영향을 주지 않는다').toBe(before);
+    expect(draw(parent, 50)).toEqual(draw(control, 50)); // 부모의 이후 수열은 갈래 없는 쪽과 같다
+  });
+
+  it('같은 부모 상태·같은 salt는 같은 수열이고, salt가 다르면 서로 다른 수열이다', () => {
+    const parent = createRng(777);
+    draw(parent, 3);
+    const a = draw(forkRng(parent, 1), 20);
+    expect(draw(forkRng(parent, 1), 20)).toEqual(a);
+    const sequences = [1, 2, 3, 0x52505254, 0x50454552].map((salt) => draw(forkRng(parent, salt), 20).join(','));
+    expect(new Set(sequences).size).toBe(sequences.length);
+    // 갈래의 수열은 부모의 다음 수열과도 다르다
+    const parentNext = createRng(parent.getState());
+    expect(draw(forkRng(parent, 1), 20)).not.toEqual(draw(parentNext, 20));
+  });
+
+  it('부모 상태가 다르면 같은 salt의 갈래도 다르다, 갈래의 값은 [0,1) 범위다', () => {
+    const a = forkRng(createRng(1), 9);
+    const b = forkRng(createRng(2), 9);
+    expect(draw(a, 10)).not.toEqual(draw(b, 10));
+    for (const v of draw(forkRng(createRng(5), 9), 500)) {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThan(1);
+    }
+  });
+
+  it('mixSeed: 같은 입력 → 같은 uint32, 순서·값이 다르면 다른 값이다(눈사태)', () => {
+    expect(mixSeed(1, 2)).toBe(mixSeed(1, 2));
+    expect(mixSeed(1, 2)).not.toBe(mixSeed(2, 1));
+    for (const v of [mixSeed(0, 0), mixSeed(0xffffffff, 0xffffffff), mixSeed(123456789, 987654321)]) expect(Number.isInteger(v) && v >= 0 && v <= 0xffffffff).toBe(true);
+    const outputs = new Set(Array.from({ length: 2000 }, (_, i) => mixSeed(i, 42)));
+    expect(outputs.size).toBe(2000);
   });
 });

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import statsJson from '../src/data/koreaStats.json';
+import { ERAS } from '../src/core/types';
+import { ERA_CONFIG } from '../src/data/birthTable';
 import {
   CAROUSEL_ORDER,
   createStatsAccess,
@@ -14,6 +16,7 @@ import {
   getRegionFootnote,
   getRouletteRegions,
   getSeriesGaps,
+  getSigunguRows2025,
   getSigunguRows2026,
   getUsableIndicator,
   getUsableIndicators,
@@ -326,10 +329,10 @@ describe('행정구역·룰렛 함수 (M3가 쓰는 함수, R-145·R-146)', () =
     for (const y of [1949, 1990, 2025, 2027, 2029, 2061]) expect(getRouletteRegions(y), String(y)).toBeUndefined();
   });
 
-  it('getRouletteRegions: 비율 합 100.0, 출생아 합 254,341, 모두 설계값 표시, 지금 세상은 전남광주 한 칸', () => {
+  it('getRouletteRegions: 비율 합 100.0, 출생아 합 254,341, 성격 표시(basis), 지금 세상은 전남광주 한 칸', () => {
     for (const y of [1955, 1970, 1983, 1987, 1989, 2026, 2050]) {
       const r = getRouletteRegions(y)!;
-      expect(r.designValue, String(y)).toBe(true);
+      expect(['statistic-derived', 'design'], String(y)).toContain(r.basis);
       expect(Math.round(r.regions.reduce((a, x) => a + x.sharePct, 0) * 10) / 10, String(y)).toBe(100);
       expect(r.regions.reduce((a, x) => a + x.births, 0), String(y)).toBe(254341);
     }
@@ -339,6 +342,34 @@ describe('행정구역·룰렛 함수 (M3가 쓰는 함수, R-145·R-146)', () =
     expect(now.regions.map((x) => x.name)).not.toContain('광주');
     expect(getRouletteRegions(1955)!.kind).toBe('past');
     expect(getRouletteRegions(1955)!.regions.map((x) => x.name)).not.toContain('울산');
+  });
+
+  // REV-003-M6a-2 R-187 (M3 착수 조건): ERA_CONFIG의 **모든 출생 연도**에서 목록이 나오고, 지금 세상(2026)만 통계 파생·지난·다가올 세상은 설계값이다
+  it('R-187: ERA_CONFIG의 모든 출생 연도(지난 1950~1989·지금 2026·다가올 2030~2060)에서 룰렛 지역 목록이 있고, basis가 지금 세상 = statistic-derived / 지난·다가올 = design이다', () => {
+    let checked = 0;
+    for (const era of ERAS) {
+      const { min, max } = ERA_CONFIG[era].birthYears;
+      for (let y = min; y <= max; y++) {
+        const r = getRouletteRegions(y);
+        expect(r, `${era} ${y}`).toBeDefined();
+        expect(r!.regions.length, `${era} ${y}`).toBeGreaterThanOrEqual(10);
+        expect(r!.basis, `${era} ${y}`).toBe(era === 'present' ? 'statistic-derived' : 'design');
+        checked++;
+      }
+    }
+    expect(checked, '검사한 출생 연도 수 = 40 + 1 + 31').toBe(72);
+    // 시대 밖 연도에는 목록이 없다
+    for (const y of [1949, 1990, 2007, 2025, 2027, 2029, 2061]) expect(getRouletteRegions(y), String(y)).toBeUndefined();
+  });
+
+  it('getSigunguRows2025: 2025년 행정구역 그대로의 252행(2026 새 구 없음), 전국 합 254,341, 인천 중·동·서구와 화성시가 있다', () => {
+    const rows = getSigunguRows2025();
+    expect(rows).toHaveLength(252);
+    expect(rows.reduce((a, r) => a + r.births, 0)).toBe(254341);
+    const names = rows.map((r) => `${r.sido} ${r.name}`);
+    for (const old of ['인천 중구', '인천 동구', '인천 서구', '경기 화성시']) expect(names, old).toContain(old);
+    for (const made of ['인천 제물포구', '인천 영종구', '경기 동탄구']) expect(names, made).not.toContain(made);
+    expect(new Set(names).size, '시도+이름 중복 없음').toBe(252);
   });
 
   it('getRegionFootnote: 「출생 통계는 2025년 행정구역 기준」 표기 문구', () => {

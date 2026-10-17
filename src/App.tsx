@@ -22,6 +22,7 @@ import {
   type StorageLike,
 } from './core';
 import { BirthScreen } from './screens/BirthScreen';
+import { RouletteScreen } from './screens/RouletteScreen';
 import { EndingScreen } from './screens/EndingScreen';
 import { ErrorBoundary } from './screens/ErrorBoundary';
 import { LifeScreen } from './screens/LifeScreen';
@@ -148,7 +149,7 @@ function Game() {
   // 저장소는 여기서 한 번만 읽는다(lazy 초기값). 이 탭이 마지막으로 읽거나 쓴 원문(written)은 아래 effect들이 갱신하는 가변 객체다.
   const [{ session: initial, written, oldSave }] = useState(readBoot);
   const [session, dispatch] = useReducer(sessionReducer, initial);
-  const { game, settings, tick, showTitle } = session;
+  const { game, settings, tick, showTitle, spin } = session;
   // 이전 버전 저장 안내는 첫 화면에 한 번만: 새 판이 시작되면(첫 화면을 떠나면) 다시 보이지 않는다.
   const [showOldNotice, setShowOldNotice] = useState(oldSave);
   useEffect(() => {
@@ -252,8 +253,9 @@ function Game() {
   }, [setSuperseded, written]);
 
   let screen;
-  // 첫 화면만 새 디자인(시스템의 라이트·다크를 따른다)이고, 나머지는 아직 고정 색의 옛 화면이라 그동안 색 구성표를 라이트로 고정한다(R-208)
-  const onFirstScreen = !superseded && (game.phase === 'title' || showTitle);
+  // 첫 화면·룰렛·출생신고는 새 디자인(시스템의 라이트·다크를 따른다)이고, 나머지(인생·엔딩·밀린 화면·오류 화면)는 아직 고정 색의 옛 화면이라 그동안 색 구성표를 라이트로 고정한다(R-208).
+  // 새 디자인 화면이 늘면(M4 대시보드·엔딩) 이 목록에 더한다.
+  const onNewDesign = !superseded && (game.phase === 'title' || game.phase === 'roulette' || game.phase === 'birth' || showTitle);
   if (superseded) {
     screen = <SupersededScreen onTakeOver={takeOver} />;
   } else if (game.phase === 'title' || showTitle) {
@@ -269,8 +271,20 @@ function Game() {
         oldSaveNotice={showOldNotice && game.phase === 'title'}
       />
     );
-  } else if (game.phase === 'birth' && game.era && game.character) {
-    screen = <BirthScreen era={game.era} character={game.character} onNext={() => dispatch({ type: 'enterLife' })} />;
+  } else if (game.phase === 'roulette' && game.era && game.character && game.birthReport) {
+    // 룰렛: 결과는 「태어나기」 순간 이미 저장돼 있고(RL5) 이 화면은 그 결과를 연출로 보여 준다. spin은 저장되지 않는 세션 상태라 새로고침하면 결과가 확정된 모습으로 열린다.
+    screen = (
+      <RouletteScreen
+        era={game.era}
+        character={game.character}
+        report={game.birthReport}
+        spin={spin}
+        onFinishSpin={() => dispatch({ type: 'finishSpin' })}
+        onNext={() => dispatch({ type: 'enterBirth' })}
+      />
+    );
+  } else if (game.phase === 'birth' && game.era && game.character && game.birthReport && game.peerSeed !== null) {
+    screen = <BirthScreen era={game.era} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} onNext={() => dispatch({ type: 'enterLife' })} />;
   } else if (game.phase === 'life' && game.character) {
     screen = (
       <LifeScreen
@@ -303,7 +317,7 @@ function Game() {
           저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다.
         </p>
       ) : null}
-      {onFirstScreen ? null : <LegacyLight />}
+      {onNewDesign ? null : <LegacyLight />}
       {screen}
     </>
   );

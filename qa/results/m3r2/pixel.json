@@ -1,0 +1,728 @@
+{
+ "all": [
+  {
+   "mode": "light",
+   "state": "result-diamond",
+   "n": 95,
+   "min": 5.3,
+   "docH": 1070,
+   "colored": 7
+  },
+  {
+   "mode": "light",
+   "state": "result-dirt",
+   "n": 94,
+   "min": 5.3,
+   "docH": 1070,
+   "colored": 7
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-diamond",
+   "n": 143,
+   "min": 4.97,
+   "docH": 2592,
+   "colored": 10
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-labor",
+   "n": 142,
+   "min": 4.97,
+   "docH": 2592,
+   "colored": 9
+  },
+  {
+   "mode": "light",
+   "state": "birth-past",
+   "n": 101,
+   "min": 4.97,
+   "docH": 1978,
+   "colored": 9
+  },
+  {
+   "mode": "light",
+   "state": "birth-future",
+   "n": 103,
+   "min": 4.97,
+   "docH": 1935,
+   "colored": 10
+  },
+  {
+   "mode": "dark",
+   "state": "result-diamond",
+   "n": 95,
+   "min": 6.62,
+   "docH": 1070,
+   "colored": 7
+  },
+  {
+   "mode": "dark",
+   "state": "result-dirt",
+   "n": 94,
+   "min": 6.62,
+   "docH": 1070,
+   "colored": 7
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-diamond",
+   "n": 143,
+   "min": 5.94,
+   "docH": 2592,
+   "colored": 10
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-labor",
+   "n": 142,
+   "min": 5.94,
+   "docH": 2592,
+   "colored": 9
+  },
+  {
+   "mode": "dark",
+   "state": "birth-past",
+   "n": 101,
+   "min": 6.6,
+   "docH": 1978,
+   "colored": 9
+  },
+  {
+   "mode": "dark",
+   "state": "birth-future",
+   "n": 103,
+   "min": 6.62,
+   "docH": 1935,
+   "colored": 10
+  },
+  {
+   "mode": "forced-light",
+   "state": "result-diamond",
+   "n": 95,
+   "min": 21,
+   "docH": 1071,
+   "colored": 5
+  },
+  {
+   "mode": "forced-light",
+   "state": "result-dirt",
+   "n": 94,
+   "min": 21,
+   "docH": 1071,
+   "colored": 5
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-diamond",
+   "n": 143,
+   "min": 18.58,
+   "docH": 2596,
+   "colored": 7
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-labor",
+   "n": 142,
+   "min": 18.58,
+   "docH": 2596,
+   "colored": 7
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-past",
+   "n": 101,
+   "min": 18.58,
+   "docH": 1982,
+   "colored": 7
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-future",
+   "n": 103,
+   "min": 18.58,
+   "docH": 1939,
+   "colored": 7
+  },
+  {
+   "mode": "forced-dark",
+   "state": "result-diamond",
+   "n": 95,
+   "min": 21,
+   "docH": 1071,
+   "colored": 5
+  },
+  {
+   "mode": "forced-dark",
+   "state": "result-dirt",
+   "n": 94,
+   "min": 21,
+   "docH": 1071,
+   "colored": 5
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-diamond",
+   "n": 143,
+   "min": 17.62,
+   "docH": 2596,
+   "colored": 7
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-labor",
+   "n": 142,
+   "min": 17.62,
+   "docH": 2596,
+   "colored": 7
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-past",
+   "n": 101,
+   "min": 17.62,
+   "docH": 1982,
+   "colored": 7
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-future",
+   "n": 103,
+   "min": 17.62,
+   "docH": 1939,
+   "colored": 7
+  }
+ ],
+ "stampRows": [
+  "light/birth-present-diamond: 접수 4.97:1 글자 #8a6a14 바탕 #fffdf8",
+  "light/birth-present-labor: 접수 4.97:1 글자 #8a6a14 바탕 #fffdf8",
+  "light/birth-past: 접수 4.97:1 글자 #8a6a14 바탕 #fffdf8",
+  "light/birth-future: 접수 4.97:1 글자 #8a6a14 바탕 #fffdf8",
+  "dark/birth-present-diamond: 접수 8.48:1 글자 #dcb85c 바탕 #1c212c",
+  "dark/birth-present-labor: 접수 8.48:1 글자 #dcb85c 바탕 #1c212c",
+  "dark/birth-past: 접수 8.48:1 글자 #dcb85c 바탕 #1c212c",
+  "dark/birth-future: 접수 8.48:1 글자 #dcb85c 바탕 #1c212c",
+  "forced-light/birth-present-diamond: 접수 21:1 글자 #000000 바탕 #ffffff",
+  "forced-light/birth-present-labor: 접수 21:1 글자 #000000 바탕 #ffffff",
+  "forced-light/birth-past: 접수 21:1 글자 #000000 바탕 #ffffff",
+  "forced-light/birth-future: 접수 21:1 글자 #000000 바탕 #ffffff",
+  "forced-dark/birth-present-diamond: 접수 21:1 글자 #ffffff 바탕 #000000",
+  "forced-dark/birth-present-labor: 접수 21:1 글자 #ffffff 바탕 #000000",
+  "forced-dark/birth-past: 접수 21:1 글자 #ffffff 바탕 #000000",
+  "forced-dark/birth-future: 접수 21:1 글자 #ffffff 바탕 #000000"
+ ],
+ "bandRows": [
+  {
+   "mode": "light",
+   "state": "birth-present-diamond",
+   "text": "출생 신고",
+   "ratio": 12.82,
+   "ink": "#ffffff",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-diamond",
+   "text": "수저 게임",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-diamond",
+   "text": "·",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-diamond",
+   "text": "가상의 서류",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-labor",
+   "text": "출생 신고",
+   "ratio": 12.82,
+   "ink": "#ffffff",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-labor",
+   "text": "수저 게임",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-labor",
+   "text": "·",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-present-labor",
+   "text": "가상의 서류",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-past",
+   "text": "출생 신고",
+   "ratio": 12.82,
+   "ink": "#ffffff",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-past",
+   "text": "수저 게임",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-past",
+   "text": "·",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-past",
+   "text": "가상의 서류",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-future",
+   "text": "출생 신고",
+   "ratio": 12.82,
+   "ink": "#ffffff",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-future",
+   "text": "수저 게임",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-future",
+   "text": "·",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "light",
+   "state": "birth-future",
+   "text": "가상의 서류",
+   "ratio": 11.07,
+   "ink": "#eeeef0",
+   "bg": "#26324a"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-diamond",
+   "text": "출생 신고",
+   "ratio": 10.07,
+   "ink": "#14171f",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-diamond",
+   "text": "수저 게임",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-diamond",
+   "text": "·",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-diamond",
+   "text": "가상의 서류",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-labor",
+   "text": "출생 신고",
+   "ratio": 10.07,
+   "ink": "#14171f",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-labor",
+   "text": "수저 게임",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-labor",
+   "text": "·",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-present-labor",
+   "text": "가상의 서류",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-past",
+   "text": "출생 신고",
+   "ratio": 10.07,
+   "ink": "#14171f",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-past",
+   "text": "수저 게임",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-past",
+   "text": "·",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-past",
+   "text": "가상의 서류",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-future",
+   "text": "출생 신고",
+   "ratio": 10.07,
+   "ink": "#14171f",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-future",
+   "text": "수저 게임",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-future",
+   "text": "·",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "dark",
+   "state": "birth-future",
+   "text": "가상의 서류",
+   "ratio": 8.72,
+   "ink": "#20242e",
+   "bg": "#b3c2e8"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-diamond",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#000000",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-diamond",
+   "text": "수저 게임",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-diamond",
+   "text": "·",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-diamond",
+   "text": "가상의 서류",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-labor",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#000000",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-labor",
+   "text": "수저 게임",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-labor",
+   "text": "·",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-present-labor",
+   "text": "가상의 서류",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-past",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#000000",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-past",
+   "text": "수저 게임",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-past",
+   "text": "·",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-past",
+   "text": "가상의 서류",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-future",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#000000",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-future",
+   "text": "수저 게임",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-future",
+   "text": "·",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-light",
+   "state": "birth-future",
+   "text": "가상의 서류",
+   "ratio": 18.58,
+   "ink": "#131313",
+   "bg": "#ffffff"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-diamond",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#ffffff",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-diamond",
+   "text": "수저 게임",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-diamond",
+   "text": "·",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-diamond",
+   "text": "가상의 서류",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-labor",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#ffffff",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-labor",
+   "text": "수저 게임",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-labor",
+   "text": "·",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-present-labor",
+   "text": "가상의 서류",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-past",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#ffffff",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-past",
+   "text": "수저 게임",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-past",
+   "text": "·",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-past",
+   "text": "가상의 서류",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-future",
+   "text": "출생 신고",
+   "ratio": 21,
+   "ink": "#ffffff",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-future",
+   "text": "수저 게임",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-future",
+   "text": "·",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  },
+  {
+   "mode": "forced-dark",
+   "state": "birth-future",
+   "text": "가상의 서류",
+   "ratio": 17.62,
+   "ink": "#ebebeb",
+   "bg": "#000000"
+  }
+ ]
+}

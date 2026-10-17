@@ -1,0 +1,20 @@
+{
+ "counts": {
+  "steps": 48,
+  "combos": 35,
+  "lineChars": 25247,
+  "lineLines": null,
+  "tabStops": [
+   "to-birth",
+   "next-life",
+   "skip-roulette"
+  ]
+ },
+ "released": [],
+ "allowedBreaks": [],
+ "cm10": [],
+ "cm11": [],
+ "line": [],
+ "bar": [],
+ "shots": []
+}

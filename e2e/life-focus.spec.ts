@@ -298,7 +298,7 @@ test('8배속 + 자동 모드: 선택지가 몇 번 떠도 포커스는 자동 �
   const start = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 400; seed++) {
-       const s = core.enterLife(core.beginBirth(core.createInitialState(seed), 'present'));
+       const s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
        if (core.playToEnd(s, null).counts.choice >= 12) return s;
      }
      return null;`,

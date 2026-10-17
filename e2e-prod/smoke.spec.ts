@@ -5,6 +5,7 @@ import { BASIS_B_SPLIT, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from '
 import { slideCount } from '../e2e/carouselHelpers';
 import { collectSlideDom, type SlideDom } from '../e2e/slideText';
 import { measureTextResize, setRootFontPercent, textResizeViolations } from '../e2e/textResize';
+import { NO_CONTAINER_QUERIES, WITH_CONTAINER_QUERIES, cssAppliedBy } from '../tests/helpers/browserCss';
 
 /**
  * 프로덕션 번들 스모크 (R-043). `npm run e2e:prod`가 빌드한 dist를 vite preview로 띄운 서버에서 돈다.
@@ -30,12 +31,15 @@ function trackErrors(page: Page): string[] {
 
 async function toLifeScreen(page: Page): Promise<void> {
   await page.getByTestId('start-birth').click(); // 첫 화면의 하단 고정 「태어나기」. 가드가 풀릴 때까지 Playwright가 기다린다
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  await page.getByTestId('skip-roulette').click(); // 룰렛(M3): 연출은 건너뛴다(연출 시간은 아래 별도 시험이 본다)
+  await page.getByTestId('to-birth').click();
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   await page.getByTestId('next-life').click();
   await expect(page.getByTestId('life-screen')).toBeVisible();
 }
 
-test('프로덕션 번들: 첫 화면 → 태어나기 → 출생 → 인생 화면까지 오류 없이 간다 (이벤트 데이터 검증 통과 후의 번들이 실제로 뜬다)', async ({ page }) => {
+test('프로덕션 번들: 첫 화면 → 태어나기 → 룰렛 → 출생신고 → 인생 화면까지 오류 없이 간다 (이벤트 데이터 검증 통과 후의 번들이 실제로 뜬다)', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
   await expect(page).toHaveTitle('수저 게임');
@@ -119,9 +123,55 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   expect(fresh.data.character).toBeNull();
   expect(fresh.data.death).toBeNull();
   expect(await page.evaluate(() => localStorage.getItem('suzeo-game:settings'))).toBe(settingsBefore);
-  // 새 판도 끝까지 시작할 수 있다: 태어나기를 누르면 새 인물의 출생 화면
+  // 새 판도 끝까지 시작할 수 있다: 태어나기를 누르면 새 인물의 룰렛 화면
   await page.getByTestId('start-birth').click();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  await expect(page.getByTestId('error-screen')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('프로덕션 번들: 룰렛이 실제로 돌고(회전 중 → 결과) 총 4~6초에 끝나며 결과가 저장된 출생 결과이고, 새로고침해도 다시 돌지 않는다 (RL1·RL5, M3)', async ({ page }) => {
+  test.setTimeout(60_000);
+  const errors = trackErrors(page);
+  await page.goto('/');
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  await page.getByTestId('start-birth').click();
+  const screen = page.getByTestId('roulette-screen');
+  await expect(screen).toHaveAttribute('data-state', 'spinning');
+  const startedAt = Date.now();
+  const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY);
+  expect(saved?.data?.phase).toBe('roulette');
+  expect(saved?.data?.birthReport, '출생 결과(상세)가 「태어나기」 순간에 저장됐다').toBeTruthy();
+  await expect(screen).toHaveAttribute('data-state', 'result', { timeout: 8_000 });
+  const seconds = (Date.now() - startedAt) / 1000;
+  expect(seconds, `총 연출 ${seconds.toFixed(2)}초`).toBeGreaterThanOrEqual(3.8);
+  expect(seconds, `총 연출 ${seconds.toFixed(2)}초`).toBeLessThanOrEqual(6.5);
+  expect(await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY), '연출 전후 저장이 같다').toEqual(saved);
+  expect((await page.locator('[data-testid="reel-region"] [data-result="true"]').innerText()).trim()).toBe(saved.data.birthReport.region);
+  // 새로고침: 다시 돌지 않고 결과 상태, 같은 저장
+  await page.reload();
+  await expect(screen).toHaveAttribute('data-state', 'result');
+  expect(await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY)).toEqual(saved);
+  await expect(page.getByTestId('error-screen')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('프로덕션 번들: 룰렛·출생신고의 안내 문구 — 없는 기능(대시보드 오른쪽 칸)을 가리키지 않고(QM3-3), 비교 표 안내는 합쇼체·룰렛 안내는 해요체로 통일돼 있다 (QM3-4)', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/');
+  await page.getByTestId('start-birth').click();
+  await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'spinning');
+  expect((await page.getByTestId('roulette-status').innerText()).replace(/\s+/g, ' ').trim()).toBe('어느 집, 어느 땅에 태어날지는 고를 수 없어요. 확률대로 돌아가요.');
+  await page.getByTestId('skip-roulette').click();
+  await page.getByTestId('to-birth').click();
   await expect(page.getByTestId('birth-screen')).toBeVisible();
+  const text = (await page.getByTestId('birth-screen').innerText()).replace(/\s+/g, ' ');
+  expect(text).not.toMatch(/대시보드|오른쪽 칸/);
+  expect((await page.locator('[data-testid="peers-card"] p.card__note').innerText()).trim()).toBe('네 사람도 같은 세상에서 나이를 먹습니다.');
+  // 지금 세상(첫 화면의 기본 선택)이라 비교 표 안내가 있다
+  expect((await page.getByTestId('compare-note').innerText()).replace(/\s+/g, ' ').trim()).toBe(
+    '평균은 각 통계의 전체 대상(학생, 가구) 기준이고, 이 가정 열은 수저 단계에 맞춘 소득 구간의 값입니다. 단계와 소득 구간의 대응은 게임의 설계값입니다.',
+  );
   await expect(page.getByTestId('error-screen')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -333,4 +383,59 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
   expect(doms.reduce((sum, d) => sum + d.all.length, 0), '모은 화면 글자 수').toBeGreaterThan(2500);
   expect(doms.filter((d) => d.chartTexts.length > 0), '그래프 글자가 모인 슬라이드').toHaveLength(14);
   expect(doms.filter((d) => d.valueLines.length > 0).length, '값 줄이 있는 슬라이드').toBeGreaterThanOrEqual(12);
+});
+
+/**
+ * 제품 번들의 M3 컨테이너 규칙 (REV-003-M3-4 R-302 ③). M3 r4가 룰렛 제목 상한(`cqi`)·서류 본문(`docbody`)·비교 카드(`cmp`)의 컨테이너 규칙을 새로 넣었는데, 개발 서버 e2e는 소스 CSS를 보므로
+ * **vite의 CSS 최소화가 `@container`·`container-type`·`cqi`를 바꾸거나 빠뜨려도** 못 잡는다(R-243이 캐러셀 규칙에 한 것과 같은 이유). 이 시험은 최소화된 번들 CSS를 정규식으로 본다:
+ * ① 세 컨테이너(`.roulette__lead`·`.doc__body` = docbody·`.card--cmp` = cmp)가 `container-type: inline-size`를 가진다 ② `@container docbody`(1열 < 11.5rem · 3열 ≥ 17.75rem)·`@container cmp`(쌓기 < 35rem) 규칙이 살아 있다
+ * ③ 제목 상한 식(`100cqi`)이 `@supports (width: 1cqi)` 안에 있고, `cqi`는 번들 어디에도 그 밖에 없다 ④ 컨테이너 질의를 모르는 브라우저용 폴백(`@supports not (container-type: inline-size)` 안의 예전 `@media` 쌓기·3열)이 있다
+ * ⑤ 그 브라우저가 실제로 적용할 CSS(tests/helpers/browserCss.ts)로 걸러 보면 `@container`·`cqi`·`container-type`이 남지 않고 폴백 `@media` 쌓기·3열이 올라온다. 공백은 최소화 방식이 바뀌어도 견디게 `\s*`로 느슨하게 맞춘다.
+ */
+test('제품 번들 CSS(M3, R-302): 컨테이너 3종·@container docbody/cmp·cqi 제목 상한이 최소화 뒤에도 살아 있고, cqi는 @supports 안에만 있으며, 컨테이너 질의를 모르는 브라우저용 폴백이 있다', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  const hrefs = [...new Set([...html.matchAll(/<link[^>]+href="([^"]+\.css)"[^>]*>/g)].map((m) => m[1]))];
+  expect(hrefs.length, 'index.html에 번들 CSS가 있다').toBeGreaterThan(0);
+  const css = (await Promise.all(hrefs.map(async (href) => (await request.get(href)).text()))).join('\n');
+  expect(css.length).toBeGreaterThan(3_000);
+
+  // ① 컨테이너 세 곳
+  expect(css, '룰렛 제목 상자(.roulette__lead)가 컨테이너다').toMatch(/\.roulette__lead\s*\{[^}]*container-type:\s*inline-size/);
+  expect(css, '서류 본문(.doc__body)이 이름 있는 컨테이너 docbody다').toMatch(/\.doc__body\s*\{[^}]*container-type:\s*inline-size\s*;\s*container-name:\s*docbody/);
+  expect(css, '비교 카드(.card--cmp)가 이름 있는 컨테이너 cmp다').toMatch(/\.card--cmp\s*\{\s*container-type:\s*inline-size\s*;\s*container-name:\s*cmp/);
+
+  // ② @container 규칙
+  expect(css, '서류 격자 1열: docbody 11.5rem 미만').toMatch(
+    /@container\s+docbody\s*\(\s*max-width:\s*11\.5rem\s*\)\s*\{\s*\.doc__grid\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*\}\s*\.doc__grid \.span-2\s*\{\s*grid-column:\s*1\s*\/\s*-1\s*\}\s*\}/,
+  );
+  expect(css, '서류 격자 3열: 뷰포트 640px 이상 안의 docbody 17.75rem 이상').toMatch(
+    /@media\s*\(\s*min-width:\s*640px\s*\)\s*\{\s*@container\s+docbody\s*\(\s*min-width:\s*17\.75rem\s*\)\s*\{\s*\.doc__grid\s*\{\s*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)\s*\}\s*\}\s*\}/,
+  );
+  expect(css, '비교 표 쌓기: cmp 35rem 미만에서 표를 블록으로, 행을 격자로, 머리글을 가린다').toMatch(
+    /@container\s+cmp\s*\(\s*max-width:\s*35rem\s*\)\s*\{\s*\.table--cmp,\s*\.table--cmp tbody\s*\{\s*display:\s*block\s*\}\s*\.table--cmp thead\s*\{\s*position:\s*absolute;[^}]*clip:[^}]*\}\s*\.table--cmp tr\s*\{\s*display:\s*grid;/,
+  );
+
+  // ③ 제목 상한 식은 @supports (width: 1cqi) 안에만 있다
+  const guarded = /@supports\s*\(\s*width:\s*1cqi\s*\)\s*\{\s*\.roulette__lead \.t-title\s*\{\s*font-size:\s*max\(\s*var\(--fs-lg\)\s*,\s*min\(\s*var\(--fs-2xl\)\s*,\s*calc\(\s*100cqi\s*\/\s*var\(--title-chars\s*,\s*8\)\s*\)\s*\)\s*\)\s*;?\s*\}\s*\}/;
+  expect(css, '제목 상한: @supports (width: 1cqi) 안의 max(바닥, min(상한, 100cqi ÷ 칸 수))').toMatch(guarded);
+  expect(css, '공허 통과 방지: 번들에 cqi 식이 있다').toMatch(/100cqi/);
+  expect(css.replace(guarded, ''), 'cqi는 그 @supports 블록 밖에 없다(밖에 있으면 모르는 브라우저에서 font-size가 unset)').not.toMatch(/\dcqi\b/);
+
+  // ④ 폴백
+  expect(css, '폴백: 컨테이너 질의를 모르는 브라우저에서 뷰포트 639px 이하 비교 표 쌓기').toMatch(
+    /@supports\s+not\s*\(\s*container-type:\s*inline-size\s*\)\s*\{\s*@media\s*\(\s*max-width:\s*639px\s*\)\s*\{\s*\.table--cmp,\s*\.table--cmp tbody\s*\{\s*display:\s*block\s*\}[^@]*\.table--cmp tr\s*\{\s*display:\s*grid;/,
+  );
+  expect(css, '폴백: 뷰포트 640px 이상 서류 격자 3열').toMatch(/@media\s*\(\s*min-width:\s*640px\s*\)\s*\{\s*\.doc__grid\s*\{\s*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)\s*\}\s*\}\s*\}/);
+
+  // ⑤ 모르는 브라우저가 걸러 낸 번들 CSS
+  const legacy = cssAppliedBy(css, NO_CONTAINER_QUERIES);
+  expect(legacy.length, '걸러 낸 CSS가 비어 있지 않다').toBeGreaterThan(3_000);
+  expect(legacy, '모르는 브라우저: @container가 없다').not.toMatch(/@container/);
+  expect(legacy, '모르는 브라우저: 컨테이너 단위가 없다').not.toMatch(/\dcq(?:w|h|i|b|min|max)\b/);
+  expect(legacy, '모르는 브라우저: container-type이 없다').not.toMatch(/container-(?:type|name)/);
+  expect(legacy, '모르는 브라우저: 폴백 @media 쌓기가 올라와 있다').toMatch(/@media\s*\(\s*max-width:\s*639px\s*\)\s*\{\s*\.table--cmp,\s*\.table--cmp tbody\s*\{\s*display:\s*block\s*\}/);
+  expect(legacy, '모르는 브라우저: 제목 상한 식이 없어 .t-title 기본이 남는다').not.toMatch(/\.roulette__lead \.t-title/);
+  const modern = cssAppliedBy(css, WITH_CONTAINER_QUERIES);
+  expect(modern, '아는 브라우저: 폴백 @media 쌓기는 걸러진다').not.toMatch(/@media\s*\(\s*max-width:\s*639px\s*\)\s*\{\s*\.table--cmp/);
+  expect(modern, '아는 브라우저: @container cmp가 남는다').toMatch(/@container\s+cmp/);
 });

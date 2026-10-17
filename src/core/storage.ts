@@ -2,6 +2,7 @@ import { ERA_CONFIG } from '../data/birthTable';
 import { EVENT_POOL } from '../data/events';
 import { HISTORY_LIMITS, STATE_LIMITS } from '../data/lifeTable';
 import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
+import { isValidBirthReport } from './birthReport';
 import { isValidStat } from './stats';
 import {
   ERAS,
@@ -25,10 +26,12 @@ import { DEFAULT_SETTINGS } from './state';
  * v3: 지금 세상 출생 연도 범위가 1990~2025 → 2008~2025로 바뀜(R-012). 구 저장은 새 게임으로 시작한다.
  * v4: 인생 진행(M3) — 플래그·본 이벤트·대기 중인 선택지·사망 정보 추가, 연표 항목 형태 변경, 스탯 0~100 정수 검증(R-024).
  * v5: 개편(SPEC-003 M2) — 화면 단계에서 시대 선택(eraSelect)이 빠지고(세상·인생 길이는 첫 화면에서 고른다), 판마다 인생 길이(lifeLength)가 고정된다. v4 이하 저장은 새 게임으로 시작한다(C6).
+ * v6: 개편(SPEC-003 M3) — 화면 단계에 룰렛(roulette)이 더해지고, 판마다 출생신고 상세(birthReport)와 또래 시드(peerSeed)가 저장된다. 지금 세상 출생 연도가 2026 한 해로 고정되어
+ *     (ERA_CONFIG.present.birthYears) M2 시기의 v5 저장(지금 세상 2008~2025년생)은 새 게임으로 시작한다 — 버전을 올려 「손상」이 아니라 「이전 버전」으로 분류하고 첫 화면에 안내 한 줄(C6)을 보인다(REV-003-M2-1 R-213).
  */
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 /**
  * 설정 스키마는 게임 스키마와 따로 버전을 관리한다(게임 스키마가 바뀌어도 설정은 유지).
  * v2: 첫 화면에서 고른 세상(era)·인생 길이(lifeLength)가 더해졌다. v1 설정(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — 배속·자동 모드를 잃지 않는다.
@@ -180,6 +183,8 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
     (v.era === null || isOneOf(ERAS, v.era)) &&
     (v.lifeLength === null || isOneOf(LIFE_LENGTHS, v.lifeLength)) &&
     (v.character === null || validCharacter(v.character)) &&
+    (v.birthReport === null || isObj(v.birthReport)) &&
+    (v.peerSeed === null || isUint32(v.peerSeed)) &&
     validStats(v.stats) &&
     (v.birthStats === null || validStats(v.birthStats)) &&
     isInt(v.age) &&
@@ -204,7 +209,7 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   // 필드 간 정합성 (R-001): 출생 이후 단계는 시대·캐릭터·출생 스냅샷이 모두 있어야 하고,
   // 출생 전 단계는 캐릭터가 없어야 한다. 출생 연도는 시대 범위 안이어야 한다.
   const phase = v.phase as GameState['phase'];
-  const afterBirth = phase === 'birth' || phase === 'life' || phase === 'ending';
+  const afterBirth = phase === 'roulette' || phase === 'birth' || phase === 'life' || phase === 'ending';
   const age = v.age as number;
   if (afterBirth) {
     if (v.era === null || v.lifeLength === null || v.character === null || v.birthStats === null) return 'invalid';
@@ -213,7 +218,9 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
     const year = (v.character as Character).birthYear;
     if (year < range.min || year > range.max) return 'invalid';
     if (age > ERA_CONFIG[era].life.maxAge) return 'invalid';
-  } else if (v.character !== null || v.birthStats !== null) {
+    // 출생신고 상세(M3): 룰렛 이후 모든 단계에 있어야 하고, 지역·시군구·체중·부모·주거가 그 출생 연도·성별에 맞아야 한다. 또래 시드도 있어야 한다.
+    if (v.peerSeed === null || !isValidBirthReport(v.birthReport, year, (v.character as Character).gender)) return 'invalid';
+  } else if (v.character !== null || v.birthStats !== null || v.birthReport !== null || v.peerSeed !== null) {
     return 'invalid';
   }
   // 첫 화면(title)에서는 세상·인생 길이가 아직 정해지지 않았다(고르는 값은 설정에 있다). 판 상태에 있으면 변조·손상이다.
@@ -221,7 +228,7 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
 
   // 인생 진행 필드 (M3): 인생이 시작되기 전에는 진행 기록이 모두 비어 있어야 하고,
   // 대기 중인 선택지는 life에서만, 사망 정보는 ending에서만(그리고 ending에는 반드시) 있다.
-  const fresh = phase === 'title' || phase === 'birth';
+  const fresh = phase === 'title' || phase === 'roulette' || phase === 'birth';
   const pending = v.pending as unknown;
   const seen = v.seen as Record<string, number>;
   if (fresh) {

@@ -9,9 +9,12 @@ import iconsRaw from '../assets/icons/ui-icons.svg?raw';
 import spoonGradesRaw from '../assets/icons/spoon-grades.svg?raw';
 import logoRowRaw from '../assets/logo-a.svg?raw';
 import logoStackedRaw from '../assets/brand/a/logo-stacked.svg?raw';
+import logoHeaderRaw from '../assets/brand/a/logo-header.svg?raw';
 
 export const LOGO_STACKED_SVG: string = logoStackedRaw;
 export const LOGO_ROW_SVG: string = logoRowRaw;
+/** 첫 화면 밖 모든 화면의 헤더 로고(단순화 심볼 + 워드마크, 높이 40px, DS1 워드마크 글자 높이 ≥ 22px) */
+export const LOGO_HEADER_SVG: string = logoHeaderRaw;
 /** 아이콘(`i-*`)과 수저 5단계(칩 `sp-1`~`sp-5`, 큰 변형 `sp-1-lg`~`sp-5-lg`)의 <symbol>이 들어 있는 스프라이트 두 개 */
 export const SPRITE_SVG: string = iconsRaw + spoonGradesRaw;
 

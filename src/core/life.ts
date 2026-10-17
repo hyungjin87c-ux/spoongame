@@ -155,7 +155,14 @@ export function independenceWealth(wealth: number, education: number): number {
 
 function ctxOf(state: GameState): CondContext {
   if (state.character === null) throw new Error('ctxOf: 캐릭터가 없다');
-  return { character: state.character, stats: state.stats, flags: new Set(state.flags) };
+  const r = state.birthReport;
+  return {
+    character: state.character,
+    stats: state.stats,
+    flags: new Set(state.flags),
+    age: state.age,
+    family: r === null ? null : { birthOrder: r.birthOrder, motherBirthAge: r.mother.age, fatherBirthAge: r.father.age },
+  };
 }
 
 /** 플래그를 끄고(clear) 켠다(set). 정렬·중복 없는 배열. 같은 플래그가 둘 다 있으면 켜는 쪽이 이긴다. */

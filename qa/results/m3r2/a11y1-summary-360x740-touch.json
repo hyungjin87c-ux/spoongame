@@ -1,0 +1,33 @@
+{
+ "counts": {
+  "steps": 48,
+  "combos": 35,
+  "lineChars": 25155,
+  "lineLines": null,
+  "tabStops": [
+   "to-birth",
+   "next-life",
+   "skip-roulette"
+  ]
+ },
+ "released": [],
+ "allowedBreaks": [
+  "360x740-touch/150%/birth-present-229-diamond-honam: 다이아몬드수저(옛 측정기, 기록만)",
+  "360x740-touch/200%/birth-present-229-diamond-honam: 전남광주통합특별시(옛 측정기, 기록만)",
+  "360x740-touch/200%/birth-present-229-diamond-honam: 전남광주통합특별시(옛 측정기, 기록만)",
+  "360x740-touch/200%/birth-present-229-diamond-honam: 다이아몬드수저(옛 측정기, 기록만)",
+  "360x740-touch/200%/birth-present-61-dirt-naju: 전남광주통합특별시(옛 측정기, 기록만)",
+  "360x740-touch/200%/birth-present-61-dirt-naju: 전남광주통합특별시(옛 측정기, 기록만)",
+  "360x740-touch/150%/birth-future-138-diamond: 다이아몬드수저(옛 측정기, 기록만)",
+  "360x740-touch/200%/birth-future-138-diamond: 다이아몬드수저(옛 측정기, 기록만)"
+ ],
+ "cm10": [],
+ "cm11": [],
+ "line": [],
+ "bar": [],
+ "shots": [
+  "qa/screenshots/003/M3r2-C-360x740-touch-200-birth-present-61-dirt-naju.png",
+  "qa/screenshots/003/M3r2-C-360x740-touch-100-birth-past-155-dirt.png",
+  "qa/screenshots/003/M3r2-C-spin-360-200.png"
+ ]
+}

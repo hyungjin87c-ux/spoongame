@@ -8,6 +8,7 @@ import {
   beginBirth,
   createInitialState,
   createSession,
+  enterBirth,
   enterLife,
   hasProgress,
   parseGame,
@@ -92,7 +93,8 @@ describe('「태어나기」 (FS6): 설정의 세상·인생 길이로 출생하
         let s = createSession(createInitialState(31), { speed: 1, autoMode: false, lifeLength });
         s = send(s, { type: 'setEra', era });
         s = send(s, { type: 'begin' });
-        expect(s.game.phase, `${era}/${lifeLength}`).toBe('birth');
+        expect(s.game.phase, `${era}/${lifeLength}`).toBe('roulette'); // 출생 결과가 정해져 저장되고 룰렛 화면이 시작된다(RL5)
+        expect(s.spin, '연출 중').toBe(true);
         expect(s.game.era).toBe(era);
         expect(s.game.lifeLength).toBe(lifeLength);
         expect(parseGame(serializeGame(s.game))).toEqual(s.game); // 저장·복원도 된다
@@ -103,7 +105,7 @@ describe('「태어나기」 (FS6): 설정의 세상·인생 길이로 출생하
   it('연타·더블탭: 둘째부터는 같은 객체라 두 번 추첨되지 않는다', () => {
     const s0 = fresh(9);
     const s1 = send(s0, { type: 'begin' });
-    expect(s1.game.phase).toBe('birth');
+    expect(s1.game.phase).toBe('roulette');
     expect(send(s1, { type: 'begin' })).toBe(s1);
     expect(send(send(s1, { type: 'begin' }), { type: 'begin' })).toBe(s1);
     // 정확히 한 번 뽑은 결과와 같다
@@ -139,10 +141,12 @@ describe('「태어나기」 (FS6): 설정의 세상·인생 길이로 출생하
 
 describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기, C3)', () => {
   const inLife = (): Session => createSession(startLife(7, 'present'), { speed: 1, autoMode: false });
-  const inBirth = (): Session => createSession(beginBirth(createInitialState(7), 'past', 'long60'), { speed: 1, autoMode: false });
+  const inRoulette = (): Session => createSession(beginBirth(createInitialState(7), 'past', 'long60'), { speed: 1, autoMode: false });
+  const inBirth = (): Session => createSession(enterBirth(beginBirth(createInitialState(7), 'past', 'long60')), { speed: 1, autoMode: false });
 
   it('진행 중인 판(출생·인생)에서만 열린다. 첫 화면(title)·엔딩에서는 열 수 없다', () => {
     expect(hasProgress(inLife().game)).toBe(true);
+    expect(hasProgress(inRoulette().game)).toBe(true); // 룰렛 단계도 결과가 정해진 판이다
     expect(hasProgress(inBirth().game)).toBe(true);
     expect(hasProgress(createInitialState(1))).toBe(false);
     const title = fresh();
@@ -183,11 +187,15 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
       { type: 'autoChoose', key: 'x@1' },
       { type: 'choose', key: 'x@1', choiceId: 'a' },
       { type: 'enterLife' },
+      { type: 'enterBirth' },
+      { type: 'finishSpin' },
     ] as const) {
       expect(send(opened, a), a.type).toBe(opened);
     }
     const birthOpened = send(inBirth(), { type: 'openTitle' });
     expect(send(birthOpened, { type: 'enterLife' })).toBe(birthOpened);
+    const rouletteOpened = send(inRoulette(), { type: 'openTitle' });
+    expect(send(rouletteOpened, { type: 'enterBirth' })).toBe(rouletteOpened);
   });
 
   it('열려 있을 때 「태어나기」(begin)는 새 판을 시작하지 않는다 — 이전 판을 버리는 길은 확인을 거친 beginNew 하나뿐', () => {
@@ -201,7 +209,8 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
     s = send(s, { type: 'openTitle' });
     const n1 = send(s, { type: 'beginNew', seed: 424242 });
     expect(n1.showTitle).toBe(false);
-    expect(n1.game.phase).toBe('birth');
+    expect(n1.game.phase).toBe('roulette');
+    expect(n1.spin).toBe(true);
     expect(n1.game.seed).toBe(424242);
     expect(n1.game.seed).not.toBe(old.seed);
     expect(n1.game.era).toBe('future');
@@ -236,5 +245,60 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
     expect(s.game).toEqual(enterLife(inBirth().game));
     const advanced = send(s, { type: 'advance', fromAge: 0 });
     expect(advanced.game.age).toBe(1);
+  });
+});
+
+describe('룰렛 단계 (SPEC-003 RL5, M3): 연출 중 상태(spin)는 저장되지 않는 세션 상태다', () => {
+  const rolled = (): Session => send(fresh(11), { type: 'begin' });
+
+  it('「태어나기」가 출생 결과를 확정해 저장하고(roulette) 연출 중(spin)으로 시작한다. 복원한 세션은 연출 중이 아니다', () => {
+    const s = rolled();
+    expect(s.game.phase).toBe('roulette');
+    expect(s.spin).toBe(true);
+    expect(s.game.character).not.toBeNull();
+    expect(s.game.birthReport).not.toBeNull();
+    expect(Object.keys(JSON.parse(serializeGame(s.game)).data)).not.toContain('spin');
+    // 룰렛 도중 새로고침 = 저장을 다시 읽어 세션을 만든다 → 연출 중이 아니고, 결과(인물·출생신고)는 같다
+    const reloaded = createSession(parseGame(serializeGame(s.game))!, s.settings);
+    expect(reloaded.spin).toBe(false);
+    expect(reloaded.game).toEqual(s.game);
+  });
+
+  it('finishSpin: 연출 중일 때만 동작한다(건너뛰기 연타는 같은 객체)', () => {
+    const s = rolled();
+    const done = send(s, { type: 'finishSpin' });
+    expect(done.spin).toBe(false);
+    expect(done.game).toBe(s.game); // 연출을 끄는 것은 결과를 바꾸지 않는다(RL2)
+    expect(send(done, { type: 'finishSpin' })).toBe(done);
+    expect(send(fresh(), { type: 'finishSpin' }).spin).toBe(false);
+  });
+
+  it('enterBirth(「출생신고 보기」): 연출 중에는 무시하고, 끝난 뒤 한 번만 동작한다 — 결과(인물·출생신고)는 그대로', () => {
+    const s = rolled();
+    expect(send(s, { type: 'enterBirth' }), '연출 중').toBe(s);
+    const done = send(s, { type: 'finishSpin' });
+    const inBirth = send(done, { type: 'enterBirth' });
+    expect(inBirth.game.phase).toBe('birth');
+    expect(inBirth.game.character).toBe(s.game.character);
+    expect(inBirth.game.birthReport).toBe(s.game.birthReport);
+    expect(inBirth.game.peerSeed).toBe(s.game.peerSeed);
+    expect(send(inBirth, { type: 'enterBirth' }), '연타').toBe(inBirth);
+  });
+
+  it('다시 굴리기는 없다: 룰렛·출생신고 단계에서 「태어나기」(begin)는 같은 객체를 돌려주고 결과가 바뀌지 않는다', () => {
+    const s = rolled();
+    expect(send(s, { type: 'begin' })).toBe(s);
+    const inBirth = send(send(s, { type: 'finishSpin' }), { type: 'enterBirth' });
+    expect(send(inBirth, { type: 'begin' })).toBe(inBirth);
+  });
+
+  it('새 판(beginNew)·다른 탭 이어받기(adopt)·openTitle은 연출 중 상태를 새로 정하거나 끈다', () => {
+    const opened = send(send(send(rolled(), { type: 'finishSpin' }), { type: 'openTitle' }), { type: 'resume' });
+    expect(opened.spin).toBe(false);
+    const again = send(send(rolled(), { type: 'finishSpin' }), { type: 'openTitle' });
+    const fresh2 = send(again, { type: 'beginNew', seed: 5 });
+    expect(fresh2.spin).toBe(true); // 새 판의 룰렛은 다시 돈다
+    const adopted = send(rolled(), { type: 'adopt', game: startLife(9, 'present') });
+    expect(adopted.spin).toBe(false);
   });
 });

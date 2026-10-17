@@ -280,6 +280,65 @@ export const PAIRS: Pair[] = [
   { fg: '--c-face-hair-edge', bg: '--c-face-bg', min: 3, kind: 'graphic', alpha: 0.7, use: '밝은 머리(회·흰) 윤곽선 ↔ 타일 바탕' },
 ];
 
+// ---------- 화면 CSS가 불투명도로 합성하는 글자·도형 (SPEC-003 QM3-5, QA-003-M3 M3-O02) ----------
+
+/**
+ * 토큰만 견주면 못 잡는 것: 화면 CSS가 `opacity`를 걸어 합성되는 색. 장식(`aria-hidden`)이라도 눈에 보이는 글자·도형은 DS3 대비 기준에서 면제되지 않는다(면제 목록 없음) —
+ * 도장 「접수」는 `--c-accent` 토큰만으로는 4.5:1을 넘지만 `opacity: 0.85`를 걸면 라이트에서 3.72:1이었다.
+ * 그래서 `src/styles/doc.css`에서 불투명도를 **직접 읽어** 합성 뒤의 색으로 쌍을 만든다(CSS가 바뀌면 쌍도 따라 바뀐다).
+ */
+export interface OpacityRule {
+  /** 선택자(앞뒤 공백 제거) */
+  selector: string;
+  /** 규칙의 `opacity` 값(0~1) */
+  opacity: number;
+  /** 같은 규칙의 `color` 토큰 이름(`var(--c-accent)` → `--c-accent`), 없으면 null */
+  colorToken: string | null;
+}
+
+/** CSS 글에서 `opacity`를 선언한 규칙들(주석·미디어 블록 안 포함, 중첩 없는 단순 규칙) */
+export function readOpacityRules(cssText: string): OpacityRule[] {
+  const css = stripComments(cssText);
+  const out: OpacityRule[] = [];
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const body = m[2];
+    const op = /(?:^|[;\s])opacity\s*:\s*([0-9.]+)\s*(?:;|$)/.exec(body);
+    if (op === null) continue;
+    const color = /(?:^|[;\s])color\s*:\s*var\((--[a-z0-9-]+)\)/.exec(body);
+    out.push({ selector: m[1].trim(), opacity: Number(op[1]), colorToken: color === null ? null : color[1] });
+  }
+  return out;
+}
+
+/**
+ * 장식 도장 `.stamp`(출생신고 「접수」): `.doc`(--c-surface) 위에 `color: --c-accent`(테두리는 currentColor)로 놓이고 규칙의 불투명도로 합성된다.
+ * 글자(14px 굵게 — 큰 글자 기준 미만이라 4.5:1)와 테두리 둘(바깥 2.5px·안쪽 1px — UI 도형 3:1) 모두 전수 쌍에 든다.
+ */
+export function stampPairs(opacity: number): Pair[] {
+  const a = opacity === 1 ? undefined : opacity;
+  return [
+    { fg: '--c-accent', bg: '--c-surface', min: 4.5, kind: 'text', alpha: a, use: '장식 도장 「접수」 글자(aria-hidden이지만 눈에 보인다 — 면제 없음, 불투명도 합성)' },
+    { fg: '--c-accent', bg: '--c-surface', min: 3, kind: 'ui', alpha: a, use: '장식 도장 바깥 테두리(2.5px, 불투명도 합성)' },
+    { fg: '--c-accent', bg: '--c-surface', min: 3, kind: 'ui', alpha: a, use: '장식 도장 안쪽 테두리(1px, 불투명도 합성)' },
+  ];
+}
+
+/** 출생신고 띠 오른쪽 표기 `.doc__tag`: `--c-on-brand` 글자가 `--c-brand` 띠 위에서 불투명도로 합성된다 */
+export function docTagPair(opacity: number): Pair {
+  return { fg: '--c-on-brand', bg: '--c-brand', min: 4.5, kind: 'text', alpha: opacity === 1 ? undefined : opacity, use: '출생신고 띠 표기(`.doc__tag`, 불투명도 합성)' };
+}
+
+/** `src/styles/doc.css`의 불투명도 규칙에서 만든 화면 쌍. `.stamp`·`.doc__tag`가 없으면 던진다(선택자가 바뀌어 쌍이 조용히 사라지는 것을 막는다) */
+export function docCssPairs(docCss: string): Pair[] {
+  const rules = readOpacityRules(docCss);
+  const stamp = rules.find((r) => r.selector === '.stamp');
+  const tag = rules.find((r) => r.selector === '.doc__tag');
+  // `.stamp`는 불투명도가 없으면(1) 규칙이 없을 수 있다 — 색이 --c-accent인지는 별도 단언
+  const stampOpacity = stamp?.opacity ?? 1;
+  if (tag === undefined) throw new Error('doc.css에서 `.doc__tag`의 opacity 규칙을 찾지 못했다 — 선택자가 바뀌었으면 docCssPairs를 고친다');
+  return [...stampPairs(stampOpacity), docTagPair(tag.opacity)];
+}
+
 export interface PairResult {
   theme: Theme;
   pair: Pair;
@@ -315,7 +374,7 @@ export function formatReport(results: readonly PairResult[], extra: { mismatch: 
   return [
     '# 대비 점검 결과 (자동 생성)',
     '',
-    '`npx vite-node scripts/checkContrast.ts --write` 가 `src/styles/tokens.css`의 색 쌍을 전수 계산해 이 파일을 만든다. 손으로 고치지 않는다.',
+    '`npx vite-node scripts/checkContrast.ts --write` 가 `src/styles/tokens.css`의 색 토큰 쌍과 `src/styles/doc.css`의 불투명도(도장 「접수」·띠 표기처럼 바탕 위에 불투명도로 쌓이는 글자)가 만드는 쌍을 전수 계산해 이 파일을 만든다. 손으로 고치지 않는다.',
     `- 점검 쌍: 라이트 ${results.filter((r) => r.theme === 'light').length}개 + 다크 ${results.filter((r) => r.theme === 'dark').length}개, **실패 ${fails}개**`,
     `- 다크 토큰 두 블록(미디어쿼리 / data-theme) 불일치: ${extra.mismatch.length === 0 ? '없음' : extra.mismatch.join(', ')}`,
     '- 기준: 글자 4.5:1, 컨트롤 경계·아이콘·바·그림 3:1 (WCAG 2.x 상대 휘도). 투명도가 있는 선은 바탕 위에 얹은 색으로 계산.',

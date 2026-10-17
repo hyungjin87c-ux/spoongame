@@ -13,14 +13,17 @@ import {
   oracleAuto,
   oracleLife,
   pressBegin,
+  pressBeginToLife,
   readSave,
   readSettings,
   recordClicks,
   recordedClicks,
   replaceSaveAndReload,
   settle,
+  skipRoulette,
   startPageHidden,
   titleState,
+  toBirthReport,
 } from './helpers';
 
 /**
@@ -135,7 +138,8 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   const pickedTexts = await page.getByTestId('timeline-picked').allInnerTexts();
   expect(pickedTexts).toEqual(oracle.picked.map((p) => `선택: ${p}`));
   await expect(page.getByTestId('timeline-infant')).toBeVisible(); // 출생은 영유아 단계의 첫 줄
-  await expect(page.getByTestId('timeline-entry').first()).toContainText('로 태어났다');
+  // 연표의 첫 줄은 출생신고의 한 줄 서술문과 같은 문장(합쇼체, SPEC-003 BR3·C1) — M3 이전에는 「~로 태어났다」였다
+  await expect(page.getByTestId('timeline-entry').first()).toContainText('로 태어났습니다');
   await expect(page.getByTestId('timeline-entry').last()).toContainText('세상을 떠났다');
 
   // 위에서 아래로: 출발선 대비 → 최종 스탯 → 연표 → 다시 태어나기
@@ -216,7 +220,7 @@ test('가장 긴 연표(세 시대에서 찾은 가장 긴 인생)도 360px와 3
     `let best = null;
      for (const era of ['past', 'present', 'future']) {
        for (let seed = 1; seed <= 150; seed++) {
-         const s = core.enterLife(core.beginBirth(core.createInitialState(seed), era));
+         const s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), era)));
          const f = core.playToEnd(s, null).state;
          if (best === null || f.history.length > best.history.length) best = f;
        }
@@ -354,7 +358,8 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   // 태어나기를 누르면 새 인물: 같은 시드·마지막 선택(다가올 세상·약 30분)의 core 출생 결과와 같다
   const expected = await evalCore<GameState>(page, 'return core.beginBirth(arg, "future", "short30");', fresh);
   await pressBegin(page);
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await skipRoulette(page); // 룰렛(결과는 태어나기 순간에 이미 정해져 있다) → 출생신고
+  await toBirthReport(page);
   const born = (await readSave(page)).data;
   expect(born.character).toEqual(expected.character);
   expect(born.era).toBe('future');
@@ -397,8 +402,7 @@ test('다시 태어나기를 거친 새 판도 끝까지 가서 다시 엔딩이
   const ended = await endedState(page);
   await injectSave(page, ended, '/?__timescale=3000', SETTINGS);
   await page.getByTestId('rebirth').click();
-  await pressBegin(page);
-  await page.getByTestId('next-life').click();
+  await pressBeginToLife(page);
   // 자동 모드(8배속)가 켜져 있으니 새 판은 스스로 끝까지 간다
   await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 60_000 });
   const second = (await readSave(page)).data;
@@ -435,6 +439,7 @@ for (const fraction of [1 / 4, 1 / 2, 3 / 4]) {
       await settle(page);
       await page.waitForTimeout(500); // 가드가 풀린 뒤에도 첫 화면에 머무른다 (늦게 도착한 입력이 없다)
       await expect(page.getByTestId('title-screen')).toBeVisible();
+      await expect(page.getByTestId('roulette-screen')).toHaveCount(0); // 둘째 입력이 첫 화면의 「태어나기」에 떨어져 룰렛이 열리지 않았다
       await expect(page.getByTestId('birth-screen')).toHaveCount(0);
       expect(page.url(), '외부 링크로 이동하지 않았다').toBe(url);
       expect(context.pages().length, '새 창이 열리지 않았다').toBe(1);

@@ -10,9 +10,9 @@ export interface EraConfig {
   /** 시대 선택 화면 한 줄 설명 */
   blurb: string;
   /**
-   * 출생 연도 범위(양 끝 포함). SPEC-001 '시대 선택': 지난 1950~1989 / 지금 2008~2025 / 다가올 2030~2060.
-   * 이름 풀, 저장 검증(storage.ts), 시대 선택 화면이 모두 이 표를 따른다. 범위를 바꾸면 이름 풀(names.json,
-   * 원자료) 범위와 어긋나지 않는지 tests/names.test.ts가 확인한다.
+   * 출생 연도 범위(양 끝 포함). 지난 1950~1989 / **지금 2026 한 해**(올해 태어나는 아이로 고정, SPEC-003 형진 님 결정 Q1 — 해가 바뀌어도 자동으로 따라가지 않는다) / 다가올 2030~2060.
+   * 이름 풀, 저장 검증(storage.ts), 첫 화면의 세상 카드 문구(data/titleText.ts#eraMetaText)가 모두 이 표를 따른다. 범위를 바꾸면 이름 풀(names.json,
+   * 원자료) 범위와 어긋나지 않는지 tests/names.test.ts가 확인한다. 지금 세상의 이름 풀은 가장 최근 연도(2025) 하나다(data/names.ts#PRESENT_POOL_YEAR).
    */
   birthYears: { min: number; max: number };
   /** 부모 재력 1~5단계 출생 비율(%) 합계 100. 인덱스 0 = 1단계. */
@@ -46,7 +46,7 @@ export const ERA_CONFIG: Record<Era, EraConfig> = {
   present: {
     label: '지금 세상',
     blurb: '우리가 지금 살고 있는 시간',
-    birthYears: { min: 2008, max: 2025 },
+    birthYears: { min: 2026, max: 2026 },
     wealthWeights: [25, 30, 28, 14, 3],
     parentingWeights: { neglect: 15, free: 30, helicopter: 30, strict: 25 },
     priceIndex: 1,

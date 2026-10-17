@@ -16,16 +16,19 @@ import {
   type ParentWealth,
 } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
+import { EVENT_POOL } from '../src/data/events';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { startLife } from '../scripts/simulateLib';
 import {
   EXPECTED_BIRTH_YEARS,
   EXPECTED_GRACE,
   EXPECTED_START_BANDS,
+  FAMILY_RULES,
   PIPELINE_STRATEGIES,
   allowedGiven,
   checkCharacterName,
   checkEnding,
+  checkFamilyRules,
   checkStats,
   checkTransition,
   deepEqual,
@@ -83,39 +86,101 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
   });
 
   it('checkCharacterName: 맞는 이름은 통과하고, 풀 밖 이름·다른 성별 풀·시대 밖 연도·없는 성·금지 이름·성과 첫 글자가 같은 이름은 각각 잡는다', () => {
-    // 맞는 이름: 2022년 여자 풀의 첫 이름 + 성씨 표의 성
-    const given = allowedGiven(2022, 'female')![0];
-    expect(checkCharacterName('present', `김${given}`, 2022, 'female')).toEqual([]);
-    expect(checkCharacterName('present', '김가나다', 2022, 'female').join()).toContain('풀에 없다');
+    // 맞는 이름: 지금 세상(2026년생, 2025년 풀) 여자 풀의 첫 이름 + 성씨 표의 성
+    const given = allowedGiven(2026, 'female')![0];
+    expect(checkCharacterName('present', `김${given}`, 2026, 'female')).toEqual([]);
+    expect(checkCharacterName('present', '김가나다', 2026, 'female').join()).toContain('풀에 없다');
     // 같은 연도라도 성별 풀이 다르다: 남자 풀의 이름은 여자 풀에 없다 (두 풀이 완전히 같지 않다)
-    const maleOnly = allowedGiven(2022, 'male')!.find((n) => !allowedGiven(2022, 'female')!.includes(n))!;
+    const maleOnly = allowedGiven(2026, 'male')!.find((n) => !allowedGiven(2026, 'female')!.includes(n))!;
     expect(maleOnly).toBeTruthy();
-    expect(checkCharacterName('present', `김${maleOnly}`, 2022, 'female').join()).toContain('풀에 없다');
-    // 출생 연도가 시대 밖
+    expect(checkCharacterName('present', `김${maleOnly}`, 2026, 'female').join()).toContain('풀에 없다');
+    // 출생 연도가 시대 밖 (M2 시기의 지금 세상 연도 2022도 이제 밖이다)
     expect(checkCharacterName('present', `김${given}`, 1995, 'female').join()).toContain('범위');
-    expect(checkCharacterName('past', `김${allowedGiven(2022, 'female')![0]}`, 2022, 'female').join()).toContain('범위');
+    expect(checkCharacterName('present', `김${given}`, 2022, 'female').join()).toContain('범위');
+    expect(checkCharacterName('past', `김${allowedGiven(2026, 'female')![0]}`, 2026, 'female').join()).toContain('범위');
     // 없는 성
-    expect(checkCharacterName('present', `뷁${given}`, 2022, 'female').join()).toContain('성씨 표에 없다');
+    expect(checkCharacterName('present', `뷁${given}`, 2026, 'female').join()).toContain('성씨 표에 없다');
     // 금지 이름 (박정희: 1960년대 여자 풀에 "정희"가 있다)
     expect(allowedGiven(1965, 'female')).toContain('정희');
     expect(checkCharacterName('past', '박정희', 1965, 'female').join()).toContain('금지 이름');
-    // 성과 이름 첫 글자가 같은 조합 (이이서: 2022년 여자 풀에 "이서")
-    expect(allowedGiven(2022, 'female')).toContain('이서');
-    const same = checkCharacterName('present', '이이서', 2022, 'female');
+    // 성과 이름 첫 글자가 같은 조합 (이이서: 지금 세상 여자 풀(2025년)에 "이서")
+    expect(allowedGiven(2026, 'female')).toContain('이서');
+    const same = checkCharacterName('present', '이이서', 2026, 'female');
     expect(same).toHaveLength(1);
     expect(same[0]).toContain('첫 글자');
     // 한글 3~4자가 아닌 이름
-    expect(checkCharacterName('present', 'Kim', 2022, 'female').join()).toContain('한글 3~4자');
+    expect(checkCharacterName('present', 'Kim', 2026, 'female').join()).toContain('한글 3~4자');
   });
 
-  it('allowedGiven: 시대 밖 연도는 null, 지난 세상은 verified + estimated, 다가올 세상은 2021~2025 합집합', () => {
-    for (const y of [1949, 1990, 2007, 2026, 2029, 2061]) expect(allowedGiven(y, 'male'), String(y)).toBeNull();
+  it('allowedGiven: 시대 밖 연도는 null, 지난 세상은 verified + estimated, 지금 세상(2026)은 2025년 풀 하나, 다가올 세상은 2021~2025 합집합', () => {
+    for (const y of [1949, 1990, 2007, 2008, 2025, 2029, 2061]) expect(allowedGiven(y, 'male'), String(y)).toBeNull();
     expect(allowedGiven(1955, 'male')!.length).toBeGreaterThanOrEqual(20);
-    expect(allowedGiven(2008, 'male')!).toHaveLength(20);
+    expect(allowedGiven(2026, 'male')!).toHaveLength(20);
     const future = allowedGiven(2040, 'female')!;
     expect(future.length).toBeGreaterThan(20);
     expect(new Set(future).size).toBe(future.length);
-    for (const n of allowedGiven(2025, 'female')!) expect(future).toContain(n);
+    for (const n of allowedGiven(2026, 'female')!) expect(future).toContain(n); // 지금 세상 풀(2025년)은 다가올 세상 합집합 안에 있다
+  });
+
+  describe('checkFamilyRules: 가족 정합 규칙 (BR6·CM9, R-272)', () => {
+    /** 실제 한 판에서 시작해 연표·플래그·출생신고 상세를 필요한 대로 바꾼 판 (출생 때 어머니 34·아버지 38, 첫째) */
+    const base = (): GameState => {
+      const g = endedGame();
+      return { ...g, flags: [], history: [g.history[0]], birthReport: { ...g.birthReport!, birthOrder: 1, mother: { ...g.birthReport!.mother, age: 34 }, father: { ...g.birthReport!.father, age: 38 } } };
+    };
+    const first = (g: GameState, order: number): GameState => ({ ...g, history: [{ ...g.history[0], text: `2026년 1월, 서울특별시 종로구의 평범한 가정에서 3.2kg 여자아이로 태어났습니다. ${['첫째', '둘째', '셋째', '넷째', '다섯째 이상'][order - 1]}입니다. (3.2kg은 상위 약 50%)` }, ...g.history.slice(1)] });
+    const withEvent = (g: GameState, eventId: string, age: number): GameState => ({ ...g, history: [...g.history, { age, kind: 'event', title: 't', text: 'x', eventId }] });
+    const check = (g: GameState) => checkFamilyRules(first(g, g.birthReport!.birthOrder), 'x');
+
+    it('대조군: 규칙을 지키는 판은 위반 0이고 점검 횟수가 센다 — 병환(아버지 38 + 30 = 68세)·임종(38 + 40 = 78세)·동생(첫째, 어머니 34 + 3 = 37세)·사별·연표 첫 줄', () => {
+      let g = withEvent(base(), 'middle-parents-care', 30);
+      g = withEvent(g, 'middle-parents-farewell', 40);
+      g = withEvent(g, 'infant-new-sibling', 3);
+      g = { ...g, flags: ['parents_gone'] };
+      const r = check(g);
+      expect(r.problems).toEqual([]);
+      expect(r.applied).toBe(3 + 1 + 1); // 사건 3개 + 사별 + 연표 첫 줄
+      // 사건이 없는 판도 연표 첫 줄은 점검한다
+      expect(check(base())).toEqual({ problems: [], applied: 1 });
+    });
+
+    it('병환·임종 사건이 부모 나이에 어긋나면 잡는다: 나이 많은 쪽이 60세 미만(병환)·65세 미만(임종)·100세 초과', () => {
+      expect(check(withEvent(base(), 'middle-parents-care', 21)).problems.join()).toContain('middle-parents-care'); // 38 + 21 = 59
+      expect(check(withEvent(base(), 'middle-parents-care', 22)).problems).toEqual([]); // 60
+      expect(check(withEvent(base(), 'middle-parents-care', 62)).problems).toEqual([]); // 100
+      expect(check(withEvent(base(), 'middle-parents-care', 63)).problems.join()).toContain('101세'); // 38 + 63 = 101
+      expect(check(withEvent(base(), 'middle-parents-farewell', 26)).problems.join()).toContain('middle-parents-farewell'); // 64
+      expect(check(withEvent(base(), 'middle-parents-farewell', 27)).problems).toEqual([]); // 65
+      expect(check(withEvent(base(), 'middle-parents-farewell', 63)).problems.join()).toContain('101세'); // 101
+      // 나이 많은 쪽 기준이다: 어머니가 더 많은 판에서는 어머니 나이로 판정한다
+      const older = { ...base(), birthReport: { ...base().birthReport!, mother: { ...base().birthReport!.mother, age: 44 } } };
+      expect(check(withEvent(older, 'middle-parents-farewell', 21)).problems).toEqual([]); // 44 + 21 = 65
+    });
+
+    it('동생이 생겼다 사건은 첫째가 아닌 판, 어머니가 45세를 넘는 때를 잡는다 (R-268)', () => {
+      expect(check(withEvent({ ...base(), birthReport: { ...base().birthReport!, birthOrder: 2 } }, 'infant-new-sibling', 3)).problems.join()).toContain('형제 순서가 2번째');
+      const oldMother = (age: number) => ({ ...base(), birthReport: { ...base().birthReport!, mother: { ...base().birthReport!.mother, age } } });
+      expect(check(withEvent(oldMother(43), 'infant-new-sibling', 2)).problems).toEqual([]); // 45세
+      expect(check(withEvent(oldMother(43), 'infant-new-sibling', 3)).problems.join()).toContain('어머니는 46세');
+      expect(check(withEvent(oldMother(47), 'infant-new-sibling', 2)).problems.join()).toContain('어머니는 49세');
+    });
+
+    it('사별(parents_gone) 플래그가 있는데 임종 사건이 연표에 없으면 잡고, 있으면 통과한다', () => {
+      expect(check({ ...base(), flags: ['parents_gone'] }).problems.join()).toContain('임종 사건이 연표에 없다');
+      expect(check({ ...withEvent(base(), 'middle-parents-farewell', 40), flags: ['parents_gone'] }).problems).toEqual([]);
+    });
+
+    it('연표 첫 줄(출생신고 서술문)의 형제 순서가 저장된 순서와 다르면 잡는다', () => {
+      const g = base();
+      expect(checkFamilyRules(first(g, 2), 'x').problems.join()).toContain('형제 순서');
+      expect(checkFamilyRules(first(g, 1), 'x').problems).toEqual([]);
+      expect(checkFamilyRules({ ...g, birthReport: null }, 'x').problems.join()).toContain('출생신고 상세가 없어');
+    });
+
+    it('점검 규칙표가 이벤트 데이터의 조건과 같다 (독립으로 적은 표와 데이터가 어긋나면 어느 쪽이 틀렸는지 여기서 드러난다)', () => {
+      for (const [id, [min, max]] of Object.entries(FAMILY_RULES.olderParentAtEvent)) expect(EVENT_POOL.byId.get(id)!.conditions?.parentAge, id).toEqual({ min, max });
+      expect(EVENT_POOL.byId.get('infant-new-sibling')!.conditions).toEqual({ birthOrder: { max: 1 }, motherAge: { max: FAMILY_RULES.siblingMotherMax } });
+    });
   });
 
   describe('checkTransition: 한 걸음 전후의 불변식', () => {
@@ -320,6 +385,8 @@ describe('1000판 전체 파이프라인 (SPEC-001 M6): 세 시대 × 자동 모
           expect(r.checks.endingTexts).toBe(LIVES);
           expect(r.checks.rebirths).toBe(LIVES);
           expect(r.checks.roundTrips).toBeGreaterThan(LIVES * 20);
+          // 가족 정합(BR6, R-272): 판마다 연표 첫 줄 + 부모 병환·임종·동생 사건·사별을 실제로 대조했다(사건이 나온 판이 있어 판 수보다 많다)
+          expect(r.checks.familyRules).toBeGreaterThan(LIVES * 1.2);
           expect(r.checks.transitions).toBeGreaterThan(LIVES * 40);
           expect(r.checks.duplicateInputs).toBeGreaterThan(LIVES * 40);
           expect(r.stepSerializedLives).toBe(LIVES / EVERY);

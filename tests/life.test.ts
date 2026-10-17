@@ -987,10 +987,14 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
     expect(s.settings.era).toBe('future');
     expect(sessionReducer(s, { type: 'setEra', era: 'future' })).toBe(s); // 같은 선택은 같은 객체
     s = sessionReducer(s, { type: 'begin' });
-    expect(s.game.phase).toBe('birth');
+    expect(s.game.phase).toBe('roulette'); // 출생 결과가 정해지고 룰렛 화면(M3)
     expect(s.game.era).toBe('future');
     const born = s;
     expect(sessionReducer(s, { type: 'begin' })).toBe(born); // 이중 추첨 없음
+    expect(sessionReducer(s, { type: 'enterLife' }), '룰렛에서 곧바로 인생으로는 못 간다').toBe(s);
+    s = sessionReducer(sessionReducer(s, { type: 'finishSpin' }), { type: 'enterBirth' });
+    expect(s.game.phase).toBe('birth');
+    expect(sessionReducer(s, { type: 'enterBirth' })).toBe(s);
     s = sessionReducer(s, { type: 'enterLife' });
     expect(s.game.phase).toBe('life');
     expect(sessionReducer(s, { type: 'enterLife' })).toBe(s);

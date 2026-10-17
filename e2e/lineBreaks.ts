@@ -1,4 +1,5 @@
 import { type Page } from '@playwright/test';
+import { FORCED_BREAK_WORDS, INTENDED_BREAK_WORDS } from './intendedBreaks';
 
 /**
  * 줄바꿈 품질 측정 (SPEC-003 QM2-5, QA-003-M2 인상). 화면에 보이는 글자를 글자 하나씩 `Range`로 재서 줄로 나눈 뒤 두 가지를 본다.
@@ -43,6 +44,8 @@ export async function measureLineBreaks(page: Page, scopeSelector: string, optio
           if (cur.classList.contains('sr-only') || cur.tagName.toLowerCase() === 'svg') return true;
           const cs = getComputedStyle(cur);
           if (cs.visibility === 'hidden' || cs.display === 'none') return true;
+          // `position: absolute` + `clip: rect(0,0,0,0)`로 1px에 접은 시각적으로 숨긴 요소(좁은 폭의 비교 표 머리글 등)도 읽는 글자가 아니다
+          if (cs.position === 'absolute' && /^rect\(0(px)?,? ?0(px)?,? ?0(px)?,? ?0(px)?\)$/.test(cs.clip)) return true;
           if (cur === scope) break;
         }
         return false;
@@ -145,5 +148,317 @@ export async function measureLineBreaks(page: Page, scopeSelector: string, optio
       };
     },
     [scopeSelector, check] as const,
+  );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------
+// 낱말 중간 끊김 감사 (SPEC-003 QM3-1, QA-003-M3 M3-L02)
+// ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * 한 낱말의 기록: 낱말·곳(가장 가까운 data-testid 또는 태그.클래스)·자연 폭(글자 상자 폭의 합, px)·한 줄 전체의 폭(px)
+ */
+export interface WordBreakRecord {
+  word: string;
+  where: string;
+  natural: number;
+  line: number;
+}
+
+export interface WordBreakReport {
+  /** 잰 낱말 수 (같은 낱말도 곳마다 센다, 공허 통과 방지) */
+  checked: number;
+  /** 잰 낱말 목록 (중복 없음) */
+  words: string[];
+  /** 그 밖의 끊김 = 결함. 비어야 통과한다 */
+  broken: WordBreakRecord[];
+  /** 한 줄 전체보다 낱말이 길어(자연 폭 > 한 줄 + 0.5px) 끊을 수밖에 없는 것. 글자 100%에서는 비어야 한다 */
+  unavoidable: WordBreakRecord[];
+  /** 코드에 명시한 `<wbr>` 지점에서만 끊긴 목록 낱말 */
+  intended: WordBreakRecord[];
+  /**
+   * 등록한 강제 줄바꿈 `<br>`(FORCED_BREAKS)에서만 갈린 목록 낱말 (R-300). 폭과 상관없이 늘 같은 자리에서 갈리는 글쓴이가 정한 줄 구조라 결함은 아니지만 **따로 보고**한다 —
+   * 호출하는 e2e가 이 집합이 화면의 기대(첫 화면 수저 띠의 「다이아몬드수저」 하나 …)와 같음을 단언해, 등록 없는 `<br>`가 조용히 면제가 되지 못하게 한다.
+   * 등록되지 않은 낱말 한가운데의 `<br>`는 폭과 상관없이 `broken`이다.
+   */
+  forced: WordBreakRecord[];
+  /** `options.categories`의 이름마다, 그 선택자 안에서 잰 낱말 수 (제목·칩·직업 라벨 등이 실제로 잰 대상에 들었는지 확인하는 공허 통과 방지용) */
+  categories: Record<string, number>;
+}
+
+export interface WordBreakOptions {
+  /** 감사 범위 선택자 (기본 `body` = 화면에 보이는 모든 글자) */
+  scope?: string;
+  /** 의도된 줄바꿈 낱말 목록 (기본 `INTENDED_BREAK_WORDS`) — 변조 대조에서 비워 볼 때 쓴다 */
+  intended?: readonly string[];
+  /** 강제 줄바꿈 `<br>`로 갈려도 되는 등록 낱말 목록 (기본 `FORCED_BREAK_WORDS`) — 변조 대조에서 비워 볼 때 쓴다 (R-300) */
+  forced?: readonly string[];
+  /** 이름 → 선택자. 그 안에서 잰 낱말 수를 `categories`로 돌려준다 */
+  categories?: Readonly<Record<string, string>>;
+}
+
+/** 기록을 한 줄 글로 */
+export function describeWordBreak(r: WordBreakRecord): string {
+  return `${r.word} @${r.where} (낱말 ${r.natural}px / 한 줄 ${r.line}px)`;
+}
+
+/**
+ * 눈에 보이는 모든 글자의 **낱말이 중간에서 끊겼는가**를 잰다 (QM3-1). 판정식:
+ *  - 끊긴 낱말 w마다 `intended` = (w 안에서 줄이 바뀐 지점이 모두 `<wbr>` 바로 뒤이고 w가 `intended` 목록에 있음) / `forced` = (줄이 바뀐 지점이 모두 `<br>` 바로 뒤이고 w가 `forced` 목록에 있음)
+ *    / `unavoidable` = (자연 폭(w) > 한 줄 전체 + 0.5px) / 그 밖은 `broken`. `<br>`로 갈렸는데 w가 `forced` 목록에 없으면 폭과 상관없이 `broken`.
+ *
+ * 용어 (SPEC-003 QM3-1)
+ *  - **낱말** = 공백으로 갈라낸 글자 덩어리에서 앞뒤 구두점·괄호를 뗀 한글·영숫자 부분. 요소 경계(`<span>`·`<wbr>`)를 넘어 이어 붙은 글자는 한 낱말이다(「다이아몬드<wbr>수저」 = 낱말 하나).
+ *    숫자 사이의 `.`·`,`는 낱말 안(3.3, 1,234)이고, 그 밖의 구두점·기호(`·` `/` `—` `(` `)` `%` …)는 낱말 경계다. 낱말 **사이**나 구두점 뒤의 줄바꿈은 끊김이 아니다.
+ *    공백 텍스트 노드(`{' '}`)도 낱말을 가르는 공백으로 센다(QA 기록 12의 측정 도구 결함 1). 블록·칸(flex·grid 아이템, inline-block …)이 다른 글자는 이어 붙이지 않는다(칸 사이는 공백이 없어도 다른 낱말).
+ *    강제 줄바꿈 `<br>`는 낱말 경계가 **아니다**(R-300): 글자 사이에 바로 붙은 `<br>`(「다이아몬드<br>수저」)는 낱말 한가운데를 가르므로 한 낱말로 이어 붙여 잰다.
+ *    그 낱말이 `FORCED_BREAKS`(등록제, 폭과 상관없이 늘 같은 자리에서 갈리는 글쓴이가 정한 줄 구조)에 있고 `<br>`에서만 갈렸으면 `forced`(결함 아님, 따로 보고)이고, 등록 없는 낱말의 `<br>`는 폭과 상관없이 `broken`이다.
+ *    `<br>`와 글자 사이에 공백·구두점이 끼면 보통 낱말 경계다(「안녕 <br>하세요」「안녕.<br>하세요」 — 낱말 사이의 줄바꿈).
+ *  - **끊김** = 낱말의 글자(글자 하나씩 `Range`로 잰다)가 서로 다른 두 줄 이상에 걸친 것. 줄은 글자 상자의 세로 겹침으로 나눈다.
+ *  - **한 줄 전체** = 그 낱말에서 위로 올라가 처음 만나는, 여러 칸이 한 줄을 나눠 쓰는 상자(격자·가로 flex·표)의 내용 폭 — 한 칸의 폭이 아니다. 그런 상자가 없으면(칸 안에서 혼자 줄을 이루는 글)
+ *    낱말을 담은 블록(문단 등)의 내용 폭이다. 예: 서류 격자(`dl`)의 칸 → 격자 폭, 또래 항목 → `li` 폭, 표 셀 → 표 폭, 릴 칸 → 두 릴 전체(`.reels`).
+ *    칩(`inline-flex`·`inline-block`)과 한 자식만 가진 flex는 칸을 나누지 않으므로 그냥 지나 올라간다(칩이 칸 폭을 못 차지하게 폭을 고치는 것이 해법이라 칩 자신의 폭을 기준으로 삼지 않는다).
+ *  - **자연 폭** = 낱말 글자 상자들의 폭의 합(같은 글꼴·크기·굵기·자간으로 한 줄에 놓았을 때 폭).
+ * 제외는 눈에 보이지 않는 것뿐이다: `display: none`·`visibility: hidden`·`.sr-only`/`clip: rect(0,0,0,0)`·폭 또는 높이 0·`svg`·`overflow`로 잘려 안 보이는 글자(돌아가는 릴 목록의 화면 밖 칸).
+ * `aria-hidden`이라도 눈에 보이면 감사 대상이다(장식 도장 「접수」).
+ */
+export async function measureWordBreaks(page: Page, options: WordBreakOptions = {}): Promise<WordBreakReport> {
+  const scope = options.scope ?? 'body';
+  const intended = [...(options.intended ?? INTENDED_BREAK_WORDS)];
+  const forcedWords = [...(options.forced ?? FORCED_BREAK_WORDS)];
+  const categories = Object.entries(options.categories ?? {});
+  return page.evaluate(
+    ([scopeSel, intendedWords, forcedList, cats]) => {
+      const root = document.querySelector(scopeSel);
+      if (root === null) throw new Error(`범위를 찾을 수 없다: ${scopeSel}`);
+      type Item = { ch: string; sep: boolean; rect: DOMRect | null; ifc: Element | null; parent: Element | null; afterWbr: boolean; afterBr: boolean };
+
+      // ---------- 눈에 보이는가 ----------
+      const hiddenCache = new Map<Element, boolean>();
+      const isHidden = (el: Element): boolean => {
+        const cached = hiddenCache.get(el);
+        if (cached !== undefined) return cached;
+        let out = false;
+        const cs = getComputedStyle(el);
+        if (el.classList.contains('sr-only') || el.tagName.toLowerCase() === 'svg') out = true;
+        else if (cs.display === 'none' || cs.visibility === 'hidden') out = true;
+        else if (cs.position === 'absolute' && /^rect\(0(px)?,? ?0(px)?,? ?0(px)?,? ?0(px)?\)$/.test(cs.clip)) out = true;
+        else if (el.parentElement !== null && el !== root) out = isHidden(el.parentElement);
+        hiddenCache.set(el, out);
+        return out;
+      };
+      const clipCache = new Map<Element, DOMRect | null>();
+      /** 조상의 overflow가 잘라 내는 보이는 영역 (없으면 null = 제한 없음) */
+      const clipBoxOf = (el: Element): DOMRect | null => {
+        if (clipCache.has(el)) return clipCache.get(el)!;
+        let box: { left: number; top: number; right: number; bottom: number } | null = null;
+        for (let cur: Element | null = el; cur !== null && cur !== document.documentElement; cur = cur.parentElement) {
+          const cs = getComputedStyle(cur);
+          if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+          const r = cur.getBoundingClientRect();
+          box = box === null ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : { left: Math.max(box.left, r.left), top: Math.max(box.top, r.top), right: Math.min(box.right, r.right), bottom: Math.min(box.bottom, r.bottom) };
+        }
+        const out = box === null ? null : new DOMRect(box.left, box.top, Math.max(0, box.right - box.left), Math.max(0, box.bottom - box.top));
+        clipCache.set(el, out);
+        return out;
+      };
+      const intersects = (a: DOMRect, b: DOMRect): boolean => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
+
+      // ---------- 칸·한 줄 전체 ----------
+      const isInline = (d: string): boolean => d === 'inline' || d === 'contents' || d === 'ruby' || d === 'ruby-text' || d === 'ruby-base';
+      const blockLevel = (d: string): boolean => !d.startsWith('inline') && d !== 'contents' && d !== 'none' && !d.startsWith('ruby');
+      const ifcRootOf = (el: Element): Element => {
+        let cur: Element = el;
+        while (cur.parentElement !== null && isInline(getComputedStyle(cur).display)) cur = cur.parentElement;
+        return cur;
+      };
+      /**
+       * 칸 수: 흐름 안에 있는 자식. 아이콘(`svg`·`img`·`[role="img"]`)은 칸을 차지하지 않는다 — 수저 칩(아이콘 + 이름 + 점)은 이름 하나가 칸이고,
+       * 칩이 flex 아이템이 되면 `inline-flex`가 `flex`로 바뀌어(blockify) 겉으로는 가로 flex 상자가 되기 때문이다.
+       */
+      const inFlowCount = (p: Element): number => {
+        let n = 0;
+        for (const c of Array.from(p.childNodes)) {
+          if (c.nodeType === Node.TEXT_NODE) {
+            if ((c.textContent ?? '').trim() !== '') n++;
+          } else if (c.nodeType === Node.ELEMENT_NODE) {
+            const el = c as Element;
+            const cs = getComputedStyle(el);
+            if (cs.display === 'none' || cs.display === 'contents' || cs.position === 'absolute' || cs.position === 'fixed') continue;
+            if (['svg', 'img'].includes(el.tagName.toLowerCase()) || el.getAttribute('role') === 'img') continue;
+            n++;
+          }
+        }
+        return n;
+      };
+      /** 칸 둘 이상이 한 줄을 나눠 쓰는 상자인가: 격자·가로 flex(칸 둘 이상). 칩(inline-flex)·inline-block은 칸을 나누지 않는다 */
+      const sharesRow = (p: Element): boolean => {
+        const cs = getComputedStyle(p);
+        if (cs.display === 'grid') return inFlowCount(p) >= 2;
+        if (cs.display === 'flex') return (cs.flexDirection === 'row' || cs.flexDirection === 'row-reverse') && inFlowCount(p) >= 2;
+        return false;
+      };
+      const contentWidth = (el: Element): number => {
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+      };
+      const lineCache = new Map<Element, number>();
+      /** 한 줄 전체의 폭 (용어 설명은 measureWordBreaks의 주석) */
+      const lineWidthOf = (start: Element): number => {
+        const cached = lineCache.get(start);
+        if (cached !== undefined) return cached;
+        let width: number | null = null;
+        for (let el: Element | null = start; el !== null && el !== document.body; el = el.parentElement) {
+          const p: Element | null = el.parentElement;
+          if (p === null) break;
+          if (getComputedStyle(el).display === 'table-cell') {
+            const table = el.closest('table');
+            width = contentWidth(table ?? p);
+            break;
+          }
+          if (sharesRow(p)) {
+            width = contentWidth(p);
+            break;
+          }
+        }
+        if (width === null) {
+          // 칸을 나눠 쓰는 상자가 없다: 낱말을 담은 블록(문단 등)의 내용 폭
+          let block: Element = start;
+          while (block.parentElement !== null && !blockLevel(getComputedStyle(block).display)) block = block.parentElement;
+          width = contentWidth(block);
+        }
+        lineCache.set(start, width);
+        return width;
+      };
+      const labelOf = (el: Element): string => {
+        for (let cur: Element | null = el, depth = 0; cur !== null && depth < 6; cur = cur.parentElement, depth++) {
+          const t = cur.getAttribute('data-testid');
+          if (t !== null) return t;
+        }
+        const cls = (el as HTMLElement).className;
+        return `${el.tagName.toLowerCase()}${typeof cls === 'string' && cls.trim() !== '' ? `.${cls.trim().split(/\s+/)[0]}` : ''}`;
+      };
+
+      // ---------- 글자 흐름 만들기 (공백 텍스트 노드·`<wbr>` 포함) ----------
+      const items: Item[] = [];
+      let pendingWbr = false;
+      let pendingBr = false;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+      const range = document.createRange();
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as Element;
+          if (el.tagName === 'WBR' && !isHidden(el)) pendingWbr = true;
+          // `<br>`은 낱말 경계가 아니다(R-300): 글자 사이에 바로 붙은 `<br>`는 낱말 한가운데를 가르는 줄바꿈이라 이어 붙여 재고, 다음 글자에 표시만 남긴다(afterBr).
+          // 등록한 낱말(FORCED_BREAKS)이면 `forced`로 따로 보고하고, 등록 없는 낱말이면 폭과 상관없이 결함이다. 앞뒤 공백·구두점이 있으면 보통 낱말 경계다.
+          else if (el.tagName === 'BR' && !isHidden(el)) {
+            pendingBr = true;
+            pendingWbr = false;
+          }
+          continue;
+        }
+        const text = node as Text;
+        const parent = text.parentElement;
+        if (parent === null || isHidden(parent)) continue;
+        const ifc = ifcRootOf(parent);
+        for (let i = 0; i < text.data.length; i++) {
+          const ch = text.data[i];
+          if (ch === '\u00AD') {
+            pendingWbr = true;
+            continue;
+          }
+          if (/[ \t\n\r\f\u3000]/.test(ch)) {
+            items.push({ ch, sep: true, rect: null, ifc, parent, afterWbr: false, afterBr: false });
+            pendingWbr = false;
+            pendingBr = false;
+            continue;
+          }
+          range.setStart(text, i);
+          range.setEnd(text, i + 1);
+          const r = range.getClientRects()[0];
+          items.push({ ch, sep: false, rect: r === undefined || (r.width === 0 && r.height === 0) ? null : r, ifc, parent, afterWbr: pendingWbr, afterBr: pendingBr });
+          pendingWbr = false;
+          pendingBr = false;
+        }
+      }
+
+      // ---------- 낱말로 묶기 ----------
+      const isWordChar = (ch: string): boolean => /[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]/.test(ch);
+      const isDigit = (ch: string | undefined): boolean => ch !== undefined && /[0-9]/.test(ch);
+      const words: Item[][] = [];
+      let cur: Item[] = [];
+      const flush = () => {
+        if (cur.length > 0) words.push(cur);
+        cur = [];
+      };
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const joinsNumber = (it.ch === '.' || it.ch === ',') && cur.length > 0 && isDigit(cur[cur.length - 1].ch) && isDigit(items[i + 1]?.ch) && items[i + 1]?.ifc === it.ifc;
+        if (it.sep || !(isWordChar(it.ch) || joinsNumber)) {
+          flush();
+          continue;
+        }
+        if (cur.length > 0 && cur[0].ifc !== it.ifc) flush();
+        cur.push(it);
+      }
+      flush();
+
+      // ---------- 판정 ----------
+      const intendedSet = new Set(intendedWords);
+      const forcedSet = new Set(forcedList);
+      const broken: Array<{ word: string; where: string; natural: number; line: number }> = [];
+      const unavoidable: Array<{ word: string; where: string; natural: number; line: number }> = [];
+      const intended: Array<{ word: string; where: string; natural: number; line: number }> = [];
+      const forced: Array<{ word: string; where: string; natural: number; line: number }> = [];
+      const seen = new Set<string>();
+      const counts: Record<string, number> = {};
+      for (const [name] of cats) counts[name] = 0;
+      let checked = 0;
+      for (const w of words) {
+        const rects = w.filter((it) => it.rect !== null) as Array<Item & { rect: DOMRect }>;
+        if (rects.length === 0) continue;
+        // 눈에 보이는가: 조상 overflow가 잘라 낸 영역 밖의 글자는 세지 않는다
+        const clip = clipBoxOf(rects[0].parent!);
+        if (clip !== null && !rects.some((it) => intersects(it.rect, clip))) continue;
+        const word = w.map((it) => it.ch).join('');
+        const start = rects[0].parent!;
+        checked++;
+        seen.add(word);
+        for (const [name, selector] of cats) if (start.closest(selector) !== null) counts[name]++;
+        // 줄 나누기: 이어진 두 글자의 세로 겹침이 작으면 새 줄
+        const breakAt: number[] = [];
+        for (let k = 1; k < rects.length; k++) {
+          const a = rects[k - 1].rect;
+          const b = rects[k].rect;
+          const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (overlap < 0.5 * Math.min(a.height, b.height)) breakAt.push(k);
+        }
+        if (breakAt.length === 0) continue;
+        // `<br>` 바로 뒤에서 갈린 지점(강제)과 그 밖의 지점. 자연 폭은 강제 줄바꿈으로 나뉜 조각 중 가장 넓은 것(조각마다 한 줄을 이룬다)
+        const brAt = breakAt.filter((k) => rects[k].afterBr);
+        const otherAt = breakAt.filter((k) => !rects[k].afterBr);
+        let natural = 0;
+        let piece = 0;
+        rects.forEach((it, k) => {
+          if (brAt.includes(k)) piece = 0;
+          piece += it.rect.width;
+          natural = Math.max(natural, piece);
+        });
+        const line = lineWidthOf(start);
+        const record = { word, where: labelOf(start), natural: Math.round(natural), line: Math.round(line) };
+        if (brAt.length > 0) {
+          // 등록 없는 낱말 한가운데의 `<br>`는 폭과 상관없이 결함이다(R-300). 등록한 낱말이 `<br>`에서만 갈렸으면 forced
+          if (!forcedSet.has(word)) broken.push(record);
+          else if (otherAt.length === 0) forced.push(record);
+          else if (natural > line + 0.5) unavoidable.push(record);
+          else broken.push(record);
+        } else if (intendedSet.has(word) && breakAt.every((k) => rects[k].afterWbr)) intended.push(record);
+        else if (natural > line + 0.5) unavoidable.push(record);
+        else broken.push(record);
+      }
+      return { checked, words: [...seen], broken, unavoidable, intended, forced, categories: counts };
+    },
+    [scope, intended, forcedWords, categories] as const,
   );
 }

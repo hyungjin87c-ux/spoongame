@@ -527,6 +527,34 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
   });
 
   /**
+   * D-05 (diff-003.md, QA-003-M3 마스터 추가): 칩 이름 안에는 줄바꿈 표시로 `<br>`뿐 아니라 `<wbr>`도 허용한다. `<wbr>`는 **글자 없는 줄바꿈 지점**이라 눈에 보이는 줄을 만들지 않고 읽는 이름은 같다
+   * (구현의 `다이아몬드<wbr />수저`, src/ui/Grade.tsx — e2e/intendedBreaks.ts의 목록 항목). 약화가 아니다: 이름 글자는 그대로 단계마다 하나로 못 박혀 있고(`NAMES`), 다른 인라인 태그(`<b>`·`<i>` 등)는 여전히 막힌다.
+   */
+  const NAME_BREAK = '(?:<br>|<wbr>)?';
+  const NAMES = ['', '흙수저', '동수저', '은수저', '금수저', `다이아몬드${NAME_BREAK}수저`];
+  const PAIRED_CHIP = /<(?:span class="grade [^"]*"|li class="spoon-fig [^"]*")><svg class="spoon[^"]*"[^>]*><use href="#sp-(\d)(?:-lg)?"\/><\/svg><span(?: class="spoon-fig__name")?>([^<]*(?:<br>|<wbr>)?[^<]*)<\/span>/g;
+
+  it('D-05: 칩 이름 정규식은 `<wbr>`를 허용하되 다른 태그·틀린 이름은 막는다 — 합성 마크업 (약화 아님: 이름 글자는 단계마다 그대로 고정)', () => {
+    const chip = (n: number, inner: string) => `<span class="grade grade--${n}"><svg class="spoon" aria-hidden="true"><use href="#sp-${n}"/></svg><span>${inner}</span></span>`;
+    const pairs = (html: string) => [...html.matchAll(PAIRED_CHIP)].map((m) => [m[1], m[2]] as const);
+    const nameOk = (n: string, label: string) => new RegExp(`^${NAMES[Number(n)]}$`).test(label);
+    // 허용: `<wbr>`가 있는 다이아몬드수저(구현), `<br>`가 있는 다이아몬드수저(시안의 첫 화면 띠), 줄바꿈 표시 없는 이름
+    for (const label of ['다이아몬드<wbr>수저', '다이아몬드<br>수저', '다이아몬드수저']) {
+      const found = pairs(chip(5, label));
+      expect(found, label).toHaveLength(1);
+      expect(nameOk(found[0][0], found[0][1]), `${label} 허용`).toBe(true);
+    }
+    // `<wbr>`는 글자가 없다: 지우면 읽는 이름은 「다이아몬드수저」다
+    expect('다이아몬드<wbr>수저'.replace(/<wbr>/g, '')).toBe('다이아몬드수저');
+    // 막는 것: 다른 인라인 태그(<b>)·틀린 이름·다른 단계의 이름·이름 한가운데 아닌 곳의 <wbr>
+    expect(pairs(chip(5, '다이아<b>몬드</b>수저')), '다른 태그는 칩 이름으로 인정되지 않는다').toHaveLength(0);
+    for (const [n, label] of [[5, '다이아몬드<wbr>수저2'], [5, '다이아<wbr>몬드수저'], [3, '은<wbr>수저'], [3, '금수저'], [1, '흙수저<wbr>']] as const) {
+      const found = pairs(chip(n, label));
+      expect(found.length === 1 && nameOk(found[0][0], found[0][1]), `${n}단계 「${label}」 거부`).toBe(false);
+    }
+  });
+
+  /**
    * R-190·R-196: 「수저 아이콘은 이름·점 없이 단독으로 쓰지 않는다」를 화면 시안에서 실제로 막는다 — 열두 화면 시안의 모든 수저 아이콘(<svg class="spoon…">)은
    * 칩(.grade, gradeChip·reelSpoon) 또는 첫 화면 띠(.spoon-fig, spoonLineup) 안에 있고, 바로 뒤에 같은 단계의 이름이 따른다.
    * 설명판(components·spoon-sizes·symbols·faces)은 아이콘 자체를 보여 주는 시트라 제외한다(크기 줄 옆에 글로 이름을 적는다).
@@ -535,12 +563,11 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
     const mockups = import.meta.glob('../docs/design/mockups/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
     const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all)\.html$/.test(n));
     expect(screens.length).toBe(12);
-    const NAMES = ['', '흙수저', '동수저', '은수저', '금수저', '다이아몬드(?:<br>)?수저'];
     let total = 0;
     for (const [name, html] of screens) {
       const icons = html.match(/<svg class="spoon[^"]*"/g) ?? [];
       expect(icons.length, `${name}: 아이콘이 있다`).toBeGreaterThan(0);
-      const paired = [...html.matchAll(/<(?:span class="grade [^"]*"|li class="spoon-fig [^"]*")><svg class="spoon[^"]*"[^>]*><use href="#sp-(\d)(?:-lg)?"\/><\/svg><span(?: class="spoon-fig__name")?>([^<]*(?:<br>)?[^<]*)<\/span>/g)];
+      const paired = [...html.matchAll(PAIRED_CHIP)];
       expect(paired.length, `${name}: 칩·띠 밖의 수저 아이콘 ${icons.length - paired.length}개`).toBe(icons.length);
       for (const [, n, label] of paired) expect(label, `${name}: sp-${n} 뒤의 이름`).toMatch(new RegExp(`^${NAMES[Number(n)]}$`));
       total += icons.length;

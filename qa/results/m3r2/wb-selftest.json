@@ -1,0 +1,213 @@
+{
+ "bad": 0,
+ "rows": [
+  {
+   "id": "S1 반쪽 칸에서 끊긴 짧은 낱말 = broken",
+   "ok": true,
+   "expect": {
+    "broken": [
+     "단순노무직"
+    ],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [
+     "단순노무직"
+    ],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 4
+  },
+  {
+   "id": "S2 낱말 사이 줄바꿈은 세지 않는다(공백으로 이은 두 span)",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 2
+  },
+  {
+   "id": "S3 구두점 뒤 줄바꿈은 낱말 끊김이 아니다",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 2
+  },
+  {
+   "id": "S4 <wbr> 지점 끊김 = intended",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": [
+     "다이아몬드수저"
+    ]
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": [
+     "다이아몬드수저"
+    ]
+   },
+   "words": 1
+  },
+  {
+   "id": "S5 허용 목록에 없는 낱말의 <wbr> 끊김 = broken",
+   "ok": true,
+   "expect": {
+    "broken": [
+     "서울특별시청"
+    ],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [
+     "서울특별시청"
+    ],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 2
+  },
+  {
+   "id": "S6 한 줄 전체보다 긴 낱말 = unavoidable",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [
+     "전남광주통합특별시"
+    ],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [
+     "전남광주통합특별시"
+    ],
+    "intended": []
+   },
+   "words": 1
+  },
+  {
+   "id": "S7 <br>로 나눈 두 줄은 끊긴 낱말이 아니다",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 2
+  },
+  {
+   "id": "S8 요소 경계를 넘어 이어 붙은 글자는 한 낱말(한 줄보다 길면 unavoidable 하나로 센다)",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [
+     "단순노무직입니다"
+    ],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [
+     "단순노무직입니다"
+    ],
+    "intended": []
+   },
+   "words": 1
+  },
+  {
+   "id": "S9 가로 flex 행의 칩(inline-flex): 칩 폭이 아니라 행 전체 폭으로 잰다 — 행보다 짧은 낱말이 칩 안에서 끊기면 broken",
+   "ok": true,
+   "expect": {
+    "broken": [
+     "다이아몬드수저"
+    ],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [
+     "다이아몬드수저"
+    ],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 2
+  },
+  {
+   "id": "S10 보이지 않는 글자(sr-only·display:none)는 세지 않는다",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 1
+  },
+  {
+   "id": "S11 잘려 나간 칸(overflow:hidden 창 밖)은 세지 않는다",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [],
+    "intended": []
+   },
+   "words": 1
+  },
+  {
+   "id": "S12 숫자 사이의 .는 낱말 안(한 낱말 「12345.6789」로 센다)",
+   "ok": true,
+   "expect": {
+    "broken": [],
+    "unavoidable": [
+     "12345.6789"
+    ],
+    "intended": []
+   },
+   "got": {
+    "broken": [],
+    "unavoidable": [
+     "12345.6789"
+    ],
+    "intended": []
+   },
+   "words": 1
+  }
+ ]
+}

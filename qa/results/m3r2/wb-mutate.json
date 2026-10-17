@@ -1,0 +1,110 @@
+[
+ {
+  "id": "MU1 서류 격자 1열 쌓기 무력화(어머니·아버지 반쪽 칸으로)",
+  "ok": true,
+  "before": {
+   "broken": [],
+   "h1Broken": []
+  },
+  "after": {
+   "broken": [
+    "단순노무직(단순노 / 무직)",
+    "서비스직(서비스 / 직)"
+   ],
+   "unavoidable": [],
+   "intended": [],
+   "h1Broken": []
+  },
+  "shot": "qa/screenshots/003/M3r2-L02m-MU1.png"
+ },
+ {
+  "id": "MU2 제목 글자 크기 상한 제거",
+  "ok": true,
+  "before": {
+   "broken": [],
+   "h1Broken": []
+  },
+  "after": {
+   "broken": [],
+   "unavoidable": [
+    "정해졌습니다"
+   ],
+   "intended": [],
+   "h1Broken": [
+    "정해졌습니다"
+   ]
+  },
+  "shot": "qa/screenshots/003/M3r2-L02m-MU2.png"
+ },
+ {
+  "id": "MU3 비교 카드 쌓기(컨테이너 질의) 무력화 — 표 칸 안 출처 줄",
+  "ok": true,
+  "before": {
+   "broken": [],
+   "h1Broken": []
+  },
+  "after": {
+   "broken": [
+    "초중고사교육비조사(초중고사교육비조 / 사)",
+    "초중고사교육비조사(초중고사교육비조 / 사)"
+   ],
+   "unavoidable": [],
+   "intended": [],
+   "h1Broken": []
+  },
+  "shot": "qa/screenshots/003/M3r2-L02m-MU3.png"
+ },
+ {
+  "id": "MU4 <wbr> 제거 + 허용 목록 비움 → 릴 칸 「다이아몬드수저」가 중간에서 끊김",
+  "ok": true,
+  "before": {
+   "broken": [],
+   "h1Broken": []
+  },
+  "after": {
+   "broken": [
+    "다이아몬드수저(다이아몬드 / 수저)"
+   ],
+   "unavoidable": [],
+   "intended": [],
+   "h1Broken": []
+  },
+  "shot": "qa/screenshots/003/M3r2-L02m-MU4.png"
+ },
+ {
+  "id": "MU5 허용 목록을 비우면(= <wbr> 지점이 intended가 아니라 broken) 「다이아몬드수저」가 잡힌다",
+  "ok": true,
+  "before": {
+   "broken": [
+    "다이아몬드수저"
+   ],
+   "h1Broken": []
+  },
+  "after": {
+   "broken": [
+    "다이아몬드수저(다이아몬드 / 수저)"
+   ],
+   "unavoidable": [],
+   "intended": [],
+   "h1Broken": []
+  },
+  "shot": "qa/screenshots/003/M3r2-L02m-MU5.png"
+ },
+ {
+  "id": "MU6 서류 본문 컨테이너 쌓기 무력화 + 칸 폭 강제(반쪽 칸) — 1열 규칙이 실제로 단순노무직을 살리고 있음",
+  "ok": true,
+  "before": {
+   "broken": [],
+   "h1Broken": []
+  },
+  "after": {
+   "broken": [
+    "단순노무직(단순노무 / 직)"
+   ],
+   "unavoidable": [],
+   "intended": [],
+   "h1Broken": []
+  },
+  "shot": "qa/screenshots/003/M3r2-L02m-MU6.png"
+ }
+]

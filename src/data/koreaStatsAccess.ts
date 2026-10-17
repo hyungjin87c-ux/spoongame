@@ -25,7 +25,10 @@ import statsJson from './koreaStats.json';
  *  - `formatBasisLine(ind): string` — `통계 기준: 2025년 · 마지막 갱신 2026-10-15`(SC4).
  *  - `getSeriesGaps(series): Array<{ from: number; to: number }>` — 연도 간격이 1년을 넘는 구간.
  *  - `getSigunguRows2026(): SigunguRow2026[]` — 2026년 행정구역 시군구 표(인천 제물포·영종·서해·검단구, 화성 4개 구는 **설계값**, 광주·전남은 `sido2026: '전남광주'`).
- *  - `getRouletteRegions(birthYear: number): RouletteRegions | undefined` — 룰렛 지역 목록과 비율(합 100.0). 1950~1989 지난 세상은 시대별 시·도 목록(설계값), 2026·2030~2060은 16개 시·도.
+ *  - `getSigunguRows2025(): SigunguRow2025[]` — 2025년 행정구역 그대로의 시군구 표(252행). 지난 세상 출생신고가 그 시기 시·도 구분에 맞춰 쓴다(2026년 새 구는 없다).
+ *  - `getRouletteRegions(birthYear: number): RouletteRegions | undefined` — 룰렛 지역 목록과 비율(합 100.0). `basis`가 값의 성격을 구분한다(REV-003-M6a-2 R-187):
+ *      `'statistic-derived'` = 지금 세상(2026년생) — 2025년 출생 통계를 2026 시·도 16개로 합친 파생값 / `'design'` = 지난 세상(1950~1989, 시대별 시·도 목록)과 다가올 세상(2030~2060, 지금 통계를 바탕으로 한 설계값).
+ *      ERA_CONFIG의 모든 출생 연도에서 목록을 돌려준다(그 밖의 연도는 undefined).
  *  - `getRegionFootnote(): string` — 「출생 통계는 2025년 행정구역 기준 …」 표기 문구.
  *  - `createStatsAccess(file): StatsAccess` — 같은 함수를 주어진 데이터로 만든다(테스트가 가짜 데이터로 규칙을 확인한다).
  */
@@ -185,13 +188,26 @@ export interface RouletteRegion {
   births: number;
   sharePct: number;
 }
+/**
+ * 룰렛 지역 비율의 성격 (RL3·R-187): `statistic-derived`는 통계(2025 출생)를 2026 행정구역으로 합친 **파생값**(지금 세상), `design`은 지금 통계를 바탕으로 시대에 맞춰 옮긴 **설계값**(지난·다가올 세상).
+ * 화면은 파생값이면 출처·기준 연도를, 설계값이면 「지금 통계를 바탕으로 한 설계값」임을 적는다.
+ */
+export type RegionBasis = 'statistic-derived' | 'design';
+
 export interface RouletteRegions {
   eraId: string;
   label: string;
   kind: 'past' | 'present';
-  /** 지난 세상 시대별 목록과 2026년 합친 값은 통계가 아니라 설계값(RL3) */
-  designValue: true;
+  basis: RegionBasis;
   regions: RouletteRegion[];
+}
+
+export interface SigunguRow2025 {
+  /** 2025년 시·도 줄임 이름(17개 시도, 광주·전남은 따로) */
+  sido: string;
+  name: string;
+  births: number;
+  tfr: number;
 }
 
 /** 캐러셀 슬라이드 순서(요청의 5개 → 나머지). 이 목록에 없는 carousel 지표는 JSON 순서로 뒤에 붙는다. */
@@ -293,6 +309,7 @@ export interface StatsAccess {
   getCarouselIndicators(): UsableIndicator[];
   getCarouselCards(): CarouselCard[];
   getSigunguRows2026(): SigunguRow2026[];
+  getSigunguRows2025(): SigunguRow2025[];
   getRouletteRegions(birthYear: number): RouletteRegions | undefined;
   getRegionFootnote(): string;
   getUpdatedOn(): string;
@@ -389,6 +406,15 @@ export function createStatsAccess(file: StatsFile): StatsAccess {
     return [...kept, ...made];
   };
 
+  const getSigunguRows2025 = (): SigunguRow2025[] => {
+    const ind = byId('birth-by-sigungu');
+    if (!ind) return [];
+    return (ind.rows ?? []).map((r) => {
+      const row = r as { sido: string; name: string; births: number; tfr: number };
+      return { sido: row.sido, name: row.name, births: row.births, tfr: row.tfr };
+    });
+  };
+
   const getRouletteRegions = (birthYear: number): RouletteRegions | undefined => {
     const ind = byId('birth-by-sido');
     if (!ind) return undefined;
@@ -398,7 +424,9 @@ export function createStatsAccess(file: StatsFile): StatsAccess {
     // 지금 세상(2026)과 다가올 세상(2030~2060)은 같은 16개 시·도 목록(birthYears [2026, 2060])
     const era = eras.find((e) => inPastOrPresent(e) && (e.kind === 'past' || birthYear === 2026 || (birthYear >= 2030 && birthYear <= 2060)));
     if (!era) return undefined;
-    return { eraId: era.id, label: era.label, kind: era.kind, designValue: true, regions: era.regions };
+    // 성격(R-187): 목록의 첫 해(지금 세상 2026)만 2025 출생 통계를 2026 시·도로 합친 파생값이다. 같은 목록을 쓰는 다가올 세상(2030~2060)과 지난 세상 목록은 설계값이다.
+    const basis: RegionBasis = era.kind === 'present' && birthYear === era.birthYears[0] ? 'statistic-derived' : 'design';
+    return { eraId: era.id, label: era.label, kind: era.kind, basis, regions: era.regions };
   };
 
   const getRegionFootnote = (): string => String(file.meta.birthStatsBasisFootnote ?? '');
@@ -409,6 +437,7 @@ export function createStatsAccess(file: StatsFile): StatsAccess {
     getCarouselIndicators,
     getCarouselCards,
     getSigunguRows2026,
+    getSigunguRows2025,
     getRouletteRegions,
     getRegionFootnote,
     getUpdatedOn: () => file.meta.updatedOn,
@@ -424,5 +453,6 @@ export const getUsableIndicators = DEFAULT.getUsableIndicators;
 export const getCarouselIndicators = DEFAULT.getCarouselIndicators;
 export const getCarouselCards = DEFAULT.getCarouselCards;
 export const getSigunguRows2026 = DEFAULT.getSigunguRows2026;
+export const getSigunguRows2025 = DEFAULT.getSigunguRows2025;
 export const getRouletteRegions = DEFAULT.getRouletteRegions;
 export const getRegionFootnote = DEFAULT.getRegionFootnote;

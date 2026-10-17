@@ -12,13 +12,16 @@ import {
   birthState,
   noHorizontalOverflow,
   pressBegin,
+  pressBeginToBirth,
   rapidInput,
   readSave,
   readSettings,
   replaceSaveAndReload,
+  skipRoulette,
   titleState,
+  toBirthReport,
 } from './helpers';
-import { SETTINGS_KEY } from './saves';
+import { SAVE_VERSION, SETTINGS_KEY } from './saves';
 import { readThemeBlocks, themeTokens, type Theme } from '../scripts/checkContrastLib';
 
 /**
@@ -276,8 +279,7 @@ test('화면 사이 거짓 안내 없음(R-201): 세상 카드에서 읽은 출�
     await injectSave(page, titleState(KNOWN_SEED + i), '/', { speed: 1, autoMode: false, era });
     const range = await eraBirthYears(page);
     const text = await eraMeta(page, era).innerText();
-    await pressBegin(page);
-    await expect(page.getByTestId('birth-screen')).toBeVisible();
+    await pressBeginToBirth(page);
     const year = Number(/^(\d{4})년/.exec(await page.getByTestId('birth-year').innerText())![1]);
     const { min, max } = range[era];
     expect(year, `${era}: 출생 연도 ${year}가 ERA_CONFIG 범위 ${min}~${max} 안`).toBeGreaterThanOrEqual(min);
@@ -344,7 +346,7 @@ test('저장된 설정의 인생 길이가 「약 1시간」(long60)이어도 �
   await expect.poll(async () => (await readSettings(page)).lifeLength, { message: '읽은 값(약 30분)이 다시 저장된다' }).toBe('short30');
   expect((await readSettings(page)).speed).toBe(2);
   await pressBegin(page);
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible(); // 출생 결과는 「태어나기」 순간에 정해져 저장된다
   const born = (await readSave(page)).data;
   expect(born.lifeLength).toBe('short30');
   expect(born.era).toBe('past');
@@ -378,23 +380,24 @@ test('키보드: 라디오 묶음에서 방향키로 선택을 바꾸고(Tab 정
 
 for (const era of ['past', 'present', 'future'] as const) {
   for (const lifeLength of ['short30'] as const) { // 「약 1시간」은 준비 중이라 고를 수 없다(R-202) — 저장된 long60이 short30으로 읽히는 것은 위 테스트가 본다
-    test(`태어나기(FS6): ${era} × ${lifeLength} — 고른 세상·인생 길이로 출생하고(저장 = core 기대값) 출생 화면에 머문다`, async ({ page }) => {
+    test(`태어나기(FS6): ${era} × ${lifeLength} — 고른 세상·인생 길이로 출생하고(저장 = core 기대값) 룰렛 화면에 머문다`, async ({ page }) => {
       await injectSave(page, titleState(KNOWN_SEED));
       await expect(page.getByTestId('title-screen')).toBeVisible();
       await chooseEra(page, era);
       await chooseLifeLength(page, lifeLength);
       const oracle = await expectedBirth(page, titleState(KNOWN_SEED), era, lifeLength);
       await pressBegin(page);
-      await expect(page.getByTestId('birth-screen')).toBeVisible();
+      await expect(page.getByTestId('roulette-screen')).toBeVisible();
       const save = (await readSave(page)).data;
       expect(save).toEqual(oracle.once);
+      expect(save.phase).toBe('roulette');
       expect(save.era).toBe(era);
       expect(save.lifeLength).toBe(lifeLength);
       const settings = await readSettings(page);
       expect([settings.era, settings.lifeLength]).toEqual([era, lifeLength]);
-      // 새로고침해도 같은 출생 화면(첫 화면이 아니라 저장된 화면, C3)
+      // 새로고침해도 같은 룰렛 화면(첫 화면이 아니라 저장된 화면, C3) — 다시 돌지 않고 결과 상태로 열린다(RL5)
       await page.reload();
-      await expect(page.getByTestId('birth-screen')).toBeVisible();
+      await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'result');
       expect((await readSave(page)).data).toEqual(oracle.once);
     });
   }
@@ -485,22 +488,23 @@ for (const [i, vp] of [
 }
 
 for (const method of RAPID_METHODS) {
-  test(`태어나기 ${method}: 연타·더블탭에도 출생은 한 번만 일어나고 출생 화면에 머문다 (FS6, R-014 방식)`, async ({ page }) => {
+  test(`태어나기 ${method}: 연타·더블탭에도 출생은 한 번만 일어나고 룰렛 화면에 머문다 (FS6, R-014 방식)`, async ({ page }) => {
     await injectSave(page, titleState(KNOWN_SEED));
     const oracle = await expectedBirth(page, titleState(KNOWN_SEED), 'present');
     expect(oracle.second, '이 시드는 두 번 뽑으면 다른 인물이다').not.toEqual(oracle.once.character);
     const begin = page.getByTestId('start-birth');
     await expect(begin).toBeEnabled();
     await rapidInput(page, method, begin);
-    await expect(page.getByTestId('birth-screen')).toBeVisible();
-    await expect(page.getByTestId('next-life')).toBeEnabled(); // 출생 화면의 가드가 풀린 뒤에도
-    await expect(page.getByTestId('birth-screen')).toBeVisible();
+    await expect(page.getByTestId('roulette-screen')).toBeVisible();
+    await expect(page.getByTestId('skip-roulette')).toBeEnabled(); // 룰렛 화면의 가드가 풀린 뒤에도(둘째 입력이 같은 자리의 「건너뛰기」를 누르지 않았다)
+    await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'spinning');
+    await expect(page.getByTestId('birth-screen')).toHaveCount(0);
     await expect(page.getByTestId('life-screen')).toHaveCount(0);
     expect((await readSave(page)).data).toEqual(oracle.once);
   });
 }
 
-test('태어나기 연타는 출생 화면의 「살아가기」를 건너뛰지 않는다 — 하단 고정 버튼 자리에 출생 화면의 버튼이 겹치는 낮은 화면(360x480·667x375)에서도', async ({ page }, testInfo) => {
+test('태어나기 연타는 룰렛의 「건너뛰기」를 누르지 않는다 — 하단 고정 버튼 자리에 룰렛의 버튼이 같은 모양으로 놓이는 낮은 화면(360x480·667x375)에서도', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   for (const vp of [
     { width: 360, height: 480 },
@@ -512,10 +516,11 @@ test('태어나기 연타는 출생 화면의 「살아가기」를 건너뛰지
       await injectSave(page, titleState(KNOWN_SEED + vp.height));
       await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀린 뒤(좌표 입력은 활성 여부를 기다리지 않는다)
       await rapidInput(page, method, page.getByTestId('start-birth'));
-      await expect(page.getByTestId('birth-screen'), `${vp.width}x${vp.height} ${method}`).toBeVisible();
-      await expect(page.getByTestId('next-life')).toBeEnabled();
+      await expect(page.getByTestId('roulette-screen'), `${vp.width}x${vp.height} ${method}`).toBeVisible();
+      await expect(page.getByTestId('skip-roulette')).toBeEnabled();
+      await expect(page.getByTestId('roulette-screen'), `${vp.width}x${vp.height} ${method}: 연출이 건너뛰어지지 않았다`).toHaveAttribute('data-state', 'spinning');
       await expect(page.getByTestId('life-screen')).toHaveCount(0);
-      expect((await readSave(page)).data.phase).toBe('birth');
+      expect((await readSave(page)).data.phase).toBe('roulette');
     }
   }
 });
@@ -1088,6 +1093,33 @@ for (const vp of FOOTER_VIEWPORTS) {
 
 // ---------- R-224: 낮은 창의 안쪽 스크롤 (키보드) ----------
 
+/** 맨 위로 돌아오기까지 PageUp을 누르는 상한 (R-282) */
+const PAGE_UP_LIMIT = 6;
+
+/** 안쪽 스크롤이 멈출 때까지(scrollTop이 연속 `frames` 프레임 변하지 않을 때까지, 상한 2초) 기다리고 그때의 scrollTop을 돌려준다. 키보드 스크롤은 짧은 애니메이션이라 키를 누른 직후 값으로 판단하면 안 된다. */
+async function waitScrollSettled(page: Page, selector: string, frames = 10): Promise<number> {
+  return page.evaluate(
+    ({ selector, frames }) =>
+      new Promise<number>((resolve) => {
+        const el = document.querySelector(selector)!;
+        const deadline = performance.now() + 2000;
+        let last = el.scrollTop;
+        let still = 0;
+        const tick = () => {
+          if (el.scrollTop === last) still++;
+          else {
+            still = 0;
+            last = el.scrollTop;
+          }
+          if (still >= frames || performance.now() > deadline) resolve(el.scrollTop);
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    { selector, frames },
+  );
+}
+
 test('낮은 데스크톱 창(1280x620)에서 키보드로 카드 안쪽을 끝까지 내릴 수 있다 (R-224): 슬라이드 영역 포커스 → PageDown → 안쪽 scrollTop > 0, 「통계 기준」 줄이 하단 띠 위에 보이고, PageUp으로 조작 줄이 다시 보인다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'desktop 프로젝트에서만 실행');
   test.setTimeout(60_000);
@@ -1124,9 +1156,17 @@ test('낮은 데스크톱 창(1280x620)에서 키보드로 카드 안쪽을 끝�
   expect(after.basisTop).toBeGreaterThanOrEqual(0);
   await expect(page.locator('.slide.is-active').getByTestId('slide-basis')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/dev-M2-r224-1280x620-pagedown.png` });
-  // 되돌리기: PageUp으로 맨 위로 오면 조작 줄이 다시 보이고 눌린다
-  await page.keyboard.press('PageUp');
-  await expect.poll(scrollTop).toBe(0);
+  // 되돌리기: PageUp으로 맨 위로 오면 조작 줄이 다시 보이고 눌린다.
+  // PageUp 한 번에 scrollTop 0을 가정하지 않는다(R-282): Chromium은 직전 PageDown의 스크롤 애니메이션이 막 끝난 순간 도착한 PageUp을 흘려보내는 일이 있다
+  // (키 이벤트는 도착하고 preventDefault도 없는데 스크롤이 일어나지 않아 scrollTop이 15에 5초 동안 머문다 — 이 시험 단독 반복 약 30%에서 재현). 사람이 한 번 더 누르는 것과 같게,
+  // 누른 뒤 움직임이 멈출 때까지(scrollTop이 연속 프레임에서 변하지 않을 때까지) 기다리고 아직 0이 아니면 다시 누른다. 상한 6번 — 6번 안에 못 올라오면 실패다.
+  let pageUps = 0;
+  while (pageUps < PAGE_UP_LIMIT && (await scrollTop()) > 0) {
+    await page.keyboard.press('PageUp');
+    pageUps++;
+    await waitScrollSettled(page, '.title__side');
+  }
+  expect(await scrollTop(), `PageUp ${pageUps}번(상한 ${PAGE_UP_LIMIT}) 뒤 맨 위`).toBe(0);
   const back = await carouselGeometry(page);
   for (const c of back.ctrl) {
     expect(c.top).toBeGreaterThanOrEqual(0);
@@ -1242,7 +1282,7 @@ test('막대 그래프(시·도별)의 값은 시각적으로 숨긴 표로도 �
 
 // ---------- R-215: 옛 화면의 전역 규칙이 첫 화면에 새지 않는다 ----------
 
-test('스타일 새어 듦(R-215): 첫 화면의 그래프 막대는 의도한 높이이고(옛 인생 화면의 .bar 규칙이 새지 않는다), 옛 화면(출생·인생)의 제목·버튼·상태 막대는 그대로다', async ({ page }) => {
+test('스타일 새어 듦(R-215): 첫 화면의 그래프 막대는 의도한 높이이고(옛 인생 화면의 .bar 규칙이 새지 않는다), 옛 인생 화면의 상태 막대는 그대로이며 새 출생신고 화면은 옛 전역 규칙을 받지 않는다', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   const index = await page.evaluate(() => [...document.querySelectorAll('[data-testid="stat-slide"]')].findIndex((s) => s.getAttribute('data-slide-id') === 'region-population-registered'));
@@ -1263,19 +1303,17 @@ test('스타일 새어 듦(R-215): 첫 화면의 그래프 막대는 의도한 �
   expect(first.btnRadius).toBe('10px'); // --r-md (옛 button은 8px)
   expect(first.btnBg).not.toBe('rgb(58, 58, 58)'); // 옛 button의 #3a3a3a가 아니라 토큰의 쪽빛
 
-  // 옛 화면 회귀 없음: 출생 화면의 제목·버튼 / 인생 화면의 상태 막대
-  const vw = page.viewportSize()!.width;
+  // M3: 출생신고는 새 디자인 화면이라 옛 전역 규칙(버튼 #3a3a3a·모서리 8px)을 받지 않고 토큰의 기본 버튼 모양이다(이전에는 옛 모양 그대로임을 확인하던 자리).
+  // 옛 화면 회귀는 인생 화면의 상태 막대로 본다.
   await injectSave(page, birthState(KNOWN_SEED, 'present', 3, 50));
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   const birth = await page.evaluate(() => {
     const btn = getComputedStyle(document.querySelector('[data-testid="next-life"]')!);
-    return { h1: getComputedStyle(document.querySelector('[data-testid="birth-name"]')!).fontSize, bg: btn.backgroundColor, minH: btn.minHeight, radius: btn.borderTopLeftRadius, color: btn.color };
+    return { bg: btn.backgroundColor, minH: parseFloat(btn.minHeight), radius: btn.borderTopLeftRadius };
   });
-  expect(birth.h1).toBe(vw >= 768 ? '40px' : '32px'); // 2rem / 768px 이상 2.5rem
-  expect(birth.bg).toBe('rgb(58, 58, 58)');
-  expect(birth.color).toBe('rgb(255, 255, 255)');
-  expect(birth.minH).toBe('44px');
-  expect(birth.radius).toBe('8px');
+  expect(birth.bg, '옛 button의 #3a3a3a가 아니라 토큰의 쪽빛').not.toBe('rgb(58, 58, 58)');
+  expect(birth.radius, '옛 button은 8px, 새 기본 버튼은 --r-md(10px)').toBe('10px');
+  expect(birth.minH).toBeGreaterThanOrEqual(44);
   await injectSave(page, lifeState(KNOWN_SEED), '/', { speed: 1, autoMode: false });
   await expect(page.getByTestId('life-screen')).toBeVisible();
   const meter = await page.evaluate(() => {
@@ -1326,8 +1364,7 @@ test('외부 요청 0건(FS8·CM3): 첫 화면 로드·캐러셀 전부 훑기·
   for (let i = 0; i < n; i++) await page.getByTestId('carousel-next').click();
   await chooseEra(page, 'future');
   await chooseLifeLength(page, 'short30');
-  await pressBegin(page);
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await pressBeginToBirth(page); // 첫 화면 → 룰렛 → 출생신고까지(M3)
   const origin = new URL(page.url()).origin;
   const outside = requests.filter((u) => {
     if (u.startsWith('data:') || u.startsWith('blob:')) return false;
@@ -1431,15 +1468,16 @@ test('새로 태어나기(FS6): 누르면 이전 판이 사라진다는 확인�
   const yes = page.getByTestId('confirm-new-yes');
   await expect(yes).toBeEnabled();
   await rapidInput(page, 'mouse3', yes);
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
   const born = (await readSave(page)).data;
-  expect(born.phase).toBe('birth');
+  expect(born.phase).toBe('roulette'); // 새 판은 룰렛에서 시작한다(출생 결과는 이미 정해져 저장돼 있다)
   expect(born.seed).not.toBe(KNOWN_SEED);
   expect(born.era).toBe('future');
   expect(born.lifeLength).toBe('short30');
   expect(JSON.stringify(born)).not.toContain(old.character!.name);
-  await expect(page.getByTestId('next-life')).toBeEnabled();
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('skip-roulette')).toBeEnabled();
+  await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'spinning'); // 연타의 둘째·셋째 입력이 같은 자리의 「건너뛰기」를 누르지 않았다
+  await expect(page.getByTestId('birth-screen')).toHaveCount(0);
 });
 
 // ---------- C6: 이전 버전 저장 ----------
@@ -1461,16 +1499,16 @@ test('이전 버전(v4) 저장은 새 게임으로 시작하고 첫 화면에 �
   await expect(page.getByTestId('old-save-notice')).toHaveText('이전 버전에서 저장된 판은 이어서 할 수 없어 새 게임으로 시작합니다.');
   await expect(page.getByTestId('resume')).toHaveCount(0); // 새 게임이라 이어하기가 없다
   const save = await readSave(page);
-  expect(save.version).toBe(5);
+  expect(save.version).toBe(SAVE_VERSION);
   expect(save.data.phase).toBe('title');
   expect(save.data.seed).not.toBe(5);
   // 설정은 유지(v1 → v2로 올라가며 새 필드는 기본값)
   expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30' });
   // 태어나면 안내가 사라지고, 새로고침해도 다시 뜨지 않는다
   await pressBegin(page);
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
   await page.reload();
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
   await expect(page.getByTestId('old-save-notice')).toHaveCount(0);
 });
 
@@ -1512,8 +1550,8 @@ test('키보드(CM4): Tab 순서는 제목 → 세상 → 인생 길이 → 캐�
   expect(ring.outlineWidth).toBeGreaterThanOrEqual(3);
   expect(ring.inView).toBe(true);
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
-  await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('birth-name');
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('roulette-heading'); // 화면이 바뀌면 새 화면의 제목으로 포커스(R-030)
 });
 
 test('버튼·카드의 접근 가능한 이름: 라디오는 카드 글, 캐러셀 버튼은 한국어 이름, 로고는 장식', async ({ page }) => {
@@ -1534,7 +1572,7 @@ test('버튼·카드의 접근 가능한 이름: 라디오는 카드 글, 캐러
 // ---------- 다크·강제 색상·스크린샷 ----------
 
 test.describe('색 구성표(DB6 기반·CM4)', () => {
-  test('다크: 시스템 설정을 따른다 — 바탕·글자·버튼·로고가 다크 토큰이고 가로 넘침·가림이 없다. 출생 화면 이후(옛 화면)는 아직 라이트다', async ({ page }, testInfo) => {
+  test('다크: 시스템 설정을 따른다 — 바탕·글자·버튼·로고가 다크 토큰이고 가로 넘침·가림이 없다. 룰렛·출생신고(새 디자인)도 다크를 따르고 인생 화면(옛 화면)부터는 아직 라이트다', async ({ page }, testInfo) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/');
     await expect(page.getByTestId('title-screen')).toBeVisible();
@@ -1564,10 +1602,15 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     expect(await noHorizontalOverflow(page)).toBe(true);
     await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀려 버튼이 흐리지 않은 모습으로 찍는다
     await page.screenshot({ path: `${SHOTS}/dev-M2-title-${projectKey(testInfo.project.name)}-dark.png` });
-    // 옛 화면은 아직 라이트 디자인: 출생 화면의 바탕이 라이트다 (M3·M4에서 새 디자인으로 바뀐다).
+    // M3: 룰렛·출생신고는 새 디자인 화면이라 시스템 다크를 따른다(바탕·글자 = 다크 토큰, body.theme-surface). 인생 화면부터는 아직 옛 라이트 디자인이다(M4에서 새 디자인으로 바뀐다).
+    await pressBeginToBirth(page);
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '출생신고 바탕 = 다크 토큰').toBe(dark('--c-bg'));
+    expect(await page.evaluate(() => getComputedStyle(document.body).color), '출생신고 글자색 = 다크 토큰').toBe(dark('--c-text'));
+    expect(await page.evaluate(() => document.body.classList.contains('theme-surface'))).toBe(true);
     // R-223: body 바탕은 토큰이라 옛 화면은 LegacyLight가 건 <html data-theme="light">로 라이트 토큰(--c-bg)을 받는다(예전에는 고정 색 #f5f2ec였다).
-    await pressBegin(page);
-    await expect(page.getByTestId('birth-screen')).toBeVisible();
+    await expect(page.getByTestId('next-life')).toBeEnabled();
+    await page.getByTestId('next-life').click();
+    await expect(page.getByTestId('life-screen')).toBeVisible();
     expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe((await tokenColors(page, 'light'))('--c-bg'));
     expect(await page.evaluate(() => getComputedStyle(document.body).color), '글자색도 라이트 토큰').toBe((await tokenColors(page, 'light'))('--c-text'));
     expect(await page.evaluate(() => document.body.classList.contains('theme-surface'))).toBe(false);
@@ -1694,6 +1737,7 @@ test('확인 단계 가드(R-204): 「새로 태어나기」를 더블탭해도(
     await expect(page.getByTestId('confirm-new-yes')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.getByTestId('confirm-new-no')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.getByTestId('title-screen')).toBeVisible();
+    await expect(page.getByTestId('roulette-screen')).toHaveCount(0);
     await expect(page.getByTestId('birth-screen')).toHaveCount(0);
     expect((await readSave(page)).data.seed, `${method}: 이전 판(시드)이 그대로다`).toBe(KNOWN_SEED + 7);
     expect((await readSave(page)).data.phase).toBe('life');
@@ -1713,7 +1757,7 @@ test('확인 단계 가드(R-204): 「새로 태어나기」를 더블탭해도(
   // 대조군 2: 가드가 없으면 확정 버튼은 뜨자마자 눌린다(가드 400ms가 그 사이를 막는다)
   await page.getByTestId('begin-new').click();
   await page.getByTestId('confirm-new-yes').click();
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toBeVisible(); // 새 판은 룰렛에서 시작한다(M3)
   // 가드가 있으면 뜨자마자(강제) 누른 확정은 무시된다
   await injectSave(page, lifeState(KNOWN_SEED + 11), '/?__exit=1', { speed: 1, autoMode: false });
   await expect(page.getByTestId('begin-new')).toBeEnabled();
@@ -1755,7 +1799,7 @@ test('확인 단계를 닫으면 포커스가 「새로 태어나기」로 돌�
 
 // ---------- R-208: 옛 화면이 떠 있는 동안 색 구성표 라이트 ----------
 
-test('색 구성표(R-208): 다크 OS에서 첫 화면은 시스템을 따르고(color-scheme·theme-color 다크), 출생 이후의 옛 화면·오류 화면이 떠 있는 동안에는 라이트로 고정된다', async ({ page }) => {
+test('색 구성표(R-208): 다크 OS에서 첫 화면·룰렛·출생신고(새 디자인)는 시스템을 따르고(color-scheme·theme-color 다크), 인생 이후의 옛 화면·오류 화면이 떠 있는 동안에는 라이트로 고정된다', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   const scheme = () => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme);
   const metas = () =>
@@ -1772,10 +1816,20 @@ test('색 구성표(R-208): 다크 OS에서 첫 화면은 시스템을 따르고
   expect(systemMetas.scheme).toBe('light dark');
   expect(systemMetas.dataTheme).toBeNull();
   expect(systemMetas.theme.map((t) => t.media)).toEqual(['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)']);
-  // 태어나면 옛 화면(출생): 라이트 고정 — 스크롤바·입력 부품·주소 표시줄 색이 본문과 어긋나지 않는다
+  // M3: 룰렛·출생신고는 새 디자인 화면이라 시스템(다크)을 그대로 따른다 — color-scheme·메타가 첫 화면과 같다
   await pressBegin(page);
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
-  expect(await scheme(), '출생 화면은 다크 OS에서도 라이트').toBe('light');
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  expect(await scheme(), '룰렛 화면은 새 디자인이라 다크 OS를 따른다').toBe('dark');
+  expect(await metas()).toEqual(systemMetas);
+  await skipRoulette(page);
+  await toBirthReport(page);
+  expect(await scheme(), '출생신고 화면도 다크 OS를 따른다').toBe('dark');
+  expect(await metas()).toEqual(systemMetas);
+  // 인생 화면부터 옛 화면: 라이트 고정 — 스크롤바·입력 부품·주소 표시줄 색이 본문과 어긋나지 않는다
+  await expect(page.getByTestId('next-life')).toBeEnabled();
+  await page.getByTestId('next-life').click();
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  expect(await scheme(), '인생 화면(옛 화면)은 다크 OS에서도 라이트').toBe('light');
   const legacyMetas = await metas();
   expect(legacyMetas.scheme).toBe('light');
   expect(legacyMetas.dataTheme).toBe('light');
@@ -1785,11 +1839,6 @@ test('색 구성표(R-208): 다크 OS에서 첫 화면은 시스템을 따르고
     expect(t.media, '다크 OS에서도 같은 색이라 media 조건이 없다').toBeNull();
   }
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '옛 화면 body 바탕 = 라이트 토큰').toBe((await tokenColors(page, 'light'))('--c-bg'));
-  // 인생 화면도
-  await expect(page.getByTestId('next-life')).toBeEnabled();
-  await page.getByTestId('next-life').click();
-  await expect(page.getByTestId('life-screen')).toBeVisible();
-  expect(await scheme()).toBe('light');
   // 새로고침해도 저장된 옛 화면은 라이트
   await page.reload();
   await expect(page.getByTestId('life-screen')).toBeVisible();
@@ -1832,7 +1881,7 @@ for (const phase of ['title', 'eraSelect'] as const) {
     await expect(page.getByTestId('old-save-notice')).toHaveCount(0);
     await expect(page.getByTestId('resume')).toHaveCount(0);
     const save = await readSave(page);
-    expect(save.version).toBe(5);
+    expect(save.version).toBe(SAVE_VERSION);
     expect(save.data.phase).toBe('title');
     expect(save.data.seed).not.toBe(5); // 새 게임
   });

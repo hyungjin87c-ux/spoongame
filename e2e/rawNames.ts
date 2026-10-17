@@ -26,13 +26,13 @@ export async function loadRawNames(page: Page): Promise<RawNames> {
 
 const col = (g: Gender) => (g === 'male' ? 'M' : 'F');
 
-/** 출생 연도·성별에 허용되는 이름(성 제외) 목록. 시대별 규칙: 지난 1950~1989 연대 풀 / 지금 2008~2025 그 해 상위 20 / 다가올 2030~2060 2021~2025 합집합 */
+/** 출생 연도·성별에 허용되는 이름(성 제외) 목록. 시대별 규칙: 지난 1950~1989 연대 풀 / 지금 2026 가장 최근 연도(2025)의 상위 20 하나(EV7 R1) / 다가올 2030~2060 2021~2025 합집합 */
 export function allowedGivenNames(raw: RawNames, birthYear: number, gender: Gender): string[] {
   if (birthYear >= 1950 && birthYear <= 1989) {
     const d = raw.names.decades[String(Math.floor(birthYear / 10) * 10)][gender];
     return [...d.verified, ...d.estimated];
   }
-  if (birthYear >= 2008 && birthYear <= 2025) return raw.scourt.years[String(birthYear)][col(gender)].map((r) => r.name);
+  if (birthYear === 2026) return raw.scourt.years['2025'][col(gender)].map((r) => r.name); // 지금 세상은 2026년생 고정, 이름은 2025년 풀 하나
   if (birthYear >= 2030 && birthYear <= 2060) {
     return [...new Set([2021, 2022, 2023, 2024, 2025].flatMap((y) => raw.scourt.years[String(y)][col(gender)].map((r) => r.name)))];
   }

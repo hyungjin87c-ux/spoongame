@@ -23,6 +23,7 @@ import {
   sessionReducer,
   createSession,
   beginBirth,
+  enterBirth,
   shareAtLeast,
   shareAtMost,
   stageOf,
@@ -1099,11 +1100,12 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
     expect(r.seed).not.toBe(before.seed);
   });
 
-  it('ending이 아닐 때는 같은 객체를 돌려준다 (title·birth·life에서 호출돼도 아무 일도 없다)', () => {
+  it('ending이 아닐 때는 같은 객체를 돌려준다 (title·roulette·birth·life에서 호출돼도 아무 일도 없다)', () => {
     const title = createInitialState(1);
-    const birth = beginBirth(title, 'past');
+    const roulette = beginBirth(title, 'past');
+    const birth = enterBirth(roulette);
     const life = enterLife(birth);
-    for (const s of [title, birth, life]) expect(rebirth(s, 5)).toBe(s);
+    for (const s of [title, roulette, birth, life]) expect(rebirth(s, 5)).toBe(s);
   });
 
   it('연타·더블탭: 두 번째부터는 같은 객체라 두 판이 시작되거나 첫 화면을 건너뛰지 않는다', () => {
@@ -1141,7 +1143,7 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
       return sessionReducer(s, { type: 'begin' }).game;
     };
     const a = born(1001);
-    expect(a.phase).toBe('birth');
+    expect(a.phase).toBe('roulette');
     expect(a.era).toBe('present');
     expect(born(1001)).toEqual(a);
     expect(born(1002).character).not.toEqual(a.character);
@@ -1162,6 +1164,8 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
     for (let round = 0; round < 4; round++) {
       session = sessionReducer(session, { type: 'rebirth', seed: 500 + round });
       session = sessionReducer(session, { type: 'begin' });
+      session = sessionReducer(session, { type: 'finishSpin' });
+      session = sessionReducer(session, { type: 'enterBirth' });
       session = sessionReducer(session, { type: 'enterLife' });
       seeds.push(session.game.seed);
       const end = playToEnd(session.game, null).state;

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { GAME_KEY, SAVE_VERSION, chooseEra, injectSave, lifeState, noHorizontalOverflow, pressBegin, readSave, readSettings } from './helpers';
+import { GAME_KEY, SAVE_VERSION, chooseEra, injectSave, lifeState, noHorizontalOverflow, pressBegin, readSave, readSettings, toBirthReport } from './helpers';
 import { loadRawNames } from './rawNames';
 
 test('첫 화면과 탭 제목이 "수저 게임", 「태어나기」 버튼이 있다 (이전의 「시작」 버튼은 없다)', async ({ page }) => {
@@ -18,7 +18,12 @@ test('가로 스크롤 없이 화면에 맞는다 (타이틀)', async ({ page })
 test('태어나기를 누른 뒤 새로고침하면 출생 화면이 그대로 복원된다 (저장된 화면 복원, C3)', async ({ page }) => {
   await page.goto('/');
   await pressBegin(page);
-  await expect(page.getByTestId('birth-screen')).toBeVisible();
+  // 룰렛: 새로고침하면 다시 돌지 않고 결과가 확정된 모습으로 복원된다(RL5)
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'result');
+  await expect(page.getByTestId('title-screen')).toHaveCount(0);
+  await toBirthReport(page);
   const before = await page.getByTestId('birth-name').innerText();
   await page.reload();
   await expect(page.getByTestId('birth-screen')).toBeVisible();

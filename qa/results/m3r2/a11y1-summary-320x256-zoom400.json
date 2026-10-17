@@ -1,0 +1,33 @@
+{
+ "counts": {
+  "steps": 24,
+  "combos": 34,
+  "lineChars": 25155,
+  "lineLines": null,
+  "tabStops": [
+   "to-birth",
+   "next-life",
+   "skip-roulette"
+  ]
+ },
+ "released": [],
+ "allowedBreaks": [
+  "320x256-zoom400/100%/result-silver: 다이아몬드수저(옛 측정기, 기록만)",
+  "320x256-zoom400/100%/result-honam: 다이아몬드수저(옛 측정기, 기록만)",
+  "320x256-zoom400/100%/result-future: 다이아몬드수저(옛 측정기, 기록만)",
+  "320x256-zoom400/200%/birth-present-4242-silver: 제주특별자치도(옛 측정기, 기록만)",
+  "320x256-zoom400/200%/birth-present-229-diamond-honam: 전남광주통합특별시(옛 측정기, 기록만)",
+  "320x256-zoom400/200%/birth-present-229-diamond-honam: 전남광주통합특별시(옛 측정기, 기록만)",
+  "320x256-zoom400/200%/birth-present-229-diamond-honam: 다이아몬드수저(옛 측정기, 기록만)",
+  "320x256-zoom400/200%/birth-present-61-dirt-naju: 전남광주통합특별시(옛 측정기, 기록만)",
+  "320x256-zoom400/200%/birth-present-61-dirt-naju: 전남광주통합특별시(옛 측정기, 기록만)",
+  "320x256-zoom400/200%/birth-future-138-diamond: 다이아몬드수저(옛 측정기, 기록만)"
+ ],
+ "cm10": [],
+ "cm11": [],
+ "line": [],
+ "bar": [],
+ "shots": [
+  "qa/screenshots/003/M3r2-C-320x256-zoom400-100-birth-present-229-diamond-honam.png"
+ ]
+}

@@ -551,6 +551,63 @@ describe('조건 평가', () => {
     expect(meetsCondition({ looks: { min: 60 }, flags: ['married'], gender: ['female'] }, c)).toBe(true);
     expect(meetsCondition({ looks: { min: 60 }, flags: ['married'], gender: ['male'] }, c)).toBe(false);
   });
+
+  it('가족 조건 (SPEC-003 BR6): birthOrder는 형제 순서, parentAge는 나이 많은 부모의 지금 나이(태어났을 때 나이 + 아이 나이)이며 경계를 포함한다', () => {
+    const family = { birthOrder: 2, motherBirthAge: 31, fatherBirthAge: 36 };
+    const at = (age: number | undefined, fam: typeof family | null | undefined): CondContext => ({ ...c, age, family: fam });
+    expect(meetsCondition({ birthOrder: { max: 2 } }, at(5, family))).toBe(true);
+    expect(meetsCondition({ birthOrder: { max: 1 } }, at(5, family))).toBe(false);
+    expect(meetsCondition({ birthOrder: { min: 2, max: 3 } }, at(5, family))).toBe(true);
+    // 아버지 36 + 아이 40 = 76 (어머니 71보다 나이 많은 쪽)
+    expect(meetsCondition({ parentAge: { min: 76 } }, at(40, family))).toBe(true);
+    expect(meetsCondition({ parentAge: { min: 77 } }, at(40, family))).toBe(false);
+    expect(meetsCondition({ parentAge: { max: 76 } }, at(40, family))).toBe(true);
+    expect(meetsCondition({ parentAge: { max: 75 } }, at(40, family))).toBe(false);
+    // 어머니가 더 많은 쪽이면 어머니 기준
+    expect(meetsCondition({ parentAge: { min: 60, max: 60 } }, at(20, { birthOrder: 1, motherBirthAge: 40, fatherBirthAge: 35 }))).toBe(true);
+    // 가족 정보나 나이를 모르면 가족 조건은 맞지 않는다. 가족 조건이 없는 조건은 영향이 없다.
+    expect(meetsCondition({ birthOrder: { max: 5 } }, at(5, null))).toBe(false);
+    expect(meetsCondition({ birthOrder: { max: 5 } }, at(5, undefined))).toBe(false);
+    expect(meetsCondition({ parentAge: { min: 0 } }, at(undefined, family))).toBe(false);
+    expect(meetsCondition({ looks: { min: 60 } }, at(undefined, null))).toBe(true);
+    // 다른 조건과 AND
+    expect(meetsCondition({ birthOrder: { max: 2 }, looks: { min: 71 } }, at(5, family))).toBe(false);
+  });
+
+  it('가족 조건 motherAge (R-268): 어머니의 지금 나이 = 태어났을 때 어머니 나이 + 아이 나이이며 경계를 포함하고, 가족 정보나 나이를 모르면 맞지 않는다', () => {
+    const at = (age: number | undefined, fam: { birthOrder: number; motherBirthAge: number; fatherBirthAge: number } | null | undefined): CondContext => ({ ...c, age, family: fam });
+    const family = { birthOrder: 1, motherBirthAge: 40, fatherBirthAge: 52 }; // 아버지가 더 많아도 motherAge는 어머니만 본다
+    // 어머니 40 + 아이 5 = 45
+    expect(meetsCondition({ motherAge: { max: 45 } }, at(5, family))).toBe(true);
+    expect(meetsCondition({ motherAge: { max: 44 } }, at(5, family))).toBe(false);
+    expect(meetsCondition({ motherAge: { min: 45, max: 45 } }, at(5, family))).toBe(true);
+    expect(meetsCondition({ motherAge: { min: 46 } }, at(5, family))).toBe(false);
+    // 아버지 기준인 parentAge와는 다른 값이다
+    expect(meetsCondition({ parentAge: { max: 45 } }, at(5, family))).toBe(false);
+    expect(meetsCondition({ motherAge: { max: 45 } }, at(5, null))).toBe(false);
+    expect(meetsCondition({ motherAge: { max: 45 } }, at(5, undefined))).toBe(false);
+    expect(meetsCondition({ motherAge: { max: 45 } }, at(undefined, family))).toBe(false);
+    // 다른 가족 조건과 AND
+    expect(meetsCondition({ motherAge: { max: 45 }, birthOrder: { max: 1 } }, at(5, family))).toBe(true);
+    expect(meetsCondition({ motherAge: { max: 45 }, birthOrder: { max: 1 } }, at(5, { ...family, birthOrder: 2 }))).toBe(false);
+  });
+
+  it('가족 조건의 스키마 검증: 허용 범위(형제 순서 1~5, 부모 나이 0~130)와 min·max 규칙', () => {
+    const withCond = (conditions: unknown) => problemsOf(file(narrative({ conditions })));
+    expect(withCond({ birthOrder: { max: 1 } })).toEqual([]);
+    expect(withCond({ parentAge: { min: 60, max: 100 } })).toEqual([]);
+    expect(withCond({ birthOrder: { max: 6 } }).join(' | ')).toContain('1~5');
+    expect(withCond({ birthOrder: { min: 0 } }).join(' | ')).toContain('1~5');
+    expect(withCond({ parentAge: { max: 131 } }).join(' | ')).toContain('0~130');
+    expect(withCond({ parentAge: {} }).join(' | ')).toContain('min 또는 max');
+    expect(withCond({ parentAge: { min: 70, max: 60 } }).join(' | ')).toContain('보다 크다');
+    expect(withCond({ parentAge: 60 }).join(' | ')).toContain('객체');
+    // motherAge (R-268)
+    expect(withCond({ motherAge: { max: 45 } })).toEqual([]);
+    expect(withCond({ motherAge: { max: 131 } }).join(' | ')).toContain('0~130');
+    expect(withCond({ motherAge: {} }).join(' | ')).toContain('min 또는 max');
+    expect(withCond({ motherAge: { min: 50, max: 40 } }).join(' | ')).toContain('보다 크다');
+  });
 });
 
 describe('생애 단계와 이벤트 후보 판정', () => {

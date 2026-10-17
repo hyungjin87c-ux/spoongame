@@ -37,6 +37,8 @@ function stateFor(pool: EventPool, eventId: string): GameState & { character: Ch
     pending: { eventId, key: `${eventId}@${age}`, age, choiceIds: ev.choices.map((c) => c.id) },
     lastChoiceAge: age,
     death: null,
+    birthReport: null, // 레이아웃 하니스는 인생 화면만 그린다(출생신고 상세는 쓰지 않는다)
+    peerSeed: null,
     seed: 1,
     rngState: 1,
   };

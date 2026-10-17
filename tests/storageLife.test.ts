@@ -223,7 +223,7 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
   it('시대별 상한 나이 경계는 통과: 지난 100 / 지금 105 / 다가올 110', () => {
     for (const [era, year, max] of [
       ['past', 1960, 100],
-      ['present', 2012, 105],
+      ['present', 2026, 105],
       ['future', 2040, 110],
     ] as const) {
       const x = clone(ended);

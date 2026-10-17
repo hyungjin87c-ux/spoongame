@@ -1,4 +1,4 @@
-import { birthEntryText } from '../data/lifeText';
+import { birthSentence } from './birthReport';
 import { generateBirth } from './birth';
 import { appendHistory } from './history';
 import { createRng } from './rng';
@@ -36,6 +36,8 @@ export function createInitialState(seed: number): GameState {
     pending: null,
     lastChoiceAge: null,
     death: null,
+    birthReport: null,
+    peerSeed: null,
     seed: s,
     rngState: s,
   };
@@ -52,21 +54,24 @@ export function rebirth(state: GameState, seed: number): GameState {
 }
 
 /**
- * 「태어나기」: 첫 화면(title)에서 고른 세상·인생 길이로 출생 결과를 만든다. 시드 RNG만 사용한다(M3의 룰렛이 이 결과를 보여 준다).
+ * 「태어나기」: 첫 화면(title)에서 고른 세상·인생 길이로 출생 결과를 **한 번에** 정해 저장한다(RL5). 시드 RNG만 사용한다.
+ * 결과는 이 순간 확정되고 화면은 룰렛(roulette 단계)으로 넘어간다 — 룰렛은 이미 정해진 결과를 연출로 보여 줄 뿐이라(RL2) 도중·직후에 새로고침해도 결과가 같다.
  * title 단계에서만 동작하므로 연타해도 두 번 뽑히지 않는다. 인생 길이는 여기서 판에 고정된다(LM3).
  */
 export function beginBirth(state: GameState, era: Era = DEFAULT_ERA, lifeLength: LifeLength = DEFAULT_LIFE_LENGTH): GameState {
   if (state.phase !== 'title') return state;
   const rng = createRng(state.rngState);
-  const { character, stats } = generateBirth(rng, era);
+  const { character, stats, report, peerSeed } = generateBirth(rng, era);
   return {
     ...state,
-    phase: 'birth',
+    phase: 'roulette',
     era,
     lifeLength,
     character,
     stats,
     birthStats: { ...stats },
+    birthReport: report,
+    peerSeed,
     age: 0,
     history: [],
     flags: [],
@@ -78,16 +83,23 @@ export function beginBirth(state: GameState, era: Era = DEFAULT_ERA, lifeLength:
   };
 }
 
-/** 출생 결과 → 인생 진행. 생애 연표의 첫 줄(출생)을 남긴다. */
+/**
+ * 룰렛 → 출생신고(「출생신고 보기」). 룰렛 단계에서만 동작해 연타해도 한 번이다. 출생 결과는 이미 정해져 있어 바뀌는 것은 화면 단계뿐이다.
+ */
+export function enterBirth(state: GameState): GameState {
+  return state.phase === 'roulette' ? { ...state, phase: 'birth' } : state;
+}
+
+/** 출생신고 → 인생 진행(「살아가기」). 생애 연표의 첫 줄(출생)에 출생신고의 한 줄 서술문(BR3)을 남긴다. */
 export function enterLife(state: GameState): GameState {
-  if (state.phase !== 'birth' || state.character === null) return state;
+  if (state.phase !== 'birth' || state.character === null || state.birthReport === null || state.era === null) return state;
   return {
     ...state,
     phase: 'life',
     history: appendHistory(state.history, {
       age: 0,
       kind: 'stage',
-      text: birthEntryText(state.character.birthYear, state.character.gender),
+      text: birthSentence(state.character, state.birthReport, state.era),
     }),
   };
 }

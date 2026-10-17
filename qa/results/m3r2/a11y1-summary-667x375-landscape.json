@@ -1,0 +1,22 @@
+{
+ "counts": {
+  "steps": 48,
+  "combos": 35,
+  "lineChars": 25223,
+  "lineLines": null,
+  "tabStops": [
+   "to-birth",
+   "next-life",
+   "skip-roulette"
+  ]
+ },
+ "released": [],
+ "allowedBreaks": [],
+ "cm10": [],
+ "cm11": [],
+ "line": [],
+ "bar": [],
+ "shots": [
+  "qa/screenshots/003/M3r2-C-667x375-landscape-200-birth-present-229-diamond-honam.png"
+ ]
+}

@@ -6,6 +6,7 @@ import {
   beginBirth,
   createInitialState,
   createRng,
+  enterBirth,
   enterLife,
   estimatePlaySeconds,
   playToEnd,
@@ -34,7 +35,8 @@ export type Strategy = 'auto' | 'first' | 'random';
  * looks를 주면 외모를 그 값으로 고정한다(외모 구간별 조우율 비교용: 시드·시대가 같은 인생에서 외모만 다르게 한다).
  */
 export function startLife(seed: number, era: Era, opts: { looks?: number; lifeLength?: LifeLength } = {}): GameState {
-  const s = enterLife(beginBirth(createInitialState(seed), era, opts.lifeLength));
+  // 첫 화면 → 태어나기(룰렛 단계에서 출생 결과 확정) → 출생신고 보기 → 살아가기(인생 0세)
+  const s = enterLife(enterBirth(beginBirth(createInitialState(seed), era, opts.lifeLength)));
   if (opts.looks === undefined || s.character === null) return s;
   return { ...s, character: { ...s.character, looks: opts.looks } };
 }

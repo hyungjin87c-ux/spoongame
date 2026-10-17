@@ -15,6 +15,7 @@ import {
   createRng,
   cumulativeBottomPercent,
   cumulativeTopPercent,
+  enterBirth,
   enterLife,
   generateBirth,
   generateBirthFromSeed,
@@ -26,7 +27,9 @@ import {
   type Era,
 } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
-import { PARENTING_LABEL, WEALTH_TEXT, looksText, parentingText } from '../src/data/birthText';
+import { PARENTING_LABEL } from '../src/data/birthText';
+import { parentingDocText } from '../src/data/birthReportText';
+import { WEALTH_ADJECTIVE } from '../src/data/birthReportTable';
 import { EPS, sigmaTolerance, sigmaTolerancePct } from './helpers/stats';
 import { exactTopPercent, expectedTopPercent } from './helpers/looksReference';
 
@@ -57,9 +60,9 @@ describe('시대별 가중치 표', () => {
     });
   }
 
-  it('시대 연도 범위: 지난 1950~1989 / 지금 2008~2025 / 다가올 2030~2060 (SPEC-001 시대 선택, R-012 결정)', () => {
+  it('시대 연도 범위: 지난 1950~1989 / 지금 2026 한 해(올해 태어나는 아이, SPEC-003 Q1) / 다가올 2030~2060', () => {
     expect(ERA_CONFIG.past.birthYears).toEqual({ min: 1950, max: 1989 });
-    expect(ERA_CONFIG.present.birthYears).toEqual({ min: 2008, max: 2025 });
+    expect(ERA_CONFIG.present.birthYears).toEqual({ min: 2026, max: 2026 });
     expect(ERA_CONFIG.future.birthYears).toEqual({ min: 2030, max: 2060 });
   });
 
@@ -225,8 +228,7 @@ describe('결정성', () => {
     }
     const y = ERAS.map((e) => generateBirthFromSeed(777, e).character.birthYear);
     expect(y[0]).toBeLessThanOrEqual(1989);
-    expect(y[1]).toBeGreaterThanOrEqual(2008);
-    expect(y[1]).toBeLessThanOrEqual(2025);
+    expect(y[1]).toBe(2026);
     expect(y[2]).toBeGreaterThanOrEqual(2030);
   });
 
@@ -342,11 +344,16 @@ describe('상태 전이', () => {
     expect(s.phase).toBe('title');
     expect(s.era).toBeNull(); // 고르는 값은 설정에 있다. 판에는 출생 때 정해진다
     expect(s.lifeLength).toBeNull();
-    s = beginBirth(s); // 아무것도 안 고르면 기본값
-    expect(s.phase).toBe('birth');
+    s = beginBirth(s); // 아무것도 안 고르면 기본값 — 출생 결과가 이 순간 정해지고 룰렛 단계로 간다(RL5)
+    expect(s.phase).toBe('roulette');
     expect(s.era).toBe('present');
     expect(s.lifeLength).toBe('short30');
     expect(s.character).not.toBeNull();
+    expect(s.birthReport).not.toBeNull();
+    expect(s.peerSeed).not.toBeNull();
+    expect(enterLife(s)).toBe(s); // 룰렛에서 곧바로 인생으로는 못 간다(출생신고를 거친다)
+    s = enterBirth(s);
+    expect(s.phase).toBe('birth');
     s = enterLife(s);
     expect(s.phase).toBe('life');
     expect(s.lifeLength).toBe('short30'); // 진행 중에도 그대로(LM3)
@@ -355,7 +362,7 @@ describe('상태 전이', () => {
   it('고른 세상·인생 길이가 판에 그대로 들어가고, 인생 길이는 인생이 시작돼도 바뀌지 않는다 (LM3)', () => {
     for (const era of ERAS) {
       for (const length of ['short30', 'long60'] as const) {
-        const born = beginBirth(createInitialState(77), era, length);
+        const born = enterBirth(beginBirth(createInitialState(77), era, length));
         expect(born.era, `${era}/${length}`).toBe(era);
         expect(born.lifeLength, `${era}/${length}`).toBe(length);
         expect(enterLife(born).lifeLength).toBe(length);
@@ -372,8 +379,11 @@ describe('상태 전이', () => {
   });
 
   it('beginBirth 연타해도 한 번만 뽑힌다 / 첫 화면(title) 밖에서는 아무 일도 없다', () => {
-    const born = beginBirth(createInitialState(9), 'future');
-    expect(beginBirth(born, 'past')).toBe(born);
+    const rolled = beginBirth(createInitialState(9), 'future');
+    expect(beginBirth(rolled, 'past')).toBe(rolled);
+    expect(enterBirth(enterBirth(rolled))).toEqual(enterBirth(rolled)); // 「출생신고 보기」 연타도 한 번
+    const born = enterBirth(rolled);
+    expect(enterBirth(born)).toBe(born); // 출생신고 단계에서는 더 하지 않는다
     expect(enterLife(enterLife(born))).toEqual(enterLife(born));
     const life = enterLife(born);
     expect(beginBirth(life, 'past', 'long60')).toBe(life);
@@ -389,6 +399,8 @@ describe('상태 전이', () => {
     const expected = generateBirth(ref, 'future');
     expect(born.character).toEqual(expected.character);
     expect(born.stats).toEqual(expected.stats);
+    expect(born.birthReport).toEqual(expected.report); // 출생신고 상세·또래 시드도 같은 한 번의 추첨에서 나온다
+    expect(born.peerSeed).toBe(expected.peerSeed);
     expect(born.rngState).toBe(ref.getState());
 
     // 난수 상태가 실제로 전진했다 (시드 그대로가 아니다)
@@ -416,44 +428,41 @@ describe('상태 전이', () => {
   });
 });
 
-describe('화면 문구', () => {
+describe('화면 문구 (출생신고의 형편 서술·교육방식, 합쇼체)', () => {
   const FORBIDDEN_GRADE = /[흙동은금]수저|다이아|수저/;
   const combos = PARENT_WEALTHS.flatMap((w) => PARENTING_STYLES.map((p) => ({ w, p })));
 
   it('재력 5단계 × 교육방식 4종 = 20개 조합 모두 문구가 있다 (R-013)', () => {
     expect(combos).toHaveLength(20);
     for (const { w, p } of combos) {
-      const t = parentingText(p, w);
+      const t = parentingDocText(p, w);
       expect(typeof t, `재력 ${w} × ${p}`).toBe('string');
       expect(t.trim().length, `재력 ${w} × ${p}`).toBeGreaterThan(10);
       expect(PARENTING_LABEL[p].length).toBeGreaterThan(0);
     }
-    // 형편 문구 5개는 서로 다르고, 방임은 형편 단계별로 문구가 나뉜다
-    expect(Object.keys(WEALTH_TEXT)).toHaveLength(5);
-    expect(new Set(Object.values(WEALTH_TEXT)).size).toBe(5);
-    expect(new Set(PARENT_WEALTHS.map((w) => parentingText('neglect', w))).size).toBeGreaterThanOrEqual(3);
+    // 형편 서술 5개는 서로 다르고, 방임은 형편 단계별로 문구가 나뉜다
+    expect(Object.keys(WEALTH_ADJECTIVE)).toHaveLength(5);
+    expect(new Set(Object.values(WEALTH_ADJECTIVE)).size).toBe(5);
+    expect(new Set(PARENT_WEALTHS.map((w) => parentingDocText('neglect', w))).size).toBeGreaterThanOrEqual(3);
     // 20개 조합의 최종 문장(형편 + 교육방식)이 모두 서로 다르다
-    const full = combos.map(({ w, p }) => `${WEALTH_TEXT[w]} ${parentingText(p, w)}`);
+    const full = combos.map(({ w, p }) => `${WEALTH_ADJECTIVE[w]} ${parentingDocText(p, w)}`);
     expect(new Set(full).size).toBe(20);
   });
 
-  it('집안 형편·교육방식·외모 묘사에 등급명(흙/동/은/금/다이아 수저)과 느낌표가 없다', () => {
-    const all = [
-      ...Object.values(WEALTH_TEXT),
-      ...combos.map(({ w, p }) => parentingText(p, w)),
-      ...[0, 30, 50, 70, 90].map(looksText),
-    ];
+  it('형편 서술·교육방식 문구에 등급명(흙/동/은/금/다이아 수저)과 느낌표가 없고, 문장은 합쇼체(~습니다)로 끝난다 — 인생 기록 첫 줄에도 들어가는 글이라 등급명 금지(C4)', () => {
+    const all = [...Object.values(WEALTH_ADJECTIVE), ...combos.map(({ w, p }) => parentingDocText(p, w))];
     for (const t of all) {
       expect(t).not.toMatch(FORBIDDEN_GRADE);
       expect(t).not.toContain('!');
     }
+    for (const { w, p } of combos) for (const sentence of parentingDocText(p, w).split(/(?<=\.)\s*/).filter(Boolean)) expect(sentence, `${w}×${p}`).toMatch(/습니다\.$/);
   });
 
   it('R-013: 재력 4·5단계의 어떤 교육방식 문구에도 가난·쫓김 표현이 없다', () => {
     const poorWords = /먹고사는|쫓겨|빠듯|한숨|끼니|가난|형편이 어려|여유가 없/;
     for (const w of [4, 5] as const) {
       for (const p of PARENTING_STYLES) {
-        expect(parentingText(p, w), `재력 ${w} × ${p}`).not.toMatch(poorWords);
+        expect(parentingDocText(p, w), `재력 ${w} × ${p}`).not.toMatch(poorWords);
       }
     }
   });
@@ -462,7 +471,7 @@ describe('화면 문구', () => {
     const richWords = /아끼지 않|여유가 있|돈 문제로 고민하는 어른을 본 적이 없/;
     for (const w of [1, 2] as const) {
       for (const p of PARENTING_STYLES) {
-        expect(parentingText(p, w), `재력 ${w} × ${p}`).not.toMatch(richWords);
+        expect(parentingDocText(p, w), `재력 ${w} × ${p}`).not.toMatch(richWords);
       }
     }
   });

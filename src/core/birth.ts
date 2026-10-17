@@ -1,12 +1,15 @@
 import { ERA_CONFIG } from '../data/birthTable';
 import { isForbiddenFullName } from '../data/forbiddenNames';
-import { NAMES, futurePool, officialPool, pastPool } from '../data/names';
-import { createRng, type Rng } from './rng';
+import { NAMES, PRESENT_POOL_YEAR, futurePool, officialPool, pastPool } from '../data/names';
+import { rollBirthReport } from './birthReport';
+import { createRng, forkRng, mixSeed, type Rng } from './rng';
+import { standingOf, type Standing } from './standing';
 import {
   ERAS,
   GENDERS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
+  type BirthReport,
   type Character,
   type Era,
   type Gender,
@@ -31,7 +34,7 @@ export function eraOfBirthYear(birthYear: number): Era | null {
 /**
  * 이름 풀의 종류와 키. 시대마다 풀이 다르다(R-012).
  *  - past: 1950~1989년생 → 연대(decade) 풀. 언론 인용 확인분 + 추정 보충(통계 아님).
- *  - present: 2008~2025년생 → 그 출생 연도의 법원 통계서비스 상위 20위(공식 통계).
+ *  - present: 올해(2026)년생 고정 → 가장 최근 연도(2025) 하나의 법원 통계서비스 상위 20위(공식 통계). `year`는 풀의 기준 연도다(출생 연도가 아니다 — 2026년은 진행 중이라 통계가 없다).
  *  - future: 2030~2060년생 → 통계가 없어 최근 5개 연도(2021~2025) 공식 풀의 합집합.
  */
 export type NamePoolId = { kind: 'past'; decade: number } | { kind: 'present'; year: number } | { kind: 'future' };
@@ -52,8 +55,8 @@ export function namePoolIdOf(birthYear: number): NamePoolId {
     return { kind: 'past', decade };
   }
   if (era === 'present') {
-    if (officialPool(birthYear, 'male') === null) throw new RangeError(`namePoolIdOf: ${birthYear}년 공식 통계 풀이 없다`);
-    return { kind: 'present', year: birthYear };
+    if (officialPool(PRESENT_POOL_YEAR, 'male') === null) throw new RangeError(`namePoolIdOf: ${PRESENT_POOL_YEAR}년 공식 통계 풀이 없다`);
+    return { kind: 'present', year: PRESENT_POOL_YEAR };
   }
   return { kind: 'future' };
 }
@@ -173,32 +176,8 @@ export function looksTopPercent(looks: number): number {
 }
 
 // ---------- 순위 표현 (상위/하위/중간) ----------
-
-/**
- * "우리나라 출생아 중 어디쯤인가"의 표현 결정. 화면은 이 결과만 그린다(문구는 data/birthText.ts).
- *  - top: 상위 약 N%   - bottom: 하위 약 N%   - middle: 퍼센트 없이 "중간쯤"
- * percent는 1~50의 정수. within이 true면 실제 비율이 1% 미만이라 "N% 안쪽"으로 말해야 한다(약 0% 방지).
- */
-export type Standing = { kind: 'top' | 'bottom'; percent: number; within: boolean } | { kind: 'middle' };
-
-function rankedStanding(kind: 'top' | 'bottom', share: number): Standing {
-  return share < 1 ? { kind, percent: 1, within: true } : { kind, percent: Math.round(share), within: false };
-}
-
-/**
- * 표현 규칙(R-018). topPct = 이 값 이상인 비율(%), bottomPct = 이 값 이하인 비율(%).
- *  - topPct <= 50 이면 top, 아니면 bottomPct <= 50 이면 bottom,
- *  - 둘 다 50%를 넘는(중앙에 걸친) 경우는 middle: 퍼센트를 말하지 않는다.
- * 그래서 화면에 나오는 퍼센트는 항상 50 이하이고, "약 100%"는 나올 수 없다.
- */
-export function standingOf(topPct: number, bottomPct: number): Standing {
-  for (const v of [topPct, bottomPct]) {
-    if (!Number.isFinite(v) || v < 0 || v > 100) throw new RangeError(`standingOf: 비율이 0~100이 아니다 (${v})`);
-  }
-  if (topPct <= 50) return rankedStanding('top', topPct);
-  if (bottomPct <= 50) return rankedStanding('bottom', bottomPct);
-  return { kind: 'middle' };
-}
+// Standing·standingOf는 core/standing.ts로 옮겼다(출생 체중도 같은 규칙을 쓴다). 여기서 다시 내보내 기존 import 경로가 그대로 동작한다.
+export { standingOf, type Standing } from './standing';
 
 /**
  * 가중치 표에서 이 재력 단계 이상의 비율(%). 가중치 합으로 나눠 정규화하므로 합이 100이 아니어도
@@ -279,9 +258,21 @@ export function rollBirthStats(rng: Rng, wealth: ParentWealth, parenting: Parent
 export interface BirthResult {
   character: Character;
   stats: Stats;
+  /** 출생신고 상세(출생 월·지역·시군구·부모·주거·체중·형제 순서) — 룰렛(RL2)과 출생신고(BR)가 이 값을 그대로 보인다 */
+  report: BirthReport;
+  /** 같은 해 태어난 사람들(VP3)을 만드는 시드 */
+  peerSeed: number;
 }
 
-/** 난수 소비 순서(고정): 연도 → 성별 → 성씨 → 이름 → 재력 → 교육방식 → 외모 → 스탯 */
+/** 갈래 RNG의 salt: 출생신고 상세 / 같은 해 태어난 사람들. 값은 바꾸지 않는다(같은 시드 → 같은 인물이 새 판에서도 이어지도록 — 바꾸면 알려진 시드의 출생신고가 달라진다). */
+const REPORT_SALT = 0x52505254; // 'RPRT'
+const PEER_SALT = 0x50454552; // 'PEER'
+
+/**
+ * 난수 소비 순서(고정): 연도 → 성별 → 성씨 → 이름 → 재력 → 교육방식 → 외모 → 스탯.
+ * 출생신고 상세(report)와 또래 시드(peerSeed)는 이 RNG를 **전진시키지 않고** 현재 상태에서 갈라낸 별도 수열로 만든다(forkRng·mixSeed) —
+ * 그래서 인생 진행의 난수 수열(rngState)과 엔딩 분포표(finalDistribution)는 출생신고가 생기기 전과 같다(R-022 「정확히 한 번 뽑는다」도 그대로).
+ */
 export function generateBirth(rng: Rng, era: Era): BirthResult {
   const cfg = ERA_CONFIG[era];
   const birthYear = rng.int(cfg.birthYears.min, cfg.birthYears.max);
@@ -291,7 +282,8 @@ export function generateBirth(rng: Rng, era: Era): BirthResult {
   const parenting = PARENTING_STYLES[rng.weightedIndex(PARENTING_STYLES.map((p) => cfg.parentingWeights[p]))];
   const looks = rollLooks(rng);
   const stats = rollBirthStats(rng, parentWealth, parenting);
-  return { character: { name, gender, birthYear, parentWealth, parenting, looks }, stats };
+  const report = rollBirthReport(forkRng(rng, REPORT_SALT), era, birthYear, gender, parentWealth);
+  return { character: { name, gender, birthYear, parentWealth, parenting, looks }, stats, report, peerSeed: mixSeed(rng.getState(), PEER_SALT) };
 }
 
 /** 시드에서 바로 출생 결과를 만든다(테스트·시뮬레이션용). */

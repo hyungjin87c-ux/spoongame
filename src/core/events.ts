@@ -25,6 +25,10 @@ import {
 
 // ---------- 모델 ----------
 
+/** 조건 검증용 상한: 형제 순서는 다섯째까지(출생신고 추첨 범위), 부모 나이(어머니 나이 포함)는 130살까지만 적을 수 있다 */
+const BIRTH_ORDER_MAX = 5;
+const PARENT_AGE_MAX = 130;
+
 export interface Range {
   min?: number;
   max?: number;
@@ -35,6 +39,12 @@ export interface Condition {
   stats?: Partial<Record<StatKey, Range>>;
   looks?: Range;
   parentWealth?: Range;
+  /** 형제 순서(1 첫째 ~ 5 다섯째) — 출생신고에서 정해진 값 (SPEC-003 BR6) */
+  birthOrder?: Range;
+  /** 두 부모 중 나이가 많은 쪽의 지금 나이 = 태어났을 때 나이 + 아이의 지금 나이 (SPEC-003 BR6). 부모의 병환·임종처럼 부모 나이와 어긋나면 안 되는 사건에 쓴다. */
+  parentAge?: Range;
+  /** 어머니의 지금 나이 = 태어났을 때 어머니 나이 + 아이의 지금 나이 (SPEC-003 BR6, R-268). 「동생이 생겼다」처럼 어머니 나이가 한계를 넘으면 안 되는 사건에 쓴다. */
+  motherAge?: Range;
   parenting?: ParentingStyle[];
   gender?: Gender[];
   /** 모두 설정돼 있어야 한다 */
@@ -107,10 +117,21 @@ export function createEventPool(events: readonly EventDef[]): EventPool {
 
 // ---------- 조건 평가 ----------
 
+/** 조건이 읽는 출생 가족 정보 (출생신고 상세에서 온다: 형제 순서와 태어났을 때 부모 나이) */
+export interface FamilyView {
+  birthOrder: number;
+  motherBirthAge: number;
+  fatherBirthAge: number;
+}
+
 export interface CondContext {
   character: Character;
   stats: Stats;
   flags: ReadonlySet<string>;
+  /** 지금 아이의 나이 (parentAge 조건에 필요) */
+  age?: number;
+  /** 출생 가족 정보 (birthOrder·parentAge 조건에 필요). 없으면 그 조건은 맞지 않는 것으로 본다. */
+  family?: FamilyView | null;
 }
 
 const inRange = (value: number, r: Range | undefined): boolean =>
@@ -123,6 +144,20 @@ export function meetsCondition(cond: Condition | undefined, ctx: CondContext): b
   }
   if (!inRange(ctx.character.looks, cond.looks)) return false;
   if (!inRange(ctx.character.parentWealth, cond.parentWealth)) return false;
+  if (cond.birthOrder !== undefined || cond.parentAge !== undefined || cond.motherAge !== undefined) {
+    // 가족 정보를 모르는데 가족 조건이 걸려 있으면 맞지 않는다(말이 안 되는 사건이 일어나는 쪽보다 안 일어나는 쪽이 안전하다)
+    const family = ctx.family;
+    if (family === undefined || family === null) return false;
+    if (!inRange(family.birthOrder, cond.birthOrder)) return false;
+    if (cond.parentAge !== undefined) {
+      if (ctx.age === undefined) return false;
+      if (!inRange(Math.max(family.motherBirthAge, family.fatherBirthAge) + ctx.age, cond.parentAge)) return false;
+    }
+    if (cond.motherAge !== undefined) {
+      if (ctx.age === undefined) return false;
+      if (!inRange(family.motherBirthAge + ctx.age, cond.motherAge)) return false;
+    }
+  }
   if (cond.parenting && !cond.parenting.includes(ctx.character.parenting)) return false;
   if (cond.gender && !cond.gender.includes(ctx.character.gender)) return false;
   if (cond.flags && !cond.flags.every((f) => ctx.flags.has(f))) return false;
@@ -311,7 +346,7 @@ function checkEnumList<T extends string>(v: unknown, all: readonly T[], path: st
 
 function checkCondition(v: unknown, path: string, p: Problems): void {
   if (!isObj(v)) return void p.add(path, '조건 객체여야 한다');
-  checkKeys(v, ['stats', 'looks', 'parentWealth', 'parenting', 'gender', 'flags', 'notFlags'], [], path, p);
+  checkKeys(v, ['stats', 'looks', 'parentWealth', 'birthOrder', 'parentAge', 'motherAge', 'parenting', 'gender', 'flags', 'notFlags'], [], path, p);
   if (Object.keys(v).length === 0) p.add(path, '빈 조건이다 (항목을 쓰거나 조건 자체를 빼야 한다)');
   if (v.stats !== undefined) {
     if (!isObj(v.stats)) p.add(`${path}.stats`, '{ 스탯이름: { min, max } } 객체여야 한다');
@@ -325,6 +360,9 @@ function checkCondition(v: unknown, path: string, p: Problems): void {
   }
   if (v.looks !== undefined) checkRange(v.looks, `${path}.looks`, 0, 100, p);
   if (v.parentWealth !== undefined) checkRange(v.parentWealth, `${path}.parentWealth`, PARENT_WEALTHS[0], PARENT_WEALTHS[PARENT_WEALTHS.length - 1], p);
+  if (v.birthOrder !== undefined) checkRange(v.birthOrder, `${path}.birthOrder`, 1, BIRTH_ORDER_MAX, p);
+  if (v.parentAge !== undefined) checkRange(v.parentAge, `${path}.parentAge`, 0, PARENT_AGE_MAX, p);
+  if (v.motherAge !== undefined) checkRange(v.motherAge, `${path}.motherAge`, 0, PARENT_AGE_MAX, p);
   if (v.parenting !== undefined) checkEnumList(v.parenting, PARENTING_STYLES, `${path}.parenting`, p);
   if (v.gender !== undefined) checkEnumList(v.gender, GENDERS, `${path}.gender`, p);
   const flagsOk = v.flags === undefined ? true : checkFlagList(v.flags, `${path}.flags`, p);

@@ -1,0 +1,335 @@
+{
+ "files": 11,
+ "vps": [
+  "1024x768",
+  "1280x620",
+  "1280x800",
+  "320x256-zoom400",
+  "320x568",
+  "360x568",
+  "360x740-touch",
+  "375x812",
+  "640x400-zoom200",
+  "667x375-landscape",
+  "768x1024"
+ ],
+ "stateKeys": 41,
+ "rows": 1947,
+ "errors": [],
+ "wbAudits": 1353,
+ "words": 283326,
+ "chars": 824466,
+ "shy": 0,
+ "wbrParents": [
+  "다이아몬드수저"
+ ],
+ "brokenN": 0,
+ "broken": [],
+ "unavoidableN": 26,
+ "unavoidableByWordFont": [
+  [
+   "전남광주통합특별시@200%",
+   18
+  ],
+  [
+   "제주특별자치도@200%",
+   4
+  ],
+  [
+   "전북특별자치도@200%",
+   2
+  ],
+  [
+   "강원특별자치도@200%",
+   2
+  ]
+ ],
+ "unavoidableAt100": [],
+ "intendedN": 36,
+ "intendedByWordFont": [
+  [
+   "다이아몬드수저@100%@320x256-zoom400",
+   6
+  ],
+  [
+   "다이아몬드수저@100%@320x568",
+   6
+  ],
+  [
+   "다이아몬드수저@200%@320x256-zoom400",
+   4
+  ],
+  [
+   "다이아몬드수저@200%@320x568",
+   4
+  ],
+  [
+   "다이아몬드수저@200%@360x568",
+   4
+  ],
+  [
+   "다이아몬드수저@200%@360x740-touch",
+   4
+  ],
+  [
+   "다이아몬드수저@150%@360x568",
+   2
+  ],
+  [
+   "다이아몬드수저@150%@360x740-touch",
+   2
+  ],
+  [
+   "다이아몬드수저@150%@375x812",
+   2
+  ],
+  [
+   "다이아몬드수저@200%@375x812",
+   2
+  ]
+ ],
+ "intendedBad": [],
+ "minWords": {
+  "result": 93,
+  "roulette-reduced": 107,
+  "birth": 213,
+  "title": 175,
+  "carousel": 175,
+  "spin": 96
+ },
+ "catsSeen": {
+  "result:head": 231,
+  "result:h1": 693,
+  "result:h2h3": 693,
+  "result:chip": 1155,
+  "result:reel": 2310,
+  "result:table": 9372,
+  "result:foot": 1617,
+  "result:bar": 462,
+  "roulette-reduced:head": 33,
+  "roulette-reduced:h1": 99,
+  "roulette-reduced:h2h3": 99,
+  "roulette-reduced:chip": 165,
+  "roulette-reduced:reel": 330,
+  "roulette-reduced:table": 1386,
+  "roulette-reduced:foot": 231,
+  "roulette-reduced:bar": 66,
+  "birth:head": 990,
+  "birth:h1": 990,
+  "birth:band": 2970,
+  "birth:stamp": 495,
+  "birth:name": 495,
+  "birth:sentence": 7557,
+  "birth:field": 27159,
+  "birth:chip": 2475,
+  "birth:h2h3": 3300,
+  "birth:peers": 10494,
+  "birth:table": 14880,
+  "birth:source": 3630,
+  "birth:foot": 42834,
+  "birth:bar": 495,
+  "title:head": 3267,
+  "title:h2h3": 396,
+  "title:bar": 495,
+  "carousel:head": 15246,
+  "carousel:h2h3": 3098,
+  "carousel:bar": 462,
+  "spin:head": 33,
+  "spin:h1": 165,
+  "spin:h2h3": 99,
+  "spin:chip": 166,
+  "spin:reel": 338,
+  "spin:table": 1386,
+  "spin:bar": 33
+ },
+ "tally": {
+  "정해졌습니다": {
+   "broken": 0,
+   "unavoidable": 0,
+   "intended": 0,
+   "unavoidableCombos": [],
+   "intendedCombos": []
+  },
+  "다이아몬드수저": {
+   "broken": 0,
+   "unavoidable": 0,
+   "intended": 36,
+   "unavoidableCombos": [],
+   "intendedCombos": [
+    [
+     "320x256-zoom400/100%/span<span.grade<li.reel__item",
+     6
+    ],
+    [
+     "320x568/100%/span<span.grade<li.reel__item",
+     6
+    ],
+    [
+     "320x256-zoom400/200%/span<span.grade<span.grade-line",
+     2
+    ],
+    [
+     "320x256-zoom400/200%/span<span.grade<li[peer]",
+     2
+    ],
+    [
+     "320x568/200%/span<span.grade<span.grade-line",
+     2
+    ],
+    [
+     "320x568/200%/span<span.grade<li[peer]",
+     2
+    ],
+    [
+     "360x568/150%/span<span.grade<span.grade-line",
+     2
+    ],
+    [
+     "360x568/200%/span<span.grade<span.grade-line",
+     2
+    ],
+    [
+     "360x568/200%/span<span.grade<li[peer]",
+     2
+    ],
+    [
+     "360x740-touch/150%/span<span.grade<span.grade-line",
+     2
+    ],
+    [
+     "360x740-touch/200%/span<span.grade<span.grade-line",
+     2
+    ],
+    [
+     "360x740-touch/200%/span<span.grade<li[peer]",
+     2
+    ]
+   ]
+  },
+  "단순노무직": {
+   "broken": 0,
+   "unavoidable": 0,
+   "intended": 0,
+   "unavoidableCombos": [],
+   "intendedCombos": []
+  },
+  "서비스직": {
+   "broken": 0,
+   "unavoidable": 0,
+   "intended": 0,
+   "unavoidableCombos": [],
+   "intendedCombos": []
+  },
+  "제주특별자치도": {
+   "broken": 0,
+   "unavoidable": 4,
+   "intended": 0,
+   "unavoidableCombos": [
+    [
+     "320x256-zoom400/200%/p[birth-sentence]<div.doc__body<article.doc",
+     2
+    ],
+    [
+     "320x568/200%/p[birth-sentence]<div.doc__body<article.doc",
+     2
+    ]
+   ],
+   "intendedCombos": []
+  },
+  "전남광주통합특별시": {
+   "broken": 0,
+   "unavoidable": 18,
+   "intended": 0,
+   "unavoidableCombos": [
+    [
+     "320x256-zoom400/200%/p[birth-sentence]<div.doc__body<article.doc",
+     2
+    ],
+    [
+     "320x256-zoom400/200%/dd[birth-place]<div[birth-field-place]<dl[birth-grid]",
+     2
+    ],
+    [
+     "320x568/200%/p[birth-sentence]<div.doc__body<article.doc",
+     2
+    ],
+    [
+     "320x568/200%/dd[birth-place]<div[birth-field-place]<dl[birth-grid]",
+     2
+    ],
+    [
+     "360x568/200%/p[birth-sentence]<div.doc__body<article.doc",
+     2
+    ],
+    [
+     "360x568/200%/dd[birth-place]<div[birth-field-place]<dl[birth-grid]",
+     2
+    ],
+    [
+     "360x740-touch/200%/p[birth-sentence]<div.doc__body<article.doc",
+     2
+    ],
+    [
+     "360x740-touch/200%/dd[birth-place]<div[birth-field-place]<dl[birth-grid]",
+     2
+    ],
+    [
+     "375x812/200%/p[birth-sentence]<div.doc__body<article.doc",
+     2
+    ]
+   ],
+   "intendedCombos": []
+  },
+  "초중고사교육비조사": {
+   "broken": 0,
+   "unavoidable": 0,
+   "intended": 0,
+   "unavoidableCombos": [],
+   "intendedCombos": []
+  }
+ },
+ "h1": {
+  "count": 1485,
+  "words": 3575,
+  "bad": [],
+  "badN": 0,
+  "jeongHae": {
+   "checked": 440,
+   "fonts": [
+    100,
+    125,
+    150,
+    175,
+    200
+   ],
+   "vps": [
+    "1024x768",
+    "1280x620",
+    "1280x800",
+    "320x256-zoom400",
+    "320x568",
+    "360x568",
+    "360x740-touch",
+    "375x812",
+    "640x400-zoom200",
+    "667x375-landscape",
+    "768x1024"
+   ],
+   "bad": []
+  },
+  "byKind": [
+   [
+    "birth-heading",
+    825
+   ],
+   [
+    "roulette-heading",
+    495
+   ],
+   [
+    "title-heading",
+    165
+   ]
+  ]
+ }
+}
