@@ -16,6 +16,7 @@ import {
   type StorageLike,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
+import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { startLife } from '../scripts/simulateLib';
 
 /**
@@ -179,7 +180,7 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
     'history: title이 너무 김': d(mid, (x) => (x.history[0].title = '가'.repeat(61))),
     'history: choice가 너무 김': d(mid, (x) => (x.history[0].choice = '가'.repeat(81))),
     'history: 항목 나이가 현재 나이보다 큼': d(mid, (x) => x.history.push({ age: x.age + 1, kind: 'event', text: '미래' })),
-    'history: 161개(상한 초과)': d(mid, (x) => (x.history = Array.from({ length: 161 }, () => ({ age: 0, kind: 'event', text: 'x' })))),
+    'history: 301개(상한 초과)': d(mid, (x) => (x.history = Array.from({ length: 301 }, () => ({ age: 0, kind: 'event', text: 'x' })))),
     // 인생 시작 전에는 진행 기록이 비어 있어야 한다
     'title인데 연표가 있음': d(mid, (x) => {
       x.phase = 'title';
@@ -348,3 +349,43 @@ describe('콘텐츠 갱신으로 대기 중이던 이벤트가 사라진 저장:
   });
 });
 
+
+describe('연표 상한 300 (SPEC-003 DB12)과 저장 크기', () => {
+  it('상한은 300이다: 300줄은 저장·복원되고 301줄은 손상으로 새 게임이다', () => {
+    expect(HISTORY_LIMITS.maxEntries).toBe(300);
+    const make = (n: number) => {
+      const x = clone(mid);
+      x.history = Array.from({ length: n }, (_, i) => ({ age: 0, kind: i === 0 ? 'stage' : 'event', text: `기록 ${i}` }));
+      return x;
+    };
+    expect(parseGame(raw(make(300)))?.history).toHaveLength(300);
+    expect(parseGame(raw(make(301)))).toBeNull();
+  });
+
+  it('최악 판의 저장 크기 ≤ 200KB(▲): 모든 줄이 길이 상한(본문 400·제목 60·선택 80자)을 꽉 채운 300줄과 상한 가까운 플래그·본 이벤트가 있어도 JSON이 20만 자를 넘지 않는다', () => {
+    const { maxTextLength, maxTitleLength, maxChoiceLength, maxEntries } = HISTORY_LIMITS;
+    const x = clone(mid);
+    x.history = Array.from({ length: maxEntries }, () => ({
+      age: 0,
+      kind: 'choice',
+      text: '가'.repeat(maxTextLength),
+      title: '나'.repeat(maxTitleLength),
+      choice: '다'.repeat(maxChoiceLength),
+      eventId: 'e'.repeat(48),
+    }));
+    x.flags = Array.from({ length: 60 }, (_, i) => `flag_${String(i).padStart(2, '0')}`).sort();
+    const text = raw(x);
+    expect(parseGame(text), '최악 판도 검증을 통과해 복원된다').not.toBeNull();
+    // 화면 글자 수(UTF-16 코드 단위) 기준 — 브라우저 저장소 용량도 글자 수로 센다. 실제 이벤트 글(권장 최대 제목 16·본문 70·라벨 24·결과 80자)은 이 상한보다 훨씬 짧다.
+    expect(text.length, `최악 판 저장 ${text.length}자`).toBeLessThanOrEqual(200_000);
+    expect(text.length, '공허 통과 방지: 실제로 상한을 꽉 채운 판이다').toBeGreaterThan(150_000);
+  });
+
+  it('정상 플레이의 저장은 훨씬 작다: 세 시대 자동 완주 판의 저장이 30KB(글자 수)를 넘지 않는다', () => {
+    for (const era of ['past', 'present', 'future'] as const) {
+      const end = playToEnd(startLife(11, era)).state;
+      const text = serializeGame(end);
+      expect(text.length, era).toBeLessThanOrEqual(30_000);
+    }
+  });
+});

@@ -1,8 +1,23 @@
 import { EVENT_POOL } from '../data/events';
 import type { EventPool } from './events';
 import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type TickInfo } from './life';
-import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth } from './state';
-import { ERAS, SPEEDS, isLifeLengthSelectable, type Era, type GameState, type LifeLength, type PlaySettings, type Settings, type Speed } from './types';
+import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth, setPaused } from './state';
+import {
+  BGM_VOLUME_MAX,
+  BGM_VOLUME_MIN,
+  ERAS,
+  SPEEDS,
+  THEMES,
+  isLifeLengthSelectable,
+  type BgmSettings,
+  type Era,
+  type GameState,
+  type LifeLength,
+  type PlaySettings,
+  type Settings,
+  type Speed,
+  type ThemeChoice,
+} from './types';
 
 /**
  * 화면(UI)이 쓰는 상태 묶음과 reducer. 순수 함수라서 React 없이 vitest로 검증한다(R-005).
@@ -19,6 +34,10 @@ import { ERAS, SPEEDS, isLifeLengthSelectable, type Era, type GameState, type Li
  *    룰렛 도중·직후 새로고침하면 spin이 꺼진 채 열려 룰렛이 다시 돌지 않고 결과가 확정된 모습으로 복원된다(RL5).
  *  - enterBirth(「출생신고 보기」): roulette 단계에서만 동작하고 한 번 동작하면 단계가 바뀌어 연타해도 한 번이다. 연출 중(spin)에는 무시 — 건너뛰기를 먼저 눌러야 한다(결과가 확정되어 보이기 전에 넘어가지 않는다).
  *  - rebirth(seed): ending 단계에서만 동작하고 새 판은 첫 화면(title)에서 시작한다 → 더블탭·연타의 둘째 입력은 같은 객체를 돌려받아 두 판이 시작되지 않는다. 설정(배속·자동 모드·세상·인생 길이)은 그대로다.
+ *  - setPaused(paused): 인생 화면의 「일시정지/다시 진행」(DB3). 인생 단계에서만, 값이 같으면 같은 객체(연타가 상태를 흔들지 않는다). 연출 시간 결정용 걸음(tick)은 그대로 둔다 — 멈췄다 풀어도 그 해의 연출이 이어진다.
+ *    멈춰 있는 동안에는 해마다 진행(advance)과 자동 선택(autoChoose)이 무시된다(늦게 울린 타이머가 멈춘 인생을 한 걸음 진행시키지 않게). 사람이 하는 선택(choose)과 「다음 결정으로」(skip)는 막지 않는다.
+ *  - openTitle(「나가기」): 인생 단계에서는 **일시정지 상태로** 첫 화면을 연다(DB8) — 일시정지는 저장되는 판 상태라 새로고침해도, 「이어서 살기」로 돌아와도 멈춘 채 열린다(사용자가 「다시 진행」을 눌러야 흐른다).
+ *  - setBgm / setTheme: 대시보드 도구 줄의 BGM(켬/끔·볼륨)과 다크 모드(수동 선택 저장). 설정이라 어느 화면에서든 받는다.
  * 무시되는 경우에는 같은 객체를 돌려준다(React가 다시 그리지 않는다).
  *
  * 첫 화면을 다시 연 상태(showTitle): 「나가기」(M4)가 진행 중인 판(birth·life)을 그대로 두고 첫 화면만 보여 줄 때 켜진다.
@@ -60,6 +79,12 @@ export type SessionAction =
   | { type: 'skip' }
   | { type: 'setSpeed'; speed: Speed }
   | { type: 'setAuto'; auto: boolean }
+  /** 인생 화면: 일시정지/다시 진행 (인생 단계에서만, 저장되는 판 상태) */
+  | { type: 'setPaused'; paused: boolean }
+  /** 인생 화면 도구 줄: BGM 켬/끔·볼륨(일부만 줘도 된다. 볼륨은 0~100 정수로 맞춘다) */
+  | { type: 'setBgm'; bgm: Partial<BgmSettings> }
+  /** 인생 화면 도구 줄: 화면 테마 수동 선택 */
+  | { type: 'setTheme'; theme: ThemeChoice }
   /** 엔딩에서 새 시드로 새 판을 시작해 첫 화면으로 간다(설정은 그대로). 시드는 UI가 정해 넘긴다. */
   | { type: 'rebirth'; seed: number }
   /** 다른 탭이 진행한 저장 상태를 이어받는다(R-011) */
@@ -95,7 +120,8 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
       return game === s.game ? s : { ...s, game, tick: null, spin: true };
     }
     case 'openTitle':
-      return s.showTitle || !hasProgress(s.game) ? s : { ...s, showTitle: true, tick: null, spin: false };
+      // 인생 중이면 일시정지 상태로 저장한다(DB8). 출생신고·룰렛 단계는 흐르는 시간이 없어 일시정지가 의미 없다.
+      return s.showTitle || !hasProgress(s.game) ? s : { ...s, game: setPaused(s.game, true), showTitle: true, tick: null, spin: false };
     case 'resume':
       return s.showTitle ? { ...s, showTitle: false } : s;
     case 'beginNew': {
@@ -110,7 +136,7 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
     case 'enterLife':
       return withGame(s, enterLife(s.game));
     case 'advance': {
-      if (s.game.age !== a.fromAge) return s;
+      if (s.game.age !== a.fromAge || s.game.paused) return s;
       const r = stepYear(s.game, pool);
       return withGame(s, r.state, r.tick);
     }
@@ -119,12 +145,13 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
       return withGame(s, r.state, r.tick);
     }
     case 'autoChoose': {
-      if (!s.settings.autoMode) return s;
+      if (!s.settings.autoMode || s.game.paused) return s;
       const r = autoResolveStep(s.game, a.key, pool);
       return withGame(s, r.state, r.tick);
     }
     case 'skip': {
       // 다음 결정으로: 선택지(또는 사망)까지 연출 없이 즉시. 선택은 사람이 한다(자동 모드에서는 이 동작이 없다 — 위 설명).
+      // 일시정지(`paused`) 중에도 동작한다 — 사용자가 직접 누르는 입력이라 시계(advance·autoChoose가 멈춘다)와 상관이 없고, 선택지에서 멈춘 판은 일시정지 그대로다(R-331, tests/dashSession.test.ts).
       if (s.settings.autoMode || s.game.phase !== 'life' || s.game.pending !== null) return s;
       const r = advanceUntilDecision(s.game, pool);
       return withGame(s, r.state, r.last);
@@ -135,6 +162,19 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
         : { ...s, settings: { ...s.settings, speed: a.speed } };
     case 'setAuto':
       return a.auto === s.settings.autoMode ? s : { ...s, settings: { ...s.settings, autoMode: a.auto } };
+    case 'setPaused': {
+      if (s.showTitle) return s;
+      const game = setPaused(s.game, a.paused);
+      return game === s.game ? s : { ...s, game }; // tick은 그대로(위 설명)
+    }
+    case 'setBgm': {
+      const on = typeof a.bgm.on === 'boolean' ? a.bgm.on : s.settings.bgm.on;
+      const raw = a.bgm.volume;
+      const volume = typeof raw === 'number' && Number.isFinite(raw) ? Math.min(BGM_VOLUME_MAX, Math.max(BGM_VOLUME_MIN, Math.round(raw))) : s.settings.bgm.volume;
+      return on === s.settings.bgm.on && volume === s.settings.bgm.volume ? s : { ...s, settings: { ...s.settings, bgm: { on, volume } } };
+    }
+    case 'setTheme':
+      return !(THEMES as readonly string[]).includes(a.theme) || a.theme === s.settings.theme ? s : { ...s, settings: { ...s.settings, theme: a.theme } };
     case 'rebirth':
       return withGame(s, rebirth(s.game, a.seed));
     case 'adopt':

@@ -5,6 +5,7 @@ import { allowedGivenNames, loadRawNames } from './rawNames';
 import {
   KNOWN_SEED,
   RAPID_METHODS,
+  SAVE_VERSION,
   birthState,
   chooseEra,
   expectedBirth,
@@ -456,7 +457,7 @@ test('R-213: M2 시기의 v5 저장(지금 세상 2008~2025년생)은 「손상�
   await expect(page.getByTestId('old-save-notice')).toHaveText('이전 버전에서 저장된 판은 이어서 할 수 없어 새 게임으로 시작합니다.');
   await expect(page.getByTestId('resume')).toHaveCount(0);
   const save = await readSave(page);
-  expect(save.version).toBe(6);
+  expect(save.version).toBe(SAVE_VERSION); // M4: 저장 스키마 6 → 7(일시정지 paused 추가)이라 새 게임의 저장 버전도 7이다. 버전 숫자는 e2e/saves.ts의 SAVE_VERSION(tests/e2eHelpers.test.ts가 core와 대조)
   expect(save.data.phase).toBe('title');
   expect(save.data.seed).not.toBe(5);
 });

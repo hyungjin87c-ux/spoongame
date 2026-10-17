@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ERAS, bandFromRange, playToEnd, reviewEnding, startBandOf, type EndingGame, type EndingReview, type Era } from '../src/core';
+import { ERAS, bandFromRange, looksStanding, playToEnd, reviewEnding, startBandOf, type EndingGame, type EndingReview, type Era } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
+import { BIRTH_TEXT } from '../src/data/birthReportText';
+import { standingLabel } from '../src/data/birthText';
 import { ENDING_HEADINGS, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, journeyText } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { splitStanding } from '../src/ui/KeepStanding';
@@ -32,9 +34,22 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(html).toContain(ENDING_HEADINGS.timeline);
   });
 
-  it('제목(h1)은 이름이고 tabindex=-1이다(화면이 뜨면 포커스를 받는다). 시대 이름이 위에 있다', () => {
-    expect(html).toMatch(new RegExp(`<h1[^>]*tabindex="-1"[^>]*data-testid="ending-name"[^>]*>${game.character.name}</h1>`));
+  it('제목(h1)은 「{이름}의 인생」이고 tabindex=-1이다(화면이 뜨면 포커스를 받는다). 시대 이름이 위에 있다 — 바뀐 기대(M4): 예전 제목은 이름뿐이었다. 공통 헤더(DS1)가 게임명 로고와 화면 이름을 맡으므로 h1은 화면의 메시지다(docs/design/copy.md 엔딩 헤더 행)', () => {
+    expect(html).toMatch(new RegExp(`<h1[^>]*tabindex="-1"[^>]*data-testid="ending-name"[^>]*>${game.character.name}의 인생</h1>`));
     expect(html).toContain(ERA_CONFIG[game.era].label);
+  });
+
+  it('공통 헤더(DS1): 게임명 로고와 화면 이름 「엔딩」이 있고, 옛 <h1>수저 게임</h1>은 없다 — h1은 하나뿐이다 (M4)', () => {
+    expect(html).toContain('data-testid="site-head"');
+    expect(html).toContain('data-testid="header-logo"');
+    expect(html).toMatch(/<span class="site-head__name">엔딩<\/span>/);
+    expect(html.match(/<h1/g)).toHaveLength(1);
+    expect(textOf(html.match(/<h1[^>]*>([^]*?)<\/h1>/)![1])).not.toBe('수저 게임');
+  });
+
+  it('얼굴: 마지막 나이의 얼굴 한 장이 제목 곁에 있다 (DS4 — 엔딩에도 적용)', () => {
+    expect((html.match(/data-testid="face"/g) ?? []).length).toBe(1);
+    expect(html).toMatch(/class="face face--lg" data-testid="face" data-age-group="[a-z]+"/);
   });
 
   it('출생·사망 한 줄: 몇 년에 태어나 몇 세에 어떤 원인으로 떠났는지, 선택의 순간 수', () => {
@@ -55,11 +70,16 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(text).toContain('숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다');
   });
 
-  it('최종 스탯: 재산·학력·건강·행복·관계·외모의 마지막 값이 모두 있다. "처음 N"은 학력·행복·관계에만 붙는다 (재산·건강·외모는 원값 비교 금지)', () => {
+  it('최종 스탯: 재산·지식(학력)·건강·행복·관계의 마지막 값과 외모(「상위/하위 약 N%」)가 있다. "처음 N"은 지식·행복·관계에만 붙는다 (재산·건강·외모는 원값 비교 금지) — 외모는 원점수 없이 순위 문구만 (R-135, M4)', () => {
     for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships'] as const) {
       expect(html).toMatch(new RegExp(`data-testid="final-${key}">${game.stats[key]}<`));
     }
-    expect(html).toMatch(new RegExp(`data-testid="final-looks">${game.character.looks}<`));
+    // 바뀐 기대(M4): 예전에는 외모 막대에 원점수(「외모 53」)가 있었다. 엔딩 어디에도 원점수가 없고 「상위/하위 약 N%」(또는 가운데 문구)만 있다.
+    const looksCell = html.match(/data-testid="final-looks">([^]*?)<\/dd>/)![1];
+    expect(textOf(looksCell)).toBe(`${standingLabel(looksStanding(game.character.looks))} ${BIRTH_TEXT.looksSub}`);
+    expect(textOf(html)).not.toMatch(/외모\s*\d+\s*점/);
+    expect(html).not.toMatch(/data-stat="looks"/);
+    expect(html).not.toMatch(new RegExp(`data-testid="final-looks">\\s*${game.character.looks}\\s*<`));
     for (const key of ['education', 'happiness', 'relationships'] as const) {
       expect(html).toMatch(new RegExp(`data-testid="started-${key}">처음 ${game.birthStats[key]}<`));
     }
@@ -74,7 +94,9 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(choices.length).toBeGreaterThan(5);
     for (const c of choices) expect(textOf(html)).toContain(`선택: ${c.choice}`);
     // 단계 제목이 순서대로 있다
-    const heads = ['영유아 · 0~6세', '학창 · 7~19세', '청년 · 20~39세', '중년 · 40~64세', '노년 · 65세~'].map((h) => html.indexOf(h));
+    // (단계 제목은 ui/Glue 묶음으로 그려져 숫자+단위 둘레에 span이 낀다 — 태그를 뺀 글자로 찾는다)
+    const plain = textOf(html);
+    const heads = ['영유아 · 0~6세', '학창 · 7~19세', '청년 · 20~39세', '중년 · 40~64세', '노년 · 65세~'].map((h) => plain.indexOf(h));
     expect(heads.every((i) => i > -1)).toBe(true);
     expect(heads).toEqual([...heads].sort((a, b) => a - b));
     // 출생이 맨 앞, 사망이 맨 뒤
@@ -107,7 +129,8 @@ describe('엔딩 화면: 금지된 것이 없다 (SPEC "안 할 것" · 등급�
   it('공유·SNS·결과 카드·링크·이미지가 없다 (SNS 공유 결과 카드는 MVP에서 하지 않는다)', () => {
     for (const g of games) {
       const html = render(g);
-      expect(html).not.toMatch(/<a[\s>]|<img|<canvas|<audio|<video|<svg|navigator\.share/);
+      // (M4: 공통 헤더 로고·얼굴·아이콘이 인라인 <svg>라 svg는 더는 금지 목록이 아니다 — 공유·링크·이미지 파일·캔버스·소리가 없다는 뜻은 그대로다)
+      expect(html).not.toMatch(/<a[\s>]|<img|<canvas|<audio|<video|navigator\.share/);
       expect(textOf(html)).not.toMatch(/공유|SNS|트위터|인스타|카카오톡|복사|저장하기|이미지로/);
       expect((html.match(/<button/g) ?? []).length).toBe(1); // 다시 태어나기 하나뿐
     }
@@ -143,8 +166,8 @@ describe('엔딩 화면: 스무 살 전에 끝난 인생', () => {
     expect(journey).toMatch(/^.+의 집에서 태어났다\.$/);
     expect(journey).not.toMatch(/내가 가진 것|생이 끝|견줄|스무 살/);
     expect(text).not.toContain('형편으로 생을 마쳤다');
-    expect(html).toMatch(/<span>집안 형편<\/span>/);
-    expect(html).not.toMatch(/<span>재산<\/span>/);
+    expect(html).toMatch(/<span class="meter__label">집안 형편<\/span>/);
+    expect(html).not.toMatch(/<span class="meter__label">재산<\/span>/);
   });
 
   it('연표와 최종 스탯은 그대로 나온다 (선택 기록 수만큼)', () => {

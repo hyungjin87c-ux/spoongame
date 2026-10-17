@@ -1127,10 +1127,11 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
   });
 
   it('설정(배속·자동 모드·고른 세상과 인생 길이)은 그대로 유지된다, tick은 비워진다, 인생 도중의 rebirth는 무시된다', () => {
-    const s0 = createSession(ended(), { speed: 4, autoMode: true, era: 'future', lifeLength: 'long60' });
+    const s0 = createSession(ended(), { speed: 4, autoMode: true, era: 'future', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark' });
     const s1 = sessionReducer(s0, { type: 'rebirth', seed: 5 });
     expect(s1.settings).toBe(s0.settings);
-    expect(s1.settings).toEqual({ speed: 4, autoMode: true, era: 'future', lifeLength: 'long60' });
+    // M4: 설정에 BGM·테마가 더해졌고, 다시 태어나도 그대로 유지된다
+    expect(s1.settings).toEqual({ speed: 4, autoMode: true, era: 'future', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark' });
     expect(s1.tick).toBeNull();
     const life = createSession(startLife(3, 'present'), { speed: 2, autoMode: false });
     expect(sessionReducer(life, { type: 'rebirth', seed: 5 })).toBe(life);

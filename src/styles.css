@@ -1,8 +1,11 @@
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; margin: 0; }
-/* 바탕·글자색은 디자인 토큰(styles/tokens.css)이 정한다(REV-003-M2-2 R-223): 시스템이 다크 모드면 JS가 뜨기 전 첫 그림부터 다크 바탕이라 첫 화면이 라이트로 번쩍이지 않는다.
-   옛 화면(출생·인생·엔딩)은 떠 있는 동안 ui/legacyTheme.tsx의 LegacyLight가 <html data-theme="light">를 걸어 라이트 토큰을 받는다(색 구성표·주소 표시줄 색도 함께 라이트).
-   옛 화면을 새로고침으로 직접 열면 React가 뜨기 전 한 프레임은 시스템 다크가 보일 수 있다 — 옛 화면이 새 디자인으로 바뀌는 M3·M4에서 사라지는 임시 문제로 받아들인다. */
+/* 키보드 포커스가 화면 안으로 스크롤될 때 포커스 링(굵기 3px + 간격 2~4px)이 화면 가장자리에 잘리지 않게 위·아래 여유를 둔다(CM10). 하단 띠가 있는 화면(html.has-bottom-bar, styles/title.css)과 고정 머리가 있는 대시보드(html.has-sticky-head, styles/dash.css)는 더 구체적인 규칙이 이 값을 대신한다. */
+html { scroll-padding-block: var(--sp-3); }
+/* 바탕·글자색은 디자인 토큰(styles/tokens.css)이 정한다(REV-003-M2-2 R-223): 시스템이 다크 모드면 JS가 뜨기 전 첫 그림부터 다크 바탕이라 화면이 라이트로 번쩍이지 않는다.
+   설정의 수동 테마(라이트·다크)는 main.tsx가 React가 뜨기 전에 <html data-theme>로 걸어 첫 그림부터 따른다(ui/theme.ts, SPEC-003 DB6).
+   SPEC-003 M4에서 옛 화면(인생·엔딩·밀린 화면·오류 화면)이 모두 새 디자인으로 바뀌어, 고정 색의 옛 화면 규칙(.screen·.life·.stats·.bar·.log·.controls·.choice-panel·.ending 등)과
+   그것을 라이트로 고정하던 장치(ui/legacyTheme.tsx)는 지웠다. 화면별 스타일은 styles/title.css(첫 화면·공통 부품)·doc.css(룰렛·출생신고)·dash.css(대시보드·엔딩·밀린·오류 화면)가 정한다. */
 body {
   font-family: system-ui, -apple-system, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
   background: var(--c-bg);
@@ -11,173 +14,17 @@ body {
   /* 한국어는 띄어쓰기 단위로만 줄을 바꾼다(단어 중간에서 끊기거나 한 글자가 홀로 남는 줄을 줄인다, QA 사용감 3). 한 단어가 줄보다 길 때만 아래 overflow-wrap이 끊는다. */
   word-break: keep-all;
 }
-/* 저장 실패 안내 바(.notice)가 화면 위에 놓여도 세로 스크롤이 생기지 않도록, 화면 높이를 채우는 일은 #root(세로 flex)가 맡고 .screen은 남은 높이를 나눠 쓴다(QA 사용감 6). */
+/* 저장 실패 안내 바(.notice)가 화면 위에 놓여도 세로 스크롤이 생기지 않도록, 화면 높이를 채우는 일은 #root(세로 flex)가 맡고 각 화면의 .page가 남은 높이를 나눠 쓴다(QA 사용감 6). */
 #root { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
-.screen {
-  width: 100%;
-  max-width: 480px;
-  flex: 1 0 auto;
-  margin: 0 auto;
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  text-align: center;
-}
-/* 옛 화면(.screen: 출생·인생·엔딩·밀린 화면·오류 화면) 전용 규칙. 새 첫 화면(.title-page)은 src/styles/title.css가 자기 규칙을 가지므로 h1·button 같은 요소 규칙이 새어 들지 않게
-   `:where(.screen)`로 옛 화면 범위에 한정한다(우선순위는 전과 같다 — :where는 0이라 옛 화면 안의 겹침 순서가 그대로다, REV-003-M2-1 R-215). */
-:where(.screen) h1 { margin: 0; font-size: 2rem; overflow-wrap: anywhere; }
 p { margin: 0; overflow-wrap: anywhere; }
-/* 제목은 줄 길이를 고르게, 본문은 마지막 줄에 한 글자만 남지 않게 (지원하는 브라우저에서만) */
-:where(.screen) :is(h1, h2) { text-wrap: balance; }
+/* 본문은 마지막 줄에 한 글자만 남지 않게 (지원하는 브라우저에서만) */
 p { text-wrap: pretty; }
+/* 출생신고 또래 목록의 장소 줄(.people .sub, doc.css)이 받는 바깥 여백 — M3에서 승인된 모양이라 그대로 둔다(대시보드 또래 칸은 시안대로 여백 없이 dash.css가 덮는다) */
 .sub { margin: 0 0 16px; color: #666; }
-/* 순위 표현("상위 약 23%의")은 줄이 바뀌어도 쪼개지지 않는다 (ui/KeepStanding.tsx) */
+/* 순위 표현("상위 약 23%의")과 짧은 숫자+단위는 줄이 바뀌어도 쪼개지지 않는다 (ui/KeepStanding.tsx, ui/Glue.tsx) */
 .nowrap { white-space: nowrap; }
-/* (옛 타이틀·시대 선택 화면의 규칙 .screen.title·.title-body·.credit·.era-list·.era-card는 첫 화면 개편(SPEC-003 M2)으로 쓰는 곳이 없어 지웠다 — R-215.
-   첫 화면의 출처·카드는 styles/title.css의 .title-foot·.radio-card가 정한다.) */
-:where(.screen) button {
-  min-height: 44px;
-  padding: 10px 20px;
-  font-size: 1rem;
-  border: 0;
-  border-radius: 8px;
-  background: #3a3a3a;
-  color: #fff;
-  cursor: pointer;
-}
-:where(.screen) button.secondary { background: #ddd8cc; color: #2b2b2b; }
-/* 화면 전환 직후 입력 가드(GuardedButton) 중에는 살짝 흐리게 — 곧 눌러도 된다는 신호.
-   호출자가 누를 수 없다고 한 버튼("다음 결정으로"가 선택지 대기·자동 모드일 때)도 같은 aria-disabled라 같은 모양이다(R-036). */
-:where(.screen) button { transition: opacity 0.2s; }
-:where(.screen) button[aria-disabled='true'] { opacity: 0.55; cursor: default; }
-.muted { color: #777; font-size: 0.875rem; }
-.facts { display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 8px 0 16px; }
-/* ---------- 인생 화면 (M3) ---------- */
 /* 화면에는 보이지 않고 스크린리더에만 읽히는 영역(aria-live 알림용) */
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
   clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-}
-/* 화면이 바뀔 때 프로그램이 제목(tabindex=-1)으로 옮기는 포커스는 Tab으로 닿는 곳이 아니라서 링을 그리지 않는다 — 장식처럼 보였다(QA 사용감 2).
-   스크린리더는 제목을 읽고, 키보드 사용자가 닿는 버튼·링크의 포커스 링은 아래에서 그대로 유지한다. */
-:where(.screen) :is(h1, h2):is(:focus, :focus-visible) { outline: none; }
-:where(.screen) :is(button, a):focus-visible { outline: 3px solid #1f6feb; outline-offset: 2px; }
-:where(.screen) button:disabled { opacity: 0.55; cursor: default; } /* aria-disabled와 같은 흐림: 어느 쪽으로 막혀도 같은 모양 */
-/* 저장 실패 안내: 화면 위에 한 줄로 놓이고, 따라다니지 않는다(예전에는 위에 고정돼 낮은 화면을 계속 가렸다, QA 사용감 1·6). 스크롤을 올리면 다시 보이고 role=status로 처음 뜰 때 읽힌다. */
-.notice {
-  flex: none; margin: 0; padding: 6px 16px;
-  background: #fff3cd; color: #5c4400; font-size: 0.8125rem; line-height: 1.4; text-align: center; border-bottom: 1px solid #e6d28a;
-}
-.screen.life {
-  justify-content: flex-start; text-align: left; gap: 14px; padding-bottom: 0;
-}
-.life-head { display: flex; flex-direction: column; gap: 2px; }
-.life-head h1 { font-size: 1.5rem; }
-.life-head p { margin: 0; }
-.status { min-height: 1.5em; }
-.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
-.stat-line { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.9375rem; }
-.bar { height: 6px; background: #ddd8cc; border-radius: 3px; overflow: hidden; margin-top: 2px; }
-.bar-fill { height: 100%; background: #3a3a3a; transition: width 0.3s; }
-.bar-fill.fixed { background: #8a8577; }
-.log { min-width: 0; }
-.log ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.log li { display: flex; gap: 8px; align-items: baseline; font-size: 0.9375rem; color: #555; overflow-wrap: anywhere; }
-.log li.latest { color: #2b2b2b; font-weight: 600; }
-.log-age { flex: none; min-width: 2.75rem; color: #777; font-variant-numeric: tabular-nums; }
-.log-body { min-width: 0; }
-.log-choice { font-style: normal; color: #777; font-weight: 400; }
-.choice-panel {
-  background: #fff; border: 2px solid #3a3a3a; border-radius: 10px; padding: 14px 12px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.choice-panel h2 { margin: 0; font-size: 1.125rem; overflow-wrap: anywhere; }
-.choice-list { display: flex; flex-direction: column; gap: 8px; }
-.choice-list button { text-align: left; overflow-wrap: anywhere; }
-/* 속도 컨트롤은 화면 아래에 붙어 있어 선택지가 길어져도 언제나 보이고 누를 수 있다. */
-.controls {
-  position: sticky; bottom: 0; z-index: 10; margin: auto -16px 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  background: var(--c-bg); border-top: 1px solid #ddd8cc; display: flex; flex-direction: column; gap: 8px;
-}
-.speed-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.speed-row button { padding: 10px 0; background: #ddd8cc; color: #2b2b2b; }
-.speed-row button[aria-pressed='true'] { background: #3a3a3a; color: #fff; }
-.action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.action-row button { padding: 10px 6px; font-size: 0.9375rem; }
-.action-row button[aria-pressed='true'] { background: #3a3a3a; color: #fff; }
-/* ---------- 엔딩 (M5) ---------- */
-.screen.ending { justify-content: flex-start; text-align: left; gap: 22px; }
-.ending-head { display: flex; flex-direction: column; gap: 4px; }
-.ending-head .sub { margin: 0; }
-.ending-head h1 { font-size: 1.75rem; }
-.ending-section { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.ending-section h2 { margin: 0 0 2px; font-size: 1.125rem; }
-.ending-section .stats { gap: 10px 16px; }
-.stat-value { display: inline-flex; align-items: baseline; gap: 8px; }
-.stat-started { font-size: 0.8125rem; }
-.tl-group { min-width: 0; }
-.tl-group h3 { margin: 14px 0 8px; font-size: 1rem; color: #555; }
-.timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.timeline li { display: flex; gap: 8px; align-items: baseline; font-size: 0.9375rem; color: #555; overflow-wrap: anywhere; border-left: 3px solid transparent; padding-left: 8px; }
-.timeline .log-body { display: flex; flex-direction: column; gap: 1px; }
-.timeline li[data-kind='stage'] { color: #777; }
-/* 선택한 순간은 눈에 띄게: 왼쪽 막대 + 고른 문구를 굵게 */
-.timeline li[data-kind='choice'] { color: #2b2b2b; border-left-color: #3a3a3a; }
-.tl-picked { font-weight: 600; }
-.timeline li[data-kind='death'] { color: #2b2b2b; font-weight: 600; }
-.ending-rebirth { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 24px; text-align: center; }
-@media (min-width: 768px) {
-  .screen { max-width: 560px; }
-  :where(.screen) h1 { font-size: 2.5rem; }
-  .screen.life .life-head h1 { font-size: 1.75rem; }
-  .screen.ending .ending-head h1 { font-size: 2rem; }
-  /* 데스크톱: 선택지가 떠도 스탯이 접힘 아래로 밀려나지 않도록 스탯은 3열(두 줄), 컨트롤 바는 한 줄로 줄인다(QA 사용감 1). 800px 높이에서 모두 보인다. */
-  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .screen.life { padding-top: 16px; gap: 12px; }
-  .life-head { flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: 14px; }
-  .life-head .status { flex-basis: 100%; min-height: 1.25em; }
-  .controls { flex-direction: row; align-items: center; gap: 8px; padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
-  .controls .speed-row { flex: 4 1 0; min-width: 0; }
-  .controls .action-row { flex: 5 1 0; min-width: 0; }
-  .controls button { white-space: nowrap; }
-}
-
-/* ---------- 낮은 화면(가로 모드·작은 창·확대) — QA 사용감 1 ---------- */
-/* 하단 컨트롤 바(약 117px)가 낮은 화면을 크게 가렸다. 높이 480px 이하에서는 버튼과 여백을 줄여 두 줄이어도 얇게(약 90px) 한다. */
-@media (max-height: 480px) {
-  .controls { padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); gap: 6px; }
-  .controls button { min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
-  .screen { padding-top: 12px; }
-  .screen.life { gap: 10px; }
-  /* 이름과 나이를 한 줄에 놓아 머리글이 차지하는 높이를 줄인다 */
-  .life-head { flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
-  .life-head h1 { font-size: 1.25rem; }
-  .life-head .status { flex-basis: 100%; min-height: 1.25em; }
-}
-/* 가로로 넓은 낮은 화면(예: 667x375)에서는 속도 버튼과 나머지 버튼을 한 줄에 놓아 컨트롤 바를 한 줄(약 50px)로 줄인다. */
-@media (max-height: 480px) and (min-width: 560px) {
-  .controls { flex-direction: row; align-items: center; gap: 8px; }
-  .controls .speed-row { flex: 4 1 0; min-width: 0; }
-  .controls .action-row { flex: 5 1 0; min-width: 0; }
-  .controls button { white-space: nowrap; }
-}
-
-/* ---------- 강제 색상(고대비) 모드 — QA 사용감 5 ---------- */
-/* 이 모드에서는 배경색이 시스템 색으로 덮여 눌린 버튼과 스탯 막대가 사라졌다. 색이 아니라 모양(굵은 이중 테두리)과 시스템 색(Highlight)으로 구분한다. */
-@media (forced-colors: active) {
-  :where(.screen) button { border: 2px solid ButtonText; }
-  :where(.screen) button[aria-pressed='true'] {
-    forced-color-adjust: none;
-    background: Highlight;
-    color: HighlightText;
-    border: 4px double ButtonText;
-  }
-  :where(.screen) button[aria-disabled='true'], :where(.screen) button:disabled { border-color: GrayText; color: GrayText; }
-  .bar { background: Canvas; border: 1px solid CanvasText; }
-  .bar-fill { forced-color-adjust: none; background: CanvasText; }
-  .bar-fill.fixed { background: GrayText; }
-  .choice-panel { border-color: CanvasText; }
-  .timeline li[data-kind='choice'] { border-left-color: CanvasText; }
 }

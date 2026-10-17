@@ -85,6 +85,35 @@ export const PARENT_AGE_SHIFT_BY_WEALTH: Readonly<Record<ParentWealth, number>> 
 /** 부모 나이의 허용 범위(설계 상한·하한): 시대 보정(ERA_REPORT_ADJUST.parentAgeShift)을 더한 뒤 이 안으로 맞춘다. 지금 세상의 통계 나이(어머니 16~49·아버지 20~54)는 이 안에 있다. */
 export const PARENT_AGE_LIMITS = { min: 16, max: 56 } as const;
 
+// ---------- 형제 순서 ↔ 어머니 나이 (R-330, BR6·CM9) ----------
+
+/*
+ * 출생 순서(N째)와 어머니 나이는 서로 어긋나면 안 된다: 위 형제가 N−1명이면 어머니는 최소 첫 출산 나이(16)에 낳기 시작해 형제마다 최소 2살 터울로 낳았어야 한다.
+ * **출생 생성기(core/birthReport.ts#rollParentAges)와 식구 카드(core/family.ts#familyOf)가 이 한 곳의 상수·함수를 같이 쓴다** — 한쪽만 바뀌어 출생신고 문장의 「둘째입니다」와
+ * 식구 카드의 위 형제 수가 어긋나는 일이 없게 하려는 것이다(설계값, 통계가 아님).
+ */
+/** 어머니가 첫 아이를 낳을 수 있는 가장 어린 나이 — 출생신고의 부모 나이 하한과 같다 */
+export const MIN_FIRST_BIRTH_AGE = PARENT_AGE_LIMITS.min;
+/** 위 형제 한 명당 나이 차 범위(살) — 시드로 고른다. min은 어머니의 최소 터울이기도 하다 */
+export const SIBLING_GAP = { min: 2, max: 5 } as const;
+/** 위 형제 수의 상한 (형제 순서 5 = 「다섯째 이상」) */
+export const MAX_OLDER_SIBLINGS = 4;
+
+/** 형제 순서(1~5)가 말하는 위 형제 수: N째이면 N−1명, 다섯째 이상은 4명 */
+export function olderSiblingsOf(order: number): number {
+  return Math.min(MAX_OLDER_SIBLINGS, Math.max(0, order - 1));
+}
+
+/** 출생 때 어머니 나이가 이 값일 때 위로 낳을 수 있었던 형제 수의 한도: ⌊(어머니 나이 − 16) / 2⌋ */
+export function olderSiblingLimit(motherAge: number): number {
+  return Math.floor(Math.max(0, motherAge - MIN_FIRST_BIRTH_AGE) / SIBLING_GAP.min);
+}
+
+/** 이 형제 순서로 태어나려면 출생 때 어머니가 적어도 몇 살이어야 하는가 (첫째 16, 둘째 18, 셋째 20, 넷째 22, 다섯째 이상 24) */
+export function minMotherAgeForOrder(order: number): number {
+  return MIN_FIRST_BIRTH_AGE + SIBLING_GAP.min * olderSiblingsOf(order);
+}
+
 /**
  * 아버지 − 어머니 나이 차 규칙(설계값): 통계에는 부부 나이 차의 분포가 없다. 어머니·아버지의 공표 연령 분포(구간 비중·평균)를 그대로 가장자리로 하고, 그 둘을 잇는 결합 분포를
  * 나이 차가 [min, max] 안인 조합으로만 만든다. peak·spread는 결합 분포의 초기 모양(peak 둘레의 종 모양, 폭 spread)일 뿐이고 실제 나이 차 평균은 두 공표 평균의 차(36.1 − 33.8 = 2.3살)로 정해진다.

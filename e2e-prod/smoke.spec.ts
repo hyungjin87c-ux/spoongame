@@ -3,6 +3,7 @@ import { HOLD_MS } from '../src/data/timingTable';
 import { readThemeBlocks, themeTokens } from '../scripts/checkContrastLib';
 import { BASIS_B_SPLIT, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from '../e2e/carouselForms';
 import { slideCount } from '../e2e/carouselHelpers';
+import { SETTINGS_KEY, settingsEnvelope } from '../e2e/saves';
 import { collectSlideDom, type SlideDom } from '../e2e/slideText';
 import { measureTextResize, setRootFontPercent, textResizeViolations } from '../e2e/textResize';
 import { NO_CONTAINER_QUERIES, WITH_CONTAINER_QUERIES, cssAppliedBy } from '../tests/helpers/browserCss';
@@ -48,10 +49,111 @@ test('프로덕션 번들: 첫 화면 → 태어나기 → 룰렛 → 출생신�
   await expect(page.getByTestId('life-age')).toContainText('0세');
   for (const label of ['1배', '2배', '4배', '8배']) await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
   await expect(page.getByTestId('auto')).toBeVisible();
+  // M4 대시보드: 일시정지, 도구 줄 5개, 올해 진행률 바, 프로필·상태·자산·인생 기록·식구·같은 해 태어난 사람들 카드가 제품 번들에서도 그려진다
+  await expect(page.getByTestId('pause')).toBeVisible();
+  for (const id of ['tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit']) await expect(page.getByTestId(id)).toBeVisible();
+  // R-326·R-337: 생각 남기기는 M7c까지 선택할 수 없는 자리(점선·「준비 중」이 접근 가능한 이름에)이고 제품 번들의 CSS도 지속 비활성 모양을 그린다
+  await expect(page.getByTestId('tool-note')).toHaveAccessibleName('생각 남기기 준비 중');
+  await expect(page.getByTestId('tool-note')).toHaveAttribute('data-unavailable', 'true');
+  expect(await page.getByTestId('tool-note').evaluate((el) => getComputedStyle(el).borderTopStyle)).toBe('dashed');
+  await expect(page.getByTestId('year-progress')).toHaveAttribute('role', 'progressbar');
+  for (const id of ['profile-card', 'stats', 'assets-card', 'log', 'family-card', 'peers-now-card']) await expect(page.getByTestId(id)).toBeVisible();
+  await expect(page.getByTestId('peer-now')).toHaveCount(4);
   await expect(page.getByTestId('error-screen')).toHaveCount(0);
   // 인생 화면으로 넘어가면 저장이 남는다
   const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY);
   expect(saved?.data?.phase).toBe('life');
+  expect(errors).toEqual([]);
+});
+
+test('프로덕션 번들: BGM은 기본 꺼짐이고 켜기 전에는 소리 장치(AudioContext)를 만들지 않으며, 켜면 하나만 만들고 끄면 멈춘다. 음원 파일 요청은 없다 (DB4)', async ({ page }) => {
+  const errors = trackErrors(page);
+  const requests: string[] = [];
+  page.on('request', (r) => requests.push(r.url()));
+  await page.addInitScript(() => {
+    const w = window as unknown as { __audioContexts: number; AudioContext?: new () => unknown; webkitAudioContext?: unknown };
+    w.__audioContexts = 0;
+    const Original = w.AudioContext;
+    if (Original === undefined) return;
+    w.AudioContext = class extends (Original as unknown as new () => object) {
+      constructor() {
+        super();
+        w.__audioContexts++;
+      }
+    } as unknown as new () => unknown;
+  });
+  await page.goto('/');
+  await toLifeScreen(page);
+  const count = () => page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts);
+  expect(await count(), '켜기 전에는 AudioContext가 없다 (자동 재생 없음)').toBe(0);
+  const bgm = page.getByTestId('tool-bgm');
+  await expect(bgm).toHaveAttribute('aria-pressed', 'false');
+  await expect(bgm).toBeEnabled();
+  await bgm.click();
+  await expect(bgm).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('bgm-volume-input')).toBeVisible();
+  expect(await count(), '켜면 하나').toBe(1);
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem('suzeo-game:settings')))!).data.bgm.on).toBe(true);
+  await bgm.click();
+  await expect(bgm).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('bgm-volume')).toHaveCount(0);
+  await bgm.click();
+  expect(await count(), '다시 켜도 장치는 새로 만들지 않는다(또는 하나만 더) — 폭주 없음').toBeLessThanOrEqual(2);
+  const audioFiles = requests.filter((u) => /\.(mp3|ogg|wav|m4a|aac|flac|opus|weba)(\?|$)/i.test(u));
+  expect(audioFiles, '음원 파일 요청').toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('프로덕션 번들: 다크 모드 버튼은 수동 선택을 저장해 새로고침 뒤에도 유지하고, 의견 보내기는 새 탭 링크이며, 나가기는 확인 뒤 일시정지로 저장한다. 게임 중 외부 요청은 0이다 (DB6·DB7·DB8·CM3)', async ({ page }) => {
+  const errors = trackErrors(page);
+  const external: string[] = [];
+  page.on('request', (r) => {
+    const url = new URL(r.url());
+    if (url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') external.push(r.url());
+  });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/');
+  await toLifeScreen(page);
+  const theme = () => page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+
+  // 다크 모드: 켜짐 표시 → data-theme=dark, 설정 저장, 새로고침 뒤에도 유지(첫 그림부터)
+  const dark = page.getByTestId('tool-dark');
+  await expect(dark).toHaveAttribute('aria-pressed', 'false');
+  await expect(dark).toBeEnabled();
+  await dark.click();
+  await expect(dark).toHaveAttribute('aria-pressed', 'true');
+  expect(await theme()).toBe('dark');
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem('suzeo-game:settings')))!).data.theme).toBe('dark');
+  await page.reload();
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  expect(await theme()).toBe('dark');
+  await expect(page.getByTestId('tool-dark')).toHaveAttribute('aria-pressed', 'true');
+
+  // 의견 보내기: 진짜 링크(새 탭), 주소에 이름·나이가 없다
+  const feedback = page.getByTestId('tool-feedback');
+  const href = (await feedback.getAttribute('href'))!;
+  expect(href).toMatch(/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/new\?template=feedback\.yml&screen=/);
+  expect(await feedback.getAttribute('target')).toBe('_blank');
+  expect(await feedback.getAttribute('rel')).toBe('noopener noreferrer');
+  const name = (await page.getByTestId('life-name').innerText()).trim();
+  expect(decodeURIComponent(href)).not.toContain(name);
+  expect(decodeURIComponent(href)).toContain('인생 진행 중');
+
+  // 나가기: 확인 단계 → 돌아가기로 닫기 → 다시 열어 나가기 → 첫 화면(이어서 살기) → 일시정지로 저장
+  await page.getByTestId('tool-exit').click();
+  await expect(page.getByTestId('exit-ask')).toBeVisible();
+  await page.getByTestId('exit-no').click();
+  await expect(page.getByTestId('exit-ask')).toHaveCount(0);
+  await page.getByTestId('tool-exit').click();
+  await page.getByTestId('exit-yes').click();
+  await expect(page.getByTestId('resume')).toBeVisible();
+  const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY);
+  expect(saved.data.phase).toBe('life');
+  expect(saved.data.paused, '나가기는 일시정지로 저장한다').toBe(true);
+  await page.getByTestId('resume').click();
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  await expect(page.getByTestId('pause')).toHaveText('다시 진행');
+  expect(external, '게임 중 외부 요청').toEqual([]);
   expect(errors).toEqual([]);
 });
 
@@ -102,7 +204,9 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(page.getByTestId('ending-death')).toContainText(`${saved.data.death.age}세에 세상을 떠났다`);
   await expect(page.getByTestId('ending-journey')).toContainText('의 집에서 태어');
   await expect(page.getByTestId('ending-movement')).toBeVisible();
-  for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships', 'looks']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
+  for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
+  // 바뀐 기대(M4): 외모는 점수 숫자가 아니라 「상위/하위 약 N%」 한 가지로만 (R-135)
+  await expect(page.getByTestId('final-looks')).toContainText(/상위|하위|딱 중간쯤/);
   await expect(page.getByTestId('timeline-entry')).toHaveCount(history.length);
   await expect(page.getByTestId('timeline-picked')).toHaveCount(choices);
   const endingText = (await page.getByTestId('ending-screen').innerText()).replace(/\s+/g, ' ');
@@ -167,11 +271,18 @@ test('프로덕션 번들: 룰렛·출생신고의 안내 문구 — 없는 기�
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   const text = (await page.getByTestId('birth-screen').innerText()).replace(/\s+/g, ' ');
   expect(text).not.toMatch(/대시보드|오른쪽 칸/);
-  expect((await page.locator('[data-testid="peers-card"] p.card__note').innerText()).trim()).toBe('네 사람도 같은 세상에서 나이를 먹습니다.');
+  // M4: 대시보드 또래 칸(VP4)이 생겨 안내에 둘째 문장이 더해졌다 — 문구가 가리키는 칸이 실제로 있는지는 아래에서 살아가기를 눌러 확인한다(문구 ⇔ 기능)
+  expect((await page.locator('[data-testid="peers-card"] p.card__note').innerText()).trim()).toBe(
+    '네 사람도 같은 세상에서 나이를 먹습니다. 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.',
+  );
   // 지금 세상(첫 화면의 기본 선택)이라 비교 표 안내가 있다
   expect((await page.getByTestId('compare-note').innerText()).replace(/\s+/g, ' ').trim()).toBe(
     '평균은 각 통계의 전체 대상(학생, 가구) 기준이고, 이 가정 열은 수저 단계에 맞춘 소득 구간의 값입니다. 단계와 소득 구간의 대응은 게임의 설계값입니다.',
   );
+  await page.getByTestId('next-life').click();
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  await expect(page.getByTestId('peers-now-card').getByRole('heading', { name: '같은 해 태어난 사람들' })).toBeVisible();
+  await expect(page.getByTestId('peer-now')).toHaveCount(4);
   await expect(page.getByTestId('error-screen')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -251,6 +362,100 @@ test('다크 OS에서 JS가 뜨기 전(스크립트를 막은 상태)에도 바�
     expect(seen.body, `${scheme} OS: JS 전 body 바탕`).toBe(bg[scheme]);
     expect(seen.scheme, `${scheme} OS: 색 구성표`).toBe(scheme);
   }
+});
+
+/**
+ * 수동 테마 사전 적용 (QA-003-M4 O02): 다크·라이트를 직접 고른 사용자는 JS 번들이 늦게 와도 첫 그림부터 고른 테마다. `index.html`의 인라인 스크립트가 저장된 설정의 theme을
+ * <html data-theme>에 미리 건다(제품 번들의 CSS는 <link>로 먼저 받아 그려지므로 JS 없이도 첫 그림의 바탕을 실측할 수 있다). 개발 서버용은 e2e/theme-first-paint.spec.ts(번들 전 속성), 판정 대조는 tests/themeInline.test.ts.
+ */
+async function lightDarkBackgrounds(): Promise<{ light: string; dark: string }> {
+  // 토큰 값은 파일(designer 소유)에서 읽는다 — 색을 이 테스트에 적어 두지 않는다(위 R-223 테스트와 같은 방법)
+  const nodeFs = 'node:fs';
+  const fs = (await import(nodeFs)) as { readFileSync(path: string, encoding: 'utf-8'): string };
+  const blocks = readThemeBlocks(fs.readFileSync('src/styles/tokens.css', 'utf-8'));
+  const rgb = (hex: string) => `rgb(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)})`;
+  const bg = { light: rgb(themeTokens(blocks, 'light')['--c-bg']), dark: rgb(themeTokens(blocks, 'dark')['--c-bg']) };
+  expect(bg.light).not.toBe(bg.dark); // 공허 통과 방지
+  return bg;
+}
+
+test('수동 테마 사전 적용: 저장된 수동 선택이 OS 설정과 반대여도, 번들(JS)이 늦게 오는 동안의 첫 그림 바탕이 고른 테마다 — 라이트로 번쩍이지 않는다 (O02). 번들이 뜬 뒤에도 같다', async ({ page }) => {
+  const bg = await lightDarkBackgrounds();
+  // JS 응답을 붙잡는다(지연) — 그 사이가 「JS가 아직 안 온」 첫 그림이다
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+    setTimeout(resolve, 4_000);
+  });
+  await page.route('**/*.js', async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page.emulateMedia({ colorScheme: 'light' }); // OS는 라이트, 사용자가 고른 것은 다크
+  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [SETTINGS_KEY, settingsEnvelope({ speed: 1, autoMode: false, theme: 'dark' })] as const);
+  await page.goto('/', { waitUntil: 'commit' });
+  // CSS가 적용돼 바탕이 투명이 아니게 된 첫 순간의 값을 본다
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  const seen = await page.evaluate(() => ({ body: getComputedStyle(document.body).backgroundColor, scheme: getComputedStyle(document.documentElement).colorScheme, rootEmpty: document.getElementById('root')?.childElementCount === 0 }));
+  expect(seen.rootEmpty, '번들 지연 중이라 React가 아직 안 떴다').toBe(true);
+  expect(seen.body, 'OS는 라이트지만 수동 다크: JS 전 body 바탕이 다크 토큰').toBe(bg.dark);
+  expect(seen.scheme, '색 구성표도 다크').toBe('dark');
+  release();
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '번들이 뜬 뒤에도 같은 바탕').toBe(bg.dark);
+});
+
+test('수동 테마 사전 적용(매트릭스, 스크립트 차단): 수동 라이트·다크는 OS와 상관없이 그 테마이고, system·저장 없음·깨진 저장·모르는 버전은 OS 색을 따른다 (O02)', async ({ browser }) => {
+  const bg = await lightDarkBackgrounds();
+  const manual = (theme: 'light' | 'dark' | 'system') => settingsEnvelope({ speed: 1, autoMode: false, theme });
+  const cases: Array<{ label: string; saved: string | null; os: 'light' | 'dark'; expected: 'light' | 'dark' }> = [
+    { label: '수동 다크 · OS 라이트', saved: manual('dark'), os: 'light', expected: 'dark' },
+    { label: '수동 다크 · OS 다크', saved: manual('dark'), os: 'dark', expected: 'dark' },
+    { label: '수동 라이트 · OS 다크', saved: manual('light'), os: 'dark', expected: 'light' },
+    { label: '수동 라이트 · OS 라이트', saved: manual('light'), os: 'light', expected: 'light' },
+    { label: 'system · OS 다크', saved: manual('system'), os: 'dark', expected: 'dark' },
+    { label: 'system · OS 라이트', saved: manual('system'), os: 'light', expected: 'light' },
+    { label: '저장 없음 · OS 다크', saved: null, os: 'dark', expected: 'dark' },
+    { label: '저장 없음 · OS 라이트', saved: null, os: 'light', expected: 'light' },
+    { label: '깨진 저장(수동 다크로 읽지 않는다) · OS 라이트', saved: '{"version":3,"data":', os: 'light', expected: 'light' },
+    { label: '모르는 버전의 다크 · OS 라이트', saved: JSON.stringify({ version: 4, data: { speed: 1, autoMode: false, theme: 'dark' } }), os: 'light', expected: 'light' },
+  ];
+  for (const c of cases) {
+    const context = await browser.newContext({ viewport: { width: 360, height: 740 } });
+    const p = await context.newPage();
+    await p.route('**/*.js', (route) => route.abort());
+    await p.emulateMedia({ colorScheme: c.os });
+    if (c.saved !== null) await p.addInitScript(([key, value]) => localStorage.setItem(key, value), [SETTINGS_KEY, c.saved] as const);
+    await p.goto('/');
+    await expect(p.locator('#root')).toBeEmpty(); // React가 뜨기 전이다
+    await expect.poll(() => p.evaluate(() => getComputedStyle(document.body).backgroundColor), { message: c.label }).toBe(bg[c.expected]);
+    await context.close();
+  }
+});
+
+test('수동 테마 사전 적용(대조): 인라인 스크립트를 뺀 문서에서는 수동 다크 저장이 있어도 JS 전 첫 그림이 OS 색(라이트)이다 — 위 시험이 스크립트의 부재를 실제로 잡는다 (O02)', async ({ page }) => {
+  const bg = await lightDarkBackgrounds();
+  await page.route('**/*.js', (route) => route.abort());
+  await page.route(/\/$/, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: (await res.text()).replace(/<script>[\s\S]*?<\/script>/, '') });
+  });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [SETTINGS_KEY, settingsEnvelope({ speed: 1, autoMode: false, theme: 'dark' })] as const);
+  await page.goto('/');
+  await expect(page.locator('#root')).toBeEmpty();
+  expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), '스크립트가 없으면 건 값이 없다').toBeNull();
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '스크립트가 없으면 OS 라이트 색으로 번쩍인다').toBe(bg.light);
+});
+
+test('제품 문서(dist/index.html)에 인라인 테마 스크립트가 그대로 들어 있고 base 경로·외부 주소를 만들지 않으며 번들 스크립트보다 앞에 있다 (O02)', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  expect(inline, '인라인(src 없는) 스크립트 하나').toHaveLength(1);
+  expect(inline[0]).toContain("'suzeo-game:settings'");
+  expect(inline[0]).toContain("setAttribute('data-theme'");
+  expect(inline[0]).not.toMatch(/https?:|\/assets\/|\/spoongame/);
+  expect(html.indexOf('<script>'), '번들 스크립트(type=module)보다 앞').toBeLessThan(html.indexOf('<script type="module"'));
 });
 
 /**
@@ -419,7 +624,12 @@ test('제품 번들 CSS(M3, R-302): 컨테이너 3종·@container docbody/cmp·c
   const guarded = /@supports\s*\(\s*width:\s*1cqi\s*\)\s*\{\s*\.roulette__lead \.t-title\s*\{\s*font-size:\s*max\(\s*var\(--fs-lg\)\s*,\s*min\(\s*var\(--fs-2xl\)\s*,\s*calc\(\s*100cqi\s*\/\s*var\(--title-chars\s*,\s*8\)\s*\)\s*\)\s*\)\s*;?\s*\}\s*\}/;
   expect(css, '제목 상한: @supports (width: 1cqi) 안의 max(바닥, min(상한, 100cqi ÷ 칸 수))').toMatch(guarded);
   expect(css, '공허 통과 방지: 번들에 cqi 식이 있다').toMatch(/100cqi/);
-  expect(css.replace(guarded, ''), 'cqi는 그 @supports 블록 밖에 없다(밖에 있으면 모르는 브라우저에서 font-size가 unset)').not.toMatch(/\dcqi\b/);
+  // M4(R-321): 엔딩 「{이름}의 인생」·밀린·오류 화면 메시지의 제목 상한도 같은 모양으로 한 @supports 블록에 있고, 컨테이너(.ending__who·.system .card)가 최소화 뒤에도 살아 있다
+  const guardedDash = /@supports\s*\(\s*width:\s*1cqi\s*\)\s*\{\s*\.ending__who \.t-title\s*\{\s*font-size:\s*max\(\s*var\(--fs-lg\)\s*,\s*min\(\s*var\(--fs-2xl\)\s*,\s*calc\(\s*100cqi\s*\/\s*var\(--title-chars\s*,\s*8\)\s*\)\s*\)\s*\)\s*;?\s*\}\s*\.system h1\s*\{\s*font-size:\s*max\(\s*var\(--fs-md\)\s*,\s*min\(\s*var\(--fs-xl\)\s*,\s*calc\(\s*100cqi\s*\/\s*var\(--title-chars\s*,\s*8\)\s*\)\s*\)\s*\)\s*;?\s*\}\s*\}/;
+  expect(css, '엔딩·밀린·오류 화면 제목 상한: @supports (width: 1cqi) 안의 max(바닥, min(상한, 100cqi ÷ 칸 수))').toMatch(guardedDash);
+  expect(css, '엔딩 이름 칸(.ending__who)이 컨테이너다').toMatch(/\.ending__who\s*\{[^}]*container-type:\s*inline-size/);
+  expect(css, '밀린·오류 화면 카드(.system .card)가 컨테이너다').toMatch(/\.system \.card\s*\{\s*container-type:\s*inline-size/);
+  expect(css.replace(guarded, '').replace(guardedDash, ''), 'cqi는 그 @supports 블록들 밖에 없다(밖에 있으면 모르는 브라우저에서 font-size가 unset)').not.toMatch(/\dcqi\b/);
 
   // ④ 폴백
   expect(css, '폴백: 컨테이너 질의를 모르는 브라우저에서 뷰포트 639px 이하 비교 표 쌓기').toMatch(
@@ -435,6 +645,7 @@ test('제품 번들 CSS(M3, R-302): 컨테이너 3종·@container docbody/cmp·c
   expect(legacy, '모르는 브라우저: container-type이 없다').not.toMatch(/container-(?:type|name)/);
   expect(legacy, '모르는 브라우저: 폴백 @media 쌓기가 올라와 있다').toMatch(/@media\s*\(\s*max-width:\s*639px\s*\)\s*\{\s*\.table--cmp,\s*\.table--cmp tbody\s*\{\s*display:\s*block\s*\}/);
   expect(legacy, '모르는 브라우저: 제목 상한 식이 없어 .t-title 기본이 남는다').not.toMatch(/\.roulette__lead \.t-title/);
+  expect(legacy, '모르는 브라우저: 엔딩 제목 상한 식이 없어 .t-title 기본이 남는다').not.toMatch(/\.ending__who \.t-title/);
   const modern = cssAppliedBy(css, WITH_CONTAINER_QUERIES);
   expect(modern, '아는 브라우저: 폴백 @media 쌓기는 걸러진다').not.toMatch(/@media\s*\(\s*max-width:\s*639px\s*\)\s*\{\s*\.table--cmp/);
   expect(modern, '아는 브라우저: @container cmp가 남는다').toMatch(/@container\s+cmp/);

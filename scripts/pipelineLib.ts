@@ -12,6 +12,7 @@ import {
   createRng,
   createSession,
   estimatePlaySeconds,
+  familyOf,
   maxAgeOf,
   parseGame,
   peersOf,
@@ -21,6 +22,7 @@ import {
   sessionReducer,
   type EndingGame,
   type EndingReview,
+  type FamilySummary,
   type Era,
   type Gender,
   type GameState,
@@ -297,15 +299,23 @@ export function checkBirthReport(game: GameState, where: string): string[] {
  *  - 동생이 생겼다(infant-new-sibling): 형제 순서가 첫째이고, 그때 어머니(출생 때 나이 + 아이 나이)가 45세 이하
  *  - 사별 플래그(parents_gone)가 있으면 임종 사건이 연표에 있다
  *  - 연표 0세 첫 줄(출생신고 서술문)이 말하는 형제 순서 = 저장된 형제 순서
+ *  - 식구 카드의 위 형제: 가장 위 형제와의 누적 나이 차는 「어머니의 출생 때 나이 − 최소 첫 출산 나이(16)」 이하이고 형제마다 나이 차가 2살 이상이며 (R-330),
+ *    **위 형제 수는 형제 순서 − 1(최대 4)과 같다** — 출생 생성기가 어머니 나이를 형제 순서에 맞게(위 형제 수 ≤ ⌊(어머니 나이 − 16) / 2⌋, 즉 둘째 18세·셋째 20세·넷째 22세·다섯째 이상 24세 이상) 만들기 때문이다 (R-330 r3)
  * applied = 실제로 대조한 규칙 수(공허 통과 방지 — 이벤트가 하나도 안 나온 판만 보면 0이다).
  */
 const ORDER_WORDS = ['첫째', '둘째', '셋째', '넷째', '다섯째 이상'] as const; // 형제 순서 1~5의 서술문 낱말 (구현의 표를 읽지 않고 따로 적었다)
 export const FAMILY_RULES = {
   olderParentAtEvent: { 'middle-parents-care': [60, 100], 'middle-parents-farewell': [65, 100] } as Readonly<Record<string, readonly [number, number]>>,
   siblingMotherMax: 45,
+  /** 어머니가 첫 아이를 낳을 수 있는 가장 어린 나이(구현의 상수를 읽지 않고 따로 적었다) */
+  motherMinFirstBirth: 16,
+  /** 위 형제 사이의 가장 작은 나이 차(살) */
+  minSiblingGap: 2,
+  /** 위 형제 수의 상한(형제 순서 5 = 「다섯째 이상」은 4명) */
+  maxOlderSiblings: 4,
 } as const;
 
-export function checkFamilyRules(game: GameState, where: string): { problems: string[]; applied: number } {
+export function checkFamilyRules(game: GameState, where: string, family?: FamilySummary): { problems: string[]; applied: number } {
   const problems: string[] = [];
   let applied = 0;
   const bad = (msg: string) => problems.push(`${where}: ${msg}`);
@@ -330,6 +340,25 @@ export function checkFamilyRules(game: GameState, where: string): { problems: st
   if (game.flags.includes('parents_gone')) {
     applied++;
     if (!game.history.some((h) => h.eventId === 'middle-parents-farewell')) bad('사별(parents_gone)인데 임종 사건이 연표에 없다');
+  }
+  // 식구 카드의 위 형제 (R-330): 누적 나이 차가 어머니의 첫 출산 한도 안이다. 첫째는 위 형제가 없어 대조할 것이 없다(applied에 세지 않는다)
+  const olderSiblings = (family ?? familyOf(game)).siblings.filter((s) => s.older);
+  // 위 형제 수 = 형제 순서 − 1(최대 4) — 같아야 한다(R-330 r3). 어머니가 그 순서를 낳기엔 어렸다면(둘째 18세·셋째 20세·넷째 22세·다섯째 이상 24세 미만) 생성기가 모순을 만든 것이다
+  const wantedOlder = Math.min(FAMILY_RULES.maxOlderSiblings, r.birthOrder - 1);
+  const minMother = FAMILY_RULES.motherMinFirstBirth + FAMILY_RULES.minSiblingGap * wantedOlder;
+  if (olderSiblings.length !== wantedOlder) bad(`위 형제가 ${olderSiblings.length}명인데 형제 순서는 ${r.birthOrder}번째다(위 형제 ${wantedOlder}명이어야 한다, 출생 때 어머니 ${r.mother.age}세)`);
+  if (r.mother.age < minMother) bad(`형제 순서가 ${r.birthOrder}번째(위 형제 ${wantedOlder}명)인데 어머니는 출생 때 ${r.mother.age}세다(${minMother}세 이상이어야 한다: 첫 출산 ${FAMILY_RULES.motherMinFirstBirth}세 + 터울 ${FAMILY_RULES.minSiblingGap}살 × ${wantedOlder})`);
+  if (olderSiblings.length > 0 || wantedOlder > 0) {
+    applied++;
+    let prevGap = 0;
+    for (const s of olderSiblings) {
+      if (s.gap - prevGap < FAMILY_RULES.minSiblingGap) bad(`위 형제 사이 나이 차 ${s.gap - prevGap}살 < ${FAMILY_RULES.minSiblingGap}살`);
+      prevGap = s.gap;
+    }
+    if (olderSiblings.length > 0) {
+      const farthest = olderSiblings[olderSiblings.length - 1].gap;
+      if (farthest > r.mother.age - FAMILY_RULES.motherMinFirstBirth) bad(`가장 위 형제와 나이 차 ${farthest}살인데 어머니는 출생 때 ${r.mother.age}세다(첫 출산 ${r.mother.age - farthest}세 < ${FAMILY_RULES.motherMinFirstBirth}세)`);
+    }
   }
   const first = game.history[0]?.text ?? '';
   applied++;

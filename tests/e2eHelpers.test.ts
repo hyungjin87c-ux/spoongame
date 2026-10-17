@@ -35,11 +35,13 @@ describe('e2e 저장 주입 헬퍼', () => {
     expect(parseGame(JSON.stringify({ version: SAVE_VERSION, data: made }))).toEqual(made);
   });
 
-  it('settingsEnvelope는 core 설정 검증기가 그대로 읽는 v2 봉투이고, 비어 있는 필드는 기본값으로 채운다', () => {
+  it('settingsEnvelope는 core 설정 검증기가 그대로 읽는 현재 버전(v3) 봉투이고, 비어 있는 필드(세상·인생 길이·BGM·테마)는 기본값으로 채운다', () => {
     expect(parseSettings(settingsEnvelope({ speed: 8, autoMode: true }))).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true });
-    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' }))).toEqual({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
+    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' }))).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
     // 아직 고를 수 없는 「약 1시간」(long60)이 저장돼 있으면 약 30분으로 읽는다(R-202: 이 단언이 바뀐 이유 — 예전에는 long60이 그대로 읽혔다)
-    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'long60' }))).toEqual({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
+    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'long60' }))).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
+    // M4: BGM·테마도 주입할 수 있고 그대로 읽힌다
+    expect(parseSettings(settingsEnvelope({ speed: 1, autoMode: false, bgm: { on: true, volume: 40 }, theme: 'dark' }))).toMatchObject({ bgm: { on: true, volume: 40 }, theme: 'dark' });
   });
 
   it('lifeState는 core 검증기를 통과하는 유효한 저장이다 (ErrorBoundary e2e가 clearGame을 실제로 검증하려면 유효해야 한다)', () => {

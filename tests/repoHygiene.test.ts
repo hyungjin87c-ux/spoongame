@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { carriageReturnLines, noTextPaths } from './helpers/lineEndings';
 import { findLocalPathLeaks, localAccountNames, usableAccountNames } from './helpers/localPathLeaks';
 import { ignoreMatcher, isTextPath, listRepoTextFiles, readRepoText } from './helpers/repoFiles';
 
@@ -11,6 +12,8 @@ import { ignoreMatcher, isTextPath, listRepoTextFiles, readRepoText } from './he
  *  - 어디서나: 사용자 폴더 경로 일반 패턴 0. CI(GitHub Actions)에서도 같다.
  *  - 내 컴퓨터: 위에 더해 실행 환경의 계정 이름(os.userInfo().username, os.homedir() 마지막 폴더)이 0. CI의 계정(runner)은 흔한 말이라 건너뛴다.
  * 이 파일 어디에도 사용자 이름·실제 경로를 글자 그대로 적지 않는다 — 감지기 시험 문장은 조각을 이어 붙여 만든다.
+ *
+ * 줄바꿈 위생 (REV-003-M4-2 R-341): 올라갈 텍스트 파일에는 CR이 없다(전부 LF). 예외는 .gitattributes에서 `-text`로 변환을 끈 파일뿐이다. 맨 아래 "줄바꿈 위생" 묶음.
  */
 
 /** 시험용 가짜 경로를 이어 붙여 만든다(글자 그대로 적으면 이 파일이 감지기에 걸린다) */
@@ -170,5 +173,64 @@ describe('저장소 전체 위생: 사용자 폴더 경로·사용자 이름이 
       for (const h of findLocalPathLeaks(text, names)) report.push(`${path}:${h.line} ${h.rule}`);
     }
     expect(report).toEqual([]);
+  });
+});
+
+describe('줄바꿈 위생: 올라갈 텍스트 파일에 CR이 없다 — 예외는 .gitattributes의 -text 파일뿐 (R-341)', () => {
+  const CR = String.fromCharCode(13);
+  const listed = listRepoTextFiles();
+  /** 예외로 인정한 파일 — 늘리려면 .gitattributes의 -text와 여기를 함께 고쳐야 한다(조용히 늘지 않게 못 박는다) */
+  const EXPECTED_EXCEPTIONS = ['docs/data/korea-life-data-sources.csv'];
+
+  it('감지기 자체 시험: CRLF·단독 CR·LF와 섞인 파일의 CR 줄을 줄 번호로 잡고, LF뿐이면 잡지 않는다', () => {
+    expect(carriageReturnLines('가\n나\n다\n')).toEqual([]);
+    expect(carriageReturnLines('')).toEqual([]);
+    expect(carriageReturnLines(`가${CR}\n나${CR}\n다${CR}\n`), '전부 CRLF').toEqual([1, 2, 3]);
+    expect(carriageReturnLines(`가${CR}\n나\n다${CR}\n라\n`), '섞인 파일(일부 CRLF·일부 LF)은 CRLF 줄만').toEqual([1, 3]);
+    expect(carriageReturnLines(`가\n나${CR}다\n`), '줄 안의 단독 CR').toEqual([2]);
+    expect(carriageReturnLines(`가\n나${CR}`), '마지막 줄 끝의 CR').toEqual([2]);
+  });
+
+  it('.gitattributes 해석: -text 줄의 경로만 모으고, 주석·빈 줄·text=auto·binary 줄은 넘기며, 글롭 -text는 던진다', () => {
+    const sample = ['# 주석', '', '* text=auto eol=lf', '*.png binary', 'docs/data/a.csv -text', '/docs/data/b.csv   -text  ', 'x/y.txt text'].join('\n');
+    expect(noTextPaths(sample)).toEqual(['docs/data/a.csv', 'docs/data/b.csv']);
+    expect(noTextPaths('')).toEqual([]);
+    expect(() => noTextPaths('docs/*.csv -text')).toThrow(/글롭/);
+    expect(() => noTextPaths('*.csv -text')).toThrow(/글롭/);
+  });
+
+  it('예외 목록은 .gitattributes의 -text 규칙과 일치하고(못 박은 목록), 예외 파일은 실제로 있고 실제로 CR이 든다 — 낡은 예외가 남지 않는다', () => {
+    const attrs = readRepoText('.gitattributes');
+    expect(attrs, '.gitattributes').not.toBeNull();
+    const exceptions = noTextPaths(attrs!);
+    expect(exceptions).toEqual(EXPECTED_EXCEPTIONS);
+    for (const path of exceptions) {
+      expect(listed.paths, `${path}가 검사 대상 목록에 있다`).toContain(path);
+      const text = readRepoText(path);
+      expect(text, path).not.toBeNull();
+      expect(carriageReturnLines(text!).length, `${path}: 예외인데 CR이 없다 — .gitattributes의 -text를 지우고 이 목록에서도 뺀다`).toBeGreaterThan(0);
+    }
+  });
+
+  it('예외를 뺀 모든 텍스트 파일에 CR이 0이다 (CRLF·섞인 줄바꿈·단독 CR 모두)', () => {
+    const exceptions = new Set(noTextPaths(readRepoText('.gitattributes') ?? ''));
+    const report: string[] = [];
+    let read = 0;
+    for (const path of listed.paths) {
+      if (exceptions.has(path)) continue;
+      const text = readRepoText(path);
+      if (text === null) continue;
+      read++;
+      const lines = carriageReturnLines(text);
+      if (lines.length > 0) report.push(`${path}: CR이 든 줄 ${lines.length}개 (첫 줄 ${lines[0]})`);
+    }
+    expect(read, '읽은 파일 수').toBeGreaterThan(150);
+    expect(report).toEqual([]);
+  });
+
+  it('이 시험 파일과 감지기 도우미에는 CR이 직접 들어 있지 않다 (자기 자신에게 걸리지 않는다)', () => {
+    for (const path of ['tests/repoHygiene.test.ts', 'tests/helpers/lineEndings.ts']) {
+      expect(carriageReturnLines(readRepoText(path)!), path).toEqual([]);
+    }
   });
 });

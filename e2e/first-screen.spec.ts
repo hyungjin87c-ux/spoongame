@@ -1282,7 +1282,7 @@ test('막대 그래프(시·도별)의 값은 시각적으로 숨긴 표로도 �
 
 // ---------- R-215: 옛 화면의 전역 규칙이 첫 화면에 새지 않는다 ----------
 
-test('스타일 새어 듦(R-215): 첫 화면의 그래프 막대는 의도한 높이이고(옛 인생 화면의 .bar 규칙이 새지 않는다), 옛 인생 화면의 상태 막대는 그대로이며 새 출생신고 화면은 옛 전역 규칙을 받지 않는다', async ({ page }) => {
+test('스타일 새어 듦(R-215): 첫 화면의 그래프 막대는 의도한 높이이고(옛 전역 규칙이 새지 않는다), 새 출생신고·인생 화면은 옛 전역 규칙을 받지 않으며 옛 상태 막대 규칙(.stats .bar)은 더 이상 없다', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   const index = await page.evaluate(() => [...document.querySelectorAll('[data-testid="stat-slide"]')].findIndex((s) => s.getAttribute('data-slide-id') === 'region-population-registered'));
@@ -1304,7 +1304,7 @@ test('스타일 새어 듦(R-215): 첫 화면의 그래프 막대는 의도한 �
   expect(first.btnBg).not.toBe('rgb(58, 58, 58)'); // 옛 button의 #3a3a3a가 아니라 토큰의 쪽빛
 
   // M3: 출생신고는 새 디자인 화면이라 옛 전역 규칙(버튼 #3a3a3a·모서리 8px)을 받지 않고 토큰의 기본 버튼 모양이다(이전에는 옛 모양 그대로임을 확인하던 자리).
-  // 옛 화면 회귀는 인생 화면의 상태 막대로 본다.
+  // 옛 화면 회귀는 인생 화면의 상태 막대로 보았다 — M4에서 인생 화면도 새 디자인이 되어 아래에서 새 미터를 본다.
   await injectSave(page, birthState(KNOWN_SEED, 'present', 3, 50));
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   const birth = await page.evaluate(() => {
@@ -1316,12 +1316,17 @@ test('스타일 새어 듦(R-215): 첫 화면의 그래프 막대는 의도한 �
   expect(birth.minH).toBeGreaterThanOrEqual(44);
   await injectSave(page, lifeState(KNOWN_SEED), '/', { speed: 1, autoMode: false });
   await expect(page.getByTestId('life-screen')).toBeVisible();
+  // M4: 옛 상태 막대(.stats .bar: 높이 6px·고정 색 #ddd8cc·모서리 3px)는 없어졌다. 새 미터(.meter__track)는 토큰 색·12px 높이이고 옛 규칙의 값을 받지 않는다.
   const meter = await page.evaluate(() => {
-    const bar = document.querySelector('.stats .bar')!;
-    const cs = getComputedStyle(bar);
-    return { h: cs.height, bg: cs.backgroundColor, radius: cs.borderTopLeftRadius };
+    const track = document.querySelector('.meter__track')!;
+    const cs = getComputedStyle(track);
+    return { legacy: document.querySelectorAll('.stats .bar').length, h: cs.height, bg: cs.backgroundColor, radius: cs.borderTopLeftRadius };
   });
-  expect(meter).toEqual({ h: '6px', bg: 'rgb(221, 216, 204)', radius: '3px' });
+  expect(meter.legacy, '옛 상태 막대는 없다').toBe(0);
+  expect(meter.h).toBe('12px');
+  expect(meter.bg, '옛 막대의 고정 색이 아니라 토큰 --c-meter-track').toBe((await tokenColors(page, 'light'))('--c-meter-track'));
+  expect(meter.bg).not.toBe('rgb(221, 216, 204)');
+  expect(meter.radius, '옛 막대는 3px, 새 미터는 알약 모양').not.toBe('3px');
 });
 
 // ---------- FS7: 푸터 ----------
@@ -1502,8 +1507,8 @@ test('이전 버전(v4) 저장은 새 게임으로 시작하고 첫 화면에 �
   expect(save.version).toBe(SAVE_VERSION);
   expect(save.data.phase).toBe('title');
   expect(save.data.seed).not.toBe(5);
-  // 설정은 유지(v1 → v2로 올라가며 새 필드는 기본값)
-  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30' });
+  // 설정은 유지(v1 → v3로 올라가며 새 필드는 기본값; M4: BGM은 꺼짐·볼륨 30, 테마는 시스템 설정을 따른다)
+  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system' });
   // 태어나면 안내가 사라지고, 새로고침해도 다시 뜨지 않는다
   await pressBegin(page);
   await expect(page.getByTestId('roulette-screen')).toBeVisible();
@@ -1572,7 +1577,7 @@ test('버튼·카드의 접근 가능한 이름: 라디오는 카드 글, 캐러
 // ---------- 다크·강제 색상·스크린샷 ----------
 
 test.describe('색 구성표(DB6 기반·CM4)', () => {
-  test('다크: 시스템 설정을 따른다 — 바탕·글자·버튼·로고가 다크 토큰이고 가로 넘침·가림이 없다. 룰렛·출생신고(새 디자인)도 다크를 따르고 인생 화면(옛 화면)부터는 아직 라이트다', async ({ page }, testInfo) => {
+  test('다크: 시스템 설정을 따른다 — 바탕·글자·버튼·로고가 다크 토큰이고 가로 넘침·가림이 없다. 룰렛·출생신고·인생 화면(M4: 모두 새 디자인)도 다크를 따른다', async ({ page }, testInfo) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/');
     await expect(page.getByTestId('title-screen')).toBeVisible();
@@ -1602,18 +1607,19 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     expect(await noHorizontalOverflow(page)).toBe(true);
     await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀려 버튼이 흐리지 않은 모습으로 찍는다
     await page.screenshot({ path: `${SHOTS}/dev-M2-title-${projectKey(testInfo.project.name)}-dark.png` });
-    // M3: 룰렛·출생신고는 새 디자인 화면이라 시스템 다크를 따른다(바탕·글자 = 다크 토큰, body.theme-surface). 인생 화면부터는 아직 옛 라이트 디자인이다(M4에서 새 디자인으로 바뀐다).
+    // M3: 룰렛·출생신고는 새 디자인 화면이라 시스템 다크를 따른다(바탕·글자 = 다크 토큰, body.theme-surface). M4: 인생 화면도 새 디자인이라 다크를 따른다(예전에는 옛 화면이라 라이트로 고정이었다).
     await pressBeginToBirth(page);
     expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '출생신고 바탕 = 다크 토큰').toBe(dark('--c-bg'));
     expect(await page.evaluate(() => getComputedStyle(document.body).color), '출생신고 글자색 = 다크 토큰').toBe(dark('--c-text'));
     expect(await page.evaluate(() => document.body.classList.contains('theme-surface'))).toBe(true);
-    // R-223: body 바탕은 토큰이라 옛 화면은 LegacyLight가 건 <html data-theme="light">로 라이트 토큰(--c-bg)을 받는다(예전에는 고정 색 #f5f2ec였다).
+    // 바뀐 기대(M4): 예전에는 인생 화면이 옛 화면이라 LegacyLight가 건 <html data-theme="light">로 라이트 토큰을 받았다. 이제 인생 화면도 시스템 다크 토큰을 따른다.
     await expect(page.getByTestId('next-life')).toBeEnabled();
     await page.getByTestId('next-life').click();
     await expect(page.getByTestId('life-screen')).toBeVisible();
-    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe((await tokenColors(page, 'light'))('--c-bg'));
-    expect(await page.evaluate(() => getComputedStyle(document.body).color), '글자색도 라이트 토큰').toBe((await tokenColors(page, 'light'))('--c-text'));
-    expect(await page.evaluate(() => document.body.classList.contains('theme-surface'))).toBe(false);
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '인생 화면 바탕 = 다크 토큰').toBe(dark('--c-bg'));
+    expect(await page.evaluate(() => getComputedStyle(document.body).color), '글자색도 다크 토큰').toBe(dark('--c-text'));
+    expect(await page.evaluate(() => document.body.classList.contains('theme-surface'))).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), '시스템을 따르는 중이라 수동 선택 속성이 없다').toBeNull();
   });
 
   test('라이트: 바탕·버튼·로고가 라이트 토큰이다', async ({ page }, testInfo) => {
@@ -1797,9 +1803,11 @@ test('확인 단계를 닫으면 포커스가 「새로 태어나기」로 돌�
   await expect(beginNew).toBeFocused();
 });
 
-// ---------- R-208: 옛 화면이 떠 있는 동안 색 구성표 라이트 ----------
+// ---------- R-208 → M4: 모든 화면이 시스템 색 구성표를 따른다 ----------
 
-test('색 구성표(R-208): 다크 OS에서 첫 화면·룰렛·출생신고(새 디자인)는 시스템을 따르고(color-scheme·theme-color 다크), 인생 이후의 옛 화면·오류 화면이 떠 있는 동안에는 라이트로 고정된다', async ({ page }) => {
+test('색 구성표(R-208, M4에서 바뀜): 다크 OS에서 첫 화면·룰렛·출생신고·인생 화면·오류 화면이 모두 시스템을 따른다(color-scheme·theme-color 다크) — 옛 화면 라이트 고정은 없어졌다', async ({ page }) => {
+  // 바뀐 기대(M4): R-208은 옛 화면(인생·엔딩·오류)이 떠 있는 동안 <html data-theme="light">와 메타를 라이트로 고정했다. 모든 화면이 새 디자인이 되어 그 장치(ui/legacyTheme.tsx)를 지웠고,
+  // 이제 모든 화면에서 색 구성표 메타·color-scheme이 같다(수동 선택은 data-theme을 걸지만 기본은 시스템).
   await page.emulateMedia({ colorScheme: 'dark' });
   const scheme = () => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme);
   const metas = () =>
@@ -1816,36 +1824,30 @@ test('색 구성표(R-208): 다크 OS에서 첫 화면·룰렛·출생신고(새
   expect(systemMetas.scheme).toBe('light dark');
   expect(systemMetas.dataTheme).toBeNull();
   expect(systemMetas.theme.map((t) => t.media)).toEqual(['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)']);
-  // M3: 룰렛·출생신고는 새 디자인 화면이라 시스템(다크)을 그대로 따른다 — color-scheme·메타가 첫 화면과 같다
+  expect(systemMetas.theme.map((t) => t.content), '주소 표시줄 색 = 라이트·다크 바탕 토큰').toEqual([await tokenHex(page, 'light', '--c-bg'), await tokenHex(page, 'dark', '--c-bg')]);
+  // 룰렛·출생신고: 첫 화면과 같다
   await pressBegin(page);
   await expect(page.getByTestId('roulette-screen')).toBeVisible();
-  expect(await scheme(), '룰렛 화면은 새 디자인이라 다크 OS를 따른다').toBe('dark');
+  expect(await scheme(), '룰렛 화면은 다크 OS를 따른다').toBe('dark');
   expect(await metas()).toEqual(systemMetas);
   await skipRoulette(page);
   await toBirthReport(page);
   expect(await scheme(), '출생신고 화면도 다크 OS를 따른다').toBe('dark');
   expect(await metas()).toEqual(systemMetas);
-  // 인생 화면부터 옛 화면: 라이트 고정 — 스크롤바·입력 부품·주소 표시줄 색이 본문과 어긋나지 않는다
+  // 인생 화면(M4 대시보드): 예전에는 옛 화면이라 라이트로 고정이었다. 이제 같다.
   await expect(page.getByTestId('next-life')).toBeEnabled();
   await page.getByTestId('next-life').click();
   await expect(page.getByTestId('life-screen')).toBeVisible();
-  expect(await scheme(), '인생 화면(옛 화면)은 다크 OS에서도 라이트').toBe('light');
-  const legacyMetas = await metas();
-  expect(legacyMetas.scheme).toBe('light');
-  expect(legacyMetas.dataTheme).toBe('light');
-  const legacyBgHex = await tokenHex(page, 'light', '--c-bg');
-  for (const t of legacyMetas.theme) {
-    expect(t.content, 'theme-color가 옛 화면 바탕색(라이트 --c-bg 토큰)').toBe(legacyBgHex);
-    expect(t.media, '다크 OS에서도 같은 색이라 media 조건이 없다').toBeNull();
-  }
-  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '옛 화면 body 바탕 = 라이트 토큰').toBe((await tokenColors(page, 'light'))('--c-bg'));
-  // 새로고침해도 저장된 옛 화면은 라이트
+  expect(await scheme(), '인생 화면도 다크 OS를 따른다').toBe('dark');
+  expect(await metas()).toEqual(systemMetas);
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '인생 화면 body 바탕 = 다크 토큰').toBe((await tokenColors(page, 'dark'))('--c-bg'));
+  // 새로고침해도 저장된 인생 화면은 같다
   await page.reload();
   await expect(page.getByTestId('life-screen')).toBeVisible();
-  expect(await scheme()).toBe('light');
-  expect((await metas()).scheme).toBe('light');
+  expect(await scheme()).toBe('dark');
+  expect(await metas()).toEqual(systemMetas);
 
-  // 첫 화면을 다시 연 상태(이어하기)는 다시 시스템(다크), 「이어서 살기」를 누르면 옛 화면이라 라이트
+  // 첫 화면을 다시 연 상태(이어하기)와 「이어서 살기」 뒤의 인생 화면도 같다
   await injectSave(page, lifeState(KNOWN_SEED), '/?__exit=1', { speed: 1, autoMode: false });
   await expect(page.getByTestId('resume')).toBeVisible();
   expect(await scheme()).toBe('dark');
@@ -1853,13 +1855,14 @@ test('색 구성표(R-208): 다크 OS에서 첫 화면·룰렛·출생신고(새
   await expect(page.getByTestId('resume')).toBeEnabled();
   await page.getByTestId('resume').click();
   await expect(page.getByTestId('life-screen')).toBeVisible();
-  expect(await scheme()).toBe('light');
+  expect(await scheme()).toBe('dark');
+  expect(await metas()).toEqual(systemMetas);
 
-  // 오류 화면(옛 화면)도 라이트
+  // 오류 화면도 같다
   await page.goto('/?__crash=1');
   await expect(page.getByTestId('error-screen')).toBeVisible();
-  expect(await scheme()).toBe('light');
-  expect((await metas()).theme.every((t) => t.content === legacyBgHex)).toBe(true);
+  expect(await scheme()).toBe('dark');
+  expect(await metas()).toEqual(systemMetas);
 });
 
 // ---------- R-214: 진행 전 단계의 이전 버전 저장에는 안내를 띄우지 않는다 ----------

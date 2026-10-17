@@ -24,6 +24,10 @@ import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type MouseE
  * disabled 버튼은 Tab 순서에서 빠져 키보드 사용자의 Tab 순서가 상태에 따라 바뀌고, 포커스가 있던 버튼이 disabled가 되면 포커스를 잃기 때문이다.
  * 가드와 호출자의 비활성은 합쳐서 판단한다(isButtonInert): 둘 중 하나라도 비활성이면 aria-disabled="true"이고 클릭/Enter/Space(= 버튼의 click)를 무시한다.
  * 가드가 풀려도 호출자의 비활성은 그대로 유지된다. 어느 쪽이든 포커스는 받는다.
+ *
+ * 비활성의 두 가지 모양(R-337, SPEC-003 DS3·docs/design/design-system.md 2절 「비활성 컨트롤의 대비」): ① 진입 직후 0.4초 입력 가드는 과도 상태라 `aria-disabled`만 붙고 CSS가 흐리게(불투명도) 그린다.
+ * ② 호출자가 넘긴 **지속 비활성**(자동 모드 내내인 「다음 결정으로」·준비 중인 「생각 남기기」)은 눈에 보이는 글자가 읽혀야 하므로 `data-unavailable="true"`도 함께 붙고, CSS가 불투명도 대신
+ * 옅은 글자(`--c-text-3`) + 점선 테두리로 그린다(대비 4.5:1, 새 토큰 없음). 렌더 대비 e2e(e2e/m4-colors.spec.ts)는 이 요소를 면제하지 않고 잰다.
  */
 export const INPUT_GUARD_MS = 400;
 
@@ -80,7 +84,15 @@ export function useInputGuard(resetKey: GuardKey = null, requestedMs: number = I
  * 호출자가 넘기는 aria-disabled는 true / 'true'만 비활성으로 본다(false·'false'·undefined와 ARIA의 다른 토큰은 비활성이 아니다).
  */
 export function isButtonInert(guardReady: boolean, callerAriaDisabled: ButtonHTMLAttributes<HTMLButtonElement>['aria-disabled']): boolean {
-  return !guardReady || callerAriaDisabled === true || callerAriaDisabled === 'true';
+  return !guardReady || isCallerUnavailable(callerAriaDisabled);
+}
+
+/**
+ * 호출자가 「지금은 누를 수 없다」고 넘긴 비활성인가(`aria-disabled`가 true / 'true'). 0.4초 입력 가드(과도 상태)와 구분하려고 따로 센다 —
+ * 호출자의 비활성은 **지속** 비활성(자동 모드 내내 「다음 결정으로」, 준비 중인 「생각 남기기」)이라 눈에 보이는 글자가 읽혀야 한다(R-337).
+ */
+export function isCallerUnavailable(callerAriaDisabled: ButtonHTMLAttributes<HTMLButtonElement>['aria-disabled']): boolean {
+  return callerAriaDisabled === true || callerAriaDisabled === 'true';
 }
 
 export interface GuardedButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -94,6 +106,8 @@ export interface GuardedButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
 export const GuardedButton = forwardRef<HTMLButtonElement, GuardedButtonProps>(function GuardedButton({ guardKey, guardMs, onClick, 'aria-disabled': callerAriaDisabled, ...rest }, ref) {
   const ready = useInputGuard(guardKey, guardMs);
   const inert = isButtonInert(ready, callerAriaDisabled);
+  // 호출자가 넘긴 지속 비활성에만 표식을 단다: 0.4초 가드(ready=false)만으로는 달지 않는다 — 가드의 흐림은 읽으라고 둔 글자가 아니라 더블탭을 삼키는 과도 상태다(R-337, design-system.md 2절)
+  const unavailable = isCallerUnavailable(callerAriaDisabled);
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     if (inert) {
       e.preventDefault();
@@ -101,5 +115,5 @@ export const GuardedButton = forwardRef<HTMLButtonElement, GuardedButtonProps>(f
     }
     onClick?.(e);
   };
-  return <button type="button" {...rest} ref={ref} aria-disabled={inert ? true : undefined} onClick={handleClick} />;
+  return <button type="button" {...rest} ref={ref} aria-disabled={inert ? true : undefined} data-unavailable={unavailable ? 'true' : undefined} onClick={handleClick} />;
 });

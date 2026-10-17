@@ -58,7 +58,10 @@
    상한은 rem 고정값이 아니다 — 루트 글자 200%에서는 rem이 두 배라 rem 상한만으로는 부족하다. 줄 폭은 이 제목을 담은 상자(.roulette__lead)의 내용 폭(100cqi)이다.
    글자 수(--title-chars)는 문구 상수에서 계산해 RouletteScreen이 넘긴다(data/birthReportText.ts#ROULETTE_TITLE_CHARS, 새 제목이 상한을 조용히 넘지 않게 tests/titleCap.test.tsx가 지킨다).
    바닥은 --fs-lg(본문보다 큰 18px)라 상한 때문에 제목이 본문보다 작아지지 않는다. 낱말 사이에서 여러 줄로 접히는 것은 괜찮다. */
-/* `cqi`를 모르는 브라우저(Safari 16 미만)에서는 이 식이 통째로 무효라 `font-size`가 `unset`(본문 크기 16px)이 되어 제목이 본문만 해진다 — 그래서 식을 @supports로 감싸고, 모르면 위 `.t-title` 기본 크기(--fs-2xl)로 물러난다 (R-302, design-system.md 11-6) */
+/* `cqi`를 모르는 브라우저(Safari 16 미만)에서는 이 식이 통째로 무효라 `font-size`가 `unset`(본문 크기 16px)이 되어 제목이 본문만 해진다 — 그래서 식을 @supports로 감싸고, 모르면 위 `.t-title` 기본 크기(--fs-2xl)로 물러난다 (R-302, design-system.md 11-6)
+   알려진 한계(R-310 ⓑ, REV-003-M3-5 — M4 착수 때 기록): 그 구형 브라우저(iOS 15 이하 Safari)에서는 상한이 없어 제목이 `--fs-2xl` 그대로다(글자 200%에서 56px). 폭 320·360 × 글자 200%에서는 가장 긴 낱말 「정해졌습니다」(6글자, 약 336px)가
+   줄 폭(약 288~328px)을 넘어 「정해졌습니 / 다」로 끊길 수 있다. 일부러 뷰포트 기준(vw) 상한을 더하지 않았다 — M3가 승인한 폴백(`--fs-2xl` 그대로, tests/docCssFallback.test.ts·e2e/m3-css-fallback.spec.ts가 잠근 모양)을 M4에서 바꾸지 않는다.
+   실기기 확인은 docs/TODO.md 실기기 점검 목록(iOS 15 이하 Safari: 룰렛 결과 제목 폭 320·360 × 글자 200%, 출생신고 반쪽 칸 직업 150~200%)에 올라 있다. */
 @supports (width: 1cqi) {
   .roulette__lead .t-title { font-size: max(var(--fs-lg), min(var(--fs-2xl), calc(100cqi / var(--title-chars, 8)))); }
 }

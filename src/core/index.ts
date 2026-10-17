@@ -19,3 +19,8 @@ export * from './carousel';
 export * from './glue';
 export * from './format';
 export * from './population';
+export * from './progress';
+export * from './profile';
+export * from './family';
+export * from './peerNow';
+export * from './feedback';

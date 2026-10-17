@@ -173,6 +173,11 @@ export interface GameState {
   birthReport: BirthReport | null;
   /** 같은 해 태어난 사람들(VP3)을 만드는 시드. 상태에는 시드만 저장하고 인물은 매번 같은 함수로 다시 만든다. 출생 전에는 null. */
   peerSeed: number | null;
+  /**
+   * 일시정지 중인가 (SPEC-003 DB3·DB8, 저장 스키마 v7). 인생 화면의 「일시정지」와 「나가기」(첫 화면으로 나가며 일시정지 상태로 저장)가 켠다.
+   * 켜져 있으면 해마다 진행하는 타이머와 자동 선택 타이머가 멈추고, 탭이 다시 보여도 저절로 풀리지 않는다(사용자가 정지한 상태 유지). 인생(life) 단계에서만 true일 수 있다.
+   */
+  paused: boolean;
   /** 최초 난수 시드 (재현용) */
   seed: number;
   /** 현재 RNG 내부 상태. 저장에 포함되어 새로고침 후에도 수열이 이어진다. */
@@ -182,6 +187,19 @@ export interface GameState {
 export const SPEEDS = [1, 2, 4, 8] as const;
 export type Speed = (typeof SPEEDS)[number];
 
+/** 화면 테마 선택 (DB6): 시스템 설정을 따름(기본) / 라이트 / 다크. 수동 선택(light·dark)은 설정에 저장돼 시스템 설정보다 우선한다. */
+export const THEMES = ['system', 'light', 'dark'] as const;
+export type ThemeChoice = (typeof THEMES)[number];
+
+/** BGM 설정 (DB4): 켬/끔(기본 꺼짐)과 볼륨(0~100 정수, 기본 낮음) */
+export interface BgmSettings {
+  on: boolean;
+  volume: number;
+}
+export const BGM_VOLUME_MIN = 0;
+export const BGM_VOLUME_MAX = 100;
+export const DEFAULT_BGM: BgmSettings = { on: false, volume: 30 };
+
 /** 설정은 게임 진행과 별도 키로 저장되며 새 판에도 유지된다. */
 export interface Settings {
   speed: Speed;
@@ -190,6 +208,10 @@ export interface Settings {
   era: Era;
   /** 첫 화면에서 마지막으로 고른 인생 길이 — 다음 판의 기본 선택(FS5·LM1) */
   lifeLength: LifeLength;
+  /** BGM 켬/끔·볼륨 (DB4, 설정 스키마 v3) */
+  bgm: BgmSettings;
+  /** 화면 테마 (DB6, 설정 스키마 v3) */
+  theme: ThemeChoice;
 }
 
 /** 인생 화면이 읽는 재생 설정(배속·자동 모드). Settings의 일부다. */

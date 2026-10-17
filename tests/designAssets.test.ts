@@ -68,6 +68,62 @@ describe('색 토큰: 두 테마 모두 WCAG AA (scripts/checkContrast.ts와 같
   it('헤더 로고 토큰은 40px (DS1·R-128: 워드마크 글자 높이 ≥ 22px가 되는 최소 높이)', () => {
     expect(tokensCss).toMatch(/--logo-h-header:\s*40px/);
   });
+  /**
+   * REV-003-M2-5 R-251 (M4 착수 조건, designer 2026-10-17): 강제 색상 블록의 선택자가 `:root` 하나(특이도 (0,1,0))면 다크 두 블록 `:root:not([data-theme='light'])`·`:root[data-theme='dark']`((0,2,0))에
+   * 져서 OS 다크·수동 다크 + 강제 색상에서 시스템 색 매핑이 다크 팔레트에 덮인다 — 밝은 고대비 테마 위에 수동 다크를 켜면 로고·선택 카드 글자·포커스 링(forced-color-adjust: none)이 사라진다.
+   * 강제 색상 블록은 다크 두 선택자를 함께 적어 **특이도가 다크 블록 이상**이고 **소스 순서가 뒤**이며 `!important`를 쓰지 않는다(값은 그대로). 실제 렌더(라이트 고대비 + data-theme='dark'에서 로고·선택 카드 글자 대비 ≥ 3:1)는 M4 developer의 e2e.
+   */
+  const specificity = (selector: string): [number, number, number] => {
+    let s = selector.trim().replace(/:not\(([^)]*)\)/g, ' $1 '); // :not()은 인자의 특이도
+    const ids = (s.match(/#[\w-]+/g) ?? []).length;
+    const attrs = (s.match(/\[[^\]]*\]/g) ?? []).length;
+    s = s.replace(/\[[^\]]*\]/g, ' ');
+    const classes = (s.match(/\.[\w-]+/g) ?? []).length;
+    const pseudoElements = (s.match(/::[\w-]+/g) ?? []).length;
+    s = s.replace(/::[\w-]+/g, ' ');
+    const pseudoClasses = (s.match(/:[\w-]+/g) ?? []).length;
+    const elements = (s.replace(/[.#:][\w-]+/g, ' ').match(/\b[a-zA-Z][\w-]*/g) ?? []).length;
+    return [ids, attrs + classes + pseudoClasses, elements + pseudoElements];
+  };
+  const atLeast = (a: [number, number, number], b: [number, number, number]): boolean => a[0] !== b[0] ? a[0] > b[0] : a[1] !== b[1] ? a[1] > b[1] : a[2] >= b[2];
+  it('R-251: 강제 색상 블록의 선택자는 다크 두 블록(미디어쿼리·data-theme) 각각과 특이도가 같거나 높고, 소스 순서가 뒤이며, !important가 없고 값은 그대로다', () => {
+    const css = tokensCss.replace(/\/\*[\s\S]*?\*\//g, '');
+    // 자기 점검: 특이도 계산기
+    expect(specificity(':root')).toEqual([0, 1, 0]);
+    expect(specificity(":root:not([data-theme='light'])")).toEqual([0, 2, 0]);
+    expect(specificity(":root[data-theme='dark']")).toEqual([0, 2, 0]);
+    expect(specificity('html.bar-released .bottom-bar')).toEqual([0, 2, 1]);
+    expect(atLeast([0, 1, 0], [0, 2, 0])).toBe(false);
+    expect(atLeast([0, 2, 0], [0, 2, 0])).toBe(true);
+    const forcedAt = css.indexOf('@media (forced-colors: active)');
+    expect(forcedAt).toBeGreaterThan(0);
+    const forced = css.slice(forcedAt);
+    const m = /@media \(forced-colors: active\)\s*\{\s*([^{]+?)\s*\{([\s\S]*?)\n\s*\}/.exec(forced);
+    expect(m, '강제 색상 블록의 첫 규칙').toBeTruthy();
+    const selectors = m![1].split(',').map((x) => x.trim());
+    const body = m![2];
+    const darkSelectors = [":root:not([data-theme='light'])", ":root[data-theme='dark']"];
+    // 다크 두 선택자가 강제 색상 블록에도 그대로 있다 — 다크·수동 다크에서 같은 특이도 + 뒤 순서로 이긴다. `:root`는 수동 라이트(어느 다크 블록도 맞지 않는 때)를 맡는다
+    expect(selectors).toContain(':root');
+    for (const d of darkSelectors) {
+      expect(selectors, `강제 색상 블록에 ${d}`).toContain(d);
+      const strongest = selectors.map(specificity).some((s) => atLeast(s, specificity(d)));
+      expect(strongest, `특이도 ≥ ${d}`).toBe(true);
+    }
+    // 소스 순서: 강제 색상 블록은 다크 두 블록보다 뒤
+    expect(forcedAt).toBeGreaterThan(css.indexOf(":root:not([data-theme='light'])"));
+    expect(forcedAt).toBeGreaterThan(css.indexOf(":root[data-theme='dark']"));
+    // !important로 이기지 않는다(토큰을 덮어쓰는 다른 길까지 막는다)
+    expect(forced).not.toContain('!important');
+    // 값은 그대로(REV-003-D-4 표식·로고·포커스 매핑)
+    expect(body).toMatch(/--sp-mark:\s*Canvas;/);
+    expect(body).toMatch(/--c-logo:\s*CanvasText;/);
+    expect(body).toMatch(/--c-focus:\s*Highlight;/);
+    expect(body).toMatch(/--c-bg:\s*Canvas;/);
+    // 블록 분리기는 여전히 라이트·다크 세 블록을 찾는다(강제 색상 블록의 `:root[data-theme='dark']`는 다크 블록보다 뒤라 먼저 잡히지 않는다)
+    expect(Object.keys(blocks.darkAttr).length).toBeGreaterThan(40);
+    expect(blocks.darkAttr['--c-bg']).toBe('#14171f');
+  });
   const STATS = ['--c-stat-health', '--c-stat-happy', '--c-stat-knowledge', '--c-stat-relation'];
   const STAT_NAME: Record<string, string> = { '--c-stat-health': '건강', '--c-stat-happy': '행복', '--c-stat-knowledge': '지식', '--c-stat-relation': '관계' };
   /**
@@ -561,8 +617,10 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
    */
   it('R-190: 화면 시안의 수저 아이콘은 모두 칩·띠 안에 있고 바로 뒤에 같은 단계의 이름이 따른다 — 단독 사용 0', () => {
     const mockups = import.meta.glob('../docs/design/mockups/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
-    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all)\.html$/.test(n));
+    // 설명판(components·spoon-sizes·symbols·faces)과 수저가 나오지 않는 밀린·오류 화면 시안(system — 공통 헤더 + 카드 하나, 2026-10-17 M4 착수 정리)은 제외
+    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system)\.html$/.test(n));
     expect(screens.length).toBe(12);
+    expect(mockups[Object.keys(mockups).find((n) => n.endsWith('/system.html')) ?? ''] ?? '', 'system.html: 수저 아이콘 없음').not.toMatch(/<svg class="spoon/);
     let total = 0;
     for (const [name, html] of screens) {
       const icons = html.match(/<svg class="spoon[^"]*"/g) ?? [];

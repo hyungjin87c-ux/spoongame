@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
+import { revealCard } from './focusReveal';
 
 /**
  * 화면 전환 시 새 화면의 제목으로 포커스를 옮긴다 (R-030).
@@ -129,7 +130,15 @@ export function useLifeFocus(targets: LifeFocusTargets): LifeFocusHandle {
     }
     const action = decideLifeFocus(moment, autoMode, focusPlaceOf(t.controlsRef.current, document.activeElement));
     if (live !== null) live.textContent = action === 'announce' ? `선택지가 나왔습니다: ${t.choiceTitleRef.current?.textContent ?? ''}` : '';
-    if (action === 'choiceTitle') t.choiceTitleRef.current?.focus();
+    if (action === 'choiceTitle') {
+      // 포커스는 제목으로 옮기되 스크롤은 직접 맞춘다: 브라우저 기본은 제목을 화면 가운데로 올려 그 아래 선택지를 하단 고정 줄 밑으로 밀 수 있다(M4 대시보드 — 고정 헤더·진행 줄).
+      // 카드(제목을 품은 section)가 헤더 밑·진행 줄 위 가용 영역 안에 이미 있으면 그대로 두고, 아니면 카드의 위쪽을 헤더 밑에 맞춘다(scroll-padding이 헤더·띠 높이를 담고 있다, CM10).
+      const title = t.choiceTitleRef.current;
+      if (title !== null) {
+        title.focus({ preventScroll: true });
+        revealCard(title.closest('section') ?? title);
+      }
+    }
     else if (action === 'lifeTitle') t.titleRef.current?.focus({ preventScroll: moment === 'choiceResolved' });
   }, [pendingKey, autoMode]);
   useEffect(() => {

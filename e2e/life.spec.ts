@@ -35,15 +35,21 @@ async function startFromTitle(page: Page, url = '/') {
   await expect(page.getByTestId('life-screen')).toBeVisible();
 }
 
-test('출생 → 살아가기 → 인생 화면: 이름·나이·단계·스탯 5개+외모·속도 컨트롤이 보이고 자리표시와 "처음으로"는 없다 (R-021)', async ({ page }) => {
+test('출생 → 살아가기 → 인생 화면(대시보드): 이름·나이·학력·상태 4개·외모 순위·진행 컨트롤이 보이고 자리표시와 "처음으로"는 없다 (R-021, M4)', async ({ page }) => {
   await startFromTitle(page);
   await expect(page.getByTestId('life-name')).toBeVisible();
   await expect(page.getByTestId('life-age')).toContainText('0세');
-  await expect(page.getByTestId('life-stage')).toHaveText('영유아');
-  for (const key of ['wealth', 'education', 'health', 'happiness', 'relationships', 'looks']) {
+  // 바뀐 기대(M4): 옛 「단계」 줄(life-stage 「영유아」)은 프로필 카드의 학력(0세는 「취학 전」)으로, 스탯 5개+외모 줄은 상태 바 4개(건강·행복·지식·관계)로 바뀌었다.
+  // 재산은 자산 현황 자리(경제 모델 M5)로, 외모는 점수 줄이 아니라 얼굴 그림과 「상위/하위 약 N%」 한 가지로만 드러난다(R-135).
+  await expect(page.getByTestId('profile-edu')).toHaveText('취학 전');
+  for (const key of ['health', 'happiness', 'education', 'relationships']) {
     await expect(page.getByTestId(`stat-${key}`)).toBeVisible();
   }
-  // 속도 컨트롤 상시 표시: 1배 / 2배 / 4배 / 8배, 다음 결정으로, 자동 모드
+  for (const key of ['wealth', 'looks']) await expect(page.getByTestId(`stat-${key}`)).toHaveCount(0);
+  await expect(page.getByTestId('profile-looks')).toContainText(/상위|하위|딱 중간쯤/);
+  await expect(page.getByTestId('assets-card')).toBeVisible();
+  // 진행 줄 상시 표시: 일시정지 / 1배 / 2배 / 4배 / 8배, 다음 결정으로, 자동 모드 (M4: 일시정지가 더해졌다)
+  await expect(page.getByTestId('pause')).toBeVisible();
   for (const label of ['1배', '2배', '4배', '8배']) await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '1배', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('skip')).toBeVisible();
@@ -204,7 +210,7 @@ for (const vp of [
   { width: 360, height: 640 },
   { width: 360, height: 740 },
 ]) {
-  test(`${vp.width}x${vp.height}: 선택지 3개와 속도 컨트롤이 모두 화면 안에서 서로 가려지지 않고 가로 넘침이 없다`, async ({ page }, testInfo) => {
+  test(`${vp.width}x${vp.height}: 선택지 3개는 스크롤로 모두 닿고 진행 줄 7개는 늘 화면 안에서 가려지지 않으며 가로 넘침이 없다 (M4: 전수 측정은 e2e/layout.spec.ts)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize(vp);
     await page.goto('/');
@@ -220,15 +226,20 @@ for (const vp of [
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, covered: !(hit === el || el.contains(hit)), name: (el.textContent ?? '').trim() };
       };
+      // 바뀐 기대(M4): 선택지 카드는 고정 머리(약 95px) 아래에서 시작해 360×568에서는 셋째 선택지가 하단 진행 줄 밑에 있을 수 있다 — 각 선택지를 화면 가운데로 스크롤해 닿는지 본다(첫 화면 전체 적합은 layout.spec.ts가 따로 잰다).
+      const choices = [...document.querySelectorAll('[data-testid="choice-panel"] button')].map((b) => {
+        b.scrollIntoView({ block: 'center' });
+        return rect(b);
+      });
       return {
         vw: window.innerWidth,
         vh: window.innerHeight,
-        choices: [...document.querySelectorAll('[data-testid="choice-panel"] button')].map(rect),
+        choices,
         controls: [...document.querySelectorAll('[data-testid="controls"] button')].map(rect),
       };
     });
     expect(boxes.choices).toHaveLength(3);
-    expect(boxes.controls).toHaveLength(6);
+    expect(boxes.controls, '일시정지·1·2·4·8배·다음 결정으로·자동 모드').toHaveLength(7);
     for (const b of [...boxes.choices, ...boxes.controls]) {
       expect(b.left, b.name).toBeGreaterThanOrEqual(0);
       expect(b.right, b.name).toBeLessThanOrEqual(boxes.vw);
@@ -240,7 +251,9 @@ for (const vp of [
   });
 }
 
-test('사건 로그는 최근 항목 위주로 보이고(최신이 맨 위), 긴 인생 중간 화면도 360px에서 넘치지 않는다', async ({ page }) => {
+test('인생 기록(M4): 줄이 시간순으로 쌓여 맨 아래가 가장 최근이고 영역 안에서 스크롤되며, 긴 인생 중간 화면도 360px에서 넘치지 않는다', async ({ page }) => {
+  // 바뀐 기대(M4): 예전에는 사건 로그가 「최근 6개, 최신이 맨 위」였다. 인생 기록 카드(DB12)는 모든 줄을 시간순으로 쌓고(연표 상한 300) 맨 아래가 최신이며,
+  // 맨 아래를 보고 있으면 자동으로 따라가고 위로 올려 읽을 수 있다. 줄 수는 연표(history) 길이와 같다.
   await page.goto('/');
   const mid = await evalCore<GameState>(
     page,
@@ -250,11 +263,23 @@ test('사건 로그는 최근 항목 위주로 보이고(최신이 맨 위), 긴
   );
   expect(mid.history.length).toBeGreaterThan(6);
   await injectSave(page, mid, '/');
-  const items = page.getByTestId('log').locator('li');
-  await expect(items).toHaveCount(6);
-  await expect(items.first()).toHaveClass(/latest/);
+  const rows = page.getByTestId('log-row');
+  await expect(rows).toHaveCount(mid.history.length);
   const last = mid.history[mid.history.length - 1];
-  await expect(items.first()).toContainText(last.text);
+  await expect(rows.last()).toHaveClass(/latest/);
+  await expect(rows.last()).toContainText(last.text);
+  await expect(rows.first()).toContainText('로 태어났습니다');
+  // 화면이 막 떴을 때 맨 아래(가장 최근)에서 시작한다
+  const atBottom = await page.getByTestId('log-list').evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
+  expect(atBottom).toBeLessThanOrEqual(24);
+  // 위로 올려 첫 줄(출생)까지 읽을 수 있다
+  await page.getByTestId('log-list').evaluate((el) => el.scrollTo({ top: 0, behavior: 'instant' }));
+  const firstVisibleInList = await page.getByTestId('log-list').evaluate((el) => {
+    const row = el.querySelector('[data-testid="log-row"]')!.getBoundingClientRect();
+    const box = el.getBoundingClientRect();
+    return row.top >= box.top - 1 && row.bottom <= box.bottom + 1; // 기록 영역 안에서 첫 줄이 보인다(영역 자체가 쪽 화면에 있는지는 상관없다)
+  });
+  expect(firstVisibleInList).toBe(true);
   await expect(page.getByTestId('life-age')).toContainText(`${mid.age}세`);
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
@@ -289,7 +314,7 @@ test('배속 설정이 실제 진행 간격을 바꾼다: 1배속의 한 해는 
     const w = window as unknown as { __ages: { age: number; t: number }[] };
     w.__ages = [];
     const record = () => {
-      const strong = document.querySelector('[data-testid="life-age"] strong');
+      const strong = document.querySelector('[data-testid="life-age"] b'); // M4: 헤더의 나이 알약은 <b>31</b>세 (예전에는 <strong>)
       if (strong === null) return;
       const age = Number((strong.textContent ?? '').split('세')[0]);
       if (w.__ages.length === 0 || w.__ages[w.__ages.length - 1].age !== age) w.__ages.push({ age, t: performance.now() });

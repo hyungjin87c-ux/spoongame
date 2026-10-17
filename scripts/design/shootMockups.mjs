@@ -23,7 +23,8 @@ const OUT = ROOT + 'docs/design/screens/003/';
 mkdirSync(OUT, { recursive: true });
 
 const VIEW = { mobile: { width: 360, height: 740, dpr: 2 }, desktop: { width: 1280, height: 800, dpr: 1 }, 320: { width: 320, height: 640, dpr: 2 }, low: { width: 320, height: 256, dpr: 2 } };
-/** [파일, 이름, { m: 모바일 변형[], d: 데스크톱 변형[], n: 320 변형[], l: low(320×256) 변형[] }] 변형 옵션: dark, forced, reduced, full(전체 길이), bottom(맨 아래로 스크롤), to(이 선택자의 요소가 화면 위에 오게 스크롤), query(시안 주소의 질의 문자열 — 예 'slide=marriage-count', 'state=confirm', 'era=past'), text(글자 크기 %, 예 200) */
+/** [파일, 이름, { m: 모바일 변형[], d: 데스크톱 변형[], n: 320 변형[], l: low(320×256) 변형[] }] 변형 옵션: dark, forced, reduced, full(전체 길이), bottom(맨 아래로 스크롤), to(이 선택자의 요소가 화면 위에 오게 스크롤), query(시안 주소의 질의 문자열 — 예 'slide=marriage-count', 'state=confirm', 'era=past'), text(글자 크기 %, 예 200),
+ *  el(이 선택자의 **요소만** 찍는다 — 비활성 버튼처럼 작은 부분을 확대 없이 또렷이 볼 때. 넘침 점검은 페이지 전체에 그대로 돈다) */
 const SHOTS = [
   // 첫 화면 (확정 A안). 캐러셀은 구현과 같은 모델의 14장을 모두 품고 `?slide=<id>`로 보이는 슬라이드를 고른다(기본 1/14 합계출산율)
   ['title-a.html', 'title-a', { m: [{}, { dark: true }, { forced: true }, { full: true }], d: [{}, { dark: true }], n: [{}] }],
@@ -56,15 +57,29 @@ const SHOTS = [
   ['birth.html', 'birth-past-bottom', { d: [{ query: 'era=past', bottom: true }] }],
   ['birth.html', 'birth-future', { m: [{ query: 'era=future' }, { query: 'era=future', full: true }], d: [{ query: 'era=future' }], n: [{ query: 'era=future', full: true }, { query: 'era=future', text: 150, to: '.doc__grid' }] }],
   ['birth.html', 'birth-future-bottom', { d: [{ query: 'era=future', bottom: true }] }],
-  // 대시보드
+  // 대시보드(2026-10-17 M4 착수 정리): 헤더 sticky(--head-h) + 모바일 고정 진행 줄(= 이 화면의 하단 띠, --bar-h·.page-end-space), 다크는 도구 줄 「다크 모드」 켜짐 상태(aria-pressed + 해 아이콘 + 「켜짐」)
+  // 320 · 글자 200% = 헤더 첫 줄 접힘(이름·알약이 로고 아래) + 진행 줄 flex-wrap, low 320×256 = 헤더 + 진행 줄이 절반을 넘어 **헤더 고정이 풀리고** 진행 줄만 고정(11-1 헤더 해제 규칙)
   ['dashboard-infant.html', 'dashboard-infant', { m: [{}, { dark: true }, { full: true }], d: [{}, { dark: true }] }],
-  ['dashboard-adult.html', 'dashboard-adult', { m: [{}, { full: true }, { forced: true }], d: [{}, { dark: true }, { forced: true }], n: [{}] }],
+  ['dashboard-adult.html', 'dashboard-adult', { m: [{}, { full: true }, { dark: true }, { forced: true }], d: [{}, { dark: true }, { forced: true }], n: [{}, { text: 200 }], l: [{ to: '.profile' }] }],
+  // 도구 줄 아래 한 줄(2026-10-17 M4 구현에 맞춰 추가, `?state=`): tools = BGM 켜짐 → 볼륨 줄 「BGM 볼륨」 + range + 「30%」 / exit = 나가기 확인 단계(안내문 → 「첫 화면으로 나가기」(보조) → 「돌아가기」(기본), 첫 화면 확인 단계와 같은 배치 R-204)
+  // 「생각 남기기」는 M7c까지 모든 대시보드 샷에서 지속 비활성(점선·옅은 글자) + 버튼 안 「준비 중」 알약이다(M4 r2 R-326 — 예전의 안내 줄 「…준비 중입니다.」는 없다). 320 · 글자 200%의 확인 단계: 두 버튼이 flex-wrap으로 한 줄씩, 이름은 낱말 단위 「첫 화면으로 / 나가기」(R-336)
+  ['dashboard-infant.html', 'dashboard-tools', { m: [{ query: 'state=tools' }, { query: 'state=tools', dark: true }, { query: 'state=tools', forced: true }], d: [{ query: 'state=tools' }], n: [{ query: 'state=tools' }, { query: 'state=tools', text: 200 }] }],
+  ['dashboard-infant.html', 'dashboard-exit', { m: [{ query: 'state=exit' }, { query: 'state=exit', dark: true }, { query: 'state=exit', text: 200 }], d: [{ query: 'state=exit' }], n: [{ query: 'state=exit', text: 200 }] }],
+  // 지속 비활성 컨트롤만 또렷이(요소 단위 샷, 구현 qa/screenshots/003/dev-M4-unavailable-*.png과 같은 자리): 도구 줄(「생각 남기기 준비 중」 + 볼륨 줄) 라이트·다크·강제 색상 / 확인 단계 상자(320 · 글자 200% — 버튼 이름이 낱말 단위 두 줄, 고정 진행 줄에 가리지 않게 full + el)
+  // / 컴포넌트판 버튼 줄(「입력 가드 0.4초」 흐림 ↔ 「다음 결정으로」 점선 — 선택지 대기 중의 모습; 카드 시안 decision-*는 시트가 진행 줄 위를 덮어 요소 샷으로는 보이지 않는다)·도구 줄(강제 색상 포함)
+  ['dashboard-infant.html', 'dashboard-unavailable-tools', { m: [{ query: 'state=tools', el: '.toolbar' }, { query: 'state=tools', el: '.toolbar', dark: true }, { query: 'state=tools', el: '.toolbar', forced: true }] }],
+  ['dashboard-infant.html', 'dashboard-exit-box', { m: [{ query: 'state=exit', text: 200, el: '.exit-ask', full: true }], n: [{ query: 'state=exit', text: 200, el: '.exit-ask', full: true }] }],
+  ['components.html', 'components-buttons', { m: [{ el: '#buttons' }], d: [{ el: '#buttons' }, { el: '#buttons', dark: true }] }],
+  ['components.html', 'components-tools', { m: [{ el: '#tools' }, { el: '#tools', forced: true }] }],
+  // 밀린 화면·오류 화면(DS1 공통 헤더 — M4가 공통 헤더 컴포넌트로 함께 바꾼다): `system.html` / `?state=error`. 320 · 글자 200% = 제목 글자 크기 상한(R-321: 「바뀌었습니다.」가 한 줄 폭에 들어가도록 바닥 --fs-md까지 줄어든다)
+  ['system.html', 'system-superseded', { m: [{}, { forced: true }], d: [{}], n: [{ text: 200 }] }],
+  ['system.html', 'system-error', { m: [{ query: 'state=error' }, { query: 'state=error', dark: true }], d: [{ query: 'state=error' }], n: [{ query: 'state=error', text: 200 }] }],
   // 카드
   ['decision-infant.html', 'decision-infant', { m: [{}], d: [{}] }],
   ['decision-adult.html', 'decision-adult', { m: [{}, { dark: true }], d: [{}, { dark: true }] }],
   ['note.html', 'note', { m: [{}, { dark: true }], d: [{}] }],
-  // 엔딩
-  ['ending.html', 'ending', { m: [{}, { full: true }, { dark: true }], d: [{}] }],
+  // 엔딩: 머리 = 얼굴 96px 정사각 + 텍스트 칸 `.ending__who`(R-320), 320 · 글자 200% = 제목 「이서연의 인생」 글자 크기 상한(R-321 — 낱말이 끊기지 않고 칸이 좁으면 얼굴 아래 줄로)
+  ['ending.html', 'ending', { m: [{}, { full: true }, { dark: true }], d: [{}], n: [{}, { text: 200 }] }],
   // 디자인 시스템
   ['components.html', 'components', { m: [{ full: true }], d: [{ full: true }, { dark: true, full: true }] }],
   ['symbols.html', 'symbols', { m: [{ full: true }], d: [{ full: true }] }],
@@ -151,7 +166,14 @@ async function shoot(file, name, kind, opt) {
     await page.waitForTimeout(150);
   }
   const path = `${OUT}${name}-${kind}${suffix}.png`;
-  await page.screenshot({ path });
+  if (opt.el) {
+    // 요소 단위 샷: 그 요소의 경계 상자만(고정 요소·스크림이 위에 있으면 보이는 그대로 찍힌다)
+    const target = page.locator(opt.el).first();
+    if ((await target.count()) === 0) throw new Error(`${label}: 요소 ${opt.el}가 없다`);
+    await target.screenshot({ path });
+  } else {
+    await page.screenshot({ path });
+  }
   await ctx.close();
   console.log('saved', path.replace(ROOT, ''));
 }

@@ -161,6 +161,19 @@ test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
     expect(r.broken).toEqual([]);
   });
 
+  test('R-311 합성 대조: 등록 낱말이 `<br>` 밖의 자리(`<wbr>`)에서도 끊겼는데 한 줄 전체에는 들어갈 폭이면 broken이다 — forced·unavoidable로 숨지 못한다 (REV-003-M3-5)', async ({ page }) => {
+    const front = await natural(page, '다이아몬드');
+    // 가로 flex(한 줄 전체 = 칸들이 나눠 쓰는 넓은 상자) 안의 좁은 칸: 칸 폭(앞 조각의 70%)이 「다이아몬드」보다 좁아 `<wbr>`에서도 줄이 나뉜다.
+    // 그래도 낱말(앞 조각 `다이아몬드`)은 한 줄 전체(flex 폭 = 앞 조각의 6배)에 들어가므로 자연 폭 ≤ 한 줄이다 → unavoidable이 아니라 broken이어야 한다.
+    await render(page, `<div style="display:flex;width:${front * 6}px"><p style="margin:0;width:${front * 0.7}px">다이아<wbr>몬드<br>수저</p><p style="margin:0">옆 칸</p></div>`);
+    const r = await measureWordBreaks(page);
+    const dia = r.broken.filter((b) => b.word === '다이아몬드수저');
+    expect(dia, '한 줄에 들어갈 폭인데 `<br>` 밖에서도 끊긴 등록 낱말은 결함').toHaveLength(1);
+    expect(dia[0].natural, '자연 폭은 한 줄 전체 안이다(unavoidable이 될 수 없다)').toBeLessThanOrEqual(dia[0].line);
+    expect(r.forced, '등록 낱말이라도 `<br>` 밖의 끊김이 있으면 forced가 아니다').toEqual([]);
+    expect(r.unavoidable).toEqual([]);
+  });
+
   test('`<br>` 앞뒤에 공백이나 구두점이 있으면 낱말 사이의 줄바꿈이다: 「안녕 <br>하세요」「안녕.<br>하세요」는 낱말 둘 — 끊김도 forced도 아니다', async ({ page }) => {
     await render(page, '<p style="margin:0">안녕 <br>하세요</p><p style="margin:0">반가워.<br>잘가요</p><p style="margin:0">첫째<br> 둘째</p>');
     const r = await measureWordBreaks(page);

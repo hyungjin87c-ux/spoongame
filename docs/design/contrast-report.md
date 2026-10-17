@@ -1,6 +1,6 @@
 # 대비 점검 결과 (자동 생성)
 
-`npx vite-node scripts/checkContrast.ts --write` 가 `src/styles/tokens.css`의 색 토큰 쌍과 `src/styles/doc.css`의 불투명도(도장 「접수」·띠 표기처럼 바탕 위에 불투명도로 쌓이는 글자)가 만드는 쌍을 전수 계산해 이 파일을 만든다. 손으로 고치지 않는다.
+`npx vite-node scripts/checkContrast.ts --write` 가 `src/styles/tokens.css`의 색 토큰 쌍과 `src/styles/doc.css`가 만드는 화면 쌍(띠 표기 `.doc__tag`처럼 불투명도로 쌓이는 글자, 불투명도 없이 토큰 색 그대로인 장식 도장 「접수」의 글자·테두리)을 전수 계산해 이 파일을 만든다. 손으로 고치지 않는다.
 - 점검 쌍: 라이트 81개 + 다크 81개, **실패 0개**
 - 다크 토큰 두 블록(미디어쿼리 / data-theme) 불일치: 없음
 - 기준: 글자 4.5:1, 컨트롤 경계·아이콘·바·그림 3:1 (WCAG 2.x 상대 휘도). 투명도가 있는 선은 바탕 위에 얹은 색으로 계산.

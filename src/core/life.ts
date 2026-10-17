@@ -246,6 +246,7 @@ function finishYear(s: GameState, rng: Rng): { state: GameState; died: boolean }
         phase: 'ending',
         stats,
         pending: null,
+        paused: false, // 일시정지는 인생 단계에서만 있을 수 있다(저장 검증, DB3) — 일시정지 중 고른 선택이 마지막이었어도 엔딩에는 남지 않는다
         death: { age, cause },
         history: appendHistory(s.history, { age, kind: 'death', text: deathEntryText(cause) }),
         rngState: rng.getState(),

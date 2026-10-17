@@ -19,7 +19,9 @@ import { startBandOf } from '../../src/core/ending.ts';
 import { glueSegments, splitPair } from '../../src/core/glue.ts';
 import { peersOf } from '../../src/core/peers.ts';
 import { ROULETTE_TIMING, buildRoulette, reelPosition } from '../../src/core/roulette.ts';
-import { ERAS, LIFE_LENGTHS, isLifeLengthSelectable } from '../../src/core/types.ts';
+import { BGM_VOLUME_MAX, BGM_VOLUME_MIN, DEFAULT_BGM, ERAS, LIFE_LENGTHS, isLifeLengthSelectable } from '../../src/core/types.ts';
+import { DASH_TEXT, SYSTEM_TITLE, SYSTEM_TITLE_CHARS, titleCharsFor } from '../../src/data/dashText.ts';
+import { STAGE_ENTRY_TEXT } from '../../src/data/lifeTable.ts';
 import { buildComparison, compareShown, lifeGapLine } from '../../src/data/birthCompare.ts';
 import { OCCUPATION_LABEL } from '../../src/data/birthReportTable.ts';
 import { BIRTH_TEXT, GRADE_NAME, REPORT_NOTES, ROULETTE_TEXT, ROULETTE_TITLE_CHARS, formatKg, genderLabel, housingText, orderText, parentingDocText, regionOddsNote, yearMonthText } from '../../src/data/birthReportText.ts';
@@ -462,32 +464,62 @@ ${bar}
 }
 
 // ---------- 4. 대시보드 ----------
-/** 도구 줄 버튼. id는 시안 스크립트(다크 켜짐 표시)용. pressed = 켜짐(aria-pressed) */
-const toolBtn = (id, iconName, label, pressed = false) => `<button class="btn btn--tool" type="button" data-tool="${id}" ${pressed ? 'aria-pressed="true"' : 'aria-pressed="false"'}>${icon(iconName)}<span>${label}</span><span class="sr-only">${pressed ? '켜짐' : ''}</span></button>`;
+/**
+ * 도구 줄 버튼. id는 시안 스크립트(다크 켜짐 표시)용. pressed = 켜짐(aria-pressed).
+ * soon = M7c 전의 「생각 남기기」(R-326 마스터 결정, 구현 LifeScreen#LifeTools·M4 r2와 같은 마크업): **지속 비활성**(aria-disabled + data-unavailable — ds.css 점선·옅은 글자, R-337)이고
+ * 눈에 보이는 「준비 중」 알약(.tool-soon, DASH_TEXT.toolSoon)이 이름 뒤에 붙어 접근 가능한 이름이 「생각 남기기 준비 중」이다. 누르면 아무 일도 없다 — 없는 기능이 동작하는 것처럼 보이지 않게(QM3-3).
+ * 예전의 「눌러서 안내 한 줄이 나오는 보통 버튼」(「생각 남기기는 준비 중입니다.」)은 폐기했다(diff-003.md D-17).
+ */
+const toolBtn = (id, iconName, label, pressed = false, soon = false) =>
+  soon
+    ? `<button class="btn btn--tool" type="button" data-tool="${id}" aria-disabled="true" data-unavailable="true">${icon(iconName)}<span>${label}</span> <span class="tool-soon">${esc(DASH_TEXT.toolSoon)}</span></button>`
+    : `<button class="btn btn--tool" type="button" data-tool="${id}" ${pressed ? 'aria-pressed="true"' : 'aria-pressed="false"'}>${icon(iconName)}<span>${label}</span><span class="sr-only">${pressed ? '켜짐' : ''}</span></button>`;
 
-function dashHead({ age, year, progress, paused }) {
+/**
+ * 대시보드 헤더 + 도구 줄. 문구는 구현 상수 DASH_TEXT(src/data/dashText.ts)에서 읽는다(copy.md 대시보드 행과 같은 글자, 2026-10-17 M4 구현 뒤 맞춤).
+ * pending(선택지 대기 = 카드 시안의 시트가 떠 있을 때)이면 「다음 결정으로」가 **지속 비활성**: aria-disabled + data-unavailable(ds.css — 옅은 글자 + 점선, 불투명도 아님; design-system.md 6절 「버튼」).
+ * 「생각 남기기」는 M7c 전까지 같은 지속 비활성 + 「준비 중」 알약이다(toolBtn soon, R-326) — noteReady는 M7c 목표 시안(note.html, 자유 기록 카드가 떠 있는 모습)에서만 true.
+ * 도구 줄 아래 한 줄(볼륨·나가기 확인 단계)은 dashboardPage()가 `?state=tools|exit`로 끼운다.
+ */
+function dashHead({ age, year, progress, paused, pending = false, noteReady = false }) {
+  const T = DASH_TEXT;
   return `<header class="dash-head"><div class="dash-head__inner">
     <div class="dash-head__top">${headerLogo()}
-      <div class="who"><span class="who__name">${HERO.name}</span><span class="who__age"><b>${age}</b>세</span></div></div>
-    <div class="year-row"><span class="num">${year}년</span>
-      <div class="year-progress" role="progressbar" aria-label="올해 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><div class="year-progress__fill" style="width:${progress}%"></div></div>
+      <div class="who"><span class="who__name">${HERO.name}</span><span class="who__age"><b>${age}</b>${T.ageSuffix}</span></div></div>
+    <div class="year-row"><span class="num">${year}${T.yearSuffix}</span>
+      <div class="year-progress" role="progressbar" aria-label="${T.yearProgressLabel}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"${paused ? ` aria-valuetext="${progress}%, ${T.progressPausedValue}"` : ''}><div class="year-progress__fill" style="width:${progress}%"></div></div>
       <span class="year-row__pct num">${progress}%</span></div>
   </div></header>
   <div class="toolbar"><div class="toolbar__inner">
-    <div class="controls-fixed">
+    <div class="controls-fixed" role="group" aria-label="${T.controlsGroup}">
       <div class="controls__speed">
-        <button class="btn btn--sm" type="button" ${paused ? 'aria-pressed="true"' : ''}>${icon(paused ? 'play' : 'pause', 'icon--sm')}<span>${paused ? '다시 진행' : '일시정지'}</span></button>
-        <button class="btn btn--sm" type="button" aria-pressed="true">1배</button><button class="btn btn--sm" type="button">2배</button><button class="btn btn--sm" type="button">4배</button><button class="btn btn--sm" type="button">8배</button>
+        <button class="btn btn--sm" type="button">${icon(paused ? 'play' : 'pause', 'icon--sm')}<span>${paused ? T.play : T.pause}</span></button>
+        <button class="btn btn--sm" type="button" aria-pressed="true">1${T.speedUnit}</button><button class="btn btn--sm" type="button">2${T.speedUnit}</button><button class="btn btn--sm" type="button">4${T.speedUnit}</button><button class="btn btn--sm" type="button">8${T.speedUnit}</button>
       </div>
       <div class="controls__more">
-        <button class="btn btn--sm btn--secondary" type="button">${icon('next', 'icon--sm')}<span>다음 결정으로</span></button>
-        <button class="btn btn--sm btn--secondary" type="button" aria-pressed="false">${icon('auto', 'icon--sm')}<span>자동 모드 꺼짐</span></button>
+        <button class="btn btn--sm btn--secondary" type="button"${pending ? ' aria-disabled="true" data-unavailable="true"' : ''}>${icon('next', 'icon--sm')}<span>${T.skip}</span></button>
+        <button class="btn btn--sm btn--secondary" type="button" aria-pressed="false">${icon('auto', 'icon--sm')}<span>${T.autoOff}</span></button>
       </div>
     </div>
-    <div class="controls__tools">
-      ${toolBtn('bgm', 'music', 'BGM')}${toolBtn('note', 'pencil', '생각 남기기')}${toolBtn('dark', 'moon', '다크 모드')}${toolBtn('feedback', 'message', '의견 보내기')}${toolBtn('exit', 'exit', '나가기')}
+    <div class="controls__tools" role="group" aria-label="${T.toolsGroup}">
+      ${toolBtn('bgm', 'music', T.toolBgm)}${toolBtn('note', 'pencil', T.toolNote, false, !noteReady)}${toolBtn('dark', 'moon', T.toolDark)}${toolBtn('feedback', 'message', T.toolFeedback)}${toolBtn('exit', 'exit', T.toolExit)}
     </div>
   </div></div>`;
+}
+
+/**
+ * 도구 줄 아래 한 줄의 상태(M4 구현 LifeScreen.tsx와 같은 마크업, 2026-10-17 — r2 R-326 뒤 맞춤): `?state=tools` = BGM 켜짐(aria-pressed + 「켜짐」) → 볼륨 줄 「BGM 볼륨」 + range + 「N%」 /
+ * `?state=exit` = 나가기 확인 단계(안내문 → 「첫 화면으로 나가기」(보조) → 맨 아래 「돌아가기」(기본·먼저 포커스) — 첫 화면 확인 단계 R-204·QM2-6과 같은 배치). 문구는 DASH_TEXT(copy.md 대시보드 행).
+ * 「생각 남기기」의 안내 줄(「…준비 중입니다.」, 예전 .tool-note)은 없다 — 준비 중임은 버튼 안의 「준비 중」 알약이 늘 보인다(toolBtn soon, R-326).
+ */
+function toolbarStates() {
+  const T = DASH_TEXT;
+  const tools = `<label class="volume"><span>${esc(T.bgmVolume)}</span><input type="range" min="${BGM_VOLUME_MIN}" max="${BGM_VOLUME_MAX}" step="5" value="${DEFAULT_BGM.volume}" aria-valuetext="${DEFAULT_BGM.volume}%"><output>${DEFAULT_BGM.volume}%</output></label>`;
+  const exit = `<div class="exit-ask" role="group" aria-labelledby="exit-ask-t"><p class="exit-ask__title" id="exit-ask-t" role="alert">${esc(T.exitAsk)}</p><p class="t-sm t-muted">${esc(T.exitAskSub)}</p>
+<div class="exit-ask__actions"><button class="btn btn--secondary" type="button">${esc(T.exitYes)}</button><button class="btn btn--primary" type="button">${esc(T.exitNo)}</button></div></div>`;
+  return `<template id="state-tools">${tools}</template>
+<template id="state-exit">${exit}</template>
+<script>(function(){var s=new URLSearchParams(location.search).get('state');if(s!=='tools'&&s!=='exit')return;var t=document.getElementById('state-'+s),inner=document.querySelector('.toolbar__inner');if(!t||!inner)return;inner.appendChild(t.content.cloneNode(true));if(s==='tools'){var b=document.querySelector('[data-tool="bgm"]');if(b){b.setAttribute('aria-pressed','true');var sr=b.querySelector('.sr-only');if(sr)sr.textContent='${T.toolOn}';}}})();</script>`;
 }
 
 function profileCard({ ageGroup, edu }) {
@@ -512,32 +544,40 @@ const assetsInfant = `<section class="card" aria-label="자산 현황"><h2 class
   <p class="t-sm t-muted">자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.</p></section>`;
 
 const assetsAdult = `<section class="card" aria-label="자산 현황"><div class="card__head" style="margin-bottom:var(--sp-3)"><h2 class="card__title">자산 현황</h2><span class="tag">올해 가치 기준</span></div>
-  <dl class="assets"><div class="assets__row"><dt>순자산</dt><dd class="neg">−1,200만 원</dd></div><div class="assets__row"><dt>연 소득</dt><dd>3,200만 원</dd></div><div class="assets__row"><dt>부채</dt><dd>4,800만 원</dd></div></dl>
+  <dl class="assets"><div class="assets__row"><dt>순자산</dt><dd class="neg nowrap">−1,200만 원</dd></div><div class="assets__row"><dt>연 소득</dt><dd class="nowrap">3,200만 원</dd></div><div class="assets__row"><dt>부채</dt><dd class="nowrap">4,800만 원</dd></div></dl>
   <p class="t-xs t-faint" style="margin-top:var(--sp-2)">순자산 = 가진 것 − 부채. 마이너스는 빚이 더 많다는 뜻입니다.</p></section>`;
 
 const logRow = (age, text, extra = '', cls = '') => `<li class="log__row ${cls}"><span class="log__age">${age}세</span><span class="log__text">${text}${extra ? ` <em>${extra}</em>` : ''}</span></li>`;
-const logNote = (age, topic, text) => `<li class="log__row log__row--note"><span class="log__age">${age}세</span><span class="log__text"><span class="log__note-label">${icon('pencil', 'icon--sm')}나의 기록 · ${topic}</span><br>${esc(text)}</span></li>`;
+// 「나의 기록 · {주제}」 같은 짧은 쌍은 줄바꿈 묶음(Glue)으로 — 「·」가 줄 끝·첫머리에 혼자 남지 않는다(QM2-5·QM2-10, 11-4절)
+const logNote = (age, topic, text) => `<li class="log__row log__row--note"><span class="log__age">${age}세</span><span class="log__text"><span class="log__note-label">${icon('pencil', 'icon--sm')}${glueHtml(`나의 기록 · ${topic}`)}</span><br>${esc(text)}</span></li>`;
 
+/**
+ * 인생 기록(DB12·DB14). 고정 줄 「이 세상의 가상 인구 {N}명 · {이름}도 그중 한 사람」은 내용 길이가 판마다 다른 짧은 쌍이라 FitPair(한 줄에 안 들어가면 기호 없이 두 줄, 11-7절 — 구현 ui/FitPair.tsx).
+ * 머리 보조 「시간순 · 위로 스크롤하면 지난 기록」·「새 기록 N개 · 맨 아래로」는 Glue 묶음.
+ */
 function logCard(rowsHtml, newCount) {
-  return `<section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2><span class="t-xs t-faint">시간순 · 위로 스크롤하면 지난 기록</span></div>
-  <p class="log__pin">이 세상의 가상 인구 <strong class="num">${N_POP}명</strong> · ${HERO.name}도 그중 한 사람</p>
+  return `<section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2><span class="t-xs t-faint">${glueHtml('시간순 · 위로 스크롤하면 지난 기록')}</span></div>
+  <p class="log__pin">${fitPair(`이 세상의 가상 인구 ${N_POP}명`, `${HERO.name}도 그중 한 사람`)}</p>
   <ol class="log__list" aria-live="polite" aria-relevant="additions">${rowsHtml}</ol>
-  ${newCount ? `<button class="btn btn--secondary btn--sm log__jump" type="button">새 기록 ${newCount}개 · 맨 아래로</button>` : ''}</section>`;
+  ${newCount ? `<button class="btn btn--secondary btn--sm log__jump" type="button">${glueHtml(`새 기록 ${newCount}개 · 맨 아래로`)}</button>` : ''}</section>`;
 }
 
-/** 식구: 부모 나이는 출생신고(어머니 29·아버지 32, 2026년)에서 해마다 오른다 */
+/** 식구(DB13): 부모 나이는 출생신고(어머니 29·아버지 32, 2026년)에서 해마다 오른다. 「{직업} · {상태}」는 내용 길이가 판마다 다른 짧은 쌍이라 FitPair(좁은 열·큰 글자에서 기호 없이 두 줄 — 「·」가 가장자리에 남지 않는다, 11-7절) */
 const familyCard = (age) => `<section class="card family" aria-label="식구"><h2 class="card__title" style="margin-bottom:var(--sp-3)">식구</h2>
   <dl class="family-list">
-    <dt>어머니</dt><dd>${HERO.motherAge + age}세<small>${HERO.motherJob} · 건강함</small></dd>
-    <dt>아버지</dt><dd>${HERO.fatherAge + age}세<small>${HERO.fatherJob} · 건강함</small></dd>
+    <dt>어머니</dt><dd>${HERO.motherAge + age}세<small>${fitPair(HERO.motherJob, '건강함')}</small></dd>
+    <dt>아버지</dt><dd>${HERO.fatherAge + age}세<small>${fitPair(HERO.fatherJob, '건강함')}</small></dd>
     <dt>형제자매</dt><dd>${age >= 20 ? `남동생 ${age - 3}세 <small>3세 아래</small>` : '남동생 <small>이제 막 태어남</small>'}</dd>
     ${age >= 20 ? '<dt>배우자</dt><dd>없음</dd><dt>자녀</dt><dd>없음</dd>' : ''}
   </dl></section>`;
 
+/**
+ * 또래 카드(VP4, copy.md 「대시보드 · 또래 카드」): 한 줄의 구조는 출생신고 또래 목록(M3 구현 .people, R-269)과 같다 — 이름 옆 「여성/남성」, 장소는 다음 줄, **수저 칩**(gradeChip — M4 착수 결정 1 마스터: 수저 이름 허용 자리에 VP4 추가, 구현 ui/dash/Cards.tsx와 같은 순서) —
+ * 그 아래 상태 라벨(.people__now). 라벨은 나이 × 수저 규칙표(설계값)에서 나오므로 카드 끝에 「통계가 아님」을 적는다. 문구는 DASH_TEXT.
+ */
 function peersCard(labels) {
-  // 또래 한 줄의 구조는 출생신고(M3 구현)와 같다: 이름 옆 「여성/남성」, 장소는 다음 줄(R-269). 「요즘 모습」 라벨 자리는 M4 몫
-  const rows = PEERS.map(([n, s, g], i) => `<li><div class="people__who"><div class="people__line"><span class="name">${esc(n)}</span> <span class="sub">${esc(g)}</span></div><div class="sub">${esc(s)}</div></div><span class="t-sm t-muted">${labels[i]}</span></li>`).join('');
-  return `<section class="card" aria-label="같은 해 태어난 사람들"><div class="card__head" style="margin-bottom:var(--sp-1)"><h2 class="card__title">같은 해 태어난 사람들</h2><span class="t-xs t-faint" style="flex-basis:100%">요즘 모습</span></div><ul class="people">${rows}</ul><p class="t-xs t-faint">나이와 수저에 따라 정한 설계값입니다(통계가 아님).</p></section>`;
+  const rows = PEERS.map(([n, s, g, w], i) => `<li><div class="people__who"><div class="people__line"><span class="name">${esc(n)}</span> <span class="sub">${esc(g)}</span></div><div class="sub">${esc(s)}</div></div>${gradeChip(w)}<span class="people__now">${labels[i]}</span></li>`).join('');
+  return `<section class="card peers-now" aria-labelledby="peers-now-t"><div class="card__head" style="margin-bottom:var(--sp-1)"><h2 id="peers-now-t" class="card__title">${esc(DASH_TEXT.peersTitle)}</h2><span class="card__sub">${esc(DASH_TEXT.peersSub)}</span></div><ul class="people">${rows}</ul><p class="t-xs t-faint">${esc(DASH_TEXT.peersNote)}</p></section>`;
 }
 
 function infantSheet() {
@@ -589,10 +629,11 @@ function noteSheet() {
     </div></div></div>`;
 }
 
-function dashboardPage(kind, overlay = '', infantAge = 3) {
+function dashboardPage(kind, overlay = '', infantAge = 3, { noteReady = false } = {}) {
   const infant = kind === 'infant';
   const age = infant ? infantAge : 31;
-  const head = dashHead({ age, year: HERO.birthYear + age, progress: infant ? 62 : 38, paused: overlay !== '' });
+  // 카드 시안(시트가 떠 있음) = 선택지 대기: 시간은 멈추고 「다음 결정으로」는 지속 비활성이다(구현 LifeScreen#isSkipBlocked). noteReady = M7c 목표 시안(note.html)에서만 「생각 남기기」가 보통 버튼
+  const head = dashHead({ age, year: HERO.birthYear + age, progress: infant ? 62 : 38, paused: overlay !== '', pending: overlay !== '', noteReady });
   const rowsInfant =
     logRow(0, esc(HERO.sentence)) + // 인생 기록 0세 첫 줄 = 출생신고 서술문(BR3, core/birthReport.ts#birthSentence)
     logRow(0, '기본 예방접종을 받았습니다.') +
@@ -600,8 +641,9 @@ function dashboardPage(kind, overlay = '', infantAge = 3) {
     logRow(1, '첫 단어를 말했습니다. ‘엄마’라는 뜻의 말이었습니다.') +
     logRow(2, '엄마와 즐거운 시간을 보냈습니다.') +
     logRow(3, '동생을 맞이했습니다.', '', 'log__row--latest');
+  // 단계 줄도 다른 줄처럼 「N세 + 문장」(연표 한 줄 = 기록 한 줄, 문장은 구현 상수 STAGE_ENTRY_TEXT — 어체는 M7e) — 글자 색·2px 아래선으로만 구분(M4 구현에 맞춤 2026-10-17)
   const rowsAdult =
-    `<li class="log__row log__row--stage"><span class="log__text">20대 · 청년기</span></li>` +
+    logRow(20, esc(STAGE_ENTRY_TEXT.youth), '', 'log__row--stage') +
     logRow(24, '학자금 대출을 갚기 시작했습니다.', '(선택: 대출을 유지한다)') +
     logRow(27, '계약직으로 첫 직장에 들어갔습니다.') +
     logRow(29, '가까워진 사람과 만남을 시작했습니다.', '(선택: 연애를 시작한다)') +
@@ -622,9 +664,43 @@ function dashboardPage(kind, overlay = '', infantAge = 3) {
     ${MOCK_TAG}
   </div>
 </main>
-<div style="height:150px"></div>
-${overlay}`;
+<div class="page-end-space"></div>
+${overlay}
+${overlay ? '' : toolbarStates()}`;
+  // 본문 끝 여백은 고정 진행 줄의 실제 높이(--bar-h)를 따르는 .page-end-space — 150px 같은 고정값을 두지 않는다(11-1절, 2026-10-17)
   return page({ title: `수저 게임 · 시안 · 대시보드 (${infant ? '영유아 시점' : '성인 시점'})`, body, bodyClass: 'is-dash' });
+}
+
+// ---------- 4-1. 밀린 화면·오류 화면 (DS1 공통 헤더 — QA-003-M2 보완 마스터 결정 2·QM3-6, M4) ----------
+/**
+ * 게임명은 공통 헤더(.site-head = 구현 ui/Brand.tsx#SiteHead: 헤더 로고 40px + 화면 이름)가 맡고, h1은 화면의 메시지다. 문구는 구현 상수 `SYSTEM_TITLE`(src/data/dashText.ts — SupersededScreen·ErrorBoundary가 같은 상수를 그린다) 그대로.
+ * h1은 구현처럼 `--title-chars`(= `SYSTEM_TITLE_CHARS`, 가장 긴 낱말 「바뀌었습니다.」 7글자 + 1)를 인라인으로 넘겨 ds.css의 글자 크기 상한(카드 `.system .card`가 컨테이너, 바닥 --fs-md)이 폭 320 · 글자 200%에서도 낱말을 끊지 않는다(R-321·QM3-2, M4 r2 뒤 맞춤).
+ * `system.html`(밀린 화면) / `system.html?state=error`(오류 화면). 헤더 이름은 copy.md 「밀린 화면」「오류 화면」 행.
+ */
+function systemPage() {
+  const h1 = (text) => `<h1 style="--title-chars:${SYSTEM_TITLE_CHARS}">${esc(text)}</h1>`;
+  const superseded = `<header class="site-head">${headerLogo()}<span class="site-head__name">저장 안내</span></header>
+<main class="system" data-state="superseded">
+  <section class="card">
+    ${h1(SYSTEM_TITLE.superseded)}
+    <p class="t-muted">다른 탭이나 창에서 진행했거나, 저장이 직접 지워지거나 바뀌었을 수 있습니다. 이 화면은 최신이 아닐 수 있습니다. 이어서 하려면 아래 버튼을 누르세요. 저장된 가장 최근 내용을 이어받습니다.</p>
+    <button class="btn btn--primary" type="button">이 탭에서 이어하기</button>
+    <p class="t-sm t-muted">저장된 게임이 없거나 읽을 수 없으면 새 게임이 시작됩니다.</p>
+  </section>
+  ${MOCK_TAG}
+</main>`;
+  const error = `<header class="site-head">${headerLogo()}<span class="site-head__name">오류</span></header>
+<main class="system" data-state="error">
+  <section class="card">
+    ${h1(SYSTEM_TITLE.error)}
+    <button class="btn btn--primary" type="button">저장 지우고 새로 시작</button>
+  </section>
+  ${MOCK_TAG}
+</main>`;
+  const body = `${superseded}
+<template id="state-error">${error}</template>
+<script>(function(){if(new URLSearchParams(location.search).get('state')!=='error')return;var t=document.getElementById('state-error');if(!t)return;var head=document.querySelector('header.site-head'),main=document.querySelector('main.system');var frag=t.content.cloneNode(true);var nh=frag.querySelector('header.site-head'),nm=frag.querySelector('main.system');if(head&&nh)head.replaceWith(nh);if(main&&nm)main.replaceWith(nm);document.title='수저 게임 · 시안 · 오류 화면';})();</script>`;
+  return page({ title: '수저 게임 · 시안 · 밀린 화면', body, bodyClass: 'is-system' });
 }
 
 // ---------- 5. 엔딩 ----------
@@ -633,6 +709,8 @@ ${overlay}`;
  * 어체는 SPEC-003 C1·M7e에 따라 합쇼체로 바뀌며, 그때 화면은 함수 출력을 따른다(지금 시안은 M7e 전 현행 출력 = 해라체, R-191). 다시 태어나기 안내는 REBIRTH_NOTE(FR9).
  * 출발선 = band(era, grade)(지금 세상 1단계 「하위 25% 안쪽」), 도착 = standingLabel(END_STANDING)(「상위 약 38%」, 시안용 가짜 값).
  * 출발선 막대의 읽기용 설명(aria-label)도 같은 함수 출력(bandLabel·standingLabel·MOVEMENT_TEXT)의 조합이다 — 손으로 적지 않는다(R-191(d)).
+ * 머리(M4 구현 EndingScreen과 같은 구조, r2 뒤 맞춤): 얼굴 타일(96px 정사각, `flex: none`) + **텍스트 칸 `.ending__who`**(flex로 늘어나는 쪽은 이 칸뿐 — R-320) 안의 h1 「{이름}의 인생」(`DASH_TEXT.endingTitleSuffix`)에
+ * `--title-chars`(= `titleCharsFor(제목)`)를 넘겨 ds.css의 글자 크기 상한(컨테이너 = `.ending__who`, 바닥 --fs-lg)이 좁은 폭·큰 글자에서도 낱말을 끊지 않는다(R-321·QM3-2). 그 밖의 엔딩 구성(출발선 막대 등)은 M7e 목표 모습(diff-003.md D-19).
  */
 function endingPage() {
   const tl = (age, text, cls = '') => `<li class="${cls}"><span class="log__age">${age}세</span><span>${text}</span></li>`;
@@ -641,10 +719,11 @@ function endingPage() {
   const movement = 'up';
   const journey = journeyText({ kind: 'compared', start, end, movement });
   const barLabel = `출발선 ${bandLabel(start)}, 마지막 ${standingLabel(end)}. ${MOVEMENT_TEXT[movement]}`;
+  const title = `${HERO.name}${DASH_TEXT.endingTitleSuffix}`;
   const body = `<header class="site-head">${headerLogo()}<span class="site-head__name">엔딩</span></header>
 <main class="ending">
   <div class="ending__head">${face('elder', 'female', 3, `${HERO.name}의 얼굴 (노년 여성)`, 'face--lg')}
-    <div><p class="label">생애 기록</p><h1 class="t-title">${HERO.name}의 인생</h1><p class="t-muted">${HERO.birth} ~ 2110년 · 84세</p></div></div>
+    <div class="ending__who"><p class="label">생애 기록</p><h1 class="t-title" style="--title-chars:${titleCharsFor(title)}">${esc(title)}</h1><p class="t-muted">${HERO.birth} ~ 2110년 · 84세</p></div></div>
   <section class="card stack--sm stack"><p>${esc(deathLineText({ age: 84, cause: '노환' }))}</p><p class="t-muted">${esc(choiceCountText(27))}</p>
     <p class="mock-tag">시안 주석 · 회고 문장과 연표의 사망 줄은 endingText.ts·lifeText.ts의 현행 출력(M7e 전, 해라체)입니다. 합쇼체 전환(C1·M7e) 뒤 화면은 바뀐 함수 출력을 그대로 따릅니다.</p></section>
   <section class="card" aria-labelledby="j-t"><h2 id="j-t" class="card__title" style="margin-bottom:var(--sp-3)">${esc(ENDING_HEADINGS.journey)}</h2>
@@ -692,10 +771,10 @@ function componentsPage() {
   <section><h2>글자</h2><div class="stack--sm stack"><p class="t-display">수저 게임 52</p><p class="t-title">화면 제목 28px</p><p class="t-h2">카드 제목 22px</p><p>본문 16px — 한 번의 인생을, 끝까지 살아 보는 이야기입니다.</p><p class="t-sm t-muted">보조 설명 14px — 영향 표기와 도움말</p><p class="t-xs t-faint">출처·주석 12px (이보다 작게 쓰지 않습니다)</p></div></section>
   <section><h2>로고</h2><div class="row row--wrap" style="gap:var(--sp-6);align-items:flex-end">${logo(DEFAULT_KEY, 'row')}<span style="--logo-h:40px">${headerLogo()}</span></div>
     <p class="t-sm t-muted" style="margin-top:var(--sp-2)">왼쪽: 가로 로고(정식 심볼, 첫 화면 데스크톱 108px). 오른쪽: 헤더용 로고(단순화 심볼, 모든 화면 헤더 40px — 워드마크 글자 높이 약 23px).</p></section>
-  <section><h2>버튼</h2><div class="row row--wrap"><button class="btn btn--primary" type="button">기본</button><button class="btn btn--secondary" type="button">보조</button><button class="btn btn--ghost" type="button">테두리</button><button class="btn" type="button" aria-pressed="true">1배 (눌림)</button><button class="btn" type="button">2배</button><button class="btn btn--primary" type="button" aria-disabled="true">비활성</button><button class="btn btn--primary btn--lg" type="button">크게</button><button class="btn btn--secondary btn--icon" type="button" aria-label="이전">${icon('prev')}</button></div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">눌림 상태는 색 반전 + 굵은 아래 막대 + aria-pressed로 알립니다. 터치 대상은 44×44px 이상.</p></section>
-  <section><h2>도구 줄 (모바일) — BGM 켜짐·다크모드 켜짐 상태</h2><div class="controls__tools controls__tools--stack" style="max-width:360px">${toolBtn('bgm', 'music', 'BGM', true)}${toolBtn('note', 'pencil', '생각 남기기')}<button class="btn btn--tool" type="button" aria-pressed="true">${icon('sun')}<span>다크 모드</span><span class="sr-only">켜짐</span></button>${toolBtn('feedback', 'message', '의견 보내기')}${toolBtn('exit', 'exit', '나가기')}</div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">켜짐 = aria-pressed="true" + 색 반전 + 아래 막대 + 아이콘 교체(다크모드: 달 → 해) + 읽기 전용 「켜짐」. 이름은 낱말 단위로 두 줄까지 줄바꿈.</p></section>
+  <section id="buttons"><h2>버튼</h2><div class="row row--wrap"><button class="btn btn--primary" type="button">기본</button><button class="btn btn--secondary" type="button">보조</button><button class="btn btn--ghost" type="button">테두리</button><button class="btn" type="button" aria-pressed="true">1배 (눌림)</button><button class="btn" type="button">2배</button><button class="btn btn--primary" type="button" aria-disabled="true">입력 가드 0.4초</button><button class="btn btn--secondary" type="button" aria-disabled="true" data-unavailable="true">${icon('next', 'icon--sm')}<span>${esc(DASH_TEXT.skip)}</span></button><button class="btn btn--primary btn--lg" type="button">크게</button><button class="btn btn--secondary btn--icon" type="button" aria-label="이전">${icon('prev')}</button></div>
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">눌림 상태는 색 반전 + 굵은 아래 막대 + aria-pressed로 알립니다. 터치 대상은 44×44px 이상. 비활성은 둘: 진입 직후 0.4초 입력 가드(과도 상태)는 0.55 흐림, <strong>지속 비활성</strong>(「다음 결정으로」 — 자동 모드 내내·선택지 대기 중, 「생각 남기기」 — M7c 전)은 옅은 글자(--c-text-3) + 점선 테두리로 글자 4.5:1을 지킵니다(라디오 카드 「준비 중」과 같은 모양, 2026-10-17 — 구현 R-337).</p></section>
+  <section id="tools"><h2>도구 줄 (모바일) — BGM 켜짐·다크모드 켜짐 상태, 「생각 남기기」 준비 중(M7c 전)</h2><div class="controls__tools controls__tools--stack" style="max-width:360px">${toolBtn('bgm', 'music', DASH_TEXT.toolBgm, true)}${toolBtn('note', 'pencil', DASH_TEXT.toolNote, false, true)}<button class="btn btn--tool" type="button" aria-pressed="true">${icon('sun')}<span>${esc(DASH_TEXT.toolDark)}</span><span class="sr-only">켜짐</span></button>${toolBtn('feedback', 'message', DASH_TEXT.toolFeedback)}${toolBtn('exit', 'exit', DASH_TEXT.toolExit)}</div>
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">켜짐 = aria-pressed="true" + 색 반전 + 아래 막대 + 아이콘 교체(다크모드: 달 → 해) + 읽기 전용 「켜짐」. 이름은 낱말 단위로 두 줄까지 줄바꿈. 「생각 남기기」는 M7c까지 지속 비활성(점선·옅은 글자) + 버튼 안 <strong>「준비 중」 알약</strong>(.tool-soon — 라디오 카드 「약 1시간」의 메타 알약과 같은 모양, R-326): 눌러도 아무 일이 없고 접근 가능한 이름은 「생각 남기기 준비 중」. 알약만큼(약 19px) 도구 줄이 높아지는 것은 받아들였다.</p></section>
   <section><h2>수저 5단계 — 재질 색 + 이름 + 점 (아이콘은 칩 변형 실루엣)</h2><div class="row row--wrap">${[1, 2, 3, 4, 5].map((n) => gradeChip(n)).join('')}</div><div class="row row--wrap" style="margin-top:var(--sp-3)">${[1, 2, 3, 4, 5].map((n) => gradeChip(n, { lg: true })).join('')}</div>
     <div class="row row--wrap" style="margin-top:var(--sp-3)">${gradeChip(1, { range: band('present', 1) })}${gradeChip(2, { range: band('present', 2) })}</div>
     <p class="t-sm t-muted" style="margin-top:var(--sp-2)">칩(≤ 24px)은 무늬 없는 실루엣 + 이름 + 점. 구간 글자는 <code>bandLabel(startBandOf(era, wealth))</code> 출력을 칩 뒤 괄호에 — 글로 적으면 「${esc(gradeText(1, band('present', 1)))}」(R-170).</p>
@@ -822,9 +901,10 @@ write('spoon-sizes.html', spoonSizesPage());
 write('birth.html', birthPage());
 write('dashboard-infant.html', dashboardPage('infant'));
 write('dashboard-adult.html', dashboardPage('adult'));
+write('system.html', systemPage());
 write('decision-infant.html', dashboardPage('infant', infantSheet()));
 write('decision-adult.html', dashboardPage('adult', adultSheet()));
-write('note.html', dashboardPage('infant', noteSheet(), 5));
+write('note.html', dashboardPage('infant', noteSheet(), 5, { noteReady: true })); // M7c 목표 모습: 자유 기록 카드가 떠 있으므로 도구 줄의 「생각 남기기」는 보통 버튼
 write('ending.html', endingPage());
 write('components.html', componentsPage());
 write('symbols.html', symbolsPage());

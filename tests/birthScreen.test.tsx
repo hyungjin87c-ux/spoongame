@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ERAS, PARENT_WEALTHS, beginBirth, birthSentence, createInitialState, enterBirth, peersOf, type Era } from '../src/core';
 import { BIRTH_TEXT, DASHBOARD_PEERS_SHIPPED, GRADE_NAME, REPORT_NOTES, genderLabel, housingText, orderText, peersNoteText, yearMonthText } from '../src/data/birthReportText';
 import { lifeGapLine } from '../src/data/birthCompare';
+import { DASH_TEXT } from '../src/data/dashText';
 import { placeLabel } from '../src/data/regionNames';
 import { OCCUPATION_LABEL } from '../src/data/birthReportTable';
 import { getRegionFootnote } from '../src/data/koreaStatsAccess';
@@ -115,24 +116,29 @@ describe('같은 해 태어난 사람들 (VP3)', () => {
     }
   });
 
-  it('QM3-3: 또래 안내는 없는 기능을 가리키지 않는다 — 대시보드 또래 칸(VP4, M4)이 배포되기 전까지 「대시보드」·「오른쪽 칸」이 화면에 한 곳도 없고, 안내는 첫 문장 하나뿐이다 (세 세상 × 40판)', () => {
-    expect(DASHBOARD_PEERS_SHIPPED, 'M4가 VP4(대시보드 또래 칸)를 넣는 변경에서 켠다 — 그때 이 시험과 아래 두 문장 단언을 함께 바꾼다').toBe(false);
-    expect(BIRTH_TEXT.peersNote).toBe('네 사람도 같은 세상에서 나이를 먹습니다.');
+  it('QM3-3 (c): 대시보드 또래 칸(VP4)이 배포됐다(M4) — 안내가 둘째 문장으로 그 칸을 가리키고, 「대시보드」·「오른쪽 칸」은 화면에 한 곳도 없다 (세 세상 × 40판). 바뀐 기대: M3에서는 첫 문장 하나뿐이었다', () => {
+    expect(DASHBOARD_PEERS_SHIPPED, 'M4가 VP4(대시보드 또래 칸, ui/dash/Cards.tsx#PeersNowCard)를 넣는 변경에서 켰다').toBe(true);
+    const full = '네 사람도 같은 세상에서 나이를 먹습니다. 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.';
+    expect(BIRTH_TEXT.peersNote).toBe(full);
+    // 안내가 가리키는 칸의 이름은 대시보드 칸 제목과 같은 글자이고, 누를 버튼 이름은 출생신고 하단 띠의 「살아가기」다
+    expect(full).toContain(`「${DASH_TEXT.peersTitle}」`);
+    expect(full).toContain(`${BIRTH_TEXT.next}를 누르면`);
     for (const era of ERAS) {
       for (let seed = 1; seed <= 40; seed++) {
         const { html, text } = render(era, seed * 47);
+        // 좁은 화면(1열)에서는 그 칸이 맨 아래라 「오른쪽 칸」은 틀린 위치 서술이고, 「대시보드」는 화면에 적히지 않는 내부 이름이다(M4 착수 결정 3)
         expect(text, `${era} ${seed}`).not.toMatch(/대시보드|오른쪽 칸/);
         expect(html).not.toMatch(/대시보드|오른쪽 칸/); // 보이지 않는 속성(aria-label 등)에도 없다
         const note = /<p class="t-sm t-muted card__note">([^]*?)<\/p>/.exec(html);
         expect(note, '또래 안내 문단').not.toBeNull();
-        expect(note![1].replace(/<[^>]+>/g, '').trim(), '또래 안내는 첫 문장 하나').toBe('네 사람도 같은 세상에서 나이를 먹습니다.');
+        expect(note![1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), '또래 안내는 두 문장').toBe(full);
       }
     }
   });
 
-  it('QM3-3: 켜는 방법 — `peersNoteText(true)`는 둘째 문장(대시보드 오른쪽 칸 안내)을 더하고 `false`는 첫 문장뿐이다 (M4가 상수 하나로 켠다)', () => {
+  it('QM3-3: 켜는 방법 — `peersNoteText(true)`는 둘째 문장(「같은 해 태어난 사람들」 칸 안내)을 더하고 `false`는 첫 문장뿐이다', () => {
     expect(peersNoteText(false)).toBe('네 사람도 같은 세상에서 나이를 먹습니다.');
-    expect(peersNoteText(true)).toBe('네 사람도 같은 세상에서 나이를 먹습니다. 대시보드 오른쪽 칸에서 요즘 모습을 볼 수 있습니다.');
+    expect(peersNoteText(true)).toBe('네 사람도 같은 세상에서 나이를 먹습니다. 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.');
     expect(BIRTH_TEXT.peersNote).toBe(peersNoteText(DASHBOARD_PEERS_SHIPPED));
   });
 

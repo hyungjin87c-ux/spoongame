@@ -17,7 +17,7 @@ import {
 } from './helpers';
 
 /**
- * R-035: "살아가기"·"이 탭에서 이어하기"를 더블탭하면 둘째 입력이 같은 좌표에 새로 뜬 인생 화면 컨트롤(속도 4개·다음 결정으로·자동 모드)에
+ * R-035: "살아가기"·"이 탭에서 이어하기"를 더블탭하면 둘째 입력이 같은 좌표에 새로 뜬 인생 화면 컨트롤(M4: 일시정지·속도 4개·다음 결정으로·자동 모드 + 도구 줄의 BGM·생각 남기기·다크 모드·의견 보내기·나가기)에
  * 떨어질 수 있다. 화면이 뜬 직후 INPUT_GUARD_MS 동안 컨트롤도 입력을 무시해야 하고, 그 가드는 화면 진입 때만 걸려야 한다.
  *
  * R-050: 어느 뷰포트에서 겹치는지는 표로 적지 않고 **그 뷰포트에서 실제로 잰다** — 시작 화면 버튼의 영역과 인생 화면 컨트롤 버튼들의 영역이 겹치는 곳(교집합)을 구하고,
@@ -30,16 +30,21 @@ import {
  */
 
 const SETTINGS = { speed: 1, autoMode: false } as const;
-const SWEEP_TIMEOUT_MS = 120_000;
+const SWEEP_TIMEOUT_MS = 240_000;
 /** 교집합이 이 값(px)보다 얇으면 "닿는다"고 단정하지 않는다(서브픽셀·경계). 이 값 이상이면 교집합 한가운데의 클릭은 반드시 두 버튼 모두에 떨어진다. */
 const MIN_OVERLAP_PX = 4;
 /** 겹치는 곳을 더블클릭할 때, 버튼 폭의 이 비율 지점도 함께 누른다(R-035: 좌·우 1/4 지점). 겹치지 않는 뷰포트는 이 지점들만 짧게 본다. */
 const FRACTIONS = [1 / 4, 1 / 2, 3 / 4];
 const INITIAL: LifeSnapshot = { speed: '1', auto: 'false', age: '0세', hasChoice: false };
 /** 눌러도 상태가 안 바뀌는 컨트롤(이미 1배속이다): 가드가 막았는지는 landed로 보고, 대조군의 변화 기대에서는 뺀다. */
-const NO_EFFECT_CONTROLS = ['speed-1'];
-/** 뷰포트당 확인할 컨트롤 교집합(너무 오래 걸리지 않게 속도 2·8배, 다음 결정으로, 자동 모드). 속도 4배는 2·8배와 같은 경로라 생략한다. */
-const PROBED_CONTROLS = ['speed-2', 'speed-8', 'skip', 'auto'];
+const NO_EFFECT_CONTROLS = ['speed-1', 'tool-note']; // 「생각 남기기」는 M7c까지 선택할 수 없는 자리라 눌러도 아무 일도 없다(R-326)
+/**
+ * 뷰포트당 확인할 컨트롤 교집합(너무 오래 걸리지 않게 속도 2·8배, 다음 결정으로, 자동 모드). 속도 4배는 2·8배와 같은 경로라 생략한다.
+ * M4: 일시정지와 도구 줄(BGM·생각 남기기·다크 모드·의견 보내기·나가기)이 더해졌다 — 눌리면 일시정지·BGM 켬·테마 바뀜·새 탭·나가기 확인 단계가 생기므로 모두 변화로 센다(생각 남기기는 선택할 수 없는 자리라 변화가 없다 — R-326).
+ */
+const PROBED_CONTROLS = ['pause', 'speed-2', 'speed-8', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit'];
+/** 인생 화면에서 입력을 받는 요소 12개의 DOM 순서 (진행 줄 7개 + 도구 줄 5개) */
+const CONTROL_IDS = ['pause', 'speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit'];
 
 /**
  * 겹침이 관측돼야 하는 하한(스위트 수준). 이 개발 환경에서 측정한 현재 값(R-087에서 다시 쟀다)은 살아가기 9곳(11곳 중 360x667·360x740만 안 겹친다), 이어하기 3곳(360x320·320x360·480x320)이다.
@@ -82,7 +87,7 @@ interface Point {
 
 async function controlRects(page: Page): Promise<NamedRect[]> {
   return page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>('[data-testid="controls"] button')].map((b) => {
+    [...document.querySelectorAll<HTMLElement>('[data-testid="controls"] button, [data-testid="tools"] button, [data-testid="tools"] a')].map((b) => {
       const r = b.getBoundingClientRect();
       return { id: b.dataset.testid ?? `speed-${b.dataset.speed}`, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
     }),
@@ -119,6 +124,12 @@ interface Trial {
   savedAuto: boolean;
   savedAge: number;
   savedPending: string | null;
+  /** M4: 일시정지·BGM·테마·나가기 확인 단계·새 탭(의견 보내기) */
+  savedPaused: boolean;
+  savedBgmOn: boolean;
+  savedTheme: string;
+  exitOpen: boolean;
+  newTabs: number;
 }
 
 async function readTrial(page: Page, point: Point): Promise<Trial> {
@@ -126,6 +137,10 @@ async function readTrial(page: Page, point: Point): Promise<Trial> {
   await settle(page);
   const save = (await readSave(page)).data;
   const settings = await readSettings(page);
+  // 의견 보내기가 눌렸다면 새 탭이 열려 있다(밖으로 나가는 요청은 막아 두었다). 세고 닫는다.
+  const others = page.context().pages().filter((p) => p !== page);
+  const newTabs = others.length;
+  for (const p of others) await p.close();
   return {
     point,
     snapshot: await lifeSnapshot(page),
@@ -134,6 +149,11 @@ async function readTrial(page: Page, point: Point): Promise<Trial> {
     savedAuto: settings.autoMode,
     savedAge: save.age,
     savedPending: save.pending?.key ?? null,
+    savedPaused: save.paused,
+    savedBgmOn: settings.bgm.on,
+    savedTheme: settings.theme,
+    exitOpen: (await page.getByTestId('exit-ask').count()) > 0,
+    newTabs,
   };
 }
 
@@ -145,7 +165,12 @@ const isChanged = (t: Trial) =>
   t.savedSpeed !== SETTINGS.speed ||
   t.savedAuto !== SETTINGS.autoMode ||
   t.savedAge !== 0 ||
-  t.savedPending !== null;
+  t.savedPending !== null ||
+  t.savedPaused ||
+  t.savedBgmOn ||
+  t.savedTheme !== 'system' ||
+  t.exitOpen ||
+  t.newTabs > 0;
 
 const wasIntercepted = (t: Trial) => t.landed.some((c) => c.endsWith('(가드)'));
 const describeTrial = (t: Trial) => `x=${Math.round(t.point.x)} y=${Math.round(t.point.y)} (${t.point.control ?? '분수 지점'}): 둘째 입력(${t.landed.join(', ')}) 뒤 ${JSON.stringify(t.snapshot)}`;
@@ -192,7 +217,7 @@ async function measureControls(page: Page): Promise<NamedRect[]> {
   await replaceSaveAndReload(page, LIFE_SAVE, SETTINGS);
   await expect(page.getByTestId('life-screen')).toBeVisible();
   const rects = await controlRects(page);
-  expect(rects.map((r) => r.id)).toEqual(['speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto']);
+  expect(rects.map((r) => r.id)).toEqual(CONTROL_IDS);
   return rects;
 }
 
@@ -241,6 +266,7 @@ async function sweep(page: Page, entry: Entry, points: Point[], guardOn: boolean
 
 /** 뷰포트 하나의 측정만 한다(더블클릭 없음): 컨트롤 영역은 뷰포트마다 한 번 재고, 시작 화면 버튼마다 교집합을 구한다. */
 async function prepareViewport(page: Page, vp: { width: number; height: number }, kind: Entry['kind']): Promise<void> {
+  await page.context().route((url) => url.hostname !== 'localhost', (route) => route.abort()); // 의견 보내기가 새 탭을 열어도 실제 외부 사이트로 나가지 않는다(탭이 열렸는지만 센다)
   await page.setViewportSize({ width: vp.width, height: vp.height });
   await startPageHidden(page);
   await recordClicks(page);
@@ -334,16 +360,36 @@ test('데스크톱: 하단 고정 「살아가기」 자리와 인생 화면 컨
   await injectSave(page, BIRTH_SAVE, '/', SETTINGS);
   const controls = await measureControls(page);
   const measured = await measureEntry(page, ENTRIES[0], controls);
-  // M3 이전에는 출생 화면의 「살아가기」가 본문 안에 있어 데스크톱에서 컨트롤과 겹치지 않았다. 이제 화면 아래 고정 띠라 인생 화면의 컨트롤 줄과 겹친다 — 그래서 가드가 막아야 하는 경우로 바뀌었다.
-  expect(measured.overlapIds.length, '데스크톱에서도 하단 고정 「살아가기」가 인생 화면 컨트롤과 겹친다(측정)').toBeGreaterThan(0);
-
+  // M3에서는 데스크톱에서도 하단 고정 「살아가기」 띠가 인생 화면의 (아래쪽에 있던) 컨트롤 줄과 겹쳤다. M4 대시보드는 데스크톱(폭 ≥ 960px)에서 진행 줄·도구 줄이 머리 아래 **위쪽**에 놓여 겹침이 사라진다
+  // (모바일은 진행 줄이 화면 아래에 고정이라 11개 뷰포트에서 모두 겹친다 — 위 스위트). 겹침 여부는 측정해 기록하고, 겹치면 예전 단언(가드가 막는다·가드를 끄면 바뀐다)을 그대로 지킨다.
+  const overlapped = measured.overlapIds.length > 0;
+  testInfo.annotations.push({ type: '측정', description: `데스크톱 1280x800에서 「살아가기」와 겹치는 인생 화면 컨트롤: ${overlapped ? measured.overlapIds.join('·') : '없음(진행 줄·도구 줄이 위쪽)'}` });
   const trials = await sweep(page, ENTRIES[0], measured.points, true);
-  expect(trials.length).toBeGreaterThan(FRACTIONS.length); // 분수 지점 + 겹침 한가운데 지점들
+  expect(trials.length).toBeGreaterThanOrEqual(FRACTIONS.length); // 분수 지점 (+ 겹침 한가운데 지점들)
   for (const t of trials) expect(isChanged(t), describeTrial(t)).toBe(false);
-  expect(trials.filter(wasIntercepted).length, '겹치는 곳을 눌렀는데 둘째 입력이 닫힌 컨트롤에 닿은 적이 없다').toBeGreaterThan(0);
-  // 대조군: 가드를 끄면 같은 조작이 실제로 상태를 바꾼다 — 위 단언이 가드를 가른다는 증거
-  const unguarded = await sweep(page, ENTRIES[0], measured.points, false);
-  expect(unguarded.filter(isChanged).length, '대조군(가드 없음)에서 더블클릭이 컨트롤을 눌러 상태가 바뀌어야 한다').toBeGreaterThan(0);
+  if (overlapped) {
+    expect(trials.filter(wasIntercepted).length, '겹치는 곳을 눌렀는데 둘째 입력이 닫힌 컨트롤에 닿은 적이 없다').toBeGreaterThan(0);
+    // 대조군: 가드를 끄면 같은 조작이 실제로 상태를 바꾼다 — 위 단언이 가드를 가른다는 증거
+    const unguarded = await sweep(page, ENTRIES[0], measured.points, false);
+    expect(unguarded.filter(isChanged).length, '대조군(가드 없음)에서 더블클릭이 컨트롤을 눌러 상태가 바뀌어야 한다').toBeGreaterThan(0);
+  }
+
+  // 겹치지 않아도 가드는 화면이 막 뜬 순간의 모든 입력(손가락이 조금 옮겨 간 경우)을 막아야 한다: ?__guard=600000(개발 서버 전용 탐침)으로 「막 뜬 순간」을 붙들고
+  // 진행 줄·도구 줄 12개의 한가운데를 차례로 눌러도 상태가 하나도 바뀌지 않고, 모든 버튼 입력이 닫힌 버튼(가드)에 닿으며, 새 탭도 열리지 않는다.
+  await page.context().route((url) => url.hostname !== 'localhost', (route) => route.abort());
+  await injectSave(page, LIFE_SAVE, '/?__guard=600000', SETTINGS);
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  const rects = await controlRects(page);
+  expect(rects.map((r) => r.id)).toEqual(CONTROL_IDS);
+  await page.evaluate(() => ((window as unknown as { __clicks: string[] }).__clicks.length = 0)); // 위에서 건 입력 기록기(recordClicks)는 이동 뒤에도 남는다 — 이 시험의 입력만 기록
+  for (const r of await controlRects(page)) {
+    await page.mouse.click((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+  }
+  const held = await readTrial(page, { x: 0, y: 0, control: '모든 컨트롤' });
+  const clicks = await recordedClicks(page);
+  expect(clicks.length, '12개를 눌렀다').toBeGreaterThanOrEqual(CONTROL_IDS.length - 1); // 의견 보내기(링크)는 버튼이 아니라 비버튼으로 기록된다
+  for (const c of clicks) expect(c.endsWith('(가드)') || c.startsWith('비버튼:'), `가드가 닫힌 동안 열린 버튼에 입력이 닿았다: ${c}`).toBe(true);
+  expect(isChanged(held), describeTrial(held)).toBe(false);
 });
 
 test('가드는 화면이 뜰 때 한 번만 걸린다: 플레이 중 배속 버튼 연타·나이가 오를 때·자동 모드 해제에서 컨트롤이 다시 닫히지 않는다 (R-035)', async ({ page }) => {

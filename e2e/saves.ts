@@ -7,9 +7,9 @@ import type { BirthReport, Character, Era, GameState, LifeLength, ParentWealth, 
 
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 /** 설정 봉투 버전(core/storage.ts#SETTINGS_VERSION)과 첫 화면의 기본 선택(core/state.ts#DEFAULT_SETTINGS) — tests/e2eHelpers.test.ts가 core와 같은지 대조한다. */
-export const SETTINGS_VERSION = 2;
+export const SETTINGS_VERSION = 3;
 export const DEFAULT_ERA_CHOICE: Era = 'present';
 export const DEFAULT_LIFE_LENGTH_CHOICE: LifeLength = 'short30';
 /** 재현 가능한 실패를 위한 기본 시드 */
@@ -25,7 +25,7 @@ export type InjectedSettings = PlaySettings & Partial<Settings>;
 
 /** 설정 봉투(JSON 문자열). 비어 있는 필드는 기본값으로 채운다. */
 export function settingsEnvelope(settings: InjectedSettings): string {
-  return JSON.stringify({ version: SETTINGS_VERSION, data: { era: DEFAULT_ERA_CHOICE, lifeLength: DEFAULT_LIFE_LENGTH_CHOICE, ...settings } });
+  return JSON.stringify({ version: SETTINGS_VERSION, data: { era: DEFAULT_ERA_CHOICE, lifeLength: DEFAULT_LIFE_LENGTH_CHOICE, bgm: { on: false, volume: 30 }, theme: 'system', ...settings } });
 }
 
 /** 새 게임: 첫 화면(title). 세상·인생 길이는 아직 정해지지 않았다(첫 화면의 선택은 설정에 있다). */
@@ -42,6 +42,7 @@ export function titleState(seed: number): GameState {
     ...FRESH,
     birthReport: null,
     peerSeed: null,
+    paused: false,
     seed,
     rngState: seed,
   };
@@ -92,6 +93,7 @@ export function lifeState(seed: number): GameState {
     ...FRESH,
     birthReport: report(),
     peerSeed: PEER_SEED,
+    paused: false,
     seed,
     rngState: seed + 1,
   };
@@ -123,6 +125,7 @@ export function birthState(seed: number, era: Era, parentWealth: ParentWealth, l
     ...FRESH,
     birthReport: report(reportOverrides),
     peerSeed: PEER_SEED,
+    paused: false,
     seed,
     rngState: seed + 1,
   };

@@ -1,0 +1,1 @@
+{"okSep":true,"okUnit":true,"issues":[{"kind":"줄끝 기호","ch":"·","line":"가나다라·","where":"div"},{"kind":"숫자·단위 갈라짐","ch":"12345명","line":"12345명","where":"div"}]}

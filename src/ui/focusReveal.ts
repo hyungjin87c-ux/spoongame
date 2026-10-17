@@ -55,3 +55,22 @@ export function revealWithinReleasedBar(first: Element | null, focused: Element 
   }
   if (Math.abs(delta) >= 0.5) window.scrollBy(0, delta);
 }
+
+/**
+ * 카드(결정을 기다리는 중대 결정 카드 같은 큰 상자)를 가용 영역(화면 − 위 스크롤 여백(고정 헤더) − 아래 스크롤 여백(고정 띠)) 안에 둔다 (SPEC-003 CM10, M4).
+ * 이미 안에 있으면 건드리지 않는다(데스크톱의 3열은 카드가 처음부터 보인다 — 불필요한 점프 없음). 위가 가려졌거나 아래가 띠에 가려지면 카드의 **위쪽**을 가용 영역의 위에 맞춘다 —
+ * 카드가 가용 높이보다 커도 위쪽(제목)과 첫 선택지부터 보이고, 나머지는 문서 스크롤로 닿는다. 브라우저 기본 focus() 스크롤은 요소를 화면 가운데로 올려 카드 아래쪽이 띠 밑으로 밀릴 수 있어 대신 쓴다.
+ */
+export function revealCard(el: Element): void {
+  if (typeof window === 'undefined') return;
+  const style = window.getComputedStyle(document.documentElement);
+  const px = (v: string): number => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const top = px(style.scrollPaddingTop);
+  const bottomEdge = window.innerHeight - px(style.scrollPaddingBottom);
+  const r = el.getBoundingClientRect();
+  if (r.top >= top - 0.5 && r.bottom <= bottomEdge + 0.5) return;
+  window.scrollBy({ top: r.top - top, behavior: 'instant' });
+}

@@ -10,3 +10,4 @@ qa/results/final/mass-*.json
 qa/results/final/cases.jsonl
 qa/results/final/end-table.json
 qa/results/m3/samples-*.jsonl
+qa/results/m4/samples-*.jsonl

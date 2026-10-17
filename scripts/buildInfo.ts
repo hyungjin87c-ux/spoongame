@@ -48,3 +48,20 @@ export function resolveBuildInfo(input: {
 export function commitConstant(info: BuildInfo): string {
   return info.commit === null ? '' : `${info.commit}${info.dirty ? '+' : ''}`;
 }
+
+/**
+ * 저장소 주소 결정 (SPEC-003 DB7·DP1 「저장소 주소는 빌드 설정에서 읽는다」): package.json의 `repository`(문자열 또는 { url })에서 GitHub 저장소의 **https 주소**(`https://github.com/<주인>/<저장소>`)를 만든다.
+ * `git+https://…/x.git`·`git@github.com:주인/x.git`·`github:주인/x` 꼴을 받고, GitHub 저장소가 아니거나 모양이 어긋나면 빈 글자(의견 보내기 링크를 만들지 않는다 — 엉뚱한 주소로 보내지 않는다).
+ * vite.config.ts가 `__REPO_URL__` 상수로 넣고, src/core/feedback.ts#buildFeedbackUrl이 이 주소에서 이슈 작성 주소를 만든다.
+ */
+export function resolveRepoUrl(repository: unknown): string {
+  const raw = typeof repository === 'string' ? repository : typeof repository === 'object' && repository !== null && typeof (repository as { url?: unknown }).url === 'string' ? (repository as { url: string }).url : '';
+  const text = raw.trim();
+  const owner = '([A-Za-z0-9][A-Za-z0-9-]{0,38})';
+  const repo = '([A-Za-z0-9._-]{1,100}?)';
+  const m =
+    new RegExp(`^(?:git\\+)?https://github\\.com/${owner}/${repo}(?:\\.git)?/?$`).exec(text) ??
+    new RegExp(`^git@github\\.com:${owner}/${repo}(?:\\.git)?$`).exec(text) ??
+    new RegExp(`^github:${owner}/${repo}$`).exec(text);
+  return m === null ? '' : `https://github.com/${m[1]}/${m[2]}`;
+}

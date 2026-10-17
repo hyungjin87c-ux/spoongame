@@ -45,8 +45,16 @@ export function TitleLogos() {
 export function SiteHead({ name }: { name: string }) {
   return (
     <header className="site-head" data-testid="site-head">
-      <span className="logo-wrap logo--header" data-testid="header-logo" dangerouslySetInnerHTML={{ __html: LOGO_HEADER_SVG }} />
+      <HeaderLogo />
       <span className="site-head__name">{name}</span>
     </header>
   );
+}
+
+/**
+ * 헤더용 가로 로고(단순화 심볼 + 워드마크, 높이 40px). `SiteHead`(룰렛·출생신고·엔딩·밀린 화면·오류 화면)와 대시보드 헤더(`DashHead`, 이름·나이 알약과 진행률이 함께 있는 sticky 헤더)가 같은 로고를 쓴다.
+ * 로고 SVG는 `role="img" aria-label="수저 게임 로고 …"`를 갖고 있어 스크린리더가 게임명을 읽는다.
+ */
+export function HeaderLogo() {
+  return <span className="logo-wrap logo--header" data-testid="header-logo" dangerouslySetInnerHTML={{ __html: LOGO_HEADER_SVG }} />;
 }

@@ -70,11 +70,19 @@ export interface BarReleaseOptions {
   onRelease?: () => void;
   /** 이미 풀려 있는데 띠 높이나 작은 뷰포트 높이가 달라졌다(글자 확대·창 높이 축소, QA-003-M2 M2-B07) — 주소창 접힘으로는 불리지 않는다(작은 뷰포트 높이가 그대로라서) */
   onReleasedResize?: () => void;
+  /**
+   * 절반 규칙과 별개로 고정을 풀어야 하는 사정이 있는가 (작은 뷰포트 높이를 받는다; 매번 재측정할 때 불린다). 대시보드 「나가기」 확인 단계가 열려 있을 때,
+   * 안내문 첫 줄부터 「돌아가기」까지와 고정 요소(헤더·진행 줄)가 한 화면에 함께 못 들어가면 true — `ui/exitAsk.ts`가 판정한다(QA-003-M4 O03).
+   * 절반 규칙이 이미 풀면 이 값과 상관없이 풀린다(둘 중 하나라도 true면 해제). 값이 바뀔 사정이 생기면 호출자가 `refresh()`를 부른다.
+   */
+  forceRelease?: (viewportHeight: number) => boolean;
 }
 
 export interface BarReleaseWatch {
   /** 지금 풀려 있는가 (아직 재지 않았으면 false) */
   isReleased(): boolean;
+  /** 지금 바로 다시 잰다 — `forceRelease`의 사정이 바뀐 때(확인 단계 열기·닫기·크기 변화) 호출자가 부른다. 재는 일은 같은 함수라 값이 그대로면 아무 일도 없다 */
+  refresh(): void;
   /** 리스너·관찰자·탐침을 걷고 `bar-released` 클래스와 `--bar-h`를 지운다 */
   dispose(): void;
 }
@@ -93,7 +101,7 @@ export function watchBarRelease(bar: HTMLElement, options: BarReleaseOptions = {
     const height = bar.offsetHeight;
     const view = viewport.height();
     root.style.setProperty('--bar-h', `${height}px`);
-    const next = shouldReleaseBar(height, view);
+    const next = shouldReleaseBar(height, view) || (options.forceRelease?.(view) ?? false);
     const sizeChanged = height !== lastBar || view !== lastView;
     lastBar = height;
     lastView = view;
@@ -112,6 +120,7 @@ export function watchBarRelease(bar: HTMLElement, options: BarReleaseOptions = {
   window.addEventListener('resize', apply);
   return {
     isReleased: () => released === true,
+    refresh: apply,
     dispose() {
       observer?.disconnect();
       window.removeEventListener('resize', apply);

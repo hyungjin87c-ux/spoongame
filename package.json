@@ -2,6 +2,10 @@
   "name": "suzeo-game",
   "private": true,
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyungjin87c-ux/spoongame.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

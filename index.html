@@ -7,11 +7,25 @@
     <meta name="description" content="태어난 집에 따라 달라지는, 한국인의 한 번의 인생을 살아 보는 시뮬레이션 게임" />
     <meta name="application-name" content="수저 게임" />
     <meta name="apple-mobile-web-app-title" content="수저 게임" />
-    <!-- 첫 화면은 시스템 설정(밝게/어둡게)을 따른다(src/styles/tokens.css). 주소 표시줄 색도 같은 바탕색을 쓴다.
-         출생 이후의 옛 화면(아직 고정 색의 라이트 디자인)이 떠 있는 동안에는 src/ui/legacyTheme.tsx가 아래 두 메타와 <html data-theme>를 라이트로 바꿨다가 첫 화면에서 되돌린다(R-208). -->
+    <!-- 모든 화면이 시스템 설정(밝게/어둡게)을 따른다(src/styles/tokens.css). 주소 표시줄 색도 같은 바탕색을 쓴다.
+         대시보드의 「다크 모드」 버튼으로 수동 선택(라이트·다크)을 하면 src/ui/theme.ts가 아래 메타들과 <html data-theme>를 그 선택으로 바꾸고, 시스템으로 돌아가면 이 원래 값으로 되돌린다(SPEC-003 DB6). -->
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#14171f" media="(prefers-color-scheme: dark)" />
+    <!-- 수동 테마 사전 적용(QA-003-M4 O02): 다크·라이트를 직접 고른 사용자의 첫 그림이 시스템 색으로 번쩍이지 않게, JS 번들이 뜨기 전에 저장된 설정의 theme을 <html data-theme>에 미리 건다(tokens.css가 그 값을 시스템 설정보다 우선한다).
+         키·형식·판정은 src/core/storage.ts(SETTINGS_KEY·parseSettings)와 같다 — tests/themeInline.test.ts가 같은 입력으로 parseSettings와 결과를 대조한다. 읽기에 실패하거나 형식이 맞지 않으면 아무것도 하지 않는다(시스템 설정을 따른다).
+         주소 표시줄 메타는 건드리지 않는다(번들이 뜬 뒤 src/ui/theme.ts가 원래 값을 기억하며 바꾼다). 요청을 만들지 않는 짧은 인라인 스크립트다. -->
+    <script>
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem('suzeo-game:settings'));
+          var d = s && s.data;
+          if (d && [1, 2, 3].indexOf(s.version) >= 0 && [1, 2, 4, 8].indexOf(d.speed) >= 0 && typeof d.autoMode === 'boolean' && (d.theme === 'light' || d.theme === 'dark')) {
+            document.documentElement.setAttribute('data-theme', d.theme);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <!-- 파비콘·터치 아이콘: 형진 님이 고른 심볼 A안 「담긴 땅」(src/assets/brand/a). 경로는 vite가 빌드 때 base를 붙여 준다. -->
     <link rel="icon" type="image/svg+xml" href="/src/assets/brand/a/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/src/assets/brand/a/favicon-32.png" />

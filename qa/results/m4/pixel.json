@@ -1,0 +1,494 @@
+{
+ "all": [
+  {
+   "mode": "light",
+   "state": "infant",
+   "rows": 106,
+   "min": 5.78,
+   "disabled": [
+    "생각 남기기:5.78",
+    "생각 남기기:5.78",
+    "준비 중:8.65"
+   ],
+   "docH": 2214
+  },
+  {
+   "mode": "light",
+   "state": "age30",
+   "rows": 135,
+   "min": 5.78,
+   "disabled": [
+    "생각 남기기:5.78",
+    "생각 남기기:5.78",
+    "준비 중:8.65"
+   ],
+   "docH": 2632
+  },
+  {
+   "mode": "light",
+   "state": "pending",
+   "rows": 147,
+   "min": 5.78,
+   "disabled": [
+    "다음 결정으로:5.78",
+    "생각 남기기:5.78",
+    "생각 남기기:5.78",
+    "준비 중:8.65"
+   ],
+   "docH": 2966
+  },
+  {
+   "mode": "light",
+   "state": "exit-ask",
+   "rows": 141,
+   "min": 5.78,
+   "disabled": [
+    "생각 남기기:5.78",
+    "생각 남기기:5.78",
+    "준비 중:8.65"
+   ],
+   "docH": 2873
+  },
+  {
+   "mode": "light",
+   "state": "tools-open",
+   "rows": 138,
+   "min": 5.78,
+   "disabled": [
+    "생각 남기기:5.78",
+    "생각 남기기:5.78",
+    "준비 중:8.65"
+   ],
+   "docH": 2688
+  },
+  {
+   "mode": "light",
+   "state": "ending",
+   "rows": 326,
+   "min": 5.78,
+   "disabled": [],
+   "docH": 6063
+  },
+  {
+   "mode": "light",
+   "state": "superseded",
+   "rows": 11,
+   "min": 7.93,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "light",
+   "state": "error",
+   "rows": 4,
+   "min": 7.93,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "light",
+   "state": "auto-on",
+   "rows": 106,
+   "min": 5.78,
+   "disabled": [
+    "다음 결정으로:5.78",
+    "생각 남기기:5.78",
+    "생각 남기기:5.78",
+    "준비 중:8.65"
+   ],
+   "docH": 2214
+  },
+  {
+   "mode": "dark",
+   "state": "infant",
+   "rows": 106,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2214
+  },
+  {
+   "mode": "dark",
+   "state": "age30",
+   "rows": 135,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2632
+  },
+  {
+   "mode": "dark",
+   "state": "pending",
+   "rows": 147,
+   "min": 5.96,
+   "disabled": [
+    "다음 결정으로:5.96",
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2966
+  },
+  {
+   "mode": "dark",
+   "state": "exit-ask",
+   "rows": 141,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2873
+  },
+  {
+   "mode": "dark",
+   "state": "tools-open",
+   "rows": 138,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2688
+  },
+  {
+   "mode": "dark",
+   "state": "ending",
+   "rows": 326,
+   "min": 5.96,
+   "disabled": [],
+   "docH": 6063
+  },
+  {
+   "mode": "dark",
+   "state": "superseded",
+   "rows": 11,
+   "min": 8.78,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "dark",
+   "state": "error",
+   "rows": 4,
+   "min": 9.76,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "dark",
+   "state": "auto-on",
+   "rows": 106,
+   "min": 5.96,
+   "disabled": [
+    "다음 결정으로:5.96",
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2214
+  },
+  {
+   "mode": "manual-dark",
+   "state": "infant",
+   "rows": 106,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2214
+  },
+  {
+   "mode": "manual-dark",
+   "state": "age30",
+   "rows": 135,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2632
+  },
+  {
+   "mode": "manual-dark",
+   "state": "pending",
+   "rows": 147,
+   "min": 5.96,
+   "disabled": [
+    "다음 결정으로:5.96",
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2966
+  },
+  {
+   "mode": "manual-dark",
+   "state": "exit-ask",
+   "rows": 141,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2873
+  },
+  {
+   "mode": "manual-dark",
+   "state": "tools-open",
+   "rows": 138,
+   "min": 5.96,
+   "disabled": [
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2688
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending",
+   "rows": 326,
+   "min": 5.96,
+   "disabled": [],
+   "docH": 6063
+  },
+  {
+   "mode": "manual-dark",
+   "state": "superseded",
+   "rows": 11,
+   "min": 8.78,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "manual-dark",
+   "state": "error",
+   "rows": 4,
+   "min": 9.76,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "manual-dark",
+   "state": "auto-on",
+   "rows": 106,
+   "min": 5.96,
+   "disabled": [
+    "다음 결정으로:5.96",
+    "생각 남기기:5.96",
+    "생각 남기기:5.96",
+    "준비 중:8.78"
+   ],
+   "docH": 2214
+  },
+  {
+   "mode": "forced-light",
+   "state": "infant",
+   "rows": 106,
+   "min": 11.31,
+   "disabled": [
+    "생각 남기기:14.02",
+    "생각 남기기:14.02",
+    "준비 중:14.02"
+   ],
+   "docH": 2215
+  },
+  {
+   "mode": "forced-light",
+   "state": "age30",
+   "rows": 135,
+   "min": 11.31,
+   "disabled": [
+    "생각 남기기:14.02",
+    "생각 남기기:14.02",
+    "준비 중:14.02"
+   ],
+   "docH": 2632
+  },
+  {
+   "mode": "forced-light",
+   "state": "pending",
+   "rows": 147,
+   "min": 11.31,
+   "disabled": [
+    "다음 결정으로:14.02",
+    "생각 남기기:14.02",
+    "생각 남기기:14.02",
+    "준비 중:14.02"
+   ],
+   "docH": 2966
+  },
+  {
+   "mode": "forced-light",
+   "state": "exit-ask",
+   "rows": 141,
+   "min": 11.31,
+   "disabled": [
+    "생각 남기기:14.02",
+    "생각 남기기:14.02",
+    "준비 중:14.02"
+   ],
+   "docH": 2873
+  },
+  {
+   "mode": "forced-light",
+   "state": "tools-open",
+   "rows": 138,
+   "min": 11.31,
+   "disabled": [
+    "생각 남기기:14.02",
+    "생각 남기기:14.02",
+    "준비 중:14.02"
+   ],
+   "docH": 2688
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending",
+   "rows": 326,
+   "min": 21,
+   "disabled": [],
+   "docH": 6063
+  },
+  {
+   "mode": "forced-light",
+   "state": "superseded",
+   "rows": 11,
+   "min": 21,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "forced-light",
+   "state": "error",
+   "rows": 4,
+   "min": 21,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "forced-light",
+   "state": "auto-on",
+   "rows": 106,
+   "min": 11.31,
+   "disabled": [
+    "다음 결정으로:14.02",
+    "생각 남기기:14.02",
+    "생각 남기기:14.02",
+    "준비 중:14.02"
+   ],
+   "docH": 2215
+  },
+  {
+   "mode": "forced-dark",
+   "state": "infant",
+   "rows": 106,
+   "min": 8.73,
+   "disabled": [
+    "생각 남기기:13.98",
+    "생각 남기기:13.98",
+    "준비 중:13.98"
+   ],
+   "docH": 2215
+  },
+  {
+   "mode": "forced-dark",
+   "state": "age30",
+   "rows": 135,
+   "min": 8.73,
+   "disabled": [
+    "생각 남기기:13.98",
+    "생각 남기기:13.98",
+    "준비 중:13.98"
+   ],
+   "docH": 2632
+  },
+  {
+   "mode": "forced-dark",
+   "state": "pending",
+   "rows": 147,
+   "min": 8.73,
+   "disabled": [
+    "다음 결정으로:13.98",
+    "생각 남기기:13.98",
+    "생각 남기기:13.98",
+    "준비 중:13.98"
+   ],
+   "docH": 2966
+  },
+  {
+   "mode": "forced-dark",
+   "state": "exit-ask",
+   "rows": 141,
+   "min": 8.73,
+   "disabled": [
+    "생각 남기기:13.98",
+    "생각 남기기:13.98",
+    "준비 중:13.98"
+   ],
+   "docH": 2873
+  },
+  {
+   "mode": "forced-dark",
+   "state": "tools-open",
+   "rows": 138,
+   "min": 8.73,
+   "disabled": [
+    "생각 남기기:13.98",
+    "생각 남기기:13.98",
+    "준비 중:13.98"
+   ],
+   "docH": 2688
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending",
+   "rows": 326,
+   "min": 21,
+   "disabled": [],
+   "docH": 6063
+  },
+  {
+   "mode": "forced-dark",
+   "state": "superseded",
+   "rows": 11,
+   "min": 21,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "forced-dark",
+   "state": "error",
+   "rows": 4,
+   "min": 21,
+   "disabled": [],
+   "docH": 740
+  },
+  {
+   "mode": "forced-dark",
+   "state": "auto-on",
+   "rows": 106,
+   "min": 8.73,
+   "disabled": [
+    "다음 결정으로:13.98",
+    "생각 남기기:13.98",
+    "생각 남기기:13.98",
+    "준비 중:13.98"
+   ],
+   "docH": 2215
+  }
+ ]
+}

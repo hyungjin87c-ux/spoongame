@@ -259,7 +259,8 @@ export async function lifeSnapshot(page: Page): Promise<LifeSnapshot> {
   return page.evaluate(() => ({
     speed: document.querySelector('[data-speed][aria-pressed="true"]')?.getAttribute('data-speed') ?? null,
     auto: document.querySelector('[data-testid="auto"]')?.getAttribute('aria-pressed') ?? null,
-    age: document.querySelector('[data-testid="life-age"] strong')?.textContent?.trim() ?? '',
+    // 헤더의 나이 알약 「31세」(M4 대시보드: <b>31</b>세) — 예전에는 <strong>31세</strong>였다
+    age: document.querySelector('[data-testid="life-age"]')?.textContent?.trim() ?? '',
     hasChoice: document.querySelector('[data-testid="choice-panel"]') !== null,
   }));
 }
@@ -377,5 +378,5 @@ export async function controlFocusables(page: Page): Promise<string[]> {
   });
 }
 
-/** 컨트롤 그룹의 Tab 순서(DOM 순서)가 이래야 한다: 속도 4개 → 다음 결정으로 → 자동 모드. 선택지·자동 모드와 무관하다. */
-export const CONTROL_TAB_ORDER = ['speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto'] as const;
+/** 진행 줄 그룹의 Tab 순서(DOM 순서)가 이래야 한다: 일시정지 → 속도 4개 → 다음 결정으로 → 자동 모드. 선택지·자동 모드·일시정지와 무관하다. (M4: 일시정지가 맨 앞에 더해졌다) */
+export const CONTROL_TAB_ORDER = ['pause', 'speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto'] as const;

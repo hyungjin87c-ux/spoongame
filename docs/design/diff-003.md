@@ -6,6 +6,9 @@
 - **2026-10-16 r4(QA-003-M3 후속 QM3-1~5·R-291·D-05) 뒤 갱신**(designer, `ai-log/2026-10-16_SPEC-003_design-M3r4.md`): D-05·D-07이 닫혔고, r4 구현이 바꾼 것(컨테이너 기반 격자 1열·비교 표 쌓기, 제목 글자 크기 상한, 도장 불투명도 제거, 문구 3개)을 시안 `ds.css`·생성기에 그대로 옮겨 3절 「사라진 차이」에 더했다. 1절의 D-01~D-12 번호는 그대로 둔다(닫힌 것은 상태 열에 표시).
 - 상태 열: 「의도」 = 정적 시안의 한계로 그대로 둔다 / 「시안 한계」 = designer 후속 / 「구현 수정 필요」 = developer 몫(마스터가 ID를 부여해 지시) / 2절은 마스터 결정으로 확정된 명세 차이.
 - 근거 이미지: 시안 `docs/design/screens/003/{roulette-*,birth-*}.png`, 구현 `qa/screenshots/003/dev-M3-*.png`.
+- **2026-10-17 M4(대시보드·엔딩·밀린·오류 화면) 구현 뒤 갱신**(designer, `ai-log/2026-10-17_SPEC-003_design-M4.md`): 1-1절 D-13~D-26 신설(`ai-log/2026-10-17_SPEC-003_dev-M4.md` 3절 「시안과 다른 점」 기준 + 시안 점검에서 새로 찾은 것), 시안을 구현에 맞춘 항목은 3-2절. 근거 이미지: 시안 `dashboard-*.png`(`dashboard-tools-*`·`dashboard-exit-*` 신설)·`decision-*`·`components-desktop-full.png`, 구현 `qa/screenshots/003/dev-M4-*.png`.
+- **2026-10-17 M4 r2(REV-003-M4-1 R-320~R-337 반영) 뒤 갱신**(designer, `ai-log/2026-10-17_SPEC-003_design-M4r2.md`): D-17(생각 남기기 — R-326 마스터 결정으로 모양이 바뀌어 시안을 다시 맞춤)·**D-20(R-336)·D-23(R-337)·D-26 닫힘**, **D-27~D-30 신설**(R-320 엔딩 머리·R-321 제목 상한·R-329 얼굴 96px — 시안을 r2 구현에 맞춤, 관찰 하나). 3-3절. 근거 이미지: 시안 `dashboard-tools-*`·`dashboard-unavailable-tools-*`·`dashboard-exit-box-*`·`ending-320-text200`·`system-*-320-text200`·`components-buttons-*`, 구현 `qa/screenshots/003/dev-M4-{unavailable-*,exit-ask-box-*,ending-head-face-*,profile-card-96px-*}.png`.
+- **2026-10-17 M4 r3·REV-003-M4-2 R-342 뒤 갱신**(designer, `ai-log/2026-10-17_SPEC-003_design-M4r2.md` 7절): **D-30 ①② 닫힘** — r3에서 developer가 둘 다 반영(REV-003-M4-1 「반영 내역(r3)」: `title.css` 강제 색상 알약 `GrayText` 한 줄, `dash.css` `.tool-note` 죽은 규칙 삭제)했고, 시안 `ds.css` 강제 색상 블록에 같은 글자의 한 줄을 넣었다. 3-4절. 근거 이미지: 시안 `dashboard-unavailable-tools-mobile-forced.png`·`components-tools-mobile-forced.png`·`dashboard-tools-mobile-forced.png`(재촬영).
 
 ## 1. 구현 ↔ 시안 (M3 룰렛·출생신고) — 남은 차이
 
@@ -23,6 +26,29 @@
 | D-10 | 룰렛 시안의 세상 | 세 시대(지난 세상은 시·도 10~15칸, 설계값 주석) | 지금 세상만(16칸) | 의도. 세 시대의 주석 문구는 `copy.md` 룰렛 「지역 확률표 주석」 행에 적었다 |
 | D-11 | 시안 표식 | — | `.mock-tag` 「시안 · 가짜 데이터」 | 의도(시안 구분) |
 | D-12 | 출생신고 세 시대 한 파일 | 세상은 저장 상태가 정한다 | `birth.html?era=past|future` — `<template>`에 둔 본문으로 바꿔 끼운다(첫 화면 `?state=confirm`과 같은 방식) | 의도. 320px 전수 점검은 (파일, 질의) 조합마다 돈다 |
+
+## 1-1. 구현 ↔ 시안 (M4 대시보드·엔딩·밀린·오류 화면) — 남은 차이 (2026-10-17)
+
+| ID | 곳 | 구현 (`src/`, `qa/screenshots/003/dev-M4-*`) | 시안 (`docs/design/mockups`, `screens/003`) | 상태 · 이유 |
+|---|---|---|---|---|
+| D-13 | 중대 결정 카드 자리 | 대시보드 **안의 카드** `.choice-panel`(◆ 중대 결정 + 제목 + 본문 + 선택지): 1열은 헤더·진행 줄 바로 아래 맨 위, 3열은 가운데 열 맨 위(`dev-M4-dash-decision-mobile-360x740.png`) | 대시보드 위에 뜨는 **시트** `decision-*.html`(인용 박스·영향 표기·「카드 접기」 포함) | 의도(M7b 전 임시 — 시트 UI·근거 인용·영향 표기는 M7b 범위). 카드 틀의 종류 표시(◆)·선택지 버튼(번호 원 + 이름)은 시안 시트와 같은 부품이라 M7b에서 틀만 바뀐다 |
+| D-14 | 자산 현황(20세 이후) | 자리표시 한 줄 「스무 살 이후의 순자산, 연 소득, 부채는 아직 준비 중입니다.」(태그·주석 없음) | 금액 3줄(순자산 ▼ −1,200만 원 …) + 태그 「올해 가치 기준」 + 주석 | 의도(M5 전 임시 — SPEC: 자산 표시는 자리만). 시안은 M5의 목표 모습으로 유지. 문구 제안은 `copy.md` 「자산 현황(20세 이후, M5 전 자리)」 행 |
+| D-15 | BGM 볼륨 줄(DB4) | BGM 켜짐 → 도구 줄 아래 `label.volume`(「BGM 볼륨」 + `range` + `output` 「30%」) + 읽기 전용 「켜짐」(`dev-M4-dash-infant-mobile-360x740-tools-open.png`) | (없었음) → **같은 마크업·CSS 추가**(`dashboard-infant.html?state=tools`, `dashboard-tools-mobile.png`·`-desktop.png`) | **닫힘(시안을 구현에 맞춤)**. 시안 값은 `DEFAULT_BGM.volume`·`BGM_VOLUME_MIN/MAX`(`core/types.ts`)에서 읽는다 |
+| D-16 | 나가기 확인 단계(DB8) | 도구 줄 아래 `.exit-ask`: 「첫 화면으로 나갈까요?」 + 설명 + 「첫 화면으로 나가기」(보조) / 「돌아가기」(기본, 먼저 포커스)(`dev-M4-dash-infant-mobile-360x740-exit-ask.png`) | (없었음) → **같은 마크업·CSS 추가**(`?state=exit`, `dashboard-exit-{mobile,mobile-dark,mobile-text200,desktop,320-text200}.png`), 문구는 `DASH_TEXT`에서 | **닫힘(시안을 구현에 맞춤)** — 단 D-20 |
+| D-17 | 생각 남기기(M7c 전) | **r2(R-326 마스터 결정)**: `aria-disabled` 버튼(눌러도 무변화, 포커스는 받음) + `GuardedButton`의 `data-unavailable`(점선·옅은 글자) + 버튼 안 눈에 보이는 「준비 중」 알약(`.tool-soon`, `dashText.ts#toolSoon`) → 접근 가능한 이름 「생각 남기기 준비 중」. r1의 「보통 버튼 + 눌러서 안내 「…준비 중입니다.」(`noteSoon`)」는 삭제(`dev-M4-unavailable-tools-mobile-360x740-{light,dark}.png`·`…-tools-open.png`) | r1 모양(안내 줄)을 맞췄던 시안이 삭제된 `DASH_TEXT.noteSoon`을 읽어 재생성 시 「undefined」가 찍혔다 → **생성기 `toolBtn(…, soon)`이 구현과 같은 마크업**(`aria-disabled` + `data-unavailable` + `<span class="tool-soon">`)을 내고 `?state=tools`의 안내 줄·`aria-describedby`를 삭제, `ds.css` `.btn--tool .tool-soon`(구현 `dash.css`와 같은 규칙). 모든 대시보드·카드 시안의 도구 줄이 이 상태이고 M7c 목표 시안 `note.html`만 보통 버튼(`dashboard-tools-mobile.png`·`-desktop.png`·`dashboard-unavailable-tools-mobile{,-dark,-forced}.png`·`dashboard-tools-320-text200.png`) | **닫힘(r2 뒤 시안을 구현에 다시 맞춤, 2026-10-17)**. designer 판단: 알약은 라디오 카드 「약 1시간」의 메타 알약과 같은 부품이라 새 토큰·새 모양이 없고, 세로 배치에서 도구 줄이 약 19px 높아지는 것(developer 실측 64 → 83px)은 받아들인다 — 알약을 더 낮추면 12px 글자가 테두리에 붙는다. 320 · 글자 200%에서 알약 폭이 버튼 내용 폭과 거의 같아 점선에 닿아 보이나 잘림·넘침은 없다(`shootMockups` 요소 단위 0, 픽셀 확대로 확인) |
+| D-18 | 인생 기록 **단계 줄** | 다른 줄과 같이 나이 열 + 문장(「20세 스무 살이 되었다. …」, `STAGE_ENTRY_TEXT`), 보조색 + 2px 아래선 | 나이 없는 「20대 · 청년기」 한 칸 줄 → **구현 모양으로 교체**(`logRow(20, STAGE_ENTRY_TEXT.youth, '', 'log__row--stage')`) | **닫힘(designer 판단: 구현이 맞다)** — 연표 한 줄 = 기록 한 줄이고, 나이 열이 있어야 단계가 바뀐 시점이 다른 줄과 같은 눈금으로 읽힌다. 줄 격자를 하나로 둔 developer 판단 유지. 문장 어체는 M7e |
+| D-19 | 엔딩 | 공통 헤더 + 「{이름}의 인생」 + 얼굴 + 외모 「상위/하위 약 N%」(원점수 0) + 현행 통계(「재산」 미터·「지식」 라벨)·연표(`dev-M4-ending-mobile-360x740.png`) | `ending.html`: 출발선 카드(출발선 → 마지막 막대)·최종 스탯·연표·`REBIRTH_NOTE` | 의도(엔딩 개편은 M7e — M4는 공통 헤더·제목·얼굴·원점수 0만). 시안은 M7e 목표 모습으로 유지 |
+| D-20 | **확인 단계 버튼의 글자 200% 가로 넘침** | `dash.css` `.toolbar .btn { white-space: nowrap }`이 `.exit-ask__actions > .btn`에도 걸린다 → 글자 200%에서 「첫 화면으로 나가기」는 약 340px(32px × 9글자 + 공백 + 안쪽 여백 32 + 테두리 4)인데 칸은 폭 320에서 260px·360에서 300px·375에서 315px — **문서가 가로로 넘친다(CM11 위반 후보)**. `e2e/m4-breaks.spec.ts`·`m4-screenshots`는 확인 단계 열린 상태를 글자 200%로 돌지 않는다(`exit` 0건) | 같은 CSS로 `shootMockups`가 320 · 200%에서 **넘침 6건**(문서 345 > 320, 버튼 화면 밖)을 잡음 → `ds.css` `.exit-ask__actions > .btn { white-space: normal }`(낱말 단위 「첫 화면으로 / 나가기」)로 0건(`dashboard-exit-320-text200.png`·`-mobile-text200.png`) | **닫힘(r2 — 마스터가 R-336으로 ID 부여, developer 반영, 2026-10-17)**: `dash.css` `.exit-ask__actions > .btn { white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2) }`(`.toolbar .btn { nowrap }`보다 뒤) + `e2e/m4States.ts`에 `dash-exit-ask` 상태를 더해 `m4-fixed`·`m4-breaks`가 320·360·375 × 글자 200% 넘침 0을 단언(변이 V1: 규칙을 지우면 가로 넘침 25px로 실패). 구현 샷 `dev-M4-exit-ask-box-narrow-320x568-font200.png`(「첫 화면으로 / 나가기」 두 줄)을 designer가 열어 확인 — 시안 `dashboard-exit-box-320-text200-full.png`과 같은 모양. 시안 `ds.css`도 `keep-all`·`overflow-wrap: normal`·`padding-block`을 더해 구현과 네 속성이 같다 |
+| D-21 | 또래 카드 수저 칩(VP4) | 칩 있음(`GradeChip`, 이름 묶음 다음·라벨 앞 — M4 착수 결정 1 마스터) | 칩 없음 → **칩 추가**(`peersCard` `gradeChip(w)`, `dashboard-adult-mobile-full.png`) | **닫힘(마스터 결정 1 반영)** — 4절의 마스터 판단 요청은 끝났다. `copy.md`·`design-system.md` 6절 허용 자리 갱신 |
+| D-22 | 이름표 격자 1열 문턱·식구 규칙·기록 높이 상한·백분율 폭 | `facts` **15.5rem**(12.5rem은 글자 150% · 폭 375에서 9글자 지명이 끊겼다 — QM3-1), 식구 목록의 1열 규칙은 `.family-list` 기본 규칙 뒤에 따로, `.log__list` 높이 `min(520px, 가용 높이 − 고정 머리 − 고정 진행 줄)`(CM10), 기록 줄 `flex-wrap`, `.year-row__pct` `min-width: 2.6em` | 12.5rem·한 블록·520px 고정·격자 → **구현 값·구조로 교체** | **닫힘(시안을 구현에 맞춤)** — 모두 QA·e2e가 잡은 보정이라 시안이 따른다 |
+| D-23 | 비활성 「다음 결정으로」 | `.btn[aria-disabled='true'] { opacity: 0.55 }`(가드와 같은 규칙) — 라이트 글자 **3.77:1**(렌더 측정), 테두리 1.90:1. 렌더 대비 e2e는 `aria-disabled` 목록으로 면제 | 2026-10-17부터 **지속 비활성 = `data-unavailable="true"`**: 불투명도 없이 `--c-text-3` 글자 + 점선 `--c-border-strong`(글자 5.78/5.96:1, 테두리 4.02/4.29) — `ds.css`, `components-desktop-full.png` 버튼 줄, `decision-*.png`(시트 뒤 진행 줄) | **닫힘(r2 — 마스터가 R-337로 ID 부여, developer 반영, 2026-10-17)**: `GuardedButton#isCallerUnavailable`이 호출자 `aria-disabled`에 `data-unavailable="true"`를 붙이고 `title.css`에 두 줄(보통 + 강제 색상 `GrayText` 점선 — 시안 `ds.css`와 글자까지 같은 규칙), 렌더 대비 e2e는 면제 목록을 없애고 4.5:1(`m4-colors` 6조합 × 8화면 최저 라이트 5.78·다크 5.96·강제 색상 13.98:1, `m4-unavailable` 5건). 구현 샷 `dev-M4-unavailable-controls-mobile-360x740-{light,dark}.png`·`…-unavailable-tools-…`을 designer가 열어 확인 — 시안 `components-buttons-desktop.png`(「입력 가드 0.4초」 흐림 ↔ 「다음 결정으로」 점선)·`dashboard-unavailable-tools-mobile-*.png`과 같은 모양. 0.4초 가드의 0.55 흐림은 그대로(D-26 잠금) |
+| D-24 | 헤더·도구 줄·또래 카드 문구 | `DASH_TEXT`(`src/data/dashText.ts`) | 손으로 적은 글자 → **생성기가 `DASH_TEXT`를 읽는다**(진행률 바 이름·일시정지 값·그룹 이름·도구 이름·볼륨·확인 단계·또래 카드) | **닫힘** — M3(R-270)과 같은 방식. 카드 본문(상태 도움말·자산·식구)은 아직 손글자이나 `copy.md`와 같다 |
+| D-25 | 일시정지 버튼의 `aria-pressed` | 없음(이름 「일시정지」↔「다시 진행」이 상태를 전한다, `copy.md`) | 카드 시안에서 `aria-pressed="true"`(색 반전) → **제거** | **닫힘(시안을 구현에 맞춤)** |
+| D-26 | 대비 보고서의 범위 | `scripts/checkContrast.ts`는 `tokens.css` + `doc.css`만 읽는다. `title.css` `.btn[aria-disabled]`·`dash.css` `.choice[aria-disabled]`의 0.55는 0.4초 가드의 과도 상태라 쌍을 더하지 않는다(2절 예외) | — | **닫힘(r2 — developer가 선택 반영, 2026-10-17)**: `tests/contrast.test.ts` 「title.css·dash.css의 opacity 규칙 잠금」 — 현재 규칙(가드 흐림 0.55 둘)을 이유와 함께 표로 두고 새 규칙이 조용히 들어오면 실패. 보고서 수치는 변화 없음(81 + 81, 실패 0) |
+| D-27 | 엔딩 머리의 얼굴 타일 | **r1 결함(R-320)**: `.ending__head > div { flex: 1 1 9rem }`이 얼굴 타일(`div.face`)까지 골라 96px 정사각을 가로로 늘렸다(360px에서 155×96, 1280px에서 358×97) → r2에서 텍스트 칸 `.ending__who`로 좁힘(얼굴 1:1·96px e2e `m4-faces` 11뷰포트 × 100·200%, `dev-M4-ending-head-face-{mobile,desktop}.png`) | 시안은 처음부터 정사각(`.ending__head`에 flex 규칙이 없었다) → **구현 r2의 구조로 교체**: `.ending__head { flex-wrap }` + `.ending__who { flex: 1 1 9rem; min-width: min(9rem, 100%); container-type }`, 생성기가 `<div class="ending__who">`(`ending-mobile.png`·`ending-320-text200.png` — 글자 200%에서 텍스트 칸이 얼굴 아래 줄로) | **닫힘(시안을 r2 구현에 맞춤)** — 구현 샷에서 얼굴 정사각 + 제목 한 줄을 designer가 확인 |
+| D-28 | 엔딩·밀린·오류 h1의 글자 크기 상한(QM3-2) | **r2(R-321)**: `dash.css` `@supports (width: 1cqi)` — 엔딩 `.ending__who .t-title`(바닥 `--fs-lg`, 기본 `--fs-2xl`)·밀린/오류 `.system h1`(바닥 `--fs-md`, 기본 `--fs-xl`, 컨테이너 `.system .card`), h1이 `--title-chars`(`dashText.ts#titleCharsFor`·`SYSTEM_TITLE_CHARS`)를 인라인으로. 대시보드 이름은 기본이 본문 크기라 상한 없이 `.who` `flex-wrap`. e2e `m4-titles`(네 제목 × 11뷰포트 × 100~200%) | 시안은 상한 없음(룰렛만 있었다) → **같은 `@supports` 블록을 `ds.css`에**, 생성기가 엔딩 제목(`titleCharsFor(「이서연의 인생」)` = 5)·밀린/오류 제목(`SYSTEM_TITLE` 상수 + `SYSTEM_TITLE_CHARS` = 8)을 구현 상수에서 읽어 인라인으로 넘긴다. `.who`·`.who__name`·`.system .card { container-type }`·`.timeline li` flex-wrap도 구현 규칙으로(`ending-320-text200.png` 「이서연의 / 인생」, `system-superseded-320-text200.png` 「저장된 게임이 / 이 화면 밖에서 / 바뀌었습니다.」 — 바닥 `--fs-md`라 본문과 같은 크기, 굵기·색으로 구분) | **닫힘(시안을 r2 구현에 맞춤)**. 밀린·오류 h1이 본문 크기까지 내려가는 것(폭 320 · 200% 한정)은 designer도 동의 — 「바뀌었습니다.」 7글자가 36px이면 252px > 246px(developer 계산 확인). 밀린·오류 문구도 D-24처럼 상수(`SYSTEM_TITLE`)에서 읽는다 |
+| D-29 | 프로필 얼굴 크기 | r1 72px(`--face-size` 기본) → **r2(R-329 마스터 결정) 시안대로 96px**(`<Face large>`, `.profile__top { flex-wrap }`, `dev-M4-profile-card-96px-adult-mobile-360x740.png`) | 96px(`face--lg`) 그대로, `.profile__top`에 구현과 같은 `flex-wrap` + `gap: var(--sp-3) var(--sp-4)` | **닫힘**. R-329 후반(72px 자리의 중년 단서 재검토)은 `faces.md` 5차 검토 — **72px로 그리는 자리는 지금 없다**(프로필·엔딩 둘 다 `large`), 중년 남성의 72px 단서가 약해 조정안을 제시만 했다(다음 designer 작업 후보, `src/assets`는 이번에 손대지 않음) |
+| D-30 | (관찰) 「준비 중」 알약의 강제 색상·`dash.css` 미사용 규칙 | ~~r2: ① 강제 색상에서 알약 글자·테두리는 토큰 매핑대로 `CanvasText`, 버튼 이름·점선은 `GrayText` ② `dash.css` `.tool-note { … }`·≥ 960px `.toolbar__inner > .tool-note`는 쓰는 요소가 없다~~ → **r3(REV-003-M4-1 「반영 내역(r3)」)**: ① `title.css` 강제 색상 블록에 `.btn[data-unavailable='true'] .tool-soon { color: GrayText; border-color: GrayText }` — 알약이 버튼 이름·점선·라디오 카드 메타 알약과 같은 `GrayText`(e2e `m4-unavailable` 「강제 색상: … (D-30①)」, `m4-colors` 렌더 대비 통과) ② `dash.css`의 두 선택자 삭제(`data-testid="tool-note"`는 살아 있는 버튼의 시험 손잡이라 남김) | ① 시안 `ds.css` 강제 색상 블록에 **같은 글자의 한 줄**(REV-003-M4-2 R-342, 2026-10-17) — `dashboard-unavailable-tools-mobile-forced.png`·`components-tools-mobile-forced.png`·`dashboard-tools-mobile-forced.png` 재촬영(알약 글자·테두리가 이름·점선과 같은 회색) ② 시안은 r2 때 이미 지웠다 | **닫힘** — ①② 모두 r3 구현, 시안은 R-342로 맞춤(3-4절) |
 
 ## 2. 구현 ↔ 명세(SPEC-003) 차이 — 마스터 결정으로 확정된 것
 
@@ -59,10 +85,46 @@
 | 칩 이름 `<wbr>`(D-05) | `다이아몬드<wbr>수저` | 없음 → `gradeNameHtml` |
 | 강제 색상 띠(D-07·R-291) | Canvas/CanvasText + 3px 아래선 | 시안이 먼저 이렇게 있었고 구현이 따라옴 |
 
-## 4. 후속 (designer)
+### 3-2. M4 구현 뒤 시안을 맞춰 사라진 차이 (2026-10-17, `ai-log/2026-10-17_SPEC-003_design-M4.md`)
+
+| 항목 | M4 구현 | 시안 → 지금 |
+|---|---|---|
+| 도구 줄 아래 한 줄 | `.volume`·`.tool-note`·`.exit-ask`(`LifeScreen.tsx`) | 없음 → `ds.css` 같은 블록 + `dashboard-infant.html?state=tools|exit`(`toolbarStates()`), 샷 7장 |
+| 또래 카드 칩 | `GradeChip` | 없음 → `gradeChip(w)` |
+| 기록 단계 줄 | 나이 열 + `STAGE_ENTRY_TEXT` | 「20대 · 청년기」 → 같은 줄 형식 |
+| 기록 줄·높이 | `flex-wrap`, `min(520px, 가용 높이)` + `--head-fixed-h`·`--bar-fixed-h` | 격자·520px → 같은 규칙 |
+| 이름표 격자 | `facts` 15.5rem, 식구 규칙 분리 | 12.5rem → 15.5rem, 분리 |
+| 문구 | `DASH_TEXT` | 손글자 → 생성기가 상수를 읽음 |
+| 비활성 버튼 | (0.55 흐림 — D-23 수정 대기) | `.btn[data-unavailable='true']` 신설(2절 결정의 참고 구현) |
+
+### 3-3. M4 r2(REV-003-M4-1 반영) 뒤 시안을 다시 맞춰 사라진 차이 (2026-10-17, `ai-log/2026-10-17_SPEC-003_design-M4r2.md`)
+
+| 항목 | r2 구현 | 시안 → 지금 |
+|---|---|---|
+| 생각 남기기(R-326) | `aria-disabled` + `data-unavailable` + `.tool-soon` 「준비 중」, 안내 줄 삭제 | `?state=tools`의 `.tool-note` 안내 줄(삭제된 `noteSoon`을 읽어 「undefined」) → `toolBtn(…, soon)` 같은 마크업, `ds.css` `.btn--tool .tool-soon`, `.tool-note` 규칙 삭제 |
+| 확인 단계 버튼(R-336, D-20) | `white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block` | `white-space: normal`만 → 네 속성 같게 |
+| 지속 비활성(R-337, D-23) | `GuardedButton` `data-unavailable` + `title.css` 두 줄 | 시안이 먼저 있었고 구현이 따라옴(규칙 글자 같음) |
+| 엔딩 머리(R-320) | `.ending__who` 텍스트 칸, 얼굴 `flex: none` | `.ending__head { flex-wrap }` + `.ending__who`, 생성기 클래스 |
+| 제목 상한(R-321) | `@supports (width: 1cqi)` 엔딩·밀린·오류 h1, `--title-chars` 인라인, `.who` flex-wrap | 같은 블록 + 생성기가 `titleCharsFor`·`SYSTEM_TITLE_CHARS`·`SYSTEM_TITLE`을 읽음, `.who`·`.who__name`·`.system .card` 컨테이너·`.timeline li` flex-wrap |
+| 프로필 머리(R-329) | `large` 96px + `.profile__top { flex-wrap }` | 96px 그대로 + `flex-wrap`·`gap` |
+| 문구(R-333) | 자산 자리표시 「순자산, 연 소득, 부채는 아직 준비 중입니다.」, 상태 도움말의 자산 문장은 M5부터 | `copy.md` 행 갱신(시안 대시보드 카드 본문은 M5 목표 모습이라 그대로) |
+
+### 3-4. M4 r3(REV-003-M4-1 「반영 내역(r3)」) 뒤 시안을 맞춰 사라진 차이 (2026-10-17, REV-003-M4-2 R-342, `ai-log/2026-10-17_SPEC-003_design-M4r2.md` 7절)
+
+| 항목 | r3 구현 | 시안 → 지금 |
+|---|---|---|
+| 「준비 중」 알약의 강제 색상(D-30①) | `title.css` 강제 색상 블록 `.btn[data-unavailable='true'] .tool-soon { color: GrayText; border-color: GrayText; }` | 규칙 없음(토큰 매핑대로 CanvasText) → `ds.css` 강제 색상 블록에 **같은 글자의 한 줄**(`.btn[data-unavailable='true']` 바로 뒤). 재촬영 `dashboard-unavailable-tools-mobile-forced.png`·`components-tools-mobile-forced.png`·`dashboard-tools-mobile-forced.png` — 알약이 이름·점선과 같은 회색, 라디오 카드 「약 1시간」 메타 알약과 같은 규칙 |
+| `dash.css` `.tool-note` 죽은 규칙(D-30②) | 두 선택자 삭제, `data-testid="tool-note"`는 남김 | 시안은 r2 때 지웠다(3-3절 첫 행) — 바꿀 것 없음 |
+
+## 4. 후속 (designer) — 2026-10-17 M4 착수 정리 뒤 갱신, M4 구현 뒤 재갱신, M4 r2 뒤 재갱신
 
 - ~~D-05 `<wbr>`~~ — r4 뒤 반영(1절 닫힘).
 - ~~D-07~~ — r4 R-291 구현 스크린샷으로 확인하고 닫음(1절).
-- D-09 도장 크기(rem)는 M4 대시보드 때 함께 판단.
+- **D-09 도장 크기(rem)** — M4 착수 정리에서 판단: **64px 고정 유지**. 글자 200%에서 「접수」가 원을 꽉 채우는 것은 장식(`aria-hidden`)이고 대비 기준(4.97:1)은 지키며, `4rem`으로 두면 글자 200% × 폭 320에서 도장이 128px가 되어 서류 본문 폭(246px)의 절반을 덮어 이름·서술문을 가린다. 재론 조건: 실기기 200%에서 도장 글자가 원 밖으로 나가는 것이 보일 때(그때는 `font-size`만 `--fs-xs`로).
 - QM3-1 (a) 허용으로 남은 글자 200% × 폭 320의 7글자 지명 끊김(서류 서술문 한 줄 246px vs 낱말 252px): 서류 본문 안쪽 여백을 줄이면 없앨 수 있으나 designer 의견은 **유지**(`ai-log/2026-10-16_SPEC-003_design-M3r4.md` 6절 — 띠·본문 여백 정렬, 9글자 지명은 그대로 남음, 규칙상 허용). 마스터가 달리 정하면 `.doc`를 컨테이너로 올려 좁은 폭에서 띠·본문 여백을 함께 `--sp-4`로 줄이는 안.
-- `scripts/checkContrastLib.ts#formatReport`의 보고서 머리글 「`src/styles/tokens.css`의 색 쌍을 전수 계산」은 r4부터 `doc.css` 불투명도 쌍도 포함하므로 한 구절이 낡았다 — developer 몫(r4 검수 중이라 건드리지 않음).
+- ~~`formatReport` 머리글 「tokens.css의 색 쌍」~~ — r5에서 developer가 정정. ~~남은 한 구절(도장 예시)~~ — **M4에서 developer가 제안 문구로 교체**(`tests/contrast.test.ts` 「보고서 머리글」), designer가 2026-10-17 `checkContrast --write`로 재생성해 `contrast-report.md` 머리글이 새 문구(81 + 81쌍, 수치 변화 없음). 닫힘.
+- ~~**마스터 판단 요청 — 또래 카드 수저 칩**~~ — M4 착수 결정 1로 **칩 있음**. 시안·`copy.md`·`design-system.md` 반영(D-21 닫힘).
+- ~~**M4 구현 뒤 developer 확인 사항(마스터 ID 부여 요청)**: **D-20**·**D-23**, 선택 **D-26**~~ — 마스터가 R-336·R-337로 ID를 부여해 **M4 r2에서 모두 반영·닫힘**(1-1절). 문구 제안 둘 가운데 자산 자리표시 「스무 살 이후의」 삭제는 **r2 R-333에서 채택**(`copy.md`), 자동 모드 안내의 콜론 라벨형 → 문장형은 M7b 때.
+- **M4 r2 뒤(2026-10-17)**: ① **R-329 후반 — 72px 중년 단서**: 72px로 그리는 자리는 지금 없다(프로필·엔딩 모두 96px). 중년 남성의 72px 단서(팔자 주름 한 쌍 0.3 + 귀 위 회색 토막 약 3.6px)가 약해 `faces.md` 5차 검토에 조정안(주름 1단계 진하기·굵기, 구레나룻 토막 굵기, 중년 남 머리 모양)을 적었다 — **다음 designer 작업 후보**(`src/assets/faces/faceLayers.ts` 수정 + `previewFaces` 48·72px 재확인 + reviewer 판정), 72px 자리가 생길 때 적용. ② ~~D-30 관찰 둘(강제 색상 알약 색 한 줄·`dash.css` `.tool-note` 미사용 규칙)은 developer 선택~~ — **r3에서 developer가 둘 다 반영**(REV-003-M4-1 「반영 내역(r3)」), 시안 `ds.css`는 REV-003-M4-2 R-342로 같은 줄을 넣어 맞춤(1-1절 D-30 닫힘, 3-4절).
+- ~~R-251 `tokens.css` 강제 색상 블록 특이도~~ — 2026-10-17 반영(`design-system.md` 3절 4항). 실제 렌더 e2e는 M4 developer(TODO).
+- 대시보드 시안이 구현된 공용 부품과 맞는지 점검한 결과(2026-10-17, `ai-log/2026-10-17_SPEC-003_design-M4prep.md` 3절): 어긋난 곳은 모두 시안 쪽을 고쳤다 — 고정 여백 150px → `.page-end-space`, 진행 줄을 하단 띠로(`--bar-h`), sticky 헤더 `--head-h` + 해제, 5열 격자 → `flex-wrap`, 이름표 격자 컨테이너 1열, 짧은 쌍 `FitPair`·`Glue`, 또래 라벨 자리. ~~M4 구현이 끝나면 1절과 같은 표(D-번호)를 대시보드에도 만든다~~ → 1-1절(D-13~D-26).

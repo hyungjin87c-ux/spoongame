@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PAIRS, checkTheme, docCssPairs, docTagPair, readOpacityRules, readThemeBlocks, stampPairs, themeTokens } from '../scripts/checkContrastLib';
+import { PAIRS, checkTheme, docCssPairs, docTagPair, formatReport, readOpacityRules, readThemeBlocks, stampPairs, themeTokens } from '../scripts/checkContrastLib';
 
 /**
  * 장식 포함 대비 전수 (SPEC-003 DS3, QM3-5, QA-003-M3 M3-O02). DS3의 대비 기준은 **눈에 보이는 모든 글자와 UI 도형**에 적용된다 — 장식(`aria-hidden`)도 면제하지 않는다.
@@ -16,6 +16,8 @@ async function readText(relative: string): Promise<string> {
 }
 const tokensCss = await readText('../src/styles/tokens.css');
 const docCss = await readText('../src/styles/doc.css');
+const titleCss = await readText('../src/styles/title.css');
+const dashCss = await readText('../src/styles/dash.css');
 const blocks = readThemeBlocks(tokensCss);
 
 /** 규칙 하나의 본문 (주석을 뺀 CSS에서) */
@@ -100,5 +102,55 @@ describe('장식 도장 「접수」 (QM3-5): 글자·테두리가 전수 쌍에
     const rules = readOpacityRules(docCss);
     expect(rules.length).toBeGreaterThan(0);
     for (const r of rules) expect(COVERED.has(r.selector) || NOT_TEXT.has(r.selector), `${r.selector}의 opacity ${r.opacity} — 대비 쌍을 더하거나 NOT_TEXT에 이유와 함께 올린다`).toBe(true);
+  });
+});
+
+describe('title.css·dash.css의 opacity 규칙 잠금 (D-26, designer 제안 — 대비 보고서 범위 밖의 두 파일)', () => {
+  // scripts/checkContrast.ts는 tokens.css + doc.css만 읽는다. 나머지 두 화면 CSS에 새 불투명도 규칙이 조용히 들어와 글자 대비를 잃지 못하게, 지금 있는 규칙을 이유와 함께 모두 적는다.
+  // 규칙을 더하면 이 표에 이유를 올려야 하고(글자·도형이 아닌 것인지, 과도 상태인지), 지우면 표에서도 지워야 한다(표가 현재 CSS와 정확히 같다).
+  const ALLOWED = {
+    'title.css': new Map<string, string>([
+      ["`.btn[aria-disabled='true'], .btn:disabled`|0.55", '0.4초 입력 가드(GuardedButton)의 과도 상태 — 읽으라고 둔 글자가 아니라 더블탭을 삼키는 흐림. 지속 비활성은 data-unavailable로 불투명도 없이 그린다(R-337)'],
+      ["`.btn[data-unavailable='true']`|1", '지속 비활성의 불투명도를 1로 되돌리는 규칙 — 옅은 글자 --c-text-3(라이트 5.78:1·다크 5.96:1)과 점선 테두리가 대비를 지킨다(R-337, 렌더 대비는 e2e/m4-colors.spec.ts)'],
+      ['`.radio-card input`|0', '라디오 카드의 실제 input을 시각적으로 숨긴다(글자 없음, 카드 label이 모양을 그린다)'],
+      ['`.radio-card__mark .icon`|0', '선택 표시 체크 아이콘 숨김(선택되지 않은 카드) — 글자가 아니다'],
+      ['`.radio-card.is-selected .radio-card__mark .icon`|1', '선택된 카드의 체크 아이콘을 보인다(불투명도 1)'],
+      ['`.slide`|0', '캐러셀의 보이지 않는 슬라이드(visibility: hidden과 함께) — 전환 흐림'],
+      ['`.slide.is-active`|1', '캐러셀의 보이는 슬라이드(불투명도 1)'],
+    ]),
+    'dash.css': new Map<string, string>([["`.choice[aria-disabled='true']`|0.55", '선택지 카드의 0.4초 입력 가드 — 과도 상태(지속 비활성이 아니다)']]),
+  } as const;
+  const key = (r: { selector: string; opacity: number }) => `\`${r.selector}\`|${r.opacity}`;
+
+  for (const [file, css] of [
+    ['title.css', titleCss],
+    ['dash.css', dashCss],
+  ] as const) {
+    it(`${file}의 opacity 규칙은 표에 이유와 함께 올라 있는 것뿐이고 표에 있는 규칙은 모두 실제로 있다`, () => {
+      const rules = readOpacityRules(css);
+      const found = new Set(rules.map(key));
+      const allowed = ALLOWED[file];
+      for (const k of found) expect(allowed.has(k), `${file}에 새 opacity 규칙 ${k} — 글자 대비를 잃지 않는지 확인하고 이 표에 이유와 함께 올린다`).toBe(true);
+      for (const k of allowed.keys()) expect(found.has(k), `표에는 있는데 ${file}에는 없는 규칙 ${k} — 표에서도 지운다`).toBe(true);
+      expect(rules.length).toBeGreaterThan(0);
+    });
+  }
+
+  it('조용히 끼어드는 규칙을 실제로 잡는다(공허 통과 방지): 합성 CSS에 새 불투명도 규칙을 더하면 표에 없는 규칙으로 읽힌다', () => {
+    const rules = readOpacityRules(`${dashCss}
+.sneaky { color: var(--c-text); opacity: 0.4; }`);
+    expect(rules.map(key)).toContain('`.sneaky`|0.4');
+    expect(ALLOWED['dash.css'].has('`.sneaky`|0.4')).toBe(false);
+  });
+});
+
+describe('보고서 머리글 (REV-003-M3-5 관찰, designer 제안 문구 — docs/design/diff-003.md 4절)', () => {
+  it('머리글은 doc.css가 만드는 화면 쌍을 정확히 말한다: 띠 표기(.doc__tag)만 불투명도로 쌓이고 장식 도장 「접수」는 불투명도 없이 토큰 색 그대로다 — 옛 문구(도장이 불투명도로 쌓인다)는 없다', () => {
+    const results = [...checkTheme(themeTokens(blocks, 'light'), 'light', PAIRS), ...checkTheme(themeTokens(blocks, 'dark'), 'dark', PAIRS)];
+    const head = formatReport(results, { mismatch: [] }).split('\n').slice(0, 6).join('\n');
+    expect(head).toContain('`src/styles/doc.css`가 만드는 화면 쌍');
+    expect(head).toContain('띠 표기 `.doc__tag`처럼 불투명도로 쌓이는 글자');
+    expect(head).toContain('불투명도 없이 토큰 색 그대로인 장식 도장 「접수」의 글자·테두리');
+    expect(head).not.toContain('도장 「접수」·띠 표기처럼 바탕 위에 불투명도로 쌓이는 글자');
   });
 });

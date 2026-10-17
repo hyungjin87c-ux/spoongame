@@ -368,6 +368,57 @@ describe('작은 뷰포트 높이와 공용 감시자 — 가짜 환경 (R-240 �
     w2.dispose();
   });
 
+  it('forceRelease(O03): 절반 규칙과 별개로 풀어야 하는 사정이 true면 절반 이하여도 풀리고, 사정이 사라져 refresh()를 부르면 다시 고정이 된다 — 절반 규칙이 풀면 사정과 상관없이 풀린다', () => {
+    // 띠 112px / 작은 뷰포트 568px = 20%: 절반 규칙으로는 고정
+    const env = install({ svh: true, probeHeight: 568, clientHeight: 568, innerHeight: 568, barHeight: 112 });
+    let forced = false;
+    const seenViews: number[] = [];
+    const calls = { release: 0 };
+    const watch = watchBarRelease(env.bar, {
+      root: env.root,
+      onRelease: () => void calls.release++,
+      forceRelease: (view) => {
+        seenViews.push(view);
+        return forced;
+      },
+    });
+    expect(watch.isReleased(), '사정이 없으면 절반 규칙 그대로(20% → 고정)').toBe(false);
+    expect(seenViews, '판정 함수는 작은 뷰포트 높이(innerHeight가 아니다)를 받는다').toEqual([568]);
+    forced = true; // 나가기 확인 단계가 열려 구간이 고정 요소와 함께 못 들어간다
+    expect(watch.isReleased(), 'refresh() 전에는 아직 모른다').toBe(false);
+    watch.refresh();
+    expect(watch.isReleased(), '띠는 20%뿐인데 사정 때문에 풀린다').toBe(true);
+    expect(env.classes.has('bar-released')).toBe(true);
+    expect(calls.release, '고정 → 해제이므로 onRelease를 한 번 부른다').toBe(1);
+    watch.refresh(); // 값이 그대로면 아무 일도 없다
+    expect(env.toggles).toEqual(['bar-released:false', 'bar-released:true']);
+    forced = false; // 확인 단계를 닫았다
+    watch.refresh();
+    expect(watch.isReleased(), '사정이 사라지면 원래 규칙(고정)으로 돌아온다').toBe(false);
+    expect(env.classes.has('bar-released')).toBe(false);
+    // 절반 규칙으로 풀릴 띠는 사정이 없어도 풀린 채다 (둘 중 하나라도 true면 해제)
+    env.state.barHeight = 300; // 300/568 = 53%
+    watch.refresh();
+    expect(watch.isReleased()).toBe(true);
+    forced = true;
+    watch.refresh();
+    expect(watch.isReleased()).toBe(true);
+    watch.dispose();
+  });
+
+  it('forceRelease를 주지 않으면(룰렛·출생신고·첫 화면 띠) 동작이 그대로다 — refresh()를 불러도 절반 규칙뿐', () => {
+    const env = install({ svh: true, probeHeight: 568, clientHeight: 568, innerHeight: 568, barHeight: 150 });
+    const watch = watchBarRelease(env.bar, { root: env.root });
+    watch.refresh();
+    watch.refresh();
+    expect(watch.isReleased()).toBe(false);
+    expect(env.toggles).toEqual(['bar-released:false']);
+    env.state.probeHeight = 256;
+    watch.refresh(); // 창 크기 변화를 기다리지 않고 지금 다시 잰다
+    expect(watch.isReleased()).toBe(true);
+    watch.dispose();
+  });
+
   it('dispose: 리스너·관찰자·탐침을 걷고 bar-released 클래스와 --bar-h를 지운다', () => {
     const env = install({ svh: true, probeHeight: 256, clientHeight: 256, innerHeight: 256, barHeight: 150 });
     const watch = watchBarRelease(env.bar, { root: env.root });

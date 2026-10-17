@@ -122,7 +122,7 @@ export async function sampleFocus(page: Page): Promise<FocusStop> {
   return { id: sample.id, scrollY, sample, judgement: judgeFocus(sample) };
 }
 
-/** 화면의 조작 요소(Tab으로 닿는 것)의 이름을 DOM 순서로. 라디오는 묶음마다 선택된 하나(없으면 첫째). 비활성·숨김·tabindex<0은 뺀다. */
+/** 화면의 조작 요소(Tab으로 닿는 것 — 접이식 <summary> 포함, M4 대시보드의 「상태 네 가지의 뜻 보기」)의 이름을 DOM 순서로. 라디오는 묶음마다 선택된 하나(없으면 첫째). 비활성·숨김·tabindex<0은 뺀다. */
 export async function listTabbables(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const label = (el: Element): string => {
@@ -132,7 +132,7 @@ export async function listTabbables(page: Page): Promise<string[]> {
       const cls = typeof (el as HTMLElement).className === 'string' && (el as HTMLElement).className ? `.${(el as HTMLElement).className.split(/\s+/)[0]}` : '';
       return `${el.tagName}${cls}${text ? `[${text}]` : ''}`;
     };
-    const all = Array.from(document.body.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, [tabindex]'));
+    const all = Array.from(document.body.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, summary, [tabindex]'));
     const out: string[] = [];
     const seenGroups = new Set<string>();
     const radios = all.filter((e) => e instanceof HTMLInputElement && e.type === 'radio');
@@ -208,6 +208,13 @@ async function resetFocus(page: Page): Promise<void> {
     range.setStart(document.body, 0);
     range.collapse(true);
     selection?.addRange(range);
+    // M4: 화면이 뜰 때 문서 뒤쪽의 요소(대시보드의 선택지 제목 등)에 프로그램 포커스가 가 있었다면 blur() 뒤에도 순차 포커스의 출발점이 거기에 남아 첫 Tab이 문서 중간에서 시작한다.
+    // 문서 맨 앞에 임시 요소를 끼워 포커스를 주었다가 지우면 출발점이 문서 맨 앞으로 돌아온다(Chrome은 출발점 요소가 사라지면 그 자리에서 이어간다).
+    const sentinel = document.createElement('span');
+    sentinel.tabIndex = -1;
+    document.body.insertBefore(sentinel, document.body.firstChild);
+    sentinel.focus({ preventScroll: true });
+    sentinel.remove();
   });
 }
 
@@ -233,7 +240,7 @@ async function walk(page: Page, direction: 'forward' | 'backward', max: number):
 /** DOM 순서 index번째 조작 요소에 프로그램 focus()를 건다 (listTabbables와 같은 규칙으로 고른다) */
 async function focusTabbable(page: Page, index: number): Promise<void> {
   await page.evaluate((i) => {
-    const all = Array.from(document.body.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, [tabindex]'));
+    const all = Array.from(document.body.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, summary, [tabindex]'));
     const list: HTMLElement[] = [];
     const seenGroups = new Set<string>();
     const radios = all.filter((e) => e instanceof HTMLInputElement && e.type === 'radio');

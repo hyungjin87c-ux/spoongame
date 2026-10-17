@@ -240,13 +240,15 @@ test('긴 단어(공백 없는 긴 글)는 keep-all이어도 넘치지 않고 �
 
 // ---------- 사용감 1·6: 낮은 화면, 저장 실패 안내 ----------
 
+// 바뀐 기준(M4): 예전에는 컨트롤 바 높이 상한을 뷰포트마다 정했다(100px·60px, 예전 117px). 대시보드의 진행 줄은 디자인 시스템 11절의 하단 고정 띠(두 줄, 약 112px)이고, 규칙은 높이가 아니라
+// 「작은 뷰포트 높이의 절반 이하일 때만 고정, 넘으면 문서 흐름 끝으로 풀린다」(QM2-12)이다 — 두 뷰포트 모두 절반(240px·187px) 이하라 고정이고, 풀리는 경우는 e2e/m4-fixed-elements.spec.ts가 글자 확대로 본다.
 const LOW = [
-  { width: 360, height: 480, maxControls: 100, label: '낮은 폰 세로' },
-  { width: 667, height: 375, maxControls: 60, label: '가로 모드' },
+  { width: 360, height: 480, label: '낮은 폰 세로' },
+  { width: 667, height: 375, label: '가로 모드' },
 ] as const;
 
 for (const vp of LOW) {
-  test(`${vp.width}x${vp.height} (${vp.label}): 컨트롤 바가 ${vp.maxControls}px 이하(예전 117px)로 얇아지고, 선택지와 컨트롤의 모든 버튼에 스크롤로 닿으며 서로 가려지지 않는다 (QA 사용감 1)`, async ({ page }, testInfo) => {
+  test(`${vp.width}x${vp.height} (${vp.label}): 진행 줄이 작은 뷰포트 높이의 절반 이하로 화면 아래에 고정되고, 선택지와 컨트롤의 모든 버튼에 스크롤로 닿으며 서로 가려지지 않는다 (QA 사용감 1, M4 기준)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await page.goto('/');
@@ -255,12 +257,13 @@ for (const vp of LOW) {
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await expect(page.getByTestId('auto')).toBeEnabled();
     const controls = (await page.getByTestId('controls').boundingBox())!;
-    expect(controls.height, '컨트롤 바 높이').toBeLessThanOrEqual(vp.maxControls);
+    expect(controls.height, '진행 줄 높이 ≤ 작은 뷰포트 높이의 절반(QM2-12)').toBeLessThanOrEqual(vp.height / 2);
     expect(controls.y + controls.height).toBeLessThanOrEqual(vp.height + 1); // 화면 아래에 붙어 있다
+    expect(await page.getByTestId('controls').evaluate((el) => getComputedStyle(el).position), '절반 이하라 고정').toBe('fixed');
     expect(await noHorizontalOverflow(page)).toBe(true);
     // 컨트롤 버튼은 한 줄(가로)이거나 두 줄이어도 서로 겹치지 않고 글이 잘리지 않는다
     const buttons = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-testid="controls"] button')].map((b) => ({ text: b.textContent, w: b.scrollWidth - b.clientWidth, h: b.scrollHeight - b.clientHeight, r: b.getBoundingClientRect().toJSON() })));
-    expect(buttons).toHaveLength(6);
+    expect(buttons).toHaveLength(7); // 일시정지·1·2·4·8배·다음 결정으로·자동 모드
     for (const b of buttons) {
       expect(b.w, `${b.text}: 글이 옆으로 잘림`).toBeLessThanOrEqual(1);
       expect(b.h, `${b.text}: 글이 위아래로 잘림`).toBeLessThanOrEqual(1);
@@ -286,15 +289,15 @@ for (const vp of LOW) {
       expect(hit.visibleTop).toBeGreaterThanOrEqual(0);
       expect(hit.visibleBottom).toBeLessThanOrEqual(vp.height);
     }
-    // 맨 아래까지 내리면 스탯이 컨트롤 바 위에 온전히 보인다
+    // 맨 아래까지 내리면 마지막 카드(같은 해 태어난 사람들)가 진행 줄 위에 온전히 보인다(본문 끝 여백이 줄 높이를 담는다). 예전에는 스탯 영역이 마지막이었다.
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await settle(page);
-    const tail = await page.evaluate(() => ({ stats: document.querySelector('[data-testid="stats"]')!.getBoundingClientRect().bottom, controls: document.querySelector('[data-testid="controls"]')!.getBoundingClientRect().top }));
-    expect(tail.stats).toBeLessThanOrEqual(tail.controls + 1);
+    const tail = await page.evaluate(() => ({ last: document.querySelector('[data-testid="peers-now-card"]')!.getBoundingClientRect().bottom, controls: document.querySelector('[data-testid="controls"]')!.getBoundingClientRect().top }));
+    expect(tail.last).toBeLessThanOrEqual(tail.controls + 1);
   });
 }
 
-test('데스크톱(1280x800): 선택지가 떠도 스탯(재산·학력·건강·행복·관계·외모)이 접힘 아래로 밀려나지 않고 컨트롤 바에 가려지지 않는다 (QA 사용감 1)', async ({ page }, testInfo) => {
+test('데스크톱(1280x800): 선택지가 떠도 상태 4개(건강·행복·지식·관계)와 선택지 카드가 접힘 아래로 밀려나지 않고 진행 줄·머리에 가려지지 않는다 (QA 사용감 1, M4 3열)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', '기본 뷰포트(1280x800)를 쓰므로 desktop에서만 실행');
   await page.goto('/');
   const decision = await findPendingState(page, 'present', { minChoices: 3 });
@@ -315,15 +318,23 @@ test('데스크톱(1280x800): 선택지가 떠도 스탯(재산·학력·건강�
   await injectSave(page, s, '/');
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect(page.getByTestId('auto')).toBeEnabled();
+  // 바뀐 기대(M4): 데스크톱(폭 ≥ 960)은 3열이고 진행 줄이 머리 아래 위쪽에 놓인다(하단 고정이 아니다). 왼쪽 열의 상태 카드(4개)와 가운데의 선택지 카드가 1280×800 첫 화면에 들어온다.
   const rects = await page.evaluate(() => ({
     vh: innerHeight,
-    controls: document.querySelector('[data-testid="controls"]')!.getBoundingClientRect().top,
-    stats: [...document.querySelectorAll('[data-testid="stats"] .stat')].map((e) => e.getBoundingClientRect().bottom),
+    headBottom: document.querySelector('[data-testid="dash-head"]')!.getBoundingClientRect().bottom,
+    controlsPosition: getComputedStyle(document.querySelector('[data-testid="controls"]')!).position,
+    meters: [...document.querySelectorAll('[data-testid="stats"] .meter')].map((e) => ({ top: e.getBoundingClientRect().top, bottom: e.getBoundingClientRect().bottom })),
+    panel: document.querySelector('[data-testid="choice-panel"]')!.getBoundingClientRect().toJSON(),
   }));
-  expect(rects.stats).toHaveLength(6);
-  for (const b of rects.stats) expect(b, '스탯이 컨트롤 바 아래로 가려짐').toBeLessThanOrEqual(rects.controls + 1);
+  expect(rects.meters).toHaveLength(4);
+  for (const m of rects.meters) {
+    expect(m.bottom, '상태 막대가 접힘 아래로 밀림').toBeLessThanOrEqual(rects.vh);
+    expect(m.top, '상태 막대가 머리에 가려짐').toBeGreaterThanOrEqual(rects.headBottom);
+  }
+  expect(rects.panel.bottom, '선택지 카드가 접힘 아래로 밀림').toBeLessThanOrEqual(rects.vh);
+  expect(rects.controlsPosition, '데스크톱 진행 줄은 고정이 아니다').toBe('static');
   const bar = (await page.getByTestId('controls').boundingBox())!;
-  expect(bar.height, '데스크톱 컨트롤 바는 한 줄').toBeLessThanOrEqual(70);
+  expect(bar.height, '데스크톱 진행 줄은 한 줄').toBeLessThanOrEqual(70);
 });
 
 for (const vp of [
@@ -388,10 +399,10 @@ test('강제 색상 모드: 눌린 속도·자동 상태가 눌리지 않은 것
   expect(pressed.bg, '눌린 버튼은 배경 색도 다르다').not.toBe(plain.bg);
   const autoOn = await style('[data-testid="auto"]');
   expect(autoOn.borderStyle).toBe('double');
-  // 스탯 막대: 채움이 바탕과 구분된다
+  // 상태 막대(M4: .meter__track / .meter__fill, 예전 .bar / .bar-fill): 채움이 바탕과 구분된다
   const bar = await page.evaluate(() => {
-    const track = document.querySelector('.bar') as HTMLElement;
-    const fill = document.querySelector('.bar-fill') as HTMLElement;
+    const track = document.querySelector('.meter__track') as HTMLElement;
+    const fill = document.querySelector('.meter__fill') as HTMLElement;
     return { track: getComputedStyle(track).backgroundColor, fill: getComputedStyle(fill).backgroundColor, fillWidth: fill.getBoundingClientRect().width, trackBorder: getComputedStyle(track).borderTopStyle };
   });
   expect(bar.fill, '막대 채움이 바탕과 같은 색(사라짐)').not.toBe(bar.track);

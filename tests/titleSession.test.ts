@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_BGM,
   DEFAULT_SETTINGS,
   ERAS,
   LIFE_LENGTHS,
@@ -81,7 +82,8 @@ describe('세상·인생 길이 선택 (FS4·FS5)', () => {
     let s = createSession(createInitialState(1), { speed: 8, autoMode: true, lifeLength: 'long60' });
     s = send(s, { type: 'setEra', era: 'future' });
     s = send(s, { type: 'setLifeLength', lifeLength: 'short30' });
-    expect(s.settings).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
+    // (M4: 설정에 BGM·테마가 더해졌다 — 세상·인생 길이를 고르는 일이 그 기본값도 건드리지 않는다)
+    expect(s.settings).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: DEFAULT_BGM, theme: 'system' });
   });
 });
 
@@ -158,25 +160,35 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
     expect(send(opened, { type: 'openTitle' })).toBe(opened); // 두 번째는 같은 객체
   });
 
-  it('열어도 판은 그대로이고 저장되지 않는다(showTitle은 세션에만 있다)', () => {
+  it('열어도 판은 그대로이고(인생 중이면 일시정지만 켜진다 — DB8) showTitle은 저장되지 않는다(세션에만 있다)', () => {
     const s = inLife();
     const opened = send(s, { type: 'openTitle' });
-    expect(opened.game).toBe(s.game);
-    expect(serializeGame(opened.game)).toBe(serializeGame(s.game));
+    // 바뀐 기대(M4): 예전에는 열어도 같은 객체였다. 「나가기」는 인생 중인 판을 **일시정지 상태로 저장**하므로(DB8) paused만 켜진 새 객체가 된다 — 그 밖의 필드는 그대로다.
+    expect(opened.game).toEqual({ ...s.game, paused: true });
+    expect(JSON.parse(serializeGame(opened.game)).data.paused).toBe(true);
+    expect(serializeGame(opened.game)).toBe(serializeGame({ ...s.game, paused: true }));
+    // 출생신고·룰렛 단계에서는 흐르는 시간이 없어 판이 같은 객체다
+    for (const make of [inBirth, inRoulette]) {
+      const before = make();
+      expect(send(before, { type: 'openTitle' }).game).toBe(before.game);
+    }
     expect(JSON.parse(serializeGame(opened.game)).version).toBe(SCHEMA_VERSION);
     expect(Object.keys(JSON.parse(serializeGame(opened.game)).data)).not.toContain('showTitle');
     // 저장을 다시 읽으면(= 새로고침) 첫 화면이 아니라 저장된 단계다
     const reloaded = createSession(parseGame(serializeGame(opened.game))!, opened.settings);
     expect(reloaded.showTitle).toBe(false);
     expect(reloaded.game.phase).toBe('life');
+    expect(reloaded.game.paused, '새로고침해도 멈춘 채 복원된다(일시정지 상태로 저장, DB8)').toBe(true);
   });
 
   it('「이어서 살기」(resume): 저장된 화면으로 돌아간다. 열려 있지 않으면 무시', () => {
     const s = inLife();
     expect(send(s, { type: 'resume' })).toBe(s);
-    const back = send(send(s, { type: 'openTitle' }), { type: 'resume' });
+    const opened = send(s, { type: 'openTitle' });
+    const back = send(opened, { type: 'resume' });
     expect(back.showTitle).toBe(false);
-    expect(back.game).toBe(s.game);
+    expect(back.game, '저장된 판 그대로 — 일시정지는 켜진 채(사용자가 「다시 진행」을 눌러야 흐른다)').toBe(opened.game);
+    expect(back.game.paused).toBe(true);
   });
 
   it('열려 있는 동안 인생은 흐르지 않는다: 진행·선택·자동 선택·다음 결정으로·살아가기 입력을 모두 무시한다', () => {

@@ -28,7 +28,9 @@ import { ErrorBoundary } from './screens/ErrorBoundary';
 import { LifeScreen } from './screens/LifeScreen';
 import { SupersededScreen } from './screens/SupersededScreen';
 import { TitleScreen } from './screens/TitleScreen';
-import { LegacyLight } from './ui/legacyTheme';
+import { useApplyTheme } from './ui/theme';
+import { useBgm } from './ui/useBgm';
+import { useYearClock } from './ui/useYearClock';
 
 /**
  * 개발 서버 전용 탐침 (프로덕션 빌드에서는 import.meta.env.DEV가 false라 아래 값들이 상수로 접히고 문자열째 제거된다.
@@ -159,6 +161,15 @@ function Game() {
   const [superseded, setSuperseded] = useSuperseded(written);
   const [gameSaveFailed, setGameSaveFailed] = useState(false);
   const [settingsSaveFailed, setSettingsSaveFailed] = useState(false);
+  // 나가기 확인 단계가 열려 있는가(DB8): 열려 있는 동안은 인생이 흐르지 않는다. 인생 화면을 떠나면(첫 화면 다시 열기·엔딩 등) 닫는다.
+  const [exitAsk, setExitAsk] = useState(false);
+  useEffect(() => {
+    if (game.phase !== 'life' || showTitle) setExitAsk(false);
+  }, [game.phase, showTitle]);
+  // 화면 테마(DB6): 설정의 수동 선택을 문서에 건다(시스템 설정을 따르는 기본은 data-theme를 지운다). 모든 화면이 새 디자인이라 한 곳에서 건다.
+  useApplyTheme(settings.theme);
+  // BGM(DB4): 인생 화면에서만, 사용자가 한 번이라도 누른 뒤에만 소리가 난다. 탭이 가려지면 멈춘다.
+  useBgm({ on: settings.bgm.on, volume: settings.bgm.volume, active: game.phase === 'life' && !showTitle && !superseded });
 
   // 상태가 바뀔 때마다 자동 저장. setItem은 키 단위로 원자적이라 쓰기 도중 새로고침돼도 이전 값 또는 새 값 중 하나만 남는다.
   // 저장 effect는 쓰기 직전에 저장소를 다시 읽어 "내가 아는 값"(처음 읽었거나 마지막으로 쓴 값, written)과 비교한다(decideSave, R-052):
@@ -224,25 +235,25 @@ function Game() {
     };
   }, [written]);
 
-  // 한 해 진행 타이머. 타이머는 UI 계층에만 있고, 상태 갱신은 reducer 하나로만 한다(R-005).
-  // 'advance'는 자기가 알던 나이(fromAge)를 들고 가서 상황이 달라졌으면 무시되므로, 겹치거나 지연된 타이머가 한 해를 두 번 진행하지 못한다.
-  // 선택지가 대기 중이거나 사망했거나 탭이 가려져 있으면 타이머를 걸지 않는다(배속·자동 모드와 무관하게 선택지에서 멈춘다).
-  useEffect(() => {
-    if (game.phase !== 'life' || game.pending !== null || superseded || !visible || showTitle) return;
-    const delay = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE);
-    if (delay === null) return;
-    const fromAge = game.age;
-    const id = window.setTimeout(() => dispatch({ type: 'advance', fromAge }), delay);
-    return () => window.clearTimeout(id);
-  }, [game.phase, game.age, game.pending, tick, settings.speed, superseded, visible, showTitle]);
+  // 한 해 진행 시계(DB2). 시계는 UI 계층에만 있고, 상태 갱신은 reducer 하나로만 한다(R-005). 헤더 진행률 바가 이 시계를 구독해 같이 차오르고, 100%가 되는 순간 한 해를 진행한다(ui/useYearClock.ts).
+  // 'advance'는 자기가 알던 나이(fromAge)를 들고 가서 상황이 달라졌으면 무시되므로, 겹치거나 지연된 시계가 한 해를 두 번 진행하지 못한다.
+  // 선택지가 대기 중이거나 사망했거나 탭이 가려져 있거나 일시정지·나가기 확인 중이면 시계가 멈춘다(배속·자동 모드와 무관하게 선택지에서 멈춘다). 멈춘 자리에서 이어 흐른다.
+  const inLife = game.phase === 'life' && !showTitle && !superseded;
+  const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE);
+  const clock = useYearClock({
+    resetKey: `${game.age}|${game.history.length}|${game.pending?.key ?? ''}`,
+    durationMs: game.pending !== null ? null : hold,
+    running: inLife && visible && !game.paused && !exitAsk && game.pending === null,
+    onElapsed: () => dispatch({ type: 'advance', fromAge: game.age }),
+  });
 
-  // 자동 모드: 선택지를 잠깐 보여 준 뒤 성향대로 고른다. 해제하면 타이머가 정리되고 선택지는 그대로 남는다.
+  // 자동 모드: 선택지를 잠깐 보여 준 뒤 성향대로 고른다. 해제하면 타이머가 정리되고 선택지는 그대로 남는다. 일시정지·나가기 확인 중에는 고르지 않는다(reducer도 막는다).
   useEffect(() => {
-    if (!settings.autoMode || game.pending === null || superseded || !visible || showTitle) return;
+    if (!settings.autoMode || game.pending === null || superseded || !visible || showTitle || game.paused || exitAsk) return;
     const key = game.pending.key;
     const id = window.setTimeout(() => dispatch({ type: 'autoChoose', key }), autoChoiceDelayMs(settings.speed, TIME_SCALE));
     return () => window.clearTimeout(id);
-  }, [settings.autoMode, settings.speed, game.pending, superseded, visible, showTitle]);
+  }, [settings.autoMode, settings.speed, game.pending, game.paused, exitAsk, superseded, visible, showTitle]);
 
   const takeOver = useCallback(() => {
     // 저장소를 한 번만 읽어, 그 원문을 파싱해 이어받고 "내가 아는 값"으로도 기록한다(R-052). 이어받은 값은 저장소에 이미 있는 값이라 같은 값을 다시 쓰지 않는다.
@@ -253,9 +264,7 @@ function Game() {
   }, [setSuperseded, written]);
 
   let screen;
-  // 첫 화면·룰렛·출생신고는 새 디자인(시스템의 라이트·다크를 따른다)이고, 나머지(인생·엔딩·밀린 화면·오류 화면)는 아직 고정 색의 옛 화면이라 그동안 색 구성표를 라이트로 고정한다(R-208).
-  // 새 디자인 화면이 늘면(M4 대시보드·엔딩) 이 목록에 더한다.
-  const onNewDesign = !superseded && (game.phase === 'title' || game.phase === 'roulette' || game.phase === 'birth' || showTitle);
+  // 모든 화면이 새 디자인이다(첫 화면·룰렛·출생신고·대시보드·엔딩·밀린 화면·오류 화면) — 시스템의 라이트·다크를 따르거나 설정의 수동 선택을 따른다. 옛 화면을 라이트로 고정하던 장치는 M4에서 없어졌다.
   if (superseded) {
     screen = <SupersededScreen onTakeOver={takeOver} />;
   } else if (game.phase === 'title' || showTitle) {
@@ -285,16 +294,26 @@ function Game() {
     );
   } else if (game.phase === 'birth' && game.era && game.character && game.birthReport && game.peerSeed !== null) {
     screen = <BirthScreen era={game.era} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} onNext={() => dispatch({ type: 'enterLife' })} />;
-  } else if (game.phase === 'life' && game.character) {
+  } else if (game.phase === 'life' && game.character && game.era && game.birthReport && game.peerSeed !== null) {
     screen = (
       <LifeScreen
-        game={{ ...game, character: game.character }}
+        game={{ ...game, character: game.character, era: game.era, birthReport: game.birthReport, peerSeed: game.peerSeed }}
         settings={settings}
-        tick={tick}
+        clock={clock}
+        exitOpen={exitAsk}
+        onExitOpen={setExitAsk}
         onChoose={(key, choiceId) => dispatch({ type: 'choose', key, choiceId })}
         onSkip={() => dispatch({ type: 'skip' })}
         onSpeed={(speed) => dispatch({ type: 'setSpeed', speed })}
         onAuto={(auto) => dispatch({ type: 'setAuto', auto })}
+        onPause={(paused) => dispatch({ type: 'setPaused', paused })}
+        onBgm={(bgm) => dispatch({ type: 'setBgm', bgm })}
+        onTheme={(theme) => dispatch({ type: 'setTheme', theme })}
+        onExit={() => {
+          // 확인 단계를 거쳐 나간다: 일시정지 상태로 저장하고(reducer가 paused를 켠다) 첫 화면을 다시 연다. 새로고침하면 저장된 화면(대시보드)이 멈춘 채 복원된다(C3).
+          setExitAsk(false);
+          dispatch({ type: 'openTitle' });
+        }}
       />
     );
   } else if (game.phase === 'ending' && game.character && game.death && game.era && game.birthStats) {
@@ -317,7 +336,6 @@ function Game() {
           저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다.
         </p>
       ) : null}
-      {onNewDesign ? null : <LegacyLight />}
       {screen}
     </>
   );

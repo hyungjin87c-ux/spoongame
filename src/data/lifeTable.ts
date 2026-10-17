@@ -154,13 +154,15 @@ export const MORTALITY = {
 // ---------- 연표 저장 상한 ----------
 
 /**
- * 연표 상한/요약 정책: 한 판에 이벤트는 해마다 최대 하나라서 정상 플레이에서는 상한에 닿지 않는다
- * (가장 긴 다가올 세상 기준 111해 + 단계 문구 5줄(출생 포함) + 사망 1줄 = 117줄 < 160). 상한은 손상된 저장이나 데이터 변경이
+ * 연표 상한/요약 정책: 한 판에 이벤트는 해마다 최대 하나라서 지금은 정상 플레이에서 상한에 닿지 않는다
+ * (가장 긴 다가올 세상 기준 111해 + 단계 문구 5줄(출생 포함) + 사망 1줄 = 117줄). 상한은 손상된 저장이나 데이터 변경이
  * 저장 용량을 무한히 키우지 못하게 두는 안전장치다.
  * 넘치면 core/history.ts#appendHistory가 가장 오래된 "서술 이벤트(선택이 없는 것)"부터 버리고, 그다음 오래된 선택지 기록,
  * 그다음 단계 기록 순으로 버린다. 출생(맨 앞)과 사망 기록은 끝까지 남긴다(엔딩 연표용).
+ * 상한 300 (SPEC-003 DB12 ▲, M4): 해마다 이벤트가 둘 이상 생기는 새 콘텐츠(영유아 사건·자유 기록 — M7)와 인생 기록 화면의 「쌓이는 줄」에 맞춰 160에서 올렸다.
+ * 최악 판 저장 크기(모든 줄이 이 파일의 길이 상한을 꽉 채운 300줄)는 tests/storageLife.test.ts가 200KB 이하임을 단언한다.
  */
-export const HISTORY_LIMITS = { maxEntries: 160, maxTextLength: 400, maxTitleLength: 60, maxChoiceLength: 80 };
+export const HISTORY_LIMITS = { maxEntries: 300, maxTextLength: 400, maxTitleLength: 60, maxChoiceLength: 80 };
 
 /** 저장 검증 한도: 본 이벤트 목록 / 플래그 개수 */
 export const STATE_LIMITS = { maxSeen: 400, maxFlags: 200, maxFlagLength: 40, maxCauseLength: 40 };

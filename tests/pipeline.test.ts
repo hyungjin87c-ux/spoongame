@@ -4,6 +4,7 @@ import {
   ERAS,
   advanceYear,
   autoResolveStep,
+  familyOf,
   finalWealthStanding,
   maxAgeOf,
   playToEnd,
@@ -163,6 +164,52 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
       expect(check(withEvent(oldMother(43), 'infant-new-sibling', 2)).problems).toEqual([]); // 45세
       expect(check(withEvent(oldMother(43), 'infant-new-sibling', 3)).problems.join()).toContain('어머니는 46세');
       expect(check(withEvent(oldMother(47), 'infant-new-sibling', 2)).problems.join()).toContain('어머니는 49세');
+    });
+
+    it('식구 카드의 위 형제: 누적 나이 차가 어머니의 첫 출산 한도(어머니 나이 − 16)를 넘거나, 위 형제 수가 형제 순서 − 1과 다르거나, 어머니가 그 순서를 낳기엔 어렸으면 잡는다 — 순서에 맞는 어머니 나이에서는 위반 0이고 점검 횟수가 센다 (R-330, r3)', () => {
+      const motherOf = (age: number, order: number): GameState => {
+        const g = base();
+        return { ...g, birthReport: { ...g.birthReport!, birthOrder: order, mother: { ...g.birthReport!.mother, age } } };
+      };
+      // 대조군: 어머니가 그 순서를 낳을 수 있는 나이(첫째 16·둘째 18·셋째 20·넷째 22·다섯째 이상 24세 이상 — 독립으로 적은 표)면 위반 0이고, 위 형제가 있으면 한 번 더 센다.
+      // 낳을 수 없는 나이(생성기가 이제 만들지 않는 조합 — 옛 저장 판에나 있다)면 잡는다: 어머니 나이 위반 + 식구 카드가 형제를 숨긴 만큼 위 형제 수 불일치
+      let possible = 0;
+      let impossible = 0;
+      for (let motherAge = 16; motherAge <= 46; motherAge++) {
+        for (const order of [1, 2, 3, 4, 5]) {
+          const g = motherOf(motherAge, order);
+          const r = checkFamilyRules(first(g, order), 'x');
+          const minMother = 16 + 2 * Math.min(4, order - 1);
+          if (motherAge >= minMother) {
+            possible++;
+            expect(r.problems, `어머니 ${motherAge}세 ${order}째`).toEqual([]);
+            expect(r.applied, `어머니 ${motherAge}세 ${order}째`).toBe(1 + (order > 1 ? 1 : 0));
+          } else {
+            impossible++;
+            expect(r.problems.join(), `어머니 ${motherAge}세 ${order}째`).toContain(`어머니는 출생 때 ${motherAge}세다(${minMother}세 이상이어야 한다`);
+            expect(r.problems.join(), `어머니 ${motherAge}세 ${order}째`).toContain(`위 형제가 ${familyOf(g).siblings.filter((s) => s.older).length}명인데 형제 순서는 ${order}번째다(위 형제 ${Math.min(4, order - 1)}명이어야 한다`);
+            expect(r.applied, `어머니 ${motherAge}세 ${order}째`).toBe(2);
+          }
+        }
+      }
+      expect(possible, '공허 통과 방지').toBeGreaterThan(100);
+      expect(impossible, '공허 통과 방지: 낳을 수 없는 조합도 점검했다').toBe(2 + 4 + 6 + 8); // 둘째 16·17세 / 셋째 16~19세 / 넷째 16~21세 / 다섯째 이상 16~23세 — 첫째는 없다 (2 + 4 + 6 + 8 = 20)
+      // 공허 통과 방지: 규칙이 실제로 잡는다 — 식구 카드가 한도를 넘는 형제를 만들었다고 가정한 요약(family 인자)을 넘기면 위반이다
+      const g = motherOf(24, 5);
+      const real = familyOf(g);
+      const sibling = (gap: number) => ({ kind: 'olderBrother' as const, age: gap, gap, older: true, gone: false });
+      const forge = (gaps: number[]) => ({ ...real, siblings: gaps.map(sibling) });
+      expect(checkFamilyRules(first(g, 5), 'x', forge([5, 9, 14, 20])).problems.join(), '어머니 24세인데 가장 위 형제와 20살 차이').toContain('가장 위 형제와 나이 차 20살인데 어머니는 출생 때 24세다');
+      expect(checkFamilyRules(first(g, 5), 'x', forge([2, 4, 6, 8])).problems, '정확히 한도(8살)에 닿는 것은 통과').toEqual([]);
+      expect(checkFamilyRules(first(g, 5), 'x', forge([2, 3, 6, 8])).problems.join(), '형제 사이 1살').toContain('위 형제 사이 나이 차 1살 < 2살');
+      // R-330 r3: 위 형제 수는 「이하」가 아니라 「같다」 — 식구 카드가 형제를 줄여 보이면(셋·없음) 모순으로 잡는다
+      expect(checkFamilyRules(first(g, 5), 'x', forge([2, 4, 6])).problems.join(), '다섯째인데 위 형제 3명').toContain('위 형제가 3명인데 형제 순서는 5번째다(위 형제 4명이어야 한다');
+      expect(checkFamilyRules(first(g, 5), 'x', forge([])).problems.join(), '다섯째인데 위 형제 없음').toContain('위 형제가 0명인데 형제 순서는 5번째다');
+      expect(checkFamilyRules(first(g, 5), 'x', forge([])).applied, '위 형제가 있어야 하는 판은 점검 횟수에 센다').toBe(2);
+      const second = motherOf(24, 2);
+      expect(checkFamilyRules(first(second, 2), 'x', { ...familyOf(second), siblings: [2, 4].map(sibling) }).problems.join(), '둘째인데 위 형제 2명').toContain('위 형제가 2명인데 형제 순서는 2번째');
+      expect(FAMILY_RULES.motherMinFirstBirth).toBe(16);
+      expect(FAMILY_RULES.minSiblingGap).toBe(2);
     });
 
     it('사별(parents_gone) 플래그가 있는데 임종 사건이 연표에 없으면 잡고, 있으면 통과한다', () => {

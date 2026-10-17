@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import pkg from './package.json';
-import { commitConstant, resolveBuildInfo } from './scripts/buildInfo';
+import { commitConstant, resolveBuildInfo, resolveRepoUrl } from './scripts/buildInfo';
 import { resolvePagesBase } from './scripts/pagesBase';
 
 /** 로컬 깃의 HEAD 커밋(없으면 null). 깃이 없는 환경(압축본 빌드 등)에서도 빌드가 멈추지 않는다. */
@@ -34,6 +34,8 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(build.version),
     __APP_COMMIT__: JSON.stringify(commitConstant(build)),
+    // 의견 보내기(DB7)가 이슈 작성 주소를 만드는 저장소 주소 — package.json의 repository에서 읽는다(DP1: 저장소 주소는 빌드 설정에서)
+    __REPO_URL__: JSON.stringify(resolveRepoUrl((pkg as { repository?: unknown }).repository)),
   },
   test: {
     environment: 'node',

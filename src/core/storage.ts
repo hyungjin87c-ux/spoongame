@@ -5,6 +5,8 @@ import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from '.
 import { isValidBirthReport } from './birthReport';
 import { isValidStat } from './stats';
 import {
+  BGM_VOLUME_MAX,
+  BGM_VOLUME_MIN,
   ERAS,
   GENDERS,
   HISTORY_KINDS,
@@ -13,6 +15,7 @@ import {
   PARENT_WEALTHS,
   PHASES,
   SPEEDS,
+  THEMES,
   selectableLifeLength,
   type Character,
   type GameState,
@@ -28,17 +31,20 @@ import { DEFAULT_SETTINGS } from './state';
  * v5: 개편(SPEC-003 M2) — 화면 단계에서 시대 선택(eraSelect)이 빠지고(세상·인생 길이는 첫 화면에서 고른다), 판마다 인생 길이(lifeLength)가 고정된다. v4 이하 저장은 새 게임으로 시작한다(C6).
  * v6: 개편(SPEC-003 M3) — 화면 단계에 룰렛(roulette)이 더해지고, 판마다 출생신고 상세(birthReport)와 또래 시드(peerSeed)가 저장된다. 지금 세상 출생 연도가 2026 한 해로 고정되어
  *     (ERA_CONFIG.present.birthYears) M2 시기의 v5 저장(지금 세상 2008~2025년생)은 새 게임으로 시작한다 — 버전을 올려 「손상」이 아니라 「이전 버전」으로 분류하고 첫 화면에 안내 한 줄(C6)을 보인다(REV-003-M2-1 R-213).
+ * v7: 개편(SPEC-003 M4) — 판 상태에 일시정지 여부(`paused`, DB3·DB8: 「나가기」가 일시정지 상태로 저장하고 새로고침해도 멈춘 채 열린다)가 더해졌다. 일시정지는 인생(life) 단계에서만 true일 수 있다.
+ *     연표 상한도 160 → 300줄로 올랐다(data/lifeTable.ts#HISTORY_LIMITS, DB12). v6 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6).
  */
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 /**
  * 설정 스키마는 게임 스키마와 따로 버전을 관리한다(게임 스키마가 바뀌어도 설정은 유지).
  * v2: 첫 화면에서 고른 세상(era)·인생 길이(lifeLength)가 더해졌다. v1 설정(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — 배속·자동 모드를 잃지 않는다.
+ * v3: 대시보드(SPEC-003 M4)의 BGM 켬/끔·볼륨(`bgm`, DB4)과 화면 테마(`theme`, DB6)가 더해졌다. v1·v2 설정은 그대로 읽고 새 필드는 기본값(BGM 꺼짐·시스템 테마)으로 채운다 — 이미 고른 값을 잃지 않는다.
  */
-export const SETTINGS_VERSION = 2;
+export const SETTINGS_VERSION = 3;
 /** 읽을 수 있는 설정 버전 (현재 + 이전 버전). 이 밖의 버전은 기본값. */
-const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2];
+const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2, 3];
 
 /** localStorage와 같은 최소 인터페이스 (테스트에서 가짜를 주입). */
 export interface StorageLike {
@@ -185,6 +191,7 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
     (v.character === null || validCharacter(v.character)) &&
     (v.birthReport === null || isObj(v.birthReport)) &&
     (v.peerSeed === null || isUint32(v.peerSeed)) &&
+    typeof v.paused === 'boolean' &&
     validStats(v.stats) &&
     (v.birthStats === null || validStats(v.birthStats)) &&
     isInt(v.age) &&
@@ -225,6 +232,8 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   }
   // 첫 화면(title)에서는 세상·인생 길이가 아직 정해지지 않았다(고르는 값은 설정에 있다). 판 상태에 있으면 변조·손상이다.
   if (phase === 'title' && (v.era !== null || v.lifeLength !== null)) return 'invalid';
+  // 일시정지는 인생(life) 단계에서만 있을 수 있다(DB3). 다른 단계에 켜져 있으면 변조·손상이다.
+  if (v.paused === true && phase !== 'life') return 'invalid';
 
   // 인생 진행 필드 (M3): 인생이 시작되기 전에는 진행 기록이 모두 비어 있어야 하고,
   // 대기 중인 선택지는 life에서만, 사망 정보는 ending에서만(그리고 ending에는 반드시) 있다.
@@ -259,6 +268,18 @@ function readSettings(v: unknown): Settings | null {
     era: isOneOf(ERAS, v.era) ? (v.era as Settings['era']) : DEFAULT_SETTINGS.era,
     // 아직 고를 수 없는 인생 길이(1차에서는 「약 1시간」)가 저장돼 있으면 고를 수 있는 값(약 30분)으로 읽는다(R-202)
     lifeLength: isOneOf(LIFE_LENGTHS, v.lifeLength) ? selectableLifeLength(v.lifeLength as Settings['lifeLength']) : DEFAULT_SETTINGS.lifeLength,
+    // v3 필드: 없거나 형태가 어긋나면 그 필드만 기본값으로 채운다(이미 고른 다른 설정을 잃지 않는다)
+    bgm: readBgm(v.bgm),
+    theme: isOneOf(THEMES, v.theme) ? (v.theme as Settings['theme']) : DEFAULT_SETTINGS.theme,
+  };
+}
+
+/** BGM 설정: 켬/끔은 불리언, 볼륨은 0~100 정수. 어느 쪽이든 어긋나면 그 값만 기본값(BGM은 꺼짐이 기본이라 어긋난 저장이 갑자기 소리를 내지 않는다). */
+function readBgm(v: unknown): Settings['bgm'] {
+  if (!isObj(v)) return { ...DEFAULT_SETTINGS.bgm };
+  return {
+    on: typeof v.on === 'boolean' ? v.on : DEFAULT_SETTINGS.bgm.on,
+    volume: isInt(v.volume) && v.volume >= BGM_VOLUME_MIN && v.volume <= BGM_VOLUME_MAX ? v.volume : DEFAULT_SETTINGS.bgm.volume,
   };
 }
 

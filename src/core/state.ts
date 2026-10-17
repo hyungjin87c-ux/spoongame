@@ -2,7 +2,7 @@ import { birthSentence } from './birthReport';
 import { generateBirth } from './birth';
 import { appendHistory } from './history';
 import { createRng } from './rng';
-import type { Era, GameState, LifeLength, Settings, Stats } from './types';
+import { DEFAULT_BGM, type Era, type GameState, type LifeLength, type Settings, type Stats } from './types';
 
 /** 출생 전 자리표시 스탯. 실제 값은 beginBirth가 채운다(건강은 0이 되지 않게 중립값). */
 export const INITIAL_STATS: Stats = {
@@ -17,7 +17,14 @@ export const INITIAL_STATS: Stats = {
 export const DEFAULT_ERA: Era = 'present';
 export const DEFAULT_LIFE_LENGTH: LifeLength = 'short30';
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, autoMode: false, era: DEFAULT_ERA, lifeLength: DEFAULT_LIFE_LENGTH };
+export const DEFAULT_SETTINGS: Settings = {
+  speed: 1,
+  autoMode: false,
+  era: DEFAULT_ERA,
+  lifeLength: DEFAULT_LIFE_LENGTH,
+  bgm: { ...DEFAULT_BGM },
+  theme: 'system',
+};
 
 /** 새 게임의 초기 상태. 시드는 주입한다(테스트·재현용). */
 export function createInitialState(seed: number): GameState {
@@ -38,9 +45,18 @@ export function createInitialState(seed: number): GameState {
     death: null,
     birthReport: null,
     peerSeed: null,
+    paused: false,
     seed: s,
     rngState: s,
   };
+}
+
+/**
+ * 일시정지를 켜고 끈다 (DB3). 인생(life) 단계에서만 동작하고 값이 같으면 같은 객체를 돌려준다(연타·늦게 도착한 입력이 상태를 흔들지 않는다).
+ * 일시정지 여부는 저장되는 판 상태다 — 「나가기」가 일시정지 상태로 저장하고(DB8), 새로고침해도 멈춘 채 열린다.
+ */
+export function setPaused(state: GameState, paused: boolean): GameState {
+  return state.phase !== 'life' || state.paused === paused ? state : { ...state, paused };
 }
 
 /**

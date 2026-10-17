@@ -21,6 +21,7 @@ import {
   loadSettings,
   parseGame,
   parseSettings,
+  playToEnd,
   saveGame,
   saveSettings,
   selectableLifeLength,
@@ -30,6 +31,7 @@ import {
   type StorageLike,
 } from '../src/core';
 import { PEER_SEED, report } from '../e2e/saves';
+import { startLife } from '../scripts/simulateLib';
 
 function memoryStorage(): StorageLike & { map: Map<string, string> } {
   const map = new Map<string, string>();
@@ -315,9 +317,51 @@ describe('손상 데이터 복구', () => {
     }
   });
 
-  it('스키마 버전은 6이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이 / 6: 개편 M3 — 룰렛 단계·출생신고 상세·또래 시드, 지금 세상 2026 고정)', () => {
-    expect(SCHEMA_VERSION).toBe(6);
-    expect(JSON.parse(serializeGame(richState())).version).toBe(6);
+  it('스키마 버전은 7이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이 / 6: 개편 M3 — 룰렛 단계·출생신고 상세·또래 시드, 지금 세상 2026 고정 / 7: 개편 M4 — 일시정지 여부(paused), 연표 상한 300)', () => {
+    expect(SCHEMA_VERSION).toBe(7);
+    expect(JSON.parse(serializeGame(richState())).version).toBe(7);
+  });
+
+  it('v6 저장(M3 배포분)은 「손상」이 아니라 이전 버전으로 분류되어 새 게임으로 시작하고 안내가 필요하다 (C6) — 진행 전(첫 화면)이던 v6은 안내하지 않는다', () => {
+    const v6Life = JSON.stringify({ version: 6, data: { ...richState(), paused: undefined } });
+    expect(parseGame(v6Life), 'v6은 읽지 않는다').toBeNull();
+    expect(classifySavedGame(v6Life)).toBe('old-version');
+    expect(classifySavedGame(JSON.stringify({ version: 6, data: { ...createInitialState(6), paused: undefined } }))).toBe('old-version-empty');
+  });
+
+  it('paused(일시정지, DB3·DB8): 불리언이어야 하고 인생(life) 단계에서만 true일 수 있다 — 어긋나면 손상으로 새 게임', () => {
+    const life = richState();
+    expect(parseGame(serializeGame({ ...life, paused: true })), '인생 중 일시정지는 저장·복원된다').toEqual({ ...life, paused: true });
+    for (const bad of [undefined, 1, 'true', null]) {
+      expect(parseGame(JSON.stringify({ version: SCHEMA_VERSION, data: { ...life, paused: bad } })), String(bad)).toBeNull();
+    }
+    for (const phase of ['title', 'roulette', 'birth'] as const) {
+      const other = phase === 'title' ? createInitialState(4) : { ...beginBirth(createInitialState(4)), phase };
+      expect(parseGame(serializeGame(other)), phase + ' 일시정지 없음').not.toBeNull();
+      expect(parseGame(serializeGame({ ...other, paused: true })), phase + '에 켜진 일시정지는 변조').toBeNull();
+    }
+    // 엔딩에도 켜져 있을 수 없다 (일시정지 중 고른 선택이 마지막이었어도 finishYear가 끈다)
+    const end = playToEnd({ ...startLife(5, 'present'), paused: true }, null).state;
+    expect(end.phase).toBe('ending');
+    expect(end.paused).toBe(false);
+    expect(parseGame(serializeGame({ ...end, paused: true }))).toBeNull();
+  });
+
+  it('설정 v3: BGM 켬/끔·볼륨과 테마를 저장·복원하고, 모양이 어긋난 값은 그 필드만 기본값으로 읽는다 (BGM은 꺼짐이 기본 — 어긋난 저장이 소리를 내지 않는다)', () => {
+    const st = memoryStorage();
+    const custom = { ...DEFAULT_SETTINGS, bgm: { on: true, volume: 80 }, theme: 'light' as const };
+    saveSettings(st, custom);
+    expect(loadSettings(st)).toEqual(custom);
+    const read = (data: unknown) => parseSettings(JSON.stringify({ version: SETTINGS_VERSION, data: { speed: 2, autoMode: true, ...(data as object) } }));
+    expect(read({ bgm: { on: 'yes', volume: 40 } }).bgm).toEqual({ on: false, volume: 40 });
+    expect(read({ bgm: { on: true, volume: 101 } }).bgm).toEqual({ on: true, volume: 30 });
+    expect(read({ bgm: { on: true, volume: -1 } }).bgm).toEqual({ on: true, volume: 30 });
+    expect(read({ bgm: { on: true, volume: 40.5 } }).bgm, '정수가 아닌 볼륨').toEqual({ on: true, volume: 30 });
+    expect(read({ bgm: 'loud' }).bgm).toEqual(DEFAULT_SETTINGS.bgm);
+    expect(read({ theme: 'sepia' }).theme).toBe('system');
+    expect(read({ theme: 'dark' }).theme).toBe('dark');
+    // 다른 필드(배속·자동 모드)는 어긋난 BGM·테마 때문에 기본값으로 돌아가지 않는다
+    expect(read({ bgm: 7, theme: 7 })).toMatchObject({ speed: 2, autoMode: true });
   });
 
   it('M2 시기의 v5 저장(지금 세상 2008~2025년생)은 「손상」이 아니라 이전 버전으로 분류되어 새 게임으로 시작하고 안내가 필요하다 (REV-003-M2-1 R-213, C6)', () => {
@@ -328,13 +372,13 @@ describe('손상 데이터 복구', () => {
     expect(classifySavedGame(v5Birth)).toBe('old-version');
     // 진행 전(첫 화면)이던 v5 저장은 잃은 것이 없어 안내하지 않는다
     expect(classifySavedGame(JSON.stringify({ version: 5, data: createInitialState(5) }))).toBe('old-version-empty');
-    // 지금 버전(v6)의 같은 인물이 2012년생이면 손상이다(안내 대상이 아니라 broken)
-    const broken = JSON.stringify({ version: 6, data: { ...richState(), character: { ...richState().character, birthYear: 2012 } } });
+    // 지금 버전의 같은 인물이 2012년생이면 손상이다(안내 대상이 아니라 broken)
+    const broken = JSON.stringify({ version: SCHEMA_VERSION, data: { ...richState(), character: { ...richState().character, birthYear: 2012 } } });
     expect(classifySavedGame(broken)).toBe('broken');
   });
 
   it('v4 이하 저장은 새 게임으로 시작한다 (C6) — 같은 모양이어도 버전이 낮으면 읽지 않는다', () => {
-    for (const version of [1, 2, 3, 4, 5]) {
+    for (const version of [1, 2, 3, 4, 5, 6]) {
       const raw = JSON.stringify({ version, data: createInitialState(5) });
       expect(parseGame(raw), `v${version}`).toBeNull();
       // 진행 전(title)이던 이전 버전 저장은 잃은 것이 없어 안내하지 않는다(R-214) — 안내가 필요한 저장은 아래 「진행한 판이 있던」 항목
@@ -425,14 +469,14 @@ describe('설정은 게임과 독립', () => {
   });
 
   it('기본값: 1배속, 자동 꺼짐, 지금 세상, 약 30분', () => {
-    expect(loadSettings(memoryStorage())).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30' });
-    expect(DEFAULT_SETTINGS).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30' });
+    expect(loadSettings(memoryStorage())).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system' });
+    expect(DEFAULT_SETTINGS).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system' }); // M4: BGM은 꺼짐·볼륨 낮음(30), 테마는 시스템 설정을 따름
   });
 
   it('설정 저장 왕복 (배속·자동 모드·태어날 세상·인생 길이)', () => {
     const st = memoryStorage();
-    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
-    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
+    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark' });
+    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark' });
   });
 
   it('저장된 설정의 인생 길이가 아직 고를 수 없는 「약 1시간」(long60)이면 short30으로 읽는다 — 다른 필드는 그대로 (R-202)', () => {
@@ -442,11 +486,11 @@ describe('설정은 게임과 독립', () => {
     expect(selectableLifeLength('short30')).toBe('short30');
     expect(isLifeLengthSelectable('long60')).toBe(false);
     const st = memoryStorage();
-    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'long60' });
-    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
+    saveSettings(st, { ...DEFAULT_SETTINGS, speed: 8, autoMode: true, era: 'future', lifeLength: 'long60' });
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
     // 현재 설정 봉투(v2)의 원문을 그대로 읽어도 같다 (v1 봉투에는 인생 길이 필드가 없어 이 검사 대상이 아니다 — 아래 「설정 v1 …」 테스트)
-    for (const version of [2]) {
-      expect(parseSettings(JSON.stringify({ version, data: { speed: 4, autoMode: false, era: 'past', lifeLength: 'long60' } }))).toEqual({ speed: 4, autoMode: false, era: 'past', lifeLength: 'short30' });
+    for (const version of [2, 3]) {
+      expect(parseSettings(JSON.stringify({ version, data: { speed: 4, autoMode: false, era: 'past', lifeLength: 'long60' } }))).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: false, era: 'past', lifeLength: 'short30' });
     }
     // 알 수 없는 값은 기본값(이전 동작 그대로)
     expect(parseSettings(JSON.stringify({ version: 2, data: { speed: 4, autoMode: false, era: 'past', lifeLength: 'x' } })).lifeLength).toBe('short30');
@@ -456,20 +500,20 @@ describe('설정은 게임과 독립', () => {
   });
 
   it('설정 v1(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — v5 게임 스키마 전환에서 설정을 잃지 않는다', () => {
-    expect(SETTINGS_VERSION).toBe(2);
+    expect(SETTINGS_VERSION).toBe(3); // v3(M4): BGM 켬/끔·볼륨과 화면 테마가 더해졌다 — v1·v2는 그대로 읽고 새 필드는 기본값(꺼짐·시스템 테마)으로 채운다
     const st = memoryStorage();
     st.map.set(SETTINGS_KEY, JSON.stringify({ version: 1, data: { speed: 4, autoMode: true } }));
-    expect(loadSettings(st)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30' });
-    // 읽은 뒤 저장하면 v2로 올라간다
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: true });
+    // 읽은 뒤 저장하면 현재 버전(v3)으로 올라간다
     saveSettings(st, loadSettings(st));
-    expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(2);
+    expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(SETTINGS_VERSION);
     // v2에서 알 수 없는 세상·인생 길이는 그 필드만 기본값(배속·자동 모드는 유지)
     st.map.set(SETTINGS_KEY, JSON.stringify({ version: 2, data: { speed: 2, autoMode: true, era: 'mars', lifeLength: 7 } }));
-    expect(loadSettings(st)).toEqual({ speed: 2, autoMode: true, era: 'present', lifeLength: 'short30' });
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: true });
     // 게임이 v4 저장이라 새 게임이 돼도 설정은 그대로다
     st.map.set(GAME_KEY, JSON.stringify({ version: 4, data: createInitialState(1) }));
     expect(loadGame(st)).toBeNull();
-    expect(loadSettings(st)).toEqual({ speed: 2, autoMode: true, era: 'present', lifeLength: 'short30' });
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: true });
   });
 
   it('serializeSettings는 현재 버전 봉투로 쓴다', () => {
@@ -492,7 +536,7 @@ describe('설정은 게임과 독립', () => {
   it('손상된 설정은 기본값, 게임에는 영향 없음', () => {
     const st = memoryStorage();
     saveGame(st, richState());
-    for (const raw of ['{{', JSON.stringify({ version: SETTINGS_VERSION, data: { speed: 3, autoMode: false } }), JSON.stringify({ version: 3, data: { speed: 2, autoMode: true } })]) {
+    for (const raw of ['{{', JSON.stringify({ version: SETTINGS_VERSION, data: { speed: 3, autoMode: false } }), JSON.stringify({ version: SETTINGS_VERSION + 1, data: { speed: 2, autoMode: true } })]) {
       st.map.set(SETTINGS_KEY, raw);
       expect(loadSettings(st)).toEqual(DEFAULT_SETTINGS);
     }

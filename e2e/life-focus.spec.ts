@@ -20,7 +20,7 @@ import {
 
 /**
  * R-036: 인생 화면의 포커스 규칙 (src/ui/useFocus.ts#decideLifeFocus / useLifeFocus)
- *  - 컨트롤 그룹(1·2·4·8배, 다음 결정으로, 자동 모드)의 Tab 순서는 선택지가 뜨든 사라지든 변하지 않는다. "다음 결정으로"는 누를 수 없을 때
+ *  - 컨트롤 그룹(M4: 일시정지, 1·2·4·8배, 다음 결정으로, 자동 모드 — 일시정지가 맨 앞에 더해졌다)의 Tab 순서는 선택지가 뜨든 사라지든 변하지 않는다. "다음 결정으로"는 누를 수 없을 때
  *    disabled가 아니라 aria-disabled(포커스는 받고 입력은 무시)다 — disabled면 Tab 순서에서 빠져, 포커스가 8배 버튼에 있다가 선택지가 뜨면 다음 Tab이
  *    "자동 모드"에 닿고 Space가 자동 모드를 켜 버렸다.
  *  - 자동 모드에서는 선택지가 떠도 포커스를 옮기지 않는다 (키보드로 자동 모드 버튼까지 가서 끌 수 있어야 한다 — SPEC "언제든 해제 가능")
@@ -134,7 +134,7 @@ test('컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록과 실제
   const { start } = await lifeWithDecision(page);
   await injectSave(page, start, '/?__timescale=200', SETTINGS_MANUAL);
   await controlsReady(page);
-  const expectedWalk = CONTROL_TAB_ORDER.slice(1); // speed-1에서 시작해 Tab 5번
+  const expectedWalk = CONTROL_TAB_ORDER.slice(CONTROL_TAB_ORDER.indexOf('speed-1') + 1); // speed-1에서 시작해 Tab 5번 (M4: 일시정지가 앞에 있어 speed-1은 둘째다)
   const walk = async () => {
     await page.locator('[data-speed="1"]').focus();
     return tabWalk(page, expectedWalk.length);
@@ -178,7 +178,7 @@ test('컨트롤 그룹의 Tab 순서는 (수동·자동) × (선택지 없음·�
     await controlsReady(page);
     expect(await controlFocusables(page), label).toEqual([...CONTROL_TAB_ORDER]);
     await page.locator('[data-speed="1"]').focus();
-    expect(await tabWalk(page, 5), label).toEqual(CONTROL_TAB_ORDER.slice(1));
+    expect(await tabWalk(page, 5), label).toEqual(CONTROL_TAB_ORDER.slice(CONTROL_TAB_ORDER.indexOf('speed-1') + 1));
     // "다음 결정으로"가 누를 수 없는 때는 정확히 (자동 모드 또는 선택지 있음)
     const blocked = settings.autoMode || state.pending !== null;
     const skip = page.getByTestId('skip');
@@ -206,9 +206,9 @@ for (const key of ['Enter', 'Space'] as const) {
     const expected = await oracleDecision(page, start);
     await injectSave(page, start, '/', SETTINGS_MANUAL);
     await controlsReady(page);
-    // 인생 화면 제목에서 시작해 Tab으로 "다음 결정으로"까지 간다
+    // 인생 화면 제목에서 시작해 Tab으로 "다음 결정으로"까지 간다 (M4: 일시정지가 맨 앞이라 여섯 번)
     expect(await activeTestId(page)).toBe('life-name');
-    expect(await tabWalk(page, 5)).toEqual(['speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip']);
+    expect(await tabWalk(page, 6)).toEqual(['pause', 'speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip']);
     await expect(page.getByTestId('skip')).not.toHaveAttribute('aria-disabled', 'true');
 
     await page.keyboard.press(key);
@@ -425,5 +425,5 @@ test('키보드로 선택지를 고른 뒤 패널이 사라져도 포커스는 b
   await expect.poll(() => activeTestId(page), '선택한 버튼이 사라진 뒤 포커스').toBe('life-name');
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
   // 인생 화면 제목 다음 Tab은 컨트롤 그룹으로 이어지고, 그 순서는 선택지가 있을 때와 같다
-  expect(await tabWalk(page, 6)).toEqual([...CONTROL_TAB_ORDER]);
+  expect(await tabWalk(page, CONTROL_TAB_ORDER.length)).toEqual([...CONTROL_TAB_ORDER]);
 });

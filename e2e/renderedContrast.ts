@@ -126,9 +126,17 @@ async function textRectsOf(page: Page, index: number): Promise<{ width: number; 
       if (parent === null || isHidden(parent)) continue;
       if (parent.closest('.reel') !== null && parent.closest('.is-result') === null) continue;
       if (nearestBox(parent) !== box) continue; // 안쪽 다른 색 바탕 상자의 글자는 그 상자가 잰다
+      // 글자와 상자 사이의 스크롤 영역(overflow가 visible이 아닌 조상)이 잘라 내는 곳: 완전히 보이는 줄만 잰다. 스크롤 영역 밖으로 밀려난 줄이나 가장자리에 반쯤 걸린 줄은
+      // 요소 스크린샷에 글자가 없거나 일부만 있어 「글자 색 = 바탕 색」으로 잘못 읽힌다(대시보드 인생 기록의 스크롤 영역, M4). 사용자가 읽을 수 없는 글자라 대비의 대상도 아니다.
+      const clips: DOMRect[] = [];
+      for (let cur: Element | null = parent; cur !== null && cur !== box; cur = cur.parentElement) {
+        const cs = getComputedStyle(cur);
+        if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') clips.push(cur.getBoundingClientRect());
+      }
       range.selectNodeContents(node);
       for (const r of Array.from(range.getClientRects())) {
         if (r.width < 2 || r.height < 4) continue;
+        if (clips.some((c) => r.left < c.left - 1 || r.right > c.right + 1 || r.top < c.top - 1 || r.bottom > c.bottom + 1)) continue;
         rects.push({ text: text.slice(0, 14), x: r.left - b.left, y: r.top - b.top, w: r.width, h: r.height });
       }
     }

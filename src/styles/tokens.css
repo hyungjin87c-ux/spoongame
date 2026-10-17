@@ -5,7 +5,8 @@
  * 테마 선택 규칙 (DB6)
  *   1) 기본: 시스템 설정(prefers-color-scheme)을 따른다.
  *   2) 수동 선택: <html data-theme="light|dark">. 이 값이 있으면 시스템 설정보다 우선한다.
- *   3) 강제 색상(고대비) 모드: forced-colors: active 에서는 아래 맨 끝의 시스템 색 매핑이 이긴다.
+ *   3) 강제 색상(고대비) 모드: forced-colors: active 에서는 아래 맨 끝의 시스템 색 매핑이 이긴다 — 선택자를 `:root, :root:not([data-theme='light']), :root[data-theme='dark']`로 적어
+ *      다크 두 블록(특이도 (0,2,0))과 같은 특이도를 갖고 소스 순서가 뒤라 어느 테마 조합에서도 이긴다(REV-003-M2-5 R-251, 2026-10-17 designer). `!important`는 쓰지 않는다.
  * 다크 토큰은 두 곳(미디어쿼리 / data-theme)에 같은 값으로 적혀 있다 — CSS만으로는 한 번에 못 쓰기 때문이다.
  * 두 블록이 어긋나지 않는지도 scripts/checkContrast.ts 가 점검한다.
  *
@@ -307,9 +308,16 @@
 /* ---------- 강제 색상(고대비) 모드 ----------
    배경·글자색은 시스템이 덮어쓴다. 의미는 색이 아니라 모양(테두리 굵기·무늬·아이콘·글자)이 전한다.
    색이 의미를 가진 요소(상태 바 면·수저 단계 아이콘·얼굴·로고)는 해당 요소에서만 forced-color-adjust: none 으로
-   시스템 색(CanvasText·Highlight·GrayText)을 직접 지정한다 — design-system.md 「강제 색상」. */
+   시스템 색(CanvasText·Highlight·GrayText)을 직접 지정한다 — design-system.md 「강제 색상」.
+   선택자(R-251, REV-003-M2-5 — M4 착수 조건): `:root` 하나(특이도 (0,1,0))면 위의 다크 두 블록 `:root:not([data-theme='light'])`·`:root[data-theme='dark']`((0,2,0))에 져서
+   OS 다크 또는 수동 다크(`data-theme='dark'`) + 강제 색상에서 시스템 색 매핑이 다크 팔레트에 덮인다 — 밝은 고대비 테마 위에 수동 다크를 켜면 forced-color-adjust: none 요소
+   (로고 --c-logo, 선택 카드 글자, 포커스 링 --c-focus, 띠 표식 --sp-mark)가 밝은 Canvas 위에 어두운 팔레트 값으로 그려져 사라진다. 그래서 셋을 한 규칙에 적는다:
+   다크·수동 다크에서는 (0,2,0)으로 맞고 소스 순서가 뒤라 이기며, 수동 라이트에서는 `:root`만 맞지만 그때는 다크 블록도 맞지 않아 기본 블록을 순서로 이긴다. `!important`는 쓰지 않는다(토큰을 덮는 다른 길까지 막는다).
+   값은 그대로다. tests/designAssets.test.ts 「R-251」이 선택자·특이도·순서를 잠근다. */
 @media (forced-colors: active) {
-  :root {
+  :root,
+  :root:not([data-theme='light']),
+  :root[data-theme='dark'] {
     --c-bg: Canvas;
     --c-surface: Canvas;
     --c-surface-2: Canvas;

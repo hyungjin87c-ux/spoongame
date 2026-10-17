@@ -69,16 +69,20 @@ export const ROULETTE_TITLE_CHARS = ROULETTE_TITLE_LONGEST_WORD + 1;
 // ---------- 출생신고 ----------
 
 /**
- * 대시보드 오른쪽 또래 칸(VP4)이 배포돼 있는가 (QM3-3: 화면 문구는 없는 기능을 가리키지 않는다).
- * **M4가 VP4(대시보드 또래 칸)를 넣는 변경에서 `true`로 켠다** — 켜면 출생신고의 또래 안내 둘째 문장이 보이고,
- * M4의 e2e가 「출생신고 → 살아가기 → 대시보드」에서 안내가 가리키는 또래 칸이 실제로 보임을 단언한다(문구 ⇔ 기능).
+ * 대시보드의 「같은 해 태어난 사람들」 칸(VP4)이 배포돼 있는가 (QM3-3: 화면 문구는 없는 기능을 가리키지 않는다).
+ * **M4가 VP4(대시보드 또래 칸, ui/dash/Cards.tsx#PeersNowCard)를 넣는 변경에서 `true`로 켰다** — 켜면 출생신고의 또래 안내 둘째 문장이 보이고,
+ * e2e(e2e/m4-peers-note.spec.ts)가 「출생신고 → 살아가기 → 대시보드」에서 안내가 가리키는 또래 칸이 실제로 보임을 단언한다(문구 ⇔ 기능).
  */
-export const DASHBOARD_PEERS_SHIPPED = false;
+export const DASHBOARD_PEERS_SHIPPED = true;
 
-/** 또래 카드 안내: 첫 문장은 설정 설명(화면을 가리키지 않는다), 둘째 문장은 대시보드 또래 칸이 있을 때만 */
+/**
+ * 또래 카드 안내: 첫 문장은 설정 설명(화면을 가리키지 않는다), 둘째 문장은 대시보드 또래 칸이 있을 때만.
+ * 둘째 문장은 위치(「오른쪽 칸」)가 아니라 **사용자가 곧 누를 버튼 이름 + 칸 제목**으로 가리킨다 — 좁은 화면(1열)에서는 그 칸이 맨 아래라 위치 서술이 틀리고,
+ * 「대시보드」는 화면에 적히지 않는 내부 이름이다(M4 착수 결정 3, docs/design/copy.md 출생신고 또래 안내 행). 칸 제목은 `DASH_TEXT.peersTitle`과 같은 글자다.
+ */
 export function peersNoteText(dashboardShipped: boolean): string {
   const first = '네 사람도 같은 세상에서 나이를 먹습니다.';
-  return dashboardShipped ? `${first} 대시보드 오른쪽 칸에서 요즘 모습을 볼 수 있습니다.` : first;
+  return dashboardShipped ? `${first} 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.` : first;
 }
 
 export const BIRTH_TEXT = {

@@ -8,6 +8,7 @@ import {
   PARENT_AGE_LIMITS,
   THIRD_PLUS_SPLIT,
   WEALTH_ADJECTIVE,
+  minMotherAgeForOrder,
 } from '../data/birthReportTable';
 import { babyLabel, formatKg, orderText } from '../data/birthReportText';
 import { getBirthStats, housingRow, nationalHousing, regionHousing, regionOrderShares, regionsOf, sigunguChoices } from '../data/birthStats';
@@ -29,6 +30,7 @@ import { HOUSINGS, OCCUPATIONS, type BirthReport, type Era, type Gender, type Oc
  *  - 형제 순서 = 지역의 출산 순위 비중(s-022). 셋째 이상은 넷째·다섯째로 나눈다(설계값 THIRD_PLUS_SPLIT).
  *  - 부모 나이 = **공표 구간 비중을 지키는 확률표**(data/parentAgeModel.ts, R-265): 어머니는 (출산 순위 × 수저 단계) 집단의 분포에서(구간 안 기울기로 첫째 33.2·둘째 34.7·셋째 이상 35.8·전체 33.8에 맞춤),
  *    아버지는 그 어머니의 조건부 분포에서(나이 차 FATHER_GAP 안, 전체는 공표 구간 비중·평균 36.1) 뽑는다. 시대 보정은 두 부모에게 같은 살수를 더한다.
+ *    형제 순서가 먼저 정해지므로 어머니 나이는 그 순서가 가능한 나이로 제한된다(위 형제 수 ≤ ⌊(어머니 나이 − 16) / 2⌋, `rollParentAges`의 조건부 재추첨 — R-330 r3, 식구 카드와 같은 상수).
  *  - 부모 직업 = 30·40대 취업자 직업 분포(s-025, 통계에 부모 직업이 없어 쓰는 근사) × 수저 단계·부모(어머니/아버지)·시대 설계 배율.
  *  - 사는 집 = 지역별 점유형태(s-024) × 소득계층 배율(수저 단계에 맞춘 계층). 출생 체중 = 성별 체중 구간별 출생아 수(s-019), 구간 안은 0.1kg 격자 균등.
  *  - 시대 보정(지난·다가올 세상)은 부모 나이(통째로 더하는 살수)·형제 순서·직업 배율뿐이고 모두 설계값이다.
@@ -64,13 +66,22 @@ function rollOrder(rng: Rng, era: Era, regionName: string, birthYear: number): {
 /**
  * 부모 나이 한 쌍. 어머니는 (출산 순위 칸 `bucket` × 수저 단계 `wealth`) 집단의 확률표에서, 아버지는 그 어머니 나이의 조건부 확률표에서 뽑는다(난수 2개).
  * 시대 보정(지난 −6살·다가올 +1살)은 두 부모에게 같이 더하고 허용 범위로 맞춘다 — 지금 세상은 0이라 공표 구간 비중·평균이 그대로 나온다.
+ *
+ * **형제 순서에 맞는 어머니 나이만 만든다** (R-330 r3, BR6·CM9): 위 형제가 N−1명이면 시대 보정을 더하고 맞춘 **최종 어머니 나이**가 `minMotherAgeForOrder(order)`(16 + 2 × 위 형제 수) 이상이다.
+ * 첫 추첨이 어긋나면 그 나이들의 가중치를 0으로 두고 **한 번 더** 뽑는다(조건부 재추첨) — 첫 추첨이 맞은 판은 예전 구현과 같고(난수 소비도 같다), 어긋난 판만 「순서가 정해졌다는 조건 아래의
+ * 어머니 나이 분포」(= 예전 분포에서 불가능한 칸을 잘라낸 것)에서 다시 뽑힌다. 그래서 **형제 순서 비중(공표 출산 순위 비중)은 그대로**이고(순서를 먼저 뽑는다), 바뀌는 것은 불가능했던
+ * 칸(어머니 16~17세의 둘째 이상 …)의 질량뿐이다. `order`를 안 주면 첫째로 본다(제한 없음).
  */
-export function rollParentAges(rng: Rng, era: Era, wealth: ParentWealth, bucket: 0 | 1 | 2): { mother: number; father: number } {
+export function rollParentAges(rng: Rng, era: Era, wealth: ParentWealth, bucket: 0 | 1 | 2, order = 1): { mother: number; father: number } {
   const model = getBirthStats().parentAges;
-  const mother = model.motherMin + rng.weightedIndex(model.motherGiven[bucket][wealth - 1]);
-  const father = model.fatherMin + rng.weightedIndex(model.fatherGivenMother[mother - model.motherMin]);
   const shift = ERA_REPORT_ADJUST[era].parentAgeShift;
-  return { mother: clamp(mother + shift, PARENT_AGE_LIMITS.min, PARENT_AGE_LIMITS.max), father: clamp(father + shift, PARENT_AGE_LIMITS.min, PARENT_AGE_LIMITS.max) };
+  const finalAge = (age: number) => clamp(age + shift, PARENT_AGE_LIMITS.min, PARENT_AGE_LIMITS.max);
+  const need = minMotherAgeForOrder(order);
+  const weights = model.motherGiven[bucket][wealth - 1];
+  let mother = model.motherMin + rng.weightedIndex(weights);
+  if (finalAge(mother) < need) mother = model.motherMin + rng.weightedIndex(weights.map((w, i) => (finalAge(model.motherMin + i) >= need ? w : 0)));
+  const father = model.fatherMin + rng.weightedIndex(model.fatherGivenMother[mother - model.motherMin]);
+  return { mother: finalAge(mother), father: finalAge(father) };
 }
 
 // ---------- 직업 ----------
@@ -148,7 +159,7 @@ export function rollBirthReport(rng: Rng, era: Era, birthYear: number, gender: G
   const place = pickWeighted(rng, choices, choices.map((c) => c.births));
   const month = rng.weightedIndex(getBirthStats().monthWeights) + 1;
   const { order, bucket } = rollOrder(rng, era, region, birthYear);
-  const ages = rollParentAges(rng, era, wealth, bucket);
+  const ages = rollParentAges(rng, era, wealth, bucket, order);
   const motherJob = rollJob(rng, 'mother', ages.mother, wealth, era);
   const fatherJob = rollJob(rng, 'father', ages.father, wealth, era);
   const housing = pickWeighted(rng, HOUSINGS, housingProbs(region, birthYear, wealth));

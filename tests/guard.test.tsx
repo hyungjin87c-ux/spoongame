@@ -12,7 +12,37 @@ import typesSrc from '../src/core/types.ts?raw';
 import { startLife } from '../scripts/simulateLib';
 import { LifeControls, LifeScreen, CONTROLS_GUARD_KEY, SKIP_REASON_ID, isSkipBlocked, skipBlockedReason } from '../src/screens/LifeScreen';
 import { GuardedButton, INPUT_GUARD_MS, isButtonInert, openGuard, reconcileGuard, type GuardState } from '../src/ui/GuardedButton';
-import { advanceUntilDecision } from '../src/core';
+import { DEFAULT_SETTINGS, advanceUntilDecision, type GameState } from '../src/core';
+import type { LifeGame } from '../src/ui/dash/Cards';
+import type { YearClock } from '../src/ui/useYearClock';
+
+/** 서버 렌더용 가짜 올해 시계(진행률 0) — 화면이 시계를 읽기만 한다 */
+const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
+const noop = () => undefined;
+/** startLife가 만든 인생 단계 상태는 출생 결과(시대·출생신고·또래 시드)를 모두 갖고 있다 — 대시보드 화면이 받는 모양으로 좁힌다 */
+const asLifeGame = (g: GameState): LifeGame => ({ ...g, character: g.character!, era: g.era!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
+/** 대시보드(LifeScreen)를 서버 렌더한다. 설정은 기본값에 배속·자동 모드만 덮는다. */
+const renderLife = (g: GameState, autoMode = false) =>
+  renderToString(
+    <LifeScreen
+      game={asLifeGame(g)}
+      settings={{ ...DEFAULT_SETTINGS, speed: 1, autoMode }}
+      clock={CLOCK}
+      exitOpen={false}
+      onExitOpen={noop}
+      onChoose={noop}
+      onSkip={noop}
+      onSpeed={noop}
+      onAuto={noop}
+      onPause={noop}
+      onBgm={noop}
+      onTheme={noop}
+      onExit={noop}
+      minute={29_846_880}
+      repoUrl="https://github.com/hyungjin87c-ux/spoongame"
+      buildLabel="v0.1.0 (abc1234)"
+    />,
+  );
 
 /**
  * R-014 화면 전환 직후 입력 가드. 실제 클릭 무시·시간 경과는 DOM이 필요해 e2e(e2e/birth.spec.ts)가 검증하고,
@@ -52,6 +82,72 @@ describe('GuardedButton (R-014)', () => {
   it('가드 시간은 사람의 더블클릭 간격(약 100~300ms, OS 기본 최대 500ms) 안쪽을 덮되 눈에 띄는 지연은 아니다', () => {
     expect(INPUT_GUARD_MS).toBeGreaterThanOrEqual(300);
     expect(INPUT_GUARD_MS).toBeLessThanOrEqual(500);
+  });
+});
+
+/**
+ * R-337 (REV-003-M4-1, design-system.md 2절 「비활성 컨트롤의 대비」): 호출자가 넘긴 **지속 비활성**(자동 모드 내내인 「다음 결정으로」·준비 중인 「생각 남기기」)은 `data-unavailable="true"`를 함께 달아
+ * CSS가 불투명도 흐림이 아니라 옅은 글자 + 점선 테두리로 그리게 한다(렌더 대비 4.5:1). 0.4초 입력 가드의 흐림(과도 상태)은 그대로 `aria-disabled`만 달린다.
+ */
+describe('GuardedButton: 지속 비활성 표식 data-unavailable (R-337)', () => {
+  it('호출자가 aria-disabled를 true / "true"로 넘기면 data-unavailable="true"가 붙고, 입력 가드만 닫힌 버튼에는 붙지 않는다', () => {
+    expect(renderToString(<GuardedButton aria-disabled={true}>a</GuardedButton>)).toContain('data-unavailable="true"');
+    expect(renderToString(<GuardedButton aria-disabled="true">a</GuardedButton>)).toContain('data-unavailable="true"');
+    const guardOnly = renderToString(<GuardedButton>a</GuardedButton>); // 첫 렌더는 가드가 닫혀 있다
+    expect(guardOnly).toContain('aria-disabled="true"');
+    expect(guardOnly).not.toContain('data-unavailable');
+  });
+
+  it('호출자의 비활성이 아니면(false·"false"·없음) 표식이 없다. 가드가 풀린 뒤에도 호출자의 비활성은 표식과 함께 유지된다 (guardMs=0)', () => {
+    for (const v of [false, 'false', undefined] as const) expect(renderToString(<GuardedButton guardMs={0} aria-disabled={v}>a</GuardedButton>), String(v)).not.toContain('data-unavailable');
+    const stillUnavailable = renderToString(
+      <GuardedButton guardMs={0} aria-disabled={true}>
+        a
+      </GuardedButton>,
+    );
+    expect(stillUnavailable).toContain('aria-disabled="true"');
+    expect(stillUnavailable).toContain('data-unavailable="true"');
+  });
+
+  it('isButtonInert의 판정은 그대로다 (가드 닫힘 또는 호출자 비활성) — 표식이 판정을 바꾸지 않는다', () => {
+    expect(isButtonInert(true, undefined)).toBe(false);
+    expect(isButtonInert(false, undefined)).toBe(true);
+    expect(isButtonInert(true, true)).toBe(true);
+    expect(isButtonInert(true, 'true')).toBe(true);
+    expect(isButtonInert(true, false)).toBe(false);
+  });
+
+  it('대시보드: 자동 모드에서는 「다음 결정으로」가, 선택지 대기 중에도 그렇고, 「생각 남기기」는 늘 표식이 있다. 켜진 자동 모드·속도·일시정지 같은 버튼에는 없다', () => {
+    const life = startLife(5, 'present');
+    const auto = renderLife(life, true);
+    const tag = (html: string, id: string) => {
+      const at = html.indexOf(`data-testid="${id}"`);
+      return html.slice(html.lastIndexOf('<', at), html.indexOf('>', at) + 1);
+    };
+    expect(tag(auto, 'skip')).toContain('data-unavailable="true"');
+    expect(tag(auto, 'tool-note')).toContain('data-unavailable="true"');
+    for (const id of ['pause', 'auto', 'tool-bgm', 'tool-dark', 'tool-exit']) expect(tag(auto, id), id).not.toContain('data-unavailable');
+    const manual = renderLife(life, false);
+    expect(tag(manual, 'skip'), '수동·선택지 없음: 「다음 결정으로」는 누를 수 있다').not.toContain('data-unavailable');
+    const pending = advanceUntilDecision(startLife(5, 'present')).state;
+    if (pending.phase === 'life' && pending.pending !== null) expect(tag(renderLife(pending, false), 'skip'), '선택지 대기 중').toContain('data-unavailable="true"');
+  });
+
+  it('CSS(title.css): 지속 비활성 규칙은 불투명도를 1로 되돌리고 옅은 글자(--c-text-3) + 점선 테두리(--c-border-strong)이며 강제 색상에서는 GrayText 점선이다. 0.4초 가드의 흐림 규칙은 그대로 있다', async () => {
+    const spec = 'node:fs';
+    const fs = (await import(/* @vite-ignore */ spec)) as { readFileSync(path: URL, encoding: 'utf-8'): string };
+    const css = fs.readFileSync(new URL('../src/styles/title.css', import.meta.url), 'utf-8').replace(/\/\*[^]*?\*\//g, '');
+    const rule = /\.btn\[data-unavailable='true'\] \{([^}]*)\}/.exec(css)![1];
+    expect(rule).toMatch(/opacity:\s*1\b/);
+    expect(rule).toMatch(/color:\s*var\(--c-text-3\)/);
+    expect(rule).toMatch(/border-style:\s*dashed/);
+    expect(rule).toMatch(/border-color:\s*var\(--c-border-strong\)/);
+    // 같은 특이도(0,2,0)의 가드 규칙보다 뒤에 있어야 불투명도 0.55를 되돌린다
+    expect(css.indexOf(".btn[data-unavailable='true'] {")).toBeGreaterThan(css.indexOf(".btn[aria-disabled='true'], .btn:disabled { opacity: 0.55; cursor: default; }"));
+    expect(css).toContain(".btn[aria-disabled='true'], .btn:disabled { opacity: 0.55; cursor: default; }");
+    expect(css).toMatch(/@media \(forced-colors: active\) \{[^]*\.btn\[data-unavailable='true'\] \{ color: GrayText; border-color: GrayText; \}/);
+    // 새 토큰·고정 색을 쓰지 않는다
+    expect(rule).not.toMatch(/#[0-9a-f]{3,8}\b|rgb\(/i);
   });
 });
 
@@ -182,37 +278,49 @@ function flatten(node: ReactNode, out: ReactElement[] = []): ReactElement[] {
 }
 
 /**
- * R-035·R-036: 인생 화면 하단 컨트롤(속도 4개·다음 결정으로·자동 모드).
+ * R-035·R-036: 인생 화면(대시보드) 진행 줄(일시정지·속도 4개·다음 결정으로·자동 모드)과 도구 줄. (M4: 일시정지가 더해져 6개 → 7개, 도구 줄 다섯 개가 더해졌다)
  * 화면이 뜬 순간(첫 렌더)에는 모두 가드로 닫혀 있고, 가드 키는 상수라 가드가 풀린 뒤 다시 닫히지 않는다(실제 클릭 무시·재폐쇄 없음은 e2e/entry-guard.spec.ts).
  * "다음 결정으로"는 disabled가 아니라 aria-disabled로 막는다 — 선택지가 뜨든 사라지든 컨트롤 그룹의 Tab 순서가 변하지 않도록.
  */
 describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
   const life = startLife(41, 'present');
   const game = { ...life, character: life.character! };
-  const render = (g: typeof game, autoMode = false) =>
-    renderToString(<LifeScreen game={g} settings={{ speed: 1, autoMode }} tick={null} onChoose={() => {}} onSkip={() => {}} onSpeed={() => {}} onAuto={() => {}} />);
-  const controlsOf = (html: string) => html.slice(html.indexOf('data-testid="controls"'));
+  const render = (g: GameState, autoMode = false) => renderLife(g, autoMode);
+  /** 진행 줄(controls)만: 그 뒤에 이어지는 도구 줄(tools) 앞까지 */
+  const controlsOf = (html: string) => html.slice(html.indexOf('data-testid="controls"'), html.indexOf('data-testid="tools"'));
+  const toolsOf = (html: string) => html.slice(html.indexOf('data-testid="tools"'), html.indexOf('data-testid="choice-announce"'));
   /** 해당 data-testid 버튼의 여는 태그 문자열 */
   const tagOf = (html: string, testId: string) => html.match(new RegExp(`<button[^>]*data-testid="${testId}"[^>]*>`))![0];
   const hasRealDisabled = (tag: string) => /\sdisabled(=|\s|>)/.test(tag);
 
-  it('첫 렌더: 컨트롤 6개(1/2/4/8배·다음 결정으로·자동 모드)가 모두 aria-disabled=true', () => {
+  it('첫 렌더: 진행 줄 7개(일시정지·1/2/4/8배·다음 결정으로·자동 모드)가 모두 aria-disabled=true', () => {
     const controls = controlsOf(render(game));
-    expect(controls.match(/<button/g)).toHaveLength(6);
-    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(6);
+    expect(controls.match(/<button/g)).toHaveLength(7);
+    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(7);
     for (const speed of [1, 2, 4, 8]) expect(controls).toMatch(new RegExp(`data-speed="${speed}"`));
     expect(controls).toContain('data-testid="auto"');
+    expect(controls).toContain('data-testid="pause"');
+  });
+
+  it('첫 렌더: 도구 줄도 모두 가드로 닫혀 있다 — 버튼 넷(BGM·생각 남기기·다크 모드·나가기)과 의견 보내기 링크(aria-disabled)', () => {
+    const tools = toolsOf(render(game));
+    expect(tools.match(/<button/g)).toHaveLength(4);
+    expect(tools.match(/<a /g), '의견 보내기는 진짜 링크다').toHaveLength(1);
+    expect(tools.match(/aria-disabled="true"/g)).toHaveLength(5);
+    for (const id of ['tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit']) expect(tools).toContain(`data-testid="${id}"`);
+    expect((tools.match(/<button[^>]*>/g) ?? []).filter(hasRealDisabled)).toHaveLength(0);
   });
 
   it('선택지가 떠 있는 첫 렌더: 선택지 버튼도 컨트롤도 모두 aria-disabled로 닫혀 있고, 어느 컨트롤도 disabled 속성을 쓰지 않는다 (R-036: Tab 순서 유지)', () => {
     const decision = advanceUntilDecision(life).state;
     expect(decision.pending).not.toBeNull();
-    const html = render({ ...decision, character: decision.character! });
-    const choiceBlock = html.slice(html.indexOf('data-testid="choice-panel"'), html.indexOf('data-testid="controls"'));
+    const html = render(decision);
+    // 중대 결정 카드는 본문(main) 가운데 열의 맨 위이고 그 뒤에 인생 기록(log)이 온다
+    const choiceBlock = html.slice(html.indexOf('data-testid="choice-panel"'), html.indexOf('data-testid="log"'));
     expect(choiceBlock.match(/<button/g)!.length).toBeGreaterThanOrEqual(2);
     expect(choiceBlock.match(/<button/g)!.length).toBe(choiceBlock.match(/aria-disabled="true"/g)!.length);
     const controls = controlsOf(html);
-    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(6);
+    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(7);
     expect((controls.match(/<button[^>]*>/g) ?? []).filter(hasRealDisabled)).toHaveLength(0);
   });
 
@@ -223,16 +331,16 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
   });
 
   const controlsTree = (over: Partial<Parameters<typeof LifeControls>[0]> = {}) =>
-    flatten(LifeControls({ speed: 1, autoMode: false, hasPending: false, onSpeed: () => {}, onSkip: () => {}, onAuto: () => {}, ...over })).filter(
+    flatten(LifeControls({ speed: 1, autoMode: false, paused: false, hasPending: false, onSpeed: () => {}, onSkip: () => {}, onAuto: () => {}, onPause: () => {}, ...over })).filter(
       (el) => el.type === GuardedButton,
     );
   const prop = (el: ReactElement, name: string) => (el.props as Record<string, unknown>)[name];
 
-  it('컨트롤 6개는 모두 같은 상수 guardKey를 쓴다: 나이·선택지·배속·자동 모드가 바뀌어도 키가 같아 가드가 다시 걸리지 않는다', () => {
-    const variants = [{}, { speed: 8 as const }, { autoMode: true }, { hasPending: true }, { speed: 4 as const, autoMode: true, hasPending: true }];
+  it('컨트롤 7개는 모두 같은 상수 guardKey를 쓴다: 나이·선택지·배속·자동 모드·일시정지가 바뀌어도 키가 같아 가드가 다시 걸리지 않는다', () => {
+    const variants = [{}, { speed: 8 as const }, { autoMode: true }, { hasPending: true }, { paused: true }, { speed: 4 as const, autoMode: true, hasPending: true, paused: true }];
     for (const v of variants) {
       const buttons = controlsTree(v);
-      expect(buttons, JSON.stringify(v)).toHaveLength(6);
+      expect(buttons, JSON.stringify(v)).toHaveLength(7);
       for (const b of buttons) expect(prop(b, 'guardKey'), JSON.stringify(v)).toBe(CONTROLS_GUARD_KEY);
     }
     // 선택지 버튼의 키(이벤트 인스턴스 키)와 겹치지 않는 값이다 — 선택지 키는 "<이벤트>@<나이>" 모양
@@ -253,7 +361,7 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
       expect(prop(skip, 'aria-disabled'), `자동 ${autoMode} / 선택지 ${hasPending}`).toBe(blocked);
       for (const b of buttons) {
         expect(prop(b, 'disabled'), '어떤 컨트롤도 disabled를 쓰지 않는다(Tab 순서가 변하지 않는다)').toBeUndefined();
-        if (b !== skip) expect(prop(b, 'aria-disabled'), '속도·자동 모드 버튼은 호출자 비활성이 없다').toBeUndefined();
+        if (b !== skip) expect(prop(b, 'aria-disabled'), '일시정지·속도·자동 모드 버튼은 호출자 비활성이 없다').toBeUndefined();
       }
     }
   });
@@ -267,12 +375,7 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
 describe('비활성 "다음 결정으로"의 사유 전달 (R-056)', () => {
   const life = startLife(41, 'present');
   const decision = advanceUntilDecision(life).state;
-  const html = (autoMode: boolean, pending: boolean) => {
-    const g = pending ? decision : life;
-    return renderToString(
-      <LifeScreen game={{ ...g, character: g.character! }} settings={{ speed: 1, autoMode }} tick={null} onChoose={() => {}} onSkip={() => {}} onSpeed={() => {}} onAuto={() => {}} />,
-    );
-  };
+  const html = (autoMode: boolean, pending: boolean) => renderLife(pending ? decision : life, autoMode);
   const skipTag = (h: string) => h.match(/<button[^>]*data-testid="skip"[^>]*>/)![0];
 
   it('skipBlockedReason: 자동 모드·선택지 대기 중에는 사유 문장, 누를 수 있으면 null (자동 모드가 선택지 대기보다 먼저)', () => {

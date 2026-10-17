@@ -74,12 +74,20 @@ svg.spoon--lg { width: 32px; height: 52px; }
 .btn--sm { font-size: var(--fs-sm); padding: 0 var(--sp-3); }
 .btn[aria-pressed='true'], .btn.is-on { background: var(--c-brand); color: var(--c-on-brand); box-shadow: inset 0 -4px 0 currentColor; }
 .btn[aria-disabled='true'], .btn:disabled { opacity: 0.55; cursor: default; }
+/* 비활성 두 가지(2026-10-17 M4 후속, design-system.md 2절·6절 「버튼」 — 구현 src/styles/title.css `.btn[data-unavailable='true']`와 같은 규칙, M4 r2 R-337 반영): ① 진입 직후 0.4초 입력 가드(GuardedButton — 과도 상태, 읽는 글자가 아니다)는 위 0.55 흐림 그대로.
+   ② **지속 비활성**(「다음 결정으로」 — 자동 모드 내내·선택지 대기 중, 「생각 남기기」 — M7c 전 준비 중 R-326)은 DS3 전수 대비 대상이라 WCAG의 비활성 면제를 쓰지 않는다: 불투명도 대신 옅은 글자 --c-text-3(면 위 라이트 5.78:1·다크 5.96:1) + 점선 테두리 --c-border-strong(면 4.02/4.29, 바탕 3.68/4.77) —
+   라디오 카드 「준비 중」과 같은 모양(R-202). 0.55 흐림은 라이트에서 글자 3.75:1·테두리 1.90:1이었다. 구현은 GuardedButton이 호출자의 aria-disabled에 data-unavailable="true"를 함께 붙여 가드와 구분하고, 렌더 대비 e2e(m4-colors·m4-unavailable)가 면제 없이 4.5:1을 잰다 */
+.btn[data-unavailable='true'] { opacity: 1; color: var(--c-text-3); background: var(--c-surface); border-style: dashed; border-color: var(--c-border-strong); box-shadow: none; cursor: default; }
 .controls__tools--stack { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-left: 0 !important; }
 .controls__tools--stack .btn--tool { flex-direction: column !important; min-height: 52px !important; padding: 4px 2px !important; font-size: var(--fs-xs) !important; gap: 2px !important; }
 /* 도구 줄 버튼(모바일): 아이콘 위·이름 아래. 이름은 낱말 단위로 두 줄까지 줄바꿈한다(「생각 남기기」→「생각/남기기」). 줄바꿈 허용은 .toolbar .btn--tool 규칙(아래)이 보장한다 — R-122 */
 .btn--tool { flex-direction: column; gap: 2px; min-height: 56px; padding: 4px 2px; font-size: var(--fs-xs); line-height: 1.15; font-weight: var(--fw-regular); background: var(--c-surface); border-color: var(--c-border-strong); white-space: normal; word-break: keep-all; overflow-wrap: normal; }
 .btn--tool .icon { width: 22px; height: 22px; }
 .btn--tool span { display: block; max-width: 100%; }
+/* 「생각 남기기」의 눈에 보이는 「준비 중」 표식(R-326, M4 r2 — 구현 src/styles/dash.css `.btn--tool .tool-soon`과 같은 규칙): 라디오 카드 「약 1시간」의 메타 알약(.radio-card.is-disabled .radio-card__meta)과 같은 모양 — 글자 --c-text-2 + 얇은 테두리 + 알약 모서리.
+   낱말 사이에서 끊기지 않게 한 덩어리(nowrap)로 둔다. 버튼 이름 뒤에 붙어 접근 가능한 이름이 「생각 남기기 준비 중」이다(낭독 사용자도 이유를 듣는다). 버튼의 점선 테두리·옅은 글자는 위 `.btn[data-unavailable]`가 그린다.
+   세로 배치(모바일)에서는 이름 아래 한 줄이라 도구 줄이 알약 높이만큼(약 19px) 높아진다 — 받아들인 대가(design-M4r2 로그). ≥ 960px은 가로 배치라 이름 오른쪽에 붙는다 */
+.btn--tool .tool-soon { margin-top: 2px; padding: 0 var(--sp-1); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); color: var(--c-text-2); font-weight: var(--fw-bold); white-space: nowrap; }
 /* 켜짐 상태(BGM·다크모드): aria-pressed="true" → 색 반전 + 아래 4px 막대(.btn 공통) + 아이콘 교체(달→해)는 스크립트가 한다. 색만으로 알리지 않는다 — R-136② */
 .btn--tool[aria-pressed='true'] .icon { stroke-width: 2.4; }
 .btn--icon { padding: 0; }
@@ -356,8 +364,11 @@ html.bar-released .page-end-space { display: none; }
 .roulette__lead { text-align: center; display: flex; flex-direction: column; gap: var(--sp-2); container-type: inline-size; }
 /* 제목(h1) 글자 크기 상한(QM3-2, M3-L02): 가장 긴 낱말(「정해졌습니다」 6글자)이 폭 320 · 글자 200%에서도 한 줄에 들어가도록 **줄 폭 ÷ (글자 수 + 여유 1)**로 줄인다.
    상한은 rem 고정값이 아니다 — 루트 글자 200%에서는 rem이 두 배라 rem 상한만으로는 부족하다. 줄 폭은 제목을 담은 상자(.roulette__lead)의 내용 폭(100cqi). 글자 수(--title-chars)는 문구 상수에서 계산해 인라인으로 넘긴다
-   (data/birthReportText.ts#ROULETTE_TITLE_CHARS — 시안 생성기도 같은 상수를 읽는다). 바닥은 --fs-lg(본문보다 큰 18px)라 상한 때문에 제목이 본문보다 작아지지 않고, 낱말 사이에서 여러 줄로 접히는 것은 괜찮다(design-system.md 11-8절) */
-.roulette__lead .t-title { font-size: max(var(--fs-lg), min(var(--fs-2xl), calc(100cqi / var(--title-chars, 8)))); }
+   (data/birthReportText.ts#ROULETTE_TITLE_CHARS — 시안 생성기도 같은 상수를 읽는다). 바닥은 --fs-lg(본문보다 큰 18px)라 상한 때문에 제목이 본문보다 작아지지 않고, 낱말 사이에서 여러 줄로 접히는 것은 괜찮다(design-system.md 11-8절).
+   `cqi`를 모르는 브라우저(Safari 16 미만)에서는 이 식이 통째로 무효라 font-size가 unset(본문 16px)이 된다 — 식을 @supports로 감싸 모르면 .t-title 기본 크기(--fs-2xl)로 물러난다(구현 doc.css와 같다, REV-003-M3-4 R-302 — design-system.md 11-6) */
+@supports (width: 1cqi) {
+  .roulette__lead .t-title { font-size: max(var(--fs-lg), min(var(--fs-2xl), calc(100cqi / var(--title-chars, 8)))); }
+}
 /* 두 릴 열: 열 최소 폭(rem)이라 글자를 키우면 한 열씩 쌓인다(CM11 — 가로로 밀지 않는다). 보통 폭(320·360px)에서는 나란히 */
 .reels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); gap: var(--sp-3); align-items: start; }
 .reel-col { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
@@ -446,64 +457,124 @@ html.bar-released .page-end-space { display: none; }
 /* 하단 표기(BR4): 지역 표기 · 통계 출처 · 주거 한계 · 설계 보정 (+ 지난·다가올 세상은 시대 보정 한 줄) */
 .doc-notes { display: flex; flex-direction: column; gap: var(--sp-1); line-height: 1.5; }
 
-/* ---------- 대시보드 ---------- */
+/* ---------- 대시보드 (2026-10-17 M4 착수 정리: 11절 공통 패턴에 맞춤 — 고정 요소 높이 변수·scroll-padding·고정 해제·글자 200% 리플로) ---------- */
+/* 헤더는 sticky **고정 요소**다(11-1): 실제 높이를 <html>의 --head-h로 알리고(시안은 page()의 흉내 스크립트, 구현은 ResizeObserver — watchBarRelease와 같은 방식) 문서 루트의 scroll-padding-top에 더한다.
+   고정 해제(11-2의 헤더판, M4): 고정 요소 둘(헤더 + 고정 진행 줄)이 작은 뷰포트 높이(100svh)의 절반을 넘게 덮으면 — 헤더 높이 + (진행 줄이 고정돼 있으면 그 높이) > 50% — <html class="head-released">로 헤더 고정을 풀어 보통 흐름으로 스크롤되게 한다.
+   가로 폰(667×375)·400% 확대 상당(320×256)이 여기 해당한다(헤더 약 100px + 진행 줄 약 120px). 진행 줄 자체의 해제는 QM2-12 그대로(진행 줄 높이 > 50%). 클래스만 바뀌므로 포커스는 그대로다 */
 .dash-head { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--c-bg); border-bottom: 1px solid var(--c-border); }
+html.head-released .dash-head { position: static; }
+html.has-sticky-head { scroll-padding-top: calc(var(--head-h, 0px) + var(--sp-3)); }
+html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
 .dash-head__inner { max-width: var(--w-page); margin: 0 auto; padding: var(--sp-2) var(--gutter) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
 /* 대시보드 헤더: 첫 줄 = 로고(왼쪽) + 이름·나이 알약(오른쪽). 둘째 줄 = 연도 · 올해 진행률 바 · 백분율.
-   큰 나이 숫자 한 개가 헤더를 차지하는 배치는 쓰지 않는다(참고 게임과 구별, R-123). */
-.dash-head__top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 44px; }
+   큰 나이 숫자 한 개가 헤더를 차지하는 배치는 쓰지 않는다(참고 게임과 구별, R-123).
+   첫 줄은 flex-wrap(11-3): 글자 200% × 폭 320에서 로고(145px) + 이름 + 알약이 한 줄에 안 들어가면 이름·알약이 로고 아래 줄로 내려간다 — 이름을 자르지(overflow: hidden) 않는다(잘림 0) */
+.dash-head__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); min-height: 44px; }
 .dash-head__top .logo { --logo-h: var(--logo-h-header); }
-.who { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0; }
-.who__name { font-weight: var(--fw-bold); white-space: nowrap; overflow: hidden; text-overflow: clip; }
+/* 이름(h1) + 나이 알약: 글자 200%에서 둘이 한 줄에 안 들어가면 알약이 이름 아래 줄로 내려간다(flex-wrap) — 이름은 한 낱말이라 줄 안에서 끊기지 않는다(R-321, M4 r2). 이름 글자 크기는 본문과 같은 --fs-md(바닥 = 기본)라 줄여야 할 상한이 없다 — 이름은 성 1글자 + 최대 4글자라 폭 320 · 글자 200%의 한 줄(9글자)에 든다 */
+.who { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); min-width: 0; max-width: 100%; margin-left: auto; }
+.who__name { font-weight: var(--fw-bold); white-space: nowrap; font-size: var(--fs-md); line-height: var(--lh-snug); }
 .who__age { display: inline-flex; align-items: baseline; gap: 2px; padding: 2px var(--sp-3); border-radius: var(--r-pill); background: var(--c-brand-soft); color: var(--c-on-brand-soft); border: 1.5px solid var(--c-brand); font-weight: var(--fw-bold); font-size: var(--fs-sm); white-space: nowrap; }
 .who__age b { font-size: var(--fs-xl); line-height: 1.1; font-variant-numeric: tabular-nums; }
 .year-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); font-size: var(--fs-sm); color: var(--c-text-2); }
-.year-row__pct { font-variant-numeric: tabular-nums; font-weight: var(--fw-bold); color: var(--c-text); }
+.year-row__pct { font-variant-numeric: tabular-nums; font-weight: var(--fw-bold); color: var(--c-text); min-width: 2.6em; text-align: right; }
 .toolbar { max-width: var(--w-page); margin: 0 auto; padding: var(--sp-3) var(--gutter) 0; }
 .toolbar__inner { display: flex; flex-direction: column; gap: var(--sp-2); }
 .toolbar .btn { white-space: nowrap; }
 .toolbar .btn--tool { white-space: normal; } /* 도구 줄 이름은 줄바꿈 허용(위 nowrap보다 뒤에 두어 이긴다) — R-122 */
+/* 진행 줄(일시정지·배속 / 다음 결정으로·자동 모드): 모바일(< 960px)에서는 이 화면의 **하단 고정 띠**다(아래 max-width: 959px 블록) — 구현은 ui/useBottomBar.ts#useBottomBar에 이 요소의 ref를 넘겨 --bar-h·has-bottom-bar·bar-released를 받는다(첫 화면·룰렛·출생신고와 같은 함수).
+   버튼 줄은 격자가 아니라 **flex-wrap**(11-3): 글자 200%에서 「다음 결정으로」「자동 모드 꺼짐」이 반쪽 칸에 안 들어가면 가로로 밀거나 자르지 않고 다음 줄로 접는다(버튼 이름은 nowrap — 이름 안에서는 끊지 않는다).
+   보통 폭에서는 예전 격자와 같은 모양: 일시정지 칸이 배속 칸의 2.1배, 배속 넷은 같은 폭(flex-basis 0 + grow). 각 버튼의 최소 폭은 이름 폭(min-content)이라 폭이 모자라면 접힌다 */
 .controls-fixed { display: flex; flex-direction: column; gap: var(--sp-2); }
-.controls__speed { display: grid; grid-template-columns: 2.1fr repeat(4, 1fr); gap: var(--sp-2); }
-.controls__more { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
-.controls__tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); }
+.controls__speed { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.controls__speed > .btn { flex: 1 1 0; min-width: min-content; }
+.controls__speed > .btn:first-child { flex-grow: 2.1; }
+.controls__more { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.controls__more > .btn { flex: 1 1 0; min-width: min-content; }
+/* 도구 줄 다섯 개(BGM·생각 남기기·다크 모드·의견 보내기·나가기): 보통 폭에서는 같은 폭 다섯 칸(flex-basis 0 + grow = 예전 5열 격자와 같은 모양), 글자가 커져 칸이 이름의 가장 긴 낱말(min-content)보다 좁아지면 다음 줄로 접는다(11-3 — 320 · 글자 200%에서 5열 격자는 「생각」이 칸을 넘쳤다) */
+.controls__tools { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.controls__tools > .btn--tool { flex: 1 1 0; min-width: min-content; }
 .controls-fixed .btn { padding: 0 var(--sp-1); font-size: var(--fs-sm); }
+/* 도구 줄 아래 한 줄(M4 구현 src/styles/dash.css와 같은 블록, 2026-10-17): BGM이 켜진 동안의 볼륨 줄(.volume = 「BGM 볼륨」 + range + 「N%」) · 나가기 확인 단계(.exit-ask — 첫 화면 확인 단계와 같은 배치: 안내문 → 「첫 화면으로 나가기」(보조) → 「돌아가기」(기본)).
+   「생각 남기기」의 안내 줄(예전 .tool-note 「…준비 중입니다.」)은 M4 r2 R-326으로 없어졌다 — 준비 중임은 버튼 안의 「준비 중」 알약(.tool-soon)이 늘 보인다. 시안은 dashboard-infant.html?state=tools / ?state=exit 로 보인다(copy.md 대시보드 행) */
+.volume { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); min-height: var(--hit); font-size: var(--fs-sm); }
+.volume input[type='range'] { flex: 1 1 8rem; min-width: 0; min-height: var(--hit); accent-color: var(--c-brand); }
+.volume output { min-width: 2.6em; text-align: right; font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
+.exit-ask { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); }
+.exit-ask__title { font-weight: var(--fw-bold); }
+.exit-ask__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.exit-ask__actions > .btn { flex: 1 1 10rem; min-width: min-content; }
+/* 확인 단계의 두 버튼 이름(「첫 화면으로 나가기」 9글자)은 글자 200%에서 칸(폭 320에서 260px)보다 길다 — 위 `.toolbar .btn { white-space: nowrap }`이 걸리면 문서가 가로로 넘친다(시안 shootMockups가 320 · 200%에서 먼저 잡음 → diff-003.md D-20 → 구현 M4 r2 R-336으로 닫힘). `.btn--tool`과 같은 예외:
+   낱말 단위로 줄바꿈(「첫 화면으로 / 나가기」)하고 낱말 안에서는 끊지 않는다(keep-all·overflow-wrap normal). 두 줄이 되어도 글자가 테두리에 붙지 않게 위아래 여백을 둔다. 위 `.toolbar .btn`보다 뒤에 두어 같은 특이도에서 이긴다 — 구현 dash.css와 같은 규칙 */
+.exit-ask__actions > .btn { white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2); }
 .dash { max-width: var(--w-page); margin: 0 auto; padding: var(--sp-4) var(--gutter) 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
 .col { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
 .profile { display: flex; flex-direction: column; gap: var(--sp-3); }
-.profile__top { display: flex; gap: var(--sp-4); align-items: center; }
+/* 프로필 머리: 얼굴 96px(.face--lg — 구현도 시안대로 96px, R-329 마스터 결정) + 이름·성별. 글자 200% × 폭 320에서 이름 칸이 얼굴 옆에 못 서면 아래 줄로(flex-wrap, M4 r2) */
+.profile__top { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-4); align-items: center; }
 .face { flex: none; width: var(--face-size); height: var(--face-size); border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--c-border-strong); background: var(--c-face-bg); }
 .face svg { width: 100%; height: 100%; }
 .face--lg { --face-size: 96px; }
 .profile__name { font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
-.facts { display: grid; grid-template-columns: 5.2rem 1fr; gap: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
+/* 이름표 격자(프로필 「출생/거주/출신 가정/학력/외모」·식구 「어머니/아버지/…」): 이름표 열은 rem 고정이라 카드가 좁아지면(글자 150%+·폭 320) 값 칸이 수저 칩(min-content 약 6.5rem)·지명을 못 담아 넘친다 —
+   카드를 컨테이너로 두고 내용 폭이 15.5rem(이름표 5.2rem + 간격 + 값 9.5em = 가장 긴 지명 「전남광주통합특별시」 9글자 + 여유) 아래이면 **1열**(이름표 위, 값 아래)로 쌓는다(11-7 서류 격자와 같은 방법 — 뷰포트 px가 아니라 컨테이너 rem).
+   글자 100%는 폭 320에서도 2열(내용 폭 16rem). 처음 값 12.5rem은 글자 150%·폭 375에서 값 칸 166px에 9글자 지명(189px)이 중간에서 끊겼다 — M4 구현(e2e/m4-breaks.spec.ts, QM3-1)이 잡아 15.5rem으로, 시안도 2026-10-17 같은 값 */
+.profile, .family, .ending-stats { container-type: inline-size; container-name: facts; }
+.facts { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
 .facts dt { color: var(--c-text-2); }
 .facts dd { font-weight: var(--fw-bold); min-width: 0; }
 .facts dd small { font-weight: var(--fw-regular); color: var(--c-text-2); }
+@container facts (max-width: 15.5rem) {
+  .facts { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .facts dt:not(:first-child) { margin-top: var(--sp-2); }
+}
+/* 자산 현황(DB11): 금액(formatWon 출력 「−1,200만 원」「1억 2,000만 원」)은 한 덩어리(.nowrap — 「만 원」 사이에서 끊지 않는다). 칸이 좁으면 금액이 이름 아래 줄로 내려가되 오른쪽 정렬을 유지한다 */
 .assets { display: grid; grid-template-columns: 1fr; gap: var(--sp-2); }
-.assets__row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); }
+.assets__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--sp-1) var(--sp-3); }
 .assets__row dt { font-size: var(--fs-sm); color: var(--c-text-2); }
-.assets__row dd { font-weight: var(--fw-bold); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
+.assets__row dd { margin-left: auto; font-weight: var(--fw-bold); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
 .assets__row dd.neg::before { content: '▼ '; font-size: 0.7em; color: var(--c-down); }
 .disclosure { font-size: var(--fs-sm); color: var(--c-text-2); }
-.disclosure summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.disclosure summary { cursor: pointer; min-height: var(--hit); display: flex; align-items: center; } /* 접이식 도움말도 터치 대상 44px(DB3) */
 .log { display: flex; flex-direction: column; min-height: 0; }
+/* 가상 인구 고정 줄(DB14): 「이 세상의 가상 인구 {N}명 · {이름}도 그중 한 사람」은 내용 길이가 판마다 다른 짧은 쌍이라 FitPair — 한 줄에 안 들어가면 기호 없이 두 줄(QM2-10 규칙 3) */
 .log__pin { padding: var(--sp-3); border-radius: var(--r-md); background: var(--c-brand-soft); color: var(--c-on-brand-soft); font-size: var(--fs-sm); }
-.log__list { display: flex; flex-direction: column; gap: 0; margin-top: var(--sp-2); max-height: 520px; overflow-y: auto; scroll-behavior: smooth; }
-.log__row { display: grid; grid-template-columns: 3.1rem 1fr; gap: var(--sp-2); padding: var(--sp-3) var(--sp-1); border-bottom: 1px solid var(--c-border); }
-.log__age { color: var(--c-text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; padding-top: 2px; }
-.log__text { min-width: 0; }
+/* 안쪽 스크롤 영역은 자기 scroll-padding을 둔다(11-1): 키보드 포커스·「맨 아래로」가 줄을 화면 안으로 스크롤할 때 포커스 링이 영역 가장자리에 잘리지 않게 */
+/* 높이 상한은 min(520px, 가용 높이): 고정 머리(--head-fixed-h)와 하단 고정 진행 줄(--bar-fixed-h)을 뺀 화면 안 — 영역이 가용 높이보다 크면 키보드 포커스 링이 머리·진행 줄에 가린다(CM10, M4 구현 dash.css와 같은 식). 풀린 요소(head-released·bar-released)와 데스크톱의 보통 행 진행 줄은 0 */
+.log__list { display: flex; flex-direction: column; gap: 0; margin-top: var(--sp-2); max-height: min(520px, max(6rem, calc(100svh - var(--head-fixed-h, 0px) - var(--bar-fixed-h, 0px) - 2 * (var(--sp-3) + 7px)))); overflow-y: auto; scroll-behavior: smooth; scroll-padding: var(--sp-3) 0; overscroll-behavior: contain; }
+html.has-sticky-head { --head-fixed-h: var(--head-h, 0px); }
+html.head-released { --head-fixed-h: 0px; }
+@media (max-width: 959px) {
+  html.has-bottom-bar { --bar-fixed-h: var(--bar-h, 0px); }
+  html.bar-released { --bar-fixed-h: 0px; }
+}
+/* 한 줄: 「{나이}세」 칸 + 문장 칸 — **단계 줄(.log__row--stage)도 같은 두 칸**이다(연표 한 줄이 곧 한 줄이라 모든 줄이 「N세 + 문장」, 단계 줄은 글자 색·2px 아래선으로만 구분 — M4 구현에 맞춤 2026-10-17, 예전 시안의 나이 없는 「20대 · 청년기」 줄은 없다).
+   글자가 커져 문장 칸이 한 낱말(약 11글자)도 못 담으면 문장이 나이 아래 줄로 내려간다(flex-wrap, QM3-1 — 예전 격자 3.1rem 1fr은 글자 200%·폭 320에서 문장 칸이 116px로 줄었다) */
+.log__row { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); padding: var(--sp-3) var(--sp-1); border-bottom: 1px solid var(--c-border); }
+.log__age { flex: 0 0 3.1rem; color: var(--c-text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.log__text { flex: 1 1 11em; min-width: min(11em, 100%); }
 .log__text em { font-style: normal; color: var(--c-text-2); font-size: var(--fs-sm); }
 .log__row--note { background: var(--c-accent-soft); color: var(--c-on-accent-soft); border-radius: var(--r-md); border-bottom: 0; margin: var(--sp-1) 0; padding: var(--sp-3); border-left: 5px solid var(--c-accent); }
 .log__row--note .log__age { color: var(--c-on-accent-soft); }
 .log__note-label { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: var(--fw-bold); }
-.log__row--stage { grid-template-columns: 1fr; color: var(--c-text-2); font-size: var(--fs-sm); border-bottom: 2px solid var(--c-border-strong); }
+.log__row--stage { color: var(--c-text-2); font-size: var(--fs-sm); border-bottom: 2px solid var(--c-border-strong); }
 .log__row--latest { font-weight: var(--fw-bold); }
 .log__jump { align-self: center; margin-top: var(--sp-2); }
-.family dl, .family-list { display: grid; grid-template-columns: 4.6rem 1fr; gap: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
+.family dl, .family-list { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
 .family-list dt { color: var(--c-text-2); }
-.family-list dd { font-weight: var(--fw-bold); }
+.family-list dd { font-weight: var(--fw-bold); min-width: 0; }
 .family-list dd small { display: block; font-weight: var(--fw-regular); color: var(--c-text-2); }
+.family-list dd + dd { margin-top: var(--sp-1); }
+/* 식구 목록의 1열 쌓기: 위 .facts 규칙과 같은 컨테이너 조건. .family-list 기본 규칙(위) 뒤에 두어야 같은 선택자 우선순위에서 이긴다(앞에 두면 기본 2열이 덮어쓴다 — M4 e2e/m4-breaks.spec.ts가 글자 200%에서 「단순노무직」이 끊기는 것으로 잡았다) */
+@container facts (max-width: 15.5rem) {
+  .family-list { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .family-list dt:not(:first-child) { margin-top: var(--sp-2); }
+}
+/* 카드 머리의 보조 글(「요즘 모습」): 제목 아래 한 줄 전체 */
+.card__sub { flex-basis: 100%; font-size: var(--fs-xs); color: var(--c-text-3); }
+/* 또래 카드(VP4): 한 줄의 구조는 출생신고 또래 목록(.people, R-269)과 같고 — 이름 옆 「여성/남성」, 다음 줄 장소, **수저 칩**(M4 착수 결정 1 마스터: 「수저 → 지금의 삶」 연결이 읽히게 — 수저 이름 허용 자리에 VP4 추가) — 그 아래 **상태 라벨**(「일하는 사람」…)이 온다.
+   라벨은 이 카드가 약속한 값(「요즘 모습」)이라 본문색·굵게(이름·장소는 보조색)이고 **항상 이름 묶음·칩 아래 한 줄**이다(한 줄 전체) — 길이에 따라 어떤 사람은 오른쪽, 어떤 사람은 아래로 갈리면 목록이 들쭉날쭉해진다. 라벨 안에서는 끊지 않는다(가장 긴 「학교에 다님」) */
+.people__now { flex: 1 1 100%; font-weight: var(--fw-bold); color: var(--c-text); white-space: nowrap; }
 
 /* ---------- 카드(중대 결정·자유 기록) ---------- */
 .overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--c-scrim); display: flex; align-items: flex-end; justify-content: center; }
@@ -535,7 +606,10 @@ html.bar-released .page-end-space { display: none; }
 
 /* ---------- 엔딩 ---------- */
 .ending { max-width: 760px; margin: 0 auto; padding: var(--sp-6) var(--gutter) 0; display: flex; flex-direction: column; gap: var(--sp-6); }
-.ending__head { display: flex; align-items: center; gap: var(--sp-4); }
+.ending__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4); }
+/* 엔딩 머리의 텍스트 칸(구현 src/styles/dash.css `.ending__who`와 같은 규칙, M4 r2 R-320·R-321): flex로 늘어나는 쪽은 **이 칸뿐**이다 — 얼굴 타일(.face, flex: none)은 늘 96×96 정사각. 구현 r1의 `.ending__head > div`는 얼굴 타일(div.face)까지 골라 가로로 늘렸다(360px에서 155×96).
+   한 낱말(「이서연의」 …)도 못 담을 만큼 좁아지면(글자 200%) 얼굴 아래 줄로 내려간다(min-width). 이 칸은 제목(h1) 글자 크기 상한의 컨테이너다(아래 「제목 글자 크기 상한」) */
+.ending__who { flex: 1 1 9rem; min-width: min(9rem, 100%); container-type: inline-size; }
 .journey { display: flex; flex-direction: column; gap: var(--sp-3); }
 .journey__bar { position: relative; height: 44px; margin: 0 var(--sp-2); }
 .journey__line { position: absolute; left: 0; right: 0; top: 20px; height: 4px; background: var(--c-border-strong); border-radius: 2px; }
@@ -545,7 +619,10 @@ html.bar-released .page-end-space { display: none; }
 .journey__legend { display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); }
 /* 범례 한 줄 = 「○ 출발선」 라벨 칸 + 값 칸(칩 + 구간). 값 칸이 격자의 둘째 열이라 구간 글자가 줄바꿈돼도 라벨 아래가 아니라 칩 시작점에 맞춰 내려간다 */
 .journey__legend > span { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--sp-2); }
-.timeline li { display: grid; grid-template-columns: 3.1rem 1fr; gap: var(--sp-2); padding: var(--sp-2) var(--sp-1); border-bottom: 1px solid var(--c-border); font-size: var(--fs-sm); }
+/* 연표 한 줄도 인생 기록 줄(.log__row)과 같은 방법(구현 dash.css, M4): 문장 칸이 한 낱말을 못 담으면 나이 아래로 내려간다(flex-wrap, QM3-1 — 예전 격자 3.1rem 1fr은 글자 200% · 폭 320에서 문장 칸이 좁아 낱말이 끊길 수 있었다) */
+.timeline li { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); padding: var(--sp-2) var(--sp-1); border-bottom: 1px solid var(--c-border); font-size: var(--fs-sm); }
+.timeline li > .log__age { flex: 0 0 3.1rem; }
+.timeline li > span:last-child { flex: 1 1 11em; min-width: min(11em, 100%); }
 .timeline li.is-note { background: var(--c-accent-soft); color: var(--c-on-accent-soft); border-left: 5px solid var(--c-accent); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .timeline li.is-choice { border-left: 3px solid var(--c-brand); padding-left: var(--sp-2); }
 
@@ -600,6 +677,24 @@ html.bar-released .page-end-space { display: none; }
     .doc__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 }
+/* ---------- 컨테이너 질의 폴백 (구현 src/styles/doc.css와 글자 그대로 같은 블록 — REV-003-M3-4 R-302, design-system.md 11-6) ----------
+   `container-type`을 모르는 브라우저(Safari 16 미만)는 위의 `@container docbody`·`@container cmp` 블록을 통째로 건너뛴다 — 그대로 두면 비교 표가 휴대폰에서도 3열 표로 남고 서류 격자는 넓은 화면에서도 2열이다.
+   그 브라우저에서만 예전(M3 r3까지) 뷰포트 폭 규칙을 되살린다: 비교 표는 뷰포트 < 640px에서 한 행씩 쌓고, 서류 격자는 뷰포트 ≥ 640px에서 3열. 1열 쌓기는 칸 폭(rem)과 글자 크기를 함께 보는 컨테이너 질의가 있어야 말이 되므로 되살리지 않는다.
+   쌓기 규칙 본문은 위 `@container cmp` 블록과 **글자 그대로 같아야 한다**(구현은 tests/docCssFallback.test.ts가 두 블록을 견준다) */
+@supports not (container-type: inline-size) {
+  @media (max-width: 639px) {
+    .table--cmp, .table--cmp tbody { display: block; }
+    .table--cmp thead { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .table--cmp tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--c-border); }
+    .table--cmp tbody th { grid-column: 1 / -1; padding: 0; border: 0; font-weight: var(--fw-bold); }
+    .table--cmp td { padding: 0; border: 0; text-align: left; }
+    .table--cmp td::before { content: attr(data-label); display: block; font-size: var(--fs-xs); color: var(--c-text-3); }
+    .table--cmp td.num { white-space: normal; }
+  }
+  @media (min-width: 640px) {
+    .doc__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+}
 @media (min-width: 960px) {
   .title { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); column-gap: var(--sp-8); padding-top: var(--sp-6); align-items: start; }
   .title__main { grid-column: 1; grid-row: 1; }
@@ -626,9 +721,12 @@ html.bar-released .page-end-space { display: none; }
   .dash-head__top { flex: none; }
   .year-row { flex: 1; }
   .toolbar__inner { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4); }
+  .toolbar__inner > .volume, .toolbar__inner > .exit-ask { flex-basis: 100%; }
   .controls-fixed { flex-direction: row; align-items: center; gap: var(--sp-3); }
+  /* 넓은 화면: 진행 줄은 도구 줄 안의 보통 행 — 버튼은 자연 폭(좁은 화면의 flex-basis 0 분배를 푼다) */
   .controls__speed { display: flex; gap: var(--sp-2); }
   .controls__more { display: flex; gap: var(--sp-2); }
+  .controls__speed > .btn, .controls__more > .btn, .controls__tools > .btn--tool { flex: 0 1 auto; }
   .controls__tools { display: flex; margin-left: auto; gap: var(--sp-2); }
   .controls__tools .btn--tool { flex-direction: row; min-height: var(--hit); padding: 0 var(--sp-3); font-size: var(--fs-sm); gap: var(--sp-2); }
   .controls-fixed .btn { padding: 0 var(--sp-3); }
@@ -636,18 +734,44 @@ html.bar-released .page-end-space { display: none; }
   .sym-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 959px) {
-  /* 모바일: 속도 컨트롤을 아래에 고정 */
+  /* 모바일: 진행 줄을 아래에 고정 — 이 화면의 하단 고정 띠(11-1·11-2). 높이는 --bar-h(시안은 page() 흉내 스크립트가 .controls-fixed를 잰다, 구현은 useBottomBar), 본문 끝 여백은 .page-end-space,
+     문서 루트의 scroll-padding-bottom은 html.has-bottom-bar 규칙(위 하단 띠 절)이 맡는다. 150px 같은 고정 여백은 쓰지 않는다 */
   .controls-fixed { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-bar); padding: var(--sp-2) var(--gutter) calc(var(--sp-2) + env(safe-area-inset-bottom)); background: var(--c-bg); box-shadow: var(--shadow-bar); }
+  /* 진행 줄이 작은 뷰포트 높이의 절반을 넘으면(글자 200% × 낮은 화면) 고정을 풀어 본문 끝에 둔다(QM2-12) — 위끝 선은 테두리가 아니라 그림자(고정·해제 띠 높이가 같아야 --bar-h가 어긋나지 않는다) */
+  html.bar-released .controls-fixed { position: static; box-shadow: 0 -1px 0 var(--c-border-strong); }
+  @media (forced-colors: active) {
+    /* 강제 색상은 그림자를 지운다 — 띠와 같은 CanvasText 1px 위끝 선, 고정·해제 공통 한 규칙(QM2-12). 넓은 화면(≥ 960px)에서는 진행 줄이 도구 줄 안의 보통 행이라 선을 두지 않는다 */
+    .controls-fixed { border-top: 1px solid CanvasText; }
+  }
   .sym-grid { grid-template-columns: minmax(0, 1fr); }
   .face-sheet { grid-template-columns: 3.4rem repeat(6, minmax(0, 1fr)); gap: var(--sp-1); }
 }
 @media (max-width: 359px) {
-  /* 320px: 속도 줄은 일시정지를 아이콘만(이름은 읽기 전용으로 유지) + 44px 버튼 4개. 터치 대상 44px을 지키면서 넘침 0 */
-  .controls__speed { grid-template-columns: var(--hit) repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .controls__speed > .btn:first-child { padding: 0; }
+  /* 320px: 속도 줄은 일시정지를 아이콘만(이름은 읽기 전용으로 유지) 44px + 배속 버튼 4개가 남은 폭을 나눈다. 터치 대상 44px을 지키면서 넘침 0. 글자가 커서 한 줄에 못 들어가면 flex-wrap으로 접힌다 */
+  .controls__speed { gap: 6px; }
+  .controls__speed > .btn:first-child { flex: 0 0 var(--hit); padding: 0; }
   .controls__speed > .btn:first-child span { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .controls__more { gap: 6px; }
   .controls__more .btn { gap: 4px; padding: 0 2px; }
+}
+
+/* ---------- 밀린 화면·오류 화면 (DS1 공통 헤더 — QA-003-M2 보완 마스터 결정 2·QM3-6: M4가 공통 헤더 컴포넌트로 함께 바꾼다) ----------
+   구조: .site-head(헤더 로고 40px + 화면 이름) → 좁은 본문 한 열(카드 하나: 제목(h1) + 설명 + 주 버튼 + 주석). 문구는 구현(SupersededScreen·ErrorBoundary)의 글자 그대로이고 게임명은 헤더 로고가 맡으므로 h1은 화면의 메시지다 */
+.system { max-width: 560px; margin: 0 auto; padding: var(--sp-6) var(--gutter) var(--sp-8); display: flex; flex-direction: column; gap: var(--sp-4); }
+.system .card { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-5); container-type: inline-size; }
+.system h1 { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.system .btn { align-self: flex-start; }
+
+/* ---------- 제목(h1) 글자 크기 상한 — 엔딩·밀린·오류 화면 (R-321, QM3-2 — 위 룰렛 `.roulette__lead .t-title`와 같은 방식, 구현 src/styles/dash.css와 같은 블록, M4 r2) ----------
+   새 화면의 제목 낱말은 어떤 폭·글자 크기에서도 중간에서 끊기지 않는다(11-8절: 제목에는 허용 (a)(b)를 쓰지 않는다). 글자 크기 = max(바닥, min(기본, 줄 폭 ÷ (가장 긴 낱말 글자 수 + 1))) — 줄 폭은 제목을 담은 컨테이너의 내용 폭(100cqi),
+   글자 수(--title-chars)는 문구에서 계산해 h1이 인라인 변수로 넘긴다(생성기도 구현과 같은 src/data/dashText.ts#titleCharsFor·SYSTEM_TITLE_CHARS를 읽는다 — 엔딩은 이름 길이에 따라, 밀린·오류 화면은 고정 문구라 상수 8).
+   - 엔딩 「{이름}의 인생」: 컨테이너 = `.ending__who`, 바닥 --fs-lg(본문보다 큰 18px), 기본 --fs-2xl.
+   - 밀린·오류 화면의 메시지: 컨테이너 = `.system .card`. 바닥은 본문(--fs-md)이다 — 폭 320 · 글자 200%에서 카드 내용 폭이 246px이라 가장 긴 낱말 「바뀌었습니다.」(7글자)가 바닥 36px(--fs-lg의 두 배)에서는 252px로 넘치지만 32px에서는 224px로 들어간다. 이때만 제목이 본문과 같은 크기이고(굵기·색으로 구분) 그 밖에는 기본 --fs-xl.
+   - 대시보드 이름(h1): 기본이 본문 크기(--fs-md)라 줄일 상한이 없다 — 대신 `.who`가 flex-wrap으로 알약을 내려보낸다(위).
+   `cqi`를 모르는 브라우저는 식이 통째로 무효가 되므로 @supports로 감싼다 — 모르면 위의 기본 크기로 물러난다(11-6 폴백 규칙 ①, 룰렛과 같은 알려진 한계 R-310) */
+@supports (width: 1cqi) {
+  .ending__who .t-title { font-size: max(var(--fs-lg), min(var(--fs-2xl), calc(100cqi / var(--title-chars, 8)))); }
+  .system h1 { font-size: max(var(--fs-md), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }
 }
 
 /* ---------- 강제 색상(고대비) ---------- */
@@ -664,6 +788,12 @@ html.bar-released .page-end-space { display: none; }
   .radio-card.is-selected .radio-card__mark { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
   .radio-card.is-disabled { border-color: GrayText; color: GrayText; }
   .radio-card.is-disabled .radio-card__title, .radio-card.is-disabled .radio-card__desc, .radio-card.is-disabled .radio-card__meta { color: GrayText; }
+  /* 지속 비활성 버튼(「다음 결정으로」·「생각 남기기」)도 라디오 카드 「준비 중」과 같은 GrayText + 점선(구현 title.css와 같은 규칙, R-337) */
+  .btn[data-unavailable='true'] { color: GrayText; border-color: GrayText; }
+  /* 「생각 남기기」 안의 「준비 중」 알약(.btn--tool .tool-soon)도 같은 GrayText — 라디오 카드 메타 알약(위)과 색을 맞춘다. 이 규칙이 더 구체적이라 위 .btn--tool .tool-soon의 CanvasText 매핑(--c-text-2·--c-border-strong)을 이긴다.
+     구현 title.css 강제 색상 블록과 같은 글자(M4 r3 D-30①, 시안은 REV-003-M4-2 R-342로 맞춤 — diff-003.md D-30 닫힘) */
+  .btn[data-unavailable='true'] .tool-soon { color: GrayText; border-color: GrayText; }
+  .exit-ask { border-color: CanvasText; }
   .slide__help { background: Canvas; color: CanvasText; border-color: CanvasText; }
   svg.logo { forced-color-adjust: none; }
   /* 띠의 위끝 구분선은 그림자(--shadow-bar·풀린 띠의 0 -1px 0)인데 강제 색상은 그림자를 지운다 — CanvasText 1px 실선으로 대신한다. 고정·해제 **둘 다 같은 규칙**(.bottom-bar 한 곳)이라 두 상태의 띠 높이가 같다(QM2-12) */
