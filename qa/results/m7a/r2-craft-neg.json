@@ -1,0 +1,513 @@
+[
+ {
+  "name": "이삿짐(자가) past 재력1 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력1 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력1 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력1 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) past 재력1 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(무상) past 재력1 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(자가) past 재력2 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력2 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력2 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력2 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) past 재력2 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(무상) past 재력2 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(자가) past 재력3 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력3 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력3 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) past 재력3 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) past 재력3 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 20
+ },
+ {
+  "name": "이삿짐(무상) past 재력3 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 20
+ },
+ {
+  "name": "이삿짐(자가) present 재력1 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력1 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력1 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력1 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) present 재력1 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(무상) present 재력1 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(자가) present 재력2 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력2 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력2 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력2 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) present 재력2 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(무상) present 재력2 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(자가) present 재력3 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력3 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력3 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) present 재력3 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) present 재력3 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 21
+ },
+ {
+  "name": "이삿짐(무상) present 재력3 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 21
+ },
+ {
+  "name": "이삿짐(자가) future 재력1 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력1 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력1 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력1 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) future 재력1 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(무상) future 재력1 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(자가) future 재력2 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력2 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력2 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력2 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) future 재력2 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(무상) future 재력2 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "이삿짐(자가) future 재력3 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력3 4세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력3 5세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(자가) future 재력3 6세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "이삿짐(임차) future 재력3 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 21
+ },
+ {
+  "name": "이삿짐(무상) future 재력3 4세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 21
+ },
+ {
+  "name": "맡김 정해짐(childcare_set)인 판의 「맡겨지는 낮」(infant-care) past 2세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "맡김 정해지지 않은 판의 「맡겨지는 낮」 past 2세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 34
+ },
+ {
+  "name": "맡김 정해짐(childcare_set)인 판의 「맡겨지는 낮」(infant-care) present 2세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "맡김 정해지지 않은 판의 「맡겨지는 낮」 present 2세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 34
+ },
+ {
+  "name": "맡김 정해짐(childcare_set)인 판의 「맡겨지는 낮」(infant-care) future 2세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "맡김 정해지지 않은 판의 「맡겨지는 낮」 future 2세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 34
+ },
+ {
+  "name": "맡김 정해짐인 판의 「어린이집 대기」 present 1세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "맡김 정해짐인 판의 「어린이집 대기」 present 2세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "맡김 정해지지 않은 판의 「어린이집 대기」 present 1세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 16
+ },
+ {
+  "name": "일을 쉬는 한 해 present 1세(창 0~0)",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "일을 쉬는 한 해 present 0세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 3
+ },
+ {
+  "name": "말을 받아 주는 인형 future 2세(창 3~5)",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "말을 받아 주는 인형 future 3세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 7
+ },
+ {
+  "name": "첫 걸음마 2세(창 1~1)",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "첫 걸음마 1세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 1
+ },
+ {
+  "name": "첫 말 3세(창 1~1)",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "첫 말 1세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 1
+ },
+ {
+  "name": "둘째 이상의 동생 맞이 present 3세",
+  "expectFound": false,
+  "found": false,
+  "ok": true,
+  "k": 0
+ },
+ {
+  "name": "첫째의 동생 맞이 present 3세",
+  "expectFound": true,
+  "found": true,
+  "ok": true,
+  "k": 3
+ }
+]

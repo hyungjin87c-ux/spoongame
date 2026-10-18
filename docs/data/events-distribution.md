@@ -6,8 +6,8 @@
 
 ## 1. 총계
 
-- 이벤트 **112개** = 선택지 이벤트 78개 + 서술 이벤트 34개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
-- 시대 전용: 지난 세상 7개 · 지금 세상 3개 · 다가올 세상 4개 / 시대 중립 공용 92개 / 두 시대 공용 6개
+- 이벤트 **140개** = 선택지 이벤트 90개 + 서술 이벤트 50개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
+- 시대 전용: 지난 세상 10개 · 지금 세상 6개 · 다가올 세상 7개 / 시대 중립 공용 107개 / 두 시대 공용 10개
 
 ## 2. 시대 × 생애 단계 × 유형 (그 칸에서 일어날 수 있는 이벤트 수)
 
@@ -15,34 +15,58 @@
 
 | 생애 단계 | 지난 세상 | 지금 세상 | 다가올 세상 |
 |---|---|---|---|
-| 영유아 (0~6세) | 6 / 4 | 5 / 5 | 5 / 5 |
-| 학창 (7~19세) | 4 / 14 | 4 / 13 | 4 / 13 |
+| 영유아 (0~6세) | 16 / 9 | 14 / 15 | 17 / 12 |
+| 학창 (7~19세) | 7 / 15 | 6 / 15 | 6 / 15 |
 | 청년 (20~39세) | 9 / 19 | 8 / 20 | 7 / 20 |
 | 중년 (40~64세) | 7 / 22 | 8 / 23 | 7 / 24 |
 | 노년 (65세~) | 5 / 17 | 5 / 17 | 5 / 18 |
-| **합계(칸 합)** | 31 / 76 | 30 / 78 | 28 / 80 |
+| **합계(칸 합)** | 44 / 82 | 41 / 90 | 42 / 89 |
 
 ## 3. 이벤트 목록
 
 유형: 서술 = 선택지 없이 효과만 / 선택지 = 2~3개 중 선택. 플래그: 켬 = 이 이벤트의 선택·효과가 켜는 것 / 읽음 = 조건·선택지 노출·보너스·확률 배수에서 읽는 것.
 
-### 영유아 (0~6세) — 11개
+### 영유아 (0~6세) — 35개
 
 | id | 제목 | 나이 | 시대 | 유형 | 모티브 | 플래그 |
 |---|---|---|---|---|---|---|
-| `infant-first-word` | 첫 말 | 1~3 | 공용 | 서술 | 아이의 첫 말에 온 가족이 웃던 일 | - |
-| `infant-care` | 맡겨지는 낮 | 1~5 | 공용 | 선택지 3 | 맞벌이 부모가 아이를 어디에 맡길지 정하는 일 | 켬 `grandparent_close` |
+| `infant-first-word` | 첫 말 | 1~1 | 공용 | 서술 | 아이의 첫 말에 온 가족이 웃던 일 | - |
+| `infant-care` | 맡겨지는 낮 | 1~5 | 공용 | 선택지 3 | 맞벌이 부모가 아이를 어디에 맡길지 정하는 일 | 켬 `childcare_set` `grandparent_close` / 읽음 `childcare_set` |
 | `infant-fever` | 한밤의 열 | 1~5 | 공용 | 선택지 3 | 한밤에 아이가 열이 올라 병원에 갈지 망설이던 일 | - |
 | `infant-stories` | 자기 전의 이야기 | 2~6 | 공용 | 선택지 3 | 자기 전 이야기를 졸라 대던 아이를 대하는 방식의 차이 | - |
 | `infant-screen` | 화면 앞의 아이 | 2~6 | 지금·다가올 전용 | 선택지 3 | 아이에게 화면을 보여 줄지 말지 고민하는 부모 | - |
-| `infant-new-sibling` | 동생이 생겼다 | 2~6 | 공용 | 선택지 3 | 동생이 생기면서 느낀 서운함 | 켬 `sibling_close` / 읽음 `grandparent_close` |
+| `infant-new-sibling` | 동생이 생겼다 | 2~4 | 공용 | 선택지 4 | 동생이 생기면서 느낀 서운함 | 켬 `sibling_close` `younger_sibling` / 읽음 `grandparent_close` |
 | `infant-village` | 온 골목의 아이 | 1~6 | 지난 전용 | 서술 | 골목 전체가 아이를 함께 키우던 어린 시절 | - |
 | `infant-grandparent-song` | 무릎 위의 노래 | 1~6 | 공용 | 서술 | 조부모 무릎에서 듣던 노래의 기억 | 읽음 `grandparent_close` |
 | `infant-neglect-night` | 불 꺼진 집 | 1~6 | 공용 | 서술 | 부모가 늦게까지 돌아오지 않던 밤의 외로움 | - |
 | `infant-hovering` | 한 걸음 앞의 어른 | 1~6 | 공용 | 서술 | 아이를 늘 앞서서 지켜 주던 과보호 육아 | - |
 | `infant-free-play` | 마음껏 뛰놀던 날들 | 2~6 | 공용 | 서술 | 흙투성이로 마음껏 놀게 두던 자유로운 육아 | - |
+| `infant-vaccine` | 첫 예방접종 | 0~0 | 공용 | 서술 | 첫 예방접종 날 크게 울던 아이를 안아 달래던 일 | - |
+| `infant-hundred-days` | 백일 | 0~0 | 공용 | 서술 | 백일을 맞아 떡을 나누던 집 | - |
+| `infant-night-wake` | 밤마다 깨는 아이 | 0~1 | 공용 | 서술 | 밤마다 깨는 아이를 번갈아 달래던 부모 | - |
+| `infant-meal-start` | 처음 먹는 밥 | 0~1 | 공용 | 선택지 3 | 이유식을 직접 만들지 사 먹일지 정하던 부모 | - |
+| `infant-checkup` | 영유아 건강검진 | 0~3 | 지금·다가올 전용 | 서술 | 정해진 때마다 아이를 데리고 받던 영유아 건강검진 | - |
+| `infant-parental-leave` | 일을 쉬는 한 해 | 0~0 | 지금 전용 | 선택지 3 | 아이가 태어난 첫해 누가 일을 쉴지 정하던 부부 | 켬 `childcare_set` |
+| `infant-care-alert` | 곁을 지키는 기계 | 0~2 | 다가올 전용 | 서술 | 돌봄 기계가 밤새 곁을 살피던 집 | - |
+| `infant-first-steps` | 첫 걸음마 | 1~1 | 공용 | 서술 | 처음 혼자 걷던 날 숨을 죽이고 지켜보던 가족 | - |
+| `infant-first-birthday` | 첫 생일 | 1~1 | 공용 | 선택지 3 | 첫 생일을 어떻게 치를지 의견이 갈리던 가족 | - |
+| `infant-daycare-wait` | 어린이집 대기 | 1~2 | 지금 전용 | 선택지 3 | 어린이집 대기 순번이 줄지 않아 맡길 곳을 찾던 부모 | 켬 `childcare_set` `grandparent_close` / 읽음 `childcare_set` |
+| `infant-follow-sibling` | 형제를 따라 하는 아이 | 1~5 | 공용 | 서술 | 형제의 말투와 놀이를 따라 하던 막내 | - |
+| `infant-coal-winter` | 겨울밤의 아랫목 | 1~5 | 지난 전용 | 서술 | 연탄불이 꺼질까 번갈아 일어나던 겨울밤 | - |
+| `infant-tantrum` | 드러누운 아이 | 2~3 | 공용 | 서술 | 길 한복판에 드러누워 떼를 쓰던 아이 | - |
+| `infant-market-day` | 장날의 손 | 2~6 | 지난 전용 | 서술 | 장날마다 어른 손을 잡고 나가던 아이 | - |
+| `infant-talking-toy` | 말을 받아 주는 인형 | 3~5 | 다가올 전용 | 서술 | 말을 받아 주는 인형과 오래 이야기하던 아이 | - |
+| `infant-heat-day` | 나갈 수 없는 한낮 | 2~6 | 다가올 전용 | 서술 | 더위 때문에 놀이터에 나가지 못한 여름 | - |
+| `infant-noise` | 이웃의 항의 | 2~6 | 지금 전용 | 선택지 3 | 아이 뛰는 소리로 이웃의 항의를 받던 집 | - |
+| `infant-questions` | 묻기 시작한 아이 | 3~5 | 공용 | 서술 | 눈에 띄는 것마다 이름과 까닭을 묻던 아이 | - |
+| `infant-kindergarten` | 유치원 고르기 | 3~4 | 지금·다가올 전용 | 선택지 3 | 아이가 다닐 유치원을 두고 고민하던 부모 | - |
+| `infant-sibling-toy` | 동생의 장난감 | 3~6 | 공용 | 선택지 3 | 동생이 만지는 장난감을 놓지 않던 첫째 | 읽음 `younger_sibling` |
+| `infant-hospital-stay` | 병실에서 보낸 며칠 | 3~6 | 공용 | 선택지 3 | 아이가 입원해 곁을 지킬 사람을 정하던 가족 | - |
+| `infant-moving` | 이삿짐을 싸던 날 | 3~6 | 공용 | 선택지 3 | 계약이 끝나 정든 동네를 떠나던 가족 | - |
+| `infant-early-lessons` | 취학 전의 시간표 | 5~6 | 지금·다가올 전용 | 선택지 3 | 입학 전에 무엇을 시킬지 고민하던 부모 | - |
+| `infant-first-book` | 처음 읽은 책 | 6~7 | 공용 | 서술 | 글자를 짚어 가며 처음 책 한 권을 읽은 날 | - |
 
-### 학창 (7~19세) — 22개
+### 학창 (7~19세) — 26개
 
 | id | 제목 | 나이 | 시대 | 유형 | 모티브 | 플래그 |
 |---|---|---|---|---|---|---|
@@ -68,6 +92,10 @@
 | `school-long-walk` | 먼 등굣길 | 8~13 | 지난 전용 | 서술 | 한 시간을 걸어 다니던 등굣길 | 읽음 `left_school` |
 | `school-academy-talk` | 학원 이야기로 시작하는 대화 | 10~16 | 지금 전용 | 서술 | 쉬는 시간의 대화가 어느 학원에 다니는지로 시작되던 교실 | - |
 | `school-virtual-class` | 화면 속의 교실 | 8~15 | 다가올 전용 | 서술 | 수업 절반이 화면 속에서 이루어지던 학교 | - |
+| `school-first-day` | 책가방을 멘 아침 | 7~7 | 공용 | 서술 | 책가방을 메고 교문 앞에서 뒤돌아보던 아이 | - |
+| `school-supplies` | 입학 준비물 | 7~7 | 공용 | 선택지 3 | 입학을 앞두고 가방과 학용품을 마련하던 집 | - |
+| `school-after-hours` | 학교가 끝난 뒤 | 7~7 | 지금·다가올 전용 | 선택지 3 | 일터에서 돌아올 어른이 없는 방과 후 | - |
+| `school-first-walk` | 처음 걷는 등굣길 | 7~7 | 지난 전용 | 서술 | 이웃 아이들과 처음 학교까지 걸어가던 길 | - |
 
 ### 청년 (20~39세) — 31개
 
@@ -176,6 +204,7 @@
 | `child_late` | `youth-child-again` | `middle-both-working` `middle-child-grows` `middle-child-leaves` `middle-child-school` `middle-late-child` `senior-gathering` |
 | `child_left` | `middle-child-leaves` | `middle-child-grows` `middle-child-leaves` `middle-child-school` `middle-late-child` |
 | `child_postponed` | `youth-child` | `youth-child-again` |
+| `childcare_set` | `infant-care` `infant-daycare-wait` `infant-parental-leave` | `infant-care` `infant-daycare-wait` |
 | `close_friend` | `school-club` `school-friend` `school-friend-quarrel` | `middle-friend-reunion` `senior-old-friend` `senior-photo` `youth-friend-wedding` `youth-lonely-city` |
 | `college` | `school-exam` | `youth-first-job` |
 | `divorced` | `middle-marriage-crisis` | - |
@@ -187,7 +216,7 @@
 | `fought_for_school` | `school-family-priority` | - |
 | `friend_back` | `middle-friend-reunion` | `middle-lonely-holiday` |
 | `gave_up_exam` | `youth-exam-prep` | - |
-| `grandparent_close` | `infant-care` | `infant-grandparent-song` `infant-new-sibling` `senior-gathering` |
+| `grandparent_close` | `infant-care` `infant-daycare-wait` | `infant-grandparent-song` `infant-new-sibling` `senior-gathering` |
 | `has_career` | `middle-job-again` `youth-exam-passed` `youth-exam-prep` `youth-first-job` `youth-gig-work` | `middle-both-working` `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-new-skills` `middle-remote-work` `youth-colleague` `youth-exam-prep` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-machine-partner` `youth-startup` `youth-work-pressure` `youth-workplace-romance` |
 | `has_child` | `youth-child` `youth-child-again` | `middle-both-working` `middle-child-grows` `middle-child-leaves` `middle-child-school` `middle-late-child` `middle-marriage-crisis` `senior-estate` `senior-estranged-child` `senior-gathering` `senior-grandchild-visit` `senior-grandchildren` `senior-move-home` `youth-child-again` |
 | `has_partner` | `youth-approached` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-reunion` `youth-workplace-romance` | `youth-approached` `youth-marriage` `youth-marriage-again` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-partner-leaves` `youth-reunion` `youth-second-chance` `youth-single-years` `youth-workplace-romance` |
@@ -220,4 +249,5 @@
 | `sibling_close` | `infant-new-sibling` | `middle-parents-farewell` |
 | `skilled_trade` | `school-career-choice` | `school-exam` `youth-first-job` |
 | `stood_up` | `school-bully` | `school-chat-room` |
+| `younger_sibling` | `infant-new-sibling` | `infant-sibling-toy` |
 

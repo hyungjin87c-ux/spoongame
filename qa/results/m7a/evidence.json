@@ -1,0 +1,107 @@
+[
+ {
+  "id": "F1a",
+  "era": "present",
+  "seed": 197,
+  "event": "infant-kindergarten",
+  "note": "재력 5단계(아주 넉넉한 가정) 3세 유치원 고르기 → 집에서 더 돌본다",
+  "birthSentence": "2026년 3월, 대전광역시 대덕구의 아주 넉넉한 가정에서 2.6kg 남자아이로 태어났습니다. 셋째입니다. (2.6kg은 하위 약 17%)",
+  "housing": "임차(전세, 월세)",
+  "wealth": "다이아몬드수저(상위 3% 안쪽)",
+  "shots": [
+   "qa/screenshots/003/M7a-F1a-card.png",
+   "qa/screenshots/003/M7a-F1a-log-result.png",
+   "qa/screenshots/003/M7a-F1a-log-birth-line.png"
+  ],
+  "card": {
+   "key": "infant-kindergarten@3",
+   "choices": [
+    "near:집 가까운 곳으로 보낸다",
+    "famous:교육으로 이름난 곳에 보낸다",
+    "home:집에서 더 돌본다"
+   ],
+   "picked": "home"
+  },
+  "logFirst": "0세2026년 3월, 대전광역시 대덕구의 아주 넉넉한 가정에서 2.6kg 남자아이로 태어났습니다. 셋째입니다. (2.6kg은 하위 약 17%)",
+  "logResult": "3세한 사람이 곁에서 아이와 하루를 보냈습니다. 놀이와 낮잠이 느긋하게 이어졌고 살림은 빠듯해졌습니다. (선택: 집에서 더 돌본다)"
+ },
+ {
+  "id": "F1b",
+  "era": "present",
+  "seed": 111,
+  "event": "infant-parental-leave",
+  "note": "재력 5단계 0세 일을 쉬는 한 해 → 한 사람이 일을 쉬고 돌본다",
+  "birthSentence": "2026년 11월, 경상북도 포항시 북구의 아주 넉넉한 가정에서 2.9kg 여자아이로 태어났습니다. 둘째입니다. (2.9kg은 하위 약 40%)",
+  "housing": "자가",
+  "wealth": "다이아몬드수저(상위 3% 안쪽)",
+  "shots": [
+   "qa/screenshots/003/M7a-F1b-card.png",
+   "qa/screenshots/003/M7a-F1b-log-result.png",
+   "qa/screenshots/003/M7a-F1b-log-birth-line.png"
+  ],
+  "card": {
+   "key": "infant-parental-leave@0",
+   "choices": [
+    "one:한 사람이 일을 쉬고 돌본다",
+    "share:번갈아 가며 일을 쉰다",
+    "back:일터로 돌아가고 맡길 곳을 찾는다"
+   ],
+   "picked": "one"
+  },
+  "logFirst": "0세2026년 11월, 경상북도 포항시 북구의 아주 넉넉한 가정에서 2.9kg 여자아이로 태어났습니다. 둘째입니다. (2.9kg은 하위 약 40%)",
+  "logResult": "0세한 사람이 일을 쉬고 아이 곁을 지켰습니다. 아이의 하루는 일정했지만 집안 살림은 빠듯해졌습니다. (선택: 한 사람이 일을 쉬고 돌본다)"
+ },
+ {
+  "id": "F2a",
+  "era": "past",
+  "seed": 94,
+  "event": "infant-moving",
+  "note": "자가(재력 3단계) 6세 이삿짐을 싸던 날 → 빚을 내어 작은 집을 산다",
+  "birthSentence": "1958년 12월, 경기도 인천 중구의 평범한 가정에서 2.7kg 남자아이로 태어났습니다. 첫째입니다. (2.7kg은 하위 약 22%)",
+  "housing": "자가",
+  "wealth": "은수저(상위 8~28% 사이)",
+  "shots": [
+   "qa/screenshots/003/M7a-F2a-birth-report-housing.png",
+   "qa/screenshots/003/M7a-F2a-card.png",
+   "qa/screenshots/003/M7a-F2a-log-result.png",
+   "qa/screenshots/003/M7a-F2a-log-birth-line.png"
+  ],
+  "card": {
+   "key": "infant-moving@6",
+   "choices": [
+    "near:같은 동네에서 집을 구한다",
+    "far:값이 낮은 먼 동네로 옮긴다",
+    "buy:빚을 내어 작은 집을 산다"
+   ],
+   "picked": "buy"
+  },
+  "logFirst": "0세1958년 12월, 경기도 인천 중구의 평범한 가정에서 2.7kg 남자아이로 태어났습니다. 첫째입니다. (2.7kg은 하위 약 22%)",
+  "logResult": "6세대출을 얻어 작은 집을 마련했습니다. 이사 걱정은 줄었지만 어른들의 한숨은 길어졌습니다. (선택: 빚을 내어 작은 집을 산다)"
+ },
+ {
+  "id": "F2b",
+  "era": "present",
+  "seed": 80,
+  "event": "infant-moving",
+  "note": "자가(재력 3단계) 5세 이삿짐을 싸던 날 → 빚을 내어 작은 집을 산다",
+  "birthSentence": "2026년 7월, 대구광역시 북구의 평범한 가정에서 2.8kg 여자아이로 태어났습니다. 첫째입니다. (2.8kg은 하위 약 34%)",
+  "housing": "자가",
+  "wealth": "은수저(상위 17~45% 사이)",
+  "shots": [
+   "qa/screenshots/003/M7a-F2b-card.png",
+   "qa/screenshots/003/M7a-F2b-log-result.png",
+   "qa/screenshots/003/M7a-F2b-log-birth-line.png"
+  ],
+  "card": {
+   "key": "infant-moving@5",
+   "choices": [
+    "near:같은 동네에서 집을 구한다",
+    "far:값이 낮은 먼 동네로 옮긴다",
+    "buy:빚을 내어 작은 집을 산다"
+   ],
+   "picked": "buy"
+  },
+  "logFirst": "0세2026년 7월, 대구광역시 북구의 평범한 가정에서 2.8kg 여자아이로 태어났습니다. 첫째입니다. (2.8kg은 하위 약 34%)",
+  "logResult": "5세대출을 얻어 작은 집을 마련했습니다. 이사 걱정은 줄었지만 어른들의 한숨은 길어졌습니다. (선택: 빚을 내어 작은 집을 산다)"
+ }
+]

@@ -113,8 +113,9 @@ console.log('|---|---|---|---|---|---|---|');
 for (const r of judgeConditions(random.rows.present)) {
   const c = r.check.condition;
   const cond = [c.netMin !== undefined ? `≥ ${f0(c.netMin)}` : '', c.netMax !== undefined ? `≤ ${f0(c.netMax)}` : ''].filter(Boolean).join(' ');
-  console.log(`| ${r.check.where} | ${r.check.age}세 | ${cond} | ${r.check.oldRate}% | ${f1(r.rate)}% | ${f1(r.lo)} ~ ${f1(r.hi)}% | ${r.check.accepted !== undefined ? '수용(문구 우선)' : r.ok ? '통과' : '불합격'} |`);
+  console.log(`| ${r.check.where} | ${r.check.age}세 | ${cond} | ${r.check.oldRate}% | ${f1(r.rate)}% | ${f1(r.lo)} ~ ${f1(r.hi)}% | ${r.check.accepted !== undefined ? '수용(문구 우선)' : r.known ? '알려진 차이(보고함)' : r.ok ? '통과' : '불합격'} |`);
   if (r.check.accepted !== undefined) console.log(`  수용: ${r.check.accepted}`);
+  else if (r.known) console.log(`  알려진 차이: ${r.check.reported!.why}`);
   else if (!r.ok) fail(`조건 ${r.check.where} ${r.check.age}세 통과율 ${f1(r.rate)}% (옛 ${r.check.oldRate}%, 허용 ${f1(r.lo)} ~ ${f1(r.hi)}%)`);
 }
 

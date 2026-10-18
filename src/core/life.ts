@@ -2,6 +2,7 @@ import { ERA_CONFIG } from '../data/birthTable';
 import { EVENT_POOL } from '../data/events';
 import { AUTO_ASSET } from '../data/economyTable';
 import {
+  EARLY_YEARS_MAX_AGE,
   EDUCATION_GROWTH,
   EVENT_FREQUENCY,
   HEALTH_DECAY,
@@ -18,6 +19,8 @@ import {
   eventWeight,
   isChoiceEvent,
   isEventEligible,
+  isMilestoneEvent,
+  MILESTONES_PER_YEAR_MAX,
   resolveEffects,
   stageOfAge,
   visibleChoices,
@@ -39,6 +42,7 @@ import { PARENT_WEALTHS, type Character, type Era, type GameState, type HistoryE
  * 같은 시드 + 같은 선택 → 같은 인생. 중간에 직렬화↔복원해도 같다(RNG 상태와 모든 진행 정보가 GameState에 있다).
  *
  * 한 해의 흐름(나이 a를 사는 해):
+ *   0) 마일스톤 슬롯(M7a): 창 안의 마일스톤(첫 예방접종·첫 걸음마·첫 말)이 일반 추첨과 별개로 한 줄을 남긴다(창의 마지막 해는 100%). 한 해에 줄이 둘일 수 있다.
  *   1) 이벤트 추첨(선택지 → 서술 순). 선택지 이벤트면 pending에 넣고 여기서 멈춘다(stepYear가 같은 상태를 돌려주는 동안 시간은 흐르지 않는다).
  *   2) 서술 이벤트면 효과를 적용하고 연표에 남긴다. (선택지는 resolveChoice가 효과를 적용한다.)
  *   3) 한 해 마무리(finishYear): 단계별 자연 변화 → 사망 판정 → 살아 있으면 나이 +1(단계가 바뀌면 연표에 한 줄).
@@ -179,7 +183,10 @@ export interface TickInfo {
   kind: TickKind;
   /** 이 걸음을 시작할 때의 나이 */
   fromAge: number;
+  /** 그 해의 주된 사건(선택지·서술). 일반 추첨에서 아무것도 안 나온 해에 마일스톤만 있었다면 첫 마일스톤(id 오름차순)의 id다 */
   eventId?: string;
+  /** 그 해 마일스톤 슬롯에서 일어난 이벤트 id들(id 오름차순) (SPEC-003 IN3, M7a r3 — 일반 사건과 별개 줄이라 한 해 연표에 여러 줄이 남을 수 있다: 1세는 걸음마 + 첫 말 + 일반 사건 최대 3줄 이상) */
+  milestoneIds?: string[];
 }
 
 export interface StepResult {
@@ -258,13 +265,27 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
 
   const rng = createRng(state.rngState);
   const age = state.age;
-  const freq = EVENT_FREQUENCY[stageOfAge(age)];
+  // 0~7세는 영유아 빈도표를 쓴다(SPEC-003 M7a: 7세는 학창 단계지만 영유아기와 같은 빈도 — EARLY_YEARS_MAX_AGE)
+  const freq = age <= EARLY_YEARS_MAX_AGE ? EVENT_FREQUENCY.infant : EVENT_FREQUENCY[stageOfAge(age)];
   const rollChoice = rng.next();
   const rollNarrative = rng.next();
 
   const ctx = condContextOf(state);
   const view = { ...ctx, age, era: state.era, seen: state.seen };
   const eligible = eventsForStage(pool, stageOfAge(age)).filter((ev) => isEventEligible(ev, view));
+
+  // 마일스톤 슬롯 (SPEC-003 IN3, M7a r3): 일반 추첨과 별개로, 창 안의 마일스톤을 한 해에 **여러 개(최대 MILESTONES_PER_YEAR_MAX)** 일으킨다. 창이 일찍 끝나는(급한) 것부터, 끝이 같으면 id 오름차순으로 따져
+  // 확률 1 ÷ (창 끝 나이 − 나이 + 1)로 일어나고, 창의 마지막 해(분모 1)는 난수 없이 100%다. 한 해에 몰려도 칸(MILESTONES_PER_YEAR_MAX) 안이면 모두 일어나고, 칸을 넘길 몰림은
+  // lint(eventLint#milestoneWindowProblems)가 풀 점검에서 막는다 → 모든 판에 반드시 일어난다(tests/milestone.test.ts). 난수는 확률이 1보다 작은 후보를 따질 때만 쓴다(후보·확률은 상태로 정해지므로 같은 시드 → 같은 인생).
+  // 연표·효과는 id 오름차순으로 남긴다(같은 해에 줄이 여럿이어도 순서가 늘 같다).
+  const chosenMilestones: EventDef[] = [];
+  for (const m of eligible.filter(isMilestoneEvent).sort((a, b) => (a.ageRange?.max ?? 0) - (b.ageRange?.max ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
+    if (chosenMilestones.length >= MILESTONES_PER_YEAR_MAX) break;
+    const left = (m.ageRange?.max ?? age) - age + 1;
+    if (left <= 1 || rng.next() < 1 / left) chosenMilestones.push(m);
+  }
+  chosenMilestones.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+
   // 선택지는 간격을 두고, 한 판의 선택지 수 조절(CHOICE_PACING)을 따른다. 지금까지 푼 선택지 수는 연표의 선택 기록 수다.
   const choicesSoFar = state.history.reduce((n, h) => (h.kind === 'choice' ? n + 1 : n), 0);
   const canChoice = (state.lastChoiceAge === null || age - state.lastChoiceAge >= MIN_YEARS_BETWEEN_CHOICES) && choicesSoFar < CHOICE_PACING.hard;
@@ -272,23 +293,34 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
 
   let picked: EventDef | null = null;
   if (rollChoice < choiceChance && canChoice) picked = pickWeighted(rng, eligible.filter(isChoiceEvent), ctx);
-  if (picked === null && rollNarrative < freq.narrative) picked = pickWeighted(rng, eligible.filter((ev) => !isChoiceEvent(ev)), ctx);
+  if (picked === null && rollNarrative < freq.narrative) picked = pickWeighted(rng, eligible.filter((ev) => !isChoiceEvent(ev) && !isMilestoneEvent(ev)), ctx);
+
+  // 마일스톤 효과·연표 한 줄은 그 해의 일반 사건보다 먼저 적용한다(선택지가 뜨는 해에도 마일스톤 줄은 이미 남는다)
+  let s: GameState = state;
+  for (const milestone of chosenMilestones) {
+    s = applyResolved(s, resolveEffects(milestone.effects, milestone.bonuses, ctx));
+    s = {
+      ...s,
+      seen: { ...s.seen, [milestone.id]: age },
+      history: appendHistory(s.history, { age, kind: 'event', title: milestone.title, text: milestone.text, eventId: milestone.id }),
+    };
+  }
+  const milestoneIds = chosenMilestones.map((m) => m.id);
 
   if (picked !== null && isChoiceEvent(picked)) {
     const visible = visibleChoices(picked, ctx);
     return {
       state: {
-        ...state,
+        ...s,
         rngState: rng.getState(),
-        seen: { ...state.seen, [picked.id]: age },
+        seen: { ...s.seen, [picked.id]: age },
         lastChoiceAge: age,
         pending: { eventId: picked.id, key: `${picked.id}@${age}`, age, choiceIds: visible.map((c) => c.id) },
       },
-      tick: { kind: 'choice', fromAge: age, eventId: picked.id },
+      tick: { kind: 'choice', fromAge: age, eventId: picked.id, ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
     };
   }
 
-  let s: GameState = state;
   if (picked !== null) {
     s = applyResolved(s, resolveEffects(picked.effects, picked.bonuses, ctx));
     s = {
@@ -298,7 +330,11 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
     };
   }
   const { state: next, died } = finishYear(s, rng, state);
-  return { state: next, tick: { kind: died ? 'death' : picked !== null ? 'narrative' : 'quiet', fromAge: age, eventId: picked?.id } };
+  const eventId = picked?.id ?? milestoneIds[0];
+  return {
+    state: next,
+    tick: { kind: died ? 'death' : eventId !== undefined ? 'narrative' : 'quiet', fromAge: age, ...(eventId !== undefined ? { eventId } : {}), ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
+  };
 }
 
 /** 한 해 진행의 상태만 필요할 때 */

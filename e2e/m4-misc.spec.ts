@@ -5,13 +5,13 @@ import {
   KNOWN_SEED,
   SETTINGS_KEY,
   activeTestId,
-  evalCore,
   findPendingState,
   injectSave,
   lifeState,
   oracleAuto,
   oracleLife,
   pressBeginToLife,
+  quietStart,
   readSave,
   readSettings,
   settle,
@@ -27,21 +27,8 @@ import { adultState, openM4Screen } from './m4States';
 
 const MANUAL = { speed: 1, autoMode: false } as const;
 
-async function quietLife(page: Page, years: number): Promise<GameState> {
-  const s = await evalCore<GameState | null>(
-    page,
-    `for (let seed = 1; seed < 2000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
-       let ok = true;
-       for (let i = 0; i < arg.years; i++) { const r = core.stepYear(s); if (r.tick.kind !== 'quiet') { ok = false; break; } s = r.state; }
-       if (ok) return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
-     }
-     return null;`,
-    { years },
-  );
-  expect(s).not.toBeNull();
-  return s!;
-}
+/** 앞으로 N해가 모두 「조용한 해」인 상태 — M7a 이후 0세는 늘 첫 예방접종이 있어 20세 이후 상태다(e2e/helpers.ts#quietStart) */
+const quietLife = (page: Page, years: number): Promise<GameState> => quietStart(page, years);
 
 async function recordPct(page: Page): Promise<void> {
   await page.addInitScript(() => {

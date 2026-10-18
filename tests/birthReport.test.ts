@@ -621,7 +621,9 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
     expect(isEventEligible(sibling, at(2, 43, 33, 1)), '어머니 45세').toBe(true);
     expect(isEventEligible(sibling, at(3, 43, 33, 1)), '어머니 46세').toBe(false);
     expect(isEventEligible(sibling, at(2, 47, 50, 1)), '어머니 49세').toBe(false);
-    expect(isEventEligible(sibling, at(6, 38, 60, 1)), '어머니 44세, 아버지가 많아도').toBe(true);
+    expect(isEventEligible(sibling, at(4, 40, 60, 1)), '어머니 44세, 아버지가 많아도').toBe(true); // M7a: 동생 사건은 2~4세(옛 2~6세라 6세·어머니 38세였다)
+    expect(isEventEligible(sibling, at(5, 39, 33, 1)), '5세는 창(2~4세) 밖').toBe(false);
+    expect(isEventEligible(sibling, at(1, 30, 33, 1)), '1세는 창(2~4세) 밖').toBe(false);
   });
 
   it('R-268: 출생 때 어머니가 높은 나이인 판 400개 — 동생 사건이 일어난 나이에 어머니는 45세 이하이고, 어머니 47세 판에서는 동생 사건이 없다 / 어머니 38세 판에서는 있다(공허 통과 방지)', () => {

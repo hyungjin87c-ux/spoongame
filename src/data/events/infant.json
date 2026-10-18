@@ -1,15 +1,16 @@
 {
-  "note": "영유아(0~6세) 이벤트. 커뮤니티 사연을 모티브로만 새로 쓴 글이다. 작성법: docs/data/events-schema.md",
+  "note": "영유아(0~7세; 7세 전용은 school.json의 school-* 이벤트) 이벤트. 커뮤니티 사연을 모티브로만 새로 쓴 글이다. 작성법: docs/data/events-schema.md",
   "events": [
     {
       "id": "infant-first-word",
       "title": "첫 말",
-      "text": "처음으로 또렷한 말을 했다. 곁에 있던 어른들이 한참을 웃었다.",
+      "text": "아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.",
       "stages": ["infant"],
-      "ageRange": { "min": 1, "max": 3 },
+      "ageRange": { "min": 1, "max": 1 },
       "weight": 12,
       "once": true,
-      "effects": { "stats": { "happiness": 2, "relationships": 2 } },
+      "milestone": true,
+      "effects": { "stats": { "happiness": 1, "relationships": 1 } },
       "bonuses": [
         { "when": { "parenting": ["free", "helicopter"] }, "effects": { "stats": { "relationships": 1 } } }
       ]
@@ -17,29 +18,30 @@
     {
       "id": "infant-care",
       "title": "맡겨지는 낮",
-      "text": "부모님이 일하러 나가는 낮 동안 아이를 어디에 맡길지 정해야 했다. 집안 사정에 따라 고를 수 있는 길이 달랐다.",
+      "text": "부모님이 일하러 나가는 낮 동안 아이를 어디에 맡길지 정해야 했습니다. 집안 사정에 따라 고를 수 있는 길이 달랐습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 1, "max": 5 },
       "weight": 12,
       "once": true,
+      "conditions": { "notFlags": ["childcare_set"] },
       "choices": [
         {
           "id": "grandparents",
           "label": "조부모님 곁에서 지낸다",
-          "result": "낮에는 조부모님 곁에서 지냈다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었다.",
-          "effects": { "stats": { "relationships": 4 }, "setFlags": ["grandparent_close"] }
+          "result": "낮에는 조부모님 곁에서 지냈습니다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었습니다.",
+          "effects": { "stats": { "relationships": 3 }, "setFlags": ["grandparent_close", "childcare_set"] }
         },
         {
           "id": "daycare",
           "label": "아이를 돌봐 주는 곳에 보낸다",
-          "result": "또래 아이들과 하루를 보내기 시작했다. 처음 몇 주는 아침마다 울었지만 차츰 익숙해졌다.",
-          "effects": { "stats": { "education": 3, "relationships": 2, "happiness": -1 } }
+          "result": "또래 아이들과 하루를 보내기 시작했습니다. 처음 몇 주는 아침마다 울었지만 차츰 익숙해졌습니다.",
+          "effects": { "stats": { "education": 2, "relationships": 2, "happiness": -1 }, "setFlags": ["childcare_set"] }
         },
         {
           "id": "home",
           "label": "집에서 한 사람이 전담해 돌본다",
-          "result": "한 사람이 곁에서 하루를 함께했다. 아이는 어른들의 말을 일찍 알아들었다.",
-          "effects": { "stats": { "education": 4, "happiness": 2 }, "family": -450 },
+          "result": "한 사람이 곁에서 하루를 함께했습니다. 아이는 어른들의 말을 일찍 알아들었습니다.",
+          "effects": { "stats": { "education": 4, "happiness": 2 }, "family": -450, "setFlags": ["childcare_set"] },
           "requires": { "parentWealth": { "min": 4 } }
         }
       ]
@@ -47,7 +49,7 @@
     {
       "id": "infant-fever",
       "title": "한밤의 열",
-      "text": "한밤중에 아이가 열이 올라 울기 시작했다. 어른들은 잠시 서로의 얼굴만 보았다.",
+      "text": "한밤중에 아이가 열이 올라 울기 시작했습니다. 어른들은 잠시 서로의 얼굴만 보았습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 1, "max": 5 },
       "weight": 14,
@@ -56,20 +58,20 @@
         {
           "id": "hospital",
           "label": "바로 병원으로 간다",
-          "result": "밤길을 달려 병원에 갔다. 열은 새벽에 내렸고, 어른들은 아침까지 아이 곁을 지켰다.",
+          "result": "밤길을 달려 병원에 갔습니다. 열은 새벽에 내렸고, 어른들은 아침까지 아이 곁을 지켰습니다.",
           "effects": { "stats": { "health": 3 }, "family": -300 },
           "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "happiness": -1 }, "family": -300 } }]
         },
         {
           "id": "watch",
           "label": "집에서 밤새 지켜본다",
-          "result": "찬 수건을 갈아 대며 밤을 새웠다. 아침 무렵 열이 내렸지만 그 밤의 불안은 오래 남았다.",
+          "result": "찬 수건을 갈아 대며 밤을 새웠습니다. 아침 무렵 열이 내렸지만 그 밤의 불안은 오래 남았습니다.",
           "effects": { "stats": { "relationships": 2, "happiness": -1 } }
         },
         {
           "id": "dismiss",
           "label": "별일 아니라며 넘긴다",
-          "result": "어른들은 별일 아니라고 했다. 아이는 이틀을 앓고 털고 일어났지만 그 기억은 오래 남았다.",
+          "result": "어른들은 별일 아니라고 했습니다. 아이는 이틀을 앓고 털고 일어났지만 그 기억은 오래 남았습니다.",
           "effects": { "stats": { "health": -3, "happiness": -2 }, "family": 150 },
           "bonuses": [{ "when": { "parenting": ["free"] }, "effects": { "stats": { "happiness": 1 } } }]
         }
@@ -78,7 +80,7 @@
     {
       "id": "infant-stories",
       "title": "자기 전의 이야기",
-      "text": "잠들기 전 아이는 매일 이야기를 졸랐다. 어른들은 저마다 다른 방식으로 응했다.",
+      "text": "잠들기 전 아이는 매일 이야기를 졸랐습니다. 어른들은 저마다 다른 방식으로 응했습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 2, "max": 6 },
       "weight": 12,
@@ -87,20 +89,20 @@
         {
           "id": "tell",
           "label": "옛이야기를 들려준다",
-          "result": "머리맡에서 지어낸 이야기가 매일 밤 이어졌다. 아이는 이야기 속 사람들의 이름을 외웠다.",
-          "effects": { "stats": { "education": 3, "relationships": 2, "happiness": 1 } }
+          "result": "머리맡에서 지어낸 이야기가 매일 밤 이어졌습니다. 아이는 이야기 속 사람들의 이름을 외웠습니다.",
+          "effects": { "stats": { "education": 1, "relationships": 2, "happiness": 1 } }
         },
         {
           "id": "book",
           "label": "그림책을 사다 준다",
-          "result": "그림책이 한 권씩 늘어 갔다. 글자를 모르는 아이가 책장을 넘기며 혼자 이야기를 지어냈다.",
+          "result": "그림책이 한 권씩 늘어 갔습니다. 글자를 모르는 아이가 책장을 넘기며 혼자 이야기를 지어냈습니다.",
           "effects": { "stats": { "education": 4 }, "family": -300 },
           "requires": { "parentWealth": { "min": 3 } }
         },
         {
           "id": "alone",
           "label": "혼자 놀다 잠들게 둔다",
-          "result": "이야기 대신 조용한 방이 있었다. 아이는 혼자 노는 법을 배웠고 잠은 일찍 들었다.",
+          "result": "이야기 대신 조용한 방이 있었습니다. 아이는 혼자 노는 법을 배웠고 잠은 일찍 들었습니다.",
           "effects": { "stats": { "relationships": -2, "happiness": -1, "health": 1 } },
           "bonuses": [{ "when": { "parenting": ["free"] }, "effects": { "stats": { "happiness": 2 } } }]
         }
@@ -109,7 +111,7 @@
     {
       "id": "infant-screen",
       "title": "화면 앞의 아이",
-      "text": "아이는 어른 손에 들린 화면에서 눈을 떼지 못했다. 보여 줄지 말지 정해야 했다.",
+      "text": "아이는 어른 손에 들린 화면에서 눈을 떼지 못했습니다. 보여 줄지 말지 정해야 했습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 2, "max": 6 },
       "eras": ["present", "future"],
@@ -120,19 +122,19 @@
         {
           "id": "limit",
           "label": "시간을 정해 보여 준다",
-          "result": "정해 둔 시간이 끝나면 화면이 꺼졌다. 처음엔 울었지만 이내 다른 놀이를 찾았다.",
+          "result": "정해 둔 시간이 끝나면 화면이 꺼졌습니다. 처음엔 울었지만 이내 다른 놀이를 찾았습니다.",
           "effects": { "stats": { "education": 1, "relationships": 1 } }
         },
         {
           "id": "free",
           "label": "원하는 만큼 보게 둔다",
-          "result": "화면 속 노래를 아이는 하루 종일 흥얼거렸다. 어른들은 그사이 집안일을 끝냈다.",
+          "result": "화면 속 노래를 아이는 하루 종일 흥얼거렸습니다. 어른들은 그사이 집안일을 끝냈습니다.",
           "effects": { "stats": { "happiness": 1, "health": -2, "education": -1 } }
         },
         {
           "id": "none",
           "label": "보여 주지 않는다",
-          "result": "화면 대신 공과 블록을 손에 쥐여 주었다. 어른들은 한동안 더 지쳤다.",
+          "result": "화면 대신 공과 블록을 손에 쥐여 주었습니다. 어른들은 한동안 더 지쳤습니다.",
           "effects": { "stats": { "health": 2, "relationships": 2, "happiness": -1 } }
         }
       ]
@@ -140,49 +142,57 @@
     {
       "id": "infant-new-sibling",
       "title": "동생이 생겼다",
-      "text": "집에 동생이 생겼다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸다.",
+      "text": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
       "stages": ["infant"],
-      "ageRange": { "min": 2, "max": 6 },
-      "weight": 10,
+      "ageRange": { "min": 2, "max": 4 },
+      "weight": 60,
       "once": true,
       "conditions": { "birthOrder": { "max": 1 }, "motherAge": { "max": 45 } },
+      "modifiers": [{ "when": { "motherAge": { "max": 32 } }, "weight": 10 }],
       "choices": [
         {
           "id": "help",
-          "label": "동생 곁을 지킨다",
-          "result": "작은 손가락을 잡아 주며 동생 곁에서 놀았다. 둘은 오래도록 서로의 편이 되었다.",
-          "effects": { "stats": { "relationships": 4, "happiness": 1 }, "setFlags": ["sibling_close"] }
+          "label": "동생을 예뻐하며 돌본다",
+          "result": "작은 손가락을 잡아 주고 곁에서 놀았습니다. 안기고 싶은 마음은 속으로 참았지만 동생을 돌보는 일은 아이의 자랑이 되었습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": -1 }, "setFlags": ["sibling_close", "younger_sibling"] }
         },
         {
           "id": "sulk",
-          "label": "서운해서 떼를 쓴다",
-          "result": "며칠을 토라져 있다가 어른이 안아 주고서야 풀렸다. 서운함은 남았지만 하고 싶은 말은 늘었다.",
-          "effects": { "stats": { "happiness": -2, "relationships": -1, "education": 1 } }
+          "label": "서운해서 울며 어른에게 매달린다",
+          "result": "어른이 동생을 안을 때마다 아이는 울며 매달렸습니다. 한동안 아기처럼 굴었지만 서운한 마음을 말로 풀어놓는 법도 조금씩 익혔습니다.",
+          "effects": { "stats": { "happiness": -2, "relationships": -1, "education": 1 }, "setFlags": ["younger_sibling"] }
         },
         {
           "id": "grandma",
-          "label": "조부모님 품으로 간다",
-          "result": "서운한 마음을 안고 조부모님께 갔다. 그 품은 여전히 아이의 자리였다.",
-          "effects": { "stats": { "happiness": 2, "relationships": 2 } },
+          "label": "조부모님 품에서 마음을 달랜다",
+          "result": "서운한 마음을 안고 조부모님께 갔습니다. 그 품에서 먹고 자는 일이 한결 편안해졌습니다.",
+          "effects": { "stats": { "happiness": 2, "relationships": 1, "health": 1 }, "setFlags": ["younger_sibling"] },
           "requires": { "flags": ["grandparent_close"] }
+        },
+        {
+          "id": "notice",
+          "label": "일부러 장난을 쳐서 눈길을 끈다",
+          "result": "동생에게 눈길이 쏠리자 아이는 온 집 안을 뛰어다니며 일부러 물건을 쏟고 장난을 쳤습니다. 꾸중을 들었지만 눈길은 아이에게 돌아왔습니다.",
+          "effects": { "stats": { "relationships": 2, "happiness": -1, "health": 1 }, "setFlags": ["younger_sibling"] },
+          "requires": { "notFlags": ["grandparent_close"] }
         }
       ]
     },
     {
       "id": "infant-village",
       "title": "온 골목의 아이",
-      "text": "집집마다 문이 열려 있던 골목에서 이 집 저 집의 밥을 얻어먹으며 자랐다.",
+      "text": "아이는 집집마다 문이 열려 있던 골목에서 이 집 저 집의 밥을 나눠 먹으며 자랐습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 1, "max": 6 },
       "eras": ["past"],
       "weight": 12,
       "once": true,
-      "effects": { "stats": { "relationships": 3, "happiness": 1 } }
+      "effects": { "stats": { "relationships": 2, "happiness": 1 } }
     },
     {
       "id": "infant-grandparent-song",
       "title": "무릎 위의 노래",
-      "text": "조부모님 무릎에 앉아 듣던 노래가 오래도록 귓가에 남았다.",
+      "text": "조부모님 무릎에 앉아 듣던 노래가 오래도록 귓가에 남았습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 1, "max": 6 },
       "weight": 14,
@@ -193,7 +203,7 @@
     {
       "id": "infant-neglect-night",
       "title": "불 꺼진 집",
-      "text": "부모님이 늦도록 돌아오지 않는 밤이 잦았다. 아이는 불 꺼진 방에서 혼자 잠을 청했다.",
+      "text": "부모님이 늦도록 돌아오지 않는 밤이 잦았습니다. 아이는 불 꺼진 방에서 혼자 잠을 청했습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 1, "max": 6 },
       "weight": 14,
@@ -204,7 +214,7 @@
     {
       "id": "infant-hovering",
       "title": "한 걸음 앞의 어른",
-      "text": "아이가 넘어질세라 어른들은 늘 한 걸음 앞에 있었다. 아이는 안전했고, 조금 조심스러웠다.",
+      "text": "아이가 넘어질세라 어른들은 늘 한 걸음 앞에 있었습니다. 아이는 안전했고, 조금 조심스러웠습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 1, "max": 6 },
       "weight": 14,
@@ -215,13 +225,475 @@
     {
       "id": "infant-free-play",
       "title": "마음껏 뛰놀던 날들",
-      "text": "어른들은 아이가 흙투성이가 되어도 말리지 않았다. 아이는 해가 질 때까지 밖에서 놀았다.",
+      "text": "어른들은 아이가 흙투성이가 되어도 말리지 않았습니다. 아이는 해가 질 때까지 밖에서 놀았습니다.",
       "stages": ["infant"],
       "ageRange": { "min": 2, "max": 6 },
       "weight": 14,
       "once": true,
       "conditions": { "parenting": ["free"] },
       "effects": { "stats": { "health": 2, "happiness": 2 } }
+    },
+    {
+      "id": "infant-vaccine",
+      "title": "첫 예방접종",
+      "text": "첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. 어른들은 아이를 안아 달랜 뒤 집으로 돌아왔습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 0, "max": 0 },
+      "weight": 14,
+      "once": true,
+      "milestone": true,
+      "effects": { "stats": { "health": 1 } }
+    },
+    {
+      "id": "infant-hundred-days",
+      "title": "백일",
+      "text": "아이가 태어난 지 백일이 되었습니다. 떡을 나누며 이웃과 친척이 아이의 앞날을 빌어 주었습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 0, "max": 0 },
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "relationships": 1, "happiness": 1 } }
+    },
+    {
+      "id": "infant-night-wake",
+      "title": "밤마다 깨는 아이",
+      "text": "아이는 밤마다 자주 깼습니다. 어른들은 번갈아 일어나 아이를 달랬습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 0, "max": 1 },
+      "weight": 12,
+      "once": true,
+      "conditions": { "parenting": ["free", "helicopter", "strict"] },
+      "effects": { "stats": { "relationships": 1, "happiness": -1 } }
+    },
+    {
+      "id": "infant-meal-start",
+      "title": "처음 먹는 밥",
+      "text": "이유식을 시작할 때가 되었습니다. 무엇을 어떻게 먹일지 어른들이 의논했습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 0, "max": 1 },
+      "weight": 12,
+      "once": true,
+      "choices": [
+        {
+          "id": "cook",
+          "label": "직접 만들어 먹인다",
+          "result": "매일 아이 먹을 것을 손수 만들었습니다. 품은 들었지만 밥상 앞이 따뜻해졌습니다.",
+          "effects": { "stats": { "health": 1, "relationships": 1 }, "family": -150 }
+        },
+        {
+          "id": "buy",
+          "label": "남이 만든 것을 사다 먹인다",
+          "result": "남이 만든 것을 사다 먹이며 끼니를 해결했습니다. 아이가 먹는 동안 어른들도 한숨 돌렸습니다.",
+          "effects": { "stats": { "happiness": 1 }, "family": -300 }
+        },
+        {
+          "id": "mash",
+          "label": "어른 밥을 덜어 으깨어 먹인다",
+          "result": "어른 밥을 덜어 곱게 으깨어 먹였습니다. 드는 돈은 없었지만 아이가 입을 닫는 날도 있었습니다.",
+          "effects": { "stats": { "happiness": -1 }, "family": 150 }
+        }
+      ]
+    },
+    {
+      "id": "infant-checkup",
+      "title": "영유아 건강검진",
+      "text": "정해진 때가 되어 아이는 건강검진을 받았습니다. 키와 몸무게를 재고 자라는 모습을 살폈습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 0, "max": 3 },
+      "eras": ["present", "future"],
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "health": 1 } }
+    },
+    {
+      "id": "infant-parental-leave",
+      "title": "일을 쉬는 한 해",
+      "text": "아이가 태어난 첫해, 누가 일을 쉬고 아이를 돌볼지 정해야 했습니다. 일터와 살림살이를 함께 헤아려야 했습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 0, "max": 0 },
+      "eras": ["present"],
+      "weight": 14,
+      "once": true,
+      "choices": [
+        {
+          "id": "one",
+          "label": "한 사람이 일을 쉬고 돌본다",
+          "result": "한 사람이 일을 쉬고 아이 곁을 지켰습니다. 아이의 하루는 일정했고 집안의 벌이는 줄었습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": 2 }, "family": -450 },
+          "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "happiness": -1 }, "family": -300 } }]
+        },
+        {
+          "id": "share",
+          "label": "번갈아 가며 일을 쉰다",
+          "result": "두 사람이 차례로 일을 쉬며 아이를 돌봤습니다. 서로의 일터에 눈치가 보였지만 아이 곁에는 늘 누군가 있었습니다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 2, "health": 1 }, "family": -600 },
+          "requires": { "parentWealth": { "min": 3 } }
+        },
+        {
+          "id": "back",
+          "label": "일터로 돌아가고 맡길 곳을 찾는다",
+          "result": "일터로 일찍 돌아가고 아이는 다른 이의 손에 맡겨졌습니다. 벌이는 끊기지 않았습니다.",
+          "effects": { "stats": { "relationships": -1, "happiness": -1 }, "family": 150, "setFlags": ["childcare_set"] }
+        }
+      ]
+    },
+    {
+      "id": "infant-care-alert",
+      "title": "곁을 지키는 기계",
+      "text": "아이 곁의 돌봄 기계가 밤새 숨소리를 살폈습니다. 어른들은 한결 깊은 잠을 잘 수 있었습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 0, "max": 2 },
+      "eras": ["future"],
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "health": 1, "happiness": 1, "relationships": -1 } }
+    },
+    {
+      "id": "infant-first-steps",
+      "title": "첫 걸음마",
+      "text": "아이가 붙잡고 서더니 처음으로 혼자 몇 걸음을 걸었습니다. 모두가 숨을 죽였습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 1, "max": 1 },
+      "weight": 14,
+      "once": true,
+      "milestone": true,
+      "effects": { "stats": { "happiness": 1 } }
+    },
+    {
+      "id": "infant-first-birthday",
+      "title": "첫 생일",
+      "text": "아이의 첫 생일이 다가왔습니다. 어떻게 치를지 정해야 했습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 1, "max": 1 },
+      "weight": 14,
+      "once": true,
+      "choices": [
+        {
+          "id": "grand",
+          "label": "손님을 모아 크게 치른다",
+          "result": "많은 손님이 모여 아이의 앞날을 축하했습니다. 아이는 낯선 얼굴들에 지쳐 일찍 잠들었습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": -1 }, "family": -600 },
+          "requires": { "parentWealth": { "min": 4 } }
+        },
+        {
+          "id": "small",
+          "label": "가족끼리 작게 치른다",
+          "result": "가까운 가족만 모여 미역국과 떡을 나누었습니다. 소박했지만 웃음이 오갔습니다.",
+          "effects": { "stats": { "relationships": 2, "happiness": 1 }, "family": -150 }
+        },
+        {
+          "id": "skip",
+          "label": "사진 한 장만 남기고 넘어간다",
+          "result": "별다른 잔치 없이 사진 한 장만 남겼습니다. 조용히 지나간 하루였습니다.",
+          "effects": { "stats": { "happiness": -1 }, "family": 150 }
+        }
+      ]
+    },
+    {
+      "id": "infant-daycare-wait",
+      "title": "어린이집 대기",
+      "text": "일터로 돌아갈 때가 다가왔지만 아이를 맡길 곳은 정해지지 않았습니다. 대기 순번은 좀처럼 줄지 않았습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 1, "max": 2 },
+      "eras": ["present"],
+      "weight": 14,
+      "once": true,
+      "conditions": { "notFlags": ["childcare_set"] },
+      "choices": [
+        {
+          "id": "grandparents",
+          "label": "조부모님께 맡기며 순번을 기다린다",
+          "result": "조부모님이 낮 동안 아이를 맡았습니다. 순번이 돌아올 때까지 몇 달이 그렇게 흘렀습니다.",
+          "effects": { "stats": { "relationships": 3, "education": 1 }, "setFlags": ["grandparent_close", "childcare_set"] }
+        },
+        {
+          "id": "center",
+          "label": "집 가까운 어린이집에 보낸다",
+          "result": "집 가까운 작은 어린이집에 아이를 맡겼습니다. 처음 며칠은 아침마다 울었지만 곧 익숙해졌습니다.",
+          "effects": { "stats": { "education": 3, "relationships": 2, "happiness": -1 }, "family": -300, "setFlags": ["childcare_set"] }
+        },
+        {
+          "id": "sitter",
+          "label": "집으로 오는 돌봄 도우미를 구한다",
+          "result": "집으로 오는 도우미가 아이를 돌봤습니다. 하루 일과가 일정하게 자리를 잡았습니다.",
+          "effects": { "stats": { "education": 2, "happiness": 1 }, "family": -600, "setFlags": ["childcare_set"] },
+          "requires": { "parentWealth": { "min": 4 } }
+        }
+      ]
+    },
+    {
+      "id": "infant-follow-sibling",
+      "title": "형제를 따라 하는 아이",
+      "text": "아이는 손위 형제의 말투와 놀이를 무엇이든 따라 했습니다. 형제는 귀찮아하면서도 곁을 내주었습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 1, "max": 5 },
+      "weight": 14,
+      "once": true,
+      "conditions": { "birthOrder": { "min": 2 } },
+      "effects": { "stats": { "relationships": 1, "happiness": 1 } }
+    },
+    {
+      "id": "infant-coal-winter",
+      "title": "겨울밤의 아랫목",
+      "text": "겨울이면 온 식구가 아랫목에 모여 잤습니다. 밤새 연탄불이 꺼지지 않게 어른들이 번갈아 일어났습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 1, "max": 5 },
+      "eras": ["past"],
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "relationships": 1 } }
+    },
+    {
+      "id": "infant-tantrum",
+      "title": "드러누운 아이",
+      "text": "원하는 것을 얻지 못한 아이가 길 한복판에 드러누웠습니다. 한참 만에 울음이 잦아들었고 그 뒤로 싫다는 말이 부쩍 늘었습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 2, "max": 3 },
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "education": 1, "happiness": -1 } }
+    },
+    {
+      "id": "infant-market-day",
+      "title": "장날의 손",
+      "text": "장날이면 아이는 어른의 손을 잡고 장터에 나갔습니다. 사람 구경이 하루 종일 이어졌습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 2, "max": 6 },
+      "eras": ["past"],
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "relationships": 1, "education": 1 } }
+    },
+    {
+      "id": "infant-talking-toy",
+      "title": "말을 받아 주는 인형",
+      "text": "인형 속에는 인공지능이 들어 있어 아이의 말에 꼬박꼬박 대답했습니다. 인형과 한참 이야기를 나누었습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 3, "max": 5 },
+      "eras": ["future"],
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "education": 1, "relationships": -1, "happiness": 1 } }
+    },
+    {
+      "id": "infant-heat-day",
+      "title": "나갈 수 없는 한낮",
+      "text": "한낮의 더위가 길어져 아이는 놀이터에 나가지 못했습니다. 아이의 놀이는 대부분 집 안에서 이어졌습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 2, "max": 6 },
+      "eras": ["future"],
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "health": -1, "happiness": -1, "relationships": -1 } },
+      "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "health": -1 } } }]
+    },
+    {
+      "id": "infant-noise",
+      "title": "이웃의 항의",
+      "text": "아이가 뛰는 소리가 바닥을 타고 울려 이웃에서 항의가 왔습니다. 어른들은 아이를 어떻게 해야 할지 막막했습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 2, "max": 6 },
+      "eras": ["present"],
+      "weight": 12,
+      "once": true,
+      "conditions": { "parentWealth": { "max": 4 } },
+      "choices": [
+        {
+          "id": "mat",
+          "label": "바닥에 매트를 깔고 사과한다",
+          "result": "매트를 깔고 이웃에 사과했습니다. 소리는 줄었고 이웃과의 어색함도 조금 풀렸습니다.",
+          "effects": { "stats": { "relationships": 1, "happiness": -1 }, "family": -150 }
+        },
+        {
+          "id": "hush",
+          "label": "집 안에서는 조용히 놀게 한다",
+          "result": "아이는 발소리를 죽이고 놀았습니다. 항의는 멎었지만 아이의 웃음소리도 작아졌습니다.",
+          "effects": { "stats": { "happiness": -2, "health": -1 }, "family": 150 }
+        },
+        {
+          "id": "move",
+          "label": "이사할 집을 알아본다",
+          "result": "아이가 마음껏 뛸 수 있는 집을 찾아 옮겼습니다. 이사에는 돈과 품이 들었습니다.",
+          "effects": { "stats": { "happiness": 2, "health": 1, "relationships": -1 }, "family": -600 },
+          "requires": { "parentWealth": { "min": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "infant-questions",
+      "title": "묻기 시작한 아이",
+      "text": "아이는 눈에 띄는 것마다 이름과 까닭을 물었습니다. 어른들은 대답이 막힐 때가 많았습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 3, "max": 5 },
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "education": 1 } },
+      "bonuses": [{ "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "education": 1 } } }]
+    },
+    {
+      "id": "infant-kindergarten",
+      "title": "유치원 고르기",
+      "text": "아이가 다닐 유치원을 고를 때가 왔습니다. 어디가 좋을지 어른들이 이야기를 나누었습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 3, "max": 4 },
+      "eras": ["present", "future"],
+      "weight": 14,
+      "once": true,
+      "choices": [
+        {
+          "id": "near",
+          "label": "집 가까운 곳으로 보낸다",
+          "result": "걸어서 갈 수 있는 곳에 아이를 보냈습니다. 같은 동네 친구들이 하나둘 생겼습니다.",
+          "effects": { "stats": { "relationships": 2, "education": 1, "happiness": 1 }, "family": -150 }
+        },
+        {
+          "id": "famous",
+          "label": "교육으로 이름난 곳에 보낸다",
+          "result": "수업이 촘촘한 곳에 아이를 보냈습니다. 배우는 것은 늘었지만 집에 오면 지쳐 잠들곤 했습니다.",
+          "effects": { "stats": { "education": 3, "relationships": 1, "happiness": -2 }, "family": -600 },
+          "requires": { "parentWealth": { "min": 4 } }
+        },
+        {
+          "id": "home",
+          "label": "집에서 더 돌본다",
+          "result": "한 사람이 곁에서 아이와 하루를 보냈습니다. 놀이와 낮잠이 느긋하게 이어졌고 돌보는 사람의 벌이는 줄었습니다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 2 }, "family": -300 }
+        }
+      ]
+    },
+    {
+      "id": "infant-sibling-toy",
+      "title": "동생의 장난감",
+      "text": "동생이 아이의 장난감을 만지기 시작했습니다. 아이는 그 장난감을 품에 끌어안고 놓지 않았습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 3, "max": 6 },
+      "weight": 16,
+      "once": true,
+      "conditions": { "flags": ["younger_sibling"] },
+      "choices": [
+        {
+          "id": "share",
+          "label": "장난감을 동생에게 건넨다",
+          "result": "아이는 장난감을 동생 손에 쥐여 주었습니다. 어른들이 크게 칭찬하자 아이의 어깨가 으쓱했습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": 1 } }
+        },
+        {
+          "id": "take",
+          "label": "동생 손의 장난감을 가져가 숨긴다",
+          "result": "아이는 동생이 쥔 장난감을 가져가 등 뒤에 숨겼습니다. 자기 것이라는 말을 처음 또렷이 한 날이었습니다.",
+          "effects": { "stats": { "education": 2, "relationships": -1, "happiness": -1 } }
+        },
+        {
+          "id": "apart",
+          "label": "서로 다른 장난감을 쥐고 논다",
+          "result": "아이는 다른 장난감을 집어 들고 방 한쪽에서 놀았습니다. 둘 사이에는 별 다툼이 없었습니다.",
+          "effects": { "stats": { "happiness": 1, "health": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "infant-hospital-stay",
+      "title": "병실에서 보낸 며칠",
+      "text": "아이의 열과 기침이 길어져 며칠 입원하게 되었습니다. 곁을 지킬 사람이 필요했습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 3, "max": 6 },
+      "weight": 12,
+      "once": true,
+      "choices": [
+        {
+          "id": "one",
+          "label": "한 사람이 일을 쉬고 곁을 지킨다",
+          "result": "한 사람이 일을 쉬고 병실을 지켰습니다. 아이는 눈을 뜰 때마다 곁에서 익숙한 얼굴을 보았습니다.",
+          "effects": { "stats": { "relationships": 2, "health": 1 }, "family": -300 },
+          "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "happiness": -1 }, "family": -300 } }]
+        },
+        {
+          "id": "rotate",
+          "label": "가족이 번갈아 곁을 지킨다",
+          "result": "가족들이 차례로 병실을 오갔습니다. 아이 곁은 비지 않았지만 모두가 지쳐 갔습니다.",
+          "effects": { "stats": { "relationships": 1, "happiness": -1 } }
+        },
+        {
+          "id": "room",
+          "label": "독립된 병실을 쓴다",
+          "result": "조용한 병실에서 아이는 덜 보채고 편안하게 지냈습니다. 곁을 지킨 어른도 눈을 붙일 수 있었습니다.",
+          "effects": { "stats": { "happiness": 2, "relationships": 1 }, "family": -600 },
+          "requires": { "parentWealth": { "min": 4 } }
+        }
+      ]
+    },
+    {
+      "id": "infant-moving",
+      "title": "이삿짐을 싸던 날",
+      "text": "살던 집을 비워야 할 사정이 생겼습니다. 아이는 익숙한 골목과 친구들을 두고 떠나야 했습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 3, "max": 6 },
+      "weight": 12,
+      "once": true,
+      "conditions": { "parentWealth": { "max": 3 }, "housing": ["rent", "free"] },
+      "modifiers": [{ "when": { "parentWealth": { "max": 2 } }, "weight": 1.8 }],
+      "choices": [
+        {
+          "id": "near",
+          "label": "같은 동네에서 집을 구한다",
+          "result": "근처에서 새 집을 구했습니다. 친구들과 같은 골목을 오가는 날이 이어졌습니다.",
+          "effects": { "stats": { "relationships": 1 }, "family": -300 }
+        },
+        {
+          "id": "far",
+          "label": "값이 낮은 먼 동네로 옮긴다",
+          "result": "살림에 맞는 집을 찾아 먼 동네로 옮겼습니다. 새 골목에서 아이는 한동안 말수가 줄었습니다.",
+          "effects": { "stats": { "relationships": -3, "happiness": -2 }, "family": 150 }
+        },
+        {
+          "id": "buy",
+          "label": "빚을 내어 작은 집을 산다",
+          "result": "빚을 내어 작은 집을 마련했습니다. 이사 걱정은 줄었지만 어른들의 한숨은 길어졌습니다.",
+          "effects": { "stats": { "happiness": 1, "relationships": 1 }, "family": -600 },
+          "requires": { "parentWealth": { "min": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "infant-early-lessons",
+      "title": "취학 전의 시간표",
+      "text": "또래들이 하나둘 일찍부터 무언가를 배우러 다닌다는 이야기가 들려왔습니다. 입학 전에 무엇을 시킬지 어른들이 고민했습니다.",
+      "stages": ["infant"],
+      "ageRange": { "min": 5, "max": 6 },
+      "eras": ["present", "future"],
+      "weight": 14,
+      "once": true,
+      "choices": [
+        {
+          "id": "lessons",
+          "label": "학습지와 방문 수업을 시작한다",
+          "result": "주마다 방문 선생님이 찾아와 글자와 셈을 가르쳤습니다. 숙제 앞에서 아이의 표정이 굳는 날이 늘었습니다.",
+          "effects": { "stats": { "education": 2, "happiness": -2 }, "family": -300 }
+        },
+        {
+          "id": "english",
+          "label": "영어 유치원에 보낸다",
+          "result": "하루 대부분을 영어로 보내는 곳에 다니기 시작했습니다. 친구도 생기고 말문도 트였지만 낮잠은 줄었습니다.",
+          "effects": { "stats": { "education": 4, "relationships": 2, "happiness": -3, "health": -1 }, "family": -900 },
+          "requires": { "parentWealth": { "min": 4 } }
+        },
+        {
+          "id": "play",
+          "label": "놀이 중심으로 지내게 둔다",
+          "result": "수업 대신 마당과 놀이터에서 해가 질 때까지 놀았습니다. 글자는 놀이 사이에 하나씩 천천히 익혔습니다.",
+          "effects": { "stats": { "happiness": 3, "relationships": 2, "health": 1 }, "family": 150 }
+        }
+      ]
+    },
+    {
+      "id": "infant-first-book",
+      "title": "처음 읽은 책",
+      "text": "아이가 글자를 짚어 가며 책 한 권을 끝까지 읽었습니다. 읽고 나서 어른에게 줄거리를 들려주었습니다.",
+      "stages": ["infant", "school"],
+      "ageRange": { "min": 6, "max": 7 },
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "education": 1, "happiness": 1 } }
     }
   ]
 }

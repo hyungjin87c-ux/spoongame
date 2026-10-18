@@ -16,13 +16,13 @@ import { startLife } from '../scripts/simulateLib';
 /**
  * 자동 모드 성향과 자산·부채 (SPEC-003 M5 EC6, docs/data/economy-model.md 8절): 연애 시작 이벤트(youth-meeting)의 「약속 장소에 나간다」는 「자산 ▼」로 표기되고
  * 같은 이벤트에 「바쁘다며 미룬다」(자산 ▲)가 있다. 자동 모드 성향 선택이 자산·부채를 반영해 부채 판(순자산 < 0)에서 연애를 시작하는 비율이 비부채 판보다 낮다 —
- * 시뮬레이션 단언: 자동 모드 2000판에서 차이 ≥ 10%p. 소극적 선택에도 얻는 것이 있어 지배 선택지가 아니다(E11).
+ * 시뮬레이션 단언: 자동 모드 4000판(r3: 2000에서 늘림)에서 차이 ≥ 10%p. 소극적 선택에도 얻는 것이 있어 지배 선택지가 아니다(E11).
  */
 
 const EVENT_ID = 'youth-meeting';
 const MEET = 'meet';
 const LATER = 'later';
-const PLAYS = 2000;
+const PLAYS = 4000; // r3(R-364): 2000 → 4000 — 「실제로 나간 비율」의 잡음을 줄여 임계 10%p를 되찾는다
 
 interface Rec {
   net: number;
@@ -94,12 +94,12 @@ describe('연애 시나리오 (EC6): 표기와 지배 선택지 여부', () => {
   });
 });
 
-describe('자동 모드 성향이 자산·부채를 읽는다 (EC6): 자동 모드 2000판 시뮬레이션 단언', () => {
-  it('표본이 충분하다: 연애 시작 결정을 만난 판이 1000판 이상이고 부채 판이 200판 이상, 그 밖 판이 600판 이상이다', () => {
+describe('자동 모드 성향이 자산·부채를 읽는다 (EC6): 자동 모드 4000판 시뮬레이션 단언', () => {
+  it('표본이 충분하다: 연애 시작 결정을 만난 판이 2000판 이상이고 부채 판이 400판 이상, 그 밖 판이 1200판 이상이다 (4000판)', () => {
     const r = RECORDS();
-    expect(r.length).toBeGreaterThan(1000);
-    expect(r.filter((x) => x.net < 0).length).toBeGreaterThan(200);
-    expect(r.filter((x) => x.net >= 0).length).toBeGreaterThan(600);
+    expect(r.length).toBeGreaterThan(2000);
+    expect(r.filter((x) => x.net < 0).length).toBeGreaterThan(400);
+    expect(r.filter((x) => x.net >= 0).length).toBeGreaterThan(1200);
   });
 
   it('성향이 정한 「나간다」 확률: 부채 판(순자산 < 0)이 그 밖의 판보다 10%p 이상 낮다 (관측 13.4%p — 난수 잡음 없는 평균 확률, r2 값 pointMan 1200·needSpan 300·needCap 8)', () => {
@@ -109,7 +109,10 @@ describe('자동 모드 성향이 자산·부채를 읽는다 (EC6): 자동 모�
     expect(free - debt, `부채 ${(debt * 100).toFixed(1)}% / 그 밖 ${(free * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(0.1);
   });
 
-  it('실제로 나간 비율도 부채 판이 더 낮다: 차이 10%p 이상 (같은 시드 2000판의 실제 선택 결과)', () => {
+  it('실제로 나간 비율도 부채 판이 더 낮다: 차이 10%p 이상 (같은 시드 4000판의 실제 선택 결과 — SPEC EC6, 관측 15~17%p)', () => {
+    // M7a r3(R-364): r1에서 임계를 10 → 7%p로 낮췄던 것을 되돌렸다. 이 값은 난수가 뽑은 실제 선택의 비율이라 표본 잡음이 있다 — 부채 판 약 270판(2000판)에서는 잡음이 ±3%p쯤이라
+    // 난수 흐름이 바뀐 r1에 9.0%p가 나왔다. 임계를 낮추는 대신 **표본을 4000판으로 늘려**(부채 판 약 550판, 잡음 ±2%p) 10%p를 되찾았다(관측 15.6%p; 2000~8000판 어디서 재도 15~17%p).
+    // 성향이 정한 기대 확률의 차이(위 시험, 잡음 없음)는 그대로 10%p 이상이다.
     const r = RECORDS();
     const debt = rate(r.filter((x) => x.net < 0));
     const free = rate(r.filter((x) => x.net >= 0));

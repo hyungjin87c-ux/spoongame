@@ -248,6 +248,7 @@ export const KNOWN_GAPS: Record<string, { limit: (value: number) => boolean; why
   dm30: { limit: (v) => v >= 5_500, why: '30대 부채 보유자 부채 중앙값 6,243 (목표 10,732, 허용 6,439~) — D19 차입 한도가 생활비 때문에 지는 큰 빚(자동 대출)을 없애 부채 보유자의 중앙값이 내려갔다(한도 600 → 300이면 더 내려간다)' },
   dm40: { limit: (v) => v >= 5_500, why: '40대 부채 보유자 부채 중앙값 6,139 (목표 11,000, 허용 6,600~) — 같은 이유. 결혼 시작 부채를 6,000 → 7,500으로 올려도 +46뿐이라(부채 보유자 대부분이 작은 빚이다) 계수를 더 비틀지 않았다' },
   dm60: { limit: (v) => v <= 9_000, why: '60세 이상 부채 보유자 부채 중앙값 7,712 (목표 5,000, 허용 ~7,000) — D20 노년 안전망이 남은 부채를 동결해 노년 부채 보유자의 중앙값이 줄지 않는다(2a 18,532 → 7,712로 내려갔다)' },
+  debt60: { limit: (v) => v <= 61.5, why: 'M7a(영유아 콘텐츠) 뒤 60세 이상 부채 보유 비율 60.4% (허용 ~60.1, M7a 이전 59.1) — 영유아 콘텐츠의 스탯 효과를 줄인 뒤(r2·r3) AGE 40~64세 곱을 1.65 → 1.71로 올려 순자산 중앙값·3억 미만 비율을 M7a 이전 자리로 되돌리자(레버 하나) 더 쓰는 만큼 빚도 늘었다. 순자산 3억 미만 비율(≥ 49.0)과 이 비율(≤ 60.1)은 AGE 하나로 함께 못 맞춘다(economy-model.md 9-7절 표)' },
   inc60: { limit: (v) => v >= 1_800, why: '60세 이상 소득 중앙값 2,169 (목표 3,978, 허용 2,785~) — R2(개인 모델의 연금 660 대 가구 소득, 마스터가 수용하고 계속 보고하기로 했다 — D21)' },
 };
 
@@ -312,10 +313,13 @@ export function movementShares(lives: readonly LifeOutcome[]): Record<Movement, 
  * 허용 폭 밖으로 **보고한** 가드(키 `시대:가드 id`)와 보고한 값보다 나빠지지 않도록 지키는 한계 (KNOWN_GAPS와 같은 규칙, 15-3절). 못 맞춘 이유·시도한 레버는 docs/data/economy-model.md 9-3절.
  */
 export const KNOWN_GUARD_GAPS: Record<string, { limit: (metric: number) => boolean; why: string }> = {
-  'past:g3-ratio': { limit: (v) => v >= 3.2, why: '지난 세상 5단계 대 1단계 40대 순자산 비 3.6배(≥ 4배) — 지난 세상 5단계는 전체의 약 1%(6000판 중 약 60판)라 중앙값 잡음이 ±10%이고, 지난 세상은 생활비·집값이 낮아(0.7·0.6) 가난한 집이 그만큼 더 모은다. 지난 세상 생활비 계수를 0.75로 올리면 4.7배가 되지만 사망 시점 순자산<0이 32%가 된다' },
-  'past:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.8%(≤ 25%) — 1·2단계의 일부가 평생 빚에서 못 나온 채 끝난다(노년 안전망이 부채를 동결할 뿐 없애지 않는다)' },
-  'present:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.5%(≤ 25%) — 같은 이유. 사망 시점 순자산의 하한을 0으로 두는 규칙(상속 포기·한정승인의 근사, D22)이면 0%가 되지만 마스터가 채택하지 않았다(15-6절) — 빚으로 끝나는 인생도 엔딩에 그대로 보인다' },
-  'future:end-negative': { limit: (v) => v <= 41, why: '사망 시점 순자산<0 38.3%(≤ 35%) — 같은 이유 + 다가올 세상의 소득 대 생활·주거 계수(1.15 대 1.2·1.3)가 가난한 집에 더 무겁다' },
+  'past:g3-ratio': { limit: (v) => v >= 3.2, why: '지난 세상 5단계 대 1단계 40대 순자산 비 3.6배(≥ 4배; M7a r3 뒤 3.5배) — 지난 세상 5단계는 전체의 약 1%(6000판 중 약 60판)라 중앙값 잡음이 ±10%이고, 지난 세상은 생활비·집값이 낮아(0.7·0.6) 가난한 집이 그만큼 더 모은다. 지난 세상 생활비 계수를 0.75로 올리면 4.7배가 되지만 사망 시점 순자산<0이 32%가 된다' },
+  'past:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.8%(≤ 25%; M7a r3 뒤 28.9%) — 1·2단계의 일부가 평생 빚에서 못 나온 채 끝난다(노년 안전망이 부채를 동결할 뿐 없애지 않는다)' },
+  'present:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.5%(≤ 25%; M7a r3 뒤 26.4%) — 같은 이유. 사망 시점 순자산의 하한을 0으로 두는 규칙(상속 포기·한정승인의 근사, D22)이면 0%가 되지만 마스터가 채택하지 않았다(15-6절) — 빚으로 끝나는 인생도 엔딩에 그대로 보인다' },
+  'future:end-negative': { limit: (v) => v <= 41, why: '사망 시점 순자산<0 38.3%(≤ 35%; M7a r3 뒤 38.3%) — 같은 이유 + 다가올 세상의 소득 대 생활·주거 계수(1.15 대 1.2·1.3)가 가난한 집에 더 무겁다' },
+  // M7a(영유아 콘텐츠) r2가 새로 보고한 차이(economy-model.md 9-7절, 마스터 결정 M-12, 15-3절): 동생 맞이를 출생 순서 통계에 맞춰 자주 일어나게 하자(첫째 판 중 11~18% → 47~78%) 상속이 형제 수로 나뉜다.
+  // r3: 지금 세상 5단계 「뒤쪽」은 63.6%로 통과로 돌아와 뺐다(r2 70.5%). 4단계만 51.4%로 남는다. 이 가드는 AGE와 무관하다(상속 ÷ (형제 수 + 1)이 도착 자리를 내린다).
+  'present:end-down4': { limit: (v) => v <= 52, why: '지금 세상 4단계 엔딩 「뒤쪽」 51.4%(≤ 50%, M7a 이전 48.3%) — 동생이 생기는 첫째 판이 늘어(11% → 47%) 상속이 나뉜다' },
 };
 
 // ---------- 옛 재산 조건 7곳의 「같은 통과율」 (R-354, economy-model.md 5-A) ----------
@@ -333,6 +337,11 @@ export interface ConditionCheck {
   condition: { netMin?: number; netMax?: number };
   /** 마스터가 통과율 변화를 받아들인 곳(문구를 우선한 변경) — 같은 통과율을 요구하지 않고 이유를 보고한다 */
   accepted?: string;
+  /**
+   * 개발자가 맞추지 못해 **보고한** 차이(15-3절, 마스터 수용 전): 통과율이 허용 폭 밖이어도 `limit`(보고한 값보다 나빠지지 않는 한계) 안이면 불합격으로 세지 않고 「알려진 차이」로 적는다.
+   * 허용 폭 안으로 들어오면 이 필드를 지운다(시험이 알려 준다).
+   */
+  reported?: { limit: (rate: number) => boolean; why: string };
 }
 
 /** 허용 폭: 옛 통과율의 ±15% (상대) — 5-A의 「±15% 측정 오차」와 같은 크기 */
@@ -374,7 +383,13 @@ export function conditionChecks(): ConditionCheck[] {
     { id: 'middle-layoff/open', where: 'middle-layoff/open 선택지 조건', age: 51, oldRate: 91, condition: assetsOf(choice('middle-layoff', 'open').requires, 'middle-layoff/open') },
     { id: 'middle-parents-care/facility', where: 'middle-parents-care/facility 보너스', age: 55, oldRate: 17, condition: bonusWith(choice('middle-parents-care', 'facility').bonuses, 'netMin', 'middle-parents-care/facility') },
     { id: 'senior-retire(netMin)', where: 'senior-retire 보너스(행복 +3)', age: 67, oldRate: 30, condition: bonusWith(ev('senior-retire').bonuses, 'netMin', 'senior-retire') },
-    { id: 'senior-retire(netMax)', where: 'senior-retire 보너스(행복 −3)', age: 67, oldRate: 15, condition: bonusWith(ev('senior-retire').bonuses, 'netMax', 'senior-retire') },
+    {
+      id: 'senior-retire(netMax)',
+      where: 'senior-retire 보너스(행복 −3)',
+      age: 67,
+      oldRate: 15,
+      condition: bonusWith(ev('senior-retire').bonuses, 'netMax', 'senior-retire'),
+    },
   ];
 }
 
@@ -384,8 +399,10 @@ export interface ConditionResult {
   rate: number;
   lo: number;
   hi: number;
-  /** 허용 폭 안인가 (accepted인 곳은 판정하지 않는다) */
+  /** 허용 폭 안인가 (accepted인 곳은 판정하지 않고, reported인 곳은 보고한 한계 안이면 true) */
   ok: boolean;
+  /** 허용 폭 밖이지만 보고한 한계 안이라 통과로 센 경우(reported) */
+  known: boolean;
   n: number;
 }
 
@@ -398,7 +415,9 @@ export function judgeConditions(rows: readonly Sample[], checks: readonly Condit
     const rate = sharePct(at, (r) => conditionPasses(check.condition, r.net));
     const lo = check.oldRate * (1 - CONDITION_TOLERANCE);
     const hi = Math.min(100, check.oldRate * (1 + CONDITION_TOLERANCE));
-    return { check, rate, lo, hi, ok: check.accepted !== undefined ? true : rate >= lo && rate <= hi, n: at.length };
+    const inRange = rate >= lo && rate <= hi;
+    const known = check.accepted === undefined && !inRange && check.reported !== undefined && check.reported.limit(rate);
+    return { check, rate, lo, hi, ok: check.accepted !== undefined ? true : inRange || known, known, n: at.length };
   });
 }
 

@@ -1,0 +1,31 @@
+// 도구 점검: 인생 기록 영역의 크기와 마지막 줄 위치를 잰다(「기록 마지막 줄이 온전히 안 보임」이 도구 결함인지 제품 결함인지 가르려고).
+import fs from 'node:fs';
+import path from 'node:path';
+import { launch, mkctx, sleep, OUT, PROD, GAME_KEY, SETTINGS_KEY, setRootFont, shot } from './m7a-lib.mjs';
+import { RP, SHOT_PREFIX } from './m7a-lib.mjs';
+const state = process.argv[2] || 'card-infant-care';
+const [w, h] = (process.argv[3] || '320x568').split('x').map(Number);
+const font = Number(process.argv[4] || 200);
+const browser = await launch();
+const ctx = await mkctx(browser, { viewport: { width: w, height: h } });
+const raw = fs.readFileSync(path.join(OUT, RP + 'saves', `${state}.json`), 'utf8');
+await ctx.addInitScript(([k, v, sk, sv]) => { try { if (!sessionStorage.getItem('s')) { localStorage.clear(); localStorage.setItem(k, v); localStorage.setItem(sk, sv); sessionStorage.setItem('s', '1'); } } catch {} }, [GAME_KEY, raw, SETTINGS_KEY, JSON.stringify({ version: 3, data: { speed: 8, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system' } })]);
+const page = await ctx.newPage();
+await page.goto(PROD, { waitUntil: 'load' });
+await page.waitForSelector('[data-testid="life-screen"]');
+await sleep(800);
+if (font !== 100) await setRootFont(page, font);
+await sleep(300);
+const r = await page.evaluate(() => {
+  const list = document.querySelector('[data-testid="log-list"]');
+  const rows = [...list.querySelectorAll('[data-testid="log-row"]')];
+  list.scrollTop = list.scrollHeight;
+  const lb = list.getBoundingClientRect();
+  const last = rows[rows.length - 1].getBoundingClientRect();
+  return { list: { top: lb.top, bottom: lb.bottom, h: lb.height, scrollH: list.scrollHeight, clientH: list.clientHeight, scrollTop: list.scrollTop }, last: { top: last.top, bottom: last.bottom, h: last.height }, rows: rows.length, innerH: window.innerHeight, scrollY: window.scrollY };
+});
+console.log(JSON.stringify(r));
+await page.evaluate(() => document.querySelector('[data-testid="log"]').scrollIntoView());
+await sleep(200);
+console.log(await shot(page, 'PROBE', `log-${state}-${w}x${h}-${font}`));
+await browser.close();

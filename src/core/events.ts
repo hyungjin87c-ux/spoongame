@@ -4,6 +4,7 @@ import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
 import {
   ERAS,
   GENDERS,
+  HOUSINGS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
   STAGES,
@@ -14,6 +15,7 @@ import {
   type Effects,
   type Era,
   type Gender,
+  type Housing,
   type ParentingStyle,
   type Stage,
   type StatKey,
@@ -60,6 +62,8 @@ export interface Condition {
   motherAge?: Range;
   parenting?: ParentingStyle[];
   gender?: Gender[];
+  /** 출생신고의 「사는 집」(자가 own · 임차 rent · 무상 거주 free) 중 하나 — 태어난 때의 집이라 어릴 때 이사로 달라졌을 수 있다(근사). 하나라도 맞으면 참 (SPEC-003 M7a r3, CM9) */
+  housing?: Housing[];
   /** 모두 설정돼 있어야 한다 */
   flags?: string[];
   /** 하나도 설정돼 있지 않아야 한다 */
@@ -105,12 +109,22 @@ export interface EventDef {
   /** 서술 이벤트(선택지 없음)의 효과 */
   effects?: Effects;
   bonuses?: Bonus[];
-  /** 선택지 이벤트(2~3개). 없으면 서술 이벤트. */
+  /** 선택지 이벤트(정의 2~4개, 어떤 상태에서도 보이는 것은 2~3개). 없으면 서술 이벤트. */
   choices?: ChoiceDef[];
+  /**
+   * 마일스톤 이벤트 (SPEC-003 IN3, M7a): 정한 나이 창(ageRange) 안에서 **모든 판**에 일어나는 서술 이벤트(첫 예방접종·첫 걸음마·첫 말).
+   * 일반 추첨과 별개 슬롯이라 그 해의 일반 사건과 **함께** 연표에 한 줄을 남기고, 창의 마지막 해에는 100% 일어난다(`life.ts#stepYear`). 서술 전용·once 전용.
+   */
+  milestone?: boolean;
 }
 
 export function isChoiceEvent(ev: EventDef): boolean {
   return ev.choices !== undefined && ev.choices.length > 0;
+}
+
+/** 마일스톤 슬롯의 이벤트인가 (일반 추첨 후보에서는 빠진다) */
+export function isMilestoneEvent(ev: EventDef): boolean {
+  return ev.milestone === true;
 }
 
 export interface EventPool {
@@ -135,6 +149,8 @@ export interface FamilyView {
   birthOrder: number;
   motherBirthAge: number;
   fatherBirthAge: number;
+  /** 출생신고의 사는 집(housing 조건에 필요). 모르면(옛 상태·시험용) housing 조건은 맞지 않는다. */
+  housing?: Housing;
 }
 
 export interface CondContext {
@@ -168,11 +184,12 @@ export function meetsCondition(cond: Condition | undefined, ctx: CondContext): b
     if (c.debtMax !== undefined && a.debt > c.debtMax) return false;
     if (c.incomeMin !== undefined && a.income < c.incomeMin) return false;
   }
-  if (cond.birthOrder !== undefined || cond.parentAge !== undefined || cond.motherAge !== undefined) {
+  if (cond.birthOrder !== undefined || cond.parentAge !== undefined || cond.motherAge !== undefined || cond.housing !== undefined) {
     // 가족 정보를 모르는데 가족 조건이 걸려 있으면 맞지 않는다(말이 안 되는 사건이 일어나는 쪽보다 안 일어나는 쪽이 안전하다)
     const family = ctx.family;
     if (family === undefined || family === null) return false;
     if (!inRange(family.birthOrder, cond.birthOrder)) return false;
+    if (cond.housing !== undefined && (family.housing === undefined || !cond.housing.includes(family.housing))) return false;
     if (cond.parentAge !== undefined) {
       if (ctx.age === undefined) return false;
       if (!inRange(Math.max(family.motherBirthAge, family.fatherBirthAge) + ctx.age, cond.parentAge)) return false;
@@ -285,6 +302,14 @@ export const MAX_EVENT_WEIGHT = 100;
 export const MIN_MODIFIER_WEIGHT = 0.1;
 export const MAX_MODIFIER_WEIGHT = 10;
 export const MAX_MODIFIERS = 6;
+/**
+ * 선택지 수: 정의는 최대 4개, 같은 상태에서 보이는 것은 최대 3개(최소 2개 — 조건 없는 선택지가 2개 이상). 정의가 3개를 넘는 이벤트(infant-new-sibling: 플래그 유무로 grandma·notice가 배타)는
+ * 서로 같이 보일 수 없는 선택지가 있을 때만 쓸 수 있다 — lint가 「동시에 보일 수 있는 선택지의 최대 수 ≤ 3」을 점검한다(eventLint#visibleChoiceProblems).
+ */
+export const MAX_DEFINED_CHOICES = 4;
+export const MAX_VISIBLE_CHOICES = 3;
+/** 한 해에 일어날 수 있는 마일스톤의 최대 수 (life.ts#stepYear). 창 끝이 이른 것부터, 같으면 id 오름차순으로 칸을 채우고 연표에는 id 오름차순으로 남긴다. */
+export const MILESTONES_PER_YEAR_MAX = 3;
 export const MIN_EFFECTIVE_WEIGHT = 0.01;
 export const MAX_EFFECTIVE_WEIGHT = 10000;
 export const MAX_BONUSES = 8;
@@ -398,7 +423,7 @@ function checkAssetCondition(v: unknown, path: string, p: Problems): void {
 
 function checkCondition(v: unknown, path: string, p: Problems): void {
   if (!isObj(v)) return void p.add(path, '조건 객체여야 한다');
-  checkKeys(v, ['stats', 'looks', 'parentWealth', 'assets', 'birthOrder', 'parentAge', 'motherAge', 'parenting', 'gender', 'flags', 'notFlags'], [], path, p);
+  checkKeys(v, ['stats', 'looks', 'parentWealth', 'assets', 'birthOrder', 'parentAge', 'motherAge', 'parenting', 'gender', 'housing', 'flags', 'notFlags'], [], path, p);
   if (Object.keys(v).length === 0) p.add(path, '빈 조건이다 (항목을 쓰거나 조건 자체를 빼야 한다)');
   if (v.stats !== undefined) {
     if (!isObj(v.stats)) p.add(`${path}.stats`, '{ 스탯이름: { min, max } } 객체여야 한다');
@@ -418,6 +443,7 @@ function checkCondition(v: unknown, path: string, p: Problems): void {
   if (v.motherAge !== undefined) checkRange(v.motherAge, `${path}.motherAge`, 0, PARENT_AGE_MAX, p);
   if (v.parenting !== undefined) checkEnumList(v.parenting, PARENTING_STYLES, `${path}.parenting`, p);
   if (v.gender !== undefined) checkEnumList(v.gender, GENDERS, `${path}.gender`, p);
+  if (v.housing !== undefined) checkEnumList(v.housing, HOUSINGS, `${path}.housing`, p);
   const flagsOk = v.flags === undefined ? true : checkFlagList(v.flags, `${path}.flags`, p);
   const notOk = v.notFlags === undefined ? true : checkFlagList(v.notFlags, `${path}.notFlags`, p);
   if (flagsOk && notOk && Array.isArray(v.flags) && Array.isArray(v.notFlags)) {
@@ -532,7 +558,7 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
 
 const EVENT_KEYS = [
   'id', 'title', 'text', 'stages', 'ageRange', 'eras', 'weight', 'once', 'cooldown',
-  'conditions', 'modifiers', 'effects', 'bonuses', 'choices',
+  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone',
 ] as const;
 
 /** 단계가 덮는 나이 구간 [시작, 끝] (노년은 상한 없음) */
@@ -631,10 +657,28 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
     }
   }
 
+  if (ev.milestone !== undefined) {
+    if (typeof ev.milestone !== 'boolean') p.add(`${path}.milestone`, 'true 또는 false여야 한다');
+    else if (ev.milestone) {
+      // 마일스톤은 「창 안의 모든 판에 한 번」이라 서술 전용·once 전용이고, 마지막 해(100%)를 알려면 창의 양 끝이 있어야 한다
+      if (ev.choices !== undefined) p.add(`${path}.milestone`, '마일스톤은 서술 이벤트만 된다 (선택지가 있으면 안 된다)');
+      if (ev.once !== true) p.add(`${path}.milestone`, 'once:true여야 한다');
+      const r = ev.ageRange;
+      if (!isObj(r) || !isInt(r.min) || !isInt(r.max)) p.add(`${path}.milestone`, 'ageRange의 min과 max가 모두 있어야 한다 (창의 마지막 해에 100%로 일어난다)');
+      else if (Array.isArray(ev.stages)) {
+        // R-371 ①: 창의 모든 나이가 stages에 덮여야 한다 — 단계가 7세를 덮지 않으면 일반 후보에서 빠져 창의 마지막 해 100%가 조용히 깨진다
+        for (let age = r.min; age <= r.max && age <= 130; age++) {
+          const st = stageOfAge(age);
+          if (!ev.stages.includes(st)) p.add(`${path}.milestone`, `창의 ${age}세는 ${st} 단계인데 stages에 없다 — 마일스톤은 창의 모든 나이에 일어날 수 있어야 한다`);
+        }
+      }
+    }
+  }
+
   const hasChoices = ev.choices !== undefined;
   if (hasChoices) {
-    if (!Array.isArray(ev.choices) || ev.choices.length < 2 || ev.choices.length > 3) {
-      p.add(`${path}.choices`, `선택지는 2~3개여야 한다 (서술 이벤트는 choices를 아예 쓰지 않는다. 지금 ${Array.isArray(ev.choices) ? ev.choices.length : '배열 아님'}개)`);
+    if (!Array.isArray(ev.choices) || ev.choices.length < 2 || ev.choices.length > MAX_DEFINED_CHOICES) {
+      p.add(`${path}.choices`, `선택지는 2~${MAX_DEFINED_CHOICES}개여야 한다 (서술 이벤트는 choices를 아예 쓰지 않는다. 지금 ${Array.isArray(ev.choices) ? ev.choices.length : '배열 아님'}개). 정의가 ${MAX_VISIBLE_CHOICES}개를 넘으면 어떤 상태에서도 보이는 선택지가 ${MAX_VISIBLE_CHOICES}개 이하여야 한다(eventLint가 점검)`);
     } else {
       const ids = new Set<string>();
       let unconditional = 0;

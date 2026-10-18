@@ -306,10 +306,13 @@ describe('현금흐름 (cashFlowOf): 소득 − 생활비 − 의료 − 주거�
   it('소득 보정(incomeAdj)이 늘면 현금흐름이 그만큼 늘고, 결혼하면 소득 ×1.3 · 생활 인원 +0.5로 현금흐름이 달라지는 파생 변화가 표기에 들어간다', () => {
     const c = ctx({ age: 45, flags: ['has_career'] });
     const a = assets({ dwelling: 'rent' });
-    expect(cashFlowOf(c, { ...a, incomeAdj: 400 }).total - cashFlowOf(c, a).total).toBe(400 - (housingCostOf('rent', 5516, 'present') - housingCostOf('rent', 5116, 'present')));
+    // 소득 보정이 늘어난 만큼의 산술은 흑자 쪽 나이(38세 — 나이 곡선 ×0.85)에서 본다. 40~64세의 곡선(M7a 재보정 뒤 ×1.73)에서는 생활비가 최소 생활(minShare) 바닥에 닿아 현금흐름이 같은 값으로 막힐 수 있다
+    const y = ctx({ age: 38, flags: ['has_career'] });
+    expect(cashFlowOf(y, { ...a, incomeAdj: 400 }).total - cashFlowOf(y, a).total).toBe(400 - (housingCostOf('rent', incomeOf(y, 0) + 400, 'present') - housingCostOf('rent', incomeOf(y, 0), 'present')));
     const married = ctx({ age: 45, flags: ['has_career', 'married'] });
     // 소득 +30%(약 +1,535)와 생활 인원 +0.5(약 +2,150)의 차이: 중년 부부는 혼자일 때보다 현금흐름이 줄어든다(소득이 낮은 사람일수록 더)
-    expect(cashFlowOf(married, a).total).not.toBe(cashFlowOf(c, a).total);
+    // 차입 한도(limits)를 끈 값으로 견준다 — M7a 재보정 뒤 40~64세는 둘 다 한도(−300)에 막혀 같은 값이 된다
+    expect(cashFlowOf(married, a, { limits: false }).total).not.toBe(cashFlowOf(c, a, { limits: false }).total);
     expect(cashFlowOf(married, a).income - cashFlowOf(c, a).income).toBe(incomeOf(married, 0) - incomeOf(c, 0));
     expect(cashFlowOf(married, a, { limits: false }).living - cashFlowOf(c, a, { limits: false }).living).toBe(livingOf(married, 'rent') - livingOf(c, 'rent'));
   });
@@ -613,19 +616,22 @@ describe('선택의 자산 효과 적용 (applyAssetEffects)', () => {
 describe('해마다 정산 (yearlyAssets): 현금흐름을 더하고, 흑자의 일부로 빚을 갚고, 모자라면 자동 대출 — 난수 없음', () => {
   const working = ctx({ age: 45, flags: ['has_career'] });
 
+  // 흑자를 보는 시험은 나이 곡선이 ×0.85인 38세로 한다(40~64세는 M7a 재보정 뒤 ×1.73이라 흑자가 보장되지 않는다)
+  const earning = ctx({ age: 38, flags: ['has_career'] });
+
   it('흑자: 순자산이 현금흐름만큼 늘고 흑자의 repayShare만큼 부채가 준다 (상환은 순자산을 바꾸지 않는다)', () => {
     const a = assets({ net: 1000, debt: 3000, dwelling: 'own' });
-    const flow = cashFlowOf(working, a).total;
+    const flow = cashFlowOf(earning, a).total;
     expect(flow).toBeGreaterThan(0);
-    const out = yearlyAssets(a, working);
+    const out = yearlyAssets(a, earning);
     expect(out.net).toBe(1000 + flow);
     expect(out.debt).toBe(3000 - Math.round(ECONOMY.repayShare * flow));
-    expect(out.income).toBe(cashFlowOf(working, a).income);
+    expect(out.income).toBe(cashFlowOf(earning, a).income);
   });
 
   it('부채보다 큰 흑자여도 부채는 0 아래로 내려가지 않는다', () => {
     const a = assets({ net: 5000, debt: 50, dwelling: 'own' });
-    expect(yearlyAssets(a, working).debt).toBe(0);
+    expect(yearlyAssets(a, earning).debt).toBe(0);
   });
 
   it('적자: 순자산이 줄고, 순자산이 음수가 되면 부족분이 부채로 잡힌다 (이자가 다음 해 적자를 키운다 — 빚이 빚을 만든다). 차입 한도를 끈 상태에서 본 구조다', () => {

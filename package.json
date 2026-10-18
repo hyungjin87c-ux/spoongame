@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "sim": "vite-node scripts/simulate.ts",
     "sim:1000": "vite-node scripts/simulate1000.ts",
+    "sim:infant": "vite-node scripts/infantMetrics.ts",
     "check:events": "vite-node scripts/validateEvents.ts",
     "check:dist": "vite-node scripts/checkFinalDistribution.ts",
     "check:todo": "vite-node scripts/checkTodoEvidence.ts",

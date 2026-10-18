@@ -6,13 +6,14 @@ import { EVENT_FILES } from '../src/data/events';
 import { advanceUntilDecision, autoResolveStep, type ChoiceDef, type EventDef, type Era, type GameState } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
 import { startLife } from '../scripts/simulateLib';
+import { M7A_NEW_EVENT_IDS, M7A_WEALTH_GATES } from './helpers/m7a';
 import type { Effects } from '../src/core/types';
 
 /**
  * 이벤트 변환 (SPEC-003 M5 EC3, docs/data/economy-model.md 5절): 옛 `stats.wealth`가 새 효과(`assets`·`family`)로 옮겨졌다.
  *  - 변환표(5-D)의 「새 효과」 열을 문서에서 읽어 이벤트 데이터와 한 줄씩 대조한다 (75개 이벤트의 모든 기본·보너스 값).
  *  - 옛 값을 얼려 둔 `tests/fixtures/wealthLegacy.json`과 대조해 **명시 효과의 부호가 옛 wealth 부호와 같고**, 크기가 분류별 상수(F 150 · T 청년 400·중년 600·노년 250 · S T의 절반 · I 청년 200·중년 250·노년 100)의 배수임을 본다.
- *  - 조건 변환 7곳, 재산과 무관한 37개 이벤트, EC4 자금 조건 선택지 10개, 대출(debt) 값, 옛 재산 스탯의 흔적 0을 확인한다.
+ *  - 조건 변환 7곳, 재산과 무관한 37개 이벤트(+ M7a 신규 영유아·7세 28개는 처음부터 집안 살림 효과로 쓴 것이라 변환표 밖), EC4 자금 조건 선택지 10개(+ M7a 10개), 대출(debt) 값, 옛 재산 스탯의 흔적 0을 확인한다.
  * 표기 방향(영향 표기)과 옛 부호의 대조는 tests/impact.test.ts가 맡는다.
  */
 
@@ -124,14 +125,20 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
     expect(wrong).toEqual([]);
   });
 
-  it('표에 없는 이벤트에는 돈 효과가 없다: 표의 75개 + 재산과 무관한 37개 = 풀 112개 전부', () => {
+  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) = 풀 140개 전부', () => {
     const inTable = new Set(ROWS.map((r) => r.eventId));
     const unchanged = parseUnchanged();
     expect(unchanged).toHaveLength(37);
     expect(new Set(unchanged).size).toBe(37);
     for (const id of unchanged) expect(inTable.has(id), `${id}가 표에도 5-5에도 있다`).toBe(false);
-    expect(new Set([...inTable, ...unchanged])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
-    expect(EVENT_POOL.events).toHaveLength(112);
+    // M7a 신규 28개는 표에도 5-5에도 없다 — 20세 미만 이벤트라 effects.family만 쓰고 자산 효과는 없다
+    for (const id of M7A_NEW_EVENT_IDS) {
+      expect(inTable.has(id), `${id}가 변환표에 있다`).toBe(false);
+      expect(unchanged.includes(id), `${id}가 5-5에 있다`).toBe(false);
+      expect(JSON.stringify(eventOf(id)), id).not.toMatch(/"assets"/);
+    }
+    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
+    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length);
     for (const id of unchanged) {
       const ev = eventOf(id);
       const effs: Array<Effects | undefined> = [ev.effects, ...(ev.bonuses ?? []).map((b) => b.effects), ...(ev.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];
@@ -253,7 +260,7 @@ describe('대출(debt) 효과: 주택 구입 경로 (D9 설계값, 9-3절에서 
   });
 });
 
-describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15)', () => {
+describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7a 영유아·7세 10개', () => {
   const ev = eventOf;
   const GATES: Array<[string, string, string]> = [
     ['infant-care', 'home', 'parentWealth'],
@@ -269,10 +276,12 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15)', ()
     ['senior-travel', 'go', 'assets'],
   ];
 
-  it('열 곳이 정확히 이 10개다: 자산 또는 부모 재력 조건이 걸린 선택지는 이것뿐이다', () => {
+  it('열 곳이 정확히 이 10개 + M7a 10개다: 자산 또는 부모 재력 조건이 걸린 선택지는 이것뿐이다', () => {
     const found: string[] = [];
     for (const ev of EVENT_POOL.events) for (const c of ev.choices ?? []) if (c.requires?.assets !== undefined || c.requires?.parentWealth !== undefined) found.push(`${ev.id}/${c.id}`);
-    expect(found.sort()).toEqual(GATES.map(([e, c]) => `${e}/${c}`).sort());
+    // M7a(영유아·7세)가 더한 부모 재력 문턱 10개는 따로 센다(tests/infantContent.test.ts가 문안 규칙을 본다)
+    const all = [...GATES.map(([e, c]) => `${e}/${c}`), ...M7A_WEALTH_GATES.map(([e, c]) => `${e}/${c}`)];
+    expect(found.sort()).toEqual(all.sort());
   });
 
   it('새 4개의 조건: 시험 준비를 이어 가려면 순자산 ≥ -5,000 · 시설을 알아보려면 ≥ 0 · 무리한 여행은 ≥ 5,000 · 재수는 부모 재력 ≥ 2', () => {

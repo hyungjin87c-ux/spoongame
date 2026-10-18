@@ -5,10 +5,10 @@ import {
   KNOWN_SEED,
   SAVE_VERSION,
   SETTINGS_KEY,
-  evalCore,
   findPendingState,
   injectSave,
   lifeState,
+  quietStart,
   readSave,
   readSettings,
   setPageVisible,
@@ -25,22 +25,8 @@ import { adultState } from './m4States';
 
 const MANUAL = { speed: 1, autoMode: false } as const;
 
-/** 첫 N해가 모두 「조용한 해」인 시드의 0세 상태(연출 시간이 일정하고 선택지가 끼지 않는다) */
-async function quietLife(page: Page, years: number): Promise<GameState> {
-  const s = await evalCore<GameState | null>(
-    page,
-    `for (let seed = 1; seed < 2000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
-       let ok = true;
-       for (let i = 0; i < arg.years; i++) { const r = core.stepYear(s); if (r.tick.kind !== 'quiet') { ok = false; break; } s = r.state; }
-       if (ok) return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
-     }
-     return null;`,
-    { years },
-  );
-  expect(s).not.toBeNull();
-  return s!;
-}
+/** 앞으로 N해가 모두 「조용한 해」인 상태(연출 시간이 일정하고 선택지가 끼지 않는다) — M7a 이후 0세는 늘 첫 예방접종이 있어 20세 이후 상태다(e2e/helpers.ts#quietStart) */
+const quietLife = (page: Page, years: number): Promise<GameState> => quietStart(page, years);
 
 interface Sample {
   age: number;
@@ -197,8 +183,13 @@ test('일시정지 중에도 「다음 결정으로」는 눌려 선택지(또�
   await expect(skip).not.toHaveAttribute('data-unavailable', 'true');
   expect((await readSave(page)).data.age).toBe(life.age);
   await skip.click();
-  // 선택지가 뜨거나(대부분) 곧바로 엔딩이다 — 어느 쪽이든 나이가 올랐다
-  await expect.poll(async () => (await readSave(page)).data.age, { timeout: 10_000 }).toBeGreaterThan(life.age);
+  // 선택지가 뜨거나(대부분) 곧바로 엔딩이다. M7a 이후 0세에도 결정이 있어(첫 결정이 0세 안에 뜰 수 있다) 나이가 오르지 않은 채 선택지가 뜰 수 있다 — 저장이 「선택지 대기」나 「나이 상승」·엔딩으로 바뀌었는지 본다
+  await expect
+    .poll(async () => {
+      const d = (await readSave(page)).data;
+      return d.pending !== null || d.age > life.age || d.phase === 'ending';
+    }, { timeout: 10_000 })
+    .toBe(true);
   const after = (await readSave(page)).data;
   if (after.phase === 'life') {
     await expect(page.getByTestId('choice-panel'), '선택지에서 멈췄다').toBeVisible();

@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { EventDef } from '../src/core/events';
 import { TEXT_LIMITS } from '../src/core/eventLint';
 import { injectSave, lifeState, noHorizontalOverflow } from './helpers';
+import { lengthSample } from './lengthSamples';
 
 /**
  * R-042: 360px 레이아웃을 "첫 결정 하나"가 아니라 풀의 모든 선택지 이벤트로 잰다. (M4 대시보드로 갱신 — 아래 「바뀐 점」)
@@ -142,19 +143,9 @@ async function openHarness(page: Page, vp: { width: number; height: number }): P
   await page.waitForFunction(() => (window as unknown as { __layout?: unknown }).__layout !== undefined);
 }
 
-/** 권장 최대 길이 끝값으로 만든 최악의 이벤트: 제목·본문·라벨이 모두 최대이고 선택지가 3개. 글자는 단어 사이 공백으로 줄바꿈 낭비가 큰 한글 덩어리를 쓴다. */
+/** 권장 최대 길이(합쇼체 새 한도) 끝값으로 만든 최악의 이벤트: 제목·본문·라벨이 모두 최대이고 선택지가 3개 (표본은 e2e/lengthSamples.ts — 덩어리 글, 단어 사이 공백으로 줄바꿈 낭비가 크다). */
 function worstCaseEvent(): EventDef {
-  const chunk = '가나다라마 바사아자차 카타파하가 나다라마바 사아자차카 타파하가나 다라마바사 아자차카타 파하가나다 라마바사아 자차카타파 하가나다라';
-  const fit = (n: number) => chunk.slice(0, n).trim();
-  return {
-    id: 'layout-worst-case',
-    title: fit(TEXT_LIMITS.title),
-    text: fit(TEXT_LIMITS.text),
-    stages: ['youth'],
-    weight: 10,
-    once: true,
-    choices: [1, 2, 3].map((i) => ({ id: `c${i}`, label: fit(TEXT_LIMITS.label - 1) + '다', result: '결과 문장이다.' })),
-  };
+  return lengthSample('worst').event;
 }
 
 for (const vp of VIEWPORTS) {
@@ -189,7 +180,7 @@ for (const vp of VIEWPORTS) {
   });
 }
 
-test('권장 최대 길이(제목 16·본문 70·라벨 24자 ×3)로 만든 최악의 이벤트: 어느 화면 높이에서도 제목·첫 선택지가 보이고 선택지 전부가 스크롤로 닿으며, 360×740은 카드가 보인 자리에 다 들어온다 (R-042)', async ({ page }, testInfo) => {
+test(`권장 최대 길이(합쇼체 새 한도: 제목 ${TEXT_LIMITS.title}·본문 ${TEXT_LIMITS.text}·라벨 ${TEXT_LIMITS.label}자 ×3)로 만든 최악의 이벤트: 어느 화면 높이에서도 제목·첫 선택지가 보이고 선택지 전부가 스크롤로 닿으며, 360×740은 카드가 보인 자리에 다 들어온다 (R-042, M7e-1)`, async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   const ev = worstCaseEvent();
   expect(ev.text.length).toBe(TEXT_LIMITS.text);
@@ -222,10 +213,11 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
   const all = await measureAll(page);
   const tallest = [...all].sort((a, b) => b.panelHeight - a.panelHeight)[0];
   expect(tallest.nChoices).toBe(3);
-  // 2) 같은 이벤트를 실제 앱에서 열어 같은 기준으로 잰다(선택지는 requires와 무관하게 전부 보이도록 저장에 넣는다)
+  // 2) 같은 이벤트를 실제 앱에서 열어 같은 기준으로 잰다(선택지는 requires와 무관하게 같은 상태에서 함께 보일 수 있는 가장 큰 묶음을 저장에 넣는다 — 정의가 4개인 이벤트도 보이는 것은 3개다)
   const choiceIds = await page.evaluate<string[]>(`(async () => {
     const mod = await import('/src/data/events/index.ts');
-    return mod.EVENT_POOL.byId.get(${JSON.stringify(tallest.id)}).choices.map((c) => c.id);
+    const core = await import('/src/core/index.ts');
+    return core.worstCaseVisibleChoiceIds(mod.EVENT_POOL.byId.get(${JSON.stringify(tallest.id)}));
   })()`);
   const base = lifeState(777);
   const age = 30;

@@ -13,6 +13,7 @@ import {
   oracleAuto,
   oracleDecision,
   oracleLife,
+  quietStart,
   readSave,
   readSettings,
   skipRoulette,
@@ -286,27 +287,13 @@ test('인생 기록(M4): 줄이 시간순으로 쌓여 맨 아래가 가장 최�
 
 // ---------- 배속이 실제 진행 속도를 바꾼다 (연출 시간 상수 표) ----------
 
-/** 처음 N해가 모두 "조용한 해"인 시드의 0세 상태 (연출 시간이 일정해 시간 측정이 흔들리지 않는다) */
-async function quietStart(page: Page, years: number): Promise<GameState> {
-  const s = await evalCore<GameState | null>(
-    page,
-    `for (let seed = 1; seed < 2000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
-       let ok = true;
-       for (let i = 0; i < arg.years; i++) { const r = core.stepYear(s); if (r.tick.kind !== 'quiet') { ok = false; break; } s = r.state; }
-       if (ok) return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
-     }
-     return null;`,
-    { years },
-  );
-  expect(s).not.toBeNull();
-  return s!;
-}
+/** 앞으로 N해가 모두 "조용한 해"인 상태 (연출 시간이 일정해 시간 측정이 흔들리지 않는다) — M7a 이후 0세는 늘 첫 예방접종이 있어 20세 이후 상태다(e2e/helpers.ts#quietStart) */
+const quietStartOf = (page: Page, years: number): Promise<GameState> => quietStart(page, years);
 
 test('배속 설정이 실제 진행 간격을 바꾼다: 1배속의 한 해는 8배속의 몇 배로 길고, 매번 정확히 한 해씩만 진행된다 (한 해가 두 번 진행되지 않는다)', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/');
-  const start = await quietStart(page, 7);
+  const start = await quietStartOf(page, 7);
 
   // 페이지 안에서 나이가 바뀔 때마다 시각을 기록한다(렌더 직후, 첫 렌더 포함). 시간 배율 4: 조용한 한 해가 1배속 HOLD_MS.quiet/4, 8배속 HOLD_MS.quiet/8/4.
   // 고정 대기로 "N초 뒤 나이"를 보지 않고 연속한 두 나이 변화 사이의 간격을 잰다 → 부하로 전체가 늦어져도 흔들리지 않는다.

@@ -13,6 +13,7 @@ import {
   isEventEligible,
   lastSeenAge,
   lintEventData,
+  maxVisibleChoices,
   meetsCondition,
   resolveEffects,
   stageOfAge,
@@ -204,11 +205,11 @@ describe('이벤트 스키마 검증: 잘못된 데이터는 개발 중 바로 �
     ['같은 효과에서 플래그를 켜고 끔', file(narrative({ effects: { setFlags: ['same_flag'], clearFlags: ['same_flag'] } })), '켜고 끈다'],
     ['보너스에 when 없음', file(narrative({ bonuses: [{ effects: { stats: { education: 1 } } }] })), '필수 항목 "when"'],
     ['모디파이어 weight 11', file(narrative({ modifiers: [{ when: { looks: { min: 1 } }, weight: 11 }] })), '배수'],
-    ['선택지 1개', file(choiceEvent({ choices: [{ id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.' }] })), '선택지는 2~3개'],
+    ['선택지 1개', file(choiceEvent({ choices: [{ id: 'a', label: '첫째', result: '첫째를 골랐다. 결과 문장.' }] })), '선택지는 2~4개'],
     [
-      '선택지 4개',
-      file(choiceEvent({ choices: ['a', 'b', 'c', 'd'].map((id) => ({ id, label: id, result: `${id}를 골랐다. 결과 문장.` })) })),
-      '선택지는 2~3개',
+      '선택지 5개(정의 상한 4개, M7a r3: 3 → 4)',
+      file(choiceEvent({ choices: ['a', 'b', 'c', 'd', 'e'].map((id) => ({ id, label: id, result: `${id}를 골랐다. 결과 문장.` })) })),
+      '선택지는 2~4개',
     ],
     ['선택지 id 중복', file(choiceEvent({ choices: [{ id: 'a', label: '가', result: '가를 골랐다. 문장.' }, { id: 'a', label: '나', result: '나를 골랐다. 문장.' }] })), '선택지 id가 중복'],
     ['선택지 label 없음', file(choiceEvent({ choices: [{ id: 'a', result: '가를 골랐다. 문장.' }, { id: 'b', label: '나', result: '나를 골랐다. 문장.' }] })), '필수 항목 "label"'],
@@ -338,13 +339,15 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     expect(events.length).toBe(Object.values(EVENT_FILES).reduce((n: number, f) => n + (f as { events: unknown[] }).events.length, 0));
   });
 
-  it('이벤트는 60개 이상(SPEC)이고 id가 모두 다르며, 선택지(2~3개)와 서술이 충분히 섞여 있다', () => {
+  it('이벤트는 60개 이상(SPEC)이고 id가 모두 다르며, 선택지(정의 2~4개, 보이는 것은 2~3개)와 서술이 충분히 섞여 있다', () => {
     expect(events.length).toBeGreaterThanOrEqual(60);
     expect(new Set(events.map((e) => e.id)).size).toBe(events.length);
     const choices = events.filter(isChoiceEvent);
     expect(choices.length).toBeGreaterThanOrEqual(40);
     expect(events.length - choices.length).toBeGreaterThanOrEqual(20);
-    for (const e of choices) expect([2, 3]).toContain(e.choices!.length);
+    for (const e of choices) expect([2, 3, 4]).toContain(e.choices!.length);
+    for (const e of choices) expect(maxVisibleChoices(e), `${e.id}: 같은 상태에서 동시에 보이는 선택지 수`).toBeLessThanOrEqual(3);
+    expect(choices.filter((e) => e.choices!.length === 4).map((e) => e.id), '정의가 4개인 이벤트는 infant-new-sibling뿐이다').toEqual(['infant-new-sibling']);
     expect(choices.some((e) => e.choices!.length === 3)).toBe(true);
   });
 
@@ -381,8 +384,12 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     for (const era of ERAS) expect(new Set(only(era).flatMap((e) => e.stages)).size, era).toBeGreaterThanOrEqual(2);
   });
 
-  it('0세에는 일어날 수 있는 이벤트가 없다: 첫 해는 항상 조용한 해다 (프로덕션 스모크·e2e가 "새 판의 첫 한 해는 선택지 없이 지나간다"에 기댄다)', () => {
-    for (const era of ERAS) expect(cellOf(era, 'infant').filter((e) => (e.ageRange?.min ?? 0) <= 0).map((e) => e.id), era).toEqual([]);
+  it('0세에도 일어날 수 있는 이벤트가 있다 (SPEC-003 IN1, M7a): 첫 해가 늘 빈 해가 아니다 — 첫 예방접종(마일스톤)이 모든 판의 0세에 일어난다. 옛 시험은 「0세는 후보 0개」였다 (e2e·스모크가 기대던 「첫 해는 선택지 없이 조용히 지나간다」는 M7a로 사라졌다)', () => {
+    for (const era of ERAS) {
+      const ids = cellOf(era, 'infant').filter((e) => (e.ageRange?.min ?? 0) <= 0 && (e.ageRange?.max ?? 99) >= 0).map((e) => e.id);
+      expect(ids.length, era).toBeGreaterThanOrEqual(4);
+      expect(ids, era).toContain('infant-vaccine');
+    }
   });
 
   it('모든 이벤트는 한 판에 한 번만 나온다(once:true) — 같은 문구가 한 판에서 되풀이되지 않는다 (QA 사용감 7)', () => {
@@ -639,6 +646,40 @@ describe('조건 평가', () => {
     // 다른 가족 조건과 AND
     expect(meetsCondition({ motherAge: { max: 45 }, birthOrder: { max: 1 } }, at(5, family))).toBe(true);
     expect(meetsCondition({ motherAge: { max: 45 }, birthOrder: { max: 1 } }, at(5, { ...family, birthOrder: 2 }))).toBe(false);
+  });
+
+  it('가족 조건 housing (M7a r3, T05): 출생신고의 사는 집(own·rent·free) 중 하나면 맞고, 가족 정보나 사는 집을 모르면 맞지 않는다', () => {
+    const at = (housing: 'own' | 'rent' | 'free' | undefined, fam: { birthOrder: number; motherBirthAge: number; fatherBirthAge: number; housing?: 'own' | 'rent' | 'free' } | null | undefined): CondContext => ({
+      ...c,
+      age: 5,
+      family: fam === null || fam === undefined ? fam : { ...fam, ...(housing === undefined ? {} : { housing }) },
+    });
+    const family = { birthOrder: 1, motherBirthAge: 30, fatherBirthAge: 33 };
+    expect(meetsCondition({ housing: ['rent', 'free'] }, at('rent', family))).toBe(true);
+    expect(meetsCondition({ housing: ['rent', 'free'] }, at('free', family))).toBe(true);
+    expect(meetsCondition({ housing: ['rent', 'free'] }, at('own', family))).toBe(false); // 자가 판에서는 「살던 집을 비워야 할 사정」이 일어나지 않는다
+    expect(meetsCondition({ housing: ['own'] }, at('own', family))).toBe(true);
+    // 가족 정보를 모르거나 사는 집을 모르면(옛 상태·시험용) 맞지 않는다 — 안 일어나는 쪽이 안전하다
+    expect(meetsCondition({ housing: ['own', 'rent', 'free'] }, at(undefined, family))).toBe(false);
+    expect(meetsCondition({ housing: ['own', 'rent', 'free'] }, at('own', null))).toBe(false);
+    expect(meetsCondition({ housing: ['own', 'rent', 'free'] }, at('own', undefined))).toBe(false);
+    // 다른 가족 조건과 AND
+    expect(meetsCondition({ housing: ['rent'], birthOrder: { max: 1 } }, at('rent', family))).toBe(true);
+    expect(meetsCondition({ housing: ['rent'], birthOrder: { max: 1 } }, at('rent', { ...family, birthOrder: 2 }))).toBe(false);
+  });
+
+  it('housing의 스키마 검증: 빈 배열·중복·다른 값은 오류이고, 이벤트 조건·선택지 requires·보너스 when·모디파이어 when에서 모두 쓸 수 있다', () => {
+    const withCond = (conditions: unknown) => problemsOf(file(narrative({ conditions }))).join(' | ');
+    expect(withCond({ housing: ['rent', 'free'] })).toBe('');
+    expect(withCond({ housing: ['own'] })).toBe('');
+    expect(withCond({ housing: [] })).toContain('비어 있지 않은 배열');
+    expect(withCond({ housing: ['rent', 'rent'] })).toContain('중복');
+    expect(withCond({ housing: ['villa'] })).toContain('허용되지 않는 값');
+    expect(withCond({ housing: 'rent' })).toContain('비어 있지 않은 배열');
+    expect(problemsOf(file(narrative({ modifiers: [{ when: { housing: ['own'] }, weight: 2 }] })))).toEqual([]);
+    expect(problemsOf(file(narrative({ bonuses: [{ when: { housing: ['rent'] }, effects: { stats: { health: 1 } } }] })))).toEqual([]);
+    const ch = choiceEvent({ choices: [{ id: 'a', label: '가', result: '가를 골랐다. 문장.' }, { id: 'b', label: '나', result: '나를 골랐다. 문장.' }, { id: 'c', label: '다', result: '다를 골랐다. 문장.', requires: { housing: ['own'] } }] });
+    expect(problemsOf(file(ch))).toEqual([]);
   });
 
   it('가족 조건의 스키마 검증: 허용 범위(형제 순서 1~5, 부모 나이 0~130)와 min·max 규칙', () => {

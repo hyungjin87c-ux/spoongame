@@ -1,0 +1,423 @@
+[
+ {
+  "name": "기준: 합쇼체 서술 이벤트",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "기준: 합쇼체 선택지 이벤트",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "해라체 본문(「~했다.」)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 해라체 종결(\"~다.\")이 있다 — 합쇼체(\"~습니다.\"/\"~ㅂ니다.\")로 쓴다 (「아이가 처음으로 웃었다.」) — \"아이가",
+   "qa-probe-event.text: 해라체 종결(\"~다.\")이 있다 — 합쇼체(\"~습니다.\"/\"~ㅂ니다.\")로 쓴다 (「어른들은 한참을 바라보았다.」) — \"아"
+  ]
+ },
+ {
+  "name": "해라체 한 문장만 섞임",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 해라체 종결(\"~다.\")이 있다 — 합쇼체(\"~습니다.\"/\"~ㅂ니다.\")로 쓴다 (「어른들은 한참을 바라보았다.」) — \"아"
+  ]
+ },
+ {
+  "name": "마침표 없는 합쇼체",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「아이가 처음으로 웃었습니다」) — \"아이가 처음으"
+  ]
+ },
+ {
+  "name": "해요체(「~했어요.」)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「아이가 처음으로 웃었어요.」) — \"아이가 처음으",
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「어른들은 기뻤어요.」) — \"아이가 처음으로 웃었"
+  ]
+ },
+ {
+  "name": "「~죠.」 구어",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「모두 기뻤죠.」) — \"아이가 처음으로 웃었습니다",
+   "qa-probe-event.text: 구어체 종결(~요/~죠/~니까.)이 있다 — \"아이가 처음으로 웃었습니다. 모두 기뻤죠.\""
+  ]
+ },
+ {
+  "name": "옛 철자 「읍니다」(r3: 걸려야 함)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 옛 철자 「~읍니다」다 — 합쇼체는 「~습니다」로 쓴다 — \"아이가 처음으로 웃었읍니다.\""
+  ]
+ },
+ {
+  "name": "합쇼체 의문문(물음표)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 물음표가 있다 (담담한 서술체로 쓴다) — \"아이가 웃었습니까?\"",
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「아이가 웃었습니까?」) — \"아이가 웃었습니까?\""
+  ]
+ },
+ {
+  "name": "느낌표",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 느낌표가 있다 — \"아이가 웃었습니다!\"",
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「아이가 웃었습니다!」) — \"아이가 웃었습니다!\""
+  ]
+ },
+ {
+  "name": "이모지",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 이모지·그림 기호가 있다 — \"아이가 웃었습니다. 😀\"",
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「😀」) — \"아이가 웃었습니다. 😀\""
+  ]
+ },
+ {
+  "name": "말줄임표",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 말줄임표가 있다 — \"아이가 웃었습니다…\"",
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「아이가 웃었습니다…」) — \"아이가 웃었습니다…\""
+  ]
+ },
+ {
+  "name": "선택지 결과가 해라체",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.choices[0](a).result: 해라체 종결(\"~다.\")이 있다 — 합쇼체(\"~습니다.\"/\"~ㅂ니다.\")로 쓴다 (「아이를 안아",
+   "qa-probe-event.choices[0](a).result: 해라체 종결(\"~다.\")이 있다 — 합쇼체(\"~습니다.\"/\"~ㅂ니다.\")로 쓴다 (「아이는 곧 "
+  ]
+ },
+ {
+  "name": "큰따옴표 대사(합쇼체 서술)도 금지(r3 R-360)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 인용 부호(큰따옴표·작은따옴표·낫표)를 쓰지 않는다 — 대사는 「~라고 했습니다」 같은 간접화법으로 쓴다 — \"아이가 \"가자"
+  ]
+ },
+ {
+  "name": "대사로 해라체 서술 가리기(걸려야 함)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 인용 부호(큰따옴표·작은따옴표·낫표)를 쓰지 않는다 — 대사는 「~라고 했습니다」 같은 간접화법으로 쓴다 — \"아이가 \"가자",
+   "qa-probe-event.text: 해라체 종결(\"~다.\")이 있다 — 합쇼체(\"~습니다.\"/\"~ㅂ니다.\")로 쓴다 (「아이가 \"가자.\" 하고 말했다.」) — "
+  ]
+ },
+ {
+  "name": "대사 안 해요체(「그만 가요.」)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 인용 부호(큰따옴표·작은따옴표·낫표)를 쓰지 않는다 — 대사는 「~라고 했습니다」 같은 간접화법으로 쓴다 — \"아이가 \"그만",
+   "qa-probe-event.text: 구어체 종결(~요/~죠/~니까.)이 있다 — \"아이가 \"그만 가요.\" 하고 말했습니다.\""
+  ]
+ },
+ {
+  "name": "한자어 요 명사(「도움이 필요합니다.」) 통과",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "따옴표 짝 안 맞음",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 인용 부호(큰따옴표·작은따옴표·낫표)를 쓰지 않는다 — 대사는 「~라고 했습니다」 같은 간접화법으로 쓴다 — \"아이가 \"가자",
+   "qa-probe-event.text: 인용 부호가 짝이 맞지 않는다 (여는 부호와 닫는 부호를 한 쌍으로 쓴다) — \"아이가 \"가자 하고 말했습니다.\""
+  ]
+ },
+ {
+  "name": "본문 74자(통과)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "본문 75자 초과",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 권장 최대 74자를 넘는다 (지금 75자) — \"가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가입니다. 가"
+  ]
+ },
+ {
+  "name": "제목 17자",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.title: 권장 최대 16자를 넘는다 (지금 17자) — \"가가가가가가가가가가가가가가가가가\""
+  ]
+ },
+ {
+  "name": "제목 16자(통과)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "라벨 25자",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.choices[0](a).label: 권장 최대 24자를 넘는다 (지금 25자) — \"가가가가가가가가가가가가가가가가가가가가가가가한다\""
+  ]
+ },
+ {
+  "name": "라벨 끝에 마침표",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.choices[0](a).label: \"~다\"로 끝나는 서술체가 아니다 — \"안아 준다.\"",
+   "qa-probe-event.choices[0](a).label: 끝에 마침표가 있다 — \"안아 준다.\""
+  ]
+ },
+ {
+  "name": "한 문장 53자",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 한 문장이 52자를 넘는다 (55자) — 문장을 나눈다 — \"가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가"
+  ]
+ },
+ {
+  "name": "지난 세상 + 「어린이집」",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 이 이벤트가 일어나는 시대(past)에 어울리지 않는 소재다 (어린이집) — 시대 조건(eras)을 걸거나 시대 중립 문구로"
+  ]
+ },
+ {
+  "name": "지난 세상 + 「육아휴직」",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 이 이벤트가 일어나는 시대(past)에 어울리지 않는 소재다 (육아휴직) — 시대 조건(eras)을 걸거나 시대 중립 문구로"
+  ]
+ },
+ {
+  "name": "지난 세상 + 「영어 유치원」",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 이 이벤트가 일어나는 시대(past)에 어울리지 않는 소재다 (영어 유치원) — 시대 조건(eras)을 걸거나 시대 중립 문"
+  ]
+ },
+ {
+  "name": "지난 세상 + 「산후조리원」",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 이 이벤트가 일어나는 시대(past)에 어울리지 않는 소재다 (산후조리원) — 시대 조건(eras)을 걸거나 시대 중립 문구"
+  ]
+ },
+ {
+  "name": "시대 미지정 + 「어린이집」(지난 세상에도 일어남)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 이 이벤트가 일어나는 시대(past·present·future)에 어울리지 않는 소재다 (어린이집) — 시대 조건(eras)"
+  ]
+ },
+ {
+  "name": "지금 세상 전용 + 「어린이집」(통과)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "지금 세상 + 「아랫목」",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 이 이벤트가 일어나는 시대(present)에 어울리지 않는 소재다 (아랫목) — 시대 조건(eras)을 걸거나 시대 중립 문"
+  ]
+ },
+ {
+  "name": "지난 세상 전용 + 「아랫목」(통과)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "지난 세상 + 「학습지」(허용)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "영유아 1인칭 「나는」",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 영유아 문구에 1인칭(\"나·내\")이 있다 — 영유아기는 \"아이\"로 쓴다 — \"나는 처음으로 웃었습니다.\""
+  ]
+ },
+ {
+  "name": "달력 연도",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 특정 달력 연도가 있다 (기준은 나이뿐이다) — \"2026년에 아이가 웃었습니다.\""
+  ]
+ },
+ {
+  "name": "URL",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: URL·계정 표기가 있다 — \"아이가 웃었습니다. https://example.com\"",
+   "qa-probe-event.text: 합쇼체 서술체(\"~습니다.\"/\"~ㅂ니다.\")로 끝나지 않는 문장이 있다 (「https://example.com」) — \"아이"
+  ]
+ },
+ {
+  "name": "금액 문장(3만 원)(r3: 걸려야 함)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 금액(숫자 + 원·만 원·억 원)이 문장에 있다 — 금액은 영향 줄이 말하고 문장은 숫자 없이 쓴다 — \"아이 몫으로 3만 "
+  ]
+ },
+ {
+  "name": "금액 문장(3억)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 금액(숫자 + 원·만 원·억 원)이 문장에 있다 — 금액은 영향 줄이 말하고 문장은 숫자 없이 쓴다 — \"집값이 3억이라고 "
+  ]
+ },
+ {
+  "name": "금액 문장(5달러)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 금액(숫자 + 원·만 원·억 원)이 문장에 있다 — 금액은 영향 줄이 말하고 문장은 숫자 없이 쓴다 — \"아이는 5달러를 받"
+  ]
+ },
+ {
+  "name": "「몇 만 원」(통과)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "낫표 인용 「가자」",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 인용 부호(큰따옴표·작은따옴표·낫표)를 쓰지 않는다 — 대사는 「~라고 했습니다」 같은 간접화법으로 쓴다 — \"아이가 「가자"
+  ]
+ },
+ {
+  "name": "작은따옴표 인용",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 인용 부호(큰따옴표·작은따옴표·낫표)를 쓰지 않는다 — 대사는 「~라고 했습니다」 같은 간접화법으로 쓴다 — \"아이가 '가자"
+  ]
+ },
+ {
+  "name": "간접화법(통과)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "마침표 바로 뒤에 한글이 붙음(R-371 ③)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "qa-probe-event.text: 마침표 바로 뒤에 글이 붙어 있다 — 마침표 뒤는 한 칸 띄운다(문장이 나뉘지 않아 어체 점검이 끝 문장만 본다) — \"아이"
+  ]
+ },
+ {
+  "name": "구어 명사 예외(「고요합니다」)(통과)",
+  "expect": false,
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ },
+ {
+  "name": "7세 전용 school- 이벤트의 1인칭(R-371 ②)",
+  "expect": true,
+  "flagged": true,
+  "ok": true,
+  "msgs": [
+   "school-qa-probe.text: 영유아 문구에 1인칭(\"나·내\")이 있다 — 영유아기는 \"아이\"로 쓴다 — \"나는 처음으로 학교에 갔습니다.\""
+  ]
+ },
+ {
+  "name": "소수점(3.2kg)은 문장 끝이 아님",
+  "expect": "either",
+  "flagged": false,
+  "ok": true,
+  "msgs": []
+ }
+]

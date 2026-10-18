@@ -37,12 +37,36 @@ const SCROLL_GAP = 12;
  * `revealTopOfTallFocus`는 가용 높이를 **스크롤 여백**(고정 띠 + 위·아래 12px씩)으로 재서, 카드가 띠 바로 위에 딱 들어가는 높이(여백 24px 안쪽)에서도 위쪽을 맞춰 링이 띠에 1px 겹친다.
  * 이 함수는 판정(e2e/focusGeometry.ts)과 같은 문턱을 쓴다 — 링 상자(요소 + 링 두께)가 **고정 띠를 뺀** 가용 높이를 넘을 때만 「크다」고 보고, 그 밖에는 브라우저의 기본 포커스 스크롤(띠 바로 위에 맞춤)에 맡긴다.
  * 링 두께는 계산된 outline(두께 + offset)에서 읽는다.
+ * 링 상자가 가용 높이에는 들어가지만 12px 틈까지는 못 들어가는 **띠**(M7a r3 C10f)에서는 기본 스크롤에 맡기지 않고 링 상자를 가용 영역의 가운데에 둔다.
  */
 export function revealTopOfTallCard(el: HTMLElement): void {
   if (typeof window === 'undefined') return;
   const cs = window.getComputedStyle(el);
   const ring = (Number.parseFloat(cs.outlineWidth) || 0) + (Number.parseFloat(cs.outlineOffset) || 0);
-  revealTopOfTallFocus(el, ring - SCROLL_GAP);
+  const style = window.getComputedStyle(document.documentElement);
+  const px = (v: string): number => {
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  // 위·아래 고정 띠가 차지하는 높이 = 스크롤 여백에서 틈(12px)을 뺀 값. 가용 높이 = 화면 − 두 띠
+  const topInset = Math.max(0, px(style.scrollPaddingTop) - SCROLL_GAP);
+  const bottomInset = Math.max(0, px(style.scrollPaddingBottom) - SCROLL_GAP);
+  const available = window.innerHeight - topInset - bottomInset;
+  const box = el.getBoundingClientRect().height + ring * 2;
+  if (box > available) {
+    revealTopOfTallFocus(el, ring - SCROLL_GAP);
+    return;
+  }
+  // 링 상자가 가용 높이에는 들어가지만 12px 틈까지는 못 들어가는 띠(C10f, QA-003-M7a): 브라우저의 기본 포커스 스크롤은 틈을 지키려다 못 맞춰 링이 띠에 겹치거나 화면 위로 나간다.
+  // 링 상자를 가용 영역의 가운데에 둔다 — 위·아래 여유가 같고 어느 쪽 띠와도 겹치지 않는다. 마우스·터치로 생긴 포커스(:focus-visible이 아님)는 건드리지 않는다.
+  if (box <= available - SCROLL_GAP * 2) return;
+  try {
+    if (!el.matches(':focus-visible')) return;
+  } catch {
+    return;
+  }
+  const delta = el.getBoundingClientRect().top - ring - (topInset + (available - box) / 2);
+  if (Math.abs(delta) >= 0.5) window.scrollBy({ top: delta, behavior: 'instant' });
 }
 
 /**

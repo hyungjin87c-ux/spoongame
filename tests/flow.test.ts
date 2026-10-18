@@ -303,7 +303,9 @@ function trace(seed: number, era: Era, chooser: (s: GameState) => string, pool: 
       s = next;
     } else {
       const r = stepYear(s, pool);
-      if ((r.tick.kind === 'narrative' || r.tick.kind === 'death') && r.tick.eventId !== undefined) occ.push({ id: r.tick.eventId, age: s.age, flags: s.flags, after: r.state.flags });
+      // 마일스톤(M7a)은 그 해의 일반 사건과 별개 줄이다(한 해에 여러 개일 수 있다, r3) — tick.milestoneIds를 모두 세고, 일반 사건(tick.eventId가 마일스톤이 아닌 것)을 따로 센다
+      for (const id of r.tick.milestoneIds ?? []) occ.push({ id, age: s.age, flags: s.flags, after: r.state.flags });
+      if ((r.tick.kind === 'narrative' || r.tick.kind === 'death') && r.tick.eventId !== undefined && !(r.tick.milestoneIds ?? []).includes(r.tick.eventId)) occ.push({ id: r.tick.eventId, age: s.age, flags: s.flags, after: r.state.flags });
       s = r.state;
     }
   }
@@ -1100,5 +1102,78 @@ describe('한 판 안의 모순 0건: 거처 3 (R-094) — "혼자 먹는 저녁
   it('빚을 내 집을 마련(own_home)한 판에서도 월세방(renting)을 구한 판에서도 실제로 나오는 이벤트다 — 그래서 본문이 어느 쪽에서도 맞아야 한다 (표본 10판 이상)', () => {
     expect(withFlag('loan', 'own_home').length, '집을 마련한 뒤 혼자 먹는 저녁').toBeGreaterThanOrEqual(10);
     expect(withFlag('rent', 'renting').length, '월세방을 구한 뒤 혼자 먹는 저녁').toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe('한 판 안의 모순 0건: 영유아 맡김·취학 전 (R-363, M7a r3) — 맡김 장면이 두 번 나오지 않고, 육아휴직 복귀 뒤 어린이집 대기가 없고, 놀이 중심 결과가 첫 책과 어긋나지 않는다', () => {
+  const evOf = (id: string) => EVENT_POOL.byId.get(id)!;
+  /** 맡김을 정한 선택이 켜는 플래그 childcare_set을 읽어 닫는 조건을 지운 대조 풀(r2까지의 옛 모양) */
+  const openPool = poolWith({
+    'infant-care': (e) => ({ ...e, conditions: undefined }),
+    'infant-daycare-wait': (e) => ({ ...e, conditions: undefined }),
+  });
+  const CARE = 'infant-care';
+  const WAIT = 'infant-daycare-wait';
+  const LEAVE = 'infant-parental-leave';
+
+  it('(a) 육아휴직에서 「일터로 돌아간다」(back)를 고른 판에는 그 뒤 어린이집 대기도, 또 다른 맡김 장면(맡겨지는 낮)도 나오지 않는다 — back이 childcare_set을 켠다', () => {
+    const lives = populate({ [LEAVE]: 'back' }, 600, EVENT_POOL, ['present']);
+    const back = lives.filter((l) => pickedAt(l, LEAVE) === 'back');
+    expect(back.length, '육아휴직 복귀를 고른 판(공허 통과 방지)').toBeGreaterThanOrEqual(40);
+    expect(afterCount(back, LEAVE, WAIT), '복귀 뒤 어린이집 대기').toBe(0);
+    expect(afterCount(back, LEAVE, CARE), '복귀 뒤 맡겨지는 낮').toBe(0);
+    for (const l of back) expect(l.final.flags, `${l.era} ${l.seed}`).toContain('childcare_set');
+    // 대조: 닫는 조건을 지우면 같은 시드들에서 복귀 뒤에도 어린이집 대기·맡김이 실제로 나온다
+    const control = populate({ [LEAVE]: 'back' }, 600, openPool, ['present']).filter((l) => pickedAt(l, LEAVE) === 'back');
+    expect(afterCount(control, LEAVE, WAIT) + afterCount(control, LEAVE, CARE), '옛 조건에서 복귀 뒤 맡김 장면').toBeGreaterThan(0);
+  });
+
+  it('육아휴직에서 일을 쉬는 쪽(one·share)을 고른 판에는 일터로 돌아갈 때가 오므로 어린이집 대기가 그대로 열린다 (막은 것은 복귀한 판뿐이다)', () => {
+    const lives = populate({ [LEAVE]: 'one' }, 800, EVENT_POOL, ['present']).filter((l) => pickedAt(l, LEAVE) === 'one');
+    expect(lives.length).toBeGreaterThanOrEqual(80);
+    expect(afterCount(lives, LEAVE, WAIT), '일을 쉰 판의 어린이집 대기').toBeGreaterThan(0);
+  });
+
+  it('(b) 맡김 장면(맡겨지는 낮 · 어린이집 대기)은 한 판에 하나뿐이다 — 어느 쪽이 먼저든 뒤쪽이 닫힌다 (세 시대 표본)', () => {
+    const lives = GENERAL();
+    const care = lives.filter((l) => occurred(l, CARE));
+    const wait = lives.filter((l) => occurred(l, WAIT));
+    expect(care.length, '맡겨지는 낮이 나온 판').toBeGreaterThan(150);
+    expect(wait.length, '어린이집 대기가 나온 판').toBeGreaterThan(30);
+    expect(lives.filter((l) => occurred(l, CARE) && occurred(l, WAIT)).map((l) => `${l.era}/${l.seed}`), '두 맡김 장면이 함께 나온 판').toEqual([]);
+    // 맡김을 정한 선택은 모두 childcare_set을 켠다 (세 선택지 × 두 이벤트)
+    for (const [id, ids] of [[CARE, ['grandparents', 'daycare', 'home']], [WAIT, ['grandparents', 'center', 'sitter']]] as const) {
+      for (const cid of ids) expect(evOf(id).choices!.find((c) => c.id === cid)!.effects?.setFlags, `${id}/${cid}`).toContain('childcare_set');
+    }
+    expect(evOf(LEAVE).choices!.find((c) => c.id === 'back')!.effects?.setFlags).toContain('childcare_set');
+    // 대조: 닫는 조건을 지우면 같은 시드들에서 두 장면이 한 판에 함께 나온다
+    const control = populate({}, 500, openPool, ['present']);
+    expect(control.filter((l) => occurred(l, CARE) && occurred(l, WAIT)).length, '옛 조건에서 두 맡김 장면이 함께 나온 판').toBeGreaterThan(0);
+  });
+
+  it('(c) 놀이 중심(play)의 결과는 「입학 뒤에」라고 하지 않고, 첫 책 본문도 입학을 말하지 않는다 — 어느 순서로 나와도 모순이 없다', () => {
+    const play = evOf('infant-early-lessons').choices!.find((c) => c.id === 'play')!;
+    expect(play.result).toBe('수업 대신 마당과 놀이터에서 해가 질 때까지 놀았습니다. 글자는 놀이 사이에 하나씩 천천히 익혔습니다.');
+    expect(play.result).not.toMatch(/입학|학교/);
+    expect(evOf('infant-first-book').text).not.toMatch(/입학|학교/);
+    // 두 이벤트가 한 판에 모두 나오는 경우가 실제로 있다(표본) — 위 문구가 그 장면에서도 맞아야 한다
+    const both = populate({ 'infant-early-lessons': 'play' }, 400, EVENT_POOL, ['present', 'future']).filter((l) => occurred(l, 'infant-early-lessons') && occurred(l, 'infant-first-book'));
+    expect(both.length, '취학 전의 시간표와 첫 책이 함께 나온 판').toBeGreaterThan(10);
+  });
+});
+
+describe('한 판 안의 모순 0건: 자가 판의 이사 (T05, M7a r3) — 출생신고 「사는 집: 자가」인 판에는 「이삿짐을 싸던 날」이 나오지 않는다', () => {
+  it('세 시대 × 600판: 이삿짐(infant-moving)이 일어난 판의 출생 주거는 모두 임차·무상이고, 자가 판에서는 0건이다. 표본이 공허하지 않다(자가 판이 절반 가까이 있고 이삿짐은 실제로 나온다)', () => {
+    const lives = populate({}, 600);
+    const own = lives.filter((l) => l.final.birthReport!.housing === 'own');
+    const moved = lives.filter((l) => occurred(l, 'infant-moving'));
+    expect(own.length, '자가 판').toBeGreaterThan(300);
+    expect(moved.length, '이삿짐이 나온 판').toBeGreaterThan(80);
+    expect(own.filter((l) => occurred(l, 'infant-moving')).map((l) => `${l.era}/${l.seed}`), '자가 판의 이삿짐').toEqual([]);
+    for (const l of moved) expect(['rent', 'free'], `${l.era} ${l.seed}`).toContain(l.final.birthReport!.housing);
+    // 대조: housing 조건을 지운 풀(r2까지)에서는 자가 판에서도 이삿짐이 실제로 나온다
+    const old = poolWith({ 'infant-moving': (e) => ({ ...e, conditions: { parentWealth: { max: 3 } } }) });
+    const control = populate({}, 300, old).filter((l) => l.final.birthReport!.housing === 'own' && occurred(l, 'infant-moving'));
+    expect(control.length, '옛 조건에서 자가 판의 이삿짐').toBeGreaterThan(5);
   });
 });

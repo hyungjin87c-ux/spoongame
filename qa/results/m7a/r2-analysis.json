@@ -1,0 +1,221 @@
+{
+ "n": 600,
+ "byEra": {
+  "past": {
+   "n": 200,
+   "lines": 1992,
+   "blank": 153,
+   "blankMax": 3,
+   "choices": 591,
+   "twoPlus": 200,
+   "threeLineGames": 162,
+   "year1Lines": {
+    "2": 38,
+    "3": 162
+   },
+   "firstborn": 42,
+   "sibGames": 34,
+   "later": 158,
+   "laterSib": 0,
+   "toy": 13,
+   "cards3": 34,
+   "cardsAll": 34,
+   "grandma": 0,
+   "notice": 34,
+   "tierCount": {
+    "1": 76,
+    "2": 62,
+    "3": 43,
+    "4": 18,
+    "5": 1
+   },
+   "linesAvg": 9.96,
+   "blankAvg": 0.765,
+   "choicesAvg": 2.955
+  },
+  "present": {
+   "n": 200,
+   "lines": 1949,
+   "blank": 193,
+   "blankMax": 4,
+   "choices": 589,
+   "twoPlus": 200,
+   "threeLineGames": 158,
+   "year1Lines": {
+    "2": 42,
+    "3": 158
+   },
+   "firstborn": 114,
+   "sibGames": 55,
+   "later": 86,
+   "laterSib": 0,
+   "toy": 13,
+   "cards3": 55,
+   "cardsAll": 55,
+   "grandma": 2,
+   "notice": 53,
+   "tierCount": {
+    "1": 48,
+    "2": 67,
+    "3": 45,
+    "4": 30,
+    "5": 10
+   },
+   "linesAvg": 9.745,
+   "blankAvg": 0.965,
+   "choicesAvg": 2.945
+  },
+  "future": {
+   "n": 200,
+   "lines": 1991,
+   "blank": 152,
+   "blankMax": 3,
+   "choices": 586,
+   "twoPlus": 200,
+   "threeLineGames": 160,
+   "year1Lines": {
+    "2": 40,
+    "3": 160
+   },
+   "firstborn": 121,
+   "sibGames": 55,
+   "later": 79,
+   "laterSib": 0,
+   "toy": 17,
+   "cards3": 55,
+   "cardsAll": 55,
+   "grandma": 3,
+   "notice": 52,
+   "tierCount": {
+    "1": 55,
+    "2": 63,
+    "3": 42,
+    "4": 28,
+    "5": 12
+   },
+   "linesAvg": 9.955,
+   "blankAvg": 0.76,
+   "choicesAvg": 2.93
+  }
+ },
+ "t04": {
+  "wide": {
+   "undefined": {
+    "n": 371,
+    "byTier": {
+     "1": 179,
+     "2": 192
+    }
+   },
+   "infant-parental-leave/한 사람이 일을 쉬고 돌본다": {
+    "n": 30,
+    "byTier": {
+     "1": 8,
+     "2": 10,
+     "3": 4,
+     "4": 5,
+     "5": 3
+    }
+   },
+   "infant-kindergarten/집에서 더 돌본다": {
+    "n": 17,
+    "byTier": {
+     "1": 6,
+     "2": 7,
+     "3": 2,
+     "4": 2
+    }
+   }
+  },
+  "tier45Lines": 0,
+  "strict13": 0
+ },
+ "t05": {
+  "movingByHousing": {
+   "rent": 74,
+   "free": 7
+  },
+  "buyShown": {
+   "rent": 5,
+   "free": 1
+  },
+  "ownMoving": 0
+ },
+ "ms": {
+  "seven": {
+   "past": {
+    "school-supplies": 70,
+    "infant-first-book": 26,
+    "school-first-walk": 34,
+    "school-first-day": 44,
+    "_none": 26
+   },
+   "present": {
+    "school-supplies": 36,
+    "infant-first-book": 38,
+    "school-after-hours": 29,
+    "school-first-day": 66,
+    "_none": 31
+   },
+   "future": {
+    "school-supplies": 37,
+    "infant-first-book": 42,
+    "school-after-hours": 29,
+    "school-first-day": 66,
+    "_none": 26
+   }
+  }
+ },
+ "sib": {},
+ "tone": {},
+ "childcare": {
+  "careGames": 170,
+  "careOnly": 156,
+  "waitOnly": 14,
+  "backGames": 22,
+  "playAndBook": 16
+ },
+ "record": {
+  "neglectGames": 72,
+  "neglectEv": {
+   "infant-vaccine": 72,
+   "infant-meal-start": 25,
+   "infant-first-steps": 72,
+   "infant-first-word": 72,
+   "infant-stories": 23,
+   "infant-care": 25,
+   "infant-follow-sibling": 23,
+   "infant-first-book": 34,
+   "school-first-walk": 9,
+   "infant-hundred-days": 28,
+   "infant-neglect-night": 41,
+   "infant-grandparent-song": 6,
+   "infant-hospital-stay": 21,
+   "school-first-day": 20,
+   "infant-fever": 27,
+   "infant-village": 24,
+   "school-supplies": 15,
+   "infant-coal-winter": 16,
+   "infant-first-birthday": 11,
+   "infant-tantrum": 16,
+   "infant-market-day": 17,
+   "infant-questions": 30,
+   "infant-moving": 8,
+   "infant-new-sibling": 14,
+   "infant-sibling-toy": 4,
+   "infant-parental-leave": 7,
+   "infant-checkup": 16,
+   "infant-kindergarten": 5,
+   "infant-noise": 2,
+   "infant-daycare-wait": 2,
+   "infant-screen": 7,
+   "infant-early-lessons": 8,
+   "infant-heat-day": 6,
+   "infant-talking-toy": 4,
+   "infant-care-alert": 5
+  }
+ },
+ "wealthViol": 0,
+ "findingCounts": {},
+ "findings": []
+}

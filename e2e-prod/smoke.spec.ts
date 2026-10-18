@@ -307,7 +307,7 @@ test('개발 탐침 쿼리(?__timescale·__guard·__crash·__quota)는 프로덕
   expect(await page.evaluate(() => (window as unknown as { __sawGuard: boolean }).__sawGuard), '입력 가드가 걸렸다 (?__guard=0 무시)').toBe(true);
 
   await toLifeScreen(page);
-  // __timescale=1000: 1배속의 첫 한 해(0세는 이벤트가 없는 조용한 해, HOLD_MS.quiet)가 실제로 그만큼 걸린다. 탐침이 먹혔다면 수 ms 만에 나이가 오르거나 선택지가 뜬다.
+  // __timescale=1000: 1배속의 첫 한 해(M7a 이후 0세에는 첫 예방접종이 늘 일어나 조용한 해보다 길 수 있다 — 아래 하한은 조용한 해 HOLD_MS.quiet 기준)가 실제로 그만큼 걸린다. 탐침이 먹혔다면 수 ms 만에 나이가 오르거나 선택지가 뜬다.
   const shownAt = Date.now();
   await expect
     .poll(() => page.evaluate(() => !document.querySelector('[data-testid="life-age"]')?.textContent?.includes('0세') || document.querySelector('[data-testid="choice-panel"]') !== null), {
@@ -315,7 +315,7 @@ test('개발 탐침 쿼리(?__timescale·__guard·__crash·__quota)는 프로덕
     })
     .toBe(true);
   const firstYearMs = Date.now() - shownAt;
-  expect(firstYearMs, `첫 한 해가 ${firstYearMs}ms 만에 지났다 — 1배속의 조용한 한 해는 약 ${HOLD_MS.quiet}ms여야 한다 (?__timescale 무시)`).toBeGreaterThanOrEqual(HOLD_MS.quiet * 0.75);
+  expect(firstYearMs, `첫 한 해가 ${firstYearMs}ms 만에 지났다 — 1배속의 한 해는 적어도 조용한 해 ${HOLD_MS.quiet}ms에 가까워야 한다 (?__timescale 무시)`).toBeGreaterThanOrEqual(HOLD_MS.quiet * 0.75);
 
   // __quota: 저장이 실패하는 저장소가 되면 안 된다 — 저장 안내가 없고 저장이 실제로 남아 있다
   await expect(page.getByTestId('save-notice')).toHaveCount(0);

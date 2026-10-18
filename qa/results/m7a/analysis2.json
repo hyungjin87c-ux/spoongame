@@ -1,0 +1,99 @@
+{
+ "tight": {
+  "undefined": {
+   "n": 179,
+   "byTier": {
+    "1": 179
+   }
+  },
+  "infant-parental-leave/한 사람이 일을 쉬고 돌본다": {
+   "n": 32,
+   "byTier": {
+    "1": 8,
+    "2": 10,
+    "3": 5,
+    "4": 6,
+    "5": 3
+   }
+  },
+  "infant-kindergarten/집에서 더 돌본다": {
+   "n": 11,
+   "byTier": {
+    "2": 5,
+    "3": 2,
+    "4": 2,
+    "5": 2
+   }
+  }
+ },
+ "neglect": {
+  "infant-vaccine": 72,
+  "infant-meal-start": 29,
+  "infant-first-word": 72,
+  "infant-first-steps": 72,
+  "infant-fever": 21,
+  "infant-first-book": 22,
+  "infant-hundred-days": 27,
+  "infant-care": 17,
+  "school-supplies": 22,
+  "infant-tantrum": 14,
+  "infant-first-birthday": 12,
+  "infant-hospital-stay": 19,
+  "infant-stories": 21,
+  "infant-questions": 26,
+  "infant-parental-leave": 7,
+  "infant-checkup": 12,
+  "school-after-hours": 6,
+  "infant-daycare-wait": 2,
+  "infant-early-lessons": 7,
+  "infant-kindergarten": 2,
+  "infant-care-alert": 3
+ },
+ "housing": {
+  "infant-moving|own|같은 동네에서 집을 구한다": 41,
+  "infant-moving|rent|같은 동네에서 집을 구한다": 31,
+  "infant-moving|rent|값이 낮은 먼 동네로 옮긴다": 40,
+  "infant-moving|own|값이 낮은 먼 동네로 옮긴다": 36,
+  "infant-moving|free|값이 낮은 먼 동네로 옮긴다": 1,
+  "infant-moving|own|빚을 내어 작은 집을 산다": 8,
+  "infant-moving|free|같은 동네에서 집을 구한다": 2,
+  "infant-noise|rent|바닥에 매트를 깔고 사과한다": 10,
+  "infant-noise|own|바닥에 매트를 깔고 사과한다": 9,
+  "infant-noise|rent|집 안에서는 조용히 놀게 한다": 5,
+  "infant-noise|own|이사할 집을 알아본다": 2,
+  "infant-noise|own|집 안에서는 조용히 놀게 한다": 8,
+  "infant-noise|rent|이사할 집을 알아본다": 1
+ },
+ "firstWordQuestion": 37,
+ "firstWordAge": {
+  "1": 102,
+  "2": 156,
+  "3": 342
+ },
+ "wordWithTantrum": 32,
+ "moving": [],
+ "neglectGames": 72,
+ "motherAtSib": {
+  "n": 157,
+  "max": 45,
+  "min": 19
+ },
+ "mixYears": 328,
+ "legacyInTwo": {
+  "infant-village": 44,
+  "infant-fever": 72,
+  "infant-care": 65,
+  "infant-stories": 41,
+  "infant-hovering": 40,
+  "infant-neglect-night": 15,
+  "infant-free-play": 22,
+  "infant-grandparent-song": 7,
+  "infant-screen": 22
+ },
+ "sevenStageMix": 525,
+ "lineDist": {
+  "0": 511,
+  "1": 2764,
+  "2": 1525
+ }
+}

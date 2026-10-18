@@ -15,6 +15,7 @@ import {
   parseGame,
   serializeGame,
   sessionReducer,
+  stepYear,
   type Session,
 } from '../src/core';
 import { startLife } from '../scripts/simulateLib';
@@ -255,8 +256,10 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
     let s = send(send(inBirth(), { type: 'openTitle' }), { type: 'resume' });
     s = send(s, { type: 'enterLife' });
     expect(s.game).toEqual(enterLife(inBirth().game));
+    // M7a: 0세에는 마일스톤·결정이 있어 첫 걸음이 늘 나이를 1로 올리지는 않는다 — 한 걸음의 결과가 stepYear와 같고 연출 정보(tick)가 따라온다
     const advanced = send(s, { type: 'advance', fromAge: 0 });
-    expect(advanced.game.age).toBe(1);
+    expect(advanced.game).toEqual(stepYear(s.game).state);
+    expect(advanced.tick).not.toBeNull();
   });
 });
 

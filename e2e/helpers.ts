@@ -311,6 +311,34 @@ export async function evalCore<T>(page: Page, body: string, arg: unknown = null)
   })()`);
 }
 
+/**
+ * 앞으로 N해가 모두 「조용한 해」(사건도 선택지도 마일스톤도 없는 해 — tick.kind가 'quiet')인 인생 상태를 찾는다. 연출 시간이 일정해(HOLD_MS.quiet) 시간 측정이 흔들리지 않고 선택지가 끼지 않는다.
+ * M7a 이전에는 0세에서 시작해도 첫 N해가 조용한 시드가 있었다. 지금은 0세에 첫 예방접종(마일스톤)이 늘 일어나고 영유아 빈도가 높아 영유아기에는 그런 시드가 없다 —
+ * 그래서 영유아·학창기를 자동 성향으로 지나 20세 이후(중년은 사건이 드물다) 앞으로 N해가 조용한 첫 상태를 찾는다. 앱 페이지가 열려 있어야 한다.
+ */
+export async function quietStart(page: Page, years: number, era: Era = 'present'): Promise<GameState> {
+  const s = await evalCore<GameState | null>(
+    page,
+    `for (let seed = 1; seed < 8000; seed++) {
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), arg.era)));
+       for (let guard = 0; guard < 400 && s.phase === 'life'; guard++) {
+         if (s.pending !== null) { s = core.autoResolveStep(s, s.pending.key).state; continue; }
+         if (s.age >= 20) {
+           let t = s;
+           let ok = true;
+           for (let i = 0; i < arg.years; i++) { const r = core.stepYear(t); if (r.tick.kind !== 'quiet') { ok = false; break; } t = r.state; }
+           if (ok) return s;
+         }
+         s = core.stepYear(s).state;
+       }
+     }
+     return null;`,
+    { years, era },
+  );
+  expect(s, `앞으로 ${years}해가 모두 조용한 해인 상태를 찾지 못했다`).not.toBeNull();
+  return s!;
+}
+
 /** 시드·시대로 만든 "인생 0세" 상태 (core 순수 함수로 계산) */
 export async function oracleLife(page: Page, seed: number, era: Era): Promise<GameState> {
   return evalCore<GameState>(

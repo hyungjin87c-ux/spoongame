@@ -25,7 +25,7 @@ export function condContextOf(state: GameState): CondContext {
     stats: state.stats,
     flags: new Set(state.flags),
     age: state.age,
-    family: r === null ? null : { birthOrder: r.birthOrder, motherBirthAge: r.mother.age, fatherBirthAge: r.father.age },
+    family: r === null ? null : { birthOrder: r.birthOrder, motherBirthAge: r.mother.age, fatherBirthAge: r.father.age, housing: r.housing },
     assets: state.assets,
   };
 }

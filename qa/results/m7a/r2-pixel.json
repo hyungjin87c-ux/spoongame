@@ -1,0 +1,218 @@
+{
+ "all": [
+  {
+   "mode": "light",
+   "state": "card-infant-kindergarten",
+   "rows": 141,
+   "min": 5.78,
+   "docH": 2774
+  },
+  {
+   "mode": "light",
+   "state": "card-infant-early-lessons",
+   "rows": 145,
+   "min": 5.78,
+   "docH": 2825
+  },
+  {
+   "mode": "light",
+   "state": "card-infant-new-sibling",
+   "rows": 138,
+   "min": 5.78,
+   "docH": 2779
+  },
+  {
+   "mode": "light",
+   "state": "log2",
+   "rows": 137,
+   "min": 5.78,
+   "docH": 2594
+  },
+  {
+   "mode": "light",
+   "state": "ending-long",
+   "rows": 407,
+   "min": 5.78,
+   "docH": 7415
+  },
+  {
+   "mode": "light",
+   "state": "ending-present-t1",
+   "rows": 360,
+   "min": 5.78,
+   "docH": 6647
+  },
+  {
+   "mode": "dark",
+   "state": "card-infant-kindergarten",
+   "rows": 141,
+   "min": 5.96,
+   "docH": 2774
+  },
+  {
+   "mode": "dark",
+   "state": "card-infant-early-lessons",
+   "rows": 145,
+   "min": 5.96,
+   "docH": 2825
+  },
+  {
+   "mode": "dark",
+   "state": "card-infant-new-sibling",
+   "rows": 138,
+   "min": 5.96,
+   "docH": 2779
+  },
+  {
+   "mode": "dark",
+   "state": "log2",
+   "rows": 137,
+   "min": 5.96,
+   "docH": 2594
+  },
+  {
+   "mode": "dark",
+   "state": "ending-long",
+   "rows": 407,
+   "min": 5.96,
+   "docH": 7415
+  },
+  {
+   "mode": "dark",
+   "state": "ending-present-t1",
+   "rows": 360,
+   "min": 5.96,
+   "docH": 6647
+  },
+  {
+   "mode": "manual-dark",
+   "state": "card-infant-kindergarten",
+   "rows": 141,
+   "min": 5.96,
+   "docH": 2774
+  },
+  {
+   "mode": "manual-dark",
+   "state": "card-infant-early-lessons",
+   "rows": 145,
+   "min": 5.96,
+   "docH": 2825
+  },
+  {
+   "mode": "manual-dark",
+   "state": "card-infant-new-sibling",
+   "rows": 138,
+   "min": 5.96,
+   "docH": 2779
+  },
+  {
+   "mode": "manual-dark",
+   "state": "log2",
+   "rows": 137,
+   "min": 5.96,
+   "docH": 2594
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending-long",
+   "rows": 407,
+   "min": 5.96,
+   "docH": 7415
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending-present-t1",
+   "rows": 360,
+   "min": 5.96,
+   "docH": 6647
+  },
+  {
+   "mode": "forced-light",
+   "state": "card-infant-kindergarten",
+   "rows": 141,
+   "min": 11.31,
+   "docH": 2775
+  },
+  {
+   "mode": "forced-light",
+   "state": "card-infant-early-lessons",
+   "rows": 145,
+   "min": 11.31,
+   "docH": 2826
+  },
+  {
+   "mode": "forced-light",
+   "state": "card-infant-new-sibling",
+   "rows": 138,
+   "min": 11.31,
+   "docH": 2780
+  },
+  {
+   "mode": "forced-light",
+   "state": "log2",
+   "rows": 137,
+   "min": 11.31,
+   "docH": 2594
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending-long",
+   "rows": 407,
+   "min": 21,
+   "docH": 7415
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending-present-t1",
+   "rows": 360,
+   "min": 21,
+   "docH": 6647
+  },
+  {
+   "mode": "forced-dark",
+   "state": "card-infant-kindergarten",
+   "rows": 141,
+   "min": 8.73,
+   "docH": 2775
+  },
+  {
+   "mode": "forced-dark",
+   "state": "card-infant-early-lessons",
+   "rows": 145,
+   "min": 8.73,
+   "docH": 2826
+  },
+  {
+   "mode": "forced-dark",
+   "state": "card-infant-new-sibling",
+   "rows": 138,
+   "min": 8.73,
+   "docH": 2780
+  },
+  {
+   "mode": "forced-dark",
+   "state": "log2",
+   "rows": 137,
+   "min": 8.73,
+   "docH": 2594
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending-long",
+   "rows": 407,
+   "min": 21,
+   "docH": 7415
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending-present-t1",
+   "rows": 360,
+   "min": 21,
+   "docH": 6647
+  }
+ ],
+ "bad": [],
+ "shots": [],
+ "nRows": 6640,
+ "minOverall": 5.78
+}

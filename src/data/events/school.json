@@ -568,6 +568,88 @@
       "weight": 12,
       "once": true,
       "effects": { "stats": { "education": 1, "relationships": -2 } }
+    },
+    {
+      "id": "school-first-day",
+      "title": "책가방을 멘 아침",
+      "text": "아이는 책가방을 메고 처음으로 학교에 갔습니다. 교문 앞에서 몇 번이나 뒤를 돌아보았습니다.",
+      "stages": ["school"],
+      "ageRange": { "min": 7, "max": 7 },
+      "weight": 14,
+      "once": true,
+      "effects": { "stats": { "happiness": 1, "relationships": 1 } }
+    },
+    {
+      "id": "school-supplies",
+      "title": "입학 준비물",
+      "text": "입학을 앞두고 책가방과 학용품을 마련해야 했습니다. 무엇을 어떻게 갖출지 정해야 했습니다.",
+      "stages": ["school"],
+      "ageRange": { "min": 7, "max": 7 },
+      "weight": 14,
+      "once": true,
+      "choices": [
+        {
+          "id": "new",
+          "label": "새것으로 갖춰 준다",
+          "result": "반짝이는 새 책가방과 학용품을 샀습니다. 아이는 책가방을 안고 잠들었습니다.",
+          "effects": { "stats": { "happiness": 2, "relationships": 1 }, "family": -300 }
+        },
+        {
+          "id": "handed",
+          "label": "물려받은 것을 쓴다",
+          "result": "이웃이나 친척이 쓰던 것을 물려받았습니다. 아이는 지워진 이름 자리를 한참 만져 보았습니다.",
+          "effects": { "stats": { "happiness": -1 }, "family": 150 }
+        },
+        {
+          "id": "brand",
+          "label": "또래들이 드는 것으로 맞춘다",
+          "result": "또래들이 드는 것과 같은 가방을 샀습니다. 교문 앞에서는 어깨를 폈지만 몇 달 뒤 또래 사이의 유행이 바뀌었습니다.",
+          "effects": { "stats": { "happiness": 1, "relationships": 3 }, "family": -600 },
+          "requires": { "parentWealth": { "min": 4 } }
+        }
+      ]
+    },
+    {
+      "id": "school-after-hours",
+      "title": "학교가 끝난 뒤",
+      "text": "학교가 일찍 끝나는 날이 많았지만 일터에서 돌아올 어른은 아직 없었습니다. 아이를 어디에 둘지 정해야 했습니다.",
+      "stages": ["school"],
+      "ageRange": { "min": 7, "max": 7 },
+      "eras": ["present", "future"],
+      "weight": 14,
+      "once": true,
+      "choices": [
+        {
+          "id": "care",
+          "label": "학교 안 돌봄 시간에 남긴다",
+          "result": "학교 안에서 어른이 올 때까지 머물렀습니다. 같은 처지의 아이들이 곁에 있었습니다.",
+          "effects": { "stats": { "relationships": 2, "education": 1 }, "family": -150 }
+        },
+        {
+          "id": "alone",
+          "label": "혼자 집에서 기다리게 한다",
+          "result": "아이는 혼자 집에 들어가 어른이 올 때까지 기다렸습니다. 조용한 집에서 시간이 더디게 흘렀습니다.",
+          "effects": { "stats": { "relationships": -2, "happiness": -2 }, "family": 300 }
+        },
+        {
+          "id": "academy",
+          "label": "학원을 몇 군데 돌게 한다",
+          "result": "수업이 끝나면 학원 차에 올라 몇 곳을 돌았습니다. 시간표는 빈틈없이 채워졌습니다.",
+          "effects": { "stats": { "education": 3, "happiness": -2, "health": -1 }, "family": -450 },
+          "requires": { "parentWealth": { "min": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "school-first-walk",
+      "title": "처음 걷는 등굣길",
+      "text": "아이는 이웃 아이들 틈에 끼어 처음으로 학교까지 걸어갔습니다. 길가의 풍경이 모두 새로웠습니다.",
+      "stages": ["school"],
+      "ageRange": { "min": 7, "max": 7 },
+      "eras": ["past"],
+      "weight": 12,
+      "once": true,
+      "effects": { "stats": { "health": 1, "education": 1 } }
     }
   ]
 }

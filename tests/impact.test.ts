@@ -415,12 +415,17 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
     return v;
   };
 
-  const repState = (ev: EventDef, tier: ParentWealth, era: Era, dwelling: 'rent' | 'family'): GameState => {
+  /** 선택지의 requires.notFlags에 쓰이는 플래그 — 이 플래그가 꺼진 상태에서만 보이는 선택지가 있다(infant-new-sibling의 notice, M7a r3) */
+  const notFlagsOf = (ev: EventDef): string[] => [...new Set((ev.choices ?? []).flatMap((c) => c.requires?.notFlags ?? []))];
+
+  const repState = (ev: EventDef, tier: ParentWealth, era: Era, dwelling: 'rent' | 'family', flagsOff = false): GameState => {
     const lo = ev.ageRange?.min ?? 0;
     const hi = ev.ageRange?.max ?? 110;
     const age = Math.round((lo + hi) / 2);
     const base = startLife(7, era);
     const flags = new Set<string>([...(ev.conditions?.flags ?? []), ...(ev.choices ?? []).flatMap((c) => c.requires?.flags ?? [])]);
+    // 플래그가 꺼진 변형(M7a r3): notFlags 선택지가 보이는 상태 — requires.flags로 켠 플래그 가운데 어떤 선택지의 notFlags에 든 것을 끈다
+    if (flagsOff) for (const f of notFlagsOf(ev)) flags.delete(f);
     const s: GameState = { ...base, age, stats: { ...base.stats, education: 50 }, flags: [...flags].sort(), character: { ...base.character!, parentWealth: tier }, assets: null, familyFund: 0 };
     if (age < 20) return s;
     return { ...s, assets: { net: 5000, income: incomeOf(economyContextOf(s), 0), debt: 0, incomeAdj: 0, dwelling } };
@@ -435,7 +440,8 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
       for (const tier of [1, 3, 5] as const) {
         for (const era of ['past', 'present', 'future'] as const) {
           for (const dwelling of ['rent', 'family'] as const) {
-            const s = repState(ev, tier, era, dwelling);
+           for (const flagsOff of notFlagsOf(ev).length > 0 ? [false, true] : [false]) {
+            const s = repState(ev, tier, era, dwelling, flagsOff);
             if (s.age < 20 && dwelling === 'family') continue;
             states++;
             const cs = visibleChoices(ev, condContextOf(s));
@@ -456,6 +462,7 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
                 else pairs.set(id, { count: 1, first: `${era} 재력${tier} ${dwelling} ${s.age}세 나은 쪽 ${JSON.stringify(vs[a])} 못한 쪽 ${JSON.stringify(vs[b])}` });
               }
             }
+           }
           }
         }
       }
@@ -464,13 +471,11 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
   }
 
   /**
-   * 알려진 지배 쌍 24개 (R-352 처리 시점, 마스터에게 보고했다 — 콘텐츠 판단은 마스터). 고치지 않고 잠가 둔다: 새 지배 쌍이 생기거나 이 목록의 쌍이 사라지면 실패해서 알려 준다.
+   * 알려진 지배 쌍 22개 (R-352 처리 시점 24개에서 M7a가 `infant-new-sibling:help>grandma`(grandma에 건강 +1)·`infant-stories:tell>book`(tell의 지식 +3 → +2)을 고쳐 둘이 사라졌다 — 마스터에게 보고했다, 콘텐츠 판단은 마스터). 고치지 않고 잠가 둔다: 새 지배 쌍이 생기거나 이 목록의 쌍이 사라지면 실패해서 알려 준다.
    * 대부분 한쪽이 대표 상태에서 보너스를 받지 못하는 위험한 선택(창업·대출·맞서기)이거나 칸 수가 거칠어 생긴 같은 값의 쌍이다.
    * youth-gig-work의 settle > juggle(자산 ▲▲▲ · 행복 ▲ 대 자산 ▲▲ · 건강 ▼▼ · 행복 ▼)은 마스터 결정으로 콘텐츠를 고쳐(juggle에 관계 +2, settle에 순자산 −800·행복 −1) 사라졌다.
    */
   const KNOWN_DOMINANCE: readonly string[] = [
-    'infant-new-sibling:help>grandma',
-    'infant-stories:tell>book',
     'middle-business:stay>start',
     'middle-business:talk>start',
     'middle-child-school:support>fund',
@@ -495,7 +500,7 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
     'youth-startup:side>start',
   ];
 
-  it('표기 기준 지배 쌍이 알려진 24개뿐이다: 새 쌍이 생기면 실패한다 (고치지 말고 목록과 수치를 보고 — 콘텐츠 판단은 마스터)', () => {
+  it('표기 기준 지배 쌍이 알려진 22개뿐이다: 새 쌍이 생기면 실패한다 (고치지 말고 목록과 수치를 보고 — 콘텐츠 판단은 마스터)', () => {
     const { pairs, states } = findDominance();
     expect(states, '대표 상태 수(공허 통과 방지)').toBeGreaterThan(1000);
     const found = [...pairs.keys()].sort();

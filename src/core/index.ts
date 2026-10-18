@@ -3,6 +3,7 @@ export * from './rng';
 export * from './stats';
 export * from './events';
 export * from './eventLint';
+export * from './legacyHaerache';
 export * from './history';
 export * from './birth';
 export * from './birthReport';

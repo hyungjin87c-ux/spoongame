@@ -26,6 +26,7 @@ import {
   titleState,
   toBirthReport,
 } from './helpers';
+import { measureTextResize, setRootFontPercent, textResizeViolations } from './textResize';
 
 /**
  * 엔딩 (SPEC-001 M5): 담담한 회고(생애 연표·최종 스탯·출발선 대비)와 "다시 태어나기".
@@ -282,10 +283,10 @@ test('엔딩의 제목·문장은 단어 중간에서 끊기지 않고 한 글�
   // 순위 표현("상위 약 23%의")이 "%"와 조사 사이에서 쪼개져 "의"가 다음 줄 맨 앞에 오지 않는다 (ui/KeepStanding)
   const journey = (await visualLines(page, '[data-testid="ending-journey"]'))[0];
   for (const line of journey) expect(line, `줄머리의 조사: ${journey.join(' / ')}`).not.toMatch(/^[의%]/);
-  // 덩어리 수는 문장이 말하는 순위 표현의 수다(출발선 구간이 "하위 25%와 상위 45% 사이의"처럼 두 덩어리면 3개) — 같은 규칙(KeepStanding)에서 구한다
+  // 줄바꿈 없는 덩어리(.nowrap) 수는 문장이 말하는 순위 표현의 조각 수다 — 같은 규칙(KeepStanding)에서 구한다. 넓은 구간 표현("상위 3~17% 사이의")은 숫자 구간과 뒤쪽 낱말 두 조각이다(M7a r2: 320px·글자 200% 넘침 수정)
   const units = await page.evaluate<number>(`(async () => {
-    const { splitStanding } = await import('/src/ui/KeepStanding.tsx');
-    return (splitStanding(document.querySelector('[data-testid="ending-journey"]').textContent).length - 1) / 2;
+    const { splitStanding, standingPieces } = await import('/src/ui/KeepStanding.tsx');
+    return splitStanding(document.querySelector('[data-testid="ending-journey"]').textContent).filter((_, i) => i % 2 === 1).flatMap(standingPieces).length;
   })()`);
   expect(units).toBeGreaterThanOrEqual(2);
   expect(await page.locator('[data-testid="ending-journey"] .nowrap').count()).toBe(units);
@@ -328,6 +329,56 @@ test('출발선 구간 문장(맨 아래·가운데·한쪽 절반·맨 위 단�
     }
   }
   expect(new Set(labels.map((l) => l.split('의 집에서')[0])).size, labels.join(' / ')).toBe(5); // 다섯 단계의 출발선 구간 표현이 모두 다르다
+});
+
+// M7a r2 (CM11·QM3-1): 출발선 문장(#ending-journey)의 구간 표현 「상위 3~17% 사이의」가 320px·글자 200%에서 문장 상자(287px)보다 넓어(318px) 삐져나가던 결함의 단언.
+// 수정 전에는 「글자 잘림 — P#ending-journey: 글자 318 > 상자 287」이었다(qa/screenshots/003/dev-M7a-r2-ending-journey-before.png). 이제 숫자 구간과 뒤쪽 낱말 사이에서 줄이 바뀐다(ui/KeepStanding#standingPieces).
+const JOURNEY_SIZES = [
+  { width: 320, height: 568 },
+  { width: 360, height: 740 },
+] as const;
+const JOURNEY_PERCENTS = [100, 150, 200] as const;
+
+test('출발선 구간 문장(1~5단계) × 320×568·360×740 × 글자 100·150·200%: 상자를 넘는 글자 0·가로 넘침 0·덩어리가 상자 밖으로 나가지 않고 조사가 줄머리에 오지 않는다 (CM11·QM3-1, M7a r2)', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+  test.setTimeout(240_000);
+  const ended = await endedState(page);
+  for (const [wealth, final] of [
+    [1, 12000],
+    [2, 0],
+    [3, -3000],
+    [4, 80000],
+    [5, 3000],
+  ] as const) {
+    const assets = { ...ended.assets!, net: final, debt: Math.max(ended.assets!.debt, -final) };
+    const state: GameState = { ...ended, character: { ...ended.character!, parentWealth: wealth }, assets };
+    for (const size of JOURNEY_SIZES) {
+      for (const percent of JOURNEY_PERCENTS) {
+        await page.setViewportSize(size);
+        await injectSave(page, state, '/');
+        await expect(page.getByTestId('ending-screen')).toBeVisible();
+        if (percent !== 100) await setRootFontPercent(page, percent);
+        const label = `${wealth}단계 ${size.width}x${size.height}/${percent}%`;
+        const violations = textResizeViolations(await measureTextResize(page), label);
+        expect(violations, label).toEqual([]);
+        expect(await noHorizontalOverflow(page), `${label} 가로 넘침`).toBe(true);
+        const journey = (await visualLines(page, '[data-testid="ending-journey"]'))[0];
+        for (const line of journey) {
+          expect(line.length, `한 글자 줄 ${label}: ${journey.join(' / ')}`).toBeGreaterThan(1);
+          expect(line, `줄머리의 조사 ${label}: ${journey.join(' / ')}`).not.toMatch(/^[의%와]/);
+        }
+        const overflowing = await page.evaluate(() => {
+          const box = document.querySelector<HTMLElement>('[data-testid="ending-journey"]')!.getBoundingClientRect();
+          return [...document.querySelectorAll<HTMLElement>('[data-testid="ending-journey"] .nowrap')].filter((el) => el.getBoundingClientRect().right > box.right + 1).map((el) => el.textContent);
+        });
+        expect(overflowing, label).toEqual([]);
+        if (wealth === 4 && size.width === 320 && percent === 200) {
+          await page.getByTestId('ending-journey-section').scrollIntoViewIfNeeded();
+          await page.getByTestId('ending-journey-section').screenshot({ path: 'qa/screenshots/003/dev-M7a-r2-ending-journey-after.png' });
+        }
+      }
+    }
+  }
 });
 
 // ---------- 다시 태어나기 ----------

@@ -7,7 +7,7 @@ import { standingLabel } from '../src/data/birthText';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import { ENDING_HEADINGS, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, journeyText } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
-import { splitStanding } from '../src/ui/KeepStanding';
+import { splitStanding, standingPieces } from '../src/ui/KeepStanding';
 import { chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
@@ -286,15 +286,36 @@ describe('순위 표현은 줄이 바뀌어도 쪼개지지 않는다 (ui/KeepSt
     expect(splitStanding('하위 30~50% 사이의 집에서 태어났다.')).toEqual(['', '하위 30~50% 사이의', ' 집에서 태어났다.']);
   });
 
+  it('standingPieces (M7a r2, 320px·글자 200% 가로 넘침 수정): 넓은 구간 덩어리만 숫자 구간과 뒤쪽 낱말로 나뉘고, 글은 공백 하나로 이어 붙이면 그대로다', () => {
+    expect(standingPieces('상위 3~17% 사이의')).toEqual(['상위 3~17%', '사이의']);
+    expect(standingPieces('하위 30~50% 사이의')).toEqual(['하위 30~50%', '사이의']);
+    expect(standingPieces('상위 8~28% 사이')).toEqual(['상위 8~28%', '사이']);
+    expect(standingPieces('하위 40% 안쪽의')).toEqual(['하위 40%', '안쪽의']);
+    expect(standingPieces('상위 3% 안쪽의')).toEqual(['상위 3%', '안쪽의']);
+    expect(standingPieces('상위 30% 밖의')).toEqual(['상위 30%', '밖의']);
+    // 짧은 덩어리는 그대로 한 조각이다 — 숫자·「%」·조사가 쪼개지지 않는다
+    for (const unit of ['상위 약 23%의', '하위 약 25%의', '하위 25%와', '딱 중간쯤의', '딱 중간쯤', '상위 약 38%']) expect(standingPieces(unit), unit).toEqual([unit]);
+    // 어느 조각도 숫자 한가운데·「%」 앞·조사 앞에서 끊기지 않는다: 조각 안에 줄 바꿈 기회(공백)가 있다면 「상위 약」「하위 약」 앞뒤뿐이다
+    for (const unit of ['상위 3~17% 사이의', '하위 40% 안쪽의', '상위 30% 밖의']) {
+      const [number, word] = standingPieces(unit);
+      expect(number).toMatch(/^(상위|하위) \d+(~\d+)?%$/);
+      expect(word).toMatch(/^(사이|안쪽|밖)의?$/);
+      expect(`${number} ${word}`).toBe(unit);
+    }
+  });
+
   it('엔딩의 출발선 대비 문장: 순위 표현이 nowrap span으로 감싸지고 글은 그대로다', () => {
     const g = endingOf(71284, 'present');
     const html = render(g);
     const review = reviewEnding(g);
     expect(review.journey.kind).toBe('compared');
     const journeyHtml = html.match(/data-testid="ending-journey">([^]*?)<\/p>/)![1];
-    const units = (splitStanding(journeyText(review.journey)).length - 1) / 2; // 홀수 칸 = 순위 표현(덩어리)
+    const parts = splitStanding(journeyText(review.journey));
+    const units = (parts.length - 1) / 2; // 홀수 칸 = 순위 표현(덩어리)
     expect(units).toBeGreaterThanOrEqual(2);
-    expect((journeyHtml.match(/<span class="nowrap">/g) ?? []).length).toBe(units);
+    // 넓은 덩어리(「상위 3~17% 사이의」)는 숫자 구간과 뒤쪽 낱말 둘로 감싼다(standingPieces) — 조각 수의 합이 nowrap span 수다
+    const pieces = parts.filter((_, i) => i % 2 === 1).flatMap(standingPieces).length;
+    expect((journeyHtml.match(/<span class="nowrap">/g) ?? []).length).toBe(pieces);
     expect(journeyHtml.replace(/<[^>]+>/g, '')).toBe(journeyText(review.journey));
   });
 });

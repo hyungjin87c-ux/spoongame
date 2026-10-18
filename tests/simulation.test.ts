@@ -40,8 +40,8 @@ function lazy<T>(compute: () => T): () => T {
 
 const SEEDS = 400;
 
-/** 실제 EVENT_POOL로 세 시대 x 시드 400개를 '무작위 수동 선택'으로 한 번만 돌린 판들 — 수명·시간 모델·밸런스 단언이 함께 쓴다 (npm run sim과 같은 계산). */
-const REPORT_SEEDS = 400;
+/** 실제 EVENT_POOL로 세 시대 x 시드 1000개를 '무작위 수동 선택'으로 한 번만 돌린 판들 — 수명·시간 모델·밸런스 단언이 함께 쓴다 (npm run sim과 같은 계산). */
+const REPORT_SEEDS = 1000;
 const sharedLives = lazy(() => Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'random')])) as Record<Era, LifeSummary[]>);
 const seedOf = (i: number) => i * 7919 + 13;
 const STRATEGIES: Strategy[] = ['auto', 'random'];
@@ -217,7 +217,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
   });
 
   describe('목표 시간 (실제 이벤트 풀, R-042, R-064): 판당 선택지 20~25개, 1배속 수동 약 20~30분(30분 이내), 8배속 + 다음 결정으로 읽기 18초 가정 약 7~10.5분 (SPEC "10분 내외"의 하단, 최종 판정은 M6 사람 실측)', () => {
-    // 세 시대 x 시드 300개를 실제 EVENT_POOL로 한 번만 돌려 아래 단언들이 함께 쓴다 (npm run sim과 같은 계산)
+    // 세 시대 x 시드 1000개(REPORT_SEEDS)를 실제 EVENT_POOL로 한 번만 돌려 아래 단언들이 함께 쓴다 (npm run sim과 같은 계산)
     const reportsOf = lazy(() => Object.fromEntries(ERAS.map((era) => [era, reportOf(era, sharedLives()[era])])) as Record<Era, ReturnType<typeof reportOf>>);
 
     it('판당 선택지 수 분포: 시대마다 평균 20~25개, 25개를 넘는 판 30% 이하, 20개 미만인 판 20% 이하, 하드 상한을 넘는 판 없음', () => {
@@ -391,13 +391,13 @@ describe('한 판에서 같은 문구가 되풀이되지 않는다 (QA 사용감
 });
 
 describe('외모 구간별 평생 조우율 (R-044): 외모가 연애·결혼·사업 확률에 실제로 반영된다', () => {
-  // 같은 시드·같은 시대의 인생에서 외모만 구간 대표값(15 / 50 / 85)으로 바꿔 세 시대 x 200판씩(총 600판 x 3구간) 돌린다.
-  const rowsOf = lazy(() => encounterTable(200, 'random'));
+  // 같은 시드·같은 시대의 인생에서 외모만 구간 대표값(15 / 50 / 85)으로 바꿔 세 시대 x 400판씩(총 1200판 x 3구간) 돌린다. (M7a: 200판씩 600판이던 표본을 늘렸다 — 난수 흐름이 바뀐 뒤 결혼 이벤트 격차가 600판에서 19.5%p로 잡음에 걸렸고 1200·1800판에서는 21.4·22.0%p다.)
+  const rowsOf = lazy(() => encounterTable(400, 'random'));
 
-  it('구간 표본: 낮음 15점 / 보통 50점 / 높음 85점, 각 600판', () => {
+  it('구간 표본: 낮음 15점 / 보통 50점 / 높음 85점, 각 1200판', () => {
     const rows = rowsOf();
     expect(rows.map((r) => r.looks)).toEqual([15, 50, 85]);
-    expect(rows.every((r) => r.lives === 600)).toBe(true);
+    expect(rows.every((r) => r.lives === 1200)).toBe(true);
   });
 
   it('연애 이벤트를 한 번이라도 만나는 비율이 외모가 높을수록 높다 (낮음 < 보통 < 높음, 높음-낮음 8%p 이상)', () => {

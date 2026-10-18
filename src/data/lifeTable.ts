@@ -25,7 +25,7 @@ export const STAGE_TABLE: Record<Stage, StageInfo> = {
 
 /** 단계 진입 시 연표에 남기는 한 줄 (시대와 무관한 문구). 영유아는 출생 문구를 따로 쓴다. */
 export const STAGE_ENTRY_TEXT: Record<Exclude<Stage, 'infant'>, string> = {
-  school: '학교에 들어갈 나이가 되었다.',
+  school: '학교에 들어갈 나이가 되었습니다.',
   youth: '스무 살이 되었다. 이제 집안 형편이 아니라 내가 가진 것으로 살아가야 한다.',
   middle: '어느덧 마흔이 되었다.',
   senior: '예순다섯. 일에서 한 걸음 물러설 나이가 되었다.',
@@ -42,16 +42,24 @@ export const INHERIT_NOTE_TEXT = '부모님이 남기신 재산을 물려받았�
  * (조건에 맞는 이벤트가 없으면 그 해는 조용히 지나간다.)
  * M4 조정: 판당 선택지를 약 12개(M3 표본 풀)에서 20~25개로 늘리라는 결정(R-037)에 맞춰 선택지 확률을 올렸다(이전: 영유아 0.2 / 학창·청년 0.35 / 중년·노년 0.3).
  * 중년을 낮추고 노년을 높인 것은 한 판의 선택지 수 조절(CHOICE_PACING)이 앞 단계에서 이미 상한 가까이 쓰고 나면 노년의 선택지가 굶는 문제를 막으려는 것이다
- * (단계별 평균: 영유아 1.8 · 학창 4.4 · 청년 6.4 · 중년 6.3 · 노년 4~5).
+ * (단계별 평균: 영유아 1.44~1.45(기준선 V1 — docs/data/spec-003-baseline.md 4절, 세 시대 1000판 측정. 예전 추정 「약 1.8」은 틀렸다) · 학창 4.4 · 청년 6.4 · 중년 6.3 · 노년 4~5 — 영유아 밖의 값은 M4 때의 추정이다).
  * 실제 풀(EVENT_POOL) 기준 결과는 `npm run sim`과 tests/simulation.test.ts "목표 시간" 블록이 확인한다.
  */
 export const EVENT_FREQUENCY: Record<Stage, { choice: number; narrative: number }> = {
-  infant: { choice: 0.3, narrative: 0.3 },
+  infant: { choice: 0.55, narrative: 0.78 },
   school: { choice: 0.55, narrative: 0.3 },
   youth: { choice: 0.5, narrative: 0.3 },
   middle: { choice: 0.36, narrative: 0.3 },
   senior: { choice: 0.6, narrative: 0.3 },
 };
+
+/**
+ * 영유아 빈도표(`EVENT_FREQUENCY.infant`)를 쓰는 마지막 나이. 7세는 학창 단계지만(STAGE_TABLE 그대로) 영유아기와 같은 빈도를 쓴다 — SPEC-003 M7a(마스터 결정 M-2·M-3):
+ * 영유아기를 0~7세 여덟 해로 세어 빈 해를 줄이는 목표(IN2)가 7세를 포함하기 때문이다. 영유아 빈도표는 M7a에서 0.3/0.3 → **0.55/0.75**로 올렸고, r3에서 서술을 **0.78**로 한 칸 더 올렸다(걸음마·첫 말이 모두 1세로 모여 2~3세의 빈 해가 늘어 1000판 중 한 판이 빈 해 5개가 되어 IN2 최대 ≤ 4를 넘었다 — 0.78에서는 세 시대 × 두 전략 모두 최대 4): 시대별 1000판(시드 세 묶음)에서
+ * 빈 해 평균 0.76~0.92·최대 4 / 기록 줄 평균 9.6~9.8 / 판당 선택지(0~7세) 2.97~3.04로 IN2 1차 목표(≤ 1.5·≤ 4 / ≥ 9 / ≥ 2.8)를 모두 넘는 가장 낮은 칸이다(choice 0.5는 2.8 언저리라 여유가 없고 0.6은 선택지만 늘린다).
+ * 측정은 `scripts/infantMetrics.ts`, 근거 표는 docs/data/content-M7a-infant.md 1-2절과 ai-log/2026-10-18_SPEC-003_dev-M7a.md.
+ */
+export const EARLY_YEARS_MAX_AGE = 7;
 
 /** 선택지 이벤트와 다음 선택지 이벤트 사이에 최소로 두는 간격(년). 2면 "선택 → 한 해 이상 쉬고 → 다음 선택". */
 export const MIN_YEARS_BETWEEN_CHOICES = 2;

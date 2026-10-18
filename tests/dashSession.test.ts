@@ -24,12 +24,14 @@ import { startLife } from '../scripts/simulateLib';
  * 시간이 실제로 멎는지(진행률 바·연출 타이머)는 e2e/m4-dashboard.spec.ts가 본다.
  */
 const send = (s: Session, a: SessionAction): Session => sessionReducer(s, a);
-const life = () => createSession(startLife(21, 'present'), { speed: 1, autoMode: false });
+/** M7a: 0세에는 첫 예방접종·예측하기 어려운 결정이 있어 시드에 따라 첫 걸음이 결정에서 멈춘다 — 첫 걸음이 나이를 올리는 시드 2(skip은 2세의 선택지에서 멈춘다)를 쓴다 */
+const SEED = 2;
+const life = () => createSession(startLife(SEED, 'present'), { speed: 1, autoMode: false });
 const pausedLife = () => send(life(), { type: 'setPaused', paused: true });
 
 describe('setPaused (상태 함수)', () => {
   it('인생 단계에서만 바뀌고, 같은 값이면 같은 객체를 돌려준다 (연타·늦게 도착한 입력이 상태를 흔들지 않는다)', () => {
-    const g = startLife(21, 'present');
+    const g = startLife(SEED, 'present');
     expect(g.paused).toBe(false);
     const p = setPaused(g, true);
     expect(p).not.toBe(g);
@@ -92,7 +94,9 @@ describe('일시정지 (세션)', () => {
     expect(after.game.paused).toBe(decided.game.paused);
   });
 
-  it('시드 21의 첫 「다음 결정으로」는 선택지에서 멈춘다 (위 두 시험이 공허하게 통과하지 않는다)', () => {
+  it('시드 2의 첫 걸음은 나이를 올리고 첫 「다음 결정으로」는 선택지에서 멈춘다 (위 시험들이 공허하게 통과하지 않는다)', () => {
+    expect(stepYear(startLife(SEED, 'present')).state.pending).toBeNull();
+    expect(stepYear(startLife(SEED, 'present')).state.age).toBe(1);
     expect(send(pausedLife(), { type: 'skip' }).game.pending).not.toBeNull();
   });
 
