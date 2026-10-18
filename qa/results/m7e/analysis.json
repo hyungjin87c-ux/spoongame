@@ -1,0 +1,120 @@
+{
+ "lives": 338,
+ "byEra": {
+  "future": 112,
+  "past": 113,
+  "present": 113
+ },
+ "tiers": {
+  "1": 102,
+  "2": 122,
+  "3": 61,
+  "4": 38,
+  "5": 15
+ },
+ "died": {},
+ "checks": {
+  "T1": {
+   "sentences": 48270,
+   "nonHap": 0,
+   "bySrc": {
+    "history:stage": 2668,
+    "history:event": 11003,
+    "history:choice": 16108,
+    "history:death": 676,
+    "card": 15789,
+    "ending": 2026
+   }
+  },
+  "T2": {
+   "게되": 1,
+   "것입니다류": 0,
+   "반복끝맺음": 0,
+   "높임불일치": 6,
+   "되었습니다": 23,
+   "total": 395,
+   "endPhrase": {
+    "수 있었습니다": [
+     "infant-care-alert/null",
+     "youth-startup/본업을 두고 조금씩 해 본다",
+     "senior-new-device/쓰지 않고 버틴다",
+     "youth-single-years/null",
+     "youth-machine-partner/새 도구를 익혀 함께 일한다",
+     "senior-new-device/가까운 사람에게 배운다",
+     "senior-spouse-care/도움을 받아 함께 돌본다",
+     "infant-hospital-stay/독립된 병실을 쓴다",
+     "school-club/곧장 집으로 돌아간다",
+     "middle-layoff/퇴직금을 받고 나온다",
+     "youth-matchmaker/아직 이르다며 사양한다",
+     "middle-business/가족과 먼저 의논한다"
+    ],
+    "오래 남았습니다": [
+     "infant-fever/별일 아니라며 넘긴다",
+     "middle-parents-farewell/모든 일을 내려놓고 곁을 지킨다",
+     "infant-fever/집에서 밤새 지켜본다",
+     "youth-child/아이 없이 살기로 한다"
+    ],
+    "날이 늘었습니다": [
+     "middle-marriage-crisis",
+     "middle-health-crisis/조금 쉬고 곧장 일상으로 돌아간다",
+     "infant-early-lessons/학습지와 방문 수업을 시작한다"
+    ],
+    "곁에 있었습니다": [
+     "senior-move-home/돌봄이 있는 곳으로 간다",
+     "senior-illness-later/편안하게 지내는 데 마음을 쏟는다",
+     "school-after-hours/학교 안 돌봄 시간에 남긴다"
+    ]
+   },
+   "withinTextRepeat": 0,
+   "adjacentRepeat": 22,
+   "지만비율": "110/783",
+   "sentencesN": 783
+  },
+  "T3": {
+   "외동형제": 0,
+   "기혼혼자": 0,
+   "혼자먹는저녁_비독립": 0,
+   "부모떠난뒤_부모언급": 1,
+   "가족집_부모없음": 0,
+   "외동판": 78,
+   "혼자먹는저녁_판": 150,
+   "parentsGone판": 214,
+   "부모집선택_이미독립": 29,
+   "부모집선택_판": 52,
+   "자식없는데자식": 0,
+   "배우자없는데배우자": 0,
+   "명절혼자_가족집": 31,
+   "명절혼자_판": 247,
+   "일터없는데일터": 0,
+   "외동가족카드_형제칸": 1893,
+   "외동가족카드_판": 1893
+  },
+  "T4": {
+   "hits": 0,
+   "byEra": {}
+  },
+  "T5": {
+   "digits": 0,
+   "quotes": 0,
+   "amount": 0
+  },
+  "T6": {
+   "decisions": 8066,
+   "hintOk": 8066,
+   "hintBad": 0,
+   "assetsYoung": 2474,
+   "assetsYoungOk": 2474,
+   "peersReturn": 605,
+   "peersWorkingAfterRetired": 0,
+   "labels": {
+    "어린 시절": 900,
+    "학교에 다님": 2152,
+    "일하는 사람": 5039,
+    "구직 중": 1209,
+    "돌봄": 2178,
+    "다시 일하는 사람": 605,
+    "은퇴": 1855
+   }
+  }
+ }
+}

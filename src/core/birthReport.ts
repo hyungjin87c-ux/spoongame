@@ -16,6 +16,8 @@ import { standingLabel } from '../data/birthText';
 import { placeLabel } from '../data/regionNames';
 import type { Rng } from './rng';
 import { standingOf, type Standing } from './standing';
+
+// 개발자용 오류 메시지(throw)는 「~다」로 끝내고 마침표를 찍지 않는다 — 화면에 나오는 서술 문장이 아니고, 마침표를 찍으면 tests/systemText.test.ts의 해라체 문장 끝 점검(「~다.」)이 오탐한다(REV-003-M7e-2 관찰 3).
 import { HOUSINGS, OCCUPATIONS, type BirthReport, type Era, type Gender, type Occupation, type Parent, type ParentWealth } from './types';
 
 /**

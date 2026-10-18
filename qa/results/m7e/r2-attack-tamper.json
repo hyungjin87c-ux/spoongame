@@ -1,0 +1,178 @@
+[
+ {
+  "name": "net-string",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "net-huge",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "net-nan-null",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "net-float",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "dwelling-bad",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "dwelling-number",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "dwelling-family-parentsgone",
+  "expect": "accept",
+  "scr": "ending-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "assets-null-adult",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "assets-extra-key",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "debt-less-than-negnet",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "death-age-over",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "death-null-ending",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "death-cause-markup",
+  "expect": "accept-safe",
+  "scr": "ending-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "death-cause-emoji",
+  "expect": "accept-safe",
+  "scr": "ending-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "death-cause-long",
+  "expect": "accept-or-reject",
+  "scr": "ending-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "history-markup",
+  "expect": "accept-safe",
+  "scr": "ending-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "history-choice-quote",
+  "expect": "accept-safe",
+  "scr": "ending-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "phase-life-with-death",
+  "expect": "reject-or-accept",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "version-9",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "flags-injection",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "name-empty",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ },
+ {
+  "name": "name-21",
+  "expect": "reject",
+  "scr": "title-screen",
+  "notice": null,
+  "errs": 0,
+  "dialogs": 0
+ }
+]

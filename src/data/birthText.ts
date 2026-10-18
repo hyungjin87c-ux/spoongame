@@ -15,12 +15,12 @@ export const PARENTING_LABEL: Record<ParentingStyle, string> = {
 
 // ---------- 순위 표현 문구 (R-018) ----------
 
-/** 상위·하위 어느 쪽도 50% 안쪽이 아닌(중앙에 걸친) 경우의 전용 표현. 퍼센트를 말하지 않는다. */
-export const MIDDLE_LABEL = '딱 중간쯤';
+/** 상위·하위 어느 쪽도 50% 안쪽이 아닌(중앙에 걸친) 경우의 전용 표현. 퍼센트를 말하지 않는다. (M7e-3: 「딱 중간쯤」의 「딱」은 구어라 「가운데쯤」으로 — docs/design/copy.md 5-1, QM3-4·M3-O07) */
+export const MIDDLE_LABEL = '가운데쯤';
 
 /**
  * Standing(core/standing.ts#standingOf의 결정) → 짧은 표현.
- * "상위 약 N%" / "하위 약 N%" / "상위·하위 1% 안쪽" / "딱 중간쯤". 문구는 이 함수가 유일한 출처다.
+ * "상위 약 N%" / "하위 약 N%" / "상위·하위 1% 안쪽" / "가운데쯤". 문구는 이 함수가 유일한 출처다.
  * 쓰는 곳: 외모(출생신고·프로필)·출생 체중·엔딩 도착 자리. 수저 구간(「흙수저(하위 25% 안쪽)」)에는 쓰지 않는다 — 그것은 `bandLabel(startBandOf())`(R-170).
  */
 export function standingLabel(s: Standing): string {

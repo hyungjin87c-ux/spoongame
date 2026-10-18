@@ -248,7 +248,14 @@ export const KNOWN_GAPS: Record<string, { limit: (value: number) => boolean; why
   dm30: { limit: (v) => v >= 5_500, why: '30대 부채 보유자 부채 중앙값 6,243 (목표 10,732, 허용 6,439~) — D19 차입 한도가 생활비 때문에 지는 큰 빚(자동 대출)을 없애 부채 보유자의 중앙값이 내려갔다(한도 600 → 300이면 더 내려간다)' },
   dm40: { limit: (v) => v >= 5_500, why: '40대 부채 보유자 부채 중앙값 6,139 (목표 11,000, 허용 6,600~) — 같은 이유. 결혼 시작 부채를 6,000 → 7,500으로 올려도 +46뿐이라(부채 보유자 대부분이 작은 빚이다) 계수를 더 비틀지 않았다' },
   dm60: { limit: (v) => v <= 9_000, why: '60세 이상 부채 보유자 부채 중앙값 7,712 (목표 5,000, 허용 ~7,000) — D20 노년 안전망이 남은 부채를 동결해 노년 부채 보유자의 중앙값이 줄지 않는다(2a 18,532 → 7,712로 내려갔다)' },
-  debt60: { limit: (v) => v <= 61.5, why: 'M7a(영유아 콘텐츠) 뒤 60세 이상 부채 보유 비율 60.4% (허용 ~60.1, M7a 이전 59.1) — 영유아 콘텐츠의 스탯 효과를 줄인 뒤(r2·r3) AGE 40~64세 곱을 1.65 → 1.71로 올려 순자산 중앙값·3억 미만 비율을 M7a 이전 자리로 되돌리자(레버 하나) 더 쓰는 만큼 빚도 늘었다. 순자산 3억 미만 비율(≥ 49.0)과 이 비율(≤ 60.1)은 AGE 하나로 함께 못 맞춘다(economy-model.md 9-7절 표)' },
+  // M7e-3(E-4)가 새로 보고한 차이(economy-model.md 9-8절, 15-3절, planner E-12): `youth-lonely-city`를 독립 주거(월세·전세·자가)에서만 일어나게 하자 부모 집에 사는 판이 `lives_alone`을 얻지 않아
+  // `youth-housing`의 「부모님 집에 머문다」(순자산 +400, 월세 없음)가 그대로 남는다 — 그 선택이 늘어 순자산이 오른다(그 이벤트만 되돌리면 50~59세 44,713 · 60세 이상 38,566 · 65세 이상 35,499 · 3억 미만 48.8%).
+  // 레버(AGE 40~64세 ×1.71)를 1.76까지 올리면 이 네 항목은 돌아오지만 지금 세상 2단계 사망 시점 중앙값이 0으로 1단계와 붙고(end-g3) 60세 이상 부채 보유가 60.6%로 오른다 — 비틀지 않고 보고했다(마스터 결정 대기).
+  // (debt60은 M7a r3 때 보고했던 차이였는데, 같은 이유로 순자산이 오르고 부채 보유가 59.4%로 내려가 허용 폭 안으로 돌아와 이 목록에서 뺐다.)
+  net50: { limit: (v) => v <= 47_500, why: 'M7e-3 뒤 50~59세 순자산 중앙값 45,890 (허용 ~44,359; M7e-3 이전에는 허용 안) — E-4: 부모 집에 사는 판이 lonely-city에서 빠져 「부모님 집에 머문다」가 늘었다. AGE 1.76이면 43,804로 돌아오지만 지금 세상 end-g3가 깨진다(9-8절)' },
+  net60: { limit: (v) => v <= 42_000, why: 'M7e-3 뒤 60세 이상 순자산 중앙값 40,868 (허용 ~40,000) — 같은 이유(E-4)' },
+  net65: { limit: (v) => v <= 39_500, why: 'M7e-3 뒤 65세 이상 순자산 중앙값 38,023 (허용 ~35,360) — 같은 이유(E-4)' },
+  under3: { limit: (v) => v >= 46.5, why: 'M7e-3 뒤 30~79세 순자산 3억 원 미만 비율 47.8% (허용 49.0~) — 같은 이유(E-4). AGE 1.76이면 49.0%' },
   inc60: { limit: (v) => v >= 1_800, why: '60세 이상 소득 중앙값 2,169 (목표 3,978, 허용 2,785~) — R2(개인 모델의 연금 660 대 가구 소득, 마스터가 수용하고 계속 보고하기로 했다 — D21)' },
 };
 
@@ -317,9 +324,7 @@ export const KNOWN_GUARD_GAPS: Record<string, { limit: (metric: number) => boole
   'past:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.8%(≤ 25%; M7a r3 뒤 28.9%) — 1·2단계의 일부가 평생 빚에서 못 나온 채 끝난다(노년 안전망이 부채를 동결할 뿐 없애지 않는다)' },
   'present:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.5%(≤ 25%; M7a r3 뒤 26.4%) — 같은 이유. 사망 시점 순자산의 하한을 0으로 두는 규칙(상속 포기·한정승인의 근사, D22)이면 0%가 되지만 마스터가 채택하지 않았다(15-6절) — 빚으로 끝나는 인생도 엔딩에 그대로 보인다' },
   'future:end-negative': { limit: (v) => v <= 41, why: '사망 시점 순자산<0 38.3%(≤ 35%; M7a r3 뒤 38.3%) — 같은 이유 + 다가올 세상의 소득 대 생활·주거 계수(1.15 대 1.2·1.3)가 가난한 집에 더 무겁다' },
-  // M7a(영유아 콘텐츠) r2가 새로 보고한 차이(economy-model.md 9-7절, 마스터 결정 M-12, 15-3절): 동생 맞이를 출생 순서 통계에 맞춰 자주 일어나게 하자(첫째 판 중 11~18% → 47~78%) 상속이 형제 수로 나뉜다.
-  // r3: 지금 세상 5단계 「뒤쪽」은 63.6%로 통과로 돌아와 뺐다(r2 70.5%). 4단계만 51.4%로 남는다. 이 가드는 AGE와 무관하다(상속 ÷ (형제 수 + 1)이 도착 자리를 내린다).
-  'present:end-down4': { limit: (v) => v <= 52, why: '지금 세상 4단계 엔딩 「뒤쪽」 51.4%(≤ 50%, M7a 이전 48.3%) — 동생이 생기는 첫째 판이 늘어(11% → 47%) 상속이 나뉜다' },
+  // M7a r2가 보고했던 지금 세상 4단계 엔딩 「뒤쪽」(51.4%)은 M7e-3의 「동률 불리」 규칙(엔딩 마스터 결정 C, 9-8절)과 순자산 상승으로 47.4%가 되어 통과로 돌아와 뺐다(M7e-4: 주석의 45.8%는 오기였다 — 9-8절·로그의 47.4%가 맞다, REV-003-M7e-1 R-382 (c)) — `present:end-down4`.
 };
 
 // ---------- 옛 재산 조건 7곳의 「같은 통과율」 (R-354, economy-model.md 5-A) ----------
@@ -381,7 +386,17 @@ export function conditionChecks(): ConditionCheck[] {
     },
     { id: 'middle-child-school/fund', where: 'middle-child-school/fund 선택지 조건', age: 57, oldRate: 85, condition: assetsOf(choice('middle-child-school', 'fund').requires, 'middle-child-school/fund') },
     { id: 'middle-layoff/open', where: 'middle-layoff/open 선택지 조건', age: 51, oldRate: 91, condition: assetsOf(choice('middle-layoff', 'open').requires, 'middle-layoff/open') },
-    { id: 'middle-parents-care/facility', where: 'middle-parents-care/facility 보너스', age: 55, oldRate: 17, condition: bonusWith(choice('middle-parents-care', 'facility').bonuses, 'netMin', 'middle-parents-care/facility') },
+    {
+      id: 'middle-parents-care/facility',
+      where: 'middle-parents-care/facility 보너스',
+      age: 55,
+      oldRate: 17,
+      condition: bonusWith(choice('middle-parents-care', 'facility').bonuses, 'netMin', 'middle-parents-care/facility'),
+      reported: {
+        limit: (rate) => rate <= 24,
+        why: 'M7e-3 뒤 통과율 21.4% (옛 17%, 허용 14.4 ~ 19.5%) — 순자산 상승(E-4, 위 KNOWN_GAPS의 net50 등과 같은 이유)으로 10억 원 이상인 55세가 늘었다. 보고하고 계수는 비틀지 않았다(15-3절, 9-8절)',
+      },
+    },
     { id: 'senior-retire(netMin)', where: 'senior-retire 보너스(행복 +3)', age: 67, oldRate: 30, condition: bonusWith(ev('senior-retire').bonuses, 'netMin', 'senior-retire') },
     {
       id: 'senior-retire(netMax)',

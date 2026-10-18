@@ -1,0 +1,404 @@
+{
+ "all": [
+  {
+   "mode": "light",
+   "state": "ending-present-t3-up",
+   "rows": 425,
+   "min": 5.78,
+   "docH": 7739
+  },
+  {
+   "mode": "light",
+   "state": "ending-present-t1-zero",
+   "rows": 383,
+   "min": 5.78,
+   "docH": 7025
+  },
+  {
+   "mode": "light",
+   "state": "ending-past-t2",
+   "rows": 426,
+   "min": 5.78,
+   "docH": 7724
+  },
+  {
+   "mode": "light",
+   "state": "ending-before20-present-t3-a17",
+   "rows": 186,
+   "min": 5.78,
+   "docH": 3669
+  },
+  {
+   "mode": "light",
+   "state": "ending-name-max20",
+   "rows": 384,
+   "min": 5.78,
+   "docH": 7025
+  },
+  {
+   "mode": "light",
+   "state": "card-middle-parents-care-present",
+   "rows": 176,
+   "min": 5.78,
+   "docH": 3344
+  },
+  {
+   "mode": "light",
+   "state": "card-youth-housing-present",
+   "rows": 173,
+   "min": 5.78,
+   "docH": 3322
+  },
+  {
+   "mode": "light",
+   "state": "card-senior-estate-present",
+   "rows": 170,
+   "min": 5.78,
+   "docH": 3297
+  },
+  {
+   "mode": "light",
+   "state": "life-future-t3-a80",
+   "rows": 142,
+   "min": 5.78,
+   "docH": 2760
+  },
+  {
+   "mode": "light",
+   "state": "life-present-t3-a12",
+   "rows": 134,
+   "min": 5.78,
+   "docH": 2661
+  },
+  {
+   "mode": "light",
+   "state": "life-present-t3-a35",
+   "rows": 144,
+   "min": 5.78,
+   "docH": 2758
+  },
+  {
+   "mode": "dark",
+   "state": "ending-present-t3-up",
+   "rows": 425,
+   "min": 5.96,
+   "docH": 7739
+  },
+  {
+   "mode": "dark",
+   "state": "ending-present-t1-zero",
+   "rows": 383,
+   "min": 5.96,
+   "docH": 7025
+  },
+  {
+   "mode": "dark",
+   "state": "ending-past-t2",
+   "rows": 426,
+   "min": 5.96,
+   "docH": 7724
+  },
+  {
+   "mode": "dark",
+   "state": "ending-before20-present-t3-a17",
+   "rows": 186,
+   "min": 5.96,
+   "docH": 3669
+  },
+  {
+   "mode": "dark",
+   "state": "ending-name-max20",
+   "rows": 384,
+   "min": 5.96,
+   "docH": 7025
+  },
+  {
+   "mode": "dark",
+   "state": "card-middle-parents-care-present",
+   "rows": 176,
+   "min": 5.96,
+   "docH": 3344
+  },
+  {
+   "mode": "dark",
+   "state": "card-youth-housing-present",
+   "rows": 173,
+   "min": 5.96,
+   "docH": 3322
+  },
+  {
+   "mode": "dark",
+   "state": "card-senior-estate-present",
+   "rows": 170,
+   "min": 5.96,
+   "docH": 3297
+  },
+  {
+   "mode": "dark",
+   "state": "life-future-t3-a80",
+   "rows": 142,
+   "min": 5.96,
+   "docH": 2760
+  },
+  {
+   "mode": "dark",
+   "state": "life-present-t3-a12",
+   "rows": 134,
+   "min": 5.96,
+   "docH": 2661
+  },
+  {
+   "mode": "dark",
+   "state": "life-present-t3-a35",
+   "rows": 144,
+   "min": 5.96,
+   "docH": 2758
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending-present-t3-up",
+   "rows": 425,
+   "min": 5.96,
+   "docH": 7739
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending-present-t1-zero",
+   "rows": 383,
+   "min": 5.96,
+   "docH": 7025
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending-past-t2",
+   "rows": 426,
+   "min": 5.96,
+   "docH": 7724
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending-before20-present-t3-a17",
+   "rows": 186,
+   "min": 5.96,
+   "docH": 3669
+  },
+  {
+   "mode": "manual-dark",
+   "state": "ending-name-max20",
+   "rows": 384,
+   "min": 5.96,
+   "docH": 7025
+  },
+  {
+   "mode": "manual-dark",
+   "state": "card-middle-parents-care-present",
+   "rows": 176,
+   "min": 5.96,
+   "docH": 3344
+  },
+  {
+   "mode": "manual-dark",
+   "state": "card-youth-housing-present",
+   "rows": 173,
+   "min": 5.96,
+   "docH": 3322
+  },
+  {
+   "mode": "manual-dark",
+   "state": "card-senior-estate-present",
+   "rows": 170,
+   "min": 5.96,
+   "docH": 3297
+  },
+  {
+   "mode": "manual-dark",
+   "state": "life-future-t3-a80",
+   "rows": 142,
+   "min": 5.96,
+   "docH": 2760
+  },
+  {
+   "mode": "manual-dark",
+   "state": "life-present-t3-a12",
+   "rows": 134,
+   "min": 5.96,
+   "docH": 2661
+  },
+  {
+   "mode": "manual-dark",
+   "state": "life-present-t3-a35",
+   "rows": 144,
+   "min": 5.96,
+   "docH": 2758
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending-present-t3-up",
+   "rows": 425,
+   "min": 21,
+   "docH": 7739
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending-present-t1-zero",
+   "rows": 383,
+   "min": 21,
+   "docH": 7025
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending-past-t2",
+   "rows": 426,
+   "min": 21,
+   "docH": 7724
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending-before20-present-t3-a17",
+   "rows": 186,
+   "min": 21,
+   "docH": 3669
+  },
+  {
+   "mode": "forced-light",
+   "state": "ending-name-max20",
+   "rows": 384,
+   "min": 21,
+   "docH": 7025
+  },
+  {
+   "mode": "forced-light",
+   "state": "card-middle-parents-care-present",
+   "rows": 176,
+   "min": 11.31,
+   "docH": 3344
+  },
+  {
+   "mode": "forced-light",
+   "state": "card-youth-housing-present",
+   "rows": 173,
+   "min": 11.31,
+   "docH": 3322
+  },
+  {
+   "mode": "forced-light",
+   "state": "card-senior-estate-present",
+   "rows": 170,
+   "min": 11.31,
+   "docH": 3297
+  },
+  {
+   "mode": "forced-light",
+   "state": "life-future-t3-a80",
+   "rows": 142,
+   "min": 11.31,
+   "docH": 2760
+  },
+  {
+   "mode": "forced-light",
+   "state": "life-present-t3-a12",
+   "rows": 134,
+   "min": 11.31,
+   "docH": 2661
+  },
+  {
+   "mode": "forced-light",
+   "state": "life-present-t3-a35",
+   "rows": 144,
+   "min": 11.31,
+   "docH": 2758
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending-present-t3-up",
+   "rows": 425,
+   "min": 21,
+   "docH": 7739
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending-present-t1-zero",
+   "rows": 383,
+   "min": 21,
+   "docH": 7025
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending-past-t2",
+   "rows": 426,
+   "min": 21,
+   "docH": 7724
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending-before20-present-t3-a17",
+   "rows": 186,
+   "min": 21,
+   "docH": 3669
+  },
+  {
+   "mode": "forced-dark",
+   "state": "ending-name-max20",
+   "rows": 384,
+   "min": 21,
+   "docH": 7025
+  },
+  {
+   "mode": "forced-dark",
+   "state": "card-middle-parents-care-present",
+   "rows": 176,
+   "min": 8.73,
+   "docH": 3344
+  },
+  {
+   "mode": "forced-dark",
+   "state": "card-youth-housing-present",
+   "rows": 173,
+   "min": 8.73,
+   "docH": 3322
+  },
+  {
+   "mode": "forced-dark",
+   "state": "card-senior-estate-present",
+   "rows": 170,
+   "min": 8.73,
+   "docH": 3297
+  },
+  {
+   "mode": "forced-dark",
+   "state": "life-future-t3-a80",
+   "rows": 142,
+   "min": 8.73,
+   "docH": 2760
+  },
+  {
+   "mode": "forced-dark",
+   "state": "life-present-t3-a12",
+   "rows": 134,
+   "min": 8.73,
+   "docH": 2661
+  },
+  {
+   "mode": "forced-dark",
+   "state": "life-present-t3-a35",
+   "rows": 144,
+   "min": 8.73,
+   "docH": 2758
+  }
+ ],
+ "bad": [],
+ "shots": [
+  "qa/screenshots/003/M7e-K01-light-ending-present-t3-up.png",
+  "qa/screenshots/003/M7e-K01-light-card-middle-parents-care-present.png",
+  "qa/screenshots/003/M7e-K01-dark-ending-present-t3-up.png",
+  "qa/screenshots/003/M7e-K01-dark-card-middle-parents-care-present.png",
+  "qa/screenshots/003/M7e-K01-manual-dark-ending-present-t3-up.png",
+  "qa/screenshots/003/M7e-K01-manual-dark-card-middle-parents-care-present.png",
+  "qa/screenshots/003/M7e-K01-forced-light-ending-present-t3-up.png",
+  "qa/screenshots/003/M7e-K01-forced-light-card-middle-parents-care-present.png",
+  "qa/screenshots/003/M7e-K01-forced-dark-ending-present-t3-up.png",
+  "qa/screenshots/003/M7e-K01-forced-dark-card-middle-parents-care-present.png"
+ ],
+ "nRows": 13715,
+ "minOverall": 5.78
+}

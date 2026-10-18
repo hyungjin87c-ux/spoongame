@@ -1,0 +1,99 @@
+{
+ "files": {
+  "audit-focus.jsonl": 420,
+  "audit-layout-lives.jsonl": 110,
+  "audit-layout.jsonl": 1452
+ },
+ "layout": {
+  "엔딩": {
+   "combos": 275,
+   "errs": 0,
+   "states": 9,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": []
+  },
+  "인생기록": {
+   "combos": 66,
+   "errs": 0,
+   "states": 3,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": []
+  },
+  "엔딩-이름변조": {
+   "combos": 132,
+   "errs": 0,
+   "states": 4,
+   "bad": 9,
+   "unavoidable": 61,
+   "kinds": {
+    "낱말 끊김(결함)": 9
+   },
+   "examples": [
+    "ending-name-max20/667x375-landscape/150: 낱말 끊김(결함)",
+    "ending-name-max20/640x400-zoom200/150: 낱말 끊김(결함)",
+    "ending-name-nospace/320x568/100: 낱말 끊김(결함)",
+    "ending-name-nospace/360x568/100: 낱말 끊김(결함)"
+   ],
+   "brokenWords": {
+    "ending-name-max20:가나다라마바사아자차카타파하가나다라마바의": 2,
+    "ending-name-nospace:ABCDEFGHIJKLMNOPQRST의": 5,
+    "ending-name-max20-zero:가나다라마바사아자차카타파하가나다라마바의": 2
+   }
+  },
+  "결정카드": {
+   "combos": 1089,
+   "errs": 0,
+   "states": 33,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": []
+  }
+ },
+ "focus": {
+  "엔딩": {
+   "combos": 105,
+   "errs": 0,
+   "states": 5,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": [],
+   "tall": 0
+  },
+  "엔딩-이름변조": {
+   "combos": 21,
+   "errs": 0,
+   "states": 1,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": [],
+   "tall": 0
+  },
+  "결정카드": {
+   "combos": 231,
+   "errs": 0,
+   "states": 11,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": [],
+   "tall": 18
+  },
+  "인생기록": {
+   "combos": 63,
+   "errs": 0,
+   "states": 3,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": [],
+   "tall": 0
+  }
+ }
+}

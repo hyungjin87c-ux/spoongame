@@ -138,7 +138,7 @@ export function BirthScreen({ era, character: c, report, peerSeed, onNext }: Pro
                 {orderText(report.birthOrder)}
               </Field>
               <Field id="looks" label={BIRTH_TEXT.gridLabels.looks}>
-                {looks} <span className="cell-sub">{BIRTH_TEXT.looksSub}</span>
+                <span className="cell-sub">{BIRTH_TEXT.looksSub}</span> {looks}
               </Field>
               <Field id="parenting" label={BIRTH_TEXT.gridLabels.parenting} wide>
                 {PARENTING_LABEL[c.parenting]} <span className="cell-sub">{parentingDocText(c.parenting, c.parentWealth)}</span>

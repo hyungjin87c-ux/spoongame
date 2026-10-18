@@ -143,7 +143,9 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
       const ev = eventOf(id);
       const effs: Array<Effects | undefined> = [ev.effects, ...(ev.bonuses ?? []).map((b) => b.effects), ...(ev.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];
       expect(effs.some(hasMoney), id).toBe(false);
-      expect(JSON.stringify(ev), id).not.toMatch(/"assets"|"family"/);
+      // 효과(effects·보너스·선택지 효과)에 돈이 없다 — 조건(conditions.assets.dwelling 등, M7e-3 `youth-lonely-city`)은 효과가 아니라 여기서 보지 않는다
+      const effectsOnly = { effects: ev.effects, bonuses: ev.bonuses, choices: (ev.choices ?? []).map((c) => ({ effects: c.effects, bonuses: c.bonuses })) };
+      expect(JSON.stringify(effectsOnly), id).not.toMatch(/"assets"|"family"/);
     }
   });
 });
@@ -165,6 +167,10 @@ describe('옛 재산 효과와의 대응 (tests/fixtures/wealthLegacy.json: 변�
   /** 분류별 상수와 다른 크기로 마스터가 정한 값 (R-352, 2026-10-18): settle은 구직 몇 달의 수입 공백을 순자산 −800으로 둔다(옛 −1 × 800, 청년 T 400의 2배) */
   const SCALE_OVERRIDES: Record<string, { key: 'family' | 'net' | 'income'; ratios: number[] }> = {
     'youth-gig-work/settle 기본': { key: 'net', ratios: [800] },
+    // M7e-3 (마스터 결정 E-1, docs/data/content-M7e.md 1-5절 #3·#8): 표기 기준 지배 쌍을 풀려고 칸 경계를 건너 옮긴 값 — 옛 −3점이 중년 T(600)의 5배인 −3,000(비율 1,000), 옛 −1점이 T의 2/3인 −400(비율 400).
+    // support는 push(−1,200)의 절약이 영향 줄에 보이도록 ▼▼▼(≥ 3,000)로, stay는 share(−1,200)와 ▼ 대 ▼▼로 갈리도록 한 칸 낮췄다(500 미만이 아니다: 400 → 칸 ▼).
+    'middle-child-school/support 기본': { key: 'net', ratios: [1000] },
+    'middle-parents-farewell/stay 기본': { key: 'net', ratios: [400] },
   };
 
   it('얼린 자료의 규모: 기본·보너스 성분 171건 중 이벤트·선택지 항목 143개와 조건 항목', () => {
@@ -278,7 +284,12 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
 
   it('열 곳이 정확히 이 10개 + M7a 10개다: 자산 또는 부모 재력 조건이 걸린 선택지는 이것뿐이다', () => {
     const found: string[] = [];
-    for (const ev of EVENT_POOL.events) for (const c of ev.choices ?? []) if (c.requires?.assets !== undefined || c.requires?.parentWealth !== undefined) found.push(`${ev.id}/${c.id}`);
+    for (const ev of EVENT_POOL.events) for (const c of ev.choices ?? []) {
+        // 지금 사는 집(assets.dwelling)만 보는 조건은 자금 조건이 아니다 — M7e-4의 youth-housing/parents·return (T03a)
+        const a = c.requires?.assets;
+        const money = a !== undefined && (a.netMin !== undefined || a.netMax !== undefined || a.debtMax !== undefined || a.incomeMin !== undefined);
+        if (money || c.requires?.parentWealth !== undefined) found.push(`${ev.id}/${c.id}`);
+      }
     // M7a(영유아·7세)가 더한 부모 재력 문턱 10개는 따로 센다(tests/infantContent.test.ts가 문안 규칙을 본다)
     const all = [...GATES.map(([e, c]) => `${e}/${c}`), ...M7A_WEALTH_GATES.map(([e, c]) => `${e}/${c}`)];
     expect(found.sort()).toEqual(all.sort());

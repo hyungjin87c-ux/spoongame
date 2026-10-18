@@ -80,7 +80,13 @@ const SHOTS = [
   ['decision-adult.html', 'decision-adult', { m: [{}, { dark: true }], d: [{}, { dark: true }] }],
   ['note.html', 'note', { m: [{}, { dark: true }], d: [{}] }],
   // 엔딩: 머리 = 얼굴 96px 정사각 + 텍스트 칸 `.ending__who`(R-320), 320 · 글자 200% = 제목 「이서연의 인생」 글자 크기 상한(R-321 — 낱말이 끊기지 않고 칸이 좁으면 얼굴 아래 줄로)
-  ['ending.html', 'ending', { m: [{}, { full: true }, { dark: true }], d: [{}], n: [{}, { text: 200 }] }],
+  // M7e(R-327): 머리 「{세상} · 생애 기록」 + 「연월 ~ 연도 · N세」, 출발선 카드 = 띠(출발선 구간) + 마름모(마지막 자리) 막대 + 범례(수저 칩) + 합쇼체 제안 문안, 「최종 순자산」 줄은 금액만.
+  // `?state=`: zero = 최종 순자산 0원(흙수저, 현행 규칙 자리 + 규칙 후보 주석) / past = 지난 세상 인물(음수 + 「지금 가치로 환산」) / early = 스무 살 전(동수저 — 중앙 구간 「하위 25% 선과 상위 45% 선 사이」, 띠만)
+  ['ending.html', 'ending', { m: [{}, { full: true }, { dark: true }, { forced: true }], d: [{}, { dark: true }], n: [{}, { text: 200 }, { text: 200, el: '[aria-labelledby="ending-journey-title"]', tag: 'journey' }] }],
+  ['ending.html', 'ending-zero', { m: [{ query: 'state=zero', to: '[aria-labelledby="ending-journey-title"]' }], n: [{ query: 'state=zero', text: 200, el: '[aria-labelledby="ending-journey-title"]', tag: 'journey' }] }],
+  ['ending.html', 'ending-past', { m: [{ query: 'state=past' }, { query: 'state=past', forced: true, to: '[aria-labelledby="ending-journey-title"]' }], d: [{ query: 'state=past' }], n: [{ query: 'state=past', text: 200 }] }],
+  ['ending.html', 'ending-early', { m: [{ query: 'state=early' }, { query: 'state=early', dark: true, to: '[aria-labelledby="ending-journey-title"]' }], n: [{ query: 'state=early', text: 200 }, { query: 'state=early', text: 200, el: '.ending-stats', tag: 'card' }] }],
+  ['ending.html', 'ending-down', { m: [{ query: 'state=down', to: '[aria-labelledby="ending-journey-title"]' }], n: [{ query: 'state=down', text: 200, el: '[aria-labelledby="ending-journey-title"]', tag: 'journey' }] }],
   // M5 경제 모델 (economy-m5.html — 생성기 economyPage()가 만든다, D-35. 영향 줄·자산 카드·최종 순자산 줄은 구현 컴포넌트가 만든 마크업이다): `?state=`로 상태를 고른다.
   // 영향 줄: 47세 보증 결정(항목 4개, 부채 ▲ 붉음) 라이트·다크·강제 색상·320·낮은 화면, 글자 200%에서 선택지 카드 요소 샷(줄마다 항목이 접히는 모습 — 「집안 살림 ▼▼▼」만 기호 묶음이 이름 아래로)
   ['economy-m5.html', 'economy-choice', { m: [{}, { dark: true }, { forced: true }, { text: 200, el: '.choice-panel', tag: 'panel' }], d: [{}, { dark: true }], n: [{}, { text: 200, el: '.choice-panel', tag: 'panel' }, { dark: true, text: 200, el: '.choice-panel', tag: 'panel' }], l: [{}, { text: 200 }] }],

@@ -132,7 +132,7 @@ export function rawSigungu(birthYear: number, region: string): Set<string> {
 
 const RAW_JOBS = ['manager', 'professional', 'clerk', 'service', 'sales', 'agri', 'craft', 'machine', 'labor'];
 const RAW_HOUSINGS = ['own', 'rent', 'free'];
-const SENTENCE_FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (남자아이|여자아이)로 태어났습니다\. (첫째|둘째|셋째|넷째|다섯째 이상)입니다\. \(\d\.\dkg은 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|딱 중간쯤)\)$/;
+const SENTENCE_FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (남자아이|여자아이)로 태어났습니다\. (첫째|둘째|셋째|넷째|다섯째 이상)입니다\. \(\d\.\dkg은 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|가운데쯤)\)$/;
 
 // ---------- 독립 기준: 엔딩 ----------
 
@@ -152,20 +152,20 @@ const EMOJI = /\p{Extended_Pictographic}/u;
 const GRADE_NAMES = /(흙|동|은|금|다이아)\s*수저|다이아/;
 
 /**
- * 분포표(FINAL_DISTRIBUTION)에서 직접 센 도착 점수 (core의 shareAtLeast/standingOf를 부르지 않는다): 이 값 이상 비율 ≤ 50이면 상위(점수 100 - N), 아니면 이 값 이하 비율 ≤ 50이면 하위(점수 N),
- * 둘 다 50 초과면 딱 중간쯤(50). N은 반올림하되 1% 미만은 1 (약 0%를 말하지 않는다).
+ * 분포표(FINAL_DISTRIBUTION)에서 직접 센 도착 점수 (core의 shareAtLeast/standingOf를 부르지 않는다): 이 값 이상 비율 ≤ 50이면 상위(점수 100 - N), 아니면 이 값 **미만** 비율 ≤ 50이면 하위(점수 N, M7e-3 동률 불리),
+ * 둘 다 50 초과면 가운데쯤(50). N은 반올림하되 1% 미만은 1 (약 0%를 말하지 않는다).
  */
 /** 최종 순자산(만 원)의 도착 점수. 분위수표 101칸에서 직접 센다 — 이 값 이상인 칸 수 ÷ 101 = 이 값 이상 비율. */
 export function expectedEndScore(era: Era, wealth: number): number {
   const quantiles = FINAL_DISTRIBUTION[era].quantiles;
   let atLeast = 0;
-  let atMost = 0;
+  let below = 0;
   for (const q of quantiles) {
     if (q >= wealth) atLeast++;
-    if (q <= wealth) atMost++;
+    if (q < wealth) below++;
   }
   const top = (atLeast * 100) / quantiles.length;
-  const bottom = (atMost * 100) / quantiles.length;
+  const bottom = (below * 100) / quantiles.length;
   const n = (share: number) => (share < 1 ? 1 : Math.round(share));
   if (top <= 50) return 100 - n(top);
   if (bottom <= 50) return n(bottom);
@@ -494,14 +494,14 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
   let label: string;
   let endLabel: string | null = null;
   if (j.kind === 'early') {
-    const m = /^(.+)의 집에서 태어났다\.$/.exec(text);
+    const m = /^(.+)의 집에서 태어났습니다\.$/.exec(text);
     if (m === null) {
       bad(`20세 전 사망 문장의 모양이 다르다: ${text}`);
       return out;
     }
     label = m[1];
   } else {
-    const m = /^(.+)의 집에서 태어나, (.+)의 형편으로 생을 마쳤다\.$/.exec(text);
+    const m = /^(.+)의 집에서 태어나, (.+)의 형편으로 생을 마쳤습니다\.$/.exec(text);
     if (m === null) {
       bad(`출발선 대비 문장의 모양이 다르다: ${text}`);
       return out;

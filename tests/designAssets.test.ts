@@ -37,6 +37,7 @@ async function readText(relative: string): Promise<string> {
 const tokensCss = await readText('../src/styles/tokens.css');
 const dsCss = await readText('../docs/design/mockups/ds.css');
 const economyMockHtml = await readText('../docs/design/mockups/economy-m5.html');
+const endingMockHtml = await readText('../docs/design/mockups/ending.html');
 
 const TIERS: LooksTier[] = [1, 2, 3, 4, 5];
 const GENDERS: Gender[] = ['female', 'male'];
@@ -766,10 +767,13 @@ describe('M5 영향 줄·자산 카드·최종 순자산 줄 계약 (designer �
     expect(economyMockHtml).toContain('<dl class="assets" aria-describedby="assets-basis"');
     expect(economyMockHtml).toContain('>−1,200만 원<');
     expect(economyMockHtml).toContain('<summary>상태와 자산의 뜻 보기</summary>');
-    expect(economyMockHtml).toContain('선택지 아래 글씨는 지금 이서연에게 일어날 변화입니다.');
+    expect(economyMockHtml).toContain('선택지 아래 글씨는 이 선택만으로 이서연에게 생기는 변화입니다.');
     expect(economyMockHtml).toContain('스무 살이 되기 전이라 자산을 세지 않았습니다.');
-    expect(economyMockHtml).toContain('같은 세상 안에서 <span class="nowrap">상위 약 38%</span>'); // 순위 표현은 줄바꿈 없는 묶음(KeepStanding)
+    // M7e-3(copy.md 5-2 ①, D-43): 「최종 순자산」 줄은 금액(+태그)만 — 자리 글자 「같은 세상 안에서 …」는 출발선 카드 한 곳으로 옮겨 이 줄에 없다
+    expect(economyMockHtml).not.toContain('같은 세상 안에서');
+    expect(economyMockHtml).not.toContain('final-net__standing');
     expect(economyMockHtml).toContain('>1억 2,345만 원<');
+    expect(economyMockHtml).toMatch(/<small>또래 사이에서<\/small> (상위|하위|가운데쯤)/); // 외모 보조는 값 앞(D-44)
     expect(economyMockHtml).not.toContain('class="neg');
     // 시안 글자에 사용자 폴더 절대경로가 없다(repoHygiene와 같은 뜻)
     expect(economyMockHtml).not.toMatch(/[A-Za-z]:[\\/]Users[\\/]/);
@@ -797,5 +801,72 @@ describe('M5 영향 줄·자산 카드·최종 순자산 줄 계약 (designer �
     const dash = mockups[names.find((n) => n.endsWith('/dashboard-adult.html')) ?? ''] ?? '';
     expect(dash).toContain('<summary>상태와 자산의 뜻 보기</summary>');
     expect(dash).toContain('<section class="card card--assets" aria-labelledby="assets-title"');
+  });
+});
+
+/**
+ * M7e 엔딩 새 디자인·합쇼체 문구 계약 (REV-003-M4-1 R-327 · SPEC-003 C1·QM3-4, designer 2026-10-18 — copy.md 5절 ↔ ds.css ↔ 시안 ending.html).
+ * developer는 copy.md 5-1·5-3의 새 문구를 함수에 넣고 ds.css 「엔딩 출발선 막대」 블록을 dash.css로 옮긴다. 여기서는 세 산출물이 서로 어긋나지 않았는지만 본다(구현 화면은 developer의 시험·e2e 몫).
+ */
+describe('M7e 엔딩 새 디자인·합쇼체 문구 계약 (designer 산출물 사이의 일치)', () => {
+  const NEW_PHRASES = [
+    '가운데쯤',
+    '하위 25% 선과 상위 45% 선 사이',
+    '출발선보다 앞선 자리입니다.',
+    '출발선과 비슷한 자리입니다.',
+    '출발선보다 뒤쪽 자리입니다.',
+    '세상을 떠났습니다. 원인은 노환이었습니다.',
+    '선택을 내려야 하는 순간이 오기 전이었습니다.',
+    '스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.',
+    '선택지 아래 글씨는 이 선택만으로 {이름}에게 생기는 변화입니다.',
+    '살림에 보태거나 축낸 몫을 모아 둔 값이고, 스무 살이 되면 내 자산과 부채로 합쳐집니다.',
+    '생애 기록',
+  ];
+  it('copy.md 5절: 표기 함수·방향·사망·단계·안내·집안 살림·머리의 새 문안이 모두 적혀 있고, 어느 쪽으로 셀지(0원 규칙 A/B/C)는 마스터 결정 항목으로 남아 있다', () => {
+    expect(copyMd).toContain('## 5. M7e 문구 합쇼체 전환');
+    for (const p of NEW_PHRASES) expect(copyMd, p).toContain(p);
+    expect(copyMd).toContain('C 동률 불리(추천)');
+    expect(copyMd).toContain('### 5-5. 마스터 결정이 필요한 것');
+  });
+  it('시안 ending.html: 출발선 막대(띠·눈금·마름모, role=img + 함수 조합 aria-label)·범례 수저 칩·「{세상} · 생애 기록」 머리·다섯 상태가 있고, 「딱 중간쯤」·해라체 종결·최종 순자산 자리 글자가 없다', () => {
+    expect(endingMockHtml).toMatch(/<span class="journey__band" style="--from:\d+%;--to:\d+%"><\/span><span class="journey__mid"><\/span>/);
+    expect(endingMockHtml).toMatch(/<span class="journey__end" style="--at:\d+%"><\/span>/);
+    const labels = [...endingMockHtml.matchAll(/role="img" aria-label="(출발선 [^"]+)"/g)].map((m) => m[1]);
+    expect(labels.length, '상태 5개(기본·zero·past·early·down)의 막대').toBe(5);
+    // M7e-4(REV-003-M7e-1 관찰 7 마스터 결정, D-48): 막대 설명은 「출발선 {구간}, 마지막 {자리}.」 — 방향 문장은 넣지 않는다(바로 아래 문장이 읽는다). 스무 살 전은 「출발선 {구간}.」
+    for (const l of labels) expect(l).toMatch(/^출발선 [^,.]+(, 마지막 (상위|하위)(?: 약)? \d+%(?: 안쪽)?|, 마지막 가운데쯤)?\.$/);
+    for (const l of labels) expect(l, '방향 문장 없음').not.toMatch(/자리입니다|출발선보다|출발선과/);
+    expect(labels.filter((l) => !l.includes('마지막')).length, '스무 살 전(early) 하나만 마지막 자리가 없다').toBe(1);
+    for (const state of ['zero', 'past', 'early', 'down']) expect(endingMockHtml).toContain(`<template id="state-${state}">`);
+    expect(endingMockHtml).toContain('journey__key journey__key--band');
+    expect(endingMockHtml).toMatch(/<dd class="grade-line"><span class="grade grade--\d">/);
+    expect(endingMockHtml).toContain('하위 25% 선과 상위 45% 선 사이');
+    // 머리 라벨 「{세상} · 생애 기록」은 Glue 묶음(「세상 · 생애」가 keep-phrase — 「·」가 줄 가장자리에 남지 않는다)
+    expect(endingMockHtml).toMatch(/<p class="label">(지난|지금|다가올) <span class="keep-phrase">세상 · 생애<\/span> 기록<\/p>/);
+    expect(endingMockHtml).toMatch(/<small>또래 사이에서<\/small> <span class="nowrap">(상위|하위) (약 )?\d+%/);
+    expect(endingMockHtml).not.toContain('딱 중간쯤');
+    expect(endingMockHtml).not.toContain('final-net__standing');
+    expect(endingMockHtml).not.toContain('같은 세상 안에서');
+    // 시스템 문장은 모두 합쇼체 — 해라체 종결이 시안 글자에 없다(「나의 기록」의 사용자 글은 자유 기록이라 제외: 「남았다.」)
+    expect(endingMockHtml).not.toMatch(/(떠났다|마쳤다|선택을 했다|태어났다|되었다|이르렀다|머물렀다|서 있었다|지났다|끝났다)\./);
+    expect(endingMockHtml).not.toMatch(/원인: /);
+    expect(endingMockHtml).not.toMatch(/[A-Za-z]:[\/]Users[\/]/);
+  });
+  it('생성기는 제안 문안 블록(M7E) 없이 구현 함수(journeyBarLabel·deathLineText·STAGE_ENTRY_TEXT·KeepStanding …)만 읽는다 — developer 반영 뒤 되돌림(R-191)', async () => {
+    const generator = await readText('../scripts/design/buildMockups.mjs');
+    expect(generator).not.toMatch(/\bM7E\b|STANDING_UNIT_M7E|causeWas|END_STANDING/);
+    for (const name of ['journeyBarLabel', 'deathLineText', 'choiceCountText', 'journeyText', 'MOVEMENT_TEXT', 'ENDING_HEAD_LABEL', 'endingSpanText', 'JOURNEY_BAR_LEGEND', 'deathEntryText', 'STAGE_ENTRY_TEXT', 'KeepStanding']) {
+      expect(generator, name).toContain(name);
+    }
+    // 시안의 막대 읽기용 설명·사망 줄은 구현 함수의 꼴 그대로다
+    expect(endingMockHtml).toMatch(/세에 세상을 떠났습니다\. 원인은 [가-힣 ]+(이었|였)습니다\./);
+  });
+  it('ds.css: 출발선 막대 블록(띠 left/width = --from/--to, 마름모 left = --at)과 강제 색상 다섯 줄이 있다', () => {
+    expect(dsCss).toContain('.journey__band { position: absolute; top: 4px; height: 20px; left: var(--from, 0%); width: calc(var(--to, 0%) - var(--from, 0%));');
+    expect(dsCss).toContain('.journey__end { position: absolute; top: 2px; left: var(--at, 50%);');
+    expect(dsCss).toContain('.journey__legend dd { margin: 0; flex: 1 1 10em; min-width: min(10em, 100%); }');
+    expect(dsCss).toContain('.journey__band, .journey__key { background: Canvas; border-color: CanvasText; }');
+    expect(dsCss).toContain('.journey__end, .journey__key--end { forced-color-adjust: none; background: CanvasText; border-color: Canvas; }');
+    expect(dsCss).not.toContain('.journey__pin');
   });
 });

@@ -15,7 +15,8 @@ function rankedStanding(kind: 'top' | 'bottom', share: number): Standing {
 }
 
 /**
- * 표현 규칙(R-018). topPct = 이 값 이상인 비율(%), bottomPct = 이 값 이하인 비율(%).
+ * 표현 규칙(R-018). topPct = 이 값 이상인 비율(%), bottomPct = 아래쪽 비율(%) — 출생 화면(외모·체중)은 「이하」 비율을, 엔딩의 도착 자리(`ending.ts#finalWealthStanding`)는 **「미만」** 비율을
+ * 넘긴다(M7e-3 동률 불리, 같은 금액으로 마친 사람을 내 아래로 세지 않는다). 이 함수는 어느 쪽 비율이든 같은 규칙으로 말한다.
  *  - topPct <= 50 이면 top, 아니면 bottomPct <= 50 이면 bottom,
  *  - 둘 다 50%를 넘는(중앙에 걸친) 경우는 middle: 퍼센트를 말하지 않는다.
  * 그래서 화면에 나오는 퍼센트는 항상 50 이하이고, "약 100%"는 나올 수 없다.

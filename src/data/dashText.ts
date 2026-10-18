@@ -58,10 +58,12 @@ const STATUS_HELP_ASSETS: Record<Era, string> = {
 };
 /** 가구 기준 한 문장 (M-3): 결혼 전에는 나 혼자의 가구임이 드러난다 */
 const STATUS_HELP_HOUSEHOLD = '순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.';
+/** 선택지 아래 표시의 뜻 두 문장 (M7e-3, copy.md 5-2 ②): 선택만의 효과이고 해마다의 소득·생활비는 따로이며, 자산 항목은 3년치 소득·지출 변화를 담는다(economy-model.md 7절) */
+const STATUS_HELP_IMPACT = '선택지 아래 표시는 그 선택만으로 생기는 변화이고, 해마다의 소득과 생활비는 따로 더해집니다. 자산의 변화에는 앞으로 3년치 소득·지출 변화가 들어 있습니다.';
 
 /** 상태 카드의 접이식 도움말. 자산 금액이 있을 때만 자산 문장(시대별 단위 + 가구 기준)이 붙는다 */
 export function statusHelpText(assetsShipped: boolean, era: Era): string {
-  return assetsShipped ? `${STATUS_HELP_BASE} ${STATUS_HELP_ASSETS[era]} ${STATUS_HELP_HOUSEHOLD}` : STATUS_HELP_BASE;
+  return assetsShipped ? `${STATUS_HELP_BASE} ${STATUS_HELP_ASSETS[era]} ${STATUS_HELP_HOUSEHOLD} ${STATUS_HELP_IMPACT}` : STATUS_HELP_BASE;
 }
 
 export const DASH_TEXT = {
@@ -133,7 +135,8 @@ export const DASH_TEXT = {
   // ---------- 자산 현황 (DB11) ----------
   assetsTitle: '자산 현황',
   /** 20세 미만 (copy.md): 수저 칩 없음 */
-  assetsYoung: '자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.',
+  /** M7e-3 (copy.md 5-2 ③, QA-003-M5 O02): 셋째 문장이 선택지의 「집안 살림」 뜻을 푼다 — 「집안 형편」(변하지 않는 5단계)과 「집안 살림」(선택이 쌓는 값)을 가른다 */
+  assetsYoung: '자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다. 선택지에 보이는 「집안 살림」은 살림에 보태거나 축낸 몫을 모아 둔 값이고, 스무 살이 되면 내 자산과 부채로 합쳐집니다.',
   /** 20세 이후 (copy.md 4-5절): 이름 셋 — 「(가구)」를 붙이지 않는다(M-3) */
   assetsNet: '순자산',
   assetsIncome: '연 소득',

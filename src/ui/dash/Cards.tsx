@@ -60,7 +60,7 @@ export function ProfileCard({ game }: { game: LifeGame }) {
         <dt>{DASH_TEXT.profileLooks}</dt>
         <dd data-testid="profile-looks">
           {/* 외모는 점수가 아니라 「상위/하위 약 N%」 한 가지로만 (R-135) */}
-          {standingLabel(looksStanding(c.looks))} <small>{BIRTH_TEXT.looksSub}</small>
+          <small>{BIRTH_TEXT.looksSub}</small> {standingLabel(looksStanding(c.looks))}
         </dd>
       </dl>
     </section>

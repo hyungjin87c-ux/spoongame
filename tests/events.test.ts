@@ -201,6 +201,10 @@ describe('이벤트 스키마 검증: 잘못된 데이터는 개발 중 바로 �
     ['assets 조건 netMin 범위 밖(-200001)', file(narrative({ stages: ['youth'], conditions: { assets: { netMin: -200001 } } })), '정수여야 한다 (만 원)'],
     ['assets 조건 알 수 없는 항목(net)', file(narrative({ stages: ['youth'], conditions: { assets: { net: 1 } } })), '알 수 없는 항목 "net"'],
     ['assets 조건이 빈 객체', file(narrative({ stages: ['youth'], conditions: { assets: {} } })), '비어 있다'],
+    ['assets 조건 dwelling 허용되지 않는 값(hotel) — M7e-3 E-4', file(narrative({ stages: ['youth'], conditions: { assets: { dwelling: ['hotel'] } } })), '허용되지 않는 값 "hotel"'],
+    ['assets 조건 dwelling이 빈 배열', file(narrative({ stages: ['youth'], conditions: { assets: { dwelling: [] } } })), '비어 있지 않은 배열'],
+    ['assets 조건 dwelling 값 중복', file(narrative({ stages: ['youth'], conditions: { assets: { dwelling: ['rent', 'rent'] } } })), '값이 중복이다 (rent)'],
+    ['assets 조건 dwelling은 20세 이상 이벤트에서만', file(narrative({ stages: ['school'], conditions: { assets: { dwelling: ['rent'] } } })), '20세 이상'],
     ['서술 이벤트의 assets.net 최대 합계가 50000 초과(기본 +30000, 보너스 +30000)', file(narrative({ stages: ['youth'], effects: { assets: { net: 30000 } }, bonuses: [{ when: { looks: { min: 1 } }, effects: { assets: { net: 30000 } } }] })), '최대 합계(+60000)'],
     ['같은 효과에서 플래그를 켜고 끔', file(narrative({ effects: { setFlags: ['same_flag'], clearFlags: ['same_flag'] } })), '켜고 끈다'],
     ['보너스에 when 없음', file(narrative({ bonuses: [{ effects: { stats: { education: 1 } } }] })), '필수 항목 "when"'],
@@ -347,7 +351,8 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     expect(events.length - choices.length).toBeGreaterThanOrEqual(20);
     for (const e of choices) expect([2, 3, 4]).toContain(e.choices!.length);
     for (const e of choices) expect(maxVisibleChoices(e), `${e.id}: 같은 상태에서 동시에 보이는 선택지 수`).toBeLessThanOrEqual(3);
-    expect(choices.filter((e) => e.choices!.length === 4).map((e) => e.id), '정의가 4개인 이벤트는 infant-new-sibling뿐이다').toEqual(['infant-new-sibling']);
+    // M7e-4(T03a): youth-housing이 「부모님 집에 머문다」(가족 집 판)와 「부모님 집으로 돌아간다」(독립 판)를 가르며 둘째 4개짜리가 되었다 — 두 선택지는 assets.dwelling 목록이 서로 배타라 같이 보이지 않는다(maxVisibleChoices ≤ 3)
+    expect(choices.filter((e) => e.choices!.length === 4).map((e) => e.id), '정의가 4개인 이벤트는 infant-new-sibling과 youth-housing뿐이다').toEqual(['infant-new-sibling', 'youth-housing']);
     expect(choices.some((e) => e.choices!.length === 3)).toBe(true);
   });
 
@@ -575,6 +580,22 @@ describe('조건 평가', () => {
     expect(meetsCondition({ assets: { netMin: -200000 } }, ctx({ assets: null }))).toBe(false);
     expect(meetsCondition({ assets: { netMin: -200000 } }, ctx())).toBe(false);
     expect(meetsCondition({ looks: { min: 10 } }, ctx({ assets: null }))).toBe(true);
+  });
+
+  it('자산 조건의 주거(dwelling): 지금 사는 집이 목록 중 하나일 때만 맞고, 다른 자산 항목과는 AND이며, 자산이 없으면 맞지 않는다 (M7e-3, E-4 「혼자 먹는 저녁」은 독립 주거에서만)', () => {
+    const independent: Array<Assets['dwelling']> = ['rent', 'jeonse', 'own'];
+    for (const d of ['family', 'rent', 'jeonse', 'own', 'care'] as const) {
+      const x = ctx({ assets: assetsOf({ dwelling: d }) });
+      expect(meetsCondition({ assets: { dwelling: ['rent', 'jeonse', 'own'] } }, x), `${d}: 독립 주거 목록`).toBe(independent.includes(d));
+      expect(meetsCondition({ assets: { dwelling: [d] } }, x), `${d}: 자기 자신`).toBe(true);
+    }
+    // 항목끼리는 AND — c의 주거는 월세, 순자산 3000
+    expect(meetsCondition({ assets: { dwelling: ['rent'], netMin: 3000 } }, c)).toBe(true);
+    expect(meetsCondition({ assets: { dwelling: ['rent'], netMin: 3001 } }, c)).toBe(false);
+    expect(meetsCondition({ assets: { dwelling: ['own'], netMin: 0 } }, c)).toBe(false);
+    // 20세 미만(자산 null)이거나 모르면 맞지 않는다
+    expect(meetsCondition({ assets: { dwelling: ['rent'] } }, ctx({ assets: null }))).toBe(false);
+    expect(meetsCondition({ assets: { dwelling: ['rent'] } }, ctx())).toBe(false);
   });
 
   it('외모 조건', () => {
@@ -823,13 +844,13 @@ describe('확률 가중치와 효과에 캐릭터 속성이 반영된다', () =>
     const eff = (parenting: Character['parenting'], parentWealth: Character['parentWealth']) =>
       resolveEffects(tutoring.effects, tutoring.bonuses, ctx({ character: { parenting, parentWealth } }));
     // 학원비는 집안 살림(만 원)에서 나간다: 기본 -450, 형편이 어려우면(재력 1~2단계) 부담이 -300 더 (옛 재산 -3 / 추가 -2점 × 150)
-    expect(eff('free', 3).stats).toEqual({ education: 6, happiness: -3 });
+    expect(eff('free', 3).stats).toEqual({ education: 7, happiness: -3 });
     expect(eff('free', 3).family).toBe(-450);
-    expect(eff('strict', 3).stats).toEqual({ education: 8, happiness: -3 }); // 엄격한 교육방식: 학력 +2
+    expect(eff('strict', 3).stats).toEqual({ education: 9, happiness: -3 }); // 엄격한 교육방식: 학력 +2
     expect(eff('strict', 3).family).toBe(-450);
-    expect(eff('free', 1).stats).toEqual({ education: 6, happiness: -3 });
+    expect(eff('free', 1).stats).toEqual({ education: 7, happiness: -3 });
     expect(eff('free', 1).family).toBe(-750); // 형편이 어려우면 학원비 부담 -300
-    expect(eff('strict', 2).stats).toEqual({ education: 8, happiness: -3 }); // 둘 다
+    expect(eff('strict', 2).stats).toEqual({ education: 9, happiness: -3 }); // 둘 다
     expect(eff('strict', 2).family).toBe(-750);
     expect(eff('strict', 2).assets).toEqual({ net: 0, income: 0, debt: 0 }); // 20세 미만 이벤트는 자산을 건드리지 않는다
   });

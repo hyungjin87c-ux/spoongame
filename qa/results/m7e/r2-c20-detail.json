@@ -1,0 +1,20 @@
+[
+ {
+  "id": "choice-stay",
+  "aria": null,
+  "visible": "모든 일을 내려놓고 곁을 지킨다",
+  "hasDot": false
+ },
+ {
+  "id": "choice-late",
+  "aria": null,
+  "visible": "정리할 것을 마치고 뒤늦게 도착한다",
+  "hasDot": false
+ },
+ {
+  "id": "choice-share",
+  "aria": null,
+  "visible": "가족·친척과 의논해 치른다",
+  "hasDot": false
+ }
+]

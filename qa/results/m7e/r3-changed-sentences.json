@@ -1,0 +1,477 @@
+{
+ "pairs": 58,
+ "staticNew": 111,
+ "staticNewMiss": 0,
+ "oldLeft": 0,
+ "newOnScreenSentences": 99,
+ "newNeverOnScreen": 12,
+ "oldOnScreen": 0,
+ "lives": 69,
+ "misses": [],
+ "rows": [
+  {
+   "loc": "infant-daycare-wait/grandparents 결과",
+   "section": "**O02 — 높임 불일치 5곳 + 「어른들」 7곳**",
+   "new": "조부모님이 낮 동안 아이를 맡으셨습니다. 순번이 돌아올 때까지 몇 달이 그렇게 흘렀습니다.",
+   "seen": 0,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "infant-early-lessons/lessons 결과",
+   "section": "**O02 — 높임 불일치 5곳 + 「어른들」 7곳**",
+   "new": "주마다 방문 선생님이 찾아오셔서 글자와 셈을 가르치셨습니다. 숙제 앞에서 아이의 표정이 굳는 날이 늘었습니다.",
+   "seen": 14,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "infant-care 본문(관계절)",
+   "section": "**O02 — 높임 불일치 5곳 + 「어른들」 7곳**",
+   "new": "부모님이 일하러 나가시는 낮 동안 아이를 맡길 곳이 필요했습니다.",
+   "seen": 22,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "infant-neglect-night 본문(관계절)",
+   "section": "**O02 — 높임 불일치 5곳 + 「어른들」 7곳**",
+   "new": "부모님의 귀가가 늦은 밤이 잦았습니다. 아이는 불 꺼진 방에서 혼자 잠을 청했습니다.",
+   "seen": 18,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-parents-farewell 본문(관계절)",
+   "section": "**O02 — 높임 불일치 5곳 + 「어른들」 7곳**",
+   "new": "부모님이 마지막 숨을 몰아쉬시는 날이 왔습니다. 연락을 받은 것은 평범한 낮이었습니다.",
+   "seen": 106,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-matchmaker/decline 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "어른들께 아직 마음이 없다고 말씀드렸습니다. 한동안 집안 분위기가 서늘했고 그 사이 내 일에 마음을 쏟았습니다.",
+   "seen": 6,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-startup/side 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "퇴근 뒤와 주말에 작게 일을 벌였습니다. 크게 벌지는 못했고 가능성을 가늠해 보는 정도였습니다.",
+   "seen": 22,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-machine-partner/adapt 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "새 도구를 익히느라 몇 달을 고생했습니다. 그 뒤로는 같은 시간에 훨씬 많은 일이 손에 잡혔습니다.",
+   "seen": 8,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-new-device/learn 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "하나씩 물어 가며 익혔습니다. 처음엔 답답했는데 어느새 먼 곳 사람의 얼굴이 눈앞에 나타났습니다.",
+   "seen": 12,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-layoff/leave 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "짐을 정리해 회사를 나왔습니다. 손에 쥔 돈이 있어 당장은 버틸 만했습니다.",
+   "seen": 8,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-club/home 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "방과 후에는 곧장 집으로 돌아왔습니다. 혼자 보내는 시간이 늘었고 집안일을 거드는 몫도 생겼습니다.",
+   "seen": 18,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-reunion/reply",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "안부를 짧게 적어 보냈습니다. 연락은 그 뒤로 이어지지 않았어도 마음 한쪽은 가벼워졌습니다.",
+   "seen": 4,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-child/have",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "새 식구가 태어났습니다. 집 안은 바빠지고 밤은 짧아지는 동안 아이 웃음이 하루를 채웠습니다.",
+   "seen": 0,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-child-again/have",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "늦은 나이에 아이를 맞이했습니다. 체력은 달리는 대신 아이를 바라보는 눈이 깊어졌습니다.",
+   "seen": 10,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-child-again/none",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "오래 이야기한 끝에 둘이서 살기로 했습니다. 한동안 마음이 허전하더니 곧 일상이 채워졌습니다.",
+   "seen": 0,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-exam-prep/work",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "낮에는 일하고 밤에 책을 폈습니다. 몸은 고단했는데도 생활은 무너지지 않았습니다.",
+   "seen": 20,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-friend-wedding/gift",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "사정을 적어 축하금을 보냈습니다. 마음만 갔을 뿐 내 자리는 비어 있었습니다.",
+   "seen": 6,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-colleague/object",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "회의에서 내 생각을 말했습니다. 분위기는 서늘해졌는데 몇몇 동료가 뒤에서 고개를 끄덕였습니다.",
+   "seen": 34,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-colleague/endure",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "입을 닫고 일을 이어 갔습니다. 평온하게 지내면서도 그날 이후 퇴근길은 조금 무거웠습니다.",
+   "seen": 26,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-rent-hike/move",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "오가는 길이 먼 동네로 옮겼습니다. 방은 넓어진 대신 하루가 길 위에서 줄어들었습니다.",
+   "seen": 0,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-spouse-care/care",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "밤낮으로 곁을 지켰습니다. 몸은 지쳐 가면서도 서로의 손을 놓지 않았습니다.",
+   "seen": 2,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-grandchildren/raise",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "손주의 손을 잡고 아침마다 길을 나섰습니다. 몸이 힘든 날에도 집 안에는 웃음이 가득했습니다.",
+   "seen": 2,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-diet/keep",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "정해진 시간에 약을 먹고 식단을 지켰습니다. 몸이 가벼워진 만큼 식탁은 조금 심심해졌습니다.",
+   "seen": 16,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-last-wishes/words",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "한 사람씩 불러 마음에 담아 둔 말을 건넸습니다. 눈물이 오가는 사이 가슴은 가벼워졌습니다.",
+   "seen": 8,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-friend/greet",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "같이 놀자고 먼저 말했습니다. 어색한 것도 잠깐이었고 그 뒤로 둘은 오래 붙어 다녔습니다.",
+   "seen": 14,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-academy-night/many",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "저녁은 학원 가방과 함께 지나갔습니다. 점수가 오르는 동안 잠은 자꾸 모자랐습니다.",
+   "seen": 10,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-academy-night/friends",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "수업이 끝나면 친구들과 어울렸습니다. 점수는 제자리인데 웃을 일이 많았습니다.",
+   "seen": 6,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-parttime/study",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "일은 접고 책상에 앉았습니다. 주머니는 가벼워도 마음은 한결 놓였습니다.",
+   "seen": 10,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-hobby/start",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "작은 모임에 등록했습니다. 서투른 손놀림이 부끄러운데도 오랜만에 시간 가는 줄 몰랐습니다.",
+   "seen": 34,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-retirement-prep/save",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "씀씀이를 줄이고 노후 자금을 챙겼습니다. 불안이 줄어든 만큼 즐거움도 함께 줄었습니다.",
+   "seen": 30,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-marriage-crisis/talk",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "오래 묵힌 이야기를 어렵게 꺼냈습니다. 다투기도 한 뒤에야 식탁이 조금 따뜻해졌습니다.",
+   "seen": 2,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-career-peak/field",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "현장에 남기로 했습니다. 책임은 가벼웠고, 후배의 지시를 받는 순간도 있었습니다.",
+   "seen": 4,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-classmates/skip 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "집에 머물렀습니다. 오가는 차비를 아낀 대신 모임 소식은 며칠 뒤에야 전해 들었습니다.",
+   "seen": 26,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-friend-reunion/later 결과",
+   "section": "**O03 — 끝맺음 편중** (결과 257개 중 「~지만」 41%, 「",
+   "new": "다음에 보자는 말만 남기고 시간이 흘렀습니다. 쓸 일 없던 돈은 그대로 남았고 그 연락은 다시 오지 않았습니다.",
+   "seen": 6,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-night-study/study 결과",
+   "section": "**O04 — 어색한 문장 8개**",
+   "new": "일이 끝나면 곧장 교실로 갔습니다. 몇 해 뒤 손에 쥔 증서는 더 이상 먼 이야기가 아니었습니다.",
+   "seen": 12,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-late-child 본문",
+   "section": "**O04 — 어색한 문장 8개**",
+   "new": "늦게 맞은 아이의 부모는 또래 부모들보다 나이가 많았습니다. 체력은 달렸지만 하루하루가 새로웠습니다.",
+   "seen": 2,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-first-love/keep 결과",
+   "section": "**O04 — 어색한 문장 8개**",
+   "new": "끝내 말하지 못했습니다. 졸업할 때까지 인사만 나누었고, 그 마음은 책상 앞에서 조용히 가라앉혔습니다.",
+   "seen": 10,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-marriage/part 결과",
+   "section": "**O04 — 어색한 문장 8개**",
+   "new": "오래 고민한 끝에 정리하기로 했습니다. 한동안 일상이 유난히 조용했고, 함께 쓰던 돈과 시간은 가벼워졌습니다.",
+   "seen": 32,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-marriage-again/part 결과",
+   "section": "**O04 — 어색한 문장 8개**",
+   "new": "긴 시간 끝에 서로를 놓아 주기로 했습니다. 아쉬움보다 담담함이 먼저 왔고 함께 쓰던 돈은 가벼워졌습니다.",
+   "seen": 4,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-partner-leaves 본문",
+   "section": "**O04 — 어색한 문장 8개**",
+   "new": "오랜 시간 함께한 사람이 끝내 마음을 거두고 돌아섰습니다. 기다려 달라는 말은 더 이상 통하지 않았습니다.",
+   "seen": 2,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-scholarship/apply 결과",
+   "section": "**O04 — 어색한 문장 8개**",
+   "new": "며칠을 서류 준비에 쏟았습니다. 결과가 나온 날 학비 걱정이 한결 덜어졌습니다.",
+   "seen": 22,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-parents-care 본문",
+   "section": "**O05 — 외동·미혼·무자녀 판의 「가족과 …」**",
+   "new": "부모님의 몸이 눈에 띄게 약해지셨습니다. 누가, 어디서, 어떻게 돌볼지 가족이나 친척과 이야기를 나눌 때가 왔습니다.",
+   "seen": 64,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-parents-care/share 라벨",
+   "section": "**O05 — 외동·미혼·무자녀 판의 「가족과 …」**",
+   "new": "가족이나 친척과 나누어 맡는다",
+   "seen": 64,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-parents-farewell/share 라벨",
+   "section": "**O05 — 외동·미혼·무자녀 판의 「가족과 …」**",
+   "new": "일가친척과 의논해 치른다",
+   "seen": 106,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-parents-farewell/share 결과",
+   "section": "**O05 — 외동·미혼·무자녀 판의 「가족과 …」**",
+   "new": "가족이나 친척과 역할을 나누어 장례를 치렀습니다. 슬픔 한가운데서도 오랜만에 한자리에 모였습니다.",
+   "seen": 106,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-parents-care/home 결과(10-1절 추가 발견)",
+   "section": "**O05 — 외동·미혼·무자녀 판의 「가족과 …」**",
+   "new": "부모님을 곁에 모시고 직접 돌보았습니다. 몸은 고되었지만 가까이 있다는 사실이 서로에게 위안이었습니다.",
+   "seen": 0,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "school-tutoring 본문(「정할 때/차례」 4장 중)",
+   "section": "**REV 관찰 1·2**",
+   "new": "성적표를 받은 날 저녁, 식탁에서 공부 이야기가 나왔습니다. 이번 학기부터 달라질 것이 있는지는 아직 정해지지 않았습니다.",
+   "seen": 48,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-machine-partner 본문(〃)",
+   "section": "**REV 관찰 1·2**",
+   "new": "일터에 새로 들어온 기계가 내 일의 한 부분을 맡기 시작했습니다. 어디까지 맡길지는 아직 열려 있었습니다.",
+   "seen": 30,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-business/start 결과(관찰 2, 「것」 겹침)",
+   "section": "**REV 관찰 1·2**",
+   "new": "몇 해가 지나서야 일을 꾸리며 배운 것이 적지 않았음을 알았습니다.",
+   "seen": 10,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-gathering/grandchildren 결과(8음절)",
+   "section": "extra",
+   "new": "아이들의 웃음소리로 집이 다시 북적였습니다. 몸은 힘들었지만 마음은 따뜻했습니다.",
+   "seen": 0,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "senior-diet/eat 결과(8음절)",
+   "section": "extra",
+   "new": "그날그날은 즐거웠고 병원에 가는 날은 가시방석 같았습니다.",
+   "seen": 11,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "infant-hovering 본문(8음절)",
+   "section": "extra",
+   "new": "아이가 넘어질세라 어른들은 늘 한 걸음 앞에 있었습니다. 아이는 안전했고, 조금 몸을 사리는 편이었습니다.",
+   "seen": 14,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "infant-parental-leave 본문(8음절)",
+   "section": "extra",
+   "new": "아이가 태어난 첫해, 누가 일을 쉬고 아이를 돌볼지가 집안의 문제였습니다. 일터와 살림살이가 함께 걸려 있었습니다.",
+   "seen": 16,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-marriage/wait 결과(관찰 2)",
+   "section": "extra",
+   "new": "서두르지 않기로 했습니다. 몸과 마음의 짐은 덜었지만 상대의 얼굴에 아쉬운 기색이 스쳤습니다.",
+   "seen": 14,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-marriage-crisis/apart 결과(R-379)",
+   "section": "extra",
+   "new": "재산을 나누느라 목돈이 나갔지만 따로 꾸리는 살림은 가벼워졌고, 오랜 긴장도 풀렸습니다.",
+   "seen": 3,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-startup/start 결과(R-380)",
+   "section": "extra",
+   "new": "작은 사무실을 얻어 일을 시작했습니다. 잠을 줄이며 한 해를 보내는 사이 배운 것이 쌓였고 윤곽이 잡혀 갔습니다.",
+   "seen": 28,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "youth-housing/return 결과(새 선택지)",
+   "section": "extra",
+   "new": "짐을 싸 부모님 집으로 돌아갔습니다. 한 식탁에 앉는 저녁이 다시 늘었고 살림도 가벼워졌습니다. 독립은 한 걸음 물러섰습니다.",
+   "seen": 15,
+   "oldSeen": 0,
+   "staticOk": true
+  },
+  {
+   "loc": "middle-home-loan/shrink 결과(건강 +1 문장)",
+   "section": "extra",
+   "new": "큰 집을 정리하고 작은 집으로 옮겼습니다. 쓸고 닦을 곳이 줄어 몸은 편해졌지만 정든 집을 떠나는 마음은 한동안 무거웠습니다.",
+   "seen": 6,
+   "oldSeen": 0,
+   "staticOk": true
+  }
+ ]
+}

@@ -1,0 +1,512 @@
+{
+ "summary": {
+  "replays": 705,
+  "replayErrors": 0,
+  "fixtures": 266,
+  "events": 90,
+  "eras": [
+   "future",
+   "present",
+   "past"
+  ],
+  "tiers": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "ageRange": [
+   0,
+   94
+  ],
+  "tally": {
+   "statPairs": 2448,
+   "statViol": 0,
+   "familyPairs": 205,
+   "familyViol": 3,
+   "debtPairs": 407,
+   "debtViol": 0,
+   "assetPurePairs": 228,
+   "assetPureViol": 0,
+   "assetCashPairs": 0,
+   "assetCashViol": 0,
+   "hiddenAssetCand": 0,
+   "hiddenDebtCand": 10,
+   "uiMismatch": 0,
+   "uiChecks": 694,
+   "debtExplainedByYearRule": 36,
+   "assetCashNoProbe": 179,
+   "assetAbsorbed": 2,
+   "yearEndLoan": 11,
+   "limitRepay": 1
+  },
+  "violations": 3,
+  "hiddenCandidates": 27
+ },
+ "viol": [
+  {
+   "kind": "집안 살림(19세→20세, 순자산+부채)",
+   "key": "future-210-8",
+   "ctx": "future-210-8 school-exam(19세, 재력 3) apply vs retry",
+   "d": 0,
+   "shown": [
+    null,
+    "down1"
+   ]
+  },
+  {
+   "kind": "집안 살림(19세→20세, 순자산+부채)",
+   "key": "future-210-8",
+   "ctx": "future-210-8 school-exam(19세, 재력 3) apply vs work",
+   "d": -400,
+   "shown": [
+    null,
+    "up2"
+   ]
+  },
+  {
+   "kind": "집안 살림(19세→20세, 순자산+부채)",
+   "key": "future-210-8",
+   "ctx": "future-210-8 school-exam(19세, 재력 3) retry vs work",
+   "d": -400,
+   "shown": [
+    "down1",
+    "up2"
+   ]
+  }
+ ],
+ "notes": [
+  {
+   "kind": "19세 선택 → 20세 시작 부채 차이(영향 줄에 부채 없음)",
+   "key": "future-210-8",
+   "ctx": "future-210-8 school-exam(19세, 재력 3) apply vs retry",
+   "debt": [
+    800,
+    1250
+   ],
+   "flagDiff": [],
+   "shownDebt": [
+    {
+     "key": "debt",
+     "direction": "up",
+     "steps": 2,
+     "shown": "부채▲▲",
+     "sr": "부채가 늘어납니다.",
+     "tone": "bad",
+     "color": "rgb(161, 43, 43)"
+    },
+    {
+     "key": "debt",
+     "direction": "up",
+     "steps": 2,
+     "shown": "부채▲▲",
+     "sr": "부채가 늘어납니다.",
+     "tone": "bad",
+     "color": "rgb(161, 43, 43)"
+    }
+   ]
+  },
+  {
+   "kind": "19세 선택 → 20세 시작 부채 차이(영향 줄에 부채 없음)",
+   "key": "future-210-8",
+   "ctx": "future-210-8 school-exam(19세, 재력 3) apply vs work",
+   "debt": [
+    800,
+    0
+   ],
+   "flagDiff": [
+    "college",
+    "early_work"
+   ],
+   "shownDebt": [
+    {
+     "key": "debt",
+     "direction": "up",
+     "steps": 2,
+     "shown": "부채▲▲",
+     "sr": "부채가 늘어납니다.",
+     "tone": "bad",
+     "color": "rgb(161, 43, 43)"
+    },
+    null
+   ]
+  },
+  {
+   "kind": "19세 선택 → 20세 시작 부채 차이(영향 줄에 부채 없음)",
+   "key": "future-210-8",
+   "ctx": "future-210-8 school-exam(19세, 재력 3) retry vs work",
+   "debt": [
+    1250,
+    0
+   ],
+   "flagDiff": [
+    "college",
+    "early_work"
+   ],
+   "shownDebt": [
+    {
+     "key": "debt",
+     "direction": "up",
+     "steps": 2,
+     "shown": "부채▲▲",
+     "sr": "부채가 늘어납니다.",
+     "tone": "bad",
+     "color": "rgb(161, 43, 43)"
+    },
+    null
+   ]
+  },
+  {
+   "kind": "순자산 바닥에서 선택의 순자산 차이가 같은 해 생활비로 흡수됨(D19 한도 반응)",
+   "key": "future-205-22",
+   "ctx": "future-205-22 senior-illness-later(81세, 재력 2) treat vs comfort",
+   "dNet": -380,
+   "shown": [
+    "down2",
+    null
+   ],
+   "netAfter": [
+    0,
+    380
+   ],
+   "netBefore": 4448
+  },
+  {
+   "kind": "순자산 바닥에서 선택의 순자산 차이가 같은 해 생활비로 흡수됨(D19 한도 반응)",
+   "key": "future-205-22",
+   "ctx": "future-205-22 senior-illness-later(81세, 재력 2) treat vs home",
+   "dNet": -380,
+   "shown": [
+    "down2",
+    null
+   ],
+   "netAfter": [
+    0,
+    380
+   ],
+   "netBefore": 4448
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "future-233-12",
+   "ctx": "future-233-12 youth-child(38세, 재력 1) have vs later",
+   "dDebt": 243,
+   "dNet": -4624,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "future-233-12",
+   "ctx": "future-233-12 youth-child(38세, 재력 1) have vs none",
+   "dDebt": 243,
+   "dNet": -5024,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "future-211-11",
+   "ctx": "future-211-11 youth-child(34세, 재력 3) have vs later",
+   "dDebt": 245,
+   "dNet": -3824,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "future-211-11",
+   "ctx": "future-211-11 youth-child(34세, 재력 3) have vs none",
+   "dDebt": 245,
+   "dNet": -4224,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "future-218-14",
+   "ctx": "future-218-14 youth-child(36세, 재력 4) have vs later",
+   "dDebt": 290,
+   "dNet": -2624,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "future-218-14",
+   "ctx": "future-218-14 youth-child(36세, 재력 4) have vs none",
+   "dDebt": 290,
+   "dNet": -3024,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "past-223-14",
+   "ctx": "past-223-14 youth-child-again(39세, 재력 1) have vs none",
+   "dDebt": 170,
+   "dNet": -3214,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-201-7",
+   "ctx": "future-201-7 youth-exam-prep(26세, 재력 1) work vs quit",
+   "dDebt": -378,
+   "dNet": 378,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    7259,
+    7637
+   ],
+   "netAfter": [
+    -7259,
+    -7637
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-205-6",
+   "ctx": "future-205-6 youth-exam-prep(21세, 재력 2) work vs quit",
+   "dDebt": -1189,
+   "dNet": 1381,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    279,
+    1468
+   ],
+   "netAfter": [
+    -87,
+    -1468
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-207-8",
+   "ctx": "future-207-8 youth-first-job(23세, 재력 1) stable vs dream",
+   "dDebt": -351,
+   "dNet": 728,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    3123,
+    3474
+   ],
+   "netAfter": [
+    -2746,
+    -3474
+   ]
+  },
+  {
+   "kind": "한도·안전망 반응으로 달라진 해 끝 상환이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-202-7",
+   "ctx": "future-202-7 youth-gig-work(21세, 재력 2) juggle vs settle",
+   "dDebt": 66,
+   "dNet": -66,
+   "netAfter": [
+    -4071,
+    -4005
+   ]
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "future-202-11",
+   "ctx": "future-202-11 youth-housing(34세, 재력 2) rent vs parents",
+   "dDebt": 415,
+   "dNet": -4461,
+   "dInc": 0,
+   "dCF": 0,
+   "yearEnd": false
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-201-8",
+   "ctx": "future-201-8 youth-machine-partner(28세, 재력 1) adapt vs resist",
+   "dDebt": -378,
+   "dNet": 948,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    7481,
+    7859
+   ],
+   "netAfter": [
+    -6911,
+    -7859
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-201-8",
+   "ctx": "future-201-8 youth-machine-partner(28세, 재력 1) human vs resist",
+   "dDebt": -309,
+   "dNet": 373,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    7550,
+    7859
+   ],
+   "netAfter": [
+    -7486,
+    -7859
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-213-7",
+   "ctx": "future-213-7 youth-night-study(20세, 재력 1) study vs work",
+   "dDebt": 585,
+   "dNet": -585,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    4771,
+    4186
+   ],
+   "netAfter": [
+    -4771,
+    -4186
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-213-7",
+   "ctx": "future-213-7 youth-night-study(20세, 재력 1) study vs save",
+   "dDebt": 1585,
+   "dNet": -1585,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    4771,
+    3186
+   ],
+   "netAfter": [
+    -4771,
+    -3186
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-213-7",
+   "ctx": "future-213-7 youth-night-study(20세, 재력 1) work vs save",
+   "dDebt": 1000,
+   "dNet": -1000,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    4186,
+    3186
+   ],
+   "netAfter": [
+    -4186,
+    -3186
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "past-211-7",
+   "ctx": "past-211-7 youth-night-study(20세, 재력 2) study vs work",
+   "dDebt": 496,
+   "dNet": -592,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    1996,
+    1500
+   ],
+   "netAfter": [
+    -1996,
+    -1404
+   ]
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "past-211-7",
+   "ctx": "past-211-7 youth-night-study(20세, 재력 2) study vs save",
+   "dDebt": 496,
+   "dNet": -1600,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    1996,
+    1500
+   ],
+   "netAfter": [
+    -1996,
+    -396
+   ]
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "past-201-15",
+   "ctx": "past-201-15 youth-second-chance(46세, 재력 1) marry vs stay",
+   "dDebt": 138,
+   "dNet": -4573,
+   "dInc": 736,
+   "dCF": 736,
+   "yearEnd": false
+  },
+  {
+   "kind": "부채 차이가 있으나 둘 다 항목 없고 해 끝 규칙으로도 설명 안 됨",
+   "key": "past-201-15",
+   "ctx": "past-201-15 youth-second-chance(46세, 재력 1) marry vs part",
+   "dDebt": 138,
+   "dNet": -4973,
+   "dInc": 736,
+   "dCF": 736,
+   "yearEnd": false
+  },
+  {
+   "kind": "해 끝 자동 대출이 선택지별 부채 차이를 만듦(영향 줄에는 없음, 연 규칙)",
+   "key": "future-201-9",
+   "ctx": "future-201-9 youth-workplace-romance(30세, 재력 1) ask vs keep",
+   "dDebt": 129,
+   "dNet": -400,
+   "shownDebt": [
+    null,
+    null
+   ],
+   "debtAfter": [
+    8288,
+    8159
+   ],
+   "netAfter": [
+    -8288,
+    -7888
+   ]
+  }
+ ],
+ "errors": []
+}

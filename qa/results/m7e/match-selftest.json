@@ -1,0 +1,38 @@
+{
+ "flip": {
+  "statViol": 1495,
+  "familyViol": 121,
+  "debtViol": 17,
+  "assetPureViol": 105,
+  "assetCashViol": 0,
+  "hiddenAssetCand": 0,
+  "total": "1738"
+ },
+ "hide": {
+  "statViol": 312,
+  "familyViol": 129,
+  "debtViol": 0,
+  "assetPureViol": 116,
+  "assetCashViol": 0,
+  "hiddenAssetCand": 335,
+  "total": "557"
+ },
+ "steps": {
+  "statViol": 1301,
+  "familyViol": 109,
+  "debtViol": 14,
+  "assetPureViol": 85,
+  "assetCashViol": 0,
+  "hiddenAssetCand": 0,
+  "total": "1509"
+ },
+ "drop-debt": {
+  "statViol": 0,
+  "familyViol": 3,
+  "debtViol": 17,
+  "assetPureViol": 0,
+  "assetCashViol": 0,
+  "hiddenAssetCand": 0,
+  "total": "20"
+ }
+}

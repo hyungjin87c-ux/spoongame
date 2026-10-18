@@ -116,7 +116,7 @@
 | `youth-child` | 아이를 맞을 것인가 | 27~39 | 공용 | 선택지 3 | 결혼 몇 해 뒤 아이를 가질지 이야기하던 일 | 켬 `child_postponed` `has_child` `no_child` / 읽음 `married` |
 | `youth-child-again` | 늦어진 이야기 | 33~44 | 공용 | 선택지 2 | 미뤄 둔 아이 문제를 다시 이야기하게 된 일 | 켬 `child_late` `has_child` `no_child` / 끔 `child_postponed` / 읽음 `child_postponed` `has_child` `married` `no_child` |
 | `youth-workplace-romance` | 같은 팀의 사람 | 24~38 | 공용 | 선택지 2 | 같은 팀 사람과 가까워지던 일 | 켬 `has_partner` / 읽음 `has_career` `has_partner` `married` `own_business` |
-| `youth-housing` | 살 곳을 구하는 일 | 22~36 | 공용 | 선택지 3 | 가진 돈과 원하는 집 사이에서 살 곳을 정하던 일 | 켬 `lives_with_parents` `own_home` `renting` / 읽음 `lives_alone` `married` `own_home` |
+| `youth-housing` | 살 곳을 구하는 일 | 22~36 | 공용 | 선택지 4 | 가진 돈과 원하는 집 사이에서 살 곳을 정하던 일 | 켬 `lives_with_parents` `own_home` `renting` / 읽음 `lives_alone` `married` `own_home` |
 | `youth-exam-prep` | 길어지는 준비 | 21~30 | 공용 | 선택지 3 | 안정된 자리를 위해 시험 준비를 이어 가던 일 | 켬 `exam_prep` `gave_up_exam` `has_career` / 읽음 `has_career` |
 | `youth-exam-passed` | 합격 소식 | 23~38 | 공용 | 서술 | 오랜 시험 준비 끝에 합격 소식을 받은 일 | 켬 `has_career` `passed_exam` / 끔 `exam_prep` / 읽음 `exam_prep` |
 | `youth-exam-failed` | 돌아서는 길 | 23~38 | 공용 | 서술 | 시험에 떨어지고 책을 정리하던 일 | 켬 `failed_exam` / 끔 `exam_prep` / 읽음 `exam_prep` |

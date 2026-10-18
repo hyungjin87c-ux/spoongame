@@ -71,7 +71,7 @@ test('또래 칸의 요즘 모습은 나이와 모순되지 않는다: 같은 �
   });
   const first = await read();
   expect(first.labels).toHaveLength(4);
-  const ALLOWED = ['일하는 사람', '구직 중', '돌봄', '은퇴', '학교에 다님', '어린 시절'];
+  const ALLOWED = ['일하는 사람', '다시 일하는 사람', '구직 중', '돌봄', '은퇴', '학교에 다님', '어린 시절'];
   for (const l of first.labels) expect(ALLOWED).toContain(l);
   for (const l of first.labels) expect(['어린 시절', '학교에 다님'], '40세 또래가 어린 시절·학교일 수 없다').not.toContain(l);
   for (let i = 0; i < 3; i++) {

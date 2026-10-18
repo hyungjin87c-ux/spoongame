@@ -41,8 +41,8 @@ function stateFor(pool: EventPool, eventId: string, extraHistory: readonly Histo
     history: [
       { age: 0, kind: 'stage', text: '2026년, 남자아이로 태어났다.' },
       { age: 20, kind: 'stage', text: '스무 살이 되었다. 이제 집안 형편이 아니라 내가 가진 것으로 살아가야 한다.' },
-      { age: 24, kind: 'event', title: '끝나지 않는 일', text: '일은 끝이 없었다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었다.', eventId: 'youth-work-pressure' },
-      { age: 27, kind: 'choice', title: '살 곳을 구하는 일', text: '좁은 방에 짐을 풀었다. 매달 빠져나가는 돈은 아팠지만 내 방이라는 것이 든든했다.', choice: '보증금이 낮은 월세방을 구한다', eventId: 'youth-housing' },
+      { age: 24, kind: 'event', title: '끝나지 않는 일', text: '일은 끝이 없었습니다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었습니다.', eventId: 'youth-work-pressure' },
+      { age: 27, kind: 'choice', title: '살 곳을 구하는 일', text: '좁은 방에 짐을 풀었습니다. 매달 빠져나가는 돈은 아팠지만 빚 없이 얻은 내 방이 든든했습니다.', choice: '보증금이 낮은 월세방을 구한다', eventId: 'youth-housing' },
       // 길이 표본(M7e-1)이 더하는 인생 기록 줄 — 권장 최대 길이로 만든 합쇼체 사건·결과 줄
       ...extraHistory,
     ],

@@ -4,9 +4,6 @@ import {
   ERAS,
   ERA_BANNED_WORDS,
   FUTURE_WORLD_WORDS,
-  LEGACY_HAERACHE_IDS,
-  LEGACY_HAERACHE_SET,
-  LEGACY_TEXT_LIMITS,
   MIN_REPEAT_COOLDOWN,
   NEW_WORLD_WORDS,
   OLD_WORLD_WORDS,
@@ -16,8 +13,6 @@ import {
   bannedWordsFor,
   choiceBalanceProblems,
   conditionsCompatible,
-  legacyListProblems,
-  limitsFor,
   lintEvent,
   lintEventData,
   lintEventFiles,
@@ -36,7 +31,7 @@ import {
   type EventDef,
   type Tone,
 } from '../src/core';
-import baseline from './fixtures/legacy-haerache-baseline.json';
+import * as core from '../src/core';
 import { LENGTH_SAMPLE_IDS, lengthSample } from '../e2e/lengthSamples';
 import { EVENT_POOL } from '../src/data/events';
 
@@ -188,7 +183,7 @@ describe('어체 판정 (M7e-1, 마스터 결정 C1·R2): 본문·결과는 문�
     expect(tonesOf('창문을 열었습니다. 바람이 들어왔다. 오후는 저물었습니다.')).toEqual(['hapsyo', 'haera', 'hapsyo']);
   });
 
-  describe('이벤트 점검: 목록 밖(새 이벤트)은 합쇼체여야 한다', () => {
+  describe('이벤트 점검: 모든 이벤트는 합쇼체여야 한다', () => {
     it('합쇼체 본문은 통과한다 (합쇼체 문장 10개)', () => {
       for (const s of HAPSYO) expect(lintEvent(withText(`${s} 창밖으로 바람이 지나갔습니다.`)), s).toEqual([]);
     });
@@ -340,8 +335,7 @@ describe('어체 판정 (M7e-1, 마스터 결정 C1·R2): 본문·결과는 문�
     });
   });
 
-  describe('이행 목록: 해라체 기존 이벤트는 옛 규칙, 목록 밖은 합쇼체', () => {
-    const LEG = new Set(['lint-base']);
+  describe('이행 장치 없음 (M7e-3, 마스터 결정: 해라체 이행 목록·옛 길이 한도를 걷어냈다)', () => {
     const haeraBase = () =>
       base({
         text: '조용한 오후였다. 창밖으로 바람이 지나갔다.',
@@ -351,152 +345,132 @@ describe('어체 판정 (M7e-1, 마스터 결정 C1·R2): 본문·결과는 문�
         ],
       });
 
-    it('목록에 있는 해라체 이벤트는 통과한다 (이행 기간 동안 기존 이벤트가 걸리지 않는다)', () => {
-      expect(lintEvent(haeraBase(), LEG)).toEqual([]);
-      expect(lintEvents([haeraBase()], LEG)).toEqual([]);
-      expect(lintEventData([haeraBase()], { 'a.json': { note: '모티브로만 새로 쓴 글이다.', events: [] } }, LEG)).toEqual([]);
-    });
-
-    it('같은 이벤트가 목록에 없으면 해라체로 걸린다 (새 이벤트는 해라체로 쓸 수 없다)', () => {
+    it('해라체 이벤트는 어느 점검 경로로도 통과하지 못한다 — 면제 수단이 없다 (lintEvent·lintEvents·lintEventData)', () => {
       expect(joined(haeraBase())).toContain('해라체 종결');
-      expect(lintEvents([haeraBase()], new Set()).join('\n')).toContain('해라체 종결');
+      expect(lintEvents([haeraBase()]).join('\n')).toContain('해라체 종결');
+      expect(lintEventData([haeraBase()], { 'a.json': { note: '모티브로만 새로 쓴 글이다.', events: [] } }).join('\n')).toContain('해라체 종결');
     });
 
-    it('목록에 있는데 이미 합쇼체이면 실패한다 — 「목록에서 뺀다」', () => {
-      const out = lintEvent(base(), LEG).join('\n');
-      expect(out).toContain('이행 목록(LEGACY_HAERACHE_IDS)에 있는데 이미 합쇼체다');
-      expect(out).toContain('lint-base');
-      expect(lintEvent(base(), new Set())).toEqual([]);
+    it('이행 장치의 이름이 코어 모듈에 남아 있지 않다: 해라체 이행 목록 · 옛 길이 한도 · 이행 목록 점검 · 이벤트별 한도 함수', () => {
+      for (const name of ['LEGACY_HAERACHE_IDS', 'LEGACY_HAERACHE_SET', 'LEGACY_TEXT_LIMITS', 'legacyListProblems', 'limitsFor']) {
+        expect(Object.keys(core), name).not.toContain(name);
+      }
     });
 
-    it('목록에 있는 이벤트가 해라체와 합쇼체를 섞으면 실패한다 (한 이벤트는 한 어체)', () => {
+    it('한 이벤트에 해라체와 합쇼체가 섞여도 해라체 문장이 걸린다 (「어체가 섞였다」는 예외가 아니라 그냥 해라체 오류다)', () => {
       const mixed = base({ text: '조용한 오후였다. 창밖으로 바람이 지나갔습니다.' });
-      const out = lintEvent(mixed, LEG).join('\n');
-      expect(out).toContain('어체가 섞였다');
-      expect(out).toContain('해라체 1문장·합쇼체');
-      // 선택지 결과만 합쇼체로 고친 경우도 같다
-      const half = haeraBase();
-      const choices = half.choices!.map((c, i) => (i === 0 ? { ...c, result: '창문을 열었습니다. 바람이 방 안으로 들어왔습니다.' } : c));
-      expect(lintEvent({ ...half, choices }, LEG).join('\n')).toContain('어체가 섞였다');
-    });
-
-    it('목록의 이벤트에도 종결이 이상한 문장(해요체·마침표 없음)은 그대로 걸린다', () => {
-      expect(lintEvent(raw({ id: 'lint-base', text: '조용한 오후였다. 창밖으로 바람이 지나갔어요.' }), LEG).join('\n')).toContain('서술체');
-      expect(lintEvent(raw({ id: 'lint-base', text: '조용한 오후였다. 창밖으로 바람이 지나갔다' }), LEG).join('\n')).toContain('서술체');
-    });
-
-    it('legacyListProblems: 같은 id가 두 번 있거나 풀에 없는 id가 있으면 걸린다', () => {
-      const pool = [base()];
-      expect(legacyListProblems(pool, ['lint-base'])).toEqual([]);
-      expect(legacyListProblems(pool, ['lint-base', 'lint-base']).join('\n')).toContain('두 번');
-      expect(legacyListProblems(pool, ['ghost-event']).join('\n')).toContain('풀에 없다');
+      expect(joined(mixed)).toContain('해라체 종결');
     });
   });
 });
 
-describe('이행 목록 잠금 (LEGACY_HAERACHE_IDS): 줄어들기만 하고 늘 수 없다', () => {
-  const baselineIds: readonly string[] = baseline.ids;
-  /** 시작 목록을 지키는 해시(FNV-1a, 정렬한 id를 줄바꿈으로 이은 글) — 시작 목록 파일을 고치면 이 값이 달라진다 */
-  const fnv = (s: string): string => {
-    let h = 0x811c9dc5;
-    for (let i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 0x01000193) >>> 0;
-    }
-    return h.toString(16).padStart(8, '0');
-  };
+describe('해설 종결 금지 (M7e-3, 마스터 결정 E-11): 본문·결과의 문장이 「~것입니다」「~것이었습니다」「~때문입니다」로 끝나면 걸린다 — 대상을 가리키는 「그것입니다」는 통과한다', () => {
+  const EXPLAIN = '해설 종결';
+  const CAUGHT = [
+    '끝내 하지 못한 말이 있던 것입니다.',
+    '그날 일을 한 번도 말하지 않았던 것입니다.',
+    '그렇게 한참을 기다렸던 것이었습니다.',
+    '말을 아낀 것이었습니다.',
+    '아무도 몰랐기 때문입니다.',
+    '다들 바빴기 때문입니다',
+    '아이가 떠나지 못한 것입니다',
+  ];
+  const PASSED = [
+    '손에 쥔 것은 오래된 편지 한 장이었습니다.',
+    '그가 찾던 것이 바로 그것입니다.',
+    '남은 것은 이것입니다.',
+    '필요한 것은 저것입니다.',
+    '창밖의 것들이 조용히 지나갔습니다.',
+    '아이의 손은 따뜻했습니다.',
+    '모든 것이 달라졌습니다.',
+  ];
 
-  it('시작 목록(tests/fixtures/legacy-haerache-baseline.json)은 M7e-1 시작 때의 112개이고 해시가 잠겨 있다 — 고쳐 늘릴 수 없다', () => {
-    expect(baseline.count).toBe(112);
-    expect(baselineIds).toHaveLength(112);
-    expect(new Set(baselineIds).size).toBe(112);
-    expect(fnv([...baselineIds].sort().join('\n'))).toBe('f505f962');
-    expect(baseline.hash).toBe('f505f962');
+  it.each(CAUGHT)('본문에서 걸린다: %s', (sentence) => {
+    expect(joined(withText(`조용한 오후였습니다. ${sentence}`))).toContain(EXPLAIN);
   });
 
-  it('목록은 얼려 있다: 항목을 더하거나 바꾸려 하면 오류다', () => {
-    expect(Object.isFrozen(LEGACY_HAERACHE_IDS)).toBe(true);
-    expect(() => (LEGACY_HAERACHE_IDS as string[]).push('new-event')).toThrow(TypeError);
-    expect(() => {
-      (LEGACY_HAERACHE_IDS as string[])[0] = 'new-event';
-    }).toThrow(TypeError);
+  it.each(CAUGHT)('선택지 결과에서도 걸린다: %s', (sentence) => {
+    expect(joined(withResult(`창문을 열었습니다. ${sentence}`))).toContain(EXPLAIN);
   });
 
-  it('목록의 모든 id는 시작 목록 안에 있다 — 새 id를 더할 수 없다 (줄어들기만 한다)', () => {
-    const start = new Set(baselineIds);
-    expect(LEGACY_HAERACHE_IDS.filter((id) => !start.has(id))).toEqual([]);
-    expect(LEGACY_HAERACHE_IDS.length).toBeLessThanOrEqual(baseline.count);
-    // 잠금이 실제로 잡는다: 새 id를 끼워 넣은 가짜 목록은 걸린다
-    expect(['new-event', ...LEGACY_HAERACHE_IDS].filter((id) => !start.has(id))).toEqual(['new-event']);
+  it.each(PASSED)('통과한다: %s', (sentence) => {
+    const out = joined(withText(`조용한 오후였습니다. ${sentence}`));
+    expect(out, out).not.toContain(EXPLAIN);
   });
 
-  it('목록에 같은 id가 두 번 없고, 조회용 집합과 내용이 같다', () => {
-    expect(new Set(LEGACY_HAERACHE_IDS).size).toBe(LEGACY_HAERACHE_IDS.length);
-    expect([...LEGACY_HAERACHE_SET].sort()).toEqual([...LEGACY_HAERACHE_IDS].sort());
+  it('제목·라벨에는 적용하지 않는다 (R2: 라벨은 명사구/「~한다」) — 해설 종결은 본문·결과의 서술 문장 규칙이다', () => {
+    expect(joined(withLabel('그것이 마음이 가는 것이다'))).not.toContain(EXPLAIN);
   });
 
-  it('목록의 모든 id가 실제 풀에 있다 (이벤트를 지우거나 이름을 바꾸면 목록에서도 뺀다)', () => {
-    expect(legacyListProblems(EVENT_POOL.events)).toEqual([]);
+  it('실제 풀에는 해설 종결이 한 곳도 없다 (재작성 때 모두 장면 서술로 바꿨다)', () => {
+    const hits = EVENT_POOL.events.flatMap((ev) => lintEvent(ev).filter((p) => p.includes(EXPLAIN)).map((p) => `${ev.id}: ${p}`));
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('라벨·제목은 한글과 공백만 (M7e-4 C20, QA-003-M7e 2회차): 가운뎃점·쉼표·괄호·슬래시·숫자·영문이 든 글은 걸리고 한글·공백뿐인 글은 통과한다', () => {
+  const RULE = '한글과 공백만';
+  // 라벨 「가족·친척과 의논해 치른다」의 가운뎃점이 버튼 접근성 이름에 그대로 들어가 QA C20에 걸렸다 — 규칙이 없던 명세 누락
+  const CAUGHT = [
+    '가족·친척과 의논해 치른다', // 가운뎃점 (C20 원인)
+    '먼저 말을 건다, 그러고 만다', // 쉼표
+    '창문(큰 것)을 연다', // 괄호
+    '위쪽/아래쪽을 본다', // 슬래시
+    '2번째 창문을 연다', // 숫자
+    'Wi-Fi를 켠다', // 영문·붙임표
+  ];
+  const PASSED = ['일가친척과 의논해 치른다', '가족이나 친척과 나누어 맡는다', '창문을 연다', '그대로 둔다', '무리를 해서라도 뒷받침한다'];
+
+  it.each(CAUGHT)('라벨에서 걸린다: %s', (label) => {
+    expect(joined(withLabel(label))).toContain(RULE);
   });
 
-  it('실제 풀: 목록의 이벤트는 아직 해라체 문장이 남아 있고(목록에 있는데 이미 합쇼체이면 실패), 목록 밖의 이벤트는 모두 합쇼체다', () => {
+  it.each(CAUGHT)('제목에서도 걸린다: %s', (title) => {
+    expect(joined(base({ title: title.replace(/다$/, '') }))).toContain(RULE);
+  });
+
+  it.each(PASSED)('통과한다: %s', (label) => {
+    const out = joined(withLabel(label));
+    expect(out, out).not.toContain(RULE);
+    expect(joined(base({ title: label.replace(/다$/, '') }))).not.toContain(RULE);
+  });
+
+  it('본문·결과에는 적용하지 않는다 — 문장의 쉼표·괄호 없는 글은 그대로 통과 (기호 규칙은 라벨·제목만)', () => {
+    expect(joined(withText('조용한 오후였습니다. 창밖으로, 바람이 지나갔습니다.'))).not.toContain(RULE);
+  });
+
+  it('실제 풀: 모든 이벤트의 제목과 선택지 라벨이 한글과 공백뿐이다 (설계상 기호·숫자가 필요한 제목·라벨은 없다)', () => {
+    const bad = EVENT_POOL.events.flatMap((ev) => [ev.title, ...(ev.choices ?? []).map((c) => c.label)].filter((s) => /[^가-힣 ]/.test(s)).map((s) => `${ev.id} 「${s}」`));
+    expect(bad).toEqual([]);
+    expect(EVENT_POOL.events.flatMap((ev) => lintEvent(ev)).filter((p) => p.includes(RULE))).toEqual([]);
+  });
+});
+
+describe('풀 전체가 합쇼체다 (M7e-3: 해라체 이행 장치를 걷어냈다)', () => {
+  it('실제 풀: 모든 이벤트의 본문·결과 문장이 합쇼체이고, 문구 점검(어조·길이·상태 어휘)이 통과한다', () => {
     const problems = lintEvents(EVENT_POOL.events);
-    expect(problems.filter((m) => m.includes('이미 합쇼체다') || m.includes('어체가 섞였다') || m.includes('해라체 종결') || m.includes('서술체'))).toEqual([]);
+    expect(problems).toEqual([]);
+    let sentences = 0;
     for (const ev of EVENT_POOL.events) {
-      const listed = LEGACY_HAERACHE_SET.has(ev.id);
       const tones = textPartsOf(ev)
         .filter((p) => p.kind === 'text' || p.kind === 'result')
         .flatMap((p) => tonesOf(p.value));
-      if (listed) expect(tones.some((t) => t === 'haera'), `${ev.id}: 목록에 있으니 해라체 문장이 남아 있어야 한다`).toBe(true);
-      else expect(tones.every((t) => t === 'hapsyo'), `${ev.id}: 목록 밖은 모두 합쇼체`).toBe(true);
+      sentences += tones.length;
+      expect(tones.filter((t) => t !== 'hapsyo'), `${ev.id}: 합쇼체가 아닌 문장`).toEqual([]);
     }
+    expect(sentences, '문장 수(공허 통과 방지)').toBeGreaterThan(700);
   });
 
-  // R-361 (M7a r3): 「줄어들기만 하고 늘 수 없다」의 되돌림 방지 — 이미 뺀 id는 고정 파일의 removed(덧붙이기 전용)에 있고, 목록과 겹치지 않으며, 목록 ∪ 뺀 id = 시작 목록이고,
-  // 현재 개수는 이 시험에 적혀 있다. 뺀 id를 해라체로 되돌려 목록에 다시 넣으면 교집합·개수 시험이 실패한다. 줄일 때(M7e에서 한 파일씩)는 removed에 덧붙이고 아래 개수를 함께 줄인다.
-  const removedIds: string[] = (baseline as unknown as { removed: string[] }).removed;
-  const EXPECTED_LIST_SIZE = 101;
-
-  it('되돌림 방지: 뺀 id(removed)는 목록에 없고(교집합 0), 목록 ∪ 뺀 id = 시작 목록 112개이며(서로 겹치지 않는 분할), 뺀 id는 모두 풀에 있는 합쇼체 이벤트다', () => {
-    expect(new Set(removedIds).size).toBe(removedIds.length);
-    expect(LEGACY_HAERACHE_IDS.filter((id) => removedIds.includes(id)), '뺀 id가 목록에 되돌아왔다').toEqual([]);
-    expect([...LEGACY_HAERACHE_IDS, ...removedIds].sort()).toEqual([...baselineIds].sort());
-    for (const id of removedIds) {
-      const ev = EVENT_POOL.byId.get(id);
-      expect(ev, `${id}: 뺀 id가 풀에 있어야 한다`).toBeDefined();
-      const tones = textPartsOf(ev!).filter((x) => x.kind === 'text' || x.kind === 'result').flatMap((x) => tonesOf(x.value));
-      expect(tones.every((t) => t === 'hapsyo'), `${id}: 뺀 이벤트는 모두 합쇼체`).toBe(true);
-    }
-  });
-
-  it(`현재 이행 목록은 정확히 ${EXPECTED_LIST_SIZE}개다 — 줄 때만 이 숫자(와 removed)를 함께 고친다 (되돌림·추가 방지). 뺀 id: M7a r1 infant-new-sibling · r2 infant-first-word · r3 영유아 기존 9개`, () => {
-    expect(LEGACY_HAERACHE_IDS).toHaveLength(EXPECTED_LIST_SIZE);
-    expect(removedIds).toHaveLength(baselineIds.length - EXPECTED_LIST_SIZE);
-    // 잠금이 실제로 잡는다: 뺀 id를 되돌려 넣은 가짜 목록은 교집합이 생기고 개수가 늘어난다
-    const sneaky = [...LEGACY_HAERACHE_IDS, removedIds[0]];
-    expect(sneaky.filter((id) => removedIds.includes(id))).toEqual([removedIds[0]]);
-    expect(sneaky.length).toBeGreaterThan(EXPECTED_LIST_SIZE);
-  });
-
-  it('실제 판정: 목록 밖 이벤트 = 합쇼체 (풀의 어느 이벤트든 목록에 없으면 해라체 문장이 0이다 — 이 판정은 항상 참이 아니다)', () => {
-    const offList = EVENT_POOL.events.filter((ev) => !LEGACY_HAERACHE_SET.has(ev.id));
-    expect(offList.length).toBe(EVENT_POOL.events.length - EXPECTED_LIST_SIZE);
-    for (const ev of offList) {
-      const tones = textPartsOf(ev).filter((x) => x.kind === 'text' || x.kind === 'result').flatMap((x) => tonesOf(x.value));
-      expect(tones.filter((t) => t !== 'hapsyo'), `${ev.id}`).toEqual([]);
-    }
-    // 대조: 해라체로 되돌린 이벤트를 목록 밖에 두면 걸린다
-    const reverted = EVENT_POOL.byId.get('infant-first-word')!;
-    const haera = { ...reverted, text: '아이가 처음으로 낱말 하나를 말했다. 곁에 있던 어른들이 한참을 웃었다.' };
+  it('대조: 풀의 이벤트를 해라체로 되돌리면 걸린다 (되돌림 방지는 면제 수단이 없다는 구조가 한다)', () => {
+    const reverted = EVENT_POOL.byId.get('school-lunch')!;
+    const haera = { ...reverted, text: '점심시간이 되면 아이들은 저마다 도시락을 열었다. 누구의 반찬이 어떤지는 말하지 않아도 보였다.' };
     expect(lintEvent(haera).join('\n')).toContain('해라체 종결');
   });
 });
 
-describe('길이 권장 최대 (R-042, M7e-1 재산정): 합쇼체 이벤트는 새 한도, 이행 목록의 해라체 이벤트는 옛 한도 — 넘으면 걸리고, 끝값은 통과한다', () => {
+describe('길이 권장 최대 (R-042, M7e-1 재산정, M7e-3 단일 한도): 넘으면 걸리고, 끝값은 통과한다', () => {
   /** 길이 n의 한 문장 (합쇼체 "~습니다.") */
   const fill = (n: number) => `${'가나다라마바사아자차 '.repeat(20)}`.slice(0, n - 4).trim().padEnd(n - 4, '가') + '습니다.';
-  /** 길이 n의 한 문장 (해라체 "~다.") — 이행 목록 이벤트용 */
-  const fillOld = (n: number) => `${'가나다라마바사아자차 '.repeat(20)}`.slice(0, n - 2).trim().padEnd(n - 2, '가') + '다.';
   const L = TEXT_LIMITS;
   /** 합이 total인 두 문장 (각 문장은 한 문장 한도 안) */
   const twoOf = (total: number, make: (n: number) => string) => {
@@ -506,23 +480,6 @@ describe('길이 권장 최대 (R-042, M7e-1 재산정): 합쇼체 이벤트는 
 
   it('상한 값이 기대와 같다 (docs/data/events-schema.md 7절과 e2e/layout.spec.ts의 끝값 이벤트가 이 숫자를 쓴다)', () => {
     expect(TEXT_LIMITS).toEqual({ title: 16, text: 74, label: 24, result: 84, sentence: 52 });
-    expect(LEGACY_TEXT_LIMITS).toEqual({ title: 16, text: 70, label: 24, result: 80, sentence: 50 });
-  });
-
-  it('제목·라벨은 어체가 바뀌지 않아(마스터 결정 R2) 새 한도와 옛 한도가 같다. 본문·결과·문장만 합쇼체로 늘었다', () => {
-    expect(TEXT_LIMITS.title).toBe(LEGACY_TEXT_LIMITS.title);
-    expect(TEXT_LIMITS.label).toBe(LEGACY_TEXT_LIMITS.label);
-    expect(TEXT_LIMITS.text).toBeGreaterThan(LEGACY_TEXT_LIMITS.text);
-    expect(TEXT_LIMITS.result).toBeGreaterThan(LEGACY_TEXT_LIMITS.result);
-    expect(TEXT_LIMITS.sentence).toBeGreaterThan(LEGACY_TEXT_LIMITS.sentence);
-  });
-
-  it('limitsFor: 이행 목록의 id는 옛 한도, 그 밖은 새 한도', () => {
-    expect(limitsFor('school-lunch')).toBe(LEGACY_TEXT_LIMITS);
-    expect(limitsFor('infant-care')).toBe(TEXT_LIMITS); // M7a r3: 영유아 기존 9개를 합쇼체로 다시 써서 목록에서 빠졌다
-    expect(limitsFor('infant-first-word')).toBe(TEXT_LIMITS); // M7a r2: 합쇼체로 다시 써서 목록에서 빠졌다
-    expect(limitsFor('not-in-the-list-event')).toBe(TEXT_LIMITS);
-    expect(limitsFor('x', new Set(['x']))).toBe(LEGACY_TEXT_LIMITS);
   });
 
   it(`본문(합쇼체): 문장이 ${L.sentence}자 이하이면 ${L.text}자까지 통과, ${L.text + 1}자부터 걸린다`, () => {
@@ -554,96 +511,9 @@ describe('길이 권장 최대 (R-042, M7e-1 재산정): 합쇼체 이벤트는 
     expect(lintEvent(withResult(twoOf(L.result, fill)))).toEqual([]);
   });
 
-  describe('이행 목록의 해라체 이벤트는 옛 한도로 본다 (본문 70·결과 80·문장 50)', () => {
-    const LEG = new Set(['lint-base']);
-    const old = LEGACY_TEXT_LIMITS;
-    /** 해라체 기준 이벤트 (id가 이행 목록에 있다고 보고 점검한다) */
-    const haeraBase = (over: Record<string, unknown> = {}) =>
-      base({
-        text: '조용한 오후였다. 창밖으로 바람이 지나갔다.',
-        choices: [
-          { id: 'a', label: '창문을 연다', result: '창문을 열었다. 바람이 방 안으로 들어왔다.', effects: { stats: { happiness: 1 } } },
-          { id: 'b', label: '그대로 둔다', result: '그대로 두었다. 오후는 천천히 저물었다.', effects: { stats: { health: 1 } } },
-        ],
-        ...over,
-      });
-
-    it('옛 한도 안의 해라체 이벤트는 통과한다. 같은 이벤트가 목록 밖이면 해라체로 걸린다', () => {
-      expect(lintEvent(haeraBase(), LEG)).toEqual([]);
-      expect(joined(haeraBase())).toContain('해라체');
-    });
-
-    it(`본문 ${old.text}자는 통과, ${old.text + 1}자는 걸린다 — 새 한도(${L.text}자)가 아니라 옛 한도`, () => {
-      expect(lintEvent(haeraBase({ text: twoOf(old.text, fillOld) }), LEG)).toEqual([]);
-      expect(lintEvent(haeraBase({ text: twoOf(old.text + 1, fillOld) }), LEG).join('\n')).toContain(`권장 최대 ${old.text}자`);
-    });
-
-    it(`결과 ${old.result}자는 통과, ${old.result + 1}자는 걸린다`, () => {
-      const withR = (result: string) => haeraBase({ choices: [{ id: 'a', label: '창문을 연다', result }, { id: 'b', label: '그대로 둔다', result: '그대로 두었다. 오후는 천천히 저물었다.' }] });
-      expect(lintEvent(withR(twoOf(old.result, fillOld)), LEG)).toEqual([]);
-      expect(lintEvent(withR(twoOf(old.result + 1, fillOld)), LEG).join('\n')).toContain(`권장 최대 ${old.result}자`);
-    });
-
-    it(`한 문장 ${old.sentence}자는 통과, ${old.sentence + 1}자는 걸린다`, () => {
-      expect(lintEvent(haeraBase({ text: `${fillOld(old.sentence)} ${fillOld(15)}` }), LEG)).toEqual([]);
-      expect(lintEvent(haeraBase({ text: `${fillOld(old.sentence + 1)} ${fillOld(15)}` }), LEG).join('\n')).toContain(`한 문장이 ${old.sentence}자를 넘는다`);
-    });
-  });
 });
 
-describe('길이 재산정 (M7e-1): 새 한도 = 기계 환산 최대 + 옛 여유, 화면 표본이 새 규칙을 통과한다', () => {
-  const m = baseline.measure;
-  /** 해라체 문장의 끝 「~ㅆ다.」를 「~ㅆ습니다.」로만 바꾼 글 (문장마다 +2자) — 이 환산으로 기존 이벤트가 합쇼체로 바뀔 때의 길이를 어림한다 */
-  const mechanical = (v: string): string =>
-    splitSentences(v)
-      .sentences.map((s) => s.raw.replace(/다\.$/, '습니다.'))
-      .join(' ');
-  const legacyEvents = EVENT_POOL.events.filter((ev) => LEGACY_HAERACHE_SET.has(ev.id));
-
-  it('측정 기록이 기대와 같다: 시작 시점 112개의 본문 최대 63·결과 58·문장 43, 기계 환산 후 67·62·45', () => {
-    expect([m.current.text.max, m.current.result.max, m.current.sentence.max]).toEqual([63, 58, 43]);
-    expect([m.converted.text.max, m.converted.result.max, m.converted.sentence.max]).toEqual([67, 62, 45]);
-    // 본문은 두 문장이 많아(106/112) 4자, 결과도 두 문장 중심이라 4자 늘고, 한 문장은 2자 늘었다
-    expect(m.converted.text.max - m.current.text.max).toBe(4);
-    expect(m.converted.result.max - m.current.result.max).toBe(4);
-    expect(m.converted.sentence.max - m.current.sentence.max).toBe(2);
-    expect(m.current.text.n).toBe(112);
-  });
-
-  it('새 한도 규칙: 환산 최대 + (옛 한도가 옛 최대 위에 두던 여유) — 본문 74·결과 84·문장 52', () => {
-    expect(TEXT_LIMITS.text).toBe(m.converted.text.max + (LEGACY_TEXT_LIMITS.text - m.current.text.max));
-    expect(TEXT_LIMITS.result).toBe(m.converted.result.max + (LEGACY_TEXT_LIMITS.result - m.current.result.max));
-    expect(TEXT_LIMITS.sentence).toBe(m.converted.sentence.max + (LEGACY_TEXT_LIMITS.sentence - m.current.sentence.max));
-  });
-
-  it('제목·라벨은 어체가 바뀌지 않으므로 지금 데이터의 최대(15·22)가 그대로 옛 한도(16·24) 안이다', () => {
-    expect(m.current.title.max).toBeLessThanOrEqual(TEXT_LIMITS.title);
-    expect(m.current.label.max).toBeLessThanOrEqual(TEXT_LIMITS.label);
-  });
-
-  it('남아 있는 해라체 문장의 끝은 모두 「~ㅆ다.」라서 환산이 정확히 +2자다 (현재 데이터)', () => {
-    for (const ev of legacyEvents) {
-      for (const part of textPartsOf(ev).filter((p) => p.kind === 'text' || p.kind === 'result')) {
-        for (const s of splitSentences(part.value).sentences) {
-          const last = s.raw[s.raw.length - 3]; // 「했다.」의 「했」
-          expect((last.charCodeAt(0) - 0xac00) % 28, `${part.where}: ${s.raw}`).toBe(20); // 받침 ㅆ
-          expect(mechanical(s.raw).length).toBe(s.raw.length + 2);
-        }
-      }
-    }
-  });
-
-  it('남아 있는 해라체 이벤트를 기계 환산해도 새 한도 안이다 (M7e 재작성이 어미만 바꿔도 길이 때문에 걸리지 않는다)', () => {
-    for (const ev of legacyEvents) {
-      const lim = TEXT_LIMITS;
-      expect(mechanical(ev.text).length, `${ev.id}.text`).toBeLessThanOrEqual(lim.text);
-      for (const c of ev.choices ?? []) expect(mechanical(c.result).length, `${ev.id}/${c.id}.result`).toBeLessThanOrEqual(lim.result);
-      for (const p of textPartsOf(ev).filter((x) => x.kind === 'text' || x.kind === 'result')) {
-        for (const s of splitSentences(p.value).sentences) expect(mechanical(s.raw).length, p.where).toBeLessThanOrEqual(lim.sentence);
-      }
-    }
-  });
-
+describe('화면 길이 표본 (M7e-1, M7e-3 단일 한도): e2e 표본이 합쇼체·새 한도 규칙을 통과한다', () => {
   it('e2e 길이 표본(worst·natural)은 새 규칙(합쇼체·새 길이 한도)을 통과하고, 한도와 같은 길이다 (e2e/lengthSamples.ts)', () => {
     for (const id of LENGTH_SAMPLE_IDS) {
       const sample = lengthSample(id);
@@ -1326,8 +1196,10 @@ describe('M7a r3 lint 보강: 옛 철자 · 금액 문장 · 마침표 뒤 띄�
       expect(conditionsCompatible([{ assets: { netMin: 5000 } }, { assets: { netMax: 1000 } }])).toBe(false);
     });
 
-    it('실제 풀: 모든 선택지 이벤트에서 동시에 보이는 선택지가 3개 이하이고, 정의가 4개인 것은 infant-new-sibling뿐이다 (플래그 있음·없음 모두 3개)', () => {
+    it('실제 풀: 모든 선택지 이벤트에서 동시에 보이는 선택지가 3개 이하이고, 정의가 4개인 것은 infant-new-sibling·youth-housing뿐이다 (플래그 있음·없음 모두 3개)', () => {
       for (const e of EVENT_POOL.events.filter((x) => x.choices !== undefined)) expect(maxVisibleChoices(e), e.id).toBeLessThanOrEqual(3);
+      // 정의가 4개인 이벤트는 둘뿐이다 (M7e-4: youth-housing이 가족 집 판의 「머문다」와 독립 판의 「돌아간다」를 가르며 4개가 되었다 — 둘은 assets.dwelling 목록이 서로 배타)
+      expect(EVENT_POOL.events.filter((x) => x.choices?.length === 4).map((x) => x.id).sort()).toEqual(['infant-new-sibling', 'youth-housing']);
       const sib = EVENT_POOL.byId.get('infant-new-sibling')!;
       expect(sib.choices).toHaveLength(4);
       expect(maxVisibleChoices(sib)).toBe(3);

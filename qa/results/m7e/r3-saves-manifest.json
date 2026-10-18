@@ -1,0 +1,435 @@
+{
+ "card-school-family-priority-past": {
+  "event": "school-family-priority",
+  "era": "past",
+  "tier": 2,
+  "age": 14,
+  "seed": 6,
+  "visible": [
+   "accept",
+   "plead",
+   "secret"
+  ],
+  "flags": [
+   "childcare_set",
+   "grandparent_close"
+  ]
+ },
+ "card-school-tutoring-present": {
+  "event": "school-tutoring",
+  "era": "present",
+  "tier": 5,
+  "age": 12,
+  "seed": 19,
+  "visible": [
+   "academy",
+   "alone",
+   "tutor"
+  ],
+  "flags": [
+   "childcare_set"
+  ]
+ },
+ "card-school-exam-present": {
+  "event": "school-exam",
+  "era": "present",
+  "tier": 5,
+  "age": 17,
+  "seed": 19,
+  "visible": [
+   "apply",
+   "retry",
+   "work"
+  ],
+  "flags": [
+   "childcare_set",
+   "first_love"
+  ]
+ },
+ "card-school-scholarship-present": {
+  "event": "school-scholarship",
+  "era": "present",
+  "tier": 2,
+  "age": 16,
+  "seed": 3,
+  "visible": [
+   "apply",
+   "pass"
+  ],
+  "flags": []
+ },
+ "card-school-teacher-notice-present": {
+  "event": "school-teacher-notice",
+  "era": "present",
+  "tier": 3,
+  "age": 14,
+  "seed": 9,
+  "visible": [
+   "accept",
+   "ask",
+   "decline"
+  ],
+  "flags": [
+   "childcare_set"
+  ]
+ },
+ "card-youth-housing-present": {
+  "event": "youth-housing",
+  "era": "present",
+  "tier": 3,
+  "age": 26,
+  "seed": 9,
+  "visible": [
+   "rent",
+   "parents",
+   "loan"
+  ],
+  "flags": [
+   "childcare_set",
+   "early_work",
+   "has_career",
+   "passed_exam"
+  ]
+ },
+ "card-youth-startup-future": {
+  "event": "youth-startup",
+  "era": "future",
+  "tier": 3,
+  "age": 30,
+  "seed": 9,
+  "visible": [
+   "start",
+   "side",
+   "decline"
+  ],
+  "flags": [
+   "college",
+   "gave_up_exam",
+   "has_career"
+  ]
+ },
+ "card-youth-first-job-present": {
+  "event": "youth-first-job",
+  "era": "present",
+  "tier": 5,
+  "age": 25,
+  "seed": 19,
+  "visible": [
+   "stable",
+   "dream",
+   "family"
+  ],
+  "flags": [
+   "childcare_set",
+   "first_love"
+  ]
+ },
+ "card-youth-exam-prep-present": {
+  "event": "youth-exam-prep",
+  "era": "present",
+  "tier": 3,
+  "age": 24,
+  "seed": 36,
+  "visible": [
+   "persist",
+   "work",
+   "quit"
+  ],
+  "flags": [
+   "childcare_set"
+  ]
+ },
+ "card-youth-rent-hike-present": {
+  "event": "youth-rent-hike",
+  "era": "present",
+  "tier": 3,
+  "age": 30,
+  "seed": 32,
+  "visible": [
+   "pay",
+   "move",
+   "share"
+  ],
+  "flags": [
+   "college",
+   "gave_up_exam",
+   "lives_alone",
+   "renting",
+   "stood_up"
+  ]
+ },
+ "card-youth-gig-work-future": {
+  "event": "youth-gig-work",
+  "era": "future",
+  "tier": 2,
+  "age": 25,
+  "seed": 16,
+  "visible": [
+   "juggle",
+   "settle",
+   "learn"
+  ],
+  "flags": [
+   "childcare_set",
+   "gave_up_exam"
+  ]
+ },
+ "card-middle-parents-care-present": {
+  "event": "middle-parents-care",
+  "era": "present",
+  "tier": 3,
+  "age": 50,
+  "seed": 8,
+  "visible": [
+   "home",
+   "facility",
+   "share"
+  ],
+  "flags": [
+   "broke_up",
+   "childcare_set",
+   "college",
+   "has_career",
+   "met_intro",
+   "own_business",
+   "own_home",
+   "renting",
+   "sibling_close",
+   "younger_sibling"
+  ]
+ },
+ "card-middle-marriage-crisis-present": {
+  "event": "middle-marriage-crisis",
+  "era": "present",
+  "tier": 3,
+  "age": 48,
+  "seed": 32,
+  "visible": [
+   "talk",
+   "space",
+   "apart"
+  ],
+  "flags": [
+   "early_work",
+   "has_career",
+   "has_child",
+   "has_partner",
+   "lives_with_parents",
+   "married",
+   "own_business",
+   "passed_exam"
+  ]
+ },
+ "card-middle-parents-farewell-past": {
+  "event": "middle-parents-farewell",
+  "era": "past",
+  "tier": 3,
+  "age": 55,
+  "seed": 2,
+  "visible": [
+   "stay",
+   "late",
+   "share"
+  ],
+  "flags": [
+   "childcare_set",
+   "early_work",
+   "has_career",
+   "job_changed",
+   "met_intro",
+   "own_business",
+   "passed_exam",
+   "renting"
+  ]
+ },
+ "card-middle-debt-guarantee-present": {
+  "event": "middle-debt-guarantee",
+  "era": "present",
+  "tier": 3,
+  "age": 46,
+  "seed": 9,
+  "visible": [
+   "sign",
+   "lend",
+   "refuse"
+  ],
+  "flags": [
+   "broke_up",
+   "childcare_set",
+   "early_work",
+   "has_career",
+   "has_partner",
+   "job_changed",
+   "lives_with_parents",
+   "met_intro",
+   "own_home",
+   "passed_exam"
+  ]
+ },
+ "card-middle-child-school-present": {
+  "event": "middle-child-school",
+  "era": "present",
+  "tier": 3,
+  "age": 56,
+  "seed": 32,
+  "visible": [
+   "support",
+   "push",
+   "fund"
+  ],
+  "flags": [
+   "early_work",
+   "has_career",
+   "has_child",
+   "has_partner",
+   "lives_with_parents",
+   "married",
+   "own_business",
+   "passed_exam"
+  ]
+ },
+ "card-middle-home-loan-present": {
+  "event": "middle-home-loan",
+  "era": "present",
+  "tier": 4,
+  "age": 46,
+  "seed": 27,
+  "visible": [
+   "move",
+   "stay",
+   "shrink"
+  ],
+  "flags": [
+   "broke_up",
+   "early_work",
+   "first_love",
+   "gave_up_exam",
+   "has_career",
+   "job_changed",
+   "met_intro",
+   "own_home"
+  ]
+ },
+ "card-middle-layoff-present": {
+  "event": "middle-layoff",
+  "era": "present",
+  "tier": 3,
+  "age": 50,
+  "seed": 9,
+  "visible": [
+   "hold",
+   "leave",
+   "open"
+  ],
+  "flags": [
+   "broke_up",
+   "college",
+   "gave_up_exam",
+   "has_career",
+   "lives_alone",
+   "own_home",
+   "promoted",
+   "renting"
+  ]
+ },
+ "card-senior-illness-later-present": {
+  "event": "senior-illness-later",
+  "era": "present",
+  "tier": 3,
+  "age": 82,
+  "seed": 8,
+  "visible": [
+   "treat",
+   "comfort",
+   "home"
+  ],
+  "flags": [
+   "broke_up",
+   "childcare_set",
+   "college",
+   "has_career",
+   "hobby",
+   "met_intro",
+   "own_business",
+   "own_home",
+   "renting",
+   "sibling_close",
+   "younger_sibling"
+  ]
+ },
+ "card-senior-estate-present": {
+  "event": "senior-estate",
+  "era": "present",
+  "tier": 5,
+  "age": 72,
+  "seed": 19,
+  "visible": [
+   "give",
+   "spend",
+   "donate"
+  ],
+  "flags": [
+   "checked_up",
+   "childcare_set",
+   "family_business",
+   "first_love",
+   "has_career",
+   "has_partner",
+   "health_ignored",
+   "healthy_habit",
+   "parents_gone"
+  ]
+ },
+ "card-senior-spouse-care-present": {
+  "event": "senior-spouse-care",
+  "era": "present",
+  "tier": 3,
+  "age": 74,
+  "seed": 8,
+  "visible": [
+   "care",
+   "help",
+   "facility"
+  ],
+  "flags": [
+   "checked_up",
+   "college",
+   "has_career",
+   "has_partner",
+   "health_ignored",
+   "job_changed",
+   "lives_with_parents",
+   "married",
+   "met_intro",
+   "own_business",
+   "own_home",
+   "parents_gone",
+   "stood_up",
+   "younger_sibling"
+  ]
+ },
+ "card-senior-long-life-future": {
+  "event": "senior-long-life",
+  "era": "future",
+  "tier": 3,
+  "age": 76,
+  "seed": 8,
+  "visible": [
+   "work",
+   "learn",
+   "rest"
+  ],
+  "flags": [
+   "checked_up",
+   "college",
+   "has_career",
+   "has_partner",
+   "healthy_habit",
+   "lives_with_parents",
+   "married",
+   "met_intro",
+   "own_business",
+   "younger_sibling"
+  ]
+ }
+}

@@ -1,0 +1,138 @@
+{
+ "lives": 338,
+ "middleFinal": 0,
+ "mismatch": 0,
+ "unparsed": 0,
+ "zero": {
+  "future-t2": {
+   "up": 0,
+   "same": 9,
+   "down": 0
+  },
+  "future-t1": {
+   "up": 9,
+   "same": 0,
+   "down": 0
+  },
+  "future-t3": {
+   "up": 0,
+   "same": 0,
+   "down": 4
+  },
+  "future-t4": {
+   "up": 0,
+   "same": 0,
+   "down": 1
+  },
+  "past-t1": {
+   "up": 0,
+   "same": 1,
+   "down": 0
+  },
+  "past-t2": {
+   "up": 0,
+   "same": 0,
+   "down": 1
+  },
+  "present-t2": {
+   "up": 0,
+   "same": 5,
+   "down": 0
+  },
+  "present-t1": {
+   "up": 0,
+   "same": 6,
+   "down": 0
+  },
+  "present-t4": {
+   "up": 0,
+   "same": 0,
+   "down": 2
+  },
+  "present-t3": {
+   "up": 0,
+   "same": 0,
+   "down": 1
+  }
+ },
+ "dist": {
+  "future-t5": {
+   "up": 0,
+   "same": 5,
+   "down": 2
+  },
+  "future-t4": {
+   "up": 1,
+   "same": 6,
+   "down": 7
+  },
+  "future-t3": {
+   "up": 3,
+   "same": 9,
+   "down": 5
+  },
+  "future-t1": {
+   "up": 15,
+   "same": 16,
+   "down": 0
+  },
+  "future-t2": {
+   "up": 11,
+   "same": 20,
+   "down": 11
+  },
+  "past-t4": {
+   "up": 0,
+   "same": 2,
+   "down": 7
+  },
+  "past-t3": {
+   "up": 2,
+   "same": 8,
+   "down": 13
+  },
+  "past-t1": {
+   "up": 20,
+   "same": 25,
+   "down": 0
+  },
+  "past-t2": {
+   "up": 9,
+   "same": 16,
+   "down": 9
+  },
+  "past-t5": {
+   "up": 0,
+   "same": 0,
+   "down": 2
+  },
+  "present-t4": {
+   "up": 2,
+   "same": 5,
+   "down": 8
+  },
+  "present-t2": {
+   "up": 14,
+   "same": 21,
+   "down": 11
+  },
+  "present-t1": {
+   "up": 11,
+   "same": 15,
+   "down": 0
+  },
+  "present-t3": {
+   "up": 4,
+   "same": 11,
+   "down": 4
+  },
+  "present-t5": {
+   "up": 0,
+   "same": 1,
+   "down": 5
+  }
+ },
+ "zeroFuture1Up": 9,
+ "early": 2,
+ "examples": []
+}

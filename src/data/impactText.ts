@@ -77,7 +77,8 @@ export function choiceAccessibleName(label: string, items: readonly ImpactItem[]
 
 /** 선택지 묶음 아래 안내 한 줄 (copy.md 4-4). 둘째 문장은 눈에 보이는 글자(aria-hidden)와 스크린리더 대체 글자가 다르다(기호 이름이 읽히지 않게) */
 export const IMPACT_HINT = {
-  lead: (name: string): string => `선택지 아래 글씨는 지금 ${name}에게 일어날 변화입니다.`,
+  // M7e-3 (copy.md 5-2 ②, QA-003-M5 O01): 「지금 … 일어날」은 모두 올해 일어나는 것으로 읽혀 「자산 ▼」 선택의 31%가 해 끝에 순자산이 늘어나는 것과 어긋났다. 「이 선택만으로」가 「해마다의 소득·생활비는 따로」를 함의한다.
+  lead: (name: string): string => `선택지 아래 글씨는 이 선택만으로 ${name}에게 생기는 변화입니다.`,
   symbols: '▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.',
   symbolsSr: '위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.',
 } as const;

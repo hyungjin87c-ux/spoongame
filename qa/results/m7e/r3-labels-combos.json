@@ -1,0 +1,159 @@
+{
+ "labels": 255,
+ "byCombo": {
+  "320x568/150": {
+   "lineW": 216,
+   "blockW": 171,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "320x568/200": {
+   "lineW": 216,
+   "blockW": 164,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 3
+  },
+  "360x568/150": {
+   "lineW": 256,
+   "blockW": 211,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "360x568/200": {
+   "lineW": 256,
+   "blockW": 204,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "360x740-touch/150": {
+   "lineW": 256,
+   "blockW": 211,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "360x740-touch/200": {
+   "lineW": 256,
+   "blockW": 204,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "375x812/150": {
+   "lineW": 271,
+   "blockW": 226,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "375x812/200": {
+   "lineW": 271,
+   "blockW": 219,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "667x375-landscape/150": {
+   "lineW": 563,
+   "blockW": 337,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "667x375-landscape/200": {
+   "lineW": 563,
+   "blockW": 450,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "768x1024/150": {
+   "lineW": 664,
+   "blockW": 337,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "768x1024/200": {
+   "lineW": 664,
+   "blockW": 450,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "1024x768/150": {
+   "lineW": 288,
+   "blockW": 243,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "1024x768/200": {
+   "lineW": 288,
+   "blockW": 236,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "1280x620/150": {
+   "lineW": 464,
+   "blockW": 337,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "1280x620/200": {
+   "lineW": 464,
+   "blockW": 412,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "1280x800/150": {
+   "lineW": 464,
+   "blockW": 337,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "1280x800/200": {
+   "lineW": 464,
+   "blockW": 412,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "640x400-zoom200/150": {
+   "lineW": 536,
+   "blockW": 337,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "640x400-zoom200/200": {
+   "lineW": 536,
+   "blockW": 450,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "320x256-zoom400/150": {
+   "lineW": 216,
+   "blockW": 171,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 0
+  },
+  "320x256-zoom400/200": {
+   "lineW": 216,
+   "blockW": 164,
+   "broken": 0,
+   "unavoidable": 0,
+   "oldCaught": 3
+  }
+ }
+}

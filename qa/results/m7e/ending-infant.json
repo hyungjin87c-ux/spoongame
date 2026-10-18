@@ -1,0 +1,292 @@
+[
+ {
+  "name": "ending-infant-death-future-age0-two",
+  "meta": null,
+  "d": {
+   "era": "다가올 세상 · 생애 기록",
+   "span": "2045년 4월 ~ 2045년 · 0세",
+   "death": "0세에 세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.",
+   "journey": "상위 5~18% 사이의 집에서 태어났습니다.",
+   "movement": null,
+   "legend": [
+    {
+     "dt": "출발선",
+     "dd": "금수저(상위 5~18% 사이)"
+    }
+   ],
+   "gradeRange": "(상위 5~18% 사이)",
+   "label": "출발선 상위 5~18% 사이.",
+   "finalNetValue": null,
+   "finalNetBasis": null,
+   "finalLooks": "또래 사이에서 하위 약 30%",
+   "bandRect": {
+    "l": 266.390625,
+    "r": 301.484375,
+    "t": 405.96875,
+    "b": 425.96875,
+    "w": 35.09375,
+    "h": 20
+   },
+   "endRect": null,
+   "trackRect": {
+    "l": 45,
+    "r": 315,
+    "t": 401.96875,
+    "b": 429.96875,
+    "w": 270,
+    "h": 28
+   }
+  },
+  "fail": [],
+  "notes": [],
+  "mv": null,
+  "band": [
+   82,
+   95
+  ],
+  "errors": []
+ },
+ {
+  "name": "ending-infant-death-future-age1-two",
+  "meta": null,
+  "d": {
+   "era": "다가올 세상 · 생애 기록",
+   "span": "2045년 4월 ~ 2046년 · 1세",
+   "death": "1세에 세상을 떠났습니다. 원인은 사고였습니다.",
+   "journey": "상위 5~18% 사이의 집에서 태어났습니다.",
+   "movement": null,
+   "legend": [
+    {
+     "dt": "출발선",
+     "dd": "금수저(상위 5~18% 사이)"
+    }
+   ],
+   "gradeRange": "(상위 5~18% 사이)",
+   "label": "출발선 상위 5~18% 사이.",
+   "finalNetValue": null,
+   "finalNetBasis": null,
+   "finalLooks": "또래 사이에서 하위 약 30%",
+   "bandRect": {
+    "l": 266.390625,
+    "r": 301.484375,
+    "t": 431.5625,
+    "b": 451.5625,
+    "w": 35.09375,
+    "h": 20
+   },
+   "endRect": null,
+   "trackRect": {
+    "l": 45,
+    "r": 315,
+    "t": 427.5625,
+    "b": 455.5625,
+    "w": 270,
+    "h": 28
+   }
+  },
+  "fail": [],
+  "notes": [],
+  "mv": null,
+  "band": [
+   82,
+   95
+  ],
+  "errors": []
+ },
+ {
+  "name": "ending-infant-death-past-age0-two",
+  "meta": null,
+  "d": {
+   "era": "지난 세상 · 생애 기록",
+   "span": "1970년 4월 ~ 1970년 · 0세",
+   "death": "0세에 세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.",
+   "journey": "상위 8~28% 사이의 집에서 태어났습니다.",
+   "movement": null,
+   "legend": [
+    {
+     "dt": "출발선",
+     "dd": "은수저(상위 8~28% 사이)"
+    }
+   ],
+   "gradeRange": "(상위 8~28% 사이)",
+   "label": "출발선 상위 8~28% 사이.",
+   "finalNetValue": null,
+   "finalNetBasis": null,
+   "finalLooks": "또래 사이에서 하위 약 30%",
+   "bandRect": {
+    "l": 239.390625,
+    "r": 293.390625,
+    "t": 405.96875,
+    "b": 425.96875,
+    "w": 54,
+    "h": 20
+   },
+   "endRect": null,
+   "trackRect": {
+    "l": 45,
+    "r": 315,
+    "t": 401.96875,
+    "b": 429.96875,
+    "w": 270,
+    "h": 28
+   }
+  },
+  "fail": [],
+  "notes": [],
+  "mv": null,
+  "band": [
+   72,
+   92
+  ],
+  "errors": []
+ },
+ {
+  "name": "ending-infant-death-past-age1-two",
+  "meta": null,
+  "d": {
+   "era": "지난 세상 · 생애 기록",
+   "span": "1970년 4월 ~ 1971년 · 1세",
+   "death": "1세에 세상을 떠났습니다. 원인은 사고였습니다.",
+   "journey": "상위 8~28% 사이의 집에서 태어났습니다.",
+   "movement": null,
+   "legend": [
+    {
+     "dt": "출발선",
+     "dd": "은수저(상위 8~28% 사이)"
+    }
+   ],
+   "gradeRange": "(상위 8~28% 사이)",
+   "label": "출발선 상위 8~28% 사이.",
+   "finalNetValue": null,
+   "finalNetBasis": null,
+   "finalLooks": "또래 사이에서 하위 약 30%",
+   "bandRect": {
+    "l": 239.390625,
+    "r": 293.390625,
+    "t": 431.5625,
+    "b": 451.5625,
+    "w": 54,
+    "h": 20
+   },
+   "endRect": null,
+   "trackRect": {
+    "l": 45,
+    "r": 315,
+    "t": 427.5625,
+    "b": 455.5625,
+    "w": 270,
+    "h": 28
+   }
+  },
+  "fail": [],
+  "notes": [],
+  "mv": null,
+  "band": [
+   72,
+   92
+  ],
+  "shots": [
+   "qa/screenshots/003/M7e-E-ending-infant-death-past-age1-two-top.png",
+   "qa/screenshots/003/M7e-E-ending-infant-death-past-age1-two-journey.png"
+  ],
+  "errors": []
+ },
+ {
+  "name": "ending-infant-death-present-age0-two",
+  "meta": null,
+  "d": {
+   "era": "지금 세상 · 생애 기록",
+   "span": "2026년 4월 ~ 2026년 · 0세",
+   "death": "0세에 세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.",
+   "journey": "상위 3~17% 사이의 집에서 태어났습니다.",
+   "movement": null,
+   "legend": [
+    {
+     "dt": "출발선",
+     "dd": "금수저(상위 3~17% 사이)"
+    }
+   ],
+   "gradeRange": "(상위 3~17% 사이)",
+   "label": "출발선 상위 3~17% 사이.",
+   "finalNetValue": null,
+   "finalNetBasis": null,
+   "finalLooks": "또래 사이에서 하위 약 30%",
+   "bandRect": {
+    "l": 269.09375,
+    "r": 306.890625,
+    "t": 405.96875,
+    "b": 425.96875,
+    "w": 37.796875,
+    "h": 20
+   },
+   "endRect": null,
+   "trackRect": {
+    "l": 45,
+    "r": 315,
+    "t": 401.96875,
+    "b": 429.96875,
+    "w": 270,
+    "h": 28
+   }
+  },
+  "fail": [],
+  "notes": [],
+  "mv": null,
+  "band": [
+   83,
+   97
+  ],
+  "shots": [
+   "qa/screenshots/003/M7e-E-ending-infant-death-present-age0-two-top.png",
+   "qa/screenshots/003/M7e-E-ending-infant-death-present-age0-two-journey.png"
+  ],
+  "errors": []
+ },
+ {
+  "name": "ending-infant-death-present-age1-two",
+  "meta": null,
+  "d": {
+   "era": "지금 세상 · 생애 기록",
+   "span": "2026년 4월 ~ 2027년 · 1세",
+   "death": "1세에 세상을 떠났습니다. 원인은 사고였습니다.",
+   "journey": "상위 3~17% 사이의 집에서 태어났습니다.",
+   "movement": null,
+   "legend": [
+    {
+     "dt": "출발선",
+     "dd": "금수저(상위 3~17% 사이)"
+    }
+   ],
+   "gradeRange": "(상위 3~17% 사이)",
+   "label": "출발선 상위 3~17% 사이.",
+   "finalNetValue": null,
+   "finalNetBasis": null,
+   "finalLooks": "또래 사이에서 하위 약 30%",
+   "bandRect": {
+    "l": 269.09375,
+    "r": 306.890625,
+    "t": 431.5625,
+    "b": 451.5625,
+    "w": 37.796875,
+    "h": 20
+   },
+   "endRect": null,
+   "trackRect": {
+    "l": 45,
+    "r": 315,
+    "t": 427.5625,
+    "b": 455.5625,
+    "w": 270,
+    "h": 28
+   }
+  },
+  "fail": [],
+  "notes": [],
+  "mv": null,
+  "band": [
+   83,
+   97
+  ],
+  "errors": []
+ }
+]

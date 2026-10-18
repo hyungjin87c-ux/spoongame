@@ -308,7 +308,7 @@ for (const screen of IMPACT_SCREENS) {
     const hint = page.getByTestId('choice-hint');
     await expect(hint).toBeVisible();
     const parts = await hint.evaluate((el) => ({ visible: Array.from(el.childNodes).filter((n) => !(n instanceof HTMLElement && (n.classList.contains('sr-only') || n.getAttribute('aria-hidden') === 'true'))).map((n) => n.textContent ?? '').join(''), hidden: el.querySelector('[aria-hidden="true"]')?.textContent ?? '', sr: el.querySelector('.sr-only')?.textContent ?? '' }));
-    expect(parts.visible.trim()).toMatch(/^선택지 아래 글씨는 지금 .+에게 일어날 변화입니다\.$/);
+    expect(parts.visible.trim()).toMatch(/^선택지 아래 글씨는 이 선택만으로 .+에게 생기는 변화입니다\.$/); // M7e-3(copy.md 5-2 ②): 「지금 … 일어날」 → 「이 선택만으로 … 생기는」
     expect(parts.hidden).toBe('▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.');
     expect(parts.sr).toBe('위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.');
   });

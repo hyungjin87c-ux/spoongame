@@ -240,8 +240,8 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
     ]);
     expect(checks.find((c) => c.id === 'youth-return-school')!.accepted).toMatch(/R-355/);
     expect(checks.filter((c) => c.accepted !== undefined)).toHaveLength(1);
-    // M7a r2까지는 senior-retire(netMax)가 보고한 차이였으나 r3(AGE 1.71)에서 허용 폭(12.8~17.3%) 안(16.5%)으로 돌아와 보고를 뺐다 — 보고 장치(reported)는 합성 시험이 계속 지킨다
-    expect(checks.filter((c) => c.reported !== undefined).map((c) => c.id)).toEqual([]);
+    // M7a r2까지는 senior-retire(netMax)가 보고한 차이였으나 r3(AGE 1.71)에서 허용 폭(12.8~17.3%) 안(16.5%)으로 돌아와 보고를 뺐다. M7e-3(E-4)는 순자산 상승으로 middle-parents-care/facility(21.4%, 허용 14.4~19.5%)를 새로 보고했다(economy-model.md 9-8절) — 보고 장치(reported)는 합성 시험도 계속 지킨다
+    expect(checks.filter((c) => c.reported !== undefined).map((c) => c.id)).toEqual(['middle-parents-care/facility']);
   });
 
   it('samplesOfLife: 20세부터 해마다 한 줄, 나이가 1씩 늘고 불변식(부채 ≥ −순자산, 소득 ≥ 0)을 지킨다 · 같은 시드는 같은 줄', () => {

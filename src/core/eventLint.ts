@@ -1,5 +1,4 @@
 import { MAX_VISIBLE_CHOICES, MILESTONES_PER_YEAR_MAX, type ChoiceDef, type Condition, type EventDef, type Range } from './events';
-import { LEGACY_HAERACHE_IDS, LEGACY_HAERACHE_SET } from './legacyHaerache';
 import { STAT_KEYS, type Effects, type Era, type Stage } from './types';
 
 /**
@@ -12,12 +11,11 @@ import { STAT_KEYS, type Effects, type Era, type Stage } from './types';
  *
  * 점검은 다섯 갈래다.
  *  1) 어조·길이·시대 소재 — 글 자체의 규칙. 본문·결과는 **합쇼체**(「~했습니다.」, SPEC-003 마스터 결정 C1·R2)다.
- *     이행 기간(M7e 본 작업이 끝날 때까지)에는 `LEGACY_HAERACHE_IDS`의 기존 이벤트만 옛 규칙(해라체 · `LEGACY_TEXT_LIMITS`)으로 본다 — 목록 밖은 모두 새 규칙이다.
+ *     모든 이벤트가 같은 규칙이다(M7e-3에서 해라체 이행 장치를 걷어냈다 — 면제 수단이 없으므로 해라체로 되돌아가면 바로 걸린다).
  *  2) 상태 어휘(R-067) — "자식·배우자·부모님·직장·혼자" 같은 말은 그 상태를 요구하는 조건(플래그) 없이 쓰이면 안 된다.
  *     한 판 안에서 이미 일어난 일과 모순되는 문구(무자녀 판의 "자식", 사망한 부모의 재등장, 무직 판의 "출근", 기혼 판의 "혼자")를 빌드에서 잡는다.
  *  3) 선택지 균형(R-069) — 한쪽이 모든 수치에서 낫거나 같기만 한 '정답형' 선택지와 효과가 같은 선택지를 잡는다.
  *  4) 영유아 문구는 3인칭(R-070).
- *  5) 이행 목록 점검 — 목록의 id가 풀에 있는지, 목록에 있는데 이미 합쇼체가 아닌지(`legacyListProblems`).
  */
 
 // ---------- 길이 권장 최대 (R-042) ----------
@@ -26,25 +24,14 @@ import { STAT_KEYS, type Effects, type Era, type Stage } from './types';
  * 글자 수 최대 (R-042) — **합쇼체 이벤트(새 규칙)**. 360px 폭에서 선택지 3개와 하단 컨트롤이 서로 가리지 않도록 정한 값이다. 근거: e2e/layout.spec.ts —
  * 풀의 모든 선택지 이벤트를 360×568·640·740에서 재고, 이 최대값으로 만든 "최악의 이벤트"(제목 16·본문 74·라벨 24자 ×3)가
  * 360×740에서 선택지 3개를 카드가 보인 자리에 다 보이는지 본다. 합쇼체로 바뀌면 문장마다 끝이 2자 늘어나므로(「했다.」 → 「했습니다.」)
- * 본문·결과·문장의 한도를 늘렸다(M7e-1): 기존 112개 이벤트의 어미만 기계적으로 합쇼체로 바꾼 길이의 최대에 옛 한도가 그 최대 위에 두던 여유를 그대로 더한 값이다.
+ * 본문·결과·문장의 한도를 늘렸다(M7e-1): 기존 112개 이벤트의 어미만 기계적으로 합쇼체로 바꾼 길이의 최대에 옛 한도(70·80·50)가 그 최대 위에 두던 여유를 그대로 더한 값이다.
  * 제목·라벨은 어체가 바뀌지 않아(마스터 결정 R2: 제목·선택지 라벨은 현행) 그대로다. 계산과 화면 확인은 docs/data/events-schema.md 7절과 ai-log/2026-10-18_SPEC-003_dev-M7e-1.md.
  * 스키마의 하드 한도(제목 30·본문 400·라벨 40·결과 300)보다 훨씬 짧다 — 이 값을 넘으면 점검이 실패한다.
  *  - title/text/label: 선택지 패널에 그대로 보이는 글  - result: 고른 뒤 사건 기록에 한 줄로 남는 글  - sentence: 본문·결과의 한 문장
  */
 export const TEXT_LIMITS = { title: 16, text: 74, label: 24, result: 84, sentence: 52 } as const;
 
-/**
- * 옛 길이 한도 — 이행 목록(`LEGACY_HAERACHE_IDS`)의 해라체 이벤트에만 쓴다(R-042 원래 값). 해라체 문장은 합쇼체보다 짧아 옛 한도 안에서 쓰였다.
- * 이벤트가 합쇼체로 바뀌어 목록에서 빠지면 `TEXT_LIMITS`로 본다. 목록이 비면 이 상수도 지운다.
- */
-export const LEGACY_TEXT_LIMITS = { title: 16, text: 70, label: 24, result: 80, sentence: 50 } as const;
-
 export type TextLimits = { readonly [K in keyof typeof TEXT_LIMITS]: number };
-
-/** 이 이벤트에 적용하는 길이 한도: 이행 목록의 해라체 이벤트는 옛 한도, 그 밖은 새 한도 */
-export function limitsFor(eventId: string, legacy: ReadonlySet<string> = LEGACY_HAERACHE_SET): TextLimits {
-  return legacy.has(eventId) ? LEGACY_TEXT_LIMITS : TEXT_LIMITS;
-}
 
 // ---------- 어조 ----------
 
@@ -340,7 +327,7 @@ const intersectRange = (a: Range | undefined, b: Range | undefined): Range | nul
 
 /**
  * 조건들을 **모두** 만족하는 상태가 있을 수 있는가 (보수적 판정 — 같이 보일 수 없음이 확실할 때만 거짓). 플래그가 flags와 notFlags에 함께 있거나, 재력·형제 순서·나이·스탯 범위·
- * 순자산 범위가 겹치지 않거나, 양육 방식·성별·사는 집의 허용 목록이 겹치지 않으면 거짓이다. 그 밖의 조건은 서로 어긋날 수 없다고 본다.
+ * 순자산 범위가 겹치지 않거나, 양육 방식·성별·사는 집(출생신고 `housing`)·지금 사는 집(`assets.dwelling`, M7e-4)의 허용 목록이 겹치지 않으면 거짓이다. 그 밖의 조건은 서로 어긋날 수 없다고 본다.
  */
 export function conditionsCompatible(conds: ReadonlyArray<Condition | undefined>): boolean {
   const need = new Set<string>();
@@ -364,7 +351,7 @@ export function conditionsCompatible(conds: ReadonlyArray<Condition | undefined>
       const prev = key in ranges ? ranges[key] : {};
       ranges[key] = prev === null ? null : intersectRange(prev, r);
     }
-    for (const [key, list] of [['parenting', c.parenting], ['gender', c.gender], ['housing', c.housing]] as const) {
+    for (const [key, list] of [['parenting', c.parenting], ['gender', c.gender], ['housing', c.housing], ['dwelling', c.assets?.dwelling]] as const) {
       if (list === undefined) continue;
       const prev = key in lists ? lists[key] : new Set<string>(list);
       lists[key] = prev === null ? null : new Set([...prev].filter((x) => list.includes(x as never)));
@@ -565,21 +552,23 @@ const OLD_SPELLING = /읍니다/;
  * 「몇 만 원」처럼 숫자 없는 표현은 통과다.
  */
 const MONEY_SENTENCE = /\d[\d,.]*\s*(?:억|만|천|백)?\s*(?:원|달러)|\d[\d,.]*\s*억/;
+/**
+ * 해설 종결 금지 (SPEC-003 M7e-3, 마스터 결정 E-11, docs/data/content-M7e.md 4-1 B6·4-4): 본문·결과의 문장이 「~것입니다」「~것이었습니다」「~던 것입니다」「~때문입니다」로 끝나면 걸린다 —
+ * 장면을 서술해야 할 글이 이유를 설명하는 어조(「말하지 않았던 것입니다」)가 되기 때문이다. 「그것입니다」「이것입니다」「저것입니다」처럼 대상을 가리키는 명사 「것」은 해설이 아니라 통과한다.
+ */
+const EXPLANATORY_ENDING = /(?:(?<![그이저])것(?:이었습|입)니다|때문입니다)\.?$/;
 /** 마침표 바로 뒤에 한글이 붙은 글(「울었다.어른이」) — 문장 나눔이 안 되어 어체 판정이 끝 문장만 보게 된다 (R-371 ③) */
 const NO_SPACE_AFTER_PERIOD = /[가-힣)]\.(?=[가-힣])/;
 
 /**
- * 이벤트 하나의 문구 문제 목록.
- * `legacy`는 이행 목록(기본 `LEGACY_HAERACHE_SET`): 그 id의 이벤트는 해라체 · `LEGACY_TEXT_LIMITS`로, 그 밖은 합쇼체 · `TEXT_LIMITS`로 본다.
+ * 이벤트 하나의 문구 문제 목록. 모든 이벤트가 합쇼체 · `TEXT_LIMITS`로 점검된다.
  */
-export function lintEvent(ev: EventDef, legacy: ReadonlySet<string> = LEGACY_HAERACHE_SET): string[] {
+export function lintEvent(ev: EventDef): string[] {
   const problems: string[] = [];
   const banned = bannedWordsFor(ev.eras, ev.stages);
   // 영유아 문구(1인칭 금지): 단계가 영유아뿐이거나, 나이 창이 7세 안에서 끝나는 이벤트(7세 school-* 포함, R-371 ②)
   const earlyChildhood = ev.stages.every((s) => s === 'infant') || (ev.ageRange?.max !== undefined && ev.ageRange.max <= 7);
-  const isLegacy = legacy.has(ev.id);
-  const limits = isLegacy ? LEGACY_TEXT_LIMITS : TEXT_LIMITS;
-  const tones: Record<Tone, number> = { hapsyo: 0, haera: 0, other: 0 };
+  const limits = TEXT_LIMITS;
   for (const part of textPartsOf(ev)) {
     const v = part.value;
     const scan = stripSafePhrases(v);
@@ -599,39 +588,33 @@ export function lintEvent(ev: EventDef, legacy: ReadonlySet<string> = LEGACY_HAE
     for (const w of banned) {
       if (scan.includes(w)) add(`이 이벤트가 일어나는 시대(${(ev.eras ?? ALL_ERAS).join('·')})에 어울리지 않는 소재다 (${w}) — 시대 조건(eras)을 걸거나 시대 중립 문구로 바꾼다`);
     }
-    // 종결: 본문·결과는 문장마다 합쇼체 "~습니다./~ㅂ니다."(이행 목록의 기존 이벤트는 해라체 "~다."), 라벨은 "~다" (제목·라벨은 어체가 바뀌지 않는다, 마스터 결정 R2)
+    // 종결: 본문·결과는 문장마다 합쇼체 "~습니다./~ㅂ니다.", 라벨은 "~다" (제목·라벨은 어체가 바뀌지 않는다, 마스터 결정 R2)
     if (part.kind === 'text' || part.kind === 'result') {
       if (QUOTE_CHARS.test(v)) add('인용 부호(큰따옴표·작은따옴표·낫표)를 쓰지 않는다 — 대사는 「~라고 했습니다」 같은 간접화법으로 쓴다');
       if (MONEY_SENTENCE.test(v)) add('금액(숫자 + 원·만 원·억 원)이 문장에 있다 — 금액은 영향 줄이 말하고 문장은 숫자 없이 쓴다');
       if (NO_SPACE_AFTER_PERIOD.test(v)) add('마침표 바로 뒤에 글이 붙어 있다 — 마침표 뒤는 한 칸 띄운다(문장이 나뉘지 않아 어체 점검이 끝 문장만 본다)');
       const { sentences, unbalancedQuote } = splitSentences(v);
       if (unbalancedQuote) add('인용 부호가 짝이 맞지 않는다 (여는 부호와 닫는 부호를 한 쌍으로 쓴다)');
-      if (sentences.length === 0) add(isLegacy ? '"~다."로 끝나는 서술체가 아니다' : '합쇼체 서술체("~습니다."/"~ㅂ니다.")로 끝나지 않는다');
+      if (sentences.length === 0) add('합쇼체 서술체("~습니다."/"~ㅂ니다.")로 끝나지 않는다');
       for (const s of sentences) {
         if (s.quoteOnly) continue; // 대사만으로 된 문장은 어체를 보지 않는다
         const tone = toneOf(s.core);
-        tones[tone] += 1;
-        if (tone === 'other') add(isLegacy ? `"~다."로 끝나는 서술체가 아니다 (「${s.raw}」)` : `합쇼체 서술체("~습니다."/"~ㅂ니다.")로 끝나지 않는 문장이 있다 (「${s.raw}」)`);
-        else if (tone === 'haera' && !isLegacy) add(`해라체 종결("~다.")이 있다 — 합쇼체("~습니다."/"~ㅂ니다.")로 쓴다 (「${s.raw}」)`);
+        if (tone === 'other') add(`합쇼체 서술체("~습니다."/"~ㅂ니다.")로 끝나지 않는 문장이 있다 (「${s.raw}」)`);
+        else if (tone === 'haera') add(`해라체 종결("~다.")이 있다 — 합쇼체("~습니다."/"~ㅂ니다.")로 쓴다 (「${s.raw}」)`);
+        if (EXPLANATORY_ENDING.test(s.raw)) add(`해설 종결(「~것입니다」「~것이었습니다」「~때문입니다」)이 있다 — 이유를 설명하지 말고 장면을 사실로 서술한다 (「${s.raw}」)`);
       }
     }
     if (part.kind === 'label' && !/다$/.test(v)) add('"~다"로 끝나는 서술체가 아니다');
     if ((part.kind === 'title' || part.kind === 'label') && /\.$/.test(v)) add('끝에 마침표가 있다');
+    // 라벨·제목은 한글과 공백만 쓴다 (M7e-4 C20, QA-003-M7e 2회차 — 가운뎃점·쉼표·괄호·슬래시·숫자·영문은 버튼의 접근성 이름에 그대로 들어가 읽기 프로그램이 이름을 끊거나 기호를 읽는다. 잇는 말은 「이나·와/과」로 쓴다)
+    if ((part.kind === 'title' || part.kind === 'label') && /[^가-힣 ]/.test(v)) add(`라벨·제목에는 한글과 공백만 쓴다 — 기호·숫자·영문이 있다 (「${v.match(/[^가-힣 ]/)![0]}」, 잇는 말은 「이나·와/과」로 쓴다)`);
     if (COLLOQUIAL.test(scan)) add('구어체 종결(~요/~죠/~니까.)이 있다');
     if (earlyChildhood && FIRST_PERSON.test(v)) add('영유아 문구에 1인칭("나·내")이 있다 — 영유아기는 "아이"로 쓴다');
-    // 길이 (이행 목록의 기존 이벤트는 옛 한도, 그 밖은 합쇼체 기준 새 한도)
+    // 길이 (합쇼체 기준 한도)
     const max = limits[part.kind];
     if (v.length > max) add(`권장 최대 ${max}자를 넘는다 (지금 ${v.length}자)`);
     if (part.kind === 'text' || part.kind === 'result') {
       for (const s of splitSentences(v).sentences) if (s.raw.length > limits.sentence) add(`한 문장이 ${limits.sentence}자를 넘는다 (${s.raw.length}자) — 문장을 나눈다`);
-    }
-  }
-  // 이행 목록: 한 이벤트는 한 어체로, 다 고쳤으면 목록에서 뺀다
-  if (isLegacy) {
-    if (tones.haera > 0 && tones.hapsyo > 0) {
-      problems.push(`${ev.id}: 한 이벤트 안에서 어체가 섞였다 (해라체 ${tones.haera}문장·합쇼체 ${tones.hapsyo}문장) — 이벤트 하나는 한 어체로 쓴다. 다 고쳤다면 이행 목록(src/core/legacyHaerache.ts)에서 id를 뺀다`);
-    } else if (tones.haera === 0 && tones.hapsyo > 0) {
-      problems.push(`${ev.id}: 이행 목록(LEGACY_HAERACHE_IDS)에 있는데 이미 합쇼체다 — src/core/legacyHaerache.ts에서 id를 뺀다 (목록은 줄어들기만 한다)`);
     }
   }
   problems.push(...stateWordProblems(ev));
@@ -674,11 +657,11 @@ export function milestoneWindowProblems(events: readonly EventDef[]): string[] {
 }
 
 /** 풀 전체 점검: 이벤트별 문구 + 풀 전체에서 겹치는 제목·본문·결과 + 마일스톤 창 */
-export function lintEvents(events: readonly EventDef[], legacy: ReadonlySet<string> = LEGACY_HAERACHE_SET): string[] {
+export function lintEvents(events: readonly EventDef[]): string[] {
   const problems: string[] = [...milestoneWindowProblems(events)];
   const seen = new Map<string, string>();
   for (const ev of events) {
-    problems.push(...lintEvent(ev, legacy));
+    problems.push(...lintEvent(ev));
     for (const part of textPartsOf(ev)) {
       if (part.kind === 'label') continue; // 라벨은 "먼저 말을 건다"처럼 다른 이벤트와 겹칠 수 있다
       const key = `${part.kind}:${part.value}`;
@@ -703,23 +686,7 @@ export function lintEventFiles(files: Readonly<Record<string, unknown>>): string
   return problems;
 }
 
-/**
- * 이행 목록 점검 (풀 전체 — 풀에 있는 이벤트 id와 대조하므로 실제 풀로만 부른다): 목록에 같은 id가 두 번 있거나, 풀에 없는 id가 있으면 걸린다.
- * 「목록에 있는데 이미 합쇼체」는 이벤트 단위 점검(`lintEvent`)이, 「목록이 늘지 않았는가」는 tests/eventLint.test.ts가 시작 목록(tests/fixtures/legacy-haerache-baseline.json)과 견줘 본다.
- */
-export function legacyListProblems(events: readonly EventDef[], ids: readonly string[] = LEGACY_HAERACHE_IDS): string[] {
-  const problems: string[] = [];
-  const known = new Set(events.map((e) => e.id));
-  const seen = new Set<string>();
-  for (const id of ids) {
-    if (seen.has(id)) problems.push(`이행 목록(LEGACY_HAERACHE_IDS)에 "${id}"가 두 번 있다`);
-    seen.add(id);
-    if (!known.has(id)) problems.push(`이행 목록(LEGACY_HAERACHE_IDS)의 "${id}"가 이벤트 풀에 없다 — 이벤트를 지웠거나 id를 바꿨다면 목록에서도 뺀다 (src/core/legacyHaerache.ts)`);
-  }
-  return problems;
-}
-
 /** 스키마 검증을 통과한 이벤트와 원본 파일에 대한 모든 문구 점검 결과 (빈 배열이면 통과) */
-export function lintEventData(events: readonly EventDef[], files: Readonly<Record<string, unknown>>, legacy: ReadonlySet<string> = LEGACY_HAERACHE_SET): string[] {
-  return [...lintEventFiles(files), ...lintEvents(events, legacy)];
+export function lintEventData(events: readonly EventDef[], files: Readonly<Record<string, unknown>>): string[] {
+  return [...lintEventFiles(files), ...lintEvents(events)];
 }

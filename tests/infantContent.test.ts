@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   ERAS,
-  LEGACY_HAERACHE_SET,
   familyOf,
   isChoiceEvent,
   lintEvent,
@@ -73,19 +72,16 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
     expect(fw.milestone).toBe(true);
     expect(fw.ageRange).toEqual({ min: 1, max: 1 }); // r3(R-362): 걸음마와 같은 만 1세 해
     expect(fw.text).toBe('아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.'); // r3: 「또렷한 말」은 2세 이상의 장면이라 월령 주장 없이 낱말 하나로
-    expect(LEGACY_HAERACHE_SET.has('infant-first-word')).toBe(false);
     expect(lintEvent(fw)).toEqual([]); // 합쇼체 · 새 길이 한도 — 같은 해의 다른 마일스톤 줄과 어체가 섞이지 않는다
     const tell = ev('infant-stories').choices!.find((c) => c.id === 'tell')!;
     expect(tell.effects?.stats?.education).toBe(1); // r1 3 → 2, r3 2 → 1 (20세 평균 지식 +2 이하 가드, 마스터 결정 r2-1)
     expect(tell.result).toBe('머리맡에서 지어낸 이야기가 매일 밤 이어졌습니다. 아이는 이야기 속 사람들의 이름을 외웠습니다.'); // r3: 영유아 기존 9개를 합쇼체로 다시 썼다(뜻 그대로)
-    expect(LEGACY_HAERACHE_SET.has('infant-stories')).toBe(false);
     const sib = ev('infant-new-sibling');
     expect(sib.ageRange).toEqual({ min: 2, max: 4 });
     expect(sib.conditions).toEqual({ birthOrder: { max: 1 }, motherAge: { max: 45 } });
     expect(sib.choices!.map((c) => c.id)).toEqual(['help', 'sulk', 'grandma', 'notice']); // r3(R-367): 정의 4개, 보이는 것은 늘 3개 — grandma ⇄ notice가 grandparent_close로 배타
     expect(sib.weight).toBe(60); // r2: 동생 맞이를 출생 순서 통계에 맞게 자주 일어나게 한다 (IN4 시험이 비율을 지킨다)
     expect(sib.modifiers).toEqual([{ when: { motherAge: { max: 32 } }, weight: 10 }]);
-    expect(LEGACY_HAERACHE_SET.has('infant-new-sibling')).toBe(false);
     expect(lintEvent(sib)).toEqual([]); // 합쇼체 · 새 길이 한도
     for (const c of sib.choices!) expect(c.effects?.setFlags, c.id).toContain('younger_sibling');
     expect(sib.choices!.find((c) => c.id === 'help')!.effects?.setFlags).toContain('sibling_close');
@@ -106,7 +102,6 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
   it('r3(R-366): 영유아 기존 9개가 합쇼체로 다시 쓰여 이행 목록에서 빠졌다 — 효과·조건·선택지 id는 그대로이고(예외: infant-care의 childcare_set, village의 「나눠 먹으며」), 7세 단계 줄도 합쇼체다', () => {
     const NINE = ['infant-care', 'infant-fever', 'infant-stories', 'infant-screen', 'infant-village', 'infant-grandparent-song', 'infant-neglect-night', 'infant-hovering', 'infant-free-play'];
     for (const id of NINE) {
-      expect(LEGACY_HAERACHE_SET.has(id), id + ': 이행 목록에서 빠졌다').toBe(false);
       expect(lintEvent(ev(id)), id).toEqual([]); // 합쇼체 · 새 길이 한도 · 구어체·금지어·인용 부호 없음
     }
     expect(ev('infant-village').text).toBe('아이는 집집마다 문이 열려 있던 골목에서 이 집 저 집의 밥을 나눠 먹으며 자랐습니다.');
@@ -373,7 +368,6 @@ describe('IN7 수저에 따른 차이: 재력 단계에 따라 보이는 선택�
 describe('IN8 규칙 계승: 합쇼체 · 3인칭 「아이」 · 담담한 어조 · 금액·통계 숫자 없음 · 수위', () => {
   it('신규 28개는 문구 점검(합쇼체·새 길이 한도·구어체·시대 금지어·3인칭)을 통과한다 (목록 밖이라 해라체는 걸린다)', () => {
     for (const e of NEW) {
-      expect(LEGACY_HAERACHE_SET.has(e.id), `${e.id}: 이행 목록에 없다`).toBe(false);
       expect(lintEvent(e), e.id).toEqual([]);
     }
   });

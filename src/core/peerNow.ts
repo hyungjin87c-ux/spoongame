@@ -40,6 +40,9 @@ export const PEER_STATUS_LABEL: Record<PeerStatus, string> = {
   retired: '은퇴',
 };
 
+/** 은퇴 뒤 다시 일하는 모습의 표시 라벨 (SPEC-003 M7e-3, 마스터 결정 E-7): 상태 키는 그대로 `working`이고(표·분포·시험 불변) 표시만 나눈다 — 그 전 해들에 `retired`가 있었던 `working`은 「다시 일하는 사람」이다. */
+export const PEER_RETURN_LABEL = '다시 일하는 사람';
+
 /** 라벨마다 있을 수 있는 나이 범위(포함). 표(`PEER_STATUS_TABLE`)와 따로 둔 독립 기준 — 표의 가중치가 0이 아닌 칸은 모두 이 범위 안이어야 한다. */
 export const PEER_STATUS_AGES: Record<PeerStatus, { min: number; max: number }> = {
   child: { min: 0, max: 6 },
@@ -224,8 +227,15 @@ export function peerStatusAt(peerSeed: number, index: number, wealth: ParentWeal
 
 export interface PeerNow extends Peer {
   status: PeerStatus;
-  /** 화면 라벨 */
+  /** 화면 라벨 (은퇴 뒤 다시 일하는 사람은 「다시 일하는 사람」, `PEER_RETURN_LABEL`) */
   label: string;
+}
+
+/** 줄기의 마지막 해 라벨: 그 해가 `working`이고 앞선 해에 `retired`가 있었으면 「다시 일하는 사람」, 아니면 상태의 기본 라벨 */
+export function peerLabelOf(series: readonly PeerStatus[]): string {
+  const status = series[series.length - 1];
+  if (status === 'working' && series.slice(0, -1).includes('retired')) return PEER_RETURN_LABEL;
+  return PEER_STATUS_LABEL[status];
 }
 
 /** 대시보드 또래 칸: 또래 4명(출생신고와 같은 인물)과 지금 나이의 라벨. 출생 이후 단계의 상태만 받는다. */
@@ -233,7 +243,7 @@ export function peersNow(game: Pick<GameState, 'age' | 'peerSeed' | 'character' 
   const { character, birthReport: report, peerSeed } = game;
   if (character === null || report === null || peerSeed === null) throw new Error('peersNow: 출생 전 상태에는 또래가 없다');
   return peersOf(peerSeed, character.birthYear, report.month, character.name).map((p, i) => {
-    const status = peerStatusAt(peerSeed, i, p.wealth, game.age);
-    return { ...p, status, label: PEER_STATUS_LABEL[status] };
+    const series = peerStatusSeries(peerSeed, i, p.wealth, game.age);
+    return { ...p, status: series[series.length - 1], label: peerLabelOf(series) };
   });
 }

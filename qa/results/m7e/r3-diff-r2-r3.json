@@ -1,0 +1,18 @@
+{
+ "r2Lives": "samples-r2-harvest",
+ "poolBodies": 140,
+ "poolResults": 258,
+ "poolLabels": 255,
+ "bodyMiss": [],
+ "resMiss": [],
+ "labelsAdded": [
+  "일가친척과 의논해 치른다"
+ ],
+ "labelsRemoved": [
+  "가족·친척과 의논해 치른다"
+ ],
+ "nonHangulLabelsTitles": [],
+ "maxLabelWordSyllables": 5,
+ "maxLabelWordWhere": "infant-stories/tell 「옛이야기를」",
+ "r2TitlesSeen": 140
+}

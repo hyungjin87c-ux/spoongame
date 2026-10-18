@@ -1,0 +1,86 @@
+[
+ {
+  "card": "farewell-plain",
+  "id": "choice-stay",
+  "role": "button",
+  "name": "모든 일을 내려놓고 곁을 지킨다 자산이 조금 줄어듭니다. 관계가 늘어납니다. 행복이 줄어듭니다. 건강이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "farewell-plain",
+  "id": "choice-late",
+  "role": "button",
+  "name": "정리할 것을 마치고 뒤늦게 도착한다 관계가 조금 줄어듭니다. 행복이 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "farewell-plain",
+  "id": "choice-share",
+  "role": "button",
+  "name": "일가친척과 의논해 치른다 자산이 줄어듭니다. 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "farewell-moved",
+  "id": "choice-stay",
+  "role": "button",
+  "name": "모든 일을 내려놓고 곁을 지킨다 자산이 조금 줄어듭니다. 관계가 늘어납니다. 행복이 줄어듭니다. 건강이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "farewell-moved",
+  "id": "choice-late",
+  "role": "button",
+  "name": "정리할 것을 마치고 뒤늦게 도착한다 관계가 조금 줄어듭니다. 행복이 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "farewell-moved",
+  "id": "choice-share",
+  "role": "button",
+  "name": "일가친척과 의논해 치른다 자산이 줄어듭니다. 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "middle-parents-farewell-past",
+  "id": "choice-stay",
+  "role": "button",
+  "name": "모든 일을 내려놓고 곁을 지킨다 자산이 조금 줄어듭니다. 관계가 늘어납니다. 행복이 줄어듭니다. 건강이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "middle-parents-farewell-past",
+  "id": "choice-late",
+  "role": "button",
+  "name": "정리할 것을 마치고 뒤늦게 도착한다 관계가 조금 줄어듭니다. 행복이 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "middle-parents-farewell-past",
+  "id": "choice-share",
+  "role": "button",
+  "name": "일가친척과 의논해 치른다 자산이 줄어듭니다. 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "middle-parents-care-present",
+  "id": "choice-home",
+  "role": "button",
+  "name": "직접 모시고 돌본다 자산이 줄어듭니다. 관계가 늘어납니다. 행복이 조금 줄어듭니다. 건강이 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "middle-parents-care-present",
+  "id": "choice-facility",
+  "role": "button",
+  "name": "전문 시설을 알아본다 자산이 크게 줄어듭니다. 행복이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ },
+ {
+  "card": "middle-parents-care-present",
+  "id": "choice-share",
+  "role": "button",
+  "name": "가족이나 친척과 나누어 맡는다 자산이 줄어듭니다. 관계가 조금 늘어납니다. 건강이 조금 줄어듭니다.",
+  "nonHangulSymbols": []
+ }
+]

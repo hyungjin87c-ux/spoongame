@@ -37,9 +37,18 @@ import { measureTextResize, setRootFontPercent, textResizeViolations } from './t
 
 const SETTINGS = { speed: 8, autoMode: true } as const;
 /** 엔딩 출발선 문장의 구간 표현 (R-091): 하위 N% 안쪽 / 상위 N% 안쪽 / 상위 A~B% 사이 / 하위 A%와 상위 B% 사이 (끝에 "의 집에서 태어" 가 이어진다) */
-const BAND_SENTENCE = /^(하위 \d+% 안쪽|상위 \d+% 안쪽|상위 \d+~\d+% 사이|하위 \d+~\d+% 사이|하위 \d+%와 상위 \d+% 사이)의 집에서 태어(났|나, )/;
+const BAND_SENTENCE = /^(하위 \d+% 안쪽|상위 \d+% 안쪽|상위 \d+~\d+% 사이|하위 \d+~\d+% 사이|하위 \d+% 선과 상위 \d+% 선 사이)의 집에서 태어(났|나, )/;
 /** 등급명(흙/동/은/금/다이아 수저)·느낌표·이모지 */
 const FORBIDDEN = /(흙|동|은|금|다이아)\s*수저|다이아|[!！]|\p{Extended_Pictographic}/u;
+
+/** 화면 글에서 수저 칩(.grade — 출발선 범례의 이름표 한 곳, M7e-3 copy.md 5-4)의 글자를 뺀 글: 등급명 금지는 칩 밖의 문장에 대한 규칙이다 */
+async function endingTextWithoutChip(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const clone = document.querySelector('[data-testid="ending-screen"]')!.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.grade').forEach((n) => n.remove());
+    return clone.textContent ?? '';
+  });
+}
 
 /** 알려진 시드의 엔딩 상태(core 자동 진행 결과)를 만든다. 앱 페이지가 열려 있어야 한다. */
 async function endedState(page: Page, seed = KNOWN_SEED, era: 'past' | 'present' | 'future' = 'present'): Promise<GameState> {
@@ -117,13 +126,15 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   await expect(page.getByTestId('site-head')).toContainText('엔딩');
   await expect(page.getByTestId('header-logo')).toBeVisible();
   await expect(page.locator('h1')).toHaveCount(1);
-  await expect(page.getByTestId('ending-born')).toContainText(`${c.birthYear}년, ${c.gender === 'male' ? '남자아이' : '여자아이'}로 태어났다.`);
+  // M7e-3(R-327): 머리는 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (출생 문장은 연표의 첫 줄이 말한다)
+  await expect(page.getByTestId('ending-era')).toContainText(' · 생애 기록');
+  await expect(page.getByTestId('ending-span')).toHaveText(new RegExp(`^${c.birthYear}년( \\d{1,2}월)? ~ ${c.birthYear + save.death!.age}년 · ${save.death!.age}세$`));
   await expect(page.getByTestId('ending-death')).toHaveText(oracle.death);
   await expect(page.getByTestId('ending-choices')).toContainText(`${oracle.choiceCount}번의 선택`);
 
   // 출발선 대비: 같은 세상 안의 자리 문장 + 방향 + 설명
   await expect(page.getByTestId('ending-journey')).toHaveText(oracle.journey);
-  expect(oracle.journey).toMatch(/의 집에서 태어나, .+의 형편으로 생을 마쳤다\.$/);
+  expect(oracle.journey).toMatch(/의 집에서 태어나, .+의 형편으로 생을 마쳤습니다\.$/);
   expect(oracle.journey, '출발선은 재력 단계의 구간 표현 (R-091)').toMatch(BAND_SENTENCE);
   await expect(page.getByTestId('ending-movement')).toHaveText(oracle.movement!);
   await expect(page.getByTestId('ending-note')).toContainText('같은 세상 안의 자리로 견주었습니다');
@@ -147,15 +158,18 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   await expect(page.getByTestId('timeline-infant')).toBeVisible(); // 출생은 영유아 단계의 첫 줄
   // 연표의 첫 줄은 출생신고의 한 줄 서술문과 같은 문장(합쇼체, SPEC-003 BR3·C1) — M3 이전에는 「~로 태어났다」였다
   await expect(page.getByTestId('timeline-entry').first()).toContainText('로 태어났습니다');
-  await expect(page.getByTestId('timeline-entry').last()).toContainText('세상을 떠났다');
+  await expect(page.getByTestId('timeline-entry').last()).toContainText('세상을 떠났습니다');
 
   // 위에서 아래로: 출발선 대비 → 최종 스탯 → 연표 → 다시 태어나기
   const tops = await page.evaluate(() => ['ending-journey-section', 'ending-stats', 'ending-timeline', 'rebirth'].map((id) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect().top + window.scrollY));
   expect(tops).toEqual([...tops].sort((a, b) => a - b));
 
   // 금지된 것: 등급명·느낌표·이모지, 링크·이미지·공유, 가로 넘침. 버튼은 "다시 태어나기" 하나뿐
-  const text = await page.getByTestId('ending-screen').innerText();
+  const text = await endingTextWithoutChip(page);
   expect(text).not.toMatch(FORBIDDEN);
+  // 수저 칩은 출발선 범례(dd) 한 곳에만 있다 — 문장·막대·다른 카드에는 등급명이 없다
+  await expect(page.locator('.ending .grade')).toHaveCount(1);
+  await expect(page.getByTestId('ending-legend').locator('.grade')).toHaveCount(1);
   expect(text).not.toMatch(/공유|SNS|복사|이미지로 저장/);
   // M4: 공통 헤더의 로고·얼굴 그림·아이콘이 svg라 svg는 세지 않는다. 링크·이미지·캔버스·소리·영상은 여전히 0.
   expect(await page.locator('a, img, canvas, audio, video').count()).toBe(0);
@@ -197,19 +211,19 @@ test('스무 살 전에 끝난 인생: 도착 자리를 말하지 않고 집안 
     phase: 'ending',
     age: 9,
     history: [
-      { age: 0, kind: 'stage', text: '2012년, 남자아이로 태어났다.' },
-      { age: 3, kind: 'event', title: '첫 말', text: '아이가 처음으로 또렷한 말을 했다.', eventId: 'infant-first-word' },
-      { age: 7, kind: 'stage', text: '학교에 들어갈 나이가 되었다.' },
-      { age: 9, kind: 'death', text: '세상을 떠났다. 원인: 갑작스러운 병.' },
+      { age: 0, kind: 'stage', text: '2012년, 남자아이로 태어났습니다.' },
+      { age: 3, kind: 'event', title: '첫 말', text: '아이가 처음으로 또렷한 말을 했습니다.', eventId: 'infant-first-word' },
+      { age: 7, kind: 'stage', text: '학교에 들어갈 나이가 되었습니다.' },
+      { age: 9, kind: 'death', text: '세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.' },
     ],
     death: { age: 9, cause: '갑작스러운 병' },
   };
   await page.goto('/');
   await injectSave(page, early, '/');
   await expect(page.getByTestId('ending-screen')).toBeVisible();
-  await expect(page.getByTestId('ending-death')).toHaveText('9세에 세상을 떠났다. 원인: 갑작스러운 병.');
+  await expect(page.getByTestId('ending-death')).toHaveText('9세에 세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.');
   // R-083: 출발선만 담담하게 — 게임 용어("내가 가진 것")도, 윗줄이 이미 말한 "생이 끝났다"도 되풀이하지 않는다
-  await expect(page.getByTestId('ending-journey')).toHaveText(/^.+의 집에서 태어났다\.$/);
+  await expect(page.getByTestId('ending-journey')).toHaveText(/^.+의 집에서 태어났습니다\.$/);
   await expect(page.getByTestId('ending-journey')).toHaveText(BAND_SENTENCE); // R-091: 20세 전 사망 줄도 구간 표현
   await expect(page.getByTestId('ending-journey')).toHaveText((await reviewOracle(page, early)).journey);
   await expect(page.getByTestId('ending-journey')).not.toContainText(/내가 가진 것|생이 끝|견줄|스무 살/);
@@ -220,7 +234,7 @@ test('스무 살 전에 끝난 인생: 도착 자리를 말하지 않고 집안 
   await expect(page.getByTestId('final-health')).toBeVisible();
   await expect(page.getByTestId('timeline-entry')).toHaveCount(4);
   expect(await noHorizontalOverflow(page)).toBe(true);
-  expect(await page.getByTestId('ending-screen').innerText()).not.toMatch(FORBIDDEN);
+  expect(await endingTextWithoutChip(page)).not.toMatch(FORBIDDEN);
 });
 
 test('가장 긴 연표(세 시대에서 찾은 가장 긴 인생)도 360px와 320px에서 읽힌다: 가로 넘침·잘림 없고, 다시 태어나기 버튼에 스크롤로 닿는다', async ({ page }) => {

@@ -192,7 +192,7 @@ describe('외모: 0점 / 중앙 / 100점과 경계', () => {
     expect(standingLabel(looksStanding(80))).toBe('상위 약 4%'); // 3.85%
     expect(standingLabel(looksStanding(90))).toBe('상위 1% 안쪽'); // 0.53%
     expect(standingLabel(looksStanding(100))).toBe('상위 1% 안쪽'); // 0.0001%
-    expect(MIDDLE_LABEL).toBe('딱 중간쯤');
+    expect(MIDDLE_LABEL).toBe('가운데쯤');
   });
 
   it('예전에 "상위 약 94%"로 나오던 23점은 이제 하위 표현이다', () => {
@@ -272,7 +272,7 @@ describe('출생신고 화면은 core의 결과만 그린다 (BirthScreen 서버
     for (let l = 0; l <= 100; l++) {
       const markup = html('present', 3, l);
       const text = field(markup, 'birth-looks');
-      expect(text.startsWith(expectedLooksLabel(l)), `${l}점: ${text}`).toBe(true);
+      expect(text.startsWith(`또래 사이에서 ${expectedLooksLabel(l)}`), `${l}점: ${text}`).toBe(true); // M7e-3: 값 앞에 「또래 사이에서」
       for (const n of percentsIn(text)) expect(n, text).toBeLessThanOrEqual(50);
       expect(markup.replace(/<[^>]+>/g, ' '), `${l}점`).not.toMatch(/외모\s*\d+\s*점/);
     }

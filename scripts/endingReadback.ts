@@ -5,7 +5,7 @@ import type { Movement } from '../src/core';
  * **화면에 적힌 숫자만으로** 출발선 구간·도착 점수·방향을 다시 구한다. tests/ending.test.ts(5151가지 구간 전수·11990판 전수)와
  * 1000판 파이프라인(scripts/pipelineLib.ts)이 함께 쓴다 — 문장과 판정이 어긋나면 여기서 갈린다.
  *
- * 점수는 아래에서부터 센 백분위다(클수록 부유): 상위 N% → 100 - N, 하위 N% → N, 딱 중간쯤 → 50.
+ * 점수는 아래에서부터 센 백분위다(클수록 부유): 상위 N% → 100 - N, 하위 N% → N, 가운데쯤 → 50.
  */
 
 /** 문장 속 모든 숫자 */
@@ -15,7 +15,7 @@ export function numbersIn(text: string): number[] {
 
 /**
  * 엔딩 문장의 출발선 부분(bandLabel이 만든 문구) → [low, high] (아래에서부터 센 백분위). 문구가 말할 수 있는 모든 모양을 읽는다:
- * 안쪽(맨 아래·맨 위) / 밖(한쪽에 붙었지만 반대편이 50%를 넘음) / 한쪽 절반 안의 A~B% 사이 / 약 N%(폭 0) / 50%를 걸친 "하위 A%와 상위 B% 사이" / 모두가 같은 자리.
+ * 안쪽(맨 아래·맨 위) / 밖(한쪽에 붙었지만 반대편이 50%를 넘음) / 한쪽 절반 안의 A~B% 사이 / 약 N%(폭 0) / 50%를 걸친 "하위 A% 선과 상위 B% 선 사이" (M7e-3: 「선」) / 모두가 같은 자리.
  */
 export function readBand(label: string): [number, number] {
   let m: RegExpExecArray | null;
@@ -27,17 +27,17 @@ export function readBand(label: string): [number, number] {
   if ((m = /^하위 (\d+)~(\d+)% 사이$/.exec(label))) return [Number(m[1]), Number(m[2])];
   if ((m = /^상위 약 (\d+)%$/.exec(label))) return [100 - Number(m[1]), 100 - Number(m[1])]; // 폭 0
   if ((m = /^하위 약 (\d+)%$/.exec(label))) return [Number(m[1]), Number(m[1])];
-  if ((m = /^하위 (\d+)%와 상위 (\d+)% 사이$/.exec(label))) return [Number(m[1]), 100 - Number(m[2])];
+  if ((m = /^하위 (\d+)% 선과 상위 (\d+)% 선 사이$/.exec(label))) return [Number(m[1]), 100 - Number(m[2])];
   if (label === '모두가 같은 자리') return [0, 100];
   throw new Error(`출발선 문구를 읽지 못했다: ${label}`);
 }
 
-/** 엔딩 문장의 도착 부분(standingLabel이 만든 문구) → 점수: 상위 약 N% / 하위 약 N% / N% 안쪽 / 딱 중간쯤 */
+/** 엔딩 문장의 도착 부분(standingLabel이 만든 문구) → 점수: 상위 약 N% / 하위 약 N% / N% 안쪽 / 가운데쯤 */
 export function readEnd(label: string): number {
   let m: RegExpExecArray | null;
   if ((m = /^상위 (?:약 )?(\d+)%(?: 안쪽)?$/.exec(label))) return 100 - Number(m[1]);
   if ((m = /^하위 (?:약 )?(\d+)%(?: 안쪽)?$/.exec(label))) return Number(m[1]);
-  if (label === '딱 중간쯤') return 50;
+  if (label === '가운데쯤') return 50;
   throw new Error(`도착 문구를 읽지 못했다: ${label}`);
 }
 

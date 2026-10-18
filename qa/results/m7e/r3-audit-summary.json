@@ -1,0 +1,29 @@
+{
+ "files": {
+  "audit-focus-focus.jsonl": 63,
+  "audit-layout.jsonl": 198
+ },
+ "layout": {
+  "결정카드": {
+   "combos": 198,
+   "errs": 0,
+   "states": 6,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": []
+  }
+ },
+ "focus": {
+  "결정카드": {
+   "combos": 63,
+   "errs": 0,
+   "states": 3,
+   "bad": 0,
+   "unavoidable": 0,
+   "kinds": {},
+   "examples": [],
+   "tall": 9
+  }
+ }
+}

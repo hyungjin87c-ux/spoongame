@@ -53,8 +53,10 @@ describe('상태 도움말과 자산 (R-333 → M5 2b)', () => {
     expect(base).not.toMatch(/자산|원 단위/);
     for (const era of ['past', 'future'] as const) expect(statusHelpText(false, era)).toBe(base); // 자산 문장을 켜지 않으면 시대와 무관하다
     const household = '순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.';
-    expect(statusHelpText(true, 'present')).toBe(`${base} 자산은 올해 가치 기준의 원 단위입니다. ${household}`);
-    expect(statusHelpText(true, 'past')).toBe(`${base} 자산은 지금 가치로 환산한 원 단위입니다. ${household}`);
+    // M7e-3 (copy.md 5-2 ②): 끝에 선택지 아래 표시의 뜻 두 문장이 더해졌다 (선택만의 효과 · 해마다 소득·생활비는 따로 · 자산 변화에는 3년치)
+    const impact = '선택지 아래 표시는 그 선택만으로 생기는 변화이고, 해마다의 소득과 생활비는 따로 더해집니다. 자산의 변화에는 앞으로 3년치 소득·지출 변화가 들어 있습니다.';
+    expect(statusHelpText(true, 'present')).toBe(`${base} 자산은 올해 가치 기준의 원 단위입니다. ${household} ${impact}`);
+    expect(statusHelpText(true, 'past')).toBe(`${base} 자산은 지금 가치로 환산한 원 단위입니다. ${household} ${impact}`);
     expect(statusHelpText(true, 'future')).toBe(statusHelpText(true, 'past'));
     // 건강·행복·지식·관계 네 가지 설명은 두 경우 모두 있다
     for (const word of ['건강은', '행복은', '지식은', '관계는']) {
@@ -73,7 +75,8 @@ describe('상태 도움말과 자산 (R-333 → M5 2b)', () => {
     expect(DASH_TEXT.assetsBasis).toBe('지금 가치로 환산');
     expect(DASH_TEXT.assetsNote).toBe('순자산은 가진 것에서 부채를 뺀 값입니다. 0보다 작으면 부채가 가진 것보다 많다는 뜻입니다.');
     expect(DASH_TEXT.assetsNote).not.toContain('빚');
-    expect(DASH_TEXT.assetsYoung).toBe('자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.');
+    // M7e-3 (copy.md 5-2 ③, QA-003-M5 O02): 셋째 문장이 선택지의 「집안 살림」 뜻을 푼다
+    expect(DASH_TEXT.assetsYoung).toBe('자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다. 선택지에 보이는 「집안 살림」은 살림에 보태거나 축낸 몫을 모아 둔 값이고, 스무 살이 되면 내 자산과 부채로 합쳐집니다.');
     expect(Object.keys(DASH_TEXT)).not.toContain('assetsSoon');
     expect(JSON.stringify(DASH_TEXT)).not.toContain('아직 준비 중입니다');
   });

@@ -9,6 +9,8 @@ import {
   familyOf,
   inheritanceAmount,
   inheritanceDue,
+  dwellingWhenParentsGone,
+  parentsJustGone,
   incomeOf,
   economyContextOf,
   parseGame,
@@ -18,6 +20,7 @@ import {
   resolveChoiceStep,
   siblingCountOf,
   stepYear,
+  type Dwelling,
   type GameState,
   type ParentWealth,
 } from '../src/core';
@@ -33,7 +36,7 @@ const FAREWELL = 'middle-parents-farewell';
 const NOTE = '부모님이 남기신 재산을 물려받았습니다.';
 
 /** 어머니 30세·아버지 33세에 태어난 중년 상태(재력 단계·형제 순서·나이·플래그를 고른다) */
-function stateOf(over: { tier?: ParentWealth; age?: number; flags?: string[]; birthOrder?: number; motherAge?: number; fatherAge?: number; net?: number; assets?: 'none' } = {}): GameState {
+function stateOf(over: { tier?: ParentWealth; age?: number; flags?: string[]; birthOrder?: number; motherAge?: number; fatherAge?: number; net?: number; assets?: 'none'; dwelling?: Dwelling } = {}): GameState {
   const base = startLife(11, 'present');
   const age = over.age ?? 55;
   const s: GameState = {
@@ -54,7 +57,7 @@ function stateOf(over: { tier?: ParentWealth; age?: number; flags?: string[]; bi
   };
   if (over.assets === 'none') return s;
   const net = over.net ?? 20000;
-  return { ...s, assets: { net, income: incomeOf(economyContextOf(s), 0), debt: Math.max(0, -net), incomeAdj: 0, dwelling: 'own' } };
+  return { ...s, assets: { net, income: incomeOf(economyContextOf(s), 0), debt: Math.max(0, -net), incomeAdj: 0, dwelling: over.dwelling ?? 'own' } };
 }
 
 const withPending = (s: GameState, eventId: string): GameState => {
@@ -387,6 +390,102 @@ describe('나이 상한 전환의 상속 (해마다 규칙): 선택과 무관하
   it('난수를 쓰지 않는다: 같은 상태에서 상속 표가 달라도 난수 수열(rngState)은 같다 · 같은 상태는 늘 같은 결과', () => {
     const s = stateOf({ tier: 5, age: 70 });
     expect(stepOnce(s)).toEqual(stepOnce(s));
+  });
+});
+
+describe('추가② (M7e-3, economy-model.md 4-2절): 부모가 처음 모두 떠난 해 끝에 가족 집에 살고 있었다면 월세로 나온다 (상속을 더한 뒤, 난수 없음)', () => {
+  /** 가족 집에 사는 55세 — lives_with_parents로 30세 자연 전환(월세로 나옴)을 막아 둔다 */
+  const atHome = (over: Parameters<typeof stateOf>[0] = {}) => stateOf({ age: 55, flags: ['lives_with_parents'], dwelling: 'family', ...over });
+
+  it('dwellingWhenParentsGone: 가족 집만 월세로 바뀌고 월세·전세·자가·돌봄 시설은 그대로다', () => {
+    expect(dwellingWhenParentsGone('family', [])).toBe('rent');
+    expect(dwellingWhenParentsGone('family', ['lives_with_parents'])).toBe('rent');
+    for (const d of ['rent', 'jeonse', 'own', 'care'] as const) expect(dwellingWhenParentsGone(d, []), d).toBe(d);
+  });
+
+  it('R-378 (M7e-4): moved_home(자식 곁으로 옮긴 노인)이 켜진 판의 가족 집은 자식 집이라 월세로 바꾸지 않는다 — 다른 주거·플래그와 함께여도 같다', () => {
+    expect(dwellingWhenParentsGone('family', ['moved_home'])).toBe('family');
+    expect(dwellingWhenParentsGone('family', ['lives_with_parents', 'moved_home'])).toBe('family');
+    for (const d of ['rent', 'jeonse', 'own', 'care'] as const) expect(dwellingWhenParentsGone(d, ['moved_home']), d).toBe(d);
+  });
+
+  it('parentsJustGone: 부모가 막 모두 떠난 전환에서만 참이다 — 이미 떠난 뒤 · 아직 아님 · 자산이 없는 상태는 거짓', () => {
+    const before = atHome();
+    expect(parentsJustGone(before, { ...before, flags: [...before.flags, 'parents_gone'].sort() })).toBe(true);
+    expect(parentsJustGone(before, { ...before, age: before.age + 1 })).toBe(false);
+    const gone = atHome({ flags: ['lives_with_parents', 'parents_gone'] });
+    expect(parentsJustGone(gone, { ...gone, age: gone.age + 1 })).toBe(false);
+    const noAssets = stateOf({ assets: 'none' });
+    expect(parentsJustGone(noAssets, { ...noAssets, flags: ['parents_gone'] })).toBe(false);
+    // 나이 상한 전환(70 → 71세)도 막 떠난 전환이다
+    const old = atHome({ age: 70 });
+    expect(parentsJustGone(old, { ...old, age: 71 })).toBe(true);
+  });
+
+  it('사별 선택지를 고른 해 끝: 가족 집은 월세로 바뀌고 상속은 그대로 더해진다 · 월세·전세·자가는 그대로다', () => {
+    const farewell = (over: Parameters<typeof stateOf>[0]) => withPending(atHome(over), FAREWELL);
+    const home = farewell({ tier: 5, net: 20000 });
+    expect(home.assets!.dwelling).toBe('family');
+    const out = resolveChoiceStep(home, home.pending!.key, 'stay').state;
+    expect(out.flags).toContain('parents_gone');
+    expect(out.assets!.dwelling).toBe('rent');
+    expect(out.history.some((h) => h.text === NOTE), '상속 한 줄은 그대로 남는다').toBe(true);
+    for (const d of ['rent', 'jeonse', 'own'] as const) {
+      const s = farewell({ tier: 5, net: 20000, dwelling: d });
+      expect(resolveChoiceStep(s, s.pending!.key, 'stay').state.assets!.dwelling, d).toBe(d);
+    }
+    // 세 선택지 모두 같다 (선택과 무관한 해 끝 규칙)
+    for (const c of ['stay', 'share', 'late']) {
+      const s = farewell({ tier: 3, net: 20000 });
+      expect(resolveChoiceStep(s, s.pending!.key, c).state.assets!.dwelling, c).toBe('rent');
+    }
+  });
+
+  it('재력 1단계(상속 0)도 월세로 나온다 — 상속이 없어도 부모의 집을 잃는 것은 같다', () => {
+    const s = withPending(atHome({ tier: 1, net: 20000 }), FAREWELL);
+    expect(resolveChoiceStep(s, s.pending!.key, 'stay').state.assets!.dwelling).toBe('rent');
+  });
+
+  it('나이 상한 전환(70 → 71세)에서도 가족 집은 월세로 나온다 · 한 해 전(69 → 70세)에는 그대로다', () => {
+    const early = stepOnce(atHome({ tier: 5, age: 69, net: 30000 }));
+    expect(early.age).toBe(70);
+    expect(early.assets!.dwelling).toBe('family');
+    const out = stepOnce(atHome({ tier: 5, age: 70, net: 30000 }));
+    expect(out.age).toBe(71);
+    expect(out.assets!.dwelling).toBe('rent');
+  });
+
+  it('R-378 (M7e-4): 자식 곁으로 옮긴 노인(moved_home)이 나이 상한 전환(70 → 71세)을 맞아도 자식 집(가족 집)에 그대로 산다 — 부모 집에 살던 판(lives_with_parents)만 월세가 된다', () => {
+    const child = stepOnce(atHome({ tier: 5, age: 70, net: 30000, flags: ['moved_home'] }));
+    expect(child.age).toBe(71);
+    expect(child.flags).toContain('moved_home');
+    expect(child.assets!.dwelling, '자식 집은 그대로').toBe('family');
+    // 같은 판에서 moved_home만 없으면 월세 — 바뀌는 것은 이 플래그 하나다
+    const parents = stepOnce(atHome({ tier: 5, age: 70, net: 30000, flags: ['lives_with_parents'] }));
+    expect(parents.assets!.dwelling).toBe('rent');
+    // 상속은 주거와 무관하게 같은 해에 들어온다
+    expect(child.history.some((h) => h.text === NOTE)).toBe(true);
+  });
+
+  it('한 번뿐이다: 이미 떠난 뒤에는 다시 바꾸지 않는다 (사별 플래그가 있는 채 가족 집이면 그대로)', () => {
+    const gone = atHome({ flags: ['lives_with_parents', 'parents_gone'] });
+    expect(stepOnce(gone).assets!.dwelling).toBe('family');
+  });
+
+  it('난수를 쓰지 않는다: 주거 전환이 있어도 난수 상태(rngState)는 주거만 다른 같은 판과 같다', () => {
+    const own = stepOnce(atHome({ tier: 5, age: 70, net: 30000, dwelling: 'own' }));
+    const home = stepOnce(atHome({ tier: 5, age: 70, net: 30000 }));
+    expect(home.rngState).toBe(own.rngState);
+  });
+
+  it('20세 독립 때 부모가 이미 떠난 판은 가족 집이 아니라 월세로 시작한다 (재력 3~5단계의 기본 주거가 가족 집)', () => {
+    const young = (tier: ParentWealth, flags: string[]) => ({ ...stateOf({ tier, age: 19, flags, assets: 'none' }), familyFund: 500 });
+    for (const tier of [3, 4, 5] as const) {
+      expect(stepOnce(young(tier, [])).assets!.dwelling, `${tier}단계 부모 건재`).toBe('family');
+      expect(stepOnce(young(tier, ['parents_gone'])).assets!.dwelling, `${tier}단계 부모 떠남`).toBe('rent');
+    }
+    // 1~2단계는 원래 월세다
+    expect(stepOnce(young(1, ['parents_gone'])).assets!.dwelling).toBe('rent');
   });
 });
 

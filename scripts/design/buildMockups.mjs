@@ -17,7 +17,8 @@ import { AGE_GROUPS, faceSvg } from '../../src/assets/faces/faceLayers.ts';
 import { generateBirthFromSeed, looksStanding } from '../../src/core/birth.ts';
 import { birthSentence, isValidBirthReport, reportPlaceLabel, weightStanding } from '../../src/core/birthReport.ts';
 import { AUTO_ADVANCE_MS, LINE_H_STACKED, LINE_W, buildCarousel, valueWidthEm } from '../../src/core/carousel.ts';
-import { startBandOf } from '../../src/core/ending.ts';
+import { finalWealthStanding, movementOf, standingScore, startBandOf } from '../../src/core/ending.ts';
+import { formatMan } from '../../src/core/format.ts';
 import { glueSegments, splitPair } from '../../src/core/glue.ts';
 import { peersOf } from '../../src/core/peers.ts';
 import { ROULETTE_TIMING, buildRoulette, reelPosition } from '../../src/core/roulette.ts';
@@ -29,9 +30,10 @@ import { OCCUPATION_LABEL } from '../../src/data/birthReportTable.ts';
 import { BIRTH_TEXT, GRADE_NAME, REPORT_NOTES, ROULETTE_TEXT, ROULETTE_TITLE_CHARS, formatKg, genderLabel, housingText, orderText, parentingDocText, regionOddsNote, yearMonthText } from '../../src/data/birthReportText.ts';
 import { PARENTING_LABEL, standingLabel } from '../../src/data/birthText.ts';
 import { ERA_CONFIG } from '../../src/data/birthTable.ts';
-import { ENDING_HEADINGS, JOURNEY_NOTE, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, bandLabel, choiceCountText, deathLineText, journeyText } from '../../src/data/endingText.ts';
-import { getCarouselIndicators, getRegionFootnote, getUsableIndicator } from '../../src/data/koreaStatsAccess.ts';
+import { ENDING_HEADINGS, ENDING_HEAD_LABEL, FINAL_NET_TEXT, JOURNEY_BAR_LEGEND, JOURNEY_NOTE, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, bandLabel, choiceCountText, deathLineText, endingSpanText, journeyBarLabel, journeyText, stageHeadingText } from '../../src/data/endingText.ts';
 import { deathEntryText } from '../../src/data/lifeText.ts';
+import { KeepStanding } from '../../src/ui/KeepStanding.tsx';
+import { getCarouselIndicators, getRegionFootnote, getUsableIndicator } from '../../src/data/koreaStatsAccess.ts';
 import { placeLabel } from '../../src/data/regionNames.ts';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../../src/data/titleText.ts';
 import { restCells, spinCells, spinCycles } from '../../src/ui/Reel.tsx';
@@ -54,8 +56,6 @@ const band = (era, wealth) => bandLabel(startBandOf(era, wealth));
 // ---------- 가짜 인물 데이터 (화면 사이에서 일치) ----------
 /** 가상 인구(시안용 고정값 — 구현은 core/population.ts#tryVirtualPopulation이 이 기기의 시각으로 계산한다). 첫 화면·대시보드 인생 기록 고정 줄이 같은 값을 쓴다 */
 const N_POP = '51,284';
-/** 엔딩 도착 자리(시안용 가짜 값) — 화면 글자·읽기용 설명 모두 standingLabel(END_STANDING) 출력으로 적는다(R-191(d)) */
-const END_STANDING = { kind: 'top', percent: 38, within: false };
 /**
  * 시안 주인공의 **저장 상태**(구현 core/types.ts#Character·BirthReport와 같은 모양, 2026-10-16 M3 맞춤). 룰렛·출생신고 시안은 이 상태를 구현의 순수 함수에 넣어 그린다 —
  * 지역·시군구·체중 격자는 저장 검증(core/birthReport.ts#isValidBirthReport)을 통과해야 한다(2026년 경기도의 시군구는 일반구 단위라 「화성시 병점구」).
@@ -92,7 +92,6 @@ const HERO = (() => {
     parenting: PARENTING_LABEL[c.parenting],
     looks: standingLabel(looksStanding(c.looks)), // 「상위 약 46%」 — 외모 원점수는 어디에도 적지 않는다(R-135①)
     sentence: birthSentence(c, report, era), // BR3 한 줄 서술문 = 인생 기록 0세 첫 줄
-    endRank: standingLabel(END_STANDING), // 「상위 약 38%」
   };
 })();
 /**
@@ -708,53 +707,174 @@ function systemPage() {
   return page({ title: '수저 게임 · 시안 · 밀린 화면', body, bodyClass: 'is-system' });
 }
 
-// ---------- 5. 엔딩 ----------
+// ---------- 5. 엔딩 — M7e 새 디자인 (출발선 막대 · 출발선 수저 칩 · 「생애 기록」 머리: REV-003-M4-1 R-327; developer M7e-3 구현 뒤 designer가 함수 import로 되돌림, 2026-10-18) ----------
 /**
- * 회고 문장(사망·선택 수·출발선 대비·방향·주석)과 연표 사망 줄은 src/data/endingText.ts·lifeText.ts의 함수 출력 그대로다(R-091·R-170) — 디자인에서 다른 말로 바꾸지 않는다.
- * 어체는 SPEC-003 C1·M7e에 따라 합쇼체로 바뀌며, 그때 화면은 함수 출력을 따른다(지금 시안은 M7e 전 현행 출력 = 해라체, R-191). 다시 태어나기 안내는 REBIRTH_NOTE(FR9).
- * 출발선 = band(era, grade)(지금 세상 1단계 「하위 25% 안쪽」), 도착 = standingLabel(END_STANDING)(「상위 약 38%」, 시안용 가짜 값).
- * 출발선 막대의 읽기용 설명(aria-label)도 같은 함수 출력(bandLabel·standingLabel·MOVEMENT_TEXT)의 조합이다 — 손으로 적지 않는다(R-191(d)).
- * 머리(M4 구현 EndingScreen과 같은 구조, r2 뒤 맞춤): 얼굴 타일(96px 정사각, `flex: none`) + **텍스트 칸 `.ending__who`**(flex로 늘어나는 쪽은 이 칸뿐 — R-320) 안의 h1 「{이름}의 인생」(`DASH_TEXT.endingTitleSuffix`)에
- * `--title-chars`(= `titleCharsFor(제목)`)를 넘겨 ds.css의 글자 크기 상한(컨테이너 = `.ending__who`, 바닥 --fs-lg)이 좁은 폭·큰 글자에서도 낱말을 끊지 않는다(R-321·QM3-2). 그 밖의 엔딩 구성(출발선 막대 등)은 M7e 목표 모습(diff-003.md D-19).
+ * 글자는 모두 구현 함수의 출력이다(R-191 — 시안이 문장을 따로 가지지 않는다): deathLineText·choiceCountText·journeyText·MOVEMENT_TEXT·bandLabel·standingLabel·journeyBarLabel·JOURNEY_BAR_LEGEND·ENDING_HEAD_LABEL·endingSpanText(endingText.ts),
+ * deathEntryText(lifeText.ts), STAGE_ENTRY_TEXT(lifeTable.ts), KeepStanding(ui/KeepStanding.tsx — 순위 표현의 줄바꿈 보호). 숫자(구간 low·high, 도착 자리, 방향)도 구현 함수(startBandOf·finalWealthStanding·movementOf·standingScore)가 만든다 — 손으로 적은 값·문장이 없다.
+ * 시안 전용 제안 문안 블록은 developer가 copy.md 5절을 반영한 뒤 지웠다(tests/designAssets.test.ts가 다시 생기지 않음을 잠근다).
+ *
+ * 화면 구조(구현 EndingScreen.tsx M7e-3과 같은 뼈대):
+ *  ① 머리: 얼굴 96px + `.ending__who`(라벨 「{세상} · 생애 기록」 → h1 「{이름}의 인생」(--title-chars 상한) → 「{출생 연월} ~ {사망 연도}년 · {나이}세」). 짧은 쌍은 Glue(「·」가 줄 가장자리에 남지 않는다)
+ *  ② 출발선 카드: 막대(`.journey__bar` role="img" — 선 위에 **출발선 구간 띠**(low~high%) + 가운데 50% 눈금 + **마지막 자리 마름모**(standingScore%)) + 범례(출발선 = 수저 칩 + 「({구간})」, 마지막 = 자리 글자) + 문장 셋.
+ *     막대의 읽기용 설명은 journeyBarLabel(R-191(d)). 스무 살 전은 띠만(마름모·마지막 줄·방향 문장 없음).
+ *  ③ 최종 스탯 카드의 「최종 순자산」 줄은 **금액만**(자리 글자는 출발선 카드로 일원화 — copy.md 4-6·5-2 ①), 외모는 「또래 사이에서 {standingLabel}」 순서(5-1 looksSub).
+ * 상태(`?state=`): 기본 = 지금 세상 흙수저 84세 / zero = 최종 순자산 0원(QA-003-M5 O04 — 동률 불리 규칙 C의 출력) / past = 지난 세상 인물(birth.html?era=past와 같은 생성기 출력, 음수 + 「지금 가치로 환산」) / early = 스무 살 전(동수저 — 중앙 구간 문구) / down = 은수저 「뒤쪽 자리」.
  */
-function endingPage() {
-  const tl = (age, text, cls = '') => `<li class="${cls}"><span class="log__age">${age}세</span><span>${text}</span></li>`;
-  const start = startBandOf(HERO.era, HERO.grade);
-  const end = END_STANDING;
-  const movement = 'up';
-  const journey = journeyText({ kind: 'compared', start, end, movement });
-  const barLabel = `출발선 ${bandLabel(start)}, 마지막 ${standingLabel(end)}. ${MOVEMENT_TEXT[movement]}`;
-  const title = `${HERO.name}${DASH_TEXT.endingTitleSuffix}`;
-  const body = `<header class="site-head">${headerLogo()}<span class="site-head__name">엔딩</span></header>
-<main class="ending">
-  <div class="ending__head">${face('elder', 'female', 3, `${HERO.name}의 얼굴 (노년 여성)`, 'face--lg')}
-    <div class="ending__who"><p class="label">생애 기록</p><h1 class="t-title" style="--title-chars:${titleCharsFor(title)}">${esc(title)}</h1><p class="t-muted">${HERO.birth} ~ 2110년 · 84세</p></div></div>
-  <section class="card stack--sm stack"><p>${esc(deathLineText({ age: 84, cause: '노환' }))}</p><p class="t-muted">${esc(choiceCountText(27))}</p>
-    <p class="mock-tag">시안 주석 · 회고 문장과 연표의 사망 줄은 endingText.ts·lifeText.ts의 현행 출력(M7e 전, 해라체)입니다. 합쇼체 전환(C1·M7e) 뒤 화면은 바뀐 함수 출력을 그대로 따릅니다.</p></section>
-  <section class="card" aria-labelledby="j-t"><h2 id="j-t" class="card__title" style="margin-bottom:var(--sp-3)">${esc(ENDING_HEADINGS.journey)}</h2>
-    <div class="journey"><div class="journey__bar" role="img" aria-label="${esc(barLabel)}">
-      <div class="journey__line"></div>
-      <div class="journey__pin" style="left:12%"><i></i></div><div class="journey__pin journey__pin--end" style="left:62%"><i></i></div></div>
-      <div class="journey__legend"><span><span>○ 출발선</span><span class="grade-line">${gradeChip(HERO.grade, { range: HERO.gradeRange })}</span></span><span><span>◆ 마지막</span><span>${esc(HERO.endRank)}</span></span></div>
-      <p>${esc(journey)}</p>
-      <p>${esc(MOVEMENT_TEXT[movement])}</p>
-      <p class="t-xs t-faint">${esc(JOURNEY_NOTE)}</p>
-      <p class="mock-tag">시안 주석 · 출발선 영역에만 수저 이름을 씁니다(엔딩 허용, 연표에는 쓰지 않음). 자리·수치는 가짜 값입니다.</p></div></section>
-  <section class="card stack--sm stack" aria-label="${esc(ENDING_HEADINGS.stats)}"><h2 class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>${meter('health', 41)}${meter('happy', 72)}${meter('knowledge', 66)}${meter('relation', 80)}</section>
-  <section class="card" aria-labelledby="t-t"><h2 id="t-t" class="card__title" style="margin-bottom:var(--sp-2)">${esc(ENDING_HEADINGS.timeline)}</h2>
-    <ol class="timeline">
-      ${tl(0, esc(HERO.sentence))}
-      ${tl(5, '<strong>나의 기록 · 영유아기 기억</strong><br>할머니 집 마루에서 수박을 먹던 여름. 매미 소리가 시끄러웠습니다.', 'is-note')}
-      ${tl(19, '학자금 대출을 받아 대학에 들어갔습니다.', 'is-choice')}
-      ${tl(29, '<strong>나의 기록 · 청년기 연애담</strong><br>퇴근길에 같이 걷던 저녁이 오래 남았다.', 'is-note')}
-      ${tl(52, '작은 가게를 열었습니다.', 'is-choice')}
-      ${tl(84, esc(deathEntryText('노환')))}
-    </ol></section>
-  <section class="card"><p class="t-sm t-muted">이 판의 플레이 시간 <strong class="num" style="color:var(--c-text)">27:46</strong> <span class="t-xs t-faint">(일시정지 제외, 이 기기에만 저장)</span></p></section>
-  <div class="stack--sm stack" style="align-items:stretch"><button class="btn btn--primary btn--lg btn--block" type="button">${esc(REBIRTH_LABEL)}</button>
-    <p class="t-sm t-muted" style="text-align:center">${esc(REBIRTH_NOTE)}</p></div>
+/** 순위 표현의 줄바꿈 보호 — 구현 컴포넌트 KeepStanding의 출력 그대로(`<span class="nowrap">` 조각) */
+const keepStandingHtml = (text) => html(KeepStanding, { text });
+const ageGroupIdOf = (age) => AGE_GROUPS.reduce((id, g) => (age >= g.minAge ? g.id : id), AGE_GROUPS[0].id);
+/** 지금 세상에서 그 재력 단계가 나오는 첫 시드(결정적 탐색, 손으로 만든 값 없음): early = 동수저(중앙 구간 「하위 25% 선과 상위 45% 선 사이」), down = 은수저(「상위 17~45% 사이」 — 마름모가 띠 왼쪽 밖에 오는 「뒤쪽」) */
+const presentSeedOfWealth = (wealth) => {
+  for (let seed = 1; seed < 500; seed++) if (generateBirthFromSeed(seed, 'present').character.parentWealth === wealth) return seed;
+  throw new Error(`지금 세상 ${wealth}단계 시드를 찾지 못했다`);
+};
+const EARLY_SEED = presentSeedOfWealth(2);
+const DOWN_SEED = presentSeedOfWealth(3);
+
+/**
+ * 엔딩 상태 하나의 본문(main). review = { start, end|null, movement|null } 는 구현 함수로 만든다: start = startBandOf(era, 재력), end = finalWealthStanding(era, 순자산), movement = movementOf(start, end).
+ * entries = 연표 (구현 core/ending.ts#buildTimeline과 같은 단계 묶음 — 단계 제목은 stageHeadingText 출력).
+ */
+function endingMain({ era, c, month, death, net, choiceCount, entries, note = '' }) {
+  const start = startBandOf(era, c.parentWealth);
+  const early = net === null;
+  const end = early ? null : finalWealthStanding(era, net);
+  const movement = early ? null : movementOf(start, end);
+  const journey = early ? { kind: 'early', start } : { kind: 'compared', start, end, movement };
+  const title = `${c.name}${DASH_TEXT.endingTitleSuffix}`;
+  const barLabel = journeyBarLabel(journey);
+  const deathYear = c.birthYear + death.age;
+  const stageOf = (age) => (age < 7 ? 'infant' : age < 20 ? 'school' : age < 40 ? 'youth' : age < 65 ? 'middle' : 'senior');
+  const groups = [];
+  for (const e of entries) {
+    const st = stageOf(e.age);
+    if (groups.length === 0 || groups[groups.length - 1].stage !== st) groups.push({ stage: st, entries: [] });
+    groups[groups.length - 1].entries.push(e);
+  }
+  // 연표 한 줄 = 구현 EndingScreen#TimelineItem과 같은 마크업(나이 · [제목] · [선택: 이름] · 문장). 사망 줄은 굵게(data-kind="death"), 선택 줄은 왼쪽 쪽빛 선(.is-choice), 「나의 기록」 줄은 M7c 목표(.is-note)
+  const li = (e) =>
+    `<li class="${e.kind === 'choice' ? 'is-choice' : e.kind === 'note' ? 'is-note' : ''}" data-kind="${e.kind}"><span class="log__age">${e.age}세</span><span>${e.title ? `<strong>${e.kind === 'note' ? glueHtml(e.title) : esc(e.title)}</strong>` : ''}${e.choice ? `<span class="tl-picked">${esc(DASH_TEXT.logChoicePrefix)}${esc(e.choice)}</span>` : ''}<span class="tl-text">${esc(e.text)}</span></span></li>`;
+  const timeline = groups.map((g) => `<div class="tl-group"><h3>${glueHtml(stageHeadingText(g.stage))}</h3><ol class="timeline">${g.entries.map(li).join('')}</ol></div>`).join('');
+  const finalNet = early
+    ? `<dl class="final-net final-net--early"><dt>${esc(FINAL_NET_TEXT.label)}</dt><dd class="final-net__none">${esc(FINAL_NET_TEXT.early)}</dd></dl>`
+    : `<dl class="final-net"><dt>${esc(FINAL_NET_TEXT.label)}</dt><dd><span class="final-net__value nowrap">${esc(formatMan(net))}</span>${era === 'present' ? '' : `<span class="tag">${esc(FINAL_NET_TEXT.basis)}</span>`}</dd></dl>`;
+  return `<main class="ending" data-state-era="${era}">
+  <div class="ending__head">${face(ageGroupIdOf(death.age), c.gender, 3, `${c.name}의 얼굴`, 'face--lg')}
+    <div class="ending__who"><p class="label">${glueHtml(`${ERA_CONFIG[era].label} · ${ENDING_HEAD_LABEL}`)}</p><h1 class="t-title" style="--title-chars:${titleCharsFor(title)}">${esc(title)}</h1><p class="t-muted">${glueHtml(endingSpanText(c.birthYear, month, deathYear, death.age))}</p></div></div>
+  <section class="card stack--sm stack" aria-label="${esc(DASH_TEXT.endingSummaryLabel)}"><p>${esc(deathLineText(death))}</p><p class="t-muted">${esc(choiceCountText(choiceCount))}</p></section>
+  <section class="card" aria-labelledby="ending-journey-title"><h2 id="ending-journey-title" class="card__title card__title--gap">${esc(ENDING_HEADINGS.journey)}</h2>
+    <div class="journey">
+      <div class="journey__bar" role="img" aria-label="${esc(barLabel)}">
+        <div class="journey__track"><span class="journey__band" style="--from:${start.low}%;--to:${start.high}%"></span><span class="journey__mid"></span>${early ? '' : `<span class="journey__end" style="--at:${standingScore(end)}%"></span>`}</div>
+        <div class="journey__axis" aria-hidden="true"><span>${esc(JOURNEY_BAR_LEGEND.axisLow)}</span><span>${esc(JOURNEY_BAR_LEGEND.axisHigh)}</span></div></div>
+      <dl class="journey__legend">
+        <div><dt><i class="journey__key journey__key--band" aria-hidden="true"></i>${esc(JOURNEY_BAR_LEGEND.start)}</dt><dd class="grade-line">${gradeChip(c.parentWealth)}<span class="grade-line__range">${glueHtml(`(${bandLabel(start)})`)}</span></dd></div>${early ? '' : `
+        <div><dt><i class="journey__key journey__key--end" aria-hidden="true"></i>${esc(JOURNEY_BAR_LEGEND.end)}</dt><dd>${keepStandingHtml(standingLabel(end))}</dd></div>`}
+      </dl>
+      <p>${keepStandingHtml(journeyText(journey))}</p>${early ? '' : `
+      <p>${esc(MOVEMENT_TEXT[movement])}</p><p class="t-xs t-faint">${glueHtml(JOURNEY_NOTE)}</p>`}${note ? `
+      ${note}` : ''}
+    </div></section>
+  <section class="card stack stack--sm ending-stats" aria-labelledby="ending-stats-title"><h2 id="ending-stats-title" class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>${meter('health', 41)}${meter('happy', 72)}${meter('knowledge', 66)}${meter('relation', 80)}${finalNet}
+    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd><small>${esc(BIRTH_TEXT.looksSub)}</small> ${keepStandingHtml(standingLabel(looksStanding(c.looks)))}</dd></dl></section>
+  <section class="card" aria-labelledby="ending-timeline-title"><h2 id="ending-timeline-title" class="card__title card__title--gap">${esc(ENDING_HEADINGS.timeline)}</h2>${timeline}</section>
+  <section class="card"><p class="t-sm t-muted">이 판의 플레이 시간 <strong class="num" style="color:var(--c-text)">27:46</strong> <span class="t-xs t-faint">(일시정지 제외, 이 기기에만 저장)</span></p><p class="mock-tag">시안 주석 · 플레이 시간 줄은 M8(인생 길이 모드) 범위</p></section>
+  <section class="rebirth"><button class="btn btn--primary btn--lg btn--block" type="button">${esc(REBIRTH_LABEL)}</button><p class="t-sm t-muted">${esc(REBIRTH_NOTE)}</p></section>
   ${MOCK_TAG}
-</main><div class="page-end-space" style="height:40px"></div>`;
+</main>`;
+}
+
+function endingPage() {
+  const c = HERO_STATE.character;
+  const month = HERO_STATE.report.month;
+  const birthRow = { age: 0, kind: 'event', text: HERO.sentence };
+  // 기본: 지금 세상 흙수저, 84세 노환, 27번 선택, 최종 순자산 2억 4,000만 원(중앙값 위 — 자리·방향은 함수가 정한다: 「앞선 자리」)
+  const main = endingMain({
+    era: 'present',
+    c,
+    month,
+    death: { age: 84, cause: '노환' },
+    net: 24000,
+    choiceCount: 27,
+    entries: [
+      birthRow,
+      // 「나의 기록」 줄(M7c 목표): 제목(짧은 쌍은 Glue)과 글이 세로로 쌓인 두 칸 — 구현 TimelineItem과 같은 구조(강제 줄바꿈 <br> 없음, R-300)
+      { age: 5, kind: 'note', title: '나의 기록 · 영유아기 기억', text: '할머니 집 마루에서 수박을 먹던 여름. 매미 소리가 시끄러웠습니다.' },
+      { age: 19, kind: 'choice', title: '대학 진학', choice: '학자금 대출을 받아 진학한다', text: '학자금 대출을 받아 대학에 들어갔습니다.' },
+      { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth },
+      { age: 29, kind: 'note', title: '나의 기록 · 청년기 연애담', text: '퇴근길에 같이 걷던 저녁이 오래 남았다.' },
+      { age: 40, kind: 'stage', text: STAGE_ENTRY_TEXT.middle },
+      { age: 52, kind: 'choice', title: '가게', choice: '작은 가게를 연다', text: '작은 가게를 열었습니다.' },
+      { age: 65, kind: 'stage', text: STAGE_ENTRY_TEXT.senior },
+      { age: 84, kind: 'death', text: deathEntryText('노환') },
+    ],
+  });
+  // zero: 최종 순자산 0원 — 노년 안전망으로 0원에 머문 판(QA-003-M5 O04). 자리는 동률 불리 규칙(마스터 결정 C)의 함수 출력 그대로
+  const zeroEnd = finalWealthStanding('present', 0);
+  const zero = endingMain({
+    era: 'present',
+    c,
+    month,
+    death: { age: 81, cause: '노환' },
+    net: 0,
+    choiceCount: 24,
+    entries: [birthRow, { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth }, { age: 40, kind: 'stage', text: STAGE_ENTRY_TEXT.middle }, { age: 65, kind: 'stage', text: STAGE_ENTRY_TEXT.senior }, { age: 81, kind: 'death', text: deathEntryText('노환') }],
+    note: `<p class="mock-tag">시안 주석 · 0원의 자리 「${esc(standingLabel(zeroEnd))}」는 동률 불리 규칙(마스터 결정 C — 하위는 미만 비율, M7e-3 구현)의 함수 출력입니다. 자리는 이 카드 한 곳에서만 말하고 방향 문장은 중립형입니다.</p>`,
+  });
+  // past: 지난 세상 인물(birth.html?era=past와 같은 생성기 출력 — 1961년생 흙수저), 음수 순자산 + 「지금 가치로 환산」
+  const past = eraModel('past');
+  const pastMain = endingMain({
+    era: 'past',
+    c: past.character,
+    month: past.report.month,
+    death: { age: 76, cause: '오랜 병환' },
+    net: -1200,
+    choiceCount: 22,
+    entries: [
+      { age: 0, kind: 'event', text: birthSentence(past.character, past.report, 'past') },
+      { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth },
+      { age: 40, kind: 'stage', text: STAGE_ENTRY_TEXT.middle },
+      { age: 65, kind: 'stage', text: STAGE_ENTRY_TEXT.senior },
+      { age: 76, kind: 'death', text: deathEntryText('오랜 병환') },
+    ],
+  });
+  // early: 스무 살 전(17세 사고) — 지금 세상 동수저(중앙 구간 「하위 25% 선과 상위 45% 선 사이」), 띠만 있는 막대·금액 없는 최종 순자산 줄
+  const earlyBirth = generateBirthFromSeed(EARLY_SEED, 'present');
+  const earlyMain = endingMain({
+    era: 'present',
+    c: earlyBirth.character,
+    month: earlyBirth.report.month,
+    death: { age: 17, cause: '사고' },
+    net: null,
+    choiceCount: 3,
+    entries: [{ age: 0, kind: 'event', text: birthSentence(earlyBirth.character, earlyBirth.report, 'present') }, { age: 17, kind: 'death', text: deathEntryText('사고') }],
+  });
+  // down: 지금 세상 은수저(「상위 17~45% 사이」) 70세 병세 악화, 순자산 −500만 원 → 마름모가 띠 왼쪽 밖(「뒤쪽 자리」)
+  const downBirth = generateBirthFromSeed(DOWN_SEED, 'present');
+  const downMain = endingMain({
+    era: 'present',
+    c: downBirth.character,
+    month: downBirth.report.month,
+    death: { age: 70, cause: '병세 악화' },
+    net: -500,
+    choiceCount: 19,
+    entries: [
+      { age: 0, kind: 'event', text: birthSentence(downBirth.character, downBirth.report, 'present') },
+      { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth },
+      { age: 40, kind: 'stage', text: STAGE_ENTRY_TEXT.middle },
+      { age: 65, kind: 'stage', text: STAGE_ENTRY_TEXT.senior },
+      { age: 70, kind: 'death', text: deathEntryText('병세 악화') },
+    ],
+  });
+  const head = `<header class="site-head">${headerLogo()}<span class="site-head__name">엔딩</span></header>`;
+  const body = `${head}
+${main}
+<template id="state-zero">${zero}</template>
+<template id="state-past">${pastMain}</template>
+<template id="state-early">${earlyMain}</template>
+<template id="state-down">${downMain}</template>
+<script>(function(){var s=new URLSearchParams(location.search).get('state');if(!s)return;var t=document.getElementById('state-'+s);if(!t)return;var main=document.querySelector('main.ending');var nm=t.content.cloneNode(true).querySelector('main.ending');if(main&&nm)main.replaceWith(nm);document.title='수저 게임 · 시안 · 엔딩 ('+s+')';})();</script>
+<div class="page-end-space" style="height:40px"></div>`;
   return page({ title: '수저 게임 · 시안 · 엔딩', body });
 }
 
@@ -791,13 +911,13 @@ const econStatus = (era, v) => {
   return card.replace('<details class="disclosure">', '<details class="disclosure" open>');
 };
 const econAssets = (era, age, assets) => html(AssetsCard, { age, era, assets: { incomeAdj: 0, dwelling: 'rent', ...assets } });
-const econEnding = ({ era, birth, death, net, standing, tail }) => {
+const econEnding = ({ era, birth, net, tail }) => {
   const title = `${HERO.name}${DASH_TEXT.endingTitleSuffix}`;
-  return `<div class="ending__head"><div class="ending__who"><p class="label">생애 기록</p><h1 class="t-title" style="--title-chars:${titleCharsFor(title)}">${esc(title)}</h1><p class="t-muted">${birth} ~ ${death}</p></div></div>
+  return `<div class="ending__head"><div class="ending__who"><p class="label">${glueHtml(`${ERA_CONFIG[era].label} · ${ENDING_HEAD_LABEL}`)}</p><h1 class="t-title" style="--title-chars:${titleCharsFor(title)}">${esc(title)}</h1><p class="t-muted">${glueHtml(birth)}</p></div></div>
   <section class="card stack stack--sm ending-stats" aria-labelledby="ending-stats-title"><h2 id="ending-stats-title" class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>
     ${meter('health', tail[0])}${meter('happy', tail[1])}${meter('knowledge', tail[2])}${meter('relation', tail[3])}
-    ${html(FinalNetLine, { era, net, standing })}
-    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd>${tail[4]} <small>${esc(BIRTH_TEXT.looksSub)}</small></dd></dl>
+    ${html(FinalNetLine, { era, net })}
+    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd><small>${esc(BIRTH_TEXT.looksSub)}</small> ${tail[4]}</dd></dl>
   </section>`;
 };
 function economyPage() {
@@ -879,19 +999,19 @@ function economyPage() {
     tpl(
       'ending',
       ` data-main-class="ending" data-chrome="ending"`,
-      `${econEnding({ era: 'present', birth: '2026년 1월 ~ 2110년 · 84세', death: '', net: 12345, standing: END_STANDING, tail: [41, 72, 55, 63, '상위 약 32%'] })}
+      `${econEnding({ era: 'present', birth: '2026년 1월 ~ 2110년 · 84세', net: 12345, tail: [41, 72, 55, 63, '상위 약 32%'] })}
   ${tag('시안 · 가짜 데이터. 엔딩에서 M5가 바꾸는 것은 이 「최종 순자산」 한 줄(M4 「재산」 미터 자리)뿐이다. 나머지 엔딩 디자인은 M7e.')}`,
     ),
     tpl(
       'ending-past',
       ` data-main-class="ending" data-chrome="ending"`,
-      `${econEnding({ era: 'past', birth: '1955년 3월 ~ 2031년 · 76세', death: '', net: -1200, standing: { kind: 'bottom', percent: 12, within: false }, tail: [22, 48, 39, 57, '하위 약 41%'] })}
-  ${tag('시안 · 가짜 데이터. 지난 세상, 음수: 부호 「−」와 태그 「지금 가치로 환산」, 자리는 같은 세상(지난 세상) 분포 안의 자리.')}`,
+      `${econEnding({ era: 'past', birth: '1955년 3월 ~ 2031년 · 76세', net: -1200, tail: [22, 48, 39, 57, '하위 약 41%'] })}
+  ${tag('시안 · 가짜 데이터. 지난 세상, 음수: 부호 「−」와 태그 「지금 가치로 환산」. 자리 글자는 M7e-3부터 이 줄에 없다(출발선 카드 한 곳).')}`,
     ),
     tpl(
       'ending-early',
       ` data-main-class="ending" data-chrome="ending"`,
-      `${econEnding({ era: 'present', birth: '2026년 1월 ~ 2043년 · 17세', death: '', net: null, standing: null, tail: [18, 54, 46, 60, '딱 중간쯤'] })}
+      `${econEnding({ era: 'present', birth: '2026년 1월 ~ 2043년 · 17세', net: null, tail: [18, 54, 46, 60, '가운데쯤'] })}
   ${tag('시안 · 가짜 데이터. 스무 살 전에 끝난 인생: 금액도 자리도 말하지 않는다.')}`,
     ),
   ].join('\n\n');

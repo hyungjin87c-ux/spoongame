@@ -1,0 +1,138 @@
+{
+ "rows": 796,
+ "texts": {
+  "본문": 140,
+  "결과": 258,
+  "라벨": 258
+ },
+ "S1": [],
+ "S2": [],
+ "S2label": [],
+ "S3": {
+  "sentences": 790,
+  "jiman": 87,
+  "ratio": 11
+ },
+ "S4": [
+  {
+   "id": "infant-care-alert",
+   "kind": "본문",
+   "last": "어른들은 한결 깊은 잠을 잘 수 있었습니다."
+  },
+  {
+   "id": "infant-hospital-stay/room",
+   "kind": "결과",
+   "last": "곁을 지킨 어른도 눈을 붙일 수 있었습니다."
+  },
+  {
+   "id": "youth-single-years",
+   "kind": "본문",
+   "last": "쓸쓸한 날도 있었지만 내 시간을 내 뜻대로 쓸 수 있었습니다."
+  },
+  {
+   "id": "middle-business/talk",
+   "kind": "결과",
+   "last": "결론은 내지 못했지만 서로의 마음은 알 수 있었습니다."
+  },
+  {
+   "id": "senior-spouse-care/help",
+   "kind": "결과",
+   "last": "조금 덜 지치고 조금 더 오래 버틸 수 있었습니다."
+  },
+  {
+   "id": "senior-new-device/avoid",
+   "kind": "결과",
+   "last": "불편은 늘었지만 눈은 덜 피로했고 내 방식은 지킬 수 있었습니다."
+  }
+ ],
+ "S5": [
+  {
+   "id": "infant-new-sibling",
+   "kind": "본문",
+   "t": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다."
+  },
+  {
+   "id": "infant-new-sibling",
+   "kind": "제목",
+   "t": "동생이 생겼다"
+  },
+  {
+   "id": "infant-new-sibling/help",
+   "kind": "결과",
+   "t": "작은 손가락을 잡아 주고 곁에서 놀았습니다. 안기고 싶은 마음은 속으로 참았지만 동생을 돌보는 일은 아이의 자랑이 되었습니다."
+  },
+  {
+   "id": "infant-new-sibling/help",
+   "kind": "라벨",
+   "t": "동생을 예뻐하며 돌본다"
+  },
+  {
+   "id": "infant-new-sibling/sulk",
+   "kind": "결과",
+   "t": "어른이 동생을 안을 때마다 아이는 울며 매달렸습니다. 한동안 아기처럼 굴었지만 서운한 마음을 말로 풀어놓는 법도 조금씩 익혔습니다."
+  },
+  {
+   "id": "infant-new-sibling/notice",
+   "kind": "결과",
+   "t": "동생에게 눈길이 쏠리자 아이는 온 집 안을 뛰어다니며 일부러 물건을 쏟고 장난을 쳤습니다. 꾸중을 들었지만 눈길은 아이에게 돌아왔습니다."
+  },
+  {
+   "id": "infant-follow-sibling",
+   "kind": "본문",
+   "t": "아이는 손위 형제의 말투와 놀이를 무엇이든 따라 했습니다. 형제는 귀찮아하면서도 곁을 내주었습니다."
+  },
+  {
+   "id": "infant-follow-sibling",
+   "kind": "제목",
+   "t": "형제를 따라 하는 아이"
+  },
+  {
+   "id": "infant-sibling-toy",
+   "kind": "본문",
+   "t": "동생이 아이의 장난감을 만지기 시작했습니다. 아이는 그 장난감을 품에 끌어안고 놓지 않았습니다."
+  },
+  {
+   "id": "infant-sibling-toy",
+   "kind": "제목",
+   "t": "동생의 장난감"
+  },
+  {
+   "id": "infant-sibling-toy/share",
+   "kind": "결과",
+   "t": "아이는 장난감을 동생 손에 쥐여 주었습니다. 어른들이 크게 칭찬하자 아이의 어깨가 으쓱했습니다."
+  },
+  {
+   "id": "infant-sibling-toy/share",
+   "kind": "라벨",
+   "t": "장난감을 동생에게 건넨다"
+  },
+  {
+   "id": "infant-sibling-toy/take",
+   "kind": "결과",
+   "t": "아이는 동생이 쥔 장난감을 가져가 등 뒤에 숨겼습니다. 자기 것이라는 말을 처음 또렷이 한 날이었습니다."
+  },
+  {
+   "id": "infant-sibling-toy/take",
+   "kind": "라벨",
+   "t": "동생 손의 장난감을 가져가 숨긴다"
+  },
+  {
+   "id": "school-family-priority",
+   "kind": "본문",
+   "t": "형제가 많은 집이라 학비를 모두에게 댈 수 없었습니다. 누가 어디까지 공부할지가 집안의 문제로 떠올랐습니다."
+  }
+ ],
+ "S6": {
+  "가족이나 친척": [
+   "middle-parents-care(본문)",
+   "middle-parents-care/share(라벨)",
+   "middle-parents-farewell/share(결과)"
+  ],
+  "가족·친척": [],
+  "일가친척": [
+   "middle-parents-farewell/share(라벨)"
+  ],
+  "형제들": []
+ },
+ "S7": []
+}

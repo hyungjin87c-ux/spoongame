@@ -1,0 +1,182 @@
+[
+ {
+  "era": "past",
+  "seed": 1,
+  "ended": true,
+  "ages": [
+   0,
+   71
+  ],
+  "nAges": 72,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 8,
+  "nRetired": 14,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 2,
+  "ended": true,
+  "ages": [
+   2,
+   81
+  ],
+  "nAges": 80,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 19,
+  "nRetired": 52,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 3,
+  "ended": true,
+  "ages": [
+   2,
+   84
+  ],
+  "nAges": 83,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 15,
+  "nRetired": 62,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 4,
+  "ended": true,
+  "ages": [
+   0,
+   85
+  ],
+  "nAges": 86,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 3,
+  "nRetired": 75,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 5,
+  "ended": true,
+  "ages": [
+   0,
+   56
+  ],
+  "nAges": 57,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 0,
+  "nRetired": 0,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 6,
+  "ended": true,
+  "ages": [
+   0,
+   88
+  ],
+  "nAges": 89,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 14,
+  "nRetired": 76,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 7,
+  "ended": true,
+  "ages": [
+   0,
+   74
+  ],
+  "nAges": 75,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 11,
+  "nRetired": 36,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 8,
+  "ended": true,
+  "ages": [
+   0,
+   84
+  ],
+  "nAges": 85,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 13,
+  "nRetired": 87,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 9,
+  "ended": true,
+  "ages": [
+   0,
+   78
+  ],
+  "nAges": 79,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 0,
+  "nRetired": 49,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 10,
+  "ended": true,
+  "ages": [
+   0,
+   76
+  ],
+  "nAges": 77,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 15,
+  "nRetired": 34,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 11,
+  "ended": true,
+  "ages": [
+   1,
+   85
+  ],
+  "nAges": 85,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 19,
+  "nRetired": 50,
+  "viol": []
+ },
+ {
+  "era": "past",
+  "seed": 12,
+  "ended": true,
+  "ages": [
+   2,
+   54
+  ],
+  "nAges": 53,
+  "missingAges": [],
+  "nNames": 4,
+  "nReturn": 0,
+  "nRetired": 0,
+  "viol": []
+ }
+]

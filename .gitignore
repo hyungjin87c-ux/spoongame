@@ -13,3 +13,4 @@ qa/results/m3/samples-*.jsonl
 qa/results/m4/samples-*.jsonl
 qa/results/m5/samples-*.jsonl
 qa/results/m7a/samples-*.jsonl
+qa/results/m7e/samples-*.jsonl

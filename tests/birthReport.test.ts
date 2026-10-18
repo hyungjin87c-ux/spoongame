@@ -446,7 +446,7 @@ describe('출생 체중의 순위 표현 (R-018 규칙, 같은 성별 출생아 
         const s = weightStanding(kg, g);
         const text = standingLabel(s);
         if (s.kind === 'middle') {
-          expect(text).toBe('딱 중간쯤');
+          expect(text).toBe('가운데쯤');
           continue;
         }
         expect(s.percent, `${g} ${kg}kg`).toBeGreaterThanOrEqual(1);
@@ -486,7 +486,7 @@ describe('출생 체중의 순위 표현 (R-018 규칙, 같은 성별 출생아 
 
 describe('한 줄 서술문 (BR3, 합쇼체)과 서류의 장소 표기', () => {
   it('형식: 「{연}년 {월}월, {장소}의 {형편} 가정에서 {체중}kg {남자아이|여자아이}로 태어났습니다. {순서}입니다. ({체중}kg은 …)」 — 세 시대 × 시드 300개 전부', () => {
-    const FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (남자아이|여자아이)로 태어났습니다\. (첫째|둘째|셋째|넷째|다섯째 이상)입니다\. \(\d\.\dkg은 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|딱 중간쯤)\)$/;
+    const FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (남자아이|여자아이)로 태어났습니다\. (첫째|둘째|셋째|넷째|다섯째 이상)입니다\. \(\d\.\dkg은 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|가운데쯤)\)$/;
     for (const era of ERAS) {
       for (let seed = 1; seed <= 300; seed++) {
         const { character: c, report: r } = generateBirthFromSeed(seed * 31, era);

@@ -337,7 +337,7 @@ describe('프로필 카드 (DB9)', () => {
     expect(home).toContain(gradeStem(c.parentWealth));
     expect(flat(openTagBlock(home, 'grade-range'))).toBe(nospace(`(${bandLabel(startBandOf(infant.era!, c.parentWealth))})`));
     expect(flat(openTagBlock(card, 'profile-edu'))).toBe(nospace(educationLabel(infant.age, infant.flags)));
-    expect(flat(openTagBlock(card, 'profile-looks'))).toBe(nospace(`${standingLabel(looksStanding(c.looks))} ${BIRTH_TEXT.looksSub}`));
+    expect(flat(openTagBlock(card, 'profile-looks'))).toBe(nospace(`${BIRTH_TEXT.looksSub} ${standingLabel(looksStanding(c.looks))}`)); // M7e-3: 값 앞에 「또래 사이에서」
   });
 
   it('얼굴은 나이에 맞는 연령대로 바뀐다 (0세 영아 → 31세 청년)', () => {
@@ -352,7 +352,7 @@ describe('프로필 카드 (DB9)', () => {
       expect(t).not.toMatch(/(?<!\d)97(?!\d)/);
       expect(t).not.toMatch(/외모\s*\d/);
     }
-    expect(text(openTagBlock(sectionOf(render(infant), 'profile-card'), 'profile-looks'))).toMatch(/^(상위|하위)/);
+    expect(text(openTagBlock(sectionOf(render(infant), 'profile-card'), 'profile-looks'))).toMatch(/^또래 사이에서 (상위|하위|가운데쯤)/); // M7e-3: 「또래 사이에서 상위 약 N%」
   });
 });
 
@@ -383,7 +383,11 @@ describe('상태 카드 (DB10)', () => {
     expect(present).toContain('0에서 100 사이의 값입니다.');
     expect(present).toContain('관계는 가족·친구와의 유대입니다.');
     expect(present).toContain(DASH_TEXT.statusHelpSummary);
-    expect(present).toContain(statusHelpText(ASSETS_AMOUNTS_SHIPPED, 'present'));
+    // 글자(Glue)가 숫자+단위(「3년」)를 요소로 감싸 text()가 사이에 공백을 끼우므로 공백을 모두 없애고 견준다
+    expect(nospace(present)).toContain(nospace(statusHelpText(ASSETS_AMOUNTS_SHIPPED, 'present')));
+    // M7e-3 (copy.md 5-2 ②, QA-003-M5 O01): 선택지 아래 표시의 뜻 두 문장이 끝에 더해졌다
+    expect(nospace(present)).toContain(nospace('선택지 아래 표시는 그 선택만으로 생기는 변화이고, 해마다의 소득과 생활비는 따로 더해집니다.'));
+    expect(nospace(present)).toContain(nospace('자산의 변화에는 앞으로 3년치 소득·지출 변화가 들어 있습니다.'));
     expect(present).toContain('자산은 올해 가치 기준의 원 단위입니다.');
     expect(present).toContain('순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.');
     for (const era of ['past', 'future'] as const) {
@@ -553,7 +557,7 @@ describe('선택지 영향 줄 (M5 2b, copy.md 4-3·4-4)', () => {
     expect(hint).toBeGreaterThan(list);
     expect(auto).toBeGreaterThan(hint);
     const hintHtml = panel.slice(panel.lastIndexOf('<p', hint), panel.indexOf('</p>', hint) + 4);
-    expect(text(hintHtml)).toContain(`선택지 아래 글씨는 지금 ${g.character!.name}에게 일어날 변화입니다.`);
+    expect(text(hintHtml)).toContain(`선택지 아래 글씨는 이 선택만으로 ${g.character!.name}에게 생기는 변화입니다.`); // M7e-3 (copy.md 5-2 ②)
     expect(hintHtml).toContain('aria-hidden="true">▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.</span>');
     expect(hintHtml).toContain('위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.');
     // 영향이 하나도 없는 선택지 묶음에는 안내를 두지 않는다 (없는 것을 설명하지 않는다)
@@ -659,7 +663,7 @@ describe('같은 해 태어난 사람들 (VP4)', () => {
       expect(flat(li)).toContain(nospace(now[i].name));
       expect(flat(li)).toContain(nospace(genderLabel(now[i].gender)));
       expect(flat(li)).toContain(nospace(placeLabel(now[i], adult.era!)));
-      expect(flat(openTagBlock(li, 'peer-now-label'))).toBe(nospace(PEER_STATUS_LABEL[now[i].status]));
+      expect(flat(openTagBlock(li, 'peer-now-label'))).toBe(nospace(now[i].label)); // M7e-3(E-7): 은퇴 뒤 다시 일하는 모습은 「다시 일하는 사람」이라 상태 라벨이 아니라 peersNow의 label이다
     });
     expect(text(card)).toContain(DASH_TEXT.peersTitle);
     expect(text(card)).toContain(DASH_TEXT.peersSub);
@@ -692,8 +696,8 @@ describe('출신 가정 구간 글자: 괄호째 한 묶음 (REV-003-M3-5, M4 �
     expect(flat(html.slice(html.indexOf('data-testid="grade-range"')))).toContain('(상위3%안쪽)');
   });
 
-  it('여러 구간 꼴도 한 묶음이다: 「(하위 25%와 상위 45% 사이)」「(상위 17~45% 사이)」', () => {
-    for (const label of ['(하위 25%와 상위 45% 사이)', '(상위 17~45% 사이)', '(하위 25% 안쪽)']) {
+  it('여러 구간 꼴도 한 묶음이다: 「(하위 25% 선과 상위 45% 선 사이)」「(상위 17~45% 사이)」', () => {
+    for (const label of ['(하위 25% 선과 상위 45% 선 사이)', '(상위 17~45% 사이)', '(하위 25% 안쪽)']) {
       const html = renderToStaticMarkup(<GradeLine grade={3} range={label} />);
       expect(html, label).toContain('class="keep-phrase"');
       expect((html.match(/class="keep-phrase"/g) ?? []).length, `${label}: 구간 하나는 묶음 하나`).toBe(1);

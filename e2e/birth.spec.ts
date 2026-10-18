@@ -172,11 +172,11 @@ test('외모 순위 표현: 0·10·23·49·50·51·90·100점이 전수 열거 �
   }
   // 중앙(50점)은 퍼센트 없이 전용 문구, 양 끝은 "N% 안쪽"
   await replaceSaveAndReload(page, birthState(KNOWN_SEED, 'present', 3, 50));
-  expect(await field(page, 'looks')).toBe('딱 중간쯤 또래 사이에서');
+  expect(await field(page, 'looks')).toBe('또래 사이에서 가운데쯤');
   await replaceSaveAndReload(page, birthState(KNOWN_SEED, 'present', 3, 100));
-  expect(await field(page, 'looks')).toBe('상위 1% 안쪽 또래 사이에서');
+  expect(await field(page, 'looks')).toBe('또래 사이에서 상위 1% 안쪽');
   await replaceSaveAndReload(page, birthState(KNOWN_SEED, 'present', 3, 0));
-  expect(await field(page, 'looks')).toBe('하위 1% 안쪽 또래 사이에서');
+  expect(await field(page, 'looks')).toBe('또래 사이에서 하위 1% 안쪽');
 });
 
 test('출생신고 화면에서 새로고침해도 같은 출생신고 (다시 뽑히지 않는다, 연타 포함)', async ({ page }) => {

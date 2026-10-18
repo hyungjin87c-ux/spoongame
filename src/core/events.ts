@@ -2,6 +2,7 @@ import { DEFAULT_COOLDOWN, STAGE_TABLE } from '../data/lifeTable';
 import { LIMITS } from '../data/economyTable';
 import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
 import {
+  DWELLINGS,
   ERAS,
   GENDERS,
   HOUSINGS,
@@ -12,6 +13,7 @@ import {
   type AssetDeltas,
   type Assets,
   type Character,
+  type Dwelling,
   type Effects,
   type Era,
   type Gender,
@@ -39,12 +41,14 @@ export interface Range {
   max?: number;
 }
 
-/** 20세 이상 이벤트의 자산 조건(만 원): 순자산 하한·상한, 부채 상한, 연 소득 하한. 자산이 없는 20세 미만 상태에서는 맞지 않는다. */
+/** 20세 이상 이벤트의 자산 조건(만 원): 순자산 하한·상한, 부채 상한, 연 소득 하한, 지금 사는 집(주거 `Assets.dwelling` 중 하나). 자산이 없는 20세 미만 상태에서는 맞지 않는다. */
 export interface AssetCondition {
   netMin?: number;
   netMax?: number;
   debtMax?: number;
   incomeMin?: number;
+  /** 지금의 주거 형태(가족 집 family · 월세 rent · 전세 jeonse · 자가 own · 돌봄 시설 care) 중 하나 — `Assets.dwelling` (SPEC-003 M7e-3, E-4: 「혼자 먹는 저녁」은 독립 주거에서만) */
+  dwelling?: Dwelling[];
 }
 
 /** 조건: 적힌 항목이 모두 맞아야(AND) 참이다. 배열 항목(parenting·gender)은 그중 하나면 맞다. */
@@ -183,6 +187,7 @@ export function meetsCondition(cond: Condition | undefined, ctx: CondContext): b
     if (c.netMax !== undefined && a.net > c.netMax) return false;
     if (c.debtMax !== undefined && a.debt > c.debtMax) return false;
     if (c.incomeMin !== undefined && a.income < c.incomeMin) return false;
+    if (c.dwelling !== undefined && !c.dwelling.includes(a.dwelling)) return false;
   }
   if (cond.birthOrder !== undefined || cond.parentAge !== undefined || cond.motherAge !== undefined || cond.housing !== undefined) {
     // 가족 정보를 모르는데 가족 조건이 걸려 있으면 맞지 않는다(말이 안 되는 사건이 일어나는 쪽보다 안 일어나는 쪽이 안전하다)
@@ -407,8 +412,8 @@ function checkEnumList<T extends string>(v: unknown, all: readonly T[], path: st
 }
 
 function checkAssetCondition(v: unknown, path: string, p: Problems): void {
-  if (!isObj(v)) return void p.add(path, '{ netMin, netMax, debtMax, incomeMin } 객체여야 한다');
-  checkKeys(v, ['netMin', 'netMax', 'debtMax', 'incomeMin'], [], path, p);
+  if (!isObj(v)) return void p.add(path, '{ netMin, netMax, debtMax, incomeMin, dwelling } 객체여야 한다');
+  checkKeys(v, ['netMin', 'netMax', 'debtMax', 'incomeMin', 'dwelling'], [], path, p);
   if (Object.keys(v).length === 0) p.add(path, '비어 있다');
   const bounded = (k: string, lo: number, hi: number): void => {
     const x = v[k];
@@ -419,6 +424,7 @@ function checkAssetCondition(v: unknown, path: string, p: Problems): void {
   bounded('debtMax', 0, LIMITS.debtMax);
   bounded('incomeMin', 0, LIMITS.incomeMax);
   if (isInt(v.netMin) && isInt(v.netMax) && v.netMin > v.netMax) p.add(path, `netMin(${v.netMin})이 netMax(${v.netMax})보다 크다`);
+  if (v.dwelling !== undefined) checkEnumList(v.dwelling, DWELLINGS, `${path}.dwelling`, p);
 }
 
 function checkCondition(v: unknown, path: string, p: Problems): void {

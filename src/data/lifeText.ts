@@ -16,15 +16,18 @@ export function deathCauseCandidates(age: number, health: number): readonly stri
   return health < 35 ? ['오랜 병환', '병세 악화'] : ['노환', '조용한 잠'];
 }
 
+/** 마지막 글자에 받침이 있는가 (한글 음절만 본다 — 원인 낱말 뒤 「이었습니다」/「였습니다」를 정한다) */
+function hasFinalConsonant(word: string): boolean {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code <= 11171 && code % 28 !== 0;
+}
+
+/** 「원인은 노환이었습니다.」 — 원인 낱말의 받침이 있으면 「이었습니다」, 없으면 「였습니다」(「사고였습니다」) (M7e-3, copy.md 5-3) */
+export function causeSentenceText(cause: string): string {
+  return `원인은 ${cause}${hasFinalConsonant(cause) ? '이었습니다' : '였습니다'}.`;
+}
+
 /** 연표에 남기는 사망 문구 */
 export function deathEntryText(cause: string): string {
-  return `세상을 떠났다. 원인: ${cause}.`;
+  return `세상을 떠났습니다. ${causeSentenceText(cause)}`;
 }
-
-/** 출생 문구 (연표 첫 줄) */
-export function birthEntryText(birthYear: number, gender: 'male' | 'female'): string {
-  return `${birthYear}년, ${gender === 'male' ? '남자아이' : '여자아이'}로 태어났다.`;
-}
-
-/** 이벤트 없이 한 해가 지났을 때 인생 화면 상태 줄 */
-export const QUIET_YEAR_TEXT = '별다른 일 없이 한 해가 지났다.';

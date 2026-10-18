@@ -92,7 +92,7 @@ describe('출생신고 문서 구성과 값 (BR1·BR2)', () => {
     for (const era of ERAS) {
       for (let seed = 1; seed <= 60; seed++) {
         const { field, text } = render(era, seed * 29);
-        expect(field('looks')).toMatch(/^(상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|딱 중간쯤) 또래 사이에서$/);
+        expect(field('looks')).toMatch(/^또래 사이에서 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|가운데쯤)$/);
         expect(text).not.toMatch(/외모\s*\d+\s*점/);
         expect(text).not.toMatch(/소득\s*\d\s*분위/);
         expect(text).not.toMatch(/접속자|!/);

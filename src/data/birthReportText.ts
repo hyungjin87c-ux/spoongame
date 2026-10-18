@@ -107,7 +107,7 @@ export const BIRTH_TEXT = {
     parenting: '교육방식',
   },
   /** 외모 값 옆 보조 문구 (원점수는 적지 않는다, R-135) */
-  looksSub: '또래 사이에서',
+  looksSub: '또래 사이에서', // M7e-3: 값 **앞**에 둔다(「또래 사이에서 상위 약 46%」) — 「하위 약 24% 또래 사이에서」는 「또래」가 앞말에 붙어 읽혔다 (copy.md 5-1, M3-O07)
   peersTitle: '같은 해 태어난 사람들',
   /** 또래 카드 안내. 둘째 문장은 대시보드 또래 칸(VP4, M4)이 배포된 뒤에만 보인다 — `DASHBOARD_PEERS_SHIPPED`, `peersNoteText` (QM3-3) */
   peersNote: peersNoteText(DASHBOARD_PEERS_SHIPPED),

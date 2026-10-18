@@ -59,13 +59,25 @@ export function shareAtMost(quantiles: readonly number[], value: number): number
   return (n * 100) / QUANTILE_COUNT;
 }
 
+/** 이 값 **미만**으로 마친 인생의 비율(%) — 분위수표 기준(1%포인트 해상도), 0~100. 같은 금액으로 마친 인생은 세지 않는다 (SPEC-003 M7e-3, 마스터 결정 C: 동률 불리) */
+export function shareBelow(quantiles: readonly number[], value: number): number {
+  checkQuantiles(quantiles);
+  let n = 0;
+  for (const q of quantiles) if (q < value) n++;
+  return (n * 100) / QUANTILE_COUNT;
+}
+
 /**
  * 같은 시대의 최종 순자산 분위수표에서 이 최종 순자산(만 원)의 자리. 표현 규칙은 출생 화면과 같다(standingOf).
+ * **동률 불리 (M7e-3, 마스터 결정 C — docs/design/copy.md 5-2 ①)**: 상위는 「이상(≥)」 비율 그대로, 하위는 「미만(<)」 비율이다 — 같은 금액으로 마친 사람을 내 아래로 세지 않는다.
+ * 노년 안전망(D20·D20a)이 자산이 바닥난 뒤의 적자를 빚으로 만들지 않아 **정확히 0원으로 마치는 판이 많다**(분위수표의 0원 칸이 시대마다 인생의 10~18%). 이 0원을 모두 「내 아래」로 세던 예전 규칙(≤)은
+ * 0원을 지금 세상에서 「하위 약 42%」·다가올 세상에서 「가운데쯤」으로 보여 흙수저가 0원으로 마쳐도 「앞섬」이 붙었다(QA-003-M5 O04, REV-003-M5-1 관찰 1). 하위를 미만으로 세면 두 쪽이 같은 규칙(동률이 불리한 쪽)이 되어
+ * 0원이 「하위 약 26%」(지금 세상)처럼 「26%는 빚으로 마쳤다」는 사실 그대로 읽힌다. 0원이 아닌 값에서는 예전 규칙과 1칸 이내로 같다(분위수표가 연속이라 동률은 0원 근처뿐).
  * 표(table)를 주입할 수 있어 단위 테스트가 직접 적은 작은 표로 경계를 확인한다.
  */
 export function finalWealthStanding(era: Era, net: number, table: Record<Era, FinalDistribution> = FINAL_DISTRIBUTION): Standing {
   const q = table[era].quantiles;
-  return standingOf(shareAtLeast(q, net), shareAtMost(q, net));
+  return standingOf(shareAtLeast(q, net), shareBelow(q, net));
 }
 
 /** 자리 → 0~100 점수(높을수록 앞선 자리): 상위 N% → 100-N, 하위 N% → N, 중앙 → 50. 화면에 말한 자리 그대로에서 만든다. */
@@ -81,7 +93,7 @@ export function standingScore(s: Standing): number {
  * 예: 지난 세상 1단계(가중치 40%)는 [0, 40], 지금 세상 3단계는 [55, 83]. 점수(standingScore)와 같은 방향(클수록 부유)이다.
  * 화면은 이 구간을 R-018과 같은 규칙(퍼센트는 50을 넘지 않는다)으로 말한다 — kind가 말하는 방식을 정하고, 말하는 숫자는 모두 1~50이다.
  *  - bottom/top: 맨 아래/맨 위 단계 — "하위 N% 안쪽" / "상위 N% 안쪽"   - outsideTop/outsideBottom: 한쪽 끝에 붙었지만 반대편이 50%를 넘는 구간 — "상위 N% 밖" / "하위 N% 밖"
- *  - lower/upper: 한쪽 절반 안의 구간 — "하위 A~B% 사이" / "상위 A~B% 사이"   - center: 50%를 걸친 구간 — "하위 A%와 상위 B% 사이"   - whole: 구간이 전체(단계가 하나뿐인 표)
+ *  - lower/upper: 한쪽 절반 안의 구간 — "하위 A~B% 사이" / "상위 A~B% 사이"   - center: 50%를 걸친 구간 — "하위 A% 선과 상위 B% 선 사이"   - whole: 구간이 전체(단계가 하나뿐인 표)
  */
 export type StartBand = { low: number; high: number } & (
   | { kind: 'bottom'; percent: number }

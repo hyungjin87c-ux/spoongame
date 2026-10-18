@@ -643,19 +643,42 @@ html.head-released { --head-fixed-h: 0px; }
 /* 엔딩 머리의 텍스트 칸(구현 src/styles/dash.css `.ending__who`와 같은 규칙, M4 r2 R-320·R-321): flex로 늘어나는 쪽은 **이 칸뿐**이다 — 얼굴 타일(.face, flex: none)은 늘 96×96 정사각. 구현 r1의 `.ending__head > div`는 얼굴 타일(div.face)까지 골라 가로로 늘렸다(360px에서 155×96).
    한 낱말(「이서연의」 …)도 못 담을 만큼 좁아지면(글자 200%) 얼굴 아래 줄로 내려간다(min-width). 이 칸은 제목(h1) 글자 크기 상한의 컨테이너다(아래 「제목 글자 크기 상한」) */
 .ending__who { flex: 1 1 9rem; min-width: min(9rem, 100%); container-type: inline-size; }
+/* 엔딩 출발선 막대 (M7e — REV-003-M4-1 R-327, 2026-10-18 designer; copy.md 5-4절 · design-system.md 6절 「엔딩 출발선 막대」)
+   한 줄의 선(0 = 하위 끝, 100 = 상위 끝: 아래에서부터 센 백분위, core/ending.ts와 같은 방향) 위에
+     ① 출발선 구간 **띠** .journey__band — left: var(--from) · width: calc(var(--to) − var(--from)) (= StartBand.low·high %, 옅은 쪽빛 면 + 2px 쪽빛 테두리, 모양 = 네모)
+     ② 가운데 50% 눈금 .journey__mid(점선)
+     ③ 마지막 자리 **마름모** .journey__end — left: var(--at) (= standingScore(end) %, 쪽빛 채움). 띠 안이면 「비슷한 자리」, 오른쪽 밖이면 「앞선 자리」, 왼쪽 밖이면 「뒤쪽 자리」가 눈으로 읽힌다.
+   선·띠·마름모는 글자 크기와 무관한 px(그림)이고 범례·문장이 글자다. 트랙 좌우 여백 12px = 마름모 반폭 — 0%·100%(「1% 안쪽」)의 마름모가 카드 밖으로 나가지 않는다.
+   색에만 기대지 않는다: 띠(네모·테두리)와 마름모(채움)는 **모양**이 다르고, 범례의 작은 표식(.journey__key)이 같은 모양이며, 막대 전체의 읽기용 설명(role="img" aria-label)이 구간·자리·방향을 글로 말한다(R-191(d)).
+   스무 살 전(early)은 띠만 그리고 마름모·「마지막」 줄이 없다. */
 .journey { display: flex; flex-direction: column; gap: var(--sp-3); }
-.journey__bar { position: relative; height: 44px; margin: 0 var(--sp-2); }
-.journey__line { position: absolute; left: 0; right: 0; top: 20px; height: 4px; background: var(--c-border-strong); border-radius: 2px; }
-.journey__pin { position: absolute; top: 4px; width: 36px; margin-left: -18px; display: flex; flex-direction: column; align-items: center; font-size: var(--fs-xs); font-weight: var(--fw-bold); }
-.journey__pin i { display: block; width: 24px; height: 24px; border: 3px solid var(--c-brand); background: var(--c-surface); border-radius: 50%; }
-.journey__pin--end i { background: var(--c-brand); border-radius: 4px; transform: rotate(45deg) scale(0.86); }
-.journey__legend { display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); }
-/* 범례 한 줄 = 「○ 출발선」 라벨 칸 + 값 칸(칩 + 구간). 값 칸이 격자의 둘째 열이라 구간 글자가 줄바꿈돼도 라벨 아래가 아니라 칩 시작점에 맞춰 내려간다 */
-.journey__legend > span { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--sp-2); }
+.journey__bar { padding-top: var(--sp-1); }
+.journey__track { position: relative; height: 28px; margin: 0 12px; }
+.journey__track::before { content: ''; position: absolute; left: 0; right: 0; top: 12px; height: 4px; background: var(--c-border-strong); border-radius: 2px; }
+.journey__band { position: absolute; top: 4px; height: 20px; left: var(--from, 0%); width: calc(var(--to, 0%) - var(--from, 0%)); box-sizing: border-box; background: var(--c-brand-soft); border: 2px solid var(--c-brand); border-radius: var(--r-sm); }
+.journey__mid { position: absolute; left: 50%; top: 0; height: 28px; border-left: 1px dashed var(--c-text-3); }
+.journey__end { position: absolute; top: 2px; left: var(--at, 50%); width: 24px; height: 24px; margin-left: -12px; box-sizing: border-box; background: var(--c-brand); border: 2px solid var(--c-surface); border-radius: 4px; transform: rotate(45deg) scale(0.8); }
+.journey__axis { display: flex; justify-content: space-between; margin-top: 2px; font-size: var(--fs-xs); color: var(--c-text-3); }
+/* 범례(dl): 한 줄 = 표식 + 이름 칸(dt) + 값 칸(dd — 출발선은 수저 칩 + 「({구간})」, 마지막은 자리 글자). 값 칸은 자리 표현(「하위 약 24%」 — KeepStanding 한 덩어리)을 끊지 않도록
+   이름 옆에 10em을 못 받으면 **이름 아래 줄로** 내려간다(flex-wrap — 인생 기록·연표 줄과 같은 방법, QM3-1; 폭 320 · 글자 200%에서 옆 칸이 142px뿐이라 격자 2열은 넘쳤다). 표식은 막대의 띠·마름모와 같은 모양·색 */
+.journey__legend { display: flex; flex-direction: column; gap: var(--sp-2); margin: 0; font-size: var(--fs-sm); }
+.journey__legend > div { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }
+.journey__legend dt { flex: none; display: inline-flex; align-items: center; gap: 6px; color: var(--c-text-2); white-space: nowrap; }
+.journey__legend dd { margin: 0; flex: 1 1 10em; min-width: min(10em, 100%); }
+.journey__key { display: inline-block; width: 14px; height: 10px; box-sizing: border-box; background: var(--c-brand-soft); border: 2px solid var(--c-brand); border-radius: 2px; }
+.journey__key--end { width: 10px; height: 10px; background: var(--c-brand); border: 0; border-radius: 2px; transform: rotate(45deg) scale(0.9); margin: 0 2px; }
 /* 연표 한 줄도 인생 기록 줄(.log__row)과 같은 방법(구현 dash.css, M4): 문장 칸이 한 낱말을 못 담으면 나이 아래로 내려간다(flex-wrap, QM3-1 — 예전 격자 3.1rem 1fr은 글자 200% · 폭 320에서 문장 칸이 좁아 낱말이 끊길 수 있었다) */
 .timeline li { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); padding: var(--sp-2) var(--sp-1); border-bottom: 1px solid var(--c-border); font-size: var(--fs-sm); }
 .timeline li > .log__age { flex: 0 0 3.1rem; }
-.timeline li > span:last-child { flex: 1 1 11em; min-width: min(11em, 100%); }
+/* 문장 칸은 세로 쌓임(제목 · 「선택: 이름」 · 문장 — 구현 EndingScreen#TimelineItem·dash.css와 같은 규칙, M7e 시안 맞춤). 단계 묶음 제목(.tl-group h3 「학창 · 7~19세」 = stageHeadingText 출력)·사망 줄 굵게(data-kind="death").
+   2026-10-18 M7e-3 대조: 아래 「엔딩 출발선 막대」 블록(.journey*)과 강제 색상 다섯 줄은 구현 src/styles/dash.css와 줄 단위로 같다(diff 0) */
+.timeline li > span:last-child { flex: 1 1 11em; min-width: min(11em, 100%); display: flex; flex-direction: column; gap: 1px; }
+.ending .timeline { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.tl-group h3 { font-size: var(--fs-md); color: var(--c-text-2); margin: var(--sp-3) 0 var(--sp-1); }
+.tl-picked { font-weight: var(--fw-bold); }
+.timeline li[data-kind='death'] { font-weight: var(--fw-bold); }
+.rebirth { display: flex; flex-direction: column; gap: var(--sp-2); align-items: stretch; }
+.rebirth p { text-align: center; }
 .timeline li.is-note { background: var(--c-accent-soft); color: var(--c-on-accent-soft); border-left: 5px solid var(--c-accent); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .timeline li.is-choice { border-left: 3px solid var(--c-brand); padding-left: var(--sp-2); }
 /* 엔딩 「최종 순자산」 줄 (economy-model.md 9-2절 · SPEC EC5 M5 EC0 승인, 2026-10-17 designer) — M4의 「재산」 미터(role=meter, 0~100) **자리에** 들어가는 한 줄. 엔딩 나머지의 새 디자인은 M7e라 이 줄만 다룬다.
@@ -870,7 +893,11 @@ html.head-released { --head-fixed-h: 0px; }
   .toggle__thumb { forced-color-adjust: none; background: CanvasText; }
   .toggle.is-on .toggle__thumb { background: HighlightText; }
   .dots button[aria-current='true'] i { forced-color-adjust: none; background: CanvasText; border-color: CanvasText; }
-  .journey__pin--end i { forced-color-adjust: none; background: CanvasText; }
+  /* 엔딩 출발선 막대(M7e): 선·눈금·띠 테두리는 CanvasText, 띠 안은 Canvas(비어 보이는 네모), 마름모는 CanvasText 채움 + Canvas 테두리 — 모양(네모 ↔ 마름모)으로 구분되고 색은 두 극성 모두 글자색 하나 */
+  .journey__track::before { background: CanvasText; }
+  .journey__mid { border-left-color: CanvasText; }
+  .journey__band, .journey__key { background: Canvas; border-color: CanvasText; }
+  .journey__end, .journey__key--end { forced-color-adjust: none; background: CanvasText; border-color: Canvas; }
   .stamp { border-color: CanvasText; color: CanvasText; }
 }
 @media (prefers-reduced-motion: reduce) {

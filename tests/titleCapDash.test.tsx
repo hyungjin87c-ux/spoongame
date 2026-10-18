@@ -42,13 +42,13 @@ describe('엔딩 「{이름}의 인생」 (R-320·R-321)', () => {
     expect(h1Of(longer).style).toBe('--title-chars:7');
   });
 
-  it('얼굴 타일과 텍스트 칸이 서로 다른 요소다: 얼굴은 head의 직접 자식, 시대 이름·h1·출생 줄은 .ending__who 안 (얼굴이 flex로 늘어나지 않는다)', () => {
+  it('얼굴 타일과 텍스트 칸이 서로 다른 요소다: 얼굴은 head의 직접 자식, 시대 이름·h1·생애 기간 줄은 .ending__who 안 (얼굴이 flex로 늘어나지 않는다)', () => {
     const head = html.slice(html.indexOf('<div class="ending__head">'), html.indexOf('</main>'));
     expect(head).toMatch(/^<div class="ending__head"><div class="face face--lg" data-testid="face"/);
     const who = /<div class="ending__who">([^]*?)<\/div><\/div>/.exec(head);
     expect(who, '텍스트 칸').not.toBeNull();
     expect(who![1]).toContain('<h1');
-    expect(who![1]).toContain('data-testid="ending-born"');
+    expect(who![1]).toContain('data-testid="ending-span"'); // M7e-3: 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (예전 출생 줄 ending-born 대신)
     expect(who![1]).not.toContain('data-testid="face"');
   });
 });

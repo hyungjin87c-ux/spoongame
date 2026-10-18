@@ -757,7 +757,7 @@ test('프로필: 얼굴은 나이에 맞는 연령대 그림이고(0세 영아 �
   const adult = await adultState(page);
   await injectSave(page, adult, '/', MANUAL);
   await expect(page.getByTestId('face')).toHaveAttribute('data-age-group', 'middle');
-  await expect(page.getByTestId('profile-looks')).toContainText(/상위|하위|딱 중간쯤/);
+  await expect(page.getByTestId('profile-looks')).toContainText(/상위|하위|가운데쯤/);
   const text = await page.getByTestId('life-screen').innerText();
   expect(text).not.toContain(String(adult.character!.looks) + '점');
 });

@@ -26,6 +26,7 @@ import {
   enterBirth,
   shareAtLeast,
   shareAtMost,
+  shareBelow,
   stageOf,
   stageRangeOf,
   standingOf,
@@ -65,7 +66,8 @@ function lazy<T>(compute: () => T): () => T {
 /**
  * 손으로 적은 작은 분위수표 — 세 시대 모두 같다 (SPEC-003 M5 D12: 0~100번째 백분위의 최종 순자산 101칸, 만 원).
  * 칸 p의 값 = 100 × ⌊p / 10⌋: 0이 10칸(p 0~9), 100이 10칸, … 900이 10칸(p 90~99), 마지막 칸(p 100)은 1000.
- * 값 v의 「이 값 이상」 비율 = (v 이상인 칸 수) / 101, 「이 값 이하」 비율 = (v 이하인 칸 수) / 101 — 기대값은 아래에서 칸을 직접 세어 적는다.
+ * 값 v의 「이 값 이상」 비율 = (v 이상인 칸 수) / 101, 「이 값 이하」 비율 = (v 이하인 칸 수) / 101, 「이 값 미만」 비율 = (v 미만인 칸 수) / 101 — 기대값은 아래에서 칸을 직접 세어 적는다.
+ * M7e-3(마스터 결정 C, 동률 불리): 엔딩의 자리는 상위 = 이상 비율, 하위 = **미만** 비율이다(같은 금액으로 마친 사람을 내 아래로 세지 않는다).
  */
 const STEP_Q: readonly number[] = Array.from({ length: 101 }, (_, p) => 100 * Math.floor(p / 10));
 function tableOfQuantiles(q: readonly number[] = STEP_Q): Record<Era, FinalDistribution> {
@@ -125,6 +127,17 @@ describe('분포표에서 자리 구하기: 직접 센 작은 표 (R-045 c, D12 
     expect(shareAtMost(q, 900)).toBeCloseTo(cells(100), 10);
     expect(shareAtMost(q, 1000)).toBeCloseTo(100, 10);
     expect(shareAtMost(q, 99999)).toBeCloseTo(100, 10);
+    // 이 값 미만인 칸 (M7e-3): 0 미만 = 0칸, 1 미만 = 10칸(p 0~9), 100 미만 = 10칸, 101 미만 = 20칸, 900 미만 = 90칸, 1000 미만 = 100칸, 1001 미만 = 101칸
+    expect(shareBelow(q, 0)).toBe(0);
+    expect(shareBelow(q, -500)).toBe(0);
+    expect(shareBelow(q, 1)).toBeCloseTo(cells(10), 10);
+    expect(shareBelow(q, 100)).toBeCloseTo(cells(10), 10);
+    expect(shareBelow(q, 101)).toBeCloseTo(cells(20), 10);
+    expect(shareBelow(q, 900)).toBeCloseTo(cells(90), 10);
+    expect(shareBelow(q, 1000)).toBeCloseTo(cells(100), 10);
+    expect(shareBelow(q, 1001)).toBeCloseTo(100, 10);
+    // 위 두 비율과의 관계: 이 값 이상 + 이 값 미만 = 100 (정확히) — 그래서 도착 자리는 상위 아니면 하위이고 「가운데쯤」이 나오지 않는다
+    for (const v of [-1, 0, 1, 100, 250, 500, 900, 1000, 1001]) expect(shareAtLeast(q, v) + shareBelow(q, v), String(v)).toBeCloseTo(100, 10);
   });
 
   it('상위: 이상 비율이 50 이하 — 900은 11칸 = 약 11%, 700은 31칸 = 약 31%, 600은 41칸 = 약 41%', () => {
@@ -134,18 +147,22 @@ describe('분포표에서 자리 구하기: 직접 센 작은 표 (R-045 c, D12 
     expect(finalWealthStanding('present', 600, table)).toEqual({ kind: 'top', percent: 41, within: false });
   });
 
-  it('하위: 이상 비율이 50을 넘고 이하 비율이 50 이하 — 0은 10칸 = 약 10%, 100은 20칸 = 약 20%, 400은 50칸 = 약 50%(반올림 49.5 → 50)도 하위', () => {
-    expect(finalWealthStanding('present', 0, table)).toEqual({ kind: 'bottom', percent: 10, within: false });
-    expect(finalWealthStanding('present', 100, table)).toEqual({ kind: 'bottom', percent: 20, within: false });
-    expect(finalWealthStanding('present', 200, table)).toEqual({ kind: 'bottom', percent: 30, within: false });
-    expect(finalWealthStanding('present', 400, table)).toEqual({ kind: 'bottom', percent: 50, within: false });
+  it('하위(동률 불리, M7e-3): 이상 비율이 50을 넘고 **미만** 비율이 50 이하 — 100은 미만 10칸 = 약 10%, 200은 20칸 = 약 20%, 400은 40칸 = 약 40%, 500은 50칸(49.5 → 50)도 하위. 0은 미만이 0칸이라 하위 1% 안쪽', () => {
+    expect(finalWealthStanding('present', 0, table)).toEqual({ kind: 'bottom', percent: 1, within: true }); // 예전(이하 10칸) 「하위 약 10%」 — 같은 0원으로 마친 사람을 내 아래로 세지 않는다
+    expect(finalWealthStanding('present', 100, table)).toEqual({ kind: 'bottom', percent: 10, within: false });
+    expect(finalWealthStanding('present', 200, table)).toEqual({ kind: 'bottom', percent: 20, within: false });
+    expect(finalWealthStanding('present', 400, table)).toEqual({ kind: 'bottom', percent: 40, within: false });
+    expect(finalWealthStanding('present', 500, table)).toEqual({ kind: 'bottom', percent: 50, within: false });
   });
 
-  it('중앙에 걸친 값은 퍼센트 없이 middle: 500은 이상 51칸(50.5%)·이하 60칸(59.4%)이라 어느 쪽도 50% 이하가 아니다', () => {
-    expect(finalWealthStanding('present', 500, table)).toEqual({ kind: 'middle' });
-    // 같은 값이 판의 대부분을 차지할 때: 칸 대부분이 40인 표
+  it('도착 자리에는 「가운데쯤」이 나오지 않는다 (M7e-3 동률 불리): 이상 비율 + 미만 비율 = 100이라 둘 중 하나는 늘 50 이하다 — 500은 이상 51칸(50.5%)·미만 50칸(49.5% → 하위 약 50%)', () => {
+    expect(finalWealthStanding('present', 500, table)).toEqual({ kind: 'bottom', percent: 50, within: false });
+    // 같은 값이 판의 대부분을 차지할 때: 칸 대부분이 40인 표 — 예전(이하 100칸)에는 가운데쯤이었지만 미만은 1칸(0.99%)이라 하위 1% 안쪽
     const crowded = tableOfQuantiles(Array.from({ length: 101 }, (_, p) => (p === 0 ? 10 : p === 100 ? 90 : 40)));
-    expect(finalWealthStanding('present', 40, crowded)).toEqual({ kind: 'middle' });
+    expect(finalWealthStanding('present', 40, crowded)).toEqual({ kind: 'bottom', percent: 1, within: true });
+    for (const v of [-30000, -1, 0, 40, 99, 100, 500, 600, 1000, 1001, 500000]) {
+      expect(finalWealthStanding('present', v, table).kind, String(v)).not.toBe('middle');
+    }
   });
 
   it('표 밖의 값도 약 0%·약 100%가 아니다: 가장 높은 값(1000)보다 크면 "상위 1% 안쪽", 가장 낮은 값(0)보다 작으면 "하위 1% 안쪽" — 음수 순자산도 이렇게 읽힌다', () => {
@@ -158,7 +175,7 @@ describe('분포표에서 자리 구하기: 직접 센 작은 표 (R-045 c, D12 
   it('standingOf와 같은 규칙이다: 표 안팎의 모든 값에서 퍼센트는 항상 1~50이고 상위/하위/중간 중 하나다', () => {
     for (const v of [-30000, -1, 0, 50, 100, 250, 400, 500, 600, 900, 1000, 1001, 500000]) {
       const st = finalWealthStanding('present', v, table);
-      expect(st).toEqual(standingOf(shareAtLeast(q, v), shareAtMost(q, v)));
+      expect(st).toEqual(standingOf(shareAtLeast(q, v), shareBelow(q, v))); // M7e-3: 하위 = 미만
       if (st.kind !== 'middle') {
         expect(st.percent).toBeGreaterThanOrEqual(1);
         expect(st.percent).toBeLessThanOrEqual(50);
@@ -204,7 +221,7 @@ const BANDS: Record<Era, ReadonlyArray<readonly [low: number, high: number, labe
   past: [
     // 가중치 40·32·20·7·1
     [0, 40, '하위 40% 안쪽'],
-    [40, 72, '하위 40%와 상위 28% 사이'],
+    [40, 72, '하위 40% 선과 상위 28% 선 사이'],
     [72, 92, '상위 8~28% 사이'],
     [92, 99, '상위 1~8% 사이'],
     [99, 100, '상위 1% 안쪽'],
@@ -212,7 +229,7 @@ const BANDS: Record<Era, ReadonlyArray<readonly [low: number, high: number, labe
   present: [
     // 25·30·28·14·3
     [0, 25, '하위 25% 안쪽'],
-    [25, 55, '하위 25%와 상위 45% 사이'],
+    [25, 55, '하위 25% 선과 상위 45% 선 사이'],
     [55, 83, '상위 17~45% 사이'],
     [83, 97, '상위 3~17% 사이'],
     [97, 100, '상위 3% 안쪽'],
@@ -220,14 +237,14 @@ const BANDS: Record<Era, ReadonlyArray<readonly [low: number, high: number, labe
   future: [
     // 30·28·24·13·5
     [0, 30, '하위 30% 안쪽'],
-    [30, 58, '하위 30%와 상위 42% 사이'],
+    [30, 58, '하위 30% 선과 상위 42% 선 사이'],
     [58, 82, '상위 18~42% 사이'],
     [82, 95, '상위 5~18% 사이'],
     [95, 100, '상위 5% 안쪽'],
   ],
 };
 
-/** 점수(1~99)로 화면에 말할 수 있는 도착 자리를 만든다: 1~49 하위, 50 딱 중간쯤, 51~99 상위 (core가 만드는 자리와 같은 모양이다) */
+/** 점수(1~99)로 화면에 말할 수 있는 도착 자리를 만든다: 1~49 하위, 50 가운데쯤, 51~99 상위 (core가 만드는 자리와 같은 모양이다) */
 function standingAt(score: number): Standing {
   if (score === 50) return { kind: 'middle' };
   return score < 50 ? { kind: 'bottom', percent: score, within: false } : { kind: 'top', percent: 100 - score, within: false };
@@ -249,7 +266,7 @@ const SAME_RANGE: Record<Era, ReadonlyArray<readonly [from: number, to: number]>
 };
 
 describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구간을 가중치 표에서 계산해 문장에 담는다', () => {
-  it('세 시대 × 5단계: 구간의 끝값과 문구가 가중치 표에서 직접 계산한 값과 같다 (지난 세상 1단계 "하위 40% 안쪽", 지금 세상 2단계 "하위 25%와 상위 45% 사이")', () => {
+  it('세 시대 × 5단계: 구간의 끝값과 문구가 가중치 표에서 직접 계산한 값과 같다 (지난 세상 1단계 "하위 40% 안쪽", 지금 세상 2단계 "하위 25% 선과 상위 45% 선 사이")', () => {
     for (const era of ERAS) {
       expect(ERA_CONFIG[era].wealthWeights.reduce((a, b) => a + b, 0), `${era} 가중치 합`).toBe(100); // 위 계산이 성립하는 전제
       for (let w = 1; w <= 5; w++) {
@@ -269,13 +286,13 @@ describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구
     }
   });
 
-  it('출생 결과 화면의 문구는 그대로고 이 구간의 한쪽 끝값이다: 퍼센트가 구간 문구 안에 들어 있다 (중앙에 걸친 단계는 출생 화면도 "딱 중간쯤")', () => {
+  it('출생 결과 화면의 문구는 그대로고 이 구간의 한쪽 끝값이다: 퍼센트가 구간 문구 안에 들어 있다 (중앙에 걸친 단계는 출생 화면도 "가운데쯤")', () => {
     for (const era of ERAS) {
       for (let w = 1; w <= 5; w++) {
         const s = wealthStanding(era, w as ParentWealth);
         const band = startBandOf(era, w as ParentWealth);
         if (s.kind === 'middle') {
-          expect(band.kind, `${era} ${w}단계 (출생 화면 "딱 중간쯤")`).toBe('center');
+          expect(band.kind, `${era} ${w}단계 (출생 화면 "가운데쯤")`).toBe('center');
           continue;
         }
         expect(numbersIn(bandLabel(band)), `${era} ${w}단계 ${standingLabel(s)}`).toContain(s.percent);
@@ -283,7 +300,7 @@ describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구
     }
     expect(standingLabel(wealthStanding('past', 1))).toBe('하위 약 40%');
     expect(standingLabel(wealthStanding('present', 3))).toBe('상위 약 45%');
-    expect(standingLabel(wealthStanding('present', 2))).toBe('딱 중간쯤');
+    expect(standingLabel(wealthStanding('present', 2))).toBe('가운데쯤');
   });
 
   it('구간의 모양(bandFromRange): 맨 아래/맨 위/한쪽 절반/50%를 걸침/한쪽에 붙었지만 반대편이 50%를 넘음/전체', () => {
@@ -299,7 +316,7 @@ describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구
     expect(label(30, 100)).toBe('하위 30% 밖');
     expect(label(50, 70)).toBe('상위 30~50% 사이');
     expect(label(30, 50)).toBe('하위 30~50% 사이');
-    expect(label(20, 80)).toBe('하위 20%와 상위 20% 사이');
+    expect(label(20, 80)).toBe('하위 20% 선과 상위 20% 선 사이');
     expect(label(0, 100)).toBe('모두가 같은 자리');
     // 폭이 0이거나 1% 안쪽으로 줄어도 "약 0%"·"0~"가 나오지 않는다
     expect(label(0, 0)).toBe('하위 1% 안쪽');
@@ -362,7 +379,7 @@ describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구
     expect(readBand('하위 30~50% 사이')).toEqual([30, 50]);
     expect(readBand('하위 약 40%')).toEqual([40, 40]);
     expect(readBand('상위 약 40%')).toEqual([60, 60]);
-    expect(readBand('하위 25%와 상위 45% 사이')).toEqual([25, 55]);
+    expect(readBand('하위 25% 선과 상위 45% 선 사이')).toEqual([25, 55]);
     expect(readBand('모두가 같은 자리')).toEqual([0, 100]);
     expect(() => readBand('비슷한 자리')).toThrow();
   });
@@ -462,7 +479,7 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
     }
   });
 
-  it('도착이 "딱 중간쯤"(점수 50)이면: 구간이 50을 걸치면 비슷함, 구간이 50보다 한참 아래면 앞섬, 한참 위면 뒤쪽 (구간 [25,55] / [0,40] / [72,92]), 여유 끝은 [0,48]까지 비슷함·[0,47]은 앞섬', () => {
+  it('도착이 "가운데쯤"(점수 50)이면: 구간이 50을 걸치면 비슷함, 구간이 50보다 한참 아래면 앞섬, 한참 위면 뒤쪽 (구간 [25,55] / [0,40] / [72,92]), 여유 끝은 [0,48]까지 비슷함·[0,47]은 앞섬', () => {
     const middle: Standing = { kind: 'middle' };
     expect(movementOf(bandFromRange(25, 55), middle)).toBe('same');
     expect(movementOf(bandFromRange(0, 40), middle)).toBe('up');
@@ -510,7 +527,7 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
     const g: EndingGame = { ...l, character: { ...l.character, parentWealth: 4 }, assets: { ...l.assets!, net: 1500 }, death: { age: 70, cause: '노환' }, age: 70 };
     const r = reviewEnding(g, table);
     expect(r.journey.kind === 'compared' && r.journey.end).toEqual({ kind: 'top', percent: 1, within: true });
-    expect(journeyText(r.journey)).toBe('상위 3~17% 사이의 집에서 태어나, 상위 1% 안쪽의 형편으로 생을 마쳤다.');
+    expect(journeyText(r.journey)).toBe('상위 3~17% 사이의 집에서 태어나, 상위 1% 안쪽의 형편으로 생을 마쳤습니다.');
     expect(r.journey.kind === 'compared' && r.journey.movement).toBe('up');
   });
 
@@ -580,7 +597,7 @@ describe('스무 살 전에 끝난 인생 (reachedIndependence)', () => {
     for (const l of early) {
       const r = reviewEnding(l);
       expect(r.journey.kind).toBe('early');
-      expect(journeyText(r.journey)).not.toContain('형편으로 생을 마쳤다');
+      expect(journeyText(r.journey)).not.toContain('형편으로 생을 마쳤습니다');
     }
     for (const l of lives.filter((x) => x.death.age >= 20).slice(0, 300)) expect(reviewEnding(l).journey.kind).toBe('compared');
   });
@@ -619,7 +636,7 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
     expect(j.start).toEqual(startBandOf(l.era, 5));
   });
 
-  it('작은 표로 문장까지: 지금 세상 4단계(상위 3~17% 사이)·1단계(하위 25% 안쪽)·3단계(상위 17~45% 사이)·2단계(하위 25%와 상위 45% 사이) 출발선에서 도착 문장과 방향이 직접 적은 기대와 같다', () => {
+  it('작은 표로 문장까지: 지금 세상 4단계(상위 3~17% 사이)·1단계(하위 25% 안쪽)·3단계(상위 17~45% 사이)·2단계(하위 25% 선과 상위 45% 선 사이) 출발선에서 도착 문장과 방향이 직접 적은 기대와 같다', () => {
     const l = lives().find((x) => x.death.age >= 20 && x.era === 'present')!;
     const table = tableOfQuantiles();
     const born = (wealth: ParentWealth, net: number): EndingGame => ({ ...l, character: { ...l.character, parentWealth: wealth }, assets: { ...l.assets!, net, debt: Math.max(l.assets!.debt, -net) } });
@@ -627,7 +644,7 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
       const r = reviewEnding(g, table);
       return `${journeyText(r.journey)} ${r.journey.kind === 'compared' ? MOVEMENT_TEXT[r.journey.movement] : ''}`;
     };
-    // 표의 칸을 센 자리: 순자산 900 = 상위 약 11%(점수 89), 700 = 상위 약 31%(69), 600 = 상위 약 41%(59), 500 = 딱 중간쯤(50), 400 = 하위 약 50%(50), 200 = 하위 약 30%(30), 0 = 하위 약 10%(10), -100 = 하위 1% 안쪽(1)
+    // 표의 칸을 센 자리(M7e-3 동률 불리): 순자산 900 = 상위 약 11%(점수 89), 700 = 상위 약 31%(69), 600 = 상위 약 41%(59), 500 = 하위 약 50%(50), 400 = 하위 약 40%(40), 300 = 하위 약 30%(30), 200 = 하위 약 20%(20), 0 = 하위 1% 안쪽(1 — 0 미만이 없다), -100 = 하위 1% 안쪽(1)
     // 4단계: 구간 [83, 97]. 순자산 900 = 점수 89 -> 구간 안
     const rich = reviewEnding(born(4, 900), table);
     expect(rich.journey).toEqual({
@@ -636,19 +653,21 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
       end: { kind: 'top', percent: 11, within: false },
       movement: 'same',
     });
-    expect(sentence(born(4, 900))).toBe('상위 3~17% 사이의 집에서 태어나, 상위 약 11%의 형편으로 생을 마쳤다. 출발선과 비슷한 자리에 머물렀다.');
-    // 1단계: 구간 [0, 25]. 하위 약 10%(순자산 0)도, 하위 1% 안쪽(순자산 -100, 빚)도 구간 안이라 비슷함 — 맨 아래 단계는 뒤쪽이 될 수 없다 (R-084 증상: 예전에는 "뒤쪽")
-    expect(sentence(born(1, 0))).toBe('하위 25% 안쪽의 집에서 태어나, 하위 약 10%의 형편으로 생을 마쳤다. 출발선과 비슷한 자리에 머물렀다.');
-    expect(sentence(born(1, -100))).toBe('하위 25% 안쪽의 집에서 태어나, 하위 1% 안쪽의 형편으로 생을 마쳤다. 출발선과 비슷한 자리에 머물렀다.');
-    expect(sentence(born(1, 900))).toBe('하위 25% 안쪽의 집에서 태어나, 상위 약 11%의 형편으로 생을 마쳤다. 출발선보다 앞선 자리에 이르렀다.');
-    // 3단계: 구간 [55, 83]. 하위 약 10%(순자산 0)는 구간 아래(뒤쪽), 상위 약 11%(점수 89)는 구간 위(앞섬), 상위 약 31%(점수 69)는 구간 안
-    expect(sentence(born(3, 0))).toBe('상위 17~45% 사이의 집에서 태어나, 하위 약 10%의 형편으로 생을 마쳤다. 출발선보다 뒤쪽에 서 있었다.');
-    expect(sentence(born(3, 900))).toBe('상위 17~45% 사이의 집에서 태어나, 상위 약 11%의 형편으로 생을 마쳤다. 출발선보다 앞선 자리에 이르렀다.');
-    expect(sentence(born(3, 700))).toBe('상위 17~45% 사이의 집에서 태어나, 상위 약 31%의 형편으로 생을 마쳤다. 출발선과 비슷한 자리에 머물렀다.');
-    // 2단계: 구간 [25, 55]. 순자산 400 = 하위 약 50%(점수 50) 구간 안, 200 = 하위 약 30%(점수 30) 구간 안, 0 = 하위 약 10% 구간 아래(뒤쪽)
-    expect(sentence(born(2, 400))).toBe('하위 25%와 상위 45% 사이의 집에서 태어나, 하위 약 50%의 형편으로 생을 마쳤다. 출발선과 비슷한 자리에 머물렀다.');
-    expect(sentence(born(2, 200))).toBe('하위 25%와 상위 45% 사이의 집에서 태어나, 하위 약 30%의 형편으로 생을 마쳤다. 출발선과 비슷한 자리에 머물렀다.');
-    expect(sentence(born(2, 0))).toBe('하위 25%와 상위 45% 사이의 집에서 태어나, 하위 약 10%의 형편으로 생을 마쳤다. 출발선보다 뒤쪽에 서 있었다.');
+    expect(sentence(born(4, 900))).toBe('상위 3~17% 사이의 집에서 태어나, 상위 약 11%의 형편으로 생을 마쳤습니다. 출발선과 비슷한 자리입니다.');
+    // 1단계: 구간 [0, 25]. 하위 1% 안쪽(순자산 0 — 같은 0원 위아래가 없다)도, 하위 1% 안쪽(순자산 -100, 빚)도 구간 안이라 비슷함 — 맨 아래 단계는 뒤쪽이 될 수 없다 (R-084 증상: 예전에는 "뒤쪽")
+    expect(sentence(born(1, 0))).toBe('하위 25% 안쪽의 집에서 태어나, 하위 1% 안쪽의 형편으로 생을 마쳤습니다. 출발선과 비슷한 자리입니다.');
+    expect(sentence(born(1, -100))).toBe('하위 25% 안쪽의 집에서 태어나, 하위 1% 안쪽의 형편으로 생을 마쳤습니다. 출발선과 비슷한 자리입니다.');
+    expect(sentence(born(1, 900))).toBe('하위 25% 안쪽의 집에서 태어나, 상위 약 11%의 형편으로 생을 마쳤습니다. 출발선보다 앞선 자리입니다.');
+    // 3단계: 구간 [55, 83]. 하위 1% 안쪽(순자산 0)은 구간 아래(뒤쪽), 상위 약 11%(점수 89)는 구간 위(앞섬), 상위 약 31%(점수 69)는 구간 안
+    expect(sentence(born(3, 0))).toBe('상위 17~45% 사이의 집에서 태어나, 하위 1% 안쪽의 형편으로 생을 마쳤습니다. 출발선보다 뒤쪽 자리입니다.');
+    expect(sentence(born(3, 900))).toBe('상위 17~45% 사이의 집에서 태어나, 상위 약 11%의 형편으로 생을 마쳤습니다. 출발선보다 앞선 자리입니다.');
+    expect(sentence(born(3, 700))).toBe('상위 17~45% 사이의 집에서 태어나, 상위 약 31%의 형편으로 생을 마쳤습니다. 출발선과 비슷한 자리입니다.');
+    // 2단계: 구간 [25, 55]. 순자산 500 = 하위 약 50%(점수 50)·400 = 하위 약 40%(40)·300 = 하위 약 30%(30)는 구간 안, 200 = 하위 약 20%(20)는 구간 아래(25 − 여유 2 = 23 밑 — 뒤쪽), 0 = 하위 1% 안쪽 구간 아래(뒤쪽)
+    expect(sentence(born(2, 500))).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어나, 하위 약 50%의 형편으로 생을 마쳤습니다. 출발선과 비슷한 자리입니다.');
+    expect(sentence(born(2, 400))).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어나, 하위 약 40%의 형편으로 생을 마쳤습니다. 출발선과 비슷한 자리입니다.');
+    expect(sentence(born(2, 300))).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어나, 하위 약 30%의 형편으로 생을 마쳤습니다. 출발선과 비슷한 자리입니다.');
+    expect(sentence(born(2, 200))).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어나, 하위 약 20%의 형편으로 생을 마쳤습니다. 출발선보다 뒤쪽 자리입니다.');
+    expect(sentence(born(2, 0))).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어나, 하위 1% 안쪽의 형편으로 생을 마쳤습니다. 출발선보다 뒤쪽 자리입니다.');
   });
 
   it('학력·행복·관계만 처음 → 마지막 원값으로 견준다 (재산·건강·외모는 견주지 않는다)', () => {
@@ -670,8 +689,8 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
     expect(r.journey).toEqual({ kind: 'early', start: startBandOf(l.era, l.character.parentWealth) });
     const text = journeyText(r.journey);
     // R-083: 출발선만 담담하게. 게임 용어("내가 가진 것")도, 윗줄(사망·선택 수)이 이미 말한 "생이 끝났다"도 되풀이하지 않는다.
-    expect(text).toBe(`${bandLabel(startBandOf(l.era, l.character.parentWealth))}의 집에서 태어났다.`);
-    expect(text).not.toContain('형편으로 생을 마쳤다');
+    expect(text).toBe(`${bandLabel(startBandOf(l.era, l.character.parentWealth))}의 집에서 태어났습니다.`);
+    expect(text).not.toContain('형편으로 생을 마쳤습니다');
     expect(text).not.toContain('내가 가진 것');
     expect(text).not.toContain('생이 끝');
     expect(text).not.toContain('견줄');
@@ -750,39 +769,40 @@ describe('엔딩 문구 (data/endingText.ts): 담담하고 R-018 표현 규칙�
 
   it('출발선 대비 문장: 직접 적은 기대 문장 (맨 아래·한쪽 절반·가운데 걸침·맨 위 구간 × 상위·하위·중앙·1% 안쪽 도착)', () => {
     const j = (start: StartBand, end: Standing) => journeyText({ kind: 'compared', start, end, movement: movementOf(start, end) });
-    expect(j(bandFromRange(55, 83), top(23))).toBe('상위 17~45% 사이의 집에서 태어나, 상위 약 23%의 형편으로 생을 마쳤다.');
-    expect(j(bandFromRange(0, 40), bottom(4))).toBe('하위 40% 안쪽의 집에서 태어나, 하위 약 4%의 형편으로 생을 마쳤다.');
-    expect(j(bandFromRange(25, 55), { kind: 'middle' })).toBe('하위 25%와 상위 45% 사이의 집에서 태어나, 딱 중간쯤의 형편으로 생을 마쳤다.');
-    expect(j(bandFromRange(0, 25), top(1, true))).toBe('하위 25% 안쪽의 집에서 태어나, 상위 1% 안쪽의 형편으로 생을 마쳤다.');
-    expect(j(bandFromRange(97, 100), bottom(1, true))).toBe('상위 3% 안쪽의 집에서 태어나, 하위 1% 안쪽의 형편으로 생을 마쳤다.');
-    expect(j(bandFromRange(92, 99), top(30))).toBe('상위 1~8% 사이의 집에서 태어나, 상위 약 30%의 형편으로 생을 마쳤다.');
+    expect(j(bandFromRange(55, 83), top(23))).toBe('상위 17~45% 사이의 집에서 태어나, 상위 약 23%의 형편으로 생을 마쳤습니다.');
+    expect(j(bandFromRange(0, 40), bottom(4))).toBe('하위 40% 안쪽의 집에서 태어나, 하위 약 4%의 형편으로 생을 마쳤습니다.');
+    expect(j(bandFromRange(25, 55), { kind: 'middle' })).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어나, 가운데쯤의 형편으로 생을 마쳤습니다.');
+    expect(j(bandFromRange(0, 25), top(1, true))).toBe('하위 25% 안쪽의 집에서 태어나, 상위 1% 안쪽의 형편으로 생을 마쳤습니다.');
+    expect(j(bandFromRange(97, 100), bottom(1, true))).toBe('상위 3% 안쪽의 집에서 태어나, 하위 1% 안쪽의 형편으로 생을 마쳤습니다.');
+    expect(j(bandFromRange(92, 99), top(30))).toBe('상위 1~8% 사이의 집에서 태어나, 상위 약 30%의 형편으로 생을 마쳤습니다.');
   });
 
-  it('20세 전 사망 줄도 같은 구간 표현이다: "{구간}의 집에서 태어났다."', () => {
-    expect(journeyText({ kind: 'early', start: bandFromRange(0, 40) })).toBe('하위 40% 안쪽의 집에서 태어났다.');
-    expect(journeyText({ kind: 'early', start: bandFromRange(25, 55) })).toBe('하위 25%와 상위 45% 사이의 집에서 태어났다.');
-    expect(journeyText({ kind: 'early', start: bandFromRange(72, 92) })).toBe('상위 8~28% 사이의 집에서 태어났다.');
-    expect(journeyText({ kind: 'early', start: bandFromRange(99, 100) })).toBe('상위 1% 안쪽의 집에서 태어났다.');
+  it('20세 전 사망 줄도 같은 구간 표현이다: "{구간}의 집에서 태어났습니다."', () => {
+    expect(journeyText({ kind: 'early', start: bandFromRange(0, 40) })).toBe('하위 40% 안쪽의 집에서 태어났습니다.');
+    expect(journeyText({ kind: 'early', start: bandFromRange(25, 55) })).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어났습니다.');
+    expect(journeyText({ kind: 'early', start: bandFromRange(72, 92) })).toBe('상위 8~28% 사이의 집에서 태어났습니다.');
+    expect(journeyText({ kind: 'early', start: bandFromRange(99, 100) })).toBe('상위 1% 안쪽의 집에서 태어났습니다.');
   });
 
   it('방향 문장 세 가지', () => {
     expect(MOVEMENT_TEXT).toEqual({
-      up: '출발선보다 앞선 자리에 이르렀다.',
-      same: '출발선과 비슷한 자리에 머물렀다.',
-      down: '출발선보다 뒤쪽에 서 있었다.',
+      up: '출발선보다 앞선 자리입니다.',
+      same: '출발선과 비슷한 자리입니다.',
+      down: '출발선보다 뒤쪽 자리입니다.',
     });
-    // R-083: "뒤쪽 자리에 이르렀다"는 성취처럼 읽혀 어색했다. 세 문장은 모두 한 문장이고, 앞 문장("…생을 마쳤다.")의 "마쳤다"를 되풀이하지 않는다.
+    // R-083: "뒤쪽 자리에 이르렀다"는 성취처럼 읽혀 어색했다. 세 문장은 모두 한 문장이고, 앞 문장("…생을 마쳤습니다.")의 "마쳤습니다"를 되풀이하지 않는다.
     for (const t of Object.values(MOVEMENT_TEXT)) {
       expect(t.startsWith('출발선')).toBe(true);
-      expect(t).not.toContain('마쳤다');
+      expect(t).not.toContain('마쳤');
     }
     expect(MOVEMENT_TEXT.down).not.toContain('이르렀다');
   });
 
   it('사망·선택 수·단계 제목', () => {
-    expect(deathLineText({ age: 83, cause: '노환' })).toBe('83세에 세상을 떠났다. 원인: 노환.');
-    expect(choiceCountText(22)).toBe('살아오며 22번의 선택을 했다.');
-    expect(choiceCountText(0)).toBe('선택을 내려야 하는 순간이 오기 전에 생이 끝났다.');
+    expect(deathLineText({ age: 83, cause: '노환' })).toBe('83세에 세상을 떠났습니다. 원인은 노환이었습니다.'); // M7e-3: 합쇼체 (copy.md 5-3)
+    expect(deathLineText({ age: 12, cause: '사고' })).toBe('12세에 세상을 떠났습니다. 원인은 사고였습니다.'); // 받침이 없으면 「였습니다」
+    expect(choiceCountText(22)).toBe('살아오며 22번의 선택을 했습니다.');
+    expect(choiceCountText(0)).toBe('선택을 내려야 하는 순간이 오기 전이었습니다.');
     expect(STAGES.map(stageHeadingText)).toEqual(['영유아 · 0~6세', '학창 · 7~19세', '청년 · 20~39세', '중년 · 40~64세', '노년 · 65세~']);
   });
 
@@ -915,8 +935,8 @@ describe('분포표 (data/finalDistribution.ts): 현재 엔진·이벤트에서 
       const q = FINAL_DISTRIBUTION[era].quantiles;
       for (const v of [...q.filter((_, i) => i % 7 === 0), q[0] - 1, q[100] + 1, 0, -1, 1]) {
         const ge = q.filter((x) => x >= v).length;
-        const le = q.filter((x) => x <= v).length;
-        expect(finalWealthStanding(era, v), `${era} ${v}`).toEqual(standingOf((ge * 100) / 101, (le * 100) / 101));
+        const lt = q.filter((x) => x < v).length; // M7e-3 동률 불리: 하위는 미만 비율
+        expect(finalWealthStanding(era, v), `${era} ${v}`).toEqual(standingOf((ge * 100) / 101, (lt * 100) / 101));
       }
     }
   });
@@ -1056,7 +1076,7 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
     expect(readEnd('상위 약 23%')).toBe(77);
     expect(readEnd('하위 1% 안쪽')).toBe(1);
     expect(readEnd('상위 1% 안쪽')).toBe(99);
-    expect(readEnd('딱 중간쯤')).toBe(50);
+    expect(readEnd('가운데쯤')).toBe(50);
   });
 
   it('모든 판(세 시대, 스무 살 넘어 마친 약 12000판)의 reviewEnding 결과: 문장에서 읽은 숫자로 방향을 다시 정하면 같다. 구간 안인데 앞섬/뒤쪽, 구간 밖 여유(2점) 너머인데 비슷함이 0건이다 (천장·바닥 쪽은 여유 0 — R-095)', () => {
@@ -1078,7 +1098,7 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
           continue;
         }
         const text = journeyText(j);
-        const m = /^(.+)의 집에서 태어나, (.+)의 형편으로 생을 마쳤다\.$/.exec(text);
+        const m = /^(.+)의 집에서 태어나, (.+)의 형편으로 생을 마쳤습니다\.$/.exec(text);
         if (m === null) {
           wrong.push(`${era}: 문장 모양이 다르다 ${text}`);
           continue;

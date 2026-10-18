@@ -32,7 +32,7 @@ import { applyResolved, condContextOf, economyContextOf } from './apply';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { impactOfEffects } from './impact';
-import { inheritanceAmount, inheritanceDue, parentsAllGone, siblingCountOf } from './inherit';
+import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllGone, parentsJustGone, siblingCountOf } from './inherit';
 import { createRng, type Rng } from './rng';
 import { applyStatDeltas, type StatDeltas } from './stats';
 import { PARENT_WEALTHS, type Character, type Era, type GameState, type HistoryEntry, type Stage, type StatKey, type Stats } from './types';
@@ -217,7 +217,12 @@ function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: Gam
   const died = age >= maxAgeOf(s.era) || roll < deathChance(age, stats.health, s.era);
   // 간이 상속(해 끝 규칙): 이 해 끝(사망이면 같은 나이, 아니면 한 살 많은 나이 — 부모의 나이도 한 해 오른다)에 부모가 처음 모두 떠났다면 정산 뒤 순자산에 한 번 더한다. 난수를 쓰지 않는다.
   const inherited = assets === null ? 0 : inheritanceDue(before, { ...s, age: died ? age : age + 1, assets });
-  const settled = inherited > 0 && assets !== null ? settleAssets({ ...assets, net: assets.net + inherited }) : assets;
+  const inheritedAssets = inherited > 0 && assets !== null ? settleAssets({ ...assets, net: assets.net + inherited }) : assets;
+  // 부모가 처음 모두 떠난 해 끝(상속을 더한 뒤): 가족 집에 살고 있었다면 월세로 나온다 (M7e-3 마스터 결정 추가②, economy-model.md 4-2절). 난수를 쓰지 않는다.
+  const settled =
+    inheritedAssets !== null && parentsJustGone(before, { ...s, age: died ? age : age + 1, assets: inheritedAssets })
+      ? { ...inheritedAssets, dwelling: dwellingWhenParentsGone(inheritedAssets.dwelling, s.flags) }
+      : inheritedAssets;
   const history = inherited > 0 ? appendHistory(s.history, inheritanceLine(parentsAllGone({ ...s, age }) ? age : age + 1)) : s.history;
   if (died) {
     const cause = rng.pick(deathCauseCandidates(age, stats.health));
@@ -250,6 +255,9 @@ function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: Gam
       if (parentsAllGone(next) && next.assets !== null && next.character !== null) {
         const early = inheritanceAmount(next.character.parentWealth, siblingCountOf(next));
         if (early > 0) next = { ...next, assets: settleAssets({ ...next.assets, net: next.assets.net + early }), history: appendHistory(next.history, inheritanceLine(newAge)) };
+        // 부모가 이미 모두 떠난 채 독립하면 가족 집으로 시작하지 않고 월세로 나온다 (M7e-3 추가②)
+        const independent = next.assets;
+        if (independent !== null) next = { ...next, assets: { ...independent, dwelling: dwellingWhenParentsGone(independent.dwelling, next.flags) } };
       }
     }
   }

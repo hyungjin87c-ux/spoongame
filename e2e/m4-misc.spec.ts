@@ -366,7 +366,7 @@ for (const looks of [88, 97]) {
     const textOf = async (testId: string) => (await page.getByTestId(testId).innerText()).replace(/\s+/g, ' ');
     const standalone = new RegExp(`(?<![\\d,.])${looks}(?![\\d,.]|%)`);
     expect(await textOf('life-screen')).not.toMatch(standalone);
-    expect(await textOf('profile-looks')).toMatch(/^(상위|하위)/);
+    expect(await textOf('profile-looks')).toMatch(/^또래 사이에서 (상위|하위)/);
     // 엔딩
     const ended = await oracleAuto(page, { ...life, age: 0, history: life.history, character: life.character });
     expect(ended.phase).toBe('ending');

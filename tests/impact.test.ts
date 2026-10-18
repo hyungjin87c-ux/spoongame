@@ -13,7 +13,9 @@ import {
   economyContextOf,
   impactOfEffects,
   incomeOf,
+  dwellingWhenParentsGone,
   inheritanceDue,
+  parentsJustGone,
   initialAssets,
   meetsCondition,
   moneySteps,
@@ -29,6 +31,8 @@ import {
   workStateOf,
   yearlyAssets,
   type ChoiceDef,
+  type Condition,
+  type Dwelling,
   type EventDef,
   type GameState,
   type ParentWealth,
@@ -347,8 +351,11 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
             // 20세 이상: 해마다 정산 한 번 (자연 변화로 바뀐 지식을 반영) + 그 해 끝에 부모가 처음 모두 떠났다면 간이 상속(core/inherit.ts — 해 끝 규칙, 선택 적용·영향 표기에는 없다).
             // 기준은 이 해를 시작할 때의 상태(p)이고, 끝 시점은 사망이면 같은 나이·아니면 한 살 많은 나이다.
             const yearly = yearlyAssets(a.assets!, { ...economyContextOf(a), education: e.stats.education });
-            const inherited = inheritanceDue(p, { ...a, age: e.phase === 'ending' ? a.age : a.age + 1, assets: yearly });
-            expect(e.assets, where).toEqual(inherited > 0 ? settleAssets({ ...yearly, net: yearly.net + inherited }) : yearly);
+            const atEnd = { ...a, age: e.phase === 'ending' ? a.age : a.age + 1, assets: yearly };
+            const inherited = inheritanceDue(p, atEnd);
+            const received = inherited > 0 ? settleAssets({ ...yearly, net: yearly.net + inherited }) : yearly;
+            // 부모가 처음 모두 떠난 해 끝(상속을 더한 뒤): 가족 집에 살고 있었다면 월세로 나온다 (M7e-3 추가②, core/inherit.ts#dwellingWhenParentsGone)
+            expect(e.assets, where).toEqual(parentsJustGone(p, { ...atEnd, assets: received }) ? { ...received, dwelling: dwellingWhenParentsGone(received.dwelling, atEnd.flags) } : received);
             expect(e.familyFund, where).toBe(0);
           } else if (p.age === 19) {
             // 독립: 집안 살림이 시작 자산에 합쳐진다 (M-1)
@@ -395,11 +402,16 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
   });
 });
 
-describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택지 쌍을 화면에 보이는 영향 줄(방향 × 칸 수)로 견준다', () => {
+describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트의 선택지 쌍을 화면에 보이는 영향 줄(방향 × 칸 수)로 견준다', () => {
   /**
    * eventLint의 균형 점검(E11)은 명시 효과만 세서 일 상태·주거 같은 파생 효과로 생기는 지배를 못 잡는다. 이 점검은 사람이 선택 순간에 보는 것 — previewChoice 항목 — 으로 견준다.
    * 축: 돈(자산 또는 집안 살림, ▲ = 좋음) · 부채(▲ = 나쁨이라 부호를 뒤집는다) · 관계 · 행복 · 건강 · 지식. 값 = ±칸 수. a가 b를 지배 = 모든 축에서 a ≥ b이고 어느 한 축에서 a > b.
    * 대표 상태: 재력 {1, 3, 5} × 세 시대 × 주거 {월세, 부모 집(20세 이상만)} — 순자산 5,000·지식 50, 이벤트 나이대의 한가운데, 이벤트·선택지 조건이 요구하는 플래그를 켠다. 선택지는 그 상태에서 보이는 것만 견준다.
+   * 현실에 없는 조합은 만들지 않는다 (planner content-M7e 1-7절):
+   *  R1 이벤트 `conditions.assets`를 지킨다(순자산 = max(5,000, netMin), 부채·주거 조건이 안 맞으면 그 상태는 건너뜀).
+   *  R2 이벤트 `eras`에 없는 시대는 건너뛴다.
+   *  R3 주거를 플래그와 맞춘다 — married·renting ⇒ 부모 집 변형 없음 / own_home ⇒ 주거 자가 + 부채 7,000 / 재력 1~2단계의 부모 집 변형은 lives_with_parents가 켜진 경우만.
+   *  R4 보고용 변형(잠금 아님): 이벤트·선택지 `bonuses.when`의 플래그·스탯·외모를 하나씩 맞춘 상태를 더해 지배 쌍을 목록으로 보고한다.
    */
   type Axis = 'money' | 'debt' | 'relationships' | 'happiness' | 'health' | 'education';
   const AXES: Axis[] = ['money', 'debt', 'relationships', 'happiness', 'health', 'education'];
@@ -418,51 +430,113 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
   /** 선택지의 requires.notFlags에 쓰이는 플래그 — 이 플래그가 꺼진 상태에서만 보이는 선택지가 있다(infant-new-sibling의 notice, M7a r3) */
   const notFlagsOf = (ev: EventDef): string[] => [...new Set((ev.choices ?? []).flatMap((c) => c.requires?.notFlags ?? []))];
 
-  const repState = (ev: EventDef, tier: ParentWealth, era: Era, dwelling: 'rent' | 'family', flagsOff = false): GameState => {
+  /** R4 보고용 변형: 보너스 조건 하나를 맞춘 상태 (플래그 켜기 · 스탯·외모를 범위 가장자리로) */
+  interface Variant {
+    label: string;
+    flags: string[];
+    stats: Partial<GameState['stats']>;
+    looks?: number;
+    /** own_home 판의 부채를 0으로 (대출을 흑자 상환으로 다 갚은 자가 판 — REV-003-M7e-1 R-384) */
+    debt0?: boolean;
+  }
+  const variantsOf = (ev: EventDef): Variant[] => {
+    const whens: Condition[] = [...(ev.bonuses ?? []).map((b) => b.when), ...(ev.choices ?? []).flatMap((c) => (c.bonuses ?? []).map((b) => b.when))];
+    const out = new Map<string, Variant>();
+    for (const w of whens) {
+      const v: Variant = { label: '', flags: [...(w.flags ?? [])], stats: {} };
+      for (const [k, r] of Object.entries(w.stats ?? {})) if (r !== undefined) v.stats[k as keyof GameState['stats']] = r.min ?? r.max;
+      if (w.looks !== undefined) v.looks = w.looks.min ?? w.looks.max;
+      if (v.flags.length === 0 && Object.keys(v.stats).length === 0 && v.looks === undefined) continue;
+      v.label = JSON.stringify({ flags: v.flags.length > 0 ? v.flags : undefined, stats: Object.keys(v.stats).length > 0 ? v.stats : undefined, looks: v.looks });
+      out.set(v.label, v);
+    }
+    // R-384(M7e-4): own_home 플래그를 읽는 이벤트는 「부채 0인 자가 판」도 훑는다 — 부채 7,000이 아니라 0이면 shrink의 부채 −6,000이 0으로 잘려 부채 ▼가 사라진다
+    const readsOwnHome = [ev.conditions?.flags, ...(ev.choices ?? []).map((c) => c.requires?.flags)].some((f) => f?.includes('own_home'));
+    if (readsOwnHome) out.set('own_home 부채 0', { label: 'own_home 부채 0', flags: [], stats: {}, debt0: true });
+    return [...out.values()];
+  };
+
+  /** 대표 상태. 현실에 없는 조합(R1~R3)이면 null — 그 상태는 건너뛴다 */
+  const repState = (ev: EventDef, tier: ParentWealth, era: Era, dwelling: 'rent' | 'family', flagsOff = false, variant?: Variant): GameState | null => {
     const lo = ev.ageRange?.min ?? 0;
     const hi = ev.ageRange?.max ?? 110;
     const age = Math.round((lo + hi) / 2);
+    if (ev.eras !== undefined && !ev.eras.includes(era)) return null; // R2
     const base = startLife(7, era);
     const flags = new Set<string>([...(ev.conditions?.flags ?? []), ...(ev.choices ?? []).flatMap((c) => c.requires?.flags ?? [])]);
     // 플래그가 꺼진 변형(M7a r3): notFlags 선택지가 보이는 상태 — requires.flags로 켠 플래그 가운데 어떤 선택지의 notFlags에 든 것을 끈다
     if (flagsOff) for (const f of notFlagsOf(ev)) flags.delete(f);
-    const s: GameState = { ...base, age, stats: { ...base.stats, education: 50 }, flags: [...flags].sort(), character: { ...base.character!, parentWealth: tier }, assets: null, familyFund: 0 };
-    if (age < 20) return s;
-    return { ...s, assets: { net: 5000, income: incomeOf(economyContextOf(s), 0), debt: 0, incomeAdj: 0, dwelling } };
+    for (const f of variant?.flags ?? []) flags.add(f);
+    const s: GameState = {
+      ...base,
+      age,
+      stats: { ...base.stats, education: 50, ...variant?.stats },
+      flags: [...flags].sort(),
+      character: { ...base.character!, parentWealth: tier, looks: variant?.looks ?? base.character!.looks },
+      assets: null,
+      familyFund: 0,
+    };
+    if (age < 20) return dwelling === 'family' ? null : s;
+    // R3 주거
+    let dw: Dwelling = dwelling;
+    let debt = 0;
+    if (flags.has('own_home')) {
+      if (dwelling === 'family') return null;
+      dw = 'own';
+      debt = variant?.debt0 === true ? 0 : 7000;
+    } else if (dwelling === 'family') {
+      if (flags.has('married') || flags.has('renting')) return null;
+      if (tier <= 2 && !flags.has('lives_with_parents')) return null;
+    }
+    // R1 이벤트의 자산 조건
+    const ac = ev.conditions?.assets;
+    let net = Math.max(5000, ac?.netMin ?? 0);
+    if (ac?.netMax !== undefined) net = Math.min(net, ac.netMax);
+    if (ac?.debtMax !== undefined && debt > ac.debtMax) return null;
+    if (ac?.dwelling !== undefined && !ac.dwelling.includes(dw)) return null;
+    return { ...s, assets: { net, income: incomeOf(economyContextOf(s), 0), debt, incomeAdj: 0, dwelling: dw } };
   };
 
-  /** 대표 상태 전체에서 찾은 지배 쌍 「이벤트:나은 선택지>못한 선택지」 → 처음 나온 상태의 값(보고용) */
-  function findDominance(): { pairs: Map<string, { count: number; first: string }>; states: number } {
+  /** 대표 상태 전체에서 찾은 지배 쌍 「이벤트:나은 선택지>못한 선택지」 → 처음 나온 상태의 값(보고용). variants가 true면 R4 보고용 변형만 훑는다 */
+  function findDominance(withVariants = false, onlyEvent?: string): { pairs: Map<string, { count: number; first: string }>; states: number } {
     const pairs = new Map<string, { count: number; first: string }>();
     let states = 0;
     for (const ev of EVENT_POOL.events) {
       if ((ev.choices ?? []).length < 2) continue;
-      for (const tier of [1, 3, 5] as const) {
-        for (const era of ['past', 'present', 'future'] as const) {
-          for (const dwelling of ['rent', 'family'] as const) {
-           for (const flagsOff of notFlagsOf(ev).length > 0 ? [false, true] : [false]) {
-            const s = repState(ev, tier, era, dwelling, flagsOff);
-            if (s.age < 20 && dwelling === 'family') continue;
-            states++;
-            const cs = visibleChoices(ev, condContextOf(s));
-            const vs = cs.map((c) => vectorOf(s, c));
-            for (let a = 0; a < cs.length; a++) {
-              for (let b = 0; b < cs.length; b++) {
-                if (a === b) continue;
-                let allGe = true;
-                let strict = false;
-                for (const k of AXES) {
-                  if (vs[a][k] < vs[b][k]) allGe = false;
-                  if (vs[a][k] > vs[b][k]) strict = true;
+      if (onlyEvent !== undefined && ev.id !== onlyEvent) continue;
+      const variants: Array<Variant | undefined> = withVariants ? variantsOf(ev) : [undefined];
+      for (const variant of variants) {
+        for (const tier of [1, 3, 5] as const) {
+          for (const era of ['past', 'present', 'future'] as const) {
+            for (const dwelling of ['rent', 'family'] as const) {
+              for (const flagsOff of notFlagsOf(ev).length > 0 ? [false, true] : [false]) {
+                const s = repState(ev, tier, era, dwelling, flagsOff, variant);
+                if (s === null) continue;
+                states++;
+                const cs = visibleChoices(ev, condContextOf(s));
+                const vs = cs.map((c) => vectorOf(s, c));
+                for (let a = 0; a < cs.length; a++) {
+                  for (let b = 0; b < cs.length; b++) {
+                    if (a === b) continue;
+                    let allGe = true;
+                    let strict = false;
+                    for (const k of AXES) {
+                      if (vs[a][k] < vs[b][k]) allGe = false;
+                      if (vs[a][k] > vs[b][k]) strict = true;
+                    }
+                    if (!(allGe && strict)) continue;
+                    const id = `${ev.id}:${cs[a].id}>${cs[b].id}`;
+                    const prev = pairs.get(id);
+                    if (prev !== undefined) prev.count++;
+                    else
+                      pairs.set(id, {
+                        count: 1,
+                        first: `${variant === undefined ? '' : `변형 ${variant.label} `}${era} 재력${tier} ${dwelling} ${s.age}세 나은 쪽 ${JSON.stringify(vs[a])} 못한 쪽 ${JSON.stringify(vs[b])}`,
+                      });
+                  }
                 }
-                if (!(allGe && strict)) continue;
-                const id = `${ev.id}:${cs[a].id}>${cs[b].id}`;
-                const prev = pairs.get(id);
-                if (prev !== undefined) prev.count++;
-                else pairs.set(id, { count: 1, first: `${era} 재력${tier} ${dwelling} ${s.age}세 나은 쪽 ${JSON.stringify(vs[a])} 못한 쪽 ${JSON.stringify(vs[b])}` });
               }
             }
-           }
           }
         }
       }
@@ -471,36 +545,12 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
   }
 
   /**
-   * 알려진 지배 쌍 22개 (R-352 처리 시점 24개에서 M7a가 `infant-new-sibling:help>grandma`(grandma에 건강 +1)·`infant-stories:tell>book`(tell의 지식 +3 → +2)을 고쳐 둘이 사라졌다 — 마스터에게 보고했다, 콘텐츠 판단은 마스터). 고치지 않고 잠가 둔다: 새 지배 쌍이 생기거나 이 목록의 쌍이 사라지면 실패해서 알려 준다.
-   * 대부분 한쪽이 대표 상태에서 보너스를 받지 못하는 위험한 선택(창업·대출·맞서기)이거나 칸 수가 거칠어 생긴 같은 값의 쌍이다.
-   * youth-gig-work의 settle > juggle(자산 ▲▲▲ · 행복 ▲ 대 자산 ▲▲ · 건강 ▼▼ · 행복 ▼)은 마스터 결정으로 콘텐츠를 고쳐(juggle에 관계 +2, settle에 순자산 −800·행복 −1) 사라졌다.
+   * 알려진 지배 쌍: 없다 (M7e-3, planner content-M7e 1절). R-352 처리 시점 24개 → M7a 22개 → M7e-3에서 콘텐츠 값 19행·유혹 한 줄 6쌍·경계 건강 +1 한 줄·시험 상태 현실화(가짜 2쌍)로 0.
+   * 새 쌍이 생기면 이 목록에 넣지 말고 고친다 — 콘텐츠 판단은 마스터.
    */
-  const KNOWN_DOMINANCE: readonly string[] = [
-    'middle-business:stay>start',
-    'middle-business:talk>start',
-    'middle-child-school:support>fund',
-    'middle-child-school:support>push',
-    'middle-debt-guarantee:lend>sign',
-    'middle-health-check-later:exercise>treat',
-    'middle-home-loan:stay>shrink',
-    'middle-job-again:skill>rest',
-    'middle-marriage-crisis:space>apart',
-    'middle-parents-farewell:share>stay',
-    'school-career-choice:skill>look',
-    'school-tutoring:alone>academy',
-    'senior-estate:donate>give',
-    'senior-travel:near>go',
-    'youth-colleague:object>leave',
-    'youth-first-job:dream>family',
-    'youth-first-job:dream>stable',
-    'youth-housing:rent>loan',
-    'youth-marriage:marry>wait',
-    'youth-rent-hike:share>pay',
-    'youth-startup:decline>start',
-    'youth-startup:side>start',
-  ];
+  const KNOWN_DOMINANCE: readonly string[] = [];
 
-  it('표기 기준 지배 쌍이 알려진 22개뿐이다: 새 쌍이 생기면 실패한다 (고치지 말고 목록과 수치를 보고 — 콘텐츠 판단은 마스터)', () => {
+  it('표기 기준 지배 쌍이 없다 (알려진 쌍 0): 새 쌍이 생기면 실패한다 (고치지 말고 목록과 수치를 보고 — 콘텐츠 판단은 마스터)', () => {
     const { pairs, states } = findDominance();
     expect(states, '대표 상태 수(공허 통과 방지)').toBeGreaterThan(1000);
     const found = [...pairs.keys()].sort();
@@ -510,6 +560,54 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
     expect(gone, '목록이 낡았다 — 이 쌍은 더 이상 지배하지 않는다').toEqual([]);
   }, 120_000);
 
+  it('가짜 지배 2쌍은 시험 상태 수정(R3)으로 사라졌다: 집 마련(middle-home-loan)은 자가 + 부채 7,000, 부부 갈등(middle-marriage-crisis)은 부모 집 변형이 없다', () => {
+    const home = EVENT_POOL.byId.get('middle-home-loan')!;
+    const crisis = EVENT_POOL.byId.get('middle-marriage-crisis')!;
+    let homeStates = 0;
+    let crisisFamily = 0;
+    let crisisStates = 0;
+    for (const tier of [1, 3, 5] as const) {
+      for (const era of ['past', 'present', 'future'] as const) {
+        for (const dwelling of ['rent', 'family'] as const) {
+          const h = repState(home, tier, era, dwelling);
+          if (h !== null) {
+            homeStates++;
+            if (h.flags.includes('own_home')) {
+              expect(h.assets?.dwelling, 'own_home이면 자가').toBe('own');
+              expect(h.assets?.debt, 'own_home이면 부채가 있다').toBeGreaterThanOrEqual(7000);
+            }
+          }
+          const c = repState(crisis, tier, era, dwelling);
+          if (c !== null) {
+            crisisStates++;
+            if (c.assets?.dwelling === 'family') crisisFamily++;
+          }
+        }
+      }
+    }
+    expect(homeStates).toBeGreaterThan(0);
+    expect(crisisStates).toBeGreaterThan(0);
+    expect(crisisFamily, '결혼했는데 부모 집인 상태는 없다').toBe(0);
+    const { pairs } = findDominance();
+    expect([...pairs.keys()].filter((id) => id.startsWith('middle-home-loan:') || id.startsWith('middle-marriage-crisis:'))).toEqual([]);
+  }, 120_000);
+
+  it('R2: 이벤트 eras에 없는 시대의 대표 상태는 만들지 않는다 (youth-rent-hike는 지금 세상만)', () => {
+    const ev = EVENT_POOL.byId.get('youth-rent-hike')!;
+    expect(ev.eras).toEqual(['present']);
+    const built = (['past', 'present', 'future'] as const).filter((era) => repState(ev, 3, era, 'rent') !== null);
+    expect(built).toEqual(['present']);
+  });
+
+  it('R1: 이벤트의 순자산 조건을 지킨다 (senior-estate는 순자산 15,000 이상 — 대표 상태의 순자산이 조건을 만족한다)', () => {
+    const ev = EVENT_POOL.byId.get('senior-estate')!;
+    const netMin = ev.conditions?.assets?.netMin;
+    expect(netMin).toBeGreaterThanOrEqual(5000);
+    const s = repState(ev, 3, 'present', 'rent')!;
+    expect(s.assets!.net).toBe(netMin);
+    expect(meetsCondition(ev.conditions, condContextOf(s))).toBe(true);
+  });
+
   it('R-352: youth-gig-work는 어느 쪽도 다른 쪽을 지배하지 않는다 (settle 소득 보정 −200 → 순자산 −800·행복 −1, juggle 관계 +2) — 모든 대표 상태에서', () => {
     const ev = EVENT_POOL.byId.get('youth-gig-work')!;
     let n = 0;
@@ -517,6 +615,7 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
       for (const era of ['present', 'future'] as const) {
         for (const dwelling of ['rent', 'family'] as const) {
           const s = repState(ev, tier, era, dwelling);
+          if (s === null) continue; // 재력 1단계의 부모 집은 lives_with_parents 없이는 없는 상태(R3)
           const [juggle, settle, learn] = ['juggle', 'settle', 'learn'].map((id) => ev.choices!.find((c) => c.id === id)!);
           const vs = [juggle, settle, learn].map((c) => vectorOf(s, c));
           for (let a = 0; a < 3; a++) {
@@ -535,10 +634,10 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
         }
       }
     }
-    expect(n).toBe(12);
+    expect(n).toBe(10);
   });
 
-  it('지배하는 쪽이 5-C 예외인 쌍은 `youth-marriage:marry > wait` 하나뿐이다: 알려진 지배 쌍에서 지배하는 쪽(나은 선택지)이 5-C의 예외 8건에 드는 것은 이 한 쌍이다 (그 밖의 예외로 표기가 부호와 달라져도 선택의 균형은 깨지 않는다)', () => {
+  it('지배하는 쪽이 5-C 예외인 쌍이 없다: 예외 8건(표기가 부호와 달라지는 선택)이 지배하는 쪽(나은 선택지)이 되는 쌍은 0개다', () => {
     const EXCEPTION_IDS = new Set([
       'middle-layoff:leave',
       'youth-gig-work:settle',
@@ -551,9 +650,34 @@ describe('표기 기준 지배 점검 (R-352, E11): 같은 이벤트의 선택�
     ]);
     const { pairs } = findDominance();
     const dominators = [...pairs.keys()].map((id) => id.split('>')[0]).filter((x) => EXCEPTION_IDS.has(x));
-    // youth-marriage:marry > wait 한 쌍이 있다 — 재력 5단계(옛 기본 −4 + 지원 보너스 +5)에서 결혼이 기다림보다 모든 줄에서 낫게 보인다(지원 보너스). 보고에 적었다.
-    expect(dominators.sort()).toEqual(['youth-marriage:marry']);
+    expect(dominators).toEqual([]);
   }, 120_000);
+
+  it('R4 보고용 변형 (잠금 아님): 보너스 조건을 하나씩 맞춘 상태에서도 기본 상태에 없던 지배 쌍을 목록으로 출력한다 — 도구가 변형을 실제로 훑는지만 확인', () => {
+    const base = findDominance(false);
+    const withV = findDominance(true); // 변형 상태만 훑는다(기본 상태는 위 점검이 맡는다)
+    expect(withV.states, '변형 상태 수(공허 통과 방지)').toBeGreaterThan(100);
+    const extra = [...withV.pairs.keys()].filter((id) => !base.pairs.has(id)).sort();
+    // 보고용: 변형에서만 나타난 지배 쌍 — 잠그지 않는다(현재 값은 dev 로그 M7e-3에 적는다)
+    console.info(`[R4 보고용 변형] 기본 ${base.states}상태 · 변형 ${withV.states}상태, 변형에서만 나타난 지배 쌍 ${extra.length}개`);
+    for (const id of extra) console.info(`  ${id} (${withV.pairs.get(id)!.count}상태) ${withV.pairs.get(id)!.first}`);
+    expect(Array.isArray(extra)).toBe(true);
+  }, 240_000);
+
+  it('R-384 (M7e-4, F-4): 부채 0인 자가 판의 middle-home-loan — shrink 건강 +1로 stay와 서로 지배하지 않는다 (자산 같음 · 행복 ▼ 대 건강 ▲), 이 변형은 지배 0', () => {
+    const ev = EVENT_POOL.byId.get('middle-home-loan')!;
+    const v = variantsOf(ev).find((x) => x.debt0 === true);
+    expect(v, '부채 0 변형이 만들어진다(own_home을 읽는 이벤트)').toBeDefined();
+    const { pairs, states } = findDominance(true, 'middle-home-loan');
+    expect(states, 'middle-home-loan의 변형 상태 수(공허 통과 방지)').toBeGreaterThan(5);
+    expect([...pairs.keys()], '부채 0 자가 판의 지배 쌍').toEqual([]);
+    // 부채 0 상태에서 shrink의 부채 줄이 정말 없다(0으로 잘림) — 그래서 건강 ▲가 필요했다
+    const s = repState(ev, 3, 'present', 'rent', false, v)!;
+    expect(s.assets!.debt).toBe(0);
+    const items = previewChoice(s, ev.choices!.find((c) => c.id === 'shrink')!).items.map((i) => i.key);
+    expect(items).not.toContain('debt');
+    expect(items).toContain('health');
+  });
 });
 
 describe('표기 방향과 옛 재산 부호 (EC3 부호 점검): 모든 이벤트 × 선택지 × 대표 상태', () => {

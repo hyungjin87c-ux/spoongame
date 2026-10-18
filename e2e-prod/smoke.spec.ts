@@ -201,17 +201,23 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(page.getByTestId('error-screen')).toHaveCount(0);
 
   // 엔딩 회고(제품 번들): 사망 한 줄·출발선 대비(같은 세상 안의 자리)·최종 스탯·연표(선택한 순간이 빠짐없이)
-  await expect(page.getByTestId('ending-death')).toContainText(`${saved.data.death.age}세에 세상을 떠났다`);
+  await expect(page.getByTestId('ending-death')).toContainText(`${saved.data.death.age}세에 세상을 떠났습니다`);
   await expect(page.getByTestId('ending-journey')).toContainText('의 집에서 태어');
   await expect(page.getByTestId('ending-movement')).toBeVisible();
   // 재산 스탯은 없어졌다(M5 2a, 저장 v8) — 최종 순자산 줄은 2b에서 더해진다
   for (const key of ['education', 'health', 'happiness', 'relationships']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
   // 바뀐 기대(M4): 외모는 점수 숫자가 아니라 「상위/하위 약 N%」 한 가지로만 (R-135)
-  await expect(page.getByTestId('final-looks')).toContainText(/상위|하위|딱 중간쯤/);
+  await expect(page.getByTestId('final-looks')).toContainText(/상위|하위|가운데쯤/);
   await expect(page.getByTestId('timeline-entry')).toHaveCount(history.length);
   await expect(page.getByTestId('timeline-picked')).toHaveCount(choices);
-  const endingText = (await page.getByTestId('ending-screen').innerText()).replace(/\s+/g, ' ');
+  // M7e-3: 출발선 범례의 수저 칩(.grade — designer 결정, 막대의 이름표) 한 곳을 뺀 글에서 등급명·느낌표가 없다
+  const endingText = (await page.getByTestId('ending-screen').evaluate((el) => {
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.grade').forEach((n) => n.remove());
+    return clone.textContent ?? '';
+  })).replace(/\s+/g, ' ');
   expect(endingText).not.toMatch(/(흙|동|은|금|다이아)\s*수저|다이아|!/);
+  await expect(page.locator('[data-testid="ending-legend"] .grade')).toHaveCount(1);
 
   // 다시 태어나기: 새 시드의 새 판, 첫 화면(기본 지금 세상·약 30분), 설정(8배) 유지, 포커스는 새 화면 제목
   const settingsBefore = await page.evaluate(() => localStorage.getItem('suzeo-game:settings'));

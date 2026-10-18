@@ -259,7 +259,8 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     expect(hits).toEqual({
       'core/carousel.ts': 1, // 기준 줄 「{분모 문구} · {연도}년 기준」 (항목 둘 고정)
       'core/glue.ts': 1, // splitPair의 분해 기호
-      'data/endingText.ts': 1, // 엔딩 연표의 단계 줄: 단계 · 나이 범위 (엔딩 화면이 ui/Glue로 그린다)
+      'data/endingText.ts': 2, // 엔딩 연표의 단계 줄: 단계 · 나이 범위, 엔딩 머리 셋째 줄: 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (M7e-3 — 둘 다 엔딩 화면이 ui/Glue로 그린다)
+      'screens/EndingScreen.tsx': 1, // 엔딩 머리 라벨 「{세상} · 생애 기록」 (M7e-3, ui/Glue 묶음 — 「·」가 줄 가장자리에 남지 않는다)
       // SPEC-003 M4 대시보드: 인생 기록 머리 보조 「시간순 · 위로 스크롤하면 지난 기록」과 새 줄 버튼 「새 기록 N개 · 맨 아래로」 — 둘 다 항목이 둘로 고정된 짧은 쌍이고 ui/Glue 묶음(.keep-phrase)으로 그려 기호가 줄 가장자리에 혼자 남지 않는다(copy.md 대시보드 행, 11-4절).
       'data/dashText.ts': 2,
       'data/koreaStatsAccess.ts': 2, // 「통계 기준: {연도}년 · 마지막 갱신 {날짜}」, 카드 출처 줄(화면에 쓰이지 않는 접근자 값)
@@ -290,7 +291,7 @@ describe('괄호 안 짧은 구간은 괄호째 한 묶음이다 (M3-O13)', () =
   it('구간의 세 꼴을 모두 묶는다: 「안쪽」「~ 사이」「A와 B 사이」 — 그리고 뒤에 붙은 조사·구두점(「)의」「),」)도 묶음 안이다', () => {
     expect(kinds(glueSegments('흙수저(하위 30% 안쪽)'))).toEqual(['plain:흙수저', 'chain:(하위 30% 안쪽)']);
     expect(kinds(glueSegments('금수저(상위 17~45% 사이)'))).toEqual(['plain:금수저', 'chain:(상위 17~45% 사이)']);
-    expect(kinds(glueSegments('은수저(하위 25%와 상위 45% 사이)'))).toEqual(['plain:은수저', 'chain:(하위 25%와 상위 45% 사이)']);
+    expect(kinds(glueSegments('은수저(하위 25% 선과 상위 45% 선 사이)'))).toEqual(['plain:은수저', 'chain:(하위 25% 선과 상위 45% 선 사이)']);
     expect(kinds(glueSegments('동수저(하위 25% 안쪽)의 집에서'))).toEqual(['plain:동수저', 'chain:(하위 25% 안쪽)의', 'plain: 집에서']);
     expect(kinds(glueSegments('흙수저(하위 30% 안쪽), 서울'))).toEqual(['plain:흙수저', 'chain:(하위 30% 안쪽),', 'plain: 서울']);
   });
