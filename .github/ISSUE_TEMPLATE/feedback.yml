@@ -8,12 +8,13 @@ body:
       value: |
         플레이해 주셔서 고맙습니다. 아는 만큼만 적어 주셔도 됩니다.
         **이 저장소는 공개입니다. 이름·연락처·주소 같은 개인정보는 적지 말아 주세요.** 스크린샷에도 개인정보가 보이지 않게 가려 주세요.
+        게임 안에서 직접 적은 기록 글(생각 남기기)이 스크린샷에 찍힐 수 있으니, 그 글도 가려 주세요.
   - type: input
     id: screen
     attributes:
       label: 어떤 화면에서
-      description: 예) 첫 화면, 시대 선택, 태어나기, 인생 진행 중, 엔딩
-      placeholder: "예) 인생 진행 중 — 12세 선택지 화면"
+      description: 예) 첫 화면, 룰렛, 출생신고, 인생 진행 중, 결정 카드, 생각 남기기, 엔딩
+      placeholder: "예) 결정 카드 — 12세 선택지 화면"
     validations:
       required: true
   - type: textarea
@@ -50,6 +51,6 @@ body:
     id: screenshot
     attributes:
       label: 스크린샷 (선택)
-      description: 이 칸에 이미지를 끌어다 놓거나 붙여 넣을 수 있습니다. 개인정보가 보이면 가려 주세요.
+      description: 이 칸에 이미지를 끌어다 놓거나 붙여 넣을 수 있습니다. 개인정보나 직접 적은 기록 글이 보이면 가려 주세요.
     validations:
       required: false

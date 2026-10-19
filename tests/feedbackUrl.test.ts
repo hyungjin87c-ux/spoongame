@@ -211,6 +211,21 @@ describe('이슈 양식 파일과의 대응 (.github/ISSUE_TEMPLATE/feedback.yml
     expect(configRaw).toMatch(/blank_issues_enabled: false/);
   });
 
+  it('직접 적은 기록 글(생각 남기기)이 스크린샷에 찍힐 수 있으니 가려 달라는 구절이 양식 머리와 스크린샷 칸 설명에 있다 (SPEC-003 M9 W8, TODO 2차 후보 「feedback.yml 한 구절」)', () => {
+    const [head, ...fields] = templateRaw.split(/\n  - type: input|\n  - type: textarea/);
+    expect(head, '양식 머리(markdown)').toMatch(/직접 적은 기록 글\(생각 남기기\)이 스크린샷에 찍힐 수 있으니, 그 글도 가려 주세요/);
+    const screenshot = fields.find((b) => /\bid: screenshot\b/.test(b))!;
+    expect(screenshot, '스크린샷 칸 설명').toMatch(/description:.*직접 적은 기록 글이 보이면 가려 주세요/);
+  });
+
+  it('「어떤 화면에서」 칸의 예시에 앱이 미리 채우는 화면 이름이 모두 들어 있고, 없어진 「시대 선택」은 없으며, 결정 카드·생각 남기기도 예시에 있다 (M9 W8)', () => {
+    const block = templateRaw.split(/\n  - type:/).find((b) => new RegExp(`\\bid: ${FEEDBACK_SCREEN_FIELD}\\b`).test(b))!;
+    const description = block.match(/^\s+description:\s*(.+)$/m)![1];
+    for (const label of Object.values(FEEDBACK_SCREEN_LABEL)) expect(description, `앱이 채우는 「${label}」`).toContain(label);
+    for (const name of ['결정 카드', '생각 남기기']) expect(description, name).toContain(name);
+    expect(templateRaw).not.toContain('시대 선택');
+  });
+
   it('화면 이름 표는 모든 화면 단계를 덮는다 (누락 없음)', () => {
     expect(Object.keys(FEEDBACK_SCREEN_LABEL).sort()).toEqual([...PHASES].sort());
     for (const label of Object.values(FEEDBACK_SCREEN_LABEL)) expect(label.length).toBeGreaterThan(1);
