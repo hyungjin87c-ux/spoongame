@@ -75,9 +75,20 @@ const SHOTS = [
   // 밀린 화면·오류 화면(DS1 공통 헤더 — M4가 공통 헤더 컴포넌트로 함께 바꾼다): `system.html` / `?state=error`. 320 · 글자 200% = 제목 글자 크기 상한(R-321: 「바뀌었습니다.」가 한 줄 폭에 들어가도록 바닥 --fs-md까지 줄어든다)
   ['system.html', 'system-superseded', { m: [{}, { forced: true }], d: [{}], n: [{ text: 200 }] }],
   ['system.html', 'system-error', { m: [{ query: 'state=error' }, { query: 'state=error', dark: true }], d: [{ query: 'state=error' }], n: [{ query: 'state=error', text: 200 }] }],
-  // 카드
-  ['decision-infant.html', 'decision-infant', { m: [{}], d: [{}] }],
-  ['decision-adult.html', 'decision-adult', { m: [{}, { dark: true }], d: [{}, { dark: true }] }],
+  // 중대 결정 카드(M7b, 2026-10-19 — design-system.md 6절 「중대 결정 카드」, copy.md 6절). 한 파일에 `?state=`로 상태를 담는다.
+  // decision-infant: 기본 = 수동 모달 시트 「동생이 생겼다」 + 연구 c-033(이벤트 JSON의 실제 연결 — 저자 5명 「Teti 외」, 긴 영문 원제 — 320 · 글자 200%의 시트 안 스크롤) / kinder = 「유치원 고르기」 + 통계 c-061(기관 둘 「교육부, 한국교육개발원」 쉼표 나열 · 자료 이름 「교육통계연보: …」 쌍점) / auto = 「동생이 생겼다」의 자동 모드 인라인 틀(full로 카드 전체)
+  ['decision-infant.html', 'decision-infant', { m: [{}, { dark: true }, { forced: true }], d: [{}], n: [{}, { text: 200 }], l: [{}] }],
+  ['decision-infant.html', 'decision-infant-kinder', { m: [{ query: 'state=kinder' }], d: [{ query: 'state=kinder' }], n: [{ query: 'state=kinder', text: 200 }] }],
+  ['decision-infant.html', 'decision-infant-auto', { m: [{ query: 'state=auto', full: true }, { query: 'state=auto', dark: true, full: true }], d: [{ query: 'state=auto' }], n: [{ query: 'state=auto', text: 200, full: true }] }],
+  // decision-adult: 기본 = 수동 시트 「같은 팀의 사람」(인용 없음 — 빈 박스 0) / stat = 「살 곳을 구하는 일」 + 통계 c-015 / collapsed = 접힌 띠(수동, 「결정 다시 열기」) / auto = 자동 모드 인라인 카드(스크림 없음, 진행 줄 그대로) / auto-collapsed = 자동 모드에서 접힌 띠
+  ['decision-adult.html', 'decision-adult', { m: [{}, { dark: true }], d: [{}, { dark: true }], n: [{}] }],
+  ['decision-adult.html', 'decision-adult-stat', { m: [{ query: 'state=stat' }, { query: 'state=stat', forced: true }], d: [{ query: 'state=stat' }], n: [{ query: 'state=stat', text: 200 }] }],
+  ['decision-adult.html', 'decision-collapsed', { m: [{ query: 'state=collapsed' }, { query: 'state=collapsed', dark: true }, { query: 'state=collapsed', text: 200 }], d: [{ query: 'state=collapsed' }], n: [{ query: 'state=collapsed', text: 200 }], l: [{ query: 'state=collapsed' }] }],
+  ['decision-adult.html', 'decision-auto', { m: [{ query: 'state=auto' }, { query: 'state=auto', dark: true }, { query: 'state=auto', forced: true }], d: [{ query: 'state=auto' }, { query: 'state=auto', dark: true }], n: [{ query: 'state=auto' }, { query: 'state=auto', text: 200, full: true }], l: [{ query: 'state=auto' }] }],
+  ['decision-adult.html', 'decision-auto-collapsed', { m: [{ query: 'state=auto-collapsed' }], d: [{ query: 'state=auto-collapsed' }] }],
+  // 인용 박스 표본 넷 + 출처 줄 변환 예(components.html #cite — 지난·다가올 세상 머리말은 시안 주인공(지금 세상)의 카드에 못 두므로 여기서 본다)
+  // (320 · 글자 200%는 components.html의 다른 표본(#tools 5열 격자 비교판)이 페이지 넘침 점검에 걸려 두지 않는다 — 머리말 포함 글자의 200% 접힘은 decision-infant·decision-infant-auto 320 · 200% 샷과 감사가 덮는다)
+  ['components.html', 'components-cite', { m: [{ el: '#cite' }, { el: '#cite', dark: true }], n: [{ el: '#cite' }] }],
   ['note.html', 'note', { m: [{}, { dark: true }], d: [{}] }],
   // 엔딩: 머리 = 얼굴 96px 정사각 + 텍스트 칸 `.ending__who`(R-320), 320 · 글자 200% = 제목 「이서연의 인생」 글자 크기 상한(R-321 — 낱말이 끊기지 않고 칸이 좁으면 얼굴 아래 줄로)
   // M7e(R-327): 머리 「{세상} · 생애 기록」 + 「연월 ~ 연도 · N세」, 출발선 카드 = 띠(출발선 구간) + 마름모(마지막 자리) 막대 + 범례(수저 칩) + 합쇼체 제안 문안, 「최종 순자산」 줄은 금액만.

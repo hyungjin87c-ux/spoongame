@@ -52,6 +52,12 @@ async function collectBoxes(page: Page): Promise<Collected> {
       hiddenCache.set(el, out);
       return out;
     };
+    // 읽히지 않는 글자(diff-003.md D-59): 모달 시트 뒤 스크림에 가린 바깥(`[inert]` 안)은 어두워져 있어 읽는 글자가 아니고, 닫힌 <details>의 본문(요약 밖)은 화면에 없다
+    const notRead = (el: Element): boolean => {
+      if (el.closest('[inert]') !== null) return true;
+      if (el.closest('details:not([open])') !== null && el.closest('summary') === null) return true;
+      return false;
+    };
     const boxes = new Set<Element>();
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
@@ -59,6 +65,7 @@ async function collectBoxes(page: Page): Promise<Collected> {
       const parent = (node as Text).parentElement;
       if (parent === null || isHidden(parent)) continue;
       if (parent.closest('.reel') !== null && parent.closest('.is-result') === null) continue; // 릴의 결과 칸 밖 줄은 흐림 가림막이 덮는 장식 연출
+      if (notRead(parent)) continue;
       for (let cur: Element | null = parent; cur !== null; cur = cur.parentElement) {
         const bg = getComputedStyle(cur).backgroundColor;
         const m = /rgba?\(([^)]+)\)/.exec(bg);
@@ -125,13 +132,16 @@ async function textRectsOf(page: Page, index: number): Promise<{ width: number; 
       const parent = (node as Text).parentElement;
       if (parent === null || isHidden(parent)) continue;
       if (parent.closest('.reel') !== null && parent.closest('.is-result') === null) continue;
+      if (parent.closest('[inert]') !== null) continue; // 모달 뒤 스크림에 가린 바깥 글자 (D-59)
       if (nearestBox(parent) !== box) continue; // 안쪽 다른 색 바탕 상자의 글자는 그 상자가 잰다
       // 글자와 상자 사이의 스크롤 영역(overflow가 visible이 아닌 조상)이 잘라 내는 곳: 완전히 보이는 줄만 잰다. 스크롤 영역 밖으로 밀려난 줄이나 가장자리에 반쯤 걸린 줄은
       // 요소 스크린샷에 글자가 없거나 일부만 있어 「글자 색 = 바탕 색」으로 잘못 읽힌다(대시보드 인생 기록의 스크롤 영역, M4). 사용자가 읽을 수 없는 글자라 대비의 대상도 아니다.
       const clips: DOMRect[] = [];
-      for (let cur: Element | null = parent; cur !== null && cur !== box; cur = cur.parentElement) {
+      // 상자 자신이 스크롤 영역이면(모달 시트) 그 보이는 칸 밖으로 밀려난 줄도 요소 스크린샷에 들지 않으므로 같이 거른다(M7b — 시트는 맨 위·맨 아래 두 자리에서 따로 잰다)
+      for (let cur: Element | null = parent; cur !== null; cur = cur.parentElement) {
         const cs = getComputedStyle(cur);
         if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') clips.push(cur.getBoundingClientRect());
+        if (cur === box) break;
       }
       range.selectNodeContents(node);
       for (const r of Array.from(range.getClientRects())) {

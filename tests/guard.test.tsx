@@ -288,7 +288,7 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
   const render = (g: GameState, autoMode = false) => renderLife(g, autoMode);
   /** 진행 줄(controls)만: 그 뒤에 이어지는 도구 줄(tools) 앞까지 */
   const controlsOf = (html: string) => html.slice(html.indexOf('data-testid="controls"'), html.indexOf('data-testid="tools"'));
-  const toolsOf = (html: string) => html.slice(html.indexOf('data-testid="tools"'), html.indexOf('data-testid="choice-announce"'));
+  const toolsOf = (html: string) => html.slice(html.indexOf('data-testid="tools"'), html.indexOf('<main'));
   /** 해당 data-testid 버튼의 여는 태그 문자열 */
   const tagOf = (html: string, testId: string) => html.match(new RegExp(`<button[^>]*data-testid="${testId}"[^>]*>`))![0];
   const hasRealDisabled = (tag: string) => /\sdisabled(=|\s|>)/.test(tag);
@@ -315,8 +315,8 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
     const decision = advanceUntilDecision(life).state;
     expect(decision.pending).not.toBeNull();
     const html = render(decision);
-    // 중대 결정 카드는 본문(main) 가운데 열의 맨 위이고 그 뒤에 인생 기록(log)이 온다
-    const choiceBlock = html.slice(html.indexOf('data-testid="choice-panel"'), html.indexOf('data-testid="log"'));
+    // 자동 모드 꺼짐 = 모달 시트: 화면 맨 끝(inert인 바깥 형제들 뒤)에 있고, 안의 버튼은 선택지와 「카드 접기」다 (M7b)
+    const choiceBlock = html.slice(html.indexOf('data-testid="choice-panel"'));
     expect(choiceBlock.match(/<button/g)!.length).toBeGreaterThanOrEqual(2);
     expect(choiceBlock.match(/<button/g)!.length).toBe(choiceBlock.match(/aria-disabled="true"/g)!.length);
     const controls = controlsOf(html);

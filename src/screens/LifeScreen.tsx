@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, previewPending, type BgmSettings, type EventPool, type Settings, type Speed, type ThemeChoice } from '../core';
+import { useEffect, useRef, type RefObject } from 'react';
+import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, type BgmSettings, type EventPool, type Settings, type Speed, type ThemeChoice } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { EVENT_POOL } from '../data/events';
 import { DASH_TEXT } from '../data/dashText';
 import { BUILD_LABEL, REPO_URL } from '../buildInfo';
 import { HeaderLogo, Icon, Sprite } from '../ui/Brand';
 import { FeedbackLink } from '../ui/FeedbackLink';
-import { revealTopOfTallCard } from '../ui/focusReveal';
 import { GuardedButton } from '../ui/GuardedButton';
 import { AssetsCard, FamilyCard, PeersNowCard, ProfileCard, StatusCard, type LifeGame } from '../ui/dash/Cards';
-import { ImpactHint, ImpactLine } from '../ui/dash/Impact';
+import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, useDecisionModel } from '../ui/dash/DecisionCard';
 import { LogCard } from '../ui/dash/LogCard';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
 import { useStickyHead } from '../ui/headRelease';
@@ -27,7 +26,8 @@ import { YearRow } from '../ui/YearBar';
  * 좁은 화면은 1열(프로필 → 상태 → 자산 → 인생 기록 → 식구 → 또래; 결정을 기다리는 카드는 맨 위로 올라온다 — 곧바로 눈에 띄고 포커스가 가 닿는다).
  *
  * 이 화면은 계산하지 않는다: 값은 core의 순수 함수(profile·family·peerNow·progress·feedback)가 만들고, 시간은 App이 돌리는 올해 시계(`ui/useYearClock.ts`)가 흘린다.
- * 중대 결정 카드는 기존 동작(선택지 이벤트의 제목·본문·선택지, 포커스 규칙 R-036, 입력 가드)을 그대로 두고 새 틀(카드)에 담았다 — 영향 표기·인용·접기는 M5·M7b.
+ * 중대 결정 카드(M7b, `ui/dash/DecisionCard.tsx`): 자동 모드가 꺼져 있으면 **모달 시트**(바깥 전부 `inert`, Esc = 카드 접기), 켜져 있으면 **비모달 인라인 카드**(가운데 열 맨 위). 접으면 그 자리에 접힌 띠가 생기고
+ * 접힘 상태는 `App`이 갖는다(U10). 포커스는 `ui/useFocus.ts#decideLifeFocus`(8순간 × 자동 2 × 위치 3 = 48칸)가 한 곳에서 정한다.
  */
 
 /** 하단 컨트롤(진행 줄)과 도구 줄의 입력 가드 키. 상수라서 가드는 이 화면이 새로 뜰 때(마운트)만 걸리고, 플레이 중 배속을 누르거나 나이가 오를 때 다시 닫히지 않는다(R-035). */
@@ -46,6 +46,12 @@ interface Props {
   /** 나가기 확인 단계가 열려 있는가 (App이 갖는다 — 열려 있는 동안 시계도 멈춘다) */
   exitOpen: boolean;
   onExitOpen: (open: boolean) => void;
+  /** 대기 중인 중대 결정 카드가 접혀 있는가 (App이 갖는다 — M7c 카드가 읽는다, U10). 기본 false(열림) */
+  folded?: boolean;
+  /** 접기·다시 열기 횟수. 입력 가드 키에 들어가 접기·다시 열기 직후 400ms 동안 같은 자리의 버튼이 눌리지 않게 한다(U9). 기본 0 */
+  foldEpoch?: number;
+  onFold?: () => void;
+  onReopen?: () => void;
   onChoose: (key: string, choiceId: string) => void;
   onSkip: () => void;
   onSpeed: (speed: Speed) => void;
@@ -62,60 +68,6 @@ interface Props {
   buildLabel?: string;
 }
 
-function ChoicePanel({
-  game,
-  pool,
-  auto,
-  titleRef,
-  onChoose,
-}: {
-  game: LifeGame;
-  pool: EventPool;
-  auto: boolean;
-  titleRef: RefObject<HTMLHeadingElement>;
-  onChoose: Props['onChoose'];
-}) {
-  const pending = game.pending;
-  const ev = pending ? pool.byId.get(pending.eventId) : undefined;
-  // 선택지마다의 영향(항목·방향·칸 수): 인생 진행이 선택을 적용하는 코드와 같은 코드로 미리 계산한다(core/impact.ts, 숨은 효과 0). 대기 중인 선택지와 상태가 같은 동안은 다시 계산하지 않는다.
-  const previews = useMemo(() => (pending && ev ? previewPending(game, pool) : null), [game, pool, pending, ev]);
-  if (!pending || !ev) return null;
-  const choices = pending.choiceIds.map((id) => ev.choices?.find((c) => c.id === id)).filter((c) => c !== undefined);
-  const impactOf = (id: string) => previews?.find((p) => p.choiceId === id)?.impact.items ?? [];
-  const anyImpact = choices.some((c) => impactOf(c.id).length > 0);
-  return (
-    <section className="card choice-panel" aria-labelledby="choice-title" data-testid="choice-panel" data-key={pending.key}>
-      <span className="choice-panel__kind">{DASH_TEXT.choiceKind}</span>
-      {/* 포커스 이동은 LifeScreen의 useLifeFocus가 한 곳에서 정한다(자동 모드·컨트롤 안 포커스 예외 포함, R-036). */}
-      <h2 id="choice-title" className="choice-panel__title" ref={titleRef} tabIndex={-1} data-testid="choice-title">
-        {ev.title}
-      </h2>
-      <p data-testid="choice-text">{ev.text}</p>
-      <div className="choices-list" role="group" aria-label={DASH_TEXT.choiceGroup}>
-        {choices.map((c, i) => (
-          // guardKey = 이 이벤트 인스턴스의 고유 키: 다음 선택지가 같은 자리에 떠도 새로 가드가 걸려 연타가 자동으로 눌리지 않는다.
-          // 글자 200%·좁은 폭에서 선택지 카드가 가용 높이(화면 − 하단 띠)보다 커지면(번호 원이 글자 크기를 따라 커져 D-38) 키보드 포커스 때 카드의 위쪽 변을 화면에 맞춘다(CM10 예외 ②, ui/focusReveal.ts#revealTopOfTallCard)
-          <GuardedButton key={c.id} className="choice" guardKey={pending.key} data-testid={`choice-${c.id}`} onFocus={(e) => revealTopOfTallCard(e.currentTarget)} onClick={() => onChoose(pending.key, c.id)}>
-            <span className="choice__no" aria-hidden="true">
-              {i + 1}
-            </span>
-            <span className="choice__body">
-              <span className="choice__label">{c.label}</span>
-              <ImpactLine items={impactOf(c.id)} />
-            </span>
-          </GuardedButton>
-        ))}
-      </div>
-      {anyImpact ? <ImpactHint name={game.character.name} /> : null}
-      {auto ? (
-        <p className="t-sm t-muted" data-testid="auto-note">
-          {DASH_TEXT.autoNote}
-        </p>
-      ) : null}
-    </section>
-  );
-}
-
 interface ControlsProps {
   speed: Speed;
   autoMode: boolean;
@@ -123,6 +75,8 @@ interface ControlsProps {
   /** 선택지가 대기 중인가 (대기 중에는 "다음 결정으로"를 누를 수 없다) */
   hasPending: boolean;
   containerRef?: RefObject<HTMLDivElement>;
+  /** 입력 가드 키 — 기본 CONTROLS_GUARD_KEY(화면이 뜰 때만 걸린다). LifeScreen은 접기·다시 열기 횟수를 덧붙여 그 직후에도 걸리게 한다 */
+  guardKey?: string;
   onSpeed: (speed: Speed) => void;
   onSkip: () => void;
   onAuto: (auto: boolean) => void;
@@ -155,17 +109,17 @@ export function skipBlockedReason(autoMode: boolean, hasPending: boolean): strin
  *    변하지 않는다. disabled면 Tab 순서에서 빠져, 포커스가 8배 버튼에 있다가 선택지가 뜨면 다음 Tab이 "자동 모드"에 닿아 Space가 자동 모드를 켜 버린다(R-036).
  *  - 일시정지 버튼은 이름이 「일시정지」 ↔ 「다시 진행」으로 바뀐다(아이콘도 교체) — 이름이 상태를 전하므로 aria-pressed를 따로 쓰지 않는다(copy.md).
  */
-export function LifeControls({ speed, autoMode, paused, hasPending, containerRef, onSpeed, onSkip, onAuto, onPause }: ControlsProps) {
+export function LifeControls({ speed, autoMode, paused, hasPending, containerRef, guardKey = CONTROLS_GUARD_KEY, onSpeed, onSkip, onAuto, onPause }: ControlsProps) {
   const skipReason = skipBlockedReason(autoMode, hasPending);
   return (
     <div className="controls-fixed" role="group" aria-label={DASH_TEXT.controlsGroup} data-testid="controls" ref={containerRef}>
       <div className="controls__speed">
-        <GuardedButton guardKey={CONTROLS_GUARD_KEY} className="btn btn--sm" data-testid="pause" data-paused={paused ? 'true' : 'false'} onClick={() => onPause(!paused)}>
+        <GuardedButton guardKey={guardKey} className="btn btn--sm" data-testid="pause" data-paused={paused ? 'true' : 'false'} onClick={() => onPause(!paused)}>
           <Icon name={paused ? 'i-play' : 'i-pause'} className="icon--sm" />
           <span>{paused ? DASH_TEXT.play : DASH_TEXT.pause}</span>
         </GuardedButton>
         {SPEEDS.map((s) => (
-          <GuardedButton key={s} guardKey={CONTROLS_GUARD_KEY} className="btn btn--sm" aria-pressed={speed === s} data-speed={s} onClick={() => onSpeed(s)}>
+          <GuardedButton key={s} guardKey={guardKey} className="btn btn--sm" aria-pressed={speed === s} data-speed={s} onClick={() => onSpeed(s)}>
             {s}
             {DASH_TEXT.speedUnit}
           </GuardedButton>
@@ -173,7 +127,7 @@ export function LifeControls({ speed, autoMode, paused, hasPending, containerRef
       </div>
       <div className="controls__more">
         <GuardedButton
-          guardKey={CONTROLS_GUARD_KEY}
+          guardKey={guardKey}
           className="btn btn--sm btn--secondary"
           data-testid="skip"
           aria-disabled={isSkipBlocked(autoMode, hasPending)}
@@ -183,7 +137,7 @@ export function LifeControls({ speed, autoMode, paused, hasPending, containerRef
           <Icon name="i-next" className="icon--sm" />
           <span>{DASH_TEXT.skip}</span>
         </GuardedButton>
-        <GuardedButton guardKey={CONTROLS_GUARD_KEY} className="btn btn--sm btn--secondary" data-testid="auto" aria-pressed={autoMode} onClick={() => onAuto(!autoMode)}>
+        <GuardedButton guardKey={guardKey} className="btn btn--sm btn--secondary" data-testid="auto" aria-pressed={autoMode} onClick={() => onAuto(!autoMode)}>
           <Icon name="i-auto" className="icon--sm" />
           <span>{autoMode ? DASH_TEXT.autoOn : DASH_TEXT.autoOff}</span>
         </GuardedButton>
@@ -206,6 +160,7 @@ export function LifeControls({ speed, autoMode, paused, hasPending, containerRef
 export const BGM_VOLUME_STEP = 5;
 
 interface ToolsProps {
+  guardKey: string;
   settings: Settings;
   dark: boolean;
   feedbackUrl: string | null;
@@ -219,27 +174,27 @@ interface ToolsProps {
  * 도구 줄 (DB3): BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기. 켜짐 상태(BGM·다크 모드)는 aria-pressed + 색 반전·아래 막대 + 아이콘 교체 + 읽기 전용 「켜짐」이 함께 알린다(R-136②).
  * 「다크 모드」의 켜짐 = 지금 화면에 다크 테마가 적용된 상태(시스템 설정을 따르는 중이든 수동 선택이든). 누르면 반대 테마를 수동 선택으로 저장한다(DB6).
  */
-function LifeTools({ settings, dark, feedbackUrl, exitButtonRef, onBgm, onDark, onExitOpen }: ToolsProps) {
+function LifeTools({ guardKey, settings, dark, feedbackUrl, exitButtonRef, onBgm, onDark, onExitOpen }: ToolsProps) {
   return (
     <div className="controls__tools" role="group" aria-label={DASH_TEXT.toolsGroup} data-testid="tools">
-      <GuardedButton guardKey={CONTROLS_GUARD_KEY} className="btn btn--tool" aria-pressed={settings.bgm.on} data-testid="tool-bgm" onClick={() => onBgm({ on: !settings.bgm.on })}>
+      <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-pressed={settings.bgm.on} data-testid="tool-bgm" onClick={() => onBgm({ on: !settings.bgm.on })}>
         <Icon name="i-music" />
         <span>{DASH_TEXT.toolBgm}</span>
         <span className="sr-only">{settings.bgm.on ? DASH_TEXT.toolOn : ''}</span>
       </GuardedButton>
       {/* 생각 남기기: M7c까지 버튼 자리만 — 선택할 수 없고(aria-disabled, 누르면 아무 일도 없다) 점선·옅은 글자로 그렇게 보이며(GuardedButton의 data-unavailable), 눈에 보이는 「준비 중」이 접근 가능한 이름에 든다(R-326) */}
-      <GuardedButton guardKey={CONTROLS_GUARD_KEY} className="btn btn--tool" aria-disabled={true} data-testid="tool-note">
+      <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-disabled={true} data-testid="tool-note">
         <Icon name="i-pencil" />
         <span>{DASH_TEXT.toolNote}</span>{' '}
         <span className="tool-soon">{DASH_TEXT.toolSoon}</span>
       </GuardedButton>
-      <GuardedButton guardKey={CONTROLS_GUARD_KEY} className="btn btn--tool" aria-pressed={dark} data-testid="tool-dark" onClick={onDark}>
+      <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-pressed={dark} data-testid="tool-dark" onClick={onDark}>
         <Icon name={dark ? 'i-sun' : 'i-moon'} />
         <span>{DASH_TEXT.toolDark}</span>
         <span className="sr-only">{dark ? DASH_TEXT.toolOn : ''}</span>
       </GuardedButton>
-      <FeedbackLink url={feedbackUrl} guardKey={CONTROLS_GUARD_KEY} />
-      <GuardedButton ref={exitButtonRef} guardKey={CONTROLS_GUARD_KEY} className="btn btn--tool" data-testid="tool-exit" onClick={onExitOpen}>
+      <FeedbackLink url={feedbackUrl} guardKey={guardKey} />
+      <GuardedButton ref={exitButtonRef} guardKey={guardKey} className="btn btn--tool" data-testid="tool-exit" onClick={onExitOpen}>
         <Icon name="i-exit" />
         <span>{DASH_TEXT.toolExit}</span>
       </GuardedButton>
@@ -247,13 +202,18 @@ function LifeTools({ settings, dark, feedbackUrl, exitButtonRef, onBgm, onDark, 
   );
 }
 
-export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen, onExitOpen, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+const NOOP = () => undefined;
+
+/** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
+const INERT = { inert: '' } as Record<string, string>;
+
+export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen, onExitOpen, folded = false, foldEpoch = 0, onFold = NOOP, onReopen = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headRef = useRef<HTMLElement>(null);
   const choiceTitleRef = useRef<HTMLHeadingElement>(null);
+  const foldOpenRef = useRef<HTMLButtonElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
-  const liveRef = useRef<HTMLParagraphElement>(null);
   const exitButtonRef = useRef<HTMLButtonElement>(null);
   const exitCancelRef = useRef<HTMLButtonElement>(null);
   const exitBoxRef = useRef<HTMLDivElement>(null);
@@ -267,13 +227,25 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
   const bottomBar = useBottomBar(controlsRef, forceRelease);
   const stickyHead = useStickyHead(headRef, controlsRef, forceRelease);
   useExitAskFit(forceRelease, exitOpen, { titleRef: exitTitleRef, cancelRef: exitCancelRef, boxRef: exitBoxRef, headRef, barRef: controlsRef }, [bottomBar, stickyHead]);
-  const { noteSkip } = useLifeFocus({ pendingKey: game.pending?.key ?? null, autoMode: settings.autoMode, titleRef: headingRef, choiceTitleRef, controlsRef, liveRef });
+  const decision = useDecisionModel(game, pool);
+  // 접힘은 대기 중인 선택지가 있을 때만 뜻이 있다(App이 키로 묶어 두지만 여기서도 못 박는다)
+  const isFolded = decision !== null && folded;
+  // 카드 틀: 자동 모드 하나가 정한다(M-6) — 꺼짐 = 모달 시트(바깥 inert), 켜짐 = 비모달 인라인. 접었다 다시 열면 그때의 자동 모드에 맞는 틀로 뜬다
+  const sheetOpen = decision !== null && !isFolded && !settings.autoMode;
+  const { noteSkip } = useLifeFocus({ pendingKey: game.pending?.key ?? null, autoMode: settings.autoMode, folded: isFolded, titleRef: headingRef, choiceTitleRef, foldOpenRef, controlsRef });
   const fast = settings.speed >= 4 || settings.autoMode;
+  // 진행 줄·도구 줄의 입력 가드: 화면이 뜰 때 + 카드를 접거나 다시 연 직후(U9). 접기 더블탭의 둘째 입력이 시트가 사라진 자리의 컨트롤에 떨어지지 않게 한다
+  const controlsGuard = `${CONTROLS_GUARD_KEY}:${foldEpoch}`;
+  const inert = sheetOpen ? INERT : {};
   const feedbackUrl = buildFeedbackUrl(feedbackFieldsOf(game, repoUrl, buildLabel));
 
   // 나가기 확인 단계: 열리면 안전한 쪽(돌아가기)으로 포커스를 옮기고, Esc로 닫으면 「나가기」 도구로 포커스를 돌려준다(첫 화면의 확인 단계와 같은 방식, R-212).
   // 열 때의 화면 맞춤(안내문 첫 줄과 「돌아가기」가 함께 보이게)은 useExitAskFit이 한다 — 브라우저의 기본 포커스 스크롤은 버튼만 화면에 넣고 안내문을 위로 밀어내므로 스크롤은 막는다(QA-003-M4 O03).
   const returnFocus = useRef(false);
+  // 모달 시트가 위에 있으면 Esc는 시트(카드 접기)의 몫이다 — 나가기 확인이 열린 채 「다음 결정으로」로 시트가 뜬 뒤 Esc 한 번이 두 리스너를 함께 돌려 확인 단계 닫기와 카드 접기가 같이 일어나던 것을 막는다(REV-003-M7b-1 관찰 3).
+  // 맨 위 하나만 처리한다: 시트가 접히고 나면 다음 Esc가 나가기 확인을 닫는다. 이 효과가 시트 여닫음에 다시 돌지 않도록(포커스를 다시 가져가지 않도록) 값은 ref로 읽는다.
+  const sheetOpenRef = useRef(false);
+  sheetOpenRef.current = sheetOpen;
   useEffect(() => {
     if (!exitOpen) {
       if (returnFocus.current) {
@@ -284,7 +256,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
     }
     exitCancelRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !sheetOpenRef.current) {
         returnFocus.current = true;
         onExitOpen(false);
       }
@@ -301,7 +273,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
   return (
     <div className="page dash-page" data-testid="life-screen">
       <Sprite />
-      <header className="dash-head" ref={headRef} data-testid="dash-head">
+      <header className="dash-head" ref={headRef} data-testid="dash-head" {...inert}>
         <div className="dash-head__inner">
           <div className="dash-head__top">
             <HeaderLogo />
@@ -319,7 +291,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
         </div>
       </header>
 
-      <div className="toolbar">
+      <div className="toolbar" {...inert}>
         <div className="toolbar__inner">
           <LifeControls
             speed={settings.speed}
@@ -327,6 +299,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
             paused={game.paused}
             hasPending={game.pending !== null}
             containerRef={controlsRef}
+            guardKey={controlsGuard}
             onSpeed={onSpeed}
             onSkip={() => {
               noteSkip(); // 사용자가 직접 눌러 뜬 선택지는 포커스가 이 버튼에 있어도 선택지 제목으로 옮긴다(R-036)
@@ -336,6 +309,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
             onPause={onPause}
           />
           <LifeTools
+            guardKey={controlsGuard}
             settings={settings}
             dark={dark}
             feedbackUrl={feedbackUrl}
@@ -379,17 +353,20 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
         </div>
       </div>
 
-      {/* 포커스가 컨트롤(속도 버튼 등) 안에 있을 때 선택지가 뜨면 포커스는 두고 이 영역으로만 알린다(R-036). */}
-      <p className="sr-only" role="status" aria-live="polite" ref={liveRef} data-testid="choice-announce" />
-
-      <main className="dash">
+      <main className="dash" {...inert}>
         <div className="col col--left">
           <ProfileCard game={game} />
           <StatusCard stats={game.stats} era={game.era} />
           <AssetsCard age={game.age} assets={game.assets} era={game.era} />
         </div>
         <div className="col col--center">
-          <ChoicePanel game={game} pool={pool} auto={settings.autoMode} titleRef={choiceTitleRef} onChoose={onChoose} />
+          {/* 카드 자리: 접히면 접힌 띠, 자동 모드면 인라인 카드. 모달 시트는 아래(이 형제들 바깥)에서 그린다 */}
+          {decision !== null && isFolded ? <DecisionFold model={decision} epoch={foldEpoch} openRef={foldOpenRef} onReopen={onReopen} /> : null}
+          {decision !== null && !isFolded && settings.autoMode ? (
+            <DecisionInline model={decision}>
+              <DecisionCard model={decision} auto epoch={foldEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
+            </DecisionInline>
+          ) : null}
           <LogCard history={game.history} name={c.name} live={!fast} minute={minute} />
         </div>
         <div className="col col--right">
@@ -397,7 +374,13 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
           <PeersNowCard game={game} />
         </div>
       </main>
-      <div className="page-end-space" />
+      <div className="page-end-space" {...inert} />
+      {/* 모달 시트: 바깥(헤더·도구 줄·main·본문 끝 여백)이 모두 inert인 동안만 있다 — aria-modal만으로는 Tab이 뒤로 샌다(design-system.md 11-10) */}
+      {sheetOpen ? (
+        <DecisionSheet model={decision} onFold={onFold}>
+          <DecisionCard model={decision} auto={false} epoch={foldEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
+        </DecisionSheet>
+      ) : null}
     </div>
   );
 }

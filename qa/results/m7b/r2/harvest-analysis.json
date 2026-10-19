@@ -1,0 +1,78 @@
+{
+ "lives": 160,
+ "ok": 160,
+ "failed": 0,
+ "byEra": {
+  "future": {
+   "lives": 40,
+   "cards": 971,
+   "cited": 460,
+   "citedRatio": 47.4,
+   "sheet": 971,
+   "noCiteWithBox": 0,
+   "researchCards": 11,
+   "ended": 40,
+   "errors": 0,
+   "ext": 0,
+   "lens": [],
+   "pastYearViolations": [],
+   "dupInLife": [],
+   "foldTests": 330,
+   "foldFail": 0,
+   "overflow": 0,
+   "birthRange": [
+    2030,
+    2060
+   ]
+  },
+  "past": {
+   "lives": 80,
+   "cards": 1888,
+   "cited": 168,
+   "citedRatio": 8.9,
+   "sheet": 1888,
+   "noCiteWithBox": 0,
+   "researchCards": 15,
+   "ended": 80,
+   "errors": 0,
+   "ext": 0,
+   "lens": [],
+   "pastYearViolations": [],
+   "dupInLife": [],
+   "foldTests": 633,
+   "foldFail": 0,
+   "overflow": 0,
+   "birthRange": [
+    1950,
+    1989
+   ]
+  },
+  "present": {
+   "lives": 40,
+   "cards": 967,
+   "cited": 500,
+   "citedRatio": 51.7,
+   "sheet": 967,
+   "noCiteWithBox": 0,
+   "researchCards": 11,
+   "ended": 40,
+   "errors": 0,
+   "ext": 0,
+   "lens": [],
+   "pastYearViolations": [],
+   "dupInLife": [],
+   "foldTests": 327,
+   "foldFail": 0,
+   "overflow": 0,
+   "birthRange": [
+    2026,
+    2026
+   ]
+  }
+ },
+ "problems": [],
+ "cards": 3826,
+ "foldTests": 1290,
+ "uniqueCites": 86,
+ "uniqueCiteIds": 48
+}

@@ -174,7 +174,7 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   for (let step = 0; step < 400 && !(await ending.isVisible()); step++) {
     try {
       if (await panel.isVisible()) {
-        await panel.getByRole('button').first().click({ timeout: 5_000 }); // 선택지 가드가 풀릴 때까지 기다린다
+        await panel.locator('button.choice').first().click({ timeout: 5_000 }); // 선택지 가드가 풀릴 때까지 기다린다 (M7b: 카드 머리의 「카드 접기」가 첫 버튼이라 선택지 버튼만 고른다)
         choices++;
       } else {
         await skip.click({ timeout: 5_000 }); // 컨트롤 가드가 풀리고 선택지가 없을 때 눌린다
@@ -636,7 +636,11 @@ test('제품 번들 CSS(M3, R-302): 컨테이너 3종·@container docbody/cmp·c
   expect(css, '엔딩·밀린·오류 화면 제목 상한: @supports (width: 1cqi) 안의 max(바닥, min(상한, 100cqi ÷ 칸 수))').toMatch(guardedDash);
   expect(css, '엔딩 이름 칸(.ending__who)이 컨테이너다').toMatch(/\.ending__who\s*\{[^}]*container-type:\s*inline-size/);
   expect(css, '밀린·오류 화면 카드(.system .card)가 컨테이너다').toMatch(/\.system \.card\s*\{\s*container-type:\s*inline-size/);
-  expect(css.replace(guarded, '').replace(guardedDash, ''), 'cqi는 그 @supports 블록들 밖에 없다(밖에 있으면 모르는 브라우저에서 font-size가 unset)').not.toMatch(/\dcqi\b/);
+  // M7b(D-55): 중대 결정 카드 제목(h2.decision__title)의 상한도 같은 모양으로 자기 @supports 블록에 있고, 컨테이너(.decision__body)가 최소화 뒤에도 살아 있다
+  const guardedDecision = /@supports\s*\(\s*width:\s*1cqi\s*\)\s*\{\s*\.decision__title\s*\{\s*font-size:\s*max\(\s*var\(--fs-lg\)\s*,\s*min\(\s*var\(--fs-xl\)\s*,\s*calc\(\s*100cqi\s*\/\s*var\(--title-chars\s*,\s*8\)\s*\)\s*\)\s*\)\s*;?\s*\}\s*\}/;
+  expect(css, '카드 제목 상한: @supports (width: 1cqi) 안의 max(바닥, min(상한, 100cqi ÷ 칸 수))').toMatch(guardedDecision);
+  expect(css, '카드 몸(.decision__body)이 컨테이너다').toMatch(/\.decision__body\s*\{[^}]*container-type:\s*inline-size/);
+  expect(css.replace(guarded, '').replace(guardedDash, '').replace(guardedDecision, ''), 'cqi는 그 @supports 블록들 밖에 없다(밖에 있으면 모르는 브라우저에서 font-size가 unset)').not.toMatch(/\dcqi\b/);
 
   // ④ 폴백
   expect(css, '폴백: 컨테이너 질의를 모르는 브라우저에서 뷰포트 639px 이하 비교 표 쌓기').toMatch(

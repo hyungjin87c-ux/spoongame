@@ -14,7 +14,8 @@ import { setRootFontPercent } from './textResize';
  */
 
 const SHOT = 'qa/screenshots/003/dev-M7e-4';
-const MANUAL = { speed: 1, autoMode: false } as const;
+// 자동 모드 켜짐 = 비모달 인라인 카드(M7b) — 가려진 탭이라 자동 선택은 일어나지 않고, 카드 전체가 문서 안에 놓여 낱말·접근성 이름 측정이 모두 본다 (이름은 예전 그대로)
+const MANUAL = { speed: 1, autoMode: true } as const;
 
 /** 「살 곳을 구하는 일」이 결정을 기다리는 판 중 보이는 선택지가 조건에 맞는 것을 찾는다 (앱 페이지가 열려 있어야 한다) */
 async function findHousing(page: Page, kind: 'independent' | 'family' | 'lonely'): Promise<{ state: GameState; visible: string[] }> {

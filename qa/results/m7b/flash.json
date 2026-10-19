@@ -1,0 +1,86 @@
+[
+ {
+  "label": "light-360",
+  "frames": 844,
+  "seconds": 40,
+  "mut": {
+   "overlay": 0,
+   "inlineMount": 9,
+   "foldMount": 0,
+   "sheet": 0
+  },
+  "ageEnd": "43세",
+  "maxArea": 0.265,
+  "maxDMean": 0.034,
+  "flashPairs": 0,
+  "maxOpposingPerSec": 0,
+  "meanRange": [
+   0.797,
+   0.847
+  ],
+  "shot": "qa/screenshots/003/M7b-A14-light-360.png"
+ },
+ {
+  "label": "dark-360",
+  "frames": 847,
+  "seconds": 40,
+  "mut": {
+   "overlay": 0,
+   "inlineMount": 9,
+   "foldMount": 0,
+   "sheet": 0
+  },
+  "ageEnd": "43세",
+  "maxArea": 0.11,
+  "maxDMean": 0.018,
+  "flashPairs": 0,
+  "maxOpposingPerSec": 0,
+  "meanRange": [
+   0.052,
+   0.082
+  ],
+  "shot": "qa/screenshots/003/M7b-A14-dark-360.png"
+ },
+ {
+  "label": "light-1280",
+  "frames": 856,
+  "seconds": 40,
+  "mut": {
+   "overlay": 0,
+   "inlineMount": 9,
+   "foldMount": 0,
+   "sheet": 0
+  },
+  "ageEnd": "43세",
+  "maxArea": 0.191,
+  "maxDMean": 0.045,
+  "flashPairs": 0,
+  "maxOpposingPerSec": 0,
+  "meanRange": [
+   0.844,
+   0.893
+  ],
+  "shot": "qa/screenshots/003/M7b-A14-light-1280.png"
+ },
+ {
+  "label": "control-toggle-dark",
+  "frames": 216,
+  "seconds": 4,
+  "mut": {
+   "overlay": 0,
+   "inlineMount": 2,
+   "foldMount": 0,
+   "sheet": 0
+  },
+  "ageEnd": "17세",
+  "maxArea": 0.832,
+  "maxDMean": 0.666,
+  "flashPairs": 22,
+  "maxOpposingPerSec": 6,
+  "meanRange": [
+   0.071,
+   0.847
+  ],
+  "shot": "qa/screenshots/003/M7b-A14-control-toggle-dark.png"
+ }
+]

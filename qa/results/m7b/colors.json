@@ -1,0 +1,399 @@
+{
+ "summary": {
+  "light/tutoring-present/sheet": {
+   "rows": 91,
+   "cardMin": 6.37,
+   "citeMin": 10.45,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/tutoring-present/fold": {
+   "rows": 43,
+   "cardMin": 8.65,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/tutoring-present/inline": {
+   "rows": 47,
+   "cardMin": 6.25,
+   "citeMin": 10.45,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/sibling-past/sheet": {
+   "rows": 92,
+   "cardMin": 6.37,
+   "citeMin": 10.45,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/sibling-past/fold": {
+   "rows": 44,
+   "cardMin": 8.65,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/sibling-past/inline": {
+   "rows": 48,
+   "cardMin": 6.37,
+   "citeMin": 10.45,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/grandchildren-future/sheet": {
+   "rows": 92,
+   "cardMin": 6.37,
+   "citeMin": 10.45,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/grandchildren-future/fold": {
+   "rows": 43,
+   "cardMin": 8.65,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/grandchildren-future/inline": {
+   "rows": 48,
+   "cardMin": 6.58,
+   "citeMin": 10.45,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/fever-present/sheet": {
+   "rows": 72,
+   "cardMin": 6.37,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "light/fever-present/fold": {
+   "rows": 43,
+   "cardMin": 8.65,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/tutoring-present/sheet": {
+   "rows": 91,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/tutoring-present/fold": {
+   "rows": 43,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/tutoring-present/inline": {
+   "rows": 47,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/sibling-past/sheet": {
+   "rows": 92,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/sibling-past/fold": {
+   "rows": 44,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/sibling-past/inline": {
+   "rows": 48,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/grandchildren-future/sheet": {
+   "rows": 92,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/grandchildren-future/fold": {
+   "rows": 43,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/grandchildren-future/inline": {
+   "rows": 48,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/fever-present/sheet": {
+   "rows": 72,
+   "cardMin": 6.68,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/fever-present/fold": {
+   "rows": 43,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "dark/fever-present/inline": {
+   "rows": 50,
+   "cardMin": 6.68,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/tutoring-present/sheet": {
+   "rows": 91,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/tutoring-present/fold": {
+   "rows": 43,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/tutoring-present/inline": {
+   "rows": 47,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/sibling-past/sheet": {
+   "rows": 92,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/sibling-past/fold": {
+   "rows": 44,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/sibling-past/inline": {
+   "rows": 48,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/grandchildren-future/sheet": {
+   "rows": 92,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/grandchildren-future/fold": {
+   "rows": 43,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/grandchildren-future/inline": {
+   "rows": 48,
+   "cardMin": 6.68,
+   "citeMin": 9.87,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/fever-present/sheet": {
+   "rows": 72,
+   "cardMin": 6.68,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "manual-dark/fever-present/fold": {
+   "rows": 43,
+   "cardMin": 8.78,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/tutoring-present/sheet": {
+   "rows": 91,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/tutoring-present/fold": {
+   "rows": 43,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/tutoring-present/inline": {
+   "rows": 47,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/sibling-past/sheet": {
+   "rows": 92,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/sibling-past/fold": {
+   "rows": 44,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/sibling-past/inline": {
+   "rows": 48,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/grandchildren-future/sheet": {
+   "rows": 92,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/grandchildren-future/fold": {
+   "rows": 43,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/grandchildren-future/inline": {
+   "rows": 48,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/fever-present/sheet": {
+   "rows": 72,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-light/fever-present/fold": {
+   "rows": 43,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/tutoring-present/sheet": {
+   "rows": 91,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/tutoring-present/fold": {
+   "rows": 43,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/tutoring-present/inline": {
+   "rows": 47,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/sibling-past/sheet": {
+   "rows": 92,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/sibling-past/fold": {
+   "rows": 44,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/sibling-past/inline": {
+   "rows": 48,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/grandchildren-future/sheet": {
+   "rows": 92,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/grandchildren-future/fold": {
+   "rows": 43,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/grandchildren-future/inline": {
+   "rows": 48,
+   "cardMin": 21,
+   "citeMin": 21,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/fever-present/sheet": {
+   "rows": 72,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  },
+  "forced-dark/fever-present/fold": {
+   "rows": 43,
+   "cardMin": 21,
+   "citeMin": null,
+   "failCard": 0,
+   "failAny": 0
+  }
+ },
+ "minCard": 6.25,
+ "minCite": 9.87,
+ "nRows": 3365
+}

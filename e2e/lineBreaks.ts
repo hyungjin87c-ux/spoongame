@@ -203,6 +203,12 @@ export function describeWordBreak(r: WordBreakRecord): string {
 }
 
 /**
+ * 한 줄의 폭을 바깥 격자가 아니라 **상자 자신의 안쪽 폭**으로 재는 상자 (M7b). 인용 박스(`.cite`)는 옅은 쪽빛 면 + 놋쇠 막대 + 안쪽 여백을 가진 상자라 카드 폭에서 그만큼 좁다 —
+ * 글자 200% × 폭 320에서 「국민노후보장패널조사」 같은 긴 기관 이름은 카드 폭에는 들어도 박스 안쪽 폭보다 길어 어디서든 끊어야 한다(한 줄보다 긴 낱말 = unavoidable). 글자 100%에서는 여전히 0이어야 한다.
+ */
+export const FACE_BOXES: readonly string[] = ['.cite'];
+
+/**
  * 눈에 보이는 모든 글자의 **낱말이 중간에서 끊겼는가**를 잰다 (QM3-1). 판정식:
  *  - 끊긴 낱말 w마다 `intended` = (w 안에서 줄이 바뀐 지점이 모두 `<wbr>` 바로 뒤이고 w가 `intended` 목록에 있음) / `forced` = (줄이 바뀐 지점이 모두 `<br>` 바로 뒤이고 w가 `forced` 목록에 있음)
  *    / `unavoidable` = (자연 폭(w) > 한 줄 전체 + 0.5px) / 그 밖은 `broken`. `<br>`로 갈렸는데 w가 `forced` 목록에 없으면 폭과 상관없이 `broken`.
@@ -228,7 +234,7 @@ export async function measureWordBreaks(page: Page, options: WordBreakOptions = 
   const forcedWords = [...(options.forced ?? FORCED_BREAK_WORDS)];
   const categories = Object.entries(options.categories ?? {});
   return page.evaluate(
-    ([scopeSel, intendedWords, forcedList, cats]) => {
+    ([scopeSel, intendedWords, forcedList, cats, faceSel]) => {
       const root = document.querySelector(scopeSel);
       if (root === null) throw new Error(`범위를 찾을 수 없다: ${scopeSel}`);
       type Item = { ch: string; sep: boolean; rect: DOMRect | null; ifc: Element | null; parent: Element | null; afterWbr: boolean; afterBr: boolean };
@@ -309,6 +315,14 @@ export async function measureWordBreaks(page: Page, options: WordBreakOptions = 
         const cached = lineCache.get(start);
         if (cached !== undefined) return cached;
         let width: number | null = null;
+        // 자기 면·여백·막대를 가진 상자(FACE_BOXES — 인용 박스) 안의 글은 그 상자 안쪽의 문단 폭이 한 줄이다(바깥 격자 폭이 아니다)
+        if (start.closest(faceSel) !== null) {
+          let own: Element = start;
+          while (own.parentElement !== null && !blockLevel(getComputedStyle(own).display)) own = own.parentElement;
+          width = contentWidth(own);
+          lineCache.set(start, width);
+          return width;
+        }
         for (let el: Element | null = start; el !== null && el !== document.body; el = el.parentElement) {
           const p: Element | null = el.parentElement;
           if (p === null) break;
@@ -459,6 +473,6 @@ export async function measureWordBreaks(page: Page, options: WordBreakOptions = 
       }
       return { checked, words: [...seen], broken, unavoidable, intended, forced, categories: counts };
     },
-    [scope, intended, forcedWords, categories] as const,
+    [scope, intended, forcedWords, categories, FACE_BOXES.join(', ')] as const,
   );
 }

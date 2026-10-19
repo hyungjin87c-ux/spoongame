@@ -59,6 +59,7 @@
       "ageRange": { "min": 68, "max": 90 },
       "weight": 14,
       "once": true,
+      "noCitation": "X1",
       "conditions": { "stats": { "health": { "max": 50 } } },
       "choices": [
         {
@@ -83,6 +84,7 @@
       "ageRange": { "min": 78, "max": 100 },
       "weight": 16,
       "once": true,
+      "noCitation": "X1",
       "conditions": { "stats": { "health": { "max": 40 } } },
       "choices": [
         {
@@ -114,6 +116,7 @@
       "ageRange": { "min": 68, "max": 82 },
       "weight": 16,
       "once": true,
+      "citation": { "present": "c-085", "future": "c-085" },
       "conditions": { "flags": ["has_child"], "notFlags": ["child_distant", "in_care"] },
       "choices": [
         {
@@ -144,6 +147,7 @@
       "ageRange": { "min": 68, "max": 85 },
       "weight": 12,
       "once": true,
+      "citation": { "present": "c-093", "future": "c-093" },
       "conditions": { "assets": { "netMin": 15000 } },
       "choices": [
         {
@@ -175,6 +179,7 @@
       "ageRange": { "min": 70, "max": 90 },
       "weight": 12,
       "once": true,
+      "citation": { "present": "c-088", "future": "c-088" },
       "choices": [
         {
           "id": "stay",
@@ -235,6 +240,7 @@
       "ageRange": { "min": 66, "max": 85 },
       "weight": 30,
       "once": true,
+      "noCitation": "X2",
       "conditions": { "flags": ["has_child", "child_distant"] },
       "choices": [
         {
@@ -265,6 +271,7 @@
       "ageRange": { "min": 70, "max": 90 },
       "weight": 22,
       "once": true,
+      "citation": { "present": "c-082", "future": "c-082" },
       "conditions": { "flags": ["married"] },
       "choices": [
         {
@@ -295,6 +302,7 @@
       "ageRange": { "min": 70, "max": 90 },
       "weight": 14,
       "once": true,
+      "citation": { "present": "c-087", "future": "c-087" },
       "conditions": { "assets": { "dwelling": ["rent", "jeonse", "own"] }, "notFlags": ["married", "moved_home"] },
       "choices": [
         {
@@ -325,6 +333,7 @@
       "ageRange": { "min": 66, "max": 82 },
       "weight": 12,
       "once": true,
+      "citation": { "present": "c-086", "future": "c-086" },
       "choices": [
         {
           "id": "learn",
@@ -355,6 +364,7 @@
       "eras": ["future"],
       "weight": 14,
       "once": true,
+      "citation": "c-018",
       "choices": [
         {
           "id": "work",
@@ -384,6 +394,7 @@
       "ageRange": { "min": 80, "max": 100 },
       "weight": 16,
       "once": true,
+      "noCitation": "X2",
       "choices": [
         {
           "id": "words",
@@ -443,6 +454,7 @@
       "ageRange": { "min": 72, "max": 92 },
       "weight": 12,
       "once": true,
+      "noCitation": "X1",
       "choices": [
         {
           "id": "hospital",
@@ -501,6 +513,7 @@
       "ageRange": { "min": 66, "max": 88 },
       "weight": 12,
       "once": true,
+      "noCitation": "X1",
       "choices": [
         {
           "id": "keep",
@@ -530,6 +543,7 @@
       "ageRange": { "min": 68, "max": 90 },
       "weight": 10,
       "once": true,
+      "noCitation": "D",
       "choices": [
         {
           "id": "write",

@@ -5,6 +5,7 @@ import {
   advanceUntilDecision,
   createEventPool,
   createInitialState,
+  hasHiddenControl,
   loadGame,
   parseGame,
   playToEnd,
@@ -388,5 +389,72 @@ describe('연표 상한 300 (SPEC-003 DB12)과 저장 크기', () => {
       const text = serializeGame(end);
       expect(text.length, era).toBeLessThanOrEqual(30_000);
     }
+  });
+});
+
+describe('보이지 않는 방향·너비 제어 문자가 든 저장은 손상으로 본다 (QA-003-M7b A12b)', () => {
+  /** 양방향 제어(U+202A~202E·U+2066~2069·U+200E·U+200F)와 제로폭(U+200B~200D·U+FEFF) 전부 — 코드 포인트마다 */
+  const HIDDEN: number[] = [
+    0x200b, 0x200c, 0x200d, 0x200e, 0x200f, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069, 0xfeff,
+  ];
+  const at = (where: 'start' | 'middle' | 'end', text: string, cp: number): string => {
+    const ch = String.fromCodePoint(cp);
+    return where === 'start' ? ch + text : where === 'end' ? text + ch : text.slice(0, 1) + ch + text.slice(1);
+  };
+
+  it('이름: 위 15개 문자가 앞·가운데·끝 어디에 있어도 저장 전체를 거부한다(첫 화면 정리). 보통의 한글·영문·공백·이모지 이름은 통과한다', () => {
+    const base = clone(mid);
+    const name = base.character.name as string;
+    expect(parseGame(raw(base)), '고치지 않은 저장은 통과').not.toBeNull();
+    for (const cp of HIDDEN) {
+      for (const where of ['start', 'middle', 'end'] as const) {
+        const x = clone(mid);
+        x.character.name = at(where, name, cp);
+        expect(parseGame(raw(x)), `이름 ${where} U+${cp.toString(16).toUpperCase()}`).toBeNull();
+        expect(load(raw(x)), `loadGame도 거부(새 게임) U+${cp.toString(16).toUpperCase()}`).toBeNull();
+      }
+    }
+    for (const fine of ['김민준', 'Alex Kim', '이 서 윤', 'Zoë', '김🙂준', '이름-에·점']) {
+      const x = clone(mid);
+      x.character.name = fine;
+      expect(parseGame(raw(x)), `보통 이름 ${fine}`).not.toBeNull();
+    }
+  });
+
+  it('연표 글(text·title·choice)과 사망 원인도 같다: 화면에 그대로 나가는 글이라 방향 제어 문자가 글자 순서를 뒤집는다', () => {
+    const rlo = String.fromCodePoint(0x202e);
+    const zwsp = String.fromCodePoint(0x200b);
+    const cases: Record<string, string> = {
+      'history text': (() => {
+        const x = clone(mid);
+        x.history[0].text = `${x.history[0].text}${rlo}`;
+        return raw(x);
+      })(),
+      'history title': (() => {
+        const x = clone(mid);
+        x.history[0].title = `${zwsp}제목`;
+        return raw(x);
+      })(),
+      'history choice': (() => {
+        const x = clone(mid);
+        x.history[0].choice = `선택${rlo}`;
+        return raw(x);
+      })(),
+      'death cause': (() => {
+        const x = clone(ended);
+        x.death.cause = `${x.death.cause}${rlo}`;
+        return raw(x);
+      })(),
+    };
+    for (const [name, text] of Object.entries(cases)) expect(parseGame(text), name).toBeNull();
+    // 고치지 않은 사망·연표는 통과한다(공허 통과 방지: 위 변조가 아니라 문자 때문에 거부됐다)
+    expect(parseGame(serializeGame(ended))).not.toBeNull();
+    expect(parseGame(serializeGame(mid))).not.toBeNull();
+  });
+
+  it('hasHiddenControl: 15개 문자 전부를 잡고, 그 바로 앞·뒤 코드 포인트(U+200A 얇은 공백·U+2010 하이픈·U+2029·U+206A·U+FEFE)와 일반 글자는 잡지 않는다', () => {
+    for (const cp of HIDDEN) expect(hasHiddenControl(`가${String.fromCodePoint(cp)}나`), `U+${cp.toString(16)}`).toBe(true);
+    for (const cp of [0x200a, 0x2010, 0x2029, 0x202f, 0x2065, 0x206a, 0xfefe, 0x0020, 0x00a0, 0x3000]) expect(hasHiddenControl(`가${String.fromCodePoint(cp)}나`), `U+${cp.toString(16)}`).toBe(false);
+    expect(hasHiddenControl('보통의 한글 이름과 English 123 🙂')).toBe(false);
   });
 });

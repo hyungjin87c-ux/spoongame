@@ -29,6 +29,7 @@ import { LifeScreen } from './screens/LifeScreen';
 import { SupersededScreen } from './screens/SupersededScreen';
 import { TitleScreen } from './screens/TitleScreen';
 import { useApplyTheme } from './ui/theme';
+import { FOLD_INITIAL, autoChooseArmed, foldCard as foldState, isFolded, leaveLife, reopenCard as reopenState, type FoldState } from './ui/decisionFold';
 import { useBgm } from './ui/useBgm';
 import { useYearClock } from './ui/useYearClock';
 
@@ -166,6 +167,16 @@ function Game() {
   useEffect(() => {
     if (game.phase !== 'life' || showTitle) setExitAsk(false);
   }, [game.phase, showTitle]);
+  // 중대 결정 카드의 접힘 (M7b U10 — 상태는 App 수준이라 M7c의 생각 남기기 카드가 읽는다): 접힌 선택지의 키 + 접기·다시 열기 횟수(epoch — 입력 가드를 새로 건다, U9).
+  // UI 상태일 뿐 저장하지 않는다 — 새로고침하면 열린 카드로 복원된다(U5, 저장 스키마 불변). 키로 묶여 있어 다음 선택지는 늘 열린 채 뜨고, 인생 화면을 떠나면(첫 화면 다시 열기·엔딩) 지운다.
+  const [fold, setFold] = useState<FoldState>(FOLD_INITIAL);
+  const pendingKey = game.pending?.key ?? null;
+  const folded = isFolded(fold, pendingKey);
+  useEffect(() => {
+    if (game.phase !== 'life' || showTitle) setFold(leaveLife);
+  }, [game.phase, showTitle]);
+  const foldCard = useCallback(() => setFold((f) => foldState(f, pendingKey)), [pendingKey]);
+  const reopenCard = useCallback(() => setFold(reopenState), []);
   // 화면 테마(DB6): 설정의 수동 선택을 문서에 건다(시스템 설정을 따르는 기본은 data-theme를 지운다). 모든 화면이 새 디자인이라 한 곳에서 건다.
   useApplyTheme(settings.theme);
   // BGM(DB4): 인생 화면에서만, 사용자가 한 번이라도 누른 뒤에만 소리가 난다. 탭이 가려지면 멈춘다.
@@ -248,12 +259,14 @@ function Game() {
   });
 
   // 자동 모드: 선택지를 잠깐 보여 준 뒤 성향대로 고른다. 해제하면 타이머가 정리되고 선택지는 그대로 남는다. 일시정지·나가기 확인 중에는 고르지 않는다(reducer도 막는다).
+  // 카드를 접은 동안에도 고르지 않는다(M7b U3(a)) — 접기는 「지금 내가 보고 있다」는 신호다. 다시 열면 효과가 다시 돌아 `AUTO_CHOICE_MS` 뒤부터 센다(접힌 시간은 세지 않는다).
   useEffect(() => {
-    if (!settings.autoMode || game.pending === null || superseded || !visible || showTitle || game.paused || exitAsk) return;
-    const key = game.pending.key;
+    if (!autoChooseArmed({ autoMode: settings.autoMode, hasPending: game.pending !== null, superseded, visible, showTitle, paused: game.paused, exitAsk, folded })) return;
+    const key = game.pending?.key;
+    if (key === undefined) return;
     const id = window.setTimeout(() => dispatch({ type: 'autoChoose', key }), autoChoiceDelayMs(settings.speed, TIME_SCALE));
     return () => window.clearTimeout(id);
-  }, [settings.autoMode, settings.speed, game.pending, game.paused, exitAsk, superseded, visible, showTitle]);
+  }, [settings.autoMode, settings.speed, game.pending, game.paused, exitAsk, folded, superseded, visible, showTitle]);
 
   const takeOver = useCallback(() => {
     // 저장소를 한 번만 읽어, 그 원문을 파싱해 이어받고 "내가 아는 값"으로도 기록한다(R-052). 이어받은 값은 저장소에 이미 있는 값이라 같은 값을 다시 쓰지 않는다.
@@ -302,6 +315,10 @@ function Game() {
         clock={clock}
         exitOpen={exitAsk}
         onExitOpen={setExitAsk}
+        folded={folded}
+        foldEpoch={fold.epoch}
+        onFold={foldCard}
+        onReopen={reopenCard}
         onChoose={(key, choiceId) => dispatch({ type: 'choose', key, choiceId })}
         onSkip={() => dispatch({ type: 'skip' })}
         onSpeed={(speed) => dispatch({ type: 'setSpeed', speed })}

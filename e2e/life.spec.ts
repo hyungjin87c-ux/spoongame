@@ -17,6 +17,7 @@ import {
   readSave,
   readSettings,
   skipRoulette,
+  startPageHidden,
   toBirthReport,
 } from './helpers';
 
@@ -214,10 +215,12 @@ for (const vp of [
   test(`${vp.width}x${vp.height}: 선택지 3개는 스크롤로 모두 닿고 진행 줄 7개는 늘 화면 안에서 가려지지 않으며 가로 넘침이 없다 (M4: 전수 측정은 e2e/layout.spec.ts)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize(vp);
+    await startPageHidden(page); // 자동 선택 타이머가 카드를 치우지 않게
     await page.goto('/');
     const state = await findPendingState(page, 'present', { minChoices: 3 });
     expect(state.pending!.choiceIds.length).toBe(3);
-    await injectSave(page, state, '/');
+    // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 진행 줄 7개가 카드와 함께 화면 안에 있다. 수동 모드의 모달 시트는 e2e/layout.spec.ts·m7b-*가 잰다
+    await injectSave(page, state, '/', { speed: 1, autoMode: true });
     const panel = page.getByTestId('choice-panel');
     await expect(panel).toBeVisible();
     await expect(page.getByTestId(`choice-${state.pending!.choiceIds[2]}`)).toBeEnabled();
@@ -228,7 +231,7 @@ for (const vp of [
         return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, covered: !(hit === el || el.contains(hit)), name: (el.textContent ?? '').trim() };
       };
       // 바뀐 기대(M4): 선택지 카드는 고정 머리(약 95px) 아래에서 시작해 360×568에서는 셋째 선택지가 하단 진행 줄 밑에 있을 수 있다 — 각 선택지를 화면 가운데로 스크롤해 닿는지 본다(첫 화면 전체 적합은 layout.spec.ts가 따로 잰다).
-      const choices = [...document.querySelectorAll('[data-testid="choice-panel"] button')].map((b) => {
+      const choices = [...document.querySelectorAll('[data-testid="choice-panel"] button.choice')].map((b) => {
         b.scrollIntoView({ block: 'center' });
         return rect(b);
       });

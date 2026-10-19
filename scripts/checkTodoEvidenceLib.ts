@@ -5,12 +5,15 @@
  * CLAUDE.md 3절: `[x]` 항목에는 근거(파일·함수·테스트명)를 적고, 적힌 파일·테스트가 실제로 없으면 검수가 반려한다.
  * 이 코드가 그 "실제로 있는가"를 기계로 확인한다. 마일스톤마다(검수 전에) 돌린다. 실패가 하나라도 있으면 종료 코드 1.
  *
- * ## 무엇을 대조하나 (각 `[x]` 항목의 "근거:" 뒤 글에 대해)
+ * ## 무엇을 대조하나 (각 `[x]` 항목의 "근거:" 뒤 글과, 그 바로 밑의 들여쓴 하위 줄에 대해 — R-389)
+ * 근거는 [x] 줄에 다 적지 않고 `    - 시험: …`처럼 들여쓴 하위 줄로 나눠 적기도 한다. 그 하위 줄(더 깊이 들여쓴 줄, 체크 상자가 있는 하위 항목과 그 아래는 빼고)도 같은 규칙으로 줄마다 따로 대조하고,
+ * 문제의 줄 번호는 그 하위 줄이다. [x] 줄에 「근거:」가 없어도 하위 줄에 있으면 거기서부터 근거다(`evidenceChunks`).
  *  1. 파일 경로: `src/…`·`tests/…`·`e2e/…`·`e2e-prod/…`·`scripts/…`·`docs/…`·`qa/…`·`harness/…`·`wiki/…`·`ai-log/…`·`.claude/…`와 저장소 루트 파일(package.json 등).
  *     - `{a,b}` 묶음은 펼쳐서 각각, `*` 글롭은 "맞는 파일이 하나 이상"으로 확인한다.
  *     - 경로 바로 뒤(괄호 설명은 건너뛰고)가 `·이름.확장자`이면 같은 폴더의 형제 파일이다(예: `…/dev-M5-ending-mobile.png·dev-M5-ending-desktop.png`, `docs/review/A.md(R-1)·B.md(R-2)`).
  *     - "구 …/Old.tsx 삭제"처럼 없앴다고 적은 경로는 반대로 **없어야** 통과한다.
- *  2. `경로#심볼`: 그 파일에 심볼이 낱말로 들어 있다. `#a/b/c`처럼 `/`로 이어진 목록은 모두, `심볼(설명)` 괄호 설명은 건너뛴다(중첩 괄호 포함), `a.b`는 각 부분.
+ *  2. `경로#심볼`: 그 파일에 심볼이 낱말로 들어 있다. `#a/b/c`·`#a#b#c`·`#a·b`처럼 `/`·`#`·`·`로 이어 적은 목록은 **모두**(R-397 — 옛 구현은 `/`만 이어 읽어 `#a#b#c`의 둘째 이후를 한 번도 대조하지 않았다),
+ *     `·`는 경로·형제 파일(`·name.ext`, `·src/…`)이 아닐 때만 심볼을 잇는다. `심볼(설명)` 괄호 설명은 건너뛴다(중첩 괄호 포함), `a.b`는 각 부분.
  *  3. `package.json scripts.이름`, `npm run 이름`: package.json scripts에 그 이름이 있다.
  *  4. 따옴표 안 테스트 제목: 실제 테스트 목록에 있다 (아래). 단 `docs/review/….md 하단 "반영 내역 (…)"`처럼 따옴표 바로 앞이 `하단`이면 테스트 제목이 아니라
  *     앞에서 적은 .md 문서(200자 안)의 소제목이다 — 그 문서들 중 하나의 본문에 있으면 통과한다.
@@ -249,7 +252,18 @@ export function pathExists(env: Env, p: string): boolean {
   return walk(base);
 }
 
-/** `#심볼` 목록 파싱: 식별자(점으로 이어진 것 포함) + 선택적 `(설명)` + `/` 다음 식별자 … */
+/** 심볼 목록 뒤의 `·`가 경로나 형제 파일을 이은 것인가: `·name.ext`(파일 확장자로 끝남)·`·src/…`(`/` 포함)은 심볼이 아니다 */
+function dotStartsPathOrFile(text: string, at: number): boolean {
+  const token = /^[\w$.\-/]+/.exec(text.slice(at))?.[0] ?? '';
+  return token.includes('/') || /\.(?:tsx?|jsx?|mjs|json|md|css|html|csv|png|jpe?g|svg|webp)$/i.test(token.replace(/[.-]+$/, ''));
+}
+
+/**
+ * `#심볼` 목록 파싱: 식별자(점으로 이어진 것 포함) + 선택적 `(설명)` + 이음 `/`·`#`·`·` + 다음 식별자 … (REV-003-M7b-2 R-397)
+ *  - `#a/b/c`·`#a#b#c`: 이어 적은 심볼은 **모두** 대조한다(옛 구현은 `/`만 이어 읽어 `#a#b#c`의 둘째 이후는 한 번도 대조받지 못했다).
+ *  - `#a·b`: `·` 다음이 영문 식별자이고 경로·형제 파일(`·name.ext`, `·src/…`)이 아니면 심볼이다.
+ *  - 이음 다음이 영문자가 아니면(한글 설명 등) 거기서 멈춘다.
+ */
 export function parseSymbols(text: string, from: number): { symbols: string[]; end: number } {
   const symbols: string[] = [];
   let i = from;
@@ -270,7 +284,9 @@ export function parseSymbols(text: string, from: number): { symbols: string[]; e
       if (k >= text.length) break; // 닫히지 않은 괄호: 여기서 멈춘다
       i = k + 1;
     }
-    if (text[i] === '/' && /[A-Za-z_$]/.test(text[i + 1] ?? '')) i += 1;
+    const letterNext = /[A-Za-z_$]/.test(text[i + 1] ?? '');
+    if ((text[i] === '/' || text[i] === '#') && letterNext) i += 1;
+    else if (text[i] === '·' && letterNext && !dotStartsPathOrFile(text, i + 1)) i += 1;
     else break;
   }
   return { symbols, end: i };
@@ -353,6 +369,43 @@ function checkPair(q: QuoteResult, refs: readonly PathRef[], testFiles: TestFile
   warn('제목-파일 짝', `"${shown}" 앞에 적힌 파일은 ${owners.join('·')}인데 이 제목의 실제 파일은 ${[...actual].sort().join(', ')}`);
 }
 
+/** 근거로 읽는 한 줄: 줄 번호(1부터)와 그 줄에서 근거로 읽는 글 */
+export interface EvidenceChunk {
+  line: number;
+  text: string;
+}
+
+const indentOf = (line: string): number => line.length - line.trimStart().length;
+
+/**
+ * [x] 항목 하나(`lines[idx]`)가 근거로 읽는 줄들 (REV-003-M7b-1 R-389).
+ *  - [x] 줄에 「근거:」가 있으면 그 뒤 글. 없으면 하위 줄 중 처음 「근거:」가 나오는 줄의 그 뒤 글부터 시작한다.
+ *  - 그 바로 밑의 **더 깊이 들여쓴 하위 줄**은 전부 근거다(빈 줄이나 같은·얕은 들여쓰기에서 끝난다). 체크 상자가 있는 하위 항목(`- [ ]`·`- [x]`)과 그 아래는 근거가 아니다(따로 항목이다).
+ *  - 근거로 읽을 글이 하나도 없으면 빈 목록이다(「근거 없음」).
+ */
+export function evidenceChunks(lines: readonly string[], idx: number): EvidenceChunk[] {
+  const head = lines[idx];
+  const indent = indentOf(head);
+  const marker = head.indexOf('근거:');
+  const subs: EvidenceChunk[] = [];
+  for (let j = idx + 1; j < lines.length; j++) {
+    const line = lines[j];
+    if (line.trim() === '' || indentOf(line) <= indent) break;
+    if (/^\s*- \[[ x]\]/i.test(line)) {
+      // 체크 상자가 있는 하위 항목은 따로 항목이다: 그 줄과 그 아래 더 깊은 줄은 이 항목의 근거가 아니다
+      const own = indentOf(line);
+      while (j + 1 < lines.length && lines[j + 1].trim() !== '' && indentOf(lines[j + 1]) > own) j++;
+      continue;
+    }
+    subs.push({ line: j + 1, text: line });
+  }
+  if (marker >= 0) return [{ line: idx + 1, text: head.slice(marker + '근거:'.length) }, ...subs];
+  const at = subs.findIndex((c) => c.text.includes('근거:'));
+  if (at < 0) return [];
+  const first = subs[at];
+  return [{ line: first.line, text: first.text.slice(first.text.indexOf('근거:') + '근거:'.length) }, ...subs.slice(at + 1)];
+}
+
 export function checkTodo(todo: string, names: readonly string[], pkgScripts: ReadonlySet<string>, env: Env, testFiles?: TestFiles): Report {
   const report: Report = { items: 0, paths: 0, symbols: 0, scripts: 0, quotes: 0, pairs: 0, problems: [], warnings: [] };
   const fileCache = new Map<string, string | null>();
@@ -361,19 +414,22 @@ export function checkTodo(todo: string, names: readonly string[], pkgScripts: Re
     return fileCache.get(p) ?? null;
   };
 
-  todo.split(/\r?\n/).forEach((line, idx) => {
+  const lines = todo.split(/\r?\n/);
+  lines.forEach((line, idx) => {
     if (!/^\s*- \[x\]/i.test(line)) return;
-    const lineNo = idx + 1;
     const head = line.replace(/^\s*- \[x\]\s*/i, '').slice(0, 40);
-    const marker = line.indexOf('근거:');
     report.items++;
-    const problem = (kind: string, detail: string) => report.problems.push({ line: lineNo, kind, detail: `${detail}   [${head}…]` });
-    const warn = (kind: string, detail: string) => report.warnings.push({ line: lineNo, kind, detail: `${detail}   [${head}…]` });
-    if (marker < 0) {
-      problem('근거 없음', '`[x]` 항목에 "근거:"가 없다');
+    // R-389: 근거는 [x] 줄의 「근거:」 뒤뿐 아니라 그 바로 밑의 들여쓴 하위 줄에도 적는다 — 줄마다 따로 대조한다(보고의 줄 번호는 그 하위 줄이다)
+    const chunks = evidenceChunks(lines, idx);
+    if (chunks.length === 0) {
+      report.problems.push({ line: idx + 1, kind: '근거 없음', detail: `\`[x]\` 항목에 "근거:"가 없다   [${head}…]` });
       return;
     }
-    const evidence = line.slice(marker + '근거:'.length);
+    for (const chunk of chunks) {
+    const lineNo = chunk.line;
+    const evidence = chunk.text;
+    const problem = (kind: string, detail: string) => report.problems.push({ line: lineNo, kind, detail: `${detail}   [${head}…]` });
+    const warn = (kind: string, detail: string) => report.warnings.push({ line: lineNo, kind, detail: `${detail}   [${head}…]` });
     const refs: PathRef[] = [];
 
     // 1·2. 경로와 심볼
@@ -433,6 +489,7 @@ export function checkTodo(todo: string, names: readonly string[], pkgScripts: Re
         if (docs.some((d) => inOrder((read(d) ?? '').replace(/\s+/g, ' '), segs))) continue;
       }
       problem('테스트 제목 없음', `"${q.text.length > 110 ? q.text.slice(0, 110) + '…' : q.text}"`);
+    }
     }
   });
   return report;

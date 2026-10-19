@@ -9,7 +9,7 @@ import { useIsoLayoutEffect } from './hooks';
  * 탐침 글자는 CSS `::before { content: attr(data-text) }`로 그려서 DOM 글자에는 들어가지 않는다 — 화면 글자·복사되는 글자·읽는 이름에 같은 문구가 두 번 나오지 않는다.
  * 서버 렌더(테스트)와 첫 그림은 한 줄 모양이다. 나뉘어도 A와 B 사이에 공백을 남겨 이름 계산이 이어 읽을 때 붙지 않는다.
  */
-export function FitPair({ a, b, className = '' }: { a: string; b: string; className?: string }) {
+export function FitPair({ a, b, className = '', hideSeparator = false }: { a: string; b: string; className?: string; hideSeparator?: boolean }) {
   const boxRef = useRef<HTMLSpanElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const [split, setSplit] = useState(false);
@@ -41,9 +41,16 @@ export function FitPair({ a, b, className = '' }: { a: string; b: string; classN
           </span>
         </>
       ) : (
-        <>
-          <Glue text={a} /> · <Glue text={b} />
-        </>
+        hideSeparator ? (
+          // 한 줄 모양의 가운뎃점은 보이는 구분일 뿐이라 접근성 트리에서 숨긴다(「1959년 3세」로 낭독, QA-003-M7b K11) — 양옆 공백은 밖에 둬서 낭독이 붙지 않는다
+          <>
+            <Glue text={a} /> <span aria-hidden="true">·</span> <Glue text={b} />
+          </>
+        ) : (
+          <>
+            <Glue text={a} /> · <Glue text={b} />
+          </>
+        )
       )}
     </span>
   );

@@ -24,7 +24,8 @@ import {
  *    disabled가 아니라 aria-disabled(포커스는 받고 입력은 무시)다 — disabled면 Tab 순서에서 빠져, 포커스가 8배 버튼에 있다가 선택지가 뜨면 다음 Tab이
  *    "자동 모드"에 닿고 Space가 자동 모드를 켜 버렸다.
  *  - 자동 모드에서는 선택지가 떠도 포커스를 옮기지 않는다 (키보드로 자동 모드 버튼까지 가서 끌 수 있어야 한다 — SPEC "언제든 해제 가능")
- *  - 수동 모드에서 포커스가 컨트롤 그룹 안에 있으면 옮기지 않고 aria-live로 알린다. 그 밖에는 선택지 제목으로 — 복원된 선택지와 플레이 중 뜬 선택지가 같은 대상이다
+ *  - **수동 모드에서는 카드가 모달 시트이고 바깥(컨트롤 그룹 포함)이 inert다**(M7b, 마스터 결정 M-6·D-52): 포커스가 컨트롤 그룹 안에 있었어도 선택지 제목으로 옮긴다 — 예전의 「컨트롤 안이면 포커스는 두고 aria-live로만 알린다」는
+ *    시트가 뜨는 순간 컨트롤이 inert가 되어 포커스가 body로 떨어지므로 성립하지 않는다(알림 영역도 없어졌다). 복원된 선택지와 플레이 중 뜬 선택지가 같은 대상(선택지 제목)이다
  *  - 사용자가 "다음 결정으로"를 직접 눌러 뜬 선택지는 선택지 제목으로 옮긴다
  *  - 키보드로 선택한 뒤 패널이 사라지면 포커스는 body가 아니라 인생 화면 제목으로 간다
  * R-048: 선택지가 대기 중인 채 자동 모드를 끄는 순간에도 같은 규칙을 다시 적용한다.
@@ -60,7 +61,7 @@ async function expectUntouched(page: Page, pendingKey: string): Promise<void> {
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-key', pendingKey);
 }
 
-test('수동 모드: 속도 버튼에 포커스를 둔 채 선택지가 뜨면 포커스는 그대로이고 aria-live로만 알린다. Space는 선택을 확정하지 않는다 (R-036 a)', async ({ page }) => {
+test('수동 모드: 속도 버튼에 포커스를 둔 채 선택지가 뜨면 모달 시트가 뜨고 포커스는 선택지 제목으로 옮겨진다(바깥이 inert가 되어 알리기만 할 수 없다). 이때 누른 Space는 선택을 확정하지 않는다 (R-036 a, D-52)', async ({ page }) => {
   await startPageHidden(page);
   const { start } = await lifeWithDecision(page);
   await injectSave(page, start, '/?__timescale=200', SETTINGS_MANUAL); // 풀리면 선택지가 곧바로 뜬다
@@ -76,37 +77,32 @@ test('수동 모드: 속도 버튼에 포커스를 둔 채 선택지가 뜨면 �
   await setPageVisible(page, true); // 시간이 흐른다 → 선택지가 뜬다
   const panel = page.getByTestId('choice-panel');
   await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-mode', 'sheet');
   const key = (await panel.getAttribute('data-key'))!;
-  await settle(page);
-  expect(await activeTestId(page), '포커스가 선택지 제목으로 튀지 않는다').toBe('speed-4');
-  await expect(page.getByTestId('choice-announce'), '대신 aria-live 영역으로 알린다').toContainText(await page.getByTestId('choice-title').innerText());
+  await expect.poll(() => activeTestId(page), '포커스는 시트의 선택지 제목').toBe('choice-title');
 
-  // 이때 누른 Space는 속도 버튼을 누른 것이다 — 선택을 확정하지 않는다
+  // 이때 누른 Space는 제목(버튼이 아님)에 간다 — 속도도 선택도 바뀌지 않는다
   await page.keyboard.press('Space');
-  await expect(four).toHaveAttribute('aria-pressed', 'true');
   await settle(page);
+  await expect(four).toHaveAttribute('aria-pressed', 'false');
   await expect(panel).toHaveAttribute('data-key', key);
   const save = await readSave(page);
   expect(save.data.pending?.key).toBe(key);
   expect(countKind(save, 'choice')).toBe(0);
 });
 
-// (e1) 재현 경로가 닫혔는지: 포커스가 속도 버튼에 있다가 선택지가 뜬 뒤 Tab → Space
+// (e1) 재현 경로가 닫혔는지: 자동 모드(비모달 인라인 카드 — 컨트롤이 그대로 닿는다)에서 포커스가 속도 버튼에 있을 때 Tab → Space.
+// 수동 모드에서는 시트가 컨트롤을 inert로 덮어 이 경로 자체가 없다(포커스가 시트 제목으로 간다 — 위 시험).
 for (const speed of [2, 4, 8] as const) {
-  test(`수동 모드: 포커스가 ${speed}배 버튼에 있을 때 선택지가 뜬 뒤 Tab은 비활성 "다음 결정으로"에 닿고(자동 모드를 건너뛰지 않는다) Space·Enter는 무시된다 — 자동 모드·선택지·연표 불변 (R-036 e1)`, async ({ page }) => {
+  test(`자동 모드(인라인 카드): 포커스가 ${speed}배 버튼에 있을 때 선택지가 있어도 Tab은 비활성 "다음 결정으로"에 닿고(자동 모드를 건너뛰지 않는다) Space·Enter는 무시된다 — 자동 모드·선택지·연표 불변 (R-036 e1)`, async ({ page }) => {
     await startPageHidden(page);
-    const { start } = await lifeWithDecision(page);
-    await injectSave(page, start, '/?__timescale=200', SETTINGS_MANUAL);
+    const { decision } = await lifeWithDecision(page);
+    const key = decision.pending!.key;
+    await injectSave(page, decision, '/?__timescale=200', SETTINGS_AUTO); // 가려진 탭이라 자동 선택 타이머는 걸리지 않는다
     await controlsReady(page);
+    await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'inline');
     await page.locator(`[data-speed="${speed}"]`).focus();
     expect(await activeTestId(page)).toBe(`speed-${speed}`);
-
-    await setPageVisible(page, true); // 선택지가 뜬다
-    const panel = page.getByTestId('choice-panel');
-    await expect(panel).toBeVisible();
-    const key = (await panel.getAttribute('data-key'))!;
-    await settle(page);
-    expect(await activeTestId(page), '포커스는 속도 버튼에 그대로').toBe(`speed-${speed}`);
 
     // Tab: 같은 순서로 남은 속도 버튼들을 지나 "다음 결정으로"에 닿는다 (자동 모드 버튼으로 건너뛰지 않는다)
     const speedsAfter = [4, 8].filter((s) => s > speed).map((s) => `speed-${s}`);
@@ -119,12 +115,14 @@ for (const speed of [2, 4, 8] as const) {
     // Space와 Enter는 무시된다
     await page.keyboard.press('Space');
     await page.keyboard.press('Enter');
-    await expectUntouched(page, key);
+    await settle(page);
+    await expect(page.getByTestId('auto')).toHaveAttribute('aria-pressed', 'true');
+    expect((await readSave(page)).data.pending?.key, '대기 중인 선택지가 바뀌었다').toBe(key);
+    expect(countKind(await readSave(page), 'choice'), '선택이 연표에 기록됐다').toBe(0);
     expect(await activeTestId(page), '눌러도 포커스는 그대로').toBe('skip');
 
     // 다음 Tab이 자동 모드에 닿는다 (그리고 그 앞에 "다음 결정으로"가 항상 끼어 있다)
     expect(await tabWalk(page, 1)).toEqual(['auto']);
-    await expectUntouched(page, key);
   });
 }
 
@@ -145,16 +143,21 @@ test('컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록과 실제
   expect(await walk()).toEqual(expectedWalk);
   await expect(page.getByTestId('choice-panel')).toHaveCount(0);
 
-  // 선택지가 뜬 뒤 (다음 결정으로는 aria-disabled지만 목록에 그대로 있다)
+  // 선택지가 뜬 뒤 (다음 결정으로는 aria-disabled지만 목록에 그대로 있다). 수동 모드의 카드는 모달 시트라 컨트롤이 inert다 — 「카드 접기」로 접으면 컨트롤에 닿는다(M7b)
   await setPageVisible(page, true);
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await settle(page);
   await setPageVisible(page, false); // 이후 타이머가 끼어들지 않게
-  expect(await controlFocusables(page), '선택지 대기 중').toEqual([...CONTROL_TAB_ORDER]);
+  await expect(page.getByTestId('decision-fold-btn')).toBeEnabled();
+  await page.getByTestId('decision-fold-btn').click();
+  await expect(page.getByTestId('decision-fold')).toBeVisible();
+  expect(await controlFocusables(page), '선택지 대기 중(카드를 접은 채)').toEqual([...CONTROL_TAB_ORDER]);
   expect(await walk()).toEqual(expectedWalk);
   await expect(page.getByTestId('skip')).toHaveAttribute('aria-disabled', 'true');
 
-  // 선택지가 사라진 뒤
+  // 선택지가 사라진 뒤: 다시 열어 고른다
+  await expect(page.getByTestId('decision-reopen')).toBeEnabled();
+  await page.getByTestId('decision-reopen').click();
   const first = page.getByTestId(`choice-${(await readSave(page)).data.pending!.choiceIds[0]}`);
   await expect(first).toBeEnabled();
   await first.click();
@@ -176,6 +179,12 @@ test('컨트롤 그룹의 Tab 순서는 (수동·자동) × (선택지 없음·�
   for (const [label, state, settings] of states) {
     await injectSave(page, state, '/', settings);
     await controlsReady(page);
+    // 수동 모드에서 선택지가 있으면 카드는 모달 시트라 컨트롤이 inert다 — 접으면(「카드 접기」) 컨트롤 그룹이 그대로 닿는다 (M7b)
+    if (!settings.autoMode && state.pending !== null) {
+      await expect(page.getByTestId('decision-fold-btn')).toBeEnabled();
+      await page.getByTestId('decision-fold-btn').click();
+      await expect(page.getByTestId('decision-fold')).toBeVisible();
+    }
     expect(await controlFocusables(page), label).toEqual([...CONTROL_TAB_ORDER]);
     await page.locator('[data-speed="1"]').focus();
     expect(await tabWalk(page, 5), label).toEqual(CONTROL_TAB_ORDER.slice(CONTROL_TAB_ORDER.indexOf('speed-1') + 1));
@@ -217,8 +226,6 @@ for (const key of ['Enter', 'Space'] as const) {
     await expect(panel).toHaveAttribute('data-key', expected.pending!.key); // 연출 없이 core의 "다음 결정"과 같은 곳에서 멈췄다
     await expect.poll(() => activeTestId(page), '버튼이 아니라 선택지 제목으로 옮겨진다').toBe('choice-title');
     expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('H2');
-    await expect(page.getByTestId('choice-announce'), '제목으로 직접 옮겼으므로 별도 알림은 없다').toHaveText('');
-
     // 재입력·연타: 포커스가 제목에 있으므로 Space·Enter는 아무 선택도 확정하지 않는다
     for (let i = 0; i < 4; i++) {
       await page.keyboard.press('Space');
@@ -330,30 +337,29 @@ test('8배속 + 자동 모드: 선택지가 몇 번 떠도 포커스는 자동 �
 
 // R-048: 자동 모드를 끄는 순간에도 "선택지 대기 중"이면 같은 규칙. 시간 경쟁이 없도록 "대기 중에 끈 경우"와 "끈 뒤에 선택지가 뜬 경우"를 가려진 탭으로 나눠 본다.
 test.describe('자동 모드를 끄는 순간 (R-048)', () => {
-  test('선택지가 대기 중일 때 키보드(Space)로 자동 모드를 끄면 포커스는 자동 모드 버튼에 두고 aria-live로 알린다. 자동 선택은 취소된다', async ({ page }) => {
+  test('선택지가 대기 중일 때 키보드(Space)로 자동 모드를 끄면 인라인 카드가 그 자리에서 모달 시트로 바뀌고 포커스는 선택지 제목으로 간다(바깥이 inert가 된다). 자동 선택은 취소된다 (R-048, D-52)', async ({ page }) => {
     await startPageHidden(page);
     const { decision } = await lifeWithDecision(page);
     await injectSave(page, decision, '/?__timescale=200', SETTINGS_AUTO); // 가려진 탭이라 자동 선택 타이머는 아직 걸리지 않는다
     await controlsReady(page);
     await expect(page.getByTestId('auto-note')).toBeVisible();
+    await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'inline');
     const key = decision.pending!.key;
     await expect.poll(() => activeTestId(page), '자동 모드의 복원: 선택지 제목으로 가지 않는다').toBe('life-name');
-    await expect(page.getByTestId('choice-announce')).toHaveText('');
 
     const auto = page.getByTestId('auto');
     await auto.focus();
     await page.keyboard.press('Space'); // 자동 모드 끔 → 선택지가 대기 중인 채 수동으로 바뀐다
     await expect(auto).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.getByTestId('auto-note')).toHaveCount(0);
-    expect(await activeTestId(page), '포커스는 자동 모드 버튼에 그대로').toBe('auto');
-    await expect(page.getByTestId('choice-announce')).toContainText(await page.getByTestId('choice-title').innerText());
-    await expect(page.getByTestId('choice-announce')).toContainText('선택지가 나왔습니다');
+    await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'sheet');
+    await expect(page.getByTestId('auto-note')).toHaveText('자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.');
+    await expect.poll(() => activeTestId(page), '컨트롤에 있던 포커스가 시트의 제목으로 옮겨진다').toBe('choice-title');
 
     // 이제 시간이 흘러도(자동 선택 지연은 시간 배율 200에서 약 15ms) 선택이 일어나지 않는다
     await setPageVisible(page, true);
     await page.waitForTimeout(400);
     await expectUntouched(page, key);
-    expect(await activeTestId(page)).toBe('auto');
+    expect(await activeTestId(page)).toBe('choice-title');
   });
 
   test('대조: 같은 조건에서 자동 모드를 끄지 않으면 자동 선택이 곧 일어난다 (위 테스트가 지켜보는 시간이 충분하다는 증거)', async ({ page }) => {
@@ -375,10 +381,9 @@ test.describe('자동 모드를 끄는 순간 (R-048)', () => {
     await page.getByTestId('auto').evaluate((el: HTMLButtonElement) => el.click()); // 프로그램으로 눌러 버튼에 포커스가 가지 않게 한다(터치·일부 브라우저의 클릭과 같다)
     await expect(page.getByTestId('auto')).toHaveAttribute('aria-pressed', 'false');
     await expect.poll(() => activeTestId(page)).toBe('choice-title');
-    await expect(page.getByTestId('choice-announce'), '제목으로 직접 옮겼으므로 별도 알림은 없다').toHaveText('');
   });
 
-  test('자동 모드를 끈 뒤에 선택지가 뜨면 (포커스가 자동 모드 버튼에 있으므로) 옮기지 않고 aria-live로 알린다. 다시 켜면 알림이 지워진다', async ({ page }) => {
+  test('자동 모드를 끈 뒤에 선택지가 뜨면 포커스가 자동 모드 버튼에 있었어도 시트의 제목으로 간다(D-52 — 알리기만 하던 R-036의 칸이 사라졌다). 자동 선택은 취소된 채다', async ({ page }) => {
     await startPageHidden(page);
     const { start } = await lifeWithDecision(page);
     await injectSave(page, start, '/?__timescale=200', SETTINGS_AUTO);
@@ -392,19 +397,11 @@ test.describe('자동 모드를 끄는 순간 (R-048)', () => {
     await setPageVisible(page, true); // 이제 시간이 흘러 선택지가 뜬다
     const panel = page.getByTestId('choice-panel');
     await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute('data-mode', 'sheet');
     const key = (await panel.getAttribute('data-key'))!;
-    await settle(page);
-    expect(await activeTestId(page), '선택지가 떠도 포커스는 자동 모드 버튼에 그대로').toBe('auto');
-    await expect(page.getByTestId('choice-announce')).toContainText(await page.getByTestId('choice-title').innerText());
+    await expect.poll(() => activeTestId(page), '컨트롤에 있던 포커스가 시트의 제목으로 옮겨진다').toBe('choice-title');
     await page.waitForTimeout(400); // 자동 선택은 취소된 채다(지연 약 15ms)
     await expectUntouched(page, key);
-
-    // 다시 켜면 이전 알림은 지워지고 포커스는 그대로이다 (이 선택지는 자동 모드가 곧 고른다)
-    await setPageVisible(page, false);
-    await page.keyboard.press('Space');
-    await expect(auto).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('choice-announce')).toHaveText('');
-    expect(await activeTestId(page)).toBe('auto');
   });
 });
 

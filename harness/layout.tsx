@@ -1,6 +1,8 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { DEFAULT_SETTINGS, createEventPool, worstCaseVisibleChoiceIds, type BirthReport, type Character, type EventDef, type EventPool, type HistoryEntry } from '../src/core';
+import { DEFAULT_SETTINGS, ERAS, citationFor, citationIdFor, citationValidRange, createEventPool, worstCaseVisibleChoiceIds, type BirthReport, type Character, type Era, type EventDef, type EventPool, type HistoryEntry } from '../src/core';
+import { ERA_CONFIG } from '../src/data/birthTable';
+import { getCitation } from '../src/data/citationsAccess';
 import { EVENT_POOL } from '../src/data/events';
 import { LifeScreen, type LifeGame } from '../src/screens/LifeScreen';
 import type { YearClock } from '../src/ui/useYearClock';
@@ -24,15 +26,23 @@ const birthReport: BirthReport = { month: 3, region: '서울', sigunguSido: '서
 /** 서버·타이머 없이 고정된 올해 시계(진행률 0) */
 const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
 
-function stateFor(pool: EventPool, eventId: string, extraHistory: readonly HistoryEntry[] = []): LifeGame {
+/** 인용 박스 감사용(D-67): 카드를 어느 세상·어느 게임 속 연도에 보일지 */
+interface Cell {
+  era: Era;
+  /** 이 세상에 실제로 있는 출생 연도(대시보드 또래 칸이 출생 연도에서 시대를 읽는다) */
+  birthYear: number;
+  age: number;
+}
+
+function stateFor(pool: EventPool, eventId: string, extraHistory: readonly HistoryEntry[] = [], cell: Cell | null = null): LifeGame {
   const ev = pool.byId.get(eventId);
   if (ev === undefined || ev.choices === undefined) throw new Error(`선택지 이벤트가 아니다: ${eventId}`);
-  const age = 30;
+  const age = cell?.age ?? 30;
   return {
     phase: 'life',
-    era: 'present',
+    era: cell?.era ?? 'present',
     lifeLength: 'short30',
-    character,
+    character: cell === null ? character : { ...character, birthYear: cell.birthYear },
     stats,
     birthStats: { ...stats },
     age,
@@ -62,23 +72,63 @@ function stateFor(pool: EventPool, eventId: string, extraHistory: readonly Histo
 declare global {
   interface Window {
     /** ids: 풀의 선택지 이벤트 / show: 풀의 이벤트를 보인다 / showCustom: 풀에 없는 이벤트(예: 길이 권장치 끝값으로 만든 최악의 이벤트)를 보인다. history를 주면 인생 기록에 그 줄들이 더해진다(M7e-1 길이 표본) */
-    __layout: { ids: string[]; show: (id: string) => void; showCustom: (ev: EventDef, history?: HistoryEntry[]) => void };
+    __layout: { ids: string[]; show: (id: string) => void; showCustom: (ev: EventDef, history?: HistoryEntry[]) => void; cells: Array<{ id: string; era: Era; birthYear: number; age: number; year: number; citation: string }>; showCell: (id: string, era: Era, birthYear: number, age: number) => void };
   }
 }
 
 const noop = () => undefined;
+
+/**
+ * 연결된 카드 × 세상 전부(인용 박스가 실제로 보이는 칸) — 각 칸을 보일 게임 속 연도는 인용의 유효 범위가 시작하는 해다(없으면 2026). 인용 박스는 앱과 같은 `citationFor`·`CitationBox`가 그린다(D-67).
+ * 대기 상태의 나이·출생 연도는 합성이라 인용 박스 말고 다른 글(또래·기록)은 이 감사의 대상이 아니다.
+ */
+function connectedCells(): Array<{ id: string; era: Era; birthYear: number; age: number; year: number; citation: string }> {
+  const out: Array<{ id: string; era: Era; birthYear: number; age: number; year: number; citation: string }> = [];
+  for (const ev of EVENT_POOL.events) {
+    if (ev.choices === undefined) continue;
+    for (const era of ERAS) {
+      const cid = citationIdFor(ev, era);
+      const c = cid === null ? undefined : getCitation(cid);
+      if (cid === null || c === undefined) continue;
+      const range = citationValidRange(c);
+      // 이 세상의 가장 이른 출생 연도로, 인용이 보이는 해 안에서 30세 근처에 놓는다(나이는 0~100 안)
+      const birthYear = ERA_CONFIG[era].birthYears.min;
+      const year = Math.min(Math.max(birthYear + 30, range.from), range.until);
+      const age = year - birthYear;
+      if (age >= 0 && age <= 100 && citationFor(ev, era, year) !== null) out.push({ id: ev.id, era, birthYear, age, year, citation: cid });
+    }
+  }
+  return out;
+}
+const CELLS = connectedCells();
+
+/**
+ * 기본 = 자동 모드 켜짐(비모달 인라인 카드 — 대시보드 가운데 열 맨 위, 카드 전체가 문서 안에 놓인다). ?mode=sheet 이면 수동(모달 시트, M7b M-6 — 카드가 94dvh 이하의 고정 상자 안에서 스크롤된다).
+ * 낱말 끊김·줄바꿈 감사처럼 카드 전체를 한 번에 재야 하는 e2e는 기본(인라인)을 쓰고, 시트의 안쪽 스크롤 레이아웃은 e2e/layout.spec.ts·m7b-*가 따로 잰다.
+ */
+const SHEET = new URLSearchParams(window.location.search).get('mode') === 'sheet';
+const SETTINGS = { ...DEFAULT_SETTINGS, autoMode: !SHEET };
 
 function Harness() {
   const ids = EVENT_POOL.events.filter((e) => e.choices !== undefined).map((e) => e.id);
   const [id, setId] = useState(ids[0]);
   const [custom, setCustom] = useState<EventDef | null>(null);
   const [extraHistory, setExtraHistory] = useState<readonly HistoryEntry[]>([]);
+  const [cell, setCell] = useState<Cell | null>(null);
   useEffect(() => {
     window.__layout = {
       ids,
+      cells: CELLS,
       show: (next) => {
         setCustom(null);
         setExtraHistory([]);
+        setCell(null);
+        setId(next);
+      },
+      showCell: (next, era, birthYear, age) => {
+        setCustom(null);
+        setExtraHistory([]);
+        setCell({ era, birthYear, age });
         setId(next);
       },
       showCustom: (ev, history) => {
@@ -93,8 +143,8 @@ function Harness() {
     <LifeScreen
       key={shown}
       pool={pool}
-      game={stateFor(pool, shown, extraHistory)}
-      settings={DEFAULT_SETTINGS}
+      game={stateFor(pool, shown, extraHistory, cell)}
+      settings={SETTINGS}
       clock={CLOCK}
       exitOpen={false}
       onExitOpen={noop}

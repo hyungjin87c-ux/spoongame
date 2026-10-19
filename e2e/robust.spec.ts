@@ -168,9 +168,18 @@ test('키보드만으로 타이틀부터 사망까지 진행할 수 있다 (Tab�
   // 인생 화면 컨트롤은 화면이 뜬 직후 입력 가드가 걸려 있다(R-035): 풀린 뒤에 눌러야 한다.
   await expect(page.getByTestId('auto')).toBeEnabled();
   // 자동 모드 토글까지 Tab으로 간다(선택지 제목 → 선택지 버튼들 → 속도 4개 → 다음 결정으로(대기 중이라 aria-disabled지만 Tab 순서에는 그대로 있다, R-036) → 자동 모드 순서) → Space로 켠다
+  // 수동 모드의 카드는 모달 시트라 컨트롤이 inert다(M7b) — Esc로 카드를 접으면 포커스가 「결정 다시 열기」로 가고 컨트롤에 닿는다. 접은 동안은 자동 선택도 멈추므로(U3(a)) 자동 모드를 켠 뒤 다시 열어야 이어진다
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('decision-fold')).toBeVisible();
+  await expect.poll(focusedId).toBe('decision-reopen');
+  await page.getByTestId('life-name').focus();
   await tabTo((id) => id === 'auto', 20);
+  await expect(page.getByTestId('auto')).toBeEnabled(); // 카드를 접은 직후 0.4초는 컨트롤의 입력 가드가 눌림을 삼킨다 (M7b U9)
   await page.keyboard.press('Space');
   await expect(page.getByTestId('auto')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('decision-reopen')).toBeEnabled();
+  await page.getByTestId('decision-reopen').focus();
+  await page.keyboard.press('Enter'); // 다시 열기 — 이제 자동 모드의 인라인 카드이고 곧 스스로 고른다
   await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 60_000 });
   expect((await readSave(page)).data.phase).toBe('ending');
   expect(errors).toEqual([]);
@@ -206,7 +215,8 @@ test('자동 모드는 언제든 해제할 수 있다: 해제하면 대기 중�
   await page.getByTestId('auto').click(); // 입력 가드가 풀릴 때까지 Playwright가 기다린다
   await expect(page.getByTestId('auto')).toHaveAttribute('aria-pressed', 'false');
   expect((await readSettings(page)).autoMode).toBe(false);
-  await expect(page.getByTestId('auto-note')).toHaveCount(0);
+  await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'sheet'); // 인라인 카드가 그 자리에서 모달 시트로 바뀐다
+  await expect(page.getByTestId('auto-note')).toHaveText('자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.');
   await page.waitForTimeout(AUTO_DELAY_MS + 500); // 취소됐다면 지연이 다 지나도 선택지가 그대로 남는다
   await expect(panel).toHaveAttribute('data-key', decision.pending!.key);
   expect((await readSave(page)).data).toEqual(decision);
@@ -553,4 +563,29 @@ test('저장 쓰기 없이 곧바로 떠나도 마지막 상태는 남는다: �
   await page.waitForLoadState();
   await expect(page.getByTestId('life-screen')).toBeVisible();
   expect((await readSave(page)).data.history.filter((h) => h.kind === 'choice')).toHaveLength(1);
+});
+
+test('이름·연표 글에 방향 제어·제로폭 문자가 든 저장은 손상으로 보고 크래시 없이 첫 화면으로 시작한다 (QA-003-M7b A12b)', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/');
+  const decision = await findPendingState(page, 'present');
+  const ch = (cp: number) => String.fromCodePoint(cp);
+  const name = decision.character!.name;
+  const tampered: Array<[string, GameState]> = [
+    ['이름 끝 RLO(U+202E)', { ...decision, character: { ...decision.character!, name: `${name}${ch(0x202e)}` } }],
+    ['이름 앞 제로폭 공백(U+200B)', { ...decision, character: { ...decision.character!, name: `${ch(0x200b)}${name}` } }],
+    ['이름 가운데 RLI(U+2067)', { ...decision, character: { ...decision.character!, name: `${name.slice(0, 1)}${ch(0x2067)}${name.slice(1)}` } }],
+    ['이름 BOM(U+FEFF)', { ...decision, character: { ...decision.character!, name: `${name}${ch(0xfeff)}` } }],
+    ['연표 글 LRM(U+200E)', { ...decision, history: decision.history.map((h, i) => (i === 0 ? { ...h, text: `${h.text}${ch(0x200e)}` } : h)) }],
+  ];
+  for (const [label, state] of tampered) {
+    await injectSave(page, state, '/');
+    await expect(page.getByTestId('title-screen'), label).toBeVisible();
+    await expect(page.getByTestId('life-screen'), label).toHaveCount(0);
+  }
+  // 대조: 고치지 않은 저장은 인생 화면으로 이어진다 — 위 거부가 문자 때문이지 다른 변조 때문이 아니다
+  await injectSave(page, decision, '/');
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  await expect(page.getByTestId('life-name')).toHaveText(name);
+  expect(errors).toEqual([]);
 });

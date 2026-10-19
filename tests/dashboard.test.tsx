@@ -88,9 +88,13 @@ const posOf = (html: string, needle: string) => {
   expect(i, needle).toBeGreaterThan(-1);
   return i;
 };
-/** `data-testid`가 id인 요소를 담은 <section> 전체 */
+/**
+ * `data-testid`가 id인 요소를 담은 <section> 전체. 중대 결정 카드(`choice-panel`)는 자동 모드 꺼짐에서 모달 시트(<div>, 화면 맨 끝 — 바깥 형제들 뒤)라
+ * 그때는 시트가 시작되는 곳부터 문서 끝까지를 돌려준다(시트 뒤에는 닫는 태그뿐이다).
+ */
 function sectionOf(html: string, id: string): string {
   const at = posOf(html, `data-testid="${id}"`);
+  if (id === 'choice-panel' && html.slice(html.lastIndexOf('<', at), at).startsWith('<div')) return html.slice(html.lastIndexOf('<', at));
   const start = html.lastIndexOf('<section', at);
   const end = html.indexOf('</section>', at);
   expect(start).toBeGreaterThan(-1);
@@ -101,6 +105,10 @@ const openTag = (html: string, testid: string) => {
   const at = posOf(html, `data-testid="${testid}"`);
   return html.slice(html.lastIndexOf('<', at), html.indexOf('>', at) + 1);
 };
+/** 선택지 버튼들만 (카드 머리의 「카드 접기」 버튼은 뺀다) */
+function choiceButtons(panel: string): string[] {
+  return [...panel.matchAll(/<button\b[^>]*class="choice"[\s\S]*?<\/button>/g)].map((m) => m[0]);
+}
 function buttonsIn(html: string): Array<{ tag: string; label: string }> {
   return [...html.matchAll(/<(button|a)\b([^>]*)>([\s\S]*?)<\/\1>/g)].map((m) => ({ tag: `<${m[1]}${m[2]}>`, label: text(m[3]) }));
 }
@@ -113,9 +121,15 @@ const character = infant.character!;
 describe('구조와 순서 (DB1)', () => {
   const html = render(decision);
 
-  it('DOM 순서: 헤더 → 진행·도구 줄 → 알림 영역 → 왼쪽(프로필·상태·자산) → 가운데(중대 결정·인생 기록) → 오른쪽(식구·또래)', () => {
-    const order = ['dash-head', 'controls', 'tools', 'choice-announce', 'profile-card', 'stats', 'assets-card', 'choice-panel', 'log', 'family-card', 'peers-now-card'].map((id) => posOf(html, `data-testid="${id}"`));
+  it('DOM 순서(자동 모드 켜짐 = 인라인 카드): 헤더 → 진행·도구 줄 → 왼쪽(프로필·상태·자산) → 가운데(중대 결정·인생 기록) → 오른쪽(식구·또래)', () => {
+    const inline = render(decision, { settings: { autoMode: true } });
+    const order = ['dash-head', 'controls', 'tools', 'profile-card', 'stats', 'assets-card', 'choice-panel', 'log', 'family-card', 'peers-now-card'].map((id) => posOf(inline, `data-testid="${id}"`));
     for (let i = 1; i < order.length; i++) expect(order[i], `${i}번째`).toBeGreaterThan(order[i - 1]);
+  });
+
+  it('DOM 순서(자동 모드 꺼짐 = 모달 시트): 시트는 inert인 형제들(헤더·도구 줄·main·본문 끝 여백) 뒤, 화면 맨 끝에 있다', () => {
+    expect(posOf(html, 'data-testid="decision-overlay"')).toBeGreaterThan(posOf(html, 'data-testid="peers-now-card"'));
+    expect(posOf(html, 'data-testid="choice-panel"')).toBeGreaterThan(posOf(html, 'data-testid="decision-overlay"'));
   });
 
   it('제목 단계: h1은 하나(이름)이고 옛 화면의 「수저 게임」 h1·옛 클래스가 없다', () => {
@@ -131,14 +145,19 @@ describe('구조와 순서 (DB1)', () => {
     expect(quiet).toContain('data-testid="log"');
   });
 
-  it('중대 결정 카드: 기존 동작(제목·본문·선택지 개수·접근 가능한 이름)을 새 틀에 담았고 기록보다 앞이다', () => {
-    const panel = sectionOf(html, 'choice-panel');
-    expect(panel).toContain(DASH_TEXT.choiceKind);
-    expect(panel).toContain('aria-labelledby="choice-title"');
-    expect(buttonsIn(panel), '선택지 버튼 수').toHaveLength(decision.pending!.choiceIds.length);
-    expect(posOf(html, 'data-testid="choice-panel"')).toBeLessThan(posOf(html, 'data-testid="log"'));
-    expect(panel).not.toContain('data-testid="auto-note"');
-    expect(render(decision, { settings: { autoMode: true } })).toContain(DASH_TEXT.autoNote);
+  it('중대 결정 카드: 제목·본문·선택지 개수·접근 가능한 이름이 있고, 인라인 카드는 기록보다 앞이다 (요소 전체는 tests/decisionCard.test.tsx)', () => {
+    const inline = render(decision, { settings: { autoMode: true } });
+    for (const panel of [sectionOf(html, 'choice-panel'), sectionOf(inline, 'choice-panel')]) {
+      expect(panel).toContain(DASH_TEXT.choiceKind);
+      expect(panel).toContain('aria-labelledby="dc-title"');
+      expect(choiceButtons(panel), '선택지 버튼 수').toHaveLength(decision.pending!.choiceIds.length);
+    }
+    expect(posOf(inline, 'data-testid="choice-panel"')).toBeLessThan(posOf(inline, 'data-testid="log"'));
+    // 자동 모드 안내는 상태에 맞는 문장 하나만 (M-13 — 콜론 라벨형 폐기)
+    expect(text(sectionOf(html, 'choice-panel'))).toContain(DASH_TEXT.autoNoteOff);
+    expect(text(sectionOf(html, 'choice-panel'))).not.toContain(DASH_TEXT.autoNoteOn);
+    expect(text(sectionOf(inline, 'choice-panel'))).toContain(DASH_TEXT.autoNoteOn);
+    expect(text(sectionOf(inline, 'choice-panel'))).not.toContain(DASH_TEXT.autoNoteOff);
   });
 
   it('금지 낱말: 「접속자」·느낌표·이모지가 화면 문구에 없다', () => {
@@ -504,7 +523,7 @@ describe('선택지 영향 줄 (M5 2b, copy.md 4-3·4-4)', () => {
       const panel = sectionOf(render(g), 'choice-panel');
       const pool = EVENT_POOL;
       const previews = previewPending(g, pool)!;
-      const buttons = [...panel.matchAll(/<button\b[\s\S]*?<\/button>/g)].map((m) => m[0]);
+      const buttons = choiceButtons(panel);
       expect(buttons).toHaveLength(previews.length);
       let withImpact = 0;
       buttons.forEach((b, i) => {
@@ -524,7 +543,7 @@ describe('선택지 영향 줄 (M5 2b, copy.md 4-3·4-4)', () => {
       const ev = EVENT_POOL.byId.get(g.pending!.eventId)!;
       const previews = previewPending(g, EVENT_POOL)!;
       const panel = sectionOf(render(g), 'choice-panel');
-      const buttons = [...panel.matchAll(/<button\b[\s\S]*?<\/button>/g)].map((m) => m[0]);
+      const buttons = choiceButtons(panel);
       buttons.forEach((b, i) => {
         const choice = ev.choices!.find((c) => c.id === previews[i].choiceId)!;
         expect(accessibleText(b), choice.id).toBe(choiceAccessibleName(choice.label, previews[i].impact.items));

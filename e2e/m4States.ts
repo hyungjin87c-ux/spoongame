@@ -83,7 +83,9 @@ export async function openM4Screen(page: Page, screen: M4Screen | M4ExtraScreen,
   if (screen === 'dash-infant') {
     await injectSave(page, lifeState(seed), '/', { speed: 1, autoMode: false });
   } else if (screen === 'dash-decision') {
-    await injectSave(page, await findImpactState(page, 'adult'), '/', { speed: 1, autoMode: false });
+    // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): M4 대시보드 시험이 보던 「결정 카드가 가운데 열에 놓이고 진행 줄·도구 줄에 그대로 닿는」 상태다(가려진 탭이라 자동 선택은 일어나지 않는다).
+    // 수동 모드의 모달 시트·접힌 띠는 e2e/m7b-*가 잰다
+    await injectSave(page, await findImpactState(page, 'adult'), '/', { speed: 1, autoMode: true });
     await expect(page.getByTestId('choice-panel')).toBeVisible();
   } else if (screen === 'dash-adult' || screen === 'dash-exit-ask' || screen === 'dash-tools-open' || screen === 'dash-diamond') {
     const base = await adultState(page);

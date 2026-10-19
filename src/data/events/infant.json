@@ -23,6 +23,7 @@
       "ageRange": { "min": 1, "max": 5 },
       "weight": 12,
       "once": true,
+      "citation": { "present": "c-060", "future": "c-060" },
       "conditions": { "notFlags": ["childcare_set"] },
       "choices": [
         {
@@ -54,6 +55,7 @@
       "ageRange": { "min": 1, "max": 5 },
       "weight": 14,
       "once": true,
+      "noCitation": "X1",
       "choices": [
         {
           "id": "hospital",
@@ -85,6 +87,7 @@
       "ageRange": { "min": 2, "max": 6 },
       "weight": 12,
       "once": true,
+      "noCitation": "X6",
       "choices": [
         {
           "id": "tell",
@@ -117,6 +120,7 @@
       "eras": ["present", "future"],
       "weight": 12,
       "once": true,
+      "noCitation": "X6",
       "modifiers": [{ "when": { "parenting": ["neglect"] }, "weight": 1.5 }],
       "choices": [
         {
@@ -147,6 +151,7 @@
       "ageRange": { "min": 2, "max": 4 },
       "weight": 60,
       "once": true,
+      "citation": "c-033",
       "conditions": { "birthOrder": { "max": 1 }, "motherAge": { "max": 45 } },
       "modifiers": [{ "when": { "motherAge": { "max": 32 } }, "weight": 10 }],
       "choices": [
@@ -273,6 +278,7 @@
       "ageRange": { "min": 0, "max": 1 },
       "weight": 12,
       "once": true,
+      "noCitation": "X1",
       "choices": [
         {
           "id": "cook",
@@ -314,6 +320,7 @@
       "eras": ["present"],
       "weight": 14,
       "once": true,
+      "citation": "c-048",
       "choices": [
         {
           "id": "one",
@@ -367,6 +374,7 @@
       "ageRange": { "min": 1, "max": 1 },
       "weight": 14,
       "once": true,
+      "noCitation": "D",
       "choices": [
         {
           "id": "grand",
@@ -398,6 +406,7 @@
       "eras": ["present"],
       "weight": 14,
       "once": true,
+      "noCitation": "D",
       "conditions": { "notFlags": ["childcare_set"] },
       "choices": [
         {
@@ -496,6 +505,7 @@
       "eras": ["present"],
       "weight": 12,
       "once": true,
+      "citation": "c-066",
       "conditions": { "parentWealth": { "max": 4 } },
       "choices": [
         {
@@ -539,6 +549,7 @@
       "eras": ["present", "future"],
       "weight": 14,
       "once": true,
+      "citation": "c-061",
       "choices": [
         {
           "id": "near",
@@ -569,6 +580,7 @@
       "ageRange": { "min": 3, "max": 6 },
       "weight": 16,
       "once": true,
+      "noCitation": "D",
       "conditions": { "flags": ["younger_sibling"] },
       "choices": [
         {
@@ -599,6 +611,7 @@
       "ageRange": { "min": 3, "max": 6 },
       "weight": 12,
       "once": true,
+      "noCitation": "D",
       "choices": [
         {
           "id": "one",
@@ -630,6 +643,7 @@
       "ageRange": { "min": 3, "max": 6 },
       "weight": 12,
       "once": true,
+      "citation": { "present": "c-020", "future": "c-020" },
       "conditions": { "parentWealth": { "max": 3 }, "housing": ["rent", "free"] },
       "modifiers": [{ "when": { "parentWealth": { "max": 2 } }, "weight": 1.8 }],
       "choices": [
@@ -663,6 +677,7 @@
       "eras": ["present", "future"],
       "weight": 14,
       "once": true,
+      "citation": "c-062",
       "choices": [
         {
           "id": "lessons",

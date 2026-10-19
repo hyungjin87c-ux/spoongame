@@ -120,7 +120,25 @@ export interface EventDef {
    * 일반 추첨과 별개 슬롯이라 그 해의 일반 사건과 **함께** 연표에 한 줄을 남기고, 창의 마지막 해에는 100% 일어난다(`life.ts#stepYear`). 서술 전용·once 전용.
    */
   milestone?: boolean;
+  /**
+   * 중대 결정 카드의 인용 연결 (SPEC-003 MD2, M7b — docs/data/content-M7b.md 5절 안 A). 선택지 이벤트만 쓴다.
+   * 문자열 `"c-006"` = 이 카드가 뜨는 모든 세상에서 같은 인용, 객체 `{ past?, present?, future? }` = 세상마다 다른 인용(적히지 않은 세상은 인용 없음).
+   * 인용이 그 세상에서 실제로 보이는지(시대·게임 속 연도)는 `core/citations.ts#citationFor`가 가른다.
+   */
+  citation?: string | Partial<Record<Era, string>>;
+  /** 인용을 어느 세상에서도 붙이지 않는 카드의 사유 코드 — `NO_CITATION_CODES` (X1~X6 원칙적 무인용, D 맞는 자료 없음). `citation`과 함께 쓰지 않는다 */
+  noCitation?: NoCitationCode;
 }
+
+/**
+ * `noCitation`의 사유 코드 (content-M7b 1-4절): X1 의료·응급·진단 / X2 임종·가족 갈등의 존엄 / X3 재무·법률 행위 / X4 낙인 위험 / X5 다가올 세상 상상 전용 / X6 양육 방식 가치판단 유도 —
+ * 이 여섯은 **원칙적 무인용**이라 목록 변경에 마스터 승인이 필요하다(M-8). D는 맞는 자료가 없어 서술 장면으로 둔 카드.
+ */
+export const NO_CITATION_CODES = ['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'D'] as const;
+export type NoCitationCode = (typeof NO_CITATION_CODES)[number];
+
+/** 인용 id 형식 (`citations.json`의 id) */
+export const CITATION_ID_PATTERN = /^c-\d{3}$/;
 
 export function isChoiceEvent(ev: EventDef): boolean {
   return ev.choices !== undefined && ev.choices.length > 0;
@@ -564,7 +582,7 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
 
 const EVENT_KEYS = [
   'id', 'title', 'text', 'stages', 'ageRange', 'eras', 'weight', 'once', 'cooldown',
-  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone',
+  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'citation', 'noCitation',
 ] as const;
 
 /** 단계가 덮는 나이 구간 [시작, 끝] (노년은 상한 없음) */
@@ -603,6 +621,39 @@ function checkMoneyKinds(ev: Obj, path: string, p: Problems): void {
   const usesAssetCond = conds.some((c) => isObj(c) && c.assets !== undefined);
   if (usesFamily && !young) p.add(path, 'effects.family(집안 살림)는 20세 미만(영유아·학창)으로만 일어나는 이벤트에서만 쓸 수 있다');
   if ((usesAssets || usesAssetCond) && !adult) p.add(path, 'assets(자산) 효과·조건은 20세 이상(청년·중년·노년)으로만 일어나는 이벤트에서만 쓸 수 있다');
+}
+
+/**
+ * 인용 연결 필드의 형태 (M7b): `citation`은 인용 id 문자열 또는 `{ past?, present?, future? }`(비어 있지 않은 객체, 값은 id), `noCitation`은 사유 코드.
+ * 둘은 함께 쓰지 않고, 선택지 이벤트(중대 결정 카드)에서만 쓴다. 인용 id가 `citations.json`에 실제로 있는지는 데이터 파일을 아는 `core/citations.ts#citationLinkProblems`가 점검한다
+ * (이 함수는 데이터 파일 없이 형태만 본다 — 가짜 풀을 만드는 시험이 인용 파일에 묶이지 않게).
+ */
+function checkCitationFields(ev: Obj, path: string, p: Problems): void {
+  if (ev.citation === undefined && ev.noCitation === undefined) return;
+  if (ev.choices === undefined) p.add(path, 'citation·noCitation은 선택지 이벤트(중대 결정 카드)에서만 쓴다');
+  if (ev.citation !== undefined && ev.noCitation !== undefined) p.add(path, 'citation과 noCitation은 함께 쓸 수 없다 (인용이 있으면 사유가 없다)');
+  const c = ev.citation;
+  if (c !== undefined) {
+    if (typeof c === 'string') {
+      if (!CITATION_ID_PATTERN.test(c)) p.add(`${path}.citation`, `인용 id 형식이어야 한다 (예: c-006, 지금 "${c}")`);
+    } else if (isObj(c)) {
+      const keys = Object.keys(c);
+      if (keys.length === 0) p.add(`${path}.citation`, '비어 있으면 안 된다 (인용이 없는 카드는 citation을 쓰지 말고 noCitation을 쓴다)');
+      for (const k of keys) {
+        if (!(ERAS as readonly string[]).includes(k)) p.add(`${path}.citation.${k}`, `알 수 없는 세상이다 (${ERAS.join(', ')} 중 하나)`);
+        else if (typeof c[k] !== 'string' || !CITATION_ID_PATTERN.test(c[k] as string)) p.add(`${path}.citation.${k}`, '인용 id 형식이어야 한다 (예: c-006)');
+      }
+      // 이 카드가 뜨지 않는 세상(eras에 없는 세상)에 인용을 적으면 영원히 쓰이지 않는 연결이다
+      if (Array.isArray(ev.eras)) {
+        for (const k of keys) if ((ERAS as readonly string[]).includes(k) && !ev.eras.includes(k)) p.add(`${path}.citation.${k}`, `이 이벤트는 ${k} 세상에서 일어나지 않는다 (eras: ${ev.eras.join(', ')})`);
+      }
+    } else {
+      p.add(`${path}.citation`, '인용 id 문자열 또는 { past?, present?, future? } 객체여야 한다');
+    }
+  }
+  if (ev.noCitation !== undefined && !(NO_CITATION_CODES as readonly unknown[]).includes(ev.noCitation)) {
+    p.add(`${path}.noCitation`, `사유 코드(${NO_CITATION_CODES.join(', ')}) 중 하나여야 한다`);
+  }
 }
 
 function checkEvent(ev: unknown, path: string, p: Problems): void {
@@ -680,6 +731,8 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
       }
     }
   }
+
+  checkCitationFields(ev, path, p);
 
   const hasChoices = ev.choices !== undefined;
   if (hasChoices) {

@@ -17,6 +17,7 @@ import { AGE_GROUPS, faceSvg } from '../../src/assets/faces/faceLayers.ts';
 import { generateBirthFromSeed, looksStanding } from '../../src/core/birth.ts';
 import { birthSentence, isValidBirthReport, reportPlaceLabel, weightStanding } from '../../src/core/birthReport.ts';
 import { AUTO_ADVANCE_MS, LINE_H_STACKED, LINE_W, buildCarousel, valueWidthEm } from '../../src/core/carousel.ts';
+import { citationFor, citationText, splitSourceLine } from '../../src/core/citations.ts';
 import { finalWealthStanding, movementOf, standingScore, startBandOf } from '../../src/core/ending.ts';
 import { formatMan } from '../../src/core/format.ts';
 import { glueSegments, splitPair } from '../../src/core/glue.ts';
@@ -490,24 +491,29 @@ const toolBtn = (id, iconName, label, pressed = false, soon = false) =>
  * 「생각 남기기」는 M7c 전까지 같은 지속 비활성 + 「준비 중」 알약이다(toolBtn soon, R-326) — noteReady는 M7c 목표 시안(note.html, 자유 기록 카드가 떠 있는 모습)에서만 true.
  * 도구 줄 아래 한 줄(볼륨·나가기 확인 단계)은 dashboardPage()가 `?state=tools|exit`로 끼운다.
  */
-function dashHead({ age, year, progress, paused, pending = false, noteReady = false }) {
+/**
+ * 대시보드 헤더 + 도구 줄. pending = 선택지 대기(「다음 결정으로」 지속 비활성 — 구현 LifeScreen#isSkipBlocked), paused = **사용자가 누른 일시정지**만(구현 `game.paused` — 선택지 대기 중에도 버튼 이름은 「일시정지」다;
+ * M7b 전 카드 시안은 대기를 일시정지로 그렸는데 구현과 달라 바로잡았다, 2026-10-19), auto = 자동 모드 켜짐(「자동 모드 켜짐」 aria-pressed), inert = 모달 시트가 떠 있는 동안 헤더·도구 줄을 `inert`로(M7b M-6 — Tab이 시트 안에서만 돈다).
+ */
+function dashHead({ age, year, progress, paused, pending = false, noteReady = false, auto = false, inert = false }) {
   const T = DASH_TEXT;
-  return `<header class="dash-head"><div class="dash-head__inner">
+  const inertAttr = inert ? ' inert' : '';
+  return `<header class="dash-head"${inertAttr}><div class="dash-head__inner">
     <div class="dash-head__top">${headerLogo()}
       <div class="who"><span class="who__name">${HERO.name}</span><span class="who__age"><b>${age}</b>${T.ageSuffix}</span></div></div>
     <div class="year-row"><span class="num">${year}${T.yearSuffix}</span>
       <div class="year-progress" role="progressbar" aria-label="${T.yearProgressLabel}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"${paused ? ` aria-valuetext="${progress}%, ${T.progressPausedValue}"` : ''}><div class="year-progress__fill" style="width:${progress}%"></div></div>
       <span class="year-row__pct num">${progress}%</span></div>
   </div></header>
-  <div class="toolbar"><div class="toolbar__inner">
+  <div class="toolbar"${inertAttr}><div class="toolbar__inner">
     <div class="controls-fixed" role="group" aria-label="${T.controlsGroup}" data-testid="bottom-bar">
       <div class="controls__speed">
         <button class="btn btn--sm" type="button">${icon(paused ? 'play' : 'pause', 'icon--sm')}<span>${paused ? T.play : T.pause}</span></button>
         <button class="btn btn--sm" type="button" aria-pressed="true">1${T.speedUnit}</button><button class="btn btn--sm" type="button">2${T.speedUnit}</button><button class="btn btn--sm" type="button">4${T.speedUnit}</button><button class="btn btn--sm" type="button">8${T.speedUnit}</button>
       </div>
       <div class="controls__more">
-        <button class="btn btn--sm btn--secondary" type="button"${pending ? ' aria-disabled="true" data-unavailable="true"' : ''}>${icon('next', 'icon--sm')}<span>${T.skip}</span></button>
-        <button class="btn btn--sm btn--secondary" type="button" aria-pressed="false">${icon('auto', 'icon--sm')}<span>${T.autoOff}</span></button>
+        <button class="btn btn--sm btn--secondary" type="button"${pending || auto ? ' aria-disabled="true" data-unavailable="true"' : ''}>${icon('next', 'icon--sm')}<span>${T.skip}</span></button>
+        <button class="btn btn--sm btn--secondary" type="button" aria-pressed="${auto ? 'true' : 'false'}">${icon('auto', 'icon--sm')}<span>${auto ? T.autoOn : T.autoOff}</span></button>
       </div>
     </div>
     <div class="controls__tools" role="group" aria-label="${T.toolsGroup}">
@@ -561,7 +567,7 @@ const logNote = (age, topic, text) => `<li class="log__row log__row--note"><span
 function logCard(rowsHtml, newCount) {
   return `<section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2><span class="t-xs t-faint">${glueHtml('시간순 · 위로 스크롤하면 지난 기록')}</span></div>
   <p class="log__pin">${fitPair(`이 세상의 가상 인구 ${N_POP}명`, `${HERO.name}도 그중 한 사람`)}</p>
-  <ol class="log__list" aria-live="polite" aria-relevant="additions">${rowsHtml}</ol>
+  <div class="log__list" role="region" aria-label="${esc(DASH_TEXT.logTitle)}" tabindex="0"><ol class="log__rows" aria-live="polite" aria-relevant="additions">${rowsHtml}</ol></div>
   ${newCount ? `<button class="btn btn--secondary btn--sm log__jump" type="button">${glueHtml(`새 기록 ${newCount}개 · 맨 아래로`)}</button>` : ''}</section>`;
 }
 
@@ -570,7 +576,7 @@ const familyCard = (age) => `<section class="card family" aria-label="식구"><h
   <dl class="family-list">
     <dt>어머니</dt><dd>${HERO.motherAge + age}세<small>${fitPair(HERO.motherJob, '건강함')}</small></dd>
     <dt>아버지</dt><dd>${HERO.fatherAge + age}세<small>${fitPair(HERO.fatherJob, '건강함')}</small></dd>
-    <dt>형제자매</dt><dd>${age >= 20 ? `남동생 ${age - 3}세 <small>3세 아래</small>` : '남동생 <small>이제 막 태어남</small>'}</dd>
+    <dt>형제자매</dt><dd>${age - 3 >= 1 ? `남동생 ${age - 3}세 <small>3세 아래</small>` : '남동생 <small>이제 막 태어남</small>'}</dd>
     ${age >= 20 ? '<dt>배우자</dt><dd>없음</dd><dt>자녀</dt><dd>없음</dd>' : ''}
   </dl></section>`;
 
@@ -583,38 +589,86 @@ function peersCard(labels) {
   return `<section class="card peers-now" aria-labelledby="peers-now-t"><div class="card__head" style="margin-bottom:var(--sp-1)"><h2 id="peers-now-t" class="card__title">${esc(DASH_TEXT.peersTitle)}</h2><span class="card__sub">${esc(DASH_TEXT.peersSub)}</span></div><ul class="people">${rows}</ul><p class="t-xs t-faint">${esc(DASH_TEXT.peersNote)}</p></section>`;
 }
 
-function infantSheet() {
-  return `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="dc-title"><div class="sheet">
-    <div class="sheet__head"><span class="sheet__kind">중대 결정</span><div class="row"><span class="sheet__age">2029년 · 3세</span><button class="btn btn--ghost btn--sm" type="button">카드 접기 ▾</button></div></div>
-    <div class="sheet__body">
-      <div class="stack--sm stack"><h2 id="dc-title" class="t-title" style="font-size:var(--fs-2xl)">동생을 맞이했습니다</h2>
-      <p>${HERO.name}은 동생을 처음 봤습니다. 부모님의 애정이 줄어든 것처럼 느껴집니다.</p></div>
-      <div class="cite"><p class="cite__text">동생이 태어난 뒤 첫째가 관심을 끌려는 행동이나 이전 행동으로 돌아가는 모습을 보이는 일은 흔한 것으로 알려져 있습니다. <span class="t-faint" style="color:inherit;opacity:.8">(시안용 문구)</span></p><p class="cite__src">기관·저자(연도), 자료 이름 · 구현 때 근거 행에서 채움</p></div>
-      <div class="choices-list" role="group" aria-label="선택지">
-        ${choiceBtn(1, '엄마가 동생을 살피면 운다', 'relationships:down:1,happiness:up:1')}
-        ${choiceBtn(2, '동생을 예뻐해 준다', 'relationships:up:2,happiness:down:1')}
-        ${choiceBtn(3, '동생의 장난감을 빼앗는다', 'relationships:down:2,happiness:up:1')}
-      </div>
-      ${sheetHint()}
-      <p class="sheet__hint">자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.</p>
-    </div></div></div>`;
+// ---------- 4-1. M7b 중대 결정 카드 (decision-infant.html · decision-adult.html — SPEC-003 MD1·MD2·EV6, docs/data/content-M7b.md 10절, copy.md 6절, design-system.md 6절 「중대 결정 카드」) ----------
+/**
+ * 카드 글자는 **실제 이벤트 JSON**(제목·상황·선택지 라벨)과 **실제 인용**에서 가져온다. 영향 줄의 칸 수만 시안용 예시(구현은 previewChoice가 정본, 시안 표식이 밝힌다).
+ * 2026-10-19 developer M7b 1·2단계 반영 뒤(R-191 되돌림): 문구는 src/data/dashText.ts#DASH_TEXT(foldCard·reopenDecision·foldNote·autoNoteOn/Off·citeKindLabel), 카드 ↔ 인용 연결은 이벤트 JSON의 `citation`을
+ * 구현의 순수 함수 `citationFor(event, era, 게임 속 연도)`가 읽고(연결이 없거나 그 세상·그 해에 보이지 않으면 null → 박스 없음), 표시 문자열·출처 줄은 `citationText`·`splitSourceLine`(src/core/citations.ts)이 만든다.
+ * 생성기에는 문구·규칙의 흉내가 없다 — 구현이 바뀌면 재생성만으로 시안이 따라온다(tests/designAssets.test.ts가 잠근다).
+ */
+const CITATIONS = JSON.parse(readFileSync(ROOT + 'src/data/citations.json', 'utf-8')).citations;
+const EVENT_BY_ID = new Map(
+  ['infant', 'school', 'youth', 'middle', 'senior'].flatMap((stage) => {
+    const json = JSON.parse(readFileSync(ROOT + `src/data/events/${stage}.json`, 'utf-8'));
+    return (json.events ?? json).map((ev) => [ev.id, ev]);
+  }),
+);
+const eventOf = (id) => {
+  const ev = EVENT_BY_ID.get(id);
+  if (!ev) throw new Error(`이벤트 ${id}가 없다`);
+  return ev;
+};
+const citeOf = (id) => {
+  const c = CITATIONS.find((x) => x.id === id);
+  if (!c) throw new Error(`인용 ${id}가 없다`);
+  return c;
+};
+/** 인용 한 건을 (카드 연결과 무관하게) 그 세상의 표시 꼴로 — 컴포넌트판 표본용. 카드는 citationFor가 이벤트의 연결을 읽는다 */
+function citeViewOf(id, era) {
+  const c = citeOf(id);
+  const { head, title } = splitSourceLine(c.source, c.kind);
+  return { id: c.id, kind: c.kind, text: citationText(c, era), sourceWho: head, sourceTitle: title };
 }
+/** 인용 박스(구현 ui/dash/CitationBox.tsx와 같은 DOM): 종류 라벨 → 요약(Glue — 「돌봄(늘봄학교)에」 같은 괄호 사슬·「52.2%」 숫자+단위를 묶는다; 가운뎃점 사슬은 developer r2부터 데이터에 두지 않는다 — tests/citationText.test.ts 8글자 상한) → 출처 한 줄(「누가(연도),」는 한 묶음, 자료 이름은 Glue). 인용이 없는 카드는 이 함수를 부르지 않는다(빈 박스 0) */
+function citeBox(view) {
+  if (view.text.length > 100) throw new Error(`${view.id}: 표시 문자열 ${view.text.length}자 > 100`);
+  return `<div class="cite" data-testid="cite" data-citation="${view.id}"><p class="cite__kind">${esc(DASH_TEXT.citeKindLabel[view.kind])}</p><p class="cite__text" data-testid="cite-text">${glueHtml(view.text)}</p><p class="cite__src" data-testid="cite-src"><span class="keep-phrase">${esc(view.sourceWho)}</span> ${glueHtml(view.sourceTitle)}</p></div>`;
+}
+/** 카드 안쪽(두 틀 공통, copy.md 6-2 DOM). choices = [[선택지 id, 영향 칸 예시], …] — 보이는 선택지 2~3개(구현 pending.choiceIds). 인용은 이벤트 JSON의 연결을 citationFor로 읽는다(시안 주인공 = 지금 세상) */
+function decisionInner({ ev, year, age, era = 'present', choices, auto }) {
+  const T = DASH_TEXT;
+  const buttons = choices
+    .map(([cid, spec], i) => {
+      const c = ev.choices.find((x) => x.id === cid);
+      if (!c) throw new Error(`${ev.id}: 선택지 ${cid}가 없다`);
+      return choiceBtn(i + 1, c.label, spec);
+    })
+    .join('\n        ');
+  const anyImpact = choices.some(([, spec]) => spec);
+  const cite = citationFor(ev, era, year);
+  return `<div class="decision__head"><span class="decision__kind">${esc(T.choiceKind)}</span><div class="row"><span class="decision__when">${fitPair(`${year}${T.yearSuffix}`, `${age}${T.ageSuffix}`)}</span><button class="btn btn--ghost btn--sm decision__fold" type="button" data-testid="decision-fold-btn">${esc(T.foldCard)} <span aria-hidden="true">${esc(T.foldMark)}</span></button></div></div>
+    <div class="decision__body">
+      <h2 id="dc-title" class="decision__title" tabindex="-1" style="--title-chars:${titleCharsFor(ev.title)}" data-testid="choice-title">${esc(ev.title)}</h2>
+      <p class="decision__text" data-testid="choice-text">${esc(ev.text)}</p>
+      ${cite ? citeBox(cite) : ''}
+      <div class="choices-list" role="group" aria-label="${esc(T.choiceGroup)}">
+        ${buttons}
+      </div>
+      ${anyImpact ? html(ImpactHint, { name: HERO.name }).replace('class="choice-panel__hint"', 'class="decision__hint"') : ''}
+      <p class="decision__auto" data-testid="auto-note">${esc(auto ? T.autoNoteOn : T.autoNoteOff)}</p>
+    </div>`;
+}
+/** ① 모달 시트(자동 모드 꺼짐): role=dialog는 시트에, 스크림(.overlay)은 장식. 바깥은 dashboardBody가 inert로 둔다 */
+const decisionSheet = (o) => `<div class="overlay"><div class="sheet decision decision--sheet" role="dialog" aria-modal="true" aria-labelledby="dc-title" data-testid="decision-sheet">${decisionInner({ ...o, auto: false })}</div></div>`;
+/** ② 비모달 인라인 카드(자동 모드 켜짐): 대시보드 가운데 열 맨 위의 카드 */
+const decisionInline = (o) => `<section class="card decision decision--inline" aria-labelledby="dc-title" data-testid="decision-inline">${decisionInner({ ...o, auto: true })}</section>`;
+/** ③ 접힌 띠: 카드가 있던 자리. 「결정 다시 열기」의 접근 가능한 이름 = 「결정 다시 열기 {제목}」(aria-labelledby 두 id) */
+const foldBand = (ev) =>
+  `<section class="card fold" aria-labelledby="dc-fold-title" data-testid="decision-fold"><span class="fold__kind">${esc(DASH_TEXT.choiceKind)}</span><span class="fold__title" id="dc-fold-title">${esc(ev.title)}</span><span class="fold__note">${esc(DASH_TEXT.foldNote)}</span><button class="btn btn--secondary btn--sm fold__open" type="button" id="dc-fold-open" aria-labelledby="dc-fold-open dc-fold-title" data-testid="decision-reopen">${esc(DASH_TEXT.reopenDecision)}</button></section>`;
 
-function adultSheet() {
-  return `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="dc-title"><div class="sheet">
-    <div class="sheet__head"><span class="sheet__kind">중대 결정</span><div class="row"><span class="sheet__age">2057년 · 31세</span><button class="btn btn--ghost btn--sm" type="button">카드 접기 ▾</button></div></div>
-    <div class="sheet__body">
-      <div class="stack--sm stack"><h2 id="dc-title" class="t-title" style="font-size:var(--fs-2xl)">마음이 가는 사람이 생겼습니다</h2>
-      <p>${HERO.name}은 같은 일터의 동료와 가까워졌습니다. 상대도 싫지 않은 눈치입니다. 통장에는 갚아야 할 대출이 남아 있습니다.</p></div>
-      <div class="cite"><p class="cite__text">청년 가구의 상당수가 소득과 주거 비용 때문에 연애와 결혼을 미룬다고 답한 조사가 있습니다. <span style="opacity:.8">(시안용 문구)</span></p><p class="cite__src">기관·저자(연도), 자료 이름 · 구현 때 근거 행에서 채움</p></div>
-      <div class="choices-list" role="group" aria-label="선택지">
-        ${choiceBtn(1, '연애를 시작한다', 'assets:down:2,relationships:up:2,happiness:up:1')}
-        ${choiceBtn(2, '썸으로 남긴다', 'relationships:up:1,happiness:down:1')}
-        ${choiceBtn(3, '마음을 접는다', 'assets:up:1,happiness:down:2')}
-      </div>
-      ${sheetHint()}
-    </div></div></div>`;
-}
+/**
+ * 시안 카드 둘(영유아 시점 — 시안 주인공은 첫째라 「동생이 생겼다」가 뜬다). 인용은 적지 않는다 — 이벤트 JSON의 연결(citationFor)이 정한다:
+ * 「동생이 생겼다」 = 연구 c-033(저자 5명 「Teti 외」 + 긴 영문 원제 — 2026-10-19 마스터 결정, 전에는 c-032) / 「유치원 고르기」 = 통계 c-061(기관 둘 「교육부, 한국교육개발원」 + 자료 이름의 「 — 」 → 「: 」 — 출처 줄 기호 변환 표본)
+ */
+const INFANT_CARDS = {
+  sibling: { ev: eventOf('infant-new-sibling'), age: 3, choices: [['help', 'relationships:up:2,happiness:down:1'], ['sulk', 'relationships:down:1,happiness:up:1'], ['notice', 'relationships:down:2,happiness:up:1']] },
+  kinder: { ev: eventOf('infant-kindergarten'), age: 4, choices: [['near', 'relationships:up:1'], ['famous', 'family:down:2,education:up:2'], ['home', 'family:up:1,relationships:up:1,education:down:1']] },
+};
+/** 성인 시점 — 연애 카드는 인용 없음(content-M7b 1-2절 D: 맞는 통계 없음 → citationFor가 null), 주거 카드는 통계 c-015 */
+const ADULT_CARDS = {
+  romance: { ev: eventOf('youth-workplace-romance'), age: 31, choices: [['ask', 'relationships:up:2,happiness:up:1'], ['keep', 'happiness:down:1']] },
+  housing: { ev: eventOf('youth-housing'), age: 31, choices: [['rent', 'assets:down:1,happiness:down:1'], ['parents', 'assets:up:1,relationships:down:1'], ['loan', 'assets:up:2,debt:up:3']] },
+};
 
 function noteSheet() {
   return `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="nc-title"><div class="sheet">
@@ -633,18 +687,26 @@ function noteSheet() {
     </div></div></div>`;
 }
 
-function dashboardPage(kind, overlay = '', infantAge = 3, { noteReady = false } = {}) {
+/**
+ * 대시보드 본문(헤더 + 도구 줄 + 세 열 + 본문 끝 여백 [+ 시트]). overlay = 모달 시트(M7b 수동 카드·M7c 자유 기록 카드) — 있으면 바깥(헤더·도구 줄·main·여백)이 `inert`.
+ * center = 가운데 열 맨 위에 두는 비모달 카드(M7b 자동 모드의 인라인 카드·접힌 띠 — 1열에서는 헤더·진행 줄 바로 아래, ds.css .col--center). auto = 자동 모드 켜짐.
+ * 선택지 대기(overlay 또는 center)는 「다음 결정으로」 지속 비활성이고 **일시정지가 아니다**(구현: 시계만 멈춘다, 버튼 이름 「일시정지」 그대로 — 2026-10-19 바로잡음). noteReady = M7c 목표 시안(note.html)에서만 「생각 남기기」가 보통 버튼.
+ */
+function dashboardBody(kind, overlay = '', infantAge = 3, { noteReady = false, center = '', auto = false, tools = true } = {}) {
   const infant = kind === 'infant';
   const age = infant ? infantAge : 31;
-  // 카드 시안(시트가 떠 있음) = 선택지 대기: 시간은 멈추고 「다음 결정으로」는 지속 비활성이다(구현 LifeScreen#isSkipBlocked). noteReady = M7c 목표 시안(note.html)에서만 「생각 남기기」가 보통 버튼
-  const head = dashHead({ age, year: HERO.birthYear + age, progress: infant ? 62 : 38, paused: overlay !== '', pending: overlay !== '', noteReady });
+  const modal = overlay !== '';
+  const pending = modal || center !== '';
+  const head = dashHead({ age, year: HERO.birthYear + age, progress: infant ? 62 : 38, paused: false, pending, noteReady, auto, inert: modal });
+  const inertAttr = modal ? ' inert' : '';
   const rowsInfant =
     logRow(0, esc(HERO.sentence)) + // 인생 기록 0세 첫 줄 = 출생신고 서술문(BR3, core/birthReport.ts#birthSentence)
     logRow(0, '기본 예방접종을 받았습니다.') +
     logRow(1, '첫 걸음마를 뗐습니다. 온 가족이 박수를 쳤습니다.') +
     logRow(1, '첫 단어를 말했습니다. ‘엄마’라는 뜻의 말이었습니다.') +
     logRow(2, '엄마와 즐거운 시간을 보냈습니다.') +
-    logRow(3, '동생을 맞이했습니다.', '', 'log__row--latest');
+    logRow(3, '동생을 맞이했습니다.', '', age === 3 ? 'log__row--latest' : '') +
+    (age >= 4 ? logRow(4, '동생이 걷기 시작했습니다.', '', 'log__row--latest') : '');
   // 단계 줄도 다른 줄처럼 「N세 + 문장」(연표 한 줄 = 기록 한 줄, 문장은 구현 상수 STAGE_ENTRY_TEXT — 어체는 M7e) — 글자 색·2px 아래선으로만 구분(M4 구현에 맞춤 2026-10-17)
   const rowsAdult =
     logRow(20, esc(STAGE_ENTRY_TEXT.youth), '', 'log__row--stage') +
@@ -654,25 +716,69 @@ function dashboardPage(kind, overlay = '', infantAge = 3, { noteReady = false } 
     logNote(29, '청년기 연애담', '퇴근길에 같이 걷던 저녁이 오래 남았다.') +
     logRow(30, '보증금을 올려 달라는 연락을 받아 월세 집으로 옮겼습니다.') +
     logRow(31, '일하던 곳과 계약이 한 해 더 이어졌습니다.', '', 'log__row--latest');
-  const body = `${head}
-<main class="dash"${overlay ? ' aria-hidden="true"' : ''}>
+  // 본문 끝 여백은 고정 진행 줄의 실제 높이(--bar-h)를 따르는 .page-end-space — 150px 같은 고정값을 두지 않는다(11-1절, 2026-10-17)
+  return `${head}
+<main class="dash"${inertAttr}>
   <div class="col">
     ${profileCard({ ageGroup: infant ? 'toddler' : 'young', edu: infant ? '취학 전' : '대학교 졸업' })}
     ${statusCard(infant ? [82, 70, 38, 61] : [74, 58, 66, 62])}
     ${assetsCardOf(age)}
   </div>
-  <div class="col">${logCard(infant ? rowsInfant : rowsAdult, infant ? 0 : 2)}</div>
+  <div class="col col--center">${center}${logCard(infant ? rowsInfant : rowsAdult, infant ? 0 : 2)}</div>
   <div class="col">
     ${familyCard(age)}
     ${peersCard(infant ? ['어린 시절', '어린 시절', '어린 시절', '어린 시절'] : ['일하는 사람', '구직 중', '일하는 사람', '돌봄'])}
     ${MOCK_TAG}
   </div>
 </main>
-<div class="page-end-space"></div>
+<div class="page-end-space"${inertAttr}></div>
 ${overlay}
-${overlay ? '' : toolbarStates()}`;
-  // 본문 끝 여백은 고정 진행 줄의 실제 높이(--bar-h)를 따르는 .page-end-space — 150px 같은 고정값을 두지 않는다(11-1절, 2026-10-17)
-  return page({ title: `수저 게임 · 시안 · 대시보드 (${infant ? '영유아 시점' : '성인 시점'})`, body, bodyClass: 'is-dash' });
+${overlay || !tools ? '' : toolbarStates()}`;
+}
+function dashboardPage(kind, overlay = '', infantAge = 3, opts = {}) {
+  const infant = kind === 'infant';
+  return page({ title: `수저 게임 · 시안 · 대시보드 (${infant ? '영유아 시점' : '성인 시점'})`, body: dashboardBody(kind, overlay, infantAge, opts), bodyClass: 'is-dash' });
+}
+/**
+ * M7b 카드 시안 한 장에 상태 여럿(`?state=`): 기본 = 수동 모달 시트. 나머지 상태의 본문 전체를 <template>에 두고 주소 질의에 따라 #mock-root를 통째로 바꿔 끼운다(엔딩 시안 `?state=`와 같은 방식 —
+ * 상태마다 헤더의 자동 모드 버튼·inert·가운데 열이 다르기 때문). 치환은 파싱 중 동기 실행이라 page()의 DOMContentLoaded 흉내(띠 높이·FitPair·다크 토글)가 새 요소를 본다.
+ */
+function decisionPage(kind, states) {
+  const infant = kind === 'infant';
+  const entries = Object.entries(states);
+  const [, main] = entries[0];
+  const templates = entries
+    .slice(1)
+    .map(([name, bodyHtml]) => `<template id="state-${name}">${bodyHtml}</template>`)
+    .join('\n');
+  const body = `<div id="mock-root">${main}</div>
+${templates}
+<script>(function(){var s=new URLSearchParams(location.search).get('state');if(!s)return;var t=document.getElementById('state-'+s);if(!t)return;var root=document.getElementById('mock-root');root.replaceChildren(t.content.cloneNode(true));document.title+=' ('+s+')';})();</script>`;
+  return page({ title: `수저 게임 · 시안 · 중대 결정 카드 (${infant ? '영유아 시점' : '성인 시점'})`, body, bodyClass: 'is-dash' });
+}
+/** 카드 하나의 (year, era) — 시안 주인공은 지금 세상 2026년생 */
+const cardAt = (card) => ({ ...card, year: HERO.birthYear + card.age, era: 'present' });
+/** decision-infant.html: 기본 = 「동생이 생겼다」 + 연구 c-033(저자 5명 → 「Teti 외」, 긴 영문 원제) 수동 시트 / kinder = 「유치원 고르기」 + 통계 c-061(기관 둘 쉼표 나열 · 자료 이름 쌍점) 수동 시트 / auto = 「동생이 생겼다」의 자동 모드 인라인 틀(full 샷으로 카드 전체 — 긴 표본) */
+function decisionInfantPage() {
+  const sib = cardAt(INFANT_CARDS.sibling);
+  const kinder = cardAt(INFANT_CARDS.kinder);
+  return decisionPage('infant', {
+    default: dashboardBody('infant', decisionSheet(sib), sib.age, { tools: false }),
+    kinder: dashboardBody('infant', decisionSheet(kinder), kinder.age, { tools: false }),
+    auto: dashboardBody('infant', '', sib.age, { center: decisionInline(sib), auto: true, tools: false }),
+  });
+}
+/** decision-adult.html: 기본 = 「같은 팀의 사람」(인용 없음 — 빈 박스 0) 수동 시트 / stat = 「살 곳을 구하는 일」 + 통계 c-015 수동 시트 / collapsed = 접힌 띠(수동) / auto = 자동 모드 인라인 카드(통계 인용) / auto-collapsed = 자동 모드에서 접힌 띠 */
+function decisionAdultPage() {
+  const romance = cardAt(ADULT_CARDS.romance);
+  const housing = cardAt(ADULT_CARDS.housing);
+  return decisionPage('adult', {
+    default: dashboardBody('adult', decisionSheet(romance), 31, { tools: false }),
+    stat: dashboardBody('adult', decisionSheet(housing), 31, { tools: false }),
+    collapsed: dashboardBody('adult', '', 31, { center: foldBand(romance.ev), tools: false }),
+    auto: dashboardBody('adult', '', 31, { center: decisionInline(housing), auto: true, tools: false }),
+    'auto-collapsed': dashboardBody('adult', '', 31, { center: foldBand(housing.ev), auto: true, tools: false }),
+  });
 }
 
 // ---------- 4-1. 밀린 화면·오류 화면 (DS1 공통 헤더 — QA-003-M2 보완 마스터 결정 2·QM3-6, M4) ----------
@@ -893,8 +999,6 @@ const impactItems = (spec) =>
 const html = (component, props) => renderToStaticMarkup(createElement(component, props));
 const choiceBtn = (n, label, spec, extra = '') =>
   `<button class="choice" type="button"${extra}><span class="choice__no" aria-hidden="true">${n}</span><span class="choice__body"><span class="choice__label">${esc(label)}</span>${html(ImpactLine, { items: impactItems(spec) })}</span></button>`;
-/** M7b 시트 시안의 안내 한 줄(copy.md 4-4, r2 마스터 결정 3): 구현 IMPACT_HINT 글자 그대로 — 첫 문장 + 기호 설명(aria-hidden) + 스크린리더 대체 글자. 시트는 가운데 정렬 `.sheet__hint` */
-const sheetHint = () => `<p class="sheet__hint">${esc(IMPACT_HINT.lead(HERO.name))} <span aria-hidden="true">${esc(IMPACT_HINT.symbols)}</span><span class="sr-only">${esc(IMPACT_HINT.symbolsSr)}</span></p>`;
 const choiceCard = (title, text, buttons) =>
   `<section class="card choice-panel" aria-labelledby="choice-title">
       <span class="choice-panel__kind">${esc(DASH_TEXT.choiceKind)}</span>
@@ -1092,7 +1196,12 @@ function componentsPage() {
     <div class="dots" style="max-width:320px;margin-top:var(--sp-3)">${Array.from({ length: 5 }, (_, i) => `<button type="button" aria-label="${i + 1}/5" ${i === 3 ? 'aria-current="true"' : ''}><i></i></button>`).join('')}</div></section>
   <section><h2>하단 고정 띠 (높이를 --bar-h로 알리고 본문 끝 여백·scroll-padding이 따른다 — CM10·QM2-12)</h2><div class="card" style="position:relative;height:150px;overflow:hidden"><p class="t-muted">본문…</p><div class="bottom-bar" style="position:absolute"><button class="btn btn--primary btn--lg" type="button">태어나기</button></div></div>
     <div class="card" style="position:relative;height:200px;overflow:hidden;margin-top:var(--sp-3)"><p class="t-muted">확인 단계 — 맨 아래는 안전한 「돌아가기」(기본), 그 위가 이전 판을 지우는 확인(보조)</p><div class="bottom-bar" style="position:absolute"><p class="bottom-bar__ask" role="alert">이전 판이 사라집니다. 새로 태어날까요?</p><div class="bottom-bar__stack"><button class="btn btn--secondary" type="button">이전 판 지우고 태어나기</button><button class="btn btn--primary btn--lg" type="button">돌아가기</button></div></div></div></section>
-  <section><h2>인용 박스 · 프로필 얼굴</h2><div class="row row--wrap" style="align-items:flex-start;gap:var(--sp-6)"><div class="cite" style="max-width:420px"><p class="cite__text">통계·연구 요약 문장(100자 이하).</p><p class="cite__src">기관·저자(연도), 자료 이름</p></div>${face('young', 'male', 4, '청년 남성 얼굴 예시', 'face--lg')}${face('middle', 'female', 2, '중년 여성 얼굴 예시', 'face--lg')}</div></section>
+  <section id="cite"><h2>인용 박스 (M7b — 종류 라벨 → 시대 머리말 + 요약 ≤ 100자 → 출처 한 줄, copy.md 6-3)</h2>
+    <p class="t-sm t-muted">실제 인용(src/data/citations.json)을 구현 함수(src/core/citations.ts)로 그린 표본 다섯: 통계(지금 세상) · 연구 1저자 · 지난 세상의 시대 무관 연구(「지금의 연구로는」 — 머리말 포함 ${citeViewOf('c-032', 'past').text.length}자, 100자 경계) · 다가올 세상(「지금 기준으로는」) + 저자 5명 「Teti 외」 + 긴 영문 원제 · 기관 둘의 통계(「국가데이터처, 교육부」 쉼표 나열, 자료 이름 「초중고사교육비조사: …」 — 요약은 developer r2 문장 「방과후학교와 돌봄(늘봄학교)에」(가운뎃점 사슬 없음), 「돌봄(늘봄학교)에」·「52.2%」가 Glue 묶음). 링크·DOI·URL은 어디에도 없다(EV6).</p>
+    <div class="stack--sm stack" style="max-width:480px">${citeBox(citeViewOf('c-006', 'present'))}${citeBox(citeViewOf('c-032', 'present'))}${citeBox(citeViewOf('c-032', 'past'))}${citeBox(citeViewOf('c-033', 'future'))}${citeBox(citeViewOf('c-063', 'present'))}</div>
+    <p class="t-sm t-muted" style="margin-top:var(--sp-3)">출처 줄 변환 예(splitSourceLine — 통계는 기관 그대로, 기관이 둘 이상이면 쉼표 나열, 자료 이름의 띄어 쓴 줄표 「 — 」는 쌍점 「: 」(QM2-10); 연구는 저자 성만: 1명 / 2명 「A·B」 / 3명 이상 「첫 저자 외」, 원제는 줄표도 그대로; 열람 연도는 「N년 열람」, 기관이 괄호로 끝나면 연도 앞 한 칸):</p>
+    <ul class="t-xs t-faint" style="list-style:disc;padding-left:1.2em;max-width:720px">${['c-006', 'c-063', 'c-074', 'c-032', 'c-036', 'c-033', 'c-035', 'c-039'].map((id) => { const c = citeOf(id); const src = splitSourceLine(c.source, c.kind); const titleChanged = src.title !== c.source.title; return `<li><code>${esc(c.source.org)}</code>${titleChanged ? ` · <code>${esc(c.source.title)}</code>` : ''} → <span class="keep-phrase">${esc(src.head)}</span> ${esc(src.title)}</li>`; }).join('')}</ul></section>
+  <section><h2>프로필 얼굴</h2><div class="row row--wrap" style="align-items:flex-start;gap:var(--sp-6)">${face('young', 'male', 4, '청년 남성 얼굴 예시', 'face--lg')}${face('middle', 'female', 2, '중년 여성 얼굴 예시', 'face--lg')}</div></section>
 </main>`;
   return page({ title: '수저 게임 · 디자인 시스템 · 컴포넌트', body });
 }
@@ -1199,8 +1308,8 @@ write('birth.html', birthPage());
 write('dashboard-infant.html', dashboardPage('infant'));
 write('dashboard-adult.html', dashboardPage('adult'));
 write('system.html', systemPage());
-write('decision-infant.html', dashboardPage('infant', infantSheet()));
-write('decision-adult.html', dashboardPage('adult', adultSheet()));
+write('decision-infant.html', decisionInfantPage()); // M7b: ?state=kinder|auto
+write('decision-adult.html', decisionAdultPage()); // M7b: ?state=stat|collapsed|auto|auto-collapsed
 write('note.html', dashboardPage('infant', noteSheet(), 5, { noteReady: true })); // M7c 목표 모습: 자유 기록 카드가 떠 있으므로 도구 줄의 「생각 남기기」는 보통 버튼
 write('ending.html', endingPage());
 write('components.html', componentsPage());

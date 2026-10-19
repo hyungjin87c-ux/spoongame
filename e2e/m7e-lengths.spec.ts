@@ -105,7 +105,7 @@ for (const size of SIZES) {
             const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 24));
             return !(hit === el || el.contains(hit));
           };
-          const buttons = [...document.querySelectorAll('[data-testid="choice-panel"] button')].map((el) => {
+          const buttons = [...document.querySelectorAll('[data-testid="choice-panel"] button.choice')].map((el) => {
             el.scrollIntoView({ block: 'center' });
             const r = el.getBoundingClientRect();
             return { name: (el.textContent ?? '').trim().slice(0, 16), inside: r.left >= 0 && r.right <= vw, onScreen: r.bottom > 0 && r.top < vh, covered: covered(el) };

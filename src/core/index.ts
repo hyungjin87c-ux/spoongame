@@ -28,3 +28,4 @@ export * from './profile';
 export * from './family';
 export * from './peerNow';
 export * from './feedback';
+export * from './citations';

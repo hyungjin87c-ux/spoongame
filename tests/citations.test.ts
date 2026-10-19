@@ -4,6 +4,7 @@ import statsJson from '../src/data/koreaStats.json';
 import basisDoc from '../docs/data/events-stats-basis.md?raw';
 import { EVENT_POOL } from '../src/data/events';
 import { getUsableIndicator } from '../src/data/koreaStatsAccess';
+import { usedByIndex } from '../src/core/citations';
 
 /**
  * 인용 데이터(src/data/citations.json) 검증 — SPEC-003 M6a (EV1~EV6, MD3).
@@ -62,6 +63,9 @@ interface Citation {
   source: { org: string; title: string; year: number; yearKind?: 'accessed' | 'published'; venue?: string; doi?: string; pmid?: string; url?: string };
   evidenceType?: string;
   eraPrefix?: Record<string, string>;
+  /** M7b(2단계) — 게임 속 연도가 이 해보다 이르면(validFromYear) / 늦으면(validUntilYear) 보이지 않는다 */
+  validFromYear?: number;
+  validUntilYear?: number;
   facts?: Fact[];
   assertions?: Assertion[];
   usageCaution?: UsageCaution;
@@ -69,7 +73,8 @@ interface Citation {
   eras: string[];
   refs: Ref[];
   usedBy: string[];
-  candidateEvents: string[];
+  /** M7b에서 없어졌다(후보 기록의 역할이 usedBy 역색인으로 넘어갔다) — 남아 있으면 안 된다 */
+  candidateEvents?: string[];
   candidateFor: string[];
   verified: boolean;
   usable: boolean;
@@ -102,7 +107,7 @@ const ind = (id: string): Ind => {
 const EVENT_IDS = new Set(EVENT_POOL.events.map((e) => e.id));
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** 지난 세상(1970~89 공식 시계열) 통계 인용 */
-const PAST_STAT_IDS = ['c-053', 'c-054', 'c-055', 'c-056', 'c-057', 'c-058', 'c-059'];
+const PAST_STAT_IDS = ['c-053', 'c-054', 'c-055', 'c-056', 'c-057', 'c-058', 'c-059', 'c-089', 'c-090', 'c-091', 'c-097', 'c-098', 'c-099', 'c-100', 'c-101'];
 
 /** refs의 한 항목이 가리키는 값을 koreaStats.json에서 찾는다 (5가지 형식) */
 function resolve(r: Ref): number | undefined {
@@ -138,17 +143,17 @@ describe('인용 구조 (EV1·EV6)', () => {
     expect(FILE.meta.sourceLineFormat).toBe('{org}({year}), {title}');
   });
 
-  it('인용이 30개 이상이고 통계(stat)와 연구(research)가 모두 있다(현재 59개 = 통계 48 + 연구 11)', () => {
+  it('인용이 30개 이상이고 통계(stat)와 연구(research)가 모두 있다(현재 101개 = 통계 84 + 연구 17)', () => {
     expect(CITES.length).toBeGreaterThanOrEqual(30);
-    expect(CITES).toHaveLength(59);
-    expect(CITES.filter((c) => c.kind === 'stat')).toHaveLength(48);
-    expect(CITES.filter((c) => c.kind === 'research')).toHaveLength(11);
+    expect(CITES).toHaveLength(101);
+    expect(CITES.filter((c) => c.kind === 'stat')).toHaveLength(84);
+    expect(CITES.filter((c) => c.kind === 'research')).toHaveLength(17);
     expect(CITES.filter((c) => c.kind === 'stat').length).toBeGreaterThanOrEqual(20);
     expect(CITES.filter((c) => c.kind === 'research').length).toBeGreaterThanOrEqual(5);
     for (const c of CITES) expect(['stat', 'research'], c.id).toContain(c.kind);
   });
 
-  it('id는 유일하고 c-숫자 형식이며, 필수 필드(text·source·basisId·eras·refs·usedBy·candidateEvents·verified·usable·accessedOn)가 있다', () => {
+  it('id는 유일하고 c-숫자 형식이며, 필수 필드(text·source·basisId·eras·refs·usedBy·verified·usable·accessedOn)가 있고 후보 기록 candidateEvents는 없다(M7b)', () => {
     expect(new Set(CITES.map((c) => c.id)).size).toBe(CITES.length);
     for (const c of CITES) {
       expect(c.id).toMatch(/^c-\d{3}$/);
@@ -160,7 +165,7 @@ describe('인용 구조 (EV1·EV6)', () => {
       expect(Array.isArray(c.eras) && c.eras.length > 0, c.id).toBe(true);
       expect(Array.isArray(c.refs), c.id).toBe(true);
       expect(Array.isArray(c.usedBy), c.id).toBe(true);
-      expect(Array.isArray(c.candidateEvents), c.id).toBe(true);
+      expect(c.candidateEvents, `${c.id} candidateEvents는 M7b에서 없어졌다`).toBeUndefined();
       expect(c.accessedOn, c.id).toMatch(DATE);
       expect(typeof c.verified, c.id).toBe('boolean');
       expect(c.usable, c.id).toBe(c.verified);
@@ -247,14 +252,21 @@ describe('연구 인용 서지 (MD3: 확인한 것만)', () => {
 describe('통계 인용의 수치 대조 (koreaStats.json과 refs)', () => {
   const stats = CITES.filter((c) => c.kind === 'stat');
 
-  it('통계 인용의 시대(eras): 현재 통계는 present만, 장래인구추계는 future만(다가올 세상 전용), 1970~89년 공식 시계열은 past만(지난 세상 전용)', () => {
+  it('통계 인용의 시대(eras): 장래인구추계·기후 전망은 future만(다가올 세상 전용), 1970~89년 공식 시계열은 past만(지난 세상 전용), 나머지 현재 통계는 present이고 다가올 세상 카드에 쓰이는 것은 future를 함께 가진다 — 그때 머리말 「지금 기준으로는」이 있다 (M-2, M7b)', () => {
     for (const c of stats) {
-      if (c.basisId === 's-054') expect(c.eras, c.id).toEqual(['future']);
+      if (c.basisId === 's-054' || c.basisId === 's-071') expect(c.eras, c.id).toEqual(['future']);
       else if (PAST_STAT_IDS.includes(c.id)) expect(c.eras, c.id).toEqual(['past']);
-      else expect(c.eras, c.id).toEqual(['present']);
+      else {
+        expect(c.eras[0], c.id).toBe('present');
+        expect(c.eras.length <= 2, c.id).toBe(true);
+        if (c.eras.includes('future')) expect(c.eraPrefix?.future, `${c.id} 다가올 세상 머리말`).toBe('지금 기준으로는');
+        else expect(c.eras, c.id).toEqual(['present']);
+      }
     }
-    expect(stats.filter((c) => c.eras.includes('future'))).toHaveLength(2);
-    expect(stats.filter((c) => c.eras.includes('past'))).toHaveLength(7);
+    expect(stats.filter((c) => c.eras.length === 1 && c.eras[0] === 'future')).toHaveLength(3); // 장래인구추계 2건(c-051·c-052) + 기후 전망 1건(c-067)
+    expect(stats.filter((c) => c.eras.includes('past'))).toHaveLength(15); // 기존 7건 + 진학률 2건·취업자 1건(P-01a·P-01b·P-02) + 짧은 변형 3건(S-6) + 1980년 값만 쓰는 변형 2건(c-100·c-101, R-396)
+    // 지금 통계를 다가올 세상에 쓰는 것이 허용돼 있다(M-2): 전용 3건 말고도 present+future 통계가 있다
+    expect(stats.filter((c) => c.eras.includes('present') && c.eras.includes('future')).length).toBeGreaterThanOrEqual(20);
   });
 
   it('refs가 있는 통계 인용은 모두 koreaStats.json에서 같은 값으로 찾아진다 (5가지 참조 형식)', () => {
@@ -299,24 +311,27 @@ describe('통계 인용의 수치 대조 (koreaStats.json과 refs)', () => {
   });
 });
 
-describe('이벤트 연결 (usedBy·candidateEvents)', () => {
-  it('usedBy와 candidateEvents의 이벤트 id는 모두 실제 이벤트 풀(src/data/events)에 있다', () => {
+describe('이벤트 연결 (usedBy — 이벤트 JSON의 citation 역색인, M7b)', () => {
+  it('usedBy의 이벤트 id는 모두 실제 이벤트 풀(src/data/events)에 있는 선택지 이벤트다', () => {
     for (const c of CITES) {
-      for (const id of c.usedBy) expect(EVENT_IDS.has(id), `${c.id} usedBy ${id}`).toBe(true);
-      for (const id of c.candidateEvents) expect(EVENT_IDS.has(id), `${c.id} candidateEvents ${id}`).toBe(true);
+      for (const id of c.usedBy) {
+        expect(EVENT_IDS.has(id), `${c.id} usedBy ${id}`).toBe(true);
+        expect(EVENT_POOL.byId.get(id)!.choices, `${c.id} usedBy ${id}는 선택지 이벤트(중대 결정 카드)다`).toBeDefined();
+      }
     }
   });
 
-  it('M6a 시점에는 이벤트가 인용하고 있지 않으므로 usedBy는 비어 있고(후보만 연결), 후보가 있는 인용이 10개 이상이다', () => {
-    for (const c of CITES) expect(c.usedBy, c.id).toEqual([]);
-    expect(CITES.filter((c) => c.candidateEvents.length > 0).length).toBeGreaterThanOrEqual(10);
+  it('M7b: usedBy는 이벤트가 실제로 인용하는 카드 목록이다 — 비어 있지 않은 인용이 30개 이상이고, 연결을 가진 인용의 usedBy가 역색인과 같다 (자세한 양방향 대조는 tests/citationLink.test.ts)', () => {
+    expect(CITES.filter((c) => c.usedBy.length > 0).length).toBeGreaterThanOrEqual(30);
+    const index = usedByIndex(EVENT_POOL.events);
+    for (const c of CITES) expect(c.usedBy, c.id).toEqual(index[c.id] ?? []);
   });
 
-  it('후보 이벤트와 인용의 단계가 어긋나지 않는다: 영유아 연구는 영유아 이벤트에, 학창 통계는 학창 이벤트에만 붙는다', () => {
+  it('연결된 카드와 인용의 단계가 어긋나지 않는다: 영유아 연구는 영유아 이벤트에, 학창 통계는 학창 이벤트에만 붙는다', () => {
     const stageOf = (id: string) => EVENT_POOL.events.find((e) => e.id === id)!.stages;
     for (const c of CITES) {
-      if (c.basisId === 's-039') for (const id of c.candidateEvents) expect(stageOf(id), `${c.id} ${id}`).toContain('infant');
-      if (c.basisId === 's-011') for (const id of c.candidateEvents) expect(stageOf(id), `${c.id} ${id}`).toContain('school');
+      if (c.basisId === 's-039') for (const id of c.usedBy) expect(stageOf(id), `${c.id} ${id}`).toContain('infant');
+      if (c.basisId === 's-011') for (const id of c.usedBy) expect(stageOf(id), `${c.id} ${id}`).toContain('school');
     }
   });
 });
@@ -461,7 +476,8 @@ describe('문장 속 모든 수치 토큰 ↔ refs·파생값·원문 서술 매
   });
 
   it('서술 단언: 「가장」「처음」「늘었」「줄었」「커졌」「올랐」「낮았」「넘었」이 있는 문장에는 assertions가 있고 데이터로 다시 확인된다', () => {
-    const claimWords = /가장|처음|늘었|줄었|커졌|올랐|낮았|넘었/;
+    // 「가장 오래 근무한(일한) 일자리」는 조사 항목 이름이지 순위 서술이 아니다 — 그 표현만 단언 대상에서 뺀다
+    const claimWords = /가장(?! 오래 (?:일한|근무한))|처음|늘었|줄었|커졌|올랐|낮았|넘었/;
     let n = 0;
     for (const c of CITES) {
       // 통계 인용의 변화·순위 서술만 데이터로 확인한다(연구 문장의 「줄었다」는 논문 초록의 서술이라 refs가 없다)
@@ -509,7 +525,7 @@ describe('문장 속 모든 수치 토큰 ↔ refs·파생값·원문 서술 매
     expect(t('c-006').text).toContain('45만 8천 원'); // 45.8만 원 ref가 추가됨
     expect(t('c-006').refs.map((r) => resolve(r))).toEqual([75.7, 45.8]);
     expect(t('c-013').refs.map((r) => resolve(r))).toEqual([33.85, 31.62]); // 남자·여자 두 값 모두 참조
-    expect(t('c-017').facts!.map((f) => f.token)).toContain('2,156,880원');
+    expect(t('c-017').facts!.map((f) => f.token)).toContain('215만 6,880원'); // C02 ⑨: 다른 인용(「45만 8천 원」) 꼴로 맞춤(수치 불변)
     expect(10320 * 209).toBe(2156880);
     // c-022: 서울 자가 비율이 17개 시도 가운데 가장 낮다
     const own = (ind('housing-tenure').rows as Array<{ label: string; own: number }>).filter((r) => SIDO17.includes(r.label));
@@ -591,12 +607,12 @@ describe('정정된 문장 (R-140·R-141·R-143·R-153·R-154)', () => {
     expect(t('c-018').text).toContain('생명표로 본 출생 시 기대수명');
   });
 
-  it('c-039: 페이지에 갱신 연도가 없어 source.year는 열람 연도이고 yearKind: accessed, 출처 줄은 「년 열람」 형식이다(R-153)', () => {
-    const c = t('c-039');
-    expect(c.source.yearKind).toBe('accessed');
-    expect(c.source.year).toBe(Number(c.accessedOn.slice(0, 4)));
+  it('yearKind: accessed 인용(c-039와 M7b 준비의 갱신 연도 없는 기관 안내 페이지)은 source.year가 열람 연도이고 출처 줄은 「년 열람」 형식이다(R-153)', () => {
+    const accessed = CITES.filter((x) => x.source.yearKind === 'accessed').map((x) => x.id);
+    // 갱신 연도가 화면에 없는 페이지: 예방접종도우미(c-039)·이웃사이센터(c-066)·국가건강정보포털(c-068~c-070)·국가기록원 해설(c-071~c-073)
+    expect(accessed).toEqual(['c-039', 'c-066', 'c-068', 'c-069', 'c-070', 'c-071', 'c-072', 'c-073']);
+    for (const c of CITES.filter((x) => accessed.includes(x.id))) expect(c.source.year, c.id).toBe(Number(c.accessedOn.slice(0, 4)));
     expect(FILE.meta.sourceLineFormatAccessed).toBe('{org}({year}년 열람), {title}');
-    for (const x of CITES) if (x.id !== 'c-039') expect(x.source.yearKind, x.id).not.toBe('accessed');
   });
 
   it('u-003 미확인 문헌의 대체 인용 번호가 맞다: 화면 시간은 WHO 지침(c-035)이지 c-034(걸음마)가 아니다(R-153)', () => {
@@ -623,10 +639,10 @@ describe('정정된 문장 (R-140·R-141·R-143·R-153·R-154)', () => {
 });
 
 describe('지난 세상 인용과 시대 규칙 (R-150, 마스터 결정 2026-10-15)', () => {
-  it('지난 세상 통계 인용 7건: 합계출산율·출생아·기대수명·조사망률·혼인·이혼·1인 가구, 모든 참조 연도가 1970~1989이고 문장에 달력 연도가 있다', () => {
+  it('지난 세상 통계 인용 15건: 합계출산율·출생아·기대수명·조사망률·혼인·이혼·1인 가구(7건) + 진학률·연령별 취업자(3건) + 짧은 변형(3건) + 1980년 값만 쓰는 진학률 변형(2건), 모든 참조 연도가 1970~1989이고 문장에 달력 연도가 있다', () => {
     const past = CITES.filter((c) => c.eras.includes('past') && c.kind === 'stat');
     expect(past.map((c) => c.id)).toEqual(PAST_STAT_IDS);
-    expect(new Set(past.map((c) => c.basisId))).toEqual(new Set(['s-001', 's-002', 's-007', 's-003', 's-058', 's-028', 's-008']));
+    expect(new Set(past.map((c) => c.basisId))).toEqual(new Set(['s-001', 's-002', 's-007', 's-003', 's-058', 's-028', 's-008', 's-090', 's-091']));
     for (const c of past) {
       for (const r of c.refs) {
         const y = refYear(r)!;
@@ -637,15 +653,24 @@ describe('지난 세상 인용과 시대 규칙 (R-150, 마스터 결정 2026-10
     }
   });
 
-  it('지난 세상에 쓸 수 있는 연구는 시대와 무관한 발달 연구 3건(동생 출생 적응·애착·걸음마 창)뿐이고 「지금의 연구로는」 머리말(eraPrefix)이 있다', () => {
+  it('지난 세상에 쓸 수 있는 연구는 시대와 무관한 발달 연구 3건(동생 출생 적응·애착·걸음마 창, 「지금의 연구로는」 머리말 eraPrefix)과 지난 세상 제도 시기 해설 3건(국가기록원, eras가 past뿐·eraPrefix 없음)이다', () => {
     const research = CITES.filter((c) => c.kind === 'research');
     const withPast = research.filter((c) => c.eras.includes('past'));
-    expect(withPast.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034']);
-    for (const c of withPast) {
+    expect(withPast.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034', 'c-071', 'c-072', 'c-073']);
+    for (const c of withPast.filter((x) => x.id <= 'c-034')) {
       expect(c.eraPrefix?.past, c.id).toBe('지금의 연구로는');
       expect(['study', 'review', 'reference-study'], c.id).toContain(c.evidenceType);
     }
-    for (const c of research.filter((x) => !x.eras.includes('past'))) expect(c.eraPrefix, c.id).toBeUndefined();
+    for (const c of withPast.filter((x) => x.id >= 'c-071')) {
+      expect(c.eras, c.id).toEqual(['past']);
+      expect(c.evidenceType, c.id).toBe('public-guidance');
+      expect(c.eraPrefix, c.id).toBeUndefined();
+    }
+    // 과거 머리말은 위의 인용뿐이다. 지금과 다가올 세상을 함께 가진 연구는 다가올 세상 머리말만 가진다(M-2)
+    for (const c of research.filter((x) => !x.eras.includes('past'))) {
+      expect(c.eraPrefix?.past, c.id).toBeUndefined();
+      expect(c.eraPrefix?.future, c.id).toBe(c.eras.includes('present') && c.eras.includes('future') ? '지금 기준으로는' : undefined);
+    }
   });
 
   it('인용 박스는 달력 연도 금지의 예외: 규칙(meta.rules)에 적혀 있고 통계 인용 대부분의 문장·출처에 연도가 있다 — 사건 본문·연표의 금지는 그대로', () => {
@@ -654,15 +679,16 @@ describe('지난 세상 인용과 시대 규칙 (R-150, 마스터 결정 2026-10
     expect(FILE.meta.rules).toContain('사건 본문');
     const withYear = CITES.filter((c) => c.kind === 'stat' && /\d{4}(년|학년도)/.test(c.text));
     expect(withYear.length).toBeGreaterThanOrEqual(40);
-    // 인용 문장은 사건 본문이 아니다: 어느 이벤트 글도 이 문장을 그대로 쓰지 않는다(usedBy 비어 있음)
-    for (const c of CITES) expect(c.usedBy, c.id).toEqual([]);
+    // 인용 문장은 사건 본문이 아니다: 어느 이벤트의 제목·본문·선택지·결과도 인용 문장을 그대로 쓰지 않는다(사건 글에 통계 문장이 섞이지 않는다)
+    const eventTexts = EVENT_POOL.events.flatMap((e) => [e.title, e.text, ...(e.choices ?? []).flatMap((ch) => [ch.label, ch.result])]);
+    for (const c of CITES) for (const t of eventTexts) expect(t.includes(c.text), `${c.id}`).toBe(false);
   });
 
   it('지금·다가올 세상 카드용 인용이 지난 세상 전용 인용보다 훨씬 많다(MD2 ≥70%는 지금·다가올 세상 카드 기준)', () => {
     const nowFuture = CITES.filter((c) => c.eras.includes('present') || c.eras.includes('future')).length;
     const pastOnly = CITES.filter((c) => c.eras.length === 1 && c.eras[0] === 'past').length;
     expect(nowFuture).toBeGreaterThanOrEqual(CITES.length - pastOnly);
-    expect(pastOnly).toBe(7);
+    expect(pastOnly).toBe(18); // 지난 세상 전용 통계 15건 + 국가기록원 해설 3건
   });
 });
 
@@ -670,8 +696,8 @@ describe('인용별 사용 주의 usageCaution (R-151)', () => {
   const TYPES = ['parent-blame', 'determinism', 'abuse-adjacent', 'self-blame', 'stigma', 'medical-advice', 'comparison-ranking'];
   const research = CITES.filter((c) => c.kind === 'research');
 
-  it('연구 인용 11건 모두 evidenceType과 usageCaution(붙일 수 없는 카드 유형·이벤트, 주의 메모)이 있다', () => {
-    expect(research).toHaveLength(11);
+  it('연구 인용 17건 모두 evidenceType과 usageCaution(붙일 수 없는 카드 유형·이벤트, 주의 메모)이 있다', () => {
+    expect(research).toHaveLength(17);
     for (const c of research) {
       expect(['study', 'review', 'reference-study', 'report', 'guideline', 'public-guidance'], c.id).toContain(c.evidenceType);
       const u = c.usageCaution!;
@@ -697,19 +723,19 @@ describe('인용별 사용 주의 usageCaution (R-151)', () => {
     for (const c of CITES) expect(c.text, c.id).not.toMatch(/반드시|결정된다|결정됩니다|좌우|무조건|틀림없이|잘못|탓/);
   });
 
-  it('forbiddenEvents에 적은 이벤트는 실제 이벤트이고 그 인용의 candidateEvents·usedBy에 없다 — 부모 행동 사건(infant-neglect-night)에는 구조적 맥락 통계(c-048)를 붙인다', () => {
+  it('forbiddenEvents에 적은 이벤트는 실제 이벤트이고 그 인용의 usedBy에 없다 — 부모 행동 사건(infant-neglect-night)에 붙일 때는 구조적 맥락 통계(c-048)의 주의 메모를 따른다', () => {
     for (const c of CITES) {
       for (const id of c.usageCaution?.forbiddenEvents ?? []) {
         expect(EVENT_IDS.has(id), `${c.id} forbiddenEvents ${id}`).toBe(true);
-        expect(c.candidateEvents, c.id).not.toContain(id);
         expect(c.usedBy, c.id).not.toContain(id);
       }
     }
     const c036 = CITES.find((c) => c.id === 'c-036')!;
     expect(c036.usageCaution!.forbiddenEvents).toEqual(['infant-neglect-night']);
     expect(c036.usageCaution!.forbiddenCardTypes).toEqual(expect.arrayContaining(['parent-blame', 'abuse-adjacent']));
-    const holders = CITES.filter((c) => c.candidateEvents.includes('infant-neglect-night')).map((c) => c.id);
-    expect(holders).toEqual(['c-048']);
+    // c-036이 막은 사건에 붙는 인용은 없다(서술 사건은 M7b의 카드 인용 대상이 아니다). 붙인다면 c-048 한 건이고 부모 개인이 아니라 일과 돌봄의 구조를 말해야 한다
+    expect(CITES.filter((c) => c.usedBy.includes('infant-neglect-night'))).toEqual([]);
+    expect(CITES.find((c) => c.id === 'c-048')!.usageCaution!.note).toContain('방치·소홀 사건에 붙일 때는 부모 개인이 아니라 일과 돌봄의 구조');
     // c-037(Heckman)·c-038(ACE)은 결정론·부모 탓으로 읽히지 않게 막았다
     expect(CITES.find((c) => c.id === 'c-037')!.usageCaution!.forbiddenCardTypes).toContain('determinism');
     expect(CITES.find((c) => c.id === 'c-038')!.usageCaution!.forbiddenCardTypes).toEqual(expect.arrayContaining(['abuse-adjacent', 'parent-blame', 'determinism']));

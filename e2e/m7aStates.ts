@@ -88,7 +88,8 @@ export async function findInfantEnding(page: Page, era: Era = 'present', minPerY
 export async function openState(page: Page, state: GameState): Promise<void> {
   await startPageHidden(page);
   await page.goto('/');
-  await injectSave(page, state, '/', { speed: 1, autoMode: false });
+  // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 카드 전체가 문서 안에 놓여 글자 확대·낱말 끊김 측정이 카드 전부를 본다(가려진 탭이라 자동 선택은 일어나지 않는다). 모달 시트는 e2e/m7b-*가 잰다
+  await injectSave(page, state, '/', { speed: 1, autoMode: true });
   if (state.phase === 'ending') {
     await expect(page.getByTestId('ending-screen')).toBeVisible();
     await expect(page.getByTestId('rebirth')).toBeEnabled();

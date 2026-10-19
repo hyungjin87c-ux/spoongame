@@ -1,0 +1,1000 @@
+{
+ "era": "future",
+ "seed": 31,
+ "caseId": "N03-future",
+ "speed": "8",
+ "cards": [
+  {
+   "n": 1,
+   "mode": "sheet",
+   "key": "infant-screen@4",
+   "when": "2054년 · 4세",
+   "title": "화면 앞의 아이",
+   "text": "아이는 어른 손에 들린 화면에서 눈을 떼지 못했습니다. 보여 줄지 말지는 어른의 몫이었습니다.",
+   "cite": {
+    "id": "c-035",
+    "kind": "연구",
+    "text": "지금 기준으로는 5세 미만 아이를 위한 WHO 지침은 1세에게 앉아서 하는 화면 시청을 권하지 않고, 2~4세는 하루 1시간을 넘기지 않도록 권고합니다.",
+    "src": "세계보건기구(WHO) (2019), Guidelines on physical activity, sedentary behaviour and sleep for children under 5 years of age",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "limit",
+     "label": "시간을 정해 보여 준다",
+     "impact": [
+      "관계▲",
+      "지식▲"
+     ]
+    },
+    {
+     "id": "free",
+     "label": "원하는 만큼 보게 둔다",
+     "impact": [
+      "행복▲",
+      "건강▼",
+      "지식▼"
+     ]
+    },
+    {
+     "id": "none",
+     "label": "보여 주지 않는다",
+     "impact": [
+      "관계▲",
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "free"
+  },
+  {
+   "n": 2,
+   "mode": "sheet",
+   "key": "school-supplies@7",
+   "when": "2057년 · 7세",
+   "title": "입학 준비물",
+   "text": "입학을 앞두고 책가방과 학용품을 장만하는 일이 남아 있었습니다. 갖추는 방식에 따라 첫 등교 모습이 달라졌습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "new",
+     "label": "새것으로 갖춰 준다",
+     "impact": [
+      "집안 살림▼",
+      "관계▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "handed",
+     "label": "물려받은 것을 쓴다",
+     "impact": [
+      "집안 살림▲",
+      "행복▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "handed"
+  },
+  {
+   "n": 3,
+   "mode": "sheet",
+   "key": "school-friend@10",
+   "when": "2060년 · 10세",
+   "title": "전학 온 아이",
+   "text": "새 학기에 전학 온 아이가 혼자 앉아 있었습니다. 말투가 낯설었고, 반 아이들은 아직 아무도 말을 걸지 않았습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "greet",
+     "label": "먼저 말을 건다",
+     "impact": [
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "watch",
+     "label": "며칠 지켜본다",
+     "impact": [
+      "관계▲",
+      "지식▲"
+     ]
+    },
+    {
+     "id": "ignore",
+     "label": "신경 쓰지 않는다",
+     "impact": [
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "greet"
+  },
+  {
+   "n": 4,
+   "mode": "sheet",
+   "key": "school-bully@14",
+   "when": "2064년 · 14세",
+   "title": "교실의 한 아이",
+   "text": "같은 반의 한 아이가 번번이 놀림거리가 되었습니다. 나는 그 장면을 가까이서 보고 있었습니다.",
+   "cite": {
+    "id": "c-050",
+    "kind": "통계",
+    "text": "지금 기준으로는 2025년 1차 학교폭력 실태조사에서 피해를 겪었다고 답한 학생은 전체의 2.5%, 초등학생의 5.0%였습니다.",
+    "src": "교육부(2025), 2025년 1차 학교폭력 실태조사 결과 발표",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "stand",
+     "label": "그 아이 편에서 말한다",
+     "impact": [
+      "관계▲▲"
+     ]
+    },
+    {
+     "id": "tell",
+     "label": "선생님께 알린다",
+     "impact": [
+      "관계▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "ignore",
+     "label": "모른 척한다",
+     "impact": [
+      "행복▼",
+      "지식▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "tell"
+  },
+  {
+   "n": 5,
+   "mode": "sheet",
+   "key": "school-teacher-notice@17",
+   "when": "2067년 · 17세",
+   "title": "눈여겨보신 선생님",
+   "text": "선생님이 나를 따로 불러 더 공부해 볼 생각이 없느냐고 물으셨습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "accept",
+     "label": "선생님의 도움을 받는다",
+     "impact": [
+      "행복▲",
+      "지식▲▲▲"
+     ]
+    },
+    {
+     "id": "ask",
+     "label": "집에 가서 부모님과 의논한다",
+     "impact": [
+      "관계▲",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "decline",
+     "label": "마음만 받고 사양한다",
+     "impact": [
+      "관계▲",
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "decline"
+  },
+  {
+   "n": 6,
+   "mode": "sheet",
+   "key": "school-exam@19",
+   "when": "2069년 · 19세",
+   "title": "입시를 앞둔 해",
+   "text": "입시가 코앞으로 다가왔습니다. 지금까지의 성적으로 어디까지 갈 수 있는지는 대강 알고 있었습니다.",
+   "cite": {
+    "id": "c-074",
+    "kind": "통계",
+    "text": "지금 기준으로는 2024년 고등학교 졸업자의 대학 진학률은 73.6%였습니다.",
+    "src": "교육부, 한국교육개발원(2025), 교육통계분석자료집: 취학률 및 진학률(지표누리 e-나라지표)",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "apply",
+     "label": "지금 성적으로 갈 수 있는 곳에 지원한다",
+     "impact": [
+      "부채▲▲",
+      "행복▲",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "retry",
+     "label": "한 해 더 준비한다",
+     "impact": [
+      "집안 살림▼",
+      "부채▲▲",
+      "행복▼▼",
+      "지식▲▲▲"
+     ]
+    },
+    {
+     "id": "work",
+     "label": "대학 대신 일을 먼저 시작한다",
+     "impact": [
+      "집안 살림▲▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "apply"
+  },
+  {
+   "n": 7,
+   "mode": "sheet",
+   "key": "youth-housing@23",
+   "when": "2073년 · 23세",
+   "title": "살 곳을 구하는 일",
+   "text": "살 곳을 새로 구해야 했습니다. 가진 돈과 원하는 곳 사이의 거리가 멀었습니다.",
+   "cite": {
+    "id": "c-015",
+    "kind": "통계",
+    "text": "지금 기준으로는 2025년 3월말 가구주가 29세 이하인 가구의 순자산 중앙값은 5,000만 원, 50대 가구는 3억 1,685만 원이었습니다.",
+    "src": "국가데이터처(2026), 2025년 가계금융복지조사 결과",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "rent",
+     "label": "보증금이 낮은 월세방을 구한다",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "loan",
+     "label": "빚을 내서라도 집을 마련한다",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲▲",
+      "행복▲▲",
+      "건강▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "rent"
+  },
+  {
+   "n": 8,
+   "mode": "sheet",
+   "key": "youth-startup@27",
+   "when": "2077년 · 27세",
+   "title": "직접 해 보자는 제안",
+   "text": "직접 작은 사업을 해 보지 않겠느냐는 제안이 왔습니다. 해 보고 싶은 마음과 잃을 것이 많다는 마음이 부딪혔습니다.",
+   "cite": {
+    "id": "c-077",
+    "kind": "통계",
+    "text": "지금 기준으로는 2023년 기준 신생기업의 1년 생존율은 64.4%, 5년 생존율은 36.4%였습니다.",
+    "src": "국가데이터처(2025), 기업생멸행정통계: 신생기업 생존율(KOSIS)",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "start",
+     "label": "사업을 시작한다",
+     "impact": [
+      "자산▲▲",
+      "부채▲▲",
+      "행복▼",
+      "건강▼",
+      "지식▲"
+     ]
+    },
+    {
+     "id": "decline",
+     "label": "안정을 택해 거절한다",
+     "impact": [
+      "행복▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "autoTimerMs": 537,
+   "focusAfterAuto": "life-name"
+  },
+  {
+   "n": 9,
+   "mode": "inline",
+   "key": "youth-meeting@30",
+   "when": "2080년 · 30세",
+   "title": "소개받은 자리",
+   "text": "아는 사람이 만나 볼 사람이 있다며 자리를 만들었습니다. 약속 장소는 부담 없는 가까운 곳이었습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "meet",
+     "label": "약속 장소에 나간다",
+     "impact": [
+      "자산▼",
+      "부채▲",
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "later",
+     "label": "바쁘다며 미룬다",
+     "impact": [
+      "자산▲",
+      "행복▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.",
+   "docOverflow": false,
+   "focus": "life-name",
+   "speed": "8",
+   "inlineIndex": 1
+  },
+  {
+   "n": 10,
+   "mode": "inline",
+   "key": "youth-marriage@33",
+   "when": "2083년 · 33세",
+   "title": "함께 사는 일",
+   "text": "함께한 시간이 쌓였습니다. 주변에서는 슬슬 결혼 이야기를 꺼냈고, 두 사람도 같은 생각을 하고 있었습니다.",
+   "cite": {
+    "id": "c-013",
+    "kind": "통계",
+    "text": "지금 기준으로는 2025년 평균 초혼 연령은 남자 33.9세, 여자 31.6세였습니다.",
+    "src": "국가데이터처(2026), 2025년 혼인·이혼 통계",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "marry",
+     "label": "함께 살기로 한다",
+     "impact": [
+      "자산▼▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "wait",
+     "label": "조금 더 기다리자고 말한다",
+     "impact": [
+      "관계▼",
+      "행복▼",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "part",
+     "label": "헤어지기로 한다",
+     "impact": [
+      "자산▲▲",
+      "관계▼▼",
+      "행복▼▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.",
+   "docOverflow": false,
+   "focus": "life-name",
+   "speed": "8",
+   "inlineIndex": 2
+  },
+  {
+   "n": 11,
+   "mode": "inline",
+   "key": "youth-friend-wedding@35",
+   "when": "2085년 · 35세",
+   "title": "오랜 친구의 결혼식",
+   "text": "가장 오래된 친구가 결혼한다는 소식을 전해 왔습니다. 식에 가려면 먼 길을 가야 했습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "go",
+     "label": "먼 길을 가서 참석한다",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "gift",
+     "label": "축하금만 보낸다",
+     "impact": [
+      "자산▼",
+      "부채▲",
+      "관계▼"
+     ]
+    },
+    {
+     "id": "skip",
+     "label": "바쁘다며 연락을 미룬다",
+     "impact": [
+      "관계▼▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.",
+   "docOverflow": false,
+   "focus": "life-name",
+   "speed": "8",
+   "inlineIndex": 3
+  },
+  {
+   "n": 12,
+   "mode": "inline",
+   "key": "youth-marriage-again@40",
+   "when": "2090년 · 40세",
+   "title": "다시 꺼낸 이야기",
+   "text": "지난번 미뤄 둔 이야기를 다시 꺼낼 때가 왔습니다. 상대는 아무 말 없이 기다리고 있었습니다.",
+   "cite": {
+    "id": "c-044",
+    "kind": "통계",
+    "text": "지금 기준으로는 2025년 혼인은 약 24만 건으로 전년보다 8.1% 늘었고, 인구 1천 명당 4.7건이었습니다.",
+    "src": "국가데이터처(2026), 2025년 혼인·이혼 통계",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "marry",
+     "label": "이번에는 함께 살기로 한다",
+     "impact": [
+      "자산▼▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "wait",
+     "label": "좀 더 시간을 갖자고 한다",
+     "impact": [
+      "관계▼▼",
+      "행복▼"
+     ]
+    },
+    {
+     "id": "part",
+     "label": "이쯤에서 헤어지기로 한다",
+     "impact": [
+      "자산▲▲",
+      "관계▼▼",
+      "행복▼▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.",
+   "docOverflow": false,
+   "focus": "life-name",
+   "speed": "8",
+   "inlineIndex": 4
+  },
+  {
+   "n": 13,
+   "mode": "sheet",
+   "key": "middle-friend-reunion@44",
+   "when": "2094년 · 44세",
+   "title": "오랜 친구의 연락",
+   "text": "소식이 끊겼던 오랜 친구가 연락을 해 왔습니다. 긴 세월의 간격이 망설임으로 남았습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "meet",
+     "label": "시간을 내어 만난다",
+     "impact": [
+      "자산▼▼",
+      "부채▲▲",
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "reply",
+     "label": "안부만 전한다",
+     "impact": [
+      "관계▲"
+     ]
+    },
+    {
+     "id": "later",
+     "label": "다음에 보자고 미룬다",
+     "impact": [
+      "자산▲▲",
+      "관계▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "reply"
+  },
+  {
+   "n": 14,
+   "mode": "sheet",
+   "key": "youth-reunion@46",
+   "when": "2096년 · 46세",
+   "title": "다시 온 연락",
+   "text": "헤어진 사람에게서 오랜만에 연락이 왔습니다. 안부를 묻는 짧은 글이었습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "meet",
+     "label": "만나서 이야기를 나눈다",
+     "impact": [
+      "자산▼",
+      "부채▲",
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "reply",
+     "label": "짧게 안부만 전한다",
+     "impact": [
+      "관계▲",
+      "행복▼"
+     ]
+    },
+    {
+     "id": "ignore",
+     "label": "답하지 않는다",
+     "impact": [
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "ignore"
+  },
+  {
+   "n": 15,
+   "mode": "sheet",
+   "key": "middle-home-loan@48",
+   "when": "2098년 · 48세",
+   "title": "넓혀 갈 집",
+   "text": "집을 옮길 수 있는 기회가 왔습니다. 지금보다 나은 곳이었지만 대출이 필요했습니다.",
+   "cite": {
+    "id": "c-092",
+    "kind": "통계",
+    "text": "지금 기준으로는 2025년 3월말 가구주가 40대인 가구의 73.5%가 부채를 지고 있었고, 부채가 있는 가구의 부채 중앙값은 1억 1,000만 원이었습니다.",
+    "src": "국가데이터처(2026), 2025년 가계금융복지조사 결과",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "move",
+     "label": "무리해서 옮긴다",
+     "impact": [
+      "자산▲",
+      "부채▲▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "stay",
+     "label": "지금 집에 머문다",
+     "impact": [
+      "자산▲▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "move"
+  },
+  {
+   "n": 16,
+   "mode": "sheet",
+   "key": "middle-hobby@51",
+   "when": "2101년 · 51세",
+   "title": "늦게 시작한 일",
+   "text": "하루가 한숨 돌릴 만해질 무렵, 오래 미뤄 둔 것을 해 볼 마음이 들었습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "start",
+     "label": "이제라도 시작한다",
+     "impact": [
+      "자산▼▼",
+      "행복▲▲",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "join",
+     "label": "모임에 나가 사람들과 함께 한다",
+     "impact": [
+      "자산▼▼",
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "pass",
+     "label": "지금 와서 무슨 소용인가 싶어 접는다",
+     "impact": [
+      "행복▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "join"
+  },
+  {
+   "n": 17,
+   "mode": "sheet",
+   "key": "middle-retirement-prep@59",
+   "when": "2109년 · 59세",
+   "title": "내려놓을 때를 생각하며",
+   "text": "나이 들어 가는 것이 실감 났습니다. 앞으로의 시간을 어떻게 준비할지 생각이 많아졌습니다.",
+   "cite": {
+    "id": "c-030",
+    "kind": "통계",
+    "text": "지금 기준으로는 가구주의 예상 은퇴 연령은 평균 68.6세, 이미 은퇴한 가구주의 실제 은퇴 연령은 62.7세로 나타났습니다(2025년 3월말).",
+    "src": "국가데이터처(2026), 2025년 가계금융복지조사 결과",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "save",
+     "label": "씀씀이를 줄이고 모아 둔다",
+     "impact": [
+      "자산▲▲▲",
+      "행복▼"
+     ]
+    },
+    {
+     "id": "learn",
+     "label": "앞으로 할 일을 미리 배운다",
+     "impact": [
+      "자산▲",
+      "행복▲",
+      "지식▲▲"
+     ]
+    },
+    {
+     "id": "work",
+     "label": "가능한 오래 일할 생각을 한다",
+     "impact": [
+      "자산▲▲",
+      "건강▼▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "work"
+  },
+  {
+   "n": 18,
+   "mode": "sheet",
+   "key": "middle-parents-care@62",
+   "when": "2112년 · 62세",
+   "title": "부모님의 병환",
+   "text": "부모님의 몸이 눈에 띄게 약해지셨습니다. 누가, 어디서, 어떻게 돌볼지 가족이나 친척과 이야기를 나눌 때가 왔습니다.",
+   "cite": {
+    "id": "c-081",
+    "kind": "통계",
+    "text": "지금 기준으로는 2025년 장기요양 급여 이용자의 가족 응답자 86만 1,115명 가운데 딸이 35.9%, 아들이 29.7%였습니다.",
+    "src": "보건복지부(2026), 장기요양실태조사: 장기요양급여 이용자 가족의 수급자와의 관계(KOSIS)",
+    "links": 0
+   },
+   "choices": [
+    {
+     "id": "home",
+     "label": "직접 모시고 돌본다",
+     "impact": [
+      "자산▼▼",
+      "관계▲▲",
+      "행복▼",
+      "건강▼▼"
+     ]
+    },
+    {
+     "id": "share",
+     "label": "가족이나 친척과 나누어 맡는다",
+     "impact": [
+      "자산▼▼",
+      "관계▲",
+      "건강▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "share"
+  },
+  {
+   "n": 19,
+   "mode": "sheet",
+   "key": "senior-classmates@67",
+   "when": "2117년 · 67세",
+   "title": "오랜만의 동창 모임",
+   "text": "오래 연락이 끊겼던 동창들이 모임을 연다는 소식을 보내왔습니다. 이름이 하나둘 줄어드는 나이였습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "go",
+     "label": "모임에 나가 얼굴을 본다",
+     "impact": [
+      "자산▼",
+      "관계▲▲",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "send",
+     "label": "안부 글만 보낸다",
+     "impact": [
+      "관계▲"
+     ]
+    },
+    {
+     "id": "skip",
+     "label": "몸이 귀찮아 나가지 않는다",
+     "impact": [
+      "자산▲",
+      "관계▼",
+      "행복▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "send"
+  },
+  {
+   "n": 20,
+   "mode": "sheet",
+   "key": "senior-travel@69",
+   "when": "2119년 · 69세",
+   "title": "미뤄 둔 여행",
+   "text": "젊을 때부터 가 보고 싶던 곳이 있었습니다. 다리가 더 약해지기 전에 떠날 수 있을지가 고민이었습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "near",
+     "label": "가까운 곳으로 바꿔 다녀온다",
+     "impact": [
+      "자산▼▼",
+      "행복▲▲"
+     ]
+    },
+    {
+     "id": "photo",
+     "label": "사진첩으로 대신한다",
+     "impact": [
+      "행복▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "photo"
+  },
+  {
+   "n": 21,
+   "mode": "sheet",
+   "key": "senior-fall@72",
+   "when": "2122년 · 72세",
+   "title": "미끄러진 겨울날",
+   "text": "얼어붙은 길에서 발이 미끄러져 넘어졌습니다. 일어나 보니 무릎과 손목이 욱신거렸습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "hospital",
+     "label": "곧바로 병원에서 살펴본다",
+     "impact": [
+      "자산▼▼",
+      "건강▲▲"
+     ]
+    },
+    {
+     "id": "tell",
+     "label": "가까운 사람에게 알린다",
+     "impact": [
+      "관계▲▲",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "ignore",
+     "label": "괜찮다며 그냥 넘긴다",
+     "impact": [
+      "자산▲",
+      "건강▼▼"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "hospital"
+  },
+  {
+   "n": 22,
+   "mode": "sheet",
+   "key": "senior-old-friend@74",
+   "when": "2124년 · 74세",
+   "title": "오래된 친구의 소식",
+   "text": "오랜 친구의 건강이 좋지 않다는 소식이 들려왔습니다. 친구가 사는 곳까지는 먼 길이었습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "visit",
+     "label": "직접 찾아가 만난다",
+     "impact": [
+      "자산▼▼",
+      "관계▲▲",
+      "행복▲▲",
+      "건강▼"
+     ]
+    },
+    {
+     "id": "call",
+     "label": "자주 전화를 건다",
+     "impact": [
+      "관계▲▲",
+      "행복▲"
+     ]
+    },
+    {
+     "id": "wait",
+     "label": "몸이 좋지 않아 가지 못한다",
+     "impact": [
+      "관계▼",
+      "행복▼",
+      "건강▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "call"
+  },
+  {
+   "n": 23,
+   "mode": "sheet",
+   "key": "senior-gathering@76",
+   "when": "2126년 · 76세",
+   "title": "넉넉해진 시간",
+   "text": "시간이 넉넉해졌습니다. 하루를 무엇으로 채울지가 새로운 숙제였습니다.",
+   "cite": null,
+   "choices": [
+    {
+     "id": "club",
+     "label": "동네 모임에 나간다",
+     "impact": [
+      "관계▲▲",
+      "건강▲"
+     ]
+    },
+    {
+     "id": "home",
+     "label": "집에서 조용히 지낸다",
+     "impact": [
+      "관계▼",
+      "행복▲▲"
+     ]
+    }
+   ],
+   "autoNote": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "docOverflow": false,
+   "focus": "choice-title",
+   "speed": "8",
+   "picked": "club"
+  }
+ ],
+ "events": [
+  "접기: mode=fold focus=decision-reopen note=다시 열 때까지 시간은 멈춥니다.",
+  "접힌 채 자동 켜기: mode=fold auto=true key=true",
+  "접힌 채 3.6초 뒤: mode=fold key=true age=27",
+  "다시 열기: mode=inline focus=choice-title autoNote=자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.",
+  "자동 선택까지 537ms (기대 약 3000ms) 뒤 포커스=life-name 모드=null",
+  "인라인에서 자동 끄기: mode=null focus=auto autoNote=null"
+ ],
+ "shots": [
+  "qa/screenshots/003/M7b-N03-future-c01-infant-screen.png",
+  "qa/screenshots/003/M7b-N03-future-c02-school-supplies.png",
+  "qa/screenshots/003/M7b-N03-future-c03-school-friend.png",
+  "qa/screenshots/003/M7b-N03-future-c04-school-bully.png",
+  "qa/screenshots/003/M7b-N03-future-c05-school-teacher-notice.png",
+  "qa/screenshots/003/M7b-N03-future-c06-school-exam.png",
+  "qa/screenshots/003/M7b-N03-future-c07-youth-housing.png",
+  "qa/screenshots/003/M7b-N03-future-c08-youth-startup.png",
+  "qa/screenshots/003/M7b-N03-future-c08-folded.png",
+  "qa/screenshots/003/M7b-N03-future-c08-reopened-inline.png",
+  "qa/screenshots/003/M7b-N03-future-c09-youth-meeting.png",
+  "qa/screenshots/003/M7b-N03-future-c10-youth-marriage.png",
+  "qa/screenshots/003/M7b-N03-future-c11-youth-friend-wedding.png",
+  "qa/screenshots/003/M7b-N03-future-c12-youth-marriage-again.png",
+  "qa/screenshots/003/M7b-N03-future-c12-auto-off-sheet.png",
+  "qa/screenshots/003/M7b-N03-future-c13-middle-friend-reunion.png",
+  "qa/screenshots/003/M7b-N03-future-c14-youth-reunion.png",
+  "qa/screenshots/003/M7b-N03-future-c15-middle-home-loan.png",
+  "qa/screenshots/003/M7b-N03-future-c16-middle-hobby.png",
+  "qa/screenshots/003/M7b-N03-future-c17-middle-retirement-prep.png",
+  "qa/screenshots/003/M7b-N03-future-c18-middle-parents-care.png",
+  "qa/screenshots/003/M7b-N03-future-c19-senior-classmates.png",
+  "qa/screenshots/003/M7b-N03-future-c20-senior-travel.png",
+  "qa/screenshots/003/M7b-N03-future-c21-senior-fall.png",
+  "qa/screenshots/003/M7b-N03-future-c22-senior-old-friend.png",
+  "qa/screenshots/003/M7b-N03-future-c23-senior-gathering.png",
+  "qa/screenshots/003/M7b-N03-future-ending.png"
+ ],
+ "errors": [],
+ "ext": [],
+ "ended": true,
+ "endingText": "엔딩\n\n다가올 세상 · 생애 기록\n\n최하윤의 인생\n\n2050년 10월 ~ 2127년 · 77세\n\n77세에 세상을 떠났습니다. 원인은 노환이었습니다.\n\n살아오며 23번의 선택을 했습니다.\n\n출발선에서 마지막까지\n하위\n상위\n출발선\n동수저\n(하위 30% 선과 상위 42% 선 사이)\n마지막\n하위 약 2%\n\n하위 30% 선과 상위 42% 선 사이의 집에서 태어나, 하위 약 2%의 형편으로 생을 마쳤습니다.\n\n출발선보다 뒤쪽 자리입니다.\n\n재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다.\n\n최종 스탯\n건강\n51\n행복\n56\n처음 57\n지식\n47\n처음 3\n관계\n67\n처음 53\n최종 순자산\n−2억 8,951만 원\n지금 가치로 환산\n외모\n또래 사이에서 상위 약 27%\n생애 연표\n영유아 · 0~6세\n0세\n2050년 10월, 서울특별시 성북구의 넉넉하지는 않은 가정에서 2.8kg 여자아이로 태어났습니다. 첫째입니다. (2.8kg은 하위 약 34%)\n0세\n첫 예방접종\n첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. 어른들은 아이를 안아 달랜 뒤 집으로 돌아왔습니다.\n0세\n영유아 건강검진\n정해진 때가 되어 아이는 건강검진을 받았습니다. 키와 몸무게를 재고 자라는 모습을 살폈습니다.\n1세\n첫 걸음마\n아이가 붙잡고 서더니 처음으로 혼자 몇 걸음을 걸었습니다. 모두가 숨을 죽였습니다.\n1세\n첫 말\n아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.\n1세\n곁을 지키는 기계\n아이 곁의 돌봄 기계가 밤새 숨소리를 살폈습니다. 어른들은 한결 깊은 잠을 잘 수 있었습니다.\n3세\n마음껏 뛰놀던 날들\n어른들은 아이가 흙투성이가 되어도 말리지 않았습니다. 아이는 해가 질 때까지 밖에서 놀았습니다.\n4세\n화면 앞의 아이\n선택: 원하는 만큼 보게 둔다\n화면 속 노래를 아이는 하루 종일 흥얼거렸습니다. 어른들은 그사이 집안일을 끝냈습니다.\n학창 · 7~19세\n7세\n학교에 들어갈 나이가 되었습니다.\n7세\n입학 준비물\n선택: 물려받은 것을 쓴다\n이웃이나 친척이 쓰던 것을 물려받았습니다. 아이는 지워진 이름 자리를 한참 만져 보았습니다.\n8세\n화면 속의 교실\n수업의 절반은 화면 속 교실에서 이루어졌습니다. 같은 반 아이들의 키를 서로 잘 몰랐습니다.\n10세\n전학 온 아이\n선택: 먼저 말을 건다\n같이 놀자고 먼저 말했습니다. 어색한 것도 잠깐이었고 그 뒤로 둘은 오래 붙어 다녔습니다.\n14세\n교실의 한 아이\n선택: 선생님께 알린다\n선생님께 조용히 말씀드렸습니다. 일은 어른들 손으로 정리되었고 교실은 한동안 어색했습니다.\n15세\n밤마다 울리던 화면\n단체 대화방에서 오간 말 한마디가 교실 분위기를 바꿔 놓았습니다. 다음 날 아이들은 서로 눈을 피했습니다.\n17세\n눈여겨보신 선생님\n선택: 마음만 받고 사양한다\n고마웠지만 사양했습니다. 방과 후에는 일찍 집에 돌아가 쉬었고, 그 말씀은 마음 한쪽에 남았습니다.\n19세\n입시를 앞둔 해\n선택: 지금 성적으로 갈 수 있는 곳에 지원한다\n원서를 내고 결과를 기다렸습니다. 큰 기쁨도 큰 후회도 아닌, 조용한 결과였습니다.\n청년 · 20~39세\n20세\n스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.\n21세\n혼자 먹는 저녁\n낯선 동네에서 혼자 저녁을 먹는 날이 늘었습니다. 사람 사는 소리는 벽 너머로만 들렸습니다.\n23세\n살 곳을 구하는 일\n선택: 보증금이 낮은 월세방을 구한다\n좁은 방에 짐을 풀었습니다. 매달 빠져나가는 돈은 아팠지만 빚 없이 얻은 내 방이 든든했습니다.\n27세\n직접 해 보자는 제안\n선택: 사업을 시작한다\n작은 사무실을 얻어 일을 시작했습니다. 잠을 줄이며 한 해를 보내는 사이 배운 것이 쌓였고 윤곽이 잡혀 갔습니다.\n30세\n소개받은 자리\n선택: 약속 장소에 나간다\n두 번째 만남이 있었고 세 번째 만남이 있었습니다. 어느새 서로의 연락이 하루의 습관으로 자리 잡았습니다.\n33세\n함께 사는 일\n선택: 조금 더 기다리자고 말한다\n서두르지 않기로 했습니다. 몸과 마음의 짐은 덜었지만 상대의 얼굴에 아쉬운 기색이 스쳤습니다.\n35세\n오랜 친구의 결혼식\n선택: 먼 길을 가서 참석한다\n새벽 기차를 타고 식장에 갔습니다. 친구의 환한 얼굴을 보며 함께 보낸 시간이 떠올랐습니다.\n중년 · 40~64세\n40세\n어느덧 마흔이 되었습니다.\n40세\n다시 꺼낸 이야기\n선택: 좀 더 시간을 갖자고 한다\n대답을 다시 미뤘습니다. 이번에는 상대의 표정이 쉽게 풀리지 않았습니다.\n44세\n오랜 친구의 연락\n선택: 안부만 전한다\n안부를 주고받는 데 그쳤습니다. 서로 다음을 기약하지는 않았습니다.\n45세\n떠나간 사람\n오랜 시간 함께한 사람이 끝내 마음을 거두고 돌아섰습니다. 기다려 달라는 말은 더 이상 통하지 않았습니다.\n46세\n다시 온 연락\n선택: 답하지 않는다\n답장을 쓰지 않았습니다. 마음이 가라앉기까지는 며칠이 걸렸고, 그 시간에 몸을 돌보았습니다.\n47세\n내 일터의 한 해\n문을 열고 닫는 일이 몸에 밴 한 해였습니다. 단골 몇이 생겼고 이름을 부르는 인사가 늘었습니다.\n48세\n넓혀 갈 집\n선택: 무리해서 옮긴다\n대출 서류에 도장을 찍었습니다. 새 집의 창으로 해가 길게 들었지만 이자는 매달 무겁게 따라왔습니다.\n51세\n늦게 시작한 일\n선택: 모임에 나가 사람들과 함께 한다\n같은 것을 좋아하는 사람들의 모임에 나갔습니다. 새로운 얼굴들이 일상에 들어왔습니다.\n53세\n시큰거리는 허리\n허리를 숙일 때마다 시큰거리기 시작했습니다. 몸이 예전 같지 않다는 것을 처음 인정했습니다.\n54세\n혼자 맞는 명절\n모두가 가족을 찾아 떠난 거리에서 혼자 명절을 보냈습니다. 조용한 거리를 오래 걸었습니다.\n59세\n내려놓을 때를 생각하며\n선택: 가능한 오래 일할 생각을 한다\n일할 수 있는 한 일하기로 마음먹었습니다. 몸이 허락할지가 가장 큰 걱정이었습니다.\n62세\n부모님의 병환\n선택: 가족이나 친척과 나누어 맡는다\n순번을 정해 돌아가며 찾아뵈었습니다. 크고 작은 서운함이 오갔지만 결국 서로를 챙겼습니다.\n노년 · 65세~\n65세\n예순다섯이 되었습니다. 일에서 한 걸음 물러설 나이입니다.\n66세\n일에서 물러나다\n일을 내려놓는 날이 왔습니다. 정리할 것은 생각보다 많지 않았고, 돌아오는 길이 유난히 길게 느껴졌습니다.\n67세\n오랜만의 동창 모임\n선택: 안부 글만 보낸다\n안부 글을 적어 보냈습니다. 몇 사람이 답을 해 왔고 나머지는 소식이 닿지 않았습니다.\n68세\n오래된 사진\n서랍 깊은 곳에서 오래된 사진이 나왔습니다. 사진 속 얼굴들은 모두 젊었고, 그중 몇은 이제 곁에 없었습니다.\n69세\n부모님이 남기신 재산을 물려받았습니다.\n69세\n미뤄 둔 여행\n선택: 사진첩으로 대신한다\n오래된 사진첩을 펼쳐 놓고 여행을 대신했습니다. 사진마다 그날의 날씨가 되살아났습니다.\n70세\n지나온 일\n지나온 일을 돌아보며 문득 고개를 끄덕이는 날이 있었습니다. 서툴렀지만 나쁘지 않은 시간이었습니다.\n72세\n미끄러진 겨울날\n선택: 곧바로 병원에서 살펴본다\n병원에서 이곳저곳을 살펴보았습니다. 큰 이상은 없었지만 한동안 조심하라는 말을 들었습니다.\n73세\n높아진 계단\n예전에는 한달음에 오르던 계단이 높게 느껴졌습니다. 난간을 잡는 손에 힘이 들어갔습니다.\n74세\n오래된 친구의 소식\n선택: 자주 전화를 건다\n시간이 날 때마다 전화로 안부를 물었습니다. 목소리가 닿는 것만으로도 위로가 되었습니다.\n76세\n넉넉해진 시간\n선택: 동네 모임에 나간다\n아침마다 같은 얼굴들과 인사를 나누었습니다. 안부를 묻는 일이 하루의 시작이 되었습니다.\n77세\n세상을 떠났습니다. 원인은 노환이었습니다.\n다시 태어나기\n\n다시 태어나면 이 인생의 기록은 사라집니다.",
+ "born": "최하윤\n0\n세\n2050년\n6%\n일시정지\n1배\n2배\n4배\n8배\n다음 결정으로\n자동 모드 꺼짐\nBGM\n생각 남기기\n준비 중\n다크 모드\n의견 보내기\n(새 탭으로 열립니다)\n나가기\n\n최하윤\n\n여성\n\n출생\n2050년 10월\n거주\n서울특별시 성북구\n출신 가정\n동수저\n(하위 30% 선과 상위 42% 선 사이)\n학력\n취학 전\n외모\n또래 사이에서 상위 약 27%\n상태\n건강",
+ "ms": 126946
+}

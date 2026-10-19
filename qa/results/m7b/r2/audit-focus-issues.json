@@ -1,0 +1,24 @@
+{
+ "focus": [
+  "sibling-past/inline/320x568/200: choice-sulk·choice-notice",
+  "noise-present/inline/320x568/200: choice-mat·choice-hush",
+  "layoff-future/inline/320x568/200: choice-hold",
+  "familyprio-past/inline/320x568/200: choice-accept·choice-plead·choice-secret",
+  "marriage-past/inline/320x568/200: choice-marry",
+  "child-past/inline/320x568/200: choice-have"
+ ],
+ "wbUn": [
+  "grandchildren-future/sheet/320x568/200: 국민노후보장패널조사[280>257]",
+  "grandchildren-future/inline/320x568/200: 국민노후보장패널조사[280>223]",
+  "grandchildren-future/inline/320x568/200: 국민노후보장패널조사[240>223]",
+  "grandchildren-future/inline/360x568/200: 국민노후보장패널조사[280>263]",
+  "grandchildren-future/inline/360x740-touch/200: 국민노후보장패널조사[280>263]",
+  "grandchildren-future/inline/375x812/200: 국민노후보장패널조사[280>278]",
+  "grandchildren-present/sheet/320x568/200: 국민노후보장패널조사[280>257]",
+  "grandchildren-present/inline/320x568/200: 국민노후보장패널조사[280>223]",
+  "grandchildren-present/inline/320x568/200: 국민노후보장패널조사[240>223]",
+  "grandchildren-present/inline/360x568/200: 국민노후보장패널조사[280>263]",
+  "grandchildren-present/inline/360x740-touch/200: 국민노후보장패널조사[280>263]",
+  "grandchildren-present/inline/375x812/200: 국민노후보장패널조사[280>278]"
+ ]
+}

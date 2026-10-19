@@ -3,6 +3,7 @@ import todoRaw from '../docs/TODO.md?raw';
 import {
   checkQuotes,
   checkTodo,
+  evidenceChunks,
   expandBraces,
   inOrder,
   isTestFile,
@@ -120,6 +121,21 @@ describe('근거 대조: 경로·심볼 도우미', () => {
     expect(parseSymbols('#ERA_CONFIG.life(시대별)/next', 1).symbols).toEqual(['ERA_CONFIG.life', 'next']);
     expect(parseSymbols('#only 그 다음 글', 1).symbols).toEqual(['only']);
     expect(parseSymbols('#open(닫히지 않는 괄호', 1).symbols).toEqual(['open']); // 닫히지 않은 괄호에서 멈춘다(무한 루프 없음)
+  });
+
+  it('parseSymbols(R-397): #로 이어 적은 심볼(#a#b#c)과 ·로 이은 심볼(#a·b)도 모두 읽고, ·가 경로·형제 파일을 이은 것이면 심볼로 읽지 않는다', () => {
+    expect(parseSymbols('#a#b#c, 다음', 1).symbols).toEqual(['a', 'b', 'c']);
+    expect(parseSymbols('#fn(설명)#other(설명 (중첩))#last 그 다음', 1).symbols).toEqual(['fn', 'other', 'last']);
+    expect(parseSymbols('#a·b·c 다음', 1).symbols).toEqual(['a', 'b', 'c']);
+    expect(parseSymbols('#a/b#c·d', 1).symbols).toEqual(['a', 'b', 'c', 'd']); // 이음 세 가지를 섞어도
+    // 경로·형제 파일을 이은 ·는 심볼이 아니다
+    expect(parseSymbols('#a·other.test.ts', 1).symbols).toEqual(['a']);
+    expect(parseSymbols('#a·src/core/x.ts', 1).symbols).toEqual(['a']);
+    expect(parseSymbols('#a·docs/review/B.md(R-2)', 1).symbols).toEqual(['a']);
+    expect(parseSymbols('#a·dev-M5-ending-desktop.png', 1).symbols).toEqual(['a']);
+    // 이음 다음이 영문자가 아니면(한글 설명·숫자) 멈춘다
+    expect(parseSymbols('#a#1, #b·다음', 1).symbols).toEqual(['a']);
+    expect(parseSymbols('#a·다음 글', 1).symbols).toEqual(['a']);
   });
 
   it('siblingNames: 경로 뒤 ·이름.확장자 (괄호 설명은 건너뛴다)', () => {
@@ -258,10 +274,119 @@ describe('근거 대조: TODO 전체 (checkTodo)', () => {
     expect(kinds('- [x] "없는 이름"이라는 설명 — 근거: src/core/a.ts')).toEqual([]);
   });
 
+  it('이어 적은 심볼도 모두 대조한다 (R-397): #a#b의 둘째 심볼이 없으면 심볼 없음, #a·b의 둘째·#a/b#c·d의 뒤쪽도 같다', () => {
+    expect(kinds('- [x] 가 — 근거: src/core/a.ts#alpha#BETA')).toEqual([]);
+    expect(kinds('- [x] 가 — 근거: src/core/a.ts#alpha#gone')).toEqual(['심볼 없음']);
+    expect(kinds('- [x] 가 — 근거: src/core/a.ts#alpha#BETA#gone')).toEqual(['심볼 없음']);
+    expect(kinds('- [x] 가 — 근거: src/core/a.ts#alpha·gone')).toEqual(['심볼 없음']);
+    expect(kinds('- [x] 가 — 근거: src/core/a.ts#alpha/BETA#gone·BETA')).toEqual(['심볼 없음']);
+    expect(run('- [x] 가 — 근거: src/core/a.ts#alpha(설명)#gone(설명)').problems.map((p) => p.detail.split('   ')[0])).toEqual(['src/core/a.ts#gone']);
+    // 모두 있으면 통과하고 센 심볼 수에 들어간다
+    const ok = run('- [x] 가 — 근거: src/core/a.ts#alpha#BETA·alpha');
+    expect(ok.problems).toEqual([]);
+    expect(ok.symbols).toBe(3);
+  });
+
+  it('·가 경로·형제 파일을 이은 것은 심볼이 아니다 — 형제 파일 줄임(a.ts#sym·b.test.ts)과 다음 경로(#sym·src/…)를 심볼로 오해하지 않는다', () => {
+    const e = fakeEnv({ 'src/core/a.ts': 'export function alpha() {}\n', 'tests/a.test.ts': '', 'tests/b.test.ts': '' });
+    const r = checkTodo('- [x] 가 — 근거: src/core/a.ts#alpha·tests/a.test.ts·b.test.ts', NAMES, scripts, e);
+    expect(r.problems).toEqual([]);
+    expect(r.symbols).toBe(1);
+  });
+
+  it('실제 TODO.md(R-397): 이어 적은 심볼(#a#b·#a·b)이 든 [x] 줄이 실제로 있고(공허 통과 방지) 둘째 이후 심볼까지 읽힌다 — 옛 구현은 첫 심볼만 셌다', () => {
+    let chained = 0;
+    let extra = 0;
+    for (const line of todoRaw.split(/\r?\n/)) {
+      if (!/^\s*- \[x\]/i.test(line)) continue;
+      for (const m of line.matchAll(/[\w./-]+\.(?:ts|tsx|json)#/g)) {
+        const { symbols } = parseSymbols(line, (m.index ?? 0) + m[0].length);
+        if (symbols.length > 1) {
+          chained++;
+          extra += symbols.length - 1;
+        }
+      }
+    }
+    expect(chained, '심볼을 이어 적은 근거').toBeGreaterThanOrEqual(30);
+    expect(extra, '옛 구현이 대조하지 않던 둘째 이후 심볼').toBeGreaterThanOrEqual(100);
+  });
+
   it('보고에는 줄 번호와 항목 머리가 들어 있다', () => {
     const r = run('# 제목\n\n- [x] 여기 항목 — 근거: src/core/missing.ts');
     expect(r.problems[0].line).toBe(3);
     expect(r.problems[0].detail).toContain('여기 항목');
+  });
+});
+
+describe('근거 대조: [x] 바로 밑의 들여쓴 하위 줄도 근거다 (REV-003-M7b-1 R-389)', () => {
+  const env = fakeEnv({ 'src/core/a.ts': 'export function alpha() {}\n', 'tests/a.test.ts': '', 'package.json': '{}' });
+  const scripts = new Set(['build', 'check:todo']);
+  const run = (todo: string) => checkTodo(todo, NAMES, scripts, env);
+  const todoOf = (...lines: string[]) => ['# TODO', ...lines].join('\n');
+
+  it('하위 줄의 없는 파일·심볼·시험 제목·npm 스크립트를 잡고, 줄 번호는 그 하위 줄이다 (옛 검사는 [x] 줄만 읽어 놓쳤다)', () => {
+    const r = run(
+      todoOf(
+        '- [x] 머리 — 근거: (developer 기록)', // 2행: 근거는 하위 줄에 있다
+        '    - 시험: tests/a.test.ts "첫 테스트 … (R-001)", "없는 제목"', // 3행
+        '    - 파일: src/core/a.ts#alpha/gamma, src/core/missing.ts, `npm run nope`', // 4행
+      ),
+    );
+    expect(r.items).toBe(1);
+    expect(r.problems.map((p) => `${p.line}:${p.kind}`).sort()).toEqual(['3:테스트 제목 없음', '4:npm 스크립트 없음', '4:파일 없음', '4:심볼 없음'].sort());
+    expect(r.quotes).toBe(2);
+  });
+
+  it('하위 줄이 모두 맞으면 문제가 없고, 센 개수에 하위 줄이 들어간다', () => {
+    const r = run(
+      todoOf('- [x] 머리 — 근거: package.json', '    - 시험: tests/a.test.ts "첫 테스트 … (R-001)"', '    - 함수: src/core/a.ts#alpha, `npm run check:todo`'),
+    );
+    expect(r.problems).toEqual([]);
+    expect(r.quotes).toBe(1);
+    expect(r.symbols).toBe(1);
+    expect(r.scripts).toBe(1);
+  });
+
+  it('[x] 줄에 「근거:」가 없어도 하위 줄에 있으면 거기서부터 근거다. 그 앞 하위 줄(설명)은 대조하지 않는다. 어디에도 없으면 「근거 없음」', () => {
+    const ok = run(todoOf('- [x] 머리(근거는 아래)', '    - 설명: src/없는/파일.ts "없는 제목"', '    - 근거: src/core/a.ts#alpha', '    - 시험: tests/a.test.ts "첫 테스트 … (R-001)"'));
+    expect(ok.problems).toEqual([]);
+    const bad = run(todoOf('- [x] 머리(근거는 아래)', '    - 근거: src/core/a.ts#alpha', '    - 시험: tests/a.test.ts "없는 제목"'));
+    expect(bad.problems.map((p) => `${p.line}:${p.kind}`)).toEqual(['4:테스트 제목 없음']);
+    expect(run(todoOf('- [x] 머리', '    - 그냥 설명 src/없는/파일.ts')).problems.map((p) => p.kind)).toEqual(['근거 없음']);
+  });
+
+  it('같은 들여쓰기의 다음 항목·빈 줄 뒤의 글은 하위 줄이 아니다 (이웃 항목의 근거를 이 항목의 것으로 읽지 않는다)', () => {
+    const r = run(todoOf('- [x] 하나 — 근거: package.json', '- [ ] 이웃(안 한 것) — 근거: src/없는/파일.ts', '', '    - 빈 줄 뒤 들여쓴 글 src/없는/파일2.ts', '- [x] 둘 — 근거: src/core/a.ts'));
+    expect(r.problems).toEqual([]);
+    expect(r.items).toBe(2);
+  });
+
+  it('체크 상자가 있는 하위 항목은 따로 항목이다: [ ]는 읽지 않고 그 아래도 건너뛰며, [x]는 자기 줄로 대조한다. 그 뒤의 일반 하위 줄은 다시 부모의 근거다', () => {
+    const r = run(
+      todoOf(
+        '- [x] 부모 — 근거: package.json',
+        '    - [ ] 아직 안 한 하위 — 근거: src/없는/파일.ts "없는 제목"',
+        '        - 그 아래 글 src/없는/파일3.ts',
+        '    - [x] 한 하위 — 근거: src/core/a.ts#alpha',
+        '    - 부모의 하위 줄 src/core/missing.ts',
+      ),
+    );
+    expect(r.items).toBe(2);
+    expect(r.problems.map((p) => `${p.line}:${p.kind}`)).toEqual(['6:파일 없음']);
+  });
+
+  it('실제 TODO.md: [x] 항목 아래 들여쓴 하위 줄에 근거가 있는 항목이 실제로 있고(공허 통과 방지) 그 줄들이 근거 줄로 읽힌다', () => {
+    const lines = todoRaw.split(/\r?\n/);
+    const withSubs = lines
+      .map((l, i) => ({ l, i }))
+      .filter(({ l }) => /^\s*- \[x\]/i.test(l))
+      .filter(({ i }) => evidenceChunks(lines, i).some((c) => c.line - 1 !== i));
+    expect(withSubs.length, '하위 줄을 근거로 읽는 [x] 항목').toBeGreaterThanOrEqual(1);
+    for (const { i } of withSubs) {
+      const chunks = evidenceChunks(lines, i);
+      expect(chunks[0].line, '첫 근거 줄은 [x] 줄 자신이거나 그 아래다').toBeGreaterThanOrEqual(i + 1);
+      for (const c of chunks.slice(1)) expect(lines[c.line - 1].trimStart().startsWith('- ['), `${c.line}행은 체크 상자 줄이 아니다`).toBe(false);
+    }
   });
 });
 

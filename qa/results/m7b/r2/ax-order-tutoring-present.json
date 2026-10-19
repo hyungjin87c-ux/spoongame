@@ -1,0 +1,183 @@
+[
+ {
+  "role": "dialog",
+  "name": "성적표를 받은 저녁"
+ },
+ {
+  "role": "StaticText",
+  "name": "중대 결정"
+ },
+ {
+  "role": "StaticText",
+  "name": "2040년"
+ },
+ {
+  "role": "StaticText",
+  "name": " "
+ },
+ {
+  "role": "StaticText",
+  "name": " "
+ },
+ {
+  "role": "StaticText",
+  "name": "14세"
+ },
+ {
+  "role": "button",
+  "name": "카드 접기"
+ },
+ {
+  "role": "StaticText",
+  "name": "카드 접기"
+ },
+ {
+  "role": "heading",
+  "name": "성적표를 받은 저녁",
+  "level": 2
+ },
+ {
+  "role": "StaticText",
+  "name": "성적표를 받은 저녁"
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "성적표를 받은 날 저녁, 식탁에서 공부 이야기가 나왔습니다. 이번 학기부터 달라질 것이 있는지는 아직 정해지"
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "통계"
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "2025년"
+ },
+ {
+  "role": "StaticText",
+  "name": "초·중·고"
+ },
+ {
+  "role": "StaticText",
+  "name": " 학생의 "
+ },
+ {
+  "role": "StaticText",
+  "name": "75.7%"
+ },
+ {
+  "role": "StaticText",
+  "name": "가 사교육을 받았고, 학생 1인당 월평균 사교육비는 45만 8천 원이었습니다."
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "국가데이터처(2026),"
+ },
+ {
+  "role": "StaticText",
+  "name": "2025년"
+ },
+ {
+  "role": "StaticText",
+  "name": " 초중고사교육비조사 결과"
+ },
+ {
+  "role": "group",
+  "name": "선택지"
+ },
+ {
+  "role": "button",
+  "name": "방과 후에 따로 배운다 집안 살림이 조금 줄어듭니다. 행복이 줄어듭니다. 지식이 크게 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "방과 후에 따로 배운다"
+ },
+ {
+  "role": "StaticText",
+  "name": "집안 살림이 조금 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "행복이 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "지식이 크게 늘어납니다."
+ },
+ {
+  "role": "button",
+  "name": "혼자 공부한다 행복이 조금 늘어납니다. 지식이 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "혼자 공부한다"
+ },
+ {
+  "role": "StaticText",
+  "name": "행복이 조금 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "지식이 늘어납니다."
+ },
+ {
+  "role": "button",
+  "name": "과외 선생님을 붙인다 집안 살림이 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 크게 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "과외 선생님을 붙인다"
+ },
+ {
+  "role": "StaticText",
+  "name": "집안 살림이 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "행복이 조금 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "지식이 크게 늘어납니다."
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "선택지 아래 글씨는 이 선택만으로 이시윤에게 생기는 변화입니다."
+ },
+ {
+  "role": "StaticText",
+  "name": " "
+ },
+ {
+  "role": "StaticText",
+  "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다."
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다."
+ }
+]

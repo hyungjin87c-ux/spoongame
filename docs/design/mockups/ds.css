@@ -574,6 +574,8 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
 /* 안쪽 스크롤 영역은 자기 scroll-padding을 둔다(11-1): 키보드 포커스·「맨 아래로」가 줄을 화면 안으로 스크롤할 때 포커스 링이 영역 가장자리에 잘리지 않게 */
 /* 높이 상한은 min(520px, 가용 높이): 고정 머리(--head-fixed-h)와 하단 고정 진행 줄(--bar-fixed-h)을 뺀 화면 안 — 영역이 가용 높이보다 크면 키보드 포커스 링이 머리·진행 줄에 가린다(CM10, M4 구현 dash.css와 같은 식). 풀린 요소(head-released·bar-released)와 데스크톱의 보통 행 진행 줄은 0 */
 .log__list { display: flex; flex-direction: column; gap: 0; margin-top: var(--sp-2); max-height: min(520px, max(6rem, calc(100svh - var(--head-fixed-h, 0px) - var(--bar-fixed-h, 0px) - 2 * (var(--sp-3) + 7px)))); overflow-y: auto; scroll-behavior: smooth; scroll-padding: var(--sp-3) 0; overscroll-behavior: contain; }
+/* 구현 LogCard.tsx와 같은 구조(2026-10-19 M7b 시안 감사에서 맞춤): .log__list는 키보드로 닿는 스크롤 영역(role=region, tabindex=0 — Chromium은 스크롤 상자를 Tab 정지점으로 삼으므로 조작 요소 목록에 올린다), 그 안의 목록이 .log__rows */
+.log__rows { display: flex; flex-direction: column; }
 html.has-sticky-head { --head-fixed-h: var(--head-h, 0px); }
 html.head-released { --head-fixed-h: 0px; }
 @media (max-width: 959px) {
@@ -591,7 +593,9 @@ html.head-released { --head-fixed-h: 0px; }
 .log__note-label { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: var(--fw-bold); }
 .log__row--stage { color: var(--c-text-2); font-size: var(--fs-sm); border-bottom: 2px solid var(--c-border-strong); }
 .log__row--latest { font-weight: var(--fw-bold); }
-.log__jump { align-self: center; margin-top: var(--sp-2); }
+/* 「새 기록 N개 · 맨 아래로」: 버튼(inline-flex)의 글자는 익명 flex 항목이라 전역 overflow-wrap: anywhere가 최소 폭을 글자 하나로 만들어 글자 200% × 폭 320·360에서 「아래로」가 한 글자씩 끊겼다(M7b 시안 감사 2026-10-19, QM3-1).
+   낱말 단위로만 접히게 overflow-wrap: normal(이름 안 줄바꿈 허용 — 확인 단계 버튼과 같은 예외). 구현 dash.css `.log__jump`도 같은 줄이 필요하다(diff-003.md D-58) */
+.log__jump { align-self: center; margin-top: var(--sp-2); white-space: normal; word-break: keep-all; overflow-wrap: normal; }
 .family dl, .family-list { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
 .family-list dt { color: var(--c-text-2); }
 .family-list dd { font-weight: var(--fw-bold); min-width: 0; }
@@ -608,20 +612,61 @@ html.head-released { --head-fixed-h: 0px; }
    라벨은 이 카드가 약속한 값(「요즘 모습」)이라 본문색·굵게(이름·장소는 보조색)이고 **항상 이름 묶음·칩 아래 한 줄**이다(한 줄 전체) — 길이에 따라 어떤 사람은 오른쪽, 어떤 사람은 아래로 갈리면 목록이 들쭉날쭉해진다. 라벨 안에서는 끊지 않는다(가장 긴 「학교에 다님」) */
 .people__now { flex: 1 1 100%; font-weight: var(--fw-bold); color: var(--c-text); white-space: nowrap; }
 
-/* ---------- 카드(중대 결정·자유 기록) ---------- */
+/* ---------- 중대 결정 카드 (M7b, 2026-10-19 designer — SPEC-003 MD1·MD2·EV6 · docs/data/content-M7b.md 10절 M-6·M-7·M-11~M-13 · design-system.md 6절 「중대 결정 카드」·11-10절 · 문구 copy.md 6절) ----------
+   한 카드가 **두 틀**로 뜬다. 안쪽 DOM(.decision__head → .decision__body)은 같고 바깥 틀만 다르다(구현은 DecisionCard 하나 + 틀 둘):
+     ① 자동 모드 꺼짐 = **모달 시트** .overlay > .sheet.decision.decision--sheet[role=dialog][aria-modal=true][aria-labelledby=dc-title] — 모바일은 아래에서 올라온 시트(위 모서리만 둥글다), ≥ 640px은 가운데 모달(아래 넓은 화면 블록).
+        시트가 떠 있는 동안 바깥(헤더·도구 줄·main·.page-end-space)은 `inert` — Tab이 시트 안에서만 돌고 포커스는 제목(h2)으로 간다. Esc = 「카드 접기」. 하단 진행 줄을 덮지만 접으면 곧바로 닿는다(M-6: 수동이면 몇 배속이든 사람이 고를 때까지 멈추므로 번쩍임이 없다).
+     ② 자동 모드 켜짐 = **비모달 인라인 카드** section.card.decision.decision--inline — 대시보드 가운데 열 맨 위(1열에서는 헤더·진행 줄 바로 아래 order: -1, 아래 959px 블록 — M4 임시 카드 .choice-panel과 같은 자리).
+        스크림·inert·포커스 이동 없음(R-036 규칙 1), 컨트롤(자동 모드 끄기)은 그대로 닿는다(R-048). 자동 모드를 끄면 그 자리에서 ①로 바뀐다.
+     ③ **접힌 띠** section.card.fold — 카드가 있던 자리(②와 같은 자리)의 한 줄: 「◆ 중대 결정」 + 제목 + 「다시 열 때까지 시간은 멈춥니다.」 + 「결정 다시 열기」. 두 모드 공통이고 접힌 동안 자동 선택 타이머도 멈춘다(U3(a)).
+        다시 열면 **그때의 자동 모드**에 맞는 틀로 뜬다(수동 시트 → 접기 → 자동 모드 켜기 → 다시 열기 = 인라인 카드). 포커스: 접으면 「결정 다시 열기」, 다시 열면 제목(U6(b)·cardReopened).
+   머리(.decision__head): .decision__kind 「중대 결정」(◆는 ::before — 글자가 아니다) · .decision__when 「{연도}년 · {나이}세」(FitPair — 좁거나 글자가 크면 기호 없이 두 줄, QM2-10 규칙 3) · .decision__fold 「카드 접기 ▾」(▾는 aria-hidden, 접근 가능한 이름 「카드 접기」).
+   몸(.decision__body, 컨테이너): h2.decision__title(id=dc-title, tabindex=-1) · p.decision__text · .cite(인용이 있을 때만 — 없으면 요소 자체가 없다) · .choices-list(번호 원 + 라벨 + 영향 줄, 그대로) · .decision__hint(영향 안내 한 줄, 영향 줄이 있는 묶음에만 — copy.md 4-4) · .decision__auto(자동 모드 안내 — 상태에 맞는 문장 **하나**, M-13).
+   .sheet__* 는 M7c 자유 기록 카드(note.html)가 아직 쓰므로 같은 규칙에 별칭으로 함께 적는다. */
 .overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--c-scrim); display: flex; align-items: flex-end; justify-content: center; }
-.sheet { width: 100%; max-width: 640px; max-height: 94dvh; overflow: auto; background: var(--c-surface); color: var(--c-text); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow-2); border: 1px solid var(--c-border-strong); border-bottom: 0; }
-.sheet__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border); }
-.sheet__head .row { flex-wrap: wrap; }
-.sheet__head .btn { white-space: nowrap; }
-.sheet__kind { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-sm); }
-.sheet__kind::before { content: ''; width: 10px; height: 10px; background: var(--c-brand); transform: rotate(45deg); }
+/* 시트 안은 자기 스크롤 영역이라 scroll-padding을 둔다(11-1 — 키보드 포커스가 시트 가장자리에 잘리지 않게). 94dvh 상한은 낮은 화면(320×256)에서도 시트 밖에 여백 한 줄을 남긴다 */
+.sheet { width: 100%; max-width: 640px; max-height: 94dvh; overflow: auto; scroll-padding: var(--sp-3); background: var(--c-surface); color: var(--c-text); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow-2); border: 1px solid var(--c-border-strong); border-bottom: 0; }
+.sheet__head, .decision__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border); }
+.sheet__head .row, .decision__head .row { flex-wrap: wrap; }
+.sheet__head .btn, .decision__head .btn { white-space: nowrap; }
+.sheet__kind, .decision__kind, .fold__kind { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-sm); }
+.sheet__kind::before, .decision__kind::before, .fold__kind::before { content: ''; flex: none; width: 10px; height: 10px; background: var(--c-brand); transform: rotate(45deg); }
 .sheet__kind--note::before { border-radius: 50%; transform: none; background: var(--c-accent); }
-.sheet__age { color: var(--c-text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.sheet__body { padding: var(--sp-5) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
-.cite { padding: var(--sp-3) var(--sp-4); border-left: 5px solid var(--c-accent); background: var(--c-brand-soft); color: var(--c-on-brand-soft); border-radius: 0 var(--r-md) var(--r-md) 0; display: flex; flex-direction: column; gap: 4px; }
+.sheet__age, .decision__when { color: var(--c-text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.sheet__age { white-space: nowrap; }
+/* 「{연도}년 · {나이}세」는 FitPair(.fit-pair는 display: block) — 머리 줄 안에서는 글자 폭만 차지하게 inline-block으로 두고, 두 줄 모드에서는 안에서만 줄이 바뀐다 */
+.decision__when .fit-pair { display: inline-block; max-width: 100%; }
+.sheet__body, .decision__body { padding: var(--sp-5) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
+.decision__body { container-type: inline-size; }
+/* 인라인 카드: 대시보드 카드(.card) 위에 머리·몸을 얹는다 — 안쪽 여백은 머리·몸이 각자 가지므로 카드 자체는 0, 테두리는 M4 임시 카드(.choice-panel)와 같은 2px 쪽빛(결정을 기다리는 카드임을 다른 카드와 가른다) */
+.decision--inline { padding: 0; border: 2px solid var(--c-brand); display: flex; flex-direction: column; gap: 0; }
+.decision--inline .decision__body { padding: var(--sp-4); }
+/* 카드 제목(h2): 카드 제목 크기 --fs-xl(22px — M1 시안의 --fs-2xl 28px은 화면 제목(h1) 크기라 내렸다, M7b 결정: 글자 200% × 폭 320에서 28px은 한 줄에 4.5글자라 5음절 낱말이 끊긴다).
+   완료 기준 17②를 h2에도 건다(M-12): 11-8절 제목 상한 — 글자 크기 = max(--fs-lg, min(--fs-xl, 줄 폭 ÷ (가장 긴 낱말 글자 수 + 1))). 줄 폭은 .decision__body(컨테이너)의 내용 폭(100cqi), --title-chars는 구현의 titleCharsFor(제목)이 h2 인라인 변수로 넘긴다.
+   cqi를 모르는 브라우저는 식이 통째로 무효라 기본 --fs-xl로 물러난다(11-6 폴백 ①). 바닥 --fs-lg(18px)는 본문(16px)보다 커 제목 위계가 남는다 */
+.decision__title { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.decision__title:focus, .decision__title:focus-visible { outline: none; }
+@supports (width: 1cqi) {
+  .decision__title { font-size: max(var(--fs-lg), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }
+}
+/* 인용 박스(MD2·EV6): 옅은 쪽빛 면 + 놋쇠 왼쪽 막대(「사람이 남긴 것」의 색, 1절). 줄 순서 = **종류 라벨**(.cite__kind 「통계」/「연구」 — citations.json kind에서. U12 결정: 지표 이름이 아니라 자료의 종류라 QM2-11(제목이 약속한 값) 대상이 아니다)
+   → **요약**(.cite__text = 시대 머리말 + 한 칸 + 요약, 합쳐 ≤ 100자 — 「지금의 연구로는」(지난 세상의 시대 무관 연구)·「지금 기준으로는」(다가올 세상)은 같은 글자·같은 색, 따로 꾸미지 않는다) → **출처 한 줄**(.cite__src = formatSourceLine 출력 「{기관·저자}({연도}), {자료 이름}」을 Glue로 감싼 것 — copy.md 6-3).
+   안에 <a>·DOI·URL·PMID를 그리지 않는다(EV6). 인용이 없는 카드에는 이 요소 자체가 없다(빈 박스 0). 글자는 모두 --c-on-brand-soft 한 색이고 불투명도를 쓰지 않는다(QM3-5 전수 대비 — 옛 .cite__src opacity 0.9 제거; 면 위 라이트 9.9 / 다크 10.3:1).
+   긴 영문 출처 줄(c-033 「Teti 외(1996), And baby makes four: …」 약 130자)은 낱말 사이에서만 접힌다 — 쉼표는 앞 낱말에 붙어 줄 끝에 와도 되고(QM2-10 규칙 2), 두 저자 「A·B」만 Glue가 한 묶음으로 지킨다.
+   안쪽 여백은 사방 --sp-3(2026-10-19 후속 2, D-65): 카드 안의 다른 면 상자(.log__pin · 막대까지 같은 .log__row--note)와 같은 값이다 — 카드 급(.card · .fold)은 좌우 sp-4, 카드 **안** 상자는 사방 sp-3.
+   글자 200% × 폭 320 인라인 카드에서 안쪽 문단 폭이 215 → 223px가 되어 출처 줄의 9글자 기관·조사 이름(「과학기술정보통신부」 「초중고사교육비조사」 … 24px × 9 = 216px, 연결 인용 5종 14칸)이 한 줄에 든다(옛 215px에서는 1px 모자라 끊겼다). 10글자부터는 그대로 「한 줄보다 긴 낱말」(design-system.md 11-8절) */
+.cite { padding: var(--sp-3); border-left: 5px solid var(--c-accent); background: var(--c-brand-soft); color: var(--c-on-brand-soft); border-radius: 0 var(--r-md) var(--r-md) 0; display: flex; flex-direction: column; gap: 4px; }
+.cite__kind { font-size: var(--fs-xs); font-weight: var(--fw-bold); letter-spacing: 0.02em; }
 .cite__text { font-size: var(--fs-sm); line-height: var(--lh-snug); }
-.cite__src { font-size: var(--fs-xs); opacity: 0.9; }
+.cite__src { font-size: var(--fs-xs); line-height: var(--lh-snug); }
+/* 접힌 띠(M-7 U2(a)): 카드(.card) 한 줄 — 왼쪽 5px 쪽빛 막대가 「결정 하나가 여기 접혀 있다」를 가리킨다(인용 박스의 놋쇠 막대·나의 기록 줄과 같은 어법, 색만 다르다). 점선은 쓰지 않는다(점선 = 지속 비활성의 표시, 2절).
+   줄 안 순서: .fold__kind 「◆ 중대 결정」 · .fold__title 제목(굵게) · .fold__note 「다시 열 때까지 시간은 멈춥니다.」(접힌 동안 정지 표시 — 헤더의 진행률 바는 멈춤을 모양으로 보이지 않고 일시정지 버튼은 사용자가 멈춘 때만 바뀌므로 글로 한 번 적는다;
+   자동 모드에서도 참이다 — 접힌 동안 자동 선택이 멈춘다) · .fold__open 「결정 다시 열기」(접근 가능한 이름 = 「결정 다시 열기 {제목}」, aria-labelledby로 제목 id를 잇는다 — 어느 카드인지 Tab만으로 안다).
+   넓은 화면에서는 한 줄, 좁거나 글자가 크면 flex-wrap으로 두세 줄 — 「·」 같은 구분 기호를 글자로 두지 않는다(QM2-5) */
+.fold { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-left: 5px solid var(--c-brand); }
+.fold__title { flex: 1 1 12em; min-width: min(12em, 100%); font-weight: var(--fw-bold); }
+.fold__note { font-size: var(--fs-sm); color: var(--c-text-2); }
+.fold__open { margin-left: auto; }
 .choices-list { display: flex; flex-direction: column; gap: var(--sp-2); }
 .choice { display: flex; gap: var(--sp-3); align-items: flex-start; width: 100%; padding: var(--sp-3) var(--sp-4); text-align: left; border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); cursor: pointer; min-height: var(--hit); }
 .choice:hover { border-color: var(--c-brand); background: var(--c-brand-soft); }
@@ -630,7 +675,9 @@ html.head-released { --head-fixed-h: 0px; }
 .choice__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .choice__label { font-weight: var(--fw-bold); font-size: var(--fs-md); }
 .sheet__foot { display: flex; flex-direction: column; gap: var(--sp-2); align-items: stretch; }
+/* 안내 줄 둘(영향 안내 .decision__hint · 자동 모드 안내 .decision__auto): 보조색 작은 글씨, 왼쪽 맞춤(두 틀에서 같은 모양 — M1 시트의 가운데 맞춤 .sheet__hint는 note.html 몫으로만 남긴다). 자동 모드 안내는 role=status가 아니다(자동 선택 때마다 낭독되지 않게, content-M7b 4-3) */
 .sheet__hint { font-size: var(--fs-sm); color: var(--c-text-2); text-align: center; }
+.decision__hint, .decision__auto { font-size: var(--fs-sm); color: var(--c-text-2); }
 .note-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: var(--sp-3) var(--sp-4); text-align: left; border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); min-height: var(--hit); cursor: pointer; }
 .note-choice__top { display: flex; align-items: center; gap: var(--sp-3); font-weight: var(--fw-bold); }
 .note-choice__sub { font-size: var(--fs-sm); color: var(--c-text-2); padding-left: calc(26px + var(--sp-3)); }
@@ -816,6 +863,9 @@ html.head-released { --head-fixed-h: 0px; }
     /* 강제 색상은 그림자를 지운다 — 띠와 같은 CanvasText 1px 위끝 선, 고정·해제 공통 한 규칙(QM2-12). 넓은 화면(≥ 960px)에서는 진행 줄이 도구 줄 안의 보통 행이라 선을 두지 않는다 */
     .controls-fixed { border-top: 1px solid CanvasText; }
   }
+  /* 한 열(구현 dash.css와 같은 규칙, M7b): 가운데 열의 카드들이 격자의 직접 칸이 되어 결정을 기다리는 인라인 카드·접힌 띠가 헤더·진행 줄 바로 아래(맨 위)에 온다. 나머지 순서는 DB1 그대로 */
+  .col--center { display: contents; }
+  .decision--inline, .fold { order: -1; }
   .sym-grid { grid-template-columns: minmax(0, 1fr); }
   .face-sheet { grid-template-columns: 3.4rem repeat(6, minmax(0, 1fr)); gap: var(--sp-1); }
 }
@@ -888,6 +938,8 @@ html.head-released { --head-fixed-h: 0px; }
      (2026-10-16 시안·구현 강제 색상 스크린샷 모두 — docs/design/diff-003.md D-07). 그래서 바탕·글자를 Canvas / CanvasText로 못 박고 아래 굵은 선으로 문서 머리를 구분한다 */
   .doc__band { background: Canvas; color: CanvasText; border-bottom: 3px solid CanvasText; }
   .cite, .log__pin, .log__row--note { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  /* M7b: 인라인 카드의 쪽빛 테두리·접힌 띠의 왼쪽 막대도 글자색 한 가지 — 두 극성 모두 보인다. 스크림은 tokens.css가 투명(--c-scrim)으로 두므로 시트는 CanvasText 테두리(위 .sheet)가 가른다 */
+  .decision--inline, .fold { border-color: CanvasText; }
   .toggle__track { border-color: CanvasText; }
   .toggle.is-on .toggle__track { forced-color-adjust: none; background: Highlight; }
   .toggle__thumb { forced-color-adjust: none; background: CanvasText; }

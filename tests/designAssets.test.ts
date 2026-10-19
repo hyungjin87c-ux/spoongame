@@ -870,3 +870,172 @@ describe('M7e 엔딩 새 디자인·합쇼체 문구 계약 (designer 산출물 
     expect(dsCss).not.toContain('.journey__pin');
   });
 });
+
+/**
+ * M7b 중대 결정 카드 계약 (SPEC-003 MD1·MD2·EV6 · content-M7b 10절 M-6·M-7·M-11~M-13, designer 2026-10-19 — copy.md 6절 ↔ ds.css ↔ 시안 decision-*.html·components.html#cite).
+ * developer는 ds.css 「중대 결정 카드」 블록을 dash.css로 옮기고 문구는 copy.md 6-1을 쓴다. 여기서는 designer 산출물 셋이 서로 어긋나지 않았는지만 본다(구현 화면은 developer의 시험·e2e 몫).
+ */
+const decisionAdult = await readText('../docs/design/mockups/decision-adult.html');
+const decisionInfant = await readText('../docs/design/mockups/decision-infant.html');
+const componentsHtml = await readText('../docs/design/mockups/components.html');
+describe('M7b 중대 결정 카드 계약 (designer 산출물 사이의 일치)', () => {
+  const unescape = (s: string) => s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  /** 시안 한 장의 상태 조각: 기본(#mock-root) 또는 <template id="state-…"> 안 */
+  const stateOf = (html: string, state: string | null): string => {
+    if (state === null) return html.slice(html.indexOf('id="mock-root"'), html.indexOf('<template id="state-'));
+    const at = html.indexOf(`<template id="state-${state}">`);
+    expect(at, `상태 ${state}`).toBeGreaterThan(0);
+    return html.slice(at, html.indexOf('</template>', at));
+  };
+  /** 인용 요약 글자(Glue 묶음 span을 벗긴 눈에 보이는 글자) — 구현 CitationBox처럼 요약도 Glue로 그린다(2026-10-19 후속) */
+  const stripTags = (s: string) => unescape(s.replace(/<[^>]+>/g, ''));
+  const citeTexts = (html: string) => [...html.matchAll(/<p class="cite__text" data-testid="cite-text">([\s\S]*?)<\/p>/g)].map((m) => stripTags(m[1]));
+  const citeHeads = (html: string) => [...html.matchAll(/<p class="cite__src" data-testid="cite-src"><span class="keep-phrase">([^<]*)<\/span> ([\s\S]*?)<\/p>/g)].map((m) => ({ head: unescape(m[1]), title: stripTags(m[2]) }));
+
+  it('copy.md 6절: 두 형태·접힌 띠·자동 모드 두 문장·종류 라벨·시대 머리말·출처 줄 규칙(기관 둘 쉼표 나열·자료 이름 쌍점)·h2 22px이 적혀 있다', () => {
+    expect(copyMd).toContain('## 6. M7b 중대 결정 카드');
+    for (const p of [
+      '「카드 접기」',
+      '「결정 다시 열기」',
+      '「결정 다시 열기 {제목}」',
+      '「다시 열 때까지 시간은 멈춥니다.」',
+      '「자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.」',
+      '「자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.」',
+      '「통계」',
+      '「연구」',
+      '「지금의 연구로는」',
+      '「지금 기준으로는」',
+      '「{누가}({연도}), {자료 이름}」',
+      '「{첫 저자 성} 외」',
+      '「{연도}년 열람」',
+      '22px(`--fs-xl`, 카드 제목)',
+      'aria-modal="true" aria-labelledby="dc-title"',
+      '「국가데이터처, 교육부(2026), 초중고사교육비조사: 초등 방과후·돌봄 교육 이용률(지표누리 저출생 통계지표)」', // 2026-10-19 후속: 기관 둘 쉼표 나열 + 자료 이름 줄표 → 쌍점(QM2-10)
+    ]) {
+      expect(copyMd, p).toContain(p);
+    }
+    // 콜론형 자동 모드 안내는 폐기 — 6절 본문의 화면 문구 칸에 없다(2절 M4 임시 행에만 「폐기」 표시로 남는다)
+    const section = copyMd.slice(copyMd.indexOf('## 6. M7b 중대 결정 카드'));
+    expect(section).not.toContain('「자동 모드: 잠시 뒤');
+    // 옛 규칙(기관을 가운뎃점 그대로 보이는 예)은 6-3에 없다
+    expect(section).not.toContain('「교육부·한국교육개발원」');
+  });
+
+  it('decision-adult.html: 기본 = 모달 시트(dialog + 바깥 inert, 인용 없음 → 빈 박스 0) / stat = 통계 인용 / collapsed·auto-collapsed = 접힌 띠(「결정 다시 열기 {제목}」) / auto = 인라인 카드(스크림·inert 없음, 자동 모드 켜짐)', () => {
+    const base = stateOf(decisionAdult, null);
+    expect(base).toContain('<div class="sheet decision decision--sheet" role="dialog" aria-modal="true" aria-labelledby="dc-title"');
+    for (const tag of ['<header class="dash-head" inert>', '<div class="toolbar" inert>', '<main class="dash" inert>', '<div class="page-end-space" inert>']) expect(base, tag).toContain(tag);
+    expect(base).not.toContain('class="cite"'); // 「같은 팀의 사람」은 인용 없음 — 요소 자체가 없다
+    expect(base).toContain('자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.');
+    expect(base).toContain('카드 접기 <span aria-hidden="true">▾</span>');
+    expect(base).toMatch(/<h2 id="dc-title" class="decision__title" tabindex="-1" style="--title-chars:\d+"/);
+    expect(base).toContain('<span class="decision__when"><span class="fit-pair"');
+    for (const s of ['stat', 'collapsed', 'auto', 'auto-collapsed']) expect(decisionAdult).toContain(`<template id="state-${s}">`);
+    const stat = stateOf(decisionAdult, 'stat');
+    expect(stat).toContain('data-citation="c-015"><p class="cite__kind">통계</p>');
+    expect(stat).toContain('<span class="keep-phrase">국가데이터처(2026),</span>');
+    for (const s of ['collapsed', 'auto-collapsed']) {
+      const fold = stateOf(decisionAdult, s);
+      expect(fold, s).toContain('<section class="card fold" aria-labelledby="dc-fold-title"');
+      expect(fold, s).toContain('<span class="fold__note">다시 열 때까지 시간은 멈춥니다.</span>');
+      expect(fold, s).toMatch(/<button class="btn btn--secondary btn--sm fold__open" type="button" id="dc-fold-open" aria-labelledby="dc-fold-open dc-fold-title"[^>]*>결정 다시 열기<\/button>/);
+      expect(fold, s).not.toContain('class="overlay"');
+      expect(fold, s).not.toContain(' inert');
+    }
+    expect(stateOf(decisionAdult, 'collapsed')).toContain('<span>자동 모드 꺼짐</span>');
+    const auto = stateOf(decisionAdult, 'auto');
+    expect(auto).toContain('<section class="card decision decision--inline" aria-labelledby="dc-title"');
+    expect(auto).toContain('aria-pressed="true"><svg class="icon icon--sm" aria-hidden="true" focusable="false"><use href="#i-auto"/></svg><span>자동 모드 켜짐</span>');
+    expect(auto).toContain('자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.');
+    expect(auto).not.toContain('class="overlay"');
+    expect(auto).not.toContain(' inert');
+    expect(auto).not.toContain('자동 모드:'); // 콜론형 없음
+    // 모든 상태에서 「다음 결정으로」는 지속 비활성, 일시정지 버튼은 「일시정지」(선택지 대기 ≠ 일시정지, D-60)
+    for (const s of [null, 'stat', 'collapsed', 'auto', 'auto-collapsed']) {
+      const h = stateOf(decisionAdult, s);
+      expect(h, `${s}: 다음 결정으로`).toMatch(/aria-disabled="true" data-unavailable="true"><svg[^>]*><use href="#i-next"\/><\/svg><span>다음 결정으로<\/span>/);
+      expect(h, `${s}: 일시정지`).toContain('<span>일시정지</span>');
+      expect(h, `${s}: 다시 진행 없음`).not.toContain('<span>다시 진행</span>');
+      expect(h, `${s}: 기록 목록은 포커스 영역`).toContain('<div class="log__list" role="region" aria-label="인생 기록" tabindex="0"><ol class="log__rows"');
+    }
+  });
+
+  it('인용 박스: 종류 라벨 → 요약(머리말 포함 ≤ 100자, Glue) → 출처 한 줄(「누가(연도),」 한 묶음 + 자료 이름) — 카드는 이벤트 JSON의 실제 연결(「동생이 생겼다」 c-033 「Teti 외」 · 「유치원 고르기」 c-061 기관 둘 쉼표 나열·쌍점), 링크·DOI·URL 0, 시대 머리말 둘은 components.html#cite에', () => {
+    expect(decisionInfant).toContain('data-citation="c-033"><p class="cite__kind">연구</p>');
+    expect(decisionInfant).toContain('<span class="keep-phrase">Teti 외(1996),</span> And baby makes four:');
+    // 2026-10-19 후속(developer 반영 뒤): 통계의 기관 둘은 쉼표 나열, 자료 이름의 「 — 」는 「: 」 — 구현 splitSourceLine 출력 그대로
+    expect(stateOf(decisionInfant, 'kinder')).toContain('data-citation="c-061"><p class="cite__kind">통계</p>');
+    expect(stateOf(decisionInfant, 'kinder')).toContain('<span class="keep-phrase">교육부, 한국교육개발원(2026),</span>');
+    expect(citeHeads(stateOf(decisionInfant, 'kinder'))[0]?.title).toBe('교육통계연보: 유아교육 규모(지표누리 e-나라지표)');
+    expect(componentsHtml).toContain('<section id="cite">');
+    expect(citeTexts(componentsHtml).some((t) => t.startsWith('지금의 연구로는 '))).toBe(true);
+    expect(citeTexts(componentsHtml).some((t) => t.startsWith('지금 기준으로는 '))).toBe(true);
+    // 후속 2: c-063 표본은 developer r2 문장(비교 절 삭제, 가운뎃점 사슬 「방과후학교·돌봄(늘봄학교)에」 → 「방과후학교와 돌봄(늘봄학교)에」) — 생성기가 citations.json을 읽으므로 시안이 옛 문장을 들고 있으면 재생성이 빠진 것
+    expect(citeTexts(componentsHtml)).toContain('2025년 초등학생의 52.2%가 방과후학교와 돌봄(늘봄학교)에 참여했습니다.');
+    for (const html of [componentsHtml, decisionInfant, decisionAdult]) for (const t of citeTexts(html)) expect(t, '요약의 가운뎃점 사슬(r2 전 c-063 꼴)').not.toMatch(/방과후학교·돌봄|권고사직·명예퇴직/);
+    expect(componentsHtml).toContain('<span class="keep-phrase">Volling(2012),</span> Family transitions following the birth of a sibling');
+    expect(componentsHtml).toContain('<span class="keep-phrase">Shonkoff·Garner(2012),</span>');
+    expect(componentsHtml).toContain('<span class="keep-phrase">세계보건기구(WHO) (2019),</span>');
+    expect(componentsHtml).toContain('<span class="keep-phrase">국가데이터처, 교육부(2026),</span>');
+    expect(componentsHtml).toMatch(/<span class="keep-phrase">질병관리청\(\d{4}년 열람\),<\/span>/);
+    let boxes = 0;
+    for (const html of [decisionAdult, decisionInfant, componentsHtml]) {
+      for (const t of citeTexts(html)) {
+        boxes++;
+        expect(t.length, `표시 문자열 ≤ 100자: ${t}`).toBeLessThanOrEqual(100);
+      }
+      for (const { head, title } of citeHeads(html)) {
+        // 출처 줄의 앞머리에 「·」는 연구 두 저자 「A·B」뿐(통계 기관 사이는 쉼표), 자료 이름에 띄어 쓴 줄표 없음(통계는 쌍점 — 연구 원제의 줄표는 카드 시안에 없다)
+        if (head.includes('·')) expect(head).toMatch(/^[A-Z][A-Za-z-]+·[A-Z][A-Za-z-]+\(/);
+        expect(title, head).not.toContain(' — ');
+      }
+      for (const box of html.match(/<div class="cite"[\s\S]*?<\/div>/g) ?? []) {
+        expect(box).not.toMatch(/<a |https?:|doi\.org|pubmed|10\.\d{4}\//);
+        expect(box).toMatch(/^<div class="cite" data-testid="cite" data-citation="c-\d{3}"><p class="cite__kind">(통계|연구)<\/p><p class="cite__text" data-testid="cite-text">/);
+      }
+    }
+    expect(boxes).toBeGreaterThanOrEqual(9); // 성인 2(stat·auto) + 영유아 3(기본·kinder·auto) + 컴포넌트 5
+    // 머리말 포함 경계 표본: c-032 지난 세상은 96자(100자 근접) — 길이 시험이 공허하지 않다
+    expect(Math.max(...citeTexts(componentsHtml).map((t) => t.length))).toBeGreaterThanOrEqual(90);
+  });
+
+  it('ds.css 「중대 결정 카드」 블록: 제목 상한(cqi)·접힌 띠·종류 라벨·불투명도 없는 출처 줄·가운데 열 contents·order −1·강제 색상 쌍·시트 scroll-padding·log__jump 낱말 보호', () => {
+    const css = dsCss.replace(/\/\*[^]*?\*\//g, '');
+    expect(css).toContain('.decision__title { font-size: max(var(--fs-lg), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }');
+    expect(css).toMatch(/\.decision__body \{ container-type: inline-size; \}/);
+    expect(css).toMatch(/\.fold \{[^}]*border-left: 5px solid var\(--c-brand\)/);
+    expect(css).toMatch(/\.fold \{[^}]*flex-wrap: wrap/);
+    expect(css).toMatch(/\.cite__kind \{[^}]*font-weight: var\(--fw-bold\)/);
+    expect(css).toMatch(/\.cite__src \{ font-size: var\(--fs-xs\); line-height: var\(--lh-snug\); \}/);
+    // 후속 2(D-65): 인용 박스 안쪽 여백은 카드 안 면 상자(.log__pin · .log__row--note)와 같은 사방 sp-3 — 글자 200% × 폭 320 인라인에서 9글자 기관 이름(216px)이 한 줄에 든다(안쪽 223px). 막대 5px은 그대로
+    expect(css).toMatch(/\.cite \{ padding: var\(--sp-3\); border-left: 5px solid var\(--c-accent\)/);
+    expect(css).toMatch(/\.log__pin \{ padding: var\(--sp-3\);/);
+    expect(css).toMatch(/\.log__row--note \{[^}]*padding: var\(--sp-3\); border-left: 5px solid var\(--c-accent\)/);
+    expect(css).not.toMatch(/\.cite__src \{[^}]*opacity/);
+    expect(css).toContain('.col--center { display: contents; }');
+    expect(css).toContain('.decision--inline, .fold { order: -1; }');
+    expect(css).toContain('.decision--inline, .fold { border-color: CanvasText; }');
+    expect(css).toMatch(/\.sheet \{[^}]*max-height: 94dvh; overflow: auto; scroll-padding: var\(--sp-3\)/);
+    expect(css).toMatch(/\.log__jump \{[^}]*overflow-wrap: normal/);
+    expect(css).toMatch(/\.decision__hint, \.decision__auto \{ font-size: var\(--fs-sm\); color: var\(--c-text-2\); \}/);
+    for (const sel of ['.decision__title', '.fold', '.cite__kind', '.cite__src', '.decision--inline']) {
+      const m = new RegExp(`(?:^|\\}|\\n)\\s*${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`).exec(css);
+      expect(m, sel).not.toBeNull();
+      expect(m![1], `${sel}: 색 값 직접 적지 않음`).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    }
+  });
+
+  it('생성기·촬영기: 카드 글자는 실제 이벤트 JSON에서, 인용은 구현 함수(citationFor·citationText·splitSourceLine)와 DASH_TEXT로 읽고(손글 카드·문구 흉내 0 — R-191 되돌림), 제목에 titleCharsFor, 샷 목록에 접힌 띠·인라인·인용 표본이 있다', async () => {
+    const generator = await readText('../scripts/design/buildMockups.mjs');
+    for (const name of ["eventOf('infant-new-sibling')", "eventOf('infant-kindergarten')", "eventOf('youth-workplace-romance')", "eventOf('youth-housing')", 'src/data/citations.json', 'titleCharsFor(ev.title)', 'html(ImpactHint', "import { citationFor, citationText, splitSourceLine } from '../../src/core/citations.ts';", 'citationFor(ev, era, year)', 'DASH_TEXT.citeKindLabel[view.kind]', 'T.autoNoteOn : T.autoNoteOff', 'DASH_TEXT.reopenDecision']) {
+      expect(generator, name).toContain(name);
+    }
+    // developer 1·2단계 반영 뒤 지운 흉내 블록(문구 상수·출처 줄·머리말)은 다시 생기지 않는다
+    expect(generator).not.toMatch(/\bM7B_TEXT\b|function formatSourceLine|function citeText|function sourceWho|function authorSurnames|citationId:/);
+    expect(generator).not.toContain('마음이 가는 사람이 생겼습니다'); // M1의 손글 카드 삭제
+    for (const html of [decisionAdult, decisionInfant]) expect(html).not.toContain('(시안용 문구)'); // 자리표시 인용 0(M7c note.html은 아직 자리표시)
+    const shooter = await readText('../scripts/design/shootMockups.mjs');
+    for (const name of ["'decision-infant'", "'decision-infant-kinder'", "'decision-infant-auto'", "'decision-adult-stat'", "'decision-collapsed'", "'decision-auto'", "'decision-auto-collapsed'", "'components-cite'"]) expect(shooter, name).toContain(name);
+    expect(shooter).not.toMatch(/decision-infant-long|auto-long/);
+  });
+});

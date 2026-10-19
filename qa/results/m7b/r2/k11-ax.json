@@ -1,0 +1,1694 @@
+{
+ "sibling-past@360x100": [
+  {
+   "role": "dialog",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "중대 결정",
+   "lang": "ko",
+   "tid": "choice-panel",
+   "cls": "decision__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "1959년",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": "3세",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "button",
+   "name": "카드 접기",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "카드 접기",
+   "lang": "ko",
+   "tid": "decision-fold-btn",
+   "cls": "btn btn--ghost btn--sm decision__fold"
+  },
+  {
+   "role": "heading",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생이 생겼다",
+   "lang": "ko",
+   "tid": "choice-title",
+   "cls": "decision__title"
+  },
+  {
+   "role": "StaticText",
+   "name": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
+   "lang": "ko",
+   "tid": "choice-text",
+   "cls": "decision__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "연구",
+   "lang": "ko",
+   "tid": "cite",
+   "cls": "cite__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "지금의 연구로는 194가구 표본에서 첫째의 어머니에 대한 애착 안정성은 동생 출생 뒤 ",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "낮아졌고(",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "24개",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "월",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": " 미만은 2~",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "5세",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "보다 폭이 작음), 부부 화목 등과 연관이 있었습니다.",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "Teti",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": " 외(1996),",
+   "lang": "ko",
+   "tid": "cite-src",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "And baby makes four: predictors of attachment security among preschool-age firstborns during the transition to siblinghood",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "button",
+   "name": "동생을 예뻐하며 돌본다 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생을 예뻐하며 돌본다",
+   "lang": "ko",
+   "tid": "choice-help",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "서운해서 울며 어른에게 매달린다 관계가 조금 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "서운해서 울며 어른에게 매달린다",
+   "lang": "ko",
+   "tid": "choice-sulk",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "지식이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "일부러 장난을 쳐서 눈길을 끈다 관계가 조금 늘어납니다. 행복이 조금 줄어듭니다. 건강이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "일부러 장난을 쳐서 눈길을 끈다",
+   "lang": "ko",
+   "tid": "choice-notice",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "건강이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "선택지 아래 글씨는 이 선택만으로 김경자에게 생기는 변화입니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "lang": "ko",
+   "tid": "auto-note",
+   "cls": "decision__auto"
+  }
+ ],
+ "sibling-present@360x100": [
+  {
+   "role": "dialog",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "중대 결정",
+   "lang": "ko",
+   "tid": "choice-panel",
+   "cls": "decision__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "2028년",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": "2세",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "button",
+   "name": "카드 접기",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "카드 접기",
+   "lang": "ko",
+   "tid": "decision-fold-btn",
+   "cls": "btn btn--ghost btn--sm decision__fold"
+  },
+  {
+   "role": "heading",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생이 생겼다",
+   "lang": "ko",
+   "tid": "choice-title",
+   "cls": "decision__title"
+  },
+  {
+   "role": "StaticText",
+   "name": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
+   "lang": "ko",
+   "tid": "choice-text",
+   "cls": "decision__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "연구",
+   "lang": "ko",
+   "tid": "cite",
+   "cls": "cite__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "194가구 표본에서 첫째의 어머니에 대한 애착 안정성은 동생 출생 뒤 ",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "낮아졌고(",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "24개",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "월",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": " 미만은 2~",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "5세",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "보다 폭이 작음), 부부 화목 등과 연관이 있었습니다.",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "Teti",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": " 외(1996),",
+   "lang": "ko",
+   "tid": "cite-src",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "And baby makes four: predictors of attachment security among preschool-age firstborns during the transition to siblinghood",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "button",
+   "name": "동생을 예뻐하며 돌본다 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생을 예뻐하며 돌본다",
+   "lang": "ko",
+   "tid": "choice-help",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "서운해서 울며 어른에게 매달린다 관계가 조금 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "서운해서 울며 어른에게 매달린다",
+   "lang": "ko",
+   "tid": "choice-sulk",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "지식이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "일부러 장난을 쳐서 눈길을 끈다 관계가 조금 늘어납니다. 행복이 조금 줄어듭니다. 건강이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "일부러 장난을 쳐서 눈길을 끈다",
+   "lang": "ko",
+   "tid": "choice-notice",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "건강이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "선택지 아래 글씨는 이 선택만으로 박도현에게 생기는 변화입니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "lang": "ko",
+   "tid": "auto-note",
+   "cls": "decision__auto"
+  }
+ ],
+ "sibling-future@360x100": [
+  {
+   "role": "dialog",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "중대 결정",
+   "lang": "ko",
+   "tid": "choice-panel",
+   "cls": "decision__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "2048년",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": "2세",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "button",
+   "name": "카드 접기",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "카드 접기",
+   "lang": "ko",
+   "tid": "decision-fold-btn",
+   "cls": "btn btn--ghost btn--sm decision__fold"
+  },
+  {
+   "role": "heading",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생이 생겼다",
+   "lang": "ko",
+   "tid": "choice-title",
+   "cls": "decision__title"
+  },
+  {
+   "role": "StaticText",
+   "name": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
+   "lang": "ko",
+   "tid": "choice-text",
+   "cls": "decision__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "연구",
+   "lang": "ko",
+   "tid": "cite",
+   "cls": "cite__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "지금 기준으로는 194가구 표본에서 첫째의 어머니에 대한 애착 안정성은 동생 출생 뒤 ",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "낮아졌고(",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "24개",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "월",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": " 미만은 2~",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "5세",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "보다 폭이 작음), 부부 화목 등과 연관이 있었습니다.",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "Teti",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": " 외(1996),",
+   "lang": "ko",
+   "tid": "cite-src",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "And baby makes four: predictors of attachment security among preschool-age firstborns during the transition to siblinghood",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "button",
+   "name": "동생을 예뻐하며 돌본다 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생을 예뻐하며 돌본다",
+   "lang": "ko",
+   "tid": "choice-help",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "서운해서 울며 어른에게 매달린다 관계가 조금 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "서운해서 울며 어른에게 매달린다",
+   "lang": "ko",
+   "tid": "choice-sulk",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "지식이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "일부러 장난을 쳐서 눈길을 끈다 관계가 조금 늘어납니다. 행복이 조금 줄어듭니다. 건강이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "일부러 장난을 쳐서 눈길을 끈다",
+   "lang": "ko",
+   "tid": "choice-notice",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "건강이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "선택지 아래 글씨는 이 선택만으로 박시우에게 생기는 변화입니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "lang": "ko",
+   "tid": "auto-note",
+   "cls": "decision__auto"
+  }
+ ],
+ "sibling-past@320x200": [
+  {
+   "role": "dialog",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "중대 결정",
+   "lang": "ko",
+   "tid": "choice-panel",
+   "cls": "decision__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "1959년",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": "3세",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "button",
+   "name": "카드 접기",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "카드 접기",
+   "lang": "ko",
+   "tid": "decision-fold-btn",
+   "cls": "btn btn--ghost btn--sm decision__fold"
+  },
+  {
+   "role": "heading",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생이 생겼다",
+   "lang": "ko",
+   "tid": "choice-title",
+   "cls": "decision__title"
+  },
+  {
+   "role": "StaticText",
+   "name": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
+   "lang": "ko",
+   "tid": "choice-text",
+   "cls": "decision__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "연구",
+   "lang": "ko",
+   "tid": "cite",
+   "cls": "cite__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "지금의 연구로는 194가구 표본에서 첫째의 어머니에 대한 애착 안정성은 동생 출생 뒤 ",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "낮아졌고(",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "24개",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "월",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": " 미만은 2~",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "5세",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "보다 폭이 작음), 부부 화목 등과 연관이 있었습니다.",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "Teti",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": " 외(1996),",
+   "lang": "ko",
+   "tid": "cite-src",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "And baby makes four: predictors of attachment security among preschool-age firstborns during the transition to siblinghood",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "button",
+   "name": "동생을 예뻐하며 돌본다 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생을 예뻐하며 돌본다",
+   "lang": "ko",
+   "tid": "choice-help",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "서운해서 울며 어른에게 매달린다 관계가 조금 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "서운해서 울며 어른에게 매달린다",
+   "lang": "ko",
+   "tid": "choice-sulk",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "지식이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "일부러 장난을 쳐서 눈길을 끈다 관계가 조금 늘어납니다. 행복이 조금 줄어듭니다. 건강이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "일부러 장난을 쳐서 눈길을 끈다",
+   "lang": "ko",
+   "tid": "choice-notice",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "건강이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "선택지 아래 글씨는 이 선택만으로 김경자에게 생기는 변화입니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "lang": "ko",
+   "tid": "auto-note",
+   "cls": "decision__auto"
+  }
+ ],
+ "sibling-past@320x300": [
+  {
+   "role": "dialog",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "중대 결정",
+   "lang": "ko",
+   "tid": "choice-panel",
+   "cls": "decision__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "1959년",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": "3세",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "button",
+   "name": "카드 접기",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "카드 접기",
+   "lang": "ko",
+   "tid": "decision-fold-btn",
+   "cls": "btn btn--ghost btn--sm decision__fold"
+  },
+  {
+   "role": "heading",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생이 생겼다",
+   "lang": "ko",
+   "tid": "choice-title",
+   "cls": "decision__title"
+  },
+  {
+   "role": "StaticText",
+   "name": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
+   "lang": "ko",
+   "tid": "choice-text",
+   "cls": "decision__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "연구",
+   "lang": "ko",
+   "tid": "cite",
+   "cls": "cite__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "지금의 연구로는 194가구 표본에서 첫째의 어머니에 대한 애착 안정성은 동생 출생 뒤 ",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "낮아졌고(",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "24개",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "월",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": " 미만은 2~",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "5세",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "보다 폭이 작음), 부부 화목 등과 연관이 있었습니다.",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "Teti",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": " 외(1996),",
+   "lang": "ko",
+   "tid": "cite-src",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "And baby makes four: predictors of attachment security among preschool-age firstborns during the transition to siblinghood",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "button",
+   "name": "동생을 예뻐하며 돌본다 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생을 예뻐하며 돌본다",
+   "lang": "ko",
+   "tid": "choice-help",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "서운해서 울며 어른에게 매달린다 관계가 조금 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "서운해서 울며 어른에게 매달린다",
+   "lang": "ko",
+   "tid": "choice-sulk",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "지식이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "일부러 장난을 쳐서 눈길을 끈다 관계가 조금 늘어납니다. 행복이 조금 줄어듭니다. 건강이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "일부러 장난을 쳐서 눈길을 끈다",
+   "lang": "ko",
+   "tid": "choice-notice",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "건강이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "선택지 아래 글씨는 이 선택만으로 김경자에게 생기는 변화입니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "lang": "ko",
+   "tid": "auto-note",
+   "cls": "decision__auto"
+  }
+ ],
+ "sibling-future@240x200": [
+  {
+   "role": "dialog",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "중대 결정",
+   "lang": "ko",
+   "tid": "choice-panel",
+   "cls": "decision__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "2048년",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "fit-pair"
+  },
+  {
+   "role": "StaticText",
+   "name": "2세",
+   "lang": "ko",
+   "tid": "decision-when",
+   "cls": "nowrap"
+  },
+  {
+   "role": "button",
+   "name": "카드 접기",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "카드 접기",
+   "lang": "ko",
+   "tid": "decision-fold-btn",
+   "cls": "btn btn--ghost btn--sm decision__fold"
+  },
+  {
+   "role": "heading",
+   "name": "동생이 생겼다",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생이 생겼다",
+   "lang": "ko",
+   "tid": "choice-title",
+   "cls": "decision__title"
+  },
+  {
+   "role": "StaticText",
+   "name": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
+   "lang": "ko",
+   "tid": "choice-text",
+   "cls": "decision__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "연구",
+   "lang": "ko",
+   "tid": "cite",
+   "cls": "cite__kind"
+  },
+  {
+   "role": "StaticText",
+   "name": "지금 기준으로는 194가구 표본에서 첫째의 어머니에 대한 애착 안정성은 동생 출생 뒤 ",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "낮아졌고(",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "24개",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "월",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": " 미만은 2~",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "5세",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "nowrap"
+  },
+  {
+   "role": "StaticText",
+   "name": "보다 폭이 작음), 부부 화목 등과 연관이 있었습니다.",
+   "lang": "ko",
+   "tid": "cite-text",
+   "cls": "cite__text"
+  },
+  {
+   "role": "StaticText",
+   "name": "Teti",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": " 외(1996),",
+   "lang": "ko",
+   "tid": "cite-src",
+   "cls": "keep-phrase"
+  },
+  {
+   "role": "StaticText",
+   "name": "And baby makes four: predictors of attachment security among preschool-age firstborns during the transition to siblinghood",
+   "lang": "en",
+   "tid": "cite-src",
+   "cls": null
+  },
+  {
+   "role": "button",
+   "name": "동생을 예뻐하며 돌본다 관계가 늘어납니다. 행복이 조금 줄어듭니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "동생을 예뻐하며 돌본다",
+   "lang": "ko",
+   "tid": "choice-help",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "서운해서 울며 어른에게 매달린다 관계가 조금 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "서운해서 울며 어른에게 매달린다",
+   "lang": "ko",
+   "tid": "choice-sulk",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "지식이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "button",
+   "name": "일부러 장난을 쳐서 눈길을 끈다 관계가 조금 늘어납니다. 행복이 조금 줄어듭니다. 건강이 조금 늘어납니다.",
+   "lang": null,
+   "tid": null,
+   "cls": null
+  },
+  {
+   "role": "StaticText",
+   "name": "일부러 장난을 쳐서 눈길을 끈다",
+   "lang": "ko",
+   "tid": "choice-notice",
+   "cls": "choice__label"
+  },
+  {
+   "role": "StaticText",
+   "name": "관계가 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "행복이 조금 줄어듭니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "건강이 조금 늘어납니다.",
+   "lang": "ko",
+   "tid": "impact",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "선택지 아래 글씨는 이 선택만으로 박시우에게 생기는 변화입니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": " ",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "decision__hint"
+  },
+  {
+   "role": "StaticText",
+   "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.",
+   "lang": "ko",
+   "tid": "choice-hint",
+   "cls": "sr-only"
+  },
+  {
+   "role": "StaticText",
+   "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.",
+   "lang": "ko",
+   "tid": "auto-note",
+   "cls": "decision__auto"
+  }
+ ]
+}

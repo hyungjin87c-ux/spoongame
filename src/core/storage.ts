@@ -96,12 +96,21 @@ function validStats(v: unknown): v is Stats {
   return isObj(v) && Object.keys(v).length === STAT_KEYS.length && STAT_KEYS.every((k) => isValidStat(v[k]));
 }
 
+/**
+ * 화면에 그대로 나가는 글(이름·연표 글·사망 원인)에 보이지 않는 방향·너비 제어 문자가 들어 있는가 (QA-003-M7b A12b): 양방향 제어(U+202A~202E 임베딩·덮어쓰기, U+2066~2069 격리, U+200E·200F 방향 표시)는 글자 순서를 뒤집고,
+ * 제로폭(U+200B~200D, U+FEFF)은 이름을 비어 보이게 하거나 다른 이름과 구별되지 않게 한다. 게임이 만든 글에는 없으므로(이름은 이름표에서, 문장은 이벤트 데이터에서 온다) 있으면 저장을 직접 고친 손상으로 본다 — 첫 화면 정리.
+ */
+const HIDDEN_CONTROL = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/;
+export const hasHiddenControl = (text: string): boolean => HIDDEN_CONTROL.test(text);
+const cleanText = (v: unknown): boolean => typeof v === 'string' && !hasHiddenControl(v);
+
 function validCharacter(v: unknown): v is Character {
   return (
     isObj(v) &&
     typeof v.name === 'string' &&
     v.name.length > 0 &&
     v.name.length <= 20 &&
+    !hasHiddenControl(v.name) &&
     isOneOf(GENDERS, v.gender) &&
     isInt(v.birthYear) &&
     v.birthYear >= 1800 &&
@@ -117,7 +126,7 @@ function validCharacter(v: unknown): v is Character {
 /** 어느 시대에서든 가능한 가장 큰 나이 (시대를 알기 전의 상한) */
 const ABSOLUTE_MAX_AGE = Math.max(...ERAS.map((e) => ERA_CONFIG[e].life.maxAge));
 
-const optString = (v: unknown, max: number): boolean => v === undefined || (typeof v === 'string' && v.length <= max);
+const optString = (v: unknown, max: number): boolean => v === undefined || (typeof v === 'string' && v.length <= max && !hasHiddenControl(v));
 
 function validHistoryEntry(h: unknown, maxAge: number): boolean {
   return (
@@ -126,8 +135,8 @@ function validHistoryEntry(h: unknown, maxAge: number): boolean {
     h.age >= 0 &&
     h.age <= maxAge &&
     isOneOf(HISTORY_KINDS, h.kind) &&
-    typeof h.text === 'string' &&
-    h.text.length <= HISTORY_LIMITS.maxTextLength &&
+    cleanText(h.text) &&
+    (h.text as string).length <= HISTORY_LIMITS.maxTextLength &&
     optString(h.title, HISTORY_LIMITS.maxTitleLength) &&
     optString(h.choice, HISTORY_LIMITS.maxChoiceLength) &&
     optString(h.eventId, 48)
@@ -209,9 +218,9 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
     (v.death === null ||
       (isObj(v.death) &&
         isInt(v.death.age) &&
-        typeof v.death.cause === 'string' &&
-        v.death.cause.length > 0 &&
-        v.death.cause.length <= STATE_LIMITS.maxCauseLength)) &&
+        cleanText(v.death.cause) &&
+        (v.death.cause as string).length > 0 &&
+        (v.death.cause as string).length <= STATE_LIMITS.maxCauseLength)) &&
     isUint32(v.seed) &&
     isUint32(v.rngState);
   if (!basic) return 'invalid';

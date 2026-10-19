@@ -156,7 +156,7 @@ describe('선택지 버튼 이름과 안내 한 줄 (copy.md 4-3·4-4)', () => {
     // 색의 뜻을 설명하는 셋째 문장은 없다 (r2 마스터 결정 3)
     expect(Object.keys(IMPACT_HINT)).toEqual(['lead', 'symbols', 'symbolsSr']);
     const html = renderToStaticMarkup(<ImpactHint name="이서연" />);
-    expect(html).toContain('class="choice-panel__hint"');
+    expect(html).toContain('class="decision__hint"');
     expect(html).toMatch(/<span aria-hidden="true">▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다\.<\/span>/);
     expect(html).toMatch(/<span class="sr-only">위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다\.<\/span>/);
   });

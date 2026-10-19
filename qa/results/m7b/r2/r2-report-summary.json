@@ -1,0 +1,149 @@
+{
+ "lines": {
+  "rows": 712,
+  "errors": [],
+  "hard": [
+   "c-049 present/school-academy-night 320@200-inline: 요약 마지막 줄 고아 「다.」",
+   "c-049 future/school-academy-night 320@200-inline: 요약 마지막 줄 고아 「다.」"
+  ],
+  "soft": [
+   "c-092 present/middle-home-loan 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-092 present/middle-home-loan 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-092 present/middle-home-loan 360@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-092 future/middle-home-loan 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-092 future/middle-home-loan 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-092 future/middle-home-loan 360@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-030 present/middle-retirement-prep 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-030 present/middle-retirement-prep 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-030 present/middle-retirement-prep 360@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-030 future/middle-retirement-prep 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-030 future/middle-retirement-prep 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-030 future/middle-retirement-prep 360@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-006 present/school-tutoring 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-006 present/school-tutoring 320@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-006 present/school-tutoring 360@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-006 future/school-tutoring 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-006 future/school-tutoring 320@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-006 future/school-tutoring 360@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-093 present/senior-estate 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-093 present/senior-estate 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-093 present/senior-estate 360@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-093 future/senior-estate 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-093 future/senior-estate 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-093 future/senior-estate 360@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-003 present/youth-child 360@150-sheet: 출처 마지막 줄 고아 「통계」",
+   "c-003 future/youth-child 360@150-sheet: 출처 마지막 줄 고아 「통계」",
+   "c-004 present/youth-child-again 360@150-sheet: 출처 마지막 줄 고아 「통계」",
+   "c-004 future/youth-child-again 360@150-sheet: 출처 마지막 줄 고아 「통계」",
+   "c-015 present/youth-housing 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-015 present/youth-housing 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-015 present/youth-housing 360@200-sheet: 출처 마지막 줄 고아 「결과」",
+   "c-015 future/youth-housing 320@150-inline: 출처 마지막 줄 고아 「결과」",
+   "c-015 future/youth-housing 320@200-inline: 출처 마지막 줄 고아 「결과」",
+   "c-015 future/youth-housing 360@200-sheet: 출처 마지막 줄 고아 「결과」"
+  ],
+  "broken": [],
+  "sep": [],
+  "overflow": [],
+  "unavoidable": {
+   "320@200-inline": {
+    "5.9시간이었습니다(233>223)": 2,
+    "국민노후보장패널조사(280>223)": 2,
+    "국민노후보장패널조사(240>223)": 2,
+    "노인실태조사에서(224>223)": 2,
+    "디지털정보격차실태조사(264>223)": 2
+   },
+   "320@200-sheet": {
+    "국민노후보장패널조사(280>257)": 4,
+    "디지털정보격차실태조사(264>257)": 4
+   },
+   "360@200-inline": {
+    "국민노후보장패널조사(280>263)": 2,
+    "디지털정보격차실태조사(264>263)": 2
+   }
+  },
+  "cells": 89,
+  "cites": 48,
+  "cfgs": {
+   "320@150-inline": {
+    "rows": 89,
+    "lines": 823,
+    "words": 0
+   },
+   "320@200-inline": {
+    "rows": 89,
+    "lines": 1111,
+    "words": 0
+   },
+   "320@150-sheet": {
+    "rows": 89,
+    "lines": 710,
+    "words": 0
+   },
+   "360@150-sheet": {
+    "rows": 89,
+    "lines": 617,
+    "words": 0
+   },
+   "320@200-sheet": {
+    "rows": 89,
+    "lines": 952,
+    "words": 0
+   },
+   "360@150-inline": {
+    "rows": 89,
+    "lines": 696,
+    "words": 0
+   },
+   "360@200-inline": {
+    "rows": 89,
+    "lines": 941,
+    "words": 0
+   },
+   "360@200-sheet": {
+    "rows": 89,
+    "lines": 826,
+    "words": 0
+   }
+  },
+  "widths": {
+   "320@150-inline": "223",
+   "320@200-inline": "223",
+   "320@150-sheet": "257",
+   "360@150-sheet": "297",
+   "320@200-sheet": "257",
+   "360@150-inline": "263",
+   "360@200-inline": "263",
+   "360@200-sheet": "297"
+  }
+ },
+ "sweep": {
+  "rows": 486,
+  "errors": [],
+  "cards": 90,
+  "cells": 243,
+  "over": [],
+  "clipped": [],
+  "broken": [],
+  "sep": [],
+  "unreach": [],
+  "noCue": [],
+  "scrollNeeded": {
+   "360x740@100": 73,
+   "320x568@200": 243
+  },
+  "cellsWithCite": 88,
+  "docOverflow": [],
+  "unavoidable": {
+   "320x568@200": [
+    "국민노후보장패널조사[280>257]",
+    "디지털정보격차실태조사[264>257]"
+   ]
+  },
+  "firstScreenCut": [],
+  "noCueN": {
+   "320x568@200": 39,
+   "360x740@100": 20
+  }
+ }
+}

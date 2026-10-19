@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { auditFocus, sampleFocus, summarize } from './focusObscured';
 import { M4_SCREENS, headingOf, isDash, openM4Screen, readyButton, type M4Screen } from './m4States';
 import { settleDash } from './m4Fixed';
+import { injectSave, startPageHidden } from './helpers';
+import { findImpactState } from './m5States';
 import { setRootFontPercent } from './textResize';
 import { STANDARD_VIEWPORTS } from './viewports';
 
@@ -103,7 +105,7 @@ test('화면 전환 직후 제목 포커스: 출생신고 → 살아가기 → �
   }
 });
 
-test('선택지 카드가 뜨면 포커스가 선택지 제목으로 가고, 그 카드의 위쪽(제목·첫 선택지)이 고정 헤더·진행 줄에 가려지지 않는다 (CM10 예외 ② revealCard) — 모바일 4가지 높이', async ({ page }, testInfo) => {
+test('선택지 카드가 뜨면 포커스가 선택지 제목으로 가고(수동 모드·모달 시트 — 시트 안에 제목·첫 선택지가 보인다. 자동 모드의 인라인 카드는 인생 화면 제목에 머문 채 카드 제목이 고정 헤더·진행 줄 사이에 보인다), D-52·D-59 (CM10 예외 ② revealCard) — 모바일 4가지 높이', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   test.setTimeout(120_000);
   for (const vp of [
@@ -113,20 +115,36 @@ test('선택지 카드가 뜨면 포커스가 선택지 제목으로 가고, 그
     { width: 320, height: 568 },
   ]) {
     await page.setViewportSize(vp);
-    await openM4Screen(page, 'dash-decision');
+    // 수동 모드: 모달 시트. 포커스는 선택지 제목으로 가고(D-52), 시트는 화면 안에 있으며 제목·첫 선택지가 시트 안에서 보인다 (시트 뒤의 머리·진행 줄은 inert + 스크림)
+    await startPageHidden(page);
+    await page.goto('/');
+    await injectSave(page, await findImpactState(page, 'adult'), '/', { speed: 1, autoMode: false });
+    await expect(page.getByTestId('choice-panel')).toBeVisible();
     await expect(page.getByTestId('choice-title')).toBeFocused();
     const stop = await sampleFocus(page);
-    expect(stop.judgement.violations, `${vp.width}x${vp.height} 선택지 제목 포커스`).toEqual([]);
-    const geometry = await page.evaluate(() => {
+    expect(stop.judgement.violations, `${vp.width}x${vp.height} 시트 선택지 제목 포커스`).toEqual([]);
+    const sheet = await page.evaluate(() => {
+      const panel = document.querySelector('[data-testid="choice-panel"]')!.getBoundingClientRect();
+      const first = document.querySelector('[data-testid="choice-panel"] button.choice')!.getBoundingClientRect();
+      const title = document.querySelector('[data-testid="choice-title"]')!.getBoundingClientRect();
+      return { panelTop: panel.top, panelBottom: panel.bottom, titleTop: title.top, firstTop: first.top, firstBottom: first.bottom, vh: window.innerHeight };
+    });
+    expect(sheet.panelTop, `${vp.height}: 시트가 화면 위 안`).toBeGreaterThanOrEqual(0);
+    expect(sheet.panelBottom, `${vp.height}: 시트가 화면 아래 안`).toBeLessThanOrEqual(sheet.vh + 0.5);
+    expect(sheet.titleTop, `${vp.height}: 제목이 시트 안`).toBeGreaterThanOrEqual(sheet.panelTop);
+    expect(sheet.firstBottom, `${vp.height}: 첫 선택지가 시트 안(스크롤 없이)`).toBeLessThanOrEqual(sheet.panelBottom + 0.5);
+    // 자동 모드: 비모달 인라인 카드. 포커스는 인생 화면 제목에 머물고(D-52) 카드 제목은 머리 아래·진행 줄 위에 보인다
+    await injectSave(page, await findImpactState(page, 'adult'), '/', { speed: 1, autoMode: true });
+    await expect(page.getByTestId('choice-panel')).toBeVisible();
+    await expect(page.getByTestId('life-name')).toBeFocused();
+    const inline = await page.evaluate(() => {
       const head = document.querySelector('[data-testid="dash-head"]')!.getBoundingClientRect();
       const bar = document.querySelector('[data-testid="controls"]')!.getBoundingClientRect();
-      const first = document.querySelector('[data-testid="choice-panel"] button')!.getBoundingClientRect();
       const title = document.querySelector('[data-testid="choice-title"]')!.getBoundingClientRect();
-      return { headBottom: head.bottom, barTop: bar.top, titleTop: title.top, firstTop: first.top, firstBottom: first.bottom };
+      return { headBottom: head.bottom, barTop: bar.top, titleTop: title.top, titleBottom: title.bottom };
     });
-    expect(geometry.titleTop, `${vp.height}: 제목이 헤더 아래`).toBeGreaterThanOrEqual(geometry.headBottom);
-    expect(geometry.firstTop, `${vp.height}: 첫 선택지가 헤더 아래`).toBeGreaterThanOrEqual(geometry.headBottom);
-    expect(geometry.firstBottom, `${vp.height}: 첫 선택지가 진행 줄 위`).toBeLessThanOrEqual(geometry.barTop + 0.5);
+    expect(inline.titleTop, `${vp.height}: 인라인 카드 제목이 헤더 아래`).toBeGreaterThanOrEqual(inline.headBottom);
+    expect(inline.titleBottom, `${vp.height}: 인라인 카드 제목이 진행 줄 위`).toBeLessThanOrEqual(inline.barTop + 0.5);
   }
 });
 

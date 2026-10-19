@@ -83,12 +83,12 @@ describe('구조 검증 (SC3: 필수 필드·출처 형식·기준 연도)', () 
     expect(String(FILE.meta.accessRule)).toContain('robots.txt');
   });
 
-  it('지표 id는 유일하고 kebab-case이며 지표가 30개 미만으로 줄어들지 않는다(현재 51개)', () => {
+  it('지표 id는 유일하고 kebab-case이며 지표가 30개 미만으로 줄어들지 않는다(현재 74개 = 51 + M7b 준비 8 + M7b 준비 2차 15)', () => {
     const ids = ALL.map((i) => i.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id, id).toMatch(/^[a-z][a-z0-9-]{2,40}$/);
     expect(ALL.length).toBeGreaterThanOrEqual(40);
-    expect(ALL).toHaveLength(51);
+    expect(ALL).toHaveLength(74);
   });
 
   it('모든 지표에 필수 필드가 있다: id·title·kind·use·latest(또는 null)·definition(미확인은 빈 문자열 허용)·basisId·verification·usable', () => {
@@ -113,7 +113,8 @@ describe('구조 검증 (SC3: 필수 필드·출처 형식·기준 연도)', () 
       expect(i.definition, i.id).not.toMatch(/[!！]/);
       expect(i.latest, i.id).not.toBeNull();
       const l = i.latest!;
-      expect(Number.isInteger(l.year) && l.year >= 1970 && l.year <= 2072, `${i.id} 기준 연도 ${l.year}`).toBe(true);
+      // 장래인구추계는 2072년, 기후 전망(heat-projection)은 21세기 후반기(2081~2100) 값이라 상한을 2100으로 둔다
+      expect(Number.isInteger(l.year) && l.year >= 1970 && l.year <= 2100, `${i.id} 기준 연도 ${l.year}`).toBe(true);
       expect(Number.isFinite(l.value), i.id).toBe(true);
       const s = i.source!;
       expect(s, i.id).not.toBeNull();

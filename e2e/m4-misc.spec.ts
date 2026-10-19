@@ -148,6 +148,11 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
   await expect(page.getByTestId('choice-panel')).toBeVisible(); // 다음 결정까지 즉시 진행
   await expect.poll(() => activeTestId(page), '버튼이 아니라 선택지 제목으로').toBe('choice-title');
   await notBody('다음 결정으로 뒤');
+  // 수동 모드의 카드는 모달 시트라 도구 줄이 inert다 — Esc로 접으면(M7b U7) 포커스는 「결정 다시 열기」로 가고 컨트롤에 닿는다
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('decision-fold')).toBeVisible();
+  await expect.poll(() => activeTestId(page), '접으면 「결정 다시 열기」로').toBe('decision-reopen');
+  await notBody('카드 접은 뒤');
 
   // 3) 도구 줄: 인생 화면 제목 → Tab으로 도구까지 (진행 줄 7개 다음이 도구 5개)
   await page.getByTestId('life-name').focus();
@@ -157,6 +162,7 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab'); // tool-dark
   expect(await activeTestId(page)).toBe('tool-dark');
+  await expect(page.getByTestId('tool-dark')).toBeEnabled(); // 카드를 접은 직후 0.4초는 컨트롤의 입력 가드가 눌림을 삼킨다 (M7b U9)
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('tool-dark')).toHaveAttribute('aria-pressed', 'true');
   expect((await readSettings(page)).theme).toBe('dark');

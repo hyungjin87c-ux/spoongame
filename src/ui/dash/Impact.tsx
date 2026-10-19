@@ -27,7 +27,7 @@ export function ImpactLine({ items }: { items: readonly ImpactItem[] }) {
 /** 선택지 묶음 아래 안내 한 줄: 첫 문장은 그대로 읽히고, 둘째 문장(기호 설명)은 눈에 보이는 글자가 aria-hidden이며 스크린리더에는 대체 글자가 읽힌다 (copy.md 4-4) */
 export function ImpactHint({ name }: { name: string }) {
   return (
-    <p className="choice-panel__hint" data-testid="choice-hint">
+    <p className="decision__hint" data-testid="choice-hint">
       {IMPACT_HINT.lead(name)} <span aria-hidden="true">{IMPACT_HINT.symbols}</span>
       <span className="sr-only">{IMPACT_HINT.symbolsSr}</span>
     </p>

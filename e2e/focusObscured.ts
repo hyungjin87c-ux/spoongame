@@ -67,6 +67,8 @@ async function measure(page: Page): Promise<RawMeasure> {
       const cs = getComputedStyle(el);
       if (cs.position !== 'fixed' && cs.position !== 'sticky') continue;
       if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      // 모달 시트(M7b)가 떠 있는 동안 바깥은 `inert`이고 스크림 뒤에 있다 — 포커스를 가리는 고정 요소가 아니다(diff-003.md D-59)
+      if (el.closest('[inert]') !== null) continue;
       const r = el.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) continue;
       fixed.push({ id: label(el), box: { left: r.left, top: r.top, right: r.right, bottom: r.bottom }, position: cs.position, containsFocus: active !== null && (el === active || el.contains(active)) });

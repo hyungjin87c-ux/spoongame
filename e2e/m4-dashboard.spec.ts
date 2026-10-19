@@ -726,8 +726,10 @@ test('배치: 폭 < 960은 한 열(결정 카드가 맨 위, 프로필 → 상�
   await startPageHidden(page);
   await page.goto('/');
   const decision = await findPendingState(page, 'present', { minChoices: 2 });
-  await injectSave(page, decision, '/', MANUAL);
+  // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 카드가 가운데 열 맨 위(1열은 헤더 바로 아래)에 놓인다. 수동 모드의 카드는 모달 시트(화면 위에 뜬다)라 열 배치에 들지 않는다
+  await injectSave(page, decision, '/', { ...MANUAL, autoMode: true });
   await expect(page.getByTestId('choice-panel')).toBeVisible();
+  await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'inline');
   const rects = await page.evaluate(() => {
     const r = (id: string) => {
       const b = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();

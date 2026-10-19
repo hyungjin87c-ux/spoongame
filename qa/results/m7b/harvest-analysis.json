@@ -1,0 +1,87 @@
+{
+ "lives": 180,
+ "ok": 180,
+ "failed": 0,
+ "byEra": {
+  "future": {
+   "lives": 60,
+   "cards": 1440,
+   "cited": 720,
+   "citedRatio": 50,
+   "sheet": 1440,
+   "noCiteWithBox": 0,
+   "researchCards": 29,
+   "ended": 60,
+   "errors": 0,
+   "ext": 0,
+   "lens": [],
+   "pastYearViolations": [],
+   "dupInLife": [],
+   "foldTests": 488,
+   "foldFail": 0,
+   "overflow": 0,
+   "birthRange": [
+    2030,
+    2060
+   ]
+  },
+  "past": {
+   "lives": 60,
+   "cards": 1411,
+   "cited": 131,
+   "citedRatio": 9.3,
+   "sheet": 1411,
+   "noCiteWithBox": 0,
+   "researchCards": 10,
+   "ended": 60,
+   "errors": 0,
+   "ext": 0,
+   "lens": [],
+   "pastYearViolations": [],
+   "dupInLife": [],
+   "foldTests": 473,
+   "foldFail": 0,
+   "overflow": 0,
+   "birthRange": [
+    1950,
+    1989
+   ]
+  },
+  "present": {
+   "lives": 60,
+   "cards": 1410,
+   "cited": 766,
+   "citedRatio": 54.3,
+   "sheet": 1410,
+   "noCiteWithBox": 0,
+   "researchCards": 31,
+   "ended": 60,
+   "errors": 0,
+   "ext": 0,
+   "lens": [],
+   "pastYearViolations": [],
+   "dupInLife": [
+    {
+     "life": 113,
+     "id": "c-011",
+     "keys": [
+      "youth-first-job@24",
+      "middle-child-school@55"
+     ]
+    }
+   ],
+   "foldTests": 475,
+   "foldFail": 0,
+   "overflow": 0,
+   "birthRange": [
+    2026,
+    2026
+   ]
+  }
+ },
+ "problems": [],
+ "cards": 4261,
+ "foldTests": 1436,
+ "uniqueCites": 87,
+ "uniqueCiteIds": 49
+}

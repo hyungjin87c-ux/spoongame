@@ -42,7 +42,8 @@ export async function openImpactScreen(page: Page, screen: ImpactScreen): Promis
   await startPageHidden(page);
   await page.goto('/');
   const state = await findImpactState(page, screen === 'impact-young' ? 'young' : 'adult');
-  await injectSave(page, state, '/', { speed: 1, autoMode: false });
+  // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 진행 줄·도구 줄이 카드와 함께 닿는다(M5 측정이 버튼을 누른다). 모달 시트는 e2e/m7b-*가 잰다
+  await injectSave(page, state, '/', { speed: 1, autoMode: true });
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect(page.getByTestId('auto')).toBeEnabled();
   await expect(page.getByTestId('impact').first()).toBeVisible();

@@ -56,6 +56,7 @@
       "ageRange": { "min": 10, "max": 16 },
       "weight": 12,
       "once": true,
+      "citation": { "present": "c-006", "future": "c-006" },
       "conditions": { "notFlags": ["left_school"] },
       "modifiers": [{ "when": { "parenting": ["helicopter", "strict"] }, "weight": 1.5 }],
       "choices": [
@@ -93,6 +94,7 @@
       "ageRange": { "min": 15, "max": 19 },
       "weight": 10,
       "once": true,
+      "noCitation": "D",
       "conditions": { "notFlags": ["left_school"] },
       "modifiers": [
         { "when": { "looks": { "min": 70 } }, "weight": 2 },
@@ -126,6 +128,7 @@
       "ageRange": { "min": 16, "max": 19 },
       "weight": 70,
       "once": true,
+      "citation": { "past": "c-101", "present": "c-074", "future": "c-074" },
       "conditions": { "notFlags": ["left_school"] },
       "choices": [
         {
@@ -167,6 +170,7 @@
       "eras": ["past"],
       "weight": 20,
       "once": true,
+      "citation": "c-100",
       "conditions": { "parentWealth": { "max": 2 }, "notFlags": ["left_school"] },
       "choices": [
         {
@@ -191,6 +195,7 @@
       "ageRange": { "min": 9, "max": 15 },
       "weight": 12,
       "once": true,
+      "citation": { "present": "c-050", "future": "c-050" },
       "conditions": { "notFlags": ["left_school"] },
       "choices": [
         {
@@ -252,6 +257,7 @@
       "ageRange": { "min": 12, "max": 18 },
       "weight": 12,
       "once": true,
+      "noCitation": "D",
       "conditions": { "stats": { "education": { "min": 20 } }, "notFlags": ["left_school"] },
       "modifiers": [{ "when": { "parentWealth": { "max": 2 } }, "weight": 2 }],
       "choices": [
@@ -284,6 +290,7 @@
       "ageRange": { "min": 15, "max": 19 },
       "weight": 14,
       "once": true,
+      "citation": { "present": "c-010", "future": "c-010" },
       "conditions": { "parentWealth": { "max": 3 }, "stats": { "education": { "min": 25 } }, "notFlags": ["left_school"] },
       "modifiers": [{ "when": { "parentWealth": { "max": 2 } }, "weight": 2.2 }],
       "choices": [
@@ -342,6 +349,7 @@
       "eras": ["present", "future"],
       "weight": 14,
       "once": true,
+      "citation": "c-049",
       "modifiers": [{ "when": { "parenting": ["helicopter", "strict"] }, "weight": 1.6 }],
       "choices": [
         {
@@ -378,6 +386,7 @@
       "eras": ["past"],
       "weight": 16,
       "once": true,
+      "citation": "c-097",
       "conditions": { "parentWealth": { "max": 3 }, "birthOrder": { "min": 2 }, "notFlags": ["left_school"] },
       "choices": [
         {
@@ -408,6 +417,7 @@
       "ageRange": { "min": 14, "max": 17 },
       "weight": 13,
       "once": true,
+      "citation": { "present": "c-075", "future": "c-075" },
       "conditions": { "notFlags": ["left_school"] },
       "choices": [
         {
@@ -440,6 +450,7 @@
       "ageRange": { "min": 16, "max": 19 },
       "weight": 11,
       "once": true,
+      "citation": { "present": "c-017", "future": "c-017" },
       "conditions": { "notFlags": ["left_school"] },
       "modifiers": [{ "when": { "parentWealth": { "max": 2 } }, "weight": 1.8 }],
       "choices": [
@@ -587,6 +598,7 @@
       "ageRange": { "min": 7, "max": 7 },
       "weight": 14,
       "once": true,
+      "noCitation": "D",
       "choices": [
         {
           "id": "new",
@@ -618,6 +630,7 @@
       "eras": ["present", "future"],
       "weight": 14,
       "once": true,
+      "citation": "c-063",
       "choices": [
         {
           "id": "care",

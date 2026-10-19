@@ -1,0 +1,10 @@
+noise-present/sheet: 출처 6줄 [한국환경공단 층간소음 / 이웃사이센터 / (2026년 열람), / 상담서비스 / 처리 연도별 / 통계(전화상담 서비스)] 결함끊김 0·한줄보다긴낱말 0·넘침 false·출처 scrollW 249/249
+noise-present/inline: 출처 8줄 [한국환경공단 / 층간소음 / 이웃사이센터 / (2026년 열람), / 상담서비스 처리 / 연도별 / 통계(전화상담 / 서비스)] 결함끊김 0·한줄보다긴낱말 0·넘침 false·출처 scrollW 215/215
+grandchildren-present/sheet: 출처 4줄 [국민연금공단(2025), / 국민노후보장패널조사: / 손자녀 돌봄 / 여부(KOSIS)] 결함끊김 0·한줄보다긴낱말 국민노후보장패널조사[280>249]·넘침 false·출처 scrollW 249/249
+grandchildren-present/inline: 출처 5줄 [국민연금공단 / (2025), / 국민노후보장패널 / 조사: 손자녀 돌봄 / 여부(KOSIS)] 결함끊김 0·한줄보다긴낱말 국민노후보장패널조사[280>215],국민노후보장패널조사[240>215]·넘침 false·출처 scrollW 215/215
+grandchildren-future/sheet: 출처 4줄 [국민연금공단(2025), / 국민노후보장패널조사: / 손자녀 돌봄 / 여부(KOSIS)] 결함끊김 0·한줄보다긴낱말 국민노후보장패널조사[280>249]·넘침 false·출처 scrollW 249/249
+grandchildren-future/inline: 출처 5줄 [국민연금공단 / (2025), / 국민노후보장패널 / 조사: 손자녀 돌봄 / 여부(KOSIS)] 결함끊김 0·한줄보다긴낱말 국민노후보장패널조사[280>215],국민노후보장패널조사[240>215]·넘침 false·출처 scrollW 215/215
+sibling-past/sheet: 출처 8줄 [Teti 외(1996), And / baby makes four: / predictors of / attachment security / among preschool-age / firstborns during the / transition to / siblinghood] 결함끊김 0·한줄보다긴낱말 0·넘침 false·출처 scrollW 249/249
+sibling-past/inline: 출처 9줄 [Teti 외(1996), And / baby makes four: / predictors of / attachment security / among preschool- / age firstborns / during the / transition to / siblinghood] 결함끊김 0·한줄보다긴낱말 0·넘침 false·출처 scrollW 215/215
+c02-infant-screen-future/sheet: 출처 7줄 [세계보건기구(WHO) / (2019), / Guidelines on physical / activity, sedentary / behaviour and sleep / for children under 5 / years of age] 결함끊김 0·한줄보다긴낱말 0·넘침 false·출처 scrollW 249/249
+c02-infant-screen-future/inline: 출처 9줄 [세계보건기구 / (WHO) (2019), / Guidelines on / physical activity, / sedentary / behaviour and / sleep for children / under 5 years / of age] 결함끊김 0·한줄보다긴낱말 0·넘침 false·출처 scrollW 215/215

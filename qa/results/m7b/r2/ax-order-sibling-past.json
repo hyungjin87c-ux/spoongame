@@ -1,0 +1,191 @@
+[
+ {
+  "role": "dialog",
+  "name": "동생이 생겼다"
+ },
+ {
+  "role": "StaticText",
+  "name": "중대 결정"
+ },
+ {
+  "role": "StaticText",
+  "name": "1959년"
+ },
+ {
+  "role": "StaticText",
+  "name": " "
+ },
+ {
+  "role": "StaticText",
+  "name": " "
+ },
+ {
+  "role": "StaticText",
+  "name": "3세"
+ },
+ {
+  "role": "button",
+  "name": "카드 접기"
+ },
+ {
+  "role": "StaticText",
+  "name": "카드 접기"
+ },
+ {
+  "role": "heading",
+  "name": "동생이 생겼다",
+  "level": 2
+ },
+ {
+  "role": "StaticText",
+  "name": "동생이 생겼다"
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다."
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "연구"
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "지금의 연구로는 194가구 표본에서 첫째의 어머니에 대한 애착 안정성은 동생 출생 뒤 "
+ },
+ {
+  "role": "StaticText",
+  "name": "낮아졌고("
+ },
+ {
+  "role": "StaticText",
+  "name": "24개"
+ },
+ {
+  "role": "StaticText",
+  "name": "월"
+ },
+ {
+  "role": "StaticText",
+  "name": " 미만은 2~"
+ },
+ {
+  "role": "StaticText",
+  "name": "5세"
+ },
+ {
+  "role": "StaticText",
+  "name": "보다 폭이 작음), 부부 화목 등과 연관이 있었습니다."
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "Teti"
+ },
+ {
+  "role": "StaticText",
+  "name": " 외(1996),"
+ },
+ {
+  "role": "StaticText",
+  "name": "And baby makes four: predictors of attachment security among"
+ },
+ {
+  "role": "group",
+  "name": "선택지"
+ },
+ {
+  "role": "button",
+  "name": "동생을 예뻐하며 돌본다 관계가 늘어납니다. 행복이 조금 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "동생을 예뻐하며 돌본다"
+ },
+ {
+  "role": "StaticText",
+  "name": "관계가 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "행복이 조금 줄어듭니다."
+ },
+ {
+  "role": "button",
+  "name": "서운해서 울며 어른에게 매달린다 관계가 조금 줄어듭니다. 행복이 조금 줄어듭니다. 지식이 조금 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "서운해서 울며 어른에게 매달린다"
+ },
+ {
+  "role": "StaticText",
+  "name": "관계가 조금 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "행복이 조금 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "지식이 조금 늘어납니다."
+ },
+ {
+  "role": "button",
+  "name": "일부러 장난을 쳐서 눈길을 끈다 관계가 조금 늘어납니다. 행복이 조금 줄어듭니다. 건강이 조금 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "일부러 장난을 쳐서 눈길을 끈다"
+ },
+ {
+  "role": "StaticText",
+  "name": "관계가 조금 늘어납니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "행복이 조금 줄어듭니다."
+ },
+ {
+  "role": "StaticText",
+  "name": "건강이 조금 늘어납니다."
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "선택지 아래 글씨는 이 선택만으로 김경자에게 생기는 변화입니다."
+ },
+ {
+  "role": "StaticText",
+  "name": " "
+ },
+ {
+  "role": "StaticText",
+  "name": "위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다."
+ },
+ {
+  "role": "paragraph",
+  "name": ""
+ },
+ {
+  "role": "StaticText",
+  "name": "자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다."
+ }
+]

@@ -160,14 +160,14 @@ describe('인생 단계별 데이터 소스 표 (korea-life-data-sources.csv, �
     for (const r of ROWS) expect(r.length, `${r[0]} ${r[2]}`).toBe(21);
   });
 
-  it('원본 CSV 31행이 모두 대응된다: 원본_순번 1~31이 빠짐없이 있고(분리 2건은 두 행), 나머지 20행은 마스터 보완(추가)이다 — 31→53 대응(R-155)', () => {
+  it('원본 CSV 31행이 모두 대응된다: 원본_순번 1~31이 빠짐없이 있고(분리 2건은 두 행), 나머지 40행은 마스터 보완 20행과 M7b 준비 추가 20행(영유아 8·청년·학창·일·노년 등)이다 — 31→73 대응(R-155)', () => {
     const origin = ROWS.map((r) => col(r, '원본_순번'));
     const numbers = origin.filter((v) => v !== '추가').map((v) => Number.parseInt(v, 10));
     expect([...new Set(numbers)].sort((a, b) => a - b)).toEqual(Array.from({ length: 31 }, (_, k) => k + 1));
-    expect(origin.filter((v) => v === '추가')).toHaveLength(20);
+    expect(origin.filter((v) => v === '추가')).toHaveLength(40);
     expect(origin.filter((v) => v === '4(분리)')).toHaveLength(2);
     expect(origin.filter((v) => v === '23(분리)')).toHaveLength(2);
-    expect(ROWS).toHaveLength(31 + 2 + 20);
+    expect(ROWS).toHaveLength(31 + 2 + 20 + 20);
     for (const r of ROWS) expect(col(r, '대응_메모').length, `${col(r, '데이터_소스')} 대응 메모`).toBeGreaterThan(5);
     expect(col(rowOf('예방접종'), '대응_메모')).toContain('둘로 나눔');
     expect(col(rowOf('생명표'), '원본_순번')).toBe('23(분리)');
@@ -191,8 +191,8 @@ describe('인생 단계별 데이터 소스 표 (korea-life-data-sources.csv, �
     expect(sourcesDoc).toContain('한국인생단계별_데이터소스_활용처.csv');
   });
 
-  it('53행이고(원래 31행 + 분리 2행 + 마스터 보완 20행) 원문대조는 완료·부분완료·미완료뿐이다', () => {
-    expect(ROWS).toHaveLength(53);
+  it('73행이고(원래 31행 + 분리 2행 + 마스터 보완 20행 + M7b 준비 추가 20행) 원문대조는 완료·부분완료·미완료뿐이다', () => {
+    expect(ROWS).toHaveLength(73);
     const counts: Record<string, number> = {};
     for (const r of ROWS) {
       const v = col(r, '원문대조');
@@ -310,7 +310,7 @@ describe('인생 단계별 데이터 소스 표 (korea-life-data-sources.csv, �
     expect(col(rowOf('주민등록 인구통계'), '핵심_지표')).toContain('16개 시도');
   });
 
-  it('표를 korea-stats-sources.md가 가리키고 건수(행 수 53, 완료 20·부분완료 10·미완료 23)를 적어 둔다', () => {
+  it('표를 korea-stats-sources.md가 가리키고 건수(행 수 73, 완료 35·부분완료 16·미완료 22)를 적어 둔다', () => {
     expect(sourcesDoc).toContain('korea-life-data-sources.csv');
     expect(sourcesDoc).toContain(`행 수 ${ROWS.length}`);
     const done = ROWS.filter((r) => col(r, '원문대조') === '완료').length;

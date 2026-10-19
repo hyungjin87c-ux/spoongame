@@ -32,6 +32,7 @@
       "ageRange": { "min": 22, "max": 32 },
       "weight": 24,
       "once": true,
+      "citation": { "past": "c-091", "present": "c-011", "future": "c-011" },
       "conditions": { "notFlags": ["has_career", "own_business"] },
       "choices": [
         {
@@ -99,6 +100,7 @@
       "ageRange": { "min": 27, "max": 45 },
       "weight": 40,
       "once": true,
+      "citation": { "past": "c-098", "present": "c-013", "future": "c-013" },
       "conditions": { "flags": ["has_partner"], "notFlags": ["married"] },
       "modifiers": [
         { "when": { "looks": { "min": 70 } }, "weight": 1.8 },
@@ -137,6 +139,7 @@
       "ageRange": { "min": 30, "max": 48 },
       "weight": 40,
       "once": true,
+      "citation": { "present": "c-044", "future": "c-044" },
       "conditions": { "flags": ["has_partner", "marriage_waited"], "notFlags": ["married"] },
       "modifiers": [
         { "when": { "looks": { "min": 70 } }, "weight": 1.5 },
@@ -182,6 +185,7 @@
       "ageRange": { "min": 25, "max": 50 },
       "weight": 20,
       "once": true,
+      "noCitation": "D",
       "conditions": { "flags": ["broke_up"], "notFlags": ["has_partner", "married"] },
       "modifiers": [{ "when": { "looks": { "min": 70 } }, "weight": 1.5 }],
       "choices": [
@@ -213,6 +217,7 @@
       "ageRange": { "min": 26, "max": 56 },
       "weight": 60,
       "once": true,
+      "noCitation": "D",
       "conditions": { "flags": ["has_partner", "reunited"], "notFlags": ["married"] },
       "modifiers": [
         { "when": { "looks": { "min": 70 } }, "weight": 1.8 },
@@ -247,6 +252,7 @@
       "ageRange": { "min": 30, "max": 46 },
       "weight": 10,
       "once": true,
+      "noCitation": "D",
       "conditions": { "flags": ["met_intro"], "notFlags": ["has_partner", "married"] },
       "modifiers": [
         { "when": { "looks": { "min": 70 } }, "weight": 2.5 },
@@ -276,6 +282,7 @@
       "eras": ["past"],
       "weight": 16,
       "once": true,
+      "noCitation": "D",
       "conditions": { "notFlags": ["has_partner", "married"] },
       "modifiers": [
         { "when": { "looks": { "min": 70 } }, "weight": 2.2 },
@@ -304,6 +311,7 @@
       "ageRange": { "min": 22, "max": 36 },
       "weight": 10,
       "once": true,
+      "noCitation": "D",
       "conditions": { "looks": { "min": 60 }, "notFlags": ["has_partner", "married"] },
       "choices": [
         {
@@ -328,6 +336,7 @@
       "ageRange": { "min": 27, "max": 39 },
       "weight": 24,
       "once": true,
+      "citation": { "past": "c-099", "present": "c-003", "future": "c-003" },
       "conditions": { "flags": ["married"] },
       "choices": [
         {
@@ -362,6 +371,7 @@
       "ageRange": { "min": 33, "max": 44 },
       "weight": 30,
       "once": true,
+      "citation": { "present": "c-004", "future": "c-004" },
       "conditions": { "flags": ["married", "child_postponed"], "notFlags": ["has_child", "no_child"] },
       "choices": [
         {
@@ -386,6 +396,7 @@
       "ageRange": { "min": 24, "max": 38 },
       "weight": 9,
       "once": true,
+      "noCitation": "D",
       "conditions": { "flags": ["has_career"], "notFlags": ["has_partner", "married", "own_business"] },
       "modifiers": [
         { "when": { "looks": { "min": 70 } }, "weight": 2.5 },
@@ -414,6 +425,7 @@
       "ageRange": { "min": 22, "max": 36 },
       "weight": 14,
       "once": true,
+      "citation": { "present": "c-015", "future": "c-015" },
       "conditions": { "notFlags": ["own_home", "married"] },
       "choices": [
         {
@@ -456,6 +468,7 @@
       "ageRange": { "min": 21, "max": 30 },
       "weight": 14,
       "once": true,
+      "citation": { "present": "c-076", "future": "c-076" },
       "conditions": { "notFlags": ["has_career"], "stats": { "education": { "min": 30 } } },
       "modifiers": [{ "when": { "parentWealth": { "min": 3 } }, "weight": 1.4 }],
       "choices": [
@@ -571,6 +584,7 @@
       "ageRange": { "min": 26, "max": 39 },
       "weight": 6,
       "once": true,
+      "citation": { "present": "c-077", "future": "c-077" },
       "conditions": { "notFlags": ["own_business"] },
       "modifiers": [
         { "when": { "looks": { "min": 65 } }, "weight": 2.5 },
@@ -612,6 +626,7 @@
       "ageRange": { "min": 20, "max": 28 },
       "weight": 16,
       "once": true,
+      "noCitation": "X4",
       "conditions": { "parentWealth": { "max": 2 }, "stats": { "education": { "max": 45 } } },
       "choices": [
         {
@@ -643,6 +658,7 @@
       "ageRange": { "min": 23, "max": 36 },
       "weight": 30,
       "once": true,
+      "citation": { "present": "c-095", "future": "c-095" },
       "conditions": { "flags": ["saving_for_school"], "assets": { "netMin": 0 } },
       "choices": [
         {
@@ -668,6 +684,7 @@
       "eras": ["present"],
       "weight": 13,
       "once": true,
+      "citation": "c-094",
       "conditions": { "flags": ["renting"], "notFlags": ["own_home"] },
       "choices": [
         {
@@ -700,6 +717,7 @@
       "eras": ["present", "future"],
       "weight": 12,
       "once": true,
+      "citation": "c-079",
       "conditions": { "notFlags": ["has_career", "own_business"] },
       "choices": [
         {
@@ -731,6 +749,7 @@
       "eras": ["future"],
       "weight": 14,
       "once": true,
+      "noCitation": "X5",
       "conditions": { "flags": ["has_career"] },
       "choices": [
         {

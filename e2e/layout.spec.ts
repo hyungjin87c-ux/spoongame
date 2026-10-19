@@ -43,8 +43,8 @@ interface Metrics {
   firstChoiceVisible: boolean;
   /** 카드가 보인 뒤: 선택지 전부가 머리와 진행 줄 사이에 온전히 보이는가(스크롤 없이) */
   allFit: boolean;
-  /** 카드가 진행 줄 밑으로 내려가는 이벤트(스크롤 없이는 안 보이는 부분이 있는 경우)에서, 앱이 카드를 머리 바로 아래로 맞춰 보였는가 (CM10 revealCard). 그럴 필요가 없으면 true */
-  revealed: boolean;
+  /** 카드가 보인 뒤: 첫 두 선택지가 가용 영역(시트 상자 / 머리와 진행 줄 사이)에 온전히 보이는가 — 스크롤 없이 선택지를 비교해 볼 수 있는 최소한 (R-394) */
+  firstTwoVisible: boolean;
   /** 스크롤로 닿을 수 있는가: 각 선택지를 화면 가운데로 스크롤했을 때 어떤 요소에도 가려지지 않는가 */
   reachable: boolean;
   panelHeight: number;
@@ -63,7 +63,9 @@ async function measureAll(page: Page, custom?: EventDef): Promise<Metrics[]> {
       const vh = window.innerHeight;
       const panel = document.querySelector('[data-testid="choice-panel"]')!;
       const title = document.querySelector('[data-testid="choice-title"]')!;
-      const choices = [...panel.querySelectorAll('button')];
+      // 모달 시트(수동 모드, M7b)면 가용 영역은 시트 상자(바깥은 inert라 머리·진행 줄이 아니라 시트가 화면을 쓴다), 인라인 카드(자동 모드)면 머리와 진행 줄 사이다
+      const dialog = document.querySelector('[role="dialog"]');
+      const choices = [...panel.querySelectorAll('button.choice')];
       const controls = [...document.querySelectorAll('[data-testid="controls"] button')];
       const tools = [...document.querySelectorAll('[data-testid="tools"] button, [data-testid="tools"] a')];
       const bar = document.querySelector('[data-testid="controls"]')!.getBoundingClientRect();
@@ -77,21 +79,21 @@ async function measureAll(page: Page, custom?: EventDef): Promise<Metrics[]> {
         const r = el.getBoundingClientRect();
         return r.left >= 0 && r.right <= vw && r.top >= 0 && r.bottom <= vh;
       };
+      const bandTop = dialog !== null ? Math.max(0, dialog.getBoundingClientRect().top) : head.bottom;
+      const bandBottom = dialog !== null ? Math.min(vh, dialog.getBoundingClientRect().bottom) : bar.top;
       const inBand = (el: Element) => {
         const r = el.getBoundingClientRect();
-        return r.left >= 0 && r.right <= vw && r.top >= head.bottom - 0.5 && r.bottom <= bar.top + 0.5 && uncovered(el);
+        return r.left >= 0 && r.right <= vw && r.top >= bandTop - 0.5 && r.bottom <= bandBottom + 0.5 && uncovered(el);
       };
       // 1) 카드가 보인 자리(앱이 포커스와 함께 맞춘 스크롤) 그대로 잰다 — 먼저 스크롤을 옮기지 않는다
       const titleVisible = inBand(title);
       const firstChoiceVisible = choices.length > 0 && inBand(choices[0]);
       const allFit = choices.every(inBand);
-      const panelRect = panel.getBoundingClientRect();
-      // 카드의 문서 기준 아래끝이 진행 줄 위를 넘으면 스크롤 없이는 다 안 보인다 → 앱이 카드 위쪽을 머리 아래로 맞췄어야 한다(머리 아래 + scroll-padding 12px 안쪽)
-      const needsReveal = panelRect.bottom + window.scrollY > bar.top + 0.5; // 스크롤 0에서 카드 아래끝(문서 기준)이 고정 진행 줄(뷰포트 기준 위끝) 아래로 내려가는가
-      const revealed = !needsReveal || panelRect.top <= head.bottom + 16;
+      const firstTwoVisible = choices.length >= 2 && choices.slice(0, 2).every(inBand);
       const lastBottom = Math.max(...choices.map((b) => b.getBoundingClientRect().bottom));
-      const panelHeight = panel.getBoundingClientRect().height;
-      const controlsOk = controls.length === 7 && controls.every((b) => inside(b) && uncovered(b));
+      const panelHeight = dialog !== null ? dialog.scrollHeight : panel.getBoundingClientRect().height;
+      // 시트가 떠 있는 동안 진행 줄·도구 줄은 inert이고 시트 뒤에 있다(M7b) — 가림 점검은 인라인 모드(?mode=inline)에서 한다
+      const controlsOk = dialog !== null ? controls.length === 7 : controls.length === 7 && controls.every((b) => inside(b) && uncovered(b));
       // 2) 스크롤로 닿는가
       let reachable = true;
       for (const b of choices) {
@@ -100,18 +102,18 @@ async function measureAll(page: Page, custom?: EventDef): Promise<Metrics[]> {
       }
       // 3) 도구 줄은 문서 맨 위에서
       window.scrollTo(0, 0);
-      const toolsOk = tools.length === 5 && tools.every((b) => b.getBoundingClientRect().left >= 0 && b.getBoundingClientRect().right <= vw && uncovered(b));
+      const toolsOk = tools.length === 5 && tools.every((b) => b.getBoundingClientRect().left >= 0 && b.getBoundingClientRect().right <= vw && (dialog !== null || uncovered(b)));
       return {
         id,
         nChoices: choices.length,
-        overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth || (dialog !== null && dialog.scrollWidth > dialog.clientWidth),
         choiceOutside: choices.some((b) => b.getBoundingClientRect().left < 0 || b.getBoundingClientRect().right > vw),
         controlsOk,
         toolsOk,
         titleVisible,
         firstChoiceVisible,
         allFit,
-        revealed,
+        firstTwoVisible,
         reachable,
         panelHeight,
         lastBottom,
@@ -137,9 +139,9 @@ async function measureAll(page: Page, custom?: EventDef): Promise<Metrics[]> {
   }, custom);
 }
 
-async function openHarness(page: Page, vp: { width: number; height: number }): Promise<void> {
+async function openHarness(page: Page, vp: { width: number; height: number }, mode: 'sheet' | 'inline' = 'inline'): Promise<void> {
   await page.setViewportSize(vp);
-  await page.goto('/harness/layout.html');
+  await page.goto(mode === 'sheet' ? '/harness/layout.html?mode=sheet' : '/harness/layout.html');
   await page.waitForFunction(() => (window as unknown as { __layout?: unknown }).__layout !== undefined);
 }
 
@@ -148,11 +150,14 @@ function worstCaseEvent(): EventDef {
   return lengthSample('worst').event;
 }
 
-for (const vp of VIEWPORTS) {
-  test(`${vp.width}x${vp.height}: 풀의 모든 선택지 이벤트 — 카드가 보인 자리에서 제목·첫 선택지가 가려지지 않고, 선택지 전부는 스크롤로 닿으며, 진행 줄 7개·도구 줄 5개가 가려지거나 넘치지 않는다 (R-042)`, async ({ page }, testInfo) => {
+// 두 모드(M7b): sheet = 자동 모드 꺼짐 — 카드는 모달 시트(화면 아래에서 올라온 94dvh 이하의 고정 상자, 안쪽 스크롤) / inline = 자동 모드 켜짐 — 대시보드 가운데 열 맨 위의 카드(진행 줄이 그대로 닿는다)
+const MODES = ['sheet', 'inline'] as const;
+
+for (const mode of MODES) for (const vp of VIEWPORTS) {
+  test(`${mode} · ${vp.width}x${vp.height}: 풀의 모든 선택지 이벤트 — 카드가 보인 자리에서 제목·첫 선택지가 가려지지 않고, 선택지 전부는 스크롤로 닿으며${mode === 'inline' ? ', 진행 줄 7개·도구 줄 5개가 가려지거나 넘치지 않는다' : '(시트 안 스크롤)'} (R-042)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     test.setTimeout(120_000);
-    await openHarness(page, vp);
+    await openHarness(page, vp, mode);
     const all = await measureAll(page);
     expect(all.length, '풀의 선택지 이벤트가 충분히 있어야 한다').toBeGreaterThanOrEqual(40);
     const fail = (m: Metrics, why: string) =>
@@ -163,14 +168,25 @@ for (const vp of VIEWPORTS) {
       expect(m.controlsOk, fail(m, '진행 줄 7개가 화면 안에서 가려진다')).toBe(true);
       expect(m.toolsOk, fail(m, '도구 줄 5개가 문서 맨 위에서 가려지거나 넘친다')).toBe(true);
       expect(m.titleVisible, fail(m, '카드가 보인 자리에서 선택지 제목이 머리·진행 줄에 가려진다')).toBe(true);
-      expect(m.firstChoiceVisible, fail(m, '카드가 보인 자리에서 첫 선택지가 머리·진행 줄에 가려진다')).toBe(true);
-      expect(m.revealed, fail(m, '카드가 진행 줄 밑으로 내려가는데 앱이 카드를 머리 아래로 맞춰 보이지 않았다(포커스 스크롤)')).toBe(true);
+      // 첫 선택지가 스크롤 없이 보이는 것은 시트(수동 모드 — 사람이 고른다)에 요구한다. 인라인 카드(자동 모드 — 스스로 고른다)는 인용 박스가 더해져 카드가 한 화면을 넘을 수 있고 선택지는 스크롤로 닿는다(아래 reachable)
+      if (mode === 'sheet') expect(m.firstChoiceVisible, fail(m, '카드가 보인 자리에서 첫 선택지가 시트 안에 보이지 않는다')).toBe(true);
       expect(m.reachable, fail(m, '스크롤해도 선택지가 가려진다')).toBe(true);
     }
-    // 큰 화면(360×740): 선택지 전부가 스크롤 없이 가용 영역에 들어온다
-    if (vp.height >= 740) for (const m of all) expect(m.allFit, fail(m, '360×740에서는 선택지 전부가 카드가 보인 자리에 들어와야 한다 — 문구를 줄인다(docs/data/events-schema.md 7절)')).toBe(true);
+    // M7b 이전에는 큰 화면(360×740)에서 선택지 전부가 스크롤 없이 가용 영역에 들어왔다(R-042, M7e-1 길이 한도의 근거). 지금 카드는 머리(연도·나이·접기)·인용 박스·영향 안내·자동 모드 안내를 더해
+    // 시트는 94dvh까지 차오르고(안쪽 스크롤로 닿는다) 인라인 카드는 한 화면을 넘는다(페이지 스크롤로 닿고, 제목에 포커스를 두면 앱이 위쪽을 머리 아래로 맞춘다). 그래서 이 줄은 단언이 아니라 아래 기록으로 남기고,
+    // 위 단언(제목·첫 선택지(시트)·선택지 전부 reachable·가로 넘침 0)이 계속 길이 한도를 지킨다.
     // 측정 기록: 선택지 전부가 스크롤 없이 가용 영역에 들어오는 이벤트 수(참고용)
-    testInfo.annotations.push({ type: '측정', description: `${vp.width}x${vp.height}: 선택지 전부가 스크롤 없이 보이는 이벤트 ${all.filter((m) => m.allFit).length}/${all.length}개 (가용 영역 = 머리 아래 ${Math.round(all[0].headBottom)}px ~ 진행 줄 위 ${Math.round(all[0].barTop)}px)` });
+    testInfo.annotations.push({ type: '측정', description: `${mode} ${vp.width}x${vp.height}: 선택지 전부가 스크롤 없이 보이는 이벤트 ${all.filter((m) => m.allFit).length}/${all.length}개 · 첫 두 선택지가 보이는 이벤트 ${all.filter((m) => m.firstTwoVisible).length}/${all.length}개 (가용 영역 = 머리 아래 ${Math.round(all[0].headBottom)}px ~ 진행 줄 위 ${Math.round(all[0].barTop)}px)` });
+    // R-394 회귀 가드(하한): 시트(수동 모드 — 사람이 고른다)에서는 지금 측정값 아래로 내려가지 않는다. 360×740은 선택지 전부(allFit)와 첫 두 선택지가 90장 모두 시트 안에 스크롤 없이 보이고, 640은 전부 60장·첫 두 개 90장, 568은 전부 50장·첫 두 개 70장이다.
+    // M7d에서 본문·인용이 길어져 이미 있던 카드가 이 하한 아래로 밀리면 여기서 걸린다(새 카드는 하한을 채우지 않아도 된다 — 하한은 현재 90장 기준의 개수다). 인라인 카드는 페이지 스크롤로 닿으므로 기록만 한다.
+    if (mode === 'sheet') {
+      const FLOOR: Record<number, { allFit: number; firstTwo: number }> = { 740: { allFit: 90, firstTwo: 90 }, 640: { allFit: 60, firstTwo: 90 }, 568: { allFit: 50, firstTwo: 70 } };
+      const floor = FLOOR[vp.height];
+      const notAll = all.filter((m) => !m.allFit).map((m) => m.id);
+      const notTwo = all.filter((m) => !m.firstTwoVisible).map((m) => m.id);
+      expect(all.length - notAll.length, `시트 ${vp.width}x${vp.height}: 선택지 전부가 스크롤 없이 보이는 이벤트가 하한(${floor.allFit}) 아래다. 안 보이는 카드: ${notAll.join(', ')}`).toBeGreaterThanOrEqual(floor.allFit);
+      expect(all.length - notTwo.length, `시트 ${vp.width}x${vp.height}: 첫 두 선택지가 스크롤 없이 보이는 이벤트가 하한(${floor.firstTwo}) 아래다. 안 보이는 카드: ${notTwo.join(', ')}`).toBeGreaterThanOrEqual(floor.firstTwo);
+    }
     // 판별력: 세 선택지를 모두 가진 이벤트가 실제로 있고 그것도 통과했다
     expect(all.some((m) => m.nChoices === 3)).toBe(true);
     expect(all.some((m) => m.nChoices === 2)).toBe(true);
@@ -180,14 +196,25 @@ for (const vp of VIEWPORTS) {
   });
 }
 
-test(`권장 최대 길이(합쇼체 새 한도: 제목 ${TEXT_LIMITS.title}·본문 ${TEXT_LIMITS.text}·라벨 ${TEXT_LIMITS.label}자 ×3)로 만든 최악의 이벤트: 어느 화면 높이에서도 제목·첫 선택지가 보이고 선택지 전부가 스크롤로 닿으며, 360×740은 카드가 보인 자리에 다 들어온다 (R-042, M7e-1)`, async ({ page }, testInfo) => {
+test(`권장 최대 길이(합쇼체 새 한도: 제목 ${TEXT_LIMITS.title}·본문 ${TEXT_LIMITS.text}·라벨 ${TEXT_LIMITS.label}자 ×3)로 만든 최악의 이벤트: 어느 화면 높이에서도 제목·첫 선택지가 보이고 선택지 전부가 스크롤로 닿는다 — 360×740에서 카드가 한 화면 안에 다 들어오는지는 기록만 한다 (R-042, M7e-1, M7b)`, async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   const ev = worstCaseEvent();
   expect(ev.text.length).toBe(TEXT_LIMITS.text);
   expect(ev.title.length).toBeLessThanOrEqual(TEXT_LIMITS.title);
   const results: Record<string, Metrics> = {};
+  // 시트 모드(수동): 최악의 이벤트도 시트 안 스크롤로 모두 닿고 제목·첫 선택지가 시트 안에 보인다 (M7b)
   for (const vp of VIEWPORTS) {
-    await openHarness(page, vp);
+    await openHarness(page, vp, 'sheet');
+    const [m] = await measureAll(page, ev);
+    expect(m.nChoices).toBe(3);
+    expect(m.overflowX, `시트 ${vp.height}: 가로로 넘친다`).toBe(false);
+    expect(m.titleVisible, `시트 ${vp.height}: 선택지 제목이 가려진다`).toBe(true);
+    expect(m.firstChoiceVisible, `시트 ${vp.height}: 첫 선택지가 가려진다`).toBe(true);
+    expect(m.reachable, `시트 ${vp.height}: 시트 안 스크롤로도 선택지가 가려진다`).toBe(true);
+  }
+  // 인라인 모드(자동): 대시보드 안 카드 — 제목이 보이고 선택지 전부에 스크롤로 닿는다(스크롤 없이 다 보이는지는 기록만 한다)
+  for (const vp of VIEWPORTS) {
+    await openHarness(page, vp, 'inline');
     const [m] = await measureAll(page, ev);
     results[`${vp.width}x${vp.height}`] = m;
     expect(m.nChoices).toBe(3);
@@ -196,10 +223,8 @@ test(`권장 최대 길이(합쇼체 새 한도: 제목 ${TEXT_LIMITS.title}·�
     expect(m.controlsOk).toBe(true);
     expect(m.toolsOk).toBe(true);
     expect(m.titleVisible, `${vp.height}: 선택지 제목이 가려진다`).toBe(true);
-    expect(m.firstChoiceVisible, `${vp.height}: 첫 선택지가 가려진다`).toBe(true);
     expect(m.reachable, `${vp.height}: 스크롤해도 선택지가 가려진다`).toBe(true);
   }
-  expect(results['360x740'].allFit, `360×740: 마지막 선택지 아래 ${results['360x740'].lastBottom}px / 진행 줄 위 ${results['360x740'].barTop}px`).toBe(true);
   // 360×568은 최악의 이벤트가 가용 영역을 넘는다(스크롤 필요). 알려진 한계로 기록해 둔다 — 고정 머리(약 95px)와 하단 진행 줄(약 112px)이 가용 높이를 줄인다.
   expect(results['360x568'].allFit).toBe(false);
   testInfo.annotations.push({ type: '측정', description: `최악의 이벤트 allFit: ${Object.entries(results).map(([k, v]) => `${k}=${v.allFit}`).join(', ')}` });
@@ -238,19 +263,19 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
     await expect(panel).toBeVisible();
     expect(await panel.getAttribute('data-key')).toBe(`${tallest.id}@${age}`);
     for (const id of choiceIds) await expect(page.getByTestId(`choice-${id}`)).toBeEnabled();
-    // 앱이 포커스를 선택지 제목에 주며 카드를 보인 뒤의 자리에서 잰다
+    // 수동 모드: 카드는 모달 시트이고 앱이 포커스를 선택지 제목에 준다. 시트 상자 안에서 잰다(바깥 진행 줄·도구 줄은 inert이고 시트 뒤에 있다, M7b)
+    await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'sheet');
     await expect(page.getByTestId('choice-title')).toBeFocused();
     const m = await page.evaluate(() => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const head = document.querySelector('[data-testid="dash-head"]')!.getBoundingClientRect();
-      const bar = document.querySelector('[data-testid="controls"]')!.getBoundingClientRect();
       const rect = (el: Element) => {
         const r = el.getBoundingClientRect();
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, covered: !(hit === el || el.contains(hit)), name: (el.textContent ?? '').trim() };
       };
-      const choices = [...document.querySelectorAll('[data-testid="choice-panel"] button')];
+      const sheet = document.querySelector('[role="dialog"]')!.getBoundingClientRect();
+      const choices = [...document.querySelectorAll('[data-testid="choice-panel"] button.choice')];
       const shown = { title: rect(document.querySelector('[data-testid="choice-title"]')!), first: rect(choices[0]) };
       // 스크롤로 닿는가
       const reached = choices.map((b) => {
@@ -258,13 +283,13 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
         const r = rect(b);
         return { ...r, inside: r.left >= 0 && r.right <= vw && r.top >= 0 && r.bottom <= vh };
       });
-      return { vw, vh, headBottom: head.bottom, barTop: bar.top, shown, reached, controls: [...document.querySelectorAll('[data-testid="controls"] button')].map(rect) };
+      return { vw, vh, headBottom: sheet.top, barTop: Math.min(vh, sheet.bottom), shown, reached, controls: [...document.querySelectorAll('[data-testid="controls"] button')].map(rect) };
     });
     expect(m.reached).toHaveLength(3);
-    expect(m.controls).toHaveLength(7);
+    expect(m.controls).toHaveLength(7); // 진행 줄은 시트 뒤에 그대로 있다(가림 점검은 인라인 모드가 한다)
     for (const b of [m.shown.title, m.shown.first]) {
-      expect(b.top, `${tallest.id} @${vp.height}: ${b.name}이(가) 머리에 가려진다`).toBeGreaterThanOrEqual(m.headBottom - 0.5);
-      expect(b.bottom, `${tallest.id} @${vp.height}: ${b.name}이(가) 진행 줄 밑으로 밀린다`).toBeLessThanOrEqual(m.barTop + 0.5);
+      expect(b.top, `${tallest.id} @${vp.height}: ${b.name}이(가) 시트 위로 잘린다`).toBeGreaterThanOrEqual(m.headBottom - 0.5);
+      expect(b.bottom, `${tallest.id} @${vp.height}: ${b.name}이(가) 시트 아래로 밀린다`).toBeLessThanOrEqual(m.barTop + 0.5);
       expect(b.covered).toBe(false);
     }
     for (const b of m.reached) {
@@ -273,13 +298,7 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
       expect(b.inside, `${tallest.id} @${vp.height}: ${b.name}에 스크롤로 닿지 않는다`).toBe(true);
       expect(b.covered, `${tallest.id} @${vp.height}: ${b.name}이(가) 다른 요소에 가려져 눌리지 않는다`).toBe(false);
     }
-    for (const b of m.controls) {
-      expect(b.left, b.name).toBeGreaterThanOrEqual(0);
-      expect(b.right, b.name).toBeLessThanOrEqual(m.vw);
-      expect(b.bottom, b.name).toBeLessThanOrEqual(m.vh);
-      expect(b.covered, `${tallest.id} @${vp.height}: ${b.name}이(가) 다른 요소에 가려진다`).toBe(false);
-    }
     expect(await noHorizontalOverflow(page)).toBe(true);
-    testInfo.annotations.push({ type: '측정', description: `${vp.width}x${vp.height} ${tallest.id}: 카드가 보인 자리 가용 영역 ${Math.round(m.headBottom)}~${Math.round(m.barTop)}px` });
+    testInfo.annotations.push({ type: '측정', description: `${vp.width}x${vp.height} ${tallest.id}: 시트 안 가용 영역 ${Math.round(m.headBottom)}~${Math.round(m.barTop)}px` });
   }
 });

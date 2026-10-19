@@ -883,3 +883,45 @@ describe('확률 가중치와 효과에 캐릭터 속성이 반영된다', () =>
     expect(pool.byId.get('test-narrative')).toBe(a);
   });
 });
+
+// =====================================================================================================
+// M7b 인용 연결 필드: citation / noCitation (SPEC-003 MD2, docs/data/content-M7b.md 5절)
+// =====================================================================================================
+
+describe('인용 연결 필드 citation · noCitation (M7b)', () => {
+  it('citation은 인용 id 문자열 또는 세상별 객체, noCitation은 사유 코드(X1~X6·D)다 — 선택지 이벤트에서 통과한다', () => {
+    expect(problemsOf(file(choiceEvent({ citation: 'c-006' })))).toEqual([]);
+    expect(problemsOf(file(choiceEvent({ citation: { present: 'c-006', future: 'c-013' } })))).toEqual([]);
+    expect(problemsOf(file(choiceEvent({ citation: { past: 'c-033' } })))).toEqual([]);
+    for (const code of ['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'D']) expect(problemsOf(file(choiceEvent({ noCitation: code }))), code).toEqual([]);
+  });
+
+  it('잘못된 모양은 로드할 때 바로 드러난다: id 형식 · 알 수 없는 세상 · 빈 객체 · 객체의 id 형식 · 숫자 · 모르는 사유 코드', () => {
+    expect(problemsOf(file(choiceEvent({ citation: 'cite-1' }))).join('\n')).toContain('인용 id 형식');
+    expect(problemsOf(file(choiceEvent({ citation: { fantasy: 'c-006' } }))).join('\n')).toContain('알 수 없는 세상');
+    expect(problemsOf(file(choiceEvent({ citation: {} }))).join('\n')).toContain('비어 있으면 안 된다');
+    expect(problemsOf(file(choiceEvent({ citation: { present: 'c-6' } }))).join('\n')).toContain('인용 id 형식');
+    expect(problemsOf(file(choiceEvent({ citation: 6 }))).join('\n')).toContain('인용 id 문자열 또는');
+    expect(problemsOf(file(choiceEvent({ noCitation: 'X7' }))).join('\n')).toContain('사유 코드');
+    expect(problemsOf(file(choiceEvent({ noCitation: 'd' }))).join('\n')).toContain('사유 코드');
+  });
+
+  it('citation과 noCitation은 함께 쓸 수 없고, 서술 이벤트(카드가 아님)에는 쓸 수 없다', () => {
+    expect(problemsOf(file(choiceEvent({ citation: 'c-006', noCitation: 'D' }))).join('\n')).toContain('함께 쓸 수 없다');
+    expect(problemsOf(file(narrative({ citation: 'c-006' }))).join('\n')).toContain('선택지 이벤트');
+    expect(problemsOf(file(narrative({ noCitation: 'D' }))).join('\n')).toContain('선택지 이벤트');
+  });
+
+  it('이 카드가 뜨지 않는 세상(eras에 없음)에 인용을 적으면 영원히 쓰이지 않는 연결이라 오류다', () => {
+    expect(problemsOf(file(choiceEvent({ eras: ['present'], citation: { present: 'c-006' } })))).toEqual([]);
+    expect(problemsOf(file(choiceEvent({ eras: ['present'], citation: { past: 'c-006' } }))).join('\n')).toContain('past 세상에서 일어나지 않는다');
+  });
+
+  it('실제 풀: 선택지 이벤트 90개 각각이 citation·noCitation 중 하나이거나 2차 대기 목록에 있다 (자세한 대조는 tests/citationLink.test.ts)', () => {
+    const cards = EVENT_POOL.events.filter(isChoiceEvent);
+    expect(cards).toHaveLength(90);
+    const withField = cards.filter((e) => e.citation !== undefined || e.noCitation !== undefined);
+    expect(withField).toHaveLength(77); // 나머지 13개는 T-01~T-13 2차 대기
+    for (const e of cards) expect(e.citation !== undefined && e.noCitation !== undefined, e.id).toBe(false);
+  });
+});

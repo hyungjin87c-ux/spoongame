@@ -7,6 +7,7 @@
  *   ① 가로 넘침(문서·요소 단위, shootMockups.mjs와 같은 규칙) ② 낱말 끊김 `e2e/lineBreaks.ts#measureWordBreaks`(QM3-1 — broken 0, 글자 100%에서는 unavoidable도 0)
  *   ③ CM10 포커스 가림 `e2e/focusObscured.ts#auditFocus`(320×256 × 200%는 SPEC r5 메모대로 제외) ④ 렌더 픽셀 대비 `e2e/renderedContrast.ts#measureRenderedContrast`(색 바탕 상자의 글자 ≥ 4.5:1).
  * 결과는 표준 출력(요약 + 위반 목록)과 `--out` 폴더의 JSON. 위반이 하나라도 있으면 종료 코드 1. 스크린샷은 찍지 않는다(샷은 shootMockups.mjs).
+ * 2026-10-19(M7b): 모달 시트 상태에서는 ①②를 잰 뒤 `[inert]`(스크림 뒤 바깥)를 visibility: hidden으로 두고 ③④를 잰다. ④ 앞에는 닫힌 <details> 본문을 숨기고 안쪽 스크롤 목록을 펼친다(측정기 사각지대 — 본문 주석).
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -92,6 +93,10 @@ for (const state of states) {
         row.checked = wb.checked;
         for (const p of row.broken) problems.push(`[${label}] 끊김: ${p}`);
         if (text === 100) for (const p of row.unavoidable) problems.push(`[${label}] 글자 100%의 한 줄보다 긴 낱말: ${p}`);
+        // 모달 시트가 떠 있는 상태(M7b 중대 결정 카드 — 바깥이 `inert`): 스크림 뒤의 헤더·진행 줄·본문은 닿을 수도 읽을 수도 없는 글자다. 측정기(focusObscured·renderedContrast)는 겹침 순서를 모르므로
+        // 뒤에 깔린 sticky 헤더·하단 띠를 「가리는 고정 요소」로, 스크림에 어두워진 글자를 「대비 미달」로 센다 — ①②(넘침·끊김)를 잰 뒤 `[inert]`를 visibility: hidden으로 두고 ③④를 잰다(배치는 그대로, 측정기가 숨김으로 건너뛴다).
+        // 구현 e2e도 모달 상태에서는 같은 처리가 필요하다(docs/design/diff-003.md D-59).
+        if ((await page.locator('[inert]').count()) > 0) await page.addStyleTag({ content: '[inert] { visibility: hidden !important; }' });
         // ③ CM10 (320×256 × 200%는 제외 — SPEC-003 r5 메모)
         if (!(vp.name === 'low320x256' && text === 200)) {
           const audit = await auditFocus(page, label, { headingTestId: null });
@@ -99,6 +104,10 @@ for (const state of states) {
           for (const v of audit.violations) problems.push(`[${label}] CM10: ${v}`);
         }
         // ④ 렌더 대비 — 글자 100%의 세 뷰포트에서만(요소 샷 기반이라 느리다; 글자 200%는 같은 색 쌍이다)
+        // 측정기의 두 사각지대(대시보드 시안에서 처음 드러남, 2026-10-19): 닫힌 <details>의 본문은 그려지지 않는데 글자 상자가 잡혀 경계선 색을 글자색으로 읽고, 안쪽 스크롤 목록(.log__list)에서 화면 밖으로 밀린 줄은 요소 샷에 글자가 없어 1.00:1이 된다.
+        // 앞의 것은 숨기고 뒤의 것은 목록을 펼쳐(색 쌍은 그대로) 잰다 — 대비 단계는 마지막이라 다른 측정에 영향이 없다.
+        // 셋째: 측정기는 하단 띠만 숨기고 요소를 화면 안으로 스크롤해 찍는데, 대시보드의 sticky 헤더가 그 요소의 윗부분을 덮어 머리 글자(「인생 기록」「카드 접기」)가 헤더 바탕색으로 읽혔다 — 대비 단계에서만 헤더 고정을 푼다(색 쌍은 그대로).
+        await page.addStyleTag({ content: 'details:not([open]) > :not(summary) { visibility: hidden !important; } .log__list { max-height: none !important; overflow: visible !important; } .dash-head { position: static !important; }' });
         if (text === 100 && vp.name !== 'low320x256') {
           const rc = await measureRenderedContrast(page, { min: 4.5 });
           row.contrastMin = rc.min;

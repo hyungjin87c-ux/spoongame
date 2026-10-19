@@ -318,6 +318,6 @@ test.describe('r3 증거 스크린샷 (360×740)', () => {
 async function openStateAny(page: Page, state: GameState, screenTestId: string): Promise<void> {
   await startPageHidden(page);
   await page.goto('/');
-  await injectSave(page, state, '/', { speed: 1, autoMode: false });
+  await injectSave(page, state, '/', { speed: 1, autoMode: true }); // 인라인 카드(M7b) — 가려진 탭이라 자동 선택은 일어나지 않는다
   await expect(page.getByTestId(screenTestId)).toBeVisible();
 }
