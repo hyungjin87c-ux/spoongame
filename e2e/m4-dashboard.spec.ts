@@ -5,6 +5,7 @@ import {
   KNOWN_SEED,
   SAVE_VERSION,
   SETTINGS_KEY,
+  activeTestId,
   findPendingState,
   injectSave,
   lifeState,
@@ -594,35 +595,31 @@ test('의견 보내기: 새 탭으로 GitHub 이슈 작성 화면이 열리고 �
   await expect(page.getByTestId('life-screen')).toBeVisible();
 });
 
-// ---------- DB3: 생각 남기기 자리 ----------
+// ---------- DB3: 생각 남기기 도구 (M7c부터 보통 버튼) ----------
 
-test('생각 남기기 (R-326): M7c까지 버튼 자리만 — 선택할 수 없는 모양(점선·옅은 글자)이고 접근 가능한 이름에 「준비 중」이 있으며, 눌러도 아무 일도 없다 (포커스는 받는다)', async ({ page }) => {
+test('생각 남기기 (M7c D-75): 보통 버튼이다 — 「준비 중」 표식·점선·지속 비활성이 없고, 이름은 「생각 남기기」, 눌러 기록 시트(dialog)가 열린다', async ({ page }) => {
   await startPageHidden(page);
   await page.goto('/');
   await injectSave(page, lifeState(KNOWN_SEED), '/', MANUAL);
   const note = page.getByTestId('tool-note');
   await expect(page.getByTestId('tool-bgm'), '입력 가드가 풀릴 때까지').toBeEnabled();
-  // 호출자의 지속 비활성: 가드가 풀린 뒤에도 aria-disabled이고, 가드와 구분되는 표식(data-unavailable)이 있다
-  await expect(note).toHaveAttribute('aria-disabled', 'true');
-  await expect(note).toHaveAttribute('data-unavailable', 'true');
-  // 이유(준비 중)는 눈에 보이는 글자이고 접근 가능한 이름 안에 있다 — 라디오 카드 「약 1시간」의 「준비 중」과 같은 방식
-  await expect(note).toContainText('준비 중');
-  await expect(note).toHaveAccessibleName('생각 남기기 준비 중');
+  await expect(note, '가드가 풀린 뒤에는 보통 버튼').toBeEnabled();
+  await expect(note).not.toHaveAttribute('aria-disabled', 'true');
+  await expect(note).not.toHaveAttribute('data-unavailable', /.*/);
+  await expect(note).toHaveAttribute('aria-haspopup', 'dialog');
+  await expect(note).not.toContainText('준비 중');
+  await expect(note).toHaveAccessibleName('생각 남기기');
   const look = await note.evaluate((el) => {
     const cs = getComputedStyle(el);
     return { opacity: cs.opacity, borderStyle: cs.borderTopStyle };
   });
-  expect(look, '불투명도로 흐리지 않고 점선으로 드러낸다').toEqual({ opacity: '1', borderStyle: 'dashed' });
-  // 누르면 아무 일도 없다: 안내 요소가 생기지 않고 게임 상태가 그대로다. aria-disabled라 Playwright의 보통 click은 기다리다 시간 초과이므로 강제로 보낸다
-  const before = JSON.stringify((await readSave(page)).data);
-  await note.click({ force: true });
-  await note.focus();
-  await expect(note, '키보드로 포커스를 받는다').toBeFocused();
-  await page.keyboard.press('Enter');
-  await page.keyboard.press('Space');
-  await expect(page.getByTestId('note-soon')).toHaveCount(0);
-  await expect(note).not.toHaveAttribute('aria-describedby');
-  expect(JSON.stringify((await readSave(page)).data), '게임 상태는 그대로').toBe(before);
+  expect(look.borderStyle, '지속 비활성의 점선이 아니다').not.toBe('dashed');
+  // 누르면 기록 시트가 열리고(수동 기록), 닫으면(Esc) 시트가 사라지고 포커스가 버튼으로 돌아온다 — 세부 동작은 m7c-note.spec.ts
+  await note.click();
+  await expect(page.getByTestId('note-sheet')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('note-sheet')).toHaveCount(0);
+  await expect.poll(() => activeTestId(page)).toBe('tool-note');
 });
 
 // ---------- DB8: 나가기 ----------
@@ -717,7 +714,7 @@ test('이전 버전(v6) 인생 저장은 새 게임으로 시작하고 첫 화�
   await expect(page.getByTestId('old-save-notice')).toHaveText('이전 버전에서 저장된 판은 이어서 할 수 없어 새 게임으로 시작합니다.');
   await expect(page.getByTestId('resume')).toHaveCount(0);
   expect((await readSave(page)).version).toBe(SAVE_VERSION);
-  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system' });
+  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true });
 });
 
 // ---------- DB1: 열 배치 ----------

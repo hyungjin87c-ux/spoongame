@@ -312,7 +312,7 @@ export function validateMotifs(data: unknown, options: ValidateOptions = {}): Va
 
 /** 따옴표·쉼표·줄바꿈이 들어간 칸을 처리하는 최소 CSV 파서. 맨 앞 BOM은 지운다. 빈 줄은 건너뛴다 */
 export function parseCsv(text: string): string[][] {
-  const src = text.replace(/^﻿/, '');
+  const src = text.replace(/^\uFEFF/, '');
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';

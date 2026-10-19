@@ -203,10 +203,10 @@ export function describeWordBreak(r: WordBreakRecord): string {
 }
 
 /**
- * 한 줄의 폭을 바깥 격자가 아니라 **상자 자신의 안쪽 폭**으로 재는 상자 (M7b). 인용 박스(`.cite`)는 옅은 쪽빛 면 + 놋쇠 막대 + 안쪽 여백을 가진 상자라 카드 폭에서 그만큼 좁다 —
+ * 한 줄의 폭을 바깥 격자가 아니라 **상자 자신의 안쪽 폭**으로 재는 상자 (M7b; M7c D-80에서 「나의 기록」 줄 — 인생 기록 `.log__row--note`·엔딩 연표 `.timeline li.is-note` — 이 더해졌다: 나이 칸을 뺀 글 칸이 한 줄이다). 인용 박스(`.cite`)는 옅은 쪽빛 면 + 놋쇠 막대 + 안쪽 여백을 가진 상자라 카드 폭에서 그만큼 좁다 —
  * 글자 200% × 폭 320에서 「국민노후보장패널조사」 같은 긴 기관 이름은 카드 폭에는 들어도 박스 안쪽 폭보다 길어 어디서든 끊어야 한다(한 줄보다 긴 낱말 = unavoidable). 글자 100%에서는 여전히 0이어야 한다.
  */
-export const FACE_BOXES: readonly string[] = ['.cite'];
+export const FACE_BOXES: readonly string[] = ['.cite', '.log__row--note', '.timeline li.is-note'];
 
 /**
  * 눈에 보이는 모든 글자의 **낱말이 중간에서 끊겼는가**를 잰다 (QM3-1). 판정식:
@@ -375,6 +375,8 @@ export async function measureWordBreaks(page: Page, options: WordBreakOptions = 
         const text = node as Text;
         const parent = text.parentElement;
         if (parent === null || isHidden(parent)) continue;
+        // 사용자가 쓴 글(`[data-user-text]`)은 우리 문구가 아니라 어디서든 끊길 수 있다(design-system.md 11-8 「사용자 글 영역」, D-80) — 낱말 끊김에서만 뺀다. 넘침·줄바꿈 감사·대비는 이 글도 잰다
+        if (parent.closest('[data-user-text]') !== null) continue;
         const ifc = ifcRootOf(parent);
         for (let i = 0; i < text.data.length; i++) {
           const ch = text.data[i];

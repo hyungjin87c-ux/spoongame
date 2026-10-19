@@ -26,7 +26,7 @@ import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type MouseE
  * 가드가 풀려도 호출자의 비활성은 그대로 유지된다. 어느 쪽이든 포커스는 받는다.
  *
  * 비활성의 두 가지 모양(R-337, SPEC-003 DS3·docs/design/design-system.md 2절 「비활성 컨트롤의 대비」): ① 진입 직후 0.4초 입력 가드는 과도 상태라 `aria-disabled`만 붙고 CSS가 흐리게(불투명도) 그린다.
- * ② 호출자가 넘긴 **지속 비활성**(자동 모드 내내인 「다음 결정으로」·준비 중인 「생각 남기기」)은 눈에 보이는 글자가 읽혀야 하므로 `data-unavailable="true"`도 함께 붙고, CSS가 불투명도 대신
+ * ② 호출자가 넘긴 **지속 비활성**(자동 모드 내내인 「다음 결정으로」 — 「생각 남기기」는 M7c부터 보통 버튼이다)은 눈에 보이는 글자가 읽혀야 하므로 `data-unavailable="true"`도 함께 붙고, CSS가 불투명도 대신
  * 옅은 글자(`--c-text-3`) + 점선 테두리로 그린다(대비 4.5:1, 새 토큰 없음). 렌더 대비 e2e(e2e/m4-colors.spec.ts)는 이 요소를 면제하지 않고 잰다.
  */
 export const INPUT_GUARD_MS = 400;
@@ -89,7 +89,7 @@ export function isButtonInert(guardReady: boolean, callerAriaDisabled: ButtonHTM
 
 /**
  * 호출자가 「지금은 누를 수 없다」고 넘긴 비활성인가(`aria-disabled`가 true / 'true'). 0.4초 입력 가드(과도 상태)와 구분하려고 따로 센다 —
- * 호출자의 비활성은 **지속** 비활성(자동 모드 내내 「다음 결정으로」, 준비 중인 「생각 남기기」)이라 눈에 보이는 글자가 읽혀야 한다(R-337).
+ * 호출자의 비활성은 **지속** 비활성(자동 모드 내내 「다음 결정으로」)이라 눈에 보이는 글자가 읽혀야 한다(R-337).
  */
 export function isCallerUnavailable(callerAriaDisabled: ButtonHTMLAttributes<HTMLButtonElement>['aria-disabled']): boolean {
   return callerAriaDisabled === true || callerAriaDisabled === 'true';

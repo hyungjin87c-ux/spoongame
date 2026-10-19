@@ -307,6 +307,8 @@ export function resolveEffects(base: Effects | undefined, bonuses: Bonus[] | und
 // ---------- 스키마 검증 ----------
 
 export const FLAG_PATTERN = /^[a-z][a-z0-9_]{0,38}$/;
+/** 기록 카드(notes.json) id의 접두 — `seen`에 이 접두의 키는 기록 카드 전용이다(M7c, 이벤트 id는 이 접두로 시작하지 못한다) */
+export const NOTE_ID_PREFIX = 'note-';
 export const EVENT_ID_PATTERN = /^[a-z][a-z0-9-]{1,47}$/;
 const CHOICE_ID_PATTERN = /^[a-z][a-z0-9-]{0,31}$/;
 const MAX_AGE_ABS = 110;
@@ -631,6 +633,15 @@ function checkMoneyKinds(ev: Obj, path: string, p: Problems): void {
 function checkCitationFields(ev: Obj, path: string, p: Problems): void {
   if (ev.citation === undefined && ev.noCitation === undefined) return;
   if (ev.choices === undefined) p.add(path, 'citation·noCitation은 선택지 이벤트(중대 결정 카드)에서만 쓴다');
+  checkCitationShape(ev, path, p);
+}
+
+/**
+ * 인용 연결 필드(`citation`·`noCitation`)의 형태만 본다 — 선택지가 있는가는 보지 않는다. 기록 카드(`src/data/notes.json`, core/noteCards.ts)가 같은 모양을 쓰므로 나눠 두었다.
+ * 문제 목록(문장)을 돌려주는 공개 함수는 `citationShapeProblems`다.
+ */
+function checkCitationShape(ev: Obj, path: string, p: Problems): void {
+  if (ev.citation === undefined && ev.noCitation === undefined) return;
   if (ev.citation !== undefined && ev.noCitation !== undefined) p.add(path, 'citation과 noCitation은 함께 쓸 수 없다 (인용이 있으면 사유가 없다)');
   const c = ev.citation;
   if (c !== undefined) {
@@ -656,11 +667,26 @@ function checkCitationFields(ev: Obj, path: string, p: Problems): void {
   }
 }
 
+/** 인용 연결 필드 `citation`·`noCitation`의 형태 문제 목록(문장) — 기록 카드 데이터 검증(core/noteCards.ts)이 쓴다. `card`에는 이 필드들과 `eras`가 든 객체를 준다. */
+export function citationShapeProblems(card: unknown, path: string): string[] {
+  const p = new Problems(path);
+  if (isObj(card)) checkCitationShape(card, '', p);
+  return p.list;
+}
+
+/** 조건 객체(`conditions`·`requires`·`when`과 같은 문법) 하나의 형태 문제 목록(문장) — 기록 카드 데이터 검증(core/noteCards.ts)이 같은 조건 문법을 쓴다. */
+export function conditionProblems(cond: unknown, path: string): string[] {
+  const p = new Problems(path);
+  checkCondition(cond, '', p);
+  return p.list;
+}
+
 function checkEvent(ev: unknown, path: string, p: Problems): void {
   if (!isObj(ev)) return void p.add(path, '이벤트 객체여야 한다');
   checkKeys(ev, EVENT_KEYS, ['id', 'title', 'text', 'stages', 'weight', 'once'], path, p);
   if (typeof ev.id !== 'string' || !EVENT_ID_PATTERN.test(ev.id)) p.add(`${path}.id`, '소문자·숫자·하이픈 2~48자(예: school-exam)여야 한다');
   else if (RESERVED_EVENT_IDS.has(ev.id.toLowerCase())) p.add(`${path}.id`, `예약어라 id로 쓸 수 없다 (${ev.id}) — 본 이벤트 기록에서 상속 속성과 헷갈릴 수 있다`);
+  else if (ev.id.startsWith(NOTE_ID_PREFIX)) p.add(`${path}.id`, `「${NOTE_ID_PREFIX}」로 시작하는 id는 기록 카드(notes.json) 전용 예약이라 이벤트 id로 쓸 수 없다 (본 이벤트 기록 seen에서 둘의 키가 섞이지 않게)`);
   if (ev.title !== undefined) checkText(ev.title, `${path}.title`, 1, 30, p);
   if (ev.text !== undefined) checkText(ev.text, `${path}.text`, 10, 400, p);
   if (ev.stages !== undefined) checkEnumList(ev.stages, STAGES, `${path}.stages`, p);

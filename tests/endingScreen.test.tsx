@@ -41,6 +41,16 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(textOf(html.match(/data-testid="ending-era">([^]*?)<\/p>/)![1])).toBe(`${ERA_CONFIG[game.era].label} · 생애 기록`);
   });
 
+  it('머리 두 줄의 가운뎃점은 aria-hidden이다 (SPEC-003 M7c D-74): 낭독은 「{세상} 생애 기록」·「{출생 연월} ~ {사망 연도}년 {나이}세」, 눈에 보이는 글자는 그대로', () => {
+    const era = html.match(/data-testid="ending-era">([^]*?)<\/p>/)![1];
+    const span = html.match(/data-testid="ending-span">([^]*?)<\/p>/)![1];
+    const readOf = (h: string) => h.replace(/<span aria-hidden="true">[^<]*<\/span>/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    expect(era).toContain('<span aria-hidden="true">·</span>');
+    expect(span).toContain('<span aria-hidden="true">·</span>');
+    expect(readOf(era)).toBe(`${ERA_CONFIG[game.era].label} 생애 기록`);
+    expect(readOf(span)).toBe(`${game.character.birthYear}년 ${game.birthReport!.month}월 ~ ${game.character.birthYear + game.death.age}년 ${game.death.age}세`);
+  });
+
   it('공통 헤더(DS1): 게임명 로고와 화면 이름 「엔딩」이 있고, 옛 <h1>수저 게임</h1>은 없다 — h1은 하나뿐이다 (M4)', () => {
     expect(html).toContain('data-testid="site-head"');
     expect(html).toContain('data-testid="header-logo"');

@@ -9,7 +9,7 @@ export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
 export const SAVE_VERSION = 8;
 /** 설정 봉투 버전(core/storage.ts#SETTINGS_VERSION)과 첫 화면의 기본 선택(core/state.ts#DEFAULT_SETTINGS) — tests/e2eHelpers.test.ts가 core와 같은지 대조한다. */
-export const SETTINGS_VERSION = 3;
+export const SETTINGS_VERSION = 4;
 export const DEFAULT_ERA_CHOICE: Era = 'present';
 export const DEFAULT_LIFE_LENGTH_CHOICE: LifeLength = 'short30';
 /** 재현 가능한 실패를 위한 기본 시드 */
@@ -25,9 +25,13 @@ const YOUNG_MONEY = { assets: null, familyFund: 0 };
 /** e2e가 주입하는 설정: 배속·자동 모드만 줘도 되고(세상·인생 길이는 첫 화면의 기본 선택) 첫 화면의 선택까지 줄 수도 있다. */
 export type InjectedSettings = PlaySettings & Partial<Settings>;
 
-/** 설정 봉투(JSON 문자열). 비어 있는 필드는 기본값으로 채운다. */
+/**
+ * 설정 봉투(JSON 문자열). 비어 있는 필드는 기본값으로 채운다.
+ * **기록 카드(`noteCards`)만은 e2e 기본이 꺼짐이다** — 앱의 기본(켜짐)대로 두면 수동 모드의 시계가 기록 카드에서 멈춰 이전 마일스톤의 e2e가 나이를 기다리다 걸린다(SPEC-003 M7c).
+ * 새 기록 시험(m7c-*)만 `noteCards: true`를 명시한다.
+ */
 export function settingsEnvelope(settings: InjectedSettings): string {
-  return JSON.stringify({ version: SETTINGS_VERSION, data: { era: DEFAULT_ERA_CHOICE, lifeLength: DEFAULT_LIFE_LENGTH_CHOICE, bgm: { on: false, volume: 30 }, theme: 'system', ...settings } });
+  return JSON.stringify({ version: SETTINGS_VERSION, data: { era: DEFAULT_ERA_CHOICE, lifeLength: DEFAULT_LIFE_LENGTH_CHOICE, bgm: { on: false, volume: 30 }, theme: 'system', noteCards: false, ...settings } });
 }
 
 /** 새 게임: 첫 화면(title). 세상·인생 길이는 아직 정해지지 않았다(첫 화면의 선택은 설정에 있다). */

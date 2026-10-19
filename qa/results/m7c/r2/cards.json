@@ -1,0 +1,510 @@
+[
+ {
+  "id": "Q1",
+  "card": "note-infant-memory",
+  "variant": "default",
+  "pred": "true",
+  "era": "present",
+  "found": true,
+  "age": 5,
+  "flags": [
+   "childcare_set"
+  ],
+  "stats": {
+   "education": 16,
+   "health": 75,
+   "happiness": 58,
+   "relationships": 54
+  },
+  "parents": {
+   "mother": 33,
+   "father": 33
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-infant-memory",
+   "kind": "생각 남기기",
+   "title": "다섯 살 무렵을 떠올려 보면, 이시윤에게 기억나는 장면이나 느낌이 있습니까?",
+   "when": "2031년 · 5세",
+   "cite": {
+    "id": "c-037",
+    "text": "연구이른 시기의 환경이 성취와 연관된다는 증거를 정리한 경제학 논문으로, 어릴 때의 투자가 이후 투자의 효과와 이어져 있다고 봅니다.Heckman(2006), Skill formation and the economics of investing in disadvantaged children",
+    "links": 0
+   },
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 다섯 살 무렵을 떠올려 보면, 이시윤에게 기억나는 장면이나 느낌이 있습니까?"
+  },
+  "charName": "이시윤",
+  "shot": "qa/screenshots/003/M7c-r2-Q-infant-memory-default.png"
+ },
+ {
+  "id": "Q1p",
+  "card": "note-infant-memory",
+  "variant": "past",
+  "pred": "true",
+  "era": "past",
+  "found": true,
+  "age": 5,
+  "flags": [],
+  "stats": {
+   "education": 16,
+   "health": 75,
+   "happiness": 60,
+   "relationships": 56
+  },
+  "parents": {
+   "mother": 28,
+   "father": 29
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-infant-memory",
+   "kind": "생각 남기기",
+   "title": "다섯 살 무렵을 떠올려 보면, 이상철에게 기억나는 장면이나 느낌이 있습니까?",
+   "when": "1980년 · 5세",
+   "cite": {
+    "id": "c-037",
+    "text": "연구지금의 연구로는 이른 시기의 환경이 성취와 연관된다는 증거를 정리한 경제학 논문으로, 어릴 때의 투자가 이후 투자의 효과와 이어져 있다고 봅니다.Heckman(2006), Skill formation and the economics of investing in disadvantaged children",
+    "links": 0
+   },
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 다섯 살 무렵을 떠올려 보면, 이상철에게 기억나는 장면이나 느낌이 있습니까?"
+  },
+  "charName": "이상철",
+  "shot": "qa/screenshots/003/M7c-r2-Q-infant-memory-past.png"
+ },
+ {
+  "id": "Q1f",
+  "card": "note-infant-memory",
+  "variant": "future",
+  "pred": "true",
+  "era": "future",
+  "found": true,
+  "age": 5,
+  "flags": [],
+  "stats": {
+   "education": 17,
+   "health": 75,
+   "happiness": 57,
+   "relationships": 57
+  },
+  "parents": {
+   "mother": 34,
+   "father": 34
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-infant-memory",
+   "kind": "생각 남기기",
+   "title": "다섯 살 무렵을 떠올려 보면, 이은호에게 기억나는 장면이나 느낌이 있습니까?",
+   "when": "2054년 · 5세",
+   "cite": {
+    "id": "c-037",
+    "text": "연구지금 기준으로는 이른 시기의 환경이 성취와 연관된다는 증거를 정리한 경제학 논문으로, 어릴 때의 투자가 이후 투자의 효과와 이어져 있다고 봅니다.Heckman(2006), Skill formation and the economics of investing in disadvantaged children",
+    "links": 0
+   },
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 다섯 살 무렵을 떠올려 보면, 이은호에게 기억나는 장면이나 느낌이 있습니까?"
+  },
+  "charName": "이은호",
+  "shot": "qa/screenshots/003/M7c-r2-Q-infant-memory-future.png"
+ },
+ {
+  "id": "Q2",
+  "card": "note-teen-envy",
+  "variant": "default",
+  "pred": "true",
+  "era": "present",
+  "found": true,
+  "age": 16,
+  "flags": [
+   "childcare_set",
+   "stood_up"
+  ],
+  "stats": {
+   "education": 55,
+   "health": 78,
+   "happiness": 58,
+   "relationships": 57
+  },
+  "parents": {
+   "mother": 33,
+   "father": 33
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-teen-envy",
+   "kind": "생각 남기기",
+   "title": "누군가가 부럽거나 샘이 났던 순간이 이시윤에게도 있습니까?",
+   "when": "2042년 · 16세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 누군가가 부럽거나 샘이 났던 순간이 이시윤에게도 있습니까?"
+  },
+  "charName": "이시윤",
+  "shot": "qa/screenshots/003/M7c-r2-Q-teen-envy-default.png"
+ },
+ {
+  "id": "Q3a",
+  "card": "note-first-love",
+  "variant": "first_love",
+  "pred": "has('first_love')",
+  "era": "present",
+  "found": true,
+  "age": 16,
+  "flags": [
+   "childcare_set",
+   "first_love"
+  ],
+  "stats": {
+   "education": 54,
+   "health": 72,
+   "happiness": 55,
+   "relationships": 61
+  },
+  "parents": {
+   "mother": 32,
+   "father": 30
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-first-love",
+   "kind": "생각 남기기",
+   "title": "마음을 전했던 그때를 떠올려 보면, 이유준에게 남아 있는 장면이나 느낌이 있습니까?",
+   "when": "2042년 · 16세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 마음을 전했던 그때를 떠올려 보면, 이유준에게 남아 있는 장면이나 느낌이 있습니까?"
+  },
+  "charName": "이유준",
+  "shot": "qa/screenshots/003/M7c-r2-Q-first-love-first_love.png"
+ },
+ {
+  "id": "Q3b",
+  "card": "note-first-love",
+  "variant": "default",
+  "pred": "!has('first_love')",
+  "era": "present",
+  "found": true,
+  "age": 19,
+  "flags": [
+   "childcare_set",
+   "college",
+   "stood_up"
+  ],
+  "stats": {
+   "education": 75,
+   "health": 78,
+   "happiness": 51,
+   "relationships": 57
+  },
+  "parents": {
+   "mother": 33,
+   "father": 33
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-first-love",
+   "kind": "생각 남기기",
+   "title": "처음 누군가에게 마음이 갔던 기억이 이시윤에게 있습니까?",
+   "when": "2045년 · 19세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 처음 누군가에게 마음이 갔던 기억이 이시윤에게 있습니까?"
+  },
+  "charName": "이시윤",
+  "shot": "qa/screenshots/003/M7c-r2-Q-first-love-default.png"
+ },
+ {
+  "id": "Q4b",
+  "card": "note-youth-romance",
+  "variant": "partner",
+  "pred": "has('has_partner') || has('married')",
+  "era": "present",
+  "found": true,
+  "age": 30,
+  "flags": [
+   "has_career",
+   "has_partner",
+   "lives_with_parents",
+   "met_intro"
+  ],
+  "stats": {
+   "education": 65,
+   "health": 78,
+   "happiness": 46,
+   "relationships": 65
+  },
+  "parents": {
+   "mother": 34,
+   "father": 33
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-youth-romance",
+   "kind": "생각 남기기",
+   "title": "함께하는 사람과 보낸 시간 가운데 이유준에게 오래 남은 장면이 있습니까?",
+   "when": "2056년 · 30세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 함께하는 사람과 보낸 시간 가운데 이유준에게 오래 남은 장면이 있습니까?"
+  },
+  "charName": "이유준",
+  "shot": "qa/screenshots/003/M7c-r2-Q-youth-romance-partner.png"
+ },
+ {
+  "id": "Q4c",
+  "card": "note-youth-romance",
+  "variant": "default",
+  "pred": "!has('broke_up') && !has('has_partner') && !has('married')",
+  "era": "present",
+  "found": true,
+  "age": 29,
+  "flags": [
+   "childcare_set",
+   "college",
+   "gave_up_exam",
+   "met_intro",
+   "stood_up"
+  ],
+  "stats": {
+   "education": 84,
+   "health": 80,
+   "happiness": 45,
+   "relationships": 60
+  },
+  "parents": {
+   "mother": 33,
+   "father": 33
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-youth-romance",
+   "kind": "생각 남기기",
+   "title": "누군가를 만나 마음을 나누는 일에 대해, 이시윤에게 떠오르는 생각이 있습니까?",
+   "when": "2055년 · 29세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 누군가를 만나 마음을 나누는 일에 대해, 이시윤에게 떠오르는 생각이 있습니까?"
+  },
+  "charName": "이시윤",
+  "shot": "qa/screenshots/003/M7c-r2-Q-youth-romance-default.png"
+ },
+ {
+  "id": "Q5a",
+  "card": "note-illness",
+  "variant": "event",
+  "pred": "s.seen['middle-health-crisis'] !== undefined || s.seen['senior-illness'] !== undefined",
+  "era": "present",
+  "found": true,
+  "age": 69,
+  "flags": [
+   "childcare_set",
+   "college",
+   "gave_up_exam",
+   "hobby",
+   "lives_alone",
+   "own_business",
+   "parents_gone"
+  ],
+  "stats": {
+   "education": 59,
+   "health": 46,
+   "happiness": 39,
+   "relationships": 61
+  },
+  "parents": {
+   "mother": 33,
+   "father": 38
+  },
+  "seenIllness": [
+   "senior-illness"
+  ],
+  "onScreen": {
+   "card": "note-illness",
+   "kind": "생각 남기기",
+   "title": "몸이 아팠던 시간을 떠올려 보면, 김이준에게 남아 있는 마음이나 장면이 있습니까?",
+   "when": "2095년 · 69세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 몸이 아팠던 시간을 떠올려 보면, 김이준에게 남아 있는 마음이나 장면이 있습니까?"
+  },
+  "charName": "김이준",
+  "shot": "qa/screenshots/003/M7c-r2-Q-illness-event.png"
+ },
+ {
+  "id": "Q5b",
+  "card": "note-illness",
+  "variant": "lowhealth",
+  "pred": "s.seen['middle-health-crisis'] === undefined && s.seen['senior-illness'] === undefined && s.stats.health <= 35",
+  "era": "present",
+  "found": true,
+  "age": 73,
+  "flags": [
+   "checked_up",
+   "college",
+   "has_career",
+   "has_partner",
+   "health_ignored",
+   "job_changed",
+   "lives_with_parents",
+   "married",
+   "met_intro",
+   "own_business",
+   "own_home",
+   "parents_gone",
+   "stood_up",
+   "younger_sibling"
+  ],
+  "stats": {
+   "education": 57,
+   "health": 33,
+   "happiness": 57,
+   "relationships": 62
+  },
+  "parents": {
+   "mother": 34,
+   "father": 37
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-illness",
+   "kind": "생각 남기기",
+   "title": "몸이 아팠던 시간을 떠올려 보면, 김유나에게 남아 있는 마음이나 장면이 있습니까?",
+   "when": "2099년 · 73세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 몸이 아팠던 시간을 떠올려 보면, 김유나에게 남아 있는 마음이나 장면이 있습니까?"
+  },
+  "charName": "김유나",
+  "shot": "qa/screenshots/003/M7c-r2-Q-illness-lowhealth.png"
+ },
+ {
+  "id": "Q6",
+  "card": "note-parents-aging",
+  "variant": "default",
+  "pred": "!has('parents_gone')",
+  "era": "present",
+  "found": true,
+  "age": 32,
+  "flags": [
+   "childcare_set",
+   "college",
+   "gave_up_exam",
+   "has_career",
+   "met_intro",
+   "stood_up"
+  ],
+  "stats": {
+   "education": 84,
+   "health": 79,
+   "happiness": 50,
+   "relationships": 60
+  },
+  "parents": {
+   "mother": 33,
+   "father": 33
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-parents-aging",
+   "kind": "생각 남기기",
+   "title": "부모님이 예전보다 나이 들었다고 느낀 순간이 이시윤에게 있습니까?",
+   "when": "2058년 · 32세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 부모님이 예전보다 나이 들었다고 느낀 순간이 이시윤에게 있습니까?"
+  },
+  "charName": "이시윤",
+  "shot": "qa/screenshots/003/M7c-r2-Q-parents-aging-default.png"
+ },
+ {
+  "id": "Q7",
+  "card": "note-midlife",
+  "variant": "default",
+  "pred": "true",
+  "era": "present",
+  "found": true,
+  "age": 49,
+  "flags": [
+   "childcare_set",
+   "college",
+   "gave_up_exam",
+   "has_partner",
+   "marriage_waited_twice",
+   "met_intro",
+   "own_business",
+   "stood_up"
+  ],
+  "stats": {
+   "education": 84,
+   "health": 71,
+   "happiness": 49,
+   "relationships": 56
+  },
+  "parents": {
+   "mother": 33,
+   "father": 33
+  },
+  "seenIllness": [],
+  "onScreen": {
+   "card": "note-midlife",
+   "kind": "생각 남기기",
+   "title": "살아온 시간을 돌아보는 지금, 이시윤에게 인생은 어떤 것처럼 느껴집니까?",
+   "when": "2075년 · 49세",
+   "cite": null,
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "keep": "적어두고 살기",
+   "skip": "마음속에 담고 살기",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "dialogName": "생각 남기기 살아온 시간을 돌아보는 지금, 이시윤에게 인생은 어떤 것처럼 느껴집니까?"
+  },
+  "charName": "이시윤",
+  "shot": "qa/screenshots/003/M7c-r2-Q-midlife-default.png"
+ },
+ {
+  "id": "QM",
+  "card": "manual",
+  "variant": "manual",
+  "found": true,
+  "onScreen": {
+   "title": "지금 윤수호의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "kind": "생각 남기기",
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다."
+  },
+  "shot": "qa/screenshots/003/M7c-r2-Q-manual.png"
+ }
+]

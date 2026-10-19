@@ -52,10 +52,11 @@ test('프로덕션 번들: 첫 화면 → 태어나기 → 룰렛 → 출생신�
   // M4 대시보드: 일시정지, 도구 줄 5개, 올해 진행률 바, 프로필·상태·자산·인생 기록·식구·같은 해 태어난 사람들 카드가 제품 번들에서도 그려진다
   await expect(page.getByTestId('pause')).toBeVisible();
   for (const id of ['tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit']) await expect(page.getByTestId(id)).toBeVisible();
-  // R-326·R-337: 생각 남기기는 M7c까지 선택할 수 없는 자리(점선·「준비 중」이 접근 가능한 이름에)이고 제품 번들의 CSS도 지속 비활성 모양을 그린다
-  await expect(page.getByTestId('tool-note')).toHaveAccessibleName('생각 남기기 준비 중');
-  await expect(page.getByTestId('tool-note')).toHaveAttribute('data-unavailable', 'true');
-  expect(await page.getByTestId('tool-note').evaluate((el) => getComputedStyle(el).borderTopStyle)).toBe('dashed');
+  // M7c D-75: 생각 남기기는 보통 버튼이다 — 「준비 중」 표식·점선이 없고 눌러서 기록 시트(dialog)가 열린다(제품 번들에서도)
+  await expect(page.getByTestId('tool-note')).toHaveAccessibleName('생각 남기기');
+  await expect(page.getByTestId('tool-note')).toHaveAttribute('aria-haspopup', 'dialog');
+  await expect(page.getByTestId('tool-note')).not.toHaveAttribute('data-unavailable', /.*/);
+  expect(await page.getByTestId('tool-note').evaluate((el) => getComputedStyle(el).borderTopStyle)).not.toBe('dashed');
   await expect(page.getByTestId('year-progress')).toHaveAttribute('role', 'progressbar');
   for (const id of ['profile-card', 'stats', 'assets-card', 'log', 'family-card', 'peers-now-card']) await expect(page.getByTestId(id)).toBeVisible();
   await expect(page.getByTestId('peer-now')).toHaveCount(4);
@@ -63,6 +64,37 @@ test('프로덕션 번들: 첫 화면 → 태어나기 → 룰렛 → 출생신�
   // 인생 화면으로 넘어가면 저장이 남는다
   const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY);
   expect(saved?.data?.phase).toBe('life');
+  expect(errors).toEqual([]);
+});
+
+test('프로덕션 번들: 「생각 남기기」 — 눌러 기록 시트가 열리고(모달·문서 스크롤 잠금·포커스는 질문), 글을 적어 저장하면 인생 기록에 「나의 기록」 줄이 생기며 Esc로 닫으면 포커스가 그 버튼으로 돌아온다', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/');
+  await toLifeScreen(page);
+  const tool = page.getByTestId('tool-note');
+  await expect(tool).toBeEnabled(); // 입력 가드가 풀릴 때까지
+  await tool.click();
+  const sheet = page.getByTestId('note-sheet');
+  await expect(sheet).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveAccessibleName(/^생각 남기기 .*마음에 남아 있는 장면이나 생각/);
+  await expect(page.getByTestId('note-title')).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.classList.contains('sheet-open')), '문서 스크롤 잠금').toBe(true);
+  expect(await page.getByTestId('note-input').evaluate((el) => parseFloat(getComputedStyle(el).fontSize)), '입력란 글자 크기 ≥ 16px').toBeGreaterThanOrEqual(16);
+  await expect(page.getByTestId('note-input')).not.toHaveAttribute('maxlength', '140');
+  await page.keyboard.press('Escape'); // 글이 없으니 확인 없이 닫힌다
+  await expect(sheet).toHaveCount(0);
+  await expect(tool).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.classList.contains('sheet-open')), '닫으면 잠금이 풀린다').toBe(false);
+  await tool.click();
+  await expect(page.getByTestId('note-save')).toBeEnabled();
+  await page.getByTestId('note-input').fill('제품 번들 수동 기록');
+  await page.getByTestId('note-save').click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByTestId('note-text').last()).toHaveText('제품 번들 수동 기록');
+  await expect(page.getByTestId('note-label').last()).toContainText('나의 기록');
+  const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY);
+  expect(saved.data.history.filter((h: { kind: string }) => h.kind === 'note').map((h: { text: string }) => h.text)).toEqual(['제품 번들 수동 기록']);
+  expect(await page.evaluate(() => localStorage.getItem('suzeo-game:settings')?.includes('제품 번들 수동 기록')), '설정 키에 글이 없다').toBe(false);
   expect(errors).toEqual([]);
 });
 
@@ -170,9 +202,23 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   const skip = page.getByTestId('skip');
   let choices = 0;
   let skips = 0;
+  let notesWritten = 0;
+  let notesSeen = 0;
   // 선택지가 떠 있으면 첫 선택지를 고르고, 없으면 "다음 결정으로"를 누른다. 연출 타이머가 끼어들어 상태가 바뀌면(드물다) 다시 판단한다.
+  // 기록 카드(M7c)가 뜨면 시트가 모달이라 바깥이 inert다: 처음 한 번은 글을 적어 두고(1번), 나머지는 마음속에 담고 넘어간다(2번, 글이 없어 확인 없이 닫힌다).
   for (let step = 0; step < 400 && !(await ending.isVisible()); step++) {
     try {
+      if (await page.getByTestId('note-sheet').isVisible()) {
+        notesSeen++;
+        if (notesWritten === 0) {
+          await page.getByTestId('note-input').fill('제품 번들에서 적은 글');
+          await page.getByTestId('note-save').click({ timeout: 5_000 }); // 입력 가드(0.4초)가 풀릴 때까지 기다린다
+          notesWritten++;
+        } else {
+          await page.getByTestId('note-skip').click({ timeout: 5_000 });
+        }
+        continue;
+      }
       if (await panel.isVisible()) {
         await panel.locator('button.choice').first().click({ timeout: 5_000 }); // 선택지 가드가 풀릴 때까지 기다린다 (M7b: 카드 머리의 「카드 접기」가 첫 버튼이라 선택지 버튼만 고른다)
         choices++;
@@ -187,13 +233,16 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(ending).toBeVisible();
   expect(choices, '선택지를 한 번 이상 골랐다').toBeGreaterThan(0);
   expect(skips, '"다음 결정으로"를 한 번 이상 눌렀다').toBeGreaterThan(0);
+  expect(notesSeen, '기록 카드가 한 번 이상 떠서 시트가 보였다(수동 모드 · 카드 켜짐이 기본)').toBeGreaterThan(0);
+  expect(notesWritten, '글을 한 번 적었다').toBe(1);
 
   // 저장: 엔딩 단계, 사망 정보가 있고, 고른 선택이 연표에 남아 있다
   const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), GAME_KEY);
   expect(saved?.data?.phase).toBe('ending');
   expect(saved?.data?.death, '사망 정보가 저장돼 있다').toBeTruthy();
-  const history = saved.data.history as Array<{ kind: string; age: number }>;
+  const history = saved.data.history as Array<{ kind: string; age: number; text: string }>;
   expect(history.filter((h) => h.kind === 'choice').length, '연표의 선택 기록 수').toBe(choices);
+  expect(history.filter((h) => h.kind === 'note').map((h) => h.text), '적은 글 한 건만 연표에 남았다(마음속에 담은 카드는 줄이 없다)').toEqual(['제품 번들에서 적은 글']);
   expect(history.some((h) => h.kind === 'death')).toBe(true);
   // 새로고침해도 엔딩에 머무른다
   await page.reload();
@@ -203,7 +252,9 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   // 엔딩 회고(제품 번들): 사망 한 줄·출발선 대비(같은 세상 안의 자리)·최종 스탯·연표(선택한 순간이 빠짐없이)
   await expect(page.getByTestId('ending-death')).toContainText(`${saved.data.death.age}세에 세상을 떠났습니다`);
   await expect(page.getByTestId('ending-journey')).toContainText('의 집에서 태어');
-  await expect(page.getByTestId('ending-movement')).toBeVisible();
+  // 방향 문장은 스무 살(독립) 이후 사망한 판에만 있다(core/ending.ts#reviewEnding — 그 전이면 `early`). 시드가 무작위라 드물게(약 0.2%) 일찍 떠난 판이 걸린다
+  if (saved.data.death.age >= 20) await expect(page.getByTestId('ending-movement')).toBeVisible();
+  else await expect(page.getByTestId('ending-movement')).toHaveCount(0);
   // 재산 스탯은 없어졌다(M5 2a, 저장 v8) — 최종 순자산 줄은 2b에서 더해진다
   for (const key of ['education', 'health', 'happiness', 'relationships']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
   // 바뀐 기대(M4): 외모는 점수 숫자가 아니라 「상위/하위 약 N%」 한 가지로만 (R-135)
@@ -425,7 +476,7 @@ test('수동 테마 사전 적용(매트릭스, 스크립트 차단): 수동 라
     { label: '저장 없음 · OS 다크', saved: null, os: 'dark', expected: 'dark' },
     { label: '저장 없음 · OS 라이트', saved: null, os: 'light', expected: 'light' },
     { label: '깨진 저장(수동 다크로 읽지 않는다) · OS 라이트', saved: '{"version":3,"data":', os: 'light', expected: 'light' },
-    { label: '모르는 버전의 다크 · OS 라이트', saved: JSON.stringify({ version: 4, data: { speed: 1, autoMode: false, theme: 'dark' } }), os: 'light', expected: 'light' },
+    { label: '모르는 버전의 다크 · OS 라이트', saved: JSON.stringify({ version: 5, data: { speed: 1, autoMode: false, theme: 'dark' } }), os: 'light', expected: 'light' },
   ];
   for (const c of cases) {
     const context = await browser.newContext({ viewport: { width: 360, height: 740 } });
@@ -640,7 +691,11 @@ test('제품 번들 CSS(M3, R-302): 컨테이너 3종·@container docbody/cmp·c
   const guardedDecision = /@supports\s*\(\s*width:\s*1cqi\s*\)\s*\{\s*\.decision__title\s*\{\s*font-size:\s*max\(\s*var\(--fs-lg\)\s*,\s*min\(\s*var\(--fs-xl\)\s*,\s*calc\(\s*100cqi\s*\/\s*var\(--title-chars\s*,\s*8\)\s*\)\s*\)\s*\)\s*;?\s*\}\s*\}/;
   expect(css, '카드 제목 상한: @supports (width: 1cqi) 안의 max(바닥, min(상한, 100cqi ÷ 칸 수))').toMatch(guardedDecision);
   expect(css, '카드 몸(.decision__body)이 컨테이너다').toMatch(/\.decision__body\s*\{[^}]*container-type:\s*inline-size/);
-  expect(css.replace(guarded, '').replace(guardedDash, '').replace(guardedDecision, ''), 'cqi는 그 @supports 블록들 밖에 없다(밖에 있으면 모르는 브라우저에서 font-size가 unset)').not.toMatch(/\dcqi\b/);
+  // M7c(D-68): 기록 시트 질문(h2.sheet__title)의 상한도 같은 모양으로 자기 @supports 블록에 있다 (컨테이너는 .sheet__body)
+  const guardedNote = /@supports\s*\(\s*width:\s*1cqi\s*\)\s*\{\s*\.sheet__title\s*\{\s*font-size:\s*max\(\s*var\(--fs-lg\)\s*,\s*min\(\s*var\(--fs-xl\)\s*,\s*calc\(\s*100cqi\s*\/\s*var\(--title-chars\s*,\s*8\)\s*\)\s*\)\s*\)\s*;?\s*\}\s*\}/;
+  expect(css, '기록 시트 질문 상한: @supports (width: 1cqi) 안의 max(바닥, min(상한, 100cqi ÷ 칸 수))').toMatch(guardedNote);
+  expect(css, '시트 몸(.sheet__body)이 컨테이너다').toMatch(/\.sheet__body\s*\{[^}]*container-type:\s*inline-size/);
+  expect(css.replace(guarded, '').replace(guardedDash, '').replace(guardedDecision, '').replace(guardedNote, ''), 'cqi는 그 @supports 블록들 밖에 없다(밖에 있으면 모르는 브라우저에서 font-size가 unset)').not.toMatch(/\dcqi\b/);
 
   // ④ 폴백
   expect(css, '폴백: 컨테이너 질의를 모르는 브라우저에서 뷰포트 639px 이하 비교 표 쌓기').toMatch(

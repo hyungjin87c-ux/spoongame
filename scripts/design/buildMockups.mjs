@@ -33,6 +33,10 @@ import { PARENTING_LABEL, standingLabel } from '../../src/data/birthText.ts';
 import { ERA_CONFIG } from '../../src/data/birthTable.ts';
 import { ENDING_HEADINGS, ENDING_HEAD_LABEL, FINAL_NET_TEXT, JOURNEY_BAR_LEGEND, JOURNEY_NOTE, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, bandLabel, choiceCountText, deathLineText, endingSpanText, journeyBarLabel, journeyText, stageHeadingText } from '../../src/data/endingText.ts';
 import { deathEntryText } from '../../src/data/lifeText.ts';
+import { NOTE_TEXT } from '../../src/data/noteSheetText.ts';
+import { NOTE_CARDS, NOTE_MANUAL } from '../../src/data/noteCards.ts';
+import { fillNoteName } from '../../src/core/notes.ts';
+import { NOTE_LIMITS } from '../../src/core/noteText.ts';
 import { KeepStanding } from '../../src/ui/KeepStanding.tsx';
 import { getCarouselIndicators, getRegionFootnote, getUsableIndicator } from '../../src/data/koreaStatsAccess.ts';
 import { placeLabel } from '../../src/data/regionNames.ts';
@@ -476,26 +480,25 @@ ${bar}
 // ---------- 4. 대시보드 ----------
 /**
  * 도구 줄 버튼. id는 시안 스크립트(다크 켜짐 표시)용. pressed = 켜짐(aria-pressed).
- * soon = M7c 전의 「생각 남기기」(R-326 마스터 결정, 구현 LifeScreen#LifeTools·M4 r2와 같은 마크업): **지속 비활성**(aria-disabled + data-unavailable — ds.css 점선·옅은 글자, R-337)이고
- * 눈에 보이는 「준비 중」 알약(.tool-soon, DASH_TEXT.toolSoon)이 이름 뒤에 붙어 접근 가능한 이름이 「생각 남기기 준비 중」이다. 누르면 아무 일도 없다 — 없는 기능이 동작하는 것처럼 보이지 않게(QM3-3).
- * 예전의 「눌러서 안내 한 줄이 나오는 보통 버튼」(「생각 남기기는 준비 중입니다.」)은 폐기했다(diff-003.md D-17).
+ * dialog = 누르면 모달 시트가 열리는 버튼(「생각 남기기」 — 구현 LifeScreen 「생각 남기기」 버튼과 같은 `aria-haspopup="dialog"`, aria-pressed 없음; M7c D-75).
+ * M4 r2~M7b의 「생각 남기기」 지속 비활성 + 「준비 중」 알약(R-326 — 생성기의 soon 인자, 구현의 표식 상수, ds.css의 알약 규칙)은 M7c UI 단계에서 구현과 함께 지웠다(2026-10-19 후속) — 기록은 copy.md 2절 M4 r2 행·diff-003.md D-75.
  */
-const toolBtn = (id, iconName, label, pressed = false, soon = false) =>
-  soon
-    ? `<button class="btn btn--tool" type="button" data-tool="${id}" aria-disabled="true" data-unavailable="true">${icon(iconName)}<span>${label}</span> <span class="tool-soon">${esc(DASH_TEXT.toolSoon)}</span></button>`
+const toolBtn = (id, iconName, label, pressed = false, { dialog = false } = {}) =>
+  dialog
+    ? `<button class="btn btn--tool" type="button" data-tool="${id}" aria-haspopup="dialog">${icon(iconName)}<span>${label}</span></button>`
     : `<button class="btn btn--tool" type="button" data-tool="${id}" ${pressed ? 'aria-pressed="true"' : 'aria-pressed="false"'}>${icon(iconName)}<span>${label}</span><span class="sr-only">${pressed ? '켜짐' : ''}</span></button>`;
 
 /**
  * 대시보드 헤더 + 도구 줄. 문구는 구현 상수 DASH_TEXT(src/data/dashText.ts)에서 읽는다(copy.md 대시보드 행과 같은 글자, 2026-10-17 M4 구현 뒤 맞춤).
  * pending(선택지 대기 = 카드 시안의 시트가 떠 있을 때)이면 「다음 결정으로」가 **지속 비활성**: aria-disabled + data-unavailable(ds.css — 옅은 글자 + 점선, 불투명도 아님; design-system.md 6절 「버튼」).
- * 「생각 남기기」는 M7c 전까지 같은 지속 비활성 + 「준비 중」 알약이다(toolBtn soon, R-326) — noteReady는 M7c 목표 시안(note.html, 자유 기록 카드가 떠 있는 모습)에서만 true.
+ * 「생각 남기기」는 M7c부터 모든 대시보드 시안에서 보통 버튼(`aria-haspopup="dialog"`)이다 — 결정 시트가 떠 있는 동안은 도구 줄 전체가 `inert`라 누를 수 없다(구현과 같다).
  * 도구 줄 아래 한 줄(볼륨·나가기 확인 단계)은 dashboardPage()가 `?state=tools|exit`로 끼운다.
  */
 /**
  * 대시보드 헤더 + 도구 줄. pending = 선택지 대기(「다음 결정으로」 지속 비활성 — 구현 LifeScreen#isSkipBlocked), paused = **사용자가 누른 일시정지**만(구현 `game.paused` — 선택지 대기 중에도 버튼 이름은 「일시정지」다;
  * M7b 전 카드 시안은 대기를 일시정지로 그렸는데 구현과 달라 바로잡았다, 2026-10-19), auto = 자동 모드 켜짐(「자동 모드 켜짐」 aria-pressed), inert = 모달 시트가 떠 있는 동안 헤더·도구 줄을 `inert`로(M7b M-6 — Tab이 시트 안에서만 돈다).
  */
-function dashHead({ age, year, progress, paused, pending = false, noteReady = false, auto = false, inert = false }) {
+function dashHead({ age, year, progress, paused, pending = false, auto = false, inert = false }) {
   const T = DASH_TEXT;
   const inertAttr = inert ? ' inert' : '';
   return `<header class="dash-head"${inertAttr}><div class="dash-head__inner">
@@ -517,7 +520,7 @@ function dashHead({ age, year, progress, paused, pending = false, noteReady = fa
       </div>
     </div>
     <div class="controls__tools" role="group" aria-label="${T.toolsGroup}">
-      ${toolBtn('bgm', 'music', T.toolBgm)}${toolBtn('note', 'pencil', T.toolNote, false, !noteReady)}${toolBtn('dark', 'moon', T.toolDark)}${toolBtn('feedback', 'message', T.toolFeedback)}${toolBtn('exit', 'exit', T.toolExit)}
+      ${toolBtn('bgm', 'music', T.toolBgm)}${toolBtn('note', 'pencil', T.toolNote, false, { dialog: true })}${toolBtn('dark', 'moon', T.toolDark)}${toolBtn('feedback', 'message', T.toolFeedback)}${toolBtn('exit', 'exit', T.toolExit)}
     </div>
   </div></div>`;
 }
@@ -525,7 +528,7 @@ function dashHead({ age, year, progress, paused, pending = false, noteReady = fa
 /**
  * 도구 줄 아래 한 줄의 상태(M4 구현 LifeScreen.tsx와 같은 마크업, 2026-10-17 — r2 R-326 뒤 맞춤): `?state=tools` = BGM 켜짐(aria-pressed + 「켜짐」) → 볼륨 줄 「BGM 볼륨」 + range + 「N%」 /
  * `?state=exit` = 나가기 확인 단계(안내문 → 「첫 화면으로 나가기」(보조) → 맨 아래 「돌아가기」(기본·먼저 포커스) — 첫 화면 확인 단계 R-204·QM2-6과 같은 배치). 문구는 DASH_TEXT(copy.md 대시보드 행).
- * 「생각 남기기」의 안내 줄(「…준비 중입니다.」, 예전 .tool-note)은 없다 — 준비 중임은 버튼 안의 「준비 중」 알약이 늘 보인다(toolBtn soon, R-326).
+ * 「생각 남기기」의 안내 줄(「…준비 중입니다.」, 예전 .tool-note)은 없다 — M7c부터는 보통 버튼이라 누르면 기록 시트가 열린다(note.html).
  */
 function toolbarStates() {
   const T = DASH_TEXT;
@@ -557,8 +560,12 @@ const statusCard = (v) => html(StatusCard, { stats: { health: v[0], happiness: v
 const assetsCardOf = (age) => (age < 20 ? html(AssetsCard, { age, era: 'present', assets: null }) : econAssets('present', age, { net: -1200, income: 3200, debt: 4800 }));
 
 const logRow = (age, text, extra = '', cls = '') => `<li class="log__row ${cls}"><span class="log__age">${age}세</span><span class="log__text">${text}${extra ? ` <em>${extra}</em>` : ''}</span></li>`;
-// 「나의 기록 · {주제}」 같은 짧은 쌍은 줄바꿈 묶음(Glue)으로 — 「·」가 줄 끝·첫머리에 혼자 남지 않는다(QM2-5·QM2-10, 11-4절)
-const logNote = (age, topic, text) => `<li class="log__row log__row--note"><span class="log__age">${age}세</span><span class="log__text"><span class="log__note-label">${icon('pencil', 'icon--sm')}${glueHtml(`나의 기록 · ${topic}`)}</span><br>${esc(text)}</span></li>`;
+/**
+ * 「나의 기록」 줄(M7c FR4·FR5 — 구현 NoteText, copy.md 7-4·design-system 6절 「인생 기록 줄」): 라벨 「나의 기록 · {주제}」는 주제 길이가 카드마다 다른 짧은 쌍이라 **FitPair**(좁거나 글자가 크면 기호 없이 두 줄 — Glue 묶음은 한 줄보다 길면 안에서 「·」 뒤에 갈릴 수 있다, 11-4절)
+ * + 가운뎃점 aria-hidden(낭독 「나의 기록 영유아기 기억」, R-403 ⑤). 사용자 글은 <bdi dir="auto" data-user-text>(방향 격리 H5 ②, 낱말 끊김 감사 제외 D4) — React 텍스트 자식 그대로(D1), 줄바꿈은 pre-line(3줄까지). <br>·Glue·FitPair를 사용자 글에 쓰지 않는다(D5)
+ */
+const noteLabel = (topic) => `<span class="log__note-label">${icon('pencil', 'icon--sm')}${fitPair('나의 기록', topic, { hideSeparator: true })}</span>`;
+const logNote = (age, topic, text, cls = '') => `<li class="log__row log__row--note${cls ? ` ${cls}` : ''}" data-kind="note"><span class="log__age">${age}세</span><span class="log__text">${noteLabel(topic)}<bdi class="note-text" dir="auto" data-user-text>${esc(text)}</bdi></span></li>`;
 
 /**
  * 인생 기록(DB12·DB14). 고정 줄 「이 세상의 가상 인구 {N}명 · {이름}도 그중 한 사람」은 내용 길이가 판마다 다른 짧은 쌍이라 FitPair(한 줄에 안 들어가면 기호 없이 두 줄, 11-7절 — 구현 ui/FitPair.tsx).
@@ -670,34 +677,155 @@ const ADULT_CARDS = {
   housing: { ev: eventOf('youth-housing'), age: 31, choices: [['rent', 'assets:down:1,happiness:down:1'], ['parents', 'assets:up:1,relationships:down:1'], ['loan', 'assets:up:2,debt:up:3']] },
 };
 
-function noteSheet() {
-  return `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="nc-title"><div class="sheet">
-    <div class="sheet__head"><span class="sheet__kind sheet__kind--note">생각 남기기</span><span class="sheet__age">2031년 · 5세</span></div>
-    <div class="sheet__body">
-      <h2 id="nc-title" class="t-h2">${HERO.name}이 다섯 살이던 때를 떠올려 보면, 기억나는 장면이나 느낌이 있습니까?</h2>
-      <div class="cite"><p class="cite__text">영유아기의 경험은 성인기의 건강과 관계에도 영향을 준다고 알려져 있습니다. <span style="opacity:.8">(시안용 문구)</span></p><p class="cite__src">기관·저자(연도), 자료 이름</p></div>
-      <div class="field"><label class="sr-only" for="note">기록</label>
-        <textarea id="note" class="field__input" maxlength="140" rows="3">할머니 집 마루에서 수박을 먹던 여름. 매미 소리가 시끄러웠습니다.</textarea>
-        <div class="field__hint"><span>실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.</span><span class="num">34/140</span></div></div>
-      <div class="stack--sm stack">
-        <button class="note-choice note-choice--primary" type="button"><span class="note-choice__top"><span class="choice__no">1</span>적어두고 살기</span><span class="note-choice__sub">인생 기록에 한 줄로 더해집니다.</span></button>
-        <button class="note-choice" type="button"><span class="note-choice__top"><span class="choice__no">2</span>마음속에 담고 살기</span><span class="note-choice__sub">아무것도 저장하지 않고 넘어갑니다.</span></button>
-      </div>
-      <div class="sheet__foot"><button class="btn btn--ghost btn--sm" type="button">자동 기록 카드 끄기</button></div>
-    </div></div></div>`;
+// ---------- M7c 자유 기록 「생각 남기기」 시트 (2026-10-19 designer 선행 — SPEC-003 FR1~FR9 · docs/data/content-M7c.md 1-4·5·6절 · 문구 copy.md 7절 · design-system.md 6절 「자유 기록 카드 시트」) ----------
+/**
+ * 문구·질문은 **구현에서 읽는다**(2026-10-19 후속 — developer UI 단계 뒤 R-191 되돌림, M7e·M7b와 같은 수순): 시트 문구는 `src/data/noteSheetText.ts#NOTE_TEXT`(copy.md 7-2 ①~⑫와 글자까지 같다 — tests/noteSheet.test.tsx가 대조),
+ * 질문 7종·변형·수동 질문과 연표 라벨 주제는 `src/data/notes.json`(`NOTE_CARDS`·`NOTE_MANUAL`, copy.md 7-1 최종 문구), 이름 채움은 구현 함수 `fillNoteName`(core/notes.ts — 구현 `noteQuestion`이 쓰는 것).
+ * 생성기에는 문구의 흉내가 없다(선행 때의 임시 문구 블록은 지웠다) — tests/designAssets.test.ts가 「임시 블록 없음 + import」를 잠근다. 「1. 적어두고 살기」「2. 마음속에 담고 살기」는 형진 님 원문 그대로(copy.md 1절).
+ */
+const noteCardOf = (id) => {
+  const c = NOTE_CARDS.find((x) => x.id === id);
+  if (!c) throw new Error(`기록 카드 ${id}가 없다`);
+  return c;
+};
+/** 시안이 쓰는 카드 넷 + 수동: 연표 라벨 주제(「나의 기록 · {주제}」)와 질문은 notes.json의 값 그대로 */
+const NOTE_CARD = { infant: noteCardOf('note-infant-memory'), teen: noteCardOf('note-teen-envy'), firstLove: noteCardOf('note-first-love'), romance: noteCardOf('note-youth-romance') };
+const NOTE_TOPIC = { infant: NOTE_CARD.infant.topic, teen: NOTE_CARD.teen.topic, firstLove: NOTE_CARD.firstLove.topic, romance: NOTE_CARD.romance.topic, manual: NOTE_MANUAL.topic };
+/** 기본 변형의 질문에 시안 주인공 이름을 채운다(구현 noteQuestion과 같은 fillNoteName — 변형 판정은 저장 상태가 필요해 시안은 기본 문장만 보인다) */
+const noteQuestionOf = (card, name) => fillNoteName(card === null ? NOTE_MANUAL.prompt : card.prompt, name);
+const NOTE_MAX = NOTE_LIMITS.graphemes;
+/**
+ * 「나의 기록」 줄 **표본 데이터**(시안의 가짜 데이터 — HERO의 인생 기록 줄과 같은 자리. 구현 문구의 사본이 아니라 import할 원본이 없다; QA 입력 공격의 대표 입력 content-M7c 3-8절 A3·A10·A16·A9와 같은 종류를 고른 것이고,
+ * 구현 e2e는 자기 고정값(`e2e/m7cSheets.ts#LONG_NOTE_TEXTS`·`m7c-input-attack.spec.ts`)을 따로 둔다). 보이지 않는 글자·그림 문자는 코드 포인트로 적는다(문서 규칙)
+ */
+const NOTE_SAMPLES = {
+  short: '할머니 집 마루에서 수박을 먹던 여름. 매미 소리가 시끄러웠습니다.',
+  lines: '첫째 줄은 짧게.\n둘째 줄은 조금 더 길게 적어 두었습니다.\n셋째 줄까지만 보입니다.',
+  url: `https://example.com/notes/${'abcdefghij'.repeat(14)}`.slice(0, 140), // 140글자 — 공백 없는 라틴 글(A16)
+  hangul140: '가나다라마바사아자차카타파하'.repeat(10), // 140글자 — 띄어쓰기 없는 한글(D4: word-break normal이 아니면 낱말 하나로 취급된다)
+  rtl: 'שלום עולם — مرحبا بالعالم', // 히브리 「שלום עולם」 · 아랍 「مرحبا بالعالم」(둘 다 「안녕, 세상」) — 라벨·나이의 순서가 안 바뀐다(A10)
+  emoji: '\u{1F468}\u200D\u{1F469}\u200D\u{1F467} \u{1F1F0}\u{1F1F7} \u{1F44D}\u{1F3FD} 1\uFE0F\u20E3 \u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}', // 가족 ZWJ · 깃발 · 피부색 · 키캡 · 하위 지역 깃발(A3) — 그래핌 5
+  latest: '오늘은 여기까지 적어 둡니다.',
+};
+const noteOverlay = (inner, cls = '', style = '') =>
+  `<div class="overlay"${style}><div class="sheet sheet--note${cls ? ` ${cls}` : ''}" role="dialog" aria-modal="true" aria-labelledby="nc-kind nc-title" data-testid="note-sheet">${inner}</div></div>`;
+/**
+ * 시트 한 장(copy.md 7-2 DOM). state: '' 기본 / empty 빈 입력 안내(aria-invalid + 알림 줄 연결, 포커스 입력란) / confirm 확인 단계(두 버튼 자리에, 입력란 readonly) / off 끄기 누른 뒤(「켜기」 + 알림) / limit 40개 안내(안내 + 「닫기」만)
+ * / compact = 가상 키보드가 올라온 상태의 표본(`--vv-h` 340px = K3 보장 높이, 인용·보조 설명 숨김). 구현의 compact 판정은 「포커스가 입력 영역(입력란·두 버튼·끄기 칸·확인 단계) 안에 있고 보이는 높이에 시트 전체가 들어가지 않을 때」(2026-10-19 마스터 지시,
+ *   design-system.md 11-10 — 고정 문턱 520px 없음)이고 정적 시안은 그 결과 모양 하나를 고정해 보인다.
+ * 대화상자 이름 = 「생각 남기기」 + 질문(aria-labelledby 두 id) — 질문이 길어도 종류가 먼저 읽힌다. 머리 「{연도}년 · {나이}세」는 FitPair hideSeparator(낭독 「2031년 5세」, R-403 ⑤).
+ */
+function noteSheet({ year, age, question, cite = null, text = '', state = '' }) {
+  const compact = state === 'compact';
+  const confirm = state === 'confirm';
+  const empty = state === 'empty';
+  const off = state === 'off';
+  const T = NOTE_TEXT;
+  const head = `<div class="sheet__head"><span class="sheet__kind sheet__kind--note" id="nc-kind">${esc(T.kind)}</span><span class="sheet__age">${fitPair(`${year}년`, `${age}세`, { hideSeparator: true })}</span></div>`;
+  if (state === 'limit') {
+    return noteOverlay(
+      `${head}<div class="sheet__body"><h2 id="nc-title" class="sheet__title" tabindex="-1" style="--title-chars:${titleCharsFor(T.limitTitle)}">${esc(T.limitTitle)}</h2><p class="sheet__sub">${esc(T.limitSub)}</p><div class="sheet__foot"><button class="btn btn--primary" type="button" data-testid="note-close">${esc(T.close)}</button></div></div>`,
+      'sheet--limit',
+    );
+  }
+  const n = [...text].length; // 시안 표본은 결합 문자가 없어 코드 포인트 수 = 그래핌 수(구현은 Intl.Segmenter)
+  const describedBy = ['note-hint', 'note-count-sr', empty ? 'note-msg' : ''].filter(Boolean).join(' ');
+  const field = `<div class="field"><label class="sr-only" for="note-input">${esc(T.inputLabel)}</label>
+        <textarea id="note-input" class="field__input" rows="3" dir="auto" autocomplete="off" spellcheck="false" maxlength="4000" data-user-text data-testid="note-input" aria-describedby="${describedBy}"${empty ? ' aria-invalid="true"' : ''}${confirm ? ' readonly' : ''}>${esc(text)}</textarea>
+        <div class="field__hint"><span id="note-hint">${glueHtml(T.hint)}</span><span class="field__count" aria-hidden="true">${T.count(n, NOTE_MAX)}</span><span id="note-count-sr" class="sr-only">${esc(T.countSr(n, NOTE_MAX))}</span></div>
+        <p id="note-msg" class="field__msg${empty ? ' field__msg--error' : ''}" role="status" aria-live="polite" data-testid="note-msg">${empty ? esc(T.emptyError) : ''}</p></div>`;
+  const choices = confirm
+    ? `<div class="note-confirm" role="group" aria-labelledby="nc-confirm-t" data-testid="note-confirm"><p id="nc-confirm-t" class="note-confirm__title" role="alert">${esc(T.confirmTitle)}</p><p class="note-confirm__sub">${esc(T.confirmSub)}</p><div class="note-confirm__actions"><button class="btn btn--secondary" type="button" data-testid="note-discard">${esc(T.confirmDiscard)}</button><button class="btn btn--primary" type="button" data-testid="note-back">${esc(T.confirmBack)}</button></div></div>`
+    : `<div class="note-choices"><button class="note-choice note-choice--primary" type="button" data-testid="note-keep"><span class="note-choice__top"><span class="choice__no" aria-hidden="true">1</span>${esc(T.keep)}</span><span class="note-choice__sub">${esc(T.keepSub)}</span></button><button class="note-choice" type="button" data-testid="note-skip"><span class="note-choice__top"><span class="choice__no" aria-hidden="true">2</span>${esc(T.skip)}</span><span class="note-choice__sub">${esc(T.skipSub)}</span></button></div>`;
+  const foot = confirm ? '' : `<div class="sheet__foot">${off ? `<p class="sheet__notice" role="status" data-testid="note-cards-notice">${glueHtml(T.cardsOffNotice)}</p>` : ''}<button class="btn btn--ghost btn--sm" type="button" data-testid="note-cards-toggle">${esc(off ? T.cardsOn : T.cardsOff)}</button></div>`;
+  const body = `<div class="sheet__body"><h2 id="nc-title" class="sheet__title" tabindex="-1" style="--title-chars:${titleCharsFor(question)}">${esc(question)}</h2>${cite ? citeBox(cite) : ''}${field}${choices}${foot}</div>`;
+  return noteOverlay(head + body, compact ? 'sheet--compact' : '', compact ? ' style="--vv-h:min(340px, 100dvh);--vv-top:0px"' : '');
+}
+/**
+ * note.html — 한 장에 상태 아홉(`?state=`, decision-*과 같은 <template> 치환). 기본·typing·empty·confirm·off·compact·past = 5세 ① 영유아기 기억(연구 인용 c-037 — 카드 연결은 notes.json의 `citation`, 표시는 구현 함수 citationText), manual·limit = 31세 수동 시트(인용 없음).
+ * past: ① 지난 세상 표본 — c-037의 `eras`에 past·`eraPrefix.past` 「지금의 연구로는」이 citations.json에 들어왔으므로(D-79 닫힘) 실제 데이터로 그린다(옛 시안용 패치 사본은 지웠다).
+ */
+function notePage() {
+  const name = HERO.name;
+  const infantCite = (era) => {
+    if (NOTE_CARD.infant.citation !== 'c-037') throw new Error(`기록 카드 ①의 인용 연결이 c-037이 아니다: ${NOTE_CARD.infant.citation}`);
+    return citeViewOf(NOTE_CARD.infant.citation, era);
+  };
+  const infantSheet = (opts) => noteSheet({ year: HERO.birthYear + 5, age: 5, question: noteQuestionOf(NOTE_CARD.infant, name), cite: infantCite('present'), ...opts });
+  const adultSheet = (opts) => noteSheet({ year: HERO.birthYear + 31, age: 31, question: noteQuestionOf(null, name), cite: null, ...opts });
+  const infant = (sheet, extra = '', opts = {}) => dashboardBody('infant', sheet + extra, 5, opts);
+  const adult = (sheet) => dashboardBody('adult', sheet, 3);
+  const pastYear = eraModel('past').character.birthYear + 5;
+  // compact 표본의 키보드 자리 글(시안 전용, inert·aria-hidden): 구현의 compact 판정 조건을 한 줄로 적어 둔다 — 보는 사람이 「340px 고정」으로 읽지 않게(2026-10-19 후속, D-83)
+  const keyboard = '<div class="mock-keyboard" aria-hidden="true" inert style="--vv-h:min(340px, 100dvh)">가상 키보드 자리 — 시안 표시(실기기에서는 키보드가 이 영역을 덮는다). compact = 입력 영역에 포커스가 있고 보이는 높이에 시트 전체가 들어가지 않을 때 · 여기서는 보이는 높이 340px(보장 하한) · 질문은 한 줄로 시트 위에 고정(D-88)</div>';
+  const pastTag = `<p class="mock-tag">시안 · 가짜 데이터 — 지난 세상 표본: 시트와 헤더 연도만 ${pastYear}년, 스크림 뒤 대시보드는 지금 세상 주인공 그대로</p>`;
+  return statesPage('수저 게임 · 시안 · 생각 남기기 (자유 기록 카드)', {
+    '': infant(infantSheet({})),
+    typing: infant(infantSheet({ text: NOTE_SAMPLES.short })),
+    empty: infant(infantSheet({ state: 'empty' })),
+    confirm: infant(infantSheet({ text: NOTE_SAMPLES.short, state: 'confirm' })),
+    off: infant(infantSheet({ state: 'off' })),
+    compact: infant(infantSheet({ text: NOTE_SAMPLES.short, state: 'compact' }), keyboard),
+    manual: adult(adultSheet({})),
+    limit: adult(adultSheet({ state: 'limit' })),
+    past: infant(infantSheet({ year: pastYear, cite: infantCite('past') }), '', { yearOverride: pastYear, tagNote: pastTag }),
+  });
+}
+/** 엔딩 연표 한 줄(구현 EndingScreen#TimelineItem과 같은 마크업). 「나의 기록」 줄은 인생 기록 줄과 같은 부품(NoteText): 제목 자리에 라벨(FitPair hideSeparator), 문장 자리에 사용자 글(<bdi data-user-text>) */
+const timelineLi = (e) =>
+  e.kind === 'note'
+    ? `<li class="is-note" data-kind="note"><span class="log__age">${e.age}세</span><span>${noteLabel(e.topic)}<bdi class="tl-text note-text" dir="auto" data-user-text>${esc(e.text)}</bdi></span></li>`
+    : `<li class="${e.kind === 'choice' ? 'is-choice' : ''}" data-kind="${e.kind}"><span class="log__age">${e.age}세</span><span>${e.title ? `<strong>${esc(e.title)}</strong>` : ''}${e.choice ? `<span class="tl-picked">${esc(DASH_TEXT.logChoicePrefix)}${esc(e.choice)}</span>` : ''}<span class="tl-text">${esc(e.text)}</span></span></li>`;
+/**
+ * note-rows.html — 「나의 기록」 줄 표본 한 장(copy.md 7-4): 인생 기록 카드(짧은 글·3줄·긴 URL·띄어쓰기 없는 한글 140자·히브리/아랍 글·그림 문자·최신 줄)와 엔딩 연표의 note 행. 기록 목록의 높이 상한은 표본을 다 보이려고 이 장에서만 푼다 —
+ * 그래서 목록이 안에서 스크롤하지 않으므로 role=region·tabindex=0(스크롤 상자를 Tab 정지점으로 올리는 구현 LogCard의 이유)도 두지 않는다(스크롤하지 않는 목록은 Tab 정지점이 아니다; 두면 화면보다 큰 포커스 대상이 되어 CM10 감사에 걸린다).
+ * 사용자 글(data-user-text)은 어디서든 끊길 수 있는 글이라 낱말 끊김 감사에서 뺀다 — 라벨·나이·우리 문구는 감사 대상 그대로.
+ */
+function noteRowsPage() {
+  const T = NOTE_TOPIC;
+  const S = NOTE_SAMPLES;
+  const rows =
+    logRow(4, '동생이 걷기 시작했습니다.') +
+    logNote(5, T.infant, S.short) +
+    logRow(12, '반 친구들과 축구를 하다 무릎이 까졌습니다.') +
+    logNote(13, T.teen, S.lines) +
+    logNote(16, T.firstLove, S.url) +
+    logNote(29, T.romance, S.hangul140) +
+    logNote(31, T.manual, S.rtl) +
+    logNote(31, T.manual, S.emoji) +
+    logRow(32, '일하던 곳과 계약이 한 해 더 이어졌습니다.') +
+    logNote(33, T.manual, S.latest, 'log__row--latest');
+  const log = `<section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">${esc(DASH_TEXT.logTitle)}</h2><span class="t-xs t-faint">${glueHtml(DASH_TEXT.logHint)}</span></div>
+  <div class="log__list" style="max-height:none;overflow:visible"><ol class="log__rows">${rows}</ol></div>
+  <button type="button" class="btn btn--secondary btn--sm log__jump" data-testid="log-jump">${glueHtml(DASH_TEXT.logJump(1))}</button></section>`;
+  const group = (stage, items) => `<div class="tl-group"><h3>${glueHtml(stageHeadingText(stage))}</h3><ol class="timeline">${items.map(timelineLi).join('')}</ol></div>`;
+  const ending = `<section class="card" aria-labelledby="ending-timeline-title"><h2 id="ending-timeline-title" class="card__title card__title--gap">${esc(ENDING_HEADINGS.timeline)}</h2>${group('infant', [
+    { age: 4, kind: 'event', text: '동생이 걷기 시작했습니다.' },
+    { age: 5, kind: 'note', topic: T.infant, text: S.short },
+  ])}${group('school', [
+    { age: 13, kind: 'note', topic: T.teen, text: S.lines },
+    { age: 16, kind: 'note', topic: T.firstLove, text: S.url },
+    { age: 19, kind: 'choice', title: '대학 진학', choice: '학자금 대출을 받아 진학한다', text: '학자금 대출을 받아 대학에 들어갔습니다.' },
+  ])}${group('youth', [
+    { age: 29, kind: 'note', topic: T.romance, text: S.hangul140 },
+    { age: 31, kind: 'note', topic: T.manual, text: S.rtl },
+    { age: 31, kind: 'note', topic: T.manual, text: S.emoji },
+  ])}</section>`;
+  return page({ title: '수저 게임 · 시안 · 나의 기록 줄 표본', body: `<main class="ending">${log}${ending}${MOCK_TAG}</main>`, bodyClass: 'is-dash' });
 }
 
 /**
  * 대시보드 본문(헤더 + 도구 줄 + 세 열 + 본문 끝 여백 [+ 시트]). overlay = 모달 시트(M7b 수동 카드·M7c 자유 기록 카드) — 있으면 바깥(헤더·도구 줄·main·여백)이 `inert`.
  * center = 가운데 열 맨 위에 두는 비모달 카드(M7b 자동 모드의 인라인 카드·접힌 띠 — 1열에서는 헤더·진행 줄 바로 아래, ds.css .col--center). auto = 자동 모드 켜짐.
- * 선택지 대기(overlay 또는 center)는 「다음 결정으로」 지속 비활성이고 **일시정지가 아니다**(구현: 시계만 멈춘다, 버튼 이름 「일시정지」 그대로 — 2026-10-19 바로잡음). noteReady = M7c 목표 시안(note.html)에서만 「생각 남기기」가 보통 버튼.
+ * 선택지 대기(overlay 또는 center)는 「다음 결정으로」 지속 비활성이고 **일시정지가 아니다**(구현: 시계만 멈춘다, 버튼 이름 「일시정지」 그대로 — 2026-10-19 바로잡음). 「생각 남기기」는 모든 대시보드에서 보통 버튼(M7c D-75).
  */
-function dashboardBody(kind, overlay = '', infantAge = 3, { noteReady = false, center = '', auto = false, tools = true } = {}) {
+function dashboardBody(kind, overlay = '', infantAge = 3, { center = '', auto = false, tools = true, yearOverride = null, tagNote = '' } = {}) {
   const infant = kind === 'infant';
   const age = infant ? infantAge : 31;
   const modal = overlay !== '';
   const pending = modal || center !== '';
-  const head = dashHead({ age, year: HERO.birthYear + age, progress: infant ? 62 : 38, paused: false, pending, noteReady, auto, inert: modal });
+  // yearOverride·tagNote: M7c note.html의 지난 세상 표본(?state=past) — 시트와 헤더 연도만 그 세상, 뒤 대시보드(스크림 뒤)는 지금 세상 주인공 그대로이고 그 사실을 시안 표식에 적는다
+  const head = dashHead({ age, year: yearOverride ?? HERO.birthYear + age, progress: infant ? 62 : 38, paused: false, pending, auto, inert: modal });
   const inertAttr = modal ? ' inert' : '';
   const rowsInfant =
     logRow(0, esc(HERO.sentence)) + // 인생 기록 0세 첫 줄 = 출생신고 서술문(BR3, core/birthReport.ts#birthSentence)
@@ -713,7 +841,7 @@ function dashboardBody(kind, overlay = '', infantAge = 3, { noteReady = false, c
     logRow(24, '학자금 대출을 갚기 시작했습니다.', '(선택: 대출을 유지한다)') +
     logRow(27, '계약직으로 첫 직장에 들어갔습니다.') +
     logRow(29, '가까워진 사람과 만남을 시작했습니다.', '(선택: 연애를 시작한다)') +
-    logNote(29, '청년기 연애담', '퇴근길에 같이 걷던 저녁이 오래 남았다.') +
+    logNote(29, NOTE_TOPIC.romance, '퇴근길에 같이 걷던 저녁이 오래 남았다.') +
     logRow(30, '보증금을 올려 달라는 연락을 받아 월세 집으로 옮겼습니다.') +
     logRow(31, '일하던 곳과 계약이 한 해 더 이어졌습니다.', '', 'log__row--latest');
   // 본문 끝 여백은 고정 진행 줄의 실제 높이(--bar-h)를 따르는 .page-end-space — 150px 같은 고정값을 두지 않는다(11-1절, 2026-10-17)
@@ -728,7 +856,7 @@ function dashboardBody(kind, overlay = '', infantAge = 3, { noteReady = false, c
   <div class="col">
     ${familyCard(age)}
     ${peersCard(infant ? ['어린 시절', '어린 시절', '어린 시절', '어린 시절'] : ['일하는 사람', '구직 중', '일하는 사람', '돌봄'])}
-    ${MOCK_TAG}
+    ${tagNote || MOCK_TAG}
   </div>
 </main>
 <div class="page-end-space"${inertAttr}></div>
@@ -743,8 +871,7 @@ function dashboardPage(kind, overlay = '', infantAge = 3, opts = {}) {
  * M7b 카드 시안 한 장에 상태 여럿(`?state=`): 기본 = 수동 모달 시트. 나머지 상태의 본문 전체를 <template>에 두고 주소 질의에 따라 #mock-root를 통째로 바꿔 끼운다(엔딩 시안 `?state=`와 같은 방식 —
  * 상태마다 헤더의 자동 모드 버튼·inert·가운데 열이 다르기 때문). 치환은 파싱 중 동기 실행이라 page()의 DOMContentLoaded 흉내(띠 높이·FitPair·다크 토글)가 새 요소를 본다.
  */
-function decisionPage(kind, states) {
-  const infant = kind === 'infant';
+function statesPage(title, states) {
   const entries = Object.entries(states);
   const [, main] = entries[0];
   const templates = entries
@@ -754,8 +881,9 @@ function decisionPage(kind, states) {
   const body = `<div id="mock-root">${main}</div>
 ${templates}
 <script>(function(){var s=new URLSearchParams(location.search).get('state');if(!s)return;var t=document.getElementById('state-'+s);if(!t)return;var root=document.getElementById('mock-root');root.replaceChildren(t.content.cloneNode(true));document.title+=' ('+s+')';})();</script>`;
-  return page({ title: `수저 게임 · 시안 · 중대 결정 카드 (${infant ? '영유아 시점' : '성인 시점'})`, body, bodyClass: 'is-dash' });
+  return page({ title, body, bodyClass: 'is-dash' });
 }
+const decisionPage = (kind, states) => statesPage(`수저 게임 · 시안 · 중대 결정 카드 (${kind === 'infant' ? '영유아 시점' : '성인 시점'})`, states);
 /** 카드 하나의 (year, era) — 시안 주인공은 지금 세상 2026년생 */
 const cardAt = (card) => ({ ...card, year: HERO.birthYear + card.age, era: 'present' });
 /** decision-infant.html: 기본 = 「동생이 생겼다」 + 연구 c-033(저자 5명 → 「Teti 외」, 긴 영문 원제) 수동 시트 / kinder = 「유치원 고르기」 + 통계 c-061(기관 둘 쉼표 나열 · 자료 이름 쌍점) 수동 시트 / auto = 「동생이 생겼다」의 자동 모드 인라인 틀(full 샷으로 카드 전체 — 긴 표본) */
@@ -857,9 +985,9 @@ function endingMain({ era, c, month, death, net, choiceCount, entries, note = ''
     if (groups.length === 0 || groups[groups.length - 1].stage !== st) groups.push({ stage: st, entries: [] });
     groups[groups.length - 1].entries.push(e);
   }
-  // 연표 한 줄 = 구현 EndingScreen#TimelineItem과 같은 마크업(나이 · [제목] · [선택: 이름] · 문장). 사망 줄은 굵게(data-kind="death"), 선택 줄은 왼쪽 쪽빛 선(.is-choice), 「나의 기록」 줄은 M7c 목표(.is-note)
-  const li = (e) =>
-    `<li class="${e.kind === 'choice' ? 'is-choice' : e.kind === 'note' ? 'is-note' : ''}" data-kind="${e.kind}"><span class="log__age">${e.age}세</span><span>${e.title ? `<strong>${e.kind === 'note' ? glueHtml(e.title) : esc(e.title)}</strong>` : ''}${e.choice ? `<span class="tl-picked">${esc(DASH_TEXT.logChoicePrefix)}${esc(e.choice)}</span>` : ''}<span class="tl-text">${esc(e.text)}</span></span></li>`;
+  // 연표 한 줄 = 구현 EndingScreen#TimelineItem과 같은 마크업(나이 · [제목] · [선택: 이름] · 문장). 사망 줄은 굵게(data-kind="death"), 선택 줄은 왼쪽 쪽빛 선(.is-choice).
+  // 「나의 기록」 줄(.is-note, M7c FR9)은 인생 기록 줄과 **같은 부품**(NoteText — 라벨 FitPair hideSeparator + <bdi data-user-text>, D3): 제목 자리에 라벨, 문장 자리에 사용자 글
+  const li = timelineLi;
   const timeline = groups.map((g) => `<div class="tl-group"><h3>${glueHtml(stageHeadingText(g.stage))}</h3><ol class="timeline">${g.entries.map(li).join('')}</ol></div>`).join('');
   const finalNet = early
     ? `<dl class="final-net final-net--early"><dt>${esc(FINAL_NET_TEXT.label)}</dt><dd class="final-net__none">${esc(FINAL_NET_TEXT.early)}</dd></dl>`
@@ -904,11 +1032,11 @@ function endingPage() {
     choiceCount: 27,
     entries: [
       birthRow,
-      // 「나의 기록」 줄(M7c 목표): 제목(짧은 쌍은 Glue)과 글이 세로로 쌓인 두 칸 — 구현 TimelineItem과 같은 구조(강제 줄바꿈 <br> 없음, R-300)
-      { age: 5, kind: 'note', title: '나의 기록 · 영유아기 기억', text: '할머니 집 마루에서 수박을 먹던 여름. 매미 소리가 시끄러웠습니다.' },
+      // 「나의 기록」 줄(M7c FR9): 라벨(FitPair hideSeparator)과 글(<bdi data-user-text>)이 세로로 쌓인 두 칸 — 인생 기록 줄과 같은 부품(NoteText, 강제 줄바꿈 <br> 없음, R-300). 주제는 content-M7c 1-3절 라벨
+      { age: 5, kind: 'note', topic: NOTE_TOPIC.infant, text: NOTE_SAMPLES.short },
       { age: 19, kind: 'choice', title: '대학 진학', choice: '학자금 대출을 받아 진학한다', text: '학자금 대출을 받아 대학에 들어갔습니다.' },
       { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth },
-      { age: 29, kind: 'note', title: '나의 기록 · 청년기 연애담', text: '퇴근길에 같이 걷던 저녁이 오래 남았다.' },
+      { age: 29, kind: 'note', topic: NOTE_TOPIC.romance, text: '퇴근길에 같이 걷던 저녁이 오래 남았다.' },
       { age: 40, kind: 'stage', text: STAGE_ENTRY_TEXT.middle },
       { age: 52, kind: 'choice', title: '가게', choice: '작은 가게를 연다', text: '작은 가게를 열었습니다.' },
       { age: 65, kind: 'stage', text: STAGE_ENTRY_TEXT.senior },
@@ -1173,9 +1301,9 @@ function componentsPage() {
   <section><h2>로고</h2><div class="row row--wrap" style="gap:var(--sp-6);align-items:flex-end">${logo(DEFAULT_KEY, 'row')}<span style="--logo-h:40px">${headerLogo()}</span></div>
     <p class="t-sm t-muted" style="margin-top:var(--sp-2)">왼쪽: 가로 로고(정식 심볼, 첫 화면 데스크톱 108px). 오른쪽: 헤더용 로고(단순화 심볼, 모든 화면 헤더 40px — 워드마크 글자 높이 약 23px).</p></section>
   <section id="buttons"><h2>버튼</h2><div class="row row--wrap"><button class="btn btn--primary" type="button">기본</button><button class="btn btn--secondary" type="button">보조</button><button class="btn btn--ghost" type="button">테두리</button><button class="btn" type="button" aria-pressed="true">1배 (눌림)</button><button class="btn" type="button">2배</button><button class="btn btn--primary" type="button" aria-disabled="true">입력 가드 0.4초</button><button class="btn btn--secondary" type="button" aria-disabled="true" data-unavailable="true">${icon('next', 'icon--sm')}<span>${esc(DASH_TEXT.skip)}</span></button><button class="btn btn--primary btn--lg" type="button">크게</button><button class="btn btn--secondary btn--icon" type="button" aria-label="이전">${icon('prev')}</button></div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">눌림 상태는 색 반전 + 굵은 아래 막대 + aria-pressed로 알립니다. 터치 대상은 44×44px 이상. 비활성은 둘: 진입 직후 0.4초 입력 가드(과도 상태)는 0.55 흐림, <strong>지속 비활성</strong>(「다음 결정으로」 — 자동 모드 내내·선택지 대기 중, 「생각 남기기」 — M7c 전)은 옅은 글자(--c-text-3) + 점선 테두리로 글자 4.5:1을 지킵니다(라디오 카드 「준비 중」과 같은 모양, 2026-10-17 — 구현 R-337).</p></section>
-  <section id="tools"><h2>도구 줄 (모바일) — BGM 켜짐·다크모드 켜짐 상태, 「생각 남기기」 준비 중(M7c 전)</h2><div class="controls__tools controls__tools--stack" style="max-width:360px">${toolBtn('bgm', 'music', DASH_TEXT.toolBgm, true)}${toolBtn('note', 'pencil', DASH_TEXT.toolNote, false, true)}<button class="btn btn--tool" type="button" aria-pressed="true">${icon('sun')}<span>${esc(DASH_TEXT.toolDark)}</span><span class="sr-only">켜짐</span></button>${toolBtn('feedback', 'message', DASH_TEXT.toolFeedback)}${toolBtn('exit', 'exit', DASH_TEXT.toolExit)}</div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">켜짐 = aria-pressed="true" + 색 반전 + 아래 막대 + 아이콘 교체(다크모드: 달 → 해) + 읽기 전용 「켜짐」. 이름은 낱말 단위로 두 줄까지 줄바꿈. 「생각 남기기」는 M7c까지 지속 비활성(점선·옅은 글자) + 버튼 안 <strong>「준비 중」 알약</strong>(.tool-soon — 라디오 카드 「약 1시간」의 메타 알약과 같은 모양, R-326): 눌러도 아무 일이 없고 접근 가능한 이름은 「생각 남기기 준비 중」. 알약만큼(약 19px) 도구 줄이 높아지는 것은 받아들였다.</p></section>
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">눌림 상태는 색 반전 + 굵은 아래 막대 + aria-pressed로 알립니다. 터치 대상은 44×44px 이상. 비활성은 둘: 진입 직후 0.4초 입력 가드(과도 상태)는 0.55 흐림, <strong>지속 비활성</strong>(「다음 결정으로」 — 자동 모드 내내·선택지 대기 중)은 옅은 글자(--c-text-3) + 점선 테두리로 글자 4.5:1을 지킵니다(라디오 카드 「준비 중」과 같은 모양, 2026-10-17 — 구현 R-337). 「생각 남기기」가 같은 모양이던 것은 M4 r2~M7b까지이고(R-326) M7c부터 보통 버튼입니다.</p></section>
+  <section id="tools"><h2>도구 줄 (모바일) — BGM 켜짐·다크모드 켜짐 상태, 「생각 남기기」는 시트를 여는 보통 버튼(M7c)</h2><div class="controls__tools controls__tools--stack" style="max-width:360px">${toolBtn('bgm', 'music', DASH_TEXT.toolBgm, true)}${toolBtn('note', 'pencil', DASH_TEXT.toolNote, false, { dialog: true })}<button class="btn btn--tool" type="button" aria-pressed="true">${icon('sun')}<span>${esc(DASH_TEXT.toolDark)}</span><span class="sr-only">켜짐</span></button>${toolBtn('feedback', 'message', DASH_TEXT.toolFeedback)}${toolBtn('exit', 'exit', DASH_TEXT.toolExit)}</div>
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">켜짐 = aria-pressed="true" + 색 반전 + 아래 막대 + 아이콘 교체(다크모드: 달 → 해) + 읽기 전용 「켜짐」. 이름은 낱말 단위로 두 줄까지 줄바꿈. 「생각 남기기」는 M7c부터 <strong>보통 버튼</strong>(aria-haspopup="dialog" — 누르면 기록 시트 note.html이 열린다, 결정 시트가 떠 있는 동안은 도구 줄 전체가 inert). M4 r2~M7b의 지속 비활성 + 「준비 중」 알약(R-326)은 구현과 함께 지웠다.</p></section>
   <section><h2>수저 5단계 — 재질 색 + 이름 + 점 (아이콘은 칩 변형 실루엣)</h2><div class="row row--wrap">${[1, 2, 3, 4, 5].map((n) => gradeChip(n)).join('')}</div><div class="row row--wrap" style="margin-top:var(--sp-3)">${[1, 2, 3, 4, 5].map((n) => gradeChip(n, { lg: true })).join('')}</div>
     <div class="row row--wrap" style="margin-top:var(--sp-3)">${gradeChip(1, { range: band('present', 1) })}${gradeChip(2, { range: band('present', 2) })}</div>
     <p class="t-sm t-muted" style="margin-top:var(--sp-2)">칩(≤ 24px)은 무늬 없는 실루엣 + 이름 + 점. 구간 글자는 <code>bandLabel(startBandOf(era, wealth))</code> 출력을 칩 뒤 괄호에 — 글로 적으면 「${esc(gradeText(1, band('present', 1)))}」(R-170).</p>
@@ -1310,7 +1438,8 @@ write('dashboard-adult.html', dashboardPage('adult'));
 write('system.html', systemPage());
 write('decision-infant.html', decisionInfantPage()); // M7b: ?state=kinder|auto
 write('decision-adult.html', decisionAdultPage()); // M7b: ?state=stat|collapsed|auto|auto-collapsed
-write('note.html', dashboardPage('infant', noteSheet(), 5, { noteReady: true })); // M7c 목표 모습: 자유 기록 카드가 떠 있으므로 도구 줄의 「생각 남기기」는 보통 버튼
+write('note.html', notePage()); // M7c 자유 기록 「생각 남기기」 시트: ?state=typing|empty|confirm|off|compact|manual|limit|past (도구 줄의 「생각 남기기」는 보통 버튼)
+write('note-rows.html', noteRowsPage()); // M7c 「나의 기록」 줄 표본(인생 기록 + 엔딩 연표): 긴 URL·띄어쓰기 없는 한글 140자·히브리/아랍 글·그림 문자·3줄·최신 줄
 write('ending.html', endingPage());
 write('components.html', componentsPage());
 write('economy-m5.html', economyPage());

@@ -1,0 +1,366 @@
+{
+ "r1FailCombos": [
+  {
+   "combo": "keep-cite|100|320x256-zoom400",
+   "r1": {
+    "auto": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "auto(aria-disabled)"
+  },
+  {
+   "combo": "keep-cite|200|320x568",
+   "r1": {
+    "choice": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "skip(aria-disabled)"
+  },
+  {
+   "combo": "keep-cite|200|360x568",
+   "r1": {
+    "auto": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "auto(aria-disabled)"
+  },
+  {
+   "combo": "keep-cite|200|667x375-landscape",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-dark(aria-disabled)"
+  },
+  {
+   "combo": "keep-cite|200|640x400-zoom200",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "keep-manual|100|320x256-zoom400",
+   "r1": {
+    "auto": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "auto(aria-disabled)"
+  },
+  {
+   "combo": "keep-manual|200|320x568",
+   "r1": {
+    "choice": "false→true",
+    "age": "14→16"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "skip(aria-disabled)"
+  },
+  {
+   "combo": "keep-manual|200|360x568",
+   "r1": {
+    "choice": "false→true",
+    "age": "14→16"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "auto(aria-disabled)"
+  },
+  {
+   "combo": "keep-manual|200|667x375-landscape",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "div"
+  },
+  {
+   "combo": "keep-manual|200|640x400-zoom200",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "keep-manual|200|320x256-zoom400",
+   "r1": {
+    "choice": "false→true",
+    "age": "14→16"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "skip(aria-disabled)"
+  },
+  {
+   "combo": "skip-empty|100|320x568",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "skip-empty|100|360x568",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "skip-empty|100|640x400-zoom200",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "skip-empty|200|320x568",
+   "r1": {
+    "exitAsk": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-exit(aria-disabled)"
+  },
+  {
+   "combo": "skip-empty|200|360x568",
+   "r1": {
+    "exitAsk": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-exit(aria-disabled)"
+  },
+  {
+   "combo": "skip-empty|200|320x256-zoom400",
+   "r1": {
+    "choice": "false→true",
+    "age": "14→16"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "skip(aria-disabled)"
+  },
+  {
+   "combo": "discard|100|320x568",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "discard|100|360x740-touch",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "discard|100|375x812",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "discard|100|667x375-landscape",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "discard|100|640x400-zoom200",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "discard|100|320x256-zoom400",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "auto(aria-disabled)"
+  },
+  {
+   "combo": "discard|200|320x568",
+   "r1": {
+    "choice": "false→true",
+    "age": "14→16"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "skip(aria-disabled)"
+  },
+  {
+   "combo": "discard|200|360x568",
+   "r1": {
+    "choice": "false→true",
+    "age": "14→16"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-1(aria-disabled)"
+  },
+  {
+   "combo": "discard|200|667x375-landscape",
+   "r1": {
+    "auto": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "auto(aria-disabled)"
+  },
+  {
+   "combo": "discard|200|640x400-zoom200",
+   "r1": {
+    "auto": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "auto(aria-disabled)"
+  },
+  {
+   "combo": "discard|200|320x256-zoom400",
+   "r1": {
+    "choice": "false→true",
+    "age": "14→16"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "skip(aria-disabled)"
+  },
+  {
+   "combo": "decision|100|320x568",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "decision|100|360x568",
+   "r1": {
+    "speed": "1→2"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "speed-2(aria-disabled)"
+  },
+  {
+   "combo": "decision|100|320x256-zoom400",
+   "r1": {
+    "theme": "null→dark"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-dark(aria-disabled)"
+  },
+  {
+   "combo": "decision|200|320x568",
+   "r1": {
+    "exitAsk": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-exit(aria-disabled)"
+  },
+  {
+   "combo": "decision|200|360x568",
+   "r1": {
+    "exitAsk": "false→true"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-exit(aria-disabled)"
+  },
+  {
+   "combo": "decision|200|667x375-landscape",
+   "r1": {
+    "theme": "null→dark"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-dark(aria-disabled)"
+  },
+  {
+   "combo": "decision|200|640x400-zoom200",
+   "r1": {
+    "theme": "null→dark"
+   },
+   "run1": "OK(작동 0)",
+   "run2": "OK(작동 0)",
+   "secondClick": "tool-dark(aria-disabled)"
+  }
+ ],
+ "r2": {
+  "combos": 121,
+  "withDiff": 0,
+  "runs": {
+   "run1": 121,
+   "run2": 121
+  },
+  "secondClickKinds": {
+   "버튼 아닌 곳에 닿음(컨트롤 없음)": 166,
+   "가드 중인 컨트롤(aria-disabled=true)이 눌림을 버림": 76
+  },
+  "counts": {
+   "dbl": [
+    [
+     "keep-cite",
+     22
+    ],
+    [
+     "keep-manual",
+     22
+    ],
+    [
+     "skip-empty",
+     22
+    ],
+    [
+     "discard",
+     22
+    ]
+   ],
+   "decision": 22,
+   "inline": 11
+  }
+ },
+ "r1FailCount": 35,
+ "r1FailNowOk": {
+  "run1": 35,
+  "run2": 35,
+  "of": 35
+ }
+}

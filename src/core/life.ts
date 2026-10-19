@@ -33,6 +33,8 @@ import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { impactOfEffects } from './impact';
 import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllGone, parentsJustGone, siblingCountOf } from './inherit';
+import type { NoteCardDef } from './noteCards';
+import { consumeNote, dueNote, type NoteMode } from './notes';
 import { createRng, type Rng } from './rng';
 import { applyStatDeltas, type StatDeltas } from './stats';
 import { PARENT_WEALTHS, type Character, type Era, type GameState, type HistoryEntry, type Stage, type StatKey, type Stats } from './types';
@@ -484,18 +486,31 @@ export interface RunResult {
   counts: TickCounts;
   /** 마지막 걸음 */
   last: TickInfo;
+  /** `advanceUntilDecision`이 `'stop'` 모드에서 이 기록 카드 앞에서 멈췄다(멈춘 뒤의 상태는 카드가 뜰 차례인 해의 첫머리) */
+  stoppedForNote?: NoteCardDef;
 }
 
 /**
  * 다음 결정으로: 선택지 이벤트(또는 사망)가 나올 때까지 연출 없이 즉시 진행한다.
  * 이미 대기 중인 선택지가 있으면 움직이지 않는다.
+ *
+ * `notes`는 기록 카드(SPEC-003 M7c)를 어떻게 다룰지다. 기본 `'ignore'`는 카드를 보지 않아 시뮬레이션·기존 호출의 동작이 그대로다(인생도 `seen`도 바뀌지 않는다).
+ * `'stop'`: 카드가 뜰 차례인 해의 첫머리에서 멈추고 `stoppedForNote`에 그 카드를 담는다(이미 그 해의 첫머리라면 한 걸음도 가지 않는다).
+ * `'consume'`: 카드를 시트 없이 소비(`seen` 표시, 연표 줄 없음)하고 계속 간다. 소비는 스탯·자산·플래그·`rngState`를 바꾸지 않아 인생이 같다.
  */
-export function advanceUntilDecision(state: GameState, pool: EventPool = EVENT_POOL): RunResult {
+export function advanceUntilDecision(state: GameState, pool: EventPool = EVENT_POOL, notes: NoteMode = 'ignore'): RunResult {
   let s = state;
   const counts = emptyCounts();
   let last: TickInfo = { kind: 'none', fromAge: s.age };
   for (let i = 0; s.phase === 'life' && s.pending === null; i++) {
     if (i >= MAX_STEPS) throw new Error('advanceUntilDecision: 진행이 끝나지 않는다');
+    if (notes !== 'ignore') {
+      const due = dueNote(s);
+      if (due !== null) {
+        if (notes === 'stop') return { state: s, counts, last, stoppedForNote: due };
+        s = consumeNote(s, due);
+      }
+    }
     const r = stepYear(s, pool);
     s = r.state;
     last = r.tick;

@@ -36,7 +36,7 @@ export function leaveLife(state: FoldState): FoldState {
   return state.key === null ? state : { key: null, epoch: state.epoch };
 }
 
-/** 자동 모드가 선택지를 고르는 타이머를 걸어도 되는가 — 일시정지·나가기 확인·가려진 탭·첫 화면과 같이, **카드를 접은 동안에도 걸지 않는다**(U3(a)). 다시 열면 이 조건이 참이 되어 `AUTO_CHOICE_MS`부터 새로 센다 */
-export function autoChooseArmed(o: { autoMode: boolean; hasPending: boolean; superseded: boolean; visible: boolean; showTitle: boolean; paused: boolean; exitAsk: boolean; folded: boolean }): boolean {
-  return o.autoMode && o.hasPending && !o.superseded && o.visible && !o.showTitle && !o.paused && !o.exitAsk && !o.folded;
+/** 자동 모드가 선택지를 고르는 타이머를 걸어도 되는가 — 일시정지·나가기 확인·가려진 탭·첫 화면과 같이, **카드를 접은 동안에도 걸지 않는다**(U3(a)), 기록 시트(`noteOpen` — M7c 「생각 남기기」)가 열려 있는 동안에도 걸지 않는다(시간이 멈춘다, LM5). 다시 열면 이 조건이 참이 되어 `AUTO_CHOICE_MS`부터 새로 센다 */
+export function autoChooseArmed(o: { autoMode: boolean; hasPending: boolean; superseded: boolean; visible: boolean; showTitle: boolean; paused: boolean; exitAsk: boolean; folded: boolean; noteOpen?: boolean }): boolean {
+  return o.autoMode && o.hasPending && !o.superseded && o.visible && !o.showTitle && !o.paused && !o.exitAsk && !o.folded && o.noteOpen !== true;
 }

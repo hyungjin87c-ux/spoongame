@@ -134,6 +134,8 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
   await notBody('선택 뒤');
 
   // 2) 진행 줄: 일시정지(Space) → 배속 2배(Space) → 다음 결정으로(Enter)
+  // 선택지를 고른 직후 400ms는 인생 화면 컨트롤에 입력 가드가 걸려 있다(M7c r2 F-1: 시트·카드가 사라진 자리의 더블탭 보호) — 가드가 풀린 뒤에 누른다. 키보드로 Tab 이동은 가드와 무관하다
+  await expect(page.getByTestId('pause')).not.toHaveAttribute('aria-disabled', 'true');
   expect(await tabWalk(page, 1)).toEqual(['pause']);
   await page.keyboard.press('Space');
   await expect(page.getByTestId('pause')).toHaveText('다시 진행');
@@ -166,16 +168,17 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('tool-dark')).toHaveAttribute('aria-pressed', 'true');
   expect((await readSettings(page)).theme).toBe('dark');
-  await page.keyboard.press('Shift+Tab'); // tool-note: 선택할 수 없는 자리(aria-disabled)라도 포커스는 받는다 — 낭독 사용자가 이름과 이유(준비 중)를 듣는다 (R-326)
+  await page.keyboard.press('Shift+Tab'); // tool-note: 보통 버튼이다(M7c) — 키보드로 열면 기록 시트가 뜨고 Esc로 닫으면 포커스가 돌아온다
   expect(await activeTestId(page)).toBe('tool-note');
-  const saveBefore = JSON.stringify((await readSave(page)).data);
+  await expect(page.getByTestId('tool-note')).toBeEnabled();
   await page.keyboard.press('Enter');
-  await page.keyboard.press('Space');
-  await expect(page.getByTestId('tool-note'), '눌러도 아무 일도 없다').toHaveAttribute('aria-disabled', 'true');
-  await expect(page.locator('[data-testid="note-soon"]')).toHaveCount(0);
-  expect(JSON.stringify((await readSave(page)).data), '게임 상태는 그대로').toBe(saveBefore);
+  await expect(page.getByTestId('note-sheet')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('note-sheet')).toHaveCount(0);
+  await expect.poll(() => activeTestId(page), '닫으면 포커스는 「생각 남기기」로').toBe('tool-note');
   await page.keyboard.press('Shift+Tab'); // tool-bgm
   expect(await activeTestId(page)).toBe('tool-bgm');
+  await expect(page.getByTestId('tool-bgm'), '기록 시트를 닫은 직후 0.4초는 컨트롤의 입력 가드가 눌림을 삼킨다 (M7c r2 F-1)').not.toHaveAttribute('aria-disabled', 'true');
   await page.keyboard.press('Space');
   await expect(page.getByTestId('tool-bgm')).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(async () => (await readSettings(page)).bgm.on).toBe(true);

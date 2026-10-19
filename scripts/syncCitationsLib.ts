@@ -1,4 +1,4 @@
-import { usedByIndex } from '../src/core/citations';
+import { usedByIndex, type CitedCard } from '../src/core/citations';
 import type { EventDef } from '../src/core/events';
 
 /**
@@ -12,9 +12,9 @@ function usedByText(ids: readonly string[]): string {
   return ids.length === 0 ? '      "usedBy": []' : `      "usedBy": [\n${ids.map((id) => `        "${id}"`).join(',\n')}\n      ]`;
 }
 
-/** 파일 글자를 받아 `usedBy`를 이벤트의 `citation` 역색인으로 바꾸고 `candidateEvents`를 지운 글자를 돌려준다 */
-export function syncedCitationsText(text: string, events: readonly EventDef[]): string {
-  const index = usedByIndex(events);
+/** 파일 글자를 받아 `usedBy`를 이벤트(와 기록 카드 `notes` — M7c, id `note-…`)의 `citation` 역색인으로 바꾸고 `candidateEvents`를 지운 글자를 돌려준다 */
+export function syncedCitationsText(text: string, events: readonly EventDef[], notes: readonly CitedCard[] = []): string {
+  const index = usedByIndex(events, notes);
   const parts = text.split(/(?=\n    \{\n      "(?:id|kind)": )/);
   const out = [parts[0]];
   for (const part of parts.slice(1)) {

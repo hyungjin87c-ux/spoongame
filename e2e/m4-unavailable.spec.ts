@@ -3,7 +3,7 @@ import { KNOWN_SEED, findPendingState, injectSave, lifeState, startPageHidden } 
 
 /**
  * 지속 비활성 버튼의 모양과 대비 (SPEC-003 DS3, R-337 / REV-003-M4-1, docs/design/design-system.md 2절 「비활성 컨트롤의 대비」, 시안 D-23).
- * 자동 모드에서 「다음 결정으로」는 **게임 내내** 비활성이고 「생각 남기기」는 M7c까지 준비 중이다 — 과도 상태가 아니므로 WCAG의 비활성 면제를 쓰지 않고 4.5:1로 잰다.
+ * 자동 모드에서 「다음 결정으로」는 **게임 내내** 비활성이다(「생각 남기기」는 M7c부터 보통 버튼이라 이 모양이 아니다) — 과도 상태가 아니므로 WCAG의 비활성 면제를 쓰지 않고 4.5:1로 잰다.
  * 불투명도(0.55 흐림은 라이트 글자 3.77:1이었다) 대신 `--c-text-3` 글자 + 점선 `--c-border-strong` 테두리(강제 색상은 GrayText 점선)로 그린다. 유일한 예외는 진입 직후 0.4초 입력 가드의 흐림(과도 상태).
  * 렌더 픽셀 기준 4.5:1은 e2e/m4-colors.spec.ts가 6조합 × 8화면에서 비활성 버튼을 면제 없이 재고, 여기서는 계산된 모양과 색 대비·가드와의 구분을 본다.
  * 모든 테스트가 뷰포트를 직접 지정하므로 mobile-360 프로젝트에서만 돈다.
@@ -70,11 +70,11 @@ for (const [name, scheme, forced] of [
   ['다크', 'dark', false],
   ['강제 색상(고대비)', 'light', true],
 ] as const) {
-  test(`${name}: 자동 모드의 「다음 결정으로」와 준비 중인 「생각 남기기」는 불투명도 1 + 점선 + 글자 대비 ≥ 4.5:1이다 (R-337)`, async ({ page }, testInfo) => {
+  test(`${name}: 자동 모드의 「다음 결정으로」는 불투명도 1 + 점선 + 글자 대비 ≥ 4.5:1이고, 「생각 남기기」는 보통 버튼이다 (R-337, M7c D-75)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await openAuto(page, scheme, forced);
     await expect(page.getByTestId('auto')).toBeEnabled(); // 입력 가드가 풀린 뒤
-    for (const id of ['skip', 'tool-note']) {
+    for (const id of ['skip']) {
       const look = await lookOf(page, id);
       expect(look.unavailableAttr, `${id} 지속 비활성 표식`).toBe('true');
       expect(look.ariaDisabled, `${id}는 눌러도 입력을 무시한다`).toBe('true');
@@ -87,17 +87,20 @@ for (const [name, scheme, forced] of [
     const autoLook = await lookOf(page, 'auto');
     expect(autoLook.borderStyle).not.toBe('dashed');
     expect(autoLook.unavailableAttr).toBeNull();
+    // 「생각 남기기」(M7c D-75)는 보통 버튼 — 지속 비활성 모양(점선·표식·aria-disabled)이 없고 글자 대비도 4.5:1 이상이다
+    const noteLook = await lookOf(page, 'tool-note');
+    expect(noteLook.unavailableAttr, '표식 없음').toBeNull();
+    expect(noteLook.ariaDisabled, '누를 수 있다').toBeNull();
+    expect(noteLook.borderStyle, '점선이 아니다').not.toBe('dashed');
+    expect(noteLook.ratio, `글자 대비 ${noteLook.ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
   });
 }
 
-test('강제 색상: 「생각 남기기」 안의 「준비 중」 알약은 글자·테두리가 버튼 이름·점선과 같은 GrayText다 — 라디오 카드의 「준비 중」 메타 알약과 같은 색 (D-30①)', async ({ page }, testInfo) => {
+test('강제 색상: 「생각 남기기」는 보통 버튼이다 — 「준비 중」 알약(.tool-soon)이 없고 점선·GrayText가 아니라 다른 도구 버튼과 같은 글자·테두리 색이다 (M7c D-75)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   await openAuto(page, 'light', true);
   await expect(page.getByTestId('auto')).toBeEnabled();
-  const r = await page.getByTestId('tool-note').evaluate((btn) => {
-    const pill = btn.querySelector('.tool-soon') as HTMLElement | null;
-    if (pill === null) throw new Error('「준비 중」 알약이 없다');
-    // 시스템 색 이름을 이 브라우저가 실제로 어떤 값으로 바꾸는지 탐침 요소로 읽는다
+  const r = await page.evaluate(() => {
     const probe = (name: string) => {
       const span = document.createElement('span');
       span.style.color = name;
@@ -106,15 +109,19 @@ test('강제 색상: 「생각 남기기」 안의 「준비 중」 알약은 �
       span.remove();
       return value;
     };
-    const p = getComputedStyle(pill);
-    const b = getComputedStyle(btn);
-    return { pillColor: p.color, pillBorder: p.borderTopColor, btnColor: b.color, btnBorder: b.borderTopColor, gray: probe('GrayText'), text: probe('CanvasText') };
+    const look = (id: string) => {
+      const btn = document.querySelector('[data-testid="' + id + '"]') as HTMLElement;
+      const b = getComputedStyle(btn);
+      return { color: b.color, border: b.borderTopColor, style: b.borderTopStyle, soon: btn.querySelector('.tool-soon') !== null };
+    };
+    return { note: look('tool-note'), dark: look('tool-dark'), gray: probe('GrayText'), text: probe('CanvasText') };
   });
   expect(r.gray, '탐침이 GrayText와 CanvasText를 구분한다(공허 통과 방지)').not.toBe(r.text);
-  expect(r.btnColor, '버튼 이름은 GrayText').toBe(r.gray);
-  expect(r.btnBorder, '버튼 점선은 GrayText').toBe(r.gray);
-  expect(r.pillColor, '알약 글자는 GrayText(CanvasText 아님)').toBe(r.gray);
-  expect(r.pillBorder, '알약 테두리는 GrayText(CanvasText 아님)').toBe(r.gray);
+  expect(r.note.soon, '「준비 중」 알약이 없다').toBe(false);
+  expect(r.note.color, '글자는 GrayText가 아니다').not.toBe(r.gray);
+  expect(r.note.style, '점선이 아니다').not.toBe('dashed');
+  expect(r.note.color, '다른 도구 버튼과 같은 글자색').toBe(r.dark.color);
+  expect(r.note.border, '다른 도구 버튼과 같은 테두리색').toBe(r.dark.border);
 });
 
 test('0.4초 입력 가드의 흐림은 그대로다: 가드만 닫힌 버튼은 불투명도 0.55·실선이고 표식이 없으며, 같은 순간에도 지속 비활성 버튼은 불투명도 1·점선이다 (유일한 예외, R-337)', async ({ page }, testInfo) => {
@@ -125,12 +132,16 @@ test('0.4초 입력 가드의 흐림은 그대로다: 가드만 닫힌 버튼은
   expect(pause.unavailableAttr, '가드는 지속 비활성이 아니다').toBeNull();
   expect(pause.opacity, '가드의 흐림').toBeCloseTo(0.55, 2);
   expect(pause.borderStyle).not.toBe('dashed');
-  for (const id of ['skip', 'tool-note']) {
+  for (const id of ['skip']) {
     const look = await lookOf(page, id);
     expect(look.unavailableAttr, id).toBe('true');
     expect(look.opacity, `${id}: 가드가 닫혀 있어도 지속 비활성 모양이 이긴다`).toBe(1);
     expect(look.borderStyle, id).toBe('dashed');
   }
+  // 「생각 남기기」는 보통 버튼이라 가드가 닫힌 동안은 일시정지 버튼과 같은 흐림이다(M7c D-75)
+  const note = await lookOf(page, 'tool-note');
+  expect(note.unavailableAttr).toBeNull();
+  expect(note.opacity).toBeCloseTo(0.55, 2);
 });
 
 test('선택지 대기 중의 「다음 결정으로」도 지속 비활성 모양이다 — 자동 모드가 아니어도 (선택하기 전까지 누를 수 없다)', async ({ page }, testInfo) => {

@@ -1,0 +1,137 @@
+{
+ "dialogName": "생각 남기기 지금 윤수호의 마음에 남아 있는 장면이나 생각이 있습니까?",
+ "items": [
+  {
+   "d": 0,
+   "role": "dialog",
+   "name": "생각 남기기 지금 윤수호의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "StaticText",
+   "name": "생각 남기기",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "StaticText",
+   "name": "2040년",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "StaticText",
+   "name": " ",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "StaticText",
+   "name": " ",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "StaticText",
+   "name": "14세",
+   "desc": ""
+  },
+  {
+   "d": 2,
+   "role": "heading",
+   "name": "지금 윤수호의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "StaticText",
+   "name": "지금 윤수호의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "LabelText",
+   "name": "",
+   "desc": ""
+  },
+  {
+   "d": 4,
+   "role": "StaticText",
+   "name": "남길 글",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "textbox",
+   "name": "남길 글",
+   "desc": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다. 0자 입력, 140자까지"
+  },
+  {
+   "d": 5,
+   "role": "StaticText",
+   "name": "실명·연락처",
+   "desc": ""
+  },
+  {
+   "d": 5,
+   "role": "StaticText",
+   "name": " 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "desc": ""
+  },
+  {
+   "d": 5,
+   "role": "StaticText",
+   "name": "0자 입력, 140자까지",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "button",
+   "name": "적어두고 살기",
+   "desc": "인생 기록에 한 줄로 더해집니다."
+  },
+  {
+   "d": 6,
+   "role": "StaticText",
+   "name": "적어두고 살기",
+   "desc": ""
+  },
+  {
+   "d": 5,
+   "role": "StaticText",
+   "name": "인생 기록에 한 줄로 더해집니다.",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "button",
+   "name": "마음속에 담고 살기",
+   "desc": "아무것도 저장하지 않고 넘어갑니다."
+  },
+  {
+   "d": 6,
+   "role": "StaticText",
+   "name": "마음속에 담고 살기",
+   "desc": ""
+  },
+  {
+   "d": 5,
+   "role": "StaticText",
+   "name": "아무것도 저장하지 않고 넘어갑니다.",
+   "desc": ""
+  },
+  {
+   "d": 3,
+   "role": "button",
+   "name": "저절로 뜨는 기록 카드 끄기",
+   "desc": ""
+  },
+  {
+   "d": 4,
+   "role": "StaticText",
+   "name": "저절로 뜨는 기록 카드 끄기",
+   "desc": ""
+  }
+ ]
+}

@@ -402,7 +402,7 @@ describe('보이지 않는 방향·너비 제어 문자가 든 저장은 손상�
     return where === 'start' ? ch + text : where === 'end' ? text + ch : text.slice(0, 1) + ch + text.slice(1);
   };
 
-  it('이름: 위 15개 문자가 앞·가운데·끝 어디에 있어도 저장 전체를 거부한다(첫 화면 정리). 보통의 한글·영문·공백·이모지 이름은 통과한다', () => {
+  it('이름: 위 15개 문자가 앞·가운데·끝 어디에 있어도 저장 전체를 거부한다(첫 화면 정리). 이름은 한글 음절 3~5자(이름 풀 전체가 통과하는 패턴, M7c T2)라 한글 이름은 통과하고 영문·공백·이모지가 든 이름은 거부한다', () => {
     const base = clone(mid);
     const name = base.character.name as string;
     expect(parseGame(raw(base)), '고치지 않은 저장은 통과').not.toBeNull();
@@ -414,10 +414,16 @@ describe('보이지 않는 방향·너비 제어 문자가 든 저장은 손상�
         expect(load(raw(x)), `loadGame도 거부(새 게임) U+${cp.toString(16).toUpperCase()}`).toBeNull();
       }
     }
-    for (const fine of ['김민준', 'Alex Kim', '이 서 윤', 'Zoë', '김🙂준', '이름-에·점']) {
+    for (const fine of ['김민준', '박서연', '이지우']) {
       const x = clone(mid);
       x.character.name = fine;
       expect(parseGame(raw(x)), `보통 이름 ${fine}`).not.toBeNull();
+    }
+    // M7c T2: 한글 음절 화이트리스트라 한글이 아닌 글자(영문·공백·이모지·기호)가 든 이름은 거부한다 — 이름은 이름 풀에서만 오므로 정상 저장을 잃지 않는다
+    for (const bad of ['Alex Kim', '이 서 윤', 'Zoë', '김🙂준', '이름-에·점']) {
+      const x = clone(mid);
+      x.character.name = bad;
+      expect(parseGame(raw(x)), `한글이 아닌 이름 ${bad}`).toBeNull();
     }
   });
 

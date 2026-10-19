@@ -591,6 +591,12 @@ export function pipelineSeed(i: number, era: Era, strategy: PipelineStrategy): n
   return (i * 2654435761 + 12345 + salt) >>> 0;
 }
 
+/**
+ * 기록 카드(SPEC-003 M7c)를 보지 않는 세션 reducer — 지금 배포 판(기록 시트가 아직 없는 화면)과 같은 처리다. 이 파이프라인은 세션 reducer 경로와 playToEnd 경로가 **상태 전체**로 같음을 보는데,
+ * 기록 카드가 뜨면 수동 모드는 시트 응답을 기다리며 멈추고 소비된 카드는 seen에 남는다. 카드 자체(스케줄·소비·정지·응답)와 "카드가 인생을 바꾸지 않는다"는 tests/noteCards.test.ts·tests/noteInvariance.test.ts가 본다.
+ */
+const reduceIgnoringNotes = (s: Session, a: SessionAction): Session => sessionReducer(s, a, undefined, 'ignore');
+
 const SETTINGS: Settings = { ...DEFAULT_SETTINGS, speed: 8, autoMode: false };
 
 /**
@@ -614,7 +620,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     let session: Session = createSession(createInitialState(seed), { ...SETTINGS, autoMode: auto, lifeLength });
     let settings0 = session.settings;
     const send = (action: SessionAction, label: string): Session => {
-      const next = sessionReducer(session, action);
+      const next = reduceIgnoringNotes(session, action);
       if (next === session) problems.push(`${tag} ${label}: 입력이 적용되지 않았다`);
       return next;
     };
@@ -629,7 +635,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     if (session.game.phase !== 'title') problems.push(`${tag}: 새 게임이 타이틀이 아니다 (${session.game.phase})`);
     if (session.game.era !== null || session.game.lifeLength !== null) problems.push(`${tag}: 새 게임에 세상·인생 길이가 이미 정해져 있다`);
     for (const a of [{ type: 'enterLife' }, { type: 'enterBirth' }, { type: 'finishSpin' }, { type: 'advance', fromAge: 0 }, { type: 'skip' }, { type: 'resume' }, { type: 'openTitle' }, { type: 'beginNew', seed: 1 }] as const) {
-      if (sessionReducer(session, a) !== session) problems.push(`${tag}: 타이틀에서 ${a.type} 입력이 무시되지 않았다`);
+      if (reduceIgnoringNotes(session, a) !== session) problems.push(`${tag}: 타이틀에서 ${a.type} 입력이 무시되지 않았다`);
     }
     session = { ...session, game: keep(session.game, '첫 화면') };
     // 2. 세상·인생 길이 고르기 (지금 세상·약 30분은 기본 선택 그대로 확정하는 판도 있다 — 기본값이면 입력이 바뀌는 것이 없다)
@@ -642,15 +648,15 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       if (session.settings.lifeLength !== lifeLength) problems.push(`${tag}: 고른 인생 길이가 설정에 반영되지 않았다`);
     }
     // 고를 수 없는 값(약 1시간)을 눌러도 설정이 바뀌지 않는다 — 이미 long60이 들어 있던 설정에서도 같은 객체다(REV-003-M2-2 reducer 규칙)
-    if (lifeLength === 'long60' && sessionReducer(session, { type: 'setLifeLength', lifeLength: 'long60' }) !== session) problems.push(`${tag}: 고를 수 없는 인생 길이 입력이 무시되지 않았다`);
+    if (lifeLength === 'long60' && reduceIgnoringNotes(session, { type: 'setLifeLength', lifeLength: 'long60' }) !== session) problems.push(`${tag}: 고를 수 없는 인생 길이 입력이 무시되지 않았다`);
     if (lifeLength === 'short30') {
-      const rejected = sessionReducer(session, { type: 'setLifeLength', lifeLength: 'long60' });
+      const rejected = reduceIgnoringNotes(session, { type: 'setLifeLength', lifeLength: 'long60' });
       if (rejected !== session) problems.push(`${tag}: 고를 수 없는 인생 길이(long60)가 설정에 들어갔다`);
     }
     settings0 = session.settings;
     // 3. 태어나기(출생): 연타해도 한 번만 일어난다. 이 순간 출생 결과가 정해져 저장되고 룰렛 화면(roulette)이 연출 중(spin)으로 시작한다(RL5)
     session = send({ type: 'begin' }, '태어나기');
-    if (sessionReducer(session, { type: 'begin' }) !== session) problems.push(`${tag}: 태어나기 연타가 같은 객체를 돌려주지 않았다`);
+    if (reduceIgnoringNotes(session, { type: 'begin' }) !== session) problems.push(`${tag}: 태어나기 연타가 같은 객체를 돌려주지 않았다`);
     const rolled = session.game;
     if (rolled.phase !== 'roulette' || !session.spin || rolled.era !== era || rolled.lifeLength !== lifeLength || rolled.character === null) {
       problems.push(`${tag}: 룰렛 상태가 이상하다 (phase ${rolled.phase}, spin ${session.spin}, era ${rolled.era}, 인생 길이 ${rolled.lifeLength})`);
@@ -662,15 +668,15 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     const resumed = reloaded === null ? null : createSession(reloaded, session.settings);
     if (resumed === null || resumed.spin || !deepEqual(resumed.game, rolled)) problems.push(`${tag}: 룰렛 도중 새로고침한 상태가 연출 중이거나 결과가 다르다`);
     // 연출 중에는 「출생신고 보기」가 무시되고, 건너뛰기(연타 포함)는 한 번만 동작하며, 다시 굴리기는 없다
-    if (sessionReducer(session, { type: 'enterBirth' }) !== session) problems.push(`${tag}: 연출 중 「출생신고 보기」가 무시되지 않았다`);
-    if (sessionReducer(session, { type: 'enterLife' }) !== session) problems.push(`${tag}: 룰렛에서 「살아가기」가 무시되지 않았다`);
+    if (reduceIgnoringNotes(session, { type: 'enterBirth' }) !== session) problems.push(`${tag}: 연출 중 「출생신고 보기」가 무시되지 않았다`);
+    if (reduceIgnoringNotes(session, { type: 'enterLife' }) !== session) problems.push(`${tag}: 룰렛에서 「살아가기」가 무시되지 않았다`);
     session = { ...session, game: keep(session.game, '룰렛') };
     session = send({ type: 'finishSpin' }, '건너뛰기');
     if (session.game !== rolled && !deepEqual(session.game, rolled)) problems.push(`${tag}: 건너뛰기가 출생 결과를 바꿨다`);
-    if (sessionReducer(session, { type: 'finishSpin' }) !== session) problems.push(`${tag}: 건너뛰기 연타가 같은 객체를 돌려주지 않았다`);
-    if (sessionReducer(session, { type: 'begin' }) !== session) problems.push(`${tag}: 룰렛 중 「태어나기」(다시 굴리기)가 무시되지 않았다`);
+    if (reduceIgnoringNotes(session, { type: 'finishSpin' }) !== session) problems.push(`${tag}: 건너뛰기 연타가 같은 객체를 돌려주지 않았다`);
+    if (reduceIgnoringNotes(session, { type: 'begin' }) !== session) problems.push(`${tag}: 룰렛 중 「태어나기」(다시 굴리기)가 무시되지 않았다`);
     session = send({ type: 'enterBirth' }, '출생신고 보기');
-    if (sessionReducer(session, { type: 'enterBirth' }) !== session) problems.push(`${tag}: 「출생신고 보기」 연타가 같은 객체를 돌려주지 않았다`);
+    if (reduceIgnoringNotes(session, { type: 'enterBirth' }) !== session) problems.push(`${tag}: 「출생신고 보기」 연타가 같은 객체를 돌려주지 않았다`);
     const birth = session.game;
     if (birth.phase !== 'birth' || !deepEqual(birth.character, rolled.character) || !deepEqual(birth.birthReport, rolled.birthReport) || birth.peerSeed !== rolled.peerSeed) {
       problems.push(`${tag}: 출생신고 상태가 이상하다 (phase ${birth.phase}) — 출생 결과가 룰렛과 같아야 한다`);
@@ -719,7 +725,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       problems.push(...checkTransition(g, session.game, kind, `${tag} 나이 ${g.age} 걸음 ${step}(${action.type})`));
       // 연타·이중 실행: 같은 입력을 한 번 더 보내도 아무 일이 없다 (같은 세션 객체)
       checks.duplicateInputs++;
-      if (sessionReducer(session, action) !== session) problems.push(`${tag} 나이 ${g.age}: 같은 ${action.type} 입력을 한 번 더 보내자 상태가 바뀌었다`);
+      if (reduceIgnoringNotes(session, action) !== session) problems.push(`${tag} 나이 ${g.age}: 같은 ${action.type} 입력을 한 번 더 보내자 상태가 바뀌었다`);
       if (session === before) break; // 적용되지 않았다 — 무한 루프 방지
       if (stepSerialize || session.game.pending !== null || session.game.phase !== 'life') session = { ...session, game: keep(session.game, `걸음 ${step}`) };
     }
@@ -755,28 +761,28 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     result.journey = review.journey.kind === 'early' ? 'early' : review.journey.movement;
     // 엔딩에서는 진행·선택 입력이 모두 무시된다
     for (const a of [{ type: 'advance', fromAge: ended.age }, { type: 'skip' }, { type: 'autoChoose', key: 'x@1' }, { type: 'enterLife' }, { type: 'begin' }, { type: 'resume' }, { type: 'openTitle' }] as const) {
-      if (sessionReducer(session, a) !== session) problems.push(`${tag}: 엔딩에서 ${a.type} 입력이 무시되지 않았다`);
+      if (reduceIgnoringNotes(session, a) !== session) problems.push(`${tag}: 엔딩에서 ${a.type} 입력이 무시되지 않았다`);
     }
 
     // 8. 다시 태어나기: 새 시드, 첫 화면에서 시작, 설정(세상·인생 길이 포함)은 그대로, 연타는 같은 객체
     const newSeed = (seed * 48271 + 11) >>> 0;
-    const reborn = sessionReducer(session, { type: 'rebirth', seed: newSeed });
+    const reborn = reduceIgnoringNotes(session, { type: 'rebirth', seed: newSeed });
     checks.rebirths++;
     if (reborn === session) problems.push(`${tag}: 다시 태어나기가 적용되지 않았다`);
     else {
       if (!deepEqual(reborn.game, createInitialState(newSeed))) problems.push(`${tag}: 다시 태어난 상태가 새 시드의 첫 화면이 아니다`);
       if (reborn.settings !== settings0 && !deepEqual(reborn.settings, settings0)) problems.push(`${tag}: 다시 태어나도 설정이 그대로여야 한다`);
       if (reborn.tick !== null) problems.push(`${tag}: 다시 태어난 뒤 tick이 남아 있다`);
-      if (sessionReducer(reborn, { type: 'rebirth', seed: newSeed + 1 }) !== reborn) problems.push(`${tag}: 다시 태어나기 연타가 같은 객체를 돌려주지 않았다`);
+      if (reduceIgnoringNotes(reborn, { type: 'rebirth', seed: newSeed + 1 }) !== reborn) problems.push(`${tag}: 다시 태어나기 연타가 같은 객체를 돌려주지 않았다`);
       for (const a of [{ type: 'enterLife' }, { type: 'skip' }, { type: 'advance', fromAge: 0 }, { type: 'resume' }] as const) {
-        if (sessionReducer(reborn, a) !== reborn) problems.push(`${tag}: 첫 화면에서 ${a.type} 입력이 첫 화면을 건너뛰었다`);
+        if (reduceIgnoringNotes(reborn, a) !== reborn) problems.push(`${tag}: 첫 화면에서 ${a.type} 입력이 첫 화면을 건너뛰었다`);
       }
       checks.roundTrips++;
       problems.push(...roundTrip(reborn.game, `${tag} 다시 태어난 직후`).problems);
       // 새 판: 같은 시대로 태어나 첫 결정(또는 사망)까지 간다
       let next: Session = reborn;
       const go = (a: SessionAction, label: string) => {
-        const n = sessionReducer(next, a);
+        const n = reduceIgnoringNotes(next, a);
         if (n === next) problems.push(`${tag} 새 판 ${label}: 입력이 적용되지 않았다`);
         next = n;
       };
@@ -795,7 +801,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       go({ type: 'enterLife' }, '인생 시작');
       for (let k = 0; k < MAX_STEPS && next.game.phase === 'life' && next.game.pending === null; k++) {
         const prev = next.game;
-        const n = sessionReducer(next, { type: 'advance', fromAge: prev.age });
+        const n = reduceIgnoringNotes(next, { type: 'advance', fromAge: prev.age });
         if (n === next) {
           problems.push(`${tag} 새 판: 진행이 적용되지 않았다`);
           break;

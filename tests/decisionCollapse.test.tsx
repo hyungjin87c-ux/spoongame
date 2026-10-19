@@ -72,6 +72,15 @@ describe('자동 선택 타이머를 거는 조건 (U3(a)) — 접은 동안 정
     expect(autoChooseArmed({ ...ARMED, autoMode: false })).toBe(false);
   });
 
+  it('기록 시트(「생각 남기기」, noteOpen)가 열려 있는 동안에도 걸지 않는다 (SPEC-003 M7c LM5·5-3절) — 닫으면 다시 참이 되어 AUTO_CHOICE_MS부터 새로 센다. noteOpen을 안 주면 예전과 같다', () => {
+    expect(autoChooseArmed({ ...ARMED, noteOpen: true })).toBe(false);
+    expect(autoChooseArmed({ ...ARMED, noteOpen: false })).toBe(true);
+    expect(autoChooseArmed(ARMED)).toBe(true);
+    // 접힌 띠나 다른 정지 조건과 겹쳐도 거짓이다
+    expect(autoChooseArmed({ ...ARMED, noteOpen: true, folded: true })).toBe(false);
+    expect(autoChooseArmed({ ...ARMED, noteOpen: true, paused: true })).toBe(false);
+  });
+
   it('접힌 채 자동 모드를 켜도 걸지 않는다 (U8) — 켠 모드와 접힘은 독립이라 folded가 이긴다', () => {
     expect(autoChooseArmed({ ...ARMED, autoMode: true, folded: true })).toBe(false);
     // 다시 열면 참이 되어 효과가 다시 돌고 타이머는 처음부터 센다 (App의 의존 배열에 folded가 있다)

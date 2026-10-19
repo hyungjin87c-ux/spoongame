@@ -22,7 +22,8 @@ const MOCK = 'file:///' + ROOT.replace(/\\/g, '/') + 'docs/design/mockups/';
 const OUT = ROOT + 'docs/design/screens/003/';
 mkdirSync(OUT, { recursive: true });
 
-const VIEW = { mobile: { width: 360, height: 740, dpr: 2 }, desktop: { width: 1280, height: 800, dpr: 1 }, 320: { width: 320, height: 640, dpr: 2 }, low: { width: 320, height: 256, dpr: 2 } };
+// vv340 = 360×340(DPR 2): 가상 키보드가 올라온 폰의 **보이는 영역**(visualViewport) 크기 — M7c 기록 시트의 compact 상태(K2·K3 보장 높이 340px)를 그 크기 그대로 찍는다(content-M7c 6-1절). 다른 시안은 쓰지 않는다
+const VIEW = { mobile: { width: 360, height: 740, dpr: 2 }, desktop: { width: 1280, height: 800, dpr: 1 }, 320: { width: 320, height: 640, dpr: 2 }, low: { width: 320, height: 256, dpr: 2 }, vv340: { width: 360, height: 340, dpr: 2 } };
 /** [파일, 이름, { m: 모바일 변형[], d: 데스크톱 변형[], n: 320 변형[], l: low(320×256) 변형[] }] 변형 옵션: dark, forced, reduced, full(전체 길이), bottom(맨 아래로 스크롤), to(이 선택자의 요소가 화면 위에 오게 스크롤), query(시안 주소의 질의 문자열 — 예 'slide=marriage-count', 'state=confirm', 'era=past'), text(글자 크기 %, 예 200),
  *  el(이 선택자의 **요소만** 찍는다 — 비활성 버튼처럼 작은 부분을 확대 없이 또렷이 볼 때. 넘침 점검은 페이지 전체에 그대로 돈다),
  *  tag(파일 이름 꼬리 — 같은 상태의 전체 샷과 el 샷이 같은 이름으로 덮어쓰지 않게: economy-* 의 'panel'·'card'·'list') */
@@ -63,10 +64,11 @@ const SHOTS = [
   ['dashboard-infant.html', 'dashboard-infant', { m: [{}, { dark: true }, { full: true }], d: [{}, { dark: true }] }],
   ['dashboard-adult.html', 'dashboard-adult', { m: [{}, { full: true }, { dark: true }, { forced: true }], d: [{}, { dark: true }, { forced: true }], n: [{}, { text: 200 }], l: [{ to: '.profile' }] }],
   // 도구 줄 아래 한 줄(2026-10-17 M4 구현에 맞춰 추가, `?state=`): tools = BGM 켜짐 → 볼륨 줄 「BGM 볼륨」 + range + 「30%」 / exit = 나가기 확인 단계(안내문 → 「첫 화면으로 나가기」(보조) → 「돌아가기」(기본), 첫 화면 확인 단계와 같은 배치 R-204)
-  // 「생각 남기기」는 M7c까지 모든 대시보드 샷에서 지속 비활성(점선·옅은 글자) + 버튼 안 「준비 중」 알약이다(M4 r2 R-326 — 예전의 안내 줄 「…준비 중입니다.」는 없다). 320 · 글자 200%의 확인 단계: 두 버튼이 flex-wrap으로 한 줄씩, 이름은 낱말 단위 「첫 화면으로 / 나가기」(R-336)
+  // 「생각 남기기」는 M7c부터 모든 대시보드 샷에서 보통 버튼(aria-haspopup="dialog" — 누르면 note.html의 기록 시트)이다. M4 r2~M7b의 지속 비활성 + 「준비 중」 알약(R-326)은 2026-10-19 후속에서 지웠다. 320 · 글자 200%의 확인 단계: 두 버튼이 flex-wrap으로 한 줄씩, 이름은 낱말 단위 「첫 화면으로 / 나가기」(R-336)
   ['dashboard-infant.html', 'dashboard-tools', { m: [{ query: 'state=tools' }, { query: 'state=tools', dark: true }, { query: 'state=tools', forced: true }], d: [{ query: 'state=tools' }], n: [{ query: 'state=tools' }, { query: 'state=tools', text: 200 }] }],
   ['dashboard-infant.html', 'dashboard-exit', { m: [{ query: 'state=exit' }, { query: 'state=exit', dark: true }, { query: 'state=exit', text: 200 }], d: [{ query: 'state=exit' }], n: [{ query: 'state=exit', text: 200 }] }],
-  // 지속 비활성 컨트롤만 또렷이(요소 단위 샷, 구현 qa/screenshots/003/dev-M4-unavailable-*.png과 같은 자리): 도구 줄(「생각 남기기 준비 중」 + 볼륨 줄) 라이트·다크·강제 색상 / 확인 단계 상자(320 · 글자 200% — 버튼 이름이 낱말 단위 두 줄, 고정 진행 줄에 가리지 않게 full + el)
+  // 요소 단위 샷(구현 qa/screenshots/003/dev-M4-unavailable-*.png과 같은 자리 — 이름의 unavailable은 M4 r2 때 「생각 남기기 준비 중」을 보던 자리라는 뜻으로 남겼다, D-85): 도구 줄(BGM 켜짐 + 볼륨 줄, 「생각 남기기」는 M7c부터 보통 버튼) 라이트·다크·강제 색상
+  // / 확인 단계 상자(320 · 글자 200% — 버튼 이름이 낱말 단위 두 줄, 고정 진행 줄에 가리지 않게 full + el)
   // / 컴포넌트판 버튼 줄(「입력 가드 0.4초」 흐림 ↔ 「다음 결정으로」 점선 — 선택지 대기 중의 모습; 카드 시안 decision-*는 시트가 진행 줄 위를 덮어 요소 샷으로는 보이지 않는다)·도구 줄(강제 색상 포함)
   ['dashboard-infant.html', 'dashboard-unavailable-tools', { m: [{ query: 'state=tools', el: '.toolbar' }, { query: 'state=tools', el: '.toolbar', dark: true }, { query: 'state=tools', el: '.toolbar', forced: true }] }],
   ['dashboard-infant.html', 'dashboard-exit-box', { m: [{ query: 'state=exit', text: 200, el: '.exit-ask', full: true }], n: [{ query: 'state=exit', text: 200, el: '.exit-ask', full: true }] }],
@@ -89,7 +91,23 @@ const SHOTS = [
   // 인용 박스 표본 넷 + 출처 줄 변환 예(components.html #cite — 지난·다가올 세상 머리말은 시안 주인공(지금 세상)의 카드에 못 두므로 여기서 본다)
   // (320 · 글자 200%는 components.html의 다른 표본(#tools 5열 격자 비교판)이 페이지 넘침 점검에 걸려 두지 않는다 — 머리말 포함 글자의 200% 접힘은 decision-infant·decision-infant-auto 320 · 200% 샷과 감사가 덮는다)
   ['components.html', 'components-cite', { m: [{ el: '#cite' }, { el: '#cite', dark: true }], n: [{ el: '#cite' }] }],
-  ['note.html', 'note', { m: [{}, { dark: true }], d: [{}] }],
+  // M7c 자유 기록 「생각 남기기」 시트(2026-10-19 designer 선행, copy.md 7절·content-M7c 7-5절 3항): 기본 = 5세 ① 영유아기 기억 + 연구 인용 c-037, 빈 입력란 / typing = 입력 중(34/140) / empty = 빈 입력 안내(aria-invalid, 포커스 입력란)
+  // / confirm = 글이 있는데 2번 → 확인 단계(두 버튼 자리에 「글을 지우고 담아 두기」 → 맨 아래 「돌아가서 이어 쓰기」) / off = 「저절로 뜨는 기록 카드 끄기」를 누른 뒤(「켜기」 + 알림)
+  // / compact = 가상 키보드가 올라와 시트 전체가 보이는 높이에 들어가지 않는 상태의 표본(visualViewport 340px = K3 보장 높이 — vv340은 보이는 영역 그대로, mobile은 아래에 키보드 자리; 구현의 판정 조건은 design-system.md 11-10, 2026-10-19 후속)
+  // / manual = 도구 줄 「생각 남기기」로 연 수동 시트(31세, 인용 없음 → 빈 박스 0) / limit = 기록 40개 도달(안내 + 「닫기」) / past = ① 지난 세상 표본(실제 c-037의 past 머리말 「지금의 연구로는」 포함 84자 — 시트만 1966년, 뒤 대시보드는 지금 세상 주인공)
+  // 2026-10-19 후속(developer UI 단계 뒤): 문구·질문은 구현 상수(noteSheetText.ts·notes.json)에서 읽고 모든 대시보드 샷의 「생각 남기기」가 보통 버튼이라 dashboard-*·decision-*·economy-*·components-* 도 다시 찍는다
+  ['note.html', 'note', { m: [{}, { dark: true }, { forced: true }], d: [{}, { dark: true }], n: [{}, { text: 200 }], l: [{}] }],
+  ['note.html', 'note-typing', { m: [{ query: 'state=typing' }], n: [{ query: 'state=typing', text: 200 }] }],
+  ['note.html', 'note-empty', { m: [{ query: 'state=empty' }, { query: 'state=empty', dark: true }, { query: 'state=empty', forced: true }], n: [{ query: 'state=empty', text: 200 }] }],
+  ['note.html', 'note-confirm', { m: [{ query: 'state=confirm' }, { query: 'state=confirm', forced: true }, { query: 'state=confirm', el: '.note-confirm', tag: 'box' }], d: [{ query: 'state=confirm' }], n: [{ query: 'state=confirm', text: 200 }, { query: 'state=confirm', text: 200, el: '.note-confirm', tag: 'box' }] }],
+  ['note.html', 'note-off', { m: [{ query: 'state=off' }, { query: 'state=off', dark: true }, { query: 'state=off', el: '.sheet__foot', tag: 'foot' }], n: [{ query: 'state=off', text: 200 }, { query: 'state=off', text: 200, el: '.sheet__foot', tag: 'foot' }] }],
+  // compact 샷은 입력란에 포커스를 둔 채 찍는다(focus) — 실기기에서 키보드가 올라온 순간의 모습이고, K3(보이는 높이 340px에서 입력란 전체 + 두 버튼이 함께 보인다)을 vv340 샷이 보여 준다. 2026-10-19 r2부터 질문이 sticky 한 줄로 시트 위에 남는다(D-88)
+  ['note.html', 'note-compact', { m: [{ query: 'state=compact', focus: '#note-input' }], v: [{ query: 'state=compact', focus: '#note-input' }, { query: 'state=compact', focus: '#note-input', dark: true }, { query: 'state=compact', focus: '#note-input', text: 200 }] }],
+  ['note.html', 'note-manual', { m: [{ query: 'state=manual' }], d: [{ query: 'state=manual' }], n: [{ query: 'state=manual', text: 200 }] }],
+  ['note.html', 'note-limit', { m: [{ query: 'state=limit' }, { query: 'state=limit', dark: true }], d: [{ query: 'state=limit' }] }],
+  ['note.html', 'note-past', { m: [{ query: 'state=past' }], n: [{ query: 'state=past', text: 200 }] }],
+  // 「나의 기록」 줄 표본(인생 기록 카드 + 엔딩 연표 한 묶음, copy.md 7-4): 짧은 글·3줄·최신 줄·긴 URL·띄어쓰기 없는 한글 140자·히브리/아랍 글·그림 문자(가족 ZWJ·깃발·피부색·키캡)
+  ['note-rows.html', 'note-rows', { m: [{}, { dark: true }, { forced: true }, { full: true }], d: [{}, { dark: true }], n: [{}, { text: 200 }, { text: 200, full: true }] }],
   // 엔딩: 머리 = 얼굴 96px 정사각 + 텍스트 칸 `.ending__who`(R-320), 320 · 글자 200% = 제목 「이서연의 인생」 글자 크기 상한(R-321 — 낱말이 끊기지 않고 칸이 좁으면 얼굴 아래 줄로)
   // M7e(R-327): 머리 「{세상} · 생애 기록」 + 「연월 ~ 연도 · N세」, 출발선 카드 = 띠(출발선 구간) + 마름모(마지막 자리) 막대 + 범례(수저 칩) + 합쇼체 제안 문안, 「최종 순자산」 줄은 금액만.
   // `?state=`: zero = 최종 순자산 0원(흙수저, 현행 규칙 자리 + 규칙 후보 주석) / past = 지난 세상 인물(음수 + 「지금 가치로 환산」) / early = 스무 살 전(동수저 — 중앙 구간 「하위 25% 선과 상위 45% 선 사이」, 띠만)
@@ -137,6 +155,9 @@ function overflowReport() {
   };
   // 읽기 전용으로 접은(clip: rect(0 0 0 0)) 요소와 그 안 — 좁은 화면 비교 표의 머리글(thead)처럼 화면에 그려지지 않는 것은 세지 않는다(구현 e2e 측정기 e2e/textResize.ts와 같은 규칙, M3)
   const clipped = [...document.querySelectorAll('body *')].filter((el) => getComputedStyle(el).clip === 'rect(0px, 0px, 0px, 0px)');
+  // 의도된 한 줄 줄임의 허용 목록(2026-10-19 r2, diff-003.md D-88 · design-system.md 11-10 「줄임 허용」): compact 기록 시트의 질문 h2는 sticky 한 줄로 그려 넘치는 글자가 「…」로 끝난다 — 글자·접근 가능한 이름은 그대로.
+  // 이 선택자 하나뿐이고(늘리려면 design-system.md 11-10에 이유를 적는다) 세 조건(text-overflow: ellipsis · white-space: nowrap · overflow-x: hidden)이 모두 맞을 때만 「(줄임 허용)」 접두사로 따로 내보낸다 — 호출자는 넘침으로 세지 않는다. 구현 e2e/textResize.ts의 clipped 판정도 같은 목록(D-88)
+  const ELLIPSIS_ALLOWED = ['.sheet--compact .sheet__title'];
   for (const el of document.querySelectorAll('body *')) {
     if (el.closest('svg') || el.classList.contains('sr-only') || el.closest('.sr-only')) continue;
     const cs = getComputedStyle(el);
@@ -145,11 +166,16 @@ function overflowReport() {
     if (el.clientWidth === 0) continue;
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) continue;
-    if (!['auto', 'scroll'].includes(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) out.push(`${describe(el)} scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}`);
+    if (!['auto', 'scroll'].includes(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) {
+      const intentional = cs.textOverflow === 'ellipsis' && cs.whiteSpace === 'nowrap' && cs.overflowX === 'hidden' && ELLIPSIS_ALLOWED.some((s) => el.matches(s));
+      out.push(`${intentional ? '(줄임 허용) ' : ''}${describe(el)} scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}`);
+    }
     if (r.right > vw + 1 || r.left < -1) out.push(`${describe(el)} 화면 밖 (left ${Math.round(r.left)}, right ${Math.round(r.right)}, 화면 ${vw})`);
   }
   return out;
 }
+/** 넘침 목록에서 의도된 줄임(허용 목록)을 뺀다 — 샷·--check의 「넘침 N건」은 이것만 센다 */
+const realOverflow = (list) => list.filter((p) => !p.startsWith('(줄임 허용)'));
 
 async function shoot(file, name, kind, opt) {
   const v = VIEW[kind];
@@ -170,13 +196,18 @@ async function shoot(file, name, kind, opt) {
     await page.evaluate(() => window.dispatchEvent(new Event('resize')));
   }
   await page.waitForTimeout(80);
+  if (opt.focus) {
+    // 요소에 포커스를 둔 채 찍는다(M7c 기록 시트의 입력란 — 시안의 포커스 흉내 스크립트가 입력란 상자를 보이는 영역에 둔다, K4). 이름에 상태가 들어 있어 접미사를 더하지 않는다
+    await page.focus(opt.focus);
+    await page.waitForTimeout(120);
+  }
   let suffix = '';
   if (opt.dark) suffix += '-dark';
   if (opt.forced) suffix += '-forced';
   if (opt.reduced) suffix += '-reduced';
   if (opt.text) suffix += `-text${opt.text}`;
   const label = `${name}-${kind}${suffix}`;
-  for (const p of await page.evaluate(overflowReport)) problems.push(`${label}: ${p}`);
+  for (const p of realOverflow(await page.evaluate(overflowReport))) problems.push(`${label}: ${p}`);
   if (opt.full) {
     const h = await page.evaluate(() => Math.min(6000, Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)));
     await page.setViewportSize({ width: v.width, height: Math.max(v.height, h) });
@@ -212,7 +243,7 @@ async function shoot(file, name, kind, opt) {
 
 for (const [file, name, plan] of SHOTS) {
   if (checkOnly || (only && !name.includes(only))) continue;
-  for (const [kind, variants] of [['mobile', plan.m ?? []], ['desktop', plan.d ?? []], ['320', plan.n ?? []], ['low', plan.l ?? []]]) {
+  for (const [kind, variants] of [['mobile', plan.m ?? []], ['desktop', plan.d ?? []], ['320', plan.n ?? []], ['low', plan.l ?? []], ['vv340', plan.v ?? []]]) {
     for (const opt of variants) await shoot(file, name, kind, opt);
   }
 }
@@ -232,7 +263,7 @@ if (!only) {
       await page.goto(MOCK + file + (query ? `?${query}` : ''));
       await page.waitForLoadState('load');
       await page.waitForTimeout(60);
-      for (const p of await page.evaluate(overflowReport)) problems.push(`${file}${q ? `?${q}` : ''} 320px${dark ? ' dark' : ''}: ${p}`);
+      for (const p of realOverflow(await page.evaluate(overflowReport))) problems.push(`${file}${q ? `?${q}` : ''} 320px${dark ? ' dark' : ''}: ${p}`);
       await ctx.close();
     }
   }

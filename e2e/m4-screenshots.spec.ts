@@ -104,12 +104,12 @@ test.describe('증거 스크린샷 테마·접근성', () => {
     }
   });
 
-  test('나가기 확인 단계·BGM 켜짐(볼륨)·준비 중인 생각 남기기가 열린 도구 줄', async ({ page }, testInfo) => {
+  test('나가기 확인 단계·BGM 켜짐(볼륨)이 열린 도구 줄 (생각 남기기는 M7c부터 보통 버튼)', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await openM4Screen(page, 'dash-infant');
     await page.getByTestId('tool-bgm').click();
     await expect(page.getByTestId('bgm-volume')).toBeVisible();
-    await expect(page.getByTestId('tool-note')).toContainText('준비 중'); // 눌러서 나오는 안내가 아니라 처음부터 보이는 「준비 중」 (R-326)
+    await expect(page.getByTestId('tool-note')).not.toContainText('준비 중'); // M7c: 보통 버튼 (D-75)
     await page.evaluate(() => window.scrollTo(0, 0));
     await shot(page, 'dash-infant-mobile-360x740-tools-open');
     await page.getByTestId('tool-exit').click();
@@ -120,7 +120,7 @@ test.describe('증거 스크린샷 테마·접근성', () => {
     await shot(page, 'dash-infant-mobile-360x740-exit-ask');
   });
 
-  test('비활성 버튼(R-337): 자동 모드의 「다음 결정으로」와 준비 중인 「생각 남기기」 — 불투명도가 아니라 점선 + 옅은 글자 (라이트·다크)', async ({ page }, testInfo) => {
+  test('비활성 버튼(R-337): 자동 모드의 「다음 결정으로」 — 불투명도가 아니라 점선 + 옅은 글자 (라이트·다크). 「생각 남기기」는 M7c부터 보통 버튼', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });

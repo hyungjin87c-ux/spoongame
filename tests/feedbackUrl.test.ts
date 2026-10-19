@@ -6,7 +6,7 @@ import { resolveRepoUrl } from '../scripts/buildInfo';
 import { startLife } from '../scripts/simulateLib';
 import { ERA_CONFIG } from '../src/data/birthTable';
 import { LIFE_LENGTH_TEXT } from '../src/data/titleText';
-import { ERAS, LIFE_LENGTHS, PHASES, FEEDBACK_SCREEN_FIELD, FEEDBACK_SCREEN_LABEL, FEEDBACK_TEMPLATE, buildFeedbackUrl, feedbackFieldsOf, type FeedbackFields } from '../src/core';
+import { ERAS, LIFE_LENGTHS, PHASES, FEEDBACK_SCREEN_FIELD, FEEDBACK_SCREEN_LABEL, FEEDBACK_TEMPLATE, buildFeedbackUrl, feedbackFieldsOf, notesOf, writeNote, type FeedbackFields } from '../src/core';
 
 /**
  * 의견 보내기 링크 (SPEC-003 DB7): GitHub 이슈 작성 화면으로 새 탭에서 열린다. 주소에 담기는 것은 허용 목록(빌드 버전·화면·세상·인생 길이)뿐이고,
@@ -150,6 +150,31 @@ describe('feedbackFieldsOf: 게임 상태에서 네 가지만', () => {
     const decoded = decodeURIComponent(url);
     for (const secret of ['홍길동', 'script', '악성', '비밀 기록 문장', '자유 기록 비밀', '37', hostile]) expect(decoded, secret).not.toContain(secret);
     expect(url).not.toContain(encodeURIComponent('홍길동'));
+  });
+
+  it('M7c P2: 연표에 기록(note) 줄이 있어도(특수문자·긴 글·그림 문자·여러 줄) 주소에 글의 어떤 조각도 없고, 기록이 없는 같은 판의 주소와 글자까지 같다', () => {
+    const secrets = ['비밀 기록 한 줄', '<script>alert(1)</script>', '& screen=악성 #해시 ?x=1', 'DROP TABLE', '가족을 향한 마음', String.fromCodePoint(0x1f468, 0x200d, 0x1f469, 0x200d, 0x1f467), '긴글'.repeat(30)];
+    let written = game;
+    secrets.forEach((text, i) => {
+      written = writeNote(written, { cardId: null, text });
+      expect(notesOf(written), `기록 ${i}`).toHaveLength(i + 1); // 공허 통과 방지: 실제로 note 줄이 쌓였다
+    });
+    expect(written.history.filter((h) => h.kind === 'note')).toHaveLength(secrets.length);
+    for (const state of [written, { ...written, phase: 'ending' as const }]) {
+      const url = buildFeedbackUrl(feedbackFieldsOf(state, REPO, BUILD))!;
+      const decoded = decodeURIComponent(url);
+      for (const secret of secrets) {
+        const chars = Array.from(secret);
+        for (const piece of [secret, chars.slice(0, 4).join(''), chars.slice(-3).join('')]) {
+          expect(decoded, piece).not.toContain(piece);
+          expect(url, piece).not.toContain(encodeURIComponent(piece));
+        }
+      }
+      const clean = buildFeedbackUrl(feedbackFieldsOf({ ...game, phase: state.phase }, REPO, BUILD))!;
+      expect(url, '기록이 있든 없든 같은 주소').toBe(clean);
+    }
+    // 입력 타입이 글을 담을 자리가 없다: 결과 키는 여전히 다섯 개뿐이다
+    expect(Object.keys(feedbackFieldsOf(written, REPO, BUILD)).sort()).toEqual(['buildLabel', 'era', 'lifeLength', 'repoUrl', 'screen']);
   });
 
   it('첫 화면처럼 판이 없는 상태도 읽는다', () => {

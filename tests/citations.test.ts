@@ -3,6 +3,7 @@ import citationsJson from '../src/data/citations.json';
 import statsJson from '../src/data/koreaStats.json';
 import basisDoc from '../docs/data/events-stats-basis.md?raw';
 import { EVENT_POOL } from '../src/data/events';
+import { NOTE_CARDS } from '../src/data/noteCards';
 import { getUsableIndicator } from '../src/data/koreaStatsAccess';
 import { usedByIndex } from '../src/core/citations';
 
@@ -312,9 +313,13 @@ describe('통계 인용의 수치 대조 (koreaStats.json과 refs)', () => {
 });
 
 describe('이벤트 연결 (usedBy — 이벤트 JSON의 citation 역색인, M7b)', () => {
-  it('usedBy의 이벤트 id는 모두 실제 이벤트 풀(src/data/events)에 있는 선택지 이벤트다', () => {
+  it('usedBy의 이벤트 id는 모두 실제 이벤트 풀(src/data/events)에 있는 선택지 이벤트다 — 단 기록 카드(note-…, src/data/notes.json, M7c)는 기록 카드 목록에 있는 카드다', () => {
     for (const c of CITES) {
       for (const id of c.usedBy) {
+        if (id.startsWith('note-')) {
+          expect(NOTE_CARDS.some((n) => n.id === id), `${c.id} usedBy ${id}는 기록 카드 목록에 없다`).toBe(true);
+          continue;
+        }
         expect(EVENT_IDS.has(id), `${c.id} usedBy ${id}`).toBe(true);
         expect(EVENT_POOL.byId.get(id)!.choices, `${c.id} usedBy ${id}는 선택지 이벤트(중대 결정 카드)다`).toBeDefined();
       }
@@ -322,8 +327,9 @@ describe('이벤트 연결 (usedBy — 이벤트 JSON의 citation 역색인, M7b
   });
 
   it('M7b: usedBy는 이벤트가 실제로 인용하는 카드 목록이다 — 비어 있지 않은 인용이 30개 이상이고, 연결을 가진 인용의 usedBy가 역색인과 같다 (자세한 양방향 대조는 tests/citationLink.test.ts)', () => {
-    expect(CITES.filter((c) => c.usedBy.length > 0).length).toBeGreaterThanOrEqual(30);
-    const index = usedByIndex(EVENT_POOL.events);
+    // 서로 다른 인용 ≥ 30은 중대 결정 카드(이벤트) 기준이다 — 기록 카드의 인용(c-037)은 MD2 판정에 넣지 않는다(M7c NC-9)
+    expect(CITES.filter((c) => c.usedBy.some((id) => !id.startsWith('note-'))).length).toBeGreaterThanOrEqual(30);
+    const index = usedByIndex(EVENT_POOL.events, NOTE_CARDS);
     for (const c of CITES) expect(c.usedBy, c.id).toEqual(index[c.id] ?? []);
   });
 
@@ -653,11 +659,11 @@ describe('지난 세상 인용과 시대 규칙 (R-150, 마스터 결정 2026-10
     }
   });
 
-  it('지난 세상에 쓸 수 있는 연구는 시대와 무관한 발달 연구 3건(동생 출생 적응·애착·걸음마 창, 「지금의 연구로는」 머리말 eraPrefix)과 지난 세상 제도 시기 해설 3건(국가기록원, eras가 past뿐·eraPrefix 없음)이다', () => {
+  it('지난 세상에 쓸 수 있는 연구는 시대와 무관한 발달 연구 4건(동생 출생 적응·애착·걸음마 창, 그리고 M7c의 이른 시기 환경 c-037 — 「지금의 연구로는」 머리말 eraPrefix)과 지난 세상 제도 시기 해설 3건(국가기록원, eras가 past뿐·eraPrefix 없음)이다', () => {
     const research = CITES.filter((c) => c.kind === 'research');
     const withPast = research.filter((c) => c.eras.includes('past'));
-    expect(withPast.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034', 'c-071', 'c-072', 'c-073']);
-    for (const c of withPast.filter((x) => x.id <= 'c-034')) {
+    expect(withPast.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034', 'c-037', 'c-071', 'c-072', 'c-073']);
+    for (const c of withPast.filter((x) => x.id < 'c-071')) {
       expect(c.eraPrefix?.past, c.id).toBe('지금의 연구로는');
       expect(['study', 'review', 'reference-study'], c.id).toContain(c.evidenceType);
     }

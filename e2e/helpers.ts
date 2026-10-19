@@ -348,14 +348,28 @@ export async function oracleLife(page: Page, seed: number, era: Era): Promise<Ga
   );
 }
 
-/** 다음 결정(선택지 또는 사망)까지 진행한 상태 */
+/**
+ * 다음 결정(선택지 또는 사망)까지 진행한 상태.
+ * 기록 카드(M7c)는 **시트 없이 소비**하는 길과 같게 계산한다(자동 모드 또는 `noteCards: false` — e2e 기본 설정): 소비는 `seen`에 `note-…` 표시만 남기고 인생(스탯·자산·플래그·rngState·연표)은 바꾸지 않는다.
+ */
 export async function oracleDecision(page: Page, state: GameState): Promise<GameState> {
-  return evalCore<GameState>(page, 'return core.advanceUntilDecision(arg).state;', state);
+  return evalCore<GameState>(page, "return core.advanceUntilDecision(arg, undefined, 'consume').state;", state);
 }
 
-/** 끝(사망)까지 자동 모드로 진행한 상태 */
+/** 끝(사망)까지 자동 모드로 진행한 상태 — 기록 카드는 시트 없이 소비한다(자동 모드는 카드를 띄우지 않는다, M7c FR7) */
 export async function oracleAuto(page: Page, state: GameState): Promise<GameState> {
-  return evalCore<GameState>(page, 'return core.playToEnd(arg, null).state;', state);
+  return evalCore<GameState>(
+    page,
+    `let s = arg;
+     for (let guard = 0; guard < 5000 && s.phase === 'life'; guard++) {
+       if (s.pending !== null) { s = core.autoResolveStep(s, s.pending.key).state; continue; }
+       const due = core.dueNote(s);
+       if (due !== null) s = core.consumeNote(s, due);
+       s = core.stepYear(s).state;
+     }
+     return s;`,
+    state,
+  );
 }
 
 /**

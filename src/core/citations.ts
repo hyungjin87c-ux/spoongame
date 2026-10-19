@@ -234,13 +234,17 @@ export function connectedCitationIds(events: readonly EventDef[], table: readonl
 
 // ---------- 연결 점검 · 역색인 (check:events·check:citations·시험) ----------
 
+/** 인용을 연결할 수 있는 카드: 중대 결정 카드(이벤트)와 기록 카드(`notes.json`, M7c)가 같은 연결 모양(`citation`·`noCitation`·`eras`)을 쓴다 */
+export type CitedCard = Pick<EventDef, 'id' | 'citation' | 'eras' | 'noCitation'>;
+
 /**
- * 인용 → 그 인용을 쓰는 이벤트 id 목록의 역색인 (`citations.json`의 `usedBy`가 이것과 같아야 한다 — 사람이 쓰지 않고 `npm run gen:citations`가 쓴다, M-5).
- * 이벤트의 `citation`이 가리키는 모든 세상의 id를 모은다(세상이 달라도 같은 카드는 한 번). 목록은 이벤트 id 오름차순이다.
+ * 인용 → 그 인용을 쓰는 카드 id 목록의 역색인 (`citations.json`의 `usedBy`가 이것과 같아야 한다 — 사람이 쓰지 않고 `npm run gen:citations`가 쓴다, M-5).
+ * 이벤트(`events`)와 기록 카드(`notes`, id가 `note-…`)의 `citation`이 가리키는 모든 세상의 id를 모은다(세상이 달라도 같은 카드는 한 번). 목록은 카드 id 오름차순이다.
+ * 기록 카드는 MD2 판정(정적 연결률·인용 ≥ 30개)의 분모·분자에 들지 않는다 — `citationCoverage`·`connectedCitationIds`는 이벤트만 받는다(content-M7c 2-1절).
  */
-export function usedByIndex(events: readonly EventDef[]): Record<string, string[]> {
+export function usedByIndex(events: readonly CitedCard[], notes: readonly CitedCard[] = []): Record<string, string[]> {
   const index: Record<string, Set<string>> = {};
-  for (const ev of events) {
+  for (const ev of [...events, ...notes]) {
     for (const era of ERAS) {
       const id = citationIdFor(ev, era);
       if (id !== null) (index[id] ??= new Set()).add(ev.id);
@@ -251,24 +255,25 @@ export function usedByIndex(events: readonly EventDef[]): Record<string, string[
 
 
 /**
- * 이벤트가 가리키는 인용 id가 모두 `citations.json`에 있고 `verified`·`usable`인지, 인용이 금지한 이벤트(`usageCaution.forbiddenEvents`)에 연결하지 않았는지 본다.
- * 형태(문자열·객체·사유 코드)는 `validateEventFiles`가 이미 봤다. 문제 목록(문장)을 돌려준다.
+ * 이벤트(와 기록 카드 `notes`)가 가리키는 인용 id가 모두 `citations.json`에 있고 `verified`·`usable`인지, 인용이 금지한 이벤트(`usageCaution.forbiddenEvents`)에 연결하지 않았는지 본다. 형태(문자열·객체·사유 코드)는 `validateEventFiles`·`validateNoteFile`이 이미 봤다. 문제 목록(문장)을 돌려준다.
  */
-export function citationLinkProblems(events: readonly EventDef[], table: readonly CitationRecord[] = CITATION_TABLE): string[] {
+export function citationLinkProblems(events: readonly EventDef[], table: readonly CitationRecord[] = CITATION_TABLE, notes: readonly CitedCard[] = []): string[] {
   const problems: string[] = [];
   const byId = new Map(table.map((c) => [c.id, c]));
-  for (const ev of events) {
-    if (ev.noCitation !== undefined && !(NO_CITATION_CODES as readonly string[]).includes(ev.noCitation)) problems.push(`이벤트 "${ev.id}": noCitation "${ev.noCitation}"은 사유 코드가 아니다`);
+  const check = (ev: CitedCard, label: string): void => {
+    if (ev.noCitation !== undefined && !(NO_CITATION_CODES as readonly string[]).includes(ev.noCitation)) problems.push(`${label} "${ev.id}": noCitation "${ev.noCitation}"은 사유 코드가 아니다`);
     for (const era of ERAS) {
       const id = citationIdFor(ev, era);
       if (id === null) continue;
       const c = byId.get(id);
-      if (c === undefined) problems.push(`이벤트 "${ev.id}"(${era}): 인용 "${id}"가 citations.json에 없다`);
+      if (c === undefined) problems.push(`${label} "${ev.id}"(${era}): 인용 "${id}"가 citations.json에 없다`);
       else {
-        if (c.verified !== true || c.usable !== true) problems.push(`이벤트 "${ev.id}"(${era}): 인용 "${id}"는 확인되지 않았거나 쓸 수 없다 (verified·usable)`);
-        if (c.usageCaution?.forbiddenEvents?.includes(ev.id)) problems.push(`이벤트 "${ev.id}"(${era}): 인용 "${id}"는 이 이벤트에 붙일 수 없다 (usageCaution.forbiddenEvents)`);
+        if (c.verified !== true || c.usable !== true) problems.push(`${label} "${ev.id}"(${era}): 인용 "${id}"는 확인되지 않았거나 쓸 수 없다 (verified·usable)`);
+        if (c.usageCaution?.forbiddenEvents?.includes(ev.id)) problems.push(`${label} "${ev.id}"(${era}): 인용 "${id}"는 이 이벤트에 붙일 수 없다 (usageCaution.forbiddenEvents)`);
       }
     }
-  }
+  };
+  for (const ev of events) check(ev, '이벤트');
+  for (const card of notes) check(card, '기록 카드');
   return problems;
 }

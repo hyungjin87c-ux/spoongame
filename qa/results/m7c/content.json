@@ -1,0 +1,107 @@
+{
+ "past": {
+  "lives": 300,
+  "cards": {
+   "note-infant-memory": 300,
+   "note-teen-envy": 299,
+   "note-first-love": 299,
+   "note-youth-romance": 298,
+   "note-parents-aging": 298,
+   "note-midlife": 295,
+   "note-illness": 143
+  },
+  "violations": [],
+  "nViolations": 0,
+  "long": 272,
+  "longMean": 6.5036764705882355,
+  "meanAll": 6.44,
+  "maxPerLife": 7,
+  "hist": {
+   "2": 1,
+   "3": 1,
+   "5": 3,
+   "6": 153,
+   "7": 142
+  },
+  "variantCounts": {
+   "infant-memory | 다섯 살 무렵을 떠올려": 300,
+   "teen-envy | 누군가가 부럽거나 샘이": 299,
+   "first-love | 마음을 전했던 그때를 ": 12,
+   "first-love | 처음 누군가에게 마음이": 287,
+   "youth-romance | 누군가를 만나 마음을 ": 190,
+   "youth-romance | 함께하는 사람과 보낸 ": 108,
+   "parents-aging | 부모님이 예전보다 나이": 298,
+   "midlife | 살아온 시간을 돌아보는": 295,
+   "illness | 몸이 아팠던 시간을 떠": 143
+  }
+ },
+ "present": {
+  "lives": 300,
+  "cards": {
+   "note-infant-memory": 300,
+   "note-teen-envy": 298,
+   "note-first-love": 299,
+   "note-youth-romance": 299,
+   "note-parents-aging": 299,
+   "note-midlife": 297,
+   "note-illness": 153
+  },
+  "violations": [],
+  "nViolations": 0,
+  "long": 281,
+  "longMean": 6.526690391459074,
+  "meanAll": 6.483333333333333,
+  "maxPerLife": 7,
+  "hist": {
+   "2": 1,
+   "5": 2,
+   "6": 146,
+   "7": 151
+  },
+  "variantCounts": {
+   "infant-memory | 다섯 살 무렵을 떠올려": 300,
+   "teen-envy | 누군가가 부럽거나 샘이": 298,
+   "first-love | 처음 누군가에게 마음이": 284,
+   "first-love | 마음을 전했던 그때를 ": 15,
+   "youth-romance | 누군가를 만나 마음을 ": 231,
+   "youth-romance | 함께하는 사람과 보낸 ": 68,
+   "parents-aging | 부모님이 예전보다 나이": 299,
+   "midlife | 살아온 시간을 돌아보는": 297,
+   "illness | 몸이 아팠던 시간을 떠": 153
+  }
+ },
+ "future": {
+  "lives": 300,
+  "cards": {
+   "note-infant-memory": 300,
+   "note-teen-envy": 299,
+   "note-first-love": 300,
+   "note-youth-romance": 300,
+   "note-parents-aging": 300,
+   "note-midlife": 298,
+   "note-illness": 175
+  },
+  "violations": [],
+  "nViolations": 0,
+  "long": 289,
+  "longMean": 6.598615916955017,
+  "meanAll": 6.573333333333333,
+  "maxPerLife": 7,
+  "hist": {
+   "5": 2,
+   "6": 124,
+   "7": 174
+  },
+  "variantCounts": {
+   "infant-memory | 다섯 살 무렵을 떠올려": 300,
+   "teen-envy | 누군가가 부럽거나 샘이": 299,
+   "first-love | 처음 누군가에게 마음이": 282,
+   "first-love | 마음을 전했던 그때를 ": 18,
+   "youth-romance | 누군가를 만나 마음을 ": 232,
+   "youth-romance | 함께하는 사람과 보낸 ": 68,
+   "parents-aging | 부모님이 예전보다 나이": 300,
+   "midlife | 살아온 시간을 돌아보는": 298,
+   "illness | 몸이 아팠던 시간을 떠": 175
+  }
+ }
+}

@@ -24,7 +24,7 @@
 
 | 필드 | 필수 | 설명 |
 |---|---|---|
-| `id` | O | 소문자로 시작, 소문자·숫자·하이픈 2~48자 (`school-exam`). 저장 파일에 남으므로 **한 번 쓴 id는 바꾸지 않는다**. 예약어(`constructor`·`prototype` 등 `Object.prototype`의 속성 이름)는 쓸 수 없다(R-046). |
+| `id` | O | 소문자로 시작, 소문자·숫자·하이픈 2~48자 (`school-exam`). 저장 파일에 남으므로 **한 번 쓴 id는 바꾸지 않는다**. 예약어(`constructor`·`prototype` 등 `Object.prototype`의 속성 이름)는 쓸 수 없다(R-046). **`note-`로 시작하는 id도 쓸 수 없다** — 기록 카드(`src/data/notes.json`, SPEC-003 M7c)가 본 이벤트 기록 `seen`에 같은 접두의 키를 쓴다(`tests/noteCards.test.ts`). |
 | `title` | O | 1~30자(권장 16자 이하, 7절). 연표·선택지 제목에 쓰인다. |
 | `text` | O | 10~400자(권장 74자 이하, 7절). 서술 이벤트는 사건 문구, 선택지 이벤트는 상황 설명. |
 | `stages` | O | `infant`(영유아 0~6) · `school`(학창 7~19, 7세는 학창 단계지만 영유아 빈도표를 쓴다 — M7a, `EARLY_YEARS_MAX_AGE`) · `youth`(청년 20~39) · `middle`(중년 40~64) · `senior`(노년 65~) 중 하나 이상. |

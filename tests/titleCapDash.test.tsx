@@ -71,13 +71,14 @@ describe('밀린 화면·오류 화면의 메시지 (R-321)', () => {
 });
 
 describe('CSS (dash.css): 제목 글자 크기는 rem 고정 상한이 아니라 줄 폭(100cqi) ÷ 칸 수의 min()이다', () => {
-  // @supports (width: 1cqi) 블록이 둘이다: 중대 결정 카드 제목(M7b) · 엔딩/밀린·오류 화면 제목. 둘을 한 덩어리로 본다
+  // @supports (width: 1cqi) 블록이 셋이다: 중대 결정 카드 제목(M7b) · 기록 시트 질문(M7c, .sheet__title) · 엔딩/밀린·오류 화면 제목. 셋을 한 덩어리로 본다
   const blocks = [...dashCss.matchAll(/@supports \(width: 1cqi\) \{([^]*?)\n\}/g)];
   const supports = blocks.length === 0 ? null : ([blocks.map((b) => b[0]).join('\n'), blocks.map((b) => b[1]).join('\n')] as unknown as RegExpExecArray);
 
   it('식은 @supports (width: 1cqi)로 감싼다 — cqi를 모르는 브라우저는 식이 통째로 무효가 되므로 기본 크기로 물러난다 (doc.css R-302와 같은 방법)', () => {
     expect(supports, '@supports 블록').not.toBeNull();
-    expect(blocks.length, '블록 수(카드 제목 + 엔딩·시스템)').toBe(2);
+    expect(blocks.length, '블록 수(카드 제목 + 기록 시트 질문 + 엔딩·시스템)').toBe(3);
+    expect(supports![1]).toContain('.sheet__title { font-size: max(var(--fs-lg), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }');
     expect(supports![1]).toContain('.decision__title { font-size: max(var(--fs-lg), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }');
     expect(supports![1]).toContain('.ending__who .t-title { font-size: max(var(--fs-lg), min(var(--fs-2xl), calc(100cqi / var(--title-chars, 8)))); }');
     expect(supports![1]).toContain('.system h1 { font-size: max(var(--fs-md), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }');

@@ -1,0 +1,720 @@
+{
+ "era": "past",
+ "seed": 42,
+ "caseId": "I-past-42-w",
+ "speed": "8",
+ "mode": "normal",
+ "autoSheets": [
+  {
+   "k": 0,
+   "card": "note-infant-memory",
+   "via": "auto",
+   "title": "다섯 살 무렵을 떠올려 보면, 강영진에게 기억나는 장면이나 느낌이 있습니까?",
+   "when": "1979년 · 5세",
+   "cite": {
+    "id": "c-037",
+    "text": "연구지금의 연구로는 이른 시기의 환경이 성취와 연관된다는 증거를 정리한 경제학 논문으로, 이른 시기 투입이 이후 투입의 효과에 크게 영향을 준다고 봅니다.Heckman(2006), Skill formation and the economics of investing in disadvantaged children",
+    "links": 0
+   },
+   "dialogName": "생각 남기기 다섯 살 무렵을 떠올려 보면, 강영진에게 기억나는 장면이나 느낌이 있습니까?",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "focus": "note-title",
+   "ctx": {
+    "age": 5,
+    "flags": [],
+    "stats": {
+     "education": 9,
+     "health": 81,
+     "happiness": 44,
+     "relationships": 47
+    },
+    "seenNotes": [],
+    "parents": {
+     "mother": {
+      "age": 30,
+      "job": "agri"
+     },
+     "father": {
+      "age": 33,
+      "job": "labor"
+     }
+    },
+    "paused": false,
+    "seenIllness": [],
+    "era": "past"
+   },
+   "action": "save",
+   "afterType": {
+    "count": "46/140",
+    "countSr": "46자 입력, 140자까지",
+    "msg": "",
+    "value": "다섯 살 무렵, 마당의 감나무 밑에서 할머니가 곶감을 쥐여 주던 장면이 남아 있다."
+   },
+   "rowsBefore": 1,
+   "rowsAfter": 2,
+   "focusAfter": "life-name"
+  },
+  {
+   "k": 1,
+   "card": "note-teen-envy",
+   "via": "auto",
+   "title": "누군가가 부럽거나 샘이 났던 순간이 강영진에게도 있습니까?",
+   "when": "1989년 · 15세",
+   "cite": null,
+   "dialogName": "생각 남기기 누군가가 부럽거나 샘이 났던 순간이 강영진에게도 있습니까?",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "focus": "note-title",
+   "ctx": {
+    "age": 15,
+    "flags": [
+     "childcare_set",
+     "close_friend",
+     "grandparent_close"
+    ],
+    "stats": {
+     "education": 36,
+     "health": 81,
+     "happiness": 43,
+     "relationships": 59
+    },
+    "seenNotes": [
+     "note-infant-memory"
+    ],
+    "parents": {
+     "mother": {
+      "age": 30,
+      "job": "agri"
+     },
+     "father": {
+      "age": 33,
+      "job": "labor"
+     }
+    },
+    "paused": false,
+    "seenIllness": [],
+    "era": "past"
+   },
+   "action": "skip-empty",
+   "rowsBefore": 2,
+   "rowsAfter": 2,
+   "focusAfter": "life-name"
+  },
+  {
+   "k": 2,
+   "card": "note-first-love",
+   "via": "auto",
+   "title": "처음 누군가에게 마음이 갔던 때를 떠올려 보면, 강영진에게 기억나는 장면이 있습니까?",
+   "when": "1996년 · 22세",
+   "cite": null,
+   "dialogName": "생각 남기기 처음 누군가에게 마음이 갔던 때를 떠올려 보면, 강영진에게 기억나는 장면이 있습니까?",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "focus": "note-title",
+   "ctx": {
+    "age": 22,
+    "flags": [
+     "childcare_set",
+     "close_friend",
+     "college",
+     "gave_up_exam",
+     "grandparent_close"
+    ],
+    "stats": {
+     "education": 55,
+     "health": 82,
+     "happiness": 46,
+     "relationships": 60
+    },
+    "seenNotes": [
+     "note-infant-memory",
+     "note-teen-envy"
+    ],
+    "parents": {
+     "mother": {
+      "age": 30,
+      "job": "agri"
+     },
+     "father": {
+      "age": 33,
+      "job": "labor"
+     }
+    },
+    "paused": false,
+    "seenIllness": [],
+    "era": "past"
+   },
+   "action": "skip-text-back-save",
+   "confirm": {
+    "title": "적은 글을 지우고 넘어갈까요?",
+    "sub": "적은 글은 저장되지 않습니다. 돌아가면 그대로 이어 쓸 수 있습니다.",
+    "discard": "글을 지우고 담아 두기",
+    "back": "돌아가서 이어 쓰기",
+    "focus": "note-confirm-back",
+    "inputReadOnly": true,
+    "value": "고백하지 못한 채 졸업했다.\n그 뒤로도 한참 그 골목을 지나다녔다."
+   },
+   "afterBack": {
+    "value": "고백하지 못한 채 졸업했다.\n그 뒤로도 한참 그 골목을 지나다녔다.",
+    "focus": "note-input",
+    "confirm": null
+   },
+   "rowsBefore": 2,
+   "rowsAfter": 3,
+   "focusAfter": "life-name"
+  },
+  {
+   "k": 3,
+   "card": "note-youth-romance",
+   "via": "auto",
+   "title": "함께하는 사람과 보낸 시간 가운데 강영진에게 오래 남은 장면이 있습니까?",
+   "when": "2000년 · 26세",
+   "cite": null,
+   "dialogName": "생각 남기기 함께하는 사람과 보낸 시간 가운데 강영진에게 오래 남은 장면이 있습니까?",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "focus": "note-title",
+   "ctx": {
+    "age": 26,
+    "flags": [
+     "childcare_set",
+     "close_friend",
+     "college",
+     "gave_up_exam",
+     "grandparent_close",
+     "has_career",
+     "has_partner"
+    ],
+    "stats": {
+     "education": 57,
+     "health": 82,
+     "happiness": 54,
+     "relationships": 64
+    },
+    "seenNotes": [
+     "note-infant-memory",
+     "note-teen-envy",
+     "note-first-love"
+    ],
+    "parents": {
+     "mother": {
+      "age": 30,
+      "job": "agri"
+     },
+     "father": {
+      "age": 33,
+      "job": "labor"
+     }
+    },
+    "paused": false,
+    "seenIllness": [],
+    "era": "past"
+   },
+   "action": "esc-text-discard",
+   "confirm": {
+    "title": "적은 글을 지우고 넘어갈까요?",
+    "sub": "적은 글은 저장되지 않습니다. 돌아가면 그대로 이어 쓸 수 있습니다.",
+    "discard": "글을 지우고 담아 두기",
+    "back": "돌아가서 이어 쓰기",
+    "focus": "note-confirm-back"
+   },
+   "rowsBefore": 4,
+   "rowsAfter": 4,
+   "focusAfter": "life-name"
+  },
+  {
+   "k": 4,
+   "card": "note-parents-aging",
+   "via": "auto",
+   "title": "부모님이 예전보다 나이 들었다고 느낀 순간이 강영진에게 있습니까?",
+   "when": "2006년 · 32세",
+   "cite": null,
+   "dialogName": "생각 남기기 부모님이 예전보다 나이 들었다고 느낀 순간이 강영진에게 있습니까?",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "focus": "note-title",
+   "ctx": {
+    "age": 32,
+    "flags": [
+     "childcare_set",
+     "college",
+     "gave_up_exam",
+     "grandparent_close",
+     "has_career",
+     "has_partner"
+    ],
+    "stats": {
+     "education": 59,
+     "health": 76,
+     "happiness": 52,
+     "relationships": 61
+    },
+    "seenNotes": [
+     "note-infant-memory",
+     "note-teen-envy",
+     "note-first-love",
+     "note-youth-romance"
+    ],
+    "parents": {
+     "mother": {
+      "age": 30,
+      "job": "agri"
+     },
+     "father": {
+      "age": 33,
+      "job": "labor"
+     }
+    },
+    "paused": false,
+    "seenIllness": [],
+    "era": "past"
+   },
+   "action": "save-emoji",
+   "afterType": {
+    "count": "39/140",
+    "countSr": "39자 입력, 140자까지",
+    "msg": "",
+    "value": "기억에 남는 건 😀 가족과 함께한 여름 🏖️ 이었다. 숫자 1️⃣ 도 센다."
+   },
+   "rowsBefore": 4,
+   "rowsAfter": 5,
+   "focusAfter": "life-name"
+  },
+  {
+   "k": 5,
+   "card": "note-midlife",
+   "via": "auto",
+   "title": "살아온 시간을 돌아보는 지금, 강영진에게 인생은 어떤 것처럼 느껴집니까?",
+   "when": "2026년 · 52세",
+   "cite": null,
+   "dialogName": "생각 남기기 살아온 시간을 돌아보는 지금, 강영진에게 인생은 어떤 것처럼 느껴집니까?",
+   "toggle": "저절로 뜨는 기록 카드 끄기",
+   "hint": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.",
+   "focus": "note-title",
+   "ctx": {
+    "age": 52,
+    "flags": [
+     "cared_parents",
+     "child_late",
+     "childcare_set",
+     "college",
+     "gave_up_exam",
+     "grandparent_close",
+     "has_career",
+     "has_child",
+     "has_partner",
+     "job_changed",
+     "married",
+     "own_home"
+    ],
+    "stats": {
+     "education": 59,
+     "health": 61,
+     "happiness": 65,
+     "relationships": 73
+    },
+    "seenNotes": [
+     "note-infant-memory",
+     "note-teen-envy",
+     "note-first-love",
+     "note-youth-romance",
+     "note-parents-aging"
+    ],
+    "parents": {
+     "mother": {
+      "age": 30,
+      "job": "agri"
+     },
+     "father": {
+      "age": 33,
+      "job": "labor"
+     }
+    },
+    "paused": false,
+    "seenIllness": [],
+    "era": "past"
+   },
+   "action": "empty-save-error",
+   "emptyError": {
+    "msg": "적을 말이 없다면 「마음속에 담고 살기」를 골라도 됩니다.",
+    "msgError": true,
+    "invalid": "true",
+    "focus": "note-input",
+    "sheetStill": true,
+    "described": "실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다. 0자 입력, 140자까지 적을 말이 없다면 「마음속에 담고 살기」를 골라도 됩니다."
+   },
+   "rowsBefore": 6,
+   "rowsAfter": 7,
+   "focusAfter": "life-name"
+  }
+ ],
+ "manual": [
+  {
+   "i": 0,
+   "via": "manual",
+   "title": "지금 강영진의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "when": "1978년 · 4세",
+   "focus": "note-title",
+   "age": 4,
+   "action": "save",
+   "rowsBefore": 0,
+   "rowsAfter": 1,
+   "focusAfter": "tool-note"
+  },
+  {
+   "i": 1,
+   "via": "manual",
+   "title": "지금 강영진의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "when": "1990년 · 16세",
+   "focus": "note-title",
+   "age": 16,
+   "action": "discard",
+   "rowsBefore": 2,
+   "rowsAfter": 2,
+   "focusAfter": "tool-note"
+  },
+  {
+   "i": 2,
+   "via": "manual",
+   "title": "지금 강영진의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "when": "1998년 · 24세",
+   "focus": "note-title",
+   "age": 24,
+   "action": "save",
+   "rowsBefore": 3,
+   "rowsAfter": 4,
+   "focusAfter": "tool-note"
+  },
+  {
+   "i": 3,
+   "via": "manual",
+   "title": "지금 강영진의 마음에 남아 있는 장면이나 생각이 있습니까?",
+   "when": "2009년 · 35세",
+   "focus": "note-title",
+   "age": 35,
+   "action": "save",
+   "rowsBefore": 5,
+   "rowsAfter": 6,
+   "focusAfter": "tool-note"
+  }
+ ],
+ "events": [
+  "수동 기록 1 [save] 기록 0→1 나이 4",
+  "자동 시트 1 note-infant-memory 나이 5 [save] 기록 1→2 질문: 다섯 살 무렵을 떠올려 보면, 강영진에게 기억나는 장면이나 느낌이 있습니까?",
+  "자동 시트 2 note-teen-envy 나이 15 [skip-empty] 기록 2→2 질문: 누군가가 부럽거나 샘이 났던 순간이 강영진에게도 있습니까?",
+  "수동 기록 2 [discard] 기록 2→2 나이 16",
+  "자동 시트 3 note-first-love 나이 22 [skip-text-back-save] 기록 2→3 질문: 처음 누군가에게 마음이 갔던 때를 떠올려 보면, 강영진에게 기억나는 장면이 있습니까?",
+  "수동 기록 3 [save] 기록 3→4 나이 24",
+  "자동 시트 4 note-youth-romance 나이 26 [esc-text-discard] 기록 4→4 질문: 함께하는 사람과 보낸 시간 가운데 강영진에게 오래 남은 장면이 있습니까?",
+  "자동 시트 5 note-parents-aging 나이 32 [save-emoji] 기록 4→5 질문: 부모님이 예전보다 나이 들었다고 느낀 순간이 강영진에게 있습니까?",
+  "수동 기록 4 [save] 기록 5→6 나이 35",
+  "자동 시트 6 note-midlife 나이 52 [empty-save-error] 기록 6→7 질문: 살아온 시간을 돌아보는 지금, 강영진에게 인생은 어떤 것처럼 느껴집니까?"
+ ],
+ "shots": [
+  "qa/screenshots/003/M7c-I-past-42-w-m1-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-m1-typed.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a01-note-infant-memory-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a01-note-infant-memory-typed.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a02-note-teen-envy-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-m2-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a03-note-first-love-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a03-note-first-love-confirm.png",
+  "qa/screenshots/003/M7c-I-past-42-w-m3-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-m3-typed.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a04-note-youth-romance-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a04-note-youth-romance-esc-confirm.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a05-note-parents-aging-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a05-note-parents-aging-typed.png",
+  "qa/screenshots/003/M7c-I-past-42-w-m4-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-m4-typed.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a06-note-midlife-open.png",
+  "qa/screenshots/003/M7c-I-past-42-w-a06-note-midlife-empty-error.png",
+  "qa/screenshots/003/M7c-I-past-42-w-ending-top.png",
+  "qa/screenshots/003/M7c-I-past-42-w-ending-note-row.png",
+  "qa/screenshots/003/M7c-I-past-42-w-ending-full.png",
+  "qa/screenshots/003/M7c-I-past-42-w-after-rebirth.png"
+ ],
+ "errors": [],
+ "ext": [],
+ "ended": true,
+ "decisions": 24,
+ "born": "강영진\n0\n세\n1974년\n6%\n일시정지\n1배\n2배\n4배\n8배\n다음 결정으로\n자동 모드 꺼짐\nBGM\n생각 남기기\n다크 모드\n의견 보내기\n(새 탭으로 열립니다)\n나가기\n\n강영진\n\n남성\n\n출생\n1974년 10월\n거주\n전라남도 담양군\n출신 가정\n흙수저\n(하위 40% 안쪽)\n학력\n취학 전\n외모\n",
+ "rowsDuringEmpty": 6,
+ "ms": 42625,
+ "autoCount": 6,
+ "noteRowsAtEnd": [
+  {
+   "age": 4,
+   "title": "지금의 생각",
+   "text": "오늘은 괜히 창밖을 오래 봤다.",
+   "eventId": "note-manual"
+  },
+  {
+   "age": 5,
+   "title": "영유아기 기억",
+   "text": "다섯 살 무렵, 마당의 감나무 밑에서 할머니가 곶감을 쥐여 주던 장면이 남아 있다.",
+   "eventId": "note-infant-memory"
+  },
+  {
+   "age": 22,
+   "title": "첫사랑의 추억",
+   "text": "고백하지 못한 채 졸업했다.\n그 뒤로도 한참 그 골목을 지나다녔다.",
+   "eventId": "note-first-love"
+  },
+  {
+   "age": 24,
+   "title": "지금의 생각",
+   "text": "세 번째 수동 기록 — 쉼표, 따옴표 \"큰\", '작은' & 앰퍼샌드 <b>굵게</b>",
+   "eventId": "note-manual"
+  },
+  {
+   "age": 32,
+   "title": "부모님의 나이듦",
+   "text": "기억에 남는 건 😀 가족과 함께한 여름 🏖️ 이었다. 숫자 1️⃣ 도 센다.",
+   "eventId": "note-parents-aging"
+  },
+  {
+   "age": 35,
+   "title": "지금의 생각",
+   "text": "네 번째 기록은 그냥 짧게",
+   "eventId": "note-manual"
+  },
+  {
+   "age": 52,
+   "title": "중년의 인생",
+   "text": "소화가 안 되던 겨울, 병원 대기실의 시계 소리.",
+   "eventId": "note-midlife"
+  }
+ ],
+ "endState": {
+  "age": 86,
+  "phase": "ending",
+  "death": {
+   "age": 86,
+   "cause": "조용한 잠"
+  },
+  "stats": {
+   "education": 59,
+   "health": 36,
+   "happiness": 55,
+   "relationships": 60
+  },
+  "assets": {
+   "net": -1933,
+   "income": 1055,
+   "debt": 15230,
+   "incomeAdj": 1300,
+   "dwelling": "own"
+  },
+  "flags": [
+   "cared_parents",
+   "checked_up",
+   "child_late",
+   "childcare_set",
+   "college",
+   "gave_up_exam",
+   "grandparent_close",
+   "has_career",
+   "has_child",
+   "has_partner",
+   "healthy_habit",
+   "job_changed",
+   "married",
+   "own_home",
+   "parents_gone"
+  ],
+  "seenNonNote": {
+   "infant-vaccine": 0,
+   "infant-meal-start": 0,
+   "infant-first-steps": 1,
+   "infant-first-word": 1,
+   "infant-follow-sibling": 2,
+   "infant-stories": 3,
+   "infant-questions": 4,
+   "infant-care": 5,
+   "infant-village": 6,
+   "school-friend": 8,
+   "school-tutoring": 10,
+   "school-lunch": 11,
+   "school-money-gap": 14,
+   "school-scholarship": 15,
+   "school-exam": 17,
+   "school-parttime": 19,
+   "youth-exam-prep": 21,
+   "youth-first-job": 23,
+   "youth-workplace-romance": 25,
+   "youth-factory-night": 26,
+   "youth-friend-wedding": 29,
+   "youth-work-pressure": 30,
+   "youth-marriage": 32,
+   "youth-child": 34,
+   "youth-child-again": 36,
+   "youth-colleague": 38,
+   "middle-home-loan": 41,
+   "middle-back-pain": 42,
+   "middle-career-peak": 43,
+   "middle-parents-care": 45,
+   "middle-late-child": 51,
+   "middle-parents-farewell": 52,
+   "middle-health-check": 54,
+   "middle-retirement-prep": 59,
+   "senior-classmates": 66,
+   "senior-gathering": 68,
+   "senior-retire": 70
+  },
+  "historyNonNote": 43
+ },
+ "ending": {
+  "timelineRows": 50,
+  "noteRows": [
+   {
+    "label": "나의 기록 · 지금의 생각",
+    "text": "오늘은 괜히 창밖을 오래 봤다.",
+    "anchors": 0,
+    "rect": {
+     "x": 33,
+     "w": 294,
+     "r": 327
+    }
+   },
+   {
+    "label": "나의 기록 · 영유아기 기억",
+    "text": "다섯 살 무렵, 마당의 감나무 밑에서 할머니가 곶감을 쥐여 주던 장면이 남아 있다.",
+    "anchors": 0,
+    "rect": {
+     "x": 33,
+     "w": 294,
+     "r": 327
+    }
+   },
+   {
+    "label": "나의 기록 · 첫사랑의 추억",
+    "text": "고백하지 못한 채 졸업했다.\n그 뒤로도 한참 그 골목을 지나다녔다.",
+    "anchors": 0,
+    "rect": {
+     "x": 33,
+     "w": 294,
+     "r": 327
+    }
+   },
+   {
+    "label": "나의 기록 · 지금의 생각",
+    "text": "세 번째 수동 기록 — 쉼표, 따옴표 \"큰\", '작은' & 앰퍼샌드 <b>굵게</b>",
+    "anchors": 0,
+    "rect": {
+     "x": 33,
+     "w": 294,
+     "r": 327
+    }
+   },
+   {
+    "label": "나의 기록 · 부모님의 나이듦",
+    "text": "기억에 남는 건 😀 가족과 함께한 여름 🏖️ 이었다. 숫자 1️⃣ 도 센다.",
+    "anchors": 0,
+    "rect": {
+     "x": 33,
+     "w": 294,
+     "r": 327
+    }
+   },
+   {
+    "label": "나의 기록 · 지금의 생각",
+    "text": "네 번째 기록은 그냥 짧게",
+    "anchors": 0,
+    "rect": {
+     "x": 33,
+     "w": 294,
+     "r": 327
+    }
+   },
+   {
+    "label": "나의 기록 · 중년의 인생",
+    "text": "소화가 안 되던 겨울, 병원 대기실의 시계 소리.",
+    "anchors": 0,
+    "rect": {
+     "x": 33,
+     "w": 294,
+     "r": 327
+    }
+   }
+  ],
+  "docOverflow": false,
+  "endText": "엔딩\n\n지난 세상 · 생애 기록\n\n강영진의 인생\n\n1974년 10월 ~ 2060년 · 86세\n\n86세에 세상을 떠났습니다. 원인은 조용한 잠이었습니다.\n\n살아오며 24번의 선택을 했습니다.\n\n출발선에서 마지막까지\n하위\n상위\n출발선\n흙수저\n(하위 40% 안쪽)\n마지막\n하위 약 20%\n\n하위 40% 안쪽의 집에서 태어나, 하위 약 20%의 형편으로 생을 마쳤습니다.\n\n출발선과 비슷한 자리입니다.\n\n재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다.\n\n최종 스탯\n건강\n36\n행복\n55\n처음 42\n지식\n59\n처음 3\n관계\n60\n처음 46\n최종 순자산\n−1,933만 원\n지금 가치로 환산\n외모\n또래 사이에서 상위 약 31%\n생애 연표\n영유아 · 0~6세\n0세\n1974년 10월, 전라남도 담양군의 형편이 빠듯한 가정에서 2.8kg 남자아이로 태어났습니다. 셋째입니다. (2.8kg은 하위 약 27%)\n0세\n첫 예방접종\n첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. 어른들은 아이를 안아 달랜 뒤 집으로 돌아왔습니다.\n0세\n처음 먹는 밥\n선택: 직접 만들어 먹인다\n매일 아이 먹을 것을 손수 만들었습니다. 품은 들었지만 밥상 앞이 따뜻해졌습니다.\n1세\n첫 걸음마\n아이가 붙잡고 서더니 처음으로 혼자 몇 걸음을 걸었습니다. 모두가 숨을 죽였습니다.\n1세\n첫 말\n아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.\n2세\n형제를 따라 하는 아이\n아이는 손위 형제의 말투와 놀이를 무엇이든 따라 했습니다. 형제는 귀찮아하면서도 곁을 내주었습니다.\n3세\n자기 전의 이야기\n선택: 혼자 놀다 잠들게 둔다\n이야기 대신 조용한 방이 있었습니다. 아이는 혼자 노는 법을 배웠고 잠은 일찍 들었습니다.\n4세\n나의 기록 · 지금의 생각\n오늘은 괜히 창밖을 오래 봤다.\n4세\n묻기 시작한 아이\n아이는 눈에 띄는 것마다 이름과 까닭을 물었습니다. 아이의 질문은 하루 종일 끊이지 않았습니다.\n5세\n나의 기록 · 영유아기 기억\n다섯 살 무렵, 마당의 감나무 밑에서 할머니가 곶감을 쥐여 주던 장면이 남아 있다.\n5세\n맡겨지는 낮\n선택: 조부모님 곁에서 지낸다\n낮에는 조부모님 곁에서 지냈습니다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었습니다.\n6세\n온 골목의 아이\n아이는 집집마다 문이 열려 있던 골목에서 이 집 저 집의 밥을 나눠 먹으며 자랐습니다.\n학창 · 7~19세\n7세\n학교에 들어갈 나이가 되었습니다.\n8세\n전학 온 아이\n선택: 먼저 말을 건다\n같이 놀자고 먼저 말했습니다. 어색한 것도 잠깐이었고 그 뒤로 둘은 오래 붙어 다녔습니다.\n10세\n성적표를 받은 저녁\n선택: 방과 후에 따로 배운다\n방과 후마다 따로 공부를 더 했습니다. 숙제가 늘었고, 성적도 꾸준히 올랐습니다.\n11세\n각자의 점심\n점심시간이 되면 아이들은 저마다 도시락을 열었습니다. 누구의 반찬이 어떤지는 말하지 않아도 보였습니다.\n14세\n말하지 않는 격차\n친구들이 하나둘 갖게 되는 물건이 있었습니다. 나는 그것이 우리 집에 없다는 사실을 말하지 않았습니다.\n15세\n받을 수 있는 도움\n선택: 신청하지 않고 넘어간다\n서류가 번거로워 접어 두었습니다. 그 시간에 쉬었지만 안내문은 한참 서랍에 들어 있었습니다.\n17세\n입시를 앞둔 해\n선택: 지금 성적으로 갈 수 있는 곳에 지원한다\n원서를 내고 결과를 기다렸습니다. 큰 기쁨도 큰 후회도 아닌, 조용한 결과였습니다.\n19세\n처음 번 돈\n선택: 공부에 집중한다\n일은 접고 책상에 앉았습니다. 주머니는 가벼워도 마음은 한결 놓였습니다.\n청년 · 20~39세\n20세\n스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.\n21세\n길어지는 준비\n선택: 접고 다른 길을 찾는다\n준비하던 책을 덮었습니다. 홀가분한 마음 한편에 아쉬움이 남았습니다.\n22세\n나의 기록 · 첫사랑의 추억\n고백하지 못한 채 졸업했다.\n그 뒤로도 한참 그 골목을 지나다녔다.\n23세\n일자리를 고를 때\n선택: 하고 싶은 일을 따라간다\n벌이는 시원치 않았지만 하루하루가 내 일처럼 느껴졌습니다.\n24세\n나의 기록 · 지금의 생각\n세 번째 수동 기록 — 쉼표, 따옴표 \"큰\", '작은' & 앰퍼샌드 <b>굵게</b>\n25세\n같은 팀의 사람\n선택: 먼저 저녁을 함께 하자고 한다\n큰마음 먹고 저녁을 청했습니다. 어색한 침묵 뒤에 웃음이 터졌고, 그날 이후 둘의 거리가 달라졌습니다.\n26세\n멈추지 않는 기계\n기계가 멈추지 않는 공장에서 밤샘 근무가 이어졌습니다. 월급날만 기다리며 하루하루를 버텼습니다.\n29세\n오랜 친구의 결혼식\n선택: 바쁘다며 연락을 미룬다\n바쁜 일을 핑계로 답을 미루다 때를 놓쳤습니다. 이후 연락이 조금씩 뜸해졌습니다.\n30세\n끝나지 않는 일\n일은 끝이 없었습니다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었습니다.\n32세\n나의 기록 · 부모님의 나이듦\n기억에 남는 건 😀 가족과 함께한 여름 🏖️ 이었다. 숫자 1️⃣ 도 센다.\n32세\n함께 사는 일\n선택: 함께 살기로 한다\n작게 식을 올리고 한 집에서 살기 시작했습니다. 생활비와 집안 사정이 한꺼번에 합쳐졌습니다.\n34세\n아이를 맞을 것인가\n선택: 조금 더 기다리기로 한다\n형편이 나아지면 생각하기로 했습니다. 시간은 소리 없이 지나갔고, 둘은 서로에게 더 기댔습니다.\n35세\n나의 기록 · 지금의 생각\n네 번째 기록은 그냥 짧게\n36세\n늦어진 이야기\n선택: 이제라도 아이를 맞이한다\n늦은 나이에 아이를 맞이했습니다. 체력은 달리는 대신 아이를 바라보는 눈이 깊어졌습니다.\n38세\n일터에서의 일\n선택: 분명하게 이의를 제기한다\n회의에서 내 생각을 말했습니다. 분위기는 서늘해졌는데 몇몇 동료가 뒤에서 고개를 끄덕였습니다.\n중년 · 40~64세\n40세\n어느덧 마흔이 되었습니다.\n41세\n넓혀 갈 집\n선택: 무리해서 옮긴다\n대출 서류에 도장을 찍었습니다. 새 집의 창으로 해가 길게 들었지만 이자는 매달 무겁게 따라왔습니다.\n42세\n시큰거리는 허리\n허리를 숙일 때마다 시큰거리기 시작했습니다. 몸이 예전 같지 않다는 것을 처음 인정했습니다.\n43세\n맡겨진 자리\n선택: 다른 곳으로 옮긴다\n경력을 들고 새 직장으로 옮겼습니다. 낯선 환경이 오히려 활력이 되었습니다.\n45세\n부모님의 병환\n선택: 직접 모시고 돌본다\n부모님을 곁에 모시고 직접 돌보았습니다. 몸은 고되었지만 가까이 있다는 사실이 서로에게 위안이었습니다.\n51세\n늦게 맞은 아이와\n늦게 맞은 아이의 부모는 또래 부모들보다 나이가 많았습니다. 체력은 달렸지만 하루하루가 새로웠습니다.\n52세\n나의 기록 · 중년의 인생\n소화가 안 되던 겨울, 병원 대기실의 시계 소리.\n52세\n마지막 인사\n선택: 정리할 것을 마치고 뒤늦게 도착한다\n이것저것 정리하느라 늦게 도착했습니다. 끝내 하지 못한 말이 오랫동안 가슴에 남았습니다.\n54세\n검진 결과표\n선택: 생활을 바꾼다\n술자리를 줄이고 저녁마다 걸었습니다. 몸이 가벼워지는 데는 시간이 걸렸습니다.\n59세\n내려놓을 때를 생각하며\n선택: 씀씀이를 줄이고 모아 둔다\n씀씀이를 줄이고 노후 자금을 챙겼습니다. 불안이 줄어든 만큼 즐거움도 함께 줄었습니다.\n노년 · 65세~\n65세\n예순다섯이 되었습니다. 일에서 한 걸음 물러설 나이입니다.\n66세\n오랜만의 동창 모임\n선택: 안부 글만 보낸다\n안부 글을 적어 보냈습니다. 몇 사람이 답을 해 왔고 나머지는 소식이 닿지 않았습니다.\n68세\n넉넉해진 시간\n선택: 집에서 조용히 지낸다\n책과 산책과 낮잠으로 하루가 지나갔습니다. 조용했고, 가끔은 적막했습니다.\n70세\n일에서 물러나다\n일을 내려놓는 날이 왔습니다. 정리할 것은 생각보다 많지 않았고, 돌아오는 길이 유난히 길게 느껴졌습니다.\n86세\n세상을 떠났습니다. 원인은 조용한 잠이었습니다.\n다시 태어나기\n\n다시 태어나면 이 인생의 기록은 사라집니다.",
+  "meta": {
+   "ending-name": "강영진의 인생",
+   "ending-span": "1974년 10월 ~ 2060년 · 86세",
+   "ending-era": "지난 세상 · 생애 기록",
+   "ending-death": "86세에 세상을 떠났습니다. 원인은 조용한 잠이었습니다.",
+   "ending-stats": "최종 스탯건강36행복55처음 42지식59처음 3관계60처음 46최종 순자산−1,933만 원지금 가치로 환산외모또래 사이에서 상위 약 31%",
+   "ending-journey": "하위 40% 안쪽의 집에서 태어나, 하위 약 20%의 형편으로 생을 마쳤습니다.",
+   "ending-legend": "출발선흙수저(하위 40% 안쪽)마지막하위 약 20%",
+   "final-looks": "또래 사이에서 상위 약 31%",
+   "ending-movement": "출발선과 비슷한 자리입니다."
+  },
+  "nonNoteTimeline": [
+   "0세1974년 10월, 전라남도 담양군의 형편이 빠듯한 가정에서 2.8kg 남자아이로 태어났습니다. 셋째입니다. (2.8kg은 하위 약 27%)",
+   "0세첫 예방접종첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. 어른들은 아이를 안아 달랜 뒤 집으로 돌아왔습니다.",
+   "0세처음 먹는 밥선택: 직접 만들어 먹인다매일 아이 먹을 것을 손수 만들었습니다. 품은 들었지만 밥상 앞이 따뜻해졌습니다.",
+   "1세첫 걸음마아이가 붙잡고 서더니 처음으로 혼자 몇 걸음을 걸었습니다. 모두가 숨을 죽였습니다.",
+   "1세첫 말아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.",
+   "2세형제를 따라 하는 아이아이는 손위 형제의 말투와 놀이를 무엇이든 따라 했습니다. 형제는 귀찮아하면서도 곁을 내주었습니다.",
+   "3세자기 전의 이야기선택: 혼자 놀다 잠들게 둔다이야기 대신 조용한 방이 있었습니다. 아이는 혼자 노는 법을 배웠고 잠은 일찍 들었습니다.",
+   "4세묻기 시작한 아이아이는 눈에 띄는 것마다 이름과 까닭을 물었습니다. 아이의 질문은 하루 종일 끊이지 않았습니다.",
+   "5세맡겨지는 낮선택: 조부모님 곁에서 지낸다낮에는 조부모님 곁에서 지냈습니다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었습니다.",
+   "6세온 골목의 아이아이는 집집마다 문이 열려 있던 골목에서 이 집 저 집의 밥을 나눠 먹으며 자랐습니다.",
+   "7세학교에 들어갈 나이가 되었습니다.",
+   "8세전학 온 아이선택: 먼저 말을 건다같이 놀자고 먼저 말했습니다. 어색한 것도 잠깐이었고 그 뒤로 둘은 오래 붙어 다녔습니다.",
+   "10세성적표를 받은 저녁선택: 방과 후에 따로 배운다방과 후마다 따로 공부를 더 했습니다. 숙제가 늘었고, 성적도 꾸준히 올랐습니다.",
+   "11세각자의 점심점심시간이 되면 아이들은 저마다 도시락을 열었습니다. 누구의 반찬이 어떤지는 말하지 않아도 보였습니다.",
+   "14세말하지 않는 격차친구들이 하나둘 갖게 되는 물건이 있었습니다. 나는 그것이 우리 집에 없다는 사실을 말하지 않았습니다.",
+   "15세받을 수 있는 도움선택: 신청하지 않고 넘어간다서류가 번거로워 접어 두었습니다. 그 시간에 쉬었지만 안내문은 한참 서랍에 들어 있었습니다.",
+   "17세입시를 앞둔 해선택: 지금 성적으로 갈 수 있는 곳에 지원한다원서를 내고 결과를 기다렸습니다. 큰 기쁨도 큰 후회도 아닌, 조용한 결과였습니다.",
+   "19세처음 번 돈선택: 공부에 집중한다일은 접고 책상에 앉았습니다. 주머니는 가벼워도 마음은 한결 놓였습니다.",
+   "20세스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.",
+   "21세길어지는 준비선택: 접고 다른 길을 찾는다준비하던 책을 덮었습니다. 홀가분한 마음 한편에 아쉬움이 남았습니다.",
+   "23세일자리를 고를 때선택: 하고 싶은 일을 따라간다벌이는 시원치 않았지만 하루하루가 내 일처럼 느껴졌습니다.",
+   "25세같은 팀의 사람선택: 먼저 저녁을 함께 하자고 한다큰마음 먹고 저녁을 청했습니다. 어색한 침묵 뒤에 웃음이 터졌고, 그날 이후 둘의 거리가 달라졌습니다.",
+   "26세멈추지 않는 기계기계가 멈추지 않는 공장에서 밤샘 근무가 이어졌습니다. 월급날만 기다리며 하루하루를 버텼습니다.",
+   "29세오랜 친구의 결혼식선택: 바쁘다며 연락을 미룬다바쁜 일을 핑계로 답을 미루다 때를 놓쳤습니다. 이후 연락이 조금씩 뜸해졌습니다.",
+   "30세끝나지 않는 일일은 끝이 없었습니다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었습니다.",
+   "32세함께 사는 일선택: 함께 살기로 한다작게 식을 올리고 한 집에서 살기 시작했습니다. 생활비와 집안 사정이 한꺼번에 합쳐졌습니다.",
+   "34세아이를 맞을 것인가선택: 조금 더 기다리기로 한다형편이 나아지면 생각하기로 했습니다. 시간은 소리 없이 지나갔고, 둘은 서로에게 더 기댔습니다.",
+   "36세늦어진 이야기선택: 이제라도 아이를 맞이한다늦은 나이에 아이를 맞이했습니다. 체력은 달리는 대신 아이를 바라보는 눈이 깊어졌습니다.",
+   "38세일터에서의 일선택: 분명하게 이의를 제기한다회의에서 내 생각을 말했습니다. 분위기는 서늘해졌는데 몇몇 동료가 뒤에서 고개를 끄덕였습니다.",
+   "40세어느덧 마흔이 되었습니다.",
+   "41세넓혀 갈 집선택: 무리해서 옮긴다대출 서류에 도장을 찍었습니다. 새 집의 창으로 해가 길게 들었지만 이자는 매달 무겁게 따라왔습니다.",
+   "42세시큰거리는 허리허리를 숙일 때마다 시큰거리기 시작했습니다. 몸이 예전 같지 않다는 것을 처음 인정했습니다.",
+   "43세맡겨진 자리선택: 다른 곳으로 옮긴다경력을 들고 새 직장으로 옮겼습니다. 낯선 환경이 오히려 활력이 되었습니다.",
+   "45세부모님의 병환선택: 직접 모시고 돌본다부모님을 곁에 모시고 직접 돌보았습니다. 몸은 고되었지만 가까이 있다는 사실이 서로에게 위안이었습니다.",
+   "51세늦게 맞은 아이와늦게 맞은 아이의 부모는 또래 부모들보다 나이가 많았습니다. 체력은 달렸지만 하루하루가 새로웠습니다.",
+   "52세마지막 인사선택: 정리할 것을 마치고 뒤늦게 도착한다이것저것 정리하느라 늦게 도착했습니다. 끝내 하지 못한 말이 오랫동안 가슴에 남았습니다.",
+   "54세검진 결과표선택: 생활을 바꾼다술자리를 줄이고 저녁마다 걸었습니다. 몸이 가벼워지는 데는 시간이 걸렸습니다.",
+   "59세내려놓을 때를 생각하며선택: 씀씀이를 줄이고 모아 둔다씀씀이를 줄이고 노후 자금을 챙겼습니다. 불안이 줄어든 만큼 즐거움도 함께 줄었습니다.",
+   "65세예순다섯이 되었습니다. 일에서 한 걸음 물러설 나이입니다.",
+   "66세오랜만의 동창 모임선택: 안부 글만 보낸다안부 글을 적어 보냈습니다. 몇 사람이 답을 해 왔고 나머지는 소식이 닿지 않았습니다.",
+   "68세넉넉해진 시간선택: 집에서 조용히 지낸다책과 산책과 낮잠으로 하루가 지나갔습니다. 조용했고, 가끔은 적막했습니다.",
+   "70세일에서 물러나다일을 내려놓는 날이 왔습니다. 정리할 것은 생각보다 많지 않았고, 돌아오는 길이 유난히 길게 느껴졌습니다.",
+   "86세세상을 떠났습니다. 원인은 조용한 잠이었습니다."
+  ]
+ },
+ "endingReloadNoteTexts": [
+  "오늘은 괜히 창밖을 오래 봤다.",
+  "다섯 살 무렵, 마당의 감나무 밑에서 할머니가 곶감을 쥐여 주던 장면이 남아 있다.",
+  "고백하지 못한 채 졸업했다.\n그 뒤로도 한참 그 골목을 지나다녔다.",
+  "세 번째 수동 기록 — 쉼표, 따옴표 \"큰\", '작은' & 앰퍼샌드 <b>굵게</b>",
+  "기억에 남는 건 😀 가족과 함께한 여름 🏖️ 이었다. 숫자 1️⃣ 도 센다.",
+  "네 번째 기록은 그냥 짧게",
+  "소화가 안 되던 겨울, 병원 대기실의 시계 소리."
+ ],
+ "afterRebirth": {
+  "storageKeys": [
+   "suzeo-game:settings",
+   "suzeo-game:save"
+  ],
+  "leftover": [],
+  "screen": "title-screen"
+ },
+ "totalAutoNoteSheets": 6,
+ "manualCount": 4
+}

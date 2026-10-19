@@ -42,9 +42,6 @@ svg.icon--sm { width: 18px; height: 18px; }
 a.btn { text-decoration: none; }
 .btn--tool .icon { width: 22px; height: 22px; }
 .btn--tool span { display: block; max-width: 100%; }
-/* 「생각 남기기」의 눈에 보이는 「준비 중」 표식(R-326): 라디오 카드 「약 1시간」의 메타 알약(.radio-card.is-disabled .radio-card__meta)과 같은 모양 — 글자 --c-text-2 + 얇은 테두리. 낱말 사이에서 끊기지 않게 한 덩어리로 둔다.
-   버튼 이름에 포함돼(접근 가능한 이름 「생각 남기기 준비 중」) 낭독 사용자도 이유를 듣는다. 지속 비활성이라 점선 테두리·옅은 글자는 title.css `.btn[data-unavailable]`가 그린다 */
-.btn--tool .tool-soon { margin-top: 2px; padding: 0 var(--sp-1); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); color: var(--c-text-2); font-weight: var(--fw-bold); white-space: nowrap; }
 /* 켜짐 상태(BGM·다크 모드): aria-pressed="true" → 색 반전 + 아래 4px 막대(.btn 공통) + 아이콘 교체(달→해). 색만으로 알리지 않는다 — R-136② */
 .btn--tool[aria-pressed='true'] .icon { stroke-width: 2.4; }
 
@@ -85,7 +82,7 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
 .controls__tools { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .controls__tools > .btn--tool { flex: 1 1 0; min-width: min-content; }
 .controls-fixed .btn { padding: 0 var(--sp-1); font-size: var(--fs-sm); }
-/* 도구 줄 아래 BGM 볼륨 줄과 나가기 확인 단계 (「생각 남기기」 안내 줄 `.tool-note`는 R-326 뒤 없다 — 준비 중임은 버튼 안 알약이 늘 보인다, D-30②) */
+/* 도구 줄 아래 BGM 볼륨 줄과 나가기 확인 단계 (「생각 남기기」는 M7c부터 보통 버튼이다 — 누르면 기록 시트가 열린다, D-75) */
 .volume { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); min-height: var(--hit); font-size: var(--fs-sm); }
 .volume input[type='range'] { flex: 1 1 8rem; min-width: 0; min-height: var(--hit); accent-color: var(--c-brand); }
 .volume output { min-width: 2.6em; text-align: right; font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
@@ -154,7 +151,6 @@ html.head-released { --head-fixed-h: 0px; }
 .log__text em { font-style: normal; color: var(--c-text-2); font-size: var(--fs-sm); }
 .log__row--note { background: var(--c-accent-soft); color: var(--c-on-accent-soft); border-radius: var(--r-md); border-bottom: 0; margin: var(--sp-1) 0; padding: var(--sp-3); border-left: 5px solid var(--c-accent); }
 .log__row--note .log__age { color: var(--c-on-accent-soft); }
-.log__note-label { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: var(--fw-bold); }
 .log__row--stage { color: var(--c-text-2); font-size: var(--fs-sm); border-bottom: 2px solid var(--c-border-strong); }
 .log__row--latest { font-weight: var(--fw-bold); }
 /* 「새 기록 N개 · 맨 아래로」 — .btn(inline-flex)의 글자는 익명 flex 항목이라 전역 overflow-wrap: anywhere가 최소 폭을 글자 하나로 만든다. 글자 200% × 폭 320·360에서 「아래로」가 한 글자씩 끊겼다(D-58, QM3-1) → 낱말 단위로만 접힌다 */
@@ -186,19 +182,37 @@ html.head-released { --head-fixed-h: 0px; }
    머리(.decision__head): .decision__kind 「중대 결정」(◆는 ::before — 글자가 아니다) · .decision__when 「{연도}년 · {나이}세」(FitPair — 좁거나 글자가 크면 기호 없이 두 줄, QM2-10 규칙 3) · .decision__fold 「카드 접기 ▾」(▾는 aria-hidden, 접근 가능한 이름 「카드 접기」).
    몸(.decision__body, 컨테이너): h2.decision__title(id=dc-title, tabindex=-1) · p.decision__text · .cite(인용이 있을 때만 — 없으면 요소 자체가 없다) · .choices-list(번호 원 + 라벨 + 영향 줄, 그대로) · .decision__hint(영향 안내 한 줄, 영향 줄이 있는 묶음에만 — copy.md 4-4) · .decision__auto(자동 모드 안내 — 상태에 맞는 문장 **하나**, M-13).
    (시안 ds.css의 .sheet__* 별칭은 M7c 자유 기록 카드 몫이라 가져오지 않았다 — 그때 이 규칙에 더한다.) */
-/* overscroll-behavior: contain — 시트(와 바탕 .overlay) 안에서 끝까지 쓴 뒤 계속 쓸어도 시트 뒤 대시보드가 같이 스크롤되지 않는다(QA-003-M7b A20) */
+/* overscroll-behavior: contain — 시트(와 바탕 .overlay) **안에서** 끝까지 쓴 뒤 계속 쓸어도 연쇄 스크롤이 시트 뒤 문서로 넘어가지 않는다(QA-003-M7b A20). 이것은 연쇄만 끊는다: 스크림에서 시작한 드래그·넘침 없는 짧은 시트의
+   휠·PageDown·Space는 그대로 뒤 문서를 움직이므로, 문서 스크롤 자체는 아래의 html.sheet-open 잠금(훅 useScrollLock)이 막는다(M7c T1, QA-003-M7b A20b). */
 .overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--c-scrim); display: flex; align-items: flex-end; justify-content: center; overscroll-behavior: contain; }
+.overlay { top: var(--vv-top, 0px); bottom: auto; height: var(--vv-h, 100%); }
 /* 시트 안은 자기 스크롤 영역이라 scroll-padding을 둔다(11-1 — 키보드 포커스가 시트 가장자리에 잘리지 않게). 94dvh 상한은 낮은 화면(320×256)에서도 시트 밖에 여백 한 줄을 남긴다 */
 .sheet { width: 100%; max-width: 640px; max-height: 94dvh; overflow: auto; overscroll-behavior: contain; scroll-padding: var(--sp-3); background: var(--c-surface); color: var(--c-text); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow-2); border: 1px solid var(--c-border-strong); border-bottom: 0; }
-.decision__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border); }
-.decision__head .row { flex-wrap: wrap; }
-.decision__head .btn { white-space: nowrap; }
-.decision__kind, .fold__kind { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-sm); }
-.decision__kind::before, .fold__kind::before { content: ''; flex: none; width: 10px; height: 10px; background: var(--c-brand); transform: rotate(45deg); }
-.decision__when { color: var(--c-text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.sheet { max-height: min(94dvh, calc(var(--vv-h, 100dvh) - var(--sp-2))); }
+/* 시트 밖(어둠 막)을 끌어도 문서가 움직이지 않는다(T1 (d)): 스크림의 손가락 끌기는 가장 가까운 스크롤 상자가 문서라 html 잠금만으로는 iOS 사파리가 놓칠 수 있어 오버레이에 touch-action: pinch-zoom을 더한다 —
+   한 손가락 끌기(pan)와 두 번 탭 확대는 막고 핀치 확대만 남긴다. `none`이 아닌 이유(R-405): 유효 touch-action은 조상과의 교집합이고 크로뮴 계열은 스크롤 상자(.sheet)에서 pan 비트만 되살리므로,
+   `.overlay { touch-action: none }`이면 .sheet의 유효값이 pan-y뿐이 되어 시트가 떠 있는 동안 화면 어디서도 핀치 확대가 안 된다(작은 출처 줄을 확대해 읽을 길이 막힌다, WCAG 1.4.4).
+   `pinch-zoom`이면 .sheet의 유효값은 `(pan-y | pinch-zoom) ∩ pinch-zoom`에 스크롤 상자 보정(pan 비트)이 더해져 `pan-y pinch-zoom`이 된다 — 시트 안 세로 스크롤과 핀치 확대 모두 된다.
+   e2e/m7c-pinch-zoom.spec.ts가 두 시트에서 실제 핀치(CDP)로 visualViewport.scale > 1을 확인한다. 시안 ds.css도 같은 값이다(designer) */
+.overlay { touch-action: pinch-zoom; }
+.sheet { touch-action: pan-y pinch-zoom; }
+/* 문서 스크롤 잠금의 CSS 쪽(T1): 훅이 첫 시트가 열릴 때 걸고 마지막 시트가 닫힐 때 푼다 — 시트가 이어서 닫히고 열려도(결정 시트 → 기록 시트) 개수가 0이 되지 않으면 풀리지 않아 스크롤 위치가 튀지 않는다.
+   스크롤바 밀림(T1 (e) — 데스크톱의 고전 스크롤바가 사라지며 본문이 옆으로 밀리는 것): 훅이 잠그기 **전에 잰** 스크롤바 폭(innerWidth − documentElement.clientWidth)을 --scrollbar-w로 걸어 그만큼 오른쪽 여백을 둔다 — 겹쳐 그리는(overlay) 스크롤바 환경(모바일·헤드리스)은 0이라 아무것도 바뀌지 않는다.
+   `scrollbar-gutter: stable`은 쓰지 않는다 — 헤드리스 크로뮴은 겹쳐 그리는 스크롤바인데도 15px을 비워 폭 320 · 글자 200%의 상태 바가 넘쳤다(2026-10-19 시안 점검). 시안은 page()의 흉내 스크립트가 .overlay가 있으면 폭을 재고 이 클래스를 건다(구현은 훅) */
+html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
+.sheet__head, .decision__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border); }
+.sheet__head .row, .decision__head .row { flex-wrap: wrap; }
+.sheet__head .btn, .decision__head .btn { white-space: nowrap; }
+.sheet__kind, .decision__kind, .fold__kind { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-sm); }
+.sheet__kind::before, .decision__kind::before, .fold__kind::before { content: ''; flex: none; width: 10px; height: 10px; background: var(--c-brand); transform: rotate(45deg); }
+.sheet__kind--note::before { border-radius: 50%; transform: none; background: var(--c-accent); }
+.sheet__age, .decision__when { color: var(--c-text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+/* 기록 시트 머리의 「{연도}년 · {나이}세」도 FitPair(hideSeparator) — 중대 결정 카드 .decision__when과 같은 inline-block 규칙(좁으면 안에서만 두 줄) */
+.sheet__age { min-width: 0; }
+.sheet__age .fit-pair { display: inline-block; max-width: 100%; }
 /* 「{연도}년 · {나이}세」는 FitPair(.fit-pair는 display: block) — 머리 줄 안에서는 글자 폭만 차지하게 inline-block으로 두고, 두 줄 모드에서는 안에서만 줄이 바뀐다 */
 .decision__when .fit-pair { display: inline-block; max-width: 100%; }
-.decision__body { padding: var(--sp-5) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
+.sheet__body, .decision__body { padding: var(--sp-5) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
 .decision__body { container-type: inline-size; }
 /* 인라인 카드: 대시보드 카드(.card) 위에 머리·몸을 얹는다 — 안쪽 여백은 머리·몸이 각자 가지므로 카드 자체는 0, 테두리는 M4 임시 카드(.choice-panel)와 같은 2px 쪽빛(결정을 기다리는 카드임을 다른 카드와 가른다) */
 .decision--inline { padding: 0; border: 2px solid var(--c-brand); display: flex; flex-direction: column; gap: 0; }
@@ -230,6 +244,80 @@ html.head-released { --head-fixed-h: 0px; }
 .fold__open { margin-left: auto; }
 /* 안내 줄 둘(영향 안내 .decision__hint · 자동 모드 안내 .decision__auto): 보조색 작은 글씨, 왼쪽 맞춤(두 틀에서 같은 모양 — M1 시트의 가운데 맞춤 .sheet__hint는 note.html 몫으로만 남긴다). 자동 모드 안내는 role=status가 아니다(자동 선택 때마다 낭독되지 않게, content-M7b 4-3) */
 .decision__hint, .decision__auto { font-size: var(--fs-sm); color: var(--c-text-2); }
+.sheet__foot { display: flex; flex-direction: column; gap: var(--sp-2); align-items: stretch; }
+.field { display: flex; flex-direction: column; gap: var(--sp-2); }
+.field__input { width: 100%; min-height: 104px; padding: var(--sp-3); border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); resize: vertical; line-height: var(--lh-body); overflow-wrap: anywhere; }
+.field__hint .num { white-space: nowrap; flex: none; }
+.field__hint { display: flex; justify-content: space-between; gap: var(--sp-3); font-size: var(--fs-sm); color: var(--c-text-2); }
+/* ---------- 자유 기록 카드 「생각 남기기」 시트 (M7c, 2026-10-19 designer — SPEC-003 FR1~FR9 · docs/data/content-M7c.md 5·6절 · 문구 copy.md 7절 · design-system.md 6절 「자유 기록 카드 시트」·11-10) ----------
+   한 시트 두 진입 경로(자동 카드 / 도구 줄 「생각 남기기」): .overlay > .sheet.sheet--note[role=dialog aria-modal aria-labelledby="nc-kind nc-title"] — 틀·inert·Esc·포커스는 중대 결정 시트와 같다(11-10).
+   머리 .sheet__head: .sheet__kind.sheet__kind--note 「생각 남기기」(놋쇠 ● = ::before, 글자 아님) · .sheet__age 「{연도}년 · {나이}세」(FitPair hideSeparator — 가운뎃점은 aria-hidden, 낭독 「2031년 5세」).
+   몸 .sheet__body(컨테이너): h2.sheet__title#nc-title[tabindex=-1](질문, 22px + 11-8 제목 상한) · .cite(①만, 없으면 요소 없음) · .field(입력란 + 안내 + 글자 수 + 알림 줄) · .note-choices(두 버튼) · .note-confirm(확인 단계 — 두 버튼 자리에) · .sheet__foot(끄기/켜기 칸 + 알림).
+   접기 없음(NC-12) — 닫는 길은 두 버튼과 Esc뿐이라 머리에 버튼이 없다. */
+.sheet__body { container-type: inline-size; }
+/* 질문(h2): 카드 제목 크기 --fs-xl(22px) + 11-8절 제목 상한(--title-chars = titleCharsFor(질문) — 가장 긴 어절은 「{이름}에게도」 7글자(이름 3자 기준)라 320 · 글자 200%에서도 어절 사이에서만 접힌다). 중대 결정 카드 .decision__title과 같은 규칙 */
+.sheet__title { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.sheet__title:focus, .sheet__title:focus-visible { outline: none; }
+@supports (width: 1cqi) {
+  .sheet__title { font-size: max(var(--fs-lg), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }
+}
+/* 입력란(D6·K5): 글자 크기 계산값 ≥ 16px(iOS가 포커스 때 화면을 확대하지 않는다 — 글자 100%에서 --fs-md = 16px, 더 작아지는 조합은 없지만 max()로 못 박는다), dir="auto" + 격리(사용자 글은 방향 글이어도 주변 UI 순서를 뒤집지 않는다),
+   줄 3줄(rows=3, 줄바꿈 2개 — NC-3), 세로 크기 조절만. maxlength="140"은 두지 않는다(브라우저는 그래핌이 아니라 UTF-16 단위로 세고 IME 조합 중에 글자를 자른다 — 상한은 코드 `sanitizeLive`가 그래핌으로 센다, 3-1절; maxLength 4000은 안전망).
+   사용자 글이 든 요소(입력란·연표 줄 글)는 data-user-text 표식 — 낱말 끊김 감사가 이 영역을 뺀다(우리 문구가 아니라 어디서든 끊길 수 있는 글, 11-8절) */
+.field__input { font-size: max(1rem, 16px); font-family: inherit; color: var(--c-text); unicode-bidi: isolate; word-break: normal; }
+.field__input[readonly] { background: var(--c-surface-2); } /* 확인 단계가 열린 동안 — 글은 그대로 보이고 고칠 수 없다(5-2) */
+/* 빈 입력 안내(FR3·6-2): 입력란 aria-invalid + 알림 줄 .field__msg--error를 aria-describedby로 연결, 포커스는 입력란으로. 테두리는 --c-down(해로움 보조색 — 면 위 7.13/6.68:1)으로 바뀌지만 뜻은 글(안내 문장)이 전한다(색에만 기대지 않음) */
+.field__input[aria-invalid='true'] { border-color: var(--c-down); }
+.field__hint { align-items: flex-start; }
+.field__hint > span:first-child { flex: 1 1 12em; min-width: 0; }
+/* 글자 수 「34/140」은 aria-hidden(눈에 보이는 표시), 스크린리더는 입력란의 aria-describedby가 가리키는 읽기 전용 문장 「34자 입력, 140자까지」를 포커스 때 한 번 듣는다(6-2) */
+.field__count { white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; color: var(--c-text-2); font-size: var(--fs-sm); }
+/* 알림 줄(role=status 한 곳): 남은 글자 20·140 도달·붙여넣기 잘림·3줄 도달·빈 입력 오류를 다음 순간에만 갱신(글자마다 읽지 않는다). 비어 있으면 자리를 차지하지 않는다 */
+.field__msg { font-size: var(--fs-sm); color: var(--c-text-2); }
+.field__msg:empty { display: none; }
+.field__msg--error { color: var(--c-down); font-weight: var(--fw-bold); }
+.note-choices { display: flex; flex-direction: column; gap: var(--sp-2); }
+.note-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: var(--sp-3) var(--sp-4); text-align: left; border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); color: var(--c-text); min-height: var(--hit); cursor: pointer; font-size: var(--fs-md); }
+.note-choice:hover { border-color: var(--c-brand); background: var(--c-brand-soft); }
+.note-choice__top { display: flex; align-items: center; gap: var(--sp-3); font-weight: var(--fw-bold); }
+/* 보조 설명은 번호 원 폭만큼 들여 쓴다 — 원은 글자 크기에 묶인 값(D-38)이라 같은 식으로 */
+.note-choice__sub { font-size: var(--fs-sm); color: var(--c-text-2); padding-left: calc(var(--fs-sm) + 12px + var(--sp-3)); }
+.note-choice--primary { border-color: var(--c-brand); }
+/* 확인 단계(FR6·5-2): 글이 있는데 「마음속에 담고 살기」를 누르면 두 버튼 자리에 이 상자 — 안내문(role=alert, 굵게) + 보조 + 버튼 둘. 방금 누른 2번 자리(맨 아래)에 **안전한 쪽 「돌아가서 이어 쓰기」(기본·먼저 포커스)**,
+   그 위에 확정 「글을 지우고 담아 두기」(보조) — 첫 화면·나가기 확인 단계와 같은 배치(R-204·QM2-6). 열린 동안 입력란은 readonly, 글은 그대로 보인다. Esc = 돌아가서 이어 쓰기. 버튼 이름 안 줄바꿈은 낱말 단위(확인 단계 버튼 공통 예외, D-20) */
+.note-confirm { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); }
+.note-confirm__title { font-weight: var(--fw-bold); }
+.note-confirm__sub { font-size: var(--fs-sm); color: var(--c-text-2); }
+.note-confirm__actions { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-1); }
+.note-confirm__actions > .btn, .sheet__foot > .btn { white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2); }
+/* 발: 「저절로 뜨는 기록 카드 끄기/켜기」 한 칸(NC-6 — 이름이 하는 일을 말한다, aria-pressed 없음) + 누른 뒤 알림 한 줄(role=status). 40개 안내 상태(.sheet--limit)에는 입력란·두 버튼·발이 없고 안내 + 「닫기」만 */
+.sheet__notice { font-size: var(--fs-sm); color: var(--c-text-2); }
+.sheet__sub { font-size: var(--fs-sm); color: var(--c-text-2); }
+/* 가상 키보드 compact(K2 — 2026-10-19 후속, 마스터 지시로 조건 변경): **포커스가 입력 영역**(입력란·두 버튼·끄기/켜기 칸·확인 단계) 안에 있고 **보이는 높이(visualViewport.height)에 시트 전체가 들어가지 않으면** 인용 박스와 두 버튼의 보조 설명을 숨겨 높이를 줄인다.
+   고정 문턱(520px)은 쓰지 않는다 — 문턱과 시트 높이 사이(보이는 높이 520~약 616px)에서 compact도 아니고 시트도 안 들어가 두 버튼이 스크롤 밖에 남던 구멍(developer 로그 3-1)을 없앤다. 판정은 **compact 전(펼친) 높이**로 한다 — 숨긴 뒤 짧아진 높이로 다시 재면 접힘·펼침이 번갈아 일어난다.
+   포커스가 입력 영역 안에서 옮겨 다니는 동안(입력란 → Tab → 「적어두고 살기」) 유지하고, 질문 제목·시트 밖·아무 곳도 아님으로 가면 풀린다(K6). 개인정보 안내·글자 수·오류 안내는 숨기지 않는다.
+   보장(K3): 보이는 높이 ≥ 340px이면 입력란 전체와 두 버튼이 보이는 영역 안 — 시트 안쪽 스크롤로 입력란 위쪽 변을 질문 줄 아래에 맞춘다(block: 'start', 이 상태에서만). 그보다 낮으면(가로 모드·글자 200% × 폭 320) 포커스를 가진 입력란은 늘 보이고 두 버튼은 스크롤로 닿는다(K7).
+   질문은 한 줄로 시트 위에 고정(2026-10-19 r2, REV-003-M7c-1 관찰 1 → diff-003.md D-88): 입력란을 start로 올리면 머리와 질문이 함께 위로 밀려 쓰는 동안 무엇을 묻는지 안 보였다. h2를 sticky + 본문 크기 한 줄(넘치면 「…」, 면 --c-surface)로 두어 질문 첫 줄이 남는다 —
+   글자·접근 가능한 이름은 그대로(그리기만 한 줄; 전체 문장은 열릴 때 포커스가 간 제목으로 읽혔고 compact가 풀리면 다시 다 보인다). 머리 「● 생각 남기기 · 연도·나이」는 지금처럼 위로 밀린다.
+   고정 줄 아래로 포커스가 숨지 않게 scroll-padding-top = 제목 줄 높이(--fs-md × --lh-snug) + --sp-2(Shift+Tab으로 아래에서 올라와도 포커스 링 3px + 2px 위에 여유 8px), 본문 간격은 --sp-2(12 → 8px — 제목 줄이 쓰는 높이를 돌려받아 K3 유지).
+   측정(note.html?state=compact, 보이는 높이 340 × 폭 360·320 · 글자 100%): 제목 22~44 · 입력란 52~157 · 1번 218~272 · 2번 280~334 — 두 버튼이 340 안(여유 6px). 글자 200%는 K7 그대로. 강제 색상은 면이 Canvas라 추가 규칙 없음. 시안 ds.css와 같은 글자(developer r2, D-88) */
+.sheet--compact .cite, .sheet--compact .note-choice__sub { display: none; }
+.sheet--compact { scroll-padding-top: calc(var(--fs-md) * var(--lh-snug) + var(--sp-2)); }
+.sheet--compact .sheet__title { position: sticky; top: 0; z-index: 1; background: var(--c-surface); font-size: var(--fs-md); line-height: var(--lh-snug); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet--compact .sheet__body { padding: var(--sp-3) var(--sp-4); gap: var(--sp-2); }
+.sheet--compact .field__input { min-height: 5.5em; }
+/* 「나의 기록」 줄(FR4·FR5, 인생 기록 .log__row--note · 엔딩 연표 .timeline li.is-note — 같은 부품 NoteText): 놋쇠 옅은 면 + 왼쪽 5px 막대 + 연필 아이콘 라벨 「나의 기록 · {주제}」(FitPair hideSeparator — 주제 길이가 카드마다 달라 좁거나 글자가 크면 기호 없이 두 줄, 가운뎃점은 aria-hidden) → 아래 줄에 사용자 글.
+   라벨의 FitPair는 flex 안에서 폭을 받아야 잰다(11-7) — 라벨은 flex 상자, 쌍은 flex: 1. 사용자 글(.note-text[data-user-text]): <bdi dir="auto">(방향 글이 라벨·나이를 끌고 가지 않는다 — H5 ②), white-space: pre-line(줄바꿈 2개까지 그대로), overflow-wrap: anywhere + **word-break: normal**(전역 keep-all의 예외 —
+   띄어쓰기 없는 한글 140자가 낱말 하나로 취급돼 마지막 수단으로만 끊기는 것을 막는다; 우리 문구가 아니므로 어디서든 끊겨도 된다), min-width: 0. 글 안에 <a>·<img>·서식 없음(D1) — 글자 그대로. 가장 긴 낱말 규칙(11-8)에서 이 영역은 뺀다 */
+.log__note-label { display: flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: var(--fw-bold); }
+.log__note-label .fit-pair { flex: 1 1 0; min-width: 0; }
+.log__note-label .icon { flex: none; }
+.note-text, [data-user-text] { word-break: normal; overflow-wrap: anywhere; }
+.note-text { display: block; margin-top: 2px; white-space: pre-line; unicode-bidi: isolate; min-width: 0; }
+.log__row--note .log__text { display: flex; flex-direction: column; min-width: 0; }
+.timeline li.is-note .log__note-label { font-size: var(--fs-xs); }
+/* 구현 보강: 알림 줄(.sheet__notice)은 누르기 전에는 비어 있어 자리를 차지하지 않는다(.field__msg:empty와 같은 방법) */
+.sheet__notice:empty { display: none; }
 /* ≥ 640px: 시트는 아래에서 올라오지 않고 가운데 모달이다 */
 @media (min-width: 640px) {
   .overlay { align-items: center; }
@@ -239,7 +327,7 @@ html.head-released { --head-fixed-h: 0px; }
 .choices-list { display: flex; flex-direction: column; gap: var(--sp-2); }
 .choice { display: flex; gap: var(--sp-3); align-items: flex-start; width: 100%; padding: var(--sp-3) var(--sp-4); text-align: left; border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); color: var(--c-text); cursor: pointer; min-height: var(--hit); font-size: var(--fs-md); }
 .choice:hover { border-color: var(--c-brand); background: var(--c-brand-soft); }
-.choice[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+.choice[aria-disabled='true'], .note-choice[aria-disabled='true'] { opacity: 0.55; cursor: default; }
 /* 번호 원은 글자 크기에 묶는다(D-38): 글자 100%는 26px 그대로, 200%는 40px. 숫자는 본문 줄 높이(1.6)를 물려받지 않게 line-height: 1 — 안 그러면 글자 200%에서 숫자의 줄 상자가 원 안쪽을 1px 넘어 scrollHeight > clientHeight가 된다 */
 .choice__no { flex: none; width: calc(var(--fs-sm) + 12px); height: calc(var(--fs-sm) + 12px); line-height: 1; border-radius: 50%; border: 2px solid var(--c-brand); color: var(--c-brand); display: grid; place-items: center; font-size: var(--fs-sm); font-weight: var(--fw-bold); }
 .choice__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -268,7 +356,7 @@ html.head-released { --head-fixed-h: 0px; }
 .impact__step--bad { color: var(--c-down); }
 /* **예비 규칙** — M5에는 지속 비활성 선택지를 만들지 않는다(r2 마스터 결정 4: 자금 조건 선택지는 숨기고(EC4), 자동 모드 동작은 지금 그대로). 앞으로 생긴다면 버튼 `.btn[data-unavailable='true']`(design-system.md 2절 「비활성 컨트롤의 대비」, R-337)과 같은 모양 — 불투명도 없이 --c-text-3 글자 + 점선 테두리.
    영향 줄의 ▲▼도 --c-text-3(면 5.78/5.96:1 — 색이 빠져도 모양·개수가 방향·크기를 전한다). 0.4초 입력 가드(aria-disabled만, 0.55 흐림)는 과도 상태라 그대로(D-26). 구현 dash.css는 `.choice[data-unavailable='true'] { opacity: 1 }`도 함께 둔다(가드 규칙보다 뒤) */
-.choice[data-unavailable='true'] { color: var(--c-text-3); border-style: dashed; cursor: default; }
+.choice[data-unavailable='true'] { opacity: 1; color: var(--c-text-3); border-style: dashed; cursor: default; }
 .choice[data-unavailable='true']:hover { border-color: var(--c-border-strong); background: var(--c-surface); }
 .choice[data-unavailable='true'] .choice__no { border-color: var(--c-border-strong); color: var(--c-text-3); }
 .choice[data-unavailable='true'] .impact, .choice[data-unavailable='true'] .impact__step { color: var(--c-text-3); }
@@ -286,6 +374,7 @@ html.head-released { --head-fixed-h: 0px; }
 .timeline li { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); padding: var(--sp-2) var(--sp-1); border-bottom: 1px solid var(--c-border); font-size: var(--fs-sm); }
 .timeline li > .log__age { flex: 0 0 3.1rem; }
 .timeline li.is-choice { border-left: 3px solid var(--c-brand); padding-left: var(--sp-2); }
+.timeline li.is-note { background: var(--c-accent-soft); color: var(--c-on-accent-soft); border-left: 5px solid var(--c-accent); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 /* 엔딩 출발선 막대 (M7e — REV-003-M4-1 R-327, 2026-10-18 designer; copy.md 5-4절 · design-system.md 6절 「엔딩 출발선 막대」)
    한 줄의 선(0 = 하위 끝, 100 = 상위 끝: 아래에서부터 센 백분위, core/ending.ts와 같은 방향) 위에
      ① 출발선 구간 **띠** .journey__band — left: var(--from) · width: calc(var(--to) − var(--from)) (= StartBand.low·high %, 옅은 쪽빛 면 + 2px 쪽빛 테두리, 모양 = 네모)
@@ -401,12 +490,16 @@ html.head-released { --head-fixed-h: 0px; }
 @media (forced-colors: active) {
   .choice, .exit-ask { border-color: CanvasText; }
   .choice[data-unavailable='true'], .choice[data-unavailable='true'] .choice__no, .choice[data-unavailable='true'] .impact, .choice[data-unavailable='true'] .impact__step { color: GrayText; border-color: GrayText; }
-  .sheet, .decision--inline, .fold { border-color: CanvasText; }
+  .sheet, .decision--inline, .fold, .note-choice, .field__input { border-color: CanvasText; }
   .cite { background: Canvas; color: CanvasText; border-color: CanvasText; }
   .choice__no { border-color: CanvasText; color: CanvasText; }
   .meter__track, .year-progress { border-color: CanvasText; background: Canvas; }
   .meter__fill, .year-progress__fill { forced-color-adjust: none; background: CanvasText; }
   .log__pin, .log__row--note { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  /* M7c 자유 기록 시트: 확인 단계 상자·나의 기록 줄(위 .log__row--note)·연표 note 행은 CanvasText 테두리·막대. 빈 입력의 입력란은 색 대신 **이중 테두리**(모양)로 — 안내 문장이 뜻을 전하고 테두리는 보조. 시안 전용 키보드 자리도 글자색 선 */
+  .note-confirm, .timeline li.is-note { border-color: CanvasText; }
+  .field__input[aria-invalid='true'] { border-style: double; border-width: 4px; }
+  .timeline li.is-note { background: Canvas; color: CanvasText; }
   .face { border-color: CanvasText; }
   .tag { border-color: CanvasText; }
   .notice { border-color: CanvasText; }

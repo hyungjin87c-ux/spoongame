@@ -1034,9 +1034,9 @@ M6a에서는 이벤트 데이터를 고치지 않았다(`src/data/events/*.json`
 
 ## 5. 반영 이벤트 연결 (citations.json의 `usedBy` 기준)
 
-`usedBy`는 이벤트 JSON의 `citation`에서 만든 역색인이다(`npm run gen:citations`, M7b — 사람이 쓰지 않는다). 중대 결정 카드(선택지 이벤트)가 실제로 인용하는 연결이며, 후보 기록이던 `candidateEvents`는 M7b에서 없어졌다:
+`usedBy`는 이벤트 JSON의 `citation`에서 만든 역색인이다(`npm run gen:citations`, M7b — 사람이 쓰지 않는다). 중대 결정 카드(선택지 이벤트)와 기록 카드(`note-…`, `src/data/notes.json` — M7c, MD2 판정에는 들지 않는다)가 실제로 인용하는 연결이며, 후보 기록이던 `candidateEvents`는 M7b에서 없어졌다:
 
-| 이벤트 id | 인용 | 근거 행 |
+| 이벤트·기록 카드 id | 인용 | 근거 행 |
 |---|---|---|
 | `infant-care` | c-060 | s-064 |
 | `infant-early-lessons` | c-062 | s-066 |
@@ -1055,6 +1055,7 @@ M6a에서는 이벤트 데이터를 고치지 않았다(`src/data/events/*.json`
 | `middle-parents-care` | c-081 | s-083 |
 | `middle-remote-work` | c-080 | s-082 |
 | `middle-retirement-prep` | c-030 | s-031 |
+| `note-infant-memory` | c-037 | s-043 |
 | `school-academy-night` | c-049 | s-056 |
 | `school-after-hours` | c-063 | s-067 |
 | `school-bully` | c-050 | s-057 |

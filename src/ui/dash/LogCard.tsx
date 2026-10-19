@@ -7,6 +7,7 @@ import { FitPair } from '../FitPair';
 import { Glue } from '../Glue';
 import { revealTopOfTallFocus } from '../focusReveal';
 import { useEpochMinute, useIsoLayoutEffect, useReducedMotion } from '../hooks';
+import { NoteBody } from './NoteText';
 
 /**
  * 인생 기록 카드 (SPEC-003 DB12·DB14): 가운데 영역에 **한 줄씩 쌓이고** 영역 안에서 스크롤된다.
@@ -105,7 +106,7 @@ export function LogCard({ history, name, live, minute }: { history: readonly His
           {history.map((h, i) => (
             <li
               key={`${i}-${h.age}-${h.kind}`}
-              className={`log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${i === history.length - 1 ? ' log__row--latest' : ''}`}
+              className={`log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${h.kind === 'note' ? ' log__row--note' : ''}${i === history.length - 1 ? ' log__row--latest' : ''}`}
               data-kind={h.kind}
               data-testid="log-row"
             >
@@ -114,16 +115,23 @@ export function LogCard({ history, name, live, minute }: { history: readonly His
                 {DASH_TEXT.ageSuffix}
               </span>
               <span className="log__text">
-                {h.text}
-                {h.choice ? (
+                {h.kind === 'note' ? (
+                  // 「나의 기록」 줄(M7c): 라벨 + 사용자 글 — 엔딩 연표와 같은 부품(NoteBody)
+                  <NoteBody entry={h} />
+                ) : (
                   <>
-                    {' '}
-                    <em>
-                      ({DASH_TEXT.logChoicePrefix}
-                      {h.choice})
-                    </em>
+                    {h.text}
+                    {h.choice ? (
+                      <>
+                        {' '}
+                        <em>
+                          ({DASH_TEXT.logChoicePrefix}
+                          {h.choice})
+                        </em>
+                      </>
+                    ) : null}
                   </>
-                ) : null}
+                )}
               </span>
             </li>
           ))}

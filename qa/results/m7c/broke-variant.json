@@ -1,0 +1,29 @@
+{
+ "past": {
+  "cards": 1991,
+  "broke": 0,
+  "partner": 728,
+  "def": 1263,
+  "livesWithBrokeUpFlag": 617,
+  "cardWithBrokeUpFlagOn": 0,
+  "examples": []
+ },
+ "present": {
+  "cards": 1995,
+  "broke": 0,
+  "partner": 530,
+  "def": 1465,
+  "livesWithBrokeUpFlag": 505,
+  "cardWithBrokeUpFlagOn": 0,
+  "examples": []
+ },
+ "future": {
+  "cards": 1996,
+  "broke": 0,
+  "partner": 473,
+  "def": 1523,
+  "livesWithBrokeUpFlag": 438,
+  "cardWithBrokeUpFlagOn": 0,
+  "examples": []
+ }
+}

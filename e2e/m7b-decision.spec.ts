@@ -380,7 +380,7 @@ test('나가기 확인 단계를 연 채 「다음 결정으로」로 시트가 
   await expect.poll(() => activeTestId(page)).toBe('tool-exit');
 });
 
-test('시트 끝까지 쓴 뒤 더 쓸어도 시트 뒤 대시보드는 같이 스크롤되지 않는다 — overscroll-behavior: contain (QA-003-M7b A20)', async ({ page }) => {
+test('시트 끝까지 쓴 뒤 더 쓸어도 시트 뒤 대시보드는 같이 스크롤되지 않는다 — 행동으로 본다 (QA-003-M7b A20, M7c T1: 계산 스타일이 아니라 scrollY)', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await page.goto('/');
   const state = await findCardState(page, 'school-tutoring');
@@ -407,11 +407,10 @@ test('시트 끝까지 쓴 뒤 더 쓸어도 시트 뒤 대시보드는 같이 �
     }
     return page.evaluate(() => window.scrollY);
   };
-  // 규칙대로(contain): 시트가 끝에 닿은 뒤 더 쓸어도 문서는 그대로다
+  // 행동 단언: 시트가 끝에 닿은 뒤 더 쓸어도 문서는 그대로다(연쇄는 contain이, 문서 스크롤 자체는 html.sheet-open 잠금이 막는다 — e2e/m7c-scroll-lock.spec.ts가 (a)~(h)로 더 본다)
   expect(await wheelPastEnd(), '시트 끝 이후 문서 scrollY 불변').toBe(0);
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector('[role="dialog"]')!).overscrollBehaviorY)).toBe('contain');
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.overlay')!).overscrollBehaviorY)).toBe('contain');
-  // 대조(시험이 실제로 잡는다): 규칙을 풀면(auto) 같은 동작이 문서를 끌고 간다
-  await page.addStyleTag({ content: '.sheet, .overlay { overscroll-behavior: auto !important; }' });
+  expect(await page.evaluate(() => document.documentElement.classList.contains('sheet-open')), '시트가 떠 있는 동안 문서 잠금 클래스').toBe(true);
+  // 대조(시험이 실제로 잡는다): 연쇄 차단과 문서 잠금을 모두 풀면 같은 동작이 문서를 끌고 간다
+  await page.addStyleTag({ content: '.sheet, .overlay { overscroll-behavior: auto !important; } html.sheet-open { overflow: visible !important; padding-right: 0 !important; }' });
   expect(await wheelPastEnd(), '규칙을 풀면 연쇄 스크롤이 일어난다').toBeGreaterThan(0);
 });

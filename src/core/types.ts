@@ -151,8 +151,11 @@ export interface Effects {
   clearFlags?: string[];
 }
 
-/** 생애 연표 항목의 종류: stage=출생·단계 진입, event=서술 이벤트, choice=선택지 이벤트(선택 내용 포함), death=사망 */
-export const HISTORY_KINDS = ['stage', 'event', 'choice', 'death'] as const;
+/**
+ * 생애 연표 항목의 종류: stage=출생·단계 진입, event=서술 이벤트, choice=선택지 이벤트(선택 내용 포함), death=사망,
+ * note=사용자가 쓴 기록(「생각 남기기」, SPEC-003 M7c — `title`은 주제, `text`는 **사용자 글**, `eventId`는 카드 id 또는 `note-manual`). note 행의 글만 게임이 만든 글이 아니라서 저장 검증이 다르다(core/storage.ts).
+ */
+export const HISTORY_KINDS = ['stage', 'event', 'choice', 'death', 'note'] as const;
 export type HistoryKind = (typeof HISTORY_KINDS)[number];
 
 export interface HistoryEntry {
@@ -253,6 +256,8 @@ export interface Settings {
   bgm: BgmSettings;
   /** 화면 테마 (DB6, 설정 스키마 v3) */
   theme: ThemeChoice;
+  /** 기록 카드(「생각 남기기」 자동 카드)를 저절로 띄우는가 (FR7, 설정 스키마 v4, 기본 true). 꺼져 있으면 적격 카드를 시트 없이 소비한다. 수동 「생각 남기기」 버튼에는 영향이 없다. */
+  noteCards: boolean;
 }
 
 /** 인생 화면이 읽는 재생 설정(배속·자동 모드). Settings의 일부다. */

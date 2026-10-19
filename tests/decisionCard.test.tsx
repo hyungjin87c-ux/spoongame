@@ -29,7 +29,7 @@ function render(game: GameState, o: { auto?: boolean; folded?: boolean; epoch?: 
       exitOpen={false}
       onExitOpen={noop}
       folded={o.folded ?? false}
-      foldEpoch={o.epoch ?? 0}
+      guardEpoch={o.epoch ?? 0}
       onFold={noop}
       onReopen={noop}
       onChoose={noop}

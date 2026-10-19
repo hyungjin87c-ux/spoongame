@@ -63,7 +63,7 @@ test.describe('JS가 오기 전(번들 지연)의 data-theme', () => {
     ['저장된 테마가 system', settingsEnvelope({ speed: 1, autoMode: false, theme: 'system' })],
     ['저장이 없음', null],
     ['깨진 JSON', '{"version":3,"data":'],
-    ['모르는 버전(4)', JSON.stringify({ version: 4, data: { speed: 1, autoMode: false, theme: 'dark' } })],
+    ['모르는 버전(5)', JSON.stringify({ version: 5, data: { speed: 1, autoMode: false, theme: 'dark' } })],
     ['형식이 어긋난 설정(배속 3)', JSON.stringify({ version: 3, data: { speed: 3, autoMode: false, theme: 'dark' } })],
     ['theme 값이 이상함(Dark)', JSON.stringify({ version: 3, data: { speed: 1, autoMode: false, theme: 'Dark' } })],
   ] as const) {

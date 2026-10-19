@@ -53,14 +53,14 @@ for (const combo of COMBOS) {
       await openWithTheme(page, screen, combo);
       await flowFixedElements(page);
       // 입력 가드(0.4초, 과도 상태)가 모두 풀린 뒤에 잰다: 가드만 닫힌 버튼(aria-disabled이면서 data-unavailable가 아닌 것)은 흐린 채라 지금 재면 안 된다.
-      // 호출자가 넘긴 **지속 비활성**(자동 모드 내내인 「다음 결정으로」·준비 중인 「생각 남기기」)은 data-unavailable로 구분되며 면제하지 않고 4.5:1로 잰다 (R-337, design-system.md 2절)
+      // 호출자가 넘긴 **지속 비활성**(자동 모드 내내인 「다음 결정으로」)은 data-unavailable로 구분되며 면제하지 않고 4.5:1로 잰다 (R-337, design-system.md 2절)
       await expect(page.locator('[aria-disabled="true"]:not([data-unavailable="true"])'), '입력 가드가 풀린 뒤').toHaveCount(0);
       const report = await measureRenderedContrast(page, { min: 4.5 });
       expect(report.low, `가장 낮은 대비 ${report.min.toFixed(2)}:1`).toEqual([]);
       expect(report.boxes, '잰 색 바탕 상자 수(공허 통과 방지)').toBeGreaterThan(screen === 'error' ? 0 : 2);
       expect(report.texts, '잰 글자 수').toBeGreaterThan(screen === 'error' ? 0 : 8);
-      // 지속 비활성 버튼이 이 화면에 있으면 실제로 쟀다(면제 없이): 「생각 남기기」는 모든 대시보드 상태에 있다
-      if (isDashScreen(screen)) expect(report.measured.some((m) => m.startsWith('button.btn#tool-note|')), '비활성 「생각 남기기」의 글자를 쟀다').toBe(true);
+      // 도구 줄의 「생각 남기기」(M7c부터 보통 버튼)는 모든 대시보드 상태에 있고 실제로 쟀다
+      if (isDashScreen(screen)) expect(report.measured.some((m) => m.startsWith('button.btn#tool-note|')), '「생각 남기기」의 글자를 쟀다').toBe(true);
       testInfo.annotations.push({ type: '대비', description: `${report.boxes}상자 ${report.texts}글자 최저 ${report.min.toFixed(2)}:1` });
     });
   }

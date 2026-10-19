@@ -6,6 +6,8 @@
     <title>수저 게임</title>
     <meta name="description" content="태어난 집에 따라 달라지는, 한국인의 한 번의 인생을 살아 보는 시뮬레이션 게임" />
     <meta name="application-name" content="수저 게임" />
+    <!-- iOS Safari가 글 속 숫자열·날짜·주소를 눌러지는 링크로 바꾸지 않게(SPEC-003 M7c D7·D-78 — 기록 글 영역에 <a> 0). 실기기 확인은 형진 님 한 판(M9) -->
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
     <meta name="apple-mobile-web-app-title" content="수저 게임" />
     <!-- 모든 화면이 시스템 설정(밝게/어둡게)을 따른다(src/styles/tokens.css). 주소 표시줄 색도 같은 바탕색을 쓴다.
          대시보드의 「다크 모드」 버튼으로 수동 선택(라이트·다크)을 하면 src/ui/theme.ts가 아래 메타들과 <html data-theme>를 그 선택으로 바꾸고, 시스템으로 돌아가면 이 원래 값으로 되돌린다(SPEC-003 DB6). -->
@@ -20,7 +22,7 @@
         try {
           var s = JSON.parse(localStorage.getItem('suzeo-game:settings'));
           var d = s && s.data;
-          if (d && [1, 2, 3].indexOf(s.version) >= 0 && [1, 2, 4, 8].indexOf(d.speed) >= 0 && typeof d.autoMode === 'boolean' && (d.theme === 'light' || d.theme === 'dark')) {
+          if (d && [1, 2, 3, 4].indexOf(s.version) >= 0 && [1, 2, 4, 8].indexOf(d.speed) >= 0 && typeof d.autoMode === 'boolean' && (d.theme === 'light' || d.theme === 'dark')) {
             document.documentElement.setAttribute('data-theme', d.theme);
           }
         } catch (e) {}

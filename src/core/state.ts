@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lifeLength: DEFAULT_LIFE_LENGTH,
   bgm: { ...DEFAULT_BGM },
   theme: 'system',
+  noteCards: true,
 };
 
 /** 새 게임의 초기 상태. 시드는 주입한다(테스트·재현용). */

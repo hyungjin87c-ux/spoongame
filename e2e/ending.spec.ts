@@ -430,7 +430,7 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   expect(fresh.flags).toEqual([]);
   expect(JSON.stringify(fresh)).not.toContain(ended.character!.name);
   // 설정은 그대로. M4: 설정 봉투 v3에 BGM(꺼짐·볼륨 30)과 테마(시스템)가 더해져 기본값이 함께 저장된다 — 값은 바뀌지 않는다.
-  expect(await readSettings(page)).toEqual({ ...SETTINGS_CHOSEN, bgm: { on: false, volume: 30 }, theme: 'system' });
+  expect(await readSettings(page)).toEqual({ ...SETTINGS_CHOSEN, bgm: { on: false, volume: 30 }, theme: 'system', noteCards: false }); // 주입 봉투는 e2e 기본(기록 카드 꺼짐)이다 — 앱 기본이 아니다
 
   // 새로고침해도 첫 화면에서 이어진다 (엔딩이 되살아나지 않는다)
   await page.reload();

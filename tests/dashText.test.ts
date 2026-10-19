@@ -82,9 +82,10 @@ describe('상태 도움말과 자산 (R-333 → M5 2b)', () => {
   });
 });
 
-describe('생각 남기기 자리 (R-326)', () => {
-  it('눌러서 안내를 띄우던 문구는 없고, 눈에 보이는 표식은 「준비 중」이다 (첫 화면 카드 「약 1시간」과 같은 낱말)', () => {
-    expect(DASH_TEXT.toolSoon).toBe('준비 중');
+describe('생각 남기기 도구 (R-326 → M7c D-75)', () => {
+  it('M7c부터 보통 버튼이라 「준비 중」 표식 상수(toolSoon)와 눌러서 안내를 띄우던 문구가 없다. 버튼 이름은 「생각 남기기」', () => {
+    expect(Object.keys(DASH_TEXT)).not.toContain('toolSoon');
     expect(Object.keys(DASH_TEXT)).not.toContain('noteSoon');
+    expect(DASH_TEXT.toolNote).toBe('생각 남기기');
   });
 });

@@ -15,7 +15,11 @@ import {
   type Gender,
   type LooksTier,
 } from '../src/assets/faces/faceLayers';
+import { ERA_BANNED_WORDS } from '../src/core/eventLint';
 import { REBIRTH_NOTE } from '../src/data/endingText';
+import { NOTE_TEXT } from '../src/data/noteSheetText';
+import { NOTE_CARDS, NOTE_MANUAL } from '../src/data/noteCards';
+import citationsJson from '../src/data/citations.json';
 import { PAIRS, checkTheme, contrastRatio, cvdRowSums, darkMismatch, deltaE2000, deltaE2000Lab, hueDistance, hueOf, lightness, luminance, parseHex, readThemeBlocks, simulateCvd, themeTokens } from '../scripts/checkContrastLib';
 import { islandMetrics, pathPoints, spoonPath, symbolA } from '../scripts/design/brandSymbols.mjs';
 
@@ -38,6 +42,10 @@ const tokensCss = await readText('../src/styles/tokens.css');
 const dsCss = await readText('../docs/design/mockups/ds.css');
 const economyMockHtml = await readText('../docs/design/mockups/economy-m5.html');
 const endingMockHtml = await readText('../docs/design/mockups/ending.html');
+const noteMockHtml = await readText('../docs/design/mockups/note.html');
+const noteRowsMockHtml = await readText('../docs/design/mockups/note-rows.html');
+/** 구현 CSS는 읽기만 한다(R-403 ① — 시안 ds.css의 .overlay·.sheet 선언이 구현과 같은지 본다) */
+const dashCssImpl = await readText('../src/styles/dash.css');
 
 const TIERS: LooksTier[] = [1, 2, 3, 4, 5];
 const GENDERS: Gender[] = ['female', 'male'];
@@ -621,9 +629,10 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
     const mockups = import.meta.glob('../docs/design/mockups/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
     // 설명판(components·spoon-sizes·symbols·faces)과 수저가 나오지 않는 화면 시안 — 밀린·오류 화면(system — 공통 헤더 + 카드 하나, 2026-10-17 M4 착수 정리),
     // M5 경제 모델 시안(economy-m5 — 선택지 영향 줄·자산 카드·엔딩 최종 순자산 줄, 2026-10-17 designer; 「자산 현황」에는 칩을 두지 않는다는 규칙 그대로)은 제외하고 아이콘이 정말 없음을 따로 단언한다
-    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5)\.html$/.test(n));
-    expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장').toBe(12);
-    for (const bare of ['system', 'economy-m5']) {
+    // M7c 「나의 기록」 줄 표본(note-rows — 인생 기록 카드 + 엔딩 연표 조각, 2026-10-19 designer)도 수저가 나오지 않는 장이라 같은 방식으로 제외하고 아이콘 없음을 단언한다
+    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5|note-rows)\.html$/.test(n));
+    expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장(M7c의 note-rows는 수저 없는 표본 장이라 제외)').toBe(12);
+    for (const bare of ['system', 'economy-m5', 'note-rows']) {
       expect(mockups[Object.keys(mockups).find((n) => n.endsWith(`/${bare}.html`)) ?? ''] ?? '', `${bare}.html: 시안이 있고 수저 아이콘 없음`).not.toMatch(/<svg class="spoon/);
       expect(Object.keys(mockups).some((n) => n.endsWith(`/${bare}.html`)), `${bare}.html 존재`).toBe(true);
     }
@@ -1015,7 +1024,8 @@ describe('M7b 중대 결정 카드 계약 (designer 산출물 사이의 일치)'
     expect(css).toContain('.col--center { display: contents; }');
     expect(css).toContain('.decision--inline, .fold { order: -1; }');
     expect(css).toContain('.decision--inline, .fold { border-color: CanvasText; }');
-    expect(css).toMatch(/\.sheet \{[^}]*max-height: 94dvh; overflow: auto; scroll-padding: var\(--sp-3\)/);
+    // R-403 ①(M7c 선행): 구현 dash.css와 같은 두 선언 — overflow: auto 다음에 overscroll-behavior: contain(QA-003-M7b A20)
+    expect(css).toMatch(/\.sheet \{[^}]*max-height: 94dvh; overflow: auto; overscroll-behavior: contain; scroll-padding: var\(--sp-3\)/);
     expect(css).toMatch(/\.log__jump \{[^}]*overflow-wrap: normal/);
     expect(css).toMatch(/\.decision__hint, \.decision__auto \{ font-size: var\(--fs-sm\); color: var\(--c-text-2\); \}/);
     for (const sel of ['.decision__title', '.fold', '.cite__kind', '.cite__src', '.decision--inline']) {
@@ -1033,9 +1043,318 @@ describe('M7b 중대 결정 카드 계약 (designer 산출물 사이의 일치)'
     // developer 1·2단계 반영 뒤 지운 흉내 블록(문구 상수·출처 줄·머리말)은 다시 생기지 않는다
     expect(generator).not.toMatch(/\bM7B_TEXT\b|function formatSourceLine|function citeText|function sourceWho|function authorSurnames|citationId:/);
     expect(generator).not.toContain('마음이 가는 사람이 생겼습니다'); // M1의 손글 카드 삭제
-    for (const html of [decisionAdult, decisionInfant]) expect(html).not.toContain('(시안용 문구)'); // 자리표시 인용 0(M7c note.html은 아직 자리표시)
+    for (const html of [decisionAdult, decisionInfant, noteMockHtml]) expect(html).not.toContain('(시안용 문구)'); // 자리표시 인용 0(M7c note.html도 2026-10-19부터 실제 c-037)
     const shooter = await readText('../scripts/design/shootMockups.mjs');
     for (const name of ["'decision-infant'", "'decision-infant-kinder'", "'decision-infant-auto'", "'decision-adult-stat'", "'decision-collapsed'", "'decision-auto'", "'decision-auto-collapsed'", "'components-cite'"]) expect(shooter, name).toContain(name);
     expect(shooter).not.toMatch(/decision-infant-long|auto-long/);
+  });
+});
+
+/**
+ * M7c 자유 기록 「생각 남기기」 시트 계약 (SPEC-003 FR1~FR9 · content-M7c 1-2·5·6절 · REV-003-M7b-3 R-403, designer 2026-10-19 — copy.md 7절 ↔ 구현 상수(noteSheetText.ts·notes.json) ↔ 시안 note.html·note-rows.html ↔ ds.css).
+ * developer UI 단계가 copy.md 7-1의 질문을 notes.json에, 7-2의 문구를 `NOTE_TEXT`에 그대로 넣고 ds.css 블록을 dash.css로 옮겼다(2026-10-19). 여기서는 designer 산출물과 구현 상수가 서로 어긋나지 않았는지와 질문 문안의 안전 기준(lint)만 본다.
+ * 생성기의 선행 임시 블록은 developer 반영 뒤 import로 되돌렸다(R-191, 2026-10-19 후속) — 「임시 블록」 단언은 「import」 단언이 됐다(M7b·M7e와 같은 수순).
+ */
+describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산출물 사이의 일치)', () => {
+  const section = copyMd.slice(copyMd.indexOf('## 7. M7c 자유 기록'));
+  const stateOf = (html: string, state: string | null): string => {
+    if (state === null) return html.slice(html.indexOf('id="mock-root"'), html.indexOf('<template id="state-'));
+    const at = html.indexOf(`<template id="state-${state}">`);
+    expect(at, `상태 ${state}`).toBeGreaterThan(0);
+    return html.slice(at, html.indexOf('</template>', at));
+  };
+  const QUESTIONS = [...section.matchAll(/\*\*([^*]*\{이름\}[^*]*\?)\*\*/g)].map((m) => m[1]);
+  const COPY = {
+    hint: '실명·연락처 같은 개인정보는 적지 마십시오. 이 기기에만 저장됩니다.',
+    inputLabel: '남길 글',
+    emptyError: '적을 말이 없다면 「마음속에 담고 살기」를 골라도 됩니다.',
+    confirmTitle: '적은 글을 지우고 넘어갈까요?',
+    confirmSub: '적은 글은 저장되지 않습니다. 돌아가면 그대로 이어 쓸 수 있습니다.',
+    confirmDiscard: '글을 지우고 담아 두기',
+    confirmBack: '돌아가서 이어 쓰기',
+    cardsOff: '저절로 뜨는 기록 카드 끄기',
+    cardsOn: '저절로 뜨는 기록 카드 켜기',
+    cardsOffNotice: '이제 기록 카드가 저절로 뜨지 않습니다. 「생각 남기기」로는 언제든 적을 수 있습니다.',
+    cardsOnNotice: '다음 기록 카드부터 다시 저절로 뜹니다.',
+    limitTitle: '이 인생에서 남길 수 있는 기록은 40개까지입니다.',
+    limitSub: '적은 글은 인생 기록과 엔딩 연표에 그대로 남습니다.',
+    status: ['20자 남았습니다.', '140자까지 적었습니다.', '140자까지 적을 수 있어 넘는 부분은 줄였습니다.', '줄은 세 줄까지 적을 수 있습니다.'],
+    // r2(2026-10-19, content-M7c 11-4 L1~L3 · D5 카드당 하나): ③ 「첫사랑의 추억」 → 「첫사랑」, ④ 「연애의 기억」 → 「마음을 나누는 일」
+    topics: ['영유아기 기억', '또래와 나', '첫사랑', '마음을 나누는 일', '아팠던 시간', '부모님의 나이듦', '중년의 인생', '지금의 생각'],
+  };
+
+  it('copy.md 7-1: 질문 7종·변형·수동 10문장(④ 이별 변형은 D2로 삭제) — 한 문장 ≤ 52자({이름} = 5자, T01), ? 한 개, 「있습니까?」/「느껴집니까?」 끝, 이름 뒤 조사는 에게·에게도·의, S1 금지 낱말·「왜/이유/때문」·감정 형용사·시대 낱말 0, ③ 기본은 전제 없는 꼴(P1)', () => {
+    expect(section.length).toBeGreaterThan(3000);
+    expect(QUESTIONS.length).toBe(10);
+    const S1 = ['자살', '자해', '목숨', '죽', '학대', '폭행', '폭력', '구타', '성폭', '성추행', '강간', '트라우마'];
+    const S2 = ['왜', '어째서', '이유', '때문'];
+    const S4 = ['행복', '기쁨', '슬픔', '외로움', '후회', '분노', '두려움', '우울', '불안'];
+    const ERA = new Set<string>([...ERA_BANNED_WORDS.past, ...ERA_BANNED_WORDS.present, ...ERA_BANNED_WORDS.future]);
+    for (const q of QUESTIONS) {
+      const filled = q.replace('{이름}', '가가가가가'); // 이름 최대 5자(한글 3~5자, T01)
+      expect(filled.length, q).toBeLessThanOrEqual(52);
+      expect((q.match(/\?/g) ?? []).length, q).toBe(1);
+      expect(q, q).toMatch(/(있습니까|느껴집니까)\?$/);
+      expect(q, `${q}: 느낌표·마침표·이모지 없음`).not.toMatch(/[!.]|[\u{1F000}-\u{1FAFF}]/u);
+      const particle = /\{이름\}(\S*?)(?:[,?]|$| )/.exec(q)![1];
+      expect(['에게', '에게도', '의'], `${q}: 조사 ${particle}`).toContain(particle);
+      for (const w of [...S1, ...S2, ...S4, ...ERA]) expect(q, `${q}: 금지 낱말 ${w}`).not.toContain(w);
+    }
+    // 초안의 「있었습니까?」 끝맺음은 7절 질문에 남지 않는다; 수동 질문의 「{이름}에게 마음에」 겹침도 없다
+    expect(QUESTIONS.some((q) => q.endsWith('있었습니까?'))).toBe(false);
+    expect(QUESTIONS.some((q) => q.includes('{이름}에게 마음에'))).toBe(false);
+    // r2: ③ 기본은 「~했던 때를 떠올려 보면」 앞절 없이 있었는지 자체를 「있습니까?」가 묻는다(R-408·CQ06, P1·P2); ④ broke_up 변형(「헤어진 뒤에…」)은 D2로 지웠다; 글자 수는 5자 셈
+    expect(QUESTIONS).toContain('처음 누군가에게 마음이 갔던 기억이 {이름}에게 있습니까?');
+    expect(QUESTIONS.some((q) => q.includes('마음이 갔던 때를 떠올려 보면'))).toBe(false);
+    expect(QUESTIONS.some((q) => q.startsWith('헤어진 뒤에'))).toBe(false);
+    expect(section).toContain('`{이름}` = **5자**로 센 값');
+    expect(section).toContain('| ③ | 첫사랑 — 기본 | **처음 누군가에게 마음이 갔던 기억이 {이름}에게 있습니까?** | 33 |');
+    for (const t of COPY.topics) expect(section, t).toContain(`**${t}**`);
+    for (const old of ['**첫사랑의 추억**', '**연애의 기억**']) expect(section, old).not.toContain(old);
+    // 7-2 ⑨ 근거는 R-411(40개면 자동 카드는 시트 없이 소비 — 안내는 「생각 남기기」 버튼으로 열 때만)
+    expect(section).toContain('**「생각 남기기」 버튼으로 열 때만** 보인다');
+    expect(section).not.toContain('자동 카드는 7장이라 이 상태에 닿지 않는다');
+  });
+
+  it('copy.md 7-2~7-6: 시트 문구 ①~⑫, 확인 단계 배치(안전한 쪽이 맨 아래), 끄기/켜기 이름(「자동」을 쓰지 않는다), 「A · B」 낭독 규칙 범위(엔딩 머리 적용), 개인정보 안내 유지가 적혀 있다', () => {
+    for (const p of [COPY.hint, `「${COPY.inputLabel}」`, `「${COPY.emptyError}」`, `「${COPY.confirmTitle}」`, `「${COPY.confirmSub}」`, `「${COPY.confirmDiscard}」`, `「${COPY.confirmBack}」`, `「${COPY.cardsOff}」`, `「${COPY.cardsOn}」`, `「${COPY.cardsOffNotice}」`, `「${COPY.cardsOnNotice}」`, `「${COPY.limitTitle}」`, `「${COPY.limitSub}」`, ...COPY.status.map((s) => `「${s}」`), 'aria-labelledby="nc-kind nc-title"', '「{n}자 입력, 140자까지」', '맨 아래 **「돌아가서 이어 쓰기」**(기본·먼저 포커스)', '`FitPair hideSeparator`', '엔딩 머리 두 줄', '판단: **적용한다.**', 'data-user-text', '`word-break: normal`', '`scrollbar-gutter: stable`은 쓰지 않는다', 'min(340px, 100dvh)']) {
+      expect(section, p).toContain(p);
+    }
+    // 끄기/켜기 이름과 알림에 「자동」이 없다(「자동 모드」와 혼동 방지) — 이유를 적은 자리에는 있을 수 있으므로 문구 글자만 본다. FR7 원문 낱말 「띄우」도 쓰지 않는다
+    for (const s of [COPY.cardsOff, COPY.cardsOn, COPY.cardsOffNotice, COPY.cardsOnNotice]) {
+      expect(s).not.toContain('자동');
+      expect(s).not.toContain('띄우');
+    }
+    expect(copyMd).toContain(REBIRTH_NOTE);
+  });
+
+  it('구현 상수가 copy.md 7절과 같다 — notes.json 질문 10문장(카드 7 + 변형 2 + 수동 1, r2 D2·D-87)·라벨 주제 8, NOTE_TEXT 시트 문구·알림 네 문장', () => {
+    const prompts = [...NOTE_CARDS.flatMap((c) => [c.prompt, ...(c.variants ?? []).map((v) => v.prompt)]), NOTE_MANUAL.prompt];
+    expect(prompts.length).toBe(10);
+    expect(new Set(prompts).size).toBe(10);
+    for (const p of prompts) expect(QUESTIONS, p).toContain(p);
+    expect([...NOTE_CARDS.map((c) => c.topic), NOTE_MANUAL.topic]).toEqual(COPY.topics);
+    const T = NOTE_TEXT;
+    expect([T.hint, T.inputLabel, T.emptyError, T.confirmTitle, T.confirmSub, T.confirmDiscard, T.confirmBack, T.cardsOff, T.cardsOn, T.cardsOffNotice, T.cardsOnNotice, T.limitTitle, T.limitSub]).toEqual([
+      COPY.hint,
+      COPY.inputLabel,
+      COPY.emptyError,
+      COPY.confirmTitle,
+      COPY.confirmSub,
+      COPY.confirmDiscard,
+      COPY.confirmBack,
+      COPY.cardsOff,
+      COPY.cardsOn,
+      COPY.cardsOffNotice,
+      COPY.cardsOnNotice,
+      COPY.limitTitle,
+      COPY.limitSub,
+    ]);
+    expect([T.remaining(20), T.reachedMax(140), T.truncated(140), T.linesFull]).toEqual(COPY.status);
+    expect(T.kind).toBe('생각 남기기');
+    expect(T.rowLabel).toBe('나의 기록');
+    expect([T.count(34, 140), T.countSr(34, 140)]).toEqual(['34/140', '34자 입력, 140자까지']);
+    // 모든 상수 문자열이 copy.md 7절에 있다(반대 방향 — 구현에만 있는 문장 0)
+    for (const s of Object.values(T)) if (typeof s === 'string') expect(section, s).toContain(s);
+  });
+
+  it('생성기는 임시 문구 블록 없이 구현 상수(NOTE_TEXT·NOTE_CARDS·NOTE_MANUAL·fillNoteName·NOTE_LIMITS)를 읽고, ① 지난 세상 표본은 citations.json의 실제 c-037 past 머리말로 그린다 — R-191 되돌림(2026-10-19 후속)', async () => {
+    const generator = await readText('../scripts/design/buildMockups.mjs');
+    for (const imp of ["import { NOTE_TEXT } from '../../src/data/noteSheetText.ts';", "import { NOTE_CARDS, NOTE_MANUAL } from '../../src/data/noteCards.ts';", "import { fillNoteName } from '../../src/core/notes.ts';", "import { NOTE_LIMITS } from '../../src/core/noteText.ts';"]) expect(generator, imp).toContain(imp);
+    expect(generator).not.toMatch(/const NOTE_COPY\b|questions: \{|topics: \{|c37Past|eraPrefix: \{/); // 선행 때의 임시 블록·패치 사본 0
+    // 생성기 안에 시트 문구·질문의 글자 사본이 없다(표본 사용자 글 NOTE_SAMPLES와 시안 표식만 한글 문자열이다)
+    for (const s of [COPY.hint, COPY.emptyError, COPY.confirmTitle, COPY.cardsOff, COPY.limitTitle, ...QUESTIONS]) expect(generator, s).not.toContain(s);
+    expect(generator).toContain("noteCardOf('note-infant-memory')");
+    expect(generator).toContain("infantCite('past')");
+    expect(generator).not.toMatch(/자동 기록 카드|\(시안용 문구\)|maxlength="140"|tool-soon|toolSoon|noteReady/); // 「준비 중」 낱말 자체는 라디오 카드 「약 1시간」 주석에 남는다
+    const c37 = (citationsJson as { citations: { id: string; eras: string[]; eraPrefix?: Record<string, string>; usedBy?: string[] }[] }).citations.find((c) => c.id === 'c-037');
+    expect(c37?.eras).toContain('past');
+    expect(c37?.eraPrefix?.past).toBe('지금의 연구로는');
+    expect(c37?.usedBy).toContain('note-infant-memory');
+    expect(NOTE_CARDS.find((c) => c.id === 'note-infant-memory')?.citation).toBe('c-037'); // ①만 인용 — 다른 카드는 noCitation
+    expect(NOTE_CARDS.filter((c) => c.citation !== undefined).length).toBe(1);
+  });
+
+  it('note.html: 9상태 — dialog 이름 두 id·머리 FitPair hideSeparator·실제 인용 c-037(①만), 입력란 속성(maxlength 140 없음·dir auto·data-user-text·autocomplete off·spellcheck false), 빈 입력·확인 단계·끄기/켜기·40개·compact·수동(인용 0), 도구 줄은 보통 버튼(「준비 중」 0)', () => {
+    for (const s of ['typing', 'empty', 'confirm', 'off', 'compact', 'manual', 'limit', 'past']) expect(noteMockHtml).toContain(`<template id="state-${s}">`);
+    const base = stateOf(noteMockHtml, null);
+    expect(base).toContain('<div class="sheet sheet--note" role="dialog" aria-modal="true" aria-labelledby="nc-kind nc-title"');
+    expect(base).toContain('<span class="sheet__kind sheet__kind--note" id="nc-kind">생각 남기기</span>');
+    expect(base).toMatch(/<span class="sheet__age"><span class="fit-pair" data-split="false" data-a="2031년" data-b="5세" data-hide-sep="true">/);
+    expect(base).toContain('2031년 <span aria-hidden="true">·</span> 5세');
+    expect(base).toMatch(/<h2 id="nc-title" class="sheet__title" tabindex="-1" style="--title-chars:\d+">다섯 살 무렵을 떠올려 보면, 이서연에게 기억나는 장면이나 느낌이 있습니까\?<\/h2>/);
+    expect(base).toContain('data-citation="c-037"><p class="cite__kind">연구</p>');
+    expect(base).toMatch(/<textarea id="note-input" class="field__input" rows="3" dir="auto" autocomplete="off" spellcheck="false" maxlength="4000" data-user-text [^>]*aria-describedby="note-hint note-count-sr"><\/textarea>/);
+    expect(base).not.toMatch(/maxlength="140"/);
+    expect(base).toContain(`<label class="sr-only" for="note-input">${COPY.inputLabel}</label>`);
+    expect(base).toContain('<span class="field__count" aria-hidden="true">0/140</span><span id="note-count-sr" class="sr-only">0자 입력, 140자까지</span>');
+    expect(base).toContain('<span class="choice__no" aria-hidden="true">1</span>적어두고 살기');
+    expect(base).toContain('<span class="choice__no" aria-hidden="true">2</span>마음속에 담고 살기');
+    expect(base).toContain(`>${COPY.cardsOff}</button>`);
+    for (const tag of ['<header class="dash-head" inert>', '<div class="toolbar" inert>', '<main class="dash" inert>', '<div class="page-end-space" inert>']) expect(base, tag).toContain(tag);
+    // 도구 줄 「생각 남기기」는 보통 버튼(구현 LifeScreen과 같은 aria-haspopup="dialog", aria-pressed 없음) — 「준비 중」 알약·지속 비활성 없음
+    expect(base).toMatch(/<button class="btn btn--tool" type="button" data-tool="note" aria-haspopup="dialog"><svg[^>]*><use href="#i-pencil"\/><\/svg><span>생각 남기기<\/span><\/button>/);
+    expect(noteMockHtml).not.toContain('준비 중');
+    expect(noteMockHtml).not.toMatch(/data-tool="note"[^>]*aria-disabled/);
+    const empty = stateOf(noteMockHtml, 'empty');
+    expect(empty).toMatch(/aria-describedby="note-hint note-count-sr note-msg" aria-invalid="true"/);
+    expect(empty).toContain(`<p id="note-msg" class="field__msg field__msg--error" role="status" aria-live="polite" data-testid="note-msg">${COPY.emptyError}</p>`);
+    const confirm = stateOf(noteMockHtml, 'confirm');
+    expect(confirm).toMatch(/<textarea[^>]* readonly>/);
+    expect(confirm).toContain(`<p id="nc-confirm-t" class="note-confirm__title" role="alert">${COPY.confirmTitle}</p><p class="note-confirm__sub">${COPY.confirmSub}</p>`);
+    expect(confirm).toMatch(new RegExp(`btn btn--secondary[^>]*>${COPY.confirmDiscard}</button><button class="btn btn--primary"[^>]*>${COPY.confirmBack}</button>`)); // 안전한 쪽이 맨 아래
+    expect(confirm).not.toContain('class="note-choices"');
+    expect(confirm).not.toContain('class="sheet__foot"');
+    const off = stateOf(noteMockHtml, 'off');
+    expect(off).toContain('<p class="sheet__notice" role="status" data-testid="note-cards-notice">');
+    expect(off).toContain(`>${COPY.cardsOn}</button>`);
+    expect(off).not.toContain(`>${COPY.cardsOff}</button>`);
+    const compact = stateOf(noteMockHtml, 'compact');
+    expect(compact).toContain('class="sheet sheet--note sheet--compact"');
+    expect(compact).toContain('style="--vv-h:min(340px, 100dvh);--vv-top:0px"');
+    expect(compact).toContain('<div class="mock-keyboard" aria-hidden="true" inert');
+    const manual = stateOf(noteMockHtml, 'manual');
+    expect(manual).toContain('지금 이서연의 마음에 남아 있는 장면이나 생각이 있습니까?');
+    expect(manual).not.toContain('class="cite"'); // 수동 시트는 인용 없음 — 빈 박스 0
+    const limit = stateOf(noteMockHtml, 'limit');
+    expect(limit).toContain('class="sheet sheet--note sheet--limit"');
+    expect(limit).toContain(`>${COPY.limitTitle}</h2><p class="sheet__sub">${COPY.limitSub}</p>`);
+    expect(limit).not.toContain('<textarea');
+    const past = stateOf(noteMockHtml, 'past');
+    expect(past).toMatch(/data-citation="c-037"><p class="cite__kind">연구<\/p><p class="cite__text" data-testid="cite-text">지금의 연구로는 /);
+    expect(past).toContain('data-a="1966년" data-b="5세"');
+    // 모든 시트 상태에서 「다음 결정으로」는 지속 비활성(선택지 대기와 같은 정지), 일시정지 버튼 이름은 그대로
+    for (const s of [null, 'typing', 'empty', 'confirm', 'off', 'compact', 'manual', 'limit', 'past']) {
+      const h = stateOf(noteMockHtml, s);
+      expect(h, `${s}: 다음 결정으로`).toMatch(/aria-disabled="true" data-unavailable="true"><svg[^>]*><use href="#i-next"\/><\/svg><span>다음 결정으로<\/span>/);
+      expect(h, `${s}: 일시정지`).toContain('<span>일시정지</span>');
+    }
+  });
+
+  it('note-rows.html·ending.html·dashboard-adult.html: 「나의 기록」 줄 = 연필 아이콘 + FitPair hideSeparator 라벨 + <bdi dir="auto" data-user-text>(Glue·<br> 없음), 표본(3줄·URL·한글 140자·히브리/아랍·그림 문자·최신 줄), 엔딩 연표 is-note가 같은 부품, 옛 라벨 「청년기 연애담」 0', async () => {
+    const rowRe = /<li class="log__row log__row--note(?: log__row--latest)?" data-kind="note"><span class="log__age">\d+세<\/span><span class="log__text"><span class="log__note-label"><svg class="icon icon--sm" aria-hidden="true" focusable="false"><use href="#i-pencil"\/><\/svg><span class="fit-pair" data-split="false" data-a="나의 기록" data-b="([^"]+)" data-hide-sep="true">[\s\S]*?<\/span><\/span><bdi class="note-text" dir="auto" data-user-text>([\s\S]*?)<\/bdi><\/span><\/li>/g;
+    const rows = [...noteRowsMockHtml.matchAll(rowRe)];
+    expect(rows.length).toBeGreaterThanOrEqual(7);
+    const topics = rows.map((m) => m[1]);
+    // r2 D-87(후속 3, 2026-10-19): 라벨 ③ 「첫사랑」·④ 「마음을 나누는 일」 — 생성기가 notes.json을 읽으므로 구현 반영 뒤 재생성한 시안과 같다
+    for (const t of ['영유아기 기억', '또래와 나', '첫사랑', '마음을 나누는 일', '지금의 생각']) expect(topics).toContain(t);
+    for (const old of ['첫사랑의 추억', '연애의 기억']) expect(topics, `옛 라벨 「${old}」 0`).not.toContain(old);
+    const texts = rows.map((m) => m[2]);
+    expect(texts.some((t) => t.split('\n').length === 3)).toBe(true); // 3줄
+    expect(texts.some((t) => t.startsWith('https://example.com/') && [...t].length === 140 && !t.includes(' '))).toBe(true); // 공백 없는 URL 140글자
+    expect(texts.some((t) => /^[가-힣]{140}$/.test(t))).toBe(true); // 띄어쓰기 없는 한글 140자
+    expect(texts.some((t) => /[֐-׿]/.test(t) && /[؀-ۿ]/.test(t))).toBe(true); // 히브리 + 아랍
+    expect(texts.some((t) => t.includes('\u{1F468}\u200D\u{1F469}\u200D\u{1F467}') && t.includes('\u{1F1F0}\u{1F1F7}') && t.includes('\u20E3'))).toBe(true); // 가족 ZWJ·깃발·키캡
+    expect(noteRowsMockHtml).toMatch(/<li class="log__row log__row--note log__row--latest" data-kind="note">/);
+    for (const html of [noteRowsMockHtml, endingMockHtml]) {
+      expect(html).toMatch(/<li class="is-note" data-kind="note"><span class="log__age">\d+세<\/span><span><span class="log__note-label">[\s\S]*?<bdi class="tl-text note-text" dir="auto" data-user-text>/);
+    }
+    // 사용자 글 안에 요소·Glue 묶음·<br>가 없다(D1·D5): bdi 안은 글자뿐
+    for (const t of texts) expect(t, '사용자 글 안의 태그').not.toMatch(/<[a-z]/);
+    for (const html of [noteRowsMockHtml, endingMockHtml, noteMockHtml, await readText('../docs/design/mockups/dashboard-adult.html')]) {
+      expect(html).not.toContain('청년기 연애담');
+      expect(html).not.toMatch(/log__note-label">[^<]*<svg[^>]*>[^<]*<use[^>]*\/><\/svg><span class="keep-phrase">나의 기록/); // 옛 Glue 라벨 0
+      expect(html).not.toMatch(/<\/span><br>/);
+    }
+    // 표본 장의 목록은 안에서 스크롤하지 않으므로 Tab 정지점이 아니다 — 대신 실제 컨트롤 「새 기록 1개 · 맨 아래로」가 있다
+    expect(noteRowsMockHtml).not.toMatch(/<div class="log__list"[^>]*tabindex/);
+    expect(noteRowsMockHtml).toContain('class="btn btn--secondary btn--sm log__jump"');
+  });
+
+  it('ds.css M7c 블록: .overlay·.sheet 첫 선언이 구현 dash.css와 같다(R-403 ①), touch-action 두 규칙(D-81)과 html.sheet-open(overflow hidden + 측정한 스크롤바 폭, scrollbar-gutter 없음)도 같다, 입력란 ≥ 16px·word-break normal·[data-user-text], compact 숨김, 확인 상자·강제 색상, 색 값 직접 적지 않음, 「준비 중」 알약 규칙 0', () => {
+    const strip = (s: string) => s.replace(/\/\*[^]*?\*\//g, '');
+    const css = strip(dsCss);
+    const impl = strip(dashCssImpl);
+    const firstRule = (text: string, sel: string) => new RegExp(`^${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'm').exec(text)?.[1].trim();
+    for (const sel of ['.overlay', '.sheet']) {
+      expect(firstRule(css, sel), `${sel} 시안`).toBeDefined();
+      expect(firstRule(css, sel), `${sel}: ds.css = dash.css`).toBe(firstRule(impl, sel));
+    }
+    expect(css).toContain('.overlay { top: var(--vv-top, 0px); bottom: auto; height: var(--vv-h, 100%); }');
+    expect(css).toContain('.sheet { max-height: min(94dvh, calc(var(--vv-h, 100dvh) - var(--sp-2))); }');
+    // D-81(2026-10-19 후속): 구현이 별도 규칙으로 더한 스크림 터치 차단·시트 안 세로 스크롤/핀치 허용 — 시안도 같은 두 줄(첫 규칙은 그대로).
+    // r2 D-90(R-405): 스크림은 none이 아니라 pinch-zoom — 크로뮴은 스크롤 상자에서 pan 비트만 되살려 none이면 시트 안 유효값이 pan-y로 줄어 핀치 확대가 막혔다. 구현 쪽 대조는 아래 「r2 구현 대조」
+    for (const rule of ['.overlay { touch-action: pinch-zoom; }', '.sheet { touch-action: pan-y pinch-zoom; }', 'html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }']) {
+      expect(css, `${rule} 시안`).toContain(rule);
+    }
+    expect(css).not.toContain('touch-action: none');
+    for (const rule of ['.sheet { touch-action: pan-y pinch-zoom; }', 'html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }']) expect(impl, `${rule} 구현`).toContain(rule);
+    // r2 D-89: 0.4초 가드 흐림은 .choice·.note-choice 모두(M4 가드 모양, G6), 지속 비활성은 가드 규칙 뒤에서 불투명도 1로 되돌린다(구현 dash.css와 같은 순서)
+    expect(css).toContain(".choice[aria-disabled='true'], .note-choice[aria-disabled='true'] { opacity: 0.55; cursor: default; }");
+    expect(css.indexOf(".choice[data-unavailable='true'] { opacity: 1; }")).toBeGreaterThan(css.indexOf(".note-choice[aria-disabled='true']"));
+    // r2 D-88(REV-003-M7c-1 관찰 1): compact에서 질문은 sticky 한 줄 — scroll-padding-top은 제목 줄 높이 + sp-2(고정 줄 아래로 포커스가 숨지 않게), 본문 간격 sp-2(K3 예산)
+    expect(css).toContain('.sheet--compact { scroll-padding-top: calc(var(--fs-md) * var(--lh-snug) + var(--sp-2)); }');
+    expect(css).toContain('.sheet--compact .sheet__title { position: sticky; top: 0; z-index: 1; background: var(--c-surface); font-size: var(--fs-md); line-height: var(--lh-snug); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }');
+    expect(css).toContain('.sheet--compact .sheet__body { padding: var(--sp-3) var(--sp-4); gap: var(--sp-2); }');
+    expect(css).not.toContain('scrollbar-gutter');
+    expect(css).not.toMatch(/\.tool-soon/); // 「생각 남기기」 「준비 중」 알약(R-326)은 M7c D-75로 구현·시안 모두 삭제
+    expect(impl).not.toMatch(/\.tool-soon/);
+    expect(css).toMatch(/\.sheet__title \{ font-size: max\(var\(--fs-lg\), min\(var\(--fs-xl\), calc\(100cqi \/ var\(--title-chars, 8\)\)\)\); \}/);
+    expect(css).toMatch(/\.sheet__body \{ container-type: inline-size; \}/);
+    expect(css).toMatch(/\.field__input \{ font-size: max\(1rem, 16px\);[^}]*unicode-bidi: isolate; word-break: normal; \}/);
+    expect(css).toMatch(/\.field__input\[aria-invalid='true'\] \{ border-color: var\(--c-down\); \}/);
+    expect(css).toMatch(/\.field__msg:empty \{ display: none; \}/);
+    expect(css).toMatch(/\.note-text, \[data-user-text\] \{ word-break: normal; overflow-wrap: anywhere; \}/);
+    expect(css).toMatch(/\.note-text \{[^}]*white-space: pre-line; unicode-bidi: isolate/);
+    expect(css).toMatch(/\.log__note-label \{ display: flex;/);
+    expect(css).toMatch(/\.log__note-label \.fit-pair \{ flex: 1 1 0; min-width: 0; \}/);
+    expect(css).toMatch(/\.sheet--compact \.cite, \.sheet--compact \.note-choice__sub \{ display: none; \}/);
+    expect(css).toMatch(/\.note-confirm__actions > \.btn, \.sheet__foot > \.btn \{ white-space: normal; word-break: keep-all; overflow-wrap: normal;/);
+    expect(css).toMatch(/\.note-choice__sub \{[^}]*padding-left: calc\(var\(--fs-sm\) \+ 12px \+ var\(--sp-3\)\)/); // 번호 원 폭에 묶인 들여쓰기(D-38과 같은 식)
+    expect(css).toContain('.note-confirm, .timeline li.is-note, .mock-keyboard { border-color: CanvasText; }');
+    expect(css).toContain(".field__input[aria-invalid='true'] { border-style: double; border-width: 4px; }");
+    expect(css).not.toMatch(/\.sheet__hint \{/); // M1의 가운데 맞춤 안내는 지웠다
+    for (const sel of ['.sheet__title', '.field__input', '.field__msg--error', '.note-confirm', '.note-text', '.log__note-label', '.sheet__notice']) {
+      const m = new RegExp(`(?:^|\\}|\\n)\\s*${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`).exec(css);
+      expect(m, sel).not.toBeNull();
+      expect(m![1], `${sel}: 색 값 직접 적지 않음`).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    }
+  });
+
+  it('r2 구현 대조(developer r2-2 · D-88·D-89·D-90 — 후속 3에서 닫힘, 2026-10-19): 구현 dash.css가 ds.css와 같은 글자로 .overlay { touch-action: pinch-zoom }(R-405)·compact 질문 줄 세 규칙·.note-choice 가드 흐림을 가진다', () => {
+    const impl = dashCssImpl.replace(/\/\*[^]*?\*\//g, '');
+    for (const rule of [
+      '.overlay { touch-action: pinch-zoom; }',
+      '.sheet--compact { scroll-padding-top: calc(var(--fs-md) * var(--lh-snug) + var(--sp-2)); }',
+      '.sheet--compact .sheet__title { position: sticky; top: 0; z-index: 1; background: var(--c-surface); font-size: var(--fs-md); line-height: var(--lh-snug); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+      '.sheet--compact .sheet__body { padding: var(--sp-3) var(--sp-4); gap: var(--sp-2); }',
+      ".note-choice[aria-disabled='true']",
+    ]) expect(impl, `${rule} 구현(dash.css) — ds.css와 같은 글자여야 한다`).toContain(rule);
+    expect(impl, 'R-405: 스크림 touch-action none 잔존 0').not.toContain('touch-action: none');
+  });
+
+  it('M7c D-75: 도구 줄이 있는 모든 시안(dashboard-*·decision-*·note·economy-m5·components)의 「생각 남기기」가 보통 버튼(aria-haspopup="dialog")이고 「준비 중」 알약·지속 비활성이 0이다', () => {
+    const mockups = import.meta.glob('../docs/design/mockups/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const withTools = Object.entries(mockups).filter(([, html]) => html.includes('data-tool="note"'));
+    expect(withTools.map(([n]) => n.replace(/.*\//, '')).sort()).toEqual(['components.html', 'dashboard-adult.html', 'dashboard-infant.html', 'decision-adult.html', 'decision-infant.html', 'economy-m5.html', 'note.html']);
+    for (const [name, html] of withTools) {
+      const buttons = [...html.matchAll(/<button class="btn btn--tool" type="button" data-tool="note"[^>]*>/g)].map((m) => m[0]);
+      expect(buttons.length, name).toBeGreaterThan(0);
+      for (const b of buttons) {
+        expect(b, name).toBe('<button class="btn btn--tool" type="button" data-tool="note" aria-haspopup="dialog">');
+      }
+      expect(html, name).not.toMatch(/class="tool-soon"/); // 알약 요소 0(컴포넌트판 설명 글에 옛 클래스 이름이 적혀 있는 것은 기록)
+      expect(html, name).not.toContain('생각 남기기 준비 중');
+    }
+    // 지속 비활성 모양(data-unavailable)의 .btn은 「다음 결정으로」(와 컴포넌트판 표본)뿐이다 — 선택지(.choice)의 지속 비활성은 M5 규칙 그대로
+    for (const [name, html] of Object.entries(mockups)) for (const m of html.matchAll(/<button class="btn[^"]*"[^>]*data-unavailable="true"[^>]*>(?:(?!<\/button>).)*?<span>([^<]+)<\/span>/g)) expect(m[1], name).toBe('다음 결정으로');
+  });
+
+  it('촬영기·감사 도구·시안 스크립트: note 상태 샷 목록·vv340 프리셋·focus 옵션, 감사 도구가 [data-user-text]를 낱말 끊김에서 뺀다, page()가 시트 열림에 스크롤바 폭을 재어 sheet-open을 걸고 입력란 포커스에 상자 전체를 보인다', async () => {
+    const shooter = await readText('../scripts/design/shootMockups.mjs');
+    for (const name of ["'note'", "'note-typing'", "'note-empty'", "'note-confirm'", "'note-off'", "'note-compact'", "'note-manual'", "'note-limit'", "'note-past'", "'note-rows'", 'vv340: { width: 360, height: 340', "focus: '#note-input'", "el: '.note-confirm', tag: 'box'", "el: '.sheet__foot', tag: 'foot'"]) expect(shooter, name).toContain(name);
+    const audit = await readText('../scripts/design/auditMockup.mjs');
+    expect(audit).toContain('[data-user-text] { visibility: hidden !important; }');
+    expect(audit).toContain('style[data-audit="skip-user-text"]');
+    // r2 D-88: 의도된 한 줄 줄임의 허용 목록은 compact 질문 h2 하나 — 두 도구가 같은 목록·세 조건으로 「줄임(허용)」을 넘침과 따로 센다(design-system 11-10 「줄임 허용」)
+    for (const tool of [audit, shooter]) {
+      expect(tool).toContain("const ELLIPSIS_ALLOWED = ['.sheet--compact .sheet__title'];");
+      expect(tool).toContain("cs.textOverflow === 'ellipsis' && cs.whiteSpace === 'nowrap' && cs.overflowX === 'hidden' && ELLIPSIS_ALLOWED.some((s) => el.matches(s))");
+    }
+    expect(shooter).toContain("const realOverflow = (list) => list.filter((p) => !p.startsWith('(줄임 허용)'));");
+    const lib = await readText('../scripts/design/mockLib.mjs');
+    expect(lib).toContain("root.style.setProperty('--scrollbar-w',Math.max(0,window.innerWidth-root.clientWidth)+'px');root.classList.add('sheet-open')");
+    expect(lib).toContain("el.matches('.sheet .field__input')");
+    expect(lib).toContain('data-hide-sep');
   });
 });

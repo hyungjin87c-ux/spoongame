@@ -1508,7 +1508,7 @@ test('이전 버전(v4) 저장은 새 게임으로 시작하고 첫 화면에 �
   expect(save.data.phase).toBe('title');
   expect(save.data.seed).not.toBe(5);
   // 설정은 유지(v1 → v3로 올라가며 새 필드는 기본값; M4: BGM은 꺼짐·볼륨 30, 테마는 시스템 설정을 따른다)
-  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system' });
+  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true });
   // 태어나면 안내가 사라지고, 새로고침해도 다시 뜨지 않는다
   await pressBegin(page);
   await expect(page.getByTestId('roulette-screen')).toBeVisible();

@@ -117,7 +117,7 @@ describe('GuardedButton: 지속 비활성 표식 data-unavailable (R-337)', () =
     expect(isButtonInert(true, false)).toBe(false);
   });
 
-  it('대시보드: 자동 모드에서는 「다음 결정으로」가, 선택지 대기 중에도 그렇고, 「생각 남기기」는 늘 표식이 있다. 켜진 자동 모드·속도·일시정지 같은 버튼에는 없다', () => {
+  it('대시보드: 자동 모드에서는 「다음 결정으로」가, 선택지 대기 중에도 그렇다(「생각 남기기」는 M7c부터 보통 버튼이라 표식이 없다). 켜진 자동 모드·속도·일시정지 같은 버튼에는 없다', () => {
     const life = startLife(5, 'present');
     const auto = renderLife(life, true);
     const tag = (html: string, id: string) => {
@@ -125,8 +125,7 @@ describe('GuardedButton: 지속 비활성 표식 data-unavailable (R-337)', () =
       return html.slice(html.lastIndexOf('<', at), html.indexOf('>', at) + 1);
     };
     expect(tag(auto, 'skip')).toContain('data-unavailable="true"');
-    expect(tag(auto, 'tool-note')).toContain('data-unavailable="true"');
-    for (const id of ['pause', 'auto', 'tool-bgm', 'tool-dark', 'tool-exit']) expect(tag(auto, id), id).not.toContain('data-unavailable');
+    for (const id of ['pause', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-exit']) expect(tag(auto, id), id).not.toContain('data-unavailable'); // 「생각 남기기」는 M7c부터 보통 버튼이다(지속 비활성 아님)
     const manual = renderLife(life, false);
     expect(tag(manual, 'skip'), '수동·선택지 없음: 「다음 결정으로」는 누를 수 있다').not.toContain('data-unavailable');
     const pending = advanceUntilDecision(startLife(5, 'present')).state;

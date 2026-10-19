@@ -91,6 +91,14 @@
 - **요청 수(대략, 이 작업 전체 합계 — 영유아 수집 포함)**: `kosis.kr` 페이지 열기 약 66회(robots 1 포함) + 화면 안 조작(시점 변경·탭·검색창) 약 70회 = **약 140회**, `www.index.go.kr` 페이지 열기 약 41회 + 화면 안 조작(검색창·표 조회) 약 15회 = **약 55회**, `www.moe.go.kr` 4회(robots 1·보도자료 3 — 2차에서 R-02 보도자료 1회 추가), `pubmed.ncbi.nlm.nih.gov` 2회, `pmc.ncbi.nlm.nih.gov` 4회(robots 3·글 1), `psycnet.apa.org` 1회(robots만). 나머지 사이트(`floor.noiseinfo.or.kr` 6·`health.kdca.go.kr` 약 11(위 표와 같다 — 사이트 검색창 조회·헛걸음 2회 포함)·`theme.archives.go.kr` 4·`www.korea.kr` 3·`www.kma.go.kr` 3·`mcee.go.kr` 3·`nip.kdca.go.kr`·`www.kdca.go.kr`·`www.law.go.kr` 각 1)는 위 영유아 표와 같다. **어느 사이트도 300회 이하**이고 차단·CAPTCHA·로그인 요구 0건, 우회 도구 0건, **파일 내려받기 0건**이다. 횟수는 도구 호출 기록에서 센 페이지 열기 수에 화면 안 조작을 어림해 보탠 대략값이며 시각·주소의 원본은 저장하지 않았다.
 - **열지 않은 곳**: `www.mohw.go.kr`(보건복지부)·`www.kicce.re.kr`(육아정책연구소)·`www.nhis.or.kr`(건강보험공단) robots 불허 사이트는 이번에도 접근하지 않았다. 보건복지부 통계(장기요양실태조사·노인실태조사)는 **KOSIS 표 화면**에서 읽었다. 공공데이터포털 API(인증키)와 KOSIS·ECOS OpenAPI는 쓰지 않았다(C4).
 
+### M7c r2(2026-10-19) 접근 기록 — c-037 초록 재열람 (R-149 규칙, content-M7c 11-3·11-12 D3)
+
+- 목적: 기록 카드 ①의 인용 c-037(Heckman 2006) 둘째 절을 「(가) …어릴 때의 투자가 이후 투자의 효과와 이어져 있다고 봅니다」로 바꾸기 전에 초록이 그 말보다 강하지도 어긋나지도 않은지 확인(마스터 조건).
+- 방법: 내장 브라우저 창(UA `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/2.37337.1 Chrome/152.0.7977.130 Safari/537.36 MSIX` — 위장 없음). 스크립트 요청 없음, 파일 내려받기 없음, 로그인·양식 제출 없음.
+- **robots.txt를 본문 요청 전 별도 단계로 확인**: `pubmed.ncbi.nlm.nih.gov` `User-agent: *` `Crawl-delay: 1`, `Disallow`는 `/api`·`/rss`·`/*/references/`·`/*/citations/`·`/*/export/`·`/*/similar/` 등이고 논문 기록 `/<pmid>/`는 불허가 아니다.
+- 요청 수: `pubmed.ncbi.nlm.nih.gov` **2회**(robots 1 → 간격 1초 이상 → 논문 기록 `/16809525/` 1). 사이트당 300회 이하.
+- 확인한 초록(영문, 두 문장): 「This paper summarizes evidence on the effects of early environments on child, adolescent, and adult achievement. Life cycle skill formation is a dynamic process in which early inputs strongly affect the productivity of later inputs.」 — 2026-10-15에 적은 요지와 같다(변경 없음).
+
 ### 1차 수집의 읽은 방법 (재현용)
 1. **보도자료 문서**: 국가데이터처 누리집 게시글의 「미리보기」가 쓰는 문서 뷰어(`/attachPreview.es?bid=<게시판>&list_no=<글번호>&seq=<첨부>` → `/synap/preview/board/<게시판>/<해시>.files/<해시>_<쪽>.xml`)의 **쪽별 텍스트층**을 읽어 줄로 이어 붙였다. 첨부 파일(pdf·hwp)을 내려받지 않았다. 글자층에 숫자가 없는 쪽(혼인·이혼 통계, 생명표, 가계금융복지조사의 대부분)은 같은 뷰어의 **쪽 이미지**를 열어 눈으로 읽었다. (이 방법은 새 규칙 5에 따라 앞으로 쓰지 않는다 — 보도자료 본문·KOSIS 표를 우선한다.)
 2. **KOSIS 통계표 화면**: 브라우저 창에서 표 화면(`https://kosis.kr/statHtml/statHtml.do?orgId=…&tblId=…`)을 열고 화면에 그려진 표의 셀 값을 읽었다. 기간은 화면의 「시점」 창에서 사람이 고르듯 골랐다. KOSIS OpenAPI(인증키)·표 내려받기는 쓰지 않았다.

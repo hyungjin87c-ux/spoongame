@@ -118,7 +118,10 @@ describe('title.css·dash.css의 opacity 규칙 잠금 (D-26, designer 제안 �
       ['`.slide`|0', '캐러셀의 보이지 않는 슬라이드(visibility: hidden과 함께) — 전환 흐림'],
       ['`.slide.is-active`|1', '캐러셀의 보이는 슬라이드(불투명도 1)'],
     ]),
-    'dash.css': new Map<string, string>([["`.choice[aria-disabled='true']`|0.55", '선택지 카드의 0.4초 입력 가드 — 과도 상태(지속 비활성이 아니다)']]),
+    'dash.css': new Map<string, string>([
+      ["`.choice[aria-disabled='true'], .note-choice[aria-disabled='true']`|0.55", '선택지 카드와 기록 시트 두 버튼의 0.4초 입력 가드 — 과도 상태(지속 비활성이 아니다). 기록 시트 버튼은 M7c r2 D-89에서 더했고, 시트가 닫힌 직후 인생 화면 컨트롤의 가드(F-1)는 .btn 규칙(title.css)이 같은 모양으로 덮는다'],
+      ["`.choice[data-unavailable='true']`|1", '지속 비활성 선택지의 불투명도를 1로 되돌린다(가드 규칙보다 뒤) — 옅은 글자 --c-text-3와 점선 테두리가 대비를 지킨다(R-337). 지금 지속 비활성 선택지는 만들지 않는 예비 규칙(M5)']
+    ]),
   } as const;
   const key = (r: { selector: string; opacity: number }) => `\`${r.selector}\`|${r.opacity}`;
 

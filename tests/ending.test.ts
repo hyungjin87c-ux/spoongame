@@ -1204,8 +1204,8 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
     const s0 = createSession(ended(), { speed: 4, autoMode: true, era: 'future', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark' });
     const s1 = sessionReducer(s0, { type: 'rebirth', seed: 5 });
     expect(s1.settings).toBe(s0.settings);
-    // M4: 설정에 BGM·테마가 더해졌고, 다시 태어나도 그대로 유지된다
-    expect(s1.settings).toEqual({ speed: 4, autoMode: true, era: 'future', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark' });
+    // M4: 설정에 BGM·테마가 더해졌고, 다시 태어나도 그대로 유지된다 (M7c: 자동 기록 카드 켬/끔 noteCards도 기본값 켜짐 그대로)
+    expect(s1.settings).toEqual({ speed: 4, autoMode: true, era: 'future', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark', noteCards: true });
     expect(s1.tick).toBeNull();
     const life = createSession(startLife(3, 'present'), { speed: 2, autoMode: false });
     expect(sessionReducer(life, { type: 'rebirth', seed: 5 })).toBe(life);

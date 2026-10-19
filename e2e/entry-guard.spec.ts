@@ -37,7 +37,7 @@ const MIN_OVERLAP_PX = 4;
 const FRACTIONS = [1 / 4, 1 / 2, 3 / 4];
 const INITIAL: LifeSnapshot = { speed: '1', auto: 'false', age: '0세', hasChoice: false };
 /** 눌러도 상태가 안 바뀌는 컨트롤(이미 1배속이다): 가드가 막았는지는 landed로 보고, 대조군의 변화 기대에서는 뺀다. */
-const NO_EFFECT_CONTROLS = ['speed-1', 'tool-note']; // 「생각 남기기」는 M7c까지 선택할 수 없는 자리라 눌러도 아무 일도 없다(R-326)
+const NO_EFFECT_CONTROLS = ['speed-1']; // (M7c: 「생각 남기기」는 보통 버튼이라 눌리면 기록 시트가 열린다 — 변화로 센다)
 /**
  * 뷰포트당 확인할 컨트롤 교집합(너무 오래 걸리지 않게 속도 2·8배, 다음 결정으로, 자동 모드). 속도 4배는 2·8배와 같은 경로라 생략한다.
  * M4: 일시정지와 도구 줄(BGM·생각 남기기·다크 모드·의견 보내기·나가기)이 더해졌다 — 눌리면 일시정지·BGM 켬·테마 바뀜·새 탭·나가기 확인 단계가 생기므로 모두 변화로 센다(생각 남기기는 선택할 수 없는 자리라 변화가 없다 — R-326).
@@ -129,6 +129,8 @@ interface Trial {
   savedBgmOn: boolean;
   savedTheme: string;
   exitOpen: boolean;
+  /** M7c: 「생각 남기기」가 눌려 기록 시트가 열렸다 */
+  noteOpen: boolean;
   newTabs: number;
 }
 
@@ -153,6 +155,7 @@ async function readTrial(page: Page, point: Point): Promise<Trial> {
     savedBgmOn: settings.bgm.on,
     savedTheme: settings.theme,
     exitOpen: (await page.getByTestId('exit-ask').count()) > 0,
+    noteOpen: (await page.getByTestId('note-sheet').count()) > 0,
     newTabs,
   };
 }
@@ -170,6 +173,7 @@ const isChanged = (t: Trial) =>
   t.savedBgmOn ||
   t.savedTheme !== 'system' ||
   t.exitOpen ||
+  t.noteOpen ||
   t.newTabs > 0;
 
 const wasIntercepted = (t: Trial) => t.landed.some((c) => c.endsWith('(가드)'));
@@ -432,10 +436,26 @@ test('가드는 화면이 뜰 때 한 번만 걸린다: 플레이 중 배속 버
   await expect.poll(age, { timeout: 20_000 }).toBeGreaterThanOrEqual(ageBefore + 3);
   expect((await probe()).reclosed, '컨트롤이 다시 닫힌 횟수').toBe(0);
 
-  // 자동 모드는 즉시 해제된다: 켜고 끄기를 빠르게 세 번 (가드가 다시 닫혔다면 일부가 무시돼 짝이 어긋난다)
+  // 자동 모드는 즉시 해제된다: 켜고 끄기를 빠르게 세 번 (가드가 다시 닫혔다면 일부가 무시돼 짝이 어긋난다).
+  // **시계가 흐르는 판에서 하지 않는다**(M7c r3 R-413): 자동 모드를 끄는 순간 대기 중인 결정이 있으면 인라인 카드가 모달 시트로 바뀌어 「자동 모드」 버튼 자리를 덮고, 미리 잰 좌표의 클릭이 시트·선택지에
+  // 떨어져 클릭 짝이 어긋나는 데다(선택지를 고르면 F-1의 가드가 컨트롤을 다시 닫는다) 시험은 그런 일이 있었는지도 모른다. 부하 아래 첫 전체 실행에서 실패한 단언은 이 단계의 `aria-pressed`가 `false`여야 한다는 줄이었고
+  // (받은 값 true, 14번 재시도 — `reclosed`를 세는 줄까지 가지 못했다) 클릭 몇 개가 자동 모드 버튼에 닿지 못한 모습이다. 그래서 같은 세 번 클릭을 가려진 탭(시계 정지)의 새 판 — 대기 카드가 없고 컨트롤이 움직이지 않는 상태 —에서 하고,
+  // 클릭마다 그 자리의 요소가 정말 「자동 모드」 버튼인지 먼저 단언한다.
+  await startPageHidden(page);
+  await injectSave(page, lifeState(KNOWN_SEED), '/', { speed: 1, autoMode: true });
+  await expect(page.getByTestId('life-screen')).toBeVisible();
   const auto = page.getByTestId('auto');
+  await expect(auto).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(async () => (await probe()).opened, { message: '화면 진입 가드가 풀린 뒤' }).toBe(true);
+  await expect(page.getByTestId('choice-panel'), '대기 중인 결정이 없다').toHaveCount(0);
   const box = (await auto.boundingBox())!;
-  for (let i = 0; i < 3; i++) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  for (let i = 1; i <= 3; i++) {
+    const hit = await page.evaluate(([x, y]) => (document.elementFromPoint(x, y)?.closest('button') as HTMLElement | null)?.getAttribute('data-testid') ?? null, [cx, cy] as const);
+    expect(hit, `클릭 ${i}: 그 자리의 요소는 「자동 모드」 버튼`).toBe('auto');
+    await page.mouse.click(cx, cy);
+  }
   await expect(auto).toHaveAttribute('aria-pressed', 'false'); // 켜짐(시작) → 꺼짐 → 켜짐 → 꺼짐
   await expect.poll(async () => (await readSettings(page)).autoMode).toBe(false);
   expect((await probe()).reclosed, '컨트롤이 다시 닫힌 횟수').toBe(0);

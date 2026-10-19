@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, type BgmSettings, type EventPool, type Settings, type Speed, type ThemeChoice } from '../core';
+import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { EVENT_POOL } from '../data/events';
 import { DASH_TEXT } from '../data/dashText';
@@ -10,8 +10,10 @@ import { GuardedButton } from '../ui/GuardedButton';
 import { AssetsCard, FamilyCard, PeersNowCard, ProfileCard, StatusCard, type LifeGame } from '../ui/dash/Cards';
 import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, useDecisionModel } from '../ui/dash/DecisionCard';
 import { LogCard } from '../ui/dash/LogCard';
+import { NoteSheet } from '../ui/dash/NoteSheet';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
 import { useStickyHead } from '../ui/headRelease';
+import { decideNoteFocus, type NoteFocusVia } from '../ui/noteFocus';
 import { isDarkApplied, useSystemDark } from '../ui/theme';
 import { useBottomBar, useScrollTopOnMount, useThemeSurface } from '../ui/useBottomBar';
 import { useLifeFocus } from '../ui/useFocus';
@@ -32,10 +34,25 @@ import { YearRow } from '../ui/YearBar';
 
 /** 하단 컨트롤(진행 줄)과 도구 줄의 입력 가드 키. 상수라서 가드는 이 화면이 새로 뜰 때(마운트)만 걸리고, 플레이 중 배속을 누르거나 나이가 오를 때 다시 닫히지 않는다(R-035). */
 export const CONTROLS_GUARD_KEY = 'life-controls';
+
+/** 진행 줄·도구 줄의 입력 가드 키 — 화면이 뜰 때 + 가드 세대가 오를 때(접기·다시 열기·시트 닫힘, M7c r2 F-1)마다 달라진다 */
+export function controlsGuardKey(guardEpoch: number): string {
+  return `${CONTROLS_GUARD_KEY}:${guardEpoch}`;
+}
 /** 나가기 확인 단계의 두 버튼이 같은 순간에 뜨므로 한 키를 같이 쓴다 */
 const EXIT_GUARD_KEY = 'life-exit';
 
 export type { LifeGame };
+
+/**
+ * 지금 열려 있는 기록 시트 (App이 갖는다 — `noteOpen`, M7c). 저절로 뜬 카드(`via: 'auto'`, `card`가 있다)이거나 도구 줄 「생각 남기기」로 연 수동 기록(`via: 'manual'`, `card: null`).
+ * `token`은 시트를 새로 열 때마다 오르는 값으로 입력 가드 키에 들어간다.
+ */
+export interface NoteSheetState {
+  via: NoteFocusVia;
+  card: NoteCardDef | null;
+  token: number;
+}
 
 interface Props {
   game: LifeGame;
@@ -48,10 +65,23 @@ interface Props {
   onExitOpen: (open: boolean) => void;
   /** 대기 중인 중대 결정 카드가 접혀 있는가 (App이 갖는다 — M7c 카드가 읽는다, U10). 기본 false(열림) */
   folded?: boolean;
-  /** 접기·다시 열기 횟수. 입력 가드 키에 들어가 접기·다시 열기 직후 400ms 동안 같은 자리의 버튼이 눌리지 않게 한다(U9). 기본 0 */
-  foldEpoch?: number;
+  /**
+   * 입력 가드 세대 — 접기·다시 열기 횟수에 사용자가 시트(기록·결정)를 닫은 횟수를 더한 값(App이 갖는다). 입력 가드 키에 들어가, 이 값이 오르는 **그 렌더에서** 진행 줄·도구 줄·결정 카드·접힌 띠의 모든 가드 버튼이
+   * 다시 400ms 닫힌다(U9; M7c r2 F-1). 접기·다시 열기·시트 닫힘 직후 같은 자리에 드러나는 컨트롤이 더블탭의 둘째 탭에 눌리지 않게 한다. 기본 0
+   */
+  guardEpoch?: number;
   onFold?: () => void;
   onReopen?: () => void;
+  /** 열려 있는 기록 시트 (없으면 null) — 떠 있는 동안 바깥은 inert, 시계·자동 선택은 App이 멈춘다 */
+  noteSheet?: NoteSheetState | null;
+  /** 도구 줄 「생각 남기기」 */
+  onOpenNote?: () => void;
+  /** 시트의 「1. 적어두고 살기」 (입력란의 값 — 정리 전) */
+  onNoteSave?: (text: string) => void;
+  /** 시트의 「2. 마음속에 담고 살기」·40개 안내의 「닫기」 */
+  onNoteDismiss?: () => void;
+  /** 시트의 「저절로 뜨는 기록 카드 끄기/켜기」 */
+  onNoteCards?: (on: boolean) => void;
   onChoose: (key: string, choiceId: string) => void;
   onSkip: () => void;
   onSpeed: (speed: Speed) => void;
@@ -165,8 +195,10 @@ interface ToolsProps {
   dark: boolean;
   feedbackUrl: string | null;
   exitButtonRef: RefObject<HTMLButtonElement>;
+  noteButtonRef: RefObject<HTMLButtonElement>;
   onBgm: Props['onBgm'];
   onDark: () => void;
+  onNote: () => void;
   onExitOpen: () => void;
 }
 
@@ -174,7 +206,7 @@ interface ToolsProps {
  * 도구 줄 (DB3): BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기. 켜짐 상태(BGM·다크 모드)는 aria-pressed + 색 반전·아래 막대 + 아이콘 교체 + 읽기 전용 「켜짐」이 함께 알린다(R-136②).
  * 「다크 모드」의 켜짐 = 지금 화면에 다크 테마가 적용된 상태(시스템 설정을 따르는 중이든 수동 선택이든). 누르면 반대 테마를 수동 선택으로 저장한다(DB6).
  */
-function LifeTools({ guardKey, settings, dark, feedbackUrl, exitButtonRef, onBgm, onDark, onExitOpen }: ToolsProps) {
+function LifeTools({ guardKey, settings, dark, feedbackUrl, exitButtonRef, noteButtonRef, onBgm, onDark, onNote, onExitOpen }: ToolsProps) {
   return (
     <div className="controls__tools" role="group" aria-label={DASH_TEXT.toolsGroup} data-testid="tools">
       <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-pressed={settings.bgm.on} data-testid="tool-bgm" onClick={() => onBgm({ on: !settings.bgm.on })}>
@@ -182,11 +214,10 @@ function LifeTools({ guardKey, settings, dark, feedbackUrl, exitButtonRef, onBgm
         <span>{DASH_TEXT.toolBgm}</span>
         <span className="sr-only">{settings.bgm.on ? DASH_TEXT.toolOn : ''}</span>
       </GuardedButton>
-      {/* 생각 남기기: M7c까지 버튼 자리만 — 선택할 수 없고(aria-disabled, 누르면 아무 일도 없다) 점선·옅은 글자로 그렇게 보이며(GuardedButton의 data-unavailable), 눈에 보이는 「준비 중」이 접근 가능한 이름에 든다(R-326) */}
-      <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-disabled={true} data-testid="tool-note">
+      {/* 생각 남기기(M7c, D-75): 보통 버튼 — 누르면 기록 시트가 열린다(모달이라 `aria-haspopup="dialog"`). 결정 시트가 열려 있는 동안은 도구 줄 전체가 inert라 누를 수 없고, 접힌 띠·일시정지·자동 모드에서는 연다(content-M7c 5-4절) */}
+      <GuardedButton ref={noteButtonRef} guardKey={guardKey} className="btn btn--tool" aria-haspopup="dialog" data-testid="tool-note" onClick={onNote}>
         <Icon name="i-pencil" />
-        <span>{DASH_TEXT.toolNote}</span>{' '}
-        <span className="tool-soon">{DASH_TEXT.toolSoon}</span>
+        <span>{DASH_TEXT.toolNote}</span>
       </GuardedButton>
       <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-pressed={dark} data-testid="tool-dark" onClick={onDark}>
         <Icon name={dark ? 'i-sun' : 'i-moon'} />
@@ -207,7 +238,7 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen, onExitOpen, folded = false, foldEpoch = 0, onFold = NOOP, onReopen = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headRef = useRef<HTMLElement>(null);
@@ -215,6 +246,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
   const foldOpenRef = useRef<HTMLButtonElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
   const exitButtonRef = useRef<HTMLButtonElement>(null);
+  const noteButtonRef = useRef<HTMLButtonElement>(null);
   const exitCancelRef = useRef<HTMLButtonElement>(null);
   const exitBoxRef = useRef<HTMLDivElement>(null);
   const exitTitleRef = useRef<HTMLParagraphElement>(null);
@@ -235,8 +267,10 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
   const { noteSkip } = useLifeFocus({ pendingKey: game.pending?.key ?? null, autoMode: settings.autoMode, folded: isFolded, titleRef: headingRef, choiceTitleRef, foldOpenRef, controlsRef });
   const fast = settings.speed >= 4 || settings.autoMode;
   // 진행 줄·도구 줄의 입력 가드: 화면이 뜰 때 + 카드를 접거나 다시 연 직후(U9). 접기 더블탭의 둘째 입력이 시트가 사라진 자리의 컨트롤에 떨어지지 않게 한다
-  const controlsGuard = `${CONTROLS_GUARD_KEY}:${foldEpoch}`;
-  const inert = sheetOpen ? INERT : {};
+  const controlsGuard = controlsGuardKey(guardEpoch);
+  // 기록 시트도 모달이다(M7c): 열려 있는 동안 바깥 전부 inert. 결정 시트와 동시에 열리는 일은 없다 — 기록 카드는 해의 첫머리(결정 대기 없음), 수동 기록은 결정 시트가 열린 동안 도구 줄이 inert라 누를 수 없다(content-M7c 5-4절)
+  const noteOpen = noteSheet !== null;
+  const inert = sheetOpen || noteOpen ? INERT : {};
   const feedbackUrl = buildFeedbackUrl(feedbackFieldsOf(game, repoUrl, buildLabel));
 
   // 나가기 확인 단계: 열리면 안전한 쪽(돌아가기)으로 포커스를 옮기고, Esc로 닫으면 「나가기」 도구로 포커스를 돌려준다(첫 화면의 확인 단계와 같은 방식, R-212).
@@ -245,7 +279,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
   // 모달 시트가 위에 있으면 Esc는 시트(카드 접기)의 몫이다 — 나가기 확인이 열린 채 「다음 결정으로」로 시트가 뜬 뒤 Esc 한 번이 두 리스너를 함께 돌려 확인 단계 닫기와 카드 접기가 같이 일어나던 것을 막는다(REV-003-M7b-1 관찰 3).
   // 맨 위 하나만 처리한다: 시트가 접히고 나면 다음 Esc가 나가기 확인을 닫는다. 이 효과가 시트 여닫음에 다시 돌지 않도록(포커스를 다시 가져가지 않도록) 값은 ref로 읽는다.
   const sheetOpenRef = useRef(false);
-  sheetOpenRef.current = sheetOpen;
+  sheetOpenRef.current = sheetOpen || noteOpen; // 기록 시트의 Esc(= 2번)도 시트의 몫이다
   useEffect(() => {
     if (!exitOpen) {
       if (returnFocus.current) {
@@ -264,6 +298,21 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [exitOpen, onExitOpen]);
+
+  // 기록 시트가 닫힌 뒤의 포커스는 여는 길이 정한다(D-76, content-M7c 5-9 `decideNoteFocus`): 저절로 뜬 카드 → 인생 화면 제목(스크롤 그대로), 수동 → 도구 줄 「생각 남기기」 버튼
+  const lastNoteVia = useRef<NoteFocusVia | null>(null);
+  const noteVia = noteSheet === null ? null : noteSheet.via;
+  useEffect(() => {
+    if (noteVia !== null) {
+      lastNoteVia.current = noteVia;
+      return;
+    }
+    const via = lastNoteVia.current;
+    if (via === null) return;
+    lastNoteVia.current = null;
+    if (decideNoteFocus('closed', via) === 'lifeTitle') headingRef.current?.focus({ preventScroll: true });
+    else noteButtonRef.current?.focus({ preventScroll: true });
+  }, [noteVia]);
 
   const closeExit = () => {
     returnFocus.current = true;
@@ -314,8 +363,10 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
             dark={dark}
             feedbackUrl={feedbackUrl}
             exitButtonRef={exitButtonRef}
+            noteButtonRef={noteButtonRef}
             onBgm={onBgm}
             onDark={() => onTheme(dark ? 'light' : 'dark')}
+            onNote={onOpenNote}
             onExitOpen={() => onExitOpen(true)}
           />
           {settings.bgm.on ? (
@@ -361,10 +412,10 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
         </div>
         <div className="col col--center">
           {/* 카드 자리: 접히면 접힌 띠, 자동 모드면 인라인 카드. 모달 시트는 아래(이 형제들 바깥)에서 그린다 */}
-          {decision !== null && isFolded ? <DecisionFold model={decision} epoch={foldEpoch} openRef={foldOpenRef} onReopen={onReopen} /> : null}
+          {decision !== null && isFolded ? <DecisionFold model={decision} epoch={guardEpoch} openRef={foldOpenRef} onReopen={onReopen} /> : null}
           {decision !== null && !isFolded && settings.autoMode ? (
             <DecisionInline model={decision}>
-              <DecisionCard model={decision} auto epoch={foldEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
+              <DecisionCard model={decision} auto epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
             </DecisionInline>
           ) : null}
           <LogCard history={game.history} name={c.name} live={!fast} minute={minute} />
@@ -378,8 +429,22 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
       {/* 모달 시트: 바깥(헤더·도구 줄·main·본문 끝 여백)이 모두 inert인 동안만 있다 — aria-modal만으로는 Tab이 뒤로 샌다(design-system.md 11-10) */}
       {sheetOpen ? (
         <DecisionSheet model={decision} onFold={onFold}>
-          <DecisionCard model={decision} auto={false} epoch={foldEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
+          <DecisionCard model={decision} auto={false} epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
         </DecisionSheet>
+      ) : null}
+      {/* 기록 시트(M7c): 바깥이 모두 inert인 동안만 있다. 같은 시트가 두 길(저절로 뜬 카드 / 「생각 남기기」 버튼)로 열린다 */}
+      {noteSheet !== null ? (
+        <NoteSheet
+          via={noteSheet.via}
+          card={noteSheet.card}
+          game={game}
+          count={noteCount(game)}
+          cardsOn={settings.noteCards}
+          guardKey={`note:${noteSheet.via}:${noteSheet.card === null ? 'manual' : noteSheet.card.id}:${noteSheet.token}`}
+          onSave={onNoteSave}
+          onDismiss={onNoteDismiss}
+          onToggleCards={onNoteCards}
+        />
       ) : null}
     </div>
   );

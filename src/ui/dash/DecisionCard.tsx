@@ -5,6 +5,7 @@ import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
 import { FitPair } from '../FitPair';
 import { revealTopOfTallCard } from '../focusReveal';
 import { GuardedButton } from '../GuardedButton';
+import { useScrollLock } from '../useScrollLock';
 import type { LifeGame } from './Cards';
 import { CitationBox } from './CitationBox';
 import { ImpactHint, ImpactLine } from './Impact';
@@ -120,6 +121,8 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose }:
 
 /** 모달 시트 (자동 모드 꺼짐). 바깥을 `inert`로 두는 일은 이 시트를 렌더하는 LifeScreen이 한다 — React 트리에서 시트가 그 형제들 바깥에 있어야 한다 */
 export function DecisionSheet({ model, onFold, children }: { model: DecisionModel; onFold: () => void; children: ReactNode }) {
+  // 시트가 떠 있는 동안 문서 스크롤을 잠근다(M7c T1 — 기록 시트와 열린 시트 수를 같이 센다, ui/useScrollLock.ts)
+  useScrollLock();
   // Esc = 카드 접기 (U7). 스크림 탭은 접기와 같게 처리하지 않는다 — 다시 열기 더블탭의 둘째 입력이 새 시트의 스크림에 떨어져 곧바로 접히는 일을 막는다(D-56은 선택)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -7,10 +7,14 @@ import {
   createInitialState,
   createSession,
   decideSave,
+  dueNote,
   getBrowserStorage,
   hasProgress,
   holdDelayMs,
   isSupersedingChange,
+  lifeLineCount,
+  noteCount,
+  noteResponse,
   parseGame,
   parseSettings,
   saveGame,
@@ -25,7 +29,7 @@ import { BirthScreen } from './screens/BirthScreen';
 import { RouletteScreen } from './screens/RouletteScreen';
 import { EndingScreen } from './screens/EndingScreen';
 import { ErrorBoundary } from './screens/ErrorBoundary';
-import { LifeScreen } from './screens/LifeScreen';
+import { LifeScreen, type NoteSheetState } from './screens/LifeScreen';
 import { SupersededScreen } from './screens/SupersededScreen';
 import { TitleScreen } from './screens/TitleScreen';
 import { useApplyTheme } from './ui/theme';
@@ -177,6 +181,51 @@ function Game() {
   }, [game.phase, showTitle]);
   const foldCard = useCallback(() => setFold((f) => foldState(f, pendingKey)), [pendingKey]);
   const reopenCard = useCallback(() => setFold(reopenState), []);
+  // 입력 가드 세대 (M7c r2 F-1, content-M7c 11-1): 사용자가 모달 시트(기록·결정)를 닫는 **같은 이벤트·같은 렌더**에서 올린다 — 시트가 사라지며 `inert`가 풀리는 순간 그 자리에 드러나는 컨트롤이
+  // 이미 400ms 가드 중이어야 더블탭의 둘째 탭이 눌리지 않는다(`useEffect`로 다음 렌더에 올리면 한 프레임 열린 채 그려진다). 접기·다시 열기의 `fold.epoch`와 더해 한 값으로 LifeScreen에 넘긴다(둘 다 단조 증가).
+  // 자동 선택(`autoChoose`)·시트 없는 소비(자동 모드·카드 끔·기록 40개)는 사용자가 누른 것이 아니라 올리지 않는다(G8).
+  const [inputEpoch, setInputEpoch] = useState(0);
+  const bumpGuard = useCallback(() => setInputEpoch((n) => n + 1), []);
+
+  // 기록 시트 「생각 남기기」(M7c, FR1~FR9): 열려 있는지는 App 수준 한 값 `noteOpen`이다 — 연출 시계·자동 선택 타이머가 멈추고(LM5) M8의 플레이 시간 타이머가 같은 값을 읽는다.
+  // 두 길로 열린다. ① 저절로 뜬 카드: 적격 카드(`dueNote` — 해의 첫머리, 결정 대기 없음)는 **파생 상태**다 — 수동 + 「자동 기록 카드」 켜짐일 때 시트가 뜨고(reducer의 `advance`·`skip`도 같은 판정으로 멈춘다),
+  // 자동 모드이거나 카드를 끄면 reducer가 시트 없이 소비한다. 새로고침하면 같은 카드가 다시 뜬다(입력한 글은 사라진다 — 초안을 저장하지 않는다, NC-8).
+  // 시트 안에서 「저절로 뜨는 기록 카드 끄기」를 눌러도 시트와 글은 그대로여야 하므로, 한 번 뜬 카드는 닫힐 때까지 붙든다(`heldNoteId`). ② 도구 줄 「생각 남기기」: 수동 기록은 UI 상태 `manualNote`다(저장하지 않는다 — 새로고침하면 닫힌다).
+  const inLifeNow = game.phase === 'life' && !showTitle && !superseded;
+  const dueCard = inLifeNow ? dueNote(game) : null;
+  const [heldNoteId, setHeldNoteId] = useState<string | null>(null);
+  const autoNote = dueCard !== null && (noteResponse(settings, game) === 'stop' || heldNoteId === dueCard.id) ? dueCard : null;
+  useEffect(() => {
+    setHeldNoteId(autoNote === null ? null : autoNote.id);
+  }, [autoNote]);
+  const [manualNote, setManualNote] = useState<{ token: number; count: number } | null>(null);
+  const noteTokens = useRef(0);
+  useEffect(() => {
+    if (!inLifeNow || autoNote !== null) setManualNote(null); // 인생 화면을 떠나거나 저절로 뜬 카드가 뜰 차례면 수동 시트는 닫힌다
+  }, [inLifeNow, autoNote]);
+  const noteSheet: NoteSheetState | null = autoNote !== null ? { via: 'auto', card: autoNote, token: 0 } : manualNote !== null ? { via: 'manual', card: null, token: manualNote.token } : null;
+  const noteOpen = noteSheet !== null;
+  const openNote = useCallback(() => {
+    // 나가기 확인 단계가 열린 채 「생각 남기기」: 확인 단계를 닫고 시트를 연다(5-4절)
+    setExitAsk(false);
+    noteTokens.current += 1;
+    setManualNote({ token: noteTokens.current, count: noteCount(game) });
+  }, [game]);
+  const saveNote = useCallback(
+    (text: string) => {
+      // 수동 기록은 열 때의 기록 수를 들고 가서, 이미 늘어난 상태면 두 번째 제출을 무시한다(연타·더블탭 → 1건). 자동 카드는 소비되면 적격이 사라져 무시된다
+      dispatch({ type: 'saveNote', cardId: autoNote === null ? null : autoNote.id, text, ...(autoNote === null && manualNote !== null ? { expectCount: manualNote.count } : {}) });
+      setManualNote(null);
+      bumpGuard(); // 시트가 사라지는 같은 렌더에서 컨트롤에 가드를 건다 (F-1)
+    },
+    [autoNote, manualNote, bumpGuard],
+  );
+  const dismissNote = useCallback(() => {
+    if (autoNote !== null) dispatch({ type: 'dismissNote', cardId: autoNote.id });
+    setManualNote(null);
+    bumpGuard(); // 2번·확인 단계의 「글을 지우고 담아 두기」·40개 안내의 「닫기」·Esc가 모두 여기를 지난다 (F-1)
+  }, [autoNote, bumpGuard]);
+  const setNoteCards = useCallback((on: boolean) => dispatch({ type: 'setNoteCards', on }), []);
   // 화면 테마(DB6): 설정의 수동 선택을 문서에 건다(시스템 설정을 따르는 기본은 data-theme를 지운다). 모든 화면이 새 디자인이라 한 곳에서 건다.
   useApplyTheme(settings.theme);
   // BGM(DB4): 인생 화면에서만, 사용자가 한 번이라도 누른 뒤에만 소리가 난다. 탭이 가려지면 멈춘다.
@@ -252,21 +301,21 @@ function Game() {
   const inLife = game.phase === 'life' && !showTitle && !superseded;
   const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE);
   const clock = useYearClock({
-    resetKey: `${game.age}|${game.history.length}|${game.pending?.key ?? ''}`,
+    resetKey: `${game.age}|${lifeLineCount(game.history)}|${game.pending?.key ?? ''}`, // 기록(note) 줄은 세지 않는다 — 「생각 남기기」 한 줄이 올해 진행률을 되감지 않게(M7c 5-3절)
     durationMs: game.pending !== null ? null : hold,
-    running: inLife && visible && !game.paused && !exitAsk && game.pending === null,
+    running: inLife && visible && !game.paused && !exitAsk && !noteOpen && game.pending === null,
     onElapsed: () => dispatch({ type: 'advance', fromAge: game.age }),
   });
 
   // 자동 모드: 선택지를 잠깐 보여 준 뒤 성향대로 고른다. 해제하면 타이머가 정리되고 선택지는 그대로 남는다. 일시정지·나가기 확인 중에는 고르지 않는다(reducer도 막는다).
   // 카드를 접은 동안에도 고르지 않는다(M7b U3(a)) — 접기는 「지금 내가 보고 있다」는 신호다. 다시 열면 효과가 다시 돌아 `AUTO_CHOICE_MS` 뒤부터 센다(접힌 시간은 세지 않는다).
   useEffect(() => {
-    if (!autoChooseArmed({ autoMode: settings.autoMode, hasPending: game.pending !== null, superseded, visible, showTitle, paused: game.paused, exitAsk, folded })) return;
+    if (!autoChooseArmed({ autoMode: settings.autoMode, hasPending: game.pending !== null, superseded, visible, showTitle, paused: game.paused, exitAsk, folded, noteOpen })) return;
     const key = game.pending?.key;
     if (key === undefined) return;
     const id = window.setTimeout(() => dispatch({ type: 'autoChoose', key }), autoChoiceDelayMs(settings.speed, TIME_SCALE));
     return () => window.clearTimeout(id);
-  }, [settings.autoMode, settings.speed, game.pending, game.paused, exitAsk, folded, superseded, visible, showTitle]);
+  }, [settings.autoMode, settings.speed, game.pending, game.paused, exitAsk, folded, noteOpen, superseded, visible, showTitle]);
 
   const takeOver = useCallback(() => {
     // 저장소를 한 번만 읽어, 그 원문을 파싱해 이어받고 "내가 아는 값"으로도 기록한다(R-052). 이어받은 값은 저장소에 이미 있는 값이라 같은 값을 다시 쓰지 않는다.
@@ -316,10 +365,18 @@ function Game() {
         exitOpen={exitAsk}
         onExitOpen={setExitAsk}
         folded={folded}
-        foldEpoch={fold.epoch}
+        guardEpoch={fold.epoch + inputEpoch}
         onFold={foldCard}
         onReopen={reopenCard}
-        onChoose={(key, choiceId) => dispatch({ type: 'choose', key, choiceId })}
+        noteSheet={noteSheet}
+        onOpenNote={openNote}
+        onNoteSave={saveNote}
+        onNoteDismiss={dismissNote}
+        onNoteCards={setNoteCards}
+        onChoose={(key, choiceId) => {
+          dispatch({ type: 'choose', key, choiceId });
+          bumpGuard(); // 사용자가 결정 시트(또는 인라인 카드)에서 고른 순간 — 사라지는 카드 자리의 컨트롤에 같은 렌더에서 가드 (F-1)
+        }}
         onSkip={() => dispatch({ type: 'skip' })}
         onSpeed={(speed) => dispatch({ type: 'setSpeed', speed })}
         onAuto={(auto) => dispatch({ type: 'setAuto', auto })}

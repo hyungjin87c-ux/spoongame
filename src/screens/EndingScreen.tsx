@@ -27,6 +27,7 @@ import { Glue } from '../ui/Glue';
 import { GradeChip } from '../ui/Grade';
 import { GuardedButton } from '../ui/GuardedButton';
 import { FinalNetLine } from '../ui/dash/FinalNet';
+import { NoteBody } from '../ui/dash/NoteText';
 import { KeepStanding } from '../ui/KeepStanding';
 import { useFocusOnChange } from '../ui/useFocus';
 import { useScrollTopOnMount, useThemeSurface } from '../ui/useBottomBar';
@@ -69,6 +70,17 @@ function FinalMeter({ stat, label, value, tone, icon, started }: { stat: StatKey
 }
 
 function TimelineItem({ entry }: { entry: HistoryEntry }) {
+  // 「나의 기록」 줄(M7c FR9): 인생 기록(LogCard)과 같은 부품 — 라벨 「나의 기록 · {주제}」 + 사용자 글(`<bdi data-user-text>`). 글을 읽는 분기는 없다
+  if (entry.kind === 'note') {
+    return (
+      <li className="is-note" data-kind="note" data-testid="timeline-entry">
+        <span className="log__age">{entry.age}세</span>
+        <span>
+          <NoteBody entry={entry} textClassName="tl-text" />
+        </span>
+      </li>
+    );
+  }
   return (
     <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-testid="timeline-entry">
       <span className="log__age">{entry.age}세</span>
@@ -110,13 +122,13 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
           {/* 텍스트 칸: 제목 글자 크기 상한의 컨테이너다(R-320·R-321 — 얼굴 타일이 아니라 이 칸만 flex로 늘어난다, dash.css `.ending__who`) */}
           <div className="ending__who">
             <p className="label" data-testid="ending-era">
-              <Glue text={`${ERA_CONFIG[game.era].label} · ${ENDING_HEAD_LABEL}`} />
+              <Glue text={`${ERA_CONFIG[game.era].label} · ${ENDING_HEAD_LABEL}`} hideSeparator />
             </p>
             <h1 className="t-title" ref={headingRef} tabIndex={-1} data-testid="ending-name" style={{ '--title-chars': titleCharsFor(title) } as CSSProperties}>
               {title}
             </h1>
             <p className="t-muted" data-testid="ending-span">
-              <Glue text={endingSpanText(c.birthYear, game.birthReport === null ? null : game.birthReport.month, c.birthYear + game.death.age, game.death.age)} />
+              <Glue text={endingSpanText(c.birthYear, game.birthReport === null ? null : game.birthReport.month, c.birthYear + game.death.age, game.death.age)} hideSeparator />
             </p>
           </div>
         </div>

@@ -332,4 +332,61 @@
   - **M7b 완료 판정**(REV-003-M7b-3 APPROVED + QA 2회차 PASS). TODO [x] 근거 기록, check:todo 141항목 통과
   - **마스터 판단**: A20b·R-400(바탕 위 스크롤)·A12d(보이지 않는 이름)·R-401·D65r(1px·「다.」·「e-」)·R-403(디자인 문서 동기화)은 **M7c 착수 작업**으로(같은 시트·저장·문구 규칙을 M7c가 다시 쓰므로 한 번에). TODO M7c 아래 4줄
   - 다음: 푸시 전 점검 → main 배포 → 위키 → M7c
+- 후속 85(2026-10-19):
+  - M7b 배포: `a85ea8f` main 푸시(깨끗한 작업 트리 — typecheck, vitest 95파일 3015 통과·1 건너뜀, Pages 빌드 SHA a85ea8f, check:dist·check:events 「모두 합쇼체」; 푸시 전 check:motifs 통과·원문 제목 겹침은 일반 낱말뿐·3MB 넘는 파일 0·repoHygiene 22), Actions 39182300078 success, DP8 통과
+  - 마스터 공개 주소 확인(375×812, 자동 모드 끔): 「화면 앞의 아이」 모달 시트 — 인용 박스 없음(X6 반영), 헤더 「2029년 · 3세」·「카드 접기」·영향 줄·자동 모드 꺼짐 안내 한 줄 정상. 「이웃의 항의」 카드에 통계 인용 박스(층간소음 전화상담, 출처 줄 「…(2026년 열람), …」) 정상
+  - wiki-keeper M7b 갱신(00·01·02·03). QA가 드라이브 루트에 만든 빈 폴더는 마스터가 지움
+  - **M7c 착수**: planner `docs/data/content-M7c.md` 진행 중(FR1~FR9, 사용자 글 저장과 숨은 문자 거부의 관계, 두 시트 우선순위, 착수 작업 4줄)
+- 후속 86(2026-10-19):
+  - M7b 완료를 형진 님께 보고(MD2 1차 게이트 조정·WHO 인용 해제 포함)
+  - planner `docs/data/content-M7c.md` 완료 → **마스터 결정 10절**(NC-1~NC-15 기획자 추천대로, NC-10 위기 안내 없음·NC-14 가상 키보드 기준은 잠정)로 확정, SPEC 「M7c 착수 결정」·M7c 행, `ai-log/2026-10-19_SPEC-003_spec-M7c.md`
+  - 핵심: 사용자 글은 연표 note 행 + seen `note-` 키(스키마 v8 유지 — 진행 중인 판을 지킴), 불러올 때 거부하지 않고 위험 글자만 걷음(이모지 ZWJ로 인생이 지워지는 경로 차단), 그래핌 140, 카드 차례는 RNG 없는 순수 판정(기록이 인생 결과를 바꾸지 않음), 판당 최대 7장
+  - 병행 지시: designer M7c 선행(R-403 동기화·copy.md·note.html·연표 줄·c-049/c-088 처리안), developer core 단계(notes.json·dueNote·finalizeNote·저장·reducer·설정 v4·이름 화이트리스트·인용 c-037 — UI 없이, 배포 판 동작 불변)
+  - 형진 님께 NC-10(기록 카드에 상담전화 안내를 두지 않음) 의견을 다음 보고 때 묻는다
+- 후속 87(2026-10-19):
+  - designer M7c 선행 완료(`ai-log/2026-10-19_SPEC-003_design-M7c.md`): copy.md 7절(질문 11문장 최종 — 「다섯 살 무렵을」 등 5문장 손질, 시트 문구, 끄기/켜기 이름 「저절로 뜨는 기록 카드 끄기 / 켜기」 — 「자동 모드」와 혼동 피함, 확인 단계 「적은 글을 지우고 넘어갈까요?」), R-403 동기화(D-65~D-67 닫힘, 스크롤 잠금은 refcount 훅 + `html.sheet-open` — `scrollbar-gutter: stable` 금지), T3 처리안(c-049·c-088 데이터 손질, 「e-나라지표」 묶기, 허용 목록 이름 둘, 칸 수 92), D-68~D-80, 시안 note 9상태 + 연표 줄 감사 240조합 위반 0, designAssets 65/65
+  - 마스터: core developer에 최종 문구·D-73·D-79 반영 추가 지시. 2차 후보(FitPair 기본 hideSeparator, feedback.yml 한 구절, M9 같은 출처 Pages 점검)는 TODO로
+- 후속 88(2026-10-19):
+  - developer M7c core 완료(`ai-log/2026-10-19_SPEC-003_dev-M7c-core.md`): notes.json 7종 + 수동(copy.md 7-1 최종 문구), `dueNote`(RNG 없음)·`finalizeNote`·`sanitizeLive`·`cleanNoteForLoad`, note 행 저장(스키마 v8 유지, 위험 글자만 걷음), 설정 v4, 이름 한글 화이트리스트, reducer `saveNote`·`dismissNote`·`setNoteCards`, 40개 상한, c-037 ① 연결(past 머리말), c-049·c-088 데이터 손질(D-73). UI 전에는 `'ignore'`로 감싸 배포 판 동작 불변. npm test 99파일 3155 통과, sim 위반 0, e2e 회귀 0(설정 비교 단언 3곳 보정, 룰렛 6건은 부하 흔들림 — 단독 재실행 통과). 스케줄 1000판: 판당 6.38~6.60장, ⑤ 도달 41~61%, 결정 카드와 같은 해 27~29%(동시 열림 0). 인생 불변 시험 세 시대 × 200판 × 7가지 처리
+  - **마스터 승인**: 이름 패턴 `/^[가-힣]{3,5}$/`, 글자 수 = `liveGraphemes`(≤ 140), 40개 상한 = 자동+수동 합계, ④ 변형 「함께하는 사람」 우선
+  - 다음: 같은 developer가 UI 단계(D-68~D-80, T1 스크롤 잠금, 가상 키보드, T3 잔여) → reviewer → qa
+- 후속 89(2026-10-19):
+  - developer M7c UI 단계 완료(`ai-log/2026-10-19_SPEC-003_dev-M7c.md`): NoteSheet(두 진입 경로)·도구 줄 「생각 남기기」·NoteText·`useScrollLock`(refcount, 두 시트 공통 — R-400 해소)·`useVisualViewport`·T3(「e-나라지표」 묶기, 허용 낱말 이름 둘, 칸 수 92). npm test 103파일 3218 통과, e2e 전체 실패 0(첫 실행 10건은 e2e 오라클이 자동 모드 기록 카드 소비를 몰랐던 것 — 오라클 수정), e2e:prod 17 통과, sim 위반 0, check 전부 통과. 시험이 잡은 결함 둘(compact가 Tab 이동 때 풀려 낮은 화면에서 버튼이 밖으로 밀림, StrictMode 포커스 이중 실행) 수정
+  - **마스터 판단**: K3 구멍(보이는 높이 520~616px에서 compact도 아니고 시트도 안 들어감) — **지금 막는다**: compact 조건을 「입력 영역 포커스 중 전체 시트가 보이는 높이에 안 들어가면」으로(보장 ≥ 340px). designer는 생성기 `toolSoon` 깨짐·touch-action·11-8 문언·compact 설명 동기화
+  - 다음: developer K3 수정 + designer 동기화 → reviewer → qa
+- 후속 90(2026-10-19):
+  - developer K3 수정 완료: compact = 입력 영역 포커스 중 전체 시트가 시트 최대 높이에 안 들어가면(고정 문턱 삭제, 보장 340 유지), `m7c-viewport` 보이는 높이 340~740 12단계 × 인용 유무 × 폭 × 글자, 변이 점검(고정 문턱 되살리면 9개 실패). m7c 관련 e2e 280개 통과
+  - designer M7c 후속 완료: 생성기 `toolSoon` 깨짐 수정·R-191 import 되돌림, touch-action·compact 규칙·11-8 문언 동기화, D-68~D-80 닫힘·D-81~D-86(D-83 compact는 반영 뒤 대조, D-84 키보드 내려간 뒤 시트 안 스크롤이 남는 관찰 — 실기기 확인), 시안 260장 넘침 0·note 216조합 위반 0·designAssets 67/67. `NOTE_SAMPLES`(시안용 가짜 사용자 글) 유지 판단 — **마스터 승인**
+  - 다음: reviewer REV-003-M7c-1 + qa QA-003-M7c 1회차 병행
+- 후속 91(2026-10-19):
+  - reviewer REV-003-M7c-1 **CHANGES_REQUESTED**(중간 R-405: 스크림 `touch-action: none`이 크로뮴에서 시트 안 핀치 확대까지 막을 가능성 — 두 시트 공통 후퇴, 낮음 R-406 깃발 태그 상한 불일치·R-407 소스의 보이지 않는 글자·R-408 ③ 기본 질문의 가벼운 전제·R-409 문서 동기화·R-410 낡은 증거 샷·R-411 40개 판의 자동 카드 안내 시트) — 본문은 reviewer가 텍스트로 넘겨 마스터가 저장. 저장 안전·입력 규칙·개인정보·인생 불변·K3 잠금은 통과, 디자인 검수 정체성 5
+  - **마스터 처리**: R-405 고침(`.overlay { touch-action: pinch-zoom }` + 핀치 e2e), **R-411 = 40개면 자동 카드를 시트 없이 소비**, R-408 designer, R-406·R-407·R-410 + 관찰 2·4·5 developer, R-409 (1)(3)은 마스터가 바로(TODO T4 [x], TODO M9 줄 문언, content-M7c 10절 추가), (2) D-83은 designer. QA 1회차 결과와 묶어 r2
+- 후속 92(2026-10-19):
+  - qa QA-003-M7c 1회차 **FAIL**(227건: PASS 207 · FAIL 9 · RECORD 9 · SKIP 2) — FAIL 9건은 한 원인 F-1: 시트가 닫힌 직후 컨트롤에 입력 가드가 없어 1번·2번·확인 버림 더블탭의 둘째 탭이 배속·「다음 결정으로」(나이 14→16)·자동 모드·나가기를 누름(88조합 중 28, 360×740 터치 포함). M7b 결정 카드 선택지에도 같은 부류. 그 밖의 입력 공격 A1~A20·스크롤 잠금·가상 키보드·개인정보·인생 불변·회귀·저장 변조·무작위 2,240단계는 모두 통과 — 리포트는 qa가 텍스트로 넘겨 마스터가 저장
+  - **CLAUDE.md 4항: QA FAIL → 기획 복귀**: planner content-M7c 11절(F-1 가드 규칙, CQ04 ④ 이별 변형이 구조상 0번, CQ05 c-037 인과 표현, CQ06=R-408, K03, T01, R-411 반영, r2 할 일·QA 2회차 기준)
+  - 형진 님께 보고: M7c QA 1회차 FAIL 사실(마일스톤 진행 중 보고)
+- 후속 93(2026-10-19):
+  - planner content-M7c 11절 완료 → **마스터 결정 11-12**(D1 F-1 가드 11-1 그대로 — 닫히는 같은 렌더에서 가드 세대, 자동 선택·소비 제외 / D2 ④ 이별 변형 삭제 / D3 c-037 손질안 + 초록 재확인 조건 / D4 K03 그대로 / D5 카드당 라벨 하나), SPEC CM5 한 줄 보강, `ai-log/2026-10-19_SPEC-003_spec-M7c-r2.md`
+  - 병행 지시: designer r2(d-1 ③ 질문·라벨·copy ⑨, d-2 compact 질문 표시, d-3 `.note-choice` 가드 흐림, R-405 ds.css), developer r2(F-1·R-405~R-411·관찰 2·4·5·D2·D3·K03 시험·T01 — ③ 질문은 designer 문구 뒤)
+- 후속 94(2026-10-19):
+  - designer r2 완료: ③ 기본 질문 「처음 누군가에게 마음이 갔던 기억이 {이름}에게 있습니까?」(전제 없음), 라벨 ③ 「첫사랑」·④ 「마음을 나누는 일」(「~의 추억/기억」은 그 일이 있었다고 말해 기본 변형 판에 맞지 않음), ④ 이별 변형 행 삭제, copy ⑨ R-411 반영, D-88 compact에서 질문을 sticky 한 줄(이 게임의 첫 줄임 — 11-10 「줄임 허용」 원칙), D-89 `.note-choice` 가드 흐림, D-90 overlay pinch-zoom, D-83 닫힘. 시안 note 216조합 위반 0. designAssets 66/68(나머지 둘은 developer r2 반영 대기)
+  - 마스터: developer r2에 D-87~D-90 반영 안내
+- 후속 95(2026-10-19):
+  - 형진 님 「진행해줘」 — NC-10(상담전화 안내 없음)·WebKit 미설치는 잠정안 그대로 진행(이견 시 변경)
+  - developer M7c r2 완료(dev 로그 11절): F-1 `inputEpoch`/`bumpGuard`(사용자 닫힘과 같은 이벤트에서 가드 세대, 자동 선택·소비 제외) + 단위 21·e2e 35(88+22+11조합, B07 스윕, G1, 변이 확인), R-405 pinch-zoom + 두 손가락 핀치 e2e(변이 확인), R-406·R-407(이스케이프 + 보이지 않는 글자 전수 시험)·R-410·R-411, D2·D3(PubMed 초록 R-149로 재열람 — 원문 「strongly affect」보다 약한 연관 표현)·T01·K03 시험, 관찰 2·4·5, D-87~D-90. 시험이 찾은 D-88 부작용(compact 해제 때 제목 포커스 가림) → NoteSheet에 scrollIntoView 효과. npm test 105파일 3251, e2e 전체 실패 0, e2e:prod 17, sim 위반 0, check 전부, designAssets 68/68
+  - 다음: reviewer REV-003-M7c-2 + qa 2회차 + designer 후속 3(시안 재생성·D 닫기) 병행
+- 후속 96(2026-10-19):
+  - designer 후속 3 완료: 시안 재생성(새 라벨·③ 질문, 97장 넘침 0, note 216조합 위반 0), D-87~D-90 닫힘, developer의 compact 해제 때 scrollIntoView 효과를 D-91로 받아들임(규격 11-10에 기록), designAssets 68/68. 남은 디자인 몫 없음 — compact 질문 줄 체감·D-84·핀치는 M9 실기기
+- 후속 97(2026-10-19):
+  - reviewer REV-003-M7c-2 **APPROVED**(F-1·R-405~R-411 종결, 낮음 R-412 시험 공허 통과 두 곳·R-413 entry-guard 토글 단계·R-414 designer 정리, **R-407 재지적 = 같은 ID 2회**) — 본문은 reviewer가 텍스트로 넘겨 마스터가 저장
+  - **마스터 개입(R-407)**: 원인 = 배정 누락(designer 몫 d-1이 후속 2에서 빠졌고 감시 시험 `invisibleLiterals.test.ts`가 designer 파일을 제외) — 명세·설계 문제 아님. 원자성을 위해 이번 한 번 developer가 designer 파일 두 줄의 기계적 이스케이프 치환 + `DESIGNER_OWNED` 제외 삭제를 같이 한다. 교훈: 역할을 나눈 지적은 감시 시험도 같은 범위를 봐야 한다
+  - R-414는 designer 후속 3이 대부분 처리(시안·라벨·D-87~D-90·D-91), TODO 186 근거(시험 이름 변경으로 check:todo 1건 실패)는 developer, D-86은 designer 한 줄. REV-003-M7c-1의 맨 보이지 않는 글자는 마스터가 `U+XXXX` 표기로 바꿈
+  - 다음: developer r3(src 무변경 — QA 2회차 진행 중) + QA 2회차 결과
+- 후속 98(2026-10-19):
+  - developer r3 완료(src 무변경): R-407(designer 두 줄 이스케이프 치환 + 감시 범위를 qa/ 밖 모든 코드 파일과 src JSON으로, 변이 확인), R-412(B07 측정 없으면 실패, (d) 소비 프레임 기준 창), R-413(지난 실패는 443행 aria-pressed — 토글 단계를 시계 정지 판에서 elementFromPoint 확인 뒤 클릭), TODO 186 근거 정정. npm test 3251, 바뀐 e2e 61 통과, check:todo 163 실패 0. designer D-86 닫힘. REV-003-M7c-2의 맨 보이지 않는 글자 3개는 마스터가 `U+XXXX` 표기로
+  - 다음: QA 2회차 결과
+- 후속 99(2026-10-19):
+  - qa QA-003-M7c 2회차 **PASS**(288건: PASS 282 · FAIL 0 · RECORD 4 · SKIP 2 — F-1 더블탭 242번 측정 작동 0, 1회차 실패 35조합 모두 0, B07 거부 36/36·열림 24/24, 가드 과하지 않음 121/121, 핀치 시트 위·스크림 위 1→5·통제 1→1, R-411·콘텐츠 변경·회귀·무작위 3,200단계 통과) — 리포트는 qa가 텍스트로 넘겨 마스터가 맨 위에 저장
+  - **M7c 완료 판정**(REV-003-M7c-2 APPROVED + QA 2회차 PASS, r3는 시험·문서만이라 src 해시 동일). V-obs-title(compact 질문 줄임)은 설계대로 수용. 두 번 탭 확대·A21f·D-84·실기기 키보드는 M9
+  - 다음: 푸시 전 점검 → main 배포 → 위키 → M8
 - 다음 단계(갱신 전 기록): GitHub 저장소 준비(형진 님이 빈 공개 저장소를 만들고 주소·사용자 이름을 알려 주면 마스터가 첫 푸시 — 로그인 창은 형진 님이 직접), planner가 SPEC-003 초안(SPEC-002 흡수) → 형진 님 확정 → designer 시안 → developer 구현

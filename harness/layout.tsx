@@ -1,10 +1,12 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { DEFAULT_SETTINGS, ERAS, citationFor, citationIdFor, citationValidRange, createEventPool, worstCaseVisibleChoiceIds, type BirthReport, type Character, type Era, type EventDef, type EventPool, type HistoryEntry } from '../src/core';
+import { DEFAULT_SETTINGS, ERAS, citationFor, citationIdFor, citationValidRange, createEventPool, worstCaseVisibleChoiceIds, type BirthReport, type Character, type Era, type EventDef, type EventPool, type HistoryEntry, type NoteCardDef } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
 import { getCitation } from '../src/data/citationsAccess';
 import { EVENT_POOL } from '../src/data/events';
+import { NOTE_CARDS } from '../src/data/noteCards';
 import { LifeScreen, type LifeGame } from '../src/screens/LifeScreen';
+import { NoteSheet } from '../src/ui/dash/NoteSheet';
 import type { YearClock } from '../src/ui/useYearClock';
 import '../src/styles/tokens.css';
 import '../src/styles.css';
@@ -98,8 +100,20 @@ function connectedCells(): Array<{ id: string; era: Era; birthYear: number; age:
       if (age >= 0 && age <= 100 && citationFor(ev, era, year) !== null) out.push({ id: ev.id, era, birthYear, age, year, citation: cid });
     }
   }
+  // 기록 카드(M7c)의 인용 — 시트 안 인용 박스. 카드가 뜨는 나이(창의 시작)에 보인다(D-73: 89칸 + 기록 카드 ① × 세 세상 = 92칸)
+  for (const card of NOTE_CARDS) {
+    if (card.citation === undefined) continue;
+    for (const era of ERAS) {
+      const birthYear = ERA_CONFIG[era].birthYears.min;
+      const age = card.ageRange.min;
+      const year = birthYear + age;
+      const cid = citationIdFor(card, era);
+      if (cid !== null && citationFor(card, era, year) !== null) out.push({ id: card.id, era, birthYear, age, year, citation: cid });
+    }
+  }
   return out;
 }
+const NOTE_BY_ID = new Map<string, NoteCardDef>(NOTE_CARDS.map((c) => [c.id, c]));
 const CELLS = connectedCells();
 
 /**
@@ -139,11 +153,14 @@ function Harness() {
   }, [ids]);
   const pool = custom !== null ? createEventPool([custom]) : EVENT_POOL;
   const shown = custom !== null ? custom.id : id;
-  return (
+  // 기록 카드 칸(M7c D-73): 결정 카드 없이 인생 화면 위에 기록 시트(NoteSheet)를 얹어 시트 안 인용 박스를 잰다
+  const noteCard = custom === null && cell !== null ? NOTE_BY_ID.get(id) : undefined;
+  const game = stateFor(pool, noteCard !== undefined ? ids[0] : shown, extraHistory, cell);
+  const life = (
     <LifeScreen
       key={shown}
       pool={pool}
-      game={stateFor(pool, shown, extraHistory, cell)}
+      game={noteCard !== undefined ? { ...game, pending: null, seen: {} } : game}
       settings={SETTINGS}
       clock={CLOCK}
       exitOpen={false}
@@ -158,6 +175,13 @@ function Harness() {
       onExit={noop}
       minute={29_846_880}
     />
+  );
+  if (noteCard === undefined) return life;
+  return (
+    <>
+      {life}
+      <NoteSheet via="auto" card={noteCard} game={{ ...game, pending: null, seen: {} }} count={0} cardsOn guardKey={noteCard.id} onSave={noop} onDismiss={noop} onToggleCards={noop} />
+    </>
   );
 }
 

@@ -29,3 +29,6 @@ export * from './family';
 export * from './peerNow';
 export * from './feedback';
 export * from './citations';
+export * from './noteText';
+export * from './noteCards';
+export * from './notes';

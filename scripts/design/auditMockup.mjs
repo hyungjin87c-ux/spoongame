@@ -44,6 +44,9 @@ function overflowReport() {
     return `<${el.tagName.toLowerCase()}${cls}> "${text}"`;
   };
   const clipped = [...document.querySelectorAll('body *')].filter((el) => getComputedStyle(el).clip === 'rect(0px, 0px, 0px, 0px)');
+  // 의도된 한 줄 줄임의 허용 목록(2026-10-19 r2, diff-003.md D-88 · design-system.md 11-10 「줄임 허용」): compact 기록 시트의 질문 h2는 sticky 한 줄로 그려 넘치는 글자가 「…」로 끝난다 — 글자·접근 가능한 이름은 그대로.
+  // 이 선택자 하나뿐이고(늘리려면 design-system.md 11-10에 이유를 적는다) 세 조건(text-overflow: ellipsis · white-space: nowrap · overflow-x: hidden)이 모두 맞을 때만 「(줄임 허용)」 접두사로 따로 내보낸다 — 호출자가 「줄임(허용) N」으로 따로 세고 넘침에는 넣지 않는다. 구현 e2e/textResize.ts의 clipped 판정도 같은 목록(D-88)
+  const ELLIPSIS_ALLOWED = ['.sheet--compact .sheet__title'];
   for (const el of document.querySelectorAll('body *')) {
     if (el.closest('svg') || el.classList.contains('sr-only') || el.closest('.sr-only') || el.closest('template')) continue;
     const cs = getComputedStyle(el);
@@ -52,7 +55,10 @@ function overflowReport() {
     if (el.clientWidth === 0) continue;
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) continue;
-    if (!['auto', 'scroll'].includes(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) out.push(`${describe(el)} scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}`);
+    if (!['auto', 'scroll'].includes(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) {
+      const intentional = cs.textOverflow === 'ellipsis' && cs.whiteSpace === 'nowrap' && cs.overflowX === 'hidden' && ELLIPSIS_ALLOWED.some((s) => el.matches(s));
+      out.push(`${intentional ? '(줄임 허용) ' : ''}${describe(el)} scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}`);
+    }
     if (r.right > vw + 1 || r.left < -1) out.push(`${describe(el)} 화면 밖 (left ${Math.round(r.left)}, right ${Math.round(r.right)}, 화면 ${vw})`);
   }
   return out;
@@ -82,12 +88,17 @@ for (const state of states) {
           await page.evaluate(() => window.dispatchEvent(new Event('resize')));
         }
         await page.waitForTimeout(80);
-        const row = { label, overflow: [], broken: [], unavoidable: [], focus: null, contrastMin: null, contrastLow: [] };
-        // ① 넘침
-        row.overflow = await page.evaluate(overflowReport);
+        const row = { label, overflow: [], ellipsis: [], broken: [], unavoidable: [], focus: null, contrastMin: null, contrastLow: [] };
+        // ① 넘침 — 허용 목록의 의도된 줄임(compact 질문 h2, D-88)은 「줄임(허용)」으로 따로 세고 위반에 넣지 않는다
+        const overflowAll = await page.evaluate(overflowReport);
+        row.ellipsis = overflowAll.filter((p) => p.startsWith('(줄임 허용)'));
+        row.overflow = overflowAll.filter((p) => !p.startsWith('(줄임 허용)'));
         for (const p of row.overflow) problems.push(`[${label}] 넘침: ${p}`);
-        // ② 낱말 끊김
+        // ② 낱말 끊김 — 사용자 글 영역([data-user-text]: 기록 입력란·「나의 기록」 줄의 글, M7c FR4 D4·design-system 11-8)은 우리 문구가 아니라 어디서든 끊길 수 있으므로 감사에서 뺀다(구현 e2e도 같은 표식으로 뺀다 — diff-003.md).
+        //    배치는 그대로 두고 그 글자만 visibility: hidden으로 숨겨 재고(측정기는 숨은 글자를 건너뛴다), 재고 나면 되돌린다 — 넘침(①)·CM10(③)·대비(④)는 사용자 글을 포함해 잰다
+        await page.addStyleTag({ content: '[data-user-text] { visibility: hidden !important; }' }).then((h) => h.evaluate((el) => el.setAttribute('data-audit', 'skip-user-text')));
         const wb = await measureWordBreaks(page);
+        await page.evaluate(() => document.querySelector('style[data-audit="skip-user-text"]')?.remove());
         row.broken = wb.broken.map(describeWordBreak);
         row.unavoidable = wb.unavoidable.map(describeWordBreak);
         row.checked = wb.checked;
@@ -117,7 +128,7 @@ for (const state of states) {
           for (const p of rc.low) problems.push(`[${label}] 대비: ${p}`);
         }
         rows.push(row);
-        console.log(`${label}: 넘침 ${row.overflow.length} · 끊김 ${row.broken.length}(한 줄보다 긴 낱말 ${row.unavoidable.length}, 잰 낱말 ${row.checked}) · ${row.focus ?? 'CM10 제외'}${row.contrastMin !== null ? ` · 대비 최저 ${row.contrastMin.toFixed(2)} (상자 ${row.contrastBoxes})` : ''}`);
+        console.log(`${label}: 넘침 ${row.overflow.length}${row.ellipsis.length > 0 ? ` · 줄임(허용) ${row.ellipsis.length}` : ''} · 끊김 ${row.broken.length}(한 줄보다 긴 낱말 ${row.unavoidable.length}, 잰 낱말 ${row.checked}) · ${row.focus ?? 'CM10 제외'}${row.contrastMin !== null ? ` · 대비 최저 ${row.contrastMin.toFixed(2)} (상자 ${row.contrastBoxes})` : ''}`);
         await ctx.close();
       }
     }

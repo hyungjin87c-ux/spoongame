@@ -9,7 +9,7 @@ import { GAME_KEY, KNOWN_SEED, evalCore, injectSave, lifeState, oracleAuto, orac
  *  - dash-decision  선택지 3개 이상이 떠 있는 대시보드(중대 결정 카드가 맨 위): 카드·선택지가 고정 머리·진행 줄과 겹치는 대표 상태. M5부터 **영향 줄이 가장 긴 성인 결정**(선택지 중 하나가 5항목)이라 영향 줄·안내 한 줄까지 모든 M4 감사(고정 요소·포커스·낱말 끊김·색)가 함께 잰다
  *  - dash-adult     50세(성인, 선택지 없음): 얼굴 중년, 기록이 길고 식구(배우자·자녀)·또래 라벨이 다양
  *  - dash-exit-ask  50세 대시보드에 **나가기 확인 단계**가 열려 있다(R-322): 긴 안내문 + 버튼 둘(「첫 화면으로 나가기」·「돌아가기」, 포커스는 「돌아가기」) — 프로그램 포커스·낱말 줄바꿈·넘침(R-336)·대비 감사의 대상
- *  - dash-tools-open 50세 대시보드에 **도구 줄이 모두 열려 있다**(R-322): BGM 켜짐(볼륨 슬라이더·읽기 전용 「켜짐」) + 「준비 중」 표식이 있는 생각 남기기 — 슬라이더 가림·넘침·대비 감사의 대상
+ *  - dash-tools-open 50세 대시보드에 **도구 줄이 모두 열려 있다**(R-322): BGM 켜짐(볼륨 슬라이더·읽기 전용 「켜짐」) — 슬라이더 가림·넘침·대비 감사의 대상
  *  - ending         사망 후 엔딩: 긴 연표, 「다시 태어나기」 버튼
  *  - superseded     「저장 안내」(밀린 화면): 「이 탭에서 이어하기」
  *  - error          「오류」(ErrorBoundary): 「저장 지우고 새로 시작」
@@ -113,7 +113,7 @@ export async function openM4Screen(page: Page, screen: M4Screen | M4ExtraScreen,
   }
   if (screen === 'dash-tools-open') {
     await expect(page.getByTestId('bgm-volume-input')).toBeVisible();
-    await expect(page.getByTestId('tool-note')).toContainText('준비 중');
+    await expect(page.getByTestId('tool-note')).not.toContainText('준비 중'); // M7c: 생각 남기기는 보통 버튼 (D-75)
   }
   await expect(readyButton(page, screen)).toBeEnabled();
 }

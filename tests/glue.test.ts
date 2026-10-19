@@ -267,6 +267,8 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       // SPEC-003 M3: 항목이 둘로 고정된 짧은 쌍(룰렛 결과 「{수저(구간)} · {시·도}」, 출생신고의 「나이 · 직업」·「장소 · 성별」·「수저 게임 · 가상의 서류」)을 그린다 — 탐침 글자(data-text)와 한 줄 모양의 JSX 두 곳.
       // 한 줄에 들어가는지 재서(탐침) 안 들어가면 기호 없이 두 항목을 따로 줄로 나눈다(QM2-10 규칙 3) — 기호가 줄 끝·첫머리에 혼자 남지 않는다.
       'ui/FitPair.tsx': 2,
+      // SPEC-003 M7c D-74: `Glue hideSeparator`가 띄어 쓴 가운뎃점 사슬 「A · B」를 가르는 자리 — 문구를 조립하지 않고(조립은 위 곳들) 이미 만들어진 글에서 「·」만 낭독에서 숨긴다
+      'ui/Glue.tsx': 2,
     });
     // 쌍을 그리는 곳(ui/Pair.tsx)은 공백이 기호 조각 밖에 있어 「 · 」 문자열이 없다 — 대신 기호 조각이 「· 」이고 앞에 일반 공백이 따로 있음을 본다
     const pair = files.find((f) => f.file === 'ui/Pair.tsx')!;
@@ -279,6 +281,51 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
  * 괄호 안 짧은 구간 표기 (QA-003-M3 M3-O13, M3 r5): 룰렛 결과 문장 「다이아몬드수저(상위 3% 안쪽)」가 글자 200%·좁은 폭에서 「(상위 / 3% 안쪽)」으로 갈라지던 것을 막는다.
  * 괄호 구간(상위·하위로 시작하는 24글자 이하)은 괄호째 한 묶음이고, 앞 낱말은 묶음 밖이다. 실제 줄 모양은 e2e/m3-band-glue.spec.ts가 잰다.
  */
+describe('라틴 글자 + 하이픈 + 한글 낱말은 한 묶음이다 (SPEC-003 M7c D-73 ③: 「e-나라지표」)', () => {
+  it('「지표누리 e-나라지표」: 「e-나라지표」가 한 묶음(nowrap)이라 「e-」와 「나라지표」 사이에서 줄이 바뀌지 않는다 — 글자는 그대로', () => {
+    expect(kinds(glueSegments('교육통계연보 — 유아교육 규모(지표누리 e-나라지표)'))).toContain('nowrap:e-나라지표');
+    expect(kinds(glueSegments('지표누리 e-나라지표 「취학률」'))).toEqual(['plain:지표누리 ', 'nowrap:e-나라지표', 'plain: 「취학률」']);
+    for (const t of ['지표누리 e-나라지표', '(지표누리 e-나라지표)', 'e-나라지표']) expect(segmentsText(glueSegments(t)), t).toBe(t);
+  });
+
+  it('범위는 라틴 글자 바로 뒤 하이픈 + 한글뿐이다: 영어끼리의 하이픈(x-ray)·한글끼리의 하이픈은 건드리지 않는다', () => {
+    expect(kinds(glueSegments('x-ray 검사'))).toEqual(['plain:x-ray 검사']);
+    expect(kinds(glueSegments('가-나 다'))).toEqual(['plain:가-나 다']);
+  });
+
+  it('렌더: Glue 컴포넌트가 white-space: nowrap 묶음(keep-phrase)으로 감싸고 보이는 글자는 같다', () => {
+    const html = renderToStaticMarkup(Glue({ text: '지표누리 e-나라지표' }));
+    expect(html.replace(/<[^>]+>/g, '')).toBe('지표누리 e-나라지표');
+    expect(html).toContain('<span class="nowrap">e-나라지표</span>');
+  });
+});
+
+describe('Glue hideSeparator: 띄어 쓴 가운뎃점만 낭독에서 숨긴다 (SPEC-003 M7c D-74, R-403 ⑤)', () => {
+  const read = (html: string) => html.replace(/<span aria-hidden="true">[^<]*<\/span>/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+  it('「A · B」의 「·」만 <span aria-hidden>이 되고 글자·공백·묶음은 그대로다 — 낭독 글자는 「A B」, 화면에 보이는 글자(textContent)는 「A · B」', () => {
+    const html = renderToStaticMarkup(Glue({ text: '지금 세상 · 생애 기록', hideSeparator: true }));
+    expect(html).toContain('<span aria-hidden="true">·</span>');
+    expect(html.match(/aria-hidden/g)).toHaveLength(1);
+    expect(html.replace(/<[^>]+>/g, '')).toBe('지금 세상 · 생애 기록');
+    expect(read(html)).toBe('지금 세상 생애 기록');
+  });
+
+  it('기본값(hideSeparator 없음)은 예전과 같다 — aria-hidden이 없다. 붙여 쓴 「A·B」·쉼표 나열·숫자+단위는 건드리지 않는다', () => {
+    expect(renderToStaticMarkup(Glue({ text: '지금 세상 · 생애 기록' }))).not.toContain('aria-hidden');
+    const plain = renderToStaticMarkup(Glue({ text: '인구동향조사·생명표 12,000건, 6)·본문', hideSeparator: true }));
+    expect(plain).not.toContain('aria-hidden');
+    expect(plain.replace(/<[^>]+>/g, '')).toBe('인구동향조사·생명표 12,000건, 6)·본문');
+  });
+
+  it('사슬이 셋이어도 가운뎃점마다 숨긴다 (「1959년 · 3세 · 서울」 → 낭독 「1959년 3세 서울」)', () => {
+    const html = renderToStaticMarkup(Glue({ text: '1959년 · 3세 · 서울', hideSeparator: true }));
+    expect(html.match(/<span aria-hidden="true">·<\/span>/g)).toHaveLength(2);
+    expect(read(html)).toBe('1959년 3세 서울');
+    expect(html.replace(/<[^>]+>/g, '')).toBe('1959년 · 3세 · 서울');
+  });
+});
+
 describe('괄호 안 짧은 구간은 괄호째 한 묶음이다 (M3-O13)', () => {
   it('「다이아몬드수저(상위 3% 안쪽)」: 앞 낱말은 묶음 밖, 「(상위 3% 안쪽)」은 한 묶음이고 안에서 「3%」는 그대로 묶인다', () => {
     const segs = glueSegments('다이아몬드수저(상위 3% 안쪽)');

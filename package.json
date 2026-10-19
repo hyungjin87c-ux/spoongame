@@ -27,6 +27,7 @@
     "check:citations": "vite-node scripts/syncCitations.ts",
     "gen:citations": "vite-node scripts/syncCitations.ts --write",
     "report:citations": "vite-node scripts/citationExposure.ts",
+    "report:notes": "vite-node scripts/noteSchedule.ts",
     "e2e:prod": "npm run build && playwright test -c playwright.prod.config.ts"
   },
   "dependencies": {

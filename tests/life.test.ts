@@ -54,6 +54,7 @@ import { ERA_CONFIG } from '../src/data/birthTable';
 import { EVENT_POOL } from '../src/data/events';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { startLife } from '../scripts/simulateLib';
+import { lifeView } from './helpers/notes';
 
 const poolOf = (...events: unknown[]): EventPool => createEventPool(validateEventFiles({ 'test.json': { events } }));
 const EMPTY_POOL = createEventPool([]);
@@ -863,7 +864,9 @@ describe('다음 결정으로 (advanceUntilDecision)', () => {
 });
 
 describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해가 두 번 진행되지 않는다 (R-005)', () => {
-  const sess = (game: GameState) => createSession(game, { speed: 1, autoMode: false });
+  // M7c: 기록 카드가 뜰 해(5세 …)에서 수동 + 켜짐 세션은 시트 응답을 기다리며 멈춘다. 이 묶음은 해 진행·선택의 중복 방어(R-005)를 보므로 카드를 끈 세션(소비 모드 — 시트 없이 지나간다)으로 돌린다.
+  // 카드 멈춤·응답 자체는 tests/noteCards.test.ts, 카드가 인생을 바꾸지 않음은 tests/noteInvariance.test.ts가 본다.
+  const sess = (game: GameState) => createSession(game, { speed: 1, autoMode: false, noteCards: false });
 
   it('advance(fromAge): 같은 나이로 두 번 와도 한 해만 진행된다 (StrictMode 이중 실행·겹친 타이머)', () => {
     const s0 = sess(life(2));
@@ -954,8 +957,8 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
     expect(sessionReducer(s, { type: 'setSpeed', speed: 1 })).toBe(s);
     expect(sessionReducer(s, { type: 'setAuto', auto: false })).toBe(s);
     expect(sessionReducer(s, { type: 'setSpeed', speed: 3 as never })).toBe(s);
-    expect(sessionReducer(s, { type: 'setSpeed', speed: 8 }).settings).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: false });
-    expect(sessionReducer(s, { type: 'setAuto', auto: true }).settings).toEqual({ ...DEFAULT_SETTINGS, speed: 1, autoMode: true });
+    expect(sessionReducer(s, { type: 'setSpeed', speed: 8 }).settings).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: false, noteCards: false }); // sess는 카드를 끈 세션이다(위 설명)
+    expect(sessionReducer(s, { type: 'setAuto', auto: true }).settings).toEqual({ ...DEFAULT_SETTINGS, speed: 1, autoMode: true, noteCards: false });
     // 속도·자동 변경이 게임 상태를 건드리지 않는다
     expect(sessionReducer(s, { type: 'setSpeed', speed: 4 }).game).toBe(s.game);
   });
@@ -1006,7 +1009,8 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
           s = sessionReducer(s, { type: 'advance', fromAge: staleAge === g.age ? -1 : staleAge }); // 옛 나이의 타이머
         }
       }
-      expect(s.game).toEqual(canonical);
+      // 소비 모드라 seen에 note- 키가 더해진다 — 기록 카드가 건드리는 것(seen의 note- 키·note 줄)만 빼고 상태 전체가 같다
+      expect(lifeView(s.game)).toEqual(lifeView(canonical));
     }
   });
 });

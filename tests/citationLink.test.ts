@@ -5,6 +5,7 @@ import { CITATION_COVERAGE_MIN, CITATION_DISTINCT_MIN, ERAS, cardCalendarYears, 
 import { CITATION_TABLE, getCitation } from '../src/data/citationsAccess';
 import { CITATION_PENDING, pendingCellCount } from '../src/data/citationPending';
 import { EVENT_POOL } from '../src/data/events';
+import { NOTE_CARDS } from '../src/data/noteCards';
 
 /**
  * 카드와 인용의 연결 (SPEC-003 MD2·EV6, M7b — docs/data/content-M7b.md 1-2·1-4·5절, 마스터 결정 M-1~M-9).
@@ -182,14 +183,14 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
 
 describe('usedBy 역색인 (M-5)', () => {
   it('citations.json의 usedBy가 이벤트 citation의 역색인과 글자까지 같다 (npm run check:citations) — 사람이 쓰지 않고 npm run gen:citations가 쓴다', () => {
-    expect(syncedCitationsText(citationsRaw, EVENT_POOL.events)).toBe(citationsRaw);
-    for (const c of CITATION_TABLE) expect(c.usedBy ?? [], c.id).toEqual(usedByIndex(EVENT_POOL.events)[c.id] ?? []);
+    expect(syncedCitationsText(citationsRaw, EVENT_POOL.events, NOTE_CARDS)).toBe(citationsRaw);
+    for (const c of CITATION_TABLE) expect(c.usedBy ?? [], c.id).toEqual(usedByIndex(EVENT_POOL.events, NOTE_CARDS)[c.id] ?? []);
   });
 
   it('양방향: 카드의 citation에 있는 인용은 그 인용의 usedBy에 그 카드가 있고, usedBy의 카드는 실제로 그 인용을 가리킨다 (고아 0)', () => {
     for (const c of CITATION_TABLE) {
       for (const evId of c.usedBy ?? []) {
-        const e = EVENT_POOL.byId.get(evId)!;
+        const e = EVENT_POOL.byId.get(evId) ?? NOTE_CARDS.find((n) => n.id === evId)!; // 기록 카드(note-…)도 같은 연결 모양이다
         expect(ERAS.some((era) => citationIdFor(e, era) === c.id), `${c.id} usedBy ${evId}는 그 인용을 가리키지 않는다`).toBe(true);
       }
     }
@@ -202,10 +203,10 @@ describe('usedBy 역색인 (M-5)', () => {
   it('syncedCitationsText는 실제로 고친다(공허 통과 방지): 틀린 usedBy·남은 candidateEvents를 바로잡는다', () => {
     const broken = citationsRaw.replace('"usedBy": [\n        "school-tutoring"\n      ]', '"usedBy": []');
     expect(broken).not.toBe(citationsRaw);
-    expect(syncedCitationsText(broken, EVENT_POOL.events)).toBe(citationsRaw);
+    expect(syncedCitationsText(broken, EVENT_POOL.events, NOTE_CARDS)).toBe(citationsRaw);
     const withCandidate = citationsRaw.replace('"usedBy": []', '"candidateEvents": [\n        "x"\n      ],\n      "usedBy": []');
     expect(withCandidate).not.toBe(citationsRaw);
-    expect(syncedCitationsText(withCandidate, EVENT_POOL.events)).toBe(citationsRaw);
+    expect(syncedCitationsText(withCandidate, EVENT_POOL.events, NOTE_CARDS)).toBe(citationsRaw);
   });
 });
 

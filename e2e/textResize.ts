@@ -81,6 +81,11 @@ export async function measureTextResize(page: Page): Promise<TextResizeMeasure> 
     };
     const offenders: string[] = [];
     const clipped: string[] = [];
+    // 줄임(…)으로 한 줄에 줄인 글자는 "잘림"이 아니라 설계된 표시다 — 허용 목록(designer D-88: compact에서 시트 위에 고정되는 질문 한 줄)에 있고 세 조건(text-overflow: ellipsis · white-space: nowrap · overflow-x: hidden)이 모두 걸려 있을 때만.
+    // 조건이 하나라도 빠지면(예: 줄임표 없이 그냥 잘림) 허용하지 않는다. 전체 문장은 compact가 풀리면 다시 다 보이고 접근 가능한 이름은 그대로다.
+    const ELLIPSIS_ALLOWED = ['.sheet--compact .sheet__title'];
+    const ellipsisAllowed = (el: Element, cs: CSSStyleDeclaration): boolean =>
+      ELLIPSIS_ALLOWED.some((sel) => el.matches(sel)) && cs.textOverflow === 'ellipsis' && cs.whiteSpace === 'nowrap' && cs.overflowX === 'hidden';
     for (const el of Array.from(document.body.querySelectorAll('*'))) {
       if (skip(el)) continue;
       const r = el.getBoundingClientRect();
@@ -91,10 +96,10 @@ export async function measureTextResize(page: Page): Promise<TextResizeMeasure> 
       const cs = getComputedStyle(el);
       const scroll = cs.overflowX !== 'visible' || cs.overflowY !== 'visible';
       if (scroll && el !== root && el !== document.body) {
-        if (el.scrollWidth > el.clientWidth + 1 && cs.overflowX !== 'visible') clipped.push(`${name(el)}: 가로 ${el.scrollWidth} > ${el.clientWidth}`);
+        if (el.scrollWidth > el.clientWidth + 1 && cs.overflowX !== 'visible' && !ellipsisAllowed(el, cs)) clipped.push(`${name(el)}: 가로 ${el.scrollWidth} > ${el.clientWidth}`);
       }
       // 글자가 자기 상자의 오른쪽 끝을 넘는다 (블록·버튼·flex/grid 아이템. 줄 안의 인라인은 제외)
-      if (cs.display !== 'inline' && cs.display !== 'contents') {
+      if (cs.display !== 'inline' && cs.display !== 'contents' && !ellipsisAllowed(el, cs)) {
         const hasText = Array.from(el.childNodes).some((n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== '');
         if (hasText) {
           // 눈에 보이는 글자만 센다: 시각적으로 숨긴 글자(.sr-only — 한 줄로 이어 붙인 읽기 전용 문장은 상자보다 길다)가 같은 요소 안에 있어도 잘림으로 잡지 않는다 (M5 안내 줄 .choice-panel__hint)

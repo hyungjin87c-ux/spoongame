@@ -1,0 +1,90 @@
+{
+  "note": "기록 카드(「생각 남기기」 자동 카드) 7종과 수동 기록의 고정 질문 — SPEC-003 M7c FR1·FR2, 설명서 docs/data/content-M7c.md 1·2절. 질문 문안은 designer의 최종 문구다(docs/design/copy.md 7-1절, 2026-10-19 — content-M7c 1-4절 초안에서 ①②③ 기본·④ 기본·⑥·수동 질문 여섯 문장이 바뀌었다). 형식과 규칙은 src/core/noteCards.ts(validateNoteFile·lintNoteFile), 차례 판정은 src/core/notes.ts#dueNote.",
+  "manual": {
+    "topic": "지금의 생각",
+    "prompt": "지금 {이름}의 마음에 남아 있는 장면이나 생각이 있습니까?"
+  },
+  "cards": [
+    {
+      "id": "note-infant-memory",
+      "topic": "영유아기 기억",
+      "order": 1,
+      "ageRange": { "min": 5, "max": 5 },
+      "timing": "asap",
+      "prompt": "다섯 살 무렵을 떠올려 보면, {이름}에게 기억나는 장면이나 느낌이 있습니까?",
+      "citation": "c-037"
+    },
+    {
+      "id": "note-teen-envy",
+      "topic": "또래와 나",
+      "order": 2,
+      "ageRange": { "min": 13, "max": 17 },
+      "timing": { "jitter": { "min": 13, "max": 17 } },
+      "prompt": "누군가가 부럽거나 샘이 났던 순간이 {이름}에게도 있습니까?",
+      "noCitation": "D"
+    },
+    {
+      "id": "note-first-love",
+      "topic": "첫사랑",
+      "order": 3,
+      "ageRange": { "min": 15, "max": 25 },
+      "timing": { "jitter": { "min": 18, "max": 22 } },
+      "prompt": "처음 누군가에게 마음이 갔던 기억이 {이름}에게 있습니까?",
+      "variants": [
+        {
+          "when": { "flags": ["first_love"] },
+          "prompt": "마음을 전했던 그때를 떠올려 보면, {이름}에게 남아 있는 장면이나 느낌이 있습니까?"
+        }
+      ],
+      "noCitation": "D"
+    },
+    {
+      "id": "note-youth-romance",
+      "topic": "마음을 나누는 일",
+      "order": 4,
+      "ageRange": { "min": 20, "max": 34 },
+      "timing": { "jitter": { "min": 27, "max": 32 } },
+      "prompt": "누군가를 만나 마음을 나누는 일에 대해, {이름}에게 떠오르는 생각이 있습니까?",
+      "variants": [
+        {
+          "when": [{ "flags": ["has_partner"] }, { "flags": ["married"] }],
+          "prompt": "함께하는 사람과 보낸 시간 가운데 {이름}에게 오래 남은 장면이 있습니까?"
+        }
+      ],
+      "noCitation": "D"
+    },
+    {
+      "id": "note-illness",
+      "topic": "아팠던 시간",
+      "order": 5,
+      "ageRange": { "min": 30, "max": 85 },
+      "triggers": [
+        { "seenAny": ["middle-health-crisis", "senior-illness"] },
+        { "conditions": { "stats": { "health": { "max": 35 } } }, "minAge": 35 }
+      ],
+      "unlessSeen": ["senior-illness-later"],
+      "timing": "asap",
+      "prompt": "몸이 아팠던 시간을 떠올려 보면, {이름}에게 남아 있는 마음이나 장면이 있습니까?",
+      "noCitation": "X1"
+    },
+    {
+      "id": "note-parents-aging",
+      "topic": "부모님의 나이듦",
+      "order": 6,
+      "ageRange": { "min": 25, "max": 60 },
+      "conditions": { "parentAge": { "min": 65 }, "notFlags": ["parents_gone"] },
+      "timing": "asap",
+      "prompt": "부모님이 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?",
+      "noCitation": "D"
+    },
+    {
+      "id": "note-midlife",
+      "topic": "중년의 인생",
+      "order": 7,
+      "ageRange": { "min": 45, "max": 55 },
+      "timing": { "jitter": { "min": 47, "max": 53 } },
+      "prompt": "살아온 시간을 돌아보는 지금, {이름}에게 인생은 어떤 것처럼 느껴집니까?",
+      "noCitation": "D"
+    }
+  ]
+}

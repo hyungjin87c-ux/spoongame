@@ -253,8 +253,8 @@ describe('도구 줄 (DB3·DB4·DB6·DB7·DB8)', () => {
 
   it('5개: BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기, 이 순서', () => {
     const labels = buttonsIn(tools).map((b) => b.label.replace(DASH_TEXT.feedbackNewTab, '').replace(/\s+/g, ' ').trim());
-    // 생각 남기기의 접근 가능한 이름에는 눈에 보이는 「준비 중」이 든다 (R-326)
-    expect(labels).toEqual([DASH_TEXT.toolBgm, `${DASH_TEXT.toolNote} ${DASH_TEXT.toolSoon}`, DASH_TEXT.toolDark, DASH_TEXT.toolFeedback, DASH_TEXT.toolExit]);
+    // 생각 남기기는 M7c부터 보통 버튼이다(「준비 중」 표식이 없다)
+    expect(labels).toEqual([DASH_TEXT.toolBgm, DASH_TEXT.toolNote, DASH_TEXT.toolDark, DASH_TEXT.toolFeedback, DASH_TEXT.toolExit]);
   });
 
   it('BGM: 처음엔 꺼짐(눌림 아님, 볼륨 조절 없음). 켜면 눌림 + 읽기 전용 「켜짐」 + 볼륨 조절이 나타난다', () => {
@@ -282,22 +282,22 @@ describe('도구 줄 (DB3·DB4·DB6·DB7·DB8)', () => {
     expect(text(openTagBlock(light, 'tool-dark'))).not.toContain(DASH_TEXT.toolOn);
   });
 
-  it('생각 남기기 (R-326): M7c까지 버튼 자리만 — 선택할 수 없고(aria-disabled) 지속 비활성 모양(data-unavailable)이며, 눈에 보이는 「준비 중」이 접근 가능한 이름에 든다. 누르면 나오던 안내는 없다', () => {
+  it('생각 남기기 (M7c D-75): 보통 버튼이다 — 눌러서 기록 시트가 열리므로 aria-haspopup=dialog, 「준비 중」 표식·지속 비활성(aria-disabled·data-unavailable)·누르면 나오던 안내가 없다', () => {
     const tag = openTag(html, 'tool-note');
-    expect(attr(tag, 'aria-disabled')).toBe('true');
-    // 입력 가드(첫 렌더는 모든 도구가 닫힌다)가 아니라 호출자의 지속 비활성이다 — 가드만 닫힌 다른 도구에는 이 표식이 없다 (R-337)
-    expect(attr(tag, 'data-unavailable')).toBe('true');
-    expect(attr(openTag(html, 'tool-bgm'), 'aria-disabled')).toBe('true');
-    expect(attr(openTag(html, 'tool-bgm'), 'data-unavailable')).toBeNull();
-    // 이유(준비 중)는 눈에 보이는 글자이고 버튼 이름 안에 있다 — 라디오 카드 「약 1시간」의 「준비 중」과 같은 방식
+    // 입력 가드(첫 렌더는 모든 도구가 닫힌다)만 aria-disabled를 붙이고 호출자의 지속 비활성 표식(data-unavailable)은 없다 — 다른 도구와 같다 (R-337)
+    expect(attr(tag, 'data-unavailable')).toBeNull();
+    expect(attr(tag, 'aria-haspopup')).toBe('dialog');
+    expect(attr(tag, 'aria-pressed')).toBeNull();
     const block = openTagBlock(html, 'tool-note');
-    expect(block).toContain('class="tool-soon"');
-    expect(text(block)).toBe(`${DASH_TEXT.toolNote} ${DASH_TEXT.toolSoon}`);
-    expect(DASH_TEXT.toolSoon).toBe('준비 중');
-    // 눌러서 안내를 띄우던 예전 방식은 없다: 안내 요소·describedby가 없고 안내 문구 상수도 없다
+    expect(block).not.toContain('tool-soon');
+    expect(text(block)).toBe(DASH_TEXT.toolNote);
+    expect(Object.keys(DASH_TEXT)).not.toContain('toolSoon');
+    // 눌러서 안내를 띄우던 예전 방식도 없다: 안내 요소·describedby가 없고 안내 문구 상수도 없다
     expect(html).not.toContain('note-soon');
     expect(attr(tag, 'aria-describedby')).toBeNull();
     expect(Object.keys(DASH_TEXT)).not.toContain('noteSoon');
+    expect(Object.keys(DASH_TEXT)).not.toContain('assetsSoon');
+    expect(JSON.stringify(DASH_TEXT)).not.toContain('아직 준비 중입니다');
   });
 
   it('의견 보내기: 새 탭 링크, 이슈 양식 주소, 허용 목록 값만 (이름·나이·기록 없음)', () => {

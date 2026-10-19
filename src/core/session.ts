@@ -1,6 +1,7 @@
 import { EVENT_POOL } from '../data/events';
 import type { EventPool } from './events';
 import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type TickInfo } from './life';
+import { consumeNote, dueNote, noteResponse, writeNote, type NoteMode } from './notes';
 import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth, setPaused } from './state';
 import {
   BGM_VOLUME_MAX,
@@ -38,6 +39,11 @@ import {
  *    멈춰 있는 동안에는 해마다 진행(advance)과 자동 선택(autoChoose)이 무시된다(늦게 울린 타이머가 멈춘 인생을 한 걸음 진행시키지 않게). 사람이 하는 선택(choose)과 「다음 결정으로」(skip)는 막지 않는다.
  *  - openTitle(「나가기」): 인생 단계에서는 **일시정지 상태로** 첫 화면을 연다(DB8) — 일시정지는 저장되는 판 상태라 새로고침해도, 「이어서 살기」로 돌아와도 멈춘 채 열린다(사용자가 「다시 진행」을 눌러야 흐른다).
  *  - setBgm / setTheme: 대시보드 도구 줄의 BGM(켬/끔·볼륨)과 다크 모드(수동 선택 저장). 설정이라 어느 화면에서든 받는다.
+ *  - 기록 카드(M7c, core/notes.ts): 적격 카드(`dueNote` — 해의 첫머리, 결정 대기 없음)를 만나면 `advance`·`skip`은 **수동 + `noteCards` 켜짐**이면 멈추고(화면이 시트를 띄운다 — 시트는 파생 상태다),
+ *    **자동 모드이거나 `noteCards`가 꺼져 있으면** 시트 없이 소비한다(`seen` 표시, 연표 줄 없음 = 「마음속에 담고 살기」와 같다). `choose`·`autoChoose`가 해를 마치고 새 해의 첫머리에서 카드를 만나면 소비 모드에서는 바로 소비한다(멈춤 모드는 파생).
+ *    saveNote(cardId|null, text, expectCount?): 「적어두고 살기」 — 글을 정규화해 연표에 더한다(자동 카드는 지금 뜰 차례의 카드여야 하고, 수동 기록은 cardId null). 빈 입력·40개 도달·이미 늘어난 기록 수(연타)·이미 소비된 카드는 같은 객체.
+ *    dismissNote(cardId): 「마음속에 담고 살기」 — 지금 뜰 차례의 카드를 소비한다(저장 없음). 이미 소비됐으면 같은 객체(연타). setNoteCards(on): 「자동 기록 카드 끄기/켜기」(설정, 새 인생으로 넘어가도 유지).
+ *    기록은 인생(스탯·자산·플래그·rngState)을 바꾸지 않는다 — 카드를 어떻게 처리하든 인생이 같다(tests/noteInvariance.test.ts).
  * 무시되는 경우에는 같은 객체를 돌려준다(React가 다시 그리지 않는다).
  *
  * 첫 화면을 다시 연 상태(showTitle): 「나가기」(M4)가 진행 중인 판(birth·life)을 그대로 두고 첫 화면만 보여 줄 때 켜진다.
@@ -85,6 +91,12 @@ export type SessionAction =
   | { type: 'setBgm'; bgm: Partial<BgmSettings> }
   /** 인생 화면 도구 줄: 화면 테마 수동 선택 */
   | { type: 'setTheme'; theme: ThemeChoice }
+  /** 기록 시트의 「1. 적어두고 살기」: cardId는 지금 뜰 차례인 자동 카드 id 또는 null(「생각 남기기」 수동 기록). expectCount는 열 때의 기록 수(연타 방어). */
+  | { type: 'saveNote'; cardId: string | null; text: string; expectCount?: number }
+  /** 기록 시트의 「2. 마음속에 담고 살기」: 지금 뜰 차례인 자동 카드를 소비한다(저장 없음) */
+  | { type: 'dismissNote'; cardId: string }
+  /** 기록 시트의 「자동 기록 카드 끄기/켜기」: 설정만 바꾼다 */
+  | { type: 'setNoteCards'; on: boolean }
   /** 엔딩에서 새 시드로 새 판을 시작해 첫 화면으로 간다(설정은 그대로). 시드는 UI가 정해 넘긴다. */
   | { type: 'rebirth'; seed: number }
   /** 다른 탭이 진행한 저장 상태를 이어받는다(R-011) */
@@ -104,7 +116,21 @@ function withGame(s: Session, game: GameState, tick: TickInfo | null = null): Se
   return game === s.game ? s : { ...s, game, tick };
 }
 
-export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = EVENT_POOL): Session {
+/**
+ * 세션이 기록 카드를 어떻게 다루는가: `live`(기본)는 위 설명대로 설정(자동 모드·`noteCards`)을 따르고, `ignore`는 진행 액션이 카드를 아예 보지 않는다 —
+ * 기록 시트가 없는 화면(M7c UI 전의 배포 판)과 시뮬레이션이 쓴다. `saveNote`·`dismissNote`·`setNoteCards`는 어느 쪽이든 동작한다.
+ */
+export type NoteHandling = 'live' | 'ignore';
+
+/** 소비 모드에서는 해가 바뀐 직후의 새 해 첫머리 카드를 바로 소비한다(멈춤·무시 모드는 그대로) */
+function settleNotes(game: GameState, mode: NoteMode): GameState {
+  if (mode !== 'consume') return game;
+  const due = dueNote(game);
+  return due === null ? game : consumeNote(game, due);
+}
+
+export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = EVENT_POOL, handling: NoteHandling = 'live'): Session {
+  const mode: NoteMode = handling === 'ignore' ? 'ignore' : noteResponse(s.settings, s.game);
   // 첫 화면을 다시 연 동안에는 인생이 흐르지 않는다(늦게 울린 타이머·입력이 와도 무시).
   if (s.showTitle && (a.type === 'advance' || a.type === 'choose' || a.type === 'autoChoose' || a.type === 'skip' || a.type === 'enterLife' || a.type === 'enterBirth' || a.type === 'finishSpin')) return s;
   switch (a.type) {
@@ -137,23 +163,31 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
       return withGame(s, enterLife(s.game));
     case 'advance': {
       if (s.game.age !== a.fromAge || s.game.paused) return s;
-      const r = stepYear(s.game, pool);
-      return withGame(s, r.state, r.tick);
+      let game = s.game;
+      if (mode !== 'ignore') {
+        const due = dueNote(game);
+        if (due !== null) {
+          if (mode === 'stop') return s; // 기록 시트가 열릴 차례 — 해를 진행하지 않는다(시트에서 쓰거나 담아 두면 진행이 이어진다)
+          game = consumeNote(game, due);
+        }
+      }
+      const r = stepYear(game, pool);
+      return withGame(s, settleNotes(r.state, mode), r.tick);
     }
     case 'choose': {
       const r = resolveChoiceStep(s.game, a.key, a.choiceId, pool);
-      return withGame(s, r.state, r.tick);
+      return withGame(s, settleNotes(r.state, mode), r.tick);
     }
     case 'autoChoose': {
       if (!s.settings.autoMode || s.game.paused) return s;
       const r = autoResolveStep(s.game, a.key, pool);
-      return withGame(s, r.state, r.tick);
+      return withGame(s, settleNotes(r.state, mode), r.tick);
     }
     case 'skip': {
       // 다음 결정으로: 선택지(또는 사망)까지 연출 없이 즉시. 선택은 사람이 한다(자동 모드에서는 이 동작이 없다 — 위 설명).
       // 일시정지(`paused`) 중에도 동작한다 — 사용자가 직접 누르는 입력이라 시계(advance·autoChoose가 멈춘다)와 상관이 없고, 선택지에서 멈춘 판은 일시정지 그대로다(R-331, tests/dashSession.test.ts).
       if (s.settings.autoMode || s.game.phase !== 'life' || s.game.pending !== null) return s;
-      const r = advanceUntilDecision(s.game, pool);
+      const r = advanceUntilDecision(s.game, pool, mode);
       return withGame(s, r.state, r.last);
     }
     case 'setSpeed':
@@ -175,6 +209,18 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
     }
     case 'setTheme':
       return !(THEMES as readonly string[]).includes(a.theme) || a.theme === s.settings.theme ? s : { ...s, settings: { ...s.settings, theme: a.theme } };
+    case 'saveNote': {
+      if (s.showTitle) return s;
+      const game = writeNote(s.game, { cardId: a.cardId, text: a.text, expectCount: a.expectCount });
+      return game === s.game ? s : { ...s, game }; // tick은 그대로(연출 시간 결정용 걸음은 기록과 무관하다)
+    }
+    case 'dismissNote': {
+      if (s.showTitle) return s;
+      const due = dueNote(s.game);
+      return due === null || due.id !== a.cardId ? s : { ...s, game: consumeNote(s.game, due) };
+    }
+    case 'setNoteCards':
+      return typeof a.on !== 'boolean' || a.on === s.settings.noteCards ? s : { ...s, settings: { ...s.settings, noteCards: a.on } };
     case 'rebirth':
       return withGame(s, rebirth(s.game, a.seed));
     case 'adopt':

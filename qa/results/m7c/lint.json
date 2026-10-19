@@ -1,0 +1,79 @@
+[
+ {
+  "id": "note-infant-memory",
+  "kind": "prompt",
+  "text": "다섯 살 무렵을 떠올려 보면, {이름}에게 기억나는 장면이나 느낌이 있습니까?",
+  "len": 42,
+  "issues": []
+ },
+ {
+  "id": "note-teen-envy",
+  "kind": "prompt",
+  "text": "누군가가 부럽거나 샘이 났던 순간이 {이름}에게도 있습니까?",
+  "len": 32,
+  "issues": []
+ },
+ {
+  "id": "note-first-love",
+  "kind": "prompt",
+  "text": "처음 누군가에게 마음이 갔던 때를 떠올려 보면, {이름}에게 기억나는 장면이 있습니까?",
+  "len": 47,
+  "issues": []
+ },
+ {
+  "id": "note-first-love",
+  "kind": "variant",
+  "text": "마음을 전했던 그때를 떠올려 보면, {이름}에게 남아 있는 장면이나 느낌이 있습니까?",
+  "len": 46,
+  "issues": []
+ },
+ {
+  "id": "note-youth-romance",
+  "kind": "prompt",
+  "text": "누군가를 만나 마음을 나누는 일에 대해, {이름}에게 떠오르는 생각이 있습니까?",
+  "len": 43,
+  "issues": []
+ },
+ {
+  "id": "note-youth-romance",
+  "kind": "variant",
+  "text": "헤어진 뒤에 지나온 시간을 떠올려 보면, {이름}에게 남아 있는 장면이나 마음이 있습니까?",
+  "len": 49,
+  "issues": []
+ },
+ {
+  "id": "note-youth-romance",
+  "kind": "variant",
+  "text": "함께하는 사람과 보낸 시간 가운데 {이름}에게 오래 남은 장면이 있습니까?",
+  "len": 40,
+  "issues": []
+ },
+ {
+  "id": "note-illness",
+  "kind": "prompt",
+  "text": "몸이 아팠던 시간을 떠올려 보면, {이름}에게 남아 있는 마음이나 장면이 있습니까?",
+  "len": 45,
+  "issues": []
+ },
+ {
+  "id": "note-parents-aging",
+  "kind": "prompt",
+  "text": "부모님이 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?",
+  "len": 36,
+  "issues": []
+ },
+ {
+  "id": "note-midlife",
+  "kind": "prompt",
+  "text": "살아온 시간을 돌아보는 지금, {이름}에게 인생은 어떤 것처럼 느껴집니까?",
+  "len": 40,
+  "issues": []
+ },
+ {
+  "id": "manual",
+  "kind": "manual",
+  "text": "지금 {이름}의 마음에 남아 있는 장면이나 생각이 있습니까?",
+  "len": 32,
+  "issues": []
+ }
+]

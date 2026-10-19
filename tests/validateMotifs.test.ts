@@ -400,7 +400,7 @@ describe('금지 패턴 (T4·T5: URL · @계정 · 전화번호 · 따옴표·�
 
 describe('CSV 읽기 (원문 겹침 점검용 — 가짜 데이터)', () => {
   it('BOM·따옴표 속 쉼표와 따옴표·CRLF·끝 빈 줄을 처리한다', () => {
-    const text = '﻿카테,순번,게시글_제목\r\n가,1,"제목, 쉼표 포함"\r\n나,2,"따옴표 ""안"" 포함"\r\n\r\n다,3,보통 제목\r\n';
+    const text = '\uFEFF카테,순번,게시글_제목\r\n가,1,"제목, 쉼표 포함"\r\n나,2,"따옴표 ""안"" 포함"\r\n\r\n다,3,보통 제목\r\n';
     const rows = parseCsv(text);
     expect(rows).toHaveLength(4);
     expect(rows[0]).toEqual(['카테', '순번', '게시글_제목']);
@@ -740,7 +740,7 @@ describe('실제 소재 목록 docs/data/story-motifs.json (M6c 형진 님 제�
     expect(files.length, '저장소 파일을 읽었다').toBeGreaterThan(20);
     for (const path of files) {
       expect(/톡톡|게시글|네이트판/.test(path), `${path}: 파일 이름`).toBe(false);
-      const text = fs.readFileSync(new URL(path, REPO), 'utf-8').replace(/^﻿/, '');
+      const text = fs.readFileSync(new URL(path, REPO), 'utf-8').replace(/^\uFEFF/, '');
       if (path.toLowerCase().endsWith('.json')) {
         for (const col of dumpColumns) expect(text.includes(col), `${path}: JSON 안의 ${col}`).toBe(false);
       } else {
@@ -752,9 +752,9 @@ describe('실제 소재 목록 docs/data/story-motifs.json (M6c 형진 님 제�
 
   it('덤프 검사는 가짜 TSV·TXT·JSON도 알아본다 (검사 규칙 자체의 확인)', () => {
     const dumpColumns = ['톡톡_카테고리', '게시글_제목', '원문_링크', '게시판_주소'];
-    const header = (text: string) => text.replace(/^﻿/, '').split(/\r?\n/, 1)[0];
+    const header = (text: string) => text.replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0];
     expect(dumpColumns.some((c) => header('톡톡_카테고리\t순번\t게시글_제목\n가\t1\t나').includes(c))).toBe(true);
-    expect(dumpColumns.some((c) => header('﻿게시글_제목 원문_링크\n가 나').includes(c))).toBe(true);
+    expect(dumpColumns.some((c) => header('\uFEFF게시글_제목 원문_링크\n가 나').includes(c))).toBe(true);
     expect(dumpColumns.some((c) => '[{"게시글_제목":"가","원문_링크":"나"}]'.includes(c))).toBe(true);
     expect(dumpColumns.some((c) => header('분류,이름,값\n가,나,다').includes(c))).toBe(false);
   });

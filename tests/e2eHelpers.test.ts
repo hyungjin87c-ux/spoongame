@@ -35,11 +35,14 @@ describe('e2e 저장 주입 헬퍼', () => {
     expect(parseGame(JSON.stringify({ version: SAVE_VERSION, data: made }))).toEqual(made);
   });
 
-  it('settingsEnvelope는 core 설정 검증기가 그대로 읽는 현재 버전(v3) 봉투이고, 비어 있는 필드(세상·인생 길이·BGM·테마)는 기본값으로 채운다', () => {
-    expect(parseSettings(settingsEnvelope({ speed: 8, autoMode: true }))).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true });
-    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' }))).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
+  it('settingsEnvelope는 core 설정 검증기가 그대로 읽는 현재 버전 봉투이고, 비어 있는 필드(세상·인생 길이·BGM·테마)는 기본값으로 채운다 — 기록 카드(noteCards)만 e2e 기본이 꺼짐이다 (M7c)', () => {
+    expect(parseSettings(settingsEnvelope({ speed: 8, autoMode: true }))).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true, noteCards: false });
+    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' }))).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: false, era: 'future', lifeLength: 'short30', noteCards: false });
+    // 새 기록 시험만 켠다: 명시한 값이 e2e 기본을 이긴다
+    expect(parseSettings(settingsEnvelope({ speed: 1, autoMode: false, noteCards: true })).noteCards).toBe(true);
+    expect(DEFAULT_SETTINGS.noteCards).toBe(true); // 앱의 기본은 켜짐 — e2e 기본만 꺼짐
     // 아직 고를 수 없는 「약 1시간」(long60)이 저장돼 있으면 약 30분으로 읽는다(R-202: 이 단언이 바뀐 이유 — 예전에는 long60이 그대로 읽혔다)
-    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'long60' }))).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: false, era: 'future', lifeLength: 'short30' });
+    expect(parseSettings(settingsEnvelope({ speed: 2, autoMode: false, era: 'future', lifeLength: 'long60' }))).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: false, era: 'future', lifeLength: 'short30', noteCards: false });
     // M4: BGM·테마도 주입할 수 있고 그대로 읽힌다
     expect(parseSettings(settingsEnvelope({ speed: 1, autoMode: false, bgm: { on: true, volume: 40 }, theme: 'dark' }))).toMatchObject({ bgm: { on: true, volume: 40 }, theme: 'dark' });
   });

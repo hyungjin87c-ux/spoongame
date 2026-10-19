@@ -22,10 +22,12 @@ import {
   selectableLifeLength,
   type Character,
   type GameState,
+  type HistoryEntry,
   type Settings,
   type Stats,
 } from './types';
 import { isValidAssets } from './economy';
+import { cleanNoteForLoad, isInvisibleOnly } from './noteText';
 import { DEFAULT_SETTINGS } from './state';
 
 /**
@@ -39,6 +41,7 @@ import { DEFAULT_SETTINGS } from './state';
  *     연표 상한도 160 → 300줄로 올랐다(data/lifeTable.ts#HISTORY_LIMITS, DB12). v6 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6).
  * v8: 개편(SPEC-003 M5) — **재산(wealth) 스탯이 없어지고** 20세부터의 자산 현황(`assets`: 순자산·연 소득·부채·소득 보정·주거 형태, 만 원 정수)과 20세 미만의 집안 살림(`familyFund`)이 판 상태에 더해졌다.
  *     v7 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6 — `classifySavedGame`이 `version < SCHEMA_VERSION`을 이전 버전으로 분류한다). docs/data/economy-model.md 10절.
+ * (M7c: 게임 스키마는 v8 그대로다 — 연표 종류에 `note`가 더해지고 `seen`에 `note-…` 키가 생길 수 있지만 허용 범위만 넓어졌고, 기록이 없는 v8 저장은 새 규칙에서도 그대로 유효하다. 진행 중인 판을 잃지 않으려고 올리지 않았다, NC-1.)
  */
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
@@ -47,10 +50,11 @@ export const SCHEMA_VERSION = 8;
  * 설정 스키마는 게임 스키마와 따로 버전을 관리한다(게임 스키마가 바뀌어도 설정은 유지).
  * v2: 첫 화면에서 고른 세상(era)·인생 길이(lifeLength)가 더해졌다. v1 설정(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — 배속·자동 모드를 잃지 않는다.
  * v3: 대시보드(SPEC-003 M4)의 BGM 켬/끔·볼륨(`bgm`, DB4)과 화면 테마(`theme`, DB6)가 더해졌다. v1·v2 설정은 그대로 읽고 새 필드는 기본값(BGM 꺼짐·시스템 테마)으로 채운다 — 이미 고른 값을 잃지 않는다.
+ * v4: 기록 카드(SPEC-003 M7c)의 `noteCards`(자동 기록 카드 켬/끔, 기본 켜짐)가 더해졌다. v1~v3 설정은 그대로 읽고 새 필드는 기본값으로 채운다 — 이미 고른 값을 잃지 않는다.
  */
-export const SETTINGS_VERSION = 3;
-/** 읽을 수 있는 설정 버전 (현재 + 이전 버전). 이 밖의 버전은 기본값. */
-const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2, 3];
+export const SETTINGS_VERSION = 4;
+/** 읽을 수 있는 설정 버전 (현재 + 이전 버전). 이 밖의 버전은 기본값. index.html의 첫 그림 전 테마 스크립트도 같은 목록이다(tests/themeInline.test.ts가 대조한다). */
+const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2, 3, 4];
 
 /** localStorage와 같은 최소 인터페이스 (테스트에서 가짜를 주입). */
 export interface StorageLike {
@@ -104,13 +108,18 @@ const HIDDEN_CONTROL = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/;
 export const hasHiddenControl = (text: string): boolean => HIDDEN_CONTROL.test(text);
 const cleanText = (v: unknown): boolean => typeof v === 'string' && !hasHiddenControl(v);
 
+/**
+ * 주인공 이름은 **한글 음절 3~5자**뿐이다 (SPEC-003 M7c T2·NC-13, QA-003-M7b A12d): 이름은 이름 풀(src/data/names.ts)에서만 오고 풀 전체(성 1자 + 이름 2~3자 — 성 1~2자까지 여유)가 이 패턴을 통과한다(tests/storage.test.ts).
+ * 보이지 않는 글자만의 이름(U+3164·U+115F·U+2060·공백·결합 문자·U+061C 등)과 숨은 제어 문자가 든 이름을 한꺼번에 막는다. 이름은 사용자 입력이 아니라서 거부해도 정상 저장을 잃지 않는다.
+ * **사용자 글(기록)에는 이 거부를 쓰지 않는다** — 기록 행은 별도 검증이다(`validHistoryEntry`).
+ */
+export const CHARACTER_NAME_PATTERN = /^[가-힣]{3,5}$/;
+
 function validCharacter(v: unknown): v is Character {
   return (
     isObj(v) &&
     typeof v.name === 'string' &&
-    v.name.length > 0 &&
-    v.name.length <= 20 &&
-    !hasHiddenControl(v.name) &&
+    CHARACTER_NAME_PATTERN.test(v.name) &&
     isOneOf(GENDERS, v.gender) &&
     isInt(v.birthYear) &&
     v.birthYear >= 1800 &&
@@ -128,19 +137,31 @@ const ABSOLUTE_MAX_AGE = Math.max(...ERAS.map((e) => ERA_CONFIG[e].life.maxAge))
 
 const optString = (v: unknown, max: number): boolean => v === undefined || (typeof v === 'string' && v.length <= max && !hasHiddenControl(v));
 
+/**
+ * 연표 한 줄의 검증. **기록(`note`) 줄의 글(`text`)은 사용자가 쓴 글**이라 숨은 문자 거부(`cleanText`)·길이 400 거부를 쓰지 않는다(M7c H1·H4) — 이모지 하나(ZWJ)로 인생 전체가 날아가면 안 된다.
+ * 문자열이 아니면 모양 위반이라 손상(H3)이고, 문자열이면 여기서는 통과시킨다. 위험한 글자는 `parseGame`이 `cleanNoteForLoad`로 걷어 내고 비면 그 줄만 버린다.
+ * 기록 줄의 `title`(주제)·`eventId`(카드 id)는 게임이 만든 글이라 기존 검사를 그대로 받는다(H2).
+ */
 function validHistoryEntry(h: unknown, maxAge: number): boolean {
-  return (
-    isObj(h) &&
-    isInt(h.age) &&
-    h.age >= 0 &&
-    h.age <= maxAge &&
-    isOneOf(HISTORY_KINDS, h.kind) &&
-    cleanText(h.text) &&
-    (h.text as string).length <= HISTORY_LIMITS.maxTextLength &&
-    optString(h.title, HISTORY_LIMITS.maxTitleLength) &&
-    optString(h.choice, HISTORY_LIMITS.maxChoiceLength) &&
-    optString(h.eventId, 48)
-  );
+  if (!isObj(h) || !isInt(h.age) || h.age < 0 || h.age > maxAge || !isOneOf(HISTORY_KINDS, h.kind)) return false;
+  const textOk = h.kind === 'note' ? typeof h.text === 'string' : cleanText(h.text) && (h.text as string).length <= HISTORY_LIMITS.maxTextLength;
+  return textOk && optString(h.title, HISTORY_LIMITS.maxTitleLength) && optString(h.choice, HISTORY_LIMITS.maxChoiceLength) && optString(h.eventId, 48);
+}
+
+/** 불러온 기록 줄의 글에서 위험한 글자를 걷고, 걷은 뒤 보이는 글자가 없으면 그 줄만 버린다 (H3). 기록 줄이 없으면 같은 객체. */
+function withCleanNotes(state: GameState): GameState {
+  if (!state.history.some((h) => h.kind === 'note')) return state;
+  const history: HistoryEntry[] = [];
+  for (const h of state.history) {
+    if (h.kind !== 'note') {
+      history.push(h);
+      continue;
+    }
+    const text = cleanNoteForLoad(h.text);
+    if (isInvisibleOnly(text)) continue;
+    history.push(text === h.text ? h : { ...h, text });
+  }
+  return { ...state, history };
 }
 
 function validFlags(v: unknown): boolean {
@@ -288,6 +309,8 @@ function readSettings(v: unknown): Settings | null {
     // v3 필드: 없거나 형태가 어긋나면 그 필드만 기본값으로 채운다(이미 고른 다른 설정을 잃지 않는다)
     bgm: readBgm(v.bgm),
     theme: isOneOf(THEMES, v.theme) ? (v.theme as Settings['theme']) : DEFAULT_SETTINGS.theme,
+    // v4 필드: 없거나 불리언이 아니면 기본값(켜짐)
+    noteCards: typeof v.noteCards === 'boolean' ? v.noteCards : DEFAULT_SETTINGS.noteCards,
   };
 }
 
@@ -349,7 +372,8 @@ export function parseGame(raw: string | null, pool: EventPool = EVENT_POOL): Gam
   const data = parseEnvelope(raw, SCHEMA_VERSION);
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
-  return verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
+  const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
+  return withCleanNotes(state);
 }
 
 /** 문자열 → 설정. 문제가 있으면 기본값. */
