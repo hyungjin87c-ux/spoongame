@@ -303,7 +303,7 @@ test('인생 길이(FS5, R-202): 「약 30분」 기본·선택, 「약 1시간�
   await expect(page.getByTestId('life-short30')).toBeEnabled();
   await expect(group).toContainText('약 30분');
   await expect(group).toContainText('약 1시간');
-  await expect(page.getByTestId('life-length-hint')).toHaveText('평균 수명까지 살아 보는 데 걸리는 시간이에요. 도중에 나가도 진행은 이 기기에 남습니다.');
+  await expect(page.getByTestId('life-length-hint')).toHaveText('평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.'); // M8 D-92
   // 비활성 + 이유: 접근 가능한 이름에 「준비 중」이 들어 있어 스크린리더도 이유를 듣는다
   const long = page.getByRole('radio', { name: /약 1시간/ });
   await expect(long).toBeDisabled();

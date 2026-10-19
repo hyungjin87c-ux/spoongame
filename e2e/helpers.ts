@@ -304,11 +304,36 @@ export async function readSettings(page: Page): Promise<Settings> {
  * body는 async 함수 본문이다: core(모듈)와 arg(JSON 직렬화 가능한 인자)를 쓰고 return 한다.
  */
 export async function evalCore<T>(page: Page, body: string, arg: unknown = null): Promise<T> {
+  // 결과 속 판 상태(phase·rngState가 있는 객체)에서 플레이 시간 기록(play)을 뺀다 — 이유는 아래 withoutPlay: core의 enterLife가 만든 0 기록을 주입하면 앱 타이머가 실제 시간을 쌓아 저장이 오라클과 어긋난다
   return page.evaluate<T>(`(async () => {
     const core = await import('/src/core/index.ts');
     const arg = ${JSON.stringify(arg)};
-    ${body}
+    const stripPlay = (v) => {
+      if (Array.isArray(v)) return v.map(stripPlay);
+      if (v === null || typeof v !== 'object') return v;
+      const out = {};
+      for (const [k, x] of Object.entries(v)) if (!(k === 'play' && 'phase' in v && 'rngState' in v)) out[k] = stripPlay(x);
+      return out;
+    };
+    return stripPlay(await (async () => {
+      ${body}
+    })());
   })()`);
+}
+
+/**
+ * 플레이 시간 기록(play, SPEC-003 M8)이 없는 판으로 만든다. core의 enterLife는 인생과 함께 play를 0으로 만들지만, 이 오라클 상태를 주입해 앱을 돌리면 **앱의 타이머가 실제 시간을 쌓아**
+ * 저장이 오라클(play 0)과 어긋난다. 인생(스탯·연표·난수…)만 견주는 e2e가 대부분이라 오라클 상태에서는 play를 뺀다 — play가 없는 저장은 「시간을 재지 않은 판」(M8 이전에 시작한 저장)이라 앱이 재지 않는다.
+ * 플레이 시간 타이머를 보는 e2e/m8-playtime.spec.ts만 `withPlay`로 0 기록을 붙여 주입한다.
+ */
+export function withoutPlay(state: GameState): GameState {
+  const { play: _play, ...rest } = state;
+  return rest as GameState;
+}
+
+/** 시간을 재는 판으로 만든다: 0에서 시작하는 플레이 시간 기록(play)을 붙인다 (m8-playtime.spec.ts) */
+export function withPlay(state: GameState, over: Partial<NonNullable<GameState['play']>> = {}): GameState {
+  return { ...state, play: { hold: 0, decide: 0, fold: 0, note: 0, idle: 0, offSpeed: 0, auto: 0, skips: 0, resumes: 0, ...over } };
 }
 
 /**
@@ -336,15 +361,13 @@ export async function quietStart(page: Page, years: number, era: Era = 'present'
     { years, era },
   );
   expect(s, `앞으로 ${years}해가 모두 조용한 해인 상태를 찾지 못했다`).not.toBeNull();
-  return s!;
+  return withoutPlay(s!);
 }
 
 /** 시드·시대로 만든 "인생 0세" 상태 (core 순수 함수로 계산) */
 export async function oracleLife(page: Page, seed: number, era: Era): Promise<GameState> {
-  return evalCore<GameState>(
-    page,
-    'return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), arg.era)));',
-    { seed, era },
+  return withoutPlay(
+    await evalCore<GameState>(page, 'return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), arg.era)));', { seed, era }),
   );
 }
 
@@ -388,7 +411,7 @@ export async function findPendingState(page: Page, era: Era, opts: { minChoices?
     { era, from: opts.fromSeed ?? 1000, min: opts.minChoices ?? 2 },
   );
   expect(found, `${era}: 선택지가 있는 시드를 찾지 못했다`).not.toBeNull();
-  return found!;
+  return withoutPlay(found!);
 }
 
 /** 저장의 history에서 특정 종류의 항목 수 */

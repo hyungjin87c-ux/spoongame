@@ -9,6 +9,7 @@ import {
   holdDelayMs,
   holdMsFor,
   autoChoiceDelayMs,
+  readSecFor,
   maxAgeOf,
   parseGame,
   playToEnd,
@@ -22,9 +23,9 @@ import {
   type TickCounts,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { CHOICE_PACING, EVENT_FREQUENCY, HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
-import { AUTO_CHOICE_MS, CHOICE_COUNT_TARGET, HOLD_MS, JUMP_OVERHEAD_SEC, READ_SEC_PER_CHOICE, TIME_TARGET_MIN } from '../src/data/timingTable';
-import { balanceOf, chooserFor, encounterTable, reportEra, reportOf, simulateLife, simulateMany, startLife, type LifeSummary, type Strategy } from '../scripts/simulateLib';
+import { EVENT_FREQUENCY, HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
+import { AUTO_CHOICE_MS, HOLD_MS, INFANT_CHOICE_MEAN_MIN, JUMP_OVERHEAD_SEC, LIFE_LENGTH_MODES, READ_MODEL, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
+import { balanceOf, chooserFor, encounterTable, reportOf, simulateLife, simulateMany, startLife, type LifeSummary, type Strategy } from '../scripts/simulateLib';
 import { syntheticEvents, syntheticPool } from '../scripts/syntheticPool';
 
 /**
@@ -39,6 +40,7 @@ function lazy<T>(compute: () => T): () => T {
 }
 
 const SEEDS = 400;
+const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
 
 /** 실제 EVENT_POOL로 세 시대 x 시드 1000개를 '무작위 수동 선택'으로 한 번만 돌린 판들 — 수명·시간 모델·밸런스 단언이 함께 쓴다 (npm run sim과 같은 계산). */
 const REPORT_SEEDS = 1000;
@@ -155,14 +157,15 @@ describe('평균 수명·사망 분포 (시대별 계수)', () => {
   });
 });
 
-describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 시간 가정치)', () => {
-  const counts = (over: Partial<TickCounts> = {}): TickCounts => ({ quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, ...over });
+describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 시간 모델, SPEC-003 LM2 — M8)', () => {
+  const counts = (over: Partial<TickCounts> = {}): TickCounts => ({ quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, extraLines: 0, ...over });
+  const slow = { speed: 1 as const, skipToDecision: false };
 
   it('상수 표: 연출 시간은 조용한 해 < 서술 이벤트 < 선택 결과 읽기 순이고, 선택지 빈도는 0~1 확률이다', () => {
     expect(HOLD_MS.quiet).toBeLessThan(HOLD_MS.narrative);
     expect(HOLD_MS.resolved).toBeLessThan(HOLD_MS.narrative * 1.5);
     expect(HOLD_MS.quiet).toBeGreaterThan(0);
-    expect(READ_SEC_PER_CHOICE).toBeGreaterThan(0);
+    for (const era of ERAS) expect(readSecFor(era)).toBeGreaterThan(0);
     for (const f of Object.values(EVENT_FREQUENCY)) {
       expect(f.choice).toBeGreaterThan(0);
       expect(f.choice).toBeLessThan(1);
@@ -171,23 +174,25 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
     }
   });
 
-  it('holdMsFor: 한 해의 연출 대기. 선택지·사망에는 타이머 대기가 없다(null)', () => {
-    expect(holdMsFor('quiet')).toBe(HOLD_MS.quiet);
-    expect(holdMsFor('narrative')).toBe(HOLD_MS.narrative);
-    expect(holdMsFor('resolved')).toBe(HOLD_MS.resolved);
-    expect(holdMsFor(null)).toBe(HOLD_MS.quiet); // 새로고침 직후
-    expect(holdMsFor('none')).toBe(HOLD_MS.quiet);
+  it('holdMsFor: 한 해의 연출 대기 = HOLD_MS × 판의 모드 계수. 선택지·사망에는 타이머 대기가 없다(null) (HOLD_MS를 직접 비교하던 SPEC-001 시험의 갱신 — 모드 계수가 곱해진다)', () => {
+    const k = LIFE_LENGTH_MODES.short30.holdScale;
+    expect(holdMsFor('quiet')).toBe(Math.round(HOLD_MS.quiet * k)); // 기본 모드는 short30
+    expect(holdMsFor('narrative')).toBe(Math.round(HOLD_MS.narrative * k));
+    expect(holdMsFor('resolved')).toBe(Math.round(HOLD_MS.resolved * k));
+    expect(holdMsFor(null)).toBe(holdMsFor('quiet')); // 새로고침 직후
+    expect(holdMsFor('none')).toBe(holdMsFor('quiet'));
     expect(holdMsFor('choice')).toBeNull();
     expect(holdMsFor('death')).toBeNull();
   });
 
   it('holdDelayMs: 배속으로 나누고(1/2/4/8배), 개발용 시간 배율로 더 나누며, 선택지·사망에는 null', () => {
-    expect(holdDelayMs('quiet', 1)).toBe(HOLD_MS.quiet);
-    expect(holdDelayMs('quiet', 2)).toBe(HOLD_MS.quiet / 2);
-    expect(holdDelayMs('quiet', 4)).toBe(HOLD_MS.quiet / 4);
-    expect(holdDelayMs('quiet', 8)).toBe(HOLD_MS.quiet / 8);
-    expect(holdDelayMs('narrative', 8)).toBe(HOLD_MS.narrative / 8);
-    expect(holdDelayMs('quiet', 1, 100)).toBe(HOLD_MS.quiet / 100);
+    const q = holdMsFor('quiet') as number;
+    expect(holdDelayMs('quiet', 1)).toBe(q);
+    expect(holdDelayMs('quiet', 2)).toBe(q / 2);
+    expect(holdDelayMs('quiet', 4)).toBe(q / 4);
+    expect(holdDelayMs('quiet', 8)).toBe(q / 8);
+    expect(holdDelayMs('narrative', 8)).toBe((holdMsFor('narrative') as number) / 8);
+    expect(holdDelayMs('quiet', 1, 100)).toBe(q / 100);
     expect(holdDelayMs('choice', 8)).toBeNull();
     expect(holdDelayMs('death', 1)).toBeNull();
     expect(autoChoiceDelayMs(1)).toBe(AUTO_CHOICE_MS);
@@ -195,123 +200,205 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
     expect(autoChoiceDelayMs(8, 1000)).toBe(AUTO_CHOICE_MS / 8 / 1000);
   });
 
-  it('estimatePlaySeconds: 직접 계산한 값과 같다 (건너뛰기 없음 = 연출 합/배속 + 선택지×읽기, 다음 결정으로 = 선택지×(읽기)+(선택지+1)×오버헤드)', () => {
-    const c = counts({ quiet: 60, narrative: 10, resolved: 18, choice: 20 });
-    const hold = (60 * HOLD_MS.quiet + 10 * HOLD_MS.narrative + 18 * HOLD_MS.resolved) / 1000;
-    expect(estimatePlaySeconds(c, { speed: 1, skipToDecision: false })).toBeCloseTo(hold + 20 * READ_SEC_PER_CHOICE, 9);
-    expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: false })).toBeCloseTo(hold / 8 + 20 * READ_SEC_PER_CHOICE, 9);
-    expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: true })).toBeCloseTo(20 * READ_SEC_PER_CHOICE + 21 * JUMP_OVERHEAD_SEC, 9);
+  it('estimatePlaySeconds: 직접 계산한 값과 같다 (건너뛰지 않으면 = 연출 합/배속 + 결정 카드 수 × r, 다음 결정으로 = 결정 카드 수 × r + (결정 카드 수 + 1) × 오버헤드)', () => {
+    const c = counts({ quiet: 60, narrative: 10, resolved: 18, choice: 20, extraLines: 5 });
+    // 30분 모드(계수 1.25): 조용한 해 8.75초 · 서술 해 21.25초 · 결과 16.25초 · 둘째 줄 +6.25초
+    const hold = (60 * 8750 + 10 * 21250 + 18 * 16250 + 5 * 6250) / 1000;
+    const r = readSecFor('present');
+    expect(estimatePlaySeconds(c, slow, 'short30', 'present')).toBeCloseTo(hold + 20 * r, 9);
+    expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(hold / 8 + 20 * r, 9);
+    expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: true }, 'short30', 'present')).toBeCloseTo(20 * r + 21 * JUMP_OVERHEAD_SEC, 9);
     // 건너뛰면 배속과 무관하고, 읽는 시간은 배속으로 줄지 않는다
-    expect(estimatePlaySeconds(c, { speed: 1, skipToDecision: true })).toBe(estimatePlaySeconds(c, { speed: 8, skipToDecision: true }));
-    expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: false })).toBeGreaterThan(20 * READ_SEC_PER_CHOICE);
-    expect(estimatePlaySeconds(counts(), { speed: 1, skipToDecision: false })).toBe(0);
+    expect(estimatePlaySeconds(c, slow, 'short30', 'present')).toBeGreaterThan(estimatePlaySeconds(c, { speed: 8, skipToDecision: false }, 'short30', 'present'));
+    expect(estimatePlaySeconds(c, { speed: 1, skipToDecision: true }, 'short30', 'present')).toBe(estimatePlaySeconds(c, { speed: 8, skipToDecision: true }, 'short30', 'present'));
+    expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: false }, 'short30', 'present')).toBeGreaterThan(20 * r);
+    expect(estimatePlaySeconds(counts(), slow, 'short30', 'present')).toBe(0);
+    // 참고 항(기록 카드 입력 시간 등)은 합에 더해지지만 판정(0)에서는 빠진다
+    expect(estimatePlaySeconds(c, slow, 'short30', 'present', 'median', 120)).toBeCloseTo(estimatePlaySeconds(c, slow, 'short30', 'present') + 120, 9);
   });
 
   it('배속이 빠를수록, 건너뛸수록 짧다: 1배 > 2배 > 4배 > 8배 > 8배+다음 결정으로', () => {
     const r = simulateLife(seedOf(7), 'present', 'random');
-    const t = (speed: 1 | 2 | 4 | 8, skip: boolean) => estimatePlaySeconds(r.counts, { speed, skipToDecision: skip });
+    const t = (speed: 1 | 2 | 4 | 8, skip: boolean) => estimatePlaySeconds(r.counts, { speed, skipToDecision: skip }, 'short30', 'present');
     expect(t(1, false)).toBeGreaterThan(t(2, false));
     expect(t(2, false)).toBeGreaterThan(t(4, false));
     expect(t(4, false)).toBeGreaterThan(t(8, false));
     expect(t(8, false)).toBeGreaterThan(t(8, true));
   });
 
-  describe('목표 시간 (실제 이벤트 풀, R-042, R-064): 판당 선택지 20~25개, 1배속 수동 약 20~30분(30분 이내), 8배속 + 다음 결정으로 읽기 18초 가정 약 7~10.5분 (SPEC "10분 내외"의 하단, 최종 판정은 M6 사람 실측)', () => {
-    // 세 시대 x 시드 1000개(REPORT_SEEDS)를 실제 EVENT_POOL로 한 번만 돌려 아래 단언들이 함께 쓴다 (npm run sim과 같은 계산)
-    const reportsOf = lazy(() => Object.fromEntries(ERAS.map((era) => [era, reportOf(era, sharedLives()[era])])) as Record<Era, ReturnType<typeof reportOf>>);
+  describe(
+    '목표 시간 (실제 이벤트 풀, SPEC-003 LM2·LM4, M8 — SPEC-001의 시간 시험(`TIME_TARGET_MIN` 1배속 19.5~30분·8배속 7~10.5분, 읽기 18초, 판당 20~25개)을 모드별 구간으로 **교체**한다, 마스터 결정 LD-12: 기준의 교체이지 약화가 아니다 — 옛 기준은 SPEC-003 개편(합쇼체 글자 수·인용 박스·영유아 콘텐츠)으로 전제가 달라졌고 SPEC 83행이 LM으로 대체한다고 적었다)',
+    () => {
+      // 세 시대 x 시드 1000개(REPORT_SEEDS)를 실제 EVENT_POOL로 한 번만 돌려 아래 단언들이 함께 쓴다 (npm run sim과 같은 계산)
+      const reportsOf = lazy(() => Object.fromEntries(ERAS.map((era) => [era, reportOf(era, sharedLives()[era])])) as Record<Era, ReturnType<typeof reportOf>>);
+      const mode = LIFE_LENGTH_MODES.short30;
 
-    it('판당 선택지 수 분포: 시대마다 평균 20~25개, 25개를 넘는 판 30% 이하, 20개 미만인 판 20% 이하, 하드 상한을 넘는 판 없음', () => {
-      for (const era of ERAS) {
-        const r = reportsOf()[era];
-        expect(r.choices.mean, `${era}: 선택지 수 평균`).toBeGreaterThanOrEqual(CHOICE_COUNT_TARGET.meanLow);
-        expect(r.choices.mean, `${era}: 선택지 수 평균`).toBeLessThanOrEqual(CHOICE_COUNT_TARGET.meanHigh);
-        // 한계 0.30(`CHOICE_COUNT_TARGET.maxOverShare`)은 그대로다. 다가올 세상만 지금 측정값(30.2%, 시드 고정 1000판)에 0.1%p를 붙인 0.303까지 받는다 — M7a가 29.8%로 한계에 붙였고 M7e-3(E-4)가 +0.2%p를 더했다(마스터의 M8 이관 결정,
-        // docs/TODO.md M8 「취약한 통계 (b)」). 고정 시드의 결정적 측정이라 「표본 잡음」 근거의 넓은 여유(전 시대 +1%p)는 앞으로의 콘텐츠 변경이 지난·지금 세상을 나쁘게 만들어도 통과시키는 약화였다(REV-003-M7e-1 R-381) —
-        // 지난·지금 세상은 한계 0.30을 그대로 지키고(측정 17.5%·24.3%), 다가올 세상이 0.303을 넘으면 실패한다. CHOICE_PACING 재조정(M8)에서 한계와 함께 다시 본다.
-        const overLimit = era === 'future' ? CHOICE_COUNT_TARGET.maxOverShare + 0.003 : CHOICE_COUNT_TARGET.maxOverShare;
-        expect(r.overTwentyFivePct / 100, `${era}: 25개 초과 비율`).toBeLessThanOrEqual(overLimit);
-        expect(r.underTwentyPct / 100, `${era}: 20개 미만 비율`).toBeLessThanOrEqual(0.2);
-        expect(r.choices.max, `${era}: 최대`).toBeLessThanOrEqual(CHOICE_PACING.hard);
-        expect(r.choices.p05, `${era}: 5% 분위`).toBeGreaterThanOrEqual(16);
-      }
-    });
+      // 임계 규칙(content-M8.md 7-4절, LD-9): 임계 = 측정값 + 표준오차 3배 이상. 최댓값은 판정하지 않고(보고) 평균·비율·분위수를 판정한다. 이 시험에는 「25장 초과 판 ≤ 30%」·「측정값 + 0.1%p」 단언이 없다(폐기).
+      // 카드 수 판정 구간(마스터 결정 2026-10-20 — 페이싱 soft 24 / hard 30 확정, 목표는 판 길이이고 카드 수는 수단)과 노년 하한은 data/timingTable.ts(#LIFE_LENGTH_MODES.short30.cards · SENIOR_CHOICE_MEAN_MIN)에 있다.
+      // 임계 계산(M-3, LD-9: 임계 ≤ 가장 불리한 표본 줄의 측정값 − 3 SE): 카드 평균 하한은 1000판 줄 네 개(시험·sim:1000 × 수동 흉내·자동 성향) 중 sim:1000 수동 흉내 지난 세상 23.690 ± 0.097 → 23.40 이하 → **23.3**,
+      // 노년 하한은 지난 세상 sim:1000 수동 흉내 4.171 ± 0.069 → 3.96 이하 → **3.95**, 다가올 세상 sim:1000 자동 5.211 ± 0.067 → 5.01 이하 → **5.00**(지금 세상 4.72는 그대로). 계산과 모든 줄의 여유는 tests/judgeMargins.test.ts가 3 SE 이상으로 지킨다.
+      // 처음 임계(23.5 / 3.97 / 5.03)는 이 네 칸이 2.0 · 2.9 · 2.9 · 2.7 SE라 3 SE에 못 미쳤다.
 
-    it('단계별로 고르게 분포한다: 학창·청년·중년에 몰리되 영유아와 노년도 선택지가 있다', () => {
-      for (const era of ERAS) {
-        const m = reportsOf()[era].choicesByStageMean;
-        expect(m.infant, `${era} 영유아`).toBeGreaterThanOrEqual(1.2);
-        expect(m.school, `${era} 학창`).toBeGreaterThanOrEqual(3);
-        expect(m.youth, `${era} 청년`).toBeGreaterThanOrEqual(5);
-        expect(m.middle, `${era} 중년`).toBeGreaterThanOrEqual(5);
-        expect(m.senior, `${era} 노년`).toBeGreaterThanOrEqual(3);
-        // 어느 한 단계가 전체의 40%를 넘게 차지하지 않는다
-        const total = STAGES.reduce((a, s) => a + m[s], 0);
-        for (const s of STAGES) expect(m[s] / total, `${era} ${s}`).toBeLessThan(0.4);
-      }
-    });
-
-    it('1배속 수동(읽는 시간 중앙 가정 18초/개): 평균이 목표 구간(약 20~30분) 안이고, 모든 판이 30분 이내', () => {
-      for (const era of ERAS) {
-        const r = reportsOf()[era];
-        expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeGreaterThanOrEqual(TIME_TARGET_MIN.manual1xLow);
-        expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeLessThanOrEqual(TIME_TARGET_MIN.manual1xMax);
-        expect(r.minutes1x.max, `${era}: 1배속 최대(분)`).toBeLessThanOrEqual(TIME_TARGET_MIN.manual1xMax);
-      }
-    });
-
-    it('1배속 수동(읽는 시간 상한 가정 30초/개)에서도 모든 판이 30분을 넘지 않는다', () => {
-      for (const era of ERAS) expect(reportsOf()[era].minutes1xUpper.max, `${era}: 1배속(30초) 최대(분)`).toBeLessThanOrEqual(TIME_TARGET_MIN.manual1xMax);
-    });
-
-    it('8배속 + 다음 결정으로(중앙 가정 18초/개): 평균이 약 7~10.5분(실측 7.2~7.6분 — "10분 내외"의 하단), 24초 가정(QA 실측 상단)에서는 약 9~11분(실측 9.4~9.9분)', () => {
-      for (const era of ERAS) {
-        const r = reportsOf()[era];
-        expect(r.minutesFast.mean, `${era}: 8배속+다음결정(18초) 평균(분)`).toBeGreaterThanOrEqual(TIME_TARGET_MIN.fastLow);
-        expect(r.minutesFast.mean, `${era}: 8배속+다음결정(18초) 평균(분)`).toBeLessThanOrEqual(TIME_TARGET_MIN.fastHigh);
-        expect(r.minutesFastHigh.mean, `${era}: 8배속+다음결정(24초) 평균(분)`).toBeGreaterThanOrEqual(9);
-        expect(r.minutesFastHigh.mean, `${era}: 8배속+다음결정(24초) 평균(분)`).toBeLessThanOrEqual(11);
-        // 보수 상한(30초)에서는 12~13분대 — 목표 구간을 넘지만 한계 안이다 (보고서에 기록)
-        expect(r.minutesFastUpper.mean, `${era}: 8배속+다음결정(30초) 평균(분)`).toBeLessThanOrEqual(14);
-      }
-    });
-
-    it('배속·건너뛰기 순서가 실제 풀에서도 성립한다: 1배속 > 8배속 > 8배속+다음 결정으로, 읽는 시간 가정이 길수록 길다', () => {
-      for (const era of ERAS) {
-        const r = reportsOf()[era];
-        expect(r.minutes1x.mean).toBeGreaterThan(r.minutesFast.mean * 2);
-        expect(r.minutes1xHigh.mean).toBeGreaterThan(r.minutes1x.mean);
-        expect(r.minutes1xUpper.mean).toBeGreaterThan(r.minutes1xHigh.mean);
-        expect(r.minutesFastUpper.mean).toBeGreaterThan(r.minutesFastHigh.mean);
-        expect(r.minutesFastHigh.mean).toBeGreaterThan(r.minutesFast.mean);
-      }
-    });
-
-    it('이벤트 글의 길이가 QA 실측 표본(선택지 이벤트 본문+라벨 평균 75.6자)과 크게 다르지 않아 읽는 시간 가정이 유효하다 (±25%)', () => {
-      const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined);
-      const chars = choiceEvents.map((e) => e.text.length + e.choices!.reduce((a, c) => a + c.label.length, 0));
-      const mean = chars.reduce((a, b) => a + b, 0) / chars.length;
-      expect(mean).toBeGreaterThan(75.6 * 0.75);
-      expect(mean).toBeLessThan(75.6 * 1.25);
-    });
-
-    it('선택지 빈도는 자동·수동 전략과 무관하게 비슷하다 (자동/첫 선택지 전략도 평균 20~25개, 시대별 100판)', () => {
-      for (const strategy of ['auto', 'first'] as const) {
+      // 같은 판정을 자동 성향 전략에도 1000판 단위로 건다(REV-003-M8-1 R-416 — 파이프라인 칸(시대 × 전략)에서 SPEC-001 판정을 빼면서 자동 성향의 카드 수 판정이 1000판 단위에서 사라졌었다).
+      // 시드 줄은 수동 흉내와 같은 `simulateMany`(i × 7919 + 13)다. 측정(report:time -- 1000 --only=margins, 시험 · 자동 성향): 카드 평균 23.85 / 24.84 / 25.00(표준오차 0.08~0.09, 하한 23.3까지 6.0 SE 이상),
+      // 하드−1↑ 1.0 / 3.7 / 4.3%(10%까지 8.7 SE 이상), 5% 분위 19 / 20 / 21(16장 미만 판 ≤ 5%까지 9 SE 이상), 70세+ 중 20장 미만 1.8 / 0.95 / 0.63%(10%까지 17 SE 이상), 노년 4.28 / 5.19 / 5.33(하한 3.95 / 4.72 / 5.00까지 4.7 SE 이상) — 모두 3 SE 이상이다.
+      const autoLives = lazy(() => Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'auto')])) as Record<Era, LifeSummary[]>);
+      const autoReportsOf = lazy(() => Object.fromEntries(ERAS.map((era) => [era, reportOf(era, autoLives()[era])])) as Record<Era, ReturnType<typeof reportOf>>);
+      type Reports = Record<Era, ReturnType<typeof reportOf>>;
+      const judgeCards = (reports: Reports, who: string): void => {
         for (const era of ERAS) {
-          const r = reportEra(era, 100, strategy);
-          expect(r.choices.mean, `${era}/${strategy}`).toBeGreaterThanOrEqual(19.5);
-          expect(r.choices.mean, `${era}/${strategy}`).toBeLessThanOrEqual(25.5);
+          const r = reports[era];
+          expect(r.choices.mean, `${who} ${era}: 결정 카드 수 평균`).toBeGreaterThanOrEqual(mode.cards.meanLow);
+          expect(r.choices.mean, `${who} ${era}: 결정 카드 수 평균`).toBeLessThanOrEqual(mode.cards.meanHigh);
+          expect(r.overHardCount, `${who} ${era}: 하드 상한(${mode.pacing.hard}) 초과 판`).toBe(0);
+          expect(r.nearCapPct / 100, `${who} ${era}: 하드−1 이상 판 비율`).toBeLessThanOrEqual(mode.cards.nearCapShareMax);
+          expect(r.choices.p05, `${who} ${era}: 5% 분위`).toBeGreaterThanOrEqual(16);
+          expect(r.under20Of70PlusPct, `${who} ${era}: 사망 나이 70세+ 중 20장 미만 판 비율(%)`).toBeLessThanOrEqual(10);
         }
-      }
-    });
+      };
 
-    it('합성 풀(형태만 갖춘 이벤트 40개, 참고용)은 스키마 검증을 통과하는 40개 이벤트(선택지 26 + 서술 14)이고 모든 단계를 덮는다', () => {
-      const ev = syntheticEvents() as Array<{ stages: string[]; choices?: unknown[] }>;
-      expect(ev).toHaveLength(40);
-      expect(ev.filter((e) => e.choices).length).toBe(26);
-      expect(new Set(ev.flatMap((e) => e.stages)).size).toBe(5);
-      expect(syntheticPool().events).toHaveLength(40);
-    });
-  });
+      it('판당 결정 카드 수 분포 (30분 모드): 시대마다 평균이 모드 구간(23.3~29) 안, 하드 상한을 넘는 판 없음, 하드−1 이상인 판 ≤ 10%, 5% 분위 ≥ 16', () => {
+        judgeCards(reportsOf(), '수동 흉내');
+      });
+
+      it('판당 결정 카드 수 분포 (30분 모드, 자동 성향 1000판): 수동 흉내와 같은 판정 — 평균이 모드 구간(23.3~29) 안, 하드 상한 초과 0, 하드−1 이상 ≤ 10%, 5% 분위 ≥ 16, 70세+ 중 20장 미만 ≤ 10% (R-416)', () => {
+        judgeCards(autoReportsOf(), '자동 성향');
+      });
+
+      it('단계별 분포: 노년은 M7a가 굶긴 몫을 돌려받았고(하한 3.95 / 4.72 / 5.00 이상 — 처음 HEAD − 0.3에서 M-3으로 내림), 영유아(0~7세)는 IN2 하한(2.8)을 지키며, 어느 한 단계가 전체의 40%를 넘게 차지하지 않는다 (수동 흉내 · 자동 성향 1000판)', () => {
+        const strategies: Array<[string, Reports, Record<Era, LifeSummary[]>]> = [
+          ['수동 흉내', reportsOf(), sharedLives()],
+          ['자동 성향', autoReportsOf(), autoLives()],
+        ];
+        for (const [who, reports, lives] of strategies) {
+        for (const era of ERAS) {
+          const m = reports[era].choicesByStageMean;
+          expect(m.infant, `${who} ${era} 영유아`).toBeGreaterThanOrEqual(1.2);
+          expect(m.school, `${who} ${era} 학창`).toBeGreaterThanOrEqual(3);
+          expect(m.youth, `${who} ${era} 청년`).toBeGreaterThanOrEqual(5);
+          expect(m.middle, `${who} ${era} 중년`).toBeGreaterThanOrEqual(5);
+          expect(m.senior, `${who} ${era} 노년`).toBeGreaterThanOrEqual(SENIOR_CHOICE_MEAN_MIN[era]);
+          const total = STAGES.reduce((a, s) => a + m[s], 0);
+          for (const s of STAGES) expect(m[s] / total, `${who} ${era} ${s}`).toBeLessThan(0.4);
+          // 0~7세(영유아 빈도표 구간) 평균은 연표의 나이로 센다
+          const upTo7 = lives[era].reduce((a, l) => a + l.final.history.filter((h) => h.kind === 'choice' && h.age <= 7).length, 0) / lives[era].length;
+          expect(upTo7, `${who} ${era} 0~7세`).toBeGreaterThanOrEqual(INFANT_CHOICE_MEAN_MIN);
+        }
+        }
+      });
+
+      // M-3으로 노년 하한을 내려도 기준의 뜻이 유지되는지의 근거 (REV-003-M8-2 R-425·R-426, dev 로그 11-9): 하한이 「M7a가 굶긴 몫을 돌려받았는가」를 여전히 가른다.
+      // 옛 페이싱(soft 23 / hard 26 — M7a 뒤 M8 이전)은 노년 평균을 3.87 / 4.35 / 4.54로 굶겼다. 지금 세상(4.35 < 4.72)·다가올 세상(4.54 < 5.00)은 하한에서 0.37·0.46 아래라 표본이 달라져도 뒤집히지 않는다.
+      // 지난 세상(3.87 대 하한 3.95)은 0.08 차이(약 1 SE)라 단언하지 않는다 — 하한이 3 SE 여유를 가지도록 내린 값의 대가다.
+      it('굶긴 상태는 잡힌다: 옛 페이싱(soft 23 / hard 26)으로 되돌리면 지금·다가올 세상의 노년 평균(4.35 / 4.54)이 노년 하한(4.72 / 5.00) 아래다', () => {
+        const saved = { ...mode.pacing };
+        try {
+          Object.assign(mode.pacing, { soft: 23, softFactor: 0.3, hard: 26 });
+          for (const era of ['present', 'future'] as const) {
+            const lives = simulateMany(era, REPORT_SEEDS, 'random');
+            const senior = mean(lives.map((l) => l.choicesByStage.senior));
+            expect(senior, `${era}: 옛 페이싱의 노년 평균 ${senior.toFixed(2)}`).toBeLessThan(SENIOR_CHOICE_MEAN_MIN[era]);
+          }
+        } finally {
+          Object.assign(mode.pacing, saved);
+        }
+      });
+
+      it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~34.5분) 안, 세 시대 평균이 27~33분, 판 하나하나의 95%가 40분 이하이고 최대 45분 이하', () => {
+        let sum = 0;
+        for (const era of ERAS) {
+          const r = reportsOf()[era];
+          expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeGreaterThanOrEqual(mode.timeMin.modelLow - 1.5);
+          expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeLessThanOrEqual(mode.timeMin.modelHigh + 1.5);
+          expect(r.minutes1x.p95, `${era}: 1배속 95% 분위(분)`).toBeLessThanOrEqual(40);
+          expect(r.minutes1x.max, `${era}: 1배속 최대(분)`).toBeLessThanOrEqual(45);
+          sum += r.minutes1x.mean;
+        }
+        expect(sum / ERAS.length, '세 시대 평균(분)').toBeGreaterThanOrEqual(mode.timeMin.modelLow);
+        expect(sum / ERAS.length, '세 시대 평균(분)').toBeLessThanOrEqual(mode.timeMin.modelHigh);
+      });
+
+      it('읽는 시간 수준별 보고 (판정 아님 — 사람 실측이 정한다): 낮음 < 중앙 < 높음 < 상한, 높음의 세 시대 평균이 40분을 넘지 않는다', () => {
+        for (const era of ERAS) {
+          const r = reportsOf()[era];
+          expect(r.minutes1xHigh.mean).toBeGreaterThan(r.minutes1x.mean);
+          expect(r.minutes1xUpper.mean).toBeGreaterThan(r.minutes1xHigh.mean);
+          expect(r.minutes1xHigh.mean, `${era}: 높음(느린 독자) 평균(분)`).toBeLessThanOrEqual(40);
+        }
+      });
+
+      it('배속·건너뛰기 순서가 실제 풀에서도 성립한다: 1배속 > 8배속 > 8배속+다음 결정으로 (8배속 + 다음 결정으로의 시간은 참고로만 본다 — 판정 단언 삭제, LD-12)', () => {
+        for (const era of ERAS) {
+          const r = reportsOf()[era];
+          expect(r.minutes1x.mean).toBeGreaterThan(r.minutesFast.mean);
+          expect(r.minutesFastUpper.mean).toBeGreaterThan(r.minutesFastHigh.mean);
+          expect(r.minutesFastHigh.mean).toBeGreaterThan(r.minutesFast.mean);
+        }
+      });
+
+      it('이벤트 글의 길이가 읽는 시간 모델(READ_MODEL)의 글자 수와 ±10% 안이다 — 합쇼체 실제 글자 수로 다시 쟀다(SPEC-003 완료 기준 15·LM2, 옛 「본문+라벨 75.6자」 가정의 교체)', () => {
+        const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined);
+        const near = (value: number, target: number) => {
+          expect(value).toBeGreaterThan(target * 0.9);
+          expect(value).toBeLessThan(target * 1.1);
+        };
+        near(mean(choiceEvents.map((e) => [...e.title].length)), READ_MODEL.chars.title);
+        near(mean(choiceEvents.map((e) => [...e.text].length)), READ_MODEL.chars.body);
+        near(mean(choiceEvents.flatMap((e) => e.choices!.map((c) => [...c.label].length))), READ_MODEL.chars.label);
+      });
+
+      // 「선택지 빈도는 전략과 무관하다」(100판 × 하한 23.5 / 상한 29.5)의 교체 (REV-003-M8-1 R-416): 100판 표본의 표준오차는 약 0.29장이라 하한 23.5가 측정값(첫 선택지 지난 세상 23.75)에서 1 SE도 안 떨어져 있었다(LD-9 위반).
+      // 표본을 1000판(표준오차 0.09)으로 늘리고, 판정을 「구간 안」이 아니라 「수동 흉내(shared 1000판)와의 차」로 바꾼다 — 이 시험의 뜻이 전략 무관이기 때문이다. 자동 성향의 구간 판정은 위 「자동 성향 1000판」 시험이 맡는다.
+      // 한계 계산: 측정된 차의 최댓값 0.23장(자동 성향 지금 세상 24.84 − 24.61) + 차의 표준오차(√(0.09² + 0.08²) ≈ 0.12)의 3배 0.36 = 0.59 → 0.6장 (여유 3.0 SE 이상). 첫 선택지: 지난 −0.11 · 지금 +0.14 · 다가올 −0.04.
+      it('선택지 빈도는 자동·수동 전략과 무관하게 비슷하다 (자동 성향·첫 선택지 1000판의 카드 수 평균이 수동 흉내와 0.6장 안, 시대별) (R-416: 100판 → 1000판)', () => {
+        const STRATEGY_GAP_MAX = 0.6;
+        const strategies = { auto: autoLives(), first: Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'first')])) as Record<Era, LifeSummary[]> };
+        for (const [name, lives] of Object.entries(strategies)) {
+          for (const era of ERAS) {
+            const strategyMean = mean(lives[era].map((l) => l.counts.choice));
+            const randomMean = mean(sharedLives()[era].map((l) => l.counts.choice));
+            expect(Math.abs(strategyMean - randomMean), `${era}/${name}: 카드 수 평균 ${strategyMean.toFixed(2)} 대 수동 흉내 ${randomMean.toFixed(2)}`).toBeLessThanOrEqual(STRATEGY_GAP_MAX);
+            expect(strategyMean, `${era}/${name}`).toBeLessThanOrEqual(mode.cards.meanHigh);
+          }
+        }
+      });
+
+      it('합성 풀(형태만 갖춘 이벤트 40개, 참고용)은 스키마 검증을 통과하는 40개 이벤트(선택지 26 + 서술 14)이고 모든 단계를 덮는다', () => {
+        const ev = syntheticEvents() as Array<{ stages: string[]; choices?: unknown[] }>;
+        expect(ev).toHaveLength(40);
+        expect(ev.filter((e) => e.choices).length).toBe(26);
+        expect(new Set(ev.flatMap((e) => e.stages)).size).toBe(5);
+        expect(syntheticPool().events).toHaveLength(40);
+      });
+
+      describe('LM4 약 1시간 모드 (1차는 닫혀 있다 — 표·시험·시뮬레이션 준비): 세 시대 × 1000판에서 에러 0·모순 0이고 카드 수·시간은 보고만 한다', () => {
+        const longLives = lazy(() => Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'random', undefined, { lifeLength: 'long60' })])) as Record<Era, LifeSummary[]>);
+
+        it('모든 판이 사망에 도달하고 판의 인생 길이가 long60이며 하드 상한을 넘지 않는다', () => {
+          const hard = LIFE_LENGTH_MODES.long60.pacing.hard;
+          for (const era of ERAS) {
+            for (const l of longLives()[era]) {
+              expect(l.final.phase, `${era} 시드 ${l.seed}`).toBe('ending');
+              expect(l.final.lifeLength).toBe('long60');
+              expect(l.counts.choice).toBeLessThanOrEqual(hard);
+            }
+          }
+        });
+
+        it('영유아(0~7세) 평균은 IN2 하한(2.8) 이상이고, 같은 시드라면 연출 계수만 달라 카드 수는 30분 모드와 같으며(임시 페이싱 = 30분 모드와 같은 값) 모델 시간은 계수 비율만큼 길다', () => {
+          for (const era of ERAS) {
+            const upTo7 = longLives()[era].reduce((a, l) => a + l.final.history.filter((h) => h.kind === 'choice' && h.age <= 7).length, 0) / REPORT_SEEDS;
+            expect(upTo7, `${era} 0~7세`).toBeGreaterThanOrEqual(INFANT_CHOICE_MEAN_MIN);
+            const shortLives = sharedLives()[era];
+            expect(longLives()[era].map((l) => l.counts.choice), `${era}: 임시 페이싱이 같으면 카드 수가 같다`).toEqual(shortLives.map((l) => l.counts.choice));
+            const longMin = longLives()[era].reduce((a, l) => a + l.seconds1x / 60, 0) / REPORT_SEEDS;
+            const shortMin = shortLives.reduce((a, l) => a + l.seconds1x / 60, 0) / REPORT_SEEDS;
+            expect(longMin, `${era}: 약 1시간 모드의 모델 시간(분, 보고)`).toBeGreaterThan(shortMin * 1.2);
+          }
+        });
+      });
+    },
+  );
 });
 
 describe('유년기 사망 (R-045 a): 담담하게 끝난다', () => {

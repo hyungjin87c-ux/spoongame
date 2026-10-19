@@ -31,7 +31,9 @@ import { OCCUPATION_LABEL } from '../../src/data/birthReportTable.ts';
 import { BIRTH_TEXT, GRADE_NAME, REPORT_NOTES, ROULETTE_TEXT, ROULETTE_TITLE_CHARS, formatKg, genderLabel, housingText, orderText, parentingDocText, regionOddsNote, yearMonthText } from '../../src/data/birthReportText.ts';
 import { PARENTING_LABEL, standingLabel } from '../../src/data/birthText.ts';
 import { ERA_CONFIG } from '../../src/data/birthTable.ts';
-import { ENDING_HEADINGS, ENDING_HEAD_LABEL, FINAL_NET_TEXT, JOURNEY_BAR_LEGEND, JOURNEY_NOTE, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, bandLabel, choiceCountText, deathLineText, endingSpanText, journeyBarLabel, journeyText, stageHeadingText } from '../../src/data/endingText.ts';
+import { ENDING_HEADINGS, ENDING_HEAD_LABEL, FINAL_NET_TEXT, JOURNEY_BAR_LEGEND, JOURNEY_NOTE, MOVEMENT_TEXT, PLAYTIME_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, bandLabel, breakdownParts, choiceCountText, deathLineText, endingSpanText, journeyBarLabel, journeyText, stageHeadingText } from '../../src/data/endingText.ts';
+import { displaySeconds, isCleanRun, readPlay } from '../../src/core/playClock.ts';
+import { PlayTime } from '../../src/ui/PlayTime.tsx';
 import { deathEntryText } from '../../src/data/lifeText.ts';
 import { NOTE_TEXT } from '../../src/data/noteSheetText.ts';
 import { NOTE_CARDS, NOTE_MANUAL } from '../../src/data/noteCards.ts';
@@ -57,6 +59,34 @@ const write = (name, html) => {
 const NAMES_META = JSON.parse(readFileSync(ROOT + 'src/data/names.json', 'utf-8')).meta;
 /** 수저 구간 글자의 단일 출처(R-170): bandLabel(startBandOf(era, wealth)). 시안은 이 함수 출력만 적는다 — 「약 N%」(standingLabel)는 외모·체중·엔딩 도착 자리 전용 */
 const band = (era, wealth) => bandLabel(startBandOf(era, wealth));
+
+/**
+ * M8 플레이 시간 블록(docs/design/copy.md 8절)은 **구현 상수·부품을 그대로** 읽는다(R-191 — 2026-10-19 선행 때의 임시 블록 `M8_TEXT`는 developer가 `PLAYTIME_TEXT`·`TITLE_TEXT.lifeLengthHint`를 copy.md 8-1 그대로 넣은 뒤 지웠다, diff-003.md D-96):
+ * 글자 = `src/data/endingText.ts#PLAYTIME_TEXT`(분해 문장은 `breakdownParts`가 시간 부품 앞뒤 조각으로), 값 = `src/core/playClock.ts#displaySeconds`(버킷별 초 버림 뒤 합)·`isCleanRun`,
+ * 시간 부품 = `src/ui/PlayTime.tsx`(눈에 보이는 mm:ss aria-hidden + 낭독 「{m}분 {s}초」 sr-only + datetime PT — React 서버 렌더는 속성 이름을 `dateTime`으로 내고 브라우저 DOM에서는 `datetime`과 같은 속성이다). tests/designAssets.test.ts가 상수 = copy.md 8절, 생성기에 글자 사본 없음을 잠근다.
+ * 시안의 플레이 기록은 저장 상태의 모양(core/types.ts#PlayTime — ms 일곱 + 횟수 둘)으로 두고 `readPlay`(저장 검증)를 통과해야 한다 — HERO_STATE가 Character·BirthReport 모양을 지키는 것과 같은 규칙.
+ */
+/** 시안용 플레이 기록: 연출(hold)·결정 읽기(decide)는 초 단위 모델값(content-M8 2-6절) → ms, 나머지 버킷·횟수는 0. extra로 깨끗하지 않은 판(offSpeed·auto·skips)을 만든다 */
+function playRecord(holdSec, decideSec, extra = {}) {
+  const rec = { hold: holdSec * 1000, decide: decideSec * 1000, fold: 0, note: 0, idle: 0, offSpeed: 0, auto: 0, skips: 0, resumes: 0, ...extra };
+  if (readPlay(rec) === undefined) throw new Error(`시안 플레이 기록이 저장 검증을 통과하지 못한다: ${JSON.stringify(rec)}`);
+  return rec;
+}
+/** 시간 값 하나 — 구현 부품 PlayTime의 출력 그대로(세 자리가 같은 부품). 바로 뒤에 조사를 두지 않는다(design-system.md 11-4) */
+const playTimeHtml = (seconds, props = {}) => renderToStaticMarkup(createElement(PlayTime, { seconds, ...props }));
+/**
+ * 엔딩 「사망과 선택」 카드 끝의 플레이 시간 블록 — 구현 EndingScreen.tsx#PlayTimeBlock과 같은 마크업(copy.md 8-3 DOM, data-testid까지). play = core/types.ts#PlayTime 또는 null(없으면 블록 자체가 없다 — M8 이전 저장, content-M8 5-3절).
+ * 표시값 = displaySeconds(버킷별 초 버림 뒤 합)라 보조 문장의 두 부분(각각 버림)을 더하면 늘 표시값과 같다. 깨끗하지 않은 판(isCleanRun 거짓 — 배속·자동 모드·「다음 결정으로」 중 하나라도 쓴 판)에만 notClean 문장이 든다.
+ */
+function playtimeHtml(play) {
+  if (play === null) return '';
+  const t = PLAYTIME_TEXT;
+  const [lead, mid, tail] = breakdownParts();
+  // 글자 조각은 Glue 묶음을 거친다(구현 D-98 — 관형사 「이 기기에만」이 줄 끝에 홀로 남지 않게, design-system.md 11-4; 규칙 D-97이 들어오기 전에는 출력이 맨 글자와 같다)
+  const breakdown = `${glueHtml(lead)}${playTimeHtml(Math.floor(play.hold / 1000), { testId: 'ending-playtime-hold' })}${glueHtml(mid)}${playTimeHtml(Math.floor(play.decide / 1000), { testId: 'ending-playtime-decide' })}${glueHtml(tail)}`;
+  const sentences = [breakdown, glueHtml(t.excluded), ...(isCleanRun(play) ? [] : [glueHtml(t.notClean)]), glueHtml(t.device)];
+  return `<div class="playtime" data-testid="ending-playtime"><dl class="playtime__row"><dt>${esc(t.label)}</dt><dd>${playTimeHtml(displaySeconds(play), { className: 'playtime__value', testId: 'ending-playtime-value' })}</dd></dl><p class="t-xs t-faint playtime__note" data-testid="ending-playtime-note">${sentences.join(' ')}</p></div>`;
+}
 
 // ---------- 가짜 인물 데이터 (화면 사이에서 일치) ----------
 /** 가상 인구(시안용 고정값 — 구현은 core/population.ts#tryVirtualPopulation이 이 기기의 시각으로 계산한다). 첫 화면·대시보드 인생 기록 고정 줄이 같은 값을 쓴다 */
@@ -259,8 +289,8 @@ function titlePage(key, state = 'new') {
     <p class="hero__tag">${esc(TITLE_TEXT.heroTagLead)}<span class="keep-phrase">${esc(tag[0])}${tag[1] === '' ? '' : `<span class="nowrap">${esc(tag[1])}</span>`}${esc(tag[2])}</span></p>
     ${spoonLineup()}
     <p class="hero__pop"><strong>${N_POP}${TITLE_TEXT.populationUnit}</strong>${esc(TITLE_TEXT.populationSuffix)}</p>
-    <p class="hero__note">${esc(TITLE_TEXT.populationNote)}</p>
-  </header>`;
+    <p class="hero__note">${glueHtml(TITLE_TEXT.populationNote)}</p>
+  </header>`; // 가상 인구 주석도 Glue(구현 TitleScreen.tsx:266, D-98) — 「이 기기」가 줄 끝에서 갈리지 않는다
   const eraMeta = (e) => eraMetaText(e, e === 'present' ? { min: 2026, max: 2026 } : ERA_CONFIG[e].birthYears);
   const world = `<fieldset><legend class="group-title">${esc(TITLE_TEXT.eraGroup)}</legend>
     <div class="choices choices--1" role="radiogroup" aria-label="${esc(TITLE_TEXT.eraGroup)}">
@@ -270,7 +300,7 @@ function titlePage(key, state = 'new') {
     <div class="choices choices--2" role="radiogroup" aria-label="${esc(TITLE_TEXT.lifeLengthGroup)}">
       ${LIFE_LENGTHS.map((l) => radioCard({ name: 'len', title: LIFE_LENGTH_TEXT[l].title, desc: LIFE_LENGTH_TEXT[l].desc, selected: l === 'short30', disabled: !isLifeLengthSelectable(l), meta: isLifeLengthSelectable(l) ? '' : NOT_READY_TEXT })).join('\n      ')}
     </div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">${esc(TITLE_TEXT.lifeLengthHint)}</p></fieldset>`;
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">${glueHtml(TITLE_TEXT.lifeLengthHint)}</p></fieldset>`; // FS5 설명은 구현 상수 그대로(M8 D-92 — LD-1: 기록 쓰는 시간이 빠진다는 한 문장 + 어체 통일, copy.md 8-1 ①; 선행 때의 임시 블록은 developer 반영 뒤 지웠다, D-96). Glue 묶음(관형사 「이 기기에」 — design-system.md 11-4, D-97·D-98)은 구현 glue.ts의 규칙(r2, 2026-10-20)을 import로 그대로 쓴다
   // 하단 띠 — 확인 단계(R-204): 맨 아래(방금 누른 「새로 태어나기」 자리)는 안전한 「돌아가기」(기본·큰 버튼, 먼저 포커스), 그 위 줄이 이전 판을 지우는 확인(보조)
   const barNew = `<button class="btn btn--primary btn--lg" type="button">${esc(TITLE_TEXT.begin)}</button>`;
   const barContinue = `<button class="btn btn--primary btn--lg" type="button">${esc(TITLE_TEXT.resume)}</button><button class="btn btn--ghost btn--sm" type="button">${esc(TITLE_TEXT.beginNew)}</button>`;
@@ -533,7 +563,7 @@ function dashHead({ age, year, progress, paused, pending = false, auto = false, 
 function toolbarStates() {
   const T = DASH_TEXT;
   const tools = `<label class="volume"><span>${esc(T.bgmVolume)}</span><input type="range" min="${BGM_VOLUME_MIN}" max="${BGM_VOLUME_MAX}" step="5" value="${DEFAULT_BGM.volume}" aria-valuetext="${DEFAULT_BGM.volume}%"><output>${DEFAULT_BGM.volume}%</output></label>`;
-  const exit = `<div class="exit-ask" role="group" aria-labelledby="exit-ask-t"><p class="exit-ask__title" id="exit-ask-t" role="alert">${esc(T.exitAsk)}</p><p class="t-sm t-muted">${esc(T.exitAskSub)}</p>
+  const exit = `<div class="exit-ask" role="group" aria-labelledby="exit-ask-t"><p class="exit-ask__title" id="exit-ask-t" role="alert">${esc(T.exitAsk)}</p><p class="t-sm t-muted">${glueHtml(T.exitAskSub)}</p>
 <div class="exit-ask__actions"><button class="btn btn--secondary" type="button">${esc(T.exitYes)}</button><button class="btn btn--primary" type="button">${esc(T.exitNo)}</button></div></div>`;
   return `<template id="state-tools">${tools}</template>
 <template id="state-exit">${exit}</template>
@@ -953,6 +983,9 @@ function systemPage() {
  *     막대의 읽기용 설명은 journeyBarLabel(R-191(d)). 스무 살 전은 띠만(마름모·마지막 줄·방향 문장 없음).
  *  ③ 최종 스탯 카드의 「최종 순자산」 줄은 **금액만**(자리 글자는 출발선 카드로 일원화 — copy.md 4-6·5-2 ①), 외모는 「또래 사이에서 {standingLabel}」 순서(5-1 looksSub).
  * 상태(`?state=`): 기본 = 지금 세상 흙수저 84세 / zero = 최종 순자산 0원(QA-003-M5 O04 — 동률 불리 규칙 C의 출력) / past = 지난 세상 인물(birth.html?era=past와 같은 생성기 출력, 음수 + 「지금 가치로 환산」) / early = 스무 살 전(동수저 — 중앙 구간 문구) / down = 은수저 「뒤쪽 자리」.
+ *  ④ (M8, 2026-10-19) 「사망과 선택」 카드 끝의 **플레이 시간 블록**(copy.md 8절): 「이 판의 플레이 시간 mm:ss」 한 줄 + 보조 문장(세월이 흐른 시간·결정을 읽고 고른 시간 분해, 제외 범위, 깨끗하지 않은 판 표시, 이 기기에만). 값은 M8 시간 모델(content-M8 2-6절, k = 1.2 · 지금·다가올 r 26초 · 지난 22초)로 그 판의 사망 나이·선택 수에서 계산한 모델값이다.
+ *     추가 상태: play-fast = 배속·「다음 결정으로」를 쓴 판(깨끗하지 않은 판 문장) / play-long = 한 시간을 넘긴 판(61:05 — mm:ss 표기 점검용, 1차 30분 모드에서는 나오기 어렵고 2차 1시간 모드의 값) / play-none = `play` 없는 판(M8 이전 저장 — 블록 없음).
+ *     글자·값·시간 부품은 구현(`PLAYTIME_TEXT`·`displaySeconds`·`isCleanRun`·`PlayTime`) 그대로이고 플레이 기록은 저장 모양(`playRecord`, `readPlay` 통과) — 2026-10-19 후속 D-96.
  */
 /** 순위 표현의 줄바꿈 보호 — 구현 컴포넌트 KeepStanding의 출력 그대로(`<span class="nowrap">` 조각) */
 const keepStandingHtml = (text) => html(KeepStanding, { text });
@@ -969,7 +1002,7 @@ const DOWN_SEED = presentSeedOfWealth(3);
  * 엔딩 상태 하나의 본문(main). review = { start, end|null, movement|null } 는 구현 함수로 만든다: start = startBandOf(era, 재력), end = finalWealthStanding(era, 순자산), movement = movementOf(start, end).
  * entries = 연표 (구현 core/ending.ts#buildTimeline과 같은 단계 묶음 — 단계 제목은 stageHeadingText 출력).
  */
-function endingMain({ era, c, month, death, net, choiceCount, entries, note = '' }) {
+function endingMain({ era, c, month, death, net, choiceCount, entries, note = '', play = null, playNote = '' }) {
   const start = startBandOf(era, c.parentWealth);
   const early = net === null;
   const end = early ? null : finalWealthStanding(era, net);
@@ -995,7 +1028,7 @@ function endingMain({ era, c, month, death, net, choiceCount, entries, note = ''
   return `<main class="ending" data-state-era="${era}">
   <div class="ending__head">${face(ageGroupIdOf(death.age), c.gender, 3, `${c.name}의 얼굴`, 'face--lg')}
     <div class="ending__who"><p class="label">${glueHtml(`${ERA_CONFIG[era].label} · ${ENDING_HEAD_LABEL}`)}</p><h1 class="t-title" style="--title-chars:${titleCharsFor(title)}">${esc(title)}</h1><p class="t-muted">${glueHtml(endingSpanText(c.birthYear, month, deathYear, death.age))}</p></div></div>
-  <section class="card stack--sm stack" aria-label="${esc(DASH_TEXT.endingSummaryLabel)}"><p>${esc(deathLineText(death))}</p><p class="t-muted">${esc(choiceCountText(choiceCount))}</p></section>
+  <section class="card stack--sm stack" aria-label="${esc(DASH_TEXT.endingSummaryLabel)}"><p>${esc(deathLineText(death))}</p><p class="t-muted">${esc(choiceCountText(choiceCount))}</p>${playtimeHtml(play)}${playNote}</section>
   <section class="card" aria-labelledby="ending-journey-title"><h2 id="ending-journey-title" class="card__title card__title--gap">${esc(ENDING_HEADINGS.journey)}</h2>
     <div class="journey">
       <div class="journey__bar" role="img" aria-label="${esc(barLabel)}">
@@ -1012,8 +1045,7 @@ function endingMain({ era, c, month, death, net, choiceCount, entries, note = ''
   <section class="card stack stack--sm ending-stats" aria-labelledby="ending-stats-title"><h2 id="ending-stats-title" class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>${meter('health', 41)}${meter('happy', 72)}${meter('knowledge', 66)}${meter('relation', 80)}${finalNet}
     <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd><small>${esc(BIRTH_TEXT.looksSub)}</small> ${keepStandingHtml(standingLabel(looksStanding(c.looks)))}</dd></dl></section>
   <section class="card" aria-labelledby="ending-timeline-title"><h2 id="ending-timeline-title" class="card__title card__title--gap">${esc(ENDING_HEADINGS.timeline)}</h2>${timeline}</section>
-  <section class="card"><p class="t-sm t-muted">이 판의 플레이 시간 <strong class="num" style="color:var(--c-text)">27:46</strong> <span class="t-xs t-faint">(일시정지 제외, 이 기기에만 저장)</span></p><p class="mock-tag">시안 주석 · 플레이 시간 줄은 M8(인생 길이 모드) 범위</p></section>
-  <section class="rebirth"><button class="btn btn--primary btn--lg btn--block" type="button">${esc(REBIRTH_LABEL)}</button><p class="t-sm t-muted">${esc(REBIRTH_NOTE)}</p></section>
+  <section class="rebirth"><button class="btn btn--primary btn--lg btn--block" type="button">${esc(REBIRTH_LABEL)}</button><p class="t-sm t-muted">${glueHtml(REBIRTH_NOTE)}</p></section>
   ${MOCK_TAG}
 </main>`;
 }
@@ -1023,13 +1055,15 @@ function endingPage() {
   const month = HERO_STATE.report.month;
   const birthRow = { age: 0, kind: 'event', text: HERO.sentence };
   // 기본: 지금 세상 흙수저, 84세 노환, 27번 선택, 최종 순자산 2억 4,000만 원(중앙값 위 — 자리·방향은 함수가 정한다: 「앞선 자리」)
-  const main = endingMain({
+  // 플레이 시간(M8)은 그 판의 모델값(content-M8 2-6절 공식, 1배속 수동·k = 1.2): 연출 = 1.2 × ((사망 나이 − 선택 수) × 9.0 + 13 × 선택 수 + 11)초, 결정 읽기 = 선택 수 × 26초(지금·다가올 세상; 지난 세상은 9.3·22초) — 84세·27번 = 17:30 + 11:42 = 29:12
+  const mainArgs = {
     era: 'present',
     c,
     month,
     death: { age: 84, cause: '노환' },
     net: 24000,
     choiceCount: 27,
+    play: playRecord(1050, 702),
     entries: [
       birthRow,
       // 「나의 기록」 줄(M7c FR9): 라벨(FitPair hideSeparator)과 글(<bdi data-user-text>)이 세로로 쌓인 두 칸 — 인생 기록 줄과 같은 부품(NoteText, 강제 줄바꿈 <br> 없음, R-300). 주제는 content-M7c 1-3절 라벨
@@ -1042,8 +1076,9 @@ function endingPage() {
       { age: 65, kind: 'stage', text: STAGE_ENTRY_TEXT.senior },
       { age: 84, kind: 'death', text: deathEntryText('노환') },
     ],
-  });
-  // zero: 최종 순자산 0원 — 노년 안전망으로 0원에 머문 판(QA-003-M5 O04). 자리는 동률 불리 규칙(마스터 결정 C)의 함수 출력 그대로
+  };
+  const main = endingMain(mainArgs);
+  // zero: 최종 순자산 0원 — 노년 안전망으로 0원에 머문 판(QA-003-M5 O04). 자리는 동률 불리 규칙(마스터 결정 C)의 함수 출력 그대로. 플레이 시간 81세·24번 = 16:43 + 10:24
   const zeroEnd = finalWealthStanding('present', 0);
   const zero = endingMain({
     era: 'present',
@@ -1052,6 +1087,7 @@ function endingPage() {
     death: { age: 81, cause: '노환' },
     net: 0,
     choiceCount: 24,
+    play: playRecord(1003, 624),
     entries: [birthRow, { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth }, { age: 40, kind: 'stage', text: STAGE_ENTRY_TEXT.middle }, { age: 65, kind: 'stage', text: STAGE_ENTRY_TEXT.senior }, { age: 81, kind: 'death', text: deathEntryText('노환') }],
     note: `<p class="mock-tag">시안 주석 · 0원의 자리 「${esc(standingLabel(zeroEnd))}」는 동률 불리 규칙(마스터 결정 C — 하위는 미만 비율, M7e-3 구현)의 함수 출력입니다. 자리는 이 카드 한 곳에서만 말하고 방향 문장은 중립형입니다.</p>`,
   });
@@ -1064,6 +1100,7 @@ function endingPage() {
     death: { age: 76, cause: '오랜 병환' },
     net: -1200,
     choiceCount: 22,
+    play: playRecord(959, 484), // 지난 세상(서술 비율이 높아 조용한 해 가중 9.3초, 인용이 드물어 r 22초): 76세·22번 = 15:59 + 08:04 = 24:03
     entries: [
       { age: 0, kind: 'event', text: birthSentence(past.character, past.report, 'past') },
       { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth },
@@ -1081,6 +1118,7 @@ function endingPage() {
     death: { age: 17, cause: '사고' },
     net: null,
     choiceCount: 3,
+    play: playRecord(180, 91), // 17세·3번 = 03:00 + 01:31 = 04:31 (영유아 해는 서술·여러 줄 해가 많아 모델 평균보다 조금 길게)
     entries: [{ age: 0, kind: 'event', text: birthSentence(earlyBirth.character, earlyBirth.report, 'present') }, { age: 17, kind: 'death', text: deathEntryText('사고') }],
   });
   // down: 지금 세상 은수저(「상위 17~45% 사이」) 70세 병세 악화, 순자산 −500만 원 → 마름모가 띠 왼쪽 밖(「뒤쪽 자리」)
@@ -1092,6 +1130,7 @@ function endingPage() {
     death: { age: 70, cause: '병세 악화' },
     net: -500,
     choiceCount: 19,
+    play: playRecord(860, 494), // 70세·19번 = 14:20 + 08:14 = 22:34
     entries: [
       { age: 0, kind: 'event', text: birthSentence(downBirth.character, downBirth.report, 'present') },
       { age: 20, kind: 'stage', text: STAGE_ENTRY_TEXT.youth },
@@ -1100,6 +1139,25 @@ function endingPage() {
       { age: 70, kind: 'death', text: deathEntryText('병세 악화') },
     ],
   });
+  // M8 플레이 시간 상태 셋(기본 판과 같은 인생, 플레이 기록만 다르다 — copy.md 8-3)
+  // play-fast: 8배속 + 「다음 결정으로」를 쓴 판 — 연출이 거의 없고(03:12, 전부 1배속이 아닌 시간이라 offSpeed = hold) 결정 읽기만 남아(09:40) 12:52, 건너뛰기 6번. 깨끗하지 않은 판(isCleanRun 거짓)이라 보조 문장에 한 문장이 더 든다
+  const playFast = endingMain({
+    ...mainArgs,
+    play: playRecord(192, 580, { offSpeed: 192 * 1000, skips: 6 }),
+    playNote: '<p class="mock-tag">시안 주석 · 배속·「다음 결정으로」를 쓴 판 — 깨끗하지 않은 판의 보조 문장(content-M8 5-2 offSpeed·auto·skips)</p>',
+  });
+  // play-long: 한 시간을 넘긴 판 — mm:ss 표기 상한 없음(61:05, 낭독 「61분 5초」)의 점검용. 1차 30분 모드(k = 1.2)에서는 읽기 상한(42초)으로도 36분 안팎이라 나오기 어렵고 2차 1시간 모드의 값이다
+  const playLong = endingMain({
+    ...mainArgs,
+    play: playRecord(2000, 1665),
+    playNote: '<p class="mock-tag">시안 주석 · 한 시간을 넘긴 판의 표기 점검(분은 두 자리 이상, 시 단위로 바꾸지 않는다 — 2차 1시간 모드의 값)</p>',
+  });
+  // play-none: `play`가 없는 판(M8 이전에 시작한 저장) — 블록을 그리지 않는다(content-M8 5-3절)
+  const playNone = endingMain({
+    ...mainArgs,
+    play: null,
+    playNote: '<p class="mock-tag">시안 주석 · M8 이전 저장(play 없음) — 플레이 시간 블록을 그리지 않는다</p>',
+  });
   const head = `<header class="site-head">${headerLogo()}<span class="site-head__name">엔딩</span></header>`;
   const body = `${head}
 ${main}
@@ -1107,6 +1165,9 @@ ${main}
 <template id="state-past">${pastMain}</template>
 <template id="state-early">${earlyMain}</template>
 <template id="state-down">${downMain}</template>
+<template id="state-play-fast">${playFast}</template>
+<template id="state-play-long">${playLong}</template>
+<template id="state-play-none">${playNone}</template>
 <script>(function(){var s=new URLSearchParams(location.search).get('state');if(!s)return;var t=document.getElementById('state-'+s);if(!t)return;var main=document.querySelector('main.ending');var nm=t.content.cloneNode(true).querySelector('main.ending');if(main&&nm)main.replaceWith(nm);document.title='수저 게임 · 시안 · 엔딩 ('+s+')';})();</script>
 <div class="page-end-space" style="height:40px"></div>`;
   return page({ title: '수저 게임 · 시안 · 엔딩', body });

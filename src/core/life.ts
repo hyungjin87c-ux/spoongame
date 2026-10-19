@@ -7,7 +7,6 @@ import {
   EVENT_FREQUENCY,
   HEALTH_DECAY,
   INHERIT_NOTE_TEXT,
-  CHOICE_PACING,
   MIN_YEARS_BETWEEN_CHOICES,
   MOOD_DRIFT,
   MORTALITY,
@@ -15,6 +14,7 @@ import {
   STAGE_ENTRY_TEXT,
 } from '../data/lifeTable';
 import { deathCauseCandidates, deathEntryText } from '../data/lifeText';
+import { lifeModeOf } from '../data/timingTable';
 import {
   eventWeight,
   isChoiceEvent,
@@ -189,6 +189,21 @@ export interface TickInfo {
   eventId?: string;
   /** 그 해 마일스톤 슬롯에서 일어난 이벤트 id들(id 오름차순) (SPEC-003 IN3, M7a r3 — 일반 사건과 별개 줄이라 한 해 연표에 여러 줄이 남을 수 있다: 1세는 걸음마 + 첫 말 + 일반 사건 최대 3줄 이상) */
   milestoneIds?: string[];
+  /**
+   * 그 해 연표에 남은 사건·선택 줄 수(마일스톤 + 일반 사건 + 결정 결과, `yearLineCount`) — 연출 대기가 둘째 줄부터 줄마다 길어진다(SPEC-003 LM2, core/timing.ts#holdMsFor).
+   * 대기가 있는 걸음(서술 해 `narrative`·결과 해 `resolved`)에만 담는다. 새로고침 직후(tick 없음)에는 모르므로 조용한 해 값으로 대기한다.
+   */
+  lines?: number;
+}
+
+/**
+ * 한 해(나이 age)에 연표에 남은 사건·선택 줄 수: `event`와 `choice` 줄만 센다(`stage`·`death`·`note` 줄은 읽는 연출 대기의 대상이 아니다).
+ * 한 해에 줄이 둘 이상일 수 있다 — 마일스톤 슬롯(M7a r3)이 일반 사건과 별개로 한 줄을 남기고, 결정을 고른 해는 마일스톤 줄 뒤에 결과 줄이 붙는다.
+ */
+export function yearLineCount(history: readonly HistoryEntry[], age: number): number {
+  let n = 0;
+  for (const h of history) if (h.age === age && (h.kind === 'event' || h.kind === 'choice')) n++;
+  return n;
 }
 
 export interface StepResult {
@@ -296,10 +311,12 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
   }
   chosenMilestones.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
-  // 선택지는 간격을 두고, 한 판의 선택지 수 조절(CHOICE_PACING)을 따른다. 지금까지 푼 선택지 수는 연표의 선택 기록 수다.
+  // 선택지는 간격을 두고, 한 판의 선택지 수 조절(페이싱)을 따른다. 지금까지 푼 선택지 수는 연표의 선택 기록 수다.
+  // 페이싱은 **판의 인생 길이 모드**가 정한다(SPEC-003 LM2·LM3, data/timingTable.ts#LIFE_LENGTH_MODES) — 설정이 아니라 판의 값을 읽어 첫 화면에서 설정을 바꿔도 진행 중인 판이 흔들리지 않는다.
+  const pacing = lifeModeOf(state.lifeLength).pacing;
   const choicesSoFar = state.history.reduce((n, h) => (h.kind === 'choice' ? n + 1 : n), 0);
-  const canChoice = (state.lastChoiceAge === null || age - state.lastChoiceAge >= MIN_YEARS_BETWEEN_CHOICES) && choicesSoFar < CHOICE_PACING.hard;
-  const choiceChance = freq.choice * (choicesSoFar >= CHOICE_PACING.soft ? CHOICE_PACING.softFactor : 1);
+  const canChoice = (state.lastChoiceAge === null || age - state.lastChoiceAge >= MIN_YEARS_BETWEEN_CHOICES) && choicesSoFar < pacing.hard;
+  const choiceChance = freq.choice * (choicesSoFar >= pacing.soft ? pacing.softFactor : 1);
 
   let picked: EventDef | null = null;
   if (rollChoice < choiceChance && canChoice) picked = pickWeighted(rng, eligible.filter(isChoiceEvent), ctx);
@@ -340,10 +357,17 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
     };
   }
   const { state: next, died } = finishYear(s, rng, state);
+  const lines = yearLineCount(next.history, age); // 이 해의 줄 수(마일스톤 + 일반 사건 + 해 끝 규칙의 상속 줄이 이 나이에 붙었다면 그것도) — 단계 줄은 세지 않는다
   const eventId = picked?.id ?? milestoneIds[0];
   return {
     state: next,
-    tick: { kind: died ? 'death' : eventId !== undefined ? 'narrative' : 'quiet', fromAge: age, ...(eventId !== undefined ? { eventId } : {}), ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
+    tick: {
+      kind: died ? 'death' : eventId !== undefined ? 'narrative' : 'quiet',
+      fromAge: age,
+      ...(eventId !== undefined ? { eventId } : {}),
+      ...(milestoneIds.length > 0 ? { milestoneIds } : {}),
+      ...(!died && eventId !== undefined ? { lines } : {}),
+    },
   };
 }
 
@@ -386,7 +410,8 @@ export function resolveChoiceStep(state: GameState, key: string, choiceId: strin
   const rng = createRng(state.rngState);
   rng.next();
   const { state: next, died } = finishYear(s, rng, state);
-  return { state: next, tick: { kind: died ? 'death' : 'resolved', fromAge: pending.age, eventId: ev.id } };
+  const lines = yearLineCount(next.history, pending.age); // 이 해의 마일스톤 줄들 + 방금 남긴 결과 줄 (+ 이 나이에 붙은 상속 줄)
+  return { state: next, tick: { kind: died ? 'death' : 'resolved', fromAge: pending.age, eventId: ev.id, ...(died ? {} : { lines }) } };
 }
 
 export function resolveChoice(state: GameState, key: string, choiceId: string, pool: EventPool = EVENT_POOL): GameState {
@@ -468,14 +493,18 @@ export interface TickCounts {
   choice: number;
   resolved: number;
   death: number;
+  /** 연출 대기가 있는 해(서술 해·결과 해)의 **둘째 줄부터의 줄 수** 합 = Σ max(0, 줄 수 − 1) — 시간 모델이 줄마다 대기를 더한다(SPEC-003 LM2) */
+  extraLines: number;
 }
 
 export function emptyCounts(): TickCounts {
-  return { quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0 };
+  return { quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, extraLines: 0 };
 }
 
 function count(counts: TickCounts, tick: TickInfo): void {
-  if (tick.kind !== 'none') counts[tick.kind]++;
+  if (tick.kind === 'none') return;
+  counts[tick.kind]++;
+  if (tick.kind === 'narrative' || tick.kind === 'resolved') counts.extraLines += Math.max(0, (tick.lines ?? 1) - 1);
 }
 
 /** 안전장치: 한 번의 연속 진행이 이 걸음 수를 넘으면 무한 루프로 보고 throw */

@@ -263,7 +263,7 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
                   {TITLE_TEXT.populationSuffix}
                 </p>
                 <p className="hero__note" data-testid="population-note">
-                  {TITLE_TEXT.populationNote}
+                  <Glue text={TITLE_TEXT.populationNote} />
                 </p>
               </>
             )}
@@ -310,7 +310,7 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
               })}
             </div>
             <p className="t-sm t-muted" style={{ marginTop: 'var(--sp-2)' }} data-testid="life-length-hint">
-              {TITLE_TEXT.lifeLengthHint}
+              <Glue text={TITLE_TEXT.lifeLengthHint} />
             </p>
           </fieldset>
         </main>

@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { ERAS, PARENT_WEALTHS, buildCarousel, commaList, glueSegments, segmentsText, splitPair, type GlueSegment } from '../src/core';
 import { startBandOf } from '../src/core/ending';
 import { GRADE_NAME } from '../src/data/birthReportText';
-import { bandLabel } from '../src/data/endingText';
+import { DASH_TEXT } from '../src/data/dashText';
+import { PLAYTIME_TEXT, REBIRTH_NOTE, bandLabel } from '../src/data/endingText';
+import { IMPACT_HINT } from '../src/data/impactText';
 import { footerStatsText, TITLE_TEXT } from '../src/data/titleText';
 import { Glue } from '../src/ui/Glue';
 import { Pair } from '../src/ui/Pair';
@@ -377,5 +379,76 @@ describe('괄호 안 짧은 구간은 괄호째 한 묶음이다 (M3-O13)', () =
     const html = renderToStaticMarkup(Glue({ text: '다이아몬드수저(상위 3% 안쪽)' }));
     expect(html).toBe('다이아몬드수저<span class="keep-phrase">(상위 <span class="nowrap">3%</span> 안쪽)</span>');
     expect(html.replace(/<[^>]+>/g, '')).toBe('다이아몬드수저(상위 3% 안쪽)');
+  });
+});
+
+describe('지시 관형사 「이」「그」「저」 + 바로 뒤 어절은 한 덩어리다 (REV-003-M8-1 관찰 4, designer D-97)', () => {
+  it('엔딩 보조 문장·첫 화면 FS5의 「이 기기에만」「이 기기에」가 관형사가 줄 끝에 홀로 남지 않게 한 묶음(chain)이 된다', () => {
+    expect(kinds(glueSegments('넣지 않았습니다. 이 기기에만 저장됩니다.'))).toEqual(['plain:넣지 않았습니다. ', 'chain:이 기기에만', 'plain: 저장됩니다.']);
+    expect(kinds(glueSegments('진행은 이 기기에 남아요.'))).toEqual(['plain:진행은 ', 'chain:이 기기에', 'plain: 남아요.']);
+    expect(kinds(glueSegments('이 기기 안에서 계산한 가상의 사람들이에요.'))).toEqual(['chain:이 기기', 'plain: 안에서 계산한 가상의 사람들이에요.']);
+  });
+
+  it('「그」「저」도 같다: 「그 아이는 어느새」 → 「그 아이는」, 「이 집 저 집의 밥을」 → 「이 집」「저 집의」 두 묶음', () => {
+    expect(kinds(glueSegments('그 아이는 어느새'))).toEqual(['chain:그 아이는', 'plain: 어느새']);
+    expect(kinds(glueSegments('이 집 저 집의 밥을'))).toEqual(['chain:이 집', 'plain: ', 'chain:저 집의', 'plain: 밥을']);
+    expect(kinds(glueSegments('그 밖에 멈춰 있던 시간'))).toEqual(['chain:그 밖에', 'plain: 멈춰 있던 시간']);
+  });
+
+  it('붙은 「이」(「세월이」)·이름 첫 글자(「이서연의」)·수관형사(「한 해」)·조사는 묶지 않는다 — 글자가 그대로 한 덩어리 plain이다', () => {
+    for (const same of ['세월이 흐른 시간', '이서연의 인생', '한 해 동안', '아이가 그렇게 웃었다', '책이 아니다', '이상한 일']) {
+      expect(kinds(glueSegments(same)), same).toEqual([`plain:${same}`]);
+    }
+  });
+
+  it('뒤 어절이 한글로 시작하지 않으면(숫자·라틴 글자·기호) 묶지 않는다: 「이 3명」「이 ABC」', () => {
+    expect(kinds(glueSegments('이 3명이'))).toEqual(['plain:이 ', 'nowrap:3명', 'plain:이']);
+    expect(kinds(glueSegments('이 ABC 표'))).toEqual(['plain:이 ABC 표']);
+  });
+
+  it('숫자+단위·날짜 묶음과 나란히 있다: 「2026년 이 해」 → nowrap + chain', () => {
+    expect(kinds(glueSegments('2026년 이 해'))).toEqual(['nowrap:2026년', 'plain: ', 'chain:이 해']);
+  });
+
+  it('여는 괄호·낫표 바로 뒤의 관형사도 어절로 홀로 선 것이다: 「(이 기기에서)」「「이 선택만으로」」', () => {
+    expect(kinds(glueSegments('(이 기기에서)'))).toEqual(['plain:(', 'chain:이 기기에서)']);
+    expect(kinds(glueSegments('「이 선택만으로」 생기는'))).toEqual(['plain:「', 'chain:이 선택만으로」', 'plain: 생기는']);
+  });
+
+  it('구간 표기(⑤)·괄호 낱말(③)·구분 기호 사슬이 먼저 맞는다 (관형사 규칙은 맨 끝 대안이고 그들에게 양보한다): 「(상위 3% 안쪽)」 변화 없음, 「이 기기 · 저 기기」는 사슬 하나(「·」가 혼자 남지 않는 것이 우선), 「이 기간(15~49세)」는 괄호 낱말', () => {
+    expect(kinds(glueSegments('다이아몬드수저(상위 3% 안쪽)'))).toEqual(['plain:다이아몬드수저', 'chain:(상위 3% 안쪽)']);
+    expect(kinds(glueSegments('이 기기 · 저 기기 모두'))).toEqual(['plain:이 ', 'chain:기기 · 저', 'plain: 기기 모두']);
+    expect(kinds(glueSegments('이 기간(15~49세) 동안'))).toEqual(['plain:이 ', 'chain:기간(15~49세)', 'plain: 동안']);
+    expect(kinds(glueSegments('이 기기(상위 3% 안쪽) 변화'))).toEqual(['plain:이 ', 'plain:기기', 'chain:(상위 3% 안쪽)', 'plain: 변화']);
+  });
+
+  it('묶어도 글자는 바뀌지 않는다 — 조각을 이어 붙이면 원래 글자와 같고, Glue 마크업에서 태그를 벗기면 원래 글자다', () => {
+    const samples = [
+      TITLE_TEXT.lifeLengthHint,
+      TITLE_TEXT.populationNote,
+      '넣지 않았습니다. 이 기기에만 저장됩니다.',
+      '그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다.',
+      '다시 태어나면 이 인생의 기록은 사라집니다.',
+      '지금까지의 인생은 일시정지한 채 이 기기에 저장되고, 첫 화면의 「이어서 살기」로 돌아올 수 있습니다.',
+      '선택지 아래 글씨는 이 선택만으로 김민준에게 생기는 변화입니다.',
+      '이 집 저 집의 밥을',
+    ];
+    for (const t of samples) {
+      expect(segmentsText(glueSegments(t)), t).toBe(t);
+      expect(renderToStaticMarkup(Glue({ text: t })).replace(/<[^>]+>/g, ''), t).toBe(t);
+    }
+  });
+
+  it('D-98의 고정 문장 여섯은 모두 지시 관형사가 뒤 어절과 한 묶음이다 (FS5 · 가상 인구 주석 · 플레이 시간 보조 · 다시 태어나기 · 나가기 확인 · 영향 안내)', () => {
+    const chainStarts = (t: string): string[] => glueSegments(t).flatMap((s) => (s.kind === 'chain' ? [segmentsText(s.parts)] : []));
+    expect(chainStarts(TITLE_TEXT.lifeLengthHint)).toEqual(['이 기기에']); // 첫 화면 FS5 설명
+    expect(chainStarts(TITLE_TEXT.populationNote)).toEqual(['이 기기']); // 가상 인구 주석
+    // 엔딩 플레이 시간 보조 문장의 조각 둘 — 「그 밖에」(제외 범위)·「이 기기에만」(저장 안내). 나머지 조각(분해 셋·깨끗하지 않은 판 문장)에는 관형사가 없어 묶음이 생기지 않는다
+    expect(chainStarts(PLAYTIME_TEXT.excluded)).toEqual(['그 밖에']);
+    expect(chainStarts(PLAYTIME_TEXT.device)).toEqual(['이 기기에만']);
+    expect(chainStarts(PLAYTIME_TEXT.notClean)).toEqual([]);
+    expect(chainStarts(REBIRTH_NOTE)).toEqual(['이 인생의']); // 다시 태어나기 안내
+    expect(chainStarts(DASH_TEXT.exitAskSub)).toEqual(['이 기기에']); // 나가기 확인 보조 문장
+    expect(chainStarts(IMPACT_HINT.lead('김민준'))).toEqual(['이 선택만으로']); // 영향 안내
   });
 });

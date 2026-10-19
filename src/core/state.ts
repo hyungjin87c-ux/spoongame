@@ -1,6 +1,7 @@
 import { birthSentence } from './birthReport';
 import { generateBirth } from './birth';
 import { appendHistory } from './history';
+import { emptyPlay } from './playClock';
 import { createRng } from './rng';
 import { DEFAULT_BGM, type Era, type GameState, type LifeLength, type Settings, type Stats } from './types';
 
@@ -122,5 +123,7 @@ export function enterLife(state: GameState): GameState {
       kind: 'stage',
       text: birthSentence(state.character, state.birthReport, state.era),
     }),
+    // 플레이 시간 기록이 인생과 함께 0에서 시작한다(SPEC-003 LM6, M8) — 새 판은 늘 0이고 다시 태어나기는 이 필드 없는 새 상태에서 시작한다. 누적은 UI의 타이머(ui/usePlayTimer.ts)가 한다.
+    play: emptyPlay(),
   };
 }

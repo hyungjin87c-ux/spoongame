@@ -123,5 +123,26 @@ export function stageHeadingText(stage: Stage): string {
   return `${STAGE_TABLE[stage].label} · ${to === null ? `${from}세~` : `${from}~${to}세`}`;
 }
 
+/**
+ * 엔딩 「사망과 선택」 카드 안의 플레이 시간 블록 문구 (SPEC-003 LM6, M8 — docs/design/copy.md 8-1, diff-003.md D-93~D-95). 합쇼체. 숫자(mm:ss)는 `core/playClock.ts#formatPlayTime`이 만들고 `ui/PlayTime.tsx`가 그린다.
+ *  - label: 값의 이름 · breakdown: 분해 한 문장 — {연출 mm:ss}·{결정 mm:ss} 자리에 시간 부품이 들어간다(`breakdownParts`가 조각으로 자른다). **시간 값 바로 뒤에는 조사를 두지 않는다**(「의」·쉼표만 — design-system.md 11-4: 눈에 보이는 「12:36」(육)과 낭독 「12분 36초」(초)의 받침이 달라 을/를·과/와가 어긋난다)
+ *  - excluded: 시간 목표 밖의 것(LD-1) · notClean: 배속·자동 모드·「다음 결정으로」를 쓴 판에만(`isCleanRun`이 거짓일 때, 세 조작을 늘 함께 적는다) · device: 개인정보(5-4절 — 이 기기에만)
+ * 표시하지 않는 것: 이어하기 횟수(`resumes`)·일시정지 횟수(마스터 승인 — 누적만). `play`가 없는 판(M8 이전 저장)은 블록 자체가 없다.
+ */
+export const PLAYTIME_TEXT = {
+  label: '이 판의 플레이 시간',
+  breakdown: '세월이 흐른 시간 {연출 mm:ss}, 결정을 읽고 고른 시간 {결정 mm:ss}의 합입니다.',
+  excluded: '그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다.',
+  notClean: '배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다.',
+  device: '이 기기에만 저장됩니다.',
+} as const;
+
+/** 분해 문장을 시간 부품이 들어갈 두 자리 앞뒤로 자른 조각: [「세월이 흐른 시간 」, 「, 결정을 읽고 고른 시간 」, 「의 합입니다.」] */
+export function breakdownParts(): readonly [string, string, string] {
+  const m = /^(.*)\{연출 mm:ss\}(.*)\{결정 mm:ss\}(.*)$/.exec(PLAYTIME_TEXT.breakdown);
+  if (m === null) throw new Error('PLAYTIME_TEXT.breakdown: {연출 mm:ss}·{결정 mm:ss} 자리가 없다');
+  return [m[1], m[2], m[3]];
+}
+
 export const REBIRTH_LABEL = '다시 태어나기';
 export const REBIRTH_NOTE = '다시 태어나면 이 인생의 기록은 사라집니다.';

@@ -37,8 +37,11 @@ export const TITLE_TEXT = {
 
   eraGroup: '태어날 세상',
   lifeLengthGroup: '인생 길이',
-  /** FS5 한 줄 설명 (REV-003-D-1 R-124·R-131: designer의 최종 문구 — 시안 title-a.html과 같다) */
-  lifeLengthHint: '평균 수명까지 살아 보는 데 걸리는 시간이에요. 도중에 나가도 진행은 이 기기에 남습니다.',
+  /**
+   * FS5 설명 (REV-003-D-1 R-124·R-131: designer의 최종 문구 — 시안 title-a.html과 같다). M8(D-92, docs/design/copy.md 8-1 ①): 시간 목표(연출 + 결정 읽기) 밖인 기록 쓰기 시간을 한 문장으로 밝혀 「약 30분」이 손목시계와 어긋나지 않게 했다(LD-1).
+   * 끝 문장은 한 문단 두 어체 금지(QM3-4)로 「남습니다」 → 「남아요」(마스터 승인).
+   */
+  lifeLengthHint: '평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.',
 
   begin: '태어나기',
   resume: '이어서 살기',

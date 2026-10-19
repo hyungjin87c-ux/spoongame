@@ -472,10 +472,11 @@ describe('1000판 전체 파이프라인 (SPEC-001 M6): 세 시대 × 자동 모
           expect(r.journeys.up + r.journeys.same + r.journeys.down + r.journeys.early).toBe(LIVES);
           // 서로 다른 인물이 나온다 (같은 인물만 반복하지 않는다)
           expect(r.distinctNames).toBeGreaterThan(100);
-          // 시간 추정 (읽는 시간 18초 가정): 판당 선택지 평균 20~25개, 1배속 수동 최대 30분 이내 — M4 목표가 1000판에서도 유지된다
-          expect(r.choices.mean).toBeGreaterThanOrEqual(20);
-          expect(r.choices.mean).toBeLessThanOrEqual(25);
-          expect(r.minutes1x.max).toBeLessThanOrEqual(30);
+          // 시간·카드 수 판정은 여기서 하지 않는다 (M8, 마스터 결정 LD-12 — SPEC-001의 「판당 20~25개 · 1배속 수동 최대 30분」은 기준의 교체로 모드별 구간이 됐다): 이 칸은 시드 짝홀로 두 모드를 섞어 돌려 한 모드의 구간으로 판정할 수 없다.
+          // 모드별 카드 수·시간 판정은 tests/simulation.test.ts가 맡는다 — 30분 모드를 **수동 흉내와 자동 성향 각 1000판**으로 판정하고(REV-003-M8-1 R-416: 자동 성향의 카드 수 판정이 1000판 단위에서 사라졌던 것을 되살렸다) 1시간 모드는 보고만 한다. npm run sim:1000(모드 축 12000판)은 칸마다 구간 안·밖을 줄로 보인다. 여기서는 시간 모델이 실제로 계산됐고 카드 수가 말이 되는 범위인지만 본다.
+          expect(r.choices.mean).toBeGreaterThan(18);
+          expect(r.choices.mean).toBeLessThan(33);
+          expect(r.minutes1x.mean).toBeGreaterThan(10);
         },
         240_000,
       );

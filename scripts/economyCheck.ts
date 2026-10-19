@@ -92,7 +92,7 @@ for (const era of ERAS) {
   for (const g of random.guards[era]) {
     // G3는 세 시대 모두 본다(지난·다가올 세상도 방향은 같아야 한다). M-2는 지금 세상만 판정하고(통계가 지금 세상 것), M-4는 다가올 세상에만 있다.
     const gap = KNOWN_GUARD_GAPS[`${era}:${g.id}`];
-    const known = !g.ok && g.reference !== true && gap !== undefined && gap.limit(g.metric);
+    const known = !g.ok && g.reference !== true && gap !== undefined && gap.limit(g.metric, g);
     console.log(`- [${era}] ${g.label}: ${g.value} — ${g.ok ? '통과' : g.reference === true ? '어긋남(참고, 판정 아님)' : known ? '알려진 차이(보고함)' : '불합격'}`);
     if (known) console.log(`  알려진 차이: ${gap.why}`);
     else if (!g.ok && g.reference !== true) fail(`[${era}] ${g.label}: ${g.value}`);

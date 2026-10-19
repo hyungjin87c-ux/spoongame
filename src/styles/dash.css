@@ -411,6 +411,18 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 .final-net__none { font-size: var(--fs-sm); color: var(--c-text-2); }
 @container facts (max-width: 14rem) { .final-net__value { font-size: var(--fs-md); } }
 @container facts (max-width: 9.5rem) { .final-net__value { font-size: var(--fs-sm); } }
+
+/* M8 엔딩 플레이 시간 블록(SPEC LM6 · content-M8 LD-7·LD-8 ②, 2026-10-19 designer — copy.md 8절 · design-system.md 6절 「엔딩 플레이 시간 블록」): 「사망과 선택」 카드의 세 번째 요소.
+   마크업: div.playtime[data-testid=ending-playtime] > dl.playtime__row(dt 「이 판의 플레이 시간」 + dd > time.playtime__value) + p.playtime__note.t-xs.t-faint(보조 문장 — 분해·제외 범위·[깨끗하지 않은 판]·이 기기에만).
+   위끝 1px 선이 인생의 두 문장(사망·선택 수)과 세션 통계를 가른다(.final-net과 같은 가름). 값은 본문 크기 굵게 tabular — 형진 님이 폰 캡처로 읽는 숫자라 보조 글자보다 또렷하되 「최종 순자산」(--fs-lg)보다는 낮은 위계.
+   모든 <time>은 「숫자 글자 aria-hidden + 낭독 글자 sr-only(「27분 46초」)」 쌍이고 nowrap(시간 값이 줄 가운데서 끊기지 않는다). 좁거나 글자가 크면 값이 이름 아래 줄 오른쪽으로(flex-wrap). 강제 색상은 토큰·테두리가 시스템 색으로 바뀌는 것 외에 따로 둘 규칙 없음 */
+.playtime { display: flex; flex-direction: column; gap: var(--sp-1); padding-top: var(--sp-3); border-top: 1px solid var(--c-border); }
+.playtime__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: 0; }
+.playtime__row dt { font-size: var(--fs-sm); color: var(--c-text-2); }
+.playtime__row dd { margin: 0 0 0 auto; min-width: 0; }
+.playtime__value { font-weight: var(--fw-bold); font-size: var(--fs-md); font-variant-numeric: tabular-nums; color: var(--c-text); }
+.playtime__note { margin: 0; }
+.playtime time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .timeline li[data-kind='death'] { font-weight: var(--fw-bold); }
 .timeline li > span:last-child { flex: 1 1 11em; min-width: min(11em, 100%); display: flex; flex-direction: column; gap: 1px; }
 .tl-group h3 { font-size: var(--fs-md); color: var(--c-text-2); margin: var(--sp-3) 0 var(--sp-1); }

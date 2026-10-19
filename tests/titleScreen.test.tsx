@@ -152,7 +152,8 @@ describe('가상 인구 문구 (FS2·VP2)', () => {
   it('보조 문구는 항상 보인다 (세상·인생 길이·이어하기 상태와 무관하게): 가상의 사람들이며 실제 사람 수가 아니다', () => {
     for (const over of [{}, { era: 'past' as const }, { era: 'future' as const }, { saved }, { oldSaveNotice: true }]) {
       const html = render(over);
-      expect(html).toContain(`data-testid="population-note">${TITLE_TEXT.populationNote}`);
+      // 보조 문구는 Glue를 거친다(D-98 — 「이 기기」가 한 묶음) → 태그를 벗긴 글자가 문구 그대로인지 본다
+      expect(text(html.match(/data-testid="population-note">([^]*?)<\/p>/)![1]).trim()).toBe(TITLE_TEXT.populationNote);
       expect(TITLE_TEXT.populationNote).toContain('가상');
       expect(TITLE_TEXT.populationNote).toContain('실제로 게임하는 사람 수가 아니에요');
     }
@@ -236,7 +237,8 @@ describe('태어날 세상·인생 길이 선택 (FS4·FS5)', () => {
     expect(text(html)).toContain('약 30분');
     expect(text(html)).toContain('약 1시간');
     expect(text(html)).toContain(TITLE_TEXT.lifeLengthHint);
-    expect(TITLE_TEXT.lifeLengthHint).toContain('이 기기에 남습니다'); // 도중에 나가도 진행은 이 기기에 남는다는 뜻 (FS5)
+    expect(TITLE_TEXT.lifeLengthHint).toContain('이 기기에 남아요'); // 도중에 나가도 진행은 이 기기에 남는다는 뜻 (FS5) — M8 D-92: 한 문단 어체 통일(「남습니다」 → 「남아요」)
+    expect(TITLE_TEXT.lifeLengthHint).toContain('생각을 적는 시간은 넣지 않았어요'); // LD-1: 기록 쓰기 시간은 「약 30분」 밖이다
   });
 
   /** 입력 태그 하나에서 disabled 속성 여부 */

@@ -186,13 +186,12 @@ describe('IN1 규모: 0~7세 각 나이 × 각 시대의 정적 후보 ≥ 4, �
   });
 });
 
-describe(`IN2 사건 없는 해·기록 줄·선택지 (시대별 ${LIVES}판, 0~7세 여덟 해, 1차 목표: 빈 해 평균 ≤ 1.5·최대 ≤ 4 / 줄 평균 ≥ 9 / 선택지 평균 ≥ 2.8)`, () => {
+describe(`IN2 사건 없는 해·기록 줄·선택지 (시대별 ${LIVES}판, 0~7세 여덟 해, 1차 목표: 빈 해 평균 ≤ 1.5·빈 해 5개 이상인 판 ≤ 0.5% / 줄 평균 ≥ 9 / 선택지 평균 ≥ 2.8 — M8 LD-9: 「최대 ≤ 4」는 시드 고정 표본의 최댓값이라 판 하나로 뒤집히는 취약한 통계라 비율로 바꿨다)`, () => {
   for (const strategy of ['auto', 'random'] as const) {
     it(`${strategy}: 세 시대 모두 1차 목표를 넘는다`, () => {
       for (const era of ERAS) {
         const s = summarizeInfant(infantLives(era, LIVES, strategy));
         expect(s.emptyMean, `${era} 빈 해 평균`).toBeLessThanOrEqual(1.5);
-        expect(s.emptyMax, `${era} 빈 해 최대`).toBeLessThanOrEqual(4);
         expect(s.linesMean, `${era} 기록 줄 평균(출생 줄 제외)`).toBeGreaterThanOrEqual(9);
         expect(s.choicesMean, `${era} 판당 선택지 평균(0~7세)`).toBeGreaterThanOrEqual(2.8);
         // 한 해 두 줄(마일스톤 + 일반 사건)이 실제로 생긴다
@@ -200,6 +199,25 @@ describe(`IN2 사건 없는 해·기록 줄·선택지 (시대별 ${LIVES}판, 0
       }
     });
   }
+
+  // 취약한 통계의 교체(M8 LD-9, content-M8.md 7-2절): 판정은 최댓값이 아니라 **비율**이다 — 「빈 해 5개 이상인 판」 ≤ 0.5%. 표본은 시대·전략마다 4000판(0~7세만 돌려 가볍다, EARLY_SEEDS 선례)이라 한계 0.5%는 20판이고,
+  // 측정값(0판)에서 표준오차의 3배(참 비율 0.1%여도 4000판에서 20판을 넘을 확률은 사실상 0)보다 멀다. 최댓값과 4개 이상인 판의 비율은 보고만 하고 판정하지 않는다.
+  it('빈 해가 5개 이상인 판은 0.5% 이하이고 평균은 1.5 이하다 (시대 × 전략마다 4000판) — 최댓값은 판정하지 않는다 (LD-9)', () => {
+    const SAMPLE = 4000;
+    for (const strategy of ['auto', 'random'] as const) {
+      for (const era of ERAS) {
+        const lives = infantLives(era, SAMPLE, strategy);
+        const five = lives.filter((l) => l.emptyYears >= 5).length;
+        // 보고 줄(sim:infant·report:time)의 4개·5개 이상 비율이 이 판정과 같은 계산이다 (REV-003-M8-1 R-420)
+        const summary = summarizeInfant(lives);
+        expect(summary.emptyGe5Pct, `${era}/${strategy}: 5개 이상 비율(%)`).toBeCloseTo((five / SAMPLE) * 100, 9);
+        expect(summary.emptyGe4Pct, `${era}/${strategy}: 4개 이상 비율(%)`).toBeCloseTo((lives.filter((l) => l.emptyYears >= 4).length / SAMPLE) * 100, 9);
+        expect(summary.emptyGe4Pct).toBeGreaterThanOrEqual(summary.emptyGe5Pct);
+        expect(five / SAMPLE, `${era}/${strategy}: 빈 해 5개 이상인 판 ${five}/${SAMPLE}`).toBeLessThanOrEqual(0.005);
+        expect(lives.reduce((a, l) => a + l.emptyYears, 0) / SAMPLE, `${era}/${strategy}: 빈 해 평균`).toBeLessThanOrEqual(1.5);
+      }
+    }
+  });
 
   it('선택지 간격 2년 규칙은 그대로다: 0~7세의 선택지는 최대 4개이고 같은 판에서 연속한 두 해에 결정 카드가 뜨지 않는다', () => {
     for (const era of ERAS) {

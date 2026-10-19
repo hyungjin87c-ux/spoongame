@@ -2,6 +2,7 @@ import { EVENT_POOL } from '../data/events';
 import type { EventPool } from './events';
 import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type TickInfo } from './life';
 import { consumeNote, dueNote, noteResponse, writeNote, type NoteMode } from './notes';
+import { playEqual, playNotBehind, readPlay } from './playClock';
 import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth, setPaused } from './state';
 import {
   BGM_VOLUME_MAX,
@@ -15,6 +16,7 @@ import {
   type GameState,
   type LifeLength,
   type PlaySettings,
+  type PlayTime,
   type Settings,
   type Speed,
   type ThemeChoice,
@@ -38,6 +40,7 @@ import {
  *  - setPaused(paused): 인생 화면의 「일시정지/다시 진행」(DB3). 인생 단계에서만, 값이 같으면 같은 객체(연타가 상태를 흔들지 않는다). 연출 시간 결정용 걸음(tick)은 그대로 둔다 — 멈췄다 풀어도 그 해의 연출이 이어진다.
  *    멈춰 있는 동안에는 해마다 진행(advance)과 자동 선택(autoChoose)이 무시된다(늦게 울린 타이머가 멈춘 인생을 한 걸음 진행시키지 않게). 사람이 하는 선택(choose)과 「다음 결정으로」(skip)는 막지 않는다.
  *  - openTitle(「나가기」): 인생 단계에서는 **일시정지 상태로** 첫 화면을 연다(DB8) — 일시정지는 저장되는 판 상태라 새로고침해도, 「이어서 살기」로 돌아와도 멈춘 채 열린다(사용자가 「다시 진행」을 눌러야 흐른다).
+ *  - syncPlay(seed, play): 플레이 시간 타이머(ui/usePlayTimer.ts)가 쌓은 기록을 판 상태의 선택 필드 `play`로 옮긴다(M8). 인생 단계·같은 판·줄지 않는 올바른 기록일 때만 받고 아니면 같은 객체다.
  *  - setBgm / setTheme: 대시보드 도구 줄의 BGM(켬/끔·볼륨)과 다크 모드(수동 선택 저장). 설정이라 어느 화면에서든 받는다.
  *  - 기록 카드(M7c, core/notes.ts): 적격 카드(`dueNote` — 해의 첫머리, 결정 대기 없음)를 만나면 `advance`·`skip`은 **수동 + `noteCards` 켜짐**이면 멈추고(화면이 시트를 띄운다 — 시트는 파생 상태다),
  *    **자동 모드이거나 `noteCards`가 꺼져 있으면** 시트 없이 소비한다(`seen` 표시, 연표 줄 없음 = 「마음속에 담고 살기」와 같다). `choose`·`autoChoose`가 해를 마치고 새 해의 첫머리에서 카드를 만나면 소비 모드에서는 바로 소비한다(멈춤 모드는 파생).
@@ -99,6 +102,8 @@ export type SessionAction =
   | { type: 'setNoteCards'; on: boolean }
   /** 엔딩에서 새 시드로 새 판을 시작해 첫 화면으로 간다(설정은 그대로). 시드는 UI가 정해 넘긴다. */
   | { type: 'rebirth'; seed: number }
+  /** 플레이 시간 타이머(ui/usePlayTimer.ts)가 쌓은 기록을 판 상태에 옮긴다. seed는 그 기록이 속한 판의 시드(다른 판의 오래된 기록이 새 판에 새지 않게). 인생 단계에서만, 줄어드는 기록·같은 기록은 같은 객체. */
+  | { type: 'syncPlay'; seed: number; play: PlayTime }
   /** 다른 탭이 진행한 저장 상태를 이어받는다(R-011) */
   | { type: 'adopt'; game: GameState };
 
@@ -223,6 +228,13 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
       return typeof a.on !== 'boolean' || a.on === s.settings.noteCards ? s : { ...s, settings: { ...s.settings, noteCards: a.on } };
     case 'rebirth':
       return withGame(s, rebirth(s.game, a.seed));
+    case 'syncPlay': {
+      // 플레이 시간 기록 옮기기(M8): 이 판의 기록이 있는 인생 단계에서만, 같은 판(seed)의 값이고 줄어들지 않는 올바른 기록일 때만 받는다. 아니면 같은 객체(연타·늦게 도착한 오래된 기록이 상태를 흔들지 않는다).
+      const current = s.game.play;
+      const next = readPlay(a.play);
+      if (s.game.phase !== 'life' || current === undefined || next === undefined || a.seed !== s.game.seed || !playNotBehind(next, current) || playEqual(next, current)) return s;
+      return { ...s, game: { ...s.game, play: next } }; // tick은 그대로(연출 시간 결정용 걸음은 시간 기록과 무관하다)
+    }
     case 'adopt':
       return { ...s, game: a.game, tick: null, showTitle: false, spin: false };
   }

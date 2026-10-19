@@ -42,7 +42,7 @@ export const INHERIT_NOTE_TEXT = '부모님이 남기신 재산을 물려받았�
  * 해마다 먼저 choice 확률로 선택지 이벤트를 시도하고, 못 뽑으면 narrative 확률로 서술 이벤트를 시도한다.
  * (조건에 맞는 이벤트가 없으면 그 해는 조용히 지나간다.)
  * M4 조정: 판당 선택지를 약 12개(M3 표본 풀)에서 20~25개로 늘리라는 결정(R-037)에 맞춰 선택지 확률을 올렸다(이전: 영유아 0.2 / 학창·청년 0.35 / 중년·노년 0.3).
- * 중년을 낮추고 노년을 높인 것은 한 판의 선택지 수 조절(CHOICE_PACING)이 앞 단계에서 이미 상한 가까이 쓰고 나면 노년의 선택지가 굶는 문제를 막으려는 것이다
+ * 중년을 낮추고 노년을 높인 것은 한 판의 선택지 수 조절(페이싱 — timingTable.ts#LIFE_LENGTH_MODES)이 앞 단계에서 이미 상한 가까이 쓰고 나면 노년의 선택지가 굶는 문제를 막으려는 것이다
  * (단계별 평균: 영유아 1.44~1.45(기준선 V1 — docs/data/spec-003-baseline.md 4절, 세 시대 1000판 측정. 예전 추정 「약 1.8」은 틀렸다) · 학창 4.4 · 청년 6.4 · 중년 6.3 · 노년 4~5 — 영유아 밖의 값은 M4 때의 추정이다).
  * 실제 풀(EVENT_POOL) 기준 결과는 `npm run sim`과 tests/simulation.test.ts "목표 시간" 블록이 확인한다.
  */
@@ -66,13 +66,10 @@ export const EARLY_YEARS_MAX_AGE = 7;
 export const MIN_YEARS_BETWEEN_CHOICES = 2;
 
 /**
- * 한 판의 선택지 수 조절(M4). 판당 선택지는 약 20~25개가 목표인데, 확률만으로는 선택지가 몰린 판이 33개까지 늘어 1배속 수동 시간이 목표를 넘고
- * 25개를 넘는 판이 많아진다. 그래서 윗꼬리만 잘라 평균(약 23~24)은 그대로 둔다:
- *  - soft: 이만큼 푼 뒤부터는 선택지가 나올 확률(EVENT_FREQUENCY.choice)에 softFactor를 곱해 잦아들지 않게 한다.
- *  - hard: 이만큼 풀면 그 판에는 더 이상 선택지가 나오지 않는다(서술 이벤트와 조용한 해만 이어진다).
- * 지금까지 푼 선택지 수는 연표의 선택 기록 수다. 숫자는 `npm run sim`의 선택지 수 분포와 tests/simulation.test.ts가 확인한다.
+ * 한 판의 선택지 수 조절(M4)은 **인생 길이 모드 표로 옮겼다**(SPEC-003 LM2, M8): `data/timingTable.ts#LIFE_LENGTH_MODES[모드].pacing`(soft / softFactor / hard).
+ * 판의 모드(`GameState.lifeLength`)가 정하고 엔진(`core/life.ts#stepYear`)이 읽는다. 평균은 이 파일의 `EVENT_FREQUENCY`와 이벤트 풀이 만들고 페이싱은 윗꼬리만 자른다(M4 원칙).
+ * 숫자는 `npm run report:time`의 선택지 수 분포와 tests/simulation.test.ts가 확인한다.
  */
-export const CHOICE_PACING = { soft: 23, softFactor: 0.3, hard: 26 };
 
 /** 반복 가능한(once가 아닌) 이벤트가 cooldown을 안 적었을 때 같은 이벤트가 다시 나오기까지의 최소 년수 */
 export const DEFAULT_COOLDOWN = 10;

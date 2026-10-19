@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameState } from '../src/core/types';
-import { GAME_KEY, KNOWN_SEED, evalCore, injectSave, lifeState, replaceSaveAndReload, startPageHidden, type InjectedSettings } from './helpers';
+import { GAME_KEY, KNOWN_SEED, evalCore, injectSave, lifeState, replaceSaveAndReload, startPageHidden, withPlay, type InjectedSettings } from './helpers';
 import { cardReady } from './m7bStates';
 import { infantDue, sheetReady, withNotes } from './m7cStates';
 import { setRootFontPercent } from './textResize';
@@ -42,7 +42,7 @@ interface World {
 }
 
 /** 앱 페이지가 열려 있어야 한다. 선택지를 어느 쪽으로 골라도 곧바로 기록 카드가 뜨지 않는 짧은 결정(선택지 2개·인용 없음) — 시트 뒤에 드러난 컨트롤이 가려지지 않게 */
-async function buildWorld(page: Page): Promise<World> {
+async function buildWorld(page: Page, timed = false): Promise<World> {
   await page.goto('/');
   const infant = (await infantDue(page)).state;
   const found = await evalCore<{ state: GameState; choiceId: string } | null>(
@@ -64,7 +64,9 @@ async function buildWorld(page: Page): Promise<World> {
      return null;`,
   );
   expect(found, '고르면 곧바로 기록 카드가 뜨지 않는 짧은 결정을 찾지 못했다').not.toBeNull();
-  return { infant, life: lifeState(KNOWN_SEED), decision: found!.state, choiceId: found!.choiceId };
+  const world: World = { infant, life: lifeState(KNOWN_SEED), decision: found!.state, choiceId: found!.choiceId };
+  // 시간을 재는 판(M8 플레이 시간, REV-003-M8-1 R-417): 세 상태 모두 play를 붙여 주입한다 — 닫힘 가드는 시간을 재는 판에서도 같아야 한다
+  return timed ? { ...world, infant: withPlay(world.infant), life: withPlay(world.life), decision: withPlay(world.decision) } : world;
 }
 
 const targetOf = (kind: Kind, w: World): string => {
@@ -195,28 +197,44 @@ async function mockExternal(page: Page): Promise<void> {
 
 // ---------- (a)(b)(d)(e): 11 뷰포트 × 글자 100·200% ----------
 
+/** (a)(b)(d)(e)의 한 조합: 뷰포트 × 글자 크기에서 기록 버튼 4종 + 결정 시트 선택지(+ 인라인 카드)를 한 번 탭 대 더블탭(두 번)으로 비교한다. timed면 시간을 재는 판(withPlay)으로 돈다. */
+async function checkDoubleTap(page: Page, vp: (typeof STANDARD_VIEWPORTS)[number], percent: 100 | 200, timed: boolean): Promise<void> {
+  const tag = `${vp.name} ${percent}%${timed ? ' 시간을 재는 판' : ''}`;
+  await mockExternal(page);
+  await page.setViewportSize({ width: vp.width, height: vp.height });
+  await startPageHidden(page);
+  const w = await buildWorld(page, timed);
+  const mode: 'touch' | 'mouse' = vp.touch === true ? 'touch' : 'mouse';
+  const kinds: Kind[] = [...NOTE_KINDS, 'decision-choice', ...(percent === 100 ? (['inline-choice'] as const) : [])];
+  for (const kind of kinds) {
+    const single = await singleRun(page, w, kind, mode, percent, kind === kinds[0]);
+    // 한 번 탭으로 시트는 닫혔다(공허 통과 방지) — 기록 시트: 열린 시트 0, 결정 카드: 카드 0
+    if (kind === 'decision-choice' || kind === 'inline-choice') expect.soft(single.cards, `${tag} ${kind}: 한 번 탭으로 카드가 사라졌다`).toBe(0);
+    else expect.soft(single.noteSheets, `${tag} ${kind}: 한 번 탭으로 시트가 닫혔다`).toBe(0);
+    for (const round of [1, 2]) {
+      const double = await doubleRun(page, w, kind, mode, percent);
+      expect.soft(double, `${tag} ${kind} #${round}: 더블탭 뒤 상태가 한 번 탭한 판과 같다(컨트롤 작동 0)`).toEqual(single);
+    }
+  }
+}
+
 for (const vp of STANDARD_VIEWPORTS) {
   for (const percent of [100, 200] as const) {
     test(`F-1 (a)(b)(d)(e) ${vp.name} · 글자 ${percent}%: 시트가 닫힌 직후 더블탭 — 기록 버튼 4종${percent === 100 ? ' + 인라인 카드' : ''} + 결정 시트 선택지에서 컨트롤 작동 0 (두 번), 한 번 탭 뒤 배속은 먹는다`, async ({ page }) => {
       test.setTimeout(360_000);
-      await mockExternal(page);
-      await page.setViewportSize({ width: vp.width, height: vp.height });
-      await startPageHidden(page);
-      const w = await buildWorld(page);
-      const mode: 'touch' | 'mouse' = vp.touch === true ? 'touch' : 'mouse';
-      const kinds: Kind[] = [...NOTE_KINDS, 'decision-choice', ...(percent === 100 ? (['inline-choice'] as const) : [])];
-      for (const kind of kinds) {
-        const single = await singleRun(page, w, kind, mode, percent, kind === kinds[0]);
-        // 한 번 탭으로 시트는 닫혔다(공허 통과 방지) — 기록 시트: 열린 시트 0, 결정 카드: 카드 0
-        if (kind === 'decision-choice' || kind === 'inline-choice') expect.soft(single.cards, `${vp.name} ${percent}% ${kind}: 한 번 탭으로 카드가 사라졌다`).toBe(0);
-        else expect.soft(single.noteSheets, `${vp.name} ${percent}% ${kind}: 한 번 탭으로 시트가 닫혔다`).toBe(0);
-        for (const round of [1, 2]) {
-          const double = await doubleRun(page, w, kind, mode, percent);
-          expect.soft(double, `${vp.name} ${percent}% ${kind} #${round}: 더블탭 뒤 상태가 한 번 탭한 판과 같다(컨트롤 작동 0)`).toEqual(single);
-        }
-      }
+      await checkDoubleTap(page, vp, percent, false);
     });
   }
+}
+
+// 시간을 재는 판 한 조합 (REV-003-M8-1 R-417): `play`를 가진 판(타이머·저장 경로가 도는 판)에서도 닫힘 가드가 같은 결과를 내는지 본다. 대표 조합 하나(모바일 터치 · 글자 100%).
+// 주의(REV-003-M8-2 R-426): 이 조합은 `startPageHidden`으로 **가려진 채** 돈다 — 타이머의 버킷이 처음부터 끝까지 idle이라 hold·decide가 쌓이는 보이는 상태의 가드는 여기서 보지 않는다.
+// 보이는 상태에서 시간이 쌓이는 판의 입력 가드는 QA의 G-*(시간을 재는 판)가 맡는다.
+for (const vp of STANDARD_VIEWPORTS.filter((v) => v.name === '360x740-touch')) {
+  test(`F-1 (a)(b)(d)(e) 시간을 재는 판(withPlay) ${vp.name} · 글자 100%: 더블탭 뒤 상태가 한 번 탭한 판과 같다 — 기록 버튼 4종 + 결정 시트 선택지 + 인라인 카드`, async ({ page }) => {
+    test.setTimeout(360_000);
+    await checkDoubleTap(page, vp, 100, true);
+  });
 }
 
 // ---------- (c) 간격 스윕 B07 ----------

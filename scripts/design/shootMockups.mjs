@@ -36,6 +36,8 @@ const SHOTS = [
   ['title-a.html', 'title-a-pair-split', { n: [{ query: 'slide=suicide-rate', to: '.slide.is-active .slide__basis' }] }],
   // 큰 값 아래 조혼인율 줄(QM2-11)
   ['title-a.html', 'title-a-marriage', { m: [{ query: 'slide=marriage-count', to: '.carousel' }], d: [{ query: 'slide=marriage-count' }] }],
+  // M8(LD-1): 인생 길이 묶음만 요소 단위로 — 두 카드(「약 1시간」은 「준비 중」 그대로, LD-4) + 세 문장 설명(「생각을 적는 시간은 넣지 않았어요.」가 든 새 FS5 문구, copy.md 8-1)
+  ['title-a.html', 'title-length', { m: [{ el: 'fieldset:has(.choices--2)', tag: 'group' }, { dark: true, el: 'fieldset:has(.choices--2)', tag: 'group' }], d: [{ el: 'fieldset:has(.choices--2)', tag: 'group' }], n: [{ text: 200, full: true, el: 'fieldset:has(.choices--2)', tag: 'group' }] }], // 320 · 200%는 full(전체 길이 뷰포트)로 — 요소 샷이 하단 고정 띠에 가려지지 않게
   ['title-continue.html', 'title-continue', { m: [{}], d: [{}] }],
   // 확인 단계(R-204·QM2-6): 안내문 + 「이전 판 지우고 태어나기」(보조) / 「돌아가기」(기본, 맨 아래). low(320×256)에서는 띠가 화면 절반을 넘어 고정이 풀려 본문 끝에 놓인다(QM2-12)
   ['title-continue.html', 'title-confirm', { m: [{ query: 'state=confirm' }], d: [{ query: 'state=confirm' }], l: [{ query: 'state=confirm', bottom: true }] }],
@@ -116,6 +118,11 @@ const SHOTS = [
   ['ending.html', 'ending-past', { m: [{ query: 'state=past' }, { query: 'state=past', forced: true, to: '[aria-labelledby="ending-journey-title"]' }], d: [{ query: 'state=past' }], n: [{ query: 'state=past', text: 200 }] }],
   ['ending.html', 'ending-early', { m: [{ query: 'state=early' }, { query: 'state=early', dark: true, to: '[aria-labelledby="ending-journey-title"]' }], n: [{ query: 'state=early', text: 200 }, { query: 'state=early', text: 200, el: '.ending-stats', tag: 'card' }] }],
   ['ending.html', 'ending-down', { m: [{ query: 'state=down', to: '[aria-labelledby="ending-journey-title"]' }], n: [{ query: 'state=down', text: 200, el: '[aria-labelledby="ending-journey-title"]', tag: 'journey' }] }],
+  // M8 플레이 시간 블록(copy.md 8절): 「사망과 선택」 카드만 요소 단위로 — 기본(깨끗한 판 29:12 = 17:30 + 11:42) 라이트·다크·강제 색상·320 글자 200%, play-fast(배속·「다음 결정으로」를 쓴 판 — 보조 문장 한 줄 더), play-long(61:05 — 분 두 자리 이상·상한 없음), play-none(M8 이전 저장 — 블록 없음)
+  ['ending.html', 'ending-playtime', { m: [{ el: '[aria-label="사망과 선택"]', tag: 'card' }, { dark: true, el: '[aria-label="사망과 선택"]', tag: 'card' }, { forced: true, el: '[aria-label="사망과 선택"]', tag: 'card' }], d: [{ el: '[aria-label="사망과 선택"]', tag: 'card' }], n: [{ text: 200, el: '[aria-label="사망과 선택"]', tag: 'card' }] }],
+  ['ending.html', 'ending-play-fast', { m: [{ query: 'state=play-fast', el: '[aria-label="사망과 선택"]', tag: 'card' }], n: [{ query: 'state=play-fast', text: 200, el: '[aria-label="사망과 선택"]', tag: 'card' }] }],
+  ['ending.html', 'ending-play-long', { m: [{ query: 'state=play-long', el: '[aria-label="사망과 선택"]', tag: 'card' }] }],
+  ['ending.html', 'ending-play-none', { m: [{ query: 'state=play-none', el: '[aria-label="사망과 선택"]', tag: 'card' }] }],
   // M5 경제 모델 (economy-m5.html — 생성기 economyPage()가 만든다, D-35. 영향 줄·자산 카드·최종 순자산 줄은 구현 컴포넌트가 만든 마크업이다): `?state=`로 상태를 고른다.
   // 영향 줄: 47세 보증 결정(항목 4개, 부채 ▲ 붉음) 라이트·다크·강제 색상·320·낮은 화면, 글자 200%에서 선택지 카드 요소 샷(줄마다 항목이 접히는 모습 — 「집안 살림 ▼▼▼」만 기호 묶음이 이름 아래로)
   ['economy-m5.html', 'economy-choice', { m: [{}, { dark: true }, { forced: true }, { text: 200, el: '.choice-panel', tag: 'panel' }], d: [{}, { dark: true }], n: [{}, { text: 200, el: '.choice-panel', tag: 'panel' }, { dark: true, text: 200, el: '.choice-panel', tag: 'panel' }], l: [{}, { text: 200 }] }],

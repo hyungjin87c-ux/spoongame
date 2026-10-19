@@ -50,8 +50,9 @@ describe('vite-node 선언 (R-049)', () => {
     // check:basis·gen:basis(근거 문서·CSV를 JSON에서 다시 만들어 맞는지 확인·재생성, SPEC-003 M6a-r2 R-148)는 M6a 검수 반영에서 더했다
     // check:economy(경제 모델 밸런스 점검 — 연령대별 순자산·부채·소득을 통계 목표와 견줌, SPEC-003 M5 EC7)는 M5 2a에서 더했다
     // sim:infant(영유아 0~7세 지표 보고 — 빈 해·기록 줄·선택지·마일스톤, SPEC-003 M7a IN2)는 M7a에서 더했다
+    // report:time(시간 모델 측정 보고 — 판당 카드 수 분포·자연 분포·글자 수 실측·읽기 수준별 판 시간, SPEC-003 M8 LM2·LM7 · content-M8 6-5절)은 M8에서 더했다
     // report:notes(기록 카드 스케줄 보고 — 판당 카드 수·도달률·결정 카드와 같은 해 겹침, SPEC-003 M7c 완료 기준 1)는 M7c core에서 더했다
-    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:basis', 'gen:citations', 'report:citations', 'report:notes', 'sim', 'sim:1000', 'sim:infant']);
+    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:basis', 'gen:citations', 'report:citations', 'report:notes', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
   });
 });
 

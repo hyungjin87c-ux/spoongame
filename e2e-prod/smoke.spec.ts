@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { HOLD_MS } from '../src/data/timingTable';
+import { holdMsFor } from '../src/core/timing';
 import { readThemeBlocks, themeTokens } from '../scripts/checkContrastLib';
 import { BASIS_B_SPLIT, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from '../e2e/carouselForms';
 import { slideCount } from '../e2e/carouselHelpers';
@@ -15,7 +15,7 @@ import { NO_CONTAINER_QUERIES, WITH_CONTAINER_QUERIES, cssAppliedBy } from '../t
 
 const GAME_KEY = 'suzeo-game:save';
 /** 개발 전용 탐침 쿼리 이름. 제품 번들에는 문자열째 없어야 한다. */
-const PROBES = ['__timescale', '__guard', '__crash', '__quota', '__exit'] as const;
+const PROBES = ['__timescale', '__guard', '__crash', '__quota', '__exit', '__playTime'] as const;
 /** 개발 전용 하니스가 window에 다는 이름(harness/layout.tsx). 하니스가 번들에 섞이면 이 문자열이 보인다 (R-071). */
 const HARNESS_GLOBALS = ['__layout'] as const;
 /** 하니스 페이지에만 있는 문구 (harness/guard.html · harness/layout.html의 title) */
@@ -252,6 +252,18 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   // 엔딩 회고(제품 번들): 사망 한 줄·출발선 대비(같은 세상 안의 자리)·최종 스탯·연표(선택한 순간이 빠짐없이)
   await expect(page.getByTestId('ending-death')).toContainText(`${saved.data.death.age}세에 세상을 떠났습니다`);
   await expect(page.getByTestId('ending-journey')).toContainText('의 집에서 태어');
+  // 이 판의 플레이 시간(M8 LM6, 완료 기준 16 스모크): 제품 번들에서 저장된 기록(play)이 엔딩에 mm:ss로 보이고(표시값 = 버킷별 초 버림 뒤 합), 8배속과 「다음 결정으로」를 쓴 판이라 짧게 잡힌다는 문장이 있다.
+  // 이어하기 횟수(resumes)는 화면에 없다.
+  const play = saved.data.play as { hold: number; decide: number; skips: number; resumes: number } | undefined;
+  expect(play, '시간 기록이 저장돼 있다').toBeTruthy();
+  expect(play!.skips, '「다음 결정으로」를 쓴 횟수가 기록됐다').toBeGreaterThan(0);
+  const shownSeconds = Math.floor(play!.hold / 1000) + Math.floor(play!.decide / 1000);
+  const mmss = `${String(Math.floor(shownSeconds / 60)).padStart(2, '0')}:${String(shownSeconds % 60).padStart(2, '0')}`;
+  await expect(page.getByTestId('ending-playtime-value').locator('[aria-hidden="true"]')).toHaveText(mmss);
+  await expect(page.getByTestId('ending-playtime-value').locator('.sr-only')).toHaveText(`${Math.floor(shownSeconds / 60)}분 ${shownSeconds % 60}초`);
+  await expect(page.getByTestId('ending-playtime')).toContainText('이 판의 플레이 시간');
+  await expect(page.getByTestId('ending-playtime-note')).toContainText('짧게 잡힙니다');
+  await expect(page.getByTestId('ending-playtime-note')).toContainText('이 기기에만 저장됩니다.');
   // 방향 문장은 스무 살(독립) 이후 사망한 판에만 있다(core/ending.ts#reviewEnding — 그 전이면 `early`). 시드가 무작위라 드물게(약 0.2%) 일찍 떠난 판이 걸린다
   if (saved.data.death.age >= 20) await expect(page.getByTestId('ending-movement')).toBeVisible();
   else await expect(page.getByTestId('ending-movement')).toHaveCount(0);
@@ -364,7 +376,7 @@ test('개발 탐침 쿼리(?__timescale·__guard·__crash·__quota)는 프로덕
   expect(await page.evaluate(() => (window as unknown as { __sawGuard: boolean }).__sawGuard), '입력 가드가 걸렸다 (?__guard=0 무시)').toBe(true);
 
   await toLifeScreen(page);
-  // __timescale=1000: 1배속의 첫 한 해(M7a 이후 0세에는 첫 예방접종이 늘 일어나 조용한 해보다 길 수 있다 — 아래 하한은 조용한 해 HOLD_MS.quiet 기준)가 실제로 그만큼 걸린다. 탐침이 먹혔다면 수 ms 만에 나이가 오르거나 선택지가 뜬다.
+  // __timescale=1000: 1배속의 첫 한 해(M7a 이후 0세에는 첫 예방접종이 늘 일어나 조용한 해보다 길 수 있다 — 아래 하한은 조용한 해 연출 대기 — HOLD_MS.quiet × 30분 모드 계수, M8 — 기준)가 실제로 그만큼 걸린다. 탐침이 먹혔다면 수 ms 만에 나이가 오르거나 선택지가 뜬다.
   const shownAt = Date.now();
   await expect
     .poll(() => page.evaluate(() => !document.querySelector('[data-testid="life-age"]')?.textContent?.includes('0세') || document.querySelector('[data-testid="choice-panel"]') !== null), {
@@ -372,7 +384,7 @@ test('개발 탐침 쿼리(?__timescale·__guard·__crash·__quota)는 프로덕
     })
     .toBe(true);
   const firstYearMs = Date.now() - shownAt;
-  expect(firstYearMs, `첫 한 해가 ${firstYearMs}ms 만에 지났다 — 1배속의 한 해는 적어도 조용한 해 ${HOLD_MS.quiet}ms에 가까워야 한다 (?__timescale 무시)`).toBeGreaterThanOrEqual(HOLD_MS.quiet * 0.75);
+  expect(firstYearMs, `첫 한 해가 ${firstYearMs}ms 만에 지났다 — 1배속의 한 해는 적어도 조용한 해 ${holdMsFor('quiet')}ms에 가까워야 한다 (?__timescale 무시)`).toBeGreaterThanOrEqual((holdMsFor('quiet') as number) * 0.75);
 
   // __quota: 저장이 실패하는 저장소가 되면 안 된다 — 저장 안내가 없고 저장이 실제로 남아 있다
   await expect(page.getByTestId('save-notice')).toHaveCount(0);

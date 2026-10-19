@@ -850,7 +850,7 @@ describe('다음 결정으로 (advanceUntilDecision)', () => {
     const p = pendingState();
     const r = advanceUntilDecision(p);
     expect(r.state).toBe(p);
-    expect(r.counts).toEqual({ quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0 });
+    expect(r.counts).toEqual({ quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, extraLines: 0 });
     const t = createInitialState(1);
     expect(advanceUntilDecision(t).state).toBe(t);
   });

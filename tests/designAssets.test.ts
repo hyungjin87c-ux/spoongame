@@ -16,7 +16,10 @@ import {
   type LooksTier,
 } from '../src/assets/faces/faceLayers';
 import { ERA_BANNED_WORDS } from '../src/core/eventLint';
-import { REBIRTH_NOTE } from '../src/data/endingText';
+import { displaySeconds, formatPlayTime, isCleanRun, readPlay } from '../src/core/playClock';
+import { PLAYTIME_TEXT, REBIRTH_NOTE, breakdownParts } from '../src/data/endingText';
+import { TITLE_TEXT } from '../src/data/titleText';
+import { DASH_TEXT } from '../src/data/dashText';
 import { NOTE_TEXT } from '../src/data/noteSheetText';
 import { NOTE_CARDS, NOTE_MANUAL } from '../src/data/noteCards';
 import citationsJson from '../src/data/citations.json';
@@ -776,7 +779,9 @@ describe('M5 영향 줄·자산 카드·최종 순자산 줄 계약 (designer �
     expect(economyMockHtml).toContain('<dl class="assets" aria-describedby="assets-basis"');
     expect(economyMockHtml).toContain('>−1,200만 원<');
     expect(economyMockHtml).toContain('<summary>상태와 자산의 뜻 보기</summary>');
-    expect(economyMockHtml).toContain('선택지 아래 글씨는 이 선택만으로 이서연에게 생기는 변화입니다.');
+    // D-97·D-98(2026-10-20): 영향 안내의 관형사 「이 선택만으로」는 keep-phrase 묶음(구현 ImpactHint가 Glue를 거친다, design-system.md 11-4) — 글자는 그대로
+    expect(economyMockHtml).toContain('선택지 아래 글씨는 <span class="keep-phrase">이 선택만으로</span> 이서연에게 생기는 변화입니다.');
+    expect(economyMockHtml.replace(/<[^>]+>/g, '')).toContain('선택지 아래 글씨는 이 선택만으로 이서연에게 생기는 변화입니다.');
     expect(economyMockHtml).toContain('스무 살이 되기 전이라 자산을 세지 않았습니다.');
     // M7e-3(copy.md 5-2 ①, D-43): 「최종 순자산」 줄은 금액(+태그)만 — 자리 글자 「같은 세상 안에서 …」는 출발선 카드 한 곳으로 옮겨 이 줄에 없다
     expect(economyMockHtml).not.toContain('같은 세상 안에서');
@@ -841,7 +846,7 @@ describe('M7e 엔딩 새 디자인·합쇼체 문구 계약 (designer 산출물 
     expect(endingMockHtml).toMatch(/<span class="journey__band" style="--from:\d+%;--to:\d+%"><\/span><span class="journey__mid"><\/span>/);
     expect(endingMockHtml).toMatch(/<span class="journey__end" style="--at:\d+%"><\/span>/);
     const labels = [...endingMockHtml.matchAll(/role="img" aria-label="(출발선 [^"]+)"/g)].map((m) => m[1]);
-    expect(labels.length, '상태 5개(기본·zero·past·early·down)의 막대').toBe(5);
+    expect(labels.length, '상태 8개(기본·zero·past·early·down + M8 play-fast·play-long·play-none)의 막대').toBe(8);
     // M7e-4(REV-003-M7e-1 관찰 7 마스터 결정, D-48): 막대 설명은 「출발선 {구간}, 마지막 {자리}.」 — 방향 문장은 넣지 않는다(바로 아래 문장이 읽는다). 스무 살 전은 「출발선 {구간}.」
     for (const l of labels) expect(l).toMatch(/^출발선 [^,.]+(, 마지막 (상위|하위)(?: 약)? \d+%(?: 안쪽)?|, 마지막 가운데쯤)?\.$/);
     for (const l of labels) expect(l, '방향 문장 없음').not.toMatch(/자리입니다|출발선보다|출발선과/);
@@ -1356,5 +1361,141 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
     expect(lib).toContain("root.style.setProperty('--scrollbar-w',Math.max(0,window.innerWidth-root.clientWidth)+'px');root.classList.add('sheet-open')");
     expect(lib).toContain("el.matches('.sheet .field__input')");
     expect(lib).toContain('data-hide-sep');
+  });
+});
+
+/**
+ * M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (SPEC-003 LM6·FS5 · content-M8 11절 LD-1·LD-7·LD-8 ②, designer 선행 2026-10-19 — copy.md 8절 ↔ 구현 상수(endingText.ts#PLAYTIME_TEXT·titleText.ts#lifeLengthHint)·표기 함수(playClock.ts) ↔ 생성기 import ↔ 시안 ending.html·title-a.html ↔ ds.css ↔ 촬영기).
+ * 2026-10-19 후속(D-96): developer가 상수를 copy.md 8절 그대로 넣어 생성기의 임시 블록 `M8_TEXT`를 지우고 구현 상수·부품(`PlayTime`) import로 되돌렸다 — 「임시 블록 = copy.md」 단언은 「구현 상수 = copy.md + 생성기에 글자 사본 없음」으로(M7b·M7c와 같은 수순, R-191).
+ * 시안의 <time>은 구현 부품 PlayTime의 서버 렌더 출력이라 속성 이름이 `dateTime`이다(React가 그대로 낸다 — HTML 속성 이름은 대소문자를 가리지 않아 브라우저 DOM에서는 `datetime`과 같다; tests/endingPlayTime.test.tsx도 같은 꼴을 본다).
+ */
+describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (designer 산출물 사이의 일치)', () => {
+  const PLAYTIME_COPY = {
+    hint: '평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.',
+    label: '이 판의 플레이 시간',
+    breakdown: '세월이 흐른 시간 {연출 mm:ss}, 결정을 읽고 고른 시간 {결정 mm:ss}의 합입니다.',
+    excluded: '그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다.',
+    notClean: '배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다.',
+    device: '이 기기에만 저장됩니다.',
+  };
+  const section8 = copyMd.slice(Math.max(0, copyMd.indexOf('## 8. M8')));
+  it('copy.md 8절: 문구 여섯(첫 화면 설명·이름·분해·제외·깨끗하지 않은 판·이 기기)과 숫자 표기 규칙(mm:ss 두 자리 이상·상한 없음·낭독 「N분 N초」·버킷별 초 버림 뒤 합)이 적혀 있고, 2절 FS5 행도 새 문구다', () => {
+    expect(copyMd.indexOf('## 8. M8')).toBeGreaterThan(0);
+    for (const [k, v] of Object.entries(PLAYTIME_COPY)) expect(section8, k).toContain(v);
+    for (const rule of ['61:05', '100:00', '00:59', '0분 59초', 'PT27M46S', '초를 버린 뒤 더한']) expect(section8, rule).toContain(rule);
+    expect(copyMd).toContain(`| 첫 화면 | 인생 길이 보조(FS5) | 「${PLAYTIME_COPY.hint}」`);
+  });
+  it('구현 상수가 copy.md 8절과 같다(PLAYTIME_TEXT 다섯·TITLE_TEXT.lifeLengthHint·breakdownParts 조각) · 표기 함수가 8-2 규칙대로다(formatPlayTime 단위 표·displaySeconds 버킷별 버림·isCleanRun 세 조작) · 생성기는 임시 블록 없이 그 상수·부품(PlayTime)을 읽고 글자 사본이 없다 — R-191 되돌림(D-96, 2026-10-19 후속)', async () => {
+    expect(TITLE_TEXT.lifeLengthHint).toBe(PLAYTIME_COPY.hint);
+    expect({ ...PLAYTIME_TEXT }).toEqual({ label: PLAYTIME_COPY.label, breakdown: PLAYTIME_COPY.breakdown, excluded: PLAYTIME_COPY.excluded, notClean: PLAYTIME_COPY.notClean, device: PLAYTIME_COPY.device });
+    expect(breakdownParts()).toEqual(['세월이 흐른 시간 ', ', 결정을 읽고 고른 시간 ', '의 합입니다.']);
+    // 8-2: 분 두 자리 이상·상한 없음(시 단위로 바꾸지 않는다), 낭독 「{m}분 {s}초」(0분 포함), datetime PT
+    expect([59, 1666, 3665, 6000].map(formatPlayTime)).toEqual([
+      { text: '00:59', spoken: '0분 59초', iso: 'PT0M59S' },
+      { text: '27:46', spoken: '27분 46초', iso: 'PT27M46S' },
+      { text: '61:05', spoken: '61분 5초', iso: 'PT61M5S' },
+      { text: '100:00', spoken: '100분 0초', iso: 'PT100M0S' },
+    ]);
+    // 8-2: 표시값 = 버킷별로 초를 버린 뒤 더한 값(hold 910.9초 + decide 756.9초 → 1666초 = 27:46, 통째 버림이면 1667), 접기·기록·멈춤·이어하기는 들어가지 않고 깨끗함도 해치지 않는다
+    const rec = { hold: 910_900, decide: 756_900, fold: 12_000, note: 20_000, idle: 31_000, offSpeed: 0, auto: 0, skips: 0, resumes: 4 };
+    expect(displaySeconds(rec)).toBe(910 + 756);
+    expect(isCleanRun(rec)).toBe(true);
+    for (const patch of [{ offSpeed: 1 }, { auto: 1 }, { skips: 1 }]) expect(isCleanRun({ ...rec, ...patch }), JSON.stringify(patch)).toBe(false);
+    expect(readPlay(rec)).toEqual(rec);
+    // 생성기: 임시 블록·표기 흉내(mmss·spokenTime·timeHtml·clean 플래그) 없음, 구현 상수·함수·부품 import, 시안의 플레이 기록은 저장 모양(readPlay 통과)
+    const generator = await readText('../scripts/design/buildMockups.mjs');
+    for (const imp of ["import { displaySeconds, isCleanRun, readPlay } from '../../src/core/playClock.ts';", "import { PlayTime } from '../../src/ui/PlayTime.tsx';"]) expect(generator, imp).toContain(imp);
+    expect(generator).toMatch(/import \{[^}]*\bPLAYTIME_TEXT\b[^}]*\bbreakdownParts\b[^}]*\} from '\.\.\/\.\.\/src\/data\/endingText\.ts';/);
+    expect(generator).toContain('${glueHtml(TITLE_TEXT.lifeLengthHint)}'); // 후속 2: Glue 묶음(관형사 「이 기기에」, D-97·D-98)을 거친다 — 규칙이 들어오기 전에는 맨 글자와 같다
+    expect(generator).toContain('createElement(PlayTime, { seconds, ...props })');
+    expect(generator).toMatch(/function playRecord\(holdSec, decideSec, extra = \{\}\)[\s\S]*?readPlay\(rec\) === undefined/);
+    expect(generator).not.toMatch(/const M8_TEXT\b|M8_TEXT\.|const mmss\b|const spokenTime\b|const timeHtml\b|clean: (true|false)|padStart\(2, '0'\)\}:/); // 선행 때의 임시 블록·표기 흉내 0(이름은 되돌림 주석에만)
+    // 글자 사본 0 — 문장 다섯(첫 화면 설명·분해·제외·깨끗하지 않은 판·이 기기)은 생성기 어디에도 없다(이름 「이 판의 플레이 시간」은 주석의 설명에만 남는다)
+    for (const s of [PLAYTIME_COPY.hint, PLAYTIME_COPY.breakdown, PLAYTIME_COPY.excluded, PLAYTIME_COPY.notClean, PLAYTIME_COPY.device]) expect(generator, s).not.toContain(s);
+    expect(generator.match(new RegExp(PLAYTIME_COPY.label, 'g'))?.length ?? 0).toBeLessThanOrEqual(2);
+    expect(generator).not.toMatch(new RegExp(`['"\`]${PLAYTIME_COPY.label}['"\`]`));
+  });
+  it('시안 ending.html: 블록은 「사망과 선택」 카드 끝(7상태 — play-none에는 없음), 구현 PlayTimeBlock과 같은 마크업(dl 이름 + time.playtime__value, 보조 문장 p — data-testid 넷까지), 모든 time은 datetime PT·sr-only 「N분 N초」·aria-hidden mm:ss 쌍(순서 값·hold·decide), 두 부분의 합 = 표시값, 깨끗하지 않은 판 문장은 play-fast에만, 61:05 표기, 시간 값 뒤 조사 없음', () => {
+    const blocks = [...endingMockHtml.matchAll(/<div class="playtime" data-testid="ending-playtime">[\s\S]*?<\/p><\/div>/g)].map((m) => m[0]);
+    expect(blocks.length).toBe(7);
+    for (const state of ['play-fast', 'play-long', 'play-none']) expect(endingMockHtml).toContain(`<template id="state-${state}">`);
+    const noneStart = endingMockHtml.indexOf('<template id="state-play-none">');
+    expect(endingMockHtml.slice(noneStart, endingMockHtml.indexOf('</template>', noneStart))).not.toContain('ending-playtime');
+    // 블록은 선택 수 문장 바로 뒤, 같은 section 안(카드의 세 번째 요소)
+    expect(endingMockHtml.match(/살아오며 \d+번의 선택을 했습니다\.<\/p><div class="playtime"/g)?.length).toBe(7);
+    // 구현 부품 PlayTime의 서버 렌더 출력(속성 이름 dateTime — 브라우저 DOM에서는 datetime과 같다), data-testid는 구현과 같은 셋
+    const TIME = /<time( class="playtime__value")? dateTime="PT(\d+)M(\d+)S" data-testid="ending-playtime-(value|hold|decide)"><span class="sr-only">(\d+)분 (\d+)초<\/span><span aria-hidden="true">(\d{2,}):(\d{2})<\/span><\/time>/g;
+    let notClean = 0;
+    for (const b of blocks) {
+      expect(b).toContain(`<dl class="playtime__row"><dt>${PLAYTIME_COPY.label}</dt><dd><time class="playtime__value"`);
+      expect(b).toContain('<p class="t-xs t-faint playtime__note" data-testid="ending-playtime-note">');
+      const found = [...b.matchAll(TIME)].map((m) => ({ valueClass: m[1] !== undefined, id: m[4], nums: [m[2], m[3], m[5], m[6], m[7], m[8]].map(Number) }));
+      expect(found.map((f) => f.id), '표시값 + 분해 둘').toEqual(['value', 'hold', 'decide']);
+      expect(found.map((f) => f.valueClass), 'playtime__value는 표시값에만').toEqual([true, false, false]);
+      expect(b.match(/<time /g)?.length, '다른 time 요소 없음').toBe(3);
+      const times = found.map((f) => f.nums);
+      for (const [m, s, sm, ss, vm, vs] of times) {
+        expect([sm, ss], '낭독 글자 = datetime').toEqual([m, s]);
+        expect([vm, vs], '눈에 보이는 mm:ss = datetime').toEqual([m, s]);
+        expect(s).toBeLessThan(60);
+      }
+      const [total, hold, decide] = times.map(([m, s]) => m * 60 + s);
+      expect(total, '버킷별 초 버림 뒤 합 = 표시값').toBe(hold + decide);
+      // 문장 순서는 태그를 벗긴 글자로 본다(D-97·D-98, 2026-10-20 — 「그 밖에」「이 기기에만」이 keep-phrase 묶음이라 원문 마크업에는 문장이 통째로 없다; 글자는 그대로)
+      const plain = b.replace(/<[^>]+>/g, '');
+      const at = (s: string) => plain.indexOf(s);
+      expect(at(PLAYTIME_COPY.excluded)).toBeGreaterThan(0);
+      expect(at(PLAYTIME_COPY.device)).toBeGreaterThan(at(PLAYTIME_COPY.excluded));
+      if (plain.includes(PLAYTIME_COPY.notClean)) {
+        notClean++;
+        expect(at(PLAYTIME_COPY.notClean)).toBeGreaterThan(at(PLAYTIME_COPY.excluded));
+        expect(at(PLAYTIME_COPY.notClean)).toBeLessThan(at(PLAYTIME_COPY.device));
+      }
+      // 관형사 묶음(design-system.md 11-4, D-97·D-98): 보조 문장의 「그 밖에」「이 기기에만」은 뒤 어절과 한 묶음(.keep-phrase, nowrap 아님), 시간 값은 묶음 밖 — 구현 EndingScreen.tsx#PlayTimeBlock의 조각별 Glue와 같은 출력
+      expect(b).toContain('의 합입니다. <span class="keep-phrase">그 밖에</span> 멈춰 있던 시간과');
+      expect(b).toContain('<span class="keep-phrase">이 기기에만</span> 저장됩니다.</p>');
+      expect(b.match(/<span class="keep-phrase">/g)?.length, '묶음은 둘(그 밖에 · 이 기기에만)').toBe(2);
+      expect(b).not.toContain('class="nowrap"');
+      // 시간 값 바로 뒤에는 조사를 두지 않는다(쉼표·「의」만 — 눈에 보이는 「12:36」과 낭독 「12분 36초」의 받침이 달라 을/를·과/와가 어긋난다, design-system.md 11-4)
+      for (const m of b.matchAll(/<\/time>([^<]{0,1})/g)) expect(['', ',', '의'], `time 뒤 「${m[1]}」`).toContain(m[1]);
+    }
+    expect(notClean, 'play-fast 하나').toBe(1);
+    expect(endingMockHtml).toContain('dateTime="PT61M5S" data-testid="ending-playtime-value"><span class="sr-only">61분 5초</span><span aria-hidden="true">61:05</span>');
+    // 옛 자리표시 줄(별도 카드 「(일시정지 제외, 이 기기에만 저장)」)은 없다
+    expect(endingMockHtml).not.toContain('일시정지 제외');
+    expect(endingMockHtml).not.toContain('플레이 시간 줄은 M8');
+  });
+  it('시안 title-a.html·title-continue.html: 인생 길이 설명이 새 문구(세 문장 해요체)이고 「약 1시간」은 「준비 중」 그대로(LD-4)', async () => {
+    for (const file of ['title-a.html', 'title-continue.html']) {
+      const html = await readText(`../docs/design/mockups/${file}`);
+      // D-97·D-98(2026-10-20): 끝 문장의 「이 기기에」는 keep-phrase 묶음(구현 TitleScreen.tsx:313이 Glue, design-system.md 11-4) — 글자는 copy.md 그대로(태그를 벗기면 같다)
+      expect(html, file).toContain(`<p class="t-sm t-muted" style="margin-top:var(--sp-2)">${PLAYTIME_COPY.hint.replace('이 기기에 남아요.', '<span class="keep-phrase">이 기기에</span> 남아요.')}</p>`);
+      expect(html.replace(/<[^>]+>/g, ''), file).toContain(PLAYTIME_COPY.hint);
+      expect(html, file).toContain('<p class="hero__note"><span class="keep-phrase">이 기기</span> 안에서 계산한 가상의 사람들이에요.'); // 가상 인구 주석(TitleScreen.tsx:266, D-98)
+      expect(html, file).not.toContain('이 기기에 남습니다');
+      expect(html, file).toMatch(/<span class="radio-card__title">약 1시간<\/span><span class="radio-card__meta">준비 중<\/span>/);
+    }
+  });
+  it('D-97·D-98(2026-10-20, design-system.md 11-4 관형사 묶음 — 구현 glue.ts r2 규칙을 생성기가 import): 나머지 고정 문장 셋의 시안도 구현과 같은 묶음을 품는다 — 엔딩 다시 태어나기 안내 「이 인생의」, 대시보드 나가기 확인 「이 기기에」, 결정 카드 영향 안내 「이 선택만으로」; 글자는 바뀌지 않고 생성기의 세 자리는 esc가 아니라 glueHtml이다', async () => {
+    expect(endingMockHtml).toContain(`<p class="t-sm t-muted">${REBIRTH_NOTE.replace('이 인생의', '<span class="keep-phrase">이 인생의</span>')}</p>`);
+    const dashboard = await readText('../docs/design/mockups/dashboard-infant.html');
+    expect(dashboard).toContain(`<p class="t-sm t-muted">${DASH_TEXT.exitAskSub.replace('이 기기에', '<span class="keep-phrase">이 기기에</span>')}</p>`);
+    const decision = await readText('../docs/design/mockups/decision-adult.html');
+    expect(decision).toContain('<span class="keep-phrase">이 선택만으로</span>');
+    for (const [html, text] of [[endingMockHtml, REBIRTH_NOTE], [dashboard, DASH_TEXT.exitAskSub]] as const) expect(html.replace(/<[^>]+>/g, ''), text).toContain(text);
+    // 생성기: D-98의 여섯 자리 중 부품이 아닌 다섯(FS5·가상 인구 주석·플레이 시간 조각·다시 태어나기·나가기 확인)이 glueHtml — 영향 안내는 구현 부품 ImpactHint의 서버 렌더라 따로 적지 않는다
+    const generator = await readText('../scripts/design/buildMockups.mjs');
+    for (const s of ['${glueHtml(TITLE_TEXT.lifeLengthHint)}', '${glueHtml(TITLE_TEXT.populationNote)}', '${glueHtml(lead)}', '${glueHtml(mid)}', '${glueHtml(tail)}', 'glueHtml(t.excluded)', 'glueHtml(t.notClean)', 'glueHtml(t.device)', '${glueHtml(REBIRTH_NOTE)}', '${glueHtml(T.exitAskSub)}']) expect(generator, s).toContain(s);
+    for (const s of ['${esc(TITLE_TEXT.populationNote)}', '${esc(REBIRTH_NOTE)}', '${esc(T.exitAskSub)}', '${esc(TITLE_TEXT.lifeLengthHint)}']) expect(generator, s).not.toContain(s);
+  });
+  it('ds.css: .playtime 블록(위끝 1px 선·dl 한 줄 flex-wrap·값 본문 크기 굵게 tabular·time nowrap, 색 값 직접 없음); 촬영기에 플레이 시간 카드 샷 넷과 인생 길이 묶음 샷이 있다', async () => {
+    const block = dsCss.slice(dsCss.indexOf('.playtime {'));
+    expect(block).toContain('.playtime { display: flex; flex-direction: column; gap: var(--sp-1); padding-top: var(--sp-3); border-top: 1px solid var(--c-border); }');
+    expect(block).toContain('.playtime__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;');
+    expect(block).toContain('.playtime__value { font-weight: var(--fw-bold); font-size: var(--fs-md); font-variant-numeric: tabular-nums; color: var(--c-text); }');
+    expect(block).toContain('.playtime time { white-space: nowrap; font-variant-numeric: tabular-nums; }');
+    expect(block.slice(0, block.indexOf('.playtime time') + 20)).not.toMatch(/#[0-9a-f]{3,6}\b/i);
+    const shooter = await readText('../scripts/design/shootMockups.mjs');
+    for (const name of ["'ending-playtime'", "'ending-play-fast'", "'ending-play-long'", "'ending-play-none'", "'title-length'", "el: 'fieldset:has(.choices--2)'", "el: '[aria-label=\"사망과 선택\"]'"]) expect(shooter, name).toContain(name);
   });
 });

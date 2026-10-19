@@ -177,6 +177,15 @@ describe('feedbackFieldsOf: 게임 상태에서 네 가지만', () => {
     expect(Object.keys(feedbackFieldsOf(written, REPO, BUILD)).sort()).toEqual(['buildLabel', 'era', 'lifeLength', 'repoUrl', 'screen']);
   });
 
+  it('M8 LD-11: 플레이 시간(play)은 주소에 싣지 않는다 — 시간이 많이 쌓인 판(엔딩)이어도 기록이 없는 같은 판의 주소와 글자까지 같고, 결과 키는 여전히 다섯 개뿐이다 (형진 님이 엔딩 숫자를 직접 알려 준다)', () => {
+    const played = { ...game, phase: 'ending' as const, play: { hold: 910_900, decide: 756_900, fold: 12_345, note: 23_456, idle: 34_567, offSpeed: 7_777, auto: 8_888, skips: 3, resumes: 4 } };
+    const url = buildFeedbackUrl(feedbackFieldsOf(played, REPO, BUILD))!;
+    const decoded = decodeURIComponent(url);
+    for (const piece of ['910900', '756900', '12345', '23456', '34567', '7777', '8888', '27:46', 'PT', '1666', 'play', 'hold', 'decide']) expect(decoded, piece).not.toContain(piece);
+    expect(url, '플레이 시간이 있든 없든 같은 주소').toBe(buildFeedbackUrl(feedbackFieldsOf({ ...game, phase: 'ending' as const }, REPO, BUILD))!);
+    expect(Object.keys(feedbackFieldsOf(played, REPO, BUILD)).sort()).toEqual(['buildLabel', 'era', 'lifeLength', 'repoUrl', 'screen']);
+  });
+
   it('첫 화면처럼 판이 없는 상태도 읽는다', () => {
     const fields = feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, REPO, BUILD);
     expect(fields).toEqual({ repoUrl: REPO, screen: 'title', era: null, lifeLength: null, buildLabel: BUILD });

@@ -1,0 +1,476 @@
+[
+ {
+  "key": "Q",
+  "tag": "Q-0",
+  "seed": 26,
+  "era": "future",
+  "step": 2,
+  "kind": "quiet",
+  "lines": 0,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   }
+  ],
+  "g0": 8771.5,
+  "g1": 8799.399999976158,
+  "ages": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "card": true
+ },
+ {
+  "key": "Q",
+  "tag": "Q-1",
+  "seed": 31,
+  "era": "present",
+  "step": 2,
+  "kind": "quiet",
+  "lines": 0,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   }
+  ],
+  "g0": 8765.400000035763,
+  "g1": 8757.5,
+  "ages": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "card": false
+ },
+ {
+  "key": "Q",
+  "tag": "Q-2",
+  "seed": 130,
+  "era": "present",
+  "step": 2,
+  "kind": "quiet",
+  "lines": 0,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   }
+  ],
+  "g0": 8761,
+  "g1": 8755.099999964237,
+  "ages": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "card": false
+ },
+ {
+  "key": "Q",
+  "tag": "Q-3",
+  "seed": 171,
+  "era": "past",
+  "step": 2,
+  "kind": "quiet",
+  "lines": 0,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 1
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   }
+  ],
+  "g0": 8765.399999976158,
+  "g1": 8754.699999988079,
+  "ages": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "card": false
+ },
+ {
+  "key": "Q",
+  "tag": "Q-4",
+  "seed": 187,
+  "era": "present",
+  "step": 2,
+  "kind": "quiet",
+  "lines": 0,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 1
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   }
+  ],
+  "g0": 8760.100000023842,
+  "g1": 8803.300000011921,
+  "ages": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "card": true
+ },
+ {
+  "key": "N1",
+  "tag": "N1-0",
+  "seed": 3,
+  "era": "past",
+  "step": 0,
+  "kind": "narrative",
+  "lines": 1,
+  "before": [],
+  "g0": 8764.5,
+  "g1": 21278.099999964237,
+  "ages": [
+   0,
+   1,
+   2
+  ],
+  "card": false
+ },
+ {
+  "key": "N1",
+  "tag": "N1-1",
+  "seed": 3,
+  "era": "past",
+  "step": 2,
+  "kind": "narrative",
+  "lines": 1,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 1
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   }
+  ],
+  "g0": 8757.199999988079,
+  "g1": 21298.399999976158,
+  "ages": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "card": true
+ },
+ {
+  "key": "N1",
+  "tag": "N1-2",
+  "seed": 16,
+  "era": "present",
+  "step": 0,
+  "kind": "narrative",
+  "lines": 1,
+  "before": [],
+  "g0": 8759.200000047684,
+  "g1": 21310.299999952316,
+  "ages": [
+   0,
+   1
+  ],
+  "card": true
+ },
+ {
+  "key": "N1",
+  "tag": "N1-3",
+  "seed": 17,
+  "era": "future",
+  "step": 2,
+  "kind": "narrative",
+  "lines": 1,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   }
+  ],
+  "g0": 8758.5,
+  "g1": 21263.599999964237,
+  "ages": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "card": false
+ },
+ {
+  "key": "N1",
+  "tag": "N1-4",
+  "seed": 17,
+  "era": "future",
+  "step": 3,
+  "kind": "narrative",
+  "lines": 1,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   },
+   {
+    "kind": "narrative",
+    "lines": 3
+   },
+   {
+    "kind": "narrative",
+    "lines": 1
+   }
+  ],
+  "g0": 8758.900000035763,
+  "g1": 21263.80000001192,
+  "ages": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "card": false
+ },
+ {
+  "key": "N2",
+  "tag": "N2-0",
+  "seed": 2,
+  "era": "future",
+  "step": 0,
+  "kind": "narrative",
+  "lines": 2,
+  "before": [],
+  "g0": 8760.800000011921,
+  "g1": 27512.100000023842,
+  "ages": [
+   0,
+   1,
+   2
+  ],
+  "card": false
+ },
+ {
+  "key": "N2",
+  "tag": "N2-1",
+  "seed": 11,
+  "era": "future",
+  "step": 0,
+  "kind": "narrative",
+  "lines": 2,
+  "before": [],
+  "g0": 8763.5,
+  "g1": 27564.19999998808,
+  "ages": [
+   0,
+   1
+  ],
+  "card": true
+ },
+ {
+  "key": "N2",
+  "tag": "N2-2",
+  "seed": 12,
+  "era": "past",
+  "step": 0,
+  "kind": "narrative",
+  "lines": 2,
+  "before": [],
+  "g0": 8760.5,
+  "g1": 27516.80000001192,
+  "ages": [
+   0,
+   1,
+   2
+  ],
+  "card": false
+ },
+ {
+  "key": "N2",
+  "tag": "N2-3",
+  "seed": 13,
+  "era": "present",
+  "step": 0,
+  "kind": "narrative",
+  "lines": 2,
+  "before": [],
+  "g0": 8764.5,
+  "g1": 27554.099999964237,
+  "ages": [
+   0,
+   1
+  ],
+  "card": true
+ },
+ {
+  "key": "N2",
+  "tag": "N2-4",
+  "seed": 17,
+  "era": "future",
+  "step": 0,
+  "kind": "narrative",
+  "lines": 2,
+  "before": [],
+  "g0": 8756.899999976158,
+  "g1": 27517.5,
+  "ages": [
+   0,
+   1,
+   2
+  ],
+  "card": false
+ },
+ {
+  "key": "N3",
+  "tag": "N3-0",
+  "seed": 2,
+  "era": "future",
+  "step": 1,
+  "kind": "narrative",
+  "lines": 3,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   }
+  ],
+  "g0": 8763.699999988079,
+  "g1": 33798.69999998808,
+  "ages": [
+   0,
+   1,
+   2
+  ],
+  "card": true
+ },
+ {
+  "key": "N3",
+  "tag": "N3-1",
+  "seed": 3,
+  "era": "past",
+  "step": 1,
+  "kind": "narrative",
+  "lines": 3,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 1
+   }
+  ],
+  "g0": 8767.600000023842,
+  "g1": 33761.5,
+  "ages": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "card": false
+ },
+ {
+  "key": "N3",
+  "tag": "N3-2",
+  "seed": 12,
+  "era": "past",
+  "step": 1,
+  "kind": "narrative",
+  "lines": 3,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   }
+  ],
+  "g0": 8759,
+  "g1": 33801.40000003576,
+  "ages": [
+   0,
+   1,
+   2
+  ],
+  "card": true
+ },
+ {
+  "key": "N3",
+  "tag": "N3-3",
+  "seed": 17,
+  "era": "future",
+  "step": 1,
+  "kind": "narrative",
+  "lines": 3,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   }
+  ],
+  "g0": 8762.100000023842,
+  "g1": 33764.80000001192,
+  "ages": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "card": false
+ },
+ {
+  "key": "N3",
+  "tag": "N3-4",
+  "seed": 18,
+  "era": "past",
+  "step": 1,
+  "kind": "narrative",
+  "lines": 3,
+  "before": [
+   {
+    "kind": "narrative",
+    "lines": 2
+   }
+  ],
+  "g0": 8759.699999988079,
+  "g1": 33798.80000001192,
+  "ages": [
+   0,
+   1,
+   2
+  ],
+  "card": true
+ }
+]

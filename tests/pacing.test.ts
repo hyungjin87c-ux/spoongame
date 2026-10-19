@@ -21,8 +21,26 @@ import {
   type Stats,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { CHOICE_PACING, EVENT_FREQUENCY, MIN_YEARS_BETWEEN_CHOICES, MOOD_DRIFT } from '../src/data/lifeTable';
+import { EVENT_FREQUENCY, MIN_YEARS_BETWEEN_CHOICES, MOOD_DRIFT } from '../src/data/lifeTable';
+import { LIFE_LENGTH_MODES } from '../src/data/timingTable';
 import { chooserFor, correlation, startLife } from '../scripts/simulateLib';
+
+/**
+ * 한 판의 선택지 수 조절(페이싱)은 인생 길이 모드 표에 있다(M8, data/timingTable.ts#LIFE_LENGTH_MODES) — 이 시험은 30분 모드(기본)의 표를 읽고, 상한 시험은 표 값을 **시험 안에서만** 낮춰 끼운다
+ * (30분 모드의 hard 30은 판의 0.1 / 0.7 / 1.7%만 닿아, 표 값 그대로는 시험 표본(200판)에서 「상한에 닿는 판이 있다」를 안정적으로 확인하지 못한다 — content-M8.md 2-8절).
+ */
+const CHOICE_PACING = LIFE_LENGTH_MODES.short30.pacing;
+/** 상한 시험에 끼우는 낮은 페이싱: 후보가 넉넉한 풀에서 판당 평균이 25 안팎이라 hard 24에 많은 판이 닿는다 */
+const LOW_PACING = { soft: 18, softFactor: 0.3, hard: 24 };
+function withPacing<T>(pacing: { soft: number; softFactor: number; hard: number }, fn: () => T): T {
+  const saved = { ...CHOICE_PACING };
+  try {
+    Object.assign(CHOICE_PACING, pacing);
+    return fn();
+  } finally {
+    Object.assign(CHOICE_PACING, saved);
+  }
+}
 
 /** M4 밸런스 장치: 행복·관계의 출생 편차 걷어 내기(R-045 b, R-063), 한 판의 선택지 수 조절, 자동 선택 가중치의 지수 제한(R-046). */
 
@@ -300,14 +318,18 @@ describe('한 판의 선택지 수 조절 (CHOICE_PACING)', () => {
   });
 
   it('후보가 아무리 넉넉해도 한 판의 선택지는 하드 상한을 넘지 않는다 (그리고 상한까지 가는 판이 있다)', () => {
-    const counts = playMany(200);
-    expect(Math.max(...counts)).toBeLessThanOrEqual(CHOICE_PACING.hard);
-    expect(Math.max(...counts), '상한에 닿는 판이 하나도 없으면 이 시험이 상한을 확인하지 못한다').toBe(CHOICE_PACING.hard);
+    // 표의 값 그대로(30분 모드 hard 30)에서는 상한을 넘지 않는 것만 보고, 상한에 닿는 판이 있는지는 낮춰 끼운 페이싱으로 확인한다(M8)
+    const tableCounts = playMany(200);
+    expect(Math.max(...tableCounts)).toBeLessThanOrEqual(CHOICE_PACING.hard);
+    withPacing(LOW_PACING, () => {
+      const counts = playMany(200);
+      expect(Math.max(...counts)).toBeLessThanOrEqual(LOW_PACING.hard);
+      expect(Math.max(...counts), '상한에 닿는 판이 하나도 없으면 이 시험이 상한을 확인하지 못한다').toBe(LOW_PACING.hard);
+    });
   });
 
   it('부드러운 상한은 윗꼬리만 줄인다: 같은 시드에서 softFactor를 1로 두면(감속 없음) 상한 근처에 몰리는 판이 더 많다', () => {
-    const saved = CHOICE_PACING.softFactor;
-    try {
+    withPacing(LOW_PACING, () => {
       const withSoft = playMany(200);
       CHOICE_PACING.softFactor = 1;
       const without = playMany(200);
@@ -315,9 +337,7 @@ describe('한 판의 선택지 수 조절 (CHOICE_PACING)', () => {
       expect(nearCap(without)).toBeGreaterThan(nearCap(withSoft));
       const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
       expect(mean(without)).toBeGreaterThan(mean(withSoft));
-    } finally {
-      CHOICE_PACING.softFactor = saved;
-    }
+    });
   });
 
   it('선택지가 없는 판도, 하드 상한에 닿은 뒤에도 인생은 계속된다 (서술 이벤트·조용한 해로 사망까지)', () => {

@@ -11,6 +11,7 @@ import { AssetsCard, FamilyCard, PeersNowCard, ProfileCard, StatusCard, type Lif
 import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, useDecisionModel } from '../ui/dash/DecisionCard';
 import { LogCard } from '../ui/dash/LogCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
+import { Glue } from '../ui/Glue';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
 import { useStickyHead } from '../ui/headRelease';
 import { decideNoteFocus, type NoteFocusVia } from '../ui/noteFocus';
@@ -390,7 +391,9 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
               <p className="exit-ask__title" id="exit-ask-t" role="alert" data-testid="exit-ask-title" ref={exitTitleRef}>
                 {DASH_TEXT.exitAsk}
               </p>
-              <p className="t-sm t-muted">{DASH_TEXT.exitAskSub}</p>
+              <p className="t-sm t-muted">
+                <Glue text={DASH_TEXT.exitAskSub} />
+              </p>
               <div className="exit-ask__actions">
                 <GuardedButton guardKey={EXIT_GUARD_KEY} className="btn btn--secondary" data-testid="exit-yes" onClick={onExit}>
                   {DASH_TEXT.exitYes}

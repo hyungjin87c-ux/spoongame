@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOLD_MS } from '../src/data/timingTable';
-import { advanceFraction, holdDelayMs, percentOf, yearProgress, SPEEDS } from '../src/core';
+import { advanceFraction, holdDelayMs, holdMsFor, percentOf, yearProgress, SPEEDS } from '../src/core';
 
 /**
  * 올해 진행률 (SPEC-003 DB2): 바는 그 해의 연출 시간 동안 0 → 100%로 차오르고, 100%가 되면 나이가 +1 된다.
@@ -51,7 +50,7 @@ describe('advanceFraction(비율, dt, 연출 시간): 시계가 흐르는 방식
   });
 
   it('한 해 도중에 배속이 바뀌어도 바는 되감기거나 건너뛰지 않는다: 이미 찬 비율은 그대로이고 남은 비율만 새 속도로 채운다', () => {
-    const base = HOLD_MS.quiet;
+    const base = holdMsFor('quiet')!; // 판의 인생 길이 모드 계수가 곱해진 한 해의 연출 시간(M8 — HOLD_MS를 직접 쓰지 않는다)
     // 1배속으로 절반을 지난 뒤 8배속으로 바꾼다
     let f = advanceFraction(0, base / 2, base);
     expect(f).toBeCloseTo(0.5, 10);

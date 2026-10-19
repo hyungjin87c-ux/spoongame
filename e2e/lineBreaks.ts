@@ -25,8 +25,13 @@ export interface LineReport {
   sample: string[];
 }
 
-export async function measureLineBreaks(page: Page, scopeSelector: string, options: { separators?: boolean; keeps?: boolean; keepWords?: readonly string[] } = {}): Promise<LineReport> {
-  const check = { separators: options.separators ?? true, keeps: options.keeps ?? true, keepWords: [...(options.keepWords ?? [])] };
+export async function measureLineBreaks(
+  page: Page,
+  scopeSelector: string,
+  options: { separators?: boolean; keeps?: boolean; keepWords?: readonly string[]; determiners?: boolean } = {},
+): Promise<LineReport> {
+  // determiners(기본 꺼짐): 줄 끝에 어절로 홀로 선 지시 관형사 「이」「그」「저」가 남는 줄 0 (REV-003-M8-1 관찰 4, designer D-97·D-98). Glue를 거치는 고정 문장에만 켠다 — 이벤트 서술 줄(D-99, 2차)은 아직 묶지 않는다.
+  const check = { separators: options.separators ?? true, keeps: options.keeps ?? true, keepWords: [...(options.keepWords ?? [])], determiners: options.determiners ?? false };
   return page.evaluate(
     ([selector, wanted]) => {
       const scope = document.querySelector(selector);
@@ -112,6 +117,16 @@ export async function measureLineBreaks(page: Page, scopeSelector: string, optio
           const last = chars[vis[vis.length - 1]].ch;
           if ('·/—('.includes(last) && vis.length >= 1) violations.push(`줄 끝에 「${last}」: 「${show(idx)}」`);
           if ('·/—),.'.includes(first) && vis.length >= 1) violations.push(`줄 첫머리에 「${first}」: 「${show(idx)}」`);
+        }
+      }
+      if (wanted.determiners) {
+        for (const idx of lines) {
+          const vis = idx.filter(visible).filter((i) => chars[i].ch.trim() !== '');
+          if (vis.length === 0) continue;
+          // 줄의 마지막 어절(줄 안의 글자를 이어 붙여 마지막 공백 뒤)이 정확히 「이」「그」「저」 하나인 줄
+          const lineText = show(idx);
+          const lastWord = lineText.slice(lineText.lastIndexOf(' ') + 1);
+          if (lastWord === '이' || lastWord === '그' || lastWord === '저') violations.push(`줄 끝에 홀로 선 관형사 「${lastWord}」: 「${lineText}」`);
         }
       }
       let keepChecked = 0;

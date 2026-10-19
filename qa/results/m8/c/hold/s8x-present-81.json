@@ -1,0 +1,1065 @@
+{
+ "era": "present",
+ "seed": 81,
+ "speed": 8,
+ "mode": "skip",
+ "readMs": 1500,
+ "tag": "s8x-present-81",
+ "wallSec": 105,
+ "events": [
+  {
+   "t": 2502,
+   "k": "age",
+   "age": 0
+  },
+  {
+   "t": 3011.5,
+   "k": "age",
+   "age": 1
+  },
+  {
+   "t": 3011.600000023842,
+   "k": "card"
+  },
+  {
+   "t": 4996.300000011921,
+   "k": "age",
+   "age": 2
+  },
+  {
+   "t": 4996.300000011921,
+   "k": "cardGone"
+  },
+  {
+   "t": 8602.600000023842,
+   "k": "age",
+   "age": 3
+  },
+  {
+   "t": 8654.700000047684,
+   "k": "card"
+  },
+  {
+   "t": 10642,
+   "k": "age",
+   "age": 4
+  },
+  {
+   "t": 10642.100000023842,
+   "k": "cardGone"
+  },
+  {
+   "t": 12684,
+   "k": "age",
+   "age": 5
+  },
+  {
+   "t": 12742.800000011921,
+   "k": "age",
+   "age": 6
+  },
+  {
+   "t": 12742.900000035763,
+   "k": "card"
+  },
+  {
+   "t": 14709.600000023842,
+   "k": "age",
+   "age": 7
+  },
+  {
+   "t": 14709.600000023842,
+   "k": "cardGone"
+  },
+  {
+   "t": 16749,
+   "k": "age",
+   "age": 8
+  },
+  {
+   "t": 16794.700000047684,
+   "k": "card"
+  },
+  {
+   "t": 18777.80000001192,
+   "k": "age",
+   "age": 9
+  },
+  {
+   "t": 18777.80000001192,
+   "k": "cardGone"
+  },
+  {
+   "t": 20817.100000023842,
+   "k": "age",
+   "age": 10
+  },
+  {
+   "t": 20854.5,
+   "k": "age",
+   "age": 11
+  },
+  {
+   "t": 20854.5,
+   "k": "card"
+  },
+  {
+   "t": 22837.700000047684,
+   "k": "age",
+   "age": 12
+  },
+  {
+   "t": 22837.700000047684,
+   "k": "cardGone"
+  },
+  {
+   "t": 24873.700000047684,
+   "k": "age",
+   "age": 13
+  },
+  {
+   "t": 24893.5,
+   "k": "age",
+   "age": 14
+  },
+  {
+   "t": 24893.5,
+   "k": "card"
+  },
+  {
+   "t": 26865.400000035763,
+   "k": "age",
+   "age": 15
+  },
+  {
+   "t": 26865.400000035763,
+   "k": "cardGone"
+  },
+  {
+   "t": 28900.100000023842,
+   "k": "age",
+   "age": 16
+  },
+  {
+   "t": 28949.200000047684,
+   "k": "card"
+  },
+  {
+   "t": 30920.100000023842,
+   "k": "age",
+   "age": 17
+  },
+  {
+   "t": 30920.200000047684,
+   "k": "cardGone"
+  },
+  {
+   "t": 32959.700000047684,
+   "k": "age",
+   "age": 18
+  },
+  {
+   "t": 32988.10000002384,
+   "k": "card"
+  },
+  {
+   "t": 34951.10000002384,
+   "k": "age",
+   "age": 19
+  },
+  {
+   "t": 34951.200000047684,
+   "k": "cardGone"
+  },
+  {
+   "t": 36991.90000003576,
+   "k": "age",
+   "age": 20
+  },
+  {
+   "t": 37034.30000001192,
+   "k": "age",
+   "age": 22
+  },
+  {
+   "t": 37034.40000003576,
+   "k": "card"
+  },
+  {
+   "t": 39016.10000002384,
+   "k": "age",
+   "age": 23
+  },
+  {
+   "t": 39016.10000002384,
+   "k": "cardGone"
+  },
+  {
+   "t": 41054.5,
+   "k": "age",
+   "age": 24
+  },
+  {
+   "t": 41091.80000001192,
+   "k": "age",
+   "age": 29
+  },
+  {
+   "t": 41091.80000001192,
+   "k": "card"
+  },
+  {
+   "t": 43083.5,
+   "k": "age",
+   "age": 30
+  },
+  {
+   "t": 43083.5,
+   "k": "cardGone"
+  },
+  {
+   "t": 45125.5,
+   "k": "age",
+   "age": 31
+  },
+  {
+   "t": 45203,
+   "k": "card"
+  },
+  {
+   "t": 47172,
+   "k": "age",
+   "age": 32
+  },
+  {
+   "t": 47172.10000002384,
+   "k": "cardGone"
+  },
+  {
+   "t": 49210.10000002384,
+   "k": "age",
+   "age": 33
+  },
+  {
+   "t": 49265.90000003576,
+   "k": "age",
+   "age": 35
+  },
+  {
+   "t": 49266,
+   "k": "card"
+  },
+  {
+   "t": 51248.10000002384,
+   "k": "age",
+   "age": 36
+  },
+  {
+   "t": 51248.200000047684,
+   "k": "cardGone"
+  },
+  {
+   "t": 53285.40000003576,
+   "k": "age",
+   "age": 37
+  },
+  {
+   "t": 53343.90000003576,
+   "k": "age",
+   "age": 38
+  },
+  {
+   "t": 53344,
+   "k": "card"
+  },
+  {
+   "t": 55341.5,
+   "k": "age",
+   "age": 39
+  },
+  {
+   "t": 55341.5,
+   "k": "cardGone"
+  },
+  {
+   "t": 57383.700000047684,
+   "k": "age",
+   "age": 40
+  },
+  {
+   "t": 57431.90000003576,
+   "k": "card"
+  },
+  {
+   "t": 59444.5,
+   "k": "age",
+   "age": 41
+  },
+  {
+   "t": 59444.60000002384,
+   "k": "cardGone"
+  },
+  {
+   "t": 61487.200000047684,
+   "k": "age",
+   "age": 42
+  },
+  {
+   "t": 61546.60000002384,
+   "k": "card"
+  },
+  {
+   "t": 63554.60000002384,
+   "k": "age",
+   "age": 43
+  },
+  {
+   "t": 63554.60000002384,
+   "k": "cardGone"
+  },
+  {
+   "t": 65600.90000003576,
+   "k": "age",
+   "age": 44
+  },
+  {
+   "t": 65672.60000002384,
+   "k": "age",
+   "age": 46
+  },
+  {
+   "t": 65672.70000004768,
+   "k": "card"
+  },
+  {
+   "t": 67704,
+   "k": "age",
+   "age": 47
+  },
+  {
+   "t": 67704,
+   "k": "cardGone"
+  },
+  {
+   "t": 69747.20000004768,
+   "k": "age",
+   "age": 48
+  },
+  {
+   "t": 69810.20000004768,
+   "k": "age",
+   "age": 57
+  },
+  {
+   "t": 69810.30000001192,
+   "k": "card"
+  },
+  {
+   "t": 71871.40000003576,
+   "k": "age",
+   "age": 58
+  },
+  {
+   "t": 71871.40000003576,
+   "k": "cardGone"
+  },
+  {
+   "t": 73910.90000003576,
+   "k": "age",
+   "age": 59
+  },
+  {
+   "t": 73987.60000002384,
+   "k": "age",
+   "age": 60
+  },
+  {
+   "t": 73987.70000004768,
+   "k": "card"
+  },
+  {
+   "t": 75971.10000002384,
+   "k": "age",
+   "age": 61
+  },
+  {
+   "t": 75971.20000004768,
+   "k": "cardGone"
+  },
+  {
+   "t": 78010.60000002384,
+   "k": "age",
+   "age": 62
+  },
+  {
+   "t": 78098.5,
+   "k": "age",
+   "age": 66
+  },
+  {
+   "t": 78098.60000002384,
+   "k": "card"
+  },
+  {
+   "t": 80117.90000003576,
+   "k": "age",
+   "age": 67
+  },
+  {
+   "t": 80117.90000003576,
+   "k": "cardGone"
+  },
+  {
+   "t": 82158.20000004768,
+   "k": "age",
+   "age": 68
+  },
+  {
+   "t": 82201.90000003576,
+   "k": "card"
+  },
+  {
+   "t": 84273.20000004768,
+   "k": "age",
+   "age": 69
+  },
+  {
+   "t": 84273.30000001192,
+   "k": "cardGone"
+  },
+  {
+   "t": 86312.20000004768,
+   "k": "age",
+   "age": 70
+  },
+  {
+   "t": 86359,
+   "k": "card"
+  },
+  {
+   "t": 88478.90000003576,
+   "k": "age",
+   "age": 71
+  },
+  {
+   "t": 88478.90000003576,
+   "k": "cardGone"
+  },
+  {
+   "t": 90514.60000002384,
+   "k": "age",
+   "age": 72
+  },
+  {
+   "t": 90549.40000003576,
+   "k": "age",
+   "age": 73
+  },
+  {
+   "t": 90549.60000002384,
+   "k": "card"
+  },
+  {
+   "t": 92577.70000004768,
+   "k": "age",
+   "age": 74
+  },
+  {
+   "t": 92577.70000004768,
+   "k": "cardGone"
+  },
+  {
+   "t": 94622.70000004768,
+   "k": "age",
+   "age": 75
+  },
+  {
+   "t": 94636,
+   "k": "age",
+   "age": 76
+  },
+  {
+   "t": 94636,
+   "k": "card"
+  },
+  {
+   "t": 96625.70000004768,
+   "k": "age",
+   "age": 77
+  },
+  {
+   "t": 96625.70000004768,
+   "k": "cardGone"
+  },
+  {
+   "t": 98668.40000003576,
+   "k": "age",
+   "age": 78
+  },
+  {
+   "t": 98692.70000004768,
+   "k": "card"
+  },
+  {
+   "t": 100657.40000003576,
+   "k": "age",
+   "age": 79
+  },
+  {
+   "t": 100657.40000003576,
+   "k": "cardGone"
+  },
+  {
+   "t": 102695.80000001192,
+   "k": "age",
+   "age": 80
+  },
+  {
+   "t": 102795.5,
+   "k": "ending"
+  }
+ ],
+ "lat": {
+  "n": 2053,
+  "sum": 5773.500000357628,
+  "max": 326.39999997615814,
+  "over50": 5,
+  "over100": 1
+ },
+ "save": {
+  "phase": "ending",
+  "era": "present",
+  "lifeLength": "short30",
+  "character": {
+   "name": "이도윤",
+   "gender": "male",
+   "birthYear": 2026,
+   "parentWealth": 1,
+   "parenting": "strict",
+   "looks": 45
+  },
+  "stats": {
+   "education": 64,
+   "health": 42,
+   "happiness": 52,
+   "relationships": 70
+  },
+  "birthStats": {
+   "education": 2,
+   "health": 72,
+   "happiness": 44,
+   "relationships": 50
+  },
+  "age": 85,
+  "history": [
+   {
+    "age": 0,
+    "kind": "stage",
+    "text": "2026년 9월, 충청북도 청주시 흥덕구의 형편이 빠듯한 가정에서 3.1kg 남자아이로 태어났습니다. 첫째입니다. (3.1kg은 가운데쯤)"
+   },
+   {
+    "age": 0,
+    "kind": "event",
+    "title": "첫 예방접종",
+    "text": "첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. 어른들은 아이를 안아 달랜 뒤 집으로 돌아왔습니다.",
+    "eventId": "infant-vaccine"
+   },
+   {
+    "age": 0,
+    "kind": "event",
+    "title": "백일",
+    "text": "아이가 태어난 지 백일이 되었습니다. 떡을 나누며 이웃과 친척이 아이의 앞날을 빌어 주었습니다.",
+    "eventId": "infant-hundred-days"
+   },
+   {
+    "age": 1,
+    "kind": "event",
+    "title": "첫 걸음마",
+    "text": "아이가 붙잡고 서더니 처음으로 혼자 몇 걸음을 걸었습니다. 모두가 숨을 죽였습니다.",
+    "eventId": "infant-first-steps"
+   },
+   {
+    "age": 1,
+    "kind": "event",
+    "title": "첫 말",
+    "text": "아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.",
+    "eventId": "infant-first-word"
+   },
+   {
+    "age": 1,
+    "kind": "choice",
+    "title": "맡겨지는 낮",
+    "text": "낮에는 조부모님 곁에서 지냈습니다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었습니다.",
+    "choice": "조부모님 곁에서 지낸다",
+    "eventId": "infant-care"
+   },
+   {
+    "age": 2,
+    "kind": "event",
+    "title": "영유아 건강검진",
+    "text": "정해진 때가 되어 아이는 건강검진을 받았습니다. 키와 몸무게를 재고 자라는 모습을 살폈습니다.",
+    "eventId": "infant-checkup"
+   },
+   {
+    "age": 3,
+    "kind": "choice",
+    "title": "한밤의 열",
+    "text": "밤길을 달려 병원에 갔습니다. 열은 새벽에 내렸고, 어른들은 아침까지 아이 곁을 지켰습니다.",
+    "choice": "바로 병원으로 간다",
+    "eventId": "infant-fever"
+   },
+   {
+    "age": 4,
+    "kind": "event",
+    "title": "무릎 위의 노래",
+    "text": "조부모님 무릎에 앉아 듣던 노래가 오래도록 귓가에 남았습니다.",
+    "eventId": "infant-grandparent-song"
+   },
+   {
+    "age": 6,
+    "kind": "choice",
+    "title": "이삿짐을 싸던 날",
+    "text": "근처에서 새 집을 구했습니다. 친구들과 같은 골목을 오가는 날이 이어졌습니다.",
+    "choice": "같은 동네에서 집을 구한다",
+    "eventId": "infant-moving"
+   },
+   {
+    "age": 7,
+    "kind": "stage",
+    "text": "학교에 들어갈 나이가 되었습니다."
+   },
+   {
+    "age": 7,
+    "kind": "event",
+    "title": "책가방을 멘 아침",
+    "text": "아이는 책가방을 메고 처음으로 학교에 갔습니다. 교문 앞에서 몇 번이나 뒤를 돌아보았습니다.",
+    "eventId": "school-first-day"
+   },
+   {
+    "age": 8,
+    "kind": "choice",
+    "title": "집 앞의 강아지",
+    "text": "어른들을 졸라 강아지를 데려왔습니다. 하루를 마치고 돌아오면 꼬리를 흔드는 존재가 집에 생겼습니다.",
+    "choice": "데려와 기른다",
+    "eventId": "school-puppy"
+   },
+   {
+    "age": 11,
+    "kind": "choice",
+    "title": "교실의 한 아이",
+    "text": "용기를 내 그만하라고 했습니다. 한동안 나도 놀림을 받았지만 그 아이는 오래도록 나를 기억했습니다.",
+    "choice": "그 아이 편에서 말한다",
+    "eventId": "school-bully"
+   },
+   {
+    "age": 14,
+    "kind": "choice",
+    "title": "방과 후의 모임",
+    "text": "해가 질 때까지 공을 쫓았습니다. 몸은 단단해졌고 함께 땀 흘린 아이들과 가까워졌습니다.",
+    "choice": "몸을 쓰는 모임에 든다",
+    "eventId": "school-club"
+   },
+   {
+    "age": 16,
+    "kind": "choice",
+    "title": "눈여겨보신 선생님",
+    "text": "방과 후에 남아 선생님께 따로 배웠습니다. 모르는 것을 물을 수 있는 어른이 생겼습니다.",
+    "choice": "선생님의 도움을 받는다",
+    "eventId": "school-teacher-notice"
+   },
+   {
+    "age": 17,
+    "kind": "event",
+    "title": "말하지 않는 격차",
+    "text": "친구들이 하나둘 갖게 되는 물건이 있었습니다. 나는 그것이 우리 집에 없다는 사실을 말하지 않았습니다.",
+    "eventId": "school-money-gap"
+   },
+   {
+    "age": 18,
+    "kind": "choice",
+    "title": "늦은 밤의 학원가",
+    "text": "저녁은 학원 가방과 함께 지나갔습니다. 점수가 오르는 동안 잠은 자꾸 모자랐습니다.",
+    "choice": "밤늦은 수업까지 챙겨 듣는다",
+    "eventId": "school-academy-night"
+   },
+   {
+    "age": 20,
+    "kind": "stage",
+    "text": "스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다."
+   },
+   {
+    "age": 21,
+    "kind": "event",
+    "title": "정해진 날짜",
+    "text": "정해진 날짜에 짐을 싸서 집을 나섰습니다. 낯선 사람들과 같은 방에서 지내는 날들이 시작되었습니다.",
+    "eventId": "youth-military"
+   },
+   {
+    "age": 22,
+    "kind": "choice",
+    "title": "쪼개진 일자리",
+    "text": "일과 일 사이를 뛰어다니며 여러 사람과 안면을 익혔습니다. 통장은 겨우 유지되었지만 몸은 어느새 지쳐 있었습니다.",
+    "choice": "여러 일을 이어 붙여 버틴다",
+    "eventId": "youth-gig-work"
+   },
+   {
+    "age": 23,
+    "kind": "event",
+    "title": "연락이 없는 날들",
+    "text": "지원서를 낸 곳에서는 번번이 소식이 없었습니다. 방 안에서 보내는 날들이 길어졌습니다.",
+    "eventId": "youth-job-rejections"
+   },
+   {
+    "age": 24,
+    "kind": "event",
+    "title": "혼자 먹는 저녁",
+    "text": "낯선 동네에서 혼자 저녁을 먹는 날이 늘었습니다. 사람 사는 소리는 벽 너머로만 들렸습니다.",
+    "eventId": "youth-lonely-city"
+   },
+   {
+    "age": 29,
+    "kind": "choice",
+    "title": "길어지는 준비",
+    "text": "낮에는 일하고 밤에 책을 폈습니다. 몸은 고단했는데도 생활은 무너지지 않았습니다.",
+    "choice": "일을 하며 틈틈이 준비한다",
+    "eventId": "youth-exam-prep"
+   },
+   {
+    "age": 30,
+    "kind": "event",
+    "title": "합격 소식",
+    "text": "결과가 나온 날, 이름을 찾아 몇 번이나 다시 확인했습니다. 긴 준비가 끝났습니다.",
+    "eventId": "youth-exam-passed"
+   },
+   {
+    "age": 31,
+    "kind": "choice",
+    "title": "일터에서의 일",
+    "text": "회의에서 내 생각을 말했습니다. 분위기는 서늘해졌는데 몇몇 동료가 뒤에서 고개를 끄덕였습니다.",
+    "choice": "분명하게 이의를 제기한다",
+    "eventId": "youth-colleague"
+   },
+   {
+    "age": 34,
+    "kind": "event",
+    "title": "끝나지 않는 일",
+    "text": "일은 끝이 없었습니다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었습니다.",
+    "eventId": "youth-work-pressure"
+   },
+   {
+    "age": 35,
+    "kind": "choice",
+    "title": "살 곳을 구하는 일",
+    "text": "좁은 방에 짐을 풀었습니다. 매달 빠져나가는 돈은 아팠지만 빚 없이 얻은 내 방이 든든했습니다.",
+    "choice": "보증금이 낮은 월세방을 구한다",
+    "eventId": "youth-housing"
+   },
+   {
+    "age": 36,
+    "kind": "event",
+    "title": "혼자의 시간",
+    "text": "혼자 보내는 주말이 어느새 익숙해졌습니다. 쓸쓸한 날도 있었지만 내 시간을 내 뜻대로 쓸 수 있었습니다.",
+    "eventId": "youth-single-years"
+   },
+   {
+    "age": 38,
+    "kind": "choice",
+    "title": "오르는 월세",
+    "text": "오른 월세를 감당하기로 했습니다. 다른 지출을 줄이며 한 해를 보냈습니다.",
+    "choice": "오른 값을 감당하며 머문다",
+    "eventId": "youth-rent-hike"
+   },
+   {
+    "age": 40,
+    "kind": "stage",
+    "text": "어느덧 마흔이 되었습니다."
+   },
+   {
+    "age": 40,
+    "kind": "choice",
+    "title": "넓혀 갈 집",
+    "text": "대출 서류에 도장을 찍었습니다. 새 집의 창으로 해가 길게 들었지만 이자는 매달 무겁게 따라왔습니다.",
+    "choice": "무리해서 옮긴다",
+    "eventId": "middle-home-loan"
+   },
+   {
+    "age": 42,
+    "kind": "choice",
+    "title": "맡겨진 자리",
+    "text": "자리가 바뀌자 해야 할 일의 성격도 바뀌었습니다. 월급은 올랐고 퇴근은 늦어졌습니다.",
+    "choice": "자리를 받아들인다",
+    "eventId": "middle-career-peak"
+   },
+   {
+    "age": 46,
+    "kind": "choice",
+    "title": "검진 결과표",
+    "text": "술자리를 줄이고 저녁마다 걸었습니다. 몸이 가벼워지는 데는 시간이 걸렸습니다.",
+    "choice": "생활을 바꾼다",
+    "eventId": "middle-health-check"
+   },
+   {
+    "age": 48,
+    "kind": "event",
+    "title": "혼자 맞는 명절",
+    "text": "모두가 가족을 찾아 떠난 거리에서 혼자 명절을 보냈습니다. 조용한 거리를 오래 걸었습니다.",
+    "eventId": "middle-lonely-holiday"
+   },
+   {
+    "age": 52,
+    "kind": "event",
+    "title": "시큰거리는 허리",
+    "text": "허리를 숙일 때마다 시큰거리기 시작했습니다. 몸이 예전 같지 않다는 것을 처음 인정했습니다.",
+    "eventId": "middle-back-pain"
+   },
+   {
+    "age": 57,
+    "kind": "choice",
+    "title": "마지막 인사",
+    "text": "하던 일을 두고 달려가 지친 몸으로 마지막까지 곁을 지켰습니다. 손을 잡고 있던 온기가 오래 남았습니다.",
+    "choice": "모든 일을 내려놓고 곁을 지킨다",
+    "eventId": "middle-parents-farewell"
+   },
+   {
+    "age": 60,
+    "kind": "choice",
+    "title": "내려놓을 때를 생각하며",
+    "text": "씀씀이를 줄이고 노후 자금을 챙겼습니다. 불안이 줄어든 만큼 즐거움도 함께 줄었습니다.",
+    "choice": "씀씀이를 줄이고 모아 둔다",
+    "eventId": "middle-retirement-prep"
+   },
+   {
+    "age": 65,
+    "kind": "stage",
+    "text": "예순다섯이 되었습니다. 일에서 한 걸음 물러설 나이입니다."
+   },
+   {
+    "age": 66,
+    "kind": "choice",
+    "title": "오래된 친구의 소식",
+    "text": "먼 길을 달려 친구를 찾아갔습니다. 손을 맞잡고 한참 말없이 앉아 있었습니다.",
+    "choice": "직접 찾아가 만난다",
+    "eventId": "senior-old-friend"
+   },
+   {
+    "age": 68,
+    "kind": "choice",
+    "title": "남길 것과 쓸 것",
+    "text": "가까운 이들에게 몫을 나누어 주었습니다. 서로의 정이 깊어졌고 가벼워진 마음 한편에 허전함이 스쳤습니다.",
+    "choice": "가까운 이들에게 미리 나눈다",
+    "eventId": "senior-estate"
+   },
+   {
+    "age": 70,
+    "kind": "choice",
+    "title": "혼자 사는 집",
+    "text": "용기를 내 이웃에게 먼저 인사를 건넸습니다. 어색한 인사가 오가다 차 한 잔을 나누는 사이로 이어졌습니다.",
+    "choice": "이웃에게 먼저 말을 건다",
+    "eventId": "senior-alone"
+   },
+   {
+    "age": 72,
+    "kind": "event",
+    "title": "오래된 사진",
+    "text": "서랍 깊은 곳에서 오래된 사진이 나왔습니다. 사진 속 얼굴들은 모두 젊었고, 그중 몇은 이제 곁에 없었습니다.",
+    "eventId": "senior-photo"
+   },
+   {
+    "age": 73,
+    "kind": "choice",
+    "title": "미끄러진 겨울날",
+    "text": "병원에서 이곳저곳을 살펴보았습니다. 큰 이상은 없었지만 한동안 조심하라는 말을 들었습니다.",
+    "choice": "곧바로 병원에서 살펴본다",
+    "eventId": "senior-fall"
+   },
+   {
+    "age": 76,
+    "kind": "choice",
+    "title": "어디서 살 것인가",
+    "text": "익숙한 집에 남기로 했습니다. 불편은 늘었지만 어디에 무엇이 있는지 눈 감고도 알았습니다.",
+    "choice": "살던 집에 머문다",
+    "eventId": "senior-move-home"
+   },
+   {
+    "age": 77,
+    "kind": "event",
+    "title": "지나온 일",
+    "text": "지나온 일을 돌아보며 문득 고개를 끄덕이는 날이 있었습니다. 서툴렀지만 나쁘지 않은 시간이었습니다.",
+    "eventId": "senior-quiet-pride"
+   },
+   {
+    "age": 78,
+    "kind": "choice",
+    "title": "넉넉해진 시간",
+    "text": "아침마다 같은 얼굴들과 인사를 나누었습니다. 안부를 묻는 일이 하루의 시작이 되었습니다.",
+    "choice": "동네 모임에 나간다",
+    "eventId": "senior-gathering"
+   },
+   {
+    "age": 81,
+    "kind": "event",
+    "title": "높아진 계단",
+    "text": "예전에는 한달음에 오르던 계단이 높게 느껴졌습니다. 난간을 잡는 손에 힘이 들어갔습니다.",
+    "eventId": "senior-stairs"
+   },
+   {
+    "age": 85,
+    "kind": "death",
+    "text": "세상을 떠났습니다. 원인은 노환이었습니다."
+   }
+  ],
+  "flags": [
+   "checked_up",
+   "childcare_set",
+   "close_friend",
+   "grandparent_close",
+   "has_career",
+   "healthy_habit",
+   "lives_alone",
+   "mentor_teacher",
+   "own_home",
+   "parents_gone",
+   "passed_exam",
+   "promoted",
+   "renting",
+   "stood_up"
+  ],
+  "seen": {
+   "infant-vaccine": 0,
+   "infant-hundred-days": 0,
+   "infant-first-steps": 1,
+   "infant-first-word": 1,
+   "infant-care": 1,
+   "infant-checkup": 2,
+   "infant-fever": 3,
+   "infant-grandparent-song": 4,
+   "note-infant-memory": 5,
+   "infant-moving": 6,
+   "school-first-day": 7,
+   "school-puppy": 8,
+   "school-bully": 11,
+   "note-teen-envy": 13,
+   "school-club": 14,
+   "school-teacher-notice": 16,
+   "school-money-gap": 17,
+   "school-academy-night": 18,
+   "note-first-love": 21,
+   "youth-military": 21,
+   "youth-gig-work": 22,
+   "youth-job-rejections": 23,
+   "youth-lonely-city": 24,
+   "youth-exam-prep": 29,
+   "note-youth-romance": 30,
+   "youth-exam-passed": 30,
+   "youth-colleague": 31,
+   "note-parents-aging": 32,
+   "youth-work-pressure": 34,
+   "youth-housing": 35,
+   "youth-single-years": 36,
+   "youth-rent-hike": 38,
+   "middle-home-loan": 40,
+   "middle-career-peak": 42,
+   "middle-health-check": 46,
+   "middle-lonely-holiday": 48,
+   "note-midlife": 52,
+   "middle-back-pain": 52,
+   "middle-parents-farewell": 57,
+   "middle-retirement-prep": 60,
+   "senior-old-friend": 66,
+   "senior-estate": 68,
+   "senior-alone": 70,
+   "senior-photo": 72,
+   "senior-fall": 73,
+   "senior-move-home": 76,
+   "senior-quiet-pride": 77,
+   "senior-gathering": 78,
+   "senior-stairs": 81
+  },
+  "pending": null,
+  "lastChoiceAge": 78,
+  "death": {
+   "age": 85,
+   "cause": "노환"
+  },
+  "birthReport": {
+   "month": 9,
+   "region": "충북",
+   "sigunguSido": "충북",
+   "sigungu": "청주시 흥덕구",
+   "mother": {
+    "age": 31,
+    "job": "labor"
+   },
+   "father": {
+    "age": 34,
+    "job": "sales"
+   },
+   "housing": "rent",
+   "birthWeightKg": 3.1,
+   "birthOrder": 1
+  },
+  "peerSeed": 1378830988,
+  "paused": false,
+  "assets": {
+   "net": 90483,
+   "income": 1837,
+   "debt": 3235,
+   "incomeAdj": 3900,
+   "dwelling": "own"
+  },
+  "familyFund": 0,
+  "seed": 81,
+  "rngState": 593954251,
+  "play": {
+   "hold": 52212,
+   "decide": 48023,
+   "fold": 0,
+   "note": 0,
+   "idle": 0,
+   "offSpeed": 52212,
+   "auto": 0,
+   "skips": 25,
+   "resumes": 0
+  }
+ },
+ "endText": {
+  "block": "이 판의 플레이 시간1분 40초01:40세월이 흐른 시간 0분 52초00:52, 결정을 읽고 고른 시간 0분 48초00:48의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+  "value": "1분 40초01:40",
+  "note": "세월이 흐른 시간 0분 52초00:52, 결정을 읽고 고른 시간 0분 48초00:48의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+  "hold": "0분 52초00:52",
+  "decide": "0분 48초00:48",
+  "choices": "살아오며 24번의 선택을 했습니다.",
+  "death": "85세에 세상을 떠났습니다. 원인은 노환이었습니다.",
+  "datetime": "PT1M40S"
+ },
+ "errors": [],
+ "ext": [],
+ "skipClicks": 25,
+ "skipMs": [
+  7,
+  25,
+  28,
+  25,
+  26,
+  27,
+  23,
+  21,
+  24,
+  29,
+  30,
+  41,
+  27,
+  33,
+  36,
+  48,
+  92,
+  52,
+  45,
+  52,
+  32,
+  34,
+  17,
+  23,
+  78
+ ]
+}

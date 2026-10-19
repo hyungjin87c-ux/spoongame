@@ -17,7 +17,7 @@ developer는 화면 문구를 **이 파일에서 가져다 쓴다.** 뜻은 SPEC
 | 화면 | 자리 | 문구 | 바꾼 이유 |
 |---|---|---|---|
 | 첫 화면 | 가상 인구 보조 설명(FS2) | 「이 기기 안에서 계산한 가상의 사람들이에요. 실제로 게임하는 사람 수가 아니에요.」 | R-131: 「접속자」 낱말을 쓰지 않는다(VP2 점검). 뜻은 「실제 집계가 아님」 유지 |
-| 첫 화면 | 인생 길이 보조(FS5) | 「평균 수명까지 살아 보는 데 걸리는 시간이에요. 도중에 나가도 진행은 이 기기에 남습니다.」 | 문구 원칙 FS5 항목 대체(뜻: 이 기기 저장·이어하기) |
+| 첫 화면 | 인생 길이 보조(FS5) | 「평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.」 — **M8(2026-10-19, LD-1)**: 가운데 문장을 더하고 끝 문장의 어미를 해요체로 맞췄다(M2 확정 문구는 「평균 수명까지 살아 보는 데 걸리는 시간이에요. 도중에 나가도 진행은 이 기기에 남습니다.」). 규격·이유는 **8-1 ①**, 구현 `diff-003.md` D-92 | 문구 원칙 FS5 항목 대체(뜻: 이 기기 저장·이어하기). M8 LD-1: 시간 목표는 연출 + 결정 읽기이고 기록 시트에 글을 쓰는 시간은 밖이라, 「약 30분」을 손목시계로 재면 기록을 쓴 만큼 더 걸린다는 사실과 설명이 어긋나지 않게 한 문장. 한 문단에 두 어체를 섞지 않는다(QM3-4, 3-2절)로 「남습니다」 → 「남아요」 |
 | 첫 화면 | 통계 캐러셀 머리 | 「한국 사회 통계」 · 「**7초마다** 다음 지표」 · 위치 「{i} / {N}」 · 버튼 「이전 지표」「다음 지표」「자동 넘김 일시정지」 | R-133: 점 10개 대신 번호 표기(점은 5개 이하일 때만). 간격은 SPEC SC5 7초(R-172(d)). N = `koreaStats.json`에서 `usable`이고 `use`에 `carousel`이 있는 지표 수(2026-10-15 기준 14) |
 | 첫 화면 | 확인 단계 · 확정 버튼(FS6) | 「이전 판 지우고 태어나기」 — 같은 확인 단계의 안내문은 「이전 판이 사라집니다. 새로 태어날까요?」, 취소(안전한 쪽, 먼저 포커스를 받는다)는 「돌아가기」, 확인 단계를 여는 보조 버튼은 「새로 태어나기」. **배치**(R-204): 위에서부터 안내문 → 「이전 판 지우고 태어나기」(보조 버튼) → **맨 아래 「돌아가기」(기본·큰 버튼)** — 방금 누른 「새로 태어나기」 자리에 안전한 쪽이 온다(더블탭의 둘째 입력이 떨어져도 가드에 막힌다). 시안 `title-continue.html?state=confirm` | QM2-6 마스터 결정(A): 방금 누른 보조 버튼과 같은 이름이면 「누른 게 그대로 남았나」 헷갈린다(QA-003-M2 인상). 이름만으로 결과(이전 판이 지워지고 새로 태어남)가 드러난다 |
 | 첫 화면 | 인생 길이 · 고를 수 없는 카드(FS5) | 「약 1시간」 카드 오른쪽 작은 알약 **「준비 중」**(`NOT_READY_TEXT`) — 카드는 라디오 그룹 안에 그대로(점선 테두리·옅은 글자·`disabled`), 이 글자가 카드의 접근 가능한 이름에 들어가 스크린리더도 이유를 듣는다. 「약 1시간」의 실제 시간 모델은 M8 | REV-003-M2-1 R-202: 고를 수 없는 이유를 색이 아니라 글자로. 「곧 공개」「준비중」 같은 홍보 어투·붙여쓰기를 쓰지 않는다 |
@@ -84,6 +84,7 @@ developer는 화면 문구를 **이 파일에서 가져다 쓴다.** 뜻은 SPEC
 | 엔딩 | 출발선 카드(**M7e 새 디자인**, R-327) | 제목 `ENDING_HEADINGS.journey`(「출발선에서 마지막까지」) → **출발선 막대**(`role="img"`: 한 줄의 선 위에 출발선 **구간 띠**(네모, `startBandOf` low~high%) + 가운데 50% 점선 눈금 + 마지막 자리 **마름모**(`standingScore(end)`%), 축 글자 「하위」(왼쪽)·「상위」(오른쪽)) → **범례** 두 줄: 「출발선」 + 수저 칩 + 「({bandLabel})」 / 「마지막」 + `standingLabel` 출력 → 문장 셋 **`journeyText`·`MOVEMENT_TEXT`·`JOURNEY_NOTE` 출력 그대로**(M7e 합쇼체 문안은 5-3 표 — 방향 문장은 중립형 「출발선보다 앞선 자리입니다.」). 막대의 읽기용 설명(`aria-label`)은 같은 함수의 조합 **「출발선 {bandLabel}, 마지막 {standingLabel}.」**(`journeyBarLabel` — **방향 문장은 넣지 않는다**: M7e-4 관찰 7, 방향은 아래 문장이 읽는다) — 손으로 적지 않는다. **스무 살 전**은 띠만(마름모·「마지막」 줄·방향 문장·주석 없음), 설명은 「출발선 {bandLabel}.」. 시안 `ending.html`(`?state=zero|past|early|down`) → `ending-{mobile,down-mobile,early-mobile,past-mobile-forced,320-text200-journey}.png` | R-136①: 출발선 영역에만 수저 이름 허용, 연표에는 없음. R-170: 출발선 구간은 코드와 같은 함수 — 디자인이 문장을 바꾸지 않는다. R-191(a)(d). 막대 규격·DOM·CSS는 5-4절과 `design-system.md` 6절 「엔딩 출발선 막대」 |
 | 엔딩 | 사망·선택 수 · 연표 사망 줄 | `deathLineText` · `choiceCountText`(`endingText.ts`) · 연표 마지막 줄은 `deathEntryText`(`lifeText.ts`) 출력 그대로. 세 함수의 **M7e 합쇼체 문안은 5-3 표**(「84세에 세상을 떠났습니다. 원인은 노환이었습니다.」 · 「살아오며 27번의 선택을 했습니다.」 · 「세상을 떠났습니다. 원인은 노환이었습니다.」) — 화면은 함수 출력을 따른다(한 화면에 두 어체가 섞이지 않는다) | 현행 엔딩 구현·테스트의 문구 체계. R-191(b) |
 | 엔딩 | 다시 하기 | `REBIRTH_LABEL` 「다시 태어나기」 + `REBIRTH_NOTE` 「다시 태어나면 이 인생의 기록은 사라집니다.」(`endingText.ts`) **그대로 — 새 문구를 쓰지 않는다** | SPEC FR9 「기존 안내 문구 유지」, R-191(c) 마스터 결정 |
+| 엔딩 | **플레이 시간 블록(M8 LM6, 2026-10-19)** | 「사망과 선택」 카드 끝(선택 수 문장 아래, 위끝 1px 선): 이름 **「이 판의 플레이 시간」** + 값 `mm:ss`(「29:12」, 낭독 「29분 12초」) + 보조 문장 한 문단 **「세월이 흐른 시간 {연출 mm:ss}, 결정을 읽고 고른 시간 {결정 mm:ss}의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. [배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다.] 이 기기에만 저장됩니다.」**([ ]는 깨끗하지 않은 판에만). `play`가 없는 판(M8 이전 저장)은 블록 없음. 규격 전체는 **8절**, 시안 `ending.html`(`?state=play-fast\|play-long\|play-none`) → `ending-playtime-*-card.png` | SPEC LM6 「이 판의 플레이 시간 mm:ss」 계열의 자체 문구(합쇼체 — 엔딩은 R2 합쇼체 범위). content-M8 5-3절 뜻 초안(「일시정지·카드를 접어 둔 시간·기록을 쓴 시간은 뺐습니다」·「연출 15:10, 결정 읽기 12:36」·「배속이나 자동 모드를 쓴 판이라 시간 비교에는 쓰지 않습니다」)을 사람이 겪은 상태의 이름과 행위자가 드러나는 문장으로 다시 썼다(8-1). LD-7·LD-8 ② 마스터 결정 |
 
 ## 3. 표기 규칙
 
@@ -666,3 +667,76 @@ developer UI 단계(`NoteSheet`·`NoteText`·도구 버튼·연표/엔딩 표시
 - `e2e/lineBreaks.ts`: `[data-user-text]` 제외 + `FACE_BOXES`에 `.log__row--note`·`.timeline li.is-note`(D-80). `e2e/m7c-word-breaks`·`m7c-text-resize`·`m7c-colors`·`m7c-focus-not-obscured`(content-M7c 7-4 표)는 note.html의 9상태와 같은 상태 집합으로.
 - `tests/designAssets.test.ts` 「M7c 자유 기록 시트 계약」(designer): copy.md 7절 ↔ 구현 상수(`NOTE_TEXT`·`notes.json`) ↔ 시안 note.html·note-rows.html ↔ ds.css 블록의 일치 — **2026-10-19 후속에서 「임시 블록」 단언을 「import」 단언으로 바꿨고**, D-75(모든 대시보드 시안의 「생각 남기기」 보통 버튼)·D-81(`touch-action` 두 줄 = 구현)도 잠근다. 위 세 묶음은 developer UI 단계가 반영했다(`ai-log/2026-10-19_SPEC-003_dev-M7c.md` 2절).
 - **r2(2026-10-19, content-M7c 11-8)**: developer — `tests/noteCards.test.ts`의 ③ 기본 문장(7-1 새 문구)·라벨 배열(③ 「첫사랑」·④ 「마음을 나누는 일」)·문장 수 10(④ `broke_up` 삭제, D2)·`NOTE_NAME_WIDTH` 5(T01), `src/styles/dash.css`에 D-88(compact 제목 세 규칙)·D-89(`.note-choice[aria-disabled]` 흐림)·D-90(`.overlay { touch-action: pinch-zoom }`)을 `ds.css`와 같은 글자로, `e2e/m7c-viewport`에 compact 제목 단언(D-88), 핀치 e2e(r2-2). designer — `tests/designAssets.test.ts`가 10문장·5자 셈·새 라벨·D-88~D-90 CSS(시안·구현 둘 다)를 잠근다; 구현 쪽 단언은 developer 반영 전까지 빨갛다(「r2 구현 반영 대기」 시험 하나로 모았다).
+
+## 8. M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 (2026-10-19 designer, SPEC-003 LM5·LM6·FS5 · `docs/data/content-M8.md` 2-5절·5절·11절 LD-1·LD-4·LD-7·LD-8 ② · SPEC 「M8 착수 결정」 (1)(3)(4))
+
+시안 `mockups/ending.html`(생성기 `buildMockups.mjs#endingMain` — `?state=`에 `play-fast`·`play-long`·`play-none`을 더했다)·`title-a.html`·`title-continue.html`. 문구는 선행 때 구현에 상수가 없어 생성기의 임시 블록 `M8_TEXT`가 가졌고, developer가 8-6의 상수(`PLAYTIME_TEXT`·`TITLE_TEXT.lifeLengthHint`)를 이 절 그대로 넣은 뒤 **2026-10-19 후속에서 designer가 import로 되돌렸다**(R-191, D-96 — 글자뿐 아니라 값(`displaySeconds`·`isCleanRun`)과 시간 부품(`PlayTime`)도 구현 것을 그대로 쓰고, 시안의 플레이 기록은 저장 모양 `core/types.ts#PlayTime`으로 두어 `readPlay`를 통과해야 한다). `tests/designAssets.test.ts`가 구현 상수 = 이 절, 생성기에 글자 사본 없음, 시안·`ds.css`·촬영기가 이 절과 같은지 잠근다. developer 구현 항목은 `diff-003.md` 1-6절 **D-92~D-96**(후속에서 모두 닫힘 — 코드 대조, 구현 샷은 QA 때). 선행·후속 모두 developer가 같은 시간에 M8을 구현 중이라 `src/`·`e2e/`·`tests/`(designAssets 제외)는 읽기만 했다.
+
+### 8-1. 문구 (자리 · 문구 · 뜻·근거)
+
+| 자리 | 문구 | 뜻·근거 |
+|---|---|---|
+| ① 첫 화면 · 인생 길이 설명(FS5) | 「평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.」 | **LD-1**: 「약 30분」의 대상은 연출 + 결정 카드를 읽고 고르는 시간이고, 기록 시트에 글을 쓰는 시간(판당 건너뛰기 약 0.8분, 한두 줄씩 쓰면 2~6.5분 — content-M8 2-5절)은 밖이다. 손목시계로 재면 그만큼 더 걸리므로 첫 화면의 약속이 사실과 어긋나지 않게 **한 문장**을 더했다. 낱말은 기록 시트의 동사 「적다」(「적어두고 살기」「적은 글」)와 같다 — 아직 기능을 보지 않은 사람도 「생각을 적는 시간」은 알아듣고, 뒤에 만나는 버튼 「생각 남기기」와 이어진다. 끝 문장의 「남습니다」는 「남아요」로 — 화면 안내문은 해요체이고 한 문단에 두 어체를 섞지 않는다(3-2절 QM3-4; M2 확정 당시에는 첫 문장만 해요체였다). 일시정지·배속은 적지 않는다(일시정지가 빠지는 것은 당연하고, 배속은 첫 화면에서 아직 모르는 조작이라 설명이 길어진다 — 엔딩 보조 문장 ⑥이 말한다). 「약 1시간」 카드와 「준비 중」은 그대로(LD-4) |
+| ② 엔딩 · 플레이 시간 이름(dt) | 「이 판의 플레이 시간」 | SPEC LM6·마스터 지시의 꼴. 「이 판의」가 누적이 아니라 한 판의 값임을 말한다. content-M8 6-2절 안내문의 ①(「이 판의 플레이 시간」)과 같은 이름이라 형진 님이 캡처에서 바로 찾는다. 「플레이」는 SPEC·안내문이 이미 쓰는 낱말이고 「게임」「BGM」처럼 이 게임이 허용하는 외래어 범위 안 |
+| ③ 엔딩 · 값(dd) | `mm:ss` — 「29:12」, 낭독 「29분 12초」 | 8-2 표기 규칙 |
+| ④ 엔딩 · 보조 문장 1(분해) | 「세월이 흐른 시간 {연출 mm:ss}, 결정을 읽고 고른 시간 {결정 mm:ss}의 합입니다.」 | **LD-8 ②** 분해(연출/결정 읽기). 사람이 겪은 두 상태로 이름 지었다 — 「세월이 흐른 시간」 = 연출 시계가 흐른 시간(`hold`: 조용한 해·서술 해·결과 대기, 배속 반영), 「결정을 읽고 고른 시간」 = 결정 카드가 열려 있던 시간(`decide`). 「연출」은 화면 어디에도 없는 내부 낱말이라 쓰지 않았다. **두 값 뒤에 조사를 두지 않는다**(「의」만 — `design-system.md` 11-4절 새 항: 눈에 보이는 「12:36」(육 → 을)과 낭독 「12분 36초」(초 → 를)의 받침이 달라 어긋난다). 두 부분을 더하면 늘 표시값과 같다(8-2) |
+| ⑤ 엔딩 · 보조 문장 2(제외 범위) | 「그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다.」 | **LD-1·LD-7**: 일시정지·탭 가림·나가기 확인·카드를 접어 둔 시간은 모두 「시간이 멈춘」 상태(접힌 띠 「다시 열 때까지 시간은 멈춥니다.」, 「일시정지」)라 한 낱말 「멈춰 있던 시간」으로 묶고, 기록 시트가 열린 시간만 따로 이름을 불렀다(사람이 활동한 시간인데 빠지기 때문). 「그 밖에」가 있어야 한다 — 결정 시트도 「직접 고를 때까지 시간은 멈춥니다」라고 말하는데 그 시간은 ④에 들어가므로, 「④의 둘 말고 멈춰 있던 것」으로 읽히게 |
+| ⑥ 엔딩 · 보조 문장 3(깨끗하지 않은 판에만) | 「배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다.」 | **LD-8 ②** 「배속을 바꾸지 않은 깨끗한 판인지」. `offSpeed`·`auto`·`skips` 가운데 하나라도 0이 아니면 이 한 문장이 ⑤와 ⑦ 사이에 든다(깨끗한 판에는 아무 표시도 없다 — 침묵이 깨끗함). 셋을 늘 함께 적는다(「이나」 = 또는): 쓴 것만 골라 나열하면 뒤 조사(을/를)가 마지막 항목에 따라 바뀌어 문장 조립이 늘고, 세 조작은 같은 뜻(시간을 줄인다)이다. 비교 대상 「1배속으로 직접 고른 판」은 content-M8 6-1절 실측 조건 그대로. 기획 초안의 「시간 비교에는 쓰지 않습니다」처럼 행위자가 흐린 말 대신 숫자가 왜 짧은지를 사실로 말한다 — 조작을 나무라지 않는다 |
+| ⑦ 엔딩 · 보조 문장 4(개인정보) | 「이 기기에만 저장됩니다.」 | content-M8 5-4절. 기록 시트 안내(7-2)와 같은 말 — 전송 0·복사 0의 사실 범위 안에서만 약속한다 |
+
+- 보조 문장은 ④ → ⑤ → [⑥] → ⑦ 순서로 한 문단(`p.playtime__note`)이다: 숫자의 정의(분해·제외) → 비교 주의 → 저장 범위. 모두 합쇼체(엔딩은 R2 합쇼체 범위), 느낌표 없음, 「·」 나열 없음(QM2-10 — ⑥의 셋은 쉼표 나열).
+- **표시하지 않기로 한 것**: 이어하기 횟수(`resumes`) — 한 번 이어 갈 때 다시 흐르는 한 해 연출은 길어야 10초 안팎이라 표시값의 정밀도 안이고, 모바일에서 탭이 내려가 돌아오는 흔한 일에 「N번 이어서 한 판」이라고 적으면 흠처럼 읽힌다. 보정 규칙(content-M8 6-3절 1번)이 `resumes`를 쓸 때는 형진 님께 물어 적는다(마스터가 캡처에 넣기를 원하면 ⑥ 뒤에 「도중에 다시 이어 간 판입니다.」 한 문장 — 지금은 두지 않는다). 일시정지 횟수·시간도 적지 않는다(쉬는 것은 흠이 아니다). 깨끗한 판에 「1배속으로 직접 고른 판입니다」 같은 확인 문장도 두지 않는다.
+
+### 8-2. 숫자 표기 규칙
+
+| 규칙 | 값 | 이유 |
+|---|---|---|
+| 눈에 보이는 꼴 | `mm:ss` — 분은 두 자리 이상, 초는 두 자리. 「00:59」「29:12」「61:05」「100:00」 | 한 꼴만 둔다. 첫 화면의 약속이 「약 30분」「약 1시간」(분)이라 분으로 읽히는 것이 견주기 쉽고, 59:59 → 1:00:00처럼 60분에서 꼴이 바뀌지 않는다(2차 1시간 모드도 그대로 — content-M8 5-3절) |
+| 낭독 | 「{m}분 {s}초」 — 「29분 12초」「0분 59초」「61분 5초」 | 「29:12」는 시각으로 읽힐 수 있어(「29시 12분」) 숫자 글자는 `aria-hidden`, 낭독 글자는 `sr-only`(4-4절 영향 안내와 같은 방식). 규칙 하나(0분도 「0분 59초」)라 시험이 단순하고 눈에 보이는 자리와 1:1 |
+| 기계용 | `<time datetime="PT{m}M{s}S">` — 「PT27M46S」「PT61M5S」 | 보조 — ISO 8601 지속 시간. 스크린리더 낭독은 sr-only가 맡는다 |
+| 올림·버림 | **버킷별로 초를 버린 뒤 더한다**: 표시값 = ⌊hold/1000⌋ + ⌊decide/1000⌋ | 분해 두 값을 더하면 늘 표시값과 같다(⌊hold + decide⌋로 하면 1초 어긋나는 판이 생긴다 — 참값과의 차는 최대 1초, 측정 오차보다 작다). content-M8 5-2절 「소수 버림」의 구체화 |
+| 자릿수 묶음 | 모든 `<time>`은 `nowrap` + tabular 숫자 | 「12:36」이 줄 가운데서 갈리지 않고 값 열이 흔들리지 않는다 |
+| 시간 값 뒤 | 조사를 붙이지 않는다(쉼표·「의」만) | `design-system.md` 11-4절 새 항 |
+
+### 8-3. DOM · CSS · 상태 (developer 구현 노트 — `ds.css` 「M8 엔딩 플레이 시간 블록」과 1:1)
+
+```html
+<section class="card stack stack--sm" aria-label="사망과 선택">
+  <p data-testid="ending-death">84세에 세상을 떠났습니다. 원인은 노환이었습니다.</p>
+  <p class="t-muted" data-testid="ending-choices">살아오며 27번의 선택을 했습니다.</p>
+  <div class="playtime" data-testid="ending-playtime">                     <!-- play가 없으면 이 div 자체가 없다 -->
+    <dl class="playtime__row">
+      <dt>이 판의 플레이 시간</dt>
+      <dd><time class="playtime__value" datetime="PT29M12S" data-testid="ending-playtime-value"><span class="sr-only">29분 12초</span><span aria-hidden="true">29:12</span></time></dd>
+    </dl>
+    <p class="t-xs t-faint playtime__note" data-testid="ending-playtime-note">세월이 흐른 시간 <time datetime="PT17M30S"><span class="sr-only">17분 30초</span><span aria-hidden="true">17:30</span></time>, 결정을 읽고 고른 시간 <time datetime="PT11M42S">…</time>의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 이 기기에만 저장됩니다.</p>
+  </div>
+</section>
+```
+- **위치·위계**: 「사망과 선택」 카드의 **세 번째 요소**(선택 수 문장 바로 아래), 위끝 1px 선(`--c-border`)으로 인생의 두 문장과 가른다 — `.final-net`이 네 미터와 갈리는 것과 같은 모양. 별도 카드로 두지 않은 이유: 엔딩 머리(세상·나이)·선택 수·플레이 시간이 **360×740 한 화면**에 들어와 형진 님의 실측 보고(content-M8 6-1절 ①~④)가 캡처 한 장으로 끝나고(`ending-mobile.png`), 세션 통계 한 줄에 카드 한 장을 주면 출발선 카드(이 화면의 본론)가 그만큼 내려간다. 시안의 옛 자리(연표 아래 별도 카드 「(일시정지 제외, 이 기기에만 저장)」)는 지웠다. 카드의 읽기 전용 이름 「사망과 선택」(`DASH_TEXT.endingSummaryLabel`)은 그대로 — 최종 스탯 카드가 제목 밖의 외모 줄을 품는 것과 같은 꼴이고 이 블록은 각주다.
+- **글자 크기**: 이름 `--fs-sm` 보조색, 값 `--fs-md` 굵게 tabular(폰 캡처로 읽는 숫자 — 보조 글자보다 또렷하되 「최종 순자산」(`--fs-lg`)보다 낮은 위계), 보조 문장 `--fs-xs` `--c-text-3`(JOURNEY_NOTE와 같은 급 — 대비 5.78/5.96:1, 감사 최저값 그대로).
+- **줄바꿈**: `.playtime__row`는 `flex-wrap` — 값이 이름 옆에 못 서면(폭 320 · 글자 200%) 아래 줄 오른쪽으로(`ending-play-fast-320-text200-card.png`). 모든 `<time>`은 `nowrap`. 보조 문장은 보통 문단(「다음 결정으로」의 「」는 낱말에 붙어 함께 움직인다) — **후속 2(REV-003-M8-1 관찰 4)**: 360에서 「…넣지 않았습니다. 이 / 기기에만」처럼 관형사 「이」가 줄 끝에 남아, 보조 문장의 글자 조각(`breakdownParts` 셋·⑤·⑥·⑦)을 `Glue`로 감싸 「이 기기에만」을 한 묶음(`.keep-phrase`)으로 둔다(`design-system.md` 11-4 관형사 묶음, `diff-003.md` D-97·D-98 — 글자 불변). 첫 화면 FS5 설명(「진행은 이 / 기기에」, 320 · 200%)도 같다.
+- **상태**: `play` 없음(M8 이전 저장) → 블록 없음(`state=play-none`). 깨끗한 판 → ④⑤⑦. 깨끗하지 않은 판(`offSpeed`·`auto`·`skips` 중 하나라도 > 0) → ④⑤⑥⑦(`state=play-fast`, 12:52 = 03:12 + 09:40). 1시간 넘김 → 같은 꼴(`state=play-long`, 61:05). 스무 살 전(`early`)도 같은 블록(04:31). 지난 세상(`past`) 24:03. 새로고침 뒤 같은 값, 「다시 태어나기」 뒤 새 판은 0부터(content-M8 5-2절). 시안의 값은 그 판의 사망 나이·선택 수를 M8 시간 모델(content-M8 2-6절, k = 1.2 · r 26초(지난 세상 22초))에 넣은 모델값이다.
+- **CSS**(`ds.css` → `dash.css` 글자 그대로): `.playtime`·`.playtime__row`·`.playtime__row dt`·`.playtime__row dd`·`.playtime__value`·`.playtime__note`·`.playtime time`. 토큰만. 강제 색상은 따로 둘 규칙 없음(테두리·글자가 시스템 색으로 — `ending-playtime-mobile-forced-card.png`).
+- **접근성**: 블록 전체가 차례로 읽힌다 — 「이 판의 플레이 시간, 29분 12초. 세월이 흐른 시간 17분 30초, 결정을 읽고 고른 시간 11분 42초의 합입니다. …」. 색에 기대지 않는다(깨끗한 판 여부는 문장의 유무). 조작 요소 없음(CM10 영향 없음).
+
+### 8-4. 점검 결과 (시안, 2026-10-19)
+- `auditMockup ending.html --states=,zero,past,early,down,play-fast,play-long,play-none` → **8상태 192조합 위반 0**(넘침 0 · 낱말 끊김 0 · CM10 가려진 포커스 0), 렌더 대비 최저 라이트 5.78 / 다크 5.96 / 강제 색상 21.00(M7e 때와 같은 값 — 보조 문장의 `--c-text-3`).
+- `shootMockups ending` 41장 넘침 0(`ending` 21 + 새 `ending-playtime-{mobile,mobile-dark,mobile-forced,desktop,320-text200}-card`·`ending-play-fast-{mobile,320-text200}-card`·`ending-play-long-mobile-card`·`ending-play-none-mobile-card` 9 + 이름 조각이 함께 잡은 `economy-ending` 11). `shootMockups title` 21장 넘침 0(`title-length-{mobile,mobile-dark,desktop}-group`·`title-length-320-text200-full-group` 4 포함 — 320 · 글자 200%는 `full`로 찍어 하단 띠에 가려지지 않게).
+- `auditMockup title-a.html`(첫 화면 시안의 **첫 감사** — M2 때는 도구가 없었다): 24조합 넘침 0 · 낱말 끊김 0, 렌더 대비 최저 라이트 5.78 / 다크 5.96 / 강제 색상 14.02. CM10 항목 84줄은 **바꾸기 전 시안(HEAD)과 줄 수·종류가 같다**(정적 시안의 네이티브 라디오 `input` 기하 · 저층 뷰포트보다 큰 캐러셀 영역 · 정적 페이지의 Tab 순회 한계 — 구현에는 `focusReveal`·`revealTopOfTallFocus`가 있고 e2e `first-screen`이 CM10을 잰다). 바뀐 문단(설명 세 문장)과 무관.
+- `tests/designAssets.test.ts` M8 계약 5건.
+- **후속(2026-10-19, developer 반영 뒤 — D-96 되돌림 뒤 재점검)**: 바뀐 시안은 `ending.html`뿐(구현 부품 `PlayTime`의 출력 — `<time>` 속성 이름 `dateTime`·`data-testid` 넷; 값·글자 같음), `title-a.html`·`title-continue.html` 바이트 동일. `shootMockups ending` 41장 넘침 0, `--check` 넘침 0, `auditMockup ending.html` 8상태 **192조합 위반 0**(대비 최저 라이트 5.78 / 다크 5.96 / 강제 색상 21.00 — 선행과 같다), `tests/designAssets.test.ts` 73/73. 구현 대조(코드)로 `diff-003.md` D-92~D-95 닫힘 — 차이 0.
+- **후속 3(2026-10-20, developer r2 D-97·D-98 반영 뒤)**: 생성기가 구현 `glue.ts` 규칙을 import하므로 재생성만으로 묶음이 들어왔다(바뀐 시안 10장 — `Glue`를 거치는 글 전부; 생성기에 `esc`로 남아 있던 가상 인구 주석·나가기 확인·다시 태어나기 세 자리는 `glueHtml`로). 보조 문장의 묶음은 블록마다 정확히 둘(「그 밖에」「이 기기에만」), 시간 값은 묶음 밖, `nowrap` 없음. 전체 재촬영 273장 넘침 0 · `--check` 넘침 0 · `auditMockup ending.html` 8상태 **192조합 위반 0**(대비 최저 5.78 / 5.96 / 21.00 그대로) · `title-a.html` 24조합 넘침·끊김 0 · `note` 216 · `decision-adult` 120 · `decision-infant` 72조합 위반 0 · `tests/designAssets.test.ts` 74/74. 샷 `ending-playtime-mobile-card.png`(360) 「…넣지 않았습니다. / 이 기기에만 저장됩니다.」· `title-length-320-text200-full-group.png` 「진행은 / 이 기기에 남아요.」 — 후속 2의 관찰 두 자리 해소. `diff-003.md` D-97·D-98 닫힘.
+
+### 8-5. 바뀌어야 하는 시험·e2e·스크립트 (developer — `diff-003.md` D-92~D-96)
+- 첫 화면 문구: `src/data/titleText.ts#lifeLengthHint`, `e2e/first-screen.spec.ts:306`(글자 그대로 단언), `tests/titleScreen.test.tsx:239`(「이 기기에 남습니다」 → 「이 기기에 남아요」), `e2e-prod/smoke.spec.ts`(FS5 문장을 단언하면). qa 스크립트 `qa/scripts/m2*-text.mjs`의 정규식은 옛 회차 기록이라 QA 몫(고치지 않아도 된다).
+- 엔딩: `tests/endingScreen.test.tsx`(블록 유무·값·낭독 글자·`datetime`·문장 순서), `e2e/ending.spec.ts`(`ending-playtime` 형식 `^\d{2,}:\d{2}$`, 새로고침 뒤 같은 값), `e2e/m8-playtime.spec.ts`(content-M8 8-4절), `tests/designAssets.test.ts`(designer — 반영 뒤 import 단언으로).
+- (후속 2) 관형사 묶음: `core/glue.ts` 규칙 + `tests/glue.test.ts` 보기(D-97), FS5·플레이 시간 보조 문장·다시 태어나기 안내·나가기 확인·영향 안내를 `Glue`로(D-98) — 글자가 그대로라 문구 단언은 바뀌지 않고, `textOf`류 비교는 `<span>`을 벗긴 글자로 본다(이미 그렇게 한다). **(후속 3, 2026-10-20) developer r2 반영 확인 — D-97·D-98 닫힘**: `tests/glue.test.ts` 「지시 관형사 …」 9개, `e2e/m8-determiner-breaks.spec.ts`(여섯 곳 × 320·360 × 100·200%), `tests/titleScreen.test.tsx`·`tests/endingPlayTime.test.tsx`는 태그를 벗긴 글자 단언으로(developer). designer 쪽: 생성기의 남은 `esc` 세 자리(가상 인구 주석·나가기 확인·다시 태어나기)를 `glueHtml`로, `tests/designAssets.test.ts`의 FS5 문단·보조 문장 순서·영향 안내 단언을 묶음 포함 꼴로 + 「나머지 고정 문장 셋 + 생성기 자리」 1건(74/74).
+
+### 8-6. 구현 노트 — 상수·함수 이름 제안 (developer가 다르게 지어도 된다)
+- `src/data/endingText.ts#PLAYTIME_TEXT = { label, breakdown, excluded, notClean, device }` — 글자는 8-1 그대로. `breakdown`은 `{연출 mm:ss}`·`{결정 mm:ss}` 자리에 `<PlayTime>`을 끼우므로 조각 배열을 돌려주는 함수가 편하다.
+- `src/core/playClock.ts#formatPlayTime(sec) → { text: '29:12', spoken: '29분 12초', iso: 'PT29M12S' }`, `displaySeconds(play) = ⌊hold/1000⌋ + ⌊decide/1000⌋`, `isCleanPlay(play) = offSpeed === 0 && auto === 0 && skips === 0`.
+- `src/ui/PlayTime.tsx` — `<time className datetime={iso}><span className="sr-only">{spoken}</span><span aria-hidden="true">{text}</span></time>`. 세 자리(표시값·분해 둘)가 같은 부품.
+- 시안 생성기의 임시 블록 `M8_TEXT`는 이 상수들이 들어온 뒤 designer가 import로 되돌렸다(D-96, 2026-10-19 후속 — `ai-log/2026-10-19_SPEC-003_design-M8.md` 「후속」).
+- (2026-10-19 같은 시간, 읽기만 함) developer의 `src/core/playClock.ts`에 `formatPlayClock`(= 위 `text`)·`playClockDatetime`(= `iso`)·`playDisplayMs`·`isCleanRun`이 이미 있다 — 제안 이름은 이것으로 갈음한다. 다른 점은 표시값의 버림 방식(통째 버림 → 버킷별 버림 뒤 합)과 낭독 함수(「{m}분 {s}초」) 둘뿐(`diff-003.md` D-94).
+- (후속 확인) 구현 최종: `formatPlayTime(sec) → { text, spoken, iso }`(제안 이름 그대로)·`displaySeconds = ⌊hold/1000⌋ + ⌊decide/1000⌋`·`isCleanRun`(제안의 `isCleanPlay`)·`ui/PlayTime.tsx`(제안 DOM 그대로 + `data-testid`)·`endingText.ts#PLAYTIME_TEXT` + `breakdownParts()`(조각 배열) — 위 다른 점 둘은 모두 해소됐다. 8-3 DOM과 구현 `EndingScreen.tsx#PlayTimeBlock`은 글자·속성까지 같다(`<time>`의 속성 이름만 React 서버 렌더 출력에서 `dateTime` — DOM에서는 `datetime`).

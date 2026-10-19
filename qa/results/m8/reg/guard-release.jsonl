@@ -1,0 +1,11 @@
+{"id":"G-rel-keep-cite-100-run1","vp":"360x740-touch","font":100,"target":"keep-cite","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-keep-cite-200-run1","vp":"360x740-touch","font":200,"target":"keep-cite","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-keep-manual-100-run1","vp":"360x740-touch","font":100,"target":"keep-manual","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-keep-manual-200-run1","vp":"360x740-touch","font":200,"target":"keep-manual","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-skip-empty-100-run1","vp":"360x740-touch","font":100,"target":"skip-empty","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-skip-empty-200-run1","vp":"360x740-touch","font":200,"target":"skip-empty","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-discard-100-run1","vp":"360x740-touch","font":100,"target":"discard","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-discard-200-run1","vp":"360x740-touch","font":200,"target":"discard","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-decision-100-run1","vp":"360x740-touch","font":100,"target":"decision","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-decision-200-run1","vp":"360x740-touch","font":200,"target":"decision","from":"1","want":"4","now":"4","guardedAtTap":null}
+{"id":"G-rel-inline-100-run1","vp":"360x740-touch","font":100,"target":"inline","from":"1","want":"4","now":"4","guardedAtTap":null}

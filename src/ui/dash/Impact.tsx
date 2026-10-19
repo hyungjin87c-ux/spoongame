@@ -1,4 +1,5 @@
 import type { ImpactItem } from '../../core/impact';
+import { Glue } from '../Glue';
 import { IMPACT_HINT, IMPACT_LABEL, impactSentence, impactSymbols, impactTone } from '../../data/impactText';
 
 /**
@@ -28,7 +29,7 @@ export function ImpactLine({ items }: { items: readonly ImpactItem[] }) {
 export function ImpactHint({ name }: { name: string }) {
   return (
     <p className="decision__hint" data-testid="choice-hint">
-      {IMPACT_HINT.lead(name)} <span aria-hidden="true">{IMPACT_HINT.symbols}</span>
+      <Glue text={IMPACT_HINT.lead(name)} /> <span aria-hidden="true">{IMPACT_HINT.symbols}</span>
       <span className="sr-only">{IMPACT_HINT.symbolsSr}</span>
     </p>
   );

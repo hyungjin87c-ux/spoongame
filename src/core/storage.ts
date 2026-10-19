@@ -28,6 +28,7 @@ import {
 } from './types';
 import { isValidAssets } from './economy';
 import { cleanNoteForLoad, isInvisibleOnly } from './noteText';
+import { readPlay } from './playClock';
 import { DEFAULT_SETTINGS } from './state';
 
 /**
@@ -42,6 +43,7 @@ import { DEFAULT_SETTINGS } from './state';
  * v8: 개편(SPEC-003 M5) — **재산(wealth) 스탯이 없어지고** 20세부터의 자산 현황(`assets`: 순자산·연 소득·부채·소득 보정·주거 형태, 만 원 정수)과 20세 미만의 집안 살림(`familyFund`)이 판 상태에 더해졌다.
  *     v7 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6 — `classifySavedGame`이 `version < SCHEMA_VERSION`을 이전 버전으로 분류한다). docs/data/economy-model.md 10절.
  * (M7c: 게임 스키마는 v8 그대로다 — 연표 종류에 `note`가 더해지고 `seen`에 `note-…` 키가 생길 수 있지만 허용 범위만 넓어졌고, 기록이 없는 v8 저장은 새 규칙에서도 그대로 유효하다. 진행 중인 판을 잃지 않으려고 올리지 않았다, NC-1.)
+ * (M8: 게임 스키마는 v8 그대로다 — 판 상태에 **선택 필드 `play`**(플레이 시간 기록, core/playClock.ts)가 더해졌다. 없으면 시간을 재지 않은 판이고, 값이 이상하면 판을 버리지 않고 그 필드만 버린다(`withValidPlay`). 진행 중인 판을 잃지 않으려고 올리지 않았다, LD-6.)
  */
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
@@ -162,6 +164,20 @@ function withCleanNotes(state: GameState): GameState {
     history.push(text === h.text ? h : { ...h, text });
   }
   return { ...state, history };
+}
+
+/**
+ * 플레이 시간 기록(`play`, SPEC-003 LM6 · M8 LD-6)은 **선택 필드**라 이상한 값이 판을 버리게 하지 않는다 — 값이 이상하면(음수·문자열·소수·NaN·상한 초과·키 모자람/넘침·배열·null, `readPlay`가 정한다)
+ * **그 필드만 버리고** 판은 그대로 연다(NC-2 「거부하지 않고 걷어 낸다」, 없으면 시간을 재지 않은 판 = 엔딩에 줄이 없다). 인생·엔딩이 아닌 단계(첫 화면·룰렛·출생신고)에는 있을 수 없어 그 필드도 버린다. 필드가 없는 v8 저장은 그대로 유효하다(스키마를 올리지 않는다).
+ */
+function withValidPlay(state: GameState): GameState {
+  if (!Object.prototype.hasOwnProperty.call(state, 'play')) return state;
+  const raw: unknown = (state as { play?: unknown }).play;
+  const play = state.phase === 'life' || state.phase === 'ending' ? readPlay(raw) : undefined;
+  if (play !== undefined) return { ...state, play };
+  const rest = { ...state } as Record<string, unknown>;
+  delete rest.play;
+  return rest as unknown as GameState;
 }
 
 function validFlags(v: unknown): boolean {
@@ -373,7 +389,7 @@ export function parseGame(raw: string | null, pool: EventPool = EVENT_POOL): Gam
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
-  return withCleanNotes(state);
+  return withValidPlay(withCleanNotes(state));
 }
 
 /** 문자열 → 설정. 문제가 있으면 기본값. */
@@ -402,6 +418,46 @@ export function decideSave(stored: string | null, known: string | null, next: st
   if (stored === next) return 'unchanged';
   if (stored !== known && !bothNothingToLose(stored, known)) return 'conflict';
   return 'write';
+}
+
+/**
+ * 쓰려는 판이 **저장소에 있다고 아는 값**(known)과 수동적인 시간(`play.idle` — 탭 가림·일시정지·나가기 확인 등 사람이 아무것도 하지 않은 시간)만 다른가 (REV-003-M8-1 R-417).
+ * 그렇다면 쓰지 않는다: idle만 늘어난 저장을 쓰면 아무것도 하지 않은 탭(열기만 한 탭, 일시정지해 둔 채 배경으로 간 탭)이 저장소에 써서 활성 탭을 「밀린 화면」으로 보내고(R-047),
+ * 저장이 막힌 기기에서 진행이 없는데도 저장을 시도한다(R-006·NC-11). hold·decide·fold·note·offSpeed·auto·skips·resumes가 하나라도 늘었거나(= 사람이 한 일이 있다) 인생 상태가 다르면 false다.
+ * 이어하기 횟수(resumes)는 그 탭에서 hold·decide가 처음 쌓일 때 같이 오르므로 따로 보지 않는다(core/playTimer.ts). 알던 값이 없거나 읽을 수 없으면 false(쓰는 쪽에 맡긴다).
+ * 보이는 두 번째 탭이 결정 카드를 10초 넘게 띄워 decide가 쌓이면 이 함수는 false를 돌려주고 그 탭이 쓴다 — **허용한다**(마스터 결정 M-1, content-M8 13-6: 보이는 탭에서 실제로 읽은 시간이고 마지막 쓰기 우선 규칙 R-011의 연장이다 — 열기만 한 다른 탭이 밀리는 것도 같다).
+ */
+export function isIdleOnlyChange(knownRaw: string | null, game: GameState): boolean {
+  if (knownRaw === null || game.play === undefined) return false;
+  const known = parseGame(knownRaw);
+  if (known === null || known.play === undefined) return false;
+  return serializeGame({ ...game, play: { ...game.play, idle: known.play.idle } }) === serializeGame(known);
+}
+
+/**
+ * 사람이 한 일이 **있기는 하지만 쓸 만큼은 아닌** 시간의 상한(ms). 마지막으로 아는 저장 뒤에 쌓인 hold + decide + fold + note가 이보다 짧고 「다음 결정으로」(skips)와 인생 상태가 그대로면 flush(10초마다·가림·pagehide)는 쓰지 않는다.
+ * 표본 간격(1초)보다 길고 e2e 「일시정지를 풀고 2.5초 흘린 뒤 pagehide → 쓴다」(QA TB01-did)보다 짧은 1.5초다.
+ */
+export const NEGLIGIBLE_PLAY_MS = 1500;
+
+/**
+ * 열자마자 곧바로 닫은 탭이 활성 탭을 밀어내지 않게 (content-M8 13-3 QA 2회차 TB01-close — 「B를 열고 곧바로 닫기(pagehide) → B 쓰기 0, A는 밀리지 않음」, R-047). 보이는 채로 막 뜬 탭은 결정 카드·연출이 흐르므로 닫는 순간
+ * 수십~수백 ms의 decide·hold가 쌓여 있어 `isIdleOnlyChange`만으로는 쓰게 된다. 그 시간을 잃어도 되는 이유: 어디까지나 마지막 쓰기 뒤 1.5초 미만이다.
+ * 잃는 시간(content-M8 13-8, R-423): 닫는 이벤트(`pagehide`·가림)가 오면 1.5초 미만, 오지 않으면(보이는 채 프로세스가 끝남, iOS에서 `pagehide`가 오지 않음) 최대 약 11.5초(10초 주기 + 1.5초) —
+ * 이 규칙은 10초 주기 flush에도 걸려 마지막 쓰기 직후(1.5초 미만)에 주기가 돌면 그 차례를 건너뛰기 때문이다. 5-2절의 「닫을 때마다 최대 10초」보다 1.5초 길지만, 코드로 10초를 지키면 가려졌다 잠깐 보인 탭이 쓰는 F-1 류 경로가 다시 열려 문서를 고쳤다.
+ * (1.5초를 넘기면 쓴다 — 보이는 탭이 실제로 읽은 시간, 마스터 결정 M-1). 알던 값이 없거나 읽을 수 없거나 기록이 없으면 false(쓰는 쪽에 맡긴다).
+ */
+export function isNegligibleChange(knownRaw: string | null, game: GameState): boolean {
+  if (knownRaw === null || game.play === undefined) return false;
+  const known = parseGame(knownRaw);
+  if (known === null || known.play === undefined) return false;
+  const k = known.play;
+  const p = game.play;
+  if (p.skips !== k.skips) return false;
+  const human = p.hold - k.hold + (p.decide - k.decide) + (p.fold - k.fold) + (p.note - k.note);
+  if (human >= NEGLIGIBLE_PLAY_MS) return false;
+  // 기록(play)을 알던 값으로 되돌린 직렬화가 같아야 한다 = 인생 상태는 그대로
+  return serializeGame({ ...game, play: k }) === serializeGame(known);
 }
 
 // ---------- 잃을 진행이 없는 첫 저장 (A66) ----------

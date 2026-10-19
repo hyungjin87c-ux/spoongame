@@ -285,6 +285,8 @@ export interface Guard {
   ok: boolean;
   /** true이면 참고 지표다: 어긋나도 불합격으로 세지 않는다(통계가 지금 세상 것이라 다른 시대에는 판정 기준이 아닌 가드) */
   reference?: boolean;
+  /** metric이 여러 값의 최솟값일 때 그 구성 값(알려진 차이의 한계를 부분마다 다르게 걸 때 쓴다): end-g3는 인접한 두 재력 단계의 사망 시점 순자산 중앙값 차 [1→2, 2→3, 3→4, 4→5] */
+  parts?: number[];
 }
 
 const byWealth = (rows: readonly Sample[], w: ParentWealth): Sample[] => rows.filter((r) => r.parentWealth === w);
@@ -319,11 +321,14 @@ export function movementShares(lives: readonly LifeOutcome[]): Record<Movement, 
 /**
  * 허용 폭 밖으로 **보고한** 가드(키 `시대:가드 id`)와 보고한 값보다 나빠지지 않도록 지키는 한계 (KNOWN_GAPS와 같은 규칙, 15-3절). 못 맞춘 이유·시도한 레버는 docs/data/economy-model.md 9-3절.
  */
-export const KNOWN_GUARD_GAPS: Record<string, { limit: (metric: number) => boolean; why: string }> = {
+export const KNOWN_GUARD_GAPS: Record<string, { limit: (metric: number, guard?: Guard) => boolean; why: string }> = {
   'past:g3-ratio': { limit: (v) => v >= 3.2, why: '지난 세상 5단계 대 1단계 40대 순자산 비 3.6배(≥ 4배; M7a r3 뒤 3.5배) — 지난 세상 5단계는 전체의 약 1%(6000판 중 약 60판)라 중앙값 잡음이 ±10%이고, 지난 세상은 생활비·집값이 낮아(0.7·0.6) 가난한 집이 그만큼 더 모은다. 지난 세상 생활비 계수를 0.75로 올리면 4.7배가 되지만 사망 시점 순자산<0이 32%가 된다' },
   'past:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.8%(≤ 25%; M7a r3 뒤 28.9%) — 1·2단계의 일부가 평생 빚에서 못 나온 채 끝난다(노년 안전망이 부채를 동결할 뿐 없애지 않는다)' },
   'present:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.5%(≤ 25%; M7a r3 뒤 26.4%) — 같은 이유. 사망 시점 순자산의 하한을 0으로 두는 규칙(상속 포기·한정승인의 근사, D22)이면 0%가 되지만 마스터가 채택하지 않았다(15-6절) — 빚으로 끝나는 인생도 엔딩에 그대로 보인다' },
   'future:end-negative': { limit: (v) => v <= 41, why: '사망 시점 순자산<0 38.3%(≤ 35%; M7a r3 뒤 38.3%) — 같은 이유 + 다가올 세상의 소득 대 생활·주거 계수(1.15 대 1.2·1.3)가 가난한 집에 더 무겁다' },
+  // M8(30분 모드 페이싱 재조정 — soft 24 / hard 30, 마스터가 이 차이를 승인하고 값을 확정했다 2026-10-20)이 새로 보고한 차이: 지금 세상 재력 1·2단계의 사망 시점 순자산 중앙값이 0 = 0으로 붙었다(M7e-4: 0 < 616). 2단계의 중앙값이 0 근처에서 출렁이는 지표라
+  // (M7e-3도 AGE 레버를 1.76으로 올렸을 때 같은 동률을 보고했다) 노년 결정 카드가 +0.5~0.7장 돌아오는 것만으로 616이 0으로 내려갔다. 순서가 뒤집히지는 않았다(동률) — 한계는 **1·2단계의 차만 0 이상, 나머지 인접 차(2·3, 3·4, 4·5단계)는 0 초과**다(REV-003-M8-1 R-419: 마스터가 승인한 것은 1·2단계 동률뿐이라 다른 인접 쌍의 새 동률은 통과시키지 않는다).
+  'present:end-g3': { limit: (v, g) => v >= 0 && g?.parts !== undefined && g.parts.length === 4 && g.parts[0] >= 0 && g.parts.slice(1).every((d) => d > 0), why: '지금 세상 재력 단계별 사망 시점 순자산 중앙값 1 < 2 < 3 < 4 < 5가 1·2단계 동률(0 = 0)이다(M7e-4: 0 < 616) — 2단계 중앙값이 0 근처라 노년 결정 카드가 조금만 늘어도 흔들린다(M8 페이싱 soft 24 / hard 30, 마스터 승인 2026-10-20 — M7e-3 9-8절에도 같은 동률 보고). 뒤집히지는 않는다' },
   // M7a r2가 보고했던 지금 세상 4단계 엔딩 「뒤쪽」(51.4%)은 M7e-3의 「동률 불리」 규칙(엔딩 마스터 결정 C, 9-8절)과 순자산 상승으로 47.4%가 되어 통과로 돌아와 뺐다(M7e-4: 주석의 45.8%는 오기였다 — 9-8절·로그의 47.4%가 맞다, REV-003-M7e-1 R-382 (c)) — `present:end-down4`.
 };
 
@@ -479,6 +484,7 @@ export function endingGuardsOf(era: Era, lives: readonly LifeOutcome[]): Guard[]
     value: med.map((m) => Math.round(m)).join(' < '),
     metric: Math.min(...med.map((m, i) => (i === 0 ? Number.POSITIVE_INFINITY : m - med[i - 1]))),
     ok: med.every((m, i) => i === 0 || m > med[i - 1]),
+    parts: med.slice(1).map((m, i) => m - med[i]),
   });
   // 엔딩 방향은 지금 세상이 판정 기준이다(다른 시대는 참고)
   for (const w of [4, 5] as const) {

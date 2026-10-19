@@ -148,6 +148,21 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
     expect(a.samples).toEqual(samplesOfLife(economySeed(5), 'present', 'random'));
   });
 
+  it("지금 세상 end-g3 알려진 차이의 한계는 마스터가 승인한 1·2단계 동률만 허용한다: 2·3 / 3·4 / 4·5단계 동률이나 뒤집힘은 통과시키지 않는다 (REV-003-M8-1 R-419)", () => {
+    const gap = KNOWN_GUARD_GAPS['present:end-g3'];
+    expect(gap).toBeDefined();
+    const guardFor = (nets: number[]) => Object.fromEntries(endingGuardsOf('present', nets.map((n, i) => life((i + 1) as 1, n))).map((x) => [x.id, x]))['end-g3'];
+    const accepts = (nets: number[]) => gap.limit(guardFor(nets).metric, guardFor(nets));
+    expect(guardFor([0, 0, 5, 9, 30]).parts).toEqual([0, 5, 4, 21]);
+    expect(accepts([0, 0, 5, 9, 30]), '1·2단계 동률(승인된 보고)').toBe(true);
+    expect(accepts([0, 616, 1000, 2000, 5000]), '엄격한 순서도 한계 안').toBe(true);
+    expect(accepts([0, 5, 5, 9, 30]), '2·3단계 동률').toBe(false);
+    expect(accepts([0, 5, 9, 9, 30]), '3·4단계 동률').toBe(false);
+    expect(accepts([0, 5, 9, 30, 30]), '4·5단계 동률').toBe(false);
+    expect(accepts([5, 0, 9, 20, 30]), '1·2단계 뒤집힘').toBe(false);
+    expect(accepts([0, 0, 0, 9, 30]), '1·2·3단계가 모두 같다').toBe(false);
+  });
+
   it('엔딩 가드 도구: deathNetMedians·movementShares·endingGuardsOf를 손으로 만든 판으로 점검한다', () => {
     const lives = [life(1, -100), life(1, 0), life(1, 100), life(2, 500), life(3, 1000), life(4, 5000, 'down'), life(5, 9000, 'down'), life(5, 8000, 'up'), life(5, 7000, 'down', { reached: false, movement: null })];
     expect(deathNetMedians(lives)).toEqual([0, 500, 1000, 5000, 8500]);
@@ -348,7 +363,7 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 3시대, 시드 �
         for (let i = 1; i < 5; i++) expect(med[i], `${era} ${i + 1}단계`).toBeGreaterThan(med[i - 1]);
       } else {
         expect(g('end-g3').ok, `${era}가 통과했다 — KNOWN_GUARD_GAPS에서 뺀다`).toBe(false);
-        expect(gap.limit(g('end-g3').metric), `${gap.why}: 지금 ${g('end-g3').value}`).toBe(true);
+        expect(gap.limit(g('end-g3').metric, g('end-g3')), `${gap.why}: 지금 ${g('end-g3').value}`).toBe(true);
       }
     }
     const present = (id: string) => r.guards.present.find((x) => x.id === id)!;
@@ -382,7 +397,7 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 3시대, 시드 �
       const [era, id] = key.split(':') as ['past' | 'present' | 'future', string];
       const g = r.guards[era].find((x) => x.id === id)!;
       expect(g.ok, `${key}가 통과했다 — KNOWN_GUARD_GAPS에서 뺀다`).toBe(false);
-      expect(gap.limit(g.metric), `${gap.why}: 지금 ${g.value}`).toBe(true);
+      expect(gap.limit(g.metric, g), `${gap.why}: 지금 ${g.value}`).toBe(true);
     }
   }, 180_000);
 

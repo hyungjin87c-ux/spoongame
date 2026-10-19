@@ -1,0 +1,271 @@
+{
+ "Q": [
+  {
+   "seed": 26,
+   "era": "future",
+   "step": 2,
+   "kind": "quiet",
+   "lines": 0,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    }
+   ]
+  },
+  {
+   "seed": 31,
+   "era": "present",
+   "step": 2,
+   "kind": "quiet",
+   "lines": 0,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    }
+   ]
+  },
+  {
+   "seed": 130,
+   "era": "present",
+   "step": 2,
+   "kind": "quiet",
+   "lines": 0,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    }
+   ]
+  },
+  {
+   "seed": 171,
+   "era": "past",
+   "step": 2,
+   "kind": "quiet",
+   "lines": 0,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 1
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    }
+   ]
+  },
+  {
+   "seed": 187,
+   "era": "present",
+   "step": 2,
+   "kind": "quiet",
+   "lines": 0,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 1
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    }
+   ]
+  }
+ ],
+ "N1": [
+  {
+   "seed": 3,
+   "era": "past",
+   "step": 0,
+   "kind": "narrative",
+   "lines": 1,
+   "before": []
+  },
+  {
+   "seed": 3,
+   "era": "past",
+   "step": 2,
+   "kind": "narrative",
+   "lines": 1,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 1
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    }
+   ]
+  },
+  {
+   "seed": 16,
+   "era": "present",
+   "step": 0,
+   "kind": "narrative",
+   "lines": 1,
+   "before": []
+  },
+  {
+   "seed": 17,
+   "era": "future",
+   "step": 2,
+   "kind": "narrative",
+   "lines": 1,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    }
+   ]
+  },
+  {
+   "seed": 17,
+   "era": "future",
+   "step": 3,
+   "kind": "narrative",
+   "lines": 1,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    },
+    {
+     "kind": "narrative",
+     "lines": 3
+    },
+    {
+     "kind": "narrative",
+     "lines": 1
+    }
+   ]
+  }
+ ],
+ "N2": [
+  {
+   "seed": 2,
+   "era": "future",
+   "step": 0,
+   "kind": "narrative",
+   "lines": 2,
+   "before": []
+  },
+  {
+   "seed": 11,
+   "era": "future",
+   "step": 0,
+   "kind": "narrative",
+   "lines": 2,
+   "before": []
+  },
+  {
+   "seed": 12,
+   "era": "past",
+   "step": 0,
+   "kind": "narrative",
+   "lines": 2,
+   "before": []
+  },
+  {
+   "seed": 13,
+   "era": "present",
+   "step": 0,
+   "kind": "narrative",
+   "lines": 2,
+   "before": []
+  },
+  {
+   "seed": 17,
+   "era": "future",
+   "step": 0,
+   "kind": "narrative",
+   "lines": 2,
+   "before": []
+  }
+ ],
+ "N3": [
+  {
+   "seed": 2,
+   "era": "future",
+   "step": 1,
+   "kind": "narrative",
+   "lines": 3,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    }
+   ]
+  },
+  {
+   "seed": 3,
+   "era": "past",
+   "step": 1,
+   "kind": "narrative",
+   "lines": 3,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 1
+    }
+   ]
+  },
+  {
+   "seed": 12,
+   "era": "past",
+   "step": 1,
+   "kind": "narrative",
+   "lines": 3,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    }
+   ]
+  },
+  {
+   "seed": 17,
+   "era": "future",
+   "step": 1,
+   "kind": "narrative",
+   "lines": 3,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    }
+   ]
+  },
+  {
+   "seed": 18,
+   "era": "past",
+   "step": 1,
+   "kind": "narrative",
+   "lines": 3,
+   "before": [
+    {
+     "kind": "narrative",
+     "lines": 2
+    }
+   ]
+  }
+ ]
+}

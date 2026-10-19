@@ -22,7 +22,7 @@ import {
   type TickCounts,
 } from '../src/core';
 import { LIMITS } from '../src/data/economyTable';
-import { READ_SEC } from '../src/data/timingTable';
+import { lifeModeOf } from '../src/data/timingTable';
 
 /**
  * 헤드리스 시뮬레이션 도우미 (테스트와 scripts/simulate.ts가 함께 쓴다).
@@ -58,7 +58,7 @@ export interface LifeSummary {
   deathAge: number;
   /** 단계별로 만난 선택지 이벤트 수 */
   choicesByStage: Record<Stage, number>;
-  /** 1배속 수동(건너뛰기 없음) 추정 시간(초): 읽는 시간 가정 = 중앙(READ_SEC.median) / QA 실측 상단(READ_SEC.high) / 보수 상한(READ_SEC.upper) */
+  /** 1배속 수동(건너뛰기 없음) 추정 시간(초): 읽는 시간 가정 = 중앙('median') / 느린 독자('high') / 보수 상한('upper') — core/timing.ts#estimatePlaySeconds (판의 인생 길이 모드·시대로) */
   seconds1x: number;
   seconds1xHigh: number;
   seconds1xUpper: number;
@@ -79,7 +79,7 @@ export function choicesByStage(final: GameState): Record<Stage, number> {
  * 한 판을 끝까지 돌리고 매 걸음 불변식을 검사한다(위반하면 throw):
  * 스탯 0~100 정수, 나이 단조(줄어들지 않음, 한 걸음에 +1 이하), 사망에 도달, 연표 상한.
  */
-export function simulateLife(seed: number, era: Era, strategy: Strategy, pool?: EventPool, opts: { looks?: number } = {}): LifeSummary {
+export function simulateLife(seed: number, era: Era, strategy: Strategy, pool?: EventPool, opts: { looks?: number; lifeLength?: LifeLength } = {}): LifeSummary {
   const start = startLife(seed, era, opts);
   const chooser = chooserFor(strategy, seed);
   const run = playToEnd(start, chooser, pool);
@@ -98,12 +98,12 @@ export function simulateLife(seed: number, era: Era, strategy: Strategy, pool?: 
     counts: run.counts,
     deathAge: final.death.age,
     choicesByStage: choicesByStage(final),
-    seconds1x: estimatePlaySeconds(run.counts, slow, READ_SEC.median),
-    seconds1xHigh: estimatePlaySeconds(run.counts, slow, READ_SEC.high),
-    seconds1xUpper: estimatePlaySeconds(run.counts, slow, READ_SEC.upper),
-    secondsFast: estimatePlaySeconds(run.counts, fast, READ_SEC.median),
-    secondsFastHigh: estimatePlaySeconds(run.counts, fast, READ_SEC.high),
-    secondsFastUpper: estimatePlaySeconds(run.counts, fast, READ_SEC.upper),
+    seconds1x: estimatePlaySeconds(run.counts, slow, final.lifeLength, era, 'median'),
+    seconds1xHigh: estimatePlaySeconds(run.counts, slow, final.lifeLength, era, 'high'),
+    seconds1xUpper: estimatePlaySeconds(run.counts, slow, final.lifeLength, era, 'upper'),
+    secondsFast: estimatePlaySeconds(run.counts, fast, final.lifeLength, era, 'median'),
+    secondsFastHigh: estimatePlaySeconds(run.counts, fast, final.lifeLength, era, 'high'),
+    secondsFastUpper: estimatePlaySeconds(run.counts, fast, final.lifeLength, era, 'upper'),
   };
 }
 
@@ -155,7 +155,7 @@ export interface EraReport {
   choices: Dist;
   narratives: Dist;
   quiet: Dist;
-  /** 1배속 수동(분): 읽는 시간 가정 중앙(18초/개) / QA 실측 상단(24초) / 보수 상한(30초) */
+  /** 1배속 수동(분): 읽는 시간 가정 중앙 / 느린 독자 / 보수 상한 (시대별 r — core/timing.ts#readSecFor) */
   minutes1x: Dist;
   minutes1xHigh: Dist;
   minutes1xUpper: Dist;
@@ -165,16 +165,18 @@ export interface EraReport {
   minutesFastUpper: Dist;
   /** 단계별 선택지 수 평균 */
   choicesByStageMean: Record<Stage, number>;
-  /** 선택지가 25개를 넘는 판 / 20개 미만인 판의 비율(%) */
-  overTwentyFivePct: number;
-  underTwentyPct: number;
+  /** 하드 상한을 넘은 판 수(구조적으로 0) / 하드 상한 −1 이상인 판의 비율(%) — 페이싱이 분포를 모양내는지 본다 (취약한 「25장 초과」 통계를 대체, M8 LD-9) */
+  overHardCount: number;
+  nearCapPct: number;
+  /** 사망 나이 70세 이상인 판 중 결정 카드가 20장 미만인 판의 비율(%) (조기 사망이 섞이면 사망 나이 분포가 흔든다) */
+  under20Of70PlusPct: number;
   /** 사망 연령 분포(10세 구간별 비율) */
   deathByDecade: Record<string, number>;
   /** 20세 전 사망 비율(%) */
   earlyDeathPct: number;
 }
 
-export function simulateMany(era: Era, seeds: number, strategy: Strategy, pool?: EventPool, opts: { looks?: number } = {}): LifeSummary[] {
+export function simulateMany(era: Era, seeds: number, strategy: Strategy, pool?: EventPool, opts: { looks?: number; lifeLength?: LifeLength } = {}): LifeSummary[] {
   const lives: LifeSummary[] = [];
   for (let i = 1; i <= seeds; i++) lives.push(simulateLife(i * 7919 + 13, era, strategy, pool, opts));
   return lives;
@@ -189,6 +191,8 @@ export function reportOf(era: Era, lives: readonly LifeSummary[]): EraReport {
   for (const k of Object.keys(deathByDecade)) deathByDecade[k] = Math.round((deathByDecade[k] / lives.length) * 1000) / 10;
   const choicesByStageMean = Object.fromEntries(STAGES.map((st) => [st, mean(lives.map((l) => l.choicesByStage[st]))])) as Record<Stage, number>;
   const pct = (n: number) => Math.round((n / lives.length) * 1000) / 10;
+  const hard = lifeModeOf(lives[0]?.final.lifeLength).pacing.hard;
+  const long = lives.filter((l) => l.deathAge >= 70);
   return {
     era,
     lives: lives.length,
@@ -203,19 +207,20 @@ export function reportOf(era: Era, lives: readonly LifeSummary[]): EraReport {
     minutesFastHigh: distOf(lives.map((l) => l.secondsFastHigh / 60)),
     minutesFastUpper: distOf(lives.map((l) => l.secondsFastUpper / 60)),
     choicesByStageMean,
-    overTwentyFivePct: pct(lives.filter((l) => l.counts.choice > 25).length),
-    underTwentyPct: pct(lives.filter((l) => l.counts.choice < 20).length),
+    overHardCount: lives.filter((l) => l.counts.choice > hard).length,
+    nearCapPct: pct(lives.filter((l) => l.counts.choice >= hard - 1).length),
+    under20Of70PlusPct: Math.round((long.filter((l) => l.counts.choice < 20).length / (long.length || 1)) * 1000) / 10,
     deathByDecade,
     earlyDeathPct: pct(lives.filter((l) => l.deathAge < 20).length),
   };
 }
 
-export function reportEra(era: Era, seeds: number, strategy: Strategy, pool?: EventPool): EraReport {
-  return reportOf(era, simulateMany(era, seeds, strategy, pool));
+export function reportEra(era: Era, seeds: number, strategy: Strategy, pool?: EventPool, opts: { lifeLength?: LifeLength } = {}): EraReport {
+  return reportOf(era, simulateMany(era, seeds, strategy, pool, opts));
 }
 
-export function reportAll(seeds: number, strategy: Strategy, pool?: EventPool): EraReport[] {
-  return ERAS.map((era) => reportEra(era, seeds, strategy, pool));
+export function reportAll(seeds: number, strategy: Strategy, pool?: EventPool, opts: { lifeLength?: LifeLength } = {}): EraReport[] {
+  return ERAS.map((era) => reportEra(era, seeds, strategy, pool, opts));
 }
 
 // ---------- 밸런스: 부모 재력 단계별 최종 스탯, 출생값과의 상관 (R-045 b) ----------

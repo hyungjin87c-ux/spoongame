@@ -82,6 +82,9 @@ export interface InfantSummary {
   lives: number;
   emptyMean: number;
   emptyMax: number;
+  /** 빈 해가 4개 이상 / 5개 이상인 판의 비율(%) — 최댓값 대신 보는 보고 값 (M8 LD-9, content-M8.md 7-2절). IN2 판정은 5개 이상 ≤ 0.5% */
+  emptyGe4Pct: number;
+  emptyGe5Pct: number;
   linesMean: number;
   choicesMean: number;
   choicesInfantStageMean: number;
@@ -96,6 +99,8 @@ export function summarizeInfant(lives: readonly InfantLife[]): InfantSummary {
     lives: lives.length,
     emptyMean: mean(lives.map((l) => l.emptyYears)),
     emptyMax: Math.max(...lives.map((l) => l.emptyYears)),
+    emptyGe4Pct: (lives.filter((l) => l.emptyYears >= 4).length / lives.length) * 100,
+    emptyGe5Pct: (lives.filter((l) => l.emptyYears >= 5).length / lives.length) * 100,
     linesMean: mean(lives.map((l) => l.lines)),
     choicesMean: mean(lives.map((l) => l.choices)),
     choicesInfantStageMean: mean(lives.map((l) => l.choicesInfantStage)),

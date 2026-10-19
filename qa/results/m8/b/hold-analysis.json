@@ -1,0 +1,1103 @@
+{
+ "runs": {
+  "a1x-future-13": {
+   "tag": "a1x-future-13",
+   "era": "future",
+   "seed": 13,
+   "speed": 1,
+   "mode": "auto",
+   "wallSec": 1253,
+   "lifeLength": "short30",
+   "age": 88,
+   "phase": "ending",
+   "cards": 28,
+   "play": {
+    "hold": 1163341,
+    "decide": 84501,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 0,
+    "auto": 1247842,
+    "skips": 0,
+    "resumes": 0
+   },
+   "modelHoldSum": 1162500,
+   "domHoldSum": 1163306,
+   "holdRatio": 1.0007,
+   "domRatio": 1.0007,
+   "decideModel": 84000,
+   "decideRatio": 1.006,
+   "lat": {
+    "n": 25014,
+    "meanLate": 2.33,
+    "max": 311,
+    "over50": 4,
+    "over100": 1
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간20분 47초20:47세월이 흐른 시간 19분 23초19:23, 결정을 읽고 고른 시간 1분 24초01:24의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "20분 47초20:47",
+    "note": "세월이 흐른 시간 19분 23초19:23, 결정을 읽고 고른 시간 1분 24초01:24의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "19분 23초19:23",
+    "decide": "1분 24초01:24",
+    "choices": "살아오며 28번의 선택을 했습니다.",
+    "death": "88세에 세상을 떠났습니다. 원인은 오랜 병환이었습니다.",
+    "datetime": "PT20M47S"
+   },
+   "kinds": {
+    "quiet": {
+     "model": 8750,
+     "n": 49,
+     "mean": 8758,
+     "min": 8753,
+     "max": 8769,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 8575,
+     "hi": 9263
+    },
+    "narrative-L2": {
+     "model": 27500,
+     "n": 1,
+     "mean": 27547,
+     "min": 27547,
+     "max": 27547,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 26950,
+     "hi": 28575
+    },
+    "resolved-L3": {
+     "model": 28750,
+     "n": 1,
+     "mean": 28764,
+     "min": 28764,
+     "max": 28764,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 28175,
+     "hi": 29863
+    },
+    "narrative-L1": {
+     "model": 21250,
+     "n": 12,
+     "mean": 21259,
+     "min": 21255,
+     "max": 21270,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 20825,
+     "hi": 22138
+    },
+    "resolved-L1": {
+     "model": 16250,
+     "n": 26,
+     "mean": 16260,
+     "min": 16255,
+     "max": 16268,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 15925,
+     "hi": 16988
+    }
+   },
+   "cardDecide": {
+    "n": 28,
+    "mean": 3017,
+    "min": 3009,
+    "max": 3031
+   }
+  },
+  "a1x-past-11": {
+   "tag": "a1x-past-11",
+   "era": "past",
+   "seed": 11,
+   "speed": 1,
+   "mode": "auto",
+   "wallSec": 1246,
+   "lifeLength": "short30",
+   "age": 82,
+   "phase": "ending",
+   "cards": 24,
+   "play": {
+    "hold": 1169518,
+    "decide": 72343,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 0,
+    "auto": 1241861,
+    "skips": 0,
+    "resumes": 0
+   },
+   "modelHoldSum": 1168750,
+   "domHoldSum": 1169481,
+   "holdRatio": 1.0007,
+   "domRatio": 1.0006,
+   "decideModel": 72000,
+   "decideRatio": 1.0048,
+   "lat": {
+    "n": 24896,
+    "meanLate": 2.2,
+    "max": 354,
+    "over50": 2,
+    "over100": 1
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간20분 41초20:41세월이 흐른 시간 19분 29초19:29, 결정을 읽고 고른 시간 1분 12초01:12의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "20분 41초20:41",
+    "note": "세월이 흐른 시간 19분 29초19:29, 결정을 읽고 고른 시간 1분 12초01:12의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "19분 29초19:29",
+    "decide": "1분 12초01:12",
+    "choices": "살아오며 24번의 선택을 했습니다.",
+    "death": "82세에 세상을 떠났습니다. 원인은 조용한 잠이었습니다.",
+    "datetime": "PT20M41S"
+   },
+   "kinds": {
+    "quiet": {
+     "model": 8750,
+     "n": 40,
+     "mean": 8758,
+     "min": 8752,
+     "max": 8767,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 8575,
+     "hi": 9263
+    },
+    "narrative-L2": {
+     "model": 27500,
+     "n": 1,
+     "mean": 27552,
+     "min": 27552,
+     "max": 27552,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 26950,
+     "hi": 28575
+    },
+    "resolved-L3": {
+     "model": 28750,
+     "n": 1,
+     "mean": 28761,
+     "min": 28761,
+     "max": 28761,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 28175,
+     "hi": 29863
+    },
+    "narrative-L1": {
+     "model": 21250,
+     "n": 18,
+     "mean": 21259,
+     "min": 21253,
+     "max": 21270,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 20825,
+     "hi": 22138
+    },
+    "resolved-L1": {
+     "model": 16250,
+     "n": 22,
+     "mean": 16259,
+     "min": 16252,
+     "max": 16265,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 15925,
+     "hi": 16988
+    },
+    "resolved-L2": {
+     "model": 22500,
+     "n": 1,
+     "mean": 22507,
+     "min": 22507,
+     "max": 22507,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 22050,
+     "hi": 23425
+    }
+   },
+   "cardDecide": {
+    "n": 24,
+    "mean": 3014,
+    "min": 3007,
+    "max": 3023
+   }
+  },
+  "a1x-present-12": {
+   "tag": "a1x-present-12",
+   "era": "present",
+   "seed": 12,
+   "speed": 1,
+   "mode": "auto",
+   "wallSec": 1309,
+   "lifeLength": "short30",
+   "age": 92,
+   "phase": "ending",
+   "cards": 28,
+   "play": {
+    "hold": 1218403,
+    "decide": 84527,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 0,
+    "auto": 1302930,
+    "skips": 0,
+    "resumes": 0
+   },
+   "modelHoldSum": 1217500,
+   "domHoldSum": 1218402,
+   "holdRatio": 1.0007,
+   "domRatio": 1.0007,
+   "decideModel": 84000,
+   "decideRatio": 1.0063,
+   "lat": {
+    "n": 26128,
+    "meanLate": 2.22,
+    "max": 437,
+    "over50": 4,
+    "over100": 2
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간21분 42초21:42세월이 흐른 시간 20분 18초20:18, 결정을 읽고 고른 시간 1분 24초01:24의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "21분 42초21:42",
+    "note": "세월이 흐른 시간 20분 18초20:18, 결정을 읽고 고른 시간 1분 24초01:24의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "20분 18초20:18",
+    "decide": "1분 24초01:24",
+    "choices": "살아오며 28번의 선택을 했습니다.",
+    "death": "92세에 세상을 떠났습니다. 원인은 병세 악화였습니다.",
+    "datetime": "PT21M42S"
+   },
+   "kinds": {
+    "quiet": {
+     "model": 8750,
+     "n": 51,
+     "mean": 8758,
+     "min": 8753,
+     "max": 8779,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 8575,
+     "hi": 9263
+    },
+    "narrative-L2": {
+     "model": 27500,
+     "n": 1,
+     "mean": 27510,
+     "min": 27510,
+     "max": 27510,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 26950,
+     "hi": 28575
+    },
+    "narrative-L3": {
+     "model": 33750,
+     "n": 1,
+     "mean": 33795,
+     "min": 33795,
+     "max": 33795,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 33075,
+     "hi": 35013
+    },
+    "resolved-L1": {
+     "model": 16250,
+     "n": 28,
+     "mean": 16261,
+     "min": 16255,
+     "max": 16270,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 15925,
+     "hi": 16988
+    },
+    "narrative-L1": {
+     "model": 21250,
+     "n": 12,
+     "mean": 21261,
+     "min": 21253,
+     "max": 21269,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 20825,
+     "hi": 22138
+    }
+   },
+   "cardDecide": {
+    "n": 28,
+    "mean": 3016,
+    "min": 3005,
+    "max": 3028
+   }
+  },
+  "a4x-past-41": {
+   "tag": "a4x-past-41",
+   "era": "past",
+   "seed": 41,
+   "speed": 4,
+   "mode": "auto",
+   "wallSec": 259,
+   "lifeLength": "short30",
+   "age": 70,
+   "phase": "ending",
+   "cards": 21,
+   "play": {
+    "hold": 237095,
+    "decide": 16042,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 237095,
+    "auto": 253137,
+    "skips": 0,
+    "resumes": 0
+   },
+   "modelHoldSum": 236563,
+   "domHoldSum": 237098,
+   "holdRatio": 1.0023,
+   "domRatio": 1.0023,
+   "decideModel": 15750,
+   "decideRatio": 1.0185,
+   "lat": {
+    "n": 5126,
+    "meanLate": 2.56,
+    "max": 388,
+    "over50": 3,
+    "over100": 1
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간4분 13초04:13세월이 흐른 시간 3분 57초03:57, 결정을 읽고 고른 시간 0분 16초00:16의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "4분 13초04:13",
+    "note": "세월이 흐른 시간 3분 57초03:57, 결정을 읽고 고른 시간 0분 16초00:16의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "3분 57초03:57",
+    "decide": "0분 16초00:16",
+    "choices": "살아오며 21번의 선택을 했습니다.",
+    "death": "70세에 세상을 떠났습니다. 원인은 노환이었습니다.",
+    "datetime": "PT4M13S"
+   },
+   "kinds": {
+    "quiet": {
+     "model": 2188,
+     "n": 39,
+     "mean": 2195,
+     "min": 2190,
+     "max": 2242,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 2144,
+     "hi": 2503
+    },
+    "resolved-L2": {
+     "model": 5625,
+     "n": 2,
+     "mean": 5631,
+     "min": 5628,
+     "max": 5635,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 5513,
+     "hi": 6044
+    },
+    "narrative-L3": {
+     "model": 8438,
+     "n": 1,
+     "mean": 8446,
+     "min": 8446,
+     "max": 8446,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 8269,
+     "hi": 8941
+    },
+    "resolved-L1": {
+     "model": 4063,
+     "n": 18,
+     "mean": 4070,
+     "min": 4066,
+     "max": 4079,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 3981,
+     "hi": 4434
+    },
+    "narrative-L1": {
+     "model": 5313,
+     "n": 11,
+     "mean": 5319,
+     "min": 5317,
+     "max": 5322,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 5206,
+     "hi": 5722
+    }
+   },
+   "cardDecide": {
+    "n": 21,
+    "mean": 763,
+    "min": 756,
+    "max": 769
+   }
+  },
+  "a8x-future-121": {
+   "tag": "a8x-future-121",
+   "era": "future",
+   "seed": 121,
+   "speed": 8,
+   "mode": "auto",
+   "wallSec": 165,
+   "lifeLength": "short30",
+   "age": 89,
+   "phase": "ending",
+   "cards": 24,
+   "play": {
+    "hold": 150557,
+    "decide": 9348,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 150557,
+    "auto": 159905,
+    "skips": 0,
+    "resumes": 0
+   },
+   "modelHoldSum": 149844,
+   "domHoldSum": 150580,
+   "holdRatio": 1.0048,
+   "domRatio": 1.0049,
+   "decideModel": 9000,
+   "decideRatio": 1.0387,
+   "lat": {
+    "n": 3254,
+    "meanLate": 1.99,
+    "max": 324,
+    "over50": 2,
+    "over100": 1
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간2분 39초02:39세월이 흐른 시간 2분 30초02:30, 결정을 읽고 고른 시간 0분 9초00:09의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "2분 39초02:39",
+    "note": "세월이 흐른 시간 2분 30초02:30, 결정을 읽고 고른 시간 0분 9초00:09의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "2분 30초02:30",
+    "decide": "0분 9초00:09",
+    "choices": "살아오며 24번의 선택을 했습니다.",
+    "death": "89세에 세상을 떠났습니다. 원인은 오랜 병환이었습니다.",
+    "datetime": "PT2M39S"
+   },
+   "kinds": {
+    "quiet": {
+     "model": 1094,
+     "n": 49,
+     "mean": 1101,
+     "min": 1096,
+     "max": 1112,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 1072,
+     "hi": 1377
+    },
+    "narrative-L2": {
+     "model": 3438,
+     "n": 1,
+     "mean": 3487,
+     "min": 3487,
+     "max": 3487,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 3369,
+     "hi": 3791
+    },
+    "resolved-L3": {
+     "model": 3594,
+     "n": 1,
+     "mean": 3606,
+     "min": 3606,
+     "max": 3606,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 3522,
+     "hi": 3952
+    },
+    "narrative-L1": {
+     "model": 2656,
+     "n": 16,
+     "mean": 2664,
+     "min": 2659,
+     "max": 2670,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 2603,
+     "hi": 2986
+    },
+    "resolved-L1": {
+     "model": 2031,
+     "n": 23,
+     "mean": 2039,
+     "min": 2035,
+     "max": 2047,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 1991,
+     "hi": 2342
+    }
+   },
+   "cardDecide": {
+    "n": 24,
+    "mean": 388,
+    "min": 380,
+    "max": 397
+   }
+  },
+  "a8x-past-101": {
+   "tag": "a8x-past-101",
+   "era": "past",
+   "seed": 101,
+   "speed": 8,
+   "mode": "auto",
+   "wallSec": 153,
+   "lifeLength": "short30",
+   "age": 82,
+   "phase": "ending",
+   "cards": 25,
+   "play": {
+    "hold": 137438,
+    "decide": 9686,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 137438,
+    "auto": 147124,
+    "skips": 0,
+    "resumes": 0
+   },
+   "modelHoldSum": 136875,
+   "domHoldSum": 137443,
+   "holdRatio": 1.0041,
+   "domRatio": 1.0041,
+   "decideModel": 9375,
+   "decideRatio": 1.0332,
+   "lat": {
+    "n": 3011,
+    "meanLate": 2.21,
+    "max": 410,
+    "over50": 2,
+    "over100": 2
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간2분 26초02:26세월이 흐른 시간 2분 17초02:17, 결정을 읽고 고른 시간 0분 9초00:09의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "2분 26초02:26",
+    "note": "세월이 흐른 시간 2분 17초02:17, 결정을 읽고 고른 시간 0분 9초00:09의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "2분 17초02:17",
+    "decide": "0분 9초00:09",
+    "choices": "살아오며 25번의 선택을 했습니다.",
+    "death": "82세에 세상을 떠났습니다. 원인은 노환이었습니다.",
+    "datetime": "PT2M26S"
+   },
+   "kinds": {
+    "quiet": {
+     "model": 1094,
+     "n": 45,
+     "mean": 1101,
+     "min": 1096,
+     "max": 1143,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 1072,
+     "hi": 1377
+    },
+    "resolved-L2": {
+     "model": 2813,
+     "n": 1,
+     "mean": 2824,
+     "min": 2824,
+     "max": 2824,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 2756,
+     "hi": 3147
+    },
+    "narrative-L3": {
+     "model": 4219,
+     "n": 1,
+     "mean": 4229,
+     "min": 4229,
+     "max": 4229,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 4134,
+     "hi": 4595
+    },
+    "narrative-L1": {
+     "model": 2656,
+     "n": 12,
+     "mean": 2662,
+     "min": 2658,
+     "max": 2673,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 2603,
+     "hi": 2986
+    },
+    "resolved-L1": {
+     "model": 2031,
+     "n": 24,
+     "mean": 2037,
+     "min": 2033,
+     "max": 2046,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 1991,
+     "hi": 2342
+    }
+   },
+   "cardDecide": {
+    "n": 25,
+    "mean": 387,
+    "min": 381,
+    "max": 396
+   }
+  },
+  "a8x-present-111": {
+   "tag": "a8x-present-111",
+   "era": "present",
+   "seed": 111,
+   "speed": 8,
+   "mode": "auto",
+   "wallSec": 121,
+   "lifeLength": "short30",
+   "age": 62,
+   "phase": "ending",
+   "cards": 19,
+   "play": {
+    "hold": 107527,
+    "decide": 7391,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 107527,
+    "auto": 114918,
+    "skips": 0,
+    "resumes": 0
+   },
+   "modelHoldSum": 107031,
+   "domHoldSum": 107542,
+   "holdRatio": 1.0046,
+   "domRatio": 1.0048,
+   "decideModel": 7125,
+   "decideRatio": 1.0373,
+   "lat": {
+    "n": 2376,
+    "meanLate": 2.17,
+    "max": 321,
+    "over50": 3,
+    "over100": 1
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간1분 54초01:54세월이 흐른 시간 1분 47초01:47, 결정을 읽고 고른 시간 0분 7초00:07의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "1분 54초01:54",
+    "note": "세월이 흐른 시간 1분 47초01:47, 결정을 읽고 고른 시간 0분 7초00:07의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "1분 47초01:47",
+    "decide": "0분 7초00:07",
+    "choices": "살아오며 19번의 선택을 했습니다.",
+    "death": "62세에 세상을 떠났습니다. 원인은 조용한 잠이었습니다.",
+    "datetime": "PT1M54S"
+   },
+   "kinds": {
+    "quiet": {
+     "model": 1094,
+     "n": 33,
+     "mean": 1101,
+     "min": 1097,
+     "max": 1146,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 1072,
+     "hi": 1377
+    },
+    "resolved-L2": {
+     "model": 2813,
+     "n": 2,
+     "mean": 2821,
+     "min": 2817,
+     "max": 2824,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 2756,
+     "hi": 3147
+    },
+    "narrative-L3": {
+     "model": 4219,
+     "n": 1,
+     "mean": 4234,
+     "min": 4234,
+     "max": 4234,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 4134,
+     "hi": 4595
+    },
+    "resolved-L1": {
+     "model": 2031,
+     "n": 17,
+     "mean": 2040,
+     "min": 2035,
+     "max": 2048,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 1991,
+     "hi": 2342
+    },
+    "narrative-L1": {
+     "model": 2656,
+     "n": 10,
+     "mean": 2664,
+     "min": 2658,
+     "max": 2671,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 2603,
+     "hi": 2986
+    }
+   },
+   "cardDecide": {
+    "n": 19,
+    "mean": 388,
+    "min": 381,
+    "max": 396
+   }
+  },
+  "s8x-present-81": {
+   "tag": "s8x-present-81",
+   "era": "present",
+   "seed": 81,
+   "speed": 8,
+   "mode": "skip",
+   "wallSec": 104,
+   "lifeLength": "short30",
+   "age": 85,
+   "phase": "ending",
+   "cards": 24,
+   "play": {
+    "hold": 51587,
+    "decide": 47086,
+    "fold": 0,
+    "note": 0,
+    "idle": 0,
+    "offSpeed": 51587,
+    "auto": 0,
+    "skips": 25,
+    "resumes": 0
+   },
+   "modelHoldSum": 104375,
+   "domHoldSum": 76983,
+   "holdRatio": 0.4942,
+   "domRatio": 0.7376,
+   "decideModel": null,
+   "decideRatio": null,
+   "lat": {
+    "n": 2023,
+    "meanLate": 2.67,
+    "max": 332,
+    "over50": 2,
+    "over100": 1
+   },
+   "errors": 0,
+   "ext": 0,
+   "endText": {
+    "block": "이 판의 플레이 시간1분 38초01:38세월이 흐른 시간 0분 51초00:51, 결정을 읽고 고른 시간 0분 47초00:47의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "value": "1분 38초01:38",
+    "note": "세월이 흐른 시간 0분 51초00:51, 결정을 읽고 고른 시간 0분 47초00:47의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+    "hold": "0분 51초00:51",
+    "decide": "0분 47초00:47",
+    "choices": "살아오며 24번의 선택을 했습니다.",
+    "death": "85세에 세상을 떠났습니다. 원인은 노환이었습니다.",
+    "datetime": "PT1M38S"
+   },
+   "kinds": {
+    "resolved-L3": {
+     "model": 3594,
+     "n": 1,
+     "mean": 3603,
+     "min": 3603,
+     "max": 3603,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 3522,
+     "hi": 3952
+    },
+    "resolved-L1": {
+     "model": 2031,
+     "n": 23,
+     "mean": 2038,
+     "min": 2033,
+     "max": 2046,
+     "outside": 0,
+     "outsideAges": [],
+     "lo": 1991,
+     "hi": 2342
+    }
+   },
+   "cardDecide": {
+    "n": 11,
+    "mean": 1963,
+    "min": 1940,
+    "max": 1982
+   }
+  }
+ },
+ "byKind": {
+  "x1|quiet": {
+   "model": 8750,
+   "n": 140,
+   "mean": 8758,
+   "min": 8752,
+   "max": 8779,
+   "ratio": 1.0009,
+   "outside": 0,
+   "lo": 8575,
+   "hi": 9263
+  },
+  "x1|narrative-L2": {
+   "model": 27500,
+   "n": 3,
+   "mean": 27537,
+   "min": 27510,
+   "max": 27552,
+   "ratio": 1.0013,
+   "outside": 0,
+   "lo": 26950,
+   "hi": 28575
+  },
+  "x1|resolved-L3": {
+   "model": 28750,
+   "n": 2,
+   "mean": 28762,
+   "min": 28761,
+   "max": 28764,
+   "ratio": 1.0004,
+   "outside": 0,
+   "lo": 28175,
+   "hi": 29863
+  },
+  "x1|narrative-L1": {
+   "model": 21250,
+   "n": 42,
+   "mean": 21260,
+   "min": 21253,
+   "max": 21270,
+   "ratio": 1.0005,
+   "outside": 0,
+   "lo": 20825,
+   "hi": 22138
+  },
+  "x1|resolved-L1": {
+   "model": 16250,
+   "n": 76,
+   "mean": 16260,
+   "min": 16252,
+   "max": 16270,
+   "ratio": 1.0006,
+   "outside": 0,
+   "lo": 15925,
+   "hi": 16988
+  },
+  "x1|resolved-L2": {
+   "model": 22500,
+   "n": 1,
+   "mean": 22507,
+   "min": 22507,
+   "max": 22507,
+   "ratio": 1.0003,
+   "outside": 0,
+   "lo": 22050,
+   "hi": 23425
+  },
+  "x1|narrative-L3": {
+   "model": 33750,
+   "n": 1,
+   "mean": 33795,
+   "min": 33795,
+   "max": 33795,
+   "ratio": 1.0013,
+   "outside": 0,
+   "lo": 33075,
+   "hi": 35013
+  },
+  "x4|quiet": {
+   "model": 2188,
+   "n": 39,
+   "mean": 2195,
+   "min": 2190,
+   "max": 2242,
+   "ratio": 1.0035,
+   "outside": 0,
+   "lo": 2144,
+   "hi": 2503
+  },
+  "x4|resolved-L2": {
+   "model": 5625,
+   "n": 2,
+   "mean": 5631,
+   "min": 5628,
+   "max": 5635,
+   "ratio": 1.0011,
+   "outside": 0,
+   "lo": 5513,
+   "hi": 6044
+  },
+  "x4|narrative-L3": {
+   "model": 8438,
+   "n": 1,
+   "mean": 8446,
+   "min": 8446,
+   "max": 8446,
+   "ratio": 1.0011,
+   "outside": 0,
+   "lo": 8269,
+   "hi": 8941
+  },
+  "x4|resolved-L1": {
+   "model": 4063,
+   "n": 18,
+   "mean": 4070,
+   "min": 4066,
+   "max": 4079,
+   "ratio": 1.002,
+   "outside": 0,
+   "lo": 3981,
+   "hi": 4434
+  },
+  "x4|narrative-L1": {
+   "model": 5313,
+   "n": 11,
+   "mean": 5319,
+   "min": 5317,
+   "max": 5322,
+   "ratio": 1.0013,
+   "outside": 0,
+   "lo": 5206,
+   "hi": 5722
+  },
+  "x8|quiet": {
+   "model": 1094,
+   "n": 127,
+   "mean": 1101,
+   "min": 1096,
+   "max": 1146,
+   "ratio": 1.0068,
+   "outside": 0,
+   "lo": 1072,
+   "hi": 1377
+  },
+  "x8|narrative-L2": {
+   "model": 3438,
+   "n": 1,
+   "mean": 3487,
+   "min": 3487,
+   "max": 3487,
+   "ratio": 1.0144,
+   "outside": 0,
+   "lo": 3369,
+   "hi": 3791
+  },
+  "x8|resolved-L3": {
+   "model": 3594,
+   "n": 1,
+   "mean": 3606,
+   "min": 3606,
+   "max": 3606,
+   "ratio": 1.0033,
+   "outside": 0,
+   "lo": 3522,
+   "hi": 3952
+  },
+  "x8|narrative-L1": {
+   "model": 2656,
+   "n": 38,
+   "mean": 2664,
+   "min": 2658,
+   "max": 2673,
+   "ratio": 1.0027,
+   "outside": 0,
+   "lo": 2603,
+   "hi": 2986
+  },
+  "x8|resolved-L1": {
+   "model": 2031,
+   "n": 64,
+   "mean": 2039,
+   "min": 2033,
+   "max": 2048,
+   "ratio": 1.0036,
+   "outside": 0,
+   "lo": 1991,
+   "hi": 2342
+  },
+  "x8|resolved-L2": {
+   "model": 2813,
+   "n": 3,
+   "mean": 2822,
+   "min": 2817,
+   "max": 2824,
+   "ratio": 1.0032,
+   "outside": 0,
+   "lo": 2756,
+   "hi": 3147
+  },
+  "x8|narrative-L3": {
+   "model": 4219,
+   "n": 2,
+   "mean": 4231,
+   "min": 4229,
+   "max": 4234,
+   "ratio": 1.003,
+   "outside": 0,
+   "lo": 4134,
+   "hi": 4595
+  },
+  "skip-x8|resolved-L3": {
+   "model": 3594,
+   "n": 1,
+   "mean": 3603,
+   "min": 3603,
+   "max": 3603,
+   "ratio": 1.0026,
+   "outside": 0,
+   "lo": 3522,
+   "hi": 3952
+  },
+  "skip-x8|resolved-L1": {
+   "model": 2031,
+   "n": 23,
+   "mean": 2038,
+   "min": 2033,
+   "max": 2046,
+   "ratio": 1.0035,
+   "outside": 0,
+   "lo": 1991,
+   "hi": 2342
+  }
+ }
+}

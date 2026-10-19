@@ -11,18 +11,25 @@ import {
   getBrowserStorage,
   hasProgress,
   holdDelayMs,
+  isIdleOnlyChange,
+  isNegligibleChange,
   isSupersedingChange,
   lifeLineCount,
   noteCount,
   noteResponse,
   parseGame,
   parseSettings,
+  playBucketOf,
+  playNotBehind,
   saveGame,
   saveSettings,
   serializeGame,
   serializeSettings,
   sessionReducer,
+  type GameState,
+  type PlayTime,
   type Session,
+  type SessionAction,
   type StorageLike,
 } from './core';
 import { BirthScreen } from './screens/BirthScreen';
@@ -35,15 +42,17 @@ import { TitleScreen } from './screens/TitleScreen';
 import { useApplyTheme } from './ui/theme';
 import { FOLD_INITIAL, autoChooseArmed, foldCard as foldState, isFolded, leaveLife, reopenCard as reopenState, type FoldState } from './ui/decisionFold';
 import { useBgm } from './ui/useBgm';
+import { usePlayTimer, type PlayTimer } from './ui/usePlayTimer';
 import { useYearClock } from './ui/useYearClock';
 
 /**
  * 개발 서버 전용 탐침 (프로덕션 빌드에서는 import.meta.env.DEV가 false라 아래 값들이 상수로 접히고 문자열째 제거된다.
  * ?__crash·?__guard와 같은 방식. 빌드 결과에 탐침 이름이 남지 않는지는 확인했다).
  *  - ?__quota : 저장이 항상 실패하는 저장소 (저장 실패 안내 e2e, R-006)
- *  - ?__timescale=N : 연출 시간을 N배 빠르게 (e2e가 실제 30분을 기다리지 않게)
+ *  - ?__timescale=N : 연출 시간을 N배 빠르게 (e2e가 실제 30분을 기다리지 않게). 플레이 시간 타이머는 연출(hold)에 흐른 시간에 N을 곱해 모델 시간으로 센다(core/playClock.ts#AccrueContext)
  *  - ?__crash : 렌더 중 예외 (ErrorBoundary 탈출구 e2e)
  *  - ?__exit : 진행 중인 저장이 있어도 첫 화면을 다시 연 상태로 시작한다 (「나가기」(M4)가 같은 상태를 만든다 — 첫 화면의 「이어서 살기」 e2e)
+ *  - window.__playTime() : 플레이 시간 타이머가 지금까지 쌓은 기록을 저장하지 않고 읽는다 (e2e/m8-playtime — 저장으로 읽으면 수동적인 시간(idle)만 바뀐 기록은 쓰지 않으므로 R-417 이후 읽을 수 없다)
  */
 const PROBE_QUOTA = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__quota');
 const PROBE_CRASH = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__crash');
@@ -107,6 +116,8 @@ interface Boot {
 function readBoot(): Boot {
   const game = readRaw(GAME_KEY);
   const settings = readRaw(SETTINGS_KEY);
+  // 이어하기 횟수(플레이 시간 기록 — 그 해 연출이 처음부터 다시 흘러 hold가 한 해 안쪽만큼 늘 수 있어 보정에서 감안한다, content-M8.md 5-2절)는 여기서 올리지 않는다: 읽은 원문과 상태가 달라져 사람이 아무것도 하지 않은 탭도 첫 저장 effect가 쓰기 때문이다(R-417).
+  // 그 탭에서 hold·decide가 처음 쌓일 때 타이머가 올린다(core/playTimer.ts).
   const parsed = parseGame(game) ?? createInitialState(newSeed());
   // 진행 중인 판이 저장돼 있으면 새로고침해도 저장된 화면이 그대로 복원된다(C3). 첫 화면은 「나가기」로 다시 연 때에만 보인다(개발 서버 탐침 ?__exit은 그 상태로 시작).
   return {
@@ -152,10 +163,24 @@ function useSuperseded(written: WrittenRaw): [boolean, (v: boolean) => void] {
   return [superseded, setSuperseded];
 }
 
+/** 인생 도중 플레이 시간 기록을 저장소에 쓰는 간격(ms) */
+const PLAY_SAVE_MS = 10_000;
+
+/** 저장 직전, 타이머가 쌓은 기록이 상태의 기록보다 새로우면(같은 판·줄어들지 않음) 담는다. 그 밖에는 상태 그대로. */
+function withPlayNow(game: GameState, now: { seed: number; play: PlayTime } | null): GameState {
+  return now !== null && game.phase === 'life' && game.play !== undefined && game.seed === now.seed && playNotBehind(now.play, game.play) ? { ...game, play: now.play } : game;
+}
+
 function Game() {
   // 저장소는 여기서 한 번만 읽는다(lazy 초기값). 이 탭이 마지막으로 읽거나 쓴 원문(written)은 아래 effect들이 갱신하는 가변 객체다.
   const [{ session: initial, written, oldSave }] = useState(readBoot);
-  const [session, dispatch] = useReducer(sessionReducer, initial);
+  const [session, rawDispatch] = useReducer(sessionReducer, initial);
+  // 상태를 바꾸는 모든 액션은 이 dispatch를 거친다: 그 직전에 플레이 시간 타이머가 지금까지의 시간을 판 상태로 옮긴다(syncPlay) — 사망으로 엔딩에 들어가는 액션 직전의 시간까지 정확히 담긴다. 타이머는 아래에서 만들어 ref에 넣는다.
+  const timerRef = useRef<PlayTimer | null>(null);
+  const dispatch = useCallback((a: SessionAction) => {
+    timerRef.current?.sync();
+    rawDispatch(a);
+  }, []);
   const { game, settings, tick, showTitle, spin } = session;
   // 이전 버전 저장 안내는 첫 화면에 한 번만: 새 판이 시작되면(첫 화면을 떠나면) 다시 보이지 않는다.
   const [showOldNotice, setShowOldNotice] = useState(oldSave);
@@ -205,6 +230,33 @@ function Game() {
   }, [inLifeNow, autoNote]);
   const noteSheet: NoteSheetState | null = autoNote !== null ? { via: 'auto', card: autoNote, token: 0 } : manualNote !== null ? { via: 'manual', card: null, token: manualNote.token } : null;
   const noteOpen = noteSheet !== null;
+
+  // 플레이 시간 타이머 (M8 LM5·LM6): 시간을 어느 버킷에 쌓을지는 연출 시계의 `running`·자동 선택 타이머(`autoChooseArmed`)와 **같은 입력**에서 한 순수 함수(core/playClock.ts#playBucketOf)가 정한다 —
+  // 시계가 도는 상태는 모두 hold, 자동 선택이 걸린 상태는 decide로 어긋나지 않는다(tests/playClock.test.ts). 누적은 ui/usePlayTimer.ts. 시간 기록이 없는 판(M8 이전 저장)은 재지 않는다.
+  const playBucket = playBucketOf({
+    timed: game.play !== undefined,
+    inLife: game.phase === 'life',
+    superseded,
+    showTitle,
+    exitAsk,
+    visible,
+    paused: game.paused,
+    noteOpen,
+    hasPending: game.pending !== null,
+    folded,
+  });
+  const playTimer = usePlayTimer({ seed: game.seed, phase: game.phase, play: game.play, bucket: playBucket, speedOne: settings.speed === 1, auto: settings.autoMode, timeScale: TIME_SCALE, dispatch: rawDispatch });
+  timerRef.current = playTimer;
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const probe = window as unknown as { __playTime?: () => PlayTime | null };
+      probe.__playTime = () => timerRef.current?.peek()?.play ?? null;
+      return () => {
+        delete probe.__playTime;
+      };
+    }
+  }, []);
+  const playBucketRef = useRef(playBucket);
   const openNote = useCallback(() => {
     // 나가기 확인 단계가 열린 채 「생각 남기기」: 확인 단계를 닫고 시트를 연다(5-4절)
     setExitAsk(false);
@@ -273,23 +325,39 @@ function Game() {
   useEffect(() => {
     latest.current = session;
     supersededRef.current = superseded;
+    playBucketRef.current = playBucket;
   });
   useEffect(() => {
     // 저장소가 이 탭이 쓴 값 그대로일 때만 쓴다(decideSave === 'write'): 개발자 도구로 저장을 지우거나 바꾼 뒤 새로고침하면 그 변경이 존중된다.
     // 쓰고 나면 "내가 아는 값"도 갱신해야 이어지는 저장 effect가 자기 쓰기를 남의 변경으로 오해하지 않는다.
+    // 플레이 시간 기록(M8): 상태(game.play)에는 마지막 syncPlay까지만 들어 있으므로, 쓰기 직전에 타이머가 지금까지 쌓은 기록을 담아 쓴다(탭을 닫기 직전의 시간을 거의 잃지 않는다 — 마지막 쓰기 뒤 1.5초 미만은 아래 isNegligibleChange가 건너뛴다). 인생 도중 10초마다도 같은 flush를 돈다.
+    // 수동적인 시간(idle)만 늘었으면 쓰지 않는다 (R-417): 열기만 한 탭·일시정지해 둔 채 배경으로 간 탭·가려진 탭을 닫는 일이 저장소에 쓰면 활성 탭이 밀린 화면으로 간다(R-047),
+    // 저장이 막힌 기기에서는 진행이 없는데 열자마자 실패 안내가 뜬다(R-006·NC-11). hold·decide·fold·note·skips가 마지막 쓰기 뒤에 늘었거나 인생 상태가 다르면 쓴다.
+    // 단 마지막 쓰기 뒤에 쌓인 사람의 시간이 1.5초(NEGLIGIBLE_PLAY_MS)에 못 미치면 쓰지 않는다 — 열자마자 곧바로 닫은 탭(수십~수백 ms의 decide·hold가 쌓여 있다)이 활성 탭을 밀어내지 않게(content-M8 13-3 TB01-close).
+    // 보이는 탭이 결정 카드를 10초 넘게 띄워 decide가 쌓이면 그 탭이 쓰게 되고, 열기만 한 다른 탭이 밀린 화면이 되는 것은 **허용한다**(마스터 결정 M-1, content-M8 13-6): 보이는 탭에서 사람이 실제로 읽은 시간이고,
+    // 쓰면 다른 탭이 밀리는 마지막 쓰기 우선(R-011)의 연장이다(R-047의 약속은 「열기만 한 탭은 쓰지 않는다」이지 「다른 탭이 쓴 뒤에도 안 밀린다」가 아니다). 진행 손실은 0이다(decideSave의 충돌 판정 그대로). 가려진 탭은 idle이라 쓰지 않는다.
+    // 이 flush(10초마다·가림·pagehide)의 저장 실패는 **안내를 띄우지 않는다**(마스터 결정 M-2): 안내(save-notice)는 인생 상태를 담는 저장 effect가 실패할 때만 뜬다(R-006·NC-11). 여기서 잃는 것은 다음 주기에 다시 시도하기 전에 탭이 닫힐 때의 시간 값(표시값 오차, 아래 「잃는 시간」 범위)이지
+    // 인생이 아니고, 안내를 띄우면 진행이 없는 탭이 카드를 10초 읽을 때마다 배너가 뜬다. 그래서 아래 saveGame의 결과는 written.game 갱신에만 쓰고 gameSaveFailed를 건드리지 않는다. 시험: e2e/m8-playtime-save.spec.ts 「M-2」.
     const flush = () => {
       if (supersededRef.current) return;
-      const gameRaw = serializeGame(latest.current.game);
-      if (decideSave(readRaw(GAME_KEY), written.game, gameRaw) === 'write' && saveGame(storage, latest.current.game)) written.game = gameRaw;
+      const game = withPlayNow(latest.current.game, timerRef.current?.peek() ?? null);
+      const gameRaw = serializeGame(game);
+      if (!isIdleOnlyChange(written.game, game) && !isNegligibleChange(written.game, game) && decideSave(readRaw(GAME_KEY), written.game, gameRaw) === 'write' && saveGame(storage, game)) written.game = gameRaw;
       const settingsRaw = serializeSettings(latest.current.settings);
       if (readRaw(SETTINGS_KEY) === written.settings && settingsRaw !== written.settings && saveSettings(storage, latest.current.settings)) written.settings = settingsRaw;
     };
     const onHide = () => {
       if (document.visibilityState === 'hidden') flush();
     };
+    // 인생 도중에는 10초마다(연출·결정 읽기·접기·기록 버킷이 흐르는 동안만 — 멈춘 동안에는 셀 시간이 없다). 잃는 시간(content-M8 13-8, R-423): 닫는 이벤트(pagehide·가림)가 오면 1.5초 미만, 오지 않으면 최대 약 11.5초(10초 주기 + 1.5초) — storage.ts#isNegligibleChange 참고.
+    const periodic = window.setInterval(() => {
+      const b = playBucketRef.current;
+      if (b !== 'off' && b !== 'idle') flush();
+    }, PLAY_SAVE_MS);
     window.addEventListener('pagehide', flush);
     document.addEventListener('visibilitychange', onHide);
     return () => {
+      window.clearInterval(periodic);
       window.removeEventListener('pagehide', flush);
       document.removeEventListener('visibilitychange', onHide);
     };
@@ -299,7 +367,9 @@ function Game() {
   // 'advance'는 자기가 알던 나이(fromAge)를 들고 가서 상황이 달라졌으면 무시되므로, 겹치거나 지연된 시계가 한 해를 두 번 진행하지 못한다.
   // 선택지가 대기 중이거나 사망했거나 탭이 가려져 있거나 일시정지·나가기 확인 중이면 시계가 멈춘다(배속·자동 모드와 무관하게 선택지에서 멈춘다). 멈춘 자리에서 이어 흐른다.
   const inLife = game.phase === 'life' && !showTitle && !superseded;
-  const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE);
+  // 연출 대기 = HOLD_MS × 이 판의 인생 길이 모드 계수 + 한 해 둘째 줄부터의 줄 대기 (SPEC-003 LM2·LM3) — 설정(settings.lifeLength)이 아니라 **판의 값**(game.lifeLength)을 읽는다.
+  // 새로고침 직후(tick 없음)에는 조용한 해 값으로 대기한다.
+  const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE, { mode: game.lifeLength, lines: tick?.lines });
   const clock = useYearClock({
     resetKey: `${game.age}|${lifeLineCount(game.history)}|${game.pending?.key ?? ''}`, // 기록(note) 줄은 세지 않는다 — 「생각 남기기」 한 줄이 올해 진행률을 되감지 않게(M7c 5-3절)
     durationMs: game.pending !== null ? null : hold,
@@ -321,7 +391,9 @@ function Game() {
     // 저장소를 한 번만 읽어, 그 원문을 파싱해 이어받고 "내가 아는 값"으로도 기록한다(R-052). 이어받은 값은 저장소에 이미 있는 값이라 같은 값을 다시 쓰지 않는다.
     const raw = readRaw(GAME_KEY);
     written.game = raw;
-    dispatch({ type: 'adopt', game: parseGame(raw) ?? createInitialState(newSeed()) });
+    const adopted = parseGame(raw) ?? createInitialState(newSeed());
+    timerRef.current?.adopt(adopted); // 이어받은 판의 플레이 시간 기록에서 다시 쌓는다(이어받은 값을 그대로 쓴다)
+    dispatch({ type: 'adopt', game: adopted });
     setSuperseded(false);
   }, [setSuperseded, written]);
 
@@ -377,7 +449,11 @@ function Game() {
           dispatch({ type: 'choose', key, choiceId });
           bumpGuard(); // 사용자가 결정 시트(또는 인라인 카드)에서 고른 순간 — 사라지는 카드 자리의 컨트롤에 같은 렌더에서 가드 (F-1)
         }}
-        onSkip={() => dispatch({ type: 'skip' })}
+        onSkip={() => {
+          // 「다음 결정으로」 횟수(깨끗한 판 표시용): reducer가 실제로 움직이는 조건과 같을 때만 센다
+          if (!settings.autoMode && game.pending === null && !showTitle) playTimer.noteSkip();
+          dispatch({ type: 'skip' });
+        }}
         onSpeed={(speed) => dispatch({ type: 'setSpeed', speed })}
         onAuto={(auto) => dispatch({ type: 'setAuto', auto })}
         onPause={(paused) => dispatch({ type: 'setPaused', paused })}

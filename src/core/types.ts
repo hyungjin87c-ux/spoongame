@@ -10,13 +10,13 @@ export type Phase = (typeof PHASES)[number];
 export const ERAS = ['past', 'present', 'future'] as const;
 export type Era = (typeof ERAS)[number];
 
-/** 인생 길이: 약 30분 / 약 1시간 (SPEC-003 FS5·LM1). 이번 마일스톤(M2)은 선택값을 저장하는 데까지이고 실제 시간 모델은 M8 몫이다. */
+/** 인생 길이: 약 30분 / 약 1시간 (SPEC-003 FS5·LM1). 시간 모델은 M8의 모드 표(data/timingTable.ts#LIFE_LENGTH_MODES)가 정하고, 엔진은 판의 값을 읽는다(LM3). */
 export const LIFE_LENGTHS = ['short30', 'long60'] as const;
 export type LifeLength = (typeof LIFE_LENGTHS)[number];
 
 /**
  * 지금 고를 수 있는 인생 길이 (REV-003-M2-1 R-202). 「약 1시간」은 2차(M8)라 1차에서는 첫 화면에 카드는 보이되 선택할 수 없고(「준비 중」),
- * 저장된 설정이 long60이어도 short30으로 읽는다(core/storage.ts#parseSettings). M8이 시간 모델을 만들면 여기에 'long60'을 더하면 된다.
+ * 저장된 설정이 long60이어도 short30으로 읽는다(core/storage.ts#parseSettings). M8(1차)은 시간 모델·시뮬레이션을 두 모드 모두 준비해 두고 「약 1시간」은 닫아 둔다(LD-4) — 2차에 열 때 여기에 'long60'을 더하고 모드 표의 selectable을 true로 바꾼다(tests/lifeLengthModes.test.ts가 둘이 같은지 잠근다).
  * 판에 고정되는 값(GameState.lifeLength)과 core 함수(beginBirth 등)는 두 값을 모두 안다 — 이 목록은 「화면에서 고를 수 있는가」만 정한다.
  */
 export const SELECTABLE_LIFE_LENGTHS: readonly LifeLength[] = ['short30'];
@@ -185,6 +185,28 @@ export interface Death {
   cause: string;
 }
 
+/**
+ * 이 판의 플레이 시간 기록 (SPEC-003 LM5·LM6, M8 — docs/data/content-M8.md 5절). 게임 상태의 **선택 필드**라 저장 스키마는 v8 그대로다(진행 중인 판을 잃지 않는다, LD-6).
+ * 시간은 밀리초 정수, 횟수는 정수. 시간을 다섯 버킷으로 나눠 쌓는다(어느 버킷인지는 `core/playClock.ts#playBucketOf`):
+ *  - hold: 연출 시계가 흐른 시간(조용한 해·서술 해·결과) — 실제로 흐른 시간이라 배속이 빠르면 짧다 · decide: 결정 카드를 읽고 고르는 시간(자동 모드의 자동 선택 대기 포함)
+ *  - fold: 결정 카드를 접어 둔 시간 · note: 기록 시트가 열려 있던 시간 · idle: 일시정지·탭 가림·나가기 확인·첫 화면 다시 열기·밀린 화면의 시간(표본이라 실제보다 작을 수 있다 — 한 번에 5초까지만 센다)
+ * 화면에 보이는 플레이 시간 = ⌊hold/1000⌋ + ⌊decide/1000⌋초 (`displaySeconds` — 버킷별로 초를 버린 뒤 합). 나머지는 시간에서 빠지고 분해 기록으로만 남는다.
+ * 깨끗한 판(`isCleanRun`) = 배속을 바꾸지 않고(offSpeed 0) 자동 모드를 쓰지 않고(auto 0) 「다음 결정으로」를 쓰지 않은(skips 0) 판 — 사람 실측은 깨끗한 판만 쓴다(LM7).
+ *  - offSpeed: 1배속이 아닌 배속에서 흐른 hold의 ms · auto: 자동 모드 중에 흐른 hold + decide의 ms · skips: 「다음 결정으로」 횟수 · resumes: 새로고침·탭 닫기 뒤 이어하기 횟수
+ * 날짜·시각·기기 정보는 기록하지 않는다. 서버로 보내지 않고 의견 보내기 주소에도 싣지 않는다(LD-11).
+ */
+export interface PlayTime {
+  hold: number;
+  decide: number;
+  fold: number;
+  note: number;
+  idle: number;
+  offSpeed: number;
+  auto: number;
+  skips: number;
+  resumes: number;
+}
+
 export interface GameState {
   phase: Phase;
   era: Era | null;
@@ -226,6 +248,11 @@ export interface GameState {
   seed: number;
   /** 현재 RNG 내부 상태. 저장에 포함되어 새로고침 후에도 수열이 이어진다. */
   rngState: number;
+  /**
+   * 이 판의 플레이 시간 기록 (선택 필드 — 위 `PlayTime`). 인생이 시작될 때(`enterLife`) 0으로 생기고, 없으면 시간을 재지 않은 판이다(M8 이전에 시작한 저장 — 엔딩에 줄을 그리지 않는다).
+   * 값이 이상한 저장은 판을 버리지 않고 이 필드만 버린다(core/storage.ts#parseGame).
+   */
+  play?: PlayTime;
 }
 
 export const SPEEDS = [1, 2, 4, 8] as const;

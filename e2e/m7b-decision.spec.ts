@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameState } from '../src/core/types';
-import { KNOWN_SEED, activeTestId, countKind, findPendingState, injectSave, lifeState, oracleLife, rapidInput, readSave, readSettings, setPageVisible, settle, startPageHidden } from './helpers';
+import { KNOWN_SEED, activeTestId, countKind, findPendingState, injectSave, lifeState, oracleLife, rapidInput, readSave, readSettings, setPageVisible, settle, startPageHidden, withPlay } from './helpers';
 import { SETTINGS_AUTO, SETTINGS_MANUAL, cardReady, findCardState, openCard } from './m7bStates';
 
 /**
@@ -221,12 +221,16 @@ test('접기·다시 열기 연타 20회: 상태가 어긋나지 않는다 (카�
 test('새로고침: 접힌 채 새로고침하면 열린 카드(시트)로 복원되고 접힘은 저장되지 않는다 (U5, 스키마 불변)', async ({ page }) => {
   await page.goto('/');
   const state = await findCardState(page, 'school-tutoring');
-  await openCard(page, state, SETTINGS_MANUAL);
+  // 시간을 재는 판(withPlay)으로 연다: 판 상태의 플레이 시간 기록(play, M8)에는 카드를 접어 둔 시간(ms)의 필드 이름 fold가 있어 아래 단언이 play를 따로 본다
+  await openCard(page, withPlay(state), SETTINGS_MANUAL);
   await cardReady(page);
   const key = (await page.getByTestId('choice-panel').getAttribute('data-key'))!;
   await page.getByTestId('decision-fold-btn').click();
   await expect(page.getByTestId('decision-fold')).toBeVisible();
-  expect(JSON.stringify((await readSave(page)).data)).not.toMatch(/fold|folded|collapsed/i);
+  // 접힘 상태는 저장하지 않는다. play는 상태가 아니라 시간 기록이라 빼고 본다 — 대신 play의 키 집합이 정확히 아홉 개(시간 일곱 + 횟수 둘)인지 함께 본다: 접힘 상태가 play 안에 숨어 저장되는 경우까지 막는다 (REV-003-M8-1 관찰 1)
+  const saved = (await readSave(page)).data;
+  expect(JSON.stringify({ ...saved, play: undefined })).not.toMatch(/fold|folded|collapsed/i);
+  expect(Object.keys(saved.play ?? {}).sort(), 'play의 키 집합').toEqual(['auto', 'decide', 'fold', 'hold', 'idle', 'note', 'offSpeed', 'resumes', 'skips']);
   await page.reload();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-key', key);

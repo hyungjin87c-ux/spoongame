@@ -36,7 +36,6 @@ import { EVENT_POOL } from '../src/data/events';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import { HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
 import { JOURNEY_NOTE, MOVEMENT_TEXT, choiceCountText, deathLineText, journeyText, stageHeadingText, startedAtText } from '../src/data/endingText';
-import { READ_SEC } from '../src/data/timingTable';
 import { expectedMovement, numbersIn, readBand, readEnd } from './endingReadback';
 import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
 
@@ -395,6 +394,7 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
   out.push(...checkStats(next.stats, where));
   out.push(...checkMoney(next, where));
   if (next.era !== prev.era) bad(`시대가 바뀌었다 ${prev.era} → ${next.era}`);
+  if (next.lifeLength !== prev.lifeLength) bad(`인생 길이가 바뀌었다 ${prev.lifeLength} → ${next.lifeLength} (LM3: 판에 고정된다)`);
   if (next.seed !== prev.seed) bad('시드가 바뀌었다');
   const pc = prev.character;
   const nc = next.character;
@@ -564,6 +564,8 @@ export interface PipelineOptions {
   strategy: PipelineStrategy;
   /** true면 매 걸음 저장→복원을 하고 복원한 상태로 이어간다(새로고침을 매 걸음 한 것과 같다). false면 단계가 바뀌는 지점·선택지·엔딩에서만 저장 검증한다. */
   stepSerialize: boolean;
+  /** 이 판의 인생 길이. 없으면 시드 짝홀로 두 값을 번갈아 돈다(기본 `npm test`의 6000판). 있으면 모드를 **독립 축**으로 쓴다(SPEC-003 LM4: `npm run sim:1000`의 시대 × 전략 × 모드). */
+  lifeLength?: LifeLength;
 }
 
 export interface PipelineLife {
@@ -586,8 +588,8 @@ export interface PipelineLife {
 }
 
 /** 시드 → 파이프라인 시드: 시대·전략마다 서로 다른 시드 줄을 쓴다(uint32) */
-export function pipelineSeed(i: number, era: Era, strategy: PipelineStrategy): number {
-  const salt = (ERAS.indexOf(era) * 2 + PIPELINE_STRATEGIES.indexOf(strategy)) * 1000003;
+export function pipelineSeed(i: number, era: Era, strategy: PipelineStrategy, lifeLength?: LifeLength): number {
+  const salt = (ERAS.indexOf(era) * 2 + PIPELINE_STRATEGIES.indexOf(strategy)) * 1000003 + (lifeLength === 'long60' ? 7000003 : 0); // 모드 축에서 약 1시간 칸은 다른 시드 줄을 쓴다(독립 표본)
   return (i * 2654435761 + 12345 + salt) >>> 0;
 }
 
@@ -613,10 +615,10 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
   const MAX_STEPS = 1500;
 
   try {
-    // 인생 길이는 시드 짝홀로 두 값을 모두 돈다(LM1: 판을 시작할 때 정해져 판에 고정된다).
+    // 인생 길이는 (모드 축이 아니면) 시드 짝홀로 두 값을 모두 돈다(LM1: 판을 시작할 때 정해져 판에 고정된다).
     // 「약 1시간」(long60)은 지금 고를 수 없어 reducer의 setLifeLength가 무시한다(REV-003-M2-2) — 그래서 두 값 모두 **설정에 이미 들어 있는 값**으로 시작해
     // core의 출생·인생·엔딩·저장이 두 값 모두에서 에러 없이 도는지(M8이 long60을 열 때를 대비) 계속 본다. 고르는 입력 자체는 short30일 때만 따로 확인한다(아래 2번).
-    const lifeLength: LifeLength = seed % 2 === 0 ? 'short30' : 'long60';
+    const lifeLength: LifeLength = opts.lifeLength ?? (seed % 2 === 0 ? 'short30' : 'long60');
     let session: Session = createSession(createInitialState(seed), { ...SETTINGS, autoMode: auto, lifeLength });
     let settings0 = session.settings;
     const send = (action: SessionAction, label: string): Session => {
@@ -708,6 +710,17 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
         problems.push(`${tag}: 진행이 ${MAX_STEPS}걸음을 넘도록 끝나지 않는다`);
         return finish();
       }
+      // 플레이 시간 기록(M8 LM6): 타이머(UI)가 하는 일을 흉내 낸다 — 13걸음마다 늘어난 기록을 syncPlay로 옮기고, 줄어드는 오래된 기록은 무시되는지 본다. 기록은 인생에 영향이 없다(아래 기준 실행과 같은 인생).
+      if (step % 13 === 5 && session.game.phase === 'life' && session.game.play !== undefined) {
+        const cur = session.game.play;
+        const synced = reduceIgnoringNotes(session, { type: 'syncPlay', seed: session.game.seed, play: { ...cur, hold: cur.hold + 1000 + step, decide: cur.decide + 500 } });
+        if (synced === session || synced.game.play === undefined || synced.game.play.hold <= cur.hold) problems.push(`${tag} 걸음 ${step}: 플레이 시간 기록이 판 상태로 옮겨지지 않았다`);
+        else {
+          session = synced;
+          if (reduceIgnoringNotes(session, { type: 'syncPlay', seed: session.game.seed, play: cur }) !== session) problems.push(`${tag} 걸음 ${step}: 줄어드는 플레이 시간 기록이 무시되지 않았다`);
+          if (reduceIgnoringNotes(session, { type: 'syncPlay', seed: session.game.seed + 1, play: { ...cur, hold: cur.hold + 99_000 } }) !== session) problems.push(`${tag} 걸음 ${step}: 다른 판의 플레이 시간 기록이 무시되지 않았다`);
+        }
+      }
       const g = session.game;
       let action: SessionAction;
       let kind: 'single' | 'skip' = 'single';
@@ -743,10 +756,13 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
 
     // 6. 기준 실행과 같은 결과: 세션 reducer 경로 = playToEnd 경로 (같은 시드·같은 선택)
     const reference = playToEnd(startLife(seed, era, { lifeLength }), auto ? null : chooserFor('random', seed));
-    if (!deepEqual(reference.state, ended)) problems.push(`${tag}: 세션 reducer로 간 인생이 playToEnd로 간 인생과 다르다`);
+    // 플레이 시간 기록(play)은 타이머가 쌓는 UI 쪽 값이라 인생 비교에서 뺀다 — 위에서 syncPlay로 옮긴 값이 들어 있다. 인생(스탯·자산·연표·플래그·난수)은 같아야 한다.
+    if (!deepEqual({ ...reference.state, play: undefined }, { ...ended, play: undefined })) problems.push(`${tag}: 세션 reducer로 간 인생이 playToEnd로 간 인생과 다르다`);
+    if (ended.play === undefined) problems.push(`${tag}: 엔딩에 플레이 시간 기록이 없다`);
+    else if (step > 6 && ended.play.hold <= 0) problems.push(`${tag}: 옮긴 플레이 시간 기록이 엔딩까지 이어지지 않았다`);
     result.choices = reference.counts.choice;
-    result.minutes1x = estimatePlaySeconds(reference.counts, { speed: 1, skipToDecision: false }, READ_SEC.median) / 60;
-    result.minutesFast = estimatePlaySeconds(reference.counts, { speed: 8, skipToDecision: true }, READ_SEC.median) / 60;
+    result.minutes1x = estimatePlaySeconds(reference.counts, { speed: 1, skipToDecision: false }, lifeLength, era, 'median') / 60;
+    result.minutesFast = estimatePlaySeconds(reference.counts, { speed: 8, skipToDecision: true }, lifeLength, era, 'median') / 60;
     problems.push(...checkStats(ended.stats, `${tag} 최종 스탯`));
 
     // 7. 엔딩 회고 + 엔딩 저장 복원
@@ -827,6 +843,8 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
 export interface CellReport {
   era: Era;
   strategy: PipelineStrategy;
+  /** 모드 축으로 돈 칸이면 그 모드, 시드 짝홀로 섞어 돈 칸이면 null */
+  lifeLength: LifeLength | null;
   lives: number;
   /** 불변식 위반이 하나라도 있는 판 수 */
   failedLives: number;
@@ -855,6 +873,8 @@ export interface PipelineParams {
   strategies?: readonly PipelineStrategy[];
   /** 이 간격의 판(i % every === 0)은 매 걸음 저장→복원 (0이면 없음) */
   stepSerializeEvery?: number;
+  /** 모든 판의 인생 길이(모드 축). 없으면 시드 짝홀로 섞는다. */
+  lifeLength?: LifeLength;
   /** 판마다 호출 (진행 표시용) */
   onLife?: (life: PipelineLife) => void;
 }
@@ -863,7 +883,7 @@ export function runPipelineCell(era: Era, strategy: PipelineStrategy, params: Pi
   const every = params.stepSerializeEvery ?? 0;
   const lives: PipelineLife[] = [];
   for (let i = 1; i <= params.lives; i++) {
-    const life = runPipelineLife({ seed: pipelineSeed(i, era, strategy), era, strategy, stepSerialize: every > 0 && i % every === 0 });
+    const life = runPipelineLife({ seed: pipelineSeed(i, era, strategy, params.lifeLength), era, strategy, stepSerialize: every > 0 && i % every === 0, lifeLength: params.lifeLength });
     lives.push(life);
     params.onLife?.(life);
   }
@@ -882,6 +902,7 @@ export function runPipelineCell(era: Era, strategy: PipelineStrategy, params: Pi
   return {
     era,
     strategy,
+    lifeLength: params.lifeLength ?? null,
     lives: lives.length,
     failedLives: lives.filter((l) => l.problems.length > 0).length,
     exceptions: lives.filter((l) => l.threw).length,

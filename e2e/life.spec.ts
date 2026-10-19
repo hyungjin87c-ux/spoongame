@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameState } from '../src/core/types';
-import { HOLD_MS } from '../src/data/timingTable';
+import { holdMsFor } from '../src/core/timing';
 import {
   KNOWN_SEED,
   evalCore,
@@ -298,7 +298,8 @@ test('배속 설정이 실제 진행 간격을 바꾼다: 1배속의 한 해는 
   await page.goto('/');
   const start = await quietStartOf(page, 7);
 
-  // 페이지 안에서 나이가 바뀔 때마다 시각을 기록한다(렌더 직후, 첫 렌더 포함). 시간 배율 4: 조용한 한 해가 1배속 HOLD_MS.quiet/4, 8배속 HOLD_MS.quiet/8/4.
+  // 페이지 안에서 나이가 바뀔 때마다 시각을 기록한다(렌더 직후, 첫 렌더 포함). 시간 배율 4: 조용한 한 해가 1배속 quietMs/4, 8배속 quietMs/8/4 — quietMs는 HOLD_MS.quiet에 이 판의 인생 길이 모드 계수를 곱한 값이다(M8: holdMsFor).
+  const quietMs = holdMsFor('quiet', { mode: start.lifeLength }) as number;
   // 고정 대기로 "N초 뒤 나이"를 보지 않고 연속한 두 나이 변화 사이의 간격을 잰다 → 부하로 전체가 늦어져도 흔들리지 않는다.
   await page.addInitScript(() => {
     const w = window as unknown as { __ages: { age: number; t: number }[] };
@@ -326,8 +327,8 @@ test('배속 설정이 실제 진행 간격을 바꾼다: 1배속의 한 해는 
   // 매번 정확히 한 해씩 (StrictMode 이중 효과·겹친 타이머가 한 해를 두 번 진행하면 나이가 2 이상 건너뛴다)
   for (const m of [slow, fast]) m.ages.forEach((age, i) => expect(age, `${m.ages}`).toBe(m.ages[0] + i));
   // 타이머는 설정한 시간보다 일찍 울리지 않는다 → 아래 하한은 부하와 무관하게 안전하다
-  expect(Math.min(...slow.gaps), `1배속 간격 ${slow.gaps}`).toBeGreaterThanOrEqual((HOLD_MS.quiet / 4) * 0.9); // HOLD_MS.quiet / 1배 / 시간 배율 4
-  expect(Math.min(...fast.gaps), `8배속 간격 ${fast.gaps}`).toBeGreaterThanOrEqual((HOLD_MS.quiet / 8 / 4) * 0.8); // HOLD_MS.quiet / 8배 / 시간 배율 4
+  expect(Math.min(...slow.gaps), `1배속 간격 ${slow.gaps}`).toBeGreaterThanOrEqual((quietMs / 4) * 0.9); // quietMs / 1배 / 시간 배율 4
+  expect(Math.min(...fast.gaps), `8배속 간격 ${fast.gaps}`).toBeGreaterThanOrEqual((quietMs / 8 / 4) * 0.8); // quietMs / 8배 / 시간 배율 4
   // 8배속이 눈에 띄게 빠르다 (이상적으로 8배, 부하로 늦어져도 2배 넘게는 차이가 난다)
   expect(median(fast.gaps) * 2, `1배속 ${slow.gaps} / 8배속 ${fast.gaps}`).toBeLessThan(median(slow.gaps));
 });

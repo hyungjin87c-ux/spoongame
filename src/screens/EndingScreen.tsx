@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { COMPARABLE_STATS, looksStanding, reviewEnding, standingScore, type EndingGame, type EndingReview, type HistoryEntry, type StatKey } from '../core';
+import { COMPARABLE_STATS, displaySeconds, isCleanRun, looksStanding, reviewEnding, standingScore, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
 import { ERA_CONFIG } from '../data/birthTable';
 import { BIRTH_TEXT } from '../data/birthReportText';
 import { standingLabel } from '../data/birthText';
@@ -10,9 +10,11 @@ import {
   JOURNEY_NOTE,
   JOURNEY_BAR_LEGEND,
   MOVEMENT_TEXT,
+  PLAYTIME_TEXT,
   REBIRTH_LABEL,
   REBIRTH_NOTE,
   bandLabel,
+  breakdownParts,
   choiceCountText,
   deathLineText,
   endingSpanText,
@@ -29,6 +31,7 @@ import { GuardedButton } from '../ui/GuardedButton';
 import { FinalNetLine } from '../ui/dash/FinalNet';
 import { NoteBody } from '../ui/dash/NoteText';
 import { KeepStanding } from '../ui/KeepStanding';
+import { PlayTime } from '../ui/PlayTime';
 import { useFocusOnChange } from '../ui/useFocus';
 import { useScrollTopOnMount, useThemeSurface } from '../ui/useBottomBar';
 
@@ -65,6 +68,34 @@ function FinalMeter({ stat, label, value, tone, icon, started }: { stat: StatKey
           {startedAtText(started)}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 이 판의 플레이 시간 블록 (SPEC-003 LM6, M8 — docs/design/copy.md 8절, diff-003.md D-93~D-95): 「사망과 선택」 카드의 세 번째 요소. 값 = 연출 + 결정 읽기를 **버킷별로 초를 버린 뒤 더한 값**(core/playClock.ts#displaySeconds)이라
+ * 보조 문장의 분해 두 값(세월이 흐른 시간·결정을 읽고 고른 시간)을 더하면 늘 이 값이다. 보조 문장은 분해 → 제외 범위 → [배속·자동 모드·「다음 결정으로」를 쓴 판에만] → 이 기기에만.
+ * 이어하기 횟수(resumes)·일시정지 횟수는 그리지 않는다(누적만 — 마스터 승인). 이 컴포넌트는 play가 있는 판에서만 부른다(M8 이전 저장은 블록 자체가 없다).
+ */
+function PlayTimeBlock({ play }: { play: PlayRecord }) {
+  const [lead, mid, tail] = breakdownParts();
+  return (
+    <div className="playtime" data-testid="ending-playtime">
+      <dl className="playtime__row">
+        <dt>{PLAYTIME_TEXT.label}</dt>
+        <dd>
+          <PlayTime seconds={displaySeconds(play)} className="playtime__value" testId="ending-playtime-value" />
+        </dd>
+      </dl>
+      <p className="t-xs t-faint playtime__note" data-testid="ending-playtime-note">
+        {/* 글자 조각마다 Glue (D-98): 관형사 「그」「이」가 줄 끝에 홀로 남지 않게 — 글자·낭독은 그대로, 공백 조각은 그대로 둔다 */}
+        <Glue text={lead} />
+        <PlayTime seconds={Math.floor(play.hold / 1000)} testId="ending-playtime-hold" />
+        <Glue text={mid} />
+        <PlayTime seconds={Math.floor(play.decide / 1000)} testId="ending-playtime-decide" />
+        <Glue text={tail} /> <Glue text={PLAYTIME_TEXT.excluded} /> {isCleanRun(play) ? null : <><Glue text={PLAYTIME_TEXT.notClean} /> </>}
+        <Glue text={PLAYTIME_TEXT.device} />
+      </p>
     </div>
   );
 }
@@ -138,6 +169,8 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
           <p className="t-muted" data-testid="ending-choices">
             {choiceCountText(review.choiceCount)}
           </p>
+          {/* 플레이 시간(M8 LM6): 시간 기록이 있는 판에만 — M8 이전 저장은 블록이 없다 */}
+          {game.play !== undefined ? <PlayTimeBlock play={game.play} /> : null}
         </section>
 
         <section className="card" aria-labelledby="ending-journey-title" data-testid="ending-journey-section">
@@ -239,7 +272,9 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
           <GuardedButton className="btn btn--primary btn--lg" guardKey={ENDING_GUARD_KEY} data-testid="rebirth" onClick={onRebirth}>
             {REBIRTH_LABEL}
           </GuardedButton>
-          <p className="t-sm t-muted">{REBIRTH_NOTE}</p>
+          <p className="t-sm t-muted">
+            <Glue text={REBIRTH_NOTE} />
+          </p>
         </section>
       </main>
     </div>
