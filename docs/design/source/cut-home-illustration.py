@@ -1,6 +1,7 @@
 """SPEC-005 QI2 첫 화면 일러스트 다듬기 (designer, 2026-10-20) — 로컬 PIL/numpy/scipy만 쓴다. 외부 서비스·업로드 없음.
 실행(저장소 뿌리에서): python docs/design/source/cut-home-illustration.py docs/design/source/home-illustration-source-2026-10-20.webp <점검 그림 폴더> src/assets/home
-출력: src/assets/home/home-map-pc.webp(545×640, q66) · home-map-mobile.webp(341×400, q74) — 알파 WebP, 합계 ≤ 100KB. 점검 폴더에는 overlay/preview-light/preview-dark/cut-full.png
+출력: src/assets/home/home-map-pc.webp(613×720, q58) · home-map-mobile.webp(375×440, q66) — 알파 WebP, 합계 ≤ 100KB. 점검 폴더에는 overlay/preview-light/preview-dark/cut-full.png
+      (r3 2026-10-20: 첫 화면 그림을 1.4배로 키우면서 해상도도 올렸다 — r2는 545×640 q66 · 341×400 q74 = 88.3KB. 화면에서 opacity .8·채도·대비 낮춤·0.5px 블러를 거치므로 품질 단계를 낮춰도 티가 안 난다)
 원본: docs/design/source/home-illustration-source-2026-10-20.webp (1536×1024)
 단계: ① 손으로 적은 넉넉한 다각형 + 제외 상자(배·돛단배·스카이라인) — 지도 바깥의 글·통계 패널·인물·팻말을 배제
       ② 색 분류: 하늘(파랑) / 흰색 / 색 있는 내용. 지도 윤곽의 흰 테두리(halo)는 '얇은 흰색'(5px 안에 다른 색이 있는 흰색)으로 살린다
@@ -137,7 +138,7 @@ for name, bg in (("light", (0xF6, 0xF3, 0xEC)), ("dark", (0x14, 0x17, 0x1F))):
 if ASSET_DIR:
     os.makedirs(ASSET_DIR, exist_ok=True)
     report = {}
-    for fname, hgt, q in (("home-map-pc.webp", 640, 66), ("home-map-mobile.webp", 400, 74)):
+    for fname, hgt, q in (("home-map-pc.webp", 720, 58), ("home-map-mobile.webp", 440, 66)):
         sc = hgt / crop.size[1]
         w = round(crop.size[0] * sc)
         r = crop.resize((w, hgt), Image.LANCZOS)

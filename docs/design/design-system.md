@@ -323,13 +323,22 @@ CSS는 `docs/design/mockups/title-005.css`(ds.css 위에 얹는 별도 파일 �
 ### 12-4. 자동 넘김
 - 9초(마스터 결정 M8 일부 — 표제어·공식 통계명·값·정의 약 70자를 느린 독자(500자/분)가 읽는 8.4초 + 여유). 19장 한 바퀴 171초. 멈춤 규칙(포인터·포커스·탭 가림·움직임 줄이기)·`aria-live` 규칙은 SC5 그대로.
 
-### 12-5. 첫 화면 일러스트 (형진 님 결정 2026-10-20 — 12-1의 픽토그램 A/B 대신, `title-005.html?hero=illust`)
+### 12-5. 첫 화면 일러스트 (형진 님 결정 2026-10-20 — 12-1의 픽토그램 A/B 대신, `title-005.html?hero=illust`; **r3 2026-10-20 형진 님 「조금 더 키우고, 약간 흐리게」** — 크기 1.4배·흐림 2단계, 샷 `screens/005/illust-r3-*.png`·`compare-illust-soft.png`)
 - **무엇**: 형진 님이 준 그림(`docs/design/source/home-illustration-source-2026-10-20.webp`, 1536×1024)에서 **한반도 모양의 삶 장면 일러스트만** 잘라 쓴다. 원본의 손글씨 제목·문구·팻말·가짜 통계 패널·앞쪽 인물·노트북·컵·배(돛단배·여객선)·스카이라인은 쓰지 않는다(게임의 통계는 실제 자료로 HTML이 그린다, 그림 속 글은 읽기 도구가 못 읽는다). 그림 안에 글자 0.
 - **원본 대비 처리 내역**(`docs/design/source/cut-home-illustration.py`, 로컬 PIL·numpy·scipy만 — 외부 생성 서비스·업로드 없음): ① 넉넉한 다각형 + 제외 상자로 지도 바깥을 배제 ② 색 분류(하늘 파랑 H 185~245° / 흰색 S<0.14·V>0.86 / 색 있는 내용)로 `core` = 색 있는 내용 ∪ **얇은 흰색**(5px 안에 다른 색이 있는 흰색 = 지도의 흰 테두리) ③ 둘러싸인 구멍(타일 안 하늘·바다) 채움, 350px 미만 조각 제거, 북쪽 두 타일 꼭대기·제주 꼭대기는 손으로 따라 그린 「믿는 구역」으로 보존 ④ 바깥 10px 띠(믿는 구역은 6px)에서 파랑 하늘 픽셀을 알파로 빼고, 섬(< 6000px)은 하늘·물결 자락 제거, 경계 14px 안의 구름 자락(색 있는 내용에서 10px 넘게 떨어진 흰색) 제거, 가우시안 페더 σ 1.4, 가장자리 RGB를 안쪽 색으로 당겨 파란 번짐 방지 ⑤ 채도 0.92, R +1.2% · B −1.8%(한지색 바탕과 맞춤), 바깥 광 σ 9 · 최대 22% 크림색(#fbf6ea) ⑥ 경계 상자 + 6px로 자르기(원본 365,12 ~ 1125,904 → 760×892) → 알파 WebP.
-- **자산** `src/assets/home/`: `home-map-pc.webp` 545×640 q66(57.5 KB) · `home-map-mobile.webp` 341×400 q74(30.8 KB), 알파 품질 70, 합계 88.3 KB(예산 ≤ 100 KB▲). 테마별 파일 없음 — 알파가 바탕색(라이트 `--c-bg` 한지색 / 다크 남색)에 녹는다. 다시 만들 때 같은 스크립트·같은 값.
-- **배치**: 넓은 화면(≥ 960px) `figure.illust--top` = 오른쪽 열 맨 위, 가운데 정렬, 높이 300px(1280×800 → 카드 위 332, 표제어·값 스크롤 0 — HS3 ④) / ≥ 1600px 400px. 좁은 화면(< 960px) `figure.illust--banner` = 로고 줄 아래 배너 200px(지도 폭 ≈ 171px), 가운데. 머리 아래 글은 왼쪽 정렬 그대로. `.picto`는 숨긴다.
-- **마크업 규칙**: `figure[aria-hidden] > picture > source[media="(min-width: 960px)"][srcset=pc] + img[src=mobile][width=341][height=400][alt=""][decoding=async]`. 장식(alt 빈 값) — 이름은 로고가 말한다(HS1 ①). 배너·오른쪽 열의 두 `<picture>`는 같은 뷰포트에서 같은 파일을 고르므로 내려받기 한 번. `width`·`height` 속성 + CSS `height: var(--illust-h); width: auto`로 그림이 오기 전에도 자리가 잡힌다(레이아웃 이동 0). 클릭·선택 없음, 외부 요청 0.
-- **다크**: 같은 파일 + `filter: brightness(0.86) saturate(0.9)`(두 다크 선택자, 3절 테마 규칙). 강제 색상: `filter: none`(래스터 그림은 그대로 보인다).
+- **자산** `src/assets/home/`: `home-map-pc.webp` 613×720 q58(63.6 KB) · `home-map-mobile.webp` 375×440 q66(32.7 KB), 알파 품질 70, 합계 **96.3 KB**(예산 ≤ 100 KB▲; r2 545×640·341×400 = 88.3 KB — r3에서 그림을 1.4배 키우며 해상도를 올렸고, 화면에서 흐림 처리를 거치므로 품질 단계를 낮췄다). 테마별 파일 없음, **흐림도 파일에 굽지 않는다**(CSS가 맡는다 — 자산은 한 벌). 알파가 바탕색(라이트 `--c-bg` 한지색 / 다크 남색)에 녹는다. 다시 만들 때 같은 스크립트·같은 값(`cut-home-illustration.py`의 크기 표).
+- **배치**: 넓은 화면(≥ 960px) `figure.illust--top` = 오른쪽 열 맨 위, 가운데 정렬, 높이 **420px**(r2 300; 1280×800 → 카드 위 412, 표제어 아래 488·값 아래 558·그래프 위 564 < 띠 732 — HS3 ④) / ≥ 1600px **500px**(r2 400 — 오른쪽 열 폭 428px에 비율 0.851로 들어가는 최대. 560이면 `max-width`가 폭을 눌러 세로로 찌그러진다; `object-fit: contain`이 안전장치). **그림 아래 `--illust-tuck`(32px, ≥ 1600 36px)은 통계 카드 뒤로 들어간다** — `.illust--top { margin-bottom: calc(-1 * var(--illust-tuck)) }` + `.carousel--005 { position: relative; z-index: 1 }`(filter·opacity가 있는 img는 자체 스태킹 컨텍스트라 카드를 띄워야 그림이 뒤로 간다). 카드가 그림 위에 얹힌 꼴로 제주 타일 아래쪽만 살짝 가려지고 본토 윤곽은 그대로. 좁은 화면(< 960px) `figure.illust--banner` = 로고 줄 아래 배너 **224px**(r2 200; 지도 폭 191px; 360×740에서 「태어날 세상」 제목 636~661 < 띠 672 — 232면 띠에 닿는다), 가운데. 머리 아래 글은 왼쪽 정렬 그대로. `.picto`는 숨긴다.
+- **마크업 규칙**: `figure[aria-hidden] > picture > source[media="(min-width: 960px)"][srcset=pc] + img[src=mobile][width=375][height=440][alt=""][decoding=async]`. 장식(alt 빈 값) — 이름은 로고가 말한다(HS1 ①). 배너·오른쪽 열의 두 `<picture>`는 같은 뷰포트에서 같은 파일을 고르므로 내려받기 한 번. `width`·`height` 속성 + CSS `height: var(--illust-h); width: auto; object-fit: contain`으로 그림이 오기 전에도 자리가 잡힌다(레이아웃 이동 0, 폭에 걸려도 찌그러지지 않음). 클릭·선택 없음, 외부 요청 0.
+- **흐림(r3 「약간 흐리게」)**: `.illust img { opacity: var(--illust-opacity); filter: var(--illust-filter) }` — 첫 화면 지역 변수(`title.css` 「일러스트」 블록, `tokens.css`에 넣지 않음). 글·통계를 방해하지 않게 **투명도·채도·대비를 낮추는 것이 기본**, 블러는 디테일이 뭉개지지 않는 0.5~1px만. 세 단계를 만들어 비교(`screens/005/compare-illust-soft.png`, 시안 `?soft=0|1|2|3`)하고 **2단계를 기본**으로 한다.
+
+| 단계 | 라이트 (`opacity` / `filter`) | 다크 | 판단 |
+|---|---|---|---|
+| 1 「연하게」 | 0.85 / `saturate(.9) contrast(.95)` | 0.86 / `brightness(.92) saturate(.85) contrast(.95)` | 투명도만 — r2와 거의 같아 보인다 |
+| **2 「부드럽게」(기본)** | **0.8 / `saturate(.85) contrast(.92) blur(.5px)`** | **0.8 / `brightness(.9) saturate(.78) contrast(.92) blur(.5px)`** | 추천 — 글·통계보다 한 걸음 뒤로 물러나되 인물·건물이 읽힌다 |
+| 3 「더 흐리게」 | 0.72 / `saturate(.78) contrast(.88) blur(1px)` | 0.74 / `brightness(.9) saturate(.7) contrast(.88) blur(1px)` | 1px 블러에서 인물 디테일이 뭉개진다 — 쓰지 않음 |
+
+  라이트는 한지색 바탕이 비쳐 밝아지고 다크는 남색 바탕이 비쳐 어두워진다 — 다크는 투명도만으로는 「흐려」 보이지 않아 brightness를 함께 내렸다(실효 밝기 r2 0.86L → 약 0.72L). 그림 위에 글·UI가 없으므로 대비(AA)에 영향 없음. 강제 색상 `opacity: 1; filter: none`.
+- **다크**: 같은 파일 + 위 표의 다크 2단계 값(두 다크 선택자, 3절 테마 규칙 — r2의 `brightness(0.86) saturate(0.9)` 대체). 강제 색상: `filter: none; opacity: 1`(래스터 그림은 그대로 보인다).
 - **쓰지 않는 것**: 그림 위 글자·겹친 UI, 그림을 배경(`background-image`)으로 깔기(텍스트 대비를 해친다), 지역 선택(SPEC-004 — 그림은 지도 기능이 아니다), 테마별 두 벌 파일, 분단선·경계 그리기.
 
 ### 12-6. 통계 카드 색 맞춤 (그림과 어울리게 — 형진 님 「일러스트와 통계 그래프는 웹페이지 배경과 어울리도록」)

@@ -136,27 +136,45 @@ html[data-state='saved'] .bottom-bar__saved { display: flex; }
   .picto--top { --picto-h: 200px; }
 }
 
-/* ---------- 일러스트(hero=illust — 형진 님 결정 2026-10-20 「픽토그램 대신 내 그림」): 픽토그램 자리에 다듬은 한반도 일러스트 ----------
-   파일: src/assets/home/home-map-pc.webp(545×640, 57.5KB) · home-map-mobile.webp(341×400, 30.8KB) — 알파 WebP 한 벌로 라이트·다크 모두(가장자리의 흰 테두리 + 22% 크림색 광이 바탕색에 녹는다. 테마별 파일 없음).
-   <picture>의 source media로 ≥ 960px은 PC 파일, 그 아래는 모바일 파일 — 배너(<960)와 오른쪽 열(≥960)의 두 <picture>가 같은 주소를 고르므로 내려받기는 한 번(≤ 57.5KB).
+/* ---------- 일러스트(hero=illust — 형진 님 결정 2026-10-20 「픽토그램 대신 내 그림」 → r3 「조금 더 키우고, 약간 흐리게」): 오른쪽 열 맨 위 / 좁은 화면 로고 줄 아래 배너 ----------
+   파일: src/assets/home/home-map-pc.webp(613×720, 63.6KB q58) · home-map-mobile.webp(375×440, 32.7KB q66) — 알파 WebP 한 벌로 라이트·다크 모두(가장자리의 흰 테두리 + 22% 크림색 광이 바탕색에 녹는다), 합계 96.3KB ≤ 100KB.
+   흐림은 자산이 아니라 CSS(opacity·filter)가 맡는다 — 자산은 한 벌. r2(545×640 q66 · 341×400 q74 = 88.3KB)보다 해상도를 올린 것은 그림이 1.4배 커져서다(1920에서 500px 표시 ← 720px 1.44배, 1280 420px ← 1.7배 여유, 360 224px ← 1.96배).
+   <picture>의 source media로 ≥ 960px은 PC 파일, 그 아래는 모바일 파일 — 배너(<960)와 오른쪽 열(≥960)의 두 <picture>가 같은 주소를 고르므로 내려받기는 한 번(≤ 63.6KB).
    width·height 속성 + height 고정·width auto → 그림이 오기 전에도 자리가 잡혀 레이아웃이 흔들리지 않는다. 장식(alt="" · figure aria-hidden), 클릭 없음, 외부 요청 0.
-   높이: 좁은 화면 배너 200px(지도 폭 ≈ 170px), 1280×800 오른쪽 열 300px(≈ 255px) — 카드 위끝 y ≈ 372, 표제어·값은 스크롤 0에서 보임(HS3 ④), 1600px 이상 400px(≈ 340px). */
+   크기(r3 = r2 × 1.4 / 배너 × 1.12): 배너 224px(r2 200 — 232면 360×740에서 「태어날 세상」 제목 아래끝 669가 띠 672에 닿는다, 224는 661) · 1280×800 오른쪽 열 420px(r2 300) · ≥ 1600px 500px(r2 400 — 오른쪽 열 폭 428px에 그림 비율 0.851로 들어가는 최대. 560이면 max-width가 폭을 428로 눌러 그림이 세로로 찌그러진다. object-fit: contain은 그 안전장치).
+   넓은 화면은 그림 아래 --illust-tuck(32px, ≥1600 36px)만큼 통계 카드 뒤로 들어간다 — 카드가 그림 위에 얹힌 꼴. 제주 타일 아래쪽만 살짝 가려지고 본토 윤곽(남해안 y≈92%)은 그대로다.
+   카드에 position: relative + z-index: 1 — filter·opacity가 있는 img는 자체 스태킹 컨텍스트라 뒤에 오는 형제의 배경보다 위에 그려지므로 카드를 띄워야 그림이 카드 뒤로 간다.
+   그림 위에 글·UI는 없다(대비 무관). 흐림 단계는 아래 「흐림 단계」 블록(soft=1|2|3, 기본 2 = 추천). */
 .illust { display: none; margin: 0; }
-.illust img { display: block; height: var(--illust-h, 200px); width: auto; max-width: 100%; }
+.illust img { display: block; height: var(--illust-h, 224px); width: auto; max-width: 100%; object-fit: contain; opacity: var(--illust-opacity, 1); filter: var(--illust-filter, none); }
 html[data-hero='illust'] .picto { display: none; }
-html[data-hero='illust'] .illust--banner { display: flex; justify-content: center; --illust-h: 200px; }
+html[data-hero='illust'] .illust--banner { display: flex; justify-content: center; --illust-h: 224px; }
 @media (min-width: 960px) {
   html[data-hero='illust'] .illust--banner { display: none; }
-  html[data-hero='illust'] .illust--top { display: flex; justify-content: center; --illust-h: 300px; padding-bottom: var(--sp-2); }
+  html[data-hero='illust'] .illust--top { display: flex; justify-content: center; --illust-h: 420px; --illust-tuck: 32px; margin-bottom: calc(-1 * var(--illust-tuck)); }
+  html[data-hero='illust'] .carousel--005 { position: relative; z-index: 1; }
 }
 @media (min-width: 1600px) {
-  html[data-hero='illust'] .illust--top { --illust-h: 400px; }
+  html[data-hero='illust'] .illust--top { --illust-h: 500px; --illust-tuck: 36px; }
 }
-/* 다크: 그림 자체는 같은 파일, 밝기·채도만 낮춰 어두운 바탕에서 눈부시지 않게(흰 테두리가 옅은 빛 테두리가 된다) */
+/* 흐림 단계(형진 님 「약간 흐리게」 — 글·통계를 방해하지 않게 연하고 부드럽게). 투명도·채도·대비를 낮추는 것이 기본이고, 블러는 그림 디테일이 뭉개지지 않는 0.5~1px만.
+   1 「연하게」 = 투명도만 · 2 「부드럽게」(추천·기본) = 투명도 + 아주 약한 블러 · 3 「더 흐리게」 = 배경에 가깝게. 비교: screens/005/compare-illust-soft.png.
+   라이트는 한지색 바탕이 비쳐 밝아지고, 다크는 남색 바탕이 비쳐 어두워진다 — 다크는 투명도와 brightness를 함께 써서 실효 밝기를 r2(0.86L)에서 2단계 약 0.72L로 내린다(어두운 바탕 위의 밝은 그림은 투명도만으로는 「흐려」 보이지 않았다 — 비교 그림 1차). */
+/* soft=0 = 흐림 없음(r2 그대로, 비교 기준만 — 구현 대상 아님) */
+html[data-soft='0'] { --illust-opacity: 1; --illust-filter: none; }
+@media (prefers-color-scheme: dark) { html[data-soft='0']:not([data-theme='light']) { --illust-filter: brightness(0.86) saturate(0.9); } }
+html[data-soft='0'][data-theme='dark'] { --illust-filter: brightness(0.86) saturate(0.9); }
+html[data-soft='1'] { --illust-opacity: 0.85; --illust-filter: saturate(0.9) contrast(0.95); }
+html[data-soft='2'] { --illust-opacity: 0.8; --illust-filter: saturate(0.85) contrast(0.92) blur(0.5px); }
+html[data-soft='3'] { --illust-opacity: 0.72; --illust-filter: saturate(0.78) contrast(0.88) blur(1px); }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .illust img { filter: brightness(0.86) saturate(0.9); }
+  html[data-soft='1']:not([data-theme='light']) { --illust-opacity: 0.86; --illust-filter: brightness(0.92) saturate(0.85) contrast(0.95); }
+  html[data-soft='2']:not([data-theme='light']) { --illust-opacity: 0.8; --illust-filter: brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px); }
+  html[data-soft='3']:not([data-theme='light']) { --illust-opacity: 0.74; --illust-filter: brightness(0.9) saturate(0.7) contrast(0.88) blur(1px); }
 }
-:root[data-theme='dark'] .illust img { filter: brightness(0.86) saturate(0.9); }
+html[data-soft='1'][data-theme='dark'] { --illust-opacity: 0.86; --illust-filter: brightness(0.92) saturate(0.85) contrast(0.95); }
+html[data-soft='2'][data-theme='dark'] { --illust-opacity: 0.8; --illust-filter: brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px); }
+html[data-soft='3'][data-theme='dark'] { --illust-opacity: 0.74; --illust-filter: brightness(0.9) saturate(0.7) contrast(0.88) blur(1px); }
 /* 통계 카드·차트를 그림의 하늘·연두·살구 톤에 맞춘다(형진 님 「통계 그래프는 웹페이지 배경과 어울리도록」): 카드 위쪽 88px 옅은 하늘 띠, 차가운 회색 테두리, 푸른빛 그림자,
    실측 선·점·막대·범례는 카드 안에서만 --c-brand를 --c-chart(쪽빛보다 밝은 하늘 남색)로 바꾼다. 전망(놋쇠 긴 점선 10 5·빗금)·보조 계열(점선)·칩은 그대로 — 실측 실선 / 전망 점선 구분 유지.
    대비(2026-10-20 계산, WCAG 상대 휘도): 라이트 선 #2f5f8f / 면 #fffdf8 6.55:1 · 띠 #eef4f9 6.01:1, 다크 #9fc4ea / 면 #1c212c 8.87:1 · 띠 #1f2735 8.26:1(비텍스트 ≥ 3:1), 띠 위 공식 통계명 --c-text-3 5.30 / 5.54:1(≥ 4.5), 조작 상자 테두리 --c-border-strong / 띠 3.68 / 3.99:1(≥ 3), 전망 칩 놋쇠 / 띠 4.56 / 7.90:1.
@@ -168,17 +186,12 @@ html[data-hero='illust'] { --c-chart: #2f5f8f; --c-card-tint: #eef4f9; --c-card-
 }
 html[data-hero='illust'][data-theme='dark'] { --c-chart: #9fc4ea; --c-card-tint: #1f2735; --c-card-border: #343d4e; --shadow-card: none; }
 html[data-hero='illust'] .carousel--005 { --c-brand: var(--c-chart); border-color: var(--c-card-border); box-shadow: var(--shadow-card); background: linear-gradient(180deg, var(--c-card-tint) 0, var(--c-surface) 88px); }
-/* 부제 후보(tag=alt): 원본 그림의 문구 「다른 세대, 다른 삶 / 같은 대한민국」을 부제 자리에 넣어 본 상태 — 형진 님 확인 뒤 채택(SPEC-005 「형진 님 결정 — 첫 화면 그림」 ④). 기본은 지금 부제 */
-.hero__tag-alt { display: none; }
-html[data-tag='alt'] .hero__tag-cur { display: none; }
-html[data-tag='alt'] .hero__tag-alt { display: inline; }
-.hero__tag-alt .mock-tag--inline { margin-left: var(--sp-2); vertical-align: middle; }
 
 /* ---------- 강제 색상: 모양으로 구분(이중 테두리·점선·빗금·체크), 시스템 색 한 짝 ---------- */
 @media (forced-colors: active) {
   html[data-hero='illust'] { --c-chart: ButtonText; --c-card-tint: Canvas; --c-card-border: CanvasText; --shadow-card: none; }
   html[data-hero='illust'] .carousel--005 { background: Canvas; }
-  .illust img { filter: none; }
+  .illust img { filter: none; opacity: 1; } /* 래스터 장식 그림은 원색·불투명 그대로 */
   .nav-btn, .seg, .switch__track, .chip, .radio-card--action, .radio-card--action .radio-card__mark--square { border-color: CanvasText; }
   .seg__opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
   .seg__opt.is-disabled, .seg__opt.is-disabled .seg__meta { color: GrayText; border-color: GrayText; }
