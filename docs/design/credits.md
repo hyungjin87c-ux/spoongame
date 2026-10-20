@@ -12,6 +12,7 @@
 | 워드마크 「수저 게임」 | `src/assets/brand/wordmark*.svg`, `logo-a.svg`, `brand/a/logo-header*.svg` | **글꼴 파일을 쓰지 않고** 한글 획을 직접 그린 도형(`scripts/design/brandGeometry.mjs`, 획 13/100·둥근 끝) | 직접 제작 — 글꼴 라이선스 문제 없음 |
 | 앱 아이콘·파비콘 | `src/assets/brand/a/app-icon.svg`, `favicon.svg`, `*.png` | 위 심볼을 타일에 올려 직접 제작, PNG는 Playwright 크로미움으로 렌더 | 직접 제작 |
 | 화면 아이콘(일시정지·재생·음악·연필·달·해·말풍선·나가기·화살표·체크·하트·웃음·책·사람·정보 등 18개) | `scripts/design/mockLib.mjs`의 스프라이트 → `src/assets/icons/ui-icons.svg` | 24px 격자에 직접 그린 단순 선 도형. 외부 아이콘 세트(Material·Feather 등)를 쓰지 않았다 | 직접 제작 |
+| 결정자 글리프 2개(부모님의 결정 `i-by-parent` = 집 한 채 · 아이의 일 `i-by-child` = 물결 둘 — SPEC-005 QI5, REV-005-QI5-1 R-455, 2026-10-21) | `src/assets/icons/decider-icons.svg`(손으로 쓴 새 파일, 시안 `docs/design/mockups/qi5/parent-card.html`에 같은 도형 인라인) | 24px 격자에 직접 그린 선 도형 2개(`design-system.md` 13-3). 외부 아이콘 세트를 쓰지 않았고 얼굴·사람 모양이 아니다 | 직접 제작 |
 | 수저 5단계 아이콘 | 같은 스프라이트(`sp-1`~`sp-5` 칩 변형, `sp-1-lg`~`sp-5-lg` 큰 변형) → `src/assets/icons/spoon-grades.svg` | 직접 제작(심볼과 같은 숟가락 실루엣. 큰 변형만 닫힌 채움 표식: 담긴 흙 더미·은 광택·금 하이라이트(둘은 밝은 채움)·다이아 커팅, 동은 표식 없음) | 직접 제작 |
 | 얼굴 그래픽 80조합 | `src/assets/faces/faceLayers.ts` | 직접 제작한 도형을 코드로 조합. 실존 인물을 본뜨지 않았다 | 직접 제작 |
 | 색·간격·글자 크기 토큰 | `src/styles/tokens.css` | 직접 정함 | 직접 제작 |

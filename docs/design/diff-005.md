@@ -171,3 +171,18 @@ SPEC-005 「형진 님 결정 — 첫 화면 그림」 ①~⑤. 1절 D5-01·D5-0
 - 가로 넘침 0 · 콘솔 오류 0 · 외부 요청 0(모든 행). 글자 200%·확인 단계(띠 156px)는 설계 기준 밖 — 열 안쪽 스크롤(R-224)이 맡는다.
 - 샷(`screens/005/`): **`compare-low-1280x620-saved.png`**(적용 전 / 후 나란히 — 이어서 살기 띠, 왼쪽은 값이 띠에 가림, 오른쪽은 표제어·값이 보임) · `low-1280x620.png`(새 판) · `low-1280x620-saved.png` · `low-1280x620-saved-2line.png`(두 줄 표제어 cdr — 값 아래 486 < 열 끝 494) · `low-1366x657-saved.png`. 5장 1.19 MB.
 - 시안의 tfr·cdr·지역 인구 문구는 R-446 확정 문구로 손으로 맞췄다(`copy.md` 9-11 — `title-a.html`·`title-continue.html`은 생성기 재생성(R-445 ①)으로 따라온다).
+
+## 10. REV-005-QI5-1 후속 — 부모·흘러감 카드 시안과 결정자 글리프 (R-452·R-455, designer 2026-10-21)
+
+- 범위: `src/`에는 **새 파일 하나**(`src/assets/icons/decider-icons.svg`)만 더했다 — 기존 `src/` 파일·`tests/`·`e2e/`는 건드리지 않았다(developer가 R-451 등을 고치는 중). 규격은 `design-system.md` **13절**(6절 표에 한 행), 문구는 `copy.md` **11-8**(R-452 부모용 라벨·결과), 출처는 `credits.md`(직접 제작 행 하나).
+- 시안 `mockups/qi5/parent-card.html`(정적, 구현과 같은 DOM·클래스 — 다른 점은 FitPair 대신 고정 글자, 영향 줄 기호 수는 손으로 적은 근사값, 헤더·진행 줄 없음) → `screens/005/qi5-*.png` 20장(`scripts/design/shootParentCard.mjs` — 문서·요소 넘침 점검 ①② 0건, 360×740 DPR 2 · 1280×800 · 320×640 글자 200% · 다크 · 강제 색상). `ds.css` 맨 끝에 「부모·흘러감 카드」 블록(= `dash.css` 241~250·504·529~531행 + `.tl-picked .icon` 정렬 한 줄).
+
+| ID | 구현 ↔ 시안 | 처리 |
+|---|---|---|
+| D5-35 | 아이콘 등록: 구현 `SPRITE_SVG`(`src/ui/brandAssets.ts`)에 `decider-icons.svg`가 없다 | developer — import + 이어 붙이기, 스프라이트 id 단언(13-5) |
+| D5-36 | 칩·기록 줄·엔딩 연표의 글리프가 `i-people`·`i-smile`(상태 아이콘 재사용 — R-455) | developer — `ParentCard.tsx` 69 · `LogList.tsx` 262 · `EndingScreen.tsx` 126을 `i-by-parent`/`i-by-child`로, 한 곳 상수 권장(13-5) |
+| D5-37 | 엔딩 연표 `.tl-picked` 글리프에 정렬 규칙이 없다(아이콘 뒤 공백 없음·기준선에 앉음) — 시안은 기록 줄과 같은 `inline-block; vertical-align: -2px; margin-right: 4px` | developer — `dash.css` 250행 선택자에 `.tl-picked .icon` 추가(13-5) |
+| D5-38 | `ds.css` 「부모·흘러감 카드」 블록 = `dash.css` 같은 글자(설계가 구현을 뒤따라 적음) | 차이 없음 — 블록 대조 시험은 선택 |
+| D5-39 | `school-scholarship` `pass`의 부모용 문구가 데이터에 없다(R-452) | developer — `school.json` 두 필드 + `tests/parentCard.test.tsx` 수 15 → 17·`cases` 한 줄, 문서 수 「2장·7개」 → 「3장·9개」(`copy.md` 11-8 반영 목록) |
+| (관찰) | 구현 캡처(QA ①~⑩)가 아직 없어 시안 ↔ 구현 화면 대조는 못 했다 | developer 반영 뒤 QA 캡처 → designer가 이 절에 차이 추가 |
+| (관찰) | 시안 파일이 하위 폴더 `mockups/qi5/`다 — `tests/designAssets.test.ts` 637~638행 평면 glob의 「화면 시안 수 13」 때문 | 평면으로 옮기려면 제외 목록에 `parent-card`(선택, developer) |

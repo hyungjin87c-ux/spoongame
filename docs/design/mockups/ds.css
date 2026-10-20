@@ -1057,3 +1057,28 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 @media (forced-colors: active) {
   .choice[data-unavailable='true'], .choice[data-unavailable='true'] .choice__no, .choice[data-unavailable='true'] .impact, .choice[data-unavailable='true'] .impact__step { color: GrayText; border-color: GrayText; }
 }
+
+/* ---------- 부모님이 정한 카드 · 아이의 일로 흘러간 카드 (SPEC-005 QI5 PD5 — design-system.md 13절, 2026-10-21 designer: 구현 dash.css 블록을 규격으로 받아 옮기고 결정자 글리프 둘(i-by-parent·i-by-child, src/assets/icons/decider-icons.svg)을 더함) ----------
+   비모달 section.card.decision.decision--parent[.decision--child] — 인라인 결정 카드와 같은 머리·몸(.decision__head → .decision__body)을 쓰되 누를 것이 없다. 테두리는 옅은 구분선 + **왼쪽 5px 놋쇠 막대**(「이미 정해진 일」·「사람이 남긴 것」의 색 — 1절; 결정을 기다리는 카드의 2px 쪽빛과 가른다).
+   머리: 칩 .parent-chip(결정자 글리프 18px 놋쇠 + 글자 굵게 --fs-sm, nowrap) · .decision__when 「{연도}년 · {나이}세」. 몸: 제목 → 상황 → 고른 길 .parent-pick(왼쪽 4px 쪽빛 막대 + 큰 굵은 라벨 --fs-lg + 도장 상자 .parent-pick__stamp — 1.5px --c-text-2 테두리 + 같은 색 굵은 --fs-sm 글자, 알약 아님 r-sm)
+   → 영향 줄(.impact, 카드 면 위 그대로) → 인용 박스(.cite, 있으면) → 안내 한 줄 .parent-hint(판의 첫 부모 카드만, 보조색 --fs-sm). 색 값은 모두 기존 토큰 짝이라 새 대비 쌍이 없다(놋쇠/면 4.97·8.48, 보조/면 8.65·8.78, 쪽빛 막대/면 12.62·9.05). 강제 색상은 아래 블록 */
+.decision--parent { padding: 0; border: 1px solid var(--c-border); border-left: 5px solid var(--c-accent); display: flex; flex-direction: column; gap: 0; }
+.decision--parent .decision__body { padding: var(--sp-4); }
+.parent-chip { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-sm); color: var(--c-text); }
+.parent-chip .icon { width: 18px; height: 18px; color: var(--c-accent); }
+.parent-pick { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-1) 0 var(--sp-1) var(--sp-3); border-left: 4px solid var(--c-brand); }
+.parent-pick__label { font-size: var(--fs-lg); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.parent-pick__stamp { align-self: flex-start; max-width: 100%; padding: 2px var(--sp-3); border: 1.5px solid var(--c-text-2); border-radius: var(--r-sm); color: var(--c-text-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.parent-hint { font-size: var(--fs-sm); color: var(--c-text-2); }
+/* 인생 기록 줄 「(부모님이 이렇게 정했습니다: 라벨)」·엔딩 연표 「부모님이 이렇게 정했습니다: 라벨」의 표지 — 같은 글리프를 icon--xs(14px)로, 글자 앞 4px, 기준선 −2px(글자 가운데에 맞춘다). 엔딩 .tl-picked도 같은 규칙(구현 반영 항목 D5-37) */
+.log__by .icon, .tl-picked .icon { display: inline-block; vertical-align: -2px; margin-right: 4px; }
+@media (max-width: 959px) {
+  /* 한 열에서는 중대 결정 인라인 카드와 같은 자리(맨 위, dash.css와 같은 규칙) */
+  .decision--parent { order: -1; }
+}
+@media (forced-colors: active) {
+  /* 놋쇠 막대·쪽빛 막대·도장 테두리·칩 글리프 모두 CanvasText 한 가지 — 뜻은 글자(칩·도장)와 모양(막대·상자)이 전한다 */
+  .decision--parent, .parent-pick { border-color: CanvasText; }
+  .parent-pick__stamp { border-color: CanvasText; color: CanvasText; }
+  .parent-chip .icon { color: CanvasText; }
+}

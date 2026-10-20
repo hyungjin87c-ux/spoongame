@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수저 게임 · 시안 · 부모님이 정한 카드 · 아이의 일로 흘러간 카드</title>
+<!-- 시안(정적 HTML, 가짜 데이터 — 카드 글은 실제 이벤트 JSON의 문장, 이름·연도·수치는 가짜): 디자인 시스템 토큰·컴포넌트 스타일을 그대로 불러 쓴다(SPEC-005 QI5 · REV-005-QI5-1 R-452·R-455, design-system.md 13절).
+     ?state=parent-first | parent-scholar | child-bully | child-family | rows | glyphs,  &theme=dark 면 다크 테마. 하위 폴더 qi5/에 두는 이유: tests/designAssets.test.ts 637행의 평면 glob이 수저 아이콘 없는 새 장을 「화면 시안 수」에 세기 때문(design-system.md 13-5). 구현(src/ui/dash/ParentCard.tsx·LogList.tsx·screens/EndingScreen.tsx)과 같은 DOM·클래스다 — 다른 점은 FitPair 대신 고정 글자, 영향 줄 기호 수는 손으로 적은 근사값. -->
+<link rel="stylesheet" href="../../../../src/styles/tokens.css">
+<link rel="stylesheet" href="../ds.css">
+<script>(function(){var q=new URLSearchParams(location.search);var t=q.get('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);
+document.addEventListener('DOMContentLoaded',function(){var s=q.get('state')||'parent-first';document.body.setAttribute('data-state',s);var tpl=document.getElementById('state-'+s);var slot=document.getElementById('slot');if(tpl&&slot){slot.innerHTML='';slot.appendChild(tpl.content.cloneNode(true));}
+/* 글리프 시트: 두 새 글리프 + 기존 아이콘 18개를 18px·14px로 — 18px에서 구분되는지 눈으로 본다(R-455) */
+var sheet=document.getElementById('glyph-sheet');if(sheet){var NEW=['i-by-parent','i-by-child'],OLD=['i-people','i-smile','i-heart','i-book','i-check','i-info','i-auto','i-next','i-prev','i-forward','i-play','i-pause','i-music','i-pencil','i-moon','i-sun','i-message','i-exit'];function cell(id,cls){return '<div class="g-cell"><svg class="icon '+(cls||'')+'" aria-hidden="true" focusable="false"><use href="#'+id+'"/></svg><span class="g-lab">'+id+'</span></div>';}
+function row(title,ids,cls){return '<div class="g-row"><h3 class="g-title">'+title+'</h3><div class="g-cells">'+ids.map(function(i){return cell(i,cls);}).join('')+'</div></div>';}
+sheet.innerHTML=row('결정자 글리프 둘 — 72px(4배)',NEW,'g-72')+row('18px(칩·상태 미터 크기) — 새 글리프 둘 + 기존 아이콘 18개',NEW.concat(OLD),'g-18')+row('14px(기록 줄·엔딩 연표 icon--xs)',NEW.concat(OLD),'g-14')+'<p class="g-note">i-by-parent 「집안의 결정」= 지붕·벽·바닥 한 채(얼굴·사람 없음) · i-by-child 「흘러감」= 물결 둘(긴 것 위, 짧은 것 아래). 색은 currentColor(칩 --c-accent, 기록 줄은 글자색), 선 2px·둥근 끝 — ui-icons.svg와 같은 규칙.</p>';}});})();</script>
+<style>
+/* 시안 전용: 글리프 시트 */
+#glyph-sheet { padding: var(--sp-4); background: var(--c-surface); color: var(--c-text); display: flex; flex-direction: column; gap: var(--sp-4); max-width: 920px; }
+.g-title { font-size: var(--fs-sm); color: var(--c-text-2); margin: 0 0 var(--sp-2); font-weight: var(--fw-bold); }
+.g-cells { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-4); align-items: flex-end; }
+.g-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 64px; }
+.g-cell .icon { color: var(--c-accent); }
+.g-cell:nth-child(n+3) .icon { color: var(--c-text); }
+.g-lab { font-size: 11px; color: var(--c-text-3); font-family: ui-monospace, monospace; }
+svg.g-72 { width: 72px; height: 72px; }
+svg.g-18 { width: 18px; height: 18px; }
+svg.g-14 { width: 14px; height: 14px; }
+.g-note { font-size: var(--fs-sm); color: var(--c-text-2); margin: 0; }
+/* 시안 전용: 카드 밖 자리표(프로필 요약·식구) — 구현의 카드 모양만 흉내 */
+.ph { color: var(--c-text-2); font-size: var(--fs-sm); }
+</style>
+</head>
+<body class="is-dash">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<!-- 새 글리프 둘 = src/assets/icons/decider-icons.svg 와 같은 도형 -->
+<symbol id="i-by-parent" viewBox="0 0 24 24"><path d="M4 12 12 5l8 7"/><path d="M6.5 10.5V19h11v-8.5"/></symbol>
+<symbol id="i-by-child" viewBox="0 0 24 24"><path d="M3 10c2-2.4 4-2.4 6 0s4 2.4 6 0 4-2.4 6 0"/><path d="M6 16c2-2.4 4-2.4 6 0s4 2.4 6 0"/></symbol>
+<!-- 기존 아이콘 = src/assets/icons/ui-icons.svg -->
+<symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24"><path d="M4 6l8 6-8 6zM12 6l8 6-8 6z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-auto" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.2M4 13a8 8 0 0 0 14.5 4.2"/><path d="M18.5 3v4.5H14M5.5 21v-4.5H10"/></symbol>
+<symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4.5L16.5 4a2 2 0 0 1 3 3L8 18.5z"/><path d="M14.5 6l3 3"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></symbol>
+<symbol id="i-message" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></symbol>
+<symbol id="i-exit" viewBox="0 0 24 24"><path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/></symbol>
+<symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-forward" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.3 3.5 2.3s2.5-.7 3.5-2.3"/><path d="M9 9.8h.01M15 9.8h.01" stroke-width="3"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4.5 5.5H10a2 2 0 0 1 2 2V20a2 2 0 0 0-2-2H4.5zM19.5 5.5H14a2 2 0 0 0-2 2V20a2 2 0 0 1 2-2h5.5z"/></symbol>
+<symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.4-3.2 2.6-5 5.5-5s5.1 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.5 14c2.4 0 3.8 1.5 4.2 4"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6h.01" stroke-width="2.6"/></symbol>
+</defs></svg>
+
+<main class="dash" id="slot"></main>
+
+<!-- ========== 상태 1: 판의 첫 부모 카드 — 1세 「한밤의 열」 「별일 아니라며 넘긴다」(R-455가 든 자리: 외면하는 결정 옆에 웃는 얼굴이 아니라 집 글리프) + 안내 한 줄 ========== -->
+<template id="state-parent-first">
+  <div class="col">
+    <section class="card stack stack--sm" aria-label="상태"><div class="card__head card__head--flush"><h2 class="card__title">상태</h2></div>
+      <div class="meter meter--health"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg>건강</span><div class="meter__track" role="meter" aria-label="건강" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58"><div class="meter__fill" style="width:58%"></div></div><span class="meter__value">58</span></div>
+      <div class="meter meter--happy"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-smile"/></svg>행복</span><div class="meter__track" role="meter" aria-label="행복" aria-valuemin="0" aria-valuemax="100" aria-valuenow="49"><div class="meter__fill" style="width:49%"></div></div><span class="meter__value">49</span></div>
+      <div class="meter meter--knowledge"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>지식</span><div class="meter__track" role="meter" aria-label="지식" aria-valuemin="0" aria-valuemax="100" aria-valuenow="12"><div class="meter__fill" style="width:12%"></div></div><span class="meter__value">12</span></div>
+      <div class="meter meter--relation"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-people"/></svg>관계</span><div class="meter__track" role="meter" aria-label="관계" aria-valuemin="0" aria-valuemax="100" aria-valuenow="44"><div class="meter__fill" style="width:44%"></div></div><span class="meter__value">44</span></div>
+    </section>
+    <section class="card" aria-label="자산 현황"><div class="card__head"><h2 class="card__title">자산 현황</h2></div><p class="t-sm t-muted">자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다.</p></section>
+  </div>
+  <div class="col col--center">
+    <section class="card decision decision--parent" aria-labelledby="pc-title" data-testid="parent-card" data-by="parent">
+      <div class="decision__head">
+        <span class="parent-chip parent-chip--parent" data-testid="parent-chip"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg><span>부모님의 결정</span></span>
+        <span class="decision__when">2027년 <span aria-hidden="true">·</span> 1세</span>
+      </div>
+      <div class="decision__body">
+        <h2 id="pc-title" class="decision__title" style="--title-chars:4">한밤의 열</h2>
+        <p class="decision__text">한밤중에 아이가 열이 올라 울기 시작했습니다. 병원에 갈지 지켜볼지 망설이는 시간이 흘렀습니다.</p>
+        <div class="parent-pick"><p class="parent-pick__label">별일 아니라며 넘긴다</p><p class="parent-pick__stamp">부모님이 이렇게 정했습니다</p></div>
+        <span class="impact"><span class="impact__item" data-key="family" data-direction="up" data-steps="1"><span class="impact__show" aria-hidden="true"><span class="impact__name">집안 살림</span><span class="impact__step impact__step--good">▲</span></span><span class="sr-only">집안 살림이 늘어납니다.</span></span><span class="impact__item" data-key="happiness" data-direction="down" data-steps="1"><span class="impact__show" aria-hidden="true"><span class="impact__name">행복</span><span class="impact__step impact__step--bad">▼</span></span><span class="sr-only">행복이 줄어듭니다.</span></span><span class="impact__item" data-key="health" data-direction="down" data-steps="2"><span class="impact__show" aria-hidden="true"><span class="impact__name">건강</span><span class="impact__step impact__step--bad">▼▼</span></span><span class="sr-only">건강이 꽤 줄어듭니다.</span></span></span>
+        <p class="parent-hint">어린 시절의 큰 결정은 부모님이 내립니다. 열세 살부터는 공부·친구·취미를 직접 고릅니다.</p>
+      </div>
+    </section>
+    <section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2></div>
+      <ol class="log__rows">
+        <li class="log__row log__row--latest"><span class="log__age">1세</span><span class="log__text">어른들은 별일 아니라고 했습니다. 아이는 이틀을 앓고 털고 일어났지만 그 기억은 오래 남았습니다. <em class="log__by log__by--parent" data-by="parent"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg>(부모님이 이렇게 정했습니다: 별일 아니라며 넘긴다)</em></span></li>
+        <li class="log__row"><span class="log__age">0세</span><span class="log__text">2026년 1월, 경기도 화성시의 형편이 빠듯한 가정에서 3.3kg 여자아이로 태어났습니다. 첫째입니다.</span></li>
+      </ol>
+    </section>
+  </div>
+  <div class="col"><section class="card" aria-label="식구"><h2 class="card__title" style="margin-bottom:var(--sp-3)">식구</h2><dl class="family-list"><dt>어머니</dt><dd>32세 <small>판매직</small></dd><dt>아버지</dt><dd>35세 <small>기계 조작직</small></dd></dl></section><p class="mock-tag">시안 · 가짜 데이터</p></div>
+</template>
+
+<!-- ========== 상태 2: 16세 「받을 수 있는 도움」 — R-452 부모용 문구(parentLabel) + 통계 인용 ========== -->
+<template id="state-parent-scholar">
+  <div class="col">
+    <section class="card stack stack--sm" aria-label="상태"><div class="card__head card__head--flush"><h2 class="card__title">상태</h2></div>
+      <div class="meter meter--health"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg>건강</span><div class="meter__track" role="meter" aria-label="건강" aria-valuemin="0" aria-valuemax="100" aria-valuenow="61"><div class="meter__fill" style="width:61%"></div></div><span class="meter__value">61</span></div>
+      <div class="meter meter--happy"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-smile"/></svg>행복</span><div class="meter__track" role="meter" aria-label="행복" aria-valuemin="0" aria-valuemax="100" aria-valuenow="46"><div class="meter__fill" style="width:46%"></div></div><span class="meter__value">46</span></div>
+      <div class="meter meter--knowledge"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>지식</span><div class="meter__track" role="meter" aria-label="지식" aria-valuemin="0" aria-valuemax="100" aria-valuenow="38"><div class="meter__fill" style="width:38%"></div></div><span class="meter__value">38</span></div>
+      <div class="meter meter--relation"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-people"/></svg>관계</span><div class="meter__track" role="meter" aria-label="관계" aria-valuemin="0" aria-valuemax="100" aria-valuenow="52"><div class="meter__fill" style="width:52%"></div></div><span class="meter__value">52</span></div>
+    </section>
+  </div>
+  <div class="col col--center">
+    <section class="card decision decision--parent" aria-labelledby="pc-title" data-testid="parent-card" data-by="parent">
+      <div class="decision__head">
+        <span class="parent-chip parent-chip--parent"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg><span>부모님의 결정</span></span>
+        <span class="decision__when">2042년 <span aria-hidden="true">·</span> 16세</span>
+      </div>
+      <div class="decision__body">
+        <h2 id="pc-title" class="decision__title" style="--title-chars:4">받을 수 있는 도움</h2>
+        <p class="decision__text">학교에서 학비를 보태 주는 제도가 있다는 안내가 나왔습니다. 서류를 내려면 준비할 것이 많았습니다.</p>
+        <div class="parent-pick"><p class="parent-pick__label">이번에는 신청하지 않기로 한다</p><p class="parent-pick__stamp">부모님이 이렇게 정했습니다</p></div>
+        <span class="impact"><span class="impact__item" data-key="happiness" data-direction="down" data-steps="1"><span class="impact__show" aria-hidden="true"><span class="impact__name">행복</span><span class="impact__step impact__step--bad">▼</span></span><span class="sr-only">행복이 줄어듭니다.</span></span><span class="impact__item" data-key="health" data-direction="up" data-steps="1"><span class="impact__show" aria-hidden="true"><span class="impact__name">건강</span><span class="impact__step impact__step--good">▲</span></span><span class="sr-only">건강이 늘어납니다.</span></span></span>
+        <div class="cite" data-citation="c-010"><p class="cite__kind">통계</p><p class="cite__text">2026학년도 4년제 일반·교육대학의 학생 1인 연간 평균 등록금은 약 <span class="nowrap">727만</span> 원입니다.</p><p class="cite__src"><span class="keep-phrase">교육부·한국대학교육협의회(2026),</span> 2026년 4월 대학정보공시 분석 결과 발표</p></div>
+      </div>
+    </section>
+    <section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2></div>
+      <ol class="log__rows">
+        <li class="log__row log__row--latest"><span class="log__age">16세</span><span class="log__text">집에서는 신청하지 않기로 했습니다. 기한 안에 갖추기 어려운 서류가 있었고, 안내문은 한참 서랍에 들어 있었습니다. <em class="log__by log__by--parent" data-by="parent"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg>(부모님이 이렇게 정했습니다: 이번에는 신청하지 않기로 한다)</em></span></li>
+        <li class="log__row"><span class="log__age">15세</span><span class="log__text">쭈뼛대며 먼저 다가갔습니다. 서로 말없이 웃고 나서야 며칠의 침묵이 끝났습니다. <em>(선택: 내가 먼저 말을 건다)</em></span></li>
+      </ol>
+    </section>
+  </div>
+  <div class="col"><p class="mock-tag">시안 · 가짜 데이터</p></div>
+</template>
+
+<!-- ========== 상태 3: 10세 「교실의 한 아이」 「모른 척한다」 — 흘러감 칩(물결) + 통계 인용 ========== -->
+<template id="state-child-bully">
+  <div class="col">
+    <section class="card stack stack--sm" aria-label="상태"><div class="card__head card__head--flush"><h2 class="card__title">상태</h2></div>
+      <div class="meter meter--health"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg>건강</span><div class="meter__track" role="meter" aria-label="건강" aria-valuemin="0" aria-valuemax="100" aria-valuenow="63"><div class="meter__fill" style="width:63%"></div></div><span class="meter__value">63</span></div>
+      <div class="meter meter--happy"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-smile"/></svg>행복</span><div class="meter__track" role="meter" aria-label="행복" aria-valuemin="0" aria-valuemax="100" aria-valuenow="51"><div class="meter__fill" style="width:51%"></div></div><span class="meter__value">51</span></div>
+      <div class="meter meter--knowledge"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>지식</span><div class="meter__track" role="meter" aria-label="지식" aria-valuemin="0" aria-valuemax="100" aria-valuenow="27"><div class="meter__fill" style="width:27%"></div></div><span class="meter__value">27</span></div>
+      <div class="meter meter--relation"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-people"/></svg>관계</span><div class="meter__track" role="meter" aria-label="관계" aria-valuemin="0" aria-valuemax="100" aria-valuenow="47"><div class="meter__fill" style="width:47%"></div></div><span class="meter__value">47</span></div>
+    </section>
+  </div>
+  <div class="col col--center">
+    <section class="card decision decision--parent decision--child" aria-labelledby="pc-title" data-testid="parent-card" data-by="child">
+      <div class="decision__head">
+        <span class="parent-chip parent-chip--child"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-by-child"/></svg><span>아이의 일</span></span>
+        <span class="decision__when">2036년 <span aria-hidden="true">·</span> 10세</span>
+      </div>
+      <div class="decision__body">
+        <h2 id="pc-title" class="decision__title" style="--title-chars:3">교실의 한 아이</h2>
+        <p class="decision__text">같은 반의 한 아이가 번번이 놀림거리가 되었습니다. 나는 그 장면을 가까이서 보고 있었습니다.</p>
+        <div class="parent-pick"><p class="parent-pick__label">모른 척한다</p><p class="parent-pick__stamp">이렇게 흘러갔습니다</p></div>
+        <span class="impact"><span class="impact__item" data-key="happiness" data-direction="down" data-steps="2"><span class="impact__show" aria-hidden="true"><span class="impact__name">행복</span><span class="impact__step impact__step--bad">▼▼</span></span><span class="sr-only">행복이 꽤 줄어듭니다.</span></span><span class="impact__item" data-key="education" data-direction="up" data-steps="1"><span class="impact__show" aria-hidden="true"><span class="impact__name">지식</span><span class="impact__step impact__step--good">▲</span></span><span class="sr-only">지식이 늘어납니다.</span></span></span>
+        <div class="cite" data-citation="c-050"><p class="cite__kind">통계</p><p class="cite__text">2025년 1차 학교폭력 실태조사에서 피해를 겪었다고 답한 학생은 전체의 2.5%, 초등학생의 5.0%였습니다.</p><p class="cite__src"><span class="keep-phrase">교육부(2025),</span> 2025년 1차 학교폭력 실태조사 결과 발표</p></div>
+      </div>
+    </section>
+    <section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2></div>
+      <ol class="log__rows">
+        <li class="log__row log__row--latest"><span class="log__age">10세</span><span class="log__text">고개를 돌려 책을 폈습니다. 아무 일도 없었다는 듯 지냈지만 그 장면은 오래도록 남았습니다. <em class="log__by log__by--child" data-by="child"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-child"/></svg>(이렇게 흘러갔습니다: 모른 척한다)</em></span></li>
+        <li class="log__row"><span class="log__age">8세</span><span class="log__text">학교에 들어갔습니다.</span></li>
+      </ol>
+    </section>
+  </div>
+  <div class="col"><p class="mock-tag">시안 · 가짜 데이터</p></div>
+</template>
+
+<!-- ========== 상태 4: 14세 「먼저 가야 할 사람」 「집안의 결정을 따른다」 — 흘러감 카드(지난 세상) ========== -->
+<template id="state-child-family">
+  <div class="col">
+    <section class="card stack stack--sm" aria-label="상태"><div class="card__head card__head--flush"><h2 class="card__title">상태</h2></div>
+      <div class="meter meter--health"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg>건강</span><div class="meter__track" role="meter" aria-label="건강" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55"><div class="meter__fill" style="width:55%"></div></div><span class="meter__value">55</span></div>
+      <div class="meter meter--happy"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-smile"/></svg>행복</span><div class="meter__track" role="meter" aria-label="행복" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40"><div class="meter__fill" style="width:40%"></div></div><span class="meter__value">40</span></div>
+      <div class="meter meter--knowledge"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>지식</span><div class="meter__track" role="meter" aria-label="지식" aria-valuemin="0" aria-valuemax="100" aria-valuenow="31"><div class="meter__fill" style="width:31%"></div></div><span class="meter__value">31</span></div>
+      <div class="meter meter--relation"><span class="meter__label"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-people"/></svg>관계</span><div class="meter__track" role="meter" aria-label="관계" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><div class="meter__fill" style="width:50%"></div></div><span class="meter__value">50</span></div>
+    </section>
+  </div>
+  <div class="col col--center">
+    <section class="card decision decision--parent decision--child" aria-labelledby="pc-title" data-testid="parent-card" data-by="child">
+      <div class="decision__head">
+        <span class="parent-chip parent-chip--child"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-by-child"/></svg><span>아이의 일</span></span>
+        <span class="decision__when">1975년 <span aria-hidden="true">·</span> 14세</span>
+      </div>
+      <div class="decision__body">
+        <h2 id="pc-title" class="decision__title" style="--title-chars:3">먼저 가야 할 사람</h2>
+        <p class="decision__text">형제가 많은 집이라 학비를 모두에게 댈 수 없었습니다. 누가 어디까지 공부할지가 집안의 문제로 떠올랐습니다.</p>
+        <div class="parent-pick"><p class="parent-pick__label">집안의 결정을 따른다</p><p class="parent-pick__stamp">이렇게 흘러갔습니다</p></div>
+        <span class="impact"><span class="impact__item" data-key="family" data-direction="up" data-steps="1"><span class="impact__show" aria-hidden="true"><span class="impact__name">집안 살림</span><span class="impact__step impact__step--good">▲</span></span><span class="sr-only">집안 살림이 늘어납니다.</span></span><span class="impact__item" data-key="relationships" data-direction="up" data-steps="1"><span class="impact__show" aria-hidden="true"><span class="impact__name">관계</span><span class="impact__step impact__step--good">▲</span></span><span class="sr-only">관계가 늘어납니다.</span></span><span class="impact__item" data-key="happiness" data-direction="down" data-steps="2"><span class="impact__show" aria-hidden="true"><span class="impact__name">행복</span><span class="impact__step impact__step--bad">▼▼</span></span><span class="sr-only">행복이 꽤 줄어듭니다.</span></span><span class="impact__item" data-key="education" data-direction="down" data-steps="2"><span class="impact__show" aria-hidden="true"><span class="impact__name">지식</span><span class="impact__step impact__step--bad">▼▼</span></span><span class="sr-only">지식이 꽤 줄어듭니다.</span></span></span>
+      </div>
+    </section>
+    <section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2></div>
+      <ol class="log__rows">
+        <li class="log__row log__row--latest"><span class="log__age">14세</span><span class="log__text">말없이 어른들의 뜻을 따랐습니다. 책가방을 접어 넣던 날의 마음은 오래 가라앉았습니다. <em class="log__by log__by--child" data-by="child"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-child"/></svg>(이렇게 흘러갔습니다: 집안의 결정을 따른다)</em></span></li>
+      </ol>
+    </section>
+  </div>
+  <div class="col"><p class="mock-tag">시안 · 가짜 데이터</p></div>
+</template>
+
+<!-- ========== 상태 5: 세 표지가 한 화면 — 인생 기록 줄(본인·부모·흘러감) + 엔딩 연표 세 줄 ========== -->
+<template id="state-rows">
+  <div class="col"></div>
+  <div class="col col--center">
+    <section class="card log" aria-label="인생 기록"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">인생 기록</h2><span class="t-xs t-faint">세 표지 — 본인 「(선택: …)」 · 부모 집 글리프 · 흘러감 물결 글리프</span></div>
+      <ol class="log__rows">
+        <li class="log__row log__row--latest"><span class="log__age">13세</span><span class="log__text">학원가의 불빛 아래에서 저녁을 보냈습니다. 점수는 올랐고 집에 오는 길은 늘 어두웠습니다. <em>(선택: 여러 학원을 돌며 밤까지 공부한다)</em></span></li>
+        <li class="log__row"><span class="log__age">10세</span><span class="log__text">고개를 돌려 책을 폈습니다. 아무 일도 없었다는 듯 지냈지만 그 장면은 오래도록 남았습니다. <em class="log__by log__by--child" data-by="child"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-child"/></svg>(이렇게 흘러갔습니다: 모른 척한다)</em></span></li>
+        <li class="log__row"><span class="log__age">7세</span><span class="log__text">학교가 끝나면 빈집에서 혼자 숙제를 하고 어른들을 기다렸습니다. <em class="log__by log__by--parent" data-by="parent"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg>(부모님이 이렇게 정했습니다: 집에서 혼자 기다리게 한다)</em></span></li>
+        <li class="log__row"><span class="log__age">3세</span><span class="log__text">어른이 동생을 안을 때마다 아이는 울며 매달렸습니다. 어른들의 손은 둘로 나뉘었습니다. <em class="log__by log__by--child" data-by="child"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-child"/></svg>(이렇게 흘러갔습니다: 서운해서 울며 어른에게 매달린다)</em></span></li>
+        <li class="log__row"><span class="log__age">1세</span><span class="log__text">어른들은 별일 아니라고 했습니다. 아이는 이틀을 앓고 털고 일어났지만 그 기억은 오래 남았습니다. <em class="log__by log__by--parent" data-by="parent"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg>(부모님이 이렇게 정했습니다: 별일 아니라며 넘긴다)</em></span></li>
+        <li class="log__row"><span class="log__age">0세</span><span class="log__text">한 사람이 일을 쉬고 아이 곁을 지켰습니다. 아이의 하루는 일정했고 집안의 벌이는 줄었습니다. <em class="log__by log__by--parent" data-by="parent"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg>(부모님이 이렇게 정했습니다: 한 사람이 일을 쉬고 돌본다)</em></span></li>
+      </ol>
+    </section>
+    <section class="card" aria-label="엔딩 연표 표본"><div class="card__head" style="margin-bottom:var(--sp-2)"><h2 class="card__title">연표</h2><span class="t-xs t-faint">엔딩 「사망과 선택」 아래 연표의 같은 세 표지</span></div>
+      <p class="t-sm t-muted" style="margin-bottom:var(--sp-3)">살아오며 27번의 선택을 했습니다.<br>어린 시절의 큰 결정 가운데 6번은 부모님이 내렸고, 2번은 아이의 일로 흘러갔습니다.</p>
+      <ol class="timeline">
+        <li class="is-choice" data-kind="choice"><span class="log__age">1세</span><span><strong>한밤의 열</strong><span class="tl-picked" data-by="parent"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-parent"/></svg>부모님이 이렇게 정했습니다: 별일 아니라며 넘긴다</span><span class="tl-text">어른들은 별일 아니라고 했습니다. 아이는 이틀을 앓고 털고 일어났지만 그 기억은 오래 남았습니다.</span></span></li>
+        <li class="is-choice" data-kind="choice"><span class="log__age">10세</span><span><strong>교실의 한 아이</strong><span class="tl-picked" data-by="child"><svg class="icon icon--xs" aria-hidden="true" focusable="false"><use href="#i-by-child"/></svg>이렇게 흘러갔습니다: 모른 척한다</span><span class="tl-text">고개를 돌려 책을 폈습니다. 아무 일도 없었다는 듯 지냈지만 그 장면은 오래도록 남았습니다.</span></span></li>
+        <li class="is-choice" data-kind="choice"><span class="log__age">13세</span><span><strong>늦은 밤의 학원가</strong><span class="tl-picked">선택: 여러 학원을 돌며 밤까지 공부한다</span><span class="tl-text">학원가의 불빛 아래에서 저녁을 보냈습니다. 점수는 올랐고 집에 오는 길은 늘 어두웠습니다.</span></span></li>
+      </ol>
+    </section>
+    <p class="mock-tag">시안 · 가짜 데이터</p>
+  </div>
+  <div class="col"></div>
+</template>
+
+<!-- ========== 글리프 시트 ========== -->
+<template id="state-glyphs">
+  <div class="col"></div>
+  <div class="col col--center"><section class="card" aria-label="결정자 글리프 시트" style="padding:0"><div id="glyph-sheet"></div></section></div>
+  <div class="col"></div>
+</template>
+</body>
+</html>
