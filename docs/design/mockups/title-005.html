@@ -19,7 +19,23 @@ r.setAttribute('data-hero',q.get('hero')==='illust'?'illust':'picto');r.setAttri
 document.addEventListener('DOMContentLoaded',function(){var bar=document.querySelector('.bottom-bar');if(!bar)return;r.classList.add('has-bottom-bar');var probe=document.createElement('div');probe.setAttribute('aria-hidden','true');probe.style.cssText='position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none';document.body.appendChild(probe);function apply(){var vh=probe.offsetHeight||r.clientHeight||window.innerHeight;var h=bar.offsetHeight;r.style.setProperty('--bar-h',h+'px');r.classList.toggle('bar-released',h>vh*0.5);}apply();if(window.ResizeObserver){new ResizeObserver(apply).observe(bar);}window.addEventListener('resize',apply);});
 document.addEventListener('DOMContentLoaded',function(){var id=q.get('slide');var all=document.querySelectorAll('.slide');var at=0;if(id){all.forEach(function(s,k){var on=s.getAttribute('data-slide-id')===id;s.classList.toggle('is-active',on);if(on)at=k;});if(!document.querySelector('.slide.is-active'))all[0].classList.add('is-active');}var st=document.querySelector('.carousel__status');if(st)st.textContent=(at+1)+' / '+all.length;
 if(q.get('paused')==='1'){var b=document.querySelector('.carousel__pause');if(b){b.setAttribute('aria-label','자동 넘김 다시 시작');var u=b.querySelector('use');if(u)u.setAttribute('href','#i-play');}}
-if(q.get('gentle')==='1'){var sw=document.querySelector('.switch');if(sw){sw.setAttribute('aria-checked','true');var s=sw.querySelector('.switch__state');if(s)s.textContent='켜짐';}}
+if(q.get('gentle')==='1'){var sw=document.querySelector('.switch');if(sw){sw.setAttribute('aria-checked','true');var s=sw.querySelector('.switch__state');if(s)s.textContent='켜짐';}
+/* QI6 HV7(2026-10-21, design-system.md 14-5 · REV-005-HV-1 7절): 설정이 켜져 있으면 자살률 슬라이드를 가린다 — 표제어 h3 → 「무거운 주제 · 마음 건강 통계」, 「펼쳐 보기」 하나(aria-expanded·aria-controls 두 묶음), 상담전화 묶음(.slide__help)은 늘 보임.
+   나머지(공식 통계명·값·기준·그래프·정의 / 출처·기준 줄)는 .slide__veiled 두 묶음에 넣고 hidden. 읽기 이름(article aria-label)도 분류 문구. ?veil=open 이면 펼친 모양(구현은 슬라이드를 떠나면 다시 가린다 — 저장 안 함) */
+var sl=document.querySelector('.slide[data-slide-id="suicide-rate"]');if(sl){var h3=sl.querySelector('.slide__insight');var help=sl.querySelector('.slide__help');var isOpen=q.get('veil')==='open';var origHtml=h3.innerHTML;var fullLabel=sl.getAttribute('aria-label');var veilLabel=fullLabel.replace(/^(\d+\/\d+) .*$/,'$1 무거운 주제, 마음 건강 통계');
+var wa=document.createElement('div');wa.className='slide__veiled';wa.id='veil-suicide-a';var wb=document.createElement('div');wb.className='slide__veiled';wb.id='veil-suicide-b';var afterHelp=false;Array.prototype.slice.call(sl.children).forEach(function(k){if(k===h3)return;if(k===help){afterHelp=true;return;}(afterHelp?wb:wa).appendChild(k);});
+var btn=document.createElement('button');btn.type='button';btn.className='btn btn--ghost btn--sm slide__veil-btn';btn.setAttribute('aria-controls','veil-suicide-a veil-suicide-b');h3.after(btn);if(help){help.before(wa);help.after(wb);}else{sl.appendChild(wa);sl.appendChild(wb);}
+function paint(o){h3.innerHTML=o?origHtml:'무거운 주제 <span aria-hidden="true">·</span> 마음 건강 통계';btn.setAttribute('aria-expanded',o?'true':'false');btn.innerHTML=o?'접기 <span aria-hidden="true">▴</span>':'펼쳐 보기 <span aria-hidden="true">▾</span>';[wa,wb].forEach(function(w){if(o)w.removeAttribute('hidden');else w.setAttribute('hidden','');});sl.classList.toggle('slide--veiled',!o);sl.setAttribute('aria-label',o?fullLabel:veilLabel);}
+btn.addEventListener('click',function(){isOpen=!isOpen;paint(isOpen);});paint(isOpen);}}
+/* QI7 NT4·NT5·FQ1(2026-10-21, design-system.md 14-7): 푸터 링크 → 패널 「새 소식과 소개」(모달 시트, 바깥 inert, 제목으로 포커스). ?panel=news|intro 면 연 모양, &faq=N 이면 N번째 질문이 펼쳐진 모양, ?seen=1 이면 「새」 표시 없음(notesSeen = 현재 버전). 패널을 열면 「새」 표시는 사라진다 */
+r.setAttribute('data-seen',q.get('seen')==='1'?'1':'0');
+function openPanel(which){if(document.querySelector('.sheet--info'))return;var tpl=document.getElementById('info-panel-tpl');if(!tpl)return;document.body.appendChild(tpl.content.cloneNode(true));['.title','.page-end-space','.bottom-bar'].forEach(function(sel){var el=document.querySelector(sel);if(el)el.setAttribute('inert','');});r.setAttribute('data-seen','1');r.style.setProperty('--scrollbar-w',Math.max(0,window.innerWidth-r.clientWidth)+'px');r.classList.add('sheet-open');
+var n=parseInt(q.get('faq')||'0',10);if(n>0){var d=document.querySelectorAll('.faq__item')[n-1];if(d)d.open=true;}
+var closeBtn=document.querySelector('.sheet--info .info__close');if(closeBtn)closeBtn.addEventListener('click',closePanel);document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel();});
+var t=document.getElementById('info-title');if(t)t.focus({preventScroll:true});if(which==='intro'){var sec=document.getElementById('info-intro');if(sec)sec.scrollIntoView({block:'start'});}}
+function closePanel(){var ov=document.querySelector('.overlay');if(!ov)return;ov.remove();['.title','.page-end-space','.bottom-bar'].forEach(function(sel){var el=document.querySelector(sel);if(el)el.removeAttribute('inert');});r.classList.remove('sheet-open');var back=document.querySelector('.title-foot__links a[data-panel="'+(lastPanel||'news')+'"]');if(back)back.focus();}
+var lastPanel=null;document.querySelectorAll('.title-foot__links a[data-panel]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();lastPanel=a.getAttribute('data-panel');openPanel(lastPanel);});});
+var pq=q.get('panel');if(pq==='news'||pq==='intro'){lastPanel=pq;openPanel(pq);}
 /* 시안 전용: 스위치·분절 컨트롤·내비를 눌러 볼 수 있게(구현은 상태값이 정한다) */
 document.querySelectorAll('.switch').forEach(function(sw){sw.addEventListener('click',function(){var on=sw.getAttribute('aria-checked')!=='true';sw.setAttribute('aria-checked',on?'true':'false');var s=sw.querySelector('.switch__state');if(s)s.textContent=on?'켜짐':'꺼짐';});});
 document.querySelectorAll('.seg input').forEach(function(i){i.addEventListener('change',function(){i.closest('.seg').querySelectorAll('.seg__opt').forEach(function(o){o.classList.toggle('is-selected',o.contains(i));});});});
@@ -403,7 +419,8 @@ var pb=document.querySelector('.carousel__pause');if(pb)pb.addEventListener('cli
     </section>
   </aside>
   <footer class="title-foot">
-    <p class="title-foot__links"><a href="#">새 소식</a> · <a href="#">자주 묻는 질문</a> <span class="t-faint">(SPEC-005 NT4·FQ1 자리)</span></p>
+    <!-- QI7(NT4·FQ1, 2026-10-21 확정 — copy.md 13절): 두 링크가 같은 패널 「새 소식과 소개」의 두 구역을 연다. 「새」 표시 = 알약 글자(aria-hidden) + 읽기 전용 「(읽지 않은 소식 있음)」. ?seen=1 이면 둘 다 없음 -->
+    <p class="title-foot__links"><a href="#" data-panel="news">새 소식<span class="news-badge" aria-hidden="true">새</span><span class="sr-only news-badge-sr">(읽지 않은 소식 있음)</span></a> <span aria-hidden="true">·</span> <a href="#" data-panel="intro">소개</a></p>
     <p class="credit"><a href="https://stfamily.scourt.go.kr/st/StFrrStatcsView.do?pgmId=090000000025" target="_blank" rel="noopener noreferrer">지금 <span class="keep-phrase">세상·다가올</span> 세상 이름 출처: 대한민국 법원 전자가족관계등록시스템 통계서비스 「상위 출생신고 이름 <span class="keep-phrase">현황」(등록일</span> 기준 잠정치, <span class="nowrap">2026-10-13</span> 조회)</a></p>
     <p>통계 출처: 국가데이터처, 행정안전부, 교육부, 기상청 (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)</p>
     <p>가상 인구: 대한민국 주민등록 <span class="keep-phrase">인구(<span class="nowrap">2026년 9월</span>)를</span> 1,000분의 1로 줄이고, <span class="nowrap">2025년</span> <span class="keep-phrase">출생·사망</span> 통계를 반영해 시간에 따라 조금씩 달라지게 <span class="keep-phrase">이 기기</span> 안에서 계산한 숫자입니다. 서버와 통신하지 않고 실제 사람 수를 세지도 않습니다.</p>
@@ -411,6 +428,104 @@ var pb=document.querySelector('.carousel__pause');if(pb)pb.addEventListener('cli
     <p><span class="mock-tag">시안 · 가짜 데이터(연령 빈곤율·1인 가구 전망 값, 가상 인구 수)</span></p>
   </footer>
 </div>
+<!-- ========== QI7 패널 「새 소식과 소개」(NT4·NT5·FQ1 — copy.md 13절·design-system.md 14-7, 2026-10-21 designer). 첫 화면 위 모달 시트, ?panel=news|intro 또는 푸터 링크로 연다.
+     문구는 확정 글 그대로이고 {자리표시자} 6개는 지금 데이터 값으로 채워 보였다(통계 출처 기관 = 푸터 출처 줄과 같은 쉼표 나열 · 이름 출처 · 가상 인구 계산 기준(해요체) · 상담전화 이름·번호·시간). v0.2.0 날짜는 배포일 자리(시안 값) ========== -->
+<template id="info-panel-tpl">
+<div class="overlay" data-testid="info-overlay"><div class="sheet sheet--info" role="dialog" aria-modal="true" aria-labelledby="info-title" data-testid="info-panel">
+  <div class="sheet__head"><h2 id="info-title" class="sheet__title" tabindex="-1">새 소식과 소개</h2><button class="btn btn--ghost btn--sm info__close" type="button" data-testid="info-close">닫기</button></div>
+  <div class="sheet__body">
+    <section class="info__section" id="info-news" aria-labelledby="info-news-h">
+      <h3 id="info-news-h" class="info__h">새 소식</h3>
+      <p class="info__lead">새 소식에는 눈에 보이는 달라진 점만 적어요.</p>
+      <details class="info__ver" open><summary><span><span class="info__ver-head"><strong>v0.2.0</strong> <span class="info__ver-date">2026-10-25</span></span><span class="info__ver-sum">어린 시절의 결정, 인생 기록, 첫 화면이 달라졌어요.</span></span></summary>
+        <ul class="info__items">
+          <li><span class="note-kind">추가</span><span>어린 시절의 큰 결정은 부모님이 정해요. 열세 살부터는 공부·친구·취미를 직접 골라요.</span></li>
+          <li><span class="note-kind">추가</span><span>동생이 생기는 일처럼 아이의 반응이 중심인 일은 고르지 않고 「이렇게 흘러갔습니다」로 기록돼요.</span></li>
+          <li><span class="note-kind">추가</span><span>「무거운 장면 가리기」를 켜면 아픈 일이나 이별 같은 장면의 글만 가려요. 일어나는 일은 같고, 처음에는 꺼져 있어요.</span></li>
+          <li><span class="note-kind">개선</span><span>인생 기록이 최신순이에요. 가장 최근 일이 맨 위에 보여요. 엔딩 연표는 처음부터 차례로 읽어요.</span></li>
+          <li><span class="note-kind">개선</span><span>첫 화면에 한반도 일러스트가 들어오고, 통계마다 제목 한 줄과 공식 통계 이름이 붙었어요.</span></li>
+          <li><span class="note-kind">추가</span><span>앞날을 내다보는 전망 통계 카드가 생겼어요. 예측이 아니라 공식 추계이고 「전망」 표시가 붙어요.</span></li>
+          <li><span class="note-kind">개선</span><span>첫 화면의 인생 길이 고르기가 작은 칸 두 개로 줄었어요. 「약 1시간」은 아직 준비 중이에요.</span></li>
+          <li><span class="note-kind">추가</span><span>첫 화면 아래쪽에서 「새 소식」과 「소개」를 볼 수 있어요.</span></li>
+        </ul>
+      </details>
+      <details class="info__ver" open><summary><span><span class="info__ver-head"><strong>v0.1.0</strong> <span class="info__ver-date">2026-10-20</span></span><span class="info__ver-sum">수저 게임의 첫 공개 버전이에요.</span></span></summary>
+        <ul class="info__items">
+          <li><span class="note-kind">추가</span><span>지난·지금·다가올 세상 중 하나를 골라 태어나면, 룰렛이 수저와 지역을 정하고 출생신고 서류가 나와요.</span></li>
+          <li><span class="note-kind">추가</span><span>0세부터 삶을 마칠 때까지 한 해씩 흘러가고, 사연과 중대 결정이 찾아와요.</span></li>
+          <li><span class="note-kind">추가</span><span>20세부터 순자산과 연 소득, 부채를 원 단위로 보여 주고, 선택마다 영향을 한 줄로 알려 줘요.</span></li>
+          <li><span class="note-kind">추가</span><span>중대 결정 카드에 맞는 통계나 연구가 있으면 인용이 붙어요. 인용은 선택을 권하거나 말리지 않아요.</span></li>
+          <li><span class="note-kind">추가</span><span>첫 화면 통계 카드마다 통계표 이름과 기준 연도, 출처를 적었어요.</span></li>
+          <li><span class="note-kind">추가</span><span>「생각 남기기」로 한 줄을 적을 수 있어요. 글은 이 기기에만 저장돼요.</span></li>
+          <li><span class="note-kind">추가</span><span>한 판은 약 30분이에요. 진행은 이 기기에 저장되고, 엔딩에서 출발선과 최종 순자산을 돌아봐요.</span></li>
+          <li><span class="note-kind">추가</span><span>배속, 자동 모드, 다크 모드, BGM, 의견 보내기를 쓸 수 있어요.</span></li>
+        </ul>
+      </details>
+    </section>
+    <section class="info__section" id="info-intro" aria-labelledby="info-intro-h">
+      <h3 id="info-intro-h" class="info__h">소개</h3>
+      <p class="info__lead">이 게임에 대해 질문과 답으로 정리했어요.</p>
+      <details class="faq__item"><summary><span>이 게임은 무엇인가요?</span></summary><div class="faq__a">
+        <p>한국에서 태어난 한 사람의 삶을 해마다 따라가 보는 시뮬레이션이에요.</p>
+        <p>태어난 집안 형편과 시대가 삶의 선택과 결과에 어떤 영향을 줄 수 있는지 느껴 보는 것이 목적이에요.</p>
+        <p>정답을 알려 주거나 이렇게 살라고 권하는 게임은 아니에요. 한 판은 약 30분이에요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>「수저」는 무엇이고, 무엇을 바꾸나요?</span></summary><div class="faq__a">
+        <p>수저는 태어날 때 받은 집안 형편을 흙수저, 동수저, 은수저, 금수저, 다이아몬드수저의 다섯 단계로 부르는 이름이에요. 태어날 때 룰렛이 정해요.</p>
+        <p>수저에 따라 시작할 때의 집안 살림과 상태, 보이는 선택지, 독립할 때 받는 부모님의 도움이 달라져요. 어린 시절에 부모님이 돈이 드는 길을 고르는 정도도 달라져요.</p>
+        <p>같은 수저여도 선택과 우연에 따라 결말은 달라져요. 엔딩에서는 출발선과 최종 순자산을 견줘 볼 수 있어요.</p>
+        <p>수저가 인생의 결말을 정한다고 말하는 게임은 아니에요. 출발선의 차이가 선택과 결과에 어떻게 닿는지 보여 주려는 거예요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>숫자는 어디서 온 건가요?</span></summary><div class="faq__a">
+        <p>첫 화면의 통계 카드와 태어날 때의 바탕 수치(출생 월, 체중, 부모님 나이 등)는 국가데이터처, 행정안전부, 교육부, 기상청의 공개 자료에서 옮겼어요. 카드마다 통계표 이름과 기준 연도를 적었고, 원문과 대조하지 못한 값은 쓰지 않았어요.</p>
+        <p>수저 단계가 나올 확률, 선택지의 효과, 부모님의 선택 경향 같은 게임 속 확률과 수치는 게임을 위해 정한 설계값이에요. 통계가 아니에요. 설계값은 출생신고 화면처럼 통계가 아니라고 밝혀요.</p>
+        <p>사연과 인물은 만들어 낸 이야기예요. 이름은 대한민국 법원 전자가족관계등록시스템 통계서비스에서 가져오지만 인물은 모두 가상이에요.</p>
+        <p>결정 카드에 붙는 인용은 통계나 연구의 요약이고, 선택을 권하거나 말리지 않아요. 「전망」 카드는 예측이 아니라 공식 기관의 추계예요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>첫 화면의 인구 숫자는 실제 사람 수인가요?</span></summary><div class="faq__a">
+        <p>아니에요. 이 기기 안에서 계산한 가상의 숫자예요. 대한민국 주민등록 인구(2026년 9월)를 1,000분의 1로 줄이고, 2025년 출생·사망 통계를 반영해 시간에 따라 조금씩 달라지게 계산한 숫자예요.</p>
+        <p>접속한 사람 수나 게임을 하는 사람 수가 아니에요. 서버와 통신하지도 않아요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>내 기록은 어디에 저장되나요?</span></summary><div class="faq__a">
+        <p>이 기기의 이 브라우저에만 저장돼요. 서버로 보내지 않고, 다른 기기와 공유되지도 않아요. 「생각 남기기」에 적은 글도 마찬가지예요.</p>
+        <p>한 해가 지날 때마다 저장돼요. 도중에 나가도 첫 화면의 「이어서 살기」로 이어 갈 수 있어요.</p>
+        <p>브라우저의 사이트 데이터를 지우면 기록도 사라져요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>어린 시절의 큰 결정은 왜 부모님이 정하나요?</span></summary><div class="faq__a">
+        <p>어린아이의 큰 결정은 대개 부모님이 내리기 때문이에요. 그 모습을 그대로 담았어요.</p>
+        <p>열두 살까지의 큰 결정은 부모님이 정하고, 카드에 「부모님이 이렇게 정했습니다」와 영향이 보여요. 동생이 생기는 일처럼 아이의 반응이 중심인 일은 「이렇게 흘러갔습니다」로 기록돼요.</p>
+        <p>열세 살부터는 공부·친구·취미를 직접 골라요. 돈·진학·이사 같은 결정은 열여덟 살까지 부모님이 정하고, 열아홉 살부터는 모두 직접 정해요.</p>
+        <p>부모님이 무엇을 고르는지는 집안 형편, 부모님의 양육 방식, 형제 순서, 아이의 지금 상태에 따라 달라져요. 같은 상황에서도 집안 형편에 따라 선택이 달라질 수 있다는 걸 보여 주려는 거예요. 부모님의 직업이나 아이의 성별은 쓰지 않아요.</p>
+        <p>부모님의 선택을 평가하거나 정답을 알려 주지 않아요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>「무거운 장면 가리기」는 무엇인가요?</span></summary><div class="faq__a">
+        <p>켜면 아픈 일, 이별, 병처럼 무겁게 느껴질 수 있는 장면의 글을 가려요. 가려진 줄에는 어떤 종류의 일인지만 보이고, 「펼쳐 보기」를 누르면 원래 글을 읽을 수 있어요.</p>
+        <p>가리는 건 글뿐이에요. 일어나는 일과 결과, 통계는 켜든 끄든 똑같아요. 켠 채로 살아 본 판은 엔딩에 한 줄로 표시돼요.</p>
+        <p>처음에는 꺼져 있어요. 첫 화면의 스위치로 켜고 꺼요. 켜거나 끄면 지난 기록까지 바로 바뀌어요.</p>
+        <p>판 도중에 바꾸려면 「나가기」로 첫 화면에 간 뒤 스위치를 바꾸고 「이어서 살기」를 누르면 돼요.</p>
+        <p>사망 기록과 상담전화 안내는 가려지지 않아요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>힘든 마음이 들 때는 어떻게 하나요?</span></summary><div class="faq__a">
+        <p>힘든 마음을 혼자 견디지 않아도 돼요. 자살예방 상담전화 109(24시간)로 전화할 수 있어요.</p>
+        <p>첫 화면의 통계 카드에도 같은 안내가 있고, 「무거운 장면 가리기」를 켜도 이 안내는 가려지지 않아요.</p>
+        <p>이 게임은 상담이나 치료를 대신하지 않아요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>누가 만들었나요? AI를 썼나요?</span></summary><div class="faq__a">
+        <p>한 사람이 기획하고 AI(Anthropic의 Claude)와 함께 만들었어요.</p>
+        <p>기획, 개발, 디자인, 검수에 AI를 도구로 썼어요. 첫 화면의 그림은 AI 이미지 도구(OpenAI의 ChatGPT)로 만든 그림을 다듬어 썼어요.</p>
+        <p>게임을 하는 동안 AI가 글을 새로 만들지는 않아요. 사연과 문장은 미리 써 둔 거예요.</p>
+      </div></details>
+      <details class="faq__item"><summary><span>의견이나 문의는 어디로 보내나요?</span></summary><div class="faq__a">
+        <p>아래 「의견 보내기」를 누르면 GitHub의 의견 작성 화면이 새 탭으로 열려요. 인생이 진행되는 화면의 도구 줄에도 같은 버튼이 있어요. 어떤 화면에서 무엇을 했는지, 기기와 브라우저를 적어 주시면 고치기 쉬워요.</p>
+        <p>이 의견은 공개돼요. 이름이나 연락처 같은 개인정보는 적지 말아 주세요. 직접 적은 기록 글이 찍힌 스크린샷도 가려 주세요.</p>
+        <p>의견 작성 화면에 미리 채워지는 것은 화면 이름, 세상, 인생 길이, 버전뿐이에요. 캐릭터 이름이나 인생 기록은 담기지 않아요.</p>
+        <p>의견을 남기려면 GitHub 계정이 필요해요. 지금은 계정이 없는 분이 의견을 보낼 다른 방법이 없어요.</p>
+      </div></details>
+    </section>
+    <div class="info__foot"><a class="btn btn--secondary btn--sm" href="#" target="_blank" rel="noopener noreferrer" data-testid="info-feedback"><svg class="icon icon--sm" aria-hidden="true" focusable="false"><use href="#i-message"/></svg><span>의견 보내기</span><span class="sr-only">(새 탭으로 열립니다)</span></a><span class="mock-tag mock-tag--inline">시안 · 날짜·링크 주소는 시안 값</span></div>
+  </div>
+</div></div>
+</template>
 <div class="page-end-space"></div>
 <div class="bottom-bar">
   <div class="bottom-bar__new"><button class="btn btn--primary btn--lg" type="button">태어나기</button></div>

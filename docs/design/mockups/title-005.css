@@ -108,9 +108,22 @@ html[data-slot='gen8'] .slot--gen8 { display: block; }
 .chart .split-label { font-size: 11px; fill: var(--c-text-3); }
 .chart .chart-bar--proj { fill: url(#hatch); stroke: var(--c-accent); stroke-width: 1; }
 
-/* ---------- 푸터 링크 자리(NT4·FQ1) ---------- */
-.title-foot__links { font-size: var(--fs-sm); color: var(--c-text-2); }
-.title-foot__links a { color: var(--c-link); text-decoration: underline; }
+/* ---------- 푸터 링크(NT4·FQ1 — QI7 확정 2026-10-21, design-system.md 14-7): 「새 소식」 · 「소개」 두 링크가 같은 패널의 두 구역을 연다. 「새」 표시 = 놋쇠 옅은 알약 + 글자(색 + 글자) — 알약 글자는 aria-hidden, 링크 이름의 읽기 전용 꼬리 「(읽지 않은 소식 있음)」이 뜻을 전한다.
+   포인터 클릭 대상 ≥ 24px(링크 min-height), 거친 포인터에서 44px ---------- */
+.title-foot__links { font-size: var(--fs-sm); color: var(--c-text-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }
+.title-foot__links a { color: var(--c-link); text-decoration: underline; display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 24px; }
+.news-badge { display: inline-block; font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; padding: 0 var(--sp-2); border-radius: var(--r-pill); border: 1px solid var(--c-accent); background: var(--c-accent-soft); color: var(--c-on-accent-soft); text-decoration: none; }
+html[data-seen='1'] .news-badge, html[data-seen='1'] .news-badge-sr { display: none; }
+@media (pointer: coarse) {
+  .title-foot__links a { min-height: var(--hit); }
+}
+
+/* ---------- QI6 HV7 가린 자살률 슬라이드 (?gentle=1 — design-system.md 14-5, REV-005-HV-1 7절): 표제어 h3 자리에 「무거운 주제 · 마음 건강 통계」, 「펼쳐 보기」 하나(aria-expanded·aria-controls), 상담전화 묶음(.slide__help)은 늘 보임.
+   공식 통계명·값·기준·그래프·정의·출처·기준 줄은 .slide__veiled 안 — 가린 동안 hidden(DOM에는 있되 화면·접근성 트리에서 빠짐). display: contents 라 슬라이드의 flex 간격이 그대로다(hidden 규칙이 뒤에 와서 이긴다) ---------- */
+.slide__veil-btn { align-self: flex-start; min-height: 32px; padding: 0 var(--sp-3); font-weight: var(--fw-regular); }
+.slide__veiled { display: contents; }
+.slide__veiled[hidden] { display: none; }
+.slide--veiled .slide__insight { color: var(--c-text); }
 
 /* ---------- 하단 띠 상태(state=new|saved) ---------- */
 .bottom-bar__new, .bottom-bar__saved { display: none; flex-direction: column; align-items: center; gap: var(--sp-2); width: 100%; }
