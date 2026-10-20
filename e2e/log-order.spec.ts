@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { GameState, HistoryEntry } from '../src/core/types';
-import { KNOWN_SEED, findPendingState, injectSave, lifeState, noHorizontalOverflow, readSave, settle, startPageHidden } from './helpers';
+import { KNOWN_SEED, evalCore, findPendingState, injectSave, lifeState, noHorizontalOverflow, readSave, settle, startPageHidden, withoutPlay } from './helpers';
+import { describeWordBreak, measureWordBreaks } from './lineBreaks';
 import { adultState } from './m4States';
 import { setRootFontPercent } from './textResize';
 
@@ -12,7 +13,10 @@ import { setRootFontPercent } from './textResize';
  *  - LR3 단계 줄의 구분선은 줄 아래
  *  - LR4 키보드 Home = 맨 위(가장 최근) · End = 맨 아래(가장 오래된) / 움직임 줄이기에서 부드러운 스크롤 없음
  *  - LR5 결정 카드(인라인)·접힌 띠가 인생 기록 위에 있고 어느 폭·글자 크기에서도 겹치지 않는다
- *  - LR7 상한 300줄에서도 줄이 다시 만들어지지 않고 보던 위치가 흔들리지 않는다
+ *  - LR7 상한 300줄에서도 줄이 다시 만들어지지 않고 보던 위치가 흔들리지 않는다 / 나가기 → 이어서 살기 뒤 맨 위 (R-442)
+ *  - R-439 줄이 다시 흐를 때(글자 크기 100 ↔ 200% · 창 폭 1280 → 960 / 360 → 320 · 새 줄과 겹침) 아래에서 읽던 사람의 보던 줄이 제자리 — overflow-anchor: none으로 잃은 브라우저 스크롤 고정을 LogList가 대신한다
+ *  - R-438 「새 기록 N개 · 맨 위로」 알약이 스크롤 영역 안 위 가장자리(+8px, 가운데)에 떠 있고 화면 안·가려짐 0·터치 44px·글자 200% 넘침 0 (docs/design/log-order-qi1.md)
+ *  - R-441 「새 기록 N개 · 맨 위로」를 키보드로 누르면 포커스가 목록 영역으로 간다
  * 타이머는 멈춰 두고(startPageHidden) 줄은 「다음 결정으로」·선택으로만 늘린다.
  */
 
@@ -187,6 +191,7 @@ test('LR1 줄은 다시 만들어지지 않는다: 줄이 쌓여도 기존 줄�
 });
 
 test('LR2 새로고침하면 맨 위(가장 최근)에서 시작한다', async ({ page }) => {
+  test.setTimeout(90_000); // 개발 서버 첫 요청(콜드 스타트)이 WebKit에서 30초에 가깝다
   await openAdult(page);
   const list = listOf(page);
   await list.evaluate((el) => el.scrollTo({ top: 300, behavior: 'instant' }));
@@ -200,6 +205,7 @@ test('LR2 새로고침하면 맨 위(가장 최근)에서 시작한다', async (
 });
 
 test('LR3 단계 줄(출생 포함)의 구분선은 줄 아래에 있고 위에는 없다. 가장 오래된 줄(출생)은 목록 끝이라 아래 선도 없다. 단계 줄이 같은 단계 안의 다른 줄보다 아래에 있다', async ({ page }) => {
+  test.setTimeout(90_000); // 개발 서버 첫 요청(콜드 스타트)이 WebKit에서 30초에 가깝다
   await openAdult(page);
   const info = await page.locator('[data-testid="log-row"][data-kind="stage"]').evaluateAll((els) =>
     els.map((el) => {
@@ -225,6 +231,7 @@ test('LR3 단계 줄(출생 포함)의 구분선은 줄 아래에 있고 위에�
 });
 
 test('LR4 키보드: 영역에 포커스를 두고 PageDown·PageUp·방향키로 읽고, End = 맨 아래(가장 오래된 줄), Home = 맨 위(가장 최근 줄)', async ({ page }) => {
+  test.setTimeout(90_000); // 개발 서버 첫 요청(콜드 스타트)이 WebKit에서 30초에 가깝다
   await openAdult(page);
   const list = listOf(page);
   await expect(list).toHaveAttribute('role', 'region');
@@ -401,4 +408,355 @@ test('LR2 8배속 자동 진행으로 줄이 폭주하는 중에도 아래에서
   expect(result.maxDelta, `보던 줄(「${result.text}」)의 프레임별 최대 이동(px) — ${result.rowsAdded}줄이 쌓이는 동안`).toBeLessThanOrEqual(2);
   expect((await rows.count()) - count0).toBeGreaterThanOrEqual(5);
   await expect(page.getByTestId('log-jump')).toBeVisible();
+});
+
+// ---------- R-439 줄이 다시 흐를 때(글자 크기·창 크기·화면 회전) 보던 자리 ----------
+
+interface Watched {
+  text: string;
+  /** 잡아 둔 줄의 윗변이 영역 윗변에서 떨어진 거리(px, 윗변이 영역 위로 넘어 있으면 음수) */
+  offset: number;
+  /** 지금 영역 윗변에 걸친 첫 줄이 잡아 둔 그 줄인가 */
+  first: boolean;
+  /** 잡아 둔 줄이 DOM에 그대로 있는가(다시 만들어지지 않았다) */
+  connected: boolean;
+  scrollTop: number;
+  scrollHeight: number;
+}
+
+/** 영역 윗변에 걸친 첫 줄(아랫변이 영역 윗변 아래인 첫 줄)을 `pin`이면 새로 잡고, 아니면 전에 잡아 둔 줄의 지금 거리를 잰다 */
+function readWatched(list: Locator, pin: boolean): Promise<Watched> {
+  return list.evaluate((el, doPin) => {
+    const w = window as unknown as { __watched?: HTMLElement };
+    const box = el.getBoundingClientRect();
+    const rows = [...el.querySelectorAll('[data-testid="log-row"]')] as HTMLElement[];
+    const first = rows.find((r) => r.getBoundingClientRect().bottom > box.top + 1)!;
+    if (doPin || w.__watched === undefined) w.__watched = first;
+    const row = w.__watched;
+    return {
+      text: (row.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 24),
+      offset: row.getBoundingClientRect().top - box.top,
+      first: first === row,
+      connected: row.isConnected,
+      scrollTop: el.scrollTop,
+      scrollHeight: el.scrollHeight,
+    };
+  }, pin);
+}
+
+/** 목록을 `min`px 이상 내리되 한 줄의 중간(그 줄 윗변이 영역 윗변보다 18px 위)에 맞추고, 그 줄을 잡아 둔다 — 줄 경계에 걸려 어느 줄이 「첫 줄」인지 흔들리지 않게 */
+async function pinMidRow(list: Locator, min = 200): Promise<Watched> {
+  await list.evaluate((el, minTop) => {
+    const box = el.getBoundingClientRect();
+    const rows = [...el.querySelectorAll('[data-testid="log-row"]')] as HTMLElement[];
+    const y = (r: HTMLElement) => r.getBoundingClientRect().top - box.top + el.scrollTop; // 줄 윗변의 목록 안 위치
+    const target = rows.find((r) => y(r) + 18 >= minTop && r.getBoundingClientRect().height > 40)!;
+    el.scrollTo({ top: y(target) + 18, behavior: 'instant' });
+  }, min);
+  const w = await readWatched(list, true);
+  expect(w.scrollTop, '아래에서 읽는 중(≥ 200px)').toBeGreaterThanOrEqual(min);
+  expect(Math.abs(w.offset + 18), `잡은 줄은 윗변이 영역 위로 약 18px 넘어 있다(${w.offset.toFixed(2)}px — WebKit은 스크롤 위치를 화면 픽셀에 맞춘다)`).toBeLessThanOrEqual(1.5);
+  return w;
+}
+
+/** 줄이 다시 흐른 뒤: 잡아 둔 줄이 그대로 있고(같은 요소) 영역 윗변에 걸친 첫 줄이며 영역 윗변에서의 거리 변화가 작다(≤ 2px) */
+function expectKept(now: Watched, before: Watched, label: string): void {
+  expect(now.connected, `${label}: 줄이 다시 만들어지지 않았다`).toBe(true);
+  expect(now.first, `${label}: 영역 윗변에 걸친 첫 줄이 보던 줄(「${before.text}」) 그대로다`).toBe(true);
+  expect(Math.abs(now.offset - before.offset), `${label}: 보던 줄의 영역 윗변에서의 거리 변화(${before.offset.toFixed(1)} → ${now.offset.toFixed(1)}px)`).toBeLessThanOrEqual(2);
+}
+
+test('R-439 글자 크기: 아래에서(≥ 200px) 읽는 중 루트 글자를 100 → 200 → 100%로 바꿔도 보던 줄이 같고 영역 윗변에서의 거리 변화 ≤ 2px이다 — 위치는 줄이 커진 만큼 따라간다', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openAdult(page);
+  const list = listOf(page);
+  const before = await pinMidRow(list);
+  await setRootFontPercent(page, 200);
+  await settle(page);
+  const big = await readWatched(list, false);
+  expectKept(big, before, '글자 200%');
+  expect(big.scrollHeight, '글자가 커져 내용이 정말 길어졌다(공허 통과 방지)').toBeGreaterThan(before.scrollHeight * 1.4);
+  expect(big.scrollTop, '위치가 줄이 커진 만큼 따라갔다').toBeGreaterThan(before.scrollTop + 80);
+  await setRootFontPercent(page, 100);
+  await settle(page);
+  const back = await readWatched(list, false);
+  expectKept(back, before, '글자 100%로 되돌림');
+  expect(Math.abs(back.scrollTop - before.scrollTop), '되돌리면 위치도 처음과 같다(어긋남이 쌓이지 않는다)').toBeLessThanOrEqual(3);
+  await expect(page.getByTestId('log-jump'), '크기가 바뀌어도 새 기록으로 세지 않는다').toHaveCount(0);
+});
+
+test('R-439 창 폭: 아래에서(≥ 200px) 읽는 중 뷰포트 폭을 1280 → 960(모바일은 360 → 320)으로 줄였다 되돌려도 보던 줄이 같고 영역 윗변에서의 거리 변화 ≤ 2px이다 (글자 100%)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openAdult(page);
+  const list = listOf(page);
+  const full = page.viewportSize()!;
+  const narrow = { width: full.width >= 1000 ? 960 : 320, height: full.height };
+  const before = await pinMidRow(list);
+  await page.setViewportSize(narrow);
+  await settle(page);
+  expectKept(await readWatched(list, false), before, `폭 ${full.width} → ${narrow.width}`);
+  await page.setViewportSize(full);
+  await settle(page);
+  expectKept(await readWatched(list, false), before, `폭 ${narrow.width} → ${full.width}로 되돌림`);
+});
+
+test('R-439 창 폭 + 글자 150%: 폭이 줄어 줄바꿈이 실제로 늘어나는(내용 높이가 달라지는) 상태에서도 보던 줄이 같고 거리 변화 ≤ 2px이다', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openAdult(page);
+  const list = listOf(page);
+  const full = page.viewportSize()!;
+  const narrow = { width: full.width >= 1000 ? 960 : 320, height: full.height };
+  await setRootFontPercent(page, 150);
+  await settle(page);
+  const before = await pinMidRow(list);
+  await page.setViewportSize(narrow);
+  await settle(page);
+  const small = await readWatched(list, false);
+  expectKept(small, before, `글자 150% · 폭 ${full.width} → ${narrow.width}`);
+  expect(small.scrollHeight, `폭이 줄어 내용 높이가 달라졌다(${before.scrollHeight} → ${small.scrollHeight}, 공허 통과 방지)`).toBeGreaterThan(before.scrollHeight);
+  await page.setViewportSize(full);
+  await settle(page);
+  expectKept(await readWatched(list, false), before, `글자 150% · 폭 ${narrow.width} → ${full.width}로 되돌림`);
+});
+
+test('R-439 맨 위(≤ 24px)를 보고 있으면 글자 크기가 바뀌어도 되맞추지 않고 맨 위에 머문다 — 가장 최근 줄이 보인다', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openAdult(page);
+  const list = listOf(page);
+  expect(await scrollTopOf(list)).toBeLessThanOrEqual(TOP_SLACK);
+  await setRootFontPercent(page, 200);
+  await settle(page);
+  expect(await scrollTopOf(list), '글자 200%에서도 맨 위').toBeLessThanOrEqual(TOP_SLACK);
+  await setRootFontPercent(page, 100);
+  await settle(page);
+  expect(await scrollTopOf(list), '글자 100%로 되돌려도 맨 위').toBeLessThanOrEqual(TOP_SLACK);
+  const newest = await list.evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const r = el.querySelector('[data-testid="log-row"]')!.getBoundingClientRect();
+    return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+  });
+  expect(newest, '가장 최근 줄이 영역 안에 온전히 보인다').toBe(true);
+});
+
+/** 30세 넘게 살아 쌓인 긴 기록 + 아직 고르지 않은 선택지가 떠 있는 상태 (결정 하나가 줄 하나를 만든다) */
+async function pendingAdultState(page: Page): Promise<GameState> {
+  const state = await evalCore<GameState>(
+    page,
+    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'present')));
+     while (s.phase === 'life' && s.age < 30) s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
+     for (let i = 0; i < 60 && s.phase === 'life' && !s.pending; i++) s = core.advanceUntilDecision(s).state;
+     return s;`,
+  );
+  expect(state.pending, '대기 중인 선택지가 있다').not.toBeNull();
+  expect(state.history.length, '긴 인생 기록').toBeGreaterThan(15);
+  return withoutPlay(state);
+}
+
+test('R-439 새 줄과 글자 크기 변화가 한 프레임에 겹쳐도(같은 작업에서 글자를 200%로 키우고 선택을 누름) 보던 줄은 한 번에 제자리로 간다 — 영역 윗변에서의 거리 변화 ≤ 2px', async ({ page }) => {
+  test.setTimeout(90_000);
+  await startPageHidden(page);
+  await page.goto('/');
+  await injectSave(page, await pendingAdultState(page), '/', MANUAL);
+  const choice = page.locator('[data-testid="choice-panel"] button[data-testid^="choice-"]').first();
+  await expect(choice).toBeEnabled();
+  const list = listOf(page);
+  const before = await pinMidRow(list);
+  // 글자를 키우면 레이아웃이 더러워지고 ResizeObserver는 다음 프레임에야 돈다. 그 전에(같은 작업) 선택을 눌러 새 줄을 그리게 한다 = 흐름 변화와 새 줄이 한 프레임에 겹친다
+  const added = await page.evaluate(async () => {
+    const count = () => document.querySelectorAll('[data-testid="log-row"]').length;
+    const rowsBefore = count();
+    document.documentElement.style.fontSize = '200%';
+    (document.querySelector('[data-testid="choice-panel"] button[data-testid^="choice-"]') as HTMLElement).click();
+    for (let i = 0; i < 8; i++) await Promise.resolve(); // 마이크로태스크만 비운다 — 프레임(레이아웃·관찰자)은 아직 오지 않는다
+    return count() - rowsBefore;
+  });
+  expect(added, '새 줄이 프레임 전에 같은 작업 안에서 그려졌다(겹침 재현)').toBeGreaterThanOrEqual(1);
+  await settle(page);
+  const now = await readWatched(list, false);
+  expectKept(now, before, '새 줄 + 글자 200%');
+  expect(now.scrollTop, '글자가 커진 만큼 따라갔다').toBeGreaterThan(before.scrollTop + 80);
+  await expect(page.getByTestId('log-jump')).toHaveText(new RegExp(`새 기록 ${added}개 · 맨 위로`));
+  // 한 프레임 더 지나도(관찰자가 다시 돌아도) 가만히 있다
+  await settle(page);
+  expectKept(await readWatched(list, false), before, '한 프레임 더');
+});
+
+// ---------- R-441 「새 기록 N개 · 맨 위로」 키보드 ----------
+
+for (const key of ['Enter', 'Space']) {
+  test(`R-441 키보드로(${key}) 「새 기록 N개 · 맨 위로」를 누르면 버튼이 사라져도 포커스가 목록 영역으로 가고(화면은 끌려가지 않는다) 맨 위로 올라가며, 거기서 방향키로 계속 읽는다`, async ({ page }) => {
+    test.setTimeout(120_000);
+    await openAdult(page);
+    const list = listOf(page);
+    await list.evaluate((el) => el.scrollTo({ top: 260, behavior: 'instant' }));
+    await settle(page);
+    await addRows(page, 1);
+    const jump = page.getByTestId('log-jump');
+    await expect(jump).toBeVisible();
+    await jump.focus();
+    await expect(jump).toBeFocused();
+    const pageY = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press(key);
+    await expect(jump, '누르면 버튼은 사라진다').toHaveCount(0);
+    await expect(list, '포커스가 문서 맨 앞(body)으로 떨어지지 않고 목록 영역으로 간다').toBeFocused();
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), '활성 요소는 인생 기록 영역').toBe('log-list');
+    expect(await page.evaluate(() => window.scrollY), '포커스가 문서를 끌고 가지 않는다(preventScroll)').toBe(pageY);
+    await expect.poll(() => scrollTopOf(list)).toBeLessThanOrEqual(TOP_SLACK);
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(() => scrollTopOf(list), '포커스가 목록에 있으니 방향키로 이어서 읽는다').toBeGreaterThan(0);
+  });
+}
+
+// ---------- R-442 나가기 → 이어서 살기 뒤 맨 위 ----------
+
+test('R-442 아래로 스크롤했다가 나가기 → 첫 화면 「이어서 살기」로 돌아오면 인생 기록은 맨 위(가장 최근)에서 시작한다 (scrollTop ≤ 24)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openAdult(page);
+  const list = listOf(page);
+  await list.evaluate((el) => el.scrollTo({ top: 300, behavior: 'instant' }));
+  await settle(page);
+  expect(await scrollTopOf(list), '아래에서 읽는 중').toBeGreaterThan(200);
+  await expect(page.getByTestId('tool-exit')).toBeEnabled();
+  await page.getByTestId('tool-exit').click();
+  await expect(page.getByTestId('exit-yes')).toBeEnabled();
+  await page.getByTestId('exit-yes').click();
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  await expect(page.getByTestId('resume')).toBeEnabled();
+  await page.getByTestId('resume').click();
+  await expect(page.getByTestId('life-screen')).toBeVisible();
+  await expect(rowsOf(page).first()).toHaveClass(/log__row--latest/);
+  expect(await scrollTopOf(listOf(page)), '이어서 살기 뒤 맨 위').toBeLessThanOrEqual(TOP_SLACK);
+  await expect(page.getByTestId('log-jump')).toHaveCount(0);
+});
+
+// ---------- R-438 「새 기록 N개 · 맨 위로」 알약 자리 (docs/design/log-order-qi1.md) ----------
+
+interface PillGeometry {
+  /** 알약 윗변이 스크롤 영역 윗변에서 떨어진 거리 */
+  fromTop: number;
+  /** 알약 가로 가운데와 영역 가로 가운데의 차 */
+  centerDx: number;
+  withinListX: boolean;
+  withinViewport: boolean;
+  /** 알약 한가운데에서 맞는 요소가 알약(또는 그 안)인가 — 고정 머리·하단 띠에 가려지지 않았다 */
+  hit: boolean;
+  /** 한가운데에서 맞은 요소(알약이 아닐 때 무엇에 가려졌는지 — 진단용) */
+  coveredBy: string;
+  rect: string;
+  /** 하단 고정 띠·고정 머리와 겹치는 면적(px²) */
+  overlapBars: number;
+  /** 터치 대상 높이(알약 + ::before가 위아래로 늘린 만큼) */
+  touchHeight: number;
+  width: number;
+  height: number;
+  /** 슬롯(알약을 감싼 높이 0 sticky 상자)의 높이·position */
+  slotHeight: number;
+  slotPosition: string;
+  /** 줄 목록(ol) 윗변의 스크롤 내용 안 위치 — 0이면 슬롯이 줄을 밀지 않는다 */
+  olTopInContent: number;
+  /** 알약이 줄 목록(live region) 밖인가 */
+  outsideLive: boolean;
+}
+
+async function pillGeometry(page: Page): Promise<PillGeometry> {
+  return page.evaluate(() => {
+    const pill = document.querySelector('[data-testid="log-jump"]') as HTMLElement;
+    const list = document.querySelector('[data-testid="log-list"]') as HTMLElement;
+    const slot = pill.parentElement as HTMLElement;
+    const ol = list.querySelector('ol') as HTMLElement;
+    const r = pill.getBoundingClientRect();
+    const lr = list.getBoundingClientRect();
+    const before = getComputedStyle(pill, '::before');
+    const cs = getComputedStyle(pill);
+    const extra = (v: string) => (Number.isFinite(parseFloat(v)) ? -parseFloat(v) : Number.NaN); // top·bottom이 음수면 그만큼 늘어난다
+    const center = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    const bars = ['controls', 'bottom-bar', 'dash-head']
+      .map((id) => document.querySelector(`[data-testid="${id}"]`))
+      .filter((el): el is Element => el !== null && ['fixed', 'sticky'].includes(getComputedStyle(el).position))
+      .map((el) => el.getBoundingClientRect());
+    const overlap = bars.reduce((sum, b) => sum + Math.max(0, Math.min(r.right, b.right) - Math.max(r.left, b.left)) * Math.max(0, Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top)), 0);
+    return {
+      fromTop: r.top - lr.top,
+      centerDx: r.left + r.width / 2 - (lr.left + lr.width / 2),
+      withinListX: r.left >= lr.left - 0.5 && r.right <= lr.right + 0.5,
+      withinViewport: r.top >= -0.5 && r.bottom <= window.innerHeight + 0.5 && r.left >= -0.5 && r.right <= window.innerWidth + 0.5,
+      hit: center !== null && (center === pill || pill.contains(center)),
+      coveredBy: center === null ? "null(화면 밖)" : `${center.tagName}.${String(center.className)}#${center.getAttribute("data-testid") ?? ""}`,
+      rect: `알약 ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)} · 창 ${window.innerWidth}x${window.innerHeight} · scrollY ${Math.round(window.scrollY)}/${document.documentElement.scrollHeight} · 카드 ${Math.round((document.querySelector('[data-testid="log"]') as HTMLElement).getBoundingClientRect().top)} · 영역 ${Math.round(lr.top)}~${Math.round(lr.bottom)} · 띠 ${bars.map((b) => Math.round(b.top) + "~" + Math.round(b.bottom)).join(",")} · 덮은 ${center instanceof HTMLElement ? Math.round(center.getBoundingClientRect().top) + "~" + Math.round(center.getBoundingClientRect().bottom) : ""}`,
+      overlapBars: overlap,
+      touchHeight: pill.clientHeight + Math.max(parseFloat(cs.borderTopWidth) || 0, extra(before.top) || 0) + Math.max(parseFloat(cs.borderBottomWidth) || 0, extra(before.bottom) || 0),
+      width: r.width,
+      height: r.height,
+      slotHeight: slot.getBoundingClientRect().height,
+      slotPosition: getComputedStyle(slot).position,
+      olTopInContent: ol.getBoundingClientRect().top - lr.top + list.scrollTop,
+      outsideLive: !ol.contains(pill),
+    };
+  });
+}
+
+test('R-438 알약 자리: 아래에서(≥ 200px) 읽는 중 새 줄이 쌓이면 「새 기록 N개 · 맨 위로」가 스크롤 영역 안 위 가장자리 +8px 가운데에 떠 있고, 화면 안이며 가려지지 않고(하단 띠·머리와 겹침 0), 터치 대상 ≥ 44px이고, 스크롤해도 같은 자리이며 줄을 밀지 않는다', async ({ page }) => {
+  test.setTimeout(120_000);
+  await openAdult(page);
+  const list = listOf(page);
+  const mobile = page.viewportSize()!.width < 960;
+  if (!mobile) expect(await page.evaluate(() => window.scrollY), '1280×800: 페이지 스크롤 0에서 잰다').toBe(0);
+  const pinned = await pinMidRow(list);
+  await addRows(page, 1);
+  const jump = page.getByTestId('log-jump');
+  await expect(jump).toBeVisible();
+  await settle(page);
+  // 나타나도 줄이 밀리지 않는다: 보던 줄의 영역 안 거리가 그대로이고 슬롯이 자리를 차지하지 않는다
+  expectKept(await readWatched(list, false), pinned, '알약이 나타난 뒤');
+  if (mobile) await list.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' })); // 한 열 배치: 인생 기록 영역을 고정 머리 바로 아래로(스크롤 여백이 머리 높이를 지킨다)
+  await settle(page);
+  const g = await pillGeometry(page);
+  expect(g.slotHeight, '슬롯은 높이 0').toBe(0);
+  expect(g.slotPosition, '슬롯은 sticky').toBe('sticky');
+  expect(Math.abs(g.olTopInContent), '줄 목록은 영역 내용의 맨 위에서 시작한다(슬롯이 줄을 밀지 않는다)').toBeLessThan(0.5);
+  expect(g.outsideLive, '알약은 live region(ol) 밖').toBe(true);
+  expect(Math.abs(g.fromTop - 8), `알약 윗변이 영역 위 가장자리에서 8px 아래(${g.fromTop.toFixed(1)}px)`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(g.centerDx), `가로 가운데(${g.centerDx.toFixed(1)}px 어긋남)`).toBeLessThanOrEqual(3);
+  expect(g.withinListX, '영역 가로 안').toBe(true);
+  expect(g.withinViewport, `${mobile ? '카드를 헤더 아래로 맞춘 화면' : '1280×800 페이지 스크롤 0'}에서 알약이 화면 안`).toBe(true);
+  expect(g.hit, `알약 한가운데에서 맞는 요소가 알약 — 고정 머리·하단 띠에 가려지지 않는다(${g.coveredBy} / ${g.rect})`).toBe(true);
+  expect(g.overlapBars, '하단 고정 띠·고정 머리와 겹침 0').toBe(0);
+  expect(g.touchHeight, `터치 대상 높이(알약 ${g.height.toFixed(1)}px + ::before)`).toBeGreaterThanOrEqual(44 - 0.5);
+  expect(g.width, '터치 대상 폭').toBeGreaterThanOrEqual(44);
+  // 스크롤해도 같은 자리(sticky): 영역을 더 내려도 알약은 영역 위 가장자리 +8px에 붙어 있다
+  await list.evaluate((el) => el.scrollBy({ top: 90, behavior: 'instant' }));
+  await settle(page);
+  const moved = await pillGeometry(page);
+  expect(Math.abs(moved.fromTop - 8), `더 내려도 영역 위 가장자리 +8px(${moved.fromTop.toFixed(1)}px)`).toBeLessThanOrEqual(1.5);
+  expect(moved.hit).toBe(true);
+});
+
+test('R-438 글자 200%: 알약이 두 줄로 접혀도 영역 안·화면 안이고 가로 넘침 0·낱말 끊김 0이며 터치 대상 ≥ 44px이다 (폭 360·320, 데스크톱은 1280)', async ({ page }) => {
+  test.setTimeout(120_000);
+  await openAdult(page);
+  const list = listOf(page);
+  const full = page.viewportSize()!;
+  await pinMidRow(list);
+  await addRows(page, 1);
+  await expect(page.getByTestId('log-jump')).toBeVisible();
+  for (const width of full.width < 960 ? [360, 320] : [full.width]) {
+    await page.setViewportSize({ width, height: full.height });
+    await setRootFontPercent(page, 200);
+    await settle(page);
+    await expect(page.getByTestId('log-jump'), `${width}px: 크기를 바꿔도 알약이 남아 있다`).toBeVisible();
+    await list.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await settle(page);
+    const g = await pillGeometry(page);
+    expect(await noHorizontalOverflow(page), `${width}px · 200%: 가로 넘침 0`).toBe(true);
+    expect(g.withinListX, `${width}px · 200%: 영역 가로 안`).toBe(true);
+    expect(g.hit, `${width}px · 200%: 알약이 가려지지 않는다(${g.coveredBy} / ${g.rect})`).toBe(true);
+    expect(Math.abs(g.fromTop - 8), `${width}px · 200%: 영역 위 가장자리 +8px(${g.fromTop.toFixed(1)}px)`).toBeLessThanOrEqual(1.5);
+    expect(g.touchHeight, `${width}px · 200%: 터치 대상 높이`).toBeGreaterThanOrEqual(44 - 0.5);
+    expect(g.overlapBars, `${width}px · 200%: 하단 띠·머리와 겹침 0`).toBe(0);
+    const words = await measureWordBreaks(page, { scope: '[data-testid="log-jump"]' });
+    expect(words.checked, `${width}px · 200%: 잰 낱말`).toBeGreaterThanOrEqual(2);
+    expect(words.broken.map(describeWordBreak), `${width}px · 200%: 끊긴 낱말`).toEqual([]);
+    expect(words.unavoidable.map(describeWordBreak), `${width}px · 200%: 한 줄보다 긴 낱말`).toEqual([]);
+    if (width < 700) expect(g.height, `${width}px · 200%: 글자가 커서 두 줄 이상이다(공허 통과 방지)`).toBeGreaterThan(60);
+  }
 });

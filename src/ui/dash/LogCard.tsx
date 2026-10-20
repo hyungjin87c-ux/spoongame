@@ -13,7 +13,9 @@ import { isAtLogTop, logRows } from './logOrder';
  * 인생 기록 카드 (SPEC-003 DB12·DB14, SPEC-005 LR1~LR7): 가운데 영역에 **한 줄씩 쌓이고** 영역 안에서 스크롤된다. **위가 최신**이다 — 새 줄은 맨 위에 붙는다.
  *  - 저장 순서(`game.history`)는 시간순 그대로이고 화면만 뒤집는다(`logOrder.ts#logRows`). DOM 순서 = 화면 순서 = 읽기 순서(CSS로 겉만 뒤집지 않는다 — 스크린리더·Tab 순서가 갈라진다).
  *  - 맨 위(가장 최근)를 보고 있는 동안은 새 줄이 와도 맨 위에 머문다(= 새 줄이 바로 보인다). 아래로 내려 지난 기록을 읽는 중이면 **보던 줄이 화면에서 움직이지 않게** 스크롤 위치를 직접 보정하고
- *    (`LogList.tsx` — WebKit은 `overflow-anchor`를 구현하지 않는다) 「새 기록 N개 · 맨 위로」 버튼에 개수만 센다. 누르거나 직접 맨 위까지 올리면 개수는 0.
+ *    (`LogList.tsx` — WebKit은 `overflow-anchor`를 구현하지 않는다) 「새 기록 N개 · 맨 위로」 버튼에 개수만 센다. 누르거나 직접 맨 위까지 올리면 개수는 0. 버튼을 누르면 포커스는 목록 영역으로 간다(버튼이 사라지므로 — R-441).
+ *    알약은 스크롤 영역 **안** 위 가장자리에 떠 있다(새 줄이 쌓이는 쪽 — 나타나도 줄이 밀리지 않는다, `LogList`의 높이 0 슬롯, R-438).
+ *    창 크기·글자 크기·화면 회전으로 줄이 다시 흐를 때도 보던 줄을 지킨다(`LogList.tsx`의 `ResizeObserver` — R-439).
  *  - 줄 형식 「{나이}세 {문장}」, 종류: 단계(출생 포함, 아래 선 — 그 단계의 가장 오래된 줄이 단계 묶음의 맨 아래에 와서 선이 묶음을 가른다) / 사건 / 선택 결과(「선택: …」) / (나의 기록 — 자유 기록 M7c) / 사망. 첫 줄(가장 최근)은 굵게.
  *  - 맨 위 고정 줄(DB14): 「이 세상의 가상 인구 {N}명 · {이름}도 그중 한 사람」 — 쌓이는 기록과 구분되는 띠. N은 첫 화면과 같은 가상 인구 함수(core/population.ts)이고 시각은 UI가 분 단위로 넘긴다.
  *    짧은 쌍이라 `FitPair`(한 줄에 안 들어가면 기호 없이 두 줄). 근거 통계를 읽을 수 없으면 이 줄만 빠진다(R-211).
@@ -44,7 +46,10 @@ export function LogCard({ history, name, live, minute }: { history: readonly His
   const jump = () => {
     following.current = true;
     setUnread(0);
-    scrollerRef.current?.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+    const el = scrollerRef.current;
+    // 누른 버튼은 곧 사라진다 — 포커스가 문서 맨 앞(body)으로 떨어지지 않게 목록 영역으로 옮긴다(WCAG 2.4.3). 스크롤은 아래 scrollTo가 하므로 포커스가 화면을 끌지 않게 한다
+    el?.focus({ preventScroll: true });
+    el?.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
   };
 
   return (
@@ -64,6 +69,13 @@ export function LogCard({ history, name, live, minute }: { history: readonly His
       )}
       <LogList
         rows={rows}
+        jump={
+          unread > 0 ? (
+            <button type="button" className="btn btn--secondary btn--sm log__jump" onClick={jump} data-testid="log-jump">
+              <Glue text={DASH_TEXT.logJump(unread)} />
+            </button>
+          ) : null
+        }
         live={live}
         scrollerRef={scrollerRef}
         following={following}
@@ -75,11 +87,6 @@ export function LogCard({ history, name, live, minute }: { history: readonly His
         onUnread={(added) => setUnread((n) => n + added)}
         onReset={() => setUnread(0)}
       />
-      {unread > 0 ? (
-        <button type="button" className="btn btn--secondary btn--sm log__jump" onClick={jump} data-testid="log-jump">
-          <Glue text={DASH_TEXT.logJump(unread)} />
-        </button>
-      ) : null}
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import { createRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { startLife } from '../scripts/simulateLib';
@@ -5,7 +6,8 @@ import { playToEnd, type HistoryEntry } from '../src/core';
 import { appendHistory } from '../src/core/history';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { LogCard } from '../src/ui/dash/LogCard';
-import { LOG_TOP_SLACK, addedAbove, isAtLogTop, logRowKeys, logRows, scrollPlan } from '../src/ui/dash/logOrder';
+import { LogList } from '../src/ui/dash/LogList';
+import { LOG_TOP_SLACK, RESIZE_EPSILON, addedAbove, isAtLogTop, logRowKeys, logRows, resizePlan, scrollPlan } from '../src/ui/dash/logOrder';
 
 /**
  * 인생 기록 최신순 (SPEC-005 QI1, LR1~LR7) — 순서·키·위치 보정 계획·문구·CSS 규칙을 확인한다.
@@ -182,6 +184,112 @@ describe('LR2 스크롤 계획: 맨 위면 머물고, 읽는 중이면 보던 �
   });
 });
 
+describe('R-439 줄이 다시 흐를 때(창 크기·글자 크기·화면 회전) 보던 줄을 지키는 계획', () => {
+  it('맨 위였으면(기억한 위치 ≤ 24) 되맞추지 않는다 — 맨 위는 어떻게 흘러도 맨 위다', () => {
+    expect(resizePlan({ rememberedScrollTop: 0, scrollTop: 0, shift: 120, follow: false })).toBeNull();
+    expect(resizePlan({ rememberedScrollTop: LOG_TOP_SLACK, scrollTop: 24, shift: -40, follow: false })).toBeNull();
+  });
+
+  it('읽는 중이었으면(기억한 위치 > 24) 보던 줄이 밀린 만큼 옮겨 그 줄을 같은 자리에 붙든다: 글자가 커져 줄이 밀리면 내리고, 줄면 올린다', () => {
+    expect(resizePlan({ rememberedScrollTop: 220, scrollTop: 220, shift: 96.5, follow: false })).toBe(316.5);
+    expect(resizePlan({ rememberedScrollTop: 220, scrollTop: 220, shift: -80, follow: false })).toBe(140);
+    // 브라우저가 줄어든 내용에 맞춰 위치를 끌어당겼어도(scrollTop이 기억과 다르다) 지금 위치에서 밀린 만큼 옮기면 그 줄이 기억한 거리에 온다
+    expect(resizePlan({ rememberedScrollTop: 600, scrollTop: 310, shift: 55, follow: false })).toBe(365);
+  });
+
+  it('보던 줄이 이미 기억한 거리에 있으면(밀림 < 0.5px) 움직이지 않는다 — 새 줄 보정 뒤 뒤따르는 관찰자가 한 번 더 움직이지 않는다', () => {
+    expect(resizePlan({ rememberedScrollTop: 220, scrollTop: 220, shift: 0, follow: false })).toBeNull();
+    expect(resizePlan({ rememberedScrollTop: 220, scrollTop: 220, shift: RESIZE_EPSILON - 0.01, follow: false })).toBeNull();
+    expect(resizePlan({ rememberedScrollTop: 220, scrollTop: 220, shift: -(RESIZE_EPSILON - 0.01), follow: false })).toBeNull();
+    expect(resizePlan({ rememberedScrollTop: 220, scrollTop: 220, shift: RESIZE_EPSILON, follow: false })).toBe(220.5);
+  });
+
+  it('「맨 위로」가 부드럽게 올라가는 중(follow)이면 건드리지 않고, 위치는 0 밑으로 내려가지 않는다', () => {
+    expect(resizePlan({ rememberedScrollTop: 400, scrollTop: 400, shift: 90, follow: true })).toBeNull();
+    expect(resizePlan({ rememberedScrollTop: 400, scrollTop: 30, shift: -90, follow: false })).toBe(0);
+  });
+
+  it('되맞춤은 위치를 가만히 두는 뜻이다: 보던 줄의 새 화면 위치 = 기억한 화면 위치 (수식 점검)', () => {
+    // 보던 줄이 영역 윗변에서 o만큼 떨어져 있었고(기억), 줄이 다시 흐른 뒤 윗변에서 o + shift로 밀렸다. 스크롤을 shift만큼 옮기면 다시 o다
+    for (const [S, o, shift] of [[200, -14, 180], [31.5, 3.25, -9.5], [1000, 0, 333]] as const) {
+      const top = resizePlan({ rememberedScrollTop: S, scrollTop: S, shift, follow: false })!;
+      expect(o + shift - (top - S)).toBeCloseTo(o, 6);
+    }
+  });
+
+  it('브라우저의 스크롤 고정을 끈 자리(overflow-anchor: none)는 LogList가 ResizeObserver로 되맞춘다 — 끄기만 하고 되맞춤이 없으면 아래에서 읽던 자리가 튄다', () => {
+    const list = SRC_CODE['../src/ui/dash/LogList.tsx'];
+    expect(list, 'LogList.tsx를 읽었다').toBeTruthy();
+    expect(list).toContain('new ResizeObserver(');
+    expect(list).toContain('resizePlan(');
+    expect(list).toContain('this.observer?.disconnect()');
+    expect(dashCss).toMatch(/.log__list {[^}]*overflow-anchor: none/);
+  });
+});
+
+describe('R-438 「새 기록 N개 · 맨 위로」 알약 자리: 스크롤 영역 안, 줄 목록 앞의 높이 0 슬롯', () => {
+  const renderList = (jump?: JSX.Element) =>
+    renderToStaticMarkup(
+      <LogList rows={logRows(BASE)} live scrollerRef={createRef<HTMLDivElement>()} following={{ current: false }} onScroll={() => undefined} onUserScroll={() => undefined} onUnread={() => undefined} onReset={() => undefined} jump={jump} />,
+    );
+
+  it('알약이 있으면 스크롤 영역(log__list) 안, 줄 목록(ol) 앞의 슬롯 안에 있고, 줄 목록(live region) 밖이다 — 개수가 바뀔 때마다 읽히지 않는다', () => {
+    const html = renderList(<button type="button" className="btn btn--secondary btn--sm log__jump" data-testid="log-jump">새 기록 2개 · 맨 위로</button>);
+    const slot = html.indexOf('<div class="log__jump-slot">');
+    const pill = html.indexOf('data-testid="log-jump"');
+    const ol = html.indexOf('<ol ');
+    const olEnd = html.indexOf('</ol>');
+    expect(slot, '슬롯이 있다').toBeGreaterThan(html.indexOf('class="log__list"'));
+    expect(pill, '알약은 슬롯 안').toBeGreaterThan(slot);
+    expect(html.indexOf('</div>', slot), '슬롯은 알약 하나만 감싼다').toBeGreaterThan(pill);
+    expect(slot, '슬롯이 줄 목록보다 앞').toBeLessThan(ol);
+    expect(pill < ol && pill < olEnd, '알약이 live region(ol) 밖').toBe(true);
+    expect(html).not.toMatch(/<ol[^>]*>[\s\S]*log-jump[\s\S]*<\/ol>/);
+  });
+
+  it('알약이 없으면 슬롯도 없다(빈 슬롯을 남기지 않는다) — 줄 목록은 영역의 첫 자식이다', () => {
+    const html = renderList();
+    expect(html).not.toContain('log__jump-slot');
+    expect(html).not.toContain('log-jump');
+    expect(html.slice(html.indexOf('class="log__list"')).replace(/^[^>]*>/, '').startsWith('<ol ')).toBe(true);
+  });
+
+  it('LogCard는 알약을 스크롤 영역 안에서만 그린다: 목록 아래(카드 끝)에는 버튼이 없다 — 처음엔 알약도 슬롯도 없다 (unread 0)', () => {
+    const html = renderLog(BASE);
+    expect(html).not.toContain('log-jump');
+    expect(html).not.toContain('log__jump-slot');
+    expect(html.slice(html.indexOf('</ol>'))).not.toContain('<button');
+  });
+
+  it('CSS: 슬롯은 높이 0 sticky(top 0, 줄을 밀지 않는다)이고 알약은 슬롯 안 absolute — 위 가장자리에서 8px 아래 가운데, 알약 모서리·그림자·display: block·낱말 보호, ::before가 터치 대상 44px을 채운다', () => {
+    const rule = (sel: string) => new RegExp(`${sel.replace(/[.[\]:]/g, '\\$&')} \\{[^}]*\\}`).exec(dashCss)![0];
+    const slot = rule('.log__jump-slot');
+    expect(slot).toMatch(/position: sticky/);
+    expect(slot).toMatch(/top: 0/);
+    expect(slot).toMatch(/height: 0/);
+    expect(slot).toMatch(/z-index: 1/);
+    expect(slot).toMatch(/overflow: visible/);
+    const pill = rule('.log__jump');
+    expect(pill).toMatch(/position: absolute/);
+    expect(pill).toMatch(/top: var\(--sp-2\)/);
+    expect(pill).toMatch(/left: var\(--sp-2\)/);
+    expect(pill).toMatch(/right: var\(--sp-2\)/);
+    expect(pill).toMatch(/width: fit-content/);
+    expect(pill).toMatch(/margin: 0 auto/);
+    expect(pill).toMatch(/display: block/);
+    expect(pill).toMatch(/border-radius: var\(--r-pill\)/);
+    expect(pill).toMatch(/box-shadow: var\(--shadow-2\)/);
+    expect(pill).toMatch(/word-break: keep-all/);
+    expect(pill).toMatch(/overflow-wrap: normal/);
+    const hit = rule('.log__jump::before');
+    expect(hit).toMatch(/position: absolute/);
+    expect(hit).toMatch(/top: min\(0px, calc\(\(100% - var\(--hit\)\) \/ 2\)\)/);
+    expect(hit).toMatch(/bottom: min\(0px, calc\(\(100% - var\(--hit\)\) \/ 2\)\)/);
+    // 옛 자리(카드 끝의 보통 흐름 버튼)의 규칙은 남지 않는다
+    expect(dashCss).not.toMatch(/\.log__jump \{[^}]*align-self: center/);
+  });
+});
+
 describe('LR2 문구 · LR4 접근성 · CSS 규칙', () => {
   it('live region 속성이 유지된다: 빠른 진행·자동 모드가 아니면 polite, 아니면 off, 늘 additions', () => {
     for (const [live, expected] of [[true, 'polite'], [false, 'off']] as const) {
@@ -197,16 +305,18 @@ describe('LR2 문구 · LR4 접근성 · CSS 규칙', () => {
     expect(tag).toContain('aria-label="인생 기록"');
     expect(tag).toContain('tabindex="0"');
     expect(tag).toContain('aria-describedby="log-hint"');
-    expect(plain(html.slice(html.indexOf('id="log-hint"'), html.indexOf('</span>', html.indexOf('id="log-hint"'))))).toContain('최근 기록이 위');
+    expect(plain(html.slice(html.indexOf('id="log-hint"'), html.indexOf('</div>', html.indexOf('id="log-hint"'))))).toContain('최신순 · 아래로 스크롤하면 지난 기록');
   });
 
-  it('옛 순서 문구와 이름이 소스 어디에도 남지 않는다: 「위로 스크롤하면 지난 기록」·「맨 아래로」·LOG_BOTTOM_SLACK', () => {
+  it('옛 순서 문구와 임시 문구와 이름이 소스 어디에도 남지 않는다: 「위로 스크롤하면 지난 기록」·「맨 아래로」·「최근 기록이 위」·「태어난 순서대로」·LOG_BOTTOM_SLACK (R-437)', () => {
     const files: Array<[string, string]> = [...Object.entries(SRC_CODE), ...Object.entries(SRC_CSS)];
     expect(Object.keys(SRC_CODE).length, 'src 코드 파일을 읽었다').toBeGreaterThan(50);
     expect(SRC_CSS['dash.css'].length, 'CSS를 읽었다').toBeGreaterThan(1000);
     for (const [f, code] of files) {
       expect(code, f).not.toContain('위로 스크롤하면 지난 기록');
       expect(code, f).not.toContain('맨 아래로');
+      expect(code, f).not.toContain('최근 기록이 위');
+      expect(code, f).not.toContain('태어난 순서대로');
       expect(code, f).not.toContain('LOG_BOTTOM_SLACK');
     }
   });

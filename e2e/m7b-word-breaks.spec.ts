@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { DASH_TEXT } from '../src/data/dashText';
 import { INTENDED_BREAK_WORDS } from './intendedBreaks';
 import { describeWordBreak, measureWordBreaks } from './lineBreaks';
 import { CARD_UI_STATES, expandSheet, longestCardStates, openCardIn, startHidden, type CardUiState } from './m7bCards';
@@ -12,7 +13,7 @@ import { openM4Screen } from './m4States';
  *  - 눈에 보이는 모든 낱말(카드 제목·상황·라벨·영향 줄·인용 요약·**출처 줄**의 영문 저자명·원제)에서 한 줄보다 짧은데 중간에서 끊긴 낱말(결함) 0. 한 줄보다 긴 낱말만 예외이고 글자 100%에서는 그것도 0.
  *  - 17②: **카드 제목(h2 `.decision__title`)은 폭 320 · 글자 200%에서도 중간에서 끊기지 않는다**(한 줄보다 긴 낱말 예외도 없다 — 글자 크기 상한).
  *  - `INTENDED_BREAKS`에 새 항목을 더하지 않는다(카드 안의 의도된 끊김은 없다 — 목록 밖 intended 0, 강제 `<br>` 0).
- *  - D-58: 「새 기록 N개 · 맨 아래로」 버튼이 글자 200% × 폭 320·360에서 한 글자씩 끊기지 않는다.
+ *  - D-58: 「새 기록 N개 · 맨 위로」 알약(스크롤 영역 위 가장자리의 sticky 슬롯, R-438)이 글자 200% × 폭 320·360에서 한 글자씩 끊기지 않는다.
  * 폭 320·360은 mobile-360, 1280은 desktop 프로젝트.
  */
 
@@ -67,22 +68,25 @@ for (const width of WIDTHS) {
   }
 }
 
-test('D-58: 「새 기록 N개 · 맨 아래로」 버튼의 「아래로」가 글자 200% × 폭 320·360에서 한 글자씩 끊기지 않는다 (.log__jump)', async ({ page }, testInfo) => {
+test('D-58: 「새 기록 N개 · 맨 위로」 알약의 「위로」가 글자 200% × 폭 320·360에서 한 글자씩 끊기지 않는다 (.log__jump, 새 자리 .log__jump-slot — R-438)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
   test.setTimeout(90_000);
   for (const width of [320, 360]) {
     await page.setViewportSize({ width, height: 740 });
     await openM4Screen(page, 'dash-adult');
-    // 버튼은 새 기록이 있을 때만 뜨므로, 같은 클래스로 만든 표본을 기록 카드에 붙여 잰다 (CSS 규칙 자체를 본다)
-    await page.evaluate(() => {
-      const list = document.querySelector('[data-testid="log"]')!;
+    // 알약은 새 기록이 있을 때만 뜨므로, 같은 클래스로 만든 표본을 새 자리(스크롤 영역 안, 줄 목록 앞의 슬롯)에 붙여 잰다 (CSS 규칙 자체를 본다). 실제 알약은 e2e/log-order.spec.ts "R-438"이 본다
+    await page.evaluate((text) => {
+      const list = document.querySelector('[data-testid="log-list"]')!;
+      const slot = document.createElement('div');
+      slot.className = 'log__jump-slot';
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'btn btn--secondary btn--sm log__jump';
       b.dataset.testid = 'jump-sample';
-      b.textContent = '새 기록 12개 · 맨 아래로';
-      list.appendChild(b);
-    });
+      b.textContent = text;
+      slot.appendChild(b);
+      list.insertBefore(slot, list.firstChild);
+    }, DASH_TEXT.logJump(12));
     for (const percent of [100, 200]) {
       await setRootFontPercent(page, percent);
       const words = await measureWordBreaks(page, { scope: '[data-testid="jump-sample"]' });

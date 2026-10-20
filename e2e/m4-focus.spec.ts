@@ -197,3 +197,48 @@ for (const vp of STANDARD_VIEWPORTS) {
     }
   });
 }
+
+// ---------- R-438: 「새 기록 N개 · 맨 위로」 알약이 떠 있는 대시보드 (스크롤 영역 안 위 가장자리) ----------
+
+/** 인생 기록을 아래로 읽는 중에 새 줄이 쌓여 「새 기록 N개 · 맨 위로」 알약이 떠 있는 50세 대시보드 */
+async function openDashWithJumpPill(page: Page): Promise<void> {
+  await openM4Screen(page, 'dash-adult');
+  await page.getByTestId('log-list').evaluate((el) => el.scrollTo({ top: 220, behavior: 'instant' }));
+  for (let i = 0; i < 80 && (await page.getByTestId('log-jump').count()) === 0; i++) {
+    // 선택지가 떠 있으면 첫 선택지를, 아니면 「다음 결정으로」를 누른다(입력 가드 중이면 눌리지 않고 다음 바퀴에 다시)
+    await page.evaluate(() => {
+      const choice = document.querySelector('[data-testid="choice-panel"] button[data-testid^="choice-"]') as HTMLElement | null;
+      const skip = document.querySelector('[data-testid="skip"]') as HTMLElement | null;
+      (choice ?? skip)?.click();
+    });
+    await settleDash(page);
+  }
+  await expect(page.getByTestId('log-jump'), '알약이 떴다').toHaveCount(1);
+}
+
+for (const vpName of ['320x568', '360x740-touch', '1280x800', '640x400-zoom200']) {
+  const vp = STANDARD_VIEWPORTS.find((v) => v.name === vpName)!;
+  test.describe(`R-438 알약이 떠 있는 대시보드 포커스 가림 없음 ${vp.name}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch === true });
+
+    for (const percent of [100, 200] as const) {
+      test(`${vp.name} · 글자 ${percent}% · 알약 표시: Tab·Shift+Tab 전체 순회·프로그램 focus()에서 가려진 포커스 0이고 알약(log-jump)이 순회에 든다 (CM10, R-438)`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+        test.setTimeout(240_000);
+        await openDashWithJumpPill(page);
+        if (percent !== 100) await setRootFontPercent(page, percent);
+        await settleDash(page);
+        const audit = await auditFocus(page, `${vp.name}/${percent}%/dash-adult+알약`, { headingTestId: 'life-name' });
+        expect(audit.violations, summarize(audit)).toEqual([]);
+        for (const id of ['pause', 'skip', 'auto', 'tool-exit', 'log-list', 'log-jump']) {
+          expect(audit.tabbables, `조작 요소 ${audit.tabbables.join(' → ')}`).toContain(id);
+          expect(audit.forward.map((s) => s.id), `Tab 순회 ${id}`).toContain(id);
+          expect(audit.backward.map((s) => s.id), `Shift+Tab 순회 ${id}`).toContain(id);
+        }
+        // 키보드 순서: 인생 기록 영역 다음이 알약이다(스크롤 영역 안, 줄 목록 앞)
+        const order = audit.forward.map((s) => s.id);
+        expect(order.indexOf('log-jump'), '알약은 영역 바로 다음').toBe(order.indexOf('log-list') + 1);
+      });
+    }
+  });
+}

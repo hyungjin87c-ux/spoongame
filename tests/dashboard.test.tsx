@@ -644,7 +644,7 @@ describe('인생 기록 (DB12·DB14)', () => {
   });
 
   it('안내 문구와 새 줄 버튼 문구는 새 순서를 말하고, 옛 순서 문구는 화면에 없다 (LR2 d·e)', () => {
-    expect(DASH_TEXT.logHint).toBe('최근 기록이 위 · 아래로 스크롤하면 지난 기록');
+    expect(DASH_TEXT.logHint).toBe('최신순 · 아래로 스크롤하면 지난 기록');
     expect(DASH_TEXT.logJump(3)).toBe('새 기록 3개 · 맨 위로');
     expect(flat(sectionOf(render(adult), 'log'))).not.toMatch(/맨아래로|시간순|위로스크롤하면/);
   });

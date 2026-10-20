@@ -16,8 +16,8 @@ export const ENDING_HEADINGS = {
   journey: '출발선에서 마지막까지',
   stats: '최종 스탯',
   timeline: '생애 연표',
-  /** 연표 제목 옆 한 줄 (SPEC-005 LR6, 마스터 결정 M1): 연표는 위가 처음(시간순)이다 — 살아가기 화면의 인생 기록은 위가 최신이라 순서를 밝힌다 */
-  timelineOrder: '태어난 순서대로',
+  /** 연표 제목 옆 한 줄 (SPEC-005 LR6, 마스터 결정 M1, docs/design/copy.md 10절 ③): 연표는 위가 처음(시간순)이다 — 살아가기 화면의 인생 기록은 위가 최신이라 순서를 밝힌다. 처음 임시 문구는 형제 사이의 출생 순서로 읽힐 수 있어(R-437) 바꿨다 */
+  timelineOrder: '태어날 때부터 차례로',
 } as const;
 
 /** "83세에 세상을 떠났습니다. 원인은 노환이었습니다." (원인 낱말의 받침에 따라 「이었습니다」·「였습니다」, lifeText.ts#causeSentenceText) */

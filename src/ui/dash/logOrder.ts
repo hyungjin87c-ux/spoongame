@@ -76,3 +76,19 @@ export function scrollPlan(input: { scrollTop: number; shift: number; added: num
   if (input.follow || isAtLogTop(input.scrollTop)) return { top: 0, unread: 0 };
   return { top: input.scrollTop + input.shift, unread: input.added };
 }
+
+/** 줄이 다시 흐를 때(창 크기·글자 크기·화면 회전) 보던 줄이 이만큼(px) 밀렸으면 되맞춘다 — 이보다 작은 어긋남은 화면 픽셀 반올림이라 건드리지 않는다 */
+export const RESIZE_EPSILON = 0.5;
+
+/**
+ * 창 크기·글자 크기·화면 회전으로 줄이 다시 흐를 때의 스크롤 계획 (R-439). 브라우저의 스크롤 고정(`overflow-anchor`)은 새 줄 보정과 겹쳐 두 번 움직이므로 끄고(CSS `none`) 직접 한다.
+ *  - `rememberedScrollTop`: 스크롤할 때 기억해 둔 위치(줄이 다시 흐르기 전). 맨 위(≤ 24px)였으면 되맞추지 않는다 — 맨 위는 어떻게 흘러도 맨 위다.
+ *  - `scrollTop`: 지금 위치. `shift`: 기억해 둔 줄이 영역 윗변에서 떨어진 거리가 기억했을 때보다 얼마나 늘었는가(px, 아래로 밀렸으면 양수).
+ *  - `follow`: 「맨 위로」가 부드럽게 올라가는 중이면 건드리지 않는다.
+ * 돌려주는 값은 맞출 스크롤 위치, 움직일 필요가 없으면 `null`.
+ */
+export function resizePlan(input: { rememberedScrollTop: number; scrollTop: number; shift: number; follow: boolean }): number | null {
+  if (input.follow || isAtLogTop(input.rememberedScrollTop)) return null;
+  if (Math.abs(input.shift) < RESIZE_EPSILON) return null;
+  return Math.max(0, input.scrollTop + input.shift);
+}
