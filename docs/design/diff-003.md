@@ -208,6 +208,18 @@ SPEC-003 LM5·LM6·FS5 · `docs/data/content-M8.md` 2-5·5절·11절(LD-1·LD-4�
 
 시안: 생성기는 같은 `glueSegments`를 쓰므로 D-97이 들어오면 **재생성만으로** 따라간다 — 후속 2에서 FS5 설명과 플레이 시간 보조 문장 조각을 `glueHtml`로 바꿔 두었다(지금은 규칙이 없어 출력이 같다; D-97 뒤 designer가 `ending`·`title` 재생성·재촬영, `tests/designAssets.test.ts`의 FS5 문단 단언을 묶음 포함 꼴로). **후속 3(2026-10-20, D-97 반영 뒤)**: 재생성으로 바뀐 시안은 `ending`·`title-*`만이 아니라 `Glue`를 거치는 글 전부 — **10장**(`birth`·`dashboard-adult`·`dashboard-infant`·`decision-adult`·`decision-infant`·`economy-m5`·`ending`·`note`·`title-a`·`title-continue`). 생성기에 `esc`로 남아 있던 D-98 세 자리(가상 인구 주석 292행·나가기 확인 566행·다시 태어나기 1048행)를 `glueHtml`로 고쳤다(후속 2에서 미리 바꾼 FS5·보조 문장 조각 + 부품 렌더인 영향 안내와 합쳐 여섯 곳 1:1). 전체 재촬영 273장 넘침 0 · `--check` 넘침 0 · 감사 `ending` 192 · `note` 216 · `decision-adult` 120 · `decision-infant` 72조합 위반 0, `title-a` 24조합 넘침·끊김 0(CM10 84줄은 27차와 같은 정적 시안 한계) · `tests/designAssets.test.ts` 74/74. 결과 전체는 `ai-log/2026-10-19_SPEC-003_design-M8.md` 「후속 3」.
 
+## 1-8. M9 구현 화면(`screens/003/impl-m9/`) ↔ 시안 대조 — REV-003-M9-1 R-431 (2026-10-20, `ai-log/2026-10-20_SPEC-003_design-M9.md`)
+
+1차 릴리스 최종 디자인 검수용으로 **구현(prod 빌드, `PAGES_BASE=/spoongame/`, `src/` 트리 해시 `ee8e752c…` = main `02f47c5`)** 화면 23장을 `screens/003/impl-m9/`에 찍었다(목록·방법은 로그). 그중 데스크톱 1280 아홉 장을 같은 화면의 시안(`title-a-desktop`·`roulette-result-desktop`·`birth-top-desktop`·`dashboard-infant-desktop`·`dashboard-adult-desktop`·`decision-adult-stat-desktop`·`note-desktop`·`ending-desktop`)과 눈으로 대조했다. 구조·위계·토큰·문구 규칙은 같고, 다른 곳은 아래 셋이다. **시안은 지우지 않고 표기만 한다**(R-431). 구현 화면이 기준이다.
+
+| ID | 곳 | 구현 (`screens/003/impl-m9/`) | 시안 (`screens/003/`) | 상태 · 이유 |
+|---|---|---|---|---|
+| D-100 | 영유아 대시보드 연표 줄 | `04-dashboard-infant-1280x800.png`(2세): `infant.json`의 실제 사건 줄 — 0세 「첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. …」(`infant-vaccine`) · 「남이 만든 것을 사다 먹으며 끼니를 해결했습니다. … (선택: …)」, 1세 「아이가 붙잡고 서더니 처음으로 혼자 몇 걸음을 걸었습니다. …」(`infant-first-steps`) · 「아이가 처음으로 낱말 하나를 말했습니다. …」(`infant-first-word`) · 「정해진 때가 되어 아이는 건강검진을 받았습니다. …」 — 0~7세 「아이」 서술, 인용 부호 없음 | `dashboard-infant-desktop.png`(+ `-dark`·`-mobile`·`-mobile-dark`·`-mobile-full`): 「기본 예방접종을 받았습니다.」 · 「첫 걸음마를 뗐습니다. 온 가족이 박수를 쳤습니다.」 · 「첫 단어를 말했습니다. '엄마'라는 뜻의 말이었습니다.」(본문 인용 부호 금지 R-360에도 걸림) · 「엄마와 즐거운 시간을 보냈습니다.」 · 「동생을 맞이했습니다.」 — M4 때 생성기에 손으로 적은 표본 | **구현과 다름 — 구현 화면은 impl-m9/④.** 다음 시안 재생성 때 생성기의 연표 표본을 `infant.json` 실제 줄로 바꾼다(1차에는 손대지 않음) |
+| D-101 | 프로필 카드 「외모」 줄 어순 | `04-*`·`05-*`: 「또래 사이에서 **하위 약 34%**」 — `BIRTH_TEXT.looksSub`가 값 **앞**(copy.md 5-1 · M7e, 세 자리 모두) | `dashboard-infant-desktop.png`·`dashboard-adult-desktop.png`(대시보드 시안 전부): 「**상위 약 46%** 또래 사이에서」 — 값 **뒤**. `buildMockups.mjs#profileCard`(대시보드 프로필 칸, `<dd>${HERO.looks} <small>또래 사이에서</small>`)가 M7e의 어순 변경을 따라오지 못했다(출생신고·엔딩 시안은 `looksSub` import라 맞다) | **구현과 다름 — 구현 화면은 impl-m9/④·⑤.** 구현이 규격(5-1)과 같다. 다음 재생성 때 생성기 한 줄을 `looksSub` import로 |
+| D-102 | 첫 화면 통계 카드의 차트 높이·글자 크기 | `01-title-1280x800.png`·`01-title-1920x1080.png`: 차트를 카드의 실제 폭으로 다시 그린다(`StatsCarousel.tsx` `chartSizeFor(el.clientWidth)` — R-206 좌표계 폭 = 그려지는 폭, 글자 13px 고정) → 1280에서 차트 높이 약 150px, 카드가 짧다 | `title-a-desktop.png`: 기본 크기로 만든 SVG가 데스크톱 카드 폭으로 **늘어나** 높이 약 240px·글자도 함께 커진다(정적 시안은 폭을 재지 않는다) | **정적 시안 한계(구현과 다름) — 구현 화면은 impl-m9/①.** 모바일 폭 시안은 같다. 구현이 맞다 |
+
+나머지(룰렛 결과·출생신고·성인 대시보드 3열·결정 시트(인용 박스·영향 줄·안내 두 줄)·기록 시트(질문·연구 인용·입력란·두 선택지·끄기 버튼)·엔딩 머리·사망/선택 수/플레이 시간 블록·출발선 카드·연표 「나의 기록」 줄)는 시안과 같은 구조·문구 규칙이다. 다크·강제 색상·360·320×200%의 구현 모습은 시안 규칙대로이며, REV-003-M9-1 접근성 항목이 의심한 「강제 색상의 연표 나이 글자 끝 색 번짐」은 구현(`05-dashboard-adult-1280x800-forced.png`)에는 없다.
+
 ## 2. 구현 ↔ 명세(SPEC-003) 차이 — 마스터 결정으로 확정된 것
 
 | ID | 항목 | SPEC 원문 | 구현 | 결정 · 근거 |
