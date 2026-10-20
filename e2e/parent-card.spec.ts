@@ -168,17 +168,25 @@ test.describe('다음 결정으로 + 기록 카드 (R-451, PD7-3)', () => {
   for (const by of ['parent', 'child'] as const) {
     test(`4세가 ${by === 'parent' ? '부모님이 정한' : '아이의 일로 흘러간'} 해이고 5세에 기록 카드: 건너뛰면 기록 시트만 뜨고 ${by === 'parent' ? '부모' : '흘러감'} 카드는 시트 뒤에도, 시트를 닫은 뒤에도 없다 — 기록 줄은 남는다`, async ({ page }) => {
       await page.goto('/');
-      const found = await evalCore<{ start: GameState; expected: GameState } | null>(
+      // 시드 탐색 (R-459): 4세가 `by` 해이고 5세 첫머리에 기록 카드가 뜨는 판 가운데, 시트를 닫은 뒤의 **5세 해가 위임 해가 아닌** 판만 쓴다 — 5세가 위임 해면 6세가 된 뒤 5세 카드(`${eventId}@5`)가
+      // 뜨는 것이 PD5상 정상이라 아래의 「화면에 카드 없음」 단언이 거짓으로 실패한다. 시트를 닫는 길(`dismissNote` = `consumeNote`)과 그 해 걸음(`stepYear`)을 core로 한 번 미리 돌려 5세 해의 틱을 본다.
+      const found = await evalCore<{ start: GameState; expected: GameState; eventId: string } | null>(
         page,
         `for (let seed = 1; seed < 800; seed++) {
            const s0 = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), arg.era)));
            const r = core.advanceUntilDecision(s0, undefined, 'stop');
-           if (r.stoppedForNote && r.stoppedForNote.id === 'note-infant-memory' && r.state.age === 5 && r.last.fromAge === 4 && r.last.by === arg.by) return { start: s0, expected: r.state };
+           if (r.stoppedForNote && r.stoppedForNote.id === 'note-infant-memory' && r.state.age === 5 && r.last.fromAge === 4 && r.last.by === arg.by && r.last.eventId !== undefined) {
+             const year5 = core.stepYear(core.consumeNote(r.state, r.stoppedForNote));
+             if (year5.tick.by !== undefined || year5.state.age !== 6) continue; // 5세가 위임 해이거나 본인 결정 앞에서 멈추면(나이가 안 넘어간다) 이 시험의 대상이 아니다
+             return { start: s0, expected: r.state, eventId: r.last.eventId };
+           }
          }
          return null;`,
         { era: 'present', by },
       );
-      expect(found, `4세가 ${by} 해이고 5세에 기록 카드가 뜨는 시드를 찾지 못했다`).not.toBeNull();
+      expect(found, `4세가 ${by} 해이고 5세에 기록 카드가 뜨며 5세 해는 위임 해가 아닌 시드를 찾지 못했다`).not.toBeNull();
+      // 건너뛴 4세 해의 카드: 어떤 상황에서도 뜨지 않는다 (키 = `{이벤트 id}@{나이}`, ParentCard의 data-key)
+      const card4 = page.locator(`[data-testid="parent-card"][data-key="${found!.eventId}@4"]`);
       await injectSave(page, withoutPlay(found!.start), TS, NOTES_ON);
       const skip = page.getByTestId('skip');
       await expect(skip).toBeEnabled();
@@ -187,6 +195,7 @@ test.describe('다음 결정으로 + 기록 카드 (R-451, PD7-3)', () => {
       await expect(page.getByTestId('note-sheet')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId('note-sheet')).toHaveAttribute('data-card', 'note-infant-memory');
       await expect(page.getByTestId('parent-card')).toHaveCount(0);
+      await expect(card4).toHaveCount(0);
       // 저장된 인생은 core 기대값(advanceUntilDecision 'stop')과 같고, 위임 해의 기록 줄이 남아 있다
       const save = (await readSave(page)).data;
       expect(save.age).toBe(5);
@@ -199,8 +208,12 @@ test.describe('다음 결정으로 + 기록 카드 (R-451, PD7-3)', () => {
       await page.getByTestId('note-skip').click();
       await expect(page.getByTestId('note-sheet')).toHaveCount(0);
       await expect(page.getByTestId('parent-card')).toHaveCount(0);
-      // 카드 필요량(1배속 18~44초 ÷ 5 = 4~9초)보다 짧은 기본 연출로 5세가 끝난다
-      await expect.poll(async () => (await readSave(page)).data.age, { timeout: 30_000 }).toBeGreaterThan(5);
+      await expect(card4).toHaveCount(0);
+      // 기본 연출로 5세가 끝난다 (R-459 시간 상한): 틱이 없는 해(새로고침 직후와 같다)는 조용한 해 대기 = HOLD_MS.quiet 7초 × 연출 계수 1.35 = 9.45초(1배속) ÷ 배속 5 = 1.9초 뒤에 넘어간다.
+      // 4세 카드가 떴다면 결과 해 대기(13초 × 1.35 = 17.6초, 카드 필요량 18~44초면 그 이상) ÷ 5 = 3.5초 이상을 기다렸을 것이다 — 그 아래(3초)로 상한을 둬 카드를 기다렸다면 실패하게 한다.
+      await expect.poll(async () => (await readSave(page)).data.age, { timeout: 3_000, intervals: [100, 200, 300, 500] }).toBeGreaterThan(5);
+      // 6세가 된 뒤에도 건너뛴 4세 해의 카드는 없다. 5세 해는 시드 탐색에서 위임 해가 아닌 판만 골랐으므로 화면 전체에도 부모·흘러감 카드가 없다.
+      await expect(card4).toHaveCount(0);
       await expect(page.getByTestId('parent-card')).toHaveCount(0);
     });
   }

@@ -124,7 +124,7 @@ if (only.has('family')) {
 
 if (only.has('care')) {
   console.log(`\n## 돌봄 선택지 낙인 점검 (R-454): 선택 확률 평균(%) — 수저 단계별 · 양육 방식별 (괄호 = 관측 수, 단계당 ${perTier}판)`);
-  console.log('fever.dismiss의 1단계 − 5단계 격차는 설계 문서 6-3절이 3~4%p를 전제한다(tests/parentDecisionSim.test.ts가 상한을 지킨다).');
+  console.log('fever.dismiss의 1단계 − 5단계 격차는 측정 5.0~6.1%p이고 상한 8%p, 세 카드(after-hours.alone·noise.hush·stories.alone)는 25%p다(설계 문서 10-9, tests/parentDecisionSim.test.ts가 상한을 지킨다).');
   for (const era of ERAS) {
     const rows = careRows(tiered[era]!);
     console.log(`\n### ${ERA_LABEL[era]} 세상`);

@@ -330,7 +330,7 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     return html.slice(html.lastIndexOf('<li', at), html.indexOf('</li>', at));
   };
 
-  it('부모님이 정한 줄: 「{결과 문장} (부모님이 이렇게 정했습니다: {고른 길 라벨})」 — 표지(data-testid="log-by")에 사람 아이콘이 붙고 문구는 한 상수에서 나온다', () => {
+  it('부모님이 정한 줄: 「{결과 문장} (부모님이 이렇게 정했습니다: {고른 길 라벨})」 — 표지(data-testid="log-by")에 집 글리프가 붙고 문구는 한 상수에서 나온다', () => {
     const d = delegatedYear('infant-fever', 'present', 1, 'dismiss');
     const ev = EVENT_POOL.byId.get('infant-fever')!;
     const choice = ev.choices!.find((c) => c.id === 'dismiss')!;

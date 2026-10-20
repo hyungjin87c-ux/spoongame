@@ -19,6 +19,7 @@ import {
   sampleYoung,
   sampleYoungByTier,
   seedOf,
+  type CareRow,
   type YoungLife,
 } from '../scripts/parentReportLib';
 import { chooserFor, startLife, type Strategy } from '../scripts/simulateLib';
@@ -368,7 +369,23 @@ describe('T5 ⑦ 통계 보정 판정 2곳 (지금 세상, 차 ≤ 15%p): 사교
   });
 });
 
-describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절): 수저에 따른 비율 표, 아픈 아이를 넘기는 선택(fever.dismiss)의 1단계 대 5단계 격차 ≤ 8%p', () => {
+/**
+ * R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10절). 마스터 결정 2026-10-21(설계 문서 10-9): 권고 A(수용) — 1차(v0.2.0)는 수치·데이터 그대로, 시험·문서만.
+ *
+ * **규칙 (10-9 ②): 돌봄 관련 선택지의 수저별 격차 가운데 「돈 민감도 몫」은 ≤ 8%p, 선택지가 열리는(가시성) 몫은 제한 없음.** 가시성은 `requires.parentWealth.min = 3`이 세 번째 선택지
+ * (`academy`·`book`·`move`)를 여는 것으로, 형편이 선택지를 바꾸는 것은 게임의 주제(G3)다. 돈 민감도 몫은 같은 선택지를 보고도 `moneyNeed`(1.42 → 0.58)가 돈 드는 길의 점수를 깎아 돈이 남는 길로 끌리는 몫으로,
+ * 「부모가 돈 때문에 아이를 덜 챙긴다」로 읽힐 수 있는 경로(G4)라 8%p로 묶는다(`fever.dismiss` 상한과 같은 값).
+ *
+ * 이 파일이 지키는 것 (시뮬 표에서는 두 몫을 가를 수 없어 전체 격차로 잠근다):
+ *  - `fever.dismiss`: 보이는 선택지가 3 → 3이라 가시성 몫이 0 — 전체 격차가 곧 돈 민감도 몫이므로 **≤ 8%p를 직접 단언**한다(측정 지난 5.9 · 지금 5.1 · 다가올 4.9%p; 설계 문서 2-5절·2-10절의 「3~4%p」는
+ *    헬리콥터 한 칸 손계산이었다 — 양육 방식별 손계산 3.5~6.8%p, 측정 5.0~6.1%p, 10-7절).
+ *  - `after-hours.alone` · `noise.hush` · `stories.alone`: 가시성 몫이 큰 계단형(1~2단계 같음 → 3단계에서 한 번에 내려감 → 3~5단계 평평)이라 **전체 격차 ≤ 25%p로 지금 크기를 알려진 값으로 잠그고 앞으로 키우지 않게 한다**
+ *    (단계당 300판 측정 14.4~19.2%p, 단계당 1000판 측정 지금 세상 19.7 · 18.8 · 14.5%p — 10-1절). 돈 민감도 몫은 손계산으로 after-hours 약 7.5 · noise 약 3.6 · stories 0%p로 모두 8%p 안이다(10-2절) —
+ *    시뮬레이션으로 두 몫을 따로 재는 단언은 아직 없다(선택지 가시성을 가린 표본이 필요 — 2차 「R-454-후속」에서 자료 확인과 함께 다룬다).
+ * 표본: 단계당 300판(`PER_TIER`), 전략 `random`, 시드 `i × 7919 + 13`(`seedOf`)을 차례로 훑어 그 단계가 나온 판을 모은 조건부 표본, 세 시대. 표의 값은 판마다 그 선택지가 보인 해의 선택 **확률** 평균이라 표본 잡음이 작다
+ * (300판 표와 1000판 표가 1%p 안에서 같다). 격차 = 1단계 − 카드가 일어나는 가장 높은 단계(`noise.hush`는 재력 5단계에 카드가 없어 1 − 4단계, 나머지는 1 − 5단계).
+ */
+describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10-9): 수저에 따른 비율 표, 아픈 아이를 넘기는 선택(fever.dismiss)의 1단계 대 5단계 격차 ≤ 8%p, 세 카드(after-hours.alone·noise.hush·stories.alone)의 격차 ≤ 25%p', () => {
   const rowsOf = (era: Era) => Object.fromEntries(careRows(tiered()[era]).map((r) => [r.name, r]));
 
   it('표가 다섯 선택지 × 수저 5단계 × 양육 방식 4가지로 나온다 — fever.dismiss는 세 시대 모든 단계에 관측이 충분하고, 지금 세상은 다섯 선택지가 모두 관측된다 (공허 통과 방지)', () => {
@@ -385,7 +402,7 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절): �
     for (const r of careRows(tiered().present)) expect(r.byTier.filter((t) => t.share !== null).length, `지금 세상 ${r.name}`).toBeGreaterThanOrEqual(4); // noise.hush는 5단계에 보이지 않는다(requires)
   });
 
-  it('fever.dismiss의 수저 1단계 대 5단계 격차는 세 시대 모두 8%p 이하다 (측정 지난 5.9 · 지금 5.1 · 다가올 4.9%p — 설계 문서 6-3절이 전제한 3~4%p보다 크다 — 판단은 planner·마스터; 1단계가 더 자주 고른다)', () => {
+  it('fever.dismiss의 수저 1단계 대 5단계 격차는 세 시대 모두 8%p 이하다 (측정 지난 5.9 · 지금 5.1 · 다가올 4.9%p — 설계 문서 2-5절의 옛 손계산 3~4%p보다 크지만 마스터가 수용했다(10-9 ①); 1단계가 더 자주 고른다)', () => {
     for (const era of ERAS) {
       const r = rowsOf(era)['fever.dismiss'];
       expect(r.gap1to5, `${era}`).not.toBeNull();
@@ -405,6 +422,71 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절): �
     }
     expect(PARENT_FIT['infant-fever/dismiss']).toBe(0.5);
   });
+
+  // ---- 세 카드 격차 상한 (10-9 ③, 1차 몫) ----
+  /** 격차 상한(%p) — 측정 최대 19.2(300판 표) / 19.7(1000판 표)에 여유를 둔 값, 지금 크기를 알려진 값으로 잠근다 */
+  const THREE_CARD_GAP_CAP = 25;
+  const THREE_CARDS = ['after-hours.alone', 'noise.hush', 'stories.alone'] as const;
+  /** 시대마다 이 세 카드 가운데 일어나는 것 (이벤트의 `eras`·`requires`가 정한다 — 안 일어나는 칸은 관측 0이라 격차가 없다) */
+  const OBSERVED: Record<Era, readonly string[]> = {
+    past: ['stories.alone'],
+    present: ['after-hours.alone', 'noise.hush', 'stories.alone'],
+    future: ['after-hours.alone', 'stories.alone'],
+  };
+  /** 1단계 − 관측이 있는 가장 높은 단계 (noise.hush는 5단계에 카드가 없어 1−4단계). 관측이 없으면 null */
+  function gapToLastTier(r: CareRow): { gap: number; last: number; n1: number; nLast: number } | null {
+    const seen = r.byTier.filter((t) => t.share !== null);
+    if (seen.length === 0) return null;
+    const first = seen[0];
+    const last = seen[seen.length - 1];
+    return { gap: first.share! - last.share!, last: last.tier, n1: first.n, nLast: last.n };
+  }
+
+  it('세 카드(after-hours.alone·noise.hush·stories.alone)의 1단계 대 끝단계 격차는 일어나는 모든 칸에서 25%p 이하이고 관측이 충분하다 (측정 지금 세상 19.0 · 18.4 · 14.4%p — 표본 단계당 300판, 시드 i×7919+13, 무작위 선택)', () => {
+    for (const era of ERAS) {
+      const observed: string[] = [];
+      for (const name of THREE_CARDS) {
+        const g = gapToLastTier(rowsOf(era)[name]);
+        if (g === null) continue;
+        observed.push(name);
+        expect(g.n1, `${era} ${name} 1단계 관측`).toBeGreaterThanOrEqual(40);
+        expect(g.nLast, `${era} ${name} ${g.last}단계 관측`).toBeGreaterThanOrEqual(40);
+        expect(g.gap, `${era} ${name}: 1단계 ${rowsOf(era)[name].byTier[0].share!.toFixed(1)}% 대 ${g.last}단계 ${rowsOf(era)[name].byTier[g.last - 1].share!.toFixed(1)}% (1 − ${g.last}단계 ${g.gap.toFixed(1)}%p)`).toBeLessThanOrEqual(THREE_CARD_GAP_CAP);
+        expect(g.gap, `${era} ${name}: 부호는 1단계가 더 자주 고르는 쪽(제약 경로의 방향)`).toBeGreaterThan(0);
+      }
+      // 공허 통과 방지: 어느 시대에 어느 카드가 일어나는지가 데이터와 같다(카드가 사라지거나 다른 시대로 옮겨 가 단언이 조용히 비는 일을 막는다)
+      expect(observed, `${era}에서 관측되는 카드`).toEqual([...OBSERVED[era]]);
+    }
+  });
+
+  // 변이 점검: 세 번째(돈 드는) 선택지의 적합도를 허용 범위(PARENT_FIT_RANGE 0.5~4.0) 안에서 올리면 격차가 25%p를 넘는다 — 이 상한이 실제로 격차의 확대를 알아챈다
+  const MUTATIONS: Array<{ card: (typeof THREE_CARDS)[number]; fit: Record<string, number>; measured: string }> = [
+    { card: 'after-hours.alone', fit: { 'school-after-hours/academy': 4 }, measured: '지금 세상 29.7%p' },
+    { card: 'noise.hush', fit: { 'infant-noise/move': 4 }, measured: '지금 세상 31.9%p' },
+    // stories는 book 4.0만으로는 23.6%p라 상한 아래다 — 범위 안에서 tell을 0.5로 낮춰 함께 바꾼다(37.1%p)
+    { card: 'stories.alone', fit: { 'infant-stories/book': 4, 'infant-stories/tell': 0.5 }, measured: '지금 세상 37.1%p' },
+  ];
+  for (const m of MUTATIONS) {
+    it(`변이 점검: ${m.card} — 적합도 ${JSON.stringify(m.fit)}로 바꾸면 격차가 25%p를 넘는다 (측정 ${m.measured})`, () => {
+      const table = PARENT_FIT as Record<string, number>;
+      const saved: Record<string, number | undefined> = {};
+      try {
+        for (const [key, v] of Object.entries(m.fit)) {
+          saved[key] = table[key];
+          table[key] = v;
+        }
+        const g = gapToLastTier(careRows(sampleYoungByTier('present', PER_TIER, 'random')).find((x) => x.name === m.card)!);
+        expect(g, `${m.card} 관측`).not.toBeNull();
+        expect(g!.gap, `${m.card} 변이 뒤 격차`).toBeGreaterThan(THREE_CARD_GAP_CAP);
+      } finally {
+        for (const [key, v] of Object.entries(saved)) {
+          if (v === undefined) delete table[key];
+          else table[key] = v;
+        }
+      }
+      for (const key of Object.keys(m.fit)) expect(PARENT_FIT[key], `${key} 원상 복구`).toBe(saved[key]);
+    }, 60_000);
+  }
 });
 
 describe('T5 ⑧ 에러 0 · 모순 0, ⑨ 같은 시드는 같은 인생', () => {
