@@ -1,6 +1,6 @@
 import { EVENT_POOL } from '../data/events';
 import type { EventPool } from './events';
-import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type TickInfo } from './life';
+import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type RunResult, type TickInfo } from './life';
 import { consumeNote, dueNote, noteResponse, writeNote, type NoteMode } from './notes';
 import { playEqual, playNotBehind, readPlay } from './playClock';
 import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth, setPaused } from './state';
@@ -31,6 +31,7 @@ import {
  *  - choose(key, choiceId) / autoChoose(key): 대기 중인 이벤트 인스턴스의 키와 다르면 무시 → 연타가 다음 선택지를 누르지 못한다
  *  - autoChoose: 자동 모드가 꺼져 있으면 무시 → 타이머가 울리기 직전에 사용자가 자동 모드를 해제했다면 그 선택은 일어나지 않는다(R-038)
  *  - skip(다음 결정으로): 자동 모드에서는 무시 → 자동 모드의 선택은 타이머(autoChoose)로만 일어난다. 화면도 자동 모드에서는 이 버튼을 비활성화한다(R-038)
+ *    기록 카드 앞에서 멈췄고 직전 해가 부모님이 정한·흘러간 해였다면 그 걸음(tick)은 남기지 않는다 → 부모·흘러감 카드가 기록 시트 뒤에 뜨지 않는다(R-451, PD7-3). `tickAfterSkip` 참고.
  *  - begin / beginNew: 첫 화면의 「태어나기」. title 단계(begin) 또는 첫 화면을 다시 연 상태(beginNew)에서만 동작하고 한 번 동작하면 단계가 바뀌어
  *    더블탭·연타의 둘째 입력은 같은 객체를 돌려받는다 → 출생은 한 번만 일어난다(FS6). 이 순간 출생 결과가 정해져 저장되고 화면은 룰렛(roulette 단계)으로 간다(RL5).
  *  - finishSpin: 룰렛 연출이 끝났거나 「건너뛰기」를 눌렀다. 연출 중임을 나타내는 세션 상태(spin)를 끈다 — 이미 꺼져 있으면 무시(건너뛰기 연타). 저장되는 값이 아니라서
@@ -122,6 +123,17 @@ function withGame(s: Session, game: GameState, tick: TickInfo | null = null): Se
 }
 
 /**
+ * 「다음 결정으로」(`skip`)가 세션에 남기는 걸음 (R-451, SPEC-005 PD7-3 「이 경우 카드는 화면에 뜨지 않는다」).
+ * 기록 카드(수동 + `noteCards` 켜짐)가 해의 첫머리에서 건너뛰기를 멈춰 세우면 `r.last`는 **그 직전 해**의 걸음이다 — 그 해가 부모님이 정했거나 흘러간 해(`by`)였다면
+ * 새 해의 나이가 `fromAge + 1`이라 부모·흘러감 카드(`parentCardModel`)가 기록 시트 뒤에 뜨고, 시트를 닫으면 카드의 필요량(18~44초)만큼 기다리게 된다.
+ * 건너뛴 해는 연출 없이 지나갔으므로 그 걸음을 남기지 않는다(null = 새로고침 직후와 같다: 카드 없음, 기록 줄만 남는다).
+ * 위임이 아닌 해(서술·본인이 고른 해)의 걸음은 그대로 둔다 — 그 뒤의 연출 대기 계산은 지금과 같다.
+ */
+function tickAfterSkip(r: RunResult): TickInfo | null {
+  return r.stoppedForNote !== undefined && r.last.by !== undefined ? null : r.last;
+}
+
+/**
  * 세션이 기록 카드를 어떻게 다루는가: `live`(기본)는 위 설명대로 설정(자동 모드·`noteCards`)을 따르고, `ignore`는 진행 액션이 카드를 아예 보지 않는다 —
  * 기록 시트가 없는 화면(M7c UI 전의 배포 판)과 시뮬레이션이 쓴다. `saveNote`·`dismissNote`·`setNoteCards`는 어느 쪽이든 동작한다.
  */
@@ -193,7 +205,7 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
       // 일시정지(`paused`) 중에도 동작한다 — 사용자가 직접 누르는 입력이라 시계(advance·autoChoose가 멈춘다)와 상관이 없고, 선택지에서 멈춘 판은 일시정지 그대로다(R-331, tests/dashSession.test.ts).
       if (s.settings.autoMode || s.game.phase !== 'life' || s.game.pending !== null) return s;
       const r = advanceUntilDecision(s.game, pool, mode);
-      return withGame(s, r.state, r.last);
+      return withGame(s, r.state, tickAfterSkip(r));
     }
     case 'setSpeed':
       return !(SPEEDS as readonly number[]).includes(a.speed) || a.speed === s.settings.speed

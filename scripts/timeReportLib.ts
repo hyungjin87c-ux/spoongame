@@ -150,9 +150,9 @@ export function measureLife(seed: number, era: Era, strategy: Strategy, lifeLeng
   if (final.lifeLength !== lifeLength) problems.push(`${tag}: 판의 인생 길이가 ${final.lifeLength}다`);
   if (totalCards(c) > lifeModeOf(lifeLength).pacing.hard) problems.push(`${tag}: 결정 카드 ${totalCards(c)}장이 하드 상한 ${lifeModeOf(lifeLength).pacing.hard}을 넘었다`);
   if (c.extraLines < 0) problems.push(`${tag}: 둘째 줄 수가 음수다`);
-  choiceRows.forEach((h, i) => {
-    if (cards[i] !== undefined) cards[i].resultLen = len(h.text);
-  });
+  // 결과 문장 글자 수는 카드(본인이 고른 것만 잰다)와 같은 순서의 **본인 선택 줄**에 짝지운다 — 위임 줄(`by`)까지 섞인 `choiceRows`로 짝지으면 QI5 뒤 색인이 어긋난다(R-458).
+  if (cards.length !== ownRows.length) problems.push(`${tag}: 카드 측정 ${cards.length}개와 본인 선택 줄 ${ownRows.length}개의 길이가 달라 결과 글자 수를 짝지을 수 없다`);
+  else ownRows.forEach((h, i) => (cards[i].resultLen = len(h.text)));
   const byStage = { infant: 0, school: 0, youth: 0, middle: 0, senior: 0 } as Record<Stage, number>;
   let cardsUpTo7 = 0;
   for (const h of choiceRows) {

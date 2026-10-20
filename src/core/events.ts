@@ -93,7 +93,7 @@ export interface ChoiceDef {
   result: string;
   /**
    * 부모가 정하는 카드에서만 라벨 대신 쓰는 문구 (SPEC-005 PD11 처리 (b)) — 선택지 라벨이 아이의 행동이라 「부모님이 이렇게 정했습니다」와 어긋날 때만 둔다
-   * (`school-puppy` 세 선택지와 `school-academy-night`의 `friends`). 본인·흘러감 결정에서는 쓰지 않는다. 기록 줄·카드·엔딩은 `parentLabel ?? label`.
+   * (`school-puppy` 세 선택지, `school-academy-night`의 `friends`, `school-scholarship`의 `pass` — 3장·9개 문자열, R-452). 본인·흘러감 결정에서는 쓰지 않는다. 기록 줄·카드·엔딩은 `parentLabel ?? label`.
    */
   parentLabel?: string;
   /** 부모가 정하는 카드에서만 `result` 대신 쓰는 결과 문구 (위와 같다). `parentResult ?? result` */

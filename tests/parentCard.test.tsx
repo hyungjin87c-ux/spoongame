@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SETTINGS,
+  advanceUntilDecision,
+  createSession,
   calendarYear,
   cardReadNeedMs,
   citationFor,
@@ -11,6 +13,7 @@ import {
   previewChoice,
   resolveChoiceStep,
   resolveDelegated,
+  sessionReducer,
   type Era,
   type GameState,
   type TickInfo,
@@ -22,14 +25,21 @@ import {
   FIRST_PARENT_HINT,
   PARENT_CHIP_TEXT,
   PARENT_DECIDED_TEXT,
+  DECIDER_ICON,
   PARENT_DECISION_TABLE,
   decidedByText,
+  deciderIconOf,
   delegatedSummaryText,
 } from '../src/data/parentDecisionTable';
 import { LifeScreen } from '../src/screens/LifeScreen';
+import endingScreenSrc from '../src/screens/EndingScreen.tsx?raw';
+import { SPRITE_SVG } from '../src/ui/brandAssets';
+import logListSrc from '../src/ui/dash/LogList.tsx?raw';
+import parentCardSrc from '../src/ui/dash/ParentCard.tsx?raw';
 import type { LifeGame } from '../src/ui/dash/Cards';
 import { ParentCard, parentCardModel } from '../src/ui/dash/ParentCard';
 import type { YearClock } from '../src/ui/useYearClock';
+import { startLife } from '../scripts/simulateLib';
 import { forcedPending } from './helpers/forcedPending';
 
 /**
@@ -118,6 +128,13 @@ describe('부모님이 정한 카드: 비모달·구성·문구 (PD5·PD8, 설�
   const parent = delegatedYear('infant-fever', 'present', 1, 'dismiss');
   const html = cardHtml(parent.game, parent.tick);
 
+  it('칩의 아이콘은 결정자 전용 글리프 i-by-parent(집 한 채)다 — 관계 상태 아이콘 i-people을 재사용하지 않는다 (R-455)', () => {
+    const chip = html.slice(html.indexOf('data-testid="parent-chip"'), html.indexOf('data-testid="parent-when"'));
+    expect(chip).toContain('href="#i-by-parent"');
+    expect(chip).not.toMatch(/#i-people|#i-smile|#i-by-child/);
+    expect(body(html, 'parent-chip')).toBe('부모님의 결정'); // 글자는 그대로 — 아이콘만 바뀌었다
+  });
+
   it('카드가 그려진다: data-by="parent", 칩 「부모님의 결정」, 도장 「부모님이 이렇게 정했습니다」, 고른 길 라벨 한 개', () => {
     expect(html).toContain('data-testid="parent-card"');
     expect(html).toContain('data-by="parent"');
@@ -195,6 +212,12 @@ describe('아이의 일로 흘러간 카드: 칩 「아이의 일」, 도장 「
     expect(child.tick.firstParent).toBeUndefined();
   });
 
+  it('칩의 아이콘은 결정자 전용 글리프 i-by-child(물결 둘)다 — 행복 상태 아이콘 i-smile(웃는 얼굴)을 재사용하지 않는다 (R-455)', () => {
+    const chip = html.slice(html.indexOf('data-testid="parent-chip"'), html.indexOf('data-testid="parent-when"'));
+    expect(chip).toContain('href="#i-by-child"');
+    expect(chip).not.toMatch(/#i-people|#i-smile|#i-by-parent/);
+  });
+
   it('비모달·정적: 부모 카드와 같다(버튼·시트·낭독 영역 없음, 집안 사정 줄 없음)', () => {
     expect(html).not.toMatch(/<button|role="(dialog|status|alert|log)"|aria-modal|aria-live/);
     expect(plain(html)).not.toMatch(/집안 사정|고를 수 없었/);
@@ -248,12 +271,13 @@ describe('줄 형식 세 가지는 한 상수에서 나온다 (PD6, 설계 문�
     expect(decidedByText('child')).toBe(CHILD_FLOW_TEXT);
   });
 
-  it('parentLabel/parentResult가 있는 선택지만 부모일 때 바뀐다: school-puppy의 세 길과 school-academy-night의 friends — 본인이 고르면 label/result 그대로', () => {
+  it('parentLabel/parentResult가 있는 선택지만 부모일 때 바뀐다: school-puppy의 세 길, school-academy-night의 friends, school-scholarship의 pass(R-452) — 본인이 고르면 label/result 그대로', () => {
     const cases: Array<[string, string, number]> = [
       ['school-puppy', 'keep', 9],
       ['school-puppy', 'feed', 9],
       ['school-puppy', 'pass', 9],
       ['school-academy-night', 'friends', 10],
+      ['school-scholarship', 'pass', 15],
     ];
     for (const [eventId, choiceId, age] of cases) {
       const ev = EVENT_POOL.byId.get(eventId)!;
@@ -314,6 +338,8 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     expect(row).toContain('data-testid="log-by"');
     expect(row).toContain('data-by="parent"');
     expect(row).toContain('<svg'); // 아이콘 (색에만 의존하지 않는다)
+    expect(row, '결정자 전용 글리프 (R-455)').toContain('href="#i-by-parent"');
+    expect(row).not.toMatch(/#i-people|#i-smile/);
     expect(plain(row)).toContain(`${choice.result} (${PARENT_DECIDED_TEXT}: ${choice.label})`);
   });
 
@@ -324,6 +350,8 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     const row = rowOf(logHtml(d.game), choice.result);
     expect(row).toContain('data-by="child"');
     expect(row).toContain('<svg');
+    expect(row, '결정자 전용 글리프 (R-455)').toContain('href="#i-by-child"');
+    expect(row).not.toMatch(/#i-people|#i-smile/);
     expect(plain(row)).toContain(`${choice.result} (${CHILD_FLOW_TEXT}: ${choice.label})`);
   });
 
@@ -357,8 +385,8 @@ describe('새 문자열 lint (설계 문서 3-3절): 칩·도장·안내·엔딩
   const EMOJI_OR_MARK = /[!?！？\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
   const TIER_NAMES = /흙수저|동수저|은수저|금수저|다이아수저|다이아 수저/;
 
-  it('lint 대상이 11개 이상이다 (칩 2 + 도장 2 + 안내 1 + 엔딩 3 + parentLabel 4 + parentResult 3 — 공허 통과 방지)', () => {
-    expect(NEW_STRINGS.length).toBe(15);
+  it('lint 대상이 17개다 (칩 2 + 도장 2 + 안내 1 + 엔딩 3 + parentLabel 5 + parentResult 4 — R-452가 school-scholarship pass의 둘을 더했다; 공허 통과 방지)', () => {
+    expect(NEW_STRINGS.length).toBe(17);
   });
 
   for (const [name, value] of NEW_STRINGS) {
@@ -450,5 +478,92 @@ describe('카드 필요량 불변식 (PD5-d, 설계 문서 4-3절): 연출 대�
     expect(first.tick.readNeedMs!).toBeGreaterThan(later.tick.readNeedMs!);
     const hintMs = cardReadNeedMs(FIRST_PARENT_HINT.length, false) - cardReadNeedMs(0, false);
     expect(first.tick.readNeedMs! - later.tick.readNeedMs!).toBe(hintMs);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// R-451: 「다음 결정으로」가 기록 카드 앞에서 멈출 때
+
+describe('「다음 결정으로」가 기록 카드 앞에서 멈추면 부모·흘러감 카드는 뜨지 않는다 (R-451, SPEC-005 PD7-3)', () => {
+  // 0세에서 skip → 5세 첫머리의 기록 카드(note-infant-memory, asap)에서 멈춘다. 0~12세는 모두 부모·흘러감이라 사람이 고르는 카드가 없고, 멈추는 곳은 언제나 이 기록 카드다.
+  // 그때 `advanceUntilDecision`이 돌려주는 마지막 걸음은 4세 해의 것이다 — 그 해가 위임 해(`by`)면 나이가 `fromAge + 1`이라 카드가 기록 시트 뒤에 뜨던 것이 R-451이다.
+  const manual = { speed: 1 as const, autoMode: false, noteCards: true };
+
+  function stopped(seed: number, era: Era) {
+    const game = startLife(seed, era);
+    const raw = advanceUntilDecision(game, EVENT_POOL, 'stop'); // 멈춘 자리의 core 기대값 (reducer와 같은 호출)
+    return { game, raw, after: sessionReducer(createSession(game, manual), { type: 'skip' }) };
+  }
+
+  it('noteCards 켬(수동): 4세가 위임 해인 시드에서 멈춘 세션의 틱은 null이고 카드 모델이 없다 — 고치기 전 틱(r.last)으로는 카드가 만들어진다(공허 통과 방지)', () => {
+    let delegated = 0;
+    for (const era of ['past', 'present', 'future'] as const) {
+      for (let seed = 1; seed <= 60; seed++) {
+        const { raw, after } = stopped(seed, era);
+        if (raw.stoppedForNote === undefined || raw.last.by === undefined) continue;
+        delegated++;
+        const where = `${era} 시드 ${seed}`;
+        // 5세 첫머리, 기록 카드 앞, 선택지 대기 없음
+        expect(after.game.age, where).toBe(5);
+        expect(raw.last.fromAge, where).toBe(4);
+        expect(after.game.pending, where).toBeNull();
+        expect(after.game, `${where}: 상태는 core 기대값과 같다`).toEqual(raw.state);
+        // 고치기 전 동작: 직전 해의 틱을 남기면 카드 모델이 만들어진다
+        expect(parentCardModel(asLife(after.game), raw.last, EVENT_POOL), `${where}: r.last를 남기면 카드가 뜬다`).not.toBeNull();
+        // 고친 뒤: 틱이 없다 → 카드가 없다 (기록 줄은 그대로)
+        expect(after.tick, where).toBeNull();
+        expect(parentCardModel(asLife(after.game), after.tick, EVENT_POOL), where).toBeNull();
+        expect(after.game.history.filter((h) => h.by !== undefined).length, `${where}: 위임 해의 기록 줄은 남는다`).toBeGreaterThan(0);
+        // 시트를 닫고(마음속에 담고 살기) 진행해도 카드는 뜨지 않는다
+        const closed = sessionReducer(after, { type: 'dismissNote', cardId: raw.stoppedForNote.id });
+        expect(parentCardModel(asLife(closed.game), closed.tick, EVENT_POOL), `${where}: 시트를 닫은 뒤`).toBeNull();
+      }
+    }
+    expect(delegated, '4세가 위임 해인 시드 (공허 통과 방지)').toBeGreaterThanOrEqual(10);
+  });
+
+  it('위임이 아닌 해에서 멈추면 직전 해의 걸음을 그대로 남긴다 (연출 대기 계산은 지금과 같다)', () => {
+    let kept = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const { raw, after } = stopped(seed, 'present');
+      if (raw.stoppedForNote === undefined || raw.last.by !== undefined) continue;
+      kept++;
+      expect(after.tick, `시드 ${seed}`).toEqual(raw.last);
+      expect(parentCardModel(asLife(after.game), after.tick, EVENT_POOL), `시드 ${seed}`).toBeNull(); // 위임이 아닌 해는 원래 카드가 없다
+    }
+    expect(kept, '위임이 아닌 해에서 멈춘 시드').toBeGreaterThanOrEqual(3);
+  });
+
+  it('기록 카드를 끄면(소비) 멈추지 않아 걸음을 그대로 남긴다: 끝까지 간 마지막 걸음 = core 기대값(consume)', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const game = startLife(seed, 'present');
+      const raw = advanceUntilDecision(game, EVENT_POOL, 'consume');
+      const after = sessionReducer(createSession(game, { ...manual, noteCards: false }), { type: 'skip' });
+      expect(raw.stoppedForNote, `시드 ${seed}`).toBeUndefined();
+      expect(after.tick, `시드 ${seed}`).toEqual(raw.last);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// R-455: 결정자 글리프
+
+describe('결정자 글리프 둘 (R-455, design-system 13-3절·13-5 D5-35·D5-36)', () => {
+  it('스프라이트에 i-by-parent·i-by-child가 들어 있고 결정자 상수가 그 id를 가리킨다 (아이콘 id 한 곳)', () => {
+    expect(SPRITE_SVG).toContain('id="i-by-parent"');
+    expect(SPRITE_SVG).toContain('id="i-by-child"');
+    expect(DECIDER_ICON).toEqual({ parent: 'i-by-parent', child: 'i-by-child' });
+    expect(deciderIconOf('parent')).toBe('i-by-parent');
+    expect(deciderIconOf('child')).toBe('i-by-child');
+    // 상태 미터의 아이콘은 그대로 있다 (관계 i-people · 행복 i-smile) — 두 뜻이 한 그림을 나누지 않는다
+    expect(SPRITE_SVG).toContain('id="i-people"');
+    expect(SPRITE_SVG).toContain('id="i-smile"');
+  });
+
+  it('세 곳(카드 칩·인생 기록 줄·엔딩 연표)은 같은 함수로 아이콘을 고르고 상태 아이콘을 쓰지 않는다 (소스 대조)', () => {
+    for (const [name, src] of [['ParentCard.tsx', parentCardSrc], ['LogList.tsx', logListSrc], ['EndingScreen.tsx', endingScreenSrc]] as const) {
+      expect(src, name).toContain('deciderIconOf(');
+      expect(src, `${name}: 결정자 표지에 상태 아이콘을 재사용하지 않는다`).not.toMatch(/'i-people' : 'i-smile'|'i-smile' : 'i-people'/);
+    }
   });
 });

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { ERAS, PARENT_WEALTHS, advanceUntilDecision, autoResolveStep, createSession, deciderOf, parseGame, resolveChoiceStep, serializeGame, sessionReducer, stepYear, type Era, type GameState, type HistoryEntry, type ParentWealth } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { PARENT_DECISION_TABLE, SELF_AREA_WEIGHT } from '../src/data/parentDecisionTable';
+import { PARENT_DECISION_TABLE, PARENT_FIT, SELF_AREA_WEIGHT } from '../src/data/parentDecisionTable';
 import { selfAreaWeightFactor } from '../src/core/parentDecision';
 import {
+  CARE_CHOICES,
   MONOTONE_CARDS,
   OFFICIAL,
   cardCounts,
+  careRows,
   dominanceCells,
   familyPriorityAccept,
   monotoneRows,
@@ -366,6 +368,45 @@ describe('T5 ⑦ 통계 보정 판정 2곳 (지금 세상, 차 ≤ 15%p): 사교
   });
 });
 
+describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절): 수저에 따른 비율 표, 아픈 아이를 넘기는 선택(fever.dismiss)의 1단계 대 5단계 격차 ≤ 8%p', () => {
+  const rowsOf = (era: Era) => Object.fromEntries(careRows(tiered()[era]).map((r) => [r.name, r]));
+
+  it('표가 다섯 선택지 × 수저 5단계 × 양육 방식 4가지로 나온다 — fever.dismiss는 세 시대 모든 단계에 관측이 충분하고, 지금 세상은 다섯 선택지가 모두 관측된다 (공허 통과 방지)', () => {
+    expect(CARE_CHOICES.map((c) => c.name)).toEqual(['fever.dismiss', 'after-hours.alone', 'stories.alone', 'screen.free', 'noise.hush']);
+    for (const era of ERAS) {
+      const rows = careRows(tiered()[era]);
+      expect(rows).toHaveLength(5);
+      for (const r of rows) {
+        expect(r.byTier.map((t) => t.tier)).toEqual([1, 2, 3, 4, 5]);
+        expect(r.byParenting.map((x) => x.parenting)).toEqual(['neglect', 'free', 'helicopter', 'strict']);
+      }
+      for (const t of rowsOf(era)['fever.dismiss'].byTier) expect(t.n, `${era} fever.dismiss ${t.tier}단계 관측`).toBeGreaterThanOrEqual(40);
+    }
+    for (const r of careRows(tiered().present)) expect(r.byTier.filter((t) => t.share !== null).length, `지금 세상 ${r.name}`).toBeGreaterThanOrEqual(4); // noise.hush는 5단계에 보이지 않는다(requires)
+  });
+
+  it('fever.dismiss의 수저 1단계 대 5단계 격차는 세 시대 모두 8%p 이하다 (측정 지난 5.9 · 지금 5.1 · 다가올 4.9%p — 설계 문서 6-3절이 전제한 3~4%p보다 크다 — 판단은 planner·마스터; 1단계가 더 자주 고른다)', () => {
+    for (const era of ERAS) {
+      const r = rowsOf(era)['fever.dismiss'];
+      expect(r.gap1to5, `${era}`).not.toBeNull();
+      expect(Math.abs(r.gap1to5!), `${era}: 1단계 ${r.byTier[0].share!.toFixed(1)}% 대 5단계 ${r.byTier[4].share!.toFixed(1)}%`).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it('변이 점검: fever.dismiss의 적합도 0.5를 2.0으로 바꾸면 격차가 8%p를 넘는다 (이 상한이 PARENT_FIT 0.5를 실제로 지킨다 — 측정 지금 세상 9.4%p)', () => {
+    const table = PARENT_FIT as Record<string, number>;
+    const saved = table['infant-fever/dismiss'];
+    try {
+      table['infant-fever/dismiss'] = 2;
+      const r = careRows(sampleYoungByTier('present', PER_TIER, 'random')).find((x) => x.name === 'fever.dismiss')!;
+      expect(Math.abs(r.gap1to5!), '적합도 2.0일 때 격차').toBeGreaterThan(8);
+    } finally {
+      table['infant-fever/dismiss'] = saved;
+    }
+    expect(PARENT_FIT['infant-fever/dismiss']).toBe(0.5);
+  });
+});
+
 describe('T5 ⑧ 에러 0 · 모순 0, ⑨ 같은 시드는 같은 인생', () => {
   it('⑧ 세 시대 × 두 전략 × 1000판이 모두 끝까지 돈다(예외 0) — 표본 수와 구조 점검이 위 시험이 본 값과 같다', () => {
     for (const st of STRATEGIES) for (const era of ERAS) expect(natural()[st][era].length).toBe(LIVES);
@@ -419,7 +460,7 @@ describe('T5 ⑪ 보고: 13~18세·19세까지 본인 카드 수 분포와 0장 
     }
   });
 
-  it('PD13 목표: 13~18세 본인 카드가 0장인 판이 세 시대 모두 25% 이하다 (3000판 측정 24.4 / 21.1 / 21.6% — 마스터 결정 9절 3번: ×1.5의 26.6~30.9%로는 못 미쳐 ×2.0으로 올렸다)', () => {
+  it('PD13 목표: 13~18세 본인 카드가 0장인 판이 세 시대 모두 25% 이하다 (3000판 측정 24.4 / 21.1 / 21.6% — 마스터 결정 9절 3번: ×1.5의 3000판 26.6~29.6%로는 못 미쳐 ×2.0으로 올렸다)', () => {
     for (const era of ERAS) {
       const c = cardCounts(sampleYoung(era, 3000, 'random'));
       expect(c.self13to18Zero, `${era} 13~18세 본인 0장 비율`).toBeLessThanOrEqual(0.25);

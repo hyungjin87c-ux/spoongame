@@ -148,13 +148,14 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
     expect(a.samples).toEqual(samplesOfLife(economySeed(5), 'present', 'random'));
   });
 
-  it("지금 세상 end-g3는 더 이상 알려진 차이가 아니다 (SPEC-005 QI5가 1·2단계 0 = 0 동률을 0 < 971로 되돌려 KNOWN_GUARD_GAPS에서 뺐다): 엄격한 순서만 통과이고, 어느 인접 단계의 동률·뒤집힘도 통과시키지 않는다 (REV-003-M8-1 R-419의 한계 시험을 이 뜻으로 옮김)", () => {
+  it("지금 세상 end-g3는 더 이상 알려진 차이가 아니다 (SPEC-005 QI5가 1·2단계 0 = 0 동률을 0 < 1,251(PD13 ×2.0 최종값)로 되돌려 KNOWN_GUARD_GAPS에서 뺐다): 엄격한 순서만 통과이고, 어느 인접 단계의 동률·뒤집힘도 통과시키지 않는다 (REV-003-M8-1 R-419의 한계 시험을 이 뜻으로 옮김)", () => {
     expect(KNOWN_GUARD_GAPS['present:end-g3'], '목록에서 뺐다 — 다시 동률이 되면 마스터 보고와 함께 다시 올린다').toBeUndefined();
     const guardFor = (nets: number[]) => Object.fromEntries(endingGuardsOf('present', nets.map((n, i) => life((i + 1) as 1, n))).map((x) => [x.id, x]))['end-g3'];
     const passes = (nets: number[]) => guardFor(nets).ok;
     expect(guardFor([0, 0, 5, 9, 30]).parts).toEqual([0, 5, 4, 21]);
     expect(passes([0, 616, 1000, 2000, 5000]), '엄격한 순서').toBe(true);
-    expect(passes([0, 971, 37360, 124518, 184411]), 'QI5 직후 지금 세상의 실제 값').toBe(true);
+    expect(passes([0, 1251, 36353, 124629, 178212]), 'QI5 최종(PD13 ×2.0) 지금 세상의 실제 값').toBe(true);
+    expect(passes([0, 971, 37360, 124518, 184411]), '처음 ×1.5로 쟀던 값(기록)').toBe(true);
     expect(passes([0, 0, 5, 9, 30]), '1·2단계 동률 (옛 알려진 차이였던 것 — 이제는 어긋남)').toBe(false);
     expect(passes([0, 5, 5, 9, 30]), '2·3단계 동률').toBe(false);
     expect(passes([0, 5, 9, 9, 30]), '3·4단계 동률').toBe(false);

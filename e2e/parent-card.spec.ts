@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { GameState } from '../src/core/types';
-import { activeTestId, evalCore, injectSave, oracleDecision, readSave, withoutPlay } from './helpers';
+import { activeTestId, evalCore, injectSave, oracleDecision, readSave, withoutPlay, type InjectedSettings } from './helpers';
 import { MANUAL, findDelegatedYear, focusPauseAfterEntry } from './parentStates';
 
 /**
@@ -159,4 +159,49 @@ test.describe('다음 결정으로 (PD3·PD7)', () => {
     await expect(page.getByTestId('parent-card')).toHaveCount(0);
     expect(await page.getByTestId('choice-panel').getByRole('button').count()).toBeGreaterThanOrEqual(2);
   });
+});
+
+test.describe('다음 결정으로 + 기록 카드 (R-451, PD7-3)', () => {
+  // 기록 카드를 켠 기본 설정(수동, noteCards: true)에서 「다음 결정으로」는 5세 첫머리의 기록 카드 앞에서 멈춘다. 직전(4세) 해가 부모님이 정한·흘러간 해여도 그 카드는 화면에 뜨지 않는다.
+  const NOTES_ON: InjectedSettings = { speed: 1, autoMode: false, noteCards: true };
+
+  for (const by of ['parent', 'child'] as const) {
+    test(`4세가 ${by === 'parent' ? '부모님이 정한' : '아이의 일로 흘러간'} 해이고 5세에 기록 카드: 건너뛰면 기록 시트만 뜨고 ${by === 'parent' ? '부모' : '흘러감'} 카드는 시트 뒤에도, 시트를 닫은 뒤에도 없다 — 기록 줄은 남는다`, async ({ page }) => {
+      await page.goto('/');
+      const found = await evalCore<{ start: GameState; expected: GameState } | null>(
+        page,
+        `for (let seed = 1; seed < 800; seed++) {
+           const s0 = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), arg.era)));
+           const r = core.advanceUntilDecision(s0, undefined, 'stop');
+           if (r.stoppedForNote && r.stoppedForNote.id === 'note-infant-memory' && r.state.age === 5 && r.last.fromAge === 4 && r.last.by === arg.by) return { start: s0, expected: r.state };
+         }
+         return null;`,
+        { era: 'present', by },
+      );
+      expect(found, `4세가 ${by} 해이고 5세에 기록 카드가 뜨는 시드를 찾지 못했다`).not.toBeNull();
+      await injectSave(page, withoutPlay(found!.start), TS, NOTES_ON);
+      const skip = page.getByTestId('skip');
+      await expect(skip).toBeEnabled();
+      await skip.click();
+      // 기록 시트가 5세 첫머리에서 열린다 (카드는 없다)
+      await expect(page.getByTestId('note-sheet')).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId('note-sheet')).toHaveAttribute('data-card', 'note-infant-memory');
+      await expect(page.getByTestId('parent-card')).toHaveCount(0);
+      // 저장된 인생은 core 기대값(advanceUntilDecision 'stop')과 같고, 위임 해의 기록 줄이 남아 있다
+      const save = (await readSave(page)).data;
+      expect(save.age).toBe(5);
+      expect(save.history).toEqual(found!.expected.history);
+      expect(save.history.filter((h) => h.by === by).length).toBeGreaterThanOrEqual(1);
+      await expect(page.getByTestId('log').getByText(by === 'parent' ? '부모님이 이렇게 정했습니다' : '이렇게 흘러갔습니다').first()).toBeAttached();
+      // 시트를 닫아도 카드는 뜨지 않고(필요량 18~44초를 기다리지 않는다) 해가 이어진다
+      await page.waitForTimeout(1500);
+      await expect(page.getByTestId('parent-card')).toHaveCount(0);
+      await page.getByTestId('note-skip').click();
+      await expect(page.getByTestId('note-sheet')).toHaveCount(0);
+      await expect(page.getByTestId('parent-card')).toHaveCount(0);
+      // 카드 필요량(1배속 18~44초 ÷ 5 = 4~9초)보다 짧은 기본 연출로 5세가 끝난다
+      await expect.poll(async () => (await readSave(page)).data.age, { timeout: 30_000 }).toBeGreaterThan(5);
+      await expect(page.getByTestId('parent-card')).toHaveCount(0);
+    });
+  }
 });

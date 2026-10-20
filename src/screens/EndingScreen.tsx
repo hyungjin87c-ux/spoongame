@@ -3,7 +3,7 @@ import { COMPARABLE_STATS, displaySeconds, isCleanRun, looksStanding, reviewEndi
 import { ERA_CONFIG } from '../data/birthTable';
 import { BIRTH_TEXT } from '../data/birthReportText';
 import { standingLabel } from '../data/birthText';
-import { decidedByText, delegatedSummaryText } from '../data/parentDecisionTable';
+import { decidedByText, deciderIconOf, delegatedSummaryText } from '../data/parentDecisionTable';
 import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/dashText';
 import {
   ENDING_HEADINGS,
@@ -123,7 +123,7 @@ function TimelineItem({ entry }: { entry: HistoryEntry }) {
             {entry.by !== undefined ? (
               // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6·PD9): 인생 기록 줄과 같은 문구 한 곳 + 아이콘(색에만 의존하지 않는다)
               <>
-                <Icon name={entry.by === 'parent' ? 'i-people' : 'i-smile'} className="icon--xs" />
+                <Icon name={deciderIconOf(entry.by)} className="icon--xs" />
                 {decidedByText(entry.by)}: {entry.choice}
               </>
             ) : (

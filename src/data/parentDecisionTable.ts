@@ -88,6 +88,15 @@ export function decidedByText(by: 'parent' | 'child'): string {
   return by === 'parent' ? PARENT_DECIDED_TEXT : CHILD_FLOW_TEXT;
 }
 
+/**
+ * 결정자 표지의 아이콘 id — 부모 카드 칩·인생 기록 줄·엔딩 연표 세 곳이 이 한 곳에서 가져온다 (R-455, design-system 13-3절·D5-36). 상태 미터의 아이콘(`i-people` 관계·`i-smile` 행복)을 재사용하지 않는다 —
+ * 같은 화면에서 한 그림이 두 뜻을 갖지 않게 전용 글리프를 쓴다(`src/assets/icons/decider-icons.svg`, 스프라이트는 `src/ui/brandAssets.ts#SPRITE_SVG`).
+ */
+export const DECIDER_ICON = { parent: 'i-by-parent', child: 'i-by-child' } as const;
+export function deciderIconOf(by: 'parent' | 'child'): 'i-by-parent' | 'i-by-child' {
+  return DECIDER_ICON[by];
+}
+
 /** 카드 머리 칩 — 부모: 설계 문서 3-2절의 문구. 흘러감: 「아이의 일」 (designer 확정 — `docs/design/copy.md` 11-1 ①) */
 export const PARENT_CHIP_TEXT = '부모님의 결정';
 export const CHILD_CHIP_TEXT = '아이의 일';
@@ -180,7 +189,7 @@ export function parentFitOf(eventId: string, choiceId: string): number {
 
 /**
  * 13~18세에 본인이 고르는 카드(`deciderOf === 'self'`)의 이벤트 추첨 가중에 곱하는 값. 기본 1.0(그대로)이고, **13~18세 본인 카드가 0장인 판이 25%를 넘으면 올린다**(마스터 결정 Q2, 측정은 `npm run report:parent`의 `selfBefore19`). 「본인 카드 1장 보장」은 쓰지 않는다.
- * 지금 값 **2.0**: 설계 문서 7절의 승인 값은 ×1.5였으나 ×1.5로도 0장 비율이 26.6~30.9%라 25%에 못 미쳐 마스터가 ×2.0으로 올렸다(설계 문서 9절 3번, A16 범위 밖의 마스터 승인). 3000판 0장 비율: ×1.0 35~39% · ×1.5 27~30% · **×2.0 21~24%** · ×3.0 15~18%.
+ * 지금 값 **2.0**: 설계 문서 7절의 승인 값은 ×1.5였으나 ×1.5로도 0장 비율이 3000판 26.6~29.6%(1000판 28.3~30.9%)라 25%에 못 미쳐 마스터가 ×2.0으로 올렸다(설계 문서 9절 3번, A16 범위 밖의 마스터 승인). 3000판 0장 비율: ×1.0 35~39% · ×1.5 26.6~29.6% · **×2.0 21~24%** · ×3.0 15~18%.
  * 값을 바꾸면 이벤트 추첨이 달라져 EK(경제·분포) 재측정이 따라온다.
  */
 export const SELF_AREA_WEIGHT: number = 2;

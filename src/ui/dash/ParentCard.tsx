@@ -2,7 +2,7 @@ import { useMemo, type CSSProperties } from 'react';
 import { calendarYear, citationFor, type CitationView, type EventDef, type EventPool, type TickInfo } from '../../core';
 import type { ImpactItem } from '../../core/impact';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
-import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, FIRST_PARENT_HINT, PARENT_CHIP_TEXT, PARENT_DECIDED_TEXT } from '../../data/parentDecisionTable';
+import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, FIRST_PARENT_HINT, PARENT_CHIP_TEXT, PARENT_DECIDED_TEXT, deciderIconOf } from '../../data/parentDecisionTable';
 import { FitPair } from '../FitPair';
 import { Icon } from '../Brand';
 import type { LifeGame } from './Cards';
@@ -66,7 +66,7 @@ export function ParentCard({ model }: { model: ParentCardModel }) {
     <section className={`card decision decision--parent${by === 'child' ? ' decision--child' : ''}`} aria-labelledby="pc-title" data-testid="parent-card" data-by={by} data-key={`${ev.id}@${age}`}>
       <div className="decision__head">
         <span className={`parent-chip parent-chip--${by}`} data-testid="parent-chip">
-          <Icon name={by === 'parent' ? 'i-people' : 'i-smile'} />
+          <Icon name={deciderIconOf(by)} />
           <span>{chip}</span>
         </span>
         <span className="decision__when" data-testid="parent-when">

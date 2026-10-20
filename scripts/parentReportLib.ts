@@ -391,3 +391,47 @@ export function familyPriorityAccept(byTier: Record<ParentWealth, YoungLife[]>):
   });
 }
 
+
+// ---------- 돌봄 선택지 낙인 점검 (R-454, 설계 문서 2-5절·6-3절) ----------
+
+/**
+ * 「가난한 집 부모가 아이를 방치한다」로 읽힐 수 있는 돌봄 선택지 다섯 개. 확률은 수저(형편 입력)·양육 방식·`PARENT_FIT`으로 생기므로, 수저에 따라 얼마나 갈리는지를 잰다.
+ * `fever.dismiss`는 낙인 완화를 위해 `PARENT_FIT` 0.5를 곱한다(2-5절) — 그 전제(1단계 대 5단계 격차가 작다)를 `tests/parentDecisionSim.test.ts`가 지킨다.
+ */
+export const CARE_CHOICES: ReadonlyArray<{ name: string; eventId: string; choiceId: string }> = [
+  { name: 'fever.dismiss', eventId: 'infant-fever', choiceId: 'dismiss' },
+  { name: 'after-hours.alone', eventId: 'school-after-hours', choiceId: 'alone' },
+  { name: 'stories.alone', eventId: 'infant-stories', choiceId: 'alone' },
+  { name: 'screen.free', eventId: 'infant-screen', choiceId: 'free' },
+  { name: 'noise.hush', eventId: 'infant-noise', choiceId: 'hush' },
+];
+
+export interface CareRow {
+  name: string;
+  /** 수저 1~5단계의 선택 확률 평균(%)과 관측 수 (그 시대에 일어나지 않는 카드는 관측 0 → share null) */
+  byTier: Array<{ tier: ParentWealth; share: number | null; n: number }>;
+  /** 양육 방식(방임·자유·헬리콥터·엄격)의 선택 확률 평균(%)과 관측 수 — 수저 단계별 표본(단계당 같은 판 수)을 합쳐 수저 구성이 치우치지 않게 한다 */
+  byParenting: Array<{ parenting: ParentingStyle; share: number | null; n: number }>;
+  /** 1단계 − 5단계 (%p, 부호 있음). 관측이 없으면 null */
+  gap1to5: number | null;
+}
+
+/** 돌봄 선택지 수저별·양육 방식별 비율 표: 한 시대의 수저 단계별 표본에서 */
+export function careRows(byTier: Record<ParentWealth, YoungLife[]>): CareRow[] {
+  const all = PARENT_WEALTHS.flatMap((t) => byTier[t]);
+  return CARE_CHOICES.map((c) => {
+    const tiers = PARENT_WEALTHS.map((tier) => {
+      const obs = obsOf(byTier[tier], c.eventId);
+      const share = meanShare(obs, (_o, id) => id === c.choiceId);
+      return { tier, share: share === null ? null : share * 100, n: obs.length };
+    });
+    const parenting = (['neglect', 'free', 'helicopter', 'strict'] as const).map((p) => {
+      const obs = obsOf(all, c.eventId).filter((o) => o.parenting === p);
+      const share = meanShare(obs, (_o, id) => id === c.choiceId);
+      return { parenting: p, share: share === null ? null : share * 100, n: obs.length };
+    });
+    const lo = tiers[0].share;
+    const hi = tiers[4].share;
+    return { name: c.name, byTier: tiers, byParenting: parenting, gap1to5: lo === null || hi === null ? null : lo - hi };
+  });
+}

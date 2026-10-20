@@ -125,6 +125,16 @@ describe('엔딩 화면: 구성과 순서', () => {
     // 줄 문구: 본인이 고른 선택 「선택: 라벨」 · 부모님이 정한 일 「부모님이 이렇게 정했습니다: 라벨」 · 흘러간 일 「이렇게 흘러갔습니다: 라벨」 — 인생 기록 줄과 같은 문구 한 곳(PD6)
     for (const c of choices) expect(textOf(html)).toContain(c.by === undefined ? `선택: ${c.choice}` : `${decidedByText(c.by)}: ${c.choice}`);
     expect(choices.some((c) => c.by === 'parent') && choices.some((c) => c.by === undefined), '공허 통과 방지: 부모·본인 선택이 모두 있다').toBe(true);
+    // 표지 아이콘은 결정자 전용 글리프다 (R-455): 부모 줄 i-by-parent, 흘러감 줄 i-by-child, 본인 줄은 아이콘이 없다 — 상태 아이콘 i-people·i-smile을 재사용하지 않는다
+    const picked = [...html.matchAll(/<span class="tl-picked" data-testid="timeline-picked"(?: data-by="(parent|child)")?>(.*?)<\/span>/g)];
+    expect(picked.length).toBe(choices.length);
+    for (const m of picked) {
+      if (m[1] === undefined) expect(m[2]).not.toContain('<svg');
+      else {
+        expect(m[2]).toContain(`href="#${m[1] === 'parent' ? 'i-by-parent' : 'i-by-child'}"`);
+        expect(m[2]).not.toMatch(/#i-people|#i-smile/);
+      }
+    }
     // 단계 제목이 순서대로 있다
     // (단계 제목은 ui/Glue 묶음으로 그려져 숫자+단위 둘레에 span이 낀다 — 태그를 뺀 글자로 찾는다)
     const plain = textOf(html);

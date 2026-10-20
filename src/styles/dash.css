@@ -247,7 +247,7 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 .parent-pick__stamp { align-self: flex-start; max-width: 100%; padding: 2px var(--sp-3); border: 1.5px solid var(--c-text-2); border-radius: var(--r-sm); color: var(--c-text-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
 .parent-hint { font-size: var(--fs-sm); color: var(--c-text-2); }
 /* 인생 기록 줄의 표지(PD6): 「(부모님이 이렇게 정했습니다: 라벨)」·「(이렇게 흘러갔습니다: 라벨)」 — 앞의 작은 아이콘 + 글자. 본인 선택 줄 「(선택: …)」과 글자·아이콘으로 가른다 */
-.log__by .icon { display: inline-block; vertical-align: -2px; margin-right: 4px; }
+.log__by .icon, .tl-picked .icon { display: inline-block; vertical-align: -2px; margin-right: 4px; }
 /* 인용 박스(MD2·EV6): 옅은 쪽빛 면 + 놋쇠 왼쪽 막대(「사람이 남긴 것」의 색, 1절). 줄 순서 = **종류 라벨**(.cite__kind 「통계」/「연구」 — citations.json kind에서. U12 결정: 지표 이름이 아니라 자료의 종류라 QM2-11(제목이 약속한 값) 대상이 아니다)
    → **요약**(.cite__text = 시대 머리말 + 한 칸 + 요약, 합쳐 ≤ 100자 — 「지금의 연구로는」(지난 세상의 시대 무관 연구)·「지금 기준으로는」(다가올 세상)은 같은 글자·같은 색, 따로 꾸미지 않는다) → **출처 한 줄**(.cite__src = formatSourceLine 출력 「{기관·저자}({연도}), {자료 이름}」을 Glue로 감싼 것 — copy.md 6-3).
    안에 <a>·DOI·URL·PMID를 그리지 않는다(EV6). 인용이 없는 카드에는 이 요소 자체가 없다(빈 박스 0). 글자는 모두 --c-on-brand-soft 한 색이고 불투명도를 쓰지 않는다(QM3-5 전수 대비 — 옛 .cite__src opacity 0.9 제거; 면 위 라이트 9.9 / 다크 10.3:1).

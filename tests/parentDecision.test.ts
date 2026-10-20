@@ -461,17 +461,49 @@ describe('모델 상수와 보조 함수 (설계 문서 2절 — 승인 A3~A6)',
     expect(parentFitOf('nope', 'nope')).toBe(1);
   });
 
-  it('적합도는 선택지의 효과를 바꾸지 않는다: 같은 입력에서 fit 표를 지우면 확률만 달라지고 영향 줄(resolveEffects)은 그대로다', () => {
+  it('적합도는 선택지의 효과를 바꾸지 않는다: fit 표를 모두 1로 둔 가중치와 비교하면 학원·과외 확률만 fit 곱만큼 오르고(혼자 공부는 상대적으로 내려감), 보이는 선택지·영향 줄(resolveEffects)은 그대로다 (R-457)', () => {
     const cell = stateAt({ eventId: 'school-tutoring', age: 12, wealth: 4, parenting: 'free', stat: 50, fund: 0, order: 1 })!;
-    const w = parentChoiceWeights(cell)!;
-    expect(w.ids).toEqual(['academy', 'alone', 'tutor']);
+    const withFit = parentChoiceWeights(cell)!;
+    expect(withFit.ids).toEqual(['academy', 'alone', 'tutor']);
     const ev = EVENT_POOL.byId.get('school-tutoring')!;
-    const before = JSON.stringify(ev.choices);
-    parentChoiceWeights(cell);
-    expect(JSON.stringify(ev.choices)).toBe(before);
-    // 같은 양육·형편에서 fit이 있는 학원·과외가 fit 없는 혼자 공부보다 상대적으로 높다 (2.5배 곱)
-    const noFit = w.weights.map((x) => x); // 변조 금지 확인용 복사
-    expect(noFit).toHaveLength(3);
+    const ctx = condContextOf(cell);
+    const effectsOf = () => withFit.ids.map((id) => JSON.stringify(resolveEffects(ev.choices!.find((c) => c.id === id)!.effects, ev.choices!.find((c) => c.id === id)!.bonuses, ctx)));
+    const choicesBefore = JSON.stringify(ev.choices);
+    const effectsBefore = effectsOf();
+
+    // fit 표를 1로 둔다(모든 키 제거) — 끝나면 반드시 되돌린다
+    const table = PARENT_FIT as Record<string, number>;
+    const saved = { ...table };
+    let noFit: ReturnType<typeof parentChoiceWeights>;
+    let effectsWithoutFit: string[];
+    try {
+      for (const k of Object.keys(table)) delete table[k];
+      expect(parentFitOf('school-tutoring', 'academy'), 'fit을 지웠다').toBe(1);
+      noFit = parentChoiceWeights(cell);
+      effectsWithoutFit = effectsOf();
+    } finally {
+      Object.assign(table, saved);
+    }
+    expect(PARENT_FIT, 'fit 표를 되돌렸다').toEqual(saved);
+    expect(parentFitOf('school-tutoring', 'academy')).toBe(2.5);
+
+    // 선택지 id·효과·카드 데이터는 같고, 확률만 다르다
+    expect(noFit!.ids).toEqual(withFit.ids);
+    expect(JSON.stringify(ev.choices), '카드 데이터를 바꾸지 않는다').toBe(choicesBefore);
+    expect(effectsWithoutFit!, '영향 줄(실제 효과)은 fit과 무관하다').toEqual(effectsBefore);
+    expect(noFit!.weights).not.toEqual(withFit.weights);
+    const at = (w: { ids: string[]; weights: number[] }, id: string): number => w.weights[w.ids.indexOf(id)];
+    // 학원·과외(fit 2.5)는 오르고 fit 없는 혼자 공부는 내려간다 — 상대적으로 높다
+    expect(at(withFit, 'academy')).toBeGreaterThan(at(noFit!, 'academy'));
+    expect(at(withFit, 'tutor')).toBeGreaterThan(at(noFit!, 'tutor'));
+    expect(at(withFit, 'alone')).toBeLessThan(at(noFit!, 'alone'));
+    // 정확한 크기: ε 섞기를 걷어 낸 몫(raw)의 비는 fit 곱만큼만 달라진다 — 학원 대 혼자, 과외 대 혼자는 2.5배, fit이 같은 학원 대 과외는 그대로
+    const eps = PARENT_MODEL.epsilon;
+    const n = withFit.ids.length;
+    const raw = (w: { ids: string[]; weights: number[] }, id: string): number => (at(w, id) - eps / n) / (1 - eps);
+    expect(raw(withFit, 'academy') / raw(withFit, 'alone')).toBeCloseTo(2.5 * (raw(noFit!, 'academy') / raw(noFit!, 'alone')), 8);
+    expect(raw(withFit, 'tutor') / raw(withFit, 'alone')).toBeCloseTo(2.5 * (raw(noFit!, 'tutor') / raw(noFit!, 'alone')), 8);
+    expect(raw(withFit, 'academy') / raw(withFit, 'tutor')).toBeCloseTo(raw(noFit!, 'academy') / raw(noFit!, 'tutor'), 8);
   });
 });
 

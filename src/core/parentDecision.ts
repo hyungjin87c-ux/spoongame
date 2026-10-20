@@ -62,7 +62,7 @@ export function decisionFor(eventId: string, age: number): Decider {
 
 /**
  * PD13: 13~18세에 본인이 고르는 카드의 이벤트 추첨 가중 배수(`SELF_AREA_WEIGHT`, 기본 1). 그 밖의 카드·나이는 1.
- * 13~18세 본인 카드가 0장인 판이 25%를 넘으면 1.5로 올리고 EK를 다시 잰다(마스터 결정 Q2).
+ * 13~18세 본인 카드가 0장인 판이 25%를 넘으면 올리고 EK를 다시 잰다(마스터 결정 Q2): 승인 값 ×1.5로는 3000판 26.6~29.6%라 못 미쳐 마스터가 **×2.0**으로 올렸다(설계 문서 9절 3번, `SELF_AREA_WEIGHT`).
  */
 export function selfAreaWeightFactor(eventId: string, age: number): number {
   if (SELF_AREA_WEIGHT === 1 || age < SELF_FROM_AGE || age >= ALL_SELF_FROM_AGE) return 1;

@@ -359,6 +359,25 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
     }
   });
 
+  it('카드별 결과 문장 글자 수(resultLen)는 본인이 고른 선택 줄(by 없는 줄)에 짝지어진다 — 부모님이 정한·흘러간 줄이 섞여도 어긋나지 않는다 (R-458)', () => {
+    let delegatedLives = 0;
+    for (const era of ERAS as readonly Era[]) {
+      const measuredLives = measureMany(era, 25, 'random', 'short30'); // 시드 i × 7919 + 13 (i = 1…25)
+      for (let i = 1; i <= 25; i++) {
+        const seed = i * 7919 + 13;
+        const measured = measuredLives[i - 1];
+        // 같은 판을 따로 다시 돌려(같은 시드 → 같은 인생) 본인 선택 줄을 직접 꺼낸다
+        const final = playToEnd(startLife(seed, era, { lifeLength: 'short30' }), chooserFor('random', seed)).state;
+        const choiceRows = final.history.filter((h) => h.kind === 'choice');
+        const own = choiceRows.filter((h) => h.by === undefined);
+        if (own.length < choiceRows.length) delegatedLives++;
+        expect(measured.problems, `${era} 시드 ${seed}`).toEqual([]);
+        expect(measured.cards.map((c) => c.resultLen), `${era} 시드 ${seed}: 카드와 본인 선택 줄의 결과 글자 수`).toEqual(own.map((h) => len(h.text)));
+      }
+    }
+    expect(delegatedLives, '위임 줄이 섞인 판 (공허 통과 방지)').toBeGreaterThan(60);
+  });
+
   it('시대별 인용 노출률(report:citations — 자동 성향 1000판)이 READ_MODEL.citeExposure와 ±5%p 안이다', () => {
     for (const era of ERAS as readonly Era[]) {
       const row = exposureOf(era, 1000);

@@ -1,6 +1,6 @@
 import { Component, createRef, type MutableRefObject, type ReactNode, type RefObject, type UIEventHandler } from 'react';
 import { DASH_TEXT } from '../../data/dashText';
-import { decidedByText } from '../../data/parentDecisionTable';
+import { decidedByText, deciderIconOf } from '../../data/parentDecisionTable';
 import { Icon } from '../Brand';
 import { revealTopOfTallFocus } from '../focusReveal';
 import { NoteBody } from './NoteText';
@@ -259,7 +259,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
                         {h.by !== undefined ? (
                           // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6): 「(부모님이 이렇게 정했습니다: 라벨)」 · 「(이렇게 흘러갔습니다: 라벨)」 — 글자 + 아이콘으로 본인 선택 줄과 가른다(색에만 의존하지 않는다)
                           <em className={`log__by log__by--${h.by}`} data-testid="log-by" data-by={h.by}>
-                            <Icon name={h.by === 'parent' ? 'i-people' : 'i-smile'} className="icon--xs" />({decidedByText(h.by)}: {h.choice})
+                            <Icon name={deciderIconOf(h.by)} className="icon--xs" />({decidedByText(h.by)}: {h.choice})
                           </em>
                         ) : (
                           <em>

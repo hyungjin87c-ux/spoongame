@@ -1,18 +1,19 @@
 import { ERAS, type Era, type ParentWealth } from '../src/core';
 import { PARENTING_LABEL } from '../src/data/birthText';
 import { SELF_AREA_WEIGHT } from '../src/data/parentDecisionTable';
-import { MONOTONE_CARDS, OFFICIAL, cardCounts, dominanceCells, familyPriorityAccept, monotoneRows, parentalLeaveShare, parentingGap, privateEducationRows, sampleYoung, sampleYoungByTier, type YoungLife } from './parentReportLib';
+import { MONOTONE_CARDS, OFFICIAL, cardCounts, careRows, dominanceCells, familyPriorityAccept, monotoneRows, parentalLeaveShare, parentingGap, privateEducationRows, sampleYoung, sampleYoungByTier, type YoungLife } from './parentReportLib';
 import type { Strategy } from './simulateLib';
 
 /**
  * 어린 시절 부모님 결정 보고 (SPEC-005 PD12·PD13, 설계 문서 docs/data/parent-decision-model.md 5절 T5): **판정이 아니라 보고**다 — 손계산 칸(설계 문서 1-6·2-7·2-10절)을 실측으로 대체하고
  * `selfBefore19`(13~18세·19세까지 본인 카드 수와 0장 비율, PD13)를 낸다. 단언은 tests/parentDecisionSim.test.ts가 한다.
- * 실행: npm run report:parent [-- 판수=1000] [--tier=300] [--strategy=random|auto] [--only=counts,monotone,parenting,dominance,calibration,family]
+ * 실행: npm run report:parent [-- 판수=1000] [--tier=300] [--strategy=random|auto] [--only=counts,monotone,parenting,dominance,calibration,family,care]
  *   counts      시대별 판당 부모·흘러감·본인 카드 수, 13~18세 본인 카드 분포와 0장 비율(selfBefore19)
  *   monotone    카드별 수저 단조 표(비용 합 확률, 단계별 판 N개씩)
  *   parenting   양육 방식 방향(엄격·헬리콥터 대 자유·방임)
  *   dominance   (카드 × 수저 × 양육) 칸의 한 선택지 최대 확률 — 부모·흘러감
  *   calibration 통계 보정 판정 2곳(사교육 소득별 · 육아휴직 어머니 72.2%) + 학업 중단(family-priority) 보고
+ *   care        돌봄 선택지(fever.dismiss · after-hours.alone · stories.alone · screen.free · noise.hush) 수저별·양육 방식별 선택 확률 — 낙인 점검(R-454, 설계 문서 6-3절)
  * 20세가 되기 전까지만 돌린다(한 판 0.5ms쯤). 시드 i × 7919 + 13.
  */
 const args = process.argv.slice(2);
@@ -21,9 +22,9 @@ const positional = args.find((a) => !a.startsWith('--'));
 const lives = Number(positional ?? 1000);
 const perTier = Number(flag('tier') ?? 300);
 const strategy = (flag('strategy') ?? 'random') as Strategy;
-const only = new Set((flag('only') ?? 'counts,monotone,parenting,dominance,calibration,family').split(','));
+const only = new Set((flag('only') ?? 'counts,monotone,parenting,dominance,calibration,family,care').split(','));
 if (!Number.isInteger(lives) || lives < 1 || !Number.isInteger(perTier) || perTier < 1 || !['random', 'auto'].includes(strategy)) {
-  console.error('사용법: npm run report:parent [-- 판수(1 이상 정수) --tier=단계당 판수 --strategy=random|auto --only=counts,monotone,parenting,dominance,calibration,family]');
+  console.error('사용법: npm run report:parent [-- 판수(1 이상 정수) --tier=단계당 판수 --strategy=random|auto --only=counts,monotone,parenting,dominance,calibration,family,care]');
   process.exit(2);
 }
 
@@ -36,7 +37,7 @@ console.log(`# 부모님 결정 보고 (PD12·PD13) — 20세 전까지 · 시�
 const natural: Record<Era, YoungLife[]> = { past: [], present: [], future: [] };
 const tiered: Partial<Record<Era, Record<ParentWealth, YoungLife[]>>> = {};
 if (only.has('counts') || only.has('parenting') || only.has('dominance')) for (const era of ERAS) natural[era] = sampleYoung(era, lives, strategy);
-if (only.has('monotone') || only.has('calibration') || only.has('family') || only.has('dominance')) for (const era of ERAS) tiered[era] = sampleYoungByTier(era, perTier, strategy);
+if (only.has('monotone') || only.has('calibration') || only.has('family') || only.has('dominance') || only.has('care')) for (const era of ERAS) tiered[era] = sampleYoungByTier(era, perTier, strategy);
 
 if (only.has('counts')) {
   console.log('\n## 판당 카드 수 (자연 분포)');
@@ -118,5 +119,20 @@ if (only.has('family')) {
   for (const era of ERAS) {
     const rows = familyPriorityAccept(tiered[era]!);
     console.log(`- ${ERA_LABEL[era]}: ${rows.map((r) => `${r.tier}단계 ${f(r.share)}% (n=${r.n})`).join(' · ')}`);
+  }
+}
+
+if (only.has('care')) {
+  console.log(`\n## 돌봄 선택지 낙인 점검 (R-454): 선택 확률 평균(%) — 수저 단계별 · 양육 방식별 (괄호 = 관측 수, 단계당 ${perTier}판)`);
+  console.log('fever.dismiss의 1단계 − 5단계 격차는 설계 문서 6-3절이 3~4%p를 전제한다(tests/parentDecisionSim.test.ts가 상한을 지킨다).');
+  for (const era of ERAS) {
+    const rows = careRows(tiered[era]!);
+    console.log(`\n### ${ERA_LABEL[era]} 세상`);
+    console.log('| 선택지 | 1단계 | 2단계 | 3단계 | 4단계 | 5단계 | 1단계 − 5단계(%p) | 방임 | 자유 | 헬리콥터 | 엄격 |');
+    console.log('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
+    for (const r of rows) {
+      const cell = (x: { share: number | null; n: number }): string => (x.share === null ? '-' : `${f(x.share)} (${x.n})`);
+      console.log(`| ${r.name} | ${r.byTier.map(cell).join(' | ')} | ${r.gap1to5 === null ? '-' : f(r.gap1to5)} | ${r.byParenting.map(cell).join(' | ')} |`);
+    }
   }
 }
