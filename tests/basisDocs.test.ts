@@ -57,7 +57,8 @@ describe('근거 문서·CSV는 JSON에서 만든 생성기의 결과와 같다 
   });
 
   it('근거 행은 s-001부터 s-091까지 빠짐없이 있고(LAST_ROW), 모든 지표의 basisId가 그 안에 있다', () => {
-    expect(LAST_ROW).toBe(91);
+    // SPEC-005 QI4 1단계(2026-10-21): s-092~s-100을 더해 LAST_ROW는 100이다. 제목의 s-091은 그 전 값이다 — docs/TODO.md가 이 제목을 인용해 제목은 바꾸지 않았다.
+    expect(LAST_ROW).toBe(100);
     for (let n = 1; n <= LAST_ROW; n++) expect(basisDoc).toContain(`### s-${String(n).padStart(3, '0')} `);
     const ids = (statsJson as { indicators: Array<{ basisId: string }> }).indicators.map((i) => i.basisId);
     for (const id of ids) expect(Number(id.slice(2))).toBeLessThanOrEqual(LAST_ROW);
@@ -65,9 +66,10 @@ describe('근거 문서·CSV는 JSON에서 만든 생성기의 결과와 같다 
   });
 
   it('요약 표의 행 수(확인 84·미확인 7·합계 91)가 지표의 usable과 맞는다 (s-037 임차 세분 2019년 값 확인, s-063 주거비 부담 추가 — 2026-10-17, s-064~s-091 M7b 준비 수집 — 2026-10-19)', () => {
-    expect(basisDoc).toContain('| 확인(원문 직접 대조) | 84 |');
+    // SPEC-005 QI4 1단계(2026-10-21): s-092~s-100 수집으로 지금 값은 확인 93·미확인 7·합계 100이다. 제목의 숫자는 그 전 값이다 — docs/TODO.md가 이 제목을 인용해 제목은 바꾸지 않았다.
+    expect(basisDoc).toContain('| 확인(원문 직접 대조) | 93 |');
     expect(basisDoc).toContain('| 미확인(사유 적음, 게임에서 쓰지 않음) | 7 |');
-    expect(basisDoc).toContain('| 합계 | 91 |');
+    expect(basisDoc).toContain('| 합계 | 100 |');
     const unusable = (statsJson as { indicators: Array<{ usable: boolean }> }).indicators.filter((i) => !i.usable).length;
     expect(unusable).toBe(6); // 지표 6개 + 서지 미확인 행 s-050 = 미확인 7
   });

@@ -88,13 +88,14 @@ describe('구조 검증 (SC3: 필수 필드·출처 형식·기준 연도)', () 
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id, id).toMatch(/^[a-z][a-z0-9-]{2,40}$/);
     expect(ALL.length).toBeGreaterThanOrEqual(40);
-    expect(ALL).toHaveLength(74);
+    // SPEC-005 QI4 1단계(2026-10-21): 새 지표 9개(공식 전망 7 + 연령별 격차 2)를 더해 83개. 제목의 74는 그 전 값이다 — docs/TODO.md가 이 제목을 인용해 제목은 바꾸지 않았다.
+    expect(ALL).toHaveLength(83);
   });
 
   it('모든 지표에 필수 필드가 있다: id·title·kind·use·latest(또는 null)·definition(미확인은 빈 문자열 허용)·basisId·verification·usable', () => {
     for (const i of ALL) {
       expect(i.title.length, i.id).toBeGreaterThan(1);
-      expect(['line', 'bar', 'number', 'table'], i.id).toContain(i.kind);
+      expect(['line', 'bar', 'number', 'table', 'projection'], i.id).toContain(i.kind);
       expect(Array.isArray(i.use) && i.use.length > 0, i.id).toBe(true);
       for (const u of i.use) expect(USES.has(u), `${i.id} use ${u}`).toBe(true);
       expect(i.basisId, i.id).toMatch(/^s-\d{3}$/);

@@ -92,12 +92,51 @@ export interface HelpLine {
   source?: SourceInfo;
 }
 
+/**
+ * 공식 전망(`kind: 'projection'`) 지표의 전망 정보 — SPEC-004 PJ2 형식 (SPEC-005 FC4, QI4 1단계). 공식 추계만 담는다(지어낸 미래 수치 0).
+ * 한 지표는 `actual`(실측·확정 구간, `actualThrough`까지)과 `projection.scenarios`(전망 구간, `baseYear`~`horizon`)를 가진다.
+ * 시나리오 이름은 원문 그대로(중위·고위·저위 등)이며 낙관·기준·비관으로 옮기지 않는다(그 대응표는 SPEC-004 PJ4). 화면은 아직 연결하지 않았다(다음 단계).
+ */
+export interface ProjectionScenario {
+  /** 'median' · 'high' · 'low' · 'main'(시나리오 구분이 없는 단일 추계) */
+  key: string;
+  /** 원문 이름의 단계: 중위 'mid' · 고위 'high' · 저위 'low' · 구분 없음 'single' */
+  level: 'mid' | 'high' | 'low' | 'single';
+  label: string;
+  /** 원문 표에 적힌 이름 그대로 */
+  official: string;
+  /** 연도별 값(`shape`가 없을 때) */
+  series?: YearPoint[];
+  /** 기준 연도별 행(`shape: 'cohort-rows'`일 때) */
+  rows?: Array<Record<string, number>>;
+}
+export interface ProjectionInfo {
+  /** 보고서(자료) 이름: 「장래인구추계: 2022~2072년」 */
+  report: string;
+  /** 발표 기관(발표 당시 명칭, 「통계청(현 국가데이터처)」) */
+  publisher: string;
+  /** 발표일(보도자료 게시일) */
+  releasedOn: string;
+  releaseUrl: string;
+  /** 추계 기준 연도 */
+  baseYear: number;
+  /** 전망이 끝나는 해(PJ3) */
+  horizon: number;
+  /** 실측·확정 구간이 끝나는 해(원문 주석이 말하는 경계) */
+  actualThrough: number;
+  actualNote: string;
+  baseNote?: string;
+  defaultScenario: string;
+  scenarios: ProjectionScenario[];
+  shape?: 'cohort-rows';
+}
+
 /** koreaStats.json의 지표 한 개 (확인 여부와 무관한 원본 모양) */
 export interface RawIndicator {
   id: string;
   title: string;
   unit: string | null;
-  kind: 'line' | 'bar' | 'number' | 'table';
+  kind: 'line' | 'bar' | 'number' | 'table' | 'projection';
   use: UseTag[];
   latest: YearPoint | null;
   latestUnit?: string;
@@ -117,6 +156,10 @@ export interface RawIndicator {
   verification: Verification;
   safety: string | null;
   helpLine?: HelpLine;
+  /** `kind: 'projection'` 지표만: 공식 전망 정보(시나리오별 값·기준 연도·지평·발표일) */
+  projection?: ProjectionInfo;
+  /** `kind: 'projection'` 지표만: 실측·확정 구간(`projection.actualThrough`까지) */
+  actual?: YearPoint[];
   usable: boolean;
   notes?: string;
   [extra: string]: unknown;
@@ -154,7 +197,7 @@ export interface CarouselCard {
   title: string;
   /** 「2025년 기준(17개 시·도)」 같은 기준 문구(없으면 null) */
   scopeLabel: string | null;
-  kind: 'line' | 'bar' | 'table' | 'number';
+  kind: 'line' | 'bar' | 'table' | 'number' | 'projection';
   headlines: FormattedValue[];
   /** 그래프 값. line이면 연도 비례 축(axis), bar이면 라벨 */
   chart: { kind: 'line' | 'bar'; unit: string | null; decimals: number; points: Point[]; extra: ExtraSeries[]; axis: AxisInfo | null };
