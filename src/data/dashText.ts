@@ -155,8 +155,9 @@ export const DASH_TEXT = {
 
   // ---------- 인생 기록 (DB12·DB14) ----------
   logTitle: '인생 기록',
-  logHint: '시간순 · 위로 스크롤하면 지난 기록',
-  logJump: (n: number) => `새 기록 ${n}개 · 맨 아래로`,
+  /** 최신순 (SPEC-005 LR2 d): 위가 최근이고 아래로 스크롤하면 지난 기록 — 옛 시간순 안내는 남기지 않는다 */
+  logHint: '최근 기록이 위 · 아래로 스크롤하면 지난 기록',
+  logJump: (n: number) => `새 기록 ${n}개 · 맨 위로`,
   logPinA: (n: string) => `이 세상의 가상 인구 ${n}명`,
   logPinB: (name: string) => `${name}도 그중 한 사람`,
   logChoicePrefix: '선택: ',

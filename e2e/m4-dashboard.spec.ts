@@ -269,7 +269,7 @@ test('한 해 도중에 배속을 8배로 바꿔도 진행률 바는 되감기�
 
 // ---------- DB12·DB14: 인생 기록 ----------
 
-test('인생 기록: 새 줄이 맨 아래에 쌓이고, 맨 아래를 보고 있으면 따라가며, 위로 올려 읽는 중이면 「새 기록 N개」 버튼이 떠서 누르면 맨 아래로 간다. 가상 인구 줄은 고정이다 (DB12·DB14)', async ({ page }) => {
+test('인생 기록(최신순, SPEC-005 LR1·LR2): 새 줄이 맨 위에 쌓이고, 맨 위를 보고 있으면 맨 위에 머물며, 아래로 내려 지난 기록을 읽는 중이면 보던 줄이 움직이지 않고 「새 기록 N개」 버튼이 떠서 누르면 맨 위로 간다. 가상 인구 줄은 고정이다 (DB12·DB14)', async ({ page }) => {
   test.setTimeout(60_000);
   await startPageHidden(page); // 타이머가 끼어들지 않게 — 줄은 「다음 결정으로」로만 늘린다
   await page.goto('/');
@@ -278,57 +278,75 @@ test('인생 기록: 새 줄이 맨 아래에 쌓이고, 맨 아래를 보고 �
   await expect(page.getByTestId('skip')).toBeEnabled();
   const rows = page.getByTestId('log-row');
   const list = page.getByTestId('log-list');
-  const gap = () => list.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
+  const scrollTop = () => list.evaluate((el) => el.scrollTop);
   const panel = page.getByTestId('choice-panel');
   /** 줄이 하나 이상 늘 때까지 진행한다: 선택지가 떠 있으면 첫 선택지를 고르고, 없으면 「다음 결정으로」를 누른다(선택지만 뜨고 줄은 안 느는 해도 있다) */
+  const choosePending = async () => {
+    if (!(await panel.isVisible())) return false;
+    const pending = (await readSave(page)).data.pending!;
+    const choice = page.getByTestId(`choice-${pending.choiceIds[0]}`);
+    await expect(choice).toBeEnabled();
+    await choice.click();
+    await expect(panel).toHaveCount(0);
+    return true;
+  };
   const addRows = async () => {
     const start = await rows.count();
     for (let i = 0; i < 12 && (await rows.count()) === start; i++) {
-      if (await panel.isVisible()) {
-        const pending = (await readSave(page)).data.pending!;
-        const choice = page.getByTestId(`choice-${pending.choiceIds[0]}`);
-        await expect(choice).toBeEnabled();
-        await choice.click();
-        await expect(panel).toHaveCount(0);
-      } else {
+      if (!(await choosePending())) {
         await page.getByTestId('skip').click();
         await settle(page);
       }
     }
+    await choosePending(); // 끝에 떠 있는 결정 카드도 골라 둔다 — 모달 시트가 뒤의 「맨 위로」 클릭을 가로채지 않게
     expect(await rows.count(), '줄이 늘었다').toBeGreaterThan(start);
   };
   const before = await rows.count();
   expect(before).toBe(adult.history.length);
-  expect(await gap(), '처음에는 맨 아래(가장 최근)에서 시작').toBeLessThanOrEqual(24);
+  expect(await scrollTop(), '처음에는 맨 위(가장 최근)에서 시작').toBeLessThanOrEqual(24);
   await expect(page.getByTestId('log-jump')).toHaveCount(0);
 
-  // 맨 아래를 보고 있으면 새 줄이 와도 따라간다(버튼 없음)
+  // 맨 위를 보고 있으면 새 줄이 와도 맨 위에 머문다(버튼 없음)
   // 고정 줄이 「기록 카드 안에서」 제자리인지 본다: 화면 좌표는 선택지 카드(M5부터 영향 줄이 있어 더 높다)가 떴다 사라질 때 달라지는 스크롤 위치에도 흔들리므로 카드 윗변에서의 거리로 잰다
   const pinOffset = async () => (await page.getByTestId('log-pin').boundingBox())!.y - (await page.getByTestId('log').boundingBox())!.y;
   const pinBefore = await pinOffset();
   await addRows();
   await expect(page.getByTestId('log-jump')).toHaveCount(0);
-  expect(await gap(), '새 줄을 따라 맨 아래').toBeLessThanOrEqual(24);
+  expect(await scrollTop(), '맨 위에 머문다(새 줄이 바로 보인다)').toBeLessThanOrEqual(24);
   expect(await pinOffset(), '가상 인구 줄은 기록이 쌓여도 제자리').toBe(pinBefore);
-  await expect(page.getByTestId('log-row').last()).toHaveClass(/latest/);
+  await expect(page.getByTestId('log-row').first()).toHaveClass(/latest/);
+  expect(await list.evaluate((el) => el.querySelectorAll('.log__row--latest').length), '굵은 줄은 하나').toBe(1);
 
-  // 위로 올려 읽는 중이면 따라가지 않고 개수만 센다
-  await list.evaluate((el) => el.scrollTo({ top: 0, behavior: 'instant' }));
+  // 아래로 내려 지난 기록을 읽는 중이면 따라가지 않고 보던 줄이 움직이지 않으며 개수만 센다
+  const reach = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
+  expect(reach, '내려 읽을 만큼 기록이 길다').toBeGreaterThan(60);
+  await list.evaluate((el, y) => el.scrollTo({ top: y, behavior: 'instant' }), Math.min(200, reach - 20));
   await settle(page);
+  /** 영역 안에서 완전히 보이는 첫 줄 — 줄 내용(나이+문장)과 영역 윗변에서의 거리 */
+  const watched = () =>
+    list.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const row = [...el.querySelectorAll('[data-testid="log-row"]')].find((r) => r.getBoundingClientRect().top >= box.top)!;
+      return { text: (row.textContent ?? '').replace(/\s+/g, ' ').trim(), offset: row.getBoundingClientRect().top - box.top };
+    });
+  const seenRow = await watched();
   const afterFirst = await rows.count();
   await addRows();
   const added = (await rows.count()) - afterFirst;
   expect(added).toBeGreaterThan(0);
   const jump = page.getByTestId('log-jump');
   await expect(jump).toBeVisible();
-  expect(await list.evaluate((el) => el.scrollTop), '위로 올려 읽는 중이라 따라가지 않았다').toBeLessThan(40);
-  await expect(jump).toHaveText(new RegExp(`새 기록 ${added}개`));
+  await expect(jump).toHaveText(new RegExp(`새 기록 ${added}개 · 맨 위로`));
+  const nowRow = await watched();
+  expect(nowRow.text, '보던 줄이 그대로').toBe(seenRow.text);
+  expect(Math.abs(nowRow.offset - seenRow.offset), `보던 줄의 화면 위치 변화(${seenRow.offset} → ${nowRow.offset})`).toBeLessThanOrEqual(2);
+  expect(await scrollTop(), '아래에서 읽는 중이라 맨 위로 따라가지 않았다').toBeGreaterThan(100);
   await jump.click();
-  await expect.poll(gap).toBeLessThanOrEqual(24);
+  await expect.poll(scrollTop).toBeLessThanOrEqual(24);
   await expect(page.getByTestId('log-jump')).toHaveCount(0);
 });
 
-test('인생 기록 영역은 키보드로 닿고(방향키·PageUp) 지난 기록을 읽을 수 있다. 접근 가능한 이름이 있다 (DB12)', async ({ page }) => {
+test('인생 기록 영역은 키보드로 닿고(방향키·PageUp·Home·End) 지난 기록을 읽을 수 있다. 접근 가능한 이름이 있다 (DB12, SPEC-005 LR4)', async ({ page }) => {
   await startPageHidden(page);
   await page.goto('/');
   await injectSave(page, await adultState(page), '/', MANUAL);
@@ -337,10 +355,18 @@ test('인생 기록 영역은 키보드로 닿고(방향키·PageUp) 지난 기�
   await expect(list).toHaveAttribute('aria-label', '인생 기록');
   await list.focus();
   const top = () => list.evaluate((el) => el.scrollTop);
-  const start = await top();
-  expect(start).toBeGreaterThan(0);
+  const max = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
+  expect(await top(), '맨 위(가장 최근)에서 시작').toBeLessThanOrEqual(24);
+  expect(max, '내려 읽을 만큼 길다').toBeGreaterThan(100);
+  // 아래로 읽는다: PageDown·ArrowDown이 지난 기록으로 내려간다
+  await page.keyboard.press('PageDown');
+  await expect.poll(top).toBeGreaterThan(0);
+  const down = await top();
   await page.keyboard.press('PageUp');
-  await expect.poll(top).toBeLessThan(start);
+  await expect.poll(top).toBeLessThan(down);
+  // End = 맨 아래(가장 오래된 줄), Home = 맨 위(가장 최근 줄)
+  await page.keyboard.press('End');
+  await expect.poll(async () => max - (await top())).toBeLessThanOrEqual(2);
   await page.keyboard.press('Home');
   await expect.poll(top).toBe(0);
 });

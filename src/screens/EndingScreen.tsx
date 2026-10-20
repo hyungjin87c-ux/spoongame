@@ -251,9 +251,15 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
         </section>
 
         <section className="card" aria-labelledby="ending-timeline-title" data-testid="ending-timeline">
-          <h2 id="ending-timeline-title" className="card__title card__title--gap">
-            {ENDING_HEADINGS.timeline}
-          </h2>
+          {/* 연표는 시간순(위가 처음)이다 — 살아가기 화면의 인생 기록은 최신순(SPEC-005 LR1)이라 두 화면의 순서가 달라 헷갈리지 않게 제목 옆에 순서를 적는다(LR6, 마스터 결정 M1) */}
+          <div className="card__head">
+            <h2 id="ending-timeline-title" className="card__title">
+              {ENDING_HEADINGS.timeline}
+            </h2>
+            <span className="t-xs t-faint" data-testid="ending-timeline-order">
+              {ENDING_HEADINGS.timelineOrder}
+            </span>
+          </div>
           {review.timeline.map((group) => (
             <div className="tl-group" key={group.stage} data-testid={`timeline-${group.stage}`}>
               <h3>

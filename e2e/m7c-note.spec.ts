@@ -98,7 +98,7 @@ test('1번 빈 입력(공백·줄바꿈만): 기록 0, 시트는 열린 채 안�
   expect(await noteRows(page), '기록되지 않았다').toEqual([]);
 });
 
-test('1번 정상 입력: 글자 수가 늘고, 눌러 저장하면 시트가 닫히고 연표에 「나의 기록」 줄이 맨 아래에 생기며 포커스는 인생 화면 제목이다. 시계가 다시 흐른다', async ({ page }) => {
+test('1번 정상 입력: 글자 수가 늘고, 눌러 저장하면 시트가 닫히고 연표에 「나의 기록」 줄이 맨 위(최신순)에 생기며 포커스는 인생 화면 제목이다. 시계가 다시 흐른다', async ({ page }) => {
   await openInfant(page);
   await sheetReady(page);
   const written = '마루 끝에 앉아 있던 기억이 난다.\n햇볕이 따뜻했다.';
@@ -113,12 +113,12 @@ test('1번 정상 입력: 글자 수가 늘고, 눌러 저장하면 시트가 �
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ age: 5, kind: 'note', title: '영유아기 기억', eventId: 'note-infant-memory', text: '마루 끝에 앉아 있던 기억이 난다.\n햇볕이 따뜻했다.' });
   expect((await readSave(page)).data.seen['note-infant-memory'], '카드가 소비됐다').toBe(5);
-  // 인생 기록 맨 아래: 「나의 기록 · 영유아기 기억」 + 글
-  const last = page.getByTestId('log-row').last();
-  await expect(last).toHaveAttribute('data-kind', 'note');
-  await expect(page.getByTestId('note-label').last()).toContainText('나의 기록');
-  await expect(page.getByTestId('note-label').last()).toContainText('영유아기 기억');
-  await expect(page.getByTestId('note-text').last()).toHaveText('마루 끝에 앉아 있던 기억이 난다.\n햇볕이 따뜻했다.');
+  // 인생 기록 맨 위(최신순, SPEC-005 LR5 a): 「나의 기록 · 영유아기 기억」 + 글
+  const newest = page.getByTestId('log-row').first();
+  await expect(newest).toHaveAttribute('data-kind', 'note');
+  await expect(newest.getByTestId('note-label')).toContainText('나의 기록');
+  await expect(newest.getByTestId('note-label')).toContainText('영유아기 기억');
+  await expect(newest.getByTestId('note-text')).toHaveText('마루 끝에 앉아 있던 기억이 난다.\n햇볕이 따뜻했다.');
   await shot(page, 'note-log-row');
   // 시계가 다시 흐른다: 올해 진행률이 0을 넘는다
   await expect.poll(() => page.getByTestId('year-progress').getAttribute('aria-valuenow').then(Number), { timeout: 15_000 }).toBeGreaterThan(0);

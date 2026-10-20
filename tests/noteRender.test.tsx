@@ -127,6 +127,11 @@ describe('두 화면이 같은 부품을 쓴다 (D3, FR4·FR9)', () => {
     expect(rows[0]).not.toContain('note-text');
     expect(rows[2]).not.toContain('note-text');
     expect(rows[2]).not.toContain('log__row--note');
+    // 최신순(SPEC-005 LR1): 저장 순서는 [출생, 나의 기록, 이사]이고 화면은 거꾸로 — 첫 줄이 가장 최근(이사), 끝 줄이 출생. 가운데 줄(나의 기록)은 어느 순서든 가운데다
+    expect(rows[0]).toContain('이사를 갔다.');
+    expect(rows[0]).toContain('log__row--latest');
+    expect(rows[2]).toContain('태어났다.');
+    expect(rows[1]).not.toContain('log__row--latest');
   });
 
   it('엔딩 연표(TimelineItem)와 인생 기록 줄의 안쪽 마크업이 같은 부품이다: 라벨과 글 요소가 똑같고 연표는 글에 tl-text 클래스만 더한다', () => {
@@ -143,7 +148,8 @@ describe('두 화면이 같은 부품을 쓴다 (D3, FR4·FR9)', () => {
     expect(ages).toEqual(notes.map((n) => n.age));
     // 같은 부품: 같은 줄을 인생 기록(LogCard)에 그린 것과 라벨·글 요소가 같다
     const logHtml = renderToStaticMarkup(<LogCard history={game.history} name={game.character.name} live={false} minute={29_846_880} />);
-    const logRows = logHtml.match(/<li class="log__row[^"]*log__row--note[^"]*"[^>]*>[^]*?<\/li>/g)!;
+    // 인생 기록은 최신순(SPEC-005 LR1)이라 뒤집어 연표(시간순)와 같은 순서로 맞대어 본다
+    const logRows = logHtml.match(/<li class="log__row[^"]*log__row--note[^"]*"[^>]*>[^]*?<\/li>/g)!.reverse();
     expect(logRows).toHaveLength(notes.length);
     const part = (li: string, cls: string) => ({
       label: /<span class="log__note-label"[^]*?<\/span><\/span>(?=<bdi)/.exec(li)![0],

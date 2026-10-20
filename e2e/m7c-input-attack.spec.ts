@@ -106,7 +106,8 @@ test('A1~A18 대표 입력이 실제 입력란에서 3-8절 기대대로 저장�
   await expect(rows).toHaveCount(expected.length);
   expect(await rows.locator('a, img, script, strong, em, h1, h2, ul, ol, table, br, iframe').count(), '링크·이미지·서식·제목 0').toBe(0);
   expect(await page.locator('[data-testid="note-text"] *').count(), '글 영역 안에 요소가 없다').toBe(0);
-  const shown = await page.getByTestId('note-text').allTextContents();
+  // 인생 기록은 최신순(SPEC-005 LR1)이라 화면의 note 줄은 쓴 순서의 거꾸로다 — 뒤집어서 저장된 글(쓴 순서)과 맞댄다
+  const shown = (await page.getByTestId('note-text').allTextContents()).reverse();
   expect(shown, '화면의 글 = 저장된 글').toEqual(expected);
   await page.getByTestId('log-list').evaluate((el) => el.scrollTo(0, 0));
   await page.screenshot({ path: `${SHOTS}/dev-M7c-attack-log-${testInfo.project.name}.png` });
@@ -114,7 +115,7 @@ test('A1~A18 대표 입력이 실제 입력란에서 3-8절 기대대로 저장�
   await page.reload();
   await expect(page.getByTestId('life-screen')).toBeVisible();
   expect((await noteRows(page)).map((r) => r.text), '새로고침 뒤 저장된 글').toEqual(expected);
-  expect(await page.getByTestId('note-text').allTextContents(), '새로고침 뒤 화면의 글').toEqual(expected);
+  expect((await page.getByTestId('note-text').allTextContents()).reverse(), '새로고침 뒤 화면의 글(최신순이라 거꾸로)').toEqual(expected);
 });
 
 test('A13 결합 문자 범람: 한 글자에 코드 포인트 8개까지만 남고, 줄 높이·옆 줄을 침범하지 않는다', async ({ page }) => {
@@ -151,14 +152,15 @@ test('A10 방향 글(히브리·아랍): 줄 안의 「나의 기록」 라벨�
     await page.getByTestId('note-save').click();
     await expect(sheet(page)).toHaveCount(0);
   }
-  const geo = await page.locator('[data-testid="log-row"][data-kind="note"]').evaluateAll((rows) =>
+  // 최신순(SPEC-005 LR1)이라 화면의 note 줄은 쓴 순서의 거꾸로다 — 뒤집어 쓴 순서(한국어 → 히브리 → 아랍)로 맞춘다
+  const geo = (await page.locator('[data-testid="log-row"][data-kind="note"]').evaluateAll((rows) =>
     rows.map((row) => {
       const age = row.querySelector('.log__age')!.getBoundingClientRect();
       const label = row.querySelector('[data-testid="note-label"]')!.getBoundingClientRect();
       const text = row.querySelector('[data-testid="note-text"]') as HTMLElement;
       return { ageLeft: Math.round(age.left), labelLeft: Math.round(label.left), textLeft: Math.round(text.getBoundingClientRect().left), dir: getComputedStyle(text).direction, bidi: getComputedStyle(text).unicodeBidi };
     }),
-  );
+  )).reverse();
   expect(geo).toHaveLength(3);
   for (const g of geo) {
     expect(g.ageLeft, '나이가 왼쪽 첫 칸').toBeLessThan(g.labelLeft);

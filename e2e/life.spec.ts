@@ -255,9 +255,9 @@ for (const vp of [
   });
 }
 
-test('인생 기록(M4): 줄이 시간순으로 쌓여 맨 아래가 가장 최근이고 영역 안에서 스크롤되며, 긴 인생 중간 화면도 360px에서 넘치지 않는다', async ({ page }) => {
-  // 바뀐 기대(M4): 예전에는 사건 로그가 「최근 6개, 최신이 맨 위」였다. 인생 기록 카드(DB12)는 모든 줄을 시간순으로 쌓고(연표 상한 300) 맨 아래가 최신이며,
-  // 맨 아래를 보고 있으면 자동으로 따라가고 위로 올려 읽을 수 있다. 줄 수는 연표(history) 길이와 같다.
+test('인생 기록(M4, 최신순 SPEC-005 LR1): 줄이 최신순으로 쌓여 맨 위가 가장 최근이고 영역 안에서 스크롤되며, 긴 인생 중간 화면도 360px에서 넘치지 않는다', async ({ page }) => {
+  // 바뀐 기대(M4): 예전에는 사건 로그가 「최근 6개, 최신이 맨 위」였다. 인생 기록 카드(DB12)는 모든 줄을 쌓고(연표 상한 300) 영역 안에서 스크롤된다. 줄 수는 연표(history) 길이와 같다.
+  // 바뀐 기대(SPEC-005 LR1): M4의 시간순(맨 아래가 최신)에서 최신순(맨 위가 최신)으로 — 단언은 그대로 두고 순서만 뒤집었다. 맨 위(가장 최근)에서 시작하고 아래로 내려 첫 줄(출생)까지 읽을 수 있다.
   await page.goto('/');
   const mid = await evalCore<GameState>(
     page,
@@ -270,20 +270,21 @@ test('인생 기록(M4): 줄이 시간순으로 쌓여 맨 아래가 가장 최�
   const rows = page.getByTestId('log-row');
   await expect(rows).toHaveCount(mid.history.length);
   const last = mid.history[mid.history.length - 1];
-  await expect(rows.last()).toHaveClass(/latest/);
-  await expect(rows.last()).toContainText(last.text);
-  await expect(rows.first()).toContainText('로 태어났습니다');
-  // 화면이 막 떴을 때 맨 아래(가장 최근)에서 시작한다
-  const atBottom = await page.getByTestId('log-list').evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
-  expect(atBottom).toBeLessThanOrEqual(24);
-  // 위로 올려 첫 줄(출생)까지 읽을 수 있다
-  await page.getByTestId('log-list').evaluate((el) => el.scrollTo({ top: 0, behavior: 'instant' }));
-  const firstVisibleInList = await page.getByTestId('log-list').evaluate((el) => {
-    const row = el.querySelector('[data-testid="log-row"]')!.getBoundingClientRect();
+  await expect(rows.first()).toHaveClass(/latest/);
+  await expect(rows.first()).toContainText(last.text);
+  await expect(rows.last()).toContainText('로 태어났습니다');
+  // 화면이 막 떴을 때 맨 위(가장 최근)에서 시작한다
+  const scrollTop = await page.getByTestId('log-list').evaluate((el) => el.scrollTop);
+  expect(scrollTop).toBeLessThanOrEqual(24);
+  // 아래로 내려 마지막 줄(출생)까지 읽을 수 있다
+  await page.getByTestId('log-list').evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }));
+  const lastVisibleInList = await page.getByTestId('log-list').evaluate((el) => {
+    const rowsEl = el.querySelectorAll('[data-testid="log-row"]');
+    const row = rowsEl[rowsEl.length - 1].getBoundingClientRect();
     const box = el.getBoundingClientRect();
-    return row.top >= box.top - 1 && row.bottom <= box.bottom + 1; // 기록 영역 안에서 첫 줄이 보인다(영역 자체가 쪽 화면에 있는지는 상관없다)
+    return row.top >= box.top - 1 && row.bottom <= box.bottom + 1; // 기록 영역 안에서 마지막(가장 오래된) 줄이 보인다(영역 자체가 쪽 화면에 있는지는 상관없다)
   });
-  expect(firstVisibleInList).toBe(true);
+  expect(lastVisibleInList).toBe(true);
   await expect(page.getByTestId('life-age')).toContainText(`${mid.age}세`);
   expect(await noHorizontalOverflow(page)).toBe(true);
 });

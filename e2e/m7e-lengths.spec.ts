@@ -112,13 +112,21 @@ for (const size of SIZES) {
           });
           const list = document.querySelector('[data-testid="log-list"]') as HTMLElement;
           const rowsEl = [...document.querySelectorAll('[data-testid="log-row"]')];
-          list.scrollTop = list.scrollHeight;
+          // 최신순(SPEC-005 LR1): 표본 줄(가장 긴 글)은 가장 최근이라 첫 줄 쪽이다 — 맨 위에서 첫 줄 위끝이, 맨 아래로 스크롤한 끝에서 마지막(가장 오래된) 줄 끝이 영역 안에 온전히 보인다
+          list.scrollTo({ top: 0, behavior: 'instant' }); // CSS scroll-behavior: smooth라 scrollTop 대입은 미끄러진다 — 바로 재려면 instant
           const lr = list.getBoundingClientRect();
+          const first = rowsEl[0].getBoundingClientRect();
+          const firstTextEl = rowsEl[0].querySelector('.log__text') as HTMLElement;
+          const firstInside = { topInside: first.top >= lr.top - 1, horizontallyInside: first.left >= lr.left - 0.5 && first.right <= lr.right + 0.5, textHorizontallyInside: firstTextEl.getBoundingClientRect().right <= lr.right + 0.5 };
+          list.scrollTo({ top: list.scrollHeight, behavior: 'instant' });
           const last = rowsEl[rowsEl.length - 1].getBoundingClientRect();
           const textEl = rowsEl[rowsEl.length - 1].querySelector('.log__text') as HTMLElement;
           return {
             buttons,
             log: {
+              firstTopInside: firstInside.topInside,
+              firstHorizontallyInside: firstInside.horizontallyInside,
+              firstTextHorizontallyInside: firstInside.textHorizontallyInside,
               lastBottomInside: last.bottom <= lr.bottom + 1,
               lastHorizontallyInside: last.left >= lr.left - 0.5 && last.right <= lr.right + 0.5,
               textHorizontallyInside: textEl.getBoundingClientRect().right <= lr.right + 0.5,
@@ -134,7 +142,10 @@ for (const size of SIZES) {
           expect(r.onScreen, `${label}: ${r.name}에 스크롤로 닿지 않는다`).toBe(true);
           expect(r.covered, `${label}: ${r.name}이(가) 고정 머리·진행 줄에 가려진다`).toBe(false);
         }
-        expect(reach.log.lastBottomInside, `${label}: 인생 기록 맨 아래로 스크롤해도 마지막 줄 끝이 영역 밖이다 (${JSON.stringify(reach.log)})`).toBe(true);
+        expect(reach.log.firstTopInside, `${label}: 인생 기록 맨 위에서 첫(가장 최근) 줄의 윗변이 영역 밖이다 (${JSON.stringify(reach.log)})`).toBe(true);
+        expect(reach.log.firstHorizontallyInside, `${label}: 첫(가장 최근) 인생 기록 줄이 영역 밖으로 넘친다`).toBe(true);
+        expect(reach.log.firstTextHorizontallyInside, `${label}: 첫(가장 최근) 인생 기록 줄의 글이 영역 밖으로 넘친다`).toBe(true);
+        expect(reach.log.lastBottomInside,`${label}: 인생 기록 맨 아래로 스크롤해도 마지막 줄 끝이 영역 밖이다 (${JSON.stringify(reach.log)})`).toBe(true);
         expect(reach.log.lastHorizontallyInside, `${label}: 마지막 인생 기록 줄이 영역 밖으로 넘친다`).toBe(true);
         expect(reach.log.textHorizontallyInside, `${label}: 마지막 인생 기록 줄의 글이 영역 밖으로 넘친다`).toBe(true);
 

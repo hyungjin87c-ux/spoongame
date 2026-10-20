@@ -602,16 +602,22 @@ describe('선택지 영향 줄 (M5 2b, copy.md 4-3·4-4)', () => {
 });
 
 describe('인생 기록 (DB12·DB14)', () => {
-  it('줄은 연표와 같은 개수·순서이고 「N세」 + 문장이며, 마지막 줄이 가장 최근이다', () => {
+  it('줄은 연표와 같은 개수이고 거꾸로(최신순) 놓이며 「N세」 + 문장이다: 첫 줄이 가장 최근, 끝 줄이 출생 (SPEC-005 LR1·LR3)', () => {
     const log = sectionOf(render(adult), 'log');
     const rows = [...log.matchAll(/<li class="([^"]*)" data-kind="([^"]*)" data-testid="log-row">([\s\S]*?)<\/li>/g)];
     expect(rows).toHaveLength(adult.history.length);
     rows.forEach((m, i) => {
-      expect(m[2]).toBe(adult.history[i].kind);
-      expect(text(m[3]).startsWith(`${adult.history[i].age}${DASH_TEXT.ageSuffix}`)).toBe(true);
-      expect(m[1].includes('log__row--latest'), `${i}번째 줄`).toBe(i === rows.length - 1);
-      expect(m[1].includes('log__row--stage')).toBe(adult.history[i].kind === 'stage');
+      // 화면의 i번째 줄 = 저장 순서(시간순)의 뒤에서 i번째 — 저장 순서는 그대로이고 화면만 뒤집었다
+      const h = adult.history[adult.history.length - 1 - i];
+      expect(m[2]).toBe(h.kind);
+      expect(text(m[3]).startsWith(`${h.age}${DASH_TEXT.ageSuffix}`)).toBe(true);
+      expect(m[1].includes('log__row--latest'), `${i}번째 줄`).toBe(i === 0);
+      expect(m[1].includes('log__row--stage')).toBe(h.kind === 'stage');
     });
+    // 나이는 위에서 아래로 늘지 않는다(비증가), 끝 줄은 출생
+    const ages = rows.map((m) => Number(/^(\d+)세/.exec(text(m[3]))![1]));
+    expect(ages).toEqual([...ages].sort((x, y) => y - x));
+    expect(rows.at(-1)![2]).toBe('stage');
     expect(adult.history.length).toBeGreaterThan(5);
   });
 
@@ -632,6 +638,15 @@ describe('인생 기록 (DB12·DB14)', () => {
     expect(attr(list, 'role')).toBe('region');
     expect(attr(list, 'aria-label')).toBe(DASH_TEXT.logTitle);
     expect(html).not.toContain('data-testid="log-jump"');
+    // 영역의 설명이 안내 문구(최근이 위)라 스크린리더가 포커스에서 순서를 듣는다 (LR4 e)
+    expect(attr(list, 'aria-describedby')).toBe('log-hint');
+    expect(flat(openTagBlock(html, 'log-hint'))).toBe(nospace(DASH_TEXT.logHint));
+  });
+
+  it('안내 문구와 새 줄 버튼 문구는 새 순서를 말하고, 옛 순서 문구는 화면에 없다 (LR2 d·e)', () => {
+    expect(DASH_TEXT.logHint).toBe('최근 기록이 위 · 아래로 스크롤하면 지난 기록');
+    expect(DASH_TEXT.logJump(3)).toBe('새 기록 3개 · 맨 위로');
+    expect(flat(sectionOf(render(adult), 'log'))).not.toMatch(/맨아래로|시간순|위로스크롤하면/);
   });
 
   it('새 줄 알림(aria-live)은 빠른 진행(4배 이상)·자동 모드에서는 끈다 — 읽을 수 없는 속도로 낭독이 쌓이지 않게', () => {

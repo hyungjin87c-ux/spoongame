@@ -121,6 +121,17 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(html.lastIndexOf('data-kind="death"')).toBeGreaterThan(html.lastIndexOf('data-kind="choice"'));
   });
 
+  it('엔딩 연표는 시간순(위가 처음) 그대로이고 제목 옆에 「태어난 순서대로」가 있다 — 살아가기 화면의 인생 기록은 최신순이라 두 화면의 순서가 다르다 (SPEC-005 LR6, 마스터 결정 M1)', () => {
+    const ages = [...html.matchAll(/data-testid="timeline-entry"><span class="log__age">(\d+)세/g)].map((m) => Number(m[1]));
+    expect(ages).toHaveLength(game.history.length);
+    expect(ages, '저장 순서(시간순) 그대로').toEqual(game.history.map((h) => h.age));
+    expect(ages).toEqual([...ages].sort((a, b) => a - b));
+    expect(ENDING_HEADINGS.timelineOrder).toBe('태어난 순서대로');
+    // 제목(h2)과 같은 머리 줄 안에 있고, 연표 본문(첫 단계 묶음)보다 앞이다
+    const head = html.slice(html.indexOf('id="ending-timeline-title"'), html.indexOf('data-testid="timeline-infant"'));
+    expect(textOf(head)).toContain(`${ENDING_HEADINGS.timeline} ${ENDING_HEADINGS.timelineOrder}`);
+  });
+
   it('다시 태어나기 버튼은 하나뿐이다: GuardedButton이라 첫 렌더에는 aria-disabled(가드), 안내 문구가 곁에 있다', () => {
     expect((html.match(/data-testid="rebirth"/g) ?? []).length).toBe(1);
     expect((html.match(/<button/g) ?? []).length).toBe(1);

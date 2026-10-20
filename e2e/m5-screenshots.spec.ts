@@ -239,9 +239,9 @@ test('인생 기록 · 상속 한 줄: 부모님이 모두 떠나는 결정의 �
   await late.click();
   await expect(page.getByTestId('choice-panel')).toHaveCount(0);
   const rows = page.getByTestId('log-row');
-  const last = rows.last();
-  await expect(last).toContainText('부모님이 남기신 재산을 물려받았습니다.');
-  await expect(rows.nth((await rows.count()) - 2)).toContainText('선택:');
+  // 최신순(SPEC-005 LR1): 상속 줄은 그 해 끝에 선택 기록 뒤에 남으므로 화면에서는 선택 기록 바로 위(맨 위)에 있다 — 예전 시간순의 「맨 아래·그 앞」을 뒤집었다
+  await expect(rows.first()).toContainText('부모님이 남기신 재산을 물려받았습니다.');
+  await expect(rows.nth(1)).toContainText('선택:');
   await expect(page.getByTestId('assets-net')).not.toHaveText('');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('suzeo-game:save')!).data.assets.net as number);
   expect(saved).toBeGreaterThan(netBefore);

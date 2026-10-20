@@ -132,9 +132,9 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
 .log { display: flex; flex-direction: column; min-height: 0; }
 /* 가상 인구 고정 줄(DB14): 「이 세상의 가상 인구 {N}명 · {이름}도 그중 한 사람」은 내용 길이가 판마다 다른 짧은 쌍이라 FitPair — 한 줄에 안 들어가면 기호 없이 두 줄(QM2-10 규칙 3) */
 .log__pin { padding: var(--sp-3); border-radius: var(--r-md); background: var(--c-brand-soft); color: var(--c-on-brand-soft); font-size: var(--fs-sm); }
-/* 안쪽 스크롤 영역은 자기 scroll-padding을 둔다(11-1): 키보드 포커스·「맨 아래로」가 줄을 화면 안으로 스크롤할 때 포커스 링이 영역 가장자리에 잘리지 않게. 스크롤 영역이므로 키보드로 닿을 수 있다(tabindex 0 — 방향키로 지난 기록을 읽는다) */
+/* 안쪽 스크롤 영역은 자기 scroll-padding을 둔다(11-1): 키보드 포커스·「맨 위로」가 줄을 화면 안으로 스크롤할 때 포커스 링이 영역 가장자리에 잘리지 않게. 스크롤 영역이므로 키보드로 닿을 수 있다(tabindex 0 — 방향키로 지난 기록을 읽는다) */
 .log__rows { display: flex; flex-direction: column; }
-.log__list { display: flex; flex-direction: column; gap: 0; margin-top: var(--sp-2); max-height: min(520px, max(6rem, calc(100svh - var(--head-fixed-h, 0px) - var(--bar-fixed-h, 0px) - 2 * (var(--sp-3) + 7px)))); overflow-y: auto; scroll-behavior: smooth; scroll-padding: var(--sp-3) 0; overscroll-behavior: contain; }
+.log__list { display: flex; flex-direction: column; gap: 0; margin-top: var(--sp-2); max-height: min(520px, max(6rem, calc(100svh - var(--head-fixed-h, 0px) - var(--bar-fixed-h, 0px) - 2 * (var(--sp-3) + 7px)))); overflow-y: auto; scroll-behavior: smooth; scroll-padding: var(--sp-3) 0; overscroll-behavior: contain; overflow-anchor: none; }
 /* 인생 기록 영역의 높이 상한(위 .log__list): 고정 요소가 실제로 화면을 덮는 높이를 변수로 알린다. 영역이 가용 높이(화면 − 고정 머리 − 하단 고정 진행 줄 − 위아래 여유 12px − 포커스 링 7px)보다 커지면
    키보드 포커스를 받을 때 링의 위나 아래가 머리·진행 줄에 가리므로 그 안에 들어오게 줄인다(CM10). 풀린 요소(head-released·bar-released)와 데스크톱의 보통 행 진행 줄은 덮지 않으므로 0이다. */
 html.has-sticky-head { --head-fixed-h: var(--head-h, 0px); }
@@ -151,9 +151,11 @@ html.head-released { --head-fixed-h: 0px; }
 .log__text em { font-style: normal; color: var(--c-text-2); font-size: var(--fs-sm); }
 .log__row--note { background: var(--c-accent-soft); color: var(--c-on-accent-soft); border-radius: var(--r-md); border-bottom: 0; margin: var(--sp-1) 0; padding: var(--sp-3); border-left: 5px solid var(--c-accent); }
 .log__row--note .log__age { color: var(--c-on-accent-soft); }
+/* 최신순(SPEC-005 LR3): 단계 진입 줄은 그 단계의 가장 오래된 줄이라 묶음의 맨 아래에 온다 — 줄 **아래**의 굵은 선이 이 단계 묶음과 그 이전 단계(더 아래)를 가른다. 가장 오래된 줄(출생)은 목록 맨 끝이라 아래 선이 없다 */
 .log__row--stage { color: var(--c-text-2); font-size: var(--fs-sm); border-bottom: 2px solid var(--c-border-strong); }
+.log__rows > .log__row:last-child { border-bottom: 0; }
 .log__row--latest { font-weight: var(--fw-bold); }
-/* 「새 기록 N개 · 맨 아래로」 — .btn(inline-flex)의 글자는 익명 flex 항목이라 전역 overflow-wrap: anywhere가 최소 폭을 글자 하나로 만든다. 글자 200% × 폭 320·360에서 「아래로」가 한 글자씩 끊겼다(D-58, QM3-1) → 낱말 단위로만 접힌다 */
+/* 「새 기록 N개 · 맨 위로」 — .btn(inline-flex)의 글자는 익명 flex 항목이라 전역 overflow-wrap: anywhere가 최소 폭을 글자 하나로 만든다. 글자 200% × 폭 320·360에서 한 글자씩 끊겼다(D-58, QM3-1) → 낱말 단위로만 접힌다 */
 .log__jump { align-self: center; margin-top: var(--sp-2); white-space: normal; word-break: keep-all; overflow-wrap: normal; }
 .family-list { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
 .family-list dt { color: var(--c-text-2); }
