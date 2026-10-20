@@ -98,7 +98,8 @@ html[data-slot='gen8'] .slot--gen8 { display: block; }
 .chip .icon { width: 14px; height: 14px; stroke-width: 2.4; }
 .mock-tag--inline { margin-top: 0; }
 .slide__projnote { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-2); border-left: 3px solid var(--c-accent); padding-left: var(--sp-2); }
-/* 그래프: 실측 = 실선(쪽빛), 전망 = **긴 점선(10 5, 놋쇠)** + 경계 세로 점선 + 「실측 | 전망」 글자, 막대 전망 = 빗금(색만으로 구분하지 않는다, FC2).
+/* 그래프: 확정 / 추계 앞 구간 = 실선(쪽빛), 전망 = **긴 점선(10 5, 놋쇠)** + 경계 세로 점선 + 「확정 | 전망」(가구추계는 「추계 앞 구간 | 전망」) 글자, 막대 전망 = 놋쇠 빗금 #hatch(색만으로 구분하지 않는다, FC2).
+   「실측」 낱말은 쓰지 않는다(마스터 결정 3·R-480). 놋쇠 빗금은 모든 슬라이드에서 「전망」 전용(R-477).
    기존 보조 계열의 점선(남자 7 4 · 여자 2 4, ds.css .line--dashed/.line--dotted)과 무늬가 다르다 — 한 캐러셀 안에서 「점선 = 전망」이 보조 계열과 헷갈리지 않게 전망은 긴 점선 + 라벨 + 범례 「전망」으로 세 겹 */
 .chart .line--proj { stroke: var(--c-accent); stroke-dasharray: 10 5; }
 .chart .dot--proj { stroke: var(--c-accent); }
@@ -110,18 +111,20 @@ html[data-slot='gen8'] .slot--gen8 { display: block; }
 /* ---------- QI4 전망 차트(2026-10-21, design-system.md 15절 — 생성기 scripts/design/buildQi4Slides.mjs가 그린다) ----------
    경계: 세로 점선(.split) + 위쪽 「확정 | 전망」(가구추계는 「추계 앞 구간 | 전망」) + 축 아래 경계 연도 눈금(.tick)과 연도 글자 — 선 모양·글자·눈금 세 겹(색에만 기대지 않음).
    시나리오: 중위 = 긴 점선 10 5(놋쇠, 굵게) / 고위·저위 = 옅은 띠(.band, 놋쇠 옅은 면) + 가는 점선 가장자리(.line--range) + 끝 글자 「고위」「저위」 — 띠는 면이라 선과 모양이 다르고, 강제 색상에서는 면이 사라져도 점선 가장자리와 글자가 남는다.
-   누적 막대(「지금 태어나는 아기라면?」): 0~14세 = 빈 칸(면 색 + 실선 테두리) · 15~64세 = 실선 채움(안에 값 글자) · 65세 이상 = 빗금(전망 막대와 같은 무늬) — 세 칸이 무늬로 갈린다 */
+   누적 막대(「지금 태어나는 아기라면?」): 0~14세 = 빈 칸(면 색 + 실선 테두리) · 15~64세 = 실선 채움(안에 값 글자) · 65세 이상 = **점무늬 #dots**(중립 잉크색 --c-text-2, 1px 테두리) — 세 칸이 무늬로 갈린다.
+   65세 이상 칸에 놋쇠 빗금을 쓰지 않는 이유(R-477): 바로 앞 폭염 막대의 범례 「전망(빗금)」과 같은 무늬라 9초 사이에 빗금 뜻이 바뀌고 65세 이상만 전망으로 읽힌다. 점무늬/면 대비 라이트 8.65 · 다크 8.78(「보조 설명」 쌍) */
 .chart .band { fill: var(--c-accent-soft); stroke: none; }
 .chart .line--range { fill: none; stroke: var(--c-text-3); stroke-width: 1; stroke-dasharray: 2 3; }
 .chart .range-label { font-size: 11px; fill: var(--c-text-3); }
 .chart .tick { stroke: var(--c-text-3); stroke-width: 1; }
 .chart .chart-seg--young { fill: var(--c-surface); stroke: var(--c-brand); stroke-width: 1; }
 .chart .chart-seg--work { fill: var(--c-brand); }
-.chart .chart-seg--old { fill: url(#hatch); stroke: var(--c-accent); stroke-width: 1; }
+.chart .chart-seg--old { fill: url(#dots); stroke: var(--c-text-2); stroke-width: 1; }
 .chart .seg-text { font-size: 12px; fill: var(--c-on-brand); stroke: none; paint-order: normal; }
 .chart .row-label .val { fill: var(--c-text); }
 .legend .swatch-rect--bar, .legend .swatch-rect--work { fill: var(--c-brand); }
 .legend .swatch-rect--proj { fill: url(#hatch); stroke: var(--c-accent); stroke-width: 1; }
+.legend .swatch-rect--old { fill: url(#dots); stroke: var(--c-text-2); stroke-width: 1; }
 .legend .swatch-rect--young { fill: var(--c-surface); stroke: var(--c-brand); stroke-width: 1; }
 .legend .swatch-rect--band { fill: var(--c-accent-soft); stroke: var(--c-text-3); stroke-width: 1; stroke-dasharray: 2 2; }
 
@@ -216,9 +219,9 @@ html[data-soft='1'][data-theme='dark'] { --illust-opacity: 0.86; --illust-filter
 html[data-soft='2'][data-theme='dark'] { --illust-opacity: 0.8; --illust-filter: brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px); }
 html[data-soft='3'][data-theme='dark'] { --illust-opacity: 0.74; --illust-filter: brightness(0.9) saturate(0.7) contrast(0.88) blur(1px); }
 /* 통계 카드·차트를 그림의 하늘·연두·살구 톤에 맞춘다(형진 님 「통계 그래프는 웹페이지 배경과 어울리도록」): 카드 위쪽 88px 옅은 하늘 띠, 차가운 회색 테두리, 푸른빛 그림자,
-   실측 선·점·막대·범례는 카드 안에서만 --c-brand를 --c-chart(쪽빛보다 밝은 하늘 남색)로 바꾼다. 전망(놋쇠 긴 점선 10 5·빗금)·보조 계열(점선)·칩은 그대로 — 실측 실선 / 전망 점선 구분 유지.
+   확정(추계 앞 구간) 선·점·막대·범례는 카드 안에서만 --c-brand를 --c-chart(쪽빛보다 밝은 하늘 남색)로 바꾼다. 전망(놋쇠 긴 점선 10 5·빗금)·보조 계열(점선)·칩은 그대로 — 확정 실선 / 전망 점선 구분 유지.
    대비(2026-10-20 계산, WCAG 상대 휘도): 라이트 선 #2f5f8f / 면 #fffdf8 6.55:1 · 띠 #eef4f9 6.01:1, 다크 #9fc4ea / 면 #1c212c 8.87:1 · 띠 #1f2735 8.26:1(비텍스트 ≥ 3:1), 띠 위 공식 통계명 --c-text-3 5.30 / 5.54:1(≥ 4.5), 조작 상자 테두리 --c-border-strong / 띠 3.68 / 3.99:1(≥ 3), 전망 칩 놋쇠 / 띠 4.56 / 7.90:1.
-   실측 선 대 전망 놋쇠는 1.32 / 1.05:1 — 밝기가 아니라 색상(파랑/노랑)과 무늬(실선/긴 점선 10 5)·「실측 | 전망」 라벨·범례로 구분한다(색에만 의존하지 않음).
+   확정 선 대 전망 놋쇠는 1.32 / 1.05:1 — 밝기가 아니라 색상(파랑/노랑)과 무늬(실선/긴 점선 10 5)·「확정 | 전망」(「추계 앞 구간 | 전망」) 라벨·범례로 구분한다(색에만 의존하지 않음).
    강제 색상에서는 시스템 색으로 되돌린다(아래 블록). */
 html[data-hero='illust'] { --c-chart: #2f5f8f; --c-card-tint: #eef4f9; --c-card-border: #d3dce6; --shadow-card: 0 1px 2px rgba(38, 50, 74, 0.06), 0 8px 20px rgba(38, 50, 74, 0.08); }
 @media (prefers-color-scheme: dark) {
@@ -243,12 +246,14 @@ html[data-hero='illust'] .carousel--005 { --c-brand: var(--c-chart); border-colo
   .picto svg path { fill: CanvasText; }
   .slide__projnote { border-left-color: CanvasText; }
   .chart .chart-bar--proj { stroke: CanvasText; }
-  /* QI4: 띠 면은 사라지고 가장자리 점선·글자가 남는다, 누적 막대는 채움/빈 칸/빗금으로 갈린다 */
+  /* QI4: 띠 면은 사라지고 가장자리 점선·글자가 남는다, 누적 막대는 채움/빈 칸/점무늬로 갈린다(빗금 #hatch는 전망 막대만 — R-477). 무늬의 선·점은 CanvasText */
   .chart .band, .legend .swatch-rect--band { fill: Canvas; }
   .legend .swatch-rect--band, .chart .line--range, .chart .tick { stroke: CanvasText; }
   .chart .chart-seg--work, .legend .swatch-rect--work, .legend .swatch-rect--bar { fill: ButtonText; }
   .chart .chart-seg--young, .legend .swatch-rect--young { fill: Canvas; stroke: CanvasText; }
-  .chart .chart-seg--old, .legend .swatch-rect--proj { stroke: CanvasText; }
+  .chart .chart-seg--old, .legend .swatch-rect--old, .legend .swatch-rect--proj { stroke: CanvasText; }
+  #hatch line { stroke: CanvasText; }
+  #dots circle { fill: CanvasText; }
   .chart .seg-text { fill: ButtonFace; }
   .slots-bottom { border-top-color: CanvasText; }
 }

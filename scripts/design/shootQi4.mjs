@@ -31,8 +31,13 @@ const SHOTS = [
   { name: 'qi4-heat-360x740', slide: 'heat-projection', view: '360x740', dpr: 2, coarse: true, el: '.carousel--005' },
   { name: 'qi4-newborn-1280x800', slide: 'projection-newborn-age-structure', view: '1280x800', dpr: 1 },
   { name: 'qi4-newborn-360x740', slide: 'projection-newborn-age-structure', view: '360x740', dpr: 2, coarse: true, el: '.carousel--005' },
-  { name: 'qi4-gap-1280x800', slide: 'income-gap-by-age', view: '1280x800', dpr: 1 },
+  { name: 'qi4-gap-1280x800', slide: 'income-gap-by-age', view: '1280x800', dpr: 1, clip: { x: 640, y: 0, width: 640, height: 800 } }, // r2: 보조 줄 둘이 더해져 전체 화면이 301 KB — 오른쪽 열(그림 + 카드 + 띠, 스크롤 0)만. 왼쪽 열은 다른 1280 샷과 같다
+
   { name: 'qi4-gap-320x640-text200', slide: 'income-gap-by-age', view: '320x640', dpr: 1, text: 200, el: '.carousel--005' },
+  // r2(REV-005-QI4-1): 격차 막대 360 · 띠 그래프(#17) 강제 색상(R-477·R-483 a — 띠 면이 사라지고 가장자리 점선·「고위」「저위」가 남는지) · 아기 점무늬 강제 색상(R-477). 1280 강제 색상은 카드만(그래프가 접힘 아래)
+  { name: 'qi4-gap-360x740', slide: 'income-gap-by-age', view: '360x740', dpr: 2, coarse: true, el: '.carousel--005' },
+  { name: 'qi4-aging-1280x800-forced', slide: 'projection-aging-share', view: '1280x800', dpr: 1, forced: true, el: '.carousel--005' },
+  { name: 'qi4-newborn-1280x800-forced', slide: 'projection-newborn-age-structure', view: '1280x800', dpr: 1, forced: true, el: '.carousel--005' },
 ];
 /** 측정 조합: 일곱 슬라이드 × 여섯 조건(샷은 없음) */
 const MEASURES = [
@@ -107,6 +112,7 @@ if (!measureOnly) {
     const over = await overflowOf(page);
     if (over.length > 0) problems.push(`${name}: ${over.join(' | ')}`);
     if (s.el !== undefined) await page.locator(s.el).first().screenshot({ path: OUT + name });
+    else if (s.clip !== undefined) await page.screenshot({ path: OUT + name, clip: s.clip });
     else await page.screenshot({ path: OUT + name });
     const kb = Math.round(statSync(OUT + name).size / 1024);
     if (kb > 300) problems.push(`${name}: ${kb} KB > 300 KB`);
