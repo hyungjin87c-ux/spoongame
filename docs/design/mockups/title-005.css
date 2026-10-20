@@ -151,11 +151,21 @@ html[data-hero='illust'] .picto { display: none; }
 html[data-hero='illust'] .illust--banner { display: flex; justify-content: center; --illust-h: 224px; }
 @media (min-width: 960px) {
   html[data-hero='illust'] .illust--banner { display: none; }
-  html[data-hero='illust'] .illust--top { display: flex; justify-content: center; --illust-h: 420px; --illust-tuck: 32px; margin-bottom: calc(-1 * var(--illust-tuck)); }
+  /* 겹침(--illust-tuck)은 그림 높이의 7.62%(420px일 때 32px) — 낮은 창에서 그림이 줄어도 제주 타일이 카드 뒤로 더 들어가지 않는다(D5-34). 420px·500px에서는 32·36 그대로 */
+  html[data-hero='illust'] .illust--top { display: flex; justify-content: center; --illust-h: 420px; --illust-tuck: min(32px, calc(var(--illust-h) * 0.0762)); margin-bottom: calc(-1 * var(--illust-tuck)); }
   html[data-hero='illust'] .carousel--005 { position: relative; z-index: 1; }
+  /* 낮은 창(REV-005-QI3-1 R-447, diff-005 D5-34): 그림 높이를 창 높이에 맞춰 줄여 이어서 살기 띠(120px)에서도, 표제어가 두 줄인 슬라이드에서도 값 줄 아래끝이 열의 보이는 끝 위(여유 8px)에 있게 한다.
+     예산 334px = 띠 120 + 열 아래 간격 6 + 여유 8 + 위 여백 24 + 카드 위끝→값 아래끝 176(표제어 두 줄). ÷ 0.924 = 겹침(7.62%)을 뺀 그림 높이 비율. 창 높이 ≥ 722면 420(지금 그대로), 541 이하는 바닥 224(모바일 배너와 같은 최소).
+     clamp()를 모르는 엔진은 위 420px 그대로(@supports). 띠 높이 변수(--bar-h)를 쓰지 않는 이유: JS가 재기 전 첫 그림과 확인 단계(156px)에서 그림이 뛴다(CLS·움직임). */
+  @supports (height: clamp(1px, 2px, 3px)) {
+    html[data-hero='illust'] .illust--top { --illust-h: clamp(224px, calc((100vh - 334px) / 0.924), 420px); }
+  }
 }
 @media (min-width: 1600px) {
-  html[data-hero='illust'] .illust--top { --illust-h: 500px; --illust-tuck: 36px; }
+  html[data-hero='illust'] .illust--top { --illust-h: 500px; --illust-tuck: min(36px, calc(var(--illust-h) * 0.0762)); }
+  @supports (height: clamp(1px, 2px, 3px)) {
+    html[data-hero='illust'] .illust--top { --illust-h: clamp(224px, calc((100vh - 334px) / 0.924), 500px); }
+  }
 }
 /* 흐림 단계(형진 님 「약간 흐리게」 — 글·통계를 방해하지 않게 연하고 부드럽게). 투명도·채도·대비를 낮추는 것이 기본이고, 블러는 그림 디테일이 뭉개지지 않는 0.5~1px만.
    1 「연하게」 = 투명도만 · 2 「부드럽게」(추천·기본) = 투명도 + 아주 약한 블러 · 3 「더 흐리게」 = 배경에 가깝게. 비교: screens/005/compare-illust-soft.png.
