@@ -1,17 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { hasUnseenNotes } from '../core/build';
 import { DEFAULT_CHART_SIZE, buildCarousel, type CarouselData, type ChartSize } from '../core/carousel';
+import { buildFeedbackUrl, feedbackFieldsOf } from '../core/feedback';
 import { formatCount } from '../core/format';
 import { tryVirtualPopulation } from '../core/population';
 import { ERAS, LIFE_LENGTHS, isLifeLengthSelectable, type Era, type LifeLength } from '../core/types';
 import { BUILD_LABEL } from '../buildInfo';
+import { APP_VERSION, REPO_URL } from '../buildInfo';
+import { buildAboutFaq } from '../data/aboutFaq';
 import { ERA_CONFIG } from '../data/birthTable';
+import { INFO_TEXT } from '../data/infoText';
 import { NAMES } from '../data/names';
+import { RELEASE_NOTES } from '../data/releaseNotes';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../data/titleText';
 import homeMapMobile from '../assets/home/home-map-mobile.webp';
 import homeMapPc from '../assets/home/home-map-pc.webp';
 import { Icon, Spoon, Sprite, TitleWordmark } from '../ui/Brand';
 import { Glue } from '../ui/Glue';
 import { GuardedButton, useInputGuard } from '../ui/GuardedButton';
+import { InfoPanel, type InfoSection } from '../ui/InfoPanel';
 import { StatsCarousel } from '../ui/StatsCarousel';
 import { watchBarRelease } from '../ui/barRelease';
 import { revealTopOfTallFocus, revealWithinReleasedBar } from '../ui/focusReveal';
@@ -53,11 +60,22 @@ interface Props {
   /** 캐러셀 데이터(테스트용 주입). 없으면 koreaStats.json에서 만든다(그래프는 화면에 그려지는 폭에 맞춰 다시 만든다). */
   carousel?: CarouselData;
   /**
-   * 설정 줄의 「무거운 장면 가리기」 스위치(HV3, QI6에서 동작을 연결한다). 이 값을 넘길 때만 설정 줄이 그려진다 —
-   * QI3은 자리(컴포넌트·CSS·문구)만 만들고 App은 아직 넘기지 않으므로 첫 화면에는 스위치가 보이지 않는다(동작하지 않는 스위치를 보이지 않는다).
+   * 설정 줄의 「무거운 장면 가리기」 스위치(HV3, 설정 v5 `gentle`) — App이 설정값과 토글을 넘긴다. 이 값을 넘길 때만 설정 줄이 그려진다(시험이 자리만 보는 경우를 위해 선택).
+   * 켜져 있으면 오른쪽 통계 카드의 자살률 슬라이드도 가려진다(HV7, 화면 규칙 (A) — 지금의 설정값으로 화면이 정한다).
+   * 판 도중 바꾸는 자리는 이 스위치 하나다 — 인생 화면 도구 줄에는 버튼을 두지 않았다(「나가기 → 첫 화면 → 스위치 → 이어서 살기」가 같은 결과, designer 판단 copy.md 12-7).
    */
   gentle?: { on: boolean; onToggle: () => void };
+  /** 마지막으로 본 새 소식의 버전 (설정 `notesSeen`, NT4). 지금 버전이 이보다 높으면 푸터 「새 소식」 링크 옆에 「새」 표시가 뜬다. 기본 빈 글자(본 적 없음) */
+  notesSeen?: string;
+  /** 정보 패널을 열었다 — 마지막으로 본 버전을 지금 버전으로 갱신한다 (설정 `notesSeen`) */
+  onSeeNotes?: (version: string) => void;
+  /** 지금 빌드의 버전·저장소 주소 (테스트 주입). 없으면 빌드 설정의 값. 푸터의 빌드 표기는 `BUILD_LABEL` 한 곳이다(QM2-7 d) */
+  appVersion?: string;
+  repoUrl?: string;
 }
+
+/** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다. 패널이 떠 있는 동안 바깥 전부에 거는 값이다 */
+const INERT = { inert: '' } as Record<string, string>;
 
 interface RadioCardProps {
   name: string;
@@ -151,12 +169,13 @@ function SegOption({ value, checked, guardReady, onSelect, title, meta, testId, 
 
 /**
  * 설정 줄의 「무거운 장면 가리기」 스위치 (HV3, copy.md 9-5). `role="switch"` + `aria-checked`, 이름 `aria-labelledby`·설명 `aria-describedby`. 상태 글자 「꺼짐/켜짐」은 보조(aria-hidden — 상태는 aria-checked가 전한다).
- * 켜짐은 트랙 색 + 썸 위치 + 글자로 구분한다(색에만 의존하지 않는다). 동작(설정 v5 `gentle`·가림 UI)은 QI6 — 지금 TitleScreen은 `gentle` prop이 있을 때만 이 줄을 그린다.
+ * 켜짐은 트랙 색 + 썸 위치 + 글자로 구분한다(색에만 의존하지 않는다). 동작(설정 v5 `gentle`·가림 UI)은 QI6에서 연결했다 — TitleScreen은 `gentle` prop이 있을 때만 이 줄을 그린다.
+ * 화면 진입 직후 입력 가드(0.4초, R-014)를 다른 선택 컨트롤(라디오 카드·인생 길이)과 같이 받는다 — 「첫 화면으로 나가기」·엔딩 「다시 태어나기」 더블탭의 둘째 입력이 스위치에 떨어져 설정을 바꾸지 않게(판 도중 켜면 `gentleUsed`가 참이 되므로 잘못 눌린 입력의 값이 크다). 가드 중에는 조용히 무시한다(라디오 카드와 같다).
  */
-function GentleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+function GentleSwitch({ on, onToggle, guardReady }: { on: boolean; onToggle: () => void; guardReady: boolean }) {
   return (
     <div className="slot slot--setting" data-testid="gentle-slot">
-      <button type="button" className="switch" role="switch" aria-checked={on} aria-labelledby="gentle-name" aria-describedby="gentle-desc" data-testid="gentle-switch" onClick={onToggle}>
+      <button type="button" className="switch" role="switch" aria-checked={on} aria-labelledby="gentle-name" aria-describedby="gentle-desc" data-testid="gentle-switch" onClick={() => (guardReady ? onToggle() : undefined)}>
         <span className="switch__track" aria-hidden="true">
           <span className="switch__thumb" />
         </span>
@@ -204,7 +223,7 @@ const SPOONS: ReadonlyArray<{ grade: 1 | 2 | 3 | 4 | 5; name: string; lines?: [s
   { grade: 5, name: '다이아몬드수저', lines: ['다이아몬드', '수저'] },
 ];
 
-export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, onBegin, saved = null, oldSaveNotice = false, minute, carousel, gentle }: Props) {
+export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, onBegin, saved = null, oldSaveNotice = false, minute, carousel, gentle, notesSeen = '', onSeeNotes, appVersion = APP_VERSION, repoUrl = REPO_URL }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const tagKeep = heroTagKeepParts();
   const clock = useEpochMinute();
@@ -214,6 +233,27 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
   const data = useMemo(() => carousel ?? buildCarousel(undefined, chartSize), [carousel, chartSize]);
   const [confirming, setConfirming] = useState(false);
   const guardReady = useInputGuard(GUARD_KEY);
+  // 정보 패널 「새 소식과 소개」 (QI7 NT4·NT5·FQ1): 열려 있는 구역(없으면 닫힘)과 열었던 링크(닫히면 포커스가 돌아간다). 저장하지 않는다 — 새로고침하면 닫힌 첫 화면이다(SV3)
+  const [panel, setPanel] = useState<{ section: InfoSection; token: number } | null>(null);
+  const panelOpener = useRef<HTMLElement | null>(null);
+  const panelTokens = useRef(0);
+  const wasPanelOpen = useRef(false);
+  const unseenNotes = hasUnseenNotes(appVersion, notesSeen);
+  const openPanel = (section: InfoSection, opener: HTMLElement) => {
+    panelOpener.current = opener;
+    panelTokens.current += 1;
+    setConfirming(false); // 확인 단계(이전 판 지우기)가 열려 있었다면 접는다 — 패널이 그 위에 뜨므로
+    setPanel({ section, token: panelTokens.current });
+    onSeeNotes?.(appVersion);
+  };
+  const onPanelClosed = useCallback(() => setPanel(null), []);
+  // 패널이 닫히면 포커스는 **열었던 링크**로 돌아간다 (NT5)
+  useEffect(() => {
+    if (panel === null && wasPanelOpen.current) panelOpener.current?.focus();
+    wasPanelOpen.current = panel !== null;
+  }, [panel]);
+  const feedbackUrl = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, repoUrl, BUILD_LABEL));
+  const panelInert = panel === null ? {} : INERT;
   const barRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const beginNewRef = useRef<HTMLButtonElement>(null);
@@ -310,7 +350,7 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
       <Sprite />
       {/* 구조(R-220): 한 격자(.title)에 왼쪽 본문(main)·오른쪽 통계 카드(aside)·왼쪽 아래 푸터(footer)를 함께 둔다. 넓은 화면에서 오른쪽 카드가 푸터 줄까지 걸쳐
           (grid-row: 1 / span 2) 따라다니는(sticky) 범위가 문서 끝까지 이어진다 — 맨 아래에서도 카드가 열 끝에 밀려 올라가지 않는다. 푸터는 <main> 밖이라 페이지 푸터(contentinfo)로 남는다. */}
-      <div className="title">
+      <div className="title" {...panelInert}>
         <main className="title__main">
           {oldSaveNotice ? (
             <p className="title__notice" role="status" data-testid="old-save-notice">
@@ -411,14 +451,50 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
                 <Glue text={TITLE_TEXT.lifeLengthHint} />
               </p>
             </fieldset>
-            {gentle === undefined ? null : <GentleSwitch on={gentle.on} onToggle={gentle.onToggle} />}
+            {gentle === undefined ? null : <GentleSwitch on={gentle.on} onToggle={gentle.onToggle} guardReady={guardReady} />}
           </div>
         </main>
         <aside className="title__side">
           <HomeIllustration variant="top" />
-          <StatsCarousel data={data} onChartSize={carousel === undefined ? setChartSize : undefined} />
+          <StatsCarousel data={data} onChartSize={carousel === undefined ? setChartSize : undefined} gentle={gentle?.on === true} />
         </aside>
         <footer className="title-foot" data-testid="title-foot">
+          {/* 푸터 링크 둘 (NT4·FQ1): 같은 패널의 두 구역을 연다. 링크 이름 = 구역 이름. 「새」 표시 = 알약 글자(aria-hidden) + 읽기 전용 꼬리 — 색 + 글자(색에만 의존하지 않는다) */}
+          <p className="title-foot__links" data-testid="info-links">
+            <a
+              href="#"
+              data-panel="news"
+              data-testid="link-news"
+              aria-haspopup="dialog"
+              onClick={(e) => {
+                e.preventDefault();
+                openPanel('news', e.currentTarget);
+              }}
+            >
+              {INFO_TEXT.newsName}
+              {unseenNotes ? (
+                <>
+                  <span className="news-badge" aria-hidden="true" data-testid="news-badge">
+                    {INFO_TEXT.badge}
+                  </span>
+                  <span className="sr-only">{INFO_TEXT.badgeSr}</span>
+                </>
+              ) : null}
+            </a>{' '}
+            <span aria-hidden="true">·</span>{' '}
+            <a
+              href="#"
+              data-panel="intro"
+              data-testid="link-intro"
+              aria-haspopup="dialog"
+              onClick={(e) => {
+                e.preventDefault();
+                openPanel('intro', e.currentTarget);
+              }}
+            >
+              {INFO_TEXT.introName}
+            </a>
+          </p>
           {/* 법원 통계 자료 이용 조건: 출처를 구체적으로 표시한다(문구·주소는 names.json의 meta.attribution). */}
           <p className="credit" data-testid="names-credit">
             <a href={NAMES.meta.attribution.url} target="_blank" rel="noopener noreferrer">
@@ -436,8 +512,8 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
           </p>
         </footer>
       </div>
-      <div className="page-end-space" />
-      <div className="bottom-bar" data-testid="bottom-bar" ref={barRef}>
+      <div className="page-end-space" {...panelInert} />
+      <div className="bottom-bar" data-testid="bottom-bar" ref={barRef} {...panelInert}>
         {saved === null ? (
           <GuardedButton className="btn btn--primary btn--lg" guardKey={GUARD_KEY} data-testid="start-birth" onClick={onBegin}>
             {TITLE_TEXT.begin}
@@ -471,6 +547,8 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
           </>
         )}
       </div>
+      {/* 정보 패널: 바깥(.title·본문 끝 여백·하단 띠)이 모두 inert인 동안만 있다 — aria-modal만으로는 Tab이 뒤로 샌다(design-system.md 11-10) */}
+      {panel === null ? null : <InfoPanel key={panel.token} section={panel.section} notes={RELEASE_NOTES} faq={buildAboutFaq({ orgs: data.orgs })} feedbackUrl={feedbackUrl} onClosed={onPanelClosed} guardKey={`info-panel:${panel.token}`} />}
     </div>
   );
 }

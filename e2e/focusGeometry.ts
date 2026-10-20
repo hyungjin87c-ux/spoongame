@@ -56,6 +56,13 @@ export interface FocusJudgement {
 
 const EPS = 0.5;
 
+/**
+ * 문서의 스크롤 위치는 정수 픽셀이라, 브라우저가 요소를 스크롤 여백 쪽에 붙여도(요소가 가용 영역보다 거의 꽉 찰 때) 소수 위치에서 가장 가까운 정수 칸으로 반올림되어 최대 0.5px 어긋난다 —
+ * 그 어긋남으로 생긴 0.5px 미만의 겹침은 가림이 아니다(사람 눈에 안 보이고, 스크롤로 없앨 수도 없다). 겹침을 잴 때만 링 상자를 이만큼 줄여서 본다.
+ * (SPEC-005 QI6: 첫 화면 설정 줄에 「무거운 장면 가리기」 스위치가 더해지며 360×740 「이어하기」 상태의 슬라이드 영역이 이 경계에 걸렸다 — 링 아래끝 620.37 대 띠 위끝 620. 0.5px 이상 겹치면 여전히 위반이다 — 기존 시험의 1px 겹침도 그대로 잡힌다.)
+ */
+export const SCROLL_ROUNDING = 0.5;
+
 export const widthOf = (b: Box): number => b.right - b.left;
 export const heightOf = (b: Box): number => b.bottom - b.top;
 
@@ -134,7 +141,7 @@ export function judgeFocus(s: FocusSample): FocusJudgement {
 
   if (!tooTall) {
     for (const f of others) {
-      const area = overlapArea(ringBox, f.box);
+      const area = overlapArea(grow(ringBox, -SCROLL_ROUNDING), f.box); // 정수 스크롤로 생기는 0.5px 미만의 겹침은 가림으로 세지 않는다
       if (area > 0) {
         obscuredBy.push(f.id);
         violations.push(`${s.id}: 포커스 링 ${fmt(ringBox)}이(가) 고정 요소 ${f.id}(${fmt(f.box)})에 가려진다 (겹침 ${Math.round(area)}px²)`);

@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react';
-import { COMPARABLE_STATS, displaySeconds, isCleanRun, looksStanding, reviewEnding, standingScore, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
+import { COMPARABLE_STATS, displaySeconds, heavyKindOfEntry, isCleanRun, looksStanding, reviewEnding, standingScore, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
 import { ERA_CONFIG } from '../data/birthTable';
 import { BIRTH_TEXT } from '../data/birthReportText';
 import { standingLabel } from '../data/birthText';
+import { VEIL_TEXT } from '../data/gentleText';
 import { decidedByText, deciderIconOf, delegatedSummaryText } from '../data/parentDecisionTable';
 import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/dashText';
 import {
@@ -31,6 +32,7 @@ import { GradeChip } from '../ui/Grade';
 import { GuardedButton } from '../ui/GuardedButton';
 import { FinalNetLine } from '../ui/dash/FinalNet';
 import { NoteBody } from '../ui/dash/NoteText';
+import { VeiledText, VeilTimelineStamp, useVeilOpen } from '../ui/dash/Veil';
 import { KeepStanding } from '../ui/KeepStanding';
 import { PlayTime } from '../ui/PlayTime';
 import { useFocusOnChange } from '../ui/useFocus';
@@ -48,6 +50,11 @@ interface Props {
   onRebirth: () => void;
   /** 테스트에서 회고를 직접 주입한다 (기본: 게임 상태에서 계산) */
   review?: EndingReview;
+  /**
+   * 「무거운 장면 가리기」(설정값, SPEC-005 HV3·HV4 ④): 켜져 있으면 생애 연표의 무거운 장면 줄이 지난 줄까지 가려지고 「펼쳐 보기」로 연다(엔딩을 볼 때의 설정값을 따른다 — 줄마다 가렸는지는 저장하지 않는다).
+   * 엔딩 맨 위 한 줄은 이 값이 아니라 **판의 기록 `game.gentleUsed`**가 정한다(HV6). 기본 false
+   */
+  gentle?: boolean;
 }
 
 /** 최종 상태 막대 한 줄 (건강·행복·지식·관계) */
@@ -101,7 +108,30 @@ function PlayTimeBlock({ play }: { play: PlayRecord }) {
   );
 }
 
-function TimelineItem({ entry }: { entry: HistoryEntry }) {
+/** 연표 줄 하나의 내용(제목 → 고른 길 → 결과 문장) — 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
+function TimelineBody({ entry }: { entry: HistoryEntry }) {
+  return (
+    <>
+      {entry.title ? <strong>{entry.title}</strong> : null}
+      {entry.choice ? (
+        <span className="tl-picked" data-testid="timeline-picked" data-by={entry.by}>
+          {entry.by !== undefined ? (
+            // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6·PD9): 인생 기록 줄과 같은 문구 한 곳 + 아이콘(색에만 의존하지 않는다)
+            <>
+              <Icon name={deciderIconOf(entry.by)} className="icon--xs" />
+              {decidedByText(entry.by)}: {entry.choice}
+            </>
+          ) : (
+            <>선택: {entry.choice}</>
+          )}
+        </span>
+      ) : null}
+      <span className="tl-text">{entry.text}</span>
+    </>
+  );
+}
+
+function TimelineItem({ entry, gentle = false, veilId, open = false, onToggle }: { entry: HistoryEntry; gentle?: boolean; veilId?: string; open?: boolean; onToggle?: () => void }) {
   // 「나의 기록」 줄(M7c FR9): 인생 기록(LogCard)과 같은 부품 — 라벨 「나의 기록 · {주제}」 + 사용자 글(`<bdi data-user-text>`). 글을 읽는 분기는 없다
   if (entry.kind === 'note') {
     return (
@@ -113,25 +143,25 @@ function TimelineItem({ entry }: { entry: HistoryEntry }) {
       </li>
     );
   }
+  const heavy = gentle ? heavyKindOfEntry(entry) : null;
+  if (heavy !== null && veilId !== undefined) {
+    // 가린 줄 (HV4 ④): 인생 기록 줄과 같은 부품 — 안내 「무거운 일이 있었습니다 · {분류}」 + [결정자 도장] + 「펼쳐 보기」, 펼치면 제목 → 고른 길 → 결과 문장. 사망 줄은 heavy가 아니라 여기 오지 않는다(원인 낱말까지 그대로, R-470)
+    return (
+      <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-veiled="true" data-testid="timeline-entry">
+        <span className="log__age">{entry.age}세</span>
+        <span className="veil">
+          <VeiledText kind={heavy} age={entry.age} bodyId={`veil-${veilId}`} open={open} onToggle={onToggle ?? (() => undefined)} stamp={entry.by !== undefined ? <VeilTimelineStamp by={entry.by} open={open} /> : null}>
+            <TimelineBody entry={entry} />
+          </VeiledText>
+        </span>
+      </li>
+    );
+  }
   return (
     <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-testid="timeline-entry">
       <span className="log__age">{entry.age}세</span>
       <span>
-        {entry.title ? <strong>{entry.title}</strong> : null}
-        {entry.choice ? (
-          <span className="tl-picked" data-testid="timeline-picked" data-by={entry.by}>
-            {entry.by !== undefined ? (
-              // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6·PD9): 인생 기록 줄과 같은 문구 한 곳 + 아이콘(색에만 의존하지 않는다)
-              <>
-                <Icon name={deciderIconOf(entry.by)} className="icon--xs" />
-                {decidedByText(entry.by)}: {entry.choice}
-              </>
-            ) : (
-              <>선택: {entry.choice}</>
-            )}
-          </span>
-        ) : null}
-        <span className="tl-text">{entry.text}</span>
+        <TimelineBody entry={entry} />
       </span>
     </li>
   );
@@ -146,18 +176,25 @@ function TimelineItem({ entry }: { entry: HistoryEntry }) {
  * M7e-3(REV-003-M4-1 R-327, docs/design/copy.md 5-3·5-4, diff-003.md D-41~D-46): 새 디자인 — 머리 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」, 출발선 카드의 **출발선 막대**(구간 띠 + 50% 눈금 + 마지막 마름모,
  * `role="img"` + 함수 조합 `aria-label`)와 **범례**(출발선 = 수저 칩 + 「({구간})」, 마지막 = 자리), 합쇼체 문장. 막대의 숫자는 모두 구현 함수에서 온다(`startBandOf`의 low·high, `standingScore(end)`).
  */
-export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: Props) {
+export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gentle = false }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   useThemeSurface();
   useScrollTopOnMount();
   const c = game.character;
   const title = `${c.name}${DASH_TEXT.endingTitleSuffix}`;
   const delegatedLine = delegatedSummaryText(review.delegated.parent, review.delegated.child);
+  const veil = useVeilOpen(gentle);
   return (
     <div className="page ending-page" data-testid="ending-screen">
       <Sprite />
       <SiteHead name={ENDING_HEAD_NAME} />
       <main className="ending">
+        {/* 이 판은 무거운 장면 가리기를 켠 채 살았다 (HV6): 기준은 설정이 아니라 **판의 기록**(`gentleUsed` — 판 도중 한 번이라도 켜졌으면 참)이라 설정이 꺼져 있어도 보인다. 의견 보내기 주소·플레이 시간에는 싣지 않는다 */}
+        {game.gentleUsed === true ? (
+          <p className="ending__gentle" data-testid="ending-gentle">
+            {VEIL_TEXT.endingLine}
+          </p>
+        ) : null}
         <div className="ending__head">
           <Face age={game.death.age} gender={c.gender} looks={c.looks} large />
           {/* 텍스트 칸: 제목 글자 크기 상한의 컨테이너다(R-320·R-321 — 얼굴 타일이 아니라 이 칸만 flex로 늘어난다, dash.css `.ending__who`) */}
@@ -282,9 +319,10 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
                 <Glue text={stageHeadingText(group.stage)} />
               </h3>
               <ol className="timeline">
-                {group.entries.map((e, i) => (
-                  <TimelineItem key={`${e.age}-${i}`} entry={e} />
-                ))}
+                {group.entries.map((e, i) => {
+                  const veilId = `tl-${group.stage}-${i}`;
+                  return <TimelineItem key={`${e.age}-${i}`} entry={e} gentle={gentle} veilId={veilId} open={veil.isOpen(veilId)} onToggle={() => veil.toggle(veilId)} />;
+                })}
               </ol>
             </div>
           ))}

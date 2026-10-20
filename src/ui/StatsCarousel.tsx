@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { AUTO_ADVANCE_MS, chartSizeFor, dotLabel, nextSlideIndex, pointerCountsAsHover, shouldAutoAdvance, showDots, swipeStep, valueWidthEm, type CarouselData, type CarouselSlide, type ChartSize } from '../core/carousel';
+import { HEAVY_SLIDE_TEXT, VEIL_TEXT } from '../data/gentleText';
 import { TITLE_TEXT } from '../data/titleText';
 import { Icon } from './Brand';
 import { Glue } from './Glue';
@@ -19,6 +20,9 @@ import { useIsoLayoutEffect, usePageHidden, useReducedMotion } from './hooks';
  * 재개 불변식(QM2-2): 멈춤 사유(일시정지·포인터·키보드 포커스·가려진 탭)가 모두 풀리면 반드시 다시 돈다. 포인터가 카드 위에 있는지는 React의 enter/leave 짝에 기대지 않고
  * **문서 수준 pointermove로 「지금 포인터 밑 요소가 카드 안인가」를 직접 본다** — 「다시 시작」을 누르면 버튼 아이콘이 바뀌면서 포인터 밑 요소가 사라지고, 브라우저가 pointerout 없이
  * 다음 이동 이벤트만 보내면 React의 onPointerLeave(pointerout에서 만들어진다)가 오지 않아 hovering이 true로 남았다(QA-003-M2 M2-A15). 터치는 사유로 세지 않는다(I4).
+ * **무거운 장면 가리기**(SPEC-005 QI6 HV7, REV-005-HV-1 7절): `gentle`(설정값)이 켜져 있으면 상담전화 안내(`slide.safety`)가 붙은 자살률 슬라이드가 가려진다 — 표제어 자리에 「무거운 주제 · 마음 건강 통계」, 「펼쳐 보기」 하나(`aria-expanded`·`aria-controls` 두 묶음),
+ * 공식 통계명·값·기준·그래프(읽기 이름 포함)·정의 / 출처·기준 줄은 `hidden` 두 묶음에 들어간다. **상담전화 묶음(`slide__help`)은 두 묶음 사이에서 늘 보인다**(이름은 바꾸지도 순화하지도 않는다). 눈에 안 보이는 읽기 이름
+ * (슬라이드 `article`의 `aria-label`, 점 버튼 이름)도 분류 문구로 바뀐다. 펼침은 저장하지 않고 **슬라이드를 떠나면(이전·다음·자동 넘김) 다시 가린다**, 설정이 바뀌어도 초기화된다. 다른 지표는 가리지 않는다(인구 통계이지 장면이 아니다).
  * 그래프는 화면에 그려지는 폭으로 좌표를 만든다(`onChartSize`로 폭·레이아웃을 알려 주면 부모가 `buildCarousel(undefined, size)`로 다시 만들어 넘긴다, R-206).
  */
 
@@ -43,20 +47,19 @@ function valueSizing(valueTexts: readonly string[], unitText: string): CSSProper
   return { '--value-em': em, '--unit-chars': Math.max(unitText.length, 1) } as CSSProperties;
 }
 
-function SlideView({ slide, index, count, active }: { slide: CarouselSlide; index: number; count: number; active: boolean }) {
+/** 무거운 장면 가리기가 이 슬라이드에 적용되는가: 설정이 켜져 있고 상담전화 안내가 붙은 슬라이드(자살률)일 때 (HV7) */
+export function isVeilableSlide(slide: CarouselSlide, gentle: boolean): boolean {
+  return gentle && slide.safety !== null;
+}
+
+function SlideView({ slide, index, count, active, gentle = false, open = false, onToggleVeil }: { slide: CarouselSlide; index: number; count: number; active: boolean; gentle?: boolean; open?: boolean; onToggleVeil?: () => void }) {
+  const veilable = isVeilableSlide(slide, gentle);
+  const veiled = veilable && !open;
   const chart = slide.chart.kind === 'line' ? <LineChart chart={slide.chart} label={slide.chartLabel} /> : <BarChart chart={slide.chart} label={slide.chartLabel} />;
   const unit = slide.unitText !== '' ? <small className="slide__unit">{slide.unitText}</small> : null;
-  return (
-    <article
-      className={`slide${active ? ' is-active' : ''}`}
-      data-testid="stat-slide"
-      data-slide-id={slide.id}
-      aria-roledescription="슬라이드"
-      aria-label={`${index + 1}/${count} ${slide.insight}, ${slide.officialText}`}
-    >
-      <h3 className="slide__insight">
-        <Glue text={slide.insight} />
-      </h3>
+  // 표제어 아래 ~ 정의 줄 (가림 대상의 앞 묶음) — 공식 통계명·값·기준·그래프·범례·정의
+  const top = (
+    <>
       <p className="slide__official" data-testid="slide-official">
         <Glue text={slide.officialText} />
       </p>
@@ -118,20 +121,60 @@ function SlideView({ slide, index, count, active }: { slide: CarouselSlide; inde
       <p className="t-sm t-muted">
         <Glue text={slide.definition} />
       </p>
-      {slide.safety !== null ? (
-        <aside className="slide__help" data-testid="slide-help" aria-label={slide.safety.name}>
-          <p>{TITLE_TEXT.helpLead}</p>
-          <p>
-            <strong>{slide.safety.name}</strong> <a href={`tel:${slide.safety.number}`}>{slide.safety.number}</a> ({slide.safety.hours})
-          </p>
-        </aside>
-      ) : null}
+    </>
+  );
+  // 상담전화 안내 — 가림 대상이 아니다(SC6): 가린 슬라이드에서도 두 묶음 사이에 늘 보인다. 이름·번호·시간은 데이터(helpLine) 그대로
+  const help =
+    slide.safety !== null ? (
+      <aside className="slide__help" data-testid="slide-help" aria-label={slide.safety.name}>
+        <p>{TITLE_TEXT.helpLead}</p>
+        <p>
+          <strong>{slide.safety.name}</strong> <a href={`tel:${slide.safety.number}`}>{slide.safety.number}</a> ({slide.safety.hours})
+        </p>
+      </aside>
+    ) : null;
+  // 출처 줄·기준 줄 (가림 대상의 뒤 묶음)
+  const bottom = (
+    <>
       <p className="slide__meta">
         출처: <Glue text={slide.sourceText} />
       </p>
       <p className="slide__meta" data-testid="slide-basis">
         <Pair text={slide.basisLine} kind="meta" />
       </p>
+    </>
+  );
+  return (
+    <article
+      className={`slide${active ? ' is-active' : ''}${veiled ? ' slide--veiled' : ''}`}
+      data-testid="stat-slide"
+      data-slide-id={slide.id}
+      aria-roledescription="슬라이드"
+      aria-label={veiled ? `${index + 1}/${count} ${HEAVY_SLIDE_TEXT.readName}` : `${index + 1}/${count} ${slide.insight}, ${slide.officialText}`}
+    >
+      <h3 className="slide__insight">
+        <Glue text={veiled ? HEAVY_SLIDE_TEXT.title : slide.insight} hideSeparator={veiled} />
+      </h3>
+      {veilable ? (
+        <>
+          <button type="button" className="btn btn--ghost btn--sm slide__veil-btn" aria-expanded={open} aria-controls={`veil-${slide.id}-a veil-${slide.id}-b`} data-testid="slide-veil-btn" onClick={onToggleVeil}>
+            {open ? VEIL_TEXT.close : VEIL_TEXT.open} <span aria-hidden="true">{open ? VEIL_TEXT.markClose : VEIL_TEXT.markOpen}</span>
+          </button>
+          <div className="slide__veiled" id={`veil-${slide.id}-a`} hidden={!open} data-testid="slide-veiled-top">
+            {top}
+          </div>
+          {help}
+          <div className="slide__veiled" id={`veil-${slide.id}-b`} hidden={!open} data-testid="slide-veiled-bottom">
+            {bottom}
+          </div>
+        </>
+      ) : (
+        <>
+          {top}
+          {help}
+          {bottom}
+        </>
+      )}
     </article>
   );
 }
@@ -139,7 +182,7 @@ function SlideView({ slide, index, count, active }: { slide: CarouselSlide; inde
 /** 캐러셀이 오른쪽 열에 놓이는(카드 높이가 슬라이드마다 다른) 넓은 레이아웃인가 — title.css의 같은 경계(960px) */
 const WIDE_LAYOUT_QUERY = '(min-width: 960px)';
 
-export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** 그래프를 그릴 크기(화면에 그려지는 폭·레이아웃)가 바뀔 때 알린다. 없으면 알리지 않는다(주입된 데이터로 그릴 때). */ onChartSize?: (size: ChartSize) => void }) {
+export function StatsCarousel({ data, onChartSize, gentle = false }: { data: CarouselData; /** 그래프를 그릴 크기(화면에 그려지는 폭·레이아웃)가 바뀔 때 알린다. 없으면 알리지 않는다(주입된 데이터로 그릴 때). */ onChartSize?: (size: ChartSize) => void; /** 「무거운 장면 가리기」(설정값) — 켜져 있으면 자살률 슬라이드가 가려진다(HV7). 기본 꺼짐 */ gentle?: boolean }) {
   const count = data.slides.length;
   const slidesRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -147,6 +190,8 @@ export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** �
   const [paused, setPaused] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
+  // 펼친 가린 슬라이드의 id (HV7) — 저장하지 않는다. 슬라이드를 떠나거나 설정이 바뀌면 다시 가린다(아래 효과)
+  const [veilOpenId, setVeilOpenId] = useState<string | null>(null);
   const reduced = useReducedMotion();
   const pageHidden = usePageHidden();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -202,8 +247,14 @@ export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** �
     return () => window.clearTimeout(id);
   }, [auto, index, count]);
 
+  const currentIndex = Math.min(index, Math.max(count - 1, 0));
+  // 가린 슬라이드를 떠나면(이전·다음·점·자동 넘김) 다시 가린다 — 그리고 설정이 바뀌면 펼침을 모두 지운다(M19). 현재 슬라이드가 바뀌거나 설정이 바뀔 때마다 비운다
+  useEffect(() => {
+    setVeilOpenId(null);
+  }, [currentIndex, gentle]);
+
   if (count === 0) return null;
-  const current = Math.min(index, count - 1);
+  const current = currentIndex;
   const go = (step: 1 | -1) => setIndex((i) => nextSlideIndex(i, count, step));
 
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
@@ -288,14 +339,14 @@ export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** �
       >
         <div className="slides" ref={slidesRef} aria-live={auto ? 'off' : 'polite'}>
           {data.slides.map((s, i) => (
-            <SlideView key={s.id} slide={s} index={i} count={count} active={i === current} />
+            <SlideView key={s.id} slide={s} index={i} count={count} active={i === current} gentle={gentle} open={i === current && veilOpenId === s.id} onToggleVeil={() => setVeilOpenId((id) => (id === s.id ? null : s.id))} />
           ))}
         </div>
       </div>
       {showDots(count) ? (
         <div className="dots" role="group" aria-label="지표 선택" data-testid="carousel-dots">
           {data.slides.map((s, i) => (
-            <GuardedButton key={s.id} guardKey={CAROUSEL_GUARD_KEY} data-testid={`carousel-dot-${i}`} aria-label={dotLabel(i, count, s.insight)} aria-current={i === current ? 'true' : undefined} onClick={() => setIndex(i)}>
+            <GuardedButton key={s.id} guardKey={CAROUSEL_GUARD_KEY} data-testid={`carousel-dot-${i}`} aria-label={dotLabel(i, count, isVeilableSlide(s, gentle) && !(i === current && veilOpenId === s.id) ? HEAVY_SLIDE_TEXT.readName : s.insight)} aria-current={i === current ? 'true' : undefined} onClick={() => setIndex(i)}>
               <i />
             </GuardedButton>
           ))}

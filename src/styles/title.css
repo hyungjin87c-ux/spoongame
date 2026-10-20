@@ -429,3 +429,66 @@ html.bar-released .page-end-space { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .slide, .slide.is-active { transition: none; }
 }
+
+
+/* ---------- 푸터 링크(NT4·FQ1 — QI7 확정 2026-10-21, design-system.md 14-7): 「새 소식」 · 「소개」 두 링크가 같은 패널의 두 구역을 연다. 「새」 표시 = 놋쇠 옅은 알약 + 글자(색 + 글자) — 알약 글자는 aria-hidden, 링크 이름의 읽기 전용 꼬리 「(읽지 않은 소식 있음)」이 뜻을 전한다.
+   포인터 클릭 대상 ≥ 24px(링크 줄 높이), 거친 포인터에서 44px ---------- */
+/* 두 링크와 「·」와 「새」 표시는 모두 한 줄 안의 인라인 글자다 — flex 항목으로 두면 각각이 따로 블록이 되어 줄바꿈 감사가 「·」를 혼자 선 줄로 읽는다(e2e/line-breaks.spec.ts).
+   링크는 inline-block(줄 높이 ≥ 24px, 거친 포인터 44px — 글자는 줄 높이 안에서 가운데), 「새」 알약은 링크 안의 inline-block이다.
+   한 줄에 들어가는 폭에서는 「새 소식 · 소개」 한 줄이고, 칸이 좁거나 글자가 커서 한 줄을 넘으면 기호를 감추고 링크를 따로 줄로 나눈다 — 「짧은 쌍」(.pair, QM2-10 규칙 3)과 같은 방식이다.
+   문턱은 한 줄 폭(약 10em)에 여유를 둔 13em이고, 컨테이너 질의를 모르는 브라우저는 항상 한 줄 모양이다. */
+.title-foot__links { font-size: var(--fs-sm); color: var(--c-text-2); container-type: inline-size; }
+.title-foot__links a { color: var(--c-link); text-decoration: underline; display: inline-block; line-height: max(24px, 1.5em); }
+@container (max-width: 13em) {
+  .title-foot__links a { display: block; width: fit-content; }
+  .title-foot__links > span[aria-hidden='true'] { display: none; }
+}
+.news-badge { display: inline-block; margin-left: var(--sp-1); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; padding: 0 var(--sp-2); border-radius: var(--r-pill); border: 1px solid var(--c-accent); background: var(--c-accent-soft); color: var(--c-on-accent-soft); text-decoration: none; }
+@media (pointer: coarse) {
+  .title-foot__links a { line-height: max(var(--hit), 1.5em); }
+}
+@media (forced-colors: active) {
+  /* 「새」 표시: 면 Canvas, 글자·테두리 CanvasText (design-system.md 14-8) — 뜻은 글자가 전한다 */
+  .news-badge { background: Canvas; color: CanvasText; border-color: CanvasText; }
+}
+
+/* ---------- QI6 HV7 가린 자살률 슬라이드 (?gentle=1 — design-system.md 14-5, REV-005-HV-1 7절): 표제어 h3 자리에 「무거운 주제 · 마음 건강 통계」, 「펼쳐 보기」 하나(aria-expanded·aria-controls), 상담전화 묶음(.slide__help)은 늘 보임.
+   공식 통계명·값·기준·그래프·정의·출처·기준 줄은 .slide__veiled 안 — 가린 동안 hidden(DOM에는 있되 화면·접근성 트리에서 빠짐). display: contents 라 슬라이드의 flex 간격이 그대로다(hidden 규칙이 뒤에 와서 이긴다) ---------- */
+.slide__veil-btn { align-self: flex-start; min-height: 32px; padding: 0 var(--sp-3); font-weight: var(--fw-regular); }
+.slide__veiled { display: contents; }
+.slide__veiled[hidden] { display: none; }
+.slide--veiled .slide__insight { color: var(--c-text); }
+
+/* ---------- 새 소식과 소개 패널 (SPEC-005 QI7 NT4·NT5·FQ1 — design-system.md 14-7, 2026-10-21 designer; 구현: title.css에 같은 글자로 옮겼다(SPEC-005 QI7 D5-53)) ----------
+   첫 화면 위에 뜨는 모달 시트: .overlay > .sheet.sheet--info[role=dialog aria-modal aria-labelledby=info-title] — 틀·바깥 inert·스크롤 잠금·Esc는 11-10 그대로, 머리에 「닫기」 버튼(뒤로가기 = 닫기, history 항목 하나).
+   포커스는 열릴 때 제목 h2(tabindex=-1), 닫히면 열었던 푸터 링크로. 구역 둘: 「새 소식」(버전별 <details>, 최신 3개 open) · 「소개」(질문 <details> 10개). 항목 종류는 글자 칩(.note-kind — 색 없음). 패널 끝 「의견 보내기」(FeedbackLink와 같은 새 탭 링크).
+   <details>/<summary>는 네이티브 키보드 조작(Enter·Space)과 aria-expanded를 공짜로 얻는다 — 기본 ▶ 표식 대신 선으로 그린 꺾쇠(::before, 글자 아님 — 스크린리더가 읽지 않는다) */
+.sheet--info { max-width: 720px; }
+.sheet--info .sheet__head { position: sticky; top: 0; z-index: 1; background: var(--c-surface); }
+.sheet--info .sheet__title { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.sheet--info .sheet__title:focus, .sheet--info .sheet__title:focus-visible { outline: none; }
+.info__section { display: flex; flex-direction: column; gap: var(--sp-3); scroll-margin-top: calc(var(--fs-xl) * var(--lh-snug) + var(--sp-3) * 2 + var(--sp-2)); }
+.info__section + .info__section { padding-top: var(--sp-4); border-top: 1px solid var(--c-border); }
+.info__h { font-size: var(--fs-lg); font-weight: var(--fw-bold); line-height: var(--lh-snug); }
+.info__lead { font-size: var(--fs-sm); color: var(--c-text-2); margin: 0; }
+.info__ver, .faq__item { border: 1px solid var(--c-border); border-radius: var(--r-md); background: var(--c-surface); }
+.info__ver > summary, .faq__item > summary { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--sp-1) var(--sp-2); min-height: var(--hit); padding: var(--sp-2) var(--sp-3); cursor: pointer; list-style: none; font-weight: var(--fw-bold); line-height: var(--lh-snug); }
+.info__ver > summary::-webkit-details-marker, .faq__item > summary::-webkit-details-marker { display: none; }
+.info__ver > summary::before, .faq__item > summary::before { content: ''; flex: none; width: 8px; height: 8px; margin: 0.45em 2px 0 2px; border-right: 2px solid var(--c-text-2); border-bottom: 2px solid var(--c-text-2); transform: rotate(-45deg); transition: transform var(--dur) var(--ease); }
+.info__ver[open] > summary::before, .faq__item[open] > summary::before { transform: rotate(45deg); }
+.info__ver > summary > span, .faq__item > summary > span { flex: 1 1 0; min-width: 0; } /* 꺾쇠 옆 남은 폭을 다 쓰고 안에서 낱말 단위로 접힌다 — min-width 12em이면 320 · 글자 200%에서 꺾쇠만 한 줄에 남았다 */
+.info__ver-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--sp-2); }
+.info__ver-date { font-weight: var(--fw-regular); color: var(--c-text-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.info__ver-sum { display: block; font-weight: var(--fw-regular); font-size: var(--fs-sm); color: var(--c-text-2); }
+.info__items { list-style: none; margin: 0; padding: 0 var(--sp-3) var(--sp-3) calc(var(--sp-3) + 12px + var(--sp-2)); display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); line-height: var(--lh-body); }
+.info__items li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-2); }
+.note-kind { flex: none; font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--c-text-2); border: 1px solid var(--c-border-strong); border-radius: var(--r-sm); padding: 0 var(--sp-2); line-height: 1.7; white-space: nowrap; }
+.info__items li > span:last-child { flex: 1 1 14em; min-width: min(14em, 100%); }
+.faq__a { padding: 0 var(--sp-3) var(--sp-3) calc(var(--sp-3) + 12px + var(--sp-2)); display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); line-height: var(--lh-body); }
+.faq__a p { margin: 0; }
+.info__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding-top: var(--sp-4); border-top: 1px solid var(--c-border); font-size: var(--fs-sm); color: var(--c-text-2); }
+.info__foot .btn { white-space: normal; word-break: keep-all; overflow-wrap: normal; }
+@media (forced-colors: active) {
+  .info__ver, .faq__item, .note-kind { border-color: CanvasText; }
+  .info__ver > summary::before, .faq__item > summary::before { border-color: CanvasText; }
+}

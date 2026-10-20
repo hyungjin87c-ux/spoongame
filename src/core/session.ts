@@ -2,6 +2,7 @@ import { EVENT_POOL } from '../data/events';
 import type { EventPool } from './events';
 import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type RunResult, type TickInfo } from './life';
 import { consumeNote, dueNote, noteResponse, writeNote, type NoteMode } from './notes';
+import { VERSION_PATTERN } from './build';
 import { playEqual, playNotBehind, readPlay } from './playClock';
 import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth, setPaused } from './state';
 import {
@@ -48,6 +49,13 @@ import {
  *    saveNote(cardId|null, text, expectCount?): 「적어두고 살기」 — 글을 정규화해 연표에 더한다(자동 카드는 지금 뜰 차례의 카드여야 하고, 수동 기록은 cardId null). 빈 입력·40개 도달·이미 늘어난 기록 수(연타)·이미 소비된 카드는 같은 객체.
  *    dismissNote(cardId): 「마음속에 담고 살기」 — 지금 뜰 차례의 카드를 소비한다(저장 없음). 이미 소비됐으면 같은 객체(연타). setNoteCards(on): 「자동 기록 카드 끄기/켜기」(설정, 새 인생으로 넘어가도 유지).
  *    기록은 인생(스탯·자산·플래그·rngState)을 바꾸지 않는다 — 카드를 어떻게 처리하든 인생이 같다(tests/noteInvariance.test.ts).
+ *  - 무거운 장면 가리기(SPEC-005 QI6, 설정 v5): setGentle(on)은 설정 `gentle`을 바꾼다(첫 화면의 스위치 — 가림은 이 값으로 화면이 정한다, 화면 규칙 (A)). **진행 중인 판(룰렛~인생)에서 켜면 그 판의 `gentleUsed`가 참이 된다**
+ *    (판 도중 한 번이라도 켜졌으면 참 — 켜고 나서 꺼도 참이다). 첫 화면의 새 판(`begin`/`beginNew`)은 설정이 켜져 있으면 **켠 채 시작한 판**이라 처음부터 `gentleUsed`가 참이다. 한 규칙(`markGentleUsed`)이 모두 덮는다:
+ *    설정이 켜진 채 진행 중인 판을 바꾸는 입력은 무엇이든 그 판에 표지를 붙인다(켜진 설정으로 저장된 판을 열어 이어 가는 경우 포함). 이 밖에는 인생(스탯·자산·플래그·`rngState`·연표)을 전혀 건드리지 않는다
+ *    (같은 시드·같은 선택이면 켠 판과 끈 판의 상태 전체가 `gentleUsed`와 `play`만 빼고 같다 — tests/gentle.test.ts).
+ *    autoPick(key): 가린 결정 카드의 「이번에는 자동으로 고르기」 — 자동 모드가 꺼져 있어도 지금의 자동 선택 성향(`autoChoiceWeights`)으로 대기 중인 선택지를 한 번 고른다. 사용자가 직접 누른 입력이라 `choose`처럼 일시정지 중에도 동작하고,
+ *    고른 결과는 「그 선택지를 수동으로 고른 것」과 상태 전체가 같다(R-039). 키가 다르면 무시.
+ *  - seeNotes(version): 새 소식 패널을 열었다(NT4) — 마지막으로 본 버전 `notesSeen`을 갱신한다(인생과 무관한 설정).
  * 무시되는 경우에는 같은 객체를 돌려준다(React가 다시 그리지 않는다).
  *
  * 첫 화면을 다시 연 상태(showTitle): 「나가기」(M4)가 진행 중인 판(birth·life)을 그대로 두고 첫 화면만 보여 줄 때 켜진다.
@@ -78,6 +86,12 @@ export type SessionAction =
   | { type: 'resume' }
   /** 첫 화면에서 「새로 태어나기」: 이전 판을 버리고 새 시드로 새 판을 시작한다(첫 화면을 다시 연 상태에서만). 시드는 UI가 정해 넘긴다. */
   | { type: 'beginNew'; seed: number }
+  /** 첫 화면: 「무거운 장면 가리기」 켜기·끄기(설정에 저장). 진행 중인 판(룰렛~인생)에서 켜면 그 판의 `gentleUsed`가 참이 된다(SPEC-005 HV3). */
+  | { type: 'setGentle'; on: boolean }
+  /** 가린 결정 카드의 「이번에는 자동으로 고르기」: 자동 모드와 상관없이 지금의 자동 선택 성향으로 대기 중인 선택지를 한 번 고른다(SPEC-005 HV4 ②). */
+  | { type: 'autoPick'; key: string }
+  /** 새 소식 패널을 열었다: 마지막으로 본 버전(`notesSeen`)을 갱신한다(SPEC-005 NT4). */
+  | { type: 'seeNotes'; version: string }
   /** 룰렛 연출이 끝났다/건너뛰었다: 회전 중 상태를 끈다. */
   | { type: 'finishSpin' }
   /** 룰렛 → 출생신고(「출생신고 보기」). roulette 단계에서만. */
@@ -118,6 +132,15 @@ export function hasProgress(game: GameState): boolean {
   return game.phase === 'roulette' || game.phase === 'birth' || game.phase === 'life';
 }
 
+/**
+ * 가림 설정이 켜진 채 진행 중인 판(룰렛~인생)이 바뀌면 그 판은 **가림을 켠 판**이다 — `gentleUsed`를 참으로 한다 (SPEC-005 HV3 「판 도중 한 번이라도 켜졌으면 참」).
+ * 하나의 규칙이 세 길을 모두 덮는다: ① 켠 채 새 판을 시작했다(`begin`·`beginNew`) ② 판 도중 켰다(`setGentle`) ③ 이미 켜져 있는 설정으로 저장된 판을 열어 이어 갔다(저장된 판에는 표지가 없을 수 있다 — 다른 탭·옛 저장).
+ * 필드는 `true`만 쓰고(끈 판의 저장은 이전 버전과 같다) 한 번 참이면 꺼도 참으로 남는다. 아무것도 바뀌지 않은 입력(무시된 액션)은 판을 건드리지 않는다. 인생(스탯·자산·플래그·난수·연표)은 이 표지와 무관하다.
+ */
+function markGentleUsed(s: Session): Session {
+  return s.settings.gentle && hasProgress(s.game) && s.game.gentleUsed !== true ? { ...s, game: { ...s.game, gentleUsed: true } } : s;
+}
+
 function withGame(s: Session, game: GameState, tick: TickInfo | null = null): Session {
   return game === s.game ? s : { ...s, game, tick };
 }
@@ -147,9 +170,15 @@ function settleNotes(game: GameState, mode: NoteMode): GameState {
 }
 
 export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = EVENT_POOL, handling: NoteHandling = 'live'): Session {
+  const next = reduceSession(s, a, pool, handling);
+  // 무시된 입력(같은 세션)은 그대로 돌려준다 — 연타·늦게 온 입력이 판을 흔들지 않는다
+  return next === s ? s : markGentleUsed(next);
+}
+
+function reduceSession(s: Session, a: SessionAction, pool: EventPool, handling: NoteHandling): Session {
   const mode: NoteMode = handling === 'ignore' ? 'ignore' : noteResponse(s.settings, s.game);
   // 첫 화면을 다시 연 동안에는 인생이 흐르지 않는다(늦게 울린 타이머·입력이 와도 무시).
-  if (s.showTitle && (a.type === 'advance' || a.type === 'choose' || a.type === 'autoChoose' || a.type === 'skip' || a.type === 'enterLife' || a.type === 'enterBirth' || a.type === 'finishSpin')) return s;
+  if (s.showTitle && (a.type === 'advance' || a.type === 'choose' || a.type === 'autoChoose' || a.type === 'autoPick' || a.type === 'skip' || a.type === 'enterLife' || a.type === 'enterBirth' || a.type === 'finishSpin')) return s;
   switch (a.type) {
     case 'setEra':
       return !(ERAS as readonly string[]).includes(a.era) || a.era === s.settings.era ? s : { ...s, settings: { ...s.settings, era: a.era } };
@@ -171,6 +200,13 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
       if (!s.showTitle) return s;
       return { ...s, game: beginBirth(createInitialState(a.seed), s.settings.era, s.settings.lifeLength), tick: null, showTitle: false, spin: true };
     }
+    case 'setGentle': {
+      if (typeof a.on !== 'boolean') return s;
+      // 설정만 바꾼다(tick은 그대로 — 인생과 무관). 판 도중 켜면 `sessionReducer`의 `markGentleUsed`가 그 판에 표지를 붙인다
+      return a.on === s.settings.gentle ? s : { ...s, settings: { ...s.settings, gentle: a.on } };
+    }
+    case 'seeNotes':
+      return typeof a.version !== 'string' || a.version === s.settings.notesSeen || !VERSION_PATTERN.test(a.version) ? s : { ...s, settings: { ...s.settings, notesSeen: a.version } };
     case 'finishSpin':
       return s.spin ? { ...s, spin: false } : s;
     case 'enterBirth':
@@ -197,6 +233,11 @@ export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = E
     }
     case 'autoChoose': {
       if (!s.settings.autoMode || s.game.paused) return s;
+      const r = autoResolveStep(s.game, a.key, pool);
+      return withGame(s, settleNotes(r.state, mode), r.tick);
+    }
+    case 'autoPick': {
+      // 가린 결정 카드의 「이번에는 자동으로 고르기」(SPEC-005 HV4 ②): 사람이 누른 입력이다 — 자동 모드 여부·일시정지와 무관하게 대기 중인 카드(key가 맞을 때)를 지금의 성향으로 한 번 고른다
       const r = autoResolveStep(s.game, a.key, pool);
       return withGame(s, settleNotes(r.state, mode), r.tick);
     }

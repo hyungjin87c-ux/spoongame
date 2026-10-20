@@ -1540,7 +1540,7 @@ test('이전 버전(v4) 저장은 새 게임으로 시작하고 첫 화면에 �
   expect(save.data.phase).toBe('title');
   expect(save.data.seed).not.toBe(5);
   // 설정은 유지(v1 → v3로 올라가며 새 필드는 기본값; M4: BGM은 꺼짐·볼륨 30, 테마는 시스템 설정을 따른다)
-  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true });
+  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '' }); // 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘이 기본값으로 함께 저장된다
   // 태어나면 안내가 사라지고, 새로고침해도 다시 뜨지 않는다
   await pressBegin(page);
   await expect(page.getByTestId('roulette-screen')).toBeVisible();
@@ -1574,7 +1574,8 @@ test('키보드(CM4): Tab 순서는 제목 → 세상 → 인생 길이 → 캐�
   }
   expect(stops[stops.length - 1], `Tab 정지점: ${stops.join(' → ')}`).toBe('start-birth');
   // 조작 줄(이전·다음·일시정지)이 카드 머리로 옮겨져(R-200) 슬라이드 영역보다 먼저 닿는다 — 이 순서가 바뀐 이유는 ai-log dev-M2-r2. APG 캐러셀도 회전 제어를 슬라이드보다 앞에 두기를 권한다.
-  const expected = ['era-present', 'life-short30', 'carousel-prev', 'carousel-next', 'carousel-pause', 'carousel-viewport', 'A', 'start-birth'];
+  // SPEC-005 QI6·QI7: 설정 줄의 「무거운 장면 가리기」 스위치(gentle-switch, 인생 길이 바로 다음)와 푸터의 「새 소식」·「소개」 링크(출처 링크 앞)가 정지점에 더해졌다 — 나머지 순서는 그대로다.
+  const expected = ['era-present', 'life-short30', 'gentle-switch', 'carousel-prev', 'carousel-next', 'carousel-pause', 'carousel-viewport', 'link-news', 'link-intro', 'A', 'start-birth'];
   expect(stops).toEqual(expected);
   // 포커스 링: 하단 버튼은 :focus-visible 링(3px 이상), 화면 안에 있다
   const ring = await page.evaluate(() => {

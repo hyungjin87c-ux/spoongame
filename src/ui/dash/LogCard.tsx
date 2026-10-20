@@ -7,6 +7,7 @@ import { FitPair } from '../FitPair';
 import { Glue } from '../Glue';
 import { useEpochMinute, useReducedMotion } from '../hooks';
 import { LogList } from './LogList';
+import { useVeilOpen } from './Veil';
 import { isAtLogTop, logRows } from './logOrder';
 
 /**
@@ -24,9 +25,10 @@ import { isAtLogTop, logRows } from './logOrder';
  *  - 스크롤 영역은 키보드로 닿을 수 있다(tabindex 0 + 이름 + 안내 문구가 설명) — 방향키·PageUp/Down으로 지난 기록을 읽고 Home = 맨 위(가장 최근) · End = 맨 아래(가장 오래된)다.
  *    영역(최대 520px)이 가용 높이(화면 − 고정 머리 − 진행 줄)보다 크면 키보드 포커스를 받을 때 위쪽 변이 머리 밑에 오게 맞춘다(CM10 예외 ②).
  *  - 처음 뜰 때·새로고침 복원 때는 맨 위(가장 최근)에서 시작한다 — 새로 만든 스크롤 영역의 기본 위치다.
+ *  - **무거운 장면 가리기**(SPEC-005 QI6): `gentle`(설정값)이 켜져 있으면 무거운 장면 줄이 지난 줄까지 가려지고 「펼쳐 보기」로 연다. 펼침은 이 컴포넌트의 상태일 뿐 저장하지 않고, 설정이 바뀌면 초기화된다(M19, `useVeilOpen`).
  */
 
-export function LogCard({ history, name, live, minute }: { history: readonly HistoryEntry[]; name: string; live: boolean; minute?: number }) {
+export function LogCard({ history, name, live, minute, gentle = false }: { history: readonly HistoryEntry[]; name: string; live: boolean; minute?: number; /** 「무거운 장면 가리기」(설정값) */ gentle?: boolean }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const rows = useMemo(() => logRows(history), [history]);
   /** 「맨 위로」를 누른 직후 부드럽게 올라가는 중인가 — 그동안 새 줄이 와도 맨 위로 따라간다 */
@@ -35,6 +37,7 @@ export function LogCard({ history, name, live, minute }: { history: readonly His
   const clock = useEpochMinute();
   const reduced = useReducedMotion();
   const population = tryVirtualPopulation(minute ?? clock);
+  const veil = useVeilOpen(gentle);
 
   /**
    * 「새 기록 N개 · 맨 위로」 알약이 **저절로 사라지는** 길(키보드로 알약에 Tab한 뒤 Home·PageUp·↑로 목록이 맨 위에 닿음, 휠·스크롤바로 맨 위에 닿음, 다른 판으로 바뀜)에서, 알약이 지금 포커스를 가졌으면 목록 영역으로 옮긴다 —
@@ -94,6 +97,9 @@ export function LogCard({ history, name, live, minute }: { history: readonly His
           ) : null
         }
         live={live}
+        gentle={gentle}
+        veilOpen={veil.isOpen}
+        onVeilToggle={veil.toggle}
         scrollerRef={scrollerRef}
         following={following}
         onScroll={onScroll}

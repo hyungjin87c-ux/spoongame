@@ -51,7 +51,8 @@ for (const [width, height] of [
           const cs = getComputedStyle(el);
           return { line: cs.textDecorationLine, color: cs.textDecorationColor, style: cs.textDecorationStyle };
         };
-        const blocks = [...a.querySelectorAll('*')].filter((e) => getComputedStyle(e).display === 'inline-block');
+        // 「새」 알약(.news-badge, SPEC-005 QI7)은 링크 글자가 아니라 알약이라 밑줄을 긋지 않는 것이 의도다(inline-block이라 링크 밑줄이 전파되지 않는다) — 이 감사의 대상은 글자 묶음이다
+        const blocks = [...a.querySelectorAll('*')].filter((e) => getComputedStyle(e).display === 'inline-block' && !e.classList.contains('news-badge'));
         return { testId: a.closest('[data-testid]')?.getAttribute('data-testid') ?? '', link: line(a), blocks: blocks.map((b) => ({ text: (b.textContent ?? '').slice(0, 20), ...line(b) })) };
       }),
     );

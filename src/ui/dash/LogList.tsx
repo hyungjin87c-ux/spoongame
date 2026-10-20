@@ -1,9 +1,12 @@
 import { Component, createRef, type MutableRefObject, type ReactNode, type RefObject, type UIEventHandler } from 'react';
+import { heavyKindOfEntry } from '../../core/gentle';
+import type { HistoryEntry } from '../../core/types';
 import { DASH_TEXT } from '../../data/dashText';
 import { decidedByText, deciderIconOf } from '../../data/parentDecisionTable';
 import { Icon } from '../Brand';
 import { revealTopOfTallFocus } from '../focusReveal';
 import { NoteBody } from './NoteText';
+import { VeiledText, VeilStamp } from './Veil';
 import { addedAbove, isAtLogTop, resizePlan, scrollPlan, type LogRow } from './logOrder';
 
 /**
@@ -16,6 +19,9 @@ import { addedAbove, isAtLogTop, resizePlan, scrollPlan, type LogRow } from './l
  * 업데이트 직후 같은 줄(키로 찾는다)의 거리를 다시 재서 달라진 만큼 스크롤 위치를 옮긴다. 쌓인 줄의 높이만 더하는 방식은 가장 최근이던 줄이 굵은 글씨를 잃으며 줄바꿈이 바뀌는 것(`log__row--latest`)을
  * 놓쳐 한 줄만큼 어긋났다. 브라우저의 `overflow-anchor`는 WebKit이 구현하지 않고 켜 두면 이 보정과 겹쳐 두 번 움직이므로 CSS에서 끄고(`.log__list { overflow-anchor: none }`) 여기서만 한다.
  * 맨 위를 보고 있었으면(또는 「맨 위로」를 누른 직후면) 보정 대신 맨 위(0)에 머문다 = 새 줄이 바로 보인다.
+ *
+ * **무거운 장면 가리기**(SPEC-005 QI6 HV4): `gentle`이 켜져 있으면 무거운 장면 줄(`heavyKindOfEntry` — 이벤트의 `heavy` 표지 또는 상속 줄 상수)을 「{나이}세 무거운 일이 있었습니다 · {분류}」 + 「펼쳐 보기」로 바꾼다. 지금의 설정값으로 지난 줄까지 모두 가리고(화면 규칙 (A)),
+ * 끄면 원문이다. 원문은 `hidden` 요소로 DOM에만 있어 live region이 읽지 않고(`aria-relevant="additions"`), 펼치기·접기로 줄의 높이가 달라져도 아래 `ResizeObserver` 보정이 보던 줄을 지킨다.
  *
  * 줄이 **다시 흐를 때**(창 크기·글자 크기·화면 회전)도 같은 방식으로 보던 자리를 지킨다 (R-439) — `overflow-anchor: none`으로 끈 브라우저 스크롤 고정이 해 주던 일이다.
  * 스크롤할 때마다 보던 줄(키)과 영역 윗변에서의 거리를 기억해 두고(`place`), 영역·목록의 크기가 바뀌면(`ResizeObserver`) 같은 줄의 거리가 기억한 값과 같아지게 스크롤 위치를 옮긴다.
@@ -44,6 +50,36 @@ interface Props {
   onUnread: (added: number) => void;
   /** 다른 판의 기록으로 바뀌어 맨 위에서 다시 시작했다 */
   onReset: () => void;
+  /** 「무거운 장면 가리기」가 켜져 있는가 — 설정값(`gentle`)이 정한다. 기본 꺼짐(모든 줄 원문) */
+  gentle?: boolean;
+  /** 가린 줄(키)이 펼쳐져 있는가 — 펼침은 저장하지 않고 설정이 바뀌면 초기화된다(`useVeilOpen`) */
+  veilOpen?: (key: string) => boolean;
+  onVeilToggle?: (key: string) => void;
+}
+
+/** 기록 줄 한 개의 원문 — 사건 문장, 선택 결과면 「(선택: 라벨)」 또는 결정자 도장 + 라벨. 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
+function EntryText({ h }: { h: HistoryEntry }) {
+  return (
+    <>
+      {h.text}
+      {h.choice ? (
+        <>
+          {' '}
+          {h.by !== undefined ? (
+            // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6): 「(부모님이 이렇게 정했습니다: 라벨)」 · 「(이렇게 흘러갔습니다: 라벨)」 — 글자 + 아이콘으로 본인 선택 줄과 가른다(색에만 의존하지 않는다)
+            <em className={`log__by log__by--${h.by}`} data-testid="log-by" data-by={h.by}>
+              <Icon name={deciderIconOf(h.by)} className="icon--xs" />({decidedByText(h.by)}: {h.choice})
+            </em>
+          ) : (
+            <em>
+              ({DASH_TEXT.logChoicePrefix}
+              {h.choice})
+            </em>
+          )}
+        </>
+      ) : null}
+    </>
+  );
 }
 
 interface Snapshot {
@@ -216,7 +252,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
   }
 
   render() {
-    const { rows, live, jump, scrollerRef, onUserScroll } = this.props;
+    const { rows, live, jump, scrollerRef, onUserScroll, gentle = false, veilOpen, onVeilToggle } = this.props;
     return (
       <div
         className="log__list"
@@ -235,45 +271,43 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
       >
         {jump ? <div className="log__jump-slot">{jump}</div> : null}
         <ol aria-live={live ? 'polite' : 'off'} aria-relevant="additions" className="log__rows" ref={this.olRef}>
-          {rows.map(({ entry: h, key, latest }) => (
-            <li
-              key={key}
-              className={`log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${h.kind === 'note' ? ' log__row--note' : ''}${latest ? ' log__row--latest' : ''}`}
-              data-kind={h.kind}
-              data-testid="log-row"
-            >
+          {rows.map(({ entry: h, key, latest }) => {
+            const heavy = gentle ? heavyKindOfEntry(h) : null;
+            const className = `log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${h.kind === 'note' ? ' log__row--note' : ''}${latest ? ' log__row--latest' : ''}`;
+            const age = (
               <span className="log__age">
                 {h.age}
                 {DASH_TEXT.ageSuffix}
               </span>
-              <span className="log__text">
-                {h.kind === 'note' ? (
-                  // 「나의 기록」 줄(M7c): 라벨 + 사용자 글 — 엔딩 연표와 같은 부품(NoteBody)
-                  <NoteBody entry={h} />
-                ) : (
-                  <>
-                    {h.text}
-                    {h.choice ? (
-                      <>
-                        {' '}
-                        {h.by !== undefined ? (
-                          // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6): 「(부모님이 이렇게 정했습니다: 라벨)」 · 「(이렇게 흘러갔습니다: 라벨)」 — 글자 + 아이콘으로 본인 선택 줄과 가른다(색에만 의존하지 않는다)
-                          <em className={`log__by log__by--${h.by}`} data-testid="log-by" data-by={h.by}>
-                            <Icon name={deciderIconOf(h.by)} className="icon--xs" />({decidedByText(h.by)}: {h.choice})
-                          </em>
-                        ) : (
-                          <em>
-                            ({DASH_TEXT.logChoicePrefix}
-                            {h.choice})
-                          </em>
-                        )}
-                      </>
-                    ) : null}
-                  </>
-                )}
-              </span>
-            </li>
-          ))}
+            );
+            if (heavy !== null) {
+              // 가린 줄 (HV4 ①③ 서술·결정·부모): 나이 열은 보통 줄과 같고, 글 자리에 안내 + [결정자 도장] + 「펼쳐 보기」, 원문은 `hidden`
+              const open = veilOpen?.(key) ?? false;
+              return (
+                <li key={key} className={className} data-kind={h.kind} data-veiled="true" data-testid="log-row">
+                  {age}
+                  <span className="log__text veil">
+                    <VeiledText kind={heavy} age={h.age} bodyId={`veil-${key}`} open={open} onToggle={() => onVeilToggle?.(key)} stamp={h.by !== undefined ? <VeilStamp by={h.by} open={open} /> : null}>
+                      <EntryText h={h} />
+                    </VeiledText>
+                  </span>
+                </li>
+              );
+            }
+            return (
+              <li key={key} className={className} data-kind={h.kind} data-testid="log-row">
+                {age}
+                <span className="log__text">
+                  {h.kind === 'note' ? (
+                    // 「나의 기록」 줄(M7c): 라벨 + 사용자 글 — 엔딩 연표와 같은 부품(NoteBody)
+                    <NoteBody entry={h} />
+                  ) : (
+                    <EntryText h={h} />
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ol>
       </div>
     );

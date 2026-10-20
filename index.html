@@ -22,7 +22,7 @@
         try {
           var s = JSON.parse(localStorage.getItem('suzeo-game:settings'));
           var d = s && s.data;
-          if (d && [1, 2, 3, 4].indexOf(s.version) >= 0 && [1, 2, 4, 8].indexOf(d.speed) >= 0 && typeof d.autoMode === 'boolean' && (d.theme === 'light' || d.theme === 'dark')) {
+          if (d && [1, 2, 3, 4, 5].indexOf(s.version) >= 0 && [1, 2, 4, 8].indexOf(d.speed) >= 0 && typeof d.autoMode === 'boolean' && (d.theme === 'light' || d.theme === 'dark')) {
             document.documentElement.setAttribute('data-theme', d.theme);
           }
         } catch (e) {}

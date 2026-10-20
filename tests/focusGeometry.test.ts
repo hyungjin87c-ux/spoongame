@@ -53,6 +53,16 @@ describe('judgeFocus: 가려진 포커스를 실패로 본다 (QM2-1 규칙 2)',
     expect(j.violations.join('\n')).toContain('아래로 나갔다'); // 743 > 740
   });
 
+  it('정수 스크롤이 만드는 0.5px 미만의 겹침은 가림이 아니다 — 360×740 이어하기의 슬라이드 영역 링 아래끝 620.37 대 띠 위끝 620 (SPEC-005 QI6). 0.5px 이상 겹치면 여전히 위반이다', () => {
+    const slide = (bottom: number) => sample({ id: 'carousel-viewport', box: { left: 33, right: 327, top: 12.45, bottom }, ring: 7, fixed: [bar(620, 120, 740)] });
+    const edge = judgeFocus(slide(613.37)); // 링 5.45~620.37, 겹침 0.37px
+    expect(edge.tooTall).toBe(false);
+    expect(edge.violations).toEqual([]);
+    const over = judgeFocus(slide(614.5)); // 링 아래끝 621.5 — 1.5px 겹침은 가림이다
+    expect(over.obscuredBy).toEqual(['bottom-bar']);
+    expect(over.violations.join(' ')).toContain('가려진다');
+  });
+
   it('QA 실측 실패 2·3 — 320×568 「약 30분」 486~561 vs 띠 500, 1280×800 716~792 vs 732', () => {
     const small = judgeFocus(sample({ viewport: { width: 320, height: 568 }, box: { left: 16, right: 304, top: 486, bottom: 561 }, fixed: [bar(500, 68, 568, { box: { left: 0, right: 320, top: 500, bottom: 568 } })] }));
     expect(small.obscuredBy).toEqual(['bottom-bar']);

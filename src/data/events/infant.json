@@ -55,6 +55,7 @@
       "ageRange": { "min": 1, "max": 5 },
       "weight": 14,
       "once": true,
+      "heavy": { "kind": "health" },
       "noCitation": "X1",
       "choices": [
         {
@@ -213,6 +214,7 @@
       "ageRange": { "min": 1, "max": 6 },
       "weight": 14,
       "once": true,
+      "heavy": { "kind": "home" },
       "conditions": { "parenting": ["neglect"] },
       "effects": { "stats": { "happiness": -2, "relationships": -2 } }
     },
@@ -611,6 +613,7 @@
       "ageRange": { "min": 3, "max": 6 },
       "weight": 12,
       "once": true,
+      "heavy": { "kind": "health" },
       "noCitation": "D",
       "choices": [
         {

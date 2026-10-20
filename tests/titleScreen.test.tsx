@@ -483,8 +483,12 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
   it('외부 요청이 없다 (FS8): 외부 주소로 불러오는 자원(src·stylesheet·script·img)이 마크업에 없고, 링크는 사용자가 누르는 출처 링크뿐이다', () => {
     expect(html).not.toMatch(/<(img|script|iframe|link)\b[^>]*(src|href)="https?:/i);
     expect(html).not.toMatch(/url\(\s*['"]?https?:/i);
-    const links = [...html.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
-    for (const href of links) expect(href.startsWith('tel:') || href.startsWith('https://'), href).toBe(true);
+    const links = [...html.matchAll(/<a ([^>]*)href="([^"]+)"([^>]*)>/g)].map((m) => ({ href: m[2], tag: m[0] }));
+    // 푸터의 「새 소식」「소개」(SPEC-005 QI7)는 같은 화면 안의 패널을 여는 링크라 `#`이다 — 네트워크로 나가지 않고 `data-panel`로 가려진다(둘뿐)
+    const panelLinks = links.filter((l) => l.href === '#');
+    expect(panelLinks.length).toBe(2);
+    for (const l of panelLinks) expect(l.tag, '주소가 #인 링크는 정보 패널을 여는 링크뿐').toContain('data-panel=');
+    for (const { href } of links.filter((l) => l.href !== '#')) expect(href.startsWith('tel:') || href.startsWith('https://'), href).toBe(true);
   });
 
   it('이모지·느낌표가 없다 (담담한 어조)', () => {

@@ -52,6 +52,7 @@
       "ageRange": { "min": 45, "max": 62 },
       "weight": 15,
       "once": true,
+      "heavy": { "kind": "loss" },
       "citation": { "present": "c-081", "future": "c-081" },
       "conditions": { "notFlags": ["parents_gone"], "parentAge": { "min": 60, "max": 100 } },
       "choices": [
@@ -113,6 +114,7 @@
       "ageRange": { "min": 53, "max": 64 },
       "weight": 14,
       "once": true,
+      "heavy": { "kind": "health" },
       "noCitation": "X1",
       "conditions": { "flags": ["checked_up"], "stats": { "health": { "max": 60 } } },
       "modifiers": [
@@ -148,6 +150,7 @@
       "ageRange": { "min": 48, "max": 64 },
       "weight": 36,
       "once": true,
+      "heavy": { "kind": "health" },
       "noCitation": "X1",
       "conditions": { "flags": ["health_ignored"] },
       "choices": [
@@ -364,6 +367,7 @@
       "ageRange": { "min": 45, "max": 58 },
       "weight": 12,
       "once": true,
+      "heavy": { "kind": "work" },
       "citation": { "present": "c-083", "future": "c-083" },
       "conditions": { "flags": ["has_career"], "notFlags": ["own_business", "family_business", "passed_exam"] },
       "choices": [
@@ -458,6 +462,7 @@
       "ageRange": { "min": 42, "max": 58 },
       "weight": 11,
       "once": true,
+      "heavy": { "kind": "bond" },
       "citation": { "present": "c-096", "future": "c-096" },
       "conditions": { "flags": ["married"] },
       "choices": [
@@ -519,6 +524,7 @@
       "ageRange": { "min": 52, "max": 64 },
       "weight": 18,
       "once": true,
+      "heavy": { "kind": "loss" },
       "noCitation": "X2",
       "conditions": { "parentAge": { "min": 65, "max": 100 } },
       "choices": [
@@ -552,6 +558,7 @@
       "ageRange": { "min": 42, "max": 55 },
       "weight": 9,
       "once": true,
+      "heavy": { "kind": "work" },
       "noCitation": "X3",
       "choices": [
         {

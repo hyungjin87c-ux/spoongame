@@ -105,8 +105,8 @@ describe('index.html 인라인 테마 스크립트: parseSettings와 같은 판�
     }
   });
 
-  it('봉투 버전: 읽을 수 있는 1·2·3·4는 data를 그대로 읽고, 그 밖(0·5·소수·문자열·없음)은 기본값(system)이다 — 현재 저장 버전은 4(M7c: noteCards)', () => {
-    expect(SETTINGS_VERSION).toBe(4);
+  it('봉투 버전: 읽을 수 있는 1·2·3·4·5는 data를 그대로 읽고, 그 밖(0·6·소수·문자열·없음)은 기본값(system)이다 — 현재 저장 버전은 5(SPEC-005 SV2: gentle·notesSeen)', () => {
+    expect(SETTINGS_VERSION).toBe(5);
     const data = { ...DEFAULT_SETTINGS, theme: 'dark' };
     for (const version of [0, 1, 2, 3, 4, 5, 6, 3.5, -1, '3', '4', null, undefined, true]) {
       const raw = envelope(version, data);
@@ -114,8 +114,9 @@ describe('index.html 인라인 테마 스크립트: parseSettings와 같은 판�
     }
     expect(applied(JSON.stringify({ data }))).toBe('system');
     expect(applied(envelope(3, data))).toBe('dark'); // 대조: 정상 저장은 실제로 걸린다
-    expect(applied(envelope(4, data))).toBe('dark'); // 대조: 현재 버전(v4)도 건다 — 지금 빌드가 쓰는 저장이 첫 그림 전에 읽혀야 한다
-    expect(applied(envelope(5, data))).toBe('system'); // 대조: 모르는 버전은 안 건다
+    expect(applied(envelope(4, data))).toBe('dark'); // 대조: 이전 버전(v4)도 건다
+    expect(applied(envelope(5, data))).toBe('dark'); // 대조: 현재 버전(v5)도 건다 — 지금 빌드가 쓰는 저장이 첫 그림 전에 읽혀야 한다
+    expect(applied(envelope(6, data))).toBe('system'); // 대조: 모르는 버전은 안 건다
   });
 
   it('data의 모양이 어긋나면 설정 전체가 기본값(system)이다: 배속·자동 모드가 형식에 안 맞는 경우, data가 객체가 아닌 경우', () => {

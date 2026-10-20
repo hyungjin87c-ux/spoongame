@@ -40,6 +40,7 @@
 | `milestone` | | `true`면 **마일스톤 이벤트**(SPEC-003 IN3, M7a): 첫 예방접종·첫 걸음마·첫 말처럼 정한 나이 창(`ageRange`) 안에서 **모든 판에** 일어난다. **서술 이벤트·`once:true`·`ageRange`의 `min`과 `max`가 모두 있어야 한다**(어기면 로드할 때 오류). 일반 추첨과 **별개 슬롯**이라 그 해의 일반 사건과 함께 연표에 한 줄을 남기고(한 해 두 줄), 창의 마지막 해에는 100%다 — 아래 「마일스톤 슬롯」. |
 | `citation` | | **중대 결정 카드의 인용 연결**(SPEC-003 MD2, M7b — 선택지 이벤트만). 인용 id 문자열 `"c-006"` = 이 카드가 뜨는 모든 세상에서 같은 인용, 객체 `{ "past": "c-033", "present": "c-006", "future": "c-006" }` = 세상마다 다른 인용(적히지 않은 세상은 인용 없음, 키는 이 이벤트가 뜨는 세상만). id는 `src/data/citations.json`의 `verified`·`usable` 인용이어야 하고(`check:events`가 점검) 그 인용의 `eras`에 그 세상이 있어야 화면에 보인다. 다가올 세상은 인용의 머리말 「지금 기준으로는」, 지난 세상의 시대 무관 연구는 「지금의 연구로는」이 붙고, 지난 세상 통계는 인용의 `validFromYear`보다 이른 게임 속 연도에서는 보이지 않는다. `citations.json`의 `usedBy`는 이 필드의 **역색인**이라 사람이 쓰지 않는다(`npm run gen:citations`, 어긋나면 `npm run check:citations`가 실패). |
 | `noCitation` | | 이 카드에 **어느 세상에서도 인용을 붙이지 않는** 사유 코드 — `X1` 의료·응급·진단 / `X2` 임종·가족 갈등의 존엄 / `X3` 재무·법률 행위 / `X4` 낙인 위험 / `X5` 다가올 세상 상상 전용 / `X6` 양육 방식 가치판단 유도(**원칙적 무인용 X1~X6**, 시대별 등장 카드의 25% 이하, 목록 변경은 마스터 승인) / `D` 맞는 자료가 없어 서술 장면으로 둔 카드. `citation`과 함께 쓰지 않는다. 선택지 이벤트 90개는 `citation`·`noCitation` 중 하나를 가져야 한다 — 단 2차 수집 대기 카드(T-01~T-13 정서·관계)는 `src/data/citationPending.ts`에 칸 단위로 적어 두고 두 필드를 아직 쓰지 않는다(`tests/citationLink.test.ts`가 90개 전수를 점검). |
+| `heavy` | | **무거운 장면 표지**(SPEC-005 HV2): `{ "kind": "home" \| "school" \| "health" \| "loss" \| "bond" \| "work" }`. 설정 「무거운 장면 가리기」가 켜지면 이 이벤트의 **글**(제목·본문·선택지·결과·인용)이 화면에서 가려진다 — 사건·효과·확률·난수·플래그는 그대로다(방식 A). 서술·선택지 이벤트에 쓰고 마일스톤에는 쓰지 않는다. 판정 기준은 아래 11절. |
 
 **마일스톤 슬롯** (`src/core/life.ts#stepYear`): 해마다 일반 추첨(선택지 → 서술)과 별개로, 그 나이·시대에 일어날 수 있는 `milestone: true` 이벤트를 **한 해에 여러 개(칸 `MILESTONES_PER_YEAR_MAX` = 3개까지)** 일으킨다(M7a r3 — 걸음마와 첫 말이 모두 1세). 창이 일찍 끝나는(급한) 것부터, 끝이 같으면 id 오름차순으로 확률 1 ÷ (창 끝 나이 − 나이 + 1)로 따지고, 창의 마지막 해는 난수 없이 100%다(난수는 확률이 1보다 작은 후보를 따질 때만 쓴다). 연표에는 **id 오름차순**으로 남는다(같은 해 걸음마 → 첫 말, 그 뒤 일반 사건 — 한 해 세 줄). 마일스톤은 일반 추첨 후보에서 빠지고, 그 해의 일반 사건이 선택지여도 마일스톤 줄은 이미 연표에 남는다(`TickInfo.milestoneIds`). **한 해에 마감되는 마일스톤이 칸 수를 넘으면**(같은 시대에서 창 끝이 같은 마일스톤이 4개 이상) 그 해에 일부가 못 일어나 100% 보장이 깨지므로 풀 점검(`milestoneWindowProblems`, `npm run check:events`)이 잡는다 — 둘·셋이 같은 해에 끝나는 것은 괜찮다(r2까지의 「창 끝이 같으면 안 된다」는 사라졌다). **창의 모든 나이가 `stages`에 덮여야 한다**(스키마 검증 — 6~7세 창에 `stages: ["infant"]`이면 7세가 비어 100%가 조용히 깨진다). 지금 마일스톤: `infant-vaccine`(0세) · `infant-first-steps`(1세) · `infant-first-word`(1세). 그 전에 사망한 판은 제외한다.
 
@@ -242,3 +243,40 @@ npm run sim:infant            # 영유아(0~7세) 지표 — 빈 해 평균·최
 `npm run build`에는 넣지 않았다: 표를 다시 만들어 견주는 데 10초대가 걸려 빌드가 느려지기 때문이다(`check:events`는 수 초). 배포 전에는 `npm test`(필수)가 같은 것을 잡는다. SPEC-002로 이벤트를 +50 추가하면 반드시 3번을 한다.
 
 표는 **무작위 선택 전략**(수동 플레이 흉내)으로 만든다. 자동 모드(성향 선택) 판은 같은 표와 견준다 — 지난 세상은 자동 판이 평균 4~5점 더 벌어(중앙값 37 → 42) 같은 재산이 표에서 최대 14%p 다른 자리로 읽힌다(지금·다가올 세상은 최대 6~7%p). 측정과 제안은 `docs/review/REV-001-M5-1.md` 하단 "반영 내역" R-085.
+
+
+## 11. 무거운 장면 표지 (`heavy`, SPEC-005 HV2 — 판독 `docs/review/REV-005-HV-1.md`, 마스터 승인 2026-10-21)
+
+**새 이벤트를 쓸 때도 이 기준으로 판단한다.** 표지가 붙은 이벤트는 설정 「무거운 장면 가리기」(첫 화면 스위치, 기본 꺼짐)를 켠 사람에게 글이 가려진다 — 가린 줄에는 분류 이름만 보이고 눌러서 펼칠 수 있다. 가리는 것은 **글뿐**이다: 사건·선택·효과·확률·난수·플래그·통계는 켜든 끄든 같다(같은 시드·같은 선택이면 상태 전체가 같다, `tests/gentle.test.ts`).
+
+**가림 대상은 「사람이 다치거나 무언가를 잃는 장면」이다.** 다섯 가지를 말한다.
+1. 몸의 병·부상·입원, 병이 나빠졌다는 통보.
+2. 가까운 사람의 중병·간병·임종, 죽음을 앞둔 정리.
+3. 관계가 끊기는 일(떠나는 연인, 부부의 단절과 별거 갈림길, 자식과의 연락 단절).
+4. 아이가 돌봄을 받지 못하거나 괴롭힘을 겪거나 지켜보는 일(방임 암시, 따돌림, 온라인 따돌림).
+5. 생계가 무너지는 일(정리해고, 고립을 동반한 긴 미취업, 보증 빚, 집안 형편이 무너져 학업을 접는 일).
+
+**판단 단위는 이벤트 하나다.** 카드의 상황(제목·본문)이 위 다섯에 해당하거나 그 일의 직접적인 갈림길이면(보증 부탁처럼) 카드 전체에 표지를 붙인다. 선택지 하나의 결과만 아픈 경우(본인이 고른 담담한 이별 등)는 붙이지 않는다. **선택지 단위 표지는 없다.**
+
+**붙이지 않는 세 갈래.**
+- 많은 사람이 겪는 일상의 고단함과 슬픔(형편의 차이, 경쟁, 일의 고됨, 외로움, 한 번의 실패, 노화의 불편) — 이 게임이 보여 주려는 것 자체다.
+- 게임 진행에 필요한 사실과 도움 정보(사망 기록, 상담전화 안내, 식구 카드 상태 문구, 스탯·자산 미터, 결정자 칩·도장).
+- 사용자가 직접 쓰는 기록 카드.
+
+경계 사례는 두 질문으로 가른다. ① 스위치 설명 「아픈 일이나 이별 같은 장면」에 문자 그대로 들어맞는가. ② 같은 결의 다른 장면과 판정이 일관된가(예: `school-money-gap`을 넣으려면 같은 결의 `school-lunch`·`school-academy-talk`·`school-supplies`도 넣어야 하는데, 그러면 출발선의 격차가 대부분 가려져 게임의 주제가 사라진다 — 그래서 넣지 않았다).
+
+**분류 6개** (`kind` → 화면 이름은 `src/data/gentleText.ts#HEAVY_KIND_TEXT`, 이름은 가린 줄에서 유일하게 보이는 낱말이라 **그 분류의 모든 장면에 참**이어야 한다 — R-469):
+| kind | 화면 이름 | 장면 (지금 23개) |
+|---|---|---|
+| `home` | 집안 사정 | infant-neglect-night · school-early-work · school-family-priority |
+| `school` | 또래 사이 | school-bully · school-chat-room |
+| `health` | 건강 | infant-fever · infant-hospital-stay · middle-health-check-later · middle-health-crisis · senior-illness · senior-illness-later · senior-fall |
+| `loss` | 돌봄과 이별 | middle-parents-care · middle-parents-farewell · senior-spouse-care · senior-last-wishes · senior-old-friend |
+| `bond` | 멀어진 사이 | youth-partner-leaves · middle-marriage-crisis · senior-estranged-child |
+| `work` | 일과 생계 | youth-job-rejections · middle-layoff · middle-debt-guarantee |
+
+새 분류가 필요하면 `HEAVY_KINDS`(`src/core/types.ts`)와 `HEAVY_KIND_TEXT`에 함께 더하고(이름 목록은 `heavy` 표 시험에 묶여 있다: kind 6개 ↔ 이름 6개 1:1) 분류 이름이 새 분류의 모든 장면에 참인지 reviewer가 판독한다. 이름은 6자 이하다.
+
+**이벤트 밖의 기록 줄.** `eventId`가 없는 기록 줄 가운데 무거운 것은 줄을 만드는 쪽의 **상수**로 잡는다(`src/core/gentle.ts#HEAVY_LINES_WITHOUT_EVENT` — 지금은 상속 줄 「부모님이 남기신 재산을 물려받았습니다.」(`INHERIT_NOTE_TEXT`) 하나, 분류 `loss`). 줄에 필드를 더하지 않으므로 저장 스키마는 v8 그대로이고, 이 변경 이전에 저장된 판의 줄도 똑같이 가려진다.
+
+시험(`tests/gentle.test.ts`)이 표지 23개의 목록과 데이터를 대조하고, 제외 4개(`school-money-gap`·`youth-factory-night`·`senior-alone`·`middle-lonely-holiday`)·경계 3개(`middle-health-check`·`youth-work-pressure`·`school-academy-night`)에 표지가 **없음**을 단언한다. 표지를 더하거나 빼려면 이 표와 시험의 목록을 함께 고치고 reviewer 판독을 거친다.

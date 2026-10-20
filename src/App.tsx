@@ -206,11 +206,31 @@ function Game() {
   }, [game.phase, showTitle]);
   const foldCard = useCallback(() => setFold((f) => foldState(f, pendingKey)), [pendingKey]);
   const reopenCard = useCallback(() => setFold(reopenState), []);
+  // 가린 결정 카드의 펼침 (SPEC-005 QI6 HV4 ②, M19): 「펼쳐서 읽기」로 연 선택지의 키 + 그때의 설정값. 접힘처럼 App 메모리 상태일 뿐 저장하지 않는다 — 접기 → 다시 열기에서는 유지되고(같은 키),
+  // 설정값이 바뀌면 키가 같아도 다시 가려지며(펼침 초기화), 인생 화면을 떠나면(첫 화면 다시 열기·엔딩) 지운다. 새로고침하면 다시 가린다.
+  const [veilOpen, setVeilOpen] = useState<{ gentle: boolean; key: string | null }>({ gentle: false, key: null });
+  const veilOpened = pendingKey !== null && veilOpen.key === pendingKey && veilOpen.gentle === settings.gentle;
+  useEffect(() => {
+    if (game.phase !== 'life' || showTitle) setVeilOpen((v) => (v.key === null ? v : { gentle: v.gentle, key: null }));
+  }, [game.phase, showTitle]);
   // 입력 가드 세대 (M7c r2 F-1, content-M7c 11-1): 사용자가 모달 시트(기록·결정)를 닫는 **같은 이벤트·같은 렌더**에서 올린다 — 시트가 사라지며 `inert`가 풀리는 순간 그 자리에 드러나는 컨트롤이
   // 이미 400ms 가드 중이어야 더블탭의 둘째 탭이 눌리지 않는다(`useEffect`로 다음 렌더에 올리면 한 프레임 열린 채 그려진다). 접기·다시 열기의 `fold.epoch`와 더해 한 값으로 LifeScreen에 넘긴다(둘 다 단조 증가).
   // 자동 선택(`autoChoose`)·시트 없는 소비(자동 모드·카드 끔·기록 40개)는 사용자가 누른 것이 아니라 올리지 않는다(G8).
   const [inputEpoch, setInputEpoch] = useState(0);
   const bumpGuard = useCallback(() => setInputEpoch((n) => n + 1), []);
+  // 가린 카드의 두 버튼: 「펼쳐서 읽기」는 사라지는 버튼 자리에 선택지 버튼이 드러나므로 같은 렌더에서 입력 가드를 올린다(더블탭의 둘째 탭이 선택지를 누르지 않게, F-1과 같은 이유).
+  // 「이번에는 자동으로 고르기」는 지금의 자동 선택 성향으로 한 번 고르는 일이라 reducer가 `choose`와 같은 경로를 탄다(autoPick) — 카드가 사라지는 자리의 컨트롤도 같은 이유로 가드를 올린다.
+  const openVeil = useCallback(() => {
+    setVeilOpen({ gentle: settings.gentle, key: pendingKey });
+    bumpGuard();
+  }, [settings.gentle, pendingKey, bumpGuard]);
+  const autoPick = useCallback(
+    (key: string) => {
+      dispatch({ type: 'autoPick', key });
+      bumpGuard();
+    },
+    [bumpGuard],
+  );
 
   // 기록 시트 「생각 남기기」(M7c, FR1~FR9): 열려 있는지는 App 수준 한 값 `noteOpen`이다 — 연출 시계·자동 선택 타이머가 멈추고(LM5) M8의 플레이 시간 타이머가 같은 값을 읽는다.
   // 두 길로 열린다. ① 저절로 뜬 카드: 적격 카드(`dueNote` — 해의 첫머리, 결정 대기 없음)는 **파생 상태**다 — 수동 + 「자동 기록 카드」 켜짐일 때 시트가 뜨고(reducer의 `advance`·`skip`도 같은 판정으로 멈춘다),
@@ -408,6 +428,9 @@ function Game() {
       <TitleScreen
         era={settings.era}
         lifeLength={settings.lifeLength}
+        gentle={{ on: settings.gentle, onToggle: () => dispatch({ type: 'setGentle', on: !settings.gentle }) }}
+        notesSeen={settings.notesSeen}
+        onSeeNotes={(version) => dispatch({ type: 'seeNotes', version })}
         onSelectEra={(era) => dispatch({ type: 'setEra', era })}
         onSelectLifeLength={(lifeLength) => dispatch({ type: 'setLifeLength', lifeLength })}
         onBegin={() => dispatch({ type: 'begin' })}
@@ -442,6 +465,9 @@ function Game() {
         guardEpoch={fold.epoch + inputEpoch}
         onFold={foldCard}
         onReopen={reopenCard}
+        veilOpened={veilOpened}
+        onVeilOpen={openVeil}
+        onAutoPick={autoPick}
         noteSheet={noteSheet}
         onOpenNote={openNote}
         onNoteSave={saveNote}
@@ -474,6 +500,7 @@ function Game() {
       <EndingScreen
         game={{ ...game, character: game.character, death: game.death, era: game.era, birthStats: game.birthStats }}
         onRebirth={() => dispatch({ type: 'rebirth', seed: newSeed() })}
+        gentle={settings.gentle}
       />
     );
   } else {

@@ -271,10 +271,10 @@ describe('이름 한글 음절 화이트리스트 (T2·NC-13, QA-003-M7b A12d)',
 });
 
 describe('설정 v3 → v4: noteCards (FR7)', () => {
-  it('현재 설정 버전은 4이고 기본값은 noteCards 켜짐이다', () => {
-    expect(SETTINGS_VERSION).toBe(4);
+  it('현재 설정 버전은 5(v4에서 noteCards, v5에서 gentle·notesSeen이 더해졌다 — SPEC-005 QI6·QI7)이고 기본값은 noteCards 켜짐이다', () => {
+    expect(SETTINGS_VERSION).toBe(5);
     expect(DEFAULT_SETTINGS.noteCards).toBe(true);
-    expect(JSON.parse(serializeSettings(DEFAULT_SETTINGS))).toEqual({ version: 4, data: { ...DEFAULT_SETTINGS, noteCards: true } });
+    expect(JSON.parse(serializeSettings(DEFAULT_SETTINGS))).toEqual({ version: 5, data: { ...DEFAULT_SETTINGS, noteCards: true } });
   });
 
   it('v1·v2·v3 설정은 그대로 읽고 noteCards는 기본값(켜짐)으로 채운다 — 이미 고른 값(배속·세상·BGM·테마)을 잃지 않는다', () => {
@@ -285,14 +285,14 @@ describe('설정 v3 → v4: noteCards (FR7)', () => {
       expect(read.speed).toBe(4);
       expect(read.autoMode).toBe(true);
     }
-    expect(parseSettings(JSON.stringify({ version: 3, data: v3 }))).toEqual({ ...v3, noteCards: true });
+    expect(parseSettings(JSON.stringify({ version: 3, data: v3 }))).toEqual({ ...v3, noteCards: true, gentle: false, notesSeen: '' }); // v5의 새 필드 둘도 기본값으로 채워진다
   });
 
   it('v4: noteCards 켬/끔이 저장·복원된다. 불리언이 아니면 그 필드만 기본값(켜짐)이고 다른 설정은 그대로다', () => {
     const st = memoryStorage();
     saveSettings(st, { ...DEFAULT_SETTINGS, noteCards: false, speed: 2 });
     expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, noteCards: false, speed: 2 });
-    expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(4);
+    expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(5); // 저장은 현재 버전(5)으로 쓴다 — v4 봉투도 아래에서 그대로 읽힌다
     const read = (noteCards: unknown) => parseSettings(JSON.stringify({ version: 4, data: { speed: 2, autoMode: false, theme: 'dark', noteCards } }));
     for (const bad of ['no', 0, 1, null, {}, []]) {
       const r = read(bad);
@@ -303,8 +303,9 @@ describe('설정 v3 → v4: noteCards (FR7)', () => {
     expect(read(false).noteCards).toBe(false);
   });
 
-  it('모르는 버전(5)은 기본값이다. 게임 저장과 설정은 따로다 (설정을 읽는 일이 게임 저장 키를 건드리지 않는다)', () => {
-    expect(parseSettings(JSON.stringify({ version: 5, data: { speed: 2, autoMode: true, noteCards: false } }))).toEqual(DEFAULT_SETTINGS);
+  it('모르는 버전(6)은 기본값이다. 게임 저장과 설정은 따로다 (설정을 읽는 일이 게임 저장 키를 건드리지 않는다)', () => {
+    // 설정 v5(SPEC-005 QI6·QI7)부터 5는 읽을 수 있는 버전이라, 아직 없는 다음 버전 6으로 올렸다 — 경계(읽을 수 없는 첫 버전)를 보는 시험의 뜻은 그대로다
+    expect(parseSettings(JSON.stringify({ version: 6, data: { speed: 2, autoMode: true, noteCards: false } }))).toEqual(DEFAULT_SETTINGS);
     expect(GAME_KEY).not.toBe(SETTINGS_KEY);
   });
 });

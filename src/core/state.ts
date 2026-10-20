@@ -25,6 +25,9 @@ export const DEFAULT_SETTINGS: Settings = {
   bgm: { ...DEFAULT_BGM },
   theme: 'system',
   noteCards: true,
+  // 설정 v5 (SPEC-005 SV2): 「무거운 장면 가리기」는 처음에 꺼져 있고(HV3 — 모든 장면 그대로, 형진 님 답 M12), 새 소식은 아직 본 적이 없다(빈 글자)
+  gentle: false,
+  notesSeen: '',
 };
 
 /** 새 게임의 초기 상태. 시드는 주입한다(테스트·재현용). */
