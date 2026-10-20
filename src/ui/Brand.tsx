@@ -1,4 +1,4 @@
-import { LOGO_HEADER_SVG, LOGO_ROW_SVG, LOGO_STACKED_SVG, SPRITE_SVG } from './brandAssets';
+import { LOGO_HEADER_SVG, LOGO_WORDMARK_SVG, SPRITE_SVG } from './brandAssets';
 
 /** 아이콘·수저 도형 스프라이트. 화면에 한 번 둔다(<use href="#i-prev"/>가 문서 안에서 찾는다). */
 export function Sprite() {
@@ -26,16 +26,12 @@ export function Spoon({ grade, large }: { grade: 1 | 2 | 3 | 4 | 5; large?: bool
 }
 
 /**
- * 게임명 로고(A안). 첫 화면은 모바일(< 960px)에서 세로 로고, 데스크톱에서 가로 로고를 쓴다(CSS가 하나만 보이게 한다 — 시안과 같다).
- * 둘 다 장식으로 숨기고 게임명은 바깥 제목(<h1>)의 읽히는 글자 「수저 게임」이 맡는다.
+ * 첫 화면의 게임명 로고 (SPEC-005 D5-01 A안, diff-005.md 7절 D5-31): 두 폭 모두 **워드마크만**(「수저 게임」 글자) — 머리 줄은 왼쪽 정렬이고 그 아래에 일러스트(좁은 화면 배너)가 온다.
+ * 높이는 CSS(`.hero .logo--word`, 좁은 화면 52px → 글자 높이 41px로 DS1 ≥ 40px, 넓은 화면 64px → 51px)가 정한다.
+ * 장식으로 숨기고 게임명은 바깥 제목(<h1>)의 읽히는 글자 「수저 게임」이 맡는다.
  */
-export function TitleLogos() {
-  return (
-    <>
-      <span className="logo-wrap logo--stacked" data-testid="title-logo-stacked" aria-hidden="true" dangerouslySetInnerHTML={{ __html: LOGO_STACKED_SVG }} />
-      <span className="logo-wrap logo--row" data-testid="title-logo-row" aria-hidden="true" dangerouslySetInnerHTML={{ __html: LOGO_ROW_SVG }} />
-    </>
-  );
+export function TitleWordmark() {
+  return <span className="logo-wrap logo--word" data-testid="title-logo-word" aria-hidden="true" dangerouslySetInnerHTML={{ __html: LOGO_WORDMARK_SVG }} />;
 }
 
 /**

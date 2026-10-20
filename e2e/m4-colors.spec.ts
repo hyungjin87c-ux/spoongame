@@ -172,13 +172,15 @@ async function rendered(page: Page) {
       return c;
     };
     const out: { logo: Array<{ fill: string; ratio: number }>; cardText: Array<{ where: string; ratio: number }>; ring: { outline: string; ratio: number } | null } = { logo: [], cardText: [], ring: null };
-    for (const path of Array.from(document.querySelectorAll('[data-testid="title-logo-stacked"] svg path, [data-testid="title-logo-row"] svg path, [data-testid="header-logo"] svg path'))) {
+    for (const path of Array.from(document.querySelectorAll('[data-testid="title-logo-word"] svg path, [data-testid="header-logo"] svg path'))) {
       const rect = path.getBoundingClientRect();
-      if (rect.width < 1 || rect.height < 1) continue; // 숨은 쪽 로고(좁은 폭 ↔ 넓은 폭)는 건너뛴다
+      if (rect.width < 1 || rect.height < 1) continue; // 보이지 않는 로고는 건너뛴다
       const cs = getComputedStyle(path);
-      const fill = parse(cs.fill);
+      // 헤더 로고는 면(fill)으로, 첫 화면 워드마크(SPEC-005 D5-01 A안)는 선(stroke)으로 그린다 — 칠해진 쪽의 색을 잰다
+      const paint = cs.fill !== 'none' ? cs.fill : cs.stroke;
+      const fill = parse(paint);
       if (fill === null || fill.a === 0) continue;
-      out.logo.push({ fill: cs.fill, ratio: ratio(fill, backgroundOf(path)) });
+      out.logo.push({ fill: paint, ratio: ratio(fill, backgroundOf(path)) });
     }
     for (const sel of ['.radio-card:has(input:checked) .radio-card__meta', '.radio-card:has(input:checked) .radio-card__desc', '.radio-card:has(input:checked) .radio-card__title']) {
       const el = document.querySelector(sel);

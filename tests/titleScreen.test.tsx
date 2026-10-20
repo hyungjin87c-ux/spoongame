@@ -10,6 +10,7 @@ import { ERA_CONFIG } from '../src/data/birthTable';
 import { ICON_IDS, SPOON_IDS, SPOON_LG_IDS, SPRITE_SVG } from '../src/ui/brandAssets';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../src/data/titleText';
 import { TitleScreen, type TitleSaved } from '../src/screens/TitleScreen';
+import { AUTO_ADVANCE_MS } from '../src/core';
 
 /**
  * 첫 화면의 구성 (SPEC-003 FS1~FS8, VP2, SC6). 서버 렌더로 마크업을 본다 — 실제 폭·스크롤·동작은 e2e/first-screen.spec.ts.
@@ -19,7 +20,7 @@ import { TitleScreen, type TitleSaved } from '../src/screens/TitleScreen';
 const MINUTE = 29_850_000; // 2026-10-21 근처
 const saved: TitleSaved = { onResume: () => {}, onBeginNew: () => {} };
 
-function render(over: Partial<{ era: Era; lifeLength: LifeLength; saved: TitleSaved | null; oldSaveNotice: boolean; minute: number; carousel: CarouselData }> = {}): string {
+function render(over: Partial<{ era: Era; lifeLength: LifeLength; saved: TitleSaved | null; oldSaveNotice: boolean; minute: number; carousel: CarouselData; gentle: { on: boolean; onToggle: () => void } }> = {}): string {
   return renderToStaticMarkup(
     <TitleScreen
       era={over.era ?? 'present'}
@@ -31,6 +32,7 @@ function render(over: Partial<{ era: Era; lifeLength: LifeLength; saved: TitleSa
       oldSaveNotice={over.oldSaveNotice ?? false}
       minute={over.minute ?? MINUTE}
       carousel={over.carousel}
+      gentle={over.gentle}
     />,
   );
 }
@@ -77,19 +79,19 @@ describe('서버 렌더 (수집 시점 출력 금지)', () => {
 describe('첫 화면 구성 (FS1)', () => {
   const html = render();
 
-  it('위에서부터: 로고(제목) → 한 줄 설명 → 수저 다섯 자루 → 가상 인구 문구와 보조 문구 → 태어날 세상 → 인생 길이, 오른쪽(좁으면 아래)에 캐러셀, 푸터, 하단 고정 버튼', () => {
-    const order = ['data-testid="title-heading"', 'hero__tag', 'data-testid="spoon-lineup"', 'data-testid="population-line"', 'data-testid="population-note"', 'data-testid="era-group"', 'data-testid="life-length-group"', 'data-testid="carousel"', 'data-testid="title-foot"', 'data-testid="bottom-bar"'];
+  it('위에서부터: 로고(제목) → (좁은 화면) 일러스트 배너 → 한 줄 설명 → 수저 다섯 자루 → 가상 인구 문구와 보조 문구 → 태어날 세상 → 인생 길이, 오른쪽(좁으면 아래)에 일러스트 → 캐러셀, 푸터, 하단 고정 버튼', () => {
+    const order = ['data-testid="title-heading"', 'data-testid="home-illust-banner"', 'hero__tag', 'data-testid="spoon-lineup"', 'data-testid="population-line"', 'data-testid="population-note"', 'data-testid="era-group"', 'data-testid="life-length-group"', 'data-testid="home-illust-top"', 'data-testid="carousel"', 'data-testid="title-foot"', 'data-testid="bottom-bar"'];
     const at = order.map((k) => html.indexOf(k));
     for (const [i, k] of order.entries()) expect(at[i], k).toBeGreaterThanOrEqual(0);
     for (let i = 1; i < at.length; i++) expect(at[i], `${order[i - 1]} → ${order[i]}`).toBeGreaterThan(at[i - 1]);
   });
 
-  it('게임명 「수저 게임」이 제목(h1)의 읽히는 글자로 있고, 로고는 세로·가로 두 벌(모바일/데스크톱)이 장식으로 들어 있다', () => {
+  it('게임명 「수저 게임」이 제목(h1)의 읽히는 글자로 있고, 로고는 워드마크(글자) 하나가 장식으로 들어 있다 — 두 폭 모두 같은 것이고 세로·가로 로고(심볼 + 워드마크)는 없다 (SPEC-005 D5-01 A안·D5-31)', () => {
     expect(html).toMatch(/<h1[^>]*data-testid="title-heading"[^>]*><span class="sr-only">수저 게임<\/span>/);
-    expect(html).toContain('data-testid="title-logo-stacked"');
-    expect(html).toContain('data-testid="title-logo-row"');
-    expect(html.match(/viewBox="0 0 309\.3 248"/g)?.length).toBe(1); // 세로 로고
-    expect(html).toContain('viewBox="0 0 443.8 128"'); // 가로 로고
+    expect(html).toMatch(/<span class="logo-wrap logo--word" data-testid="title-logo-word" aria-hidden="true">/);
+    expect(html.match(/viewBox="0 0 425 100"/g)?.length).toBe(1); // 워드마크 하나
+    expect(html).not.toContain('title-logo-stacked');
+    expect(html).not.toContain('title-logo-row');
   });
 
   it('수저 다섯 단계: 이름이 글자로 있고(색에만 의존하지 않는다) 큰 변형 도형(sp-1-lg~sp-5-lg, 32px 이상)을 쓴다 — 칩 변형(sp-N)은 쓰지 않는다', () => {
@@ -171,8 +173,8 @@ describe('가상 인구 문구 (FS2·VP2)', () => {
     const banned = /접속자|동시\s*접속|접속\s*중|접속한/;
     const all = [render(), render({ saved }), render({ oldSaveNotice: true }), render({ era: 'future' })];
     for (const html of all) expect(text(html)).not.toMatch(banned);
-    for (const value of Object.values(TITLE_TEXT)) expect(typeof value === 'string' ? value : value(8)).not.toMatch(banned);
-    for (const v of Object.values(LIFE_LENGTH_TEXT)) expect(`${v.title} ${v.desc}`).not.toMatch(banned);
+    for (const value of Object.values(TITLE_TEXT)) expect(value).not.toMatch(banned); // (SPEC-005: 함수형 문구 carouselAutoNote가 없어져 모두 글자다)
+    for (const v of Object.values(LIFE_LENGTH_TEXT)) expect(v.title).not.toMatch(banned);
   });
 });
 
@@ -229,34 +231,49 @@ describe('태어날 세상·인생 길이 선택 (FS4·FS5)', () => {
     }
   });
 
-  it('인생 길이: 「약 30분」/「약 1시간」 라디오 카드, 기본 약 30분, 한 줄 설명(저장 안내)', () => {
+  it('인생 길이(HS2): 「약 30분」/「약 1시간」 작은 분절 컨트롤(radiogroup, 라디오 둘), 기본 약 30분, 한 줄 안내(저장 안내) — 라디오 카드·카드 보조문·세 문장 안내는 없다', () => {
     const html = render();
-    expect(html).toMatch(/role="radiogroup" aria-label="인생 길이"/);
+    expect(html).toMatch(/<div class="seg" role="radiogroup" aria-label="인생 길이" data-testid="life-length-group">/);
     expect(radio(html, 'life-short30')).toEqual({ checked: true, name: 'lifeLength', value: 'short30' });
     expect(radio(html, 'life-long60')).toEqual({ checked: false, name: 'lifeLength', value: 'long60' });
+    expect(html.match(/<label class="seg__opt/g)?.length).toBe(2);
     expect(text(html)).toContain('약 30분');
     expect(text(html)).toContain('약 1시간');
+    // 한 줄 안내(copy.md 9-4): 평균 수명까지 · 생각을 적는 시간은 뺐다 · 나가도 이 기기에 남는다 — 세 뜻이 한 줄에 있다
     expect(text(html)).toContain(TITLE_TEXT.lifeLengthHint);
-    expect(TITLE_TEXT.lifeLengthHint).toContain('이 기기에 남아요'); // 도중에 나가도 진행은 이 기기에 남는다는 뜻 (FS5) — M8 D-92: 한 문단 어체 통일(「남습니다」 → 「남아요」)
-    expect(TITLE_TEXT.lifeLengthHint).toContain('생각을 적는 시간은 넣지 않았어요'); // LD-1: 기록 쓰기 시간은 「약 30분」 밖이다
+    expect(TITLE_TEXT.lifeLengthHint).toBe('평균 수명까지 사는 시간이에요. 생각을 적는 시간은 뺐고, 나가도 이 기기에 남아요.');
+    expect(TITLE_TEXT.lifeLengthHint).toContain('이 기기에 남아요'); // 도중에 나가도 진행은 이 기기에 남는다는 뜻 (FS5)
+    expect(TITLE_TEXT.lifeLengthHint).toContain('생각을 적는 시간은 뺐고'); // LD-1: 기록 쓰기 시간은 「약 30분」 밖이다
+    expect(TITLE_TEXT.lifeLengthHint.length).toBeLessThanOrEqual(50); // 한 줄 안내(1280에서 한 줄 — 실측은 e2e/first-screen-layout.spec.ts)
+    for (const gone of ['가볍게 한 판', '결정을 더 많이', '생각을 적는 시간은 넣지 않았어요']) expect(text(html), gone).not.toContain(gone);
+    expect(html).not.toContain('choices--2');
+  });
+
+  it('분절 컨트롤의 선택 상태는 색에만 의존하지 않는다: 체크 아이콘과 「선택됨」 글자가 선택된 칸에만 있다 (HS2 ①)', () => {
+    const html = render();
+    const sel = /<label class="seg__opt is-selected">[\s\S]*?<\/label>/.exec(html)?.[0];
+    expect(sel, '선택된 칸').toBeDefined();
+    expect(sel).toContain('href="#i-check"');
+    expect(sel).toContain('<span class="sr-only">선택됨</span>');
+    expect(sel).toContain('<span>약 30분</span>');
+    expect(html.match(/class="seg__opt is-selected"/g)?.length).toBe(1);
   });
 
   /** 입력 태그 하나에서 disabled 속성 여부 */
   const isDisabled = (html: string, testId: string): boolean => /\sdisabled(=|\s|\/|>)/.test(new RegExp(`<input [^>]*data-testid="${testId}"[^>]*>`).exec(html)![0]);
 
-  it('「약 1시간」 카드는 보이되 선택할 수 없고 「준비 중」이 적혀 있다. 라디오 그룹 안에 그대로 있고 비활성 이유는 카드 글(접근 가능한 이름)에 들어 있다 (R-202)', () => {
+  it('「약 1시간」 칸은 보이되 선택할 수 없고 「준비 중」이 적혀 있다. 라디오 그룹 안에 그대로 있고 비활성 이유는 칸 글(접근 가능한 이름)에 들어 있다 (R-202)', () => {
     expect(SELECTABLE_LIFE_LENGTHS).toEqual(['short30']);
     const html = render();
     expect(isDisabled(html, 'life-long60')).toBe(true);
     expect(isDisabled(html, 'life-short30')).toBe(false);
     expect(NOT_READY_TEXT).toBe('준비 중');
-    // 카드(label) 하나 안에 라디오·제목·준비 중·설명이 모두 들어 있다 → 라디오의 접근 가능한 이름은 「약 1시간 준비 중 결정을 더 많이」
-    const label = /<label class="radio-card is-disabled">(?:(?!<\/label>)[\s\S])*?data-testid="life-long60"(?:(?!<\/label>)[\s\S])*?<\/label>/.exec(html)?.[0];
-    expect(label, '비활성 카드 마크업').toBeDefined();
+    // 칸(label) 하나 안에 라디오·이름·준비 중이 모두 들어 있다 → 라디오의 접근 가능한 이름은 「약 1시간 준비 중」 (SPEC-005 HS2 ②: 분절 컨트롤의 비활성 칸)
+    const label = /<label class="seg__opt is-disabled">(?:(?!<\/label>)[\s\S])*?data-testid="life-long60"(?:(?!<\/label>)[\s\S])*?<\/label>/.exec(html)?.[0];
+    expect(label, '비활성 칸 마크업').toBeDefined();
     expect(text(label!)).toContain(LIFE_LENGTH_TEXT.long60.title);
     expect(text(label!)).toContain(NOT_READY_TEXT);
-    expect(text(label!)).toContain(LIFE_LENGTH_TEXT.long60.desc);
-    expect(label).toContain(`<span class="radio-card__meta">${NOT_READY_TEXT}</span>`);
+    expect(label).toContain(`<span class="seg__meta">${NOT_READY_TEXT}</span>`);
     // 라디오 그룹은 그대로 2개 — 카드를 숨기지 않는다
     expect(html.match(/name="lifeLength"/g)?.length).toBe(2);
     expect(html).toMatch(/role="radiogroup" aria-label="인생 길이"/);
@@ -316,23 +333,72 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
   const html = render();
   const data = buildCarousel();
 
-  it('모든 슬라이드가 마크업에 있고(전환은 보이기/숨기기), 첫 슬라이드가 현재이며, 위치는 「1 / 14」 한 줄이다. 지표가 6개 이상이면 점은 그리지 않는다(R-133)', () => {
+  it('모든 슬라이드가 마크업에 있고(전환은 보이기/숨기기), 첫 슬라이드가 현재이며, 위치는 「1 / 14」 한 줄이다. 지표가 6개 이상이면 점은 그리지 않는다(R-133). 슬라이드의 이름은 「n/N 표제어, 공식 통계명(기준)」이다(SH3)', () => {
     expect(html.match(/data-testid="stat-slide"/g)?.length).toBe(data.slides.length);
     expect(html.match(/class="slide is-active"/g)?.length).toBe(1);
     expect(data.slides.length).toBeGreaterThan(CAROUSEL_MAX_DOTS);
     expect(html).not.toContain('data-testid="carousel-dots"');
     expect(html).not.toMatch(/data-testid="carousel-dot-\d+"/);
-    expect(html).toContain(`aria-label="1/${data.slides.length} ${data.slides[0].title}"`); // 슬라이드의 이름은 그대로 「n/N 제목」
+    expect(html).toContain(`aria-label="1/${data.slides.length} ${data.slides[0].insight}, ${data.slides[0].officialText}"`); // 「1/14 아기는 얼마나 태어나고 있을까?, 합계출산율(2025년)」
+    expect(html).toContain('aria-label="1/14 아기는 얼마나 태어나고 있을까?, 합계출산율(2025년)"');
     expect(html).toContain(`data-testid="carousel-count" aria-hidden="true">1 / ${data.slides.length}<`);
-    expect(text(html)).toContain('7초마다 다음 지표');
   });
 
-  it('슬라이드가 5개 이하일 때만 점을 그리고, 점 버튼의 이름은 「3/5 제목」이다 (R-133)', () => {
+  it('머리글 삭제(SH4): 눈에 보이는 「한국 사회 통계」「7초마다 다음 지표」「자동 넘김 멈춤」이 없다. 영역 이름은 aria-label로 남고 제목은 h2.sr-only — 슬라이드 h3 위에 h2가 있다', () => {
+    const visible = text(html.replace(/<h2 class="sr-only">[^<]*<\/h2>/g, ''));
+    for (const gone of ['한국 사회 통계', '7초마다', '9초마다', '자동 넘김 멈춤', '다음 지표']) {
+      // 「다음 지표」는 버튼의 aria-label에만 있다 — 눈에 보이는 글자(태그 안 속성 제외)에는 없다
+      expect(visible, gone).not.toContain(gone);
+    }
+    expect(html).not.toContain('carousel-auto-note');
+    expect(html).not.toContain('carousel__head');
+    expect(html).toContain('aria-roledescription="캐러셀" aria-label="한국 사회 통계 캐러셀"');
+    expect(html).toContain('<h2 class="sr-only">한국 사회 통계</h2>');
+    const carousel = html.slice(html.indexOf('data-testid="carousel"'));
+    expect(carousel.indexOf('<h2 class="sr-only">')).toBeGreaterThan(-1);
+    expect(carousel.indexOf('<h2 class="sr-only">')).toBeLessThan(carousel.indexOf('<h3 class="slide__insight">')); // 제목 단계를 건너뛰지 않는다
+    expect(carousel.match(/<h2/g)?.length).toBe(1);
+    for (const key of ['carouselTitle', 'carouselAutoNote', 'carouselPausedNote']) expect(key in TITLE_TEXT, key).toBe(false);
+  });
+
+  it('슬라이드는 위에서부터 표제어(h3) → 공식 통계명(기준) 줄 → 값 → 그래프 → 정의 → 출처 순이다 (SH1) — 지표 이름(옛 h3)은 제목이 아니다', () => {
+    for (const s of data.slides) {
+      const start = html.indexOf(`data-slide-id="${s.id}"`);
+      const article = html.slice(start, html.indexOf('</article>', start));
+      const order = ['<h3 class="slide__insight">', 'class="slide__official"', 'class="chart"', 'class="t-sm t-muted"', '출처: '].map((k) => article.indexOf(k));
+      expect(order.every((i) => i >= 0), `${s.id} 조각 위치 ${order}`).toBe(true);
+      expect([...order].sort((a, b) => a - b), `${s.id} 순서`).toEqual(order);
+      if (s.valueText !== null) expect(article.indexOf('data-testid="slide-value"'), `${s.id} 값은 공식 통계명 줄 뒤`).toBeGreaterThan(order[1]);
+      expect(text(article), s.id).toContain(s.insight);
+      expect(text(article), s.id).toContain(s.officialText);
+    }
+  });
+
+  it('조작 줄(SH5·SH6): 이전·「i / N」·다음·일시정지가 카드 안 슬라이드 앞(오른쪽 위)에 있고, 일시정지 버튼은 늘 보이며 아이콘·이름이 상태를 맡는다 — 돌고 있으면 일시정지 아이콘 + 「자동 넘김 일시정지」', () => {
+    const nav = /<div class="carousel__nav" data-testid="carousel-nav">[\s\S]*?<\/div>/.exec(html)?.[0];
+    expect(nav, '조작 줄').toBeDefined();
+    expect(html.indexOf('data-testid="carousel-nav"')).toBeLessThan(html.indexOf('data-testid="carousel-viewport"'));
+    expect(nav!.match(/<button /g)?.length).toBe(3); // 이전 · 다음 · 일시정지 (「i / N」은 글자)
+    expect(nav).toMatch(/data-testid="carousel-prev" aria-label="이전 지표"[^>]*><span class="nav-btn__box"><svg[^>]*><use href="#i-prev"/);
+    expect(nav).toMatch(/data-testid="carousel-next" aria-label="다음 지표"[^>]*><span class="nav-btn__box"><svg[^>]*><use href="#i-forward"/);
+    expect(nav).toMatch(/data-testid="carousel-pause" aria-label="자동 넘김 일시정지"[^>]*><span class="nav-btn__box"><svg[^>]*><use href="#i-pause"/);
+    expect(nav).not.toContain('#i-play');
+    expect(nav).toContain(`>1 / ${data.slides.length}<`);
+    // 보이는 상자 28px·거친 포인터 44px는 CSS(실측은 e2e/first-screen-layout.spec.ts). 점은 지표가 많아 없다
+    expect(TITLE_TEXT.carouselPause).toBe('자동 넘김 일시정지');
+    expect(TITLE_TEXT.carouselPlay).toBe('자동 넘김 다시 시작');
+  });
+
+  it('자동 넘김은 9초다 (SPEC-005 마스터 결정 M8) — 머리글 문구가 아니라 상수가 정한다', () => {
+    expect(AUTO_ADVANCE_MS).toBe(9000);
+  });
+
+  it('슬라이드가 5개 이하일 때만 점을 그리고, 점 버튼의 이름은 「3/5 표제어」이다 (R-133)', () => {
     const few: CarouselData = { ...data, slides: data.slides.slice(0, CAROUSEL_MAX_DOTS) };
     const dotsHtml = render({ carousel: few });
     expect(dotsHtml).toContain('data-testid="carousel-dots"');
     expect(dotsHtml.match(/data-testid="carousel-dot-\d+"/g)?.length).toBe(CAROUSEL_MAX_DOTS);
-    expect(dotsHtml).toContain(`aria-label="3/${CAROUSEL_MAX_DOTS} ${few.slides[2].title}"`);
+    expect(dotsHtml).toContain(`aria-label="3/${CAROUSEL_MAX_DOTS} ${few.slides[2].insight}"`); // 점 버튼의 이름은 표제어(SPEC-005 SH1)
     expect(dotsHtml.match(/aria-current="true"/g)?.length).toBe(1);
     // 6개부터는 점이 없다
     const many: CarouselData = { ...data, slides: data.slides.slice(0, CAROUSEL_MAX_DOTS + 1) };
@@ -375,12 +441,16 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(html).toContain('aria-roledescription="캐러셀"');
   });
 
-  it('슬라이드마다 출처·기준 연도가 적혀 있고 마지막 갱신일이 보인다 (SC2·SC4)', () => {
+  it('슬라이드마다 출처·기준 연도(공식 통계명 줄)가 적혀 있고 마지막 갱신일이 보인다 (SC2·SC4 — 기준 연도는 SPEC-005 SH3에서 공식 통계명 줄로 옮겼다)', () => {
     for (const s of data.slides) {
       expect(text(html), s.id).toContain(`출처: ${s.sourceText}`);
-      expect(text(html), s.id).toContain(s.basisText);
+      expect(text(html), s.id).toContain(s.officialText);
+      if (s.basisText !== null) expect(text(html), s.id).toContain(s.basisText);
       expect(text(html), s.id).toContain(s.basisLine); // 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」
     }
+    // 연도만 있던 기준 줄은 없다 — 분모가 있는 둘(조사망률·자살률)만 기준 줄이 남는다
+    expect(html.match(/data-testid="slide-basis-line"/g)?.length).toBe(2);
+    expect(text(html.replace(/<caption>[^<]*<\/caption>/g, ''))).not.toMatch(/\d{4}년 기준(?!\()/); // (숨긴 표의 캡션은 지표 이름 그대로라 뺀다)
     expect(html.match(/data-testid="slide-basis"/g)?.length).toBe(data.slides.length);
   });
 
@@ -392,7 +462,11 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(slide).toContain('href="tel:109"');
     expect(text(slide)).toContain('자살예방 상담전화 109 (24시간)');
     expect(text(slide)).toContain('27.8');
-    expect(text(slide)).toContain('2025년 기준');
+    expect(text(slide)).toContain('자살률(2025년)'); // 공식 통계명 줄(SH3) — 「자살」 낱말은 이 줄에만 있다
+    expect(text(slide)).toContain('인구 10만 명당'); // 기준 줄(분모만)
+    const insight = /<h3 class="slide__insight">([\s\S]*?)<\/h3>/.exec(slide)![1];
+    expect(text(insight)).toBe('삶을 스스로 마감하는 사람은 얼마나 될까?'); // 임시 표제어 후보 ①(copy.md 9-1 #5 — reviewer·마스터 판독 대기 [확인 M9]) — 「자살」 낱말은 공식 통계명 줄에만 있다
+    expect(text(insight)).not.toContain('자살');
     // 다른 슬라이드에는 없다
     expect(html.match(/data-testid="slide-help"/g)?.length).toBe(1);
   });
@@ -478,20 +552,23 @@ describe('2회차 보완 화면 문구 (SPEC-003 QM2-10·QM2-11, REV-003-M2-3 R-
     const slide = html.slice(start, html.indexOf('</article>', start));
     expect(slide).toContain('data-testid="slide-side-value"');
     expect(text(slide)).toContain('조혼인율 인구 1천 명당 4.7건');
-    const order = ['data-testid="slide-value"', 'data-testid="slide-side-value"', 'data-testid="slide-basis-line"', 'class="chart"'].map((k) => slide.indexOf(k));
+    const order = ['class="slide__official"', 'data-testid="slide-value"', 'data-testid="slide-side-value"', 'class="chart"'].map((k) => slide.indexOf(k));
     expect(order.every((i) => i >= 0), `조각 위치 ${order}`).toBe(true);
-    expect([...order].sort((a, b) => a - b), '큰 값 → 조혼인율 줄 → 기준 줄 → 그래프 순서').toEqual(order);
+    expect([...order].sort((a, b) => a - b), '공식 통계명 줄 → 큰 값 → 조혼인율 줄 → 그래프 순서(연도 기준 줄은 공식 통계명 줄로 옮겼다)').toEqual(order);
+    expect(slide, '혼인 건수는 분모가 없어 기준 줄이 없다').not.toContain('data-testid="slide-basis-line"');
+    expect(text(slide)).toContain('혼인 건수·조혼인율(2025년)');
     expect(slide, '선 무늬(범례)가 아니다').not.toContain('class="legend"');
     expect(html.match(/data-testid="slide-side-value"/g)?.length, '14장 중 보조 값 줄은 하나').toBe(1);
   });
 
-  it('기준 줄과 「통계 기준」 줄의 짧은 쌍은 <Pair>로 그려진다 — 기준 줄 쌍 둘(조사망률·자살률), 통계 기준 줄 쌍 14장 전부 (QM2-10 규칙 3)', () => {
-    expect(html.match(/class="pair pair--basis"/g)?.length).toBe(2);
+  it('「통계 기준」 줄의 짧은 쌍은 <Pair>로 그려진다 — 14장 전부. 기준 줄은 분모만 남아 쌍이 아니다(SPEC-005 copy.md 9-2: 「인구 10만 명당 · 2025년 기준」 → 「인구 10만 명당」 + 공식 통계명 줄 「자살률(2025년)」) (QM2-10 규칙 3)', () => {
+    expect(html.match(/class="pair pair--basis"/g)?.length ?? 0).toBe(0);
     expect(html.match(/class="pair pair--meta"/g)?.length).toBe(14);
     const start = html.indexOf('data-slide-id="suicide-rate"');
     const slide = html.slice(start, html.indexOf('</article>', start));
     expect(text(slide)).toContain('27.8 명');
-    expect(text(slide)).toContain('인구 10만 명당 · 2025년 기준');
+    expect(text(slide)).toContain('인구 10만 명당');
+    expect(text(slide)).not.toContain('인구 10만 명당 · 2025년 기준');
   });
 
   it('한 줄 설명의 끝 「한 번의 인생」은 줄바꿈 금지 묶음(nowrap)이고 글자는 그대로다 — 마지막 낱말 「인생」이 혼자 줄에 남지 않는다 (R-237, QA 3회차 마스터 결정: 마지막 두 어절 묶음)', () => {

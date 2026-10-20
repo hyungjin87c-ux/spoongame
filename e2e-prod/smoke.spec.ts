@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { holdMsFor } from '../src/core/timing';
 import { readThemeBlocks, themeTokens } from '../scripts/checkContrastLib';
-import { BASIS_B_SPLIT, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from '../e2e/carouselForms';
+import { BASIS_B, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from '../e2e/carouselForms';
 import { slideCount } from '../e2e/carouselHelpers';
 import { SETTINGS_KEY, settingsEnvelope } from '../e2e/saves';
 import { collectSlideDom, type SlideDom } from '../e2e/slideText';
@@ -607,7 +607,8 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
     const bad = (msg: string) => problems.push(`${dom.id}: ${msg}`);
     // 금지 패턴 (명당 명 · 같은 단위 연속) — 구성 요소마다 + 전체
     for (const [where, text] of [
-      ['제목', dom.title],
+      ['표제어', dom.insight],
+      ['공식 통계명 줄', dom.official],
       ['캡션', dom.captions.join(' ')],
       ['값 줄', dom.valueLines.map((v) => `${v.label ?? ''} ${v.text}`).join(' / ')],
       ['보조 값 줄', dom.sideLines.join(' / ')],
@@ -623,16 +624,15 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
       if (!VALUE_LINE.test(v.text)) bad(`값 줄 「${v.text}」이 「숫자 + 단위 낱말」이 아니다`);
       if (v.unit !== '' && !UNIT_WORD.test(v.unit)) bad(`단위 칸 「${v.unit}」이 단위 낱말 하나가 아니다`);
     }
-    // 기준 줄 모양 (형식표 A·B·C·D): 모델 없이 DOM의 글자만으로
+    // 표제어·공식 통계명 줄·기준 줄 모양 (SPEC-005 SH1~SH3, 형식표 A·B·C·D): 모델 없이 DOM의 글자만으로 — 공식 통계명 줄 끝 괄호가 기준 연도(월)·범위를 말하고, 기준 줄은 분모가 있는 B형에만 남는다
+    if (dom.insight === '' || /[0-9]/.test(dom.insight)) bad(`표제어가 비었거나 숫자가 있다: 「${dom.insight}」`);
+    if (!/\(\d{4}년( \d{1,2}월)?(, [^()]+)?\)$/.test(dom.official.replace(/\s+/g, ' ').trim())) bad(`공식 통계명 줄 모양(「이름(기준)」): 「${dom.official}」`);
     const form = SLIDE_FORMS[dom.id];
     if (form === undefined) bad('형식표(SLIDE_FORMS)에 없는 슬라이드다');
-    else if (form === 'A' || form === 'C') {
-      if (!/^\d{4}년 기준$/.test(dom.basisLines.join('\n'))) bad(`형식 ${form} 기준 줄이 「{연도}년 기준」이 아니다: 「${dom.basisLines.join(' / ')}」`);
-    } else if (form === 'B') {
-      // 글자 200%·폭 320: 쌍이 두 줄로 나뉘고 가운뎃점이 눈에 보이지 않는다
-      if (dom.basisLines.length !== 2 || !BASIS_B_SPLIT.every((re, k) => re.test(dom.basisLines[k]))) bad(`형식 B 기준 줄이 두 줄(「인구 N 명당」/「{연도}년 기준」)이 아니다: 「${dom.basisLines.join(' / ')}」`);
-      if (dom.pairSepVisible !== false) bad('형식 B 기준 줄이 두 줄인데 「·」가 눈에 보인다(또는 쌍이 아니다)');
-    } else if (!/^\d{4}년( \d{1,2}월)? 기준\(\d+개 시·도/.test(dom.basisLines.join(' '))) bad(`형식 D 기준 줄 모양: 「${dom.basisLines.join(' ')}」`);
+    else if (form === 'B') {
+      // 글자 200%·폭 320에서도 분모만 한 줄이다(쌍이 아니라 나뉘지 않는다)
+      if (dom.basisLines.length !== 1 || !BASIS_B.test(dom.basisLines[0])) bad(`형식 B 기준 줄이 「인구 N 명당」(분모만, 한 줄)이 아니다: 「${dom.basisLines.join(' / ')}」`);
+    } else if (dom.basisLines.length !== 0) bad(`형식 ${form}에 기준 줄이 남아 있다(연도는 공식 통계명 줄이 맡는다): 「${dom.basisLines.join(' / ')}」`);
     // 「통계 기준」 줄: 쌍이 나뉘어도 글자는 「통계 기준: {연도}년 · 마지막 갱신 {날짜}」다(두 줄이면 사이의 기호가 감춰진다)
     if (!/^통계 기준: \d{4}년\s+마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' '))) bad(`「통계 기준」 줄 모양: 「${dom.statLines.join(' / ')}」`);
     // 가로 넘침·글자 잘림 0 (최소화된 CSS에서도 cqw 값 크기·nowrap이 살아 있다)
@@ -647,13 +647,10 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
   expect(marriage.sideLines[0].replace(/\s+/g, ' '), '조혼인율 줄').toMatch(/^조혼인율 인구 1천 명당 \d\.\d건$/);
   expect(marriage.sideLines[0], '데이터 라벨의 괄호 단위를 그대로 쓰지 않는다').not.toContain('(');
   expect(marriage.legend, '조혼인율은 범례(선 무늬)가 아니라 값 줄 아래 줄이다').toEqual([]);
-  // ④ B형 두 장(조사망률·자살률)이 실제로 있었고 둘 다 두 줄 + 기호 숨김
+  // ④ B형 두 장(조사망률·자살률)이 실제로 있었고 둘 다 분모만 한 줄(기준 연도는 공식 통계명 줄로 옮겼다)
   const basisB = doms.filter((d) => SLIDE_FORMS[d.id] === 'B');
   expect(basisB.map((d) => d.id).sort()).toEqual(['cdr', 'suicide-rate']);
-  for (const d of basisB) {
-    expect(d.basisLines, `${d.id} 기준 줄`).toHaveLength(2);
-    expect(d.pairSepVisible, `${d.id}: 「·」가 감춰졌다`).toBe(false);
-  }
+  for (const d of basisB) expect(d.basisLines, `${d.id} 기준 줄(분모만)`).toHaveLength(1);
   // 공허 통과 방지: 모은 글자·그래프 글자·값 줄이 실제로 있다
   expect(doms.reduce((sum, d) => sum + d.all.length, 0), '모은 화면 글자 수').toBeGreaterThan(2500);
   expect(doms.filter((d) => d.chartTexts.length > 0), '그래프 글자가 모인 슬라이드').toHaveLength(14);

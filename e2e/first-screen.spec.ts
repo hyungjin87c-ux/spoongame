@@ -22,6 +22,7 @@ import {
   toBirthReport,
 } from './helpers';
 import { SAVE_VERSION, SETTINGS_KEY } from './saves';
+import { synthesizeBigSlot } from './titleStates';
 import { readThemeBlocks, themeTokens, type Theme } from '../scripts/checkContrastLib';
 
 /**
@@ -89,7 +90,7 @@ async function leaveCarousel(page: Page, expectAutoplay: 'on' | 'off' = 'on'): P
   await expect(page.getByTestId('carousel')).toHaveAttribute('data-autoplay', expectAutoplay);
 }
 
-/** 가짜 시계를 깔고(타이머를 직접 흘린다) 첫 화면을 연 뒤 흐름을 멈춘다. 실제 시간이 흘러 7초 타이머가 먼저 울리지 않게 열자마자 멈춘다. */
+/** 가짜 시계를 깔고(타이머를 직접 흘린다) 첫 화면을 연 뒤 흐름을 멈춘다. 실제 시간이 흘러 9초 타이머가 먼저 울리지 않게 열자마자 멈춘다. */
 async function openWithClock(page: Page, url = '/'): Promise<void> {
   await page.clock.install({ time: new Date('2026-10-16T03:10:00Z') });
   await page.goto(url);
@@ -119,19 +120,25 @@ test('첫 화면 구성(FS1): 로고 → 한 줄 설명 → 수저 다섯 자루
       return { carouselLeft: c.left, eraRight: era.right, carouselTop: c.top, vh: innerHeight };
     });
     expect(side.carouselLeft, '캐러셀이 선택 영역 오른쪽 열에 있다 (FS3)').toBeGreaterThan(side.eraRight);
-    expect(side.carouselTop, '캐러셀이 첫 화면 높이 안에서 시작한다').toBeLessThan(side.vh / 2);
+    expect(side.carouselTop, '캐러셀이 첫 화면 높이 안에서 시작한다').toBeLessThan(side.vh);
+    // SPEC-005 HS3 ④: 오른쪽 열 맨 위에 일러스트가 있어 카드는 그 아래에서 시작한다 — 대신 표제어·값이 스크롤 0에서 보인다(하단 띠 위)
+    const vis = await page.evaluate(() => {
+      const r = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+      return { insightBottom: r('.slide.is-active .slide__insight').bottom, valueBottom: r('.slide.is-active [data-testid="slide-value"]').bottom, barTop: r('[data-testid="bottom-bar"]').top };
+    });
+    expect(vis.insightBottom, '표제어가 스크롤 0에서 하단 띠 위에 보인다').toBeLessThan(vis.barTop);
+    expect(vis.valueBottom, '값이 스크롤 0에서 하단 띠 위에 보인다').toBeLessThan(vis.barTop);
   }
   await expect(page.getByTestId('start-birth')).toHaveText('태어나기');
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 
-test('로고(DS1): 게임명 워드마크 글자 높이 ≥ 40px — 좁은 화면은 세로 로고, 넓은 화면은 가로 로고, 제목(h1)의 읽히는 글자는 「수저 게임」', async ({ page }) => {
+test('로고(DS1): 게임명 워드마크 글자 높이 ≥ 40px — 두 폭 모두 워드마크(글자)만(SPEC-005 D5-01 A안), 제목(h1)의 읽히는 글자는 「수저 게임」', async ({ page }) => {
   await page.goto('/');
-  const vw = page.viewportSize()!.width;
-  const visibleId = vw >= 960 ? 'title-logo-row' : 'title-logo-stacked';
-  const hiddenId = vw >= 960 ? 'title-logo-stacked' : 'title-logo-row';
+  const visibleId = 'title-logo-word';
   await expect(page.getByTestId(visibleId)).toBeVisible();
-  await expect(page.getByTestId(hiddenId)).toBeHidden();
+  await expect(page.getByTestId('title-logo-stacked')).toHaveCount(0); // 세로·가로 로고(심볼 + 워드마크)는 없다
+  await expect(page.getByTestId('title-logo-row')).toHaveCount(0);
   const m = await page.evaluate((id) => {
     const svg = document.querySelector(`[data-testid="${id}"] svg`) as SVGSVGElement;
     const wordmark = svg.querySelector(':scope > g') as SVGGraphicsElement; // 워드마크(글자 도형 묶음)
@@ -295,23 +302,23 @@ test('화면 사이 거짓 안내 없음(R-201): 세상 카드에서 읽은 출�
   }
 });
 
-test('인생 길이(FS5, R-202): 「약 30분」 기본·선택, 「약 1시간」 카드는 보이되 선택할 수 없고 「준비 중」이 적혀 있다(라디오 그룹 접근성 유지) — 눌러도 아무 일도 없다', async ({ page }) => {
+test('인생 길이(FS5, R-202 · SPEC-005 HS2 분절 컨트롤): 「약 30분」 기본·선택, 「약 1시간」 칸은 보이되 선택할 수 없고 「준비 중」이 적혀 있다(라디오 그룹 접근성 유지) — 눌러도 아무 일도 없다', async ({ page }) => {
   await page.goto('/');
   const group = page.getByRole('radiogroup', { name: '인생 길이' });
-  await expect(group.getByRole('radio')).toHaveCount(2); // 카드를 숨기지 않는다
+  await expect(group.getByRole('radio')).toHaveCount(2); // 칸을 숨기지 않는다
   await expect(page.getByTestId('life-short30')).toBeChecked();
   await expect(page.getByTestId('life-short30')).toBeEnabled();
   await expect(group).toContainText('약 30분');
   await expect(group).toContainText('약 1시간');
-  await expect(page.getByTestId('life-length-hint')).toHaveText('평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.'); // M8 D-92
+  await expect(page.getByTestId('life-length-hint')).toHaveText('평균 수명까지 사는 시간이에요. 생각을 적는 시간은 뺐고, 나가도 이 기기에 남아요.'); // copy.md 9-4 (M8 D-92의 세 문장을 한 줄로)
   // 비활성 + 이유: 접근 가능한 이름에 「준비 중」이 들어 있어 스크린리더도 이유를 듣는다
   const long = page.getByRole('radio', { name: /약 1시간/ });
   await expect(long).toBeDisabled();
   await expect(long).not.toBeChecked();
-  await expect(long).toHaveAccessibleName(/약 1시간.*준비 중.*결정을 더 많이/);
-  await expect(page.getByTestId('life-long60').locator('xpath=ancestor::label').locator('.radio-card__meta')).toHaveText('준비 중');
-  await expect(page.getByTestId('life-short30').locator('xpath=ancestor::label').locator('.radio-card__meta')).toHaveCount(0);
-  // 색에만 의존하지 않는다: 비활성 카드는 점선 테두리이고 커서도 금지 표시
+  await expect(long).toHaveAccessibleName(/약 1시간.*준비 중/);
+  await expect(page.getByTestId('life-long60').locator('xpath=ancestor::label').locator('.seg__meta')).toHaveText('준비 중');
+  await expect(page.getByTestId('life-short30').locator('xpath=ancestor::label').locator('.seg__meta')).toHaveCount(0);
+  // 색에만 의존하지 않는다: 비활성 칸은 점선 테두리이고 커서도 금지 표시
   const look = await page.evaluate(() => {
     const card = document.querySelector('[data-testid="life-long60"]')!.closest('label')!;
     const ok = document.querySelector('[data-testid="life-short30"]')!.closest('label')!;
@@ -466,7 +473,12 @@ for (const [i, vp] of [
           barHeight: bar.height,
           spacerHeight: spacer.height,
           version: document.querySelector('[data-testid="build-version"]')!.getBoundingClientRect().bottom,
-          carousel: document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect().bottom,
+          // 넓은 화면의 카드는 열 안쪽 스크롤로 아랫부분에 닿는다(SPEC-005 D5-30 — 일러스트가 열 맨 위에 있다): 안쪽을 끝까지 내린 뒤의 카드 아래끝을 잰다
+          carousel: (() => {
+            const side = document.querySelector('.title__side') as HTMLElement;
+            if (matchMedia('(min-width: 960px)').matches) side.scrollTop = side.scrollHeight;
+            return document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect().bottom;
+          })(),
           atEnd: Math.ceil(window.scrollY + innerHeight) >= document.documentElement.scrollHeight - 1,
         };
       });
@@ -537,9 +549,10 @@ test('캐러셀(SC1·SC2): 지표 10개 이상, 요청의 5개 포함, 슬라이
   expect(ids).not.toContain('region-population'); // 17개 시도 센서스 지표는 뺐다(마스터 결정: 2026 주민등록 16개 시·도)
   // 첫 슬라이드: 합계출산율 — 시안의 가짜 값(0.68·2023)이 아니라 실제 값 0.80명·2025년 기준
   const first = page.locator('.slide.is-active');
-  await expect(first).toContainText('합계출산율');
+  await expect(first.locator('h3.slide__insight')).toHaveText('아기는 얼마나 태어나고 있을까?'); // 표제어(SH1) — 슬라이드의 제목
+  await expect(first.locator('.slide__official')).toHaveText('합계출산율(2025년)'); // 공식 통계명(기준) 줄(SH3) — 연도만 있던 기준 줄은 없다
   await expect(first.getByTestId('slide-value')).toHaveText('0.80');
-  await expect(first).toContainText('2025년 기준');
+  await expect(first.getByTestId('slide-basis-line')).toHaveCount(0);
   await expect(first).toContainText('출처: 국가데이터처, 2025년 출생 통계');
   await expect(first).toContainText('(2026-10-15 조회)');
   await expect(first).toContainText('합계출산율은 한 여자가 가임 기간');
@@ -549,8 +562,9 @@ test('캐러셀(SC1·SC2): 지표 10개 이상, 요청의 5개 포함, 슬라이
   const label = await first.locator('svg.chart').getAttribute('aria-label');
   expect(label).toContain('1970년부터 2025년까지 합계출산율 추이 그래프');
   expect(label).toContain('마지막 0.80명');
-  // 자동 전환 안내(7초)
-  await expect(page.getByTestId('carousel-auto-note')).toHaveText('7초마다 다음 지표');
+  // 머리글 문구(「한국 사회 통계」「7초마다 다음 지표」「자동 넘김 멈춤」)는 없다 — 자동 넘김의 상태는 일시정지 버튼이 맡는다(SH4·SH6)
+  await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 일시정지');
+  await expect(page.getByTestId('carousel-auto-note')).toHaveCount(0);
   // 보이는 슬라이드는 하나뿐이다(나머지는 스크린리더·화면에서 숨는다)
   const visible = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-testid="stat-slide"]')].filter((s) => getComputedStyle(s).visibility === 'visible').length);
   expect(visible).toBe(1);
@@ -579,13 +593,13 @@ test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는
   expect(countBox.height, '「n / N」이 한 줄이다').toBeLessThan(countBox.lineHeight * 1.5);
   const third = await page.evaluate(() => {
     const s = document.querySelectorAll('[data-testid="stat-slide"]')[2];
-    return { id: s.getAttribute('data-slide-id'), title: s.querySelector('h3')!.textContent };
+    return { id: s.getAttribute('data-slide-id'), insight: s.querySelector('h3')!.textContent!, official: s.querySelector('.slide__official')!.textContent! };
   });
   await page.getByTestId('carousel-next').click();
   await page.getByTestId('carousel-next').click();
   expect(await countText(page)).toBe(`3 / ${n}`);
   expect(await activeSlideId(page)).toBe(third.id);
-  await expect(page.locator('.slide.is-active')).toHaveAccessibleName(`3/${n} ${third.title}`);
+  await expect(page.locator('.slide.is-active')).toHaveAccessibleName(`3/${n} ${third.insight}, ${third.official}`); // 「n/N 표제어, 공식 통계명(기준)」(SH3)
   // 키보드 ←/→ (슬라이드 영역에 포커스가 있을 때)
   await page.getByTestId('carousel-viewport').focus();
   await page.keyboard.press('ArrowRight');
@@ -612,7 +626,7 @@ test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는
   expect(await countText(page)).toBe(`2 / ${n}`); // 세로 스크롤 동작은 넘기지 않는다
 });
 
-test('캐러셀 자동 전환(SC5): 7초마다 다음 슬라이드, 포인터가 올라가면 정지, 포커스가 안에 있으면 정지, 일시정지 버튼으로 멈추고 다시 시작', async ({ page }) => {
+test('캐러셀 자동 전환(SC5): 9초마다 다음 슬라이드, 포인터가 올라가면 정지, 포커스가 안에 있으면 정지, 일시정지 버튼으로 멈추고 다시 시작', async ({ page }) => {
   await openWithClock(page);
   const n = await slideCount(page);
   const carousel = page.getByTestId('carousel');
@@ -620,11 +634,11 @@ test('캐러셀 자동 전환(SC5): 7초마다 다음 슬라이드, 포인터가
   await leaveCarousel(page); // 포인터는 캐러셀 밖
   expect(await countText(page)).toBe(`1 / ${n}`);
   await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'off'); // 자동 전환은 스크린리더가 읽지 않는다
-  await tick(page, 6_000);
-  expect(await countText(page)).toBe(`1 / ${n}`); // 아직 7초가 안 됐다
-  await tick(page, 1_500);
+  await tick(page, 8_000);
+  expect(await countText(page)).toBe(`1 / ${n}`); // 아직 9초가 안 됐다
+  await tick(page, 2_000);
   await expect(count).toHaveText(`2 / ${n}`);
-  await tick(page, 7_100);
+  await tick(page, 9_100);
   await expect(count).toHaveText(`3 / ${n}`);
 
   // 포인터가 올라가면 정지
@@ -637,7 +651,7 @@ test('캐러셀 자동 전환(SC5): 7초마다 다음 슬라이드, 포인터가
   await expect(count).toHaveText(`3 / ${n}`);
   await leaveCarousel(page);
   await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'off'); // 다시 자동 전환 중이면 읽지 않는다
-  await tick(page, 7_100);
+  await tick(page, 9_100);
   await expect(count).toHaveText(`4 / ${n}`);
 
   // 키보드 포커스가 안에 있으면 정지 (키보드 사용자)
@@ -649,7 +663,7 @@ test('캐러셀 자동 전환(SC5): 7초마다 다음 슬라이드, 포인터가
   await expect(count).toHaveText(`4 / ${n}`);
   await leaveCarousel(page);
   await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'off');
-  await tick(page, 7_100);
+  await tick(page, 9_100);
   await expect(count).toHaveText(`5 / ${n}`);
 
   // 일시정지 버튼: 멈추고(이름이 「다시 시작」으로 바뀐다, 읽어 주도록 live=polite), 다시 누르면 이어서 돈다
@@ -658,7 +672,7 @@ test('캐러셀 자동 전환(SC5): 7초마다 다음 슬라이드, 포인터가
   await pause.click();
   await expect(pause).toHaveAccessibleName('자동 넘김 다시 시작');
   await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'polite');
-  await expect(page.getByTestId('carousel-auto-note')).toHaveText('자동 넘김 멈춤');
+  await expect(pause.locator('use')).toHaveAttribute('href', '#i-play'); // 상태는 버튼의 아이콘·이름이 말한다(SH6) — 머리글 문구는 없다
   await leaveCarousel(page, 'off');
   await tick(page, 30_000);
   await expect(count).toHaveText(`5 / ${n}`);
@@ -666,13 +680,13 @@ test('캐러셀 자동 전환(SC5): 7초마다 다음 슬라이드, 포인터가
   await expect(pause).toHaveAccessibleName('자동 넘김 일시정지');
   await page.mouse.move(2, 2, { steps: 8 });
   await expect(carousel).toHaveAttribute('data-autoplay', 'on');
-  await tick(page, 7_100);
+  await tick(page, 9_100);
   await expect(count).toHaveText(`6 / ${n}`);
-  // 손으로 넘기면 7초를 다시 센다
+  // 손으로 넘기면 9초를 다시 센다
   await page.getByTestId('carousel-next').click();
   await expect(count).toHaveText(`7 / ${n}`);
   await leaveCarousel(page);
-  await tick(page, 6_000);
+  await tick(page, 8_000);
   await expect(count).toHaveText(`7 / ${n}`);
   await tick(page, 1_200);
   await expect(count).toHaveText(`8 / ${n}`);
@@ -686,7 +700,6 @@ test('움직임 줄이기(SC5·CM4): 자동 전환이 꺼지고(일시정지 버
   await tick(page, 60_000);
   await expect(page.getByTestId('carousel-count')).toHaveText(`1 / ${n}`);
   await expect(page.getByTestId('carousel-pause')).toHaveCount(0);
-  await expect(page.getByTestId('carousel-auto-note')).toHaveText('자동 넘김 멈춤');
   await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'polite');
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   await page.getByTestId('carousel-next').click();
@@ -705,7 +718,7 @@ test('움직임 줄이기(SC5·CM4): 자동 전환이 꺼지고(일시정지 버
   // 설정을 끄면 다시 자동 전환
   await page.evaluate(() => document.documentElement.removeAttribute('data-motion'));
   await expect(page.getByTestId('carousel-pause')).toBeVisible();
-  await tick(page, 7_100);
+  await tick(page, 9_100);
   await expect(page.getByTestId('carousel-count')).toHaveText(`2 / ${n}`);
 });
 
@@ -722,7 +735,7 @@ test('탭이 가려지면 자동 전환이 멈추고 다시 보이면 이어진�
   await tick(page, 30_000);
   await expect(page.getByTestId('carousel-count')).toHaveText(`1 / ${n}`);
   await setVisibility('visible');
-  await tick(page, 7_100);
+  await tick(page, 9_100);
   await expect(page.getByTestId('carousel-count')).toHaveText(`2 / ${n}`);
 });
 
@@ -742,7 +755,8 @@ test('자살률 슬라이드(SC6): 값·기준 연도·출처와 자살예방 �
       await expect(slide.getByTestId('slide-value')).toHaveText('27.8');
       // 값 옆 칸은 단위 낱말(「명」)만, 분모 문구는 기준 줄에(QM2-4): 예전에는 「인구 10만 명당 명」이라 「명당 명」이 겹쳐 읽혔다
       await expect(slide.getByTestId('slide-value').locator('xpath=following-sibling::small')).toHaveText('명');
-      await expect(slide.locator('.slide__basis').first()).toHaveText('인구 10만 명당 · 2025년 기준');
+      await expect(slide.locator('.slide__basis').first()).toHaveText('인구 10만 명당'); // 기준 줄은 분모만(copy.md 9-2) — 연도는 공식 통계명 줄 「자살률(2025년)」
+      await expect(slide.locator('.slide__official')).toHaveText('자살률(2025년)');
       await expect(slide).not.toContainText('명당 명');
       await expect(slide).toContainText('출처: 국가데이터처');
       await expect(help).toBeVisible();
@@ -805,16 +819,20 @@ test('캐러셀 모든 슬라이드: 조작 줄(이전·다음·일시정지)은
       return el.getBoundingClientRect().height / lh;
     });
     expect(countRows, `${w}px 위치 표기가 한 줄`).toBeLessThan(1.5);
-    // 이전·다음·일시정지는 44×44 이상
+    // 이전·다음·일시정지: 보이는 상자 ≤ 32px(SPEC-005 SH5 ▲), 포인터 환경의 클릭 대상 ≥ 24×24(WCAG 2.5.8) — 거친 포인터(터치)에서 44×44는 e2e/first-screen-layout.spec.ts가 본다
     const targets = await page.evaluate(() =>
       ['carousel-prev', 'carousel-next', 'carousel-pause'].map((id) => {
-        const r = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
-        return [r.width, r.height];
+        const el = document.querySelector(`[data-testid="${id}"]`)!;
+        const r = el.getBoundingClientRect();
+        const box = el.querySelector('.nav-btn__box')!.getBoundingClientRect();
+        return [r.width, r.height, box.width, box.height];
       }),
     );
-    for (const [tw, th] of targets) {
-      expect(tw).toBeGreaterThanOrEqual(44);
-      expect(th).toBeGreaterThanOrEqual(44);
+    for (const [tw, th, bw, bh] of targets) {
+      expect(tw).toBeGreaterThanOrEqual(24);
+      expect(th).toBeGreaterThanOrEqual(24);
+      expect(Math.round(bw)).toBeLessThanOrEqual(32);
+      expect(Math.round(bh)).toBeLessThanOrEqual(32);
     }
     expect(await noHorizontalOverflow(page)).toBe(true);
   }
@@ -866,9 +884,19 @@ for (const vp of [
         // scrollY 0: 캐러셀 카드 맨 아래가 하단 띠 위끝보다 위에 있다(예전에는 카드가 띠 아래로 약 60~70px 가려졌다)
         await page.evaluate(() => window.scrollTo(0, 0));
         const g0 = await carouselGeometry(page);
-        expect(g0.cardBottom, `scrollY 0 · ${g0.slide}: carousel.bottom ${Math.round(g0.cardBottom)} ≤ bar.top ${Math.round(g0.barTop)}`).toBeLessThanOrEqual(g0.barTop);
+        // SPEC-005(diff-005 D5-30): 오른쪽 열 맨 위에 일러스트가 있어 카드 아랫부분은 열 안쪽 스크롤로 닿는다 — 열(따라다니는 영역)이 띠 위에서 끝나고,
+        // 안쪽을 끝까지 내리면 카드 전체(조작 줄 포함)가 띠 위에 닿는다(예전에는 카드가 띠 아래로 약 60~70px 가려졌다 — 가려진 채 닿을 수 없는 것이 R-200의 문제였다)
+        expect(g0.sideBottom, `scrollY 0 · ${g0.slide}: 오른쪽 열 맨 아래 ${Math.round(g0.sideBottom)} ≤ bar.top ${Math.round(g0.barTop)}`).toBeLessThanOrEqual(g0.barTop + 0.5);
         expect(g0.cardTop).toBeGreaterThanOrEqual(0);
-        expect(g0.innerScroll, `${g0.slide}: 카드 안쪽이 스크롤돼야 할 만큼 크지 않다`).toBeLessThanOrEqual(1);
+        await page.evaluate(() => {
+          const side = document.querySelector('.title__side')!;
+          side.scrollTop = side.scrollHeight;
+        });
+        const gEnd = await carouselGeometry(page);
+        expect(gEnd.cardBottom, `안쪽 끝 · ${g0.slide}: carousel.bottom ${Math.round(gEnd.cardBottom)} ≤ bar.top ${Math.round(gEnd.barTop)}`).toBeLessThanOrEqual(gEnd.barTop + 0.5);
+        await page.evaluate(() => {
+          document.querySelector('.title__side')!.scrollTop = 0;
+        });
         for (const c of g0.ctrl) {
           expect(c.bottom, `${g0.slide} ${c.id}이 띠 위`).toBeLessThanOrEqual(g0.barTop);
           expect(c.hit, `${g0.slide} ${c.id} 한가운데를 누르면 그 버튼이다(다른 것이 가리지 않는다)`).toBe(c.id);
@@ -885,7 +913,7 @@ for (const vp of [
         for (const y of [Math.min(200, stuckEnd), stuckEnd, 99999]) { // 열이 그리 길지 않아(약 1000px) 붙어 있는 구간은 맨 위부터 약 380px까지다
           await page.evaluate((to) => window.scrollTo(0, to), y);
           const g = await carouselGeometry(page);
-          expect(g.cardBottom, `scrollY ${y} · ${g.slide}: carousel.bottom ${Math.round(g.cardBottom)} ≤ bar.top ${Math.round(g.barTop)}`).toBeLessThanOrEqual(g.barTop);
+          expect(g.sideBottom, `scrollY ${y} · ${g.slide}: 오른쪽 열 맨 아래 ${Math.round(g.sideBottom)} ≤ bar.top ${Math.round(g.barTop)}`).toBeLessThanOrEqual(g.barTop + 0.5);
           for (const c of g.ctrl) expect(c.bottom).toBeLessThanOrEqual(g.barTop);
           if (y !== 99999) {
             expect(g.cardTop, `scrollY ${y}: 붙어 있는 동안 카드 머리(조작 줄 포함)가 화면 위에 보인다`).toBeGreaterThanOrEqual(0);
@@ -978,6 +1006,8 @@ for (const vp of [
       await expect(page.getByTestId('carousel')).toBeVisible();
       await page.waitForTimeout(450); // 입력 가드(0.4초)가 풀린 뒤에 버튼을 누른다
       await page.getByTestId('carousel-pause').click(); // 훑는 동안 자동 전환이 슬라이드를 바꾸지 않게
+      // SPEC-005: 인생 길이를 작게 줄여 왼쪽 열이 거의 한 화면이다 — 따라다니는 구간을 만들려고 큰 슬롯을 SPEC-004의 8장으로 늘려 합성한다(HS3: 카드 수에 의존하지 않는 슬롯)
+      await synthesizeBigSlot(page, 8);
       const ids = await page.evaluate(() => [...document.querySelectorAll('[data-testid="stat-slide"]')].map((s) => s.getAttribute('data-slide-id')!));
       const maxY = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
       expect(maxY, '페이지가 스크롤되고 따라다니는 구간(scrollY ≥ 3)이 있다(공허 통과 방지)').toBeGreaterThan(100);
@@ -995,7 +1025,7 @@ for (const vp of [
           const tag = `${ids[i]} scrollY ${y}`;
           expect(g.slide, `${tag}: 지금 슬라이드`).toBe(ids[i]);
           expect(g.y, `${tag}: 실제로 그 위치까지 갔다`).toBeCloseTo(y, 0);
-          expect(g.cardBottom, `${tag}: 카드 아래끝 ${Math.round(g.cardBottom)} ≤ 띠 위끝 ${Math.round(g.barTop)}`).toBeLessThanOrEqual(g.barTop + 0.5);
+          expect(g.sideBottom, `${tag}: 오른쪽 열 아래끝 ${Math.round(g.sideBottom)} ≤ 띠 위끝 ${Math.round(g.barTop)} (카드 아랫부분은 열 안쪽 스크롤로 닿는다 — D5-30)`).toBeLessThanOrEqual(g.barTop + 0.5);
           for (const c of g.ctrl) {
             expect(c.top, `${tag} ${c.id}: 화면 위로 잘리지 않는다 (ctrl.top ≥ 0)`).toBeGreaterThanOrEqual(0);
             expect(c.bottom, `${tag} ${c.id}: 하단 띠 위`).toBeLessThanOrEqual(g.barTop + 0.5);
@@ -1074,7 +1104,7 @@ for (const vp of FOOTER_VIEWPORTS) {
     expect([...seen], `${vp.width}px: 슬라이드가 바뀔 때 아래 내용이 움직였다`).toHaveLength(1);
   });
 
-  test(`전환 때 아래 내용(푸터·본문 끝 여백·문서 높이)이 움직이지 않는다 — 자동 전환 ${vp.width}x${vp.height}: 7초마다 모든 슬라이드 (R-220 ④)`, async ({ page }, testInfo) => {
+  test(`전환 때 아래 내용(푸터·본문 끝 여백·문서 높이)이 움직이지 않는다 — 자동 전환 ${vp.width}x${vp.height}: 9초마다 모든 슬라이드 (R-220 ④)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', '뷰포트를 직접 지정하므로 desktop 프로젝트에서만 실행(레이아웃은 폭만 본다)');
     test.setTimeout(120_000);
     await page.setViewportSize(vp);
@@ -1083,7 +1113,7 @@ for (const vp of FOOTER_VIEWPORTS) {
     await leaveCarousel(page);
     const seen = new Set<string>([(await belowContent(page)).key]);
     for (let k = 1; k < n; k++) {
-      await tick(page, 7_100);
+      await tick(page, 9_100);
       await expect(page.getByTestId('carousel-count')).toHaveText(`${k + 1} / ${n}`);
       seen.add((await belowContent(page)).key);
     }
@@ -1571,7 +1601,8 @@ test('버튼·카드의 접근 가능한 이름: 라디오는 카드 글, 캐러
   const unnamed = await page.evaluate(() => [...document.querySelectorAll('.title-page button')].filter((b) => !(b.getAttribute('aria-label') ?? b.textContent ?? '').trim()).length);
   expect(unnamed).toBe(0);
   // 장식(로고·아이콘 스프라이트)은 보조기기에서 숨겨져 있다
-  expect(await page.locator('[data-testid^="title-logo"][aria-hidden="true"]').count()).toBe(2);
+  expect(await page.locator('[data-testid^="title-logo"][aria-hidden="true"]').count()).toBe(1); // 워드마크 하나(SPEC-005 D5-01 A안) — 일러스트 둘(figure)도 장식으로 숨겨져 있다
+  expect(await page.locator('.title-page figure[aria-hidden="true"]').count()).toBe(2);
 });
 
 // ---------- 다크·강제 색상·스크린샷 ----------
@@ -1583,22 +1614,23 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     await expect(page.getByTestId('title-screen')).toBeVisible();
     const c = await page.evaluate(() => {
       const css = (el: Element, prop: string) => getComputedStyle(el).getPropertyValue(prop) || (getComputedStyle(el) as unknown as Record<string, string>)[prop];
-      const logoPath = document.querySelector(`[data-testid="${innerWidth >= 960 ? 'title-logo-row' : 'title-logo-stacked'}"] svg path`)!;
+      const logoPath = document.querySelector('[data-testid="title-logo-word"] svg path')!; // 워드마크는 선(stroke)으로 그린다
       return {
         body: getComputedStyle(document.body).backgroundColor,
         page: getComputedStyle(document.querySelector('.title-page')!).backgroundColor,
         text: getComputedStyle(document.querySelector('.hero__pop')!).color,
         btnBg: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).backgroundColor,
         btnText: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).color,
-        card: getComputedStyle(document.querySelector('.carousel')!).backgroundColor,
-        logo: getComputedStyle(logoPath).fill,
+        card: getComputedStyle(document.querySelector('.carousel')!).backgroundImage, // 위쪽 띠(--c-card-tint)에서 면(--c-surface)으로 가는 그라데이션(SPEC-005 D5-27)
+        logo: getComputedStyle(logoPath).stroke,
         scheme: css(document.documentElement, 'color-scheme'),
       };
     });
     const dark = await tokenColors(page, 'dark');
     expect(c.body, 'body 바탕 = --c-bg 다크').toBe(dark('--c-bg'));
     expect(c.page).toBe(dark('--c-bg'));
-    expect(c.card, '카드 = --c-surface 다크').toBe(dark('--c-surface'));
+    expect(c.card, '카드 = 위쪽 띠 --c-card-tint → 면 --c-surface 다크').toContain(dark('--c-surface'));
+    expect(c.card).toContain(dark('--c-card-tint'));
     expect(c.text, '글자 = --c-text 다크').toBe(dark('--c-text'));
     expect(c.btnBg, '주요 버튼 = --c-brand 다크').toBe(dark('--c-brand'));
     expect(c.btnText).toBe(dark('--c-on-brand'));
@@ -1630,7 +1662,7 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
       body: getComputedStyle(document.body).backgroundColor,
       btnBg: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).backgroundColor,
       btnText: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).color,
-      logo: getComputedStyle(document.querySelector(`[data-testid="${innerWidth >= 960 ? 'title-logo-row' : 'title-logo-stacked'}"] svg path`)!).fill,
+      logo: getComputedStyle(document.querySelector('[data-testid="title-logo-word"] svg path')!).stroke, // 워드마크는 선(stroke)으로 그린다
     }));
     const light = await tokenColors(page, 'light');
     expect(c.body).toBe(light('--c-bg'));
@@ -1649,14 +1681,14 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     const s = await page.evaluate(() => {
       const card = (id: string) => getComputedStyle(document.querySelector(`[data-testid="${id}"]`)!.closest('.radio-card')!);
       const btn = getComputedStyle(document.querySelector('[data-testid="start-birth"]')!);
-      const logo = document.querySelector(`[data-testid="${innerWidth >= 960 ? 'title-logo-row' : 'title-logo-stacked'}"] svg path`)!;
+      const logo = document.querySelector('[data-testid="title-logo-word"] svg path')!;
       return {
         selected: card('era-present').borderTopStyle,
         plain: card('era-past').borderTopStyle,
         selectedWidth: parseFloat(card('era-present').borderTopWidth),
         btnBorder: btn.borderTopStyle,
         btnWidth: parseFloat(btn.borderTopWidth),
-        logoFill: getComputedStyle(logo).fill,
+        logoFill: getComputedStyle(logo).stroke,
         bodyBg: getComputedStyle(document.body).backgroundColor,
       };
     });

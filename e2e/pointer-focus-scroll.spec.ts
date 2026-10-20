@@ -20,6 +20,12 @@ async function prepare(page: Page): Promise<void> {
   await page.setViewportSize({ width: 360, height: 568 });
   await openBarState(page, 'confirm');
   await setRootFontPercent(page, 200);
+  // SPEC-005 D5-05: 큰 슬롯의 카드가 작은 변형(`radio-card--compact`)이 되어 「다가올 세상」 카드(216px)가 확인 단계의 가용 높이(약 290px)보다 작아졌다 — 키보드 포커스라면 맞춤이 일어날 만큼 큰 카드가
+  // 있어야 이 시험이 공허하지 않다. SPEC-004의 세대 카드처럼 소개 문장이 긴 카드를 합성한다(글자만 늘린다 — React는 값이 바뀌지 않은 글자 노드를 다시 쓰지 않는다)
+  await page.evaluate(() => {
+    const desc = document.querySelector('[data-testid="era-future"]')!.closest('label')!.querySelector('.radio-card__desc')!;
+    desc.textContent = `${desc.textContent} ${'소개 문장이 길게 이어지는 합성 카드입니다.'.repeat(5)}`;
+  });
   await expect(page.getByTestId(BAR_MAIN_BUTTON.confirm)).toBeEnabled(); // 입력 가드가 풀린 뒤 — 눌러도 선택이 막히지 않게
   await settle(page);
 }
@@ -73,7 +79,9 @@ async function runPointerCase(page: Page, kind: Kind): Promise<void> {
   expect(tall.map((c) => c.id), `가용 높이보다 큰 카드 (가용 ${Math.round((await cardBox(page, 'era-future')).available)}px)`).toContain('era-future');
   const checks: string[] = [];
   for (const id of CARDS) {
-    for (const top of [-40, 100] as const) {
+    // 위쪽 변이 화면 위로 잘린 만큼: 큰 카드는 40px. 분절 컨트롤 칸(32px, SPEC-005 HS2)처럼 작은 대상은 통째로 화면 밖으로 나가면 누를 자리가 없으니 절반 안쪽까지만 자른다
+    const cut = Math.min(40, Math.floor((await cardBox(page, id)).height / 2) - 4);
+    for (const top of [-cut, 100]) {
       const at = await scrollCardTo(page, id, top);
       const hit = await page.evaluate(([x, y, testId]) => {
         const el = document.elementFromPoint(x as number, y as number);

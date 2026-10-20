@@ -9,6 +9,7 @@ import {
   type StatsFile,
   type UsableIndicator,
 } from '../data/koreaStatsAccess';
+import { STAT_HEADLINES } from '../data/statHeadlines';
 
 /**
  * 한국 사회 통계 캐러셀의 슬라이드 모델과 동작 규칙 (SPEC-003 SC1~SC7). 모두 순수 함수라 React 없이 단위 테스트한다.
@@ -19,8 +20,8 @@ import {
 
 // ---------- 동작 규칙 (SC5) ----------
 
-/** 자동 전환 주기(밀리초). SPEC ▲ 7초. */
-export const AUTO_ADVANCE_MS = 7000;
+/** 자동 전환 주기(밀리초). SPEC-003 ▲ 7초 → SPEC-005 마스터 결정 M8(표제어·공식 통계명이 늘어 읽을 글이 많아졌다): 9초. */
+export const AUTO_ADVANCE_MS = 9000;
 
 /** 이전(-1)/다음(+1)으로 한 칸 이동. 끝에서는 반대쪽 끝으로 돈다. 슬라이드가 없으면 0. */
 export function nextSlideIndex(index: number, count: number, step: 1 | -1): number {
@@ -59,7 +60,7 @@ export function showDots(count: number): boolean {
   return count >= 2 && count <= CAROUSEL_MAX_DOTS;
 }
 
-/** 점 버튼의 접근 가능한 이름 (SC5): 「3/5 합계출산율」 */
+/** 점 버튼의 접근 가능한 이름 (SC5): 「3/5 아기는 얼마나 태어나고 있을까?」 — 이름은 슬라이드의 표제어(SPEC-005 SH1) */
 export function dotLabel(index: number, count: number, title: string): string {
   return `${index + 1}/${count} ${title}`;
 }
@@ -166,7 +167,14 @@ export interface SlideSideValue {
 
 export interface CarouselSlide {
   id: string;
+  /** 지표 이름(데이터의 `title`). 표제어가 아니다 — 막대 그래프 표 캡션·그래프 대체 글에 쓴다 */
   title: string;
+  /** 표제어(SH1·SH2): 인사이트형 질문, `data/statHeadlines.ts`. 슬라이드의 제목(`h3`)이다 */
+  insight: string;
+  /** 공식 통계명(SH3): 기관이 쓰는 이름 — 「합계출산율」 */
+  officialName: string;
+  /** 공식 통계명 줄 글자(SH3): 「합계출산율(2025년)」 — 기준은 `latest.year`(월 기준·범위 지표는 데이터의 범위 문구)에서만 만든다(SC4 단일 출처) */
+  officialText: string;
   /** 큰 글씨 값들(남자·여자처럼 두 값이면 둘). 막대 그래프 중 전국 값이 따로 적히지 않은 것은 빈 배열 */
   headlines: SlideHeadline[];
   /** 큰 글씨 값 하나(첫째). 값이 없으면 null */
@@ -174,10 +182,11 @@ export interface CarouselSlide {
   /** 값 바로 옆 칸: **단위 낱말 하나**(명·%·세·년·건…). 「인구 10만 명당」 같은 분모 문구는 여기가 아니라 기준 줄(basisText)에 있다(QM2-4) */
   unitText: string;
   /**
-   * 기준 줄(QM2-4 형식표): 「2025년 기준」, 분모가 있는 비율은 「인구 10만 명당 · 2025년 기준」(B형), 시·도 그래프는 범위 문구 「2025년 기준(17개 시·도)」(D형).
-   * 슬라이드 안의 기준 연도(이 줄·「통계 기준」 줄·그래프 마지막 점)는 모두 같은 값 `latest.year`에서 만든다.
+   * 기준 줄(QM2-4 → SPEC-005 copy.md 9-2): 연도만 있던 줄(「2025년 기준」)은 없앴다 — 공식 통계명 줄(`officialText`)이 같은 값을 말한다.
+   * 분모가 있는 비율(조사망률·자살률)만 분모 「인구 1천 명당」이 남는다(B형). 없으면 null이고 줄을 그리지 않는다.
+   * 슬라이드 안의 기준 연도(공식 통계명 줄·「통계 기준」 줄·그래프 마지막 점)는 모두 같은 값 `latest.year`에서 만든다.
    */
-  basisText: string;
+  basisText: string | null;
   /** 값 위 설명(예: 「2026년 9월 전국 주민등록 인구」) */
   caption: string | null;
   definition: string;
@@ -538,6 +547,19 @@ export function selectCarouselIndicators(file?: StatsFile): UsableIndicator[] {
   return list.filter(isDrawable);
 }
 
+const SCOPE_LABEL = /^(\d{4}년(?: \d{1,2}월)?) 기준(?:\((.+)\))?$/;
+
+/**
+ * 공식 통계명 줄의 기준 괄호 안 글자 (SH3, SC4 단일 출처): 보통은 `latest.year` — 「2025년」. 월 기준 지표(지역별 주민등록 인구수)는 데이터의 범위 문구(`scopeLabel`: 「2026년 9월 기준(16개 시·도, 주민등록)」)의
+ * 앞부분 「2026년 9월」이다. `withScope`이면 범위 문구의 괄호 안 설명을 쉼표로 덧붙인다(시·도별 합계출산율: 「2025년, 17개 시·도」 — 옛 기준 줄 「2025년 기준(17개 시·도)」을 대신한다).
+ * 범위 문구를 읽을 수 없는 모양이면 `latest.year`로 돌아간다.
+ */
+export function officialBasisOf(ind: Pick<UsableIndicator, 'latest' | 'scopeLabel'>, withScope: boolean): string {
+  const m = ind.scopeLabel !== undefined ? SCOPE_LABEL.exec(ind.scopeLabel) : null;
+  const when = m === null ? `${ind.latest.year}년` : m[1];
+  return withScope && m !== null && m[2] !== undefined ? `${when}, ${m[2]}` : when;
+}
+
 /** 지표 하나 → 슬라이드. 그릴 수 없는 지표(계열 부족 등)는 null. size는 그래프를 그릴 크기(chartSizeFor). */
 export function buildSlide(ind: UsableIndicator, updatedOn?: string, size: ChartSize = DEFAULT_CHART_SIZE): CarouselSlide | null {
   const isBar = ind.kind === 'bar';
@@ -549,8 +571,8 @@ export function buildSlide(ind: UsableIndicator, updatedOn?: string, size: Chart
   // 막대 그래프(시·도)는 전국 값이 따로 적혀 있을 때만(latestLabel) 큰 글씨로 보인다.
   const showValue = !isBar || (ind.latestLabel !== undefined && ind.latestLabel !== '');
   const headlines: SlideHeadline[] = showValue ? formatHeadlines(ind).map((h, _i, all) => ({ label: all.length > 1 ? h.label : null, value: h.value })) : [];
-  // 값 옆 칸은 단위 낱말 하나, 분모 문구(「인구 10만 명당」)는 기준 줄로(QM2-4). 기준 문구: 시·도 그래프는 데이터가 정한 범위 문구(「2025년 기준(17개 시·도)」, 통계 근거 검수 R-147 d, 마스터 결정),
-  // 그 밖은 「2025년 기준」, 분모가 있으면 「인구 10만 명당 · 2025년 기준」. 연도는 모두 latest.year에서 만든다.
+  // 값 옆 칸은 단위 낱말 하나, 분모 문구(「인구 10만 명당」)는 기준 줄로(QM2-4). 기준 연도는 공식 통계명 줄(officialText)이 말한다(SPEC-005 SH3 — 시·도 그래프의 범위 문구 「17개 시·도」도 그 괄호 안,
+  // 통계 근거 검수 R-147 d·copy.md 9-1 #14). 연도는 모두 latest.year(월 기준·범위 지표는 데이터의 범위 문구)에서만 만든다.
   // 큰 값 아래 줄: 제목에 이름이 든 보조 계열 중 그래프(범례)에 안 그려진 것 — 값을 글자로 보인다(QM2-11, R-230). 이름 + 분모 문구 + 값 + 단위(`formatWithUnit` 어순), 선 무늬 없음.
   const drawn = new Set(legend.map((l) => l.key));
   const sideValues: SlideSideValue[] = titleIndicators(ind)
@@ -558,15 +580,20 @@ export function buildSlide(ind: UsableIndicator, updatedOn?: string, size: Chart
     // 보조 계열의 기준 연도가 슬라이드의 기준 연도(latest.year)와 다르면 그 값의 연도를 글자로 밝힌다(QM2-4 규칙 4: 기준 줄은 슬라이드 한 값만 가리킨다)
     .map((t) => ({ name: t.name, valueText: t.valueText, text: `${t.name} ${t.valueText}${t.year !== null && t.year !== ind.latest.year ? ` (${t.year}년 기준)` : ''}` }));
   const { denominator, word } = splitUnit(ind.latestUnit);
-  const range = ind.scopeLabel !== undefined && ind.scopeLabel !== '' ? ind.scopeLabel : `${ind.latest.year}년 기준`;
-  const basisText = denominator === null ? range : `${denominator} · ${range}`;
+  // 표제어·공식 통계명(SH1~SH3): 데이터 파일은 건드리지 않고 data/statHeadlines.ts에서 가져온다. 항목이 없는 지표(새 지표·시험용 가짜 지표)는 지표 이름으로 대신한다 —
+  // 그래도 슬라이드는 뜨고, 모든 캐러셀 지표에 항목이 있는지는 tests/statHeadlines.test.ts가 잡는다.
+  const headline = STAT_HEADLINES[ind.id];
+  const officialName = headline?.officialName ?? ind.title;
   return {
     id: ind.id,
     title: ind.title,
+    insight: headline?.insight ?? ind.title,
+    officialName,
+    officialText: `${officialName}(${officialBasisOf(ind, headline?.withScope === true)})`,
     headlines,
     valueText: headlines.length > 0 ? headlines[0].value : null,
     unitText: word,
-    basisText,
+    basisText: denominator,
     caption: isBar && ind.latestLabel !== undefined && ind.latestLabel !== '' ? ind.latestLabel : null,
     definition: ind.definition,
     sourceText: `${ind.source.org}, ${ind.source.table} (${ind.source.accessedOn} 조회)`,

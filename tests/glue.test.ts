@@ -64,7 +64,7 @@ describe('glueSegments: 묶는 것', () => {
   it('실제 14장·푸터 글자에서 닫는 괄호 바로 뒤에 글자(한글·영문·숫자)가 붙은 곳은 모두 묶음 안에 있다 — 혼인 건수 정의의 「기준)으로」가 들어 있다 (REV-003-M2-4 R-244)', () => {
     const data = buildCarousel();
     const texts: string[] = [];
-    for (const s of data.slides) texts.push(s.title, s.caption ?? '', s.definition, s.sourceText, s.basisText, s.basisLine, s.seriesNote ?? '', ...s.legend.map((l) => l.label));
+    for (const s of data.slides) texts.push(s.title, s.insight, s.officialText, s.caption ?? '', s.definition, s.sourceText, s.basisText ?? '', s.basisLine, s.seriesNote ?? '', ...s.legend.map((l) => l.label));
     texts.push(footerStatsText(data.orgs));
     let attached = 0;
     for (const t of texts) {
@@ -106,7 +106,7 @@ describe('묶음은 글자를 바꾸지 않는다', () => {
     const data = buildCarousel();
     let checked = 0;
     for (const s of data.slides) {
-      for (const t of [s.title, s.caption ?? '', s.definition, s.sourceText, s.basisText, s.basisLine, s.seriesNote ?? '', ...s.legend.map((l) => l.label)]) {
+      for (const t of [s.title, s.insight, s.officialText, s.caption ?? '', s.definition, s.sourceText, s.basisText ?? '', s.basisLine, s.seriesNote ?? '', ...s.legend.map((l) => l.label)]) {
         checked++;
         expect(segmentsText(glueSegments(t)), `${s.id}: ${t}`).toBe(t);
       }
@@ -133,7 +133,7 @@ describe('실제 문구: 구분 기호가 묶음 밖에 홀로 남지 않는다 
     const data = buildCarousel();
     const texts: Array<[string, string]> = [];
     for (const s of data.slides) {
-      texts.push([`${s.id} 제목`, s.title], [`${s.id} 정의`, s.definition], [`${s.id} 출처`, s.sourceText], [`${s.id} 기준`, s.basisText], [`${s.id} 통계 기준`, s.basisLine]);
+      texts.push([`${s.id} 제목`, s.title], [`${s.id} 표제어`, s.insight], [`${s.id} 공식 통계명`, s.officialText], [`${s.id} 정의`, s.definition], [`${s.id} 출처`, s.sourceText], [`${s.id} 기준`, s.basisText ?? ''], [`${s.id} 통계 기준`, s.basisLine]);
       if (s.caption !== null) texts.push([`${s.id} 캡션`, s.caption]);
       if (s.seriesNote !== null) texts.push([`${s.id} 계열 설명`, s.seriesNote]);
       for (const l of s.legend) texts.push([`${s.id} 범례`, l.label]);
@@ -146,7 +146,7 @@ describe('실제 문구: 구분 기호가 묶음 밖에 홀로 남지 않는다 
   it('공백 없이 길게 이어지는 나열(예전 「학원·개인과외·그룹과외·방문학습지·인터넷」)이 없다 — 묶음이 한 줄보다 길면 안에서 끊긴다', () => {
     const data = buildCarousel();
     for (const s of data.slides) {
-      for (const t of [s.title, s.definition, s.sourceText, s.basisText, s.seriesNote ?? '']) {
+      for (const t of [s.title, s.insight, s.officialText, s.definition, s.sourceText, s.basisText ?? '', s.seriesNote ?? '']) {
         for (const seg of glueSegments(t)) {
           if (seg.kind !== 'chain') continue;
           const text = segmentsText(seg.parts);
@@ -252,14 +252,14 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     expect(files.length, '공허 통과 방지: src 전체를 읽었다').toBeGreaterThan(40);
   });
 
-  it('코드 안의 「 · 」(공백 + 가운뎃점 + 공백) 문구 조립은 항목이 고정된 짧은 쌍 여섯 곳뿐이다 — 기준 줄·통계 기준 줄(둘 다 ui/Pair가 좁은 폭에서 두 줄로 나눈다)·분해 코드·엔딩 연표의 단계 줄·대시보드 인생 기록의 안내 두 줄(ui/Glue 묶음)·룰렛/출생신고의 짧은 쌍(ui/FitPair — 한 줄에 들어갈 때만 「A · B」이고 안 들어가면 기호 없이 두 줄) (ui/Pair.tsx는 공백을 기호 조각 밖에 두어 「· 」만 그린다 — R-242)', () => {
+  it('코드 안의 「 · 」(공백 + 가운뎃점 + 공백) 문구 조립은 항목이 고정된 짧은 쌍 여섯 곳뿐이다 — 통계 기준 줄(ui/Pair가 좁은 폭에서 두 줄로 나눈다)·분해 코드·엔딩 연표의 단계 줄·대시보드 인생 기록의 안내 두 줄(ui/Glue 묶음)·룰렛/출생신고의 짧은 쌍(ui/FitPair — 한 줄에 들어갈 때만 「A · B」이고 안 들어가면 기호 없이 두 줄) (ui/Pair.tsx는 공백을 기호 조각 밖에 두어 「· 」만 그린다 — R-242)', () => {
     const hits: Record<string, number> = {};
     for (const f of files) {
       const n = [...f.code.matchAll(/ · /g)].length;
       if (n > 0) hits[f.file] = n;
     }
     expect(hits).toEqual({
-      'core/carousel.ts': 1, // 기준 줄 「{분모 문구} · {연도}년 기준」 (항목 둘 고정)
+      // (SPEC-005 QI3: core/carousel.ts의 기준 줄 「{분모 문구} · {연도}년 기준」 조립은 없어졌다 — 연도는 공식 통계명 줄 「합계출산율(2025년)」로 옮겼고 기준 줄에는 분모만 남는다)
       'core/glue.ts': 1, // splitPair의 분해 기호
       'data/endingText.ts': 2, // 엔딩 연표의 단계 줄: 단계 · 나이 범위, 엔딩 머리 셋째 줄: 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (M7e-3 — 둘 다 엔딩 화면이 ui/Glue로 그린다)
       'screens/EndingScreen.tsx': 1, // 엔딩 머리 라벨 「{세상} · 생애 기록」 (M7e-3, ui/Glue 묶음 — 「·」가 줄 가장자리에 남지 않는다)

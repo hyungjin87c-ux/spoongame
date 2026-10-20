@@ -28,3 +28,24 @@ export async function openBarState(page: Page, state: BarState, seed = KNOWN_SEE
 
 /** 상태에 따라 띠에서 가장 눈에 띄는(큰) 버튼의 data-testid */
 export const BAR_MAIN_BUTTON: Readonly<Record<BarState, string>> = { new: 'start-birth', continue: 'resume', confirm: 'confirm-new-no' };
+
+/**
+ * 큰 슬롯(「태어날 세상」 격자 `.choices--grid`)에 카드를 합성해 총 count장으로 만든다 — SPEC-004의 「태어날 세대」 7장 + 「랜덤」 8장 자리를 흉내 낸다(SPEC-005 HS3: 슬롯은 카드 수·열 수에 의존하지 않는다).
+ * 실제 라디오 카드를 복제하고, 각자 따로 Tab이 닿도록 라디오 이름을 다르게 붙인다(복제 카드의 선택은 저장·게임에 영향이 없다 — 화면에서만 존재).
+ */
+export async function synthesizeBigSlot(page: Page, count: number): Promise<void> {
+  await page.evaluate((n) => {
+    const grid = document.querySelector('[data-testid="era-group"]')!;
+    const labels = [...grid.querySelectorAll('label')];
+    for (let i = labels.length; i < n; i++) {
+      const copy = labels[i % labels.length].cloneNode(true) as HTMLElement;
+      copy.classList.remove('is-selected');
+      const input = copy.querySelector('input')!;
+      input.setAttribute('data-testid', `synth-card-${i}`); // 각 라디오가 서로 다른 이름을 가져야 Tab 순회 판정(같은 이름이면 이미 거친 요소로 본다)이 합성 카드를 따로 센다
+      input.name = `synth-${i}`;
+      input.checked = false;
+      copy.querySelector('.radio-card__title')!.textContent = `합성 카드 ${i + 1}`;
+      grid.appendChild(copy);
+    }
+  }, count);
+}

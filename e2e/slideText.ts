@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { BASIS_B_ONE_LINE, BASIS_B_SPLIT, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from './carouselForms';
+import { BASIS_B, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from './carouselForms';
 
 /**
  * 캐러셀 슬라이드의 **화면 DOM 글자** 측정과 판정 (SPEC-003 QM2-4 완료 기준 c, QM2-11 완료 기준 c, REV-003-M2-3 R-231).
@@ -10,16 +10,17 @@ import { BASIS_B_ONE_LINE, BASIS_B_SPLIT, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, fo
 
 export interface SlideDom {
   id: string;
-  title: string;
+  /** 표제어(h3, SPEC-005 SH1) */
+  insight: string;
+  /** 공식 통계명(기준) 줄 「합계출산율(2025년)」 (SH3) */
+  official: string;
   captions: string[];
   /** 큰 값 줄들(남자·여자처럼 둘이면 둘): 라벨(없으면 null)과 「값 + 단위 낱말」 글자 */
   valueLines: Array<{ label: string | null; text: string; unit: string }>;
   /** 큰 값 아래 줄의 보조 계열 값 (「조혼인율 인구 1천 명당 4.7건」) */
   sideLines: string[];
-  /** 기준 줄: 한 줄이면 하나, 쌍이 좁은 폭에서 둘로 나뉘었으면 둘 */
+  /** 기준 줄: 분모가 있는 비율(B형)만 「인구 10만 명당」 한 줄, 그 밖에는 없다(SPEC-005 copy.md 9-2 — 연도는 공식 통계명 줄이 맡는다) */
   basisLines: string[];
-  /** 기준 줄이 쌍 모양(「A · B」)일 때 가운뎃점이 눈에 보이는가 (쌍이 아니면 null) */
-  pairSepVisible: boolean | null;
   /** 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」 (쌍이 나뉘면 두 줄) */
   statLines: string[];
   legend: string[];
@@ -84,7 +85,6 @@ export async function collectSlideDom(page: Page): Promise<SlideDom> {
     const lines = (sel: string): string[] => all(sel).map((e) => textOf(e)).filter((t) => t !== '');
     const basisEl = slide.querySelector('[data-testid="slide-basis-line"]');
     const statEl = slide.querySelector('[data-testid="slide-basis"]');
-    const pairSep = basisEl?.querySelector('.pair__sep') ?? null;
     const valueEls = all('.slide__value');
     const valueLines: Array<{ label: string | null; text: string; unit: string }> = [];
     for (const v of valueEls) {
@@ -101,12 +101,12 @@ export async function collectSlideDom(page: Page): Promise<SlideDom> {
     }
     return {
       id: slide.getAttribute('data-slide-id') ?? '',
-      title: textOf(slide.querySelector('h3')!),
+      insight: textOf(slide.querySelector('h3')!),
+      official: textOf(slide.querySelector('.slide__official')!),
       captions: lines('.slide__caption'),
       valueLines,
       sideLines: lines('.slide__side'),
       basisLines: basisEl === null ? [] : textOf(basisEl).split('\n'),
-      pairSepVisible: pairSep === null ? null : isVisible(pairSep),
       statLines: statEl === null ? [] : textOf(statEl).split('\n'),
       legend: lines('.legend li'),
       metas: lines('.slide__meta'),
@@ -120,6 +120,10 @@ export async function collectSlideDom(page: Page): Promise<SlideDom> {
 /** 슬라이드 하나에 화면이 보여야 할 것 — 앱의 모델(`buildCarousel()`·`titleIndicators()`)에서 가져온다(fetchExpected) */
 export interface ExpectedSlide {
   id: string;
+  /** 표제어 (모델의 `insight`) */
+  insight: string;
+  /** 공식 통계명 줄 글자 (모델의 `officialText`) */
+  officialText: string;
   /** 지표의 기준 연도(latest.year) */
   year: number;
   chartKind: 'line' | 'bar';
@@ -144,6 +148,8 @@ export async function fetchExpected(page: Page): Promise<ExpectedSlide[]> {
       const ind = inds.find((i) => i.id === s.id);
       return {
         id: s.id,
+        insight: s.insight,
+        officialText: s.officialText,
         year: ind.latest.year,
         chartKind: s.chart.kind,
         scopeLabel: ind.scopeLabel ?? null,
@@ -163,7 +169,8 @@ export function checkSlideDom(dom: SlideDom, expected: ExpectedSlide, label: str
 
   // 1) 금지 패턴 — 눈에 보이는 글자 전부와 구성 요소마다(어느 곳인지 알려 주려고)
   const groups: Array<[string, string]> = [
-    ['제목', dom.title],
+    ['표제어', dom.insight],
+    ['공식 통계명 줄', dom.official],
     ['캡션', dom.captions.join(' ')],
     ['값 줄', dom.valueLines.map((v) => `${v.label ?? ''} ${v.text}`).join(' / ')],
     ['보조 값 줄', dom.sideLines.join(' / ')],
@@ -189,31 +196,33 @@ export function checkSlideDom(dom: SlideDom, expected: ExpectedSlide, label: str
     if (form === 'A' || form === 'B') {
       if (dom.valueLines.length !== 1) bad(`형식 ${form}인데 값 줄이 ${dom.valueLines.length}개다`);
     }
-    if (form === 'A') {
-      if (dom.basisLines.join('\n') !== `${yearOf}년 기준`) bad(`형식 A 기준 줄이 「${yearOf}년 기준」이 아니다: 「${dom.basisLines.join(' / ')}」`);
-    } else if (form === 'B') {
-      if (dom.valueLines[0] !== undefined && !/명$/.test(dom.valueLines[0].text)) bad(`형식 B 값 줄이 「…명」이 아니다: 「${dom.valueLines[0].text}」`);
-      const one = dom.basisLines.length === 1 && BASIS_B_ONE_LINE.test(dom.basisLines[0]);
-      const split = dom.basisLines.length === 2 && BASIS_B_SPLIT.every((re, i) => re.test(dom.basisLines[i]));
-      if (!one && !split) bad(`형식 B 기준 줄이 「인구 N 명당 · {연도}년 기준」(한 줄) 또는 두 줄(「인구 N 명당」/「{연도}년 기준」)이 아니다: 「${dom.basisLines.join(' / ')}」`);
-      if (one && dom.pairSepVisible !== true) bad('기준 줄이 한 줄인데 「·」가 보이지 않는다');
-      if (split && dom.pairSepVisible !== false) bad('기준 줄이 두 줄로 나뉘었는데 「·」가 눈에 보인다');
-      if (one && !dom.basisLines[0].includes(yearOf)) bad(`기준 줄 연도가 ${yearOf}이 아니다`);
-    } else if (form === 'C') {
+    // SPEC-005 copy.md 9-1·9-2: 표제어와 공식 통계명 줄은 모델의 글자 그대로 그려지고, 기준 연도(월)·범위는 공식 통계명 줄 끝 괄호가 말한다(연도만 있던 기준 줄은 없다)
+    if (flat(dom.insight) !== flat(expected.insight)) bad(`표제어가 모델과 다르다: 「${flat(dom.insight)}」 ≠ 「${expected.insight}」`);
+    if (/[0-9]/.test(dom.insight)) bad(`표제어에 숫자가 있다(SH2 ③): 「${dom.insight}」`);
+    if (flat(dom.official) !== flat(expected.officialText)) bad(`공식 통계명 줄이 모델과 다르다: 「${flat(dom.official)}」 ≠ 「${expected.officialText}」`);
+    if (!/\(\d{4}년( \d{1,2}월)?(, [^()]+)?\)$/.test(flat(dom.official))) bad(`공식 통계명 줄 모양(「이름(기준)」): 「${flat(dom.official)}」`);
+    if (form === 'A' || form === 'C') {
+      if (dom.basisLines.length !== 0) bad(`형식 ${form}에 기준 줄이 남아 있다(연도는 공식 통계명 줄이 맡는다): 「${dom.basisLines.join(' / ')}」`);
+    }
+    if (form === 'C') {
       if (dom.valueLines.map((v) => v.label).join(',') !== '남자,여자') bad(`형식 C 값 라벨이 「남자·여자」가 아니다: ${dom.valueLines.map((v) => v.label).join(',')}`);
       if (!dom.valueLines.every((v) => /세$/.test(v.text))) bad('형식 C 값이 「…세」가 아니다');
-      if (dom.basisLines.join('\n') !== `${yearOf}년 기준`) bad(`형식 C 기준 줄이 「${yearOf}년 기준」이 아니다: 「${dom.basisLines.join(' / ')}」`);
-    } else {
-      // D: 그래프가 주인공 — 전국 값(캡션 + 값 + 단위)은 두고 기준 줄은 데이터가 정한 범위 문구
+    } else if (form === 'B') {
+      if (dom.valueLines[0] !== undefined && !/명$/.test(dom.valueLines[0].text)) bad(`형식 B 값 줄이 「…명」이 아니다: 「${dom.valueLines[0].text}」`);
+      // 기준 줄은 분모만 한 줄 — 연도가 섞이면(옛 「인구 N 명당 · 2025년 기준」) 걸린다
+      if (dom.basisLines.length !== 1 || !BASIS_B.test(dom.basisLines[0])) bad(`형식 B 기준 줄이 「인구 N 명당」(분모만, 한 줄)이 아니다: 「${dom.basisLines.join(' / ')}」`);
+    } else if (form === 'D') {
+      // D: 그래프가 주인공 — 전국 값(캡션 + 값 + 단위)은 두고, 연도(월)·범위는 공식 통계명 줄이 데이터의 범위 문구(scopeLabel)에서 말한다. 기준 줄은 없다
       if (expected.chartKind !== 'bar') bad('형식 D인데 막대 그래프가 아니다');
       if (dom.captions.length === 0) bad('형식 D 전국 값의 캡션이 없다');
-      if (expected.scopeLabel !== null && dom.basisLines.join(' ') !== expected.scopeLabel) bad(`형식 D 기준 줄이 범위 문구와 다르다: 「${dom.basisLines.join(' ')}」 ≠ 「${expected.scopeLabel}」`);
-      if (!/^\d{4}년( \d{1,2}월)? 기준\(\d+개 시·도/.test(dom.basisLines.join(' '))) bad(`형식 D 기준 줄 모양: 「${dom.basisLines.join(' ')}」`);
+      if (dom.basisLines.length !== 0) bad(`형식 D에 기준 줄이 남아 있다: 「${dom.basisLines.join(' / ')}」`);
+      const when = expected.scopeLabel === null ? null : /^(\d{4}년(?: \d{1,2}월)?) 기준/.exec(expected.scopeLabel)?.[1];
+      if (when !== undefined && when !== null && !flat(dom.official).includes(`(${when}`)) bad(`형식 D 공식 통계명 줄에 범위 문구의 기준 「${when}」이 없다: 「${flat(dom.official)}」`);
     }
   }
 
-  // 3) 기준 연도는 한 값에서 나온다 (QM2-4 규칙 4): 기준 줄·「통계 기준」 줄·그래프 가로축 끝
-  for (const text of [dom.basisLines.join(' '), dom.statLines.join(' ')]) {
+  // 3) 기준 연도는 한 값에서 나온다 (QM2-4 규칙 4 · SPEC-005 SH3): 공식 통계명 줄·기준 줄·「통계 기준」 줄·그래프 가로축 끝
+  for (const text of [dom.official, dom.basisLines.join(' '), dom.statLines.join(' ')]) {
     for (const m of text.matchAll(/(\d{4})년/g)) if (m[1] !== yearOf) bad(`기준 연도 ${m[1]}이(가) latest.year(${yearOf})와 다르다: 「${text}」`);
   }
   if (!/^통계 기준: \d{4}년 · 마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' · '))) bad(`「통계 기준」 줄 모양: 「${dom.statLines.join(' / ')}」`);

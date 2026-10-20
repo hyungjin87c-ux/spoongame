@@ -145,7 +145,9 @@ test('타이틀 하단에 법원 통계 출처가 표기되고 원자료의 권�
   const eraBox = (await page.getByTestId('life-length-group').boundingBox())!;
   const creditBox = (await credit.boundingBox())!;
   expect(creditBox.y).toBeGreaterThan(eraBox.y + eraBox.height);
-  expect(creditBox.y).toBeGreaterThan(carouselBox.y + carouselBox.height);
+  // 좁은 화면(한 칸)은 캐러셀 다음에 푸터가 온다. 넓은 화면(폭 ≥ 960)에서는 캐러셀이 오른쪽 열이라 푸터(왼쪽 열)와 세로로 겹쳐도 된다 — SPEC-005에서 오른쪽 열 맨 위에 일러스트가 들어와 카드가 왼쪽 열 끝보다 아래까지 이어진다(열 안쪽 스크롤)
+  if ((page.viewportSize()?.width ?? 0) < 960) expect(creditBox.y).toBeGreaterThan(carouselBox.y + carouselBox.height);
+  else expect(creditBox.x, '푸터는 왼쪽 열, 캐러셀은 오른쪽 열').toBeLessThan(carouselBox.x);
   const fontSize = await credit.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   expect(fontSize).toBeLessThan(14);
 });

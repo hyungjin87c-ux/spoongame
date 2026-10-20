@@ -118,6 +118,48 @@ svg.spoon--lg { width: 32px; height: 52px; }
 .radio-card.is-disabled .radio-card__mark { border-style: dashed; }
 .radio-card.is-disabled .radio-card__meta { color: var(--c-text-2); font-weight: var(--fw-bold); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); padding: 0 var(--sp-2); }
 .group-title { font-size: var(--fs-md); font-weight: var(--fw-bold); margin-bottom: var(--sp-2); }
+/* 큰 슬롯의 작은 카드(SPEC-005 D5-05, HS3 ①): 여백 한 단 작게, 제목 --fs-md, 보조 --fs-xs. 카드 수(3장 → SPEC-004 8장)·열 수에 의존하지 않는 auto-fit 격자(.choices--grid)와 짝이다 */
+.radio-card--compact { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); align-items: center; }
+.radio-card--compact.is-selected { padding: calc(var(--sp-2) - 2px) calc(var(--sp-3) - 2px); }
+.radio-card--compact .radio-card__title { font-size: var(--fs-md); }
+.radio-card--compact .radio-card__desc { font-size: var(--fs-xs); line-height: 1.4; }
+.radio-card--compact .radio-card__meta { font-size: var(--fs-xs); }
+.radio-card--compact .radio-card__mark { width: 22px; height: 22px; margin-top: 0; }
+.radio-card--compact .radio-card__mark .icon { width: 14px; height: 14px; }
+.slot--big { min-width: 0; }
+
+/* ---------- 작은 슬롯: 인생 길이 분절 컨트롤(HS2) + 설정 줄: 무거운 장면 가리기 스위치(HV3) ---------- */
+.slots-bottom { display: flex; flex-direction: column; gap: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--c-border); }
+.slot--small { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); min-width: 0; }
+.group-title--inline { float: left; margin: 0 var(--sp-3) 0 0; line-height: 36px; }
+/* 분절 컨트롤(.seg, role=radiogroup): 틀 1px --c-border-strong + 2px 안쪽 여백, 칸(.seg__opt) 보이는 높이 32px. 선택 = 체크 + --c-brand 테두리 + 연한 면(색 + 모양 + 글자), 고를 수 없는 칸 = 점선 + 옅은 글자 + 「준비 중」(R-202) */
+/* 좁은 폭·큰 글자(320px · 글자 200%)에서는 두 칸이 한 줄에 못 들어간다 — 칸을 두 줄로 접고(flex-wrap), 칸 안의 낱말은 중간에서 끊지 않는다(word-break: keep-all · overflow-wrap: normal — CM11·QM3-1: 「30분」이 「30」/「분」으로 갈라지던 것) */
+.seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; align-items: stretch; gap: 2px; padding: 2px; border: 1px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); }
+.seg__opt { position: relative; display: inline-flex; align-items: center; gap: var(--sp-1); overflow-wrap: normal; word-break: keep-all; min-height: 32px; padding: 0 var(--sp-3); border: 2px solid transparent; border-radius: calc(var(--r-md) - 2px); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.2; color: var(--c-text-2); cursor: pointer; }
+.seg__opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.seg__opt .icon { width: 16px; height: 16px; stroke-width: 3; opacity: 0; }
+.seg__opt.is-selected { background: var(--c-brand-soft); color: var(--c-on-brand-soft); border-color: var(--c-brand); }
+.seg__opt.is-selected .icon { opacity: 1; }
+.seg__opt.is-disabled { color: var(--c-text-3); border-style: dashed; border-color: var(--c-border-strong); cursor: not-allowed; }
+.seg__opt.is-disabled input { cursor: not-allowed; }
+.seg__meta { font-size: var(--fs-xs); font-weight: var(--fw-bold); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); padding: 0 var(--sp-2); line-height: 1.6; }
+.seg__opt:focus-within { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.seg__hint { flex-basis: 100%; font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+/* 거친 포인터(터치): 보이는 32px은 그대로, 누르는 영역(라디오 input)만 위아래로 넓혀 44px(WCAG 2.5.8 — 테두리 2px 안쪽 28px + 8px × 2) */
+@media (pointer: coarse) {
+  .seg__opt input { top: -8px; bottom: auto; height: calc(100% + 16px); } /* top·bottom을 함께 주면 입력 요소(replaced)가 늘어나지 않는 엔진(WebKit)이 있어 높이를 직접 준다 */
+}
+/* 스위치(.switch, role=switch): 트랙 40×24 + 썸 16px. 켜짐 = 트랙 --c-brand + 썸이 오른쪽 + 상태 알약 「켜짐」(색에만 의존하지 않는다). 버튼 높이 ≥ 44 */
+.switch { display: flex; align-items: flex-start; gap: var(--sp-3); width: 100%; min-height: var(--hit); padding: var(--sp-1) 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: var(--r-sm); }
+.switch__track { flex: none; position: relative; width: 40px; height: 24px; margin-top: 1px; border-radius: var(--r-pill); border: 2px solid var(--c-border-strong); background: var(--c-surface-2); }
+.switch__thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-text-2); transition: transform var(--dur) var(--ease); }
+.switch[aria-checked='true'] .switch__track { background: var(--c-brand); border-color: var(--c-brand); }
+.switch[aria-checked='true'] .switch__thumb { transform: translateX(16px); background: var(--c-on-brand); }
+.switch__text { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--sp-2); row-gap: 2px; min-width: 0; }
+.switch__name { font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.switch__state { font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--c-text-2); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); padding: 0 var(--sp-2); line-height: 1.6; }
+.switch[aria-checked='true'] .switch__state { color: var(--c-on-brand-soft); background: var(--c-brand-soft); border-color: var(--c-brand); }
+.switch__desc { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
 
 /* ---------- 수저 단계 (색 + 모양 + 이름) ---------- */
 .grade--1 { --grade-solid: var(--c-grade-1); --grade-soft: var(--c-grade-1-soft); --grade-ink: var(--c-grade-1-ink); }
@@ -154,8 +196,12 @@ html.bar-released .page-end-space { display: none; }
 .title__main { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
 .title__notice { padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--c-notice-bg); color: var(--c-on-notice); font-size: var(--fs-sm); }
 .hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-4); }
-.hero .logo--stacked { --logo-h: 236px; max-width: 100%; }
-.hero .logo--row { --logo-h: 108px; display: none; max-width: 100%; }
+.hero .logo--word { --logo-h: 52px; max-width: 100%; }
+/* 머리 줄 (SPEC-005 D5-01 A안·D5-04): 로고는 워드마크만이고(좁은 화면 52px → 글자 높이 41px로 DS1 ≥ 40px, 넓은 화면 64px → 51px) 머리 아래 글은 두 폭 모두 **왼쪽 정렬**이다 — 로고 줄 아래의 일러스트 배너(좁은 화면)·한 줄 설명·수저 띠가 한 축을 쓴다 */
+.hero--005 { align-items: stretch; text-align: left; gap: var(--sp-3); }
+.hero--005 h1 { min-width: 0; }
+.hero--005 .spoon-lineup { max-width: 420px; padding: var(--sp-2) 0; }
+.hero--005 .hero__pop { max-width: none; }
 .hero__tag { font-size: var(--fs-lg); line-height: var(--lh-snug); color: var(--c-text-2); max-width: 22em; }
 /* 줄바꿈 묶음(QM2-5, core/glue.ts): 「A · B」 같은 구분 기호 묶음과 한 줄 설명의 끝 구절(「한국인의 한 번의 인생」)은 줄이 바뀌어도 쪼개지지 않게 묶되(inline-block — 줄에 안 들어가면 통째로 다음 줄로 내려간다),
    묶음 자체가 한 줄보다 길어지는 큰 글자(200%)·좁은 폭(320px)에서는 묶음 안에서 줄을 바꾼다. white-space: nowrap으로 묶으면 그 폭에서 가로로 넘쳤다(CM11, QA-003-M2 M2-V04).
@@ -189,8 +235,7 @@ html.bar-released .page-end-space { display: none; }
 .hero__pop { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-regular); max-width: 22em; }
 .hero__pop strong { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
 .hero__note { font-size: var(--fs-sm); color: var(--c-text-3); margin-top: calc(var(--sp-2) * -1); }
-.choices { display: grid; gap: var(--sp-2); }
-.choices--1, .choices--2 { grid-template-columns: minmax(0, 1fr); }
+.choices--grid { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
 .title__side { min-width: 0; }
 .title-foot { min-width: 0; font-size: var(--fs-xs); color: var(--c-text-3); display: flex; flex-direction: column; gap: var(--sp-1); }
 .title-foot .credit { margin: 0; font-size: var(--fs-xs); line-height: 1.5; color: var(--c-text-3); }
@@ -198,11 +243,22 @@ html.bar-released .page-end-space { display: none; }
 
 /* ---------- 통계 캐러셀 ---------- */
 .carousel { display: flex; flex-direction: column; gap: var(--sp-2); }
-/* 카드 머리: 제목·안내(왼쪽)와 조작 줄(이전·위치·다음·일시정지, 오른쪽). 슬라이드의 높이가 달라도 조작 줄은 같은 자리에 있고, 하단 띠에 가려지지 않는다(R-200).
-   좁아서 한 줄에 안 들어가면 조작 줄이 아래로 내려와 가로 전체를 쓴다(일시정지는 오른쪽 끝). */
-.carousel__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1) var(--sp-3); }
-.carousel__heading { display: flex; flex-direction: column; min-width: 0; }
-.carousel__note { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+/* 조작 줄(SPEC-005 SH5): 카드 **오른쪽 위**에 작게 — 이전·「i / N」·다음·일시정지. 카드 머리글은 없다(SH4). 슬라이드의 높이가 달라도 같은 자리에 있고 하단 띠에 가려지지 않는다(R-200).
+   음수 바깥 여백으로 카드 안쪽 여백 위·오른쪽 모서리 쪽으로 당겨 붙인다(표제어는 이 줄 아래 줄이라 어느 폭에서도 겹치지 않는다, SH5 ③). */
+.carousel__nav { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-1); margin: calc(var(--sp-2) * -1) calc(var(--sp-2) * -1) 0 0; }
+/* 조작 버튼: 보이는 상자(.nav-btn__box)는 28px(≤ 32px▲, 포인터 클릭 대상 ≥ 24×24, WCAG 2.5.8), 누르는 요소(button)는 거친 포인터(터치)에서 44px로 커진다 — 보이지 않는 여백이 버튼 자신이라 요소가 부모 밖으로 넘치지 않는다 */
+.nav-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-2); cursor: pointer; }
+.nav-btn__box { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--c-border-strong); border-radius: var(--r-sm); background: var(--c-surface); }
+.nav-btn:hover .nav-btn__box { background: var(--c-surface-2); color: var(--c-text); }
+.nav-btn .icon { width: 18px; height: 18px; }
+/* 입력 가드(진입 직후 0.4초)의 과도 상태 — 다른 버튼(.btn)과 같은 흐림 */
+.nav-btn[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+.carousel__nav .carousel__status { min-width: 3.4em; text-align: center; font-size: var(--fs-xs); color: var(--c-text-2); }
+.carousel__nav .carousel__pause { margin-left: var(--sp-1); color: var(--c-text); }
+@media (pointer: coarse) {
+  .nav-btn { width: 44px; height: 44px; }
+  .carousel__nav { margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) calc(var(--sp-2) * -1) 0; }
+}
 .carousel__viewport { min-width: 0; touch-action: pan-y; }
 .carousel__viewport:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 4px; border-radius: var(--r-md); }
 /* 좁은 화면(한 칸 레이아웃): 모든 슬라이드를 같은 칸에 겹쳐 두고 보이는 하나만 드러낸다 — 카드 높이가 가장 큰 슬라이드에 맞춰 고정되어 전환 때 아래 내용(푸터)이 흔들리지 않는다.
@@ -211,6 +267,10 @@ html.bar-released .page-end-space { display: none; }
 .slide { container-type: inline-size; grid-area: 1 / 1; display: flex; flex-direction: column; gap: calc(var(--sp-2) - 2px); min-width: 0; visibility: hidden; opacity: 0; transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur); }
 .slide.is-active { visibility: visible; opacity: 1; transition: opacity var(--dur) var(--ease); }
 .slide .t-sm { line-height: var(--lh-snug); }
+/* 표제어(SH1·SH2): 인사이트형 질문, 슬라이드의 제목(h3). 줄 균형(text-wrap: balance)으로 글자 200%에서 두 줄이 되어도 한 낱말만 홀로 남지 않는다 */
+.slide__insight { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); text-wrap: balance; }
+/* 공식 통계명(기준): 작고 연한 글씨이지만 대비 4.5:1 이상 — --c-text-3(면 위 라이트 5.78 / 다크 5.96, 띠 위 5.30 / 5.54, contrast-report.md) */
+.slide__official { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin-top: calc(var(--sp-1) * -1); }
 .slide__caption { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
 /* 큰 값 줄: 「값 + 단위 낱말」은 한 줄에서 끊기지 않는다(white-space: nowrap). 대신 글자 크기를 슬라이드 칸 폭에 맞춰 줄인다 — 값 글자 폭(--value-em)과 단위 글자 수(--unit-chars)는 StatsCarousel이 슬라이드마다 넣는다.
    보통 크기에서는 36px(--fs-3xl) 그대로이고, 글자 크기를 200%로 키우거나 폭이 아주 좁을 때만 줄어 숫자가 중간에서 끊기거나 칸을 넘치지 않는다(CM11, QM2-5). */
@@ -256,20 +316,34 @@ html.bar-released .page-end-space { display: none; }
 .legend .swatch-line--dashed { stroke: var(--c-accent); stroke-dasharray: 7 4; }
 .legend .swatch-line--dotted { stroke: var(--c-text-2); stroke-dasharray: 2 4; }
 .legend strong { color: var(--c-text); font-variant-numeric: tabular-nums; }
-.carousel__ctrl { display: flex; align-items: center; gap: var(--sp-1); flex: 1 1 auto; min-width: 0; }
-.carousel__ctrl .carousel__status { flex: none; min-width: 3.6em; text-align: center; font-size: var(--fs-sm); color: var(--c-text-2); }
-.carousel__ctrl .btn--icon { flex: none; }
-.carousel__ctrl .carousel__pause { margin-left: auto; }
 /* 점은 한 줄로만 놓는다(칸이 모자라면 점 칸이 같이 좁아진다 — 두 줄로 꺾이지 않는다) */
 .dots { display: flex; flex-wrap: nowrap; justify-content: center; gap: 0; }
 .dots button { flex: 1 1 0; min-width: 14px; max-width: 24px; height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; }
 .dots button i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--c-border-strong); background: transparent; box-sizing: content-box; }
 .dots button[aria-current='true'] i { width: 12px; border-radius: var(--r-pill); background: var(--c-brand); border-color: var(--c-brand); }
 
-/* ---------- 넓은 화면 ---------- */
-@media (min-width: 640px) {
-  .choices--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* ---------- 일러스트 (SPEC-005 HS1, 형진 님 결정 2026-10-20 → r3 「조금 더 키우고, 약간 흐리게」, diff-005 D5-24~D5-33) ----------
+   파일: src/assets/home/home-map-pc.webp(613×720, 63.6KB) · home-map-mobile.webp(375×440, 32.7KB) — 알파 WebP 한 벌로 라이트·다크 모두(가장자리의 흰 테두리 + 크림색 광이 바탕색에 녹는다). 합계 ≤ 100KB.
+   흐림은 파일에 굽지 않고 CSS(opacity·filter)가 맡는다 — 자산은 한 벌. <picture>의 source media로 ≥ 960px은 PC 파일, 그 아래는 모바일 파일을 고르고, 배너(< 960px)와 오른쪽 열(≥ 960px)의 두 그림은 같은 주소라 내려받기 한 번이다.
+   width·height 속성 + height 고정·width auto → 그림이 오기 전에도 자리가 잡혀 레이아웃이 흔들리지 않는다. 장식(alt="" · figure aria-hidden), 클릭 없음, 외부 요청 0, 그림 위에 글·UI 없음(대비 무관).
+   크기: 배너 224px(232면 360×740에서 「태어날 세상」 제목 아래끝이 띠에 닿는다) · 1280×800 오른쪽 열 420px · ≥ 1600px 500px(오른쪽 열 폭 428px에 그림 비율 0.851로 들어가는 최대 — 560이면 max-width가 폭을 눌러 세로로 찌그러진다; object-fit: contain이 그 안전장치).
+   넓은 화면은 그림 아래 --illust-tuck(32px, ≥ 1600 36px)만큼 통계 카드 뒤로 들어간다 — 카드에 position: relative + z-index: 1을 줘야 한다: filter·opacity가 있는 img는 자체 스태킹 컨텍스트라 뒤에 오는 형제의 배경보다 위에 그려진다.
+   흐림 2단계 「부드럽게」(형진 님 확인): 라이트 opacity .8 + saturate(.85) contrast(.92) blur(.5px) / 다크 opacity .8 + brightness(.9) saturate(.78) contrast(.92) blur(.5px) / 강제 색상 불투명 · filter 없음(래스터 장식 그림은 원색 그대로).
+   첫 화면 지역 변수라 tokens.css에 넣지 않는다. */
+.illust { display: none; margin: 0; --illust-opacity: 0.8; --illust-filter: saturate(0.85) contrast(0.92) blur(0.5px); }
+.illust img { display: block; height: var(--illust-h, 224px); width: auto; max-width: 100%; object-fit: contain; opacity: var(--illust-opacity); filter: var(--illust-filter); }
+.illust--banner { display: flex; justify-content: center; --illust-h: 224px; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .illust { --illust-filter: brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px); }
 }
+:root[data-theme='dark'] .illust { --illust-filter: brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px); }
+
+/* 통계 카드를 그림의 하늘·연두·살구 톤에 맞춘다(형진 님 「일러스트와 통계 그래프는 웹페이지 배경과 어울리도록」, D5-27): 카드 위쪽 88px 옅은 하늘 띠, 차가운 회색 테두리, 푸른빛 그림자,
+   실측 선·점·막대·범례는 이 카드 안에서만 --c-brand를 --c-chart로 바꾼다. 전망(놋쇠 긴 점선·빗금)·보조 계열(점선)·칩·글자 색은 그대로 — 실측 실선 / 전망 점선 구분 유지(색에만 의존하지 않는다).
+   토큰 4개(--c-chart·--c-card-tint·--c-card-border·--shadow-card)는 tokens.css, 대비 쌍 5개는 scripts/checkContrastLib.ts. 강제 색상은 토큰이 시스템 색으로 돌아간다. 다른 카드는 공용 .card 그대로. */
+.carousel--005 { --c-brand: var(--c-chart); border-color: var(--c-card-border); box-shadow: var(--shadow-card); background: linear-gradient(180deg, var(--c-card-tint) 0, var(--c-surface) 88px); position: relative; z-index: 1; }
+
+/* ---------- 넓은 화면 ---------- */
 @media (min-width: 960px) {
   .title { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); column-gap: var(--sp-8); padding-top: var(--sp-6); align-items: start; }
   .title__main { grid-column: 1; grid-row: 1; }
@@ -283,9 +357,15 @@ html.bar-released .page-end-space { display: none; }
   .hero { align-items: flex-start; text-align: left; }
   .spoon-lineup { max-width: 460px; }
   .hero__tag { max-width: none; }
-  .hero .logo--stacked { display: none; }
-  .hero .logo--row { display: block; }
+  .hero .logo--word { --logo-h: 64px; }
+  .hero--005 { gap: var(--sp-3); }
+  .hero--005 .spoon-lineup { max-width: 460px; }
+  /* 1280×800: 왼쪽 열(큰 슬롯 → 인생 길이 → 설정 줄)이 하단 띠 위에 다 들어가도록 세로 간격을 한 단 줄인다 — 큰 슬롯 카드가 8장(SPEC-004)이 되면 스크롤이 생기지만 띠가 포커스를 가리지 않는다(scroll-padding, CM10) */
+  .slots-bottom { gap: var(--sp-2); }
   .hero__pop { max-width: none; }
+  /* 일러스트(HS1): 배너는 숨기고 오른쪽 열 맨 위의 그림을 보인다 — 가운데 정렬, 아래 --illust-tuck만큼은 통계 카드 뒤(D5-24·D5-32) */
+  .illust--banner { display: none; }
+  .illust--top { display: flex; justify-content: center; --illust-h: 420px; --illust-tuck: 32px; margin-bottom: calc(-1 * var(--illust-tuck)); }
   /* 따라다니는 카드가 하단 띠 위에 머문다: 낮은 화면(예: 높이 650px의 노트북 창)에서 카드가 더 크면 카드 안쪽이 스크롤된다(안쪽 스크롤 전에는 조작 줄이 카드 머리라 보이고, 안쪽을 내리면 머리도 함께 올라가며 PageUp·휠로 되돌린다 — R-224).
      바깥 여백 3px은 카드 그림자·테두리가 스크롤 영역에 잘리지 않게 하려는 것이다.
      R-220: 카드가 놓인 격자 영역은 본문 줄과 푸터 줄을 합친 높이(grid-row: 1 / span 2)라서 따라다니는 범위가 문서 끝까지 이어진다 — 맨 아래까지 내려도 카드가 열 끝에 밀려 올라가지 않고
@@ -297,8 +377,23 @@ html.bar-released .page-end-space { display: none; }
   html.bar-released .title__side { max-height: calc(100vh - var(--sp-6) - 3px); }
 }
 
+@media (min-width: 1600px) {
+  .illust--top { --illust-h: 500px; --illust-tuck: 36px; }
+}
+
 /* ---------- 강제 색상(고대비) ---------- */
 @media (forced-colors: active) {
+  /* 일러스트: 래스터 그림은 강제 색상에서도 원색·불투명 그대로(장식이라 정보 손실 없음). 선택자 셋·소스 순서로 다크 두 규칙을 이긴다(tokens.css R-251과 같은 방식) */
+  .illust, :root:not([data-theme='light']) .illust, :root[data-theme='dark'] .illust { --illust-opacity: 1; --illust-filter: none; }
+  .carousel--005 { background: Canvas; }
+  .nav-btn, .seg, .switch__track, .seg__meta { border-color: CanvasText; }
+  .seg__opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  .seg__opt.is-disabled, .seg__opt.is-disabled .seg__meta { color: GrayText; border-color: GrayText; }
+  .switch[aria-checked='true'] .switch__track { forced-color-adjust: none; background: Highlight; border-color: CanvasText; }
+  .switch__thumb { forced-color-adjust: none; background: CanvasText; }
+  .switch[aria-checked='true'] .switch__thumb { background: HighlightText; }
+  .switch__state, .switch[aria-checked='true'] .switch__state { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  .slots-bottom { border-top-color: CanvasText; }
   .btn, .card, .radio-card, .tag { border-color: CanvasText; }
   .radio-card.is-disabled { border-color: GrayText; color: GrayText; }
   .radio-card.is-disabled .radio-card__title, .radio-card.is-disabled .radio-card__desc, .radio-card.is-disabled .radio-card__meta { color: GrayText; }

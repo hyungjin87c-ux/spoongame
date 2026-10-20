@@ -57,11 +57,12 @@ for (const width of WIDTHS) {
       expect(doms.reduce((sum, d) => sum + d.all.length, 0), '모은 화면 글자 수').toBeGreaterThan(2500);
       expect(expected.flatMap((e) => e.titleIndicators).some((t) => t.name === '조혼인율'), '조혼인율 쌍이 검사 대상에 들어 있다').toBe(true);
       expect(doms.filter((d) => d.chartTexts.length > 0).length, '그래프 글자가 모인 슬라이드').toBe(14);
-      // 형식 B(조사망률·자살률): 폭·글자 크기에 따라 기준 줄이 한 줄이거나 두 줄 — 어느 쪽이든 형식을 지킨다
+      // 형식 B(조사망률·자살률): 기준 줄은 분모만 남아 어느 폭·글자 크기에서도 한 줄이다(SPEC-005 copy.md 9-2 — 연도는 공식 통계명 줄로 옮겼다, 쌍이 아니라 두 줄로 나뉘지 않는다)
       const basisB = doms.filter((d) => d.id === 'cdr' || d.id === 'suicide-rate').map((d) => d.basisLines.length);
-      expect(basisB, '형식 B 두 장').toHaveLength(2);
-      if (percent === 200) expect(basisB, '글자 200%에서는 쌍이 두 줄로 나뉜다').toEqual([2, 2]);
-      if (percent === 100 && width !== 320) expect(basisB, '글자 100%·폭이 넉넉하면 한 줄이다').toEqual([1, 1]);
+      expect(basisB, '형식 B 두 장').toEqual([1, 1]);
+      expect(doms.filter((d) => d.id !== 'cdr' && d.id !== 'suicide-rate').every((d) => d.basisLines.length === 0), '다른 12장에는 기준 줄이 없다').toBe(true);
+      // 표제어·공식 통계명 줄은 14장 모두 있고(SH1·SH3) 표제어에 숫자가 없다
+      expect(doms.every((d) => d.insight !== '' && d.official !== ''), '표제어·공식 통계명 줄 14장').toBe(true);
 
       // 혼인 건수 슬라이드: 조혼인율 줄 (QM2-11 b)
       const marriage = doms.find((d) => d.id === 'marriage-count')!;

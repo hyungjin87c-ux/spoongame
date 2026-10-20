@@ -48,6 +48,14 @@
   --c-on-notice: #5c4400;
   --c-link: #1d4fb0;
 
+  /* ---------- 색: 첫 화면 통계 카드 (SPEC-005 D5-27, design-system.md 12-6 — 그림의 하늘·연두·살구 톤에 맞춘 카드·차트. `.carousel--005` 안에서만 쓴다) ----------
+     --c-chart = 카드 안 실측 선·점·막대(`--c-brand` 대신, 비텍스트 3:1 — 선/면 6.55 · 선/띠 6.01), --c-card-tint = 카드 위 88px 그라데이션 띠, --c-card-border = 카드 테두리, --shadow-card = 푸른빛 그림자.
+     띠 위 글자·상자도 대비를 지킨다(--c-text-3/띠 5.30, --c-border-strong/띠 3.68, 놋쇠/띠 4.56 — scripts/checkContrastLib.ts PAIRS). 강제 색상은 시스템 색. */
+  --c-chart: #2f5f8f;
+  --c-card-tint: #eef4f9;
+  --c-card-border: #d3dce6;
+  --shadow-card: 0 1px 2px rgba(38, 50, 74, 0.06), 0 8px 20px rgba(38, 50, 74, 0.08);
+
   /* ---------- 색: 상태 바(건강·행복·지식·관계). 바 면 ↔ 트랙 3:1 이상 + 숫자·이름을 항상 함께 적는다.
      건강 연지(장밋빛 붉은색)·행복 자주(자줏빛)·지식 파랑(밝은 파랑 — 브랜드 쪽빛 --c-brand와 다른 색)·관계 보라.
      규칙(모두 tests/designAssets.test.ts가 단언, 두 테마 각각):
@@ -187,6 +195,10 @@
     --c-notice-bg: #3d3410;
     --c-on-notice: #f5e3a3;
     --c-link: #9dbcff;
+    --c-chart: #9fc4ea;
+    --c-card-tint: #1f2735;
+    --c-card-border: #343d4e;
+    --shadow-card: none;
     --c-stat-health: #ef4d92;
     --c-stat-happy: #d243b8;
     --c-stat-knowledge: #3d7ff0;
@@ -251,6 +263,10 @@
   --c-notice-bg: #3d3410;
   --c-on-notice: #f5e3a3;
   --c-link: #9dbcff;
+  --c-chart: #9fc4ea;
+  --c-card-tint: #1f2735;
+  --c-card-border: #343d4e;
+  --shadow-card: none;
   --c-stat-health: #ef4d92;
   --c-stat-happy: #d243b8;
   --c-stat-knowledge: #3d7ff0;
@@ -341,6 +357,10 @@
     --c-notice-bg: Canvas;
     --c-on-notice: CanvasText;
     --c-link: LinkText;
+    --c-chart: ButtonText;
+    --c-card-tint: Canvas;
+    --c-card-border: CanvasText;
+    --shadow-card: none;
     --c-stat-health: CanvasText;
     --c-stat-happy: CanvasText;
     --c-stat-knowledge: CanvasText;

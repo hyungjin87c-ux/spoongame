@@ -154,7 +154,10 @@ describe('강제 색상(고대비)에서 띠 구분선 (QA-003-M2 3회차 기록
     expect(normal).toContain('.btn--primary:hover { background: var(--c-brand-hover); }');
     // 첫 화면 CSS의 :hover 규칙은 이 한 곳뿐이다(새 hover 규칙이 생기면 강제 색상 짝도 같이 정하라고 이 시험이 알린다)
     const code = css.replace(/\/\*[\s\S]*?\*\//g, ''); // 주석을 뺀 코드만
-    expect([...code.matchAll(/:hover/g)].length, ':hover를 쓴 곳(주석 제외) — 보통 모드 1 + 강제 색상 블록(주 버튼 hover 규칙 두 줄)').toBe(3);
+    // SPEC-005 QI3: 캐러셀 조작 버튼의 hover(`.nav-btn:hover .nav-btn__box`)가 더해졌다 — 색을 토큰 쌍(면 --c-surface-2 / 글자 --c-text)으로만 정해 강제 색상에서 시스템 색 한 짝(Canvas / CanvasText)으로 매핑된다
+    // (배경과 글자가 같은 색이 되는 일이 없다 — 주 버튼처럼 forced-color-adjust: none으로 색을 직접 쥐지 않는다)
+    expect([...code.matchAll(/:hover/g)].length, ':hover를 쓴 곳(주석 제외) — 보통 모드 2(주 버튼 · 조작 버튼 상자) + 강제 색상 블록(주 버튼 hover 규칙 두 줄)').toBe(4);
+    expect(code).toContain('.nav-btn:hover .nav-btn__box { background: var(--c-surface-2); color: var(--c-text); }');
   });
 });
 

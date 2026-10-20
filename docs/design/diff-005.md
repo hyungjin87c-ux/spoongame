@@ -97,3 +97,19 @@ SPEC-005 「형진 님 결정 — 첫 화면 그림」 ①~⑤. 1절 D5-01·D5-0
 | D5-31 | 좁은 화면 머리 순서 | 세로 로고 → 설명 | 워드마크(52px) → **배너 그림 224px**(r2 200) → 부제 → 수저 띠 → 가상 인구 → 큰 슬롯. 360×740에서 부제 324~374, 「태어날 세상」 제목 636~661 < 띠 672(첫 카드 669는 띠 아래 — 제목만 첫 화면) | 시안 제안. 232px이면 제목 아래끝 669가 띠 672에 닿아 224로 멈췄다(배너 200 → 224 = 1.12배). 형진 님이 선택 영역이 더 일찍 보이길 원하면 200(r2)·160까지 줄일 수 있다 |
 | D5-32 | 그림–카드 겹침(r3) | — | `.illust--top { margin-bottom: calc(-1 * var(--illust-tuck)) }`(32px, ≥ 1600px 36px) + `.carousel--005 { position: relative; z-index: 1 }` — 카드가 그림 아래쪽 위에 얹힌다. 제주 타일 아래 약 30%만 가려지고 본토 윤곽(남해안, 그림 높이의 ≈ 92%)은 그대로 | 시안 제안. **z-index가 필요한 이유**: `filter`·`opacity`가 있는 `img`는 자체 스태킹 컨텍스트라 뒤에 오는 형제의 배경보다 위에 그려진다 — 카드를 띄우지 않으면 그림이 카드 위로 올라온다. `.title__side`의 sticky·overflow와는 충돌 없음(열 안에서만 z 1) |
 | D5-33 | 흐림(r3 「약간 흐리게」) | — | `.illust img { opacity: var(--illust-opacity); filter: var(--illust-filter); object-fit: contain }` — **2단계(기본)** 라이트 `0.8` / `saturate(0.85) contrast(0.92) blur(0.5px)`, 다크 `0.8` / `brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px)`, 강제 색상 `opacity: 1; filter: none`. 세 단계 비교 `screens/005/compare-illust-soft.png`(시안 `?soft=0|1|2|3`, 0 = r2 그대로) | 시안 제안. 1단계(투명도만)는 r2와 거의 같아 보이고 3단계(1px 블러)는 인물 디테일이 뭉개져 **2단계 추천**. 두 변수는 `title.css` 「일러스트」 블록의 지역 변수로(첫 화면 전용 — `tokens.css`에 넣지 않음). 그림 위에 글·UI가 없으므로 대비 영향 0. 자산은 한 벌(흐림을 파일에 굽지 않음) |
+
+## 8. QI3 구현 기록 (developer, 2026-10-20 — 시안과 같게 옮긴 것과 달라진 것)
+
+`ai-log/2026-10-20_SPEC-005_dev-QI3.md`에 측정값·시험 결과. 여기는 이 문서의 상태 열을 대신하는 **차이만**의 목록이다(나머지 D5 항목은 시안 그대로 구현).
+
+| ID | 구현 | 시안과 다른 점 · 근거 |
+|---|---|---|
+| D5-01·D5-31 | 첫 화면 로고 = 워드마크 하나(`ui/Brand.tsx#TitleWordmark`, `brand/wordmark.svg` 인라인) — 세로·가로 로고 둘(`LOGO_STACKED_SVG`·`LOGO_ROW_SVG`)은 첫 화면에서 쓰지 않는다. 좁은 화면 52px(글자 41px), 넓은 화면 64px | 시안 A안 그대로. 워드마크는 선(stroke)으로 그려 `data-testid="title-logo-word"`, e2e 색 단언은 fill이 아니라 stroke |
+| D5-03·D5-30 | `.title__side`는 flex가 아니라 **block** 그대로, 그림은 `margin-bottom: calc(-1 * var(--illust-tuck))` | 시안은 `.title__side { display: flex; flex-direction: column }`이지만 이 칸은 sticky + `max-height` + 안쪽 스크롤 컨테이너라 flex 자식이 줄어들며 카드가 눌린다 — block이면 카드가 자기 높이를 갖고 안쪽 스크롤이 쓰인다(시안 측정값 그대로 재현: 1280×800 카드 위 412·표제어 아래 488·값 아래 558) |
+| D5-06 | 분절 컨트롤 포커스 링은 `.seg__opt:focus-within`(포커스 가진 칸) | 시안은 `.seg:focus-within`(컨트롤 전체). `auditFocus`(CM10)가 「링 주인의 한가운데에서 맞는 요소가 포커스 요소여야 한다」를 보는데 컨트롤 전체의 한가운데는 이웃(비활성) 칸이라 걸렸다 — 링을 칸에 건다(라디오 카드의 `label:focus-within`과 같은 방식) |
+| D5-07 | 스위치 컴포넌트(`GentleSwitch`)·CSS·문구(`TITLE_TEXT.gentle*`)는 있지만 `TitleScreen`의 `gentle` prop을 App이 넘기지 않아 **첫 화면에 그려지지 않는다** | 동작(설정 v5 `gentle`·가림 UI)은 QI6. 동작하지 않는 스위치를 사용자에게 보이지 않는다. 시안의 1280×800 수치(왼쪽 열 끝 655)는 스위치 줄을 포함한 값이고 구현은 스위치가 없어 597 |
+| D5-12 | 슬라이드 `basisText`는 `string \| null`(분모만), 새 필드 `insight`·`officialName`·`officialText` | 연도(월)·범위는 공식 통계명 줄. 시·도별 합계출산율만 `withScope`로 「(2025년, 17개 시·도)」, 지역별 주민등록 인구수는 시안대로 「(2026년 9월)」 — 옛 기준 줄의 「16개 시·도, 주민등록」 문구(R-147 d)는 화면에서 사라진다(그래프가 16개 시·도 막대, 정의 문장이 「시도별 총인구」) |
+| D5-15·D5-16 | `elderly-poverty`의 표제어는 부록 B 대안 「노년의 살림살이는 어떨까?」(임시), 자살률은 후보 ①(임시, 판독 대기) | 형진 님 예시는 연령계층별 빈곤율 지표(QI4 수집)가 있어야 그래프가 답한다(SH2 ⑤). 마스터 확인 대기 |
+| D5-13·D5-14·D5-17 | 이번 회차에서 하지 않음 | 전망 슬라이드·칩(QI4), 푸터 링크(QI7) |
+| D5-27 | 토큰 4개 `tokens.css` 3곳(라이트·다크 두 블록·강제 색상), 대비 쌍 5개 `scripts/checkContrastLib.ts#PAIRS`, `docs/design/contrast-report.md` 재생성(라이트 89쌍 + 다크 89쌍, 실패 0) | 시안과 같다. 전망 놋쇠/띠 쌍은 4.5:1(글자 기준)로 걸었다(라이트 4.56) |
+| D5-33 | 흐림 변수 `--illust-opacity`·`--illust-filter`는 `.illust` 요소에 두고(첫 화면 지역 변수) 다크는 두 선택자, 강제 색상은 세 선택자 | `html[data-soft]` 단계 속성은 만들지 않았다(2단계만 구현) |

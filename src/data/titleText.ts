@@ -38,10 +38,20 @@ export const TITLE_TEXT = {
   eraGroup: '태어날 세상',
   lifeLengthGroup: '인생 길이',
   /**
-   * FS5 설명 (REV-003-D-1 R-124·R-131: designer의 최종 문구 — 시안 title-a.html과 같다). M8(D-92, docs/design/copy.md 8-1 ①): 시간 목표(연출 + 결정 읽기) 밖인 기록 쓰기 시간을 한 문장으로 밝혀 「약 30분」이 손목시계와 어긋나지 않게 했다(LD-1).
-   * 끝 문장은 한 문단 두 어체 금지(QM3-4)로 「남습니다」 → 「남아요」(마스터 승인).
+   * 인생 길이 한 줄 안내 (HS2 ③, copy.md 9-4): 평균 수명까지 걸리는 시간 · 생각을 적는 시간은 뺐다(LD-1 — 「약 30분」이 손목시계와 어긋나지 않게) · 도중에 나가도 이 기기에 저장.
+   * SPEC-003 FS5의 세 문장(`평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.`)을 한 줄로 줄였다(SPEC-005 QI3).
+   * 「이 기기에」는 줄바꿈 묶음(Glue 관형사 묶음)이다.
    */
-  lifeLengthHint: '평균 수명까지 살아 보는 데 걸리는 시간이에요. 생각을 적는 시간은 넣지 않았어요. 도중에 나가도 진행은 이 기기에 남아요.',
+  lifeLengthHint: '평균 수명까지 사는 시간이에요. 생각을 적는 시간은 뺐고, 나가도 이 기기에 남아요.',
+
+  /**
+   * 무거운 장면 가리기 스위치 자리 (HV3·copy.md 9-5, 이름·기본값은 형진 님 답 M12). 동작 연결(설정 v5 `gentle`·가림 UI)은 QI6이고, 지금은 문구와 자리(컴포넌트·CSS)만 있다.
+   * 상태 글자 「꺼짐/켜짐」은 보조(aria-hidden — 상태는 `aria-checked`가 전한다). 「순한 맛」「마음 놓고」 같은 은유는 쓰지 않는다.
+   */
+  gentleName: '무거운 장면 가리기',
+  gentleOff: '꺼짐',
+  gentleOn: '켜짐',
+  gentleDesc: '아픈 일이나 이별 같은 장면의 글만 가려요. 일어나는 일은 같아요.',
 
   begin: '태어나기',
   resume: '이어서 살기',
@@ -57,10 +67,11 @@ export const TITLE_TEXT = {
   /** C6 — 이전 스키마(v4 이하) 저장이 있었을 때 */
   oldSaveNotice: '이전 버전에서 저장된 판은 이어서 할 수 없어 새 게임으로 시작합니다.',
 
-  carouselTitle: '한국 사회 통계',
-  /** 머리 오른쪽 작은 글씨 */
-  carouselAutoNote: (seconds: number) => `${seconds}초마다 다음 지표`,
-  carouselPausedNote: '자동 넘김 멈춤',
+  /**
+   * 캐러셀 카드의 제목(`h2.sr-only`) — 눈에 보이는 머리글은 없다(SH4: 「한국 사회 통계」「7초마다 다음 지표」「자동 넘김 멈춤」 삭제). 제목 단계를 건너뛰지 않게(슬라이드 제목 `h3` 위에 `h2`) 읽히는 글자로만 남긴다.
+   * 자동 넘김의 상태 표시는 일시정지 버튼의 아이콘·이름이 맡는다(SH6).
+   */
+  carouselHeading: '한국 사회 통계',
   carouselRegionLabel: '한국 사회 통계 캐러셀',
   // 버튼 이름은 designer의 문구 기준표(docs/design/copy.md, R-124·R-133)를 따른다
   carouselPrev: '이전 지표',
@@ -93,13 +104,13 @@ export function heroTagKeepParts(): [string, string, string] {
 }
 
 /**
- * 인생 길이 카드 (FS5). 값 `short30`/`long60`은 저장되고, 실제 시간 모델은 M8에서 정한다.
- * 지금 고를 수 있는 것은 `SELECTABLE_LIFE_LENGTHS`(core/types.ts)뿐이고, 고를 수 없는 카드는 `notReady`(「준비 중」)를 오른쪽 작은 글씨로 보인다 —
- * 이 글자는 카드의 접근 가능한 이름에도 들어가 스크린리더도 비활성 이유를 듣는다(REV-003-M2-1 R-202).
+ * 인생 길이 분절 컨트롤의 칸 이름 (FS5 → SPEC-005 HS2). 값 `short30`/`long60`은 저장되고, 실제 시간 모델은 M8에서 정했다.
+ * 지금 고를 수 있는 것은 `SELECTABLE_LIFE_LENGTHS`(core/types.ts)뿐이고, 고를 수 없는 칸은 `notReady`(「준비 중」)를 알약으로 보인다 —
+ * 이 글자는 칸의 접근 가능한 이름에도 들어가 스크린리더도 비활성 이유를 듣는다(REV-003-M2-1 R-202). 카드의 보조문(「가볍게 한 판」「결정을 더 많이」)은 분절 컨트롤에 자리가 없어 없앴다(diff-005 D5-08).
  */
-export const LIFE_LENGTH_TEXT: Record<LifeLength, { title: string; desc: string }> = {
-  short30: { title: '약 30분', desc: '가볍게 한 판' },
-  long60: { title: '약 1시간', desc: '결정을 더 많이' },
+export const LIFE_LENGTH_TEXT: Record<LifeLength, { title: string }> = {
+  short30: { title: '약 30분' },
+  long60: { title: '약 1시간' },
 };
 
 /** 고를 수 없는 카드의 비활성 이유 표기 */

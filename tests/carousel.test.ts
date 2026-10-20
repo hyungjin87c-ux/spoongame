@@ -13,6 +13,7 @@ import {
   bareName,
   buildCarousel,
   buildSlide,
+  officialBasisOf,
   chartSizeFor,
   dotLabel,
   estimateLabelWidth,
@@ -137,15 +138,19 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     const region = byId('region-population-registered');
     expect(region.chart.kind).toBe('bar');
     if (region.chart.kind === 'bar') expect(region.chart.rows.length).toBe(16);
-    expect(region.basisText).toBe(raw('region-population-registered').scopeLabel);
-    expect(region.basisText).toContain('2026년 9월 기준(16개 시·도');
+    // 기준 표기는 공식 통계명 줄이 맡는다(SPEC-005 SH3, copy.md 9-1 #6): 월 기준 지표라 「2026년 9월」, 데이터의 범위 문구(scopeLabel)에서 만든다. 옛 기준 줄은 없다
+    expect(raw('region-population-registered').scopeLabel).toContain('2026년 9월 기준(16개 시·도');
+    expect(region.officialText).toBe('지역별 주민등록 인구수(2026년 9월)');
+    expect(region.basisText).toBeNull();
     expect(region.valueText).toBe('51,082,431');
     expect(region.caption).toBe('2026년 9월 전국 주민등록 인구');
   });
 
-  it('시도별 합계출산율은 「2025년 기준(17개 시·도)」 라벨이다 (통계 근거 검수 R-147 d, 마스터 결정)', () => {
+  it('시도별 합계출산율은 공식 통계명 줄에 「2025년, 17개 시·도」 범위가 든다 (통계 근거 검수 R-147 d, 마스터 결정 — SPEC-005에서 옛 기준 줄 「2025년 기준(17개 시·도)」을 공식 통계명 줄이 대신한다)', () => {
     const s = byId('tfr-by-sido');
-    expect(s.basisText).toBe('2025년 기준(17개 시·도)');
+    expect(raw('tfr-by-sido').scopeLabel).toBe('2025년 기준(17개 시·도)');
+    expect(s.officialText).toBe('시·도별 합계출산율(2025년, 17개 시·도)');
+    expect(s.basisText).toBeNull();
     expect(s.chart.kind).toBe('bar');
     expect(s.valueText).toBe('0.80');
     expect(s.caption).toBe('전국 합계출산율');
@@ -154,8 +159,11 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
   it('슬라이드마다 제목·기준 연도·출처(기관과 통계표 이름, 열람일)·한 줄 정의·그래프(대체 텍스트 포함)가 있다 (SC2)', () => {
     for (const s of data.slides) {
       expect(s.title.length, s.id).toBeGreaterThan(1);
-      // 분모가 있는 비율(조사망률·자살률)의 기준 줄은 「인구 10만 명당 · 2025년 기준」이다(QM2-4 B형) — 분모 문구는 값 옆 칸이 아니라 기준 줄에 있다
-      expect(s.basisText, s.id).toMatch(/^(인구 (1천|10만) 명당 · )?\d{4}년( \d{1,2}월)? 기준/);
+      // 표제어(h3)와 공식 통계명 줄이 있다(SH1~SH3): 「합계출산율(2025년)」 꼴 — 기준은 공식 통계명 줄 끝 괄호 안에 있다
+      expect(s.insight.length, s.id).toBeGreaterThan(5);
+      expect(s.officialText, s.id).toMatch(/^.+\(\d{4}년( \d{1,2}월)?(, .+)?\)$/);
+      // 분모가 있는 비율(조사망률·자살률)만 기준 줄에 분모 「인구 10만 명당」이 남는다(QM2-4 B형 → copy.md 9-2) — 분모 문구는 값 옆 칸이 아니라 기준 줄에 있다. 연도는 공식 통계명 줄로 옮겼다
+      expect(s.basisText === null || /^인구 (1천|10만) 명당$/.test(s.basisText), s.id).toBe(true);
       expect(s.sourceText, s.id).toMatch(/^[^,]+, .{5,} \(\d{4}-\d{2}-\d{2} 조회\)$/);
       expect(s.definition.trim().endsWith('.'), s.id).toBe(true);
       expect(s.chartLabel.length, s.id).toBeGreaterThan(10);
@@ -182,7 +190,7 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
 
   it('평가·논평 문구와 느낌표가 없다 (정의와 값만, SC2·정치적 중립)', () => {
     for (const s of data.slides) {
-      const text = [s.title, s.definition, s.caption ?? '', s.seriesNote ?? '', s.basisText].join(' ');
+      const text = [s.title, s.insight, s.officialText, s.definition, s.caption ?? '', s.seriesNote ?? '', s.basisText ?? ''].join(' ');
       expect(text, s.id).not.toMatch(/[!！]/);
       expect(text, s.id).not.toMatch(/심각|위기|충격|최악|참담/);
     }
@@ -194,8 +202,8 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     expect(byId('elderly-poverty').valueText).toBe('37.7');
     expect(byId('life-expectancy').valueText).toBe('83.7');
     expect(byId('suicide-rate').valueText).toBe('27.8');
-    expect(byId('tfr').basisText).toBe('2025년 기준');
-    expect(byId('elderly-poverty').basisText).toBe('2024년 기준'); // 지표마다 기준 연도가 다르다
+    expect(byId('tfr').officialText).toBe('합계출산율(2025년)');
+    expect(byId('elderly-poverty').officialText).toBe('66세 이상 상대적 빈곤율(2024년)'); // 지표마다 기준 연도가 다르다
     expect(byId('tfr').unitText).toBe('명');
   });
 
@@ -203,7 +211,7 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     for (const ind of selectCarouselIndicators()) {
       const s = byId(ind.id);
       if (s.headlines.length === 1) expect(s.valueText, ind.id).toBe(formatNumber(ind.headline?.[0]?.value ?? ind.latest.value, ind.decimals));
-      expect(s.basisText + s.basisLine, ind.id).toContain(String(ind.latest.year));
+      expect(s.officialText + s.basisLine, ind.id).toContain(String(ind.latest.year));
     }
     expect(byId('tfr').valueText).not.toBe('0.68');
   });
@@ -266,7 +274,8 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     expect(s.valueText).toBe('27.8');
     // 값 옆 칸에는 단위 낱말만, 분모 문구는 기준 줄로(QM2-4): 예전에는 단위가 「인구 10만 명당 명」이라 「명당 명」이 겹쳐 읽혔다
     expect(s.unitText).toBe('명');
-    expect(s.basisText).toBe('인구 10만 명당 · 2025년 기준');
+    expect(s.basisText).toBe('인구 10만 명당');
+    expect(s.officialText).toBe('자살률(2025년)');
     expect(s.sourceText).toContain('국가데이터처');
     expect(s.safety).toEqual({ name: '자살예방 상담전화', number: '109', hours: '24시간' });
     // 다른 슬라이드에는 상담전화 안내가 없다
@@ -630,9 +639,15 @@ describe('슬라이드 모델 세부', () => {
     expect(spreadY([], 13, 0, 10)).toEqual([]);
   });
 
-  it('기준 문구: 데이터의 scopeLabel이 있으면 그것, 없으면 「N년 기준」. sourceOrgsOf는 가운뎃점으로 묶인 기관을 나눈다', () => {
-    expect(buildSlide(usable(base({ latest: { year: 2025, value: 1 } })))!.basisText).toBe('2025년 기준');
-    expect(buildSlide(usable(base({ scopeLabel: '2026년 9월 기준(16개 시·도)' })))!.basisText).toBe('2026년 9월 기준(16개 시·도)');
+  it('공식 통계명 줄의 기준 문구(SH3): 없으면 latest.year 「N년」, 데이터의 scopeLabel이 월 기준이면 「2026년 9월」(범위 설명은 withScope일 때만). 표제어가 없는 지표(시험용 가짜)는 지표 이름으로 대신한다. sourceOrgsOf는 가운뎃점으로 묶인 기관을 나눈다', () => {
+    expect(buildSlide(usable(base({ latest: { year: 2025, value: 1 } })))!.officialText).toBe('가짜 지표(2025년)');
+    expect(buildSlide(usable(base({ scopeLabel: '2026년 9월 기준(16개 시·도)' })))!.officialText).toBe('가짜 지표(2026년 9월)');
+    expect(buildSlide(usable(base({ latest: { year: 2025, value: 1 } })))!.insight).toBe('가짜 지표');
+    expect(buildSlide(usable(base({ latest: { year: 2025, value: 1 } })))!.basisText).toBeNull();
+    expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '2025년 기준(17개 시·도)' }, true)).toBe('2025년, 17개 시·도');
+    expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '2025년 기준(17개 시·도)' }, false)).toBe('2025년');
+    expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '2026년 9월 기준(16개 시·도, 주민등록)' }, true)).toBe('2026년 9월, 16개 시·도, 주민등록');
+    expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '읽을 수 없는 모양' }, true)).toBe('2025년'); // 범위 문구가 이상하면 latest.year로 돌아간다
     expect(sourceOrgsOf('국가데이터처·교육부')).toEqual(['국가데이터처', '교육부']);
     expect(sourceOrgsOf('행정안전부')).toEqual(['행정안전부']);
   });
@@ -659,8 +674,8 @@ describe('슬라이드 모델 세부', () => {
 });
 
 describe('동작 규칙 (SC5)', () => {
-  it('자동 전환 주기는 SPEC SC5대로 7초다 (디자인 문서의 8초는 틀린 값, 마스터 결정)', () => {
-    expect(AUTO_ADVANCE_MS).toBe(7000);
+  it('자동 전환 주기는 9초다 (SPEC-005 마스터 결정 M8 일부 — 표제어·공식 통계명이 늘어 읽을 글이 많아졌다. SPEC-003 SC5의 7초를 대체한다)', () => {
+    expect(AUTO_ADVANCE_MS).toBe(9000);
   });
 
   it('nextSlideIndex: 한 칸 이동, 끝에서는 반대쪽 끝으로 돈다, 잘못된 입력에도 범위 안', () => {
@@ -745,7 +760,7 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
   function textsOf(s: ReturnType<typeof byId>): Array<[string, string]> {
     const out: Array<[string, string]> = [];
     out.push(['값 줄', s.headlines.map((h) => `${h.label ?? ''} ${h.value}${s.unitText}`).join(' / ')]);
-    out.push(['단위', s.unitText], ['기준 줄', s.basisText], ['통계 기준 줄', s.basisLine], ['정의', s.definition], ['제목', s.title]);
+    out.push(['단위', s.unitText], ['기준 줄', s.basisText ?? ''], ['통계 기준 줄', s.basisLine], ['정의', s.definition], ['제목', s.title], ['표제어', s.insight], ['공식 통계명 줄', s.officialText]);
     if (s.caption !== null) out.push(['캡션', s.caption]);
     if (s.seriesNote !== null) out.push(['계열 설명', s.seriesNote]);
     for (const l of s.legend) out.push(['범례', `${l.label} ${l.valueText}`]);
@@ -809,36 +824,42 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
       const year = r.latest!.year;
       const form = FORMS[s.id];
       expect(s.unitText, `${s.id} 단위는 낱말 하나`).toMatch(UNIT_WORD);
+      // SPEC-005 copy.md 9-2: 기준 연도는 공식 통계명 줄(officialText) 끝 괄호가 말한다 — 연도만 있던 기준 줄은 없다(null). 분모가 있는 B형만 분모가 기준 줄에 남는다
+      expect(s.officialText, `${s.id} 공식 통계명 줄`).toMatch(new RegExp(`\\(${year}년[,)]|\\(${year}년 \\d{1,2}월[,)]`));
       if (form === 'A') {
         expect(s.headlines, s.id).toHaveLength(1);
         expect(s.headlines[0].label, s.id).toBeNull();
-        expect(s.basisText, `${s.id} 기준 줄`).toBe(`${year}년 기준`);
+        expect(s.basisText, `${s.id} 기준 줄 없음`).toBeNull();
+        expect(s.officialText, s.id).toBe(`${s.officialName}(${year}년)`);
       } else if (form === 'B') {
         expect(s.headlines, s.id).toHaveLength(1);
         expect(s.unitText, s.id).toBe('명');
-        expect(s.basisText, `${s.id} 기준 줄`).toMatch(/^인구 (1천|10만) 명당 · \d{4}년 기준$/);
+        expect(s.basisText, `${s.id} 기준 줄(분모만)`).toMatch(/^인구 (1천|10만) 명당$/);
         // 분모 문구는 데이터의 단위(「인구 1천 명당 명」)에서 그대로 온다
-        expect(r.latestUnit!.startsWith(s.basisText.split(' · ')[0] + ' '), `${s.id}: 분모가 데이터 단위와 같다`).toBe(true);
+        expect(r.latestUnit!.startsWith(`${s.basisText} `), `${s.id}: 분모가 데이터 단위와 같다`).toBe(true);
+        expect(s.officialText, s.id).toBe(`${s.officialName}(${year}년)`);
       } else if (form === 'C') {
         expect(s.headlines.map((h) => h.label)).toEqual(['남자', '여자']);
         expect(s.unitText).toBe('세');
-        expect(s.basisText).toBe(`${year}년 기준`);
+        expect(s.basisText).toBeNull();
+        expect(s.officialText).toBe(`${s.officialName}(${year}년)`);
       } else {
-        // D: 그래프가 주인공이다. 기준 줄은 데이터가 정한 범위 문구(예 「2026년 9월 기준(16개 시·도, 주민등록)」)이고 연도·범위가 거기에 드러난다.
+        // D: 그래프가 주인공이다. 연도(월)·범위는 공식 통계명 줄이 말하고(데이터의 범위 문구 scopeLabel에서 만든다) 기준 줄은 없다.
         // (전국 값은 「캡션 + 값 + 단위 낱말」로 그대로 보인다 — 명세의 「값 줄 없음」은 지표 자신의 큰 값 줄이 없다는 뜻으로 읽었다. ai-log 참고)
         expect(s.chart.kind, s.id).toBe('bar');
-        expect(s.basisText, `${s.id} 기준 줄`).toBe(r.scopeLabel);
-        expect(s.basisText, s.id).toMatch(/^\d{4}년( \d{1,2}월)? 기준\(\d+개 시·도/);
+        expect(r.scopeLabel, `${s.id} 데이터의 범위 문구`).toMatch(/^\d{4}년( \d{1,2}월)? 기준\(\d+개 시·도/);
+        expect(s.basisText, `${s.id} 기준 줄 없음`).toBeNull();
         expect(s.caption, `${s.id}: 전국 값이 무엇인지 캡션이 있다`).not.toBeNull();
       }
     }
   });
 
-  it('기준 연도 표기(기준 줄·「통계 기준」 줄·그래프 마지막 점)는 모두 같은 값 latest.year에서 만든다 (QM2-4 4)', () => {
+  it('기준 연도 표기(공식 통계명 줄·「통계 기준」 줄·그래프 마지막 점)는 모두 같은 값 latest.year에서 만든다 (QM2-4 4 · SPEC-005 SH3 단일 출처)', () => {
     for (const s of data.slides) {
       const year = raw(s.id).latest!.year;
       const yearsIn = (text: string) => [...text.matchAll(/(\d{4})년/g)].map((m) => Number(m[1]));
-      for (const y of yearsIn(s.basisText)) expect(y, `${s.id} 기준 줄 연도`).toBe(year);
+      for (const y of yearsIn(s.officialText)) expect(y, `${s.id} 공식 통계명 줄 연도`).toBe(year);
+      expect(yearsIn(s.officialText), `${s.id} 공식 통계명 줄에 기준 연도가 하나`).toEqual([year]);
       expect(yearsIn(s.basisLine), `${s.id} 「통계 기준」 줄 연도(마지막 갱신 날짜의 연도는 제외)`).toEqual([year]);
       if (s.chart.kind === 'line') {
         expect(s.chart.series[0].last.year, `${s.id} 그래프 마지막 점`).toBe(year);
@@ -875,7 +896,9 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     if (s.caption !== null) out.push(s.caption);
     for (const h of s.headlines) out.push(`${h.label ?? ''} ${h.value}${s.unitText}`.trim());
     for (const v of s.sideValues) out.push(v.text);
-    out.push(s.basisText, s.definition, s.sourceText, s.basisLine);
+    out.push(s.insight, s.officialText);
+    if (s.basisText !== null) out.push(s.basisText);
+    out.push(s.definition, s.sourceText, s.basisLine);
     if (s.seriesNote !== null) out.push(s.seriesNote);
     for (const l of s.legend) out.push(`${l.label} ${l.valueText}`);
     if (s.chart.kind === 'line') for (const l of [...s.chart.labels, ...s.chart.xLabels]) out.push(l.text);
@@ -927,13 +950,13 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     expect(s.sideValues[0].text).not.toContain('(');
     expect(forbiddenIn(s.sideValues[0].text), '금지 패턴 0').toEqual([]);
     expect(visibleTextsOf(s).join('\n').replace(/\s+/g, ' ')).toContain('조혼인율 인구 1천 명당 4.7건');
-    // 기준 연도: 보조 값의 연도 = 슬라이드의 latest.year (그래서 연도를 따로 밝히지 않는다) — 기준 줄 「2025년 기준」이 둘을 함께 가리킨다
+    // 기준 연도: 보조 값의 연도 = 슬라이드의 latest.year (그래서 연도를 따로 밝히지 않는다) — 공식 통계명 줄 「혼인 건수·조혼인율(2025년)」이 둘을 함께 가리킨다
     expect(extra.latest!.year).toBe(raw('marriage-count').latest!.year);
-    expect(s.basisText).toBe(`${raw('marriage-count').latest!.year}년 기준`);
+    expect(s.officialText).toBe(`혼인 건수·조혼인율(${raw('marriage-count').latest!.year}년)`);
     // 선 무늬(범례)가 아니다: 단위가 다른 보조 계열은 그래프 축에 더하지 않는다(현행 유지, QM2-11 규칙 2)
     expect(s.legend, '범례는 본 계열 하나뿐이라 그려지지 않는다').toHaveLength(1);
     expect(s.chart.kind === 'line' && s.chart.series.map((x) => x.key), '그래프 선은 본 계열 하나').toEqual(['main']);
-    // 형식표 A(혼인 건수 행): 값 줄 「240,326건」 + 기준 줄 「2025년 기준」은 그대로
+    // 형식표 A(혼인 건수 행): 값 줄 「240,326건」, 기준 연도는 공식 통계명 줄
     expect(s.headlines.map((h) => `${h.value}${s.unitText}`)).toEqual(['240,326건']);
   });
 

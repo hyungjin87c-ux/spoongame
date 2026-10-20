@@ -17,6 +17,7 @@ import { setRootFontPercent } from './textResize';
  *  - R-439 줄이 다시 흐를 때(글자 크기 100 ↔ 200% · 창 폭 1280 → 960 / 360 → 320 · 새 줄과 겹침) 아래에서 읽던 사람의 보던 줄이 제자리 — overflow-anchor: none으로 잃은 브라우저 스크롤 고정을 LogList가 대신한다
  *  - R-438 「새 기록 N개 · 맨 위로」 알약이 스크롤 영역 안 위 가장자리(+8px, 가운데)에 떠 있고 화면 안·가려짐 0·터치 44px·글자 200% 넘침 0 (docs/design/log-order-qi1.md)
  *  - R-441 「새 기록 N개 · 맨 위로」를 키보드로 누르면 포커스가 목록 영역으로 간다
+ *  - R-444 키보드로 알약에 Tab한 뒤 Home·PageUp·↑로 목록이 맨 위에 닿아 알약이 저절로 사라져도 포커스가 목록 영역으로 간다(body로 떨어지지 않는다)
  * 타이머는 멈춰 두고(startPageHidden) 줄은 「다음 결정으로」·선택으로만 늘린다.
  */
 
@@ -606,6 +607,57 @@ for (const key of ['Enter', 'Space']) {
     await expect.poll(() => scrollTopOf(list), '포커스가 목록에 있으니 방향키로 이어서 읽는다').toBeGreaterThan(0);
   });
 }
+
+// ---------- R-444 알약이 포커스를 가진 채 저절로 사라질 때 ----------
+
+for (const key of ['Home', 'PageUp', 'ArrowUp']) {
+  test(`R-444 키보드로(${key}) 알약에 Tab한 뒤 목록이 맨 위에 닿아 알약이 저절로 사라져도 포커스가 문서 맨 앞(body)으로 떨어지지 않고 목록 영역으로 간다(화면은 끌려가지 않는다)`, async ({ page }) => {
+    test.setTimeout(120_000);
+    await openAdult(page);
+    const list = listOf(page);
+    await list.evaluate((el) => el.scrollTo({ top: 260, behavior: 'instant' }));
+    await settle(page);
+    await addRows(page, 1);
+    const jump = page.getByTestId('log-jump');
+    await expect(jump).toBeVisible();
+    // 키보드로 알약에 닿는다: 목록 영역(tabindex 0)에 포커스를 두고 Tab — 알약은 영역 안 첫 자식(줄 목록 앞)이라 다음 정지점이다
+    await list.focus();
+    await page.keyboard.press('Tab');
+    await expect(jump, 'Tab으로 알약에 닿았다(공허 통과 방지)').toBeFocused();
+    expect(await scrollTopOf(list), '아직 아래에서 읽는 중이라 알약이 떠 있다').toBeGreaterThan(TOP_SLACK);
+    const pageY = await page.evaluate(() => window.scrollY);
+    // 맨 위에 닿을 때까지 키를 누른다(Home·PageUp은 한두 번, ↑는 40px씩이라 여러 번) — 닿으면 알약이 저절로 사라진다
+    for (let i = 0; i < 16 && (await jump.count()) > 0; i++) {
+      await page.keyboard.press(key);
+      await page.waitForTimeout(150);
+    }
+    await expect(jump, '맨 위에 닿으면 알약은 저절로 사라진다(누르지 않았다)').toHaveCount(0);
+    expect(await scrollTopOf(list), '목록은 맨 위에 닿았다').toBeLessThanOrEqual(TOP_SLACK);
+    await expect(list, '포커스가 문서 맨 앞(body)으로 떨어지지 않고 목록 영역으로 간다').toBeFocused();
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), '활성 요소는 인생 기록 영역').toBe('log-list');
+    expect(await page.evaluate(() => window.scrollY), '포커스가 문서를 끌고 가지 않는다(preventScroll)').toBe(pageY);
+    // 거기서 방향키로 계속 읽는다 — 포커스가 목록에 있다
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(() => scrollTopOf(list), '포커스가 목록에 있으니 방향키로 이어서 읽는다').toBeGreaterThan(0);
+  });
+}
+
+test('R-444 대조: 알약이 포커스를 갖지 않은 채 저절로 사라질 때는 포커스를 가져오지 않는다 — 다른 곳(「다음 결정으로」)의 포커스가 목록으로 빼앗기지 않는다', async ({ page }) => {
+  test.setTimeout(120_000);
+  await openAdult(page);
+  const list = listOf(page);
+  await list.evaluate((el) => el.scrollTo({ top: 260, behavior: 'instant' }));
+  await settle(page);
+  await addRows(page, 1);
+  const jump = page.getByTestId('log-jump');
+  await expect(jump).toBeVisible();
+  const skip = page.getByTestId('skip');
+  await skip.focus(); // 포커스는 알약이 아니라 다른 조작 요소에 있다
+  await expect(skip).toBeFocused();
+  await list.evaluate((el) => el.scrollTo({ top: 0, behavior: 'instant' })); // 직접 맨 위까지 올린다(휠·스크롤바와 같은 길)
+  await expect(jump, '맨 위에 닿으면 알약은 사라진다').toHaveCount(0);
+  await expect(skip, '알약이 포커스를 갖지 않았으니 포커스는 그대로다').toBeFocused();
+});
 
 // ---------- R-442 나가기 → 이어서 살기 뒤 맨 위 ----------
 

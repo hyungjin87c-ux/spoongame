@@ -113,7 +113,12 @@ for (const scheme of ['light', 'dark'] as const) {
       const m = await page.evaluate(() => {
         const svg = document.querySelector('.slide.is-active svg.chart') as SVGSVGElement;
         const card = document.querySelector('[data-testid="carousel"]') as HTMLElement;
-        const cardBg = getComputedStyle(card).backgroundColor;
+        // 카드 바탕 = 그래프가 놓인 면 `--c-surface`(SPEC-005 D5-27: 카드는 위쪽 88px만 옅은 하늘 띠 그라데이션이라 `background-color`가 투명하다 — 그래프는 띠 아래 면 위에 있고 글자 테두리(`stroke`)도 같은 면 색이다)
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = 'var(--c-surface)';
+        card.appendChild(probe);
+        const cardBg = getComputedStyle(probe).backgroundColor;
+        probe.remove();
         const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
         const lum = (rgb: string): number => {
           const [r, g, b] = (rgb.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number).map((v) => {

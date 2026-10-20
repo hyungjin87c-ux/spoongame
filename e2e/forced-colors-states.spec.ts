@@ -100,8 +100,10 @@ interface Target {
 
 const TARGETS: readonly Target[] = [
   { name: '하단 띠 버튼', selector: '[data-testid="bottom-bar"] button' },
-  { name: '캐러셀 조작 버튼', selector: '[data-testid="carousel"] .carousel__ctrl button' },
+  { name: '캐러셀 조작 버튼', selector: '[data-testid="carousel"] .carousel__nav button' },
   { name: '라디오 카드', selector: '.radio-card' },
+  // SPEC-005 HS2: 인생 길이는 라디오 카드가 아니라 작은 분절 컨트롤의 칸(`.seg__opt`)이다 — 선택(Highlight 면)·비활성(GrayText 점선) 칸도 같은 규칙으로 잰다
+  { name: '분절 컨트롤 칸', selector: '.seg__opt' },
 ];
 
 /** 한 화면(상태)의 모든 대상 × 모든 상태를 재고 위반 목록(비어 있으면 통과)과 잰 횟수를 돌려준다 */
@@ -119,7 +121,7 @@ async function auditStates(page: Page, label: string): Promise<{ problems: strin
       const id = (await page.evaluate(([sel, idx]) => (document.querySelectorAll(sel as string)[idx as number] as HTMLElement).getAttribute('data-testid') ?? (document.querySelectorAll(sel as string)[idx as number] as HTMLElement).textContent?.trim().slice(0, 12) ?? '', [t.selector, i] as const)) || `#${i}`;
       names.push(`${t.name}:${id}`);
       // 입력 안쪽(라디오 카드): 포커스는 안쪽 input이 받는다
-      const innerIds = t.selector === '.radio-card' ? await nodeIdsOf(cdp, rootId, '.radio-card input') : [];
+      const innerIds = t.selector === '.radio-card' || t.selector === '.seg__opt' ? await nodeIdsOf(cdp, rootId, `${t.selector} input`) : [];
       for (const s of [{ name: '쉬는 상태', classes: [] as string[] }, ...STATES]) {
         const focusish = s.classes.includes('focus');
         const nonFocus = s.classes.filter((c) => c !== 'focus' && c !== 'focus-visible');
@@ -161,11 +163,12 @@ for (const scheme of ['light', 'dark'] as const) {
       await noTransitions(page);
       const audit = await auditStates(page, `${scheme}/${state}`);
       expect(audit.problems).toEqual([]);
-      // 공허 통과 방지: 하단 띠 버튼(상태에 맞는 개수)·캐러셀 조작 버튼 3개·라디오 카드 5장을 실제로 쟀다
+      // 공허 통과 방지: 하단 띠 버튼(상태에 맞는 개수)·캐러셀 조작 버튼 3개·라디오 카드 3장(태어날 세상)·분절 컨트롤 칸 2개(인생 길이 — SPEC-005 HS2 전에는 라디오 카드 5장이었다)를 실제로 쟀다
       const expectedBar = state === 'new' ? 1 : 2;
       expect(audit.targets.filter((n) => n.startsWith('하단 띠 버튼')), '하단 띠 버튼').toHaveLength(expectedBar);
       expect(audit.targets.filter((n) => n.startsWith('캐러셀 조작 버튼')), '캐러셀 조작 버튼').toHaveLength(3);
-      expect(audit.targets.filter((n) => n.startsWith('라디오 카드')), '라디오 카드').toHaveLength(5);
+      expect(audit.targets.filter((n) => n.startsWith('라디오 카드')), '라디오 카드').toHaveLength(3);
+      expect(audit.targets.filter((n) => n.startsWith('분절 컨트롤 칸')), '분절 컨트롤 칸').toHaveLength(2);
       expect(audit.measured, '잰 (요소, 상태, 글자) 수').toBeGreaterThan((expectedBar + 3 + 5) * 5);
       testInfo.annotations.push({ type: 'forced-states', description: `${audit.targets.length}개 대상 × 5상태, 잰 글자 ${audit.measured}` });
     });

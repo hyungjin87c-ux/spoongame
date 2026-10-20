@@ -657,10 +657,10 @@ describe('저작권·문구 기록 (DS8, R-123)', () => {
   it('credits.md에 외부 자산 없음·직접 제작·글꼴(시스템 글꼴)·참고 캡처 미복제·문구 대조를 적는다', () => {
     for (const phrase of ['외부', '직접', '글꼴', '80억', '문구 대조']) expect(creditsMd, phrase).toContain(phrase);
   });
-  it('copy.md: 수저 구간은 bandLabel(startBandOf) 한 함수의 출력(R-170), 캐러셀 간격은 7초(SC5), 「접속자」 낱말 없음(R-131), 다시 태어나기 안내는 REBIRTH_NOTE 그대로(R-191(c)), 엔딩 어체는 M7e를 따른다', () => {
+  it('copy.md: 수저 구간은 bandLabel(startBandOf) 한 함수의 출력(R-170), 캐러셀 간격은 9초(SPEC-005 마스터 결정 M8 — SPEC-003 SC5의 7초를 대체), 「접속자」 낱말 없음(R-131), 다시 태어나기 안내는 REBIRTH_NOTE 그대로(R-191(c)), 엔딩 어체는 M7e를 따른다', () => {
     expect(copyMd).toContain('bandLabel(startBandOf');
     expect(copyMd).toContain('흙수저(하위 25% 안쪽)');
-    expect(copyMd).toContain('7초마다');
+    expect(copyMd).toContain('**9초**(`AUTO_ADVANCE_MS` 7000 → 9000)'); // 옛 「7초마다」 문구는 SPEC-003 기록(2절·9-3의 「삭제」 행)에만 남는다
     expect(copyMd).not.toContain('8초마다');
     expect(copyMd).toContain(REBIRTH_NOTE);
     expect(copyMd).toContain('M7e');
@@ -1379,6 +1379,7 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
     notClean: '배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다.',
     device: '이 기기에만 저장됩니다.',
   };
+  const LIFE_LENGTH_HINT_9_4 = '평균 수명까지 사는 시간이에요. 생각을 적는 시간은 뺐고, 나가도 이 기기에 남아요.';
   const section8 = copyMd.slice(Math.max(0, copyMd.indexOf('## 8. M8')));
   it('copy.md 8절: 문구 여섯(첫 화면 설명·이름·분해·제외·깨끗하지 않은 판·이 기기)과 숫자 표기 규칙(mm:ss 두 자리 이상·상한 없음·낭독 「N분 N초」·버킷별 초 버림 뒤 합)이 적혀 있고, 2절 FS5 행도 새 문구다', () => {
     expect(copyMd.indexOf('## 8. M8')).toBeGreaterThan(0);
@@ -1387,7 +1388,9 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
     expect(copyMd).toContain(`| 첫 화면 | 인생 길이 보조(FS5) | 「${PLAYTIME_COPY.hint}」`);
   });
   it('구현 상수가 copy.md 8절과 같다(PLAYTIME_TEXT 다섯·TITLE_TEXT.lifeLengthHint·breakdownParts 조각) · 표기 함수가 8-2 규칙대로다(formatPlayTime 단위 표·displaySeconds 버킷별 버림·isCleanRun 세 조작) · 생성기는 임시 블록 없이 그 상수·부품(PlayTime)을 읽고 글자 사본이 없다 — R-191 되돌림(D-96, 2026-10-19 후속)', async () => {
-    expect(TITLE_TEXT.lifeLengthHint).toBe(PLAYTIME_COPY.hint);
+    // SPEC-005 QI3(HS2 ③·copy.md 9-4): 첫 화면의 인생 길이 안내가 세 문장에서 한 줄로 줄었다 — 구현 상수는 9-4의 한 줄이다. 8절의 옛 세 문장(PLAYTIME_COPY.hint)은 SPEC-003 기록으로 8절에 남는다
+    expect(TITLE_TEXT.lifeLengthHint).toBe(LIFE_LENGTH_HINT_9_4);
+    expect(copyMd).toContain(`「${LIFE_LENGTH_HINT_9_4}」`);
     expect({ ...PLAYTIME_TEXT }).toEqual({ label: PLAYTIME_COPY.label, breakdown: PLAYTIME_COPY.breakdown, excluded: PLAYTIME_COPY.excluded, notClean: PLAYTIME_COPY.notClean, device: PLAYTIME_COPY.device });
     expect(breakdownParts()).toEqual(['세월이 흐른 시간 ', ', 결정을 읽고 고른 시간 ', '의 합입니다.']);
     // 8-2: 분 두 자리 이상·상한 없음(시 단위로 바꾸지 않는다), 낭독 「{m}분 {s}초」(0분 포함), datetime PT
@@ -1498,5 +1501,69 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
     expect(block.slice(0, block.indexOf('.playtime time') + 20)).not.toMatch(/#[0-9a-f]{3,6}\b/i);
     const shooter = await readText('../scripts/design/shootMockups.mjs');
     for (const name of ["'ending-playtime'", "'ending-play-fast'", "'ending-play-long'", "'ending-play-none'", "'title-length'", "el: 'fieldset:has(.choices--2)'", "el: '[aria-label=\"사망과 선택\"]'"]) expect(shooter, name).toContain(name);
+  });
+});
+
+/**
+ * 첫 화면 일러스트 자산 계약 (SPEC-005 QI3 HS1 · diff-005.md D5-25·D5-29·D5-32·D5-33 · design-system.md 12-5, designer 제안 시험).
+ * 형진 님 그림(`docs/design/source/home-illustration-source-2026-10-20.webp`)을 다듬은 알파 WebP 두 장(PC·모바일)이 약속을 지킨다 — 합계 ≤ 100KB▲(SPEC 「형진 님 결정 — 첫 화면 그림」 ⑤)·WebP·
+ * `width`·`height` 속성이 파일 크기와 같다(레이아웃 이동 0)·테마별 파일 없음(한 벌)·`public/`에 두지 않는다(vite 해시 이름 — 캐시)·CSS 배경으로 깔지 않는다(글자 대비를 해친다).
+ * 마크업(`figure aria-hidden` · `alt=""`)과 CSS(흐림 2단계·강제 색상)는 tests/titleScreen.test.tsx와 tests/homeScreen.test.ts가 본다.
+ */
+describe('첫 화면 일러스트 자산 (SPEC-005 D5-25: 합계 ≤ 100KB · WebP · width/height 속성)', () => {
+  const fsSpec = 'node:fs';
+  async function readBytes(relative: string): Promise<Uint8Array> {
+    const fs = (await import(/* @vite-ignore */ fsSpec)) as { readFileSync(path: URL): Uint8Array };
+    return fs.readFileSync(new URL(relative, import.meta.url));
+  }
+  /** WebP 머리(RIFF 컨테이너)에서 형식·크기·알파를 읽는다 — 외부 도구 없이 */
+  function webpInfo(b: Uint8Array): { format: string; width: number; height: number; alpha: boolean } {
+    const tag = (o: number): string => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+    expect(tag(0), 'RIFF 머리').toBe('RIFF');
+    expect(tag(8), 'WEBP 표지').toBe('WEBP');
+    const format = tag(12);
+    if (format === 'VP8X') return { format, alpha: (b[20] & 0x10) !== 0, width: 1 + (b[24] | (b[25] << 8) | (b[26] << 16)), height: 1 + (b[27] | (b[28] << 8) | (b[29] << 16)) };
+    if (format === 'VP8L') return { format, alpha: (b[24] & 0x10) !== 0, width: 1 + (((b[22] & 0x3f) << 8) | b[21]), height: 1 + (((b[24] & 0x0f) << 10) | (b[23] << 2) | ((b[22] & 0xc0) >> 6)) };
+    return { format, alpha: false, width: (b[26] | (b[27] << 8)) & 0x3fff, height: (b[28] | (b[29] << 8)) & 0x3fff };
+  }
+  const BUDGET_BYTES = 100 * 1024;
+
+  it('파일 둘(PC·모바일)이 있고 모두 WebP다', async () => {
+    for (const name of ['home-map-pc.webp', 'home-map-mobile.webp']) {
+      const b = await readBytes(`../src/assets/home/${name}`);
+      expect(b.length, name).toBeGreaterThan(1000);
+      expect(webpInfo(b).format, name).toMatch(/^VP8[XL ]$/);
+    }
+  });
+
+  it('두 파일의 합계가 100KB 이하다(▲ 예산) — 초기 로드 gzip 400KB 안에서 그림이 차지하는 몫. WebP는 이미 압축돼 있어 gzip 값도 같다', async () => {
+    const pc = await readBytes('../src/assets/home/home-map-pc.webp');
+    const mobile = await readBytes('../src/assets/home/home-map-mobile.webp');
+    expect(pc.length + mobile.length, `${pc.length} + ${mobile.length}`).toBeLessThanOrEqual(BUDGET_BYTES);
+    // 한 화면이 내려받는 것은 하나(같은 주소를 고른다) — 그중 큰 PC 파일도 예산의 70% 이하
+    expect(Math.max(pc.length, mobile.length)).toBeLessThanOrEqual(BUDGET_BYTES * 0.7);
+  });
+
+  it('크기: PC 613×720 · 모바일 375×440, 알파 채널이 있다(가장자리가 바탕색에 녹는다) — 두 파일의 가로세로 비율이 같다(≤ 1%)', async () => {
+    const pc = webpInfo(await readBytes('../src/assets/home/home-map-pc.webp'));
+    const mobile = webpInfo(await readBytes('../src/assets/home/home-map-mobile.webp'));
+    expect([pc.width, pc.height]).toEqual([613, 720]);
+    expect([mobile.width, mobile.height]).toEqual([375, 440]);
+    expect(pc.alpha && mobile.alpha, '알파 WebP').toBe(true);
+    expect(Math.abs(pc.width / pc.height / (mobile.width / mobile.height) - 1)).toBeLessThan(0.01);
+  });
+
+  it('화면 마크업의 width·height 속성이 모바일 파일의 크기와 같다(자리를 미리 잡아 레이아웃 이동 0), 테마별 파일이 없다(한 벌), public/에 두지 않는다, CSS 배경으로 깔지 않는다', async () => {
+    const mobile = webpInfo(await readBytes('../src/assets/home/home-map-mobile.webp'));
+    const screenSrc = await readText('../src/screens/TitleScreen.tsx');
+    expect(screenSrc).toContain(`width={${mobile.width}} height={${mobile.height}} alt=""`);
+    expect(screenSrc).toContain("import homeMapPc from '../assets/home/home-map-pc.webp';");
+    expect(screenSrc).toContain("import homeMapMobile from '../assets/home/home-map-mobile.webp';");
+    const fs = (await import(/* @vite-ignore */ fsSpec)) as { readdirSync(path: URL): string[]; existsSync(path: URL): boolean };
+    expect(fs.readdirSync(new URL('../src/assets/home/', import.meta.url)).sort(), '테마별 파일 없음 — 두 장뿐').toEqual(['home-map-mobile.webp', 'home-map-pc.webp']);
+    expect(fs.existsSync(new URL('../public/', import.meta.url)) ? fs.readdirSync(new URL('../public/', import.meta.url)).filter((n) => n.includes('home-map')) : [], 'public/에 두지 않는다(해시 이름 — 캐시)').toEqual([]);
+    const titleCss = await readText('../src/styles/title.css');
+    expect(titleCss, '그림을 배경 이미지로 깔지 않는다(글자 대비)').not.toMatch(/background(-image)?:[^;]*url\(/);
+    expect(titleCss).toMatch(/\.illust img \{[^}]*object-fit: contain[^}]*\}/); // 찌그러짐 0 안전장치
   });
 });

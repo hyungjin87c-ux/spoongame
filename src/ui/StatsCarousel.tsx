@@ -10,10 +10,12 @@ import { useIsoLayoutEffect, usePageHidden, useReducedMotion } from './hooks';
 
 /**
  * 한국 사회 통계 캐러셀 (SPEC-003 SC1~SC7). 슬라이드 모델은 core/carousel.ts, 값은 koreaStats.json(접근자는 data/koreaStatsAccess.ts).
- * 동작(SC5): 자동 전환 7초, 이전·다음 버튼·일시정지 버튼(점은 지표가 5개 이하일 때만, R-133), 포인터가 올라가거나 포커스가 안에 있으면 정지, 터치 스와이프, 키보드 ←/→,
+ * 동작(SC5): 자동 전환 9초(SPEC-005 M8), 이전·다음 버튼·일시정지 버튼(점은 지표가 5개 이하일 때만, R-133), 포인터가 올라가거나 포커스가 안에 있으면 정지, 터치 스와이프, 키보드 ←/→,
  * 움직임 줄이기이면 자동 전환 없음. 스크린리더 알림(aria-live)은 **자동으로 넘어가는 동안에만 off**이고, 멈춘 상태(일시정지·포커스·포인터·움직임 줄이기)에서는
  * 사용자가 직접 넘길 때 바뀐 슬라이드를 읽도록 polite다(R-205: 멈춘 사유와 무관하게 `auto` 하나로 정한다).
- * 조작 줄(이전·위치·다음·일시정지)은 카드 머리에 있다 — 슬라이드의 높이가 달라도 같은 자리에 있고, 낮은 화면에서도 하단 띠에 가려지지 않는다(R-200).
+ * 조작 줄(이전·위치·다음·일시정지)은 카드 **오른쪽 위**에 작게 있다(SPEC-005 SH5, 보이는 상자 28px · 거친 포인터 44px) — 슬라이드의 높이가 달라도 같은 자리에 있고, 낮은 화면에서도 하단 띠에 가려지지 않는다(R-200).
+ * 카드 머리글(「한국 사회 통계」·「7초마다 다음 지표」/「자동 넘김 멈춤」)은 눈에 보이지 않는다(SH4): 제목은 `h2.sr-only`, 영역 이름은 `aria-label`이 맡고, **자동 넘김의 상태는 일시정지 버튼 자체**(아이콘 + 이름)가 말한다(SH6, WCAG 2.2.2).
+ * 슬라이드 위에서부터 표제어(`h3`, 큰 글씨) → 공식 통계명(기준)(작고 연하게) → 값 → 그래프 → 정의 → 출처(SH1).
  * 재개 불변식(QM2-2): 멈춤 사유(일시정지·포인터·키보드 포커스·가려진 탭)가 모두 풀리면 반드시 다시 돈다. 포인터가 카드 위에 있는지는 React의 enter/leave 짝에 기대지 않고
  * **문서 수준 pointermove로 「지금 포인터 밑 요소가 카드 안인가」를 직접 본다** — 「다시 시작」을 누르면 버튼 아이콘이 바뀌면서 포인터 밑 요소가 사라지고, 브라우저가 pointerout 없이
  * 다음 이동 이벤트만 보내면 React의 onPointerLeave(pointerout에서 만들어진다)가 오지 않아 hovering이 true로 남았다(QA-003-M2 M2-A15). 터치는 사유로 세지 않는다(I4).
@@ -50,18 +52,21 @@ function SlideView({ slide, index, count, active }: { slide: CarouselSlide; inde
       data-testid="stat-slide"
       data-slide-id={slide.id}
       aria-roledescription="슬라이드"
-      aria-label={`${index + 1}/${count} ${slide.title}`}
+      aria-label={`${index + 1}/${count} ${slide.insight}, ${slide.officialText}`}
     >
-      <h3 className="t-h3">
-        <Glue text={slide.title} />
+      <h3 className="slide__insight">
+        <Glue text={slide.insight} />
       </h3>
+      <p className="slide__official" data-testid="slide-official">
+        <Glue text={slide.officialText} />
+      </p>
       {slide.caption !== null ? (
         <p className="slide__caption">
           <Glue text={slide.caption} />
         </p>
       ) : null}
-      {/* 값 줄은 「값 + 단위 낱말」 한 줄, 기준 줄(분모 문구·연도·범위)은 그 아래 따로 — 값 옆 칸에는 단위 낱말만 있고(QM2-4) 「·」가 줄 끝에 혼자 남지 않는다(QM2-5).
-          제목에 이름이 든 보조 계열의 값(조혼인율)은 큰 값 바로 아래 줄에 글자로 보인다(QM2-11). 기준 줄은 둘 다 가리킨다. */}
+      {/* 값 줄은 「값 + 단위 낱말」 한 줄, 기준 줄(분모 문구 — 연도·범위는 공식 통계명 줄로 옮겼다, SH3)은 그 아래 따로 — 값 옆 칸에는 단위 낱말만 있다(QM2-4).
+          제목에 이름이 든 보조 계열의 값(조혼인율)은 큰 값 바로 아래 줄에 글자로 보인다(QM2-11). 공식 통계명 줄(「혼인 건수·조혼인율(2025년)」)은 둘 다 가리킨다. */}
       {slide.headlines.length > 1 ? (
         // 값이 둘(남자·여자): 라벨을 위에 두고 나란히, 각자 단위를 붙인다
         <p className="slide__value slide__value--multi" style={valueSizing(slide.headlines.map((h) => h.value), slide.unitText)}>
@@ -86,9 +91,11 @@ function SlideView({ slide, index, count, active }: { slide: CarouselSlide; inde
           <Glue text={v.text} />
         </p>
       ))}
-      <p className="slide__basis" data-testid="slide-basis-line">
-        <Pair text={slide.basisText} kind="basis" />
-      </p>
+      {slide.basisText !== null ? (
+        <p className="slide__basis" data-testid="slide-basis-line">
+          <Glue text={slide.basisText} />
+        </p>
+      ) : null}
       {chart}
       {slide.chart.kind === 'bar' ? <BarTable chart={slide.chart} caption={`${slide.title} — 큰 값부터`} /> : null}
       {slide.legend.length >= 2 ? (
@@ -190,7 +197,7 @@ export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** �
   }, [hasCard]);
   useEffect(() => {
     if (!auto) return;
-    // 슬라이드가 바뀔 때마다(자동이든 손으로든) 7초를 다시 센다
+    // 슬라이드가 바뀔 때마다(자동이든 손으로든) 9초를 다시 센다
     const id = window.setTimeout(() => setIndex((i) => nextSlideIndex(i, count, 1)), AUTO_ADVANCE_MS);
     return () => window.clearTimeout(id);
   }, [auto, index, count]);
@@ -223,7 +230,7 @@ export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** �
   return (
     <section
       ref={sectionRef}
-      className="card carousel"
+      className="card carousel carousel--005"
       data-testid="carousel"
       // 지금 자동 전환이 돌고 있는가(멈춤 사유: 사용자 일시정지·포인터·키보드 포커스·움직임 줄이기·가려진 탭). e2e가 시계를 흘리기 전에 기다리는 기준이다.
       data-autoplay={auto ? 'on' : 'off'}
@@ -235,35 +242,35 @@ export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** �
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
       }}
     >
-      <div className="carousel__head">
-        <div className="carousel__heading">
-          <h2 className="card__title">{TITLE_TEXT.carouselTitle}</h2>
-          <span className="carousel__note" data-testid="carousel-auto-note">
-            {paused || reduced || count < 2 ? TITLE_TEXT.carouselPausedNote : TITLE_TEXT.carouselAutoNote(AUTO_ADVANCE_MS / 1000)}
-          </span>
-        </div>
-        <div className="carousel__ctrl">
-          <GuardedButton className="btn btn--secondary btn--icon" guardKey={CAROUSEL_GUARD_KEY} data-testid="carousel-prev" aria-label={TITLE_TEXT.carouselPrev} onClick={() => go(-1)}>
+      <h2 className="sr-only">{TITLE_TEXT.carouselHeading}</h2>
+      <div className="carousel__nav" data-testid="carousel-nav">
+        <GuardedButton className="nav-btn" guardKey={CAROUSEL_GUARD_KEY} data-testid="carousel-prev" aria-label={TITLE_TEXT.carouselPrev} onClick={() => go(-1)}>
+          <span className="nav-btn__box">
             <Icon name="i-prev" />
-          </GuardedButton>
-          <span className="carousel__status num" data-testid="carousel-count" aria-hidden="true">
-            {current + 1} / {count}
           </span>
-          <GuardedButton className="btn btn--secondary btn--icon" guardKey={CAROUSEL_GUARD_KEY} data-testid="carousel-next" aria-label={TITLE_TEXT.carouselNext} onClick={() => go(1)}>
+        </GuardedButton>
+        <span className="carousel__status num" data-testid="carousel-count" aria-hidden="true">
+          {current + 1} / {count}
+        </span>
+        <GuardedButton className="nav-btn" guardKey={CAROUSEL_GUARD_KEY} data-testid="carousel-next" aria-label={TITLE_TEXT.carouselNext} onClick={() => go(1)}>
+          <span className="nav-btn__box">
             <Icon name="i-forward" />
-          </GuardedButton>
-          {reduced ? null : (
-            <GuardedButton
-              className="btn btn--secondary btn--icon carousel__pause"
-              guardKey={CAROUSEL_GUARD_KEY}
-              data-testid="carousel-pause"
-              aria-label={paused ? TITLE_TEXT.carouselPlay : TITLE_TEXT.carouselPause}
-              onClick={() => setPaused((p) => !p)}
-            >
+          </span>
+        </GuardedButton>
+        {/* 자동 넘김의 상태는 이 버튼의 아이콘·이름이 말한다(SH6): 돌고 있으면 일시정지 아이콘 + 「자동 넘김 일시정지」, 멈추면 재생 아이콘 + 「자동 넘김 다시 시작」. 움직임 줄이기에서는 자동 넘김이 없어 버튼도 없다 */}
+        {reduced ? null : (
+          <GuardedButton
+            className="nav-btn carousel__pause"
+            guardKey={CAROUSEL_GUARD_KEY}
+            data-testid="carousel-pause"
+            aria-label={paused ? TITLE_TEXT.carouselPlay : TITLE_TEXT.carouselPause}
+            onClick={() => setPaused((p) => !p)}
+          >
+            <span className="nav-btn__box">
               <Icon name={paused ? 'i-play' : 'i-pause'} />
-            </GuardedButton>
-          )}
-        </div>
+            </span>
+          </GuardedButton>
+        )}
       </div>
       <div
         className="carousel__viewport"
@@ -288,7 +295,7 @@ export function StatsCarousel({ data, onChartSize }: { data: CarouselData; /** �
       {showDots(count) ? (
         <div className="dots" role="group" aria-label="지표 선택" data-testid="carousel-dots">
           {data.slides.map((s, i) => (
-            <GuardedButton key={s.id} guardKey={CAROUSEL_GUARD_KEY} data-testid={`carousel-dot-${i}`} aria-label={dotLabel(i, count, s.title)} aria-current={i === current ? 'true' : undefined} onClick={() => setIndex(i)}>
+            <GuardedButton key={s.id} guardKey={CAROUSEL_GUARD_KEY} data-testid={`carousel-dot-${i}`} aria-label={dotLabel(i, count, s.insight)} aria-current={i === current ? 'true' : undefined} onClick={() => setIndex(i)}>
               <i />
             </GuardedButton>
           ))}

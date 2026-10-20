@@ -7,7 +7,9 @@ import { BUILD_LABEL } from '../buildInfo';
 import { ERA_CONFIG } from '../data/birthTable';
 import { NAMES } from '../data/names';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../data/titleText';
-import { Icon, Spoon, Sprite, TitleLogos } from '../ui/Brand';
+import homeMapMobile from '../assets/home/home-map-mobile.webp';
+import homeMapPc from '../assets/home/home-map-pc.webp';
+import { Icon, Spoon, Sprite, TitleWordmark } from '../ui/Brand';
 import { Glue } from '../ui/Glue';
 import { GuardedButton, useInputGuard } from '../ui/GuardedButton';
 import { StatsCarousel } from '../ui/StatsCarousel';
@@ -17,8 +19,9 @@ import { useEpochMinute, useIsoLayoutEffect } from '../ui/hooks';
 import { useFocusOnChange } from '../ui/useFocus';
 
 /**
- * 첫 화면 (SPEC-003 FS1~FS8, M2). 위에서부터 로고+심볼 → 한 줄 설명 → 수저 다섯 자루 → 가상 인구 문구와 보조 문구 → 태어날 세상 → 인생 길이,
- * 폭 ≥ 960px에서는 오른쪽 열(그보다 좁으면 선택 아래)에 한국 사회 통계 캐러셀, 맨 아래 출처·빌드 버전, 하단 중앙에 고정된 「태어나기」.
+ * 첫 화면 (SPEC-003 FS1~FS8, M2 → SPEC-005 QI3 HS1~HS5·SH1~SH7). 위에서부터 로고(워드마크) → (좁은 화면) 일러스트 배너 → 한 줄 설명 → 수저 다섯 자루 → 가상 인구 문구와 보조 문구 →
+ * 선택 영역(큰 슬롯 「태어날 세상」 → 작은 슬롯 인생 길이 분절 컨트롤 → 설정 줄 — HS3의 슬롯 원칙: 큰 결정 → 작은 결정),
+ * 폭 ≥ 960px에서는 오른쪽 열 맨 위에 일러스트(통계 카드 뒤로 살짝 겹침) 그 아래에 한국 사회 통계 캐러셀(그보다 좁으면 선택 아래), 맨 아래 출처·빌드 버전, 하단 중앙에 고정된 「태어나기」.
  * 진행 중인 판이 있는 채 첫 화면을 다시 열었을 때(`saved`)는 같은 자리에 「이어서 살기」가 기본 버튼이고 「새로 태어나기」는 보조다(이전 판이 사라진다는 확인 단계).
  * 구조·클래스는 docs/design/mockups/title-a.html·title-continue.html과 같다. 문구는 모두 data/titleText.ts.
  */
@@ -49,6 +52,11 @@ interface Props {
   minute?: number;
   /** 캐러셀 데이터(테스트용 주입). 없으면 koreaStats.json에서 만든다(그래프는 화면에 그려지는 폭에 맞춰 다시 만든다). */
   carousel?: CarouselData;
+  /**
+   * 설정 줄의 「무거운 장면 가리기」 스위치(HV3, QI6에서 동작을 연결한다). 이 값을 넘길 때만 설정 줄이 그려진다 —
+   * QI3은 자리(컴포넌트·CSS·문구)만 만들고 App은 아직 넘기지 않으므로 첫 화면에는 스위치가 보이지 않는다(동작하지 않는 스위치를 보이지 않는다).
+   */
+  gentle?: { on: boolean; onToggle: () => void };
 }
 
 interface RadioCardProps {
@@ -62,13 +70,14 @@ interface RadioCardProps {
   meta?: string;
   desc: string;
   testId: string;
-  /** 고를 수 없는 카드(예: 「약 1시간」 — 준비 중). 라디오 그룹 안에 그대로 있고, 비활성 이유는 meta 글자(카드의 접근 가능한 이름에 포함)로 알린다. */
+  /** 고를 수 없는 카드. 라디오 그룹 안에 그대로 있고, 비활성 이유는 meta 글자(카드의 접근 가능한 이름에 포함)로 알린다. */
   disabled?: boolean;
 }
 
 function RadioCard({ name, value, checked, guardReady, onSelect, title, meta, desc, testId, disabled = false }: RadioCardProps) {
+  // 큰 슬롯(태어날 세상 3장 → SPEC-004 태어날 세대 7장 + 랜덤)의 카드는 모두 작은 변형(`radio-card--compact`)이다 — 카드 수·열 수에 의존하지 않는 격자(HS3 ①)
   return (
-    <label className={`radio-card${checked ? ' is-selected' : ''}${disabled ? ' is-disabled' : ''}`}>
+    <label className={`radio-card radio-card--compact${checked ? ' is-selected' : ''}${disabled ? ' is-disabled' : ''}`}>
       <input
         type="radio"
         name={name}
@@ -99,6 +108,91 @@ function RadioCard({ name, value, checked, guardReady, onSelect, title, meta, de
   );
 }
 
+interface SegOptionProps {
+  value: LifeLength;
+  checked: boolean;
+  guardReady: boolean;
+  onSelect: () => void;
+  title: string;
+  /** 고를 수 없는 칸의 비활성 이유(「준비 중」) — 알약으로 보이고 칸의 접근 가능한 이름에 들어간다 */
+  meta?: string;
+  testId: string;
+  disabled?: boolean;
+}
+
+/**
+ * 인생 길이 분절 컨트롤의 칸 (HS2): 라디오 하나 + 체크 아이콘 + 이름. 선택 = 체크 + 테두리 + 연한 면(색에만 의존하지 않는다), 고를 수 없는 칸 = 점선 + 옅은 글자 + 「준비 중」.
+ * 입력 가드(R-014·R-030)는 라디오 카드와 같다 — 화면 진입 직후의 더블탭 둘째 입력이 선택을 바꾸지 않는다. 보이는 높이는 32px이고 누르는 영역은 포인터 환경에서 ≥ 24×24, 거친 포인터에서 44px(CSS).
+ */
+function SegOption({ value, checked, guardReady, onSelect, title, meta, testId, disabled = false }: SegOptionProps) {
+  return (
+    <label className={`seg__opt${checked ? ' is-selected' : ''}${disabled ? ' is-disabled' : ''}`}>
+      <input
+        type="radio"
+        name="lifeLength"
+        value={value}
+        checked={checked}
+        disabled={disabled}
+        onChange={() => {
+          if (guardReady && !disabled) onSelect();
+        }}
+        onClick={(e) => {
+          if (!guardReady) e.preventDefault();
+        }}
+        data-testid={testId}
+      />
+      <Icon name="i-check" />
+      <span>{title}</span>
+      {meta !== undefined ? <span className="seg__meta">{meta}</span> : null}
+      {checked ? <span className="sr-only">선택됨</span> : null}
+    </label>
+  );
+}
+
+/**
+ * 설정 줄의 「무거운 장면 가리기」 스위치 (HV3, copy.md 9-5). `role="switch"` + `aria-checked`, 이름 `aria-labelledby`·설명 `aria-describedby`. 상태 글자 「꺼짐/켜짐」은 보조(aria-hidden — 상태는 aria-checked가 전한다).
+ * 켜짐은 트랙 색 + 썸 위치 + 글자로 구분한다(색에만 의존하지 않는다). 동작(설정 v5 `gentle`·가림 UI)은 QI6 — 지금 TitleScreen은 `gentle` prop이 있을 때만 이 줄을 그린다.
+ */
+function GentleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <div className="slot slot--setting" data-testid="gentle-slot">
+      <button type="button" className="switch" role="switch" aria-checked={on} aria-labelledby="gentle-name" aria-describedby="gentle-desc" data-testid="gentle-switch" onClick={onToggle}>
+        <span className="switch__track" aria-hidden="true">
+          <span className="switch__thumb" />
+        </span>
+        <span className="switch__text">
+          <span className="switch__name" id="gentle-name">
+            {TITLE_TEXT.gentleName}
+          </span>
+          <span className="switch__state" aria-hidden="true">
+            {on ? TITLE_TEXT.gentleOn : TITLE_TEXT.gentleOff}
+          </span>
+          <span className="switch__desc" id="gentle-desc">
+            {TITLE_TEXT.gentleDesc}
+          </span>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * 첫 화면 일러스트 (HS1, 형진 님 그림 — diff-005 D5-24~D5-33): 한반도 모양 안의 여러 세대·지역의 삶 장면. **장식**이다 — `figure aria-hidden` + `alt=""`(이름은 로고가 말한다), 그림 안에 글자 0, 클릭·선택 없음, 외부 요청 0.
+ * 같은 그림이 두 자리에 있다: `banner`(< 960px, 로고 줄 아래 배너)와 `top`(≥ 960px, 오른쪽 열 맨 위·통계 카드 뒤로 살짝 겹침). CSS가 한 번에 하나만 보이게 한다 —
+ * 두 `<picture>`가 같은 주소를 골라 내려받기는 한 번이다(≥ 960px은 PC 파일, 그 아래는 모바일 파일). `width`·`height` 속성이 자리를 미리 잡아 레이아웃이 흔들리지 않는다.
+ * 파일은 vite가 해시 이름으로 내보낸다(`public/`에 두지 않는다 — 캐시). 흐림·겹침은 CSS(`title.css` 「일러스트」 블록).
+ */
+function HomeIllustration({ variant }: { variant: 'banner' | 'top' }) {
+  return (
+    <figure className={`illust illust--${variant}`} aria-hidden="true" data-testid={`home-illust-${variant}`}>
+      <picture>
+        <source media="(min-width: 960px)" srcSet={homeMapPc} type="image/webp" />
+        <img src={homeMapMobile} width={375} height={440} alt="" decoding="async" />
+      </picture>
+    </figure>
+  );
+}
+
 /** 수저 다섯 단계의 이름 (줄바꿈 위치만 시안과 같게: 「다이아몬드/수저」) */
 const SPOONS: ReadonlyArray<{ grade: 1 | 2 | 3 | 4 | 5; name: string; lines?: [string, string] }> = [
   { grade: 1, name: '흙수저' },
@@ -108,7 +202,7 @@ const SPOONS: ReadonlyArray<{ grade: 1 | 2 | 3 | 4 | 5; name: string; lines?: [s
   { grade: 5, name: '다이아몬드수저', lines: ['다이아몬드', '수저'] },
 ];
 
-export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, onBegin, saved = null, oldSaveNotice = false, minute, carousel }: Props) {
+export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, onBegin, saved = null, oldSaveNotice = false, minute, carousel, gentle }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const tagKeep = heroTagKeepParts();
   const clock = useEpochMinute();
@@ -221,11 +315,13 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
               {TITLE_TEXT.oldSaveNotice}
             </p>
           ) : null}
-          <header className="hero">
+          <header className="hero hero--005">
             <h1 ref={headingRef} tabIndex={-1} data-testid="title-heading">
               <span className="sr-only">수저 게임</span>
-              <TitleLogos />
+              <TitleWordmark />
             </h1>
+            {/* 좁은 화면(< 960px): 로고 줄 아래 배너. 넓은 화면의 같은 그림은 오른쪽 열 맨 위에 있다(HomeIllustration) */}
+            <HomeIllustration variant="banner" />
             <p className="hero__tag">
               {TITLE_TEXT.heroTagLead}
               <span className="keep-phrase">
@@ -268,9 +364,9 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
               </>
             )}
           </header>
-          <fieldset>
+          <fieldset className="slot slot--big">
             <legend className="group-title">{TITLE_TEXT.eraGroup}</legend>
-            <div className="choices choices--1" role="radiogroup" aria-label={TITLE_TEXT.eraGroup} data-testid="era-group">
+            <div className="choices choices--grid" role="radiogroup" aria-label={TITLE_TEXT.eraGroup} data-testid="era-group">
               {ERAS.map((e) => (
                 <RadioCard
                   key={e}
@@ -287,34 +383,37 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
               ))}
             </div>
           </fieldset>
-          <fieldset>
-            <legend className="group-title">{TITLE_TEXT.lifeLengthGroup}</legend>
-            <div className="choices choices--2" role="radiogroup" aria-label={TITLE_TEXT.lifeLengthGroup} data-testid="life-length-group">
-              {LIFE_LENGTHS.map((l) => {
-                const selectable = isLifeLengthSelectable(l);
-                return (
-                  <RadioCard
-                    key={l}
-                    name="lifeLength"
-                    value={l}
-                    checked={l === lifeLength}
-                    guardReady={guardReady}
-                    onSelect={() => onSelectLifeLength(l)}
-                    title={LIFE_LENGTH_TEXT[l].title}
-                    meta={selectable ? undefined : NOT_READY_TEXT}
-                    desc={LIFE_LENGTH_TEXT[l].desc}
-                    testId={`life-${l}`}
-                    disabled={!selectable}
-                  />
-                );
-              })}
-            </div>
-            <p className="t-sm t-muted" style={{ marginTop: 'var(--sp-2)' }} data-testid="life-length-hint">
-              <Glue text={TITLE_TEXT.lifeLengthHint} />
-            </p>
-          </fieldset>
+          {/* 작은 슬롯(HS3 ③) — 인생 길이 분절 컨트롤 + 한 줄 안내, 그 아래 설정 줄(④ 무거운 장면 가리기, QI6 전에는 gentle prop이 없어 그려지지 않는다) */}
+          <div className="slots-bottom">
+            <fieldset className="slot slot--small">
+              <legend className="group-title group-title--inline">{TITLE_TEXT.lifeLengthGroup}</legend>
+              <div className="seg" role="radiogroup" aria-label={TITLE_TEXT.lifeLengthGroup} data-testid="life-length-group">
+                {LIFE_LENGTHS.map((l) => {
+                  const selectable = isLifeLengthSelectable(l);
+                  return (
+                    <SegOption
+                      key={l}
+                      value={l}
+                      checked={l === lifeLength}
+                      guardReady={guardReady}
+                      onSelect={() => onSelectLifeLength(l)}
+                      title={LIFE_LENGTH_TEXT[l].title}
+                      meta={selectable ? undefined : NOT_READY_TEXT}
+                      testId={`life-${l}`}
+                      disabled={!selectable}
+                    />
+                  );
+                })}
+              </div>
+              <p className="seg__hint" data-testid="life-length-hint">
+                <Glue text={TITLE_TEXT.lifeLengthHint} />
+              </p>
+            </fieldset>
+            {gentle === undefined ? null : <GentleSwitch on={gentle.on} onToggle={gentle.onToggle} />}
+          </div>
         </main>
         <aside className="title__side">
+          <HomeIllustration variant="top" />
           <StatsCarousel data={data} onChartSize={carousel === undefined ? setChartSize : undefined} />
         </aside>
         <footer className="title-foot" data-testid="title-foot">
