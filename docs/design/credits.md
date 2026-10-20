@@ -19,6 +19,9 @@
 | 시안의 통계 값(합계출산율 추이·시도별 출생아 비율) | `src/data/koreaStats.json` → `scripts/design/buildMockups.mjs` | developer가 공개 보도자료·KOSIS에서 확인한 값(usable: true만). 출처·조회일은 화면에 함께 적는다 | 공공 통계(출처 표기) |
 | 시안 스크린샷 | `docs/design/screens/003/*.png` | `@playwright/test`(이미 개발 의존성, Apache-2.0)로 직접 찍음 | 직접 제작 |
 | 작업 도구 | `scripts/design/*.mjs`, `scripts/design/brandSymbols.d.mts` | 직접 작성한 스크립트. 새 npm 의존성 없음 | — |
+| 한반도 픽토그램 후보 B(단독 실루엣, SPEC-005 QI2) | `docs/design/mockups/pictogram-b.svg`(형진 님이 고르면 `src/assets/brand/a/`로) | 심볼 「담긴 땅」과 **같은 좌표**(`scripts/design/geo.mjs` 60점 윤곽 + 섬 셋, `brandSymbols.mjs#map`)를 똑바로 세워 그린 것 — 지도 이미지·지도 데이터 사용 0, 분단선·경계·지역 구분 없음, 한반도기 색(하늘색) 금지 유지 | 직접 제작 — 의무 없음 |
+| QI2 시안 아이콘 셋(「전망」 칩 꺾은선 `i-proj`, 「랜덤 세대」 뒤섞기 `i-shuffle`, 전망 막대 빗금 `hatch`) | `docs/design/mockups/title-005.html` 스프라이트(구현 때 `src/assets/icons/ui-icons.svg`로) | 24px 격자에 직접 그린 선 도형·패턴 | 직접 제작 |
+| QI2 시안의 통계 값(표제어 슬라이드 14장 · 전망 P1~P4) | `src/data/koreaStats.json`(`future-projection` 통계청 장래인구추계 2022년 기준 중위, `heat-projection` 기상청 남한상세 기후변화 전망, 실측 계열) → `title-005.html` | developer가 출처를 확인한 공개 통계(usable: true), 출처·조회일을 슬라이드에 함께 적는다. **연령계층별 빈곤율·1인 가구 전망(P5)·가상 인구 수는 가짜 값**이며 화면에 「시안 · 가짜 값」 표기 | 공공 통계(출처 표기) |
 | 색각 시뮬레이션 행렬 | `scripts/checkContrastLib.ts#CVD_MATRIX` → `tests/designAssets.test.ts`, `screens/003/status-colors-cvd.png` | Machado, Oliveira, Fernandes (2009) "A Physiologically-based Model for Simulation of Color Vision Deficiency", IEEE TVCG 15(6) — 저자 공개 표의 심각도 1.0 행렬(숫자 27개)을 옮겨 적음. 논문의 코드·이미지는 쓰지 않았다 | 수치 인용(출처를 코드 주석·이 표에 표기) |
 
 ## 글꼴 결정 근거와 대안 (C15, 마스터 확정 대기)

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수저 게임 · 시안 · 한반도 픽토그램 A/B 비교(SPEC-005 QI2)</title>
+<!-- ?view=desktop(기본, 1280 폭 A 위·B 아래) | mobile(360 폭 A 왼쪽·B 오른쪽). 안쪽은 title-005.html을 iframe으로 같은 상태(?pictogram=)로 연다 -->
+<link rel="stylesheet" href="../../../src/styles/tokens.css">
+<link rel="stylesheet" href="ds.css">
+<script>(function(){var q=new URLSearchParams(location.search);document.documentElement.setAttribute('data-view',q.get('view')==='mobile'?'mobile':'desktop');var t=q.get('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
+<style>
+  body { padding: var(--sp-4); }
+  .cmp { display: flex; flex-direction: column; gap: var(--sp-5); }
+  .cmp__item { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .cmp__item h2 { font-size: var(--fs-lg); display: flex; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap; }
+  .cmp__item h2 small { font-size: var(--fs-sm); font-weight: var(--fw-regular); color: var(--c-text-2); }
+  .cmp__frame { border: 1px solid var(--c-border-strong); border-radius: var(--r-md); overflow: hidden; background: var(--c-bg); }
+  iframe { display: block; border: 0; }
+  html[data-view='desktop'] .cmp__frame { width: 1280px; height: 560px; }
+  html[data-view='desktop'] iframe { width: 1280px; height: 560px; }
+  html[data-view='mobile'] .cmp { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+  html[data-view='mobile'] .cmp__item { flex: 0 0 360px; }
+  html[data-view='mobile'] .cmp__note { flex-basis: 100%; }
+  html[data-view='mobile'] .cmp__frame { width: 360px; height: 640px; }
+  html[data-view='mobile'] iframe { width: 360px; height: 640px; }
+  .cmp__note { font-size: var(--fs-sm); color: var(--c-text-2); max-width: 70em; }
+</style>
+</head>
+<body>
+<div class="cmp">
+  <div class="cmp__item">
+    <h2>A안 — 지금 심볼 「담긴 땅」 재사용 <small>제목은 워드마크(글자)만, 오른쪽 위에 숟가락에 담긴 한반도 · 그 밑에 통계. 새 자산 없음, 로고 규칙(R-130 한반도 단독 금지) 그대로</small></h2>
+    <div class="cmp__frame"><iframe title="A안 첫 화면" src="title-005.html?pictogram=a&slide=life-expectancy"></iframe></div>
+  </div>
+  <div class="cmp__item">
+    <h2>B안 — 한반도 단독 실루엣 <small>넓은 화면은 지금 로고(심볼 + 워드마크) 그대로, 오른쪽 위에 한반도만(섬 셋 포함, 똑바로) · 그 밑에 통계. 좁은 화면(360)은 로고 폭 때문에 워드마크만 남아 숟가락 심볼이 빠진다. 로고 규칙 R-130을 고쳐야 하고 한반도기 연상 여지는 색(쪽빛)·섬·여백으로 줄였다</small></h2>
+    <div class="cmp__frame"><iframe title="B안 첫 화면" src="title-005.html?pictogram=b&slide=life-expectancy"></iframe></div>
+  </div>
+  <p class="cmp__note">두 안 모두 통계 영역·인생 길이·무거운 장면 스위치·하단 띠는 같다. 픽토그램은 장식(aria-hidden), 클릭 없음, 분단선·경계·지역 구분 없음.</p>
+</div>
+</body>
+</html>

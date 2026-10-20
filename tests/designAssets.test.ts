@@ -633,9 +633,10 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
     // 설명판(components·spoon-sizes·symbols·faces)과 수저가 나오지 않는 화면 시안 — 밀린·오류 화면(system — 공통 헤더 + 카드 하나, 2026-10-17 M4 착수 정리),
     // M5 경제 모델 시안(economy-m5 — 선택지 영향 줄·자산 카드·엔딩 최종 순자산 줄, 2026-10-17 designer; 「자산 현황」에는 칩을 두지 않는다는 규칙 그대로)은 제외하고 아이콘이 정말 없음을 따로 단언한다
     // M7c 「나의 기록」 줄 표본(note-rows — 인생 기록 카드 + 엔딩 연표 조각, 2026-10-19 designer)도 수저가 나오지 않는 장이라 같은 방식으로 제외하고 아이콘 없음을 단언한다
-    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5|note-rows)\.html$/.test(n));
-    expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장(M7c의 note-rows는 수저 없는 표본 장이라 제외)').toBe(12);
-    for (const bare of ['system', 'economy-m5', 'note-rows']) {
+    // SPEC-005 QI2 비교 화면(title-005-compare — A/B 첫 화면을 iframe으로 나란히 보이는 장, 2026-10-20 designer)도 수저 아이콘이 직접 나오지 않는 장이라 같은 방식으로 제외한다(title-005.html 자체는 띠가 있어 화면 시안으로 센다)
+    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5|note-rows|title-005-compare)\.html$/.test(n));
+    expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장(M7c의 note-rows는 수저 없는 표본 장이라 제외) + SPEC-005 QI2 title-005 1장').toBe(13);
+    for (const bare of ['system', 'economy-m5', 'note-rows', 'title-005-compare']) {
       expect(mockups[Object.keys(mockups).find((n) => n.endsWith(`/${bare}.html`)) ?? ''] ?? '', `${bare}.html: 시안이 있고 수저 아이콘 없음`).not.toMatch(/<svg class="spoon/);
       expect(Object.keys(mockups).some((n) => n.endsWith(`/${bare}.html`)), `${bare}.html 존재`).toBe(true);
     }

@@ -1,0 +1,153 @@
+/*
+ * SPEC-005 QI2 첫 화면 시안 전용 스타일 (designer, 2026-10-20). ds.css 위에 얹는다 — 형진 님이 시안을 확인하기 전이라 ds.css·src/를 건드리지 않고 따로 둔다.
+ * 확인 뒤 developer가 title.css로 옮길 때는 이 파일의 블록을 그대로 가져가고, ds.css에도 같은 블록을 합친다(diff-005.md).
+ * 규칙: 색·간격·글자는 토큰만. 상태는 색에만 의존하지 않는다(테두리·체크·글자·점선·빗금). 포인터 클릭 대상 ≥ 24×24, 거친 포인터 ≥ 44(보이지 않는 여백).
+ */
+
+/* ---------- 머리: 제목(워드마크 또는 로고) + 한반도 픽토그램 (HS1) ---------- */
+.hero--005 { align-items: stretch; text-align: left; gap: var(--sp-3); }
+.hero__brand { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); width: 100%; min-width: 0; }
+.hero__brand h1 { display: flex; align-items: center; min-width: 0; flex: 1 1 auto; }
+.hero__logo { display: none; }
+/* A안: 제목은 워드마크(글자)만. wordmark.svg의 글자 획 상자는 svg 높이의 약 0.79(실측) — 360px에서 52px → 글자 41px(DS1 ≥ 40), 넓은 화면 64px → 51px */
+.hero__logo--a { display: block; }
+.hero__logo--a svg.logo { --logo-h: 52px; }
+/* B안: 넓은 화면은 지금 로고(정식 심볼 + 워드마크) 108px → 글자 51px 그대로. **좁은 화면(< 960px)은 B안도 워드마크만** — 헤더형 로고로 글자 40px을 지키면 폭 290px이라 픽토그램(≥ 48px)과 한 줄(328px)에 들어가지 않는다(실측 357px, 2026-10-20).
+   즉 B안은 좁은 화면에서 숟가락 심볼이 사라지고 한반도만 남는다(비교 화면 주석·diff-005.md) */
+.hero__logo--b-narrow { display: none; }
+.hero__logo--b-wide svg.logo { --logo-h: 108px; }
+.picto { flex: none; display: block; }
+.picto__a, .picto__b { display: none; }
+html[data-picto='a'] .picto__a { display: block; }
+html[data-picto='b'] .picto__b { display: block; }
+.picto svg { height: var(--picto-h, 64px); width: auto; display: block; }
+/* 좁은 화면(< 960px): 로고 줄 오른쪽에 작게. 넓은 화면의 오른쪽 열 맨 위 픽토그램은 숨긴다 */
+.picto--inline { --picto-h: 64px; }
+.picto--top { display: none; }
+.hero--005 .spoon-lineup { max-width: 420px; padding: var(--sp-2) 0; }
+.hero--005 .hero__pop { max-width: none; }
+
+/* ---------- 큰 슬롯: 태어날 세상(3장) / 태어날 세대(7장 + 랜덤) — HS3 ①: 카드 수에 의존하지 않는 auto-fit 격자 ---------- */
+.slot--big { display: none; }
+html[data-slot='era3'] .slot--era3 { display: block; }
+html[data-slot='gen8'] .slot--gen8 { display: block; }
+.slot__lead { font-size: var(--fs-sm); color: var(--c-text-2); margin: calc(var(--sp-1) * -1) 0 var(--sp-2); }
+.choices--grid { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+.radio-card--compact { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); align-items: center; }
+.radio-card--compact.is-selected { padding: calc(var(--sp-2) - 2px) calc(var(--sp-3) - 2px); }
+.radio-card--compact .radio-card__title { font-size: var(--fs-md); }
+.radio-card--compact .radio-card__desc { font-size: var(--fs-xs); line-height: 1.4; }
+.radio-card--compact .radio-card__meta { font-size: var(--fs-xs); }
+.radio-card--compact .radio-card__mark { width: 22px; height: 22px; margin-top: 0; }
+.radio-card--compact .radio-card__mark .icon { width: 14px; height: 14px; }
+/* 「랜덤 세대」: 라디오가 아니라 버튼(SPEC-004 GS1) — 같은 카드 틀에 점선 테두리 + 뒤섞기 아이콘(색이 아니라 모양으로 구분) */
+.radio-card--action { font: inherit; text-align: left; border-style: dashed; color: inherit; }
+.radio-card--action .radio-card__mark--square { border-radius: var(--r-sm); border-style: dashed; color: var(--c-text-2); }
+.radio-card--action .radio-card__mark--square .icon { opacity: 1; stroke-width: 2; }
+.radio-card--action:hover { background: var(--c-surface-2); }
+
+/* ---------- 작은 슬롯: 인생 길이 분절 컨트롤(HS2) + 설정 줄: 무거운 장면 가리기 스위치(HV3) ---------- */
+.slots-bottom { display: flex; flex-direction: column; gap: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--c-border); }
+.slot--small { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.group-title--inline { float: left; margin: 0 var(--sp-3) 0 0; line-height: 36px; }
+.seg { display: inline-flex; align-items: stretch; gap: 2px; padding: 2px; border: 1px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); }
+.seg__opt { position: relative; display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 32px; padding: 0 var(--sp-3); border: 2px solid transparent; border-radius: calc(var(--r-md) - 2px); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.2; color: var(--c-text-2); cursor: pointer; }
+.seg__opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.seg__opt .icon { width: 16px; height: 16px; stroke-width: 3; opacity: 0; }
+.seg__opt.is-selected { background: var(--c-brand-soft); color: var(--c-on-brand-soft); border-color: var(--c-brand); }
+.seg__opt.is-selected .icon { opacity: 1; }
+.seg__opt.is-disabled { color: var(--c-text-3); border-style: dashed; border-color: var(--c-border-strong); cursor: not-allowed; }
+.seg__opt.is-disabled input { cursor: not-allowed; }
+.seg__meta { font-size: var(--fs-xs); font-weight: var(--fw-bold); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); padding: 0 var(--sp-2); line-height: 1.6; }
+.seg:focus-within { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.seg__hint { flex-basis: 100%; font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+/* 거친 포인터(터치): 보이는 32px은 그대로, 누르는 영역(라디오 input)만 위아래로 넓혀 44px(WCAG 2.5.8 — 테두리 2px 안쪽 28px + 8px × 2, 실측 44) */
+@media (pointer: coarse) {
+  .seg__opt input { top: -8px; bottom: -8px; height: auto; }
+}
+.switch { display: flex; align-items: flex-start; gap: var(--sp-3); width: 100%; min-height: var(--hit); padding: var(--sp-1) 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: var(--r-sm); }
+.switch__track { flex: none; position: relative; width: 40px; height: 24px; margin-top: 1px; border-radius: var(--r-pill); border: 2px solid var(--c-border-strong); background: var(--c-surface-2); }
+.switch__thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-text-2); transition: transform var(--dur) var(--ease); }
+.switch[aria-checked='true'] .switch__track { background: var(--c-brand); border-color: var(--c-brand); }
+.switch[aria-checked='true'] .switch__thumb { transform: translateX(16px); background: var(--c-on-brand); }
+.switch__text { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--sp-2); row-gap: 2px; min-width: 0; }
+.switch__name { font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.switch__state { font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--c-text-2); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); padding: 0 var(--sp-2); line-height: 1.6; }
+.switch[aria-checked='true'] .switch__state { color: var(--c-on-brand-soft); background: var(--c-brand-soft); border-color: var(--c-brand); }
+.switch__desc { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+
+/* ---------- 통계 캐러셀(SH1·SH4·SH5·SH6): 머리글 없음, 조작 줄은 카드 오른쪽 위에 작게, 슬라이드 = 표제어(크게) + 공식 통계명(작고 연하게) ---------- */
+.carousel--005 { gap: var(--sp-2); }
+.carousel__nav { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-1); margin: calc(var(--sp-2) * -1) calc(var(--sp-2) * -1) 0 0; }
+/* 조작 버튼: 보이는 상자(.nav-btn__box)는 28px(≤ 32px▲, 포인터 클릭 대상 ≥ 24×24), 누르는 요소(button)는 거친 포인터에서 44px로 커진다(WCAG 2.5.8 — 보이지 않는 여백이 버튼 자신이라 요소 넘침이 없다) */
+.nav-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-2); cursor: pointer; }
+.nav-btn__box { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--c-border-strong); border-radius: var(--r-sm); background: var(--c-surface); }
+.nav-btn:hover .nav-btn__box { background: var(--c-surface-2); color: var(--c-text); }
+.nav-btn .icon { width: 18px; height: 18px; }
+@media (pointer: coarse) {
+  .nav-btn { width: 44px; height: 44px; }
+  .carousel__nav { margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) calc(var(--sp-2) * -1) 0; }
+}
+.carousel__nav .carousel__status { min-width: 3.4em; text-align: center; font-size: var(--fs-xs); color: var(--c-text-2); }
+.carousel__nav .carousel__pause { margin-left: var(--sp-1); color: var(--c-text); }
+.slide__chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.slide__insight { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); text-wrap: balance; }
+/* 공식 통계명(기준): 작고 연한 글씨이지만 대비 4.5:1 이상 — --c-text-3(면 위 라이트 5.78 / 다크 5.96, contrast-report.md 「출처·작은 주석」 쌍) */
+.slide__official { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin-top: calc(var(--sp-1) * -1); }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 0 var(--sp-2); border-radius: var(--r-pill); border: 1px solid var(--c-accent); background: var(--c-accent-soft); color: var(--c-on-accent-soft); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.7; }
+.chip .icon { width: 14px; height: 14px; stroke-width: 2.4; }
+.mock-tag--inline { margin-top: 0; }
+.slide__projnote { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-2); border-left: 3px solid var(--c-accent); padding-left: var(--sp-2); }
+/* 그래프: 실측 = 실선(쪽빛), 전망 = **긴 점선(10 5, 놋쇠)** + 경계 세로 점선 + 「실측 | 전망」 글자, 막대 전망 = 빗금(색만으로 구분하지 않는다, FC2).
+   기존 보조 계열의 점선(남자 7 4 · 여자 2 4, ds.css .line--dashed/.line--dotted)과 무늬가 다르다 — 한 캐러셀 안에서 「점선 = 전망」이 보조 계열과 헷갈리지 않게 전망은 긴 점선 + 라벨 + 범례 「전망」으로 세 겹 */
+.chart .line--proj { stroke: var(--c-accent); stroke-dasharray: 10 5; }
+.chart .dot--proj { stroke: var(--c-accent); }
+.chart .dot--last.dot--proj { fill: var(--c-accent); }
+.legend .swatch-line--proj { stroke: var(--c-accent); stroke-dasharray: 10 5; }
+.chart .split { stroke: var(--c-text-3); stroke-width: 1; stroke-dasharray: 2 3; }
+.chart .split-label { font-size: 11px; fill: var(--c-text-3); }
+.chart .chart-bar--proj { fill: url(#hatch); stroke: var(--c-accent); stroke-width: 1; }
+
+/* ---------- 푸터 링크 자리(NT4·FQ1) ---------- */
+.title-foot__links { font-size: var(--fs-sm); color: var(--c-text-2); }
+.title-foot__links a { color: var(--c-link); text-decoration: underline; }
+
+/* ---------- 하단 띠 상태(state=new|saved) ---------- */
+.bottom-bar__new, .bottom-bar__saved { display: none; flex-direction: column; align-items: center; gap: var(--sp-2); width: 100%; }
+html[data-state='new'] .bottom-bar__new { display: flex; }
+html[data-state='saved'] .bottom-bar__saved { display: flex; }
+.bottom-bar__new .btn--lg, .bottom-bar__saved .btn--lg { width: min(100%, 360px); }
+
+/* ---------- 넓은 화면(≥ 960px): 왼쪽 열 제목(워드마크/로고), 오른쪽 열 맨 위 픽토그램 → 그 밑에 캐러셀(HS1) ---------- */
+@media (min-width: 960px) {
+  .hero--005 { gap: var(--sp-3); }
+  .hero__logo--a svg.logo { --logo-h: 64px; }
+  html[data-picto='b'] .hero__logo--a { display: none; }
+  html[data-picto='b'] .hero__logo--b-wide { display: block; }
+  .picto--inline { display: none; }
+  .picto--top { display: flex; justify-content: flex-end; --picto-h: 168px; padding: 0 var(--sp-3) var(--sp-3) 0; }
+  .title__side { display: flex; flex-direction: column; }
+  .hero--005 .spoon-lineup { max-width: 460px; }
+  /* 1280×800: 왼쪽 열이 띠 위에 다 들어가도록 세로 간격을 한 단 줄인다(카드 8장에서는 스크롤이 생기지만 띠가 포커스를 가리지 않는다 — scroll-padding) */
+  .title--005 .title__main { gap: var(--sp-4); }
+  .slots-bottom { gap: var(--sp-2); }
+}
+@media (min-width: 1600px) {
+  .picto--top { --picto-h: 200px; }
+}
+
+/* ---------- 강제 색상: 모양으로 구분(이중 테두리·점선·빗금·체크), 시스템 색 한 짝 ---------- */
+@media (forced-colors: active) {
+  .nav-btn, .seg, .switch__track, .chip, .radio-card--action, .radio-card--action .radio-card__mark--square { border-color: CanvasText; }
+  .seg__opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  .seg__opt.is-disabled, .seg__opt.is-disabled .seg__meta { color: GrayText; border-color: GrayText; }
+  .switch[aria-checked='true'] .switch__track { forced-color-adjust: none; background: Highlight; border-color: CanvasText; }
+  .switch__thumb { forced-color-adjust: none; background: CanvasText; }
+  .switch[aria-checked='true'] .switch__thumb { background: HighlightText; }
+  .switch__state, .switch[aria-checked='true'] .switch__state { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  .chip { background: Canvas; color: CanvasText; }
+  .picto svg path { fill: CanvasText; }
+  .slide__projnote { border-left-color: CanvasText; }
+  .chart .chart-bar--proj { stroke: CanvasText; }
+  .slots-bottom { border-top-color: CanvasText; }
+}
