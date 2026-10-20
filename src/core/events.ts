@@ -5,6 +5,7 @@ import {
   DWELLINGS,
   ERAS,
   GENDERS,
+  HEAVY_KINDS,
   HOUSINGS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
@@ -17,6 +18,7 @@ import {
   type Effects,
   type Era,
   type Gender,
+  type HeavyKind,
   type Housing,
   type ParentingStyle,
   type Stage,
@@ -135,6 +137,12 @@ export interface EventDef {
   citation?: string | Partial<Record<Era, string>>;
   /** 인용을 어느 세상에서도 붙이지 않는 카드의 사유 코드 — `NO_CITATION_CODES` (X1~X6 원칙적 무인용, D 맞는 자료 없음). `citation`과 함께 쓰지 않는다 */
   noCitation?: NoCitationCode;
+  /**
+   * 무거운 장면 표지 (SPEC-005 HV2, docs/data/events-schema.md 「무거운 장면 표지」): 사람이 다치거나 무언가를 잃는 장면(몸의 병·돌봄과 임종·관계 단절·방임/괴롭힘·생계 붕괴)이면 분류를 붙인다.
+   * 설정 「무거운 장면 가리기」가 켜지면 이 이벤트의 **글**(제목·본문·선택지·결과·인용)이 화면에서 가려진다 — 사건·선택·효과·확률·난수·플래그는 그대로다(방식 A). 판단 단위는 이벤트 하나이고 선택지 단위 표지는 없다.
+   * 서술 이벤트와 선택지 이벤트에 쓸 수 있고 마일스톤에는 쓰지 않는다. 저장 대상이 아니다(데이터에서 읽는다).
+   */
+  heavy?: { kind: HeavyKind };
 }
 
 /**
@@ -593,7 +601,7 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
 
 const EVENT_KEYS = [
   'id', 'title', 'text', 'stages', 'ageRange', 'eras', 'weight', 'once', 'cooldown',
-  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'citation', 'noCitation',
+  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'citation', 'noCitation', 'heavy',
 ] as const;
 
 /** 단계가 덮는 나이 구간 [시작, 끝] (노년은 상한 없음) */
@@ -632,6 +640,15 @@ function checkMoneyKinds(ev: Obj, path: string, p: Problems): void {
   const usesAssetCond = conds.some((c) => isObj(c) && c.assets !== undefined);
   if (usesFamily && !young) p.add(path, 'effects.family(집안 살림)는 20세 미만(영유아·학창)으로만 일어나는 이벤트에서만 쓸 수 있다');
   if ((usesAssets || usesAssetCond) && !adult) p.add(path, 'assets(자산) 효과·조건은 20세 이상(청년·중년·노년)으로만 일어나는 이벤트에서만 쓸 수 있다');
+}
+
+/** `heavy`(무거운 장면 표지, SPEC-005 HV2)의 형태: `{ kind }` 하나뿐이고 kind는 분류 여섯 중 하나. 마일스톤(모든 판에 일어나는 첫 걸음·첫 말 같은 일)에는 쓰지 않는다. */
+function checkHeavy(ev: Obj, path: string, p: Problems): void {
+  if (ev.heavy === undefined) return;
+  if (!isObj(ev.heavy)) return void p.add(`${path}.heavy`, '{ "kind": "..." } 객체여야 한다');
+  checkKeys(ev.heavy, ['kind'], ['kind'], `${path}.heavy`, p);
+  if (ev.heavy.kind !== undefined && !(HEAVY_KINDS as readonly unknown[]).includes(ev.heavy.kind)) p.add(`${path}.heavy.kind`, `분류(${HEAVY_KINDS.join(', ')}) 중 하나여야 한다`);
+  if (ev.milestone === true) p.add(`${path}.heavy`, '마일스톤(모든 판에 일어나는 일)에는 무거운 장면 표지를 쓰지 않는다');
 }
 
 /**
@@ -768,6 +785,7 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
   }
 
   checkCitationFields(ev, path, p);
+  checkHeavy(ev, path, p);
 
   const hasChoices = ev.choices !== undefined;
   if (hasChoices) {

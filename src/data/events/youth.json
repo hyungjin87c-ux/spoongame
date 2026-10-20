@@ -174,6 +174,7 @@
       "ageRange": { "min": 31, "max": 50 },
       "weight": 60,
       "once": true,
+      "heavy": { "kind": "bond" },
       "conditions": { "flags": ["has_partner", "marriage_waited_twice"], "notFlags": ["married"] },
       "effects": { "stats": { "happiness": -4, "relationships": -4 }, "clearFlags": ["has_partner", "marriage_waited_twice"], "setFlags": ["broke_up"] }
     },
@@ -803,6 +804,7 @@
       "ageRange": { "min": 21, "max": 30 },
       "weight": 12,
       "once": true,
+      "heavy": { "kind": "work" },
       "conditions": { "notFlags": ["has_career", "own_business"] },
       "effects": { "stats": { "happiness": -3, "education": 1 }, "assets": { "income": -200 } }
     },

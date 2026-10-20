@@ -488,7 +488,7 @@ test('수동 테마 사전 적용(매트릭스, 스크립트 차단): 수동 라
     { label: '저장 없음 · OS 다크', saved: null, os: 'dark', expected: 'dark' },
     { label: '저장 없음 · OS 라이트', saved: null, os: 'light', expected: 'light' },
     { label: '깨진 저장(수동 다크로 읽지 않는다) · OS 라이트', saved: '{"version":3,"data":', os: 'light', expected: 'light' },
-    { label: '모르는 버전의 다크 · OS 라이트', saved: JSON.stringify({ version: 5, data: { speed: 1, autoMode: false, theme: 'dark' } }), os: 'light', expected: 'light' },
+    { label: '모르는 버전의 다크 · OS 라이트', saved: JSON.stringify({ version: 6, data: { speed: 1, autoMode: false, theme: 'dark' } }), os: 'light', expected: 'light' },
   ];
   for (const c of cases) {
     const context = await browser.newContext({ viewport: { width: 360, height: 740 } });

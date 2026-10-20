@@ -9,7 +9,7 @@ export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
 export const SAVE_VERSION = 8;
 /** 설정 봉투 버전(core/storage.ts#SETTINGS_VERSION)과 첫 화면의 기본 선택(core/state.ts#DEFAULT_SETTINGS) — tests/e2eHelpers.test.ts가 core와 같은지 대조한다. */
-export const SETTINGS_VERSION = 4;
+export const SETTINGS_VERSION = 5;
 export const DEFAULT_ERA_CHOICE: Era = 'present';
 export const DEFAULT_LIFE_LENGTH_CHOICE: LifeLength = 'short30';
 /** 재현 가능한 실패를 위한 기본 시드 */

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import configRaw from '../.github/ISSUE_TEMPLATE/config.yml?raw';
 import templateRaw from '../.github/ISSUE_TEMPLATE/feedback.yml?raw';
 import pkgRaw from '../package.json?raw';
+import titleScreenRaw from '../src/screens/TitleScreen.tsx?raw';
 import { resolveRepoUrl } from '../scripts/buildInfo';
 import { startLife } from '../scripts/simulateLib';
 import { ERA_CONFIG } from '../src/data/birthTable';
@@ -229,5 +230,25 @@ describe('이슈 양식 파일과의 대응 (.github/ISSUE_TEMPLATE/feedback.yml
   it('화면 이름 표는 모든 화면 단계를 덮는다 (누락 없음)', () => {
     expect(Object.keys(FEEDBACK_SCREEN_LABEL).sort()).toEqual([...PHASES].sort());
     for (const label of Object.values(FEEDBACK_SCREEN_LABEL)) expect(label.length).toBeGreaterThan(1);
+  });
+});
+
+/**
+ * 정보 패널 안 「의견 보내기」 (SPEC-005 QI7 N2·FQ3, 완료 기준 12): 패널 끝의 링크도 도구 줄과 같은 `FeedbackLink`이고 **주소가 같은 함수(`buildFeedbackUrl`)에서 나온다** —
+ * 첫 화면에는 판이 없으므로 화면 필드는 「첫 화면」, 세상·인생 길이는 비어 있고 빌드 표기만 더해진다. 이름·기록이 들어갈 자리는 이 경우에도 없다.
+ * 패널의 구조·읽기 이름은 tests/infoPanel.test.tsx, 실제 열기·새 탭 이동은 e2e/info-panel.spec.ts.
+ */
+describe('정보 패널의 「의견 보내기」 (N2): 같은 buildFeedbackUrl, 첫 화면 값', () => {
+  it('첫 화면 필드(화면 title · 세상 없음 · 인생 길이 없음 + 빌드 표기)로 만든 주소가 이슈 양식의 screen 칸에 「첫 화면, {빌드}」로 채워진다', () => {
+    const url = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, REPO, BUILD))!;
+    expect(url.startsWith(`${REPO}/issues/new?template=${FEEDBACK_TEMPLATE}&${FEEDBACK_SCREEN_FIELD}=`)).toBe(true);
+    expect(decodeURIComponent(new URL(url).searchParams.get(FEEDBACK_SCREEN_FIELD)!)).toBe(`${FEEDBACK_SCREEN_LABEL.title}, ${BUILD}`);
+    expect([...new URL(url).searchParams.keys()].sort(), '허용 목록 필드 하나(screen) + 양식 이름').toEqual([FEEDBACK_SCREEN_FIELD, 'template'].sort());
+  });
+
+  it('TitleScreen의 패널 링크는 같은 함수·같은 허용 목록 필드 도우미로 주소를 만들고(소스), 이름·기록·저장 데이터를 읽지 않는다', () => {
+    expect(titleScreenRaw).toContain('buildFeedbackUrl(feedbackFieldsOf({ phase: \'title\', era: null, lifeLength: null }, repoUrl, BUILD_LABEL))');
+    expect(titleScreenRaw).toContain('<InfoPanel');
+    expect(titleScreenRaw).not.toMatch(/character\.name|\.history|localStorage/);
   });
 });

@@ -179,6 +179,14 @@ export interface HistoryEntry {
 export const DELEGATED_BYS = ['parent', 'child'] as const;
 export type DelegatedBy = (typeof DELEGATED_BYS)[number];
 
+/**
+ * 무거운 장면의 분류 (SPEC-005 HV2, docs/review/REV-005-HV-1.md): 이벤트 데이터의 선택 필드 `heavy: { kind }`가 쓰는 여섯 값. 화면에는 분류 **이름**만 보이고(data/gentleText.ts#HEAVY_KIND_TEXT — 이름 여섯과 1:1),
+ * 이름은 그 분류의 모든 장면에 참이어야 한다(R-469). 판정 기준은 docs/data/events-schema.md 「무거운 장면 표지」.
+ * home 집안 사정 · school 또래 사이 · health 건강 · loss 돌봄과 이별 · bond 멀어진 사이 · work 일과 생계
+ */
+export const HEAVY_KINDS = ['home', 'school', 'health', 'loss', 'bond', 'work'] as const;
+export type HeavyKind = (typeof HEAVY_KINDS)[number];
+
 /** 지금 화면에서 결정을 기다리는 선택지 이벤트. 저장 상태에 들어가므로 새로고침해도 같은 이벤트·같은 선택지가 다시 보인다. */
 export interface PendingChoice {
   eventId: string;
@@ -262,6 +270,12 @@ export interface GameState {
    * 값이 이상한 저장은 판을 버리지 않고 이 필드만 버린다(core/storage.ts#parseGame).
    */
   play?: PlayTime;
+  /**
+   * 이 판이 「무거운 장면 가리기」를 켠 채로 살았는가 (선택 필드 — SPEC-005 HV3·HV6·SV1): **판 도중 한 번이라도 켜졌으면 참**이다(켜고 나서 꺼도 참, 켠 채 시작해도 참).
+   * 엔딩 맨 위 한 줄의 기준이다(설정값이 아니라 판의 기록). 켠 적이 없는 판에는 필드가 없다 — 값은 `true`만 쓴다(`false`를 쓰지 않아 끈 판의 저장이 이전 버전과 바이트까지 같다).
+   * 선택 필드라 저장 스키마는 v8 그대로다 — 값이 이상하면 판을 버리지 않고 이 필드만 버린다(core/storage.ts#withValidGentleUsed). 분포·인생과 무관하다(같은 시드·같은 선택이면 이 필드와 `play`를 뺀 상태 전체가 같다, tests/gentle.test.ts).
+   */
+  gentleUsed?: boolean;
 }
 
 export const SPEEDS = [1, 2, 4, 8] as const;
@@ -294,6 +308,16 @@ export interface Settings {
   theme: ThemeChoice;
   /** 기록 카드(「생각 남기기」 자동 카드)를 저절로 띄우는가 (FR7, 설정 스키마 v4, 기본 true). 꺼져 있으면 적격 카드를 시트 없이 소비한다. 수동 「생각 남기기」 버튼에는 영향이 없다. */
   noteCards: boolean;
+  /**
+   * 「무거운 장면 가리기」 (HV3, 설정 스키마 v5, 기본 false = 모든 장면 그대로). 가림은 이 값으로 화면이 정한다(화면 규칙 (A)): 켜져 있으면 지난 줄까지 모든 heavy 줄·카드·연표 줄·자살률 슬라이드가 가려지고, 끄면 모두 원문이다.
+   * 이 값은 다음 판의 기본값이기도 하다. 판 도중 한 번이라도 켜진 판의 표지는 `GameState.gentleUsed`다.
+   */
+  gentle: boolean;
+  /**
+   * 마지막으로 본 새 소식의 버전 (NT4, 설정 스키마 v5, 기본 빈 글자 = 아직 본 적 없음). 현재 버전이 이보다 높으면 첫 화면 푸터의 「새 소식」 링크 옆에 「새」 표시가 뜬다.
+   * 패널을 열면 현재 버전으로 갱신된다. `x.y.z` 꼴이 아닌 값은 읽을 때 기본값(빈 글자)으로 본다.
+   */
+  notesSeen: string;
 }
 
 /** 인생 화면이 읽는 재생 설정(배속·자동 모드). Settings의 일부다. */

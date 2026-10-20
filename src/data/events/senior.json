@@ -59,6 +59,7 @@
       "ageRange": { "min": 68, "max": 90 },
       "weight": 14,
       "once": true,
+      "heavy": { "kind": "health" },
       "noCitation": "X1",
       "conditions": { "stats": { "health": { "max": 50 } } },
       "choices": [
@@ -84,6 +85,7 @@
       "ageRange": { "min": 78, "max": 100 },
       "weight": 16,
       "once": true,
+      "heavy": { "kind": "health" },
       "noCitation": "X1",
       "conditions": { "stats": { "health": { "max": 40 } } },
       "choices": [
@@ -240,6 +242,7 @@
       "ageRange": { "min": 66, "max": 85 },
       "weight": 30,
       "once": true,
+      "heavy": { "kind": "bond" },
       "noCitation": "X2",
       "conditions": { "flags": ["has_child", "child_distant"] },
       "choices": [
@@ -271,6 +274,7 @@
       "ageRange": { "min": 70, "max": 90 },
       "weight": 22,
       "once": true,
+      "heavy": { "kind": "loss" },
       "citation": { "present": "c-082", "future": "c-082" },
       "conditions": { "flags": ["married"] },
       "choices": [
@@ -394,6 +398,7 @@
       "ageRange": { "min": 80, "max": 100 },
       "weight": 16,
       "once": true,
+      "heavy": { "kind": "loss" },
       "noCitation": "X2",
       "choices": [
         {
@@ -424,6 +429,7 @@
       "ageRange": { "min": 66, "max": 85 },
       "weight": 14,
       "once": true,
+      "heavy": { "kind": "loss" },
       "conditions": { "flags": ["close_friend"] },
       "choices": [
         {
@@ -454,6 +460,7 @@
       "ageRange": { "min": 72, "max": 92 },
       "weight": 12,
       "once": true,
+      "heavy": { "kind": "health" },
       "noCitation": "X1",
       "choices": [
         {

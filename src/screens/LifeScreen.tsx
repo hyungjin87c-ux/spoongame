@@ -14,6 +14,7 @@ import { ParentCard, useParentCardModel } from '../ui/dash/ParentCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
 import { Glue } from '../ui/Glue';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
+import { revealCard } from '../ui/focusReveal';
 import { useStickyHead } from '../ui/headRelease';
 import { decideNoteFocus, type NoteFocusVia } from '../ui/noteFocus';
 import { isDarkApplied, useSystemDark } from '../ui/theme';
@@ -78,6 +79,14 @@ interface Props {
   guardEpoch?: number;
   onFold?: () => void;
   onReopen?: () => void;
+  /**
+   * 대기 중인 가린 결정 카드를 펼쳤는가 (App이 갖는다 — 접힘처럼 UI 상태일 뿐 저장하지 않고, 설정이 바뀌면 초기화된다, SPEC-005 M19). 무거운 장면이 아니거나 설정이 꺼져 있으면 뜻이 없다. 기본 false
+   */
+  veilOpened?: boolean;
+  /** 가린 카드의 「펼쳐서 읽기」 */
+  onVeilOpen?: () => void;
+  /** 가린 카드의 「이번에는 자동으로 고르기」 — 지금의 자동 선택 성향으로 이 카드를 한 번 고른다 */
+  onAutoPick?: (key: string) => void;
   /** 열려 있는 기록 시트 (없으면 null) — 떠 있는 동안 바깥은 inert, 시계·자동 선택은 App이 멈춘다 */
   noteSheet?: NoteSheetState | null;
   /** 도구 줄 「생각 남기기」 */
@@ -244,7 +253,7 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headRef = useRef<HTMLElement>(null);
@@ -272,7 +281,21 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
   const isFolded = decision !== null && folded;
   // 카드 틀: 자동 모드 하나가 정한다(M-6) — 꺼짐 = 모달 시트(바깥 inert), 켜짐 = 비모달 인라인. 접었다 다시 열면 그때의 자동 모드에 맞는 틀로 뜬다
   const sheetOpen = decision !== null && !isFolded && !settings.autoMode;
+  // 무거운 장면 가리기 (HV4 ②): 설정이 켜져 있고 이 카드가 무거운 장면이고 아직 펼치지 않았으면 가린 카드(접힌 띠의 제목도 같다). 사건·효과·확률·자동 선택 타이머는 그대로다
+  const veiled = settings.gentle && decision !== null && decision.heavy !== null && !veilOpened;
   const { noteSkip } = useLifeFocus({ pendingKey: game.pending?.key ?? null, autoMode: settings.autoMode, folded: isFolded, titleRef: headingRef, choiceTitleRef, foldOpenRef, controlsRef });
+  // 「펼쳐서 읽기」를 누르면 버튼이 사라지므로 포커스는 제목(#dc-title)으로 간다 — 제목 글자가 이벤트 제목으로 바뀌어 다시 읽힌다(copy.md 12-3). 시트는 문서 스크롤을 건드리지 않고, 인라인 카드는 위쪽 변을 화면에 맞춘다
+  const wasVeilOpened = useRef(veilOpened);
+  useEffect(() => {
+    if (veilOpened && !wasVeilOpened.current) {
+      const title = choiceTitleRef.current;
+      if (title !== null) {
+        title.focus({ preventScroll: true });
+        if (title.closest('[role="dialog"]') === null) revealCard(title.closest('section') ?? title);
+      }
+    }
+    wasVeilOpened.current = veilOpened;
+  }, [veilOpened]);
   const fast = settings.speed >= 4 || settings.autoMode;
   // 진행 줄·도구 줄의 입력 가드: 화면이 뜰 때 + 카드를 접거나 다시 연 직후(U9). 접기 더블탭의 둘째 입력이 시트가 사라진 자리의 컨트롤에 떨어지지 않게 한다
   const controlsGuard = controlsGuardKey(guardEpoch);
@@ -422,15 +445,15 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
         </div>
         <div className="col col--center">
           {/* 카드 자리: 접히면 접힌 띠, 자동 모드면 인라인 카드. 모달 시트는 아래(이 형제들 바깥)에서 그린다 */}
-          {decision !== null && isFolded ? <DecisionFold model={decision} epoch={guardEpoch} openRef={foldOpenRef} onReopen={onReopen} /> : null}
+          {decision !== null && isFolded ? <DecisionFold model={decision} epoch={guardEpoch} openRef={foldOpenRef} onReopen={onReopen} veiled={veiled} /> : null}
           {decision !== null && !isFolded && settings.autoMode ? (
-            <DecisionInline model={decision}>
-              <DecisionCard model={decision} auto epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
+            <DecisionInline model={decision} veiled={veiled}>
+              <DecisionCard model={decision} auto epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} veiled={veiled} onOpenVeil={onVeilOpen} onAutoPick={onAutoPick} />
             </DecisionInline>
           ) : null}
           {/* 부모님이 정한·흘러간 카드: 인생 기록 바로 위(LR5 b — [결정 카드 또는 접힌 띠 → 부모 결정 카드 → 인생 기록]). 비모달이라 포커스·inert와 무관하다 */}
-          {parentCard !== null ? <ParentCard model={parentCard} /> : null}
-          <LogCard history={game.history} name={c.name} live={!fast} minute={minute} />
+          {parentCard !== null ? <ParentCard key={`${parentCard.ev.id}@${parentCard.age}`} model={parentCard} gentle={settings.gentle} /> : null}
+          <LogCard history={game.history} name={c.name} live={!fast} minute={minute} gentle={settings.gentle} />
         </div>
         <div className="col col--right">
           <FamilyCard game={game} />
@@ -440,8 +463,8 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
       <div className="page-end-space" {...inert} />
       {/* 모달 시트: 바깥(헤더·도구 줄·main·본문 끝 여백)이 모두 inert인 동안만 있다 — aria-modal만으로는 Tab이 뒤로 샌다(design-system.md 11-10) */}
       {sheetOpen ? (
-        <DecisionSheet model={decision} onFold={onFold}>
-          <DecisionCard model={decision} auto={false} epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
+        <DecisionSheet model={decision} onFold={onFold} veiled={veiled}>
+          <DecisionCard model={decision} auto={false} epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} veiled={veiled} onOpenVeil={onVeilOpen} onAutoPick={onAutoPick} />
         </DecisionSheet>
       ) : null}
       {/* 기록 시트(M7c): 바깥이 모두 inert인 동안만 있다. 같은 시트가 두 길(저절로 뜬 카드 / 「생각 남기기」 버튼)로 열린다 */}

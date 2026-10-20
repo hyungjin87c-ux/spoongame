@@ -339,9 +339,10 @@ describe('11-1-3 닫힘 사건 표 — App의 핸들러가 시트를 닫는 자�
     expect(appSrc).toContain("noteResponse(settings, game) === 'stop'");
   });
 
-  it('안 겁니다 — 세대는 사용자 핸들러 세 곳(saveNote·dismissNote·onChoose)에서만 오른다: bumpGuard 호출은 3곳이고 어떤 useEffect도 올리지 않는다 (효과로 다음 렌더에 올리지 않는다)', () => {
+  it('안 겁니다 — 세대는 사용자 핸들러 다섯 곳(saveNote·dismissNote·onChoose + 가린 카드의 openVeil·autoPick)에서만 오른다: bumpGuard 호출은 5곳이고 어떤 useEffect도 올리지 않는다 (효과로 다음 렌더에 올리지 않는다)', () => {
+    // SPEC-005 QI6: 가린 결정 카드의 「펼쳐서 읽기」(openVeil)·「이번에는 자동으로 고르기」(autoPick)도 사용자가 누른 순간 카드가 바뀌어 같은 자리에 다른 컨트롤이 드러나므로 같은 규칙(같은 렌더에서 가드)을 따른다 — 3곳이던 호출이 5곳이 됐다
     const src = code(appSrc);
-    expect(src.match(/\bbumpGuard\(\)/g) ?? [], 'saveNote, dismissNote, onChoose').toHaveLength(3);
+    expect(src.match(/\bbumpGuard\(\)/g) ?? [], 'saveNote, dismissNote, onChoose, openVeil, autoPick').toHaveLength(5);
     expect(src.match(/\bsetInputEpoch\(/g) ?? [], '정의 한 곳').toHaveLength(1);
     const effects = src.split('useEffect(').slice(1);
     expect(effects.length).toBeGreaterThan(5);

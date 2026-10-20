@@ -170,6 +170,7 @@
       "eras": ["past"],
       "weight": 20,
       "once": true,
+      "heavy": { "kind": "home" },
       "citation": "c-100",
       "conditions": { "parentWealth": { "max": 2 }, "notFlags": ["left_school"] },
       "choices": [
@@ -195,6 +196,7 @@
       "ageRange": { "min": 9, "max": 15 },
       "weight": 12,
       "once": true,
+      "heavy": { "kind": "school" },
       "citation": { "present": "c-050", "future": "c-050" },
       "conditions": { "notFlags": ["left_school"] },
       "choices": [
@@ -389,6 +391,7 @@
       "eras": ["past"],
       "weight": 16,
       "once": true,
+      "heavy": { "kind": "home" },
       "citation": "c-097",
       "conditions": { "parentWealth": { "max": 3 }, "birthOrder": { "min": 2 }, "notFlags": ["left_school"] },
       "choices": [
@@ -548,6 +551,7 @@
       "eras": ["present", "future"],
       "weight": 12,
       "once": true,
+      "heavy": { "kind": "school" },
       "effects": { "stats": { "relationships": -2, "happiness": -2 } },
       "bonuses": [{ "when": { "flags": ["stood_up"] }, "effects": { "stats": { "relationships": 2 } } }]
     },

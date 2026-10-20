@@ -620,14 +620,14 @@ describe('설정은 게임과 독립', () => {
   });
 
   it('기본값: 1배속, 자동 꺼짐, 지금 세상, 약 30분', () => {
-    expect(loadSettings(memoryStorage())).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true });
-    expect(DEFAULT_SETTINGS).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true }); // M4: BGM은 꺼짐·볼륨 낮음(30), 테마는 시스템 설정을 따름 / M7c: 자동 기록 카드는 켜짐
+    expect(loadSettings(memoryStorage())).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '' });
+    expect(DEFAULT_SETTINGS).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '' }); // M4: BGM은 꺼짐·볼륨 낮음(30), 테마는 시스템 설정을 따름 / M7c: 자동 기록 카드는 켜짐 / SPEC-005 SV2(설정 v5): 무거운 장면 가리기는 꺼짐, 새 소식은 본 적 없음(빈 글자)
   });
 
   it('설정 저장 왕복 (배속·자동 모드·태어날 세상·인생 길이)', () => {
     const st = memoryStorage();
-    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false });
-    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false });
+    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false, gentle: true, notesSeen: '0.2.0' });
+    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false, gentle: true, notesSeen: '0.2.0' });
   });
 
   it('저장된 설정의 인생 길이가 아직 고를 수 없는 「약 1시간」(long60)이면 short30으로 읽는다 — 다른 필드는 그대로 (R-202)', () => {
@@ -651,11 +651,11 @@ describe('설정은 게임과 독립', () => {
   });
 
   it('설정 v1(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — v5 게임 스키마 전환에서 설정을 잃지 않는다', () => {
-    expect(SETTINGS_VERSION).toBe(4); // v3(M4): BGM 켬/끔·볼륨과 화면 테마가 더해졌다 / v4(M7c): 자동 기록 카드 켬/끔(noteCards) — 이전 버전은 그대로 읽고 새 필드는 기본값으로 채운다
+    expect(SETTINGS_VERSION).toBe(5); // v3(M4): BGM 켬/끔·볼륨과 화면 테마가 더해졌다 / v4(M7c): 자동 기록 카드 켬/끔(noteCards) / v5(SPEC-005 SV2): 무거운 장면 가리기(gentle)·새 소식을 본 버전(notesSeen) — 이전 버전은 그대로 읽고 새 필드는 기본값으로 채운다
     const st = memoryStorage();
     st.map.set(SETTINGS_KEY, JSON.stringify({ version: 1, data: { speed: 4, autoMode: true } }));
     expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: true });
-    // 읽은 뒤 저장하면 현재 버전(v4)으로 올라간다
+    // 읽은 뒤 저장하면 현재 버전(v5)으로 올라간다
     saveSettings(st, loadSettings(st));
     expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(SETTINGS_VERSION);
     // v2에서 알 수 없는 세상·인생 길이는 그 필드만 기본값(배속·자동 모드는 유지)

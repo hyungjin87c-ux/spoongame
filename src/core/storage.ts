@@ -33,6 +33,7 @@ import { isValidAssets } from './economy';
 import { cleanNoteForLoad, isInvisibleOnly } from './noteText';
 import { readPlay } from './playClock';
 import { DEFAULT_SETTINGS } from './state';
+import { VERSION_PATTERN } from './build';
 
 /**
  * 게임 진행과 설정은 별도 키. 스키마(또는 저장 검증 규칙)가 바뀌면 SCHEMA_VERSION을 올린다.
@@ -46,6 +47,8 @@ import { DEFAULT_SETTINGS } from './state';
  * v8: 개편(SPEC-003 M5) — **재산(wealth) 스탯이 없어지고** 20세부터의 자산 현황(`assets`: 순자산·연 소득·부채·소득 보정·주거 형태, 만 원 정수)과 20세 미만의 집안 살림(`familyFund`)이 판 상태에 더해졌다.
  *     v7 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6 — `classifySavedGame`이 `version < SCHEMA_VERSION`을 이전 버전으로 분류한다). docs/data/economy-model.md 10절.
  * (M7c: 게임 스키마는 v8 그대로다 — 연표 종류에 `note`가 더해지고 `seen`에 `note-…` 키가 생길 수 있지만 허용 범위만 넓어졌고, 기록이 없는 v8 저장은 새 규칙에서도 그대로 유효하다. 진행 중인 판을 잃지 않으려고 올리지 않았다, NC-1.)
+ * (SPEC-005 QI6: 게임 스키마는 v8 그대로다 — 판 상태에 **선택 필드 `gentleUsed`**(판 도중 한 번이라도 「무거운 장면 가리기」가 켜졌으면 `true`, 엔딩 맨 위 한 줄의 기준)가 더해졌다. 없으면 켠 적이 없는 판이다. 값이 이상하면 판을 버리지 않고 그 필드만 버린다(`withValidGentleUsed`).
+ *     `eventId`가 없는 상속 줄의 표지는 줄에 필드를 더하지 않고 글자 상수로 잡는다(core/gentle.ts) — 이 변경 이전에 저장된 판의 상속 줄도 같다(M20).)
  * (SPEC-005 QI5: 게임 스키마는 v8 그대로다 — 연표 줄에 **선택 필드 `by`**(`'parent'` 부모님이 정했다 · `'child'` 아이의 일로 흘러갔다, `kind: 'choice'`에만)가 더해졌다. 없으면 본인이 고른 선택이다. 다른 값이거나 선택 줄이 아니면 판을 버리지 않고 그 필드만 버린다(`withValidBy`).
  *     저장에 부모 영역·흘러감 카드가 대기(`pending`) 중이면 열자마자 그 해 안에서 부모님이 정한·흘러간 선택으로 처리한다(`settleDelegatedPending`, PD10).)
  * (M8: 게임 스키마는 v8 그대로다 — 판 상태에 **선택 필드 `play`**(플레이 시간 기록, core/playClock.ts)가 더해졌다. 없으면 시간을 재지 않은 판이고, 값이 이상하면 판을 버리지 않고 그 필드만 버린다(`withValidPlay`). 진행 중인 판을 잃지 않으려고 올리지 않았다, LD-6.)
@@ -58,10 +61,12 @@ export const SCHEMA_VERSION = 8;
  * v2: 첫 화면에서 고른 세상(era)·인생 길이(lifeLength)가 더해졌다. v1 설정(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — 배속·자동 모드를 잃지 않는다.
  * v3: 대시보드(SPEC-003 M4)의 BGM 켬/끔·볼륨(`bgm`, DB4)과 화면 테마(`theme`, DB6)가 더해졌다. v1·v2 설정은 그대로 읽고 새 필드는 기본값(BGM 꺼짐·시스템 테마)으로 채운다 — 이미 고른 값을 잃지 않는다.
  * v4: 기록 카드(SPEC-003 M7c)의 `noteCards`(자동 기록 카드 켬/끔, 기본 켜짐)가 더해졌다. v1~v3 설정은 그대로 읽고 새 필드는 기본값으로 채운다 — 이미 고른 값을 잃지 않는다.
+ * v5: 「무거운 장면 가리기」(SPEC-005 HV3)의 `gentle`(기본 꺼짐)과 마지막으로 본 새 소식 버전 `notesSeen`(NT4, 기본 빈 글자)이 더해졌다. v1~v4 설정은 그대로 읽고 새 필드는 기본값으로 채운다 — 이미 고른 값을 잃지 않는다.
+ *     index.html의 첫 그림 전 테마 스크립트의 읽을 수 있는 버전 목록도 같이 고쳤다(tests/themeInline.test.ts가 대조).
  */
-export const SETTINGS_VERSION = 4;
+export const SETTINGS_VERSION = 5;
 /** 읽을 수 있는 설정 버전 (현재 + 이전 버전). 이 밖의 버전은 기본값. index.html의 첫 그림 전 테마 스크립트도 같은 목록이다(tests/themeInline.test.ts가 대조한다). */
-const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2, 3, 4];
+const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2, 3, 4, 5];
 
 /** localStorage와 같은 최소 인터페이스 (테스트에서 가짜를 주입). */
 export interface StorageLike {
@@ -182,6 +187,19 @@ function withValidPlay(state: GameState): GameState {
   if (play !== undefined) return { ...state, play };
   const rest = { ...state } as Record<string, unknown>;
   delete rest.play;
+  return rest as unknown as GameState;
+}
+
+/**
+ * 판의 `gentleUsed`(SPEC-005 HV3·SV1 — 「무거운 장면 가리기」를 켠 채 산 판)는 **선택 필드**라 이상한 값이 판을 버리게 하지 않는다 — 불리언이 아니거나, 출생 이후(룰렛·출생신고·인생·엔딩) 단계가 아닌 판에 있으면 **그 필드만 버린다**
+ * (첫 화면 단계의 판은 아직 살기 시작하지 않았다). 필드가 없는 v8 저장(이 변경 이전의 모든 판)은 그대로 유효하다. 버릴 필드가 없으면 같은 객체를 돌려준다.
+ */
+function withValidGentleUsed(state: GameState): GameState {
+  if (!Object.prototype.hasOwnProperty.call(state, 'gentleUsed')) return state;
+  const raw: unknown = (state as { gentleUsed?: unknown }).gentleUsed;
+  if (typeof raw === 'boolean' && state.phase !== 'title') return state;
+  const rest = { ...state } as Record<string, unknown>;
+  delete rest.gentleUsed;
   return rest as unknown as GameState;
 }
 
@@ -362,6 +380,9 @@ function readSettings(v: unknown): Settings | null {
     theme: isOneOf(THEMES, v.theme) ? (v.theme as Settings['theme']) : DEFAULT_SETTINGS.theme,
     // v4 필드: 없거나 불리언이 아니면 기본값(켜짐)
     noteCards: typeof v.noteCards === 'boolean' ? v.noteCards : DEFAULT_SETTINGS.noteCards,
+    // v5 필드: 없거나 형태가 어긋나면 그 필드만 기본값(꺼짐·본 적 없음) — 이상한 저장이 갑자기 장면을 가리거나 「새」 표시를 없애지 않는다
+    gentle: typeof v.gentle === 'boolean' ? v.gentle : DEFAULT_SETTINGS.gentle,
+    notesSeen: typeof v.notesSeen === 'string' && VERSION_PATTERN.test(v.notesSeen) ? v.notesSeen : DEFAULT_SETTINGS.notesSeen,
   };
 }
 
@@ -424,7 +445,7 @@ export function parseGame(raw: string | null, pool: EventPool = EVENT_POOL): Gam
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
-  return withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool)));
+  return withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool))));
 }
 
 /** 문자열 → 설정. 문제가 있으면 기본값. */

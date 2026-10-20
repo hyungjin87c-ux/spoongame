@@ -11,6 +11,20 @@ import type { Era, LifeLength } from '../core/types';
  *  - 느낌표·이모지·과장 없이 담담하게.
  */
 
+/**
+ * 가상 인구 계산 기준 (VP1·VP2): 푸터의 설명(`TITLE_TEXT.populationInfo`, 합쇼체)과 소개 Q&A Q4(`aboutFaq.ts`, 해요체)가 **같은 값에서** 문장을 만든다 — 기준 연월·비율·통계 연도를 두 곳에 따로 쓰지 않는다
+ * (SPEC-005 FQ3·diff-005 D5-51). 값은 core/population.ts의 모델이 읽는 근거 통계와 같아야 하고 tests/aboutFaq.test.ts가 대조한다: 주민등록 인구의 기준 연월(`region-population-registered`의 `latestLabel`) ·
+ * 규모를 줄이는 비율(`buildPopulationModel`의 1/1000) · 출생·사망 통계 연도(`births`·`cdr`의 최근 연도).
+ */
+export const POPULATION_BASIS = {
+  /** 주민등록 인구의 기준 연월 */
+  registeredMonth: '2026년 9월',
+  /** 인구를 줄이는 비율 (core/population.ts의 `/ 1000`) */
+  ratio: '1,000분의 1',
+  /** 출생·사망 통계 연도 */
+  statsYear: '2025년',
+} as const;
+
 export const TITLE_TEXT = {
   /**
    * 로고 아래 한 줄 설명. 뒤쪽 `heroTagKeep`은 줄에 안 들어가면 통째로 다음 줄로 내려가고(inline-block), 구절 자체가 한 줄보다 길 때(글자 200%·좁은 폭)만 안에서 줄이 바뀐다 —
@@ -32,8 +46,7 @@ export const TITLE_TEXT = {
   /** FS2 보조 문구 — 항상 보인다. 실제 사람 수가 아님을 밝힌다. */
   populationNote: '이 기기 안에서 계산한 가상의 사람들이에요. 실제로 게임하는 사람 수가 아니에요.',
   /** VP2 — 정보 설명 한 곳 (푸터) */
-  populationInfo:
-    '가상 인구: 대한민국 주민등록 인구(2026년 9월)를 1,000분의 1로 줄이고, 2025년 출생·사망 통계를 반영해 시간에 따라 조금씩 달라지게 이 기기 안에서 계산한 숫자입니다. 서버와 통신하지 않고 실제 사람 수를 세지도 않습니다.',
+  populationInfo: `가상 인구: 대한민국 주민등록 인구(${POPULATION_BASIS.registeredMonth})를 ${POPULATION_BASIS.ratio}로 줄이고, ${POPULATION_BASIS.statsYear} 출생·사망 통계를 반영해 시간에 따라 조금씩 달라지게 이 기기 안에서 계산한 숫자입니다. 서버와 통신하지 않고 실제 사람 수를 세지도 않습니다.`,
 
   eraGroup: '태어날 세상',
   lifeLengthGroup: '인생 길이',

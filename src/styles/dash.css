@@ -560,3 +560,32 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
     .assets__row dd, .final-net__value { font-size: var(--fs-md); }
   }
 }
+
+
+/* ---------- 무거운 장면 가리기 (SPEC-005 QI6 HV4·HV6 — design-system.md 14절, 2026-10-21 designer; 구현: 이 파일에 같은 글자로 옮겼다(SPEC-005 QI6 D5-49)) ----------
+   가림은 **지금의 설정값**으로 화면이 정한다(REV-005-HV-1 R-475 A): 켜져 있으면 지난 줄까지 모든 heavy 줄·카드·연표 줄·자살률 슬라이드가 가려지고 언제든 펼칠 수 있으며, 끄면 모두 원문. 펼침 상태는 저장하지 않는다(SV3).
+   공통 부품 .veil — 가린 자리마다 **한 줄**(.veil__line = 안내 「무거운 일이 있었습니다 · {분류}」(FitPair hideSeparator) [+ 결정자 도장 낱말·글리프, 라벨 없이] + 「펼쳐 보기」/「접기」 버튼 aria-expanded·aria-controls)
+   → 펼치면 그 아래 원문(.veil__body; 가린 동안은 hidden — DOM에는 있되 화면·접근성 트리·찾기에서 빠지고, live region의 「추가」로 읽히지 않는다).
+   색은 보조: 안내 글자 --c-text-2, 뜻은 글자와 버튼이 전한다(색에만 의존하지 않음). 새 색 쌍 없음(보조/면 8.65·8.78, contrast-report.md 「보조 설명」 행). 점선·회색 상자는 쓰지 않는다 — 이 시스템에서 점선은 「준비 중·지속 비활성」의 모양이다 */
+.veil { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.veil__line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); min-width: 0; }
+.veil__lead { flex: 1 1 11em; min-width: min(11em, 100%); color: var(--c-text-2); }
+.veil__lead .fit-pair { display: inline-block; max-width: 100%; }
+.veil__line .log__by, .veil__line .tl-picked { font-size: var(--fs-sm); font-style: normal; color: var(--c-text-2); font-weight: var(--fw-regular); }
+.veil__btn { margin-left: auto; min-height: 32px; padding: 0 var(--sp-2); font-weight: var(--fw-regular); white-space: nowrap; }
+.veil__btn .veil__mark { margin-left: 2px; }
+.veil__body { display: flex; flex-direction: column; gap: var(--sp-1); }
+.veil__body[hidden] { display: none; }
+.timeline .veil__body .tl-picked { font-weight: var(--fw-bold); }
+/* 가린 결정 카드(시트·인라인)·부모 카드: 제목 h2 자리에 「무거운 주제 · {분류}」, 안내 한 줄(.veil__note — 카드 본문 어체), 버튼 줄(.veil__actions — 결정 카드는 둘, 부모 카드는 하나).
+   상황·선택지·인용·영향 줄·고른 길 라벨은 DOM에서 뺀다(가린 동안 그릴 것이 없다). 머리(종류 표식·칩·연도·나이·「카드 접기」)와 자동 모드 안내·첫 부모 카드 안내는 틀이라 그대로 */
+.veil__note { color: var(--c-text-2); }
+.veil__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.veil__actions > .btn { flex: 1 1 12rem; min-width: min-content; white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2); }
+.veil__actions--one > .btn { flex: 0 1 auto; }
+.parent-pick--veiled { padding-top: var(--sp-2); padding-bottom: var(--sp-2); }
+/* 엔딩 맨 위 한 줄(HV6): 설정이 아니라 **판의 기록**(gentleUsed)이라 설정이 꺼져 있어도 보인다. 장식 없는 보조 문장 — 왼쪽 3px 선은 구분선 토큰(--c-border-strong, 바탕과 3:1 ↑) */
+.ending__gentle { margin: 0; padding: var(--sp-1) var(--sp-3); border-left: 3px solid var(--c-border-strong); font-size: var(--fs-sm); color: var(--c-text-2); }
+@media (forced-colors: active) {
+  .ending__gentle { border-left-color: CanvasText; }
+}
