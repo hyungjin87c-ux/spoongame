@@ -1,0 +1,140 @@
+{
+ "era": "future",
+ "seed": 43,
+ "vp": "m360",
+ "steps": [
+  {
+   "name": "title",
+   "texts": 22,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "roulette-spin",
+   "texts": 60,
+   "problems": []
+  },
+  {
+   "name": "roulette-result",
+   "texts": 71,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "birth",
+   "texts": 39,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "dash-start",
+   "texts": 51,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "decision-card",
+   "texts": 37,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "note-sheet-auto",
+   "texts": 28,
+   "problems": []
+  },
+  {
+   "name": "note-sheet-typed",
+   "texts": 15,
+   "problems": []
+  },
+  {
+   "name": "note-sheet-manual",
+   "texts": 19,
+   "problems": []
+  },
+  {
+   "name": "exit-ask",
+   "texts": 48,
+   "problems": []
+  },
+  {
+   "name": "title-after-exit",
+   "texts": 23,
+   "problems": []
+  },
+  {
+   "name": "dash-after-resume",
+   "texts": 51,
+   "problems": []
+  },
+  {
+   "name": "ending-top",
+   "texts": 43,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "ending-bottom",
+   "texts": 37,
+   "problems": []
+  },
+  {
+   "name": "title-after-rebirth",
+   "texts": 22,
+   "problems": []
+  }
+ ],
+ "notes": [
+  "대시보드 열 1, 프로필·기록·식구 첫 화면 안 false, 또래 카드 첫 화면 안 false",
+  "첫 결정 카드: 처음 먹는 밥 / 선택지 3개 / 인용 0 / 영향 줄 3 / 안내 true",
+  "이어서 살기: 나갈 때 15세 → 돌아온 직후 15세"
+ ],
+ "problems": [],
+ "soft": [],
+ "shots": [],
+ "dashColumns": {
+  "columns": 1,
+  "profile": {
+   "l": 16,
+   "t": 187,
+   "r": 344,
+   "b": 509,
+   "w": 328
+  },
+  "log": {
+   "l": 16,
+   "t": 986,
+   "r": 344,
+   "b": 1241,
+   "w": 328
+  },
+  "family": {
+   "l": 16,
+   "t": 1257,
+   "r": 344,
+   "b": 1456,
+   "w": 328
+  },
+  "peers": {
+   "l": 16,
+   "t": 1472,
+   "r": 344,
+   "b": 2119,
+   "w": 328
+  },
+  "vw": 360,
+  "vh": 740,
+  "allInFirstScreen": false,
+  "peersInView": false
+ },
+ "speed8": {
+  "pressed": "true"
+ },
+ "endAge": 93,
+ "decisions": 26,
+ "autoSheets": 6,
+ "citeSeen": 13,
+ "impactSeen": 26,
+ "ms": 71484
+}

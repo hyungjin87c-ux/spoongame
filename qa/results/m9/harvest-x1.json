@@ -1,0 +1,723 @@
+{
+ "N": 1000,
+ "k": 1.25,
+ "offset": 0,
+ "summary": [
+  {
+   "era": "past",
+   "strategy": "random",
+   "lives": 1000,
+   "errors": 0,
+   "cards": {
+    "mean": 23.598,
+    "se": 0.1,
+    "marginLow": 3,
+    "marginHigh": 54,
+    "p5": 18,
+    "p50": 24,
+    "p95": 27,
+    "max": 30,
+    "min": 2,
+    "over30": 0,
+    "ge29": 1.1,
+    "ge29Margin": 23,
+    "lt20_ofDeath70": 2.42,
+    "lt20Margin": 13.3,
+    "vsDev": [
+     {
+      "diff": -0.262,
+      "limit": 0.404,
+      "ok": true
+     },
+     {
+      "diff": -0.092,
+      "limit": 0.424,
+      "ok": true
+     }
+    ]
+   },
+   "senior": {
+    "mean": 4.138,
+    "se": 0.07,
+    "margin": 2.7,
+    "p5": 0,
+    "p95": 8,
+    "max": 10
+   },
+   "infant": {
+    "mean": 2.935,
+    "se": 0.025,
+    "margin": 5.3,
+    "min": 0,
+    "max": 4
+   },
+   "deathAge": {
+    "mean": 78.2,
+    "p5": 62,
+    "p95": 89
+   },
+   "years": {
+    "quiet": 41.6,
+    "narrative": 13.3,
+    "resolved": 23.4,
+    "extraLines": 3.28
+   },
+   "holdMin": 17.44,
+   "readSec": {
+    "low": 14.8,
+    "median": 21.6,
+    "high": 29
+   },
+   "time": {
+    "mean": 25.94,
+    "se": 0.0998,
+    "sd": 3.16,
+    "marginLow": 4.4,
+    "marginHigh": 85.8,
+    "p5": 20.9,
+    "p95": 29.3,
+    "max": 31.6,
+    "over40": 0,
+    "over40Margin": 23.8,
+    "low": 23.26,
+    "high": 28.86,
+    "auto1x": 18.62,
+    "auto8x": 2.33,
+    "vsDev": [
+     {
+      "diff": -0.26,
+      "limit": 0.424,
+      "ok": true
+     },
+     {
+      "diff": -0.08,
+      "limit": 0.424,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "era": "past",
+   "strategy": "auto",
+   "lives": 1000,
+   "errors": 0,
+   "cards": {
+    "mean": 23.797,
+    "se": 0.093,
+    "marginLow": 5.3,
+    "marginHigh": 55.7,
+    "p5": 18,
+    "p50": 24,
+    "p95": 27,
+    "max": 30,
+    "min": 3,
+    "over30": 0,
+    "ge29": 0.7,
+    "ge29Margin": 27.8,
+    "lt20_ofDeath70": 1.95,
+    "lt20Margin": 15.4,
+    "vsDev": [
+     {
+      "diff": -0.053,
+      "limit": 0.389,
+      "ok": true
+     },
+     {
+      "diff": 0.027,
+      "limit": 0.389,
+      "ok": true
+     }
+    ]
+   },
+   "senior": {
+    "mean": 4.273,
+    "se": 0.071,
+    "margin": 4.5,
+    "p5": 0,
+    "p95": 8,
+    "max": 10
+   },
+   "infant": {
+    "mean": 2.895,
+    "se": 0.025,
+    "margin": 3.8,
+    "min": 0,
+    "max": 4
+   },
+   "deathAge": {
+    "mean": 78.8,
+    "p5": 63,
+    "p95": 89
+   },
+   "years": {
+    "quiet": 42,
+    "narrative": 13.2,
+    "resolved": 23.6,
+    "extraLines": 3.24
+   },
+   "holdMin": 17.53,
+   "readSec": {
+    "low": 14.8,
+    "median": 21.6,
+    "high": 29
+   },
+   "time": {
+    "mean": 26.101,
+    "se": 0.0943,
+    "sd": 2.98,
+    "marginLow": 6.4,
+    "marginHigh": 89.1,
+    "p5": 20.7,
+    "p95": 29.3,
+    "max": 31.5,
+    "over40": 0,
+    "over40Margin": 23.8,
+    "low": 23.4,
+    "high": 29.05,
+    "auto1x": 18.72,
+    "auto8x": 2.34,
+    "vsDev": [
+     {
+      "diff": 0.001,
+      "limit": 0.391,
+      "ok": true
+     },
+     {
+      "diff": 0.121,
+      "limit": 0.391,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "era": "present",
+   "strategy": "random",
+   "lives": 1000,
+   "errors": 0,
+   "cards": {
+    "mean": 24.652,
+    "se": 0.08,
+    "marginLow": 16.9,
+    "marginHigh": 54.4,
+    "p5": 20,
+    "p50": 25,
+    "p95": 28,
+    "max": 30,
+    "min": 4,
+    "over30": 0,
+    "ge29": 2.5,
+    "ge29Margin": 14.1,
+    "lt20_ofDeath70": 1.18,
+    "lt20Margin": 21.3,
+    "vsDev": [
+     {
+      "diff": 0.042,
+      "limit": 0.361,
+      "ok": true
+     },
+     {
+      "diff": -0.028,
+      "limit": 0.339,
+      "ok": true
+     }
+    ]
+   },
+   "senior": {
+    "mean": 5.072,
+    "se": 0.072,
+    "margin": 4.9,
+    "p5": 1,
+    "p95": 8,
+    "max": 10
+   },
+   "infant": {
+    "mean": 2.978,
+    "se": 0.025,
+    "margin": 7.2,
+    "min": 1,
+    "max": 4
+   },
+   "deathAge": {
+    "mean": 83,
+    "p5": 67,
+    "p95": 93
+   },
+   "years": {
+    "quiet": 45.4,
+    "narrative": 13.1,
+    "resolved": 24.5,
+    "extraLines": 3.29
+   },
+   "holdMin": 18.24,
+   "readSec": {
+    "low": 17.7,
+    "median": 25.7,
+    "high": 34.4
+   },
+   "time": {
+    "mean": 28.805,
+    "se": 0.086,
+    "sd": 2.72,
+    "marginLow": 38.4,
+    "marginHigh": 66.2,
+    "p5": 23.5,
+    "p95": 31.9,
+    "max": 34.1,
+    "over40": 0,
+    "over40Margin": 23.8,
+    "low": 25.5,
+    "high": 32.36,
+    "auto1x": 19.47,
+    "auto8x": 2.43,
+    "vsDev": [
+     {
+      "diff": 0.095,
+      "limit": 0.396,
+      "ok": true
+     },
+     {
+      "diff": 0.025,
+      "limit": 0.373,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "era": "present",
+   "strategy": "auto",
+   "lives": 1000,
+   "errors": 0,
+   "cards": {
+    "mean": 24.735,
+    "se": 0.079,
+    "marginLow": 18.2,
+    "marginHigh": 54,
+    "p5": 20,
+    "p50": 25,
+    "p95": 28,
+    "max": 30,
+    "min": 3,
+    "over30": 0,
+    "ge29": 3.3,
+    "ge29Margin": 11.3,
+    "lt20_ofDeath70": 0.53,
+    "lt20Margin": 29.5,
+    "vsDev": [
+     {
+      "diff": -0.105,
+      "limit": 0.359,
+      "ok": true
+     },
+     {
+      "diff": 0.135,
+      "limit": 0.359,
+      "ok": true
+     }
+    ]
+   },
+   "senior": {
+    "mean": 5.082,
+    "se": 0.068,
+    "margin": 5.3,
+    "p5": 1,
+    "p95": 8,
+    "max": 10
+   },
+   "infant": {
+    "mean": 2.938,
+    "se": 0.025,
+    "margin": 5.4,
+    "min": 0,
+    "max": 4
+   },
+   "deathAge": {
+    "mean": 83.1,
+    "p5": 69,
+    "p95": 93
+   },
+   "years": {
+    "quiet": 45.7,
+    "narrative": 12.9,
+    "resolved": 24.6,
+    "extraLines": 3.32
+   },
+   "holdMin": 18.22,
+   "readSec": {
+    "low": 17.7,
+    "median": 25.7,
+    "high": 34.4
+   },
+   "time": {
+    "mean": 28.817,
+    "se": 0.0833,
+    "sd": 2.64,
+    "marginLow": 39.8,
+    "marginHigh": 68.2,
+    "p5": 24.3,
+    "p95": 32,
+    "max": 33.8,
+    "over40": 0,
+    "over40Margin": 23.8,
+    "low": 25.5,
+    "high": 32.38,
+    "auto1x": 19.45,
+    "auto8x": 2.43,
+    "vsDev": [
+     {
+      "diff": -0.123,
+      "limit": 0.368,
+      "ok": true
+     },
+     {
+      "diff": 0.107,
+      "limit": 0.368,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "era": "future",
+   "strategy": "random",
+   "lives": 1000,
+   "errors": 0,
+   "cards": {
+    "mean": 24.912,
+    "se": 0.079,
+    "marginLow": 20.5,
+    "marginHigh": 52.1,
+    "p5": 20,
+    "p50": 25,
+    "p95": 28,
+    "max": 30,
+    "min": 6,
+    "over30": 0,
+    "ge29": 3.2,
+    "ge29Margin": 11.6,
+    "lt20_ofDeath70": 0.74,
+    "lt20Margin": 26.4,
+    "vsDev": [
+     {
+      "diff": -0.038,
+      "limit": 0.358,
+      "ok": true
+     },
+     {
+      "diff": 0.002,
+      "limit": 0.336,
+      "ok": true
+     }
+    ]
+   },
+   "senior": {
+    "mean": 5.261,
+    "se": 0.067,
+    "margin": 3.9,
+    "p5": 1,
+    "p95": 8,
+    "max": 11
+   },
+   "infant": {
+    "mean": 2.953,
+    "se": 0.026,
+    "margin": 6,
+    "min": 0,
+    "max": 4
+   },
+   "deathAge": {
+    "mean": 84.3,
+    "p5": 70,
+    "p95": 95
+   },
+   "years": {
+    "quiet": 46.1,
+    "narrative": 13.4,
+    "resolved": 24.7,
+    "extraLines": 3.26
+   },
+   "holdMin": 18.5,
+   "readSec": {
+    "low": 17.4,
+    "median": 25.3,
+    "high": 33.8
+   },
+   "time": {
+    "mean": 29.014,
+    "se": 0.0829,
+    "sd": 2.62,
+    "marginLow": 42.4,
+    "marginHigh": 66.2,
+    "p5": 24.6,
+    "p95": 32,
+    "max": 34,
+    "over40": 0,
+    "over40Margin": 23.8,
+    "low": 25.72,
+    "high": 32.56,
+    "auto1x": 19.75,
+    "auto8x": 2.47,
+    "vsDev": [
+     {
+      "diff": -0.026,
+      "limit": 0.367,
+      "ok": true
+     },
+     {
+      "diff": 0.044,
+      "limit": 0.346,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "era": "future",
+   "strategy": "auto",
+   "lives": 1000,
+   "errors": 0,
+   "cards": {
+    "mean": 25.048,
+    "se": 0.076,
+    "marginLow": 23,
+    "marginHigh": 52.1,
+    "p5": 20,
+    "p50": 25,
+    "p95": 28,
+    "max": 30,
+    "min": 5,
+    "over30": 0,
+    "ge29": 5,
+    "ge29Margin": 7,
+    "lt20_ofDeath70": 1.16,
+    "lt20Margin": 21.8,
+    "vsDev": [
+     {
+      "diff": 0.048,
+      "limit": 0.331,
+      "ok": true
+     },
+     {
+      "diff": 0.008,
+      "limit": 0.331,
+      "ok": true
+     }
+    ]
+   },
+   "senior": {
+    "mean": 5.288,
+    "se": 0.069,
+    "margin": 4.2,
+    "p5": 1,
+    "p95": 9,
+    "max": 11
+   },
+   "infant": {
+    "mean": 2.947,
+    "se": 0.025,
+    "margin": 5.9,
+    "min": 0,
+    "max": 4
+   },
+   "deathAge": {
+    "mean": 84.5,
+    "p5": 70,
+    "p95": 94
+   },
+   "years": {
+    "quiet": 46.6,
+    "narrative": 13.1,
+    "resolved": 24.8,
+    "extraLines": 3.23
+   },
+   "holdMin": 18.5,
+   "readSec": {
+    "low": 17.4,
+    "median": 25.3,
+    "high": 33.8
+   },
+   "time": {
+    "mean": 29.069,
+    "se": 0.0792,
+    "sd": 2.5,
+    "marginLow": 45.1,
+    "marginHigh": 68.6,
+    "p5": 24.1,
+    "p95": 32.3,
+    "max": 33.7,
+    "over40": 0,
+    "over40Margin": 23.8,
+    "low": 25.76,
+    "high": 32.63,
+    "auto1x": 19.75,
+    "auto8x": 2.47,
+    "vsDev": [
+     {
+      "diff": 0.009,
+      "limit": 0.36,
+      "ok": true
+     },
+     {
+      "diff": 0.069,
+      "limit": 0.338,
+      "ok": true
+     }
+    ]
+   }
+  }
+ ],
+ "avg": {
+  "random": {
+   "mean": 27.92,
+   "se": 0.0519,
+   "marginLow": 17.7,
+   "marginHigh": 97.9
+  },
+  "auto": {
+   "mean": 27.996,
+   "se": 0.0496,
+   "marginLow": 20.1,
+   "marginHigh": 101
+  }
+ },
+ "dev": {
+  "cards": {
+   "past": {
+    "random": [
+     [
+      23.86,
+      0.09
+     ],
+     [
+      23.69,
+      0.1
+     ]
+    ],
+    "auto": [
+     [
+      23.85,
+      0.09
+     ],
+     [
+      23.77,
+      0.09
+     ]
+    ]
+   },
+   "present": {
+    "random": [
+     [
+      24.61,
+      0.09
+     ],
+     [
+      24.68,
+      0.08
+     ]
+    ],
+    "auto": [
+     [
+      24.84,
+      0.09
+     ],
+     [
+      24.6,
+      0.09
+     ]
+    ]
+   },
+   "future": {
+    "random": [
+     [
+      24.95,
+      0.09
+     ],
+     [
+      24.91,
+      0.08
+     ]
+    ],
+    "auto": [
+     [
+      25,
+      0.08
+     ],
+     [
+      25.04,
+      0.08
+     ]
+    ]
+   }
+  },
+  "time": {
+   "past": {
+    "random": [
+     [
+      26.2,
+      0.1
+     ],
+     [
+      26.02,
+      0.1
+     ]
+    ],
+    "auto": [
+     [
+      26.1,
+      0.09
+     ],
+     [
+      25.98,
+      0.09
+     ]
+    ]
+   },
+   "present": {
+    "random": [
+     [
+      28.71,
+      0.1
+     ],
+     [
+      28.78,
+      0.09
+     ]
+    ],
+    "auto": [
+     [
+      28.94,
+      0.09
+     ],
+     [
+      28.71,
+      0.09
+     ]
+    ]
+   },
+   "future": {
+    "random": [
+     [
+      29.04,
+      0.09
+     ],
+     [
+      28.97,
+      0.08
+     ]
+    ],
+    "auto": [
+     [
+      29.06,
+      0.09
+     ],
+     [
+      29,
+      0.08
+     ]
+    ]
+   }
+  }
+ }
+}

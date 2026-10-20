@@ -1,0 +1,1 @@
+720MB (브라우저 캐시 전체 — Chromium·ffmpeg·winldd, WebKit 설치 전)

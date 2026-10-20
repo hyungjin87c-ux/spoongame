@@ -1,0 +1,200 @@
+{
+ "era": "present",
+ "seed": 35,
+ "vp": "d1280",
+ "steps": [
+  {
+   "name": "title",
+   "texts": 62,
+   "problems": [],
+   "contrast": {
+    "checked": 65,
+    "unknown": 0
+   },
+   "words": []
+  },
+  {
+   "name": "roulette-spin",
+   "texts": 92,
+   "problems": [],
+   "contrast": {
+    "checked": 130,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "roulette-result",
+   "texts": 97,
+   "problems": [],
+   "contrast": {
+    "checked": 70,
+    "unknown": 0
+   },
+   "words": []
+  },
+  {
+   "name": "birth",
+   "texts": 48,
+   "problems": [],
+   "contrast": {
+    "checked": 107,
+    "unknown": 0
+   },
+   "words": []
+  },
+  {
+   "name": "dash-start",
+   "texts": 96,
+   "problems": [],
+   "contrast": {
+    "checked": 94,
+    "unknown": 0
+   },
+   "words": []
+  },
+  {
+   "name": "decision-card",
+   "texts": 40,
+   "problems": [],
+   "contrast": {
+    "checked": 36,
+    "unknown": 0
+   },
+   "words": []
+  },
+  {
+   "name": "note-sheet-auto",
+   "texts": 24,
+   "problems": [],
+   "contrast": {
+    "checked": 21,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "note-sheet-typed",
+   "texts": 24,
+   "problems": [],
+   "contrast": {
+    "checked": 22,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "note-sheet-manual",
+   "texts": 17,
+   "problems": [],
+   "contrast": {
+    "checked": 16,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "exit-ask",
+   "texts": 114,
+   "problems": [],
+   "contrast": {
+    "checked": 141,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "title-after-exit",
+   "texts": 63,
+   "problems": [],
+   "contrast": {
+    "checked": 66,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "dash-after-resume",
+   "texts": 129,
+   "problems": [],
+   "contrast": {
+    "checked": 135,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "ending-top",
+   "texts": 48,
+   "problems": [],
+   "contrast": {
+    "checked": 252,
+    "unknown": 0
+   },
+   "words": []
+  },
+  {
+   "name": "ending-bottom",
+   "texts": 46,
+   "problems": [],
+   "contrast": {
+    "checked": 252,
+    "unknown": 0
+   }
+  },
+  {
+   "name": "title-after-rebirth",
+   "texts": 62,
+   "problems": [],
+   "contrast": {
+    "checked": 65,
+    "unknown": 0
+   }
+  }
+ ],
+ "notes": [
+  "대시보드 열 3, 프로필·기록·식구 첫 화면 안 true, 또래 카드 첫 화면 안 true",
+  "첫 결정 카드: 일을 쉬는 한 해 / 선택지 2개 / 인용 1 / 영향 줄 2 / 안내 true",
+  "이어서 살기: 나갈 때 11세 → 돌아온 직후 11세"
+ ],
+ "problems": [],
+ "soft": [],
+ "shots": [],
+ "dashColumns": {
+  "columns": 3,
+  "profile": {
+   "l": 56,
+   "t": 193,
+   "r": 356,
+   "b": 560,
+   "w": 300
+  },
+  "log": {
+   "l": 372,
+   "t": 193,
+   "r": 908,
+   "b": 731,
+   "w": 536
+  },
+  "family": {
+   "l": 924,
+   "t": 193,
+   "r": 1224,
+   "b": 471,
+   "w": 300
+  },
+  "peers": {
+   "l": 924,
+   "t": 487,
+   "r": 1224,
+   "b": 1153,
+   "w": 300
+  },
+  "vw": 1280,
+  "vh": 800,
+  "allInFirstScreen": true,
+  "peersInView": true
+ },
+ "speed8": {
+  "pressed": "true"
+ },
+ "endAge": 90,
+ "decisions": 28,
+ "autoSheets": 6,
+ "citeSeen": 14,
+ "impactSeen": 28,
+ "ms": 73751
+}

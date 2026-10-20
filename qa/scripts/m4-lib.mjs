@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const ROOT = path.resolve(import.meta.dirname, '..', '..');
-export const SHOT_DIR = path.join(ROOT, 'qa', 'screenshots', '003');
+export const SHOT_DIR = process.env.QA_SHOT_DIR ? path.resolve(process.env.QA_SHOT_DIR) : path.join(ROOT, 'qa', 'screenshots', '003'); // QA-003 M9: QA_SHOT_DIR을 주면 세션 임시 폴더로 찍는다(PASS는 저장소에 남기지 않기 — 끝에서 FAIL·RECORD만 옮김)
 export const OUT = path.join(ROOT, 'qa', 'results', 'm4');
 export const PROD = process.env.QA_PROD || 'http://127.0.0.1:4899/spoongame/';
 export const DEV = process.env.QA_DEV || 'http://127.0.0.1:5899/';

@@ -1,0 +1,12 @@
+[
+ [
+  "X06",
+  "DP8 배포 확인(QM2-7 c): 공개 주소(github.io) 푸터의 커밋 7자 = 방금 푸시한 main HEAD 앞 7자",
+  "이번 회차 규칙 「외부 요청은 WebKit 설치 외 0」 — 배포 직후 마스터가 DEPLOY_URL·DEPLOY_COMMIT으로 e2e-prod DP8 시험을 돌린다. 로컬 빌드 푸터 꼴은 F-footer-build가 확인"
+ ],
+ [
+  "X07",
+  "iPhone 실기기(iOS Safari)의 터치·가상 키보드·주소창·「더 큰 텍스트」",
+  "WebKit(P6)은 iOS Safari의 엔진일 뿐 실기기를 대체하지 않는다(README 「알려진 제한」 같은 표현) — 형진 님 실기기 목록 밖(iPhone 항목은 WebKit 자동 점검으로 갈음, 12-3 Q1)"
+ ]
+]

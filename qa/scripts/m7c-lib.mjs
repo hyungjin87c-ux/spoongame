@@ -9,7 +9,7 @@ import { con, ROOT, PROD, DEV, GAME_KEY, SETTINGS_KEY, launch, sleep, mkctx, fix
 export { con, ROOT, PROD, DEV, GAME_KEY, SETTINGS_KEY, launch, sleep, mkctx, fixSeed, cleanStorageOnce, openTitle, toRoulette, skipToBirth, birthToLife, newGameToLife, waitGuard, readRaw, saveJson, overflowX, whichScreen, bodyText, pickEra, readBirth, readDash, setRootFont, rand, VP, TOUCH, STD_VIEWPORTS, parseRgb };
 
 export const SHOT_PREFIX = process.env.QA_SHOT_PREFIX || 'M7c';
-export const SHOT_DIR = path.join(ROOT, 'qa', 'screenshots', '003');
+export const SHOT_DIR = process.env.QA_SHOT_DIR ? path.resolve(process.env.QA_SHOT_DIR) : path.join(ROOT, 'qa', 'screenshots', '003'); // QA-003 M9: QA_SHOT_DIR을 주면 세션 임시 폴더로 찍는다(PASS는 저장소에 남기지 않기 — 끝에서 FAIL·RECORD만 옮김)
 export const OUT = process.env.QA_OUT ? path.resolve(ROOT, process.env.QA_OUT) : path.join(ROOT, 'qa', 'results', 'm7c');
 fs.mkdirSync(SHOT_DIR, { recursive: true });
 fs.mkdirSync(OUT, { recursive: true });

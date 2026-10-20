@@ -1,0 +1,4 @@
+{"screen":"title","vp":"360x740-touch","font":100,"problems":[]}
+{"screen":"title","vp":"360x740-touch","font":200,"problems":[]}
+{"screen":"title","vp":"1280x800","font":100,"problems":[]}
+{"screen":"title","vp":"1280x800","font":200,"problems":["[포커스] title 1280x800 200% fwd6 carousel-viewport: 링 26~755이 bottom-bar(732~800) 9493px²에 가려짐","[포커스] title 1280x800 200% fwd6 carousel-viewport: 스크롤 컨테이너에 링이 잘림 title__side 21~726 vs 링 26~755","[포커스] title 1280x800 200% back3 carousel-viewport: 링 26~755이 bottom-bar(732~800) 9493px²에 가려짐","[포커스] title 1280x800 200% back3 carousel-viewport: 스크롤 컨테이너에 링이 잘림 title__side 21~726 vs 링 26~755"]}

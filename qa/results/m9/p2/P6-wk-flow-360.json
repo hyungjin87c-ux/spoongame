@@ -1,0 +1,146 @@
+{
+ "era": "future",
+ "seed": 52,
+ "vp": "m360",
+ "steps": [
+  {
+   "name": "title",
+   "texts": 22,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "roulette-spin",
+   "texts": 67,
+   "problems": []
+  },
+  {
+   "name": "roulette-result",
+   "texts": 73,
+   "problems": [
+    "구분 기호 줄 끝/첫머리 1: end「(」"
+   ],
+   "words": [
+    "구분 기호 줄 끝/첫머리 1: end「(」"
+   ]
+  },
+  {
+   "name": "birth",
+   "texts": 41,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "dash-start",
+   "texts": 52,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "decision-card",
+   "texts": 37,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "note-sheet-auto",
+   "texts": 27,
+   "problems": []
+  },
+  {
+   "name": "note-sheet-typed",
+   "texts": 14,
+   "problems": []
+  },
+  {
+   "name": "note-sheet-manual",
+   "texts": 18,
+   "problems": []
+  },
+  {
+   "name": "exit-ask",
+   "texts": 50,
+   "problems": []
+  },
+  {
+   "name": "title-after-exit",
+   "texts": 23,
+   "problems": []
+  },
+  {
+   "name": "dash-after-resume",
+   "texts": 52,
+   "problems": []
+  },
+  {
+   "name": "ending-top",
+   "texts": 48,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "ending-bottom",
+   "texts": 38,
+   "problems": []
+  },
+  {
+   "name": "title-after-rebirth",
+   "texts": 22,
+   "problems": []
+  }
+ ],
+ "notes": [
+  "대시보드 열 1, 프로필·기록·식구 첫 화면 안 false, 또래 카드 첫 화면 안 false",
+  "첫 결정 카드: 처음 먹는 밥 / 선택지 3개 / 인용 0 / 영향 줄 3 / 안내 true",
+  "이어서 살기: 나갈 때 10세 → 돌아온 직후 10세"
+ ],
+ "problems": [],
+ "soft": [
+  "roulette-result: 구분 기호 줄 끝/첫머리 1: end「(」"
+ ],
+ "shots": [],
+ "dashColumns": {
+  "columns": 1,
+  "profile": {
+   "l": 16,
+   "t": 187,
+   "r": 344,
+   "b": 532,
+   "w": 328
+  },
+  "log": {
+   "l": 16,
+   "t": 987,
+   "r": 344,
+   "b": 1242,
+   "w": 328
+  },
+  "family": {
+   "l": 16,
+   "t": 1258,
+   "r": 344,
+   "b": 1457,
+   "w": 328
+  },
+  "peers": {
+   "l": 16,
+   "t": 1473,
+   "r": 344,
+   "b": 2124,
+   "w": 328
+  },
+  "vw": 360,
+  "vh": 740,
+  "allInFirstScreen": false,
+  "peersInView": false
+ },
+ "speed8": {
+  "pressed": "true"
+ },
+ "endAge": 87,
+ "decisions": 26,
+ "autoSheets": 6,
+ "citeSeen": 11,
+ "impactSeen": 26,
+ "ms": 79356
+}

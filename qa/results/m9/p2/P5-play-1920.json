@@ -1,0 +1,140 @@
+{
+ "era": "past",
+ "seed": 37,
+ "vp": "d1920",
+ "steps": [
+  {
+   "name": "title",
+   "texts": 86,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "roulette-spin",
+   "texts": 75,
+   "problems": []
+  },
+  {
+   "name": "roulette-result",
+   "texts": 80,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "birth",
+   "texts": 58,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "dash-start",
+   "texts": 106,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "decision-card",
+   "texts": 28,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "note-sheet-auto",
+   "texts": 24,
+   "problems": []
+  },
+  {
+   "name": "note-sheet-typed",
+   "texts": 24,
+   "problems": []
+  },
+  {
+   "name": "note-sheet-manual",
+   "texts": 17,
+   "problems": []
+  },
+  {
+   "name": "exit-ask",
+   "texts": 150,
+   "problems": []
+  },
+  {
+   "name": "title-after-exit",
+   "texts": 87,
+   "problems": []
+  },
+  {
+   "name": "dash-after-resume",
+   "texts": 160,
+   "problems": []
+  },
+  {
+   "name": "ending-top",
+   "texts": 59,
+   "problems": [],
+   "words": []
+  },
+  {
+   "name": "ending-bottom",
+   "texts": 67,
+   "problems": []
+  },
+  {
+   "name": "title-after-rebirth",
+   "texts": 86,
+   "problems": []
+  }
+ ],
+ "notes": [
+  "대시보드 열 3, 프로필·기록·식구 첫 화면 안 true, 또래 카드 첫 화면 안 true",
+  "첫 결정 카드: 첫 생일 / 선택지 2개 / 인용 0 / 영향 줄 2 / 안내 true",
+  "이어서 살기: 나갈 때 12세 → 돌아온 직후 12세"
+ ],
+ "problems": [],
+ "soft": [],
+ "shots": [],
+ "dashColumns": {
+  "columns": 3,
+  "profile": {
+   "l": 376,
+   "t": 193,
+   "r": 676,
+   "b": 537,
+   "w": 300
+  },
+  "log": {
+   "l": 692,
+   "t": 193,
+   "r": 1228,
+   "b": 731,
+   "w": 536
+  },
+  "family": {
+   "l": 1244,
+   "t": 193,
+   "r": 1544,
+   "b": 415,
+   "w": 300
+  },
+  "peers": {
+   "l": 1244,
+   "t": 431,
+   "r": 1544,
+   "b": 1097,
+   "w": 300
+  },
+  "vw": 1920,
+  "vh": 1080,
+  "allInFirstScreen": true,
+  "peersInView": true
+ },
+ "speed8": {
+  "pressed": "true"
+ },
+ "endAge": 72,
+ "decisions": 23,
+ "autoSheets": 7,
+ "citeSeen": 4,
+ "impactSeen": 23,
+ "ms": 63031
+}

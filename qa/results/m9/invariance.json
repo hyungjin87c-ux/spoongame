@@ -1,0 +1,282 @@
+[
+ {
+  "tag": "a1x-future-13",
+  "era": "future",
+  "seed": 13,
+  "mode": "auto",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 50,
+  "age": 88
+ },
+ {
+  "tag": "a1x-future-23",
+  "era": "future",
+  "seed": 23,
+  "mode": "auto",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 52,
+  "age": 91
+ },
+ {
+  "tag": "a1x-past-11",
+  "era": "past",
+  "seed": 11,
+  "mode": "auto",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 53,
+  "age": 82
+ },
+ {
+  "tag": "a1x-past-21",
+  "era": "past",
+  "seed": 21,
+  "mode": "auto",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 45,
+  "age": 90
+ },
+ {
+  "tag": "a1x-present-12",
+  "era": "present",
+  "seed": 12,
+  "mode": "auto",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 51,
+  "age": 92
+ },
+ {
+  "tag": "a1x-present-22",
+  "era": "present",
+  "seed": 22,
+  "mode": "auto",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 36,
+  "age": 58
+ },
+ {
+  "tag": "a2x-present-31",
+  "era": "present",
+  "seed": 31,
+  "mode": "auto",
+  "speed": 2,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 51,
+  "age": 86
+ },
+ {
+  "tag": "a4x-past-41",
+  "era": "past",
+  "seed": 41,
+  "mode": "auto",
+  "speed": 4,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 43,
+  "age": 70
+ },
+ {
+  "tag": "a8x-future-121",
+  "era": "future",
+  "seed": 121,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 50,
+  "age": 89
+ },
+ {
+  "tag": "a8x-future-122",
+  "era": "future",
+  "seed": 122,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 48,
+  "age": 84
+ },
+ {
+  "tag": "a8x-future-123",
+  "era": "future",
+  "seed": 123,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 50,
+  "age": 92
+ },
+ {
+  "tag": "a8x-past-101",
+  "era": "past",
+  "seed": 101,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 47,
+  "age": 82
+ },
+ {
+  "tag": "a8x-past-102",
+  "era": "past",
+  "seed": 102,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 46,
+  "age": 77
+ },
+ {
+  "tag": "a8x-past-103",
+  "era": "past",
+  "seed": 103,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 37,
+  "age": 72
+ },
+ {
+  "tag": "a8x-present-111",
+  "era": "present",
+  "seed": 111,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 39,
+  "age": 62
+ },
+ {
+  "tag": "a8x-present-112",
+  "era": "present",
+  "seed": 112,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 46,
+  "age": 89
+ },
+ {
+  "tag": "a8x-present-113",
+  "era": "present",
+  "seed": 113,
+  "mode": "auto",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 46,
+  "age": 88
+ },
+ {
+  "tag": "m1x-present-61",
+  "era": "present",
+  "seed": 61,
+  "mode": "manual",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 50,
+  "age": 82
+ },
+ {
+  "tag": "s1x-future-71",
+  "era": "future",
+  "seed": 71,
+  "mode": "skip",
+  "speed": 1,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 48,
+  "age": 89
+ },
+ {
+  "tag": "s8x-present-81",
+  "era": "present",
+  "seed": 81,
+  "mode": "skip",
+  "speed": 8,
+  "diffKeys": [
+   "seen"
+  ],
+  "seenOnlyNotes": true,
+  "same": true,
+  "history": 49,
+  "age": 85
+ }
+]

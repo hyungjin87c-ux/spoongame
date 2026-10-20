@@ -1,0 +1,148 @@
+{
+ "total": 462,
+ "bad": 0,
+ "minContrast": {
+  "light": 5.775726809837627,
+  "dark": 5.955544735277504
+ },
+ "det": {
+  "tokens": 290862,
+  "lines": 103578,
+  "designated": 0,
+  "others": 300,
+  "othersSample": [
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "light",
+    "pct": 100,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "이야기들이",
+    "context": "한결 편했지만 가끔은 그 이야기들이 아쉬웠습니다."
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "light",
+    "pct": 200,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "모습을",
+    "context": "먼저 말을 걸었습니다. 그 모습을 멀찍이서"
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "light",
+    "pct": 200,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "장면은",
+    "context": "없었다는 듯 지냈지만 그 장면은 오래도록"
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "dark",
+    "pct": 100,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "이야기들이",
+    "context": "한결 편했지만 가끔은 그 이야기들이 아쉬웠습니다."
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "dark",
+    "pct": 200,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "모습을",
+    "context": "먼저 말을 걸었습니다. 그 모습을 멀찍이서"
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "dark",
+    "pct": 200,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "장면은",
+    "context": "없었다는 듯 지냈지만 그 장면은 오래도록"
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "forced",
+    "pct": 100,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "이야기들이",
+    "context": "한결 편했지만 가끔은 그 이야기들이 아쉬웠습니다."
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "forced",
+    "pct": 200,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "모습을",
+    "context": "먼저 말을 걸었습니다. 그 모습을 멀찍이서"
+   },
+   {
+    "state": "clean-present",
+    "vp": "320x568",
+    "scheme": "forced",
+    "pct": 200,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "장면은",
+    "context": "없었다는 듯 지냈지만 그 장면은 오래도록"
+   },
+   {
+    "state": "clean-present",
+    "vp": "360x568",
+    "scheme": "light",
+    "pct": 100,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "장면은",
+    "context": "없었다는 듯 지냈지만 그 장면은 오래도록"
+   },
+   {
+    "state": "clean-present",
+    "vp": "360x568",
+    "scheme": "light",
+    "pct": 200,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "이야기들이",
+    "context": "한결 편했지만 가끔은 그 이야기들이 아쉬웠습니다."
+   },
+   {
+    "state": "clean-present",
+    "vp": "360x568",
+    "scheme": "dark",
+    "pct": 100,
+    "sel": "[data-testid=\"ending-screen\"]",
+    "el": "timeline-entry",
+    "word": "그",
+    "next": "장면은",
+    "context": "없었다는 듯 지냈지만 그 장면은 오래도록"
+   }
+  ]
+ }
+}
