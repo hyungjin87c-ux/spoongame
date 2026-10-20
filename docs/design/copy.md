@@ -826,8 +826,10 @@ developer UI 단계(`NoteSheet`·`NoteText`·도구 버튼·연표/엔딩 표시
 ### 9-8. 푸터 링크 자리 (NT4·FQ1 — QI7)
 - 「새 소식」 · 「자주 묻는 질문」(SPEC 가칭 그대로) — 빌드 표기 위 한 줄, 「새」 표시는 QI7. 시안은 자리만(`#`).
 
-### 9-9. 한반도 픽토그램 (HS1 — A/B 선택은 형진 님, 마스터 결정 M11)
+### 9-9. 한반도 픽토그램 → 일러스트 (HS1 — 형진 님 결정 2026-10-20: 픽토그램 A/B 대신 형진 님 그림)
 - 글자 없음(`aria-hidden`, 로고 `h1`의 「수저 게임」이 이름을 맡는다). 비교 화면 `title-005-compare.html`의 설명 문구는 시안 전용이다(화면 문구 아님).
+- **일러스트**(`title-005.html?hero=illust`, `src/assets/home/home-map-*.webp`): 장식 — `<img alt="">` + `figure aria-hidden`. 원본 그림의 글(손글씨 제목·「오늘은 어떤 사람의 삶을 살아볼까?」·「다양한 삶이 모여, 더 따뜻한 대한민국」·팻말·통계 패널 문구)은 **화면 문구로 쓰지 않는다**(그림에서 잘라 냈고, 가짜 통계 문구는 게임 원칙에 어긋난다).
+- **부제 후보**(`?tag=alt`, 비교 그림 `screens/005/compare-tagline.png`): 원본의 「다른 세대, 다른 삶 / 같은 대한민국」을 한 줄로 **「다른 세대, 다른 삶, 같은 대한민국」**(13자, 쉼표 둘 — 두 줄 배치는 `<br>` 대신 `nowrap`으로 「같은 대한민국」만 묶는다). 지금 부제 「태어난 집에 따라 달라지는, 한국인의 한 번의 인생」과 나란히 보여 **형진 님이 고른다**(SPEC-005 「형진 님 결정 — 첫 화면 그림」 ④). 판단 메모: 후보는 SPEC-004 G5(세대 이해)의 뜻이고, 지금 부제는 게임 목적 G1(태어난 집의 영향)을 바로 말한다 — 둘을 합치지 않는다(두 줄 부제는 360px에서 머리가 길어진다).
 
 ### 9-10. 구현 노트 (developer — QI3·QI4)
 - `src/data/statHeadlines.ts`: `Record<id, { insight: string; officialName: string }>` + 전망 `{ insight, officialName, published: number | null, baseYear: string, scenario: string }`. 기준은 `latest.year`·기존 기준 문구에서 만든다(글자로 적지 않는다). 시험 `tests/statHeadlines.test.ts`: 캐러셀 id 전부 있음·남는 항목 없음, 숫자 0, 길이 ≤ 24, 중복 0, 금지어 0, 어체(「~까?」「~요」), 공식 통계명 낱말이 `title`·`source.table`·정의에 있음.
