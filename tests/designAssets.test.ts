@@ -1630,3 +1630,80 @@ describe('첫 화면 일러스트 자산 (SPEC-005 D5-25: 합계 ≤ 100KB · We
     expect(titleCss).toMatch(/\.illust img \{[^}]*object-fit: contain[^}]*\}/); // 찌그러짐 0 안전장치
   });
 });
+
+describe('SPEC-005 QI4 스프라이트 계약 — 「전망」 칩 아이콘 i-proj · 무늬 hatch(전망 빗금)·dots(65세 이상 점무늬) (design-system.md 15절, diff-005.md D5-69 r3, R-477 — designer 2026-10-21)', () => {
+  const UI_ICON_IDS = ['i-pause', 'i-play', 'i-next', 'i-auto', 'i-music', 'i-pencil', 'i-moon', 'i-sun', 'i-message', 'i-exit', 'i-prev', 'i-forward', 'i-check', 'i-heart', 'i-smile', 'i-book', 'i-people', 'i-info', 'i-proj'];
+  const HATCH = '<pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)" style="color:var(--c-accent,#8a6a14)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="2.2"/></pattern>';
+  const DOTS = '<pattern id="dots" width="5" height="5" patternUnits="userSpaceOnUse" style="color:var(--c-text-2,#4f4a41)"><circle cx="2.5" cy="2.5" r="1.1" fill="currentColor"/></pattern>';
+  const idsOf = (svg: string) => [...svg.matchAll(/<(?:symbol|pattern) id="([^"]+)"/g)].map((m) => m[1]);
+
+  it('ui-icons.svg: i-* 심볼 19개(기존 18 + i-proj, 24×24)와 <defs> 안 무늬 둘(hatch·dots) — id는 문서에 함께 인라인되는 세 스프라이트 파일 전체에서 유일하다', async () => {
+    const ui = await readText('../src/assets/icons/ui-icons.svg');
+    expect([...ui.matchAll(/<symbol id="([^"]+)" viewBox="0 0 24 24">/g)].map((m) => m[1])).toEqual(UI_ICON_IDS);
+    expect([...ui.matchAll(/<pattern id="([^"]+)"/g)].map((m) => m[1])).toEqual(['hatch', 'dots']);
+    expect(ui, '무늬는 심볼 뒤 <defs> 한 묶음, 파일 끝').toMatch(/<\/symbol>\n<defs>\n<pattern id="hatch"[^\n]*\n<pattern id="dots"[^\n]*\n<\/defs>\n<\/svg>\n$/);
+    const all = [...idsOf(ui), ...idsOf(await readText('../src/assets/icons/spoon-grades.svg')), ...idsOf(await readText('../src/assets/icons/decider-icons.svg'))];
+    expect(new Set(all).size, `중복 id: ${all.filter((id, i) => all.indexOf(id) !== i).join(', ')}`).toBe(all.length);
+    expect(all.length).toBe(UI_ICON_IDS.length + 2 + 10 + 2);
+  });
+
+  it('i-proj: 점선 꺾은선 — path 셋(꺾은선 실선 + 점선 이음 + 점선 바닥), 그 중 둘이 stroke-dasharray, fill·색·style 속성 없음(바깥 svg.icon의 currentColor stroke를 따른다 — 칩 14px·강제 색상 CanvasText) — 시안 인라인 심벌과 같은 글자', async () => {
+    const ui = await readText('../src/assets/icons/ui-icons.svg');
+    const sym = ui.match(/<symbol id="i-proj" viewBox="0 0 24 24">([\s\S]*?)<\/symbol>/);
+    expect(sym).toBeTruthy();
+    const body = sym![1];
+    expect((body.match(/<path /g) ?? []).length).toBe(3);
+    expect((body.match(/ stroke-dasharray="[\d. ]+"/g) ?? []).length).toBe(2);
+    expect(body).not.toMatch(/ (fill|stroke|style|color)="/);
+    expect(body).toMatch(/^<path d="M3 17l5-6 4 3 4-5"\/>/); // 꺾은선은 실선: 3,17 → 8,11 → 12,14 → 16,9 (모두 24 격자 안)
+    expect(await readText('../docs/design/mockups/title-005.html')).toContain(sym![0]);
+  });
+
+  it('무늬: hatch = 6px 격자 45° 빗금(선 2.2) · dots = 5×5 격자 r 1.1 점. 색은 <pattern>의 color(style 변수, 폴백 = 라이트 토큰 값) + 내용 currentColor — 속성 안 var() 0, 폴백 밖 고정 색 0, 시안 인라인과 같은 글자(한 번씩)', async () => {
+    const ui = await readText('../src/assets/icons/ui-icons.svg');
+    const mock = await readText('../docs/design/mockups/title-005.html');
+    const lightAccent = tokensCss.match(/\n  --c-accent: (#[0-9a-f]{6});/)![1];
+    const lightText2 = tokensCss.match(/\n  --c-text-2: (#[0-9a-f]{6});/)![1];
+    expect(HATCH).toContain(`style="color:var(--c-accent,${lightAccent})"`);
+    expect(DOTS).toContain(`style="color:var(--c-text-2,${lightText2})"`);
+    for (const [id, want] of [['hatch', HATCH], ['dots', DOTS]] as const) {
+      const got = ui.match(new RegExp(`<pattern id="${id}"[\\s\\S]*?</pattern>`))![0];
+      expect(got, id).toBe(want);
+      expect(got).toMatch(/patternUnits="userSpaceOnUse"/); // 스프라이트 상자 0×0과 무관하게 참조한 도형의 좌표계로 깔린다
+      expect(got.replace(/var\(--[a-z0-9-]+,#[0-9a-fA-F]{3,6}\)/g, '').match(/#[0-9a-fA-F]{3,6}/g) ?? [], `${id}: 폴백 밖 고정 색`).toEqual([]);
+      expect(got).not.toMatch(/\s(fill|stroke)="var\(/);
+      expect((got.match(/currentColor/g) ?? []).length, `${id}: 내용은 currentColor 하나`).toBe(1);
+      expect((mock.match(new RegExp(`<pattern id="${id}"`, 'g')) ?? []).length, `${id}: 시안에 한 번`).toBe(1);
+      expect(mock).toContain(want);
+    }
+  });
+
+  it('강제 색상·뜻 하나(R-477): tokens.css가 --c-accent·--c-text-2를 CanvasText로 두어 두 무늬의 color가 CanvasText가 되고, 시안 CSS도 #hatch line·#dots circle을 CanvasText로 명시한다; url(#hatch)는 전망 막대·전망 견본 둘뿐(65세 이상 칸·견본은 url(#dots))', async () => {
+    const forced = tokensCss.match(/@media \(forced-colors: active\) \{([\s\S]*?)\n\}/)![1];
+    expect(forced).toMatch(/--c-accent: CanvasText;/);
+    expect(forced).toMatch(/--c-text-2: CanvasText;/);
+    const css = await readText('../docs/design/mockups/title-005.css');
+    const users = (id: string) => [...css.matchAll(new RegExp(`^\\s*([^{\\n]+?)\\s*\\{[^}]*url\\(#${id}\\)`, 'gm'))].map((m) => m[1]).sort();
+    expect(users('hatch')).toEqual(['.chart .chart-bar--proj', '.legend .swatch-rect--proj']);
+    expect(users('dots')).toEqual(['.chart .chart-seg--old', '.legend .swatch-rect--old']);
+    const forcedCss = css.slice(css.indexOf('@media (forced-colors: active)'));
+    expect(forcedCss).toContain('#hatch line { stroke: CanvasText; }');
+    expect(forcedCss).toContain('#dots circle { fill: CanvasText; }');
+    expect(forcedCss).toMatch(/\.chart \.chart-seg--old, \.legend \.swatch-rect--old, \.legend \.swatch-rect--proj \{ stroke: CanvasText; \}/);
+  });
+
+  it('한 곳 정의: 생성기(buildIcons.mjs)가 mockLib.mjs의 PATTERNS·SPRITE에서 ui-icons.svg를 만들고 id 중복이면 멈춘다; 구현은 ui-icons.svg를 ?raw로 읽어 SPRITE_SVG 맨 앞에 잇는다(차트 SVG 안 <defs> 되풀이 없음)', async () => {
+    const mockLib = await readText('../scripts/design/mockLib.mjs');
+    expect(mockLib).toContain('export const PATTERNS = `' + HATCH);
+    expect(mockLib).toContain('\n' + DOTS + '`;');
+    expect(mockLib).toMatch(/\$\{PATTERNS\}\n<\/defs><\/svg>`;/);
+    expect(mockLib).toContain(`\${ic('proj', '<path d="M3 17l5-6 4 3 4-5"/>`);
+    const build = await readText('../scripts/design/buildIcons.mjs');
+    expect(build).toMatch(/pick\('pattern'\)/);
+    expect(build).toMatch(/스프라이트 id 중복/);
+    expect(build).toMatch(/wrap\(icons, patterns\)/);
+    const brand = await readText('../src/ui/brandAssets.ts');
+    expect(brand).toContain("import iconsRaw from '../assets/icons/ui-icons.svg?raw';");
+    expect(brand).toMatch(/export const SPRITE_SVG: string = iconsRaw \+ /);
+  });
+});

@@ -113,6 +113,17 @@ export const SPOON_SYMBOLS_LG = {
 };
 
 // ---------- 아이콘 스프라이트 (직접 그린 단순 도형, 24×24 격자) ----------
+/**
+ * QI4 전망 차트 무늬 둘 (SPEC-005 FC2, design-system.md 15절 · diff-005.md D5-69 — 2026-10-21 designer). 뜻은 캐러셀 전체에서 하나다(R-477):
+ *   hatch = 놋쇠 빗금(45°, 6px 간격, 선 2.2) — **「전망」 전용**(폭염 전망 막대 `.chart-bar--proj`, 범례 `.swatch-rect--proj`)
+ *   dots  = 점무늬(5×5 격자, r 1.1, 중립 잉크색) — 아기 누적 막대의 65세 이상 칸 `.chart-seg--old`, 범례 `.swatch-rect--old`
+ * 색은 `<pattern>`의 `color`(style 안 변수 — 폴백은 라이트 토큰 값, 속성 안 var() 금지 REV-003-D-4)에 두고 내용은 `currentColor`다 —
+ *   무늬 내용은 참조한 도형이 아니라 pattern의 **조상**에서 상속받으므로 참조하는 rect의 색을 쓸 수 없고, 그래서 색을 pattern 자신에게 둔다.
+ *   강제 색상: `color`는 브라우저가 시스템 색으로 강제하는 속성이고 tokens.css도 --c-accent·--c-text-2를 CanvasText로 두므로 두 무늬 모두 CanvasText가 된다
+ *   (title-005.css의 `#hatch line`·`#dots circle { CanvasText }`는 같은 값을 명시한 것). 어디에 두는지는 buildIcons.mjs 머리 주석.
+ */
+export const PATTERNS = `<pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)" style="color:var(--c-accent,#8a6a14)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="2.2"/></pattern>
+<pattern id="dots" width="5" height="5" patternUnits="userSpaceOnUse" style="color:var(--c-text-2,#4f4a41)"><circle cx="2.5" cy="2.5" r="1.1" fill="currentColor"/></pattern>`;
 const ic = (id, body) => `<symbol id="i-${id}" viewBox="0 0 24 24">${body}</symbol>`;
 export const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
 ${ic('pause', '<rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/>')}
@@ -133,8 +144,10 @@ ${ic('smile', '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.3 3
 ${ic('book', '<path d="M4.5 5.5H10a2 2 0 0 1 2 2V20a2 2 0 0 0-2-2H4.5zM19.5 5.5H14a2 2 0 0 0-2 2V20a2 2 0 0 1 2-2h5.5z"/>')}
 ${ic('people', '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.4-3.2 2.6-5 5.5-5s5.1 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.5 14c2.4 0 3.8 1.5 4.2 4"/>')}
 ${ic('info', '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6h.01" stroke-width="2.6"/>')}
+${ic('proj', '<path d="M3 17l5-6 4 3 4-5"/><path d="M16 9h3.5v3.5" stroke-dasharray="2.5 1.8"/><path d="M3 20h18" stroke-dasharray="2 2"/>')}
 ${[1, 2, 3, 4, 5].map((n) => `<symbol id="sp-${n}" viewBox="0 0 20 32">${SPOON_SYMBOLS[n]}</symbol>`).join('\n')}
 ${[1, 2, 3, 4, 5].map((n) => `<symbol id="sp-${n}-lg" viewBox="0 0 20 32">${SPOON_SYMBOLS_LG[n]}</symbol>`).join('\n')}
+${PATTERNS}
 </defs></svg>`;
 
 export const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
