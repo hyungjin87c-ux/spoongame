@@ -51,8 +51,13 @@ export interface LifeLengthMode {
   /** 한 해 둘째 줄부터 줄마다 더하는 대기(ms, 1배속 · × k) — 줄 하나의 읽기(본문 평균 52자 ÷ 600자/분 ≈ 5.2초)에 맞춘다 */
   extraLineMs: number;
   pacing: ChoicePacing;
-  /** 판당 결정 카드 수 판정: 평균 구간, 하드 상한 −1 이상인 판의 비율 한계 (short30만 판정, long60은 보고) */
+  /** 판당 결정 카드 수 판정: 평균 구간, 하드 상한 −1 이상인 판의 비율 한계 (short30만 판정, long60은 보고). **총 카드 수**(본인 + 부모님이 정한 + 흘러간, `totalCards`)의 구간이다 (SPEC-005 TM5) */
   cards: { meanLow: number; meanHigh: number; nearCapShareMax: number };
+  /**
+   * 본인이 읽고 고르는 카드 수 c_self(`TickCounts.choice`)의 판정 (SPEC-005 TM5): 평균 하한. 측정값 − 3 SE 규칙(LD-9)으로 정했다 — 시대 × 전략 × 시드 줄 가운데 가장 불리한 칸의 (측정값 − 3 SE) 아래로 0.1 단위로 내린 값이다.
+   * 예측 평균 18.8장 ±0.6(설계 문서 4-2절)보다 높은 값은 쓰지 않는다. 읽기 시간(r)이 이 카드에만 붙으므로 c_self가 줄면 판 시간이 짧아진다 — 그 하한을 지키는 시험이다.
+   */
+  cardsSelf: { meanLow: number };
   /** 시간 목표(분): 사람 실측 허용 구간 / 헤드리스 모델 평균 허용 구간 (long60은 2차 판정) */
   timeMin: { humanLow: number; humanHigh: number; modelLow: number; modelHigh: number };
 }
@@ -70,7 +75,11 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     // 연출 계수 1.25 — 마스터 결정 ⓐ(2026-10-20, REV-003-M8-1 R-415): 처음 값 1.2에서 1.25로 옮겼다. 근거: 1.2에서는 1배속 수동 모델 예상이 25.5 / 28.0 / 28.3분(평균 27.3)으로 목표 「약 30분」보다 짧은 쪽이었고 지난 세상은 시대별 하한 25.5분(modelLow − 1.5)에 붙어 있었다(여유 0 SE).
     // 1.25에서는 약 26.2 / 28.7 / 29.0분(평균 28.0)으로 하한과의 여유가 3 SE를 넘는다(측정표·SE 표: ai-log/2026-10-19_SPEC-003_dev-M8.md 11절). 실측 전에 옮긴 것이지만 모델이 지금 가진 가장 좋은 정보이고 목표는 「약 30분」이다.
     // 형진 님 실측 뒤 보정 레버 순서(연출 계수 1.1~1.3 → 카드 수 → 마스터, LD-3)는 그대로이며 1.25가 새 초기값이다.
-    holdScale: 1.25,
+    //
+    // 연출 계수 1.25 → 1.35 (SPEC-005 TM4, 마스터 승인 A13·2026-10-20): 어린 시절 큰 결정을 부모님이 정하거나 아이의 일로 흘러가게 하면서(사람이 읽고 고르는 카드 c_self가 줄어 r 몫이 짧아진다) 같은 계수 1.25의 1배속 수동 모델 예상이
+    // 손계산 24.7 / 27.3 / 27.6분(평균 26.5)으로 시대별 하한 25.5와 평균 하한 27에 못 미쳐 연출을 늘렸다(실측 대체: `npm run report:time` — 측정표는 ai-log/2026-10-20_SPEC-005_dev-QI5.md). 상한은 1.45(LM7b 보정 때 0.05씩).
+    // 판정 구간(세 시대 평균 27~33분 · 시대별 25.5~34.5분 · 사람 실측 25~35분)은 내리지 않았다.
+    holdScale: 1.35,
     extraLineMs: 5000,
     // 페이싱 — soft 24 / hard 30으로 **확정**(마스터 결정 2026-10-20, ai-log/2026-10-19_SPEC-003_dev-M8.md 10절). 목표는 판 길이(약 30분)이고 카드 수는 수단이다: 이 값(연출 계수 1.25)에서 1배속 수동 모델 예상이 약 26.2 / 28.7 / 29.0분(평균 28.0)으로 시간 목표 안이다.
     // 옛 값(soft 23 / hard 26)은 판의 17.5 / 24.3 / 30.2%가 하드 상한에 닿고 노년 평균을 3.87 / 4.35 / 4.54로 굶겼다(M7a 이전 4.27 / 5.02 / 5.33). 이 값은 노년을 4.33 / 5.02 / 5.31로 돌려놓고 하드−1 이상 판이 5% 이하이며 경제·엔딩 가드가 기존 보고 한계 안이다
@@ -83,6 +92,10 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     //   가장 불리한 줄은 sim:1000 수동 흉내(23.690 ± 0.097 → 23.40)다. 처음 하한 23.5는 그 줄에서 2.0 SE(자동 성향 줄 2.9 SE)라 3 SE에 못 미쳤다 → 23.40 이하로 내려 0.1 단위로 **23.3**(그 줄 4.0 SE, 시험 줄 6.0 SE, 5000판 줄 10 SE 이상).
     //   기준의 뜻(카드 수 범위)은 그대로다: 평균이 24~25장 중심이고 상한 29까지 4 SE 이상 떨어져 있어 「약 30분」을 맞추는 수단으로서의 범위(23.3~29)가 유지된다. 하한을 내려도 노년 회복은 아래 노년 하한이 따로 지킨다.
     cards: { meanLow: 23.3, meanHigh: 29, nearCapShareMax: 0.1 },
+    // c_self 하한 17.4: `npm run report:time -- 1000 --only=margins`의 cards-self-low 행으로 정했다 (PD13 가중 ×1.5 때 측정 17.76~19.13장, 가장 불리한 칸 sim:1000 수동 지난 세상 17.76 ± 0.09 → 측정값 − 3 SE = 17.49 → 0.1 단위로 내려 17.4;
+    // ×2.0으로 올린 뒤 재측정 17.85~19.23장, 합친 4줄 최소 17.97 ± 0.05(12 SE) — 하한은 그대로 두었다,
+    // 최소 여유 3.9 SE — SPEC-005 TM5, 규칙 LD-9; ai-log/2026-10-20_SPEC-005_dev-QI5.md). 설계 문서 4-2절의 예측 평균 18.8장 ±0.6보다 높은 값은 쓰지 않았다.
+    cardsSelf: { meanLow: 17.4 },
     timeMin: { humanLow: 25, humanHigh: 35, modelLow: 27, modelHigh: 33 },
   },
   long60: {
@@ -92,6 +105,7 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     extraLineMs: 5000,
     pacing: { soft: 24, softFactor: 0.3, hard: 30 }, // 2차 착수 때 정한다 — 1차는 30분 모드와 같은 값(임시)
     cards: { meanLow: 45, meanHigh: 55, nearCapShareMax: 0.1 },
+    cardsSelf: { meanLow: 0 }, // 1시간 모드는 닫혀 있다 — c_self는 2차 착수 때 정한다
     timeMin: { humanLow: 50, humanHigh: 70, modelLow: 52, modelHigh: 68 },
   },
 };

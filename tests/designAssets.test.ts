@@ -1381,11 +1381,17 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
   };
   const LIFE_LENGTH_HINT_9_4 = '평균 수명까지 사는 시간이에요. 생각을 적는 시간은 뺐고, 나가도 이 기기에 남아요.';
   const section8 = copyMd.slice(Math.max(0, copyMd.indexOf('## 8. M8')));
-  it('copy.md 8절: 문구 여섯(첫 화면 설명·이름·분해·제외·깨끗하지 않은 판·이 기기)과 숫자 표기 규칙(mm:ss 두 자리 이상·상한 없음·낭독 「N분 N초」·버킷별 초 버림 뒤 합)이 적혀 있고, 2절 FS5 행도 새 문구다', () => {
+  it('copy.md 8절: 문구 여섯(첫 화면 설명·이름·분해·제외·깨끗하지 않은 판·이 기기)과 숫자 표기 규칙(mm:ss 두 자리 이상·상한 없음·낭독 「N분 N초」·버킷별 초 버림 뒤 합)이 적혀 있고, 2절 FS5 행은 8절의 세 문장(SPEC-003 기록)이거나 9-4의 한 줄(SPEC-005 QI3 대체)이다', () => {
     expect(copyMd.indexOf('## 8. M8')).toBeGreaterThan(0);
     for (const [k, v] of Object.entries(PLAYTIME_COPY)) expect(section8, k).toContain(v);
     for (const rule of ['61:05', '100:00', '00:59', '0분 59초', 'PT27M46S', '초를 버린 뒤 더한']) expect(section8, rule).toContain(rule);
-    expect(copyMd).toContain(`| 첫 화면 | 인생 길이 보조(FS5) | 「${PLAYTIME_COPY.hint}」`);
+    // SPEC-005 QI3(HS2 ③·R-445): 첫 화면의 인생 길이 안내는 9-4의 한 줄로 대체됐다 — 2절 FS5 행의 문구 갱신은 designer 몫이라 지금 행은 옛 세 문장이어도(기록) 새 한 줄이어도(갱신 뒤) 통과한다.
+    // 9-4에는 새 한 줄이 반드시 적혀 있다.
+    const fs5Row = copyMd.split('\n').find((l) => l.startsWith('| 첫 화면 | 인생 길이 보조(FS5) |'));
+    expect(fs5Row, '2절 FS5 행이 있다').toBeDefined();
+    expect([`「${PLAYTIME_COPY.hint}」`, `「${LIFE_LENGTH_HINT_9_4}」`].some((h) => fs5Row!.includes(h)), '2절 FS5 행은 8절 세 문장이거나 9-4 한 줄').toBe(true);
+    const section94 = copyMd.slice(copyMd.indexOf('### 9-4.'), copyMd.indexOf('### 9-5.'));
+    expect(section94, '9-4에 새 한 줄').toContain(`「${LIFE_LENGTH_HINT_9_4}」`);
   });
   it('구현 상수가 copy.md 8절과 같다(PLAYTIME_TEXT 다섯·TITLE_TEXT.lifeLengthHint·breakdownParts 조각) · 표기 함수가 8-2 규칙대로다(formatPlayTime 단위 표·displaySeconds 버킷별 버림·isCleanRun 세 조작) · 생성기는 임시 블록 없이 그 상수·부품(PlayTime)을 읽고 글자 사본이 없다 — R-191 되돌림(D-96, 2026-10-19 후속)', async () => {
     // SPEC-005 QI3(HS2 ③·copy.md 9-4): 첫 화면의 인생 길이 안내가 세 문장에서 한 줄로 줄었다 — 구현 상수는 9-4의 한 줄이다. 8절의 옛 세 문장(PLAYTIME_COPY.hint)은 SPEC-003 기록으로 8절에 남는다
@@ -1469,16 +1475,73 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
     expect(endingMockHtml).not.toContain('일시정지 제외');
     expect(endingMockHtml).not.toContain('플레이 시간 줄은 M8');
   });
-  it('시안 title-a.html·title-continue.html: 인생 길이 설명이 새 문구(세 문장 해요체)이고 「약 1시간」은 「준비 중」 그대로(LD-4)', async () => {
+  it('시안 title-a.html·title-continue.html: 인생 길이가 분절 컨트롤이고 안내가 copy.md 9-4의 한 줄(해요체)이며 「약 1시간」은 「준비 중」 그대로(LD-4, HS2 · R-445)', async () => {
     for (const file of ['title-a.html', 'title-continue.html']) {
       const html = await readText(`../docs/design/mockups/${file}`);
-      // D-97·D-98(2026-10-20): 끝 문장의 「이 기기에」는 keep-phrase 묶음(구현 TitleScreen.tsx:313이 Glue, design-system.md 11-4) — 글자는 copy.md 그대로(태그를 벗기면 같다)
-      expect(html, file).toContain(`<p class="t-sm t-muted" style="margin-top:var(--sp-2)">${PLAYTIME_COPY.hint.replace('이 기기에 남아요.', '<span class="keep-phrase">이 기기에</span> 남아요.')}</p>`);
-      expect(html.replace(/<[^>]+>/g, ''), file).toContain(PLAYTIME_COPY.hint);
+      // D-97·D-98(2026-10-20): 끝 문장의 「이 기기에」는 keep-phrase 묶음(구현 TitleScreen의 Glue, design-system.md 11-4) — 글자는 copy.md 그대로(태그를 벗기면 같다)
+      expect(html, file).toContain(`<p class="seg__hint">${LIFE_LENGTH_HINT_9_4.replace('이 기기에 남아요.', '<span class="keep-phrase">이 기기에</span> 남아요.')}</p>`);
+      expect(html.replace(/<[^>]+>/g, ''), file).toContain(LIFE_LENGTH_HINT_9_4);
+      expect(html, file).not.toContain(PLAYTIME_COPY.hint); // 옛 세 문장은 시안에 없다
       expect(html, file).toContain('<p class="hero__note"><span class="keep-phrase">이 기기</span> 안에서 계산한 가상의 사람들이에요.'); // 가상 인구 주석(TitleScreen.tsx:266, D-98)
       expect(html, file).not.toContain('이 기기에 남습니다');
-      expect(html, file).toMatch(/<span class="radio-card__title">약 1시간<\/span><span class="radio-card__meta">준비 중<\/span>/);
+      // 분절 컨트롤(HS2): 라디오 둘 — 「약 30분」 선택, 「약 1시간」 비활성 + 「준비 중」
+      expect(html, file).toMatch(/<label class="seg__opt is-selected"><input type="radio" name="lifeLength" checked>[\s\S]*?<span>약 30분<\/span>/);
+      expect(html, file).toMatch(/<label class="seg__opt is-disabled"><input type="radio" name="lifeLength"\s+disabled>[\s\S]*?<span>약 1시간<\/span><span class="seg__meta">준비 중<\/span>/);
+      expect(html, file).not.toContain('radio-card__title">약 1시간'); // 옛 라디오 카드 구조
+      // 통계 카드의 새 구조(SH1·SH4~SH6): 머리글 삭제 + 오른쪽 위 조작 줄, 표제어(h3) + 공식 통계명 줄, 「undefined」 0
+      expect(html, file).toContain('class="card carousel carousel--005"');
+      expect(html, file).toContain(`<h2 class="sr-only">${TITLE_TEXT.carouselHeading}</h2>`);
+      expect(html, file).toContain('<div class="carousel__nav">');
+      expect(html, file).not.toContain('carousel__head');
+      expect(html, file).not.toMatch(/초마다 다음 지표/);
+      expect(html, file).toMatch(/<h3 class="slide__insight">[^<]+/);
+      expect(html.replace(/<[^>]+>/g, ''), file).toMatch(/합계출산율\(\d{4}년\)/); // 공식 통계명(기준 연도) 줄 — 구현 StatsCarousel과 같이 Glue 묶음 태그를 벗기면 「합계출산율(연도년)」
+      expect(html, file).toMatch(/<p class="slide__official">/);
+      expect(html, file).not.toContain('undefined');
     }
+  });
+  it('R-445 재발 방지: 시안 생성기(scripts/design/buildMockups.mjs)가 쓰는 구현 상수가 실재한다 — `../../src/…`에서 가져오는 이름이 모두 그 모듈에 있고, `*_TEXT.<키>`·`LIFE_LENGTH_TEXT[…].<필드>`가 그 객체에 있다 (지운 상수를 쓰는 생성기가 실행하자마자 멈추던 일을 시험이 잡는다)', async () => {
+    const generator = await readText('../scripts/design/buildMockups.mjs');
+    const modules = import.meta.glob('../src/**/*.{ts,tsx}') as Record<string, () => Promise<Record<string, unknown>>>;
+    const loaded = new Map<string, Record<string, unknown>>();
+    const scope: Record<string, unknown> = {}; // 생성기 이름 → 값
+    let namedImports = 0;
+    for (const m of generator.matchAll(/import\s*\{([^}]+)\}\s*from\s*'\.\.\/\.\.\/(src\/[^']+)';/g)) {
+      const names = m[1].split(',').map((n) => n.trim()).filter(Boolean);
+      const rel = `../${m[2]}`;
+      const loader = modules[rel];
+      expect(loader, `${rel}: 생성기가 가져오는 모듈이 없다`).toBeDefined();
+      if (!loaded.has(rel)) loaded.set(rel, await loader());
+      const mod = loaded.get(rel)!;
+      for (const raw of names) {
+        const name = raw.split(/\s+as\s+/)[0].trim();
+        const local = raw.split(/\s+as\s+/).pop()!.trim();
+        namedImports++;
+        // 타입만 가져오는 이름은 런타임 값이 없다(.mjs라 type import가 없다) — 값으로 실재해야 한다
+        expect(Object.prototype.hasOwnProperty.call(mod, name) || name in mod, `${m[2]}에 ${name}이 없다 — 생성기가 지운 상수를 가져온다`).toBe(true);
+        scope[local] = mod[name];
+      }
+    }
+    expect(namedImports, '공허 통과 방지: 가져오는 이름이 충분히 많다').toBeGreaterThan(60);
+    // `X_TEXT.키` — 평범한 객체인 *_TEXT 상수는 키가 실재해야 한다 (함수·원시값이면 건너뛴다)
+    let propChecks = 0;
+    for (const m of generator.matchAll(/\b([A-Z][A-Z0-9_]*_TEXT)\.([A-Za-z_]\w*)/g)) {
+      const obj = scope[m[1]];
+      if (obj === undefined || typeof obj !== 'object' || obj === null) continue;
+      propChecks++;
+      expect(m[2] in (obj as object), `${m[1]}.${m[2]}가 없다`).toBe(true);
+    }
+    expect(propChecks, '공허 통과 방지').toBeGreaterThan(30);
+    // `LIFE_LENGTH_TEXT[…].필드`: 두 인생 길이 모두에 있어야 한다
+    const lifeLength = scope.LIFE_LENGTH_TEXT as Record<string, Record<string, unknown>>;
+    const fields = [...generator.matchAll(/LIFE_LENGTH_TEXT\[[^\]]*\]\.([A-Za-z_]\w*)/g)].map((m) => m[1]);
+    expect(fields.length, 'LIFE_LENGTH_TEXT 필드 사용처가 있다').toBeGreaterThan(0);
+    for (const f of fields) for (const k of Object.keys(lifeLength)) expect(f in lifeLength[k], `LIFE_LENGTH_TEXT.${k}.${f}가 없다`).toBe(true);
+    // 변이 점검: 지운 상수를 쓰는 가짜 생성기 조각은 이 점검이 잡는다
+    const fake = "TITLE_TEXT.carouselAutoNote(9) LIFE_LENGTH_TEXT[l].desc";
+    const missing = [...fake.matchAll(/\b([A-Z][A-Z0-9_]*_TEXT)\.([A-Za-z_]\w*)/g)].filter((m) => !((scope[m[1]] as object) && m[2] in (scope[m[1]] as object)));
+    expect(missing.map((m) => `${m[1]}.${m[2]}`)).toContain('TITLE_TEXT.carouselAutoNote');
+    expect(fields.includes('desc') ? false : !('desc' in lifeLength.short30)).toBe(true);
   });
   it('D-97·D-98(2026-10-20, design-system.md 11-4 관형사 묶음 — 구현 glue.ts r2 규칙을 생성기가 import): 나머지 고정 문장 셋의 시안도 구현과 같은 묶음을 품는다 — 엔딩 다시 태어나기 안내 「이 인생의」, 대시보드 나가기 확인 「이 기기에」, 결정 카드 영향 안내 「이 선택만으로」; 글자는 바뀌지 않고 생성기의 세 자리는 esc가 아니라 glueHtml이다', async () => {
     expect(endingMockHtml).toContain(`<p class="t-sm t-muted">${REBIRTH_NOTE.replace('이 인생의', '<span class="keep-phrase">이 인생의</span>')}</p>`);

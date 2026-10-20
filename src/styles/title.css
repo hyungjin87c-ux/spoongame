@@ -365,7 +365,14 @@ html.bar-released .page-end-space { display: none; }
   .hero__pop { max-width: none; }
   /* 일러스트(HS1): 배너는 숨기고 오른쪽 열 맨 위의 그림을 보인다 — 가운데 정렬, 아래 --illust-tuck만큼은 통계 카드 뒤(D5-24·D5-32) */
   .illust--banner { display: none; }
-  .illust--top { display: flex; justify-content: center; --illust-h: 420px; --illust-tuck: 32px; margin-bottom: calc(-1 * var(--illust-tuck)); }
+  /* 겹침(--illust-tuck)은 그림 높이의 7.62%(420px일 때 32px) — 낮은 창에서 그림이 줄어도 제주 타일이 카드 뒤로 더 들어가지 않는다(D5-34). 420·500px에서는 32·36 그대로 */
+  .illust--top { display: flex; justify-content: center; --illust-h: 420px; --illust-tuck: min(32px, calc(var(--illust-h) * 0.0762)); margin-bottom: calc(-1 * var(--illust-tuck)); }
+  /* 낮은 창(REV-005-QI3-1 R-447, diff-005 D5-34): 그림 높이를 창 높이에 맞춰 줄여 이어서 살기 띠(120px)에서도, 표제어가 두 줄인 슬라이드에서도 값 줄 아래끝이 열의 보이는 끝 위(여유 8px)에 있게 한다.
+     예산 334px = 띠 120 + 열 아래 간격 6 + 여유 8 + 위 여백 24 + 카드 위끝→값 아래끝 176(표제어 두 줄). ÷ 0.924 = 겹침(7.62%)을 뺀 그림 높이 비율. 창 높이 ≥ 722면 420(지금 그대로), 541 이하는 바닥 224(모바일 배너와 같은 최소).
+     clamp()를 모르는 엔진은 위 420px 그대로(@supports). --bar-h를 쓰지 않는 이유: JS가 재기 전 첫 그림과 확인 단계(156px)에서 그림이 뛴다(CLS·움직임). */
+  @supports (height: clamp(1px, 2px, 3px)) {
+    .illust--top { --illust-h: clamp(224px, calc((100vh - 334px) / 0.924), 420px); }
+  }
   /* 따라다니는 카드가 하단 띠 위에 머문다: 낮은 화면(예: 높이 650px의 노트북 창)에서 카드가 더 크면 카드 안쪽이 스크롤된다(안쪽 스크롤 전에는 조작 줄이 카드 머리라 보이고, 안쪽을 내리면 머리도 함께 올라가며 PageUp·휠로 되돌린다 — R-224).
      바깥 여백 3px은 카드 그림자·테두리가 스크롤 영역에 잘리지 않게 하려는 것이다.
      R-220: 카드가 놓인 격자 영역은 본문 줄과 푸터 줄을 합친 높이(grid-row: 1 / span 2)라서 따라다니는 범위가 문서 끝까지 이어진다 — 맨 아래까지 내려도 카드가 열 끝에 밀려 올라가지 않고
@@ -378,7 +385,10 @@ html.bar-released .page-end-space { display: none; }
 }
 
 @media (min-width: 1600px) {
-  .illust--top { --illust-h: 500px; --illust-tuck: 36px; }
+  .illust--top { --illust-h: 500px; --illust-tuck: min(36px, calc(var(--illust-h) * 0.0762)); }
+  @supports (height: clamp(1px, 2px, 3px)) {
+    .illust--top { --illust-h: clamp(224px, calc((100vh - 334px) / 0.924), 500px); }
+  }
 }
 
 /* ---------- 강제 색상(고대비) ---------- */

@@ -3,6 +3,7 @@ import type { GameState } from '../src/core/types';
 import {
   GAME_KEY,
   SAVE_VERSION,
+  SETTINGS_KEY,
   evalCore,
   findPendingState,
   injectSave,
@@ -13,9 +14,16 @@ import {
   rapidInput,
   readSave,
   readSettings,
+  settingsEnvelope,
   settle,
   startPageHidden,
 } from './helpers';
+
+/**
+ * 수동·1배속·기록 카드 꺼짐. SPEC-005 QI5부터 첫 본인 결정이 13세 이후라(그 앞은 부모님이 정하거나 흘러간다) 설정 없이 0세부터 시작하면 5세의 기록 카드 시트가 먼저 시계를 멈춘다 —
+ * 이 묶음은 선택 처리·연타·키보드 흐름을 보므로 기록 카드를 끈다(기록 카드 자체는 e2e/m7c-note.spec.ts). 기대값은 기록 카드를 시트 없이 소비하는 길(`'consume'`)로 계산한다.
+ */
+const NO_NOTES = { speed: 1, autoMode: false, noteCards: false } as const;
 
 /**
  * 공격·견고성 시나리오 (QA가 사람 손으로 하는 것과 같은 상황을 자동화): 새로고침 연타(로드·저장 도중 중단),
@@ -102,9 +110,9 @@ test('선택 버튼을 연타해도 첫 클릭만 반영되고, 바로 다음에
     page,
     `for (let seed = 3000; seed < 3400; seed++) {
        const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
-       const s = core.advanceUntilDecision(start).state;
+       const s = core.advanceUntilDecision(start, undefined, 'consume').state;
        if (s.phase !== 'life' || !s.pending) continue;
-       const t = core.advanceUntilDecision(core.resolveChoice(s, s.pending.key, s.pending.choiceIds[0])).state;
+       const t = core.advanceUntilDecision(core.resolveChoice(s, s.pending.key, s.pending.choiceIds[0]), undefined, 'consume').state;
        if (t.phase === 'life' && t.pending) return s;
      }
      return null;`,
@@ -113,20 +121,20 @@ test('선택 버튼을 연타해도 첫 클릭만 반영되고, 바로 다음에
   const firstId = a!.pending!.choiceIds[0];
   const expected = await evalCore<GameState>(
     page,
-    'return core.advanceUntilDecision(core.resolveChoice(arg, arg.pending.key, arg.pending.choiceIds[0])).state;',
+    "return core.advanceUntilDecision(core.resolveChoice(arg, arg.pending.key, arg.pending.choiceIds[0]), undefined, 'consume').state;",
     a,
   );
   expect(expected.pending).not.toBeNull();
   expect(expected.pending!.key).not.toBe(a!.pending!.key);
 
-  await injectSave(page, a!, '/?__timescale=100000'); // 연출이 사실상 0ms → B가 곧바로 뜬다
+  await injectSave(page, a!, '/?__timescale=100000', NO_NOTES); // 연출이 사실상 0ms → B가 곧바로 뜬다
   const first = page.getByTestId(`choice-${firstId}`);
   await expect(first).toBeEnabled();
   await rapidInput(page, 'mouse3', first); // 같은 자리를 3번 연속 클릭
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-key', expected.pending!.key);
   await page.waitForTimeout(800); // 입력 가드(400ms)보다 길게: 늦게 처리되는 입력이 없었음을 확인
   expect((await readSave(page)).data).toEqual(expected); // A는 정확히 한 번 해결됐고 B는 대기 중이다
-  expect((await readSave(page)).data.history.filter((h) => h.kind === 'choice')).toHaveLength(1);
+  expect((await readSave(page)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined)).toHaveLength(1);
 });
 
 // ---------- 키보드만으로 한 판 ----------
@@ -134,6 +142,8 @@ test('선택 버튼을 연타해도 첫 클릭만 반영되고, 바로 다음에
 test('키보드만으로 타이틀부터 사망까지 진행할 수 있다 (Tab·Enter·Space)', async ({ page }) => {
   test.setTimeout(90_000);
   const errors = trackErrors(page);
+  // 기록 카드를 끈 설정으로 시작한다(위 NO_NOTES 설명) — 저장된 설정이 없을 때만 심어, 새로고침해도 사용자가 바꾼 값을 덮지 않는다
+  await page.addInitScript(([k, v]) => { if (localStorage.getItem(k) === null) localStorage.setItem(k, v); }, [SETTINGS_KEY, settingsEnvelope(NO_NOTES)] as const);
   await page.goto('/?__timescale=500');
   const focusedId = () => page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? document.activeElement?.textContent?.trim() ?? '');
   const tabTo = async (matches: (id: string) => boolean, max = 40) => { // 첫 화면에는 세상·인생 길이·캐러셀(이전·다음·일시정지·슬라이드)·출처 링크가 있어 「태어나기」까지 Tab이 더 필요하다
@@ -197,7 +207,7 @@ test('키보드로 선택지를 고른다: 복원된 선택지도 선택지 제�
   await page.keyboard.press('Tab');
   expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe(`choice-${decision.pending!.choiceIds[0]}`);
   await page.keyboard.press('Enter');
-  await expect.poll(async () => (await readSave(page)).data.history.filter((h) => h.kind === 'choice').length).toBe(1);
+  await expect.poll(async () => (await readSave(page)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length).toBe(1);
 });
 
 // ---------- 자동 모드 해제 / 가려진 탭 ----------
@@ -260,7 +270,7 @@ test('다중 탭: 다른 탭이 저장을 바꾸면 이 탭은 멈추고(덮어�
   // 시간 배율 0.25: 두 탭이 선택 뒤 저절로 한 해를 진행하는 시각(8초 → 32초)을 늦춘다. 아래 단계가 부하로 늦어져도 진행 타이머가 끼어들어
   // 밀린 탭을 다시 밀어내지 않는다. 이 탭의 진행은 마지막에 "다음 결정으로"를 눌러 직접 일으킨다(타이머를 기다리지 않는다).
   const SLOW = '/?__timescale=0.25';
-  await injectSave(page, decision, SLOW);
+  await injectSave(page, decision, SLOW, NO_NOTES);
   await expect(page.getByTestId('choice-panel')).toBeVisible();
 
   // 같은 저장을 연 두 번째 탭에서 선택한다
@@ -272,7 +282,7 @@ test('다중 탭: 다른 탭이 저장을 바꾸면 이 탭은 멈추고(덮어�
   const first2 = page2.getByTestId(`choice-${firstId}`);
   await expect(first2).toBeEnabled();
   await first2.click();
-  await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice').length).toBe(1);
+  await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length).toBe(1);
 
   // 첫 탭은 "다른 탭에서 저장이 바뀜" 화면으로 바뀌고 선택지 화면을 더 이상 보이지 않는다
   await expect(page.getByTestId('superseded-screen')).toBeVisible();
@@ -281,7 +291,7 @@ test('다중 탭: 다른 탭이 저장을 바꾸면 이 탭은 멈추고(덮어�
   // 멈춰 있는 동안 첫 탭이 옛 상태(선택 전)로 되돌려 쓰지 않는다 (오래 기다릴수록 안전한 방향의 부정 확인)
   await page.waitForTimeout(800);
   expect((await readSave(page2)).data.history.length).toBeGreaterThanOrEqual(afterChoose.history.length);
-  expect((await readSave(page2)).data.history.filter((h) => h.kind === 'choice')).toHaveLength(1);
+  expect((await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined)).toHaveLength(1);
 
   // 첫 탭에서 이어받으면 저장된 최신 상태를 보여 주고(선택 내용이 연표에 있다), 이 탭이 진행하면 이제 두 번째 탭이 멈춘다
   const takeOver = page.getByTestId('take-over');
@@ -458,7 +468,7 @@ test('저장이 막힌 동안 다른 탭이 저장을 바꿔 "이 탭에서 이�
   const first2 = page2.getByTestId(`choice-${firstId}`);
   await expect(first2).toBeEnabled();
   await first2.click();
-  await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice').length).toBe(1);
+  await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length).toBe(1);
 
   // 3) 첫 탭은 밀렸다 → 이어받으면 저장된 최신 상태를 보여 주고 실패 안내는 사라진다 (저장은 아직 막혀 있어도 쓸 것이 없다)
   await expect(page.getByTestId('superseded-screen')).toBeVisible();
@@ -495,7 +505,7 @@ test('대기 중인 선택지가 실제 이벤트와 맞지 않는 저장: 모�
     { ...decision, pending: { ...pending, eventId: 'no-such-event', key: `no-such-event@${decision.age}` }, seen: { ...decision.seen, 'no-such-event': decision.age } },
   ];
   for (const v of stale) {
-    await injectSave(page, v, '/');
+    await injectSave(page, v, '/', NO_NOTES); // 기록 카드가 뜰 나이라 시트가 「다음 결정으로」를 가리지 않게(NO_NOTES 설명)
     await expect(page.getByTestId('life-screen')).toBeVisible();
     await expect(page.getByTestId('choice-panel')).toHaveCount(0); // 대기는 풀렸다
     await expect(page.getByTestId('life-name')).toHaveText(decision.character!.name); // 같은 인물
@@ -562,7 +572,7 @@ test('저장 쓰기 없이 곧바로 떠나도 마지막 상태는 남는다: �
   await page.reload({ waitUntil: 'commit' }); // 효과(저장)가 돌기 전에 떠날 수도 있다
   await page.waitForLoadState();
   await expect(page.getByTestId('life-screen')).toBeVisible();
-  expect((await readSave(page)).data.history.filter((h) => h.kind === 'choice')).toHaveLength(1);
+  expect((await readSave(page)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined)).toHaveLength(1);
 });
 
 test('이름·연표 글에 방향 제어·제로폭 문자가 든 저장은 손상으로 보고 크래시 없이 첫 화면으로 시작한다 (QA-003-M7b A12b)', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice } from '../core';
+import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { EVENT_POOL } from '../data/events';
 import { DASH_TEXT } from '../data/dashText';
@@ -10,6 +10,7 @@ import { GuardedButton } from '../ui/GuardedButton';
 import { AssetsCard, FamilyCard, PeersNowCard, ProfileCard, StatusCard, type LifeGame } from '../ui/dash/Cards';
 import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, useDecisionModel } from '../ui/dash/DecisionCard';
 import { LogCard } from '../ui/dash/LogCard';
+import { ParentCard, useParentCardModel } from '../ui/dash/ParentCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
 import { Glue } from '../ui/Glue';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
@@ -59,6 +60,10 @@ interface Props {
   game: LifeGame;
   settings: Settings;
   pool?: EventPool;
+  /**
+   * 직전에 처리한 걸음(App의 세션 `tick`, 저장하지 않으며 새로고침 직후에는 null). 부모님이 정한·흘러간 해의 결과 연출 동안 비모달 카드(`ParentCard`)를 파생하는 데 쓴다 — 카드는 이 틱에서만 나온다(PD5·PD7-5). 기본 null(카드 없음)
+   */
+  tick?: TickInfo | null;
   /** 올해 진행률 시계 (App이 `useYearClock`으로 만든다) */
   clock: YearClock;
   /** 나가기 확인 단계가 열려 있는가 (App이 갖는다 — 열려 있는 동안 시계도 멈춘다) */
@@ -239,7 +244,7 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headRef = useRef<HTMLElement>(null);
@@ -261,6 +266,8 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
   const stickyHead = useStickyHead(headRef, controlsRef, forceRelease);
   useExitAskFit(forceRelease, exitOpen, { titleRef: exitTitleRef, cancelRef: exitCancelRef, boxRef: exitBoxRef, headRef, barRef: controlsRef }, [bottomBar, stickyHead]);
   const decision = useDecisionModel(game, pool);
+  // 부모님이 정한·흘러간 해의 카드 (PD5): 사람이 고르는 카드(decision)와 같은 해에 뜨지 않는다 — 카드 간격 규칙(2년)이 보장한다
+  const parentCard = useParentCardModel(game, tick, pool);
   // 접힘은 대기 중인 선택지가 있을 때만 뜻이 있다(App이 키로 묶어 두지만 여기서도 못 박는다)
   const isFolded = decision !== null && folded;
   // 카드 틀: 자동 모드 하나가 정한다(M-6) — 꺼짐 = 모달 시트(바깥 inert), 켜짐 = 비모달 인라인. 접었다 다시 열면 그때의 자동 모드에 맞는 틀로 뜬다
@@ -421,6 +428,8 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, clock, exitOpen,
               <DecisionCard model={decision} auto epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} />
             </DecisionInline>
           ) : null}
+          {/* 부모님이 정한·흘러간 카드: 인생 기록 바로 위(LR5 b — [결정 카드 또는 접힌 띠 → 부모 결정 카드 → 인생 기록]). 비모달이라 포커스·inert와 무관하다 */}
+          {parentCard !== null ? <ParentCard model={parentCard} /> : null}
           <LogCard history={game.history} name={c.name} live={!fast} minute={minute} />
         </div>
         <div className="col col--right">

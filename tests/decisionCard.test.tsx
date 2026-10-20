@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { startLife } from '../scripts/simulateLib';
-import { DEFAULT_SETTINGS, advanceUntilDecision, calendarYear, resolveChoice, type GameState, type Settings } from '../src/core';
+import { DEFAULT_SETTINGS, advanceUntilDecision, calendarYear, deciderOf, possibleAgesOf, resolveChoice, type GameState, type Settings } from '../src/core';
+import { PARENT_DECISION_TABLE } from '../src/data/parentDecisionTable';
+import { forcedPending } from './helpers/forcedPending';
 import { DASH_TEXT, titleCharsFor } from '../src/data/dashText';
 import { EVENT_POOL } from '../src/data/events';
 import { LifeScreen } from '../src/screens/LifeScreen';
@@ -47,8 +49,12 @@ function render(game: GameState, o: { auto?: boolean; folded?: boolean; epoch?: 
   );
 }
 
-/** 카드 eventId가 대기 중인 상태 (앞선 결정은 첫 선택지로 넘긴다) */
+/**
+ * 카드 eventId가 대기 중인 상태 (앞선 결정은 첫 선택지로 넘긴다). SPEC-005부터 어린 시절의 큰 결정 중 부모님이 정하거나 아이의 일로 흘러가는 카드는 진행 중 `pending`이 되지 않으므로
+ * 그런 카드(`school-tutoring`·`infant-fever`·`infant-new-sibling`)는 대기 상태를 직접 만든다(tests/helpers/forcedPending.ts) — 이 묶음은 시트의 **보이는 모양**을 보고, 모양은 누가 정하느냐와 무관하다.
+ */
 function stateAt(eventId: string, era: 'past' | 'present' | 'future' = 'present'): GameState {
+  if (PARENT_DECISION_TABLE[eventId] !== undefined && possibleAgesOf(EVENT_POOL.byId.get(eventId)!).some((a) => deciderOf(eventId, a) !== 'self')) return forcedPending(eventId, era);
   for (let seed = 1; seed <= 4000; seed++) {
     let s = startLife(seed, era);
     for (let guard = 0; guard < 80 && s.phase === 'life'; guard++) {

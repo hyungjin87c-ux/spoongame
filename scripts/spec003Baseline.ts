@@ -1,4 +1,4 @@
-import { ERAS, STAGES } from '../src/core';
+import { ERAS, STAGES, totalCards } from '../src/core';
 import { STAGE_TABLE } from '../src/data/lifeTable';
 import { eventCounts, possibleEventsAt } from './spec003BaselineLib';
 import { distOf, simulateMany } from './simulateLib';
@@ -59,7 +59,7 @@ const fx = (n: number, d = 2) => n.toFixed(d);
     const il = distOf(infantLines);
     console.log(`  0~7세 8해 중 사건 없는 해: 평균 ${fx(ed.mean)} / 최대 ${ed.max} / 5% ${ed.p05} / 95% ${ed.p95}`);
     console.log(`  0~7세 사건·선택 줄(출생 줄 제외): 평균 ${fx(il.mean)} / 최소 ${il.min} / 최대 ${il.max}`);
-    const ch = distOf(sims.map((l) => l.counts.choice));
+    const ch = distOf(sims.map((l) => totalCards(l.counts)));
     console.log(`  판당 선택지: 평균 ${fx(ch.mean, 1)} / 5% ${ch.p05} / 95% ${ch.p95}`);
     const infChoice = sims.reduce((a, l) => a + l.choicesByStage.infant, 0) / sims.length;
     console.log(`  영유아 단계 판당 선택지 평균: ${fx(infChoice)}`);

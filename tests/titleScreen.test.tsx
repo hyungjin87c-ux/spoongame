@@ -339,8 +339,8 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(data.slides.length).toBeGreaterThan(CAROUSEL_MAX_DOTS);
     expect(html).not.toContain('data-testid="carousel-dots"');
     expect(html).not.toMatch(/data-testid="carousel-dot-\d+"/);
-    expect(html).toContain(`aria-label="1/${data.slides.length} ${data.slides[0].insight}, ${data.slides[0].officialText}"`); // 「1/14 아기는 얼마나 태어나고 있을까?, 합계출산율(2025년)」
-    expect(html).toContain('aria-label="1/14 아기는 얼마나 태어나고 있을까?, 합계출산율(2025년)"');
+    expect(html).toContain(`aria-label="1/${data.slides.length} ${data.slides[0].insight}, ${data.slides[0].officialText}"`); // 「1/14 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)」
+    expect(html).toContain('aria-label="1/14 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)"');
     expect(html).toContain(`data-testid="carousel-count" aria-hidden="true">1 / ${data.slides.length}<`);
   });
 
@@ -465,7 +465,7 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(text(slide)).toContain('자살률(2025년)'); // 공식 통계명 줄(SH3) — 「자살」 낱말은 이 줄에만 있다
     expect(text(slide)).toContain('인구 10만 명당'); // 기준 줄(분모만)
     const insight = /<h3 class="slide__insight">([\s\S]*?)<\/h3>/.exec(slide)![1];
-    expect(text(insight)).toBe('삶을 스스로 마감하는 사람은 얼마나 될까?'); // 임시 표제어 후보 ①(copy.md 9-1 #5 — reviewer·마스터 판독 대기 [확인 M9]) — 「자살」 낱말은 공식 통계명 줄에만 있다
+    expect(text(insight)).toBe('삶을 스스로 마감하는 사람은 얼마나 될까?'); // 확정 표제어(M9 — copy.md 9-1 #5, REV-005-QI3-1 판독 통과 + 마스터 승인) — 「자살」 낱말은 공식 통계명 줄에만 있다
     expect(text(insight)).not.toContain('자살');
     // 다른 슬라이드에는 없다
     expect(html.match(/data-testid="slide-help"/g)?.length).toBe(1);

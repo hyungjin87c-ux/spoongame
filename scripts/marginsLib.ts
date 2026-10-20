@@ -1,4 +1,4 @@
-import { ERAS, type Era } from '../src/core';
+import { ERAS, totalCards, type Era } from '../src/core';
 import { INFANT_CHOICE_MEAN_MIN, LIFE_LENGTH_MODES, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { infantLives } from './infantMetricsLib';
 import { pipelineSeed } from './pipelineLib';
@@ -7,6 +7,10 @@ import { simulateLife, type LifeSummary, type Strategy } from './simulateLib';
 /**
  * 판정 여유 표 (SPEC-003 M8, REV-003-M8-1 R-415 / LD-9): 30분 모드의 **새 판정 지표 전부**가 측정값에서 얼마나 떨어져 있는지를 표준오차(SE) 배수로 보인다.
  * `npm run report:time -- 1000 --only=margins`가 찍는다. 판정이 아니라 **보고**다 — 3 SE를 못 지키는 칸은 값을 바꾸지 않고 「3 SE 미만」으로 표시해 보고한다.
+ *
+ * **판정은 네 줄을 합친 표본으로 한다 (SPEC-005 QI5 마스터 결정 — 설계 문서 9절 1번, REV-003-M8-2 3번의 선택지 (b))**: 줄 하나(1000판)의 표준오차로 네 줄이 모두 3 SE를 지키라는 것은 모집단 값이 임계에서 4 SE쯤 떨어져 있어야 통과하는 엄격한 요구라,
+ * 난수 흐름이 바뀌는 변경(예: QI5의 부모 결정)이 오면 칸마다 반쯤의 확률로 걸렸다. 같은 질문(측정값이 임계에서 3 SE 이상인가)을 **4000판을 합친 표본**(시드 줄 둘 × 전략 둘)으로 묻고, 줄별 값은 아래 표에 그대로 두되 **보고**(`lineUnder3`)로만 남긴다.
+ * 임계는 그대로다(M-3 「임계를 더 내리지 않는다」와 충돌 없음).
  *
  * 시드 줄 둘:
  *  - 시험: tests/simulation.test.ts의 `simulateMany` 줄 (i × 7919 + 13) — 수동 흉내(random), 자동 성향(auto)
@@ -122,21 +126,23 @@ const shareMetric = (id: string, label: string, limit: string, pop: (lives: read
 });
 
 export const CARD_METRICS: readonly MarginMetric[] = [
-  meanMetric('cards-low', '결정 카드 평균 ≥ 하한', `≥ ${mode.cards.meanLow}장`, (l) => l.counts.choice, () => mode.cards.meanLow, 'min'),
-  meanMetric('cards-high', '결정 카드 평균 ≤ 상한', `≤ ${mode.cards.meanHigh}장`, (l) => l.counts.choice, () => mode.cards.meanHigh, 'max'),
-  shareMetric('near-cap', '하드−1 이상인 판 비율 (%)', `≤ ${mode.cards.nearCapShareMax * 100}%`, (lives) => [...lives], (l) => l.counts.choice >= mode.pacing.hard - 1, mode.cards.nearCapShareMax),
+  meanMetric('cards-low', '결정 카드 평균 ≥ 하한', `≥ ${mode.cards.meanLow}장`, (l) => totalCards(l.counts), () => mode.cards.meanLow, 'min'),
+  // 본인이 읽고 고르는 카드 c_self의 평균 하한 (SPEC-005 TM5): 총 카드 수 구간(23.3~29)은 그대로이고 c_self 하한을 따로 둔다 — 측정값 − 3 SE 규칙(LD-9)
+  meanMetric('cards-self-low', '본인 카드 c_self 평균 ≥ 하한', `≥ ${mode.cardsSelf.meanLow}장`, (l) => l.counts.choice, () => mode.cardsSelf.meanLow, 'min'),
+  meanMetric('cards-high', '결정 카드 평균 ≤ 상한', `≤ ${mode.cards.meanHigh}장`, (l) => totalCards(l.counts), () => mode.cards.meanHigh, 'max'),
+  shareMetric('near-cap', '하드−1 이상인 판 비율 (%)', `≤ ${mode.cards.nearCapShareMax * 100}%`, (lives) => [...lives], (l) => totalCards(l.counts) >= mode.pacing.hard - 1, mode.cards.nearCapShareMax),
   {
     id: 'p05',
     label: '5% 분위 (16장 미만 판 ≤ 5%와 같은 뜻)',
     limit: '5% 분위 ≥ 16장',
     of: (lives) => {
-      const cards = lives.map((l) => l.counts.choice);
+      const cards = lives.map((l) => totalCards(l.counts));
       const hits = cards.filter((c) => c < 16).length;
       const se = propSe(hits, cards.length);
       return { value: quantile(cards, 5), se: null, margin: (0.05 - hits / cards.length) / se, digits: 0 };
     },
   },
-  shareMetric('under20', '사망 70세+ 중 20장 미만 판 비율 (%)', '≤ 10%', (lives) => lives.filter((l) => l.deathAge >= 70), (l) => l.counts.choice < 20, 0.1),
+  shareMetric('under20', '사망 70세+ 중 20장 미만 판 비율 (%)', '≤ 10%', (lives) => lives.filter((l) => l.deathAge >= 70), (l) => totalCards(l.counts) < 20, 0.1),
   meanMetric('senior', '노년(65세+) 결정 카드 평균', `≥ 시대별 하한 (${ERAS.map((e) => SENIOR_CHOICE_MEAN_MIN[e].toFixed(2)).join(' / ')})`, (l) => l.choicesByStage.senior, (era) => SENIOR_CHOICE_MEAN_MIN[era], 'min'),
   meanMetric('infant7', '영유아(0~7세) 결정 카드 평균', `≥ ${INFANT_CHOICE_MEAN_MIN}`, infantCards, () => INFANT_CHOICE_MEAN_MIN, 'min'),
 ];
@@ -192,10 +198,15 @@ export interface MarginReport {
   cells: MarginCellResult[];
   /** 마크다운 */
   text: string;
-  /** 3 SE 미만 칸 (지표·시대·줄·여유) */
+  /** 합친 표본(네 줄 4000판)으로 3 SE 미만인 칸 — **판정** (지표·시대·여유) */
   under3: Array<{ metric: string; era: string; line: string; margin: number }>;
+  /** 줄별(1000판)로 3 SE 미만인 칸 — **보고만** (판정 아님) */
+  lineUnder3: Array<{ metric: string; era: string; line: string; margin: number }>;
   problems: string[];
 }
+
+/** 줄 넷을 합친 표본을 가리키는 가짜 줄 (판정용) */
+export const POOLED_LINE: MarginLine = { id: 'pooled', label: '합친 4줄 (판정)', seedLine: 'test', strategy: 'random' };
 
 export function marginReport(count: number, lines: readonly MarginLine[] = MARGIN_LINES, onProgress?: (msg: string) => void): MarginReport {
   const cells: MarginCellResult[] = [];
@@ -204,12 +215,15 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
     for (const era of ERAS) {
       onProgress?.(`${line.label} / ${era}`);
       const lives = marginLives(line, era, count);
-      for (const l of lives) if (l.counts.choice > mode.pacing.hard) problems.push(`${line.id}/${era} 시드 ${l.seed}: 결정 카드 ${l.counts.choice}장이 하드 상한을 넘었다`);
+      for (const l of lives) if (totalCards(l.counts) > mode.pacing.hard) problems.push(`${line.id}/${era} 시드 ${l.seed}: 결정 카드 ${totalCards(l.counts)}장이 하드 상한을 넘었다`);
       cells.push({ line, era, lives });
     }
   }
   const under3: MarginReport['under3'] = [];
+  const lineUnder3: MarginReport['lineUnder3'] = [];
   const out: string[] = [];
+  // 합친 표본: 시대마다 모든 줄의 판을 이어 붙인다
+  for (const era of ERAS) cells.push({ line: POOLED_LINE, era, lives: lines.flatMap((line) => cells.find((c) => c.line.id === line.id && c.era === era)!.lives) });
   const valueOf = (m: MarginMetric, line: MarginLine, era: Era): MarginValue => m.of(cells.find((c) => c.line.id === line.id && c.era === era)!.lives, era);
 
   out.push(`### 시대 × 전략 × 시드 줄별 모델 시간·카드 평균 (${count}판, 30분 모드 — 연출 계수 ${mode.holdScale}, 페이싱 soft ${mode.pacing.soft} / hard ${mode.pacing.hard}, 읽기 중앙, 1배속 수동)`);
@@ -218,28 +232,40 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
   for (const line of lines) {
     for (const era of ERAS) {
       const lv = cells.find((c) => c.line.id === line.id && c.era === era)!.lives;
-      const cards = lv.map((l) => l.counts.choice);
+      const cards = lv.map((l) => totalCards(l.counts));
       const mins = lv.map(minutesOf);
       out.push(`| ${line.label} | ${era} | ${f(mean(cards), 2)} ±${f(meanSe(cards), 2)} | ${f(mean(mins), 2)} ±${f(meanSe(mins), 2)} | ${f(sd(mins), 2)} | ${f(mean(lv.map((l) => l.deathAge)), 1)} |`);
     }
     const a = threeEraAverage(cells, line);
     out.push(`| ${line.label} | **세 시대 평균** | | **${f(a.mean, 2)}** ±${f(a.se, 2)} | | |`);
   }
+  for (const era of ERAS) {
+    const lv = cells.find((c) => c.line.id === POOLED_LINE.id && c.era === era)!.lives;
+    const cards = lv.map((l) => totalCards(l.counts));
+    const mins = lv.map(minutesOf);
+    out.push(`| ${POOLED_LINE.label} | ${era} | ${f(mean(cards), 2)} ±${f(meanSe(cards), 2)} | ${f(mean(mins), 2)} ±${f(meanSe(mins), 2)} | ${f(sd(mins), 2)} | ${f(mean(lv.map((l) => l.deathAge)), 1)} |`);
+  }
+  {
+    const a = threeEraAverage(cells, POOLED_LINE);
+    out.push(`| ${POOLED_LINE.label} | **세 시대 평균** | | **${f(a.mean, 2)}** ±${f(a.se, 2)} | | |`);
+  }
 
   out.push('');
-  out.push(`### 판정 여유 — 한계까지의 거리를 표준오차(SE) 배수로 (안쪽이 +, 3 SE 미만은 ⚠, LD-9: 임계는 측정값에서 3 SE 이상). 값 ±SE (여유)`);
+  out.push(`### 판정 여유 — 한계까지의 거리를 표준오차(SE) 배수로 (안쪽이 +, 3 SE 미만은 ⚠, LD-9: 임계는 측정값에서 3 SE 이상). 값 ±SE (여유). **판정은 맨 오른쪽 「합친 4줄」**(4000판), 줄별 칸의 ⚠는 보고다`);
   for (const metric of ALL_METRICS) {
     out.push('');
     out.push(`**${metric.label}** — 한계 ${metric.limit}`);
-    out.push(`| 시대 | ${lines.map((l) => l.label).join(' | ')} |`);
-    out.push(`|---|${lines.map(() => '---:').join('|')}|`);
+    out.push(`| 시대 | ${lines.map((l) => l.label).join(' | ')} | **${POOLED_LINE.label}** |`);
+    out.push(`|---|${lines.map(() => '---:').join('|')}|---:|`);
     for (const era of ERAS) {
       const row = lines.map((line) => {
         const v = valueOf(metric, line, era);
-        if (v.margin !== null && v.margin < 3) under3.push({ metric: metric.label, era, line: line.label, margin: v.margin });
+        if (v.margin !== null && v.margin < 3) lineUnder3.push({ metric: metric.label, era, line: line.label, margin: v.margin });
         return fmt(v);
       });
-      out.push(`| ${era} | ${row.join(' | ')} |`);
+      const pooled = valueOf(metric, POOLED_LINE, era);
+      if (pooled.margin !== null && pooled.margin < 3) under3.push({ metric: metric.label, era, line: POOLED_LINE.label, margin: pooled.margin });
+      out.push(`| ${era} | ${row.join(' | ')} | **${fmt(pooled)}** |`);
     }
   }
 
@@ -247,16 +273,17 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
   out.push(`**세 시대 평균 시간(분)** — 한계 ${mode.timeMin.modelLow}~${mode.timeMin.modelHigh}분 (아래쪽 / 위쪽 여유)`);
   out.push(`| 줄 | 평균 ± SE | 하한 ${mode.timeMin.modelLow}분까지 | 상한 ${mode.timeMin.modelHigh}분까지 |`);
   out.push(`|---|---:|---:|---:|`);
-  for (const line of lines) {
+  for (const line of [...lines, POOLED_LINE]) {
     const a = threeEraAverage(cells, line);
-    for (const [name, m] of [['아래', a.marginLow], ['위', a.marginHigh]] as const) if (m < 3) under3.push({ metric: `세 시대 평균 시간 (${name})`, era: '평균', line: line.label, margin: m });
+    for (const [name, m] of [['아래', a.marginLow], ['위', a.marginHigh]] as const) if (m < 3) (line.id === POOLED_LINE.id ? under3 : lineUnder3).push({ metric: `세 시대 평균 시간 (${name})`, era: '평균', line: line.label, margin: m });
     out.push(`| ${line.label} | ${f(a.mean, 2)} ±${f(a.se, 2)} | ${f(a.marginLow, 1)} SE${a.marginLow < 3 ? ' ⚠' : ''} | ${f(a.marginHigh, 1)} SE${a.marginHigh < 3 ? ' ⚠' : ''} |`);
   }
 
   // 판정마다 쓰는 줄이 다르다: 카드·시간 판정은 시험 · 수동 흉내(tests/simulation.test.ts)가 하고 나머지 줄은 보고(sim:1000)·R-416의 자동 성향 판정이다.
   out.push('');
-  out.push(under3.length === 0 ? '3 SE 미만인 칸: 없음' : `3 SE 미만인 칸 ${under3.length}개: ${under3.map((u) => `${u.metric} / ${u.era} / ${u.line} (${f(u.margin, 1)} SE)`).join(' · ')}`);
-  return { cells, text: out.join('\n'), under3, problems };
+  out.push(under3.length === 0 ? '**판정 — 합친 4줄에서 3 SE 미만인 칸: 없음**' : `**판정 — 합친 4줄에서 3 SE 미만인 칸 ${under3.length}개**: ${under3.map((u) => `${u.metric} / ${u.era} (${f(u.margin, 1)} SE)`).join(' · ')}`);
+  out.push(lineUnder3.length === 0 ? '줄별 3 SE 미만인 칸(보고): 없음' : `줄별 3 SE 미만인 칸(보고만) ${lineUnder3.length}개: ${lineUnder3.map((u) => `${u.metric} / ${u.era} / ${u.line} (${f(u.margin, 1)} SE)`).join(' · ')}`);
+  return { cells, text: out.join('\n'), under3, lineUnder3, problems };
 }
 
 // ---------- IN2 (빈 해) ----------

@@ -1,6 +1,8 @@
 import { ERA_CONFIG } from '../data/birthTable';
 import { EVENT_POOL } from '../data/events';
 import { AUTO_ASSET } from '../data/economyTable';
+import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, FAMILY_NEED_BASE, FIRST_PARENT_HINT, PARENT_CHIP_TEXT, PARENT_DECIDED_TEXT } from '../data/parentDecisionTable';
+import { IMPACT_LABEL } from '../data/impactText';
 import {
   EARLY_YEARS_MAX_AGE,
   EDUCATION_GROWTH,
@@ -31,13 +33,17 @@ import {
 import { applyResolved, condContextOf, economyContextOf } from './apply';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
-import { impactOfEffects } from './impact';
+import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllGone, parentsJustGone, siblingCountOf } from './inherit';
 import type { NoteCardDef } from './noteCards';
 import { consumeNote, dueNote, type NoteMode } from './notes';
+import { decisionFor, parentChoiceWeights, selfAreaWeightFactor } from './parentDecision';
+import { calendarYear } from './profile';
+import { citationFor } from './citations';
 import { createRng, type Rng } from './rng';
 import { applyStatDeltas, type StatDeltas } from './stats';
-import { PARENT_WEALTHS, type Character, type Era, type GameState, type HistoryEntry, type Stage, type StatKey, type Stats } from './types';
+import { cardReadNeedMs, holdMsFor } from './timing';
+import { PARENT_WEALTHS, type Character, type DelegatedBy, type Era, type GameState, type HistoryEntry, type LifeLength, type Stage, type StatKey, type Stats } from './types';
 
 /**
  * 인생 진행 루프(순수 함수). React·타이머·Date·Math.random을 쓰지 않고 시드 RNG만 쓴다.
@@ -159,9 +165,10 @@ function eventsForStage(pool: EventPool, stage: Stage): readonly EventDef[] {
   return index[stage];
 }
 
-function pickWeighted(rng: Rng, list: readonly EventDef[], ctx: CondContext): EventDef | null {
+function pickWeighted(rng: Rng, list: readonly EventDef[], ctx: CondContext, age = 0, choices = false): EventDef | null {
   if (list.length === 0) return null;
-  return list[rng.weightedIndex(list.map((ev) => eventWeight(ev, ctx)))];
+  // PD13: 13~18세에 본인이 고르는 선택지 카드의 추첨 가중에 `SELF_AREA_WEIGHT`(기본 1)를 곱한다 — 서술 이벤트·부모/흘러감 카드·19세 이상은 1이다
+  return list[rng.weightedIndex(list.map((ev) => eventWeight(ev, ctx) * (choices ? selfAreaWeightFactor(ev.id, age) : 1)))];
 }
 
 // ---------- 한 해 진행 ----------
@@ -194,6 +201,19 @@ export interface TickInfo {
    * 대기가 있는 걸음(서술 해 `narrative`·결과 해 `resolved`)에만 담는다. 새로고침 직후(tick 없음)에는 모르므로 조용한 해 값으로 대기한다.
    */
   lines?: number;
+  /**
+   * 부모님이 정했거나(`parent`) 흘러간(`child`) 해 (SPEC-005 PD3·PD5). 이 해의 선택지는 pending을 거치지 않고 그 해 안에서 즉시 해결됐다 — 틱 종류는 `resolved`(사망이면 `death`)이고 사람이 고른 `resolved`와 `by`로 가른다.
+   * 카드(UI의 비모달 `ParentCard`)는 이 틱에서 파생된다 — 새로고침하면 틱이 없어 카드가 다시 뜨지 않는다(PD7-5).
+   */
+  by?: DelegatedBy;
+  /** `by`가 있을 때 고른 선택지 id */
+  choiceId?: string;
+  /** `by`가 있는 `resolved` 틱: 고른 길의 영향 줄 항목 — **해결 전 상태**로 한 번 계산해 담는다(EC5: 표기 = 실제 효과, 같은 코드 `previewChoice`) */
+  impact?: ImpactItem[];
+  /** `by`가 있는 `resolved` 틱: 느린 독자가 카드의 모든 글과 그 해 결과 문장을 읽는 데 드는 시간(ms) = 글자 수 ÷ 500자/분 + 인용 13초(있으면) + 여유 3초 — 연출 대기가 이보다 짧아지지 않는다(PD5-d, `timing.ts#holdMsFor`) */
+  readNeedMs?: number;
+  /** `by === 'parent'`인 `resolved` 틱: 이 판의 첫 부모 카드인가 — 안내 한 줄이 붙는다(PD5-f, 마스터 승인 Q6) */
+  firstParent?: boolean;
 }
 
 /**
@@ -285,7 +305,7 @@ function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: Gam
  * 한 해를 진행한다. 진행할 수 없는 상태(life가 아님 / 대기 중인 선택지가 있음)면 같은 상태를 돌려준다
  * → 타이머가 겹치거나 버튼을 연타해도 한 해가 두 번 진행되거나 선택지를 건너뛰지 않는다.
  */
-export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepResult {
+export function stepYear(state: GameState, pool: EventPool = EVENT_POOL, observe?: DelegatedObserver): StepResult {
   if (state.phase !== 'life' || state.pending !== null || state.character === null || state.era === null) return noop(state);
 
   const rng = createRng(state.rngState);
@@ -319,7 +339,7 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
   const choiceChance = freq.choice * (choicesSoFar >= pacing.soft ? pacing.softFactor : 1);
 
   let picked: EventDef | null = null;
-  if (rollChoice < choiceChance && canChoice) picked = pickWeighted(rng, eligible.filter(isChoiceEvent), ctx);
+  if (rollChoice < choiceChance && canChoice) picked = pickWeighted(rng, eligible.filter(isChoiceEvent), ctx, age, true);
   if (picked === null && rollNarrative < freq.narrative) picked = pickWeighted(rng, eligible.filter((ev) => !isChoiceEvent(ev) && !isMilestoneEvent(ev)), ctx);
 
   // 마일스톤 효과·연표 한 줄은 그 해의 일반 사건보다 먼저 적용한다(선택지가 뜨는 해에도 마일스톤 줄은 이미 남는다)
@@ -336,14 +356,19 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL): StepRe
 
   if (picked !== null && isChoiceEvent(picked)) {
     const visible = visibleChoices(picked, ctx);
+    const pendingState: GameState = {
+      ...s,
+      rngState: rng.getState(),
+      seen: { ...s.seen, [picked.id]: age },
+      lastChoiceAge: age,
+      pending: { eventId: picked.id, key: `${picked.id}@${age}`, age, choiceIds: visible.map((c) => c.id) },
+    };
+    // 어린 시절(0~18세)의 큰 결정은 부모님이 정하거나(`parent`) 아이의 일로 흘러간다(`child`) — 사람이 고르지 않는 카드는 pending을 만들지 않고(저장되지 않는다) 이 해 안에서 즉시 해결한다 (PD3).
+    // 해결은 사람이 고른 선택과 **같은 경로**(`resolveChoiceCore`)라 효과·플래그·간격·연표·카드 수 조절이 그대로 적용된다. 본인 카드(`self`)만 지금처럼 pending에서 멈춘다.
+    const who = decisionFor(picked.id, age);
+    if (who !== 'self') return resolveDelegated(pendingState, who, pool, milestoneIds, observe);
     return {
-      state: {
-        ...s,
-        rngState: rng.getState(),
-        seen: { ...s.seen, [picked.id]: age },
-        lastChoiceAge: age,
-        pending: { eventId: picked.id, key: `${picked.id}@${age}`, age, choiceIds: visible.map((c) => c.id) },
-      },
+      state: pendingState,
       tick: { kind: 'choice', fromAge: age, eventId: picked.id, ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
     };
   }
@@ -381,6 +406,15 @@ export function advanceYear(state: GameState, pool: EventPool = EVENT_POOL): Gam
  * 같은 상태를 돌려준다(연타·늦게 도착한 입력이 다음 선택지를 건드리지 못한다).
  */
 export function resolveChoiceStep(state: GameState, key: string, choiceId: string, pool: EventPool = EVENT_POOL): StepResult {
+  return resolveChoiceCore(state, key, choiceId, pool);
+}
+
+/**
+ * 선택 해결의 한 경로 — 사람이 고른 선택(`by` 없음)과 부모님이 정한·아이의 일로 흘러간 선택(`by`)이 **같은 코드**로 효과·플래그·`lastChoiceAge`·연표를 처리한다 (PD3, 동치 시험 T3).
+ * `by === 'parent'`이면 연표 줄에 `parentLabel ?? label`·`parentResult ?? result`를 쓴다(선택지 문구가 아이의 행동이라 「부모님이 정했습니다」와 어긋나는 카드만 `parentLabel`·`parentResult`가 있다, PD11).
+ * 틱의 `by`·`choiceId`는 UI가 비모달 카드를 그리는 데 쓴다(영향 줄·필요량은 `resolveDelegated`가 해결 전 상태로 계산해 덧붙인다).
+ */
+function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool: EventPool, by?: DelegatedBy): StepResult {
   const pending = state.pending;
   if (state.phase !== 'life' || pending === null || pending.key !== key || !pending.choiceIds.includes(choiceId)) return noop(state);
   if (state.character === null || state.era === null) return noop(state);
@@ -397,13 +431,14 @@ export function resolveChoiceStep(state: GameState, key: string, choiceId: strin
       age: pending.age,
       kind: 'choice',
       title: ev.title,
-      text: choice.result,
-      choice: choice.label,
+      text: by === 'parent' ? (choice.parentResult ?? choice.result) : choice.result,
+      choice: by === 'parent' ? (choice.parentLabel ?? choice.label) : choice.label,
       eventId: ev.id,
+      ...(by !== undefined ? { by } : {}),
     }),
   };
-  // 선택을 하나 해결할 때마다 난수를 정확히 한 번 먼저 소비한다. 이 한 번의 난수는 자동 선택이 선택지를 고르는 데 쓰고(autoResolveStep),
-  // 수동 선택에서는 버린다. 그래서 같은 상태에서 같은 선택지를 고르면 자동이었든 수동이었든 난수 수열이 똑같이 한 칸 나아가
+  // 선택을 하나 해결할 때마다 난수를 정확히 한 번 먼저 소비한다. 이 한 번의 난수는 자동 선택이 선택지를 고르는 데 쓰고(autoResolveStep) 부모님이 정하는·아이의 일로 흘러가는 선택도 같다(resolveDelegated),
+  // 수동 선택에서는 버린다. 그래서 같은 상태에서 같은 선택지를 고르면 자동이었든 수동이었든 부모였든 난수 수열이 똑같이 한 칸 나아가
   // 이후 인생이 완전히 같다(R-039). (난수는 stepYear 이후 해마다 finishYear가 한 번씩 쓴다 — 선택 한 번에 한 번이 더해질 뿐이다.)
   // 자동 선택용 수열을 따로 두는 방식(시드·이벤트 키에서 파생)도 가능하지만, 저장 상태의 rngState 하나로 모든 것이 이어진다는
   // 지금의 단순함(저장 스키마·복원 규칙 그대로)을 지키려고 같은 수열에서 한 칸을 예약하는 쪽을 골랐다.
@@ -411,7 +446,56 @@ export function resolveChoiceStep(state: GameState, key: string, choiceId: strin
   rng.next();
   const { state: next, died } = finishYear(s, rng, state);
   const lines = yearLineCount(next.history, pending.age); // 이 해의 마일스톤 줄들 + 방금 남긴 결과 줄 (+ 이 나이에 붙은 상속 줄)
-  return { state: next, tick: { kind: died ? 'death' : 'resolved', fromAge: pending.age, eventId: ev.id, ...(died ? {} : { lines }) } };
+  return {
+    state: next,
+    tick: { kind: died ? 'death' : 'resolved', fromAge: pending.age, eventId: ev.id, ...(by !== undefined ? { by, choiceId } : {}), ...(died ? {} : { lines }) },
+  };
+}
+
+/**
+ * 부모님이 정한·흘러간 선택을 **관찰**하는 함수 (SPEC-005 PD12 시뮬레이션 — `scripts/parentReportLib.ts`): 고르기 직전의 대기 상태와 그 상태의 선택지 확률·실제로 고른 선택지를 받는다.
+ * 읽기만 하며 인생을 바꾸지 않는다(주지 않으면 아무 일도 없다 — 화면은 쓰지 않는다).
+ */
+export type DelegatedObserver = (e: { state: GameState; by: DelegatedBy; ids: readonly string[]; weights: readonly number[]; choiceId: string }) => void;
+
+/** 느린 독자가 카드를 읽는 글자 수에 들어가는 영향 줄 글자: 항목 이름 + 기호(칸 수) — 설계 문서 4-3절 「영향 줄」 */
+export function impactReadChars(items: readonly ImpactItem[]): number {
+  return items.reduce((n, it) => n + IMPACT_LABEL[it.key].length + it.steps, 0);
+}
+
+/**
+ * 부모님이 정하거나(`parent`) 아이의 일로 흘러가는(`child`) 결정을 이 해 안에서 끝낸다 (SPEC-005 PD3). 대기 상태(`pending`)가 막 만들어진 상태를 받아 확률로 선택지를 고르고 `resolveChoiceCore`로 해결한다.
+ * 부모는 `parentChoiceWeights`, 흘러감은 `autoChoiceWeights`(`childFlowWeights`)가 확률을 만든다.
+ * 고르는 난수는 `resolveChoiceCore`가 먼저 소비하는 그 한 번과 같다(같은 상태에서 시작하는 수열의 첫 값) — 그래서 결과는 「그 선택지를 수동으로 고른 것」과 상태 전체가 같고(`by`·`parentLabel`/`parentResult` 문구만 다르다),
+ * 흘러감은 `autoResolveStep`과 상태 전체가 같다. 영향 줄은 **해결 전 상태**로 계산해 틱에 담는다.
+ */
+export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool: EventPool = EVENT_POOL, milestoneIds: readonly string[] = [], observe?: DelegatedObserver): StepResult {
+  const pending = pendingState.pending;
+  if (pending === null || pendingState.character === null || pendingState.era === null) return noop(pendingState);
+  const w = by === 'parent' ? parentChoiceWeights(pendingState, pool) : childFlowWeights(pendingState, pool);
+  if (w === null) return noop(pendingState);
+  const choiceId = w.ids[createRng(pendingState.rngState).weightedIndex(w.weights)];
+  const ev = pool.byId.get(pending.eventId);
+  const choice = ev?.choices?.find((c) => c.id === choiceId);
+  if (ev === undefined || choice === undefined) throw new Error(`resolveDelegated: 이벤트/선택지를 찾을 수 없다 (${pending.eventId}/${choiceId})`);
+  observe?.({ state: pendingState, by, ids: w.ids, weights: w.weights, choiceId });
+  const impact = previewChoice(pendingState, choice).items;
+  const firstParent = by === 'parent' && !pendingState.history.some((h) => h.by === 'parent');
+  const r = resolveChoiceCore(pendingState, pending.key, choiceId, pool, by);
+  const withMilestones = milestoneIds.length > 0 ? { milestoneIds: [...milestoneIds] } : {};
+  if (r.tick.kind !== 'resolved') return { ...r, tick: { ...r.tick, ...withMilestones } }; // 사망한 해: 카드는 그리지 않고 기록 줄만 남는다 (설계 문서 3-2절)
+  // 카드 읽기 필요량: 카드의 모든 글(칩·제목·상황·고른 길·도장·영향 줄) + 그 해 결과 문장 (+ 첫 부모 카드의 안내 한 줄) — 느린 독자(500자/분) + 인용 박스가 있으면 13초 + 여유 3초
+  const last = r.state.history.filter((h) => h.kind === 'choice' && h.eventId === ev.id).pop();
+  const resultText = last?.text ?? choice.result;
+  const labelText = last?.choice ?? choice.label;
+  const stamp = by === 'parent' ? PARENT_DECIDED_TEXT : CHILD_FLOW_TEXT;
+  const chip = by === 'parent' ? PARENT_CHIP_TEXT : CHILD_CHIP_TEXT;
+  const chars = chip.length + ev.title.length + ev.text.length + labelText.length + stamp.length + impactReadChars(impact) + resultText.length + (firstParent ? FIRST_PARENT_HINT.length : 0);
+  const cited = citationFor(ev, pendingState.era, calendarYear(pendingState.character.birthYear, pending.age)) !== null;
+  return {
+    state: r.state,
+    tick: { ...r.tick, ...withMilestones, impact, readNeedMs: cardReadNeedMs(chars, cited), ...(firstParent ? { firstParent: true } : {}) },
+  };
 }
 
 export function resolveChoice(state: GameState, key: string, choiceId: string, pool: EventPool = EVENT_POOL): GameState {
@@ -433,8 +517,8 @@ export const AUTO_PRIORITY: Record<Character['parenting'], Record<AutoPriorityKe
   helicopter: { wealth: 1.0, education: 1.3, health: 1.3, happiness: 0.9, relationships: 1.0 },
   neglect: { wealth: 1.4, education: 0.9, health: 0.9, happiness: 1.0, relationships: 0.8 },
 };
-/** 20세 미만의 「집안 살림」 항에 곱하는 절실함의 기준: 옛 재산 스탯의 재력 단계별 출발값(8·22·45·70·92)에서 1 + (50 − 값) ÷ 100 — 가난한 집일수록 집안 살림 효과에 민감하다(옛 동작 보존). */
-const FAMILY_NEED_BASE = [8, 22, 45, 70, 92] as const;
+// 20세 미만의 「집안 살림」 항에 곱하는 절실함의 기준 `FAMILY_NEED_BASE`(옛 재산 스탯의 재력 단계별 출발값 8·22·45·70·92 → 1 + (50 − 값) ÷ 100, 가난한 집일수록 집안 살림 효과에 민감하다 — 옛 동작 보존)는
+// 부모 확률 모델(core/parentDecision.ts)도 같은 값을 쓰므로 data/parentDecisionTable.ts 한 곳에 둔다.
 
 /** 점수 → 가중치(exp(점수 / 온도)). 클수록 무작위에 가깝다. */
 export const AUTO_TEMPERATURE = 6;
@@ -485,24 +569,59 @@ export function autoResolveStep(state: GameState, key: string, pool: EventPool =
   return resolveChoiceStep(state, key, id, pool);
 }
 
+/**
+ * 흘러감의 선택 확률 (SPEC-005 PD4-8, 승인 A9): `autoChoiceWeights`를 그대로 쓴다(이름 붙인 별칭) — 아이 성향 = `AUTO_PRIORITY[양육 방식]` × 현재 스탯의 절실함, 형편 = `moneyNeed(수저)`와 보이는 선택지, `T = 6`, ε 없음.
+ * 그래서 자동 모드와 수동 모드가 같은 어린 시절을 갖고, 같은 상태에서 `autoResolveStep`과 상태 전체가 같다.
+ */
+export const childFlowWeights = autoChoiceWeights;
+
 // ---------- 여러 해를 한꺼번에 (다음 결정으로 · 자동 모드 · 시뮬레이션) ----------
 
 export interface TickCounts {
   quiet: number;
   narrative: number;
+  /** 본인이 고르는 카드(pending이 생긴 해) 수 = `c_self` — 부모님이 정한·흘러간 카드는 여기 들어가지 않는다(`totalCards`가 합친다) */
   choice: number;
+  /** 사람이 고른 선택을 마치고 한 해가 지난 해(부모님이 정한·흘러간 해는 `parent`·`child`) */
   resolved: number;
   death: number;
-  /** 연출 대기가 있는 해(서술 해·결과 해)의 **둘째 줄부터의 줄 수** 합 = Σ max(0, 줄 수 − 1) — 시간 모델이 줄마다 대기를 더한다(SPEC-003 LM2) */
+  /** 연출 대기가 있는 해(서술 해·결과 해·부모님이 정한 해·흘러간 해)의 **둘째 줄부터의 줄 수** 합 = Σ max(0, 줄 수 − 1) — 시간 모델이 줄마다 대기를 더한다(SPEC-003 LM2) */
   extraLines: number;
+  /** 부모님이 정한 해 수(카드가 뜬 해 — 사망한 해는 `deathDelegated`) (SPEC-005 TM5) */
+  parent: number;
+  /** 아이의 일로 흘러간 해 수(카드가 뜬 해 — 사망한 해는 `deathDelegated`) */
+  child: number;
+  /** 부모님이 정했거나 흘러간 선택과 같은 해에 사망한 횟수(0 또는 1) — 그 해는 `death`로만 센다 */
+  deathDelegated: number;
+  /** 부모님이 정한·흘러간 해의 연출 대기가 기본 결과 대기(+ 줄 대기)보다 카드 읽기 필요량 때문에 더 길어진 몫의 합(ms, 1배속, 모드 계수 포함) — `holdTotalMs`가 더한다 */
+  delegatedExtraMs: number;
 }
 
 export function emptyCounts(): TickCounts {
-  return { quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, extraLines: 0 };
+  return { quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, extraLines: 0, parent: 0, child: 0, deathDelegated: 0, delegatedExtraMs: 0 };
 }
 
-function count(counts: TickCounts, tick: TickInfo): void {
+/** 판의 결정 카드 총수 = 본인이 고른 카드 + 부모님이 정한 카드 + 흘러간 카드 (+ 같은 해 사망한 위임 카드) — 연표의 선택 줄 수와 같다. 총 카드 수 판정 구간(23.3~29)과 페이싱 하드 상한은 이 값이다 */
+export function totalCards(c: TickCounts): number {
+  return c.choice + c.parent + c.child + c.deathDelegated;
+}
+
+function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): void {
   if (tick.kind === 'none') return;
+  if (tick.by !== undefined) {
+    // 부모님이 정한·흘러간 해: 사망한 해는 사망으로만 세고(카드를 그리지 않는다), 아니면 결과 해처럼 줄 대기를 세되 연출 대기가 읽기 필요량에 묶인 몫을 따로 더한다
+    if (tick.kind === 'death') {
+      counts.death++;
+      counts.deathDelegated++;
+      return;
+    }
+    counts[tick.by]++;
+    counts.extraLines += Math.max(0, (tick.lines ?? 1) - 1);
+    const base = holdMsFor('resolved', { mode, lines: tick.lines }) as number;
+    const held = holdMsFor('resolved', { mode, lines: tick.lines, readNeedMs: tick.readNeedMs }) as number;
+    counts.delegatedExtraMs += Math.max(0, held - base);
+    return;
+  }
   counts[tick.kind]++;
   if (tick.kind === 'narrative' || tick.kind === 'resolved') counts.extraLines += Math.max(0, (tick.lines ?? 1) - 1);
 }
@@ -543,7 +662,7 @@ export function advanceUntilDecision(state: GameState, pool: EventPool = EVENT_P
     const r = stepYear(s, pool);
     s = r.state;
     last = r.tick;
-    count(counts, r.tick);
+    count(counts, r.tick, s.lifeLength);
   }
   return { state: s, counts, last };
 }
@@ -572,7 +691,7 @@ export function playToEnd(state: GameState, chooser: Chooser | null = null, pool
     }
     s = r.state;
     last = r.tick;
-    count(counts, r.tick);
+    count(counts, r.tick, s.lifeLength);
   }
   return { state: s, counts, last };
 }

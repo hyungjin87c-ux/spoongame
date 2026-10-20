@@ -5,9 +5,12 @@ import { HISTORY_LIMITS, STAGE_TABLE, STATE_LIMITS } from '../data/lifeTable';
 import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
 import { isValidBirthReport } from './birthReport';
 import { isValidStat } from './stats';
+import { resolveDelegated } from './life';
+import { decisionFor } from './parentDecision';
 import {
   BGM_VOLUME_MAX,
   BGM_VOLUME_MIN,
+  DELEGATED_BYS,
   DWELLINGS,
   ERAS,
   GENDERS,
@@ -43,6 +46,8 @@ import { DEFAULT_SETTINGS } from './state';
  * v8: 개편(SPEC-003 M5) — **재산(wealth) 스탯이 없어지고** 20세부터의 자산 현황(`assets`: 순자산·연 소득·부채·소득 보정·주거 형태, 만 원 정수)과 20세 미만의 집안 살림(`familyFund`)이 판 상태에 더해졌다.
  *     v7 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6 — `classifySavedGame`이 `version < SCHEMA_VERSION`을 이전 버전으로 분류한다). docs/data/economy-model.md 10절.
  * (M7c: 게임 스키마는 v8 그대로다 — 연표 종류에 `note`가 더해지고 `seen`에 `note-…` 키가 생길 수 있지만 허용 범위만 넓어졌고, 기록이 없는 v8 저장은 새 규칙에서도 그대로 유효하다. 진행 중인 판을 잃지 않으려고 올리지 않았다, NC-1.)
+ * (SPEC-005 QI5: 게임 스키마는 v8 그대로다 — 연표 줄에 **선택 필드 `by`**(`'parent'` 부모님이 정했다 · `'child'` 아이의 일로 흘러갔다, `kind: 'choice'`에만)가 더해졌다. 없으면 본인이 고른 선택이다. 다른 값이거나 선택 줄이 아니면 판을 버리지 않고 그 필드만 버린다(`withValidBy`).
+ *     저장에 부모 영역·흘러감 카드가 대기(`pending`) 중이면 열자마자 그 해 안에서 부모님이 정한·흘러간 선택으로 처리한다(`settleDelegatedPending`, PD10).)
  * (M8: 게임 스키마는 v8 그대로다 — 판 상태에 **선택 필드 `play`**(플레이 시간 기록, core/playClock.ts)가 더해졌다. 없으면 시간을 재지 않은 판이고, 값이 이상하면 판을 버리지 않고 그 필드만 버린다(`withValidPlay`). 진행 중인 판을 잃지 않으려고 올리지 않았다, LD-6.)
  */
 export const GAME_KEY = 'suzeo-game:save';
@@ -178,6 +183,36 @@ function withValidPlay(state: GameState): GameState {
   const rest = { ...state } as Record<string, unknown>;
   delete rest.play;
   return rest as unknown as GameState;
+}
+
+/**
+ * 연표 줄의 `by`(SPEC-005 PD6)는 **선택 필드**라 이상한 값이 판을 버리게 하지 않는다 — `kind: 'choice'`이고 값이 `'parent'`·`'child'`가 아니면 **그 필드만 버린다**(없는 줄은 본인이 고른 선택).
+ * 줄을 새로 만들지 않고, 버릴 필드가 없으면 같은 객체를 돌려준다.
+ */
+function withValidBy(state: GameState): GameState {
+  const has = (h: object) => Object.prototype.hasOwnProperty.call(h, 'by');
+  if (!state.history.some(has)) return state;
+  let changed = false;
+  const history = state.history.map((h) => {
+    if (!has(h)) return h;
+    if (h.kind === 'choice' && isOneOf(DELEGATED_BYS, (h as { by?: unknown }).by)) return h;
+    changed = true;
+    const rest = { ...h } as Record<string, unknown>;
+    delete rest.by;
+    return rest as unknown as HistoryEntry;
+  });
+  return changed ? { ...state, history } : state;
+}
+
+/**
+ * 부모 영역·흘러감 카드가 대기(`pending`) 중인 저장 (SPEC-005 PD10): 이 변경 이전에는 어린 시절의 모든 결정을 사람이 골랐으므로 v8 저장에는 부모님이 정할 카드가 `pending`으로 남아 있을 수 있다.
+ * 열자마자 그 해 안에서 부모님이 정한(또는 흘러간) 선택으로 처리하고 같은 연표 줄을 남긴다(`life.ts#resolveDelegated`) — 이미 지나간 해의 줄(사람이 고른 줄)은 바꾸지 않는다.
+ */
+function settleDelegatedPending(state: GameState, pool: EventPool): GameState {
+  const pending = state.pending;
+  if (state.phase !== 'life' || pending === null) return state;
+  const who = decisionFor(pending.eventId, pending.age);
+  return who === 'self' ? state : resolveDelegated(state, who, pool).state;
 }
 
 function validFlags(v: unknown): boolean {
@@ -389,7 +424,7 @@ export function parseGame(raw: string | null, pool: EventPool = EVENT_POOL): Gam
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
-  return withValidPlay(withCleanNotes(state));
+  return withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool)));
 }
 
 /** 문자열 → 설정. 문제가 있으면 기본값. */

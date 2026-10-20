@@ -1,6 +1,7 @@
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
 import { KNOWN_SEED, injectSave, lifeState, startPageHidden } from './helpers';
-import { findCardState, cardReady } from './m7bStates';
+import { longestCardStates } from './m7bCards';
+import { cardReady } from './m7bStates';
 import { decisionBeforeDue, infantDue, sheetReady, shortDecision } from './m7cStates';
 
 /**
@@ -153,10 +154,11 @@ for (const kind of ['기록 시트', '결정 시트'] as const) {
   });
 }
 
-test('(d) 긴 시트: 안쪽 끝까지 쓴 뒤 계속 쓸어도 문서는 그대로다 (결정 시트 school-tutoring, 폭 360)', async ({ page }) => {
+test('(d) 긴 시트: 안쪽 끝까지 쓴 뒤 계속 쓸어도 문서는 그대로다 (결정 시트 — 데이터에서 고른 가장 긴 카드, 폭 360. SPEC-005 QI5로 예전 school-tutoring은 부모님이 정하는 카드가 되어 시트가 아니다)', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  // 가장 긴 카드를 데이터에서 고른다(youth-startup은 360px에서 안쪽 스크롤이 없는 짧은 시트였다)
+  const [{ state }] = await longestCardStates(page, 1);
   await startPageHidden(page);
   await injectSave(page, state, '/', MANUAL);
   await cardReady(page);

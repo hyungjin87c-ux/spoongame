@@ -180,6 +180,8 @@ function GentleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
  * 첫 화면 일러스트 (HS1, 형진 님 그림 — diff-005 D5-24~D5-33): 한반도 모양 안의 여러 세대·지역의 삶 장면. **장식**이다 — `figure aria-hidden` + `alt=""`(이름은 로고가 말한다), 그림 안에 글자 0, 클릭·선택 없음, 외부 요청 0.
  * 같은 그림이 두 자리에 있다: `banner`(< 960px, 로고 줄 아래 배너)와 `top`(≥ 960px, 오른쪽 열 맨 위·통계 카드 뒤로 살짝 겹침). CSS가 한 번에 하나만 보이게 한다 —
  * 두 `<picture>`가 같은 주소를 골라 내려받기는 한 번이다(≥ 960px은 PC 파일, 그 아래는 모바일 파일). `width`·`height` 속성이 자리를 미리 잡아 레이아웃이 흔들리지 않는다.
+ * `loading="lazy"`(R-450 — **속성 순서가 중요하다: `loading`을 `src`보다 먼저 쓴다**, React가 쓴 순서대로 DOM에 속성을 주고 `src`를 주는 순간 가져오기가 시작되므로 그때 이미 lazy여야 한다): WebKit은 React가 `img`를 `picture`에 붙이기 전에 `src`(모바일 파일)를 먼저 받아 PC 화면에서 두 파일을 다 내려받았다 — 느린 로드는 레이아웃 뒤에 시작하므로 `source`가 붙은 뒤 고른 한 장만 받고,
+ * `display: none`인 쪽 그림(화면에 안 보이는 배너·오른쪽 열)은 아예 받지 않는다. `srcSet`/`sizes`(w 단위)로 고르면 1280 DPR 1에서 375w를 먼저 고르는 문제가 있어 쓰지 않는다.
  * 파일은 vite가 해시 이름으로 내보낸다(`public/`에 두지 않는다 — 캐시). 흐림·겹침은 CSS(`title.css` 「일러스트」 블록).
  */
 function HomeIllustration({ variant }: { variant: 'banner' | 'top' }) {
@@ -187,7 +189,7 @@ function HomeIllustration({ variant }: { variant: 'banner' | 'top' }) {
     <figure className={`illust illust--${variant}`} aria-hidden="true" data-testid={`home-illust-${variant}`}>
       <picture>
         <source media="(min-width: 960px)" srcSet={homeMapPc} type="image/webp" />
-        <img src={homeMapMobile} width={375} height={440} alt="" decoding="async" />
+        <img loading="lazy" decoding="async" width={375} height={440} alt="" src={homeMapMobile} />
       </picture>
     </figure>
   );

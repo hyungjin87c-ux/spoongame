@@ -362,9 +362,11 @@ test('F-1 (d) 자동 선택(autoChoose)으로 카드가 사라진 100ms 뒤 배�
 
 for (const variant of ['자동 모드', '카드 끔', '기록 40개'] as const) {
   test(`F-1 (d) 시트 없이 소비된 직후(${variant}) — 소비 뒤 500ms 동안 컨트롤에 가드가 걸린 프레임이 0이다 (G8)`, async ({ page }) => {
-    test.setTimeout(120_000);
+    // SPEC-005 QI5: 영유아기(5세의 첫 기록 카드)에는 더 이상 사람이 고르는 결정 카드가 없다 — 자동 모드 변형은 기록 카드를 소비한 뒤 첫 본인 결정(13세 이후)까지 부모님이 정한·흘러간 해를 지나가야 해서
+    // 배속 8로 올리고 기다리는 한도를 늘렸다(소비 시점이 마운트 가드 700ms 뒤라는 조건은 첫 해 대기 9.45초 ÷ 8 = 1.2초로 그대로 지킨다)
+    test.setTimeout(300_000);
     const w = await buildWorld(page);
-    const settings: InjectedSettings = variant === '자동 모드' ? { speed: 4, autoMode: true, noteCards: true } : variant === '카드 끔' ? { speed: 4, autoMode: false, noteCards: false } : { speed: 4, autoMode: false, noteCards: true }; // 4배속: 한 해가 약 1.75초라 소비가 화면 진입 가드(400ms) 창 밖에서 일어난다
+    const settings: InjectedSettings = variant === '자동 모드' ? { speed: 8, autoMode: true, noteCards: true } : variant === '카드 끔' ? { speed: 4, autoMode: false, noteCards: false } : { speed: 4, autoMode: false, noteCards: true }; // 4배속: 한 해가 약 1.75초라 소비가 화면 진입 가드(400ms) 창 밖에서 일어난다
     const state = variant === '기록 40개' ? await withNotes(page, w.infant, 40) : w.infant;
     await injectSave(page, state, '/', settings);
     await expect(page.getByTestId('life-screen')).toBeVisible();
@@ -398,7 +400,7 @@ for (const variant of ['자동 모드', '카드 끔', '기록 40개'] as const) 
           return f.some((x) => x.cards > 0) && f[f.length - 1].cards === 0;
         },
         undefined,
-        { timeout: 40_000 },
+        { timeout: 200_000 },
       );
     }
     await page.waitForTimeout(500);

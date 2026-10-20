@@ -13,7 +13,7 @@ export {}; // 모듈로 취급해 최상위 await를 쓴다
 
 try {
   const { EVENT_FILES, EVENT_POOL } = await import('../src/data/events');
-  const { lintEventData, citationLinkProblems, lintNoteFile, noteCardPoolProblems } = await import('../src/core');
+  const { lintEventData, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems } = await import('../src/core');
   const { NOTE_CARDS, NOTE_MANUAL } = await import('../src/data/noteCards');
   // 스키마 검증은 위 import에서 이미 끝났다(통과하지 못하면 throw). 이어서 문구 규칙(어조·길이·시대 소재, QA 사용감 8)을 점검한다.
   // 카드와 인용의 연결(M7b): citation이 가리키는 id가 citations.json에 있고 쓸 수 있으며 금지된 이벤트에 붙지 않았는가 (형태는 위 스키마 검증이 이미 봤다)
@@ -23,6 +23,8 @@ try {
     ...citationLinkProblems(EVENT_POOL.events, undefined, NOTE_CARDS),
     ...lintNoteFile({ manual: NOTE_MANUAL, cards: [...NOTE_CARDS] }),
     ...noteCardPoolProblems(NOTE_CARDS, EVENT_POOL.events),
+    // 어린 시절 부모님 결정(SPEC-005 PD2): 19세 미만에서 일어나는 선택지 이벤트가 분류표에 모두 있고, 표의 id가 모두 실제로 있다 — 새 선택지 이벤트를 분류 없이 추가하면 빌드가 실패한다
+    ...parentTableProblems(EVENT_POOL.events),
   ];
   if (lint.length > 0) {
     console.error('이벤트 문구 점검 실패: 빌드를 중단합니다.');
@@ -32,7 +34,7 @@ try {
   const fileCount = Object.keys(EVENT_FILES).length;
   const choiceCount = EVENT_POOL.events.filter((ev) => ev.choices !== undefined).length;
   console.log(
-    `이벤트 데이터 검증 통과(스키마 + 문구 점검): 파일 ${fileCount}개, 이벤트 ${EVENT_POOL.events.length}개 (선택지 ${choiceCount} + 서술 ${EVENT_POOL.events.length - choiceCount}), 모두 합쇼체 / 기록 카드 ${NOTE_CARDS.length}종 (질문 문구·풀 교차·인용 연결 통과)`,
+    `이벤트 데이터 검증 통과(스키마 + 문구 점검): 파일 ${fileCount}개, 이벤트 ${EVENT_POOL.events.length}개 (선택지 ${choiceCount} + 서술 ${EVENT_POOL.events.length - choiceCount}), 모두 합쇼체 / 기록 카드 ${NOTE_CARDS.length}종 (질문 문구·풀 교차·인용 연결 통과) / 부모 결정 분류표 ${Object.keys((await import('../src/data/parentDecisionTable')).PARENT_DECISION_TABLE).length}장 통과`,
   );
 } catch (error) {
   console.error('이벤트 데이터 검증 실패: 빌드를 중단합니다.');

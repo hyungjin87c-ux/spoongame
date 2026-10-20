@@ -431,22 +431,45 @@ describe('선택지 효과의 방향 (E11 소극적 선택에 작은 이득): �
   });
 });
 
-describe('r2: 영유아 콘텐츠가 스탯을 크게 올리지 않는다 (마스터 결정 1): 8세 평균 스탯이 HEAD(M7a 이전) 대비 항목마다 +2 이하, 관계만 +3 이하', () => {
+describe('r2: 영유아 콘텐츠가 스탯을 크게 올리지 않는다 (마스터 결정 1): 8세 평균 스탯이 PD_AT_8(QI5 구현 직후 기준선) 대비 항목마다 +2 이하, 관계만 +3 이하', () => {
   /**
-   * M7a 이전(브랜치 spec-003의 HEAD 5fa0c54, M7a 변경 전)에서 같은 시드(i × 7919 + 13) 1500판을 무작위 선택으로 0~7세까지 돌려 8세가 된 순간 살아 있는 판의 스탯 평균을 잰 값 — 지식·건강·행복·관계 순서.
+   * 옛 기준선(M7a 이전, 브랜치 spec-003의 HEAD 5fa0c54): 같은 시드(i × 7919 + 13) 1500판을 무작위 선택으로 0~7세까지 돌려 8세가 된 순간 살아 있는 판의 스탯 평균을 잰 값 — 지식·건강·행복·관계 순서.
    * 영유아기 이후의 이벤트는 M7a에서 바뀌지 않아 20세 평균 스탯의 변화는 8세 시점의 변화와 거의 같다(측정, 3000판: 20세 변화 지난 +1.0·+1.4·+1.8·+2.7 / 지금 +1.8·+1.7·+1.7·+2.5 / 다가올 +1.5·+0.9·+1.8·+0.8, 8세 변화 1500판은 아래 시험이 지킨다).
    * 새 영유아 콘텐츠의 양수 효과가 늘면(경제 재보정이 다시 필요해진다) 이 시험이 알려 준다 — 옛 값을 고쳐 맞추지 말고 효과를 줄이거나 마스터에게 보고한다.
+   *
+   * **기준선 교체 (SPEC-005 QI5, `tests/stat20Guard.test.ts`의 EK1·승인 A14와 같은 방식 — A14의 범위를 8세 가드까지 넓힌 것을 마스터가 승인했다: 설계 문서 9절 4번, 지금 세상 건강 +2.09는 부모 결정의 의도된 효과이고 한도는 그대로)**: 0~7세의 부모 소관 카드를 이제 부모님이 고르거나 흘러가므로
+   * (PD1·PD2) 무작위로 고르던 때보다 8세 시작 상태가 구조적으로 움직인다 — 지금 세상 건강이 +2.09로 옛 한도 +2를 0.09 넘었다(콘텐츠는 바꾸지 않았다). 그래서 *콘텐츠 변경 없이 PD 구현 직후* 같은 함수·같은 표본(1500판)으로 새 기준선
+   * `PD_AT_8`을 쟀고, 한도 +2 / +3은 이 새 기준선 대비 *앞으로의 콘텐츠 변경*에만 적용한다. PD로 인한 이동 크기(새 − 옛 = 부모 결정·흘러감을 끈 같은 트리): 지난 +0.12·+0.02·−0.04·+0.19 / 지금 +0.08·+0.22·+0.35·+0.49 /
+   * 다가올 +0.06·+0.26·+0.24·+0.54 (지식·건강·행복·관계). 크기는 모두 0.6 이하이고, 20세 시점의 이동(`stat20Guard.test.ts`)보다 작다 — 이동의 대부분은 8~18세 카드에서 나온다.
    */
   const HEAD_AT_8: Record<string, [number, number, number, number]> = {
     past: [15.58, 70.58, 43.68, 51.29],
     present: [16.54, 71.2, 48.14, 53.42],
     future: [16.51, 71.26, 48.8, 54.13],
   };
+  /** QI5 구현 직전 트리(부모 결정·흘러감 끔)에서 같은 함수·표본으로 잰 8세 평균 — PD 이동 크기를 보고하는 기준으로만 쓴다 */
+  const PRE_PD_AT_8: Record<string, [number, number, number, number]> = {
+    past: [16.4536, 72.2345, 45.3814, 53.9025],
+    present: [18.1255, 73.0634, 49.6729, 56.0988],
+    future: [17.7877, 72.3832, 50.3391, 55.1896],
+  };
+  /** 가드 기준선: QI5 구현 직후 같은 함수·같은 표본(시드 i × 7919 + 13, 1500판, 무작위 선택)의 8세 평균 — 살아서 8세가 된 판 1497·1498·1498개 */
+  const PD_AT_8: Record<string, [number, number, number, number]> = {
+    past: [16.5738, 72.2532, 45.3427, 54.0935],
+    present: [18.2056, 73.2877, 50.0267, 56.5961],
+    future: [17.8511, 72.6435, 50.5828, 55.7236],
+  };
+  /** PD 이동 크기(`PD_AT_8 − PRE_PD_AT_8`)의 보고한 상한 — 기준선을 다시 재서 몰래 올리는 일을 막는다 */
+  const REPORTED_SHIFT_CAP: Record<string, [number, number, number, number]> = {
+    past: [0.13, 0.02, 0.01, 0.2],
+    present: [0.09, 0.23, 0.36, 0.5],
+    future: [0.07, 0.27, 0.25, 0.55],
+  };
   const LIMIT = [2, 2, 2, 3];
   const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
 
   for (const era of ERAS) {
-    it(`${era}: 지식·건강·행복 +2 이하, 관계 +3 이하 (1500판)`, () => {
+    it(`${era}: 지식·건강·행복 +2 이하, 관계 +3 이하 (1500판, 기준선 PD_AT_8 대비)`, () => {
       const alive = infantLives(era, 1500, 'random').filter((l) => l.deathAge === null);
       const now = [
         mean(alive.map((l) => l.final.stats.education)),
@@ -455,9 +478,20 @@ describe('r2: 영유아 콘텐츠가 스탯을 크게 올리지 않는다 (마�
         mean(alive.map((l) => l.final.stats.relationships)),
       ];
       const names = ['지식', '건강', '행복', '관계'];
-      now.forEach((v, i) => expect(v - HEAD_AT_8[era][i], `${era} ${names[i]} 변화 ${(v - HEAD_AT_8[era][i]).toFixed(2)}`).toBeLessThanOrEqual(LIMIT[i]));
+      now.forEach((v, i) => expect(v - PD_AT_8[era][i], `${era} ${names[i]} 변화 ${(v - PD_AT_8[era][i]).toFixed(2)}`).toBeLessThanOrEqual(LIMIT[i]));
+      // 기준선이 현재 트리의 진짜 값이다(공허 통과 방지): 콘텐츠를 바꾸지 않았다면 차이는 반올림뿐이다
+      now.forEach((v, i) => expect(Math.abs(v - PD_AT_8[era][i]), `${era} ${names[i]} 기준선 일치`).toBeLessThan(0.01));
     });
   }
+
+  it('PD 이동 크기는 보고한 표를 넘지 않는다 (기준선 PD_AT_8 − PRE_PD_AT_8 ≤ 보고 상한; 옛 HEAD 대비로는 옛 +2 / +3 한도를 지금 세상 건강만 0.09 넘는다 — 그래서 기준선을 교체했다)', () => {
+    for (const era of ERAS) {
+      PD_AT_8[era].forEach((v, i) => expect(v - PRE_PD_AT_8[era][i], `${era} ${i}`).toBeLessThanOrEqual(REPORTED_SHIFT_CAP[era][i]));
+    }
+    // 교체 사유의 증거: 옛 기준선 HEAD_AT_8 대비로는 지금 세상 건강이 한도를 넘는다(+2.09), PRE_PD(부모 결정 끔) 대비 옛 한도는 모두 안이다(+1.86)
+    expect(PD_AT_8.present[1] - HEAD_AT_8.present[1]).toBeGreaterThan(LIMIT[1]);
+    expect(PRE_PD_AT_8.present[1] - HEAD_AT_8.present[1]).toBeLessThanOrEqual(LIMIT[1]);
+  });
 });
 
 describe('r3 T04 (QA-003-M7a): 재력 조건 없이 모든 단계에 보이는 문장에는 형편(빠듯·숨통·겨우·만만치·형편이 어려·넉넉하지) 낱말이 없다', () => {

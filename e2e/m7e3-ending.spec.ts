@@ -240,7 +240,7 @@ test('증거 화면 2: 선택지 안내 줄 · 20세 미만 자산 카드 · 단
 
 for (const fixture of [
   { id: 'youth-first-job', tier: 5, name: 'fix-first-job' },
-  { id: 'school-tutoring', tier: 3, name: 'fix-tutoring' },
+  { id: 'youth-housing', tier: 3, name: 'fix-housing' }, // SPEC-005 QI5: school-tutoring(fix-tutoring)은 부모님이 정하는 카드가 되어 선택지 카드로 뜨지 않는다 — 사람이 고르는 youth-housing으로 옮김
   { id: 'senior-travel', tier: 3, name: 'fix-travel' },
 ] as const) {
   test(`증거 화면 3: 지배 고침 표본 ${fixture.id} — 선택지 카드의 영향 줄이 서로 갈린다 (360×740)`, async ({ page }, testInfo) => {

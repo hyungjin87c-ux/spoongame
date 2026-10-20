@@ -224,8 +224,10 @@ export type WealthJourney = { kind: 'compared'; start: StartBand; end: Standing;
 export interface EndingReview {
   journey: WealthJourney;
   changes: StatChange[];
-  /** 선택한 순간의 수 (연표의 선택 기록 수) */
+  /** 본인이 고른 선택의 수 (연표의 선택 기록 중 `by`가 없는 것) — 부모님이 정한·흘러간 선택은 세지 않는다 (SPEC-005 PD9) */
   choiceCount: number;
+  /** 어린 시절의 큰 결정 가운데 부모님이 내린 횟수(`by: 'parent'`)와 아이의 일로 흘러간 횟수(`by: 'child'`) — 엔딩의 둘째 줄 「어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고, K번은 아이의 일로 흘러갔습니다」 (PD9, copy.md 11-1 ③) */
+  delegated: { parent: number; child: number };
   timeline: TimelineGroup[];
 }
 
@@ -239,7 +241,11 @@ export function reviewEnding(game: EndingGame, table: Record<Era, FinalDistribut
   return {
     journey,
     changes: COMPARABLE_STATS.map((stat) => ({ stat, from: game.birthStats[stat], to: game.stats[stat] })),
-    choiceCount: game.history.reduce((n, h) => (h.kind === 'choice' ? n + 1 : n), 0),
+    choiceCount: game.history.reduce((n, h) => (h.kind === 'choice' && h.by === undefined ? n + 1 : n), 0),
+    delegated: {
+      parent: game.history.reduce((n, h) => (h.kind === 'choice' && h.by === 'parent' ? n + 1 : n), 0),
+      child: game.history.reduce((n, h) => (h.kind === 'choice' && h.by === 'child' ? n + 1 : n), 0),
+    },
     timeline: buildTimeline(game.history),
   };
 }

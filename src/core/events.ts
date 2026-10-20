@@ -91,6 +91,13 @@ export interface ChoiceDef {
   label: string;
   /** 고른 뒤 보여 주는 결과 문구 */
   result: string;
+  /**
+   * 부모가 정하는 카드에서만 라벨 대신 쓰는 문구 (SPEC-005 PD11 처리 (b)) — 선택지 라벨이 아이의 행동이라 「부모님이 이렇게 정했습니다」와 어긋날 때만 둔다
+   * (`school-puppy` 세 선택지와 `school-academy-night`의 `friends`). 본인·흘러감 결정에서는 쓰지 않는다. 기록 줄·카드·엔딩은 `parentLabel ?? label`.
+   */
+  parentLabel?: string;
+  /** 부모가 정하는 카드에서만 `result` 대신 쓰는 결과 문구 (위와 같다). `parentResult ?? result` */
+  parentResult?: string;
   effects?: Effects;
   bonuses?: Bonus[];
   /** 이 조건을 만족할 때만 선택지가 보인다 */
@@ -572,10 +579,12 @@ function checkBonuses(v: unknown, path: string, p: Problems): void {
 
 function checkChoice(c: unknown, path: string, p: Problems): void {
   if (!isObj(c)) return void p.add(path, '선택지 객체여야 한다');
-  checkKeys(c, ['id', 'label', 'result', 'effects', 'bonuses', 'requires'], ['id', 'label', 'result'], path, p);
+  checkKeys(c, ['id', 'label', 'result', 'parentLabel', 'parentResult', 'effects', 'bonuses', 'requires'], ['id', 'label', 'result'], path, p);
   if (typeof c.id !== 'string' || !CHOICE_ID_PATTERN.test(c.id)) p.add(`${path}.id`, '소문자·숫자·하이픈(예: study-alone)이어야 한다');
   if (c.label !== undefined) checkText(c.label, `${path}.label`, 1, 40, p);
   if (c.result !== undefined) checkText(c.result, `${path}.result`, 6, 300, p);
+  if (c.parentLabel !== undefined) checkText(c.parentLabel, `${path}.parentLabel`, 1, 40, p);
+  if (c.parentResult !== undefined) checkText(c.parentResult, `${path}.parentResult`, 6, 300, p);
   if (c.effects !== undefined) checkEffects(c.effects, `${path}.effects`, p);
   if (c.bonuses !== undefined) checkBonuses(c.bonuses, `${path}.bonuses`, p);
   checkTotalDelta(c.effects, c.bonuses, path, p);

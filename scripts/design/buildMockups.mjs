@@ -16,7 +16,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AGE_GROUPS, faceSvg } from '../../src/assets/faces/faceLayers.ts';
 import { generateBirthFromSeed, looksStanding } from '../../src/core/birth.ts';
 import { birthSentence, isValidBirthReport, reportPlaceLabel, weightStanding } from '../../src/core/birthReport.ts';
-import { AUTO_ADVANCE_MS, LINE_H_STACKED, LINE_W, buildCarousel, valueWidthEm } from '../../src/core/carousel.ts';
+import { LINE_H_STACKED, LINE_W, buildCarousel, valueWidthEm } from '../../src/core/carousel.ts';
 import { citationFor, citationText, splitSourceLine } from '../../src/core/citations.ts';
 import { finalWealthStanding, movementOf, standingScore, startBandOf } from '../../src/core/ending.ts';
 import { formatMan } from '../../src/core/format.ts';
@@ -216,14 +216,15 @@ const swatch = (dash) => `<svg viewBox="0 0 28 10" aria-hidden="true" focusable=
 
 /**
  * 첫 화면 통계 캐러셀 — **구현과 같은 모델**(src/core/carousel.ts#buildCarousel: 값 줄·단위 낱말·기준 줄·조혼인율 줄·범례·출처·「통계 기준」 줄·그래프 좌표)을 그대로 그린다.
- * 지표 목록·순서·수(N)는 접근자 getCarouselIndicators에서 오고(2026-10-15 기준 14개) 자동 넘김 간격은 SPEC SC5 7초(AUTO_ADVANCE_MS).
- * 구조(구현 ui/StatsCarousel.tsx와 같다): 조작 줄(이전 · 「{i} / {N}」 · 다음 · 자동 넘김 일시정지)은 **카드 머리**(R-200 — 슬라이드 높이가 달라도 같은 자리, 하단 띠에 가려지지 않는다),
+ * 지표 목록·순서·수(N)는 접근자 getCarouselIndicators에서 온다(2026-10-15 기준 14개). SPEC-005 QI3(SH1~SH7, copy.md 9절, R-445)부터 구조는 구현 ui/StatsCarousel.tsx의 새 구조다:
+ * 눈에 보이는 머리글(「한국 사회 통계」·「7초마다 다음 지표」)은 없고 영역 이름은 `h2.sr-only`(TITLE_TEXT.carouselHeading), 조작 줄(이전 · 「{i} / {N}」 · 다음 · 자동 넘김 일시정지)은 카드 **오른쪽 위**,
+ * 슬라이드 위에서부터 표제어(h3 .slide__insight) → 공식 통계명(기준) 한 줄(.slide__official) → 값 줄 → 분모 기준 줄(.slide__basis, 없으면 요소 없음) → 그래프 → 정의 → 출처. 자동 넘김 간격은 9초(AUTO_ADVANCE_MS)지만 화면에 쓰지 않는다 — 상태는 일시정지 버튼의 아이콘·이름이 말한다(SH6).
+ * 이전 구조 설명(SPEC-003): 조작 줄(이전 · 「{i} / {N}」 · 다음 · 자동 넘김 일시정지)은 **카드 머리**(R-200 — 슬라이드 높이가 달라도 같은 자리, 하단 띠에 가려지지 않는다),
  * 14장을 모두 `.slides`에 겹쳐 두고 보이는 하나만 `.is-active`(좁은 화면은 카드 높이 = 가장 큰 슬라이드, 넓은 화면은 보이는 슬라이드만큼). 시안 주소 끝 `?slide=<id>`로 보이는 슬라이드를 고른다(예 `suicide-rate`·`marriage-count`).
  * 그래프 좌표는 좁은 화면 기준(폭 320·높이 232)으로 한 번 만들고 SVG가 칸 폭에 맞춰 비율로 늘어난다 — 구현은 화면에 그려지는 폭으로 좌표를 다시 만든다(R-206).
  */
 const CAROUSEL_DATA = buildCarousel(undefined, { width: LINE_W, lineHeight: LINE_H_STACKED });
 const CAROUSEL_TOTAL = CAROUSEL_DATA.slides.length;
-const CAROUSEL_SEC = AUTO_ADVANCE_MS / 1000;
 if (CAROUSEL_TOTAL !== getCarouselIndicators().length) throw new Error(`캐러셀 슬라이드 수(${CAROUSEL_TOTAL})가 접근자 지표 수와 다르다`);
 /** 큰 값 줄의 글자 크기를 칸 폭에 맞추는 변수(ds.css .slide__value, CM11·QM2-5): 값 글자 폭(em)·단위 글자 수 */
 const valueSizing = (values, unitText) => `--value-em:${Math.max(...values.map(valueWidthEm), 1)};--unit-chars:${Math.max(unitText.length, 1)}`;
@@ -243,11 +244,13 @@ function slideHtml(s, i, n, active) {
   const legend = s.legend.length >= 2 ? `<ul class="legend" aria-label="그래프 범례와 최근 값">${s.legend.map((l) => `<li>${swatch(l.dash)}<span>${glueHtml(l.label)} <strong>${esc(l.valueText)}</strong></span></li>`).join('')}</ul>` : '';
   const note = s.seriesNote !== null ? `<p class="slide__meta">${glueHtml(s.seriesNote)}</p>` : '';
   const help = s.safety !== null ? `<aside class="slide__help" aria-label="${esc(s.safety.name)}"><p>${esc(TITLE_TEXT.helpLead)}</p><p><strong>${esc(s.safety.name)}</strong> <a href="tel:${esc(s.safety.number)}">${esc(s.safety.number)}</a> (${esc(s.safety.hours)})</p></aside>` : '';
-  return `<article class="slide${active ? ' is-active' : ''}" data-slide-id="${s.id}" aria-roledescription="슬라이드" aria-label="${i + 1}/${n} ${esc(s.title)}">
-      <h3 class="t-h3">${glueHtml(s.title)}</h3>
+  // SH1: 표제어(h3) → 공식 통계명(기준) 한 줄 → (캡션) → 값 → 분모 기준 줄(있을 때만) — 구현 StatsCarousel#SlideView와 같은 순서·이름
+  return `<article class="slide${active ? ' is-active' : ''}" data-slide-id="${s.id}" aria-roledescription="슬라이드" aria-label="${i + 1}/${n} ${esc(s.insight)}, ${esc(s.officialText)}">
+      <h3 class="slide__insight">${glueHtml(s.insight)}</h3>
+      <p class="slide__official">${glueHtml(s.officialText)}</p>
       ${s.caption !== null ? `<p class="slide__caption">${glueHtml(s.caption)}</p>` : ''}
       ${value}${side}
-      <p class="slide__basis">${pairHtml(s.basisText, 'basis')}</p>
+      ${s.basisText !== null ? `<p class="slide__basis">${glueHtml(s.basisText)}</p>` : ''}
       ${chart}${legend}${note}
       <p class="t-sm t-muted">${glueHtml(s.definition)}</p>
       ${help}
@@ -257,15 +260,15 @@ function slideHtml(s, i, n, active) {
 }
 function carousel() {
   const n = CAROUSEL_TOTAL;
-  return `<section class="card carousel" aria-roledescription="캐러셀" aria-label="${esc(TITLE_TEXT.carouselRegionLabel)}">
-  <div class="carousel__head">
-    <div class="carousel__heading"><h2 class="card__title">${esc(TITLE_TEXT.carouselTitle)}</h2><span class="carousel__note">${esc(TITLE_TEXT.carouselAutoNote(CAROUSEL_SEC))}</span></div>
-    <div class="carousel__ctrl">
-      <button class="btn btn--secondary btn--icon" type="button" aria-label="${esc(TITLE_TEXT.carouselPrev)}">${icon('prev')}</button>
-      <span class="carousel__status num" aria-hidden="true">1 / ${n}</span>
-      <button class="btn btn--secondary btn--icon" type="button" aria-label="${esc(TITLE_TEXT.carouselNext)}">${icon('forward')}</button>
-      <button class="btn btn--secondary btn--icon carousel__pause" type="button" aria-label="${esc(TITLE_TEXT.carouselPause)}">${icon('pause')}</button>
-    </div>
+  // 구현 StatsCarousel과 같은 머리: 눈에 보이는 머리글 없음(h2.sr-only) + 오른쪽 위 소형 조작 줄(.carousel__nav — 이전 · 위치 · 다음 · 일시정지, SH4·SH5·SH6)
+  const navBtn = (name, label) => `<button class="nav-btn" type="button" aria-label="${esc(label)}"><span class="nav-btn__box">${icon(name)}</span></button>`;
+  return `<section class="card carousel carousel--005" aria-roledescription="캐러셀" aria-label="${esc(TITLE_TEXT.carouselRegionLabel)}">
+  <h2 class="sr-only">${esc(TITLE_TEXT.carouselHeading)}</h2>
+  <div class="carousel__nav">
+    ${navBtn('prev', TITLE_TEXT.carouselPrev)}
+    <span class="carousel__status num" aria-hidden="true">1 / ${n}</span>
+    ${navBtn('forward', TITLE_TEXT.carouselNext)}
+    <button class="nav-btn carousel__pause" type="button" aria-label="${esc(TITLE_TEXT.carouselPause)}"><span class="nav-btn__box">${icon('pause')}</span></button>
   </div>
   <div class="carousel__viewport" role="group" tabindex="0" aria-label="${esc(TITLE_TEXT.carouselViewport)}">
     <div class="slides">
@@ -296,11 +299,17 @@ function titlePage(key, state = 'new') {
     <div class="choices choices--1" role="radiogroup" aria-label="${esc(TITLE_TEXT.eraGroup)}">
       ${ERAS.map((e) => radioCard({ name: 'era', title: ERA_CONFIG[e].label, meta: eraMeta(e), desc: ERA_CONFIG[e].blurb, selected: e === 'present' })).join('\n      ')}
     </div></fieldset>`;
-  const length = `<fieldset><legend class="group-title">${esc(TITLE_TEXT.lifeLengthGroup)}</legend>
-    <div class="choices choices--2" role="radiogroup" aria-label="${esc(TITLE_TEXT.lifeLengthGroup)}">
-      ${LIFE_LENGTHS.map((l) => radioCard({ name: 'len', title: LIFE_LENGTH_TEXT[l].title, desc: LIFE_LENGTH_TEXT[l].desc, selected: l === 'short30', disabled: !isLifeLengthSelectable(l), meta: isLifeLengthSelectable(l) ? '' : NOT_READY_TEXT })).join('\n      ')}
+  // HS2(SPEC-005 QI3, copy.md 9-4): 인생 길이는 작은 분절 컨트롤(라디오 둘) + 한 줄 안내 — 구현 TitleScreen#SegOption과 같은 마크업. 「약 1시간」은 비활성 + 「준비 중」(LD-4)
+  const segOpt = (l) => {
+    const selectable = isLifeLengthSelectable(l);
+    const selected = l === 'short30';
+    return `<label class="seg__opt${selected ? ' is-selected' : ''}${selectable ? '' : ' is-disabled'}"><input type="radio" name="lifeLength" ${selected ? 'checked' : ''}${selectable ? '' : ' disabled'}>${icon('check')}<span>${esc(LIFE_LENGTH_TEXT[l].title)}</span>${selectable ? '' : `<span class="seg__meta">${esc(NOT_READY_TEXT)}</span>`}${selected ? '<span class="sr-only">선택됨</span>' : ''}</label>`;
+  };
+  const length = `<fieldset class="slot slot--small"><legend class="group-title group-title--inline">${esc(TITLE_TEXT.lifeLengthGroup)}</legend>
+    <div class="seg" role="radiogroup" aria-label="${esc(TITLE_TEXT.lifeLengthGroup)}">
+      ${LIFE_LENGTHS.map(segOpt).join('\n      ')}
     </div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">${glueHtml(TITLE_TEXT.lifeLengthHint)}</p></fieldset>`; // FS5 설명은 구현 상수 그대로(M8 D-92 — LD-1: 기록 쓰는 시간이 빠진다는 한 문장 + 어체 통일, copy.md 8-1 ①; 선행 때의 임시 블록은 developer 반영 뒤 지웠다, D-96). Glue 묶음(관형사 「이 기기에」 — design-system.md 11-4, D-97·D-98)은 구현 glue.ts의 규칙(r2, 2026-10-20)을 import로 그대로 쓴다
+    <p class="seg__hint">${glueHtml(TITLE_TEXT.lifeLengthHint)}</p></fieldset>`; // FS5 설명은 구현 상수 그대로(M8 D-92 — LD-1: 기록 쓰는 시간이 빠진다는 한 문장 + 어체 통일, copy.md 8-1 ①; 선행 때의 임시 블록은 developer 반영 뒤 지웠다, D-96). Glue 묶음(관형사 「이 기기에」 — design-system.md 11-4, D-97·D-98)은 구현 glue.ts의 규칙(r2, 2026-10-20)을 import로 그대로 쓴다
   // 하단 띠 — 확인 단계(R-204): 맨 아래(방금 누른 「새로 태어나기」 자리)는 안전한 「돌아가기」(기본·큰 버튼, 먼저 포커스), 그 위 줄이 이전 판을 지우는 확인(보조)
   const barNew = `<button class="btn btn--primary btn--lg" type="button">${esc(TITLE_TEXT.begin)}</button>`;
   const barContinue = `<button class="btn btn--primary btn--lg" type="button">${esc(TITLE_TEXT.resume)}</button><button class="btn btn--ghost btn--sm" type="button">${esc(TITLE_TEXT.beginNew)}</button>`;
@@ -324,7 +333,8 @@ function titlePage(key, state = 'new') {
 </div>
 <div class="page-end-space"></div>
 ${bar}`;
-  return page({ title: `수저 게임 · 시안 · 첫 화면${state === 'continue' ? ' (이어하기)' : ''}`, body });
+  // SPEC-005 QI3(R-445): 새 통계 카드·분절 컨트롤의 모양은 designer 시안 CSS(title-005.css)에 있다 — ds.css 위에 더한다
+  return page({ title: `수저 게임 · 시안 · 첫 화면${state === 'continue' ? ' (이어하기)' : ''}`, body, head: '<link rel="stylesheet" href="title-005.css">' });
 }
 
 // ---------- 2. 룰렛 — 구현(src/screens/RouletteScreen.tsx·ui/Reel.tsx)과 같은 모델 core/roulette.ts#buildRoulette ----------
@@ -1380,8 +1390,8 @@ function componentsPage() {
     <div style="min-width:240px;flex:1" class="stack--sm stack"><div class="field"><label class="label" for="c1">기록</label><textarea id="c1" class="field__input" rows="2">입력란은 2px 강한 테두리</textarea><div class="field__hint"><span>안내 문구</span><span class="num">13/140</span></div></div>
       <span class="toggle is-on"><span class="toggle__track"><span class="toggle__thumb">${icon('check')}</span></span><span class="toggle__state">켬</span><span>BGM</span></span>
       <span class="toggle"><span class="toggle__track"><span class="toggle__thumb">${icon('check')}</span></span><span class="toggle__state">끔</span><span>자동 모드</span></span></div></div></section>
-  <section><h2>캐러셀 카드 머리(자동 넘김 ${CAROUSEL_SEC}초, 지표 ${CAROUSEL_TOTAL}개) · 점(5개 이하일 때만)</h2><div class="carousel__head" style="max-width:420px"><div class="carousel__heading"><span class="card__title">한국 사회 통계</span><span class="carousel__note">${CAROUSEL_SEC}초마다 다음 지표</span></div><div class="carousel__ctrl"><button class="btn btn--secondary btn--icon" type="button" aria-label="이전 지표">${icon('prev')}</button><span class="carousel__status num" aria-hidden="true">3 / ${CAROUSEL_TOTAL}</span><button class="btn btn--secondary btn--icon" type="button" aria-label="다음 지표">${icon('forward')}</button><button class="btn btn--secondary btn--icon carousel__pause" type="button" aria-label="자동 넘김 일시정지">${icon('pause')}</button></div></div>
-    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">조작 줄은 카드 머리에 있다(R-200) — 슬라이드 높이가 달라도 같은 자리, 하단 띠에 가려지지 않는다. 좁으면 조작 줄이 아래로 내려와 가로 전체를 쓴다. 값 줄과 기준 줄은 나눈다: 「27.8<small>명</small>」 / 「인구 10만 명당 · 2025년 기준」(QM2-4), 짧은 쌍은 칸이 좁으면 두 줄(QM2-10).</p>
+  <section><h2>캐러셀 조작 줄(오른쪽 위 소형, 지표 ${CAROUSEL_TOTAL}개) · 점(5개 이하일 때만)</h2><div class="carousel carousel--005" style="max-width:420px"><div class="carousel__nav"><button class="nav-btn" type="button" aria-label="이전 지표"><span class="nav-btn__box">${icon('prev')}</span></button><span class="carousel__status num" aria-hidden="true">3 / ${CAROUSEL_TOTAL}</span><button class="nav-btn" type="button" aria-label="다음 지표"><span class="nav-btn__box">${icon('forward')}</span></button><button class="nav-btn carousel__pause" type="button" aria-label="자동 넘김 일시정지"><span class="nav-btn__box">${icon('pause')}</span></button></div></div>
+    <p class="t-sm t-muted" style="margin-top:var(--sp-2)">눈에 보이는 머리글은 없고(SH4) 조작 줄이 카드 오른쪽 위에 있다(SH5) — 자동 넘김의 상태는 일시정지 버튼의 아이콘·이름이 말한다(SH6). 값 줄과 분모 기준 줄은 나눈다: 「27.8<small>명</small>」 / 「인구 10만 명당」(QM2-4), 공식 통계명(기준 연도)은 표제어 아래 줄(SH3).</p>
     <div class="dots" style="max-width:320px;margin-top:var(--sp-3)">${Array.from({ length: 5 }, (_, i) => `<button type="button" aria-label="${i + 1}/5" ${i === 3 ? 'aria-current="true"' : ''}><i></i></button>`).join('')}</div></section>
   <section><h2>하단 고정 띠 (높이를 --bar-h로 알리고 본문 끝 여백·scroll-padding이 따른다 — CM10·QM2-12)</h2><div class="card" style="position:relative;height:150px;overflow:hidden"><p class="t-muted">본문…</p><div class="bottom-bar" style="position:absolute"><button class="btn btn--primary btn--lg" type="button">태어나기</button></div></div>
     <div class="card" style="position:relative;height:200px;overflow:hidden;margin-top:var(--sp-3)"><p class="t-muted">확인 단계 — 맨 아래는 안전한 「돌아가기」(기본), 그 위가 이전 판을 지우는 확인(보조)</p><div class="bottom-bar" style="position:absolute"><p class="bottom-bar__ask" role="alert">이전 판이 사라집니다. 새로 태어날까요?</p><div class="bottom-bar__stack"><button class="btn btn--secondary" type="button">이전 판 지우고 태어나기</button><button class="btn btn--primary btn--lg" type="button">돌아가기</button></div></div></div></section>

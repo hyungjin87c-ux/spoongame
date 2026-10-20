@@ -428,6 +428,9 @@ export function textPartsOf(ev: EventDef): TextPart[] {
   (ev.choices ?? []).forEach((c, i) => {
     parts.push({ where: `${ev.id}.choices[${i}](${c.id}).label`, kind: 'label', value: c.label });
     parts.push({ where: `${ev.id}.choices[${i}](${c.id}).result`, kind: 'result', value: c.result });
+    // 부모가 정하는 카드의 문구(SPEC-005 PD11): 라벨·결과와 같은 규칙으로 점검한다
+    if (c.parentLabel !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).parentLabel`, kind: 'label', value: c.parentLabel });
+    if (c.parentResult !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).parentResult`, kind: 'result', value: c.parentResult });
   });
   return parts;
 }

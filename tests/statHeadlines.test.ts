@@ -77,9 +77,9 @@ describe('표제어 규칙 lint (SH2, SH7 ② ③ ④)', () => {
     }
   });
 
-  it('자살률 표제어(M9 판독 대기)는 방법·장소·동기를 말하지 않고 완곡어도 쓰지 않으며 「자살」 낱말은 공식 통계명 줄에만 있다 (copy.md 9-1 #5, SC6)', () => {
+  it('자살률 표제어(M9 확정)는 방법·장소·동기를 말하지 않고 완곡어도 쓰지 않으며 「자살」 낱말은 공식 통계명 줄에만 있다 (copy.md 9-1 #5, SC6)', () => {
     const h = STAT_HEADLINES['suicide-rate'];
-    expect(h.insight).toBe('삶을 스스로 마감하는 사람은 얼마나 될까?'); // 임시 — reviewer·마스터 판독 뒤 확정(후보 ② ③은 copy.md)
+    expect(h.insight).toBe('삶을 스스로 마감하는 사람은 얼마나 될까?'); // 확정(M9 — REV-005-QI3-1 판독 통과 + 마스터 승인, 버린 후보 ② ③은 copy.md 9-1 #5)
     expect(h.insight).not.toMatch(/자살|극단적|방법|장소|동기|수단/);
     expect(h.officialName).toBe('자살률');
     const s = slides.find((x) => x.id === 'suicide-rate')!;
@@ -108,18 +108,19 @@ describe('공식 통계명 (SH3 — 기관이 쓰는 이름, 지어내지 않는
       expect([...s.officialText.matchAll(/(\d{4})년/g)].map((m) => Number(m[1])), `${ind.id} 공식 통계명 줄의 연도`).toEqual([ind.latest.year]);
       expect(s.basisLine, ind.id).toContain(`${ind.latest.year}년`); // 「통계 기준」 줄과 같은 연도
     }
-    expect(slides.find((s) => s.id === 'region-population-registered')!.officialText).toBe('지역별 주민등록 인구수(2026년 9월)');
+    expect(slides.find((s) => s.id === 'region-population-registered')!.officialText).toBe('지역별 주민등록 인구수(2026년 9월, 16개 시·도)'); // R-446 (b): 범위 문구 괄호의 첫 항목만(「주민등록」은 이름에 이미 있다)
     expect(slides.find((s) => s.id === 'life-expectancy')!.officialText).toBe('기대수명(2024년)'); // 형진 님 예시 「기대수명(2024년)」
   });
 
-  it('범위 설명(withScope)은 시·도별 합계출산율 하나만 괄호 안에 더한다 — 「2025년, 17개 시·도」', () => {
-    expect(Object.entries(STAT_HEADLINES).filter(([, h]) => h.withScope === true).map(([id]) => id)).toEqual(['tfr-by-sido']);
+  it('범위 설명(withScope)은 시·도 범위가 보이는 두 지표만 괄호 안에 더한다 — 「2026년 9월, 16개 시·도」「2025년, 17개 시·도」', () => {
+    expect(Object.entries(STAT_HEADLINES).filter(([, h]) => h.withScope === true).map(([id]) => id)).toEqual(['region-population-registered', 'tfr-by-sido']);
+    expect(slides.find((s) => s.id === 'region-population-registered')!.officialText).toBe('지역별 주민등록 인구수(2026년 9월, 16개 시·도)');
     expect(slides.find((s) => s.id === 'tfr-by-sido')!.officialText).toBe('시·도별 합계출산율(2025년, 17개 시·도)');
   });
 
   it('슬라이드의 접근 가능한 이름은 「n/N 표제어, 공식 통계명(기준)」이다 — 첫 슬라이드와 일곱째 슬라이드 예', () => {
     const n = slides.length;
-    expect(`1/${n} ${slides[0].insight}, ${slides[0].officialText}`).toBe(`1/${n} 아기는 얼마나 태어나고 있을까?, 합계출산율(2025년)`);
+    expect(`1/${n} ${slides[0].insight}, ${slides[0].officialText}`).toBe(`1/${n} 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)`);
     const life = slides.findIndex((s) => s.id === 'life-expectancy');
     expect(`${life + 1}/${n} ${slides[life].insight}, ${slides[life].officialText}`).toBe(`7/${n} 얼마나 살 수 있을까?, 기대수명(2024년)`);
   });

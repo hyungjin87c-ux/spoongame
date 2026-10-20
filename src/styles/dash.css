@@ -12,6 +12,7 @@
 .row { display: flex; align-items: center; gap: var(--sp-3); }
 .tag { display: inline-flex; align-items: center; gap: 4px; padding: 0 var(--sp-2); border-radius: var(--r-sm); border: 1px solid var(--c-border-strong); font-size: var(--fs-xs); line-height: 1.7; color: var(--c-text-2); background: var(--c-surface); }
 svg.icon--sm { width: 18px; height: 18px; }
+svg.icon--xs { width: 14px; height: 14px; }
 /* 카드 머리의 보조 글(「요즘 모습」): 제목 아래 한 줄 전체 */
 .card__sub { flex-basis: 100%; font-size: var(--fs-xs); color: var(--c-text-3); }
 
@@ -234,6 +235,19 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 @supports (width: 1cqi) {
   .decision__title { font-size: max(var(--fs-lg), min(var(--fs-xl), calc(100cqi / var(--title-chars, 8)))); }
 }
+/* 부모님이 정한 카드 · 아이의 일로 흘러간 카드 (SPEC-005 PD5, docs/data/parent-decision-model.md 3-2절): 비모달 카드 section.card.decision.decision--parent — 인라인 결정 카드(.decision--inline)와 같은 머리·몸을 쓰되
+   **누를 것이 없다**(선택지 버튼·「카드 접기」 없음). 테두리는 결정을 기다리는 카드의 2px 쪽빛이 아니라 옅은 구분선 + 왼쪽 5px 놋쇠 막대(「이미 정해진 일」임을 가른다). 칩(.parent-chip)은 아이콘 + 글자 — 색에만 의존하지 않는다.
+   고른 길(.parent-pick) = 왼쪽 막대 + 큰 굵은 글씨 + 도장 문구(.parent-pick__stamp — 테두리 상자 + 글자). 영향 줄(.impact)은 카드 면 위에 그대로 둔다(옅은 면 위에 얹지 않는다 — ▲▼ 색 대비). 안내 한 줄(.parent-hint)은 보조색 작은 글씨. 질문 없는 카드라 색 값은 모두 기존 토큰 짝이다. */
+.decision--parent { padding: 0; border: 1px solid var(--c-border); border-left: 5px solid var(--c-accent); display: flex; flex-direction: column; gap: 0; }
+.decision--parent .decision__body { padding: var(--sp-4); }
+.parent-chip { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-bold); font-size: var(--fs-sm); color: var(--c-text); }
+.parent-chip .icon { width: 18px; height: 18px; color: var(--c-accent); }
+.parent-pick { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-1) 0 var(--sp-1) var(--sp-3); border-left: 4px solid var(--c-brand); }
+.parent-pick__label { font-size: var(--fs-lg); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.parent-pick__stamp { align-self: flex-start; max-width: 100%; padding: 2px var(--sp-3); border: 1.5px solid var(--c-text-2); border-radius: var(--r-sm); color: var(--c-text-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.parent-hint { font-size: var(--fs-sm); color: var(--c-text-2); }
+/* 인생 기록 줄의 표지(PD6): 「(부모님이 이렇게 정했습니다: 라벨)」·「(이렇게 흘러갔습니다: 라벨)」 — 앞의 작은 아이콘 + 글자. 본인 선택 줄 「(선택: …)」과 글자·아이콘으로 가른다 */
+.log__by .icon { display: inline-block; vertical-align: -2px; margin-right: 4px; }
 /* 인용 박스(MD2·EV6): 옅은 쪽빛 면 + 놋쇠 왼쪽 막대(「사람이 남긴 것」의 색, 1절). 줄 순서 = **종류 라벨**(.cite__kind 「통계」/「연구」 — citations.json kind에서. U12 결정: 지표 이름이 아니라 자료의 종류라 QM2-11(제목이 약속한 값) 대상이 아니다)
    → **요약**(.cite__text = 시대 머리말 + 한 칸 + 요약, 합쳐 ≤ 100자 — 「지금의 연구로는」(지난 세상의 시대 무관 연구)·「지금 기준으로는」(다가올 세상)은 같은 글자·같은 색, 따로 꾸미지 않는다) → **출처 한 줄**(.cite__src = formatSourceLine 출력 「{기관·저자}({연도}), {자료 이름}」을 Glue로 감싼 것 — copy.md 6-3).
    안에 <a>·DOI·URL·PMID를 그리지 않는다(EV6). 인용이 없는 카드에는 이 요소 자체가 없다(빈 박스 0). 글자는 모두 --c-on-brand-soft 한 색이고 불투명도를 쓰지 않는다(QM3-5 전수 대비 — 옛 .cite__src opacity 0.9 제거; 면 위 라이트 9.9 / 다크 10.3:1).
@@ -487,7 +501,7 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 @media (max-width: 959px) {
   /* 한 열: 가운데 열의 카드들이 격자의 직접 칸이 되어, 결정을 기다리는 중대 결정 카드가 프로필보다 먼저(맨 위) 나온다. 나머지 순서는 DB1 그대로: 프로필 → 상태 → 자산 → 인생 기록 → 식구 → 또래 */
   .col--center { display: contents; }
-  .decision--inline, .fold { order: -1; }
+  .decision--inline, .fold, .decision--parent { order: -1; }
   /* 모바일: 진행 줄을 아래에 고정 — 이 화면의 하단 고정 띠(11-1·11-2). 높이는 --bar-h(ui/useBottomBar.ts), 본문 끝 여백은 .page-end-space, 문서 루트의 scroll-padding-bottom은 html.has-bottom-bar 규칙(title.css)이 맡는다.
      150px 같은 고정 여백은 쓰지 않는다 */
   .controls-fixed { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-bar); padding: var(--sp-2) var(--gutter) calc(var(--sp-2) + env(safe-area-inset-bottom)); background: var(--c-bg); box-shadow: var(--shadow-bar); }
@@ -512,6 +526,9 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
   .choice, .exit-ask { border-color: CanvasText; }
   .choice[data-unavailable='true'], .choice[data-unavailable='true'] .choice__no, .choice[data-unavailable='true'] .impact, .choice[data-unavailable='true'] .impact__step { color: GrayText; border-color: GrayText; }
   .sheet, .decision--inline, .fold, .note-choice, .field__input { border-color: CanvasText; }
+  .decision--parent, .parent-pick { border-color: CanvasText; }
+  .parent-pick__stamp { border-color: CanvasText; color: CanvasText; }
+  .parent-chip .icon { color: CanvasText; }
   .cite { background: Canvas; color: CanvasText; border-color: CanvasText; }
   .choice__no { border-color: CanvasText; color: CanvasText; }
   .meter__track, .year-progress { border-color: CanvasText; background: Canvas; }

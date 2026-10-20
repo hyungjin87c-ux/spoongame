@@ -9,6 +9,23 @@ export interface HoldOptions {
   mode?: LifeLength | null;
   /** 그 해 연표에 남은 사건·선택 줄 수(`TickInfo.lines`). 둘째 줄부터 줄마다 `extraLineMs`가 더해진다. */
   lines?: number;
+  /**
+   * 부모님이 정한·흘러간 해(`TickInfo.readNeedMs`)의 카드 읽기 필요량(ms). 결과 해(`resolved`)의 연출 대기는 `max(기본 대기 + 줄 대기, 필요량)`이 된다 —
+   * 느린 독자가 카드와 결과 문장을 다 읽기 전에 해가 넘어가지 않는다 (SPEC-005 PD5-d, 설계 문서 4-3절). 사람이 고른 결과 해에는 없다.
+   */
+  readNeedMs?: number;
+}
+
+/** 부모 카드 읽기 필요량의 가정 (SPEC-005 PD5-d): 느린 독자(`READ_MODEL.cpm.high`, 500자/분) + 여유 3초 + 인용 박스가 있으면 `READ_MODEL.citeSec.high`(13초) */
+export const CARD_NEED = { marginSec: 3 } as const;
+
+/**
+ * 부모님이 정한·흘러간 카드를 느린 독자가 읽는 데 드는 시간(ms) = 카드의 모든 글 + 그 해 결과 문장의 글자 수 ÷ 500자/분 + 여유 3초 + 인용 박스 13초(있으면). 정수 ms로 반올림한다.
+ * 글자 수는 호출하는 쪽이 센다(`life.ts#resolveDelegated`: 칩·제목·상황·고른 길·도장·영향 줄·결과 문장, 첫 부모 카드는 안내 한 줄까지).
+ */
+export function cardReadNeedMs(chars: number, cited: boolean): number {
+  const sec = (Math.max(0, chars) / READ_MODEL.cpm.high) * 60 + CARD_NEED.marginSec + (cited ? READ_MODEL.citeSec.high : 0);
+  return Math.round(sec * 1000);
 }
 
 /** 한 줄 더할 때마다 더하는 대기(ms, 1배속) = extraLineMs × 모드 계수 */
@@ -32,8 +49,11 @@ export function holdMsFor(kind: TickKind | null, opts: HoldOptions = {}): number
   switch (kind) {
     case 'narrative':
       return scaled(HOLD_MS.narrative) + extra();
-    case 'resolved':
-      return scaled(HOLD_MS.resolved) + extra();
+    case 'resolved': {
+      const base = scaled(HOLD_MS.resolved) + extra();
+      const need = opts.readNeedMs;
+      return need !== undefined && Number.isFinite(need) ? Math.max(base, Math.round(need)) : base;
+    }
     case 'choice':
     case 'death':
       return null;
@@ -85,13 +105,15 @@ export function holdTotalMs(counts: TickCounts, mode?: LifeLength | null): numbe
   const q = holdMsFor('quiet', { mode }) as number;
   const n = holdMsFor('narrative', { mode }) as number;
   const r = holdMsFor('resolved', { mode }) as number;
-  return counts.quiet * q + counts.narrative * n + counts.resolved * r + counts.extraLines * extraLineMsFor(mode);
+  // 부모님이 정한 해·흘러간 해도 결과 해와 같은 기본 대기를 쓰고(`parent`·`child`), 카드 읽기 필요량이 기본 대기(+ 줄 대기)보다 긴 몫은 `delegatedExtraMs`가 더한다 (PD5-d)
+  return counts.quiet * q + counts.narrative * n + (counts.resolved + counts.parent + counts.child) * r + counts.extraLines * extraLineMsFor(mode) + counts.delegatedExtraMs;
 }
 
 /**
  * 한 판이 걸리는 시간 추정(초) — 시간 목표 판정의 모델 (SPEC-003 LM2, 기준의 교체: SPEC-001의 `READ_SEC`·`TIME_TARGET_MIN`을 대체한다, LD-12).
- *  - 건너뛰지 않으면: 연출 합 ÷ 배속 + 결정 카드 수 × r (읽는 시간은 사람이 하는 일이라 배속과 무관)
- *  - 다음 결정으로: 연출 없음. (결정 카드 수 + 마지막 사망까지의 이동 1회) × JUMP_OVERHEAD_SEC + 결정 카드 수 × r
+ * **결정 카드 수는 본인이 고르는 카드(`counts.choice` = c_self)다** (SPEC-005 TM1): 부모님이 정한·흘러간 해는 읽고 고르는 시간 r이 없고 연출 대기(카드 읽기 필요량 포함)만 센다.
+ *  - 건너뛰지 않으면: 연출 합 ÷ 배속 + c_self × r (읽는 시간은 사람이 하는 일이라 배속과 무관)
+ *  - 다음 결정으로: 연출 없음. (c_self + 마지막 사망까지의 이동 1회) × JUMP_OVERHEAD_SEC + c_self × r
  *  - extraSec: 기록 카드 입력 시간 같은 **참고 항**(목표 밖 — LD-1). 판정에는 0으로 두고, 값을 주면 합에 더해 돌려준다.
  * mode는 판의 인생 길이, era는 읽는 시간의 인용 노출률을 고른다.
  */

@@ -3,6 +3,7 @@ import { COMPARABLE_STATS, displaySeconds, isCleanRun, looksStanding, reviewEndi
 import { ERA_CONFIG } from '../data/birthTable';
 import { BIRTH_TEXT } from '../data/birthReportText';
 import { standingLabel } from '../data/birthText';
+import { decidedByText, delegatedSummaryText } from '../data/parentDecisionTable';
 import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/dashText';
 import {
   ENDING_HEADINGS,
@@ -118,8 +119,16 @@ function TimelineItem({ entry }: { entry: HistoryEntry }) {
       <span>
         {entry.title ? <strong>{entry.title}</strong> : null}
         {entry.choice ? (
-          <span className="tl-picked" data-testid="timeline-picked">
-            선택: {entry.choice}
+          <span className="tl-picked" data-testid="timeline-picked" data-by={entry.by}>
+            {entry.by !== undefined ? (
+              // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6·PD9): 인생 기록 줄과 같은 문구 한 곳 + 아이콘(색에만 의존하지 않는다)
+              <>
+                <Icon name={entry.by === 'parent' ? 'i-people' : 'i-smile'} className="icon--xs" />
+                {decidedByText(entry.by)}: {entry.choice}
+              </>
+            ) : (
+              <>선택: {entry.choice}</>
+            )}
           </span>
         ) : null}
         <span className="tl-text">{entry.text}</span>
@@ -143,6 +152,7 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
   useScrollTopOnMount();
   const c = game.character;
   const title = `${c.name}${DASH_TEXT.endingTitleSuffix}`;
+  const delegatedLine = delegatedSummaryText(review.delegated.parent, review.delegated.child);
   return (
     <div className="page ending-page" data-testid="ending-screen">
       <Sprite />
@@ -169,6 +179,12 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game) }: P
           <p className="t-muted" data-testid="ending-choices">
             {choiceCountText(review.choiceCount)}
           </p>
+          {/* 어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고 K번은 아이의 일로 흘러갔습니다 (PD9, copy.md 11-1 ③) — 둘 다 0이면 줄이 없다(조기 사망 등) */}
+          {delegatedLine === null ? null : (
+            <p className="t-muted" data-testid="ending-delegated">
+              {delegatedLine}
+            </p>
+          )}
           {/* 플레이 시간(M8 LM6): 시간 기록이 있는 판에만 — M8 이전 저장은 블록이 없다 */}
           {game.play !== undefined ? <PlayTimeBlock play={game.play} /> : null}
         </section>

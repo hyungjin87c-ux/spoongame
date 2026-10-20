@@ -240,11 +240,11 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
     const first2 = page2.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
     await expect(first2).toBeEnabled();
     await first2.click();
-    await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice').length).toBe(1);
+    await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length).toBe(1);
     await expect(page.getByTestId('superseded-screen')).toBeVisible();
     await expect(page.getByTestId('choice-panel')).toHaveCount(0);
     await page.waitForTimeout(800);
-    expect((await readSave(page2)).data.history.filter((h) => h.kind === 'choice')).toHaveLength(1);
+    expect((await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined)).toHaveLength(1);
     // 첫 탭에서 이어받으면 저장된 최신 상태(선택이 연표에 있다)를 보여 주고, 이 탭이 진행하면 두 번째 탭이 멈춘다
     const takeOver = page.getByTestId('take-over');
     await expect(takeOver).toBeEnabled();

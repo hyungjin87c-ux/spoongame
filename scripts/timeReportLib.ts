@@ -10,6 +10,7 @@ import {
   previewPending,
   readSecFor,
   stageOfAge,
+  totalCards,
   type Chooser,
   type Era,
   type EventPool,
@@ -36,7 +37,8 @@ import { chooserFor, startLife, type Strategy } from './simulateLib';
 export const LEGACY_MODEL = { readSec: 18, pacing: { soft: 23, softFactor: 0.3, hard: 26 } as ChoicePacing };
 
 export function legacySeconds(c: TickCounts): number {
-  return (c.quiet * HOLD_MS.quiet + c.narrative * HOLD_MS.narrative + c.resolved * HOLD_MS.resolved) / 1000 + c.choice * LEGACY_MODEL.readSec;
+  // 옛 모델은 어린 시절의 결정도 모두 사람이 읽고 골랐다 — 새 인생(SPEC-005)에서도 총 카드 수 × 18초, 부모님이 정한·흘러간 해는 결과 해로 센다(옛 모델 「재현」용 참고값)
+  return (c.quiet * HOLD_MS.quiet + c.narrative * HOLD_MS.narrative + (c.resolved + c.parent + c.child) * HOLD_MS.resolved) / 1000 + totalCards(c) * LEGACY_MODEL.readSec;
 }
 
 // ---------- 한 판 측정 ----------
@@ -136,11 +138,17 @@ export function measureLife(seed: number, era: Era, strategy: Strategy, lifeLeng
   if (final.phase !== 'ending' || final.death === null) problems.push(`${tag}: 사망에 도달하지 못했다`);
   const deathAge = final.death?.age ?? final.age;
   const c = run.counts;
-  if (c.quiet + c.narrative + c.resolved + c.death !== deathAge + 1) problems.push(`${tag}: 해 수 합 ${c.quiet + c.narrative + c.resolved + c.death} ≠ 사망 나이 + 1 (${deathAge + 1})`);
+  // 해 수 합: 부모님이 정한·흘러간 해(parent·child)도 한 해다 (SPEC-005 TM5)
+  const years = c.quiet + c.narrative + c.resolved + c.parent + c.child + c.death;
+  if (years !== deathAge + 1) problems.push(`${tag}: 해 수 합 ${years} ≠ 사망 나이 + 1 (${deathAge + 1})`);
   const choiceRows = final.history.filter((h) => h.kind === 'choice');
-  if (cards.length !== c.choice || choiceRows.length !== c.choice) problems.push(`${tag}: 카드 ${cards.length} / 결정 틱 ${c.choice} / 연표 선택 ${choiceRows.length}이 서로 다르다`);
+  const ownRows = choiceRows.filter((h) => h.by === undefined);
+  // 불변식 (EK5): 본인이 고른 카드(c_self) = 카드 측정 수 = 결정 틱 수 = 연표의 `by` 없는 선택 줄, 위임 몫(parent + child + 같은 해 사망한 위임) = `by` 있는 줄, 합 = 연표의 선택 줄 = 판의 카드 총수
+  if (cards.length !== c.choice || ownRows.length !== c.choice) problems.push(`${tag}: 본인 카드 ${cards.length} / 결정 틱 ${c.choice} / 연표 본인 선택 ${ownRows.length}이 서로 다르다`);
+  if (c.parent + c.child + c.deathDelegated !== choiceRows.length - ownRows.length) problems.push(`${tag}: 부모 ${c.parent} + 흘러감 ${c.child} + 같은 해 사망 ${c.deathDelegated} ≠ 연표의 by 있는 선택 ${choiceRows.length - ownRows.length}`);
+  if (totalCards(c) !== choiceRows.length) problems.push(`${tag}: 카드 총수 ${totalCards(c)} ≠ 연표 선택 ${choiceRows.length}`);
   if (final.lifeLength !== lifeLength) problems.push(`${tag}: 판의 인생 길이가 ${final.lifeLength}다`);
-  if (c.choice > lifeModeOf(lifeLength).pacing.hard) problems.push(`${tag}: 결정 카드 ${c.choice}장이 하드 상한 ${lifeModeOf(lifeLength).pacing.hard}을 넘었다`);
+  if (totalCards(c) > lifeModeOf(lifeLength).pacing.hard) problems.push(`${tag}: 결정 카드 ${totalCards(c)}장이 하드 상한 ${lifeModeOf(lifeLength).pacing.hard}을 넘었다`);
   if (c.extraLines < 0) problems.push(`${tag}: 둘째 줄 수가 음수다`);
   choiceRows.forEach((h, i) => {
     if (cards[i] !== undefined) cards[i].resultLen = len(h.text);
@@ -193,11 +201,18 @@ export interface EraSummary {
   lifeLength: LifeLength;
   lives: number;
   deathAge: number;
-  /** 해 수 평균: 조용 / 서술 / 결과(= 결정을 고른 해) / 결정 카드 */
+  /** 해 수 평균: 조용 / 서술 / 결과(= 본인이 결정을 고른 해) / 결정 카드 총수(c = c_self + c_parent) */
   q: number;
   n: number;
   r: number;
   c: number;
+  /** 본인이 읽고 고르는 카드 c_self / 부모님이 정한 해 / 흘러간 해 (판당 평균, SPEC-005 TM5) */
+  cSelf: number;
+  cParent: number;
+  cChild: number;
+  /** 본인 카드 수 분포와 부모님이 정한·흘러간 해 연출 연장(`delegatedExtraMs` 판당 평균, 초, 1배속) */
+  cardsSelf: Dist;
+  delegatedExtraSec: number;
   extraLines: number;
   cards: Dist;
   hard: number;
@@ -243,7 +258,8 @@ export function preciseCardSec(f: CardFeature, level: 'low' | 'median' | 'high')
 export function summarize(era: Era, lifeLength: LifeLength, lives: readonly LifeMeasure[], hardRef = LIFE_LENGTH_MODES.short30.pacing.hard): EraSummary {
   const modeHard = lifeModeOf(lifeLength).pacing.hard;
   const hard = Number.isFinite(modeHard) ? modeHard : hardRef;
-  const choice = lives.map((l) => l.counts.choice);
+  const choice = lives.map((l) => totalCards(l.counts));
+  const choiceSelf = lives.map((l) => l.counts.choice);
   const min = (sec: (l: LifeMeasure) => number) => distStats(lives.map((l) => sec(l) / 60));
   const slow = { speed: 1 as const, skipToDecision: false };
   const fast = { speed: 8 as const, skipToDecision: true };
@@ -260,6 +276,11 @@ export function summarize(era: Era, lifeLength: LifeLength, lives: readonly Life
     n: mean(lives.map((l) => l.counts.narrative)),
     r: mean(lives.map((l) => l.counts.resolved)),
     c: mean(choice),
+    cSelf: mean(choiceSelf),
+    cParent: mean(lives.map((l) => l.counts.parent)),
+    cChild: mean(lives.map((l) => l.counts.child)),
+    cardsSelf: distStats(choiceSelf),
+    delegatedExtraSec: mean(lives.map((l) => l.counts.delegatedExtraMs / 1000)),
     extraLines: mean(lives.map((l) => l.counts.extraLines)),
     cards: distStats(choice),
     hard,
@@ -269,7 +290,7 @@ export function summarize(era: Era, lifeLength: LifeLength, lives: readonly Life
     byStage,
     upTo7: mean(lives.map((l) => l.cardsUpTo7)),
     longLives: long.length,
-    under20Of70PlusPct: (long.filter((l) => l.counts.choice < 20).length / (long.length || 1)) * 100,
+    under20Of70PlusPct: (long.filter((l) => totalCards(l.counts) < 20).length / (long.length || 1)) * 100,
     legacyMin: min((l) => legacySeconds(l.counts)),
     low: min((l) => t(l, 'low')),
     median: min((l) => t(l, 'median')),

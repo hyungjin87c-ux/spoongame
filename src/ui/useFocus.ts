@@ -34,7 +34,9 @@ export type LifeFocusMoment =
   /** 사용자가 「카드 접기」(또는 Esc)를 눌렀다 (M7b) */
   | 'cardCollapsed'
   /** 사용자가 접힌 띠의 「결정 다시 열기」를 눌렀다 (M7b) */
-  | 'cardReopened';
+  | 'cardReopened'
+  /** 부모님이 정한·흘러간 해의 비모달 카드가 떴다 (SPEC-005 PD5-a) — 누를 것이 없는 카드라 포커스를 가져가지 않는다. `pending`이 만들어지지 않으므로 `lifeFocusMoment`가 이 순간을 만들지는 않는다(표에 칸으로만 있다) */
+  | 'delegatedCard';
 
 /** 지금 포커스가 어디 있는가 */
 export type FocusPlace = 'body' | 'controls' | 'other';
@@ -43,7 +45,7 @@ export type FocusPlace = 'body' | 'controls' | 'other';
 export type LifeFocusAction = 'none' | 'choiceTitle' | 'lifeTitle' | 'foldOpen';
 
 /**
- * 인생 화면의 포커스 규칙(순수 함수 — DOM 없이 단위 테스트한다). 8순간 × 자동 모드 2 × 위치 3 = 48칸이 tests/focus.test.ts에 사람이 적은 기대값으로 있다.
+ * 인생 화면의 포커스 규칙(순수 함수 — DOM 없이 단위 테스트한다). 9순간(SPEC-005에서 `delegatedCard` 추가) × 자동 모드 2 × 위치 3 = 54칸이 tests/focus.test.ts에 사람이 적은 기대값으로 있다.
  *  1. 자동 모드에서는 선택지가 떠도 포커스를 옮기지 않는다. 카드는 비모달 인라인이라 키보드로 자동 모드 버튼까지 가서 끌 수 있어야 한다(SPEC "언제든 해제 가능").
  *  2. **수동 모드에서는 카드가 모달 시트이고 바깥 전부가 inert다**(M7b, 마스터 결정 M-6·D-52). 시트가 뜨는 순간 컨트롤에 있던 포커스는 body로 떨어지므로 R-036 규칙 2(「컨트롤 안이면 포커스는 두고 알리기만」)는
  *     성립하지 않는다 — 포커스가 어디에 있었든(body·컨트롤·그 밖) 선택지 제목으로 간다. 규칙 2가 막으려던 「포커스가 튀어 다음 Space가 엉뚱한 선택을 확정」은 제목(버튼이 아님)으로 가므로 생기지 않고 400ms 입력 가드가 남는다.
@@ -76,6 +78,8 @@ export function decideLifeFocus(moment: LifeFocusMoment, autoMode: boolean, plac
       return 'foldOpen';
     case 'cardReopened':
       return 'choiceTitle';
+    case 'delegatedCard':
+      return 'none'; // 부모 결정·흘러감 카드: 자동·수동, 어느 위치든 포커스를 옮기지 않는다 (PD5-a)
   }
 }
 

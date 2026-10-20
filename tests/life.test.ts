@@ -25,8 +25,11 @@ import {
   createEventPool,
   createInitialState,
   createRng,
+  consumeNote,
   createSession,
   deathChance,
+  dueNote,
+  emptyCounts,
   economyContextOf,
   educationGrowthPerYear,
   initialAssets,
@@ -42,6 +45,7 @@ import {
   serializeGame,
   sessionReducer,
   stepYear,
+  totalCards,
   validateEventFiles,
   type Character,
   type Era,
@@ -812,8 +816,12 @@ describe('자동 모드: 성향 기반 선택', () => {
         const r = playToEnd(life(seed, era), null);
         expect(r.state.phase, `${era} ${seed}`).toBe('ending');
         expect(r.state.pending).toBeNull();
-        // 선택지 수 = 해결된 선택 + (선택 직후 곧바로 사망한 경우는 사망 걸음으로 집계)
-        expect(r.counts.choice).toBe(r.state.history.filter((h) => h.kind === 'choice').length);
+        // 선택지 수 = 해결된 선택 + (선택 직후 곧바로 사망한 경우는 사망 걸음으로 집계). SPEC-005부터 본인이 고르는 카드(`counts.choice` = c_self)와 부모님이 정한·흘러간 카드(`by`)를 나눠 센다 —
+        // 합(totalCards)이 연표의 선택 줄 수이고, 본인 몫은 `by` 없는 줄, 위임 몫(parent + child + 같은 해 사망한 위임)은 `by` 있는 줄이다.
+        const lines = r.state.history.filter((h) => h.kind === 'choice');
+        expect(totalCards(r.counts), `${era} ${seed}`).toBe(lines.length);
+        expect(r.counts.choice, `${era} ${seed}`).toBe(lines.filter((h) => h.by === undefined).length);
+        expect(r.counts.parent + r.counts.child + r.counts.deathDelegated, `${era} ${seed}`).toBe(lines.filter((h) => h.by !== undefined).length);
       }
     }
   });
@@ -825,6 +833,7 @@ describe('다음 결정으로 (advanceUntilDecision)', () => {
       for (let seed = 1; seed <= 40; seed++) {
         let s = life(seed, era);
         let decisions = 0;
+        let delegated = 0;
         for (let i = 0; i < 100 && s.phase === 'life'; i++) {
           const startAge = s.age;
           const r = advanceUntilDecision(s);
@@ -833,15 +842,20 @@ describe('다음 결정으로 (advanceUntilDecision)', () => {
           if (r.state.pending) {
             // 지나온 해는 모두 조용한 해/서술 이벤트였다(선택지는 pending으로 나왔을 뿐 건너뛰지 않았다)
             expect(r.counts.choice).toBe(1);
-            expect(r.state.age - startAge).toBe(r.counts.quiet + r.counts.narrative);
+            // 부모님이 정한·흘러간 해(parent·child)도 pending 없이 지나간 해다 (SPEC-005 PD3)
+            expect(r.state.age - startAge).toBe(r.counts.quiet + r.counts.narrative + r.counts.parent + r.counts.child);
             decisions++;
+            delegated += r.counts.parent + r.counts.child;
             s = resolveChoice(r.state, r.state.pending.key, r.state.pending.choiceIds[0]);
           } else {
+            delegated += r.counts.parent + r.counts.child + r.counts.deathDelegated;
             s = r.state;
           }
         }
         expect(s.phase).toBe('ending');
-        expect(s.history.filter((h) => h.kind === 'choice')).toHaveLength(decisions);
+        // 건너뛴 해 중 부모님이 정한·흘러간 해는 pending 없이 지나가 연표에 `by` 줄로 남는다 — 사람이 고른 카드(pending이 뜬 것)만 `by` 없는 줄이다
+        expect(s.history.filter((h) => h.kind === 'choice' && h.by === undefined)).toHaveLength(decisions);
+        expect(s.history.filter((h) => h.kind === 'choice' && h.by !== undefined)).toHaveLength(delegated);
       }
     }
   });
@@ -850,7 +864,8 @@ describe('다음 결정으로 (advanceUntilDecision)', () => {
     const p = pendingState();
     const r = advanceUntilDecision(p);
     expect(r.state).toBe(p);
-    expect(r.counts).toEqual({ quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, extraLines: 0 });
+    expect(r.counts).toEqual(emptyCounts());
+    expect(Object.values(r.counts).every((n) => n === 0)).toBe(true);
     const t = createInitialState(1);
     expect(advanceUntilDecision(t).state).toBe(t);
   });
@@ -917,7 +932,8 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
     expect(s.game.phase).toBe('life'); // 이 시드는 사망 전에 선택지가 나온다 — 못 찾으면 실패하도록 단언을 조건 없이 둔다
     expect(s.game.pending).not.toBeNull();
     expect(s.tick?.kind).toBe('choice');
-    expect(s.game).toEqual(advanceUntilDecision(life(41)).state);
+    // 기록 카드를 끈 세션은 카드를 소비하며 간다(`consume`) — SPEC-005부터 첫 본인 카드가 13세 이후라 그 앞의 기록 카드가 여럿 소비된다 (소비는 인생을 바꾸지 않는다, tests/noteInvariance.test.ts)
+    expect(s.game).toEqual(advanceUntilDecision(life(41), EVENT_POOL, 'consume').state);
     expect(sessionReducer(s, { type: 'skip' })).toBe(s);
   });
 
@@ -944,7 +960,10 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
     const on = createSession(p, { speed: 1, autoMode: true });
     const done = sessionReducer(on, { type: 'autoChoose', key });
     expect(done).not.toBe(on);
-    expect(done.game).toEqual(autoResolveStep(p, key).state);
+    // 소비 모드 세션은 선택을 마친 해의 다음 해 첫머리에서 기록 카드를 바로 소비한다 — SPEC-005부터 본인 카드가 13세 이후라 카드가 뜰 차례일 수 있다 (소비는 인생을 바꾸지 않는다)
+    const resolved = autoResolveStep(p, key).state;
+    const due = dueNote(resolved);
+    expect(done.game).toEqual(due === null ? resolved : consumeNote(resolved, due));
     expect(done.game.pending?.key).not.toBe(key);
     // 해제 → 늦게 도착한 autoChoose는 무시, 다시 켜면 같은 선택지를 고를 수 있다
     const raced = sessionReducer(sessionReducer(on, { type: 'setAuto', auto: false }), { type: 'autoChoose', key });

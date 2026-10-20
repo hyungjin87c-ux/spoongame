@@ -21,6 +21,8 @@ import {
   type Era,
   type GameState,
   type TickCounts,
+  emptyCounts,
+  totalCards,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FREQUENCY, HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
@@ -158,7 +160,7 @@ describe('평균 수명·사망 분포 (시대별 계수)', () => {
 });
 
 describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 시간 모델, SPEC-003 LM2 — M8)', () => {
-  const counts = (over: Partial<TickCounts> = {}): TickCounts => ({ quiet: 0, narrative: 0, choice: 0, resolved: 0, death: 0, extraLines: 0, ...over });
+  const counts = (over: Partial<TickCounts> = {}): TickCounts => ({ ...emptyCounts(), ...over });
   const slow = { speed: 1 as const, skipToDecision: false };
 
   it('상수 표: 연출 시간은 조용한 해 < 서술 이벤트 < 선택 결과 읽기 순이고, 선택지 빈도는 0~1 확률이다', () => {
@@ -202,8 +204,8 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
 
   it('estimatePlaySeconds: 직접 계산한 값과 같다 (건너뛰지 않으면 = 연출 합/배속 + 결정 카드 수 × r, 다음 결정으로 = 결정 카드 수 × r + (결정 카드 수 + 1) × 오버헤드)', () => {
     const c = counts({ quiet: 60, narrative: 10, resolved: 18, choice: 20, extraLines: 5 });
-    // 30분 모드(계수 1.25): 조용한 해 8.75초 · 서술 해 21.25초 · 결과 16.25초 · 둘째 줄 +6.25초
-    const hold = (60 * 8750 + 10 * 21250 + 18 * 16250 + 5 * 6250) / 1000;
+    // 30분 모드(계수 1.35, SPEC-005 TM4): 조용한 해 9.45초 · 서술 해 22.95초 · 결과 17.55초 · 둘째 줄 +6.75초
+    const hold = (60 * 9450 + 10 * 22950 + 18 * 17550 + 5 * 6750) / 1000;
     const r = readSecFor('present');
     expect(estimatePlaySeconds(c, slow, 'short30', 'present')).toBeCloseTo(hold + 20 * r, 9);
     expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(hold / 8 + 20 * r, 9);
@@ -253,6 +255,9 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
           expect(r.overHardCount, `${who} ${era}: 하드 상한(${mode.pacing.hard}) 초과 판`).toBe(0);
           expect(r.nearCapPct / 100, `${who} ${era}: 하드−1 이상 판 비율`).toBeLessThanOrEqual(mode.cards.nearCapShareMax);
           expect(r.choices.p05, `${who} ${era}: 5% 분위`).toBeGreaterThanOrEqual(16);
+          // SPEC-005 TM5: 본인이 읽고 고르는 카드 c_self의 평균 하한(측정값 − 3 SE) — 읽기 시간 r은 이 카드에만 붙는다
+          expect(r.choicesSelf.mean, `${who} ${era}: 본인 카드 c_self 평균`).toBeGreaterThanOrEqual(mode.cardsSelf.meanLow);
+          expect(r.choicesSelf.mean, `${who} ${era}: c_self는 총 카드 수보다 적다(부모님이 정한·흘러간 카드가 있다)`).toBeLessThan(r.choices.mean - 3);
           expect(r.under20Of70PlusPct, `${who} ${era}: 사망 나이 70세+ 중 20장 미만 판 비율(%)`).toBeLessThanOrEqual(10);
         }
       };
@@ -355,8 +360,8 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
         const strategies = { auto: autoLives(), first: Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'first')])) as Record<Era, LifeSummary[]> };
         for (const [name, lives] of Object.entries(strategies)) {
           for (const era of ERAS) {
-            const strategyMean = mean(lives[era].map((l) => l.counts.choice));
-            const randomMean = mean(sharedLives()[era].map((l) => l.counts.choice));
+            const strategyMean = mean(lives[era].map((l) => totalCards(l.counts)));
+            const randomMean = mean(sharedLives()[era].map((l) => totalCards(l.counts)));
             expect(Math.abs(strategyMean - randomMean), `${era}/${name}: 카드 수 평균 ${strategyMean.toFixed(2)} 대 수동 흉내 ${randomMean.toFixed(2)}`).toBeLessThanOrEqual(STRATEGY_GAP_MAX);
             expect(strategyMean, `${era}/${name}`).toBeLessThanOrEqual(mode.cards.meanHigh);
           }
@@ -380,7 +385,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
             for (const l of longLives()[era]) {
               expect(l.final.phase, `${era} 시드 ${l.seed}`).toBe('ending');
               expect(l.final.lifeLength).toBe('long60');
-              expect(l.counts.choice).toBeLessThanOrEqual(hard);
+              expect(totalCards(l.counts)).toBeLessThanOrEqual(hard);
             }
           }
         });
@@ -390,7 +395,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
             const upTo7 = longLives()[era].reduce((a, l) => a + l.final.history.filter((h) => h.kind === 'choice' && h.age <= 7).length, 0) / REPORT_SEEDS;
             expect(upTo7, `${era} 0~7세`).toBeGreaterThanOrEqual(INFANT_CHOICE_MEAN_MIN);
             const shortLives = sharedLives()[era];
-            expect(longLives()[era].map((l) => l.counts.choice), `${era}: 임시 페이싱이 같으면 카드 수가 같다`).toEqual(shortLives.map((l) => l.counts.choice));
+            expect(longLives()[era].map((l) => totalCards(l.counts)), `${era}: 임시 페이싱이 같으면 카드 수가 같다`).toEqual(shortLives.map((l) => totalCards(l.counts)));
             const longMin = longLives()[era].reduce((a, l) => a + l.seconds1x / 60, 0) / REPORT_SEEDS;
             const shortMin = shortLives.reduce((a, l) => a + l.seconds1x / 60, 0) / REPORT_SEEDS;
             expect(longMin, `${era}: 약 1시간 모드의 모델 시간(분, 보고)`).toBeGreaterThan(shortMin * 1.2);
@@ -537,8 +542,10 @@ describe('밸런스 (R-045 b): 행복·관계는 출생값에 종속되지 않�
 
   it('부모 재력 단계별 최종 행복·관계 평균의 차이가 작다 (표본이 충분한 1~4단계 사이 행복 10 이하 · 관계 6 이하)', () => {
     const b = balanceLazy();
-    const big = b.tiers.filter((t) => t.n >= 60);
-    expect(big.length).toBeGreaterThanOrEqual(4);
+    // SPEC-005 QI5(마스터 결정 — 설계 문서 9절 2번): 표본 필터를 제목이 말하는 「표본이 충분한 1~4단계」에 맞춰 `n >= 200`으로 했다. 예전 `n >= 60`은 재력 5단계(세 시대 합쳐 약 80판, 평균의 표준오차 약 1.3)까지 끼워
+    // 고정 시드 줄에서는 부모 결정과 상관없이 단계 차가 8.87 ↔ 10.72로 출렁였다. 한도 10은 그대로다. 독립 표본 12000판(시드 1001~5000)에서 PD 전/후 단계 차는 9.02 / 8.90으로 같았다.
+    const big = b.tiers.filter((t) => t.n >= 200);
+    expect(big.map((t) => t.tier)).toEqual([1, 2, 3, 4]);
     const spread = (key: 'happiness' | 'relationships') => Math.max(...big.map((t) => t.mean[key])) - Math.min(...big.map((t) => t.mean[key]));
     expect(spread('happiness')).toBeLessThanOrEqual(10);
     expect(spread('relationships')).toBeLessThanOrEqual(6);

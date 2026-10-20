@@ -184,6 +184,8 @@ test('수저 다섯 단계 띠: 이름이 글자로 보이고 모두 한 줄 안
 // ---------- FS2·VP: 가상 인구 ----------
 
 test('가상 인구(FS2·VP1): 「N명이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요.」, N은 이 기기의 시각(분)으로 계산한 값이고 분이 바뀌면 조금씩 바뀐다. 보조 문구는 항상 보인다', async ({ page }) => {
+  // 30분을 한 분씩 흘리며 매번 core 기대값과 견주는 시험이라 HEAD에서도 29.5초(기본 제한 30초)가 걸려 가장자리였다 — SPEC-005 QI5로 시작 화면이 불러오는 모듈이 늘어 병렬 실행에서 제한을 넘었다. 단언은 그대로, 제한만 늘렸다.
+  test.setTimeout(90_000);
   await openWithClock(page);
   const minuteNow = () => page.evaluate(() => Math.floor(Date.now() / 60000));
   const shown = async () => Number((await page.getByTestId('population-count').innerText()).replace(/,/g, ''));
@@ -549,7 +551,7 @@ test('캐러셀(SC1·SC2): 지표 10개 이상, 요청의 5개 포함, 슬라이
   expect(ids).not.toContain('region-population'); // 17개 시도 센서스 지표는 뺐다(마스터 결정: 2026 주민등록 16개 시·도)
   // 첫 슬라이드: 합계출산율 — 시안의 가짜 값(0.68·2023)이 아니라 실제 값 0.80명·2025년 기준
   const first = page.locator('.slide.is-active');
-  await expect(first.locator('h3.slide__insight')).toHaveText('아기는 얼마나 태어나고 있을까?'); // 표제어(SH1) — 슬라이드의 제목
+  await expect(first.locator('h3.slide__insight')).toHaveText('한 여성이 평생 낳을 아이는 몇 명일까?'); // 표제어(SH1) — 슬라이드의 제목
   await expect(first.locator('.slide__official')).toHaveText('합계출산율(2025년)'); // 공식 통계명(기준) 줄(SH3) — 연도만 있던 기준 줄은 없다
   await expect(first.getByTestId('slide-value')).toHaveText('0.80');
   await expect(first.getByTestId('slide-basis-line')).toHaveCount(0);

@@ -5,6 +5,7 @@ import { ERA_CONFIG } from '../src/data/birthTable';
 import { BIRTH_TEXT } from '../src/data/birthReportText';
 import { standingLabel } from '../src/data/birthText';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
+import { decidedByText, delegatedSummaryText } from '../src/data/parentDecisionTable';
 import { ENDING_HEADINGS, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, journeyText } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { splitStanding, standingPieces } from '../src/ui/KeepStanding';
@@ -72,8 +73,20 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(html).not.toContain('data-testid="ending-born"');
     // 합쇼체 (copy.md 5-3): 「84세에 세상을 떠났습니다. 원인은 노환이었습니다.」 — 원인 낱말의 받침에 따라 「이었습니다」·「였습니다」
     expect(textOf(html.match(/data-testid="ending-death">([^]*?)<\/p>/)![1])).toBe(`${game.death.age}세에 세상을 떠났습니다. 원인은 ${game.death.cause}${/[가-힣]/.test(game.death.cause) && (game.death.cause.charCodeAt(game.death.cause.length - 1) - 0xac00) % 28 !== 0 ? '이었' : '였'}습니다.`);
-    const choices = game.history.filter((h) => h.kind === 'choice').length;
-    expect(text).toContain(`살아오며 ${choices}번의 선택을 했습니다.`);
+    // 「N번의 선택」은 본인이 고른 선택만 센다(by 없는 choice 줄) — 부모님이 정한 일·흘러간 일은 따로 한 줄이다 (SPEC-005 PD9)
+    const own = game.history.filter((h) => h.kind === 'choice' && h.by === undefined).length;
+    const parent = game.history.filter((h) => h.kind === 'choice' && h.by === 'parent').length;
+    const child = game.history.filter((h) => h.kind === 'choice' && h.by === 'child').length;
+    expect(parent + child, '공허 통과 방지: 어린 시절에 부모님이 정한·흘러간 선택이 있는 판이다').toBeGreaterThan(2);
+    expect(text).toContain(`살아오며 ${own}번의 선택을 했습니다.`);
+    expect(own + parent + child).toBe(game.history.filter((h) => h.kind === 'choice').length);
+    // 둘째 줄: 어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고 K번은 아이의 일로 흘러갔습니다 (PD9, copy.md 11-1 ③ — K = 0이면 부모 부분만, M = 0이면 흘러감 부분만, 둘 다 0이면 줄 없음)
+    expect(textOf(html.match(/data-testid="ending-delegated">([^]*?)<\/p>/)![1])).toBe(delegatedSummaryText(parent, child));
+    expect(delegatedSummaryText(parent, child)).toBe(
+      child > 0 && parent > 0 ? `어린 시절의 큰 결정 가운데 ${parent}번은 부모님이 내렸고, ${child}번은 아이의 일로 흘러갔습니다.`
+        : parent > 0 ? `어린 시절의 큰 결정 가운데 ${parent}번은 부모님이 내렸습니다.`
+        : `어린 시절의 큰 결정 가운데 ${child}번은 아이의 일로 흘러갔습니다.`,
+    );
   });
 
   it('출발선 대비: 재산을 같은 세상 안의 자리로 말하는 문장 하나, 방향 한 줄, 왜 숫자를 빼지 않았는지 설명', () => {
@@ -109,7 +122,9 @@ describe('엔딩 화면: 구성과 순서', () => {
     const choices = game.history.filter((h) => h.kind === 'choice');
     expect((html.match(/data-testid="timeline-picked"/g) ?? []).length).toBe(choices.length);
     expect(choices.length).toBeGreaterThan(5);
-    for (const c of choices) expect(textOf(html)).toContain(`선택: ${c.choice}`);
+    // 줄 문구: 본인이 고른 선택 「선택: 라벨」 · 부모님이 정한 일 「부모님이 이렇게 정했습니다: 라벨」 · 흘러간 일 「이렇게 흘러갔습니다: 라벨」 — 인생 기록 줄과 같은 문구 한 곳(PD6)
+    for (const c of choices) expect(textOf(html)).toContain(c.by === undefined ? `선택: ${c.choice}` : `${decidedByText(c.by)}: ${c.choice}`);
+    expect(choices.some((c) => c.by === 'parent') && choices.some((c) => c.by === undefined), '공허 통과 방지: 부모·본인 선택이 모두 있다').toBe(true);
     // 단계 제목이 순서대로 있다
     // (단계 제목은 ui/Glue 묶음으로 그려져 숫자+단위 둘레에 span이 낀다 — 태그를 뺀 글자로 찾는다)
     const plain = textOf(html);

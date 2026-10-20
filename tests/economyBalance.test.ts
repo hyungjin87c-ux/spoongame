@@ -148,19 +148,19 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
     expect(a.samples).toEqual(samplesOfLife(economySeed(5), 'present', 'random'));
   });
 
-  it("지금 세상 end-g3 알려진 차이의 한계는 마스터가 승인한 1·2단계 동률만 허용한다: 2·3 / 3·4 / 4·5단계 동률이나 뒤집힘은 통과시키지 않는다 (REV-003-M8-1 R-419)", () => {
-    const gap = KNOWN_GUARD_GAPS['present:end-g3'];
-    expect(gap).toBeDefined();
+  it("지금 세상 end-g3는 더 이상 알려진 차이가 아니다 (SPEC-005 QI5가 1·2단계 0 = 0 동률을 0 < 971로 되돌려 KNOWN_GUARD_GAPS에서 뺐다): 엄격한 순서만 통과이고, 어느 인접 단계의 동률·뒤집힘도 통과시키지 않는다 (REV-003-M8-1 R-419의 한계 시험을 이 뜻으로 옮김)", () => {
+    expect(KNOWN_GUARD_GAPS['present:end-g3'], '목록에서 뺐다 — 다시 동률이 되면 마스터 보고와 함께 다시 올린다').toBeUndefined();
     const guardFor = (nets: number[]) => Object.fromEntries(endingGuardsOf('present', nets.map((n, i) => life((i + 1) as 1, n))).map((x) => [x.id, x]))['end-g3'];
-    const accepts = (nets: number[]) => gap.limit(guardFor(nets).metric, guardFor(nets));
+    const passes = (nets: number[]) => guardFor(nets).ok;
     expect(guardFor([0, 0, 5, 9, 30]).parts).toEqual([0, 5, 4, 21]);
-    expect(accepts([0, 0, 5, 9, 30]), '1·2단계 동률(승인된 보고)').toBe(true);
-    expect(accepts([0, 616, 1000, 2000, 5000]), '엄격한 순서도 한계 안').toBe(true);
-    expect(accepts([0, 5, 5, 9, 30]), '2·3단계 동률').toBe(false);
-    expect(accepts([0, 5, 9, 9, 30]), '3·4단계 동률').toBe(false);
-    expect(accepts([0, 5, 9, 30, 30]), '4·5단계 동률').toBe(false);
-    expect(accepts([5, 0, 9, 20, 30]), '1·2단계 뒤집힘').toBe(false);
-    expect(accepts([0, 0, 0, 9, 30]), '1·2·3단계가 모두 같다').toBe(false);
+    expect(passes([0, 616, 1000, 2000, 5000]), '엄격한 순서').toBe(true);
+    expect(passes([0, 971, 37360, 124518, 184411]), 'QI5 직후 지금 세상의 실제 값').toBe(true);
+    expect(passes([0, 0, 5, 9, 30]), '1·2단계 동률 (옛 알려진 차이였던 것 — 이제는 어긋남)').toBe(false);
+    expect(passes([0, 5, 5, 9, 30]), '2·3단계 동률').toBe(false);
+    expect(passes([0, 5, 9, 9, 30]), '3·4단계 동률').toBe(false);
+    expect(passes([0, 5, 9, 30, 30]), '4·5단계 동률').toBe(false);
+    expect(passes([5, 0, 9, 20, 30]), '1·2단계 뒤집힘').toBe(false);
+    expect(passes([0, 0, 0, 9, 30]), '1·2·3단계가 모두 같다').toBe(false);
   });
 
   it('엔딩 가드 도구: deathNetMedians·movementShares·endingGuardsOf를 손으로 만든 판으로 점검한다', () => {

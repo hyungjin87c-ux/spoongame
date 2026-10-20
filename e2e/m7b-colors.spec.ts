@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { CARD_UI_STATES, openCardIn, startHidden, type CardUiState } from './m7bCards';
 import { findCardState } from './m7bStates';
+import { findDelegatedYear, showParentCard } from './parentStates';
 import { measureRenderedContrast } from './renderedContrast';
 
 /**
@@ -18,10 +19,9 @@ test.use({ launchOptions: { args: ['--disable-lcd-text'] }, deviceScaleFactor: 3
 
 type Combo = 'light' | 'dark' | 'manual-dark' | 'manual-light' | 'forced-light' | 'forced-dark';
 const COMBOS: readonly Combo[] = ['light', 'dark', 'manual-dark', 'manual-light', 'forced-light', 'forced-dark'];
-const CARDS = [
-  { id: 'school-tutoring', era: 'present' as const, kind: '통계' },
-  { id: 'infant-new-sibling', era: 'present' as const, kind: '연구' },
-];
+// SPEC-005 QI5: 사람이 고르는 카드(시트·접힌 띠·인라인)는 통계 인용이 붙은 youth-startup(예전 school-tutoring)으로, 「연구」 인용이 붙는 카드(infant-new-sibling)는
+// 이제 아이의 일로 흘러간 비모달 카드라 아래 별도 묶음(`부모님이 정한·흘러간 카드`)에서 색을 잰다.
+const CARDS = [{ id: 'youth-startup', era: 'present' as const, kind: '통계' }];
 
 async function applyCombo(page: Page, combo: Combo): Promise<void> {
   const forced = combo.startsWith('forced');
@@ -71,6 +71,31 @@ for (const combo of COMBOS) {
   }
 }
 
+// SPEC-005 QI5: 「연구」 인용 박스(CitationBox)가 붙는 카드는 아이의 일로 흘러간 비모달 카드다 — 같은 인용 박스 부품의 색을 6조합에서 같은 기준(4.5:1)으로 잰다.
+for (const combo of COMBOS) {
+  test(`${combo} · 아이의 일로 흘러간 카드 · infant-new-sibling(연구 인용): 칩·제목·고른 길·도장·영향 줄·인용 박스의 렌더 픽셀 대비가 4.5:1 이상이다 (QM3-5, PD8)`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 360, height: 740 });
+    await applyCombo(page, combo);
+    await page.goto('/');
+    const y = await findDelegatedYear(page, { eventId: 'infant-new-sibling', by: 'child', firstBorn: true });
+    await showParentCard(page, y);
+    if (combo === 'manual-dark' || combo === 'manual-light') {
+      const theme = combo === 'manual-dark' ? 'dark' : 'light';
+      await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+    }
+    await flowFixedElements(page);
+    const report = await measureRenderedContrast(page, { min: 4.5 });
+    expect(report.low, `가장 낮은 대비 ${report.min.toFixed(2)}:1`).toEqual([]);
+    expect(report.texts, '잰 글자 수').toBeGreaterThan(12);
+    expect(report.measured.some((m) => m.startsWith('div.cite')), '인용 박스(쪽빛 면) 글자').toBe(true);
+    expect(report.measured.some((m) => m.startsWith('section.card#parent-card|아이의 일')), '카드 칩 글자').toBe(true);
+    expect(report.measured.some((m) => m.startsWith('section.card#parent-card|이렇게 흘러갔습니다')), '카드 도장 글자').toBe(true);
+    testInfo.annotations.push({ type: '대비', description: `${report.boxes}상자 ${report.texts}글자 최저 ${report.min.toFixed(2)}:1` });
+  });
+}
+
 /** 공허 통과 방지: 이 상태에서 반드시 재야 하는 상자의 글자가 실제로 들었다 */
 function expectMeasured(measured: string[], ui: CardUiState): void {
   const has = (prefix: string) => measured.some((m) => m.startsWith(prefix));
@@ -94,7 +119,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: scheme, forcedColors: 'active' });
     expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches), '강제 색상 모드').toBe(true);
     await startHidden(page);
-    const state = await findCardState(page, 'school-tutoring');
+    const state = await findCardState(page, 'youth-startup');
     const probe = (selector: string) =>
       page.evaluate((sel) => {
         const el = document.querySelector(sel) as HTMLElement;

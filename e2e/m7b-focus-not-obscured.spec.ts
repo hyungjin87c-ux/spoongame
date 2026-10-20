@@ -39,7 +39,7 @@ for (const vp of STANDARD_VIEWPORTS) {
           test.skip(percent === 200 && vp.name === '320x256-zoom400', 'CM10 측정 제외 조합(QM2-1 r5 메모 4): 320×256 × 글자 200%');
           test.setTimeout(240_000);
           await startHidden(page);
-          const state = await findCardState(page, 'school-tutoring');
+          const state = await findCardState(page, 'youth-startup');
           await openCardIn(page, state, ui);
           if (percent !== 100) await setRootFontPercent(page, percent);
           await settleDash(page);
@@ -79,7 +79,7 @@ test('모달 시트: 선택지·접기 버튼으로 Tab하면 시트 안이 스�
   for (const [w, h] of [[320, 256], [667, 375], [360, 568]] as const) {
     await page.setViewportSize({ width: w, height: h });
     await startHidden(page);
-    const state = await findCardState(page, 'school-tutoring');
+    const state = await findCardState(page, 'youth-startup');
     await openCardIn(page, state, 'sheet');
     // 320×256 × 글자 200% × 선택지 카드는 M4부터 CM10의 측정 제외 조합이다(QM2-1 r5 메모 4: e2e/m4-focus.spec.ts — 선택지 하나(305px)가 화면(256px)보다 커 포커스 링이 어떻게든 한쪽에서 잘린다). 이 높이는 글자 100%로 잰다
     await setRootFontPercent(page, w === 320 && h === 256 ? 100 : 200);

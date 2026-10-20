@@ -52,7 +52,8 @@ describe('vite-node 선언 (R-049)', () => {
     // sim:infant(영유아 0~7세 지표 보고 — 빈 해·기록 줄·선택지·마일스톤, SPEC-003 M7a IN2)는 M7a에서 더했다
     // report:time(시간 모델 측정 보고 — 판당 카드 수 분포·자연 분포·글자 수 실측·읽기 수준별 판 시간, SPEC-003 M8 LM2·LM7 · content-M8 6-5절)은 M8에서 더했다
     // report:notes(기록 카드 스케줄 보고 — 판당 카드 수·도달률·결정 카드와 같은 해 겹침, SPEC-003 M7c 완료 기준 1)는 M7c core에서 더했다
-    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:basis', 'gen:citations', 'report:citations', 'report:notes', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
+    // report:parent(부모 결정 보고 — 판당 부모·흘러감·본인 카드 수, 13~18세 본인 카드 0장 비율, 수저별 선택 분포, SPEC-005 QI5 PD12·TM3·PD13)는 QI5에서 더했다
+    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:basis', 'gen:citations', 'report:citations', 'report:notes', 'report:parent', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
   });
 });
 

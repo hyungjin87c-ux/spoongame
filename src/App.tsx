@@ -369,7 +369,8 @@ function Game() {
   const inLife = game.phase === 'life' && !showTitle && !superseded;
   // 연출 대기 = HOLD_MS × 이 판의 인생 길이 모드 계수 + 한 해 둘째 줄부터의 줄 대기 (SPEC-003 LM2·LM3) — 설정(settings.lifeLength)이 아니라 **판의 값**(game.lifeLength)을 읽는다.
   // 새로고침 직후(tick 없음)에는 조용한 해 값으로 대기한다.
-  const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE, { mode: game.lifeLength, lines: tick?.lines });
+  // 부모님이 정한·흘러간 해(tick.by)는 카드 읽기 필요량(tick.readNeedMs)이 기본 결과 대기보다 길면 필요량만큼 기다린다 — 느린 독자가 카드와 결과 문장을 다 읽기 전에 해가 넘어가지 않는다 (SPEC-005 PD5-d, core/timing.ts#holdMsFor)
+  const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE, { mode: game.lifeLength, lines: tick?.lines, readNeedMs: tick?.readNeedMs });
   const clock = useYearClock({
     resetKey: `${game.age}|${lifeLineCount(game.history)}|${game.pending?.key ?? ''}`, // 기록(note) 줄은 세지 않는다 — 「생각 남기기」 한 줄이 올해 진행률을 되감지 않게(M7c 5-3절)
     durationMs: game.pending !== null ? null : hold,
@@ -433,6 +434,7 @@ function Game() {
       <LifeScreen
         game={{ ...game, character: game.character, era: game.era, birthReport: game.birthReport, peerSeed: game.peerSeed }}
         settings={settings}
+        tick={tick}
         clock={clock}
         exitOpen={exitAsk}
         onExitOpen={setExitAsk}

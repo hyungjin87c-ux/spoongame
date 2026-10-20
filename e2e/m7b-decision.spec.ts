@@ -2,19 +2,24 @@ import { expect, test, type Page } from '@playwright/test';
 import type { GameState } from '../src/core/types';
 import { KNOWN_SEED, activeTestId, countKind, findPendingState, injectSave, lifeState, oracleLife, rapidInput, readSave, readSettings, setPageVisible, settle, startPageHidden, withPlay } from './helpers';
 import { SETTINGS_AUTO, SETTINGS_MANUAL, cardReady, findCardState, openCard } from './m7bStates';
+import { findDelegatedYear, showParentCard } from './parentStates';
 
 /**
  * M7b 중대 결정 카드 (SPEC-003 MD1·MD2, content-M7b 10절 M-6·M-7, copy.md 6절): 두 틀(모달 시트 / 비모달 인라인), 접기·다시 열기, 포커스, 인용 박스, 자동 모드와의 관계.
  * 시간 경쟁을 줄이려고 가려진 탭(startPageHidden)으로 앱 타이머를 멈춘 채 화면을 준비하고, 시간이 흘러야 하는 시험(접은 동안 정지·자동 선택 재개)만 실제 시간을 쓴다.
+ *
+ * SPEC-005 QI5: 어린 시절(0~18세)의 큰 결정 가운데 부모님이 정하거나 아이의 일로 흘러가는 카드는 이제 사람이 고르는 시트가 아니다(`pending`이 되지 않는다). 시트·접힌 띠·인라인 카드의 동작을 보는
+ * 이 묶음은 **사람이 고르는 카드**로 옮겼다 — 통계 인용이 붙은 긴 카드 `youth-startup`(예전 `school-tutoring`), 인용이 없는 `youth-workplace-romance`(예전 `infant-fever`). 같은 시트 부품이라 시험의 뜻은 그대로다.
+ * 「연구」 인용이 붙는 카드(`infant-new-sibling`)는 이제 아이의 일로 흘러간 비모달 카드라, 그 인용 박스는 카드 위에서 본다(같은 `CitationBox` 부품, PD8).
  */
 
 /** 심은 상태에 이미 있는 선택 기록 수 (앞선 결정은 첫 선택지로 넘겨 만든 상태다) */
-const chosen = (state: GameState) => state.history.filter((h) => h.kind === 'choice').length;
+const chosen = (state: GameState) => state.history.filter((h) => h.kind === 'choice' && h.by === undefined).length;
 const text = async (page: Page, id: string) => ((await page.getByTestId(id).innerText()) ?? '').replace(/\s+/g, ' ').trim();
 
 test('수동 모드: 카드는 모달 시트로 뜨고(role=dialog·aria-modal·이름=제목), 바깥은 inert이며, 포커스는 제목이다 — 머리·제목·상황·인용·선택지·안내 순서 (MD1·MD2, M-6)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
 
@@ -50,32 +55,32 @@ test('수동 모드: 카드는 모달 시트로 뜨고(role=dialog·aria-modal·
 
 test('인용 박스: 통계 카드는 「통계」 라벨 + 요약 + 출처 줄이고 링크·DOI·URL이 없다. 인용이 없는 카드에는 요소 자체가 없다 (MD2·EV6)', async ({ page }) => {
   await page.goto('/');
-  const withCite = await findCardState(page, 'school-tutoring');
+  const withCite = await findCardState(page, 'youth-startup');
   await openCard(page, withCite, SETTINGS_MANUAL);
   await cardReady(page);
   const cite = page.getByTestId('cite');
   await expect(cite).toBeVisible();
   await expect(cite.locator('.cite__kind')).toHaveText('통계');
-  await expect(cite.locator('.cite__text')).toContainText('2025년 초·중·고 학생의 75.7%');
-  await expect(cite.locator('.cite__src')).toHaveText('국가데이터처(2026), 2025년 초중고사교육비조사 결과');
+  await expect(cite.locator('.cite__text')).toContainText('2023년 기준 신생기업의 1년 생존율은 64.4%');
+  await expect(cite.locator('.cite__src')).toHaveText('국가데이터처(2025), 기업생멸행정통계: 신생기업 생존율(KOSIS)');
   expect(await cite.locator('a, [href]').count(), '인용 박스 안 링크 0').toBe(0);
   expect(await cite.innerHTML()).not.toMatch(/https?:|doi|pubmed|pmid/i);
 
-  // 인용이 없는 카드(원칙적 무인용 X1: 한밤의 열)에는 .cite 요소가 없다
+  // 인용이 없는 카드(원칙적 무인용)에는 .cite 요소가 없다
   await page.goto('/');
-  const noCite = await findCardState(page, 'infant-fever');
+  const noCite = await findCardState(page, 'youth-workplace-romance');
   await openCard(page, noCite, SETTINGS_MANUAL);
   await cardReady(page);
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   expect(await page.locator('.cite').count(), '빈 박스 0').toBe(0);
 });
 
-test('연구 인용: 「연구」 라벨 + 저자 성만의 출처 줄(「Teti 외(1996),」 + 원제) (M-11)', async ({ page }) => {
+test('연구 인용: 「연구」 라벨 + 저자 성만의 출처 줄(「Teti 외(1996),」 + 원제) (M-11) — 이 인용이 붙는 카드는 아이의 일로 흘러간 비모달 카드다 (SPEC-005 PD8: 같은 CitationBox 부품)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'infant-new-sibling');
-  await openCard(page, state, SETTINGS_MANUAL);
-  await cardReady(page);
-  const cite = page.getByTestId('cite');
+  const y = await findDelegatedYear(page, { eventId: 'infant-new-sibling', by: 'child', firstBorn: true });
+  await showParentCard(page, y);
+  const card = page.getByTestId('parent-card');
+  const cite = card.getByTestId('cite');
   await expect(cite.locator('.cite__kind')).toHaveText('연구');
   await expect(cite.locator('.cite__src')).toHaveText('Teti 외(1996), And baby makes four: predictors of attachment security among preschool-age firstborns during the transition to siblinghood');
   await expect(cite.locator('.cite__src .keep-phrase').first()).toHaveText('Teti 외(1996),');
@@ -84,14 +89,16 @@ test('연구 인용: 「연구」 라벨 + 저자 성만의 출처 줄(「Teti �
   await expect(cite.locator('.cite__src > span[lang="en"]')).toContainText('And baby makes four');
   await expect(cite.locator('.cite__text [lang]'), '요약(한국어)에는 lang이 없다').toHaveCount(0);
   // K11: 머리 「{연도}년 · {나이}세」의 가운뎃점은 접근성 트리에서 숨는다 — 화면은 그대로 「 · 」
-  const when = page.getByTestId('decision-when');
+  const when = page.getByTestId('parent-when');
   await expect(when.locator('span[aria-hidden="true"]:not(.fit-pair__probe)')).toHaveText('·');
-  expect(await text(page, 'decision-when')).toBe(`${state.character!.birthYear + state.age}년 · ${state.age}세`);
+  expect(await text(page, 'parent-when')).toBe(`${y.start.character!.birthYear + y.tick.fromAge}년 · ${y.tick.fromAge}세`);
+  // 비모달: 인용 박스가 있어도 카드에는 링크·버튼이 없다 (아이콘 <use href>는 링크가 아니다)
+  expect(await card.locator('a, button, [role="button"]').count()).toBe(0);
 });
 
 test('선택하면 시트가 사라지고 선택이 기록되며 포커스는 인생 화면 제목으로 간다', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
   const first = page.locator('.choice').first();
@@ -108,7 +115,7 @@ test('선택하면 시트가 사라지고 선택이 기록되며 포커스는 �
 
 test('Tab은 시트 안에서만 돈다: 열 번 눌러도 포커스가 시트 밖(헤더·진행 줄·도구 줄)으로 새지 않는다 (aria-modal + 바깥 inert, design-system 11-10)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
   for (let i = 0; i < 10; i++) {
@@ -125,7 +132,7 @@ test('Tab은 시트 안에서만 돈다: 열 번 눌러도 포커스가 시트 �
 
 test('카드 접기: 접힌 띠가 카드 자리에 생기고 포커스는 「결정 다시 열기」로 간다. 접은 동안 게임은 정지를 유지하고 컨트롤은 쓸 수 있다 (MD1, U1·U6(b)·U8)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
   const key = (await page.getByTestId('choice-panel').getAttribute('data-key'))!;
@@ -167,7 +174,7 @@ test('카드 접기: 접힌 띠가 카드 자리에 생기고 포커스는 「�
 
 test('Esc = 수동 시트 접기. 인라인 카드(자동 모드)에서는 Esc가 아무 일도 하지 않는다 (U7)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
   await page.keyboard.press('Escape');
@@ -187,7 +194,7 @@ test('Esc = 수동 시트 접기. 인라인 카드(자동 모드)에서는 Esc�
 
 test('입력 가드: 「카드 접기」 더블탭의 둘째 입력은 그 자리에 생긴 「결정 다시 열기」에, 「결정 다시 열기」 더블탭의 둘째 입력은 새 카드에 떨어지지 않는다 (U9, 선택지 오탭 0)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
 
@@ -204,7 +211,7 @@ test('입력 가드: 「카드 접기」 더블탭의 둘째 입력은 그 자�
 
 test('접기·다시 열기 연타 20회: 상태가 어긋나지 않는다 (카드는 늘 하나, 선택은 기록되지 않는다)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
   for (let i = 0; i < 10; i++) {
@@ -220,7 +227,7 @@ test('접기·다시 열기 연타 20회: 상태가 어긋나지 않는다 (카�
 
 test('새로고침: 접힌 채 새로고침하면 열린 카드(시트)로 복원되고 접힘은 저장되지 않는다 (U5, 스키마 불변)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   // 시간을 재는 판(withPlay)으로 연다: 판 상태의 플레이 시간 기록(play, M8)에는 카드를 접어 둔 시간(ms)의 필드 이름 fold가 있어 아래 단언이 play를 따로 본다
   await openCard(page, withPlay(state), SETTINGS_MANUAL);
   await cardReady(page);
@@ -240,7 +247,7 @@ test('새로고침: 접힌 채 새로고침하면 열린 카드(시트)로 복�
 
 test('자동 모드 켜짐: 카드는 비모달 인라인이다 — 대화상자·inert·포커스 이동이 없고 자동 모드 버튼에 그대로 닿는다. 안내 한 문장은 「켜져 있습니다」 (M-6·M-13)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_AUTO, { hidden: true });
   const panel = page.getByTestId('choice-panel');
   await expect(panel).toBeVisible();
@@ -256,7 +263,7 @@ test('자동 모드 켜짐: 카드는 비모달 인라인이다 — 대화상자
 
 test('자동 모드를 끄면 인라인 카드가 그 자리에서 모달 시트로 바뀌고 포커스는 제목이다 (R-048, D-52)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_AUTO, { hidden: true });
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'inline');
   const auto = page.getByTestId('auto');
@@ -272,7 +279,7 @@ test('자동 모드를 끄면 인라인 카드가 그 자리에서 모달 시트
 
 test('자동 모드에서 접으면 자동 선택 타이머가 멈추고, 다시 열면 AUTO_CHOICE_MS(3초) 뒤부터 센다 (U3(a))', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   const key = state.pending!.key;
   await openCard(page, state, SETTINGS_AUTO);
   await cardReady(page);
@@ -299,7 +306,7 @@ test('자동 모드에서 접으면 자동 선택 타이머가 멈추고, 다시
 
 test('접은 채 자동 모드를 켜도 다시 열기 전에는 고르지 않고, 다시 열면 그때의 자동 모드에 맞는 틀(인라인)로 뜬다 (U8, copy.md 6-2 전환 한 바퀴)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   const key = state.pending!.key;
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
@@ -321,7 +328,7 @@ test('접은 채 자동 모드를 켜도 다시 열기 전에는 고르지 않�
 
 test('접은 채 자동 모드를 끄면 카드는 접힌 채 그대로이고 다시 열면 시트로 뜬다 (자동 켜짐 → 접기 → 끄기 → 다시 열기)', async ({ page }) => {
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_AUTO, { hidden: true });
   await expect(page.getByTestId('decision-fold-btn')).toBeEnabled();
   await page.getByTestId('decision-fold-btn').click();
@@ -387,7 +394,7 @@ test('나가기 확인 단계를 연 채 「다음 결정으로」로 시트가 
 test('시트 끝까지 쓴 뒤 더 쓸어도 시트 뒤 대시보드는 같이 스크롤되지 않는다 — 행동으로 본다 (QA-003-M7b A20, M7c T1: 계산 스타일이 아니라 scrollY)', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await page.goto('/');
-  const state = await findCardState(page, 'school-tutoring');
+  const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
   await cardReady(page);
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'sheet');

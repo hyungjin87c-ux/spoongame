@@ -11,6 +11,7 @@ import {
   createInitialState,
   createRng,
   createSession,
+  decisionFor,
   estimatePlaySeconds,
   familyOf,
   maxAgeOf,
@@ -20,6 +21,7 @@ import {
   reviewEnding,
   serializeGame,
   sessionReducer,
+  totalCards,
   type EndingGame,
   type EndingReview,
   type FamilySummary,
@@ -36,6 +38,7 @@ import { EVENT_POOL } from '../src/data/events';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import { HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
 import { JOURNEY_NOTE, MOVEMENT_TEXT, choiceCountText, deathLineText, journeyText, stageHeadingText, startedAtText } from '../src/data/endingText';
+import { delegatedSummaryText } from '../src/data/parentDecisionTable';
 import { expectedMovement, numbersIn, readBand, readEnd } from './endingReadback';
 import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
 
@@ -427,6 +430,8 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
       const p = next.pending;
       const ev = EVENT_POOL.byId.get(p.eventId);
       if (p.age !== next.age) bad(`대기 나이 ${p.age} ≠ 현재 나이 ${next.age}`);
+      // PD12 ②: 19세 미만에서 pending이 부모님이 정하거나 흘러가는 카드로 열린 판은 없다 — 그런 카드는 그 해 안에서 즉시 해결된다(PD3)
+      if (decisionFor(p.eventId, p.age) !== 'self') bad(`부모님이 정하거나 아이의 일로 흘러가는 카드(${p.eventId}@${p.age})가 pending으로 열렸다 (PD3·PD12 ②)`);
       if (p.key !== `${p.eventId}@${p.age}`) bad(`대기 키 불일치 ${p.key}`);
       if (ev === undefined || ev.choices === undefined) bad(`대기 중인 이벤트 ${p.eventId}가 풀의 선택지 이벤트가 아니다`);
       else {
@@ -540,7 +545,14 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
     if (c.from !== game.birthStats[c.stat] || c.to !== game.stats[c.stat]) bad(`${c.stat}: 처음·마지막 값이 상태와 다르다`);
     out.push(...checkPlainText(startedAtText(c.from), `${where} ${c.stat}`));
   }
-  if (review.choiceCount !== game.history.filter((h) => h.kind === 'choice').length) bad('선택 수가 연표의 선택 기록 수와 다르다');
+  // SPEC-005 PD9: 「N번의 선택」은 본인이 고른 선택(by 없는 선택 줄)만 센다 — 부모님이 정한 일·흘러간 일은 따로 한 줄(M번·K번)이고 셋의 합이 연표의 선택 줄 수다
+  const choiceLines = game.history.filter((h) => h.kind === 'choice');
+  if (review.choiceCount !== choiceLines.filter((h) => h.by === undefined).length) bad('선택 수(본인이 고른 것)가 연표의 `by` 없는 선택 기록 수와 다르다');
+  if (review.delegated.parent !== choiceLines.filter((h) => h.by === 'parent').length || review.delegated.child !== choiceLines.filter((h) => h.by === 'child').length) bad('부모님이 정한·흘러간 선택 수가 연표의 `by` 기록 수와 다르다');
+  if (review.choiceCount + review.delegated.parent + review.delegated.child !== choiceLines.length) bad('본인 + 부모님 + 흘러간 선택 수의 합이 연표의 선택 기록 수와 다르다');
+  const delegatedLine = delegatedSummaryText(review.delegated.parent, review.delegated.child);
+  if ((delegatedLine === null) !== (review.delegated.parent + review.delegated.child === 0)) bad('부모님이 정한·흘러간 선택 줄이 있어야 할 때만 있어야 한다');
+  if (delegatedLine !== null) out.push(...checkPlainText(delegatedLine, `${where} 부모님 결정·흘러감 줄`));
   if (!deepEqual(review.timeline.flatMap((g) => g.entries), game.history)) bad('연표를 단계별로 묶으면 항목이 빠지거나 순서가 바뀐다');
   out.push(...checkPlainText(deathLineText(game.death), `${where} 사망 줄`));
   out.push(...checkPlainText(choiceCountText(review.choiceCount), `${where} 선택 수 줄`));
@@ -760,7 +772,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     if (!deepEqual({ ...reference.state, play: undefined }, { ...ended, play: undefined })) problems.push(`${tag}: 세션 reducer로 간 인생이 playToEnd로 간 인생과 다르다`);
     if (ended.play === undefined) problems.push(`${tag}: 엔딩에 플레이 시간 기록이 없다`);
     else if (step > 6 && ended.play.hold <= 0) problems.push(`${tag}: 옮긴 플레이 시간 기록이 엔딩까지 이어지지 않았다`);
-    result.choices = reference.counts.choice;
+    result.choices = totalCards(reference.counts); // 판의 결정 카드 총수(본인 + 부모님이 정한 + 흘러간) — 총 카드 수 판정의 단위
     result.minutes1x = estimatePlaySeconds(reference.counts, { speed: 1, skipToDecision: false }, lifeLength, era, 'median') / 60;
     result.minutesFast = estimatePlaySeconds(reference.counts, { speed: 8, skipToDecision: true }, lifeLength, era, 'median') / 60;
     problems.push(...checkStats(ended.stats, `${tag} 최종 스탯`));

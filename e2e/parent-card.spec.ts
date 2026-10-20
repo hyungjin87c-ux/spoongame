@@ -1,0 +1,162 @@
+import { expect, test } from '@playwright/test';
+import type { GameState } from '../src/core/types';
+import { activeTestId, evalCore, injectSave, oracleDecision, readSave, withoutPlay } from './helpers';
+import { MANUAL, findDelegatedYear, focusPauseAfterEntry } from './parentStates';
+
+/**
+ * T8 화면 (SPEC-005 PD5·PD7, 설계 문서 3-2·5절): 부모님이 정한·아이의 일로 흘러간 해의 비모달 카드.
+ * 카드는 그 해의 결과 연출 대기 동안만 인생 기록 바로 위에 뜨고, 버튼·시트·낭독 영역이 없고 포커스를 가져가지 않는다. 일시정지하면 그 자리에 머물고, 8배속에서는 스치며 기록 줄이 남고,
+ * 새로고침(연타 포함)하면 카드는 다시 뜨지 않고 같은 인생·같은 기록 줄 하나만 남는다. 「다음 결정으로」는 부모·흘러감 해를 지나 다음 본인 결정 앞에서 멈춘다.
+ * 개발 서버 전용 탐침 `?__timescale=N`으로 연출을 N배 빠르게 한다(카드는 1배속에서 20~38초 — N = 5면 4~8초라 단언할 틈이 있다).
+ */
+
+const TS = '/?__timescale=5';
+
+// 카드 한 장의 연출 대기는 1배속에서 20~38초(느린 독자 기준 필요량)라 `__timescale=5`여도 4~8초가 걸린다 — 시작·주입·단언을 합치면 기본 30초 제한을 넘는다
+test.describe.configure({ timeout: 120_000 });
+
+test.describe('부모님이 정한 해: 비모달 카드 (PD5·PD7)', () => {
+  test('카드가 인생 기록 바로 위에 뜬다: 칩·제목·고른 길·도장·영향 줄, 버튼·시트·낭독 영역이 없고 포커스가 움직이지 않으며 기록 줄(부모님이 이렇게 정했습니다)이 같은 해에 남는다', async ({ page }) => {
+    await page.goto('/');
+    const y = await findDelegatedYear(page, { by: 'parent' });
+    await injectSave(page, y.start, TS, MANUAL);
+    // 조용한 해 연출 동안 도구 줄의 일시정지에 포커스를 둔다 — 카드가 떠도 포커스는 그대로여야 한다
+    await focusPauseAfterEntry(page);
+    const card = page.getByTestId('parent-card');
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card).toHaveAttribute('data-by', 'parent');
+    await expect(card).toHaveAttribute('data-key', `${y.tick.eventId}@${y.tick.fromAge}`);
+    await expect(page.getByTestId('parent-chip')).toHaveText('부모님의 결정');
+    await expect(page.getByTestId('parent-stamp')).toHaveText('부모님이 이렇게 정했습니다');
+    await expect(page.getByTestId('parent-title')).toHaveText(y.title);
+    await expect(page.getByTestId('parent-label')).toHaveText(y.label);
+    // 영향 줄: 틱의 impact 항목 수와 같다 (표기 = 실제 효과)
+    await expect(card.locator('.impact__item')).toHaveCount(y.tick.impact!.length);
+    // 비모달: 버튼·링크·입력 없음, 시트·낭독 영역 없음, 화면은 inert가 아니다
+    expect(await card.locator('button, a, input, select, textarea').count()).toBe(0);
+    expect(await card.locator('[role="dialog"], [role="status"], [role="alert"], [aria-live], [aria-modal]').count()).toBe(0);
+    await expect(page.locator('[role="dialog"]:visible')).toHaveCount(0);
+    expect(await page.evaluate(() => document.querySelectorAll('[inert]').length)).toBe(0);
+    // 포커스는 움직이지 않았다
+    expect(await activeTestId(page)).toBe('pause');
+    // 위치: 인생 기록 바로 위(같은 가운데 열)
+    const cardBox = (await card.boundingBox())!;
+    const logBox = (await page.getByTestId('log').boundingBox())!;
+    expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(logBox.y + 1);
+    // 기록 줄은 같은 해에 남는다 (줄 형식: {결과 문장} (부모님이 이렇게 정했습니다: {고른 길}))
+    const row = page.getByTestId('log').getByText(`부모님이 이렇게 정했습니다: ${y.label}`);
+    await expect(row.first()).toBeVisible();
+    // 가로 넘침 없음
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    // 해가 넘어가면 카드는 사라진다
+    await expect(card).toHaveCount(0, { timeout: 30_000 });
+    // 저장된 인생은 core 기대값과 같다 (이 해 끝 상태까지)
+    await expect.poll(async () => (await readSave(page)).data.age).toBeGreaterThanOrEqual(y.after.age);
+    const save = (await readSave(page)).data;
+    expect(save.history.slice(0, y.after.history.length)).toEqual(y.after.history);
+    expect(save.pending ?? null).toBe(null);
+  });
+
+  test('일시정지하면 카드가 그 자리에 머문다: 한참 지나도 사라지지 않고 나이도 그대로이며, 다시 재생하면 사라진다', async ({ page }) => {
+    await page.goto('/');
+    const y = await findDelegatedYear(page, { by: 'parent' });
+    await injectSave(page, y.start, TS, MANUAL);
+    const card = page.getByTestId('parent-card');
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId('pause').click();
+    await expect(page.getByTestId('pause')).toHaveAttribute('data-paused', 'true');
+    // 카드의 연출 대기(1배속 20~38초 ÷ 5 = 4~8초)보다 길게 기다려도 그대로
+    await page.waitForTimeout(10_000);
+    await expect(card).toBeVisible();
+    expect((await readSave(page)).data.age).toBe(y.after.age);
+    await page.getByTestId('pause').click();
+    await expect(card).toHaveCount(0, { timeout: 30_000 });
+  });
+
+  test('새로고침 연타: 카드는 다시 뜨지 않고(틱은 저장하지 않는다) 같은 인생·같은 기록 줄 하나만 남는다', async ({ page }) => {
+    await page.goto('/');
+    const y = await findDelegatedYear(page, { by: 'parent' });
+    await injectSave(page, y.start, TS, MANUAL);
+    await expect(page.getByTestId('parent-card')).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId('pause').click(); // 더 진행하지 않게 멈춘 채로 저장을 확인한다
+    await expect.poll(async () => (await readSave(page)).data.age).toBe(y.after.age);
+    const before = (await readSave(page)).data;
+    for (let i = 0; i < 4; i++) {
+      await page.reload();
+      await expect(page.getByTestId('life-screen')).toBeVisible();
+      await expect(page.getByTestId('parent-card')).toHaveCount(0);
+    }
+    const after = (await readSave(page)).data;
+    expect(after.age).toBe(before.age);
+    expect(after.history).toEqual(before.history);
+    expect(after.history.filter((h) => h.eventId === y.tick.eventId && h.kind === 'choice')).toHaveLength(1);
+    expect(after.history.find((h) => h.eventId === y.tick.eventId && h.kind === 'choice')!.by).toBe('parent');
+    // 기록 줄은 화면에 그대로 있다
+    await expect(page.getByTestId('log').getByText(`부모님이 이렇게 정했습니다: ${y.label}`).first()).toBeVisible();
+  });
+
+  test('8배속: 카드가 스쳐 지나가도 기록 줄이 남고 인생은 core 기대값과 같다', async ({ page }) => {
+    await page.goto('/');
+    const y = await findDelegatedYear(page, { by: 'parent' });
+    await injectSave(page, y.start, '/?__timescale=40', { ...MANUAL, speed: 8 });
+    await expect.poll(async () => (await readSave(page)).data.age, { timeout: 20_000 }).toBeGreaterThanOrEqual(y.after.age);
+    await page.getByTestId('pause').click();
+    const save = (await readSave(page)).data;
+    expect(save.history.slice(0, y.after.history.length)).toEqual(y.after.history);
+    await expect(page.getByTestId('log').getByText(`부모님이 이렇게 정했습니다: ${y.label}`).first()).toBeVisible();
+  });
+});
+
+test.describe('아이의 일로 흘러간 해 (PD8)', () => {
+  test('칩 「아이의 일」·도장 「이렇게 흘러갔습니다」, 기록 줄 (이렇게 흘러갔습니다: …), 안내 한 줄 없음 · 포커스 이동 없음', async ({ page }) => {
+    await page.goto('/');
+    const y = await findDelegatedYear(page, { by: 'child' });
+    await injectSave(page, y.start, TS, MANUAL);
+    await focusPauseAfterEntry(page);
+    const card = page.getByTestId('parent-card');
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card).toHaveAttribute('data-by', 'child');
+    await expect(page.getByTestId('parent-chip')).toHaveText('아이의 일');
+    await expect(page.getByTestId('parent-stamp')).toHaveText('이렇게 흘러갔습니다');
+    await expect(page.getByTestId('parent-label')).toHaveText(y.label);
+    await expect(page.getByTestId('parent-hint')).toHaveCount(0);
+    expect(await card.locator('button, a, input').count()).toBe(0);
+    expect(await activeTestId(page)).toBe('pause');
+    await expect(page.getByTestId('log').getByText(`이렇게 흘러갔습니다: ${y.label}`).first()).toBeVisible();
+  });
+});
+
+test.describe('다음 결정으로 (PD3·PD7)', () => {
+  test('부모·흘러감 해를 지나 다음 본인 결정 앞에서 멈춘다: 저장이 core 기대값(advanceUntilDecision)과 같고 사이의 해마다 by 표지 줄이 남았다', async ({ page }) => {
+    await page.goto('/');
+    // 첫 본인 결정 앞에 부모·흘러감 해가 둘 이상 있는 시드
+    const start = await evalCore<GameState | null>(
+      page,
+      `for (let seed = 1; seed < 800; seed++) {
+         const s0 = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), arg.era)));
+         const s = core.advanceUntilDecision(s0, undefined, 'consume').state;
+         if (s.phase === 'life' && s.pending && s.history.filter((h) => h.by).length >= 2) return s0;
+       }
+       return null;`,
+      { era: 'present' },
+    );
+    expect(start, '부모·흘러감 해가 둘 이상 앞서는 시드를 찾지 못했다').not.toBeNull();
+    const s0 = withoutPlay(start!);
+    const expected = await oracleDecision(page, s0);
+    await injectSave(page, s0, TS, MANUAL);
+    const skip = page.getByTestId('skip');
+    await expect(skip).toBeEnabled();
+    await skip.click();
+    await expect(page.getByTestId('choice-panel')).toBeVisible({ timeout: 60_000 });
+    const save = (await readSave(page)).data;
+    expect(save.pending?.key).toBe(expected.pending?.key);
+    expect(save.age).toBe(expected.age);
+    expect(save.history).toEqual(expected.history);
+    // 사이의 해마다 by 표지 줄이 남았다 (부모 줄이 있고, 본인 줄은 by가 없다)
+    expect(save.history.filter((h) => h.by === 'parent').length).toBeGreaterThanOrEqual(1);
+    expect(save.history.filter((h) => h.kind === 'choice' && h.by === undefined)).toHaveLength(0); // 아직 본인이 고른 선택은 없다
+    // 멈춘 카드는 본인 결정(선택지 버튼이 있는 시트)이고 부모 카드가 아니다
+    await expect(page.getByTestId('parent-card')).toHaveCount(0);
+    expect(await page.getByTestId('choice-panel').getByRole('button').count()).toBeGreaterThanOrEqual(2);
+  });
+});

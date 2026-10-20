@@ -34,6 +34,7 @@ import {
  *   notes      기록 카드(M7c) 참고 시간 — 목표 밖의 참고 항 (LD-1)
  *   infant     영유아(0~7세) 수치 (sim:infant와 같은 정의)
  *   margins    판정 여유 표 (REV-003-M8-1 R-415, LD-9) — 시대 × 전략(수동 흉내·자동 성향) × 시드 줄(시험 / sim:1000)별 모델 시간·카드 평균(± SE)과 새 판정 지표 전부의 여유(표준오차 배수). 기본에서 빠진다(오래 걸림)
+ *   hold       연출 계수 k별 1배속 수동 예상(읽기 중앙, 시대별·세 시대 평균) — 부모님이 정한·흘러간 해의 연출 대기(카드 읽기 필요량)를 센 새 모델의 손계산 표(설계 문서 4-4절·SPEC TM2)를 실측으로 대체한다. 기본에서 빠진다(k마다 다시 잰다)
  *   candidates 페이싱 후보 비교 표 (content-M8.md 2-4절 ③) — 오래 걸려 기본에서 빠진다. --cands=25:28,29:33:0.05 처럼 후보를 직접 주면 그것만 잰다(soft:hard[:청년·중년·노년 빈도에 더할 값], 소프트 계수는 0.3)
  */
 const args = process.argv.slice(2);
@@ -86,11 +87,11 @@ function printCards(title: string, sums: EraSummary[]) {
 
 function printTimes(title: string, sums: EraSummary[]) {
   console.log(`\n### ${title}`);
-  console.log('| 시대 | 해 수 q · n · 결과 · 결정 · 둘째 줄 | 연출 합(분) | 옛 모델 1배속(분) | 읽기 낮음 | **중앙** | 높음 | 상한 | 중앙 5% / 95% / 최대 | 8배속+다음결정(중앙) |');
-  console.log('|---|---|---:|---:|---:|---:|---:|---:|---|---:|');
+  console.log('| 시대 | 해 수 q · n · 결과 · 부모 · 흘러감 · 둘째 줄 | c_self · c_total | 부모 해 연장(초) | 연출 합(분) | 옛 모델 1배속(분) | 읽기 낮음 | **중앙** | 높음 | 상한 | 중앙 5% / 95% / 최대 | 8배속+다음결정(중앙) |');
+  console.log('|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|');
   for (const s of sums) {
     console.log(
-      `| ${s.era} | ${f(s.q)} · ${f(s.n)} · ${f(s.r)} · ${f(s.c)} · ${f(s.extraLines, 2)} | ${f(s.holdMin, 2)} | ${f(s.legacyMin.mean)} | ${f(s.low.mean)} | **${f(s.median.mean)}** | ${f(s.high.mean)} | ${f(s.upper.mean)} | ${f(s.median.p05)} / ${f(s.median.p95)} / ${f(s.median.max)} | ${f(s.fastMin.mean)} |`,
+      `| ${s.era} | ${f(s.q)} · ${f(s.n)} · ${f(s.r)} · ${f(s.cParent)} · ${f(s.cChild)} · ${f(s.extraLines, 2)} | ${f(s.cSelf, 2)} · ${f(s.c, 2)} | ${f(s.delegatedExtraSec, 1)} | ${f(s.holdMin, 2)} | ${f(s.legacyMin.mean)} | ${f(s.low.mean)} | **${f(s.median.mean)}** | ${f(s.high.mean)} | ${f(s.upper.mean)} | ${f(s.median.p05)} / ${f(s.median.p95)} / ${f(s.median.max)} | ${f(s.fastMin.mean)} |`,
     );
   }
   const avg = (k: 'low' | 'median' | 'high' | 'upper') => sums.reduce((a, s) => a + s[k].mean, 0) / sums.length;
@@ -114,6 +115,26 @@ for (const mode of modes) {
     printCards(`현재 설정 — 판당 결정 카드 (판정 구간 ${m.cards.meanLow}~${m.cards.meanHigh}장, 하드−1↑ ≤ ${m.cards.nearCapShareMax * 100}%)`, sums);
     printTimes('현재 설정 — 판 시간 모델 (분, 1배속 수동)', sums);
     console.log(`\n노년 평균 하한(${ERAS.map((e) => `${e} ${SENIOR_CHOICE_MEAN_MIN[e]}`).join(' / ')}) 대비: ${sums.map((s) => `${s.era} ${f(s.byStage.senior, 2)}`).join(' / ')} · 영유아(0~7세) 하한 ${INFANT_CHOICE_MEAN_MIN}: ${sums.map((s) => `${s.era} ${f(s.upTo7, 2)}`).join(' / ')}`);
+  }
+
+  if (only.has('hold')) {
+    // 연출 계수 k별 모델 시간: k는 count() 안의 `delegatedExtraMs`(필요량이 기본 대기보다 긴 몫)에도 들어가므로 k마다 다시 잰다. 모드 표를 잠시 덮어쓰고 되돌린다.
+    const saved = LIFE_LENGTH_MODES[mode].holdScale;
+    try {
+      console.log('\n### 연출 계수 k별 1배속 수동 예상 (분, 읽기 중앙) — 판정: 시대별 ≥ 25.5 · 세 시대 평균 27~33');
+      console.log('| k | 지난 | 지금 | 다가올 | 세 시대 평균 | 부모 해 연장(초/판) 지·지·다 | 판정 |');
+      console.log('|---|---:|---:|---:|---:|---|---|');
+      for (const k of [1.25, 1.3, 1.35, 1.4, 1.45]) {
+        LIFE_LENGTH_MODES[mode].holdScale = k;
+        const sums = summarizeAll(mode);
+        const meds = sums.map((x) => x.median.mean);
+        const avg = meds.reduce((a, b) => a + b, 0) / meds.length;
+        const ok = meds.every((x) => x >= m.timeMin.modelLow - 1.5) && avg >= m.timeMin.modelLow && avg <= m.timeMin.modelHigh;
+        console.log(`| ${k}${k === saved ? ' (현재)' : ''} | ${meds.map((x) => f(x, 2)).join(' | ')} | ${f(avg, 2)} | ${sums.map((x) => f(x.delegatedExtraSec, 0)).join(' · ')} | ${ok ? '통과' : '**미달**'} |`);
+      }
+    } finally {
+      LIFE_LENGTH_MODES[mode].holdScale = saved;
+    }
   }
 
   if (only.has('natural')) {

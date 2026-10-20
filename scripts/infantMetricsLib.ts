@@ -48,7 +48,10 @@ export function infantLife(seed: number, era: Era, strategy: Strategy, pool: Eve
       if (r.state === s) throw new Error('infantLife: 선택이 적용되지 않았다');
       s = r.state;
     } else {
-      s = stepYear(s, pool).state;
+      // 부모님이 정하거나 아이의 일로 흘러가는 카드(SPEC-005 PD3)는 pending 없이 그 해 안에서 해결된다 — 고르기 직전에 보인 선택지를 관찰해 같은 `shown`에 담는다
+      s = stepYear(s, pool, (e) => {
+        shown[e.state.pending!.eventId] = [...e.ids];
+      }).state;
     }
   }
   const deathAge = s.phase === 'ending' && s.death !== null && s.death.age <= INFANT_LAST_AGE ? s.death.age : null;

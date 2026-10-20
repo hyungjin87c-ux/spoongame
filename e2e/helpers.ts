@@ -416,6 +416,8 @@ export async function findPendingState(page: Page, era: Era, opts: { minChoices?
 
 /** 저장의 history에서 특정 종류의 항목 수 */
 export function countKind(save: Save, kind: string): number {
+  // SPEC-005 PD6·PD9: `choice` 줄은 본인이 고른 것(`by` 없음)만 센다 — 부모님이 정한(`by: 'parent'`)·아이의 일로 흘러간(`by: 'child'`) 줄은 사람이 고른 선택이 아니다
+  if (kind === 'choice') return save.data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length;
   return save.data.history.filter((h) => h.kind === kind).length;
 }
 

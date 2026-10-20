@@ -696,8 +696,15 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
     expect(text).not.toContain('견줄');
   });
 
-  it('선택의 순간 수는 연표의 선택 기록 수와 같다', () => {
-    for (const l of lives().slice(0, 40)) expect(reviewEnding(l).choiceCount).toBe(l.history.filter((h) => h.kind === 'choice').length);
+  it('선택의 순간 수는 연표의 선택 기록 수와 같다 — SPEC-005 PD9로 기준을 나눴다: 본인이 고른 선택(`by` 없음) = choiceCount, 부모님이 정한(`by: parent`)·흘러간(`by: child`) 선택 = delegated이고, 셋을 더하면 연표의 선택 기록 전부다', () => {
+    for (const l of lives().slice(0, 40)) {
+      const r = reviewEnding(l);
+      const records = l.history.filter((h) => h.kind === 'choice');
+      expect(r.choiceCount).toBe(records.filter((h) => h.by === undefined).length);
+      expect(r.delegated.parent).toBe(records.filter((h) => h.by === 'parent').length);
+      expect(r.delegated.child).toBe(records.filter((h) => h.by === 'child').length);
+      expect(r.choiceCount + r.delegated.parent + r.delegated.child).toBe(records.length);
+    }
   });
 });
 

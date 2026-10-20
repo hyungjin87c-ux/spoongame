@@ -12,6 +12,7 @@ export * from './apply';
 export * from './economy';
 export * from './inherit';
 export * from './impact';
+export * from './parentDecision';
 export * from './life';
 export * from './ending';
 export * from './timing';

@@ -168,7 +168,16 @@ export interface HistoryEntry {
   /** 고른 선택지의 문구 (choice) */
   choice?: string;
   eventId?: string;
+  /**
+   * 누가 정한 선택인가 (`kind: 'choice'`에만 허용, SPEC-005 PD6·SV1): `'parent'` 부모님이 정했다 · `'child'` 아이의 일로 흘러갔다. 없으면 본인이 고른 선택이다.
+   * 선택 필드라 저장 스키마는 v8 그대로다 — 값이 이상하면 판을 버리지 않고 그 필드만 버린다(core/storage.ts#withValidBy).
+   */
+  by?: DelegatedBy;
 }
+
+/** 부모님이 정했다(`parent`) / 아이의 일로 흘러갔다(`child`) — `HistoryEntry.by`·`TickInfo.by` (SPEC-005 PD6) */
+export const DELEGATED_BYS = ['parent', 'child'] as const;
+export type DelegatedBy = (typeof DELEGATED_BYS)[number];
 
 /** 지금 화면에서 결정을 기다리는 선택지 이벤트. 저장 상태에 들어가므로 새로고침해도 같은 이벤트·같은 선택지가 다시 보인다. */
 export interface PendingChoice {

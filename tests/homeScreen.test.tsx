@@ -40,7 +40,10 @@ describe('일러스트 마크업 (HS1 · D5-24): 장식 — 이름은 로고가 
   it('같은 그림이 두 자리(배너·오른쪽 열 맨 위)에 있고 둘 다 figure[aria-hidden] > picture > source + img[alt=""] 이다', () => {
     expect(figures.map((m) => m[1])).toEqual(['banner', 'top']);
     for (const [markup] of figures) {
-      expect(markup).toMatch(/<picture><source media="\(min-width: 960px\)" srcSet="[^"]+home-map-pc[^"]*\.webp" type="image\/webp"\/><img src="[^"]+home-map-mobile[^"]*\.webp" width="375" height="440" alt="" decoding="async"\/><\/picture>/);
+      expect(markup).toMatch(/<picture><source media="\(min-width: 960px\)" srcSet="[^"]+home-map-pc[^"]*\.webp" type="image\/webp"\/><img loading="lazy" decoding="async" width="375" height="440" alt="" src="[^"]+home-map-mobile[^"]*\.webp"\/><\/picture>/);
+      // R-450: `loading="lazy"`가 `src`보다 앞에 있다 — React가 쓴 속성 순서대로 DOM에 주므로 `src`를 주는 순간 이미 lazy여야 WebKit이 `source`가 붙기 전에 모바일 파일을 먼저 받지 않는다
+      expect(markup.indexOf('loading="lazy"')).toBeGreaterThan(-1);
+      expect(markup.indexOf('loading="lazy"')).toBeLessThan(markup.indexOf(' src="'));
     }
   });
 
@@ -80,8 +83,14 @@ describe('일러스트 CSS (D5-24~D5-26·D5-29·D5-32·D5-33): 크기·겹침·�
     expect(ruleBody('.illust img')).toMatch(/max-width:\s*100%/);
     expect(ruleBody('.illust img')).toMatch(/object-fit:\s*contain/);
     expect(ruleBody('.illust--banner')).toMatch(/--illust-h:\s*224px/);
-    expect(css).toMatch(/\.illust--top \{[^}]*--illust-h:\s*420px;[^}]*--illust-tuck:\s*32px;[^}]*margin-bottom:\s*calc\(-1 \* var\(--illust-tuck\)\)/);
-    expect(css).toMatch(/@media \(min-width: 1600px\) \{\s*\.illust--top \{[^}]*--illust-h:\s*500px;[^}]*--illust-tuck:\s*36px/);
+    // R-447(D5-34): 겹침은 그림 높이의 7.62% — 420px에서 32px, 500px에서 36px 그대로이고(min), 낮은 창에서 그림이 줄면 같이 줄어든다
+    expect(css).toMatch(/\.illust--top \{[^}]*--illust-h:\s*420px;[^}]*--illust-tuck:\s*min\(32px,\s*calc\(var\(--illust-h\) \* 0\.0762\)\);[^}]*margin-bottom:\s*calc\(-1 \* var\(--illust-tuck\)\)/);
+    expect(css).toMatch(/@media \(min-width: 1600px\) \{\s*\.illust--top \{[^}]*--illust-h:\s*500px;[^}]*--illust-tuck:\s*min\(36px,\s*calc\(var\(--illust-h\) \* 0\.0762\)\)/);
+  });
+
+  it('낮은 창(R-447, D5-34): 그림 높이는 창 높이에 맞춰 clamp(224px, (100vh − 334px) ÷ 0.924, 420px | 500px)로 줄고, clamp()를 모르는 엔진은 @supports 밖의 420·500px 그대로다', () => {
+    expect(css).toMatch(/@supports \(height: clamp\(1px, 2px, 3px\)\) \{\s*\.illust--top \{ --illust-h: clamp\(224px, calc\(\(100vh - 334px\) \/ 0\.924\), 420px\); \}/);
+    expect(css).toMatch(/@supports \(height: clamp\(1px, 2px, 3px\)\) \{\s*\.illust--top \{ --illust-h: clamp\(224px, calc\(\(100vh - 334px\) \/ 0\.924\), 500px\); \}/);
   });
 
   it('배너는 < 960px에서만, 오른쪽 열 그림은 ≥ 960px에서만 보인다(같은 그림이라 한 번에 하나)', () => {

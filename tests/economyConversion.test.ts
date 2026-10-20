@@ -3,10 +3,11 @@ import docSrc from '../docs/data/economy-model.md?raw';
 import legacyJson from './fixtures/wealthLegacy.json';
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FILES } from '../src/data/events';
-import { advanceUntilDecision, autoResolveStep, type ChoiceDef, type EventDef, type Era, type GameState } from '../src/core';
+import { type ChoiceDef, type EventDef, type Era } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
 import { startLife } from '../scripts/simulateLib';
 import { M7A_NEW_EVENT_IDS, M7A_WEALTH_GATES } from './helpers/m7a';
+import { playDecisions } from './helpers/decisions';
 import type { Effects } from '../src/core/types';
 
 /**
@@ -315,15 +316,12 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
     const counts = new Map<string, Map<number, number>>();
     for (const era of ['past', 'present', 'future'] as Era[]) {
       for (let i = 1; i <= 300; i++) {
-        let s: GameState = startLife(economySeed(i), era);
-        for (let guard = 0; guard < 400 && s.phase === 'life'; guard++) {
-          if (s.pending !== null) {
-            const m = counts.get(s.pending.eventId) ?? new Map<number, number>();
-            m.set(s.pending.choiceIds.length, (m.get(s.pending.choiceIds.length) ?? 0) + 1);
-            counts.set(s.pending.eventId, m);
-            s = autoResolveStep(s, s.pending.key).state;
-          } else s = advanceUntilDecision(s).state;
-        }
+        // SPEC-005: 어린 시절의 카드는 부모님이 정하거나 아이의 일로 흘러가 `pending`이 되지 않는다 — 고르기 직전의 대기 상태를 playDecisions가 모두 넘긴다
+        playDecisions(startLife(economySeed(i), era), (p) => {
+          const m = counts.get(p.pending!.eventId) ?? new Map<number, number>();
+          m.set(p.pending!.choiceIds.length, (m.get(p.pending!.choiceIds.length) ?? 0) + 1);
+          counts.set(p.pending!.eventId, m);
+        });
       }
     }
     for (const [e] of GATES) {

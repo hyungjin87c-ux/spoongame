@@ -47,6 +47,8 @@ export async function longestCards(page: Page, n = 5): Promise<LongCard[]> {
     const best = new Map();
     for (const ev of data.EVENT_POOL.events) {
       if (ev.choices === undefined) continue;
+      // SPEC-005 QI5: 어린 시절 카드의 많은 몫은 부모님이 정하거나 흘러가서 시트로 뜨지 않는다 — 사람이 고르는 나이가 있는 카드만 센다
+      if (!core.possibleAgesOf(ev).some((a) => core.decisionFor(ev.id, a) === 'self')) continue;
       for (const era of ['past', 'present', 'future']) {
         if (ev.eras !== undefined && !ev.eras.includes(era)) continue;
         const cite = core.citationFor(ev, era, 2200);

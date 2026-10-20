@@ -77,7 +77,7 @@ describe('화면 글자 판정기 checkSlideDom: 올바른 화면은 통과한�
   });
 
   it('형식 D(시·도별): 공식 통계명 줄에 범위 문구의 기준(월 기준 「2026년 9월」)이 들어 있으면 통과하고, 기준 줄은 없다', () => {
-    const region: SlideDom = { ...marriage, id: 'region-population-registered', insight: '사람들은 어디에 모여 살까?', official: '지역별 주민등록 인구수(2026년 9월)', captions: ['2026년 9월 전국 주민등록 인구'], valueLines: [{ label: null, text: '51,082,431명', unit: '명' }], sideLines: [], legend: [], chartTexts: ['경기'], statLines: ['통계 기준: 2026년 · 마지막 갱신 2026-10-15'], all: '사람들은 어디에 모여 살까?\n지역별 주민등록 인구수(2026년 9월)\n2026년 9월 전국 주민등록 인구\n51,082,431명\n경기' };
+    const region: SlideDom = { ...marriage, id: 'region-population-registered', insight: '사람들은 어디에 모여 살까?', official: '지역별 주민등록 인구수(2026년 9월, 16개 시·도)', captions: ['2026년 9월 전국 주민등록 인구'], valueLines: [{ label: null, text: '51,082,431명', unit: '명' }], sideLines: [], legend: [], chartTexts: ['경기'], statLines: ['통계 기준: 2026년 · 마지막 갱신 2026-10-15'], all: '사람들은 어디에 모여 살까?\n지역별 주민등록 인구수(2026년 9월)\n2026년 9월 전국 주민등록 인구\n51,082,431명\n경기' };
     const regionExpected: ExpectedSlide = { id: 'region-population-registered', insight: region.insight, officialText: region.official, year: 2026, chartKind: 'bar', scopeLabel: '2026년 9월 기준(16개 시·도, 주민등록)', titleIndicators: [], sideTexts: [] };
     expect(check(region, regionExpected)).toEqual([]);
     expect(check({ ...region, basisLines: ['2026년 9월 기준(16개 시·도, 주민등록)'] }, regionExpected).some((p) => p.includes('형식 D에 기준 줄이 남아 있다'))).toBe(true);

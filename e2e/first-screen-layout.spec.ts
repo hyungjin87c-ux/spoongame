@@ -127,6 +127,76 @@ test('배치 1280x800 · 이어서 살기 띠(120px): 왼쪽 열 끝이 띠 위�
   expect(m.main!.bottom, `왼쪽 열 끝 ${Math.round(m.main!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
 });
 
+// ---------- 낮은 창 (REV-005-QI3-1 R-447, diff-005 D5-34): 그림 높이를 창 높이에 맞춰 줄여 값이 띠에 가리지 않는다 ----------
+
+for (const vp of [
+  { width: 1280, height: 620, illustH: 310, tuck: 24 },
+  { width: 1366, height: 657, illustH: 350, tuck: 27 },
+] as const) {
+  for (const state of ['new', 'continue'] as const) {
+    test(`낮은 창 ${vp.width}x${vp.height} · ${state === 'new' ? '새 판' : '이어서 살기 띠'}: 그림 ${vp.illustH}px · 카드 겹침 ${vp.tuck}px, 첫 슬라이드와 표제어가 두 줄인 슬라이드(조사망률) 모두 값 아래끝이 오른쪽 열의 보이는 끝 위, 1280×800·1920×1080 수치는 그대로 (D5-34 · R-447)`, async ({ page, browserName }, testInfo) => {
+      test.skip(kindOf(testInfo.project.name) !== 'desktop', DESKTOP_ONLY);
+      if (state === 'new') {
+        await openTitle(page, vp.width, vp.height);
+      } else {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.goto('/?__exit=1');
+        await openBarState(page, 'continue');
+        await expect(page.getByTestId('resume')).toBeEnabled();
+        await page.evaluate(() => document.fonts.ready);
+      }
+      // 자동 넘김을 멈추고(일시정지) 슬라이드를 손으로 넘긴다 — 값 줄 위치를 재는 동안 슬라이드가 바뀌지 않게
+      await page.getByTestId('carousel-pause').click();
+      const measure = async () => ({
+        illust: await rectOf(page, '.illust--top img'),
+        card: await rectOf(page, '[data-testid="carousel"]'),
+        value: await rectOf(page, '.slide.is-active [data-testid="slide-value"]'),
+        side: await rectOf(page, '.title__side'),
+        bar: await rectOf(page, '[data-testid="bottom-bar"]'),
+        id: await page.locator('.slide.is-active').getAttribute('data-slide-id'),
+        headlineLines: await page.evaluate(() => {
+          const h = document.querySelector('.slide.is-active .slide__insight') as HTMLElement;
+          return Math.round(h.getBoundingClientRect().height / parseFloat(getComputedStyle(h).lineHeight));
+        }),
+      });
+      const first = await measure();
+      expect(first.illust, '그림이 보인다').not.toBeNull();
+      expect(Math.abs(first.illust!.h - vp.illustH), `그림 높이 ${first.illust!.h}px ≈ ${vp.illustH}`).toBeLessThanOrEqual(1);
+      expect(Math.abs(first.illust!.bottom - first.card!.y - vp.tuck), `카드 겹침 ${first.illust!.bottom - first.card!.y}px ≈ ${vp.tuck}`).toBeLessThanOrEqual(1);
+      expect(Math.abs(first.illust!.w / first.illust!.h - 613 / 720), '그림 비율(찌그러짐 0)').toBeLessThan(0.01);
+      expect(first.value!.bottom, `첫 슬라이드(${first.id}) 값 아래끝 ${Math.round(first.value!.bottom)} ≤ 열 끝 ${Math.round(first.side!.bottom)}`).toBeLessThanOrEqual(first.side!.bottom);
+      // 표제어가 두 줄인 슬라이드: 조사망률(cdr, 24자)까지 넘긴다
+      for (let i = 0; i < 20 && (await page.locator('.slide.is-active').getAttribute('data-slide-id')) !== 'cdr'; i++) await page.getByTestId('carousel-next').click();
+      const two = await measure();
+      expect(two.id).toBe('cdr');
+      // 두 줄 표제어는 Chromium의 글꼴 폭에서 나오는 모양이다(설계 기준 — 시안 실측). WebKit은 글꼴이 달라 한 줄일 수 있어, 그때는 더 여유가 있다(값 단언은 그대로)
+      if (browserName === 'chromium') expect(two.headlineLines, '조사망률 표제어는 두 줄(24자)').toBe(2);
+      else expect(two.headlineLines, '조사망률 표제어는 한 줄 이상').toBeGreaterThanOrEqual(1);
+      expect(two.value!.bottom, `조사망률 값 아래끝 ${Math.round(two.value!.bottom)} ≤ 열 끝 ${Math.round(two.side!.bottom)}`).toBeLessThanOrEqual(two.side!.bottom);
+      expect(await page.evaluate(() => scrollY), '스크롤 0').toBe(0);
+      expect(await noHorizontalOverflow(page)).toBe(true);
+      await page.screenshot({ path: testInfo.outputPath(`R447-low-${vp.width}x${vp.height}-${state}.png`) });
+    });
+  }
+}
+
+test('낮은 창 규칙은 높은 창을 건드리지 않는다: 1280×800 · 1920×1080 · 1280×722에서 그림이 420 / 500 / 420px, 겹침 32 / 36 / 32px (D5-34 — clamp 상한)', async ({ page }, testInfo) => {
+  test.skip(kindOf(testInfo.project.name) !== 'desktop', DESKTOP_ONLY);
+  for (const [w, h, illustH, tuck] of [
+    [1280, 800, 420, 32],
+    [1920, 1080, 500, 36],
+    [1280, 722, 420, 32],
+  ] as const) {
+    await openTitle(page, w, h);
+    const m = { illust: await rectOf(page, '.illust--top img'), card: await rectOf(page, '[data-testid="carousel"]') };
+    expect(Math.round(m.illust!.h), `${w}x${h} 그림 높이`).toBe(illustH);
+    expect(Math.round(m.illust!.bottom - m.card!.y), `${w}x${h} 겹침`).toBe(tuck);
+  }
+  // 아주 낮은 창은 바닥 224px(모바일 배너와 같은 최소)에서 멈춘다
+  await openTitle(page, 1280, 500);
+  expect(Math.round((await rectOf(page, '.illust--top img'))!.h), '1280x500 바닥').toBe(224);
+});
+
 // ---------- 좁은 화면 배치 ----------
 
 for (const vp of [
@@ -180,7 +250,7 @@ for (const vp of [
   { width: 1280, height: 800, file: 'home-map-pc', maxBytes: 66_000, natural: [613, 720] },
   { width: 360, height: 740, file: 'home-map-mobile', maxBytes: 34_000, natural: [375, 440] },
 ] as const) {
-  test(`그림 ${vp.width}px: 같은 주소 하나만 내려받고(${vp.file}) 크기가 예산 안이며, 자리가 미리 잡혀 레이아웃이 움직이지 않는다 (D5-25)`, async ({ page, browserName }, testInfo) => {
+  test(`그림 ${vp.width}px: 같은 주소 하나만 내려받고(${vp.file}) 크기가 예산 안이며, 자리가 미리 잡혀 레이아웃이 움직이지 않는다 (D5-25)`, async ({ page }, testInfo) => {
     test.skip(kindOf(testInfo.project.name) !== (vp.width < 960 ? 'mobile' : 'desktop'), '뷰포트를 직접 지정하므로 해당 프로젝트에서만 실행');
     const imageResponses: Array<{ url: string; bytes: number }> = [];
     // 그림 파일 = 응답의 형식이 image/webp인 것 (개발 서버가 주는 `…webp?import` 자바스크립트 모듈은 그림이 아니다)
@@ -190,24 +260,29 @@ for (const vp of [
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await page.goto('/');
     await expect(page.getByTestId('title-screen')).toBeVisible();
-    await page.waitForFunction(() => [...document.querySelectorAll('.illust img')].every((i) => (i as HTMLImageElement).complete));
+    // 보이는 그림만 기다린다: `loading="lazy"`라 `display: none`인 쪽 그림은 받지 않는다(R-450) — 숨은 쪽의 `complete`는 영원히 false다
+    await page.waitForFunction(() => {
+      const shown = [...document.querySelectorAll('.illust img')].filter((i) => getComputedStyle(i.closest('figure')!).display !== 'none') as HTMLImageElement[];
+      return shown.length === 1 && shown[0].complete && shown[0].naturalWidth > 0;
+    });
+    // 내려받기 요청이 모두 끝나도록 한 번 더 기다린 뒤 센다 (늦게 시작하는 요청이 있다면 여기서 잡힌다)
+    await page.waitForLoadState('networkidle');
     const files = imageResponses.map((r) => r.url.split('/').pop()!.split('?')[0]);
-    if (browserName === 'webkit') {
-      // WebKit(개발 서버 + React 클라이언트 렌더)은 `<img src>`(모바일 파일)를 `<source>`가 붙기 전에 먼저 받는 일이 있다 — 고른 파일은 받고, 두 파일을 합쳐도 그림 예산(100KB) 안이다(기록)
-      expect(files, '고른 파일은 내려받았다').toContain(`${vp.file}.webp`);
-      expect(imageResponses.reduce((sum, r) => sum + r.bytes, 0), '그림 두 장을 다 받아도 예산 안').toBeLessThanOrEqual(100 * 1024);
-    } else {
-      expect(files, '내려받은 그림 파일').toEqual([`${vp.file}.webp`]);
-      expect(imageResponses[0].bytes, `그림 ${imageResponses[0].bytes}B ≤ ${vp.maxBytes}`).toBeLessThanOrEqual(vp.maxBytes);
-    }
-    // 두 <img>(배너·오른쪽 열)가 같은 파일을 고른다 — 보이는 쪽과 숨은 쪽 모두
+    // Chromium·WebKit 모두 고른 한 장만 내려받는다 (R-450 — WebKit의 이중 내려받기 +33KB가 `loading="lazy"`로 없어졌다)
+    expect(files, '내려받은 그림 파일').toEqual([`${vp.file}.webp`]);
+    expect(imageResponses[0].bytes, `그림 ${imageResponses[0].bytes}B ≤ ${vp.maxBytes}`).toBeLessThanOrEqual(vp.maxBytes);
+    // 두 <img>(배너·오른쪽 열): 보이는 쪽은 고른 파일을 다 불러왔고, 숨은 쪽(lazy — 따로 요청하지 않음)은 같은 파일을 고른다(currentSrc가 있다면)
     const picks = await page.evaluate(() => [...document.querySelectorAll('.illust img')].map((i) => ({ src: (i as HTMLImageElement).currentSrc.split('/').pop()!.split('?')[0], natural: [(i as HTMLImageElement).naturalWidth, (i as HTMLImageElement).naturalHeight], figure: getComputedStyle(i.closest('figure')!).display })));
     expect(picks).toHaveLength(2);
-    for (const p of picks) {
-      expect(p.src).toBe(`${vp.file}.webp`);
-      expect(p.natural).toEqual([...vp.natural]);
+    const shown = picks.filter((p) => p.figure !== 'none');
+    expect(shown, '한 뷰포트에서 보이는 그림은 하나').toHaveLength(1);
+    expect(shown[0].src).toBe(`${vp.file}.webp`);
+    expect(shown[0].natural).toEqual([...vp.natural]);
+    for (const p of picks.filter((x) => x.figure === 'none')) {
+      if (p.src !== '') expect(p.src, '숨은 그림이 고른 파일도 같다').toBe(`${vp.file}.webp`);
+      // 숨은 그림은 따로 요청하지 않는다(lazy — 위 files가 한 장뿐이다). 같은 주소라 브라우저 캐시에서 크기를 알면 같은 크기고, 모르면 0이다
+      expect([[0, 0], [...vp.natural]], '숨은 그림의 크기').toContainEqual(p.natural);
     }
-    expect(picks.filter((p) => p.figure !== 'none'), '한 뷰포트에서 보이는 그림은 하나').toHaveLength(1);
     // 레이아웃 이동 0: width·height 속성이 파일 크기와 같고(모바일 파일 기준 375×440), 그림이 오기 전과 후의 자리가 같다
     const attrs = await page.evaluate(() => [...document.querySelectorAll('.illust img')].map((i) => [i.getAttribute('width'), i.getAttribute('height'), i.getAttribute('alt')]));
     for (const a of attrs) expect(a).toEqual(['375', '440', '']);

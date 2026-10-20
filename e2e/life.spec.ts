@@ -23,6 +23,11 @@ import {
 
 /** 개발 서버 전용 탐침: 연출 시간을 N배 빠르게(실제 30분을 기다리지 않는다) */
 const FAST = '/?__timescale=1000';
+/**
+ * 수동·1배속·기록 카드 꺼짐. SPEC-005 QI5부터 첫 본인 결정이 13세 이후라(그 앞은 부모님이 정하거나 흘러간다) 설정 없이 0세부터 시작하면 5세의 기록 카드 시트가 먼저 시계를 멈춘다 —
+ * 「첫 선택지까지 시간으로 간다」·「다음 결정으로는 첫 선택지에서 멈춘다」를 보는 이 시험들은 기록 카드를 끈다(기록 카드 자체는 e2e/m7c-note.spec.ts).
+ */
+const NO_NOTES = { speed: 1, autoMode: false, noteCards: false } as const;
 
 async function startFromTitle(page: Page, url = '/') {
   await page.goto(url);
@@ -87,7 +92,7 @@ test('화면이 바뀔 때마다 새 화면의 제목으로 포커스가 옮겨�
 
 test('시간이 흐르면 나이가 오르고 선택지 이벤트에서 멈춘다 → 선택하면 이어진다', async ({ page }) => {
   const start = await oracleLifeAt(page);
-  await injectSave(page, start, FAST);
+  await injectSave(page, start, FAST, NO_NOTES);
   const panel = page.getByTestId('choice-panel');
   await expect(panel).toBeVisible();
   const pending = (await readSave(page)).data.pending!;
@@ -168,7 +173,7 @@ test('다음 결정으로: 연출을 건너뛰고 첫 선택지에서 정확히 
   await page.goto('/');
   const found = await findPendingState(page, 'present');
   const start = await oracleLife(page, found.seed, 'present');
-  await injectSave(page, start, '/');
+  await injectSave(page, start, '/', NO_NOTES);
   const skip = page.getByTestId('skip');
   await expect(skip).toBeEnabled();
   await skip.click();

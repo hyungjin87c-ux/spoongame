@@ -140,7 +140,7 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     if (region.chart.kind === 'bar') expect(region.chart.rows.length).toBe(16);
     // 기준 표기는 공식 통계명 줄이 맡는다(SPEC-005 SH3, copy.md 9-1 #6): 월 기준 지표라 「2026년 9월」, 데이터의 범위 문구(scopeLabel)에서 만든다. 옛 기준 줄은 없다
     expect(raw('region-population-registered').scopeLabel).toContain('2026년 9월 기준(16개 시·도');
-    expect(region.officialText).toBe('지역별 주민등록 인구수(2026년 9월)');
+    expect(region.officialText).toBe('지역별 주민등록 인구수(2026년 9월, 16개 시·도)'); // R-446 (b)
     expect(region.basisText).toBeNull();
     expect(region.valueText).toBe('51,082,431');
     expect(region.caption).toBe('2026년 9월 전국 주민등록 인구');
@@ -646,7 +646,7 @@ describe('슬라이드 모델 세부', () => {
     expect(buildSlide(usable(base({ latest: { year: 2025, value: 1 } })))!.basisText).toBeNull();
     expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '2025년 기준(17개 시·도)' }, true)).toBe('2025년, 17개 시·도');
     expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '2025년 기준(17개 시·도)' }, false)).toBe('2025년');
-    expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '2026년 9월 기준(16개 시·도, 주민등록)' }, true)).toBe('2026년 9월, 16개 시·도, 주민등록');
+    expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '2026년 9월 기준(16개 시·도, 주민등록)' }, true)).toBe('2026년 9월, 16개 시·도'); // 괄호 안 첫 항목만(R-446 b)
     expect(officialBasisOf({ latest: { year: 2025, value: 1 }, scopeLabel: '읽을 수 없는 모양' }, true)).toBe('2025년'); // 범위 문구가 이상하면 latest.year로 돌아간다
     expect(sourceOrgsOf('국가데이터처·교육부')).toEqual(['국가데이터처', '교육부']);
     expect(sourceOrgsOf('행정안전부')).toEqual(['행정안전부']);

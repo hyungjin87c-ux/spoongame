@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { decideLifeFocus, lostFocusPlace, type FocusPlace, type LifeFocusAction, type LifeFocusMoment } from '../src/ui/useFocus';
 
 /**
- * R-036·R-048 인생 화면 포커스 규칙의 판단 부분(순수 함수) — M7b에서 8순간 × 자동 모드 2 × 위치 3 = 48칸이 됐다(D-52).
+ * R-036·R-048 인생 화면 포커스 규칙의 판단 부분(순수 함수) — M7b에서 8순간 × 자동 모드 2 × 위치 3 = 48칸이 됐다(D-52). SPEC-005 PD5-a가 아홉째 순간 `delegatedCard`(부모님이 정한·흘러간 카드가 뜸 — 포커스 이동 없음)를 더해 9 × 2 × 3 = 54칸이다.
  * 실제 포커스 이동(DOM)은 e2e/life-focus.spec.ts·e2e/m7b-decision.spec.ts가 본다. 표는 사람이 직접 적은 기대값이다 (구현이 쓰는 상수·함수를 다시 계산하지 않는다).
  *
  * M7b가 바꾼 것 (마스터 확인 D-52): 수동 모드에서는 카드가 **모달 시트**이고 바깥이 `inert`다. 시트가 뜨는 순간 컨트롤에 있던 포커스는 body로 떨어지므로 「컨트롤 안이면 포커스는 두고 알리기만」(R-036 규칙 2)은
  * 성립하지 않는다 → `choiceAppeared`·`autoTurnedOff`의 수동 × controls 칸이 `announce`에서 `choiceTitle`로 바뀌었다. 그리고 순간 둘이 늘었다: `cardCollapsed`(→ 「결정 다시 열기」)·`cardReopened`(→ 선택지 제목).
  */
 const PLACES: FocusPlace[] = ['body', 'controls', 'other'];
-const MOMENTS: LifeFocusMoment[] = ['enter', 'enterWithChoice', 'choiceAppeared', 'choiceAppearedBySkip', 'autoTurnedOff', 'choiceResolved', 'cardCollapsed', 'cardReopened'];
+const MOMENTS: LifeFocusMoment[] = ['enter', 'enterWithChoice', 'choiceAppeared', 'choiceAppearedBySkip', 'autoTurnedOff', 'choiceResolved', 'cardCollapsed', 'cardReopened', 'delegatedCard'];
 
 describe('decideLifeFocus (R-036, R-048, M7b D-52)', () => {
   it('화면이 처음 뜰 때: 선택지가 없으면 인생 화면 제목(R-030) — 포커스 위치·자동 모드와 무관', () => {
@@ -74,7 +74,7 @@ describe('decideLifeFocus (R-036, R-048, M7b D-52)', () => {
     for (const auto of [false, true]) for (const place of PLACES) expect(decideLifeFocus('cardReopened', auto, place), `${auto} ${place}`).toBe('choiceTitle');
   });
 
-  it('전체 표: 8개 순간 × 자동 모드 2 × 위치 3 = 48칸이 사람이 적은 기대값과 모두 같다', () => {
+  it('전체 표: 9개 순간 × 자동 모드 2 × 위치 3 = 54칸이 사람이 적은 기대값과 모두 같다 (아홉째 delegatedCard는 어느 칸에서도 none)', () => {
     // 칸 순서: [body, controls, other]
     const manual: Record<LifeFocusMoment, LifeFocusAction[]> = {
       enter: ['lifeTitle', 'lifeTitle', 'lifeTitle'],
@@ -85,6 +85,7 @@ describe('decideLifeFocus (R-036, R-048, M7b D-52)', () => {
       choiceResolved: ['lifeTitle', 'none', 'none'],
       cardCollapsed: ['foldOpen', 'foldOpen', 'foldOpen'],
       cardReopened: ['choiceTitle', 'choiceTitle', 'choiceTitle'],
+      delegatedCard: ['none', 'none', 'none'],
     };
     const auto: Record<LifeFocusMoment, LifeFocusAction[]> = {
       enter: ['lifeTitle', 'lifeTitle', 'lifeTitle'],
@@ -95,8 +96,9 @@ describe('decideLifeFocus (R-036, R-048, M7b D-52)', () => {
       choiceResolved: ['lifeTitle', 'none', 'none'],
       cardCollapsed: ['foldOpen', 'foldOpen', 'foldOpen'],
       cardReopened: ['choiceTitle', 'choiceTitle', 'choiceTitle'],
+      delegatedCard: ['none', 'none', 'none'],
     };
-    expect(MOMENTS).toHaveLength(8);
+    expect(MOMENTS).toHaveLength(9);
     let cells = 0;
     for (const moment of MOMENTS) {
       PLACES.forEach((place, i) => {
@@ -105,7 +107,7 @@ describe('decideLifeFocus (R-036, R-048, M7b D-52)', () => {
         cells += 2;
       });
     }
-    expect(cells, '칸 수').toBe(48);
+    expect(cells, '칸 수').toBe(54);
   });
 
   it('불변식 1: 자동 모드에서 선택지 제목으로 가는 것은 사용자가 「결정 다시 열기」를 누른 경우(cardReopened)뿐이다', () => {

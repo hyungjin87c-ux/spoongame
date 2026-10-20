@@ -11,6 +11,7 @@ import {
   estimatePlaySeconds,
   playToEnd,
   stageOfAge,
+  totalCards,
   type Chooser,
   type Era,
   type EventPool,
@@ -153,6 +154,8 @@ export interface EraReport {
   lives: number;
   deathAge: Dist;
   choices: Dist;
+  /** 본인이 읽고 고르는 카드 수 c_self (SPEC-005 TM5) — `choices`는 부모님이 정한·흘러간 카드를 더한 총 카드 수 */
+  choicesSelf: Dist;
   narratives: Dist;
   quiet: Dist;
   /** 1배속 수동(분): 읽는 시간 가정 중앙 / 느린 독자 / 보수 상한 (시대별 r — core/timing.ts#readSecFor) */
@@ -197,7 +200,8 @@ export function reportOf(era: Era, lives: readonly LifeSummary[]): EraReport {
     era,
     lives: lives.length,
     deathAge: distOf(lives.map((l) => l.deathAge)),
-    choices: distOf(lives.map((l) => l.counts.choice)),
+    choices: distOf(lives.map((l) => totalCards(l.counts))),
+    choicesSelf: distOf(lives.map((l) => l.counts.choice)),
     narratives: distOf(lives.map((l) => l.counts.narrative)),
     quiet: distOf(lives.map((l) => l.counts.quiet)),
     minutes1x: distOf(lives.map((l) => l.seconds1x / 60)),
@@ -207,9 +211,9 @@ export function reportOf(era: Era, lives: readonly LifeSummary[]): EraReport {
     minutesFastHigh: distOf(lives.map((l) => l.secondsFastHigh / 60)),
     minutesFastUpper: distOf(lives.map((l) => l.secondsFastUpper / 60)),
     choicesByStageMean,
-    overHardCount: lives.filter((l) => l.counts.choice > hard).length,
-    nearCapPct: pct(lives.filter((l) => l.counts.choice >= hard - 1).length),
-    under20Of70PlusPct: Math.round((long.filter((l) => l.counts.choice < 20).length / (long.length || 1)) * 1000) / 10,
+    overHardCount: lives.filter((l) => totalCards(l.counts) > hard).length,
+    nearCapPct: pct(lives.filter((l) => totalCards(l.counts) >= hard - 1).length),
+    under20Of70PlusPct: Math.round((long.filter((l) => totalCards(l.counts) < 20).length / (long.length || 1)) * 1000) / 10,
     deathByDecade,
     earlyDeathPct: pct(lives.filter((l) => l.deathAge < 20).length),
   };

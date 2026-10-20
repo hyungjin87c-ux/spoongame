@@ -62,8 +62,12 @@ interface ReviewOracle {
   journey: string;
   movement: string | null;
   death: string;
-  picked: string[];
+  /** 연표의 선택 줄마다 (고른 길 라벨, 누가 정했나 — 본인이면 undefined). SPEC-005 PD6 */
+  picked: Array<{ choice: string; by?: 'parent' | 'child' }>;
+  /** 「N번의 선택」의 N = 본인이 고른 선택만 (PD9) */
   choiceCount: number;
+  /** 둘째 줄 「어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고, K번은 아이의 일로 흘러갔습니다」 (copy.md 11-1 ③ — 둘 다 0이면 줄 없음) */
+  delegatedLine: string | null;
 }
 
 /** core가 계산한 회고와 문구 (개발 서버의 실제 모듈을 브라우저에서 불러 같은 코드를 쓴다) */
@@ -77,8 +81,9 @@ async function reviewOracle(page: Page, state: GameState): Promise<ReviewOracle>
       journey: text.journeyText(r.journey),
       movement: r.journey.kind === 'compared' ? text.MOVEMENT_TEXT[r.journey.movement] : null,
       death: text.deathLineText(state.death),
-      picked: state.history.filter((h) => h.kind === 'choice').map((h) => h.choice),
+      picked: state.history.filter((h) => h.kind === 'choice').map((h) => ({ choice: h.choice, by: h.by })),
       choiceCount: r.choiceCount,
+      delegatedLine: (await import('/src/data/parentDecisionTable.ts')).delegatedSummaryText(r.delegated.parent, r.delegated.child),
     };
   })()`);
 }
@@ -151,10 +156,15 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
 
   // 생애 연표: 연표의 모든 항목, 선택한 순간마다 고른 문구
   await expect(page.getByTestId('timeline-entry')).toHaveCount(save.history.length);
-  await expect(page.getByTestId('timeline-picked')).toHaveCount(oracle.choiceCount);
+  // SPEC-005 PD6·PD9: 연표의 모든 선택 줄(본인 + 부모님이 정한 + 흘러간)에 표지가 있고, 「N번의 선택」의 N은 본인이 고른 것만이다
+  await expect(page.getByTestId('timeline-picked')).toHaveCount(oracle.picked.length);
+  expect(oracle.choiceCount).toBe(oracle.picked.filter((p) => p.by === undefined).length);
   expect(oracle.choiceCount).toBeGreaterThan(5);
   const pickedTexts = await page.getByTestId('timeline-picked').allInnerTexts();
-  expect(pickedTexts).toEqual(oracle.picked.map((p) => `선택: ${p}`));
+  const MARK = { parent: '부모님이 이렇게 정했습니다', child: '이렇게 흘러갔습니다' } as const;
+  expect(pickedTexts).toEqual(oracle.picked.map((p) => `${p.by === undefined ? '선택' : MARK[p.by]}: ${p.choice}`));
+  if (oracle.delegatedLine === null) await expect(page.getByTestId('ending-delegated')).toHaveCount(0);
+  else await expect(page.getByTestId('ending-delegated')).toHaveText(oracle.delegatedLine);
   await expect(page.getByTestId('timeline-infant')).toBeVisible(); // 출생은 영유아 단계의 첫 줄
   // 연표의 첫 줄은 출생신고의 한 줄 서술문과 같은 문장(합쇼체, SPEC-003 BR3·C1) — M3 이전에는 「~로 태어났다」였다
   await expect(page.getByTestId('timeline-entry').first()).toContainText('로 태어났습니다');

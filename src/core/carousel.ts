@@ -60,7 +60,7 @@ export function showDots(count: number): boolean {
   return count >= 2 && count <= CAROUSEL_MAX_DOTS;
 }
 
-/** 점 버튼의 접근 가능한 이름 (SC5): 「3/5 아기는 얼마나 태어나고 있을까?」 — 이름은 슬라이드의 표제어(SPEC-005 SH1) */
+/** 점 버튼의 접근 가능한 이름 (SC5): 「3/5 한 여성이 평생 낳을 아이는 몇 명일까?」 — 이름은 슬라이드의 표제어(SPEC-005 SH1) */
 export function dotLabel(index: number, count: number, title: string): string {
   return `${index + 1}/${count} ${title}`;
 }
@@ -551,13 +551,14 @@ const SCOPE_LABEL = /^(\d{4}년(?: \d{1,2}월)?) 기준(?:\((.+)\))?$/;
 
 /**
  * 공식 통계명 줄의 기준 괄호 안 글자 (SH3, SC4 단일 출처): 보통은 `latest.year` — 「2025년」. 월 기준 지표(지역별 주민등록 인구수)는 데이터의 범위 문구(`scopeLabel`: 「2026년 9월 기준(16개 시·도, 주민등록)」)의
- * 앞부분 「2026년 9월」이다. `withScope`이면 범위 문구의 괄호 안 설명을 쉼표로 덧붙인다(시·도별 합계출산율: 「2025년, 17개 시·도」 — 옛 기준 줄 「2025년 기준(17개 시·도)」을 대신한다).
+ * 앞부분 「2026년 9월」이다. `withScope`이면 범위 문구의 괄호 안 설명 **첫 항목만** 쉼표로 덧붙인다(시·도별 합계출산율: 「2025년, 17개 시·도」 — 옛 기준 줄 「2025년 기준(17개 시·도)」을 대신한다.
+ * 지역별 주민등록 인구수: 「2026년 9월, 16개 시·도」 — 「주민등록」은 공식 통계명에 이미 있어 겹치지 않게 뺀다, R-446 b).
  * 범위 문구를 읽을 수 없는 모양이면 `latest.year`로 돌아간다.
  */
 export function officialBasisOf(ind: Pick<UsableIndicator, 'latest' | 'scopeLabel'>, withScope: boolean): string {
   const m = ind.scopeLabel !== undefined ? SCOPE_LABEL.exec(ind.scopeLabel) : null;
   const when = m === null ? `${ind.latest.year}년` : m[1];
-  return withScope && m !== null && m[2] !== undefined ? `${when}, ${m[2]}` : when;
+  return withScope && m !== null && m[2] !== undefined ? `${when}, ${m[2].split(',')[0].trim()}` : when;
 }
 
 /** 지표 하나 → 슬라이드. 그릴 수 없는 지표(계열 부족 등)는 null. size는 그래프를 그릴 크기(chartSizeFor). */

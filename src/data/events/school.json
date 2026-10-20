@@ -371,6 +371,7 @@
         {
           "id": "friends",
           "label": "친구들과 어울리며 보낸다",
+          "parentLabel": "학원에 보내지 않고 친구들과 어울리게 둔다",
           "result": "수업이 끝나면 친구들과 어울렸습니다. 점수는 제자리인데 웃을 일이 많았습니다.",
           "effects": { "stats": { "relationships": 3, "happiness": 2 } },
           "bonuses": [{ "when": { "parenting": ["neglect"] }, "effects": { "stats": { "education": -1 } } }]
@@ -487,6 +488,8 @@
           "id": "keep",
           "label": "데려와 기른다",
           "result": "어른들을 졸라 강아지를 데려왔습니다. 하루를 마치고 돌아오면 꼬리를 흔드는 존재가 집에 생겼습니다.",
+          "parentLabel": "강아지를 집에 들이기로 한다",
+          "parentResult": "어른들이 강아지를 집에 들이기로 했습니다. 하루를 마치고 돌아오면 꼬리를 흔드는 존재가 집에 생겼습니다.",
           "effects": { "stats": { "happiness": 4, "health": 1 }, "family": -150 },
           "bonuses": [{ "when": { "parentWealth": { "max": 2 } }, "effects": { "stats": { "happiness": -1 }, "family": -150 } }]
         },
@@ -494,12 +497,16 @@
           "id": "feed",
           "label": "먹이만 챙겨 준다",
           "result": "남은 밥을 챙겨 주었습니다. 어느 날부터 강아지는 보이지 않았습니다.",
+          "parentLabel": "집에 들이지는 않고 먹이만 챙겨 주기로 한다",
+          "parentResult": "집에 들이지는 않고 남은 밥만 챙겨 주기로 했습니다. 어느 날부터 강아지는 보이지 않았습니다.",
           "effects": { "stats": { "happiness": 1, "relationships": 1 } }
         },
         {
           "id": "pass",
           "label": "못 본 척 지나간다",
           "result": "못 본 척 지나쳤습니다. 군것질 값은 고스란히 남았지만 그 눈빛은 한참 뒤에도 문득 떠올랐습니다.",
+          "parentLabel": "강아지를 들이지 않기로 한다",
+          "parentResult": "강아지를 들이지 않기로 했습니다. 집 살림은 그대로 남았지만 그 눈빛은 한참 뒤에도 문득 떠올랐습니다.",
           "effects": { "stats": { "happiness": -1 }, "family": 150 }
         }
       ]

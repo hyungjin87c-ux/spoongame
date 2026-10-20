@@ -24,10 +24,17 @@ import { startLife } from '../scripts/simulateLib';
  * 시간이 실제로 멎는지(진행률 바·연출 타이머)는 e2e/m4-dashboard.spec.ts가 본다.
  */
 const send = (s: Session, a: SessionAction): Session => sessionReducer(s, a);
-/** M7a: 0세에는 첫 예방접종·예측하기 어려운 결정이 있어 시드에 따라 첫 걸음이 결정에서 멈춘다 — 첫 걸음이 나이를 올리는 시드 2(skip은 2세의 선택지에서 멈춘다)를 쓴다 */
+/** M7a: 0세에는 첫 예방접종·예측하기 어려운 결정이 있어 시드에 따라 첫 걸음이 결정에서 멈춘다 — 첫 걸음이 나이를 올리는 시드 2를 쓴다 (SPEC-005부터 skip은 2세의 부모님 결정을 지나 본인이 고르는 카드에서 멈춘다) */
 const SEED = 2;
 const life = () => createSession(startLife(SEED, 'present'), { speed: 1, autoMode: false });
 const pausedLife = () => send(life(), { type: 'setPaused', paused: true });
+/**
+ * 「다음 결정으로」가 **사람이 고르는 카드**에서 멈추는지 보는 시험용 세션: SPEC-005부터 0~12세와 13~18세 중 돈·진학·이사·집안 영역은 부모님이 정하거나 아이의 일로 흘러가(pending이 생기지 않는다)
+ * 첫 본인 카드가 13세 이후라, 기본 세션(기록 카드 켜짐)에서는 그 앞의 기록 카드(5세 …)에서 멈춘다. 이 묶음은 선택지에서 멈추는 규칙을 보므로 카드를 끈 세션(시트 없이 소비)으로 돌린다 —
+ * 카드 멈춤 자체는 tests/noteCards.test.ts가 본다. 시드 2는 그 세션에서 (여러 해를 지나) 본인 카드에서 멈춘다.
+ */
+const lifeNoNotes = () => createSession(startLife(SEED, 'present'), { speed: 1, autoMode: false, noteCards: false });
+const pausedLifeNoNotes = () => send(lifeNoNotes(), { type: 'setPaused', paused: true });
 
 describe('setPaused (상태 함수)', () => {
   it('인생 단계에서만 바뀌고, 같은 값이면 같은 객체를 돌려준다 (연타·늦게 도착한 입력이 상태를 흔들지 않는다)', () => {
@@ -72,7 +79,7 @@ describe('일시정지 (세션)', () => {
   });
 
   it('멈춘 동안에도 「다음 결정으로」(skip)는 동작한다 — 사용자가 직접 누르는 입력이라 시계와 상관없다. 선택지(또는 엔딩)까지 곧바로 가고, 선택지에서 멈춘 판은 여전히 일시정지다 (R-331 ①)', () => {
-    const p = pausedLife();
+    const p = pausedLifeNoNotes();
     expect(p.game.paused).toBe(true);
     const r = send(p, { type: 'skip' });
     expect(r, '세션이 바뀌었다 — 입력이 무시되지 않았다').not.toBe(p);
@@ -86,7 +93,7 @@ describe('일시정지 (세션)', () => {
   });
 
   it('멈춘 동안에도 선택지를 고를 수 있다(choose) — 고르면 그 해가 이어진다 (사람의 입력이다)', () => {
-    const decided = send(pausedLife(), { type: 'skip' });
+    const decided = send(pausedLifeNoNotes(), { type: 'skip' });
     const pending = decided.game.pending;
     if (pending === null) return; // 선택지 없이 엔딩에 닿는 시드는 이 시험의 대상이 아니다(시드 21은 선택지가 나온다 — 아래 단언이 지킨다)
     const after = send(decided, { type: 'choose', key: pending.key, choiceId: pending.choiceIds[0] });
@@ -97,7 +104,7 @@ describe('일시정지 (세션)', () => {
   it('시드 2의 첫 걸음은 나이를 올리고 첫 「다음 결정으로」는 선택지에서 멈춘다 (위 시험들이 공허하게 통과하지 않는다)', () => {
     expect(stepYear(startLife(SEED, 'present')).state.pending).toBeNull();
     expect(stepYear(startLife(SEED, 'present')).state.age).toBe(1);
-    expect(send(pausedLife(), { type: 'skip' }).game.pending).not.toBeNull();
+    expect(send(pausedLifeNoNotes(), { type: 'skip' }).game.pending).not.toBeNull();
   });
 
   it('인생이 아닌 단계(첫 화면·룰렛·출생신고)에서는 일시정지가 켜지지 않는다', () => {
