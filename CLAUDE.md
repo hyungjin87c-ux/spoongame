@@ -11,7 +11,7 @@
 |---|---|---|---|
 | 기획 | `planner` | sonnet | 문서 쓰기 |
 | 작업자(개발) | `developer` | sonnet | 코드 쓰기·실행 |
-| 디자인 | `designer` | **fable** | 디자인 자산·디자인 문서·시안 (2026-10-15 형진 님 임명, 품질을 위해 fable 모델 지정) |
+| 디자인 | `designer` | **fable** | 디자인 자산·디자인 문서·시안 (2026-10-15 형진 님 임명, 품질을 위해 fable 모델 지정). 2026-10-21부터 `design-taste-frontend` 스킬로 AI 티를 빼고 전·후 검사 기록을 남긴다 |
 | 검수 | `reviewer` | **opus** | **읽기 전용** (Read/Grep/Glob) — 코드 검수 + 디자인 검수(유저 관점에서 게임 정체성 평가) |
 | QA | `qa` | sonnet | 실행·브라우저 조작·스크린샷 |
 | 위키 | `wiki-keeper` | **haiku** | `wiki/`만 쓰기 |

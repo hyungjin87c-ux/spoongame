@@ -15,3 +15,6 @@ qa/results/m5/samples-*.jsonl
 qa/results/m7a/samples-*.jsonl
 qa/results/m7e/samples-*.jsonl
 qa/results/m7b/samples-*.jsonl
+
+# design-taste-frontend 스킬 작업 파일(검사 스크린샷·임시 결과)
+.taste-skill/
