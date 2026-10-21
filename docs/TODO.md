@@ -321,6 +321,13 @@
     - [ ] (FQ2 ⑨·N4) 상담전화 항목은 109만(`helpLine` 데이터에서 생성), 「사건·선택지·기록 카드에 자살·자해 내용이 없다」 류 문장 없음, QI8 최종 검수에서 reviewer와 마스터가 따로 판독 — (developer 완료 2026-10-21, 검수 대기) 근거: src/data/aboutFaq.ts#faqHelpLine#buildAboutFaq(id help — helpLine 데이터에서 생성), tests/aboutFaq.test.ts "금지 주장이 없다 (N4)", "Q8 힘든 마음이 들 때", e2e/info-panel.spec.ts "Q7(무거운 장면 가리기)·Q8(힘든 마음)·Q9(만든 사람)의 답"
     - [ ] (FQ2 ⑦·N7) 무거운 장면 가리기 항목에 화면 규칙 (A) 반영(「켜거나 끄면 지난 기록까지 바로 바뀐다」), 판 도중 바꾸는 자리는 QI6 시안이 정한 대로 — (developer 완료 2026-10-21, 검수 대기) 근거: src/data/aboutFaq.ts#buildAboutFaq(id gentle), tests/aboutFaq.test.ts "Q7 「무거운 장면 가리기」"(문장 「판 도중 켜고 끄면 지난 줄까지 바로 바뀐다」 ⇔ e2e/gentle.spec.ts "판 도중 켜고 끄면 지난 줄까지 바로 바뀐다")
     - [ ] (NT2·N5) v0.2.0 첫 노트: 묶음 전체를 한 번에 배포(부분 배포 없음), 날짜 = main 배포일, QI8에서 마스터가 항목별 게재 조건 대조 — (developer 완료 2026-10-21, 검수 대기) 근거: src/data/releaseNotes.ts#RELEASE_NOTES(v0.2.0 날짜 2026-10-21은 임시 — QI8에서 배포일로 고침), package.json version 0.2.0, tests/releaseNotes.test.ts "현재 APP_VERSION의 노트가 있고", "copy.md 13-2 확정 문구와 글자 그대로 같다"
+  - [ ] REV-005-B1-1 후속(묶음 검수 APPROVED, 낮음 6건 — 마스터 2026-10-21: v0.2.0 배포 전에 처리)
+    - [ ] R-488 푸터·소개 Q3 출처 기관을 같은 기관 한 번만(현재 이름), 슬라이드 출처 줄은 발행 당시 이름 그대로 — developer
+    - [ ] R-489 (배포 게이트) e2e-prod smoke 기존 실패 2건(사망까지 선택 수, browserCss @supports clamp) 시험 쪽 수정 — developer
+    - [ ] R-490 「기록 카드 ⑤⑥ 가려지지 않음」 단언 추가 또는 제목·HV8 근거 정정 — developer
+    - [ ] R-491 정보 패널 닫기 요청 겹침(닫기 더블클릭·Esc 연타)으로 history 두 걸음 뒤로 가는 것 막기 + e2e — developer
+    - [ ] R-492 design-system 15절 차트 글자 12px·첫 값 글자 자리 규칙·시안 푸터 링크 블록 정합 — designer
+    - [ ] R-493 정보 패널 1px 테두리 상자 반복(AI 티) 개선, design-taste 스킬 전·후 inspect·lint 기록 — designer → developer
     - [ ] (QI8) 배포일로 고침 — v0.2.0 첫 노트의 날짜(src/data/releaseNotes.ts `RELEASE_NOTES`의 첫 항목 `date`, 지금은 임시 값 2026-10-21)를 main 배포일로 고치고, QI4(전망 슬라이드)가 병합되면 FAQ Q3 「전망 카드는 예측이 아니라 공식 기관의 추계」 시험 분기(tests/aboutFaq.test.ts)가 켜지는지·`getUsableIndicator('suicide-rate')`의 상담전화 안내가 그대로인지 확인 — 계획: src/data/releaseNotes.ts, tests/releaseNotes.test.ts
 - [x] (SPEC-005 배포 게이트 — REV-005-QI3-1 R-448) 첫 화면 일러스트가 든 커밋을 main에 올리기 전: 형진 님께 AI 도구 이름·생성물 공개 배포 허용 확인 → `docs/design/credits.md`·decision 로그 기록 — 근거: docs/design/credits.md(일러스트 행 「ChatGPT(OpenAI)로 생성, 2026-10-20 형진 님 확인」·약관 메모), ai-log/2026-10-15_SPEC-003_decision.md 후속 147, SPEC-005 문서 끝 「R-448 해결」 줄
 - [ ] SPEC-004 세대로 살아보기(세대 7종·랜덤 세대·알파세대 비선형 생애·출생 시도 선택과 지역별 근현대사·세대별 BGM·실제 연도별 경제·2026년 이후 전망) [2차 ②] — **확정 2026-10-20**(형진 님 「추천안대로 확정」, N16 = 젠더·공정 이슈는 상황 한 줄로) — docs/spec/SPEC-004-세대.md r2(2026-10-20 planner — 7세대·수저 계수 WS·알파 생애 보드 AL·출생 시도 RG·지역 체감 3단계 SS·BGM 7장르 BG·연도별 경제 EY, GM0~GM11, 완료 기준 19항, 마스터 확인 N1~N19, 형진 님 미결 질문 12개)
