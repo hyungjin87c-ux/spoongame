@@ -22,7 +22,9 @@ export const LOGO_HEADER_SVG: string = logoHeaderRaw;
 export const SPRITE_SVG: string = iconsRaw + spoonGradesRaw + deciderRaw;
 
 /** 화면이 쓰는 스프라이트 id (자산에 모두 있는지 tests/titleScreen.test.tsx가 점검한다 — 도형 내용은 점검하지 않는다) */
-export const ICON_IDS = ['i-prev', 'i-forward', 'i-pause', 'i-play', 'i-check'] as const;
+export const ICON_IDS = ['i-prev', 'i-forward', 'i-pause', 'i-play', 'i-check', 'i-proj'] as const;
+/** 그래프 무늬(<pattern>) — 전망 빗금 `hatch`(「전망」 전용)와 65세 이상 점무늬 `dots`(QI4, R-477). 같은 스프라이트 `<defs>`에 한 번만 있다 */
+export const PATTERN_IDS = ['hatch', 'dots'] as const;
 /** 칩 변형(<= 24px, 무늬 없는 실루엣) — 첫 화면에는 쓰지 않는다(M3 이후 화면이 쓴다) */
 export const SPOON_IDS = ['sp-1', 'sp-2', 'sp-3', 'sp-4', 'sp-5'] as const;
 /** 큰 변형(>= 32px) — 첫 화면 수저 다섯 자루 띠(32x52)가 쓴다 */

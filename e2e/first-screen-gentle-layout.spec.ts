@@ -57,9 +57,9 @@ for (const vp of [
       expect(m.slot!.bottom, `설정 줄(스위치) 아래끝 ${Math.round(m.slot!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
       expect(m.main!.bottom, `왼쪽 열 끝 ${Math.round(m.main!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
       expect(m.life!.bottom, '인생 길이가 설정 줄 위(작은 슬롯 → 설정 줄, HS3 ③)').toBeLessThanOrEqual(m.slot!.y + 1);
-      // 푸터 링크 줄은 왼쪽 열 바로 아래 푸터의 첫 줄이다 — HS3 ③④의 요구(설정 줄·왼쪽 열 끝)보다 엄격한 우리 쪽 점검이라 Chromium에서만 건다.
-      // WebKit은 「인생 길이」 legend(float: left)를 분절 컨트롤 옆에 놓지 못하고 위에 쌓아 왼쪽 열이 36px 더 길다(QI3부터 있던 엔진 차이 — 스위치 줄이 그려지며 드러났다): 1280×800 링크 줄이 띠 아래에 걸린다. ai-log 참고.
-      if (!testInfo.project.name.startsWith('webkit')) expect(m.links!.bottom, `푸터 링크 줄 아래끝 ${Math.round(m.links!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
+      // 푸터 링크 줄은 왼쪽 열 바로 아래 푸터의 첫 줄이다 — HS3 ③④의 요구(설정 줄·왼쪽 열 끝)보다 엄격한 우리 쪽 점검. 두 엔진 모두 건다: 지난 회차에는 WebKit이 「인생 길이」 legend(float: left)를 분절 컨트롤 옆에 놓지 못해
+      // 왼쪽 열이 36px 더 길었지만(QI3부터 있던 엔진 차이), QI4 2단계에서 `.slot--small { display: block }`으로 고쳐(QI6·QI7 뒤 마스터 결정 ①) 가드를 없앴다.
+      expect(m.links!.bottom, `푸터 링크 줄 아래끝 ${Math.round(m.links!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
       // 자살률 슬라이드: 켜면 가려진 모양(표제어 + 펼쳐 보기 + 상담전화), 끄면 원문(값이 보임) — 둘 다 오른쪽 열의 보이는 끝(띠 위) 안이다
       await page.getByTestId('carousel-pause').click();
       for (let i = 0; i < 20 && (await page.locator('.slide.is-active').getAttribute('data-slide-id')) !== 'suicide-rate'; i++) await page.getByTestId('carousel-next').click();

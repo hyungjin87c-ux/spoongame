@@ -1,0 +1,4055 @@
+{
+  "note": "첫 화면 묶음에서 뺀 예비 지표 — 앱 코드가 id로 읽지 않는 값: 예비 전망 3개(SPEC-004 PJ 재사용 자리)·옛 전망 요약 future-projection·연령 세부 빈곤율·근거 수집용(research) 지표 23개·격차 지표의 시장소득/지니계수 measures. src/data/koreaStatsReserve.ts의 loadReserveStats()가 필요할 때만 불러오고(별도 청크), 시험·점검 도구는 src/data/koreaStatsFull.ts의 합친 전체를 본다(SPEC-005 QI4 2단계, 초기 로드 ≤ 400,000B · CM-A ≤ +30KB).",
+  "entries": [
+    {
+      "after": "lifecycle-account",
+      "indicator": {
+        "id": "future-projection",
+        "title": "장래인구추계(2022년 기준, 중위 추계)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "future"
+        ],
+        "latest": {"year":2072,"value":36222},
+        "latestUnit": "천 명",
+        "latestLabel": "2072년 추계 총인구(2022년 기준 중위 추계)",
+        "decimals": 0,
+        "columns": [
+          {
+            "key": "year",
+            "label": "연도(추계)"
+          },
+          {
+            "key": "populationThousand",
+            "label": "총인구(천 명)"
+          },
+          {
+            "key": "birthsThousand",
+            "label": "출생아 수(천 명)"
+          },
+          {
+            "key": "tfr",
+            "label": "합계출산율(명)",
+            "decimals": 2
+          },
+          {
+            "key": "lifeExpectancy",
+            "label": "기대수명 전체(년)",
+            "decimals": 1
+          },
+          {
+            "key": "lifeExpectancyMale",
+            "label": "남자(년)",
+            "decimals": 1
+          },
+          {
+            "key": "lifeExpectancyFemale",
+            "label": "여자(년)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "year": 2025,
+            "populationThousand": 51685,
+            "birthsThousand": 218,
+            "tfr": 0.65,
+            "lifeExpectancy": 84.5,
+            "lifeExpectancyMale": 81.6,
+            "lifeExpectancyFemale": 87.3
+          },
+          {
+            "year": 2026,
+            "populationThousand": 51609,
+            "birthsThousand": 229,
+            "tfr": 0.68,
+            "lifeExpectancy": 84.7,
+            "lifeExpectancyMale": 81.9,
+            "lifeExpectancyFemale": 87.5
+          },
+          {
+            "year": 2030,
+            "populationThousand": 51306,
+            "birthsThousand": 263,
+            "tfr": 0.82,
+            "lifeExpectancy": 85.5,
+            "lifeExpectancyMale": 82.8,
+            "lifeExpectancyFemale": 88.1
+          },
+          {
+            "year": 2040,
+            "populationThousand": 50059,
+            "birthsThousand": 259,
+            "tfr": 1.05,
+            "lifeExpectancy": 87.2,
+            "lifeExpectancyMale": 84.8,
+            "lifeExpectancyFemale": 89.5
+          },
+          {
+            "year": 2050,
+            "populationThousand": 47107,
+            "birthsThousand": 212,
+            "tfr": 1.08,
+            "lifeExpectancy": 88.6,
+            "lifeExpectancyMale": 86.5,
+            "lifeExpectancyFemale": 90.7
+          },
+          {
+            "year": 2060,
+            "populationThousand": 42302,
+            "birthsThousand": 156,
+            "tfr": 1.08,
+            "lifeExpectancy": 89.8,
+            "lifeExpectancyMale": 88,
+            "lifeExpectancyFemale": 91.7
+          },
+          {
+            "year": 2072,
+            "populationThousand": 36222,
+            "birthsThousand": 160,
+            "tfr": 1.08,
+            "lifeExpectancy": 91.1,
+            "lifeExpectancyMale": 89.5,
+            "lifeExpectancyFemale": 92.7
+          }
+        ],
+        "aging": {
+          "year2026Share65Plus": 21.6,
+          "shareAbove30By": 2036,
+          "shareAbove40By": 2050,
+          "note": "2026 고령자 통계(장래인구추계 2022~2072 기반): 2026년 65세 이상 1,112만 5천 명(21.6%), 2036년 30%·2050년 40% 초과 전망."
+        },
+        "definition": "장래인구추계는 현재 인구·출산·사망·국제이동 추세를 가정해 계산한 미래 인구입니다(2022년 기준, 중위 추계). 실제 값이 아닌 전망입니다.",
+        "basisId": "s-054",
+        "source": {
+          "org": "통계청(현 국가데이터처)",
+          "table": "KOSIS 장래인구추계(2022년 기준) 중위 추계: 장래 인구변동요인(DT_1BPA004)·장래 합계출산율(DT_1BPA101)·장래 기대수명(DT_1BPA201)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1BPA004",
+          "accessedOn": "2026-10-15"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 화면 표 3개(인구변동요인·합계출산율·기대수명, 중위 추계)에서 값을 읽음",
+          "crossChecks": [
+            "합계출산율 표의 2022년 0.78명이 실제(2022 출생 통계 0.78명)와 같다. 인구변동요인 표의 2022년 출생아는 추계 246천 명이고 실제는 249,186명이다(차이 있음)",
+            "2026 고령자 통계(보도자료)의 2026년 고령인구 21.6%가 같은 추계에서 나온 값"
+          ]
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "2022년 기준 추계는 이미 실제와 어긋난다: 2025년 합계출산율 추계 0.65명(실제 0.80명), 2024년 기대수명 추계 84.3년(생명표 83.7년). 「다가올 세상」 문구에는 「2022년 기준 추계」·「지금 기준으로는」을 붙이고 시나리오(높은/낮은 출산율 등)가 여럿 있음을 밝힌다. 자료갱신 2023-12-14. 2025년 인구주택총조사 등 최신 값과 비교하면 2025년 총인구 추계 51,685천 vs 실제 51,817천."
+      }
+    },
+    {
+      "after": "housing-cost-burden",
+      "indicator": {
+        "id": "korean-children-panel",
+        "title": "한국아동패널(육아정책연구소) 영유아 발달·양육 수치",
+        "unit": null,
+        "kind": "number",
+        "use": [
+          "research"
+        ],
+        "latest": null,
+        "series": [],
+        "candidateSources": [
+          "육아정책연구소 한국아동패널(2008년생 2,150명 추적) 기초분석 보고서(원문 확인 필요)"
+        ],
+        "definition": "",
+        "basisId": "s-049",
+        "source": null,
+        "verification": {
+          "status": "unverified",
+          "reason": "공공데이터포털의 한국아동패널 설문 응답 데이터는 OpenAPI(인증키 신청 필요)라서 쓰지 않는다(C4). 육아정책연구소 누리집은 robots.txt가 게시판 경로(Disallow: /*/*board*)를 막아 공개 보고서를 열람하지 않았다. 영유아 발달·양육 수치를 원문에서 직접 대조하지 못해 검토 후보로만 기록한다."
+        },
+        "safety": null,
+        "usable": false
+      }
+    },
+    {
+      "after": "household-loan-rate",
+      "indicator": {
+        "id": "daycare",
+        "title": "어린이집 이용(보육) 아동 수와 어린이집 수(연말 기준)",
+        "unit": "명",
+        "kind": "line",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":887764},
+        "latestUnit": "명",
+        "latestLabel": "어린이집 이용(보육) 아동 수(계)",
+        "decimals": 0,
+        "series": [
+          {"year":2022,"value":1095450},
+          {"year":2023,"value":1011813},
+          {"year":2024,"value":941303},
+          {"year":2025,"value":887764}
+        ],
+        "seriesLabel": "어린이집 이용(보육) 아동 수(계)",
+        "extraSeries": [
+          {
+            "label": "어린이집 수(계)",
+            "unit": "개소",
+            "decimals": 0,
+            "latest": {"year":2025,"value":26064},
+            "series": [
+              {"year":2022,"value":30923},
+              {"year":2023,"value":28954},
+              {"year":2024,"value":27387},
+              {"year":2025,"value":26064}
+            ]
+          }
+        ],
+        "axis": {
+          "scale": "year",
+          "step": 1,
+          "regular": true,
+          "gaps": [],
+          "breaks": []
+        },
+        "definition": "어린이집 이용 아동 수는 해마다 연말 기준으로 어린이집에 다니는(보육 중인) 아동의 수이며, 교육부 보육통계(국가승인통계)의 값입니다. 입소 대기 아동 수는 이 표에 없습니다.",
+        "basisId": "s-064",
+        "source": {
+          "org": "교육부",
+          "table": "지표누리 e-나라지표 「어린이집 시설수 및 아동수 현황」(원자료: 보육통계 국가승인통계, 표 출처 줄은 「보건복지부 보육통계」)",
+          "url": "https://www.index.go.kr/unify/idx-info.do?idxCd=1583",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "지표누리(e-나라지표) 통계표 화면에서 2022~2025년 값을 읽고(같은 화면을 두 번 열어 확대 대조), 같은 페이지 지표해석 글의 값과 맞춤. 보건복지부 누리집(robots 불허)은 열지 않았다",
+          "crossChecks": [
+            "지표해석 글(2023년 말 어린이집 28,954개소·이용 아동 1,011,813명, 2022년 30,923개소·1,095,450명, 전년 대비 6.4%·7.6% 감소)이 표의 2022·2023년 값과 같음",
+            "2022~2024년은 유형별(국공립·사회복지법인·법인단체 등·민간·가정·협동·직장) 값의 합이 계와 정확히 같음. 2025년 어린이집 수는 합이 계(26,064)와 같지만 이용 아동은 유형별 합 887,400이 계 887,764보다 364명 적음(표 자체의 차이 — 문장에는 계만 쓰고 이 차이를 notes에 적음)",
+            "표의 「전년대비(%)」 열(2023 −7.60·2024 −6.90·2025 −5.70)은 계 값으로 다시 계산한 −7.63·−6.97·−5.69와 소수 둘째 자리 이하에서 어긋남 — 증감률은 문장에 쓰지 않고 계 값끼리만 비교한다"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "이용 아동 수이지 입소 대기·수요 통계가 아니다(대기 수치는 citations.json u-006 미확인). 연령별 이용 아동 수는 이 표에 없다. 표 출처 줄은 「국가승인통계 제15407호」, 같은 페이지 지표정보는 「제154007호」(담당 교육부 영유아정책총괄과, 최근 갱신 2026-05-14)로 적어 번호 표기가 서로 달라 번호는 쓰지 않는다. 2025년 이용 아동 유형별 합계가 계보다 364명 적은 것은 표 그대로 두었다."
+      }
+    },
+    {
+      "after": "daycare",
+      "indicator": {
+        "id": "kindergarten",
+        "title": "유치원 취원율(만 3~5세 유아 중 유치원에 다니는 비율)·원아 수·유치원 수",
+        "unit": "%",
+        "kind": "line",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":58.5},
+        "latestUnit": "%",
+        "latestLabel": "유치원 취원율(만 3~5세 유아 중)",
+        "decimals": 1,
+        "series": [
+          {"year":2016,"value":49},
+          {"year":2017,"value":47.4},
+          {"year":2018,"value":49.9},
+          {"year":2019,"value":48.1},
+          {"year":2020,"value":47.9},
+          {"year":2021,"value":53.4},
+          {"year":2022,"value":51.9},
+          {"year":2023,"value":51.9},
+          {"year":2024,"value":56.3},
+          {"year":2025,"value":58.5}
+        ],
+        "seriesLabel": "유치원 취원율(만 3~5세 유아 중)",
+        "extraSeries": [
+          {
+            "label": "유치원 원아 수",
+            "unit": "명",
+            "decimals": 0,
+            "latest": {"year":2025,"value":481563},
+            "series": [
+              {"year":2016,"value":704138},
+              {"year":2017,"value":694631},
+              {"year":2018,"value":675998},
+              {"year":2019,"value":633913},
+              {"year":2020,"value":612538},
+              {"year":2021,"value":582572},
+              {"year":2022,"value":552812},
+              {"year":2023,"value":521794},
+              {"year":2024,"value":498604},
+              {"year":2025,"value":481563}
+            ]
+          },
+          {
+            "label": "유치원 수",
+            "unit": "개원",
+            "decimals": 0,
+            "latest": {"year":2025,"value":8140},
+            "series": [
+              {"year":2016,"value":8987},
+              {"year":2017,"value":9029},
+              {"year":2018,"value":9021},
+              {"year":2019,"value":8837},
+              {"year":2020,"value":8705},
+              {"year":2021,"value":8660},
+              {"year":2022,"value":8562},
+              {"year":2023,"value":8441},
+              {"year":2024,"value":8294},
+              {"year":2025,"value":8140}
+            ]
+          }
+        ],
+        "axis": {
+          "scale": "year",
+          "step": 1,
+          "regular": true,
+          "gaps": [],
+          "breaks": []
+        },
+        "definition": "취원율은 전국의 만 3~5세 유아 중 유치원에 다니는 유아의 비율입니다. 유치원에 대한 자료이므로 어린이집 원아는 들어 있지 않습니다.",
+        "basisId": "s-065",
+        "source": {
+          "org": "교육부·한국교육개발원",
+          "table": "지표누리 e-나라지표 「유아교육 규모」(원자료: 한국교육개발원 교육통계연보)",
+          "url": "https://www.index.go.kr/unify/idx-info.do?idxCd=1535",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "지표누리(e-나라지표) 통계표 화면에서 2016~2025년 값을 읽고(표를 오른쪽 끝까지 밀어 2025년 열까지 확인) 같은 페이지 지표해석 글과 맞춤",
+          "crossChecks": [
+            "지표해석 글의 원아 수(2016 704,138·2017 694,631·2018 675,998·2019 633,913·2020 612,538·2021 582,572·2022 552,812명)와 유치원 수(2022 8,562개원)가 표 값과 같음",
+            "교원 1인당 원아 수 = 원아 수 ÷ 교원 수가 표와 같음(2024 498,604÷55,404 = 9.0, 2025 481,563÷55,262 = 8.7)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "2025년 값은 한국교육개발원 교육통계연보 기준이다(지표누리 갱신 2026-05-14). 교육부 교육기본통계 속보(8월 발표)와 교육통계연보(9월 발간)는 값이 조금 다를 수 있어 속보 값은 원문을 열지 못해 쓰지 않았다(korea.kr 보도자료 쪽은 첨부 파일만 있고 본문 글이 없다). 취원율은 어린이집을 뺀 값이라 「유치원에 안 다니는 비율」이 곧 「집에 있는 비율」이 아니다."
+      }
+    },
+    {
+      "after": "kindergarten",
+      "indicator": {
+        "id": "preschool-private-education",
+        "title": "유아 사교육 참여율(2024년 유아 사교육비 시험조사, 7~9월 3개월)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2024,"value":47.6},
+        "latestUnit": "%",
+        "latestLabel": "전체 유아 사교육 참여율(시험조사)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "label",
+            "label": "연령"
+          },
+          {
+            "key": "participationPct",
+            "label": "사교육 참여율(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "label": "전체",
+            "participationPct": 47.6
+          },
+          {
+            "label": "2세 미만",
+            "participationPct": 24.6
+          },
+          {
+            "label": "3세",
+            "participationPct": 50.3
+          },
+          {
+            "label": "4세",
+            "participationPct": 68.9
+          },
+          {
+            "label": "5세",
+            "participationPct": 81.2
+          }
+        ],
+        "definition": "2024년 유아 사교육비 시험조사(7~9월 3개월 조사)에서 사교육에 참여한 유아의 비율을 연령별로 적은 값입니다. 시험조사라 연간 값이 아니며, 교육부는 2026년부터 본조사를 실시하고 국가승인통계 지정을 추진한다고 밝혔습니다.",
+        "basisId": "s-066",
+        "source": {
+          "org": "교육부",
+          "table": "보도자료 「아동 발달권 보호를 위한 영유아 사교육 대응 방안 발표」(2026-04-01) 본문 각주의 2024년 유아 사교육비 시험조사 결과",
+          "url": "https://www.moe.go.kr/boardCnts/viewRenew.do?boardID=294&boardSeq=105780&lev=0&m=020402&opType=N",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "교육부 누리집 보도자료 본문(HTML) 각주 「’24.유아 사교육비 시험 조사 결과」에서 읽음. 첨부 파일(hwpx)은 내려받지 않았고 2025-03 시험조사 발표 보도자료 쪽은 본문 글 없이 첨부 파일만 있어 열람하지 않음",
+          "crossChecks": [
+            "각주의 대소 서술(2세 미만 24.6% < 3세 50.3% < 4세 68.9% < 5세 81.2%)이 표 값의 순서와 같고 전체 47.6%가 그 사이에 있음",
+            "언론 요약은 「2세 이하」로 적었으나 교육부 원문은 「2세 미만」 — 원문 표기를 따름(검색 요약은 값으로 쓰지 않음)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "시험조사 값이다(연간화 전, 국가승인통계 지정은 본조사에서 추진). 같은 각주에 사교육비 3개월 총합 8,154억 원·1인당 월평균 33.2만 원이 있으나 1인당 값이 전체 유아 기준인지 참여 유아 기준인지 원문 표기만으로 가를 수 없어 금액은 담지 않았다. 어린이집 특별활동·유치원 특성화 프로그램 등이 조사 범위에서 빠진다는 설명은 이 본문에 없어 쓰지 않았다."
+      }
+    },
+    {
+      "after": "preschool-private-education",
+      "indicator": {
+        "id": "after-school-use",
+        "title": "초등 방과후·돌봄 교육 이용률(초등학생 중)",
+        "unit": "%",
+        "kind": "line",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":52.2},
+        "latestUnit": "%",
+        "decimals": 1,
+        "series": [
+          {"year":2016,"value":58.9},
+          {"year":2017,"value":60.4},
+          {"year":2018,"value":59.3},
+          {"year":2019,"value":58.7},
+          {"year":2021,"value":35.3},
+          {"year":2022,"value":47},
+          {"year":2023,"value":53.2},
+          {"year":2024,"value":50.9},
+          {"year":2025,"value":52.2}
+        ],
+        "seriesLabel": "초등 방과후·돌봄 교육 이용률(2020년은 연간화 미적용이라 뺌)",
+        "axis": {
+          "scale": "year",
+          "step": null,
+          "regular": false,
+          "gaps": [
+            {
+              "from": 2019,
+              "to": 2021
+            }
+          ],
+          "breaks": [
+            {
+              "year": 2024,
+              "note": "2023년까지는 방과후학교·돌봄 참여율이고 2024년 조사부터는 늘봄학교 참여율이다(표 주석)."
+            }
+          ]
+        },
+        "definition": "초등학교 학생의 방과후·돌봄 교육 참여 비율입니다. 2023년까지는 방과후학교·돌봄 참여율이고 2024년 조사부터는 늘봄학교 참여율입니다.",
+        "basisId": "s-067",
+        "source": {
+          "org": "국가데이터처·교육부",
+          "table": "지표누리 저출생 통계지표 「초등 방과후·돌봄 교육 이용률」(원자료: 초중고사교육비조사)",
+          "url": "https://www.index.go.kr/unity/potal/indicator/IndexInfo.do?cdNo=2&clasCd=12&idxCd=H0063&upCd=903",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "지표누리 통계표 화면에서 2016~2025년 값을 읽고(스크롤 버튼이 가린 2025년 칸은 화면을 밀어 다시 확인) 같은 화면의 그래프 모양과 맞춤",
+          "crossChecks": [
+            "표 값 모양(2016~2019 58.7~60.4 → 2020 10.9 → 2021 35.3 → 2022 47.0 → 2023 53.2 → 2024 50.9 → 2025 52.2)이 같은 화면의 그래프 점과 같음",
+            "2020년 값(10.9)은 표 주석 「연간화 미적용 통계로 과거년도 연간화한 자료와 연계한 분석이 불가함」에 따라 시리즈에서 뺐다(연도 간격 2019→2021)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "같은 조사(초중고사교육비조사)의 사교육 참여율·사교육비는 private-education(s-011)에 있다. 2020년 10.9%는 코로나19 시기 연간화 전 값이라 비교하지 않는다. 2024년부터 정의가 늘봄학교 참여율로 바뀌어 2023년 이전과 이어 읽을 때 주의한다."
+      }
+    },
+    {
+      "after": "after-school-use",
+      "indicator": {
+        "id": "school-child-care-type",
+        "title": "초등학생 자녀 가구의 방과 후 돌봄 유형(취학 자녀 돌봄 유형)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2023,"value":75.2},
+        "latestUnit": "%",
+        "latestLabel": "초등학생 자녀 가구의 방과 후 돌봄 유형 중 학원 비율",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "label",
+            "label": "돌봄 유형"
+          },
+          {
+            "key": "y2015",
+            "label": "2015년(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y2020",
+            "label": "2020년(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y2023",
+            "label": "2023년(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "label": "학원",
+            "y2015": 60.7,
+            "y2020": 37.7,
+            "y2023": 75.2
+          },
+          {
+            "label": "초등 돌봄교실",
+            "y2015": 6.3,
+            "y2020": 6.4,
+            "y2023": 5.7
+          },
+          {
+            "label": "지역 아동센터",
+            "y2015": 2.5,
+            "y2020": 2.8,
+            "y2023": 1.7
+          },
+          {
+            "label": "방과후 아카데미",
+            "y2015": 5.5,
+            "y2020": 2.2,
+            "y2023": 4.7
+          },
+          {
+            "label": "공부방",
+            "y2015": 2.2,
+            "y2020": null,
+            "y2023": null
+          },
+          {
+            "label": "집에서 지냄(주로 보호자 있음)",
+            "y2015": 19,
+            "y2020": 42.1,
+            "y2023": 11.7
+          },
+          {
+            "label": "집에서 지냄(특별히 돌봐 줄 사람 없음)",
+            "y2015": 2.9,
+            "y2020": 8.3,
+            "y2023": 0.8
+          },
+          {
+            "label": "기타",
+            "y2015": 0.8,
+            "y2020": 0.5,
+            "y2023": 0.3
+          }
+        ],
+        "definition": "초등학생 자녀의 방과 후 돌봄기관(유형)을 초등학생 자녀를 둔 가구가 답한 구성비입니다(열마다 합 100%). 가족실태조사는 3년마다 하며 표에는 2015·2020·2023년 값이 있습니다.",
+        "basisId": "s-068",
+        "source": {
+          "org": "성평등가족부",
+          "table": "지표누리 한국의 사회지표 「취학 자녀 돌봄 유형」(원자료: 가족실태조사, 지표누리 최근 갱신 2025-11-18)",
+          "url": "https://www.index.go.kr/unity/potal/indicator/IndexInfo.do?cdNo=2&clasCd=10&idxCd=F0041&upCd=2",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "지표누리 통계표 화면에서 2015·2020·2023년 열을 읽고 확대해 다시 확인. KOSIS 원표와의 대조는 하지 못했다(같은 이름의 KOSIS 표는 한부모가족실태조사 쪽만 찾아짐)",
+          "crossChecks": [
+            "2020년 열의 합이 100.0이고 2015년(99.9)·2023년(100.1)은 반올림 차이 안(표의 합계 칸은 모두 100.0)",
+            "표 주석: 초등학생 자녀를 둔 가구 대상, 「공부방」은 2020년 조사에서 응답 항목에서 제외"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "방과 후 돌봄 공백을 직접 잰 값이 아니다. 「집에서 지냄(특별히 돌봐 줄 사람 없음)」은 2015년 2.9%·2020년 8.3%(코로나19 시기)·2023년 0.8%이며 이 항목을 공백의 크기로 읽지 않는다. 2020년은 학원 이용이 낮고 집에서 지내는 비율이 높아 이전·이후와 이어 읽기 어렵다. 지표누리 표 한 곳에서만 읽었다."
+      }
+    },
+    {
+      "after": "school-child-care-type",
+      "indicator": {
+        "id": "discharge-stay-days",
+        "title": "전체 퇴원환자 평균 재원일수(연령별, 2024)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2024,"value":5},
+        "latestUnit": "일",
+        "latestLabel": "0~14세 퇴원환자 평균 재원일수(성별 전체)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "label",
+            "label": "연령"
+          },
+          {
+            "key": "days",
+            "label": "평균 재원일수(일)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "label": "전체",
+            "days": 7.9
+          },
+          {
+            "label": "0~14세",
+            "days": 5
+          },
+          {
+            "label": "15~24세",
+            "days": 5.8
+          },
+          {
+            "label": "25~34세",
+            "days": 5.4
+          },
+          {
+            "label": "35~44세",
+            "days": 5.5
+          },
+          {
+            "label": "45~54세",
+            "days": 6.4
+          },
+          {
+            "label": "55~64세",
+            "days": 7.3
+          },
+          {
+            "label": "65~74세",
+            "days": 8.3
+          },
+          {
+            "label": "75세 이상",
+            "days": 11.2
+          }
+        ],
+        "definition": "병원에서 퇴원한 환자(전체 퇴원환자)의 평균 재원일수를 연령대별로 적은 2024년 값입니다. 질병관리청 퇴원손상심층조사의 추정값이며 표준오차는 모든 칸에서 0.2일입니다.",
+        "basisId": "s-069",
+        "source": {
+          "org": "질병관리청",
+          "table": "KOSIS 퇴원손상심층조사 「전체 퇴원환자 평균재원일수 : 성별, 연령별」(DT_11760NP53, 수록기간 2005~2024, 자료갱신 2026-08-28)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=177&tblId=DT_11760NP53",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 2024년 열(성별 전체)을 읽고 같은 화면을 확대해 연령 행 이름(0-14세 등)과 값을 다시 확인. 연령 행 이름의 「-」는 「~」로 옮겨 적음",
+          "crossChecks": [
+            "표의 전체 행(7.9일)이 연령대 행의 범위(0-14세 5.0 ~ 75세 이상 11.2) 안에 있고 연령이 높아질수록 길어지는 흐름(15~24세 5.8 → 75세 이상 11.2)이 같은 화면의 남자·여자 행에서도 같음",
+            "표준오차 열이 전체·0-14세 모두 0.2일"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "성별 전체 행만 담았다(남자 0-14세 5.0일·여자 5.1일은 화면에서 읽었으나 쓰지 않음). 질병 종류별 재원일수와 보호자 간병·상주 여부는 이 표에 없다(소아 입원 보호자 간병 실태는 citations.json u-007 미확인). 0~14세는 영유아만이 아니라 아동 전체를 포함한다."
+      }
+    },
+    {
+      "after": "discharge-stay-days",
+      "indicator": {
+        "id": "floor-noise-consult",
+        "title": "층간소음 이웃사이센터 전화상담 접수 건수(연간)",
+        "unit": "건",
+        "kind": "line",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":32662},
+        "latestUnit": "건",
+        "decimals": 0,
+        "series": [
+          {"year":2012,"value":8795},
+          {"year":2013,"value":18524},
+          {"year":2014,"value":20641},
+          {"year":2015,"value":19278},
+          {"year":2016,"value":19495},
+          {"year":2017,"value":22849},
+          {"year":2018,"value":28231},
+          {"year":2019,"value":26257},
+          {"year":2020,"value":42250},
+          {"year":2021,"value":46596},
+          {"year":2022,"value":40393},
+          {"year":2023,"value":36435},
+          {"year":2024,"value":33027},
+          {"year":2025,"value":32662}
+        ],
+        "seriesLabel": "전화상담 서비스 접수 건수(콜센터+온라인)",
+        "extraSeries": [
+          {
+            "label": "현장진단(방문상담·소음측정) 서비스 접수 건수",
+            "decimals": 0,
+            "latest": {"year":2025,"value":7111},
+            "series": [
+              {"year":2012,"value":1829},
+              {"year":2013,"value":3271},
+              {"year":2014,"value":4465},
+              {"year":2015,"value":4712},
+              {"year":2016,"value":6306},
+              {"year":2017,"value":9226},
+              {"year":2018,"value":10142},
+              {"year":2019,"value":7971},
+              {"year":2020,"value":12139},
+              {"year":2021,"value":9211},
+              {"year":2022,"value":7771},
+              {"year":2023,"value":7064},
+              {"year":2024,"value":7033},
+              {"year":2025,"value":7111}
+            ]
+          }
+        ],
+        "axis": {
+          "scale": "year",
+          "step": 1,
+          "regular": true,
+          "gaps": [],
+          "breaks": []
+        },
+        "definition": "한국환경공단 층간소음 이웃사이센터가 해마다 전화상담(콜센터·온라인)으로 접수한 건수입니다. 방문상담·소음측정으로 이어지는 현장진단 접수는 따로 센 보조 시리즈입니다.",
+        "basisId": "s-070",
+        "source": {
+          "org": "한국환경공단 층간소음 이웃사이센터",
+          "table": "자료마당 통계자료 「(1단계) 전화상담 서비스」·「(2단계) 현장진단(방문상담, 소음측정) 서비스」(주소는 누리집 정책에 따라 메인화면만 적음)",
+          "url": "https://floor.noiseinfo.or.kr/",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "이웃사이센터 누리집 자료마당 통계자료 화면(HTML 표 2개)의 2012~2025년 값을 읽음. 첨부 파일·사전정보공표 자료는 열지 않음",
+          "crossChecks": [
+            "전화상담: 해마다 콜센터 + 온라인 = 계이고(2012 7,021+1,774 = 8,795 … 2025 30,212+2,450 = 32,662), 14개 연도 합계가 표 합계 395,433건과 같음",
+            "2025년 값이 누리집 첫 화면 「연도별 통계」(전화상담 32,662건, 현장진단 접수 7,111건·수행 6,834건, 추가전화상담 4,701·방문상담 1,678·방문상담·소음측정 455)와 같음",
+            "현장진단: 14개 연도 접수 합계가 표 합계 98,251건과 같고 2025년 처리 합계 6,834 = 추가전화상담 4,701 + 방문·측정 소계 2,133"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "이웃사이센터에 접수된 상담 건수이지 이웃 간 신고·분쟁의 전체가 아니다(공동주택 중심 서비스라 해석에 주의). 소음 유형(아이 뛰는 소리·가전 등)별 건수는 이 표에 없다. 누리집 저작권 정책은 자료의 무단 복제·배포를 원칙적으로 금하고 수익 목적 이용은 사전 협의를 요구하므로 표를 복제하지 않고 값만 요약해 출처(한국환경공단)를 적는다. 개별 상세 화면 링크는 허용되지 않아 메인 주소만 적었다."
+      }
+    },
+    {
+      "after": "heat-projection",
+      "indicator": {
+        "id": "college-advance-rate",
+        "title": "고등학교 졸업자의 대학 진학률(2016~2024)",
+        "unit": "%",
+        "kind": "line",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2024,"value":73.6},
+        "latestUnit": "%",
+        "decimals": 1,
+        "series": [
+          {"year":2016,"value":69.8},
+          {"year":2017,"value":68.9},
+          {"year":2018,"value":69.7},
+          {"year":2019,"value":70.4},
+          {"year":2020,"value":72.5},
+          {"year":2021,"value":73.7},
+          {"year":2022,"value":73.3},
+          {"year":2023,"value":72.8},
+          {"year":2024,"value":73.6}
+        ],
+        "seriesLabel": "고등학교 졸업자의 상급학교(대학) 진학률",
+        "axis": {
+          "scale": "year",
+          "step": 1,
+          "regular": true,
+          "gaps": [],
+          "breaks": []
+        },
+        "definition": "고등학교 졸업자 가운데 상급학교(대학)에 진학한 비율입니다. 교육통계분석자료집 「취학률 및 진학률」의 값이며, 표 주석에 따라 2010년까지는 대학 합격자 기준, 2011년부터는 대학 등록자 기준입니다.",
+        "basisId": "s-077",
+        "source": {
+          "org": "교육부·한국교육개발원",
+          "table": "지표누리 e-나라지표 「취학률 및 진학률」(교육통계분석자료집, 지표누리 최근 갱신 2025-11-03)",
+          "url": "https://www.index.go.kr/unify/idx-info.do?idxCd=1520",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "지표누리(e-나라지표) 통계표 화면에서 2016~2025년 열을 읽고 확대해 다시 확인(2025년 칸은 아직 갱신되지 않은 「-」라 2024년까지 담음)",
+          "crossChecks": [
+            "같은 표에서 1980~1989년 구간도 같은 형식·같은 주석(2011년부터 대학 등록자 기준)으로 읽혀 시리즈 정의가 이어짐",
+            "2016~2024년 값이 68.9~73.7% 범위에서 완만하게 움직이고 급변하는 해가 없음"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "교육부 보도자료·교육통계연보 원문과의 대조는 하지 못했다(지표누리 표 한 곳에서만 읽음). 2025년 값은 표에 아직 없다. 같은 표의 중학교 졸업자 상급학교 진학률은 2016~2025년 99.6~99.7%로 거의 일정해 담지 않았다. 진학하지 않는 길을 낮춰 보는 문장에 쓰지 않는다."
+      }
+    },
+    {
+      "after": "college-advance-rate",
+      "indicator": {
+        "id": "vocational-grad-employment",
+        "title": "직업계고 졸업자 취업통계(2025년 졸업자)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":55.2},
+        "latestUnit": "%",
+        "latestLabel": "직업계고 졸업자 취업률(전체, 2025년 졸업자)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "label",
+            "label": "구분"
+          },
+          {
+            "key": "graduates",
+            "label": "졸업자(명)"
+          },
+          {
+            "key": "rate",
+            "label": "취업률(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "label": "직업계고 전체",
+            "graduates": 59661,
+            "rate": 55.2
+          },
+          {
+            "label": "특성화고",
+            "graduates": 51609,
+            "rate": 52.4
+          },
+          {
+            "label": "마이스터고",
+            "graduates": 5252,
+            "rate": 73.1
+          },
+          {
+            "label": "일반고 직업반",
+            "graduates": 2800,
+            "rate": 38.2
+          }
+        ],
+        "definition": "교육부·한국교육개발원 「고등학교 졸업자 취업통계」의 2025년 값입니다. 직업계고(특성화고·마이스터고·일반고 직업반) 졸업자 수와 취업률이며, 2020년부터 고용보험·건강보험 등 공공 데이터를 연결해 만드는 국가승인통계입니다.",
+        "basisId": "s-078",
+        "source": {
+          "org": "교육부·한국교육개발원",
+          "table": "KOSIS 고등학교 졸업자 취업통계(DT_920024_3N_004, 수록 2020~2025, 자료갱신 2026-01-05) · 교육부 보도자료(2025-11-25) 「2025년 고등학교 졸업자 취업통계」",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=334&tblId=DT_920024_3N_004",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 2025년 열(졸업자 수·취업률)을 읽고 확대해 확인했고, 교육부 2025-11-25 보도자료 본문의 취업률 55.2%와 맞춤",
+          "crossChecks": [
+            "유형별 졸업자 합(특성화고 51,609 + 마이스터고 5,252 + 일반고 직업반 2,800)이 총계 59,661명과 같음",
+            "교육부 보도자료의 「졸업자 취업률 55.2%(전년 대비 0.1%p 하락)」가 KOSIS 표 총계 55.2%와 같음"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "취업률의 분모(진학자 등을 뺐는지)는 표·보도자료 본문에서 확인하지 못해 「졸업자 취업률」이라는 이름 그대로 쓴다. 광역시 55.8%·비광역 54.7%와 남녀 졸업자 수(남 35,293명·여 24,368명)는 담지 않았다. 유형별 값(마이스터고 73.1% 등)을 어느 길이 낫다는 말로 쓰지 않는다. 보도자료는 2020년부터 매년 4월 1일 기준으로 공공 데이터를 연결해 집계한다고 적는다."
+      }
+    },
+    {
+      "after": "vocational-grad-employment",
+      "indicator": {
+        "id": "youth-exam-prep",
+        "title": "청년층 비경제활동인구의 취업시험 준비자(5월 기준, 2024~2026)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2026,"value":600},
+        "latestUnit": "천 명",
+        "latestLabel": "15~29세 비경제활동인구 가운데 취업시험 준비자(2026년 5월)",
+        "decimals": 0,
+        "columns": [
+          {
+            "key": "group",
+            "label": "연령"
+          },
+          {
+            "key": "year",
+            "label": "조사 연도(5월)"
+          },
+          {
+            "key": "nonActive",
+            "label": "비경제활동인구(천 명)"
+          },
+          {
+            "key": "examPrep",
+            "label": "취업시험 준비자(천 명)"
+          }
+        ],
+        "rows": [
+          {
+            "group": "15~29세",
+            "year": 2024,
+            "nonActive": 4066,
+            "examPrep": 565
+          },
+          {
+            "group": "15~29세",
+            "year": 2025,
+            "nonActive": 4030,
+            "examPrep": 585
+          },
+          {
+            "group": "15~29세",
+            "year": 2026,
+            "nonActive": 4128,
+            "examPrep": 600
+          },
+          {
+            "group": "20~34세",
+            "year": 2024,
+            "nonActive": 2597,
+            "examPrep": 655
+          },
+          {
+            "group": "20~34세",
+            "year": 2025,
+            "nonActive": 2521,
+            "examPrep": 674
+          },
+          {
+            "group": "20~34세",
+            "year": 2026,
+            "nonActive": 2539,
+            "examPrep": 686
+          }
+        ],
+        "definition": "경제활동인구조사 청년층 부가조사(매년 5월)에서 비경제활동인구 가운데 취업시험을 준비하는 사람의 수입니다(단위 천 명). 15~29세와 20~34세 두 연령 범위의 값을 함께 담았습니다.",
+        "basisId": "s-079",
+        "source": {
+          "org": "국가데이터처",
+          "table": "KOSIS 청년층 부가조사 「성/연령별 비경제활동인구 취업시험 준비」(DT_1DE9055S, 수록 2006.05~2026.05, 자료갱신 2026-07-23)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1DE9055S",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면에서 2024·2025·2026년 5월의 비경제활동인구와 취업시험 준비자 칸을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "취업시험 준비자의 남녀 합이 전체와 같음: 2024년 15~29세 321+244=565, 2026년 283+317=600, 2026년 20~34세 346+340=686",
+            "2025년 15~29세는 남 288+여 298=586이 전체 585와 반올림 차이 1천 명"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "비경제활동인구(구직활동을 하지 않는 사람) 안의 준비자 수이며 청년 전체의 값이 아니다. 준비 분야별(일반기업체 204천 명 등)·남녀별 값은 문장에 쓰지 않았다. 합격 가능성이나 준비 기간을 말하는 값이 아니다."
+      }
+    },
+    {
+      "after": "youth-exam-prep",
+      "indicator": {
+        "id": "startup-survival",
+        "title": "신생기업 생존율(1년·5년 등, 대표자 연령별, 2023년 기준)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2023,"value":36.4},
+        "latestUnit": "%",
+        "latestLabel": "전체 신생기업의 5년 생존율(2023년 기준)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "group",
+            "label": "대표자 연령"
+          },
+          {
+            "key": "y1",
+            "label": "1년 생존율(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y2",
+            "label": "2년 생존율(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y3",
+            "label": "3년 생존율(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y4",
+            "label": "4년 생존율(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y5",
+            "label": "5년 생존율(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y6",
+            "label": "6년 생존율(%)",
+            "decimals": 1
+          },
+          {
+            "key": "y7",
+            "label": "7년 생존율(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "group": "전체",
+            "y1": 64.4,
+            "y2": 54,
+            "y3": 45.9,
+            "y4": 41,
+            "y5": 36.4,
+            "y6": 31.3,
+            "y7": 28.2
+          },
+          {
+            "group": "30대 미만",
+            "y1": 57.7,
+            "y2": 45.1,
+            "y3": 36.2,
+            "y4": 32.1,
+            "y5": 26.7,
+            "y6": 22,
+            "y7": 19
+          },
+          {
+            "group": "30대",
+            "y1": 63.7,
+            "y2": 52.5,
+            "y3": 44.5,
+            "y4": 40.3,
+            "y5": 35.3,
+            "y6": 30.2,
+            "y7": 27.1
+          },
+          {
+            "group": "40대",
+            "y1": 66.8,
+            "y2": 56.8,
+            "y3": 48.9,
+            "y4": 43.7,
+            "y5": 39.2,
+            "y6": 34.1,
+            "y7": 30.8
+          },
+          {
+            "group": "50대",
+            "y1": 66.1,
+            "y2": 56.3,
+            "y3": 48.3,
+            "y4": 42.8,
+            "y5": 38.4,
+            "y6": 33.3,
+            "y7": 30.2
+          },
+          {
+            "group": "60대",
+            "y1": 64,
+            "y2": 54.1,
+            "y3": 45.7,
+            "y4": 40.6,
+            "y5": 36.3,
+            "y6": 30.7,
+            "y7": 27.5
+          },
+          {
+            "group": "70대 이상",
+            "y1": 59.9,
+            "y2": 49,
+            "y3": 41.2,
+            "y4": 35.2,
+            "y5": 29.8,
+            "y6": 24.8,
+            "y7": 21.4
+          }
+        ],
+        "definition": "기업생멸행정통계의 신생기업 생존율(%)입니다. 신생기업이 1~7년 뒤에도 남아 있는 비율이며, 표의 기준 연도는 2023년(열 제목)입니다. 어느 해에 생긴 기업을 몇 년 뒤에 본 값인지의 세부 정의는 통계설명자료를 열지 못해 확인하지 못했습니다.",
+        "basisId": "s-080",
+        "source": {
+          "org": "국가데이터처",
+          "table": "KOSIS 기업생멸행정통계 「신생기업 생존율(산업별, DT_2BD1103)」·「대표자 성·연령별(DT_2BD1104)」(수록 2012~2023, 자료갱신 2025-12-29)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_2BD1104",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 두 개의 2023년 열을 읽고(산업별 표의 전체 행, 대표자 성·연령별 표의 성별 계 행) 확대해 다시 확인",
+          "crossChecks": [
+            "산업별 표의 전체 행과 대표자 성·연령별 표의 계 행이 1~7년 생존율 7개 값(64.4·54.0·45.9·41.0·36.4·31.3·28.2)에서 모두 같음",
+            "모든 연령대에서 생존율이 연차가 늘수록 줄어드는 순서(1년 > 2년 > … > 7년)로 읽힘"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "신생기업 집단의 값이며 개별 창업의 성패를 말하지 않는다. 40·50대 창업·자영업 비중(R-05 원 요청)이 아니라 이 연령대 대표자의 신생기업 생존율이다(비중은 u-014). 성별 행(남·여)과 2022년 이전 열은 담지 않았다. 「권한다/말린다」로 읽히는 문장에 쓰지 않는다."
+      }
+    },
+    {
+      "after": "startup-survival",
+      "indicator": {
+        "id": "nonregular-by-age",
+        "title": "연령별 임금근로자의 정규직·비정규직(2025년 8월)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":8568},
+        "latestUnit": "천 명",
+        "latestLabel": "비정규직 근로자(전체, 2025년 8월)",
+        "decimals": 0,
+        "columns": [
+          {
+            "key": "group",
+            "label": "연령"
+          },
+          {
+            "key": "wage",
+            "label": "임금근로자(천 명)"
+          },
+          {
+            "key": "regular",
+            "label": "정규직(천 명)"
+          },
+          {
+            "key": "nonregular",
+            "label": "비정규직(천 명)"
+          }
+        ],
+        "rows": [
+          {
+            "group": "계",
+            "wage": 22413,
+            "regular": 13845,
+            "nonregular": 8568
+          },
+          {
+            "group": "15~19세",
+            "wage": 131,
+            "regular": 17,
+            "nonregular": 114
+          },
+          {
+            "group": "20~29세",
+            "wage": 3258,
+            "regular": 1827,
+            "nonregular": 1431
+          },
+          {
+            "group": "30~39세",
+            "wage": 4852,
+            "regular": 3714,
+            "nonregular": 1139
+          },
+          {
+            "group": "40~49세",
+            "wage": 4865,
+            "regular": 3661,
+            "nonregular": 1204
+          },
+          {
+            "group": "50~59세",
+            "wage": 4952,
+            "regular": 3317,
+            "nonregular": 1636
+          },
+          {
+            "group": "60세 이상",
+            "wage": 4354,
+            "regular": 1310,
+            "nonregular": 3044
+          }
+        ],
+        "definition": "경제활동인구조사 근로형태별 부가조사(8월 기준)의 연령별 임금근로자·정규직·비정규직 수입니다(단위 천 명, 성별은 합계만). 비정규직 비율은 표에 없고 비정규직 수를 임금근로자 수로 나눈 값입니다.",
+        "basisId": "s-081",
+        "source": {
+          "org": "국가데이터처",
+          "table": "KOSIS 「성/연령별 근로형태(비정규직)별 취업자」(DT_1DE7006S, 근로형태별 부가조사 수록 2003.08~2025.08, 자료갱신 2025-10-28)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1DE7006S",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면에서 2025년 8월 열의 성별 계 행을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "임금근로자 = 정규직 + 비정규직: 15~19세 131=17+114, 20~29세 3,258=1,827+1,431, 40~49세 4,865=3,661+1,204, 60세 이상 4,354=1,310+3,044, 계 22,413=13,845+8,568(30대·50대는 반올림 차이 1천 명)",
+            "연령별 임금근로자 합(22,412)이 계(22,413)와 반올림 차이 1천 명"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "시간제 근로자 비율은 이 표에 없다(근로형태별 부가조사의 다른 표 — u-015). 「비정규직」은 표의 이름 그대로 쓰고 한시적·시간제·비전형 내역은 담지 않았다. 비정규직 근로자를 낮춰 보는 문장에 쓰지 않는다. 2023년 8월 20~29세는 임금근로자 3,528천 명·비정규직 1,423천 명(40.3%)이었다(화면에서 읽었으나 담지 않음)."
+      }
+    },
+    {
+      "after": "nonregular-by-age",
+      "indicator": {
+        "id": "telework-adoption",
+        "title": "재택근무제도 시행 비율(기업·공공기관, 2025)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":24.1},
+        "latestUnit": "%",
+        "latestLabel": "재택근무제도를 시행하는 기업·공공기관 비율(전체, 2025)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "group",
+            "label": "구분"
+          },
+          {
+            "key": "cases",
+            "label": "사례수(곳)"
+          },
+          {
+            "key": "rate",
+            "label": "재택근무제도 시행(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "group": "전체",
+            "cases": 4085,
+            "rate": 24.1
+          },
+          {
+            "group": "공공기관 등",
+            "cases": 1474,
+            "rate": 43.6
+          },
+          {
+            "group": "기업",
+            "cases": 2611,
+            "rate": 13.1
+          }
+        ],
+        "definition": "성평등가족부 「기업 및 공공기관의 가족친화 수준 조사」(2025)에서 재택근무제도를 시행하는 기업·공공기관의 비율(%)입니다. 조사에 응답한 기관 수(사례수)와 함께 담았습니다. 일하는 사람이 실제로 재택근무를 한 비율이 아닙니다.",
+        "basisId": "s-082",
+        "source": {
+          "org": "성평등가족부",
+          "table": "KOSIS 기업 및 공공기관의 가족친화 수준 조사 「재택근무제도 시행」(DT_MOGE_15000001013, 수록 2015~2025, 자료갱신 2026-02-03)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=154&tblId=DT_MOGE_15000001013",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 2025년 열(사례수·시행 비율)을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "공공기관 등 43.6%(1,474곳)와 기업 13.1%(2,611곳)를 사례수로 가중한 평균이 전체 24.1%(4,085곳)와 같음(98,470.5÷4,085=24.1)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "제도 시행 기관의 비율이며 재택근무를 하는 사람의 비율이 아니다(근로자 기준 비율은 u-016 미확인). 2022년 사회조사의 재택근무 17.7%(19세 이상 인구 표기)는 기준 모집단을 확인하지 못해 담지 않았다. 앞선 연도(2015~2024) 값은 읽지 않았다."
+      }
+    },
+    {
+      "after": "telework-adoption",
+      "indicator": {
+        "id": "ltc-family-relation",
+        "title": "장기요양 급여 이용자의 가족 응답자: 수급자와의 관계(2025)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":35.9},
+        "latestUnit": "%",
+        "latestLabel": "장기요양 급여 이용자의 가족 응답자 가운데 딸 비율(2025)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "group",
+            "label": "응답 가족 구분"
+          },
+          {
+            "key": "respondents",
+            "label": "응답자 수(명)"
+          },
+          {
+            "key": "spouse",
+            "label": "배우자(%)",
+            "decimals": 1
+          },
+          {
+            "key": "son",
+            "label": "아들(%)",
+            "decimals": 1
+          },
+          {
+            "key": "daughterInLaw",
+            "label": "며느리(%)",
+            "decimals": 1
+          },
+          {
+            "key": "daughter",
+            "label": "딸(%)",
+            "decimals": 1
+          },
+          {
+            "key": "sonInLaw",
+            "label": "사위(%)",
+            "decimals": 1
+          },
+          {
+            "key": "grandchild",
+            "label": "손자녀(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "group": "전체",
+            "respondents": 861115,
+            "spouse": 18.8,
+            "son": 29.7,
+            "daughterInLaw": 9.9,
+            "daughter": 35.9,
+            "sonInLaw": 0.6,
+            "grandchild": 1
+          },
+          {
+            "group": "남성",
+            "respondents": 330367,
+            "spouse": 16.7,
+            "son": 77.4,
+            "daughterInLaw": null,
+            "daughter": null,
+            "sonInLaw": null,
+            "grandchild": null
+          },
+          {
+            "group": "여성",
+            "respondents": 530748,
+            "spouse": 20.1,
+            "son": null,
+            "daughterInLaw": 16,
+            "daughter": 58.2,
+            "sonInLaw": null,
+            "grandchild": null
+          },
+          {
+            "group": "40세 미만",
+            "respondents": 14007,
+            "spouse": 0,
+            "son": null,
+            "daughterInLaw": null,
+            "daughter": null,
+            "sonInLaw": null,
+            "grandchild": null
+          },
+          {
+            "group": "40~49세",
+            "respondents": 70644,
+            "spouse": 0,
+            "son": null,
+            "daughterInLaw": null,
+            "daughter": null,
+            "sonInLaw": null,
+            "grandchild": null
+          },
+          {
+            "group": "50~59세",
+            "respondents": 306997,
+            "spouse": 1.5,
+            "son": null,
+            "daughterInLaw": null,
+            "daughter": null,
+            "sonInLaw": null,
+            "grandchild": null
+          },
+          {
+            "group": "60~69세",
+            "respondents": 295821,
+            "spouse": 11.1,
+            "son": null,
+            "daughterInLaw": null,
+            "daughter": null,
+            "sonInLaw": null,
+            "grandchild": null
+          },
+          {
+            "group": "70세 이상",
+            "respondents": 173647,
+            "spouse": 71.7,
+            "son": null,
+            "daughterInLaw": null,
+            "daughter": null,
+            "sonInLaw": null,
+            "grandchild": null
+          }
+        ],
+        "definition": "보건복지부 장기요양실태조사(2025)에서 장기요양 급여 이용자(수급자)의 가족이 답한 「수급자와의 관계」 구성비(%)입니다. 응답자 수는 명이며, 전체 행은 소계, 남성·여성은 응답 가족의 성별, 연령대 행은 응답 가족의 연령대입니다. 읽지 않은 칸은 비워 두었습니다.",
+        "basisId": "s-083",
+        "source": {
+          "org": "보건복지부",
+          "table": "KOSIS 장기요양실태조사 「(장기요양급여 이용자의 가족) 수급자와의 관계」(DT_117104_A026, 수록 3년 주기 2019~2025, 자료갱신 2026-08-31)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=117&tblId=DT_117104_A026",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 2025년 열(소계·응답 가족 성별·응답 가족 연령대)을 읽고 확대해 다시 확인. 보건복지부 누리집(robots 불허)은 열지 않았다",
+          "crossChecks": [
+            "응답 가족 성별 응답자 수의 합(330,367+530,748)이 소계 861,115명과 같음",
+            "응답 가족 연령대 응답자 수의 합(861,116)이 소계 861,115명과 반올림 차이 1명",
+            "소계 행의 관계 여섯 열(배우자 18.8·아들 29.7·며느리 9.9·딸 35.9·사위 0.6·손자녀 1.0)을 더하면 95.9%로 100% 이하(나머지 열은 읽지 않음)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "「응답 가족」은 조사에 응한 가족 구성원이며 수급자를 돌보는 모든 가족이 아니다. 수급자 연령별 배우자 비율(65세 미만 54.6%·70~74세 53.4%·90세 이상 2.8% 등)과 지역별 값은 화면에서 읽었으나 담지 않았다. 효도·책임을 압박하거나 가족을 탓하는 문장에 쓰지 않는다. 건강보험공단 통계는 robots 불허(u-004)라 열지 않았다."
+      }
+    },
+    {
+      "after": "ltc-family-relation",
+      "indicator": {
+        "id": "longest-job-exit",
+        "title": "55~79세가 가장 오래 근무한 일자리를 그만둔 이유와 그만둔 나이(2026년 5월)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2026,"value":1139},
+        "latestUnit": "천 명",
+        "latestLabel": "가장 오래 근무한 일자리를 권고사직·명예퇴직·정리해고로 그만둔 55~79세(2026년 5월)",
+        "decimals": 0,
+        "columns": [
+          {
+            "key": "reason",
+            "label": "그만둔 이유"
+          },
+          {
+            "key": "count",
+            "label": "인원(천 명)"
+          },
+          {
+            "key": "meanAge",
+            "label": "그만둔 나이(평균, 세)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "reason": "계",
+            "count": 11552,
+            "meanAge": 53
+          },
+          {
+            "reason": "정년퇴직",
+            "count": 1529,
+            "meanAge": 60.4
+          },
+          {
+            "reason": "권고사직·명예퇴직·정리해고",
+            "count": 1139,
+            "meanAge": 53.9
+          },
+          {
+            "reason": "사업부진·조업중단·휴폐업",
+            "count": 2871,
+            "meanAge": 53.9
+          },
+          {
+            "reason": "건강이 좋지 않아서",
+            "count": 2552,
+            "meanAge": 56.3
+          }
+        ],
+        "definition": "경제활동인구조사 고령층 부가조사(매년 5월)에서 55~79세가 가장 오래 근무한 일자리를 그만둔 이유별 인원(천 명)과 그만둔 평균 나이(세)입니다. 이유 8가지 가운데 5개 행만 담았습니다.",
+        "basisId": "s-084",
+        "source": {
+          "org": "국가데이터처",
+          "table": "KOSIS 고령층 부가조사 「성별 가장 오래 근무한 일자리를 그만둔 이유」(DT_1DE8037S, 수록 2005.05~2026.05, 자료갱신 2026-08-05)·「가장 오래 근무한 일자리 그만둔 이유별 그만둔 연령」(DT_1DE8075S, 수록 2013.05~2026.05)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1DE8037S",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 두 개의 2026년 5월 열(55~79세, 성별 계)을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "이유별 인원 8개(정년퇴직 1,529·권고사직 등 1,139·사업부진 등 2,871·가족돌봄 등 1,757·건강 2,552·그 밖의 두 항목 610·1,094)의 합이 계 11,552천 명과 같음",
+            "2023~2025년 그만둔 평균 나이(계 52.7·52.8·52.9)가 2026년 53.0과 이어지고 55~64세 계(49.4~49.2)도 같은 흐름"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "55~79세가 지난 일을 돌아본 값이라 45~58세의 현재 비자발적 이직 규모가 아니다(연간 규모는 u-017). 「권고사직·명예퇴직·정리해고」와 「사업부진·조업중단·휴폐업」을 함께 비자발적 이직으로 읽을 수 있으나 표가 그렇게 묶지는 않는다. 평균 나이는 표의 단위(세)와 55~64세 값(보도에서 알려진 평균 퇴직 연령과 같은 크기)으로 평균으로 읽었다. 개인 능력 탓으로 읽히게 쓰지 않는다."
+      }
+    },
+    {
+      "after": "longest-job-exit",
+      "indicator": {
+        "id": "employment-rate-by-age",
+        "title": "연령별 고용률(2025년 연간)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":62.9},
+        "latestUnit": "%",
+        "latestLabel": "15세 이상 전체 고용률(2025년)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "group",
+            "label": "연령"
+          },
+          {
+            "key": "pop",
+            "label": "인구(천 명)"
+          },
+          {
+            "key": "employed",
+            "label": "취업자(천 명)"
+          },
+          {
+            "key": "rate",
+            "label": "고용률(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "group": "15세 이상 전체",
+            "pop": 45762,
+            "employed": 28769,
+            "rate": 62.9
+          },
+          {
+            "group": "15~29세",
+            "pop": 7953,
+            "employed": 3578,
+            "rate": 45
+          },
+          {
+            "group": "30~39세",
+            "pop": 6870,
+            "employed": 5549,
+            "rate": 80.8
+          },
+          {
+            "group": "40~49세",
+            "pop": 7670,
+            "employed": 6129,
+            "rate": 79.9
+          },
+          {
+            "group": "50~59세",
+            "pop": 8621,
+            "employed": 6679,
+            "rate": 77.5
+          },
+          {
+            "group": "60세 이상",
+            "pop": 14648,
+            "employed": 6834,
+            "rate": 46.7
+          }
+        ],
+        "definition": "경제활동인구조사 연령별 경제활동인구 총괄의 2025년 연간 값입니다. 고용률은 15세 이상 인구 중 취업자의 비율(%)이며 인구·취업자는 천 명입니다.",
+        "basisId": "s-085",
+        "source": {
+          "org": "국가데이터처",
+          "table": "KOSIS 연령별 경제활동인구 총괄(DT_1DA7002S, 경제활동인구조사, 수록 1999.06~2026.09, 자료갱신 2026-10-16)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1DA7002S",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 2025년(년 단위) 블록에서 인구·취업자·고용률 칸을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "취업자 ÷ 인구가 고용률과 같음(40~49세 6,129÷7,670=79.9%, 50~59세 6,679÷8,621=77.5%, 60세 이상 6,834÷14,648=46.7%, 15~29세 3,578÷7,953=45.0%)",
+            "15세 이상 전체 62.9%·15~29세 45.0%가 youth-employment(s-010)의 2025년 값과 같음"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "연령별 고용률이며 일자리를 잃은 뒤의 재취업 비율이 아니다(재취업 통계는 u-018 미확인). 40~49세 79.9%·50~59세 77.5%·60세 이상 46.7%를 나이가 많으면 일자리가 없다는 서술로 읽히게 쓰지 않는다. 2024년·2023년 값은 읽지 않았다."
+      }
+    },
+    {
+      "after": "employment-rate-by-age",
+      "indicator": {
+        "id": "grandchild-care",
+        "title": "손자녀 돌봄 여부(국민노후보장패널조사, 2023)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2023,"value":6.3},
+        "latestUnit": "%",
+        "latestLabel": "손자녀를 돌본다고 답한 응답자 비율(전체, 2023)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "group",
+            "label": "구분"
+          },
+          {
+            "key": "care",
+            "label": "돌봄함(%)",
+            "decimals": 1
+          },
+          {
+            "key": "noCare",
+            "label": "하지 않음(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "group": "전체",
+            "care": 6.3,
+            "noCare": 93.7
+          },
+          {
+            "group": "남자",
+            "care": 3.1,
+            "noCare": 97
+          },
+          {
+            "group": "여자",
+            "care": 8.7,
+            "noCare": 91.3
+          },
+          {
+            "group": "50세 미만",
+            "care": 0,
+            "noCare": 100
+          },
+          {
+            "group": "50대",
+            "care": 7.2,
+            "noCare": 92.8
+          },
+          {
+            "group": "60대",
+            "care": 7.7,
+            "noCare": 92.3
+          },
+          {
+            "group": "70대",
+            "care": 4.7,
+            "noCare": 95.3
+          },
+          {
+            "group": "80세 이상",
+            "care": 1.8,
+            "noCare": 98.2
+          }
+        ],
+        "definition": "국민연금공단 국민노후보장패널조사(2023)에서 손자녀를 돌보고 있는지 묻는 문항의 응답 비율(%)입니다(성별·연령대별). 응답자 가운데 손자녀가 있는 사람만 센 값인지는 표에서 확인하지 못했습니다.",
+        "basisId": "s-086",
+        "source": {
+          "org": "국민연금공단",
+          "table": "KOSIS 국민노후보장패널조사 「손자녀 돌봄 여부」(DT_322001_E007, 수록 2013·2023, 자료갱신 2025-02-12)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=322&tblId=DT_322001_E007",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 2023년 열(성별·연령대별)을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "모든 행에서 돌봄함과 하지 않음을 더하면 100%(남자 100.1%는 반올림 차이)",
+            "연령대별 값이 50대 7.2%·60대 7.7%에서 70대 4.7%·80세 이상 1.8%로 줄어드는 순서이고 전체 6.3%가 그 사이에 있음"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "응답 대상(전체 응답자 vs 손자녀가 있는 응답자)을 확인하지 못해 문장에는 「응답자 가운데」로만 쓴다. 학력별·취업형태별 값(임금근로자 2.0%·비취업자 9.2% 등)은 담지 않았다. 「사양한다」를 이기심으로 읽히게 쓰지 않는다."
+      }
+    },
+    {
+      "after": "grandchild-care",
+      "indicator": {
+        "id": "digital-divide-level",
+        "title": "일반국민(=100) 대비 취약계층 디지털정보화 수준(2023~2025)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":71.8},
+        "latestUnit": "점",
+        "latestLabel": "고령층의 디지털정보화 수준(일반국민=100, 2025)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "group",
+            "label": "계층"
+          },
+          {
+            "key": "y2023",
+            "label": "2023(일반국민=100)",
+            "decimals": 1
+          },
+          {
+            "key": "y2024",
+            "label": "2024(일반국민=100)",
+            "decimals": 1
+          },
+          {
+            "key": "y2025",
+            "label": "2025(일반국민=100)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "group": "취약계층 평균",
+            "y2023": 76.9,
+            "y2024": 77.5,
+            "y2025": 77.9
+          },
+          {
+            "group": "장애인",
+            "y2023": 82.8,
+            "y2024": 83.5,
+            "y2025": 84.1
+          },
+          {
+            "group": "고령층",
+            "y2023": 70.7,
+            "y2024": 71.4,
+            "y2025": 71.8
+          },
+          {
+            "group": "저소득층",
+            "y2023": 96.1,
+            "y2024": 96.5,
+            "y2025": 97
+          },
+          {
+            "group": "농어민",
+            "y2023": 79.5,
+            "y2024": 80,
+            "y2025": 80.6
+          }
+        ],
+        "definition": "과학기술정보통신부 디지털정보격차실태조사(조사기관: 한국지능정보사회진흥원)의 디지털정보화 수준입니다. 일반국민의 수준을 100으로 두고 취약계층의 접근(0.2)·역량(0.4)·활용(0.4) 종합 점수를 비교한 값입니다.",
+        "basisId": "s-087",
+        "source": {
+          "org": "과학기술정보통신부",
+          "table": "KOSIS 디지털정보격차실태조사 「일반국민 대비 취약계층 디지털정보화 수준」(DT_12017N008, 수록 2014~2025, 자료갱신 2026-04-22) · 지표누리 e-나라지표 「디지털정보화 수준」(idxCd=1367)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=127&tblId=DT_12017N008",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 2023·2024·2025년 열을 읽고 확대해 다시 확인하고, 지표누리 e-나라지표 페이지의 취약계층 평균(2023~2025)과 맞춤",
+          "crossChecks": [
+            "지표누리 e-나라지표의 취약계층 평균 76.9(2023)·77.5(2024)·77.9(2025)가 KOSIS 표의 평균 행과 같음",
+            "2025년 취약계층 평균을 접근 96.6·역량 65.9·활용 80.5에 가중치 0.2·0.4·0.4를 곱해 다시 계산하면 77.9(77.88)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "일반국민을 100으로 둔 상대 수준 지수라 비율(%)이 아니고 개인의 능력을 재는 값이 아니다. 고령층 값은 접근·역량·활용 하위 점수를 읽지 않았다(평균만 지표누리에 있음). 조사 대상은 총 15,000명(일반국민 7,000명, 취약계층 4개 집단 각 2,200명 등, 지표누리 설명). 고령층을 「뒤처진」 같은 말로 쓰지 않는다."
+      }
+    },
+    {
+      "after": "digital-divide-level",
+      "indicator": {
+        "id": "senior-alone-households",
+        "title": "65세 이상 1인 가구 비율(독거노인가구비율, 전국)",
+        "unit": "%",
+        "kind": "line",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2025,"value":10.9},
+        "latestUnit": "%",
+        "decimals": 1,
+        "series": [
+          {"year":2000,"value":3.8},
+          {"year":2005,"value":4.9},
+          {"year":2010,"value":6.1},
+          {"year":2015,"value":6.4},
+          {"year":2020,"value":7.9},
+          {"year":2025,"value":10.9}
+        ],
+        "seriesLabel": "독거노인가구비율(65세 이상 1인 가구 ÷ 전체 일반가구 × 100)",
+        "extraSeries": [
+          {
+            "label": "65세 이상 1인 가구(가구)",
+            "unit": "가구",
+            "decimals": 0,
+            "latest": {"year":2025,"value":2455947},
+            "series": [
+              {"year":2000,"value":542690},
+              {"year":2005,"value":782708},
+              {"year":2010,"value":1066365},
+              {"year":2015,"value":1223169},
+              {"year":2020,"value":1660711},
+              {"year":2025,"value":2455947}
+            ]
+          },
+          {
+            "label": "전체 일반가구(가구)",
+            "unit": "가구",
+            "decimals": 0,
+            "latest": {"year":2025,"value":22495096},
+            "series": [
+              {"year":2000,"value":14311807},
+              {"year":2005,"value":15887128},
+              {"year":2010,"value":17339422},
+              {"year":2015,"value":19111030},
+              {"year":2020,"value":20926710},
+              {"year":2025,"value":22495096}
+            ]
+          }
+        ],
+        "axis": {
+          "scale": "year",
+          "step": 5,
+          "regular": false,
+          "gaps": [
+            {
+              "from": 2000,
+              "to": 2005
+            },
+            {
+              "from": 2005,
+              "to": 2010
+            },
+            {
+              "from": 2010,
+              "to": 2015
+            },
+            {
+              "from": 2015,
+              "to": 2020
+            },
+            {
+              "from": 2020,
+              "to": 2025
+            }
+          ],
+          "breaks": [
+            {
+              "year": 2015,
+              "note": "같은 인구총조사의 조사 방식이 2010년까지는 전통적 현장조사, 2015년부터 등록센서스 방식이라 직접 비교에 유의(single-household와 같은 단절 표시, 이 표의 주석은 읽지 못함)"
+            }
+          ]
+        },
+        "definition": "65세 이상 1인 가구(독거노인 가구)가 전체 일반가구에서 차지하는 비율입니다. 국가데이터처 e-지방지표(인구총조사)의 전국 소계이며, 가구 수는 65세 이상 1인 가구와 전체 일반가구를 함께 담았습니다.",
+        "basisId": "s-088",
+        "source": {
+          "org": "국가데이터처",
+          "table": "KOSIS 독거노인가구비율(시도/시/군/구, DT_1YL12701, e-지방지표 인구총조사, 수록 2000~2025, 자료갱신 2026-08-21)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1YL12701",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면에서 전국 소계 행의 2000·2005·2010·2015·2020·2025년 열(비율·65세 이상 1인 가구·전체 일반가구)을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "65세 이상 1인 가구 ÷ 전체 일반가구가 비율과 같음(2000년 542,690÷14,311,807=3.8%, 2025년 2,455,947÷22,495,096=10.9%)",
+            "전체 일반가구 수가 2005년 15,887,128·2010년 17,339,422로 인구총조사 일반가구 수와 맞고 해마다 늘어남"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "이 표에는 2000·2005·2010·2015·2020·2025년 값만 읽었다(그 사이 해는 읽지 않음). 시도별·시군구별 행은 담지 않았다. 혼자 사는 노년을 외롭다고 단정하는 문장에 쓰지 않는다. single-household(전 연령 1인 가구)와 다른 값이다."
+      }
+    },
+    {
+      "after": "senior-alone-households",
+      "indicator": {
+        "id": "senior-living-preference",
+        "title": "노인의 희망 거주 형태(노인실태조사, 2023)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2023,"value":87.2},
+        "latestUnit": "%",
+        "latestLabel": "건강 유지 시 현재 집에서 계속 거주를 바라는 노인 비율(2023)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "situation",
+            "label": "상황"
+          },
+          {
+            "key": "stay",
+            "label": "현재 집에서 계속 거주(%)",
+            "decimals": 1
+          },
+          {
+            "key": "betterHome",
+            "label": "거주환경이 더 좋은 집으로 이사(%)",
+            "decimals": 1
+          },
+          {
+            "key": "seniorHousing",
+            "label": "노인전용주택으로 이사(%)",
+            "decimals": 1
+          },
+          {
+            "key": "withChild",
+            "label": "자녀·형제자매 집에서 동거(%)",
+            "decimals": 1
+          },
+          {
+            "key": "nearChild",
+            "label": "자녀·형제자매 집 근처로 이사(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "situation": "건강 유지 시",
+            "stay": 87.2,
+            "betterHome": 8.1,
+            "seniorHousing": 4.7,
+            "withChild": null,
+            "nearChild": null
+          },
+          {
+            "situation": "건강 악화 시",
+            "stay": 48.9,
+            "betterHome": null,
+            "seniorHousing": 16.5,
+            "withChild": 2.5,
+            "nearChild": 4.3
+          }
+        ],
+        "definition": "보건복지부 노인실태조사(2023, 3년 주기, 응답자 9,955명)에서 65세 이상 노인이 바라는 거주 형태의 구성비(%)입니다. 건강을 유지할 때와 건강이 나빠졌을 때를 따로 물었고, 읽지 않은 칸은 비워 두었습니다.",
+        "basisId": "s-089",
+        "source": {
+          "org": "보건복지부",
+          "table": "KOSIS 노인실태조사 「건강 유지 시 희망 거주 형태」(DT_117071_J001)·「건강 악화 시 희망 거주 형태」(DT_117071_J002), 2023년, 자료갱신 2024-10-17",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=117&tblId=DT_117071_J001",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 두 개의 2023년 전체 행을 읽고 확대해 다시 확인. 건강 악화 시 표의 노인요양시설·기타 열은 화면 밖이라 읽지 못했다",
+          "crossChecks": [
+            "건강 유지 시 네 항목(현재 집 87.2·더 좋은 집 8.1·노인전용주택 4.7·기타 0.0)의 합이 100.0%",
+            "건강 악화 시 표의 연령별 행(70~74세 계속 거주 48.2%·75~79세 46.8%)이 전체 48.9%와 같은 크기"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "응답자가 바라는 거주 형태이지 실제 거주 형태가 아니다. 건강 악화 시 노인요양시설 값을 읽지 못해(화면 밖) 이 행은 합이 100%가 아니다. 「돌봄이 있는 곳이 낫다」 또는 「집이 낫다」로 읽히게 쓰지 않는다. 읍면·동부, 연령대별 값은 담지 않았다."
+      }
+    },
+    {
+      "after": "senior-living-preference",
+      "indicator": {
+        "id": "advance-rate-1980s",
+        "title": "중·고등학교 졸업자의 상급학교 진학률(1980~1989)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":1989,"value":94.6},
+        "latestUnit": "%",
+        "latestLabel": "중학교 졸업자의 상급학교 진학률(1989년)",
+        "decimals": 1,
+        "columns": [
+          {
+            "key": "year",
+            "label": "연도"
+          },
+          {
+            "key": "middle",
+            "label": "중학교 졸업자의 상급학교 진학률(%)",
+            "decimals": 1
+          },
+          {
+            "key": "high",
+            "label": "고등학교 졸업자의 상급학교 진학률(%)",
+            "decimals": 1
+          }
+        ],
+        "rows": [
+          {
+            "year": 1980,
+            "middle": 84.5,
+            "high": 27.2
+          },
+          {
+            "year": 1981,
+            "middle": 86.5,
+            "high": 35.3
+          },
+          {
+            "year": 1982,
+            "middle": 86.9,
+            "high": 37.7
+          },
+          {
+            "year": 1983,
+            "middle": 89.4,
+            "high": 38.3
+          },
+          {
+            "year": 1984,
+            "middle": 89.7,
+            "high": 37.8
+          },
+          {
+            "year": 1985,
+            "middle": 90.7,
+            "high": 36.4
+          },
+          {
+            "year": 1986,
+            "middle": 91.2,
+            "high": 36.4
+          },
+          {
+            "year": 1987,
+            "middle": 91.9,
+            "high": 36.7
+          },
+          {
+            "year": 1988,
+            "middle": 93.5,
+            "high": 35
+          },
+          {
+            "year": 1989,
+            "middle": 94.6,
+            "high": 36.9
+          }
+        ],
+        "definition": "교육통계분석자료집 「취학률 및 진학률」의 1980~1989년 값입니다. 중학교 졸업자 가운데 상급학교(고등학교)에 진학한 비율과 고등학교 졸업자 가운데 상급학교(대학)에 진학한 비율이며, 표 주석에 따라 고등학교 졸업자의 값은 2010년까지 대학 합격자 기준입니다. 표가 1980년부터 시작해 1970~1979년 값은 없습니다.",
+        "basisId": "s-090",
+        "source": {
+          "org": "교육부·한국교육개발원",
+          "table": "지표누리 e-나라지표 「취학률 및 진학률」(교육통계분석자료집, 지표누리 최근 갱신 2025-11-03)",
+          "url": "https://www.index.go.kr/unify/idx-info.do?idxCd=1520",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "지표누리(e-나라지표) 통계표 화면에서 1980~1989년 열을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "두 줄 모두 칸 수(10개)가 연도 수와 같고 같은 화면의 2016~2025년 구간과 같은 주석을 읽음",
+            "중학교 졸업자 진학률은 해마다 오르고(84.5 → 94.6) 고등학교 졸업자 진학률은 1980년 27.2%에서 1983년 38.3%로 오른 뒤 35.0~37.8%에서 움직임(한 해만 튀는 값 없음)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "지난 세상(1970~89) 카드용이다. 1970~1979년 값은 표에 없다(u-021). 고등학교 졸업자의 값은 대학 합격자 기준이고 전문대학 등 상급학교의 범위는 확인하지 못해 이름 그대로 「상급학교 진학률」로 쓴다. 진학하지 못한 이유나 가정 형편을 말하는 값이 아니다."
+      }
+    },
+    {
+      "after": "advance-rate-1980s",
+      "indicator": {
+        "id": "employed-by-age-1980s",
+        "title": "연령별 취업자(1980·1985·1989년, 15~29세 등)",
+        "unit": null,
+        "kind": "table",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":1989,"value":17560},
+        "latestUnit": "천 명",
+        "latestLabel": "전체 취업자(1989년)",
+        "decimals": 0,
+        "columns": [
+          {
+            "key": "year",
+            "label": "연도"
+          },
+          {
+            "key": "total",
+            "label": "취업자 계(천 명)"
+          },
+          {
+            "key": "age1519",
+            "label": "15~19세(천 명)"
+          },
+          {
+            "key": "age2029",
+            "label": "20~29세(천 명)"
+          },
+          {
+            "key": "age3039",
+            "label": "30~39세(천 명)"
+          },
+          {
+            "key": "age4049",
+            "label": "40~49세(천 명)"
+          },
+          {
+            "key": "age5059",
+            "label": "50~59세(천 명)"
+          },
+          {
+            "key": "age60",
+            "label": "60세 이상(천 명)"
+          },
+          {
+            "key": "age1529",
+            "label": "15~29세(천 명)"
+          }
+        ],
+        "rows": [
+          {
+            "year": 1980,
+            "total": 13683,
+            "age1519": 1035,
+            "age2029": 3512,
+            "age3039": 3468,
+            "age4049": 3188,
+            "age5059": 1766,
+            "age60": 716,
+            "age1529": 4547
+          },
+          {
+            "year": 1985,
+            "total": 14970,
+            "age1519": 634,
+            "age2029": 4068,
+            "age3039": 3990,
+            "age4049": 3366,
+            "age5059": 2034,
+            "age60": 879,
+            "age1529": 4702
+          },
+          {
+            "year": 1989,
+            "total": 17560,
+            "age1519": 612,
+            "age2029": 4398,
+            "age3039": 4848,
+            "age4049": 3813,
+            "age5059": 2690,
+            "age60": 1200,
+            "age1529": 5010
+          }
+        ],
+        "definition": "경제활동인구조사 「성/연령별 취업자」의 1980·1985·1989년 연간 값입니다(단위 천 명, 성별은 계). 이 표는 1963년부터 수록되어 있고 15세 이상 인구가 없어 고용률은 구할 수 없습니다.",
+        "basisId": "s-091",
+        "source": {
+          "org": "국가데이터처",
+          "table": "KOSIS 경제활동인구조사 취업자(1963~현재) 「성/연령별 취업자」(DT_1DA7024S, 수록 1963~2026.09, 자료갱신 2026-10-16)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1DA7024S",
+          "accessedOn": "2026-10-19"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 표 화면의 1980·1985·1989년(년 단위) 열에서 성별 계 행을 읽고 확대해 다시 확인",
+          "crossChecks": [
+            "연령별 취업자 합이 계와 같음(1980년 13,685≈13,683, 1985년 14,971≈14,970, 1989년 17,561≈17,560, 반올림 차이 2천 명 이하)",
+            "15~29세 = 15~19세 + 20~29세(1980년 1,035+3,512=4,547, 1985년 634+4,068=4,702, 1989년 612+4,398=5,010)"
+          ],
+          "recheckedOn": "2026-10-19"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "지난 세상(1970~89) 카드용이다. 15~64세 칸은 1989년에만 값이 있어 담지 않았다. 1980년대 연령별 고용률(취업자 ÷ 인구)은 인구 표가 없어 만들지 않았다(u-022). 연령대 구분은 현재 표와 같은 이름이라 이어 읽을 수 있으나 조사 방식 변경 이력은 열람하지 못했다."
+      }
+    },
+    {
+      "after": "projection-aging-share",
+      "indicator": {
+        "id": "projection-working-age",
+        "title": "장래인구추계(2022년 기준): 생산연령인구(15~64세)",
+        "unit": "명",
+        "kind": "projection",
+        "use": [
+          "future"
+        ],
+        "latest": {"year":2072,"value":16575182},
+        "latestUnit": "명",
+        "latestLabel": "2072년 생산연령인구(15~64세, 중위 추계)",
+        "decimals": 0,
+        "projection": {
+          "report": "장래인구추계: 2022~2072년",
+          "publisher": "통계청(현 국가데이터처)",
+          "releasedOn": "2023-12-14",
+          "releaseUrl": "https://mods.go.kr/board.es?mid=a10301020600&bid=207&act=view&list_no=428476",
+          "baseYear": 2022,
+          "horizon": 2072,
+          "actualThrough": 2022,
+          "actualNote": "KOSIS 주석 「1960~2022년까지는 확정인구이며, 2023년 이후는 다음 인구추계시 변경될 수 있음」",
+          "baseNote": "2022년 인구총조사(등록센서스 방식) 결과와 최근까지의 인구변동요인(출생·사망·국제이동) 추이를 반영한 추계(보도자료). 매년 7월 1일 시점.",
+          "defaultScenario": "median",
+          "scenarios": [
+            {
+              "key": "median",
+              "level": "mid",
+              "label": "중위 추계",
+              "official": "중위 추계(기본 추계: 출산율-중위 / 기대수명-중위 / 국제순이동-중위)",
+              "series": [
+                {"year":2022,"value":36743472},
+                {"year":2023,"value":36571568},
+                {"year":2024,"value":36327585},
+                {"year":2025,"value":35912191},
+                {"year":2026,"value":35487854},
+                {"year":2027,"value":35183727},
+                {"year":2028,"value":34803739},
+                {"year":2029,"value":34517674},
+                {"year":2030,"value":34165560},
+                {"year":2031,"value":33811710},
+                {"year":2032,"value":33425844},
+                {"year":2033,"value":32979445},
+                {"year":2034,"value":32418451},
+                {"year":2035,"value":31877595},
+                {"year":2036,"value":31283961},
+                {"year":2037,"value":30712083},
+                {"year":2038,"value":30130414},
+                {"year":2039,"value":29551616},
+                {"year":2040,"value":29029154},
+                {"year":2041,"value":28545426},
+                {"year":2042,"value":28088737},
+                {"year":2043,"value":27631884},
+                {"year":2044,"value":27173518},
+                {"year":2045,"value":26653748},
+                {"year":2046,"value":26137505},
+                {"year":2047,"value":25624032},
+                {"year":2048,"value":25167604},
+                {"year":2049,"value":24781109},
+                {"year":2050,"value":24447839},
+                {"year":2051,"value":24113219},
+                {"year":2052,"value":23796117},
+                {"year":2053,"value":23485218},
+                {"year":2054,"value":23151283},
+                {"year":2055,"value":22795051},
+                {"year":2056,"value":22424454},
+                {"year":2057,"value":21992529},
+                {"year":2058,"value":21549924},
+                {"year":2059,"value":21115982},
+                {"year":2060,"value":20686964},
+                {"year":2061,"value":20252503},
+                {"year":2062,"value":19833615},
+                {"year":2063,"value":19423262},
+                {"year":2064,"value":19039512},
+                {"year":2065,"value":18640458},
+                {"year":2066,"value":18257719},
+                {"year":2067,"value":17949189},
+                {"year":2068,"value":17663740},
+                {"year":2069,"value":17372636},
+                {"year":2070,"value":17111187},
+                {"year":2071,"value":16855376},
+                {"year":2072,"value":16575182}
+              ]
+            },
+            {
+              "key": "high",
+              "level": "high",
+              "label": "고위 추계",
+              "official": "고위 추계(최대인구 추계: 출산율-고위 / 기대수명-고위 / 국제순이동-고위)",
+              "series": [
+                {"year":2022,"value":36743472},
+                {"year":2023,"value":36572249},
+                {"year":2024,"value":36395135},
+                {"year":2025,"value":36038876},
+                {"year":2026,"value":35672243},
+                {"year":2027,"value":35424447},
+                {"year":2028,"value":35099263},
+                {"year":2029,"value":34867294},
+                {"year":2030,"value":34568289},
+                {"year":2031,"value":34266870},
+                {"year":2032,"value":33932564},
+                {"year":2033,"value":33536401},
+                {"year":2034,"value":33024270},
+                {"year":2035,"value":32531602},
+                {"year":2036,"value":31984812},
+                {"year":2037,"value":31458746},
+                {"year":2038,"value":30923254},
+                {"year":2039,"value":30393513},
+                {"year":2040,"value":29934972},
+                {"year":2041,"value":29529273},
+                {"year":2042,"value":29153502},
+                {"year":2043,"value":28780169},
+                {"year":2044,"value":28407459},
+                {"year":2045,"value":27974503},
+                {"year":2046,"value":27546522},
+                {"year":2047,"value":27122747},
+                {"year":2048,"value":26757839},
+                {"year":2049,"value":26465012},
+                {"year":2050,"value":26227450},
+                {"year":2051,"value":25990068},
+                {"year":2052,"value":25771774},
+                {"year":2053,"value":25559409},
+                {"year":2054,"value":25321759},
+                {"year":2055,"value":25059509},
+                {"year":2056,"value":24780713},
+                {"year":2057,"value":24437785},
+                {"year":2058,"value":24081646},
+                {"year":2059,"value":23732018},
+                {"year":2060,"value":23384985},
+                {"year":2061,"value":23029761},
+                {"year":2062,"value":22687229},
+                {"year":2063,"value":22349822},
+                {"year":2064,"value":22035591},
+                {"year":2065,"value":21702299},
+                {"year":2066,"value":21382068},
+                {"year":2067,"value":21134717},
+                {"year":2068,"value":20909915},
+                {"year":2069,"value":20679117},
+                {"year":2070,"value":20478903},
+                {"year":2071,"value":20286096},
+                {"year":2072,"value":20070491}
+              ]
+            },
+            {
+              "key": "low",
+              "level": "low",
+              "label": "저위 추계",
+              "official": "저위 추계(최소인구 추계: 출산율-저위 / 기대수명-저위 / 국제순이동-저위)",
+              "series": [
+                {"year":2022,"value":36743472},
+                {"year":2023,"value":36570870},
+                {"year":2024,"value":36259759},
+                {"year":2025,"value":35784753},
+                {"year":2026,"value":35302437},
+                {"year":2027,"value":34941471},
+                {"year":2028,"value":34505686},
+                {"year":2029,"value":34164462},
+                {"year":2030,"value":33758498},
+                {"year":2031,"value":33351953},
+                {"year":2032,"value":32914436},
+                {"year":2033,"value":32417450},
+                {"year":2034,"value":31807562},
+                {"year":2035,"value":31219137},
+                {"year":2036,"value":30579626},
+                {"year":2037,"value":29962822},
+                {"year":2038,"value":29335733},
+                {"year":2039,"value":28709829},
+                {"year":2040,"value":28139094},
+                {"year":2041,"value":27596619},
+                {"year":2042,"value":27069030},
+                {"year":2043,"value":26537934},
+                {"year":2044,"value":26002146},
+                {"year":2045,"value":25402877},
+                {"year":2046,"value":24804940},
+                {"year":2047,"value":24207702},
+                {"year":2048,"value":23665103},
+                {"year":2049,"value":23189702},
+                {"year":2050,"value":22764982},
+                {"year":2051,"value":22337097},
+                {"year":2052,"value":21924721},
+                {"year":2053,"value":21518611},
+                {"year":2054,"value":21091824},
+                {"year":2055,"value":20645200},
+                {"year":2056,"value":20186741},
+                {"year":2057,"value":19670228},
+                {"year":2058,"value":19146102},
+                {"year":2059,"value":18633351},
+                {"year":2060,"value":18128198},
+                {"year":2061,"value":17620821},
+                {"year":2062,"value":17132385},
+                {"year":2063,"value":16656158},
+                {"year":2064,"value":16210240},
+                {"year":2065,"value":15753405},
+                {"year":2066,"value":15316882},
+                {"year":2067,"value":14956827},
+                {"year":2068,"value":14621726},
+                {"year":2069,"value":14282875},
+                {"year":2070,"value":13974326},
+                {"year":2071,"value":13671391},
+                {"year":2072,"value":13344424}
+              ]
+            }
+          ]
+        },
+        "actual": [
+          {"year":1960,"value":13698341},
+          {"year":1961,"value":13949773},
+          {"year":1962,"value":14257691},
+          {"year":1963,"value":14595205},
+          {"year":1964,"value":14923382},
+          {"year":1965,"value":15245851},
+          {"year":1966,"value":15592878},
+          {"year":1967,"value":16003566},
+          {"year":1968,"value":16445982},
+          {"year":1969,"value":16957491},
+          {"year":1970,"value":17540152},
+          {"year":1971,"value":18064092},
+          {"year":1972,"value":18602276},
+          {"year":1973,"value":19176510},
+          {"year":1974,"value":19781685},
+          {"year":1975,"value":20448875},
+          {"year":1976,"value":21151580},
+          {"year":1977,"value":21829330},
+          {"year":1978,"value":22495994},
+          {"year":1979,"value":23123979},
+          {"year":1980,"value":23716967},
+          {"year":1981,"value":24300033},
+          {"year":1982,"value":24880337},
+          {"year":1983,"value":25494901},
+          {"year":1984,"value":26140581},
+          {"year":1985,"value":26759353},
+          {"year":1986,"value":27383105},
+          {"year":1987,"value":27998885},
+          {"year":1988,"value":28581942},
+          {"year":1989,"value":29134922},
+          {"year":1990,"value":29700607},
+          {"year":1991,"value":30170543},
+          {"year":1992,"value":30610680},
+          {"year":1993,"value":31023107},
+          {"year":1994,"value":31445602},
+          {"year":1995,"value":31899511},
+          {"year":1996,"value":32326522},
+          {"year":1997,"value":32791167},
+          {"year":1998,"value":33125933},
+          {"year":1999,"value":33420207},
+          {"year":2000,"value":33701986},
+          {"year":2001,"value":33946787},
+          {"year":2002,"value":34155443},
+          {"year":2003,"value":34367560},
+          {"year":2004,"value":34521703},
+          {"year":2005,"value":34640514},
+          {"year":2006,"value":34932893},
+          {"year":2007,"value":35208580},
+          {"year":2008,"value":35587293},
+          {"year":2009,"value":35901685},
+          {"year":2010,"value":36208564},
+          {"year":2011,"value":36649999},
+          {"year":2012,"value":36855893},
+          {"year":2013,"value":37013997},
+          {"year":2014,"value":37255840},
+          {"year":2015,"value":37443896},
+          {"year":2016,"value":37596157},
+          {"year":2017,"value":37571568},
+          {"year":2018,"value":37623919},
+          {"year":2019,"value":37627748},
+          {"year":2020,"value":37378502},
+          {"year":2021,"value":37051333},
+          {"year":2022,"value":36743472}
+        ],
+        "related": [
+          {
+            "key": "share15to64",
+            "label": "총인구 중 15~64세 구성비",
+            "unit": "%",
+            "decimals": 1,
+            "actual": [
+              {"year":1960,"value":54.8},
+              {"year":1961,"value":54.1},
+              {"year":1962,"value":53.8},
+              {"year":1963,"value":53.5},
+              {"year":1964,"value":53.3},
+              {"year":1965,"value":53.1},
+              {"year":1966,"value":53},
+              {"year":1967,"value":53.1},
+              {"year":1968,"value":53.3},
+              {"year":1969,"value":53.8},
+              {"year":1970,"value":54.4},
+              {"year":1971,"value":54.9},
+              {"year":1972,"value":55.5},
+              {"year":1973,"value":56.2},
+              {"year":1974,"value":57},
+              {"year":1975,"value":58},
+              {"year":1976,"value":59},
+              {"year":1977,"value":60},
+              {"year":1978,"value":60.9},
+              {"year":1979,"value":61.6},
+              {"year":1980,"value":62.2},
+              {"year":1981,"value":62.8},
+              {"year":1982,"value":63.3},
+              {"year":1983,"value":63.9},
+              {"year":1984,"value":64.7},
+              {"year":1985,"value":65.6},
+              {"year":1986,"value":66.4},
+              {"year":1987,"value":67.3},
+              {"year":1988,"value":68},
+              {"year":1989,"value":68.6},
+              {"year":1990,"value":69.3},
+              {"year":1991,"value":69.7},
+              {"year":1992,"value":70},
+              {"year":1993,"value":70.2},
+              {"year":1994,"value":70.4},
+              {"year":1995,"value":70.7},
+              {"year":1996,"value":71},
+              {"year":1997,"value":71.4},
+              {"year":1998,"value":71.6},
+              {"year":1999,"value":71.7},
+              {"year":2000,"value":71.7},
+              {"year":2001,"value":71.7},
+              {"year":2002,"value":71.7},
+              {"year":2003,"value":71.8},
+              {"year":2004,"value":71.8},
+              {"year":2005,"value":71.9},
+              {"year":2006,"value":72.1},
+              {"year":2007,"value":72.3},
+              {"year":2008,"value":72.5},
+              {"year":2009,"value":72.8},
+              {"year":2010,"value":73.1},
+              {"year":2011,"value":73.4},
+              {"year":2012,"value":73.4},
+              {"year":2013,"value":73.4},
+              {"year":2014,"value":73.4},
+              {"year":2015,"value":73.4},
+              {"year":2016,"value":73.4},
+              {"year":2017,"value":73.2},
+              {"year":2018,"value":72.9},
+              {"year":2019,"value":72.7},
+              {"year":2020,"value":72.1},
+              {"year":2021,"value":71.6},
+              {"year":2022,"value":71.1}
+            ],
+            "scenarios": [
+              {
+                "key": "median",
+                "series": [
+                  {"year":2022,"value":71.1},
+                  {"year":2023,"value":70.7},
+                  {"year":2024,"value":70.2},
+                  {"year":2025,"value":69.5},
+                  {"year":2026,"value":68.8},
+                  {"year":2027,"value":68.3},
+                  {"year":2028,"value":67.6},
+                  {"year":2029,"value":67.2},
+                  {"year":2030,"value":66.6},
+                  {"year":2031,"value":66},
+                  {"year":2032,"value":65.4},
+                  {"year":2033,"value":64.6},
+                  {"year":2034,"value":63.6},
+                  {"year":2035,"value":62.7},
+                  {"year":2036,"value":61.7},
+                  {"year":2037,"value":60.7},
+                  {"year":2038,"value":59.8},
+                  {"year":2039,"value":58.8},
+                  {"year":2040,"value":58},
+                  {"year":2041,"value":57.3},
+                  {"year":2042,"value":56.6},
+                  {"year":2043,"value":56},
+                  {"year":2044,"value":55.3},
+                  {"year":2045,"value":54.6},
+                  {"year":2046,"value":53.9},
+                  {"year":2047,"value":53.2},
+                  {"year":2048,"value":52.6},
+                  {"year":2049,"value":52.2},
+                  {"year":2050,"value":51.9},
+                  {"year":2051,"value":51.6},
+                  {"year":2052,"value":51.4},
+                  {"year":2053,"value":51.3},
+                  {"year":2054,"value":51},
+                  {"year":2055,"value":50.8},
+                  {"year":2056,"value":50.5},
+                  {"year":2057,"value":50.1},
+                  {"year":2058,"value":49.7},
+                  {"year":2059,"value":49.3},
+                  {"year":2060,"value":48.9},
+                  {"year":2061,"value":48.5},
+                  {"year":2062,"value":48.1},
+                  {"year":2063,"value":47.7},
+                  {"year":2064,"value":47.4},
+                  {"year":2065,"value":47},
+                  {"year":2066,"value":46.6},
+                  {"year":2067,"value":46.4},
+                  {"year":2068,"value":46.3},
+                  {"year":2069,"value":46.1},
+                  {"year":2070,"value":46},
+                  {"year":2071,"value":45.9},
+                  {"year":2072,"value":45.8}
+                ]
+              }
+            ]
+          }
+        ],
+        "definition": "15~64세 인구입니다. 장래인구추계(2022년 기준)의 7월 1일 시점 값(외국인 포함)이고 2022년까지는 확정인구, 2023년부터는 전망입니다. 일하는 사람의 수(취업자)가 아니라 나이로 센 인구이며, 예측이 아니라 가정이 실현될 때의 계산 결과입니다.",
+        "basisId": "s-094",
+        "source": {
+          "org": "통계청(현 국가데이터처)",
+          "table": "KOSIS 장래인구추계(2022년 기준) 전국 「주요 인구지표(성비, 인구성장률, 인구구조, 부양비 등)」(DT_1BPA002) 중위·고위·저위 추계와 보도자료 「장래인구추계: 2022~2072년」 (2023-12-14)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1BPA002",
+          "accessedOn": "2026-10-21"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 장래인구추계(2022년 기준) 「주요 인구지표」 표(DT_1BPA002) 화면에서 조회설정으로 가정별(중위·고위·저위)과 시점(1960~2072) 전체를 골라 셀 값을 읽음. 같은 표의 주석정보(주1~주5)와 국가데이터처 누리집 보도자료 상세 글(2023-12-14)·통계설명자료(승인번호 101033)를 함께 읽음. 파일은 내려받지 않음",
+          "crossChecks": [
+            "보도자료 「생산연령인구는 2022년 3,674만명에서 향후 10년간 332만명 감소, 2072년에 1,658만명」: 2022년 3,674만 명, 2032년까지 332만 명 감소, 2072년 1,658만 명",
+            "보도자료 「15~64세 생산연령인구 비중은 감소(71.1%→45.8%)」: 2022년 71.1%, 2072년 45.8%",
+            "연령 3구간 인구의 합 = 총인구(세 추계 모두 일치)"
+          ]
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "「생산연령인구」는 통계 용어(15~64세)이고 실제로 일하고 있는 사람의 수와 다르다. 슬라이드 표제어에 「일하는 사람」을 쓰면 취업자로 읽히므로 「일할 나이」처럼 나이로 읽히는 말을 쓴다."
+      }
+    },
+    {
+      "after": "projection-newborn-age-structure",
+      "indicator": {
+        "id": "projection-tfr",
+        "title": "장래인구추계(2022년 기준): 합계출산율",
+        "unit": "명",
+        "kind": "projection",
+        "use": [
+          "future"
+        ],
+        "latest": {"year":2072,"value":1.08},
+        "latestUnit": "명",
+        "latestLabel": "2072년 합계출산율(출산율 중위 가정)",
+        "decimals": 2,
+        "projection": {
+          "report": "장래인구추계: 2022~2072년",
+          "publisher": "통계청(현 국가데이터처)",
+          "releasedOn": "2023-12-14",
+          "releaseUrl": "https://mods.go.kr/board.es?mid=a10301020600&bid=207&act=view&list_no=428476",
+          "baseYear": 2022,
+          "horizon": 2072,
+          "actualThrough": 2022,
+          "actualNote": "KOSIS 주석 「2022년까지는 인구동태통계 합계출산율 실적치이며, 2023년부터는 장래 출산력 가정에 의한 합계출산율임」",
+          "baseNote": "이 표의 중위·고위·저위는 출산율 가정이다. 인구 표의 같은 이름 추계는 출산·사망·국제이동 가정을 함께 조합한 것이다.",
+          "defaultScenario": "median",
+          "scenarios": [
+            {
+              "key": "median",
+              "level": "mid",
+              "label": "출산율 중위 가정",
+              "official": "합계출산율 중위",
+              "series": [
+                {"year":2022,"value":0.78},
+                {"year":2023,"value":0.72},
+                {"year":2024,"value":0.68},
+                {"year":2025,"value":0.65},
+                {"year":2026,"value":0.68},
+                {"year":2027,"value":0.71},
+                {"year":2028,"value":0.75},
+                {"year":2029,"value":0.78},
+                {"year":2030,"value":0.82},
+                {"year":2031,"value":0.85},
+                {"year":2032,"value":0.88},
+                {"year":2033,"value":0.92},
+                {"year":2034,"value":0.95},
+                {"year":2035,"value":0.99},
+                {"year":2036,"value":1.02},
+                {"year":2037,"value":1.05},
+                {"year":2038,"value":1.05},
+                {"year":2039,"value":1.05},
+                {"year":2040,"value":1.05},
+                {"year":2041,"value":1.05},
+                {"year":2042,"value":1.05},
+                {"year":2043,"value":1.06},
+                {"year":2044,"value":1.06},
+                {"year":2045,"value":1.06},
+                {"year":2046,"value":1.07},
+                {"year":2047,"value":1.07},
+                {"year":2048,"value":1.07},
+                {"year":2049,"value":1.08},
+                {"year":2050,"value":1.08},
+                {"year":2051,"value":1.08},
+                {"year":2052,"value":1.08},
+                {"year":2053,"value":1.08},
+                {"year":2054,"value":1.08},
+                {"year":2055,"value":1.08},
+                {"year":2056,"value":1.08},
+                {"year":2057,"value":1.08},
+                {"year":2058,"value":1.08},
+                {"year":2059,"value":1.08},
+                {"year":2060,"value":1.08},
+                {"year":2061,"value":1.08},
+                {"year":2062,"value":1.08},
+                {"year":2063,"value":1.08},
+                {"year":2064,"value":1.08},
+                {"year":2065,"value":1.08},
+                {"year":2066,"value":1.08},
+                {"year":2067,"value":1.08},
+                {"year":2068,"value":1.08},
+                {"year":2069,"value":1.08},
+                {"year":2070,"value":1.08},
+                {"year":2071,"value":1.08},
+                {"year":2072,"value":1.08}
+              ]
+            },
+            {
+              "key": "high",
+              "level": "high",
+              "label": "출산율 고위 가정",
+              "official": "합계출산율 고위",
+              "series": [
+                {"year":2022,"value":0.78},
+                {"year":2023,"value":0.73},
+                {"year":2024,"value":0.7},
+                {"year":2025,"value":0.75},
+                {"year":2026,"value":0.8},
+                {"year":2027,"value":0.84},
+                {"year":2028,"value":0.89},
+                {"year":2029,"value":0.93},
+                {"year":2030,"value":0.98},
+                {"year":2031,"value":1.03},
+                {"year":2032,"value":1.07},
+                {"year":2033,"value":1.12},
+                {"year":2034,"value":1.16},
+                {"year":2035,"value":1.21},
+                {"year":2036,"value":1.26},
+                {"year":2037,"value":1.3},
+                {"year":2038,"value":1.3},
+                {"year":2039,"value":1.3},
+                {"year":2040,"value":1.3},
+                {"year":2041,"value":1.3},
+                {"year":2042,"value":1.3},
+                {"year":2043,"value":1.3},
+                {"year":2044,"value":1.31},
+                {"year":2045,"value":1.31},
+                {"year":2046,"value":1.32},
+                {"year":2047,"value":1.32},
+                {"year":2048,"value":1.33},
+                {"year":2049,"value":1.33},
+                {"year":2050,"value":1.33},
+                {"year":2051,"value":1.34},
+                {"year":2052,"value":1.34},
+                {"year":2053,"value":1.34},
+                {"year":2054,"value":1.34},
+                {"year":2055,"value":1.34},
+                {"year":2056,"value":1.34},
+                {"year":2057,"value":1.34},
+                {"year":2058,"value":1.34},
+                {"year":2059,"value":1.34},
+                {"year":2060,"value":1.34},
+                {"year":2061,"value":1.34},
+                {"year":2062,"value":1.34},
+                {"year":2063,"value":1.34},
+                {"year":2064,"value":1.34},
+                {"year":2065,"value":1.34},
+                {"year":2066,"value":1.34},
+                {"year":2067,"value":1.34},
+                {"year":2068,"value":1.34},
+                {"year":2069,"value":1.34},
+                {"year":2070,"value":1.34},
+                {"year":2071,"value":1.34},
+                {"year":2072,"value":1.34}
+              ]
+            },
+            {
+              "key": "low",
+              "level": "low",
+              "label": "출산율 저위 가정",
+              "official": "합계출산율 저위",
+              "series": [
+                {"year":2022,"value":0.78},
+                {"year":2023,"value":0.71},
+                {"year":2024,"value":0.67},
+                {"year":2025,"value":0.63},
+                {"year":2026,"value":0.59},
+                {"year":2027,"value":0.61},
+                {"year":2028,"value":0.63},
+                {"year":2029,"value":0.65},
+                {"year":2030,"value":0.67},
+                {"year":2031,"value":0.69},
+                {"year":2032,"value":0.7},
+                {"year":2033,"value":0.72},
+                {"year":2034,"value":0.74},
+                {"year":2035,"value":0.76},
+                {"year":2036,"value":0.78},
+                {"year":2037,"value":0.8},
+                {"year":2038,"value":0.8},
+                {"year":2039,"value":0.8},
+                {"year":2040,"value":0.8},
+                {"year":2041,"value":0.8},
+                {"year":2042,"value":0.8},
+                {"year":2043,"value":0.8},
+                {"year":2044,"value":0.81},
+                {"year":2045,"value":0.81},
+                {"year":2046,"value":0.81},
+                {"year":2047,"value":0.82},
+                {"year":2048,"value":0.82},
+                {"year":2049,"value":0.82},
+                {"year":2050,"value":0.82},
+                {"year":2051,"value":0.82},
+                {"year":2052,"value":0.82},
+                {"year":2053,"value":0.82},
+                {"year":2054,"value":0.82},
+                {"year":2055,"value":0.82},
+                {"year":2056,"value":0.82},
+                {"year":2057,"value":0.82},
+                {"year":2058,"value":0.82},
+                {"year":2059,"value":0.82},
+                {"year":2060,"value":0.82},
+                {"year":2061,"value":0.82},
+                {"year":2062,"value":0.82},
+                {"year":2063,"value":0.82},
+                {"year":2064,"value":0.82},
+                {"year":2065,"value":0.82},
+                {"year":2066,"value":0.82},
+                {"year":2067,"value":0.82},
+                {"year":2068,"value":0.82},
+                {"year":2069,"value":0.82},
+                {"year":2070,"value":0.82},
+                {"year":2071,"value":0.82},
+                {"year":2072,"value":0.82}
+              ]
+            }
+          ]
+        },
+        "actual": [
+          {"year":1970,"value":4.53},
+          {"year":1971,"value":4.54},
+          {"year":1972,"value":4.12},
+          {"year":1973,"value":4.07},
+          {"year":1974,"value":3.77},
+          {"year":1975,"value":3.43},
+          {"year":1976,"value":3},
+          {"year":1977,"value":2.99},
+          {"year":1978,"value":2.64},
+          {"year":1979,"value":2.9},
+          {"year":1980,"value":2.82},
+          {"year":1981,"value":2.57},
+          {"year":1982,"value":2.39},
+          {"year":1983,"value":2.06},
+          {"year":1984,"value":1.74},
+          {"year":1985,"value":1.66},
+          {"year":1986,"value":1.58},
+          {"year":1987,"value":1.53},
+          {"year":1988,"value":1.55},
+          {"year":1989,"value":1.56},
+          {"year":1990,"value":1.57},
+          {"year":1991,"value":1.71},
+          {"year":1992,"value":1.76},
+          {"year":1993,"value":1.65},
+          {"year":1994,"value":1.66},
+          {"year":1995,"value":1.63},
+          {"year":1996,"value":1.57},
+          {"year":1997,"value":1.54},
+          {"year":1998,"value":1.46},
+          {"year":1999,"value":1.43},
+          {"year":2000,"value":1.48},
+          {"year":2001,"value":1.31},
+          {"year":2002,"value":1.18},
+          {"year":2003,"value":1.19},
+          {"year":2004,"value":1.16},
+          {"year":2005,"value":1.09},
+          {"year":2006,"value":1.13},
+          {"year":2007,"value":1.26},
+          {"year":2008,"value":1.19},
+          {"year":2009,"value":1.15},
+          {"year":2010,"value":1.23},
+          {"year":2011,"value":1.24},
+          {"year":2012,"value":1.3},
+          {"year":2013,"value":1.19},
+          {"year":2014,"value":1.21},
+          {"year":2015,"value":1.24},
+          {"year":2016,"value":1.17},
+          {"year":2017,"value":1.05},
+          {"year":2018,"value":0.98},
+          {"year":2019,"value":0.92},
+          {"year":2020,"value":0.84},
+          {"year":2021,"value":0.81},
+          {"year":2022,"value":0.78}
+        ],
+        "definition": "합계출산율은 한 여성이 가임기간(15~49세) 동안 낳을 것으로 예상되는 평균 출생아 수입니다. 장래인구추계(2022년 기준)에서 2022년까지는 인구동태통계의 실적이고 2023년부터는 장래 출산력 가정에 따른 전망입니다. 중위·고위·저위는 출산율 가정이며 예측이 아닙니다.",
+        "basisId": "s-096",
+        "source": {
+          "org": "통계청(현 국가데이터처)",
+          "table": "KOSIS 장래인구추계(2022년 기준) 전국 「장래 합계출산율」(DT_1BPA101) 중위·고위·저위, 보도자료 「장래인구추계: 2022~2072년」 (2023-12-14)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1BPA101",
+          "accessedOn": "2026-10-21"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 「장래 합계출산율」 표(DT_1BPA101) 화면에서 조회설정으로 가정별(중위·고위·저위)과 시점(1970~2072) 전체를 골라 셀 값을 읽음. 같은 표의 주석정보와 기존 future-projection 지표(같은 표 중위 값)·tfr 지표(실적)와 대조. 파일은 내려받지 않음",
+          "crossChecks": [
+            "future-projection 지표의 중위 값과 같음(2025년 0.65, 2030년 0.82, 2040년 1.05, 2050년 1.08, 2072년 1.08)",
+            "실적 구간 2022년 0.78명이 tfr 지표(출생 통계 합계출산율)의 2022년 값과 같음",
+            "1970~2022년 실적은 중위 행에만 있고 고위·저위는 2022년부터 값이 있음(표의 「-」는 자료없음)"
+          ]
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "2022년 기준 추계는 이미 실제와 어긋난다: 2024년·2025년 실제 합계출산율(tfr 지표)이 중위 추계(2024년 0.68, 2025년 0.65)보다 높고 2025년 실제 값은 고위 가정(0.75)보다도 높다. 그래서 이 전망은 「예측」이 아니라 「2022년 기준 가정」임을 슬라이드에서 함께 밝힌다. 2023년 중위 0.72는 실제 2023년 값과 같다."
+      }
+    },
+    {
+      "after": "projection-tfr",
+      "indicator": {
+        "id": "projection-life-expectancy",
+        "title": "장래인구추계(2022년 기준): 기대수명",
+        "unit": "세",
+        "kind": "projection",
+        "use": [
+          "future"
+        ],
+        "latest": {"year":2072,"value":91.1},
+        "latestUnit": "세",
+        "latestLabel": "2072년 기대수명(기대수명 중위 가정, 전체)",
+        "decimals": 1,
+        "projection": {
+          "report": "장래인구추계: 2022~2072년",
+          "publisher": "통계청(현 국가데이터처)",
+          "releasedOn": "2023-12-14",
+          "releaseUrl": "https://mods.go.kr/board.es?mid=a10301020600&bid=207&act=view&list_no=428476",
+          "baseYear": 2022,
+          "horizon": 2072,
+          "actualThrough": 2022,
+          "actualNote": "KOSIS 주석 「2022년까지는 인구동태통계에 의한 기대수명 실적치이며, 2023년부터는 장래 사망력 가정에 의한 기대수명임」",
+          "baseNote": "이 표의 중위·고위·저위는 기대수명(사망력) 가정이다. 인구 표의 같은 이름 추계는 출산·사망·국제이동 가정을 함께 조합한 것이다.",
+          "defaultScenario": "median",
+          "scenarios": [
+            {
+              "key": "median",
+              "level": "mid",
+              "label": "기대수명 중위 가정",
+              "official": "기대수명 중위",
+              "series": [
+                {"year":2022,"value":82.7},
+                {"year":2023,"value":83.5},
+                {"year":2024,"value":84.3},
+                {"year":2025,"value":84.5},
+                {"year":2026,"value":84.7},
+                {"year":2027,"value":84.9},
+                {"year":2028,"value":85.1},
+                {"year":2029,"value":85.3},
+                {"year":2030,"value":85.5},
+                {"year":2031,"value":85.6},
+                {"year":2032,"value":85.8},
+                {"year":2033,"value":86},
+                {"year":2034,"value":86.2},
+                {"year":2035,"value":86.3},
+                {"year":2036,"value":86.5},
+                {"year":2037,"value":86.7},
+                {"year":2038,"value":86.8},
+                {"year":2039,"value":87},
+                {"year":2040,"value":87.2},
+                {"year":2041,"value":87.3},
+                {"year":2042,"value":87.5},
+                {"year":2043,"value":87.6},
+                {"year":2044,"value":87.8},
+                {"year":2045,"value":87.9},
+                {"year":2046,"value":88.1},
+                {"year":2047,"value":88.2},
+                {"year":2048,"value":88.3},
+                {"year":2049,"value":88.5},
+                {"year":2050,"value":88.6},
+                {"year":2051,"value":88.7},
+                {"year":2052,"value":88.9},
+                {"year":2053,"value":89},
+                {"year":2054,"value":89.1},
+                {"year":2055,"value":89.2},
+                {"year":2056,"value":89.4},
+                {"year":2057,"value":89.5},
+                {"year":2058,"value":89.6},
+                {"year":2059,"value":89.7},
+                {"year":2060,"value":89.8},
+                {"year":2061,"value":89.9},
+                {"year":2062,"value":90},
+                {"year":2063,"value":90.2},
+                {"year":2064,"value":90.3},
+                {"year":2065,"value":90.4},
+                {"year":2066,"value":90.5},
+                {"year":2067,"value":90.6},
+                {"year":2068,"value":90.7},
+                {"year":2069,"value":90.8},
+                {"year":2070,"value":90.9},
+                {"year":2071,"value":91},
+                {"year":2072,"value":91.1}
+              ]
+            },
+            {
+              "key": "high",
+              "level": "high",
+              "label": "기대수명 고위 가정",
+              "official": "기대수명 고위",
+              "series": [
+                {"year":2022,"value":82.7},
+                {"year":2023,"value":83.7},
+                {"year":2024,"value":84.8},
+                {"year":2025,"value":85.1},
+                {"year":2026,"value":85.4},
+                {"year":2027,"value":85.6},
+                {"year":2028,"value":85.8},
+                {"year":2029,"value":86.1},
+                {"year":2030,"value":86.3},
+                {"year":2031,"value":86.6},
+                {"year":2032,"value":86.7},
+                {"year":2033,"value":86.9},
+                {"year":2034,"value":87.2},
+                {"year":2035,"value":87.4},
+                {"year":2036,"value":87.5},
+                {"year":2037,"value":87.7},
+                {"year":2038,"value":87.9},
+                {"year":2039,"value":88},
+                {"year":2040,"value":88.2},
+                {"year":2041,"value":88.3},
+                {"year":2042,"value":88.5},
+                {"year":2043,"value":88.7},
+                {"year":2044,"value":88.9},
+                {"year":2045,"value":89},
+                {"year":2046,"value":89.2},
+                {"year":2047,"value":89.3},
+                {"year":2048,"value":89.5},
+                {"year":2049,"value":89.7},
+                {"year":2050,"value":89.8},
+                {"year":2051,"value":89.9},
+                {"year":2052,"value":90},
+                {"year":2053,"value":90.2},
+                {"year":2054,"value":90.3},
+                {"year":2055,"value":90.4},
+                {"year":2056,"value":90.6},
+                {"year":2057,"value":90.6},
+                {"year":2058,"value":90.7},
+                {"year":2059,"value":90.8},
+                {"year":2060,"value":91},
+                {"year":2061,"value":91.1},
+                {"year":2062,"value":91.2},
+                {"year":2063,"value":91.3},
+                {"year":2064,"value":91.4},
+                {"year":2065,"value":91.5},
+                {"year":2066,"value":91.6},
+                {"year":2067,"value":91.7},
+                {"year":2068,"value":91.8},
+                {"year":2069,"value":91.9},
+                {"year":2070,"value":92},
+                {"year":2071,"value":92.1},
+                {"year":2072,"value":92.2}
+              ]
+            },
+            {
+              "key": "low",
+              "level": "low",
+              "label": "기대수명 저위 가정",
+              "official": "기대수명 저위",
+              "series": [
+                {"year":2022,"value":82.7},
+                {"year":2023,"value":83.3},
+                {"year":2024,"value":83.7},
+                {"year":2025,"value":83.8},
+                {"year":2026,"value":83.9},
+                {"year":2027,"value":84},
+                {"year":2028,"value":84.2},
+                {"year":2029,"value":84.3},
+                {"year":2030,"value":84.4},
+                {"year":2031,"value":84.6},
+                {"year":2032,"value":84.8},
+                {"year":2033,"value":84.9},
+                {"year":2034,"value":85.1},
+                {"year":2035,"value":85.3},
+                {"year":2036,"value":85.4},
+                {"year":2037,"value":85.6},
+                {"year":2038,"value":85.7},
+                {"year":2039,"value":85.8},
+                {"year":2040,"value":86},
+                {"year":2041,"value":86.1},
+                {"year":2042,"value":86.2},
+                {"year":2043,"value":86.4},
+                {"year":2044,"value":86.5},
+                {"year":2045,"value":86.6},
+                {"year":2046,"value":86.7},
+                {"year":2047,"value":86.9},
+                {"year":2048,"value":87},
+                {"year":2049,"value":87.2},
+                {"year":2050,"value":87.3},
+                {"year":2051,"value":87.5},
+                {"year":2052,"value":87.5},
+                {"year":2053,"value":87.6},
+                {"year":2054,"value":87.7},
+                {"year":2055,"value":87.8},
+                {"year":2056,"value":87.9},
+                {"year":2057,"value":88.1},
+                {"year":2058,"value":88.2},
+                {"year":2059,"value":88.3},
+                {"year":2060,"value":88.4},
+                {"year":2061,"value":88.6},
+                {"year":2062,"value":88.7},
+                {"year":2063,"value":88.8},
+                {"year":2064,"value":88.8},
+                {"year":2065,"value":88.9},
+                {"year":2066,"value":89},
+                {"year":2067,"value":89.2},
+                {"year":2068,"value":89.3},
+                {"year":2069,"value":89.4},
+                {"year":2070,"value":89.5},
+                {"year":2071,"value":89.6},
+                {"year":2072,"value":89.7}
+              ]
+            }
+          ]
+        },
+        "actual": [
+          {"year":1970,"value":62.3},
+          {"year":1971,"value":62.7},
+          {"year":1972,"value":63.1},
+          {"year":1973,"value":63.5},
+          {"year":1974,"value":63.9},
+          {"year":1975,"value":64.2},
+          {"year":1976,"value":64.6},
+          {"year":1977,"value":65},
+          {"year":1978,"value":65.3},
+          {"year":1979,"value":65.6},
+          {"year":1980,"value":66.1},
+          {"year":1981,"value":66.7},
+          {"year":1982,"value":67.2},
+          {"year":1983,"value":67.7},
+          {"year":1984,"value":68.3},
+          {"year":1985,"value":68.9},
+          {"year":1986,"value":69.5},
+          {"year":1987,"value":70.1},
+          {"year":1988,"value":70.7},
+          {"year":1989,"value":71.2},
+          {"year":1990,"value":71.7},
+          {"year":1991,"value":72.2},
+          {"year":1992,"value":72.6},
+          {"year":1993,"value":73.1},
+          {"year":1994,"value":73.5},
+          {"year":1995,"value":73.8},
+          {"year":1996,"value":74.2},
+          {"year":1997,"value":74.7},
+          {"year":1998,"value":75.1},
+          {"year":1999,"value":75.5},
+          {"year":2000,"value":76},
+          {"year":2001,"value":76.5},
+          {"year":2002,"value":76.8},
+          {"year":2003,"value":77.3},
+          {"year":2004,"value":77.8},
+          {"year":2005,"value":78.2},
+          {"year":2006,"value":78.8},
+          {"year":2007,"value":79.2},
+          {"year":2008,"value":79.6},
+          {"year":2009,"value":80},
+          {"year":2010,"value":80.2},
+          {"year":2011,"value":80.6},
+          {"year":2012,"value":80.9},
+          {"year":2013,"value":81.4},
+          {"year":2014,"value":81.8},
+          {"year":2015,"value":82.1},
+          {"year":2016,"value":82.4},
+          {"year":2017,"value":82.7},
+          {"year":2018,"value":82.7},
+          {"year":2019,"value":83.3},
+          {"year":2020,"value":83.5},
+          {"year":2021,"value":83.6},
+          {"year":2022,"value":82.7}
+        ],
+        "related": [
+          {
+            "key": "male",
+            "label": "남자 기대수명",
+            "unit": "세",
+            "decimals": 1,
+            "actual": [
+              {"year":1970,"value":58.7},
+              {"year":1971,"value":59.1},
+              {"year":1972,"value":59.4},
+              {"year":1973,"value":59.7},
+              {"year":1974,"value":60},
+              {"year":1975,"value":60.3},
+              {"year":1976,"value":60.6},
+              {"year":1977,"value":60.9},
+              {"year":1978,"value":61.1},
+              {"year":1979,"value":61.4},
+              {"year":1980,"value":61.9},
+              {"year":1981,"value":62.4},
+              {"year":1982,"value":62.9},
+              {"year":1983,"value":63.4},
+              {"year":1984,"value":64},
+              {"year":1985,"value":64.6},
+              {"year":1986,"value":65.3},
+              {"year":1987,"value":65.9},
+              {"year":1988,"value":66.5},
+              {"year":1989,"value":67},
+              {"year":1990,"value":67.5},
+              {"year":1991,"value":67.9},
+              {"year":1992,"value":68.4},
+              {"year":1993,"value":68.9},
+              {"year":1994,"value":69.3},
+              {"year":1995,"value":69.7},
+              {"year":1996,"value":70.2},
+              {"year":1997,"value":70.7},
+              {"year":1998,"value":71.2},
+              {"year":1999,"value":71.8},
+              {"year":2000,"value":72.3},
+              {"year":2001,"value":72.9},
+              {"year":2002,"value":73.4},
+              {"year":2003,"value":73.8},
+              {"year":2004,"value":74.3},
+              {"year":2005,"value":74.9},
+              {"year":2006,"value":75.4},
+              {"year":2007,"value":75.9},
+              {"year":2008,"value":76.2},
+              {"year":2009,"value":76.7},
+              {"year":2010,"value":76.8},
+              {"year":2011,"value":77.3},
+              {"year":2012,"value":77.6},
+              {"year":2013,"value":78.1},
+              {"year":2014,"value":78.6},
+              {"year":2015,"value":79},
+              {"year":2016,"value":79.3},
+              {"year":2017,"value":79.7},
+              {"year":2018,"value":79.7},
+              {"year":2019,"value":80.3},
+              {"year":2020,"value":80.5},
+              {"year":2021,"value":80.6},
+              {"year":2022,"value":79.9}
+            ],
+            "scenarios": [
+              {
+                "key": "median",
+                "series": [
+                  {"year":2022,"value":79.9},
+                  {"year":2023,"value":80.6},
+                  {"year":2024,"value":81.4},
+                  {"year":2025,"value":81.6},
+                  {"year":2026,"value":81.9},
+                  {"year":2027,"value":82.1},
+                  {"year":2028,"value":82.4},
+                  {"year":2029,"value":82.6},
+                  {"year":2030,"value":82.8},
+                  {"year":2031,"value":83},
+                  {"year":2032,"value":83.2},
+                  {"year":2033,"value":83.4},
+                  {"year":2034,"value":83.6},
+                  {"year":2035,"value":83.8},
+                  {"year":2036,"value":84},
+                  {"year":2037,"value":84.2},
+                  {"year":2038,"value":84.4},
+                  {"year":2039,"value":84.6},
+                  {"year":2040,"value":84.8},
+                  {"year":2041,"value":85},
+                  {"year":2042,"value":85.2},
+                  {"year":2043,"value":85.4},
+                  {"year":2044,"value":85.6},
+                  {"year":2045,"value":85.7},
+                  {"year":2046,"value":85.9},
+                  {"year":2047,"value":86.1},
+                  {"year":2048,"value":86.2},
+                  {"year":2049,"value":86.4},
+                  {"year":2050,"value":86.5},
+                  {"year":2051,"value":86.7},
+                  {"year":2052,"value":86.8},
+                  {"year":2053,"value":87},
+                  {"year":2054,"value":87.2},
+                  {"year":2055,"value":87.3},
+                  {"year":2056,"value":87.4},
+                  {"year":2057,"value":87.6},
+                  {"year":2058,"value":87.7},
+                  {"year":2059,"value":87.8},
+                  {"year":2060,"value":88},
+                  {"year":2061,"value":88.1},
+                  {"year":2062,"value":88.2},
+                  {"year":2063,"value":88.4},
+                  {"year":2064,"value":88.5},
+                  {"year":2065,"value":88.6},
+                  {"year":2066,"value":88.7},
+                  {"year":2067,"value":88.9},
+                  {"year":2068,"value":89},
+                  {"year":2069,"value":89.1},
+                  {"year":2070,"value":89.2},
+                  {"year":2071,"value":89.3},
+                  {"year":2072,"value":89.5}
+                ]
+              }
+            ]
+          },
+          {
+            "key": "female",
+            "label": "여자 기대수명",
+            "unit": "세",
+            "decimals": 1,
+            "actual": [
+              {"year":1970,"value":65.8},
+              {"year":1971,"value":66.3},
+              {"year":1972,"value":66.8},
+              {"year":1973,"value":67.3},
+              {"year":1974,"value":67.8},
+              {"year":1975,"value":68.2},
+              {"year":1976,"value":68.6},
+              {"year":1977,"value":69.1},
+              {"year":1978,"value":69.5},
+              {"year":1979,"value":69.9},
+              {"year":1980,"value":70.4},
+              {"year":1981,"value":70.9},
+              {"year":1982,"value":71.5},
+              {"year":1983,"value":71.9},
+              {"year":1984,"value":72.6},
+              {"year":1985,"value":73.2},
+              {"year":1986,"value":73.8},
+              {"year":1987,"value":74.3},
+              {"year":1988,"value":74.8},
+              {"year":1989,"value":75.3},
+              {"year":1990,"value":75.9},
+              {"year":1991,"value":76.4},
+              {"year":1992,"value":76.8},
+              {"year":1993,"value":77.3},
+              {"year":1994,"value":77.7},
+              {"year":1995,"value":77.9},
+              {"year":1996,"value":78.3},
+              {"year":1997,"value":78.7},
+              {"year":1998,"value":79},
+              {"year":1999,"value":79.2},
+              {"year":2000,"value":79.7},
+              {"year":2001,"value":80.1},
+              {"year":2002,"value":80.3},
+              {"year":2003,"value":80.8},
+              {"year":2004,"value":81.2},
+              {"year":2005,"value":81.6},
+              {"year":2006,"value":82.1},
+              {"year":2007,"value":82.5},
+              {"year":2008,"value":83},
+              {"year":2009,"value":83.4},
+              {"year":2010,"value":83.6},
+              {"year":2011,"value":84},
+              {"year":2012,"value":84.2},
+              {"year":2013,"value":84.6},
+              {"year":2014,"value":85},
+              {"year":2015,"value":85.2},
+              {"year":2016,"value":85.4},
+              {"year":2017,"value":85.7},
+              {"year":2018,"value":85.7},
+              {"year":2019,"value":86.3},
+              {"year":2020,"value":86.5},
+              {"year":2021,"value":86.6},
+              {"year":2022,"value":85.6}
+            ],
+            "scenarios": [
+              {
+                "key": "median",
+                "series": [
+                  {"year":2022,"value":85.6},
+                  {"year":2023,"value":86.4},
+                  {"year":2024,"value":87.1},
+                  {"year":2025,"value":87.3},
+                  {"year":2026,"value":87.5},
+                  {"year":2027,"value":87.6},
+                  {"year":2028,"value":87.8},
+                  {"year":2029,"value":88},
+                  {"year":2030,"value":88.1},
+                  {"year":2031,"value":88.3},
+                  {"year":2032,"value":88.4},
+                  {"year":2033,"value":88.6},
+                  {"year":2034,"value":88.7},
+                  {"year":2035,"value":88.8},
+                  {"year":2036,"value":88.9},
+                  {"year":2037,"value":89.1},
+                  {"year":2038,"value":89.2},
+                  {"year":2039,"value":89.4},
+                  {"year":2040,"value":89.5},
+                  {"year":2041,"value":89.6},
+                  {"year":2042,"value":89.8},
+                  {"year":2043,"value":89.9},
+                  {"year":2044,"value":90},
+                  {"year":2045,"value":90.1},
+                  {"year":2046,"value":90.2},
+                  {"year":2047,"value":90.3},
+                  {"year":2048,"value":90.4},
+                  {"year":2049,"value":90.6},
+                  {"year":2050,"value":90.7},
+                  {"year":2051,"value":90.8},
+                  {"year":2052,"value":90.9},
+                  {"year":2053,"value":91},
+                  {"year":2054,"value":91.1},
+                  {"year":2055,"value":91.2},
+                  {"year":2056,"value":91.3},
+                  {"year":2057,"value":91.4},
+                  {"year":2058,"value":91.5},
+                  {"year":2059,"value":91.6},
+                  {"year":2060,"value":91.7},
+                  {"year":2061,"value":91.8},
+                  {"year":2062,"value":91.8},
+                  {"year":2063,"value":91.9},
+                  {"year":2064,"value":92},
+                  {"year":2065,"value":92.1},
+                  {"year":2066,"value":92.2},
+                  {"year":2067,"value":92.3},
+                  {"year":2068,"value":92.4},
+                  {"year":2069,"value":92.5},
+                  {"year":2070,"value":92.5},
+                  {"year":2071,"value":92.6},
+                  {"year":2072,"value":92.7}
+                ]
+              }
+            ]
+          }
+        ],
+        "definition": "기대수명은 지금 태어난 아기가 앞으로 살 것으로 기대되는 평균 햇수(0세 기대여명)입니다. 장래인구추계(2022년 기준)에서 2022년까지는 인구동태통계 기준 실적이고 2023년부터는 장래 사망력 가정에 따른 전망입니다. 중위·고위·저위는 기대수명 가정이며 예측이 아닙니다.",
+        "basisId": "s-097",
+        "source": {
+          "org": "통계청(현 국가데이터처)",
+          "table": "KOSIS 장래인구추계(2022년 기준) 전국 「장래 기대수명」(DT_1BPA201) 중위·고위·저위, 보도자료 「장래인구추계: 2022~2072년」 (2023-12-14)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1BPA201",
+          "accessedOn": "2026-10-21"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 「장래 기대수명」 표(DT_1BPA201) 화면에서 조회설정으로 가정별(중위·고위·저위)과 시점(1970~2072) 전체를 골라 전체·남자·여자 셀 값을 읽음. 같은 표의 주석정보와 기존 future-projection 지표(같은 표 중위 값)·life-expectancy 지표(생명표 실적)와 대조. 파일은 내려받지 않음",
+          "crossChecks": [
+            "future-projection 지표의 중위 값과 같음(2025년 84.5, 2030년 85.5, 2040년 87.2, 2050년 88.6, 2060년 89.8, 2072년 91.1세)",
+            "실적 구간 2021년 83.6세·2022년 82.7세(전체)가 life-expectancy 지표(생명표)의 같은 해 값과 같음",
+            "전체 기대수명이 같은 해 남자와 여자 값 사이에 있음(중위 추계 2022~2072년 모든 해)"
+          ]
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "2022년 82.7세는 코로나19 영향이 든 실적이다. 이 표의 전체 기대수명은 소수 첫째 자리이며, 생명표 보도자료(소수 첫째 자리)와 같은 표기다."
+      }
+    },
+    {
+      "after": "income-gap-by-age",
+      "indicator": {
+        "id": "poverty-by-age-band",
+        "title": "연령계층별 상대적 빈곤율(연령 7구간, 균등화 처분가능소득 중위소득 50% 이하)",
+        "unit": "%",
+        "kind": "bar",
+        "use": [
+          "research"
+        ],
+        "latest": {"year":2024,"value":53.8},
+        "latestUnit": "%",
+        "latestLabel": "76세 이상 상대적 빈곤율(2024년)",
+        "decimals": 1,
+        "scopeLabel": "2024년 기준(연령 7구간)",
+        "series": [
+          {"label":"0~17세","value":9.5},
+          {"label":"18~25세","value":9.3},
+          {"label":"26~40세","value":8},
+          {"label":"41~50세","value":9.3},
+          {"label":"51~65세","value":13.1},
+          {"label":"66~75세","value":26.6},
+          {"label":"76세 이상","value":53.8}
+        ],
+        "meanIncome": {
+          "unit": "만 원",
+          "decimals": 0,
+          "year": 2024,
+          "rows": [
+            {"label":"0~17세","value":4542},
+            {"label":"18~25세","value":4860},
+            {"label":"26~40세","value":4826},
+            {"label":"41~50세","value":4781},
+            {"label":"51~65세","value":4845},
+            {"label":"66~75세","value":3596},
+            {"label":"76세 이상","value":2453}
+          ]
+        },
+        "history": {
+          "years": [
+            2011,
+            2012,
+            2013,
+            2014,
+            2015,
+            2016,
+            2017,
+            2018,
+            2019,
+            2020,
+            2021,
+            2022,
+            2023,
+            2024
+          ],
+          "unit": "%",
+          "decimals": 1,
+          "poverty": [
+            {
+              "label": "0~17세",
+              "series": [
+                {"year":2011,"value":16.3},
+                {"year":2012,"value":16.7},
+                {"year":2013,"value":16.2},
+                {"year":2014,"value":16.3},
+                {"year":2015,"value":15.8},
+                {"year":2016,"value":15.1},
+                {"year":2017,"value":13.7},
+                {"year":2018,"value":12.2},
+                {"year":2019,"value":10.3},
+                {"year":2020,"value":9.5},
+                {"year":2021,"value":9.6},
+                {"year":2022,"value":9.5},
+                {"year":2023,"value":8.5},
+                {"year":2024,"value":9.5}
+              ]
+            },
+            {
+              "label": "18~25세",
+              "series": [
+                {"year":2011,"value":12.9},
+                {"year":2012,"value":12.8},
+                {"year":2013,"value":13},
+                {"year":2014,"value":13.2},
+                {"year":2015,"value":11},
+                {"year":2016,"value":11.8},
+                {"year":2017,"value":11.2},
+                {"year":2018,"value":11.1},
+                {"year":2019,"value":10},
+                {"year":2020,"value":9},
+                {"year":2021,"value":8.4},
+                {"year":2022,"value":8.7},
+                {"year":2023,"value":9.3},
+                {"year":2024,"value":9.3}
+              ]
+            },
+            {
+              "label": "26~40세",
+              "series": [
+                {"year":2011,"value":12},
+                {"year":2012,"value":12.2},
+                {"year":2013,"value":11.5},
+                {"year":2014,"value":11.8},
+                {"year":2015,"value":11.4},
+                {"year":2016,"value":11},
+                {"year":2017,"value":10.9},
+                {"year":2018,"value":9.3},
+                {"year":2019,"value":8.6},
+                {"year":2020,"value":7.9},
+                {"year":2021,"value":8.5},
+                {"year":2022,"value":7.6},
+                {"year":2023,"value":7},
+                {"year":2024,"value":8}
+              ]
+            },
+            {
+              "label": "41~50세",
+              "series": [
+                {"year":2011,"value":14.6},
+                {"year":2012,"value":14.5},
+                {"year":2013,"value":14.7},
+                {"year":2014,"value":14},
+                {"year":2015,"value":12.8},
+                {"year":2016,"value":13.1},
+                {"year":2017,"value":11.7},
+                {"year":2018,"value":11.5},
+                {"year":2019,"value":10.3},
+                {"year":2020,"value":10.2},
+                {"year":2021,"value":9.6},
+                {"year":2022,"value":9.4},
+                {"year":2023,"value":9.4},
+                {"year":2024,"value":9.3}
+              ]
+            },
+            {
+              "label": "51~65세",
+              "series": [
+                {"year":2011,"value":16.1},
+                {"year":2012,"value":15},
+                {"year":2013,"value":15.3},
+                {"year":2014,"value":15.4},
+                {"year":2015,"value":14.9},
+                {"year":2016,"value":14.4},
+                {"year":2017,"value":14.4},
+                {"year":2018,"value":13.4},
+                {"year":2019,"value":13.3},
+                {"year":2020,"value":12.7},
+                {"year":2021,"value":12.3},
+                {"year":2022,"value":12.6},
+                {"year":2023,"value":12.6},
+                {"year":2024,"value":13.1}
+              ]
+            },
+            {
+              "label": "66~75세",
+              "series": [
+                {"year":2011,"value":43.6},
+                {"year":2012,"value":41.9},
+                {"year":2013,"value":42.3},
+                {"year":2014,"value":39.9},
+                {"year":2015,"value":37.1},
+                {"year":2016,"value":36.4},
+                {"year":2017,"value":35.2},
+                {"year":2018,"value":34.6},
+                {"year":2019,"value":33.5},
+                {"year":2020,"value":31.4},
+                {"year":2021,"value":30.1},
+                {"year":2022,"value":29.8},
+                {"year":2023,"value":29.4},
+                {"year":2024,"value":26.6}
+              ]
+            },
+            {
+              "label": "76세 이상",
+              "series": [
+                {"year":2011,"value":55.5},
+                {"year":2012,"value":55},
+                {"year":2013,"value":55.7},
+                {"year":2014,"value":55.2},
+                {"year":2015,"value":54.9},
+                {"year":2016,"value":57.2},
+                {"year":2017,"value":56.2},
+                {"year":2018,"value":55},
+                {"year":2019,"value":55.9},
+                {"year":2020,"value":52.5},
+                {"year":2021,"value":51.9},
+                {"year":2022,"value":54},
+                {"year":2023,"value":54.6},
+                {"year":2024,"value":53.8}
+              ]
+            }
+          ],
+          "meanIncome": [
+            {
+              "label": "0~17세",
+              "series": [
+                {"year":2011,"value":2545},
+                {"year":2012,"value":2588},
+                {"year":2013,"value":2676},
+                {"year":2014,"value":2663},
+                {"year":2015,"value":2757},
+                {"year":2016,"value":2913},
+                {"year":2017,"value":3074},
+                {"year":2018,"value":3217},
+                {"year":2019,"value":3431},
+                {"year":2020,"value":3550},
+                {"year":2021,"value":3744},
+                {"year":2022,"value":3978},
+                {"year":2023,"value":4372},
+                {"year":2024,"value":4542}
+              ]
+            },
+            {
+              "label": "18~25세",
+              "series": [
+                {"year":2011,"value":2820},
+                {"year":2012,"value":2974},
+                {"year":2013,"value":3158},
+                {"year":2014,"value":3091},
+                {"year":2015,"value":3130},
+                {"year":2016,"value":3275},
+                {"year":2017,"value":3503},
+                {"year":2018,"value":3595},
+                {"year":2019,"value":3691},
+                {"year":2020,"value":3786},
+                {"year":2021,"value":4053},
+                {"year":2022,"value":4305},
+                {"year":2023,"value":4613},
+                {"year":2024,"value":4860}
+              ]
+            },
+            {
+              "label": "26~40세",
+              "series": [
+                {"year":2011,"value":2687},
+                {"year":2012,"value":2806},
+                {"year":2013,"value":2933},
+                {"year":2014,"value":2962},
+                {"year":2015,"value":3071},
+                {"year":2016,"value":3165},
+                {"year":2017,"value":3276},
+                {"year":2018,"value":3433},
+                {"year":2019,"value":3571},
+                {"year":2020,"value":3773},
+                {"year":2021,"value":4045},
+                {"year":2022,"value":4271},
+                {"year":2023,"value":4666},
+                {"year":2024,"value":4826}
+              ]
+            },
+            {
+              "label": "41~50세",
+              "series": [
+                {"year":2011,"value":2797},
+                {"year":2012,"value":2898},
+                {"year":2013,"value":2979},
+                {"year":2014,"value":2961},
+                {"year":2015,"value":3037},
+                {"year":2016,"value":3211},
+                {"year":2017,"value":3373},
+                {"year":2018,"value":3515},
+                {"year":2019,"value":3667},
+                {"year":2020,"value":3737},
+                {"year":2021,"value":3933},
+                {"year":2022,"value":4207},
+                {"year":2023,"value":4541},
+                {"year":2024,"value":4781}
+              ]
+            },
+            {
+              "label": "51~65세",
+              "series": [
+                {"year":2011,"value":2759},
+                {"year":2012,"value":2929},
+                {"year":2013,"value":3073},
+                {"year":2014,"value":3111},
+                {"year":2015,"value":3153},
+                {"year":2016,"value":3279},
+                {"year":2017,"value":3421},
+                {"year":2018,"value":3475},
+                {"year":2019,"value":3577},
+                {"year":2020,"value":3713},
+                {"year":2021,"value":3959},
+                {"year":2022,"value":4206},
+                {"year":2023,"value":4583},
+                {"year":2024,"value":4845}
+              ]
+            },
+            {
+              "label": "66~75세",
+              "series": [
+                {"year":2011,"value":1677},
+                {"year":2012,"value":1800},
+                {"year":2013,"value":1905},
+                {"year":2014,"value":2001},
+                {"year":2015,"value":2068},
+                {"year":2016,"value":2168},
+                {"year":2017,"value":2263},
+                {"year":2018,"value":2364},
+                {"year":2019,"value":2428},
+                {"year":2020,"value":2620},
+                {"year":2021,"value":2811},
+                {"year":2022,"value":3000},
+                {"year":2023,"value":3323},
+                {"year":2024,"value":3596}
+              ]
+            },
+            {
+              "label": "76세 이상",
+              "series": [
+                {"year":2011,"value":1467},
+                {"year":2012,"value":1566},
+                {"year":2013,"value":1642},
+                {"year":2014,"value":1691},
+                {"year":2015,"value":1685},
+                {"year":2016,"value":1701},
+                {"year":2017,"value":1704},
+                {"year":2018,"value":1804},
+                {"year":2019,"value":1857},
+                {"year":2020,"value":2034},
+                {"year":2021,"value":2078},
+                {"year":2022,"value":2228},
+                {"year":2023,"value":2387},
+                {"year":2024,"value":2453}
+              ]
+            }
+          ]
+        },
+        "definition": "연령세부계층별 상대적 빈곤율은 균등화 처분가능소득이 중위소득의 50% 이하인 사람이 그 연령 구간 인구에서 차지하는 비율입니다. 같은 소득분배지표 표의 66세 이상·18~65세 상대적 빈곤율과 같은 빈곤선이라 구간끼리 견줄 수 있고, 연령 구간은 원문 그대로 0~17세·18~25세·26~40세·41~50세·51~65세·66~75세·76세 이상입니다.",
+        "basisId": "s-100",
+        "source": {
+          "org": "국가데이터처·한국은행·금융감독원",
+          "table": "KOSIS 가계금융복지조사 「소득분배지표(연령계층별)」(DT_1HDALF06)의 연령세부계층별 균등화 처분가능소득 평균·상대적 빈곤율(수록 2011~2024, 자료갱신 2025-12-04)",
+          "url": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1HDALF06",
+          "accessedOn": "2026-10-21"
+        },
+        "verification": {
+          "status": "verified",
+          "method": "KOSIS 「소득분배지표(연령계층별)」 표(DT_1HDALF06) 화면에서 시점 2011~2024 전체를 골라 「연령세부계층」 행의 연령 7구간 셀 값을 읽음(처분가능소득 열만 값이 있고 시장소득 열은 「-」). 같은 표의 주석정보와 대조. 파일은 내려받지 않음",
+          "crossChecks": [
+            "66세 이상 전체 상대적 빈곤율(elderly-poverty 지표 2024년 37.7%)이 66~75세(26.6%)와 76세 이상(53.8%) 사이에 있음",
+            "연령 7구간 이름·순서가 원문 표와 같고 2011~2024년 14개 연도 값이 모두 있음(7구간 × 2지표 × 14개 연도)"
+          ],
+          "recheckedOn": "2026-10-21"
+        },
+        "safety": null,
+        "usable": true,
+        "notes": "같은 연령 안의 소득 격차를 직접 재는 값이 아니라 「빈곤선 아래 사람의 비중」이다. 같은 연령 안의 격차(지니계수·5분위배율)는 income-gap-by-age 지표(구간 3개)에 있다. 연령 구간의 폭이 다르다(0~17세 18년, 18~25세 8년, 76세 이상은 끝이 열려 있음)."
+      }
+    }
+  ],
+  "overlays": [
+    {
+      "id": "income-gap-by-age",
+      "fields": {
+        "measures": [
+          {
+            "key": "quintileRatio-disposable",
+            "concept": "disposable",
+            "metric": "quintileRatio",
+            "label": "소득 5분위배율(균등화 처분가능소득)",
+            "unit": "배",
+            "decimals": 2,
+            "bands": [
+              {
+                "key": "working",
+                "label": "근로연령인구(18~65세)",
+                "series": [
+                  {"year":2011,"value":7.12},
+                  {"year":2012,"value":7.02},
+                  {"year":2013,"value":6.64},
+                  {"year":2014,"value":6.4},
+                  {"year":2015,"value":5.99},
+                  {"year":2016,"value":6.02},
+                  {"year":2017,"value":5.98},
+                  {"year":2018,"value":5.56},
+                  {"year":2019,"value":5.31},
+                  {"year":2020,"value":5.07},
+                  {"year":2021,"value":5.15},
+                  {"year":2022,"value":4.98},
+                  {"year":2023,"value":4.93},
+                  {"year":2024,"value":5.01}
+                ]
+              },
+              {
+                "key": "retired",
+                "label": "은퇴연령인구(66세 이상)",
+                "series": [
+                  {"year":2011,"value":11.44},
+                  {"year":2012,"value":11.46},
+                  {"year":2013,"value":11.25},
+                  {"year":2014,"value":10.69},
+                  {"year":2015,"value":9.23},
+                  {"year":2016,"value":9.02},
+                  {"year":2017,"value":8.8},
+                  {"year":2018,"value":7.94},
+                  {"year":2019,"value":7.24},
+                  {"year":2020,"value":6.64},
+                  {"year":2021,"value":6.92},
+                  {"year":2022,"value":7.11},
+                  {"year":2023,"value":7.11},
+                  {"year":2024,"value":6.9}
+                ]
+              },
+              {
+                "key": "senior",
+                "label": "노인인구(65세이상)",
+                "series": [
+                  {"year":2011,"value":11.36},
+                  {"year":2012,"value":11.52},
+                  {"year":2013,"value":11.25},
+                  {"year":2014,"value":10.6},
+                  {"year":2015,"value":9.32},
+                  {"year":2016,"value":8.96},
+                  {"year":2017,"value":8.77},
+                  {"year":2018,"value":7.9},
+                  {"year":2019,"value":7.34},
+                  {"year":2020,"value":6.69},
+                  {"year":2021,"value":6.97},
+                  {"year":2022,"value":7.18},
+                  {"year":2023,"value":7.16},
+                  {"year":2024,"value":7.08}
+                ]
+              }
+            ]
+          },
+          {
+            "key": "gini-disposable",
+            "concept": "disposable",
+            "metric": "gini",
+            "label": "지니계수(균등화 처분가능소득)",
+            "unit": null,
+            "decimals": 3,
+            "bands": [
+              {
+                "key": "working",
+                "label": "근로연령인구(18~65세)",
+                "series": [
+                  {"year":2011,"value":0.369},
+                  {"year":2012,"value":0.367},
+                  {"year":2013,"value":0.355},
+                  {"year":2014,"value":0.346},
+                  {"year":2015,"value":0.335},
+                  {"year":2016,"value":0.336},
+                  {"year":2017,"value":0.334},
+                  {"year":2018,"value":0.322},
+                  {"year":2019,"value":0.314},
+                  {"year":2020,"value":0.309},
+                  {"year":2021,"value":0.31},
+                  {"year":2022,"value":0.303},
+                  {"year":2023,"value":0.302},
+                  {"year":2024,"value":0.303}
+                ]
+              },
+              {
+                "key": "retired",
+                "label": "은퇴연령인구(66세 이상)",
+                "series": [
+                  {"year":2011,"value":0.46},
+                  {"year":2012,"value":0.457},
+                  {"year":2013,"value":0.452},
+                  {"year":2014,"value":0.449},
+                  {"year":2015,"value":0.426},
+                  {"year":2016,"value":0.424},
+                  {"year":2017,"value":0.418},
+                  {"year":2018,"value":0.405},
+                  {"year":2019,"value":0.388},
+                  {"year":2020,"value":0.376},
+                  {"year":2021,"value":0.378},
+                  {"year":2022,"value":0.383},
+                  {"year":2023,"value":0.38},
+                  {"year":2024,"value":0.377}
+                ]
+              },
+              {
+                "key": "senior",
+                "label": "노인인구(65세이상)",
+                "series": [
+                  {"year":2011,"value":0.457},
+                  {"year":2012,"value":0.456},
+                  {"year":2013,"value":0.452},
+                  {"year":2014,"value":0.446},
+                  {"year":2015,"value":0.427},
+                  {"year":2016,"value":0.421},
+                  {"year":2017,"value":0.415},
+                  {"year":2018,"value":0.402},
+                  {"year":2019,"value":0.389},
+                  {"year":2020,"value":0.376},
+                  {"year":2021,"value":0.378},
+                  {"year":2022,"value":0.383},
+                  {"year":2023,"value":0.378},
+                  {"year":2024,"value":0.38}
+                ]
+              }
+            ]
+          },
+          {
+            "key": "quintileRatio-market",
+            "concept": "market",
+            "metric": "quintileRatio",
+            "label": "소득 5분위배율(균등화 시장소득)",
+            "unit": "배",
+            "decimals": 2,
+            "bands": [
+              {
+                "key": "working",
+                "label": "근로연령인구(18~65세)",
+                "series": [
+                  {"year":2011,"value":8.48},
+                  {"year":2012,"value":8.29},
+                  {"year":2013,"value":7.89},
+                  {"year":2014,"value":7.75},
+                  {"year":2015,"value":7.56},
+                  {"year":2016,"value":7.78},
+                  {"year":2017,"value":7.89},
+                  {"year":2018,"value":7.52},
+                  {"year":2019,"value":7.48},
+                  {"year":2020,"value":7.55},
+                  {"year":2021,"value":7.59},
+                  {"year":2022,"value":7.09},
+                  {"year":2023,"value":6.89},
+                  {"year":2024,"value":7.08}
+                ]
+              },
+              {
+                "key": "retired",
+                "label": "은퇴연령인구(66세 이상)",
+                "series": [
+                  {"year":2011,"value":40.14},
+                  {"year":2012,"value":40.26},
+                  {"year":2013,"value":39.43},
+                  {"year":2014,"value":47.99},
+                  {"year":2015,"value":46.71},
+                  {"year":2016,"value":49.47},
+                  {"year":2017,"value":45.97},
+                  {"year":2018,"value":41.99},
+                  {"year":2019,"value":42.82},
+                  {"year":2020,"value":43.13},
+                  {"year":2021,"value":41.08},
+                  {"year":2022,"value":39.52},
+                  {"year":2023,"value":36.87},
+                  {"year":2024,"value":37.89}
+                ]
+              },
+              {
+                "key": "senior",
+                "label": "노인인구(65세이상)",
+                "series": [
+                  {"year":2011,"value":38.21},
+                  {"year":2012,"value":39.71},
+                  {"year":2013,"value":38.58},
+                  {"year":2014,"value":44.77},
+                  {"year":2015,"value":45.06},
+                  {"year":2016,"value":46.77},
+                  {"year":2017,"value":43.82},
+                  {"year":2018,"value":40.42},
+                  {"year":2019,"value":41.47},
+                  {"year":2020,"value":41.46},
+                  {"year":2021,"value":39.13},
+                  {"year":2022,"value":38.53},
+                  {"year":2023,"value":35.24},
+                  {"year":2024,"value":36.79}
+                ]
+              }
+            ]
+          },
+          {
+            "key": "gini-market",
+            "concept": "market",
+            "metric": "gini",
+            "label": "지니계수(균등화 시장소득)",
+            "unit": null,
+            "decimals": 3,
+            "bands": [
+              {
+                "key": "working",
+                "label": "근로연령인구(18~65세)",
+                "series": [
+                  {"year":2011,"value":0.391},
+                  {"year":2012,"value":0.388},
+                  {"year":2013,"value":0.377},
+                  {"year":2014,"value":0.372},
+                  {"year":2015,"value":0.367},
+                  {"year":2016,"value":0.371},
+                  {"year":2017,"value":0.373},
+                  {"year":2018,"value":0.366},
+                  {"year":2019,"value":0.362},
+                  {"year":2020,"value":0.365},
+                  {"year":2021,"value":0.365},
+                  {"year":2022,"value":0.355},
+                  {"year":2023,"value":0.35},
+                  {"year":2024,"value":0.354}
+                ]
+              },
+              {
+                "key": "retired",
+                "label": "은퇴연령인구(66세 이상)",
+                "series": [
+                  {"year":2011,"value":0.56},
+                  {"year":2012,"value":0.556},
+                  {"year":2013,"value":0.555},
+                  {"year":2014,"value":0.567},
+                  {"year":2015,"value":0.564},
+                  {"year":2016,"value":0.568},
+                  {"year":2017,"value":0.564},
+                  {"year":2018,"value":0.56},
+                  {"year":2019,"value":0.554},
+                  {"year":2020,"value":0.554},
+                  {"year":2021,"value":0.552},
+                  {"year":2022,"value":0.551},
+                  {"year":2023,"value":0.54},
+                  {"year":2024,"value":0.541}
+                ]
+              },
+              {
+                "key": "senior",
+                "label": "노인인구(65세이상)",
+                "series": [
+                  {"year":2011,"value":0.555},
+                  {"year":2012,"value":0.553},
+                  {"year":2013,"value":0.553},
+                  {"year":2014,"value":0.56},
+                  {"year":2015,"value":0.561},
+                  {"year":2016,"value":0.561},
+                  {"year":2017,"value":0.557},
+                  {"year":2018,"value":0.553},
+                  {"year":2019,"value":0.549},
+                  {"year":2020,"value":0.551},
+                  {"year":2021,"value":0.545},
+                  {"year":2022,"value":0.545},
+                  {"year":2023,"value":0.535},
+                  {"year":2024,"value":0.538}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

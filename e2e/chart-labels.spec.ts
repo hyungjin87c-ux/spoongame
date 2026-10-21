@@ -5,7 +5,7 @@ import { slideCount } from './carouselHelpers';
  * 그래프 첫 값 글자 겹침 — 조건부 허용 범위 (SPEC-003 QM2-8, QA-003-M2 인상·R-225). 실제 화면(320·360·1280)에서:
  *  ① 허용 목록(KNOWN_FIRST_LABEL_OVERLAPS) 밖의 선 그래프는 글자가 선·점·다른 글자와 겹치지 않는다 — 목록 밖의 새 겹침은 실패.
  *  ② 목록 안(평균 수명·혼인 건수 전 폭, 고령인구 비율 320px)에서도 겹침은 자기 선뿐이다 — 점(마커)·다른 글자와는 0.
- *  ③ 모든 그래프 글자는 선 위에 그려지고(paint-order: stroke) 카드 바탕색 테두리 ≥ 3px, 글자 크기 ≥ 12px, 글자 색의 카드 바탕 대비 ≥ 4.5:1 (라이트·다크).
+ *  ③ 모든 그래프 글자는 선 위에 그려지고(paint-order: stroke) 카드 바탕색 테두리 ≥ 3px, 글자 크기 ≥ 12px, 글자 색의 카드 바탕 대비 ≥ 4.5:1 (라이트·다크). 채움 칸 안 글자(`seg-text`)만 후광 없이 칸 색 대비 ≥ 4.5:1로 본다.
  * 단위 테스트(tests/carousel.test.ts)가 같은 목록을 좌표 계산으로 보고, 이 e2e는 실제로 그려진 SVG(getBBox)로 본다.
  */
 
@@ -131,18 +131,25 @@ for (const scheme of ['light', 'dark'] as const) {
           const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
           return (hi + 0.05) / (lo + 0.05);
         };
+        // 채움 칸 안 글자(아기 슬라이드 15~64세 칸의 「68.8%」, designer 15-2 `seg-text`)는 면 위가 아니라 칸 위에 놓인다 — 후광 없이 칸 색(--c-brand) 대비로 본다 (SPEC-005 QI4 2단계)
+        const segFill = svg.querySelector('.chart-seg--work') ? getComputedStyle(svg.querySelector('.chart-seg--work') as Element).fill : null;
         return Array.from(svg.querySelectorAll('text')).map((t) => {
           const cs = getComputedStyle(t);
-          return { text: t.textContent ?? '', paintOrder: cs.paintOrder, stroke: cs.stroke, strokeWidth: parseFloat(cs.strokeWidth) * scale, fontPx: parseFloat(cs.fontSize) * scale, contrast: ratio(cs.fill, cardBg), cardBg };
+          const onSeg = t.classList.contains('seg-text') && segFill !== null;
+          return { text: t.textContent ?? '', onSeg, paintOrder: cs.paintOrder, stroke: cs.stroke, strokeWidth: parseFloat(cs.strokeWidth) * scale, fontPx: parseFloat(cs.fontSize) * scale, contrast: ratio(cs.fill, onSeg ? (segFill as string) : cardBg), cardBg };
         });
       });
       for (const t of m) {
         measured++;
-        expect(t.paintOrder, `${t.text}: 글자 뒤에 테두리를 먼저 그린다`).toMatch(/^stroke/);
-        expect(t.stroke, `${t.text}: 테두리는 카드 바탕색`).toBe(t.cardBg);
-        expect(t.strokeWidth, `${t.text}: 테두리 두께`).toBeGreaterThanOrEqual(3 - 0.01);
+        if (t.onSeg) {
+          expect(t.stroke, `${t.text}: 칸 안 글자는 후광이 없다`).toBe('none');
+        } else {
+          expect(t.paintOrder, `${t.text}: 글자 뒤에 테두리를 먼저 그린다`).toMatch(/^stroke/);
+          expect(t.stroke, `${t.text}: 테두리는 카드 바탕색`).toBe(t.cardBg);
+          expect(t.strokeWidth, `${t.text}: 테두리 두께`).toBeGreaterThanOrEqual(3 - 0.01);
+        }
         expect(t.fontPx, `${t.text}: 글자 크기`).toBeGreaterThanOrEqual(12);
-        expect(t.contrast, `${t.text}: 글자 색 대 카드 바탕 대비`).toBeGreaterThanOrEqual(4.5);
+        expect(t.contrast, `${t.text}: 글자 색 대 ${t.onSeg ? '칸' : '카드 바탕'} 대비`).toBeGreaterThanOrEqual(4.5);
       }
       const id = await page.evaluate(() => document.querySelector('.slide.is-active')!.getAttribute('data-slide-id')!);
       if (scheme === 'light' && ['life-expectancy', 'marriage-count', 'aging-rate'].includes(id)) {

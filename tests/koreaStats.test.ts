@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import statsJson from '../src/data/koreaStats.json';
+// 예비 지표(첫 화면 묶음에서 뺀 4개 + 격차 measures)까지 합친 전체 데이터 — 모든 지표를 훑는 시험은 합친 쪽을 본다 (SPEC-005 QI4 2단계, src/data/koreaStatsFull.ts)
+import { FULL_STATS as statsJson } from '../src/data/koreaStatsFull';
 import basisDoc from '../docs/data/events-stats-basis.md?raw';
 import sourcesDoc from '../docs/data/korea-stats-sources.md?raw';
-import { formatHeadlines, formatIndicatorValue, getSeriesGaps, getUsableIndicator, type UsableIndicator } from '../src/data/koreaStatsAccess';
+import { createStatsAccess, formatHeadlines, formatIndicatorValue, getSeriesGaps, type UsableIndicator } from '../src/data/koreaStatsAccess';
 
 /**
  * 한국 통계 데이터(src/data/koreaStats.json) 검증 — SPEC-003 M6a (SC3·EV1~EV3).
@@ -21,7 +22,7 @@ interface Indicator {
   id: string;
   title: string;
   unit: string | null;
-  kind: 'line' | 'bar' | 'number' | 'table';
+  kind: 'line' | 'bar' | 'number' | 'table' | 'projection';
   use: string[];
   latest: { year: number; value: number } | null;
   series?: Point[];
@@ -83,12 +84,12 @@ describe('구조 검증 (SC3: 필수 필드·출처 형식·기준 연도)', () 
     expect(String(FILE.meta.accessRule)).toContain('robots.txt');
   });
 
-  it('지표 id는 유일하고 kebab-case이며 지표가 30개 미만으로 줄어들지 않는다(현재 74개 = 51 + M7b 준비 8 + M7b 준비 2차 15)', () => {
+  it('지표 id는 유일하고 kebab-case이며 지표가 30개 미만으로 줄어들지 않는다(현재 83개 = 74 + QI4 1단계 9 — 51 + M7b 준비 8 + M7b 준비 2차 15 + 새 9)', () => {
     const ids = ALL.map((i) => i.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id, id).toMatch(/^[a-z][a-z0-9-]{2,40}$/);
     expect(ALL.length).toBeGreaterThanOrEqual(40);
-    // SPEC-005 QI4 1단계(2026-10-21): 새 지표 9개(공식 전망 7 + 연령별 격차 2)를 더해 83개. 제목의 74는 그 전 값이다 — docs/TODO.md가 이 제목을 인용해 제목은 바꾸지 않았다.
+    // SPEC-005 QI4 1단계(2026-10-21): 새 지표 9개(공식 전망 7 + 연령별 격차 2)를 더해 83개. 제목의 74는 2단계에서 83으로 고쳤다 — docs/TODO.md의 인용 제목도 함께 갱신했다.
     expect(ALL).toHaveLength(83);
   });
 
@@ -240,17 +241,29 @@ describe('캐러셀 지표 (SC1: 요청의 5개 포함 10개 이상, 모든 값�
     // 지역별 인구수 카드는 2026 주민등록 16개 시·도(마스터 결정 2026-10-15) — 2025 인구주택총조사 17개 시도 지표는 캐러셀에 없다
     for (const id of ['tfr', 'cdr', 'elderly-poverty', 'suicide-rate', 'region-population-registered']) expect(carousel.map((i) => i.id), id).toContain(id);
     expect(carousel.map((i) => i.id)).not.toContain('region-population');
-    expect(carousel).toHaveLength(14);
+    // QI4 2단계(마스터 결정 1): 14 → 20 (격차 1 + 공식 전망 5 — 폭염은 기존 지표를 어댑터로)
+    expect(carousel).toHaveLength(20);
     for (const i of carousel) expect(i.usable, i.id).toBe(true);
   });
 
   it('캐러셀 슬라이드마다 제목·값+단위·기준 연도·출처(기관·통계표)·그래프 값·한 줄 정의가 있다', () => {
     for (const i of carousel) {
       expect(i.title, i.id).toBeTruthy();
-      expect(i.unit, i.id).toBeTruthy();
+      // 폭염 표(heat-projection)는 지표 단위 필드가 없고(열 이름이 「(일)」) 큰 숫자의 단위 latestUnit가 있다 — 「값 + 단위」는 같다
+      expect(i.unit ?? (i as Record<string, unknown>).latestUnit, i.id).toBeTruthy();
       expect(i.latest!.year, i.id).toBeGreaterThan(1969);
       expect(i.source!.org && i.source!.table, i.id).toBeTruthy();
-      expect((i.series ?? []).length, i.id).toBeGreaterThanOrEqual(2);
+      // 그래프 값: 선·막대는 series, 공식 전망(kind projection)은 확정 구간(actual)과 시나리오별 값, 폭염 표는 권역 행 — 모두 둘 이상 (QI4 2단계)
+      const proj = (i as Record<string, unknown>).projection as { shape?: string; defaultScenario: string; scenarios: Array<{ key: string; rows?: unknown[] }> } | undefined;
+      const graphValues =
+        i.kind === 'projection'
+          ? proj?.shape === 'cohort-rows'
+            ? proj.scenarios.find((s) => s.key === proj.defaultScenario)?.rows?.length ?? 0 // 아기 누적 막대: 나이별 행
+            : ((i as Record<string, unknown>).actual as unknown[] | undefined)?.length ?? 0
+          : i.kind === 'table'
+            ? (i.rows ?? []).length
+            : (i.series ?? []).length;
+      expect(graphValues, i.id).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -681,8 +694,10 @@ describe('값 교차 검증 — 경제 모델 근거 (EC)', () => {
 // =====================================================================================================
 
 const getAny = (id: string): Record<string, unknown> & Indicator => get(id) as Record<string, unknown> & Indicator;
+// 예비 지표까지 합친 전체 데이터의 접근자 — 기본 접근자는 첫 화면 묶음의 것만 돌려준다(SPEC-005 QI4 2단계)
+const FULL_ACCESS = createStatsAccess(statsJson);
 const usable = (id: string): UsableIndicator => {
-  const found = getUsableIndicator(id);
+  const found = FULL_ACCESS.getUsableIndicator(id);
   if (!found) throw new Error(`확인된 지표 아님: ${id}`);
   return found;
 };

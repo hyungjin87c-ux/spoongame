@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import statsJson from '../src/data/koreaStats.json';
+// 예비 지표까지 합친 전체 데이터(첫 화면 묶음에서 뺀 지표 포함, SPEC-005 QI4 2단계) — 「미확인은 어떤 접근자로도 안 나온다」는 기본 접근자와 합친 접근자 둘 다 본다
+import { FULL_STATS } from '../src/data/koreaStatsFull';
 import { ERAS } from '../src/core/types';
 import { ERA_CONFIG } from '../src/data/birthTable';
 import {
@@ -60,18 +62,27 @@ function fake(over: Partial<RawIndicator> & { id: string }): RawIndicator {
 }
 
 describe('usable: false 는 어떤 접근 함수로도 나오지 않는다 (R-147(e))', () => {
-  it('실제 데이터: 미확인 지표 6개는 getUsableIndicator가 undefined이고 목록(전체·캐러셀·용도별)에 없다', () => {
-    expect(UNUSABLE_IDS.sort()).toEqual(['childcare-cost', 'household-credit', 'household-loan-rate', 'income-college-gap', 'korean-children-panel', 'wedding-cost']);
-    const listed = new Set(getUsableIndicators().map((i) => i.id));
+  it('실제 데이터: 미확인 지표 6개는 getUsableIndicator가 undefined이고 목록(전체·캐러셀·용도별)에 없다 — 기본 접근자와 예비까지 합친 접근자(QI4 2단계) 모두', () => {
+    // 6개는 합친 전체 데이터 기준이다(korean-children-panel은 예비로 옮겨 기본 파일에는 5개만 있다)
+    const unusableFull = FULL_STATS.indicators.filter((i) => !i.usable).map((i) => i.id);
+    expect(unusableFull.sort()).toEqual(['childcare-cost', 'household-credit', 'household-loan-rate', 'income-college-gap', 'korean-children-panel', 'wedding-cost']);
+    expect(UNUSABLE_IDS.sort(), '기본 파일에는 예비로 옮긴 korean-children-panel이 없다').toEqual(['childcare-cost', 'household-credit', 'household-loan-rate', 'income-college-gap', 'wedding-cost']);
     const uses = ['carousel', 'roulette', 'birth', 'economy', 'death', 'satire', 'future', 'research'] as const;
-    const listedByUse = new Set(uses.flatMap((u) => getUsableIndicators(u).map((i) => i.id)));
-    for (const id of UNUSABLE_IDS) {
-      expect(getUsableIndicator(id), id).toBeUndefined();
-      expect(listed.has(id), id).toBe(false);
-      expect(listedByUse.has(id), id).toBe(false);
-      expect(getCarouselIndicators().some((i) => i.id === id), id).toBe(false);
+    for (const [name, access, file] of [
+      ['기본', { getUsableIndicator, getUsableIndicators, getCarouselIndicators }, FILE],
+      ['합친 전체', createStatsAccess(FULL_STATS), FULL_STATS],
+    ] as const) {
+      const listed = new Set(access.getUsableIndicators().map((i) => i.id));
+      const listedByUse = new Set(uses.flatMap((u) => access.getUsableIndicators(u).map((i) => i.id)));
+      const unusable = file.indicators.filter((i) => !i.usable).map((i) => i.id);
+      for (const id of unusable) {
+        expect(access.getUsableIndicator(id), `${name} ${id}`).toBeUndefined();
+        expect(listed.has(id), `${name} ${id}`).toBe(false);
+        expect(listedByUse.has(id), `${name} ${id}`).toBe(false);
+        expect(access.getCarouselIndicators().some((i) => i.id === id), `${name} ${id}`).toBe(false);
+      }
+      expect(listed.size, name).toBe(file.indicators.length - unusable.length);
     }
-    expect(listed.size).toBe(ALL.length - UNUSABLE_IDS.length);
   });
 
   it('찾는 id가 없으면 undefined(예외 아님)이고, 돌려준 모든 지표는 usable true·verified·latest·source가 있다', () => {
@@ -234,10 +245,11 @@ describe('표기 함수', () => {
 });
 
 describe('캐러셀 (M2가 쓰는 함수)', () => {
-  it('getCarouselIndicators: 14개, CAROUSEL_ORDER 순서(요청의 5개가 앞), 모두 use: carousel이고 2025 센서스 17개 시도 지표는 없다', () => {
+  it('getCarouselIndicators: 20개, CAROUSEL_ORDER 순서(요청의 5개가 앞), 모두 use: carousel이고 2025 센서스 17개 시도 지표는 없다', () => {
     const ids = getCarouselIndicators().map((i) => i.id);
-    expect(ids).toHaveLength(14);
-    expect(ids.slice(0, 6)).toEqual(['tfr', 'births', 'cdr', 'elderly-poverty', 'suicide-rate', 'region-population-registered']);
+    // QI4 2단계(마스터 결정 1): 14 → 20 — 격차 슬라이드가 elderly-poverty 바로 뒤(5번째), 공식 전망 5장이 끝
+    expect(ids).toHaveLength(20);
+    expect(ids.slice(0, 7)).toEqual(['tfr', 'births', 'cdr', 'elderly-poverty', 'income-gap-by-age', 'suicide-rate', 'region-population-registered']);
     expect(ids).toEqual(CAROUSEL_ORDER.filter((id) => ids.includes(id)));
     expect(ids).not.toContain('region-population');
     for (const i of getCarouselIndicators()) expect(i.use).toContain('carousel');
@@ -245,7 +257,7 @@ describe('캐러셀 (M2가 쓰는 함수)', () => {
 
   it('getCarouselCards: 카드마다 제목·큰 숫자(들)·그래프 점·정의·기준 문구·출처 줄이 있고 기준 문구는 「통계 기준: 연도 · 마지막 갱신 날짜」', () => {
     const cards = getCarouselCards();
-    expect(cards).toHaveLength(14);
+    expect(cards).toHaveLength(20); // QI4 2단계: 14 → 20
     for (const c of cards) {
       expect(c.title, c.id).toBeTruthy();
       expect(c.headlines.length, c.id).toBeGreaterThanOrEqual(1);
@@ -253,7 +265,9 @@ describe('캐러셀 (M2가 쓰는 함수)', () => {
         expect(h.text, c.id).toMatch(/\d/);
         expect(h.unit.length, c.id).toBeGreaterThan(0);
       }
-      expect(c.chart.points.length, c.id).toBeGreaterThanOrEqual(2);
+      // 그래프 점은 선·막대 지표(series)에만 있다 — 공식 전망(projection)·폭염 표(table)는 화면 모델이 자기 데이터(actual·시나리오·rows)에서 그린다(QI4 2단계, core/slideForms.ts)
+      if (c.kind === 'line' || c.kind === 'bar') expect(c.chart.points.length, c.id).toBeGreaterThanOrEqual(2);
+      else expect(['projection', 'table'], c.id).toContain(c.kind);
       expect(c.definition.endsWith('.'), c.id).toBe(true);
       expect(c.basisLine, c.id).toMatch(/^통계 기준: \d{4}년 · 마지막 갱신 \d{4}-\d{2}-\d{2}$/);
       expect(c.sourceLine, c.id).toContain(' · ');

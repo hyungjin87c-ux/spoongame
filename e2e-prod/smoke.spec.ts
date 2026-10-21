@@ -573,10 +573,10 @@ test('DP8 배포 확인(QM2-7 c): 공개 주소 푸터의 커밋 7자가 방금 
 /**
  * 제품 번들의 캐러셀 화면 글자 (REV-003-M2-4 R-243). 개발 서버 e2e(e2e/slide-text.spec.ts)는 기대값을 개발 서버의 `/src` 모듈(앱 모델)에서 가져오므로 제품 번들에서는 돌지 않는다 —
  * 형진 님이 보는 것은 Pages의 최소화된 번들이라 **CSS 최소화가 `@container`·`cqw`를 바꾸거나 빠뜨려도** 그쪽 e2e로는 못 잡는다. 이 시험은 **모델 없이 화면 DOM만으로** 가장 나쁜 조건
- * (폭 320px · 글자 200%)의 14장을 본다: ① 번들 CSS가 짧은 쌍의 컨테이너 쿼리·슬라이드 칸 컨테이너·`cqw` 값 크기를 유지한다 ② 14장 금지 패턴 0·값 줄 모양·기준 줄 모양
+ * (폭 320px · 글자 200%)의 20장을 본다: ① 번들 CSS가 짧은 쌍의 컨테이너 쿼리·슬라이드 칸 컨테이너·`cqw` 값 크기를 유지한다 ② 20장 금지 패턴 0·값 줄 모양·기준 줄 모양
  * ③ 혼인 건수 슬라이드의 「조혼인율 인구 1천 명당 N.N건」 줄 ④ B형 기준 줄(조사망률·자살률)은 두 줄로 나뉘고 가운뎃점이 감춰진다 ⑤ 가로 넘침·글자 잘림 0.
  */
-test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨테이너 쿼리를 유지하고, 화면 글자가 14장 금지 패턴 0·조혼인율 줄·B형 기준 줄 두 줄(기호 숨김)·넘침 0이다 (R-243, 모델 없이 DOM만)', async ({ page, request }) => {
+test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨테이너 쿼리를 유지하고, 화면 글자가 20장 금지 패턴 0·조혼인율 줄·B형 기준 줄 두 줄(기호 숨김)·넘침 0이다 (R-243, 모델 없이 DOM만)', async ({ page, request }) => {
   test.setTimeout(120_000);
 
   // ① 번들 CSS (vite 최소화 결과) — 컨테이너 쿼리와 슬라이드 칸 컨테이너가 살아 있다
@@ -591,14 +591,14 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
   expect(css, '슬라이드 칸이 컨테이너다').toMatch(/\.slide\s*\{[^}]*container-type:\s*inline-size/);
   expect(css, '값 글자 크기가 칸 폭(cqw)에 맞춘다').toMatch(/@supports\s*\(\s*width:\s*1cqw\s*\)\s*\{\s*\.slide__value\s*\{[^}]*100cqw/);
 
-  // ② 화면: 폭 320px · 글자 200%, 14장을 모두 넘기며 눈에 보이는 글자를 모은다
+  // ② 화면: 폭 320px · 글자 200%, 20장을 모두 넘기며 눈에 보이는 글자를 모은다
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/');
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   await page.getByTestId('carousel-pause').click();
   await setRootFontPercent(page, 200);
   const n = await slideCount(page);
-  expect(n).toBe(14);
+  expect(n).toBe(20);
   const doms: SlideDom[] = [];
   const problems: string[] = [];
   for (let i = 0; i < n; i++) {
@@ -626,15 +626,21 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
     }
     // 표제어·공식 통계명 줄·기준 줄 모양 (SPEC-005 SH1~SH3, 형식표 A·B·C·D): 모델 없이 DOM의 글자만으로 — 공식 통계명 줄 끝 괄호가 기준 연도(월)·범위를 말하고, 기준 줄은 분모가 있는 B형에만 남는다
     if (dom.insight === '' || /[0-9]/.test(dom.insight)) bad(`표제어가 비었거나 숫자가 있다: 「${dom.insight}」`);
-    if (!/\(\d{4}년( \d{1,2}월)?(, [^()]+)?\)$/.test(dom.official.replace(/\s+/g, ' ').trim())) bad(`공식 통계명 줄 모양(「이름(기준)」): 「${dom.official}」`);
     const form = SLIDE_FORMS[dom.id];
+    // 공식 전망(형식 P, QI4)은 「이름(2023년 발표, 2022년 기준[, 시나리오])」, 나머지는 「이름(기준)」
+    if (form === 'P') {
+      if (!/\(\d{4}년 발표, [^()]+ 기준(, [^()]+)?\)$/.test(dom.official.replace(/\s+/g, ' ').trim())) bad(`공식 전망 통계명 줄 모양(「이름(발표 연도 발표, 기준 기준[, 시나리오])」): 「${dom.official}」`);
+    } else if (!/\(\d{4}년( \d{1,2}월)?(, [^()]+)?\)$/.test(dom.official.replace(/\s+/g, ' ').trim())) bad(`공식 통계명 줄 모양(「이름(기준)」): 「${dom.official}」`);
     if (form === undefined) bad('형식표(SLIDE_FORMS)에 없는 슬라이드다');
     else if (form === 'B') {
       // 글자 200%·폭 320에서도 분모만 한 줄이다(쌍이 아니라 나뉘지 않는다)
       if (dom.basisLines.length !== 1 || !BASIS_B.test(dom.basisLines[0])) bad(`형식 B 기준 줄이 「인구 N 명당」(분모만, 한 줄)이 아니다: 「${dom.basisLines.join(' / ')}」`);
     } else if (dom.basisLines.length !== 0) bad(`형식 ${form}에 기준 줄이 남아 있다(연도는 공식 통계명 줄이 맡는다): 「${dom.basisLines.join(' / ')}」`);
     // 「통계 기준」 줄: 쌍이 나뉘어도 글자는 「통계 기준: {연도}년 · 마지막 갱신 {날짜}」다(두 줄이면 사이의 기호가 감춰진다)
-    if (!/^통계 기준: \d{4}년\s+마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' '))) bad(`「통계 기준」 줄 모양: 「${dom.statLines.join(' / ')}」`);
+    // 전망 슬라이드(형식 P)는 「발표: 2023-12-14 · 마지막 갱신 …」(마스터 결정 8)
+    if (form === 'P') {
+      if (!/^발표: \d{4}-\d{2}-\d{2}\s+마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' '))) bad(`전망 기준 줄 모양(「발표: … · 마지막 갱신 …」): 「${dom.statLines.join(' / ')}」`);
+    } else if (!/^통계 기준: \d{4}년\s+마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' '))) bad(`「통계 기준」 줄 모양: 「${dom.statLines.join(' / ')}」`);
     // 가로 넘침·글자 잘림 0 (최소화된 CSS에서도 cqw 값 크기·nowrap이 살아 있다)
     problems.push(...textResizeViolations(await measureTextResize(page), `320px/200% ${dom.id}`));
     if (i < n - 1) await page.getByTestId('carousel-next').click();
@@ -653,7 +659,7 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
   for (const d of basisB) expect(d.basisLines, `${d.id} 기준 줄(분모만)`).toHaveLength(1);
   // 공허 통과 방지: 모은 글자·그래프 글자·값 줄이 실제로 있다
   expect(doms.reduce((sum, d) => sum + d.all.length, 0), '모은 화면 글자 수').toBeGreaterThan(2500);
-  expect(doms.filter((d) => d.chartTexts.length > 0), '그래프 글자가 모인 슬라이드').toHaveLength(14);
+  expect(doms.filter((d) => d.chartTexts.length > 0), '그래프 글자가 모인 슬라이드').toHaveLength(20);
   expect(doms.filter((d) => d.valueLines.length > 0).length, '값 줄이 있는 슬라이드').toBeGreaterThanOrEqual(12);
 });
 

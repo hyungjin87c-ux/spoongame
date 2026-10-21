@@ -61,7 +61,7 @@ describe('glueSegments: 묶는 것', () => {
     expect(kinds(glueSegments('(영문)ABC 와 (숫자)12'))).toEqual(['chain:(영문)ABC', 'plain: 와 ', 'chain:(숫자)12']);
   });
 
-  it('실제 14장·푸터 글자에서 닫는 괄호 바로 뒤에 글자(한글·영문·숫자)가 붙은 곳은 모두 묶음 안에 있다 — 혼인 건수 정의의 「기준)으로」가 들어 있다 (REV-003-M2-4 R-244)', () => {
+  it('실제 20장·푸터 글자에서 닫는 괄호 바로 뒤에 글자(한글·영문·숫자)가 붙은 곳은 모두 묶음 안에 있다 — 혼인 건수 정의의 「기준)으로」가 들어 있다 (REV-003-M2-4 R-244)', () => {
     const data = buildCarousel();
     const texts: string[] = [];
     for (const s of data.slides) texts.push(s.title, s.insight, s.officialText, s.caption ?? '', s.definition, s.sourceText, s.basisText ?? '', s.basisLine, s.seriesNote ?? '', ...s.legend.map((l) => l.label));
@@ -102,7 +102,7 @@ describe('묶음은 글자를 바꾸지 않는다', () => {
     for (const s of samples) expect(segmentsText(glueSegments(s)), s).toBe(s);
   });
 
-  it('실제 14장의 모든 글자와 푸터 문구도 그렇다', () => {
+  it('실제 20장의 모든 글자와 푸터 문구도 그렇다', () => {
     const data = buildCarousel();
     let checked = 0;
     for (const s of data.slides) {
@@ -129,7 +129,7 @@ describe('실제 문구: 구분 기호가 묶음 밖에 홀로 남지 않는다 
   /** 묶음 밖(plain·nowrap) 글자에 구분 기호가 있으면 그 기호 앞뒤에서 줄이 바뀔 수 있다 */
   const strayIn = (segments: readonly GlueSegment[]): string[] => segments.flatMap((s) => (s.kind === 'chain' ? [] : /[·/—]/.test(s.text) ? [s.text] : []));
 
-  it('14장의 모든 글자와 푸터에서 「·」「/」「—」는 전부 묶음 안에 있다', () => {
+  it('20장의 모든 글자와 푸터에서 「·」「/」「—」는 전부 묶음 안에 있다', () => {
     const data = buildCarousel();
     const texts: Array<[string, string]> = [];
     for (const s of data.slides) {
@@ -184,14 +184,18 @@ describe('쉼표 나열과 짧은 쌍 (SPEC-003 QM2-10: 한 줄을 넘을 수 �
     expect(footerStatsText([])).toBe('통계 출처: (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
   });
 
-  it('실제 푸터: 「통계 출처: 국가데이터처, 행정안전부, 교육부 (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」', () => {
+  it('실제 푸터: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 통계청(현 국가데이터처), 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」', () => {
     const data = buildCarousel();
-    expect(footerStatsText(data.orgs)).toBe('통계 출처: 국가데이터처, 행정안전부, 교육부 (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
+    // QI4 2단계(슬라이드 20장): 기관이 3곳에서 7곳으로 늘었다 — 격차 지표의 한국은행·금융감독원(5번째 슬라이드), 공식 전망의 발표 당시 명칭 「통계청(현 국가데이터처)」, 폭염의 기상청.
+    // 1단계까지의 기대 글자(3곳)를 이 글자로 바꿨다 — 푸터 기관 목록은 슬라이드의 `source.org`에서 슬라이드 차례대로 모인다(core/carousel.ts#buildCarousel).
+    expect(footerStatsText(data.orgs)).toBe('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 통계청(현 국가데이터처), 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
   });
 
   it('쉼표 나열은 줄 가장자리에 기호가 서지 않게 묶을 것이 없다: 가운뎃점 묶음(chain)이 하나도 생기지 않는다 (쉼표는 앞 낱말에 붙어 줄 끝에 와도 되고 첫머리에는 오지 않는다)', () => {
     const text = footerStatsText(buildCarousel().orgs);
-    expect(glueSegments(text).some((seg) => seg.kind === 'chain')).toBe(false);
+    // 가운뎃점·빗금·줄표로 이은 묶음(구분 기호 사슬)은 없다. 괄호가 글자에 붙은 기관 이름(「기상청(국립기상과학원)」)의 묶음은 구분 기호가 아니라 괄호 때문이다(QI4 2단계: 기관 이름에 괄호가 든 기관이 둘 늘었다)
+    expect(glueSegments(text).some((seg) => seg.kind === 'chain' && /[·/—]/.test(segmentsText(seg.parts)))).toBe(false);
+    expect(text.includes('·')).toBe(false);
   });
 
   it('splitPair: 구분 기호가 정확히 하나인 쌍만 [앞, 뒤]로 나눈다 — 기호가 없거나 둘 이상이거나 한쪽이 비면 null', () => {

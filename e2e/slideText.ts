@@ -26,6 +26,9 @@ export interface SlideDom {
   legend: string[];
   /** 계열 설명·출처 줄 */
   metas: string[];
+  /** QI4 전망 슬라이드의 「전망」 칩 글자(없으면 빈 배열)와 정의 아래 한 줄 안내 */
+  chips?: string[];
+  projNotes?: string[];
   definition: string;
   /** 그래프 안 글자(값·가로축·막대 라벨) */
   chartTexts: string[];
@@ -110,6 +113,8 @@ export async function collectSlideDom(page: Page): Promise<SlideDom> {
       statLines: statEl === null ? [] : textOf(statEl).split('\n'),
       legend: lines('.legend li'),
       metas: lines('.slide__meta'),
+      chips: lines('.slide__chips'),
+      projNotes: lines('.slide__projnote'),
       definition: textOf(slide.querySelector('p.t-muted')!),
       chartTexts: all('svg.chart text').map((t) => (t.textContent ?? '').trim()),
       all: textOf(slide),
@@ -126,7 +131,9 @@ export interface ExpectedSlide {
   officialText: string;
   /** 지표의 기준 연도(latest.year) */
   year: number;
-  chartKind: 'line' | 'bar';
+  chartKind: 'line' | 'bar' | 'bars' | 'stack';
+  /** 공식 전망 슬라이드면 모델이 정한 칩 글자·한 줄 안내·발표일(아니면 null) */
+  projection?: { chip: string; note: string; releasedOn: string } | null;
   scopeLabel: string | null;
   /** 제목에 이름이 든 지표들 (QM2-11 규칙 3) */
   titleIndicators: Array<{ name: string; kind: 'main' | 'extra'; valueText: string; valueGlyph: string }>;
@@ -152,6 +159,7 @@ export async function fetchExpected(page: Page): Promise<ExpectedSlide[]> {
         officialText: s.officialText,
         year: ind.latest.year,
         chartKind: s.chart.kind,
+        projection: s.projection,
         scopeLabel: ind.scopeLabel ?? null,
         titleIndicators: m.titleIndicators(ind).map((t: any) => ({ name: t.name, kind: t.kind, valueText: t.valueText, valueGlyph: t.valueGlyph })),
         sideTexts: s.sideValues.map((v: any) => v.text),
@@ -200,7 +208,21 @@ export function checkSlideDom(dom: SlideDom, expected: ExpectedSlide, label: str
     if (flat(dom.insight) !== flat(expected.insight)) bad(`표제어가 모델과 다르다: 「${flat(dom.insight)}」 ≠ 「${expected.insight}」`);
     if (/[0-9]/.test(dom.insight)) bad(`표제어에 숫자가 있다(SH2 ③): 「${dom.insight}」`);
     if (flat(dom.official) !== flat(expected.officialText)) bad(`공식 통계명 줄이 모델과 다르다: 「${flat(dom.official)}」 ≠ 「${expected.officialText}」`);
-    if (!/\(\d{4}년( \d{1,2}월)?(, [^()]+)?\)$/.test(flat(dom.official))) bad(`공식 통계명 줄 모양(「이름(기준)」): 「${flat(dom.official)}」`);
+    if (form === 'P') {
+      // 공식 전망 (QI4 FC2): 「이름(2023년 발표, 2022년 기준[, 시나리오])」 · 칩 「전망」 · 한 줄 안내가 눈에 보인다 — 칩은 색 + 글자 + 아이콘이고 글자는 이 시험이 본다
+      if (!/\(\d{4}년 발표, [^()]+ 기준(, [^()]+)?\)$/.test(flat(dom.official))) bad(`공식 전망 통계명 줄 모양(「이름(발표 연도 발표, 기준 기준[, 시나리오])」): 「${flat(dom.official)}」`);
+      if ((dom.chips ?? []).join(' ') !== (expected.projection?.chip ?? '전망')) bad(`전망 칩 글자가 「전망」이 아니다: 「${(dom.chips ?? []).join(' ')}」`);
+      if ((dom.projNotes ?? []).map(flat).join(' ') !== flat(expected.projection?.note ?? '')) bad(`전망 한 줄 안내가 모델과 다르다: 「${(dom.projNotes ?? []).join(' ')}」`);
+    } else {
+      if (!/\(\d{4}년( \d{1,2}월)?(, [^()]+)?\)$/.test(flat(dom.official))) bad(`공식 통계명 줄 모양(「이름(기준)」): 「${flat(dom.official)}」`);
+      if ((dom.chips ?? []).length !== 0) bad(`전망이 아닌 슬라이드에 칩이 있다: 「${(dom.chips ?? []).join(' ')}」`);
+    }
+    if (form === 'E') {
+      if (dom.valueLines.map((v) => v.label).join(',') !== '66세 이상,18~65세') bad(`형식 E 값 라벨이 「66세 이상·18~65세」가 아니다: ${dom.valueLines.map((v) => v.label).join(',')}`);
+      if (!dom.valueLines.every((v) => /배$/.test(v.text))) bad('형식 E 값이 「…배」가 아니다');
+      if (dom.sideLines.length !== 2) bad(`형식 E 보조 문장이 둘이 아니다: ${dom.sideLines.length}개`);
+      if (dom.basisLines.length !== 0) bad(`형식 E에 기준 줄이 남아 있다: 「${dom.basisLines.join(' / ')}」`);
+    }
     if (form === 'A' || form === 'C') {
       if (dom.basisLines.length !== 0) bad(`형식 ${form}에 기준 줄이 남아 있다(연도는 공식 통계명 줄이 맡는다): 「${dom.basisLines.join(' / ')}」`);
     }
@@ -222,10 +244,16 @@ export function checkSlideDom(dom: SlideDom, expected: ExpectedSlide, label: str
   }
 
   // 3) 기준 연도는 한 값에서 나온다 (QM2-4 규칙 4 · SPEC-005 SH3): 공식 통계명 줄·기준 줄·「통계 기준」 줄·그래프 가로축 끝
-  for (const text of [dom.official, dom.basisLines.join(' '), dom.statLines.join(' ')]) {
-    for (const m of text.matchAll(/(\d{4})년/g)) if (m[1] !== yearOf) bad(`기준 연도 ${m[1]}이(가) latest.year(${yearOf})와 다르다: 「${text}」`);
+  if (form !== 'P') {
+    for (const text of [dom.official, dom.basisLines.join(' '), dom.statLines.join(' ')]) {
+      for (const m of text.matchAll(/(\d{4})년/g)) if (m[1] !== yearOf) bad(`기준 연도 ${m[1]}이(가) latest.year(${yearOf})와 다르다: 「${text}」`);
+    }
+    if (!/^통계 기준: \d{4}년 · 마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' · '))) bad(`「통계 기준」 줄 모양: 「${dom.statLines.join(' / ')}」`);
+  } else {
+    // 전망은 기준 표기가 발표일이다(마스터 결정 8): 「발표: 2023-12-14 · 마지막 갱신 …」 — 연도는 자리마다 출처가 하나(단일 출처 규칙, tests/statHeadlines.test.ts)
+    if (!/^발표: \d{4}-\d{2}-\d{2} · 마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' · '))) bad(`전망 기준 줄 모양(「발표: … · 마지막 갱신 …」): 「${dom.statLines.join(' / ')}」`);
+    if (expected.projection !== undefined && expected.projection !== null && !dom.statLines.join(' ').includes(expected.projection.releasedOn)) bad(`기준 줄에 발표일 ${expected.projection.releasedOn}이 없다: 「${dom.statLines.join(' / ')}」`);
   }
-  if (!/^통계 기준: \d{4}년 · 마지막 갱신 \d{4}-\d{2}-\d{2}$/.test(dom.statLines.join(' · '))) bad(`「통계 기준」 줄 모양: 「${dom.statLines.join(' / ')}」`);
   if (expected.chartKind === 'line' && !dom.chartTexts.includes(yearOf)) bad(`그래프 가로축 끝 글자(${yearOf})가 화면에 없다`);
 
   // 4) 제목에 이름이 든 지표마다 그 값이 눈에 보이는 글자에 있다 (QM2-11 규칙 3). 대체 텍스트·숨긴 표는 세지 않는다(dom.all은 보이는 글자뿐이다)

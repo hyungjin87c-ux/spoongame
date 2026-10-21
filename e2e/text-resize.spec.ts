@@ -9,7 +9,7 @@ import { STANDARD_VIEWPORTS } from './viewports';
  * (가) 루트 글자 100·125·150·175·200% × 폭·높이 320×568·360×740 × 라이트·다크 × 첫 화면 3상태(새 판·이어하기·확인 단계):
  *      가로 넘침 0px, 글자 잘림 0, 수저 이름표 겹침 0, 하단 띠의 버튼 높이 ≥ 44px·눌림, 띠 ≤ 화면 높이의 50%.
  * (나) 브라우저 확대 상당 뷰포트 640×400(1280 창의 200%)·512×384(1024 창의 200%)·320×256(1280 창의 400%): 가로 넘침 0. 접이식 폰 280px(글자 100%)은 회귀 방지.
- * (b) 캐러셀 14장을 모두 넘기며 (가)의 320·360에서 같은 단언.
+ * (b) 캐러셀 20장을 모두 넘기며 (가)의 320·360에서 같은 단언.
  * QM2-12(2회차 보완): 하단 띠 규칙은 「고정이면 높이 ≤ 뷰포트의 50%, 50%를 넘으면 고정을 풀어 본문 끝에 둔다」다 — 공통 뷰포트 11종 × 글자 100·200% × 3상태 66조합(a),
  * 해제 상태의 스크롤 여백·오른쪽 열 max-height(b), 같은 페이지에서 고정 ↔ 해제 전환(포커스 유지·확인 단계가 화면 안, c).
  * 이전 구현에서 실패함을 확인했다: 360×740 · 200%에서 `P.hero__tag`·`SPAN.nowrap`·`SPAN.spoon-fig__name`이 366px > 360px (ai-log 「변이 점검」).
@@ -51,7 +51,7 @@ for (const size of SIZES) {
     }
 
     for (const percent of PERCENTS) {
-      test(`(b) ${size.width}x${size.height} · 글자 ${percent}%: 캐러셀 14장을 모두 넘기며 가로 넘침 0px·글자 잘림 0, 그래프 글자 ≥ 12px`, async ({ page }, testInfo) => {
+      test(`(b) ${size.width}x${size.height} · 글자 ${percent}%: 캐러셀 20장을 모두 넘기며 가로 넘침 0px·글자 잘림 0, 그래프 글자 ≥ 12px`, async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
         test.setTimeout(90_000);
         await page.goto('/');
@@ -60,7 +60,7 @@ for (const size of SIZES) {
         await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 다시 시작');
         await setRootFontPercent(page, percent);
         const n = await slideCount(page);
-        expect(n).toBe(14);
+        expect(n).toBe(20);
         const problems: string[] = [];
         let charted = 0;
         for (let i = 0; i < n; i++) {
@@ -115,7 +115,7 @@ for (const [name, width, height] of [
       });
     }
 
-    test(`(나) ${name}: 캐러셀 14장을 모두 넘기며 가로 넘침 0px`, async ({ page }, testInfo) => {
+    test(`(나) ${name}: 캐러셀 20장을 모두 넘기며 가로 넘침 0px`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
       test.setTimeout(90_000);
       await page.goto('/');

@@ -22,6 +22,7 @@ import {
   nextSlideIndex,
   selectCarouselIndicators,
   shouldAutoAdvance,
+  slideReadName,
   segmentHitsRect,
   pointerCountsAsHover,
   showDots,
@@ -54,6 +55,14 @@ const tokensCss = await readText('../src/styles/tokens.css');
  */
 
 const REAL = statsJson as unknown as StatsFile;
+
+/**
+ * SPEC-005 QI4 2단계(마스터 결정 1): 슬라이드는 20장 = 기존 14장 + 연령별 격차 `income-gap-by-age` 1장 + 공식 전망 5장(총인구 · 65세 이상 비율 · 1인 가구 · 폭염 · 지금 태어나는 아기).
+ * 아래 시험의 「14장」 단언은 `ORIGINAL_IDS`(기존 14장)에 그대로 걸고(약화 없음), 새 여섯 장은 형식에 맞는 단언을 더한다 — 전망·격차 형식별 모델 시험은 tests/slideForms.test.ts.
+ */
+const PROJECTION_IDS = ['projection-population-total', 'projection-aging-share', 'projection-one-person-households', 'heat-projection', 'projection-newborn-age-structure'];
+const QI4_IDS = ['income-gap-by-age', ...PROJECTION_IDS];
+const ORIGINAL_IDS = CAROUSEL_ORDER.filter((id) => !QI4_IDS.includes(id));
 
 const base = (over: Partial<RawIndicator>): RawIndicator => ({
   id: 'fake-a',
@@ -156,33 +165,68 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     expect(s.caption).toBe('전국 합계출산율');
   });
 
-  it('슬라이드마다 제목·기준 연도·출처(기관과 통계표 이름, 열람일)·한 줄 정의·그래프(대체 텍스트 포함)가 있다 (SC2)', () => {
+  it('슬라이드마다 제목·기준 연도·출처(기관과 통계표 이름, 열람일)·한 줄 정의·그래프(대체 텍스트 포함)가 있다 (SC2) — 20장', () => {
+    expect(data.slides, '슬라이드 20장').toHaveLength(20);
     for (const s of data.slides) {
       expect(s.title.length, s.id).toBeGreaterThan(1);
       // 표제어(h3)와 공식 통계명 줄이 있다(SH1~SH3): 「합계출산율(2025년)」 꼴 — 기준은 공식 통계명 줄 끝 괄호 안에 있다
       expect(s.insight.length, s.id).toBeGreaterThan(5);
-      expect(s.officialText, s.id).toMatch(/^.+\(\d{4}년( \d{1,2}월)?(, .+)?\)$/);
+      if (s.projection === null) expect(s.officialText, s.id).toMatch(/^.+\(\d{4}년( \d{1,2}월)?(, .+)?\)$/);
+      else expect(s.officialText, `${s.id} 전망: 「…(2023년 발표, 2022년 기준[, 시나리오])」 꼴`).toMatch(/^.+\(\d{4}년 발표, .+ 기준(, .+)?\)$/);
       // 분모가 있는 비율(조사망률·자살률)만 기준 줄에 분모 「인구 10만 명당」이 남는다(QM2-4 B형 → copy.md 9-2) — 분모 문구는 값 옆 칸이 아니라 기준 줄에 있다. 연도는 공식 통계명 줄로 옮겼다
       expect(s.basisText === null || /^인구 (1천|10만) 명당$/.test(s.basisText), s.id).toBe(true);
-      expect(s.sourceText, s.id).toMatch(/^[^,]+, .{5,} \(\d{4}-\d{2}-\d{2} 조회\)$/);
+      // 출처 줄은 20장 모두 「{기관 나열}의 {표 이름} ({조회일} 조회)」 — 한 함수의 꼴이라 장마다 다르게 두지 않는다 (마스터 결정: REV-005-QI4-1 「마스터 결정」 출처 줄, copy.md 14-6·D5-66).
+      // 1단계까지의 기대 글자 「기관, 표 이름 (…조회)」(첫 쉼표가 기관의 끝)을 이 꼴로 바꿨다.
+      expect(s.sourceText, s.id).toMatch(/^.+의 .{5,} \(\d{4}-\d{2}-\d{2} 조회\)$/);
+      expect(s.sourceText, `${s.id}: 기관 사이에 「·」가 없다(쉼표 나열)`).not.toMatch(/^[^의]*·/);
       expect(s.definition.trim().endsWith('.'), s.id).toBe(true);
       expect(s.chartLabel.length, s.id).toBeGreaterThan(10);
-      expect(s.chartLabel, s.id).toContain(s.title);
+      // 읽기 이름에 지표 이름이 든다 — 전망 슬라이드는 공식 전망명이 title과 표기가 달라(copy.md 14-4) 그래프 종류 낱말만 본다
+      if (s.projection === null) expect(s.chartLabel, s.id).toContain(s.title);
+      else expect(s.chartLabel, s.id).toContain('그래프');
     }
   });
 
-  it('슬라이드마다 「통계 기준: <연도> · 마지막 갱신 <날짜>」 한 줄이 있다 (SC4)', () => {
+  it('출처 줄은 「{기관 나열}의 {표 이름} ({조회일} 조회)」 — 기관은 쉼표 나열, 기관 묶음과 표 이름 사이는 조사 「의」, 20장 모두 데이터 source에서만 만든다 (마스터 결정 · D5-66 · R-487)', () => {
     for (const s of data.slides) {
-      expect(s.basisLine, s.id).toMatch(/^통계 기준: \d{4}년 · 마지막 갱신 \d{4}-\d{2}-\d{2}$/);
+      const src = raw(s.id).source!;
+      expect(s.sourceText, s.id).toBe(`${sourceOrgsOf(src.org).join(', ')}의 ${src.table} (${src.accessedOn} 조회)`);
+    }
+    // 대표 꼴: 기관 하나 / 기관 둘(「국가데이터처·교육부」) / 기관 셋(KOSIS가 넷째 기관처럼 읽히지 않게 「의」)
+    expect(byId('tfr').sourceText.startsWith('국가데이터처의 2025년 출생 통계 ')).toBe(true);
+    expect(byId('private-education').sourceText.startsWith('국가데이터처, 교육부의 ')).toBe(true);
+    expect(byId('income-gap-by-age').sourceText.startsWith('국가데이터처, 한국은행, 금융감독원의 KOSIS 가계금융복지조사 ')).toBe(true);
+    expect(byId('projection-population-total').sourceText.startsWith('통계청(현 국가데이터처)의 KOSIS 장래인구추계(2022년 기준) ')).toBe(true);
+    expect(byId('heat-projection').sourceText.startsWith('기상청(국립기상과학원)의 보도자료 ')).toBe(true);
+    // 옛 꼴(「기관, 표 이름」 — 첫 쉼표가 기관의 끝)은 어느 장에도 없다
+    for (const s of data.slides) {
+      const orgs = sourceOrgsOf(raw(s.id).source!.org);
+      if (orgs.length === 1) expect(s.sourceText.startsWith(`${orgs[0]}, `), `${s.id}: 기관 하나인 슬라이드는 「기관, 표」가 아니라 「기관의 표」`).toBe(false);
+    }
+  });
+
+  it('슬라이드마다 「통계 기준: <연도> · 마지막 갱신 <날짜>」 한 줄이 있다 (SC4) — 전망 5장은 「발표: <발표일> · 마지막 갱신 <날짜>」(마스터 결정 8: 기준 표기는 발표일)', () => {
+    for (const s of data.slides) {
+      if (s.projection === null) {
+        expect(s.basisLine, s.id).toMatch(/^통계 기준: \d{4}년 · 마지막 갱신 \d{4}-\d{2}-\d{2}$/);
+      } else {
+        expect(s.basisLine, s.id).toMatch(/^발표: \d{4}-\d{2}-\d{2} · 마지막 갱신 \d{4}-\d{2}-\d{2}$/);
+        expect(s.basisLine, s.id).toBe(`발표: ${s.projection.releasedOn} · 마지막 갱신 ${REAL.meta.updatedOn}`);
+      }
       expect(s.basisLine, s.id).toContain(`마지막 갱신 ${REAL.meta.updatedOn}`);
     }
     expect(byId('tfr').basisLine).toBe(`통계 기준: 2025년 · 마지막 갱신 ${REAL.meta.updatedOn}`);
+    expect(byId('projection-population-total').basisLine).toBe(`발표: 2023-12-14 · 마지막 갱신 ${REAL.meta.updatedOn}`);
+    expect(byId('projection-one-person-households').basisLine).toBe(`발표: 2024-09-12 · 마지막 갱신 ${REAL.meta.updatedOn}`);
+    expect(byId('heat-projection').basisLine).toBe(`발표: 2021-12-23 · 마지막 갱신 ${REAL.meta.updatedOn}`);
     // 데이터 파일의 갱신일을 주면(테스트용) 그 날짜를 쓴다
     expect(buildCarousel(fileOf(base({ id: 'x' }))).slides[0].basisLine).toBe('통계 기준: 2025년 · 마지막 갱신 2026-10-16');
   });
 
   it('출처 기관: 국가데이터처·행정안전부·교육부 등 슬라이드에 쓰인 기관이 중복 없이 모인다 (푸터 표기)', () => {
-    expect(data.orgs).toEqual(expect.arrayContaining(['국가데이터처', '행정안전부']));
+    expect(data.orgs).toEqual(expect.arrayContaining(['국가데이터처', '행정안전부', '교육부']));
+    // QI4 2단계: 격차 지표의 한국은행·금융감독원, 공식 전망의 발표 당시 명칭 「통계청(현 국가데이터처)」, 폭염의 기상청도 푸터 기관 목록에 모인다
+    expect(data.orgs).toEqual(expect.arrayContaining(['한국은행', '금융감독원', '통계청(현 국가데이터처)', '기상청(국립기상과학원)']));
     expect(new Set(data.orgs).size).toBe(data.orgs.length);
     // 「국가데이터처·교육부」는 나눠서 센다
     expect(data.orgs.every((o) => !o.includes('·'))).toBe(true);
@@ -211,7 +255,9 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     for (const ind of selectCarouselIndicators()) {
       const s = byId(ind.id);
       if (s.headlines.length === 1) expect(s.valueText, ind.id).toBe(formatNumber(ind.headline?.[0]?.value ?? ind.latest.value, ind.decimals));
-      expect(s.officialText + s.basisLine, ind.id).toContain(String(ind.latest.year));
+      // 전망 슬라이드는 기준 줄이 발표일이라 latest.year(지평·아기 30세 해)가 캡션(데이터 latestLabel)에 있다 — 단일 출처 규칙(R-478 d)
+      if (s.projection === null) expect(s.officialText + s.basisLine, ind.id).toContain(String(ind.latest.year));
+      else expect(s.caption, ind.id).toContain(String(ind.latest.year));
     }
     expect(byId('tfr').valueText).not.toBe('0.68');
   });
@@ -293,6 +339,39 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
     expect(list).toEqual(CAROUSEL_ORDER.filter((id) => list.includes(id)));
     expect(ids(fileOf(base({ id: 'zzz-new' }), base({ id: 'tfr', title: '합계출산율' })))).toEqual(['tfr', 'zzz-new']);
   });
+
+  /**
+   * 조용한 탈락 금지 (REV-005-QI4-1 7절 1): `isDrawable`은 그릴 수 없는 지표를 조용히 뺀다 — 그래서 「슬라이드 20장 = CAROUSEL_ORDER 순서, 16~20번 id 일치」를 단언한다.
+   * 한 장이라도 빠지거나 순서가 어긋나면 이 시험이 실패한다(데이터를 고쳤을 때 전망 슬라이드가 말없이 사라지지 않는다).
+   */
+  it('슬라이드 20장 = CAROUSEL_ORDER 순서이고 16~20번이 전망 5장(총인구·65세 이상 비율·1인 가구·폭염·아기)이다 — 그릴 수 있는 지표가 말없이 빠지지 않는다 (R-478 7절 1)', () => {
+    const list = data.slides.map((s) => s.id);
+    expect(list).toHaveLength(20);
+    expect(list).toEqual([...CAROUSEL_ORDER]);
+    expect(list.slice(15)).toEqual(['projection-population-total', 'projection-aging-share', 'projection-one-person-households', 'heat-projection', 'projection-newborn-age-structure']);
+    expect(list.slice(0, 5)).toEqual(['tfr', 'births', 'cdr', 'elderly-poverty', 'income-gap-by-age']); // 격차는 elderly-poverty 바로 뒤
+    // 접근자가 고른 20개 지표가 전부 그릴 수 있는 것이다(탈락 0)
+    const picked = selectCarouselIndicators();
+    expect(picked.map((i) => i.id)).toEqual([...CAROUSEL_ORDER]);
+    for (const i of picked) expect(isDrawable(i), i.id).toBe(true);
+    // 합계출산율 전망·future-projection은 캐러셀에 없다(마스터 결정 4)
+    expect(list).not.toContain('projection-tfr');
+    expect(list).not.toContain('future-projection');
+    // 전망 슬라이드(칩 「전망」)는 정확히 5장, 격차·기존 14장은 칩이 없다
+    expect(data.slides.filter((s) => s.projection !== null).map((s) => s.id)).toEqual(PROJECTION_IDS);
+    // 공허 통과 방지: 전망 지표를 지우면 슬라이드가 줄어 이 시험이 실패한다
+    const dropped = { ...REAL, indicators: REAL.indicators.filter((i) => i.id !== 'projection-aging-share') };
+    expect(buildCarousel(dropped).slides.map((s) => s.id)).not.toEqual([...CAROUSEL_ORDER]);
+  });
+
+  it('슬라이드의 접근 가능한 이름: 「n/N 표제어, 공식 통계명(기준)」, 전망 슬라이드는 「n/N 전망, …」 (SH3 · FC2 — 색·아이콘 없이도 전한다)', () => {
+    const plainName = slideReadName(byId('tfr'), 0, 20);
+    expect(plainName).toBe('1/20 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)');
+    const proj = byId('projection-population-total');
+    expect(slideReadName(proj, 15, 20)).toBe('16/20 전망, 앞으로 인구는 어떻게 달라질까?, 장래인구추계 총인구(2023년 발표, 2022년 기준, 중위 추계)');
+    expect(slideReadName(byId('income-gap-by-age'), 4, 20)).toBe('5/20 나이들수록 또래들과 경제력 차이가 극심해져요, 연령계층별 소득 5분위배율(2024년)');
+    for (const s of data.slides) expect(slideReadName(s, 0, 20).includes('전망,') === (s.projection !== null), s.id).toBe(true);
+  });
 });
 
 describe('그래프 크기는 화면에 그려지는 폭을 따른다 (R-206: 320px에서도 글자 12px 이상)', () => {
@@ -308,9 +387,10 @@ describe('그래프 크기는 화면에 그려지는 폭을 따른다 (R-206: 32
     expect(DEFAULT_CHART_SIZE).toEqual({ width: LINE_W, lineHeight: LINE_H });
   });
 
-  it('좌표계 폭이 그려지는 폭과 같다: 선 그래프는 그래프 영역·마지막 값 글자 자리가 폭에 맞고, 막대는 폭 안에 들어가며, 어느 폭에서도 값 글자가 폭 밖으로 나가지 않는다', () => {
+  it('좌표계 폭이 그려지는 폭과 같다: 선 그래프는 그래프 영역·마지막 값 글자 자리가 폭에 맞고, 막대는 폭 안에 들어가며, 어느 폭에서도 값 글자가 폭 밖으로 나가지 않는다 — 20장 (막대 셋·두 구간 막대·누적 막대 포함)', () => {
     for (const w of [220, 252, 292, 320, 388, 428, 520]) {
       const data = buildCarousel(undefined, { width: w, lineHeight: LINE_H });
+      expect(data.slides, `${w}`).toHaveLength(20);
       for (const s of data.slides) {
         expect(s.chart.width, `${s.id} ${w}`).toBe(w);
         if (s.chart.kind === 'line') {
@@ -320,17 +400,30 @@ describe('그래프 크기는 화면에 그려지는 폭을 따른다 (R-206: 32
             expect(p.x, `${s.id} ${w}`).toBeLessThanOrEqual(s.chart.plotRight + 0.1);
           }
           for (const l of s.chart.labels) expect(l.x, `${s.id} ${w} 값 글자 시작`).toBeLessThan(w); // 마지막 값 글자는 오른쪽 66칸 안에서 시작한다
-        } else {
+        } else if (s.chart.kind === 'bar') {
           for (const r of s.chart.rows) {
             expect(s.chart.barX + r.barWidth, `${s.id} ${r.fullLabel} ${w} 막대 끝`).toBeLessThanOrEqual(w - 84 + 0.1); // 값 글자(84칸)를 위한 자리가 남는다
             expect(r.barWidth).toBeGreaterThan(0);
+          }
+        } else if (s.chart.kind === 'bars') {
+          // 폭염 막대 셋·격차 두 구간 막대: 막대 끝 + 값 글자(굵게)가 폭 안에 든다
+          for (const r of s.chart.rows) {
+            expect(r.barWidth, `${s.id} ${r.label} ${w}`).toBeGreaterThan(0);
+            expect(s.chart.barX + r.barWidth + (r.bold ? 6 : 4) + estimateLabelWidth(r.text, r.bold), `${s.id} ${r.label} ${w} 막대 + 값 글자`).toBeLessThanOrEqual(w + 0.1);
+          }
+        } else {
+          // 아기 누적 막대: 세 칸이 막대 전체 폭(100%)을 빈틈없이 채우고, 오른쪽 값 글자가 폭 안에 든다
+          for (const r of s.chart.rows) {
+            expect(r.young.width + r.work.width + r.old.width, `${s.id} ${r.year} ${w} 세 칸 합`).toBeCloseTo(s.chart.barWidth, 0);
+            expect(r.old.x + r.old.width, `${s.id} ${r.year} ${w} 막대 끝`).toBeLessThanOrEqual(s.chart.barX + s.chart.barWidth + 0.2);
+            expect(r.valueX + estimateLabelWidth(r.valueText, true), `${s.id} ${r.year} ${w} 값 글자`).toBeLessThanOrEqual(w + 0.1);
           }
         }
       }
     }
   });
 
-  it('선 그래프 높이는 요청한 높이, 막대 그래프 높이는 행 수 × 행 높이다 — 폭과 무관한 값은 그대로다 (글자 크기는 CSS의 13px 한 곳)', () => {
+  it('선 그래프 높이는 요청한 높이, 막대 그래프 높이는 행 수 × 행 높이다 — 폭과 무관한 값은 그대로다 (글자 크기는 CSS의 13px 한 곳) · 새 막대 둘(막대 셋·누적)은 높이가 폭·선 높이와 무관하다', () => {
     const wide = buildCarousel(undefined, { width: 388, lineHeight: LINE_H });
     const narrow = buildCarousel(undefined, { width: 252, lineHeight: LINE_H_STACKED });
     for (let i = 0; i < wide.slides.length; i++) {
@@ -342,6 +435,12 @@ describe('그래프 크기는 화면에 그려지는 폭을 따른다 (R-206: 32
         expect(a.height).toBe(a.rows.length * BAR_ROW_H + 4);
         expect(b.height).toBe(a.height);
         expect(a.rows.map((r) => [r.fullLabel, r.value, r.text])).toEqual(b.rows.map((r) => [r.fullLabel, r.value, r.text])); // 값은 폭과 무관하다
+      } else if (a.kind === 'bars' && b.kind === 'bars') {
+        expect(b.height, wide.slides[i].id).toBe(a.height);
+        expect(a.rows.map((r) => [r.fullLabel, r.value, r.text, r.proj])).toEqual(b.rows.map((r) => [r.fullLabel, r.value, r.text, r.proj]));
+      } else if (a.kind === 'stack' && b.kind === 'stack') {
+        expect(b.height, wide.slides[i].id).toBe(a.height);
+        expect(a.rows.map((r) => [r.age, r.year, r.valueText, r.work.text])).toEqual(b.rows.map((r) => [r.age, r.year, r.valueText, r.work.text]));
       } else {
         throw new Error('종류가 폭에 따라 바뀌면 안 된다');
       }
@@ -350,7 +449,7 @@ describe('그래프 크기는 화면에 그려지는 폭을 따른다 (R-206: 32
     }
   });
 
-  it('값 라벨이 세로로 겹치지 않고 그래프 영역 밖(위·아래)으로 나가지 않는다: 낮은 선 그래프(180)와 높은 선 그래프(232) 모두', () => {
+  it('값 라벨이 세로로 겹치지 않고 그래프 영역 밖(위·아래)으로 나가지 않는다: 낮은 선 그래프(180)와 높은 선 그래프(232) 모두 — 전망 선 그래프의 끝 글자(중위 끝값·「고위」·「저위」)도 12.9 이상 벌어진다', () => {
     for (const lineHeight of [LINE_H, LINE_H_STACKED]) {
       const data = buildCarousel(undefined, { width: 252, lineHeight });
       for (const s of data.slides) {
@@ -359,7 +458,8 @@ describe('그래프 크기는 화면에 그려지는 폭을 따른다 (R-206: 32
           expect(l.y, `${s.id} ${lineHeight}`).toBeGreaterThan(0);
           expect(l.y, `${s.id} ${lineHeight}`).toBeLessThanOrEqual(lineHeight);
         }
-        const lasts = s.chart.labels.filter((l) => l.bold).map((l) => l.y).sort((a, b) => a - b);
+        // 마지막 값 글자 = 굵은 값과 띠 끝 글자(「고위」「저위」) — 오른쪽 끝에 놓이는 글자들이 서로 겹치지 않는다
+        const lasts = s.chart.labels.filter((l) => l.bold || l.tone === 'range').map((l) => l.y).sort((a, b) => a - b);
         for (let k = 1; k < lasts.length; k++) expect(lasts[k] - lasts[k - 1], `${s.id} 마지막 값 라벨 간격`).toBeGreaterThanOrEqual(12.9);
       }
     }
@@ -399,7 +499,8 @@ describe('선 그래프의 처음 값 글자 자리 (REV-003-M2-2 R-225)', () =>
     KNOWN_FIRST_LABEL_OVERLAPS.some((k) => k.id === id && (k.widths === undefined || k.widths.includes(width)) && (k.lineHeight === undefined || k.lineHeight === lineHeight));
 
   const raw0 = (id: string) => REAL.indicators.find((i) => i.id === id)!;
-  const lineSlides = (width: number, lineHeight: number) => buildCarousel(undefined, { width, lineHeight }).slides.flatMap((s) => (s.chart.kind === 'line' ? [{ id: s.id, chart: s.chart as LineChartModel }] : []));
+  // 보통 선 그래프만 — 전망 선 그래프(경계·띠가 있다: chart.split)는 처음 값 글자 자리 규칙이 다르다(r2 R-487 후보 4곳, tests/slideForms.test.ts가 따로 잠근다)
+  const lineSlides = (width: number, lineHeight: number) => buildCarousel(undefined, { width, lineHeight }).slides.flatMap((s) => (s.chart.kind === 'line' && s.chart.split === null ? [{ id: s.id, chart: s.chart as LineChartModel }] : []));
   /** 처음 값 글자(굵지 않고, 계열의 첫 점 x에서 시작하며, 글자가 그 계열의 첫 값) */
   const firstLabels = (chart: LineChartModel) =>
     chart.series.flatMap((ser) => {
@@ -621,7 +722,7 @@ describe('슬라이드 모델 세부', () => {
   it('값 라벨은 계열마다 처음·마지막이 있고, 세로로 겹치면 벌어진다', () => {
     const data = buildCarousel();
     for (const s of data.slides) {
-      if (s.chart.kind !== 'line') continue;
+      if (s.chart.kind !== 'line' || s.chart.split !== null) continue; // 보통 선 그래프 — 전망 선 그래프는 마지막 값 글자 하나 + 띠 끝 글자(tests/slideForms.test.ts)
       const lasts = s.chart.labels.filter((l) => l.bold).map((l) => l.y);
       expect(lasts.length, s.id).toBe(s.chart.series.length);
       const sorted = [...lasts].sort((a, b) => a - b);
@@ -701,6 +802,13 @@ describe('동작 규칙 (SC5)', () => {
     }
   });
 
+  it('shouldAutoAdvance: 「펼쳐 보기」로 연 슬라이드가 있는 동안(veilOpen)에도 돌지 않고, 접으면(false) 안 준 것과 같이 돈다 — 마스터 결정 ③, 터치 포함', () => {
+    const run = { count: 20, paused: false, hovering: false, focusWithin: false, reducedMotion: false, pageHidden: false };
+    expect(shouldAutoAdvance({ ...run, veilOpen: true }), '펼친 동안 멈춤').toBe(false);
+    expect(shouldAutoAdvance({ ...run, veilOpen: false }), '접으면 다시 돈다').toBe(true);
+    expect(shouldAutoAdvance(run), 'veilOpen을 주지 않으면 이전과 같다(가림을 쓰지 않는 호출자)').toBe(true);
+  });
+
   it('swipeStep: 가로로 40px 이상이고 세로보다 클 때만. 왼쪽으로 밀면 다음, 오른쪽으로 밀면 이전', () => {
     expect(swipeStep(-60, 5)).toBe(1);
     expect(swipeStep(60, -5)).toBe(-1);
@@ -753,6 +861,8 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
   const data = buildCarousel();
   const byId = (id: string) => data.slides.find((s) => s.id === id)!;
   const raw = (id: string) => REAL.indicators.find((i) => i.id === id)!;
+  /** 기존 14장 */
+  const original = data.slides.filter((s) => ORIGINAL_IDS.includes(s.id));
 
   /** 금지 패턴(QM2-4 완료 기준 a)은 e2e/carouselForms.ts의 것을 쓴다 — 모델(여기)과 실제 화면(e2e/slide-text.spec.ts)이 같은 패턴으로 판정한다 */
 
@@ -768,10 +878,22 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     out.push(['그래프 대체 텍스트', s.chartLabel]);
     if (s.chart.kind === 'line') {
       for (const l of [...s.chart.labels, ...s.chart.xLabels]) out.push(['그래프 값 글자', l.text]);
-    } else {
+      if (s.chart.split !== null) out.push(['그래프 경계 글자', s.chart.split.left.text], ['그래프 경계 글자', s.chart.split.right.text]);
+    } else if (s.chart.kind === 'bar') {
       out.push(['숨긴 표 캡션', `${s.title} — 큰 값부터`]);
       for (const r of s.chart.rows) out.push(['숨긴 표 값', `${r.fullLabel} ${r.valueWithUnit}`], ['그래프 값 글자', r.text]);
+    } else if (s.chart.kind === 'bars') {
+      // QI4: 폭염 막대 셋·격차 두 구간 막대
+      if (s.chart.header !== null) out.push(['그래프 머리 글자', s.chart.header.text]);
+      for (const r of s.chart.rows) out.push(['그래프 값 글자', r.text], ['그래프 라벨', r.label], ['숨긴 표 값', `${r.fullLabel} ${r.valueWithUnit}`]);
+    } else {
+      // QI4: 아기 누적 막대
+      out.push(['그래프 머리 글자', s.chart.header.text]);
+      for (const r of s.chart.rows) out.push(['그래프 값 글자', r.work.text], ['그래프 값 글자', r.valueText], ['그래프 라벨', `${r.ageText} ${r.yearText}`]);
     }
+    // 그래프 밖에 숨겨 둔 표(sr-only)와 전망 표시(칩·한 줄)도 같은 금지 패턴을 지킨다
+    for (const tb of s.tables) out.push(['숨긴 표 캡션', tb.caption], ...tb.head.map((h): [string, string] => ['숨긴 표 머리글', h]), ...tb.rows.flatMap((r): Array<[string, string]> => [['숨긴 표 행 머리', r.head], ...r.cells.map((c): [string, string] => ['숨긴 표 값', c])]));
+    if (s.projection !== null) out.push(['전망 칩', s.projection.chip], ['전망 한 줄', s.projection.note]);
     return out;
   }
 
@@ -787,8 +909,8 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     }
   });
 
-  it('14장의 값 줄·단위·기준 줄·정의·범례·그래프 라벨·숨긴 표 머리글에 금지 패턴이 0건이다 (완료 기준 a)', () => {
-    expect(data.slides).toHaveLength(14);
+  it('20장의 값 줄·단위·기준 줄·정의·범례·그래프 라벨·숨긴 표 머리글에 금지 패턴이 0건이다 (완료 기준 a — QI4 2단계: 14장 → 20장, 새 여섯 장의 보조 줄·표·칩까지)', () => {
+    expect(data.slides).toHaveLength(20);
     let checked = 0;
     for (const s of data.slides) {
       for (const [where, text] of textsOf(s)) {
@@ -796,7 +918,7 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
         expect(forbiddenIn(text), `${s.id} ${where}: 「${text.slice(0, 60)}」`).toEqual([]);
       }
     }
-    expect(checked, '실제로 검사한 글자 수(공허 통과 방지)').toBeGreaterThan(200);
+    expect(checked, '실제로 검사한 글자 수(공허 통과 방지)').toBeGreaterThan(450);
   });
 
   it('splitUnit: 「인구 10만 명당 명」은 분모 문구와 단위 낱말로 나뉜다, 분모가 없는 단위는 그대로다', () => {
@@ -815,18 +937,42 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     expect(longest * 36 + 16 + 4, '보통 크기(루트 100%)에서 가장 긴 값 줄의 폭').toBeLessThanOrEqual(254);
   });
 
-  /** 표기 형식표(QM2-4 5번)는 e2e/carouselForms.ts의 SLIDE_FORMS — 14장 전부 이 넷 중 하나. 새 지표가 생기면 거기에 형식을 정해야 테스트가 통과한다. */
+  /** 표기 형식표(QM2-4 5번)는 e2e/carouselForms.ts의 SLIDE_FORMS — 20장 전부 이 여섯 중 하나(A·B·C·D 기존 14장, E 연령별 격차, P 공식 전망). 새 지표가 생기면 거기에 형식을 정해야 테스트가 통과한다. */
   const FORMS = SLIDE_FORMS;
-  it('형식표: 14장이 모두 A(단순)·B(분모 있는 비율)·C(값 둘)·D(그래프 + 범위 문구) 중 하나의 형식이다 — 값 줄은 「값 + 단위 낱말」, 기준 줄은 형식대로 (완료 기준 b)', () => {
-    expect(Object.keys(FORMS).sort(), '형식표가 14장 전부를 정한다').toEqual(data.slides.map((s) => s.id).sort());
+  it('형식표: 20장이 모두 A(단순)·B(분모 있는 비율)·C(값 둘)·D(그래프 + 범위 문구)·E(연령별 격차)·P(공식 전망) 중 하나의 형식이다 — 값 줄은 「값 + 단위 낱말」, 기준 줄은 형식대로 (완료 기준 b)', () => {
+    expect(Object.keys(FORMS).sort(), '형식표가 20장 전부를 정한다').toEqual(data.slides.map((s) => s.id).sort());
+    expect(Object.entries(FORMS).filter(([, f]) => f === 'P').map(([id]) => id).sort(), 'P형 = 전망 5장').toEqual([...PROJECTION_IDS].sort());
+    expect(Object.entries(FORMS).filter(([, f]) => f === 'E').map(([id]) => id)).toEqual(['income-gap-by-age']);
     for (const s of data.slides) {
       const r = raw(s.id);
       const year = r.latest!.year;
       const form = FORMS[s.id];
       expect(s.unitText, `${s.id} 단위는 낱말 하나`).toMatch(UNIT_WORD);
+      if (form === 'P') {
+        // 공식 전망: 칩 「전망」 + 공식 통계명 줄 「…(2023년 발표, 2022년 기준[, 시나리오])」 + 기준 줄 「발표: …」 + 한 줄 안내 (FC2) — 연도 자리별 출처는 tests/statHeadlines.test.ts의 단일 출처 규칙
+        expect(s.projection, s.id).not.toBeNull();
+        expect(s.projection!.chip).toBe('전망');
+        expect(s.projection!.note).toBe('전망은 예측이 아니라 공식 추계입니다. 가정이 달라지면 값도 달라집니다.');
+        expect(s.officialText, s.id).toMatch(/^.+\(\d{4}년 발표, .+ 기준(, .+)?\)$/);
+        expect(s.basisLine.startsWith('발표: '), s.id).toBe(true);
+        expect(s.headlines.length, s.id).toBeGreaterThanOrEqual(1);
+        expect(s.caption, `${s.id}: 큰 값이 어느 해·어느 추계인지 캡션이 말한다`).not.toBeNull();
+        continue;
+      }
+      expect(s.projection, `${s.id}: 칩은 전망 슬라이드에만`).toBeNull();
       // SPEC-005 copy.md 9-2: 기준 연도는 공식 통계명 줄(officialText) 끝 괄호가 말한다 — 연도만 있던 기준 줄은 없다(null). 분모가 있는 B형만 분모가 기준 줄에 남는다
       expect(s.officialText, `${s.id} 공식 통계명 줄`).toMatch(new RegExp(`\\(${year}년[,)]|\\(${year}년 \\d{1,2}월[,)]`));
-      if (form === 'A') {
+      if (form === 'E') {
+        // 연령별 격차: 값 둘(66세 이상 · 18~65세, 단위 배) + 캡션(정의 상수 20%) + 두 구간 막대 + 보조 문장 둘 + 2011~2024 표 (R-476)
+        expect(s.headlines.map((h) => h.label)).toEqual(['66세 이상', '18~65세']);
+        expect(s.unitText).toBe('배');
+        expect(s.basisText).toBeNull();
+        expect(s.officialText).toBe(`${s.officialName}(${year}년)`);
+        expect(s.chart.kind).toBe('bars');
+        expect(s.sideValues).toHaveLength(2);
+        expect(s.tables).toHaveLength(1);
+        expect(s.caption).not.toBeNull();
+      } else if (form === 'A') {
         expect(s.headlines, s.id).toHaveLength(1);
         expect(s.headlines[0].label, s.id).toBeNull();
         expect(s.basisText, `${s.id} 기준 줄 없음`).toBeNull();
@@ -854,8 +1000,8 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     }
   });
 
-  it('기준 연도 표기(공식 통계명 줄·「통계 기준」 줄·그래프 마지막 점)는 모두 같은 값 latest.year에서 만든다 (QM2-4 4 · SPEC-005 SH3 단일 출처)', () => {
-    for (const s of data.slides) {
+  it('기준 연도 표기(공식 통계명 줄·「통계 기준」 줄·그래프 마지막 점)는 모두 같은 값 latest.year에서 만든다 (QM2-4 4 · SPEC-005 SH3 단일 출처) — 전망 5장은 자리마다 출처가 하나인 규칙을 따른다(tests/statHeadlines.test.ts, R-478 d)', () => {
+    for (const s of data.slides.filter((x) => x.projection === null)) {
       const year = raw(s.id).latest!.year;
       const yearsIn = (text: string) => [...text.matchAll(/(\d{4})년/g)].map((m) => Number(m[1]));
       for (const y of yearsIn(s.officialText)) expect(y, `${s.id} 공식 통계명 줄 연도`).toBe(year);
@@ -902,7 +1048,9 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     if (s.seriesNote !== null) out.push(s.seriesNote);
     for (const l of s.legend) out.push(`${l.label} ${l.valueText}`);
     if (s.chart.kind === 'line') for (const l of [...s.chart.labels, ...s.chart.xLabels]) out.push(l.text);
-    else for (const r of s.chart.rows) out.push(r.label, r.text);
+    else if (s.chart.kind === 'bar' || s.chart.kind === 'bars') for (const r of s.chart.rows) out.push(r.label, r.text);
+    else for (const r of s.chart.rows) out.push(r.work.text, r.valueText);
+    if (s.projection !== null) out.push(s.projection.chip, s.projection.note);
     if (s.safety !== null) out.push(s.safety.name, s.safety.number, s.safety.hours);
     return out;
   }
@@ -924,7 +1072,7 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     expect(bareName('  남편(남자) ')).toBe('남편');
   });
 
-  it('제목에 이름이 든 지표마다 그 값이 눈에 보이는 글자에 있다: 14장 전부 — 검사한 (슬라이드, 지표) 쌍이 14 이상이고 조혼인율 쌍이 들어 있다 (QM2-11 a)', () => {
+  it('제목에 이름이 든 지표마다 그 값이 눈에 보이는 글자에 있다: 20장 전부 — 검사한 (슬라이드, 지표) 쌍이 20 이상이고 조혼인율 쌍이 들어 있다 (QM2-11 a — QI4 2단계: 14 → 20)', () => {
     let pairs = 0;
     const names: string[] = [];
     for (const s of data.slides) {
@@ -935,7 +1083,7 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
       names.push(...ti.map((t) => t.name));
       expect(missingTitleValues(s), `${s.id}: 제목에 이름이 든 지표의 값이 눈에 보이는 글자에 없다`).toEqual([]);
     }
-    expect(pairs, '검사한 (슬라이드, 지표) 쌍(공허 통과 방지)').toBeGreaterThanOrEqual(14);
+    expect(pairs, '검사한 (슬라이드, 지표) 쌍(공허 통과 방지)').toBeGreaterThanOrEqual(20);
     expect(names, '조혼인율 쌍이 들어 있다').toContain('조혼인율');
   });
 
@@ -960,8 +1108,9 @@ describe('단위·기준 문구 결합 규칙 (SPEC-003 QM2-4: 값 옆 칸은 �
     expect(s.headlines.map((h) => `${h.value}${s.unitText}`)).toEqual(['240,326건']);
   });
 
-  it('값이 보이는 곳은 보조 값이 있는 슬라이드뿐이다: 14장 중 큰 값 아래 줄(sideValues)이 있는 것은 혼인 건수 하나 — 이름이 제목에 없는 보조 계열(사교육비 등)은 값 줄을 늘리지 않는다', () => {
-    expect(data.slides.filter((s) => s.sideValues.length > 0).map((s) => s.id)).toEqual(['marriage-count']);
+  it('값이 보이는 곳은 보조 값이 있는 슬라이드뿐이다: 기존 14장 중 큰 값 아래 줄(sideValues)이 있는 것은 혼인 건수 하나 — 이름이 제목에 없는 보조 계열(사교육비 등)은 값 줄을 늘리지 않는다 (QI4의 보조 줄은 새 여섯 장에만: 격차 2·고위 저위 등)', () => {
+    expect(original.filter((s) => s.sideValues.length > 0).map((s) => s.id)).toEqual(['marriage-count']);
+    expect(data.slides.filter((s) => QI4_IDS.includes(s.id) && s.sideValues.length === 0), 'QI4 여섯 장은 모두 보조 줄이 있다').toEqual([]);
     // 사교육 참여율에는 단위가 다른 보조 계열(사교육비)이 있지만 제목에 이름이 없어 약속한 값이 아니다
     expect(raw('private-education').extraSeries!.length).toBeGreaterThan(0);
     expect(byId('private-education').sideValues).toEqual([]);

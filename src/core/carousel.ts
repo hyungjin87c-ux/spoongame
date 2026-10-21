@@ -10,13 +10,21 @@ import {
   type UsableIndicator,
 } from '../data/koreaStatsAccess';
 import { STAT_HEADLINES } from '../data/statHeadlines';
+import { heatProjectionInput } from '../data/heatProjectionAdapter';
+import { buildGapSlide, buildHeatSlide, buildNewbornSlide, buildProjectionLineSlide, canDrawGap, canDrawNewborn, canDrawProjectionLine } from './slideForms';
+import { LABEL_GAP, LEGEND_LABEL_LINE, PAD, bareName, labelRect, rectsOverlap, round1, segmentHitsRect, sourceOrgsOf, sourceTextOf, spreadY, yearPoints, type Rect } from './slideKit';
 
 /**
  * 한국 사회 통계 캐러셀의 슬라이드 모델과 동작 규칙 (SPEC-003 SC1~SC7). 모두 순수 함수라 React 없이 단위 테스트한다.
  * 값은 `data/koreaStatsAccess.ts`(koreaStats.json을 읽는 유일한 통로 — `usable:false`·미확인 항목은 거기서 이미 빠진다)가 주고,
  * 이 파일은 그것을 화면 모양(글자·좌표)으로 바꾼다. 그림은 SVG 직접 구현이다(SC7: 차트 라이브러리 없음) — 좌표까지 여기서 계산하고 ui/StatsChart.tsx는 그리기만 한다.
  * 슬라이드에는 평가·논평 문구를 넣지 않는다: 지표 이름, 값+단위, 기준 연도, 출처, 한 줄 정의, 그래프만(SC2).
+ *
+ * SPEC-005 QI4 2단계: 슬라이드가 20장이 됐다 — 보통 선·막대 그래프(기존 14장 + 연령별 격차)에 공식 전망 5장이 더해졌다. 전망·격차·폭염·아기 슬라이드의 모델은 `slideForms.ts`,
+ * 두 파일이 함께 쓰는 작은 계산 도구는 `slideKit.ts`(이 파일이 이름을 그대로 다시 내보낸다).
  */
+
+export { bareName, estimateLabelWidth, labelRect, segmentHitsRect, sourceOrgsOf, spreadY, valueWidthEm, type Rect } from './slideKit';
 
 // ---------- 동작 규칙 (SC5) ----------
 
@@ -30,9 +38,13 @@ export function nextSlideIndex(index: number, count: number, step: 1 | -1): numb
   return (base + step + count) % count;
 }
 
-/** 자동 전환이 돌아야 하는가. 사용자가 멈췄거나, 포인터가 올라가 있거나, 포커스가 안에 있거나, 움직임 줄이기이거나, 탭이 가려졌거나, 볼 슬라이드가 하나뿐이면 멈춘다(WCAG 2.2.2). */
-export function shouldAutoAdvance(s: { count: number; paused: boolean; hovering: boolean; focusWithin: boolean; reducedMotion: boolean; pageHidden: boolean }): boolean {
-  return s.count > 1 && !s.paused && !s.hovering && !s.focusWithin && !s.reducedMotion && !s.pageHidden;
+/**
+ * 자동 전환이 돌아야 하는가. 사용자가 멈췄거나, 포인터가 올라가 있거나, 포커스가 안에 있거나, 움직임 줄이기이거나, 탭이 가려졌거나, 볼 슬라이드가 하나뿐이면 멈춘다(WCAG 2.2.2).
+ * `veilOpen`(SPEC-005 QI6·QI7 뒤 마스터 결정 ③, HV7 보충): 「무거운 장면 가리기」로 가린 자살률 슬라이드를 「펼쳐 보기」로 연 동안에도 멈춘다 — 읽는 동안 넘어가 다시 가려지지 않게.
+ * 포인터·포커스와 달리 **상태**라서 터치 환경도 같다. 슬라이드를 떠나면(이전·다음·점) 다시 가리는 동작은 그대로이고 그때 자동 전환이 다시 돈다. 생략하면 false.
+ */
+export function shouldAutoAdvance(s: { count: number; paused: boolean; hovering: boolean; focusWithin: boolean; reducedMotion: boolean; pageHidden: boolean; veilOpen?: boolean }): boolean {
+  return s.count > 1 && !s.paused && !s.hovering && !s.focusWithin && !s.reducedMotion && !s.pageHidden && s.veilOpen !== true;
 }
 
 /**
@@ -67,7 +79,8 @@ export function dotLabel(index: number, count: number, title: string): string {
 
 // ---------- 슬라이드 모델 ----------
 
-export type Dash = 'solid' | 'dashed' | 'dotted';
+/** 선 모양: 보조 계열은 dashed·dotted, 전망(중위)은 긴 점선 proj(놋쇠, FC2) */
+export type Dash = 'solid' | 'dashed' | 'dotted' | 'proj';
 
 export interface LinePoint {
   x: number;
@@ -83,6 +96,8 @@ export interface ChartLabel {
   text: string;
   anchor: 'start' | 'middle' | 'end';
   bold: boolean;
+  /** 글자 모양(전망 그래프, FC2): `range` = 띠 끝 「고위」「저위」(11px 연한 글씨) · `split` = 경계선 위 「확정 | 전망」(11px). 없으면 보통 값 글자 */
+  tone?: 'range' | 'split';
 }
 
 export interface LineSeriesModel {
@@ -94,6 +109,28 @@ export interface LineSeriesModel {
   points: LinePoint[];
   first: LinePoint;
   last: LinePoint;
+  /** 점 그리기: 없으면 20개 이하일 때 모든 점·넘으면 마지막 점만(기존). 전망 그래프는 확정 구간 `none`(점 없음), 전망 구간 `last`(마지막 점만, D5-63) */
+  marks?: 'last' | 'none';
+}
+
+/** 전망 선 그래프의 경계 (D5-63): 확정(앞선) 구간의 마지막 해에 세로 점선 + 위쪽 「확정 | 전망」 글자 + 축 아래 눈금(연도 글자는 `xLabels`의 가운데 정렬 글자) */
+export interface ChartSplit {
+  /** 경계 x = 확정(앞선) 구간의 마지막 해(`projection.actualThrough`) */
+  x: number;
+  year: number;
+  /** 세로 점선의 위·아래 y */
+  top: number;
+  bottom: number;
+  /** 축 아래 눈금의 끝 y */
+  tickTo: number;
+  left: ChartLabel;
+  right: ChartLabel;
+}
+
+/** 고위~저위 띠 (D5-63): 옅은 면(`path`) + 가는 점선 가장자리 둘(`edges` — polyline의 points 속성). 끝 글자 「고위」「저위」는 중위 끝값과 함께 세로로 벌려야 해서 `LineChartModel.labels`에 `tone: 'range'`로 있다 */
+export interface ChartBand {
+  path: string;
+  edges: [string, string];
 }
 
 export interface LineChartModel {
@@ -109,6 +146,10 @@ export interface LineChartModel {
   xLabels: ChartLabel[];
   labels: ChartLabel[];
   series: LineSeriesModel[];
+  /** 전망 선 그래프만: 확정 | 전망 경계. 보통 선 그래프는 null */
+  split: ChartSplit | null;
+  /** 전망 선 그래프만: 고위~저위 띠(시나리오가 하나면 null) */
+  band: ChartBand | null;
 }
 
 export interface BarRowModel {
@@ -132,11 +173,99 @@ export interface BarChartModel {
   rows: BarRowModel[];
 }
 
+/** 가로 막대 행 하나 — 폭염 막대 셋(현재 실선 막대 + 전망 빗금 둘)과 격차 두 구간 막대 (D5-67·D5-70) */
+export interface BarsRowModel {
+  label: string;
+  fullLabel: string;
+  value: number;
+  /** 값 글자(단위 없이 「25.0」)와 단위를 붙인 값(그래프 밖 표·읽기 이름용) */
+  text: string;
+  valueWithUnit: string;
+  /** 막대 위 y(행 안쪽) · 글자 baseline y · 막대 폭 */
+  barY: number;
+  textY: number;
+  barWidth: number;
+  /** 전망 막대(놋쇠 빗금)이면 true */
+  proj: boolean;
+  /** 값 글자를 굵게(격차 막대) */
+  bold: boolean;
+}
+
+export interface BarsChartModel {
+  kind: 'bars';
+  width: number;
+  height: number;
+  /** 라벨 글자의 오른쪽 끝 x(anchor end) · 막대 시작 x · 막대 높이 */
+  labelX: number;
+  barX: number;
+  barHeight: number;
+  /** 그래프 위 오른쪽 글자(격차 「2024년」). 없으면 null */
+  header: ChartLabel | null;
+  rows: BarsRowModel[];
+}
+
+/** 누적 막대 한 행 — 아기가 n세가 되는 해의 연령 3구간 구성비 (D5-68) */
+export interface StackRowModel {
+  age: number;
+  year: number;
+  /** 행 위 y · 글자 baseline y */
+  y: number;
+  textY: number;
+  /** 라벨 「0세 2026」의 나이 부분(굵게)과 연도 부분 */
+  ageText: string;
+  yearText: string;
+  /** 칸 셋의 x·폭 — 0~14세(빈 칸) · 15~64세(채움, 안에 값 글자) · 65세 이상(점무늬) */
+  young: { x: number; width: number };
+  work: { x: number; width: number; text: string };
+  old: { x: number; width: number };
+  /** 오른쪽 굵은 값 글자 「21.6%」(65세 이상)과 x */
+  valueText: string;
+  valueX: number;
+}
+
+export interface StackChartModel {
+  kind: 'stack';
+  width: number;
+  height: number;
+  /** 라벨 글자의 오른쪽 끝 x(anchor end) · 막대 시작 x · 막대 전체 폭(100%) · 칸 높이 */
+  labelX: number;
+  barX: number;
+  barWidth: number;
+  barHeight: number;
+  /** 그래프 위 오른쪽 글자 「모두 전망(중위 추계)」 */
+  header: ChartLabel;
+  rows: StackRowModel[];
+}
+
+export type SlideChart = LineChartModel | BarChartModel | BarsChartModel | StackChartModel;
+
+/** 범례 견본 모양: 선(`dash`) 말고 네모 견본 — 띠·채움 막대·전망 빗금·빈 칸·채움 칸·점무늬 칸 (D5-64) */
+export type LegendRect = 'band' | 'bar' | 'proj' | 'young' | 'work' | 'old';
+
 export interface SlideLegendItem {
   key: string;
   label: string;
   dash: Dash;
   valueText: string;
+  /** 있으면 선 견본 대신 이 네모 견본을 그린다(`valueText`는 빈 글자일 수 있다) */
+  rect?: LegendRect;
+}
+
+/** 그래프 밖에 숨겨 두는 표(sr-only) — 그래프가 보이지 않는 값 전부를 보조기기에 읽힌다 (R-207 꼴) */
+export interface SlideTable {
+  caption: string;
+  head: string[];
+  rows: Array<{ head: string; cells: string[] }>;
+}
+
+/** 전망 슬라이드(FC2)의 표시: 칩 글자 · 한 줄 안내 · 발표일(기준 줄) */
+export interface SlideProjection {
+  /** 「전망」 */
+  chip: string;
+  /** 「전망은 예측이 아니라 공식 추계입니다. …」 */
+  note: string;
+  /** 발표일 「2023-12-14」 */
+  releasedOn: string;
 }
 
 export interface SlideSafety {
@@ -163,6 +292,11 @@ export interface SlideSideValue {
   valueText: string;
   /** 화면에 보이는 한 줄: 「조혼인율 인구 1천 명당 4.7건」 */
   text: string;
+  /**
+   * QI4 전망 슬라이드의 보조 줄: `text`가 「머리 + 항목, 항목」 꼴일 때 항목마다 줄바꿈 묶음(`.keep-phrase`)으로 그리라는 표시 — 「2072년」 + [「고위 추계(최대인구) 42,818,632명」, 「저위 추계(최소인구) 30,172,383명」].
+   * `.pair`(「A · B」 짝)로 두면 좁은 칸에서 둘째 항목이 중간에서 갈라져(copy.md 14-6) 쉼표 문장 + 항목 묶음으로 했다. 없으면 한 문장 그대로.
+   */
+  phrases?: { lead: string; items: string[] };
 }
 
 export interface CarouselSlide {
@@ -190,19 +324,37 @@ export interface CarouselSlide {
   /** 값 위 설명(예: 「2026년 9월 전국 주민등록 인구」) */
   caption: string | null;
   definition: string;
-  /** 「국가데이터처, 2025년 출생 통계 통계표 1 …(2026-10-15 조회)」 — 기관, 통계표 이름, 열람일 */
+  /**
+   * 「국가데이터처의 2025년 출생 통계 통계표 1 …(2026-10-15 조회)」 — **{기관 나열}의 {표 이름} ({열람일} 조회)** 꼴, 20장 모두(copy.md 14-6, D5-66, 마스터 결정: 한 함수의 꼴이라 장마다 다르게 두지 않는다).
+   * 기관은 쉼표 나열이고 기관 묶음과 표 이름을 조사 「의」로 가른다 — 쉼표만 쓰면 「KOSIS …」가 넷째 기관처럼 읽힌다. 화면은 앞에 「출처: 」를 붙인다.
+   */
   sourceText: string;
-  /** 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」 (SC4) */
+  /** 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」 (SC4). 전망 슬라이드는 「발표: 2023-12-14 · 마지막 갱신 2026-10-21」(마스터 결정 8 — 기준 표기는 발표일) */
   basisLine: string;
-  chart: LineChartModel | BarChartModel;
+  chart: SlideChart;
   /** 그래프의 대체 텍스트 */
   chartLabel: string;
   legend: SlideLegendItem[];
+  /** 범례 목록의 읽기 이름: 선 그래프는 「그래프 범례와 최근 값」, 막대 그래프(폭염·아기)는 「막대 범례」 */
+  legendLabel: string;
   /** 범례가 하나뿐일 때 보이는 계열 설명(예: 「혼인 건수(건, 혼인신고 기준)」) */
   seriesNote: string | null;
-  /** 큰 값 아래 줄의 보조 계열 값(제목에 이름이 든 것 중 그래프에 안 그려진 것). 없으면 빈 배열 */
+  /** 큰 값 아래 줄의 보조 값·보조 문장. 기존: 제목에 이름이 든 보조 계열(그래프에 안 그려진 것). QI4: 전망 슬라이드의 고위·저위 끝값·출발값·65세 이상 인구, 폭염 현재 값, 아기 부양비, 격차 보조 문장 둘. 없으면 빈 배열 */
   sideValues: SlideSideValue[];
+  /** 그래프 밖에 숨겨 두는 표들(sr-only) — 격차 2011~2024 시계열, 폭염 권역 6곳, 아기 행 5개. 없으면 빈 배열 */
+  tables: SlideTable[];
+  /** 공식 전망 슬라이드(칩 「전망」 · 한 줄 안내 · 발표일)이면 값, 아니면 null (FC2) */
+  projection: SlideProjection | null;
   safety: SlideSafety | null;
+}
+
+/**
+ * 슬라이드의 접근 가능한 이름 (SH3): 「3/20 얼마나 살 수 있을까?, 기대수명(2024년)」. 전망 슬라이드는 「전망」이 칩 글자뿐 아니라 이름에도 든다 —
+ * 「16/20 전망, 앞으로 인구는 어떻게 달라질까?, 장래인구추계 총인구(…)」(색·아이콘 없이도 전한다, copy.md 14-1).
+ */
+export function slideReadName(slide: Pick<CarouselSlide, 'insight' | 'officialText' | 'projection'>, index: number, count: number): string {
+  const head = slide.projection === null ? '' : `${slide.projection.chip}, `;
+  return `${index + 1}/${count} ${head}${slide.insight}, ${slide.officialText}`;
 }
 
 /**
@@ -212,21 +364,6 @@ export interface CarouselSlide {
 export function splitUnit(unit: string): { denominator: string | null; word: string } {
   const m = /^(인구 .+당) (.+)$/.exec(unit);
   return m === null ? { denominator: null, word: unit } : { denominator: m[1], word: m[2] };
-}
-
-/**
- * 큰 값 글자의 폭을 글자 크기(em) 단위로 어림한다 — 숫자는 같은 폭(tabular-nums)이라 0.62em, 쉼표·소수점은 0.32em, 그 밖은 1em.
- * 화면은 이 값으로 큰 글자 크기를 칸 폭에 맞춰 줄여(CSS `min(var(--fs-3xl), 칸 폭 / 이 값)`), 글자 크기를 200%로 키워도 숫자가 중간에서 줄바꿈되거나 칸을 넘치지 않게 한다(CM11, QM2-5).
- */
-export function valueWidthEm(valueText: string): number {
-  let em = 0;
-  for (const ch of valueText) em += ch >= '0' && ch <= '9' ? 0.62 : ch === ',' || ch === '.' ? 0.32 : 1;
-  return Math.round(em * 100) / 100;
-}
-
-/** 이름에서 끝의 괄호 풀이를 뺀다: 「조혼인율(인구 1천 명당 건)」 → 「조혼인율」, 「혼인 건수(건, 혼인신고 기준)」 → 「혼인 건수」 (QM2-11 규칙 3) */
-export function bareName(label: string): string {
-  return label.replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
 /** 제목에 이름이 든 지표 하나 (QM2-11 규칙 3: 본 계열과 보조 계열) */
@@ -306,49 +443,6 @@ export function chartSizeFor(containerPx: number, wideLayout: boolean): ChartSiz
   const width = Number.isFinite(containerPx) ? Math.min(CHART_MAX_W, Math.max(CHART_MIN_W, Math.floor(containerPx / 4) * 4)) : LINE_W;
   return { width, lineHeight: wideLayout ? LINE_H : LINE_H_STACKED };
 }
-const PAD = { left: 8, right: 66, top: 24, bottom: 30 };
-const LABEL_GAP = 13;
-
-/** 값 글자(CSS .chart text, 13px) 한 줄이 차지하는 칸: 글자 위쪽(ascent)·아래쪽(descent) */
-const LABEL_ASCENT = 11;
-const LABEL_DESCENT = 3;
-/** 값 글자 폭 추정(13px 한글 시스템 글꼴의 숫자·점 폭을 넉넉하게). 그래프 안 글자는 숫자·소수점·쉼표뿐이다. */
-export function estimateLabelWidth(text: string, bold: boolean): number {
-  let w = 0;
-  for (const ch of text) w += ch >= '0' && ch <= '9' ? (bold ? 8.2 : 7.8) : ch === '.' || ch === ',' ? 4.2 : 13;
-  return Math.ceil(w) + 1;
-}
-
-export interface Rect {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-
-/** 시작점 기준(anchor start) 값 글자가 baseline y에 놓일 때 차지하는 사각형 */
-export function labelRect(x: number, baselineY: number, text: string, bold = false): Rect {
-  return { left: x, top: baselineY - LABEL_ASCENT, right: x + estimateLabelWidth(text, bold), bottom: baselineY + LABEL_DESCENT };
-}
-
-const rectsOverlap = (a: Rect, b: Rect): boolean => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-
-/** 선분 (x1,y1)-(x2,y2)이 사각형(경계 포함)과 만나는가 — 끝점이 안에 있거나 네 변 중 하나와 교차 */
-export function segmentHitsRect(x1: number, y1: number, x2: number, y2: number, r: Rect): boolean {
-  const inside = (x: number, y: number) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-  if (inside(x1, y1) || inside(x2, y2)) return true;
-  if (Math.max(x1, x2) < r.left || Math.min(x1, x2) > r.right || Math.max(y1, y2) < r.top || Math.min(y1, y2) > r.bottom) return false;
-  const cross = (ax: number, ay: number, bx: number, by: number, cx: number, cy: number) => (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-  const crosses = (cx: number, cy: number, dx: number, dy: number) => {
-    const d1 = cross(x1, y1, x2, y2, cx, cy);
-    const d2 = cross(x1, y1, x2, y2, dx, dy);
-    const d3 = cross(cx, cy, dx, dy, x1, y1);
-    const d4 = cross(cx, cy, dx, dy, x2, y2);
-    return d1 * d2 <= 0 && d3 * d4 <= 0;
-  };
-  return crosses(r.left, r.top, r.right, r.top) || crosses(r.right, r.top, r.right, r.bottom) || crosses(r.right, r.bottom, r.left, r.bottom) || crosses(r.left, r.bottom, r.left, r.top);
-}
-
 /** 선 그래프의 선·점(그려지는 모양 그대로: 선 두께·점 반지름 + 여유 1칸)을 사각형으로 모아 둔다 — 값 글자가 피해야 하는 곳 */
 function lineObstacles(series: readonly LineSeriesModel[]): { segments: Array<[number, number, number, number]>; markers: Rect[] } {
   const segments: Array<[number, number, number, number]> = [];
@@ -399,34 +493,10 @@ export function placeFirstLabels(series: readonly LineSeriesModel[], lineHeight:
   return out;
 }
 
-const round1 = (n: number): number => Math.round(n * 10) / 10;
-
-/** 세로로 겹치는 라벨을 위아래로 벌린다(입력 순서대로 돌려준다). 최소 간격 gap, 범위 [lo, hi]. */
-export function spreadY(ys: readonly number[], gap: number, lo: number, hi: number): number[] {
-  const order = ys.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y || a.i - b.i);
-  const out = order.map((o) => Math.min(hi, Math.max(lo, o.y)));
-  for (let k = 1; k < out.length; k++) if (out[k] - out[k - 1] < gap) out[k] = out[k - 1] + gap;
-  if (out.length > 0 && out[out.length - 1] > hi) {
-    out[out.length - 1] = hi;
-    for (let k = out.length - 2; k >= 0; k--) out[k] = Math.min(out[k], out[k + 1] - gap);
-  }
-  const result = new Array<number>(ys.length);
-  order.forEach((o, k) => {
-    result[o.i] = out[k];
-  });
-  return result;
-}
-
 function breakYears(ind: UsableIndicator): Set<number> {
   const set = new Set<number>();
   for (const b of ind.axis?.breaks ?? []) if (Number.isInteger(b.year)) set.add(b.year);
   return set;
-}
-
-function yearPoints(series: readonly Point[]): Array<{ year: number; value: number }> {
-  const out: Array<{ year: number; value: number }> = [];
-  for (const p of series) if ('year' in p && Number.isInteger(p.year) && Number.isFinite(p.value)) out.push({ year: p.year, value: p.value });
-  return out.sort((a, b) => a.year - b.year);
 }
 
 function buildLineChart(ind: UsableIndicator, { width, lineHeight }: ChartSize): { chart: LineChartModel; legend: SlideLegendItem[]; label: string } | null {
@@ -490,7 +560,7 @@ function buildLineChart(ind: UsableIndicator, { width, lineHeight }: ChartSize):
   const legend: SlideLegendItem[] = series.map((s) => ({ key: s.key, label: s.label, dash: s.dash, valueText: withUnit(s.last.value) }));
   const parts = series.map((s) => `${s.label} 처음 ${withUnit(s.first.value)}(${s.first.year}년), 마지막 ${withUnit(s.last.value)}(${s.last.year}년)`);
   const label = `${minYear}년부터 ${maxYear}년까지 ${ind.title} 추이 그래프. ${parts.join('. ')}`;
-  return { chart: { kind: 'line', width, height: lineHeight, plotLeft: PAD.left, plotRight: width - PAD.right, grid, axisY, xLabels, labels, series }, legend, label };
+  return { chart: { kind: 'line', width, height: lineHeight, plotLeft: PAD.left, plotRight: width - PAD.right, grid, axisY, xLabels, labels, series, split: null, band: null }, legend, label };
 }
 
 export const BAR_ROW_H = 15;
@@ -520,25 +590,24 @@ function buildBarChart(ind: UsableIndicator, { width }: ChartSize): { chart: Bar
   return { chart: { kind: 'bar', width, height: rows.length * BAR_ROW_H + 4, rowHeight: BAR_ROW_H, labelWidth: BAR_LABEL_W, barX, rows }, label };
 }
 
-/** 기관 이름 목록 (「국가데이터처·교육부」처럼 가운뎃점으로 묶인 것을 나눈다) */
-export function sourceOrgsOf(org: string): string[] {
-  return org
-    .split(/[·,/]/)
-    .map((x) => x.trim())
-    .filter((x) => x !== '');
-}
-
 /** 자살예방 상담전화 안내가 갖춰졌는가 (SC6: 번호가 확인되기 전에는 자살률 슬라이드를 쓰지 않는다 — C10) */
 function hasHelpLine(i: UsableIndicator): boolean {
   const h = i.helpLine;
   return h !== undefined && typeof h.number === 'string' && /^\d{2,5}(-\d{3,4})?$/.test(h.number) && typeof h.hours === 'string' && h.hours.length > 0 && typeof h.name === 'string' && h.name.length > 0;
 }
 
-/** 캐러셀에 그릴 수 있는 지표인가: 선·막대 종류, 계열 2개 이상, 안전 규칙(상담전화) 충족. */
+/**
+ * 캐러셀에 그릴 수 있는 지표인가: 선·막대 종류, 계열 2개 이상, 안전 규칙(상담전화) 충족.
+ * QI4: 공식 전망 지표(`kind: 'projection'` — 전망 선 그래프 3장 + 아기 누적 막대)와 폭염 표(어댑터가 읽을 수 있는 모양)도 그린다.
+ * 그릴 수 없는 지표는 조용히 빠지지만 **빠졌다는 사실이 시험에 걸린다**: tests/carousel.test.ts가 「슬라이드 20장 = CAROUSEL_ORDER 순서(16~20번 id 일치)」를 단언한다(REV-005-QI4-1 7절 1).
+ */
 export function isDrawable(i: UsableIndicator): boolean {
+  if (i.safety === 'suicide-help' && !hasHelpLine(i)) return false;
+  if (i.kind === 'table') return heatProjectionInput(i) !== null;
+  if (i.kind === 'projection') return i.projection?.shape === 'cohort-rows' ? canDrawNewborn(i) : canDrawProjectionLine(i);
   if (i.kind !== 'line' && i.kind !== 'bar') return false;
   if (!Array.isArray(i.series) || i.series.length < 2 || !i.series.every((p) => Number.isFinite(p.value))) return false;
-  return i.safety !== 'suicide-help' || hasHelpLine(i);
+  return STAT_HEADLINES[i.id]?.pairExtra !== true || canDrawGap(i);
 }
 
 /** 캐러셀 지표 목록(순서 확정): 접근자가 준 `use: carousel` 확인 지표 중 그릴 수 있는 것. file을 주면 그 데이터로(테스트용). */
@@ -563,6 +632,10 @@ export function officialBasisOf(ind: Pick<UsableIndicator, 'latest' | 'scopeLabe
 
 /** 지표 하나 → 슬라이드. 그릴 수 없는 지표(계열 부족 등)는 null. size는 그래프를 그릴 크기(chartSizeFor). */
 export function buildSlide(ind: UsableIndicator, updatedOn?: string, size: ChartSize = DEFAULT_CHART_SIZE): CarouselSlide | null {
+  // QI4: 공식 전망(선 그래프·아기 누적 막대)·폭염(어댑터)·연령별 격차(두 구간 막대)는 형식별 모델(slideForms.ts)이 만든다 — 값·연도는 모두 데이터에서
+  if (ind.kind === 'projection') return ind.projection?.shape === 'cohort-rows' ? buildNewbornSlide(ind, updatedOn, size) : buildProjectionLineSlide(ind, updatedOn, size);
+  if (ind.kind === 'table') return buildHeatSlide(ind, updatedOn, size);
+  if (STAT_HEADLINES[ind.id]?.pairExtra === true) return buildGapSlide(ind, updatedOn, size, officialBasisOf(ind, false));
   const isBar = ind.kind === 'bar';
   const built = isBar ? buildBarChart(ind, size) : buildLineChart(ind, size);
   if (built === null) return null;
@@ -597,13 +670,16 @@ export function buildSlide(ind: UsableIndicator, updatedOn?: string, size: Chart
     basisText: denominator,
     caption: isBar && ind.latestLabel !== undefined && ind.latestLabel !== '' ? ind.latestLabel : null,
     definition: ind.definition,
-    sourceText: `${ind.source.org}, ${ind.source.table} (${ind.source.accessedOn} 조회)`,
+    sourceText: sourceTextOf(ind),
     basisLine: formatBasisLine(ind, updatedOn),
     chart: built.chart,
     chartLabel: built.label,
     legend,
+    legendLabel: LEGEND_LABEL_LINE,
     seriesNote,
     sideValues,
+    tables: [],
+    projection: null,
     safety: help === undefined ? null : { name: help.name, number: help.number, hours: help.hours },
   };
 }

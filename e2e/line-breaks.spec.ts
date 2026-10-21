@@ -54,7 +54,7 @@ function add(tally: Tally, label: string, r: LineReport): void {
   for (const v of r.violations) tally.problems.push(`${label}: ${v}`);
 }
 
-/** 캐러셀 14장을 모두 넘기며 장마다 잰다 (일시정지 상태에서) */
+/** 캐러셀 20장을 모두 넘기며 장마다 잰다 (일시정지 상태에서) */
 async function measureSlides(page: Page, label: string, tally: Tally, percent: number): Promise<number> {
   const n = await slideCount(page);
   for (let i = 0; i < n; i++) {
@@ -68,7 +68,7 @@ async function measureSlides(page: Page, label: string, tally: Tally, percent: n
 
 for (const width of WIDTHS) {
   for (const percent of PERCENTS) {
-    test(`${width}px · 글자 ${percent}%: 첫 화면 본문·하단 띠 세 상태·푸터·캐러셀 14장에서 줄 끝·첫머리에 혼자 남는 구분 기호 0(쉼표·마침표가 줄 첫머리 0), 숫자와 단위·날짜가 갈라지는 곳 0 (QM2-5 a·b, QM2-10 a)`, async ({ page }, testInfo) => {
+    test(`${width}px · 글자 ${percent}%: 첫 화면 본문·하단 띠 세 상태·푸터·캐러셀 20장에서 줄 끝·첫머리에 혼자 남는 구분 기호 0(쉼표·마침표가 줄 첫머리 0), 숫자와 단위·날짜가 갈라지는 곳 0 (QM2-5 a·b, QM2-10 a)`, async ({ page }, testInfo) => {
       const mobile = testInfo.project.name === 'mobile-360';
       test.skip(mobile !== (width < 960), width < 960 ? 'mobile-360에서만 실행' : 'desktop에서만 실행');
       test.setTimeout(180_000);
@@ -76,7 +76,7 @@ for (const width of WIDTHS) {
       const tally: Tally = { problems: [], lines: 0, chars: 0, keeps: 0, parts: [], words: 0 };
       const label = `${width}px/${percent}%`;
 
-      // 새 판: 본문 · 푸터 · 캐러셀 14장 · 띠
+      // 새 판: 본문 · 푸터 · 캐러셀 20장 · 띠
       await openBarState(page, 'new');
       await expect(page.getByTestId('start-birth')).toBeEnabled();
       await page.getByTestId('carousel-pause').click();
@@ -87,7 +87,7 @@ for (const width of WIDTHS) {
       add(tally, `${label} 푸터`, await measureLineBreaks(page, '[data-testid="title-foot"]'));
       addWords(tally, `${label} 첫 화면(새 판)`, await measureWordBreaks(page), percent, FORCED_BREAK_WORDS); // 본문·띠·푸터·지금 보이는 슬라이드의 모든 낱말
       const slides = await measureSlides(page, label, tally, percent);
-      expect(slides).toBe(14);
+      expect(slides).toBe(20);
 
       // 이어하기 · 확인 단계의 띠 글자
       for (const state of BAR_STATES.filter((s): s is Exclude<BarState, 'new'> => s !== 'new')) {
@@ -102,7 +102,7 @@ for (const width of WIDTHS) {
       expect(tally.chars, '실제로 잰 글자 수').toBeGreaterThan(2000);
       expect(tally.keeps, '숫자+단위·날짜·keepWords 묶음을 실제로 잰 개수').toBeGreaterThan(50);
       expect(main.keepChecked, '첫 화면 본문에서 「한 번의」를 실제로 잰 개수').toBeGreaterThanOrEqual(1);
-      expect(tally.words, '낱말 끊김 감사에서 실제로 잰 낱말 수(공허 통과 방지: 화면 3상태 + 슬라이드 14장)').toBeGreaterThan(600);
+      expect(tally.words, '낱말 끊김 감사에서 실제로 잰 낱말 수(공허 통과 방지: 화면 3상태 + 슬라이드 20장)').toBeGreaterThan(600);
       expect(tally.problems).toEqual([]);
     });
   }
@@ -120,8 +120,13 @@ for (const [width, height] of [
     await setRootFontPercent(page, 200);
     const credit = page.getByTestId('stats-credit');
     const text = (await credit.innerText()).replace(/\s+/g, ' ').trim();
-    expect(text).toMatch(/^통계 출처: 국가데이터처, 행정안전부, 교육부 \(통계표 이름과 기준 연도는 카드마다 적혀 있습니다\)$/);
-    expect(text, '기관 이름 사이에 「·」가 없다').not.toMatch(/(국가데이터처|행정안전부|교육부)\s*·/);
+    // 20장(SPEC-005 QI4)이 되면서 푸터 기관이 3곳 → 7곳으로 늘었다(한국은행·금융감독원·통계청(현 국가데이터처)·기상청(국립기상과학원) 추가) — 기관 이름을 박아 두지 않고 줄 모양(쉼표 나열, 「·」 0개)과 기관 수만 본다
+    expect(text).toMatch(/^통계 출처: [^·]+ \(통계표 이름과 기준 연도는 카드마다 적혀 있습니다\)$/);
+    const list = text.replace(/^통계 출처: /, '').replace(/ \(통계표 이름과 기준 연도는 카드마다 적혀 있습니다\)$/, '');
+    const items = list.split(/, (?![^(]*\))/); // 괄호 안의 쉼표는 항목 사이가 아니다
+    expect(items.length, `기관 나열 항목 수 ${items.length}: ${items.join(' | ')}`).toBeGreaterThanOrEqual(3);
+    expect(items.every((it) => it.trim().length > 0), '빈 항목이 없다').toBe(true);
+    expect(text, '기관 이름 사이에 「·」가 없다').not.toContain('·');
     const r = await measureLineBreaks(page, '[data-testid="stats-credit"]');
     expect(r.lineCount, '푸터 출처 줄이 글자 200%에서 실제로 여러 줄이다(공허 통과 방지)').toBeGreaterThanOrEqual(3);
     expect(r.violations).toEqual([]);

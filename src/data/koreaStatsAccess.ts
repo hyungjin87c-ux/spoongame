@@ -95,7 +95,7 @@ export interface HelpLine {
 /**
  * 공식 전망(`kind: 'projection'`) 지표의 전망 정보 — SPEC-004 PJ2 형식 (SPEC-005 FC4, QI4 1단계). 공식 추계만 담는다(지어낸 미래 수치 0).
  * 한 지표는 `actual`(실측·확정 구간, `actualThrough`까지)과 `projection.scenarios`(전망 구간, `baseYear`~`horizon`)를 가진다.
- * 시나리오 이름은 원문 그대로(중위·고위·저위 등)이며 낙관·기준·비관으로 옮기지 않는다(그 대응표는 SPEC-004 PJ4). 화면은 아직 연결하지 않았다(다음 단계).
+ * 시나리오 이름은 원문 그대로(중위·고위·저위 등)이며 낙관·기준·비관으로 옮기지 않는다(그 대응표는 SPEC-004 PJ4). 화면은 첫 화면 캐러셀의 전망 슬라이드가 읽는다(SPEC-005 QI4 2단계, core/carousel.ts).
  */
 export interface ProjectionScenario {
   /** 'median' · 'high' · 'low' · 'main'(시나리오 구분이 없는 단일 추계) */
@@ -131,6 +131,22 @@ export interface ProjectionInfo {
   shape?: 'cohort-rows';
 }
 
+/** `kind: 'projection'` 지표의 보조 값 한 종류(예: 65세 이상 인구 수, 1인 가구 수): 확정 구간 `actual` + 시나리오별 전망 연도별 값 */
+export interface ProjectionRelated {
+  key: string;
+  label: string;
+  unit: string;
+  decimals: number;
+  actual?: YearPoint[];
+  scenarios: Array<{ key: string; series: YearPoint[] }>;
+}
+/** `shape: 'cohort-rows'` 지표(지금 태어나는 아기라면?)의 코호트 정보: 출생 연도와 아기가 그 나이가 되는 해들 */
+export interface ProjectionCohort {
+  birthYear: number;
+  ages: number[];
+  note: string;
+}
+
 /** koreaStats.json의 지표 한 개 (확인 여부와 무관한 원본 모양) */
 export interface RawIndicator {
   id: string;
@@ -160,6 +176,10 @@ export interface RawIndicator {
   projection?: ProjectionInfo;
   /** `kind: 'projection'` 지표만: 실측·확정 구간(`projection.actualThrough`까지) */
   actual?: YearPoint[];
+  /** `kind: 'projection'` 지표만: 보조 값(65세 이상 인구 수·1인 가구 수 등) */
+  related?: ProjectionRelated[];
+  /** 「지금 태어나는 아기라면?」 지표만: 코호트(출생 연도·나이들) */
+  cohort?: ProjectionCohort;
   usable: boolean;
   notes?: string;
   [extra: string]: unknown;
@@ -253,12 +273,18 @@ export interface SigunguRow2025 {
   tfr: number;
 }
 
-/** 캐러셀 슬라이드 순서(요청의 5개 → 나머지). 이 목록에 없는 carousel 지표는 JSON 순서로 뒤에 붙는다. */
+/**
+ * 캐러셀 슬라이드 순서(요청의 5개 → 나머지). 이 목록에 없는 carousel 지표는 JSON 순서로 뒤에 붙는다.
+ * SPEC-005 QI4 2단계(마스터 결정 1, projection-slides-QI4.md 4절): 기존 14장에 연령별 격차 `income-gap-by-age`를 `elderly-poverty` 바로 뒤에 끼우고,
+ * 공식 전망 5장을 **끝에 연속**으로 둔다(현재 지표와 전망이 섞여 읽히지 않게) → 20장.
+ * 합계출산율 전망·생산연령·기대수명 전망(예비 3개)과 `future-projection`은 캐러셀에 없다(마스터 결정 4 — `use`에 carousel이 없고 이 목록에도 없다).
+ */
 export const CAROUSEL_ORDER: readonly string[] = [
   'tfr',
   'births',
   'cdr',
   'elderly-poverty',
+  'income-gap-by-age',
   'suicide-rate',
   'region-population-registered',
   'life-expectancy',
@@ -269,6 +295,11 @@ export const CAROUSEL_ORDER: readonly string[] = [
   'private-education',
   'aging-rate',
   'tfr-by-sido',
+  'projection-population-total',
+  'projection-aging-share',
+  'projection-one-person-households',
+  'heat-projection',
+  'projection-newborn-age-structure',
 ];
 
 // ---------------------------------------------------------------- 표기
@@ -389,10 +420,13 @@ export function formatColumnValue(col: Column, value: number): string {
   return formatNumber(value, col.decimals ?? 0);
 }
 
-/** 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」(SC4). updatedOn을 생략하면 koreaStats.json의 meta.updatedOn */
-export function formatBasisLine(ind: UsableIndicator, updatedOn?: string): string {
+/**
+ * 「통계 기준: 2025년 · 마지막 갱신 2026-10-15」(SC4). updatedOn을 생략하면 koreaStats.json의 meta.updatedOn.
+ * `releasedOn`을 주면(공식 전망 슬라이드, 마스터 결정 8 — 기준 표기는 발표일) 앞부분이 「발표: 2023-12-14」로 바뀐다: 「발표: 2023-12-14 · 마지막 갱신 2026-10-21」.
+ */
+export function formatBasisLine(ind: UsableIndicator, updatedOn?: string, releasedOn?: string): string {
   const u = updatedOn ?? (statsJson as unknown as StatsFile).meta.updatedOn;
-  return `통계 기준: ${ind.latest.year}년 · 마지막 갱신 ${u}`;
+  return `${releasedOn === undefined ? `통계 기준: ${ind.latest.year}년` : `발표: ${releasedOn}`} · 마지막 갱신 ${u}`;
 }
 
 export function createStatsAccess(file: StatsFile): StatsAccess {
@@ -489,7 +523,13 @@ export function createStatsAccess(file: StatsFile): StatsAccess {
 
 // ---------------------------------------------------------------- 기본 인스턴스 (실제 데이터)
 
-const DEFAULT = createStatsAccess(statsJson as unknown as StatsFile);
+/**
+ * 기본 통계 파일 — 첫 화면 묶음에 들어가는 지표 전부(읽기 전용). 예비 지표를 합치는 `koreaStatsReserve.ts`와 시험·점검 도구(`koreaStatsFull.ts`)가 이것을 쓴다 —
+ * `koreaStats.json`을 가져오는 곳이 이 파일 하나로 남도록(R-147(e) 단일 접근자).
+ */
+export const BASE_STATS_FILE: StatsFile = statsJson as unknown as StatsFile;
+
+const DEFAULT = createStatsAccess(BASE_STATS_FILE);
 
 export const getUsableIndicator = DEFAULT.getUsableIndicator;
 export const getUsableIndicators = DEFAULT.getUsableIndicators;

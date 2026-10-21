@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
-import { AUTO_ADVANCE_MS, chartSizeFor, dotLabel, nextSlideIndex, pointerCountsAsHover, shouldAutoAdvance, showDots, swipeStep, valueWidthEm, type CarouselData, type CarouselSlide, type ChartSize } from '../core/carousel';
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
+import { AUTO_ADVANCE_MS, chartSizeFor, dotLabel, nextSlideIndex, pointerCountsAsHover, shouldAutoAdvance, showDots, slideReadName, swipeStep, valueWidthEm, type CarouselData, type CarouselSlide, type ChartSize, type SlideSideValue } from '../core/carousel';
 import { HEAVY_SLIDE_TEXT, VEIL_TEXT } from '../data/gentleText';
 import { TITLE_TEXT } from '../data/titleText';
 import { Icon } from './Brand';
 import { Glue } from './Glue';
 import { GuardedButton } from './GuardedButton';
 import { Pair } from './Pair';
-import { BarChart, BarTable, LineChart, Swatch } from './StatsChart';
+import { BarTable, SlideChartView, SrTable, Swatch, SwatchRect } from './StatsChart';
 import { useIsoLayoutEffect, usePageHidden, useReducedMotion } from './hooks';
 
 /**
@@ -22,7 +22,9 @@ import { useIsoLayoutEffect, usePageHidden, useReducedMotion } from './hooks';
  * 다음 이동 이벤트만 보내면 React의 onPointerLeave(pointerout에서 만들어진다)가 오지 않아 hovering이 true로 남았다(QA-003-M2 M2-A15). 터치는 사유로 세지 않는다(I4).
  * **무거운 장면 가리기**(SPEC-005 QI6 HV7, REV-005-HV-1 7절): `gentle`(설정값)이 켜져 있으면 상담전화 안내(`slide.safety`)가 붙은 자살률 슬라이드가 가려진다 — 표제어 자리에 「무거운 주제 · 마음 건강 통계」, 「펼쳐 보기」 하나(`aria-expanded`·`aria-controls` 두 묶음),
  * 공식 통계명·값·기준·그래프(읽기 이름 포함)·정의 / 출처·기준 줄은 `hidden` 두 묶음에 들어간다. **상담전화 묶음(`slide__help`)은 두 묶음 사이에서 늘 보인다**(이름은 바꾸지도 순화하지도 않는다). 눈에 안 보이는 읽기 이름
- * (슬라이드 `article`의 `aria-label`, 점 버튼 이름)도 분류 문구로 바뀐다. 펼침은 저장하지 않고 **슬라이드를 떠나면(이전·다음·자동 넘김) 다시 가린다**, 설정이 바뀌어도 초기화된다. 다른 지표는 가리지 않는다(인구 통계이지 장면이 아니다).
+ * (슬라이드 `article`의 `aria-label`, 점 버튼 이름)도 분류 문구로 바뀐다. 펼침은 저장하지 않고 **슬라이드를 떠나면(이전·다음·점) 다시 가린다**, 설정이 바뀌어도 초기화된다. 다른 지표는 가리지 않는다(인구 통계이지 장면이 아니다).
+ * **펼쳐 둔 동안은 자동 넘김도 멈춘다**(QI6·QI7 뒤 마스터 결정 ③ — 읽는 중에 넘어가 다시 가려지지 않게, 터치 포함: `shouldAutoAdvance`의 `veilOpen` 사유). 접거나 슬라이드를 떠나면 다시 돈다.
+ * **전망 슬라이드**(QI4, FC2): 표제어 위 「전망」 칩(색 + 글자 + 아이콘), 정의 줄 아래 한 줄 안내(`slide__projnote`), 접근 가능한 이름 「n/N 전망, …」. 격차·폭염·아기 슬라이드의 그래프 밖 표(sr-only)와 네모 범례 견본도 여기서 그린다.
  * 그래프는 화면에 그려지는 폭으로 좌표를 만든다(`onChartSize`로 폭·레이아웃을 알려 주면 부모가 `buildCarousel(undefined, size)`로 다시 만들어 넘긴다, R-206).
  */
 
@@ -52,10 +54,37 @@ export function isVeilableSlide(slide: CarouselSlide, gentle: boolean): boolean 
   return gentle && slide.safety !== null;
 }
 
+/**
+ * 큰 값 아래 보조 줄 한 줄. QI4 전망 슬라이드의 「2072년 고위 추계(최대인구) …명, 저위 추계(최소인구) …명」은 항목마다 줄바꿈 묶음(`.keep-phrase`)으로 그린다 —
+ * `.pair`(「A · B」 짝)로 두면 좁은 칸에서 둘째 항목이 중간에서 갈라졌다(copy.md 14-6). 글자는 `text`와 같다.
+ */
+function SideLine({ side }: { side: SlideSideValue }) {
+  return (
+    <p className="slide__side" data-testid="slide-side-value">
+      {side.phrases === undefined ? (
+        <Glue text={side.text} />
+      ) : (
+        <>
+          <Glue text={side.phrases.lead} />{' '}
+          {/* 쉼표는 앞 항목 묶음 안에 둔다 — 묶음이 inline-block이라 묶음 밖에 두면 줄이 쉼표 앞에서 끊겨 쉼표가 줄 첫머리에 온다(QM2-5·QM2-10, 인용 박스와 같은 방법) */}
+          {side.phrases.items.map((item, i, all) => (
+            <Fragment key={item}>
+              {i > 0 ? ' ' : null}
+              <span className="keep-phrase">
+                <Glue text={i < all.length - 1 ? `${item},` : item} />
+              </span>
+            </Fragment>
+          ))}
+        </>
+      )}
+    </p>
+  );
+}
+
 function SlideView({ slide, index, count, active, gentle = false, open = false, onToggleVeil }: { slide: CarouselSlide; index: number; count: number; active: boolean; gentle?: boolean; open?: boolean; onToggleVeil?: () => void }) {
   const veilable = isVeilableSlide(slide, gentle);
   const veiled = veilable && !open;
-  const chart = slide.chart.kind === 'line' ? <LineChart chart={slide.chart} label={slide.chartLabel} /> : <BarChart chart={slide.chart} label={slide.chartLabel} />;
+  const chart = <SlideChartView chart={slide.chart} label={slide.chartLabel} />;
   const unit = slide.unitText !== '' ? <small className="slide__unit">{slide.unitText}</small> : null;
   // 표제어 아래 ~ 정의 줄 (가림 대상의 앞 묶음) — 공식 통계명·값·기준·그래프·범례·정의
   const top = (
@@ -90,9 +119,7 @@ function SlideView({ slide, index, count, active, gentle = false, open = false, 
         </p>
       ) : null}
       {slide.sideValues.map((v) => (
-        <p className="slide__side" data-testid="slide-side-value" key={v.name}>
-          <Glue text={v.text} />
-        </p>
+        <SideLine side={v} key={v.name} />
       ))}
       {slide.basisText !== null ? (
         <p className="slide__basis" data-testid="slide-basis-line">
@@ -101,13 +128,22 @@ function SlideView({ slide, index, count, active, gentle = false, open = false, 
       ) : null}
       {chart}
       {slide.chart.kind === 'bar' ? <BarTable chart={slide.chart} caption={`${slide.title} — 큰 값부터`} /> : null}
+      {slide.tables.map((t) => (
+        <SrTable table={t} key={t.caption} />
+      ))}
       {slide.legend.length >= 2 ? (
-        <ul className="legend" aria-label="그래프 범례와 최근 값">
+        <ul className="legend" aria-label={slide.legendLabel}>
           {slide.legend.map((l) => (
             <li key={l.key}>
-              <Swatch dash={l.dash} />
+              {l.rect === undefined ? <Swatch dash={l.dash} /> : <SwatchRect kind={l.rect} />}
               <span>
-                <Glue text={l.label} /> <strong>{l.valueText}</strong>
+                <Glue text={l.label} />
+                {l.valueText === '' ? null : (
+                  <>
+                    {' '}
+                    <strong>{l.valueText}</strong>
+                  </>
+                )}
               </span>
             </li>
           ))}
@@ -121,6 +157,12 @@ function SlideView({ slide, index, count, active, gentle = false, open = false, 
       <p className="t-sm t-muted">
         <Glue text={slide.definition} />
       </p>
+      {/* 「전망은 예측이 아니라 공식 추계입니다. …」 한 줄 (FC2): 정의 줄 아래, 출처 줄 위 — 칩(위)·점선(그래프)·이 줄(아래) 세 자리가 전망임을 되풀이한다 */}
+      {slide.projection !== null ? (
+        <p className="slide__projnote" data-testid="slide-projnote">
+          {slide.projection.note}
+        </p>
+      ) : null}
     </>
   );
   // 상담전화 안내 — 가림 대상이 아니다(SC6): 가린 슬라이드에서도 두 묶음 사이에 늘 보인다. 이름·번호·시간은 데이터(helpLine) 그대로
@@ -150,8 +192,17 @@ function SlideView({ slide, index, count, active, gentle = false, open = false, 
       data-testid="stat-slide"
       data-slide-id={slide.id}
       aria-roledescription="슬라이드"
-      aria-label={veiled ? `${index + 1}/${count} ${HEAVY_SLIDE_TEXT.readName}` : `${index + 1}/${count} ${slide.insight}, ${slide.officialText}`}
+      aria-label={veiled ? `${index + 1}/${count} ${HEAVY_SLIDE_TEXT.readName}` : slideReadName(slide, index, count)}
     >
+      {/* 「전망」 칩 (FC2): 표제어 위 첫 줄 — 색(놋쇠) + 글자 + 아이콘(점선 꺾은선) 세 겹, 색에만 기대지 않는다 */}
+      {slide.projection !== null ? (
+        <p className="slide__chips" data-testid="slide-chips">
+          <span className="chip chip--proj" data-testid="slide-chip">
+            <Icon name="i-proj" />
+            {slide.projection.chip}
+          </span>
+        </p>
+      ) : null}
       <h3 className="slide__insight">
         <Glue text={veiled ? HEAVY_SLIDE_TEXT.title : slide.insight} hideSeparator={veiled} />
       </h3>
@@ -196,7 +247,8 @@ export function StatsCarousel({ data, onChartSize, gentle = false }: { data: Car
   const pageHidden = usePageHidden();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
-  const auto = shouldAutoAdvance({ count, paused, hovering, focusWithin, reducedMotion: reduced, pageHidden });
+  // 가린 슬라이드를 「펼쳐 보기」로 연 동안은 자동 넘김도 멈춘다 — 읽는 중에 넘어가 다시 가려지지 않게(QI6·QI7 뒤 마스터 결정 ③). 상태라서 터치도 같고, 슬라이드를 떠나면(아래 효과) 펼침이 지워져 다시 돈다.
+  const auto = shouldAutoAdvance({ count, paused, hovering, focusWithin, reducedMotion: reduced, pageHidden, veilOpen: veilOpenId !== null });
   // 슬라이드가 그려지는 폭을 재서 부모에게 알린다: 첫 그림 전에 한 번(layout effect), 이후 크기가 바뀔 때마다.
   useIsoLayoutEffect(() => {
     const el = slidesRef.current;

@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { buildBasisDoc } from './basisDoc';
 import { buildLifeDataCsv, LIFE_ROWS } from './lifeDataCsv';
-import statsJson from '../src/data/koreaStats.json';
+// 예비 지표까지 합친 전체 데이터(첫 화면 묶음에서 뺀 지표도 근거 문서에 있다 — SPEC-005 QI4 2단계)
+import { FULL_STATS as statsJson } from '../src/data/koreaStatsFull';
 import citationsJson from '../src/data/citations.json';
 
 /**

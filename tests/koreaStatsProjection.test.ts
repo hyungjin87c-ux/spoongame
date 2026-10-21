@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import statsJson from '../src/data/koreaStats.json';
+// 예비 지표(첫 화면 묶음에서 뺀 4개 + 격차 measures)까지 합친 전체 데이터 — 모든 지표를 훑는 시험은 합친 쪽을 본다 (SPEC-005 QI4 2단계, src/data/koreaStatsFull.ts)
+import { FULL_STATS as statsJson } from '../src/data/koreaStatsFull';
 import basisDoc from '../docs/data/events-stats-basis.md?raw';
 import sourcesDoc from '../docs/data/korea-stats-sources.md?raw';
 import slidesDoc from '../docs/data/projection-slides-QI4.md?raw';
-import { CAROUSEL_ORDER, formatIndicatorValue, getCarouselIndicators, getUsableIndicator, getUsableIndicators, type RawIndicator } from '../src/data/koreaStatsAccess';
+import { CAROUSEL_ORDER, createStatsAccess, formatIndicatorValue, getCarouselIndicators, getUsableIndicator, getUsableIndicators, type RawIndicator, type StatsFile } from '../src/data/koreaStatsAccess';
+import { loadReserveStats } from '../src/data/koreaStatsReserve';
 import { STAT_HEADLINES } from '../src/data/statHeadlines';
 
 /**
@@ -11,7 +13,7 @@ import { STAT_HEADLINES } from '../src/data/statHeadlines';
  *  - 형식(PJ2): 보고서·발표 기관·발표일·기준 연도·지평·실측 경계·시나리오별 값·열람일·basisId
  *  - 일치: 같은 표에서 읽은 값끼리의 관계(연령 3구간 합·구성비·부양비·가구 비율)와 국가데이터처 보도자료 본문의 값, 기존 지표(future-projection·tfr·life-expectancy·elderly-poverty·single-household)와의 대조
  *  - 문장 속 수치: notes·definition에 적힌 소수 수치는 데이터 값과 같아야 한다
- *  - 캐러셀 미연결(use에 carousel 없음), 기존 지표 불변, 근거·수집 기록·제안표 문서의 연결
+ *  - 캐러셀 연결(QI4 2단계: 새 지표 9개 가운데 5개 + 폭염 = 20장, 예비 4개는 연결하지 않고 첫 화면 묶음에서 뺐다), 기존 지표 불변, 근거·수집 기록·제안표 문서의 연결
  * 값은 KOSIS 화면에서 읽은 그대로이고 지어낸 미래 수치는 0이다 — 이 시험은 읽은 값이 서로 맞는지와 문장이 값을 따르는지를 잠근다.
  */
 
@@ -44,6 +46,8 @@ type Ind = RawIndicator & {
 };
 
 const ALL = (statsJson as unknown as { indicators: Ind[] }).indicators;
+/** 예비 지표까지 합친 접근자 — 기본 접근자(getUsableIndicator 등)는 첫 화면 묶음의 지표만 돌려준다 */
+const FULL = createStatsAccess(statsJson as unknown as StatsFile);
 const get = (id: string): Ind => {
   const found = ALL.find((i) => i.id === id);
   if (!found) throw new Error(`지표 없음: ${id}`);
@@ -63,6 +67,9 @@ const NEWBORN = 'projection-newborn-age-structure';
 const GAP_IDS = ['income-gap-by-age', 'poverty-by-age-band'];
 const PROJ_IDS = [...PROJ.map((p) => p.id), NEWBORN];
 const NEW_IDS = [...PROJ_IDS, ...GAP_IDS];
+/** QI4 2단계에서 첫 화면 캐러셀에 연결한 새 지표 5개(마스터 결정 1 — 총인구 · 65세 이상 비율 · 1인 가구 · 아기 · 격차)와 연결하지 않은 예비 4개(예비 전망 3개 + 연령 세부 빈곤율) */
+const CONNECTED_IDS = ['projection-population-total', 'projection-aging-share', 'projection-newborn-age-structure', 'projection-one-person-households', 'income-gap-by-age'];
+const RESERVE_IDS = NEW_IDS.filter((id) => !CONNECTED_IDS.includes(id));
 
 const pts = (a: Pt[] | undefined): Pt[] => {
   if (!a) throw new Error('시리즈 없음');
@@ -105,18 +112,19 @@ describe('공식 전망 지표 — PJ2 형식 (보고서·발표 기관·발표�
     expect(ALL.slice(-9).map((i) => i.basisId)).toEqual(['s-092', 's-093', 's-094', 's-095', 's-096', 's-097', 's-098', 's-099', 's-100']);
   });
 
-  it('전망 지표 7개: kind projection · use future(캐러셀 아님) · 확인됨 · basisId', () => {
+  it('전망 지표 7개: kind projection · use future(캐러셀에 연결한 넷은 carousel 추가, 예비 셋은 future뿐) · 확인됨 · basisId', () => {
     for (const p of PROJ) {
       const i = get(p.id);
       expect(i.kind, p.id).toBe('projection');
-      expect(i.use, p.id).toEqual(['future']);
+      // SPEC-005 QI4 2단계(마스터 결정 1): 연결한 지표의 use에 carousel을 더했다(값은 불변) — 1단계의 「use는 future뿐」 단언을 「연결 여부에 따라」로 바꿨다
+      expect(i.use, p.id).toEqual(CONNECTED_IDS.includes(p.id) ? ['carousel', 'future'] : ['future']);
       expect(i.basisId, p.id).toBe(p.basisId);
       expect(i.usable, p.id).toBe(true);
       expect(i.verification.status, p.id).toBe('verified');
     }
     expect(get(NEWBORN).kind).toBe('projection');
     expect(get(NEWBORN).basisId).toBe('s-095');
-    expect(get(NEWBORN).use).toEqual(['future']);
+    expect(get(NEWBORN).use).toEqual(['carousel', 'future']); // 20번째 슬라이드(QI4 2단계)
   });
 
   it('PJ2 필드: 보고서·발표 기관(= 출처 기관)·발표일·발표 글 주소·기준 연도·지평·실측 경계·기본 시나리오·열람일', () => {
@@ -283,7 +291,9 @@ describe('같은 표에서 읽은 값끼리의 관계 — 연령 구조 (장래�
       }
     }
     expect(i.latest).toEqual({ year: 2056, value: 42.1 });
-    expect(i.latestLabel).toContain('30세가 되는 해');
+    // D5-74(QI4 2단계, REV-005-QI4-1 R-487): 캡션의 괄호 묶음 둘을 하나로 — 같은 낱말, 값 불변. 1단계의 「30세가 되는 해」 포함 단언을 새 글자로 바꿨다
+    expect(i.latestLabel).toBe('2026년에 태어난 아기가 30세가 되는 2056년, 65세 이상 인구 구성비(중위 추계)');
+    expect(i.latestLabel!.match(/\(/g)).toHaveLength(1);
   });
 
   it('지금 태어난 아기 지표의 행이 다른 지표와 같은 값이다: 총인구·65세 이상 구성비(세 추계), 15~64세 구성비·65세 이상 인구(중위)', () => {
@@ -483,16 +493,16 @@ describe('연령별 경제력 격차 지표 — 소득분배지표(연령계층�
     return x.series;
   };
 
-  it('income-gap-by-age: 기존 line 형식 — 단위 배, 소수 2자리, 2011~2024 14개 연도 연속, 큰 숫자 = 66세 이상 2024년, 캐러셀 아님', () => {
+  it('income-gap-by-age: 기존 line 형식 — 단위 배, 소수 2자리, 2011~2024 14개 연도 연속, 큰 숫자 = 66세 이상 2024년, 캐러셀 5번째 슬라이드(QI4 2단계)', () => {
     const i = g();
     expect(i.kind).toBe('line');
-    expect(i.use).toEqual(['research']);
+    expect(i.use).toEqual(['carousel', 'research']); // 2단계에서 carousel 추가(1단계는 research뿐이었다)
     expect(i.unit).toBe('배');
     expect(i.latestUnit).toBe('배');
     expect(i.decimals).toBe(2);
     expect(i.series!.map((p) => (p as Pt).year)).toEqual(YEARS(2011, 2024));
     expect(i.latest).toEqual({ year: 2024, value: 6.9 });
-    expect(formatIndicatorValue(getUsableIndicator('income-gap-by-age')!).text).toBe('6.90배');
+    expect(formatIndicatorValue(FULL.getUsableIndicator('income-gap-by-age')!).text).toBe('6.90배');
     expect(i.seriesLabel).toBe('66세 이상(은퇴연령인구)');
     expect(i.extraSeries).toHaveLength(1);
     expect(i.extraSeries![0].label).toBe('18~65세(근로연령인구)');
@@ -642,32 +652,56 @@ describe('문장 속 수치 — notes·definition의 소수 수치는 데이터 
   });
 });
 
-describe('캐러셀에는 연결하지 않았다 · 기존 지표 불변', () => {
-  it('새 지표 9개 모두 use에 carousel이 없고, 캐러셀 지표는 여전히 14개(CAROUSEL_ORDER 그대로)이다', () => {
-    for (const id of NEW_IDS) expect(get(id).use, id).not.toContain('carousel');
+describe('캐러셀 연결(QI4 2단계: 20장) · 예비 지표는 첫 화면 묶음 밖 · 기존 지표 불변', () => {
+  // 1단계의 「미연결」 단언(새 지표 9개 모두 use에 carousel 없음, 캐러셀 14개)은 지우지 않고 「연결됨·20개」로 바꿨다 — 마스터 결정 1(캐러셀 20개 채택, projection-slides-QI4.md)
+  it('새 지표 9개 가운데 연결한 5개만 use에 carousel이 있고(예비 4개는 없다), 캐러셀 지표는 20개(CAROUSEL_ORDER 그대로)이다', () => {
+    for (const id of CONNECTED_IDS) expect(get(id).use, id).toContain('carousel');
+    for (const id of RESERVE_IDS) expect(get(id).use, id).not.toContain('carousel');
     const ids = getCarouselIndicators().map((i) => i.id);
     expect(ids).toEqual([...CAROUSEL_ORDER]);
-    expect(ids).toHaveLength(14);
-    for (const id of NEW_IDS) expect(ids, id).not.toContain(id);
-    expect(getUsableIndicators('carousel')).toHaveLength(14);
+    expect(ids).toHaveLength(20);
+    for (const id of CONNECTED_IDS) expect(ids, id).toContain(id);
+    for (const id of RESERVE_IDS) expect(ids, id).not.toContain(id);
+    expect(ids, '폭염(기존 지표)도 연결됐다').toContain('heat-projection');
+    expect(getUsableIndicators('carousel')).toHaveLength(20);
+    // 마스터 결정 4: 합계출산율 전망과 future-projection은 캐러셀에 없다
+    expect(ids).not.toContain('projection-tfr');
+    expect(ids).not.toContain('future-projection');
   });
 
-  it('use future는 기존 둘(future-projection·heat-projection) + 새 전망 7개, use research에 격차 2개가 늘었다', () => {
-    const f = getUsableIndicators('future').map((i) => i.id);
-    expect(f).toEqual(expect.arrayContaining(['future-projection', 'heat-projection', ...PROJ_IDS]));
-    expect(f).toHaveLength(2 + PROJ_IDS.length);
-    const r = getUsableIndicators('research').map((i) => i.id);
+  it('use future는 기존 둘(future-projection·heat-projection) + 새 전망 7개, use research에 격차 2개가 늘었다 — 기본 접근자는 첫 화면 묶음의 것만(연결한 4개), 예비 3개·연령 세부 빈곤율은 전체 접근자에만', () => {
+    const all = FULL.getUsableIndicators('future').map((i) => i.id);
+    expect(all).toEqual(expect.arrayContaining(['future-projection', 'heat-projection', ...PROJ_IDS]));
+    expect(all).toHaveLength(2 + PROJ_IDS.length);
+    const r = FULL.getUsableIndicators('research').map((i) => i.id);
     expect(r).toEqual(expect.arrayContaining(GAP_IDS));
+    // 기본 접근자(앱이 쓰는 것)는 예비를 돌려주지 않는다 — 초기 로드 묶음에서 뺐다. 옛 전망 요약 future-projection(앱 코드가 id로 읽지 않는다)도 예비로 옮겼다
+    const base = getUsableIndicators('future').map((i) => i.id);
+    expect(base).toEqual(expect.arrayContaining(['heat-projection', ...PROJ_IDS.filter((id) => CONNECTED_IDS.includes(id))]));
+    expect(base).not.toContain('future-projection');
+    expect(base).toHaveLength(1 + PROJ_IDS.filter((id) => CONNECTED_IDS.includes(id)).length);
+    expect(getUsableIndicators('research').map((i) => i.id)).toEqual(expect.arrayContaining(['income-gap-by-age']));
+    expect(getUsableIndicators('research').map((i) => i.id)).not.toContain('poverty-by-age-band');
   });
 
-  it('접근자가 새 지표를 돌려준다(usable·verified·latest·source) — 값은 읽기 전용으로 쓴다', () => {
-    for (const id of NEW_IDS) {
+  it('접근자가 새 지표를 돌려준다(usable·verified·latest·source) — 연결한 5개는 기본 접근자가, 예비 4개는 불러온 전체 접근자(loadReserveStats)가 — 값은 읽기 전용으로 쓴다', async () => {
+    for (const id of CONNECTED_IDS) {
       const u = getUsableIndicator(id);
       expect(u, id).toBeDefined();
       expect(u!.usable).toBe(true);
       expect(u!.latest).not.toBeNull();
       expect(u!.source.accessedOn).toBe('2026-10-21');
     }
+    for (const id of RESERVE_IDS) expect(getUsableIndicator(id), `${id}: 첫 화면 묶음에 없다`).toBeUndefined();
+    const full = await loadReserveStats();
+    for (const id of RESERVE_IDS) {
+      const u = full.getUsableIndicator(id);
+      expect(u, `${id}: 지연 로드 접근자에는 있다`).toBeDefined();
+      expect(u!.usable).toBe(true);
+      expect(u!.source.accessedOn).toBe('2026-10-21');
+    }
+    expect(full.getUsableIndicator('income-gap-by-age')!.measures, '격차 measures도 지연 로드 쪽에 있다').toBeDefined();
+    expect(getUsableIndicator('income-gap-by-age')!.measures, '기본 접근자의 격차 지표에는 measures가 없다').toBeUndefined();
   });
 
   it('기존 지표의 대표 값이 그대로다(합계출산율 0.80, 노인빈곤율 37.7, 폭염일수 86.4, future-projection 7행)', () => {
@@ -688,15 +722,17 @@ describe('근거 문서·수집 기록·제안표 연결', () => {
     return basisDoc.slice(k, next < 0 ? undefined : next);
   };
 
-  it('근거 문서에 s-092~s-100 행이 있고 각 행의 수치 칸이 큰 숫자와 같으며, 「캐러셀에는 아직 연결하지 않음」이 적혀 있다', () => {
+  it('근거 문서에 s-092~s-100 행이 있고 각 행의 수치 칸이 큰 숫자와 같으며, 연결한 지표는 「캐러셀 N번째 슬라이드에 연결됨」, 예비는 「캐러셀에는 아직 연결하지 않음」이 적혀 있다', () => {
     for (const id of NEW_IDS) {
       const i = get(id);
       const b = block(i.basisId);
       const line = b.split('\n').find((l) => l.startsWith('- **수치**:'))!;
       expect(line, id).toContain(`${i.latest!.year}년`);
-      expect(line, id).toContain(formatIndicatorValue(getUsableIndicator(id)!).text);
+      expect(line, id).toContain(formatIndicatorValue(FULL.getUsableIndicator(id)!).text);
       expect(b, id).toContain('**상태**: **확인**');
-      expect(b, id).toContain('캐러셀에는 아직 연결하지 않음');
+      // 1단계의 「미연결」 단언을 「연결됨·20개」로 바꿨다(QI4 2단계, 마스터 결정 1): 연결한 지표는 슬라이드 번호가, 예비(첫 화면 묶음에서 뺌)는 미연결 글이 근거 행에 있다
+      if (CONNECTED_IDS.includes(id)) expect(b, id).toContain(`첫 화면 캐러셀 ${CAROUSEL_ORDER.indexOf(id) + 1}번째 슬라이드에 연결됨`);
+      else expect(b, id).toContain('캐러셀에는 아직 연결하지 않음(예비');
       expect(b, id).toContain(i.source!.url);
     }
   });
@@ -711,7 +747,7 @@ describe('근거 문서·수집 기록·제안표 연결', () => {
       const row = sec.split('\n').find((l) => l.startsWith(`| \`${id}\` |`));
       expect(row, `${id} 3.12절 행`).toBeDefined();
       expect(row, id).toContain(get(id).basisId);
-      expect(row, id).toContain(formatIndicatorValue(getUsableIndicator(id)!).text);
+      expect(row, id).toContain(formatIndicatorValue(FULL.getUsableIndicator(id)!).text);
     }
   });
 
@@ -752,8 +788,11 @@ describe('근거 문서·수집 기록·제안표 연결', () => {
         expect(text, text).not.toMatch(/[!！]/);
         for (const w of FORBIDDEN) expect(text, `${text} 금지어 ${w}`).not.toContain(w);
         expect(/[?요]$/.test(text), `${text} 질문형·해요체 끝`).toBe(true);
-        // 현재 캐러셀 표제어와 같은 글이 없다(SH2 ⑥ 중복 없음)
-        expect(Object.values(STAT_HEADLINES).map((h) => h.insight), text).not.toContain(text);
+        // 후보 가운데 STAT_HEADLINES에 있는 글은 마스터가 확정한 형진 님 문장 둘뿐이다(결정 6 「나이들수록 …」·M8 「지금 태어나는 아기라면?」) — 나머지 후보(버린 글)는 캐러셀 표제어와 겹치지 않는다(SH2 ⑥ 중복 없음).
+        // 1단계의 「후보는 어느 표제어와도 같지 않다」 단언은 2단계 연결로 확정된 둘에 한해 「있어야 한다」로 바뀌었다(제안표는 후보 문서라 글자는 그대로).
+        const adopted = ['나이들수록 또래들과 경제력 차이가 극심해져요', '지금 태어나는 아기라면?'];
+        if (adopted.includes(text)) expect(Object.values(STAT_HEADLINES).map((h) => h.insight), text).toContain(text);
+        else expect(Object.values(STAT_HEADLINES).map((h) => h.insight), text).not.toContain(text);
       }
     }
     expect(candidates).toBeGreaterThanOrEqual(11);
@@ -776,7 +815,7 @@ describe('근거 문서·수집 기록·제안표 연결', () => {
     for (const id of NEW_IDS) {
       const row = slidesDoc.split('\n').find((l) => l.startsWith(`| \`${id}\` |`));
       expect(row, id).toBeDefined();
-      expect(row, id).toContain(formatIndicatorValue(getUsableIndicator(id)!).text);
+      expect(row, id).toContain(formatIndicatorValue(FULL.getUsableIndicator(id)!).text);
     }
   });
 
@@ -804,9 +843,11 @@ describe('근거 문서·수집 기록·제안표 연결', () => {
     expect(ids.map((x) => x.n)).toEqual(YEARS(1, ids.length));
     expect(ids.length).toBeLessThanOrEqual(20);
     expect(ids.length).toBe(20);
-    const present = [...CAROUSEL_ORDER];
-    const expectedPresent = [...present.slice(0, present.indexOf('elderly-poverty') + 1), 'income-gap-by-age', ...present.slice(present.indexOf('elderly-poverty') + 1)];
-    expect(ids.slice(0, 15).map((x) => x.id)).toEqual(expectedPresent);
+    // QI4 2단계: 제안표 순서 = 실제 CAROUSEL_ORDER(20장) — 제안이 그대로 채택됐다(마스터 결정 1). 1단계는 「현재 14개에 격차를 끼운 것」을 CAROUSEL_ORDER(14개)에서 만들어 비교했는데,
+    // 이제 CAROUSEL_ORDER가 이미 그 순서라 앞 15개는 그대로 비교하고 격차가 elderly-poverty 바로 뒤라는 점을 따로 단언한다.
+    expect(ids.slice(0, 15).map((x) => x.id)).toEqual([...CAROUSEL_ORDER].slice(0, 15));
+    expect(CAROUSEL_ORDER[CAROUSEL_ORDER.indexOf('elderly-poverty') + 1]).toBe('income-gap-by-age');
+    expect(ids.map((x) => x.id)).toEqual([...CAROUSEL_ORDER]);
     expect(ids.slice(15).map((x) => x.id).sort()).toEqual(['heat-projection', 'projection-aging-share', 'projection-newborn-age-structure', 'projection-one-person-households', 'projection-population-total']);
     // 전망 슬라이드는 4~6개(M10)
     expect(ids.length - 15).toBeGreaterThanOrEqual(4);

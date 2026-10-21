@@ -7,7 +7,7 @@ import barReleaseSrc from '../src/ui/barRelease.ts?raw';
 import { BUILD_LABEL } from '../src/buildInfo';
 import { CAROUSEL_MAX_DOTS, SELECTABLE_LIFE_LENGTHS, buildCarousel, formatCount, virtualPopulation, type CarouselData, type Era, type LifeLength } from '../src/core';
 import { ERA_CONFIG } from '../src/data/birthTable';
-import { ICON_IDS, SPOON_IDS, SPOON_LG_IDS, SPRITE_SVG } from '../src/ui/brandAssets';
+import { ICON_IDS, PATTERN_IDS, SPOON_IDS, SPOON_LG_IDS, SPRITE_SVG } from '../src/ui/brandAssets';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../src/data/titleText';
 import { TitleScreen, type TitleSaved } from '../src/screens/TitleScreen';
 import { AUTO_ADVANCE_MS } from '../src/core';
@@ -103,6 +103,9 @@ describe('첫 화면 구성 (FS1)', () => {
 
   it('사용하는 아이콘·수저 스프라이트 id가 디자이너 자산에 모두 있다 (도형 내용은 점검하지 않는다)', () => {
     for (const id of [...ICON_IDS, ...SPOON_IDS, ...SPOON_LG_IDS]) expect(SPRITE_SVG, id).toContain(`id="${id}"`);
+    // QI4: 「전망」 칩 아이콘 i-proj(ICON_IDS)와 그래프 무늬 hatch·dots(PATTERN_IDS)도 스프라이트에 있다 — 차트 CSS의 fill: url(#hatch|#dots)가 이 한 곳을 가리킨다
+    for (const id of PATTERN_IDS) expect(SPRITE_SVG, id).toContain(`<pattern id="${id}"`);
+    expect(ICON_IDS).toContain('i-proj');
   });
 
   it('이전의 「시작」 버튼과 시대 선택 화면은 없다', () => {
@@ -333,14 +336,18 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
   const html = render();
   const data = buildCarousel();
 
-  it('모든 슬라이드가 마크업에 있고(전환은 보이기/숨기기), 첫 슬라이드가 현재이며, 위치는 「1 / 14」 한 줄이다. 지표가 6개 이상이면 점은 그리지 않는다(R-133). 슬라이드의 이름은 「n/N 표제어, 공식 통계명(기준)」이다(SH3)', () => {
+  it('모든 슬라이드가 마크업에 있고(전환은 보이기/숨기기), 첫 슬라이드가 현재이며, 위치는 「1 / 20」 한 줄이다. 지표가 6개 이상이면 점은 그리지 않는다(R-133). 슬라이드의 이름은 「n/N 표제어, 공식 통계명(기준)」이다(SH3)', () => {
     expect(html.match(/data-testid="stat-slide"/g)?.length).toBe(data.slides.length);
     expect(html.match(/class="slide is-active"/g)?.length).toBe(1);
     expect(data.slides.length).toBeGreaterThan(CAROUSEL_MAX_DOTS);
     expect(html).not.toContain('data-testid="carousel-dots"');
     expect(html).not.toMatch(/data-testid="carousel-dot-\d+"/);
     expect(html).toContain(`aria-label="1/${data.slides.length} ${data.slides[0].insight}, ${data.slides[0].officialText}"`); // 「1/14 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)」
-    expect(html).toContain('aria-label="1/14 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)"');
+    expect(html).toContain('aria-label="1/20 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)"'); // QI4 2단계: 14 → 20
+    // 전망 슬라이드의 이름에는 「전망,」이 든다 — 칩 글자뿐 아니라 이름에도 있어 색·아이콘 없이도 전한다 (FC2, copy.md 14-1)
+    expect(html).toContain('aria-label="16/20 전망, 앞으로 인구는 어떻게 달라질까?, 장래인구추계 총인구(2023년 발표, 2022년 기준, 중위 추계)"');
+    expect(html).toContain('aria-label="20/20 전망, 지금 태어나는 아기라면?, 장래인구추계 인구 구조·부양비(2023년 발표, 2022년 기준, 중위 추계)"');
+    expect(html).toContain('aria-label="5/20 나이들수록 또래들과 경제력 차이가 극심해져요, 연령계층별 소득 5분위배율(2024년)"');
     expect(html).toContain(`data-testid="carousel-count" aria-hidden="true">1 / ${data.slides.length}<`);
   });
 
@@ -407,10 +414,13 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(render({ carousel: { ...data, slides: data.slides.slice(0, 1) } })).not.toContain('data-testid="carousel-dots"');
   });
 
-  it('막대 그래프(시·도별)는 값 16~17개 전부를 시각적으로 숨긴 표로도 준다 — 선 그래프에는 표가 없다 (R-207)', () => {
+  it('막대 그래프(시·도별)는 값 16~17개 전부를 시각적으로 숨긴 표로도 준다 — 보통 선 그래프에는 표가 없다 (R-207) · QI4: 격차 2011~2024·폭염 권역 6곳·아기 5행도 숨긴 표로 준다', () => {
     const bars = data.slides.filter((s) => s.chart.kind === 'bar');
     expect(bars.map((s) => s.id)).toEqual(expect.arrayContaining(['region-population-registered', 'tfr-by-sido']));
-    expect(html.match(/data-testid="chart-table"/g)?.length).toBe(bars.length);
+    // 시·도 막대 둘의 표 + 새 슬라이드의 그래프 밖 표(격차 1·폭염 1·아기 1) — 전망 선 그래프 셋과 보통 선 그래프에는 표가 없다
+    const srTables = data.slides.filter((s) => s.tables.length > 0);
+    expect(srTables.map((s) => s.id)).toEqual(['income-gap-by-age', 'heat-projection', 'projection-newborn-age-structure']);
+    expect(html.match(/data-testid="chart-table"/g)?.length).toBe(bars.length + srTables.reduce((n, s) => n + s.tables.length, 0));
     for (const slide of bars) {
       if (slide.chart.kind !== 'bar') throw new Error('bar');
       const start = html.indexOf(`data-slide-id="${slide.id}"`);
@@ -450,7 +460,8 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     }
     // 연도만 있던 기준 줄은 없다 — 분모가 있는 둘(조사망률·자살률)만 기준 줄이 남는다
     expect(html.match(/data-testid="slide-basis-line"/g)?.length).toBe(2);
-    expect(text(html.replace(/<caption>[^<]*<\/caption>/g, ''))).not.toMatch(/\d{4}년 기준(?!\()/); // (숨긴 표의 캡션은 지표 이름 그대로라 뺀다)
+    // 전망 슬라이드의 공식 통계명 줄 「(2023년 발표, 2022년 기준, 중위 추계)」의 「2022년 기준」은 연도만 있던 옛 기준 줄이 아니다 — 뒤에 쉼표나 닫는 괄호가 오는 꼴만 허용한다(QI4 2단계, 가구추계는 시나리오 칸이 없어 「2022년 기준)」로 끝난다)
+    expect(text(html.replace(/<caption>[^<]*<\/caption>/g, ''))).not.toMatch(/\d{4}년 기준(?![(,)])/); // (숨긴 표의 캡션은 지표 이름 그대로라 뺀다)
     expect(html.match(/data-testid="slide-basis"/g)?.length).toBe(data.slides.length);
   });
 
@@ -544,9 +555,10 @@ describe('2회차 보완 화면 문구 (SPEC-003 QM2-10·QM2-11, REV-003-M2-3 R-
   const html = render();
   const data = buildCarousel();
 
-  it('푸터 통계 출처 줄은 쉼표 나열이다: 「통계 출처: 국가데이터처, 행정안전부, 교육부 (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」 — 기관 이름 사이에 「·」가 없다 (QM2-10 b)', () => {
+  it('푸터 통계 출처 줄은 쉼표 나열이다: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 통계청(현 국가데이터처), 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」 — 기관 이름 사이에 「·」가 없다 (QM2-10 b · QI4 2단계: 3곳 → 7곳)', () => {
     const credit = html.slice(html.indexOf('data-testid="stats-credit"'), html.indexOf('data-testid="population-info"'));
-    expect(text(credit)).toContain('통계 출처: 국가데이터처, 행정안전부, 교육부 (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
+    // 1단계까지의 기대 글자(국가데이터처, 행정안전부, 교육부 — 3곳)를 슬라이드 20장에서 모인 7곳으로 바꿨다(tests/glue.test.ts 「실제 푸터」와 같은 글자)
+    expect(text(credit)).toContain('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 통계청(현 국가데이터처), 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
     expect(plain(credit)).toContain(footerStatsText(data.orgs));
     for (const org of data.orgs) expect(plain(credit).includes(`${org} ·`) || plain(credit).includes(`· ${org}`), `${org} 앞뒤의 「·」`).toBe(false);
   });
@@ -562,12 +574,14 @@ describe('2회차 보완 화면 문구 (SPEC-003 QM2-10·QM2-11, REV-003-M2-3 R-
     expect(slide, '혼인 건수는 분모가 없어 기준 줄이 없다').not.toContain('data-testid="slide-basis-line"');
     expect(text(slide)).toContain('혼인 건수·조혼인율(2025년)');
     expect(slide, '선 무늬(범례)가 아니다').not.toContain('class="legend"');
-    expect(html.match(/data-testid="slide-side-value"/g)?.length, '14장 중 보조 값 줄은 하나').toBe(1);
+    // 기존 14장 중 보조 값 줄은 혼인 건수의 하나, QI4의 새 여섯 장은 격차 2 + 총인구 1 + 65세 이상 2 + 1인 가구 1 + 폭염 1 + 아기 1 = 8줄 (보조 줄은 새 슬라이드의 값 설명·한계)
+    expect(html.match(/data-testid="slide-side-value"/g)?.length, '보조 값 줄 = 혼인 건수 1 + QI4 새 슬라이드 8').toBe(1 + 8);
+    expect(data.slides.filter((s) => !['income-gap-by-age', 'projection-population-total', 'projection-aging-share', 'projection-one-person-households', 'heat-projection', 'projection-newborn-age-structure'].includes(s.id)).flatMap((s) => s.sideValues)).toHaveLength(1);
   });
 
-  it('「통계 기준」 줄의 짧은 쌍은 <Pair>로 그려진다 — 14장 전부. 기준 줄은 분모만 남아 쌍이 아니다(SPEC-005 copy.md 9-2: 「인구 10만 명당 · 2025년 기준」 → 「인구 10만 명당」 + 공식 통계명 줄 「자살률(2025년)」) (QM2-10 규칙 3)', () => {
+  it('「통계 기준」 줄의 짧은 쌍은 <Pair>로 그려진다 — 20장 전부(전망은 「발표: … · 마지막 갱신 …」). 기준 줄은 분모만 남아 쌍이 아니다(SPEC-005 copy.md 9-2: 「인구 10만 명당 · 2025년 기준」 → 「인구 10만 명당」 + 공식 통계명 줄 「자살률(2025년)」) (QM2-10 규칙 3)', () => {
     expect(html.match(/class="pair pair--basis"/g)?.length ?? 0).toBe(0);
-    expect(html.match(/class="pair pair--meta"/g)?.length).toBe(14);
+    expect(html.match(/class="pair pair--meta"/g)?.length).toBe(20); // QI4 2단계: 14 → 20
     const start = html.indexOf('data-slide-id="suicide-rate"');
     const slide = html.slice(start, html.indexOf('</article>', start));
     expect(text(slide)).toContain('27.8 명');

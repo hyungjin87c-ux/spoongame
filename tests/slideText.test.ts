@@ -4,7 +4,7 @@ import { checkSlideDom, type ExpectedSlide, type SlideDom } from '../e2e/slideTe
 import { buildCarousel } from '../src/core';
 
 /**
- * 화면 DOM 글자 판정기(e2e/slideText.ts#checkSlideDom)가 실제로 잡는지 직접 만든 DOM 측정값으로 본다 — 판정기가 아무것도 못 잡으면 e2e/slide-text.spec.ts(14장 × 폭 3 × 글자 2)가 의미가 없다.
+ * 화면 DOM 글자 판정기(e2e/slideText.ts#checkSlideDom)가 실제로 잡는지 직접 만든 DOM 측정값으로 본다 — 판정기가 아무것도 못 잡으면 e2e/slide-text.spec.ts(20장 × 폭 3 × 글자 2)가 의미가 없다.
  * 이 e2e는 단위 테스트(tests/carousel.test.ts: 모델의 글자)가 못 보는 「화면이 그 글자를 실제로 그리는가」를 본다(REV-003-M2-3 R-231, SPEC-003 QM2-4 c·QM2-11 c).
  */
 
@@ -137,8 +137,94 @@ describe('화면 글자 판정기 checkSlideDom: 잡아야 할 것을 잡는다'
   });
 });
 
+// ---------- QI4 2단계: 형식 E(연령별 격차)와 P(공식 전망)를 판정기가 본다 ----------
+
+const gap: SlideDom = {
+  id: 'income-gap-by-age',
+  insight: '나이들수록 또래들과 경제력 차이가 극심해져요',
+  official: '연령계층별 소득 5분위배율(2024년)',
+  captions: ['같은 나이대 안에서 소득 상위 20%가 하위 20%의 몇 배인지(균등화 처분가능소득)'],
+  valueLines: [
+    { label: '66세 이상', text: '6.90배', unit: '배' },
+    { label: '18~65세', text: '5.01배', unit: '배' },
+  ],
+  sideLines: ['2011~2024년 모든 해에 66세 이상의 격차가 18~65세보다 큽니다.', '같은 나이대 안의 소득 격차는 18~65세와 66세 이상 두 구간으로 공표됩니다. 더 잘게 나눈 나이 구간의 값은 없습니다.'],
+  basisLines: [],
+  statLines: ['통계 기준: 2024년 · 마지막 갱신 2026-10-21'],
+  legend: [],
+  metas: [],
+  definition: '소득 5분위배율은 소득 상위 20% 계층의 평균소득을 하위 20% 계층의 평균소득으로 나눈 값입니다.',
+  chartTexts: ['2024년', '66세 이상', '6.90배', '18~65세', '5.01배'],
+  all: '나이들수록 또래들과 경제력 차이가 극심해져요\n연령계층별 소득 5분위배율(2024년)\n66세 이상 6.90배\n18~65세 5.01배\n2011~2024년 모든 해에 66세 이상의 격차가 18~65세보다 큽니다.\n같은 나이대 안의 소득 격차는 18~65세와 66세 이상 두 구간으로 공표됩니다. 더 잘게 나눈 나이 구간의 값은 없습니다.\n2024년\n66세 이상\n6.90배\n18~65세\n5.01배',
+};
+const gapExpected: ExpectedSlide = {
+  id: 'income-gap-by-age',
+  insight: gap.insight,
+  officialText: gap.official,
+  year: 2024,
+  chartKind: 'bars',
+  projection: null,
+  scopeLabel: null,
+  titleIndicators: [{ name: '연령계층별 소득 5분위배율', kind: 'main', valueText: '6.90배', valueGlyph: '6.90배' }],
+  sideTexts: gap.sideLines,
+};
+
+const NOTE = '전망은 예측이 아니라 공식 추계입니다. 가정이 달라지면 값도 달라집니다.';
+const population: SlideDom = {
+  id: 'projection-population-total',
+  insight: '앞으로 인구는 어떻게 달라질까?',
+  official: '장래인구추계 총인구(2023년 발표, 2022년 기준, 중위 추계)',
+  captions: ['2072년 총인구(중위 추계)'],
+  valueLines: [{ label: null, text: '36,222,293명', unit: '명' }],
+  sideLines: ['2072년 고위 추계(최대인구) 42,818,632명, 저위 추계(최소인구) 30,172,383명'],
+  basisLines: [],
+  statLines: ['발표: 2023-12-14 · 마지막 갱신 2026-10-21'],
+  legend: ['확정 1960~2022 51,672,569명', '전망 2023~2072(중위) 36,222,293명', '고위(최대인구)~저위(최소인구) 추계 범위'],
+  metas: [],
+  chips: ['전망'],
+  projNotes: [NOTE],
+  definition: '장래인구추계의 총인구입니다.',
+  chartTexts: ['1960', '2022', '2072', '3,622만', '고위', '저위'],
+  all: '전망\n앞으로 인구는 어떻게 달라질까?\n장래인구추계 총인구(2023년 발표, 2022년 기준, 중위 추계)\n36,222,293명\n2072년 고위 추계(최대인구) 42,818,632명, 저위 추계(최소인구) 30,172,383명',
+};
+const populationExpected: ExpectedSlide = {
+  id: 'projection-population-total',
+  insight: population.insight,
+  officialText: population.official,
+  year: 2072,
+  chartKind: 'line',
+  projection: { chip: '전망', note: NOTE, releasedOn: '2023-12-14' },
+  scopeLabel: null,
+  titleIndicators: [{ name: '장래인구추계(2022년 기준): 총인구', kind: 'main', valueText: '36,222,293명', valueGlyph: '36,222,293명' }],
+  sideTexts: population.sideLines,
+};
+
+describe('화면 글자 판정기 checkSlideDom: 형식 E(연령별 격차)·P(공식 전망) — QI4 2단계', () => {
+  it('올바른 격차 화면(값 둘 배 · 보조 문장 둘 · 기준 줄 없음)과 올바른 전망 화면(칩 「전망」 · 발표·기준 연도 통계명 줄 · 한 줄 안내 · 「발표: …」 기준 줄)이 통과한다', () => {
+    expect(check(gap, gapExpected)).toEqual([]);
+    expect(check(population, populationExpected)).toEqual([]);
+  });
+
+  it('형식 E: 값 라벨이 66세 이상·18~65세가 아니거나 단위가 배가 아니거나 보조 문장이 둘이 아니면 걸린다', () => {
+    expect(check({ ...gap, valueLines: [{ label: '남자', text: '6.90배', unit: '배' }, gap.valueLines[1]] }, gapExpected).some((p) => p.includes('형식 E 값 라벨'))).toBe(true);
+    expect(check({ ...gap, valueLines: [{ label: '66세 이상', text: '6.90명', unit: '명' }, gap.valueLines[1]] }, gapExpected).some((p) => p.includes('형식 E 값이 「…배」가 아니다'))).toBe(true);
+    expect(check({ ...gap, sideLines: [gap.sideLines[0]] }, { ...gapExpected, sideTexts: [gap.sideLines[0]] }).some((p) => p.includes('형식 E 보조 문장이 둘이 아니다'))).toBe(true);
+  });
+
+  it('형식 P: 칩이 없거나 글자가 다르거나, 한 줄 안내가 모델과 다르거나, 기준 줄이 「발표: …」가 아니거나, 통계명 줄이 발표·기준 연도 꼴이 아니면 걸린다 · 전망이 아닌 슬라이드에 칩이 있어도 걸린다', () => {
+    expect(check({ ...population, chips: [] }, populationExpected).some((p) => p.includes('전망 칩 글자'))).toBe(true);
+    expect(check({ ...population, chips: ['예상'] }, populationExpected).some((p) => p.includes('전망 칩 글자'))).toBe(true);
+    expect(check({ ...population, projNotes: [] }, populationExpected).some((p) => p.includes('전망 한 줄 안내'))).toBe(true);
+    expect(check({ ...population, statLines: ['통계 기준: 2072년 · 마지막 갱신 2026-10-21'] }, populationExpected).some((p) => p.includes('전망 기준 줄 모양'))).toBe(true);
+    expect(check({ ...population, official: '장래인구추계 총인구(2072년)' }, { ...populationExpected, officialText: '장래인구추계 총인구(2072년)' }).some((p) => p.includes('공식 전망 통계명 줄 모양'))).toBe(true);
+    expect(check({ ...marriage, chips: ['전망'] }, marriageExpected).some((p) => p.includes('전망이 아닌 슬라이드에 칩이 있다'))).toBe(true);
+    // 발표일이 기준 줄에 없으면 걸린다
+    expect(check({ ...population, statLines: ['발표: 2022-01-01 · 마지막 갱신 2026-10-21'] }, populationExpected).some((p) => p.includes('발표일 2023-12-14이 없다'))).toBe(true);
+  });
+});
+
 describe('e2e의 형식표·금지 패턴은 단위 테스트(모델)와 같은 것을 쓴다', () => {
-  it('SLIDE_FORMS의 키는 실제 캐러셀 14장의 id와 정확히 같다 (새 지표가 형식 없이 들어오지 못한다)', () => {
+  it('SLIDE_FORMS의 키는 실제 캐러셀 20장의 id와 정확히 같다 (새 지표가 형식 없이 들어오지 못한다 — QI4 2단계: 14장 → 20장)', () => {
     expect(Object.keys(SLIDE_FORMS).sort()).toEqual(
       buildCarousel()
         .slides.map((s) => s.id)

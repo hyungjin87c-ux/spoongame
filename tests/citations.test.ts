@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import citationsJson from '../src/data/citations.json';
-import statsJson from '../src/data/koreaStats.json';
+// 예비 지표(첫 화면 묶음에서 뺀 4개 + 격차 measures)까지 합친 전체 데이터 — 모든 지표를 훑는 시험은 합친 쪽을 본다 (SPEC-005 QI4 2단계, src/data/koreaStatsFull.ts)
+import { FULL_STATS as statsJson } from '../src/data/koreaStatsFull';
 import basisDoc from '../docs/data/events-stats-basis.md?raw';
 import { EVENT_POOL } from '../src/data/events';
 import { NOTE_CARDS } from '../src/data/noteCards';
-import { getUsableIndicator } from '../src/data/koreaStatsAccess';
+import { createStatsAccess } from '../src/data/koreaStatsAccess';
 import { usedByIndex } from '../src/core/citations';
 
 /**
@@ -478,7 +479,9 @@ describe('문장 속 모든 수치 토큰 ↔ refs·파생값·원문 서술 매
   });
 
   it('refs가 가리키는 지표는 usable이고 접근자로 돌려받을 수 있다(미확인 지표·하위 항목 참조 금지)', () => {
-    for (const c of CITES) for (const r of c.refs) expect(getUsableIndicator(r.indicator), `${c.id} → ${r.indicator}`).toBeDefined();
+    // 인용이 가리키는 지표는 근거 수집용(research) 지표라 첫 화면 묶음 밖(예비)에 있다 — 예비까지 합친 접근자로 본다(SPEC-005 QI4 2단계)
+    const full = createStatsAccess(statsJson);
+    for (const c of CITES) for (const r of c.refs) expect(full.getUsableIndicator(r.indicator), `${c.id} → ${r.indicator}`).toBeDefined();
   });
 
   it('서술 단언: 「가장」「처음」「늘었」「줄었」「커졌」「올랐」「낮았」「넘었」이 있는 문장에는 assertions가 있고 데이터로 다시 확인된다', () => {

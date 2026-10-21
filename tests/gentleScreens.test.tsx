@@ -8,6 +8,7 @@ import {
   heavyKindOfEntry,
   heavyKindOfEvent,
   playToEnd,
+  slideReadName,
   stepYear,
   type EndingGame,
   type GameState,
@@ -497,7 +498,8 @@ describe('첫 화면 자살률 슬라이드 (HV7, REV-005-HV-1 7절)', () => {
       const html = articleOf(on, s.id);
       expect(html, s.id).not.toContain('slide__veil-btn');
       expect(html, s.id).not.toContain('slide__veiled');
-      expect(html, s.id).toContain(`aria-label="${data.slides.indexOf(s) + 1}/${data.slides.length} ${s.insight}, ${s.officialText}"`);
+      // 슬라이드의 이름은 「n/N 표제어, 공식 통계명」, 전망 슬라이드는 「n/N 전망, …」(slideReadName) — QI4 2단계에서 전망 5장이 더해졌다
+      expect(html, s.id).toContain(`aria-label="${slideReadName(s, data.slides.indexOf(s), data.slides.length)}"`);
     }
   });
 

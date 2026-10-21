@@ -61,7 +61,7 @@ async function hideBottomBar(page: Page): Promise<void> {
   await page.addStyleTag({ content: '[data-testid="bottom-bar"] { visibility: hidden !important; }' });
 }
 
-/** 첫 화면 캐러셀의 현재 순서 「3 / 14」 */
+/** 첫 화면 캐러셀의 현재 순서 「3 / 20」 */
 const countText = (page: Page) => page.getByTestId('carousel-count').innerText();
 const slideCount = async (page: Page): Promise<number> => page.getByTestId('stat-slide').count();
 const activeSlideId = (page: Page) => page.evaluate(() => document.querySelector('.slide.is-active')?.getAttribute('data-slide-id') ?? '');
@@ -555,7 +555,7 @@ test('캐러셀(SC1·SC2): 지표 10개 이상, 요청의 5개 포함, 슬라이
   await expect(first.locator('.slide__official')).toHaveText('합계출산율(2025년)'); // 공식 통계명(기준) 줄(SH3) — 연도만 있던 기준 줄은 없다
   await expect(first.getByTestId('slide-value')).toHaveText('0.80');
   await expect(first.getByTestId('slide-basis-line')).toHaveCount(0);
-  await expect(first).toContainText('출처: 국가데이터처, 2025년 출생 통계');
+  await expect(first).toContainText('출처: 국가데이터처의 2025년 출생 통계'); // 기관 나열 + 「의」 + 표 이름 (D5-66, R-487)
   await expect(first).toContainText('(2026-10-15 조회)');
   await expect(first).toContainText('합계출산율은 한 여자가 가임 기간');
   await expect(first.getByTestId('slide-basis')).toHaveText(/^통계 기준: 2025년 · 마지막 갱신 \d{4}-\d{2}-\d{2}$/); // 슬라이드마다 「통계 기준·마지막 갱신」(SC4)
@@ -572,7 +572,7 @@ test('캐러셀(SC1·SC2): 지표 10개 이상, 요청의 5개 포함, 슬라이
   expect(visible).toBe(1);
 });
 
-test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는 「3 / 14」 한 줄, 지표가 6개 이상이면 점이 없다(R-133), 끝에서는 반대쪽으로 돈다', async ({ page }) => {
+test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는 「3 / 20」 한 줄, 지표가 6개 이상이면 점이 없다(R-133), 끝에서는 반대쪽으로 돈다', async ({ page }) => {
   await page.goto('/');
   const n = await slideCount(page);
   await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀린 뒤
@@ -584,7 +584,7 @@ test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는
   expect(await countText(page)).toBe(`${n} / ${n}`); // 처음에서 이전 → 마지막
   await page.getByTestId('carousel-next').click();
   expect(await countText(page)).toBe(`1 / ${n}`);
-  // 지표가 많으면(14개) 점을 그리지 않는다 — 점 10개가 두 줄로 꺾이던 문제(R-133). 위치는 「n / N」 한 줄로 보인다
+  // 지표가 많으면(20개) 점을 그리지 않는다 — 점 10개가 두 줄로 꺾이던 문제(R-133). 위치는 「n / N」 한 줄로 보인다
   expect(n).toBeGreaterThan(5);
   await expect(page.getByTestId('carousel-dots')).toHaveCount(0);
   await expect(page.locator('[data-testid^="carousel-dot-"]')).toHaveCount(0);
@@ -646,7 +646,8 @@ test('캐러셀 자동 전환(SC5): 9초마다 다음 슬라이드, 포인터가
   // 포인터가 올라가면 정지
   await carousel.scrollIntoViewIfNeeded(); // 좁은 화면에서는 캐러셀이 아래에 있다
   const box = (await carousel.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + 60);
+  // 좁은 화면에서는 카드가 창보다 높아(20장: 360×740에서 약 970px) 가운데로 스크롤하면 카드 위끝이 화면 밖이다 — 보이는 부분 안의 점을 고른다
+  await page.mouse.move(box.x + box.width / 2, Math.max(box.y, 0) + 60);
   await expect(carousel).toHaveAttribute('data-autoplay', 'off');
   await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'polite'); // 포인터로 멈췄으면 직접 넘길 때 읽는다(R-205)
   await tick(page, 20_000);
@@ -813,7 +814,7 @@ test('캐러셀 모든 슬라이드: 조작 줄(이전·다음·일시정지)은
       // 오른쪽 열(폭 ≥ 960): 카드 높이는 보이는 슬라이드만큼이다(R-200) — 짧은 슬라이드 아래에 빈 칸이 없다. 아래 내용은 열이 달라 흔들리지 않는다.
       expect(heights.size, `${w}px 카드 높이가 슬라이드마다 같다(고정 높이 해제가 안 됐다): ${[...heights]}`).toBeGreaterThan(3);
     }
-    // 점은 없고(지표 14개, R-133) 위치 「n / N」은 한 줄이다(두 줄로 꺾이지 않는다)
+    // 점은 없고(지표 20개, R-133) 위치 「n / N」은 한 줄이다(두 줄로 꺾이지 않는다)
     await expect(page.getByTestId('carousel-dots')).toHaveCount(0);
     const countRows = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="carousel-count"]')!;

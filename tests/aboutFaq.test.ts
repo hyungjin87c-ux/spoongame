@@ -20,7 +20,7 @@ import { JOURNEY_BAR_LEGEND } from '../src/data/endingText';
 import { ECONOMY } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
 import { VEIL_TEXT } from '../src/data/gentleText';
-import { getUsableIndicator } from '../src/data/koreaStatsAccess';
+import { BASE_STATS_FILE, getUsableIndicator } from '../src/data/koreaStatsAccess';
 import { NAMES } from '../src/data/names';
 import { ALL_SELF_FROM_AGE, CHILD_FLOW_TEXT, FAMILY_NEED_BASE, PARENT_DECIDED_TEXT, SELF_FROM_AGE } from '../src/data/parentDecisionTable';
 import { LIFE_LENGTH_TEXT, POPULATION_BASIS, TITLE_TEXT, footerStatsText } from '../src/data/titleText';
@@ -185,14 +185,25 @@ describe('소개 Q&A: 근거 대응 (FQ3 — 주장 ⇔ 코드·시험)', () => 
     expect(a[3]).toContain('인용은 통계나 연구의 요약이고, 선택을 권하거나 말리지 않아요');
   });
 
-  it('Q3 「전망 카드는 예측이 아니라 공식 기관의 추계」 ⇔ 전망 슬라이드(QI4) — 전망 슬라이드가 병합된 뒤(QI8)부터 이 시험이 켜진다', () => {
-    const hasProjection = buildCarousel().slides.some((s) => /전망/.test(s.officialText));
-    if (!hasProjection) {
-      // 지금 작업 사본에는 전망 슬라이드가 없다 — 문구는 확정 문구 그대로이고(위 시험), 게재 조건(N5: 한 번에 배포)은 QI8에서 마스터가 대조한다
-      expect(byId('numbers').answer[3]).toContain('「전망」 카드는 예측이 아니라 공식 기관의 추계예요.');
-      return;
+  /**
+   * Q3 「전망 카드는 예측이 아니라 공식 기관의 추계」 ⇔ 전망 슬라이드 (SPEC-005 QI6·QI7 뒤 마스터 결정 ⑤: QI4 2단계에서 이 시험 분기가 켜지는지 확인한다).
+   * 전에는 「공식 통계명에 전망이 든 슬라이드가 있으면」으로 분기해, 전망 슬라이드가 병합돼도 공식 통계명에 「전망」이 든 폭염 한 장만으로 통과했다(분기가 실제로 켜지는지 알 수 없었다).
+   * 지금은 슬라이드 모델의 전망 표시(`projection`)를 본다: 전망 슬라이드 5장이 있고(분기 ON), 소개 Q3 문장과 슬라이드 한 줄 안내가 같은 뜻(예측이 아니라 공식 추계)을 말한다.
+   */
+  it('Q3 「전망 카드는 예측이 아니라 공식 기관의 추계」 ⇔ 전망 슬라이드(QI4) — 전망 슬라이드 5장이 있어 분기가 켜지고, 소개 문장과 슬라이드 한 줄 안내가 같은 뜻이다', () => {
+    const projection = buildCarousel().slides.filter((s) => s.projection !== null);
+    expect(projection.map((s) => s.id), '전망 슬라이드 5장 — 분기가 켜졌다(공허 통과 방지)').toHaveLength(5);
+    // 소개 Q3의 문장은 확정 문구 그대로이고 (「전망」 카드 = 칩 「전망」이 붙은 슬라이드)
+    const q3 = byId('numbers').answer[3];
+    expect(q3).toContain('「전망」 카드는 예측이 아니라 공식 기관의 추계예요.');
+    for (const s of projection) {
+      expect(q3, '소개 문장이 부르는 이름 「전망」이 슬라이드 칩 글자와 같다').toContain(`「${s.projection!.chip}」 카드`);
+      // 슬라이드 한 줄 안내도 같은 뜻: 예측이 아니라 공식 추계
+      expect(s.projection!.note, s.id).toMatch(/예측이 아니라 공식 추계/);
     }
-    expect(buildCarousel().slides.filter((s) => /전망/.test(s.officialText)).length).toBeGreaterThanOrEqual(1);
+    // 분기가 꺼진 데이터에서는 이 시험이 걸린다: 전망 지표를 모두 뺀 데이터로 만든 캐러셀에는 전망 카드가 없다(그러면 위 5장 단언이 실패한다)
+    const noProjection = { ...BASE_STATS_FILE, indicators: BASE_STATS_FILE.indicators.filter((i) => i.kind !== 'projection' && i.id !== 'heat-projection') };
+    expect(buildCarousel(noProjection).slides.filter((s) => s.projection !== null)).toHaveLength(0);
   });
 
   it('Q4 가상 인구 계산 기준 ⇔ 푸터 populationInfo와 같은 상수(POPULATION_BASIS) · 근거 통계(주민등록 인구의 기준 연월·1/1000·출생·사망 통계 연도) · 서버와 통신하지 않음 e2e', () => {

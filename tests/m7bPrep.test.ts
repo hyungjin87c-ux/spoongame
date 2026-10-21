@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import citationsJson from '../src/data/citations.json';
-import statsJson from '../src/data/koreaStats.json';
+// 근거 수집용(research) 지표는 첫 화면 묶음 밖(예비)에 있다 — 합친 전체 데이터와 접근자를 본다 (SPEC-005 QI4 2단계, src/data/koreaStatsFull.ts)
+import { FULL_STATS as statsJson } from '../src/data/koreaStatsFull';
 import basisDoc from '../docs/data/events-stats-basis.md?raw';
 import sourcesDoc from '../docs/data/korea-stats-sources.md?raw';
 import { EVENT_POOL } from '../src/data/events';
-import { getUsableIndicator } from '../src/data/koreaStatsAccess';
+import { createStatsAccess, type StatsFile } from '../src/data/koreaStatsAccess';
 
 /**
  * M7b 준비 2차 수집 검증 — R-01~R-14·P-01a~P-04 수집분, 파생 N-1~N-4, 손질 S-1·S-3·S-4·S-5·S-6, R-181 (2026-10-19).
@@ -45,6 +46,7 @@ interface Cite {
   source: { org: string; title: string; year: number; url?: string };
 }
 const INDS = (statsJson as unknown as { indicators: Ind[] }).indicators;
+const getUsableIndicator = createStatsAccess(statsJson as unknown as StatsFile).getUsableIndicator;
 const FILE = citationsJson as unknown as { citations: Cite[]; unverifiedCandidates: Array<{ id: string; title: string; basisId: string; reason: string; usable: boolean }> };
 const CITES = FILE.citations;
 const ind = (id: string): Ind => {

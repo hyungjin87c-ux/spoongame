@@ -13,7 +13,7 @@ export const AUTO_MS = 9_000;
 /** 「한 주기 안에 넘어간다」를 보는 시간 = 주기 + 1초 여유 */
 export const CYCLE_MS = AUTO_MS + 1_000;
 
-/** 캐러셀의 현재 순서 「3 / 14」 */
+/** 캐러셀의 현재 순서 「3 / 20」 */
 export const countText = (page: Page): Promise<string> => page.getByTestId('carousel-count').innerText();
 
 export const slideCount = (page: Page): Promise<number> => page.getByTestId('stat-slide').count();
