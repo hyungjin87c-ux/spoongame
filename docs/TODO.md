@@ -337,6 +337,11 @@
   - [ ] SPEC-004 GM0 때 창고 항목을 연표(TL)·세대 콘텐츠(GD4)·일반 사연(story-motifs) 후보로 나누는 표(planner) — 첫 묶음 세대마다 사연 10개 안팎
   - [ ] `check:motifs`·overlap 점검이 창고의 받은 글(`00_받은글/`)도 대조하게 확장(developer, SPEC-004 착수 때)
   - [ ] 반영 모양 넷: 시대 디테일 문장 · 새 사연·결정 카드 · 기존 카드 문장 다양화(형편·시대·나이별) · 나이대별 역사 체험 줄
+- [ ] 디자인 다듬기(AI 티) — v0.2.0 뒤, design-taste 스킬 inspect·lint 결과 기준(REV-005-B1-1 R-493 designer 회차 로그 4절, 마스터 2026-10-21)
+  - [ ] 첫 화면 작은 글자 비율(`tiny-text` 약 65%가 12px) — 위계를 지키며 본문 13~14px로, HS3 배치 재측정과 함께
+  - [ ] 캐러셀 조작 버튼의 색 상자 아이콘(`icon-chips`), 360 폭 빈 공간(`blank-gap`) 원인 요소 찾기
+  - [ ] 카드·서류 그림자(`.card --shadow-1`·`.doc --shadow-2`)를 면의 톤 단계로 바꿀지, 쓰지 않는 `--font-mono` 토큰 삭제
+  - 규칙: inspect `--allow gradient,heavy-shadow,covered-text,palette-cream,heavy-borders`는 확정 토큰·형진 님 결정(일러스트 가장자리)·조작 요소 경계(WCAG 1.4.11)·하단 띠/대화상자 때문에 쓸 수 있으나, 쓸 때마다 design 로그에 이유를 적는다
 - [ ] SPEC-006 경제 현실성(전세·매매·월세, 대출 이자·상환 일정, 차·보험 등) [2차 ③] — 요청 6항, SPEC-004 확정 뒤 초안
 - [ ] SPEC-007 기록·추억·소장(자세한 사망 기록·인생 지도·건강·소득·재산 그래프·추억 여행·인생 카드·인생 기록 이미지(오리지널 일러스트)·돌아보기 단락·기억할 순간·자녀들의 삶, 서버 없이 무료 — 결제·추모관은 나중) [2차 ④] — 요청 8·9항, 그림체 시안 2~3개는 형진 님께 단계별로 여쭤 정교화
 - [x] M9 검증·QA·배포 확인 — **1차 릴리스 선언 2026-10-20(태그 v0.1.0)** — 근거: 아래 하위 항목, docs/review/REV-003-M9-2.md, qa/reports/QA-003-M9.md, docs/data/time-measure-M8.md, docs/data/realdevice-checklist-M9.md
