@@ -98,7 +98,7 @@ describe('전망 선 그래프 (총인구 · 65세 이상 구성비 · 1인 가�
     }
   });
 
-  it('고위~저위 띠: 총인구·65세 이상 구성비만(시나리오가 하나인 가구추계는 없다) — 띠 면 + 가장자리 점선 둘 + 끝 글자 「고위」「저위」(11px 연한 글씨, 중위 끝값과 12.9 이상 벌어짐)', () => {
+  it('고위~저위 띠: 총인구·65세 이상 구성비만(시나리오가 하나인 가구추계는 없다) — 띠 면 + 가장자리 점선 둘 + 끝 글자 「고위」「저위」(12px 연한 글씨, 중위 끝값과 12.9 이상 벌어짐)', () => {
     expect(line('projection-one-person-households').band).toBeNull();
     expect(line('projection-one-person-households').labels.some((l) => l.tone === 'range')).toBe(false);
     for (const id of ['projection-population-total', 'projection-aging-share']) {

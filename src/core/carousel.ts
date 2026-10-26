@@ -12,7 +12,7 @@ import {
 import { STAT_HEADLINES } from '../data/statHeadlines';
 import { heatProjectionInput } from '../data/heatProjectionAdapter';
 import { buildGapSlide, buildHeatSlide, buildNewbornSlide, buildProjectionLineSlide, canDrawGap, canDrawNewborn, canDrawProjectionLine } from './slideForms';
-import { LABEL_GAP, LEGEND_LABEL_LINE, PAD, bareName, labelRect, rectsOverlap, round1, segmentHitsRect, sourceOrgsOf, sourceTextOf, spreadY, yearPoints, type Rect } from './slideKit';
+import { LABEL_GAP, LEGEND_LABEL_LINE, PAD, bareName, currentOrgName, labelRect, rectsOverlap, round1, segmentHitsRect, sourceOrgsOf, sourceTextOf, spreadY, yearPoints, type Rect } from './slideKit';
 
 /**
  * 한국 사회 통계 캐러셀의 슬라이드 모델과 동작 규칙 (SPEC-003 SC1~SC7). 모두 순수 함수라 React 없이 단위 테스트한다.
@@ -24,7 +24,7 @@ import { LABEL_GAP, LEGEND_LABEL_LINE, PAD, bareName, labelRect, rectsOverlap, r
  * 두 파일이 함께 쓰는 작은 계산 도구는 `slideKit.ts`(이 파일이 이름을 그대로 다시 내보낸다).
  */
 
-export { bareName, estimateLabelWidth, labelRect, segmentHitsRect, sourceOrgsOf, spreadY, valueWidthEm, type Rect } from './slideKit';
+export { bareName, currentOrgName, estimateLabelWidth, labelRect, segmentHitsRect, sourceOrgsOf, spreadY, valueWidthEm, type Rect } from './slideKit';
 
 // ---------- 동작 규칙 (SC5) ----------
 
@@ -96,7 +96,7 @@ export interface ChartLabel {
   text: string;
   anchor: 'start' | 'middle' | 'end';
   bold: boolean;
-  /** 글자 모양(전망 그래프, FC2): `range` = 띠 끝 「고위」「저위」(11px 연한 글씨) · `split` = 경계선 위 「확정 | 전망」(11px). 없으면 보통 값 글자 */
+  /** 글자 모양(전망 그래프, FC2): `range` = 띠 끝 「고위」「저위」(12px 연한 글씨) · `split` = 경계선 위 「확정 | 전망」(12px). 없으면 보통 값 글자 */
   tone?: 'range' | 'split';
 }
 
@@ -686,7 +686,10 @@ export function buildSlide(ind: UsableIndicator, updatedOn?: string, size: Chart
 
 export interface CarouselData {
   slides: CarouselSlide[];
-  /** 슬라이드에 쓰인 출처 기관 이름(중복 없이, 슬라이드 순서대로) */
+  /**
+   * 슬라이드에 쓰인 출처 기관 이름(중복 없이, 슬라이드 순서대로) — 푸터 출처 줄과 소개 Q3가 쓴다. **현재 이름**이다(R-488: 「통계청(현 국가데이터처)」는 「국가데이터처」로 모여 한 번만 나온다).
+   * 슬라이드마다 붙는 출처 줄(`sourceText`)은 발행 당시 이름 그대로다(마스터 결정 3).
+   */
   orgs: string[];
 }
 
@@ -698,7 +701,10 @@ export function buildCarousel(file?: StatsFile, size: ChartSize = DEFAULT_CHART_
     const slide = buildSlide(ind, file?.meta.updatedOn, size);
     if (slide === null) continue;
     slides.push(slide);
-    for (const org of sourceOrgsOf(ind.source.org)) if (!orgs.includes(org)) orgs.push(org);
+    for (const raw of sourceOrgsOf(ind.source.org)) {
+      const org = currentOrgName(raw);
+      if (!orgs.includes(org)) orgs.push(org);
+    }
   }
   return { slides, orgs };
 }

@@ -95,3 +95,29 @@ export async function heavyRowsOf(page: Page, game: GameState): Promise<HeavyRow
     { history: game.history },
   );
 }
+
+/**
+ * 기록 카드 `cardId`가 **지금 뜰 차례인** 일시정지한 인생 (R-490 — 기록 카드 ⑤ `note-illness`·⑥ `note-parents-aging`). 시드를 늘려 가며 선택지는 자동으로 풀고, 앞서 뜰 차례가 된 다른 카드는 소비(`consumeNote`)해 넘겨
+ * 대상 카드가 처음 뜰 차례가 되는 해에서 멈춘다. 그대로 주입하면 로드와 동시에 기록 시트가 열린다(새로고침 복원과 같은 경로, e2e/m7cStates.ts#dueState와 같은 방법).
+ */
+export async function noteDueState(page: Page, cardId: string): Promise<GameState> {
+  const s = await evalCore<GameState | null>(
+    page,
+    `for (let seed = 1; seed <= 1500; seed++) {
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       for (let guard = 0; guard < 900 && s.phase === 'life'; guard++) {
+         if (s.pending !== null) { s = core.autoResolveStep(s, s.pending.key).state; continue; }
+         const due = core.dueNote(s);
+         if (due !== null) {
+           if (due.id === arg.cardId) return { ...s, paused: true };
+           s = core.consumeNote(s, due);
+         }
+         s = core.stepYear(s).state;
+       }
+     }
+     return null;`,
+    { cardId },
+  );
+  expect(s, `${cardId}: 뜰 차례인 인생을 찾지 못했다`).not.toBeNull();
+  return withoutPlay(s!);
+}

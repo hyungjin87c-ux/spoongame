@@ -28,8 +28,21 @@ function newToken(): string {
   return `${Math.round(typeof performance === 'undefined' ? 0 : performance.now())}-${tokenSeq}`;
 }
 
+/** 닫기 요청 처분: `ignore` 이미 되돌리는 중이라 무시 · `back` history를 한 걸음 되돌리고 popstate를 기다림 · `close` 되돌릴 항목이 없어 바로 닫음 */
+export type CloseDecision = 'ignore' | 'back' | 'close';
+
+/**
+ * 닫기 요청의 처분 (R-491). `history.back()`은 비동기라 popstate가 오기 전에는 현재 항목에 표식이 그대로 남아 있다 — 「닫기」 더블클릭·Esc 연타로 요청이 겹치면
+ * 표식만 보고 `back()`을 또 불러 두 걸음 뒤로 가 앱 밖으로 나갈 수 있었다. 그래서 **되돌리는 중**이면 두 번째 요청을 무시한다(`closing`).
+ */
+export function decideCloseRequest(closing: boolean, marked: boolean): CloseDecision {
+  if (closing) return 'ignore';
+  return marked ? 'back' : 'close';
+}
+
 /**
  * 패널이 마운트된 동안의 history 처리. 돌려주는 함수가 「닫기 요청」이다(닫기 버튼·Esc가 부른다): 표식이 있으면 `history.back()`으로 항목을 되돌리고 popstate가 `onClosed`를 부른다.
+ * 되돌리는 동안(popstate나 보호 시간이 오기 전)에 온 닫기 요청은 무시한다(R-491) — 닫기 길이 몇 번 눌려도 history는 한 걸음만 간다.
  * `onClosed`는 여러 번 불려도 안전해야 한다(popstate와 보호 시간이 둘 다 올 수 있다).
  */
 export function useInfoPanelHistory(onClosed: () => void): () => void {
@@ -38,6 +51,8 @@ export function useInfoPanelHistory(onClosed: () => void): () => void {
   const closed = useRef(onClosed);
   closed.current = onClosed;
   const timer = useRef<number | null>(null);
+  /** `history.back()`을 불렀고 popstate(또는 보호 시간)가 아직 오지 않았다 */
+  const closing = useRef(false);
 
   useEffect(() => {
     const t = token.current as string;
@@ -46,7 +61,10 @@ export function useInfoPanelHistory(onClosed: () => void): () => void {
       const base = isObj(window.history.state) ? window.history.state : {};
       window.history.pushState({ ...base, [PANEL_STATE_KEY]: t }, '');
     }
-    const onPop = () => closed.current();
+    const onPop = () => {
+      closing.current = false;
+      closed.current();
+    };
     window.addEventListener('popstate', onPop);
     return () => {
       window.removeEventListener('popstate', onPop);
@@ -56,12 +74,19 @@ export function useInfoPanelHistory(onClosed: () => void): () => void {
 
   return useCallback(() => {
     const t = token.current as string;
-    if (typeof window !== 'undefined' && hasPanelMark(window.history.state, t)) {
-      window.history.back();
-      if (timer.current !== null) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => closed.current(), BACK_FALLBACK_MS);
-    } else {
+    const marked = typeof window !== 'undefined' && hasPanelMark(window.history.state, t);
+    const decision = decideCloseRequest(closing.current, marked);
+    if (decision === 'ignore') return;
+    if (decision === 'close') {
       closed.current();
+      return;
     }
+    closing.current = true;
+    window.history.back();
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      closing.current = false;
+      closed.current();
+    }, BACK_FALLBACK_MS);
   }, []);
 }

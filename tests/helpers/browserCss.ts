@@ -46,9 +46,12 @@ function supportsDeclaration(property: string, value: string, features: BrowserF
   return !CQ_UNIT.test(value);
 }
 
-/** `@supports` 조건 평가. 이 저장소가 쓰는 꼴 `[not] (속성: 값)` 하나만 푼다 — 다른 꼴(and/or/중첩)은 조용히 틀리지 않도록 던진다 */
+/**
+ * `@supports` 조건 평가. 이 저장소가 쓰는 꼴 `[not] (속성: 값)` 하나만 푼다 — 다른 꼴(and/or/중첩 조건)은 조용히 틀리지 않도록 던진다.
+ * 값 안의 함수 호출 한 겹은 값의 일부다(R-489: `(height: clamp(1px, 2px, 3px))` — title.css의 낮은 창 그림 높이 규칙). 컨테이너 질의를 모르는 브라우저(Safari 16 미만)도 `clamp()`는 지원하므로(Safari 13.1+) 참이다.
+ */
 export function evaluateSupports(condition: string, features: BrowserFeatures): boolean {
-  const m = /^\s*(not\s+)?\(\s*([a-z-]+)\s*:\s*([^()]+?)\s*\)\s*$/i.exec(condition);
+  const m = /^\s*(not\s+)?\(\s*([a-z-]+)\s*:\s*((?:[^()]|\([^()]*\))+?)\s*\)\s*$/i.exec(condition);
   if (m === null) throw new Error(`browserCss: 지원하지 않는 @supports 조건: ${condition.trim()}`);
   const supported = supportsDeclaration(m[2], m[3], features);
   return m[1] === undefined ? supported : !supported;

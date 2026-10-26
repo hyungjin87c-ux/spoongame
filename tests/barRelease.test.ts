@@ -156,8 +156,11 @@ describe('강제 색상(고대비)에서 띠 구분선 (QA-003-M2 3회차 기록
     const code = css.replace(/\/\*[\s\S]*?\*\//g, ''); // 주석을 뺀 코드만
     // SPEC-005 QI3: 캐러셀 조작 버튼의 hover(`.nav-btn:hover .nav-btn__box`)가 더해졌다 — 색을 토큰 쌍(면 --c-surface-2 / 글자 --c-text)으로만 정해 강제 색상에서 시스템 색 한 짝(Canvas / CanvasText)으로 매핑된다
     // (배경과 글자가 같은 색이 되는 일이 없다 — 주 버튼처럼 forced-color-adjust: none으로 색을 직접 쥐지 않는다)
-    expect([...code.matchAll(/:hover/g)].length, ':hover를 쓴 곳(주석 제외) — 보통 모드 2(주 버튼 · 조작 버튼 상자) + 강제 색상 블록(주 버튼 hover 규칙 두 줄)').toBe(4);
+    // R-493(REV-005-B1-1, diff-005 D5-76): 정보 패널의 행(버전·질문)에 hover 때 면 한 단(`summary:hover`, 선택자 둘이 한 규칙)이 더해졌다 — 4곳 → 6곳(`:hover` 글자 수). 배경만 바꾸고 글자색은 정하지 않아
+    // 강제 색상에서 UA가 배경을 지워도 글자가 사라지지 않는다(아래 단언이 `color` 선언이 없음을 못 박는다) — 그래서 강제 색상 블록에 짝을 따로 두지 않는다.
+    expect([...code.matchAll(/:hover/g)].length, ':hover를 쓴 곳(주석 제외) — 보통 모드 2(주 버튼 · 조작 버튼 상자) + 정보 패널 행 규칙(선택자가 둘이라 2) + 강제 색상 블록(주 버튼 hover 규칙 두 줄 = 2)').toBe(6);
     expect(code).toContain('.nav-btn:hover .nav-btn__box { background: var(--c-surface-2); color: var(--c-text); }');
+    expect(code).toContain('.info__ver > summary:hover, .faq__item > summary:hover { background: var(--c-surface-2); }');
   });
 });
 

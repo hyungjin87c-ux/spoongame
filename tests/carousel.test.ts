@@ -26,6 +26,7 @@ import {
   segmentHitsRect,
   pointerCountsAsHover,
   showDots,
+  currentOrgName,
   sourceOrgsOf,
   splitUnit,
   spreadY,
@@ -34,6 +35,7 @@ import {
   valueWidthEm,
   type LineChartModel,
 } from '../src/core';
+import { sourceTextOf } from '../src/core/slideKit';
 import { SLIDE_FORMS, UNIT_WORD, forbiddenIn } from '../e2e/carouselForms';
 import { CAROUSEL_ORDER, createStatsAccess, formatNumber, formatWithUnit, type RawIndicator, type StatsFile } from '../src/data/koreaStatsAccess';
 import { TITLE_TEXT } from '../src/data/titleText';
@@ -225,11 +227,35 @@ describe('실제 캐러셀: 지표 목록·표기 (SC1·SC2)', () => {
 
   it('출처 기관: 국가데이터처·행정안전부·교육부 등 슬라이드에 쓰인 기관이 중복 없이 모인다 (푸터 표기)', () => {
     expect(data.orgs).toEqual(expect.arrayContaining(['국가데이터처', '행정안전부', '교육부']));
-    // QI4 2단계: 격차 지표의 한국은행·금융감독원, 공식 전망의 발표 당시 명칭 「통계청(현 국가데이터처)」, 폭염의 기상청도 푸터 기관 목록에 모인다
-    expect(data.orgs).toEqual(expect.arrayContaining(['한국은행', '금융감독원', '통계청(현 국가데이터처)', '기상청(국립기상과학원)']));
+    // QI4 2단계: 격차 지표의 한국은행·금융감독원, 폭염의 기상청도 푸터 기관 목록에 모인다.
+    // R-488: 공식 전망의 발표 당시 명칭 「통계청(현 국가데이터처)」는 현재 이름 「국가데이터처」로 모여 한 번만 나온다(옛 단언: 목록에 「통계청(현 국가데이터처)」가 따로 있다). 슬라이드 출처 줄의 발행 당시 이름은 그대로다.
+    expect(data.orgs).toEqual(expect.arrayContaining(['한국은행', '금융감독원', '기상청(국립기상과학원)']));
+    expect(data.orgs.filter((o) => o === '국가데이터처')).toHaveLength(1);
+    expect(data.orgs.some((o) => o.includes('통계청') || o.includes('(현 ')), '옛 이름·「(현 …)」 꼴이 목록에 없다 (R-488)').toBe(false);
     expect(new Set(data.orgs).size).toBe(data.orgs.length);
     // 「국가데이터처·교육부」는 나눠서 센다
     expect(data.orgs.every((o) => !o.includes('·'))).toBe(true);
+  });
+
+  it('R-488 기관 이름 정규화(currentOrgName 한 곳): 「(현 …)」 꼴만 현재 이름으로 바꾸고, 푸터 기관 목록(orgs)은 그것으로 모으되 슬라이드 출처 줄은 발행 당시 이름 그대로다', () => {
+    // 규칙 한 곳: 「통계청(현 국가데이터처)」 → 「국가데이터처」, 그 밖의 이름은 그대로(괄호가 소속 기관을 알리는 이름도 그대로)
+    expect(currentOrgName('통계청(현 국가데이터처)')).toBe('국가데이터처');
+    expect(currentOrgName(' 통계청(현 국가데이터처) ')).toBe('국가데이터처');
+    expect(currentOrgName('국가데이터처')).toBe('국가데이터처');
+    expect(currentOrgName('기상청(국립기상과학원)')).toBe('기상청(국립기상과학원)');
+    expect(currentOrgName('한국은행')).toBe('한국은행');
+    // 데이터 전체: 슬라이드 기관(발행 당시 이름)을 모두 현재 이름으로 바꾼 것이 orgs와 같다(순서·중복 제거 포함) — 정규화를 빼면(변이) 「통계청(현 국가데이터처)」가 남아 실패한다
+    const expected: string[] = [];
+    for (const ind of selectCarouselIndicators()) {
+      for (const o of sourceOrgsOf(ind.source.org)) if (!expected.includes(currentOrgName(o))) expected.push(currentOrgName(o));
+    }
+    expect(data.orgs).toEqual(expected);
+    expect(data.orgs).toEqual(['국가데이터처', '한국은행', '금융감독원', '행정안전부', '교육부', '기상청(국립기상과학원)']);
+    // 같은 기관이 두 이름으로 나오지 않는다: 목록의 어느 이름도 다른 이름의 「(현 …)」 안에 있지 않고, 목록 밖에 「(현 …)」 꼴이 없다
+    for (const o of data.orgs) expect(data.orgs.some((other) => other !== o && other.includes(o)), `${o}: 다른 이름 안에 들어 있는 이름`).toBe(false);
+    // 슬라이드 출처 줄은 발행 당시 이름 그대로다(마스터 결정 3)
+    expect(byId('projection-population-total').sourceText.startsWith('통계청(현 국가데이터처)의 ')).toBe(true);
+    for (const s of data.slides.filter((x) => x.projection !== null)) expect(s.sourceText, s.id).toBe(sourceTextOf({ source: raw(s.id).source! }));
   });
 
   it('평가·논평 문구와 느낌표가 없다 (정의와 값만, SC2·정치적 중립)', () => {

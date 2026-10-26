@@ -138,6 +138,73 @@ test.describe('닫기 셋: Esc · 「닫기」 · 뒤로가기 (NT5)', () => {
   });
 });
 
+test.describe('닫기 요청이 겹쳐도 history는 한 걸음만 되돌아간다 (R-491)', () => {
+  /**
+   * 「닫기」 더블클릭·Esc 연타처럼 닫기 요청이 `history.back()`이 끝나기 전에 다시 오면, 고치기 전에는 표식이 아직 남아 있어 `back()`이 두 번 불려 두 걸음 뒤로 갔다(앱 밖으로 나갈 수 있음).
+   * 두 걸음 뒤가 눈에 보이게 열기 전 history에 구별되는 항목(`/?before-panel`)을 하나 둔다 — 그 항목으로 가면 주소가 바뀌고 문서가 새로 로드돼 창에 심어 둔 표시도 사라진다.
+   * 요청이 겹치는 순간을 확실히 만들려고 같은 JS 작업 안에서 두 번 누르는 변형(popstate는 작업이 끝나야 오므로 겹침이 항상 일어난다)과, 사람이 하는 더블클릭·연타 변형을 둘 다 돈다.
+   */
+  const OVERLAPS = {
+    '「닫기」 더블클릭': (page: Page) => page.getByTestId('info-close').dblclick(),
+    '「닫기」를 같은 작업 안에서 두 번 눌러': (page: Page) =>
+      page.evaluate(() => {
+        const b = document.querySelector('[data-testid="info-close"]') as HTMLButtonElement;
+        b.click();
+        b.click();
+      }),
+    'Esc 연타(키 두 번)': async (page: Page) => {
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+    },
+    'Esc를 같은 작업 안에서 두 번 눌러': (page: Page) =>
+      page.evaluate(() => {
+        for (let i = 0; i < 2; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      }),
+    '「닫기」와 Esc를 같은 작업 안에서 섞어': (page: Page) =>
+      page.evaluate(() => {
+        (document.querySelector('[data-testid="info-close"]') as HTMLButtonElement).click();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      }),
+  } as const;
+
+  for (const [name, overlap] of Object.entries(OVERLAPS)) {
+    for (const which of ['news', 'intro'] as const) {
+      test(`${name} ${which === 'news' ? '「새 소식」' : '「소개」'} 패널을 닫으면 한 걸음만 되돌아가 주소 /와 첫 화면이 유지된다`, async ({ page }) => {
+        await page.goto('/?before-panel');
+        await openTitle(page);
+        const origin = new URL(page.url()).origin;
+        await page.evaluate(() => {
+          (window as unknown as { __panelTestMark?: number }).__panelTestMark = 1;
+        });
+        const link = page.getByTestId(`link-${which}`);
+        await link.click();
+        await expect(panel(page)).toBeVisible();
+        await overlap(page);
+        await expect(panel(page)).toHaveCount(0);
+        // 늦게 오는 두 번째 뒤로 가기가 있다면 이 시간 안에 주소·문서를 바꾼다 (보호 시간 500ms보다 길게)
+        await page.waitForTimeout(900);
+        expect(page.url(), '주소는 / 그대로(앞 항목 /?before-panel이나 about:blank로 가지 않았다)').toBe(`${origin}/`);
+        expect(await page.evaluate(() => (window as unknown as { __panelTestMark?: number }).__panelTestMark), '같은 문서가 살아 있다(새로 로드되지 않았다)').toBe(1);
+        await expect(page.getByTestId('title-screen')).toBeVisible();
+        expect(await page.evaluate(() => (history.state as { suzeoInfoPanel?: string } | null)?.suzeoInfoPanel), '표식이 걷혔다(한 걸음 되돌렸다)').toBeUndefined();
+        if (name !== '「닫기」 더블클릭') {
+          await expect.poll(() => activeTestId(page)).toBe(`link-${which}`);
+        }
+        // (사람의 더블클릭은 포커스를 보지 않는다: 첫 클릭으로 패널이 걷힌 뒤 둘째 클릭이 「닫기」가 있던 자리 뒤의 요소 — 캐러셀 뷰포트나 빈 바탕 — 에 떨어져 포커스를 가져간다.
+        // 포커스가 링크로 돌아온 뒤 둘째 클릭이 옮긴 것이라 앱이 틀린 것이 아니다. 키보드·같은 작업 안 변형은 링크로 돌아와야 한다.)
+        // 그 뒤에도 정상: 다시 열고 한 번 닫아도 같은 자리, 앞 항목으로 가지 않는다
+        await link.click();
+        await expect(panel(page)).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(panel(page)).toHaveCount(0);
+        await page.waitForTimeout(300);
+        expect(page.url()).toBe(`${origin}/`);
+        expect(await page.evaluate(() => (window as unknown as { __panelTestMark?: number }).__panelTestMark)).toBe(1);
+      });
+    }
+  }
+});
+
 test.describe('「새」 표시와 notesSeen (NT4, 설정 v5)', () => {
   test('본 적이 없으면 「새 소식」 옆에 「새」 알약(색 + 글자)이 뜨고, 패널을 열면 사라지며 notesSeen이 지금 버전으로 저장되어 새로고침 뒤에도 없다', async ({ page }) => {
     await openTitle(page);
@@ -243,6 +310,155 @@ test.describe('소개 Q&A와 의견 보내기 (FQ1·N2)', () => {
     expect(popup.url()).toBe(href);
     await popup.close();
     await expect(panel(page)).toBeVisible(); // 패널은 그대로
+  });
+});
+
+/**
+ * 한 줄 구분 목록 (REV-005-B1-1 R-493, diff-005 D5-76·D5-77): 정보 패널의 1px 테두리 상자(버전 2 · 질문 10 · 종류 칩 16)를 걷고 행 사이 한 줄 + 글자 칸으로 바꿨다.
+ * 상자가 사라진 뒤에도 「누를 수 있다」는 표시가 남는지(꺾쇠 · 44px 행 · hover 면 · 포커스 링 · 강제 색상의 구분줄)와 구분줄이 정말 행 사이에만 있는지를 계산된 스타일로 본다.
+ * 색은 토큰(`--c-border` · `--c-text-2` · `--c-surface-2`)을 화면에서 풀어 비교한다 — 색 값을 글자로 박지 않으니 라이트·다크 어느 쪽에서도 같은 단언이다.
+ */
+test.describe('한 줄 구분 목록 (R-493·D5-77)', () => {
+  /** 토큰·시스템 색을 이 화면에서 푼 색(rgb 글자) */
+  const resolveColor = (page: Page, value: string): Promise<string> =>
+    page.evaluate((v) => {
+      const el = document.createElement('span');
+      el.style.color = v;
+      document.body.appendChild(el);
+      const c = getComputedStyle(el).color;
+      el.remove();
+      return c;
+    }, value);
+
+  interface RowStyle {
+    top: string;
+    topColor: string;
+    others: number;
+    radius: string;
+    height: number;
+    chevronW: string;
+    chevronColor: string;
+    bg: string;
+  }
+  /** 같은 부류(`.info__ver` 또는 `.faq__item`) 행들의 계산된 스타일 */
+  const rowsOf = (page: Page, selector: string): Promise<RowStyle[]> =>
+    page.evaluate((sel) => {
+      return [...document.querySelectorAll(sel)].map((item) => {
+        const cs = getComputedStyle(item);
+        const summary = item.querySelector('summary') as HTMLElement;
+        const before = getComputedStyle(summary, '::before');
+        return {
+          top: cs.borderTopWidth,
+          topColor: cs.borderTopColor,
+          others: parseFloat(cs.borderRightWidth) + parseFloat(cs.borderBottomWidth) + parseFloat(cs.borderLeftWidth),
+          radius: cs.borderTopLeftRadius,
+          height: summary.getBoundingClientRect().height,
+          chevronW: before.borderRightWidth,
+          chevronColor: before.borderRightColor,
+          bg: getComputedStyle(summary).backgroundColor,
+        };
+      });
+    }, selector);
+
+  test('상자 테두리가 없다: 버전 2·질문 10·종류 글자 칸 어느 것도 네 변이 모두 테두리가 아니고, 행 사이에만 1px 구분줄이 있다 (첫 행은 없음)', async ({ page }) => {
+    await openTitle(page);
+    await page.getByTestId('link-news').click();
+    await expect(panel(page)).toBeVisible();
+    const boxes = await page.evaluate(() => {
+      const sides = ['top', 'right', 'bottom', 'left'];
+      const isBox = (el: Element) => {
+        const cs = getComputedStyle(el);
+        return sides.every((s) => parseFloat(cs.getPropertyValue(`border-${s}-width`)) >= 1 && cs.getPropertyValue(`border-${s}-style`) !== 'none');
+      };
+      const all = [...document.querySelectorAll('.info__ver, .faq__item, .note-kind')];
+      return { total: all.length, boxed: all.filter(isBox).length, kinds: document.querySelectorAll('.note-kind').length, kindBorders: [...document.querySelectorAll('.note-kind')].filter((el) => parseFloat(getComputedStyle(el).borderTopWidth) > 0).length };
+    });
+    expect(boxes.kinds, '공허 통과 방지: 종류 글자 칸이 실제로 있다').toBeGreaterThanOrEqual(8);
+    expect(boxes.total, '버전 2 + 질문 10 + 종류 글자 칸').toBe(12 + boxes.kinds);
+    expect(boxes.boxed, '테두리 상자는 0').toBe(0);
+    expect(boxes.kindBorders, '종류 글자 칸에는 테두리가 없다').toBe(0);
+    const border = await resolveColor(page, 'var(--c-border)');
+    for (const selector of ['.info__ver', '.faq__item']) {
+      const rows = await rowsOf(page, selector);
+      expect(rows.length, `${selector} 행 수`).toBe(selector === '.info__ver' ? 2 : 10);
+      rows.forEach((r, i) => {
+        expect(r.others, `${selector} ${i + 1}번째: 구분줄 말고 다른 변에 테두리가 없다`).toBe(0);
+        expect(r.top, `${selector} ${i + 1}번째: 윗줄`).toBe(i === 0 ? '0px' : '1px');
+        if (i > 0) expect(r.topColor, `${selector} ${i + 1}번째: 구분줄 색은 --c-border`).toBe(border);
+      });
+    }
+  });
+
+  test('누를 수 있다는 표시가 남는다: 꺾쇠(2px 선, --c-text-2) · 행 높이 44px 이상 · hover 때 면 한 단(--c-surface-2) · 키보드 포커스 링 3px', async ({ page }) => {
+    await openTitle(page);
+    await page.getByTestId('link-intro').click();
+    await expect(panel(page)).toBeVisible();
+    const text2 = await resolveColor(page, 'var(--c-text-2)');
+    const surface2 = await resolveColor(page, 'var(--c-surface-2)');
+    for (const selector of ['.info__ver', '.faq__item']) {
+      const rows = await rowsOf(page, selector);
+      for (const [i, r] of rows.entries()) {
+        expect(r.chevronW, `${selector} ${i + 1}번째: 꺾쇠 선 굵기`).toBe('2px');
+        expect(r.chevronColor, `${selector} ${i + 1}번째: 꺾쇠 색`).toBe(text2);
+        expect(r.height, `${selector} ${i + 1}번째: 행 높이`).toBeGreaterThanOrEqual(44);
+        expect(r.radius, `${selector} ${i + 1}번째: 항목(details)은 둥근 상자가 아니다 — 둥근 모서리는 summary(hover 면·포커스 링)의 것`).toBe('0px');
+      }
+    }
+    // hover: 면이 한 단 어두워진다 (평소는 투명)
+    const summary = page.getByTestId('faq-item').nth(2).locator('summary');
+    await summary.scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    expect(await summary.evaluate((el) => getComputedStyle(el).backgroundColor), '평소는 투명').toBe('rgba(0, 0, 0, 0)');
+    await summary.hover();
+    await expect.poll(() => summary.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(surface2);
+    // 키보드 포커스 링: 닫기 버튼에서 Tab으로 첫 행에 닿으면 3px 실선 링
+    await page.getByTestId('info-close').focus();
+    await page.keyboard.press('Tab');
+    const ring = await page.evaluate(() => {
+      const a = document.activeElement as HTMLElement;
+      const cs = getComputedStyle(a);
+      return { tag: a.tagName, inRow: a.closest('.info__ver, .faq__item') !== null, style: cs.outlineStyle, width: cs.outlineWidth, radius: cs.borderTopLeftRadius };
+    });
+    expect(ring.tag).toBe('SUMMARY');
+    expect(ring.inRow, '포커스가 첫 행 머리에 닿았다').toBe(true);
+    expect(ring.style).toBe('solid');
+    expect(ring.width).toBe('3px');
+    expect(parseFloat(ring.radius), '링이 summary의 둥근 모서리를 따른다').toBeGreaterThan(0);
+  });
+
+  test('다크 모드: 구분줄·꺾쇠 색이 다크 토큰(--c-border · --c-text-2)이고 라이트와 다르다', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await openTitle(page);
+    const lightBorder = await resolveColor(page, 'var(--c-border)');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await openTitle(page);
+    await page.getByTestId('link-intro').click();
+    await expect(panel(page)).toBeVisible();
+    const border = await resolveColor(page, 'var(--c-border)');
+    expect(border, '공허 통과 방지: 다크 토큰이 라이트와 다르다').not.toBe(lightBorder);
+    const rows = await rowsOf(page, '.faq__item');
+    expect(rows[1].topColor).toBe(border);
+    expect(rows[1].chevronColor).toBe(await resolveColor(page, 'var(--c-text-2)'));
+    expect(rows[0].top).toBe('0px');
+  });
+
+  test('강제 색상: 행 사이 구분줄과 꺾쇠가 CanvasText이고 행은 여전히 44px 이상이다', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+    await openTitle(page);
+    await page.getByTestId('link-intro').click();
+    await expect(panel(page)).toBeVisible();
+    const canvasText = await resolveColor(page, 'CanvasText');
+    for (const selector of ['.info__ver', '.faq__item']) {
+      const rows = await rowsOf(page, selector);
+      rows.forEach((r, i) => {
+        if (i > 0) {
+          expect(r.top, `${selector} ${i + 1}번째: 구분줄`).toBe('1px');
+          expect(r.topColor, `${selector} ${i + 1}번째: 구분줄 색`).toBe(canvasText);
+        }
+        expect(r.chevronColor, `${selector} ${i + 1}번째: 꺾쇠 색`).toBe(canvasText);
+        expect(r.height).toBeGreaterThanOrEqual(44);
+      });
+    }
   });
 });
 

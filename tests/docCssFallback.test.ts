@@ -38,6 +38,26 @@ describe('browserCss: 브라우저가 CSS를 읽는 방식 흉내 (합성 CSS)',
     expect(() => evaluateSupports('(a: b) and (c: d)', NO_CONTAINER_QUERIES), '모르는 꼴은 조용히 틀리지 않고 던진다').toThrow();
   });
 
+  it('R-489 @supports 값 안의 함수 호출: `(height: clamp(1px, 2px, 3px))`는 던지지 않고 두 브라우저 모두 참이다(title.css의 낮은 창 그림 높이 규칙), `not`은 뒤집고, 조건이 둘이면 여전히 던진다', () => {
+    const clamp = '(height: clamp(1px, 2px, 3px))';
+    expect(evaluateSupports(clamp, WITH_CONTAINER_QUERIES)).toBe(true);
+    expect(evaluateSupports(clamp, NO_CONTAINER_QUERIES), '컨테이너 질의를 모르는 브라우저도 clamp()는 지원한다').toBe(true);
+    expect(evaluateSupports(` not ${clamp}`, NO_CONTAINER_QUERIES)).toBe(false);
+    // 함수 안에 컨테이너 단위가 있으면 모르는 브라우저는 거짓이다(값 전체를 본다)
+    expect(evaluateSupports('(width: calc(1cqi + 2px))', NO_CONTAINER_QUERIES)).toBe(false);
+    expect(evaluateSupports('(width: calc(1cqi + 2px))', WITH_CONTAINER_QUERIES)).toBe(true);
+    expect(() => evaluateSupports(`${clamp} and (c: d)`, NO_CONTAINER_QUERIES)).toThrow();
+    expect(() => evaluateSupports('(a: b(c(d)))', NO_CONTAINER_QUERIES), '함수 두 겹은 풀지 않고 던진다').toThrow();
+  });
+
+  it('R-489 실제 소스 CSS: title.css의 모든 @supports 조건을 두 브라우저로 평가해도 던지지 않는다 (e2e-prod 번들 시험이 같은 걸러내기를 쓴다)', async () => {
+    const titleCss = await readText('../src/styles/title.css');
+    expect(() => cssAppliedBy(titleCss, NO_CONTAINER_QUERIES)).not.toThrow();
+    expect(() => cssAppliedBy(titleCss, WITH_CONTAINER_QUERIES)).not.toThrow();
+    // 공허 통과 방지: clamp() 규칙이 실제로 올라온다
+    expect(normalizeCss(cssAppliedBy(titleCss, NO_CONTAINER_QUERIES))).toContain('clamp(224px,calc((100vh - 334px) / 0.924),420px)');
+  });
+
   it('모르는 브라우저: @container 블록·container-type 선언·cqi 규칙이 사라지고 `@supports not (…)` 안쪽(@media 포함)이 올라온다', () => {
     const css = normalizeCss(cssAppliedBy(sample, NO_CONTAINER_QUERIES));
     expect(css).not.toMatch(/container|cqi/);

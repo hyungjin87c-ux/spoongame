@@ -8,7 +8,8 @@ import { DASH_TEXT } from '../src/data/dashText';
 import { TitleScreen } from '../src/screens/TitleScreen';
 import { FeedbackLink } from '../src/ui/FeedbackLink';
 import { InfoPanel } from '../src/ui/InfoPanel';
-import { PANEL_STATE_KEY, hasPanelMark } from '../src/ui/infoPanelHistory';
+import { PANEL_STATE_KEY, decideCloseRequest, hasPanelMark } from '../src/ui/infoPanelHistory';
+import historySrc from '../src/ui/infoPanelHistory.ts?raw';
 import infoPanelSrc from '../src/ui/InfoPanel.tsx?raw';
 import titleScreenSrc from '../src/screens/TitleScreen.tsx?raw';
 import { visibleText } from './helpers/visible';
@@ -182,5 +183,26 @@ describe('뒤로가기 = 닫기 (NT5) — history 표식 규칙', () => {
     expect(hasPanelMark({ [PANEL_STATE_KEY]: 't1' }, 't1')).toBe(true);
     expect(hasPanelMark({ [PANEL_STATE_KEY]: 't1' }, 't2')).toBe(false);
     for (const bad of [null, undefined, 'x', 1, [], { other: 't1' }]) expect(hasPanelMark(bad, 't1')).toBe(false);
+  });
+
+  it('R-491 decideCloseRequest: 되돌리는 중이면 표식이 아직 남아 있어도 무시한다(두 번째 history.back 없음) · 표식이 있으면 한 걸음 되돌리고 · 없으면 바로 닫는다', () => {
+    expect(decideCloseRequest(false, true)).toBe('back');
+    expect(decideCloseRequest(false, false)).toBe('close');
+    // popstate 전에 닫기 요청이 겹친 경우(「닫기」 더블클릭·Esc 연타): history.state의 표식은 아직 그대로(marked 참)지만 둘째 요청은 무시
+    expect(decideCloseRequest(true, true)).toBe('ignore');
+    expect(decideCloseRequest(true, false)).toBe('ignore');
+  });
+
+  it('R-491 소스: 훅이 닫기 요청마다 decideCloseRequest(closing)를 거치고, 되돌리기 직전에 closing을 켜며, popstate·보호 시간에서 끈다 (변이 점검: 이 중 하나가 없으면 겹친 닫기가 history를 두 걸음 되돌린다)', () => {
+    expect(historySrc).toContain('const closing = useRef(false);');
+    expect(historySrc).toContain('decideCloseRequest(closing.current, marked)');
+    // closing을 켠 다음에 history.back()을 부른다
+    expect(historySrc).toMatch(/closing\.current = true;\s*window\.history\.back\(\);/);
+    // 풀림: popstate 처리기와 보호 시간 콜백 둘 다
+    expect(historySrc.match(/closing\.current = false;/g)).toHaveLength(2);
+    // 닫기 버튼과 Esc가 같은 요청 함수(close)를 쓴다 — 두 길이 같은 가드를 지난다
+    expect(infoPanelSrc).toContain('const close = useCallback(() => requestClose(), [requestClose]);');
+    expect(infoPanelSrc).toContain('data-testid="info-close" onClick={close}');
+    expect(infoPanelSrc).toMatch(/e\.preventDefault\(\);\s*close\(\);/);
   });
 });

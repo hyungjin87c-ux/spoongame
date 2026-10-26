@@ -555,10 +555,11 @@ describe('2회차 보완 화면 문구 (SPEC-003 QM2-10·QM2-11, REV-003-M2-3 R-
   const html = render();
   const data = buildCarousel();
 
-  it('푸터 통계 출처 줄은 쉼표 나열이다: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 통계청(현 국가데이터처), 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」 — 기관 이름 사이에 「·」가 없다 (QM2-10 b · QI4 2단계: 3곳 → 7곳)', () => {
+  it('푸터 통계 출처 줄은 쉼표 나열이다: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」 — 기관 이름 사이에 「·」가 없다 (QM2-10 b · QI4 2단계: 3곳 → 7곳 · R-488: 같은 기관은 한 번만 → 6곳)', () => {
     const credit = html.slice(html.indexOf('data-testid="stats-credit"'), html.indexOf('data-testid="population-info"'));
-    // 1단계까지의 기대 글자(국가데이터처, 행정안전부, 교육부 — 3곳)를 슬라이드 20장에서 모인 7곳으로 바꿨다(tests/glue.test.ts 「실제 푸터」와 같은 글자)
-    expect(text(credit)).toContain('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 통계청(현 국가데이터처), 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
+    // 1단계까지의 기대 글자(국가데이터처, 행정안전부, 교육부 — 3곳)를 슬라이드 20장에서 모인 7곳으로 바꿨다가, R-488로 「통계청(현 국가데이터처)」를 「국가데이터처」에 모아 6곳이 됐다(tests/glue.test.ts 「실제 푸터」와 같은 글자)
+    expect(text(credit)).toContain('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
+    expect(text(credit).includes('통계청'), '푸터에 옛 이름 「통계청」이 없다(R-488)').toBe(false);
     expect(plain(credit)).toContain(footerStatsText(data.orgs));
     for (const org of data.orgs) expect(plain(credit).includes(`${org} ·`) || plain(credit).includes(`· ${org}`), `${org} 앞뒤의 「·」`).toBe(false);
   });

@@ -2,7 +2,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { GameState } from '../src/core/types';
 import { GAME_KEY, activeTestId, evalCore, injectSave, readSave, readSettings, replaceSaveAndReload, titleState } from './helpers';
 import { MANUAL, findDelegatedYear } from './parentStates';
-import { heavyEnding, heavyLifeState, heavyPending, heavyRowsOf } from './gentleStates';
+import { heavyEnding, heavyLifeState, heavyPending, heavyRowsOf, noteDueState } from './gentleStates';
+import { sheetReady } from './m7cStates';
 
 /**
  * 무거운 장면 가리기 (SPEC-005 QI6 HV3·HV4·HV6·HV7·HV8, 완료 기준 11·13, 화면 규칙 (A)·M19·M20): 실제 브라우저에서 본다.
@@ -558,6 +559,31 @@ test.describe('가려지지 않는 것 (HV8·R-471) — 켠 상태에서도 그�
     await expect(page.getByTestId('log').locator('[data-kind="stage"][data-veiled]')).toHaveCount(0);
     // 같은 판에서 가린 줄은 있다(비교 대상이 공허하지 않다)
     await expect(page.getByTestId('log').locator('[data-veiled="true"]')).not.toHaveCount(0);
+
+    // 기록 카드 ⑤ note-illness · ⑥ note-parents-aging 시트 (R-490): 켠 상태의 질문 글·대화상자 이름(접근성 트리)이 끈 상태와 같고 시트 안에 가림 부품이 없다 —
+    // 기록 시트는 가림 설정을 받지 않는다(구조상 가려질 수 없음). 앞 단언들과 같은 시험 안에 두어 이 제목이 말하는 것을 실제로 단언한다.
+    for (const cardId of ['note-illness', 'note-parents-aging']) {
+      const due = await noteDueState(page, cardId);
+      const question = await evalCore<string>(page, 'return core.noteQuestion(core.dueNote(arg.state), arg.state);', { state: due });
+      expect(question.length, `${cardId}: 질문이 있다`).toBeGreaterThan(10);
+      const seen = {} as Record<'off' | 'on', { title: string; tree: string }>;
+      for (const gentle of [false, true]) {
+        // 같은 판을 가림 꺼짐 → 켜짐 설정으로 각각 연다: 뜰 차례인 상태를 그대로 주입하면 로드와 함께 시트가 열린다(새로고침 복원과 같은 경로)
+        await injectSave(page, due, '/', { speed: 1, autoMode: false, noteCards: true, gentle });
+        await sheetReady(page);
+        expect((await readSettings(page)).gentle, `${cardId}: 설정이 ${gentle ? '켜짐' : '꺼짐'}`).toBe(gentle);
+        const sheet = page.getByTestId('note-sheet');
+        await expect(sheet).toHaveAttribute('data-card', cardId);
+        const title = await page.getByTestId('note-title').innerText();
+        expect(title.replace(/\s+/g, ' ').trim(), `${cardId}: 질문 글(gentle ${gentle})`).toBe(question);
+        // 가림 부품이 시트 안에 없고, 분류 문구가 질문을 대신하지 않는다
+        await expect(sheet.locator('[data-veiled], [data-testid="veil-btn"], .veil__btn')).toHaveCount(0);
+        expect(await shown(sheet), `${cardId}: 분류 문구가 없다`).not.toMatch(/무거운 일이 있었습니다|무거운 주제/);
+        seen[gentle ? 'on' : 'off'] = { title, tree: await page.getByRole('dialog').ariaSnapshot() };
+      }
+      expect(seen.on.title, `${cardId}: 켠 질문 글 = 끈 질문 글`).toBe(seen.off.title);
+      expect(seen.on.tree, `${cardId}: 켠 대화상자의 접근성 트리(이름 포함) = 끈 것`).toBe(seen.off.tree);
+    }
   });
 
   test('외부 요청 0: 켜고·펼치고·접고·끄는 동안 localhost 밖으로 나가는 요청이 없다 (CM-A)', async ({ page }) => {

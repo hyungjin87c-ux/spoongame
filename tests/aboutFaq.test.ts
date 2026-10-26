@@ -173,6 +173,11 @@ describe('소개 Q&A: 근거 대응 (FQ3 — 주장 ⇔ 코드·시험)', () => 
     expect(footerStatsText(ORGS)).toContain(commaList(ORGS));
     const real = buildCarousel().orgs;
     expect(buildAboutFaq({ orgs: real })[2].answer[0]).toContain(commaList(real));
+    // R-488: 같은 기관은 한 번만, 현재 이름으로 — 「국가데이터처」가 한 번이고 옛 이름 「통계청」은 없다(푸터 출처 줄과 같은 목록이라 푸터도 같다)
+    const realQ3 = buildAboutFaq({ orgs: real })[2].answer[0];
+    expect(realQ3.split('국가데이터처').length - 1, '국가데이터처가 한 번').toBe(1);
+    expect(realQ3.includes('통계청'), '옛 이름 없음').toBe(false);
+    expect(footerStatsText(real).split('국가데이터처').length - 1).toBe(1);
     // 이름 출처: 기관 이름이 출처 표기(attribution)에서 온 부분 문자열이다
     expect(NAMES.meta.attribution.text).toContain(nameSourceOrg());
     expect(a[2]).toBe(`사연과 인물은 만들어 낸 이야기예요. 이름은 ${nameSourceOrg()}에서 가져오지만 인물은 모두 가상이에요.`);

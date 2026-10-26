@@ -96,6 +96,17 @@ export function sourceOrgsOf(org: string): string[] {
     .filter((x) => x !== '');
 }
 
+/**
+ * 기관 이름을 **현재 이름**으로 (R-488): 「통계청(현 국가데이터처)」 → 「국가데이터처」. 슬라이드 출처 줄(`sourceTextOf`)은 발행 당시 이름을 그대로 두고(마스터 결정 3),
+ * 푸터 출처 줄과 소개 Q3의 기관 나열(`CarouselData.orgs`)만 이 함수를 거쳐 같은 기관이 두 번 나오지 않게 한다 — 규칙은 이 한 곳에 둔다.
+ * 「(현 …)」으로 끝나는 이름만 바꾼다: 「기상청(국립기상과학원)」처럼 괄호가 소속 기관을 알리는 이름은 그대로다.
+ */
+export function currentOrgName(org: string): string {
+  const name = org.trim();
+  const m = /^[^()]+\(현 ([^()]+)\)$/.exec(name);
+  return m === null ? name : m[1].trim();
+}
+
 /** 마지막 글자가 받침 있는 한글 음절인가 (한글이 아니면 받침 없음으로 본다) */
 export function hasBatchim(word: string): boolean {
   const code = word.trimEnd().charCodeAt(word.trimEnd().length - 1);

@@ -10,6 +10,7 @@ import {
   playToEnd,
   slideReadName,
   stepYear,
+  noteQuestion,
   type EndingGame,
   type GameState,
   type HistoryEntry,
@@ -22,11 +23,12 @@ import { deathEntryText } from '../src/data/lifeText';
 import { FIRST_PARENT_HINT, PARENT_DECIDED_TEXT, CHILD_FLOW_TEXT, PARENT_CHIP_TEXT, CHILD_CHIP_TEXT } from '../src/data/parentDecisionTable';
 import { PARENT_STATE_LABEL } from '../src/data/familyText';
 import { EndingScreen } from '../src/screens/EndingScreen';
-import { LifeScreen } from '../src/screens/LifeScreen';
+import { LifeScreen, type NoteSheetState } from '../src/screens/LifeScreen';
 import { TitleScreen } from '../src/screens/TitleScreen';
 import { LogCard } from '../src/ui/dash/LogCard';
 import { ParentCard, parentCardModel } from '../src/ui/dash/ParentCard';
 import type { LifeGame } from '../src/ui/dash/Cards';
+import { NOTE_CARDS } from '../src/data/noteCards';
 import { StatsCarousel } from '../src/ui/StatsCarousel';
 import type { YearClock } from '../src/ui/useYearClock';
 import { startLife } from '../scripts/simulateLib';
@@ -170,7 +172,7 @@ describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
 
 // ---------- 결정 카드 ----------
 
-function renderLife(game: GameState, opts: { gentle?: boolean; autoMode?: boolean; folded?: boolean; veilOpened?: boolean; tick?: TickInfo | null } = {}): string {
+function renderLife(game: GameState, opts: { gentle?: boolean; autoMode?: boolean; folded?: boolean; veilOpened?: boolean; tick?: TickInfo | null; noteSheet?: NoteSheetState | null } = {}): string {
   return renderToStaticMarkup(
     <LifeScreen
       game={asLife(game)}
@@ -186,6 +188,7 @@ function renderLife(game: GameState, opts: { gentle?: boolean; autoMode?: boolea
       veilOpened={opts.veilOpened ?? false}
       onVeilOpen={noop}
       onAutoPick={noop}
+      noteSheet={opts.noteSheet ?? null}
       onChoose={noop}
       onSkip={noop}
       onSpeed={noop}
@@ -556,6 +559,26 @@ describe('가려지지 않는 것 (HV8·R-471) — 설정을 켜도 보이는 �
     const off = renderLife(base, { gentle: false });
     expect(on.match(/role="meter"/g)).toHaveLength(off.match(/role="meter"/g)!.length);
     for (const key of ['health', 'happiness', 'education', 'relationships']) expect(on).toContain(`data-stat="${key}"`);
+
+    // 기록 카드 ⑤ note-illness · ⑥ note-parents-aging (R-490): 기록 시트는 설정을 받지 않는다 — 켠 상태에서도 질문 글이 끈 상태와 같다(대화상자 이름 포함).
+    // 결정 카드가 없는 판(pending 없음)으로 시트만 그린다 — 두 카드가 같이 뜨는 일은 실제로 없다. 가림 부품·분류 문구(「무거운 일이 있었습니다」「무거운 주제」)가 시트 안에 없다.
+    const calm: GameState = { ...base, pending: null };
+    const sheetOf = (html: string): string => html.slice(html.indexOf('data-testid="note-overlay"'));
+    for (const id of ['note-illness', 'note-parents-aging']) {
+      const card = NOTE_CARDS.find((c) => c.id === id)!;
+      const noteSheet: NoteSheetState = { via: 'auto', card, token: 0 };
+      const sheetOn = sheetOf(renderLife(calm, { gentle: true, noteSheet }));
+      const sheetOff = sheetOf(renderLife(calm, { gentle: false, noteSheet }));
+      const question = noteQuestion(card, asLife(calm));
+      expect(question.length, `${id}: 질문이 있다`).toBeGreaterThan(10);
+      expect(sheetOn.length, `${id}: 시트가 그려진다`).toBeGreaterThan(500);
+      expect(sheetOn, `${id}: 켠 시트 = 끈 시트(마크업 전체)`).toBe(sheetOff);
+      expect(visibleText(sheetOn), `${id}: 질문 글이 보인다`).toContain(question);
+      expect(visibleText(sheetOn, { ariaHidden: true }), `${id}: 스크린리더도 질문을 읽는다`).toContain(question);
+      expect(sheetOn).toMatch(/<h2 id="nc-title"[^>]*data-testid="note-title">/);
+      expect(sheetOn, `${id}: 가림 부품이 없다`).not.toMatch(/veil|data-veiled/);
+      expect(visibleText(sheetOn), `${id}: 분류 문구가 질문을 대신하지 않는다`).not.toMatch(/무거운 일이 있었습니다|무거운 주제/);
+    }
   });
 
   it('인생 기록의 단계 줄·출생 줄·「나의 기록」 줄·사망 줄은 가려지지 않는다 — 가림은 heavy 표지(이벤트·상속 줄)에만 걸린다', () => {
