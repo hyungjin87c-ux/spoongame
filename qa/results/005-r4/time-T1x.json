@@ -1,0 +1,168 @@
+[
+ {
+  "clickLag": 11,
+  "era": "present",
+  "eventId": "senior-move-home",
+  "citation": "c-088",
+  "startAge": 77,
+  "rows": [
+   {
+    "stayAt": 78,
+    "kind": "resolved",
+    "lines": 1,
+    "need": null,
+    "expectMs": 21938,
+    "measuredMs": 21948,
+    "ratio": 1.0005
+   },
+   {
+    "stayAt": 79,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11828,
+    "ratio": 1.0013
+   },
+   {
+    "stayAt": 80,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 28688,
+    "measuredMs": 28698,
+    "ratio": 1.0004
+   },
+   {
+    "stayAt": 81,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11817,
+    "ratio": 1.0003
+   },
+   {
+    "stayAt": 82,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11819,
+    "ratio": 1.0005
+   },
+   {
+    "stayAt": 83,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11819,
+    "ratio": 1.0005
+   }
+  ],
+  "sumE": 97878,
+  "sumM": 97929,
+  "ratio": 1.0005,
+  "cardInfo": {
+   "ask": true,
+   "insight": true
+  },
+  "play": {
+   "hold": 97935,
+   "decide": 2543,
+   "fold": 0,
+   "note": 0,
+   "idle": 0,
+   "offSpeed": 0,
+   "auto": 0,
+   "skips": 0,
+   "resumes": 1
+  },
+  "console": 0,
+  "external": 0
+ },
+ {
+  "clickLag": 11,
+  "era": "future",
+  "eventId": "youth-housing",
+  "citation": "c-015",
+  "startAge": 35,
+  "rows": [
+   {
+    "stayAt": 36,
+    "kind": "resolved",
+    "lines": 1,
+    "need": null,
+    "expectMs": 21938,
+    "measuredMs": 21947,
+    "ratio": 1.0004
+   },
+   {
+    "stayAt": 37,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11818,
+    "ratio": 1.0004
+   },
+   {
+    "stayAt": 38,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11816,
+    "ratio": 1.0002
+   },
+   {
+    "stayAt": 39,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11819,
+    "ratio": 1.0005
+   },
+   {
+    "stayAt": 40,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11820,
+    "ratio": 1.0006
+   },
+   {
+    "stayAt": 41,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 11813,
+    "measuredMs": 11817,
+    "ratio": 1.0003
+   }
+  ],
+  "sumE": 81003,
+  "sumM": 81037,
+  "ratio": 1.0004,
+  "cardInfo": {
+   "ask": true,
+   "insight": true
+  },
+  "play": {
+   "hold": 81044,
+   "decide": 2558,
+   "fold": 0,
+   "note": 0,
+   "idle": 0,
+   "offSpeed": 0,
+   "auto": 0,
+   "skips": 0,
+   "resumes": 1
+  },
+  "console": 0,
+  "external": 0
+ }
+]

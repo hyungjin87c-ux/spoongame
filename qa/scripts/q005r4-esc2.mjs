@@ -1,0 +1,35 @@
+// 보충: 1024 마우스에서 나가기 버튼에 올린 채 확인 상자를 열고 Esc를 두 번 — 말풍선이 어느 Esc에서 숨는지.
+import { launchChromium, Watch, PROD, DEV, run, ok, bad, note, sleep, seedPage, DEFAULT_SETTINGS, oracle, withoutPlay } from './q005r4-lib.mjs';
+const b = await launchChromium();
+const devB = await launchChromium();
+const dev = await (await devB.newContext({ viewport: { width: 800, height: 600 } })).newPage();
+await dev.goto(DEV + '/');
+await dev.getByTestId('title-screen').waitFor({ timeout: 90000 });
+const quiet = await oracle(dev, `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(7), 'present'))); return { ...s, paused: true };`).then(withoutPlay);
+const ctx = await b.newContext({ viewport: { width: 1024, height: 800 }, locale: 'ko-KR' });
+const w = new Watch('esc2').attach(ctx);
+const page = await ctx.newPage();
+await seedPage(page, { game: quiet, settings: { ...DEFAULT_SETTINGS, speed: 1, autoMode: false, noteCards: false, gentle: false } });
+await page.goto(PROD + '/');
+await page.getByTestId('life-screen').waitFor();
+await sleep(900);
+const tip = () => page.evaluate(() => ({ clip: getComputedStyle(document.querySelector('[data-testid="tool-exit"] span:not(.sr-only)')).clipPath, hover: document.querySelector('[data-testid="tool-exit"]').matches(':hover'), fv: document.querySelector('[data-testid="tool-exit"]').matches(':focus-visible'), off: document.querySelector('[data-testid="tools"]').getAttribute('data-tip-off'), ask: !!document.querySelector('[data-testid="exit-ask"]'), focus: document.activeElement?.getAttribute('data-testid') }));
+await page.getByTestId('tool-exit').hover();
+await page.getByTestId('tool-exit').click();
+await page.getByTestId('exit-ask').waitFor();
+await sleep(600);
+const s0 = await tip();
+await page.keyboard.press('Escape');
+await sleep(300);
+const s1 = await tip();
+await page.keyboard.press('Escape');
+await sleep(300);
+const s2 = await tip();
+console.log(JSON.stringify({ s0, s1, s2 }));
+await run({ id: 'C-E3-esc-tip-exit-seq', area: '공격', title: '나가기 확인 상자 + 말풍선 + Esc 두 번 (순서)', steps: '1024 마우스: 나가기 hover → 클릭(확인 상자) → Esc → Esc', expected: '첫 Esc로 확인 상자가 닫히고, 말풍선은 첫 또는 둘째 Esc로 숨는다. 게임을 나가지 않는다' }, async () => {
+  const stillLife = (await page.getByTestId('life-screen').count()) === 1;
+  const hiddenBy = s1.clip !== 'none' ? 'Esc 1' : s2.clip !== 'none' ? 'Esc 2' : '숨지 않음';
+  return (stillLife && hiddenBy !== '숨지 않음' ? ok : bad)(JSON.stringify({ s0, s1, s2, hiddenBy }));
+});
+await b.close();
+await devB.close();

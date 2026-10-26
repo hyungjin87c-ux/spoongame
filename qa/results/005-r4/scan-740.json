@@ -1,0 +1,606 @@
+{
+ "res": {
+  "h": 740,
+  "total": 67,
+  "measured": 63,
+  "skipped": [
+   "school-friend",
+   "school-exam",
+   "school-bully",
+   "school-parttime"
+  ],
+  "firstVisible": 63,
+  "firstNotVisible": [],
+  "peeking": 0,
+  "overflow": [],
+  "autoNotReached": [],
+  "noAsk": [],
+  "console": 0,
+  "external": 0
+ },
+ "rows": [
+  {
+   "id": "middle-business",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-parents-care",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-health-check",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-health-check-later",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-health-crisis",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-new-skills",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-remote-work",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-child-school",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-home-loan",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-career-peak",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-layoff",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-job-again",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-friend-reunion",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-marriage-crisis",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-hobby",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-parents-farewell",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-debt-guarantee",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "middle-retirement-prep",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "school-friend",
+   "missing": true
+  },
+  {
+   "id": "school-first-love",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "school-exam",
+   "missing": true
+  },
+  {
+   "id": "school-bully",
+   "missing": true
+  },
+  {
+   "id": "school-club",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "school-teacher-notice",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "school-scholarship",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "school-friend-quarrel",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "school-parttime",
+   "missing": true
+  },
+  {
+   "id": "senior-gathering",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-illness",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-illness-later",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-grandchildren",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-estate",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-move-home",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-travel",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-estranged-child",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-spouse-care",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-alone",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-new-device",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-long-life",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-last-wishes",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-old-friend",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-fall",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-classmates",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-diet",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "senior-memoir",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-first-job",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-meeting",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-marriage",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-marriage-again",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-reunion",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-second-chance",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-meeting-again",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-matchmaker",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-approached",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-child",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-child-again",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-workplace-romance",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-housing",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-exam-prep",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-friend-wedding",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-colleague",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-startup",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-night-study",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-return-school",
+   "first": true,
+   "firstPeek": true,
+   "n": 2,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-rent-hike",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-gig-work",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  },
+  {
+   "id": "youth-machine-partner",
+   "first": true,
+   "firstPeek": true,
+   "n": 3,
+   "over": 0,
+   "autoReach": true,
+   "hasAsk": true
+  }
+ ]
+}

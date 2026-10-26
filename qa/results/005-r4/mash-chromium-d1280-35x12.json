@@ -1,0 +1,85 @@
+{
+ "tSwitch": 1420,
+ "modes": [
+  {
+   "t": 53,
+   "m": "none"
+  },
+  {
+   "t": 177,
+   "m": "sheet"
+  },
+  {
+   "t": 1420,
+   "m": "inline"
+  },
+  {
+   "t": 1834,
+   "m": "none"
+  }
+ ],
+ "rec": [
+  {
+   "t": 1410,
+   "id": "auto-on-btn",
+   "guard": null
+  },
+  {
+   "t": 1461,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1507,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1552,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1598,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1643,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1689,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1735,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1781,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1828,
+   "id": "choice-decline",
+   "guard": null
+  },
+  {
+   "t": 1887,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 1932,
+   "id": "비버튼",
+   "guard": null
+  }
+ ],
+ "before": 6,
+ "after": 7
+}

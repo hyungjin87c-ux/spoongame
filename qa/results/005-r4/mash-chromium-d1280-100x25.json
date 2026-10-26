@@ -1,0 +1,150 @@
+{
+ "tSwitch": 1436,
+ "modes": [
+  {
+   "t": 53,
+   "m": "none"
+  },
+  {
+   "t": 182,
+   "m": "sheet"
+  },
+  {
+   "t": 1436,
+   "m": "inline"
+  },
+  {
+   "t": 1878,
+   "m": "none"
+  }
+ ],
+ "rec": [
+  {
+   "t": 1426,
+   "id": "auto-on-btn",
+   "guard": null
+  },
+  {
+   "t": 1553,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1660,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1767,
+   "id": "choice-decline",
+   "guard": "true"
+  },
+  {
+   "t": 1872,
+   "id": "choice-decline",
+   "guard": null
+  },
+  {
+   "t": 1995,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2102,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2207,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2313,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2420,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2525,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2633,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2739,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2846,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 2953,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3062,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3168,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3274,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3380,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3485,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3594,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3699,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3806,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 3913,
+   "id": "비버튼",
+   "guard": null
+  },
+  {
+   "t": 4019,
+   "id": "비버튼",
+   "guard": null
+  }
+ ],
+ "before": 6,
+ "after": 7
+}
