@@ -5,7 +5,7 @@ import path from 'node:path';
 import { ROOT, SHOT_DIR } from './q005-lib.mjs';
 export * from './q005-lib.mjs';
 
-export const RES4 = path.join(ROOT, 'qa', 'results', '005-r4');
+export const RES4 = path.join(ROOT, 'qa', 'results', process.env.QA_RES_NAME || '005-r4'); // r4b 회귀: QA_RES_NAME=005-r4b
 fs.mkdirSync(RES4, { recursive: true });
 export const CASES4 = path.join(RES4, 'cases.jsonl');
 export function record(c, r) {

@@ -130,7 +130,7 @@ describe('새 소식 데이터 (NT3)', () => {
 });
 
 describe('v0.2.1 새 소식 (SPEC-005 r4 UXN-1 — copy.md 15-7)', () => {
-  it('v0.2.1 항목 다섯은 copy.md 15-7 확정 제안 표와 글자 그대로 같고, 여섯째(QI13 5세 인용 교체)와 요약은 NT3 규칙을 지키는 developer 제안이다 — 날짜는 임시(배포일에 마스터가 고친다)', () => {
+  it('v0.2.1 항목 다섯은 copy.md 15-7 확정 제안 표와 글자 그대로 같고, 여섯째(QI13 5세 인용 교체)와 요약은 NT3 규칙을 지키는 developer 제안이다 — 날짜는 main 배포일', () => {
     const sec = copyMd.slice(copyMd.indexOf('### 15-7.'), copyMd.indexOf('### 15-8.'));
     expect(sec.length, 'copy.md에 15-7절이 있다').toBeGreaterThan(100);
     const kindOf: Record<string, string> = { 추가: 'new', 개선: 'better', 수정: 'fixed', 내용: 'content' };
@@ -141,7 +141,7 @@ describe('v0.2.1 새 소식 (SPEC-005 r4 UXN-1 — copy.md 15-7)', () => {
     expect(v.items, '다섯 + QI13 한 줄').toHaveLength(6);
     expect(v.items[5].kind).toBe('content');
     expect(v.items[5].text).toContain('다섯 살');
-    expect(v.date, '임시 날짜 — 배포일에 마스터가 고친다').toBe('2026-10-26');
+    expect(v.date, 'main 배포일(2026-10-27, 마스터가 배포 때 고침)').toBe('2026-10-27');
     // R-504: 요약의 「한 줄로 모였어요」는 PC에서만 사실이다(휴대폰·태블릿 < 960px은 그대로) — 요약이 그 조건을 밝힌다 (마스터 2026-10-27)
     expect(v.summary).toBe('결정 카드에 질문과 풀이가 생기고, PC에서는 진행·도구 버튼이 한 줄로 모였어요.');
     expect([...v.summary].length, '요약도 70자 이하').toBeLessThanOrEqual(NOTE_ITEM_MAX_CHARS);
