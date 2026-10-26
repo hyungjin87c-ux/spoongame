@@ -1,0 +1,4 @@
+import { record } from './q005-lib.mjs';
+record({ id: 'E2E-slot', area: '공통', title: '큰 슬롯 카드 3장·8장 합성 시험(HS3 ④·CM10·CM11) — 기존 e2e를 읽기 전용으로 실행', steps: '개발 서버 5199에서 playwright test e2e/first-screen-layout.spec.ts --grep 「슬롯 합성」', expected: '격자가 이어지고 가로 넘침 0, Tab 순회에서 고정 띠가 포커스를 가리지 않음, 8장 320px 글자 200% 넘침 0' }, { verdict: 'PASS', actual: '14개 중 통과 7 · 건너뜀 7(프로젝트별 폭 필터로 해당 없음) · 실패 0 — 3장·8장 × 1280×800·1920×1080·360×740, 8장 320px 글자 200%' });
+record({ id: 'E2E-prod', area: '공통', title: '프로덕션 번들 스모크·초기 로드(npm run e2e:prod) — 기존 e2e를 읽기 전용으로 실행', steps: 'npm run e2e:prod(빌드 → 4199 미리보기 → Playwright, Chromium·WebKit)', expected: '전부 통과(R-489 배포 게이트 포함), 초기 로드 ≤ 400,000B' }, { verdict: 'PASS', actual: '22개 중 통과 21 · 건너뜀 1(DP8 공개 주소 확인은 환경 변수가 있을 때만) · 실패 0. 초기 로드 gzip: Chromium PC 365,084B · 모바일 333,618B / WebKit PC 368,302B · 모바일 336,840B (한도 400,000B, 기준 286,467B 대비 +47~82KB — 그림 합계 96KB는 별도 예산, 마스터 해석 2026-10-20)' });
+console.log('ok');

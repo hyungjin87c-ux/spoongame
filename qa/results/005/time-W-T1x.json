@@ -1,0 +1,492 @@
+[
+ {
+  "era": "past",
+  "rows": [
+   {
+    "age": 0,
+    "kind": "quiet(로드 직후)",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9553,
+    "ratio": 1.0109
+   },
+   {
+    "age": 1,
+    "kind": "resolved/parent",
+    "lines": 2,
+    "need": 26520,
+    "expectMs": 26520,
+    "measuredMs": 26572,
+    "ratio": 1.002
+   },
+   {
+    "age": 2,
+    "kind": "narrative",
+    "lines": 3,
+    "need": null,
+    "expectMs": 36450,
+    "measuredMs": 36539,
+    "ratio": 1.0024
+   },
+   {
+    "age": 3,
+    "kind": "resolved/child",
+    "lines": 1,
+    "need": 35800,
+    "expectMs": 35800,
+    "measuredMs": 35879,
+    "ratio": 1.0022
+   },
+   {
+    "age": 4,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23027,
+    "ratio": 1.0034
+   },
+   {
+    "age": 5,
+    "kind": "resolved/child",
+    "lines": 1,
+    "need": 20760,
+    "expectMs": 20760,
+    "measuredMs": 20820,
+    "ratio": 1.0029
+   },
+   {
+    "age": 6,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9507,
+    "ratio": 1.006
+   },
+   {
+    "age": 7,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23029,
+    "ratio": 1.0034
+   },
+   {
+    "age": 8,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23027,
+    "ratio": 1.0034
+   },
+   {
+    "age": 9,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23020,
+    "ratio": 1.0031
+   },
+   {
+    "age": 10,
+    "kind": "resolved/child",
+    "lines": 1,
+    "need": 19560,
+    "expectMs": 19560,
+    "measuredMs": 19602,
+    "ratio": 1.0021
+   },
+   {
+    "age": 11,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9549,
+    "ratio": 1.0105
+   },
+   {
+    "age": 12,
+    "kind": "resolved/parent",
+    "lines": 1,
+    "need": 22200,
+    "expectMs": 22200,
+    "measuredMs": 22263,
+    "ratio": 1.0028
+   }
+  ],
+  "sumE": 281440,
+  "sumM": 282387,
+  "ratio": 1.0034,
+  "cards": [
+   {
+    "key": "infant-meal-start@0",
+    "by": "parent",
+    "showMs": 26573
+   },
+   {
+    "key": "infant-new-sibling@2",
+    "by": "child",
+    "showMs": 35879
+   },
+   {
+    "key": "infant-sibling-toy@4",
+    "by": "child",
+    "showMs": 20820
+   },
+   {
+    "key": "school-bully@9",
+    "by": "child",
+    "showMs": 19602
+   },
+   {
+    "key": "school-puppy@11",
+    "by": "parent",
+    "showMs": 22263
+   }
+  ],
+  "play": {
+   "hold": 282325,
+   "decide": 0,
+   "fold": 0,
+   "note": 0,
+   "idle": 0,
+   "offSpeed": 0,
+   "auto": 0,
+   "skips": 0,
+   "resumes": 1
+  },
+  "console": 0,
+  "external": 0
+ },
+ {
+  "era": "present",
+  "rows": [
+   {
+    "age": 0,
+    "kind": "quiet(로드 직후)",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9540,
+    "ratio": 1.0095
+   },
+   {
+    "age": 1,
+    "kind": "narrative",
+    "lines": 2,
+    "need": null,
+    "expectMs": 29700,
+    "measuredMs": 29752,
+    "ratio": 1.0018
+   },
+   {
+    "age": 2,
+    "kind": "resolved/parent",
+    "lines": 3,
+    "need": 25680,
+    "expectMs": 31050,
+    "measuredMs": 31118,
+    "ratio": 1.0022
+   },
+   {
+    "age": 3,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23027,
+    "ratio": 1.0034
+   },
+   {
+    "age": 4,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23038,
+    "ratio": 1.0038
+   },
+   {
+    "age": 5,
+    "kind": "resolved/parent",
+    "lines": 1,
+    "need": 22440,
+    "expectMs": 22440,
+    "measuredMs": 22515,
+    "ratio": 1.0033
+   },
+   {
+    "age": 6,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23033,
+    "ratio": 1.0036
+   },
+   {
+    "age": 7,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23042,
+    "ratio": 1.004
+   },
+   {
+    "age": 8,
+    "kind": "resolved/parent",
+    "lines": 1,
+    "need": 24960,
+    "expectMs": 24960,
+    "measuredMs": 25023,
+    "ratio": 1.0025
+   },
+   {
+    "age": 9,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9489,
+    "ratio": 1.0041
+   },
+   {
+    "age": 10,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9509,
+    "ratio": 1.0062
+   },
+   {
+    "age": 11,
+    "kind": "resolved/child",
+    "lines": 1,
+    "need": 32560,
+    "expectMs": 32560,
+    "measuredMs": 32626,
+    "ratio": 1.002
+   },
+   {
+    "age": 12,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9523,
+    "ratio": 1.0077
+   }
+  ],
+  "sumE": 270310,
+  "sumM": 271235,
+  "ratio": 1.0034,
+  "cards": [
+   {
+    "key": "infant-first-birthday@1",
+    "by": "parent",
+    "showMs": 31118
+   },
+   {
+    "key": "infant-hospital-stay@4",
+    "by": "parent",
+    "showMs": 22516
+   },
+   {
+    "key": "school-supplies@7",
+    "by": "parent",
+    "showMs": 25023
+   },
+   {
+    "key": "school-bully@10",
+    "by": "child",
+    "showMs": 32626
+   }
+  ],
+  "play": {
+   "hold": 271170,
+   "decide": 0,
+   "fold": 0,
+   "note": 0,
+   "idle": 0,
+   "offSpeed": 0,
+   "auto": 0,
+   "skips": 0,
+   "resumes": 1
+  },
+  "console": 0,
+  "external": 0
+ },
+ {
+  "era": "future",
+  "rows": [
+   {
+    "age": 0,
+    "kind": "quiet(로드 직후)",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9539,
+    "ratio": 1.0094
+   },
+   {
+    "age": 1,
+    "kind": "narrative",
+    "lines": 2,
+    "need": null,
+    "expectMs": 29700,
+    "measuredMs": 29751,
+    "ratio": 1.0017
+   },
+   {
+    "age": 2,
+    "kind": "resolved/parent",
+    "lines": 3,
+    "need": 25200,
+    "expectMs": 31050,
+    "measuredMs": 31120,
+    "ratio": 1.0023
+   },
+   {
+    "age": 3,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23013,
+    "ratio": 1.0027
+   },
+   {
+    "age": 4,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23033,
+    "ratio": 1.0036
+   },
+   {
+    "age": 5,
+    "kind": "resolved/parent",
+    "lines": 1,
+    "need": 22440,
+    "expectMs": 22440,
+    "measuredMs": 22516,
+    "ratio": 1.0034
+   },
+   {
+    "age": 6,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23035,
+    "ratio": 1.0037
+   },
+   {
+    "age": 7,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23056,
+    "ratio": 1.0046
+   },
+   {
+    "age": 8,
+    "kind": "resolved/parent",
+    "lines": 1,
+    "need": 24960,
+    "expectMs": 24960,
+    "measuredMs": 25027,
+    "ratio": 1.0027
+   },
+   {
+    "age": 9,
+    "kind": "narrative",
+    "lines": 1,
+    "need": null,
+    "expectMs": 22950,
+    "measuredMs": 23028,
+    "ratio": 1.0034
+   },
+   {
+    "age": 10,
+    "kind": "resolved/child",
+    "lines": 1,
+    "need": 21120,
+    "expectMs": 21120,
+    "measuredMs": 21160,
+    "ratio": 1.0019
+   },
+   {
+    "age": 11,
+    "kind": "quiet",
+    "lines": null,
+    "need": null,
+    "expectMs": 9450,
+    "measuredMs": 9532,
+    "ratio": 1.0087
+   },
+   {
+    "age": 12,
+    "kind": "resolved/parent",
+    "lines": 1,
+    "need": 34600,
+    "expectMs": 34600,
+    "measuredMs": 34678,
+    "ratio": 1.0023
+   }
+  ],
+  "sumE": 297520,
+  "sumM": 298488,
+  "ratio": 1.0033,
+  "cards": [
+   {
+    "key": "infant-meal-start@1",
+    "by": "parent",
+    "showMs": 31120
+   },
+   {
+    "key": "infant-hospital-stay@4",
+    "by": "parent",
+    "showMs": 22516
+   },
+   {
+    "key": "school-supplies@7",
+    "by": "parent",
+    "showMs": 25027
+   },
+   {
+    "key": "school-friend@9",
+    "by": "child",
+    "showMs": 21160
+   },
+   {
+    "key": "school-academy-night@11",
+    "by": "parent",
+    "showMs": 34678
+   }
+  ],
+  "play": {
+   "hold": 298424,
+   "decide": 0,
+   "fold": 0,
+   "note": 0,
+   "idle": 0,
+   "offSpeed": 0,
+   "auto": 0,
+   "skips": 0,
+   "resumes": 1
+  },
+  "console": 0,
+  "external": 0
+ }
+]

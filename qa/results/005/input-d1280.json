@@ -1,0 +1,309 @@
+[
+ {
+  "name": "script",
+  "pre": {
+   "count": "31/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 31
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 31,
+   "raw": "<script>window.__xss=1</script>"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 <script>window.__xss=1</script>",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "img-onerror",
+  "pre": {
+   "count": "36/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 36
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 36,
+   "raw": "<img src=x onerror=\"window.__xss=2\">"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 <img src=x onerror=\"window.__xss=2\">",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "sqlish",
+  "pre": {
+   "count": "24/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 24
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 24,
+   "raw": "'\"; DROP TABLE users; --"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 '\"; DROP TABLE users; --",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "entity",
+  "pre": {
+   "count": "34/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 34
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 34,
+   "raw": "&lt;b&gt;굵게&lt;/b&gt; &amp; &quot;"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 &lt;b&gt;굵게&lt;/b&gt; &amp; &quot;",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "js-url",
+  "pre": {
+   "count": "49/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 49
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 49,
+   "raw": "javascript:alert(1) [링크](http://a.exampl"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 javascript:alert(1) [링크](http://a.example) **굵게**",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "emoji-zwj",
+  "pre": {
+   "count": "5/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 30
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 5,
+   "raw": "👨‍👩‍👧‍👦🏳️‍🌈🇰🇷😀🧑🏽‍💻"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 👨‍👩‍👧‍👦🏳️‍🌈🇰🇷😀🧑🏽‍💻",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "hangul-nfd",
+  "pre": {
+   "count": "8/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 8
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 8,
+   "raw": "한글 자모 분리"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 한글 자모 분리",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "jamo-only",
+  "pre": {
+   "count": "14/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 14
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 14,
+   "raw": "ㅎㅏㄴㄱㅡㄹ ㅋㅋㅋㅋ ㅠㅠ"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 ㅎㅏㄴㄱㅡㄹ ㅋㅋㅋㅋ ㅠㅠ",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "rtl-zw",
+  "pre": {
+   "count": "16/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 17
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 16,
+   "raw": "אבג test reverse"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 אבג test reverse",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "newlines",
+  "pre": {
+   "count": "14/140",
+   "msg": "줄은 세 줄까지 적을 수 있습니다.",
+   "saveDisabled": true,
+   "value": 14
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 14,
+   "raw": "첫째 줄\n둘째 줄\n셋째 줄"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 첫째 줄 둘째 줄 셋째 줄",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "exact140",
+  "pre": {
+   "count": "140/140",
+   "msg": "140자까지 적었습니다.",
+   "saveDisabled": true,
+   "value": 140
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 140,
+   "raw": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "over141",
+  "pre": {
+   "count": "140/140",
+   "msg": "140자까지 적을 수 있어 넘는 부분은 줄였습니다.",
+   "saveDisabled": true,
+   "value": 140
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 140,
+   "raw": "나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나나",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "long5000",
+  "pre": {
+   "count": "140/140",
+   "msg": "140자까지 적을 수 있어 넘는 부분은 줄였습니다.",
+   "saveDisabled": true,
+   "value": 140
+  },
+  "sheetOpen": 0,
+  "saved": {
+   "kind": "note",
+   "len": 140,
+   "raw": "다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다"
+  },
+  "shown": "26세 나의 기록 · 지금의 생각 다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다다",
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "spaces",
+  "pre": {
+   "count": "0/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 4
+  },
+  "sheetOpen": 1,
+  "saved": null,
+  "shown": null,
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ },
+ {
+  "name": "empty",
+  "pre": {
+   "count": "0/140",
+   "msg": "",
+   "saveDisabled": true,
+   "value": 0
+  },
+  "sheetOpen": 1,
+  "saved": null,
+  "shown": null,
+  "xss": {
+   "flag": null,
+   "imgs": 0,
+   "bodyHasRawScript": false
+  }
+ }
+]

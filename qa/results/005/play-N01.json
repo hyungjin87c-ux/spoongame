@@ -1,0 +1,1686 @@
+{
+ "id": "N01",
+ "era": "present",
+ "vp": "d1280",
+ "speed": 4,
+ "engine": "chromium",
+ "selfPicks": [
+  {
+   "key": "school-friend-quarrel@16",
+   "age": 16,
+   "pick": "choice-wait",
+   "n": 3
+  },
+  {
+   "key": "youth-exam-prep@23",
+   "age": 23,
+   "pick": "choice-persist",
+   "n": 3
+  },
+  {
+   "key": "youth-housing@25",
+   "age": 25,
+   "pick": "choice-parents",
+   "n": 3
+  },
+  {
+   "key": "youth-workplace-romance@28",
+   "age": 28,
+   "pick": "choice-keep",
+   "n": 2
+  },
+  {
+   "key": "youth-meeting@31",
+   "age": 31,
+   "pick": "choice-later",
+   "n": 2
+  },
+  {
+   "key": "youth-colleague@36",
+   "age": 36,
+   "pick": "choice-object",
+   "n": 3
+  },
+  {
+   "key": "youth-meeting-again@38",
+   "age": 38,
+   "pick": "choice-meet",
+   "n": 2
+  },
+  {
+   "key": "middle-home-loan@40",
+   "age": 40,
+   "pick": "choice-stay",
+   "n": 2
+  },
+  {
+   "key": "middle-hobby@43",
+   "age": 43,
+   "pick": "choice-join",
+   "n": 3
+  },
+  {
+   "key": "middle-health-check@46",
+   "age": 46,
+   "pick": "choice-change",
+   "n": 2
+  },
+  {
+   "key": "middle-career-peak@51",
+   "age": 51,
+   "pick": "choice-change",
+   "n": 3
+  },
+  {
+   "key": "middle-health-check-later@57",
+   "age": 57,
+   "pick": "choice-exercise",
+   "n": 3
+  },
+  {
+   "key": "middle-retirement-prep@61",
+   "age": 61,
+   "pick": "choice-save",
+   "n": 3
+  },
+  {
+   "key": "senior-travel@69",
+   "age": 69,
+   "pick": "choice-photo",
+   "n": 3
+  },
+  {
+   "key": "senior-diet@71",
+   "age": 71,
+   "pick": "choice-keep",
+   "n": 3
+  },
+  {
+   "key": "senior-new-device@73",
+   "age": 73,
+   "pick": "choice-avoid",
+   "n": 3
+  },
+  {
+   "key": "senior-fall@75",
+   "age": 75,
+   "pick": "choice-tell",
+   "n": 3
+  },
+  {
+   "key": "senior-alone@77",
+   "age": 77,
+   "pick": "choice-go",
+   "n": 3
+  }
+ ],
+ "notesSkipped": 6,
+ "skips": 6,
+ "started": "2026-10-26T06:21:21.890Z",
+ "birthText": "출생 신고\n출생 신고\n수저 게임 · 가상의 서류\n접수\n\n이름\n\n김유나\n\n2026년 9월, 충청남도 천안시 서북구의 평범한 가정에서 3.3kg 여자아이로 태어났습니다. 둘째입니다. (3.3kg은 상위 약 32%)\n\n성별\n여성\n출생 연월\n2026년 9월\n태어난 곳\n충청남도 천안시 서북구\n집안 형편\n은수저\n(상위 17~45% 사이)\n어머니\n39세 · 사무직\n아버지\n44세 · 기계 조작직\n사는 집\n자가\n출생 체중\n3.3kg (상위 약 32%)\n형제 순서\n둘째\n외모\n또래 사이에서 하위 약 5%\n교육방식\n엄격 집에는 지켜야 할 규칙이 많았고, 부모님은 엄했습니다.\n같은 해 태어난 사람들\n박유하 여성\n서울특별시 송파구\n흙수저\n정이현 남성\n서울특별시 강동구\n은수저\n김유준 남성\n경기도 용인시 처인구\n은수저\n박서윤 여성\n경기도 평택시\n동수저\n\n네 사람도 같은 세상에서 나이를 먹습니다. 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.\n\n다른 집 아이들과 견주면\n전체 평균과 이 아이 가정과 비슷한 형편의 비교\n항목\t전체 평균\t이 가정 형편\n사교육 참여율\n국가데이터처, 교육부, 초중고사교육비조사 (2025년)\n\t75.7%\t74.9%\n월 소득 500~600만 원 미만 가구의 학생\n\n월평균 사교육비\n국가데이터처, 교육부, 초중고사교육비조사 (2025년)\n\t45.8만 원\t40.5만 원\n월 소득 500~600만 원 미만 가구의 학생\n\n자기 집에 사는 가구\n국토교통부, 주거실태조사 (2024년)\n\t58.4%\t63.6%\n중소득층 가구\n\n평균은 각 통계의 전체 대상(학생, 가구) 기준이고, 이 가정 열은 수저 단계에 맞춘 소득 구간의 값입니다. 단계와 소득 구간의 대응은 게임의 설계값입니다.\n\n소득 상위 20%와 하위 20%의 기대수명 차이는 6.48세입니다(2017년). 집단의 평균 차이입니다.\n\n통계청 통계개발원(현 국가데이터처 국가데이터연구원), 한국의 사회동향 2019 (2017년)\n\n출생 통계는 2025년 행정구역 기준이며, 2026년에 바뀐 시·도와 시·군·구는 인구 비례로 옮긴 설계값입니다.\n\n출생 월, 출생 체중, 부모의 나이, 형제 순서는 2025년 출생 통계(국가데이터처), 부모의 직업은 30·40대 취업자 직업 분포(2024년), 사는 집은 주거실태조사 점유형태(국토교통부, 2024년)를 바탕으로 했습니다. 출생 체중 순위는 같은 성별 출생아 가운데 값입니다.\n\n사는 집은 출생아 가구가 아니라 일반 가구 전체의 점유형태를 바탕으로 한 근사입니다.\n\n수저 단계에 따른 부모 나이, 직업, 사는 집의 차이는 게임의 설계값이며 통계가 아닙니다.\n\n살아가기",
+ "afterStart": 3165,
+ "elapsedSec": 284,
+ "ending": {
+  "name": "김유나의 인생",
+  "span": "2026년 9월 ~ 2103년 · 77세",
+  "death": "77세에 세상을 떠났습니다. 원인은 조용한 잠이었습니다.",
+  "choices": "살아오며 18번의 선택을 했습니다.",
+  "delegated": "어린 시절의 큰 결정 가운데 5번은 부모님이 내렸고, 2번은 아이의 일로 흘러갔습니다.",
+  "order": "태어날 때부터 차례로",
+  "gentle": null,
+  "playtime": "이 판의 플레이 시간 4분 32초 04:32 세월이 흐른 시간 4분 1초 04:01, 결정을 읽고 고른 시간 0분 31초 00:31의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+  "playtimeNote": "세월이 흐른 시간 4분 1초 04:01, 결정을 읽고 고른 시간 0분 31초 00:31의 합입니다. 그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다. 배속이나 자동 모드, 「다음 결정으로」를 쓴 판이라 1배속으로 직접 고른 판보다 짧게 잡힙니다. 이 기기에만 저장됩니다.",
+  "entries": 46,
+  "pickedBy": {
+   "parent": 5,
+   "child": 2,
+   "self": 18
+  },
+  "groups": [
+   "timeline-infant",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-school",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-youth",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-middle",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-senior",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry",
+   "timeline-entry"
+  ],
+  "overflow": 0,
+  "firstEntries": [
+   {
+    "kind": "stage",
+    "text": "0세 2026년 9월, 충청남도 천안시 서북구의 평범한 가정에서 3.3kg 여자아이로 태어났습니다. 둘째입니다. (3.3kg은 상위 약 32%)",
+    "picked": null
+   },
+   {
+    "kind": "event",
+    "text": "0세 첫 예방접종 첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. 어른들은 아이를 안아 달랜 뒤 집으로 돌아왔습니다.",
+    "picked": null
+   },
+   {
+    "kind": "choice",
+    "text": "0세 일을 쉬는 한 해 부모님이 이렇게 정했습니다: 번갈아 가며 일을 쉰다 두 사람이 차례로 일을 쉬며 아이를 돌봤습니다. 서로의 일터에 눈치가 보였지만 아이 곁에는 늘 누군가 있었습니다.",
+    "picked": "parent"
+   }
+  ],
+  "sample": [
+   {
+    "kind": "choice",
+    "text": "0세 일을 쉬는 한 해 부모님이 이렇게 정했습니다: 번갈아 가며 일을 쉰다 두 사람이 차례로 일을 쉬며 아이를 돌봤습니다. 서로의 일터에 눈치가 보였지만 아이 곁에는 늘 누군가 있었습니다.",
+    "picked": "parent"
+   },
+   {
+    "kind": "choice",
+    "text": "3세 맡겨지는 낮 부모님이 이렇게 정했습니다: 조부모님 곁에서 지낸다 낮에는 조부모님 곁에서 지냈습니다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었습니다.",
+    "picked": "parent"
+   },
+   {
+    "kind": "choice",
+    "text": "6세 화면 앞의 아이 부모님이 이렇게 정했습니다: 보여 주지 않는다 화면 대신 공과 블록을 손에 쥐여 주었습니다. 어른들은 한동안 더 지쳤습니다.",
+    "picked": "parent"
+   },
+   {
+    "kind": "choice",
+    "text": "8세 집 앞의 강아지 부모님이 이렇게 정했습니다: 집에 들이지는 않고 먹이만 챙겨 주기로 한다 집에 들이지는 않고 남은 밥만 챙겨 주기로 했습니다. 어느 날부터 강아지는 보이지 않았습니다.",
+    "picked": "parent"
+   }
+  ]
+ },
+ "endingOver": {
+  "scrollW": 1280,
+  "clientW": 1280,
+  "over": 0,
+  "offenders": []
+ },
+ "qa": {
+  "cards": [
+   {
+    "t": 5298,
+    "key": "infant-parental-leave@0",
+    "by": "parent",
+    "age": 1,
+    "chip": "부모님의 결정",
+    "stamp": "부모님이 이렇게 정했습니다",
+    "label": "번갈아 가며 일을 쉰다",
+    "title": "일을 쉬는 한 해",
+    "hint": true,
+    "buttons": 0,
+    "impact": "집안 살림\n▼▼\n집안 살림이 줄어듭니다.\n관계\n▲▲\n관계가 늘어납니다.\n행복\n▲\n행복이 조금 늘어납니다.\n건강\n▲\n건강이 조금 늘어납니다.",
+    "modal": false,
+    "focusIn": false,
+    "focusTag": "BUTTON",
+    "aboveLog": true
+   },
+   {
+    "t": 26186,
+    "key": "infant-care@3",
+    "by": "parent",
+    "age": 4,
+    "chip": "부모님의 결정",
+    "stamp": "부모님이 이렇게 정했습니다",
+    "label": "조부모님 곁에서 지낸다",
+    "title": "맡겨지는 낮",
+    "hint": false,
+    "buttons": 0,
+    "impact": "관계\n▲▲\n관계가 늘어납니다.",
+    "modal": false,
+    "focusIn": false,
+    "focusTag": "BUTTON",
+    "aboveLog": true
+   },
+   {
+    "t": 47672,
+    "key": "infant-screen@6",
+    "by": "parent",
+    "age": 7,
+    "chip": "부모님의 결정",
+    "stamp": "부모님이 이렇게 정했습니다",
+    "label": "보여 주지 않는다",
+    "title": "화면 앞의 아이",
+    "hint": false,
+    "buttons": 0,
+    "impact": "관계\n▲\n관계가 조금 늘어납니다.\n행복\n▼\n행복이 조금 줄어듭니다.\n건강\n▲\n건강이 조금 늘어납니다.",
+    "modal": false,
+    "focusIn": false,
+    "focusTag": "H1#life-name",
+    "aboveLog": true
+   },
+   {
+    "t": 58462,
+    "key": "school-puppy@8",
+    "by": "parent",
+    "age": 9,
+    "chip": "부모님의 결정",
+    "stamp": "부모님이 이렇게 정했습니다",
+    "label": "집에 들이지는 않고 먹이만 챙겨 주기로 한다",
+    "title": "집 앞의 강아지",
+    "hint": false,
+    "buttons": 0,
+    "impact": "관계\n▲\n관계가 조금 늘어납니다.\n행복\n▲\n행복이 조금 늘어납니다.",
+    "modal": false,
+    "focusIn": false,
+    "focusTag": "H1#life-name",
+    "aboveLog": true
+   },
+   {
+    "t": 64727,
+    "key": "school-academy-night@14",
+    "by": "parent",
+    "age": 15,
+    "chip": "부모님의 결정",
+    "stamp": "부모님이 이렇게 정했습니다",
+    "label": "학원에 보내지 않고 친구들과 어울리게 둔다",
+    "title": "늦은 밤의 학원가",
+    "hint": false,
+    "buttons": 0,
+    "impact": "관계\n▲▲\n관계가 늘어납니다.\n행복\n▲\n행복이 조금 늘어납니다.",
+    "modal": false,
+    "focusIn": false,
+    "focusTag": "H1#life-name",
+    "aboveLog": true
+   }
+  ],
+  "picks": [
+   {
+    "t": 75810,
+    "key": "school-friend-quarrel@16",
+    "age": 16,
+    "mode": "sheet",
+    "title": "틀어진 사이",
+    "n": 3
+   },
+   {
+    "t": 96594,
+    "key": "youth-exam-prep@23",
+    "age": 23,
+    "mode": "sheet",
+    "title": "길어지는 준비",
+    "n": 3
+   },
+   {
+    "t": 109751,
+    "key": "youth-housing@25",
+    "age": 25,
+    "mode": "sheet",
+    "title": "살 곳을 구하는 일",
+    "n": 3
+   },
+   {
+    "t": 116294,
+    "key": "youth-workplace-romance@28",
+    "age": 28,
+    "mode": "sheet",
+    "title": "같은 팀의 사람",
+    "n": 2
+   },
+   {
+    "t": 128389,
+    "key": "youth-meeting@31",
+    "age": 31,
+    "mode": "sheet",
+    "title": "소개받은 자리",
+    "n": 2
+   },
+   {
+    "t": 145288,
+    "key": "youth-colleague@36",
+    "age": 36,
+    "mode": "sheet",
+    "title": "일터에서의 일",
+    "n": 3
+   },
+   {
+    "t": 153506,
+    "key": "youth-meeting-again@38",
+    "age": 38,
+    "mode": "sheet",
+    "title": "뒤늦은 소개",
+    "n": 2
+   },
+   {
+    "t": 161701,
+    "key": "middle-home-loan@40",
+    "age": 40,
+    "mode": "sheet",
+    "title": "넓혀 갈 집",
+    "n": 2
+   },
+   {
+    "t": 172399,
+    "key": "middle-hobby@43",
+    "age": 43,
+    "mode": "sheet",
+    "title": "늦게 시작한 일",
+    "n": 3
+   },
+   {
+    "t": 178063,
+    "key": "middle-health-check@46",
+    "age": 46,
+    "mode": "sheet",
+    "title": "검진 결과표",
+    "n": 2
+   },
+   {
+    "t": 195579,
+    "key": "middle-career-peak@51",
+    "age": 51,
+    "mode": "sheet",
+    "title": "맡겨진 자리",
+    "n": 3
+   },
+   {
+    "t": 204719,
+    "key": "middle-health-check-later@57",
+    "age": 57,
+    "mode": "sheet",
+    "title": "다시 받은 결과",
+    "n": 3
+   },
+   {
+    "t": 217892,
+    "key": "middle-retirement-prep@61",
+    "age": 61,
+    "mode": "sheet",
+    "title": "내려놓을 때를 생각하며",
+    "n": 3
+   },
+   {
+    "t": 240197,
+    "key": "senior-travel@69",
+    "age": 69,
+    "mode": "sheet",
+    "title": "미뤄 둔 여행",
+    "n": 3
+   },
+   {
+    "t": 252436,
+    "key": "senior-diet@71",
+    "age": 71,
+    "mode": "sheet",
+    "title": "식탁 위의 약",
+    "n": 3
+   },
+   {
+    "t": 260606,
+    "key": "senior-new-device@73",
+    "age": 73,
+    "mode": "sheet",
+    "title": "낯선 기계",
+    "n": 3
+   },
+   {
+    "t": 272809,
+    "key": "senior-fall@75",
+    "age": 75,
+    "mode": "sheet",
+    "title": "미끄러진 겨울날",
+    "n": 3
+   },
+   {
+    "t": 281330,
+    "key": "senior-alone@77",
+    "age": 77,
+    "mode": "sheet",
+    "title": "혼자 사는 집",
+    "n": 3
+   }
+  ],
+  "audits": [
+   {
+    "age": 0,
+    "rows": 1,
+    "ordered": true,
+    "first": 0,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 1,
+    "rows": 3,
+    "ordered": true,
+    "first": 0,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 2,
+    "rows": 5,
+    "ordered": true,
+    "first": 1,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 3,
+    "rows": 5,
+    "ordered": true,
+    "first": 1,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 4,
+    "rows": 6,
+    "ordered": true,
+    "first": 3,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 5,
+    "rows": 7,
+    "ordered": true,
+    "first": 4,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 6,
+    "rows": 8,
+    "ordered": true,
+    "first": 5,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 7,
+    "rows": 10,
+    "ordered": true,
+    "first": 7,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 8,
+    "rows": 11,
+    "ordered": true,
+    "first": 7,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 9,
+    "rows": 12,
+    "ordered": true,
+    "first": 8,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 13,
+    "rows": 15,
+    "ordered": true,
+    "first": 12,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 14,
+    "rows": 15,
+    "ordered": true,
+    "first": 12,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 15,
+    "rows": 16,
+    "ordered": true,
+    "first": 14,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 16,
+    "rows": 16,
+    "ordered": true,
+    "first": 14,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 17,
+    "rows": 17,
+    "ordered": true,
+    "first": 16,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 18,
+    "rows": 17,
+    "ordered": true,
+    "first": 16,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 20,
+    "rows": 18,
+    "ordered": true,
+    "first": 20,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 21,
+    "rows": 18,
+    "ordered": true,
+    "first": 20,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 22,
+    "rows": 18,
+    "ordered": true,
+    "first": 20,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 23,
+    "rows": 19,
+    "ordered": true,
+    "first": 22,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 24,
+    "rows": 20,
+    "ordered": true,
+    "first": 23,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 25,
+    "rows": 21,
+    "ordered": true,
+    "first": 24,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 26,
+    "rows": 22,
+    "ordered": true,
+    "first": 25,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 27,
+    "rows": 23,
+    "ordered": true,
+    "first": 26,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 28,
+    "rows": 23,
+    "ordered": true,
+    "first": 26,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 29,
+    "rows": 24,
+    "ordered": true,
+    "first": 28,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 30,
+    "rows": 24,
+    "ordered": true,
+    "first": 28,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 31,
+    "rows": 24,
+    "ordered": true,
+    "first": 28,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 32,
+    "rows": 25,
+    "ordered": true,
+    "first": 31,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 33,
+    "rows": 26,
+    "ordered": true,
+    "first": 32,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 34,
+    "rows": 26,
+    "ordered": true,
+    "first": 32,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 35,
+    "rows": 26,
+    "ordered": true,
+    "first": 32,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 36,
+    "rows": 26,
+    "ordered": true,
+    "first": 32,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 37,
+    "rows": 27,
+    "ordered": true,
+    "first": 36,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 38,
+    "rows": 27,
+    "ordered": true,
+    "first": 36,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 39,
+    "rows": 28,
+    "ordered": true,
+    "first": 38,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 40,
+    "rows": 29,
+    "ordered": true,
+    "first": 40,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 41,
+    "rows": 30,
+    "ordered": true,
+    "first": 40,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 42,
+    "rows": 30,
+    "ordered": true,
+    "first": 40,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 43,
+    "rows": 30,
+    "ordered": true,
+    "first": 40,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 44,
+    "rows": 31,
+    "ordered": true,
+    "first": 43,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 45,
+    "rows": 32,
+    "ordered": true,
+    "first": 44,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 46,
+    "rows": 32,
+    "ordered": true,
+    "first": 44,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 47,
+    "rows": 33,
+    "ordered": true,
+    "first": 46,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 48,
+    "rows": 33,
+    "ordered": true,
+    "first": 46,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 49,
+    "rows": 33,
+    "ordered": true,
+    "first": 46,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 50,
+    "rows": 33,
+    "ordered": true,
+    "first": 46,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 51,
+    "rows": 33,
+    "ordered": true,
+    "first": 46,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 52,
+    "rows": 34,
+    "ordered": true,
+    "first": 51,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 53,
+    "rows": 34,
+    "ordered": true,
+    "first": 51,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 54,
+    "rows": 34,
+    "ordered": true,
+    "first": 51,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 57,
+    "rows": 34,
+    "ordered": true,
+    "first": 51,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 58,
+    "rows": 35,
+    "ordered": true,
+    "first": 57,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 59,
+    "rows": 35,
+    "ordered": true,
+    "first": 57,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 60,
+    "rows": 35,
+    "ordered": true,
+    "first": 57,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 61,
+    "rows": 35,
+    "ordered": true,
+    "first": 57,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 62,
+    "rows": 37,
+    "ordered": true,
+    "first": 62,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 63,
+    "rows": 37,
+    "ordered": true,
+    "first": 62,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 64,
+    "rows": 37,
+    "ordered": true,
+    "first": 62,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 65,
+    "rows": 38,
+    "ordered": true,
+    "first": 65,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 66,
+    "rows": 38,
+    "ordered": true,
+    "first": 65,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 67,
+    "rows": 38,
+    "ordered": true,
+    "first": 65,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 68,
+    "rows": 38,
+    "ordered": true,
+    "first": 65,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 69,
+    "rows": 38,
+    "ordered": true,
+    "first": 65,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 70,
+    "rows": 39,
+    "ordered": true,
+    "first": 69,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 71,
+    "rows": 40,
+    "ordered": true,
+    "first": 70,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 72,
+    "rows": 41,
+    "ordered": true,
+    "first": 71,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 73,
+    "rows": 41,
+    "ordered": true,
+    "first": 71,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 74,
+    "rows": 42,
+    "ordered": true,
+    "first": 73,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 75,
+    "rows": 43,
+    "ordered": true,
+    "first": 74,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 76,
+    "rows": 44,
+    "ordered": true,
+    "first": 75,
+    "over": 0,
+    "topPx": 0
+   },
+   {
+    "age": 77,
+    "rows": 44,
+    "ordered": true,
+    "first": 75,
+    "over": 0,
+    "topPx": 0
+   }
+  ],
+  "notes": [],
+  "lastAge": 77,
+  "lastPc": null,
+  "lastCh": null
+ },
+ "save": {
+  "version": 8,
+  "data": {
+   "phase": "ending",
+   "era": "present",
+   "lifeLength": "short30",
+   "character": {
+    "name": "김유나",
+    "gender": "female",
+    "birthYear": 2026,
+    "parentWealth": 3,
+    "parenting": "strict",
+    "looks": 21
+   },
+   "stats": {
+    "education": 71,
+    "health": 55,
+    "happiness": 63,
+    "relationships": 67
+   },
+   "birthStats": {
+    "education": 9,
+    "health": 61,
+    "happiness": 40,
+    "relationships": 53
+   },
+   "age": 77,
+   "history": [
+    {
+     "age": 0,
+     "kind": "stage",
+     "text": "2026년 9월, 충청남도 천안시 서북구의 평범한 가정에서 3.3kg 여자아이로 태어났습니다. 둘째입니다. (3.3kg은 상위 약 32%)"
+    },
+    {
+     "age": 0,
+     "kind": "event",
+     "title": "첫 예방접종",
+     "text": "첫 예방 주사를 맞던 날, 아이는 크게 울었습니다. 어른들은 아이를 안아 달랜 뒤 집으로 돌아왔습니다.",
+     "eventId": "infant-vaccine"
+    },
+    {
+     "age": 0,
+     "kind": "choice",
+     "title": "일을 쉬는 한 해",
+     "text": "두 사람이 차례로 일을 쉬며 아이를 돌봤습니다. 서로의 일터에 눈치가 보였지만 아이 곁에는 늘 누군가 있었습니다.",
+     "choice": "번갈아 가며 일을 쉰다",
+     "eventId": "infant-parental-leave",
+     "by": "parent"
+    },
+    {
+     "age": 1,
+     "kind": "event",
+     "title": "첫 걸음마",
+     "text": "아이가 붙잡고 서더니 처음으로 혼자 몇 걸음을 걸었습니다. 모두가 숨을 죽였습니다.",
+     "eventId": "infant-first-steps"
+    },
+    {
+     "age": 1,
+     "kind": "event",
+     "title": "첫 말",
+     "text": "아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.",
+     "eventId": "infant-first-word"
+    },
+    {
+     "age": 3,
+     "kind": "choice",
+     "title": "맡겨지는 낮",
+     "text": "낮에는 조부모님 곁에서 지냈습니다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었습니다.",
+     "choice": "조부모님 곁에서 지낸다",
+     "eventId": "infant-care",
+     "by": "parent"
+    },
+    {
+     "age": 4,
+     "kind": "event",
+     "title": "묻기 시작한 아이",
+     "text": "아이는 눈에 띄는 것마다 이름과 까닭을 물었습니다. 아이의 질문은 하루 종일 끊이지 않았습니다.",
+     "eventId": "infant-questions"
+    },
+    {
+     "age": 5,
+     "kind": "event",
+     "title": "무릎 위의 노래",
+     "text": "조부모님 무릎에 앉아 듣던 노래가 오래도록 귓가에 남았습니다.",
+     "eventId": "infant-grandparent-song"
+    },
+    {
+     "age": 6,
+     "kind": "choice",
+     "title": "화면 앞의 아이",
+     "text": "화면 대신 공과 블록을 손에 쥐여 주었습니다. 어른들은 한동안 더 지쳤습니다.",
+     "choice": "보여 주지 않는다",
+     "eventId": "infant-screen",
+     "by": "parent"
+    },
+    {
+     "age": 7,
+     "kind": "stage",
+     "text": "학교에 들어갈 나이가 되었습니다."
+    },
+    {
+     "age": 7,
+     "kind": "event",
+     "title": "책가방을 멘 아침",
+     "text": "아이는 책가방을 메고 처음으로 학교에 갔습니다. 교문 앞에서 몇 번이나 뒤를 돌아보았습니다.",
+     "eventId": "school-first-day"
+    },
+    {
+     "age": 8,
+     "kind": "choice",
+     "title": "집 앞의 강아지",
+     "text": "집에 들이지는 않고 남은 밥만 챙겨 주기로 했습니다. 어느 날부터 강아지는 보이지 않았습니다.",
+     "choice": "집에 들이지는 않고 먹이만 챙겨 주기로 한다",
+     "eventId": "school-puppy",
+     "by": "parent"
+    },
+    {
+     "age": 10,
+     "kind": "choice",
+     "title": "교실의 한 아이",
+     "text": "선생님께 조용히 말씀드렸습니다. 일은 어른들 손으로 정리되었고 교실은 한동안 어색했습니다.",
+     "choice": "선생님께 알린다",
+     "eventId": "school-bully",
+     "by": "child"
+    },
+    {
+     "age": 11,
+     "kind": "event",
+     "title": "학원 이야기로 시작하는 대화",
+     "text": "쉬는 시간의 대화는 어느 학원에 다니는지로 시작되었습니다. 다니지 않는 아이는 대화에 끼기 어려웠습니다.",
+     "eventId": "school-academy-talk"
+    },
+    {
+     "age": 12,
+     "kind": "choice",
+     "title": "눈여겨보신 선생님",
+     "text": "부모님과 늦도록 이야기를 나눴습니다. 결국 하루 몇 시간씩 공부하는 일을 허락받았습니다.",
+     "choice": "집에 가서 부모님과 의논한다",
+     "eventId": "school-teacher-notice",
+     "by": "child"
+    },
+    {
+     "age": 14,
+     "kind": "choice",
+     "title": "늦은 밤의 학원가",
+     "text": "수업이 끝나면 친구들과 어울렸습니다. 점수는 제자리인데 웃을 일이 많았습니다.",
+     "choice": "학원에 보내지 않고 친구들과 어울리게 둔다",
+     "eventId": "school-academy-night",
+     "by": "parent"
+    },
+    {
+     "age": 16,
+     "kind": "choice",
+     "title": "틀어진 사이",
+     "text": "각자의 자리를 지키며 시간을 보냈습니다. 사이는 풀렸지만 예전 같지는 않았고, 마음은 차분해졌습니다.",
+     "choice": "시간이 지나길 기다린다",
+     "eventId": "school-friend-quarrel"
+    },
+    {
+     "age": 20,
+     "kind": "stage",
+     "text": "스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다."
+    },
+    {
+     "age": 22,
+     "kind": "event",
+     "title": "연락이 없는 날들",
+     "text": "지원서를 낸 곳에서는 번번이 소식이 없었습니다. 방 안에서 보내는 날들이 길어졌습니다.",
+     "eventId": "youth-job-rejections"
+    },
+    {
+     "age": 23,
+     "kind": "choice",
+     "title": "길어지는 준비",
+     "text": "도서관에서 보내는 하루가 이어졌습니다. 통장은 비어 갔고 마음은 자꾸 좁아졌습니다.",
+     "choice": "기한을 두지 않고 계속 준비한다",
+     "eventId": "youth-exam-prep"
+    },
+    {
+     "age": 24,
+     "kind": "event",
+     "title": "합격 소식",
+     "text": "결과가 나온 날, 이름을 찾아 몇 번이나 다시 확인했습니다. 긴 준비가 끝났습니다.",
+     "eventId": "youth-exam-passed"
+    },
+    {
+     "age": 25,
+     "kind": "choice",
+     "title": "살 곳을 구하는 일",
+     "text": "집을 나서지 않기로 했습니다. 돈은 아꼈지만 독립은 조금씩 미뤄졌습니다.",
+     "choice": "부모님 집에 머문다",
+     "eventId": "youth-housing"
+    },
+    {
+     "age": 26,
+     "kind": "event",
+     "title": "끝나지 않는 일",
+     "text": "일은 끝이 없었습니다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었습니다.",
+     "eventId": "youth-work-pressure"
+    },
+    {
+     "age": 28,
+     "kind": "choice",
+     "title": "같은 팀의 사람",
+     "text": "선을 넘지 않기로 했습니다. 서로 편한 동료로 남았고, 일에 쏟는 마음은 더 단단해졌습니다.",
+     "choice": "일터에서는 선을 지킨다",
+     "eventId": "youth-workplace-romance"
+    },
+    {
+     "age": 31,
+     "kind": "choice",
+     "title": "소개받은 자리",
+     "text": "일정을 핑계로 약속을 미뤘습니다. 한동안은 마음이 편했습니다.",
+     "choice": "바쁘다며 미룬다",
+     "eventId": "youth-meeting"
+    },
+    {
+     "age": 32,
+     "kind": "event",
+     "title": "혼자의 시간",
+     "text": "혼자 보내는 주말이 어느새 익숙해졌습니다. 쓸쓸한 날도 있었지만 내 시간을 내 뜻대로 쓸 수 있었습니다.",
+     "eventId": "youth-single-years"
+    },
+    {
+     "age": 36,
+     "kind": "choice",
+     "title": "일터에서의 일",
+     "text": "회의에서 내 생각을 말했습니다. 분위기는 서늘해졌는데 몇몇 동료가 뒤에서 고개를 끄덕였습니다.",
+     "choice": "분명하게 이의를 제기한다",
+     "eventId": "youth-colleague"
+    },
+    {
+     "age": 38,
+     "kind": "choice",
+     "title": "뒤늦은 소개",
+     "text": "오랜만에 옷을 갖춰 입고 나갔습니다. 어색한 인사 끝에 이야기가 길어졌습니다.",
+     "choice": "나가서 만나 본다",
+     "eventId": "youth-meeting-again"
+    },
+    {
+     "age": 40,
+     "kind": "stage",
+     "text": "어느덧 마흔이 되었습니다."
+    },
+    {
+     "age": 40,
+     "kind": "choice",
+     "title": "넓혀 갈 집",
+     "text": "옮기지 않기로 했습니다. 익숙한 방에서 마음은 편했지만 가끔은 더 넓은 집이 떠올랐습니다.",
+     "choice": "지금 집에 머문다",
+     "eventId": "middle-home-loan"
+    },
+    {
+     "age": 43,
+     "kind": "choice",
+     "title": "늦게 시작한 일",
+     "text": "같은 것을 좋아하는 사람들의 모임에 나갔습니다. 새로운 얼굴들이 일상에 들어왔습니다.",
+     "choice": "모임에 나가 사람들과 함께 한다",
+     "eventId": "middle-hobby"
+    },
+    {
+     "age": 44,
+     "kind": "event",
+     "title": "시큰거리는 허리",
+     "text": "허리를 숙일 때마다 시큰거리기 시작했습니다. 몸이 예전 같지 않다는 것을 처음 인정했습니다.",
+     "eventId": "middle-back-pain"
+    },
+    {
+     "age": 46,
+     "kind": "choice",
+     "title": "검진 결과표",
+     "text": "술자리를 줄이고 저녁마다 걸었습니다. 몸이 가벼워지는 데는 시간이 걸렸습니다.",
+     "choice": "생활을 바꾼다",
+     "eventId": "middle-health-check"
+    },
+    {
+     "age": 51,
+     "kind": "choice",
+     "title": "맡겨진 자리",
+     "text": "경력을 들고 새 직장으로 옮겼습니다. 낯선 환경이 오히려 활력이 되었습니다.",
+     "choice": "다른 곳으로 옮긴다",
+     "eventId": "middle-career-peak"
+    },
+    {
+     "age": 57,
+     "kind": "choice",
+     "title": "다시 받은 결과",
+     "text": "아침마다 걷고 식단을 바꿨습니다. 한 해쯤 지나자 수치가 눈에 띄게 내려갔습니다.",
+     "choice": "생활을 바꾸고 운동을 시작한다",
+     "eventId": "middle-health-check-later"
+    },
+    {
+     "age": 61,
+     "kind": "choice",
+     "title": "내려놓을 때를 생각하며",
+     "text": "씀씀이를 줄이고 노후 자금을 챙겼습니다. 불안이 줄어든 만큼 즐거움도 함께 줄었습니다.",
+     "choice": "씀씀이를 줄이고 모아 둔다",
+     "eventId": "middle-retirement-prep"
+    },
+    {
+     "age": 62,
+     "kind": "event",
+     "text": "부모님이 남기신 재산을 물려받았습니다."
+    },
+    {
+     "age": 65,
+     "kind": "stage",
+     "text": "예순다섯이 되었습니다. 일에서 한 걸음 물러설 나이입니다."
+    },
+    {
+     "age": 69,
+     "kind": "choice",
+     "title": "미뤄 둔 여행",
+     "text": "오래된 사진첩을 펼쳐 놓고 여행을 대신했습니다. 사진마다 그날의 날씨가 되살아났습니다.",
+     "choice": "사진첩으로 대신한다",
+     "eventId": "senior-travel"
+    },
+    {
+     "age": 70,
+     "kind": "event",
+     "title": "오래된 사진",
+     "text": "서랍 깊은 곳에서 오래된 사진이 나왔습니다. 사진 속 얼굴들은 모두 젊었고, 그중 몇은 이제 곁에 없었습니다.",
+     "eventId": "senior-photo"
+    },
+    {
+     "age": 71,
+     "kind": "choice",
+     "title": "식탁 위의 약",
+     "text": "정해진 시간에 약을 먹고 식단을 지켰습니다. 몸이 가벼워진 만큼 식탁은 조금 심심해졌습니다.",
+     "choice": "약과 식단을 철저히 지킨다",
+     "eventId": "senior-diet"
+    },
+    {
+     "age": 73,
+     "kind": "choice",
+     "title": "낯선 기계",
+     "text": "쓰지 않고 버텼습니다. 불편은 늘었지만 눈은 덜 피로했고 내 방식은 지킬 수 있었습니다.",
+     "choice": "쓰지 않고 버틴다",
+     "eventId": "senior-new-device"
+    },
+    {
+     "age": 74,
+     "kind": "event",
+     "title": "지나온 일",
+     "text": "지나온 일을 돌아보며 문득 고개를 끄덕이는 날이 있었습니다. 서툴렀지만 나쁘지 않은 시간이었습니다.",
+     "eventId": "senior-quiet-pride"
+    },
+    {
+     "age": 75,
+     "kind": "choice",
+     "title": "미끄러진 겨울날",
+     "text": "멋쩍게 사정을 털어놓았습니다. 걱정하는 연락이 이어졌고 한동안 누군가 곁을 오갔습니다.",
+     "choice": "가까운 사람에게 알린다",
+     "eventId": "senior-fall"
+    },
+    {
+     "age": 77,
+     "kind": "choice",
+     "title": "혼자 사는 집",
+     "text": "용기를 내 이웃에게 먼저 인사를 건넸습니다. 어색한 인사가 오가다 차 한 잔을 나누는 사이로 이어졌습니다.",
+     "choice": "이웃에게 먼저 말을 건다",
+     "eventId": "senior-alone"
+    },
+    {
+     "age": 77,
+     "kind": "death",
+     "text": "세상을 떠났습니다. 원인은 조용한 잠이었습니다."
+    }
+   ],
+   "flags": [
+    "checked_up",
+    "childcare_set",
+    "grandparent_close",
+    "has_career",
+    "has_partner",
+    "healthy_habit",
+    "hobby",
+    "job_changed",
+    "lives_with_parents",
+    "met_intro",
+    "passed_exam"
+   ],
+   "seen": {
+    "infant-vaccine": 0,
+    "infant-parental-leave": 0,
+    "infant-first-steps": 1,
+    "infant-first-word": 1,
+    "infant-care": 3,
+    "infant-questions": 4,
+    "note-infant-memory": 5,
+    "infant-grandparent-song": 5,
+    "infant-screen": 6,
+    "school-first-day": 7,
+    "school-puppy": 8,
+    "school-bully": 10,
+    "school-academy-talk": 11,
+    "school-teacher-notice": 12,
+    "note-teen-envy": 13,
+    "school-academy-night": 14,
+    "school-friend-quarrel": 16,
+    "note-first-love": 20,
+    "youth-job-rejections": 22,
+    "youth-exam-prep": 23,
+    "youth-exam-passed": 24,
+    "note-parents-aging": 25,
+    "youth-housing": 25,
+    "youth-work-pressure": 26,
+    "youth-workplace-romance": 28,
+    "note-youth-romance": 31,
+    "youth-meeting": 31,
+    "youth-single-years": 32,
+    "youth-colleague": 36,
+    "youth-meeting-again": 38,
+    "middle-home-loan": 40,
+    "middle-hobby": 43,
+    "middle-back-pain": 44,
+    "middle-health-check": 46,
+    "note-midlife": 47,
+    "middle-career-peak": 51,
+    "middle-health-check-later": 57,
+    "middle-retirement-prep": 61,
+    "senior-travel": 69,
+    "senior-photo": 70,
+    "senior-diet": 71,
+    "senior-new-device": 73,
+    "senior-quiet-pride": 74,
+    "senior-fall": 75,
+    "senior-alone": 77
+   },
+   "pending": null,
+   "lastChoiceAge": 77,
+   "death": {
+    "age": 77,
+    "cause": "조용한 잠"
+   },
+   "birthReport": {
+    "month": 9,
+    "region": "충남",
+    "sigunguSido": "충남",
+    "sigungu": "천안시 서북구",
+    "mother": {
+     "age": 39,
+     "job": "clerk"
+    },
+    "father": {
+     "age": 44,
+     "job": "machine"
+    },
+    "housing": "own",
+    "birthWeightKg": 3.3,
+    "birthOrder": 2
+   },
+   "peerSeed": 1373563139,
+   "paused": false,
+   "assets": {
+    "net": 216606,
+    "income": 1664,
+    "debt": 0,
+    "incomeAdj": 1900,
+    "dwelling": "rent"
+   },
+   "familyFund": 0,
+   "seed": 1510294670,
+   "rngState": 2360013628,
+   "play": {
+    "hold": 241534,
+    "decide": 31770,
+    "fold": 0,
+    "note": 7943,
+    "idle": 0,
+    "offSpeed": 240632,
+    "auto": 0,
+    "skips": 6,
+    "resumes": 0
+   }
+  }
+ },
+ "final": {
+  "phase": "ending",
+  "age": 77,
+  "play": {
+   "hold": 241534,
+   "decide": 31770,
+   "fold": 0,
+   "note": 7943,
+   "idle": 0,
+   "offSpeed": 240632,
+   "auto": 0,
+   "skips": 6,
+   "resumes": 0
+  },
+  "histLen": 46,
+  "byCounts": {
+   "parent": 5,
+   "child": 2,
+   "self": 18
+  },
+  "gentleUsed": null
+ },
+ "choiceEvents": [
+  {
+   "age": 0,
+   "by": "parent",
+   "eventId": "infant-parental-leave"
+  },
+  {
+   "age": 3,
+   "by": "parent",
+   "eventId": "infant-care"
+  },
+  {
+   "age": 6,
+   "by": "parent",
+   "eventId": "infant-screen"
+  },
+  {
+   "age": 8,
+   "by": "parent",
+   "eventId": "school-puppy"
+  },
+  {
+   "age": 10,
+   "by": "child",
+   "eventId": "school-bully"
+  },
+  {
+   "age": 12,
+   "by": "child",
+   "eventId": "school-teacher-notice"
+  },
+  {
+   "age": 14,
+   "by": "parent",
+   "eventId": "school-academy-night"
+  },
+  {
+   "age": 16,
+   "by": "self",
+   "eventId": "school-friend-quarrel"
+  },
+  {
+   "age": 23,
+   "by": "self",
+   "eventId": "youth-exam-prep"
+  },
+  {
+   "age": 25,
+   "by": "self",
+   "eventId": "youth-housing"
+  },
+  {
+   "age": 28,
+   "by": "self",
+   "eventId": "youth-workplace-romance"
+  },
+  {
+   "age": 31,
+   "by": "self",
+   "eventId": "youth-meeting"
+  },
+  {
+   "age": 36,
+   "by": "self",
+   "eventId": "youth-colleague"
+  },
+  {
+   "age": 38,
+   "by": "self",
+   "eventId": "youth-meeting-again"
+  },
+  {
+   "age": 40,
+   "by": "self",
+   "eventId": "middle-home-loan"
+  },
+  {
+   "age": 43,
+   "by": "self",
+   "eventId": "middle-hobby"
+  },
+  {
+   "age": 46,
+   "by": "self",
+   "eventId": "middle-health-check"
+  },
+  {
+   "age": 51,
+   "by": "self",
+   "eventId": "middle-career-peak"
+  },
+  {
+   "age": 57,
+   "by": "self",
+   "eventId": "middle-health-check-later"
+  },
+  {
+   "age": 61,
+   "by": "self",
+   "eventId": "middle-retirement-prep"
+  },
+  {
+   "age": 69,
+   "by": "self",
+   "eventId": "senior-travel"
+  },
+  {
+   "age": 71,
+   "by": "self",
+   "eventId": "senior-diet"
+  },
+  {
+   "age": 73,
+   "by": "self",
+   "eventId": "senior-new-device"
+  },
+  {
+   "age": 75,
+   "by": "self",
+   "eventId": "senior-fall"
+  },
+  {
+   "age": 77,
+   "by": "self",
+   "eventId": "senior-alone"
+  }
+ ],
+ "watch": {
+  "console": [],
+  "external": []
+ }
+}

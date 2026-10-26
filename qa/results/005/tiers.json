@@ -1,0 +1,229 @@
+{
+ "school-after-hours": {
+  "1": {
+   "n": 410,
+   "ch": {
+    "care": 213,
+    "alone": 197
+   },
+   "st": {}
+  },
+  "2": {
+   "n": 458,
+   "ch": {
+    "care": 257,
+    "alone": 201
+   },
+   "st": {}
+  },
+  "3": {
+   "n": 377,
+   "ch": {
+    "academy": 110,
+    "alone": 114,
+    "care": 153
+   },
+   "st": {}
+  },
+  "4": {
+   "n": 228,
+   "ch": {
+    "alone": 66,
+    "academy": 71,
+    "care": 91
+   },
+   "st": {}
+  },
+  "5": {
+   "n": 48,
+   "ch": {
+    "alone": 11,
+    "academy": 13,
+    "care": 24
+   },
+   "st": {}
+  }
+ },
+ "infant-fever": {
+  "1": {
+   "n": 513,
+   "ch": {
+    "watch": 254,
+    "hospital": 142,
+    "dismiss": 117
+   },
+   "st": {}
+  },
+  "2": {
+   "n": 632,
+   "ch": {
+    "dismiss": 131,
+    "hospital": 181,
+    "watch": 320
+   },
+   "st": {}
+  },
+  "3": {
+   "n": 511,
+   "ch": {
+    "hospital": 215,
+    "watch": 222,
+    "dismiss": 74
+   },
+   "st": {}
+  },
+  "4": {
+   "n": 323,
+   "ch": {
+    "hospital": 128,
+    "watch": 134,
+    "dismiss": 61
+   },
+   "st": {}
+  },
+  "5": {
+   "n": 73,
+   "ch": {
+    "hospital": 28,
+    "watch": 33,
+    "dismiss": 12
+   },
+   "st": {}
+  }
+ },
+ "infant-care": {
+  "1": {
+   "n": 329,
+   "ch": {
+    "daycare": 167,
+    "grandparents": 162
+   },
+   "st": {}
+  },
+  "2": {
+   "n": 444,
+   "ch": {
+    "grandparents": 194,
+    "daycare": 250
+   },
+   "st": {}
+  },
+  "3": {
+   "n": 385,
+   "ch": {
+    "daycare": 217,
+    "grandparents": 168
+   },
+   "st": {}
+  },
+  "4": {
+   "n": 221,
+   "ch": {
+    "home": 91,
+    "daycare": 72,
+    "grandparents": 58
+   },
+   "st": {}
+  },
+  "5": {
+   "n": 57,
+   "ch": {
+    "home": 28,
+    "daycare": 15,
+    "grandparents": 14
+   },
+   "st": {}
+  }
+ },
+ "school-academy-night": {
+  "1": {
+   "n": 778,
+   "ch": {
+    "one": 298,
+    "friends": 272,
+    "many": 208
+   },
+   "st": {}
+  },
+  "2": {
+   "n": 865,
+   "ch": {
+    "many": 212,
+    "friends": 321,
+    "one": 332
+   },
+   "st": {}
+  },
+  "3": {
+   "n": 826,
+   "ch": {
+    "friends": 229,
+    "many": 294,
+    "one": 303
+   },
+   "st": {}
+  },
+  "4": {
+   "n": 491,
+   "ch": {
+    "friends": 146,
+    "one": 181,
+    "many": 164
+   },
+   "st": {}
+  },
+  "5": {
+   "n": 100,
+   "ch": {
+    "many": 35,
+    "friends": 34,
+    "one": 31
+   },
+   "st": {}
+  }
+ },
+ "infant-early-lessons": {
+  "1": {
+   "n": 300,
+   "ch": {
+    "play": 208,
+    "lessons": 92
+   },
+   "st": {}
+  },
+  "2": {
+   "n": 337,
+   "ch": {
+    "lessons": 98,
+    "play": 239
+   },
+   "st": {}
+  },
+  "3": {
+   "n": 342,
+   "ch": {
+    "play": 237,
+    "lessons": 105
+   },
+   "st": {}
+  },
+  "4": {
+   "n": 199,
+   "ch": {
+    "lessons": 58,
+    "english": 42,
+    "play": 99
+   },
+   "st": {}
+  },
+  "5": {
+   "n": 48,
+   "ch": {
+    "play": 19,
+    "lessons": 17,
+    "english": 12
+   },
+   "st": {}
+  }
+ }
+}
