@@ -1,4 +1,5 @@
 import { ERAS, calendarYear, citationCoverage, citationFor, citationIdFor, type Era, type EventPool } from '../src/core';
+import { insightFor } from '../src/data/citationInsights';
 import { EVENT_POOL } from '../src/data/events';
 import { simulateLife } from './simulateLib';
 
@@ -17,6 +18,12 @@ export interface ExposureRow {
   cited: number;
   /** 노출률 = cited / cards */
   rate: number;
+  /** 본인이 고른 카드 수(연표의 선택 줄 가운데 `by`가 없는 것 — 부모님이 정한·흘러간 줄은 빼고) */
+  selfCards: number;
+  /** 그중 인용 박스 안에 풀이 줄이 보인 카드 수 (SPEC-005 r4 UX14 — 풀이는 본인이 고르는 카드의 인용 박스에만 그려진다, M23) */
+  insighted: number;
+  /** 풀이 노출률 = insighted / selfCards (읽는 시간 모델 `READ_MODEL.insightExposure`의 근거) */
+  insightRate: number;
   /** 서로 다른 인용 id (1000판 동안 한 번이라도 보인 것) */
   distinct: string[];
   /** 한 판에서 같은 인용이 두 번 이상 보인 판 수와 그 인용 id별 판 수 */
@@ -29,6 +36,8 @@ export interface ExposureRow {
 export function exposureOf(era: Era, lives: number, pool: EventPool = EVENT_POOL): ExposureRow {
   let cards = 0;
   let cited = 0;
+  let selfCards = 0;
+  let insighted = 0;
   let repeatLives = 0;
   const distinct = new Set<string>();
   const repeatById: Record<string, number> = {};
@@ -42,10 +51,13 @@ export function exposureOf(era: Era, lives: number, pool: EventPool = EVENT_POOL
       const ev = pool.byId.get(h.eventId);
       if (ev === undefined) continue;
       cards++;
+      const isSelf = h.by === undefined;
+      if (isSelf) selfCards++;
       const row = (byEvent[ev.id] ??= { shown: 0, cited: 0 });
       row.shown++;
       const view = citationFor(ev, era, calendarYear(birthYear, h.age));
       if (view === null) continue;
+      if (isSelf && insightFor(view.id) !== null) insighted++;
       cited++;
       row.cited++;
       distinct.add(view.id);
@@ -57,7 +69,7 @@ export function exposureOf(era: Era, lives: number, pool: EventPool = EVENT_POOL
       for (const [id] of repeated) repeatById[id] = (repeatById[id] ?? 0) + 1;
     }
   }
-  return { era, lives, cards, cited, rate: cards === 0 ? 0 : cited / cards, distinct: [...distinct].sort(), repeatLives, repeatById, byEvent };
+  return { era, lives, cards, cited, rate: cards === 0 ? 0 : cited / cards, selfCards, insighted, insightRate: selfCards === 0 ? 0 : insighted / selfCards, distinct: [...distinct].sort(), repeatLives, repeatById, byEvent };
 }
 
 /** 정적으로 연결된 카드인데 실제로 뜬 횟수 가운데 인용 박스가 보인 몫이 기준 미만인 카드 (REV-003-M7b-1 R-396) */

@@ -29,9 +29,11 @@ export type LifeFocusMoment =
   | 'choiceAppearedBySkip'
   /** 선택지가 대기 중인 채로 자동 모드가 꺼졌다 (R-048) — 인라인 카드가 시트로 바뀐다 */
   | 'autoTurnedOff'
+  /** 선택지가 대기 중인 채로 자동 모드가 켜졌다 (SPEC-005 r4 UX12 — 시트의 「이후 결정을 자동으로 고르게 하기」, 마스터 결정 M-6 개정) — 같은 카드가 시트에서 인라인으로 바뀐다. 사용자가 직접 눌렀다 */
+  | 'autoTurnedOn'
   /** 선택지가 사라졌다 (고르거나 자동으로 골랐다) */
   | 'choiceResolved'
-  /** 사용자가 「카드 접기」(또는 Esc)를 눌렀다 (M7b) */
+  /** 사용자가 「잠시 덮어 두기」(또는 Esc)를 눌렀다 (M7b) */
   | 'cardCollapsed'
   /** 사용자가 접힌 띠의 「결정 다시 열기」를 눌렀다 (M7b) */
   | 'cardReopened'
@@ -45,7 +47,7 @@ export type FocusPlace = 'body' | 'controls' | 'other';
 export type LifeFocusAction = 'none' | 'choiceTitle' | 'lifeTitle' | 'foldOpen';
 
 /**
- * 인생 화면의 포커스 규칙(순수 함수 — DOM 없이 단위 테스트한다). 9순간(SPEC-005에서 `delegatedCard` 추가) × 자동 모드 2 × 위치 3 = 54칸이 tests/focus.test.ts에 사람이 적은 기대값으로 있다.
+ * 인생 화면의 포커스 규칙(순수 함수 — DOM 없이 단위 테스트한다). 10순간(SPEC-005에서 `delegatedCard`·`autoTurnedOn` 추가) × 자동 모드 2 × 위치 3 = 60칸이 tests/focus.test.ts에 사람이 적은 기대값으로 있다.
  *  1. 자동 모드에서는 선택지가 떠도 포커스를 옮기지 않는다. 카드는 비모달 인라인이라 키보드로 자동 모드 버튼까지 가서 끌 수 있어야 한다(SPEC "언제든 해제 가능").
  *  2. **수동 모드에서는 카드가 모달 시트이고 바깥 전부가 inert다**(M7b, 마스터 결정 M-6·D-52). 시트가 뜨는 순간 컨트롤에 있던 포커스는 body로 떨어지므로 R-036 규칙 2(「컨트롤 안이면 포커스는 두고 알리기만」)는
  *     성립하지 않는다 — 포커스가 어디에 있었든(body·컨트롤·그 밖) 선택지 제목으로 간다. 규칙 2가 막으려던 「포커스가 튀어 다음 Space가 엉뚱한 선택을 확정」은 제목(버튼이 아님)으로 가므로 생기지 않고 400ms 입력 가드가 남는다.
@@ -55,8 +57,11 @@ export type LifeFocusAction = 'none' | 'choiceTitle' | 'lifeTitle' | 'foldOpen';
  *  6. 선택지가 사라질 때 포커스가 body로 떨어졌다면(키보드로 누른 선택 버튼·카드의 제목·「결정 다시 열기」가 사라진 경우) **자동·수동 모두** 인생 화면 제목으로 보낸다(스크롤은 그대로, `preventScroll`). 다른 곳에 있었다면 그대로 둔다.
  *     자동 모드도 같은 이유다(R-393, 마스터 승인): 「결정 다시 열기」를 누르면 포커스가 인라인 카드 제목으로 가고(8), 3초 뒤 자동 선택으로 카드가 사라지면 포커스가 body로 떨어진다.
  *     규칙 1(「포커스를 빼앗지 않는다」)과 부딪치지 않는다 — 이미 잃은 포커스를 되돌려 줄 뿐이다. 「잃었다」는 포커스가 **있던 요소가 사라져서** body가 된 경우만이다(`lostFocusPlace`): 처음부터 아무것도 누르지 않아 body인 자동 진행은 건드리지 않는다.
- *  7. 사용자가 「카드 접기」(Esc)를 누르면 어느 모드·어느 위치든 접힌 띠의 「결정 다시 열기」로 간다(U6(b) — 「열기 전 요소」로 되돌리지 않는다: 카드가 저절로 뜬 경우 그 요소가 body이거나 컨트롤이라 규칙 2·6과 부딪친다).
+ *  7. 사용자가 「잠시 덮어 두기」(Esc)를 누르면 어느 모드·어느 위치든 접힌 띠의 「결정 다시 열기」로 간다(U6(b) — 「열기 전 요소」로 되돌리지 않는다: 카드가 저절로 뜬 경우 그 요소가 body이거나 컨트롤이라 규칙 2·6과 부딪친다).
  *  8. 사용자가 「결정 다시 열기」를 누르면 어느 모드·어느 위치든 **선택지 제목**으로 간다 — 자동 모드여도 사용자가 직접 눌렀으므로(`choiceAppearedBySkip`의 원칙).
+ *  9. (SPEC-005 r4 UX12) 선택지가 대기 중인 채 사용자가 카드 맨 끝의 「이후 결정을 자동으로 고르게 하기」를 눌러 자동 모드가 켜지면(`autoTurnedOn`) 같은 카드가 시트에서 인라인으로 바뀐다 —
+ *     누른 버튼이 시트와 함께 사라지므로 포커스는 어디에 있었든(자동 모드가 켜졌어도) **선택지 제목**으로 간다. 「결정 다시 열기」(8)와 같은 원칙: 사용자가 직접 눌렀으므로 자동 모드에서도 옮긴다.
+ *     끄는 쪽(인라인 → 시트)은 `autoTurnedOff`(5)가 그대로 맡는다. 도구 줄로 켜는 길은 시트가 떠 있는 동안 `inert`라 이 순간을 만들지 않는다(카드를 접어 둔 채 켜면 접힘 변화가 먼저다).
  *  화면이 처음 뜰 때(선택지 없음)는 제목(이름)으로 — R-030.
  * 컨트롤 그룹의 Tab 순서는 이 규칙과 무관하게 선택지가 뜨든 사라지든 변하지 않는다("다음 결정으로"는 disabled가 아니라 aria-disabled라 포커스를 받는다, R-036).
  */
@@ -77,6 +82,7 @@ export function decideLifeFocus(moment: LifeFocusMoment, autoMode: boolean, plac
     case 'cardCollapsed':
       return 'foldOpen';
     case 'cardReopened':
+    case 'autoTurnedOn':
       return 'choiceTitle';
     case 'delegatedCard':
       return 'none'; // 부모 결정·흘러감 카드: 자동·수동, 어느 위치든 포커스를 옮기지 않는다 (PD5-a)
@@ -98,6 +104,7 @@ export interface FocusSnapshot {
  *  - 선택지 키가 바뀌었다: 사라졌으면 `choiceResolved`, 새로 떴으면 `choiceAppearedBySkip`(방금 「다음 결정으로」를 눌렀을 때) 또는 `choiceAppeared`.
  *  - 키가 같은데 접힘이 바뀌었다: 접혔으면 `cardCollapsed`, 다시 열렸으면 `cardReopened` (접기·다시 열기는 사용자가 직접 누른 것뿐이다).
  *  - 키가 같고 접히지 않은 채 자동 모드가 꺼졌다: `autoTurnedOff` (접힌 채 끄면 옮길 제목이 없다 — 다시 열 때 그때의 자동 모드에 맞는 틀로 뜬다).
+ *  - 키가 같고 접히지 않은 채 자동 모드가 켜졌다: `autoTurnedOn` (SPEC-005 r4 UX12 — 시트의 자동 고르기 버튼. 접힌 채 켜면 순간이 아니다 — 다시 열 때 `cardReopened`).
  */
 export function lifeFocusMoment(prev: FocusSnapshot | null, now: FocusSnapshot, skipPressed: boolean): LifeFocusMoment | null {
   if (prev === null) return now.key === null ? 'enter' : 'enterWithChoice';
@@ -105,6 +112,7 @@ export function lifeFocusMoment(prev: FocusSnapshot | null, now: FocusSnapshot, 
   if (now.key === null) return null;
   if (prev.folded !== now.folded) return now.folded ? 'cardCollapsed' : 'cardReopened';
   if (!now.folded && prev.autoMode && !now.autoMode) return 'autoTurnedOff';
+  if (!now.folded && !prev.autoMode && now.autoMode) return 'autoTurnedOn';
   return null;
 }
 
@@ -147,8 +155,8 @@ export interface LifeFocusHandle {
 }
 
 /**
- * 인생 화면의 포커스를 한 곳에서 정한다(decideLifeFocus 규칙). 선택지가 뜨거나 사라질 때(pendingKey가 바뀔 때), 카드가 접히거나 다시 열릴 때, 선택지가 대기 중인 채 자동 모드가 꺼질 때,
- * 화면이 처음 뜰 때만 동작하고, 나이 변화·자동 모드 켜기 같은 다른 갱신에서는 아무것도 하지 않는다.
+ * 인생 화면의 포커스를 한 곳에서 정한다(decideLifeFocus 규칙). 선택지가 뜨거나 사라질 때(pendingKey가 바뀔 때), 카드가 접히거나 다시 열릴 때, 선택지가 대기 중인 채 자동 모드가 꺼지거나 켜질 때(r4: 시트의 자동 고르기 버튼),
+ * 화면이 처음 뜰 때만 동작하고, 나이 변화 같은 다른 갱신에서는 아무것도 하지 않는다.
  */
 export function useLifeFocus(targets: LifeFocusTargets): LifeFocusHandle {
   const latest = useRef(targets);

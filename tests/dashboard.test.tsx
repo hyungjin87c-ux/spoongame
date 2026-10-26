@@ -105,7 +105,7 @@ const openTag = (html: string, testid: string) => {
   const at = posOf(html, `data-testid="${testid}"`);
   return html.slice(html.lastIndexOf('<', at), html.indexOf('>', at) + 1);
 };
-/** 선택지 버튼들만 (카드 머리의 「카드 접기」 버튼은 뺀다) */
+/** 선택지 버튼들만 (카드 머리의 「잠시 덮어 두기」 버튼은 뺀다) */
 function choiceButtons(panel: string): string[] {
   return [...panel.matchAll(/<button\b[^>]*class="choice"[\s\S]*?<\/button>/g)].map((m) => m[0]);
 }

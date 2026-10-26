@@ -121,10 +121,11 @@ for (const mode of modes) {
     // 연출 계수 k별 모델 시간: k는 count() 안의 `delegatedExtraMs`(필요량이 기본 대기보다 긴 몫)에도 들어가므로 k마다 다시 잰다. 모드 표를 잠시 덮어쓰고 되돌린다.
     const saved = LIFE_LENGTH_MODES[mode].holdScale;
     try {
-      console.log('\n### 연출 계수 k별 1배속 수동 예상 (분, 읽기 중앙) — 판정: 시대별 25.5~34.5 · 세 시대 평균 27~33');
+      console.log(`\n### 연출 계수 k별 1배속 수동 예상 (분, 읽기 중앙) — 판정: 시대별 ${m.timeMin.modelLow - 1.5}~${m.timeMin.modelHigh + 1.5} · 세 시대 평균 ${m.timeMin.modelLow}~${m.timeMin.modelHigh} (M24)`);
       console.log('| k | 지난 | 지금 | 다가올 | 세 시대 평균 | 부모 해 연장(초/판) 지·지·다 | 판정 |');
       console.log('|---|---:|---:|---:|---:|---|---|');
-      for (const k of [1.25, 1.3, 1.35, 1.4, 1.45, 1.6875]) {
+      // 후보 k: 사다리 + 현재 값(R-497 — 예전에는 현재 값 1.6875를 리터럴로 적었다. 현재 값이 바뀌면 표가 알아서 따라가고 사다리와 겹치면 한 번만 나온다)
+      for (const k of [...new Set([1.25, 1.3, 1.35, 1.4, 1.45, saved])].sort((a, b) => a - b)) {
         LIFE_LENGTH_MODES[mode].holdScale = k;
         const sums = summarizeAll(mode);
         const meds = sums.map((x) => x.median.mean);
@@ -181,6 +182,9 @@ for (const mode of modes) {
     row('인용 노출률', f(READ_MODEL.citeExposure.past, 2) + ' / ' + f(READ_MODEL.citeExposure.present, 2) + ' / ' + f(READ_MODEL.citeExposure.future, 2), '-', (s) => s.exposure, '0.10 / 0.53 / 0.49', 3);
     row('인용 요약(자, 시대 머리말 포함)', '-', '-', (s) => s.citeText, '61.3(머리말 제외)');
     row('인용 출처 줄(자)', '-', '-', (s) => s.citeSrc, '약 45▲');
+    row('질문 줄(자, SPEC-005 r4 UX10)', f(c.ask), '-', (s) => s.ask, '10');
+    row('풀이 줄 노출률(SPEC-005 r4 UX14)', f(READ_MODEL.insightExposure.past, 2) + ' / ' + f(READ_MODEL.insightExposure.present, 2) + ' / ' + f(READ_MODEL.insightExposure.future, 2), '-', (s) => s.insightExposure, '-', 3);
+    row('풀이 줄(자, 보인 카드의 평균)', f(READ_MODEL.insight.chars), '-', (s) => s.insightText, '51.1');
     console.log(`\n서술 이벤트 본문(풀, 마일스톤 제외): ${f(pool.narrativeBody)}자 (문서 52.1)`);
     const sums = ERAS.map((e) => summarize(e, mode, all[e], HARD_REF[mode]));
     sums.forEach(record);

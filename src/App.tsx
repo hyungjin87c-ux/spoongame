@@ -166,6 +166,9 @@ function useSuperseded(written: WrittenRaw): [boolean, (v: boolean) => void] {
 /** 인생 도중 플레이 시간 기록을 저장소에 쓰는 간격(ms) */
 const PLAY_SAVE_MS = 10_000;
 
+/** 자동 고르기 버튼의 전환 문장(낭독 영역)이 남아 있는 시간(ms) — 읽힌 뒤 비운다(자동 선택 때마다 낭독되지 않게, content-M7b 4-3) */
+const AUTO_STATUS_MS = 2000;
+
 /** 저장 직전, 타이머가 쌓은 기록이 상태의 기록보다 새로우면(같은 판·줄어들지 않음) 담는다. 그 밖에는 상태 그대로. */
 function withPlayNow(game: GameState, now: { seed: number; play: PlayTime } | null): GameState {
   return now !== null && game.phase === 'life' && game.play !== undefined && game.seed === now.seed && playNotBehind(now.play, game.play) ? { ...game, play: now.play } : game;
@@ -231,6 +234,27 @@ function Game() {
     },
     [bumpGuard],
   );
+  // 결정 카드 맨 끝의 자동 고르기 버튼 (SPEC-005 r4 UX12·QI12 — 마스터 결정 M-6을 이 버튼 하나에 한해 개정): 새 상태·새 설정 키 없이 기존 자동 모드(`setAuto`)를 켜고 끄는 또 하나의 길이다 — 도구 줄 「자동 모드」와 같은 액션이라
+  // 같은 시드·같은 선택이면 두 길로 켠 판의 상태 전체·플레이 시간의 자동 모드 표시·엔딩 보조 문장이 같다. 이 길이 더 하는 일 둘: ① 같은 렌더에서 입력 가드 세대를 올린다 — 시트가 사라지며 `inert`가 풀리는(켬) 또는 시트가 생기는(끔) 자리의 컨트롤이
+  // 더블탭의 둘째 탭에 눌리지 않게 한다(F-1·U9; 새로 마운트되는 카드의 버튼은 마운트 가드도 걸린다) ② 전환을 스크린리더가 한 번 알리는 문장(`autoStatus`)을 켜고 잠시 뒤 비운다. 포커스는 `useLifeFocus`의 `autoTurnedOn`·`autoTurnedOff`가 제목으로 옮긴다.
+  // 자동 선택 타이머는 `settings.autoMode`가 바뀐 그 순간부터 `AUTO_CHOICE_MS`를 센다(아래 효과의 의존 값) — 전환 뒤에도 선택지를 직접 골라도 된다.
+  const [autoStatus, setAutoStatus] = useState<'on' | 'off' | null>(null);
+  const autoFromCard = useCallback(
+    (auto: boolean) => {
+      dispatch({ type: 'setAuto', auto });
+      bumpGuard();
+      setAutoStatus(auto ? 'on' : 'off');
+    },
+    [bumpGuard],
+  );
+  useEffect(() => {
+    if (autoStatus === null) return;
+    const id = window.setTimeout(() => setAutoStatus(null), AUTO_STATUS_MS);
+    return () => window.clearTimeout(id);
+  }, [autoStatus]);
+  useEffect(() => {
+    if (game.phase !== 'life' || showTitle) setAutoStatus(null);
+  }, [game.phase, showTitle]);
 
   // 기록 시트 「생각 남기기」(M7c, FR1~FR9): 열려 있는지는 App 수준 한 값 `noteOpen`이다 — 연출 시계·자동 선택 타이머가 멈추고(LM5) M8의 플레이 시간 타이머가 같은 값을 읽는다.
   // 두 길로 열린다. ① 저절로 뜬 카드: 적격 카드(`dueNote` — 해의 첫머리, 결정 대기 없음)는 **파생 상태**다 — 수동 + 「자동 기록 카드」 켜짐일 때 시트가 뜨고(reducer의 `advance`·`skip`도 같은 판정으로 멈춘다),
@@ -468,6 +492,8 @@ function Game() {
         veilOpened={veilOpened}
         onVeilOpen={openVeil}
         onAutoPick={autoPick}
+        onAutoFromCard={autoFromCard}
+        autoStatus={autoStatus}
         noteSheet={noteSheet}
         onOpenNote={openNote}
         onNoteSave={saveNote}

@@ -334,11 +334,12 @@ describe('validateNoteFile / noteCardPoolProblems: 데이터 검증이 실제로
   });
 });
 
-describe('인용 (FR2·NC-9): ①만 c-037, 나머지는 인용 박스를 그리지 않는다 — 기록 카드는 MD2 판정에 들지 않는다', () => {
+describe('인용 (FR2·NC-9): ①만 c-102(r4 QI13 — 옛 경제학 논문 c-037을 심리·아동학 논문으로 교체), 나머지는 인용 박스를 그리지 않는다 — 기록 카드는 MD2 판정에 들지 않는다', () => {
   const YEAR: Record<Era, number> = { past: 1980, present: 2031, future: 2060 };
 
-  it('① note-infant-memory는 c-037이고 나머지 여섯은 citation 없이 사유 코드만 있다 (② ③ ④ ⑥ ⑦ D, ⑤ X1)', () => {
-    expect(card(ID.infant).citation).toBe('c-037');
+  it('① note-infant-memory는 c-102이고(경제학 논문 c-037은 아니다 — UX13-4) 나머지 여섯은 citation 없이 사유 코드만 있다 (② ③ ④ ⑥ ⑦ D, ⑤ X1)', () => {
+    expect(card(ID.infant).citation).toBe('c-102');
+    expect(card(ID.infant).citation).not.toBe('c-037'); // 5세 카드에 경제학 논문을 다시 붙이지 않는다
     expect(card(ID.infant).noCitation).toBeUndefined();
     const reasons: Record<string, string> = { [ID.teen]: 'D', [ID.love]: 'D', [ID.romance]: 'D', [ID.illness]: 'X1', [ID.parents]: 'D', [ID.midlife]: 'D' };
     for (const [id, code] of Object.entries(reasons)) {
@@ -350,34 +351,37 @@ describe('인용 (FR2·NC-9): ①만 c-037, 나머지는 인용 박스를 그리
   });
 
   it('① 인용은 세 세상 모두에서 보이고 표시 문자열(머리말 + 요약)이 100자 이하이며, 머리말이 세상마다 맞다 (지난 「지금의 연구로는」 / 지금 없음 / 다가올 「지금 기준으로는」)', () => {
-    const c = getCitation('c-037')!;
+    const c = getCitation('c-102')!;
+    expect(c.kind).toBe('research');
     expect(c.eras).toEqual(['past', 'present', 'future']);
     const view = (era: Era) => citationFor(card(ID.infant), era, YEAR[era]);
     for (const era of ERAS) {
       const v = view(era);
       expect(v, era).not.toBeNull();
-      expect(v!.id).toBe('c-037');
+      expect(v!.id).toBe('c-102');
       expect([...v!.text].length, `${era} 표시 문자열 ${[...v!.text].length}자`).toBeLessThanOrEqual(100);
     }
     expect(view('past')!.text.startsWith('지금의 연구로는 ')).toBe(true);
     expect(view('present')!.text).toBe(c.text);
     expect(view('future')!.text.startsWith('지금 기준으로는 ')).toBe(true);
     // 인용 박스 링크·DOI·URL을 그리지 않는다(EV6): 출처 줄에 주소가 없다
-    for (const era of ERAS) expect(view(era)!.sourceLine).not.toMatch(/https?:|doi|10\.1126|pubmed/i);
+    for (const era of ERAS) expect(view(era)!.sourceLine).not.toMatch(/https?:|doi|10\.1126|pubmed|accesson/i);
   });
 
   it('나머지 카드 × 세 세상은 보일 인용이 없다(null) — 빈 박스 0', () => {
     for (const c of NOTE_CARDS.filter((x) => x.id !== ID.infant)) for (const era of ERAS) expect(citationFor(c, era, YEAR[era]), `${c.id} ${era}`).toBeNull();
   });
 
-  it('연결 점검(citationLinkProblems)과 usedBy 양방향: c-037.usedBy는 note-infant-memory 하나', () => {
+  it('연결 점검(citationLinkProblems)과 usedBy 양방향: c-102.usedBy는 note-infant-memory 하나이고 옛 c-037은 어느 카드에도 연결되지 않는다 (r4 QI13)', () => {
     expect(citationLinkProblems([], CITATION_TABLE, NOTE_CARDS)).toEqual([]);
-    expect(getCitation('c-037')!.usedBy).toEqual([ID.infant]);
+    expect(getCitation('c-102')!.usedBy).toEqual([ID.infant]);
+    expect(getCitation('c-037')!.usedBy, '경제학 논문 c-037 연결 0').toEqual([]);
     expect(citationLinkProblems([], CITATION_TABLE, [{ ...card(ID.infant), citation: 'c-999' }])[0]).toContain('기록 카드');
-    expect(citationLinkProblems([], CITATION_TABLE.map((x) => (x.id === 'c-037' ? { ...x, usable: false } : x)), NOTE_CARDS)[0]).toContain('쓸 수 없다');
+    expect(citationLinkProblems([], CITATION_TABLE.map((x) => (x.id === 'c-102' ? { ...x, usable: false } : x)), NOTE_CARDS)[0]).toContain('쓸 수 없다');
   });
 
-  it('MD2 판정(정적 연결률·서로 다른 인용 수)에 기록 카드가 들지 않는다 — c-037은 이벤트에 연결되지 않았으므로 분모·분자 어디에도 없다', () => {
+  it('MD2 판정(정적 연결률·서로 다른 인용 수)에 기록 카드가 들지 않는다 — c-102는 이벤트에 연결되지 않았으므로 분모·분자 어디에도 없다', () => {
+    expect(connectedCitationIds(EVENT_POOL.events)).not.toContain('c-102');
     expect(connectedCitationIds(EVENT_POOL.events)).not.toContain('c-037');
     const cov = citationCoverage(EVENT_POOL.events);
     for (const era of ERAS) {

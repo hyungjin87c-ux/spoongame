@@ -106,8 +106,8 @@ function expectMeasured(measured: string[], ui: CardUiState): void {
   }
   expect(measured.some((m) => m.startsWith('div.cite')), '인용 박스(쪽빛 면) 글자').toBe(true);
   expect(measured.some((m) => /^button\.choice/.test(m)), '선택지 버튼 글자').toBe(true);
-  // 「카드 접기」는 바탕이 투명한 고스트 버튼이라 가장 가까운 색 바탕 상자(카드·시트)의 글자로 잰다
-  expect(measured.some((m) => m.endsWith('|카드 접기')), '「카드 접기」 글자').toBe(true);
+  // 「잠시 덮어 두기」는 바탕이 투명한 고스트 버튼이라 가장 가까운 색 바탕 상자(카드·시트)의 글자로 잰다
+  expect(measured.some((m) => m.endsWith('|잠시 덮어 두기')), '「잠시 덮어 두기」 글자').toBe(true);
   expect(measured.some((m) => /^(div|section)\.(sheet|card)/.test(m)), ui === 'sheet' ? '시트 글자' : '인라인 카드 글자').toBe(true);
 }
 

@@ -57,20 +57,20 @@ describe('근거 문서·CSV는 JSON에서 만든 생성기의 결과와 같다 
     expect(buildBasisDoc(mut3, citationsJson, LIFE_ROWS.length)).toContain('조사망률 — 시험용 정의입니다.');
   });
 
-  it('근거 행은 s-001부터 s-100까지 빠짐없이 있고(LAST_ROW), 모든 지표의 basisId가 그 안에 있다', () => {
-    // SPEC-005 QI4: 1단계(2026-10-21)에 s-092~s-100을 더해 LAST_ROW는 100이다. 제목의 숫자(s-091 → s-100)는 2단계에서 새 값으로 고쳤다 — docs/TODO.md의 인용 제목도 함께 갱신했다(check:todo).
-    expect(LAST_ROW).toBe(100);
+  it('근거 행은 s-001부터 s-101까지 빠짐없이 있고(LAST_ROW), 모든 지표의 basisId가 그 안에 있다', () => {
+    // SPEC-005 QI4: 1단계(2026-10-21)에 s-092~s-100을 더해 LAST_ROW는 100이었고, SPEC-005 r4 QI13(2026-10-26)이 5세 기록 카드의 심리·아동학 인용 행 s-101을 더해 101이다 — docs/TODO.md의 인용 제목도 함께 갱신했다(check:todo).
+    expect(LAST_ROW).toBe(101);
     for (let n = 1; n <= LAST_ROW; n++) expect(basisDoc).toContain(`### s-${String(n).padStart(3, '0')} `);
     const ids = (statsJson as { indicators: Array<{ basisId: string }> }).indicators.map((i) => i.basisId);
     for (const id of ids) expect(Number(id.slice(2))).toBeLessThanOrEqual(LAST_ROW);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('요약 표의 행 수(확인 93·미확인 7·합계 100)가 지표의 usable과 맞는다 (s-037 임차 세분 2019년 값 확인, s-063 주거비 부담 추가 — 2026-10-17, s-064~s-091 M7b 준비 수집 — 2026-10-19, s-092~s-100 QI4 1단계 수집 — 2026-10-21)', () => {
-    // SPEC-005 QI4 2단계(2026-10-21): 제목의 옛 숫자(확인 84·합계 91)를 s-092~s-100 수집이 반영된 지금 값(확인 93·합계 100)으로 고쳤다 — docs/TODO.md의 인용 제목도 함께 갱신했다.
-    expect(basisDoc).toContain('| 확인(원문 직접 대조) | 93 |');
+  it('요약 표의 행 수(확인 94·미확인 7·합계 101)가 지표의 usable과 맞는다 (s-037 임차 세분 2019년 값 확인, s-063 주거비 부담 추가 — 2026-10-17, s-064~s-091 M7b 준비 수집 — 2026-10-19, s-092~s-100 QI4 1단계 수집 — 2026-10-21, s-101 5세 기록 카드 인용 — 2026-10-26)', () => {
+    // SPEC-005 QI4 2단계(2026-10-21): 제목의 옛 숫자(확인 84·합계 91)를 s-092~s-100 수집이 반영된 값(확인 93·합계 100)으로 고쳤고, r4 QI13(2026-10-26)이 s-101(연구 인용 행, 확인)을 더해 확인 94·합계 101이다 — docs/TODO.md의 인용 제목도 함께 갱신했다.
+    expect(basisDoc).toContain('| 확인(원문 직접 대조) | 94 |');
     expect(basisDoc).toContain('| 미확인(사유 적음, 게임에서 쓰지 않음) | 7 |');
-    expect(basisDoc).toContain('| 합계 | 100 |');
+    expect(basisDoc).toContain('| 합계 | 101 |');
     const unusable = (statsJson as { indicators: Array<{ usable: boolean }> }).indicators.filter((i) => !i.usable).length;
     expect(unusable).toBe(6); // 지표 6개 + 서지 미확인 행 s-050 = 미확인 7
   });

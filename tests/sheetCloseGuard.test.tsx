@@ -92,7 +92,7 @@ function render(game: GameState, o: { epoch: number; auto?: boolean; folded?: bo
 }
 
 describe('G3 — 인생 화면의 모든 가드 버튼이 같은 세대 값을 키에 담는다 (서버 렌더)', () => {
-  it('모달 시트(자동 모드 꺼짐): 진행 줄 7개 + 도구 줄 4개 + 의견 보내기 링크는 life-controls:세대, 결정 카드의 선택지와 「카드 접기」는 선택지키#세대', () => {
+  it('모달 시트(자동 모드 꺼짐): 진행 줄 7개 + 도구 줄 4개 + 의견 보내기 링크는 life-controls:세대, 결정 카드의 선택지와 「잠시 덮어 두기」·자동 고르기 버튼은 선택지키#세대', () => {
     const game = pendingState();
     const pending = game.pending!;
     const r = render(game, { epoch: 3 });
@@ -100,7 +100,7 @@ describe('G3 — 인생 화면의 모든 가드 버튼이 같은 세대 값을 �
     expect(controls, '진행 줄 7개(일시정지·배속 4·다음 결정으로·자동 모드) + 도구 줄 버튼 4개(BGM·생각 남기기·다크 모드·나가기)').toHaveLength(7 + 4);
     expect(r.feedback, '의견 보내기 링크(<a>)도 같은 키').toEqual([controlsGuardKey(3)]);
     const decision = r.buttons.filter((k) => k === decisionGuardKey(pending, 3));
-    expect(decision, '선택지마다 하나 + 「카드 접기」').toHaveLength(pending.choiceIds.length + 1);
+    expect(decision, '선택지마다 하나 + 「잠시 덮어 두기」 + 「이후 결정을 자동으로 고르게 하기」(r4 UX12)').toHaveLength(pending.choiceIds.length + 2);
     expect(r.buttons.length, '다른 가드 키의 버튼이 없다(나가기 확인이 닫힌 채)').toBe(controls.length + decision.length);
   });
 
@@ -120,11 +120,11 @@ describe('G3 — 인생 화면의 모든 가드 버튼이 같은 세대 값을 �
     expect(exitB.buttons.filter((k) => k === 'life-exit')).toHaveLength(2);
   });
 
-  it('인라인 카드(자동 모드 켜짐)의 선택지·「카드 접기」와 접힌 띠의 「결정 다시 열기」도 같은 세대 값을 쓴다', () => {
+  it('인라인 카드(자동 모드 켜짐)의 선택지·「잠시 덮어 두기」·「이후 결정을 직접 고르기」와 접힌 띠의 「결정 다시 열기」도 같은 세대 값을 쓴다', () => {
     const game = pendingState();
     const pending = game.pending!;
     const inline = render(game, { epoch: 7, auto: true });
-    expect(inline.buttons.filter((k) => k === decisionGuardKey(pending, 7))).toHaveLength(pending.choiceIds.length + 1);
+    expect(inline.buttons.filter((k) => k === decisionGuardKey(pending, 7))).toHaveLength(pending.choiceIds.length + 2); // 선택지 + 「잠시 덮어 두기」 + 끄는 버튼(r4 UX12)
     const strip = render(game, { epoch: 7, folded: true });
     expect(strip.buttons.filter((k) => k === decisionGuardKey(pending, 7)), '접힌 띠에는 「결정 다시 열기」 하나').toHaveLength(1);
     expect(strip.buttons.filter((k) => k === controlsGuardKey(7))).toHaveLength(11);
@@ -306,7 +306,7 @@ describe('11-1-3 닫힘 사건 표 — App의 핸들러가 시트를 닫는 자�
     expect(body).toMatch(/\n\s+bumpGuard\(\);/);
   });
 
-  it('겁니다 — 결정 시트의 「카드 접기」·Esc·접힌 띠의 「결정 다시 열기」: 이미 있던 fold.epoch가 같은 세대 값에 합쳐진다', () => {
+  it('겁니다 — 결정 시트의 「잠시 덮어 두기」·Esc·접힌 띠의 「결정 다시 열기」: 이미 있던 fold.epoch가 같은 세대 값에 합쳐진다', () => {
     expect(appSrc).toContain('guardEpoch={fold.epoch + inputEpoch}');
     const folded = foldCard(FOLD_INITIAL, 'a@1');
     expect(folded.epoch).toBe(FOLD_INITIAL.epoch + 1);
@@ -339,10 +339,11 @@ describe('11-1-3 닫힘 사건 표 — App의 핸들러가 시트를 닫는 자�
     expect(appSrc).toContain("noteResponse(settings, game) === 'stop'");
   });
 
-  it('안 겁니다 — 세대는 사용자 핸들러 다섯 곳(saveNote·dismissNote·onChoose + 가린 카드의 openVeil·autoPick)에서만 오른다: bumpGuard 호출은 5곳이고 어떤 useEffect도 올리지 않는다 (효과로 다음 렌더에 올리지 않는다)', () => {
+  it('안 겁니다 — 세대는 사용자 핸들러 여섯 곳(saveNote·dismissNote·onChoose + 가린 카드의 openVeil·autoPick + 카드 맨 끝 자동 고르기 버튼의 autoFromCard)에서만 오른다: bumpGuard 호출은 6곳이고 어떤 useEffect도 올리지 않는다 (효과로 다음 렌더에 올리지 않는다)', () => {
     // SPEC-005 QI6: 가린 결정 카드의 「펼쳐서 읽기」(openVeil)·「이번에는 자동으로 고르기」(autoPick)도 사용자가 누른 순간 카드가 바뀌어 같은 자리에 다른 컨트롤이 드러나므로 같은 규칙(같은 렌더에서 가드)을 따른다 — 3곳이던 호출이 5곳이 됐다
+    // SPEC-005 r4 UX12(QI12): 결정 카드 맨 끝의 「이후 결정을 자동으로 고르게 하기」·「이후 결정을 직접 고르기」(autoFromCard)도 사용자가 누른 순간 시트가 사라지거나(켬 — 바깥 inert가 풀려 컨트롤이 드러난다) 생겨서(끔) 같은 자리의 컨트롤이 바뀐다 — 같은 규칙을 따라 5곳이던 호출이 6곳이 됐다
     const src = code(appSrc);
-    expect(src.match(/\bbumpGuard\(\)/g) ?? [], 'saveNote, dismissNote, onChoose, openVeil, autoPick').toHaveLength(5);
+    expect(src.match(/\bbumpGuard\(\)/g) ?? [], 'saveNote, dismissNote, onChoose, openVeil, autoPick, autoFromCard').toHaveLength(6);
     expect(src.match(/\bsetInputEpoch\(/g) ?? [], '정의 한 곳').toHaveLength(1);
     const effects = src.split('useEffect(').slice(1);
     expect(effects.length).toBeGreaterThan(5);

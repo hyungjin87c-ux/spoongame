@@ -21,7 +21,7 @@ export function isFolded(state: FoldState, pendingKey: string | null): boolean {
   return pendingKey !== null && state.key === pendingKey;
 }
 
-/** 「카드 접기」(또는 Esc): 지금 대기 중인 선택지를 접는다. 대기 중인 선택지가 없으면 아무 일도 없다 */
+/** 「잠시 덮어 두기」(또는 Esc): 지금 대기 중인 선택지를 접는다. 대기 중인 선택지가 없으면 아무 일도 없다 */
 export function foldCard(state: FoldState, pendingKey: string | null): FoldState {
   return pendingKey === null ? state : { key: pendingKey, epoch: state.epoch + 1 };
 }

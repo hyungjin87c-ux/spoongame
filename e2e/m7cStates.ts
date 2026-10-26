@@ -38,7 +38,7 @@ export async function dueState(page: Page, opts: { minAge?: number; cardId?: str
   return found!;
 }
 
-/** 첫 기록 카드 ①(영유아기 기억, 5세, 인용 c-037 있음)이 뜰 차례인 상태 */
+/** 첫 기록 카드 ①(영유아기 기억, 5세, 인용 c-102 있음)이 뜰 차례인 상태 */
 export const infantDue = (page: Page, era: Era = 'present'): Promise<DueState> => dueState(page, { cardId: 'note-infant-memory', era });
 
 /** 인용이 없는 카드(②~⑦)가 뜰 차례인 상태 — 나이 13 이상 */

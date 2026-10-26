@@ -169,7 +169,8 @@ for (const mode of MODES) for (const vp of VIEWPORTS) {
       expect(m.toolsOk, fail(m, '도구 줄 5개가 문서 맨 위에서 가려지거나 넘친다')).toBe(true);
       expect(m.titleVisible, fail(m, '카드가 보인 자리에서 선택지 제목이 머리·진행 줄에 가려진다')).toBe(true);
       // 첫 선택지가 스크롤 없이 보이는 것은 시트(수동 모드 — 사람이 고른다)에 요구한다. 인라인 카드(자동 모드 — 스스로 고른다)는 인용 박스가 더해져 카드가 한 화면을 넘을 수 있고 선택지는 스크롤로 닿는다(아래 reachable)
-      if (mode === 'sheet') expect(m.firstChoiceVisible, fail(m, '카드가 보인 자리에서 첫 선택지가 시트 안에 보이지 않는다')).toBe(true);
+      // r4(2026-10-26): 질문 줄(「어떻게 하겠습니까?」)과 「풀이」 줄이 선택지 위에 더해져 시트가 더 높아졌다. 360×740은 90장 모두 첫 선택지가 보이고(아래 하한이 지킨다),
+      // 360×640·568에서는 일부 카드에서 첫 선택지가 시트 안 스크롤 아래로 간다 — 카드 하나씩의 필수 단언이 아니라 아래 하한(개수)과 기록으로 지킨다. 스크롤로 닿는 것(reachable)은 카드마다 그대로 필수다.
       expect(m.reachable, fail(m, '스크롤해도 선택지가 가려진다')).toBe(true);
     }
     // M7b 이전에는 큰 화면(360×740)에서 선택지 전부가 스크롤 없이 가용 영역에 들어왔다(R-042, M7e-1 길이 한도의 근거). 지금 카드는 머리(연도·나이·접기)·인용 박스·영향 안내·자동 모드 안내를 더해
@@ -180,8 +181,17 @@ for (const mode of MODES) for (const vp of VIEWPORTS) {
     // R-394 회귀 가드(하한): 시트(수동 모드 — 사람이 고른다)에서는 지금 측정값 아래로 내려가지 않는다. 360×740은 선택지 전부(allFit)와 첫 두 선택지가 90장 모두 시트 안에 스크롤 없이 보이고, 640은 전부 60장·첫 두 개 90장, 568은 전부 50장·첫 두 개 70장이다.
     // M7d에서 본문·인용이 길어져 이미 있던 카드가 이 하한 아래로 밀리면 여기서 걸린다(새 카드는 하한을 채우지 않아도 된다 — 하한은 현재 90장 기준의 개수다). 인라인 카드는 페이지 스크롤로 닿으므로 기록만 한다.
     if (mode === 'sheet') {
-      const FLOOR: Record<number, { allFit: number; firstTwo: number }> = { 740: { allFit: 90, firstTwo: 90 }, 640: { allFit: 60, firstTwo: 90 }, 568: { allFit: 50, firstTwo: 70 } };
+      // r4 재측정(2026-10-26, 질문 줄·풀이 줄이 더해진 뒤): 이전 하한은 740 {전부 90·첫 두 개 90}, 640 {60·90}, 568 {50·70}, 첫 선택지는 세 높이 모두 90장이었다.
+      // 지금 측정값이 새 하한이다(이 아래로 내려가면 걸린다) — 740은 첫 선택지 90장 그대로, 640은 88장, 568은 60장이다(「풀이」 라벨을 화면에서 뺀 형진 님 결정 2026-10-26 뒤 재측정 — 라벨 줄이 빠져 처음 값 77·59에서 늘었다). 줄어든 이유는 설계 변경(선택지 위 두 줄) 때문이고 마스터에게 보고했다.
+      const FLOOR: Record<number, { first: number; allFit: number; firstTwo: number }> = {
+        740: { first: 90, allFit: 62, firstTwo: 89 },
+        640: { first: 88, allFit: 49, firstTwo: 56 },
+        568: { first: 60, allFit: 22, firstTwo: 48 },
+      };
       const floor = FLOOR[vp.height];
+      const notFirst = all.filter((m) => !m.firstChoiceVisible).map((m) => m.id);
+      expect(all.length - notFirst.length, `시트 ${vp.width}x${vp.height}: 첫 선택지가 스크롤 없이 보이는 이벤트가 하한(${floor.first}) 아래다. 안 보이는 카드: ${notFirst.join(', ')}`).toBeGreaterThanOrEqual(floor.first);
+      testInfo.annotations.push({ type: '측정', description: `시트 ${vp.width}x${vp.height}: 첫 선택지가 스크롤 없이 보이는 이벤트 ${all.length - notFirst.length}/${all.length}개 (r4 이전 90/90)` });
       const notAll = all.filter((m) => !m.allFit).map((m) => m.id);
       const notTwo = all.filter((m) => !m.firstTwoVisible).map((m) => m.id);
       expect(all.length - notAll.length, `시트 ${vp.width}x${vp.height}: 선택지 전부가 스크롤 없이 보이는 이벤트가 하한(${floor.allFit}) 아래다. 안 보이는 카드: ${notAll.join(', ')}`).toBeGreaterThanOrEqual(floor.allFit);
@@ -256,7 +266,8 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
     pending: { eventId: tallest.id, key: `${tallest.id}@${age}`, age, choiceIds },
     lastChoiceAge: age,
   };
-  for (const vp of [VIEWPORTS[0], VIEWPORTS[1]]) {
+  // r4: 360×740을 더해 첫 선택지가 시트 안에 보이는 보장을 여기서 지킨다(640·568은 질문 줄·풀이 줄 때문에 첫 선택지가 시트 안 스크롤 아래로 갈 수 있다 — 제목은 늘 보이고 선택지 3개는 스크롤로 닿는다)
+  for (const vp of [VIEWPORTS[0], VIEWPORTS[1], VIEWPORTS[2]]) {
     await page.setViewportSize(vp);
     await injectSave(page, state, '/');
     const panel = page.getByTestId('choice-panel');
@@ -289,8 +300,11 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
     expect(m.controls).toHaveLength(7); // 진행 줄은 시트 뒤에 그대로 있다(가림 점검은 인라인 모드가 한다)
     for (const b of [m.shown.title, m.shown.first]) {
       expect(b.top, `${tallest.id} @${vp.height}: ${b.name}이(가) 시트 위로 잘린다`).toBeGreaterThanOrEqual(m.headBottom - 0.5);
-      expect(b.bottom, `${tallest.id} @${vp.height}: ${b.name}이(가) 시트 아래로 밀린다`).toBeLessThanOrEqual(m.barTop + 0.5);
-      expect(b.covered).toBe(false);
+      // 제목은 모든 높이에서, 첫 선택지는 360×740에서 시트 안에 온전히 보여야 한다 (640·568의 첫 선택지는 시트 안 스크롤로 닿는지만 본다 — 아래 reached)
+      if (b === m.shown.title || vp.height === 740) {
+        expect(b.bottom, `${tallest.id} @${vp.height}: ${b.name}이(가) 시트 아래로 밀린다`).toBeLessThanOrEqual(m.barTop + 0.5);
+        expect(b.covered).toBe(false);
+      }
     }
     for (const b of m.reached) {
       expect(b.left, b.name).toBeGreaterThanOrEqual(0);

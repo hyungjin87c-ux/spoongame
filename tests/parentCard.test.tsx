@@ -146,13 +146,15 @@ describe('부모님이 정한 카드: 비모달·구성·문구 (PD5·PD8, 설�
     expect((html.match(/data-testid="parent-label"/g) ?? []).length).toBe(1);
   });
 
-  it('비모달: 버튼·입력·링크·시트(role=dialog·aria-modal)·낭독 영역(aria-live·role=status/alert)이 없다 — 선택지 버튼·「카드 접기」·자동 선택 안내도 없다', () => {
+  it('비모달: 버튼·입력·링크·시트(role=dialog·aria-modal)·낭독 영역(aria-live·role=status/alert)이 없다 — 선택지 버튼·「잠시 덮어 두기」·자동 선택 안내도 없다', () => {
     expect(html).not.toMatch(/<button|<input|<a |<form|<select|<textarea/);
     expect(html).not.toMatch(/role="(dialog|alertdialog|status|alert|log)"/);
     expect(html).not.toContain('aria-modal');
     expect(html).not.toContain('aria-live');
     expect(html).not.toContain('tabindex');
-    expect(plain(html)).not.toMatch(/접기|자동 선택|선택하세요|고를 수/);
+    // r4: 옛 이름 「접기」는 새 이름 「덮어 두기」로 바뀌었으니 둘 다 막는다. 질문 줄(UX10)·자동 고르기 묶음(UX12)·풀이 줄(UX14, M23)도 이 카드에는 없다
+    expect(plain(html)).not.toMatch(/접기|덮어 두기|자동 선택|자동으로 고르|직접 고르기|어떻게 하겠|풀이|선택하세요|고를 수/);
+    expect(html).not.toMatch(/data-testid="(choice-ask|auto-set|auto-on-btn|auto-off-btn|cite-insight|auto-status)"/);
   });
 
   it('집안 사정 한 줄(「이 집에서는 고를 수 없었던 길」 류)이 없다 (M6) — 수저 단계 이름·형편 단정도 카드에 없다', () => {

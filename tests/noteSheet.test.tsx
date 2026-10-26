@@ -228,9 +228,11 @@ describe('시트 틀 (자동 카드, 인용 있는 ①): 대화상자·머리·�
 });
 
 describe('인용 (FR2): 있을 때만 박스, 없으면 요소 자체가 없다', () => {
-  it('카드 ①(c-037)에는 인용 박스(종류 라벨·요약·출처 한 줄)가 있고 링크가 없다', () => {
+  it('카드 ①(c-102)에는 인용 박스(종류 라벨·요약·출처 한 줄)가 있고 링크가 없다 — 풀이 줄은 없다 (기록 카드의 인용에는 풀이를 달지 않는다, r4 UX14-2)', () => {
     const html = render({ card: CITED, game: lifeAt(5) });
     expect(html).toContain('data-testid="cite"');
+    expect(html).not.toContain('cite-insight');
+    expect(html).not.toContain('cite__insight');
     expect(html).toContain(`data-citation="${CITED.citation}"`);
     expect(html).not.toMatch(/<a[\s>]/);
     expect(html).not.toContain('href=');

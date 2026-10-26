@@ -35,11 +35,11 @@ test('수동 모드: 카드는 모달 시트로 뜨고(role=dialog·aria-modal·
   for (const sel of ['[data-testid="dash-head"]', '.toolbar', 'main.dash', '.page-end-space']) await expect(page.locator(sel), sel).toHaveAttribute('inert', '');
   await expect(dialog).not.toHaveAttribute('inert', '');
 
-  // 머리: ◆ 중대 결정 · 「{연도}년 · {나이}세」 · 「카드 접기」
+  // 머리: ◆ 중대 결정 · 「{연도}년 · {나이}세」 · 「잠시 덮어 두기」
   await expect(dialog.locator('.decision__kind')).toHaveText('중대 결정');
   const year = state.character!.birthYear + state.age;
   expect(await text(page, 'decision-when')).toBe(`${year}년 · ${state.age}세`);
-  await expect(page.getByTestId('decision-fold-btn')).toHaveAccessibleName('카드 접기');
+  await expect(page.getByTestId('decision-fold-btn')).toHaveAccessibleName('잠시 덮어 두기');
 
   // 제목(h2) → 상황 → 인용 박스 → 선택지 → 영향 안내 → 자동 모드 안내
   await expect(page.getByTestId('choice-title')).toHaveJSProperty('tagName', 'H2');
@@ -130,7 +130,7 @@ test('Tab은 시트 안에서만 돈다: 열 번 눌러도 포커스가 시트 �
   }
 });
 
-test('카드 접기: 접힌 띠가 카드 자리에 생기고 포커스는 「결정 다시 열기」로 간다. 접은 동안 게임은 정지를 유지하고 컨트롤은 쓸 수 있다 (MD1, U1·U6(b)·U8)', async ({ page }) => {
+test('잠시 덮어 두기: 접힌 띠가 카드 자리에 생기고 포커스는 「결정 다시 열기」로 간다. 접은 동안 게임은 정지를 유지하고 컨트롤은 쓸 수 있다 (MD1, U1·U6(b)·U8)', async ({ page }) => {
   await page.goto('/');
   const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
@@ -192,7 +192,7 @@ test('Esc = 수동 시트 접기. 인라인 카드(자동 모드)에서는 Esc�
   await expect(page.getByTestId('decision-fold')).toHaveCount(0);
 });
 
-test('입력 가드: 「카드 접기」 더블탭의 둘째 입력은 그 자리에 생긴 「결정 다시 열기」에, 「결정 다시 열기」 더블탭의 둘째 입력은 새 카드에 떨어지지 않는다 (U9, 선택지 오탭 0)', async ({ page }) => {
+test('입력 가드: 「잠시 덮어 두기」 더블탭의 둘째 입력은 그 자리에 생긴 「결정 다시 열기」에, 「결정 다시 열기」 더블탭의 둘째 입력은 새 카드에 떨어지지 않는다 (U9, 선택지 오탭 0)', async ({ page }) => {
   await page.goto('/');
   const state = await findCardState(page, 'youth-startup');
   await openCard(page, state, SETTINGS_MANUAL);
@@ -367,7 +367,7 @@ test('수동 모드에서 시간이 흘러 선택지가 뜨면 포커스가 속�
   await expect(four, '속도도 바뀌지 않았다').toHaveAttribute('aria-pressed', 'false');
 });
 
-test('나가기 확인 단계를 연 채 「다음 결정으로」로 시트가 뜬 뒤 Esc 한 번은 맨 위(시트) 하나만 처리한다 — 카드 접기와 나가기 확인 닫기가 함께 일어나지 않는다 (REV-003-M7b-1 관찰 3)', async ({ page }) => {
+test('나가기 확인 단계를 연 채 「다음 결정으로」로 시트가 뜬 뒤 Esc 한 번은 맨 위(시트) 하나만 처리한다 — 잠시 덮어 두기와 나가기 확인 닫기가 함께 일어나지 않는다 (REV-003-M7b-1 관찰 3)', async ({ page }) => {
   await startPageHidden(page); // 타이머가 끼어들지 않게
   await page.goto('/');
   await injectSave(page, lifeState(KNOWN_SEED), '/', SETTINGS_MANUAL);

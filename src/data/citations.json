@@ -1,6 +1,6 @@
 {
   "meta": {
-    "updatedOn": "2026-10-19",
+    "updatedOn": "2026-10-26",
     "schemaVersion": 3,
     "rules": "text는 원문 문장을 옮기지 않은 요약(합쇼체, 100자 이하). 수치는 koreaStats.json 값과 refs·facts로 대조한다(문장 속 모든 수치 토큰은 facts에 있어야 하고 refs·파생값·원문 서술과 맞아야 한다). verified가 true인 항목만 usable. usedBy는 이벤트 JSON의 citation에서 만든 역색인이다 — 사람이 쓰지 않고 npm run gen:citations가 쓰며 npm run check:citations가 어긋남을 잡는다(M7b에서 candidateEvents 후보 기록을 없애고 이것으로 바꿨다). 외부 링크는 화면에 걸지 않고 출처 줄은 텍스트로만 표기한다(EV6). 인용 박스(문장·출처 줄)에는 기준 연도 같은 달력 연도를 쓴다 — 사건 본문·연표의 달력 연도 금지(S6.2)의 예외다(마스터 결정 2026-10-15). 연구 인용(study·review·reference-study·report)은 「개인차」 또는 「연관」 표현을 쓴다. 지난 세상 카드의 인용은 eras에 past가 있는 1970~89 공식 시계열 통계이거나, 시대와 무관한 발달 연구(eraPrefix.past 「지금의 연구로는」 머리말을 붙여 쓴다)다. usageCaution은 붙일 수 없는 카드 유형(forbiddenCardTypes)과 이벤트(forbiddenEvents)를 정한다. 지난 세상 제도 시기 해설(국가기록원 등, evidenceType public-guidance·eras가 past뿐)은 그 제도가 생긴 해 이후를 사는 카드에만 쓴다(적용 연도는 R-182의 validFromYear로 확정). source.yearKind가 accessed인 인용은 페이지에 갱신 연도가 없어 열람 연도를 쓴 것이다.",
     "sourceLineFormat": "{org}({year}), {title}",
@@ -1538,9 +1538,7 @@
         ],
         "note": "「어릴 때 모든 것이 결정된다」로 쓰지 않는다. 경제학적 틀의 일반론이라 개인의 운명을 단정하는 문장에 붙이지 않는다."
       },
-      "usedBy": [
-        "note-infant-memory"
-      ],
+      "usedBy": [],
       "candidateFor": [
         "G3",
         "FR2"
@@ -1548,7 +1546,7 @@
       "verified": true,
       "usable": true,
       "accessedOn": "2026-10-15",
-      "note": "초록(PubMed 2026-10-15 재열람)이 두 문장뿐이다: 「이른 환경이 아동·청소년·성인기 성취에 미치는 영향의 증거를 요약한다. 생애 기술 형성은 이른 투입이 이후 투입의 생산성에 강하게 영향을 주는 동적 과정이다」. 본문 수치는 확인하지 않았다. 이전 문장의 「좌우한다」는 초록보다 강해 고쳤다(R-151). [M7c 2026-10-19] 기록 카드 ①(note-infant-memory, NC-9)에 연결했다 — 시대 무관 발달 연구라 eras에 past를 더하고 eraPrefix.past 「지금의 연구로는」을 붙였다(표시 문자열 84자 → CQ05 뒤 81자). 기록 카드의 인용은 MD2 판정(정적 연결률·서로 다른 인용 수)에 넣지 않는다. [M7c r2 2026-10-19 QA CQ05, 마스터 D3] 둘째 절의 「크게 영향을 준다」(인과·강한 표현)와 낯선 말 「투입」을 「어릴 때의 투자가 이후 투자의 효과와 이어져 있다」(연관·강한 표현 없음)로 바꿨다. 초록을 R-149 규칙으로 다시 열어(PubMed 2회: robots·논문 기록, 2026-10-19; 영문 원문 「early inputs strongly affect the productivity of later inputs」 — 위 요지와 같다) 확인했다: 새 문장은 원문의 「strongly affect」보다 약한 연관 표현이고 「투자」는 같은 기록의 제목(investing in disadvantaged children)과 같은 틀의 말이라 원문 범위를 넘지 않는다. 새 사실·수치·예시는 더하지 않았다."
+      "note": "초록(PubMed 2026-10-15 재열람)이 두 문장뿐이다: 「이른 환경이 아동·청소년·성인기 성취에 미치는 영향의 증거를 요약한다. 생애 기술 형성은 이른 투입이 이후 투입의 생산성에 강하게 영향을 주는 동적 과정이다」. 본문 수치는 확인하지 않았다. 이전 문장의 「좌우한다」는 초록보다 강해 고쳤다(R-151). [M7c 2026-10-19] 기록 카드 ①(note-infant-memory, NC-9)에 연결했다 — 시대 무관 발달 연구라 eras에 past를 더하고 eraPrefix.past 「지금의 연구로는」을 붙였다(표시 문자열 84자 → CQ05 뒤 81자). 기록 카드의 인용은 MD2 판정(정적 연결률·서로 다른 인용 수)에 넣지 않는다. [M7c r2 2026-10-19 QA CQ05, 마스터 D3] 둘째 절의 「크게 영향을 준다」(인과·강한 표현)와 낯선 말 「투입」을 「어릴 때의 투자가 이후 투자의 효과와 이어져 있다」(연관·강한 표현 없음)로 바꿨다. 초록을 R-149 규칙으로 다시 열어(PubMed 2회: robots·논문 기록, 2026-10-19; 영문 원문 「early inputs strongly affect the productivity of later inputs」 — 위 요지와 같다) 확인했다: 새 문장은 원문의 「strongly affect」보다 약한 연관 표현이고 「투자」는 같은 기록의 제목(investing in disadvantaged children)과 같은 틀의 말이라 원문 범위를 넘지 않는다. 새 사실·수치·예시는 더하지 않았다. [SPEC-005 r4 QI13·UX13, 2026-10-26] 5세 기록 카드의 인용은 심리·아동학 논문 c-102로 교체했다(이 항목은 경제학 논문이라 카드의 질문(기억)과 주제가 어긋났다). 이 항목은 어느 카드에도 연결하지 않고 남긴다 — 5세 카드에 다시 붙이지 않는다(UX13-4). 쓰려면 '수저 영향' 같은 조기 투자 주제 카드에서만."
     },
     {
       "id": "c-038",
@@ -4451,6 +4449,64 @@
       "verified": true,
       "usable": true,
       "accessedOn": "2026-10-19"
+    },
+    {
+      "id": "c-102",
+      "kind": "research",
+      "text": "한국 성인 352명이 답한 가장 이른 어린 시절 기억의 나이는 평균 4세 8개월이었고, 개인차가 있었습니다.",
+      "source": {
+        "org": "김현정, 방희정, 조혜자, 조숙자",
+        "title": "한국 성인의 자기 기술과 아동기 회상에 관한 발달적 연구",
+        "year": 2007,
+        "venue": "한국심리학회지: 발달 20(2):17-38",
+        "url": "https://accesson.kr/jkdp/v.20/2/17/17998"
+      },
+      "basisId": "s-101",
+      "eras": [
+        "past",
+        "present",
+        "future"
+      ],
+      "eraPrefix": {
+        "past": "지금의 연구로는",
+        "future": "지금 기준으로는"
+      },
+      "evidenceType": "study",
+      "refs": [],
+      "facts": [
+        {
+          "token": "352명",
+          "kind": "source",
+          "evidence": "초록: 20대에서 50대에 속하는 성인 남녀 352명 (본문 연구대상 절: 400명 중 49명 제외 후 352명으로 적음)"
+        },
+        {
+          "token": "4세 8개월",
+          "kind": "source",
+          "evidence": "초록·본문 결과: 최초 기억의 나이 4세 8개월(표준편차 2.0)"
+        }
+      ],
+      "usageCaution": {
+        "forbiddenCardTypes": [
+          "determinism",
+          "self-blame",
+          "comparison-ranking"
+        ],
+        "forbiddenEvents": [],
+        "framing": [
+          "개인차"
+        ],
+        "note": "평균 나이를 「정상」 기준처럼 쓰지 않는다. 기억이 없거나 더 이르거나 늦은 사람을 평가하지 않는다. 자발적 참여 352명이 질문지에 적은 회고 보고이므로 기억이 생기는 나이로, 한국 성인 전체로 단정하지 않는다. 문화 간 비교(논의 절)와 정서 서술(긍정·중간 강도)은 쓰지 않는다."
+      },
+      "usedBy": [
+        "note-infant-memory"
+      ],
+      "candidateFor": [
+        "FR2"
+      ],
+      "verified": true,
+      "usable": true,
+      "accessedOn": "2026-10-26",
+      "note": "[SPEC-005 r4 QI13·UX13, 마스터 결정 2026-10-26 K1 채택 — docs/data/dc15-memory-research.md] 5세 기록 카드(note-infant-memory)의 인용을 경제학 논문 c-037에서 이 항목으로 바꿨다(카드의 질문은 기억인데 c-037은 조기 투자라 주제가 어긋났다). 출판사(학술지 사이트) 페이지의 한국·영문 초록과 공개 전문 PDF를 직접 열어 대조했다(R-149 기록: dc15-memory-research.md 2절). 초록 요지: 20~50대 성인 352명이 질문지로 가장 이른 아동기 기억을 보고, 그 나이는 4세 8개월이고 나이가 어릴수록 더 이른 기억을 적었다(성별 차이 없음). 본문 결과 절: 「최초 기억의 나이는 4세 8개월(표준편차 2.0)」, 연령 차 F(3, 339)=3.443, p<.05. 본문은 400명에서 49명을 뺀 뒤 352명이라 적었으나 산술은 351명이고 표 4의 합은 350명이다(원문 불일치, 초록의 352명을 따름). 영문 초록은 「4.8 years」로 적었으나 한국어 초록·본문은 4세 8개월(= 약 4.67년)이라 한국어 값을 따랐다. 표준편차는 단위 표기가 없고 표 2가 연 단위 소수라 연으로 읽히며 문장에는 쓰지 않았다(「개인차」의 근거로만 둔다). 정서(긍정·중간 강도)·성별·연령별 차이·자기 기술은 쓰지 않았다. 저자도 많은 응답자가 개월을 비워 정확한 나이 추정에 제약이 있었다고 적었다. 라이선스: CC BY-NC 4.0 표시. 기록 카드 인용은 MD2 판정에서 뺀다."
     }
   ],
   "unverifiedCandidates": [

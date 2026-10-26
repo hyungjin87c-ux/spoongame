@@ -20,13 +20,21 @@ export { GAME_KEY, KNOWN_SEED, PEER_SEED, SAVE_VERSION, SETTINGS_KEY, SETTINGS_V
  * 심어 둔 값을 덮어쓰기 때문이다(사람이 같은 탭의 저장을 직접 바꾸는 일은 없다).
  */
 async function stopAppSaving(page: Page): Promise<void> {
-  await page.evaluate((key) => window.dispatchEvent(new StorageEvent('storage', { key })), GAME_KEY);
-  // 앱이 실제로 「밀린 화면」으로 바뀌어 저장을 멈출 때까지 기다린다. 기다리지 않고 곧바로 이동하면 떠나는 앱의 pagehide 저장이 심어 둔 값을 덮어쓸 수 있다:
+  // 앱이 「밀린 화면」으로 바뀌어 저장을 멈출 때까지 기다린다. 기다리지 않고 곧바로 이동하면 떠나는 앱의 pagehide 저장이 심어 둔 값을 덮어쓸 수 있다:
   // 심은 값이 진행 없는 타이틀이고 앱이 아는 값도 타이틀이면 A66(잃을 진행이 없는 첫 저장은 충돌이 아니다)에 따라 덮어쓰기가 허용되기 때문이다.
-  // 밀린 화면이 끝내 뜨지 않으면 조용히 넘어가지 않고 그 자리에서 실패한다(R-217 ④: 예전에는 시간 초과를 삼켜서, 덮어쓰기 경합이 생겨도 테스트가 다른 곳에서 엉뚱하게 실패했다).
-  await page.getByTestId('superseded-screen').waitFor({ state: 'attached', timeout: 3000 }).catch((error: unknown) => {
-    throw new Error('앱이 「밀린 화면」으로 바뀌지 않았다(storage 이벤트를 받지 못했다): 심어 둔 저장이 떠나는 앱의 pagehide 저장에 덮일 수 있어 이어갈 수 없다', { cause: error });
-  });
+  // 이벤트는 세 번까지 다시 보낸다(1초씩): WebKit에서 앱의 storage 수신 효과가 붙기 전에 첫 이벤트가 지나가 3초 대기가 시간 초과로 끝나는 일이 있었다(기준선 be45cf1에서도 같은 시험이 같은 오류로 실패 — SPEC-005 r4 후속).
+  // 끝내 밀린 화면이 뜨지 않으면 조용히 넘어가지 않고 그 자리에서 실패한다(R-217 ④: 예전에는 시간 초과를 삼켜서, 덮어쓰기 경합이 생겨도 테스트가 다른 곳에서 엉뚱하게 실패했다).
+  let last: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.evaluate((key) => window.dispatchEvent(new StorageEvent('storage', { key })), GAME_KEY);
+    try {
+      await page.getByTestId('superseded-screen').waitFor({ state: 'attached', timeout: 1000 });
+      return;
+    } catch (error) {
+      last = error;
+    }
+  }
+  throw new Error('앱이 「밀린 화면」으로 바뀌지 않았다(storage 이벤트를 받지 못했다): 심어 둔 저장이 떠나는 앱의 pagehide 저장에 덮일 수 있어 이어갈 수 없다', { cause: last });
 }
 
 /** 게임 저장만 지운다(설정은 남긴다). 이 페이지의 앱이 지워진 저장을 되살리지 않게 한 뒤 호출하는 쪽이 이동/새로고침한다. */

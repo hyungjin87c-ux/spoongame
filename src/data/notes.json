@@ -12,7 +12,7 @@
       "ageRange": { "min": 5, "max": 5 },
       "timing": "asap",
       "prompt": "다섯 살 무렵을 떠올려 보면, {이름}에게 기억나는 장면이나 느낌이 있습니까?",
-      "citation": "c-037"
+      "citation": "c-102"
     },
     {
       "id": "note-teen-envy",

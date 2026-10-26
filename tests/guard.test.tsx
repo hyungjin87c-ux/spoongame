@@ -314,7 +314,7 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
     const decision = advanceUntilDecision(life).state;
     expect(decision.pending).not.toBeNull();
     const html = render(decision);
-    // 자동 모드 꺼짐 = 모달 시트: 화면 맨 끝(inert인 바깥 형제들 뒤)에 있고, 안의 버튼은 선택지와 「카드 접기」다 (M7b)
+    // 자동 모드 꺼짐 = 모달 시트: 화면 맨 끝(inert인 바깥 형제들 뒤)에 있고, 안의 버튼은 선택지와 「잠시 덮어 두기」다 (M7b)
     const choiceBlock = html.slice(html.indexOf('data-testid="choice-panel"'));
     expect(choiceBlock.match(/<button/g)!.length).toBeGreaterThanOrEqual(2);
     expect(choiceBlock.match(/<button/g)!.length).toBe(choiceBlock.match(/aria-disabled="true"/g)!.length);

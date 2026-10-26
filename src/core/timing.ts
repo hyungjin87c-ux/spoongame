@@ -84,19 +84,21 @@ export interface PlayMode {
 export const READ_LEVELS = ['low', 'median', 'high', 'upper'] as const;
 export type ReadLevel = (typeof READ_LEVELS)[number];
 
-/** 결정 카드 한 장이 읽는 글자 수(제목 + 본문 + 보이는 선택지 라벨 + 영향 줄 × 가중치) — READ_MODEL.chars */
+/** 결정 카드 한 장이 읽는 글자 수(제목 + 본문 + 공통 질문 한 줄 + 보이는 선택지 라벨 + 영향 줄 × 가중치) — READ_MODEL.chars. 질문 줄은 SPEC-005 r4(UX10)에서 더해졌다 */
 export function cardReadChars(): number {
   const c = READ_MODEL.chars;
-  return c.title + c.body + c.visibleLabels * c.label + c.visibleLabels * c.impactPerChoice * c.impactWeight;
+  return c.title + c.body + c.ask + c.visibleLabels * c.label + c.visibleLabels * c.impactPerChoice * c.impactWeight;
 }
 
 /**
- * 결정 카드 한 장을 읽고 고르는 시간 r(초) = 글자 읽기 + 고르는 시간 + 인용 읽기(그 세상의 노출률 × 인용 읽기 시간) (SPEC-003 LM2, content-M8.md 2-2절).
+ * 결정 카드 한 장을 읽고 고르는 시간 r(초) = 글자 읽기 + 고르는 시간 + 인용 읽기(그 세상의 노출률 × 인용 읽기 시간) + 풀이 읽기(풀이 줄 노출률 × 풀이 글자 수 ÷ 분당 글자 수) (SPEC-003 LM2, content-M8.md 2-2절;
+ * 질문 줄은 글자 수(`cardReadChars`)에, 풀이 줄은 마지막 항에 SPEC-005 r4 UX10·UX14가 더했다).
  * level 'upper'는 'high' 계산에 upperFactor를 곱한 값이다.
  */
 export function readSecFor(era: Era, level: ReadLevel = 'median'): number {
   const lv = level === 'upper' ? 'high' : level;
-  const seconds = (cardReadChars() / READ_MODEL.cpm[lv]) * 60 + READ_MODEL.chooseSec[lv] + READ_MODEL.citeExposure[era] * READ_MODEL.citeSec[lv];
+  const insightSec = READ_MODEL.insightExposure[era] * (READ_MODEL.insight.chars / READ_MODEL.cpm[lv]) * 60;
+  const seconds = (cardReadChars() / READ_MODEL.cpm[lv]) * 60 + READ_MODEL.chooseSec[lv] + READ_MODEL.citeExposure[era] * READ_MODEL.citeSec[lv] + insightSec;
   return level === 'upper' ? seconds * READ_MODEL.upperFactor : seconds;
 }
 

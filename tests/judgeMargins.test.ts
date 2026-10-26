@@ -34,11 +34,12 @@ describe('30분 모드 판정 임계는 모든 표본 줄에서 측정값과 3 S
     expect(MARGIN_LINES.map((l) => l.id)).toEqual(['test-random', 'test-auto', 'sim-manual', 'sim-auto']);
   }, 300_000);
 
-  it('임계 값 자체: 카드 평균 구간 23.3~29, 노년 하한 3.95 / 4.72 / 5.0, 시대별 시간 25.5~34.5분 (바뀌면 위 여유 시험과 timingTable.ts 주석의 계산을 함께 다시 한다)', () => {
+  it('임계 값 자체: 카드 평균 구간 23.3~29, 노년 하한 3.95 / 4.72 / 5.0, 시대별 시간 25.5~36.5분 (바뀌면 위 여유 시험과 timingTable.ts 주석의 계산을 함께 다시 한다)', () => {
     expect(LIFE_LENGTH_MODES.short30.cards.meanLow).toBe(23.3);
     expect(LIFE_LENGTH_MODES.short30.cards.meanHigh).toBe(29);
     expect(SENIOR_CHOICE_MEAN_MIN).toEqual({ past: 3.95, present: 4.72, future: 5 });
-    expect(ERA_TIME_BAND).toEqual({ low: 25.5, high: 34.5 });
+    // 상단 34.5 → 36.5: SPEC-005 r4 마스터 결정 M24(2026-10-26, 형진 님 「플레이시간은 몰입의 결과」) — 하단 25.5와 3 SE 규칙은 그대로다 (timingTable.ts timeMin 주석)
+    expect(ERA_TIME_BAND).toEqual({ low: 25.5, high: 36.5 });
   });
 });
 

@@ -19,6 +19,8 @@ import {
   type Stage,
   type TickCounts,
 } from '../src/core';
+import { insightFor } from '../src/data/citationInsights';
+import { DASH_TEXT } from '../src/data/dashText';
 import { EVENT_POOL } from '../src/data/events';
 import { IMPACT_LABEL } from '../src/data/impactText';
 import { EVENT_FREQUENCY } from '../src/data/lifeTable';
@@ -61,6 +63,10 @@ export interface CardFeature {
   cited: boolean;
   citeTextLen: number;
   citeSrcLen: number;
+  /** 공통 질문 한 줄의 글자 수 (SPEC-005 r4 UX10 — 본인이 고르는 카드마다 있다, 카드가 뜬 순간 `DASH_TEXT.choiceAsk`) */
+  askLen: number;
+  /** 인용 박스 안 풀이 줄의 글자 수 (SPEC-005 r4 UX14 — 풀이가 있는 인용이 보였을 때만, 없으면 0) */
+  insightLen: number;
 }
 
 export interface LifeMeasure {
@@ -110,6 +116,8 @@ export function featureOf(s: GameState, pool: EventPool): CardFeature | null {
     cited: cite !== null,
     citeTextLen: cite === null ? 0 : len(cite.text),
     citeSrcLen: cite === null ? 0 : len(cite.sourceLine),
+    askLen: len(DASH_TEXT.choiceAsk),
+    insightLen: cite === null ? 0 : len(insightFor(cite.id) ?? ''),
   };
 }
 
@@ -243,12 +251,16 @@ export interface EraSummary {
   problems: string[];
 }
 
-/** 카드 하나의 정밀 읽는 시간(초): 실제 글자 수로. 인용은 요약 전부 + 출처 줄 절반 + 숫자 해석 1.5초. level의 분당 글자 수·고르는 시간을 쓴다 */
+/**
+ * 카드 하나의 정밀 읽는 시간(초): 실제 글자 수로. 인용은 요약 전부 + 출처 줄 절반 + 숫자 해석 1.5초. level의 분당 글자 수·고르는 시간을 쓴다.
+ * SPEC-005 r4: 질문 줄(`askLen`)은 글자 읽기에 더하고, 풀이 줄(`insightLen`)은 한 문장 전부를 읽는 글이라 글자 수 ÷ 분당 글자 수만 더한다.
+ */
 export function preciseCardSec(f: CardFeature, level: 'low' | 'median' | 'high'): number {
   const cpm = READ_MODEL.cpm[level];
-  const chars = f.titleLen + f.textLen + f.labelLens.reduce((a, b) => a + b, 0) + f.impactChars * READ_MODEL.chars.impactWeight;
+  const chars = f.titleLen + f.textLen + f.askLen + f.labelLens.reduce((a, b) => a + b, 0) + f.impactChars * READ_MODEL.chars.impactWeight;
   const cite = f.cited ? ((f.citeTextLen + 0.5 * f.citeSrcLen) / cpm) * 60 + 1.5 : 0;
-  return (chars / cpm) * 60 + READ_MODEL.chooseSec[level] + cite;
+  const insight = (f.insightLen / cpm) * 60;
+  return (chars / cpm) * 60 + READ_MODEL.chooseSec[level] + cite + insight;
 }
 
 /**
@@ -323,6 +335,10 @@ export interface CharStats {
   exposure: number;
   citeText: number;
   citeSrc: number;
+  /** 질문 줄 글자 수(카드당), 풀이 줄: 노출률(뜬 카드 가운데 풀이가 보인 몫)과 보인 풀이의 평균 글자 수 (SPEC-005 r4) */
+  ask: number;
+  insightExposure: number;
+  insightText: number;
 }
 
 /** 시대 하나의 뜬 카드 전체에서 센 글자 수 (카드 단위로 가중 — 많이 뜨는 카드가 더 반영된다) */
@@ -344,6 +360,9 @@ export function charStatsOf(lives: readonly LifeMeasure[]): CharStats {
     exposure: cited.length / (cards.length || 1),
     citeText: mean(cited.map((f) => f.citeTextLen)),
     citeSrc: mean(cited.map((f) => f.citeSrcLen)),
+    ask: mean(cards.map((f) => f.askLen)),
+    insightExposure: cards.filter((f) => f.insightLen > 0).length / (cards.length || 1),
+    insightText: mean(cards.filter((f) => f.insightLen > 0).map((f) => f.insightLen)),
   };
 }
 

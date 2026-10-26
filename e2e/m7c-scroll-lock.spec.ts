@@ -39,8 +39,13 @@ async function openShortNote(page: Page): Promise<void> {
   await sheetReady(page);
 }
 
-/** 짧은 결정 시트(선택지 2개·인용 없음) */
+/**
+ * 짧은 결정 시트(선택지 2개·인용 없음).
+ * r4(2026-10-26): 카드에 질문 줄과 「이후 결정을 자동으로 고르게 하기」 단추·안내가 더해져 가장 짧은 카드도 360×740에서 시트가 94dvh 상한까지 차올라 안쪽 스크롤이 생기고 스크림이 얼마 남지 않는다.
+ * 이 시험이 보려는 것은 「짧은 시트(안쪽 스크롤 없음)에서 문서가 움직이지 않는다」이므로 화면을 세로로 충분히 키워(높이 1000) 같은 조건을 만든다 — 시트가 짧다는 전제는 expectShort가 그대로 점검한다.
+ */
 async function openShortDecision(page: Page): Promise<void> {
+  await page.setViewportSize({ width: page.viewportSize()?.width ?? 360, height: 1000 });
   await page.goto('/');
   const state = await shortDecision(page);
   await startPageHidden(page);

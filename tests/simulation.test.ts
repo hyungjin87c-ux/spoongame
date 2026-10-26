@@ -309,7 +309,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
         }
       });
 
-      it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~34.5분) 안, 세 시대 평균이 27~33분, 판 하나하나의 95%가 40분 이하이고 최대 45분 이하', () => {
+      it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~36.5분 — M24로 상단을 올렸다) 안, 세 시대 평균이 27~35분, 판 하나하나의 95%가 40분 이하이고 최대 45분 이하', () => {
         let sum = 0;
         for (const era of ERAS) {
           const r = reportsOf()[era];
@@ -390,7 +390,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
           }
         });
 
-        it('영유아(0~7세) 평균은 IN2 하한(2.8) 이상이고, 같은 시드라면 연출 계수만 달라 카드 수는 30분 모드와 같으며(임시 페이싱 = 30분 모드와 같은 값) 모델 시간은 계수 비율만큼 길다', () => {
+        it('영유아(0~7세) 평균은 IN2 하한(2.8) 이상이고, 같은 시드라면 연출 계수만 달라 카드 수는 30분 모드와 같으며(임시 페이싱 = 30분 모드와 같은 값) 모델 시간은 연출 몫이 계수 비를 따라 길다(읽기 몫은 계수와 무관해 전체 비는 계수 비보다 작다)', () => {
           for (const era of ERAS) {
             const upTo7 = longLives()[era].reduce((a, l) => a + l.final.history.filter((h) => h.kind === 'choice' && h.age <= 7).length, 0) / REPORT_SEEDS;
             expect(upTo7, `${era} 0~7세`).toBeGreaterThanOrEqual(INFANT_CHOICE_MEAN_MIN);
@@ -400,7 +400,11 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
             const shortMin = shortLives.reduce((a, l) => a + l.seconds1x / 60, 0) / REPORT_SEEDS;
             // LM7b(형진 님 결정 2026-10-26): 30분 모드의 연출 계수가 1.35 → 1.6875로 올라 1시간 모드(계수 2.0, 닫혀 있고 2차 착수 때 정한다)와의 연출 비가 1.48배에서 1.19배로 좁아졌다 —
             // 연출 몫만 늘어나므로 모델 시간의 비는 1.2 아래(약 1.1)가 된다. 「1시간이 30분보다 길다」는 뜻은 그대로 지킨다(5% 이상). 1시간 모드의 계수는 2차 착수 때 다시 정한다.
-            expect(longMin, `${era}: 약 1시간 모드의 모델 시간(분, 보고)`).toBeGreaterThan(shortMin * 1.05);
+            // R-495(REV-005-LM7b-1): 예전의 매직 넘버 ×1.05를 계수에서 계산한다. 모델 시간 = 연출 몫(계수에 비례) + 읽기 몫(계수와 무관) → 비 = 1 + 연출 몫 비율 × (계수 비 − 1).
+            // 연출 몫은 한 판의 절반 이상이다(1배속 수동 모델에서 연출 합 23.9 / 25.4 / 25.8분 대 전체 30.4 / 33.5 / 33.9분 ≈ 75~79%) → 하한은 연출 몫 50%로 잡는다. 1시간 모드의 계수(2.0)는 닫혀 있고 2차 착수 때 다시 정한다(TODO 후속).
+            const holdRatio = LIFE_LENGTH_MODES.long60.holdScale / LIFE_LENGTH_MODES.short30.holdScale;
+            expect(holdRatio, '1시간 모드의 연출 계수가 30분 모드보다 크다').toBeGreaterThan(1);
+            expect(longMin, `${era}: 약 1시간 모드의 모델 시간(분, 보고) — 30분 모드 ${shortMin.toFixed(1)}분 × (1 + 0.5 × (${holdRatio.toFixed(3)} − 1))`).toBeGreaterThan(shortMin * (1 + 0.5 * (holdRatio - 1)));
           }
         });
       });

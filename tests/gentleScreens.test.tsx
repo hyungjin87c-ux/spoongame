@@ -16,6 +16,7 @@ import {
   type HistoryEntry,
   type TickInfo,
 } from '../src/core';
+import { DASH_TEXT } from '../src/data/dashText';
 import { EVENT_POOL } from '../src/data/events';
 import { HEAVY_KIND_TEXT, HEAVY_SLIDE_TEXT, VEIL_TEXT, veilButtonLabel } from '../src/data/gentleText';
 import { INHERIT_NOTE_TEXT } from '../src/data/lifeTable';
@@ -227,7 +228,12 @@ describe('가린 결정 카드: 시트·인라인·접힌 띠 (HV4 ②⑤, 접�
     expect(card).not.toContain('data-testid="impact"');
     expect(card).not.toContain('data-testid="cite"');
     expect(card).not.toContain('class="choices-list"');
-    // 머리(종류 표식·접기)와 자동 모드 안내는 틀이라 그대로
+    // r4(SPEC-005 UX10·UX12·UX14, M22·M23): 질문 줄·풀이 줄·자동 고르기 묶음(버튼·보조 한 줄)도 가린 카드에는 없다 — 버튼은 둘뿐(펼치면 보인다)
+    for (const id of ['choice-ask', 'cite-insight', 'auto-set', 'auto-on-btn', 'auto-off-btn', 'auto-sub']) expect(card, id).not.toContain(`data-testid="${id}"`);
+    expect(card).not.toContain('id="dc-ask"');
+    expect((card.match(/<button/g) ?? []).length, '머리의 덮어 두기 + 버튼 둘').toBe(3);
+    expect(visibleText(card)).not.toContain(DASH_TEXT.autoOnBtn);
+    // 머리(종류 표식·덮어 두기)와 자동 모드 안내는 틀이라 그대로
     expect(card).toContain('중대 결정');
     expect(card).toContain('data-testid="decision-fold-btn"');
     expect(card).toContain('data-testid="auto-note"');

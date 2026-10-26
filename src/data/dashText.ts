@@ -105,9 +105,15 @@ export const DASH_TEXT = {
 
   // ---------- 중대 결정 카드 (M7b — 문구 기준 docs/design/copy.md 6-1절) ----------
   choiceKind: '중대 결정',
+  /** 선택지 묶음의 옛 이름. SPEC-005 r4(UX10)부터 묶음의 이름은 질문 줄(`choiceAsk`, aria-labelledby)이라 화면에서는 더 쓰지 않는다 — 상수만 남긴다(copy.md 15-1) */
   choiceGroup: '선택지',
-  /** 머리의 접기 버튼. 눈에 보이는 꼬리 「▾」(`foldMark`)는 aria-hidden이라 접근 가능한 이름은 「카드 접기」 */
-  foldCard: '카드 접기',
+  /** 선택지 앞의 공통 질문 한 줄 (SPEC-005 r4 UX10·QI10, copy.md 15-1 — 마스터 승인 「어떻게 하겠습니까?」, 기록 카드 질문과 같은 높임 단계의 합쇼체). 본인이 고르는 카드(시트·인라인)에만 — 부모·흘러감·가린·기록 카드에는 없다 */
+  choiceAsk: '어떻게 하겠습니까?',
+  /**
+   * 머리의 덮기 버튼 (SPEC-005 r4 UX11·QI11, copy.md 15-2 — 이전 이름을 뜻은 그대로 새로 지어 바꿨다). 눈에 보이는 꼬리 「▾」(`foldMark`)는 aria-hidden이라 접근 가능한 이름은 「잠시 덮어 두기」.
+   * R-124의 예외가 아니라 형진 님 질문 2의 답 B(뜻만 살려 새로 지음)로 정한 이름이다 — 형진 님 원문의 낱말은 어디에도 쓰지 않는다(copy.md 15-2 「버린 후보」). 내부 식별자(`foldCard`·`FoldState`·`decision-fold-btn`)는 그대로.
+   */
+  foldCard: '잠시 덮어 두기',
   foldMark: '▾',
   /** 접힌 띠의 다시 열기 버튼. 접근 가능한 이름은 「결정 다시 열기 {제목}」(aria-labelledby로 제목을 잇는다) */
   reopenDecision: '결정 다시 열기',
@@ -116,8 +122,21 @@ export const DASH_TEXT = {
   /** 자동 모드 안내는 상태에 맞는 문장 하나만(M-13). 콜론 라벨형 「자동 모드: …」은 폐기했다. 「잠시 뒤」 = AUTO_CHOICE_MS — 초를 적지 않는다(접었다 다시 열면 다시 세므로 숫자가 거짓이 된다) */
   autoNoteOn: '자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다.',
   autoNoteOff: '자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.',
+  /**
+   * 카드 맨 끝의 자동 고르기 묶음 (SPEC-005 r4 UX12·QI12, copy.md 15-3 — 마스터 결정 M-6 개정: 이 버튼 하나에 한해 시트 → 인라인 전환이 생긴다). 기존 자동 모드(`settings.autoMode`)와 **같은 설정**을 켜고 끄는 또 하나의 길이다.
+   * 켜는 버튼은 모달 시트(자동 모드 꺼짐)에, 끄는 버튼은 인라인 카드(자동 모드 켜짐)에 — 가린 카드·부모·흘러감 카드·기록 시트에는 없다(M22). 보조 문구(`aria-describedby`)는 설정으로 남는다는 뜻과 끄는 길을 밝힌다(UX12-7).
+   */
+  autoOnBtn: '이후 결정을 자동으로 고르게 하기',
+  autoOnSub: '이 결정부터 성향에 따라 고릅니다. 설정으로 남아 다음 판에도 이어지며, 카드 아래나 도구 줄에서 끌 수 있습니다.',
+  autoOffBtn: '이후 결정을 직접 고르기',
+  autoOffSub: '이 결정부터 직접 고릅니다. 도구 줄의 「자동 모드」도 함께 꺼집니다.',
+  /** 전환 순간 한 번만 읽히는 상태 문장(role="status", 전환 뒤 비운다 — 자동 선택마다 읽히지 않게, content-M7b 4-3) */
+  autoOnStatus: '자동 모드를 켰습니다. 이 결정부터 잠시 뒤 성향에 따라 고릅니다.',
+  autoOffStatus: '자동 모드를 껐습니다. 직접 고를 때까지 시간은 멈춥니다.',
   /** 인용 박스의 종류 라벨(U12 — 지표 이름이 아니라 자료의 종류이므로 QM2-11 대상이 아니다). `citations.json`의 kind 값 둘뿐이다 */
   citeKindLabel: { stat: '통계', research: '연구' },
+  /** 인용 박스 안 풀이 줄의 라벨 (SPEC-005 r4 UX14·QI14, copy.md 15-4) — 출처 줄 뒤, `.cite__kind`와 같은 규격. 풀이 문장은 `data/citationInsights.ts` */
+  citeInsightLabel: '풀이',
   /** 다가올 세상의 모든 인용 머리말 (M-2). `core/citations.ts#FUTURE_PREFIX`와 같은 글자(시험이 대조한다) */
   eraPrefixFuture: '지금 기준으로는',
 

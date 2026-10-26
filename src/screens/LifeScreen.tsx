@@ -31,7 +31,7 @@ import { YearRow } from '../ui/YearBar';
  * 좁은 화면은 1열(프로필 → 상태 → 자산 → 인생 기록 → 식구 → 또래; 결정을 기다리는 카드는 맨 위로 올라온다 — 곧바로 눈에 띄고 포커스가 가 닿는다).
  *
  * 이 화면은 계산하지 않는다: 값은 core의 순수 함수(profile·family·peerNow·progress·feedback)가 만들고, 시간은 App이 돌리는 올해 시계(`ui/useYearClock.ts`)가 흘린다.
- * 중대 결정 카드(M7b, `ui/dash/DecisionCard.tsx`): 자동 모드가 꺼져 있으면 **모달 시트**(바깥 전부 `inert`, Esc = 카드 접기), 켜져 있으면 **비모달 인라인 카드**(가운데 열 맨 위). 접으면 그 자리에 접힌 띠가 생기고
+ * 중대 결정 카드(M7b, `ui/dash/DecisionCard.tsx`): 자동 모드가 꺼져 있으면 **모달 시트**(바깥 전부 `inert`, Esc = 잠시 덮어 두기), 켜져 있으면 **비모달 인라인 카드**(가운데 열 맨 위). 접으면 그 자리에 접힌 띠가 생기고
  * 접힘 상태는 `App`이 갖는다(U10). 포커스는 `ui/useFocus.ts#decideLifeFocus`(8순간 × 자동 2 × 위치 3 = 48칸)가 한 곳에서 정한다.
  */
 
@@ -87,6 +87,13 @@ interface Props {
   onVeilOpen?: () => void;
   /** 가린 카드의 「이번에는 자동으로 고르기」 — 지금의 자동 선택 성향으로 이 카드를 한 번 고른다 */
   onAutoPick?: (key: string) => void;
+  /**
+   * 결정 카드 맨 끝의 자동 고르기 버튼 (SPEC-005 r4 UX12·QI12 — 마스터 결정 M-6을 이 버튼 하나에 한해 개정): `true` = 시트의 「이후 결정을 자동으로 고르게 하기」(자동 모드를 켠다 → 같은 카드가 인라인으로 바뀐다),
+   * `false` = 인라인 카드의 「이후 결정을 직접 고르기」(끈다 → 시트로 바뀐다). 기존 자동 모드와 같은 설정이다 — 진행 줄의 `onAuto`와 달리 입력 가드 세대를 올리고 전환 문장(`autoStatus`)을 한 번 알리는 일을 App이 더 한다.
+   */
+  onAutoFromCard?: (auto: boolean) => void;
+  /** 전환 순간 한 번만 읽히는 상태 문장의 종류 (App이 켜고 잠시 뒤 비운다) — 낭독 영역(`role="status"`, 화면에는 보이지 않는다)에 들어간다. 기본 null(비어 있음) */
+  autoStatus?: 'on' | 'off' | null;
   /** 열려 있는 기록 시트 (없으면 null) — 떠 있는 동안 바깥은 inert, 시계·자동 선택은 App이 멈춘다 */
   noteSheet?: NoteSheetState | null;
   /** 도구 줄 「생각 남기기」 */
@@ -253,7 +260,7 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headRef = useRef<HTMLElement>(null);
@@ -307,7 +314,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
   // 나가기 확인 단계: 열리면 안전한 쪽(돌아가기)으로 포커스를 옮기고, Esc로 닫으면 「나가기」 도구로 포커스를 돌려준다(첫 화면의 확인 단계와 같은 방식, R-212).
   // 열 때의 화면 맞춤(안내문 첫 줄과 「돌아가기」가 함께 보이게)은 useExitAskFit이 한다 — 브라우저의 기본 포커스 스크롤은 버튼만 화면에 넣고 안내문을 위로 밀어내므로 스크롤은 막는다(QA-003-M4 O03).
   const returnFocus = useRef(false);
-  // 모달 시트가 위에 있으면 Esc는 시트(카드 접기)의 몫이다 — 나가기 확인이 열린 채 「다음 결정으로」로 시트가 뜬 뒤 Esc 한 번이 두 리스너를 함께 돌려 확인 단계 닫기와 카드 접기가 같이 일어나던 것을 막는다(REV-003-M7b-1 관찰 3).
+  // 모달 시트가 위에 있으면 Esc는 시트(잠시 덮어 두기)의 몫이다 — 나가기 확인이 열린 채 「다음 결정으로」로 시트가 뜬 뒤 Esc 한 번이 두 리스너를 함께 돌려 확인 단계 닫기와 잠시 덮어 두기가 같이 일어나던 것을 막는다(REV-003-M7b-1 관찰 3).
   // 맨 위 하나만 처리한다: 시트가 접히고 나면 다음 Esc가 나가기 확인을 닫는다. 이 효과가 시트 여닫음에 다시 돌지 않도록(포커스를 다시 가져가지 않도록) 값은 ref로 읽는다.
   const sheetOpenRef = useRef(false);
   sheetOpenRef.current = sheetOpen || noteOpen; // 기록 시트의 Esc(= 2번)도 시트의 몫이다
@@ -353,6 +360,10 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
   return (
     <div className="page dash-page" data-testid="life-screen">
       <Sprite />
+      {/* 자동 고르기 버튼의 전환 문장 (UX12-3 ④): 카드 밖 한 곳에 늘 있는 낭독 영역 — 시트가 사라지거나 생기는 렌더에서 글자만 바뀐다(처음부터 있던 영역이라 낭독된다). 눈에는 보이지 않고, 전환 뒤 App이 비운다(자동 선택마다 읽히지 않게, content-M7b 4-3) */}
+      <p className="sr-only" role="status" data-testid="auto-status">
+        {autoStatus === 'on' ? DASH_TEXT.autoOnStatus : autoStatus === 'off' ? DASH_TEXT.autoOffStatus : ''}
+      </p>
       <header className="dash-head" ref={headRef} data-testid="dash-head" {...inert}>
         <div className="dash-head__inner">
           <div className="dash-head__top">
@@ -448,7 +459,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
           {decision !== null && isFolded ? <DecisionFold model={decision} epoch={guardEpoch} openRef={foldOpenRef} onReopen={onReopen} veiled={veiled} /> : null}
           {decision !== null && !isFolded && settings.autoMode ? (
             <DecisionInline model={decision} veiled={veiled}>
-              <DecisionCard model={decision} auto epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} veiled={veiled} onOpenVeil={onVeilOpen} onAutoPick={onAutoPick} />
+              <DecisionCard model={decision} auto epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} onAutoSwitch={onAutoFromCard} veiled={veiled} onOpenVeil={onVeilOpen} onAutoPick={onAutoPick} />
             </DecisionInline>
           ) : null}
           {/* 부모님이 정한·흘러간 카드: 인생 기록 바로 위(LR5 b — [결정 카드 또는 접힌 띠 → 부모 결정 카드 → 인생 기록]). 비모달이라 포커스·inert와 무관하다 */}
@@ -464,7 +475,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
       {/* 모달 시트: 바깥(헤더·도구 줄·main·본문 끝 여백)이 모두 inert인 동안만 있다 — aria-modal만으로는 Tab이 뒤로 샌다(design-system.md 11-10) */}
       {sheetOpen ? (
         <DecisionSheet model={decision} onFold={onFold} veiled={veiled}>
-          <DecisionCard model={decision} auto={false} epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} veiled={veiled} onOpenVeil={onVeilOpen} onAutoPick={onAutoPick} />
+          <DecisionCard model={decision} auto={false} epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} onAutoSwitch={onAutoFromCard} veiled={veiled} onOpenVeil={onVeilOpen} onAutoPick={onAutoPick} />
         </DecisionSheet>
       ) : null}
       {/* 기록 시트(M7c): 바깥이 모두 inert인 동안만 있다. 같은 시트가 두 길(저절로 뜬 카드 / 「생각 남기기」 버튼)로 열린다 */}

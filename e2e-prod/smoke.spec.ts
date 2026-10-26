@@ -220,7 +220,7 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
         continue;
       }
       if (await panel.isVisible()) {
-        await panel.locator('button.choice').first().click({ timeout: 5_000 }); // 선택지 가드가 풀릴 때까지 기다린다 (M7b: 카드 머리의 「카드 접기」가 첫 버튼이라 선택지 버튼만 고른다)
+        await panel.locator('button.choice').first().click({ timeout: 5_000 }); // 선택지 가드가 풀릴 때까지 기다린다 (M7b: 카드 머리의 「잠시 덮어 두기」가 첫 버튼이라 선택지 버튼만 고른다)
         choices++;
       } else {
         await skip.click({ timeout: 5_000 }); // 컨트롤 가드가 풀리고 선택지가 없을 때 눌린다

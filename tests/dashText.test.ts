@@ -89,3 +89,37 @@ describe('생각 남기기 도구 (R-326 → M7c D-75)', () => {
     expect(DASH_TEXT.toolNote).toBe('생각 남기기');
   });
 });
+
+describe('SPEC-005 r4 문구 상수 (copy.md 15절 — 사람이 옮겨 적은 글자)', () => {
+  it('질문 · 덮기 버튼 · 자동 고르기 버튼과 보조 한 줄 · 전환 문장 · 풀이 라벨이 확정 글자 그대로다', () => {
+    expect(DASH_TEXT.choiceAsk).toBe('어떻게 하겠습니까?');
+    expect(DASH_TEXT.foldCard).toBe('잠시 덮어 두기');
+    expect(DASH_TEXT.autoOnBtn).toBe('이후 결정을 자동으로 고르게 하기');
+    expect(DASH_TEXT.autoOnSub).toBe('이 결정부터 성향에 따라 고릅니다. 설정으로 남아 다음 판에도 이어지며, 카드 아래나 도구 줄에서 끌 수 있습니다.');
+    expect(DASH_TEXT.autoOffBtn).toBe('이후 결정을 직접 고르기');
+    expect(DASH_TEXT.autoOffSub).toBe('이 결정부터 직접 고릅니다. 도구 줄의 「자동 모드」도 함께 꺼집니다.');
+    expect(DASH_TEXT.autoOnStatus).toBe('자동 모드를 켰습니다. 이 결정부터 잠시 뒤 성향에 따라 고릅니다.');
+    expect(DASH_TEXT.autoOffStatus).toBe('자동 모드를 껐습니다. 직접 고를 때까지 시간은 멈춥니다.');
+    expect(DASH_TEXT.citeInsightLabel).toBe('풀이');
+  });
+
+  it('카드 안 글은 합쇼체다(질문 「~습니까?」, 문장 「~습니다.」) — 해요체 어미·느낌표·이모지가 없고 초(숫자)를 적지 않는다 (접었다 다시 열면 다시 세므로 숫자가 거짓이 된다)', () => {
+    expect(DASH_TEXT.choiceAsk).toMatch(/습니까\?$/);
+    for (const t of [DASH_TEXT.autoOnSub, DASH_TEXT.autoOffSub, DASH_TEXT.autoOnStatus, DASH_TEXT.autoOffStatus]) {
+      expect(t).toMatch(/니다\.$/);
+      expect(t).not.toMatch(/\d/);
+      expect(t).not.toMatch(/[!！]|\p{Extended_Pictographic}/u);
+      expect(t).not.toMatch(/(해요|에요|예요|네요|세요)[.?]?$/);
+    }
+    // 버튼 이름은 「이후 결정을 …」로 시작해 짝을 이룬다 (켜는 말 / 끄는 말), 가린 카드의 「이번에는 …」와 첫 낱말이 다르다
+    expect(DASH_TEXT.autoOnBtn.startsWith('이후 결정을 ')).toBe(true);
+    expect(DASH_TEXT.autoOffBtn.startsWith('이후 결정을 ')).toBe(true);
+    expect(DASH_TEXT.autoOnBtn).not.toBe(DASH_TEXT.autoOffBtn);
+  });
+
+  it('보조 한 줄은 같은 설정임(설정으로 남아 · 도구 줄의 「자동 모드」도 함께)과 끄는 길을 밝힌다 (UX12-2·UX12-5·UX12-7)', () => {
+    expect(DASH_TEXT.autoOnSub).toContain('설정으로 남아');
+    expect(DASH_TEXT.autoOnSub).toContain('카드 아래나 도구 줄에서 끌 수');
+    expect(DASH_TEXT.autoOffSub).toContain('도구 줄의 「자동 모드」');
+  });
+});

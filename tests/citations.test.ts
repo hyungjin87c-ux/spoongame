@@ -145,11 +145,11 @@ describe('인용 구조 (EV1·EV6)', () => {
     expect(FILE.meta.sourceLineFormat).toBe('{org}({year}), {title}');
   });
 
-  it('인용이 30개 이상이고 통계(stat)와 연구(research)가 모두 있다(현재 101개 = 통계 84 + 연구 17)', () => {
+  it('인용이 30개 이상이고 통계(stat)와 연구(research)가 모두 있다(현재 102개 = 통계 84 + 연구 18 — r4 QI13이 5세 기록 카드용 연구 c-102를 더했고 경제학 논문 c-037은 연결 없이 남겼다)', () => {
     expect(CITES.length).toBeGreaterThanOrEqual(30);
-    expect(CITES).toHaveLength(101);
+    expect(CITES).toHaveLength(102);
     expect(CITES.filter((c) => c.kind === 'stat')).toHaveLength(84);
-    expect(CITES.filter((c) => c.kind === 'research')).toHaveLength(17);
+    expect(CITES.filter((c) => c.kind === 'research')).toHaveLength(18);
     expect(CITES.filter((c) => c.kind === 'stat').length).toBeGreaterThanOrEqual(20);
     expect(CITES.filter((c) => c.kind === 'research').length).toBeGreaterThanOrEqual(5);
     for (const c of CITES) expect(['stat', 'research'], c.id).toContain(c.kind);
@@ -328,7 +328,7 @@ describe('이벤트 연결 (usedBy — 이벤트 JSON의 citation 역색인, M7b
   });
 
   it('M7b: usedBy는 이벤트가 실제로 인용하는 카드 목록이다 — 비어 있지 않은 인용이 30개 이상이고, 연결을 가진 인용의 usedBy가 역색인과 같다 (자세한 양방향 대조는 tests/citationLink.test.ts)', () => {
-    // 서로 다른 인용 ≥ 30은 중대 결정 카드(이벤트) 기준이다 — 기록 카드의 인용(c-037)은 MD2 판정에 넣지 않는다(M7c NC-9)
+    // 서로 다른 인용 ≥ 30은 중대 결정 카드(이벤트) 기준이다 — 기록 카드의 인용(c-102)은 MD2 판정에 넣지 않는다(M7c NC-9)
     expect(CITES.filter((c) => c.usedBy.some((id) => !id.startsWith('note-'))).length).toBeGreaterThanOrEqual(30);
     const index = usedByIndex(EVENT_POOL.events, NOTE_CARDS);
     for (const c of CITES) expect(c.usedBy, c.id).toEqual(index[c.id] ?? []);
@@ -662,15 +662,16 @@ describe('지난 세상 인용과 시대 규칙 (R-150, 마스터 결정 2026-10
     }
   });
 
-  it('지난 세상에 쓸 수 있는 연구는 시대와 무관한 발달 연구 4건(동생 출생 적응·애착·걸음마 창, 그리고 M7c의 이른 시기 환경 c-037 — 「지금의 연구로는」 머리말 eraPrefix)과 지난 세상 제도 시기 해설 3건(국가기록원, eras가 past뿐·eraPrefix 없음)이다', () => {
+  it('지난 세상에 쓸 수 있는 연구는 시대와 무관한 발달 연구 5건(동생 출생 적응·애착·걸음마 창, M7c의 이른 시기 환경 c-037, r4 QI13의 가장 이른 기억 나이 c-102 — 「지금의 연구로는」 머리말 eraPrefix)과 지난 세상 제도 시기 해설 3건(국가기록원, eras가 past뿐·eraPrefix 없음)이다', () => {
     const research = CITES.filter((c) => c.kind === 'research');
     const withPast = research.filter((c) => c.eras.includes('past'));
-    expect(withPast.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034', 'c-037', 'c-071', 'c-072', 'c-073']);
-    for (const c of withPast.filter((x) => x.id < 'c-071')) {
+    expect(withPast.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034', 'c-037', 'c-071', 'c-072', 'c-073', 'c-102']);
+    // 발달 연구(eraPrefix.past 「지금의 연구로는」)는 위 다섯, 제도 시기 해설(public-guidance, past 전용)은 c-071~c-073 — 번호 순이 아니라 성격으로 가른다(c-102는 번호가 뒤지만 발달 연구다)
+    for (const c of withPast.filter((x) => x.eras.length > 1)) {
       expect(c.eraPrefix?.past, c.id).toBe('지금의 연구로는');
       expect(['study', 'review', 'reference-study'], c.id).toContain(c.evidenceType);
     }
-    for (const c of withPast.filter((x) => x.id >= 'c-071')) {
+    for (const c of withPast.filter((x) => x.eras.length === 1)) {
       expect(c.eras, c.id).toEqual(['past']);
       expect(c.evidenceType, c.id).toBe('public-guidance');
       expect(c.eraPrefix, c.id).toBeUndefined();
@@ -705,8 +706,8 @@ describe('인용별 사용 주의 usageCaution (R-151)', () => {
   const TYPES = ['parent-blame', 'determinism', 'abuse-adjacent', 'self-blame', 'stigma', 'medical-advice', 'comparison-ranking'];
   const research = CITES.filter((c) => c.kind === 'research');
 
-  it('연구 인용 17건 모두 evidenceType과 usageCaution(붙일 수 없는 카드 유형·이벤트, 주의 메모)이 있다', () => {
-    expect(research).toHaveLength(17);
+  it('연구 인용 18건 모두 evidenceType과 usageCaution(붙일 수 없는 카드 유형·이벤트, 주의 메모)이 있다', () => {
+    expect(research).toHaveLength(18);
     for (const c of research) {
       expect(['study', 'review', 'reference-study', 'report', 'guideline', 'public-guidance'], c.id).toContain(c.evidenceType);
       const u = c.usageCaution!;
@@ -720,7 +721,7 @@ describe('인용별 사용 주의 usageCaution (R-151)', () => {
 
   it('연구 문장(study·review·reference-study·report)에는 「개인차」 또는 「연관」 표현이 있고 framing에 적은 표현이 문장에 실제로 있다', () => {
     const hedged = research.filter((c) => ['study', 'review', 'reference-study', 'report'].includes(c.evidenceType ?? ''));
-    expect(hedged.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034', 'c-036', 'c-037', 'c-038', 'c-042']);
+    expect(hedged.map((c) => c.id)).toEqual(['c-032', 'c-033', 'c-034', 'c-036', 'c-037', 'c-038', 'c-042', 'c-102']);
     for (const c of hedged) {
       expect(c.text, c.id).toMatch(/개인차|연관/);
       for (const w of c.usageCaution!.framing ?? []) expect(c.text, `${c.id} ${w}`).toContain(w);
@@ -747,6 +748,9 @@ describe('인용별 사용 주의 usageCaution (R-151)', () => {
     expect(CITES.find((c) => c.id === 'c-048')!.usageCaution!.note).toContain('방치·소홀 사건에 붙일 때는 부모 개인이 아니라 일과 돌봄의 구조');
     // c-037(Heckman)·c-038(ACE)은 결정론·부모 탓으로 읽히지 않게 막았다
     expect(CITES.find((c) => c.id === 'c-037')!.usageCaution!.forbiddenCardTypes).toContain('determinism');
+    // r4 QI13: 5세 카드의 새 인용 c-102(평균 나이)는 결정론·자책·견줌으로 읽히지 않게 막았다 — 평균을 「정상」 기준으로 쓰지 않는다(dc15-memory-research.md 4절)
+    expect(CITES.find((c) => c.id === 'c-102')!.usageCaution!.forbiddenCardTypes).toEqual(expect.arrayContaining(['determinism', 'self-blame', 'comparison-ranking']));
+    expect(CITES.find((c) => c.id === 'c-102')!.usageCaution!.framing).toEqual(['개인차']);
     expect(CITES.find((c) => c.id === 'c-038')!.usageCaution!.forbiddenCardTypes).toEqual(expect.arrayContaining(['abuse-adjacent', 'parent-blame', 'determinism']));
   });
 

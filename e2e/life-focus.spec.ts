@@ -143,7 +143,7 @@ test('컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록과 실제
   expect(await walk()).toEqual(expectedWalk);
   await expect(page.getByTestId('choice-panel')).toHaveCount(0);
 
-  // 선택지가 뜬 뒤 (다음 결정으로는 aria-disabled지만 목록에 그대로 있다). 수동 모드의 카드는 모달 시트라 컨트롤이 inert다 — 「카드 접기」로 접으면 컨트롤에 닿는다(M7b)
+  // 선택지가 뜬 뒤 (다음 결정으로는 aria-disabled지만 목록에 그대로 있다). 수동 모드의 카드는 모달 시트라 컨트롤이 inert다 — 「잠시 덮어 두기」로 접으면 컨트롤에 닿는다(M7b)
   await setPageVisible(page, true);
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await settle(page);
@@ -179,7 +179,7 @@ test('컨트롤 그룹의 Tab 순서는 (수동·자동) × (선택지 없음·�
   for (const [label, state, settings] of states) {
     await injectSave(page, state, '/', settings);
     await controlsReady(page);
-    // 수동 모드에서 선택지가 있으면 카드는 모달 시트라 컨트롤이 inert다 — 접으면(「카드 접기」) 컨트롤 그룹이 그대로 닿는다 (M7b)
+    // 수동 모드에서 선택지가 있으면 카드는 모달 시트라 컨트롤이 inert다 — 접으면(「잠시 덮어 두기」) 컨트롤 그룹이 그대로 닿는다 (M7b)
     if (!settings.autoMode && state.pending !== null) {
       await expect(page.getByTestId('decision-fold-btn')).toBeEnabled();
       await page.getByTestId('decision-fold-btn').click();

@@ -8,7 +8,7 @@ import { INPUT_GUARD_MS, reconcileGuard, openGuard } from '../src/ui/GuardedButt
 import { lifeFocusMoment, type FocusSnapshot } from '../src/ui/useFocus';
 
 /**
- * 카드 접기·다시 열기의 판단 (SPEC-003 MD1, M7b — content-M7b 4-2절 U1·U3·U5·U8·U9·U10, 마스터 결정 M-7). 접힘 상태(`App` 수준) · 자동 선택 타이머를 거는 조건 · 입력 가드 키 · 포커스 순간.
+ * 잠시 덮어 두기·다시 열기의 판단 (SPEC-003 MD1, M7b — content-M7b 4-2절 U1·U3·U5·U8·U9·U10, 마스터 결정 M-7). 접힘 상태(`App` 수준) · 자동 선택 타이머를 거는 조건 · 입력 가드 키 · 포커스 순간.
  * DOM이 필요한 동작(접은 동안 나이·진행률 불변, 자동 선택 정지·재개 시간, 새로고침 복원, 더블탭 가드)은 e2e/m7b-decision.spec.ts가 실제 브라우저에서 본다.
  */
 
@@ -119,7 +119,7 @@ describe('입력 가드 키 (U9): 접기·다시 열기 직후 400ms', () => {
   });
 });
 
-describe('포커스 순간 lifeFocusMoment (D-52, 48칸 표의 입력)', () => {
+describe('포커스 순간 lifeFocusMoment (D-52, 48칸 표의 입력 — r4에서 60칸)', () => {
   const now = (o: Partial<FocusSnapshot>): FocusSnapshot => ({ key: 'a@3', autoMode: false, folded: false, ...o });
 
   it('화면이 막 뜸: 선택지 없음 = enter, 있음 = enterWithChoice (복원된 카드는 열린 채 — 접힘을 저장하지 않는다)', () => {
@@ -142,11 +142,18 @@ describe('포커스 순간 lifeFocusMoment (D-52, 48칸 표의 입력)', () => {
     expect(lifeFocusMoment(now({ autoMode: true, folded: true }), now({ autoMode: true }), false)).toBe('cardReopened');
   });
 
-  it('열린 카드에서 자동 모드가 꺼지면 autoTurnedOff, 접힌 채 꺼지면 순간이 아니다 (옮길 제목이 없다) — 켜는 것은 순간이 아니다', () => {
+  it('열린 카드에서 자동 모드가 꺼지면 autoTurnedOff, 접힌 채 꺼지면 순간이 아니다 (옮길 제목이 없다)', () => {
     expect(lifeFocusMoment(now({ autoMode: true }), now({ autoMode: false }), false)).toBe('autoTurnedOff');
     expect(lifeFocusMoment(now({ autoMode: true, folded: true }), now({ autoMode: false, folded: true }), false)).toBeNull();
-    expect(lifeFocusMoment(now({ autoMode: false }), now({ autoMode: true }), false)).toBeNull();
+  });
+
+  // r4 UX12(QI12)가 바꾼 단언: 옛 단언은 「켜는 것은 순간이 아니다」(자동 모드를 켜는 길은 도구 줄뿐이고 시트가 떠 있는 동안 inert라 열린 카드에서 켜지는 일이 없었다, M-6).
+  // 마스터 결정 M-6이 시트 하단 「이후 결정을 자동으로 고르게 하기」 하나에 한해 개정돼 열린 카드(시트)에서 자동 모드가 켜지고 같은 카드가 인라인으로 바뀐다 → 이 순간이 생겼다. 접힌 채 켜는 길(도구 줄)은 여전히 순간이 아니다.
+  it('열린 카드에서 자동 모드가 켜지면 autoTurnedOn(r4 UX12 — 시트의 자동 고르기 버튼), 접힌 채 켜면 순간이 아니다 (다시 열 때 cardReopened)', () => {
+    expect(lifeFocusMoment(now({ autoMode: false }), now({ autoMode: true }), false)).toBe('autoTurnedOn');
     expect(lifeFocusMoment(now({ autoMode: false, folded: true }), now({ autoMode: true, folded: true }), false)).toBeNull();
+    // 선택지가 없는 동안 켜는 것(도구 줄)도 순간이 아니다
+    expect(lifeFocusMoment(now({ key: null, autoMode: false }), now({ key: null, autoMode: true }), false)).toBeNull();
   });
 
   it('아무 일도 없는 갱신(나이·진행률 등)은 순간이 아니다. 선택지가 없는 동안의 접힘 변화도 순간이 아니다', () => {

@@ -6,6 +6,7 @@ import { defineConfig } from '@playwright/test';
  * QI5 — 부모님이 정한·흘러간 해의 비모달 카드(`parent-card.spec.ts`: 포커스 이동 없음·일시정지·새로고침·8배속·다음 결정으로)도 WebKit에서 같은 단언으로 돈다.
  * QI6·QI7 — 무거운 장면 가리기(`gentle.spec.ts`)·새 소식과 소개 패널(`info-panel.spec.ts`: 모달 시트·inert·뒤로 가기)·가림 스위치를 켠 첫 화면(`first-screen-gentle-layout.spec.ts`)도 WebKit에서 같은 단언으로 돈다.
  * QI4 2단계 — 첫 화면 캐러셀 20장(`first-screen-qi4.spec.ts`: 「인생 길이」 제목이 컨트롤 옆 같은 줄·왼쪽 열 끝 < 띠 — 결정 ① WebKit 왼쪽 열, 20장 HS3 ④, 전망 칩·무늬, 펼친 동안 자동 넘김 멈춤)도 WebKit에서 같은 단언으로 돈다.
+ * r4 — 도구 줄 한 줄(`toolbar-one-row.spec.ts`: 폭 1180 이상 12개 한 줄·컨테이너 쿼리)과 결정 카드 아래 자동 모드 단추(`auto-from-sheet.spec.ts`: 시트 → 인라인 전환의 포커스·inert·가드)도 WebKit에서 같은 단언으로 돈다(SPEC-005 r4 UX12-3·UX9).
  * 실행: ./node_modules/.bin/playwright test -c playwright.webkit.config.ts   (WebKit 브라우저가 설치돼 있어야 한다: playwright가 받아 둔 webkit-*)
  * 일반 e2e(playwright.config.ts)는 Chromium만 돌고, 이 설정은 WebKit에서도 같은 단언이 통과해야 하는 파일만 고른다. 개발 서버는 다른 포트(5198)를 쓴다.
  */
@@ -13,7 +14,7 @@ const PORT = 5198;
 
 export default defineConfig({
   testDir: 'e2e',
-  testMatch: ['log-order.spec.ts', 'first-screen-layout.spec.ts', 'parent-card.spec.ts', 'gentle.spec.ts', 'info-panel.spec.ts', 'first-screen-gentle-layout.spec.ts', 'first-screen-qi4.spec.ts'],
+  testMatch: ['log-order.spec.ts', 'first-screen-layout.spec.ts', 'parent-card.spec.ts', 'gentle.spec.ts', 'info-panel.spec.ts', 'first-screen-gentle-layout.spec.ts', 'first-screen-qi4.spec.ts', 'toolbar-one-row.spec.ts', 'auto-from-sheet.spec.ts'],
   fullyParallel: true,
   reporter: 'list',
   use: {

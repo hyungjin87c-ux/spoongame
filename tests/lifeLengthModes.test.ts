@@ -65,7 +65,8 @@ describe('LIFE_LENGTH_MODES 표의 불변식 (완료 기준 1)', () => {
 
   it('30분 모드의 카드 수 판정 구간은 마스터 확정(2026-10-20)의 23.3~29(M-3으로 하한을 내림), 사람 실측 25~35분이고, 약 1시간은 2차의 45~55장·50~70분이다', () => {
     expect(LIFE_LENGTH_MODES.short30.cards).toEqual({ meanLow: 23.3, meanHigh: 29, nearCapShareMax: 0.1 });
-    expect(LIFE_LENGTH_MODES.short30.timeMin).toEqual({ humanLow: 25, humanHigh: 35, modelLow: 27, modelHigh: 33 });
+    // M24(SPEC-005 r4 마스터 결정, 2026-10-26 — 형진 님 「플레이시간 적당, 몰입이 중요」): 상단만 올렸다(사람 실측 35 → 38, 세 시대 평균 33 → 35, 시대별 34.5 → 36.5). 하단 25 / 27은 그대로.
+    expect(LIFE_LENGTH_MODES.short30.timeMin).toEqual({ humanLow: 25, humanHigh: 38, modelLow: 27, modelHigh: 35 });
     expect(LIFE_LENGTH_MODES.long60.cards.meanLow).toBe(45);
     expect(LIFE_LENGTH_MODES.long60.cards.meanHigh).toBe(55);
     expect(LIFE_LENGTH_MODES.long60.timeMin.humanLow).toBe(50);

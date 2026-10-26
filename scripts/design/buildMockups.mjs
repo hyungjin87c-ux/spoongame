@@ -782,13 +782,13 @@ function noteSheet({ year, age, question, cite = null, text = '', state = '' }) 
   return noteOverlay(head + body, compact ? 'sheet--compact' : '', compact ? ' style="--vv-h:min(340px, 100dvh);--vv-top:0px"' : '');
 }
 /**
- * note.html — 한 장에 상태 아홉(`?state=`, decision-*과 같은 <template> 치환). 기본·typing·empty·confirm·off·compact·past = 5세 ① 영유아기 기억(연구 인용 c-037 — 카드 연결은 notes.json의 `citation`, 표시는 구현 함수 citationText), manual·limit = 31세 수동 시트(인용 없음).
- * past: ① 지난 세상 표본 — c-037의 `eras`에 past·`eraPrefix.past` 「지금의 연구로는」이 citations.json에 들어왔으므로(D-79 닫힘) 실제 데이터로 그린다(옛 시안용 패치 사본은 지웠다).
+ * note.html — 한 장에 상태 아홉(`?state=`, decision-*과 같은 <template> 치환). 기본·typing·empty·confirm·off·compact·past = 5세 ① 영유아기 기억(연구 인용 c-102 — r4 QI13에서 c-037을 갈아 끼웠다 — 카드 연결은 notes.json의 `citation`, 표시는 구현 함수 citationText), manual·limit = 31세 수동 시트(인용 없음).
+ * past: ① 지난 세상 표본 — c-102의 `eras`에 past·`eraPrefix.past` 「지금의 연구로는」이 citations.json에 들어왔으므로(D-79 닫힘) 실제 데이터로 그린다(옛 시안용 패치 사본은 지웠다).
  */
 function notePage() {
   const name = HERO.name;
   const infantCite = (era) => {
-    if (NOTE_CARD.infant.citation !== 'c-037') throw new Error(`기록 카드 ①의 인용 연결이 c-037이 아니다: ${NOTE_CARD.infant.citation}`);
+    if (NOTE_CARD.infant.citation !== 'c-102') throw new Error(`기록 카드 ①의 인용 연결이 c-102이 아니다: ${NOTE_CARD.infant.citation}`);
     return citeViewOf(NOTE_CARD.infant.citation, era);
   };
   const infantSheet = (opts) => noteSheet({ year: HERO.birthYear + 5, age: 5, question: noteQuestionOf(NOTE_CARD.infant, name), cite: infantCite('present'), ...opts });

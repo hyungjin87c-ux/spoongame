@@ -32,6 +32,8 @@ async function open(page: Page, kind: Kind): Promise<void> {
     await page.evaluate(() => (document.querySelector('[data-testid="tool-note"]') as HTMLElement).click());
     await sheetReady(page);
   } else {
+    // r4(2026-10-26): 질문 줄·자동 모드 단추가 더해져 가장 짧은 카드도 360×740에서 시트가 94dvh까지 차오르고 스크림이 남지 않는다 — 스크림에서 핀치하는 시험을 위해 화면 높이를 1000으로 키운다
+    await page.setViewportSize({ width: page.viewportSize()?.width ?? 360, height: 1000 });
     const state = await shortDecision(page);
     await startPageHidden(page);
     await injectSave(page, state, '/', MANUAL);

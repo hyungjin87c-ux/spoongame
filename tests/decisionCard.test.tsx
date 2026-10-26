@@ -101,7 +101,7 @@ describe('모달 시트 (자동 모드 꺼짐)', () => {
     expect(html.indexOf('role="dialog"')).toBeGreaterThan(html.indexOf('class="page-end-space"'));
   });
 
-  it('머리: 종류 「중대 결정」 · 「{연도}년 · {나이}세」 · 「카드 접기 ▾」(▾는 aria-hidden이라 접근 가능한 이름은 「카드 접기」)', () => {
+  it('머리: 종류 「중대 결정」 · 「{연도}년 · {나이}세」 · 「잠시 덮어 두기 ▾」(▾는 aria-hidden이라 접근 가능한 이름은 「잠시 덮어 두기」 — r4 UX11, 옛 이름을 바꿨다)', () => {
     const head = html.slice(html.indexOf('class="decision__head"'), html.indexOf('class="decision__body"'));
     expect(text(head)).toContain('중대 결정');
     const year = calendarYear(withCite.character!.birthYear, withCite.age);
@@ -113,19 +113,58 @@ describe('모달 시트 (자동 모드 꺼짐)', () => {
     expect(when).toContain('<span aria-hidden="true">·</span>');
     expect(when.replace(/<span aria-hidden="true">[^<]*<\/span>/g, '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()).toBe(`${year}년 ${withCite.age}세`);
     expect(when).toMatch(/년<\/?[^>]*> ?<span aria-hidden="true">·<\/span> ?<?/);
-    expect(head).toMatch(/카드 접기 <span aria-hidden="true">▾<\/span>/);
+    expect(head).toMatch(/잠시 덮어 두기 <span aria-hidden="true">▾<\/span>/);
   });
 
-  it('몸의 순서: 제목(h2·tabindex=-1·제목 칸 수 변수) → 상황 → 인용 박스 → 선택지 묶음 → 영향 안내 → 자동 모드 안내', () => {
+  it('몸의 순서: 제목(h2·tabindex=-1·제목 칸 수 변수) → 상황 → 인용 박스 → 선택지 묶음(첫 자식 = 질문 줄) → 영향 안내 → 자동 모드 안내', () => {
     const body = html.slice(html.indexOf('class="decision__body"'));
     const ev = EVENT_POOL.byId.get(withCite.pending!.eventId)!;
     const h2 = tagAt(body, 'id="dc-title"');
     expect(h2).toContain('<h2');
     expect(h2).toContain('tabindex="-1"');
     expect(h2).toContain(`--title-chars:${titleCharsFor(ev.title)}`);
-    const order = ['id="dc-title"', 'data-testid="choice-text"', 'data-testid="cite"', 'role="group"', 'data-testid="choice-hint"', 'data-testid="auto-note"'].map((n) => body.indexOf(n));
+    const order = ['id="dc-title"', 'data-testid="choice-text"', 'data-testid="cite"', 'role="group"', 'data-testid="choice-ask"', 'class="choice"', 'data-testid="choice-hint"', 'data-testid="auto-note"'].map((n) => body.indexOf(n));
     for (const i of order) expect(i).toBeGreaterThan(-1);
     for (let i = 1; i < order.length; i++) expect(order[i], `${i}번째`).toBeGreaterThan(order[i - 1]);
+  });
+
+  // r4 UX10(QI10): 공통 질문 한 줄 — 선택지 묶음의 첫 자식이고 묶음의 이름이다(aria-labelledby). 글자는 copy.md 15-1 「어떻게 하겠습니까?」(사람이 옮겨 적은 값)
+  it('질문 줄: 묶음 .choices-list[role=group]의 첫 자식 <p id="dc-ask">이고 묶음은 aria-labelledby="dc-ask"로 질문을 이름으로 가진다 — 글자는 「어떻게 하겠습니까?」, 카드에 하나', () => {
+    const group = tagAt(html, 'aria-labelledby="dc-ask"');
+    expect(group).toContain('role="group"');
+    expect(group).toContain('class="choices-list"');
+    expect(group, '옛 이름 aria-label="선택지"는 없다').not.toContain('aria-label=');
+    const after = html.slice(html.indexOf(group) + group.length);
+    expect(after.startsWith('<p class="decision__ask" id="dc-ask" data-testid="choice-ask">어떻게 하겠습니까?</p>'), '묶음 바로 안의 첫 자식').toBe(true);
+    expect(html.match(/data-testid="choice-ask"/g)).toHaveLength(1);
+    expect(html.match(/id="dc-ask"/g)).toHaveLength(1);
+    // 합쇼체 의문문, 해요체 어미 0
+    expect(DASH_TEXT.choiceAsk).toBe('어떻게 하겠습니까?');
+    expect(DASH_TEXT.choiceAsk).toMatch(/습니까\?$/);
+    expect(DASH_TEXT.choiceAsk).not.toMatch(/(까요|세요|어요|아요|해요)\?*$/);
+    // 질문은 첫 선택지보다 앞이고 상황·인용보다 뒤다
+    expect(html.indexOf('data-testid="choice-ask"')).toBeGreaterThan(html.indexOf('data-testid="cite"'));
+    expect(html.indexOf('data-testid="choice-ask"')).toBeLessThan(html.indexOf('class="choice"'));
+  });
+
+  // r4 UX12(QI12): 카드 맨 끝의 자동 고르기 묶음 — 안내 문장 → 버튼 → 보조 한 줄 (copy.md 15-3). 시트(자동 모드 꺼짐)에는 켜는 버튼
+  it('자동 고르기 묶음(시트): .decision__autoset = 안내 문장 → 버튼 「이후 결정을 자동으로 고르게 하기」(aria-describedby=dc-autosub) → 보조 한 줄, 영향 안내 뒤 카드 맨 끝', () => {
+    const at = html.indexOf('<div class="decision__autoset"');
+    expect(at).toBeGreaterThan(-1);
+    const set = html.slice(at, html.indexOf('</div>', at) + 6);
+    expect(set).toContain('data-testid="auto-set"');
+    expect(citeText(set)).toBe('자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다. 이후 결정을 자동으로 고르게 하기 이 결정부터 성향에 따라 고릅니다. 설정으로 남아 다음 판에도 이어지며, 카드 아래나 도구 줄에서 끌 수 있습니다.');
+    const button = tagAt(set, 'data-testid="auto-on-btn"');
+    expect(button).toContain('class="btn btn--ghost btn--sm decision__autobtn"');
+    expect(button).toContain('aria-describedby="dc-autosub"');
+    expect(button).toContain('type="button"');
+    expect(set.indexOf('data-testid="auto-note"')).toBeLessThan(set.indexOf('data-testid="auto-on-btn"'));
+    expect(set.indexOf('data-testid="auto-on-btn"')).toBeLessThan(set.indexOf('id="dc-autosub"'));
+    expect(html.indexOf('data-testid="auto-set"')).toBeGreaterThan(html.indexOf('data-testid="choice-hint"'));
+    expect(html.match(/data-testid="auto-(on|off)-btn"/g)).toHaveLength(1);
+    expect(html).not.toContain('auto-off-btn');
+    // 낭독 영역(전환 문장)은 카드 밖 LifeScreen 한 곳에 늘 있고 처음엔 비어 있다
+    expect(html).toMatch(/<p class="sr-only" role="status" data-testid="auto-status"><\/p>/);
   });
 
   it('자동 모드 안내는 상태에 맞는 한 문장뿐이다: 꺼짐 「자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.」 — 콜론 라벨형·켜짐 문장·role=status 없음', () => {
@@ -168,8 +207,21 @@ describe('비모달 인라인 카드 (자동 모드 켜짐)', () => {
     expect(html).not.toContain('자동 모드가 꺼져 있습니다.');
   });
 
-  it('인라인 카드에도 「카드 접기」가 있다 (자동 모드에서 접기 허용 — U3(a))', () => {
+  it('인라인 카드에도 「잠시 덮어 두기」가 있다 (자동 모드에서 접기 허용 — U3(a))', () => {
     expect(html).toContain('data-testid="decision-fold-btn"');
+  });
+
+  // r4 UX12-5: 인라인 카드(자동 모드 켜짐)에는 끄는 버튼 「이후 결정을 직접 고르기」 — 켜는 버튼과 짝. 누르면 같은 카드가 시트로 바뀐다(App의 기존 `autoTurnedOff` 경로)
+  it('자동 고르기 묶음(인라인): 끄는 버튼 「이후 결정을 직접 고르기」와 보조 한 줄 — 켜는 버튼은 없다. 질문 줄은 시트와 같다', () => {
+    const at = html.indexOf('<div class="decision__autoset"');
+    expect(at).toBeGreaterThan(-1);
+    const set = html.slice(at, html.indexOf('</div>', at) + 6);
+    expect(citeText(set)).toBe('자동 모드가 켜져 있습니다. 잠시 뒤 성향에 따라 고릅니다. 이후 결정을 직접 고르기 이 결정부터 직접 고릅니다. 도구 줄의 「자동 모드」도 함께 꺼집니다.');
+    const button = tagAt(set, 'data-testid="auto-off-btn"');
+    expect(button).toContain('class="btn btn--ghost btn--sm decision__autobtn"');
+    expect(button).toContain('aria-describedby="dc-autosub"');
+    expect(html).not.toContain('auto-on-btn');
+    expect(html).toContain('<p class="decision__ask" id="dc-ask" data-testid="choice-ask">어떻게 하겠습니까?</p>');
   });
 });
 
@@ -243,7 +295,8 @@ describe('인용 박스 유무와 모양', () => {
 describe('문구 상수 (copy.md 6-1절 그대로)', () => {
   it('접기·다시 열기·정지 표시·안내·머리말', () => {
     expect(DASH_TEXT.choiceKind).toBe('중대 결정');
-    expect(DASH_TEXT.foldCard).toBe('카드 접기');
+    expect(DASH_TEXT.foldCard).toBe('잠시 덮어 두기'); // r4 UX11 — 옛 이름을 새로 지은 이름으로 바꿨다(R-124 예외가 아니다)
+    expect(DASH_TEXT.choiceAsk).toBe('어떻게 하겠습니까?'); // r4 UX10
     expect(DASH_TEXT.foldMark).toBe('▾');
     expect(DASH_TEXT.reopenDecision).toBe('결정 다시 열기');
     expect(DASH_TEXT.foldNote).toBe('다시 열 때까지 시간은 멈춥니다.');

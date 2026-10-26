@@ -256,6 +256,7 @@ export const PAIRS: Pair[] = [
   ...T('--c-on-brand', ['--c-brand'], '주요 버튼·눌린 버튼 글자'),
   ...T('--c-on-brand-soft', ['--c-brand-soft'], '선택된 카드·인용 박스 글자'),
   ...T('--c-on-accent-soft', ['--c-accent-soft'], '나의 기록 줄 글자'),
+  ...T('--c-on-accent-soft', ['--c-brand-soft'], '인용 박스 풀이 문장(놋쇠 계열 글자 — 라벨 없이 색·굵기로 구분, SPEC-005 r4 형진 님 2026-10-26)'),
   ...T('--c-brand', ['--c-bg', '--c-surface'], '브랜드색 글자(선택지 번호·로고 글자)'),
   ...T('--c-accent', ['--c-bg', '--c-surface'], '놋쇠색 글자(작은 태그)'),
   ...T('--c-link', ['--c-bg', '--c-surface'], '링크'),

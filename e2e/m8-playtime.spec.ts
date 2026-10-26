@@ -5,7 +5,7 @@ import { findPendingState, injectSave, oracleAuto, oracleLife, pressBegin, press
 
 /**
  * M8 플레이 시간 타이머와 인생 길이 모드 연출 (SPEC-003 LM2·LM3·LM5·LM6, docs/data/content-M8.md 5절·8-4절, designer 8절 D-93~D-95).
- * 실제 브라우저의 **실제 시계**로 짧게(3초 안팎) 잰다 — 타이머가 연출(hold)·결정 읽기(decide)만 표시 시간으로 세고, 일시정지·탭 가림·나가기 확인(idle)·카드 접기(fold)·기록 시트(note)는 따로 쌓는지,
+ * 실제 브라우저의 **실제 시계**로 짧게(3초 안팎) 잰다 — 타이머가 연출(hold)·결정 읽기(decide)만 표시 시간으로 세고, 일시정지·탭 가림·나가기 확인(idle)·잠시 덮어 두기(fold)·기록 시트(note)는 따로 쌓는지,
  * 새로고침 뒤 이어서 쌓이는지(이어하기 횟수 포함), 배속·자동 모드·「다음 결정으로」가 깨끗한 판 표시를 바꾸는지, 연출 대기가 판의 인생 길이 모드·한 해 줄 수를 따르는지, 엔딩 블록이 저장된 기록을 그대로 보이는지.
  * 지금 값은 개발 서버 전용 탐침 `window.__playTime()`으로 저장 없이 읽는다(App.tsx) — 예전에는 pagehide 이벤트로 flush한 저장을 읽었는데, 수동적인 시간(idle)만 바뀐 기록은 쓰지 않게 되어(REV-003-M8-1 R-417) 저장으로는 idle을 읽을 수 없다.
  * 저장에 담기는 것(사람이 한 일이 있을 때만 쓰인다)과 탭 가림은 e2e/m8-playtime-save.spec.ts가 본다.

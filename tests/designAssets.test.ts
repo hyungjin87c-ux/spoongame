@@ -20,6 +20,7 @@ import { displaySeconds, formatPlayTime, isCleanRun, readPlay } from '../src/cor
 import { PLAYTIME_TEXT, REBIRTH_NOTE, breakdownParts } from '../src/data/endingText';
 import { TITLE_TEXT } from '../src/data/titleText';
 import { DASH_TEXT } from '../src/data/dashText';
+import { INSIGHT_BY_ID } from '../src/data/citationInsights';
 import { NOTE_TEXT } from '../src/data/noteSheetText';
 import { NOTE_CARDS, NOTE_MANUAL } from '../src/data/noteCards';
 import citationsJson from '../src/data/citations.json';
@@ -910,7 +911,7 @@ describe('M7b 중대 결정 카드 계약 (designer 산출물 사이의 일치)'
   it('copy.md 6절: 두 형태·접힌 띠·자동 모드 두 문장·종류 라벨·시대 머리말·출처 줄 규칙(기관 둘 쉼표 나열·자료 이름 쌍점)·h2 22px이 적혀 있다', () => {
     expect(copyMd).toContain('## 6. M7b 중대 결정 카드');
     for (const p of [
-      '「카드 접기」',
+      '「잠시 덮어 두기」', // r4 UX11 — 머리의 버튼 이름(옛 이름은 6절 본문에 경위로 남고 15-2가 대체한다, 아래)
       '「결정 다시 열기」',
       '「결정 다시 열기 {제목}」',
       '「다시 열 때까지 시간은 멈춥니다.」',
@@ -942,7 +943,8 @@ describe('M7b 중대 결정 카드 계약 (designer 산출물 사이의 일치)'
     for (const tag of ['<header class="dash-head" inert>', '<div class="toolbar" inert>', '<main class="dash" inert>', '<div class="page-end-space" inert>']) expect(base, tag).toContain(tag);
     expect(base).not.toContain('class="cite"'); // 「같은 팀의 사람」은 인용 없음 — 요소 자체가 없다
     expect(base).toContain('자동 모드가 꺼져 있습니다. 직접 고를 때까지 시간은 멈춥니다.');
-    expect(base).toContain('카드 접기 <span aria-hidden="true">▾</span>');
+    expect(base).toContain('잠시 덮어 두기 <span aria-hidden="true">▾</span>'); // r4 UX11 — 시안의 머리 버튼 이름도 구현 상수(DASH_TEXT.foldCard)와 같다
+    expect(base).toContain(`${DASH_TEXT.foldCard} <span aria-hidden="true">${DASH_TEXT.foldMark}</span>`);
     expect(base).toMatch(/<h2 id="dc-title" class="decision__title" tabindex="-1" style="--title-chars:\d+"/);
     expect(base).toContain('<span class="decision__when"><span class="fit-pair"');
     for (const s of ['stat', 'collapsed', 'auto', 'auto-collapsed']) expect(decisionAdult).toContain(`<template id="state-${s}">`);
@@ -1049,7 +1051,7 @@ describe('M7b 중대 결정 카드 계약 (designer 산출물 사이의 일치)'
     // developer 1·2단계 반영 뒤 지운 흉내 블록(문구 상수·출처 줄·머리말)은 다시 생기지 않는다
     expect(generator).not.toMatch(/\bM7B_TEXT\b|function formatSourceLine|function citeText|function sourceWho|function authorSurnames|citationId:/);
     expect(generator).not.toContain('마음이 가는 사람이 생겼습니다'); // M1의 손글 카드 삭제
-    for (const html of [decisionAdult, decisionInfant, noteMockHtml]) expect(html).not.toContain('(시안용 문구)'); // 자리표시 인용 0(M7c note.html도 2026-10-19부터 실제 c-037)
+    for (const html of [decisionAdult, decisionInfant, noteMockHtml]) expect(html).not.toContain('(시안용 문구)'); // 자리표시 인용 0(M7c note.html도 2026-10-19부터 실제 인용)
     const shooter = await readText('../scripts/design/shootMockups.mjs');
     for (const name of ["'decision-infant'", "'decision-infant-kinder'", "'decision-infant-auto'", "'decision-adult-stat'", "'decision-collapsed'", "'decision-auto'", "'decision-auto-collapsed'", "'components-cite'"]) expect(shooter, name).toContain(name);
     expect(shooter).not.toMatch(/decision-infant-long|auto-long/);
@@ -1164,7 +1166,7 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
     for (const s of Object.values(T)) if (typeof s === 'string') expect(section, s).toContain(s);
   });
 
-  it('생성기는 임시 문구 블록 없이 구현 상수(NOTE_TEXT·NOTE_CARDS·NOTE_MANUAL·fillNoteName·NOTE_LIMITS)를 읽고, ① 지난 세상 표본은 citations.json의 실제 c-037 past 머리말로 그린다 — R-191 되돌림(2026-10-19 후속)', async () => {
+  it('생성기는 임시 문구 블록 없이 구현 상수(NOTE_TEXT·NOTE_CARDS·NOTE_MANUAL·fillNoteName·NOTE_LIMITS)를 읽고, ① 지난 세상 표본은 citations.json의 실제 c-102(r4 QI13에서 c-037을 갈아 끼웠다) past 머리말로 그린다 — R-191 되돌림(2026-10-19 후속)', async () => {
     const generator = await readText('../scripts/design/buildMockups.mjs');
     for (const imp of ["import { NOTE_TEXT } from '../../src/data/noteSheetText.ts';", "import { NOTE_CARDS, NOTE_MANUAL } from '../../src/data/noteCards.ts';", "import { fillNoteName } from '../../src/core/notes.ts';", "import { NOTE_LIMITS } from '../../src/core/noteText.ts';"]) expect(generator, imp).toContain(imp);
     expect(generator).not.toMatch(/const NOTE_COPY\b|questions: \{|topics: \{|c37Past|eraPrefix: \{/); // 선행 때의 임시 블록·패치 사본 0
@@ -1173,15 +1175,15 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
     expect(generator).toContain("noteCardOf('note-infant-memory')");
     expect(generator).toContain("infantCite('past')");
     expect(generator).not.toMatch(/자동 기록 카드|\(시안용 문구\)|maxlength="140"|tool-soon|toolSoon|noteReady/); // 「준비 중」 낱말 자체는 라디오 카드 「약 1시간」 주석에 남는다
-    const c37 = (citationsJson as { citations: { id: string; eras: string[]; eraPrefix?: Record<string, string>; usedBy?: string[] }[] }).citations.find((c) => c.id === 'c-037');
-    expect(c37?.eras).toContain('past');
-    expect(c37?.eraPrefix?.past).toBe('지금의 연구로는');
-    expect(c37?.usedBy).toContain('note-infant-memory');
-    expect(NOTE_CARDS.find((c) => c.id === 'note-infant-memory')?.citation).toBe('c-037'); // ①만 인용 — 다른 카드는 noCitation
+    const c102 = (citationsJson as { citations: { id: string; eras: string[]; eraPrefix?: Record<string, string>; usedBy?: string[] }[] }).citations.find((c) => c.id === 'c-102');
+    expect(c102?.eras).toContain('past');
+    expect(c102?.eraPrefix?.past).toBe('지금의 연구로는');
+    expect(c102?.usedBy).toContain('note-infant-memory');
+    expect(NOTE_CARDS.find((c) => c.id === 'note-infant-memory')?.citation).toBe('c-102'); // ①만 인용 — 다른 카드는 noCitation
     expect(NOTE_CARDS.filter((c) => c.citation !== undefined).length).toBe(1);
   });
 
-  it('note.html: 9상태 — dialog 이름 두 id·머리 FitPair hideSeparator·실제 인용 c-037(①만), 입력란 속성(maxlength 140 없음·dir auto·data-user-text·autocomplete off·spellcheck false), 빈 입력·확인 단계·끄기/켜기·40개·compact·수동(인용 0), 도구 줄은 보통 버튼(「준비 중」 0)', () => {
+  it('note.html: 9상태 — dialog 이름 두 id·머리 FitPair hideSeparator·실제 인용 c-102(①만), 입력란 속성(maxlength 140 없음·dir auto·data-user-text·autocomplete off·spellcheck false), 빈 입력·확인 단계·끄기/켜기·40개·compact·수동(인용 0), 도구 줄은 보통 버튼(「준비 중」 0)', () => {
     for (const s of ['typing', 'empty', 'confirm', 'off', 'compact', 'manual', 'limit', 'past']) expect(noteMockHtml).toContain(`<template id="state-${s}">`);
     const base = stateOf(noteMockHtml, null);
     expect(base).toContain('<div class="sheet sheet--note" role="dialog" aria-modal="true" aria-labelledby="nc-kind nc-title"');
@@ -1189,7 +1191,7 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
     expect(base).toMatch(/<span class="sheet__age"><span class="fit-pair" data-split="false" data-a="2031년" data-b="5세" data-hide-sep="true">/);
     expect(base).toContain('2031년 <span aria-hidden="true">·</span> 5세');
     expect(base).toMatch(/<h2 id="nc-title" class="sheet__title" tabindex="-1" style="--title-chars:\d+">다섯 살 무렵을 떠올려 보면, 이서연에게 기억나는 장면이나 느낌이 있습니까\?<\/h2>/);
-    expect(base).toContain('data-citation="c-037"><p class="cite__kind">연구</p>');
+    expect(base).toContain('data-citation="c-102"><p class="cite__kind">연구</p>');
     expect(base).toMatch(/<textarea id="note-input" class="field__input" rows="3" dir="auto" autocomplete="off" spellcheck="false" maxlength="4000" data-user-text [^>]*aria-describedby="note-hint note-count-sr"><\/textarea>/);
     expect(base).not.toMatch(/maxlength="140"/);
     expect(base).toContain(`<label class="sr-only" for="note-input">${COPY.inputLabel}</label>`);
@@ -1227,7 +1229,7 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
     expect(limit).toContain(`>${COPY.limitTitle}</h2><p class="sheet__sub">${COPY.limitSub}</p>`);
     expect(limit).not.toContain('<textarea');
     const past = stateOf(noteMockHtml, 'past');
-    expect(past).toMatch(/data-citation="c-037"><p class="cite__kind">연구<\/p><p class="cite__text" data-testid="cite-text">지금의 연구로는 /);
+    expect(past).toMatch(/data-citation="c-102"><p class="cite__kind">연구<\/p><p class="cite__text" data-testid="cite-text">지금의 연구로는 /);
     expect(past).toContain('data-a="1966년" data-b="5세"');
     // 모든 시트 상태에서 「다음 결정으로」는 지속 비활성(선택지 대기와 같은 정지), 일시정지 버튼 이름은 그대로
     for (const s of [null, 'typing', 'empty', 'confirm', 'off', 'compact', 'manual', 'limit', 'past']) {
@@ -1705,5 +1707,72 @@ describe('SPEC-005 QI4 스프라이트 계약 — 「전망」 칩 아이콘 i-p
     const brand = await readText('../src/ui/brandAssets.ts');
     expect(brand).toContain("import iconsRaw from '../assets/icons/ui-icons.svg?raw';");
     expect(brand).toMatch(/export const SPRITE_SVG: string = iconsRaw \+ /);
+  });
+});
+
+/**
+ * SPEC-005 r4(v0.2.1) 시안 계약 (diff-005.md D5-86·D5-90, designer 2026-10-26 ↔ developer 구현): 시안 `docs/design/mockups/r4/`는 평면 glob 밖이라(위 M7b 단언이 옛 시안을 지키려고 하위 폴더에 두었다) 따로 읽는다.
+ * 새 문구는 `copy.md` 15절 ↔ 구현 상수(`DASH_TEXT`) ↔ 시안 HTML이 모두 같은 글자이고, 시안 생성기는 구현 상수·실제 풀이 데이터를 읽으며 임시 블록(`R4_TEXT`)이 없다.
+ */
+const decisionR4 = await readText('../docs/design/mockups/r4/decision-r4.html');
+const toolbarR4 = await readText('../docs/design/mockups/r4/toolbar-r4.html');
+const r4Generator = await readText('../scripts/design/buildR4Mockups.mjs');
+describe('SPEC-005 r4 시안 계약 (copy.md 15절 ↔ 구현 상수 ↔ 시안 r4/)', () => {
+  const sec15 = copyMd.slice(copyMd.indexOf('## 15. SPEC-005 r4'));
+  const plain = (s: string): string => s.replace(/<[^>]+>/g, '');
+  const stateOfR4 = (html: string, state: string | null): string => {
+    if (state === null) return html.slice(html.indexOf('id="mock-root"'), html.indexOf('<template id="state-'));
+    const at = html.indexOf(`<template id="state-${state}">`);
+    expect(at, `상태 ${state}`).toBeGreaterThan(0);
+    return html.slice(at, html.indexOf('</template>', at));
+  };
+
+  it('새 문구 아홉은 copy.md 15절에 글자 그대로 있다 (구현 상수 → 문서 방향: 구현에만 있는 문장 0)', () => {
+    for (const k of ['choiceAsk', 'foldCard', 'autoOnBtn', 'autoOnSub', 'autoOffBtn', 'autoOffSub', 'autoOnStatus', 'autoOffStatus', 'citeInsightLabel'] as const) {
+      expect(sec15, `${k}: ${DASH_TEXT[k]}`).toContain(DASH_TEXT[k]);
+    }
+    expect(sec15).toContain('R-124의 예외가 아니라 새로 지은 이름');
+  });
+
+  it('시안 decision-r4.html의 기본(모달 시트) 상태는 구현 상수와 같은 글자다: 질문 · 덮기 버튼 · 켜는 버튼과 보조 한 줄 · 풀이 라벨과 문장(실제 데이터)', () => {
+    const base = stateOfR4(decisionR4, null);
+    expect(base).toContain(`<p class="decision__ask" id="dc-ask" data-testid="choice-ask">${DASH_TEXT.choiceAsk}</p>`);
+    expect(base).toContain('role="group" aria-labelledby="dc-ask"');
+    expect(base).toContain(`${DASH_TEXT.foldCard} <span aria-hidden="true">${DASH_TEXT.foldMark}</span>`);
+    expect(base).toContain(`data-testid="auto-on-btn" aria-describedby="dc-autosub">${DASH_TEXT.autoOnBtn}</button>`);
+    expect(plain(base)).toContain(DASH_TEXT.autoOnSub);
+    expect(base).toContain(`<p class="cite__insight-label">${DASH_TEXT.citeInsightLabel}</p>`);
+    expect(plain(base)).toContain(INSIGHT_BY_ID['c-015']);
+    expect(base).not.toContain('auto-off-btn');
+  });
+
+  it('인라인 카드는 끄는 버튼과 보조 한 줄, 가린 카드는 질문·풀이·자동 묶음이 없고 펼친 카드는 다시 있다, 접힌 띠는 「결정 다시 열기」 그대로다', () => {
+    const inline = stateOfR4(decisionR4, 'inline');
+    expect(inline).toContain(`data-testid="auto-off-btn" aria-describedby="dc-autosub">${DASH_TEXT.autoOffBtn}</button>`);
+    expect(plain(inline)).toContain(DASH_TEXT.autoOffSub);
+    expect(inline).not.toContain('auto-on-btn');
+    const veiled = stateOfR4(decisionR4, 'veiled');
+    for (const needle of ['choice-ask', 'cite-insight', 'auto-set', 'auto-on-btn', 'auto-off-btn']) expect(veiled, needle).not.toContain(needle);
+    expect(veiled).toContain(`${DASH_TEXT.foldCard} <span aria-hidden="true">`); // 가린 카드의 머리도 같은 이름 (12-3 「틀이지 내용이 아니다」)
+    const opened = stateOfR4(decisionR4, 'opened');
+    expect(opened).toContain('data-testid="choice-ask"');
+    expect(plain(opened)).toContain(INSIGHT_BY_ID['c-083']);
+    const fold = stateOfR4(decisionR4, 'fold');
+    expect(plain(fold)).toContain(DASH_TEXT.reopenDecision);
+    expect(plain(fold)).toContain(DASH_TEXT.foldNote);
+  });
+
+  it('시안 toolbar-r4.html: 12개 버튼(진행 7 + 도구 5)이 한 줄, 볼륨 줄·확인 상자는 별도 줄 — 구현 CSS(dash.css)에 같은 글자의 r4 블록이 들어갔다 (D5-80·D5-81)', () => {
+    for (const s of [null, 'bgm', 'exit', 'auto']) expect((stateOfR4(toolbarR4, s).match(/data-testid="(?:pause|skip|auto|tool-bgm|tool-note|tool-dark|tool-feedback|tool-exit)"|data-speed="/g) ?? []).length, String(s)).toBe(12);
+    const block = (css: string, start: string, end: string): string => css.slice(css.indexOf(start), css.indexOf(end) + end.length);
+    expect(block(dashCssImpl, '/* ---------- r4 도구 줄 한 줄', '/* ---------- r4 도구 줄 끝 ---------- */')).toBe(block(dsCss, '/* ---------- r4 도구 줄 한 줄', '/* ---------- r4 도구 줄 끝 ---------- */'));
+    expect(block(dashCssImpl, '/* ---------- r4 중대 결정 카드', '/* ---------- r4 중대 결정 카드 끝 ---------- */')).toBe(block(dsCss, '/* ---------- r4 중대 결정 카드', '/* ---------- r4 중대 결정 카드 끝 ---------- */'));
+  });
+
+  it('생성기는 임시 블록 없이 구현 상수·풀이 데이터를 읽는다 (D5-90, R-191 되돌림) — R4_TEXT 0, insightFor import', () => {
+    expect(r4Generator).not.toContain('R4_TEXT');
+    expect(r4Generator).toContain("import { insightFor } from '../../src/data/citationInsights.ts';");
+    for (const k of ['choiceAsk', 'foldCard', 'autoOnBtn', 'autoOnSub', 'autoOffBtn', 'autoOffSub', 'citeInsightLabel']) expect(r4Generator, k).toContain(`DASH_TEXT.${k}`);
+    expect(r4Generator).toContain('insightFor(cite.id)');
   });
 });

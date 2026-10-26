@@ -7,7 +7,7 @@ import { setRootFontPercent } from './textResize';
  * 인용 박스 구분 기호 줄바꿈 **상시** 감사 (SPEC-003 QM2-10·QM3-1, REV-003-M7b-2 R-398, design D-67; M7c T3 — REV-003-M7b-3 R-401, design D-73).
  * 대기 상태를 시드로 찾는 대신 **하니스 페이지**(harness/layout.html — 앱의 실제 `LifeScreen`·`NoteSheet`·`dash.css`·`citations.json`·`citationFor`·`CitationBox`)에서
  * **연결된 카드 × 세상 전부**의 인용 박스를 칸마다 보여 재므로 수십 초에 돈다. 칸 수는 하니스가 아니라 **원자료에서 따로 센 값**과 같아야 한다(`expectedCellCount` — 이벤트·기록 카드의
- * 인용 연결을 세상마다 센다): 결정 카드 89칸 + 기록 카드 ①(영유아기 기억, c-037) × 세 세상 3칸 = **92칸**, 기록 카드 칸은 시트(`NoteSheet`) 안의 인용 박스를 잰다.
+ * 인용 연결을 세상마다 센다): 결정 카드 89칸 + 기록 카드 ①(영유아기 기억, c-102) × 세 세상 3칸 = **92칸**, 기록 카드 칸은 시트(`NoteSheet`) 안의 인용 박스를 잰다.
  * 상시는 가장 좁은 문맥 — 폭 320 인라인 카드(인용 박스 안쪽 한 줄 223px) × 글자 100·150·200% 셋이다: 150%는 200%의 부분집합이 아니다(229px 사슬은 150%에서만 「·」 뒤에서 갈렸다).
  * 시트·폭 360 문맥(257·263·297px)은 `CITE_AUDIT_ALL=1 npm run e2e -- e2e/m7b-cite-lines.spec.ts`로 같은 감사를 더 돌린다(기본은 건너뜀).
  *  - `measureLineBreaks`(구분 기호가 줄 끝·첫머리에 혼자 남는 곳 0, 숫자+단위가 갈라지는 곳 0).

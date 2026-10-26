@@ -2,9 +2,11 @@ import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject 
 import { calendarYear, citationFor, heavyKindOfEvent, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
 import type { ImpactItem } from '../../core/impact';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
+import { insightFor } from '../../data/citationInsights';
 import { HEAVY_KIND_TEXT, VEIL_TEXT } from '../../data/gentleText';
 import { FitPair } from '../FitPair';
 import { revealTopOfTallCard } from '../focusReveal';
+import { Glue } from '../Glue';
 import { GuardedButton } from '../GuardedButton';
 import { useScrollLock } from '../useScrollLock';
 import type { LifeGame } from './Cards';
@@ -15,16 +17,20 @@ import { ImpactHint, ImpactLine } from './Impact';
  * 중대 결정 카드 (SPEC-003 MD1, M7b — 문구·DOM·전환은 docs/design/copy.md 6절, CSS는 styles/dash.css 「중대 결정 카드」, 시안 mockups/decision-{adult,infant}.html).
  *
  * 한 카드가 **두 틀**로 뜬다(마스터 결정 M-6 — 기준은 자동 모드 하나, 배속은 기준이 아니다):
- *  - 자동 모드 꺼짐 = **모달 시트**(`DecisionSheet`): `.overlay > .sheet[role=dialog aria-modal]`. 떠 있는 동안 바깥은 `inert`(LifeScreen이 건다), Esc = 카드 접기, 포커스는 제목으로.
+ *  - 자동 모드 꺼짐 = **모달 시트**(`DecisionSheet`): `.overlay > .sheet[role=dialog aria-modal]`. 떠 있는 동안 바깥은 `inert`(LifeScreen이 건다), Esc = 잠시 덮어 두기, 포커스는 제목으로.
  *  - 자동 모드 켜짐 = **비모달 인라인 카드**(`DecisionInline`): 대시보드 가운데 열 맨 위(1열은 헤더·진행 줄 바로 아래). 스크림·inert·포커스 이동 없음 — 자동 모드 끄기(컨트롤)에 그대로 닿는다.
  * 안쪽(머리 → 몸)은 `DecisionCard` 하나다. 접으면 카드 자리에 **접힌 띠**(`DecisionFold`)가 생기고, 접힘 상태는 `App`이 갖는다(U10 — M7c가 읽는다).
  *
+ * **SPEC-005 r4 (v0.2.1, copy.md 15절)**: ① 질문 줄 「어떻게 하겠습니까?」(UX10) — 선택지 묶음의 첫 자식이고 묶음의 이름이다(`aria-labelledby`). ② 머리의 버튼 이름 「잠시 덮어 두기」(UX11, 이전 이름을 새로 지어 바꿨다 — copy.md 15-2).
+ * ③ 카드 맨 끝의 **자동 고르기 묶음**(UX12): 시트(자동 모드 꺼짐)에는 「이후 결정을 자동으로 고르게 하기」, 인라인 카드(켜짐)에는 「이후 결정을 직접 고르기」 — 둘 다 기존 자동 모드(`settings.autoMode`)와 같은 설정을 바꾸는 또 하나의 길이다.
+ * 마스터 결정 M-6은 이 버튼 하나에 한해 개정됐다(누르면 같은 카드가 시트 ↔ 인라인으로 바뀐다 — 전환의 포커스·가드·타이머·낭독은 `App`·`useFocus`). 가린 카드에는 이 묶음이 없다(M22). ④ 인용 박스 안 풀이 줄(UX14) — 본인이 고르는 이 카드만 넘긴다(M23).
+ *
  * **무거운 장면 가리기**(SPEC-005 QI6 HV4 ②): 설정이 켜져 있고 이 카드의 이벤트에 `heavy` 표지가 있으면(`DecisionModel.heavy`) 호출한 쪽(LifeScreen)이 `veiled`를 켜서 보낸다 — 제목 자리에 「무거운 주제 · {분류}」, 상황·인용·선택지·영향 줄은 **그리지 않고**,
- * 안내 한 줄과 버튼 둘(「펼쳐서 읽기」 / 「이번에는 자동으로 고르기」)만 보인다. 머리(「◆ 중대 결정」·「{연도}년 · {나이}세」·「카드 접기」)와 자동 모드 안내는 틀이라 그대로다. 사건·효과·확률·난수는 그대로이고 자동 모드의 선택 타이머도 그대로 돈다.
+ * 안내 한 줄과 버튼 둘(「펼쳐서 읽기」 / 「이번에는 자동으로 고르기」)만 보인다. 머리(「◆ 중대 결정」·「{연도}년 · {나이}세」·「잠시 덮어 두기」)와 자동 모드 안내는 틀이라 그대로다. 사건·효과·확률·난수는 그대로이고 자동 모드의 선택 타이머도 그대로 돈다.
  * 펼침은 App의 메모리 상태다(접기 → 다시 열기에서 유지, 새로고침·설정 변경이면 다시 가림 — M19).
  *
  * 선택지 버튼·영향 줄·입력 가드는 M4·M5 그대로다. 가드 키 = `${pending.key}#${epoch}`: 새 카드가 뜰 때뿐 아니라 접기·다시 열기마다 `epoch`가 올라 다시 400ms 가드가 걸린다(U9) —
- * 「카드 접기」 더블탭의 둘째 입력이 그 자리에 생긴 「결정 다시 열기」에, 「결정 다시 열기」 더블탭의 둘째 입력이 새로 뜬 카드의 「카드 접기」·선택지에 떨어지지 않게.
+ * 「잠시 덮어 두기」 더블탭의 둘째 입력이 그 자리에 생긴 「결정 다시 열기」에, 「결정 다시 열기」 더블탭의 둘째 입력이 새로 뜬 카드의 「잠시 덮어 두기」·선택지에 떨어지지 않게.
  */
 
 /** 카드 한 장을 그리는 데 필요한 값 (계산은 core 순수 함수 — previewPending·citationFor) */
@@ -73,6 +79,8 @@ interface CardProps {
   titleRef: RefObject<HTMLHeadingElement>;
   onFold: () => void;
   onChoose: (key: string, choiceId: string) => void;
+  /** 카드 맨 끝의 자동 고르기 버튼 (UX12): `true` = 「이후 결정을 자동으로 고르게 하기」(시트), `false` = 「이후 결정을 직접 고르기」(인라인). 기존 자동 모드 설정을 바꾸고 전환의 가드·낭독은 호출한 쪽(App)이 한다 */
+  onAutoSwitch?: (auto: boolean) => void;
   /** 가린 카드인가 (설정이 켜져 있고 무거운 장면이고 아직 펼치지 않았다) — 제목·상황·인용·선택지·영향 줄 대신 안내와 버튼 둘이 보인다 */
   veiled?: boolean;
   /** 「펼쳐서 읽기」 */
@@ -81,8 +89,11 @@ interface CardProps {
   onAutoPick?: (key: string) => void;
 }
 
-/** 카드 안쪽 (두 틀 공통): 머리 → 제목 → 상황 → 인용(있을 때만) → 선택지 → 영향 안내(영향 줄이 있는 묶음에만) → 자동 모드 안내(상태에 맞는 한 문장) */
-export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, veiled = false, onOpenVeil, onAutoPick }: CardProps) {
+/**
+ * 카드 안쪽 (두 틀 공통): 머리 → 제목 → 상황 → 인용(있을 때만, 풀이 줄 포함) → 질문 → 선택지 → 영향 안내(영향 줄이 있는 묶음에만) → 자동 고르기 묶음(자동 모드 안내 한 문장 + 버튼 + 보조 한 줄).
+ * 질문은 선택지 묶음 `.choices-list`의 첫 자식이다(묶음 이름 = 질문). 가린 카드는 안내 한 줄·버튼 둘·자동 모드 안내만이다(질문·풀이·자동 고르기 버튼 없음).
+ */
+export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, onAutoSwitch, veiled = false, onOpenVeil, onAutoPick }: CardProps) {
   const { pending, ev, choices, impactOf, anyImpact, cite, year, age, name } = model;
   const guardKey = decisionGuardKey(pending, epoch);
   const kind = veiled ? model.heavy : null;
@@ -128,8 +139,12 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, v
             <p className="decision__text" data-testid="choice-text">
               {ev.text}
             </p>
-            {cite !== null ? <CitationBox view={cite} /> : null}
-            <div className="choices-list" role="group" aria-label={DASH_TEXT.choiceGroup}>
+            {cite !== null ? <CitationBox view={cite} insight={insightFor(cite.id)} /> : null}
+            <div className="choices-list" role="group" aria-labelledby="dc-ask">
+              {/* 공통 질문 (UX10): 묶음의 첫 자식 = 묶음의 이름. 묶음 안이라 선택지와 12px(본문 블록 사이 16px보다 가깝다) */}
+              <p className="decision__ask" id="dc-ask" data-testid="choice-ask">
+                {DASH_TEXT.choiceAsk}
+              </p>
               {choices.map((c, i) => (
                 // 인라인 틀에서 글자 200%·좁은 폭이라 선택지 카드가 가용 높이(화면 − 하단 띠)보다 커지면 키보드 포커스 때 카드의 위쪽 변을 화면에 맞춘다(CM10 예외 ②, ui/focusReveal.ts#revealTopOfTallCard).
                 // 시트는 자기 스크롤 영역이라(scroll-padding) 브라우저의 기본 포커스 스크롤에 맡긴다 — 문서 스크롤을 건드리지 않는다.
@@ -148,9 +163,31 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, v
           </>
         )}
         {/* 자동 모드 안내: 정적 문장이다(role=status 아님 — 자동 선택 때마다 낭독되지 않게, content-M7b 4-3) */}
-        <p className="decision__auto" data-testid="auto-note">
-          {auto ? DASH_TEXT.autoNoteOn : DASH_TEXT.autoNoteOff}
-        </p>
+        {kind !== null ? (
+          <p className="decision__auto" data-testid="auto-note">
+            {auto ? DASH_TEXT.autoNoteOn : DASH_TEXT.autoNoteOff}
+          </p>
+        ) : (
+          // 자동 고르기 묶음 (UX12, M-6 개정): 안내 문장이 상태를 말하고 그 아래 버튼이 그것을 바꾼다. 선택지(2px 상자·굵은 라벨)보다 낮은 위계의 보조 버튼 — 가린 카드의 「펼쳐 보기」 급.
+          // 가드 키는 선택지와 같아(`decisionGuardKey`) 카드가 새로 뜨거나 전환(시트 ↔ 인라인은 다른 부모라 새로 마운트)될 때마다 400ms 닫힌다 — 더블탭의 둘째 입력이 전환된 카드의 버튼·선택지에 떨어지지 않는다(U9).
+          <div className="decision__autoset" data-testid="auto-set">
+            <p className="decision__auto" data-testid="auto-note">
+              {auto ? DASH_TEXT.autoNoteOn : DASH_TEXT.autoNoteOff}
+            </p>
+            <GuardedButton
+              guardKey={guardKey}
+              className="btn btn--ghost btn--sm decision__autobtn"
+              aria-describedby="dc-autosub"
+              data-testid={auto ? 'auto-off-btn' : 'auto-on-btn'}
+              onClick={() => onAutoSwitch?.(!auto)}
+            >
+              {auto ? DASH_TEXT.autoOffBtn : DASH_TEXT.autoOnBtn}
+            </GuardedButton>
+            <p className="decision__autosub" id="dc-autosub" data-testid="auto-sub">
+              <Glue text={auto ? DASH_TEXT.autoOffSub : DASH_TEXT.autoOnSub} />
+            </p>
+          </div>
+        )}
       </div>
     </>
   );
@@ -160,7 +197,7 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, v
 export function DecisionSheet({ model, onFold, children, veiled = false }: { model: DecisionModel; onFold: () => void; children: ReactNode; /** 가린 카드(무거운 장면 가리기) — 표지만 단다 */ veiled?: boolean }) {
   // 시트가 떠 있는 동안 문서 스크롤을 잠근다(M7c T1 — 기록 시트와 열린 시트 수를 같이 센다, ui/useScrollLock.ts)
   useScrollLock();
-  // Esc = 카드 접기 (U7). 스크림 탭은 접기와 같게 처리하지 않는다 — 다시 열기 더블탭의 둘째 입력이 새 시트의 스크림에 떨어져 곧바로 접히는 일을 막는다(D-56은 선택)
+  // Esc = 잠시 덮어 두기 (U7). 스크림 탭은 접기와 같게 처리하지 않는다 — 다시 열기 더블탭의 둘째 입력이 새 시트의 스크림에 떨어져 곧바로 접히는 일을 막는다(D-56은 선택)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;

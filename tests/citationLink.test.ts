@@ -238,11 +238,11 @@ describe('MD2 1차 게이트 (마스터 결정 M-1: 시대별 정적 연결률 �
     expect(CITATION_DISTINCT_MIN).toBe(30);
   });
 
-  it('「인용 ≥ 30개」(1차 릴리스, M-4): 카드에 연결된 서로 다른 인용이 30개 이상이다 (실제 48개) — citations.json의 행 수(101)가 아니다', () => {
+  it('「인용 ≥ 30개」(1차 릴리스, M-4): 카드에 연결된 서로 다른 인용이 30개 이상이다 (실제 48개) — citations.json의 행 수(102)가 아니다', () => {
     const distinct = connectedCitationIds(EVENT_POOL.events);
     expect(distinct.length).toBeGreaterThanOrEqual(CITATION_DISTINCT_MIN);
     expect(distinct).toHaveLength(48);
-    expect(CITATION_TABLE.length).toBe(101);
+    expect(CITATION_TABLE.length).toBe(102); // 통계 84 + 연구 18(r4 QI13에서 c-102 추가 — c-037은 5세 카드에서 떼고 남겼다)
     // 연결된 서로 다른 인용의 usedBy가 모두 비어 있지 않다
     for (const id of distinct) expect(getCitation(id)!.usedBy?.length, id).toBeGreaterThan(0);
   });

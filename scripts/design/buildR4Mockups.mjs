@@ -3,16 +3,17 @@
  * 실행: node node_modules/vite-node/vite-node.mjs scripts/design/buildR4Mockups.mjs   → docs/design/mockups/r4/decision-r4.html · toolbar-r4.html   (buildMockups.mjs와 같이 TS 모듈을 읽으므로 vite-node)
  * 스크린샷·측정: node scripts/design/shootR4.mjs   → docs/design/screens/005/r4-*.png
  *
- * 하위 폴더 r4/에 두는 이유는 qi5·qi6와 같다(tests/designAssets.test.ts의 평면 glob — 기존 시안 decision-adult.html의 단언(「카드 접기」 등)을 건드리지 않는다). CSS는 docs/design/mockups/ds.css(「r4 …」 두 블록)만 쓴다.
+ * 하위 폴더 r4/에 두는 이유는 qi5·qi6와 같다(tests/designAssets.test.ts의 평면 glob — 기존 시안 decision-adult.html의 단언(이전 이름 등)을 건드리지 않는다). CSS는 docs/design/mockups/ds.css(「r4 …」 두 블록)만 쓴다.
  * 카드 글자는 **실제 이벤트 JSON**(제목·상황·선택지 라벨)과 **실제 인용**(citationFor — 구현 순수 함수)에서, 기존 문구는 **구현 상수**(DASH_TEXT·VEIL_TEXT·HEAVY_KIND_TEXT)에서 읽는다(R-191 — 손글 사본 0).
- * r4에서 **새로 정한 문구**(copy.md 15절)만 아래 R4_TEXT 블록에 있다 — developer가 dashText.ts에 넣으면(diff-005.md D5-82) 이 블록을 지우고 import로 되돌린다(M8·M7c 선행 시안과 같은 절차).
- * 풀이 두 문장은 **모양 규격용 예시**다(M23·UX14-3 — 실제 문장은 planner 초안 → designer 다듬기 → reviewer 전수 판독). 영향 줄 칸 수는 시안 예시(구현 previewChoice가 정본).
+ * r4에서 새로 정한 문구(copy.md 15절)도 이제 **구현 상수**(DASH_TEXT.choiceAsk·foldCard·autoOnBtn·autoOnSub·autoOffBtn·autoOffSub·citeInsightLabel)에서 읽는다 — 구현 반영(2026-10-26 developer, diff-005.md D5-82·D5-90) 전의 임시 블록 r4 임시 문구는 지웠다(M8·M7c 선행 시안과 같은 절차, tests/designAssets.test.ts가 「임시 블록 0」을 단언한다).
+ * 풀이는 **실제 데이터**(src/data/citationInsights.ts#insightFor — copy.md 15-5 확정 32문장)에서 읽는다. 영향 줄 칸 수는 시안 예시(구현 previewChoice가 정본).
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { citationFor } from '../../src/core/citations.ts';
 import { glueSegments } from '../../src/core/glue.ts';
+import { insightFor } from '../../src/data/citationInsights.ts';
 import { DASH_TEXT, titleCharsFor } from '../../src/data/dashText.ts';
 import { HEAVY_KIND_TEXT, VEIL_TEXT } from '../../src/data/gentleText.ts';
 import { StatusCard } from '../../src/ui/dash/Cards.tsx';
@@ -20,31 +21,7 @@ import { ImpactHint, ImpactLine } from '../../src/ui/dash/Impact.tsx';
 import { AGE_GROUPS } from '../../src/assets/faces/faceLayers.ts';
 import { ROOT, MOCK_TAG, esc, face, fitPair, gradeChip, headerLogo, icon, page } from './mockLib.mjs';
 
-// ---------- r4 새 문구 (copy.md 15절 확정 — 구현 반영 전 임시 블록, R-191) ----------
-const R4_TEXT = {
-  /** UX10 공통 질문 한 줄 — 합쇼체, 카드의 다른 질문(기록 카드 「…있습니까?」)과 같은 높임 단계 */
-  ask: '어떻게 하겠습니까?',
-  /** UX11 머리의 덮기 버튼 — 「카드 접기」의 새 이름(뜻 그대로: 잠시 숨기고 시간은 멈춘 채 기록을 본다). 꼬리 ▾(DASH_TEXT.foldMark)와 Esc·접힌 띠·「결정 다시 열기」는 그대로 */
-  foldCard: '잠시 덮어 두기',
-  /** UX12 시트 하단(자동 모드 꺼짐) — 기존 자동 모드를 켜는 또 하나의 길 */
-  autoOnBtn: '이후 결정을 자동으로 고르게 하기',
-  autoOnSub: '이 결정부터 성향에 따라 고릅니다. 설정으로 남아 다음 판에도 이어지며, 카드 아래나 도구 줄에서 끌 수 있습니다.',
-  /** UX12-5 인라인 카드 하단(자동 모드 켜짐) — 끄는 길. 켜는 버튼과 짝 */
-  autoOffBtn: '이후 결정을 직접 고르기',
-  autoOffSub: '이 결정부터 직접 고릅니다. 도구 줄의 「자동 모드」도 함께 꺼집니다.',
-  /** UX12-3 ④ 전환을 한 번 알리는 상태 문장(role=status, 시안에는 그리지 않는다 — copy.md 15절) */
-  autoOnStatus: '자동 모드를 켰습니다. 이 결정부터 잠시 뒤 성향에 따라 고릅니다.',
-  autoOffStatus: '자동 모드를 껐습니다. 직접 고를 때까지 시간은 멈춥니다.',
-  /** UX14 풀이 라벨(인용 박스 둘째 묶음의 머리) */
-  insightLabel: '풀이',
-  /** UX14 풀이 — copy.md 15-5 확정 문장 가운데 시안 두 장면의 것(비춤형, ≤ 60자, 숫자는 요약 값만). 전체 35개 표는 copy.md 15-5 */
-  insightExample: {
-    'c-015': '29세 이하 가구의 절반은 그보다 덜 가진 채 같은 거리 앞에 서 있습니다.',
-    'c-083': '이 아침을 먼저 맞은 사람이 113만 9천 명이었고, 그들은 그 뒤에도 저마다의 날을 이어 갔습니다.',
-  },
-};
-for (const [id, s] of Object.entries(R4_TEXT.insightExample)) if ([...s].length > 60) throw new Error(`${id} 풀이 예시 ${[...s].length}자 > 60`);
-
+// ---------- r4 새 문구 (copy.md 15절 확정 — 구현 상수 DASH_TEXT·insightFor를 읽는다: 임시 블록 r4 임시 문구는 구현 반영 뒤 지웠다, D5-90·R-191) ----------
 // ---------- 데이터 ----------
 const EVENT_BY_ID = new Map(
   ['infant', 'school', 'youth', 'middle', 'senior'].flatMap((stage) => {
@@ -73,17 +50,17 @@ const choiceBtn = (n, label, spec) => `<button class="choice" type="button" data
 /** 인용 박스(구현 CitationBox와 같은 DOM) + r4 풀이 묶음(본인이 고르는 카드에만 — M23) */
 function citeBox(view, { insight = null } = {}) {
   if (view.text.length > 100) throw new Error(`${view.id}: 표시 문자열 ${view.text.length}자 > 100`);
-  const ins = insight ? `<div class="cite__insight" data-testid="cite-insight"><p class="cite__insight-label">${esc(R4_TEXT.insightLabel)}</p><p class="cite__insight-text">${glueHtml(insight)}</p></div>` : '';
+  const ins = insight ? `<div class="cite__insight" data-testid="cite-insight"><p class="cite__insight-label">${esc(DASH_TEXT.citeInsightLabel)}</p><p class="cite__insight-text">${glueHtml(insight)}</p></div>` : '';
   return `<div class="cite" data-testid="cite" data-citation="${view.id}"><p class="cite__kind">${esc(DASH_TEXT.citeKindLabel[view.kind])}</p><p class="cite__text" data-testid="cite-text">${glueHtml(view.text)}</p><p class="cite__src" data-testid="cite-src"><span class="keep-phrase">${esc(view.sourceWho)}</span> ${glueHtml(view.sourceTitle)}</p>${ins}</div>`;
 }
 const head = ({ year, age }) =>
-  `<div class="decision__head"><span class="decision__kind">${esc(DASH_TEXT.choiceKind)}</span><div class="row"><span class="decision__when" data-testid="decision-when">${fitPair(`${year}${DASH_TEXT.yearSuffix}`, `${age}${DASH_TEXT.ageSuffix}`, { hideSeparator: true })}</span><button class="btn btn--ghost btn--sm decision__fold" type="button" data-testid="decision-fold-btn">${esc(R4_TEXT.foldCard)} <span aria-hidden="true">${esc(DASH_TEXT.foldMark)}</span></button></div></div>`;
+  `<div class="decision__head"><span class="decision__kind">${esc(DASH_TEXT.choiceKind)}</span><div class="row"><span class="decision__when" data-testid="decision-when">${fitPair(`${year}${DASH_TEXT.yearSuffix}`, `${age}${DASH_TEXT.ageSuffix}`, { hideSeparator: true })}</span><button class="btn btn--ghost btn--sm decision__fold" type="button" data-testid="decision-fold-btn">${esc(DASH_TEXT.foldCard)} <span aria-hidden="true">${esc(DASH_TEXT.foldMark)}</span></button></div></div>`;
 /** 카드 맨 끝: 자동 모드 안내(M-13 그대로) + r4 버튼 + 보조 한 줄. 가린 카드에는 안내 문장만(M22) */
 function autoSet(auto, { veiled = false } = {}) {
   const note = `<p class="decision__auto" data-testid="auto-note">${esc(auto ? DASH_TEXT.autoNoteOn : DASH_TEXT.autoNoteOff)}</p>`;
   if (veiled) return note;
-  const btn = auto ? R4_TEXT.autoOffBtn : R4_TEXT.autoOnBtn;
-  const sub = auto ? R4_TEXT.autoOffSub : R4_TEXT.autoOnSub;
+  const btn = auto ? DASH_TEXT.autoOffBtn : DASH_TEXT.autoOnBtn;
+  const sub = auto ? DASH_TEXT.autoOffSub : DASH_TEXT.autoOnSub;
   return `<div class="decision__autoset" data-testid="auto-set">${note}<button class="btn btn--ghost btn--sm decision__autobtn" type="button" data-testid="${auto ? 'auto-off-btn' : 'auto-on-btn'}" aria-describedby="dc-autosub">${esc(btn)}</button><p class="decision__autosub" id="dc-autosub">${glueHtml(sub)}</p></div>`;
 }
 /** 본인이 고르는 카드 안쪽(두 틀 공통): 머리 → 제목 → 상황 → 인용(+풀이) → [질문 → 선택지] → 영향 안내 → 자동 묶음 */
@@ -98,9 +75,9 @@ function decisionInner({ ev, year, age, choices, auto }) {
     <div class="decision__body">
       <h2 id="dc-title" class="decision__title" tabindex="-1" style="--title-chars:${titleCharsFor(ev.title)}" data-testid="choice-title">${esc(ev.title)}</h2>
       <p class="decision__text" data-testid="choice-text">${esc(ev.text)}</p>
-      ${cite ? citeBox(cite, { insight: R4_TEXT.insightExample[cite.id] ?? null }) : ''}
+      ${cite ? citeBox(cite, { insight: insightFor(cite.id) }) : ''}
       <div class="choices-list" role="group" aria-labelledby="dc-ask">
-        <p class="decision__ask" id="dc-ask" data-testid="choice-ask">${esc(R4_TEXT.ask)}</p>
+        <p class="decision__ask" id="dc-ask" data-testid="choice-ask">${esc(DASH_TEXT.choiceAsk)}</p>
         ${buttons.join('\n        ')}
       </div>
       ${html(ImpactHint, { name: HERO.name })}
@@ -230,4 +207,4 @@ mkdirSync(OUT, { recursive: true });
 writeFileSync(OUT + 'decision-r4.html', decisionPage);
 writeFileSync(OUT + 'toolbar-r4.html', toolbarPage);
 console.log('wrote', OUT + 'decision-r4.html', OUT + 'toolbar-r4.html');
-console.log('풀이 예시 글자 수:', Object.fromEntries(Object.entries(R4_TEXT.insightExample).map(([k, v]) => [k, [...v].length])));
+console.log('풀이 글자 수(시안에 쓴 인용):', Object.fromEntries(['c-015', 'c-083'].map((id) => [id, [...(insightFor(id) ?? '')].length])));

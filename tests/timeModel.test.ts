@@ -25,6 +25,8 @@ import {
 import { EVENT_POOL } from '../src/data/events';
 import { AUTO_CHOICE_MS, HOLD_MS, JUMP_OVERHEAD_SEC, LIFE_LENGTH_MODES, READ_MODEL } from '../src/data/timingTable';
 import { exposureOf } from '../scripts/citationExposureLib';
+import { INSIGHT_BY_ID } from '../src/data/citationInsights';
+import { DASH_TEXT } from '../src/data/dashText';
 import { chooserFor, startLife } from '../scripts/simulateLib';
 import { charStatsOf, measureMany, parseCandidates, poolCharStats, preciseCardSec, summarize } from '../scripts/timeReportLib';
 
@@ -261,17 +263,30 @@ describe('느린 독자(500자/분)가 그 해의 모든 줄을 읽는 시간 + 
 describe('읽는 시간 r = 글자 읽기 + 고르는 시간 + 인용 읽기 (직접 계산 — 완료 기준 4·5)', () => {
   const c = READ_MODEL.chars;
 
-  it('카드 한 장이 읽는 글자 수 = 제목 + 본문 + 보이는 라벨 × 라벨 글자 + 영향 줄 × 가중치', () => {
-    expect(cardReadChars()).toBeCloseTo(c.title + c.body + c.visibleLabels * c.label + c.visibleLabels * c.impactPerChoice * c.impactWeight, 9);
-    expect(cardReadChars()).toBeGreaterThan(95);
+  it('카드 한 장이 읽는 글자 수 = 제목 + 본문 + 질문 줄(r4) + 보이는 라벨 × 라벨 글자 + 영향 줄 × 가중치', () => {
+    expect(cardReadChars()).toBeCloseTo(c.title + c.body + c.ask + c.visibleLabels * c.label + c.visibleLabels * c.impactPerChoice * c.impactWeight, 9);
+    expect(cardReadChars()).toBeGreaterThan(105);
     expect(cardReadChars()).toBeLessThan(125);
   });
 
-  it('readSecFor: 수준별 값을 손으로 계산한 식과 같다 (지금 세상 중앙 = 글자 ÷ 600 × 60 + 10 + 노출률 × 10)', () => {
+  // SPEC-005 r4 (v0.2.1) UX10·UX14: 읽는 줄이 둘 늘었다 — 질문 줄(카드마다 10자)과 인용 박스 안 풀이 줄(평균 51.1자, 풀이가 보이는 카드에만). 상수가 실제 문구·데이터와 맞는다.
+  it('질문 줄 글자 수 상수(READ_MODEL.chars.ask)는 실제 문구 「어떻게 하겠습니까?」의 글자 수와 같다 — 문구를 바꾸면 이 상수도 함께 (읽는 시간 모델)', () => {
+    expect(c.ask).toBe(len(DASH_TEXT.choiceAsk));
+    expect(c.ask).toBe(10);
+  });
+
+  it('풀이 줄 글자 수 상수(READ_MODEL.insight.chars)는 확정 32문장의 평균과 ±1% 안이다 (copy.md 15-6: 합 1,635자 · 평균 51.1자)', () => {
+    const lens = Object.values(INSIGHT_BY_ID).map(len);
+    expect(lens).toHaveLength(32);
+    expect(Math.abs(READ_MODEL.insight.chars - mean(lens)) / mean(lens)).toBeLessThan(0.01);
+  });
+
+  it('readSecFor: 수준별 값을 손으로 계산한 식과 같다 (지금 세상 중앙 = 글자 ÷ 600 × 60 + 10 + 인용 노출률 × 10 + 풀이 노출률 × 풀이 글자 ÷ 600 × 60 — r4가 마지막 항과 질문 줄을 더했다)', () => {
     const chars = cardReadChars();
-    expect(readSecFor('present', 'median')).toBeCloseTo((chars / 600) * 60 + 10 + READ_MODEL.citeExposure.present * 10, 9);
-    expect(readSecFor('present', 'low')).toBeCloseTo((chars / 700) * 60 + 5 + READ_MODEL.citeExposure.present * 7, 9);
-    expect(readSecFor('present', 'high')).toBeCloseTo((chars / 500) * 60 + 15 + READ_MODEL.citeExposure.present * 13, 9);
+    const ins = (cpm: number) => READ_MODEL.insightExposure.present * (READ_MODEL.insight.chars / cpm) * 60;
+    expect(readSecFor('present', 'median')).toBeCloseTo((chars / 600) * 60 + 10 + READ_MODEL.citeExposure.present * 10 + ins(600), 9);
+    expect(readSecFor('present', 'low')).toBeCloseTo((chars / 700) * 60 + 5 + READ_MODEL.citeExposure.present * 7 + ins(700), 9);
+    expect(readSecFor('present', 'high')).toBeCloseTo((chars / 500) * 60 + 15 + READ_MODEL.citeExposure.present * 13 + ins(500), 9);
     expect(readSecFor('present', 'upper')).toBeCloseTo(readSecFor('present', 'high') * READ_MODEL.upperFactor, 9);
     expect(readSecFor('present')).toBe(readSecFor('present', 'median'));
   });
@@ -286,7 +301,8 @@ describe('읽는 시간 r = 글자 읽기 + 고르는 시간 + 인용 읽기 (�
     expect(readSecFor('past')).toBeLessThan(readSecFor('future'));
     expect(readSecFor('future')).toBeLessThanOrEqual(readSecFor('present'));
     expect(readSecFor('present')).toBeGreaterThan(18 * 1.3);
-    expect(readSecFor('present')).toBeLessThan(18 * 1.6);
+    // r4(질문 줄 + 풀이 줄)로 지금 세상 중앙 r이 25.7초 → 29.0초가 됐다 — 옛 18초 가정의 +61%. 상한을 1.6 → 1.7배로 넓혔다(M24: 읽는 줄이 느는 것은 콘텐츠를 더하는 일이고 판정 구간 상단을 올려 받았다)
+    expect(readSecFor('present')).toBeLessThan(18 * 1.7);
   });
 });
 
@@ -409,6 +425,26 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
     }
   });
 
+  it('시대별 풀이 줄 노출률(report:citations — 자동 성향 1000판, 본인이 고른 카드 가운데 풀이가 보인 몫)이 READ_MODEL.insightExposure와 ±5%p 안이다 (r4 UX14 — 인용 노출률의 풀이 짝)', () => {
+    for (const era of ERAS as readonly Era[]) {
+      const row = exposureOf(era, 1000);
+      expect(row.insighted, `${era}: 풀이가 보인 카드가 있다 (공허 통과 방지)`).toBeGreaterThan(0);
+      expect(Math.abs(row.insightRate - READ_MODEL.insightExposure[era]), `${era}: 측정 ${row.insightRate.toFixed(3)} / 상수 ${READ_MODEL.insightExposure[era]}`).toBeLessThanOrEqual(0.05);
+      // 풀이는 인용이 보일 때만 보인다 — 풀이 노출률은 인용 노출률 이하다 (부모·흘러감 카드와 생략 3건이 빠진다)
+      expect(READ_MODEL.insightExposure[era]).toBeLessThanOrEqual(READ_MODEL.citeExposure[era]);
+    }
+  });
+
+  it('뜬 카드(시대별 300판): 질문 줄 글자 수는 카드마다 10자이고 풀이 줄의 평균 글자 수가 READ_MODEL.insight와 ±10% 안이다 (풀이가 실제로 보인 카드가 있다)', () => {
+    for (const era of ERAS as readonly Era[]) {
+      const s = charStatsOf(lives(era));
+      expect(s.ask, era).toBe(READ_MODEL.chars.ask);
+      expect(s.insightExposure, `${era}: 풀이가 보인 카드`).toBeGreaterThan(0);
+      near(s.insightText, READ_MODEL.insight.chars);
+      expect(Math.abs(s.insightExposure - READ_MODEL.insightExposure[era]), `${era}: 측정 ${s.insightExposure.toFixed(3)} / 상수 ${READ_MODEL.insightExposure[era]}`).toBeLessThanOrEqual(0.05);
+    }
+  });
+
   it('시대 상수 모델 T(중앙)가 카드별 정밀 합계(실제 글자 수·인용 박스 길이)와 ±5% 안이다 (시대별 300판 평균)', () => {
     for (const era of ERAS as readonly Era[]) {
       const sum = summarize(era, 'short30', lives(era));
@@ -425,6 +461,11 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
     expect(cited.length).toBeGreaterThan(20);
     expect(plain.length).toBeGreaterThan(20);
     expect(mean(cited.map((f) => preciseCardSec(f, 'median')))).toBeGreaterThan(mean(plain.map((f) => preciseCardSec(f, 'median'))));
+    // r4: 풀이 줄이 보인 카드는 같은 카드에서 풀이가 없을 때보다 풀이 글자 수 ÷ 600자/분 × 60초만큼 더 걸린다 (정밀 합계가 풀이·질문을 센다)
+    const withInsight = cards.find((f) => f.insightLen > 0)!;
+    expect(withInsight, '풀이가 보인 카드').toBeDefined();
+    expect(preciseCardSec(withInsight, 'median') - preciseCardSec({ ...withInsight, insightLen: 0 }, 'median')).toBeCloseTo((withInsight.insightLen / 600) * 60, 9);
+    expect(preciseCardSec(withInsight, 'median') - preciseCardSec({ ...withInsight, askLen: 0 }, 'median')).toBeCloseTo((len(DASH_TEXT.choiceAsk) / 600) * 60, 9);
     for (const f of cards.slice(0, 50)) {
       expect(preciseCardSec(f, 'low')).toBeLessThan(preciseCardSec(f, 'median'));
       expect(preciseCardSec(f, 'median')).toBeLessThan(preciseCardSec(f, 'high'));
@@ -445,23 +486,49 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
   };
   /** 계수 1.0 기준 연출 합(초) — 계수를 바꿔 보는 계산용 */
   const holdSecAtScaleOne = (c: TickCounts): number => holdTotalMsAtScale(c, 1) / 1000;
-  /** 부모님이 정한 해의 연출 연장분(초) — 카드 읽기 필요량이 기본 대기보다 긴 몫이라 계수 k에 거의 묶이지 않는다(k ≤ 1.57에서 필요량에 묶임, 설계 문서 4-3절): 현재 계수의 측정값을 그대로 쓴다 */
+  /** 부모님이 정한 해의 연출 연장분(초, 현재 계수의 측정값) — 카드 읽기 필요량이 기본 대기(+ 줄 대기)보다 긴 몫이다 */
   const extraSec = (c: TickCounts): number => c.delegatedExtraMs / 1000;
-  const minutes = (c: TickCounts, k: number, r: number): number => (k * holdSecAtScaleOne(c) + extraSec(c) + c.choice * r) / 60;
+  /**
+   * 계수 k에서의 연장분(초) — **연장분은 k에 묶이지 않는다**: k가 오를수록 기본 대기가 필요량을 넘는 카드가 늘어 연장분이 줄어든다(설계 문서 4-3절; 지금 계수 1.6875에서는 평균 카드(인용 없음 20.5초 · 있음 33.5초)의 기본 대기 21.9초가 인용 없는 카드의 필요량을 이긴다).
+   * 예전에는 현재 k의 연장분을 구간의 두 끝(K_LOW · K_HIGH)에 모두 썼는데(REV-005-LM7b-1 R-496) k = 1.1 끝의 연장분은 더 크다 — 모드 표의 계수를 잠시 k로 바꿔 같은 300판을 다시 재서 끝마다 그 k의 연장분을 쓴다(카드 수는 계수와 무관해 모양 c는 그대로).
+   */
+  const extraAtCache = new Map<string, number>();
+  const extraSecAt = (era: Era, k: number): number => {
+    const key = `${era}@${k}`;
+    let v = extraAtCache.get(key);
+    if (v === undefined) {
+      const saved = MODE.holdScale;
+      try {
+        MODE.holdScale = k;
+        v = summarize(era, 'short30', measureMany(era, 300, 'random', 'short30')).delegatedExtraSec;
+      } finally {
+        MODE.holdScale = saved;
+      }
+      extraAtCache.set(key, v);
+    }
+    return v;
+  };
+  const minutes = (c: TickCounts, k: number, r: number, extra: number = extraSec(c)): number => (k * holdSecAtScaleOne(c) + extra + c.choice * r) / 60;
   /**
    * 연출 계수 레버의 범위: 1.1 ~ 상한 1.6875. SPEC-003의 1.1~1.3을 SPEC-005 TM4(마스터 승인 A13)가 1.45까지 넓혔고,
    * LM7b(형진 님 결정 2026-10-26: 1배속을 80% 속도로 = 1.35 × 1.25)가 형진 님의 명시 결정으로 1.6875까지 넘었다. 상한은 지금 값 그대로다 — 더 올리려면 다시 결정이 필요하다.
-   * 판정 구간(사람 실측 25~35분 · 시대별 25.5~34.5분 · 세 시대 평균 27~33분)은 그대로다 — 레버의 범위만 바뀌었다.
+   * 판정 구간은 SPEC-005 r4 마스터 결정 M24(2026-10-26)로 상단만 올랐다(사람 실측 25~38분 · 시대별 25.5~36.5분 · 세 시대 평균 27~35분 — timingTable.ts `timeMin`) — 레버의 범위와는 별개다.
    */
   const K_LOW = 1.1;
   const K_HIGH = 1.6875;
-  /** 계수 1.1~1.6875 한 칸으로 25~35분(사람 실측 허용 구간)에 닿는 읽는 시간 r(초)의 구간 = [(25분 − 1.6875배 연출 − 연장) ÷ c_self, (35분 − 1.1배 연출 − 연장) ÷ c_self] */
-  const coveredR = (c: TickCounts): { lo: number; hi: number } => ({
-    lo: (MODE.timeMin.humanLow * 60 - K_HIGH * holdSecAtScaleOne(c) - extraSec(c)) / c.choice,
-    hi: (MODE.timeMin.humanHigh * 60 - K_LOW * holdSecAtScaleOne(c) - extraSec(c)) / c.choice,
-  });
+  /** 계수 1.1~1.6875 한 칸으로 25~38분(사람 실측 허용 구간, M24)에 닿는 읽는 시간 r(초)의 구간 = [(25분 − 1.6875배 연출 − 그 k의 연장) ÷ c_self, (38분 − 1.1배 연출 − 그 k의 연장) ÷ c_self] — 끝마다 그 끝 k의 연장분(R-496) */
+  const coveredR = (era: Era, c: TickCounts): { lo: number; hi: number; extraLo: number; extraHi: number } => {
+    const extraLo = extraSecAt(era, K_HIGH);
+    const extraHi = extraSecAt(era, K_LOW);
+    return {
+      lo: (MODE.timeMin.humanLow * 60 - K_HIGH * holdSecAtScaleOne(c) - extraLo) / c.choice,
+      hi: (MODE.timeMin.humanHigh * 60 - K_LOW * holdSecAtScaleOne(c) - extraHi) / c.choice,
+      extraLo,
+      extraHi,
+    };
+  };
 
-  it('보정 레버의 범위: 연출 계수의 초기값(모드 표)은 1.1~1.6875 안이다(SPEC-005 TM4가 상한을 1.3에서 1.45로, LM7b 형진 님 결정이 1.6875로 넓혔다 — 기준의 교체이지 약화가 아니다: 판정 구간 25~35분·시대별 25.5~34.5분은 그대로) — 모드 표의 값으로 estimatePlaySeconds와 직접 계산이 같다', () => {
+  it('보정 레버의 범위: 연출 계수의 초기값(모드 표)은 1.1~1.6875 안이다(SPEC-005 TM4가 상한을 1.3에서 1.45로, LM7b 형진 님 결정이 1.6875로 넓혔다 — 기준의 교체이지 약화가 아니다: 판정 구간의 하단 25분·25.5분은 그대로이고 상단은 M24로 올랐다 — 25~38분·시대별 25.5~36.5분) — 모드 표의 값으로 estimatePlaySeconds와 직접 계산이 같다', () => {
     expect(MODE.holdScale).toBeGreaterThanOrEqual(K_LOW);
     expect(MODE.holdScale).toBeLessThanOrEqual(K_HIGH);
     for (const era of ERAS as readonly Era[]) {
@@ -472,7 +539,7 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
     }
   });
 
-  it('30분 모드 모델 시간(시대별 측정 평균 한 판 · 연출 계수 1.6875 · 읽기 중앙)이 사람 실측 허용 구간 25~35분 안에 든다 (content-M8.md 2-6절 계산표를 확정 설정의 측정값으로)', () => {
+  it('30분 모드 모델 시간(시대별 측정 평균 한 판 · 연출 계수 1.6875 · 읽기 중앙)이 사람 실측 허용 구간 25~38분(M24로 상단을 올렸다) 안에 든다 (content-M8.md 2-6절 계산표를 확정 설정의 측정값으로)', () => {
     for (const era of ERAS as readonly Era[]) {
       const t = estimatePlaySeconds(avgCounts(era), { speed: 1, skipToDecision: false }, 'short30', era) / 60;
       expect(t, `${era}: ${t.toFixed(2)}분`).toBeGreaterThanOrEqual(MODE.timeMin.humanLow);
@@ -480,23 +547,26 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
     }
   });
 
-  it('연출 계수 1.1~1.6875가 25~35분으로 덮는 읽는 시간 r의 구간(시대별)이 중앙·높음(느린 독자)·상한 독자를 모두 덮는다 — 보정 첫 레버가 연출 계수인 이유', () => {
+  it('연출 계수 1.1~1.6875가 25~38분으로 덮는 읽는 시간 r의 구간(시대별)이 중앙·높음(느린 독자)·상한 독자를 모두 덮는다 — 보정 첫 레버가 연출 계수인 이유', () => {
     for (const era of ERAS as readonly Era[]) {
-      const { lo, hi } = coveredR(avgCounts(era));
+      const { lo, hi, extraLo, extraHi } = coveredR(era, avgCounts(era));
       expect(hi - lo, `${era}: 덮는 폭(초)`).toBeGreaterThan(25);
       for (const level of ['median', 'high', 'upper'] as const) {
         const r = readSecFor(era, level);
         expect(r, `${era} ${level}: r ${r.toFixed(1)}초가 ${lo.toFixed(1)}~${hi.toFixed(1)}초 안`).toBeGreaterThanOrEqual(lo);
         expect(r, `${era} ${level}: r ${r.toFixed(1)}초가 ${lo.toFixed(1)}~${hi.toFixed(1)}초 안`).toBeLessThanOrEqual(hi);
       }
-      // 구간의 두 끝은 정의 그대로다: 끝에서 계수가 1.6875 / 1.1이면 25 / 35분이다
-      expect(minutes(avgCounts(era), K_HIGH, lo)).toBeCloseTo(MODE.timeMin.humanLow, 9);
-      expect(minutes(avgCounts(era), K_LOW, hi)).toBeCloseTo(MODE.timeMin.humanHigh, 9);
+      // 구간의 두 끝은 정의 그대로다: 끝에서 계수가 1.6875 / 1.1이면 25 / 38분이다 (연장분은 끝의 k에서 잰 값 — R-496)
+      expect(minutes(avgCounts(era), K_HIGH, lo, extraLo)).toBeCloseTo(MODE.timeMin.humanLow, 9);
+      expect(minutes(avgCounts(era), K_LOW, hi, extraHi)).toBeCloseTo(MODE.timeMin.humanHigh, 9);
+      // 연장분은 k가 낮을수록 크다(기본 대기가 짧아 필요량이 이기는 카드가 늘어난다) — 현재 k의 연장분을 두 끝에 쓰던 예전 방식이 hi를 크게 잡았다
+      expect(extraHi, `${era}: k = ${K_LOW}의 연장분(초)이 k = ${K_HIGH}의 연장분보다 크다`).toBeGreaterThan(extraLo);
+      expect(extraLo, `${era}: 현재 계수(${MODE.holdScale})의 측정값과 같다`).toBeCloseTo(extraSec(avgCounts(era)), 6);
     }
   });
 
   it('알려진 한계가 사라졌다(보고, content-M8.md 6-3절 6번 (iii)): SPEC-003에서는 읽기 「낮음」(빠른 독자)이 연출 계수 상한 1.3으로도 25분에 닿지 않는 시대가 지난 세상뿐이었다 — 상한을 1.45(SPEC-005 TM4)를 거쳐 1.6875(LM7b)로 넓힌 지금은 세 시대 모두 닿는다. 이 목록이 다시 비지 않으면(콘텐츠·페이싱·읽기 모델이 달라졌다) dev 로그의 보고 표를 다시 낸다', () => {
-    const notCovered = (ERAS as readonly Era[]).filter((era) => readSecFor(era, 'low') < coveredR(avgCounts(era)).lo);
+    const notCovered = (ERAS as readonly Era[]).filter((era) => readSecFor(era, 'low') < coveredR(era, avgCounts(era)).lo);
     expect(notCovered).toEqual([]);
   });
 });

@@ -80,6 +80,11 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     // 손계산 24.7 / 27.3 / 27.6분(평균 26.5)으로 시대별 하한 25.5와 평균 하한 27에 못 미쳐 연출을 늘렸다(실측 대체: `npm run report:time` — 측정표는 ai-log/2026-10-20_SPEC-005_dev-QI5.md). 상한은 1.45(LM7b 보정 때 0.05씩).
     // 판정 구간(세 시대 평균 27~33분 · 시대별 25.5~34.5분 · 사람 실측 25~35분)은 내리지 않았다.
     //
+    // 판정 구간 상단 상향 (SPEC-005 r4 마스터 결정 M24, 2026-10-26): 형진 님 「플레이시간 적당해. 플레이시간은 유저가 이 게임의 콘텐츠에 얼마나 몰입하느냐에 따라 상대적으로 달라져. 따라서 콘텐츠를 몰입감 있게, 밀도 있게, 현실성 있게 잘 넣고, 감성을 건드리는게 중요해」 —
+    // 판 길이는 콘텐츠 몰입의 결과이므로 판정 구간을 콘텐츠 추가의 걸림돌로 쓰지 않는다. **상단만 올렸다**: 세 시대 평균 27~35분(modelHigh 33 → 35) · 시대별 25.5~36.5분(= modelLow − 1.5 ~ modelHigh + 1.5) · 사람 실측 25~38분(humanHigh 35 → 38).
+    // 하단(27 · 25.5 · 25)과 3 SE 규칙(LD-9)·카드 수 구간(23.3~29장)은 그대로다. 첫 화면의 「약 30분」 표기(`label`)도 그대로다(형진 님 「적당해」). 근거: SPEC-005 r4 「마스터 결정 M21~M24」 M24, docs/data/spec-005-r4-baseline.md.
+    // 이 상향이 받는 것: v0.2.1의 질문 줄(UX10, 카드당 10자)과 풀이 줄(UX14, 평균 51.1자 × 노출률)이 더하는 읽기 약 0.4 / 1.0 / 1.0분(`READ_MODEL.chars.ask`·`insight`).
+    //
     // 연출 계수 1.35 → 1.6875 (SPEC-005 LM7b, 형진 님 결정 2026-10-26: 「1배속이 약간 빠르다 — 천천히 자세히 읽고 곱씹을 수 있게 0.8배 정도로」): 1배속을 지금의 80% 속도로 = 연출 대기 전체 × 1.25 (1.35 × 1.25 = 1.6875).
     // TM4의 상한 1.45는 형진 님의 명시 결정으로 넘는다. 이 한 곳만 바꾼다 — HOLD_MS·줄 대기·타이머·시간 모델은 모두 이 계수를 읽으므로 모든 배속에 같은 비로 적용된다(2·4·8배속은 새 1배속의 배수).
     // 읽기 필요량(`cardReadNeedMs`)은 읽는 속도에서 오는 바닥이라 곱하지 않는다. 새 판 길이 예상과 판정 구간 안팎: ai-log/2026-10-26_SPEC-005_dev-speed08.md.
@@ -100,7 +105,7 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     // ×2.0으로 올린 뒤 재측정 17.85~19.23장, 합친 4줄 최소 17.97 ± 0.05(12 SE) — 하한은 그대로 두었다,
     // 최소 여유 3.9 SE — SPEC-005 TM5, 규칙 LD-9; ai-log/2026-10-20_SPEC-005_dev-QI5.md). 설계 문서 4-2절의 예측 평균 18.8장 ±0.6보다 높은 값은 쓰지 않았다.
     cardsSelf: { meanLow: 17.4 },
-    timeMin: { humanLow: 25, humanHigh: 35, modelLow: 27, modelHigh: 33 },
+    timeMin: { humanLow: 25, humanHigh: 38, modelLow: 27, modelHigh: 35 }, // 상단 M24(2026-10-26): 사람 실측 35 → 38, 세 시대 평균 33 → 35 (시대별 상단 = modelHigh + 1.5 = 36.5)
   },
   long60: {
     label: '약 1시간',
@@ -133,11 +138,19 @@ export function lifeModeOf(lifeLength: LifeLength | null | undefined): LifeLengt
  * 사람의 r은 사람 실측이 정한다(LM7) — 이 값은 출발점이고 실측 뒤 `median`을 보정한다(content-M8.md 6-3절).
  */
 export const READ_MODEL = {
-  chars: { title: 8.1, body: 52.0, label: 12.4, visibleLabels: 2.7, impactPerChoice: 9.3, impactWeight: 0.5 },
+  chars: { title: 8.1, body: 52.0, label: 12.4, visibleLabels: 2.7, impactPerChoice: 9.3, impactWeight: 0.5, ask: 10 },
   cpm: { low: 700, median: 600, high: 500 },
   chooseSec: { low: 5, median: 10, high: 15 },
   citeSec: { low: 7, median: 10, high: 13 },
   citeExposure: { past: 0.1, present: 0.51, future: 0.47 } as Readonly<Record<Era, number>>,
+  /**
+   * SPEC-005 r4 (v0.2.1) — 읽는 줄이 둘 늘었다. ① `chars.ask`: 선택지 앞의 공통 질문 한 줄(UX10) 「어떻게 하겠습니까?」 = 10자(공백·물음표 포함, `DASH_TEXT.choiceAsk`와 같다 — tests/timeModel.test.ts). 본인이 고르는 카드마다 한 줄씩 읽는다.
+   * ② 인용 박스 안 풀이 한 줄(UX14): `insight.chars` = 확정 32문장의 평균 글자 수 51.1(copy.md 15-6, `data/citationInsights.ts`), `insightExposure` = 본인이 고르는 카드 가운데 풀이 줄이 보인 몫 — 인용이 보이는 카드의 대부분이다
+   * (생략 3건 c-095·c-030·c-096 제외, 부모·흘러감 카드는 풀이를 그리지 않으므로 분모에서 뺀다 M23). 값은 `report:citations`(자동 성향 1000판, `ExposureRow.insightRate`)와 `report:time`의 글자 수 실측(random)의 사이이고 시험이 ±5%p로 대조한다.
+   * 풀이는 요약·출처와 달리 한 문장 전부를 읽는 글이라 글자 수 ÷ 분당 글자 수만 더한다(인용 읽기의 「숫자 해석 1.5초」 같은 가산 없음). 마스터 결정 M24(2026-10-26, 형진 님 「플레이시간은 몰입의 결과」)로 이 두 줄이 더하는 약 1분을 판정 구간 상단을 올려 받는다 — `LIFE_LENGTH_MODES.short30.timeMin` 주석.
+   */
+  insight: { chars: 51.1 },
+  insightExposure: { past: 0.09, present: 0.44, future: 0.41 } as Readonly<Record<Era, number>>,
   upperFactor: 1.2,
 };
 

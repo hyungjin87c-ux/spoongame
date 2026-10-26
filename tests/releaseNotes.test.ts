@@ -129,6 +129,24 @@ describe('새 소식 데이터 (NT3)', () => {
   });
 });
 
+describe('v0.2.1 새 소식 (SPEC-005 r4 UXN-1 — copy.md 15-7)', () => {
+  it('v0.2.1 항목 다섯은 copy.md 15-7 확정 제안 표와 글자 그대로 같고, 여섯째(QI13 5세 인용 교체)와 요약은 NT3 규칙을 지키는 developer 제안이다 — 날짜는 임시(배포일에 마스터가 고친다)', () => {
+    const sec = copyMd.slice(copyMd.indexOf('### 15-7.'), copyMd.indexOf('### 15-8.'));
+    expect(sec.length, 'copy.md에 15-7절이 있다').toBeGreaterThan(100);
+    const kindOf: Record<string, string> = { 추가: 'new', 개선: 'better', 수정: 'fixed', 내용: 'content' };
+    const rows = [...sec.matchAll(/^\| (추가|개선|수정|내용) \| (.+) \| \d+ \|$/gm)].map((m) => ({ kind: kindOf[m[1]], text: m[2] }));
+    expect(rows, 'copy.md 15-7 표').toHaveLength(5);
+    const v = noteOf('0.2.1') as ReleaseNote;
+    expect(v.items.slice(0, 5)).toEqual(rows);
+    expect(v.items, '다섯 + QI13 한 줄').toHaveLength(6);
+    expect(v.items[5].kind).toBe('content');
+    expect(v.items[5].text).toContain('다섯 살');
+    expect(v.date, '임시 날짜 — 배포일에 마스터가 고친다').toBe('2026-10-26');
+    // 옛 이름은 이 한 곳(개선 항목 — 이름을 바꿨다는 사실을 알리는 글)에만 남는다: 완료 기준 3의 「옛 이름 0건」 점검이 이 파일을 예외로 둔다(tests/foldRename.test.ts)
+    expect(RELEASE_NOTES.flatMap((n) => n.items).filter((it) => /카드[ ]접기/.test(it.text))).toHaveLength(1);
+  });
+});
+
 describe('새 소식 표시 규칙 (NT4) — 버전 비교와 「새」 표시', () => {
   it('compareVersions는 숫자 비교다 (0.10.0 > 0.9.0), 꼴이 다르면 null', () => {
     expect(compareVersions('0.2.0', '0.1.0')).toBeGreaterThan(0);
