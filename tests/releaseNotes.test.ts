@@ -142,6 +142,9 @@ describe('v0.2.1 새 소식 (SPEC-005 r4 UXN-1 — copy.md 15-7)', () => {
     expect(v.items[5].kind).toBe('content');
     expect(v.items[5].text).toContain('다섯 살');
     expect(v.date, '임시 날짜 — 배포일에 마스터가 고친다').toBe('2026-10-26');
+    // R-504: 요약의 「한 줄로 모였어요」는 PC에서만 사실이다(휴대폰·태블릿 < 960px은 그대로) — 요약이 그 조건을 밝힌다 (마스터 2026-10-27)
+    expect(v.summary).toBe('결정 카드에 질문과 풀이가 생기고, PC에서는 진행·도구 버튼이 한 줄로 모였어요.');
+    expect([...v.summary].length, '요약도 70자 이하').toBeLessThanOrEqual(NOTE_ITEM_MAX_CHARS);
     // 옛 이름은 이 한 곳(개선 항목 — 이름을 바꿨다는 사실을 알리는 글)에만 남는다: 완료 기준 3의 「옛 이름 0건」 점검이 이 파일을 예외로 둔다(tests/foldRename.test.ts)
     expect(RELEASE_NOTES.flatMap((n) => n.items).filter((it) => /카드[ ]접기/.test(it.text))).toHaveLength(1);
   });

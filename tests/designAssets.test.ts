@@ -1766,7 +1766,12 @@ describe('SPEC-005 r4 시안 계약 (copy.md 15절 ↔ 구현 상수 ↔ 시안 
     for (const s of [null, 'bgm', 'exit', 'auto']) expect((stateOfR4(toolbarR4, s).match(/data-testid="(?:pause|skip|auto|tool-bgm|tool-note|tool-dark|tool-feedback|tool-exit)"|data-speed="/g) ?? []).length, String(s)).toBe(12);
     const block = (css: string, start: string, end: string): string => css.slice(css.indexOf(start), css.indexOf(end) + end.length);
     expect(block(dashCssImpl, '/* ---------- r4 도구 줄 한 줄', '/* ---------- r4 도구 줄 끝 ---------- */')).toBe(block(dsCss, '/* ---------- r4 도구 줄 한 줄', '/* ---------- r4 도구 줄 끝 ---------- */'));
-    expect(block(dashCssImpl, '/* ---------- r4 중대 결정 카드', '/* ---------- r4 중대 결정 카드 끝 ---------- */')).toBe(block(dsCss, '/* ---------- r4 중대 결정 카드', '/* ---------- r4 중대 결정 카드 끝 ---------- */'));
+    // 구현 dash.css는 쓰이지 않는 `.cite__insight-label` 규칙 한 줄만 뺐다(R-503, 형진 님 2026-10-26 결정으로 화면에 라벨이 없다) — ds.css·시안(`decision-r4.html`)에는 다음 디자인 회차까지 남는다. 그 한 줄만 예외이고 나머지는 한 글자도 다르면 안 된다
+    const LABEL_RULE = '.cite__insight-label { font-size: var(--fs-xs); font-weight: var(--fw-bold); letter-spacing: 0.02em; }\n';
+    const dsDecision = block(dsCss, '/* ---------- r4 중대 결정 카드', '/* ---------- r4 중대 결정 카드 끝 ---------- */');
+    expect(dsDecision, '시안 CSS(ds.css)에는 라벨 규칙이 아직 있다 — 디자인 회차에 지운다').toContain(LABEL_RULE);
+    expect(block(dashCssImpl, '/* ---------- r4 중대 결정 카드', '/* ---------- r4 중대 결정 카드 끝 ---------- */')).toBe(dsDecision.replace(LABEL_RULE, ''));
+    expect(dashCssImpl.replace(/\/\*[^]*?\*\//g, ''),'구현 dash.css에는 쓰이지 않는 .cite__insight-label 규칙이 없다').not.toContain('.cite__insight-label');
   });
 
   it('생성기는 임시 블록 없이 구현 상수·풀이 데이터를 읽는다 (D5-90, R-191 되돌림) — R4_TEXT 0, insightFor import', () => {

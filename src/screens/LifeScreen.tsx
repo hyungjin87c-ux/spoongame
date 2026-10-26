@@ -14,6 +14,7 @@ import { ParentCard, useParentCardModel } from '../ui/dash/ParentCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
 import { Glue } from '../ui/Glue';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
+import { useDismissibleTips } from '../ui/dismissibleTips';
 import { revealCard } from '../ui/focusReveal';
 import { useStickyHead } from '../ui/headRelease';
 import { decideNoteFocus, type NoteFocusVia } from '../ui/noteFocus';
@@ -227,10 +228,13 @@ interface ToolsProps {
 /**
  * 도구 줄 (DB3): BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기. 켜짐 상태(BGM·다크 모드)는 aria-pressed + 색 반전·아래 막대 + 아이콘 교체 + 읽기 전용 「켜짐」이 함께 알린다(R-136②).
  * 「다크 모드」의 켜짐 = 지금 화면에 다크 테마가 적용된 상태(시스템 설정을 따르는 중이든 수동 선택이든). 누르면 반대 테마를 수동 선택으로 저장한다(DB6).
+ * 폭 960~1179px의 마우스 PC에서는 도구 이름이 말풍선으로만 보인다(압축 모드, dash.css) — Esc로 숨길 수 있다(`useDismissibleTips`, WCAG 1.4.13, R-501). 터치 화면은 압축하지 않고 이름이 늘 보인다.
  */
 function LifeTools({ guardKey, settings, dark, feedbackUrl, exitButtonRef, noteButtonRef, onBgm, onDark, onNote, onExitOpen }: ToolsProps) {
+  const toolsRef = useRef<HTMLDivElement>(null);
+  useDismissibleTips(toolsRef);
   return (
-    <div className="controls__tools" role="group" aria-label={DASH_TEXT.toolsGroup} data-testid="tools">
+    <div className="controls__tools" role="group" aria-label={DASH_TEXT.toolsGroup} data-testid="tools" ref={toolsRef}>
       <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-pressed={settings.bgm.on} data-testid="tool-bgm" onClick={() => onBgm({ on: !settings.bgm.on })}>
         <Icon name="i-music" />
         <span>{DASH_TEXT.toolBgm}</span>

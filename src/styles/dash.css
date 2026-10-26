@@ -276,7 +276,6 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
    버튼 이름은 낱말 단위로 줄바꿈(확인 단계 버튼과 같은 예외 — 320 · 글자 200%에서 「이후 결정을 / 자동으로 고르게 하기」). 가린 카드(data-veiled)에는 이 묶음을 그리지 않는다(M22) — 펼친 뒤 보인다. 강제 색상: 글자뿐이라 새 규칙 없음(버튼은 .btn 공통) */
 .decision__ask { margin: 0 0 var(--sp-1); font-size: var(--fs-md); line-height: var(--lh-snug); font-weight: var(--fw-bold); color: var(--c-text); }
 .cite__insight { margin-top: var(--sp-2); display: flex; flex-direction: column; gap: 4px; }
-.cite__insight-label { font-size: var(--fs-xs); font-weight: var(--fw-bold); letter-spacing: 0.02em; }
 .cite__insight-text { font-size: var(--fs-sm); line-height: var(--lh-snug); }
 .decision__autoset { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
 .decision__autobtn { white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2); font-weight: var(--fw-regular); text-align: left; }
@@ -284,7 +283,7 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 /* ---------- r4 중대 결정 카드 끝 ---------- */
 /* ---------- r4 구현 변경 — 풀이 줄에서 「풀이」 라벨을 없애고 문장만 색·굵기로 구분한다 (형진 님 2026-10-26 「풀이라고 따로 쓰지 않고 그 문장은 조금 다른 폰트나 색으로 구분만」; diff-005.md D5-84·D5-81 아래 「구현 변경」 줄) ----------
    위 designer 블록(시안 글자 그대로, tests/designAssets.test.ts가 ds.css와 한 글자씩 대조)은 건드리지 않고 **뒤에서 덮는다** — 다음 디자인 회차에 시안·ds.css가 이 규칙을 따라온다.
-   화면에는 라벨이 없다(.cite__insight-label은 이제 그리지 않는다). 문장(.cite__insight-text)은 14px 그대로, 굵기만 한 단계 위(굵게 — 이 앱의 굵기 토큰은 보통·굵게 둘뿐이고 중간 굵기는 맑은 고딕에서 보통으로 그려져 구분이 안 된다),
+   화면에는 라벨이 없다(.cite__insight-label은 이제 그리지 않는다 — 위 designer 블록의 그 규칙 한 줄은 쓰이지 않아 이 파일에서 뺐다. ds.css에는 시안용으로 남아 있고 다음 디자인 회차에 함께 정리한다, R-503). 문장(.cite__insight-text)은 14px 그대로, 굵기만 한 단계 위(굵게 — 이 앱의 굵기 토큰은 보통·굵게 둘뿐이고 중간 굵기는 맑은 고딕에서 보통으로 그려져 구분이 안 된다),
    색은 「전망」 칩 글자와 같은 놋쇠 계열 글자 토큰 --c-on-accent-soft(인용 박스 면 --c-brand-soft 위 라이트 7.08 / 다크 9.76 — scripts/checkContrastLib.ts 쌍으로 지킨다, 요약·출처의 --c-on-brand-soft 10.45 / 9.87과 색상(쪽빛 ↔ 놋쇠)이 다르다).
    기울임은 쓰지 않는다(한글 글꼴에 이탤릭이 없어 가짜 기울임이 생긴다) · 새 웹폰트 없음. 강제 색상: 토큰이 CanvasText로 바뀌어 색 차이는 사라지고 굵기와 위 8px 띄움(.cite__insight margin-top)이 구분을 남긴다. 눈에 안 보이는 접두 「풀이:」는 .sr-only(CitationBox). */
 .cite__insight-text { font-weight: var(--fw-bold); color: var(--c-on-accent-soft); }
@@ -540,19 +539,25 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 }
 /* ---------- r4 도구 줄 끝 ---------- */
 /* ---------- r4 구현 변경 — 도구 줄 압축 모드 960~1179px (형진 님 2026-10-26 「도구줄은 한줄에 나오도록 해줘」, 마스터 해석: 휴대폰·태블릿(< 960px)은 그대로, PC 폭(≥ 960px) 전 구간 한 줄; diff-005.md D5-80 아래 「구현 변경」 줄) ----------
-   위 designer 블록(≥ 1180px 규격: 이름 + 아이콘, 간격 조임)은 그대로 두고 **뒤에서 덮는다**. 단계마다 측정하고 들어가면 멈춘다(e2e/toolbar-one-row.spec.ts):
-   ① 도구 묶음(BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기)을 **아이콘만** 보인다. 이름 글자 칸(span)은 DOM에 그대로 있어 접근 가능한 이름이 바뀌지 않고(숨김은 불투명도가 아니라 clip-path: inset(50%) — 글자 대비 잠금 규칙(tests/contrast.test.ts)에 새 opacity를 들이지 않는다), 마우스 올림·키보드 포커스(:focus-visible)에서 버튼 아래 오른쪽 맞춤 말풍선으로 보인다
-      (오른쪽 맞춤 — 맨 오른쪽 버튼의 말풍선이 화면 밖으로 나가 가로 넘침을 만들지 않게). 말풍선은 면 + 글자색 1px 테두리라 강제 색상에서도 보이고, 포커스 링은 .btn 공통 그대로다.
-   ② (필요할 때만 — 아래 @container) 진행 묶음의 「다음 결정으로」·「자동 모드」를 짧은 글자로 줄인다. 일시정지·배속 글자는 그대로.
+   위 designer 블록(≥ 1180px 규격: 이름 + 아이콘, 간격 조임)은 그대로 두고 **뒤에서 덮는다**. 측정하고 들어가면 멈춘다(e2e/toolbar-one-row.spec.ts):
+   도구 묶음(BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기)을 **아이콘만** 보인다. 이름 글자 칸(span)은 DOM에 그대로 있어 접근 가능한 이름이 바뀌지 않고(숨김은 불투명도가 아니라 clip-path: inset(50%) — 글자 대비 잠금 규칙(tests/contrast.test.ts)에 새 opacity를 들이지 않는다), 마우스 올림·키보드 포커스(:focus-visible)에서 버튼 아래 오른쪽 맞춤 말풍선으로 보인다
+   (오른쪽 맞춤 — 맨 오른쪽 버튼의 말풍선이 화면 밖으로 나가 가로 넘침을 만들지 않게). 말풍선은 면 + 글자색 1px 테두리라 강제 색상에서도 보이고, 포커스 링은 .btn 공통 그대로다.
+   WCAG 1.4.13(REV-005-r4-1 R-501): ① **올릴 수 있다** — 말풍선이 버튼의 자손이라 말풍선 위에 포인터를 두어도 버튼의 :hover가 유지되고, 버튼과 말풍선 사이 8px 틈은 ::before 다리가 메워 포인터가 건너는 동안 사라지지 않는다 ② **Esc로 숨긴다** — ui/dismissibleTips.ts가 그룹(.controls__tools)에 data-tip-off를 켜면 말풍선을 다시 가린다(올린/포커스한 버튼이 바뀌면 거둔다)
+   ③ **터치·거친 포인터는 압축하지 않는다** — 이 블록은 (hover: hover) and (pointer: fine), 곧 마우스가 주 입력일 때만 닿는다. 주 입력이 터치(hover: none · pointer: coarse — 가로 태블릿 960~1179)이거나 이 미디어 특성을 모르는 브라우저는 **압축 없이 이름이 보이는 배치로 물러난다** —
+   위 designer 블록 그대로(이름 + 아이콘, 좁은 간격)이고 한 줄이 안 되는 폭(약 1,155px 미만)에서는 flex-wrap으로 도구 묶음이 둘째 줄로 내려간다. 가로 넘침은 0이다(반응형 reflow가 한 줄보다 우선).
    글자 200%(글자만 키움)·폭 < 960px에서는 이 블록이 닿지 않거나(px 질의) 한 줄을 요구하지 않는다 — wrap으로 물러난다(1.4.10 reflow, 넘침 0이 우선). */
-@media (min-width: 960px) and (max-width: 1179px) {
+@media (min-width: 960px) and (max-width: 1179px) and (hover: hover) and (pointer: fine) {
   .controls__tools .btn--tool { position: relative; justify-content: center; width: var(--hit); padding: 0; }
   .controls__tools .btn--tool > span:not(.sr-only) {
     position: absolute; top: calc(100% + var(--sp-2)); right: 0; z-index: var(--z-bar); max-width: none; white-space: nowrap;
     padding: var(--sp-1) var(--sp-2); border: 1px solid var(--c-text); border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-text);
-    font-size: var(--fs-xs); line-height: 1.3; clip-path: inset(50%); pointer-events: none;
+    font-size: var(--fs-xs); line-height: 1.3; clip-path: inset(50%);
   }
+  /* 버튼과 말풍선 사이 틈(8px + 위쪽 테두리 1px)을 메우는 보이지 않는 다리 — 포인터가 버튼에서 말풍선으로 건너가는 동안 :hover가 끊기지 않는다(1.4.13 올릴 수 있음). 말풍선이 가려져 있을 땐 span과 함께 clip-path로 잘려 닿지 않는다 */
+  .controls__tools .btn--tool > span:not(.sr-only)::before { content: ''; position: absolute; left: -1px; right: -1px; bottom: 100%; height: calc(var(--sp-2) + 1px); }
   .controls__tools .btn--tool:hover > span:not(.sr-only), .controls__tools .btn--tool:focus-visible > span:not(.sr-only) { clip-path: none; }
+  /* Esc로 숨김(ui/dismissibleTips.ts) — 위 올림·포커스 규칙보다 구체적이라 이긴다 */
+  .controls__tools[data-tip-off] .btn--tool:hover > span:not(.sr-only), .controls__tools[data-tip-off] .btn--tool:focus-visible > span:not(.sr-only) { clip-path: inset(50%); }
 }
 /* ---------- r4 구현 변경(도구 줄) 끝 ---------- */
 @media (max-width: 959px) {

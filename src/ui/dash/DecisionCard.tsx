@@ -112,7 +112,7 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, o
         </div>
       </div>
       <div className="decision__body">
-        {/* 포커스 이동은 LifeScreen의 useLifeFocus가 한 곳에서 정한다(포커스 표 48칸, R-036). 제목 글자 크기 상한(완료 기준 17②)의 칸 수는 제목의 가장 긴 낱말 + 1 */}
+        {/* 포커스 이동은 LifeScreen의 useLifeFocus가 한 곳에서 정한다(포커스 표 60칸, R-036). 제목 글자 크기 상한(완료 기준 17②)의 칸 수는 제목의 가장 긴 낱말 + 1 */}
         {kind !== null ? (
           <>
             {/* 가린 카드: 제목 자리에 분류 문구(대화상자 이름·포커스 대상 그대로 — 글자만 바뀐다), 안내 한 줄, 버튼 둘. 상황·인용·선택지·영향 줄은 DOM에도 없다(그릴 것이 없다) */}

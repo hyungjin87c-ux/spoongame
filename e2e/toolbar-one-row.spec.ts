@@ -4,6 +4,9 @@ import { noHorizontalOverflow } from './helpers';
 import { openM4Screen } from './m4States';
 import { setRootFontPercent } from './textResize';
 
+/** 뷰포트를 직접 지정하는 시험이 도는 프로젝트: Chromium `mobile-360`, WebKit(playwright.webkit.config.ts) `webkit-mobile-360` — 이전에는 앞의 하나만 받아 WebKit 설정에서는 이 파일의 시험이 모두 건너뛰어졌다(2026-10-27 바로잡음) */
+const runsHere = (projectName: string): boolean => projectName === 'mobile-360' || projectName === 'webkit-mobile-360';
+
 /**
  * 도구 버튼 한 줄 (SPEC-005 r4 UX9·QI9, 완료 기준 1). **형진 님 지시 2026-10-26 「도구줄은 한줄에 나오도록 해줘」 — 마스터 해석: PC 폭(뷰포트 ≥ 960px) 전 구간에서 한 줄, 휴대폰·태블릿(< 960px)은 그대로**
  * (처음 M21은 한 줄을 1180px 이상에서만 보장하고 960~1154px를 두 줄로 두었다 — 이 지시가 그 부분을 바꿨다).
@@ -13,6 +16,7 @@ import { setRootFontPercent } from './textResize';
  *     960에서 한 줄에 들어가므로(측정: 진행 묶음 581 + 도구 묶음 252 + 간격 16 ≤ 안쪽 폭 928) 압축 모드 ②(진행 묶음 글자 줄이기)는 쓰지 않았다.
  *  ③ 접근 가능한 이름은 어느 폭에서도 같다(960 · 1100 · 1280). 글자 200%: 한 줄을 요구하지 않고 wrap으로 물러나며 가로 넘침 0(1.4.10 reflow). 폭 320 · 글자 200%: 가로 넘침 0px·가려진 포커스 0(CM10).
  *  ④ 폭 360·959(< 960px): 진행 줄은 하단 고정 띠, 도구 줄은 본문 위 한 줄 묶음 — 배치가 r4 이전과 같다(r4 CSS는 `@media (min-width: 960px)` 안에만 있다).
+ *  ⑤ WCAG 1.4.13(REV-005-r4-1 R-501): 마우스 PC(960~1179)의 말풍선은 Esc로 숨고(올려 둔 채·포커스를 둔 채) 말풍선 위로 포인터를 옮겨도 사라지지 않으며(올릴 수 있음), 주 입력이 터치인 화면(hover: none · pointer: coarse — `hasTouch` 에뮬레이션 1024 등)은 압축하지 않고 이름이 보이는 배치로 물러난다(wrap 허용, 가로 넘침 0, 한 번 탭으로 동작).
  * 모든 테스트가 뷰포트를 직접 지정하므로 mobile-360 프로젝트에서만 돈다.
  */
 
@@ -70,7 +74,7 @@ async function openToolbar(page: Page, width: number, height = 800): Promise<voi
 
 for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
   test(`${width}px · 글자 100%: 12개 버튼이 한 줄(위쪽 좌표 차 ≤ 2px)이고 이름이 줄바꿈되지 않으며 가로 넘침이 없다 (UX9-1)`, async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
     const rows = await twelve(page);
     expect(rows.map((r) => r.id), '12개: 진행 줄 7 + 도구 줄 5').toHaveLength(12);
@@ -83,7 +87,7 @@ for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
   });
 
   test(`${width}px: BGM을 켜면 볼륨 줄이, 나가기를 누르면 확인 상자가 12개 버튼 줄 아래 별도 줄이고 켜고 끌 때 버튼의 가로 위치 변화가 ≤ 1px이다 (UX9-2)`, async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
     const base = await twelve(page);
     const bottom = Math.max(...base.map((r) => r.bottom));
@@ -133,7 +137,7 @@ const TOOL_NAMES = ['BGM', '생각 남기기', '다크 모드', '의견 보내�
 
 for (const width of [960, 1024, 1100, 1179]) {
   test(`${width}px · 글자 100%: 압축 모드 — 도구 5개는 아이콘만(폭 44px)이고 이름은 DOM에 그대로 있으며 평소에는 눈에 안 보인다. 진행 묶음 글자는 줄이지 않았다 (형진 님 2026-10-26)`, async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
     const rows = await twelve(page);
     expect(rowCount(rows), `${width}px: 한 줄`).toBe(1);
@@ -150,8 +154,8 @@ for (const width of [960, 1024, 1100, 1179]) {
     expect(await noHorizontalOverflow(page), '가로 넘침 0').toBe(true);
   });
 
-  test(`${width}px: 말풍선 — 마우스를 올리면 이름이 보이고 키보드 포커스(Tab)에서도 보이며 포커스 링이 있고 화면 밖으로 나가지 않는다 (색에만 의존하지 않는다)`, async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+  test(`${width}px: 말풍선 — 마우스를 올리면 이름이 보이고 키보드 포커스(Tab)에서도 보이며 포커스 링이 있고 화면 밖으로 나가지 않는다 (색에만 의존하지 않는다)`, async ({ page, browserName }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
     // 올림
     for (let i = 0; i < 5; i++) {
@@ -170,7 +174,9 @@ for (const width of [960, 1024, 1100, 1179]) {
     await page.getByTestId('auto').focus();
     for (let i = 0; i < 5; i++) {
       const id = TOOL_IDS[i];
-      await page.keyboard.press('Tab');
+      // Playwright WebKit은 링크(<a>, 의견 보내기)를 Tab 순서에 넣지 않는다(Safari 기본 설정과 같다) — 그 자리는 포커스를 직접 준다. 앞뒤 버튼은 Tab으로 그대로 확인한다
+      if (browserName === 'webkit' && id === 'tool-feedback') await page.getByTestId(id).focus();
+      else await page.keyboard.press('Tab');
       expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), `${id}: Tab 순서`).toBe(id);
       const focus = await tipState(page, id);
       expect(focus.clip, `${id}: 키보드 포커스에서 보인다`).toBe('none');
@@ -185,9 +191,117 @@ for (const width of [960, 1024, 1100, 1179]) {
   });
 }
 
+// ---------- WCAG 1.4.13 (REV-005-r4-1 R-501) — 압축 모드 말풍선 ----------
+
+for (const width of [960, 1024, 1179]) {
+  test(`${width}px: 말풍선은 Esc로 숨길 수 있다 — 올려 둔 채·포커스를 둔 채로 숨고, 포인터를 치웠다 다시 올리거나 다른 버튼으로 옮기면 다시 보인다 (WCAG 1.4.13 닫을 수 있음)`, async ({ page }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+    await openToolbar(page, width);
+    // 마우스: 올리면 보이고, Esc로 숨으며(포인터는 그대로 버튼 위), 치웠다 다시 올리면 다시 보인다
+    await page.getByTestId('tool-bgm').hover();
+    expect((await tipState(page, 'tool-bgm')).clip, '올리면 보인다').toBe('none');
+    await page.keyboard.press('Escape');
+    expect((await tipState(page, 'tool-bgm')).clip, 'Esc로 숨는다').toBe('inset(50%)');
+    expect(await page.getByTestId('tool-bgm').evaluate((el) => el.matches(':hover')), '포인터는 그대로 버튼 위에 있다(움직이지 않고 닫았다)').toBe(true);
+    await page.mouse.move(1, 1);
+    await page.getByTestId('tool-bgm').hover();
+    expect((await tipState(page, 'tool-bgm')).clip, '치웠다 다시 올리면 다시 보인다').toBe('none');
+    // 다른 버튼으로 옮기면 그 버튼의 말풍선은 보인다
+    await page.keyboard.press('Escape');
+    await page.getByTestId('tool-dark').hover();
+    expect((await tipState(page, 'tool-dark')).clip, '다른 버튼을 올리면 그 말풍선은 보인다').toBe('none');
+    await page.mouse.move(1, 1);
+    // 키보드: Tab 포커스로 보이고, Esc로 숨으며(포커스는 그대로), 다음 버튼으로 Tab하면 그 말풍선은 보인다
+    await page.getByTestId('auto').focus();
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('tool-bgm');
+    expect((await tipState(page, 'tool-bgm')).clip, '포커스에서 보인다').toBe('none');
+    await page.keyboard.press('Escape');
+    expect((await tipState(page, 'tool-bgm')).clip, 'Esc로 숨는다').toBe('inset(50%)');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), '포커스는 그대로 버튼에 있다').toBe('tool-bgm');
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('tool-note');
+    expect((await tipState(page, 'tool-note')).clip, '다음 버튼의 말풍선은 보인다').toBe('none');
+    // 말풍선이 없을 때의 Esc는 아무 일도 하지 않는다(속성을 켜지 않는다 — 다음에 올리면 바로 보인다)
+    await page.mouse.move(1, 1);
+    await page.getByTestId('pause').focus();
+    await page.keyboard.press('Escape');
+    expect(await page.getByTestId('tools').getAttribute('data-tip-off'), '보이는 말풍선이 없었으면 속성이 켜지지 않는다').toBeNull();
+    await page.getByTestId('tool-exit').hover();
+    expect((await tipState(page, 'tool-exit')).clip).toBe('none');
+  });
+
+  test(`${width}px: 말풍선 위로 포인터를 옮겨도 사라지지 않는다 — 버튼에서 말풍선으로 건너가는 동안 끊기지 않고 말풍선을 눌러도 같은 버튼이 동작한다 (WCAG 1.4.13 올릴 수 있음)`, async ({ page }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+    await openToolbar(page, width);
+    const btn = page.getByTestId('tool-dark');
+    await btn.hover();
+    const tip = btn.locator('span:not(.sr-only)').first();
+    const box = (await tip.boundingBox())!;
+    const bb = (await btn.boundingBox())!;
+    expect(box.y, '말풍선은 버튼 아래에 있다').toBeGreaterThanOrEqual(bb.y + bb.height);
+    // 버튼 가운데 → 말풍선 가운데로 한 걸음씩(틈 8px를 지난다)
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 20 });
+    expect((await tipState(page, 'tool-dark')).clip, '말풍선 위에 포인터가 있어도 보인다').toBe('none');
+    expect(await btn.evaluate((el) => el.matches(':hover')), '말풍선 위에서도 버튼의 :hover가 유지된다').toBe(true);
+    // 말풍선을 누르면 같은 버튼이 눌린다(라벨을 누르는 것과 같다)
+    const before = await btn.getAttribute('aria-pressed');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(btn).not.toHaveAttribute('aria-pressed', before ?? '');
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-pressed', before ?? '');
+    // 말풍선이 가려진 동안에는 아래 요소를 가로채지 않는다(clip-path가 맞힘 판정까지 자른다)
+    await page.mouse.move(1, 1);
+    const below = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="tool-dark"]') !== null, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    expect(below, '가려진 말풍선은 맞힘 대상이 아니다').toBe(false);
+  });
+}
+
+test.describe('주 입력이 터치인 화면(hover: none · pointer: coarse — 가로 태블릿)', () => {
+  test.use({ hasTouch: true });
+
+  for (const width of [960, 1024, 1100, 1179]) {
+    test(`${width}px: 압축하지 않는다 — 도구 이름이 늘 보이고(말풍선 없음) 가로 넘침 0이며 한 번 탭으로 동작한다 (WCAG 1.4.13, R-501)`, async ({ page }, testInfo) => {
+      test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+      await openToolbar(page, width);
+      expect(await page.evaluate(() => matchMedia('(hover: none)').matches && matchMedia('(pointer: coarse)').matches), '터치 에뮬레이션이 켜져 있다(hover: none · pointer: coarse)').toBe(true);
+      for (let i = 0; i < 5; i++) {
+        const t = await tipState(page, TOOL_IDS[i]);
+        expect(t.text, `${TOOL_IDS[i]}: 이름 글자`).toBe(TOOL_NAMES[i]);
+        expect(t.clip, `${TOOL_IDS[i]}: 이름이 가려지지 않는다`).toBe('none');
+        expect(t.position, `${TOOL_IDS[i]}: 이름은 버튼 안에 놓인다(말풍선이 아니다)`).not.toBe('absolute');
+        expect(t.buttonWidth, `${TOOL_IDS[i]}: 이름이 들어가 44px보다 넓다`).toBeGreaterThan(60);
+      }
+      const rows = await twelve(page);
+      expect(rows, '버튼 12개').toHaveLength(12);
+      for (const r of rows) {
+        expect(r.left, `${r.id}: 화면 왼쪽 밖으로 나가지 않는다`).toBeGreaterThanOrEqual(-0.5);
+        expect(r.right, `${r.id}: 화면 오른쪽 밖으로 나가지 않는다`).toBeLessThanOrEqual(width + 0.5);
+        expect(r.height, `${r.id}: 버튼 높이 44px 이상`).toBeGreaterThanOrEqual(44 - 0.5);
+        expect(r.nameLines, `${r.id}: 이름이 한 줄에 놓인다`).toBe(1);
+      }
+      expect(await noHorizontalOverflow(page), `${width}px: 가로 넘침 0 (wrap으로 물러난다)`).toBe(true);
+      if (width === 1179) expect(rowCount(rows), '1179px는 designer r4 규격대로 한 줄').toBe(1);
+      // 접근 가능한 이름은 마우스 화면과 같다
+      const names = await page.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLElement>('[data-testid="tools"] .btn')).map((el) => (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().split(' ').filter((x) => x !== '').join(' ')),
+      );
+      expect(names).toEqual(['BGM', '생각 남기기', '다크 모드', '의견 보내기(새 탭으로 열립니다)', '나가기']);
+      // 한 번 탭으로 동작한다
+      const dark = page.getByTestId('tool-dark');
+      const before = await dark.getAttribute('aria-pressed');
+      await dark.tap();
+      await expect(dark).not.toHaveAttribute('aria-pressed', before ?? '');
+      await dark.tap();
+      await expect(dark).toHaveAttribute('aria-pressed', before ?? '');
+    });
+  }
+});
+
 for (const width of [1180, 1280]) {
   test(`${width}px: designer r4 규격 그대로 — 도구 버튼은 이름 + 아이콘이고 이름 글자 칸이 평소에 보인다 (압축 모드는 닿지 않는다)`, async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
     for (let i = 0; i < 5; i++) {
       const t = await tipState(page, TOOL_IDS[i]);
@@ -199,7 +313,7 @@ for (const width of [1180, 1280]) {
 }
 
 test('한 줄이 되는 최소 폭(UX9-5 기록): 960~1300을 20px씩 훑는다 — 모든 폭에서 한 줄(압축 모드가 960까지 내려 보장), 가로 넘침 0, 어느 폭에서도 일부만 접힌 줄이 없다 (형진 님 2026-10-26)', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+  test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
   test.setTimeout(120_000);
   await openToolbar(page, 960);
   let scanned = 0;
@@ -221,7 +335,7 @@ test('한 줄이 되는 최소 폭(UX9-5 기록): 960~1300을 20px씩 훑는다 
 });
 
 test('글자 200% × 폭 1000(압축 모드 구간): 한 줄을 요구하지 않고 wrap으로 물러나며 가로 넘침이 없다 — 12개 버튼 모두 눌릴 자리에 있다 (1.4.10 reflow)', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+  test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
   await openToolbar(page, 1000);
   await setRootFontPercent(page, 200);
   expect(await noHorizontalOverflow(page), '1000px × 200%: 가로 넘침 0').toBe(true);
@@ -234,7 +348,7 @@ test('글자 200% × 폭 1000(압축 모드 구간): 한 줄을 요구하지 않
 });
 
 test('글자 200%: 1280 · 1920에서는 한 줄을 요구하지 않고(컨테이너 질의가 물러난다) 가로 넘침이 없다 — 12개 버튼 모두 눌릴 자리에 있다 (UX9-4, M21)', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+  test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
   for (const width of [1280, 1920]) {
     await openToolbar(page, width);
     await setRootFontPercent(page, 200);
@@ -249,8 +363,10 @@ test('글자 200%: 1280 · 1920에서는 한 줄을 요구하지 않고(컨테�
   }
 });
 
-test('폭 320 · 글자 200%: 가로 넘침 0px, 가려진 포커스 0 (CM10) — 한 줄 CSS가 닿지 않는 좁은 화면 (UX9-4)', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+test('폭 320 · 글자 200%: 가로 넘침 0px, 가려진 포커스 0 (CM10) — 한 줄 CSS가 닿지 않는 좁은 화면 (UX9-4)', async ({ page, browserName }, testInfo) => {
+  test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+  // 포커스 가림 감사(focusObscured.ts)는 Tab·Shift+Tab 순회로 모든 조작 요소를 지나는데, Playwright WebKit은 링크(의견 보내기)를 Tab 순서에 넣지 않고 스크롤 보정도 Chromium과 달라 감사가 맞지 않는다 — 이 파일이 WebKit에서 돌게 된 2026-10-27에 처음 드러난 시험 도구 한계이고 앱 코드(< 960px는 이번 회차에서 안 바뀜)와 무관하다. 후속은 TODO
+  test.skip(browserName === 'webkit', 'WebKit: 링크가 Tab 순서에 없고 감사의 스크롤 가정이 달라 오탐 — Chromium에서만 돈다(후속 TODO)');
   test.setTimeout(180_000);
   await openToolbar(page, 320, 568);
   await setRootFontPercent(page, 200);
@@ -261,7 +377,7 @@ test('폭 320 · 글자 200%: 가로 넘침 0px, 가려진 포커스 0 (CM10) �
 });
 
 test('Tab 순서·접근 가능한 이름은 그대로다: 진행 줄 7개 → 도구 줄 5개 순서이고 이름이 바뀌지 않았다 — 960 · 1100(압축 모드) · 1280에서 모두 같다 (UX9-4)', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+  test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
   const EXPECTED = ['일시정지', '1배', '2배', '4배', '8배', '다음 결정으로', '자동 모드 꺼짐', 'BGM', '생각 남기기', '다크 모드', '의견 보내기(새 탭으로 열립니다)', '나가기'];
   for (const width of [960, 1100, 1280]) {
     await openToolbar(page, width);
@@ -277,7 +393,7 @@ test('Tab 순서·접근 가능한 이름은 그대로다: 진행 줄 7개 → �
 
 for (const width of [360, 959]) {
   test(`${width}px (< 960px): 진행 줄은 하단 고정 띠, 도구 줄은 본문 위 묶음이다 — 배치가 r4 이전과 같다 (UX9-3)`, async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width, 740);
     const m = await page.evaluate(() => {
       const bar = document.querySelector<HTMLElement>('[data-testid="controls"]')!;

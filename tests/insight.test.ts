@@ -41,6 +41,8 @@ interface CopyRow {
   id: string;
   card: string;
   text: string;
+  /** 표의 「자」 열 (공백·쉼표·마침표 포함 글자 수) */
+  chars: number;
 }
 interface CopyOmit {
   id: string;
@@ -56,7 +58,7 @@ function readCopyTable(): { rows: CopyRow[]; omitted: CopyOmit[] } {
   const omitted: CopyOmit[] = [];
   for (const line of copyMd.slice(start, end).split('\n')) {
     const m = /^\| (\d+) \| (c-\d+) \| ([^|]*) \| ([^|]*) \| (\d+) \|/.exec(line);
-    if (m !== null) rows.push({ id: m[2], card: m[3].trim(), text: m[4].trim() });
+    if (m !== null) rows.push({ id: m[2], card: m[3].trim(), text: m[4].trim(), chars: Number(m[5]) });
     const o = /^\| — \| (c-\d+) \| [^|]* \| \*\*생략\*\*/.exec(line);
     if (o !== null) omitted.push({ id: o[1] });
   }
@@ -143,6 +145,10 @@ describe('copy.md 15-5와 풀이 데이터 (글자까지 같다)', () => {
     expect(Object.keys(INSIGHT_BY_ID).sort()).toEqual(COPY.rows.map((r) => r.id).sort());
   });
 
+  it('copy.md 15-5의 「자」 열은 문장의 실제 글자 수(공백·쉼표·마침표 포함)와 같다 — R-499 반영 때 어긋난 7행을 바로잡았다', () => {
+    for (const row of COPY.rows) expect(row.chars, `${row.id} 「자」 열`).toBe([...row.text].length);
+  });
+
   it('생략 목록은 copy.md의 「생략」 행과 1:1이고, 데이터에 키가 없다 (빈 줄 0)', () => {
     expect([...INSIGHT_OMITTED].sort()).toEqual(COPY.omitted.map((o) => o.id).sort());
     for (const id of INSIGHT_OMITTED) {
@@ -156,13 +162,13 @@ describe('copy.md 15-5와 풀이 데이터 (글자까지 같다)', () => {
     for (const id of ['c-095', 'c-999', '', 'constructor', 'toString', '__proto__']) expect(insightFor(id), id).toBeNull();
   });
 
-  it('copy.md 15-6의 요약 수치와 맞는다: 32문장 · 합 1,635자 · 평균 51.1자 · 최장 60자 (시간 모델 입력)', () => {
+  it('copy.md 15-6의 요약 수치와 맞는다: 32문장 · 합 1,637자 · 평균 51.2자 · 최장 60자 (시간 모델 입력 — R-499로 c-080이 53자가 되어 합 1,635 → 1,637)', () => {
     const lens = Object.values(INSIGHT_BY_ID).map((s) => [...s].length);
     expect(lens).toHaveLength(32);
-    expect(lens.reduce((a, b) => a + b, 0)).toBe(1635);
+    expect(lens.reduce((a, b) => a + b, 0)).toBe(1637);
     expect(Math.max(...lens)).toBe(60);
     expect(Math.min(...lens)).toBe(31);
-    expect(lens.reduce((a, b) => a + b, 0) / lens.length).toBeCloseTo(51.1, 1);
+    expect(lens.reduce((a, b) => a + b, 0) / lens.length).toBeCloseTo(51.2, 1);
   });
 });
 

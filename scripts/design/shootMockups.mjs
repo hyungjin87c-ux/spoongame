@@ -93,10 +93,10 @@ const SHOTS = [
   // 인용 박스 표본 넷 + 출처 줄 변환 예(components.html #cite — 지난·다가올 세상 머리말은 시안 주인공(지금 세상)의 카드에 못 두므로 여기서 본다)
   // (320 · 글자 200%는 components.html의 다른 표본(#tools 5열 격자 비교판)이 페이지 넘침 점검에 걸려 두지 않는다 — 머리말 포함 글자의 200% 접힘은 decision-infant·decision-infant-auto 320 · 200% 샷과 감사가 덮는다)
   ['components.html', 'components-cite', { m: [{ el: '#cite' }, { el: '#cite', dark: true }], n: [{ el: '#cite' }] }],
-  // M7c 자유 기록 「생각 남기기」 시트(2026-10-19 designer 선행, copy.md 7절·content-M7c 7-5절 3항): 기본 = 5세 ① 영유아기 기억 + 연구 인용 c-037, 빈 입력란 / typing = 입력 중(34/140) / empty = 빈 입력 안내(aria-invalid, 포커스 입력란)
+  // M7c 자유 기록 「생각 남기기」 시트(2026-10-19 designer 선행, copy.md 7절·content-M7c 7-5절 3항): 기본 = 5세 ① 영유아기 기억 + 연구 인용 c-102(r4 QI13에서 c-037 경제학 논문을 교체), 빈 입력란 / typing = 입력 중(34/140) / empty = 빈 입력 안내(aria-invalid, 포커스 입력란)
   // / confirm = 글이 있는데 2번 → 확인 단계(두 버튼 자리에 「글을 지우고 담아 두기」 → 맨 아래 「돌아가서 이어 쓰기」) / off = 「저절로 뜨는 기록 카드 끄기」를 누른 뒤(「켜기」 + 알림)
   // / compact = 가상 키보드가 올라와 시트 전체가 보이는 높이에 들어가지 않는 상태의 표본(visualViewport 340px = K3 보장 높이 — vv340은 보이는 영역 그대로, mobile은 아래에 키보드 자리; 구현의 판정 조건은 design-system.md 11-10, 2026-10-19 후속)
-  // / manual = 도구 줄 「생각 남기기」로 연 수동 시트(31세, 인용 없음 → 빈 박스 0) / limit = 기록 40개 도달(안내 + 「닫기」) / past = ① 지난 세상 표본(실제 c-037의 past 머리말 「지금의 연구로는」 포함 84자 — 시트만 1966년, 뒤 대시보드는 지금 세상 주인공)
+  // / manual = 도구 줄 「생각 남기기」로 연 수동 시트(31세, 인용 없음 → 빈 박스 0) / limit = 기록 40개 도달(안내 + 「닫기」) / past = ① 지난 세상 표본(실제 c-102의 past 머리말 「지금의 연구로는」 포함 — 시트만 1966년, 뒤 대시보드는 지금 세상 주인공)
   // 2026-10-19 후속(developer UI 단계 뒤): 문구·질문은 구현 상수(noteSheetText.ts·notes.json)에서 읽고 모든 대시보드 샷의 「생각 남기기」가 보통 버튼이라 dashboard-*·decision-*·economy-*·components-* 도 다시 찍는다
   ['note.html', 'note', { m: [{}, { dark: true }, { forced: true }], d: [{}, { dark: true }], n: [{}, { text: 200 }], l: [{}] }],
   ['note.html', 'note-typing', { m: [{ query: 'state=typing' }], n: [{ query: 'state=typing', text: 200 }] }],

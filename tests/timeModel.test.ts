@@ -275,7 +275,7 @@ describe('읽는 시간 r = 글자 읽기 + 고르는 시간 + 인용 읽기 (�
     expect(c.ask).toBe(10);
   });
 
-  it('풀이 줄 글자 수 상수(READ_MODEL.insight.chars)는 확정 32문장의 평균과 ±1% 안이다 (copy.md 15-6: 합 1,635자 · 평균 51.1자)', () => {
+  it('풀이 줄 글자 수 상수(READ_MODEL.insight.chars)는 확정 32문장의 평균과 ±1% 안이다 (copy.md 15-6: 합 1,637자 · 평균 51.2자 — 상수 51.1과 0.2%)', () => {
     const lens = Object.values(INSIGHT_BY_ID).map(len);
     expect(lens).toHaveLength(32);
     expect(Math.abs(READ_MODEL.insight.chars - mean(lens)) / mean(lens)).toBeLessThan(0.01);
