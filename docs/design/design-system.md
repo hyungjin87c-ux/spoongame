@@ -527,3 +527,60 @@ CSS는 `title-005.css` 「QI4 전망 차트」 블록(12-3의 `.chip--proj`·`li
 - 넘침 0: 7 슬라이드 × {1280×800 라이트·다크·강제 색상, 1920×1080, 360×740 터치, 320×640 글자 200%} = **42조합 문서·요소 넘침 0**. 조작 버튼 보이는 상자 28×28(터치에서 누르는 영역 44 — 12-3 그대로). 320 · 200%: 표제어 3~5줄, 칩 84×43 한 줄, 값 줄 글자 줄어듦(`--value-em` 5.6의 「36,222,293」도 끊김 0).
 - 샷 **17장**(r1 14 + r2 3: `qi4-gap-360x740`·`qi4-aging-1280x800-forced`·`qi4-newborn-1280x800-forced`) 모두 ≤ 300 KB, 합계 약 3.26 MB. `qi4-gap-1280x800.png`는 r2부터 오른쪽 열(x 640~1280, 그림 + 카드 + 띠, 스크롤 0)만 — 보조 줄 둘이 더해진 전체 화면이 301 KB였다; 왼쪽 열은 다른 1280 샷과 같다. 1920은 카드만.
 - 시험 사실(r2, R-478): `npm test -- tests/designAssets.test.ts tests/statHeadlines.test.ts` **95/95 통과(2026-10-21 04:24)** — 그러나 이것은 코드가 아직 14장이라서다. 2단계에서 20장을 연결하면 `tests/statHeadlines.test.ts`의 네 단언이 **설계상 실패**한다: `:73` 종결 정규식(#20 「~라면?」), `:92-98` SH3 전체 구절(#16~#20 다섯), `:159` 「형진 님 문장이 `STAT_HEADLINES`에 없다」(#5가 바로 그 문장), `:108-109` 공식 통계명 줄 연도 = `latest.year`(전망 슬라이드는 발표 연도·기준 연도, 폭염은 `latest.year` 2081). 마스터 승인대로 developer가 바꾼다(`diff-005.md` D5-72) — 이 절의 r1 「16/16」 주장은 이 조건을 빠뜨린 것이었다.
+
+## 16. SPEC-005 r4 — 도구 줄 한 줄 · 질문 줄 · 자동 고르기 묶음 · 풀이 줄 (UX9·UX10·UX12·UX14 — 2026-10-26 designer. 마스터 결정 M21~M24. 문구 `copy.md` 15절, 차이 `diff-005.md` 14절 D5-80~D5-91, 시안 `mockups/r4/decision-r4.html`·`toolbar-r4.html`(생성 `scripts/design/buildR4Mockups.mjs`), 샷 `screens/005/r4-*.png` 12장(촬영·측정 `shootR4.mjs`), 구현 측정 `measureToolbarR4.mjs`, 기록 `ai-log/2026-10-26_SPEC-005_design-r4.md`. CSS 원문은 `mockups/ds.css`의 두 블록 「r4 도구 줄 한 줄」·「r4 중대 결정 카드」 — 구현 `dash.css`에 같은 글자로)
+
+### 16-1. 도구 줄 한 줄 (UX9 · QI9 — ≥ 960px)
+
+- **측정(구현 화면, 2026-10-26, `measureToolbarR4.mjs`, Playwright 크로뮴, Windows 맑은 고딕, 글자 100%)**: 12개 버튼(진행 줄 7 + 도구 줄 5)이 한 줄에 서는 데 필요한 폭 = 진행 줄 + 16 + 도구 줄 = **1275px**. 도구 줄의 내용 폭은 **페이지 최대 폭 1200 − 여백 32 = 1168px가 상한**이라, 폭 960·1024·1100·1180·1280·1366·1920 **모두 두 줄**(도구 다섯이 둘째 줄)이었다 — 960의 문제가 아니라 최대 폭의 문제다. 볼륨 줄·확인 상자를 켜고 끌 때 12개의 x 좌표 변화는 이미 0px(둘 다 `flex-basis: 100%`의 아래 줄).
+- **규격(간격만 조인다 — 이름·아이콘만 두기 금지, M21)**: `@media (min-width: 960px)` 안에서 `.controls-fixed { gap: --sp-2 }`(두 묶음 사이 12 → 8) · `.controls-fixed .btn { padding: 0 --sp-2; gap: --sp-1 }`(안 여백 12 → 8, 아이콘–글자 8 → 4) · `.controls__tools .btn--tool { padding: 0 --sp-2; gap: --sp-1 }` · `.controls__tools .btn--tool .icon { 18px }`(22 → 18 — 진행 줄 아이콘과 같은 크기, 한 줄에 아이콘 크기 하나). 묶음 안 버튼 간격 8과 진행 줄 ↔ 도구 줄 사이 16(두 묶음을 가르는 유일한 큰 틈)은 그대로. 높이 44·테두리 2px·글자 14px 그대로. **그 결과 필요 폭 1123px**(진행 줄 581 + 16 + 도구 줄 526).
+- **한 줄 보장 = 컨테이너 질의(em)**: `.toolbar { container-type: inline-size; container-name: toolbar }` + `@container toolbar (min-width: 70.25em) { .toolbar__inner > .controls-fixed, .toolbar__inner > .controls__tools { flex: none } .controls__speed, .controls__more, .controls__tools { flex-wrap: nowrap } }`. 문턱 70.25em = 1123 ÷ 16을 0.25em 단위로 올린 값(1124px). 내용 폭이 문턱 이상이면 두 묶음이 줄지 않고 안쪽이 접히지 않아 「12개 한 줄 또는 도구 다섯이 통째로 둘째 줄」 둘 중 하나만 생긴다. em은 **컨테이너의 글자 크기** 기준이라 글자 200%에서는 문턱이 2248px가 되어 지금의 wrap 규칙으로 물러난다 — 200%에서 넘침 0(CM11)·한 줄 비요구(UX9-4·M21). 컨테이너 질의를 모르는 브라우저도 wrap 규칙 그대로(11-6 폴백 ①). < 960px은 이 블록이 닿지 않는다(UX9-3 — 360×740 실측: 진행 줄 `position: fixed` 112px, 도구 줄 1줄 64px, 변화 없음).
+- **폭별 결과(구현에 r4 규칙을 덧입혀 재측정 · 시안 `toolbar-r4.html` 같은 값)**:
+
+| 뷰포트 | 내용 폭 | 전(줄 수) | 후(줄 수) | 비고 |
+|---:|---:|---:|---:|---|
+| 960 | 928 | 2 | **2** | 필요 1123 > 928. 도구 다섯이 둘째 줄(오른쪽 맞춤) — 안쪽 부분 접힘 없음 |
+| 1024 | 992 | 2 | **2** | 같음 |
+| 1100 | 1068 | 2 | **2** | 같음 |
+| 1180 | 1148 | 2 | **1** | 문턱 1124 ≤ 1148, 필요 1123 ≤ 1148 |
+| 1280 | 1168 | 2 | **1** | |
+| 1366 | 1168 | 2 | **1** | 최대 폭 1200 적용 |
+| 1920 | 1168 | 2 | **1** | 같음 |
+| 1280 · 글자 200% | 1168 | 2 | 2 | 필요 1733, 넘침 0(wrap 규칙) |
+| 1920 · 글자 200% | 1168 | 2 | 2 | 같음 |
+
+- **M21 보고**: 한 줄이 되는 최소 뷰포트는 약 **1155px**(내용 폭 1124 + 여백 32 — 1180부터 확실). **960~1154px는 글자 100%에서도 두 줄**이다. 더 줄이려면 이름을 줄이거나 아이콘만 두어야 하므로(960에서 345px 부족) 하지 않았다. 선택지(마스터): ① 지금 규격대로 — 1280·1366·1920(형진 님 PC 폭, e2e 세 폭)에서 한 줄, 960~1154는 두 줄 보고(권고) ② 도구 줄 글자를 모바일과 같은 12px로 — 약 −40px, 1120대까지 내려가나 960에는 못 미치고 한 줄에 두 글자 크기가 섞인다 ③ 도구 줄만 페이지 최대 폭 밖으로 — 1366에서 한 줄이 되지만 아래 3열과 가장자리가 어긋난다(권하지 않음). 다른 글꼴(Apple SD Gothic Neo·Noto Sans KR)에서 필요 폭이 몇 px 더 넓으면 문턱 언저리(1155~1170)에서만 도구 줄이 둘째 줄로 내려갈 뿐 넘치지 않는다 — 1280 이상은 여유 45px(4%).
+- 샷 `r4-toolbar-widths.png`(폭 7개 쌓기) · `r4-toolbar-rows-1280.png`(기본 / 볼륨 줄 / 확인 상자 — x 변화 0) · `r4-toolbar-1280x800.png` · `r4-toolbar-360x740.png`.
+
+### 16-2. 질문 줄 `.decision__ask` (UX10)
+
+- DOM: `.choices-list[role=group][aria-labelledby=dc-ask]` > `p.decision__ask#dc-ask`(첫 자식) + `button.choice` ×2~3. 가린 카드·부모 카드·기록 카드에는 없다.
+- 규격: `margin: 0 0 --sp-1; font-size: --fs-md; line-height: --lh-snug; font-weight: --fw-bold; color: --c-text`. 묶음 간격 8 + 여백 4 = 선택지와 **12px**(본문 블록 16px보다 가깝다 — 실측 1280 13 · 360 12). 글자 크기 새로 없음(16px), 위계는 제목 22 굵게 → 본문 16 → 질문 16 굵게 → 라벨 16 굵게(상자 안).
+- 다크·강제 색상: 글자뿐 — 토큰·CanvasText. 대비 `--c-text`/면 15.81 / 13.17.
+
+### 16-3. 자동 고르기 묶음 `.decision__autoset` (UX12)
+
+- DOM(카드 맨 끝, 본인이 고르는 카드 · 가린 카드 제외): `div.decision__autoset` > `p.decision__auto`(M-13 상태 문장 그대로, `data-testid=auto-note`) + `button.btn.btn--ghost.btn--sm.decision__autobtn[aria-describedby=dc-autosub]`(시트 「이후 결정을 자동으로 고르게 하기」 / 인라인 「이후 결정을 직접 고르기」) + `p.decision__autosub#dc-autosub`. 전환 때 한 번 읽히는 `role="status"` 문장은 카드 밖(LifeScreen) 한 곳 — 전환 뒤 비운다.
+- 규격: `.decision__autoset { flex column; align-items: flex-start; gap: --sp-2 }` · `.decision__autobtn { white-space: normal; keep-all; overflow-wrap: normal; padding-block: --sp-2; font-weight: --fw-regular; text-align: left }`(이름 안 줄바꿈은 낱말 단위 — 320 · 200%에서 「이후 결정을 / 자동으로 고르게 / 하기」, 확인 단계 버튼과 같은 예외) · `.decision__autosub { --fs-sm; --c-text-2 }`.
+- 위계: 선택지(2px `--c-border-strong` 상자 + 16px 굵은 라벨 + 번호 원) ≫ 이 버튼(투명 면 + 2px 테두리 + 14px 보통 굵기) — 가린 줄의 `.veil__btn`과 같은 급. 포커스 링 3px `--c-focus` 공통(샷 `r4-focus-1280.png`). Tab 순서(시트): 「잠시 덮어 두기」 → 제목(포커스 시작) → 선택지 1~3 → 자동 고르기 버튼(실측).
+- 시트 높이: 360×740 · 글자 100% 전체 1018px(보이는 696 — 안쪽 스크롤로 닿는다, 6-5 「구현 뒤 확인」과 같은 설계), 1280×800 855px(보이는 752). 320 · 200%는 3276px(시트 안 스크롤, 넘침 0).
+
+### 16-4. 풀이 줄 `.cite__insight` (UX14 — M23 본인이 고르는 카드에만)
+
+- DOM(`CitationBox` 안, `.cite__src` 뒤): `div.cite__insight[data-testid=cite-insight]` > `p.cite__insight-label` 「풀이」 + `p.cite__insight-text`(Glue). 풀이가 없으면 요소 자체가 없다.
+- 규격: `.cite__insight { margin-top: --sp-2; flex column; gap: 4px }` · `.cite__insight-label { --fs-xs; --fw-bold; letter-spacing: 0.02em }`(= `.cite__kind`) · `.cite__insight-text { --fs-sm; --lh-snug }`(= `.cite__text`). 색은 박스의 `--c-on-brand-soft` 한 색, 불투명도 없음. 묶음 사이 8px(박스 안 줄 간격 4의 두 배 — 실측 12px는 줄 높이 포함) — 선·색 없이 자리와 라벨로 가른다.
+- 데이터: 인용 id → 한 문장(≤ 60자). 제안 — 별도 파일 `src/data/citationInsights.json`(`{ "c-015": "…" }`) 또는 `citations.json`의 `insight` 필드; `CitationView`에 `insight: string | null`(`citationFor`가 채움), `CitationBox({ view, insight })`는 **호출자가 넘긴 값만** 그린다(부모 카드·기록 카드는 넘기지 않는다). 나이에 따라 결정자가 바뀌는 4장은 `deciderOf(eventId, age)`가 본인일 때만 넘긴다(마스터 ②). 문장 32 + 생략 3은 `copy.md` 15-5.
+- 다크: 토큰(`r4-sheet-360x740-dark.png`). 강제 색상: `.cite`가 이미 Canvas/CanvasText + CanvasText 막대 — 라벨 굵기와 자리가 남는다(`r4-sheet-1280x800-forced.png`).
+
+### 16-5. 대비 쌍 · 다크 · 강제 색상 · 포커스 — 새 토큰 0, 새 쌍 0
+
+- 질문 줄 `--c-text`/`--c-surface` 15.81 / 13.17(`contrast-report.md` 「본문·제목」) · 풀이 라벨·문장 `--c-on-brand-soft`/`--c-brand-soft` 10.45 / 9.87(「선택된 카드·인용 박스 글자」) · 자동 고르기 버튼 글자 `--c-text` ≥ 12.6, 테두리 `--c-border-strong`/면 4.02 / 4.29(조작 요소 3:1 ↑) · 보조 한 줄 `--c-text-2`/면 8.65 / 8.78(「보조 설명」) · 도구 줄 버튼은 간격만 바뀌어 쌍 변화 없음. `checkContrast` 변경 없음.
+- 강제 색상: 새 규칙 없음(`.btn`·`.cite`·`.choice` 공통 규칙이 덮는다). 다크: 토큰만.
+- 키보드: 자동 고르기 버튼·「잠시 덮어 두기」 모두 공통 `:focus-visible` 3px `--c-focus`; 시트 안 Tab 순서는 읽기 순서. 가린 카드의 두 버튼 규칙(HV4 (a))은 그대로다 — 묶음을 그리지 않으므로 버튼 수 둘 유지(M22).
+
+### 16-6. 측정 (2026-10-26, `scripts/design/shootR4.mjs`, Playwright 크로뮴, `file://`, 모바일 DPR 2·데스크톱 1)
+
+- 샷 **12장** 모두 ≤ 300 KB(최대 `r4-veiled-vs-opened-360.png` 171 KB), 합계 약 1.2 MB: `r4-toolbar-1280x800`(90) · `r4-toolbar-widths`(92, 폭 7개 합성) · `r4-toolbar-rows-1280`(52, 기본/볼륨/확인 합성) · `r4-toolbar-360x740`(96) · `r4-sheet-1280x800`(88) · `r4-sheet-1280x800-forced`(72) · `r4-sheet-360x740-dark`(97) · `r4-sheet-360-full`(144, 시트 요소 전체) · `r4-sheet-320-text200-full`(140) · `r4-inline-360-card`(124, 카드 요소 — 하단 띠는 이 샷에서만 숨김) · `r4-veiled-vs-opened-360`(171, 같은 55세 카드의 가린/펼친 꼴 나란히) · `r4-focus-1280`(44).
+- 문서·요소 가로 넘침 0(13 조합 — 폭 7 + 시트 5 + 인라인 1, 글자 100%·200% 포함). 낱말 끊김: 320 · 200%에서 새 글자(질문·풀이·버튼·보조) 0 — 유일하게 걸린 「▼는」은 기존 영향 안내 문장(`IMPACT_HINT.symbols`)의 기호+조사 결합으로 r4 이전부터 같다(기록만, 별도 항목으로 올릴지 마스터).
+- 자리 실측(1280×800 시트): 인용 박스 위 202 · 출처 281 · 풀이 310(출처와 12px) · 질문 380 · 첫 선택지 415(13px) · 자동 버튼 763 · 보조 815. 360 전체: 질문↔첫 선택지 12 · 출처↔풀이 12.
+- design-taste 검사(`inspect.mjs --app` 1280·360, `lint.mjs --app`) 전·후 수치와 예외 표는 `ai-log/2026-10-26_SPEC-005_design-r4.md` 2·4절. 시안 `tests/designAssets.test.ts` 대조는 r4 폴더가 평면 glob 밖이라 기존 단언에 닿지 않는다(developer가 구현 뒤 r4 단언을 더한다, D5-86).
