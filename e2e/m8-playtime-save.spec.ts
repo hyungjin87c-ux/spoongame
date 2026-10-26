@@ -90,7 +90,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
     expect(saved.resumes, '이 탭에서 hold가 처음 쌓일 때 이어하기 한 번').toBe(1);
   });
 
-  // R-047 / QA TB01 (content-M8 13-3 (가)): 열기만 한 탭은 저장소에 쓰지 않아 활성 탭을 밀어내지 못한다. 관찰 창은 7초(첫 해 연출 8.75초·10초 주기 저장 이전)이고 게임 키·설정 키 모두 센다.
+  // R-047 / QA TB01 (content-M8 13-3 (가)): 열기만 한 탭은 저장소에 쓰지 않아 활성 탭을 밀어내지 못한다. 관찰 창은 7초(첫 해 연출 11.81초(계수 1.6875, LM7b)·10초 주기 저장 이전)이고 게임 키·설정 키 모두 센다.
   type Kind = 'pending' | 'running' | 'paused';
   const startOf = async (page: Page, kind: Kind): Promise<GameState> => {
     if (kind === 'pending') return withPlay(await findPendingState(page, 'present'));

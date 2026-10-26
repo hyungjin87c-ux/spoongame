@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { GameState } from '../src/core/types';
+import { holdMsFor } from '../src/core/timing';
 import { activeTestId, evalCore, injectSave, oracleDecision, readSave, withoutPlay, type InjectedSettings } from './helpers';
 import { MANUAL, findDelegatedYear, focusPauseAfterEntry } from './parentStates';
 
@@ -7,12 +8,12 @@ import { MANUAL, findDelegatedYear, focusPauseAfterEntry } from './parentStates'
  * T8 화면 (SPEC-005 PD5·PD7, 설계 문서 3-2·5절): 부모님이 정한·아이의 일로 흘러간 해의 비모달 카드.
  * 카드는 그 해의 결과 연출 대기 동안만 인생 기록 바로 위에 뜨고, 버튼·시트·낭독 영역이 없고 포커스를 가져가지 않는다. 일시정지하면 그 자리에 머물고, 8배속에서는 스치며 기록 줄이 남고,
  * 새로고침(연타 포함)하면 카드는 다시 뜨지 않고 같은 인생·같은 기록 줄 하나만 남는다. 「다음 결정으로」는 부모·흘러감 해를 지나 다음 본인 결정 앞에서 멈춘다.
- * 개발 서버 전용 탐침 `?__timescale=N`으로 연출을 N배 빠르게 한다(카드는 1배속에서 20~38초 — N = 5면 4~8초라 단언할 틈이 있다).
+ * 개발 서버 전용 탐침 `?__timescale=N`으로 연출을 N배 빠르게 한다(카드는 1배속에서 22~44초 — 기본 결과 대기 21.94초(계수 1.6875, SPEC-005 LM7b) 이상 — N = 5면 4.4~8.8초라 단언할 틈이 있다).
  */
 
 const TS = '/?__timescale=5';
 
-// 카드 한 장의 연출 대기는 1배속에서 20~38초(느린 독자 기준 필요량)라 `__timescale=5`여도 4~8초가 걸린다 — 시작·주입·단언을 합치면 기본 30초 제한을 넘는다
+// 카드 한 장의 연출 대기는 1배속에서 22~44초(기본 결과 대기 21.94초와 느린 독자 기준 필요량 중 긴 쪽)라 `__timescale=5`여도 4.4~8.8초가 걸린다 — 시작·주입·단언을 합치면 기본 30초 제한을 넘는다
 test.describe.configure({ timeout: 120_000 });
 
 test.describe('부모님이 정한 해: 비모달 카드 (PD5·PD7)', () => {
@@ -209,9 +210,12 @@ test.describe('다음 결정으로 + 기록 카드 (R-451, PD7-3)', () => {
       await expect(page.getByTestId('note-sheet')).toHaveCount(0);
       await expect(page.getByTestId('parent-card')).toHaveCount(0);
       await expect(card4).toHaveCount(0);
-      // 기본 연출로 5세가 끝난다 (R-459 시간 상한): 틱이 없는 해(새로고침 직후와 같다)는 조용한 해 대기 = HOLD_MS.quiet 7초 × 연출 계수 1.35 = 9.45초(1배속) ÷ 배속 5 = 1.9초 뒤에 넘어간다.
-      // 4세 카드가 떴다면 결과 해 대기(13초 × 1.35 = 17.6초, 카드 필요량 18~44초면 그 이상) ÷ 5 = 3.5초 이상을 기다렸을 것이다 — 그 아래(3초)로 상한을 둬 카드를 기다렸다면 실패하게 한다.
-      await expect.poll(async () => (await readSave(page)).data.age, { timeout: 3_000, intervals: [100, 200, 300, 500] }).toBeGreaterThan(5);
+      // 기본 연출로 5세가 끝난다 (R-459 시간 상한): 틱이 없는 해(새로고침 직후와 같다)는 조용한 해 대기 = HOLD_MS.quiet 7초 × 연출 계수 1.6875 = 11.81초(1배속, LM7b) ÷ 배속 5 = 2.4초 뒤에 넘어간다.
+      // 4세 카드가 떴다면 결과 해 대기(13초 × 1.6875 = 21.94초, 카드 필요량이 더 길면 그 이상) ÷ 5 = 4.4초 이상을 기다렸을 것이다. 두 값의 한가운데(3.4초)로 상한을 둬 — 앞쪽 2.4초에는 1초, 뒤쪽 4.4초에는 1초의 여유 —
+      // 카드를 기다렸다면 실패하고 부하로 조금 늦어도 통과하게 한다. 값은 모드 표(`holdMsFor`)에서 가져온다(계수가 바뀔 때마다 이 줄을 고치지 않는다).
+      const quietWaitMs = (holdMsFor('quiet', { mode: 'short30' }) as number) / 5; // 2362.6
+      const cardWaitMs = (holdMsFor('resolved', { mode: 'short30' }) as number) / 5; // 4387.6
+      await expect.poll(async () => (await readSave(page)).data.age, { timeout: Math.round((quietWaitMs + cardWaitMs) / 2), intervals: [100, 200, 300, 500] }).toBeGreaterThan(5);
       // 6세가 된 뒤에도 건너뛴 4세 해의 카드는 없다. 5세 해는 시드 탐색에서 위임 해가 아닌 판만 골랐으므로 화면 전체에도 부모·흘러감 카드가 없다.
       await expect(card4).toHaveCount(0);
       await expect(page.getByTestId('parent-card')).toHaveCount(0);

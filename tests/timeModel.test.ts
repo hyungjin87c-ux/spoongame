@@ -38,32 +38,55 @@ const len = (s: string): number => [...s].length;
 const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
 
 describe('holdMsFor: 모드 × 종류 × 줄 수 표 (직접 계산 — 완료 기준 2)', () => {
-  it('30분 모드(계수 1.35 — SPEC-005 TM4, 마스터 승인 A13: 1.25에서 올림): 조용한 해 9450 · 서술 해 22950 · 결과 17550 ms, 줄마다 +6750 ms (HOLD_MS는 그대로 두고 계수만 곱한다)', () => {
+  it('30분 모드(계수 1.6875 — SPEC-005 LM7b 형진 님 결정 2026-10-26: 1.35 × 1.25, 1배속을 80% 속도로): 조용한 해 11813 · 서술 해 28688 · 결과 21938 ms, 줄마다 +8438 ms (HOLD_MS는 그대로 두고 계수만 곱한다 — 각 값은 정수 ms로 반올림, 11812.5 → 11813 처럼 .5는 올린다)', () => {
     expect(HOLD_MS).toEqual({ quiet: 7000, narrative: 17000, resolved: 13000 }); // 기본 표는 바꾸지 않았다
-    expect(LIFE_LENGTH_MODES.short30.holdScale).toBe(1.35);
-    expect(holdMsFor('quiet', { mode: 'short30' })).toBe(9450);
-    expect(holdMsFor('narrative', { mode: 'short30' })).toBe(22950);
-    expect(holdMsFor('resolved', { mode: 'short30' })).toBe(17550);
-    expect(extraLineMsFor('short30')).toBe(6750);
-    // 한 해 여러 줄: 서술·결과 해만 둘째 줄부터 더한다. 1세의 세 줄 서술 해 = (17000 + 2 × 5000) × 1.35 = 36450
-    expect(holdMsFor('narrative', { mode: 'short30', lines: 1 })).toBe(22950);
-    expect(holdMsFor('narrative', { mode: 'short30', lines: 2 })).toBe(29700);
-    expect(holdMsFor('narrative', { mode: 'short30', lines: 3 })).toBe(36450);
-    expect(holdMsFor('resolved', { mode: 'short30', lines: 2 })).toBe(24300);
-    expect(holdMsFor('resolved', { mode: 'short30', lines: 3 })).toBe(31050);
+    expect(LIFE_LENGTH_MODES.short30.holdScale).toBe(1.6875);
+    expect(holdMsFor('quiet', { mode: 'short30' })).toBe(11813);
+    expect(holdMsFor('narrative', { mode: 'short30' })).toBe(28688);
+    expect(holdMsFor('resolved', { mode: 'short30' })).toBe(21938);
+    expect(extraLineMsFor('short30')).toBe(8438);
+    // 한 해 여러 줄: 서술·결과 해만 둘째 줄부터 더한다. 1세의 세 줄 서술 해 = 28688 + 2 × 8438 = 45564 (정확한 곱은 (17000 + 2 × 5000) × 1.6875 = 45562.5 — 줄 대기를 따로 반올림해 더한다)
+    expect(holdMsFor('narrative', { mode: 'short30', lines: 1 })).toBe(28688);
+    expect(holdMsFor('narrative', { mode: 'short30', lines: 2 })).toBe(37126);
+    expect(holdMsFor('narrative', { mode: 'short30', lines: 3 })).toBe(45564);
+    expect(holdMsFor('resolved', { mode: 'short30', lines: 2 })).toBe(30376);
+    expect(holdMsFor('resolved', { mode: 'short30', lines: 3 })).toBe(38814);
+  });
+
+  it('LM7b(형진 님 결정 2026-10-26): 새 1배속은 바뀌기 전(계수 1.35: 9450 · 22950 · 17550 · 줄 +6750 ms)의 정확히 ×1.25다 — 반올림 오차 1ms 안이고, 2·4·8배속은 새 1배속의 배수(÷ 배속)라 모든 배속에 같은 비로 적용된다. 개별 숫자를 흩어 쓰지 않는다: 모드 표의 계수 한 곳이 정한다', () => {
+    const before = { quiet: 9450, narrative: 22950, resolved: 17550, extraLine: 6750 }; // 계수 1.35 (SPEC-005 TM4, 마스터 승인 A13)
+    const now = {
+      quiet: holdMsFor('quiet', { mode: 'short30' }) as number,
+      narrative: holdMsFor('narrative', { mode: 'short30' }) as number,
+      resolved: holdMsFor('resolved', { mode: 'short30' }) as number,
+      extraLine: extraLineMsFor('short30'),
+    };
+    for (const k of ['quiet', 'narrative', 'resolved', 'extraLine'] as const) {
+      expect(Math.abs(now[k] - before[k] * 1.25), `${k}: ${now[k]}ms 대 ${before[k]}ms × 1.25`).toBeLessThanOrEqual(1);
+    }
+    expect(LIFE_LENGTH_MODES.short30.holdScale).toBeCloseTo(1.35 * 1.25, 12);
+    // 같은 비: 어떤 배속에서도 (새 대기 ÷ 배속) = 1.25 × (옛 대기 ÷ 배속), 반올림 오차 안
+    for (const speed of [1, 2, 4, 8] as const) {
+      for (const kind of ['quiet', 'narrative', 'resolved'] as const) {
+        const nowDelay = holdDelayMs(kind, speed, 1, { mode: 'short30' }) as number;
+        expect(Math.abs(nowDelay - (before[kind] * 1.25) / speed), `${kind} ${speed}배속`).toBeLessThanOrEqual(1 / speed);
+        expect(nowDelay * speed, `${kind} ${speed}배속은 1배속의 배수`).toBeCloseTo(now[kind], 9);
+      }
+    }
   });
 
   it('부모님이 정한·흘러간 해(SPEC-005 PD5-d): 결과 해의 연출 대기 = max(기본 결과 대기 + 줄 대기, 카드 읽기 필요량) — 필요량이 없으면 사람이 고른 결과 해와 같고, 짧으면 기본이 이기고, 길면 필요량이 이긴다', () => {
-    const base = holdMsFor('resolved', { mode: 'short30' }) as number; // 17550
+    const base = holdMsFor('resolved', { mode: 'short30' }) as number; // 21938 (LM7b: 계수 1.6875 — 바뀌기 전 17550)
     expect(holdMsFor('resolved', { mode: 'short30', readNeedMs: undefined })).toBe(base);
-    expect(holdMsFor('resolved', { mode: 'short30', readNeedMs: 20_500 })).toBe(20_500); // 인용 없는 카드 평균 필요량 20.5초 안팎 > 17.55
+    expect(holdMsFor('resolved', { mode: 'short30', readNeedMs: 25_000 })).toBe(25_000); // 필요량이 기본 대기보다 긴 카드(글이 긴 카드)
     expect(holdMsFor('resolved', { mode: 'short30', readNeedMs: 33_500 })).toBe(33_500); // 인용 있는 카드
+    expect(holdMsFor('resolved', { mode: 'short30', readNeedMs: 20_500 })).toBe(base); // LM7b로 바뀐 점: 인용 없는 카드 평균 필요량 20.5초 안팎은 새 기본 대기 21.94초보다 짧아 기본이 이긴다(바뀌기 전 17.55초에서는 필요량이 이겼다)
     expect(holdMsFor('resolved', { mode: 'short30', readNeedMs: 9_000 })).toBe(base); // 짧은 필요량은 기본 대기를 줄이지 않는다
-    expect(holdMsFor('resolved', { mode: 'short30', lines: 2, readNeedMs: 20_000 })).toBe(24_300); // 줄 대기가 붙은 기본이 더 길다
+    expect(holdMsFor('resolved', { mode: 'short30', lines: 2, readNeedMs: 20_000 })).toBe(30_376); // 줄 대기가 붙은 기본이 더 길다
     expect(holdMsFor('resolved', { mode: 'short30', readNeedMs: Number.NaN })).toBe(base); // 이상한 값은 무시
     // 다른 종류에는 쓰이지 않는다 (서술 해·조용한 해·선택지·사망)
-    expect(holdMsFor('narrative', { mode: 'short30', readNeedMs: 90_000 })).toBe(22950);
-    expect(holdMsFor('quiet', { mode: 'short30', readNeedMs: 90_000 })).toBe(9450);
+    expect(holdMsFor('narrative', { mode: 'short30', readNeedMs: 90_000 })).toBe(28688);
+    expect(holdMsFor('quiet', { mode: 'short30', readNeedMs: 90_000 })).toBe(11813);
     expect(holdMsFor('choice', { mode: 'short30', readNeedMs: 90_000 })).toBeNull();
     expect(holdDelayMs('resolved', 8, 1, { mode: 'short30', readNeedMs: 33_500 })).toBe(33_500 / 8); // 8배속은 대기 ÷ 8
   });
@@ -87,25 +110,25 @@ describe('holdMsFor: 모드 × 종류 × 줄 수 표 (직접 계산 — 완료 �
   });
 
   it('조용한 해는 줄 수를 보지 않고, 선택지·사망에는 대기가 없으며(null), 새로고침 직후(null)·알 수 없는 걸음은 조용한 해 값이다', () => {
-    expect(holdMsFor('quiet', { mode: 'short30', lines: 5 })).toBe(9450);
+    expect(holdMsFor('quiet', { mode: 'short30', lines: 5 })).toBe(11813);
     expect(holdMsFor('choice', { mode: 'short30', lines: 2 })).toBeNull();
     expect(holdMsFor('death', { mode: 'long60' })).toBeNull();
-    expect(holdMsFor(null, { mode: 'short30' })).toBe(9450);
-    expect(holdMsFor('none')).toBe(9450);
+    expect(holdMsFor(null, { mode: 'short30' })).toBe(11813);
+    expect(holdMsFor('none')).toBe(11813);
     // 모드를 모르면(출생 전·변조) 기본 모드
-    expect(holdMsFor('quiet', { mode: null })).toBe(9450);
-    expect(holdMsFor('quiet')).toBe(9450);
+    expect(holdMsFor('quiet', { mode: null })).toBe(11813);
+    expect(holdMsFor('quiet')).toBe(11813);
   });
 
   it('줄 수가 이상해도(0·음수·소수·NaN·Infinity) 기본 대기 아래로 내려가지 않고 터지지 않는다', () => {
-    for (const lines of [0, -3, 0.5, Number.NaN, Number.NEGATIVE_INFINITY]) expect(holdMsFor('narrative', { mode: 'short30', lines }), String(lines)).toBe(22950);
-    expect(holdMsFor('narrative', { mode: 'short30', lines: 2.9 })).toBe(29700); // 소수는 버린다
+    for (const lines of [0, -3, 0.5, Number.NaN, Number.NEGATIVE_INFINITY]) expect(holdMsFor('narrative', { mode: 'short30', lines }), String(lines)).toBe(28688);
+    expect(holdMsFor('narrative', { mode: 'short30', lines: 2.9 })).toBe(37126); // 소수는 버린다
   });
 
   it('holdDelayMs: 배속으로 나누고 개발용 시간 배율로 더 나눈다. 줄 대기도 같이 나뉜다', () => {
-    expect(holdDelayMs('quiet', 1)).toBe(9450);
-    expect(holdDelayMs('quiet', 8)).toBe(1181.25);
-    expect(holdDelayMs('narrative', 2, 1, { mode: 'short30', lines: 3 })).toBe(36450 / 2);
+    expect(holdDelayMs('quiet', 1)).toBe(11813);
+    expect(holdDelayMs('quiet', 8)).toBe(1476.625);
+    expect(holdDelayMs('narrative', 2, 1, { mode: 'short30', lines: 3 })).toBe(45564 / 2);
     expect(holdDelayMs('narrative', 8, 4, { mode: 'long60', lines: 2 })).toBe(44000 / 8 / 4);
     expect(holdDelayMs('choice', 1, 1, { mode: 'short30' })).toBeNull();
     expect(autoChoiceDelayMs(1)).toBe(AUTO_CHOICE_MS); // 자동 선택은 모드 계수의 대상이 아니다
@@ -161,7 +184,7 @@ describe('한 해 여러 줄: tick.lines · counts.extraLines (TODO M8 220행)',
             expect(r.tick.lines, `시드 ${seed}`).toBe(lines);
             if (lines >= 3) {
               found++;
-              expect(holdMsFor('narrative', { mode: 'short30', lines: r.tick.lines })).toBe(36450);
+              expect(holdMsFor('narrative', { mode: 'short30', lines: r.tick.lines })).toBe(45564); // 28688 + 2 × 8438 (LM7b 계수 1.6875)
             }
           }
         }
@@ -271,9 +294,10 @@ describe('estimatePlaySeconds 손계산 시나리오 (30분·1시간 × 배속 1
   const c = counts({ quiet: 40, narrative: 12, resolved: 24, choice: 25, extraLines: 3 });
   const r = readSecFor('present'); // 중앙
 
-  it('30분 모드(계수 1.35): 연출 합 = 40 × 9.45 + 12 × 22.95 + 24 × 17.55 + 3 × 6.75 = 1094.85초', () => {
-    const hold = 40 * 9.45 + 12 * 22.95 + 24 * 17.55 + 3 * 6.75;
-    expect(hold).toBeCloseTo(1094.85, 9);
+  it('30분 모드(계수 1.6875 — LM7b): 연출 합 = 40 × 11.813 + 12 × 28.688 + 24 × 21.938 + 3 × 8.438 = 1368.602초 (각 대기는 정수 ms로 반올림된 값 — 정확한 곱 1.25 × 1094.85 = 1368.5625초와 0.04초 차)', () => {
+    const hold = 40 * 11.813 + 12 * 28.688 + 24 * 21.938 + 3 * 8.438;
+    expect(hold).toBeCloseTo(1368.602, 9);
+    expect(Math.abs(hold - 1094.85 * 1.25)).toBeLessThan(0.1); // 바뀌기 전(계수 1.35) 연출 합 1094.85초의 ×1.25
     expect(holdTotalMs(c, 'short30') / 1000).toBeCloseTo(hold, 9);
     expect(estimatePlaySeconds(c, { speed: 1, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(hold + 25 * r, 9);
     expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(hold / 8 + 25 * r, 9);
@@ -306,13 +330,13 @@ describe('estimatePlaySeconds 손계산 시나리오 (30분·1시간 × 배속 1
 
   it('카드가 없는 판은 연출 합만, 아무것도 없으면 0이다', () => {
     expect(estimatePlaySeconds(counts(), { speed: 1, skipToDecision: false }, 'short30', 'present')).toBe(0);
-    expect(estimatePlaySeconds(counts({ quiet: 10 }), { speed: 1, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(94.5, 9);
+    expect(estimatePlaySeconds(counts({ quiet: 10 }), { speed: 1, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(118.13, 9); // 10 × 11.813 (LM7b — 바뀌기 전 94.5)
   });
 
   it('부모님이 정한·흘러간 해(SPEC-005 TM1): 결과 해와 같은 기본 대기 + 카드 읽기 필요량 연장분만 센다 — 읽고 고르는 시간 r은 본인이 고르는 카드(choice = c_self)에만 붙는다', () => {
     const withParent = counts({ quiet: 40, narrative: 12, resolved: 19, parent: 4, child: 1, choice: 20, extraLines: 3, delegatedExtraMs: 55_000 });
-    // 연출 합 = 40 × 9.45 + 12 × 22.95 + (19 + 4 + 1) × 17.55 + 3 × 6.75 + 연장 55초
-    const hold = 40 * 9.45 + 12 * 22.95 + 24 * 17.55 + 3 * 6.75 + 55;
+    // 연출 합 = 40 × 11.813 + 12 × 28.688 + (19 + 4 + 1) × 21.938 + 3 × 8.438 + 연장 55초 (LM7b 계수 1.6875)
+    const hold = 40 * 11.813 + 12 * 28.688 + 24 * 21.938 + 3 * 8.438 + 55;
     expect(holdTotalMs(withParent, 'short30') / 1000).toBeCloseTo(hold, 9);
     expect(estimatePlaySeconds(withParent, { speed: 1, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(hold + 20 * r, 9);
     // 8배속: 연출(연장분 포함)만 나뉘고 읽는 시간은 그대로
@@ -424,26 +448,31 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
   /** 부모님이 정한 해의 연출 연장분(초) — 카드 읽기 필요량이 기본 대기보다 긴 몫이라 계수 k에 거의 묶이지 않는다(k ≤ 1.57에서 필요량에 묶임, 설계 문서 4-3절): 현재 계수의 측정값을 그대로 쓴다 */
   const extraSec = (c: TickCounts): number => c.delegatedExtraMs / 1000;
   const minutes = (c: TickCounts, k: number, r: number): number => (k * holdSecAtScaleOne(c) + extraSec(c) + c.choice * r) / 60;
-  /** 연출 계수 레버의 범위 (SPEC-005 TM4, 마스터 승인 A13): 1.1 ~ 상한 1.45 — SPEC-003의 1.1~1.3을 넓혔다 */
+  /**
+   * 연출 계수 레버의 범위: 1.1 ~ 상한 1.6875. SPEC-003의 1.1~1.3을 SPEC-005 TM4(마스터 승인 A13)가 1.45까지 넓혔고,
+   * LM7b(형진 님 결정 2026-10-26: 1배속을 80% 속도로 = 1.35 × 1.25)가 형진 님의 명시 결정으로 1.6875까지 넘었다. 상한은 지금 값 그대로다 — 더 올리려면 다시 결정이 필요하다.
+   * 판정 구간(사람 실측 25~35분 · 시대별 25.5~34.5분 · 세 시대 평균 27~33분)은 그대로다 — 레버의 범위만 바뀌었다.
+   */
   const K_LOW = 1.1;
-  const K_HIGH = 1.45;
-  /** 계수 1.1~1.45 한 칸으로 25~35분(사람 실측 허용 구간)에 닿는 읽는 시간 r(초)의 구간 = [(25분 − 1.45배 연출 − 연장) ÷ c_self, (35분 − 1.1배 연출 − 연장) ÷ c_self] */
+  const K_HIGH = 1.6875;
+  /** 계수 1.1~1.6875 한 칸으로 25~35분(사람 실측 허용 구간)에 닿는 읽는 시간 r(초)의 구간 = [(25분 − 1.6875배 연출 − 연장) ÷ c_self, (35분 − 1.1배 연출 − 연장) ÷ c_self] */
   const coveredR = (c: TickCounts): { lo: number; hi: number } => ({
     lo: (MODE.timeMin.humanLow * 60 - K_HIGH * holdSecAtScaleOne(c) - extraSec(c)) / c.choice,
     hi: (MODE.timeMin.humanHigh * 60 - K_LOW * holdSecAtScaleOne(c) - extraSec(c)) / c.choice,
   });
 
-  it('보정 레버의 범위: 연출 계수의 초기값(모드 표)은 1.1~1.45 안이다(SPEC-005 TM4가 상한을 1.3에서 1.45로 넓혔다 — 기준의 교체이지 약화가 아니다: 판정 구간 25~35분·시대별 25.5~34.5분은 그대로) — 모드 표의 값으로 estimatePlaySeconds와 직접 계산이 같다', () => {
+  it('보정 레버의 범위: 연출 계수의 초기값(모드 표)은 1.1~1.6875 안이다(SPEC-005 TM4가 상한을 1.3에서 1.45로, LM7b 형진 님 결정이 1.6875로 넓혔다 — 기준의 교체이지 약화가 아니다: 판정 구간 25~35분·시대별 25.5~34.5분은 그대로) — 모드 표의 값으로 estimatePlaySeconds와 직접 계산이 같다', () => {
     expect(MODE.holdScale).toBeGreaterThanOrEqual(K_LOW);
     expect(MODE.holdScale).toBeLessThanOrEqual(K_HIGH);
     for (const era of ERAS as readonly Era[]) {
       const c = avgCounts(era);
       const viaEstimate = estimatePlaySeconds(c, { speed: 1, skipToDecision: false }, 'short30', era) / 60;
-      expect(minutes(c, MODE.holdScale, readSecFor(era)), era).toBeCloseTo(viaEstimate, 9);
+      // 연출 대기는 해마다 정수 ms로 반올림되어 더해지는데(계수 1.6875에서 .5ms가 올림된다) 아래 직접 계산은 곱 전체를 한 번에 쓴다 — 차이는 해 수 × 0.5ms 이하(약 0.05초)라 0.1초를 한계로 둔다
+      expect(Math.abs(minutes(c, MODE.holdScale, readSecFor(era)) - viaEstimate) * 60, era).toBeLessThan(0.1);
     }
   });
 
-  it('30분 모드 모델 시간(시대별 측정 평균 한 판 · 연출 계수 1.35 · 읽기 중앙)이 사람 실측 허용 구간 25~35분 안에 든다 (content-M8.md 2-6절 계산표를 확정 설정의 측정값으로)', () => {
+  it('30분 모드 모델 시간(시대별 측정 평균 한 판 · 연출 계수 1.6875 · 읽기 중앙)이 사람 실측 허용 구간 25~35분 안에 든다 (content-M8.md 2-6절 계산표를 확정 설정의 측정값으로)', () => {
     for (const era of ERAS as readonly Era[]) {
       const t = estimatePlaySeconds(avgCounts(era), { speed: 1, skipToDecision: false }, 'short30', era) / 60;
       expect(t, `${era}: ${t.toFixed(2)}분`).toBeGreaterThanOrEqual(MODE.timeMin.humanLow);
@@ -451,7 +480,7 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
     }
   });
 
-  it('연출 계수 1.1~1.45가 25~35분으로 덮는 읽는 시간 r의 구간(시대별)이 중앙·높음(느린 독자)·상한 독자를 모두 덮는다 — 보정 첫 레버가 연출 계수인 이유', () => {
+  it('연출 계수 1.1~1.6875가 25~35분으로 덮는 읽는 시간 r의 구간(시대별)이 중앙·높음(느린 독자)·상한 독자를 모두 덮는다 — 보정 첫 레버가 연출 계수인 이유', () => {
     for (const era of ERAS as readonly Era[]) {
       const { lo, hi } = coveredR(avgCounts(era));
       expect(hi - lo, `${era}: 덮는 폭(초)`).toBeGreaterThan(25);
@@ -460,13 +489,13 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
         expect(r, `${era} ${level}: r ${r.toFixed(1)}초가 ${lo.toFixed(1)}~${hi.toFixed(1)}초 안`).toBeGreaterThanOrEqual(lo);
         expect(r, `${era} ${level}: r ${r.toFixed(1)}초가 ${lo.toFixed(1)}~${hi.toFixed(1)}초 안`).toBeLessThanOrEqual(hi);
       }
-      // 구간의 두 끝은 정의 그대로다: 끝에서 계수가 1.45 / 1.1이면 25 / 35분이다
+      // 구간의 두 끝은 정의 그대로다: 끝에서 계수가 1.6875 / 1.1이면 25 / 35분이다
       expect(minutes(avgCounts(era), K_HIGH, lo)).toBeCloseTo(MODE.timeMin.humanLow, 9);
       expect(minutes(avgCounts(era), K_LOW, hi)).toBeCloseTo(MODE.timeMin.humanHigh, 9);
     }
   });
 
-  it('알려진 한계가 사라졌다(보고, content-M8.md 6-3절 6번 (iii)): SPEC-003에서는 읽기 「낮음」(빠른 독자)이 연출 계수 상한 1.3으로도 25분에 닿지 않는 시대가 지난 세상뿐이었다 — 상한을 1.45로 넓힌 지금(SPEC-005 TM4)은 세 시대 모두 닿는다. 이 목록이 다시 비지 않으면(콘텐츠·페이싱·읽기 모델이 달라졌다) dev 로그의 보고 표를 다시 낸다', () => {
+  it('알려진 한계가 사라졌다(보고, content-M8.md 6-3절 6번 (iii)): SPEC-003에서는 읽기 「낮음」(빠른 독자)이 연출 계수 상한 1.3으로도 25분에 닿지 않는 시대가 지난 세상뿐이었다 — 상한을 1.45(SPEC-005 TM4)를 거쳐 1.6875(LM7b)로 넓힌 지금은 세 시대 모두 닿는다. 이 목록이 다시 비지 않으면(콘텐츠·페이싱·읽기 모델이 달라졌다) dev 로그의 보고 표를 다시 낸다', () => {
     const notCovered = (ERAS as readonly Era[]).filter((era) => readSecFor(era, 'low') < coveredR(avgCounts(era)).lo);
     expect(notCovered).toEqual([]);
   });

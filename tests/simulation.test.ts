@@ -204,8 +204,8 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
 
   it('estimatePlaySeconds: 직접 계산한 값과 같다 (건너뛰지 않으면 = 연출 합/배속 + 결정 카드 수 × r, 다음 결정으로 = 결정 카드 수 × r + (결정 카드 수 + 1) × 오버헤드)', () => {
     const c = counts({ quiet: 60, narrative: 10, resolved: 18, choice: 20, extraLines: 5 });
-    // 30분 모드(계수 1.35, SPEC-005 TM4): 조용한 해 9.45초 · 서술 해 22.95초 · 결과 17.55초 · 둘째 줄 +6.75초
-    const hold = (60 * 9450 + 10 * 22950 + 18 * 17550 + 5 * 6750) / 1000;
+    // 30분 모드(계수 1.6875, SPEC-005 LM7b 형진 님 결정 2026-10-26 — 바뀌기 전 1.35): 조용한 해 11.813초 · 서술 해 28.688초 · 결과 21.938초 · 둘째 줄 +8.438초
+    const hold = (60 * 11813 + 10 * 28688 + 18 * 21938 + 5 * 8438) / 1000;
     const r = readSecFor('present');
     expect(estimatePlaySeconds(c, slow, 'short30', 'present')).toBeCloseTo(hold + 20 * r, 9);
     expect(estimatePlaySeconds(c, { speed: 8, skipToDecision: false }, 'short30', 'present')).toBeCloseTo(hold / 8 + 20 * r, 9);
@@ -398,7 +398,9 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
             expect(longLives()[era].map((l) => totalCards(l.counts)), `${era}: 임시 페이싱이 같으면 카드 수가 같다`).toEqual(shortLives.map((l) => totalCards(l.counts)));
             const longMin = longLives()[era].reduce((a, l) => a + l.seconds1x / 60, 0) / REPORT_SEEDS;
             const shortMin = shortLives.reduce((a, l) => a + l.seconds1x / 60, 0) / REPORT_SEEDS;
-            expect(longMin, `${era}: 약 1시간 모드의 모델 시간(분, 보고)`).toBeGreaterThan(shortMin * 1.2);
+            // LM7b(형진 님 결정 2026-10-26): 30분 모드의 연출 계수가 1.35 → 1.6875로 올라 1시간 모드(계수 2.0, 닫혀 있고 2차 착수 때 정한다)와의 연출 비가 1.48배에서 1.19배로 좁아졌다 —
+            // 연출 몫만 늘어나므로 모델 시간의 비는 1.2 아래(약 1.1)가 된다. 「1시간이 30분보다 길다」는 뜻은 그대로 지킨다(5% 이상). 1시간 모드의 계수는 2차 착수 때 다시 정한다.
+            expect(longMin, `${era}: 약 1시간 모드의 모델 시간(분, 보고)`).toBeGreaterThan(shortMin * 1.05);
           }
         });
       });

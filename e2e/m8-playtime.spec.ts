@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameState, PlayTime } from '../src/core/types';
+import { holdMsFor } from '../src/core/timing';
 import { findPendingState, injectSave, oracleAuto, oracleLife, pressBegin, pressBeginToLife, quietStart, readSave, setPageVisible, skipRoulette, titleState, toBirthReport, withPlay, withoutPlay, evalCore } from './helpers';
 
 /**
@@ -8,7 +9,7 @@ import { findPendingState, injectSave, oracleAuto, oracleLife, pressBegin, press
  * 새로고침 뒤 이어서 쌓이는지(이어하기 횟수 포함), 배속·자동 모드·「다음 결정으로」가 깨끗한 판 표시를 바꾸는지, 연출 대기가 판의 인생 길이 모드·한 해 줄 수를 따르는지, 엔딩 블록이 저장된 기록을 그대로 보이는지.
  * 지금 값은 개발 서버 전용 탐침 `window.__playTime()`으로 저장 없이 읽는다(App.tsx) — 예전에는 pagehide 이벤트로 flush한 저장을 읽었는데, 수동적인 시간(idle)만 바뀐 기록은 쓰지 않게 되어(REV-003-M8-1 R-417) 저장으로는 idle을 읽을 수 없다.
  * 저장에 담기는 것(사람이 한 일이 있을 때만 쓰인다)과 탭 가림은 e2e/m8-playtime-save.spec.ts가 본다.
- * 연출 시간 실측(조용한 해 8.75 / 서술 해 21.25 / 결과 16.25 / 세 줄 해 33.75초 — 연출 계수 1.25, R-415)은 배포 번들의 실제 시계를 쓰는 QA(Q1)가 맡고, 여기서는 개발 서버의 ?__timescale로 줄여 하한을 본다.
+ * 연출 시간 실측(조용한 해 11.81 / 서술 해 28.69 / 결과 21.94 / 세 줄 해 45.56초 — 연출 계수 1.6875, SPEC-005 LM7b 형진 님 결정 2026-10-26: 1배속을 80% 속도로)은 배포 번들의 실제 시계를 쓰는 QA(Q1)가 맡고, 여기서는 개발 서버의 ?__timescale로 줄여 하한을 본다. 기대값은 `holdMsFor`(모드 표의 계수 한 곳)에서 가져온다.
  */
 
 const MANUAL = { speed: 1, autoMode: false } as const;
@@ -202,7 +203,7 @@ async function trackAges(page: Page): Promise<void> {
 const agesLog = (page: Page) => page.evaluate(() => (window as unknown as { __ages: { age: number; t: number }[] }).__ages.slice());
 
 test.describe('연출 대기: 판의 인생 길이 모드 계수와 한 해 줄 수 (LM2·LM3)', () => {
-  test('연출 대기는 설정이 아니라 판의 인생 길이를 따른다: 판이 long60이면 설정이 short30이어도 한 해가 더 오래 걸린다 (조용한 해 14.0초 대 8.75초)', async ({ page }) => {
+  test('연출 대기는 설정이 아니라 판의 인생 길이를 따른다: 판이 long60이면 설정이 short30이어도 한 해가 더 오래 걸린다 (조용한 해 14.0초 대 11.81초 — LM7b 이후 비는 1.19)', async ({ page }) => {
     test.setTimeout(120_000);
     await trackAges(page);
     await page.goto('/');
@@ -216,15 +217,19 @@ test.describe('연출 대기: 판의 인생 길이 모드 계수와 한 해 줄 
     const shortGaps = await gaps({ ...base, lifeLength: 'short30' });
     const longGaps = await gaps({ ...base, lifeLength: 'long60' });
     const median = (xs: number[]) => [...xs].sort((x, y) => x - y)[Math.floor(xs.length / 2)];
-    // 타이머는 일찍 울리지 않는다 → 하한은 부하와 무관하게 안전하다: 8750 / 7 = 1250ms, 14000 / 7 = 2000ms
-    expect(Math.min(...shortGaps), `30분 판 간격 ${shortGaps}`).toBeGreaterThanOrEqual(1250 * 0.9);
-    expect(Math.min(...longGaps), `1시간 판 간격 ${longGaps}`).toBeGreaterThanOrEqual(2000 * 0.9);
-    expect(median(longGaps) / median(shortGaps), '계수 비 2.0 / 1.25 = 1.6 — 부하가 있어도 1.3배 이상').toBeGreaterThan(1.3);
+    // 타이머는 일찍 울리지 않는다 → 하한은 부하와 무관하게 안전하다: 모드 표의 값에서 가져온다 — 30분 판 11813 / 7 = 1687.6ms, 1시간 판 14000 / 7 = 2000ms (LM7b: 30분 판의 계수가 1.25 → 1.35 → 1.6875로 올랐다)
+    const shortMs = holdMsFor('quiet', { mode: 'short30' }) as number;
+    const longMs = holdMsFor('quiet', { mode: 'long60' }) as number;
+    expect(Math.min(...shortGaps), `30분 판 간격 ${shortGaps}`).toBeGreaterThanOrEqual((shortMs / 7) * 0.9);
+    expect(Math.min(...longGaps), `1시간 판 간격 ${longGaps}`).toBeGreaterThanOrEqual((longMs / 7) * 0.9);
+    // 계수 비 2.0 / 1.6875 = 1.185 — 이상적인 비의 절반 지점(= 1.09, 이전 시험의 기준 1.3은 이상 1.6의 절반 지점이었다)보다 커야 한다
+    const ideal = longMs / shortMs;
+    expect(median(longGaps) / median(shortGaps), `계수 비 ${(longMs / shortMs).toFixed(3)} — 이상적인 비의 절반 지점 ${(1 + (ideal - 1) / 2).toFixed(3)}보다 크다`).toBeGreaterThan(1 + (ideal - 1) / 2);
     // 판의 인생 길이는 그대로 저장돼 있다 (LM3)
     expect((await readSave(page)).data.lifeLength).toBe('long60');
   });
 
-  test('한 해에 줄이 셋(1세의 걸음마 + 첫 말 + 일반 사건)이면 서술 해 대기가 줄 대기만큼 길다: (17 + 2 × 5) × 1.25 = 33.75초 / 시간 배율', async ({ page }) => {
+  test('한 해에 줄이 셋(1세의 걸음마 + 첫 말 + 일반 사건)이면 서술 해 대기가 줄 대기만큼 길다: 28.69 + 2 × 8.44 = 45.56초 (계수 1.6875, LM7b) / 시간 배율', async ({ page }) => {
     test.setTimeout(120_000);
     await trackAges(page);
     await page.goto('/');
@@ -248,13 +253,15 @@ test.describe('연출 대기: 판의 인생 길이 모드 계수와 한 해 줄 
     );
     expect(found, '세 줄 서술 해가 나오는 1세 시작 상태').not.toBeNull();
     await injectSave(page, withoutPlay(found!), '/?__timescale=20', MANUAL);
-    // 나이 1(복원 직후 조용한 해 대기 8.75초 / 20) → 2(세 줄 서술 해 대기 33.75초 / 20 = 1687.5ms) → 3
+    // 나이 1(복원 직후 조용한 해 대기 11.81초 / 20) → 2(세 줄 서술 해 대기 45.56초 / 20 = 2278ms) → 3
     await expect.poll(async () => (await agesLog(page)).length, { timeout: 40_000 }).toBeGreaterThanOrEqual(3);
     const log = await agesLog(page);
     const restored = log[1].t - log[0].t;
     const threeLines = log[2].t - log[1].t;
-    expect(restored, `복원 직후 조용한 해 간격 ${restored}`).toBeGreaterThanOrEqual((8750 / 20) * 0.9);
-    expect(threeLines, `세 줄 해 간격 ${threeLines}`).toBeGreaterThanOrEqual((33750 / 20) * 0.9); // 1687.5ms: 한 줄 서술 해(21.25초 / 20 = 1062.5ms)보다 확실히 길다
+    const quietMs = holdMsFor('quiet', { mode: 'short30' }) as number; // 11813
+    const threeLineMs = holdMsFor('narrative', { mode: 'short30', lines: 3 }) as number; // 45564
+    expect(restored, `복원 직후 조용한 해 간격 ${restored}`).toBeGreaterThanOrEqual((quietMs / 20) * 0.9);
+    expect(threeLines, `세 줄 해 간격 ${threeLines}`).toBeGreaterThanOrEqual((threeLineMs / 20) * 0.9); // 2278ms: 한 줄 서술 해(28.69초 / 20 = 1434ms)보다 확실히 길다
   });
 });
 

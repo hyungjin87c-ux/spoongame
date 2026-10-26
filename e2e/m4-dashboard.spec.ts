@@ -21,7 +21,7 @@ import { adultState } from './m4States';
 /**
  * 대시보드의 동작 (SPEC-003 DB2·DB3·DB4·DB6·DB7·DB8·DB12·DB14, C3·C6 — M4). 구조·순서·문구는 tests/dashboard.test.tsx(서버 렌더), 고정 요소·글자 확대는 e2e/m4-fixed.spec.ts·m4-focus.spec.ts가 본다.
  * 여기서는 **시간이 흐르는 동작**을 실제 브라우저에서 본다: 올해 진행률 바, 일시정지(저장·새로고침 복원), 배속 변경, 인생 기록의 쌓임·스크롤·「새 기록 N개」, 도구 줄(BGM·다크 모드·의견 보내기·나가기).
- * 개발 서버 탐침 `?__timescale=N`(연출을 N배 빠르게)으로 1배속 한 해(조용한 해 = HOLD_MS.quiet 7000ms × 30분 모드 계수 1.25 = 8750ms, M8·R-415)를 짧게 줄여 쓴다.
+ * 개발 서버 탐침 `?__timescale=N`(연출을 N배 빠르게)으로 1배속 한 해(조용한 해 = HOLD_MS.quiet 7000ms × 30분 모드 계수 1.6875 = 11813ms, M8·R-415 → SPEC-005 LM7b로 계수 1.25 → 1.35 → 1.6875)를 짧게 줄여 쓴다.
  */
 
 const MANUAL = { speed: 1, autoMode: false } as const;

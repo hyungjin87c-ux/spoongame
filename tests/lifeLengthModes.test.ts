@@ -38,9 +38,9 @@ describe('LIFE_LENGTH_MODES 표의 불변식 (완료 기준 1)', () => {
     expect(LIFE_LENGTH_MODES.long60.label).toBe('약 1시간');
   });
 
-  it('연출 계수: 30분 모드 ∈ [1.1, 1.45] (SPEC LM2 「현행의 약 1.1~1.3배」를 SPEC-005 TM4·승인 A13의 상한 1.45로 교체 — 기준 교체: 1.25→1.35, 상한 1.3→1.45), 1시간 모드 ∈ [1.8, 2.6] (「약 2배」, 상한 2.6 = 조용한 해 18초)', () => {
+  it('연출 계수: 30분 모드 ∈ [1.1, 1.6875] (SPEC LM2 「현행의 약 1.1~1.3배」 → SPEC-005 TM4·승인 A13의 상한 1.45 → LM7b 형진 님 결정 2026-10-26의 1.6875(= 1.35 × 1.25, 1배속을 80% 속도로)로 교체 — 상한 1.45는 형진 님의 명시 결정으로 넘었고, 새 상한은 이 값 그대로라 더 올리려면 다시 결정이 필요하다), 1시간 모드 ∈ [1.8, 2.6] (「약 2배」, 상한 2.6 = 조용한 해 18초)', () => {
     expect(LIFE_LENGTH_MODES.short30.holdScale).toBeGreaterThanOrEqual(1.1);
-    expect(LIFE_LENGTH_MODES.short30.holdScale).toBeLessThanOrEqual(1.45);
+    expect(LIFE_LENGTH_MODES.short30.holdScale).toBeLessThanOrEqual(1.6875);
     expect(LIFE_LENGTH_MODES.long60.holdScale).toBeGreaterThanOrEqual(1.8);
     expect(LIFE_LENGTH_MODES.long60.holdScale).toBeLessThanOrEqual(2.6);
   });
