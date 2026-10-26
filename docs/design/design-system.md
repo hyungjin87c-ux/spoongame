@@ -584,3 +584,85 @@ CSS는 `title-005.css` 「QI4 전망 차트」 블록(12-3의 `.chip--proj`·`li
 - 문서·요소 가로 넘침 0(13 조합 — 폭 7 + 시트 5 + 인라인 1, 글자 100%·200% 포함). 낱말 끊김: 320 · 200%에서 새 글자(질문·풀이·버튼·보조) 0 — 유일하게 걸린 「▼는」은 기존 영향 안내 문장(`IMPACT_HINT.symbols`)의 기호+조사 결합으로 r4 이전부터 같다(기록만, 별도 항목으로 올릴지 마스터).
 - 자리 실측(1280×800 시트): 인용 박스 위 202 · 출처 281 · 풀이 310(출처와 12px) · 질문 380 · 첫 선택지 415(13px) · 자동 버튼 763 · 보조 815. 360 전체: 질문↔첫 선택지 12 · 출처↔풀이 12.
 - design-taste 검사(`inspect.mjs --app` 1280·360, `lint.mjs --app`) 전·후 수치와 예외 표는 `ai-log/2026-10-26_SPEC-005_design-r4.md` 2·4절. 시안 `tests/designAssets.test.ts` 대조는 r4 폴더가 평면 glob 밖이라 기존 단언에 닿지 않는다(developer가 구현 뒤 r4 단언을 더한다, D5-86).
+
+## 17. SPEC-004 GM3 — 세대 카드 · 태어나는 시도 · 3릴 룰렛 · 연표 줄 4종 · 당시 화폐 전환 · 엔딩 세대 표기 (2026-10-27 designer, **게이트 ③ 형진 님 확인 전**. 근거 SPEC-004 r3 GS·RG1~RG4·TL8·PJ7·EY10~EY12 · GM1 설계 문서(`generations.md`·`timeline-schema.md`·`economy-model.md` 16-8) · 마스터 결정 N20~N24. 문구 `copy.md` 16절, 차이 `diff-004.md`, 시안 `mockups/gm3/`(생성 `scripts/design/buildGm3Mockups.mjs`), 샷 `screens/004/gm3-*` 16장(촬영·측정 `shootGm3.mjs`), 기록 `ai-log/2026-10-27_SPEC-004_design-GM3.md`. CSS 원문은 `mockups/gm3/gm3.css` — 확인 뒤 developer가 블록별로 `title.css`·`doc.css`·`dash.css`로 옮긴다)
+
+`src/`는 읽기만 했다. **새 토큰 0 · 새 색 쌍 0**(모두 기존 토큰의 새 조합, 17-7) · 새 글자 크기 0 · 새 아이콘 **3**(연표 줄 — 17-4). design-taste(app-screens) 관점에서 정한 것: 색은 데이터에만 — 쪽빛은 「그해」 줄·릴 창·선택 상태, 놋쇠는 「전망」(캐러셀의 전망 칩·긴 점선·빗금과 한 뜻, R-477), 배경·지역 소식은 잉크 보조색; 틀(카드·릴·확률표)은 잉크와 테두리뿐이고 아이콘은 색 상자 안에 두지 않는다.
+
+### 17-1. 세대 카드 7장 + 「랜덤 세대」 (GS1·GS2·GS4·GS10 — `title-005.css`의 compact 카드 위에 `.radio-card--gen`)
+- 격자는 SPEC-005 그대로(`.choices--grid` auto-fit 15rem — 1280 2열 · 360 1열). 카드 안은 **세 줄**: ① `.radio-card__titleline` = 이름(`--fs-md` 굵게) + (살아본 세대면) 알약 「살아봄」 ② `.radio-card__meta` = 짧은 쌍 `.pair--gen` 「1970~1980년생 · 올해 46~56세」(`--fs-xs`, tabular) ③ `.radio-card__desc` 소개(`--fs-xs`, 1.4). 머리를 세로로 쌓은 이유: 이름 길이(「산업화 세대 · 전후 세대」 12자 ~ 「X세대」 3자)에 따라 메타가 옆/아래로 갈리면 7장의 높이가 들쭉날쭉해진다 — 실측 1280 **95px 여섯 장 같음**(알파는 보조 줄 한 줄 더 131px), 360 78/95px(소개 한 줄/두 줄).
+- 카드는 컨테이너(`container-name: gen`): 내용 상자 폭이 **14em 이하**(320 · 글자 200% = 262px = 8.2em)면 쌍이 두 줄, 1280(280px = 17.5em)·360(302px)은 한 줄. 문턱이 18em이면 1280 2열에서도 갈라진다(첫 측정에서 잡음).
+- 알파 카드 보조 줄 `.radio-card__note`(`--fs-xs`, `--c-text-3`; 선택되면 `--c-on-brand-soft`).
+- 「살아봄」 `.radio-card__lived`: 1px `--c-border-strong` 알약, `--fs-xs` 굵게, 체크 아이콘 12px(stroke 3) + 글자 — 색이 아니라 글자·아이콘. 선택된 카드 위에서는 테두리·글자 `--c-on-brand-soft`.
+- 「랜덤 세대」(버튼, 점선 틀 + 네모 점선 표식 안 `i-shuffle` — SPEC-005 그대로)가 **마지막 선택이었으면**(GS4) `.is-selected` + `aria-pressed="true"`: 실선 3px `--c-brand` + `--c-brand-soft` 면 + 표식 반전(쪽빛 면·흰 아이콘) — 선택된 카드와 같은 문법, 라디오와 버튼이 같은 묶음 안에서 하나만 「선택됨」으로 보인다.
+- 접이식 `.slot__fold`(`details.disclosure`): summary `--fs-sm` `--c-text-2` 32px(거친 포인터 44), 본문 `--fs-sm`.
+- **1280×800의 세로**: 왼쪽 열 끝 **1136**(띠 위끝 732) — 7장 + 랜덤 + 접이식 + 시도 슬롯이라 **404px 스크롤**(SPEC-005 8장 합성에서 154px). 오른쪽 열은 스크롤 0에서 HS3 ④ 그대로(카드 위 412 · 표제어 아래 488 · 값 아래 558 < 732). 더 줄이는 길은 17-9 「마스터가 정할 것」.
+
+### 17-2. 태어나는 시도 — 분절 + 시·도 칩 묶음 · 내 출신 시도 설정 (RG1·RG2·RG3)
+- 분절 `.seg`(인생 길이와 같은 부품) 「룰렛에 맡기기 / 직접 고르기」 + 한 줄 안내 `.seg__hint`. **분절 공통 보정 두 줄**: `.seg { flex-wrap: wrap }` · `.seg__opt { white-space: nowrap }` — 320 · 글자 200%에서 칸 글자가 낱말 안에서 끊기던 것(「약 30분」「준비 중」「고르기」)이 칸 단위 줄바꿈으로 바뀐다(인생 길이 분절에도 적용 — D4-07).
+- 직접 고르기를 고르면 `.chipset`(`role=radiogroup`, `hidden` 토글): 칩 `.chip-opt` = 1px `--c-border-strong` 알약, 보이는 높이 32px(`--fs-sm` 굵게, `--c-text-2`), 안의 라디오가 거친 포인터에서 위아래 −6px → **44px**(실측 40~42 — 라디오 input의 높이, 칩 자체는 32). 선택 = 2px `--c-brand` + `--c-brand-soft` 면 + 체크 14px + `--c-on-brand-soft` 글자. 고를 수 없는 시·도 = 점선 + `--c-text-3` + `aria-disabled` + 아래 이유 한 줄 `.chipset__note`(`--fs-xs` `--c-text-3`). 포커스 링 `.chip-opt:focus-within`.
+- 바로가기 칩 `.chip-opt--origin`(설정이 있을 때만, 맨 앞 — `hidden` 토글): 같은 칩, 글자 「내 출신 시도 · 부산」. 누르면 그 시·도 칩이 선택된 것과 같다(값이 같다).
+- 내 출신 시도 설정 `.origin`(`details.disclosure`, 설정 줄 「무거운 장면 가리기」 아래): summary = 「내가 실제로 태어난 시도」(`--fs-sm` 굵게) + `.tag` 현재 값 → `.origin__body` = `select.origin__select`(40px, 1px `--c-border-strong`, `--r-sm`) + `btn--ghost btn--sm` 「지우기」(40px) + `.origin__desc` 개인정보 한 줄(`--fs-xs` `--c-text-3`).
+- 360(`gm3-title-region-360.png`): 칩 17개(바로가기 포함)가 5줄, 넘침 0.
+
+### 17-3. 룰렛 — 세대 뽑기 단계 · 3릴(연도 → 지역 → 수저) (GS3·GS6·GS7·RG2 d — `ds.css` 룰렛 블록 위에)
+- 세대 줄 `.roulette__gen`(제목 아래, 가운데): 알약 `.gen-tag`(1px `--c-border-strong`, `--fs-sm` 굵게, 잉크) + 「1970~1980년생 가운데」(`--fs-sm` `--c-text-2`).
+- **3열** `.reels--3 { repeat(auto-fit, minmax(min(100%, 6.25rem), 1fr)); gap 8px(≥ 480px 12px) }` — 360(내용 328)에서 **104px × 3 나란히**(가로 넘침 0, 실측), 1280 235px × 3, 320 · 200%와 1280 · 200%에서는 열 최소 폭이 rem이라 한 열씩 쌓인다(CM11, 넘침 0). 릴 높이·창·흐림·줄무늬는 기존 `.reel` 그대로(`--reel-item-h` 3.5rem).
+- 열은 컨테이너(`.reel-col`): **7.5rem 이하**(360 3열)에서 칸 글자 `--fs-md`·안쪽 여백 4px, 수저 칩은 아이콘 위·이름 아래(세로, `--fs-xs` — 「다이아몬드/수저」는 `<wbr>` 자리에서만), 열 제목 `--fs-sm`, 확률표 이름 칸은 낱말 단위로 접힘(`th { white-space: normal }` — 「다이아몬드수저 2%」가 104px에서 3px 넘치던 것).
+- 연도 릴 칸 `.reel__item--year`(tabular). 세대 뽑기 릴 `.reel--gen`(최대 20rem 가운데) 칸 `.reel__item--gen` = 이름 + 작은 범위(`--fs-xs` `--c-text-3`, 창 안은 `--c-text-2`).
+- 직접 고른 시도: 지역 릴 `.reel.is-picked`(`data-state="still"` — 회전·흐림·줄무늬 없음, 창에 고른 칸) + 확률표 자리 `.odds__picked` 「직접 고른 시도」(`--fs-sm` 굵게 가운데).
+- 확률표는 3열 모두 **한 줄에 하나**(`.reels--3 .odds--cols tbody { 1fr }`, `.odds--year` block) — `ds.css`의 ≥ 640px 두 칸 규칙은 2열 룰렛의 것(3열에서는 1280 · 200%에서 넘쳤다).
+- 결과 상태 줄 `.roulette__result`: FitPair 「1972년 · 부산」(`--fs-lg` 굵게) → `.grade-line`(칩 `--fs-md` + 구간 `--fs-sm`), 세로 가운데. 제목은 QM3-2 상한 그대로(`--title-chars` 5/4/7).
+
+### 17-4. 연표 줄 4종 · 전망 안내 · 머리 「전망」 · 엔딩 전망 경계 (TL8·PJ7 — `ds.css` 인생 기록 블록 위에)
+
+| 종류 | 왼쪽 3px 선 | 라벨(`.log__tl`, `--fs-xs` 굵게 + 아이콘 14px) | 문장(`.log__sent` / 엔딩 `.tl-text`) | 아이콘 |
+|---|---|---|---|---|
+| 그해 `data-tl="year"` | 실선 `--c-brand` | `--c-brand` | 본문(`--fs-md`, `--c-text`; 최신 줄 굵게) | `#i-year` |
+| 배경 `bg` | **점선(dotted)** `--c-text-3` | `--c-text-2` | `--fs-sm` `--c-text-2` | `#i-paper` |
+| 지역 소식 `local` | 실선 `--c-text-3` | `--c-text-2` | `--fs-sm` `--c-text-2` | `#i-talk` |
+| 전망 `proj` | **긴 점선(dashed)** `--c-accent` | `--c-accent` | 본문 | `#i-proj`(기존) |
+
+- 줄 = `.log__row.log__row--tl[data-tl]` > `.log__age`(「25세」 + `small.log__year` 「1997」 `--fs-xs` `--c-text-3` tabular) + `.log__text`(세로: 라벨 줄 → 문장). 왼쪽 선 때문에 `padding-left: 4 + 5px`. 일반 줄·단계 줄·「나의 기록」 줄은 그대로(일반 줄에는 연도가 없다 — TL8).
+- 세 겹 구분(색 + 모양 + 글자): 선의 **모양**(실선/점선/긴 점선)과 **색**(쪽빛/보조/놋쇠), 라벨 **글자**, 아이콘. 강제 색상에서는 선이 모두 CanvasText가 되어도 모양 셋 + 글자가 남는다(`gm3-log-rows-360-forced.png`).
+- 전망 안내 한 번 `.log__row--proj-intro`: 「나의 기록」 줄의 틀(놋쇠 옅은 면 `--c-accent-soft`, `--c-on-accent-soft` 글자, `--r-md`, 안쪽 12px)에 왼쪽 막대만 **5px 긴 점선** `--c-accent`. 첫 줄 = 칩 「전망」 + `.log__scn` 「기준 시나리오」(보통 굵기), 둘째 줄 문장.
+- 머리: `.year-row__year`(연도 + 칩, inline-flex, nowrap, `flex: none`) — `.year-row`가 `auto minmax(0,1fr) auto` 격자라 칩을 연도 칸 **안에** 둔다(밖에 두면 둘째 칸이 되어 진행률 바 자리를 차지한다 — 첫 측정에서 잡음). 칩 `.chip`은 `title-005.css`의 `.chip--proj`와 같은 글자(놋쇠 1px·옅은 면·`--fs-xs` 굵게·아이콘 14px) — 대시보드·엔딩 페이지는 그 파일을 읽지 않아 `gm3.css`에 다시 적었다(구현은 공용 블록 하나로, D4-19).
+- 엔딩 연표 `.timeline li.is-tl[data-tl]` 같은 규칙 + 전망 경계 `li.timeline__split`(칩 + 「2026년부터는 공식 전망 · 기준 시나리오」, 위아래 1px 긴 점선 `--c-accent`, `--fs-sm` `--c-text-2`).
+- 새 심볼 셋(`src/assets/icons/ui-icons.svg`에 더한다 — `buildIcons.mjs`, 다른 선 아이콘과 같은 규칙 fill·색 속성 없음): `i-year` = 달력 잎(rect 4,6 16×14 r2 + 윗줄·두 고리 + 가운데 점 r1.7 채움) · `i-paper` = 신문(rect 5,4.5 14×15 + 줄 셋) · `i-talk` = 말풍선 둘(왼쪽 큰 것 + 오른쪽 작은 것). 원문은 `buildGm3Mockups.mjs#GM3_SPRITE`.
+
+### 17-5. 자산 카드 · 엔딩 최종 순자산 — 당시 화폐 ↔ 지금 가치 (EY10·EY11·EY12)
+- 카드 머리 오른쪽 `.tag#assets-basis`(기존 태그 자리) 글자 = 「당시 화폐」 / 「2026년 가치」; `dl.assets[aria-describedby=assets-basis]`(기존 규칙).
+- 금액 아래 `.assets__view`(flex wrap, 위 12px): `btn--ghost btn--sm`(32px, 보통 굵기, 거친 포인터 44px, `aria-describedby=assets-basis` + sr-only 꼬리) + `.assets__basis` 기준 설명(`--fs-xs` `--c-text-3`, 한 줄 전체). 2026년 이후는 `.assets__view` 없음, 물가 자료 없는 해는 설명 한 줄만.
+- 색은 없다 — 태그 글자·버튼 글자·설명 글자가 기준을 말한다(app-screens: 상태는 글자로, 색은 데이터로). 네 기준의 모양은 `gm3-assets-money.png`.
+- 엔딩 `dl.final-net > dd` 안: 금액 → `.final-net__view`(태그 + 같은 버튼, 오른쪽 맞춤) → `.final-net__basis`(`--fs-xs` `--c-text-3`). 컨테이너 `facts`의 글자 크기 단계(lg → md → sm)는 그대로.
+
+### 17-6. 엔딩 머리 · 비교 카드 (GS9·GD2·PJ4·RG4 최소형)
+- `.ending__who` 안 날짜 줄 아래 `.ending__meta`(세로, `--fs-sm` `--c-text-2`): 「X세대 · 1972년생」(굵게 `--c-text`) → 「부산직할시 동래구에서 태어남」 → (전망 구간을 산 판) 칩 「전망」 + 시나리오 문장.
+- 비교 카드 `section.card.same-event`(내 출신 시도 설정이 있을 때만, 최종 스탯 아래 — 이름 `.compare`는 시안 갤러리 비교 틀이 이미 쓴다): 제목 → `ul.same-event__list`(한 줄 = `.log__age`(나이 + 연도) + 사건 이름 + `.same-event__facts` 세 사실(라벨 `--fs-xs` `--c-text-2`, 값 굵게)) → 마무리 한 줄 → 작은 글. 이미지화·지도는 SPEC-007(N19).
+
+### 17-7. 대비 쌍 (WCAG 상대 휘도 계산 2026-10-27 — 라이트 / 다크, 모두 기존 토큰의 조합)
+| 쌍 | 라이트 | 다크 | 기준 |
+|---|---|---|---|
+| 「그해」 라벨·선 `--c-brand` / 면 `--c-surface` | **12.62** | **9.05** | 글자 ≥ 4.5 · 선 ≥ 3 |
+| 「전망」 라벨·선 `--c-accent` / 면 | **4.97** | **8.48** | 12px 굵은 글자 ≥ 4.5 |
+| 배경·지역 소식 라벨·문장 `--c-text-2` / 면 | 8.65 | 8.78 | ≥ 4.5 |
+| 연도 작은 글자·배경 점선·지역 실선 `--c-text-3` / 면 | 5.78 | 5.96 | ≥ 4.5 · 선 ≥ 3 |
+| 전망 안내 글자 `--c-on-accent-soft` / 면 `--c-accent-soft` | 7.17 | 9.45 | ≥ 4.5 |
+| 전망 안내 막대·칩 테두리 `--c-accent` / `--c-accent-soft` | 4.18 | 6.77 | ≥ 3 |
+| 전망 안내의 연도 `--c-on-accent-soft`(연도도 이 색) / `--c-accent-soft` | 7.17 | 9.45 | ≥ 4.5 |
+| 칩·분절 선택 글자 `--c-on-brand-soft` / `--c-brand-soft` | 10.45 | 9.87 | ≥ 4.5 |
+| 칩·알약·선택 상자 테두리 `--c-border-strong` / 면 · / 바탕 | 4.02 · 3.68 | 4.29 · 4.77 | 조작 요소 경계 ≥ 3 |
+| 세대 알약 글자 `--c-text` / 면, 「살아봄」 `--c-text-2` / 면 | 기존 쌍 | | |
+
+`checkContrast`(`scripts/checkContrast.ts`)에 더할 새 쌍은 **없다** — 모두 `contrast-report.md`에 이미 있는 쌍의 다른 자리(놋쇠/면 · 놋쇠/띠 면 · `--c-text-3`/면 · `--c-on-accent-soft`/띠 면 · `--c-on-brand-soft`/옅은 면 · 쪽빛/면).
+
+### 17-8. 다크 · 강제 색상
+- 다크: 토큰만(`gm3-title-1280x800-dark.png`·`gm3-roulette-draw-360x740-dark.png`). 놋쇠 긴 점선·쪽빛 실선은 다크 토큰에서 더 밝아 선 대비가 오른다(17-7).
+- 강제 색상(`gm3-title-1280x800-forced.png`·`gm3-log-rows-360-forced.png`): 칩·알약·선택 상자 테두리 CanvasText, 선택 칩 `Highlight`/`HighlightText`(`forced-color-adjust: none`), 고를 수 없는 칩 GrayText, 연표 줄 선은 모두 CanvasText이되 **모양**(실선·점선·긴 점선)과 라벨 글자가 남는다, 전망 안내 면은 Canvas로 사라지고 긴 점선 막대 + 칩 + 글자가 남는다, 「랜덤 세대」 선택 표식은 Highlight 면.
+
+### 17-9. 측정 (2026-10-27, `scripts/design/shootGm3.mjs`, Playwright 크로뮴 1.64, `file://`, 모바일 DPR 2·데스크톱 1, 360은 CDP `pointer: coarse`)
+- 첫 화면 1280×800: 카드 2열 95px × 6 + 알파 131 · 왼쪽 열 끝 **1136**(띠 732 — 스크롤 404) · 오른쪽 열 카드 위 412 · 표제어 아래 488 · 값 아래 558 < 732(HS3 ④ 그대로). 1920×1080: 카드 위 488 · 표제어 564 · 값 634 < 1012, 왼쪽 열 끝 1136(스크롤 124). 360×740: 카드 1열 78/95px, 칩 17개 누르는 영역 40~42px. 320 · 200%: 끊긴 낱말 **0**(분절 보정 뒤 — 보정 전 「30분」「1시간」「준비」「고르기」 넷), 카드 242~379px, 쌍 두 줄.
+- 룰렛: 1280 3열 235px · 360 **3열 104px 나란히**(넘침 0 — 확률표 `th` 접힘 뒤; 전 3px) · 320 · 200% 한 열씩(넘침 0) · 1280 · 200% 3열(넘침 0 — 지역 확률표 한 줄 규칙 뒤; 전 11px).
+- 대시보드·엔딩 360 / 320 · 200%: 새 글자 끊김 0. 남은 끊김 하나는 기존 또래 카드 주석 「설계값입니다(통계가」(괄호 앞 — 기존 시안의 글자, 구현은 `Glue`가 묶는다) — 관찰로 기록.
+- 샷 16장 ≤ 300 KB(1280 PNG 최대 294 KB — 일러스트; 1920·320 · 200% 전체·엔딩 전체 셋은 JPEG 84/76).
+- design-taste `inspect.mjs --app` 전·후와 `lint.mjs --app`: `ai-log/2026-10-27_SPEC-004_design-GM3.md` 2·4절.

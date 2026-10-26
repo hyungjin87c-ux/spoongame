@@ -1,0 +1,182 @@
+/*
+ * SPEC-004 GM3 시안 전용 스타일 (designer 2026-10-27). ds.css(+ 첫 화면은 title-005.css) 위에 얹는다 — 형진 님 확인(게이트 ③) 전이라 공용 파일을 건드리지 않았다.
+ * 확인 뒤 developer가 옮긴다(diff-004.md): 세대 카드·시도 선택·내 출신 시도 → title.css, 3릴·세대 뽑기 → doc.css, 연표 줄·전망 안내·자산 카드 전환·엔딩 → dash.css.
+ * 규칙: 색·간격·글자는 토큰만(새 토큰 0). 상태는 색에만 의존하지 않는다(테두리 굵기·점선·체크·글자 라벨·아이콘). 포인터 대상 ≥ 24×24, 거친 포인터 ≥ 44.
+ * 스킬(design-taste app-screens) 관점: 색은 데이터에만 — 쪽빛은 「그해」 줄·릴 창·선택 상태, 놋쇠는 「전망」(캐러셀의 전망 칩·긴 점선과 같은 뜻), 배경·지역 소식은 잉크 보조색. 그 밖의 틀은 잉크·테두리뿐.
+ */
+
+[hidden] { display: none !important; }
+
+/* ---------- 첫 화면: 세대 카드 7장 + 「랜덤 세대」 (GS1·GS2·GS4·GS10) ----------
+   compact 카드(title-005.css) 위에 세 줄 구성: ① 이름(+ 「살아봄」 표시) ② 「1970~1980년생 · 올해 46~56세」 ③ 소개 한 줄(사건 셋 병렬). 머리를 세로로 쌓아 7장의 높이가 같다(이름 길이에 따라 들쭉날쭉하지 않게).
+   「올해 N~M세」는 2026 − 출생 연도 범위의 산술값 — 세대를 지금 나이로 바로 옮겨 주는 한 줄(G5: 우열 없이 「지금 그 세대는 몇 살인가」만). 카드는 컨테이너 — 좁거나 글자가 크면(320 · 200%) 쌍이 두 줄로 */
+.radio-card--gen { container-type: inline-size; container-name: gen; }
+.radio-card--gen .radio-card__body { gap: 2px; }
+.radio-card--gen .radio-card__head { flex-direction: column; align-items: flex-start; gap: 0; }
+.radio-card__titleline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }
+.radio-card--gen .radio-card__meta { font-variant-numeric: tabular-nums; }
+.pair--gen .pair__item { display: inline; }
+/* 컨테이너 폭은 카드의 **내용 상자**(1280 2열 = 280px = 17.5em, 360 1열 = 302px, 320·200% = 262px = 8.2em). 쌍 한 줄 ≈ 13em이라 문턱 14em — 320·200%에서만 두 줄 */
+@container gen (max-width: 14em) {
+  .pair--gen .pair__item { display: block; }
+  .pair--gen .pair__sep { display: none; }
+}
+.radio-card__note { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+.radio-card.is-selected .radio-card__note { color: var(--c-on-brand-soft); }
+/* 살아본 세대 표시(GS10 ▲, N15): 체크 아이콘 + 글자 「살아봄」 알약 — 순위·점수 없음, 이 기기에만 */
+.radio-card__lived { display: inline-flex; align-items: center; gap: 3px; padding: 0 var(--sp-2); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; color: var(--c-text-2); }
+.radio-card__lived .icon { width: 12px; height: 12px; stroke-width: 3; }
+.radio-card.is-selected .radio-card__lived { border-color: var(--c-on-brand-soft); color: var(--c-on-brand-soft); }
+/* 「랜덤 세대」를 마지막에 눌렀던 기억(GS4): 버튼이지만 선택된 카드와 같은 모양(실선 3px 쪽빛 + 체크 자리의 뒤섞기 아이콘 반전) */
+.radio-card--action.is-selected { border: 3px solid var(--c-brand); border-style: solid; background: var(--c-brand-soft); color: var(--c-on-brand-soft); padding: calc(var(--sp-2) - 2px) calc(var(--sp-3) - 2px); }
+.radio-card--action.is-selected .radio-card__mark--square { border-style: solid; background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-brand); }
+.radio-card--action.is-selected .radio-card__desc { color: var(--c-on-brand-soft); }
+/* 접이식 설명(GS2 「세대 범위는 자료마다 조금씩 달라요」): 격자 아래 한 줄, 보조색 */
+.slot__fold { margin-top: var(--sp-2); }
+.slot__fold summary { font-size: var(--fs-sm); color: var(--c-text-2); min-height: 32px; }
+.slot__fold p { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); margin: 0 0 var(--sp-1); }
+@media (pointer: coarse) { .slot__fold summary { min-height: var(--hit); } }
+
+/* ---------- 첫 화면: 태어나는 시도 — 「룰렛에 맡기기 / 직접 고르기」 분절 + 시·도 칩 묶음 (RG1·RG2) ----------
+   분절 컨트롤은 인생 길이(.seg)와 같은 부품. 직접 고르기를 고르면 아래에 칩 묶음(role=radiogroup, 라디오 + 글자 + 체크)이 펼쳐진다 — 고른 세대의 어느 해에도 없던 시·도는 점선 + 옅은 글자 + 이유 한 줄(색에만 의존하지 않음).
+   설정에 「내 출신 시도」가 있으면 같은 칩 묶음 맨 앞에 바로가기 칩(RG3) */
+/* 분절 컨트롤 공통 보정(인생 길이·태어나는 시도 둘 다): 칸 글자는 낱말 안에서 끊지 않고(nowrap), 두 칸이 한 줄에 안 들어가면(320 · 200%) 칸이 다음 줄로 내려간다 — 시안 측정에서 「약 30분」「준비 중」「고르기」가 글자 사이에서 끊겼다(diff-004 D4-07) */
+.seg { flex-wrap: wrap; }
+.seg__opt { white-space: nowrap; }
+.chipset { display: flex; flex-wrap: wrap; gap: var(--sp-2); flex-basis: 100%; }
+.chip-opt { position: relative; display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 32px; padding: 0 var(--sp-3); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); background: var(--c-surface); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.2; color: var(--c-text-2); cursor: pointer; white-space: nowrap; }
+.chip-opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.chip-opt .icon { width: 14px; height: 14px; stroke-width: 3; display: none; }
+.chip-opt.is-selected { border: 2px solid var(--c-brand); padding: 0 calc(var(--sp-3) - 1px); background: var(--c-brand-soft); color: var(--c-on-brand-soft); }
+.chip-opt.is-selected .icon { display: block; }
+.chip-opt.is-disabled { border-style: dashed; color: var(--c-text-3); cursor: not-allowed; }
+.chip-opt.is-disabled input { cursor: not-allowed; }
+.chip-opt:focus-within { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.chip-opt--origin { font-weight: var(--fw-bold); }
+.chipset__note { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin: 0; }
+@media (pointer: coarse) { .chip-opt input { top: -6px; bottom: -6px; height: auto; } } /* 보이는 32px, 누르는 영역 44px */
+
+/* ---------- 첫 화면: 내 출신 시도 설정 (RG3 — 이 기기의 설정 키 하나) ----------
+   설정 줄의 접이식 한 줄: 「내가 실제로 태어난 시도 (밝히지 않음)」 → 열면 선택 상자 + 「지우기」 + 개인정보 한 줄 */
+.origin summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--c-text); }
+.origin__cur { font-weight: var(--fw-bold); }
+.origin__body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-1) 0 var(--sp-2); }
+.origin__select { min-height: 40px; min-width: 10em; padding: 0 var(--sp-3); border: 1px solid var(--c-border-strong); border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-text); font: inherit; font-size: var(--fs-sm); }
+.origin__body .btn { min-height: 40px; }
+.origin__desc { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin: 0; }
+
+/* ---------- 룰렛: 세대 뽑기 단계 + 3릴(연도 → 지역 → 수저) (GS3·GS6·GS7·RG2) ----------
+   세대 줄: 룰렛 제목 아래 「[X세대] 1970~1980년생 가운데」 — 알약은 테두리만(쪽빛은 창·결과에 둔다).
+   3열: 열 최소 폭 6.25rem(100px)이라 360px(내용 328)에서 셋이 나란히(가로 넘침 0), 글자 200%에서는 한 열씩 쌓인다(CM11). 좁은 열(< 7.5rem)은 컨테이너 질의로 칸 글자를 한 단 내리고 수저 칩을 아이콘 위·이름 아래로 */
+.roulette__gen { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); color: var(--c-text-2); margin: 0; }
+.gen-tag { display: inline-flex; align-items: center; padding: 0 var(--sp-2); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.7; color: var(--c-text); background: var(--c-surface); white-space: nowrap; }
+.reels--3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.25rem), 1fr)); gap: var(--sp-2); }
+@media (min-width: 480px) { .reels--3 { gap: var(--sp-3); } }
+.reel-col { container-type: inline-size; }
+.reel__item--year { font-variant-numeric: tabular-nums; }
+.reel__item--gen { flex-direction: column; gap: 0; line-height: 1.2; text-align: center; }
+.reel__item--gen small { font-size: var(--fs-xs); font-weight: var(--fw-regular); color: var(--c-text-3); font-variant-numeric: tabular-nums; }
+.reel__item.is-result small { color: var(--c-text-2); }
+.reel--gen { max-width: 20rem; width: 100%; margin: 0 auto; }
+.reel-col--gen { align-items: center; }
+@container (max-width: 7.5rem) {
+  .reel__item { font-size: var(--fs-md); padding: 0 var(--sp-1); gap: 0; }
+  .reel__item .grade { flex-direction: column; gap: 0; font-size: var(--fs-xs); text-align: center; line-height: 1.2; }
+  .reel-col__title { font-size: var(--fs-sm); }
+  /* 좁은 열의 확률표: 이름 칸은 낱말 단위로 접힌다(「다이아몬드<wbr>수저」) — 3열 104px에서 「다이아몬드수저 2%」가 3px 넘쳤다 */
+  .odds th { white-space: normal; }
+}
+/* 직접 고른 시도(RG1·RG2 d): 지역 릴은 돌지 않고 고른 칸에 멈춰 있다 — 흐림·줄무늬 없음, 확률표 자리에 「직접 고른 시도」 한 줄 */
+.reel.is-picked .reel__list { filter: none; }
+.odds__picked { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--c-text); text-align: center; margin: 0; }
+/* 3열의 확률표는 모두 한 줄에 하나(연도 11행·지역 11행·수저 5행) — 열 폭 235px(1280)·104px(360)에서 두 칸 격자는 글자 200%에서 넘친다(ds.css .odds--cols의 ≥ 640px 두 칸 규칙을 3열에서는 쓰지 않는다) */
+.reels--3 .odds--cols tbody { grid-template-columns: 1fr; }
+.odds--year table, .odds--year tbody { display: block; }
+.odds--year tr { display: flex; justify-content: space-between; gap: 4px; }
+.roulette__result { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); margin: 0; }
+.roulette__result .fit-pair { font-size: var(--fs-lg); font-weight: var(--fw-bold); color: var(--c-text); text-align: center; }
+.roulette__result .grade-line { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); color: var(--c-text-2); }
+.roulette__result .grade-line .grade { font-size: var(--fs-md); }
+
+/* ---------- 인생 기록·엔딩 연표: 연표 줄 4종 (TL8·PJ7) ----------
+   한 줄 = 「{나이}세」 칸(아래에 작은 달력 연도 — 줄 앞의 시스템 병기) + 문장 칸(첫 줄 = 아이콘 + 종류 라벨, 둘째 줄 = 문장).
+   종류는 **왼쪽 3px 선의 색과 모양 + 글자 라벨 + 아이콘** 세 겹으로 갈린다(색에만 의존 금지):
+     그해(체험)   실선 쪽빛 --c-brand · 라벨 쪽빛 · 문장 본문 크기·본문 잉크 — 그 해를 산 한 줄이라 일반 사연과 같은 무게로 읽힌다
+     배경         점선(dotted) 잉크 보조 --c-text-3 · 라벨·문장 보조 톤(--c-text-2, 14px) — 전국의 사실 한 줄, 한 걸음 뒤
+     지역 소식    실선 잉크 보조 --c-text-3 · 라벨·문장 보조 톤 — 어디에서 그 시대를 보냈는가
+     전망         긴 점선(dashed) 놋쇠 --c-accent · 라벨 놋쇠 · 문장 본문 — 캐러셀의 「전망」 칩·긴 점선과 같은 뜻(R-477 무늬 일관)
+   일반 사연 줄은 왼쪽 선·라벨·연도가 없다. 「나의 기록」 줄(놋쇠 옅은 면 + 5px 막대)과는 면의 유무로 다르다.
+   대비(라이트/다크, 면 위): 쪽빛 라벨 12.8/10.1 · 놋쇠 라벨 4.97/8.48 · --c-text-2 8.65/8.78 · 연도 --c-text-3 5.78/5.96 · 선 ≥ 3 */
+.log__year { display: block; font-size: var(--fs-xs); line-height: 1.3; color: var(--c-text-3); font-variant-numeric: tabular-nums; font-weight: var(--fw-regular); }
+.log__row--tl { border-left: 3px solid transparent; padding-left: calc(var(--sp-1) + 5px); }
+.log__row--tl .log__text { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.log__tl { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.5; }
+.log__tl .icon { width: 14px; height: 14px; flex: none; }
+.log__row--tl[data-tl='year'] { border-left-color: var(--c-brand); }
+.log__row--tl[data-tl='year'] .log__tl { color: var(--c-brand); }
+.log__row--tl[data-tl='bg'] { border-left-color: var(--c-text-3); border-left-style: dotted; }
+.log__row--tl[data-tl='local'] { border-left-color: var(--c-text-3); }
+.log__row--tl[data-tl='bg'] .log__tl, .log__row--tl[data-tl='local'] .log__tl { color: var(--c-text-2); }
+.log__row--tl[data-tl='bg'] .log__sent, .log__row--tl[data-tl='local'] .log__sent { font-size: var(--fs-sm); color: var(--c-text-2); }
+.log__row--tl[data-tl='proj'] { border-left-color: var(--c-accent); border-left-style: dashed; }
+.log__row--tl[data-tl='proj'] .log__tl { color: var(--c-accent); }
+.log__row--latest.log__row--tl .log__sent { font-weight: var(--fw-bold); }
+/* 「전망」 칩(캐러셀 title-005.css .chip--proj와 같은 글자 — 대시보드·엔딩 페이지는 그 파일을 읽지 않아 여기 다시 적는다) */
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 0 var(--sp-2); border-radius: var(--r-pill); border: 1px solid var(--c-accent); background: var(--c-accent-soft); color: var(--c-on-accent-soft); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.7; white-space: nowrap; }
+.chip .icon { width: 14px; height: 14px; stroke-width: 2.4; }
+/* 머리의 연도 옆 「전망」(PJ7): 연도와 칩이 한 칸(.year-row__year, 줄바꿈 없음) — 진행률 바 앞, 연도와 같은 줄 */
+.year-row__year { display: inline-flex; align-items: center; gap: var(--sp-2); white-space: nowrap; flex: none; }
+/* 전망 안내 한 번(PJ7 — 2026년 첫 진입): 「나의 기록」 줄과 같은 틀의 놋쇠 옅은 면이되 왼쪽 막대가 **긴 점선**(전망의 무늬) */
+.log__row--proj-intro { background: var(--c-accent-soft); color: var(--c-on-accent-soft); border-radius: var(--r-md); border-bottom: 0; margin: var(--sp-1) 0; padding: var(--sp-3); border-left: 5px dashed var(--c-accent); }
+.log__row--proj-intro .log__age, .log__row--proj-intro .log__year { color: var(--c-on-accent-soft); }
+.log__row--proj-intro .log__text { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.log__row--proj-intro .log__tl { color: var(--c-on-accent-soft); flex-wrap: wrap; }
+.log__scn { font-weight: var(--fw-regular); }
+/* 엔딩 연표의 같은 줄(.timeline li) */
+.timeline li.is-tl { border-left: 3px solid transparent; padding-left: calc(var(--sp-1) + 5px); }
+.timeline li.is-tl[data-tl='year'] { border-left-color: var(--c-brand); }
+.timeline li.is-tl[data-tl='year'] .log__tl { color: var(--c-brand); }
+.timeline li.is-tl[data-tl='bg'] { border-left-color: var(--c-text-3); border-left-style: dotted; }
+.timeline li.is-tl[data-tl='local'] { border-left-color: var(--c-text-3); }
+.timeline li.is-tl[data-tl='bg'] .log__tl, .timeline li.is-tl[data-tl='local'] .log__tl { color: var(--c-text-2); }
+.timeline li.is-tl[data-tl='bg'] .tl-text, .timeline li.is-tl[data-tl='local'] .tl-text { color: var(--c-text-2); }
+.timeline li.is-tl[data-tl='proj'] { border-left-color: var(--c-accent); border-left-style: dashed; }
+.timeline li.is-tl[data-tl='proj'] .log__tl { color: var(--c-accent); }
+/* 엔딩 연표의 전망 경계(PJ7 「엔딩에서 전망 구간을 구분」): 단계 묶음 안의 한 줄 — 칩 + 「2026년부터는 공식 전망」, 위아래 긴 점선 */
+.timeline__split { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-1); border-top: 1px dashed var(--c-accent); border-bottom: 1px dashed var(--c-accent); font-size: var(--fs-sm); color: var(--c-text-2); list-style: none; }
+
+/* ---------- 자산 카드·엔딩 최종 순자산: 당시 화폐 ↔ 지금 가치 (EY10·EY11·EY12) ----------
+   카드 머리 오른쪽 태그 = 지금 보는 기준의 **글자**(「당시 화폐」 / 「2026년 가치」). 금액 아래 한 줄: 전환 버튼(보조 위계 ghost 작은 버튼, 포인터 대상 32px·거친 포인터 44px) + 기준 설명 한 줄.
+   2026년 이후·물가 자료가 없는 해(1940~1964)는 버튼이 없고 설명 한 줄만(이유). 접근 가능한 이름에 현재 기준을 붙인다(sr-only 꼬리). 색은 없다 — 글자가 뜻을 전한다 */
+.assets__view { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-3); }
+.assets__view .btn { min-height: 32px; font-weight: var(--fw-regular); }
+.assets__basis { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin: 0; }
+@media (pointer: coarse) { .assets__view .btn { min-height: var(--hit); } }
+.final-net__view { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--sp-2); }
+.final-net__view .btn { min-height: 32px; font-weight: var(--fw-regular); }
+.final-net__basis { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); text-align: right; }
+
+/* ---------- 엔딩 머리: 세대 표기 (GS9·GD2) + 시나리오 줄 (PJ4) · 비교 카드 「같은 사건, 다른 자리」 (RG4 최소형 — 시각화는 SPEC-007) ---------- */
+.ending__meta { display: flex; flex-direction: column; gap: 2px; margin-top: var(--sp-1); font-size: var(--fs-sm); color: var(--c-text-2); }
+.ending__meta b { color: var(--c-text); font-weight: var(--fw-bold); }
+.ending__meta .chip { margin-right: var(--sp-1); vertical-align: middle; }
+.same-event__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.same-event__item { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); padding: var(--sp-2) var(--sp-1); border-bottom: 1px solid var(--c-border); font-size: var(--fs-sm); }
+.same-event__item > .log__age { flex: 0 0 3.1rem; }
+.same-event__item > span:last-child { flex: 1 1 11em; min-width: min(11em, 100%); display: flex; flex-direction: column; gap: 2px; }
+.same-event__facts { display: flex; flex-direction: column; gap: 1px; font-size: var(--fs-xs); color: var(--c-text-2); }
+.same-event__facts b { font-weight: var(--fw-bold); color: var(--c-text); }
+.same-event__close { margin-top: var(--sp-3); font-size: var(--fs-sm); color: var(--c-text-2); }
+
+/* ---------- 다크: 토큰만(새 색 없음) ---------- */
+
+/* ---------- 강제 색상: 시스템 색 한 짝, 모양(점선·굵기·체크·아이콘·글자)이 뜻을 전한다 ---------- */
+@media (forced-colors: active) {
+  .chip-opt, .gen-tag, .origin__select, .radio-card__lived, .chip { border-color: CanvasText; background: Canvas; color: CanvasText; }
+  .chip-opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  .chip-opt.is-disabled { color: GrayText; border-color: GrayText; }
+  .radio-card--action.is-selected .radio-card__mark--square { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  .log__row--tl, .timeline li.is-tl, .log__row--proj-intro, .timeline__split { border-color: CanvasText; }
+  .log__row--tl .log__tl, .timeline li.is-tl .log__tl, .log__year { color: CanvasText; }
+  .log__row--proj-intro { background: Canvas; color: CanvasText; }
+}
