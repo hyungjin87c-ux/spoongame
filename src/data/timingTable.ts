@@ -145,7 +145,7 @@ export const READ_MODEL = {
   citeExposure: { past: 0.1, present: 0.51, future: 0.47 } as Readonly<Record<Era, number>>,
   /**
    * SPEC-005 r4 (v0.2.1) — 읽는 줄이 둘 늘었다. ① `chars.ask`: 선택지 앞의 공통 질문 한 줄(UX10) 「어떻게 하겠습니까?」 = 10자(공백·물음표 포함, `DASH_TEXT.choiceAsk`와 같다 — tests/timeModel.test.ts). 본인이 고르는 카드마다 한 줄씩 읽는다.
-   * ② 인용 박스 안 풀이 한 줄(UX14): `insight.chars` = 확정 32문장의 평균 글자 수 51.1(copy.md 15-6, `data/citationInsights.ts`), `insightExposure` = 본인이 고르는 카드 가운데 풀이 줄이 보인 몫 — 인용이 보이는 카드의 대부분이다
+   * ② 인용 박스 안 풀이 한 줄(UX14): `insight.chars` = 확정 32문장의 평균 글자 수에 가까운 51.1(실제 평균은 합 1,637 ÷ 32 = 51.16이고 copy.md 15-6은 소수 첫째 자리 반올림 51.2로 적는다 — 상수는 51.1을 그대로 두고 tests/timeModel.test.ts가 ±1% 안인지 대조한다, 차이 0.11%. `data/citationInsights.ts`), `insightExposure` = 본인이 고르는 카드 가운데 풀이 줄이 보인 몫 — 인용이 보이는 카드의 대부분이다
    * (생략 3건 c-095·c-030·c-096 제외, 부모·흘러감 카드는 풀이를 그리지 않으므로 분모에서 뺀다 M23). 값은 `report:citations`(자동 성향 1000판, `ExposureRow.insightRate`)와 `report:time`의 글자 수 실측(random)의 사이이고 시험이 ±5%p로 대조한다.
    * 풀이는 요약·출처와 달리 한 문장 전부를 읽는 글이라 글자 수 ÷ 분당 글자 수만 더한다(인용 읽기의 「숫자 해석 1.5초」 같은 가산 없음). 마스터 결정 M24(2026-10-26, 형진 님 「플레이시간은 몰입의 결과」)로 이 두 줄이 더하는 약 1분을 판정 구간 상단을 올려 받는다 — `LIFE_LENGTH_MODES.short30.timeMin` 주석.
    */

@@ -269,13 +269,13 @@ describe('읽는 시간 r = 글자 읽기 + 고르는 시간 + 인용 읽기 (�
     expect(cardReadChars()).toBeLessThan(125);
   });
 
-  // SPEC-005 r4 (v0.2.1) UX10·UX14: 읽는 줄이 둘 늘었다 — 질문 줄(카드마다 10자)과 인용 박스 안 풀이 줄(평균 51.1자, 풀이가 보이는 카드에만). 상수가 실제 문구·데이터와 맞는다.
+  // SPEC-005 r4 (v0.2.1) UX10·UX14: 읽는 줄이 둘 늘었다 — 질문 줄(카드마다 10자)과 인용 박스 안 풀이 줄(상수 51.1자 ≈ 실제 평균 51.16자, 풀이가 보이는 카드에만). 상수가 실제 문구·데이터와 맞는다.
   it('질문 줄 글자 수 상수(READ_MODEL.chars.ask)는 실제 문구 「어떻게 하겠습니까?」의 글자 수와 같다 — 문구를 바꾸면 이 상수도 함께 (읽는 시간 모델)', () => {
     expect(c.ask).toBe(len(DASH_TEXT.choiceAsk));
     expect(c.ask).toBe(10);
   });
 
-  it('풀이 줄 글자 수 상수(READ_MODEL.insight.chars)는 확정 32문장의 평균과 ±1% 안이다 (copy.md 15-6: 합 1,637자 · 평균 51.2자 — 상수 51.1과 0.2%)', () => {
+  it('풀이 줄 글자 수 상수(READ_MODEL.insight.chars)는 확정 32문장의 평균과 ±1% 안이다 (copy.md 15-6: 합 1,637자 · 평균 51.2자(실제 51.16) — 상수 51.1과 0.11%)', () => {
     const lens = Object.values(INSIGHT_BY_ID).map(len);
     expect(lens).toHaveLength(32);
     expect(Math.abs(READ_MODEL.insight.chars - mean(lens)) / mean(lens)).toBeLessThan(0.01);

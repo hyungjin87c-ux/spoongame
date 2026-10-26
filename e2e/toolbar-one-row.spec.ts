@@ -258,6 +258,277 @@ for (const width of [960, 1024, 1179]) {
   });
 }
 
+// ---------- UX9-6 (R-506, QA-005-r4 FAIL → 복귀 1/3) — 말풍선이 이웃 조작을 가로채지 않는다 ----------
+// 상태별 규칙(SPEC 표): 숨김 = 아래 요소 · 포커스만 = 아래 요소(pointer-events: none) · 올림(누르기 전) = 말풍선(1.4.13 올림 가능, 알려진 동작) · 누른 뒤 = 그 자리에서 숨고 아래 요소
+// 케이스 ID는 QA의 것을 따른다: C-C-bgm-slider · C-C-bgm-focus · C-C-tip-press · C-C-tip-return · C-C-tip-hover-label
+
+interface Box {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+async function boxOf(page: Page, selector: string): Promise<Box> {
+  return page.evaluate((sel) => {
+    const r = document.querySelector(sel)!.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  }, selector);
+}
+
+const tipSelector = (testId: string): string => `[data-testid="${testId}"] > span:not(.sr-only)`;
+
+/** 말풍선의 지금 상태: 보임 여부(clip-path) · 포인터를 받는가(pointer-events) · 사각형(가려져도 자리는 그대로) */
+async function tipInfo(page: Page, testId: string): Promise<{ clip: string; pe: string; box: Box }> {
+  const box = await boxOf(page, tipSelector(testId));
+  const { clip, pe } = await page.evaluate((sel) => {
+    const cs = getComputedStyle(document.querySelector(sel)!);
+    return { clip: cs.clipPath, pe: cs.pointerEvents };
+  }, tipSelector(testId));
+  return { clip, pe, box };
+}
+
+/** (x, y)에 있는 요소가 이 testid 요소 안(자손 포함)인가 */
+async function hitsInside(page: Page, x: number, y: number, testId: string): Promise<boolean> {
+  return page.evaluate(({ px, py, id }) => document.elementFromPoint(px, py)?.closest(`[data-testid="${id}"]`) != null, { px: x, py: y, id: testId });
+}
+
+/** 두 상자가 겹치는 띠의 가운데 (겹치지 않으면 null) */
+function overlapCenter(a: Box, b: Box): { x: number; y: number } | null {
+  const left = Math.max(a.left, b.left);
+  const right = Math.min(a.right, b.right);
+  const top = Math.max(a.top, b.top);
+  const bottom = Math.min(a.bottom, b.bottom);
+  return right - left > 4 && bottom - top > 4 ? { x: (left + right) / 2, y: (top + bottom) / 2 } : null;
+}
+
+/**
+ * QA의 36곳 격자 (C-C-bgm-slider): 볼륨 슬라이더 위·가운데·아래(+ 말풍선과 겹치는 띠 안쪽) × 슬라이더 왼쪽 끝·BGM 말풍선 왼쪽·가운데·오른쪽·슬라이더 가운데·오른쪽 끝
+ */
+function gridOver(tip: Box, slider: Box): Array<[number, number]> {
+  const oTop = Math.max(tip.top, slider.top);
+  const oBottom = Math.min(tip.bottom, slider.bottom);
+  const xs = [slider.left + 2, tip.left + 2, (tip.left + tip.right) / 2, tip.right - 2, (slider.left + slider.right) / 2, slider.right - 2];
+  const ys = [slider.top + 1, oTop + 1, (oTop + oBottom) / 2, oBottom - 1, (slider.top + slider.bottom) / 2, slider.bottom - 1];
+  return ys.flatMap((y) => xs.map((x): [number, number] => [x, y]));
+}
+
+/** 프레임 두 번 — 눌린 직후의 포커스·포인터 이벤트가 모두 지나간 뒤를 본다 */
+const settle = (page: Page): Promise<void> => page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+
+/** 키보드로 BGM에 포커스를 둔다 (진행 줄 마지막 「자동 모드」에서 Tab 한 번) */
+async function tabToBgm(page: Page): Promise<void> {
+  await page.getByTestId('auto').focus();
+  await page.keyboard.press('Tab');
+  expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), 'Tab 한 번에 BGM').toBe('tool-bgm');
+}
+
+for (const width of [960, 1024, 1100, 1179]) {
+  test(`${width}px · C-C-bgm-slider: BGM을 마우스로 켠 직후 볼륨 줄 위쪽 36곳을 눌러도 BGM이 유지되고 볼륨이 바뀐다 — 눌린 말풍선은 그 자리에서 숨는다 (UX9-6 1·3번)`, async ({ page }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+    test.setTimeout(120_000);
+    await openToolbar(page, width);
+    const bgm = page.getByTestId('tool-bgm');
+    const slider = page.getByTestId('bgm-volume-input');
+    const left: number[] = [];
+    const right: number[] = [];
+    let points = 0;
+    let overlapped = 0;
+    for (let n = 0; n < 36; n++) {
+      // 매번 처음 상태: 꺼져 있는 BGM을 마우스로 눌러 켠다 — 포인터는 버튼 위에 남는다
+      await bgm.click();
+      await expect(bgm).toHaveAttribute('aria-pressed', 'true');
+      await expect(slider).toBeVisible();
+      await settle(page);
+      expect(await bgm.evaluate((el) => el.matches(':hover')), '포인터는 눌린 버튼 위에 남아 있다').toBe(true);
+      const tip = await tipInfo(page, 'tool-bgm');
+      expect(tip.clip, '누른 직후 BGM 말풍선은 포인터가 버튼 위에 있어도 숨는다 (focusin이 거두지 않는다)').toBe('inset(50%)');
+      const sliderBox = await boxOf(page, '[data-testid="bgm-volume-input"]');
+      const grid = gridOver(tip.box, sliderBox);
+      const [x, y] = grid[n];
+      points++;
+      if (y >= Math.max(tip.box.top, sliderBox.top) && y <= Math.min(tip.box.bottom, sliderBox.bottom) && x >= tip.box.left && x <= tip.box.right) overlapped++;
+      expect(await hitsInside(page, x, y, 'bgm-volume'), `(${Math.round(x)}, ${Math.round(y)})는 볼륨 줄이 받는다(말풍선이 아니다)`).toBe(true);
+      await page.mouse.click(x, y);
+      await expect(bgm, `(${Math.round(x)}, ${Math.round(y)}) 클릭 뒤에도 BGM이 켜져 있다`).toHaveAttribute('aria-pressed', 'true');
+      await expect(slider).toBeVisible();
+      const value = Number(await slider.inputValue());
+      if (x === sliderBox.left + 2) left.push(value);
+      if (x === sliderBox.right - 2) right.push(value);
+      // 다음 판을 위해 끈다(버튼 가운데를 눌러 끈다 — 이것도 마우스로 누른 것이라 말풍선은 거둬진다)
+      await bgm.click();
+      await expect(bgm).toHaveAttribute('aria-pressed', 'false');
+    }
+    expect(points, '격자 36곳').toBe(36);
+    expect(overlapped, '말풍선이 덮던 자리(슬라이더 위쪽 띠 × 말풍선 가로 폭)가 격자에 포함된다').toBeGreaterThanOrEqual(3);
+    expect(Math.max(...left), `볼륨이 실제로 바뀐다: 왼쪽 끝 값(${left.join(',')}) < 오른쪽 끝 값(${right.join(',')})`).toBeLessThan(Math.min(...right));
+  });
+
+  test(`${width}px · C-C-bgm-focus: 키보드 포커스로만 보이는 BGM 말풍선은 포인터를 받지 않아 볼륨 줄 클릭이 BGM을 끄지 않는다 — 올리면 다시 받는다 (UX9-6 2번)`, async ({ page }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+    test.setTimeout(120_000);
+    await openToolbar(page, width);
+    const bgm = page.getByTestId('tool-bgm');
+    const slider = page.getByTestId('bgm-volume-input');
+    await page.mouse.move(5, 5); // 포인터는 도구 줄에서 멀리
+    await tabToBgm(page);
+    await page.keyboard.press('Enter'); // 키보드 click: 포인터가 없으니 말풍선을 거두지 않는다
+    await expect(bgm).toHaveAttribute('aria-pressed', 'true');
+    await expect(slider).toBeVisible();
+    await settle(page);
+    const focusOnly = await tipInfo(page, 'tool-bgm');
+    expect(focusOnly.clip, '키보드로 눌러도 포커스 표시 말풍선은 그대로 보인다(Esc로만 숨는다)').toBe('none');
+    expect(focusOnly.pe, '포커스로만 보이는 말풍선은 포인터를 받지 않는다').toBe('none');
+    const sliderBox = await boxOf(page, '[data-testid="bgm-volume-input"]');
+    const spot = overlapCenter(focusOnly.box, sliderBox);
+    expect(spot, '말풍선이 볼륨 줄 위쪽과 겹치는 자리가 있다(시험이 허공을 치지 않는다)').not.toBeNull();
+    for (const [x, y] of gridOver(focusOnly.box, sliderBox)) {
+      await tabToBgm(page); // 슬라이더를 눌러 포커스가 옮겨 갔으니 다시 키보드로 BGM에 돌아온다
+      expect((await tipInfo(page, 'tool-bgm')).clip, '포커스로 보인다').toBe('none');
+      expect(await hitsInside(page, x, y, 'bgm-volume'), `(${Math.round(x)}, ${Math.round(y)})는 볼륨 줄이 받는다`).toBe(true);
+      await page.mouse.click(x, y);
+      await expect(bgm, `(${Math.round(x)}, ${Math.round(y)}) 클릭 뒤에도 BGM이 켜져 있다`).toHaveAttribute('aria-pressed', 'true');
+    }
+    // 포인터가 버튼 위에 오면(올림) 같은 말풍선이 다시 포인터를 받는다
+    await tabToBgm(page);
+    await bgm.hover();
+    expect((await tipInfo(page, 'tool-bgm')).pe, '올리면 말풍선은 맞힘 대상(올림 가능)').toBe('auto');
+    expect(await bgm.evaluate((el) => el.matches(':focus-visible')), '키보드 포커스도 남아 있다').toBe(true);
+  });
+
+  test(`${width}px · C-C-tip-press · C-C-tip-return: 마우스로 누르면 그 버튼의 말풍선이 그 자리에서 숨고, 포인터가 떠났다 돌아오면 다시 보인다 · 키보드 click은 숨기지 않는다 (UX9-6 1번)`, async ({ page }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+    await openToolbar(page, width);
+    const dark = page.getByTestId('tool-dark');
+    // 마우스: 올리면 보이고, 누르면 포인터가 버튼 위에 있어도 숨는다 (누름의 focusin이 지나간 뒤에도 숨은 채다)
+    await dark.hover();
+    expect((await tipInfo(page, 'tool-dark')).clip, '올리면 보인다').toBe('none');
+    const before = await dark.getAttribute('aria-pressed');
+    await dark.click();
+    await expect(dark, '눌러서 동작했다').not.toHaveAttribute('aria-pressed', before ?? '');
+    await settle(page);
+    expect(await dark.evaluate((el) => el.matches(':hover')), '포인터는 그대로 버튼 위').toBe(true);
+    expect((await tipInfo(page, 'tool-dark')).clip, '누르면 포인터가 버튼 위에 있어도 숨는다').toBe('inset(50%)');
+    // 같은 버튼을 한 번 더 눌러도 숨은 채다
+    await dark.click();
+    await settle(page);
+    expect((await tipInfo(page, 'tool-dark')).clip, '다시 눌러도 숨은 채').toBe('inset(50%)');
+    // 다른 도구 버튼을 올리면 그 버튼의 말풍선이 보인다 (눌러 숨긴 버튼의 말풍선은 아직 숨음)
+    await page.getByTestId('tool-note').hover();
+    expect((await tipInfo(page, 'tool-note')).clip, '다른 버튼을 올리면 그 말풍선은 보인다').toBe('none');
+    // 돌아옴: 포인터가 그 버튼을 벗어났다가 다시 올라오면 다시 보인다
+    await page.mouse.move(1, 1);
+    await dark.hover();
+    expect((await tipInfo(page, 'tool-dark')).clip, '떠났다 돌아오면 다시 보인다').toBe('none');
+    // 버튼 사이 틈으로 옮겼다 돌아와도 같다
+    await dark.click();
+    await settle(page);
+    expect((await tipInfo(page, 'tool-dark')).clip).toBe('inset(50%)');
+    const box = (await dark.boundingBox())!;
+    await page.mouse.move(box.x + box.width + 3, box.y + box.height / 2); // 버튼 오른쪽 틈(간격 8px)
+    await dark.hover();
+    expect((await tipInfo(page, 'tool-dark')).clip, '틈을 지나 돌아와도 다시 보인다').toBe('none');
+
+    // 키보드: Enter · Space로 눌렀고 포인터가 그 버튼 위에 없으면 숨기지 않는다 (포커스 표시 — Esc로만 숨는다)
+    await page.mouse.move(1, 1);
+    await page.getByTestId('tool-note').focus(); // 시험 편의: 다크 모드 앞 버튼에 포커스를 둔다
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), 'Tab으로 다크 모드').toBe('tool-dark');
+    expect((await tipInfo(page, 'tool-dark')).clip, '포커스로 보인다').toBe('none');
+    const kb0 = await dark.getAttribute('aria-pressed');
+    await page.keyboard.press('Enter');
+    await expect(dark, 'Enter로 동작했다').not.toHaveAttribute('aria-pressed', kb0 ?? '');
+    await settle(page);
+    expect((await tipInfo(page, 'tool-dark')).clip, 'Enter로 눌러도 포커스 말풍선은 그대로 보인다').toBe('none');
+    await page.keyboard.press('Space');
+    await expect(dark, 'Space로 동작했다').toHaveAttribute('aria-pressed', kb0 ?? '');
+    await settle(page);
+    expect((await tipInfo(page, 'tool-dark')).clip, 'Space로 눌러도 포커스 말풍선은 그대로 보인다').toBe('none');
+    await page.keyboard.press('Escape');
+    expect((await tipInfo(page, 'tool-dark')).clip, 'Esc로는 숨는다').toBe('inset(50%)');
+
+    // 포인터가 그 버튼 위에 있으면 키보드로 눌러도 올림으로 보이던 말풍선이라 같이 거둔다
+    await dark.focus();
+    await dark.hover();
+    await page.keyboard.press('Escape'); // 앞선 Esc 숨김을 정리한 상태에서 시작
+    await page.mouse.move(1, 1);
+    await dark.hover();
+    expect((await tipInfo(page, 'tool-dark')).clip, '올리면 보인다').toBe('none');
+    await page.keyboard.press('Enter');
+    await settle(page);
+    expect((await tipInfo(page, 'tool-dark')).clip, '포인터가 버튼 위에 있으면 키보드로 눌러도 거둔다').toBe('inset(50%)');
+  });
+
+  test(`${width}px · C-C-tip-hover-label: 누르지 않고 올려만 둔 말풍선은 맞힘 대상으로 남는다 — 위로 옮겨도 유지되고 눌러도 같은 버튼이 동작한다 (UX9-6 5번 알려진 동작, 1.4.13 올림 가능)`, async ({ page }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+    await openToolbar(page, width);
+    const bgm = page.getByTestId('tool-bgm');
+    await bgm.click(); // 켠다(볼륨 줄이 생긴다) — 누른 직후라 말풍선은 숨는다
+    await expect(bgm).toHaveAttribute('aria-pressed', 'true');
+    await page.mouse.move(1, 1);
+    await bgm.hover(); // 떠났다 돌아와 올림 상태로
+    const tip = await tipInfo(page, 'tool-bgm');
+    expect(tip.clip, '올리면 보인다').toBe('none');
+    expect(tip.pe, '올림 상태의 말풍선은 포인터를 받는다').toBe('auto');
+    const sliderBox = await boxOf(page, '[data-testid="bgm-volume-input"]');
+    const spot = overlapCenter(tip.box, sliderBox);
+    expect(spot, '올려 둔 BGM 말풍선이 볼륨 줄 위쪽을 덮는다(알려진 동작)').not.toBeNull();
+    // 버튼에서 말풍선으로 건너가는 동안 끊기지 않는다
+    const bb = (await bgm.boundingBox())!;
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.move(spot!.x, spot!.y, { steps: 20 });
+    expect((await tipInfo(page, 'tool-bgm')).clip, '말풍선 위에 포인터가 있어도 보인다').toBe('none');
+    expect(await hitsInside(page, spot!.x, spot!.y, 'tool-bgm'), '그 자리는 말풍선(버튼의 이름표)이 받는다').toBe(true);
+    // Esc로는 숨는다
+    await page.keyboard.press('Escape');
+    expect((await tipInfo(page, 'tool-bgm')).clip, 'Esc로 숨는다').toBe('inset(50%)');
+    await page.mouse.move(1, 1);
+    await bgm.hover();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.move(spot!.x, spot!.y, { steps: 20 });
+    expect((await tipInfo(page, 'tool-bgm')).clip, '다시 올리면 보인다').toBe('none');
+    // 이름표를 누르면 그 버튼이 눌린다 (PASS 기대 — 결함이 아니다)
+    await page.mouse.click(spot!.x, spot!.y);
+    await expect(bgm, '말풍선을 누르면 같은 버튼(BGM)이 눌린다').toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test(`${width}px: 나가기 확인 상자와 겹치는 말풍선도 같은 규칙이다 — 마우스로 누르면 숨고, 키보드 포커스로만 보이면 포인터를 받지 않는다 (UX9-6 3번)`, async ({ page }, testInfo) => {
+    test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
+    await openToolbar(page, width);
+    const exit = page.getByTestId('tool-exit');
+    // 마우스로 누름: 확인 상자가 열리고 말풍선은 숨는다 — 옛 말풍선 자리는 확인 상자가 받는다
+    await exit.click();
+    await expect(page.getByTestId('exit-ask')).toBeVisible();
+    await settle(page);
+    const pressed = await tipInfo(page, 'tool-exit');
+    expect(pressed.clip, '누르면 숨는다').toBe('inset(50%)');
+    const askBox = await boxOf(page, '[data-testid="exit-ask"]');
+    const spot = overlapCenter(pressed.box, askBox);
+    expect(spot, '나가기 말풍선이 확인 상자 위쪽과 겹치는 자리가 있다(시험이 허공을 치지 않는다)').not.toBeNull();
+    expect(await hitsInside(page, spot!.x, spot!.y, 'exit-ask'), '옛 말풍선 자리는 확인 상자가 받는다').toBe(true);
+    expect(await hitsInside(page, spot!.x, spot!.y, 'tool-exit'), '나가기 버튼이 받지 않는다').toBe(false);
+    // 키보드: 돌아가기(Esc) → 포커스는 나가기 버튼으로 돌아온다(포커스 표시) → 다시 키보드로 연다 → Shift+Tab으로 나가기 버튼에 돌아오면 확인 상자와 말풍선이 함께 있다
+    await page.mouse.move(1, 1);
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('exit-ask')).toHaveCount(0);
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), 'Esc 뒤 포커스는 나가기').toBe('tool-exit');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('exit-ask')).toBeVisible();
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), '확인 상자의 안전한 쪽으로 포커스').toBe('exit-no');
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Shift+Tab');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid')), 'Shift+Tab 두 번 → 나가기 버튼').toBe('tool-exit');
+    await settle(page);
+    const focused = await tipInfo(page, 'tool-exit');
+    expect(focused.clip, '포커스로 보인다').toBe('none');
+    expect(focused.pe, '포커스로만 보이면 포인터를 받지 않는다').toBe('none');
+    const spot2 = overlapCenter(focused.box, await boxOf(page, '[data-testid="exit-ask"]'));
+    expect(spot2, '확인 상자와 겹친다').not.toBeNull();
+    expect(await hitsInside(page, spot2!.x, spot2!.y, 'exit-ask'), '그 자리는 확인 상자가 받는다').toBe(true);
+    expect(await hitsInside(page, spot2!.x, spot2!.y, 'tool-exit'), '나가기 버튼이 받지 않는다').toBe(false);
+  });
+}
+
 test.describe('주 입력이 터치인 화면(hover: none · pointer: coarse — 가로 태블릿)', () => {
   test.use({ hasTouch: true });
 

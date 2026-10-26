@@ -228,7 +228,8 @@ interface ToolsProps {
 /**
  * 도구 줄 (DB3): BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기. 켜짐 상태(BGM·다크 모드)는 aria-pressed + 색 반전·아래 막대 + 아이콘 교체 + 읽기 전용 「켜짐」이 함께 알린다(R-136②).
  * 「다크 모드」의 켜짐 = 지금 화면에 다크 테마가 적용된 상태(시스템 설정을 따르는 중이든 수동 선택이든). 누르면 반대 테마를 수동 선택으로 저장한다(DB6).
- * 폭 960~1179px의 마우스 PC에서는 도구 이름이 말풍선으로만 보인다(압축 모드, dash.css) — Esc로 숨길 수 있다(`useDismissibleTips`, WCAG 1.4.13, R-501). 터치 화면은 압축하지 않고 이름이 늘 보인다.
+ * 폭 960~1179px의 마우스 PC에서는 도구 이름이 말풍선으로만 보인다(압축 모드, dash.css) — Esc로 숨길 수 있고(`useDismissibleTips`, WCAG 1.4.13, R-501), 마우스로 누르면 그 버튼의 말풍선이 그 자리에서 숨어
+ * 새로 생기는 볼륨 줄·나가기 확인 상자를 덮지 않는다(SPEC-005 r4 UX9-6, R-506). 터치 화면은 압축하지 않고 이름이 늘 보인다.
  */
 function LifeTools({ guardKey, settings, dark, feedbackUrl, exitButtonRef, noteButtonRef, onBgm, onDark, onNote, onExitOpen }: ToolsProps) {
   const toolsRef = useRef<HTMLDivElement>(null);
