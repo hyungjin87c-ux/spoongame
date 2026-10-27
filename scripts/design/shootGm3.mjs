@@ -1,7 +1,8 @@
 /**
- * SPEC-004 GM3 시안을 Playwright 크로미움으로 찍고 잰다 → docs/design/screens/004/gm3-*.png (designer 2026-10-27) · r2 gm3r2-*.png (게이트 ③ 답 반영) · **r3 gm3r3-*.png (2026-10-27 형진 님 답 2차 반영)**.
- * 실행: node scripts/design/shootGm3.mjs [r3] [조각]  ← r3 캡처 8장(첫 화면 PC·360 · 룰렛 도는 중·결과 PC·결과 360 · 출생신고 연도 · 대안 2) + 검사(다크·강제 색상·320 200%·1920·키보드·표 흔들림·글꼴 적재·바뀜 흔들림(CLS) 추정 — 임시 샷은 .taste-skill/004r3/after/mock/)
- *       node scripts/design/shootGm3.mjs r2 [조각]     ← r2 블록(gm3r2-*). 시안이 r3로 바뀌어 r2 캡처를 다시 찍으면 r2 기록이 덮인다 — r2를 명시해야만 돈다(지난 캡처는 지우지 않는다, 마스터 지시)
+ * SPEC-004 GM3 시안을 Playwright 크로미움으로 찍고 잰다 → docs/design/screens/004/gm3-*.png (designer 2026-10-27) · r2 gm3r2-*.png · r3 gm3r3-*.png · **r4 gm3r4-*.png (2026-10-27 형진 님 답 3차 반영 — 기본)**.
+ * 실행: node scripts/design/shootGm3.mjs [r4] [조각]  ← r4 캡처 7장(첫 화면 PC·360 · 세대를 바꾼 뒤 그래프 PC · 360의 목록 아래 그래프 · 하단 PC·360 · 바탕이 바뀐 룰렛 결과 PC) + 검사(다크·강제 색상·320 200%·1920·키보드·가리킴·자리 옮김·세대 바꿈 뒤 읽기 이름·숫자 검산 — 임시 샷은 .taste-skill/004r4/after/mock/)
+ *       node scripts/design/shootGm3.mjs r3 [조각]     ← r3 블록(gm3r3-*). 시안이 r4로 바뀌어 r3 캡처를 다시 찍으면 r3 기록이 덮인다 — r3을 명시해야만 돈다(지난 캡처는 지우지 않는다, 마스터 지시)
+ *       node scripts/design/shootGm3.mjs r2 [조각]     ← r2 블록(gm3r2-*). 같은 이유로 r2를 명시해야만 돈다
  *       node scripts/design/shootGm3.mjs --r1 [조각]  ← 1차 블록(gm3-*). 같은 이유로 --r1을 명시해야만 돈다
  *   (시안은 먼저 `node node_modules/vite-node/vite-node.mjs scripts/design/buildGm3Mockups.mjs`로 만든다)
  *   시안: docs/design/mockups/gm3/title-004.html · roulette-004.html · dashboard-004.html · ending-004.html — 브라우저는 이 스크립트가 띄우고 닫는다(서버 없음, file://). 다크 `?theme=dark`, 강제 색상 forcedColors, 360은 pointer: coarse 흉내.
@@ -26,11 +27,11 @@ const browser = await chromium.launch();
 const problems = [];
 const notes = [];
 const kb = (f) => Math.round(statSync(f).size / 1024);
-/** 회차 분기(위 머리글): --r1 → 1차 블록(이름이 gm3r로 시작하지 않음) · `r2` → r2 블록(gm3r2-*) · 그 밖(기본) → r3 블록(gm3r3-*). 조각 이름(title·roulette…)을 더 주면 그 이름이 든 것만 */
+/** 회차 분기(위 머리글): --r1 → 1차 블록(이름이 gm3r로 시작하지 않음) · `r2` → r2 블록(gm3r2-*) · `r3` → r3 블록(gm3r3-*) · 그 밖(기본) → r4 블록(gm3r4-*). 조각 이름(title·roulette…)을 더 주면 그 이름이 든 것만 */
 const PARTS = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-const MODE = R1 ? 'r1' : PARTS.includes('r2') ? 'r2' : 'r3';
-const PART = PARTS.find((a) => a !== 'r2' && a !== 'r3'); // 예: `r3 title` → title 블록만
-const want = (name) => { const m = name.startsWith('gm3r3') ? 'r3' : name.startsWith('gm3r2') ? 'r2' : 'r1'; return m === MODE && (PART === undefined || name.includes(PART)); };
+const MODE = R1 ? 'r1' : PARTS.includes('r2') ? 'r2' : PARTS.includes('r3') ? 'r3' : 'r4';
+const PART = PARTS.find((a) => !/^r[234]$/.test(a)); // 예: `r4 title` → title 블록만
+const want = (name) => { const m = name.startsWith('gm3r4') ? 'r4' : name.startsWith('gm3r3') ? 'r3' : name.startsWith('gm3r2') ? 'r2' : 'r1'; return m === MODE && (PART === undefined || name.includes(PART)); };
 
 async function open({ file, q = '', view, dpr = 1, dark = false, forced = false, text, coarse = false }) {
   const ctx = await browser.newContext({ viewport: view, deviceScaleFactor: dpr, colorScheme: dark ? 'dark' : 'light', forcedColors: forced ? 'active' : 'none', hasTouch: coarse });
@@ -614,8 +615,118 @@ if (want('gm3r3-birth')) {
   }
 }
 
+// ============================================================ r4 (2026-10-27 형진 님 답 3차 반영 — 바탕 종이색·제목 크게·설명 두 줄·「한 판 약 30분」·세대 그래프·하단) ============================================================
+// 캡처 7장(gm3r4-*): 첫 화면 PC(기본 = 랜덤 세대, 그래프는 전체) · 첫 화면 360 · **세대를 X세대로 바꾼 뒤** 그래프 카드(PC) · 360에서 밀레니얼을 고른 뒤 목록 아래 그래프(뷰포트) · 하단 PC · 하단 360 · 바탕이 바뀐 룰렛 결과 PC. 다크·강제 색상·320 200%·1920·cream 비교는 **검사만**(임시 샷 .taste-skill/004r4/after/mock/).
+const TMP4 = ROOT + '.taste-skill/004r4/after/mock/';
+mkdirSync(TMP4, { recursive: true });
+const titleMeasure4 = (page) =>
+  page.evaluate(() => {
+    const r = (sel) => { const el = document.querySelector(sel); return el ? el.getBoundingClientRect() : null; };
+    const rd = (b) => (b ? { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), width: Math.round(b.width), height: Math.round(b.height) } : null);
+    const fs = (s) => { const el = document.querySelector(s); return el ? `${getComputedStyle(el).fontSize}/${getComputedStyle(el).lineHeight} ${getComputedStyle(el).fontWeight}` : null; };
+    const list = document.querySelector('.gen-list'); const rows = [...document.querySelectorAll('.gen-row')]; const lr = list && list.getBoundingClientRect();
+    const inView = (el) => { if (!el || !lr) return false; const b = el.getBoundingClientRect(); return b.top >= lr.top - 1 && b.bottom <= lr.bottom + 1; };
+    const chart = document.querySelector('.gen-chart'); const svg = document.querySelector('.gen-chart__plot');
+    return {
+      vw: innerWidth, vh: innerHeight, scrollH: document.documentElement.scrollHeight, bg: getComputedStyle(document.body).backgroundColor, paper: document.documentElement.getAttribute('data-paper'),
+      logo: rd(r('.hero__logo--a svg.logo')), time: rd(r('.hero__time')), tag: rd(r('.hero__tag')), span: rd(r('.hero__span')), lead: document.querySelectorAll('.slot__lead').length,
+      listTop: lr && Math.round(lr.top), listH: lr && Math.round(lr.height), visibleRows: rows.filter(inView).length, selected: (document.querySelector('input[name=gen]:checked') || {}).value, selectedInView: inView(document.querySelector('.gen-row.is-selected')),
+      mainBottom: rd(r('.title__main'))?.bottom, barTop: rd(r('.bottom-bar'))?.top, chart: rd(r('.gen-chart')), chartParent: chart && chart.parentElement.id ? `#${chart.parentElement.id}` : chart && `.${[...chart.parentElement.classList].join('.')}`, svg: rd(r('.gen-chart__plot')), foot: rd(r('.title-foot')),
+      live: document.querySelector('.gen-chart__gen')?.textContent, label: svg?.getAttribute('aria-label'), nums: [...document.querySelectorAll('.gen-chart__nums dd .gen-chart__val')].map((e) => e.textContent), subs: [...document.querySelectorAll('.gen-chart__nums small')].map((e) => e.textContent), tableRows: document.querySelectorAll('.gen-chart__tbody tr').length, band: !!svg?.querySelector('.gchart__band'), peak: svg?.querySelector('.gchart__peak')?.textContent,
+      type: { tag: fs('.hero__tag'), time: fs('.hero__time'), span: fs('.hero__span'), name: fs('.gen-row__name'), chartTitle: fs('.gen-chart__title'), val: fs('.gen-chart__val'), footH: fs('.foot-cols h2'), footP: fs('.foot-cols p'), footSmall: fs('.foot-small') },
+      footCols: new Set([...document.querySelectorAll('.foot-cols section')].map((s) => Math.round(s.getBoundingClientRect().left))).size,
+    };
+  });
+async function pickGen(page, id) { await page.locator(`input[name=gen][value=${id}]`).check({ force: true }); await page.waitForTimeout(450); }
+if (want('gm3r4-title')) {
+  const { ctx, page } = await open({ file: 'title-004', q: 'gen=random&lived=boomer', view: { width: 1280, height: 800 } });
+  await check(page, 'gm3r4-title-1280x800');
+  const m0 = await titleMeasure4(page);
+  notes.push(`gm3r4-title-1280x800(랜덤): ${JSON.stringify(m0)}`);
+  if (m0.lead !== 0) problems.push('안내 한 줄(.slot__lead)이 남아 있다');
+  if (!m0.chart || m0.chart.bottom > m0.barTop) problems.push(`그래프 카드 아래끝 ${m0.chart?.bottom}이 띠 ${m0.barTop} 아래다(HS3 ④)`);
+  if (m0.chartParent !== '.title__side.title__side--r4') problems.push(`1280에서 그래프 자리가 오른쪽 열이 아니다: ${m0.chartParent}`);
+  await shot(page, 'gm3r4-title-1280x800');
+  // 세대를 바꾼다(라디오 체크) → 그래프·숫자·표·읽기 이름이 X세대로
+  await pickGen(page, 'genx');
+  const m1 = await titleMeasure4(page);
+  notes.push(`gm3r4-chart-genx-1280(X세대로 바꾼 뒤): ${JSON.stringify({ live: m1.live, label: m1.label, nums: m1.nums, subs: m1.subs, tableRows: m1.tableRows, band: m1.band, peak: m1.peak, chart: m1.chart })}`);
+  if (!/X세대/.test(m1.live || '') || !/1970~1980년생 구간/.test(m1.label || '') || m1.nums.join() !== '46~56세,89만 명,62.3~66.1세' || m1.tableRows !== 11 || !m1.band || m1.peak !== '1971년 102만') problems.push(`X세대 그래프 상태가 어긋난다: ${JSON.stringify({ live: m1.live, nums: m1.nums, rows: m1.tableRows, band: m1.band, peak: m1.peak })}`);
+  await shot(page, 'gm3r4-chart-genx-1280', { el: '.gen-chart' });
+  // 가리킴: 플롯 위 1988년 자리로 포인터 → 세로 선·점·글자가 보인다
+  const svgBox = await page.locator('.gen-chart__plot').boundingBox();
+  const sc = svgBox.width / 400; await page.mouse.move(svgBox.x + (46 + (1988 - 1940) * (346 / 80)) * sc, svgBox.y + 100 * sc); await page.waitForTimeout(100);
+  const hover = await page.evaluate(() => ({ text: document.querySelector('.gchart__cursor-text')?.textContent, hidden: document.querySelector('.gchart__cursor-text')?.hasAttribute('hidden') }));
+  notes.push(`가리킴(1988년 자리): ${JSON.stringify(hover)}`);
+  if (hover.hidden || !/1988년 · 63만 명/.test(hover.text || '')) problems.push(`가리킴 글자가 어긋난다: ${JSON.stringify(hover)}`);
+  await page.screenshot({ path: `${TMP4}chart-hover-1280.png`, clip: { x: svgBox.x - 8, y: svgBox.y - 8, width: svgBox.width + 16, height: svgBox.height + 16 } });
+  await page.mouse.move(0, 0);
+  // 세대 7종 + 랜덤 모두: 숫자 셋이 비지 않고(값 또는 —), 표 줄 수 = 1970년 이후 해 수(+ 1969 이전이면 한 줄)
+  for (const id of ['industrial', 'boomer', 'g86', 'millennial', 'genz', 'alpha', 'random']) { await pickGen(page, id); const mm = await titleMeasure4(page); notes.push(`세대 ${id}: nums ${JSON.stringify(mm.nums)} subs ${JSON.stringify(mm.subs)} rows ${mm.tableRows} band ${mm.band} peak ${mm.peak} · ${mm.label}`); if (mm.nums.length !== 3 || mm.nums.some((v) => v === '')) problems.push(`${id}: 숫자 칸이 비었다`); }
+  // 키보드(목록, r3와 같은 검사) + 하단
+  notes.push(`gm3r4-title-1280x800 키보드: ${JSON.stringify(await keyboardTest3(page))}`);
+  await page.locator('.title-foot').scrollIntoViewIfNeeded(); await page.waitForTimeout(150);
+  const mf = await titleMeasure4(page); notes.push(`gm3r4-footer-1280: foot ${JSON.stringify(mf.foot)} cols ${mf.footCols} type ${JSON.stringify(mf.type)}`);
+  if (mf.footCols !== 3) problems.push(`1280 하단 세 칸이 3열이 아니다: ${mf.footCols}`);
+  await shot(page, 'gm3r4-footer-1280', { el: '.title-foot' });
+  await ctx.close();
+  // 360
+  {
+    const { ctx: c3, page: p3 } = await open({ file: 'title-004', q: 'gen=random&lived=boomer', view: { width: 360, height: 740 }, dpr: 2, coarse: true });
+    await check(p3, 'gm3r4-title-360x740');
+    const n0 = await titleMeasure4(p3); notes.push(`gm3r4-title-360x740(랜덤): ${JSON.stringify(n0)}`);
+    if (n0.chartParent !== '#gen-chart-slot') problems.push(`360에서 그래프 자리가 목록 아래가 아니다: ${n0.chartParent}`);
+    if (n0.logo && n0.logo.width > 328) problems.push(`360 워드마크 폭 ${n0.logo.width} > 328`);
+    await shot(p3, 'gm3r4-title-360x740');
+    await pickGen(p3, 'millennial');
+    await p3.evaluate(() => { const c = document.querySelector('.gen-chart'); window.scrollTo(0, c.getBoundingClientRect().top + scrollY - 120); }); await p3.waitForTimeout(200);
+    const n1 = await titleMeasure4(p3); notes.push(`gm3r4-chart-360x740(밀레니얼): ${JSON.stringify({ live: n1.live, nums: n1.nums, chart: n1.chart, svg: n1.svg, peak: n1.peak })}`);
+    await shot(p3, 'gm3r4-chart-360x740');
+    notes.push(`gm3r4-title-360x740 키보드: ${JSON.stringify(await keyboardTest3(p3))}`);
+    const metaEdge = await p3.evaluate(() => { const l = document.querySelector('.gen-list').getBoundingClientRect(); return [...document.querySelectorAll('.gen-row__meta')].map((m) => Math.round(l.right - m.getBoundingClientRect().right)); });
+    if (metaEdge.some((v) => v < 8)) problems.push(`360 메타 오른쪽 여유 < 8: ${JSON.stringify(metaEdge)}`);
+    await p3.locator('.title-foot').scrollIntoViewIfNeeded(); await p3.waitForTimeout(150);
+    const nf = await titleMeasure4(p3); notes.push(`gm3r4-footer-360: foot ${JSON.stringify(nf.foot)} cols ${nf.footCols}`);
+    await shot(p3, 'gm3r4-footer-360', { el: '.title-foot' });
+    await c3.close();
+  }
+  // 검사만: 다크 1280(X세대) · 강제 색상 1280·360(X세대) · 1920 · 320 글자 200%(끊긴 낱말 — 하단 포함) · cream 비교(바탕값) · 대체 글꼴
+  for (const [label, view, q, opt] of [
+    ['title-dark-1280', { width: 1280, height: 800 }, 'gen=genx&lived=boomer&theme=dark', { dark: true }],
+    ['title-forced-1280', { width: 1280, height: 800 }, 'gen=genx&lived=boomer', { forced: true }],
+    ['title-forced-360', { width: 360, height: 740 }, 'gen=genx&lived=boomer', { forced: true, dpr: 2, coarse: true }],
+    ['title-1920x1080', { width: 1920, height: 1080 }, 'gen=genx&lived=boomer', {}],
+    ['title-320-text200', { width: 320, height: 640 }, 'gen=genx&lived=boomer', { text: 200 }],
+    ['title-cream-1280', { width: 1280, height: 800 }, 'gen=genx&lived=boomer&alt=cream', {}],
+    ['title-system-font-1280', { width: 1280, height: 800 }, 'gen=genx&lived=boomer&font=system', {}],
+  ]) {
+    const { ctx: c4, page: p4 } = await open({ file: 'title-004', q, view, ...opt });
+    await check(p4, `r4 ${label}`);
+    const m = await titleMeasure4(p4);
+    const broken = label.includes('text200') ? await brokenWords(p4, '.title') : [];
+    notes.push(`r4 ${label}: ${JSON.stringify({ bg: m.bg, paper: m.paper, logo: m.logo, listH: m.listH, visibleRows: m.visibleRows, selectedInView: m.selectedInView, mainBottom: m.mainBottom, barTop: m.barTop, chart: m.chart, chartParent: m.chartParent, scrollH: m.scrollH, live: m.live })}${label.includes('text200') ? ` · 끊긴 낱말 ${broken.length === 0 ? '0' : broken.join(', ')}` : ''}`);
+    if (label.includes('text200') && broken.length) problems.push(`320 · 200% 끊긴 낱말: ${broken.join(', ')}`);
+    await p4.screenshot({ path: `${TMP4}${label}.png`, fullPage: label.includes('text200') || label.includes('forced-1280') });
+    await c4.close();
+  }
+}
+if (want('gm3r4-roulette')) {
+  const { ctx, page } = await open({ file: 'roulette-004', q: 'state=result', view: { width: 1280, height: 800 } });
+  await check(page, 'gm3r4-roulette-result-1280x800');
+  notes.push(`gm3r4-roulette-result-1280x800: ${JSON.stringify(await reelMeasure3(page))} · 바탕 ${await page.evaluate(() => getComputedStyle(document.body).backgroundColor)}`);
+  await shot(page, 'gm3r4-roulette-result-1280x800');
+  await ctx.close();
+  for (const [label, file, q, view, opt] of [['roulette-dark-360', 'roulette-004', 'state=result&theme=dark', { width: 360, height: 740 }, { dark: true, dpr: 2 }], ['birth-paper-1280', 'birth-004', '', { width: 1280, height: 800 }, {}], ['dash-paper-1280', 'dashboard-004', 'state=then', { width: 1280, height: 800 }, {}]]) {
+    const { ctx: c2, page: p2 } = await open({ file, q, view, ...opt });
+    await check(p2, `r4 ${label}`);
+    notes.push(`r4 ${label}: 바탕 ${await p2.evaluate(() => getComputedStyle(document.body).backgroundColor)} · 넘침 점검 완료`);
+    await p2.screenshot({ path: `${TMP4}${label}.png` });
+    await c2.close();
+  }
+}
+
 await browser.close();
-writeFileSync(`${MODE === 'r3' ? TMP3 : TMP}notes.txt`, notes.join('\n\n'));
+writeFileSync(`${MODE === 'r4' ? TMP4 : MODE === 'r3' ? TMP3 : TMP}notes.txt`, notes.join('\n\n'));
 if (notes.length > 0) console.log('\n측정:\n' + notes.join('\n\n'));
 if (problems.length > 0) {
   console.error('\n문제:\n' + problems.join('\n'));

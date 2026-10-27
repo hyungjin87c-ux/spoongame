@@ -1,9 +1,9 @@
 /**
- * SPEC-004 GM3 시안 생성기 (designer 2026-10-27 · r2 게이트 ③ 형진 님 답 반영 · **r3 2026-10-27 형진 님 답 2차 반영** — 벤치마킹 `docs/design/benchmark-004.md`). 정적 HTML 5장을 docs/design/mockups/gm3/에 만든다.
+ * SPEC-004 GM3 시안 생성기 (designer 2026-10-27 · r2 게이트 ③ 형진 님 답 반영 · r3 형진 님 답 2차 반영(벤치마킹 `docs/design/benchmark-004.md`) · **r4 2026-10-27 형진 님 답 3차 반영** — 바탕 종이색 토큰·제목 크게·설명 두 줄·「한 판 약 30분」·캐러셀 대신 세대 그래프·누리집 하단). 정적 HTML 5장을 docs/design/mockups/gm3/에 만든다.
  * 실행: node node_modules/vite-node/vite-node.mjs scripts/design/buildGm3Mockups.mjs   (mockLib가 faceLayers.ts를 읽어 vite-node가 필요하다)
  *   (글꼴 조각 fonts/*.woff2·noto-sans-kr.css는 먼저 `node scripts/design/buildGm3Fonts.mjs`로 만든다 — 첫 화면·룰렛·출생신고 시안이 읽는다. 없으면 대체 글꼴로 보인다)
- *   title-004.html     첫 화면 세대 선택 — title-005.html(SPEC-005 r3 시안)을 읽어 머리(일러스트 없음·체험 한 줄 ②)·큰 슬롯(한 열 8줄 목록, r3: 상자 없이 줄 + 줄마다 작은 소개)·시도 선택·내 출신 시도 설정을 바꾼다(한 장면).
- *                      ?gen=<id>|random(기본 random) · lived=a,b · region=pick · pick=<시도> · origin=set · open=origin · fold=open · state=new|saved · theme=dark · font=system(대체 글꼴로 — CLS 비교) · alt=paper(대안: 바탕 한 단 밝게. 캐러셀 평면화는 정본 — 마스터 결정 D4-55)
+ *   title-004.html     첫 화면 세대 선택 — title-005.html(SPEC-005 r3 시안)을 읽어 머리(일러스트 없음·워드마크 84/64px·「한 판 약 30분」·설명 두 줄)·큰 슬롯(한 열 8줄 목록, 상자 없이 줄 + 줄마다 작은 소개)·**오른쪽 열 = 고른 세대를 따라 바뀌는 「한 해에 태어난 아기 수」 그래프 하나(r4 — 20장 캐러셀 없음)**·시도 선택·내 출신 시도 설정·**새 하단(r4)**을 바꾼다(한 장면).
+ *                      ?gen=<id>|random(기본 random) · lived=a,b · region=pick · pick=<시도> · origin=set · open=origin · fold=open · state=new|saved · theme=dark · font=system(대체 글꼴로 — CLS 비교) · alt=cream(비교용: r3까지의 바탕 #f6f3ec — 기본은 r4 종이색 #f9f7f2, 형진 님 답 3차 1)
  *   roulette-004.html  세대 뽑기 단계 → **2릴(지역 · 수저)**. ?state=draw|spinning|result · gen=millennial(기본)|boomer(1940~1980 인구 비례) · region=picked · from=random(랜덤 세대 경로 — 머리에 「랜덤 세대에서 뽑힌」) · theme=dark · motion=reduce · font=system
  *                      r3: 연도 릴·연도 표 없음(연도는 보이지 않게 GS7 가중으로 뽑혀 출생신고에서 드러난다). 지역·수저 표는 **고른 세대 전체 기준**(연도 가중으로 섞은 값, 도는 동안 불변) — genMixture(). 값은 docs/data/dc2-dc7-births-regions.json(1981~2020 시도별 출생 비율·전국 출생아 수)·
  *                      dc7-province-population.json stairWeights(1940~1980 도별 인구 비례 계단식)·generations.md 3-2 wealthWeights(N29 연도별 설계값)에서 계산한다(가짜 값 0).
@@ -40,7 +40,62 @@ const GM3_TEXT = {
   listLabel: '태어날 세대',
   lived: '살아봄',
   foldSummary: '세대 범위는 자료마다 조금씩 달라요',
-  foldBody: '이 게임은 위 범위를 써요. 1960~1963년생은 베이비붐 세대와 86세대 어느 쪽으로도 살아볼 수 있어요. 출생 연도는 고른 세대의 범위 안에서 룰렛이 뽑아요.',
+  /* r4(형진 님 답 3차 2 「설명 줄은 두 줄」 = r3 제안 9): GS1 안내 한 줄 「다른 세대의 시간을 …」이 목록 위에서 빠지고 접이식 본문의 첫 문장이 된다 — 머리에는 부제 + 체험 한 줄 둘만 남는다 */
+  foldBody: '다른 세대의 시간을 살아 보며 서로의 사정을 이해해 봐요. 이 게임은 위 범위를 써요. 1960~1963년생은 베이비붐 세대와 86세대 어느 쪽으로도 살아볼 수 있어요. 출생 연도는 고른 세대의 범위 안에서 룰렛이 뽑아요.',
+  /* r4 「한 판 약 30분」 — 제목 가까이 작게(벤치마킹 Trust 「playing time: 30 min」, 형진 님 답 3차 2). 구현은 `한 판 ${LIFE_LENGTH_TEXT[settings.lifeLength].title}`(인생 길이 분절과 같은 값) */
+  heroTime: (len) => `한 판 ${len}`,
+  lifeLengthShort: '약 30분',
+  /* r4 세대 그래프(캐러셀 대신 — 형진 님 답 3차 2 + 마스터 해석 「왼쪽에서 고른 세대에 맞춰 바뀌는 그래프 하나」) — 글자는 copy.md 16-12 */
+  chart: {
+    title: '한 해에 태어난 아기 수',
+    anyGen: '어느 세대든',
+    none: '연간 통계 없음',
+    since1970: '1970년부터 자료가 있어요',
+    noData: '자료 없음',
+    kAge: '올해 나이',
+    kAvg: '한 해 평균 출생아',
+    kLife: '태어난 해의 기대수명',
+    tableSummary: '표로 보기',
+    /* 아래 넷은 {자리} 틀 — 그리기 함수가 Node와 브라우저에서 같은 글자로 채운다(JSON으로 넘기므로 함수가 아니라 글자) */
+    tableCaption: '{who} 구간의 해마다 출생아 수',
+    thYear: '연도',
+    thBirths: '출생아 수',
+    src: '출처: 국가데이터처 인구동향조사 출생아 <span class="keep-phrase">수(1970~2020년)와</span> 생명표 <span class="keep-phrase">기대수명(1970~2024년),</span> <span class="nowrap">2026-10-15</span> 조회. 1969년까지는 공식 연간 출생 통계가 없어 비워 두었어요.', // 괄호 묶음은 keep-phrase(구현 Glue ⑤) — 묶음은 320 · 200%(288px)에 들어가는 길이만
+    labelAll: '1940년부터 2020년까지 한 해에 태어난 아기 수 그래프. 공식 연간 통계는 1970년부터 있어요. 1970~2020년은 한 해 평균 {avg} 명, 가장 많은 해는 {peakY}년 {peakV} 명, 2020년은 {lastV} 명이에요.',
+    labelGen: '1940년부터 2020년까지 한 해에 태어난 아기 수 그래프. {name} {from}~{to}년생 구간을 강조했어요. {body}',
+    labelGenData: '그 구간은 한 해 평균 {avg} 명, 가장 많은 해는 {peakY}년 {peakV} 명이에요.',
+    labelGenNone: '그 구간은 공식 연간 출생 통계가 없어요.',
+  },
+  /* r4 하단(형진 님 답 3차 4 — 「80억분의 1」 하단은 **구조만** 참고, 문장·그림·연락처를 옮기지 않았다). 자리표시자 셋은 형진 님 답(2026-10-27)으로 채웠다: 운영자 cottonchild · 문의 kottonchild@gmail.com(mailto만) · 15세 이상 권장 */
+  foot: {
+    whatH: '이 게임은',
+    what: '태어날 집도, 땅도, 해도 고를 수 없는 한국 인생 시뮬레이션이에요. 룰렛이 정한 집안 형편과 시대 속에서 한 사람의 삶을 해마다 따라가며, 출발선의 차이가 선택과 결과에 어떻게 닿는지 느껴 봐요.',
+    whyH: '왜 만들었나',
+    why: '「80억분의 1」을 한국 사정에 맞게 다시 만들어 보고 싶었어요. 부모와 자녀, 이웃 세대가 서로의 시절을 살아 보며 이야기 나누고 서로를 이해하길 바라며 만들었어요. 「80억분의 1」과는 관계없는 개인 프로젝트예요.',
+    realH: '무엇이 실제 자료인가',
+    real: (orgs) => `통계 그래프와 태어날 때의 바탕 수치(출생 월, 체중, 부모님 나이 등)는 ${orgs}의 공개 자료에서 옮겼어요. 수저 단계가 나올 확률, 선택지의 효과 같은 게임 속 확률과 수치는 게임을 위해 정한 설계값이에요. 통계가 아니에요. 사연과 인물은 만들어 낸 이야기예요.`,
+    heavy: (gentle, help, age) => `아픈 일, 이별, 병, 죽음처럼 무거운 일도 일어나요. 자극적으로 그리지 않고 짧게 적어요. 「${gentle}」를 켜면 그런 장면의 글만 가려요. 힘든 마음을 혼자 견디지 않아도 돼요. ${help}로 전화할 수 있어요. ${age}.`,
+    ai: '한 사람이 기획하고 AI(Anthropic의 Claude)와 함께 만든 시뮬레이션이에요. 숫자는 공개 통계와 게임의 설계값이고, 게임을 하는 동안 AI가 글을 새로 만들지는 않아요.',
+    beta: '아직 다듬는 중이에요. 이상한 곳이나 바라는 점을 알려 주시면 살펴보고 고칠게요.',
+    feedback: '의견 보내기',
+    news: '새 소식',
+    family: '가족과 함께라면 부모님이나 자녀의 세대를 골라 살아 보고, 그 시절 이야기를 나눠 보세요.',
+    linkIntro: '소개',
+    linkPrivacy: '개인정보 처리방침',
+    linkTerms: '이용 안내',
+    linkFeedback: '의견 보내기',
+    contactLead: '그 밖의 문의',
+    operatorLead: '운영자',
+    operator: 'cottonchild',
+    contact: 'kottonchild@gmail.com',
+    age: '15세 이상 권장',
+    gentleName: '무거운 장면 가리기',
+    help: '자살예방 상담전화 109(24시간)',
+    statsLead: '통계 출처: ',
+    statsTail: '(통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요)',
+    orgs: ['국가데이터처', '행정안전부', '교육부', '기상청'],
+    version: 'v0.2.1 (a1b2c3d)',
+  },
   regionTitle: '태어나는 시도',
   regionRoulette: '룰렛에 맡기기',
   regionPick: '직접 고르기',
@@ -210,14 +265,116 @@ function genRow(g, { selected = false, random = false } = {}) {
   <span class="sr-only sel">${selected ? '선택됨' : ''}</span>
 </label>`;
 }
+/** r4: 안내 한 줄(`.slot__lead`)은 접이식 안으로(형진 님 답 3차 2). 목록 아래 `#gen-chart-slot`은 좁은 화면(< 960px)에서 세대 그래프가 들어오는 자리(한 노드를 미디어 질의로 옮긴다 — 넓은 화면은 오른쪽 열) */
 function genSlot() {
   return `<fieldset class="slot slot--big slot--gen8"><legend class="group-title">${GM3_TEXT.question}</legend>
-      <p class="slot__lead">${GM3_TEXT.lead}</p>
       <div class="gen-list" role="radiogroup" aria-label="${GM3_TEXT.listLabel}">
       ${genRow(null, { random: true, selected: true })}
       ${GENS.map((g) => genRow(g)).join('\n      ')}
       </div>
-      <details class="disclosure slot__fold"><summary>${GM3_TEXT.foldSummary}</summary><p>${GM3_TEXT.foldBody}</p></details></fieldset>`;
+      <details class="disclosure slot__fold"><summary>${GM3_TEXT.foldSummary}</summary><p>${GM3_TEXT.foldBody}</p></details></fieldset>
+    <div id="gen-chart-slot" class="gen-chart-slot" hidden></div>`;
+}
+
+// ============================================================ ①-1 r4 세대 그래프 (캐러셀 대신 — 형진 님 답 3차 2, 마스터 해석) ============================================================
+/** 값은 저장소의 실제 값만: 전국 출생아 수 1970~2020(DC2 `births_national` actual = koreaStats `births`와 같은 표) · 기대수명 1970~2024(koreaStats `life-expectancy`). 1940~1969는 공식 연간 출생 통계가 없어 **비워 둔다**(DC2 3-2절 — 1943·44는 한반도 전체, 1946~48·1960은 범위·정의가 달라 가중 근거로 못 쓴다 → 그림에도 올리지 않는다. 「추정」 표시 규칙(N1·M12)은 추정값을 보일 때의 규칙이라 여기서는 「연간 통계 없음」 글자로 둔다) */
+const KS = JSON.parse(readFileSync(`${ROOT}src/data/koreaStats.json`, 'utf-8'));
+const LIFE = KS.indicators.find((i) => i.id === 'life-expectancy').series.map((p) => [p.year, p.value]);
+const BIRTHS_1970 = BR.filter((x) => x.series === 'births_national' && x.status === 'actual' && x.year >= 1970 && x.year <= 2020).map((x) => [x.year, x.value]);
+if (BIRTHS_1970.length !== 51) throw new Error(`출생아 수 1970~2020이 51개가 아니다: ${BIRTHS_1970.length}`);
+for (const y of [1943, 1944, 1946, 1947, 1948, 1960]) if (BIRTHS_1970.some((p) => p[0] === y)) throw new Error('1970년 전 값이 그래프 데이터에 들어갔다');
+/** 그래프 데이터(브라우저에도 그대로 박힌다 — 세대를 바꿀 때 같은 함수가 다시 그린다) */
+const CHART_DATA = {
+  now: NOW,
+  gens: GENS.map((g) => ({ id: g.id, name: g.name, from: g.from, to: g.to })),
+  births: BIRTHS_1970,
+  life: LIFE,
+  geom: { L: 46, R: 392, T: 16, B: 172, Y0: 1940, Y1: 2020, YMAX: 1200000 }, // 플롯 상자 — 축 글자 왼쪽 차선 46, 위 눈금(120만)은 최댓값(1971년 102만) 위
+  text: GM3_TEXT.chart,
+};
+/** 그리기 함수(ES5 — Node가 첫 상태를 그리고, 같은 글자가 브라우저에서 라디오가 바뀔 때 다시 그린다. 구현은 React 부품 `GenChart`로 옮긴다 — diff-004 D4-61).
+ *  규칙(dataviz 스킬 + app-screens §6): 한 계열 · 강조 = 고른 세대 구간만 쪽빛 2.5px + 옅은 쪽빛 띠, 나머지는 보조 1.5px · 격자 3줄 + 기준선 · y 눈금 0/40만/80만/120만(최댓값 위) · x 눈금 5개(끝 둘은 안쪽으로) · 직접 라벨은 구간 최댓값 하나 · 범례 없음(한 계열) · 점선 격자 없음 · 글자는 잉크 토큰(계열 색을 글자에 쓰지 않는다) */
+const GEN_CHART_FN = `function genChartRender(D, id) {
+  var G = D.geom, L = G.L, R = G.R, T = G.T, B = G.B, Y0 = G.Y0, Y1 = G.Y1, YMAX = G.YMAX, X = D.text;
+  var step = (R - L) / (Y1 - Y0);
+  var x = function (y) { return L + (y - Y0) * step; };
+  var yv = function (v) { return B - (v / YMAX) * (B - T); };
+  var r1 = function (n) { return Math.round(n * 10) / 10; };
+  var man = function (v) { return Math.round(v / 10000).toLocaleString('ko-KR') + '만'; };
+  var fmt = function (tpl, o) { return tpl.replace(/\\{(\\w+)\\}/g, function (m, k) { return k in o ? String(o[k]) : m; }); };
+  var g = null; D.gens.forEach(function (q) { if (q.id === id) g = q; });
+  var all = !g, from = g ? g.from : Y0, to = g ? g.to : Y1, name = g ? g.name : X.anyGen;
+  var inSpan = function (y) { return y >= from && y <= to; };
+  var rows = D.births.filter(function (p) { return inSpan(p[0]); });
+  var avg = rows.length ? rows.reduce(function (s, p) { return s + p[1]; }, 0) / rows.length : null;
+  var peak = rows.length ? rows.reduce(function (m, p) { return p[1] > m[1] ? p : m; }) : null;
+  var leRows = D.life.filter(function (p) { return inSpan(p[0]); });
+  var leA = leRows.length ? leRows[0] : null, leB = leRows.length ? leRows[leRows.length - 1] : null;
+  var age = (D.now - to) + '~' + (D.now - from) + '세';
+  var s = '';
+  [400000, 800000, 1200000].forEach(function (v) { s += '<line class="grid" x1="' + L + '" x2="' + R + '" y1="' + r1(yv(v)) + '" y2="' + r1(yv(v)) + '"/>'; });
+  if (!all) s += '<rect class="gchart__band" x="' + r1(x(from) - step / 2) + '" y="' + (T - 6) + '" width="' + r1((to - from + 1) * step) + '" height="' + (B - T + 6) + '"/>';
+  [400000, 800000, 1200000].forEach(function (v) { s += '<text class="gchart__tick" x="' + (L - 6) + '" y="' + r1(yv(v) + 4) + '" text-anchor="end">' + man(v) + '</text>'; });
+  s += '<text class="gchart__tick" x="' + (L - 6) + '" y="' + (B + 4) + '" text-anchor="end">0</text>';
+  s += '<line class="axis" x1="' + L + '" x2="' + R + '" y1="' + B + '" y2="' + B + '"/>';
+  [1940, 1960, 1980, 2000, 2020].forEach(function (y) { var a = y === Y0 ? 'start' : y === Y1 ? 'end' : 'middle'; s += '<text class="gchart__tick" x="' + r1(x(y)) + '" y="' + (B + 16) + '" text-anchor="' + a + '">' + y + '</text>'; });
+  s += '<text class="gchart__none" x="' + r1(x(1954.5)) + '" y="' + (B - 10) + '" text-anchor="middle">' + X.none + '</text>';
+  var pts = function (arr) { return arr.map(function (p) { return r1(x(p[0])) + ',' + r1(yv(p[1])); }).join(' '); };
+  s += '<polyline class="gchart__line gchart__line--rest" points="' + pts(D.births) + '"/>';
+  if (rows.length) s += '<polyline class="gchart__line gchart__line--span" points="' + pts(rows) + '"/>';
+  if (peak) { var px = r1(x(peak[0])), py = r1(yv(peak[1])); var lx = Math.min(Math.max(px, L + 48), R - 48); s += '<circle class="gchart__dot" cx="' + px + '" cy="' + py + '" r="4"/><text class="gchart__peak" x="' + lx + '" y="' + r1(py - 9) + '" text-anchor="middle">' + peak[0] + '년 ' + man(peak[1]) + '</text>'; }
+  s += '<rect class="gchart__hit" x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '"/>';
+  s += '<line class="gchart__cursor" x1="0" x2="0" y1="' + (T - 2) + '" y2="' + B + '" hidden="hidden"/><circle class="gchart__cursor-dot" r="4" hidden="hidden"/><text class="gchart__cursor-text" y="' + (T - 4) + '" text-anchor="middle" hidden="hidden"></text>';
+  var dash = '<span class="sr-only">' + X.noData + '</span><span class="gen-chart__dash" aria-hidden="true">—</span>';
+  var cell = function (dt, dd, sub) { return '<div><dt>' + dt + '</dt><dd><span class="gen-chart__val">' + dd + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</dd></div>'; };
+  var nums = cell(X.kAge, age, '') + cell(X.kAvg, avg === null ? dash : man(avg) + ' 명', avg === null ? X.since1970 : rows[0][0] + '~' + rows[rows.length - 1][0] + '년') + cell(X.kLife, leA ? leA[1].toFixed(1) + '~' + leB[1].toFixed(1) + '세' : dash, leA ? leA[0] + '·' + leB[0] + '년생' : X.since1970);
+  var live = (g ? '<b>' + name + '</b>' : '<b>' + X.anyGen + '</b>') + ' · ' + from + '~' + to + '년생';
+  var label = all ? fmt(X.labelAll, { avg: man(avg), peakY: peak[0], peakV: man(peak[1]), lastV: man(D.births[D.births.length - 1][1]) }) : fmt(X.labelGen, { name: name, from: from, to: to, body: peak ? fmt(X.labelGenData, { avg: man(avg), peakY: peak[0], peakV: man(peak[1]) }) : X.labelGenNone });
+  var table = '';
+  if (from <= 1969) table += '<tr><th scope="row">' + Math.max(from, Y0) + '~' + Math.min(to, 1969) + '년</th><td>' + dash + '</td></tr>';
+  rows.forEach(function (p) { table += '<tr><th scope="row">' + p[0] + '년</th><td>' + p[1].toLocaleString('ko-KR') + '명</td></tr>'; });
+  return { svg: s, nums: nums, live: live, label: label, table: table, caption: fmt(X.tableCaption, { who: g ? name + ' ' + from + '~' + to + '년생' : '1940~2020년생' }) };
+}`;
+// eslint-disable-next-line no-new-func
+const renderGenChart = new Function(`${GEN_CHART_FN}; return genChartRender;`)();
+const CHART_VIEWBOX = '0 0 400 196';
+/** 그래프 카드(첫 상태 = 「랜덤 세대」 — 띠 없이 전체) */
+function genChartCard(id = 'random') {
+  const X = GM3_TEXT.chart;
+  const o = renderGenChart(CHART_DATA, id);
+  return `<section class="card gen-chart" aria-labelledby="gen-chart-title" data-gen="${id}">
+      <div class="gen-chart__head"><h2 class="gen-chart__title" id="gen-chart-title">${X.title}</h2><p class="gen-chart__gen" aria-live="polite">${o.live}</p></div>
+      <svg class="chart gchart gen-chart__plot" viewBox="${CHART_VIEWBOX}" role="img" aria-label="${esc(o.label)}" focusable="false">${o.svg}</svg>
+      <dl class="gen-chart__nums">${o.nums}</dl>
+      <details class="disclosure gen-chart__table"><summary>${X.tableSummary}</summary><table><caption class="sr-only gen-chart__caption">${o.caption}</caption><thead><tr><th scope="col">${X.thYear}</th><th scope="col">${X.thBirths}</th></tr></thead><tbody class="gen-chart__tbody">${o.table}</tbody></table></details>
+      <p class="gen-chart__src">${X.src}</p>
+    </section>`;
+}
+const genChartAside = () => `<aside class="title__side title__side--r4">\n    ${genChartCard('random')}\n  </aside>\n`;
+for (const g of GENS) { const o = renderGenChart(CHART_DATA, g.id); if (!o.label.includes(g.name)) throw new Error(`${g.id}: 그래프 읽기 이름에 세대 이름이 없다`); }
+{ const o = renderGenChart(CHART_DATA, 'genx'); if (!o.nums.includes('89만 명') || !o.svg.includes('1971년 102만')) throw new Error(`X세대 그래프 값 검산 실패: ${o.nums}`); } // 1970~1980 합 9,844,474 ÷ 11 = 894,952 → 89만 · 최대 1971년 1,024,773 → 102만
+
+// ============================================================ ①-2 r4 누리집 하단 (형진 님 답 3차 4 — 구조만 참고, 자리표시자는 형진 님 답으로 채움) ============================================================
+/** 상자 안에 상자를 넣지 않고 가는 줄과 작은 글씨로만 나눈다. (a) 세 칸 → (b) 무거운 일 → (c) AI 고지 → (d) 의견 + 단추 둘 → (f) 가족 한 줄 → (e) 아주 작은 링크 줄 → (g) 출처·운영자·버전. 순서는 마스터 초안의 (e)(f)를 바꿨다 — 법률 꼬리(링크 줄·출처)는 맨 아래에 모은다 */
+function footerHtml(credit) {
+  const F = GM3_TEXT.foot;
+  const orgs = F.orgs.join(', ');
+  return `<footer class="title-foot title-foot--r4">
+    <div class="foot-cols">
+      <section><h2>${F.whatH}</h2><p>${F.what}</p></section>
+      <section><h2>${F.whyH}</h2><p>${F.why}</p></section>
+      <section><h2>${F.realH}</h2><p>${F.real(orgs)}</p></section>
+    </div>
+    <p class="foot-p">${F.heavy(F.gentleName, F.help, F.age)}</p>
+    <p class="foot-p">${F.ai}</p>
+    <div class="foot-beta"><p class="foot-p">${F.beta}</p><span class="foot-beta__actions"><a class="btn btn--secondary btn--sm" href="#" data-panel="feedback">${F.feedback}</a><a class="btn btn--secondary btn--sm" href="#" data-panel="news">${F.news}</a></span></div>
+    <p class="foot-p foot-family">${F.family}</p>
+    <p class="foot-small foot-links"><a href="#" data-panel="intro">${F.linkIntro}</a> <span aria-hidden="true">·</span> <a href="#" data-panel="privacy">${F.linkPrivacy}</a> <span aria-hidden="true">·</span> <a href="#" data-panel="terms">${F.linkTerms}</a> <span aria-hidden="true">·</span> <a href="#" data-panel="feedback">${F.linkFeedback}</a> <span aria-hidden="true">·</span> <span class="nowrap">${F.contactLead}</span> <a href="mailto:${F.contact}">${F.contact}</a></p>
+    ${credit}
+    <p class="foot-small">${F.statsLead}${orgs} ${F.statsTail}</p>
+    <p class="foot-small"><span class="nowrap">${F.operatorLead} ${F.operator}</span> <span aria-hidden="true">·</span> <span class="num">${F.version}</span></p>
+    <p class="foot-small"><span class="mock-tag">시안 — 개인정보 처리방침과 이용 안내 초안은 copy.md 17절, 법률 검토 전. 이름 출처 줄은 title-005 시안의 것 그대로</span></p>
+  </footer>`;
 }
 function regionSlot() {
   const chip = (s, { disabled = false, origin = false } = {}) =>
@@ -265,6 +422,23 @@ function paintSido(){document.querySelectorAll('input[name=sido]').forEach(funct
 document.querySelectorAll('input[name=sido]').forEach(function(i){if(i.value===pick&&!i.disabled&&!i.closest('.chip-opt').hidden)i.checked=true;i.addEventListener('change',paintSido);});paintSido();
 (q.get('lived')||'').split(',').filter(Boolean).forEach(function(id){var c=document.querySelector('input[name=gen][value="'+id+'"]');if(c){var p=c.closest('.gen-row').querySelector('.gen-row__lived');if(p)p.hidden=false;}});
 if(q.get('fold')==='open'){var f=document.querySelector('.slot__fold');if(f)f.open=true;}
+/* r4 비교용: ?alt=cream 이면 r3까지의 바탕(#f6f3ec)으로 — 기본은 종이색 토큰(html[data-paper], gm3.css) */
+if(q.get('alt')==='cream')r.removeAttribute('data-paper');
+/* r4 세대 그래프(구현은 GM4 — 같은 규칙, diff-004 D4-61): 라디오가 바뀌면 같은 그리기 함수로 그림·숫자·표·읽기 이름을 다시 만든다. 세대 줄(aria-live=polite)만 알린다 — 그림(role=img)의 aria-label 변경은 알리지 않는다(과하지 않게). 처음 그림은 HTML에 박혀 있어(랜덤) 스크립트 없이도 보인다 */
+var CD=${JSON.stringify(CHART_DATA)};
+${GEN_CHART_FN}
+function paintChart(id){var c=document.querySelector('.gen-chart');if(!c)return;var o=genChartRender(CD,id);var svg=c.querySelector('.gen-chart__plot');svg.innerHTML=o.svg;svg.setAttribute('aria-label',o.label);c.querySelector('.gen-chart__gen').innerHTML=o.live;c.querySelector('.gen-chart__nums').innerHTML=o.nums;c.querySelector('.gen-chart__tbody').innerHTML=o.table;c.querySelector('.gen-chart__caption').textContent=o.caption;c.setAttribute('data-gen',id);bindHover();}
+/* 가리킴(dataviz 스킬 「십자선이 x를 찾는다」): 플롯 위에서 가장 가까운 해의 값을 세로 가는 선 + 점 + 글자로 — 값은 표(표로 보기)에도 모두 있어 가리킴이 없어도 읽을 수 있다 */
+function bindHover(){var svg=document.querySelector('.gen-chart__plot');if(!svg)return;var hit=svg.querySelector('.gchart__hit'),ln=svg.querySelector('.gchart__cursor'),dot=svg.querySelector('.gchart__cursor-dot'),tx=svg.querySelector('.gchart__cursor-text');if(!hit)return;var G=CD.geom,step=(G.R-G.L)/(G.Y1-G.Y0);
+function hide(){[ln,dot,tx].forEach(function(e){e.setAttribute('hidden','hidden');});}
+function at(ev){var pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;var p=pt.matrixTransform(svg.getScreenCTM().inverse());var year=Math.round(G.Y0+(p.x-G.L)/step);var v=null;CD.births.forEach(function(b){if(b[0]===year)v=b[1];});if(v===null){hide();return;}var x=G.L+(year-G.Y0)*step,y=G.B-(v/G.YMAX)*(G.B-G.T);ln.setAttribute('x1',x);ln.setAttribute('x2',x);dot.setAttribute('cx',x);dot.setAttribute('cy',y);tx.textContent=year+'년 · '+Math.round(v/10000).toLocaleString('ko-KR')+'만 명';tx.setAttribute('x',Math.min(Math.max(x,G.L+70),G.R-70));[ln,dot,tx].forEach(function(e){e.removeAttribute('hidden');});}
+hit.addEventListener('pointermove',at);hit.addEventListener('pointerleave',hide);}
+document.querySelectorAll('input[name=gen]').forEach(function(i){i.addEventListener('change',function(){paintChart(i.value);});});
+if(gen!=='random')paintChart(gen);else bindHover();
+/* 자리: 넓은 화면(≥ 960px)은 오른쪽 열, 좁은 화면은 세대 목록 바로 아래(#gen-chart-slot) — 한 노드를 옮긴다(복제 없음 — 읽기 프로그램에 한 번만). 빈 오른쪽 열은 숨겨 격자 간격이 남지 않게 */
+var chart=document.querySelector('.gen-chart'),side=document.querySelector('.title__side'),slot=document.getElementById('gen-chart-slot');
+function place(wide){if(!chart||!side||!slot)return;(wide?side:slot).appendChild(chart);side.hidden=!wide;slot.hidden=wide;}
+var mq=window.matchMedia('(min-width: 960px)');place(mq.matches);if(mq.addEventListener)mq.addEventListener('change',function(e){place(e.matches);});
 })();`;
 
 /** r3 글꼴(형진 님 답 2차 4 — Noto Sans KR을 가볍게): 조각 @font-face(fonts/noto-sans-kr.css, 생성 buildGm3Fonts.mjs) + 첫 화면 조각(s0 400·700) 미리 받기. 외부 주소 0. <html data-font="noto">가 --font-sans를 바꾼다(gm3.css) */
@@ -273,8 +447,8 @@ const FONT_LINKS = `<link rel="preload" href="fonts/NotoSansKR-400.s0.woff2" as=
 <link rel="stylesheet" href="fonts/noto-sans-kr.css">`;
 function buildTitle() {
   let html = readFileSync(`${ROOT}docs/design/mockups/title-005.html`, 'utf-8');
-  html = must(html, '<html lang="ko">', '<html lang="ko" data-font="noto">', 'html tag');
-  html = must(html, '<title>수저 게임 · 시안 · 첫 화면(SPEC-005 QI2)</title>', '<title>수저 게임 · 시안 · 첫 화면 세대 선택(SPEC-004 GM3 r3)</title>', 'title');
+  html = must(html, '<html lang="ko">', '<html lang="ko" data-font="noto" data-paper="1">', 'html tag'); // r4: 종이색 바탕 토큰(형진 님 답 3차 1)
+  html = must(html, '<title>수저 게임 · 시안 · 첫 화면(SPEC-005 QI2)</title>', '<title>수저 게임 · 시안 · 첫 화면 세대 선택(SPEC-004 GM3 r4)</title>', 'title');
   html = must(html, '<link rel="stylesheet" href="../../../src/styles/tokens.css">', '<link rel="stylesheet" href="../../../../src/styles/tokens.css">', 'tokens');
   html = must(html, '<link rel="stylesheet" href="ds.css">', '<link rel="stylesheet" href="../ds.css">', 'ds');
   html = must(html, '<link rel="stylesheet" href="title-005.css">', `<link rel="stylesheet" href="../title-005.css">\n${FONT_LINKS}\n<link rel="stylesheet" href="gm3.css">`, 'title-005.css');
@@ -287,10 +461,23 @@ function buildTitle() {
   html = html.replace(/\n[ \t]*<!-- hero=illust, 좁은 화면[^\n]*\n[ \t]*<figure class="illust illust--banner"[\s\S]*?<\/figure>/, '');
   html = html.replace(/\n[ \t]*<!-- hero=illust, 넓은 화면[^\n]*\n[ \t]*<figure class="illust illust--top"[\s\S]*?<\/figure>/, '');
   if (html.includes('class="illust')) throw new Error('일러스트 figure가 남아 있다');
-  html = must(html, '<header class="hero hero--005">', '<header class="hero hero--005 hero--r2 hero--r3">', 'hero class');
+  html = must(html, '<header class="hero hero--005">', '<header class="hero hero--005 hero--r2 hero--r3 hero--r4">', 'hero class');
+  html = must(html, '<div class="title title--005">', '<div class="title title--005 title--r4">', 'title class');
   // 「51,284명이 …」 큰 줄 + 안내 → 체험 한 줄(작은 글씨)
   html = html.replace(/<p class="hero__pop">[\s\S]*?<\/p>\n[ \t]*<p class="hero__note">[\s\S]*?<\/p>/, `<p class="hero__span">${GM3_TEXT.span}</p>`);
   if (html.includes('hero__pop') || html.includes('hero__note')) throw new Error('hero__pop/hero__note가 남아 있다');
+  // r4: 「한 판 약 30분」을 워드마크 바로 아래 작게(부제 위) — 인생 길이 분절의 값과 같은 글자
+  html = must(html, `<p class="hero__tag">${GM3_TEXT.tagLead}`, `<p class="hero__time">${GM3_TEXT.heroTime(GM3_TEXT.lifeLengthShort)}</p>\n      <p class="hero__tag">${GM3_TEXT.tagLead}`, 'hero time');
+  // r4: 오른쪽 열의 20장 캐러셀 → 세대 그래프 카드 하나 / 하단 새로 짜기
+  const credit = html.match(/<p class="credit">[\s\S]*?<\/p>/);
+  if (!credit) throw new Error('푸터 이름 출처 줄이 없다');
+  html = html.replace(/<aside class="title__side">[\s\S]*?<\/aside>\n(?=\s*<footer)/, genChartAside()); // 안쪽 <aside class="slide__help">까지 넘어 바깥 aside 끝(푸터 앞)에서 멈춘다
+  if (html.includes('<section class="card carousel') || html.includes('<article class="slide')) throw new Error('캐러셀이 남아 있다'); // 시안 스크립트의 null 검사 글자(.carousel--005)는 남아도 된다
+  html = html.replace(/<footer class="title-foot">[\s\S]*?<\/footer>/, footerHtml(credit[0].replace('class="credit"', 'class="foot-small credit"')));
+  if (!html.includes('title-foot--r4')) throw new Error('하단이 바뀌지 않았다');
+  // 시안 스크립트: 패널을 여는 링크 선택자를 새 하단(링크 줄 + 단추)으로 넓히고, 세대 라디오의 옛 .radio-card 핸들러(목록에는 카드가 없다)를 뺀다
+  html = html.replaceAll(`.title-foot__links a[data-panel]`, `.title-foot [data-panel="news"], .title-foot [data-panel="intro"]`).replaceAll(`.title-foot__links a[data-panel="`, `.title-foot [data-panel="`);
+  html = must(html, `input[type=radio][name=era],input[type=radio][name=gen]`, `input[type=radio][name=era]`, 'era radio handler');
   const era3 = html.match(/<fieldset class="slot slot--big slot--era3">[\s\S]*?<\/fieldset>\n/);
   if (!era3) throw new Error('era3 slot');
   html = html.replace(era3[0], '');
@@ -417,8 +604,8 @@ ${rouletteMain('spinning', false)}
 <template id="state-result-random">${rouletteMain('result', false, 'millennial', true)}</template>
 <p class="mock-tag" style="margin:0 var(--gutter) var(--sp-3)">시안 — 지역 비율은 실제 자료(DC2·DC7 JSON)를 연도 가중으로 섞은 값, 수저 비율은 설계값(N29 보간)을 섞은 값. 연도는 화면에 없다(출생신고에서 드러남)</p>
 <script>(function(){var q=new URLSearchParams(location.search);var s=q.get('state')||'spinning';var picked=q.get('region')==='picked';var gen=q.get('gen')==='boomer'?'boomer':'';var from=q.get('from')==='random';var id='state-'+s+(picked&&s!=='draw'?'-picked':'')+(gen&&s!=='draw'&&!picked?'-'+gen:'')+(from&&s!=='draw'&&!picked&&!gen?'-random':'');var t=document.getElementById(id);if(!t)return;var cur=document.querySelector('.page');cur.replaceWith(t.content.cloneNode(true));if(q.get('font')==='system')document.documentElement.setAttribute('data-font','system');})();</script>`;
-  const html = page({ title: '수저 게임 · 시안 · 룰렛 두 릴(SPEC-004 GM3 r3)', body, head: `${FONT_LINKS}\n<link rel="stylesheet" href="gm3.css">` })
-    .replace('<html lang="ko">', '<html lang="ko" data-font="noto">')
+  const html = page({ title: '수저 게임 · 시안 · 룰렛 두 릴(SPEC-004 GM3 r4)', body, head: `${FONT_LINKS}\n<link rel="stylesheet" href="gm3.css">` })
+    .replace('<html lang="ko">', '<html lang="ko" data-font="noto" data-paper="1">')
     .replace('href="../../../src/styles/tokens.css"', 'href="../../../../src/styles/tokens.css"')
     .replace('href="ds.css"', 'href="../ds.css"');
   writeFileSync(`${OUT}roulette-004.html`, html);
@@ -458,8 +645,8 @@ function buildBirth() {
   main = main.replace(grid[0], dl);
   main = must(main, '<div class="doc-notes t-xs t-faint">', `<div class="doc-notes t-xs t-faint">\n    <p>${GM3_TEXT.birthYearNote}</p>`, 'notes');
   let html = src.replace(/<main class="doc-page" data-era="present">[\s\S]*?<\/main>/, main.trim()).replace(/<template id="era-past">[\s\S]*?<\/template>\n?/, '').replace(/<template id="era-future">[\s\S]*?<\/template>\n?/, '');
-  html = must(html, '<html lang="ko">', '<html lang="ko" data-font="noto">', 'html tag');
-  html = must(html, '<title>수저 게임 · 시안 · 출생신고</title>', '<title>수저 게임 · 시안 · 출생신고 — 연도가 처음 드러나는 자리(SPEC-004 GM3 r3)</title>', 'title');
+  html = must(html, '<html lang="ko">', '<html lang="ko" data-font="noto" data-paper="1">', 'html tag');
+  html = must(html, '<title>수저 게임 · 시안 · 출생신고</title>', '<title>수저 게임 · 시안 · 출생신고 — 연도가 처음 드러나는 자리(SPEC-004 GM3 r4)</title>', 'title');
   html = must(html, '<link rel="stylesheet" href="../../../src/styles/tokens.css">', '<link rel="stylesheet" href="../../../../src/styles/tokens.css">', 'tokens');
   html = must(html, '<link rel="stylesheet" href="ds.css">', `<link rel="stylesheet" href="../ds.css">\n${FONT_LINKS}\n<link rel="stylesheet" href="gm3.css">`, 'ds');
   html = html.replace('</body>', `<script>(function(){var q=new URLSearchParams(location.search);if(q.get('font')==='system')document.documentElement.setAttribute('data-font','system');})();</script>\n</body>`);
@@ -591,6 +778,7 @@ ${dashboard('then')}
 ${['now', 'projection', 'none'].map((s) => `<template id="state-${s}">${dashboard(s)}</template>`).join('\n')}
 <script>(function(){var s=new URLSearchParams(location.search).get('state');if(!s||s==='then')return;var t=document.getElementById('state-'+s);if(!t)return;['.dash-head','.toolbar','main.dash','.page-end-space'].forEach(function(sel){var el=document.querySelector(sel);if(el)el.remove();});document.body.appendChild(t.content.cloneNode(true));})();</script>`;
   const html = page({ title: '수저 게임 · 시안 · 인생 기록 연표 줄·자산 카드 당시 화폐(SPEC-004 GM3)', body, bodyClass: 'is-dash', head: '<link rel="stylesheet" href="gm3.css">' })
+    .replace('<html lang="ko">', '<html lang="ko" data-paper="1">')
     .replace('href="../../../src/styles/tokens.css"', 'href="../../../../src/styles/tokens.css"')
     .replace('href="ds.css"', 'href="../ds.css"');
   writeFileSync(`${OUT}dashboard-004.html`, html);
@@ -663,6 +851,7 @@ ${ending('future')}
 <template id="state-2010">${ending('2010')}</template>
 <script>(function(){var s=new URLSearchParams(location.search).get('state');var t=document.getElementById('state-'+s);if(!t)return;document.querySelector('main.ending').replaceWith(t.content.cloneNode(true));})();</script>`;
   const html = page({ title: '수저 게임 · 시안 · 엔딩 세대 표기·최종 순자산(SPEC-004 GM3)', body, head: '<link rel="stylesheet" href="gm3.css">' })
+    .replace('<html lang="ko">', '<html lang="ko" data-paper="1">')
     .replace('href="../../../src/styles/tokens.css"', 'href="../../../../src/styles/tokens.css"')
     .replace('href="ds.css"', 'href="../ds.css"');
   writeFileSync(`${OUT}ending-004.html`, html);
