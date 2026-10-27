@@ -1,11 +1,13 @@
 /**
- * SPEC-004 GM3 시안 생성기 (designer 2026-10-27 · r2 2026-10-27 게이트 ③ 형진 님 답 반영). 정적 HTML 4장을 docs/design/mockups/gm3/에 만든다.
+ * SPEC-004 GM3 시안 생성기 (designer 2026-10-27 · r2 게이트 ③ 형진 님 답 반영 · **r3 2026-10-27 형진 님 답 2차 반영** — 벤치마킹 `docs/design/benchmark-004.md`). 정적 HTML 5장을 docs/design/mockups/gm3/에 만든다.
  * 실행: node node_modules/vite-node/vite-node.mjs scripts/design/buildGm3Mockups.mjs   (mockLib가 faceLayers.ts를 읽어 vite-node가 필요하다)
- *   title-004.html     첫 화면 세대 선택 — title-005.html(SPEC-005 r3 시안)을 읽어 머리(일러스트 없음·설명 글씨·체험 한 줄)·큰 슬롯(한 열 8줄 목록)·시도 선택·내 출신 시도 설정을 바꾼다(한 장면).
- *                      ?gen=<id>|random(기본 random) · lived=a,b · region=pick · pick=<시도> · origin=set · open=origin · fold=open · state=new|saved · theme=dark · name=salabom|taeeonabo(이름 비교 — 글자만, N30)
- *   roulette-004.html  세대 뽑기 단계 → 3릴(연도 → 지역 → 수저). ?state=draw|spinning|result · gen=millennial(기본)|boomer(1940~1980 「예시」 상태) · region=picked · theme=dark · motion=reduce
- *                      r2: 연도 표는 「{출생아 수}만 명 · {확률}%」(births) / 「— · 균등」(uniform), 지역·수저 표는 **창을 지나는 연도**의 값(도는 중 = 세대 첫 해, 결과 = 태어난 해). 값은 docs/data/dc2-dc7-births-regions.json(1981~2020 시도별 출생 비율·전국 출생아 수)과
- *                      generations.md 3-2 wealthWeights(N29 — 세대 가운데 해를 닻으로 직선 보간, 합 100 정수 보정)에서 계산한다(가짜 값 0). 1940~1980 도별 인구 비례는 수집 중(dc7-province-population.json stairWeights가 있으면 그 값, 없으면 「—」)이라 「예시」 표식을 단다.
+ *   (글꼴 조각 fonts/*.woff2·noto-sans-kr.css는 먼저 `node scripts/design/buildGm3Fonts.mjs`로 만든다 — 첫 화면·룰렛·출생신고 시안이 읽는다. 없으면 대체 글꼴로 보인다)
+ *   title-004.html     첫 화면 세대 선택 — title-005.html(SPEC-005 r3 시안)을 읽어 머리(일러스트 없음·체험 한 줄 ②)·큰 슬롯(한 열 8줄 목록, r3: 상자 없이 줄 + 줄마다 작은 소개)·시도 선택·내 출신 시도 설정을 바꾼다(한 장면).
+ *                      ?gen=<id>|random(기본 random) · lived=a,b · region=pick · pick=<시도> · origin=set · open=origin · fold=open · state=new|saved · theme=dark · font=system(대체 글꼴로 — CLS 비교) · alt=paper(대안: 바탕 한 단 밝게. 캐러셀 평면화는 정본 — 마스터 결정 D4-55)
+ *   roulette-004.html  세대 뽑기 단계 → **2릴(지역 · 수저)**. ?state=draw|spinning|result · gen=millennial(기본)|boomer(1940~1980 인구 비례) · region=picked · from=random(랜덤 세대 경로 — 머리에 「랜덤 세대에서 뽑힌」) · theme=dark · motion=reduce · font=system
+ *                      r3: 연도 릴·연도 표 없음(연도는 보이지 않게 GS7 가중으로 뽑혀 출생신고에서 드러난다). 지역·수저 표는 **고른 세대 전체 기준**(연도 가중으로 섞은 값, 도는 동안 불변) — genMixture(). 값은 docs/data/dc2-dc7-births-regions.json(1981~2020 시도별 출생 비율·전국 출생아 수)·
+ *                      dc7-province-population.json stairWeights(1940~1980 도별 인구 비례 계단식)·generations.md 3-2 wealthWeights(N29 연도별 설계값)에서 계산한다(가짜 값 0).
+ *   birth-004.html     출생신고 — 연도가 처음 드러나는 자리(「세대」 칸 「밀레니얼 세대 · 1988년생」 + 첫 문장 + 출생 연월 + 각주). birth.html의 지난 세상 템플릿 위에. ?theme=dark · font=system
  *   dashboard-004.html 인생 기록의 연표 줄 4종 + 자산 카드 당시 화폐. ?state=then|now|projection|none
  *   ending-004.html    세대 표기·전망 구간·최종 순자산 전환·비교 카드. ?state=future|2010
  * 글자는 copy.md 16절의 확정 문구(GM3_TEXT) — 구현이 상수를 만들면 import로 되돌린다. 연표 문장은 설계 문서의 예시 뜻만 썼다(사실 수치 0, 실명 0). 금액은 economy-model.md 16-8 ② 예시 배율(2000년 0.5416 · 2010년 0.7407)로 계산한 값.
@@ -18,9 +20,10 @@ const OUT = `${ROOT}docs/design/mockups/gm3/`;
 mkdirSync(OUT, { recursive: true });
 /** DC2·DC7 자료(실제 값): 전국 출생아 수(births_national, 1970~2020 actual) · 시도별 출생 비율(birth_share_sido, 1981~2020 calc, 그해의 시·도 구분) */
 const BR = JSON.parse(readFileSync(`${ROOT}docs/data/dc2-dc7-births-regions.json`, 'utf-8'));
-/** 1940~1980 도별 인구 비례 계단식 가중(DC7 마스터 결정 5 — 수집 중). 파일이 없으면 「—」로 그린다. 시안에서는 어느 쪽이든 「예시」 표식 */
+/** 1940~1980 도별 인구 비례 계단식 가중(DC7 마스터 결정 5 — DC7-pop 2026-10-27 수집 완료, 11개 도 × 1940~1980). r3부터 실제 값(「예시」 표식 없음) */
 const STAIR_FILE = `${ROOT}docs/data/dc7-province-population.json`;
-const STAIR = existsSync(STAIR_FILE) ? JSON.parse(readFileSync(STAIR_FILE, 'utf-8')).stairWeights || [] : [];
+if (!existsSync(STAIR_FILE)) throw new Error('dc7-province-population.json이 없다(1940~1980 지역 가중)');
+const STAIR = JSON.parse(readFileSync(STAIR_FILE, 'utf-8')).stairWeights;
 
 // ---------- 확정 문구 (copy.md 16절과 같은 글자) ----------
 const GM3_TEXT = {
@@ -28,14 +31,9 @@ const GM3_TEXT = {
   tagKeep: '같은 대한민국',
   question: '어느 세대로 살아보고 싶으세요?',
   lead: '다른 세대의 시간을 살아 보며 서로의 사정을 이해해 봐요.',
-  /* r2 체험 한 줄(copy.md 16-10 추천안 — 후보 셋 가운데 ①). 「51,284명이 …」 줄과 그 아래 안내를 대체한다 */
-  span: '1940년생부터 2020년생까지, 어느 세대로든 태어나 한 번의 인생을 살아 볼 수 있어요.',
-  /* N30 이름 비교(결정용 캡처 2장, 마스터 지시 2026-10-27 — 「세대 유감」은 형진 님이 뺌): 워드마크 자리의 글자만 바꾼다(새 로고 없음). 정본 이름은 「수저 게임」.
-     salabom: 부제 자리에 「어느 해, 어디서, 어떤 수저로 태어날까」 · taeeonabo: 부제는 기존 그대로 */
-  names: {
-    salabom: { h1: '살아봄', tag: '어느 해, 어디서, <span class="nowrap">어떤 수저로 태어날까</span>' },
-    taeeonabo: { h1: '태어나 보니', tag: null },
-  },
+  /* r3 체험 한 줄 — 형진 님 답 2차 3 「② 세대를 바꿔 가며 그 시절의 한 사람으로 살아 봐요.」(copy.md 16-10 후보 ②, 16-11 확정). r2의 ①은 대체됨 */
+  span: '세대를 바꿔 가며 그 시절의 한 사람으로 살아 봐요.',
+  /* N30은 2026-10-27 종결(이름 「수저 게임」 그대로) — r2의 이름 비교 상태(?name=)는 지웠다 */
   randomTitle: '랜덤 세대',
   randomDesc: '일곱 세대 가운데 하나를 같은 확률로 뽑아요',
   randomMeta: { from: 1940, to: 2020 }, // 랜덤 줄의 「1940~2020년생 · 올해 6~86세」 — 일곱 세대 전체 범위(사실)
@@ -53,30 +51,31 @@ const GM3_TEXT = {
   originTitle: '내가 실제로 태어난 시도',
   originNone: '밝히지 않음',
   originClear: '지우기',
-  originDesc: '이 기기에만 남고 밖으로 나가지 않아요. 인생이 끝난 뒤 「같은 사건, 다른 자리」를 견주는 데만 써요.',
+  originDesc: '이 기기에만 남고 밖으로 나가지 않아요. 인생이 끝난 뒤 「같은 사건, 다른 <span class="nowrap">자리」를</span> 견주는 데만 써요.', // r3: Noto Sans KR에서 320 · 200%에 「자리」를」이 닫는 괄호 뒤에서 끊겨 nowrap(구현은 Glue ⑤ 괄호 묶음)
   drawTitle: '어느 세대로 살아볼지 뽑는 중',
   drawNote: '일곱 세대 가운데 하나를 같은 확률로 뽑아요.',
   drawOdds: '일곱 세대가 같은 확률이에요(인구 비례가 아님).',
-  spinTitle: '태어날 해와 집과 땅을 고르는 중',
-  spinNote: '어느 해, 어느 집, 어느 땅에 태어날지는 고를 수 없어요. 확률대로 돌아가요.',
-  spinNotePicked: '태어나는 시도는 직접 골랐어요. 어느 해, 어느 집에 태어날지는 확률대로 돌아가요.',
-  doneTitle: '태어날 때와 곳이 정해졌습니다',
+  /* r3 룰렛(형진 님 답 2차 2): 연도 릴을 뺀다 → 제목·안내는 SPEC-003 글자로 돌아간다(「해」 없음). 표는 「고른 세대 전체 기준」(연도 가중으로 섞은 값)이라 도는 동안 바뀌지 않는다 */
+  spinTitle: '태어날 집과 땅을 고르는 중',
+  spinNote: '어느 집, 어느 땅에 태어날지는 고를 수 없어요. 확률대로 돌아가요.',
+  spinNotePicked: '태어나는 시도는 직접 골랐어요. 어느 집에 태어날지는 확률대로 돌아가요.',
+  doneTitle: '태어날 곳이 정해졌습니다',
   genAmong: (from, to) => `${from}~${to}년생 가운데`,
-  yearTitle: '태어나는 해',
+  fromRandom: '랜덤 세대에서 뽑힌',
   regionReelTitle: '태어나는 지역',
   wealthTitle: '수저',
-  yearOddsNote: '그해 출생아 수에 <span class="keep-phrase">비례해요(국가데이터처</span> 출생 통계).', // 괄호 앞 끊김(1280 · 200%) — 구현은 Glue ⑤
-  yearOddsUniform: '출생 통계 없음 · 균등하게 뽑아요.',
-  yearOddsNow: '굵은 줄은 지금 창을 지나는 해예요.',
-  yearOddsDone: '굵은 줄은 태어난 해예요.',
-  yearCell: (man, p) => `<span class="odds__sub">${man}만 명</span><span class="odds__sep"> · </span>${p}%`,
-  yearCellUniform: (p) => `<span class="odds__sub"><span class="odds__dash" aria-label="출생 통계 없음">—</span></span><span class="odds__sep"> · </span>${p}%`,
-  regionNoteSpin: (y) => `<span class="nowrap">${y}년</span> <span class="keep-phrase">시·도별</span> 출생아 수 비율. 연도 릴이 멈출 때까지 창을 지나는 해를 따라 바뀌어요.`,
-  regionNoteDone: (y) => `<span class="nowrap">${y}년</span> <span class="keep-phrase">시·도별</span> 출생아 수 비율. 그 해의 <span class="keep-phrase">시·도</span> 목록이에요. 이름은 줄여 적었어요.`,
-  regionDash: '<span class="nowrap">—는</span> 그 해에 없던 <span class="keep-phrase">시·도예요.</span>',
-  regionNotePop: (y) => `<span class="nowrap">${y}년</span> 도별 인구 비례예요(출생 자료 없음). <span class="odds__ex">예시</span> 값은 아직 수집 중이에요.`,
-  wealthNote: (y) => `<span class="nowrap">${y}년생의</span> 값이에요. 게임의 <span class="keep-phrase">설계값이에요(통계가</span> 아님).`, // 괄호 앞 끊김(320 · 200%) — 구현은 Glue ⑤ 괄호 묶음
+  oddsHead: (gen) => `${gen} 전체 기준`,
+  /* 지역 표 주석: 무엇을 어떻게 섞었는지 한 문장 + 자료 갈래 한 문장(필요할 때) + 도중에 생긴 시·도 한 문장(있을 때) */
+  regionNoteBirths: '해마다 그해 출생아 수만큼 무게를 두어 섞은 <span class="keep-phrase">시·도별</span> 출생아 비율이에요. 이름은 줄여 적었어요.',
+  regionNoteUniform: '출생 통계가 없는 해라 해마다 같은 무게로 섞은 <span class="keep-phrase">시·도별</span> 비율이에요. 이름은 줄여 적었어요.',
+  regionNotePop: '1981년 전은 출생 자료가 없어 도별 인구 비례로 셌어요.',
+  regionNoteLater: (names) => `세대 범위 도중에 생긴 <span class="nowrap">${names}의</span> 몫은 생긴 뒤 해의 것만 들어 있어요.`, // 「의」는 받침과 무관해 이름이 바뀌어도 조사가 틀리지 않는다. 「광주·대전」은 가운뎃점에서 끊기지 않게 nowrap(1280 · 200% 측정)
+  wealthNoteGen: (from, to) => `<span class="nowrap">${from}~${to}년생의</span> 설계값을 해마다 섞은 값이에요. 게임의 <span class="keep-phrase">설계값이에요(통계가</span> 아님).`, // 괄호 앞 끊김(320 · 200%) — 구현은 Glue ⑤ 괄호 묶음
   pickedRegion: '직접 고른 시도',
+  /* r3 출생신고(연도가 처음 드러나는 자리 — 마스터 해석): 「세대」 칸에 GD2 꼴 「{세대} · {연도}년생」, 각주 한 문장(GS7 가중) */
+  birthGenLabel: '세대',
+  birthGen: (gen, year) => `${gen} · ${year}년생`,
+  birthYearNote: '태어난 해는 고른 세대의 범위 안에서 그해 출생아 수에 비례해 정해졌어요. 룰렛에는 보이지 않고 이 서류에서 처음 적혀요.',
   afterNote: '돌림판은 연출이고, 결과는 돌기 전에 정해진 값이에요.',
   skip: '건너뛰기',
   seeReport: '출생신고 보기',
@@ -154,9 +153,9 @@ function yearOddsFor(g) {
   return years.map((y, i) => ({ year: y, births: b[i], p: (b[i] / sum) * 100 }));
 }
 /** 합 100 정수 보정(largestRemainder) — 내림 뒤 나머지 큰 순으로 1씩 */
-function largestRemainder(raw) {
+function largestRemainder(raw, total = 100) {
   const fl = raw.map(Math.floor);
-  let left = 100 - fl.reduce((s, v) => s + v, 0);
+  let left = total - fl.reduce((s, v) => s + v, 0);
   const order = raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
   for (let k = 0; k < left; k++) fl[order[k][1]]++;
   return fl;
@@ -192,20 +191,23 @@ function must(html, from, to, label) {
 }
 
 // ============================================================ ① 첫 화면 ============================================================
-/** r2 한 줄 = 라디오 + 표식 + 이름(+「살아봄」) + 「{from}~{to}년생 · 올해 {나이}」. 소개는 data-*로 들고 있다가 목록 아래 .gen-intro 한 곳에 보인다; 읽기 프로그램은 각 라디오의 aria-describedby로 같은 글자를 듣는다.
- *  「랜덤 세대」도 같은 묶음의 첫 줄(라디오) — 1차의 버튼(aria-pressed)을 라디오로 바꿨다(diff-004 D4-35). 메타는 일곱 세대 전체 범위(1940~2020년생 · 올해 6~86세, 사실) */
+/** r3 한 줄 = 라디오 + 표식 + [이름(+「살아봄」) ········ 「{from}~{to}년생 · 올해 {나이}」] / [작은 글씨 소개 한 줄](형진 님 답 2차 1 — 1차 시안처럼 줄마다 작은 설명).
+ *  이름 14px 700 · 메타 12px · 소개 12px(알파는 소개 뒤에 보조 문장). 접근 가능한 이름 = 이름 + 메타(aria-labelledby), 소개는 aria-describedby(한 줄의 글자가 그대로 설명).
+ *  「랜덤 세대」도 같은 묶음의 첫 줄(라디오, 기본 선택 — 답 3). 메타는 일곱 세대 전체 범위(1940~2020년생 · 올해 6~86세, 사실) */
 function genRow(g, { selected = false, random = false } = {}) {
   const from = random ? GM3_TEXT.randomMeta.from : g.from, to = random ? GM3_TEXT.randomMeta.to : g.to;
   const id = random ? 'random' : g.id;
   const name = random ? GM3_TEXT.randomTitle : g.name;
   const intro = random ? GM3_TEXT.randomDesc : g.intro;
   const note = !random && g.note ? g.note : '';
-  return `<label class="gen-row${selected ? ' is-selected' : ''}" data-name="${name}" data-intro="${intro}"${note ? ` data-note="${note}"` : ''}>
-  <input type="radio" name="gen" value="${id}"${selected ? ' checked' : ''} aria-describedby="gen-desc-${id}">
+  return `<label class="gen-row${selected ? ' is-selected' : ''}">
+  <input type="radio" name="gen" value="${id}"${selected ? ' checked' : ''} aria-labelledby="gen-name-${id} gen-meta-${id}" aria-describedby="gen-desc-${id}">
   <span class="gen-row__mark">${icon('check')}</span>
-  <span class="gen-row__name"><span>${name}</span>${random ? '' : `<span class="gen-row__lived" hidden>${icon('check')}${GM3_TEXT.lived}</span>`}</span>
-  <span class="gen-row__meta"><span class="nowrap">${from}~${to}년생</span> · <span class="nowrap">올해 ${NOW - to}~${NOW - from}세</span></span>
-  <span class="sr-only" id="gen-desc-${id}">${intro}${note ? `. ${note}` : ''}</span><span class="sr-only sel">${selected ? '선택됨' : ''}</span>
+  <span class="gen-row__body">
+    <span class="gen-row__line"><span class="gen-row__name" id="gen-name-${id}">${name}</span>${random ? '' : `<span class="gen-row__lived" hidden>${icon('check')}${GM3_TEXT.lived}</span>`}<span class="gen-row__meta" id="gen-meta-${id}"><span class="nowrap">${from}~${to}년생</span> · <span class="nowrap">올해 ${NOW - to}~${NOW - from}세</span></span></span>
+    <span class="gen-row__desc" id="gen-desc-${id}">${intro}${note ? `<span class="gen-row__note"> ${note}</span>` : ''}</span>
+  </span>
+  <span class="sr-only sel">${selected ? '선택됨' : ''}</span>
 </label>`;
 }
 function genSlot() {
@@ -215,7 +217,6 @@ function genSlot() {
       ${genRow(null, { random: true, selected: true })}
       ${GENS.map((g) => genRow(g)).join('\n      ')}
       </div>
-      <p class="gen-intro" aria-hidden="true"></p>
       <details class="disclosure slot__fold"><summary>${GM3_TEXT.foldSummary}</summary><p>${GM3_TEXT.foldBody}</p></details></fieldset>`;
 }
 function regionSlot() {
@@ -241,16 +242,17 @@ function originSetting() {
 }
 const TITLE_STATE_JS = `(function(){var q=new URLSearchParams(location.search);var r=document.documentElement;
 var gen=q.get('gen')||'random';r.setAttribute('data-gen',gen);
-/* r2 세대 목록(구현은 GM4 — 같은 규칙): 라디오가 바뀌면 고른 줄의 면·막대·체크를 칠하고, 소개를 목록 아래 한 곳에 보이고, 고른 줄을 목록 창 안에 둔다 — 목록의 scrollTop만 움직인다(문서는 스크롤하지 않는다: scrollIntoView는 페이지까지 끌어올린다) */
-var list=document.querySelector('.gen-list');var intro=document.querySelector('.gen-intro');var rows=Array.prototype.slice.call(document.querySelectorAll('.gen-row'));
+/* r3 시안 전용 상태: ?font=system 이면 글꼴을 시스템 글꼴로(기본은 Noto Sans KR 조각 — CLS 측정·비교용), ?alt=paper 는 형진 님께 보일 대안(바탕 한 단 밝게 — 캐러셀 평면화는 마스터 결정으로 정본이 됐다) */
+if(q.get('font')==='system')r.setAttribute('data-font','system');
+if(q.get('alt')==='paper')r.setAttribute('data-alt','paper');
+/* r3 세대 목록(구현은 GM4 — 같은 규칙): 라디오가 바뀌면 고른 줄의 면·막대·체크를 칠하고, 고른 줄을 목록 창 안에 둔다 — 목록의 scrollTop만 움직인다(문서는 스크롤하지 않는다: scrollIntoView는 페이지까지 끌어올린다). 소개는 줄마다 있으므로 따로 보일 것이 없다 */
+var list=document.querySelector('.gen-list');var rows=Array.prototype.slice.call(document.querySelectorAll('.gen-row'));
 function reveal(row){if(!list)return;var top=row.offsetTop,bottom=top+row.offsetHeight;if(top<list.scrollTop)list.scrollTop=top;else if(bottom>list.scrollTop+list.clientHeight)list.scrollTop=bottom-list.clientHeight;}
-function paintGen(){rows.forEach(function(row){var i=row.querySelector('input');var on=i.checked;row.classList.toggle('is-selected',on);var sr=row.querySelector('.sr-only.sel');if(sr)sr.textContent=on?'선택됨':'';if(on){if(intro){var note=row.getAttribute('data-note');intro.innerHTML='<b>'+row.getAttribute('data-name')+'</b> <span>'+row.getAttribute('data-intro')+'</span>'+(note?'<span class="gen-intro__note">'+note+'</span>':'');}reveal(row);}});}
+function paintGen(){rows.forEach(function(row){var i=row.querySelector('input');var on=i.checked;row.classList.toggle('is-selected',on);var sr=row.querySelector('.sr-only.sel');if(sr)sr.textContent=on?'선택됨':'';if(on)reveal(row);});}
 document.querySelectorAll('input[name=gen]').forEach(function(i){i.checked=i.value===gen;i.addEventListener('change',paintGen);});
 if(!document.querySelector('input[name=gen]:checked')){var f0=document.querySelector('input[name=gen][value=random]');if(f0)f0.checked=true;}
-paintGen();
-/* N30 이름 비교(결정용 캡처 2장, ?name=salabom|taeeonabo): 워드마크 SVG 자리에 글자만 — 새 로고 없음. salabom은 부제 글자도 바꾼다 */
-var NAMES=${JSON.stringify(GM3_TEXT.names)};var nm=NAMES[q.get('name')];
-if(nm){var h1=document.querySelector('.hero__brand h1');if(h1){h1.innerHTML='<span class="hero__name">'+nm.h1+'</span>';document.title=document.title.replace('수저 게임',nm.h1+'(이름 비교)');}if(nm.tag){var tg=document.querySelector('.hero__tag');if(tg)tg.innerHTML=nm.tag;}}
+/* 처음 칠할 때(저장된 선택 복원)는 즉시 스크롤 — smooth가 진행 중이면 첫 그림에서 고른 줄이 반쯤 걸친다(강제 색상 검사에서 잡힘). 사용자의 조작 뒤부터 smooth */
+if(list){list.style.scrollBehavior='auto';}paintGen();if(list){list.style.scrollBehavior='';}
 var region=q.get('region')==='pick'?'pick':'roulette';r.setAttribute('data-region',region);
 function paintRegion(){var pick=r.getAttribute('data-region')==='pick';document.querySelectorAll('.chipset,.chipset__note').forEach(function(e){e.hidden=!pick;});var hint=document.querySelector('.seg__hint--roulette');if(hint)hint.hidden=pick;document.querySelectorAll('input[name=regmode]').forEach(function(i){var on=(i.value==='pick')===pick;i.checked=on;i.closest('.seg__opt').classList.toggle('is-selected',on);});}
 document.querySelectorAll('input[name=regmode]').forEach(function(i){i.addEventListener('change',function(){r.setAttribute('data-region',i.value);paintRegion();});});
@@ -265,12 +267,17 @@ document.querySelectorAll('input[name=sido]').forEach(function(i){if(i.value===p
 if(q.get('fold')==='open'){var f=document.querySelector('.slot__fold');if(f)f.open=true;}
 })();`;
 
+/** r3 글꼴(형진 님 답 2차 4 — Noto Sans KR을 가볍게): 조각 @font-face(fonts/noto-sans-kr.css, 생성 buildGm3Fonts.mjs) + 첫 화면 조각(s0 400·700) 미리 받기. 외부 주소 0. <html data-font="noto">가 --font-sans를 바꾼다(gm3.css) */
+const FONT_LINKS = `<link rel="preload" href="fonts/NotoSansKR-400.s0.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/NotoSansKR-700.s0.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/noto-sans-kr.css">`;
 function buildTitle() {
   let html = readFileSync(`${ROOT}docs/design/mockups/title-005.html`, 'utf-8');
-  html = must(html, '<title>수저 게임 · 시안 · 첫 화면(SPEC-005 QI2)</title>', '<title>수저 게임 · 시안 · 첫 화면 세대 선택(SPEC-004 GM3)</title>', 'title');
+  html = must(html, '<html lang="ko">', '<html lang="ko" data-font="noto">', 'html tag');
+  html = must(html, '<title>수저 게임 · 시안 · 첫 화면(SPEC-005 QI2)</title>', '<title>수저 게임 · 시안 · 첫 화면 세대 선택(SPEC-004 GM3 r3)</title>', 'title');
   html = must(html, '<link rel="stylesheet" href="../../../src/styles/tokens.css">', '<link rel="stylesheet" href="../../../../src/styles/tokens.css">', 'tokens');
   html = must(html, '<link rel="stylesheet" href="ds.css">', '<link rel="stylesheet" href="../ds.css">', 'ds');
-  html = must(html, '<link rel="stylesheet" href="title-005.css">', '<link rel="stylesheet" href="../title-005.css">\n<link rel="stylesheet" href="gm3.css">', 'title-005.css');
+  html = must(html, '<link rel="stylesheet" href="title-005.css">', `<link rel="stylesheet" href="../title-005.css">\n${FONT_LINKS}\n<link rel="stylesheet" href="gm3.css">`, 'title-005.css');
   html = html.replaceAll('../../../src/assets/home/', '../../../../src/assets/home/');
   html = must(html, `r.setAttribute('data-slot',q.get('slot')==='gen8'?'gen8':'era3')`, `r.setAttribute('data-slot','gen8')`, 'slot default');
   html = must(html, `r.setAttribute('data-hero',q.get('hero')==='illust'?'illust':'picto')`, `r.setAttribute('data-hero','illust')`, 'hero default');
@@ -280,7 +287,7 @@ function buildTitle() {
   html = html.replace(/\n[ \t]*<!-- hero=illust, 좁은 화면[^\n]*\n[ \t]*<figure class="illust illust--banner"[\s\S]*?<\/figure>/, '');
   html = html.replace(/\n[ \t]*<!-- hero=illust, 넓은 화면[^\n]*\n[ \t]*<figure class="illust illust--top"[\s\S]*?<\/figure>/, '');
   if (html.includes('class="illust')) throw new Error('일러스트 figure가 남아 있다');
-  html = must(html, '<header class="hero hero--005">', '<header class="hero hero--005 hero--r2">', 'hero class');
+  html = must(html, '<header class="hero hero--005">', '<header class="hero hero--005 hero--r2 hero--r3">', 'hero class');
   // 「51,284명이 …」 큰 줄 + 안내 → 체험 한 줄(작은 글씨)
   html = html.replace(/<p class="hero__pop">[\s\S]*?<\/p>\n[ \t]*<p class="hero__note">[\s\S]*?<\/p>/, `<p class="hero__span">${GM3_TEXT.span}</p>`);
   if (html.includes('hero__pop') || html.includes('hero__note')) throw new Error('hero__pop/hero__note가 남아 있다');
@@ -299,20 +306,35 @@ function buildTitle() {
 // ============================================================ ② 룰렛 ============================================================
 const WEALTH_REEL_ORDER = [1, 2, 3, 4, 5, 4, 3, 2];
 const SPOON_NAMES = ['흙수저', '동수저', '은수저', '금수저', '다이아몬드<wbr>수저'];
-/** r2 시안의 두 경우: 밀레니얼(주 캡처 — births · 시도별 출생 비율 실제 값, 창 1981 → 결과 1988 경기 동수저) · 베이비붐(uniform · 1940~1980 인구 비례 「예시」, 창 1955 → 결과 1959) */
+/** r3 시안의 두 경우(연도는 화면에 보이지 않지만 릴 칸·출생신고에 쓴다): 밀레니얼(주 캡처 — births · 결과 1988 경기 동수저) · 베이비붐(uniform · 1940~1980 도별 인구 비례 계단식, 결과 1959 경북 동수저) */
 const ROULETTE_CASES = {
-  millennial: { gen: GENS[4], spinYear: 1981, year: 1988, regionKey: 'gyeonggi', grade: 2 },
-  boomer: { gen: GENS[1], spinYear: 1955, year: 1959, regionKey: 'gyeongbuk', grade: 2 },
+  millennial: { gen: GENS[4], year: 1988, regionKey: 'gyeonggi', grade: 2 },
+  boomer: { gen: GENS[1], year: 1959, regionKey: 'gyeongbuk', grade: 2 },
 };
 /** 구간 글자(3-1 bandLabel 꼴): 「하위 a%와 상위 b% 사이」, 양 끝은 「안쪽」 */
 const bandOf = (w, grade) => {
   const below = w.slice(0, grade - 1).reduce((s, v) => s + v, 0), above = w.slice(grade).reduce((s, v) => s + v, 0);
   return grade === 1 ? `하위 ${w[0]}% 안쪽` : grade === 5 ? `상위 ${w[4]}% 안쪽` : `하위 ${below}%와 상위 ${above}% 사이`;
 };
-/** 창에 보일 연도의 릴 위치: 창 = 목록 index pos + 2 (padding-top 4px · 창 top = 2h + 4px). 둘째 반복(2n)에서 그 해의 자리 */
-const posForYear = (years, year) => years.length * 2 - 2 + years.indexOf(year);
+/** r3 「고른 세대 전체 기준」(형진 님 답 2차 2): 연도 가중 P(연도|세대) = yearOddsFor(GS7 — births 비례 / uniform 균등)로 섞는다 — 도는 동안 바뀌지 않는다.
+ *  지역 = Σ P(y) × 그해 시·도 비율(1981~2020 birth_share_sido, 1940~1980 stairWeights; 그 해에 없던 시·도는 0) → 줄은 세대 범위에서 한 번이라도 있던 시·도(어느 해에도 없던 시·도는 뺀다), 일부 해에만 있던 시·도는 섞인 값 그대로.
+ *  수저 = Σ P(y) × wealthFor(y)(N29 연도별 설계값). 표시는 합 100 — 지역은 소수 1자리(1000분의 1 단위 largestRemainder), 수저는 정수. developer는 같은 식을 src/core로 옮긴다(diff-004 D4-47) */
+function genMixture(g) {
+  const odds = yearOddsFor(g);
+  const rows = regionRowsFor(g);
+  if (rows.length === 0) throw new Error(`${g.id}: 지역 자료가 없다`);
+  const regionRaw = rows.map(([key]) => odds.reduce((s, o) => s + (o.p / 100) * (regionShare(o.year, key) ?? 0), 0));
+  const tenths = largestRemainder(regionRaw.map((v) => v * 10), 1000);
+  const wealthRaw = [0, 0, 0, 0, 0];
+  for (const o of odds) { const w = wealthFor(o.year); for (let k = 0; k < 5; k++) wealthRaw[k] += (o.p / 100) * w[k]; }
+  const wealth = largestRemainder(wealthRaw);
+  // 세대 범위 도중에 생긴 시·도(첫 해에 없고 뒤 해에 있는 것) — 주석 한 문장의 재료
+  const later = rows.filter(([key]) => regionShare(g.from, key) === null).map(([, short]) => short);
+  return { odds, region: rows.map(([key, short], i) => ({ key, short, pct: (tenths[i] / 10).toFixed(1) })), wealth, later, popYears: g.from < 1981 };
+}
+for (const g of GENS) { const m = genMixture(g); const rs = m.region.reduce((s, r) => s + Number(r.pct) * 10, 0); const ws = m.wealth.reduce((s, v) => s + v, 0); if (Math.round(rs) !== 1000 || ws !== 100) throw new Error(`${g.id} 섞은 값 합이 100이 아니다: 지역 ${rs / 10} 수저 ${ws}`); }
 
-/** fast = 흐림·줄무늬(빠른 회전). 연도 릴은 「느려지는 중」(fast: false)으로 그려 창의 해가 읽히게 한다 */
+/** fast = 흐림·줄무늬(빠른 회전) */
 function reel(cells, { spinning, resultIdx, cls = '', picked = false, pos = 17.4, fast = true, ariaHidden = true }) {
   const n = cells.length;
   let items;
@@ -327,10 +349,11 @@ function reel(cells, { spinning, resultIdx, cls = '', picked = false, pos = 17.4
 const oddsTable = (caption, rows, note, cls = '') =>
   `<div class="odds ${cls}"><table><caption class="sr-only">${caption}</caption><tbody>${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`).join('')}</tbody></table>${note ? `<p class="odds__note">${note}</p>` : ''}</div>`;
 
-function rouletteMain(state, picked, caseId = 'millennial') {
+/** state: draw(세대 뽑기 단계) | spinning | result · picked: 시도를 직접 고른 판 · caseId · fromRandom: 「랜덤 세대」 경로(세대가 먼저 정해져 머리에 보인다) */
+function rouletteMain(state, picked, caseId = 'millennial', fromRandom = false) {
   const c = ROULETTE_CASES[caseId];
   const gx = c.gen;
-  const genLine = `<p class="roulette__gen"><span class="gen-tag">${gx.name}</span><span>${GM3_TEXT.genAmong(gx.from, gx.to)}</span></p>`;
+  const genLine = `<p class="roulette__gen">${fromRandom ? `<span class="roulette__from">${GM3_TEXT.fromRandom}</span>` : ''}<span class="gen-tag">${gx.name}</span><span>${GM3_TEXT.genAmong(gx.from, gx.to)}</span></p>`;
   if (state === 'draw') {
     const cells = GENS.map((g) => ({ html: `<span>${g.short || g.name}</span><small>${g.from}~${g.to}</small>`, cls: 'reel__item--gen' }));
     return `<div class="page roulette-page is-spinning" data-state="draw">
@@ -338,7 +361,7 @@ ${headerLogoRow()}
 <main class="roulette">
   <div class="roulette__lead"><h1 class="t-title" style="--title-chars:5">${GM3_TEXT.drawTitle}</h1><p class="t-muted" role="status">${GM3_TEXT.drawNote}</p></div>
   <div class="reels"><div class="reel-col reel-col--gen">${reel(cells, { spinning: false, resultIdx: 3, cls: 'reel--gen' })}
-    ${oddsTable('세대별 확률', GENS.map((g) => [g.name, '1/7']), GM3_TEXT.drawOdds, 'odds--gen')}</div></div>
+    ${oddsTable('세대별 확률', GENS.map((g) => [g.name, '1/7']), GM3_TEXT.drawOdds, 'odds--gen odds--r3')}</div></div>
   <p class="t-xs t-faint roulette__after" aria-hidden="true">${GM3_TEXT.afterNote}</p>
 </main>
 <div class="page-end-space"></div>
@@ -346,40 +369,30 @@ ${headerLogoRow()}
 </div>`;
   }
   const spinning = state !== 'result';
-  // r2: 「창을 지나는 해」 — 도는 중에는 세대의 첫 해(spinYear)가 창에 걸린 순간, 결과는 태어난 해. 지역·수저 표는 이 해의 값(구현은 창의 해가 바뀔 때마다 다시 그린다 — diff-004 D4-39)
-  const winYear = spinning ? c.spinYear : c.year;
-  const yearOdds = yearOddsFor(gx);
-  const years = yearOdds.map((o) => o.year);
-  const yearCells = years.map((y) => ({ html: String(y), cls: 'reel__item--year' }));
-  // 릴 칸 = 최종 연도의 시·도 목록(결과는 돌기 전에 정해진다, RL2) / 표의 줄 = 세대 범위의 시·도 합집합(줄 수 고정 — 흔들림 0), 창의 해에 없던 시·도는 「—」
+  const mix = genMixture(gx);
+  // 릴 칸 = 최종 연도의 시·도 목록(결과는 돌기 전에 정해진다, RL2). 표의 줄 = 세대 범위의 시·도 합집합(고정 — 도는 동안 바뀌지 않는다)
   const reelRegions = regionsIn(c.year);
-  let tableRegions = regionRowsFor(gx);
-  if (tableRegions.length === 0) tableRegions = SIDO.filter(([k]) => ['seoul', 'gyeonggi', 'gangwon', 'chungbuk', 'chungnam', 'jeonbuk', 'jeonnam', 'gyeongbuk', 'gyeongnam', 'jeju'].includes(k)); // 수집 중 파일이 없을 때 1947~1962의 10개 단위(「연도별 존재 시도 표」)
-  const regionCells = (reelRegions.length ? reelRegions : tableRegions).map(([, s]) => ({ html: s }));
-  const regionIdx = Math.max(0, (reelRegions.length ? reelRegions : tableRegions).findIndex(([k]) => k === c.regionKey));
+  const regionCells = reelRegions.map(([, s]) => ({ html: s }));
+  const regionIdx = Math.max(0, reelRegions.findIndex(([k]) => k === c.regionKey));
   const spoonCells = WEALTH_REEL_ORDER.map((n) => ({ html: reelSpoon(n) }));
-  const yearReel = spinning ? reel(yearCells, { spinning: true, resultIdx: 0, pos: posForYear(years, c.spinYear), fast: false }) : reel(yearCells, { spinning: false, resultIdx: years.indexOf(c.year) });
   const regionReel = picked ? reel(regionCells, { spinning: false, resultIdx: regionIdx, picked: true }) : reel(regionCells, { spinning, resultIdx: regionIdx, pos: 21.5 });
   const spoonReel = reel(spoonCells, { spinning, resultIdx: c.grade - 1, pos: 19.6 });
-  // 연도 표: 「{출생아 수}만 명 · {확률}%」(births) / 「— · {확률}%」(uniform). 굵은 줄 = 창의 해(도는 중) / 태어난 해(결과)
-  const yearTable = `<div class="odds odds--year"><table><caption class="sr-only">연도별 출생아 수와 확률</caption><tbody>${yearOdds.map((o) => `<tr${o.year === winYear ? ' class="odds__now"' : ''}><th scope="row">${o.year}년</th><td>${o.births === null ? GM3_TEXT.yearCellUniform(o.p.toFixed(1)) : GM3_TEXT.yearCell(Math.round(o.births / 10000), o.p.toFixed(1))}</td></tr>`).join('')}</tbody></table><p class="odds__note">${gx.basis === 'uniform' ? GM3_TEXT.yearOddsUniform : GM3_TEXT.yearOddsNote} ${spinning ? GM3_TEXT.yearOddsNow : GM3_TEXT.yearOddsDone}</p></div>`;
-  const dashes = tableRegions.some(([key]) => regionShare(winYear, key) === null);
+  const head = `<p class="odds__head">${GM3_TEXT.oddsHead(gx.name)}</p>`;
+  const regionNotes = [gx.basis === 'uniform' ? GM3_TEXT.regionNoteUniform : GM3_TEXT.regionNoteBirths, mix.popYears ? GM3_TEXT.regionNotePop : '', mix.later.length ? GM3_TEXT.regionNoteLater(mix.later.join('·')) : ''].filter(Boolean).join(' ');
   const regionOdds = picked
     ? `<p class="odds__picked">${GM3_TEXT.pickedRegion}</p>`
-    : `<div class="odds odds--cols odds--region"><table><caption class="sr-only">지역별 확률</caption><tbody>${tableRegions.map(([key, short]) => { const v = regionShare(winYear, key); return `<tr><th scope="row">${short}</th><td>${v === null ? '<span class="odds__dash">—</span>' : `${v.toFixed(1)}%`}</td></tr>`; }).join('')}</tbody></table><p class="odds__note">${gx.basis === 'uniform' ? GM3_TEXT.regionNotePop(winYear) : spinning ? GM3_TEXT.regionNoteSpin(winYear) : GM3_TEXT.regionNoteDone(winYear)}${dashes ? ` ${GM3_TEXT.regionDash}` : ''}</p></div>`;
-  const w = wealthFor(winYear);
-  const spoonOdds = `<div class="odds odds--spoon"><table><caption class="sr-only">수저별 확률</caption><tbody>${w.map((v, i) => `<tr><th scope="row">${SPOON_NAMES[i]}</th><td>${v}%</td></tr>`).join('')}</tbody></table><p class="odds__note">${GM3_TEXT.wealthNote(winYear)}</p></div>`;
+    : `<div class="odds odds--cols odds--region odds--r3">${head}<table><caption class="sr-only">지역별 확률 — ${GM3_TEXT.oddsHead(gx.name)}</caption><tbody>${mix.region.map((r) => `<tr><th scope="row">${r.short}</th><td>${r.pct}%</td></tr>`).join('')}</tbody></table><p class="odds__note">${regionNotes}</p></div>`;
+  const spoonOdds = `<div class="odds odds--spoon odds--r3">${head}<table><caption class="sr-only">수저별 확률 — ${GM3_TEXT.oddsHead(gx.name)}</caption><tbody>${mix.wealth.map((v, i) => `<tr><th scope="row">${SPOON_NAMES[i]}</th><td>${v}%</td></tr>`).join('')}</tbody></table><p class="odds__note">${GM3_TEXT.wealthNoteGen(gx.from, gx.to)}</p></div>`;
   const regionShort = SIDO.find((s) => s[0] === c.regionKey)[1];
+  // 결과 줄: 시도 + 수저 칩(구간은 세대 전체 기준의 섞은 값 — 표와 같은 숫자를 쓴다. 연도는 적지 않는다)
   const status = spinning
     ? `<p class="t-muted" role="status">${picked ? GM3_TEXT.spinNotePicked : GM3_TEXT.spinNote}</p>`
-    : `<p class="roulette__result" role="status">${fitPair(`${c.year}년`, regionShort)}<span class="grade-line">${gradeChip(c.grade, { range: bandOf(wealthFor(c.year), c.grade) })}</span></p>`;
-  const yearOddsHtml = yearTable;
+    : `<p class="roulette__result" role="status"><span class="roulette__place">${regionShort}</span><span class="grade-line">${gradeChip(c.grade, { range: bandOf(mix.wealth, c.grade) })}</span></p>`;
   return `<div class="page roulette-page${spinning ? ' is-spinning' : ''}" data-state="${spinning ? 'spinning' : 'done'}">
 ${headerLogoRow()}
 <main class="roulette">
   <div class="roulette__lead"><h1 class="t-title" style="--title-chars:${spinning ? 4 : 7}">${spinning ? GM3_TEXT.spinTitle : GM3_TEXT.doneTitle}</h1>${genLine}${status}</div>
-  <div class="reels reels--3">
-    <div class="reel-col"><h2 class="reel-col__title">${GM3_TEXT.yearTitle}</h2>${yearReel}${yearOddsHtml}</div>
+  <div class="reels reels--2">
     <div class="reel-col"><h2 class="reel-col__title">${GM3_TEXT.regionReelTitle}</h2>${regionReel}${regionOdds}</div>
     <div class="reel-col"><h2 class="reel-col__title">${GM3_TEXT.wealthTitle}</h2>${spoonReel}${spoonOdds}</div>
   </div>
@@ -400,12 +413,57 @@ ${rouletteMain('spinning', false)}
 <template id="state-result-picked">${rouletteMain('result', true)}</template>
 <template id="state-spinning-boomer">${rouletteMain('spinning', false, 'boomer')}</template>
 <template id="state-result-boomer">${rouletteMain('result', false, 'boomer')}</template>
-<p class="mock-tag" style="margin:0 var(--gutter) var(--sp-3)">시안 — 연도·지역 확률은 실제 자료(DC2·DC7 JSON)로 계산, 수저 비율은 설계값(N29 보간). 1940~1980 지역은 「예시」(수집 중)</p>
-<script>(function(){var q=new URLSearchParams(location.search);var s=q.get('state')||'spinning';var picked=q.get('region')==='picked';var gen=q.get('gen')==='boomer'?'boomer':'';var id='state-'+s+(picked&&s!=='draw'?'-picked':'')+(gen&&s!=='draw'&&!picked?'-'+gen:'');var t=document.getElementById(id);if(!t)return;var cur=document.querySelector('.page');cur.replaceWith(t.content.cloneNode(true));})();</script>`;
-  const html = page({ title: '수저 게임 · 시안 · 룰렛 연도 릴(SPEC-004 GM3)', body, head: '<link rel="stylesheet" href="gm3.css">' })
+<template id="state-spinning-random">${rouletteMain('spinning', false, 'millennial', true)}</template>
+<template id="state-result-random">${rouletteMain('result', false, 'millennial', true)}</template>
+<p class="mock-tag" style="margin:0 var(--gutter) var(--sp-3)">시안 — 지역 비율은 실제 자료(DC2·DC7 JSON)를 연도 가중으로 섞은 값, 수저 비율은 설계값(N29 보간)을 섞은 값. 연도는 화면에 없다(출생신고에서 드러남)</p>
+<script>(function(){var q=new URLSearchParams(location.search);var s=q.get('state')||'spinning';var picked=q.get('region')==='picked';var gen=q.get('gen')==='boomer'?'boomer':'';var from=q.get('from')==='random';var id='state-'+s+(picked&&s!=='draw'?'-picked':'')+(gen&&s!=='draw'&&!picked?'-'+gen:'')+(from&&s!=='draw'&&!picked&&!gen?'-random':'');var t=document.getElementById(id);if(!t)return;var cur=document.querySelector('.page');cur.replaceWith(t.content.cloneNode(true));if(q.get('font')==='system')document.documentElement.setAttribute('data-font','system');})();</script>`;
+  const html = page({ title: '수저 게임 · 시안 · 룰렛 두 릴(SPEC-004 GM3 r3)', body, head: `${FONT_LINKS}\n<link rel="stylesheet" href="gm3.css">` })
+    .replace('<html lang="ko">', '<html lang="ko" data-font="noto">')
     .replace('href="../../../src/styles/tokens.css"', 'href="../../../../src/styles/tokens.css"')
     .replace('href="ds.css"', 'href="../ds.css"');
   writeFileSync(`${OUT}roulette-004.html`, html);
+}
+
+// ============================================================ ②-1 출생신고 — 연도가 처음 드러나는 자리 (r3, 마스터 해석) ============================================================
+/** birth.html(SPEC-003 시안)의 「지난 세상」 템플릿을 밀레니얼 1988년생(룰렛 주 캡처와 같은 판: 경기 · 동수저)으로 바꾼다. 연도는 ① 「세대」 칸 「밀레니얼 세대 · 1988년생」(GD2 꼴) ② 첫 문장 ③ 「출생 연월」 칸에 적히고, 각주 한 문장이 GS7 가중을 말한다 */
+function buildBirth() {
+  const src = readFileSync(`${ROOT}docs/design/mockups/birth.html`, 'utf-8');
+  const past = src.match(/<template id="era-past">([\s\S]*?)<\/template>/);
+  if (!past) throw new Error('birth.html: era-past 템플릿이 없다');
+  const c = ROULETTE_CASES.millennial;
+  const g = c.gen;
+  const mix = genMixture(g);
+  let main = past[1];
+  main = must(main, '<div><p class="label">이름</p><p class="doc__name">박기철</p></div>', `<div class="doc__who"><div><p class="label">이름</p><p class="doc__name">김지혜</p></div><div><p class="label">${GM3_TEXT.birthGenLabel}</p><p class="doc__gen">${GM3_TEXT.birthGen(g.name, c.year)}</p></div></div>`, 'who');
+  main = main.replace(/<p class="doc__sentence">[\s\S]*?<\/p>/, `<p class="doc__sentence">${c.year}년 3월, 경기도 안양시의 형편이 빠듯한 가정에서 3.2kg 여자아이로 태어났습니다. 둘째입니다. <span class="keep-phrase">(3.2kg은 상위 약 48%)</span></p>`);
+  const grid = main.match(/<dl class="doc__grid">[\s\S]*?<\/dl>/);
+  if (!grid) throw new Error('birth.html: doc__grid');
+  let dl = grid[0]
+    .replace('<dt>성별</dt><dd>남성</dd>', '<dt>성별</dt><dd>여성</dd>')
+    .replace('<dt>출생 연월</dt><dd>1961년 5월</dd>', `<dt>출생 연월</dt><dd>${c.year}년 3월</dd>`)
+    .replace('<dt>태어난 곳</dt><dd>경기도 용인시 처인구</dd>', '<dt>태어난 곳</dt><dd>경기도 안양시</dd>')
+    .replace('grade grade--1 grade--lg', 'grade grade--2 grade--lg').replace('href="#sp-1"', 'href="#sp-2"').replace('<span>흙수저</span>', '<span>동수저</span>')
+    .replace('aria-label="5단계 중 1단계"><i class="on"></i><i class=""></i>', 'aria-label="5단계 중 2단계"><i class="on"></i><i class="on"></i>')
+    .replace('(하위 40% 안쪽)', `(${bandOf(mix.wealth, c.grade)})`)
+    .replace('data-a="27세" data-b="전문직"><span class="fit-pair__probe" data-text="27세 · 전문직" aria-hidden="true"></span>27세 · 전문직', 'data-a="26세" data-b="사무직"><span class="fit-pair__probe" data-text="26세 · 사무직" aria-hidden="true"></span>26세 · 사무직')
+    .replace('data-a="28세" data-b="기계 조작직"><span class="fit-pair__probe" data-text="28세 · 기계 조작직" aria-hidden="true"></span>28세 · 기계 조작직', 'data-a="29세" data-b="생산직"><span class="fit-pair__probe" data-text="29세 · 생산직" aria-hidden="true"></span>29세 · 생산직')
+    .replace('<dt>사는 집</dt><dd>자가</dd>', '<dt>사는 집</dt><dd>임차(전세, 월세)</dd>')
+    .replace('<dt>출생 체중</dt><dd>3.6kg <span class="cell-sub">(상위 약 17%)</span></dd>', '<dt>출생 체중</dt><dd>3.2kg <span class="cell-sub">(상위 약 48%)</span></dd>')
+    .replace('<dt>형제 순서</dt><dd>셋째</dd>', '<dt>형제 순서</dt><dd>둘째</dd>')
+    .replace('<dt>외모</dt><dd>상위 약 23%', '<dt>외모</dt><dd>상위 약 40%')
+    .replace(/<dt>교육방식<\/dt><dd>[\s\S]*?<\/dd>/, '<dt>교육방식</dt><dd>엄격 <span class="cell-sub">집에는 지켜야 할 규칙이 많았고, 부모님은 엄했습니다.</span></dd>');
+  // 옛 값 점검: 격자 칸에는 1961년 판의 값이 남으면 안 되고(또래 목록의 수저 칩은 다른 사람의 값이라 제외), 본문에는 옛 연도·이름·지명이 남으면 안 된다
+  for (const needle of ['1961', '박기철', '용인시', '흙수저', '전문직']) if (dl.includes(needle)) throw new Error(`출생신고 격자에 옛 값이 남아 있다: ${needle}`);
+  for (const needle of ['1961', '박기철', '용인시']) if (main.replace(grid[0], '').includes(needle)) throw new Error(`출생신고 본문에 옛 값이 남아 있다: ${needle}`);
+  main = main.replace(grid[0], dl);
+  main = must(main, '<div class="doc-notes t-xs t-faint">', `<div class="doc-notes t-xs t-faint">\n    <p>${GM3_TEXT.birthYearNote}</p>`, 'notes');
+  let html = src.replace(/<main class="doc-page" data-era="present">[\s\S]*?<\/main>/, main.trim()).replace(/<template id="era-past">[\s\S]*?<\/template>\n?/, '').replace(/<template id="era-future">[\s\S]*?<\/template>\n?/, '');
+  html = must(html, '<html lang="ko">', '<html lang="ko" data-font="noto">', 'html tag');
+  html = must(html, '<title>수저 게임 · 시안 · 출생신고</title>', '<title>수저 게임 · 시안 · 출생신고 — 연도가 처음 드러나는 자리(SPEC-004 GM3 r3)</title>', 'title');
+  html = must(html, '<link rel="stylesheet" href="../../../src/styles/tokens.css">', '<link rel="stylesheet" href="../../../../src/styles/tokens.css">', 'tokens');
+  html = must(html, '<link rel="stylesheet" href="ds.css">', `<link rel="stylesheet" href="../ds.css">\n${FONT_LINKS}\n<link rel="stylesheet" href="gm3.css">`, 'ds');
+  html = html.replace('</body>', `<script>(function(){var q=new URLSearchParams(location.search);if(q.get('font')==='system')document.documentElement.setAttribute('data-font','system');})();</script>\n</body>`);
+  writeFileSync(`${OUT}birth-004.html`, html);
 }
 
 // ============================================================ ③ 대시보드 ============================================================
@@ -612,6 +670,7 @@ ${ending('future')}
 
 buildTitle();
 buildRoulette();
+buildBirth();
 buildDashboard();
 buildEnding();
-console.log('gm3 mockups →', OUT.replace(ROOT, ''), ['title-004', 'roulette-004', 'dashboard-004', 'ending-004'].join(' · '));
+console.log('gm3 mockups →', OUT.replace(ROOT, ''), ['title-004', 'roulette-004', 'birth-004', 'dashboard-004', 'ending-004'].join(' · '));

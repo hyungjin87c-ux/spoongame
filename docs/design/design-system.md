@@ -726,3 +726,79 @@ CSS는 `title-005.css` 「QI4 전망 차트」 블록(12-3의 `.chip--proj`·`li
 - 새 색 쌍 **0**: 체험 한 줄·메타·소개 `--c-text-2`/바탕·면(8.3~8.65), 고른 줄 글자 `--c-on-brand-soft`/`--c-brand-soft` 10.45, 막대 `--c-brand`/`--c-brand-soft` ≥ 3, 「—」 `--c-text-3`/면 5.78 — 모두 17-7·`contrast-report.md`의 쌍.
 - 다크(`title-dark-1280` 검사): 토큰만, 문제 없음. 강제 색상(`title-forced-1280`·`-360`·`roulette-forced-1280` 검사): 고른 줄 Highlight 면 + HighlightText 글자·표식 채움·체크·막대, 창·줄 경계 CanvasText, 「예시」 알약 CanvasText 점선 — 문제 없어 캡처를 남기지 않았다(임시 샷 `.taste-skill/004r2/after/mock/`).
 - 측정(`shootGm3.mjs r2`, Playwright 크로뮴, 맑은 고딕): 첫 화면 1280×800 목록 256px · 보이는 줄 5(+반) · 왼쪽 열 끝 989 · 캐러셀 카드 위 24 · 값 아래 170 ≪ 732 / 360×740 목록 276px · 6줄 · 왼쪽 열 끝 1184 / 1920×1080 목록 354px 8줄 / 320 · 200% 끊긴 낱말 **0**(「시·도별」 keep-phrase 뒤). 룰렛 1280 3열 235 · 360 **3열 104 나란히**(넘침 0 — 연도 칸 두 줄 뒤; 전 11px) · 320 · 200% 한 열씩 끊긴 낱말 0 · 1280 · 200% 3열 넘침 0. 샷 7장 69~114 KB(이름 비교 2장은 h1 글자 52/59.8 700, 그 밖은 첫 화면과 같다).
+
+### 17-11. r3 — 게이트 ③ 형진 님 답 2차 반영 (2026-10-27 designer: 벤치마킹 `benchmark-004.md` · 세대 목록 상자 없이 줄 + 줄마다 작은 소개 · 룰렛 두 릴 「○○세대 전체 기준」 · 연도는 출생신고에서 · 체험 한 줄 ② · **Noto Sans KR 부분 집합 조각 실측과 절차**. 문구 `copy.md` 16-11, 차이 `diff-004.md` 7절 D4-46~D4-58, CSS `mockups/gm3/gm3.css` r3 블록, 글꼴 `mockups/gm3/fonts/`(생성 `scripts/design/buildGm3Fonts.mjs`), 샷 `screens/004/gm3r3-*` 8장, 기록 `ai-log/2026-10-27_SPEC-004_design-GM3r3.md`. 새 토큰 **0**(바탕색 후보는 대안 캡처에만) · 새 색 쌍 0 · 새 글꼴 파일 **10**(WOFF2만, 시안 폴더, `src/` 아님). **마스터 처리(2026-10-27)**: 캐러셀 평면화 정본 채택(12-6 번복) · 글꼴 B안·MG8 400,000 유지·`brotli` 없음·WOFF 삭제 · 수저 구간 = 섞은 값 · 12px 단계 유지 · 세대 줄 오른쪽 여백 8px · 정본 캡처는 포커스 없이 — `diff-004.md` 7-1)
+
+#### 17-11-1. 벤치마킹에서 가져온 규칙 (8곳 — 수치는 `benchmark-004.md` 1·2절)
+
+| 규칙(8곳 공통) | r2 | r3 |
+|---|---|---|
+| 글꼴 한 벌(Windows의 두 벌 섞임은 어느 곳에도 없다) | 시스템 글꼴 — Segoe UI 숫자 + 맑은 고딕 한글 | **Noto Sans KR 400·700 조각**(17-11-3) |
+| 본문 15~18px · 줄 간격 1.4~1.6 · 굵기는 제목에만 · 바닥 11.5~12.5px | 부제 16/1.6 · 이름 16 700 × 8줄 · 메타 14 | 이름 **14 700** · 메타 **12** · 소개 **12** · 수저 줄 이름 400 — 바닥 12 그대로 |
+| 선택 목록은 상자 안 상자가 없다(규칙선·여백·원 표식) | 1px 경계 + 둥근 모서리 + 면의 창 안 줄 | **위아래 규칙선 + 줄 사이 규칙선**, 창 상자 없음 |
+| 알약은 상태·버튼에만 | 「살아봄」·세대 태그·「예시」 알약 셋 | 없음(체크 + 글자 / 굵은 글자 / 자료 확보로 불필요) |
+| 쉬는 카드에 그라디언트·그림자 0 | 캐러셀 카드 하늘 띠 + 그림자(12-6 결정) | 기본은 그대로, **대안 캡처**(flat·paper) — 결정 대기 |
+| 표 글자 13~16, 작은 글은 각주에만 | 룰렛 표 12 | 룰렛 표 **14** + 12px 표 머리 |
+
+#### 17-11-2. 토큰에 닿는 제안과 다른 화면 영향 (시안은 바꾸지 않았다 — 결정은 마스터)
+
+| 제안 | 값 | 대비(라이트) | 다른 화면 영향 | designer 권고 |
+|---|---|---|---|---|
+| ① `--font-sans` 앞에 Noto Sans KR | `'Noto Sans KR', 'Noto Sans KR Fallback', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif` | — | **모든 화면**의 글꼴이 바뀐다(줄 높이는 모두 명시값이라 레이아웃 불변 — CLS 추정 0, 17-11-3). 대시보드·엔딩은 그 화면의 글자(s2 조각 굵기당 ≈ 52KB)를 「태어나기」 뒤 받는다 | **채택**(형진 님 답 4) — 한도는 17-11-3 |
+| ② 바탕 한 단 밝게 `--c-bg` #f6f3ec → **#f9f7f2**, `--c-surface-2` #efeae0 → #f1ede4 | 대안 `?alt=paper` | 글자 `--c-text` 15.0 · `--c-text-2` 8.2 · `--c-text-3` 5.5 · `--c-border-strong` 3.8 · 놋쇠 4.7 · 링크 7.0 — 모두 기준 위 | 바탕 ↔ 카드 면(#fffdf8) 단차 1.09 → **1.05**로 더 사라져 대시보드·출생신고·엔딩 카드가 경계·그림자에 더 기댄다. `--c-card-tint`·안내 띠·`contrast-report.md` 전수 재계산, 다크는 무관 | **보류** — 벤치마킹의 흰 바탕에 가까워지는 이득보다 정체성(한지색)·카드 단차 손실이 크다 |
+| ③ 보조 잉크 옅게 `--c-text-2` #4f4a41 → #5a544a | 제안만 | 바탕 6.76 · 면 7.37 · 옅은 쪽빛 면 6.11(모두 ≥ 4.5) | 설명 글·메타·표 보조 글 전부 — 위계가 더 보이지만 `contrast-report.md`·`checkContrast` 쌍 재계산, 다크 짝 `#c4bfb2`도 함께 | 마스터 판단(벤치마킹 보조 잉크 4.8~6.8:1 쪽으로) |
+| ④ 캐러셀 카드 평면화(`title-005.css` `data-hero='illust'` 블록 — 토큰 `--c-card-tint`·`--shadow-card`·`--c-card-border` 사용 중단) | **정본(마스터 채택 2026-10-27, 12-6 번복)** — `gm3.css` `html[data-hero] .carousel--005` | 카드 경계 `--c-border`/바탕 1.37(장식, 대비 요구 없음) · 카드 면/바탕 1.09 | 첫 화면만. 토큰 셋은 쓰는 곳이 없어지면 지우고 `checkContrastLib.ts`의 띠 위 쌍 셋도 뺀다 | 채택됨(D4-55) |
+
+#### 17-11-3. 글꼴 실측 — Noto Sans KR을 가볍게 (답 4. 원본 = 이 PC 설치본 v2.004 정적 Regular·Bold + VF v2.04, OFL 1.1 · 도구 fontTools 4.63 subset/instancer + Node brotli · 내려받기 0)
+
+**글자 집합**(모두 저장소에서 계산): GAME = `src/**` + `index.html` 1,202자(한글 1,034 — 이름 풀 포함) · GM3 시안 문구 578 · TITLE 첫 화면 시안 507 · **RENDERED 첫 화면이 처음 그리는 글자 289(한글 247)**(Playwright가 1280·360에서 잰 것 — 숨은 슬라이드·hidden 제외) · ROULETTE 룰렛+출생신고 271 · KS X 1001 2,350(Python euc-kr 2바이트 부호화로 유도). 조각(겹치지 않음): **s0** = ASCII ∪ RENDERED 346 · **s0b** = TITLE − s0 194(캐러셀 다른 장·접이식·설정 패널 — 그려질 때) · **s1** = ROULETTE 밖 28 · **s2** = 그 밖 게임 글자 638 · **s3** = KS 꼬리 1,313(사용자 입력·앞으로의 문장 — 그 글자가 화면에 올 때만).
+
+| 안 | 첫 화면이 처음 받는 바이트 | 첫 화면 글자 전부(s0+s0b) | 룰렛까지 누적 | 전체(s3 제외) | s3 꼬리 | 비고 |
+|---|---:|---:|---:|---:|---:|---|
+| A 정적 400+700 한 파일 | 174,088 | 174,088 | 174,088 | 174,088 | — | 조각 없음 |
+| **B 정적 400+700 조각(시안)** | **57,780**(400 28,752 + 700 29,028) | 93,524 | 101,752 | 206,944 | 211,600 | 첫 화면 s0 미리 받기 |
+| B′ 정적 400만(굵게 합성) | 28,752 | 46,532 | 50,628 | 103,456 | 106,148 | 합성 굵기는 한글이 번져 권하지 않음 |
+| C 가변 wght 400~700 조각 | 47,712 | 77,024 | 83,552 | 170,180 | 177,612 | 한 파일에 두 굵기 — gvar 때문에 B보다 전체는 큼 |
+| C′ 가변 한 파일 | 145,744 | 145,744 | 145,744 | 145,744 | — | |
+
+바이트는 이 스크립트가 직접 쓴 **WOFF2(널 변환 — glyf 변환 없이 brotli)** 실측 — **마스터 결정(2026-10-27): 이 파일을 그대로 쓴다**(정식 WOFF2는 5~15% 더 작지만 `brotli` 모듈 내려받기를 하지 않는다). WOFF(zlib)는 만들지 않는다(저장소 크기 — 모든 대상 브라우저가 WOFF2를 읽는다). `noto-sans-kr.css`(@font-face 10 + fallback, WOFF2 `src` 하나씩) ≈ 39KB → brotli **≈ 4.1KB**.
+
+- **표시 전략(시안)**: `font-display: swap` + 첫 화면 조각 s0(400·700) `<link rel="preload" as="font" crossorigin>` + 대체 글꼴 `'Noto Sans KR Fallback'` = 맑은 고딕에 `size-adjust: 92.19%` · `ascent-override: 116%` · `descent-override: 28.8%` · `line-gap-override: 0`(Noto hhea 1160/−288/0, 표본 = 첫 화면 한글 247자 + 숫자의 평균 폭). **바뀜 흔들림(CLS) 추정 0**(1280·360, naive 맑은 고딕 ↔ Noto도 0, 룰렛 naive 0.0013) — 줄 높이가 모두 명시값(1.6·1.4·1.5)이고 한글 전각 폭이 같아 글꼴이 바뀌어도 줄 수가 변하지 않는다. `optional`은 느린 망에서 끝까지 대체 글꼴로 남으므로 권하지 않는다(CLS가 0이라 swap의 비용이 없다).
+- **조각에 없는 글자**: 게임 글자는 모두 s0~s2에 있다(시험으로 잠근다 — 17-11-4 ⑤). 사용자가 적는 글(생각 남기기)·앞으로 더해질 문장은 ① KS 2,350 안이면 s3(굵기당 ≈ 105KB, 그때만 받는다) ② KS 밖 음절(8,822자)은 **대체 글꼴로 그려진다**(그 글자만 맑은 고딕·시스템 — 입력란 안이라 허용). 필요하면 s3을 빈도 순 조각 여럿으로 더 나눈다(Google Fonts 방식).
+- **MG8 한도 제안**(지금 WebKit PC 373,413B · Chromium PC 370,257 · 모바일 338,791/341,947, 한도 400,000, 여유 26,587): 마스터가 결정한 일러스트 삭제(D4-34 — PC `home-map-pc.webp` 65,136B · 모바일 `home-map-mobile.webp` 33,670B)를 먼저 셈에 넣으면 WebKit PC **308,277** · 모바일 **308,277**. 여기에 B안 첫 화면(57,780) + CSS(4,143) ≈ **61,923** → **370,200B, 여유 29,800** — **한도 400,000을 바꾸지 않아도 들어간다.** 다만 SPEC-004가 첫 화면에 더하는 코드·문구(세대 목록·시도 선택, gzip ≈ 3~5KB)와 정식 WOFF2 전환(−5~15%)을 셈하면 여유 25~35KB. 선택지: **① 400,000 유지**(조건: 일러스트 삭제 + B안 + 지연 로드 MG8 그대로, 여유 ≈ 30KB) ② 안전 폭을 원하면 **420,000**(5%) ③ B′(400만)면 32,895B라 여유 59KB이나 합성 굵기라 권하지 않음. **마스터 결정(2026-10-27): ① — B안 · 400,000 유지.** s0b(35,744)는 캐러셀이 다음 장으로 넘어갈 때 받으므로 `initial-load.spec.ts`의 창(networkidle + 1.5초) 밖이다 — 시험은 「첫 화면 요청 목록에 s0 둘(400·700 woff2) + CSS만」으로 단언한다.
+
+#### 17-11-4. 구현용 조각 생성 절차 (GM4 developer — 도구·명령·글자 집합 갱신)
+
+1. **원본**: 개발 PC에 설치된 Noto Sans KR v2.004 정적 Regular·Bold(`C:/Windows/Fonts` 또는 `--src <폴더>`). 저장소에는 원본을 넣지 않는다. 라이선스는 `fonts/OFL.txt`·`credits.md` 행.
+2. **글자 집합**: `node scripts/design/buildGm3Fonts.mjs`가 ① GAME(`src/**` + `index.html`) ② 시안 HTML(구현 상수가 생기면 이 항은 없어도 된다) ③ 첫 화면이 처음 그리는 글자(`.taste-skill/004r3/title-rendered-chars.*.txt` — `node scripts/design/shootGm3.mjs r3 title`이 만든다; 구현에서는 Playwright 대신 **첫 화면 상수(`titleText.ts`·세대 정의·첫 슬라이드)에서 결정적으로** 뽑는 작은 스크립트로 바꾸는 것이 낫다) ④ KS X 1001(코덱 유도)을 읽어 s0·s0b·s1·s2·s3를 나눈다.
+3. **자르기**: `python -m fontTools.subset <원본> --unicodes-file=<조각> --layout-features=<세로쓰기 제외 목록> --no-hinting --desubroutinize --name-IDs=0,1,2,3,4,5,6,13,14 --notdef-outline --recommended-glyphs` → TTF → WOFF2(스크립트의 널 변환 — 마스터 결정대로 `brotli` 모듈 없이). 산출 `fonts/NotoSansKR-{400,700}.{s0,s0b,s1,s2,s3}.woff2` + `noto-sans-kr.css`(@font-face + `unicode-range` + fallback face) + `README.md`(측정 표). WOFF(zlib)는 만들지 않는다.
+4. **배치**: 파일 → `src/assets/fonts/`, CSS → `src/styles/fonts.css`(또는 `title.css` 머리), `index.html`에 s0 400·700 preload 둘, `tokens.css --font-sans` 앞에 `'Noto Sans KR', 'Noto Sans KR Fallback'`. 외부 주소 0.
+5. **갱신·시험**: 이벤트·연표·인용 문장이 더해질 때마다 2~3을 다시 돌린다. `tests/designAssets.test.ts`에 ① `src/**` 문자열의 모든 글자가 s0∪s0b∪s1∪s2의 `unicode-range` 안(없는 글자가 있으면 실패 — 조각 재생성 신호) ② 첫 화면 상수의 글자 ⊂ s0 ③ CSS의 face 수·preload 둘·fallback metric 값 ④ 파일 바이트 합이 17-11-3 표의 ±10% 안. `initial-load.spec.ts`에 첫 화면 요청 = s0 둘 + CSS, 한도(마스터 결정 ①/②).
+
+#### 17-11-5. 세대 목록 r3 (`.gen-list` — 17-10-3을 대체)
+
+- 창: 상자 없음. 위아래 1px `--c-border-strong`, 줄 사이 1px `--c-border`. 높이 모바일 `clamp(9rem, 100svh − 27rem, 24rem)` · PC(≥ 960) `clamp(9rem, 100vh − 32rem, 24rem)` — 실측 1280×800 **288px(5줄 + 반)** · 360×740 **308px(5줄)** · 1920×1080 384px(7줄). snap·`overscroll-behavior`·smooth(움직임 줄이기면 auto)·키보드(목록 `scrollTop`만) r2 그대로, **처음 칠할 때는 즉시 스크롤**(smooth 진행 중에 첫 그림이 나오면 고른 줄이 반쯤 걸친다 — 강제 색상 검사에서 잡혀 고침).
+- 줄(`flex: none` — 세로 flex 창 안에서 눌리지 않게): 표식 원 18px(2px `--c-border-strong`) · `.gen-row__line` = 이름 `--fs-sm` 700 + (살아봄: 체크 12px + 글자 `--fs-xs` `--c-text-3`, 알약 없음) + 메타 `--fs-xs` `--c-text-3` tabular 오른쪽(`margin-left: auto`; 안 들어가면 통째로 다음 줄, 320 · 200%는 「·」 뒤에서 접힘) · `.gen-row__desc` 소개 `--fs-xs` `--c-text-2`(알파는 보조 문장 `.gen-row__note` `--c-text-3` 이어 붙임). 안쪽 여백 위 6 · 아래 7 · **오른쪽 8px**(마스터 지적 — 메타가 끝선에 붙거나 잘리지 않게; 촬영 스크립트가 모든 줄의 메타 오른쪽 여유 ≥ 8px을 단언) → 줄 높이 **50~51px**(두 줄), 긴 이름 줄(360의 산업화·베이비붐) **68**, 알파 68(1280)·85(360). 모두 ≥ 44.
+- 고른 줄: `--c-brand-soft` 면 + 왼쪽 3px `--c-brand` 막대 + 표식 채움·체크, 글자 전부 `--c-on-brand-soft`. 포커스 링 3px `--c-focus` 안쪽(−3px).
+- 접근성: 라디오 `aria-labelledby`(이름 + 메타) + `aria-describedby`(소개), 「선택됨」 sr-only. 키보드 실측: 1280·360 랜덤 → 알파 → 랜덤 왕복에 고른 줄 창 안, 문서 스크롤 1280 0px · 360 16px(브라우저 포커스 스크롤, 띠 `scroll-padding` 안 — 기록).
+
+#### 17-11-6. 룰렛 두 릴 (17-3·17-10-4를 대체)
+
+- `.reels.reels--2`(ds.css 8.5rem 격자 = SPEC-003 룰렛 틀) — 1280 두 열 **354px**, 360 **158px 나란히**(넘침 0), 320 · 200% 한 열씩. 릴·창·흐림·줄무늬는 기존 `.reel`. 세대 줄: 「랜덤 세대에서 뽑힌」(`.roulette__from` 12px `--c-text-3`, 랜덤 경로만) + 세대 이름 `--fs-md` 700(알약 없음) + 「{범위}년생 가운데」 `--fs-sm` `--c-text-2`.
+- 표(`.odds--r3`): 머리 `.odds__head` 「{세대} 전체 기준」 `--fs-xs` 400 `--c-text-2` · 글자 `--fs-sm` · 값 칸 ≥ 5.5ch tabular 오른쪽 · 지역 표는 ≥ 640px 두 칸(ds.css `.odds--cols`) — 밀레니얼 15줄(8/7) · 수저 5줄 · 주석 `--fs-xs` `--c-text-3`. 값 = `genMixture`(`diff-004.md` D4-47 — 세대 전체 기준, 합 100.0/100 검산). **도는 중 ↔ 결과 표 크기 동일**(1280 354/354 · 360 158/158, 줄 15/5, 값 칸 43/114 · 43/51) — 표는 바뀌지 않으므로 흔들림 0이 구조적으로 보장된다.
+- 결과 줄: `.roulette__place` 시도 `--fs-lg` 700 → 수저 칩 `--fs-md` + 구간 `--fs-sm` `--c-text-2`(세대 전체 기준 섞은 값 — D4-48). 연도 글자 0(실측 `yearText: false`).
+
+#### 17-11-7. 출생신고 「세대」 칸 (`birth-004.html` — SPEC-003 문서 틀 위에)
+
+- `.doc__who`(flex, wrap, 간격 8/32px): 이름 칸 + **「세대」 라벨 + `.doc__gen`**(「밀레니얼 세대 · 1988년생」 `--fs-md` 700 tabular). 첫 문장·「출생 연월」 칸은 기존 BR3 꼴. 각주 첫 문장은 GS7 가중 설명(`copy.md` 16-11). 서류 높이 678px(1280), 360·320 · 200% 넘침 0·끊긴 낱말 0.
+
+#### 17-11-8. 대비 · 다크 · 강제 색상
+
+- 새 색 쌍 **0**: 메타·살아봄·표 머리 주석 `--c-text-3`/바탕 5.30 · /면 5.78 · /옅은 쪽빛 면 4.78(모두 ≥ 4.5), 소개 `--c-text-2`/바탕 7.93, 규칙선 `--c-border-strong`/바탕 3.68(경계 ≥ 3), 줄 사이 `--c-border`는 장식(대비 요구 없음). 대안 paper의 쌍은 17-11-2 ②.
+- 다크(검사 `title-dark-1280`·`roulette-dark-360`·`birth-dark-360`): 토큰만, 문제 없음. 강제 색상(`title-forced-1280/360`·`roulette-forced-1280`·`birth-forced-1280`): 규칙선·표식 CanvasText, 고른 줄 Highlight 면 + HighlightText 글자·막대·체크, 글꼴은 그대로(Noto) — 문제 없어 캡처를 남기지 않았다(임시 샷 `.taste-skill/004r3/after/mock/`).
+
+#### 17-11-9. 측정과 검사 (2026-10-27, `shootGm3.mjs r3` · `inspect.mjs --app` · `lint.mjs --app`)
+
+- 샷 8장 67~144KB(≤ 300). 넘침 0(문서·요소), 320 · 200% 끊긴 낱말 0(첫 화면·룰렛·출생신고). 글꼴 적재: `document.fonts`에 Noto Sans KR 400·700 loaded, 본문 글자 100% Noto(inspect `typefaces Noto Sans KR 100%`).
+- inspect 전(r2 시안) → 후: 첫 화면 1 FAIL(`blank-gap` 360 캐러셀 고정 높이 — 예외 REV-003-M2-2) · WARN `icon-chips` 3 → **1 FAIL · 1 WARN** — `icon-chips`는 캐러셀 평면화(정본, `.nav-btn__box` 경계 0)로 **사라졌고**, **WARN `tiny-text` 62%**가 새로 생김(줄마다 12px 메타·소개 — **형진 님 답 1 「작은 글씨로」의 결과**, 바닥 12px·벤치마킹 작은 글 12~12.5와 같다 → 예외, 마스터 결정 「12px 단계 유지」). 정본 캡처는 포커스 없는 상태(키보드 검사는 캡처 뒤), 세대 줄 메타의 오른쪽 여유 8px(1280·360 모든 줄 실측 8). 룰렛 0 FAIL 1 WARN(`tiny-text` 48%) → **0 FAIL 0 WARN**(표 14px). 출생신고(새): FAIL `heavy-shadow`(서류 카드 `--shadow-2` — SPEC-003 문서 틀, 예외) · FAIL `covered-text` 360(「김지혜」가 어느 스크롤 위치에서 하단 고정 띠 아래 — 고정 띠의 성질, CM10 `scroll-padding`이 포커스는 지킨다, 기록) · WARN `tiny-text` 53%(각주 — 기존).
+- lint `--app` gm3 0 FAIL 2 WARN: `shadow` 1(gm3.css 137행 대안 규칙 `box-shadow: none` — 그림자를 **없애는** 줄의 오탐) · `em-dash` 67(한국어 주석). `lint --app src` 3 FAIL 15 WARN(`src/` 불변).
