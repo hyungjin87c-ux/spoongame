@@ -1,0 +1,116 @@
+/* SPEC-009 FM2 집과 가족 그림 — 시안 전용 CSS (designer 2026-10-27). 토큰은 **제안**이다(tokens.css에 없는 새 이름 --c-scene-*; 마스터 확정 뒤 developer가 tokens.css로 옮긴다).
+   라이트 값은 SVG 조각의 fallback과 같다(buildFamilyMockups.mjs LIGHT). 다크는 같은 그림을 어두운 종이에 놓은 것 — 낮밤·계절 표현이 아니다(SPEC-009 안 할 것).
+   얼굴 시스템과 공유: 살색·머리색은 --c-face-* 값과 같다(사람이 같은 사람으로 보이게). */
+:root {
+  --c-scene-sky: #dfe6ed;
+  --c-scene-far: #b9c4d0;
+  --c-scene-far2: #cfd8e2;
+  --c-scene-ground: #e4dccb;
+  --c-scene-ground2: #cfc5ae;
+  --c-scene-wall: #f5f0e5;
+  --c-scene-wall2: #cdc3ac;
+  --c-scene-roof: #5b6879;
+  --c-scene-roof2: #404b58;
+  --c-scene-wood: #8a6b4c;
+  --c-scene-clay: #926f52;
+  --c-scene-ink: #2b2a27;
+  --c-scene-shade: rgba(38,50,74,0.2);
+  --c-scene-glass: #fbf3d4;
+  --c-scene-green: #6e8a5b;
+  --c-scene-cloth1: #26324a;
+  --c-scene-cloth2: #8a6a14;
+  --c-scene-cloth3: #f7f2e8;
+  --c-scene-cloth4: #6c7f9e;
+  --c-scene-skin: #f1c9a5;
+  --c-scene-hair: #2b2420;
+  --c-scene-hairw: #d6d2ca;
+  --c-scene-pet: #a98c66;
+  --c-scene-pet2: #4a453d;
+  --c-scene-face: #4a362c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --c-scene-sky: #1e2633;
+    --c-scene-far: #2b3443;
+    --c-scene-far2: #252e3c;
+    --c-scene-ground: #2b3039;
+    --c-scene-ground2: #222730;
+    --c-scene-wall: #4a5264;
+    --c-scene-wall2: #3a4151;
+    --c-scene-roof: #7b8a9c;
+    --c-scene-roof2: #5d6b7d;
+    --c-scene-wood: #a0805e;
+    --c-scene-clay: #a07d60;
+    --c-scene-ink: #ece8de;
+    --c-scene-shade: rgba(0,0,0,0.38);
+    --c-scene-glass: #efdc9a;
+    --c-scene-green: #7f9a6c;
+    --c-scene-cloth1: #b3c2e8;
+    --c-scene-cloth2: #dcb85c;
+    --c-scene-cloth3: #e6e0d3;
+    --c-scene-cloth4: #93a3bf;
+    --c-scene-skin: #f1c9a5;
+    --c-scene-hair: #2b2420;
+    --c-scene-hairw: #d6d2ca;
+    --c-scene-pet: #b89c78;
+    --c-scene-pet2: #c9c3b8;
+    --c-scene-face: #4a362c;
+  }
+}
+:root[data-theme='dark'] {
+  --c-scene-sky: #1e2633;
+  --c-scene-far: #2b3443;
+  --c-scene-far2: #252e3c;
+  --c-scene-ground: #2b3039;
+  --c-scene-ground2: #222730;
+  --c-scene-wall: #4a5264;
+  --c-scene-wall2: #3a4151;
+  --c-scene-roof: #7b8a9c;
+  --c-scene-roof2: #5d6b7d;
+  --c-scene-wood: #a0805e;
+  --c-scene-clay: #a07d60;
+  --c-scene-ink: #ece8de;
+  --c-scene-shade: rgba(0,0,0,0.38);
+  --c-scene-glass: #efdc9a;
+  --c-scene-green: #7f9a6c;
+  --c-scene-cloth1: #b3c2e8;
+  --c-scene-cloth2: #dcb85c;
+  --c-scene-cloth3: #e6e0d3;
+  --c-scene-cloth4: #93a3bf;
+  --c-scene-skin: #f1c9a5;
+  --c-scene-hair: #2b2420;
+  --c-scene-hairw: #d6d2ca;
+  --c-scene-pet: #b89c78;
+  --c-scene-pet2: #c9c3b8;
+  --c-scene-face: #4a362c;
+}
+
+/* 그림 카드 — 가운데 열: 결정 카드 → 이 카드 → (올해 마음 쓸 곳 자리) → 인생 기록 (FH1). 그림은 카드 위끝에 꽉 차게(이미지창), 아래 한 줄·펼침·접기 */
+.scene-card { padding-top: 0; overflow: hidden; }
+.scene-card[data-fold='true'] { padding-top: var(--sp-4); }
+.scene-card[data-fold='true'] .scene { display: none; }
+.scene { margin: 0 calc(-1 * var(--sp-4)); background: var(--c-scene-sky); }
+/* 높이: 폭 ÷ 2.5, 화면 높이의 25%를 넘지 않는다(FH1 ▲). 넘으면 양옆을 조금 잘라 보인다(preserveAspectRatio slice — 안전 영역 x 20~620) */
+.scene__svg { display: block; width: 100%; aspect-ratio: 640 / 256; max-height: 25vh; forced-color-adjust: none; }
+.scene__line { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text); font-weight: var(--fw-bold); word-break: keep-all; overflow-wrap: anywhere; }
+.scene__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-2); }
+.scene__more { flex: 1 1 auto; min-width: 0; }
+.scene__more > summary { display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 var(--sp-1); cursor: pointer; font-size: var(--fs-sm); color: var(--c-text-2); list-style: none; }
+.scene__more > summary::-webkit-details-marker { display: none; }
+.scene__more > summary::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: var(--sp-2); border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform var(--dur) var(--ease, ease); }
+.scene__more[open] > summary::before { transform: rotate(45deg); }
+.scene__more > summary:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; border-radius: var(--r-sm); }
+.scene__people { margin: var(--sp-2) 0 0; padding: 0 0 0 var(--sp-2); list-style: none; display: grid; gap: var(--sp-1); font-size: var(--fs-sm); color: var(--c-text); }
+.scene__people li { padding-left: var(--sp-3); position: relative; }
+.scene__people li::before { content: ''; position: absolute; left: 0; top: 0.65em; width: 5px; height: 5px; border-radius: 50%; background: var(--c-text-3); }
+.scene__open { margin: var(--sp-2) 0 0; }
+/* 바뀌는 해의 교차 페이드(FH4 ▲): 두 그림을 겹쳐 두고 앞 그림의 불투명도만 바꾼다. 움직임 줄이기면 --dur-slow가 0.01ms라 즉시 교체된다(tokens.css) */
+.scene--swap .scene__svg { transition: opacity var(--dur-slow) var(--ease, ease); }
+@media (max-width: 959px) {
+  /* 휴대폰: 결정 카드 바로 아래(둘 다 order -1, 문서 순서대로 결정 → 그림), 그 다음 프로필·스탯·… 인생 기록(DB1) */
+  .scene-card { order: -1; }
+}
+@media (forced-colors: active) {
+  .scene { border-bottom: 1px solid CanvasText; }
+  .scene__people li::before { background: CanvasText; }
+}

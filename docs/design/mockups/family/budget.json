@@ -1,0 +1,322 @@
+{
+  "measuredAt": "2026-10-27",
+  "note": "raw·gz는 조각 안쪽 마크업(<g> 내용) 바이트. chunk는 그림체의 조각 전부를 {id: 마크업} JSON으로 묶어 gzip한 값(실제 덩어리에 가까운 추정). 예산(SPEC-009 FH8 ▲): 조각 평균 gzip ≤ 0.45KB · 조각 덩어리 ≤ 45KB(93조각) · family 덩어리 합계 ≤ 75KB.",
+  "styles": {
+    "s1": {
+      "name": "종이 오림",
+      "pieces": 24,
+      "rawTotal": 30129,
+      "gzEachTotal": 8038,
+      "gzEachAvg": 335,
+      "chunkRaw": 33456,
+      "chunkGz": 4227,
+      "chunkPerPiece": 176,
+      "projected93": 16380,
+      "projected110": 19374,
+      "rows": [
+        {
+          "id": "bg-city-early",
+          "layer": "배경",
+          "raw": 711,
+          "gz": 330
+        },
+        {
+          "id": "bg-newtown-late",
+          "layer": "배경",
+          "raw": 1299,
+          "gz": 385
+        },
+        {
+          "id": "house-detached-rent-early",
+          "layer": "집",
+          "raw": 3762,
+          "gz": 694
+        },
+        {
+          "id": "house-apt-late",
+          "layer": "집",
+          "raw": 4494,
+          "gz": 623
+        },
+        {
+          "id": "prop-pole",
+          "layer": "소품(앞 시대)",
+          "raw": 673,
+          "gz": 246
+        },
+        {
+          "id": "prop-antenna",
+          "layer": "소품(앞 시대)",
+          "raw": 195,
+          "gz": 159
+        },
+        {
+          "id": "prop-briquettes",
+          "layer": "소품(앞 시대)",
+          "raw": 830,
+          "gz": 178
+        },
+        {
+          "id": "prop-jangdok",
+          "layer": "소품(앞 시대)",
+          "raw": 1559,
+          "gz": 384
+        },
+        {
+          "id": "prop-laundry",
+          "layer": "소품(앞 시대)",
+          "raw": 553,
+          "gz": 237
+        },
+        {
+          "id": "prop-ac-unit",
+          "layer": "소품(뒤 시대)",
+          "raw": 153,
+          "gz": 130
+        },
+        {
+          "id": "prop-parcel",
+          "layer": "소품(뒤 시대)",
+          "raw": 295,
+          "gz": 166
+        },
+        {
+          "id": "prop-bicycle",
+          "layer": "소품(뒤 시대)",
+          "raw": 601,
+          "gz": 231
+        },
+        {
+          "id": "prop-planter",
+          "layer": "소품(뒤 시대)",
+          "raw": 284,
+          "gz": 147
+        },
+        {
+          "id": "prop-lamp",
+          "layer": "소품(뒤 시대)",
+          "raw": 260,
+          "gz": 145
+        },
+        {
+          "id": "fig-young-f-early",
+          "layer": "식구",
+          "raw": 1789,
+          "gz": 472
+        },
+        {
+          "id": "fig-young-m-early",
+          "layer": "식구",
+          "raw": 1561,
+          "gz": 393
+        },
+        {
+          "id": "fig-senior-f-early",
+          "layer": "식구",
+          "raw": 1517,
+          "gz": 446
+        },
+        {
+          "id": "fig-child-f-early",
+          "layer": "식구",
+          "raw": 1664,
+          "gz": 426
+        },
+        {
+          "id": "fig-infant-carried",
+          "layer": "식구",
+          "raw": 546,
+          "gz": 256
+        },
+        {
+          "id": "fig-young-f-late",
+          "layer": "식구",
+          "raw": 1716,
+          "gz": 438
+        },
+        {
+          "id": "fig-young-m-late",
+          "layer": "식구",
+          "raw": 1634,
+          "gz": 406
+        },
+        {
+          "id": "fig-child-m-late",
+          "layer": "식구",
+          "raw": 1848,
+          "gz": 436
+        },
+        {
+          "id": "pet-dog-yard",
+          "layer": "반려동물",
+          "raw": 1595,
+          "gz": 465
+        },
+        {
+          "id": "pet-cat-indoor",
+          "layer": "반려동물",
+          "raw": 590,
+          "gz": 245
+        }
+      ]
+    },
+    "s2": {
+      "name": "굵은 선 그림책",
+      "pieces": 24,
+      "rawTotal": 48980,
+      "gzEachTotal": 9081,
+      "gzEachAvg": 378,
+      "chunkRaw": 53877,
+      "chunkGz": 4658,
+      "chunkPerPiece": 194,
+      "projected93": 18050,
+      "projected110": 21349,
+      "rows": [
+        {
+          "id": "bg-city-early",
+          "layer": "배경",
+          "raw": 711,
+          "gz": 330
+        },
+        {
+          "id": "bg-newtown-late",
+          "layer": "배경",
+          "raw": 1299,
+          "gz": 385
+        },
+        {
+          "id": "house-detached-rent-early",
+          "layer": "집",
+          "raw": 5344,
+          "gz": 714
+        },
+        {
+          "id": "house-apt-late",
+          "layer": "집",
+          "raw": 6039,
+          "gz": 617
+        },
+        {
+          "id": "prop-pole",
+          "layer": "소품(앞 시대)",
+          "raw": 1273,
+          "gz": 259
+        },
+        {
+          "id": "prop-antenna",
+          "layer": "소품(앞 시대)",
+          "raw": 193,
+          "gz": 157
+        },
+        {
+          "id": "prop-briquettes",
+          "layer": "소품(앞 시대)",
+          "raw": 2876,
+          "gz": 315
+        },
+        {
+          "id": "prop-jangdok",
+          "layer": "소품(앞 시대)",
+          "raw": 1624,
+          "gz": 372
+        },
+        {
+          "id": "prop-laundry",
+          "layer": "소품(앞 시대)",
+          "raw": 1053,
+          "gz": 248
+        },
+        {
+          "id": "prop-ac-unit",
+          "layer": "소품(뒤 시대)",
+          "raw": 481,
+          "gz": 224
+        },
+        {
+          "id": "prop-parcel",
+          "layer": "소품(뒤 시대)",
+          "raw": 268,
+          "gz": 168
+        },
+        {
+          "id": "prop-bicycle",
+          "layer": "소품(뒤 시대)",
+          "raw": 801,
+          "gz": 249
+        },
+        {
+          "id": "prop-planter",
+          "layer": "소품(뒤 시대)",
+          "raw": 684,
+          "gz": 191
+        },
+        {
+          "id": "prop-lamp",
+          "layer": "소품(뒤 시대)",
+          "raw": 560,
+          "gz": 187
+        },
+        {
+          "id": "fig-young-f-early",
+          "layer": "식구",
+          "raw": 3334,
+          "gz": 555
+        },
+        {
+          "id": "fig-young-m-early",
+          "layer": "식구",
+          "raw": 2968,
+          "gz": 501
+        },
+        {
+          "id": "fig-senior-f-early",
+          "layer": "식구",
+          "raw": 2895,
+          "gz": 546
+        },
+        {
+          "id": "fig-child-f-early",
+          "layer": "식구",
+          "raw": 3114,
+          "gz": 510
+        },
+        {
+          "id": "fig-infant-carried",
+          "layer": "식구",
+          "raw": 754,
+          "gz": 285
+        },
+        {
+          "id": "fig-young-f-late",
+          "layer": "식구",
+          "raw": 2938,
+          "gz": 519
+        },
+        {
+          "id": "fig-young-m-late",
+          "layer": "식구",
+          "raw": 2798,
+          "gz": 487
+        },
+        {
+          "id": "fig-child-m-late",
+          "layer": "식구",
+          "raw": 3400,
+          "gz": 521
+        },
+        {
+          "id": "pet-dog-yard",
+          "layer": "반려동물",
+          "raw": 2584,
+          "gz": 476
+        },
+        {
+          "id": "pet-cat-indoor",
+          "layer": "반려동물",
+          "raw": 989,
+          "gz": 265
+        }
+      ]
+    }
+  }
+}
