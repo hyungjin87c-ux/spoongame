@@ -1,41 +1,81 @@
 /*
- * SPEC-004 GM3 시안 전용 스타일 (designer 2026-10-27). ds.css(+ 첫 화면은 title-005.css) 위에 얹는다 — 형진 님 확인(게이트 ③) 전이라 공용 파일을 건드리지 않았다.
- * 확인 뒤 developer가 옮긴다(diff-004.md): 세대 카드·시도 선택·내 출신 시도 → title.css, 3릴·세대 뽑기 → doc.css, 연표 줄·전망 안내·자산 카드 전환·엔딩 → dash.css.
+ * SPEC-004 GM3 시안 전용 스타일 (designer 2026-10-27 · r2 2026-10-27 게이트 ③ 형진 님 답 반영). ds.css(+ 첫 화면은 title-005.css) 위에 얹는다 — 형진 님 확인 전이라 공용 파일을 건드리지 않았다.
+ * r2에서 바뀐 블록: 「첫 화면 머리」(일러스트 없음·설명 글씨 작게·.hero__span·이름 비교) · 「세대 고르기」(2열 카드 7장 → 한 열 8줄 스크롤 목록 — 1차의 .radio-card--gen 블록은 이 목록이 대체했다) · 「룰렛 확률표」(연도별 출생아 수 · 창의 연도를 따르는 지역·수저 표). 나머지(시도 칩·내 출신 시도·3릴·연표 줄·당시 화폐·엔딩)는 1차 그대로.
+ * 확인 뒤 developer가 옮긴다(diff-004.md): 세대 목록·시도 선택·내 출신 시도·머리 글씨 → title.css, 3릴·세대 뽑기·확률표 → doc.css, 연표 줄·전망 안내·자산 카드 전환·엔딩 → dash.css.
  * 규칙: 색·간격·글자는 토큰만(새 토큰 0). 상태는 색에만 의존하지 않는다(테두리 굵기·점선·체크·글자 라벨·아이콘). 포인터 대상 ≥ 24×24, 거친 포인터 ≥ 44.
  * 스킬(design-taste app-screens) 관점: 색은 데이터에만 — 쪽빛은 「그해」 줄·릴 창·선택 상태, 놋쇠는 「전망」(캐러셀의 전망 칩·긴 점선과 같은 뜻), 배경·지역 소식은 잉크 보조색. 그 밖의 틀은 잉크·테두리뿐.
  */
 
 [hidden] { display: none !important; }
 
-/* ---------- 첫 화면: 세대 카드 7장 + 「랜덤 세대」 (GS1·GS2·GS4·GS10) ----------
-   compact 카드(title-005.css) 위에 세 줄 구성: ① 이름(+ 「살아봄」 표시) ② 「1970~1980년생 · 올해 46~56세」 ③ 소개 한 줄(사건 셋 병렬). 머리를 세로로 쌓아 7장의 높이가 같다(이름 길이에 따라 들쭉날쭉하지 않게).
-   「올해 N~M세」는 2026 − 출생 연도 범위의 산술값 — 세대를 지금 나이로 바로 옮겨 주는 한 줄(G5: 우열 없이 「지금 그 세대는 몇 살인가」만). 카드는 컨테이너 — 좁거나 글자가 크면(320 · 200%) 쌍이 두 줄로 */
-.radio-card--gen { container-type: inline-size; container-name: gen; }
-.radio-card--gen .radio-card__body { gap: 2px; }
-.radio-card--gen .radio-card__head { flex-direction: column; align-items: flex-start; gap: 0; }
-.radio-card__titleline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }
-.radio-card--gen .radio-card__meta { font-variant-numeric: tabular-nums; }
-.pair--gen .pair__item { display: inline; }
-/* 컨테이너 폭은 카드의 **내용 상자**(1280 2열 = 280px = 17.5em, 360 1열 = 302px, 320·200% = 262px = 8.2em). 쌍 한 줄 ≈ 13em이라 문턱 14em — 320·200%에서만 두 줄 */
-@container gen (max-width: 14em) {
-  .pair--gen .pair__item { display: block; }
-  .pair--gen .pair__sep { display: none; }
-}
-.radio-card__note { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
-.radio-card.is-selected .radio-card__note { color: var(--c-on-brand-soft); }
+/* ---------- r2 (2026-10-27 게이트 ③ 형진 님 답 1) 첫 화면 머리: 일러스트 없음, 설명 글씨는 작고 읽기 좋게 ----------
+   1차의 「51,284명이 …」 큰 줄(--fs-xl)과 그 아래 안내는 없어지고, 세대를 오가며 살아 볼 수 있다는 한 줄(.hero__span)이 작은 글씨로 들어간다(copy.md 16-10).
+   참고한 것은 80억분의 1 누리집의 **조판 수치뿐**(2026-10-27 계산된 스타일 — 본문 15px/24px(1.6) 400 · 부제 18px/1.6 보조 잉크 6.2:1 · 보조 14px/1.6 · 작은 글 12.5~13px/1.6 5.05:1 · 자간 0 · 400이 기본, 600은 소제목, 700은 라벨 한 곳). 그림·로고·문구·배치는 옮기지 않았다.
+   우리 토큰으로: 부제 --fs-md(16)/--lh-body(1.6) 400 --c-text-2(바탕 위 8.6:1) · 체험 한 줄 --fs-sm(14)/1.6 --c-text-2 · 안내 --fs-sm/1.5. 새 토큰 0, 글꼴은 그대로(--font-sans — 글꼴 검토 표는 design-system.md 17-10). */
+.hero--r2 .hero__tag { font-size: var(--fs-md); line-height: var(--lh-body); font-weight: var(--fw-regular); color: var(--c-text-2); max-width: 30em; }
+.hero__span { font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--c-text-2); max-width: 32em; margin: 0; }
+.hero--r2 .spoon-lineup { padding: var(--sp-2) 0; }
+/* 이름 비교(N30 — 결정용 캡처 2장, ?name=salabom|taeeonabo): 워드마크 자리에 **글자만**(salabom은 부제 글자도). 새 로고 없음. 글자 높이는 워드마크의 글자 높이(≥ 960px 51px · 360px 41px)에 맞춘다 */
+.hero__name { font-size: clamp(2.5rem, 11vw, 3.25rem); line-height: 1.15; font-weight: var(--fw-bold); letter-spacing: -0.02em; color: var(--c-logo); margin: 0; white-space: nowrap; }
+
+/* ---------- r2 세대 고르기: 한 세대 한 줄 · 한 열, 화면 높이에 맞춘 창 안에서 스크롤 (게이트 ③ 답 2·3 — GS1·GS2·GS3·GS4·GS10) ----------
+   1차의 2열 카드 7장 + 랜덤 버튼을 **라디오 묶음 한 열 8줄**로 바꾼다(「랜덤 세대」도 같은 묶음의 첫 줄 — 처음에는 이 줄이 골라져 있다, 답 3).
+   줄 = 표식(라디오 원 20px) · 이름(+「살아봄」 알약) · 「{from}~{to}년생 · 올해 {나이}」(tabular). 좁은 목록(≤ 26em)에서는 메타가 이름 아래 둘째 줄로.
+   고른 줄: 옅은 쪽빛 면 + 왼쪽 3px 쪽빛 막대 + 체크 — 색·모양·아이콘 세 겹(색에만 기대지 않음). 소개 문장은 목록 **아래 한 곳**(.gen-intro)에만 보이고, 각 라디오의 aria-describedby가 같은 글자를 읽는다(live region 아님 — 화살표마다 떠들지 않는다).
+   키보드: 위·아래 화살표로 라디오가 바뀌고(브라우저 기본), 바뀐 줄은 목록의 scrollTop만 움직여 창 안에 둔다(문서는 스크롤하지 않는다 — scrollIntoView가 페이지를 끌어올리지 않게). 포커스 링은 창 안쪽(outline-offset −3px)이라 overflow에 잘리지 않는다.
+   창 높이: 모바일 clamp(9rem, 100svh − 29rem, 22.5rem)(360×740 ≈ 6줄) · PC clamp(9rem, 100vh − 34rem, 22.5rem)(1280×800 ≈ 6줄, 마지막 줄이 반쯤 보여 스크롤을 알린다, 창 높이 ≥ 904면 8줄 전부). 릴 모티프: scroll-snap(proximity) + 창 테두리.
+   포인터 대상: 줄 높이 ≥ 44px(--hit). 글자: 이름 --fs-md 굵게 · 메타 --fs-sm --c-text-2 · 소개 --fs-sm --c-text-2 · 알파 보조 줄 --fs-xs --c-text-3 */
+.gen-list { --gen-list-h: clamp(9rem, 100svh - 29rem, 22.5rem); position: relative; display: flex; flex-direction: column; max-height: var(--gen-list-h); overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y proximity; scroll-padding-block: 2px; border: 1px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); container-type: inline-size; container-name: genlist; }
+@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(9rem, 100vh - 34rem, 22.5rem); } }
+@media (prefers-reduced-motion: no-preference) { .gen-list { scroll-behavior: smooth; } }
+:root[data-motion='reduce'] .gen-list { scroll-behavior: auto; }
+.gen-row { position: relative; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; column-gap: var(--sp-3); min-height: var(--hit); padding: var(--sp-1) var(--sp-3); border-top: 1px solid var(--c-border); scroll-snap-align: start; scroll-margin-block: 2px; cursor: pointer; color: var(--c-text); }
+.gen-row:first-child { border-top: 0; }
+.gen-row input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.gen-row__mark { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--c-border-strong); display: grid; place-items: center; background: var(--c-surface); }
+.gen-row__mark .icon { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
+.gen-row__name { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--sp-2); font-size: var(--fs-md); font-weight: var(--fw-bold); line-height: var(--lh-snug); min-width: 0; }
+.gen-row__meta { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); font-variant-numeric: tabular-nums; white-space: nowrap; justify-self: end; }
+.gen-row.is-selected { background: var(--c-brand-soft); color: var(--c-on-brand-soft); }
+/* 왼쪽 3px 막대는 절대 위치 가상 요소 — border-left로 두면 고른 줄만 글자가 3px 밀려 흔들린다(그림자가 아니라 막대) */
+.gen-row.is-selected::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c-brand); pointer-events: none; }
+.gen-row.is-selected .gen-row__meta, .gen-row.is-selected .gen-row__lived { color: var(--c-on-brand-soft); border-color: var(--c-on-brand-soft); }
+.gen-row.is-selected .gen-row__mark { background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-brand); }
+.gen-row.is-selected .gen-row__mark .icon { opacity: 1; }
+.gen-row:focus-within { outline: 3px solid var(--c-focus); outline-offset: -3px; z-index: 1; }
 /* 살아본 세대 표시(GS10 ▲, N15): 체크 아이콘 + 글자 「살아봄」 알약 — 순위·점수 없음, 이 기기에만 */
-.radio-card__lived { display: inline-flex; align-items: center; gap: 3px; padding: 0 var(--sp-2); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; color: var(--c-text-2); }
-.radio-card__lived .icon { width: 12px; height: 12px; stroke-width: 3; }
-.radio-card.is-selected .radio-card__lived { border-color: var(--c-on-brand-soft); color: var(--c-on-brand-soft); }
-/* 「랜덤 세대」를 마지막에 눌렀던 기억(GS4): 버튼이지만 선택된 카드와 같은 모양(실선 3px 쪽빛 + 체크 자리의 뒤섞기 아이콘 반전) */
-.radio-card--action.is-selected { border: 3px solid var(--c-brand); border-style: solid; background: var(--c-brand-soft); color: var(--c-on-brand-soft); padding: calc(var(--sp-2) - 2px) calc(var(--sp-3) - 2px); }
-.radio-card--action.is-selected .radio-card__mark--square { border-style: solid; background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-brand); }
-.radio-card--action.is-selected .radio-card__desc { color: var(--c-on-brand-soft); }
-/* 접이식 설명(GS2 「세대 범위는 자료마다 조금씩 달라요」): 격자 아래 한 줄, 보조색 */
+.gen-row__lived { display: inline-flex; align-items: center; gap: 3px; padding: 0 var(--sp-2); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; color: var(--c-text-2); }
+.gen-row__lived .icon { width: 12px; height: 12px; stroke-width: 3; }
+@container genlist (max-width: 26em) {
+  .gen-row { grid-template-columns: 20px minmax(0, 1fr); row-gap: 0; }
+  .gen-row__meta { grid-column: 2; justify-self: start; white-space: normal; }
+}
+.gen-intro { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); min-height: calc(var(--fs-sm) * 1.5 * 2); margin: var(--sp-2) 0 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--c-text-2); }
+.gen-intro b { font-weight: var(--fw-bold); color: var(--c-text); }
+.gen-intro__note { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+/* 접이식 설명(GS2 「세대 범위는 자료마다 조금씩 달라요」): 목록·소개 아래 한 줄, 보조색 */
 .slot__fold { margin-top: var(--sp-2); }
 .slot__fold summary { font-size: var(--fs-sm); color: var(--c-text-2); min-height: 32px; }
 .slot__fold p { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); margin: 0 0 var(--sp-1); }
 @media (pointer: coarse) { .slot__fold summary { min-height: var(--hit); } }
+
+/* ---------- r2 룰렛 확률표: 연도 릴 아래 「출생아 수 · 확률」, 지역·수저 표는 창을 지나는 연도를 따라 바뀐다 (게이트 ③ 답 2 · N29 · DC7 마스터 결정) ----------
+   흔들림 0: 숫자는 tabular(.odds td 기존), 값 칸 최소 폭 고정(연도 표 8.5ch · 지역·수저 5.5ch), 지역 표의 **줄 수는 그 세대 범위의 시·도 합집합으로 고정** — 창의 해에 없던 시·도는 「—」(회색 줄표 = 값 없음, app-screens §11). 릴 칸은 최종 연도의 시·도 목록(결과는 돌기 전에 정해진다, RL2).
+   굵은 줄 = 지금 창을 지나는 해(도는 중) / 태어난 해(결과) — 굵기(모양)로 가른다. 표는 live region이 아니다(aria-live 없음): 도는 동안 읽기 프로그램에 알리지 않고, 멈춘 뒤 결과 상태 줄(role=status)이 한 번 읽는다. 움직임 줄이기에서는 처음부터 최종 연도의 값(건너뛰기와 같다).
+   「예시」 표식(.odds__ex): 1940~1980 도별 인구 비례 값은 수집 중이라 시안에만 — 점선 알약 + 글자 */
+.odds--year td { min-width: 8.5ch; }
+.odds--region td, .odds--spoon td { min-width: 5.5ch; }
+.odds__sub { color: var(--c-text-3); }
+/* 좁은 열(360 3열 104px · 1280 글자 200% 235px — 컨테이너 ≤ 7.5rem): 연도 칸은 두 줄(위 확률, 아래 출생아 수) — 한 줄 「87만 명 · 7.7%」는 104px에서 11px 넘쳤다 */
+@container (max-width: 7.5rem) {
+  .odds--year th { vertical-align: top; }
+  .odds--year td { min-width: 0; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.3; padding-bottom: 4px; }
+  .odds--year td .odds__sub { order: 2; }
+  .odds--year td .odds__sep { display: none; }
+}
+.odds__dash { color: var(--c-text-3); }
+.odds tr.odds__now th, .odds tr.odds__now td { font-weight: var(--fw-bold); color: var(--c-text); }
+.odds__ex { display: inline-block; padding: 0 var(--sp-2); border: 1px dashed var(--c-border-strong); border-radius: var(--r-pill); font-weight: var(--fw-bold); color: var(--c-text-2); line-height: 1.6; }
 
 /* ---------- 첫 화면: 태어나는 시도 — 「룰렛에 맡기기 / 직접 고르기」 분절 + 시·도 칩 묶음 (RG1·RG2) ----------
    분절 컨트롤은 인생 길이(.seg)와 같은 부품. 직접 고르기를 고르면 아래에 칩 묶음(role=radiogroup, 라디오 + 글자 + 체크)이 펼쳐진다 — 고른 세대의 어느 해에도 없던 시·도는 점선 + 옅은 글자 + 이유 한 줄(색에만 의존하지 않음).
@@ -172,10 +212,16 @@
 
 /* ---------- 강제 색상: 시스템 색 한 짝, 모양(점선·굵기·체크·아이콘·글자)이 뜻을 전한다 ---------- */
 @media (forced-colors: active) {
-  .chip-opt, .gen-tag, .origin__select, .radio-card__lived, .chip { border-color: CanvasText; background: Canvas; color: CanvasText; }
+  .chip-opt, .gen-tag, .origin__select, .gen-row__lived, .chip, .odds__ex { border-color: CanvasText; background: Canvas; color: CanvasText; }
   .chip-opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
   .chip-opt.is-disabled { color: GrayText; border-color: GrayText; }
-  .radio-card--action.is-selected .radio-card__mark--square { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  /* r2 세대 목록: 창·줄 경계 CanvasText, 고른 줄은 Highlight 면 + 체크(모양) — 왼쪽 막대(box-shadow)는 강제 색상에서 사라지므로 표식 원의 채움·체크가 뜻을 전한다 */
+  .gen-list, .gen-row, .gen-row__mark { border-color: CanvasText; }
+  .gen-row.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  .gen-row.is-selected::before { background: HighlightText; }
+  .gen-row.is-selected .gen-row__mark { background: HighlightText; border-color: HighlightText; color: Highlight; }
+  .gen-row.is-selected .gen-row__meta, .gen-row.is-selected .gen-row__lived { color: HighlightText; border-color: HighlightText; }
+  .hero__name { color: CanvasText; }
   .log__row--tl, .timeline li.is-tl, .log__row--proj-intro, .timeline__split { border-color: CanvasText; }
   .log__row--tl .log__tl, .timeline li.is-tl .log__tl, .log__year { color: CanvasText; }
   .log__row--proj-intro { background: Canvas; color: CanvasText; }
