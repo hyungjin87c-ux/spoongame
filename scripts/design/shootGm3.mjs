@@ -29,9 +29,9 @@ const notes = [];
 const kb = (f) => Math.round(statSync(f).size / 1024);
 /** 회차 분기(위 머리글): --r1 → 1차 블록(이름이 gm3r로 시작하지 않음) · `r2` → r2 블록(gm3r2-*) · `r3` → r3 블록(gm3r3-*) · 그 밖(기본) → r4 블록(gm3r4-*). 조각 이름(title·roulette…)을 더 주면 그 이름이 든 것만 */
 const PARTS = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-const MODE = R1 ? 'r1' : PARTS.includes('r2') ? 'r2' : PARTS.includes('r3') ? 'r3' : 'r4';
-const PART = PARTS.find((a) => !/^r[234]$/.test(a)); // 예: `r4 title` → title 블록만
-const want = (name) => { const m = name.startsWith('gm3r4') ? 'r4' : name.startsWith('gm3r3') ? 'r3' : name.startsWith('gm3r2') ? 'r2' : 'r1'; return m === MODE && (PART === undefined || name.includes(PART)); };
+const MODE = R1 ? 'r1' : PARTS.includes('r2') ? 'r2' : PARTS.includes('r3') ? 'r3' : PARTS.includes('r4') ? 'r4' : 'r5';
+const PART = PARTS.find((a) => !/^r[2345]$/.test(a)); // 예: `r5 title` → title 블록만
+const want = (name) => { const m = name.startsWith('gm3r5') ? 'r5' : name.startsWith('gm3r4') ? 'r4' : name.startsWith('gm3r3') ? 'r3' : name.startsWith('gm3r2') ? 'r2' : 'r1'; return m === MODE && (PART === undefined || name.includes(PART)); };
 
 async function open({ file, q = '', view, dpr = 1, dark = false, forced = false, text, coarse = false }) {
   const ctx = await browser.newContext({ viewport: view, deviceScaleFactor: dpr, colorScheme: dark ? 'dark' : 'light', forcedColors: forced ? 'active' : 'none', hasTouch: coarse });
@@ -73,6 +73,7 @@ const brokenWords = (page, rootSel) =>
     while ((n = walker.nextNode())) {
       const el = n.parentElement;
       if (!el || el.closest('.sr-only, svg, .fit-pair__probe, template, [data-user-text]')) continue;
+      if (el.closest('.slide') && !el.closest('.slide.is-active')) continue; // 보이지 않는 슬라이드(visibility hidden, 자리만 차지)는 재지 않는다 — r5부터 캐러셀이 360 본문 흐름 안에 있다
       if (getComputedStyle(el).display === 'none') continue;
       const words = n.textContent.split(/\s+/).filter(Boolean);
       let idx = 0;
@@ -725,8 +726,117 @@ if (want('gm3r4-roulette')) {
   }
 }
 
+// ============================================================ r5 (2026-10-27 형진 님 답 4차 — 랜덤 줄 메타 없음 · 수저 줄·「한 판 약 30분」 없음 · 캐러셀 복귀(21장, 첫 장 세대 그래프, 자동 넘김 9초) · 그래프 크게) ============================================================
+// 캡처 5장(gm3r5-*): 첫 화면 PC(첫 장 = 세대 그래프, 랜덤) · 첫 화면 360 · 그래프가 넘어간 뒤(둘째 장, 카드) · 멈춤 상태(카드) · 세대를 X세대로 바꾼 뒤 첫 장(카드). 검사만: 자동 넘김(?auto=600) · 가리킴/초점 멈춤 · 움직임 줄이기 · 손 넘김 알림 · 다크 · 강제 색상 · 320 200% · 1920 · 360 자리.
+const TMP5 = ROOT + '.taste-skill/004r5/after/mock/';
+mkdirSync(TMP5, { recursive: true });
+const carMeasure = (page) =>
+  page.evaluate(() => {
+    const r = (sel) => { const el = document.querySelector(sel); return el ? el.getBoundingClientRect() : null; };
+    const rd = (b) => (b ? { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), width: Math.round(b.width), height: Math.round(b.height) } : null);
+    const fs = (s) => { const el = document.querySelector(s); return el ? `${getComputedStyle(el).fontSize}/${getComputedStyle(el).lineHeight} ${getComputedStyle(el).fontWeight}` : null; };
+    const car = document.querySelector('.carousel--005'); const act = document.querySelector('.slide.is-active');
+    const stt = window.__mockCarousel ? window.__mockCarousel.state() : null;
+    return {
+      vw: innerWidth, scrollH: document.documentElement.scrollHeight, logo: rd(r('.hero__logo--a svg.logo')), spoon: document.querySelectorAll('.spoon-lineup').length, time: document.querySelectorAll('.hero__time:not([hidden])').length, timeShown: (() => { const t = document.querySelector('.hero__time'); return t ? getComputedStyle(t).display : 'none'; })(),
+      randomMeta: document.querySelectorAll('#gen-meta-random').length, metaWrapped: [...document.querySelectorAll('.gen-row')].filter((row) => { const n = row.querySelector('.gen-row__name'), m = row.querySelector('.gen-row__meta'); return n && m && Math.round(m.getBoundingClientRect().top) > Math.round(n.getBoundingClientRect().top) + 2; }).length,
+      mainBottom: rd(r('.title__main'))?.bottom, barTop: rd(r('.bottom-bar'))?.top, car: rd(r('.carousel--005')), carParent: car && (car.parentElement.id ? `#${car.parentElement.id}` : `.${[...car.parentElement.classList].join('.')}`), slides: document.querySelectorAll('.slide').length, status: document.querySelector('.carousel__status')?.textContent,
+      active: act?.getAttribute('data-slide-id'), activeLabel: act?.getAttribute('aria-label'), chart: rd(act?.querySelector('.chart')?.getBoundingClientRect()), value: rd(act?.querySelector('.slide__value')?.getBoundingClientRect()), live: document.querySelector('.carousel__live')?.textContent, genLive: document.querySelector('.gen-chart__gen')?.textContent, big: document.querySelector('.gen-chart__big')?.textContent, nums: [...document.querySelectorAll('.gen-chart__nums .gen-chart__val')].map((e) => e.textContent),
+      autoplay: car?.getAttribute('data-autoplay'), timer: stt?.timer, pauseHidden: document.querySelector('.carousel__pause')?.hidden, pauseLabel: document.querySelector('.carousel__pause')?.getAttribute('aria-label'), pauseIcon: document.querySelector('.carousel__pause use')?.getAttribute('href'),
+      type: { insight: fs('.slide.is-active .slide__insight'), def: fs('.slide.is-active > .t-sm'), meta: fs('.slide.is-active .slide__meta'), navIcon: fs('.nav-btn .icon'), tag: fs('.hero__tag'), span: fs('.hero__span') },
+    };
+  });
+if (want('gm3r5-title')) {
+  const { ctx, page } = await open({ file: 'title-004', q: 'gen=random&lived=boomer', view: { width: 1280, height: 800 } });
+  await check(page, 'gm3r5-title-1280x800');
+  const m0 = await carMeasure(page);
+  notes.push(`gm3r5-title-1280x800(랜덤, 첫 장): ${JSON.stringify(m0)}`);
+  if (m0.spoon !== 0 || m0.timeShown !== 'none' || m0.randomMeta !== 0) problems.push(`r5 삭제 항목이 남아 있다: 수저 줄 ${m0.spoon} · time ${m0.timeShown} · 랜덤 메타 ${m0.randomMeta}`);
+  if (m0.slides !== 21 || m0.active !== 'gen-births' || m0.status !== '1 / 21') problems.push(`캐러셀 첫 장이 세대 그래프가 아니다: ${m0.slides} ${m0.active} ${m0.status}`);
+  if (m0.autoplay !== 'on' || !m0.timer) problems.push(`자동 넘김이 돌지 않는다: ${m0.autoplay} ${m0.timer}`);
+  if (!m0.car || m0.car.bottom > m0.barTop + 1) notes.push(`(기록) 1280 카드 아래끝 ${m0.car?.bottom} vs 띠 ${m0.barTop} — 카드 안쪽 스크롤 규칙`);
+  if (m0.value && m0.value.bottom > m0.barTop) problems.push(`큰 값 아래끝 ${m0.value.bottom}이 띠 ${m0.barTop} 아래다(HS3 ④)`);
+  await shot(page, 'gm3r5-title-1280x800');
+  // 손으로 다음 → 둘째 장 + 알림 글자
+  await page.click('.carousel__next'); await page.waitForTimeout(500);
+  const m1 = await carMeasure(page); notes.push(`gm3r5-carousel-next-1280(손으로 다음): ${JSON.stringify({ active: m1.active, status: m1.status, live: m1.live, chart: m1.chart, type: m1.type })}`);
+  if (m1.status !== '2 / 21' || !/^2 \/ 21 · /.test(m1.live || '')) problems.push(`손 넘김 알림이 어긋난다: ${m1.status} ${m1.live}`);
+  await shot(page, 'gm3r5-carousel-next-1280', { el: '.carousel--005' });
+  // 멈춤 단추 → paused(아이콘 재생·aria-pressed) + 가리킴을 치워도 멈춤 유지
+  await page.click('.carousel__pause'); await page.mouse.move(5, 5); await page.waitForTimeout(300);
+  const m2 = await carMeasure(page); notes.push(`gm3r5-carousel-paused-1280: ${JSON.stringify({ autoplay: m2.autoplay, timer: m2.timer, pauseLabel: m2.pauseLabel, pauseIcon: m2.pauseIcon })}`);
+  if (m2.autoplay !== 'paused' || m2.timer || m2.pauseIcon !== '#i-play') problems.push(`멈춤 상태가 어긋난다: ${JSON.stringify(m2)}`);
+  await shot(page, 'gm3r5-carousel-paused-1280', { el: '.carousel--005' });
+  await page.click('.carousel__pause'); // 다시 시작
+  // 세대를 X세대로 → 첫 장으로 돌아오고 그래프가 바뀐다(알림은 세대 줄만 — carousel__live 불변)
+  const liveBefore = (await carMeasure(page)).live;
+  await page.locator('input[name=gen][value=genx]').check({ force: true }); await page.waitForTimeout(500);
+  const m3 = await carMeasure(page); notes.push(`gm3r5-chart-genx-1280(X세대로 바꾼 뒤): ${JSON.stringify({ active: m3.active, status: m3.status, genLive: m3.genLive, big: m3.big, nums: m3.nums, live: m3.live, activeLabel: m3.activeLabel })}`);
+  if (m3.active !== 'gen-births' || !/X세대/.test(m3.genLive || '') || !/89만/.test(m3.big || '') || m3.nums.join() !== '46~56세,62.3~66.1세' || m3.live !== liveBefore) problems.push(`세대 바꿈 뒤 첫 장 상태가 어긋난다: ${JSON.stringify({ active: m3.active, genLive: m3.genLive, big: m3.big, nums: m3.nums, live: m3.live })}`);
+  await shot(page, 'gm3r5-chart-genx-1280', { el: '.carousel--005' });
+  // 가리킴 멈춤: 카드에 포인터 → held, 나가면 on
+  const box = await page.locator('.carousel--005').boundingBox(); await page.mouse.move(box.x + 40, box.y + 40); await page.waitForTimeout(100);
+  const held = (await carMeasure(page)).autoplay; await page.mouse.move(5, 5); await page.waitForTimeout(100); const back = (await carMeasure(page)).autoplay;
+  notes.push(`가리킴 멈춤: 올리면 ${held} · 나가면 ${back}`); if (held !== 'held' || back !== 'on') problems.push(`가리킴 멈춤이 어긋난다: ${held}/${back}`);
+  // 초점 멈춤: 뷰포트에 포커스 → held, 화살표 키로 넘김 → 알림
+  await page.focus('.carousel__viewport'); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(300);
+  const mk = await carMeasure(page); notes.push(`키보드: autoplay ${mk.autoplay} · ${mk.status} · 알림 「${mk.live}」`);
+  if (mk.autoplay !== 'held' || mk.status !== '2 / 21') problems.push(`초점 멈춤·키보드 넘김이 어긋난다: ${mk.autoplay} ${mk.status}`);
+  notes.push(`gm3r5 키보드(목록): ${JSON.stringify(await keyboardTest3(page))}`);
+  await ctx.close();
+  // 자동 넘김 실측(간격 600ms): 1.5초 뒤 셋째 장 이상 · 알림 글자 비어 있음(자동은 알리지 않는다)
+  {
+    const { ctx: c1, page: p1 } = await open({ file: 'title-004', q: 'gen=random&auto=600', view: { width: 1280, height: 800 } });
+    await p1.mouse.move(5, 5); await p1.waitForTimeout(1500);
+    const a = await carMeasure(p1); notes.push(`자동 넘김(600ms × 1.5s): ${a.status} · 알림 「${a.live}」 · ${a.autoplay}`);
+    if (!/^[3-9] \/ 21$/.test(a.status || '') || (a.live || '') !== '') problems.push(`자동 넘김이 어긋난다: ${a.status} 알림 「${a.live}」`);
+    await c1.close();
+  }
+  // 움직임 줄이기: 자동 넘김 없음 + 멈춤 단추 숨김
+  {
+    const { ctx: c2, page: p2 } = await open({ file: 'title-004', q: 'gen=random&motion=reduce', view: { width: 1280, height: 800 } });
+    await p2.evaluate(() => document.documentElement.setAttribute('data-motion', 'reduce')); await p2.reload(); await p2.evaluate(() => document.fonts.ready); await p2.waitForTimeout(250);
+    await p2.evaluate(() => { document.documentElement.setAttribute('data-motion', 'reduce'); });
+    const ctxR = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' }); const pR = await ctxR.newPage(); await pR.goto(`${BASE}title-004.html?gen=random`); await pR.evaluate(() => document.fonts.ready); await pR.waitForTimeout(300);
+    const rm = await carMeasure(pR); notes.push(`움직임 줄이기(prefers-reduced-motion): autoplay ${rm.autoplay} · 타이머 ${rm.timer} · 멈춤 단추 숨김 ${rm.pauseHidden}`);
+    if (rm.autoplay !== 'none' || rm.timer || rm.pauseHidden !== true) problems.push(`움직임 줄이기에서 자동 넘김이 남아 있다: ${JSON.stringify({ a: rm.autoplay, t: rm.timer, h: rm.pauseHidden })}`);
+    await pR.screenshot({ path: `${TMP5}title-reduced-1280.png` }); await ctxR.close(); await c2.close();
+  }
+  // 360
+  {
+    const { ctx: c3, page: p3 } = await open({ file: 'title-004', q: 'gen=random&lived=boomer', view: { width: 360, height: 740 }, dpr: 2, coarse: true });
+    await check(p3, 'gm3r5-title-360x740');
+    const n0 = await carMeasure(p3); notes.push(`gm3r5-title-360x740: ${JSON.stringify(n0)}`);
+    if (n0.carParent !== '.title__side') problems.push(`360에서 캐러셀 자리가 본문 뒤(오른쪽 열 노드)가 아니다: ${n0.carParent}`); // r5: 노드를 옮기지 않는다(본문 뒤·하단 앞 — r3 자리)
+    if (n0.logo && n0.logo.width > 328) problems.push(`360 워드마크 폭 ${n0.logo.width} > 328`);
+    await shot(p3, 'gm3r5-title-360x740');
+    const metaEdge = await p3.evaluate(() => { const l = document.querySelector('.gen-list').getBoundingClientRect(); return [...document.querySelectorAll('.gen-row__meta')].map((m) => Math.round(l.right - m.getBoundingClientRect().right)); });
+    if (metaEdge.some((v) => v < 8)) problems.push(`360 메타 오른쪽 여유 < 8: ${JSON.stringify(metaEdge)}`);
+    await p3.evaluate(() => { const c = document.querySelector('.carousel--005'); window.scrollTo(0, c.getBoundingClientRect().top + scrollY - 96); }); await p3.waitForTimeout(200);
+    const n1 = await carMeasure(p3); notes.push(`360 캐러셀(목록 아래): ${JSON.stringify({ car: n1.car, chart: n1.chart, status: n1.status })}`);
+    await p3.screenshot({ path: `${TMP5}title-360-carousel.png` });
+    await c3.close();
+  }
+  for (const [label, view, q, opt] of [
+    ['title-dark-1280', { width: 1280, height: 800 }, 'gen=genx&lived=boomer&theme=dark', { dark: true }],
+    ['title-forced-1280', { width: 1280, height: 800 }, 'gen=genx&lived=boomer', { forced: true }],
+    ['title-1920x1080', { width: 1920, height: 1080 }, 'gen=genx&lived=boomer', {}],
+    ['title-320-text200', { width: 320, height: 640 }, 'gen=genx&lived=boomer', { text: 200 }],
+    ['title-slide-tfr-1280', { width: 1280, height: 800 }, 'gen=random&slide=tfr&paused=1', {}],
+  ]) {
+    const { ctx: c4, page: p4 } = await open({ file: 'title-004', q, view, ...opt });
+    await check(p4, `r5 ${label}`);
+    const m = await carMeasure(p4);
+    const broken = label.includes('text200') ? await brokenWords(p4, '.title') : [];
+    notes.push(`r5 ${label}: ${JSON.stringify({ car: m.car, carParent: m.carParent, chart: m.chart, value: m.value, barTop: m.barTop, mainBottom: m.mainBottom, status: m.status, autoplay: m.autoplay, scrollH: m.scrollH, type: m.type })}${label.includes('text200') ? ` · 끊긴 낱말 ${broken.length === 0 ? '0' : broken.join(', ')}` : ''}`);
+    if (label.includes('text200') && broken.length) problems.push(`320 · 200% 끊긴 낱말: ${broken.join(', ')}`);
+    await p4.screenshot({ path: `${TMP5}${label}.png`, fullPage: label.includes('text200') });
+    await c4.close();
+  }
+}
+
 await browser.close();
-writeFileSync(`${MODE === 'r4' ? TMP4 : MODE === 'r3' ? TMP3 : TMP}notes.txt`, notes.join('\n\n'));
+writeFileSync(`${MODE === 'r5' ? TMP5 : MODE === 'r4' ? TMP4 : MODE === 'r3' ? TMP3 : TMP}notes.txt`, notes.join('\n\n'));
 if (notes.length > 0) console.log('\n측정:\n' + notes.join('\n\n'));
 if (problems.length > 0) {
   console.error('\n문제:\n' + problems.join('\n'));
