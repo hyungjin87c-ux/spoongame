@@ -9,7 +9,8 @@
  *   c 1955 전남 농촌 초가 3세대 7명 + 마당 개 · d 2015 서울 다세대 3명 + 실내 개 · e 한계 1968 대구 단독주택 8명 + 개·고양이 (FM2b)
  * 조각은 층(배경 / 시대 소품 / 집 / 식구 / 반려동물)마다 독립된 SVG 조각이고 장면은 조각을 자리(슬롯)에 놓아 합친다(FH2·FH5·FH8).
  * FM2c(2026-10-27 형진 님 제안): 집 그림 **안의 매체(TV·라디오) 층을 뺐다**. 그 대신 ① 집 그림 오른쪽 위에 그해 연도 표(.scene__year, HTML — 그림 안 글자 0 유지)
- *   ② 집 그림 **오른쪽에 「시대의 창」 칸**(.era — 그해 장면 그림 한 장 + 한 줄, 칸 전체가 그해 기록으로 가는 링크 하나). 그해 장면 그림(ERA)은 40×24 좌표계 그대로, 조각 예산과 따로 센다.
+ *   ② 집 그림 **오른쪽에 「시대의 창」 칸**(.era — 칸 전체가 그해 기록으로 가는 링크 하나). FM2d(형진 님 결정 2026-10-27, SPEC-009 머리 「FM2c 배치 결정」): **칸에는 그림만** 두고,
+ *   그해를 나타내는 문장은 **인생 기록의 「시대의 창」 줄**(data-tl="era", 새 색 토큰 --c-era, 5px 겹선 + 표지 글자·아이콘)로 적는다. 그림(ERA)은 40×32(5:4) 좌표계, 조각 예산과 따로 센다.
  *   TV를 가졌는지는 「가족과 삶」 카드의 「가진 것」 줄이 맡고, `prop-antenna`만 그 줄과 묶여 남는다.
  * 색은 디자인 토큰만 읽는다 — `var(--c-scene-*, 기본값)`. 기본값은 라이트 값이라 CSS 없는 뷰어에서도 보인다(FH6 하드코딩 색 0 — 토큰 24개는 마스터 승인, tokens.css 반영은 구현 몫).
  *
@@ -17,7 +18,7 @@
  * 산출: docs/design/mockups/family/{scenes.html, pieces.html, dashboard-family.html, family.css, budget.json, scenes.json, pieces/s1/<id>.svg}
  *       --with-s2: + compare.html, pieces/s2/<id>.svg, budget.json의 s2 항목 (없으면 앞 실측 값을 그대로 둔다)
  *       — dashboard-family.html은 gm3/dashboard-004.html(읽기만)에 결정 카드(decision-adult.html의 인라인 카드)와 그림 카드를 끼운 것.
- *         ?scene=a~e · ?era=stadium|ballot|kite|none(시대의 창 그림, 기본은 장면 연도에 맞는 것) · ?hide=1(무거운 장면 가리기 상태) · ?stamp=age(연도 옆 나이) · ?label=0(칸 머리 글자 없이) · ?split=2|2.5|3(집:창 비율 실측용)
+ *         ?scene=a~e · ?era=stadium|ballot|kite|none(시대의 창 그림, 기본은 장면 연도에 맞는 것) · ?hide=1(무거운 장면 가리기 상태) · ?stamp=age(연도 옆 나이 — 형진 님 결정은 연도만) · ?split=2|2.5|3(집:창 비율 실측용) · ?target=1(시대의 창을 누른 뒤 — 인생 기록 시대 줄 강조)
  * 의존성 없음(Node 내장만). `src/`는 읽지 않는다.
  */
 import { gzipSync } from 'node:zlib';
@@ -489,32 +490,34 @@ for (const p of PIECES) if (!('years' in p)) throw new Error(`years 없음: ${p.
 
 /**
  * 「시대의 창」 그림 — 그해의 장면(FT2·FT3). FM2b의 TV 화면 표본 둘(문화·스포츠 1 + 정치 일반 상징 1)을 그대로 옮기고, 생활 장면 표본 하나를 더했다(FM2c).
- * 좌표계 **40×20(2:1)** — FM2b의 40×24(TV 화면 5:3)에서 칸의 비율에 맞춰 바꿨다(PC 칸 그림 자리 175×78 ≈ 2.24:1, 휴대폰 띠 88×44 = 2:1). 안전 영역 x 3~37 · y 1~19(PC에서 위·아래 1.1단위가 잘린다). 색은 토큰만, 글자·로고·실존 인물·정당 상징 0. 특정 사진을 따라 그리지 않고 새로 구성.
+ * 좌표계 **40×32(5:4)** — FM2d에서 칸이 그림만 담게 되어 PC 칸(175×140 = 5:4)에 맞췄다(휴대폰 띠 100×80도 5:4 — 잘림 0). 그림 내용은 가운데 40×20 띠(y 6~26)에 두고 위·아래 6단위는 하늘·바닥 연장. 색은 토큰만, 글자·로고·실존 인물·정당 상징 0. 특정 사진을 따라 그리지 않고 새로 구성.
  * 종류: event(그해의 사건 — SPEC-004 부록 A H-코드, 해마다 1~2장) · daily(생활 장면 — 사건이 없는 해를 채우는 그 시대의 일상, 연도 범위 [from,to]로 여러 해에 재사용).
  * approved는 형진 님 사건별 승인 전이라 전부 false(빌드가 미승인을 막는 RG11 방식). heavy는 「무거운 장면 가리기」 연동(재난). 조각 수 예산(FH8)과 따로 센다 — `family` 덩어리의 시대별 하위 덩어리 후보(FT5).
  */
+/** 40×20 내용을 5:4 틀 가운데에 놓는다(위 6단위·아래 6단위는 draw가 배경으로 채운다) */
+const mid = (inner) => `<g transform="translate(0 6)">${inner}</g>`;
 const ERA = [
   { id: 'era-stadium-flame', years: [1988, 1988], kind: 'event', topic: '문화·스포츠', hCode: 'H-C03', line: '서울에서 올림픽이 열렸습니다.', heavy: false, approved: false, draw: (h) => [
     // 경기장 관중석(원호) + 성화대 불꽃 — 고리·휘장·글자 없음
-    h.rect(0, 0, 40, 20, T('sky'), { flat: true }),
-    h.path('M 2,16 Q 20,6 38,16 L 38,20 L 2,20 Z', T('far'), { flat: true }), h.path('M 6,16 Q 20,9 34,16 Z', T('far2'), { flat: true }),
-    h.rect(18.5, 9.4, 3, 6.8, T('wall2'), { flat: true }), h.path('M 15,7 L 25,7 L 23,9.8 L 17,9.8 Z', T('wall2'), { flat: true }), h.path('M 20,1.6 Q 24.3,4.2 23,7 L 17,7 Q 15.7,4.2 20,1.6 Z', T('cloth2'), { flat: true }), h.path('M 20,3.4 Q 22,5.2 21.4,7 L 18.6,7 Q 18,5.2 20,3.4 Z', T('glass'), { flat: true }),
+    h.rect(0, 0, 40, 32, T('sky'), { flat: true }), h.rect(0, 26, 40, 6, T('far'), { flat: true }),
+    mid(h.path('M 2,16 Q 20,6 38,16 L 38,20 L 2,20 Z', T('far'), { flat: true }) + h.path('M 6,16 Q 20,9 34,16 Z', T('far2'), { flat: true })
+      + h.rect(18.5, 9.4, 3, 6.8, T('wall2'), { flat: true }) + h.path('M 15,7 L 25,7 L 23,9.8 L 17,9.8 Z', T('wall2'), { flat: true }) + h.path('M 20,1.6 Q 24.3,4.2 23,7 L 17,7 Q 15.7,4.2 20,1.6 Z', T('cloth2'), { flat: true }) + h.path('M 20,3.4 Q 22,5.2 21.4,7 L 18.6,7 Q 18,5.2 20,3.4 Z', T('glass'), { flat: true })),
   ].join('') },
   { id: 'era-ballot-box', years: [1987, 1987], kind: 'event', topic: '정치(일반 상징)', hCode: null, line: '국민이 대통령을 직접 뽑았습니다.', heavy: false, approved: false, draw: (h) => [
     // 투표함 + 넣는 용지 — 정당 상징·구호·인물 없음. 한 줄은 FM2b의 「대통령을 국민이 직접 뽑는 선거가 치러졌습니다.」(26자)를 22자 규칙에 맞춰 줄인 제안(승인 전)
-    h.rect(0, 0, 40, 20, T('wall'), { flat: true }), h.rect(0, 15, 40, 5, T('wall2'), { flat: true }),
-    h.rect(11, 6.5, 18, 9.5, T('cloth4'), { flat: true }), h.rect(10, 5.5, 20, 2.4, T('cloth1'), { flat: true }), h.rect(16, 6.1, 8, 1, T('wall'), { flat: true }),
-    h.path('M 17.5,1.4 L 24.2,0.6 L 24.7,5.4 L 18,6 Z', T('cloth3'), { flat: true }), h.rect(19, 2.4, 4, 0.9, T('cloth1'), { flat: true }), h.rect(19, 4, 3, 0.9, T('cloth1'), { flat: true }),
+    h.rect(0, 0, 40, 32, T('wall'), { flat: true }), h.rect(0, 21, 40, 11, T('wall2'), { flat: true }),
+    mid(h.rect(11, 6.5, 18, 9.5, T('cloth4'), { flat: true }) + h.rect(10, 5.5, 20, 2.4, T('cloth1'), { flat: true }) + h.rect(16, 6.1, 8, 1, T('wall'), { flat: true })
+      + h.path('M 17.5,1.4 L 24.2,0.6 L 24.7,5.4 L 18,6 Z', T('cloth3'), { flat: true }) + h.rect(19, 2.4, 4, 0.9, T('cloth1'), { flat: true }) + h.rect(19, 4, 3, 0.9, T('cloth1'), { flat: true })),
   ].join('') },
   { id: 'era-kite-roofs', years: [1960, 1979], kind: 'daily', topic: '생활(겨울 놀이)', hCode: null, line: '겨울이면 동네 하늘에 연이 떴습니다.', heavy: false, approved: false, draw: (h) => [
     // 기와 지붕선 위로 뜬 방패연 하나 — 사람 없음, 연에 무늬·글자 없음(▲ 연도 범위는 설계값)
-    h.rect(0, 0, 40, 20, T('sky'), { flat: true }),
-    h.path('M 0,14 L 5,10.5 L 11,14 L 15,11 L 20,14 L 26,10 L 32,14 L 36,11.5 L 40,14 L 40,20 L 0,20 Z', T('roof'), { flat: true }),
-    h.path('M 0,16.5 L 40,16.5 L 40,20 L 0,20 Z', T('roof2'), { flat: true }), h.rect(28, 7.6, 1.4, 3.6, T('clay'), { flat: true }),
-    h.path('M 24.5,2.6 L 32.5,3.8 L 31.7,9.8 L 23.7,8.6 Z', T('cloth3'), { flat: true }), h.circle(28.1, 6.2, 1.5, T('sky'), { flat: true }),
-    // 연줄·꼬리는 가는 선(mk().stroke는 최소 2단위라 40×24 좌표계에서는 너무 굵다 — 직접 쓴다)
-    `<path d="M 28,9.2 Q 20,12 9,19" fill="none" stroke="${T('ink')}" stroke-width="0.45" stroke-linecap="round"/>`,
-    `<path d="M 24.6,8.8 q -1.2,3 0.2,5.4 M 26.8,9.1 q -0.8,3 0.6,5.4" fill="none" stroke="${T('cloth2')}" stroke-width="0.7" stroke-linecap="round"/>`,
+    h.rect(0, 0, 40, 32, T('sky'), { flat: true }), h.rect(0, 22.5, 40, 9.5, T('roof2'), { flat: true }),
+    mid(h.path('M 0,14 L 5,10.5 L 11,14 L 15,11 L 20,14 L 26,10 L 32,14 L 36,11.5 L 40,14 L 40,20 L 0,20 Z', T('roof'), { flat: true })
+      + h.path('M 0,16.5 L 40,16.5 L 40,20 L 0,20 Z', T('roof2'), { flat: true }) + h.rect(28, 7.6, 1.4, 3.6, T('clay'), { flat: true })
+      + h.path('M 24.5,2.6 L 32.5,3.8 L 31.7,9.8 L 23.7,8.6 Z', T('cloth3'), { flat: true }) + h.circle(28.1, 6.2, 1.5, T('sky'), { flat: true })
+      // 연줄·꼬리는 가는 선(mk().stroke는 최소 2단위라 이 좌표계에서는 너무 굵다 — 직접 쓴다)
+      + `<path d="M 28,9.2 Q 20,12 9,19" fill="none" stroke="${T('ink')}" stroke-width="0.45" stroke-linecap="round"/>`
+      + `<path d="M 24.6,8.8 q -1.2,3 0.2,5.4 M 26.8,9.1 q -0.8,3 0.6,5.4" fill="none" stroke="${T('cloth2')}" stroke-width="0.7" stroke-linecap="round"/>`),
   ].join('') },
 ];
 const eraById = Object.fromEntries(ERA.map((q) => [q.id, q]));
@@ -522,18 +525,24 @@ const eraById = Object.fromEntries(ERA.map((q) => [q.id, q]));
 function eraFor(year) {
   return ERA.find((q) => q.kind === 'event' && year >= q.years[0] && year <= q.years[1]) || ERA.find((q) => q.kind === 'daily' && year >= q.years[0] && year <= q.years[1]) || null;
 }
-const ERA_LINE_MAX = 22;
+const ERA_LINE_MAX = 22; // 인생 기록 시대 줄의 문장 길이(360에서 2줄 안 — 연표 줄과 같은 본문 16px)
 for (const q of ERA) if (q.line.length > ERA_LINE_MAX) throw new Error(`시대의 창 한 줄 ${q.line.length}자 > ${ERA_LINE_MAX}: ${q.id}`);
 /** 시대의 창 그림 SVG(칸 안에서 잘라 보인다 — slice) */
-const eraSvg = (q, attrs = 'aria-hidden="true" focusable="false"') => `<svg viewBox="0 0 40 20" preserveAspectRatio="xMidYMid slice" ${attrs}>${q.draw(mk('s1'))}</svg>`;
+const eraSvg = (q, attrs = 'aria-hidden="true" focusable="false"') => `<svg viewBox="0 0 40 32" preserveAspectRatio="xMidYMid slice" ${attrs}>${q.draw(mk('s1'))}</svg>`;
 /**
- * 「시대의 창」 칸(HTML) — 칸 전체가 그해 기록(인생 기록의 그해 줄)으로 가는 **링크 하나**(초점 정지점 1). 그림은 aria-hidden, 접근 이름 = 「시대의 창 · {한 줄} 그해 기록으로」(FT5 대체 글 = 그해 한 줄).
- * hidden: 「무거운 장면 가리기」가 켜진 재난 장면(FT3) — 그림 없이 한 줄만, 칸의 틀은 유지. label=false면 칸 머리 글자 「시대의 창」을 숨긴다(비교용).
+ * 「시대의 창」 칸(HTML) — **그림만**(FM2d 형진 님 결정). 칸 전체가 그해 기록의 「시대의 창」 줄로 가는 **링크 하나**(초점 정지점 1).
+ * 시각적 이름·문장은 없고, 접근 이름 = 「시대의 창 · {문장} 그해 기록으로」(sr-only), 마우스 툴팁 = title 「시대의 창 · {문장}」(제안 — 브라우저 기본, 초점 정지점·떠 있는 층 없음).
+ * hidden: 「무거운 장면 가리기」가 켜진 재난 장면(FT3) — 그림 없이 칸의 틀(--c-surface-2)만, 접근 이름은 「시대의 창 · 가려 둔 장면 · 그해 기록으로」(문장은 인생 기록 줄의 가리기 부품이 맡는다).
+ * href: 그해의 시대 줄 id(`#log-y<year>`) — 시안의 인생 기록에는 1988년 줄만 있어 나머지는 인생 기록 카드(`#life-log`)로.
  */
-function eraBox(q, { hidden = false, label = true, href = '#life-log' } = {}) {
-  if (!q) return `<a class="era" id="scene-era" href="${href}" data-era="" data-hidden="true"><span class="era__pic" aria-hidden="true"></span><span class="era__cap">${label ? '<span class="era__label">시대의 창</span><span class="era__sep" aria-hidden="true"> · </span>' : ''}<span class="era__line">이 해의 장면 그림은 시안에 없습니다.</span><span class="sr-only"> 그해 기록으로</span></span></a>`;
-  return `<a class="era" id="scene-era" href="${href}" data-era="${q.id}" data-kind="${q.kind}" data-hidden="${hidden ? 'true' : 'false'}"><span class="era__pic" aria-hidden="true">${hidden ? '' : eraSvg(q)}</span><span class="era__cap">${label ? '<span class="era__label">시대의 창</span><span class="era__sep" aria-hidden="true"> · </span>' : ''}<span class="era__line">${q.line}</span><span class="sr-only"> 그해 기록으로</span></span></a>`;
+function eraBox(q, { hidden = false, href = '#life-log' } = {}) {
+  if (!q) return `<a class="era" id="scene-era" href="${href}" data-era="" data-hidden="true" title="시대의 창"><span class="era__pic" aria-hidden="true"></span><span class="sr-only">시대의 창 · 이 해의 장면 그림은 시안에 없습니다. 그해 기록으로</span></a>`;
+  const name = hidden ? '가려 둔 장면' : q.line;
+  return `<a class="era" id="scene-era" href="${href}" data-era="${q.id}" data-kind="${q.kind}" data-hidden="${hidden ? 'true' : 'false'}" title="시대의 창 · ${name}"><span class="era__pic" aria-hidden="true">${hidden ? '' : eraSvg(q)}</span><span class="sr-only">시대의 창 · ${name} 그해 기록으로</span></a>`;
 }
+/** 인생 기록의 「시대의 창」 줄(FM2d) — 연표 줄 문법(.log__row--tl) + data-tl="era": 5px 겹선 --c-era, 표지 「시대의 창」 + 창 아이콘, 문장 본문. id로 시대의 창 링크가 닿고 :target이 잠깐 강조한다 */
+const eraRow = (q, age, year) => `<li class="log__row log__row--tl" data-kind="timeline" data-tl="era" id="log-y${year}" tabindex="-1"><span class="log__age">${age}세<small class="log__year">${year}</small></span><span class="log__text"><span class="log__tl"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-era"/></svg><span>시대의 창</span></span><span class="log__sent">${q.line}</span></span></li>`;
+const ERA_ICON = '<symbol id="i-era" viewBox="0 0 24 24"><rect x="4" y="4.5" width="16" height="15" rx="1.5"/><path d="M12 4.5v15M4 12h16"/></symbol>';
 
 // ---------------------------------------------------------------- 장면 (조각을 자리에 놓는다 — 구현의 sceneOf → SceneSpec과 같은 모양)
 /**
@@ -654,7 +663,7 @@ if (!WITH_S2 && prevBudget.styles?.s2) budget.styles.s2 = { ...prevBudget.styles
 delete budget.screens;
 {
   const h = mk('s1');
-  const rows = ERA.map((q) => { const inner = q.draw(h); write(`pieces/s1/${q.id}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20" width="240" height="120"><!-- 수저 게임 · 시대의 창 그림(그해의 장면) · ${q.id} · ${q.kind} · ${q.topic} · ${q.years[0]}~${q.years[1]} · 승인 전(approved: false) · 직접 구성, 색은 --c-scene-* 토큰 --><g>${inner}</g></svg>\n`); return { id: q.id, years: q.years, kind: q.kind, topic: q.topic, line: q.line, lineChars: q.line.length, approved: q.approved, raw: Buffer.byteLength(inner, 'utf8'), gz: gzipSync(Buffer.from(inner, 'utf8')).length }; });
+  const rows = ERA.map((q) => { const inner = q.draw(h); write(`pieces/s1/${q.id}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 32" width="200" height="160"><!-- 수저 게임 · 시대의 창 그림(그해의 장면) · ${q.id} · ${q.kind} · ${q.topic} · ${q.years[0]}~${q.years[1]} · 승인 전(approved: false) · 직접 구성, 색은 --c-scene-* 토큰 --><g>${inner}</g></svg>\n`); return { id: q.id, years: q.years, kind: q.kind, topic: q.topic, line: q.line, lineChars: q.line.length, approved: q.approved, raw: Buffer.byteLength(inner, 'utf8'), gz: gzipSync(Buffer.from(inner, 'utf8')).length }; });
   const chunkGz = gzipSync(Buffer.from(JSON.stringify(Object.fromEntries(ERA.map((q) => [q.id, q.draw(h)]))), 'utf8')).length;
   const avg = Math.round(rows.reduce((a, r) => a + r.gz, 0) / rows.length);
   const ratio = budget.styles.s1.chunkRatio;
@@ -662,7 +671,7 @@ delete budget.screens;
   const daily = Math.ceil(years / 5);
   const lineGz = Math.round(75 * 0.42); // 한 줄 평균 25자 UTF-8 75B, 글 덩어리 gzip 비율 ≈ 0.42(FM2b 추정과 같다)
   const est = (n) => ({ pieces: n, gzEach: avg * n, chunkEst: Math.round(avg * n * ratio), withLines: Math.round(avg * n * ratio + lineGz * n) });
-  budget.era = { note: '시대의 창 그림(FT2 — FM2c에서 TV 화면 밖으로 옮김, 좌표계 40×20). 장당 개별 gzip과 덩어리 비율(s1 chunkRatio)을 곱한 합계 추정. 그림 자리 PC 약 175×78px · 휴대폰 88×44px(시안 실측은 shootFamily). 승인 전(approved: false). lineGz는 한 줄 문장의 추정 gzip.', rows, gzEachAvg: avg, chunkGzSamples: chunkGz, lineGz, projected: { years, daily, eventOnePerYear: est(years + daily), eventTwoPerYear: est(years * 2 + daily) } };
+  budget.era = { note: '시대의 창 그림(FT2 — FM2c에서 TV 화면 밖으로 옮김, FM2d 좌표계 40×32 — 칸에 그림만). 장당 개별 gzip과 덩어리 비율(s1 chunkRatio)을 곱한 합계 추정. 그림 자리 PC 175×140px · 휴대폰 100×80px(시안 실측은 shootFamily). 승인 전(approved: false). lineGz는 한 줄 문장의 추정 gzip.', rows, gzEachAvg: avg, chunkGzSamples: chunkGz, lineGz, projected: { years, daily, eventOnePerYear: est(years + daily), eventTwoPerYear: est(years * 2 + daily) } };
 }
 write('budget.json', JSON.stringify(budget, null, 2) + '\n');
 
@@ -673,14 +682,24 @@ write('family.css', `/* SPEC-009 집과 가족 그림 — 시안 전용 CSS (des
    얼굴 시스템과 공유: 살색·머리색은 --c-face-* 값과 같다(사람이 같은 사람으로 보이게). */
 :root {
 ${tokenBlock(LIGHT)}
+  /* FM2d 새 토큰 2(마스터 확인 전 제안): 인생 기록 「시대의 창」 줄의 색. 오디색 — 라이트 #6d2f4e(면 9.53 · 파인 면 8.08, ΔE2000 최소 19: --c-stat-health) */
+  --c-era: #6d2f4e;
+  --c-era-soft: #f4e3ec; /* 시대의 창을 누른 뒤 줄의 잠깐 강조 면(글자 --c-text 13.0) */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
 ${tokenBlock(DARK, '    ')}
+    --c-era: #f5a8d6; /* 다크: 면 8.79 · 파인 면 7.62, ΔE2000 --c-down 18 · --c-stat-health 19 · --c-stat-relation 14(상태색 기준 12 이상) */
+    --c-era-soft: #3a2434;
   }
 }
 :root[data-theme='dark'] {
 ${tokenBlock(DARK)}
+  --c-era: #f5a8d6;
+  --c-era-soft: #3a2434;
+}
+@media (forced-colors: active) {
+  :root { --c-era: CanvasText; --c-era-soft: Canvas; }
 }
 
 /* 그림 카드 — 가운데 열: 결정 카드 → 이 카드 → (올해 마음 쓸 곳 자리) → 인생 기록 (FH1). 그림 띠(집 그림 + 시대의 창)는 카드 위끝에 꽉 차게, 아래 한 줄·펼침·접기 */
@@ -697,29 +716,33 @@ ${tokenBlock(DARK)}
 .scene__svg { display: block; width: 100%; aspect-ratio: 640 / 256; max-height: 25vh; forced-color-adjust: none; }
 /* 연도 표 — 집 그림 오른쪽 위. 그림 안 글자가 아니라 HTML(종이 꼬리표): 바탕은 카드 면 색이라 어느 하늘·지붕 위에서도 글자 대비가 토큰 그대로(라이트 15.5:1 · 다크 13.9:1). 강제 색상은 Canvas/CanvasText + 1px 테두리 */
 .scene__year { position: absolute; top: var(--sp-2); right: var(--sp-2); margin: 0; padding: 2px var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.4; font-variant-numeric: tabular-nums; color: var(--c-text); background: var(--c-surface); border-radius: var(--r-sm); white-space: nowrap; }
-/* 「시대의 창」 칸 — 그해 장면 그림 한 장 + 한 줄, 칸 전체가 그해 기록으로 가는 링크 하나(초점 정지점 1, FT5). 창틀 장식 없음: 그림이 위, 한 줄이 아래(면 한 단계 어두운 --c-surface-2) */
-.era { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
-.era__pic { display: block; flex: 1 1 0; min-height: 48px; overflow: hidden; background: var(--c-scene-sky); }
+/* 「시대의 창」 칸 — **그림만**(FM2d). 칸 전체가 그해 기록의 시대 줄로 가는 링크 하나(초점 정지점 1, FT5). 창틀 장식 없음. PC 칸 175×140 = 5:4 = 그림 좌표계 40×32(잘림 0) */
+.era { display: block; min-width: 0; min-height: 0; background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
+.era__pic { display: block; width: 100%; height: 100%; min-height: 48px; overflow: hidden; background: var(--c-scene-sky); }
 .era[data-hidden='true'] .era__pic { background: var(--c-surface-2); }
 .era__pic svg { display: block; width: 100%; height: 100%; forced-color-adjust: none; }
-.era__cap { display: block; flex: none; padding: var(--sp-1) var(--sp-2) var(--sp-2); font-size: var(--fs-xs); line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
-/* 칸 머리 글자 「시대의 창」: PC 칸에서는 한 줄 위에 따로(회색), 휴대폰 띠에서는 문장 앞에 이어 쓴다(두 줄 안에 들어가게) */
-.era__label { display: block; color: var(--c-text-2); }
-.era__sep { display: none; }
-.era:hover .era__line, .era:focus-visible .era__line { text-decoration: underline; text-underline-offset: 2px; }
+.era:hover .era__pic svg { opacity: 0.92; }
 .era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 /* 바뀌는 해의 교차 페이드는 집 그림과 같은 규칙(.scene--swap) — 움직임 줄이기면 즉시 교체 */
 .scene--swap .era__pic svg { transition: opacity var(--dur-slow) var(--ease, ease); }
-/* 휴대폰(카드 폭 ≤ 480px — 360에서 카드 326px): 나란히 두면 집 그림이 217px(어른 32px)로 줄어 읽히지 않는다. 집 그림은 전폭(326×130), 시대의 창은 그 아래 **가로 띠**(그림 88×44 + 머리 글자·한 줄 14px 두 줄) — 띠 합계 ≈ 185px = 25vh@740 */
+/* 휴대폰(카드 폭 ≤ 480px — 360에서 카드 326px): 나란히 두면 집 그림이 212px(어른 31px)로 줄어 읽히지 않는다. 집 그림은 전폭(326×130), 시대의 창은 그 아래 **가로 띠 80px**(FM2d: 그림만 — 5:4 그림 100×80을 왼쪽에, 나머지는 띠 바탕 --c-surface-2) — 띠 합계 130 + 8 + 80 = 218px(29.5%@740; 집 그림만 25vh 규칙 대상) */
 @container scene (max-width: 480px) {
   .scene { grid-template-columns: minmax(0, 1fr); }
   .scene[data-split='2.5'], .scene[data-split='3'] { grid-template-columns: minmax(0, 1fr); }
-  .era { flex-direction: row; align-items: stretch; min-height: var(--hit); }
-  .era__pic { flex: none; width: 88px; aspect-ratio: 2 / 1; min-height: 0; align-self: center; }
-  .era__cap { flex: 1 1 auto; min-width: 0; align-self: center; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
-  .era__label { display: inline; }
-  .era__sep { display: inline; color: var(--c-text-2); }
+  .era { height: 80px; }
+  .era__pic { width: 100px; height: 80px; min-height: 0; }
 }
+/* 인생 기록 「시대의 창」 줄(FM2d) — 연표 줄 4종(gm3.css 17-4) 위에 다섯째: 5px **겹선**(double) --c-era(모양으로도 구분), 표지 「시대의 창」 + 창 아이콘 --c-era, 문장은 본문(--c-text). 왼쪽 안쪽 여백은 3px 선의 줄과 글자 시작을 맞춘다(5 + 3 = 3 + 5) */
+.log__row--tl[data-tl='era'] { border-left: 5px double var(--c-era); padding-left: calc(var(--sp-1) + 3px); }
+.log__row--tl[data-tl='era'] .log__tl { color: var(--c-era); }
+.log__row--tl[data-tl='era'] .log__sent { color: var(--c-text); }
+/* 링크로 닿은 줄(tabindex=-1)에 초점이 오면 시스템 초점 테두리(3px --c-focus) — 브라우저 기본 테두리 대신 */
+.log__row[tabindex='-1']:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
+/* 시대의 창을 누르면 그 줄로(:target) — 잠깐 강조: 면 --c-era-soft가 1.2초 머물다 1.2초에 걸쳐 사라진다. 움직임 줄이기면 애니메이션 없이 면만 남긴다(강조만) */
+.log__row--tl[data-tl='era']:target { background: var(--c-era-soft); animation: era-flash 2.4s ease-out 1 both; }
+@keyframes era-flash { 0%, 50% { background-color: var(--c-era-soft); } 100% { background-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .log__row--tl[data-tl='era']:target { animation: none; } }
+:root[data-motion='reduce'] .log__row--tl[data-tl='era']:target { animation: none; }
 .scene__line { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text); font-weight: var(--fw-bold); word-break: keep-all; overflow-wrap: anywhere; }
 .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-2); }
 .scene__more { flex: 1 1 auto; min-width: 0; }
@@ -740,11 +763,9 @@ ${tokenBlock(DARK)}
 }
 @media (forced-colors: active) {
   .scene__house, .era, .scene__year { border: 1px solid CanvasText; }
-  .era__pic { border-bottom: 1px solid CanvasText; }
   .scene__people li::before { background: CanvasText; }
-}
-@container scene (max-width: 480px) {
-  @media (forced-colors: active) { .era__pic { border-bottom: 0; border-right: 1px solid CanvasText; } }
+  .log__row--tl[data-tl='era'] { border-left-color: CanvasText; }
+  .log__row--tl[data-tl='era']:target { outline: 2px solid Highlight; outline-offset: -2px; animation: none; }
 }
 `);
 
@@ -785,7 +806,7 @@ write('scenes.html', `${HEAD('수저 게임 · 시안 · 집과 가족 그림 �
 <p class="cmp__lead">형진 님이 고른 그림체(종이 오림)로 그린 장면입니다. 조각(배경·소품·집·식구·반려동물)을 자리에 놓아 합친 것이고, 색은 디자인 토큰만 읽습니다. 시안이라 이름·나이는 가짜 값입니다. 집 안의 매체(TV·라디오)는 FM2c에서 뺐고, 그해 장면은 대시보드의 「시대의 창」 칸이 맡습니다.</p>
 <nav class="cmp__links" aria-label="보기"><a href="scenes.html">라이트</a><a href="scenes.html?theme=dark">다크</a><a href="dashboard-family.html?scene=c">대시보드 자리</a><a href="pieces.html">조각 표</a><a href="compare.html">그림체 비교(게이트 기록)</a></nav>
 <section class="cmp__style"><div class="cmp__grid">${Object.values(SCENES).map((sc) => `<div><h2 style="font-size:var(--fs-md);margin:0 0 var(--sp-2)">${sc.title}</h2>${sceneCardStandalone('s1', sc)}</div>`).join('')}</div></section>
-<section class="cmp__style" id="era-samples"><h2>시대의 창 — 그해 장면 그림 표본 셋(FT2, 승인 전)</h2><p>종이 오림 그림체로 새로 구성한 표본입니다. 특정 사진을 따라 그리지 않았고 글자·로고·실존 인물·정당 상징이 없습니다. 왼쪽은 40×20 좌표계 원본(6배), 가운데는 PC 칸의 그림 자리(175×78 — 2:1 배치, 머리 글자 + 두 줄 아래), 오른쪽은 휴대폰 띠의 그림(88×44).</p><div class="cmp__grid">${ERA.map((q) => `<figure class="cmp__fig" data-sample="${q.id}" style="padding:var(--sp-4)"><div style="display:flex;gap:var(--sp-4);align-items:flex-end;flex-wrap:wrap"><svg viewBox="0 0 40 20" width="240" height="120" aria-hidden="true" focusable="false">${q.draw(mk('s1'))}</svg><span style="display:block;width:175px;height:78px;overflow:hidden">${eraSvg(q, 'aria-hidden="true" focusable="false" style="display:block;width:100%;height:100%"')}</span><span style="display:block;width:88px;height:44px;overflow:hidden">${eraSvg(q, 'aria-hidden="true" focusable="false" style="display:block;width:100%;height:100%"')}</span></div><figcaption class="scene__line" style="font-weight:var(--fw-regular)">${q.years[0]}${q.years[1] !== q.years[0] ? `~${q.years[1]}` : ''}년 · ${q.kind === 'event' ? '사건' : '생활 장면'} · ${q.topic} · 한 줄 「${q.line}」(${q.line.length}자) · gzip ${budget.era.rows.find((r) => r.id === q.id).gz}B</figcaption></figure>`).join('')}</div></section>
+<section class="cmp__style" id="era-samples"><h2>시대의 창 — 그해 장면 그림 표본 셋(FT2, 승인 전)</h2><p>종이 오림 그림체로 새로 구성한 표본입니다. 특정 사진을 따라 그리지 않았고 글자·로고·실존 인물·정당 상징이 없습니다. 왼쪽은 40×32 좌표계 원본(5배), 가운데는 PC 칸(175×140 — 2:1 배치, 그림만), 오른쪽은 휴대폰 띠의 그림(100×80). 문장은 칸이 아니라 인생 기록의 「시대의 창」 줄에 적힌다(대시보드 시안).</p><div class="cmp__grid">${ERA.map((q) => `<figure class="cmp__fig" data-sample="${q.id}" style="padding:var(--sp-4)"><div style="display:flex;gap:var(--sp-4);align-items:flex-end;flex-wrap:wrap"><svg viewBox="0 0 40 32" width="200" height="160" aria-hidden="true" focusable="false">${q.draw(mk('s1'))}</svg><span style="display:block;width:175px;height:140px;overflow:hidden">${eraSvg(q, 'aria-hidden="true" focusable="false" style="display:block;width:100%;height:100%"')}</span><span style="display:block;width:100px;height:80px;overflow:hidden">${eraSvg(q, 'aria-hidden="true" focusable="false" style="display:block;width:100%;height:100%"')}</span></div><figcaption class="scene__line" style="font-weight:var(--fw-regular)">${q.years[0]}${q.years[1] !== q.years[0] ? `~${q.years[1]}` : ''}년 · ${q.kind === 'event' ? '사건' : '생활 장면'} · ${q.topic} · 한 줄 「${q.line}」(${q.line.length}자) · gzip ${budget.era.rows.find((r) => r.id === q.id).gz}B</figcaption></figure>`).join('')}</div></section>
 </main>
 </body>
 </html>
@@ -839,6 +860,13 @@ ${Object.entries(STYLES).map(([s, name]) => { const b = budget.styles[s]; const 
   dash = dash.replace('<link rel="stylesheet" href="gm3.css">', '<link rel="stylesheet" href="../gm3/gm3.css">\n<link rel="stylesheet" href="family.css">');
   dash = dash.replace('<!-- 시안(정적 HTML, 가짜 데이터): 디자인 시스템 토큰·컴포넌트 스타일을 그대로 불러 쓴다. 주소 끝에 ?theme=dark 를 붙이면 다크 테마, &motion=reduce 면 움직임 줄이기. -->', '<!-- 시안(정적 HTML, 가짜 데이터) — gm3/dashboard-004.html에 결정 카드(decision-adult.html의 인라인 카드)와 집과 가족 그림 카드를 끼운 것(buildFamilyMockups.mjs). 그림체는 종이 오림(선택) 하나. ?theme=dark 다크 · &motion=reduce 움직임 줄이기 · ?scene=a|b|c|d|e 장면 · ?fold=1 그림 접힘 · ?open=1 펼침 열림 · ?decision=fold 결정 카드를 「잠시 덮어 두기」로 접은 띠 · ?era=stadium|ballot|kite|none 시대의 창 그림(연도 표도 그 해로) · ?hide=1 무거운 장면 가리기 상태 · ?stamp=age 연도 옆 나이 · ?label=0 칸 머리 글자 없이 · ?split=2|2.5|3 집:창 비율 -->');
   dash = dash.replace('<section class="card log" aria-label="인생 기록">', '<section class="card log" id="life-log" aria-label="인생 기록">');
+  // FM2d: 시대의 창 줄 — 주인공 1972년생이라 1988년 = 16세, 19세 1991 줄 다음(최신순)
+  if (!dash.includes('id="i-era"')) dash = dash.replace('<symbol id="i-talk"', ERA_ICON + '<symbol id="i-talk"');
+  {
+    const i91 = dash.indexOf('19세<small class="log__year">1991</small>');
+    const li = dash.indexOf('</li>', i91) + '</li>'.length;
+    dash = dash.slice(0, li) + eraRow(eraById['era-stadium-flame'], 16, 1988) + dash.slice(li);
+  }
   const personLine = ([role, name, age, rel]) => `${role} · ${name} · ${age}세${rel ? ` · ${rel}` : ''}`;
   const selfAge = (sc) => sc.people.find((p) => p[0] === '나')[2];
   const sceneCard = (sc) => `<section class="card scene-card" aria-labelledby="scene-title" data-fold="false" data-scene="${sc.id}" data-year="${sc.year}" data-self-age="${selfAge(sc)}" data-testid="family-scene">
@@ -857,16 +885,18 @@ ${Object.entries(STYLES).map(([s, name]) => { const b = budget.styles[s]; const 
   assertYears(SCENES.a, 1988); assertYears(SCENES.a, 1987);
   const eraKey = { stadium: 'era-stadium-flame', ballot: 'era-ballot-box', kite: 'era-kite-roofs' };
   const eraTemplates = [];
-  for (const [key, id] of Object.entries(eraKey)) for (const hidden of [false, true]) for (const label of [true, false]) eraTemplates.push(`<template data-era-box="${key}" data-hidden="${hidden}" data-label="${label}">${eraBox(eraById[id], { hidden, label })}</template>`);
-  for (const label of [true, false]) eraTemplates.push(`<template data-era-box="none" data-hidden="true" data-label="${label}">${eraBox(null, { label })}</template>`);
+  const eraHref = (id) => (eraById[id].years[0] === 1988 ? '#log-y1988' : '#life-log');
+  for (const [key, id] of Object.entries(eraKey)) for (const hidden of [false, true]) eraTemplates.push(`<template data-era-box="${key}" data-hidden="${hidden}">${eraBox(eraById[id], { hidden, href: eraHref(id) })}</template>`);
+  eraTemplates.push(`<template data-era-box="none" data-hidden="true">${eraBox(null)}</template>`);
   dash = dash.replace('</body>', `${variants.join('\n')}
 <template data-decision="fold">${fold}</template>
 ${eraTemplates.join('\n')}
 <script>(function(){var q=new URLSearchParams(location.search);var k=q.get('scene')||'a';if(q.get('decision')==='fold'){var ft=document.querySelector('template[data-decision="fold"]');var dc=document.querySelector('.decision--inline');if(ft&&dc)dc.replaceWith(ft.content.cloneNode(true));}var cur=document.querySelector('.scene-card');if(k!=='a'){var t=document.querySelector('template[data-scene="'+k+'"]');if(t&&cur){cur.replaceWith(t.content.cloneNode(true));cur=document.querySelector('.scene-card');}}
-/* 시대의 창(FM2c): ?era=stadium|ballot|kite|none 으로 그림을 바꾸고 연도 표도 그 그림의 해로 맞춘다(장면 A 1975 → 1988 올림픽: 집·소품은 그 해에도 유효 — 빌드가 단언). ?hide=1 가리기 상태 · ?label=0 머리 글자 없이 · ?stamp=age 「1988년 · 13세」 · ?split=2.5|3 비율 */
-var eraYears={stadium:1988,ballot:1987,kite:null};var ek=q.get('era');var hide=q.get('hide')==='1';var label=q.get('label')!=='0';if(ek||hide||!label){var et=document.querySelector('template[data-era-box="'+(ek||document.querySelector('.era').dataset.era.replace(/^era-(stadium|ballot|kite).*$/,'$1')||'none')+'"][data-hidden="'+(hide||ek==='none'||!ek&&document.querySelector('.era').dataset.hidden==='true')+'"][data-label="'+label+'"]');if(et)cur.querySelector('.era').replaceWith(et.content.cloneNode(true));}
+/* 시대의 창(FM2c·d): ?era=stadium|ballot|kite|none 으로 그림을 바꾸고 연도 표도 그 그림의 해로 맞춘다(장면 A 1975 → 1988 올림픽: 집·소품은 그 해에도 유효 — 빌드가 단언). ?hide=1 가리기 상태 · ?stamp=age 「1988년 · 13세」(비교용) · ?split=2.5|3 비율 · ?target=1 시대의 창을 누른 상태(시대 줄 강조) */
+var eraYears={stadium:1988,ballot:1987,kite:null};var ek=q.get('era');var hide=q.get('hide')==='1';if(ek||hide){var et=document.querySelector('template[data-era-box="'+(ek||document.querySelector('.era').dataset.era.replace(/^era-(stadium|ballot|kite).*$/,'$1')||'none')+'"][data-hidden="'+(hide||ek==='none'||!ek&&document.querySelector('.era').dataset.hidden==='true')+'"]');if(et)cur.querySelector('.era').replaceWith(et.content.cloneNode(true));}
 var year=(ek&&eraYears[ek])||Number(cur.dataset.year);var age=Number(cur.dataset.selfAge)+(year-Number(cur.dataset.year));var yt=cur.querySelector('.scene__year');yt.innerHTML='<time datetime="'+year+'">'+year+'년</time>'+(q.get('stamp')==='age'?' · '+age+'세':'');
 if(q.get('split'))cur.querySelector('.scene').setAttribute('data-split',q.get('split'));
+if(q.get('target')==='1'){var el=cur.querySelector('.era');var h=el.getAttribute('href');var row=document.querySelector(h);if(row){location.hash=h;row.focus({preventScroll:false});}}
 /* 접기(FH1): 접으면 그림 띠(집 그림 + 시대의 창)가 사라지고 한 줄·펼침은 남는다. 설정에 저장(구현) — 시안은 ?fold=1 */
 var btn=cur.querySelector('.scene__fold');function setFold(f){cur.setAttribute('data-fold',f?'true':'false');btn.setAttribute('aria-expanded',f?'false':'true');btn.textContent=f?'그림 펼치기':'그림 접기';}
 if(q.get('fold')==='1')setFold(true);btn.addEventListener('click',function(){setFold(cur.getAttribute('data-fold')!=='true');});

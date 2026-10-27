@@ -1,16 +1,16 @@
 /**
  * SPEC-009 집과 가족 그림 시안을 Playwright 크로미움으로 찍고 잰다 → docs/design/screens/009/ (designer 2026-10-27).
- * 실행: node scripts/design/shootFamily.mjs            ← FM2c 정본 캡처 4장 + 검사 (집 그림 + 연도 표 + 「시대의 창」 배치)
+ * 실행: node scripts/design/shootFamily.mjs            ← FM2d 정본 캡처 3장 + 검사 (시대의 창은 그림만 · 인생 기록의 「시대의 창」 줄)
+ *       node scripts/design/shootFamily.mjs fm2c       ← (기록) FM2c 캡처 — 칸에 문장이 있던 시안. 커밋 e381f3e의 산출물을 그대로 둔다
  *       node scripts/design/shootFamily.mjs preview    ← 작업 중 미리보기(.taste-skill/009/preview/, 저장소에 올리지 않는다)
  *       node scripts/design/shootFamily.mjs fm2        ← FM2 게이트 캡처 6장(그림체 둘 — 먼저 buildFamilyMockups.mjs --with-s2)
  *       node scripts/design/shootFamily.mjs fm2b       ← (기록) FM2b 캡처 — 생성기가 매체 층을 뺀 뒤에는 다시 만들지 않는다(커밋 9f9d2da의 산출물을 그대로 둔다)
  *   시안은 먼저 `node scripts/design/buildFamilyMockups.mjs`로 만든다. 브라우저는 이 스크립트가 띄우고 닫는다(서버 없음, file://).
- * FM2c 캡처(4장, ≤ 300 KB):
- *   fm2c-dash-1280.png — 1280×800 대시보드(장면 A를 1988년에 · 시대의 창 = 성화대 · 결정 카드 접은 띠)
- *   fm2c-dash-e-1280.png — 한계 장면 E(8명 + 2마리, 1968 · 시대의 창 = 생활 장면 연) 그림 카드 2:1 · 비교 5:2 · 3:1 (식구 px 실측)
- *   fm2c-dash-360.png — 360×740 대시보드(쌓기, 기본) · 비교: 나란히 2:1 · 접기
- *   fm2c-dash-dark.png — 다크 1280 그림 카드 · 다크 360 · 강제 색상 1280 그림 카드
- * 검사: 문서·요소 가로 넘침 0(1280·360·320 글자 200%·1920), 집 그림 높이 ≤ 25vh, 카드 순서(결정 → 그림 → 기록), 접기(둘 다 사라짐) 키보드, 대체 글(연도 포함), 시대의 창 = 링크 1(초점 정지점), 한 줄 ≤ 2줄@360·창 한 줄 ≤ 2줄, 연도 표 대비 ≥ 4.5, 다크·강제 색상, 외부 요청 0.
+ * FM2d 캡처(3장, ≤ 300 KB):
+ *   fm2d-dash-1280.png — 1280×800 대시보드(장면 A를 1988년에 · 시대의 창 = 성화대 그림만) · 시대의 창에서 Enter → 인생 기록 「시대의 창」 줄로 이동·강조된 상태
+ *   fm2d-dash-360.png — 360×740 라이트(띠 80px) · 다크(장면 E) · 누른 뒤(시대 줄 강조)
+ *   fm2d-log-era-row.png — 인생 기록 시대 줄 확대 ×2: 강조 중 · 평소 · 다크 · 강제 색상 · 움직임 줄이기
+ * 검사: 가로 넘침 0(1280·360·320 글자 200%·1920·1280×600), 집 그림 ≤ 25vh, 카드 순서, 접기(둘 다 사라짐) 키보드, 대체 글(연도 포함), 시대의 창 = 그림만 + 링크 1(초점 정지점·title), Enter → #log-y1988 :target·초점·스크롤 영역 안·2.4초 뒤 강조 해제, 시대 줄 표지·문장 대비 ≥ 4.5(라이트·다크), 움직임 줄이기면 애니메이션 없음, 다크·강제 색상, 외부 요청 0.
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
@@ -18,9 +18,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const BASE = 'file:///' + ROOT.replace(/\\/g, '/') + 'docs/design/mockups/family/';
-const MODE = process.argv[2] || 'fm2c';
+const MODE = process.argv[2] || 'fm2d';
 const PREVIEW = MODE === 'preview';
-if (MODE === 'fm2b') { console.log('fm2b 캡처는 기록입니다 — 생성기가 매체 층을 뺀 뒤에는 다시 만들지 않습니다(docs/design/screens/009/fm2b-*.png 그대로).'); process.exit(0); }
+if (MODE === 'fm2b' || MODE === 'fm2c') { console.log(`${MODE} 캡처는 기록입니다 — 시안이 바뀐 뒤에는 다시 만들지 않습니다(docs/design/screens/009/${MODE}-*.png 그대로).`); process.exit(0); }
 const OUT = PREVIEW ? ROOT + '.taste-skill/009/preview/' : ROOT + 'docs/design/screens/009/';
 const TMP = ROOT + '.taste-skill/009/shoot/';
 mkdirSync(OUT, { recursive: true });
@@ -143,118 +143,137 @@ if (MODE === 'fm2') {
     }
   }
 } else {
-  // ================= FM2c — 집 그림 + 연도 표 + 시대의 창 =================
-  const cardShot = async (label, q, view, opt, file) => {
+  // ================= FM2d — 시대의 창은 그림만 · 인생 기록의 시대 줄 =================
+  const rowMeasure = (page) =>
+    page.evaluate(() => {
+      const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+      const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return Math.round(((x + 0.05) / (y + 0.05)) * 100) / 100; };
+      const row = document.querySelector('#log-y1988');
+      if (!row) return null;
+      const cs = getComputedStyle(row);
+      const card = getComputedStyle(document.querySelector('#life-log'));
+      const bg = cs.backgroundColor === 'rgba(0, 0, 0, 0)' ? card.backgroundColor : cs.backgroundColor;
+      const tl = getComputedStyle(row.querySelector('.log__tl'));
+      const sent = getComputedStyle(row.querySelector('.log__sent'));
+      const r = row.getBoundingClientRect();
+      const list = document.querySelector('.log__list').getBoundingClientRect();
+      return { h: Math.round(r.height), border: `${cs.borderLeftWidth} ${cs.borderLeftStyle} ${cs.borderLeftColor}`, label: tl.color, labelContrast: contrast(tl.color, bg), sentContrast: contrast(sent.color, bg), bg, targeted: row.matches(':target'), focused: document.activeElement === row, inView: r.top >= list.top - 1 && r.bottom <= list.bottom + 1, anim: cs.animationName, hash: location.hash, eraTitle: (document.querySelector('.era') || {}).getAttribute?.('title') };
+    });
+  const shot = async (label, q, view, opt, file, { full = false, pre } = {}) => {
     const { ctx, page } = await open({ file: 'dashboard-family', q, view, ...opt });
+    if (pre) await pre(page);
     await check(page, label);
     const m = await dashMeasure(page);
+    const rm = await rowMeasure(page);
     if (m.picH !== null && m.picH > m.maxH) problems.push(`${label} 집 그림 높이 ${m.picH} > 25vh ${m.maxH}`);
     if (m.lines > 2 && view.width >= 360) problems.push(`${label} 한 줄 ${m.lines}줄`);
-    if (m.era && m.era.capLines > 2 && !opt.text && !/split=(2.5|3)/.test(q)) problems.push(`${label} 시대의 창 한 줄 ${m.era.capLines}줄`); // 5:2·3:1은 비교용 — 줄 수는 캡션에 적는다
     if (m.year && m.year.contrast < 4.5 && !opt.forced) problems.push(`${label} 연도 표 대비 ${m.year.contrast}`);
-    if (m.era && m.era.capContrast < 4.5 && !opt.forced) problems.push(`${label} 시대의 창 글자 대비 ${m.era.capContrast}`);
     if (m.era && !m.eraLinkTarget) problems.push(`${label} 시대의 창 링크 대상 없음 ${m.era.href}`);
+    if (rm && !opt.forced && rm.labelContrast < 4.5) problems.push(`${label} 시대 줄 표지 대비 ${rm.labelContrast}`);
+    if (rm && !opt.forced && rm.sentContrast < 4.5) problems.push(`${label} 시대 줄 문장 대비 ${rm.sentContrast}`);
     const center = m.order.find((x) => x.cls === 'scene-card');
     const ord = m.order.filter((o) => center && o.left === center.left).sort((x, y) => x.top - y.top).map((o) => o.cls).join(' → ');
-    notes.push(`${label}: 집 ${m.picW}×${m.picH}(25vh ${m.maxH}) 띠 ${m.stripH} · 연도 「${m.year?.text}」 ${m.year?.w}×${m.year?.h} ${m.year?.fontPx}px 대비 ${m.year?.contrast} · 창 ${m.era?.id ?? '-'} ${m.era?.w}×${m.era?.h} 그림 ${m.era?.picW}×${m.era?.picH} 글 ${m.era?.capFontPx}px ${m.era?.capLines}줄(${m.era?.capChars}자) 대비 ${m.era?.capContrast} · 식구 어른 ${m.fig.adult?.join('×')} 어린이 ${m.fig.child?.join('×')} · 한 줄 ${m.lines}줄 · 초점 ${m.focusables.join(', ')} · 순서 ${ord}`);
+    notes.push(`${label}: 집 ${m.picW}×${m.picH}(25vh ${m.maxH}) 띠 ${m.stripH} · 연도 「${m.year?.text}」 대비 ${m.year?.contrast} · 창 ${m.era?.id ?? '-'} ${m.era?.w}×${m.era?.h} 그림 ${m.era?.picW}×${m.era?.picH} title 「${rm?.eraTitle ?? m.era?.name}」 · 식구 어른 ${m.fig.adult?.join('×')} · 한 줄 ${m.lines}줄 · 초점 ${m.focusables.join(', ')} · 순서 ${ord}${rm ? ` · 시대 줄 ${rm.h}px 선 ${rm.border} 표지 대비 ${rm.labelContrast} 문장 대비 ${rm.sentContrast} target ${rm.targeted} focus ${rm.focused} 보임 ${rm.inView} anim ${rm.anim} bg ${rm.bg}` : ''}`);
     if (file) {
-      await page.evaluate(() => { const el = document.querySelector('.scene-card'); const head = document.querySelector('.dash-head'); const h = head ? head.getBoundingClientRect().height : 0; window.scrollBy(0, el.getBoundingClientRect().top - h - 8); });
-      await page.waitForTimeout(150);
-      if (file.endsWith('-full.png')) await page.screenshot({ path: file });
-      else await page.locator('.scene-card').screenshot({ path: file });
+      if (full) {
+        if (!/target=1/.test(q)) { await page.evaluate(() => { const el = document.querySelector('.scene-card'); const head = document.querySelector('.dash-head'); const h = head ? head.getBoundingClientRect().height : 0; window.scrollBy(0, el.getBoundingClientRect().top - h - 8); }); await page.waitForTimeout(150); }
+        await page.screenshot({ path: file });
+      } else {
+        await page.evaluate(() => { const el = document.querySelector('.scene-card'); const head = document.querySelector('.dash-head'); const h = head ? head.getBoundingClientRect().height : 0; window.scrollBy(0, el.getBoundingClientRect().top - h - 8); });
+        await page.waitForTimeout(150);
+        await page.locator('.scene-card').screenshot({ path: file });
+      }
     }
     await ctx.close();
-    return m;
+    return { m, rm };
   };
-  // ---------- ① 1280×800 대시보드: 장면 A @ 1988 · 시대의 창 성화대 · 결정 카드 띠 ----------
+  // ---------- ① 1280×800 대시보드: 장면 A @ 1988 · 시대의 창(그림만) → Enter → 인생 기록 「시대의 창」 줄로 이동·강조 ----------
   {
     const { ctx, page } = await open({ file: 'dashboard-family', q: 'scene=a&era=stadium&decision=fold', view: { width: 1280, height: 800 } });
-    await check(page, 'fm2c-dash-1280');
+    await check(page, 'fm2d-dash-1280');
     const m = await dashMeasure(page);
-    notes.push(`dash-a1988-1280: 집 ${m.picW}×${m.picH}(25vh ${m.maxH}) 연도 「${m.year.text}」 대비 ${m.year.contrast} 창 ${m.era.id} ${m.era.w}×${m.era.h} 그림 ${m.era.picW}×${m.era.picH} 글 ${m.era.capLines}줄 · 대체 글 「${m.alt}」 · 창 접근 이름 「${m.era.name}」 · 초점 ${m.focusables.join(', ')}`);
     if (m.focusables.filter((f) => f === 'era').length !== 1) problems.push('시대의 창 초점 정지점이 1개가 아님');
-    // 접기: 집 그림과 창이 함께 사라지고 한 줄·펼침·접기 단추가 남는다 (키보드 Enter 왕복)
-    await page.focus('.scene__fold');
+    if (m.era.w !== m.era.picW || m.era.h !== m.era.picH) problems.push(`시대의 창에 그림 말고 다른 것이 있음 ${m.era.w}×${m.era.h} vs 그림 ${m.era.picW}×${m.era.picH}`);
+    notes.push(`dash-a1988-1280(전): 창 ${m.era.w}×${m.era.h} = 그림 ${m.era.picW}×${m.era.picH} · 접근 이름 「${m.era.name}」 · 대체 글 「${m.alt}」`);
+    // 접기 왕복
+    await page.focus('.scene__fold'); await page.keyboard.press('Enter');
+    const folded = await page.evaluate(() => ({ fold: document.querySelector('.scene-card').dataset.fold, strip: getComputedStyle(document.querySelector('.scene')).display, era: document.querySelector('.era').getBoundingClientRect().height }));
     await page.keyboard.press('Enter');
-    const folded = await page.evaluate(() => ({ fold: document.querySelector('.scene-card').dataset.fold, strip: getComputedStyle(document.querySelector('.scene')).display, line: !!document.querySelector('.scene__line').offsetParent, era: document.querySelector('.era').getBoundingClientRect().height }));
-    await page.keyboard.press('Enter');
-    const un = await dashMeasure(page);
-    if (folded.fold !== 'true' || folded.strip !== 'none' || !folded.line || folded.era !== 0 || un.fold !== 'false') problems.push(`접기 동작: ${JSON.stringify(folded)} → ${un.fold}`);
-    // 시대의 창 링크 Enter → 인생 기록 카드로
-    await page.focus('.era');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(100);
-    const hash = await page.evaluate(() => location.hash);
-    if (hash !== '#life-log') problems.push(`시대의 창 링크 이동 실패 ${hash}`);
-    await page.evaluate(() => { history.replaceState(null, '', location.pathname + location.search); scrollTo(0, 0); });
-    await page.waitForTimeout(100);
-    await page.screenshot({ path: `${OUT}fm2c-dash-1280.png` });
-    saved(`${OUT}fm2c-dash-1280.png`);
+    if (folded.fold !== 'true' || folded.strip !== 'none' || folded.era !== 0) problems.push(`접기 동작: ${JSON.stringify(folded)}`);
+    // 시대의 창 Enter → 시대 줄
+    await page.focus('.era'); await page.keyboard.press('Enter');
+    await page.waitForTimeout(250);
+    const rm = await rowMeasure(page);
+    if (!rm || rm.hash !== '#log-y1988' || !rm.targeted) problems.push(`시대의 창 링크 → 시대 줄 실패 ${JSON.stringify(rm)}`);
+    if (rm && !rm.inView) problems.push('시대 줄이 인생 기록 스크롤 영역 밖');
+    if (rm && rm.anim !== 'era-flash') problems.push(`시대 줄 강조 애니메이션 없음(${rm.anim})`);
+    // 캡처: 그림 카드와 시대 줄이 한 화면에 — 창을 눌러 안쪽 목록이 줄로 스크롤된 상태에서 창만 맨 위로(줄이 목록 머리에 오게)
+    await page.evaluate(() => { const row = document.querySelector('#log-y1988'); const list = document.querySelector('.log__list'); list.scrollTop = row.offsetTop - list.offsetTop; window.scrollTo(0, 0); });
+    await page.waitForTimeout(120);
+    notes.push(`dash-a1988-1280(후): 시대 줄 ${rm.h}px 선 ${rm.border} 표지 대비 ${rm.labelContrast} 문장 대비 ${rm.sentContrast} 강조면 ${rm.bg} target ${rm.targeted} 초점 ${rm.focused} 보임 ${rm.inView} anim ${rm.anim}`);
+    await page.screenshot({ path: `${OUT}fm2d-dash-1280.png` });
+    saved(`${OUT}fm2d-dash-1280.png`);
+    // 강조가 끝난 뒤(2.4s) 면이 사라지는지
+    await page.waitForTimeout(2600);
+    const after = await rowMeasure(page);
+    if (after.bg === rm.bg) problems.push('시대 줄 강조가 사라지지 않음');
+    notes.push(`dash-a1988-1280(2.6s 뒤): bg ${after.bg}`);
     await ctx.close();
   }
-  // ---------- ② 한계 장면 E @ 1968(연) — 2:1 기본 · 5:2 · 3:1 비교 (식구 px 실측) ----------
+  // ---------- ② 360×740: 라이트(장면 A @ 1988) · 다크(장면 E 1968 연) ----------
   {
     const items = [];
-    for (const [split, cap] of [['2', '2:1 (제안)'], ['2.5', '5:2 (비교)'], ['3', '3:1 (비교)']]) {
-      const f = `${TMP}dash-e-split-${split}.png`;
-      const m = await cardShot(`dash-e-1280-split-${split}`, `scene=e&split=${split}&decision=fold`, { width: 1280, height: 800 }, {}, f);
-      items.push([f, `${cap} — 집 ${m.picW}×${m.picH}px · 창 ${m.era.w}×${m.era.h}(그림 ${m.era.picW}×${m.era.picH}) · 어른 ${m.fig.adult?.[1]}px · 어린이 ${m.fig.child?.[1]}px · 창 한 줄 ${m.era.capLines}줄`, 534]);
-    }
-    await composite(`${OUT}fm2c-dash-e-1280.png`, items, `FM2c — ${SCENE_CAP.e} · 1280 가운데 열(카드 534px) · 집 그림 : 시대의 창 비율 비교 (시안 · 가짜 이름·나이 · 시대의 창 = 생활 장면 표본, 승인 전)`, { row: true, width: 1120 });
+    const f1 = `${TMP}fm2d-360.png`;
+    const r1 = await shot('dash-a1988-360', 'scene=a&era=stadium', { width: 360, height: 740 }, { dpr: 2, coarse: true }, f1, { full: true });
+    items.push([f1, `라이트 — 집 ${r1.m.picW}×${r1.m.picH}(25vh ${r1.m.maxH}) · 창 띠 ${r1.m.era.w}×${r1.m.era.h}(그림 ${r1.m.era.picW}×${r1.m.era.picH}) · 띠 합계 ${r1.m.stripH}px · 한 줄 ${r1.m.lines}줄`, 360]);
+    const f2 = `${TMP}fm2d-360-dark.png`;
+    const r2 = await shot('dash-dark-360-e', 'scene=e&theme=dark', { width: 360, height: 740 }, { dark: true, dpr: 2 }, f2, { full: true });
+    items.push([f2, `다크 — 한계 장면 E · 창 = 생활 장면(연) · 연도 표 대비 ${r2.m.year.contrast}`, 360]);
+    const f3 = `${TMP}fm2d-360-target.png`;
+    const r3 = await shot('dash-a1988-360-target', 'scene=a&era=stadium&target=1', { width: 360, height: 740 }, { dpr: 2 }, f3, { full: true });
+    items.push([f3, `시대의 창을 누른 뒤 — 인생 기록의 「시대의 창」 줄로 이동·강조(표지 대비 ${r3.rm?.labelContrast})`, 360]);
+    await composite(`${OUT}fm2d-dash-360.png`, items, 'FM2d — 360×740 휴대폰 · 시대의 창은 그림만(띠 80px) · 누르면 인생 기록의 시대 줄로 (시안 · 가짜 이름·나이 · 표본은 승인 전)', { row: true, width: 1120 });
   }
-  // ---------- ③ 360×740: 쌓기(기본) · 나란히(비교, 컨테이너 규칙을 강제로 끔) · 접기 ----------
+  // ---------- ③ 인생 기록 「시대의 창」 줄 확대: 라이트(강조 중) · 다크 · 강제 색상 · 움직임 줄이기(강조만) ----------
   {
     const items = [];
-    const f1 = `${TMP}dash-a-360-full.png`;
-    const m1 = await cardShot('dash-a1988-360', 'scene=a&era=stadium', { width: 360, height: 740 }, { dpr: 2, coarse: true }, f1);
-    items.push([f1, `쌓기(제안) — 집 ${m1.picW}×${m1.picH}(25vh ${m1.maxH}) · 창 띠 ${m1.era.w}×${m1.era.h}(그림 ${m1.era.picW}×${m1.era.picH}, 글 ${m1.era.capFontPx}px ${m1.era.capLines}줄) · 띠 합계 ${m1.stripH}px · 한 줄 ${m1.lines}줄`, 360]);
-    {
-      const { ctx, page } = await open({ file: 'dashboard-family', q: 'scene=a&era=stadium', view: { width: 360, height: 740 }, dpr: 2 });
-      await page.addStyleTag({ content: '.scene{grid-template-columns:minmax(0,2fr) minmax(0,1fr) !important}.era{flex-direction:column !important}.era__pic{width:auto !important;aspect-ratio:auto !important;flex:1 1 0 !important;min-height:48px !important}.era__cap{font-size:var(--fs-xs) !important;padding:var(--sp-1) var(--sp-2) var(--sp-2) !important}.era__label{display:block !important}.era__sep{display:none !important}' });
-      await page.waitForTimeout(100);
-      const m = await dashMeasure(page);
-      notes.push(`dash-a-360-sidebyside(비교): 집 ${m.picW}×${m.picH} 창 ${m.era.w}×${m.era.h} 그림 ${m.era.picW}×${m.era.picH} 글 ${m.era.capLines}줄 · 어른 ${m.fig.adult?.join('×')} 어린이 ${m.fig.child?.join('×')}`);
-      await page.evaluate(() => { const el = document.querySelector('.scene-card'); el.scrollIntoView({ block: 'start' }); });
-      const f = `${TMP}dash-a-360-side.png`;
-      await page.locator('.scene-card').screenshot({ path: f });
-      items.push([f, `나란히 2:1(비교) — 집 ${m.picW}×${m.picH} · 어른 ${m.fig.adult?.[1]}px · 어린이 ${m.fig.child?.[1]}px · 창 ${m.era.w}×${m.era.h} 글 ${m.era.capLines}줄`, 326]);
+    for (const [label, q, opt, cap] of [
+      ['row-light', 'scene=a&era=stadium&decision=fold&target=1', {}, '라이트 · 시대의 창을 누른 직후(면 --c-era-soft 강조, 2.4초 뒤 사라짐)'],
+      ['row-light-rest', 'scene=a&era=stadium&decision=fold', {}, '라이트 · 평소(5px 겹선 --c-era + 표지 「시대의 창」 + 창 아이콘 + 본문 문장)'],
+      ['row-dark', 'scene=a&era=stadium&theme=dark&decision=fold&target=1', { dark: true }, '다크 · 누른 직후'],
+      ['row-forced', 'scene=a&era=stadium&decision=fold&target=1', { forced: true }, '강제 색상 · 누른 직후(겹선 CanvasText + Highlight 테두리)'],
+      ['row-reduce', 'scene=a&era=stadium&decision=fold&target=1&motion=reduce', { reduced: true }, '움직임 줄이기 · 애니메이션 없이 면만(강조만)'],
+    ]) {
+      const { ctx, page } = await open({ file: 'dashboard-family', q, view: { width: 1280, height: 800 }, dpr: 2, ...opt });
+      const rm = await rowMeasure(page);
+      await page.evaluate(() => { document.querySelector('#log-y1988').scrollIntoView({ block: 'center' }); const el = document.querySelector('#life-log'); const head = document.querySelector('.dash-head'); const h = head ? head.getBoundingClientRect().height : 0; const t = el.getBoundingClientRect().top; if (t < h) window.scrollBy(0, t - h - 8); });
+      await page.waitForTimeout(120);
+      const box = await page.evaluate(() => { const r = document.querySelector('#log-y1988').getBoundingClientRect(); const l = document.querySelector('.log__list').getBoundingClientRect(); return { x: l.x - 2, y: Math.max(l.y, r.y - 58), w: l.width + 4, h: Math.min(l.bottom, r.bottom + 58) - Math.max(l.y, r.y - 58) }; });
+      const f = `${TMP}fm2d-${label}.png`;
+      await page.screenshot({ path: f, clip: { x: box.x, y: box.y, width: box.w, height: box.h } });
+      items.push([f, `${cap} — 표지 대비 ${rm.labelContrast} · 문장 대비 ${rm.sentContrast} · 선 ${rm.border}${label === 'row-reduce' ? ` · anim ${rm.anim}` : ''}`, 534]);
+      if (label === 'row-reduce' && rm.anim !== 'none') problems.push(`움직임 줄이기에서 강조 애니메이션 ${rm.anim}`);
+      notes.push(`${label}: 표지 ${rm.label} 대비 ${rm.labelContrast} 문장 대비 ${rm.sentContrast} 선 ${rm.border} target ${rm.targeted} anim ${rm.anim} bg ${rm.bg}`);
       await ctx.close();
     }
-    const f3 = `${TMP}dash-a-360-fold.png`;
-    const m3 = await cardShot('dash-a1988-360-fold', 'scene=a&era=stadium&fold=1', { width: 360, height: 740 }, { dpr: 2 }, f3);
-    items.push([f3, `접기(「그림 접기」 뒤) — 집 그림과 창이 함께 접히고 한 줄·펼침이 남는다 · 접힘 ${m3.fold}`, 326]);
-    await composite(`${OUT}fm2c-dash-360.png`, items, 'FM2c — 360×740 휴대폰 · 장면 A를 1988년에 · 시대의 창 = 성화대 (시안 · 가짜 이름·나이 · 표본은 승인 전)', { row: true, width: 1120 });
+    await composite(`${OUT}fm2d-log-era-row.png`, items, 'FM2d — 인생 기록의 「시대의 창」 줄(data-tl="era") · 1280 가운데 열 ×2 · 연표 줄 4종 위에 다섯째 모양(겹선)·색(--c-era)·표지 글자·아이콘 (시안)', { row: true, width: 1120 });
   }
-  // ---------- ④ 다크 1280 · 다크 360 · 강제 색상 1280 ----------
-  {
-    const items = [];
-    const f1 = `${TMP}dash-dark-1280.png`;
-    const m1 = await cardShot('dash-dark-1280-a1988', 'scene=a&era=stadium&theme=dark&decision=fold', { width: 1280, height: 800 }, { dark: true }, f1);
-    items.push([f1, `다크 1280 — 연도 표 대비 ${m1.year.contrast} · 창 글자 대비 ${m1.era.capContrast}`, 534]);
-    const f2 = `${TMP}dash-dark-360-full.png`;
-    const m2 = await cardShot('dash-dark-360-e', 'scene=e&theme=dark', { width: 360, height: 740 }, { dark: true, dpr: 2 }, f2);
-    items.push([f2, `다크 360 — 한계 장면 E · 창 = 생활 장면(연) · 한 줄 ${m2.lines}줄`, 360]);
-    const f3 = `${TMP}dash-forced-1280.png`;
-    await cardShot('dash-forced-1280-a1988', 'scene=a&era=stadium&decision=fold', { width: 1280, height: 800 }, { forced: true }, f3);
-    items.push([f3, '강제 색상 1280 — 그림은 토큰 유지(forced-color-adjust none), 연도 표·창은 Canvas/CanvasText + 1px 테두리', 534]);
-    await composite(`${OUT}fm2c-dash-dark.png`, items, 'FM2c — 다크·강제 색상 (시안 · 가짜 이름·나이)', { row: true, width: 1120 });
-  }
-  // ---------- ⑤ 검사만: 결정 카드 열림 · 1920 · 1280×600(25vh이 먼저 닿는 높이) · 글자 200% · 강제 360 · 가리기 상태 · 머리 글자 없이 · 나이 표 · 표본 없는 장면 · 움직임 줄이기 ----------
+  // ---------- ④ 검사만 ----------
   for (const [label, q, view, opt] of [
+    ['dash-e-1280', 'scene=e&decision=fold', { width: 1280, height: 800 }, {}],
     ['dash-decision-open-1280-a', 'scene=a&era=stadium', { width: 1280, height: 800 }, {}],
     ['dash-1920-e', 'scene=e', { width: 1920, height: 1080 }, {}],
     ['dash-1280x600-a', 'scene=a&era=stadium&decision=fold', { width: 1280, height: 600 }, {}],
     ['dash-320-text200-e-open', 'scene=e&open=1', { width: 320, height: 640 }, { text: 200 }],
-    ['dash-1280-text200-a', 'scene=a&era=stadium&decision=fold', { width: 1280, height: 800 }, { text: 200 }],
+    ['dash-1280-text200-a', 'scene=a&era=stadium&decision=fold&target=1', { width: 1280, height: 800 }, { text: 200 }],
     ['dash-forced-360-e', 'scene=e', { width: 360, height: 740 }, { forced: true, dpr: 2 }],
+    ['dash-forced-1280-a', 'scene=a&era=stadium&decision=fold', { width: 1280, height: 800 }, { forced: true }],
+    ['dash-dark-1280-a', 'scene=a&era=stadium&theme=dark&decision=fold', { width: 1280, height: 800 }, { dark: true }],
     ['dash-hide-1280-a', 'scene=a&era=ballot&hide=1&decision=fold', { width: 1280, height: 800 }, {}],
-    ['dash-nolabel-1280-a', 'scene=a&era=stadium&label=0&decision=fold', { width: 1280, height: 800 }, {}],
-    ['dash-stamp-age-360-a', 'scene=a&era=stadium&stamp=age', { width: 360, height: 740 }, { dpr: 2 }],
     ['dash-b-1280', 'scene=b&decision=fold', { width: 1280, height: 800 }, {}],
     ['dash-d-360-dark', 'scene=d&theme=dark', { width: 360, height: 740 }, { dark: true, dpr: 2 }],
-    ['dash-reduce-1280-a', 'scene=a&era=stadium&motion=reduce', { width: 1280, height: 800 }, { reduced: true }],
-  ]) await cardShot(label, q, view, opt, `${TMP}${label}.png`);
-  // scenes.html 전체(라이트·다크·360) 넘침 + 표본 셋
+    ['dash-fold-360-a', 'scene=a&era=stadium&fold=1', { width: 360, height: 740 }, { dpr: 2 }],
+  ]) await shot(label, q, view, opt, `${TMP}${label}.png`);
   for (const [label, q, view, opt] of [['scenes-1280', '', { width: 1280, height: 800 }, {}], ['scenes-dark-1280', 'theme=dark', { width: 1280, height: 800 }, { dark: true }], ['scenes-360', '', { width: 360, height: 740 }, { dpr: 2 }]]) {
     const { ctx, page } = await open({ file: 'scenes', q, view, ...opt });
     await check(page, label);

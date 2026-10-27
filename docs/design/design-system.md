@@ -952,3 +952,17 @@ CSS는 `title-005.css` 「QI4 전망 차트」 블록(12-3의 `.chip--proj`·`li
 
 - 대비: 그림은 정보가 아니라 `role="img"`의 대체 글(아래 한 줄 + 반려동물 문장 + 그해 한 줄)이 정보를 맡으므로 WCAG 글자 대비 대상이 아니다. 그림 아래 글자는 기존 `--c-text`·`--c-text-2` 쌍(4.5:1 이상)만 쓴다.
 - 새 토큰 요청 없음: 초가 지붕은 `clay`+`wood`, 볏가리는 `ground2`+`clay`로 그렸다(전용 straw 토큰을 더하지 않았다).
+
+### 18-3. FM2d — 「시대의 창」 색 토큰 2 (2026-10-27 designer 제안, **마스터 확인 전**. 근거 SPEC-009 머리 「FM2c 배치 결정」·`family-scene.md` 5-4절, 값의 정본 `mockups/family/family.css`, 캡처 `screens/009/fm2d-log-era-row.png`)
+
+인생 기록의 **「시대의 창」 줄**(`data-tl="era"` — 17-4 연표 줄 4종 위에 다섯째)의 색. 그해 장면 그림이 든 「시대의 창」 칸을 누르면 이 줄로 간다.
+
+| 토큰 | 라이트 | 다크 | 강제 색상 | 쓰는 곳 | 대비·거리 |
+|---|---|---|---|---|---|
+| `--c-era` | `#6d2f4e`(오디색) | `#f5a8d6` | `CanvasText` | 줄의 왼쪽 **5px 겹선**(double), 표지 「시대의 창」 글자(`--fs-xs` 굵게) + 창 아이콘 `#i-era` | 면 `--c-surface` 위 9.53 / 8.79, 파인 면 8.08 / 7.62, 강조 면 위 7.87 / 7.73. ΔE2000(R-192 방식): 라이트 최소 19(`--c-stat-health`), `--c-down` 20, `--c-brand` 24 · 다크 `--c-down` 18, `--c-stat-health` 19, `--c-stat-relation` 14(상태색 기준 12 이상), `--c-brand` 23 |
+| `--c-era-soft` | `#f4e3ec` | `#3a2434` | `Canvas`(대신 2px `Highlight` 테두리) | 시대의 창을 눌러 줄에 닿았을 때(`:target`) **잠깐 강조**하는 면 — 1.2초 머물다 1.2초에 걸쳐 사라진다(`@keyframes era-flash` 2.4s `both`); 움직임 줄이기면 애니메이션 없이 면만 | 글자 `--c-text` 13.0 / 11.6 |
+
+- 세 겹 구분: 색(`--c-era`) + 모양(겹선 — 실선·점선·긴 점선에 없는 넷째) + 표지 글자·아이콘. 문장은 본문(`--fs-md` `--c-text`). 강제 색상에서는 겹선 CanvasText + 표지 글자가 남는다.
+- 줄에 `tabindex="-1"`을 두어 링크 이동 뒤 초점이 줄로 가고(`:focus-visible` 3px `--c-focus`, 안쪽 −3px), 엔딩 연표 `.timeline li.is-tl[data-tl="era"]`도 같은 규칙.
+- 새 아이콘 1: `i-era` = 창문(rect 4,4.5 16×15 r1.5 + 십자살 `M12 4.5v15M4 12h16`) — `src/assets/icons/ui-icons.svg`에 더한다(`buildIcons.mjs`, 다른 선 아이콘과 같은 규칙). 원문은 `buildFamilyMockups.mjs#ERA_ICON`.
+- CSS 원문은 `mockups/family/family.css` 「인생 기록 「시대의 창」 줄」 블록 — 확인 뒤 developer가 `tokens.css`(토큰 2 × 라이트·다크·강제)와 `dash.css`(줄·강조)로 옮긴다.

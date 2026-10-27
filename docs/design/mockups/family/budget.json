@@ -572,7 +572,7 @@
     }
   },
   "era": {
-    "note": "시대의 창 그림(FT2 — FM2c에서 TV 화면 밖으로 옮김, 좌표계 40×20). 장당 개별 gzip과 덩어리 비율(s1 chunkRatio)을 곱한 합계 추정. 그림 자리 PC 약 175×78px · 휴대폰 88×44px(시안 실측은 shootFamily). 승인 전(approved: false). lineGz는 한 줄 문장의 추정 gzip.",
+    "note": "시대의 창 그림(FT2 — FM2c에서 TV 화면 밖으로 옮김, FM2d 좌표계 40×32 — 칸에 그림만). 장당 개별 gzip과 덩어리 비율(s1 chunkRatio)을 곱한 합계 추정. 그림 자리 PC 175×140px · 휴대폰 100×80px(시안 실측은 shootFamily). 승인 전(approved: false). lineGz는 한 줄 문장의 추정 gzip.",
     "rows": [
       {
         "id": "era-stadium-flame",
@@ -585,8 +585,8 @@
         "line": "서울에서 올림픽이 열렸습니다.",
         "lineChars": 16,
         "approved": false,
-        "raw": 589,
-        "gz": 280
+        "raw": 699,
+        "gz": 314
       },
       {
         "id": "era-ballot-box",
@@ -599,8 +599,8 @@
         "line": "국민이 대통령을 직접 뽑았습니다.",
         "lineChars": 18,
         "approved": false,
-        "raw": 651,
-        "gz": 240
+        "raw": 686,
+        "gz": 272
       },
       {
         "id": "era-kite-roofs",
@@ -613,27 +613,27 @@
         "line": "겨울이면 동네 하늘에 연이 떴습니다.",
         "lineChars": 20,
         "approved": false,
-        "raw": 826,
-        "gz": 376
+        "raw": 942,
+        "gz": 418
       }
     ],
-    "gzEachAvg": 299,
-    "chunkGzSamples": 704,
+    "gzEachAvg": 335,
+    "chunkGzSamples": 763,
     "lineGz": 32,
     "projected": {
       "years": 81,
       "daily": 17,
       "eventOnePerYear": {
         "pieces": 98,
-        "gzEach": 29302,
-        "chunkEst": 12307,
-        "withLines": 15443
+        "gzEach": 32830,
+        "chunkEst": 13789,
+        "withLines": 16925
       },
       "eventTwoPerYear": {
         "pieces": 179,
-        "gzEach": 53521,
-        "chunkEst": 22479,
-        "withLines": 28207
+        "gzEach": 59965,
+        "chunkEst": 25185,
+        "withLines": 30913
       }
     }
   }

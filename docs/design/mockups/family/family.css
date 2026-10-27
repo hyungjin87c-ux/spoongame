@@ -27,6 +27,9 @@
   --c-scene-pet: #a98c66;
   --c-scene-pet2: #4a453d;
   --c-scene-face: #4a362c;
+  /* FM2d 새 토큰 2(마스터 확인 전 제안): 인생 기록 「시대의 창」 줄의 색. 오디색 — 라이트 #6d2f4e(면 9.53 · 파인 면 8.08, ΔE2000 최소 19: --c-stat-health) */
+  --c-era: #6d2f4e;
+  --c-era-soft: #f4e3ec; /* 시대의 창을 누른 뒤 줄의 잠깐 강조 면(글자 --c-text 13.0) */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
@@ -55,6 +58,8 @@
     --c-scene-pet: #b89c78;
     --c-scene-pet2: #c9c3b8;
     --c-scene-face: #4a362c;
+    --c-era: #f5a8d6; /* 다크: 면 8.79 · 파인 면 7.62, ΔE2000 --c-down 18 · --c-stat-health 19 · --c-stat-relation 14(상태색 기준 12 이상) */
+    --c-era-soft: #3a2434;
   }
 }
 :root[data-theme='dark'] {
@@ -83,6 +88,11 @@
   --c-scene-pet: #b89c78;
   --c-scene-pet2: #c9c3b8;
   --c-scene-face: #4a362c;
+  --c-era: #f5a8d6;
+  --c-era-soft: #3a2434;
+}
+@media (forced-colors: active) {
+  :root { --c-era: CanvasText; --c-era-soft: Canvas; }
 }
 
 /* 그림 카드 — 가운데 열: 결정 카드 → 이 카드 → (올해 마음 쓸 곳 자리) → 인생 기록 (FH1). 그림 띠(집 그림 + 시대의 창)는 카드 위끝에 꽉 차게, 아래 한 줄·펼침·접기 */
@@ -99,29 +109,33 @@
 .scene__svg { display: block; width: 100%; aspect-ratio: 640 / 256; max-height: 25vh; forced-color-adjust: none; }
 /* 연도 표 — 집 그림 오른쪽 위. 그림 안 글자가 아니라 HTML(종이 꼬리표): 바탕은 카드 면 색이라 어느 하늘·지붕 위에서도 글자 대비가 토큰 그대로(라이트 15.5:1 · 다크 13.9:1). 강제 색상은 Canvas/CanvasText + 1px 테두리 */
 .scene__year { position: absolute; top: var(--sp-2); right: var(--sp-2); margin: 0; padding: 2px var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.4; font-variant-numeric: tabular-nums; color: var(--c-text); background: var(--c-surface); border-radius: var(--r-sm); white-space: nowrap; }
-/* 「시대의 창」 칸 — 그해 장면 그림 한 장 + 한 줄, 칸 전체가 그해 기록으로 가는 링크 하나(초점 정지점 1, FT5). 창틀 장식 없음: 그림이 위, 한 줄이 아래(면 한 단계 어두운 --c-surface-2) */
-.era { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
-.era__pic { display: block; flex: 1 1 0; min-height: 48px; overflow: hidden; background: var(--c-scene-sky); }
+/* 「시대의 창」 칸 — **그림만**(FM2d). 칸 전체가 그해 기록의 시대 줄로 가는 링크 하나(초점 정지점 1, FT5). 창틀 장식 없음. PC 칸 175×140 = 5:4 = 그림 좌표계 40×32(잘림 0) */
+.era { display: block; min-width: 0; min-height: 0; background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
+.era__pic { display: block; width: 100%; height: 100%; min-height: 48px; overflow: hidden; background: var(--c-scene-sky); }
 .era[data-hidden='true'] .era__pic { background: var(--c-surface-2); }
 .era__pic svg { display: block; width: 100%; height: 100%; forced-color-adjust: none; }
-.era__cap { display: block; flex: none; padding: var(--sp-1) var(--sp-2) var(--sp-2); font-size: var(--fs-xs); line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
-/* 칸 머리 글자 「시대의 창」: PC 칸에서는 한 줄 위에 따로(회색), 휴대폰 띠에서는 문장 앞에 이어 쓴다(두 줄 안에 들어가게) */
-.era__label { display: block; color: var(--c-text-2); }
-.era__sep { display: none; }
-.era:hover .era__line, .era:focus-visible .era__line { text-decoration: underline; text-underline-offset: 2px; }
+.era:hover .era__pic svg { opacity: 0.92; }
 .era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 /* 바뀌는 해의 교차 페이드는 집 그림과 같은 규칙(.scene--swap) — 움직임 줄이기면 즉시 교체 */
 .scene--swap .era__pic svg { transition: opacity var(--dur-slow) var(--ease, ease); }
-/* 휴대폰(카드 폭 ≤ 480px — 360에서 카드 326px): 나란히 두면 집 그림이 217px(어른 32px)로 줄어 읽히지 않는다. 집 그림은 전폭(326×130), 시대의 창은 그 아래 **가로 띠**(그림 88×44 + 머리 글자·한 줄 14px 두 줄) — 띠 합계 ≈ 185px = 25vh@740 */
+/* 휴대폰(카드 폭 ≤ 480px — 360에서 카드 326px): 나란히 두면 집 그림이 212px(어른 31px)로 줄어 읽히지 않는다. 집 그림은 전폭(326×130), 시대의 창은 그 아래 **가로 띠 80px**(FM2d: 그림만 — 5:4 그림 100×80을 왼쪽에, 나머지는 띠 바탕 --c-surface-2) — 띠 합계 130 + 8 + 80 = 218px(29.5%@740; 집 그림만 25vh 규칙 대상) */
 @container scene (max-width: 480px) {
   .scene { grid-template-columns: minmax(0, 1fr); }
   .scene[data-split='2.5'], .scene[data-split='3'] { grid-template-columns: minmax(0, 1fr); }
-  .era { flex-direction: row; align-items: stretch; min-height: var(--hit); }
-  .era__pic { flex: none; width: 88px; aspect-ratio: 2 / 1; min-height: 0; align-self: center; }
-  .era__cap { flex: 1 1 auto; min-width: 0; align-self: center; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
-  .era__label { display: inline; }
-  .era__sep { display: inline; color: var(--c-text-2); }
+  .era { height: 80px; }
+  .era__pic { width: 100px; height: 80px; min-height: 0; }
 }
+/* 인생 기록 「시대의 창」 줄(FM2d) — 연표 줄 4종(gm3.css 17-4) 위에 다섯째: 5px **겹선**(double) --c-era(모양으로도 구분), 표지 「시대의 창」 + 창 아이콘 --c-era, 문장은 본문(--c-text). 왼쪽 안쪽 여백은 3px 선의 줄과 글자 시작을 맞춘다(5 + 3 = 3 + 5) */
+.log__row--tl[data-tl='era'] { border-left: 5px double var(--c-era); padding-left: calc(var(--sp-1) + 3px); }
+.log__row--tl[data-tl='era'] .log__tl { color: var(--c-era); }
+.log__row--tl[data-tl='era'] .log__sent { color: var(--c-text); }
+/* 링크로 닿은 줄(tabindex=-1)에 초점이 오면 시스템 초점 테두리(3px --c-focus) — 브라우저 기본 테두리 대신 */
+.log__row[tabindex='-1']:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
+/* 시대의 창을 누르면 그 줄로(:target) — 잠깐 강조: 면 --c-era-soft가 1.2초 머물다 1.2초에 걸쳐 사라진다. 움직임 줄이기면 애니메이션 없이 면만 남긴다(강조만) */
+.log__row--tl[data-tl='era']:target { background: var(--c-era-soft); animation: era-flash 2.4s ease-out 1 both; }
+@keyframes era-flash { 0%, 50% { background-color: var(--c-era-soft); } 100% { background-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .log__row--tl[data-tl='era']:target { animation: none; } }
+:root[data-motion='reduce'] .log__row--tl[data-tl='era']:target { animation: none; }
 .scene__line { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text); font-weight: var(--fw-bold); word-break: keep-all; overflow-wrap: anywhere; }
 .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-2); }
 .scene__more { flex: 1 1 auto; min-width: 0; }
@@ -142,9 +156,7 @@
 }
 @media (forced-colors: active) {
   .scene__house, .era, .scene__year { border: 1px solid CanvasText; }
-  .era__pic { border-bottom: 1px solid CanvasText; }
   .scene__people li::before { background: CanvasText; }
-}
-@container scene (max-width: 480px) {
-  @media (forced-colors: active) { .era__pic { border-bottom: 0; border-right: 1px solid CanvasText; } }
+  .log__row--tl[data-tl='era'] { border-left-color: CanvasText; }
+  .log__row--tl[data-tl='era']:target { outline: 2px solid Highlight; outline-offset: -2px; animation: none; }
 }
