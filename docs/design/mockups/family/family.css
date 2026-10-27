@@ -1,5 +1,5 @@
-/* SPEC-009 FM2 집과 가족 그림 — 시안 전용 CSS (designer 2026-10-27). 토큰은 **제안**이다(tokens.css에 없는 새 이름 --c-scene-*; 마스터 확정 뒤 developer가 tokens.css로 옮긴다).
-   라이트 값은 SVG 조각의 fallback과 같다(buildFamilyMockups.mjs LIGHT). 다크는 같은 그림을 어두운 종이에 놓은 것 — 낮밤·계절 표현이 아니다(SPEC-009 안 할 것).
+/* SPEC-009 집과 가족 그림 — 시안 전용 CSS (designer 2026-10-27). 토큰 --c-scene-* 24개는 **마스터 승인**(FM2 게이트 통과 기록) — tokens.css 반영은 구현(FM5) 몫이고 이 파일은 시안만 읽는다.
+   라이트 값은 SVG 조각의 fallback과 같다(buildFamilyMockups.mjs LIGHT). 다크는 같은 그림을 어두운 종이에 놓은 것 — 낮밤·계절 표현이 아니다(SPEC-009 안 할 것). 다크의 창 불빛(glass)은 유지한다(마스터 결정).
    얼굴 시스템과 공유: 살색·머리색은 --c-face-* 값과 같다(사람이 같은 사람으로 보이게). */
 :root {
   --c-scene-sky: #dfe6ed;
@@ -90,7 +90,7 @@
 .scene-card[data-fold='true'] { padding-top: var(--sp-4); }
 .scene-card[data-fold='true'] .scene { display: none; }
 .scene { margin: 0 calc(-1 * var(--sp-4)); background: var(--c-scene-sky); }
-/* 높이: 폭 ÷ 2.5, 화면 높이의 25%를 넘지 않는다(FH1 ▲). 넘으면 양옆을 조금 잘라 보인다(preserveAspectRatio slice — 안전 영역 x 20~620) */
+/* 높이: 폭 ÷ 2.5, 화면 높이의 25%를 넘지 않는다(FH1 ▲, 형진 님 선택 2026-10-27). 넘으면 양옆을 조금 잘라 보인다(preserveAspectRatio slice — 안전 영역 x 20~620) */
 .scene__svg { display: block; width: 100%; aspect-ratio: 640 / 256; max-height: 25vh; forced-color-adjust: none; }
 .scene__line { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text); font-weight: var(--fw-bold); word-break: keep-all; overflow-wrap: anywhere; }
 .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-2); }
@@ -107,7 +107,7 @@
 /* 바뀌는 해의 교차 페이드(FH4 ▲): 두 그림을 겹쳐 두고 앞 그림의 불투명도만 바꾼다. 움직임 줄이기면 --dur-slow가 0.01ms라 즉시 교체된다(tokens.css) */
 .scene--swap .scene__svg { transition: opacity var(--dur-slow) var(--ease, ease); }
 @media (max-width: 959px) {
-  /* 휴대폰: 결정 카드 바로 아래(둘 다 order -1, 문서 순서대로 결정 → 그림), 그 다음 프로필·스탯·… 인생 기록(DB1) */
+  /* 휴대폰: 결정 카드 바로 아래(둘 다 order -1, 문서 순서대로 결정 → 그림 — 마스터 결정), 그 다음 프로필·스탯·… 인생 기록(DB1) */
   .scene-card { order: -1; }
 }
 @media (forced-colors: active) {

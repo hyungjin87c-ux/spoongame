@@ -1,7 +1,7 @@
 # 집과 가족 그림 — 그림체 게이트(SPEC-009 FM2) 시안 문서
 
 - 작성: designer, 2026-10-27. 정본 `docs/spec/SPEC-009-가족과집.md` FH1~FH10(특히 FH7 게이트·FH8 예산·FH9 지연 로드), 배경 `docs/spec/requests/2026-10-27_4차피드백.md` 5절.
-- 상태: **형진 님 선택 대기(게이트 ③)**. 고른 그림체로만 구현한다. 이 문서는 FM3 설계 문서(`docs/design/family-scene.md`, FH10)가 조각 표·출처를 이어받기 전의 시안 기록이다.
+- 상태: **게이트 통과(2026-10-27) — 형진 님이 그림체 1 「종이 오림」과 시안 크기(25vh)를 골랐다.** 마스터 결정: `--c-scene-*` 토큰 24개 승인 · 예산 기준은 「덩어리 gzip」 · 다크의 창 불빛 유지 · 1975년 포대기 유지 · 휴대폰은 결정 카드 바로 아래. 이 문서는 그림체 비교의 **기록**이고, 조각 표·고르기 규칙·매체(TV)·예산의 정본은 **`docs/design/family-scene.md`**(FM2b)로 옮겼다. 생성기는 기본 경로에서 s2를 뺐다(`--with-s2`로만 비교 자료 재생성, `pieces/s2/`·`compare.html`은 지우지 않음). 아래 2~7절의 조각 id는 FM2 당시 이름이고 FM2b에서 시대 밴드 접미(`-e2`·`-h2`·`-b2`)로 바뀌었다 — 대응은 `family-scene.md` 2절.
 - 시안: `docs/design/mockups/family/` — `compare.html`(그림체 × 장면 2×2, `?theme=dark`) · `dashboard-family.html`(대시보드 자리, `?style=s1|s2&scene=a|b&theme=dark&fold=1&open=1&decision=fold`) · `pieces.html`(조각 표) · `pieces/<s1|s2>/<id>.svg`(조각 48개) · `family.css`(토큰 제안 + 카드 규칙) · `budget.json`(실측). 생성 `scripts/design/buildFamilyMockups.mjs`, 촬영·검사 `scripts/design/shootFamily.mjs`.
 - 캡처 6장 `docs/design/screens/009/`: `fm2-s1-scene-a.png` · `fm2-s1-scene-b.png` · `fm2-s2-scene-a.png` · `fm2-s2-scene-b.png`(그림체 × 장면 — 한 장에 라이트 520px·다크 520px·라이트 328px) · `fm2-dash-1280x800.png`(그림체 1 · 장면 A · 결정 카드를 「잠시 덮어 두기」로 접은 띠 상태) · `fm2-dash-360x740.png`(그림체 2 · 장면 B · 펼침 연 상태).
 - 지킨 것: `src/` 읽기만(토큰 파일을 링크로 읽을 뿐) · 커밋 없음 · 외부 자원·웹 접근 0 · 다른 게임의 그림·캡처 0(구조만: 가운데 위 이미지창 + 아래 한 줄 + 펼침) · 그림 안 글자 0 · 실존 인물·상호 0 · 도트 표현 0.

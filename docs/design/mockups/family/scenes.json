@@ -1,0 +1,109 @@
+{
+  "note": "장면별 한 줄(sceneLineOf 시안 규칙, LINE_MAX 40) · 매체 자리 · 빈 화면 자리 크기(단위: 그림 좌표 640, PC 534px, 휴대폰 326px)",
+  "scenes": [
+    {
+      "id": "a",
+      "year": 1975,
+      "line": "서울 성북구 · 단독주택 셋방 · 부모님·누나 둘·할머니와 함께",
+      "lineChars": 35,
+      "people": 6,
+      "media": "media-tv-bw",
+      "mediaAt": [
+        105,
+        127
+      ],
+      "screen": {
+        "units": [
+          16,
+          12
+        ],
+        "pc": [
+          13.4,
+          10
+        ],
+        "mobile": [
+          8.2,
+          6.1
+        ]
+      }
+    },
+    {
+      "id": "b",
+      "year": 2005,
+      "line": "경기 안양시 동안구 · 아파트 · 부모님과 함께",
+      "lineChars": 26,
+      "people": 3,
+      "media": "media-tv-color",
+      "mediaAt": [
+        305,
+        32
+      ],
+      "screen": {
+        "units": [
+          20,
+          15
+        ],
+        "pc": [
+          16.7,
+          12.5
+        ],
+        "mobile": [
+          10.2,
+          7.6
+        ]
+      }
+    },
+    {
+      "id": "c",
+      "year": 1955,
+      "line": "전남 고흥군 · 단독주택 · 부모님·누나·형·할머니·할아버지와 함께",
+      "lineChars": 37,
+      "people": 7,
+      "media": "media-radio",
+      "mediaAt": [
+        213.4,
+        172.4
+      ],
+      "screen": null
+    },
+    {
+      "id": "d",
+      "year": 2015,
+      "line": "서울 관악구 · 다세대주택 · 부모님과 함께",
+      "lineChars": 24,
+      "people": 3,
+      "media": "media-tv-wall",
+      "mediaAt": [
+        214,
+        88
+      ],
+      "screen": {
+        "units": [
+          40,
+          22
+        ],
+        "pc": [
+          33.4,
+          18.4
+        ],
+        "mobile": [
+          20.4,
+          11.2
+        ]
+      }
+    },
+    {
+      "id": "e",
+      "year": 1968,
+      "line": "대구 중구 · 단독주택 · 부모님·누나·오빠·동생·할머니·할아버지와 함께",
+      "lineChars": 40,
+      "people": 8,
+      "media": "media-radio",
+      "mediaAt": [
+        209.5,
+        174.2
+      ],
+      "screen": null
+    }
+  ]
+}
