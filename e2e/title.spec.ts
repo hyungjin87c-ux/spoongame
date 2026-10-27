@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { GAME_KEY, SAVE_VERSION, chooseEra, injectSave, lifeState, noHorizontalOverflow, pressBegin, readSave, readSettings, toBirthReport } from './helpers';
+import { GAME_KEY, SAVE_VERSION, chooseGeneration, injectSave, lifeState, noHorizontalOverflow, pressBegin, readSave, readSettings, toBirthReport } from './helpers';
 import { loadRawNames } from './rawNames';
 
 test('첫 화면과 탭 제목이 "수저 게임", 「태어나기」 버튼이 있다 (이전의 「시작」 버튼은 없다)', async ({ page }) => {
@@ -34,8 +34,8 @@ test('태어나기를 누른 뒤 새로고침하면 출생 화면이 그대로 �
 test('새로고침 연타(로드 도중 중단 포함) 후에도 저장이 복원된다 (R-004)', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀린 뒤(선택이 바뀌는 때)
-  await chooseEra(page, 'future');
-  await expect.poll(async () => (await readSettings(page)).era).toBe('future'); // 설정 저장이 끝난 뒤
+  await chooseGeneration(page, 'alpha');
+  await expect.poll(async () => (await readSettings(page)).generation).toBe('alpha'); // 설정 저장이 끝난 뒤
   // 로드가 끝나기를 기다리지 않고 다시 새로고침한다 — 이전 로드/저장이 중간에 끊긴다.
   for (const gap of [0, 0, 5, 10, 20, 40, 0, 80]) {
     await page.reload({ waitUntil: 'commit' });
@@ -43,8 +43,8 @@ test('새로고침 연타(로드 도중 중단 포함) 후에도 저장이 복�
   }
   await page.reload();
   await expect(page.getByTestId('title-screen')).toBeVisible();
-  await expect(page.getByTestId('era-future')).toBeChecked();
-  expect((await readSettings(page)).era).toBe('future');
+  await expect(page.getByTestId('gen-alpha')).toBeChecked();
+  expect((await readSettings(page)).generation).toBe('alpha');
   expect((await readSave(page)).data.phase).toBe('title');
 });
 
@@ -73,7 +73,7 @@ test('필드 간 정합성이 깨진 저장(life인데 character 없음)은 크�
   await page.addInitScript(([key, version]) => {
     const data = {
       phase: 'life',
-      era: 'present',
+      era: 'alpha',
       character: null,
       stats: { wealth: 1, education: 1, health: 1, happiness: 1, relationships: 1 },
       birthStats: null,
@@ -178,7 +178,7 @@ test('구 저장(스키마 v2, 지금 세상 1995년생)은 새 게임으로 시
     ([key, stats]) => {
       const data = {
         phase: 'life',
-        era: 'present',
+        era: 'alpha',
         character: { name: '김민준', gender: 'male', birthYear: 1995, parentWealth: 3, parenting: 'free', looks: 50 },
         stats,
         birthStats: stats,

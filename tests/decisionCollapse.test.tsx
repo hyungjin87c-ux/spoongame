@@ -88,7 +88,7 @@ describe('자동 선택 타이머를 거는 조건 (U3(a)) — 접은 동안 정
   });
 
   it('접힘은 시계(한 해 진행)에 영향이 없다: 선택지가 대기 중이면 어차피 시계가 멈춘다 — 접은 동안 게임은 정지를 유지한다 (U1)', () => {
-    const s = advanceUntilDecision(startLife(11, 'present')).state;
+    const s = advanceUntilDecision(startLife(11, 'alpha')).state;
     expect(s.pending).not.toBeNull();
     // 연출 대기 시간은 선택지·사망에서 null(타이머 없음) — 접든 열든 같다
     expect(holdDelayMs('choice', 1)).toBeNull();

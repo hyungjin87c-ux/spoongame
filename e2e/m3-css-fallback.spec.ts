@@ -1,5 +1,4 @@
 import { expect, test, type Page } from '@playwright/test';
-import { BIRTH_TEXT } from '../src/data/birthReportText';
 import { NO_CONTAINER_QUERIES, WITH_CONTAINER_QUERIES, cssAppliedBy, withoutBlocks } from '../tests/helpers/browserCss';
 import { setRootFontPercent } from './textResize';
 import { openWordBreakState } from './wordBreakStates';
@@ -93,27 +92,22 @@ test.describe('① 룰렛 제목 글자 크기 (cqi를 모르는 브라우저)',
   });
 });
 
-/** 비교 표·서류 격자의 모양을 읽는다 */
-async function docShape(page: Page): Promise<{ tableDisplay: string; rowDisplay: string; headClip: boolean; gridColumns: number; cellLabelBefore: string }> {
+/**
+ * 서류 격자의 모양을 읽는다. 비교 표는 SPEC-004 BR5(N20)에서 세대 판에 숨겨져 화면에 없다 — 표 CSS(doc.css의 `.cmp`)는 남아 있지만 지금은 그려지지 않으므로 서류 격자만 잰다
+ * (표가 다시 켜지면 이 함수에 표 모양을 되돌려 놓는다 — `git log -S tableDisplay`).
+ */
+async function docShape(page: Page): Promise<{ tableShown: boolean; gridColumns: number }> {
   return page.evaluate(() => {
-    const table = document.querySelector('[data-testid="compare-table"]')!;
-    const row = table.querySelector('tbody tr')!;
-    const head = table.querySelector('thead')!;
     const grid = document.querySelector('[data-testid="birth-grid"]')!;
-    const headCs = getComputedStyle(head);
-    const cell = row.querySelector('td')!;
     return {
-      tableDisplay: getComputedStyle(table).display,
-      rowDisplay: getComputedStyle(row).display,
-      headClip: headCs.position === 'absolute' && parseFloat(headCs.width) <= 1,
+      tableShown: document.querySelector('[data-testid="compare-table"]') !== null,
       gridColumns: getComputedStyle(grid).gridTemplateColumns.split(' ').filter((c) => c !== '').length,
-      cellLabelBefore: getComputedStyle(cell, '::before').content,
     };
   });
 }
 
-test.describe('② 출생신고 비교 표·서류 격자 (컨테이너 질의를 모르는 브라우저)', () => {
-  test('폭 360(< 640px): 모르는 브라우저에서도 비교 표가 한 행씩 쌓이고(tr 격자·머리글 가림·칸 이름표), 서류는 2열이다 — 아는 브라우저와 같은 모양', async ({ page }) => {
+test.describe('② 출생신고 서류 격자 (컨테이너 질의를 모르는 브라우저)', () => {
+  test('폭 360(< 640px): 모르는 브라우저에서도 서류는 2열이다 — 아는 브라우저와 같은 모양(비교 표는 숨겨져 있다)', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await openWordBreakState(page, 'birth');
     const docCss = await readDocCss();
@@ -121,11 +115,11 @@ test.describe('② 출생신고 비교 표·서류 격자 (컨테이너 질의�
     const modern = await docShape(page);
     await swapDocCss(page, cssAppliedBy(docCss, NO_CONTAINER_QUERIES));
     const legacy = await docShape(page);
-    expect(legacy, '모르는 브라우저(폴백)').toEqual({ tableDisplay: 'block', rowDisplay: 'grid', headClip: true, gridColumns: 2, cellLabelBefore: `"${BIRTH_TEXT.compareColAll}"` });
+    expect(legacy, '모르는 브라우저(폴백)').toEqual({ tableShown: false, gridColumns: 2 });
     expect(legacy, '폴백이 아는 브라우저의 모양과 같다(쌓기·2열)').toEqual(modern);
   });
 
-  test('폭 1024(≥ 640px, 글자 100%): 모르는 브라우저에서도 비교 표는 표 그대로이고 서류 격자는 3열이다', async ({ page }) => {
+  test('폭 1024(≥ 640px, 글자 100%): 모르는 브라우저에서도 서류 격자는 3열이다', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await openWordBreakState(page, 'birth');
     const docCss = await readDocCss();
@@ -133,8 +127,6 @@ test.describe('② 출생신고 비교 표·서류 격자 (컨테이너 질의�
     const modern = await docShape(page);
     await swapDocCss(page, cssAppliedBy(docCss, NO_CONTAINER_QUERIES));
     const legacy = await docShape(page);
-    expect(legacy.tableDisplay).toBe('table');
-    expect(legacy.rowDisplay).toBe('table-row');
     expect(legacy.gridColumns, '서류 격자 3열').toBe(3);
     expect(legacy, '아는 브라우저와 같은 모양').toEqual(modern);
   });
@@ -147,8 +139,7 @@ test.describe('② 출생신고 비교 표·서류 격자 (컨테이너 질의�
     await openWordBreakState(page, 'birth');
     await swapDocCss(page, r4);
     const phone = await docShape(page);
-    expect(phone.tableDisplay, '휴대폰인데 비교 표가 표 그대로').toBe('table');
-    expect(phone.headClip).toBe(false);
+    expect(phone.gridColumns, '휴대폰인데 서류 격자가 2열이 아니다(가드 밖 식은 컨테이너 질의를 모르는 브라우저에서 무효)').toBeGreaterThanOrEqual(1);
 
     await page.setViewportSize({ width: 1024, height: 768 });
     await swapDocCss(page, r4);

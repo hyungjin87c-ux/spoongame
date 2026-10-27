@@ -78,7 +78,7 @@ export async function lifeWithLongNotes(page: Page): Promise<GameState> {
 export async function endedWithLongNotes(page: Page): Promise<GameState> {
   const state = await evalCore<GameState>(
     page,
-    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), 'present')));
+    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), 'alpha')));
      let i = 0;
      const marks = [12, 22, 33, 44, 55];
      for (let guard = 0; guard < 2000 && s.phase === 'life'; guard++) {

@@ -43,6 +43,7 @@ export interface LongCard {
 export async function longestCards(page: Page, n = 5): Promise<LongCard[]> {
   return page.evaluate<LongCard[]>(`(async () => {
     const core = await import('/src/core/index.ts');
+    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
     const data = await import('/src/data/events/index.ts');
     const best = new Map();
     for (const ev of data.EVENT_POOL.events) {
@@ -66,7 +67,7 @@ export async function longestCards(page: Page, n = 5): Promise<LongCard[]> {
 export async function longestCardStates(page: Page, n = 5): Promise<Array<{ card: LongCard; state: GameState }>> {
   const cards = await longestCards(page, n);
   const out: Array<{ card: LongCard; state: GameState }> = [];
-  for (const card of cards) out.push({ card, state: await findCardState(page, card.id, card.era) });
+  for (const card of cards) out.push({ card, state: await findCardState(page, card.id, ({ past: 'industrial', present: 'alpha', future: 'genz' } as const)[card.era]) });
   return out;
 }
 

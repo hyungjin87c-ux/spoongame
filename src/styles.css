@@ -7,7 +7,7 @@ html { scroll-padding-block: var(--sp-3); }
    SPEC-003 M4에서 옛 화면(인생·엔딩·밀린 화면·오류 화면)이 모두 새 디자인으로 바뀌어, 고정 색의 옛 화면 규칙(.screen·.life·.stats·.bar·.log·.controls·.choice-panel·.ending 등)과
    그것을 라이트로 고정하던 장치(ui/legacyTheme.tsx)는 지웠다. 화면별 스타일은 styles/title.css(첫 화면·공통 부품)·doc.css(룰렛·출생신고)·dash.css(대시보드·엔딩·밀린·오류 화면)가 정한다. */
 body {
-  font-family: system-ui, -apple-system, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  font-family: var(--font-sans); /* tokens.css: Noto Sans KR 조각 + 맑은 고딕에 맞춘 대체 글꼴 (SPEC-004 GM4) */
   background: var(--c-bg);
   color: var(--c-text);
   line-height: 1.5;

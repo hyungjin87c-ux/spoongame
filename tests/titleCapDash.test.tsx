@@ -27,7 +27,7 @@ const h1Of = (html: string): { text: string; style: string | null } => {
   return { text: m![2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), style: /style="([^"]*)"/.exec(m![1])?.[1] ?? null };
 };
 
-const ending = playToEnd(startLife(2024, 'present'), chooserFor('random', 2024)).state as EndingGame;
+const ending = playToEnd(startLife(2024, 'alpha'), chooserFor('random', 2024)).state as EndingGame;
 
 describe('엔딩 「{이름}의 인생」 (R-320·R-321)', () => {
   const html = renderToStaticMarkup(<EndingScreen game={ending} onRebirth={() => {}} />);

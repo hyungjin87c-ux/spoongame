@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ERAS, STATE_WORD_RULES, createEventPool, createRng, playToEnd, resolveChoiceStep, stepYear, textPartsOf, type Era, type EventDef, type EventPool, type GameState } from '../src/core';
+import { GENERATION_IDS, STATE_WORD_RULES, calendarYear, createEventPool, createRng, playToEnd, resolveChoiceStep, stepYear, textPartsOf, type EventDef, type EventPool, type GameState, type ProfileId } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { chooserFor, startLife, type Strategy } from '../scripts/simulateLib';
+import { SIM_PROFILES, chooserFor, startLife, type Strategy } from '../scripts/simulateLib';
+
+/** 이 시험이 도는 프로필: 세대 표본 3종(산업화·X·알파) — 옛 「세 시대」 자리. 어느 세대로든 같은 규칙이 지켜져야 한다 */
+const ERAS = SIM_PROFILES;
+type Era = ProfileId;
 
 /**
  * 이벤트 흐름 (R-045 e, SPEC "선택이 스탯과 이후 이벤트에 영향"): 선택이 이후 이벤트를 열고 닫는지를 진행 루프로 직접 확인한다.
@@ -231,36 +235,38 @@ describe('일·학업·건강: 선택이 이후 이벤트를 연다 (R-045 e)', 
   });
 });
 
-describe('모든 이벤트에 닿을 수 있다: 네 가지 선택 전략으로 세 시대를 돌리면 (이벤트, 시대) 쌍이 빠짐없이 한 번 이상 나온다', () => {
+describe('모든 이벤트에 닿을 수 있다: 네 가지 선택 전략으로 세대 7종을 돌리면 모든 이벤트가 한 번 이상 나오고, 나올 때는 늘 이벤트의 yearRange 안이다', () => {
   const covered = lazy(() => {
     const hit = new Map<string, number>();
+    const outside: string[] = [];
     const strategies: Array<Strategy | 'last'> = ['random', 'first', 'auto', 'last'];
     for (const strategy of strategies) {
-      for (const era of ERAS) {
-        for (let i = 1; i <= 350; i++) {
+      for (const era of GENERATION_IDS) {
+        for (let i = 1; i <= 120; i++) {
           const seed = i * 7919 + 13;
           const chooser = strategy === 'last' ? (s: GameState) => s.pending!.choiceIds[s.pending!.choiceIds.length - 1] : chooserFor(strategy, seed);
           const f = playToEnd(startLife(seed, era), chooser).state;
-          for (const id of Object.keys(f.seen)) hit.set(`${id}|${era}`, (hit.get(`${id}|${era}`) ?? 0) + 1);
+          const birthYear = f.character!.birthYear;
+          for (const [id, age] of Object.entries(f.seen)) {
+            hit.set(id, (hit.get(id) ?? 0) + 1);
+            const r = EVENT_POOL.byId.get(id)?.yearRange;
+            const year = calendarYear(birthYear, age);
+            if (r !== undefined && ((r.from !== undefined && year < r.from) || (r.to !== undefined && year > r.to))) outside.push(`${id}(${era}, ${year}년)`);
+          }
         }
       }
     }
-    return hit;
+    return { hit, outside };
   });
 
   it('조건이 어긋나 영원히 열리지 않는 이벤트가 없다', () => {
-    const hit = covered();
-    const missing: string[] = [];
-    for (const e of EVENT_POOL.events) for (const era of e.eras ?? ERAS) if ((hit.get(`${e.id}|${era}`) ?? 0) < 1) missing.push(`${e.id}(${era})`);
+    const { hit } = covered();
+    const missing = EVENT_POOL.events.filter((e) => (hit.get(e.id) ?? 0) < 1).map((e) => e.id);
     expect(missing).toEqual([]);
   });
 
-  it('이벤트가 한 시대에서만 나오도록 걸려 있으면 다른 시대에서는 나오지 않는다 (시대 전용 이벤트의 격리)', () => {
-    const hit = covered();
-    for (const e of EVENT_POOL.events) {
-      if (e.eras === undefined) continue;
-      for (const era of ERAS) if (!e.eras.includes(era)) expect(hit.get(`${e.id}|${era}`) ?? 0, `${e.id}가 ${era}에서 나왔다`).toBe(0);
-    }
+  it('연도 구간(yearRange)이 걸린 이벤트는 그 연도 밖에서는 나오지 않는다 (달력 연도 격리)', () => {
+    expect(covered().outside).toEqual([]);
   });
 });
 
@@ -342,8 +348,8 @@ const afterCount = (lives: readonly Life[], first: string, ...later: string[]) =
     return i >= 0 && l.occ.slice(i + 1).some((o) => later.includes(o.id));
   }).length;
 
-/** 규칙 없이 무작위로 고른 세 시대 1500판 — 여러 단언이 함께 쓴다 */
-const GENERAL = lazy(() => populate({}, 500));
+/** 규칙 없이 무작위로 고른 세대 표본 3종 2100판 (재력 4·5단계가 적은 세대가 있어 700판씩) — 여러 단언이 함께 쓴다 */
+const GENERAL = lazy(() => populate({}, 700));
 
 const MARRIED_RULES = { 'youth-meeting': 'meet', 'youth-marriage': 'marry' } as const;
 
@@ -585,7 +591,7 @@ describe('한 판 안의 모순 0건: 재력·학업 (R-060) — 고재력 판�
   it('집안 사정으로 학교를 접은 판(school-family-priority "집안의 결정을 따른다")에서는 그 뒤 입시·학교 생활 이벤트가 하나도 나오지 않는다', () => {
     const IN_SCHOOL = ['school-exam', 'school-tutoring', 'school-club', 'school-bully', 'school-teacher-notice', 'school-scholarship', 'school-friend-quarrel', 'school-career-choice', 'school-parttime', 'school-first-love', 'school-early-work', 'school-friend', 'school-lunch', 'school-long-walk'];
     // SPEC-005부터 school-family-priority는 아이의 일로 흘러가는 카드(`by: 'child'`)라 규칙으로 고르게 할 수 없다 — 모델이 고른 「집안의 결정을 따른다」(accept, 지난 세상 3% 안팎)를 센다. 표본을 늘려(지난 세상 3000판) 같은 수의 판을 모은다
-    const dropped = populate({}, 3000, EVENT_POOL, ['past']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
+    const dropped = populate({}, 3000, EVENT_POOL, ['industrial']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
     expect(dropped.length, '학교를 접은 판').toBeGreaterThanOrEqual(40);
     for (const l of dropped) {
       const i = indexOfEvent(l, 'school-family-priority');
@@ -597,7 +603,7 @@ describe('한 판 안의 모순 0건: 재력·학업 (R-060) — 고재력 판�
 
   it('대조: 닫는 조건(left_school)을 지우면 학교를 접은 뒤에도 입시가 실제로 나온다', () => {
     const open = poolWith({ 'school-exam': (e) => ({ ...e, conditions: undefined }) });
-    const dropped = populate({}, 3000, open, ['past']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
+    const dropped = populate({}, 3000, open, ['industrial']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
     expect(afterCount(dropped, 'school-family-priority', 'school-exam')).toBeGreaterThan(0);
   });
 });
@@ -815,7 +821,7 @@ describe('한 판 안의 모순 0건: 직장 없이 사업을 시작한 판 (R-0
   });
 
   it('시험에 합격한 판(passed_exam)에는 합격한 뒤 공장 밤샘 근무가 나오지 않는다 (지난 세상, 재력 1~3단계에서 열리는 이벤트)', () => {
-    const passed = populate({ 'youth-exam-prep': 'persist' }, 700, EVENT_POOL, ['past']).filter((l) => l.final.flags.includes('passed_exam'));
+    const passed = populate({ 'youth-exam-prep': 'persist' }, 700, EVENT_POOL, ['industrial']).filter((l) => l.final.flags.includes('passed_exam'));
     expect(passed.length).toBeGreaterThanOrEqual(30);
     for (const l of passed) {
       const o = l.occ.find((x) => x.id === 'youth-factory-night');
@@ -833,7 +839,7 @@ describe('한 판 안의 모순 0건: 학교를 접은 판 (R-073) — "학교�
 
   it('학교를 접은 판(left_school)에서도 강아지 이야기는 나올 수 있고, 그때 보이는 글에 "학교"가 없다', () => {
     // 집안 결정(accept)도 강아지(school-puppy)도 부모님·아이의 일이라 모델이 고른다(SPEC-005) — 표본을 늘려(지난 세상 6000판) 학교를 접은 판을 모은다
-    const dropped = populate({}, 6000, EVENT_POOL, ['past']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
+    const dropped = populate({}, 6000, EVENT_POOL, ['industrial']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
     expect(dropped.length).toBeGreaterThanOrEqual(100);
     let puppy = 0;
     for (const l of dropped) {
@@ -856,7 +862,7 @@ describe('한 판 안의 모순 0건: 학교를 접은 판 (R-073) — "학교�
         choices: e.choices!.map((c) => (c.id === 'keep' ? { ...c, result: c.result.replace('하루를 마치고 돌아오면', '학교에서 돌아오면'), parentResult: c.parentResult?.replace('하루를 마치고 돌아오면', '학교에서 돌아오면') } : c)),
       }),
     });
-    const dropped = populate({}, 6000, old, ['past']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
+    const dropped = populate({}, 6000, old, ['industrial']).filter((l) => pickedAt(l, 'school-family-priority') === 'accept');
     const violations = dropped.filter((l) => {
       const i = indexOfEvent(l, 'school-family-priority');
       return l.occ.slice(i + 1).some((o) => o.id === 'school-puppy' && o.choice === 'keep');
@@ -1125,19 +1131,19 @@ describe('한 판 안의 모순 0건: 영유아 맡김·취학 전 (R-363, M7a r
 
   it('(a) 육아휴직에서 「일터로 돌아간다」(back)를 고른 판에는 그 뒤 어린이집 대기도, 또 다른 맡김 장면(맡겨지는 낮)도 나오지 않는다 — back이 childcare_set을 켠다', () => {
     // 육아휴직은 부모님이 정하는 카드(SPEC-005)라 규칙으로 고르게 할 수 없다 — 모델이 고른 판 가운데 back을 고른 판을 센다
-    const lives = populate({}, 600, EVENT_POOL, ['present']);
+    const lives = populate({}, 600, EVENT_POOL, ['alpha']);
     const back = lives.filter((l) => pickedAt(l, LEAVE) === 'back');
     expect(back.length, '육아휴직 복귀를 고른 판(공허 통과 방지)').toBeGreaterThanOrEqual(40);
     expect(afterCount(back, LEAVE, WAIT), '복귀 뒤 어린이집 대기').toBe(0);
     expect(afterCount(back, LEAVE, CARE), '복귀 뒤 맡겨지는 낮').toBe(0);
     for (const l of back) expect(l.final.flags, `${l.era} ${l.seed}`).toContain('childcare_set');
     // 대조: 닫는 조건을 지우면 같은 시드들에서 복귀 뒤에도 어린이집 대기·맡김이 실제로 나온다
-    const control = populate({}, 600, openPool, ['present']).filter((l) => pickedAt(l, LEAVE) === 'back');
+    const control = populate({}, 600, openPool, ['alpha']).filter((l) => pickedAt(l, LEAVE) === 'back');
     expect(afterCount(control, LEAVE, WAIT) + afterCount(control, LEAVE, CARE), '옛 조건에서 복귀 뒤 맡김 장면').toBeGreaterThan(0);
   });
 
   it('육아휴직에서 일을 쉬는 쪽(one·share)을 고른 판에는 일터로 돌아갈 때가 오므로 어린이집 대기가 그대로 열린다 (막은 것은 복귀한 판뿐이다)', () => {
-    const lives = populate({}, 800, EVENT_POOL, ['present']).filter((l) => pickedAt(l, LEAVE) === 'one');
+    const lives = populate({}, 800, EVENT_POOL, ['alpha']).filter((l) => pickedAt(l, LEAVE) === 'one');
     expect(lives.length).toBeGreaterThanOrEqual(80);
     expect(afterCount(lives, LEAVE, WAIT), '일을 쉰 판의 어린이집 대기').toBeGreaterThan(0);
   });
@@ -1155,7 +1161,7 @@ describe('한 판 안의 모순 0건: 영유아 맡김·취학 전 (R-363, M7a r
     }
     expect(evOf(LEAVE).choices!.find((c) => c.id === 'back')!.effects?.setFlags).toContain('childcare_set');
     // 대조: 닫는 조건을 지우면 같은 시드들에서 두 장면이 한 판에 함께 나온다
-    const control = populate({}, 500, openPool, ['present']);
+    const control = populate({}, 500, openPool, ['alpha']);
     expect(control.filter((l) => occurred(l, CARE) && occurred(l, WAIT)).length, '옛 조건에서 두 맡김 장면이 함께 나온 판').toBeGreaterThan(0);
   });
 
@@ -1165,7 +1171,7 @@ describe('한 판 안의 모순 0건: 영유아 맡김·취학 전 (R-363, M7a r
     expect(play.result).not.toMatch(/입학|학교/);
     expect(evOf('infant-first-book').text).not.toMatch(/입학|학교/);
     // 두 이벤트가 한 판에 모두 나오는 경우가 실제로 있다(표본) — 위 문구가 그 장면에서도 맞아야 한다
-    const both = populate({}, 400, EVENT_POOL, ['present', 'future']).filter((l) => occurred(l, 'infant-early-lessons') && occurred(l, 'infant-first-book'));
+    const both = populate({}, 400, EVENT_POOL, ['genz', 'alpha']).filter((l) => occurred(l, 'infant-early-lessons') && occurred(l, 'infant-first-book'));
     expect(both.length, '취학 전의 시간표와 첫 책이 함께 나온 판').toBeGreaterThan(10);
   });
 });

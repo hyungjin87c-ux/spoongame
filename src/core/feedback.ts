@@ -1,6 +1,6 @@
-import { ERA_CONFIG } from '../data/birthTable';
+import { profileLabel } from './birthProfile';
 import { LIFE_LENGTH_TEXT } from '../data/titleText';
-import type { Era, LifeLength, Phase } from './types';
+import type { LifeLength, Phase, ProfileId } from './types';
 
 /**
  * 의견 보내기 주소 (SPEC-003 DB7): GitHub 이슈 작성 화면(`…/issues/new?template=feedback.yml`)으로 보내는 주소를 만든다.
@@ -30,8 +30,8 @@ export interface FeedbackFields {
   repoUrl: string;
   /** 지금 화면 단계 */
   screen: Phase;
-  /** 이 판의 세상(첫 화면처럼 판이 없으면 null) */
-  era: Era | null;
+  /** 이 판의 세대(첫 화면처럼 판이 없으면 null) — 표시 이름만 싣는다(출생 연도·시도는 싣지 않는다) */
+  generation: ProfileId | null;
   /** 이 판의 인생 길이(판이 없으면 null) */
   lifeLength: LifeLength | null;
   /** 빌드 표기 `v0.1.0 (abc1234)` (src/buildInfo.ts#BUILD_LABEL) */
@@ -46,7 +46,7 @@ const BUILD_LABEL_PATTERN = /^v[0-9A-Za-z.+-]{1,24} \((?:[0-9a-f]{7}\+?|개발 �
 export function buildFeedbackUrl(fields: FeedbackFields): string | null {
   if (!REPO_PATTERN.test(fields.repoUrl)) return null;
   const parts = [FEEDBACK_SCREEN_LABEL[fields.screen]];
-  if (fields.era !== null) parts.push(ERA_CONFIG[fields.era].label);
+  if (fields.generation !== null) parts.push(profileLabel(fields.generation));
   if (fields.lifeLength !== null) parts.push(LIFE_LENGTH_TEXT[fields.lifeLength].title);
   if (BUILD_LABEL_PATTERN.test(fields.buildLabel)) parts.push(fields.buildLabel);
   const value = parts.join(', ');
@@ -54,6 +54,6 @@ export function buildFeedbackUrl(fields: FeedbackFields): string | null {
 }
 
 /** 게임 상태에서 허용 목록 네 가지만 꺼낸다 (이름·나이·기록·저장 데이터는 읽지도 않는다) */
-export function feedbackFieldsOf(game: { phase: Phase; era: Era | null; lifeLength: LifeLength | null }, repoUrl: string, buildLabel: string): FeedbackFields {
-  return { repoUrl, screen: game.phase, era: game.era, lifeLength: game.lifeLength, buildLabel };
+export function feedbackFieldsOf(game: { phase: Phase; generation: ProfileId | null; lifeLength: LifeLength | null }, repoUrl: string, buildLabel: string): FeedbackFields {
+  return { repoUrl, screen: game.phase, generation: game.generation, lifeLength: game.lifeLength, buildLabel };
 }

@@ -23,7 +23,7 @@ async function flowFixed(page: Page): Promise<void> {
 
 test.use({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2 });
 
-for (const era of ['present', 'past', 'future'] as const) {
+for (const era of ['alpha', 'industrial', 'genz'] as const) {
   test(`영향 줄 · ${era}: 성인 결정 카드 (영향 줄 4~5항목 + 안내 한 줄)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
     test.setTimeout(90_000);
@@ -59,7 +59,7 @@ for (const tier of [1, 5] as const) {
     test.setTimeout(120_000);
     await startPageHidden(page);
     await page.goto('/');
-    const state = await findPendingEvent(page, 'school-exam', { tier, era: 'present' });
+    const state = await findPendingEvent(page, 'school-exam', { tier, era: 'alpha' });
     await injectSave(page, state, '/', { speed: 1, autoMode: false });
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await settleGuards(page);
@@ -86,12 +86,12 @@ test('영향 줄 · 쪼개진 일자리(youth-gig-work): 어느 선택지도 다
   test.setTimeout(180_000);
   await startPageHidden(page);
   await page.goto('/');
-  const state = await findPendingEvent(page, 'youth-gig-work', { era: 'present', seedFrom: 1000, seedTo: 9000 });
+  const state = await findPendingEvent(page, 'youth-gig-work', { era: 'alpha', seedFrom: 1000, seedTo: 9000 });
   await injectSave(page, state, '/', { speed: 1, autoMode: false });
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await settleGuards(page);
   await flowFixed(page);
-  const items = async (id: string): Promise<string[]> => page.getByTestId(`choice-${id}`).locator('.impact__item').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-key')}.${e.getAttribute('data-direction')}.${e.getAttribute('data-steps')}`));
+  const items = async (id: string): Promise<string[]> => page.locator(`button[data-testid="choice-${id}"]`).locator('.impact__item').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-key')}.${e.getAttribute('data-direction')}.${e.getAttribute('data-steps')}`));
   const juggle = await items('juggle');
   const settle = await items('settle');
   expect(juggle.some((x) => x.startsWith('relationships.up')), 'juggle: 관계 ▲').toBe(true);
@@ -108,7 +108,7 @@ test('영향 줄 · 부채 ▲ 붉음 / 부채 ▼ 초록: 부채 항목이 있�
   test.setTimeout(90_000);
   await startPageHidden(page);
   await page.goto('/');
-  await injectSave(page, await findImpactState(page, 'adult'), '/', { speed: 1, autoMode: false });
+  await injectSave(page, await findImpactState(page, 'adult', 'genx'), '/', { speed: 1, autoMode: false }); // 부채가 느는 선택지는 집·대출 결정이 있는 세대(X세대)의 성인 카드에서 잡힌다
   await expect(page.getByTestId('choice-panel')).toBeVisible();
     await settleGuards(page);
   await flowFixed(page);
@@ -138,7 +138,7 @@ test('영향 줄 · 글자 200% 320×568: 항목이 줄마다 접힌다', async 
   await page.getByTestId('choice-panel').screenshot({ path: `${SHOTS}/dev-M5-impact-320-text200-panel.png` });
 });
 
-for (const era of ['present', 'past', 'future'] as const) {
+for (const era of ['alpha', 'industrial', 'genz'] as const) {
   test(`자산 카드 · ${era}: 순자산·연 소득·부채 (지금 세상은 태그 없음, 지난·다가올 세상은 「지금 가치로 환산」)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
     test.setTimeout(90_000);
@@ -148,8 +148,7 @@ for (const era of ['present', 'past', 'future'] as const) {
     await injectSave(page, state, '/', { speed: 1, autoMode: false });
     await expect(page.getByTestId('assets-net')).toBeVisible();
     await flowFixed(page);
-    if (era === 'present') await expect(page.getByTestId('assets-basis')).toHaveCount(0);
-    else await expect(page.getByTestId('assets-basis')).toHaveText('지금 가치로 환산');
+    await expect(page.getByTestId('assets-basis')).toHaveText('지금 가치로 환산'); // 세대 판은 모두 환산 표기(EY12)
     await page.getByTestId('assets-card').screenshot({ path: `${SHOTS}/dev-M5-assets-${era}.png` });
     // 상태 도움말(자산 단위 + 가구 기준 문장)을 펼친 모습
     await page.locator('[data-testid="stats"] summary').click();
@@ -163,7 +162,7 @@ test('자산 카드 · 음수 순자산과 가장 긴 금액: 부호 「−」�
   await page.setViewportSize({ width: 320, height: 568 });
   await startPageHidden(page);
   await page.goto('/');
-  const base = await adultStateOf(page, 'present');
+  const base = await adultStateOf(page, 'alpha');
   const state: GameState = { ...base, assets: { ...base.assets!, net: -199_999, debt: 324_500, income: 12_000 } };
   await injectSave(page, state, '/', { speed: 1, autoMode: false });
   await expect(page.getByTestId('assets-net')).toHaveText('−19억 9,999만 원');
@@ -172,7 +171,7 @@ test('자산 카드 · 음수 순자산과 가장 긴 금액: 부호 「−」�
   await page.getByTestId('assets-card').screenshot({ path: `${SHOTS}/dev-M5-assets-big-320-text200.png` });
 });
 
-for (const era of ['present', 'past', 'future'] as const) {
+for (const era of ['alpha', 'industrial', 'genz'] as const) {
   test(`엔딩 최종 순자산 줄 · ${era}`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
     test.setTimeout(90_000);
@@ -183,8 +182,7 @@ for (const era of ['present', 'past', 'future'] as const) {
     await injectSave(page, ended, '/', { speed: 1, autoMode: false });
     await expect(page.getByTestId('final-net')).toBeVisible();
     await flowFixed(page);
-    if (era === 'present') await expect(page.getByTestId('final-net-basis')).toHaveCount(0);
-    else await expect(page.getByTestId('final-net-basis')).toHaveText('지금 가치로 환산');
+    await expect(page.getByTestId('final-net-basis')).toHaveText('지금 가치로 환산');
     await page.getByTestId('ending-stats').screenshot({ path: `${SHOTS}/dev-M5-ending-final-net-${era}.png` });
   });
 }
@@ -207,7 +205,7 @@ test('엔딩 최종 순자산 줄 · 음수와 0 (글자 200% 320×568)', async 
   await page.setViewportSize({ width: 320, height: 568 });
   await startPageHidden(page);
   await page.goto('/');
-  const ended = await oracleAuto(page, await oracleLife(page, 20261013, 'present'));
+  const ended = await oracleAuto(page, await oracleLife(page, 20261013, 'alpha'));
   for (const net of [-1200, 0]) {
     await injectSave(page, { ...ended, assets: { ...ended.assets!, net, debt: Math.max(ended.assets!.debt, -net) } }, '/', { speed: 1, autoMode: false });
     await expect(page.getByTestId('final-net-value')).toHaveText(net === 0 ? '0원' : '−1,200만 원');
@@ -231,7 +229,7 @@ test('인생 기록 · 상속 한 줄: 부모님이 모두 떠나는 결정의 �
   await flowFixed(page);
   const late = page.getByTestId('choice-late');
   for (const id of ['stay', 'late', 'share']) {
-    await expect(page.getByTestId(`choice-${id}`).locator('.impact__item[data-key="assets"][data-direction="up"]'), `${id}: 자산 ▲(상속)가 영향 줄에 있다`).toHaveCount(0);
+    await expect(page.locator(`button[data-testid="choice-${id}"]`).locator('.impact__item[data-key="assets"][data-direction="up"]'), `${id}: 자산 ▲(상속)가 영향 줄에 있다`).toHaveCount(0);
   }
   await expect(page.getByTestId('choice-stay').locator('.impact__item[data-key="assets"][data-direction="down"]')).toHaveCount(1);
   await page.getByTestId('choice-panel').screenshot({ path: `${SHOTS}/dev-M5-inheritance-choice.png` });

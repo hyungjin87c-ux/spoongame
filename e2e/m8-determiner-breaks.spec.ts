@@ -6,7 +6,7 @@ import { setRootFontPercent } from './textResize';
 
 /**
  * 지시 관형사 「이」「그」「저」가 줄 끝에 홀로 남지 않는다 (REV-003-M8-1 관찰 4, designer diff-003 1-7절 D-97·D-98). 줄 끝의 어절이 정확히 「이」「그」「저」인 줄 0을
- * Glue를 거치는 고정 문장 여섯 곳에서 잰다: 첫 화면 FS5 설명(`life-length-hint`)·가상 인구 주석(`population-note`) · 엔딩 플레이 시간 보조 문장(`ending-playtime-note`)·다시 태어나기 안내(`.rebirth p`) ·
+ * Glue를 거치는 고정 문장 여섯 곳에서 잰다: 첫 화면 FS5 설명(`life-length-hint`)·기간 문장(`hero-span`) · 엔딩 플레이 시간 보조 문장(`ending-playtime-note`)·다시 태어나기 안내(`.rebirth p`) ·
  * 나가기 확인 보조 문장(`exit-ask`의 `p.t-sm`) · 영향 안내(`choice-hint`). 폭 320·360 × 글자 100·200%, 넘침 0.
  * 이벤트 서술 줄(D-99 — `log__text`·`tl-text`·결정 시트 결과 문구)은 2차라 이 시험이 보지 않는다. 폭을 직접 지정하므로 mobile-360 프로젝트에서만 돈다.
  */
@@ -27,7 +27,7 @@ async function audit(page: Page, label: string, selector: string, problems: stri
 
 for (const width of WIDTHS) {
   for (const percent of PERCENTS) {
-    test(`관형사가 줄 끝에 홀로 남지 않는다 — ${width}px · 글자 ${percent}%: 첫 화면 FS5·가상 인구 주석 / 엔딩 플레이 시간 보조·다시 태어나기 안내 / 나가기 확인 보조 / 영향 안내`, async ({ page }, testInfo) => {
+    test(`관형사가 줄 끝에 홀로 남지 않는다 — ${width}px · 글자 ${percent}%: 첫 화면 FS5·기간 문장 / 엔딩 플레이 시간 보조·다시 태어나기 안내 / 나가기 확인 보조 / 영향 안내`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '폭을 직접 지정하므로 mobile-360에서만 실행');
       test.setTimeout(180_000);
       await page.setViewportSize({ width, height: 740 });
@@ -41,10 +41,10 @@ for (const width of WIDTHS) {
       await expect(page.getByTestId('life-length-hint')).toBeVisible();
       if (percent !== 100) await setRootFontPercent(page, percent);
       await audit(page, at('첫 화면 FS5'), '[data-testid="life-length-hint"]', problems, tally);
-      await audit(page, at('가상 인구 주석'), '[data-testid="population-note"]', problems, tally);
+      await audit(page, at('기간 문장'), '[data-testid="hero-span"]', problems, tally);
 
       // 2. 엔딩: 플레이 시간 보조 문장(깨끗하지 않은 판 문장까지 길게) · 다시 태어나기 안내
-      const ended = await oracleAuto(page, await oracleLife(page, 20261013, 'present'));
+      const ended = await oracleAuto(page, await oracleLife(page, 20261013, 'alpha'));
       expect(ended.phase).toBe('ending');
       const timed: GameState = withPlay(ended, { hold: 1_800_000, decide: 1_200_000, offSpeed: 5000, skips: 2 });
       await injectSave(page, timed, '/', MANUAL);
@@ -62,7 +62,7 @@ for (const width of WIDTHS) {
       await audit(page, at('나가기 확인 보조'), '[data-testid="exit-ask"] p.t-sm', problems, tally);
 
       // 4. 결정 카드: 영향 안내
-      await injectSave(page, await findPendingState(page, 'present'), '/', MANUAL);
+      await injectSave(page, await findPendingState(page, 'alpha'), '/', MANUAL);
       await expect(page.getByTestId('choice-hint')).toBeVisible();
       if (percent !== 100) await setRootFontPercent(page, percent);
       await audit(page, at('영향 안내'), '[data-testid="choice-hint"]', problems, tally);

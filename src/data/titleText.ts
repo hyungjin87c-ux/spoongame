@@ -1,5 +1,5 @@
 import { commaList } from '../core/glue';
-import type { Era, LifeLength } from '../core/types';
+import type { LifeLength } from '../core/types';
 
 /**
  * 첫 화면(타이틀)의 문구 — 한 곳에 모았다 (SPEC-003 FS1~FS7, 디자인 검수 REV-003-D-1 R-124·R-131).
@@ -12,43 +12,24 @@ import type { Era, LifeLength } from '../core/types';
  */
 
 /**
- * 가상 인구 계산 기준 (VP1·VP2): 푸터의 설명(`TITLE_TEXT.populationInfo`, 합쇼체)과 소개 Q&A Q4(`aboutFaq.ts`, 해요체)가 **같은 값에서** 문장을 만든다 — 기준 연월·비율·통계 연도를 두 곳에 따로 쓰지 않는다
- * (SPEC-005 FQ3·diff-005 D5-51). 값은 core/population.ts의 모델이 읽는 근거 통계와 같아야 하고 tests/aboutFaq.test.ts가 대조한다: 주민등록 인구의 기준 연월(`region-population-registered`의 `latestLabel`) ·
- * 규모를 줄이는 비율(`buildPopulationModel`의 1/1000) · 출생·사망 통계 연도(`births`·`cdr`의 최근 연도).
+ * 이름 출처 표기 (푸터 맨 아래 줄 — 법원 통계 자료의 이용 조건: 출처를 구체적으로 표시한다). 글자·주소는 `names.json`의 `meta.attribution`과 같고(tests/names.test.ts가 대조한다)
+ * 첫 화면이 이름 풀 데이터(수만 자)를 불러오지 않도록 여기에 작게 둔다 — 이름 풀은 「태어나기」 뒤에 쓰인다.
  */
-export const POPULATION_BASIS = {
-  /** 주민등록 인구의 기준 연월 */
-  registeredMonth: '2026년 9월',
-  /** 인구를 줄이는 비율 (core/population.ts의 `/ 1000`) */
-  ratio: '1,000분의 1',
-  /** 출생·사망 통계 연도 */
-  statsYear: '2025년',
+export const NAME_CREDIT = {
+  text: '2008년 이후 출생 이름 출처: 대한민국 법원 전자가족관계등록시스템 통계서비스 「상위 출생신고 이름 현황」(등록일 기준 잠정치, 2026-10-13 조회)',
+  url: 'https://stfamily.scourt.go.kr/st/StFrrStatcsView.do?pgmId=090000000025',
 } as const;
 
 export const TITLE_TEXT = {
   /**
-   * 로고 아래 한 줄 설명. 뒤쪽 `heroTagKeep`은 줄에 안 들어가면 통째로 다음 줄로 내려가고(inline-block), 구절 자체가 한 줄보다 길 때(글자 200%·좁은 폭)만 안에서 줄이 바뀐다 —
-   * 이때도 `heroTagNoBreak`(「한 번의 인생」)는 갈라지지 않는다(nowrap 묶음). 앞서 「한 번의」만 묶었을 때는 글자 200%·폭 320에서 「한국인의 한 번의 / 인생」으로 마지막 낱말 「인생」이 혼자 줄에 남았다
-   * (QA-003-M2 3회차 인상, 마스터 결정: 마지막 두 어절 「번의 인생」을 묶는다 — 「한 번의」는 이미 한 묶음이라 결국 세 어절 「한 번의 인생」이 한 덩어리다. 한 덩어리의 폭은 글자 200%에서 205px로
-   * 폭 280px(안쪽 248px)에도 들어간다). 이전: REV-003-M2-3 R-237(200%에서 「한국인의 한 / 번의 인생」으로 끊기던 것).
+   * 로고 아래 부제 (SPEC-004 N30 — 이름은 「수저 게임」, 세대의 뜻은 부제가 맡는다): 「다른 세대, 다른 삶, 같은 대한민국」. 뒤쪽 `heroTagKeep`은 줄에 안 들어가면 통째로 다음 줄로 내려간다(nowrap).
+   * 이전 부제 「태어난 집에 따라 달라지는, 한국인의 한 번의 인생」은 세대 선택이 들어오며 바뀌었다 (형진 님 결정 2026-10-20).
    */
-  heroTagLead: '태어난 집에 따라 달라지는, ',
-  heroTagKeep: '한국인의 한 번의 인생',
-  heroTagNoBreak: '한 번의 인생',
+  heroTagLead: '다른 세대, 다른 삶, ',
+  heroTagKeep: '같은 대한민국',
+  heroTagNoBreak: '같은 대한민국',
   spoonLineupLabel: '수저 다섯 단계: 흙수저, 동수저, 은수저, 금수저, 다이아몬드수저',
 
-  /**
-   * FS2 — 형진 님 지정 문구: 「{N}명이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요.」
-   * 「{N}명」을 함께 굵게 보인다(시안 title-a.html·docs/design/copy.md 1절의 `**{N}명**이`, REV-003-M2-1 R-209). 뒤쪽은 조사 「이」부터다.
-   */
-  populationUnit: '명',
-  populationSuffix: '이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요.',
-  /** FS2 보조 문구 — 항상 보인다. 실제 사람 수가 아님을 밝힌다. */
-  populationNote: '이 기기 안에서 계산한 가상의 사람들이에요. 실제로 게임하는 사람 수가 아니에요.',
-  /** VP2 — 정보 설명 한 곳 (푸터) */
-  populationInfo: `가상 인구: 대한민국 주민등록 인구(${POPULATION_BASIS.registeredMonth})를 ${POPULATION_BASIS.ratio}로 줄이고, ${POPULATION_BASIS.statsYear} 출생·사망 통계를 반영해 시간에 따라 조금씩 달라지게 이 기기 안에서 계산한 숫자입니다. 서버와 통신하지 않고 실제 사람 수를 세지도 않습니다.`,
-
-  eraGroup: '태어날 세상',
   lifeLengthGroup: '인생 길이',
   /**
    * 인생 길이 한 줄 안내 (HS2 ③, copy.md 9-4): 평균 수명까지 걸리는 시간 · 생각을 적는 시간은 뺐다(LD-1 — 「약 30분」이 손목시계와 어긋나지 않게) · 도중에 나가도 이 기기에 저장.
@@ -67,6 +48,12 @@ export const TITLE_TEXT = {
   gentleDesc: '아픈 일이나 이별 같은 장면의 글만 가려요. 일어나는 일은 같아요.',
 
   begin: '태어나기',
+  /** 「태어나기」 뒤 지연 로드 덩어리(이벤트·출생 연도 표·이름 풀)를 불러오는 동안의 버튼 글자와, 실패했을 때의 안내·다시 시도 (MG8) */
+  loading: '불러오는 중',
+  loadFailed: '게임 데이터를 불러오지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+  loadRetry: '다시 시도',
+  /** 진행 중이던 판을 불러오는 동안의 한 줄 (저장 복원 때 지연 로드 덩어리를 기다린다) */
+  restoring: '저장된 판을 불러오는 중이에요.',
   resume: '이어서 살기',
   beginNew: '새로 태어나기',
   confirmNewTitle: '이전 판이 사라집니다. 새로 태어날까요?',
@@ -128,17 +115,3 @@ export const LIFE_LENGTH_TEXT: Record<LifeLength, { title: string }> = {
 
 /** 고를 수 없는 카드의 비활성 이유 표기 */
 export const NOT_READY_TEXT = '준비 중';
-
-/**
- * 태어날 세상 카드의 오른쪽 작은 글씨 (FS4) — **출생 로직의 연도 범위(`ERA_CONFIG[era].birthYears`)에서 만든다**(REV-003-M2-1 R-201).
- * 지금 세상은 출생 연도가 2026 한 해로 고정될 때(min = max = 2026, 형진 님 결정 Q1 — M3에서 `ERA_CONFIG.present.birthYears`를 바꾼다)에만 「올해(2026) 태어나는 아이」이고,
- * 그 전에는 실제 범위(예: 「2008~2025년생」)를 적는다 — 카드에서 읽은 연도와 출생 화면의 연도가 어긋나는 거짓 안내가 없다.
- * 한 해로 고정된 다른 세상은 「2026년생」처럼 적는다.
- */
-export function eraMetaText(era: Era, birthYears: { min: number; max: number }): string {
-  if (era === 'present' && birthYears.min === PRESENT_FIXED_YEAR && birthYears.max === PRESENT_FIXED_YEAR) return '올해(2026) 태어나는 아이';
-  return birthYears.min === birthYears.max ? `${birthYears.min}년생` : `${birthYears.min}~${birthYears.max}년생`;
-}
-
-/** 「올해」로 안내하는 출생 연도(SPEC Q1: 지금 세상은 올해(2026) 출생 고정). 「올해(2026)」 문구는 출생 범위가 이 해 하나일 때만 쓴다. */
-const PRESENT_FIXED_YEAR = 2026;

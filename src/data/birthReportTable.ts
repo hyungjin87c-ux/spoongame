@@ -1,4 +1,4 @@
-import type { Era, Housing, Occupation, ParentWealth } from '../core/types';
+import type { Housing, Occupation, ParentWealth } from '../core/types';
 
 /**
  * 출생신고 상세(SPEC-003 BR2~BR4)의 **설계값** 표. 통계가 아니다 — 통계(출생 월·체중·부모 연령·직업 분포·점유형태·형제 순서)는 data/birthStats.ts가 koreaStats.json에서 읽고,
@@ -66,11 +66,20 @@ export const JOB_TILT_BY_PARENT: Readonly<Record<'mother' | 'father', JobTilt>> 
   father: tilt(1.3, 1, 0.8, 0.7, 0.9, 1.1, 1.4, 1.4, 1.1),
 };
 
-/** 시대 보정(설계값): 지난 세상은 농림어업·기능직·단순노무가 많고 전문·사무·관리가 적다. 다가올 세상은 지금 통계 그대로. */
-export const JOB_TILT_BY_ERA: Readonly<Record<Era, JobTilt>> = {
+/**
+ * 출생 연도에 따른 출생신고 보정의 두 갈래 (SPEC-004 NR2 — 연도별 근거가 확보되지 않은 항목은 가장 가까운 확보 연도 값을 쓰고 「추정」으로 표기한다):
+ * 1989년 이전 출생은 R1의 「지난 세상」 보정을, 1990년 이후 출생은 지금 통계 그대로(보정 없음)를 쓴다. 연도별 표(NR2)가 들어오기 전까지의 전환기 규칙이고 모두 설계값이다.
+ */
+export type ReportTilt = 'past' | 'present';
+export const REPORT_TILT_LAST_PAST_YEAR = 1989;
+export function reportTiltOf(birthYear: number): ReportTilt {
+  return birthYear <= REPORT_TILT_LAST_PAST_YEAR ? 'past' : 'present';
+}
+
+/** 시대 보정(설계값): 1989년 이전 출생은 농림어업·기능직·단순노무가 많고 전문·사무·관리가 적다. 그 뒤는 지금 통계 그대로. */
+export const JOB_TILT_BY_ERA: Readonly<Record<ReportTilt, JobTilt>> = {
   past: tilt(0.5, 0.3, 0.5, 1, 1, 8, 2, 1.2, 2),
   present: tilt(1, 1, 1, 1, 1, 1, 1, 1, 1),
-  future: tilt(1, 1, 1, 1, 1, 1, 1, 1, 1),
 };
 
 // ---------- 부모 나이 ----------
@@ -124,17 +133,15 @@ export const FATHER_GAP = { min: -4, max: 15, peak: 2.5, spread: 3.5 } as const;
 /** 출산 순위 셋째 이상을 넷째·다섯째로 나누는 비중(설계값, 합 100): 통계에는 「셋째 이상」 한 칸뿐이다. */
 export const THIRD_PLUS_SPLIT: readonly [third: number, fourth: number, fifthPlus: number] = [74, 19, 7];
 
-/** 시대 보정(설계값): 부모 나이 보정(살)과 형제 순서(첫째·둘째·셋째 이상, %) 덮어쓰기. null이면 지금 통계(지역별) 그대로. */
+/** 출생 연도 갈래 보정(설계값): 부모 나이 보정(살)과 형제 순서(첫째·둘째·셋째 이상, %) 덮어쓰기. null이면 지금 통계(지역별) 그대로. */
 export interface EraReportAdjust {
   parentAgeShift: number;
   orderShares: readonly [first: number, second: number, thirdPlus: number] | null;
 }
-export const ERA_REPORT_ADJUST: Readonly<Record<Era, EraReportAdjust>> = {
-  /** 1950~80년대: 어머니 평균 출산 연령 20대 후반, 형제가 많다 */
+export const ERA_REPORT_ADJUST: Readonly<Record<ReportTilt, EraReportAdjust>> = {
+  /** 1989년 이전 출생: 어머니 평균 출산 연령 20대 후반, 형제가 많다 */
   past: { parentAgeShift: -6, orderShares: [26, 26, 48] },
   present: { parentAgeShift: 0, orderShares: null },
-  /** 다가올 세상: 지금보다 조금 늦게 낳고 첫째 비중이 조금 크다 */
-  future: { parentAgeShift: 1, orderShares: [66, 28, 6] },
 };
 
 // ---------- 사는 집 ----------

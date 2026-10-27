@@ -117,7 +117,7 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
   test.setTimeout(90_000);
   await startPageHidden(page); // 타이머가 끼어들지 않게
   await page.goto('/');
-  const decision = await findPendingState(page, 'present', { minChoices: 2 });
+  const decision = await findPendingState(page, 'alpha', { minChoices: 2 });
   await injectSave(page, decision, '/', MANUAL);
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect.poll(() => activeTestId(page)).toBe('choice-title');
@@ -125,7 +125,7 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
 
   // 1) 선택지: 제목에서 Tab → 첫 선택지 → Enter
   const firstId = decision.pending!.choiceIds[0];
-  await expect(page.getByTestId(`choice-${firstId}`)).toBeEnabled();
+  await expect(page.locator(`button[data-testid="choice-${firstId}"]`)).toBeEnabled();
   await page.keyboard.press('Tab');
   expect(await activeTestId(page)).toBe(`choice-${firstId}`);
   await page.keyboard.press('Enter');
@@ -246,8 +246,8 @@ test('연타: 「다음 결정으로」를 두 번 눌러도 선택지 한 곳�
   test.setTimeout(60_000);
   await startPageHidden(page);
   await page.goto('/');
-  const found = await findPendingState(page, 'present');
-  const start = await oracleLife(page, found.seed, 'present');
+  const found = await findPendingState(page, 'alpha');
+  const start = await oracleLife(page, found.seed, 'alpha');
   await injectSave(page, start, '/', MANUAL);
   const skip = page.getByTestId('skip');
   await expect(skip).toBeEnabled();
@@ -257,7 +257,7 @@ test('연타: 「다음 결정으로」를 두 번 눌러도 선택지 한 곳�
   await settle(page);
   const pending = (await readSave(page)).data.pending!;
   expect(pending.key).toBe(found.pending!.key); // 첫 결정에서 멈췄다(둘째 입력이 더 진행시키지 못한다)
-  const choice = page.getByTestId(`choice-${pending.choiceIds[0]}`);
+  const choice = page.locator(`button[data-testid="choice-${pending.choiceIds[0]}"]`);
   await expect(choice).toBeEnabled();
   const c = (await choice.boundingBox())!;
   await page.mouse.dblclick(c.x + c.width / 2, c.y + c.height / 2);
@@ -269,12 +269,12 @@ test('연타: 「다음 결정으로」를 두 번 눌러도 선택지 한 곳�
 
 // ---------- 새로고침 복원 ----------
 
-test('새로고침 복원: 프로필·식구·또래·상태·가상 인구 줄이 새로고침을 여러 번 해도 똑같다 (결정적)', async ({ page }) => {
+test('새로고침 복원: 프로필·식구·또래·상태 줄이 새로고침을 여러 번 해도 똑같다 (결정적)', async ({ page }) => {
   test.setTimeout(60_000);
   await startPageHidden(page);
   await page.goto('/');
   await injectSave(page, await adultState(page), '/', MANUAL);
-  const ids = ['profile-card', 'family-card', 'peers-now-card', 'stats', 'log-pin', 'life-name', 'life-age', 'life-year'] as const;
+  const ids = ['profile-card', 'family-card', 'peers-now-card', 'stats', 'life-name', 'life-age', 'life-year'] as const;
   const snapshot = async (): Promise<Record<string, string>> => Object.fromEntries(await Promise.all(ids.map(async (id): Promise<[string, string]> => [id, (await page.getByTestId(id).innerText()).replace(/\s+/g, ' ')])));
   await expect(page.getByTestId('auto')).toBeEnabled();
   const before = await snapshot();

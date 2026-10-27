@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_BGM,
   DEFAULT_SETTINGS,
-  ERAS,
+  GENERATION_IDS,
   LIFE_LENGTHS,
   SCHEMA_VERSION,
   SELECTABLE_LIFE_LENGTHS,
@@ -28,10 +28,10 @@ import { startLife } from '../scripts/simulateLib';
 const fresh = (seed = 1): Session => createSession(createInitialState(seed), { speed: 1, autoMode: false });
 const send = (s: Session, a: Parameters<typeof sessionReducer>[1]): Session => sessionReducer(s, a);
 
-describe('세상·인생 길이 선택 (FS4·FS5)', () => {
-  it('기본 선택은 지금 세상·약 30분이다', () => {
+describe('세대·인생 길이 선택 (GS4·FS5)', () => {
+  it('기본 선택은 랜덤 세대·약 30분이다 (처음 방문 — 선택 기록이 없다)', () => {
     const s = fresh();
-    expect(s.settings.era).toBe('present');
+    expect(s.settings.generation).toBe('random');
     expect(s.settings.lifeLength).toBe('short30');
     expect(s.showTitle).toBe(false);
   });
@@ -39,9 +39,9 @@ describe('세상·인생 길이 선택 (FS4·FS5)', () => {
   it('고른 값은 설정에 들어가고(다음 판의 기본값), 게임 상태는 바뀌지 않는다. 같은 값은 같은 객체', () => {
     let s = fresh();
     const game0 = s.game;
-    for (const era of ERAS) {
-      s = send(s, { type: 'setEra', era });
-      expect(s.settings.era).toBe(era);
+    for (const generation of [...GENERATION_IDS, 'random'] as const) {
+      s = send(s, { type: 'setGeneration', generation });
+      expect(s.settings.generation).toBe(generation);
     }
     // 인생 길이는 고를 수 있는 값만 설정에 들어간다(REV-003-M2-2: reducer도 막는다 — 아래 「고를 수 없는 인생 길이」 테스트)
     for (const lifeLength of SELECTABLE_LIFE_LENGTHS) {
@@ -49,7 +49,7 @@ describe('세상·인생 길이 선택 (FS4·FS5)', () => {
       expect(s.settings.lifeLength).toBe(lifeLength);
     }
     expect(s.game).toBe(game0);
-    expect(send(s, { type: 'setEra', era: s.settings.era })).toBe(s);
+    expect(send(s, { type: 'setGeneration', generation: s.settings.generation })).toBe(s);
     expect(send(s, { type: 'setLifeLength', lifeLength: s.settings.lifeLength })).toBe(s);
   });
 
@@ -61,8 +61,8 @@ describe('세상·인생 길이 선택 (FS4·FS5)', () => {
     const r = send(s, { type: 'setLifeLength', lifeLength: 'long60' });
     expect(r).toBe(s);
     expect(r.settings.lifeLength).toBe('short30');
-    // 에라(세상)를 바꾼 뒤에도, 연타해도 마찬가지
-    let t = send(s, { type: 'setEra', era: 'future' });
+    // 세대를 바꾼 뒤에도, 연타해도 마찬가지
+    let t = send(s, { type: 'setGeneration', generation: 'genx' });
     const before = t;
     t = send(send(t, { type: 'setLifeLength', lifeLength: 'long60' }), { type: 'setLifeLength', lifeLength: 'long60' });
     expect(t).toBe(before);
@@ -74,31 +74,39 @@ describe('세상·인생 길이 선택 (FS4·FS5)', () => {
 
   it('알 수 없는 값은 무시한다 (변조된 입력)', () => {
     const s = fresh();
-    expect(send(s, { type: 'setEra', era: 'mars' as never })).toBe(s);
+    expect(send(s, { type: 'setGeneration', generation: 'mars' as never })).toBe(s);
+    expect(send(s, { type: 'setGeneration', generation: 'past' as never }), '옛 시대 이름도 받지 않는다').toBe(s);
+    expect(send(s, { type: 'setGeneration', generation: 'r1-present' as never }), '시험 전용 R1은 고를 수 없다').toBe(s);
     expect(send(s, { type: 'setLifeLength', lifeLength: 'long120' as never })).toBe(s);
   });
 
   it('배속·자동 모드와 독립이다 (서로를 건드리지 않는다)', () => {
     // (인생 길이는 설정에 이미 있던 long60에서 고를 수 있는 short30으로 바꾼다 — long60을 새로 고르는 길은 reducer가 막는다)
     let s = createSession(createInitialState(1), { speed: 8, autoMode: true, lifeLength: 'long60' });
-    s = send(s, { type: 'setEra', era: 'future' });
+    s = send(s, { type: 'setGeneration', generation: 'genx' });
     s = send(s, { type: 'setLifeLength', lifeLength: 'short30' });
     // (M4: 설정에 BGM·테마가 더해졌다 / M7c: 자동 기록 카드 켬/끔 / SPEC-005 SV2: 무거운 장면 가리기 꺼짐·새 소식 본 버전 없음 — 세상·인생 길이를 고르는 일이 그 기본값도 건드리지 않는다)
-    expect(s.settings).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: DEFAULT_BGM, theme: 'system', noteCards: true, gentle: false, notesSeen: '' });
+    expect(s.settings).toEqual({ speed: 8, autoMode: true, generation: 'genx', lifeLength: 'short30', bgm: DEFAULT_BGM, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then' });
   });
 });
 
-describe('「태어나기」 (FS6): 설정의 세상·인생 길이로 출생하고 한 번만 일어난다', () => {
-  it('세상 3 × 인생 길이 2 = 6가지 모두, 고른 값이 판에 들어간다', () => {
-    for (const era of ERAS) {
+describe('「태어나기」 (FS6·GS3): 설정의 세대·인생 길이로 출생하고 한 번만 일어난다', () => {
+  it('세대 줄 8가지(랜덤 세대 + 7세대) × 인생 길이 2 = 16가지 모두, 고른 값이 판에 들어간다 — 랜덤 세대는 태어나기에서 한 세대가 뽑히고 표지(fromRandom)가 붙는다', () => {
+    for (const era of ['random', ...GENERATION_IDS] as const) {
       for (const lifeLength of LIFE_LENGTHS) {
         // 인생 길이는 설정에 이미 들어 있는 값으로 시작한다(long60은 reducer로 새로 고를 수 없지만 core의 출생·저장은 두 값 모두 안다)
         let s = createSession(createInitialState(31), { speed: 1, autoMode: false, lifeLength });
-        s = send(s, { type: 'setEra', era });
+        s = send(s, { type: 'setGeneration', generation: era });
         s = send(s, { type: 'begin' });
         expect(s.game.phase, `${era}/${lifeLength}`).toBe('roulette'); // 출생 결과가 정해져 저장되고 룰렛 화면이 시작된다(RL5)
         expect(s.spin, '연출 중').toBe(true);
-        expect(s.game.era).toBe(era);
+        if (era === 'random') {
+          expect(GENERATION_IDS as readonly string[], `${lifeLength}: 뽑힌 세대`).toContain(s.game.generation);
+          expect(s.game.fromRandom, '랜덤 세대 표지').toBe(true);
+        } else {
+          expect(s.game.generation).toBe(era);
+          expect(s.game.fromRandom, '직접 고른 세대에는 표지가 없다').toBeUndefined();
+        }
         expect(s.game.lifeLength).toBe(lifeLength);
         expect(parseGame(serializeGame(s.game))).toEqual(s.game); // 저장·복원도 된다
       }
@@ -112,40 +120,41 @@ describe('「태어나기」 (FS6): 설정의 세상·인생 길이로 출생하
     expect(send(s1, { type: 'begin' })).toBe(s1);
     expect(send(send(s1, { type: 'begin' }), { type: 'begin' })).toBe(s1);
     // 정확히 한 번 뽑은 결과와 같다
-    expect(s1.game).toEqual(beginBirth(createInitialState(9), 'present', 'short30'));
+    expect(s1.game).toEqual(beginBirth(createInitialState(9), 'random', 'short30'));
   });
 
-  it('출생 뒤에는 세상·인생 길이를 바꿔도 이 판은 그대로다 (LM3: 판을 시작할 때 정해져 고정)', () => {
+  it('출생 뒤에는 세대·인생 길이를 바꿔도 이 판은 그대로다 (LM3: 판을 시작할 때 정해져 고정)', () => {
     let s = send(fresh(5), { type: 'begin' });
     const born = s.game;
-    s = send(s, { type: 'setEra', era: 'future' });
+    const bornGeneration = born.generation;
+    s = send(s, { type: 'setGeneration', generation: bornGeneration === 'genx' ? 'alpha' : 'genx' });
     s = send(s, { type: 'setLifeLength', lifeLength: 'long60' }); // 고를 수 없는 값이라 무시된다
     expect(s.game).toBe(born);
-    expect(s.game.era).toBe('present');
+    expect(s.game.generation).toBe(bornGeneration);
     expect(s.game.lifeLength).toBe('short30');
     s = send(s, { type: 'enterLife' });
     expect(s.game.lifeLength).toBe('short30');
-    expect(s.settings.era).toBe('future'); // 세상은 다음 판의 기본 선택으로 남는다
+    expect(s.settings.generation).toBe(bornGeneration === 'genx' ? 'alpha' : 'genx'); // 세대는 다음 판의 기본 선택으로 남는다
     expect(s.settings.lifeLength).toBe('short30'); // 바뀐 기대: 예전에는 long60이 남았다(REV-003-M2-2: reducer가 고를 수 없는 값을 받지 않는다)
   });
 
   it('다시 태어나기: 첫 화면으로 돌아오고, 마지막 선택이 그대로 눌려 있다', () => {
-    let s = createSession(startLife(3, 'present'), { speed: 1, autoMode: false, era: 'future', lifeLength: 'long60' });
+    let s = createSession(startLife(3, 'alpha'), { speed: 1, autoMode: false, generation: 'genx', lifeLength: 'long60' });
     s = { ...s, game: { ...s.game, phase: 'ending', death: { age: 80, cause: '노환' }, age: 80 } };
     const r = send(s, { type: 'rebirth', seed: 77 });
     expect(r.game.phase).toBe('title');
-    expect(r.settings.era).toBe('future');
+    expect(r.settings.generation).toBe('genx');
     expect(r.settings.lifeLength).toBe('long60');
     const born = send(r, { type: 'begin' });
-    expect(born.game.era).toBe('future');
+    expect(born.game.generation).toBe('genx');
     expect(born.game.lifeLength).toBe('long60');
   });
 });
 
 describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기, C3)', () => {
-  const inLife = (): Session => createSession(startLife(7, 'present'), { speed: 1, autoMode: false });
-  const inRoulette = (): Session => createSession(beginBirth(createInitialState(7), 'past', 'long60'), { speed: 1, autoMode: false });
-  const inBirth = (): Session => createSession(enterBirth(beginBirth(createInitialState(7), 'past', 'long60')), { speed: 1, autoMode: false });
+  const inLife = (): Session => createSession(startLife(7, 'alpha'), { speed: 1, autoMode: false });
+  const inRoulette = (): Session => createSession(beginBirth(createInitialState(7), 'industrial', 'long60'), { speed: 1, autoMode: false });
+  const inBirth = (): Session => createSession(enterBirth(beginBirth(createInitialState(7), 'industrial', 'long60')), { speed: 1, autoMode: false });
 
   it('진행 중인 판(출생·인생)에서만 열린다. 첫 화면(title)·엔딩에서는 열 수 없다', () => {
     expect(hasProgress(inLife().game)).toBe(true);
@@ -154,7 +163,7 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
     expect(hasProgress(createInitialState(1))).toBe(false);
     const title = fresh();
     expect(send(title, { type: 'openTitle' })).toBe(title);
-    const ending = createSession({ ...startLife(3, 'present'), phase: 'ending', death: { age: 70, cause: '노환' }, age: 70 }, { speed: 1, autoMode: false });
+    const ending = createSession({ ...startLife(3, 'alpha'), phase: 'ending', death: { age: 70, cause: '노환' }, age: 70 }, { speed: 1, autoMode: false });
     expect(send(ending, { type: 'openTitle' })).toBe(ending);
     const opened = send(inLife(), { type: 'openTitle' });
     expect(opened.showTitle).toBe(true);
@@ -217,7 +226,7 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
   });
 
   it('「새로 태어나기」(beginNew): 이전 판을 버리고 새 시드로 설정의 세상·인생 길이로 출생한다. 연타는 한 번만', () => {
-    let s = createSession(startLife(7, 'present'), { speed: 4, autoMode: false, era: 'future', lifeLength: 'long60' });
+    let s = createSession(startLife(7, 'alpha'), { speed: 4, autoMode: false, generation: 'genx', lifeLength: 'long60' });
     const old = s.game;
     s = send(s, { type: 'openTitle' });
     const n1 = send(s, { type: 'beginNew', seed: 424242 });
@@ -226,22 +235,22 @@ describe('첫 화면을 다시 연 상태 (「나가기」 → 이어서 살기,
     expect(n1.spin).toBe(true);
     expect(n1.game.seed).toBe(424242);
     expect(n1.game.seed).not.toBe(old.seed);
-    expect(n1.game.era).toBe('future');
+    expect(n1.game.generation).toBe('genx');
     expect(n1.game.lifeLength).toBe('long60');
     expect(n1.game.history).toEqual([]);
     expect(n1.game.character).not.toEqual(old.character);
-    expect(n1.game).toEqual(beginBirth(createInitialState(424242), 'future', 'long60'));
+    expect(n1.game).toEqual(beginBirth(createInitialState(424242), 'genx', 'long60'));
     expect(n1.settings).toEqual(s.settings);
     // 연타: 첫 입력으로 showTitle이 꺼져 둘째 입력은 같은 객체
     expect(send(n1, { type: 'beginNew', seed: 99 })).toBe(n1);
     // 첫 화면을 다시 연 상태가 아니면(= 확인을 거치지 않았으면) 새 판을 시작하지 않는다
-    const closed = createSession(startLife(7, 'present'), { speed: 1, autoMode: false });
+    const closed = createSession(startLife(7, 'alpha'), { speed: 1, autoMode: false });
     expect(send(closed, { type: 'beginNew', seed: 5 })).toBe(closed);
   });
 
   it('다른 탭의 진행을 이어받으면(adopt) 첫 화면 상태는 꺼지고 저장된 단계가 보인다', () => {
     const opened = send(inLife(), { type: 'openTitle' });
-    const other = startLife(9, 'future');
+    const other = startLife(9, 'genx');
     const adopted = send(opened, { type: 'adopt', game: other });
     expect(adopted.showTitle).toBe(false);
     expect(adopted.game).toBe(other);
@@ -313,7 +322,7 @@ describe('룰렛 단계 (SPEC-003 RL5, M3): 연출 중 상태(spin)는 저장되
     const again = send(send(rolled(), { type: 'finishSpin' }), { type: 'openTitle' });
     const fresh2 = send(again, { type: 'beginNew', seed: 5 });
     expect(fresh2.spin).toBe(true); // 새 판의 룰렛은 다시 돈다
-    const adopted = send(rolled(), { type: 'adopt', game: startLife(9, 'present') });
+    const adopted = send(rolled(), { type: 'adopt', game: startLife(9, 'alpha') });
     expect(adopted.spin).toBe(false);
   });
 });

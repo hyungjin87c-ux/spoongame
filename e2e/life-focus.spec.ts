@@ -38,8 +38,8 @@ const SETTINGS_AUTO: PlaySettings = { speed: 1, autoMode: true };
 /** 첫 선택지가 나오기까지 시간이 걸리는(0세에서 시작하는) 시드의 인생 시작 상태와 그 결정 상태 */
 async function lifeWithDecision(page: Page): Promise<{ start: GameState; decision: GameState }> {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
-  const start = await oracleLife(page, decision.seed, 'present');
+  const decision = await findPendingState(page, 'alpha');
+  const start = await oracleLife(page, decision.seed, 'alpha');
   return { start, decision };
 }
 
@@ -158,7 +158,7 @@ test('컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록과 실제
   // 선택지가 사라진 뒤: 다시 열어 고른다
   await expect(page.getByTestId('decision-reopen')).toBeEnabled();
   await page.getByTestId('decision-reopen').click();
-  const first = page.getByTestId(`choice-${(await readSave(page)).data.pending!.choiceIds[0]}`);
+  const first = page.locator(`button[data-testid="choice-${(await readSave(page)).data.pending!.choiceIds[0]}"]`);
   await expect(first).toBeEnabled();
   await first.click();
   await expect(page.getByTestId('choice-panel')).toHaveCount(0);
@@ -289,7 +289,7 @@ test('수동 모드: 인생 화면 제목이나 body에 포커스가 있다가 �
 test('자동 모드: 새로고침으로 선택지가 복원돼도 선택지 제목으로 가지 않는다 (인생 화면 제목에만 둔다) (R-036 b)', async ({ page }) => {
   await startPageHidden(page);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/', SETTINGS_AUTO);
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect(page.getByTestId('auto-note')).toBeVisible();
@@ -305,7 +305,7 @@ test('8배속 + 자동 모드: 선택지가 몇 번 떠도 포커스는 자동 �
   const start = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 400; seed++) {
-       const s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       const s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        if (core.playToEnd(s, null).counts.choice >= 12) return s;
      }
      return null;`,
@@ -408,13 +408,13 @@ test.describe('자동 모드를 끄는 순간 (R-048)', () => {
 test('키보드로 선택지를 고른 뒤 패널이 사라져도 포커스는 body로 떨어지지 않고 인생 화면 제목에 있으며, Tab은 컨트롤 그룹을 같은 순서로 지난다 (R-036 d)', async ({ page }) => {
   await startPageHidden(page); // 선택 뒤 다음 해가 저절로 진행되지 않게 멈춰 둔다
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/', SETTINGS_MANUAL);
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect.poll(() => activeTestId(page)).toBe('choice-title');
 
   const firstId = decision.pending!.choiceIds[0];
-  await expect(page.getByTestId(`choice-${firstId}`)).toBeEnabled(); // 입력 가드가 풀릴 때까지
+  await expect(page.locator(`button[data-testid="choice-${firstId}"]`)).toBeEnabled(); // 입력 가드가 풀릴 때까지
   await page.keyboard.press('Tab');
   expect(await activeTestId(page)).toBe(`choice-${firstId}`);
   await page.keyboard.press('Enter');

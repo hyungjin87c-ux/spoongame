@@ -1,4 +1,4 @@
-import { EVENT_POOL } from '../data/events';
+import { eventPool } from './gameData';
 import { INHERIT_NOTE_TEXT } from '../data/lifeTable';
 import type { EventDef, EventPool } from './events';
 import type { HeavyKind, HistoryEntry } from './types';
@@ -30,14 +30,14 @@ export const HEAVY_LINES_WITHOUT_EVENT: ReadonlyMap<string, HeavyKind> = new Map
  * 기록 줄의 무거운 장면 분류(없으면 null). 사건(`event`)·선택 결과(`choice`) 줄만 가릴 수 있고, 단계·사망·「나의 기록」 줄은 가리지 않는다(HV8).
  * 이벤트에서 온 줄은 그 이벤트의 표지를, 이벤트 밖의 줄은 상수 표를 따른다. 풀에 없는 이벤트(콘텐츠가 사라진 옛 저장)는 null — 원문 그대로 보인다.
  */
-export function heavyKindOfEntry(entry: HistoryEntry, pool: EventPool = EVENT_POOL): HeavyKind | null {
+export function heavyKindOfEntry(entry: HistoryEntry, pool: EventPool = eventPool()): HeavyKind | null {
   if (entry.kind !== 'event' && entry.kind !== 'choice') return null;
   if (entry.eventId === undefined) return entry.kind === 'event' ? (HEAVY_LINES_WITHOUT_EVENT.get(entry.text) ?? null) : null;
   return heavyKindOfEvent(pool.byId.get(entry.eventId));
 }
 
 /** 풀에서 무거운 장면 표지가 붙은 이벤트 id → 분류 (시험·보고용) */
-export function heavyEvents(pool: EventPool = EVENT_POOL): Map<string, HeavyKind> {
+export function heavyEvents(pool: EventPool = eventPool()): Map<string, HeavyKind> {
   const out = new Map<string, HeavyKind>();
   for (const ev of pool.events) if (ev.heavy !== undefined) out.set(ev.id, ev.heavy.kind);
   return out;

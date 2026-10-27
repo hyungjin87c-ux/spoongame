@@ -1,4 +1,4 @@
-import { EVENT_POOL } from '../data/events';
+import { eventPool } from './gameData';
 import {
   ALL_SELF_FROM_AGE,
   DECISION_AREAS,
@@ -107,7 +107,7 @@ export interface ChoiceWeights {
  * 고르는 난수는 `resolveChoiceStep`이 선택마다 먼저 소비하는 그 한 번의 난수와 같다(life.ts#parentPick).
  * 대기 중인 선택지가 없거나 인생 단계가 아니면 null.
  */
-export function parentChoiceWeights(state: GameState, pool: EventPool = EVENT_POOL): ChoiceWeights | null {
+export function parentChoiceWeights(state: GameState, pool: EventPool = eventPool()): ChoiceWeights | null {
   const pending = state.pending;
   if (state.phase !== 'life' || pending === null || state.character === null) return null;
   const ev = pool.byId.get(pending.eventId);

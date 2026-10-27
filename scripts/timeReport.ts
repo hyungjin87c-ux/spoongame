@@ -1,4 +1,4 @@
-import { ERAS, STAGES, type Era, type LifeLength } from '../src/core';
+import { ERAS, STAGES, timingEraOfProfile, type LifeLength, type ProfileId } from '../src/core';
 import { STAGE_TABLE } from '../src/data/lifeTable';
 import { INFANT_CHOICE_MEAN_MIN, LIFE_LENGTH_MODES, READ_MODEL, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { NOTE_CARDS } from '../src/data/noteCards';
@@ -6,7 +6,7 @@ import { EVENT_POOL } from '../src/data/events';
 import { infantLives, summarizeInfant } from './infantMetricsLib';
 import { infantMargins, marginReport } from './marginsLib';
 import { runNoteSchedule } from './noteScheduleLib';
-import { chooserFor, type Strategy } from './simulateLib';
+import { SIM_PROFILES, chooserFor, type Strategy } from './simulateLib';
 import {
   LEGACY_MODEL,
   NATURAL,
@@ -63,14 +63,14 @@ const HARD_REF = Object.fromEntries(Object.entries(LIFE_LENGTH_MODES).map(([k, m
 /** 후보(또는 현재 설정)를 적용한 채 측정하고 집계까지 그 안에서 한다 — 집계가 모드 표의 페이싱(하드 상한)을 읽기 때문이다 */
 function summarizeAll(mode: LifeLength, cand?: Candidate): EraSummary[] {
   const run = () => {
-    const all = Object.fromEntries(ERAS.map((era) => [era, measureMany(era, lives, strategy, mode)])) as Record<Era, LifeMeasure[]>;
-    return ERAS.map((era) => summarize(era, mode, all[era], HARD_REF[mode]));
+    const all = Object.fromEntries(SIM_PROFILES.map((era) => [era, measureMany(era, lives, strategy, mode)])) as Record<ProfileId, LifeMeasure[]>;
+    return SIM_PROFILES.map((era) => summarize(era, mode, all[era], HARD_REF[mode]));
   };
   return cand === undefined ? run() : withCandidate(mode, cand, run);
 }
 
-function measureAll(mode: LifeLength, cand?: Candidate): Record<Era, LifeMeasure[]> {
-  const run = () => Object.fromEntries(ERAS.map((era) => [era, measureMany(era, lives, strategy, mode)])) as Record<Era, LifeMeasure[]>;
+function measureAll(mode: LifeLength, cand?: Candidate): Record<ProfileId, LifeMeasure[]> {
+  const run = () => Object.fromEntries(SIM_PROFILES.map((era) => [era, measureMany(era, lives, strategy, mode)])) as Record<ProfileId, LifeMeasure[]>;
   return cand === undefined ? run() : withCandidate(mode, cand, run);
 }
 
@@ -100,7 +100,7 @@ function printTimes(title: string, sums: EraSummary[]) {
 
 // ---------- 본문 ----------
 
-console.log(`# 시간 모델 보고 — 시대 ${ERAS.length} × ${lives}판 (전략 ${strategy}, 모드 ${modes.join('·')}, 소비 모드 — 기록 시트 없음)`);
+console.log(`# 시간 모델 보고 — 프로필 ${SIM_PROFILES.length} × ${lives}판 (전략 ${strategy}, 모드 ${modes.join('·')}, 소비 모드 — 기록 시트 없음)`);
 for (const mode of modes) {
   const m = LIFE_LENGTH_MODES[mode];
   console.log(`\n## 모드 ${m.label} (${mode}) — 연출 계수 ${m.holdScale}, 페이싱 soft ${m.pacing.soft} / ×${m.pacing.softFactor} / hard ${m.pacing.hard}`);
@@ -154,16 +154,16 @@ for (const mode of modes) {
     console.log('\n### 옛 모델 재현 (content-M8.md 1-3절 표와 맞는지) — 옛 모델: HOLD_MS 그대로, 읽기 18초, 줄 대기 없음');
     console.log('| 시대 | A (사망 나이) | c (결정 카드) | n (서술) | q (조용) | 결과 해 | 연출 합 H(7q+17n+13·결과, 분) | 읽기 합 18초×c (분) | **현 모델 1배속 수동(분)** | 문서 값(분) |');
     console.log('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
-    const docT: Record<Era, string> = { past: '20.7', present: '21.3', future: '21.7' };
+    const docT = { past: '20.7', present: '21.3', future: '21.7' } as const;
     for (const s of sums) {
       const h = (7 * s.q + 17 * s.n + 13 * s.r) / 60;
-      console.log(`| ${s.era} | ${f(s.deathAge)} | ${f(s.c)} | ${f(s.n)} | ${f(s.q)} | ${f(s.r)} | ${f(h)} | ${f((18 * s.c) / 60)} | **${f(s.legacyMin.mean)}** | ${docT[s.era]} |`);
+      console.log(`| ${s.era} | ${f(s.deathAge)} | ${f(s.c)} | ${f(s.n)} | ${f(s.q)} | ${f(s.r)} | ${f(h)} | ${f((18 * s.c) / 60)} | **${f(s.legacyMin.mean)}** | ${docT[timingEraOfProfile(s.era)]} |`);
     }
   }
 
   if (only.has('chars')) {
     const all = measureAll(mode);
-    const stats = ERAS.map((e) => charStatsOf(all[e]));
+    const stats = SIM_PROFILES.map((e) => charStatsOf(all[e]));
     const pool = poolCharStats();
     const c = READ_MODEL.chars;
     console.log('\n### 글자 수 실측 (합쇼체) — 뜬 카드 기준 시대별 · 풀 기준 정적 평균 · READ_MODEL 상수');
@@ -186,7 +186,7 @@ for (const mode of modes) {
     row('풀이 줄 노출률(SPEC-005 r4 UX14)', f(READ_MODEL.insightExposure.past, 2) + ' / ' + f(READ_MODEL.insightExposure.present, 2) + ' / ' + f(READ_MODEL.insightExposure.future, 2), '-', (s) => s.insightExposure, '-', 3);
     row('풀이 줄(자, 보인 카드의 평균)', f(READ_MODEL.insight.chars), '-', (s) => s.insightText, '51.1');
     console.log(`\n서술 이벤트 본문(풀, 마일스톤 제외): ${f(pool.narrativeBody)}자 (문서 52.1)`);
-    const sums = ERAS.map((e) => summarize(e, mode, all[e], HARD_REF[mode]));
+    const sums = SIM_PROFILES.map((e) => summarize(e, mode, all[e], HARD_REF[mode]));
     sums.forEach(record);
     console.log('\n### 카드별 정밀 합계(실제 글자 수·인용) 대 시대 상수 모델 (중앙)');
     console.log('| 시대 | 시대 상수 모델 T(분) | 카드별 정밀 합계 T(분) | 차이 % |');
@@ -198,7 +198,7 @@ for (const mode of modes) {
     console.log('\n### 기록 카드(M7c) 참고 시간 — 목표 밖의 참고 항 (LD-1)');
     console.log('| 시대 | 판당 기록 카드 평균 | 건너뛰기 6~9초(분) | 한두 줄 20~60초(분) | 140자까지 90초(분) |');
     console.log('|---|---:|---:|---:|---:|');
-    for (const e of ERAS) {
+    for (const e of SIM_PROFILES) {
       const r = runNoteSchedule(e, Math.min(lives, 1000), (seed) => chooserFor(strategy, seed), 1, NOTE_CARDS);
       const n = r.meanCards;
       console.log(`| ${e} | ${f(n, 2)} | ${f((n * 6) / 60)}~${f((n * 9) / 60)} | ${f((n * 20) / 60)}~${f((n * 60) / 60)} | ${f((n * 90) / 60)} |`);
@@ -229,7 +229,7 @@ for (const mode of modes) {
   if (only.has('infant')) {
     console.log('\n### 영유아(0~7세) 수치 (sim:infant와 같은 정의, 전략 auto / random)');
     for (const st of ['auto', 'random'] as const) {
-      for (const e of ERAS) {
+      for (const e of SIM_PROFILES) {
         const s = summarizeInfant(infantLives(e, lives, st));
         console.log(`- [${st}/${e}] 빈 해 평균 ${f(s.emptyMean, 2)} 최대 ${s.emptyMax} (4개 이상 판 ${f(s.emptyGe4Pct, 2)}% · 5개 이상 판 ${f(s.emptyGe5Pct, 2)}% — IN2 판정은 5개 이상 ≤ 0.5%) / 줄 평균 ${f(s.linesMean, 2)} / 선택지(0~7세) ${f(s.choicesMean, 2)} (0~6세 단계 ${f(s.choicesInfantStageMean, 2)}) / 한 해 두 줄 ${f(s.doubleYearsMean, 2)}해`);
       }

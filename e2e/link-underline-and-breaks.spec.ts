@@ -77,14 +77,14 @@ for (const [width, height] of [
   [320, 568],
 ] as const) {
   for (const percent of [100, 150, 200] as const) {
-    test(`${width}x${height} 글자 ${percent}%: 한 줄 설명의 「한 번의」는 두 줄로 갈라지지 않는다 (R-237)`, async ({ page }, testInfo) => {
+    test(`${width}x${height} 글자 ${percent}%: 한 줄 설명의 「같은 대한민국」은 두 줄로 갈라지지 않는다 (R-237)`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
       await page.setViewportSize({ width, height });
       await page.goto('/');
       await expect(page.getByTestId('start-birth')).toBeEnabled();
       if (percent !== 100) await setRootFontPercent(page, percent);
-      const r = await measureLineBreaks(page, '.hero__tag', { separators: true, keeps: true, keepWords: ['한 번의'] });
-      expect(r.keepChecked, '「한 번의」를 실제로 잰 개수').toBeGreaterThanOrEqual(1);
+      const r = await measureLineBreaks(page, '.hero__tag', { separators: true, keeps: true, keepWords: ['같은 대한민국'] });
+      expect(r.keepChecked, '「같은 대한민국」을 실제로 잰 개수').toBeGreaterThanOrEqual(1);
       expect(r.violations).toEqual([]);
       if (percent === 200 && width === 360) await page.getByTestId('title-screen').locator('.hero__tag').screenshot({ path: 'qa/screenshots/003/dev-M2-r5-r237-hero-tag-360x740-200pct.png' });
     });

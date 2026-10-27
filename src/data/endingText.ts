@@ -59,7 +59,7 @@ export function bandLabel(band: StartBand): string {
 }
 
 /**
- * 재산의 출발선 대비 한 줄. 출발선(집안 형편의 구간)과 도착(내가 가진 것)을 원값이 아니라 같은 세상 안의 자리로 말한다.
+ * 재산의 출발선 대비 한 줄. 출발선(집안 형편의 구간)과 도착(내가 가진 것)을 원값이 아니라 같은 세대 안의 자리로 말한다.
  * 예: "상위 17~45% 사이의 집에서 태어나, 상위 약 23%의 형편으로 생을 마쳤습니다."
  */
 export function journeyText(j: WealthJourney): string {
@@ -81,7 +81,7 @@ export const MOVEMENT_TEXT: Record<Movement, string> = {
 };
 
 /** 왜 숫자를 빼서 견주지 않았는가 (R-045 c) */
-export const JOURNEY_NOTE = '재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세상 안의 자리로 견주었습니다.';
+export const JOURNEY_NOTE = '재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세대 안의 자리로 견주었습니다.';
 
 /**
  * 엔딩 「최종 순자산」 줄의 문구 (SPEC-003 M5, docs/design/copy.md 4-6절): M4의 「재산」 미터(0~100)와 스무 살 전의 이름 「집안 형편」을 대신한다. 금액은 `formatWon` 출력 그대로(「약」 없음, 음수 U+2212),
@@ -97,6 +97,11 @@ export const FINAL_NET_TEXT = {
 
 /** 엔딩 머리 (M7e-3, R-327, copy.md 5-4): 라벨 「{세상} · 생애 기록」과 셋째 줄 「{출생 연월} ~ {사망 연도}년 · {나이}세」 */
 export const ENDING_HEAD_LABEL = '생애 기록';
+
+/** 엔딩 머리 둘째 줄의 태어난 곳 (GS9): 「경기도 안양시에서 태어남」 꼴 — 세대 판은 그 해의 행정구역 이름 */
+export function endingBornText(place: string): string {
+  return `${place}에서 태어남`;
+}
 export function endingSpanText(birthYear: number, month: number | null, deathYear: number, age: number): string {
   return `${month === null ? `${birthYear}년` : yearMonthText(birthYear, month)} ~ ${deathYear}년 · ${age}세`;
 }
@@ -147,4 +152,4 @@ export function breakdownParts(): readonly [string, string, string] {
 }
 
 export const REBIRTH_LABEL = '다시 태어나기';
-export const REBIRTH_NOTE = '다시 태어나면 이 인생의 기록은 사라집니다.';
+export const REBIRTH_NOTE = '첫 화면의 세대 선택으로 돌아갑니다. 다시 태어나면 이 인생의 기록은 사라집니다.';

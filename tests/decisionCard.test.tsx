@@ -19,7 +19,7 @@ import type { YearClock } from '../src/ui/useYearClock';
 
 const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
 const noop = () => undefined;
-const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, era: g.era!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
+const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, generation: g.generation!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
 const settingsOf = (o: Partial<Settings> = {}): Settings => ({ ...DEFAULT_SETTINGS, speed: 1, autoMode: false, ...o });
 
 function render(game: GameState, o: { auto?: boolean; folded?: boolean; epoch?: number } = {}): string {
@@ -53,10 +53,16 @@ function render(game: GameState, o: { auto?: boolean; folded?: boolean; epoch?: 
  * 카드 eventId가 대기 중인 상태 (앞선 결정은 첫 선택지로 넘긴다). SPEC-005부터 어린 시절의 큰 결정 중 부모님이 정하거나 아이의 일로 흘러가는 카드는 진행 중 `pending`이 되지 않으므로
  * 그런 카드(`school-tutoring`·`infant-fever`·`infant-new-sibling`)는 대기 상태를 직접 만든다(tests/helpers/forcedPending.ts) — 이 묶음은 시트의 **보이는 모양**을 보고, 모양은 누가 정하느냐와 무관하다.
  */
+/** 카드 화면은 인용 박스의 시대 구간(지난·지금·다가올)을 게임 속 연도로 정한다 — 시대 구간을 고정해 보려고 출생 연도를 그 구간의 대표 연도(지난 1985 · 지금 2025 · 다가올 2040)에 맞춘다(화면 시험이라 세대 범위 검증은 거치지 않는다) */
+const LEGACY_YEAR = { past: 1985, present: 2025, future: 2040 } as const;
 function stateAt(eventId: string, era: 'past' | 'present' | 'future' = 'present'): GameState {
+  const s = stateAtRaw(eventId, era);
+  return { ...s, character: { ...s.character!, birthYear: Math.min(2020, Math.max(1940, LEGACY_YEAR[era] - s.age)) } };
+}
+function stateAtRaw(eventId: string, era: 'past' | 'present' | 'future'): GameState {
   if (PARENT_DECISION_TABLE[eventId] !== undefined && possibleAgesOf(EVENT_POOL.byId.get(eventId)!).some((a) => deciderOf(eventId, a) !== 'self')) return forcedPending(eventId, era);
   for (let seed = 1; seed <= 4000; seed++) {
-    let s = startLife(seed, era);
+    let s = startLife(seed, era === 'past' ? 'genx' : era === 'present' ? 'alpha' : 'genz');
     for (let guard = 0; guard < 80 && s.phase === 'life'; guard++) {
       s = advanceUntilDecision(s).state;
       if (s.phase !== 'life' || s.pending === null) break;
@@ -246,7 +252,7 @@ describe('접힌 띠', () => {
   }
 
   it('선택지가 없으면 접힘 표시를 줘도 아무것도 그리지 않는다 (접힘은 대기 중인 결정에만 뜻이 있다)', () => {
-    const quiet = startLife(11, 'present');
+    const quiet = startLife(11, 'alpha');
     expect(quiet.pending).toBeNull();
     const html = render(quiet, { folded: true });
     expect(html).not.toContain('class="card fold"');

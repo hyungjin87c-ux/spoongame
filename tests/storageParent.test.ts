@@ -23,7 +23,7 @@ const memoryStorage = (text: string): StorageLike => {
 /** 부모·흘러감 줄이 여럿 있는 어린 시절의 한 판(14세 즈음) — 첫 시드 가운데 부모 줄 3개 이상, 흘러감 줄 1개 이상이 있는 것 */
 function youngLifeWithDelegations(): GameState {
   for (let seed = 1; seed < 400; seed++) {
-    let s = startLife(seed, 'present');
+    let s = startLife(seed, 'alpha');
     while (s.phase === 'life' && s.age < 14 && s.pending === null) s = stepYear(s).state;
     if (s.phase !== 'life' || s.pending !== null) continue; // 본인 카드에서 멈추면 건너뛴다
     const parent = s.history.filter((h) => h.by === 'parent').length;
@@ -74,14 +74,14 @@ describe('T7-1 연표 줄의 by 필드: choice 줄에만, 값은 parent | child�
     expect(back!.history[firstChoice].by).toBe('parent');
   });
 
-  it('v8 저장(by가 하나도 없음)은 그대로 열린다: 본인이 고른 선택이 전부인 옛 판 — 줄 객체가 새로 만들어지지도 않는다', () => {
+  it('by가 하나도 없는 연표(SPEC-005 이전에 쓴 줄 모양)도 그대로 열린다: 본인이 고른 선택이 전부인 옛 판 — 줄 객체가 새로 만들어지지도 않는다', () => {
     const old = youngLifeWithDelegations();
     const noBy: GameState = { ...old, history: old.history.map((h) => { const { by: _drop, ...rest } = h as HistoryEntry & { by?: unknown }; void _drop; return rest as HistoryEntry; }) };
     const back = parseGame(serializeGame(noBy));
     expect(back).not.toBeNull();
     expect(back!.history.every((h) => !Object.prototype.hasOwnProperty.call(h, 'by'))).toBe(true);
     expect(back!.history).toEqual(noBy.history);
-    expect(SCHEMA_VERSION).toBe(8); // 스키마 버전은 올리지 않았다 (SV1)
+    expect(SCHEMA_VERSION).toBe(9); // by 필드는 스키마를 올리지 않았고(SV1), 현재 v9는 SPEC-004 MG1이 올렸다
   });
 
   it('변이 점검: by 검증을 거치지 않으면 이 시험이 잡는다 (잘못된 값이 그대로 열린 상태를 흉내 내면 위 단언이 실패한다)', () => {
@@ -142,7 +142,7 @@ describe('T7-2 부모 영역·흘러감 카드가 pending인 v8 저장은 열자
   it('19세 이상 / 표 밖 이벤트가 대기 중인 저장은 건드리지 않는다 (모두 본인)', () => {
     let found = false;
     for (let seed = 1; seed < 400 && !found; seed++) {
-      let s = startLife(seed, 'present');
+      let s = startLife(seed, 'alpha');
       while (s.phase === 'life' && s.age < 25 && s.pending === null) s = stepYear(s).state;
       if (s.phase !== 'life' || s.pending === null || s.age < 19) continue;
       found = true;
@@ -172,7 +172,7 @@ describe('T7-2 부모 영역·흘러감 카드가 pending인 v8 저장은 열자
 describe('T7-3 엔딩의 부모·흘러감 집계 (PD9): 본인 카드 수 N · 부모님이 정한 M · 흘러간 K', () => {
   it('reviewEnding의 choiceCount·delegated가 연표의 선택 줄(by 유무)과 같고, 셋을 더하면 연표의 선택 줄 전부다', () => {
     for (const seed of [11, 222, 3333, 44444, 7919, 15838]) {
-      const end = playToEnd(startLife(seed, 'present')).state;
+      const end = playToEnd(startLife(seed, 'alpha')).state;
       expect(end.phase).toBe('ending');
       const r = reviewEnding(end as Parameters<typeof reviewEnding>[0]);
       const lines = end.history.filter((h) => h.kind === 'choice');

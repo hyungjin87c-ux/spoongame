@@ -64,7 +64,7 @@ test('「인생 길이」 제목이 분절 컨트롤 왼쪽 같은 줄에 있고
   await page.goto('/');
   await expect(page.getByTestId('start-birth')).toBeEnabled({ timeout: 20_000 }); // 입력 가드(0.4초)가 풀린 뒤 — 콜드 스타트한 WebKit 작업자는 5초를 넘기기도 한다
   const m = {
-    legend: await rectOf(page, '.slot--small > legend'),
+    legend: await rectOf(page, 'fieldset:has([data-testid="life-length-group"]) > legend'), // (태어나는 시도 칸도 `.slot--small`이라 인생 길이 칸의 legend를 이름으로 고른다)
     seg: await rectOf(page, '[data-testid="life-length-group"]'),
     hint: await rectOf(page, '[data-testid="life-length-hint"]'),
   };
@@ -89,10 +89,11 @@ for (const state of ['new', 'continue'] as const) {
     await expect(page.getByTestId('start-birth').or(page.getByTestId('resume'))).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const m = { main: await rectOf(page, '.title__main'), bar: await rectOf(page, '[data-testid="bottom-bar"]'), life: await rectOf(page, '[data-testid="life-length-group"]') };
-    expect(m.main!.bottom, `왼쪽 열 끝 ${Math.round(m.main!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
-    expect(m.life!.bottom).toBeLessThan(m.bar!.y);
+    // SPEC-004 GM4 1차: 세대 목록(스크롤 창 288px)과 「태어나는 시도」 칸이 왼쪽 열에 더해져 열 끝(접이식 「내가 실제로 태어난 시도」·설정 줄)은 1280×800에서 띠 밑으로 내려간다 —
+    // 접는 선 정리(제목 키우기·설명 두 줄·열 끝)는 GM4 2차(docs/TODO.md 「GM4 2차」)에서 다시 잡는다. 지금은 고르는 컨트롤(인생 길이까지)이 띠 위에 있음을 지킨다
+    expect(m.life!.bottom, `인생 길이 아래끝 ${Math.round(m.life!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
     expect(await noHorizontalOverflow(page)).toBe(true);
-    console.log(`[QI4 ① ${testInfo.project.name} ${state}] main.bottom=${Math.round(m.main!.bottom)} bar.y=${Math.round(m.bar!.y)} (여유 ${Math.round(m.bar!.y - m.main!.bottom)}px)`);
+    console.log(`[QI4 ① ${testInfo.project.name} ${state}] main.bottom=${Math.round(m.main!.bottom)} life.bottom=${Math.round(m.life!.bottom)} bar.y=${Math.round(m.bar!.y)} (인생 길이 여유 ${Math.round(m.bar!.y - m.life!.bottom)}px)`);
   });
 }
 

@@ -12,6 +12,7 @@
 export {}; // 모듈로 취급해 최상위 await를 쓴다
 
 try {
+  await import('../src/data/installAll'); // 지연 로드 데이터(이벤트 풀·출생 연도 표·인용 테이블)를 정적으로 놓는다 — core의 기본 인자가 읽는다(MG8)
   const { EVENT_FILES, EVENT_POOL } = await import('../src/data/events');
   const { lintEventData, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems } = await import('../src/core');
   const { NOTE_CARDS, NOTE_MANUAL } = await import('../src/data/noteCards');

@@ -12,8 +12,10 @@
     <!-- 모든 화면이 시스템 설정(밝게/어둡게)을 따른다(src/styles/tokens.css). 주소 표시줄 색도 같은 바탕색을 쓴다.
          대시보드의 「다크 모드」 버튼으로 수동 선택(라이트·다크)을 하면 src/ui/theme.ts가 아래 메타들과 <html data-theme>를 그 선택으로 바꾸고, 시스템으로 돌아가면 이 원래 값으로 되돌린다(SPEC-003 DB6). -->
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#f9f7f2" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#14171f" media="(prefers-color-scheme: dark)" />
+    <!-- 글꼴 조각은 src/styles/fonts.css의 @font-face(font-display: swap, unicode-range)가 그 글자가 화면에 올 때만 받는다. 미리 받기(link 요소의 rel=preload, as=font)는 두지 않는다:
+         WebKit은 같은 출처 글꼴을 no-cors로 다시 받아 미리 받은 CORS 요청과 맞지 않아 s0 400·700(57,780B)을 두 번 내려받는다(MG8 「중복 요청 없음」·초기 로드 한도 위반, e2e-prod/initial-load.spec.ts가 잡는다) -->
     <!-- 수동 테마 사전 적용(QA-003-M4 O02): 다크·라이트를 직접 고른 사용자의 첫 그림이 시스템 색으로 번쩍이지 않게, JS 번들이 뜨기 전에 저장된 설정의 theme을 <html data-theme>에 미리 건다(tokens.css가 그 값을 시스템 설정보다 우선한다).
          키·형식·판정은 src/core/storage.ts(SETTINGS_KEY·parseSettings)와 같다 — tests/themeInline.test.ts가 같은 입력으로 parseSettings와 결과를 대조한다. 읽기에 실패하거나 형식이 맞지 않으면 아무것도 하지 않는다(시스템 설정을 따른다).
          주소 표시줄 메타는 건드리지 않는다(번들이 뜬 뒤 src/ui/theme.ts가 원래 값을 기억하며 바꾼다). 요청을 만들지 않는 짧은 인라인 스크립트다. -->
@@ -22,7 +24,7 @@
         try {
           var s = JSON.parse(localStorage.getItem('suzeo-game:settings'));
           var d = s && s.data;
-          if (d && [1, 2, 3, 4, 5].indexOf(s.version) >= 0 && [1, 2, 4, 8].indexOf(d.speed) >= 0 && typeof d.autoMode === 'boolean' && (d.theme === 'light' || d.theme === 'dark')) {
+          if (d && [1, 2, 3, 4, 5, 6].indexOf(s.version) >= 0 && [1, 2, 4, 8].indexOf(d.speed) >= 0 && typeof d.autoMode === 'boolean' && (d.theme === 'light' || d.theme === 'dark')) {
             document.documentElement.setAttribute('data-theme', d.theme);
           }
         } catch (e) {}

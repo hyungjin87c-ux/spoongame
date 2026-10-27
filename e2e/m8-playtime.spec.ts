@@ -82,7 +82,7 @@ test.describe('플레이 시간 타이머: 어느 버킷에 쌓이는가 (LM5)',
   test('결정 카드를 읽는 시간은 decide, 카드를 접어 둔 시간은 fold에 쌓인다 (표시 시간에는 decide만)', async ({ page }) => {
     test.setTimeout(90_000);
     await page.goto('/');
-    const decision = withPlay(await findPendingState(page, 'present'));
+    const decision = withPlay(await findPendingState(page, 'alpha'));
     await injectSave(page, decision, '/', MANUAL);
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await page.waitForTimeout(3000);
@@ -237,7 +237,7 @@ test.describe('연출 대기: 판의 인생 길이 모드 계수와 한 해 줄 
     const found = await evalCore<GameState | null>(
       page,
       `for (let seed = 1; seed < 3000; seed++) {
-         let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+         let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
          for (let guard = 0; guard < 20 && s.phase === 'life' && s.age < 1; guard++) {
            if (s.pending !== null) { s = core.autoResolveStep(s, s.pending.key).state; continue; }
            s = core.stepYear(s).state;
@@ -270,7 +270,7 @@ test.describe('엔딩 플레이 시간 블록 (D-93~D-95)', () => {
 
   async function endedWith(page: Page, over: Partial<PlayTime> | null): Promise<GameState> {
     await page.goto('/');
-    const ended = await oracleAuto(page, await oracleLife(page, 20261013, 'present'));
+    const ended = await oracleAuto(page, await oracleLife(page, 20261013, 'alpha'));
     expect(ended.phase).toBe('ending');
     return over === null ? ended : withPlay(ended, { ...PLAY, ...over });
   }

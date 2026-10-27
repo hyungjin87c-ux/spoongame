@@ -4,7 +4,7 @@ import { VEIL_TEXT } from './gentleText';
 import { getUsableIndicator } from './koreaStatsAccess';
 import { NAMES } from './names';
 import { ALL_SELF_FROM_AGE, CHILD_FLOW_TEXT, PARENT_DECIDED_TEXT, SELF_FROM_AGE } from './parentDecisionTable';
-import { LIFE_LENGTH_TEXT, POPULATION_BASIS, TITLE_TEXT } from './titleText';
+import { LIFE_LENGTH_TEXT, TITLE_TEXT } from './titleText';
 
 /**
  * 소개 Q&A (SPEC-005 FQ1~FQ4, docs/data/release-notes-faq-draft.md 2절 + 5절 마스터 결정 N1~N8) — 첫 화면 푸터 「소개」 링크가 여는 패널(`ui/InfoPanel.tsx`)의 둘째 구역.
@@ -61,11 +61,6 @@ export function nameSourceOrg(): string {
   return m === null ? text : m[1];
 }
 
-/** `{가상 인구 계산 기준}`의 해요체 문장 — 푸터 `populationInfo`(합쇼체)와 같은 상수(`POPULATION_BASIS`)에서 만든다 */
-export function populationBasisFaqText(): string {
-  return `대한민국 주민등록 인구(${POPULATION_BASIS.registeredMonth})를 ${POPULATION_BASIS.ratio}로 줄이고, ${POPULATION_BASIS.statsYear} 출생·사망 통계를 반영해 시간에 따라 조금씩 달라지게 계산한 숫자예요.`;
-}
-
 export interface HelpLineText {
   name: string;
   number: string;
@@ -119,11 +114,6 @@ export function buildAboutFaq(input: FaqInput): FaqItem[] {
       ],
     },
     {
-      id: 'population',
-      question: '첫 화면의 인구 숫자는 실제 사람 수인가요?',
-      answer: [`아니에요. 이 기기 안에서 계산한 가상의 숫자예요. ${populationBasisFaqText()}`, '접속한 사람 수나 게임을 하는 사람 수가 아니에요. 서버와 통신하지도 않아요.'],
-    },
-    {
       id: 'storage',
       question: '내 기록은 어디에 저장되나요?',
       answer: [
@@ -168,7 +158,7 @@ export function buildAboutFaq(input: FaqInput): FaqItem[] {
       question: '누가 만들었나요? AI를 썼나요?',
       answer: [
         '한 사람이 기획하고 AI(Anthropic의 Claude)와 함께 만들었어요.',
-        '기획, 개발, 디자인, 검수에 AI를 도구로 썼어요. 첫 화면의 그림은 AI 이미지 도구(OpenAI의 ChatGPT)로 만든 그림을 다듬어 썼어요.',
+        '기획, 개발, 디자인, 검수에 AI를 도구로 썼어요.',
         '게임을 하는 동안 AI가 글을 새로 만들지는 않아요. 사연과 문장은 미리 써 둔 거예요.',
       ],
     },

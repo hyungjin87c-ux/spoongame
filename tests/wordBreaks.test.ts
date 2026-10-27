@@ -120,9 +120,11 @@ describe('FORCED_BREAKS ↔ src/ 사용처 (R-300)', () => {
     return out;
   };
 
-  it('공허 통과 방지: src의 ts·tsx·html 파일을 실제로 훑었고, `<br>` 사용처가 하나 이상 있다', () => {
+  it('공허 통과 방지: src의 ts·tsx·html 파일을 실제로 훑었다 (`<br>` 사용처는 지금 하나도 없다 — SPEC-004 GS11이 첫 화면의 수저 이름표 띠를 없앴다)', () => {
     expect(files.length, '훑은 소스 파일 수').toBeGreaterThan(30);
-    expect(sites.length).toBeGreaterThanOrEqual(1);
+    expect(sites.map((s) => `${s.file}`)).toEqual([]);
+    // 찾는 규칙이 살아 있다: 합성 소스에서는 찾는다
+    expect(findLineBreakTags('<p>다이아몬드<br />수저</p>')).toHaveLength(1);
   });
 
   it('src의 `<br>` 사용처(파일별 개수) = 등록 목록(파일별 tags 합) — 목록에 없는 `<br>`도, 코드에 없는 목록 항목도 실패한다', () => {
@@ -131,8 +133,8 @@ describe('FORCED_BREAKS ↔ src/ 사용처 (R-300)', () => {
     expect(perFile(), `코드의 사용처: ${sites.map((s) => s.file).join(', ')}`).toEqual(registered);
   });
 
-  it('목록은 지금 「다이아몬드수저」 하나이고, 쓰는 파일(file)·태그 수(tags)·이유(why)가 적혀 있다', () => {
-    expect(FORCED_BREAKS.map((b) => b.word)).toEqual(['다이아몬드수저']);
+  it('목록은 지금 비어 있다(등록할 `<br>`가 없다). 항목이 있으면 쓰는 파일(file)·태그 수(tags)·이유(why)가 적혀 있고 코드의 사용처와 같다', () => {
+    expect(FORCED_BREAKS.map((b) => b.word)).toEqual([]);
     for (const b of FORCED_BREAKS) {
       expect(b.why.length, `${b.word}: 이유`).toBeGreaterThan(10);
       expect(b.tags, `${b.word}: 태그 수`).toBeGreaterThanOrEqual(1);
@@ -141,13 +143,13 @@ describe('FORCED_BREAKS ↔ src/ 사용처 (R-300)', () => {
     expect(new Set(FORCED_BREAK_WORDS).size, '중복 없음').toBe(FORCED_BREAK_WORDS.length);
   });
 
-  it('데이터로 채워지는 `<br>`의 낱말: 첫 화면을 서버 렌더한 마크업에서 `<br>` 앞뒤로 이어 붙은 낱말의 집합 = 등록 낱말의 집합이고, 렌더된 `<br>` 수와 같다', () => {
-    const html = renderToStaticMarkup(createElement(TitleScreen, { era: 'present', lifeLength: 'short30', onSelectEra: () => {}, onSelectLifeLength: () => {}, onBegin: () => {}, minute: 29_850_000 }))
+  it('첫 화면을 서버 렌더한 마크업에 `<br>`가 하나도 없고, 렌더된 `<br>`가 가르는 낱말의 집합 = 등록 낱말의 집합(빈 집합)이다', () => {
+    const html = renderToStaticMarkup(createElement(TitleScreen, { generation: 'random', lifeLength: 'short30', onSelectGeneration: () => {}, onSelectLifeLength: () => {}, onBegin: () => {} }))
       .replace(/<!-- -->/g, ''); // React가 이웃한 글자 사이에 넣는 주석 표시 (글자 사이의 `<br>`를 가리지 않게)
     const brs = [...html.matchAll(/<br\s*\/?>/gi)];
     const words = [...html.matchAll(/([가-힣A-Za-z0-9]+)<br\s*\/?>([가-힣A-Za-z0-9]+)/g)].map((m) => m[1] + m[2]);
-    expect(brs.length, '공허 통과 방지: 첫 화면에 `<br>`가 실제로 그려진다').toBeGreaterThanOrEqual(1);
-    expect(words.length, '그려진 `<br>`는 모두 글자 사이에 붙어 있다(낱말 한가운데를 가른다)').toBe(brs.length);
+    expect(html.length, '공허 통과 방지: 첫 화면이 실제로 그려졌다').toBeGreaterThan(1000);
+    expect(brs.length).toBe(0);
     expect([...new Set(words)].sort(), '그려진 `<br>`가 가르는 낱말 = 등록 낱말').toEqual([...FORCED_BREAK_WORDS].sort());
   });
 });

@@ -188,7 +188,7 @@ interface Entry {
   setup: (page: Page) => Promise<void>;
 }
 
-const BIRTH_SAVE = birthState(KNOWN_SEED, 'present', 3, 50);
+const BIRTH_SAVE = birthState(KNOWN_SEED, 'alpha', 3, 50);
 const LIFE_SAVE = lifeState(KNOWN_SEED);
 
 const ENTRIES: Entry[] = [

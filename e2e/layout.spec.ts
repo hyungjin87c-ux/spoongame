@@ -253,6 +253,7 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
   const choiceIds = await page.evaluate<string[]>(`(async () => {
     const mod = await import('/src/data/events/index.ts');
     const core = await import('/src/core/index.ts');
+    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
     return core.worstCaseVisibleChoiceIds(mod.EVENT_POOL.byId.get(${JSON.stringify(tallest.id)}));
   })()`);
   const base = lifeState(777);
@@ -274,7 +275,7 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
     const panel = page.getByTestId('choice-panel');
     await expect(panel).toBeVisible();
     expect(await panel.getAttribute('data-key')).toBe(`${tallest.id}@${age}`);
-    for (const id of choiceIds) await expect(page.getByTestId(`choice-${id}`)).toBeEnabled();
+    for (const id of choiceIds) await expect(page.locator(`button[data-testid="choice-${id}"]`)).toBeEnabled();
     // 수동 모드: 카드는 모달 시트이고 앱이 포커스를 선택지 제목에 준다. 시트 상자 안에서 잰다(바깥 진행 줄·도구 줄은 inert이고 시트 뒤에 있다, M7b)
     await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'sheet');
     await expect(page.getByTestId('choice-title')).toBeFocused();

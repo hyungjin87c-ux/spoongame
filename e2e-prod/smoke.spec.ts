@@ -302,7 +302,7 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   expect(JSON.parse(settingsBefore!).data.speed).toBe(8);
   await page.getByTestId('rebirth').click(); // 가드가 풀릴 때까지 Playwright가 기다린다
   await expect(page.getByTestId('title-screen')).toBeVisible();
-  await expect(page.getByTestId('era-present')).toBeChecked();
+  await expect(page.getByTestId('gen-random')).toBeChecked();
   await expect(page.getByTestId('life-short30')).toBeChecked();
   await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:수저 게임');
   await expect.poll(() => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null')?.data?.phase, GAME_KEY)).toBe('title');
@@ -360,10 +360,9 @@ test('프로덕션 번들: 룰렛·출생신고의 안내 문구 — 없는 기�
   expect((await page.locator('[data-testid="peers-card"] p.card__note').innerText()).trim()).toBe(
     '네 사람도 같은 세상에서 나이를 먹습니다. 살아가기를 누르면 「같은 해 태어난 사람들」 칸에서 요즘 모습을 볼 수 있습니다.',
   );
-  // 지금 세상(첫 화면의 기본 선택)이라 비교 표 안내가 있다
-  expect((await page.getByTestId('compare-note').innerText()).replace(/\s+/g, ' ').trim()).toBe(
-    '평균은 각 통계의 전체 대상(학생, 가구) 기준이고, 이 가정 열은 수저 단계에 맞춘 소득 구간의 값입니다. 단계와 소득 구간의 대응은 게임의 설계값입니다.',
-  );
+  // 비교 표(와 그 안내)는 SPEC-004 BR5(N20)에서 숨겨졌다 — 세대 판에는 표도 안내도 없다
+  await expect(page.getByTestId('compare-note')).toHaveCount(0);
+  await expect(page.getByTestId('compare-table')).toHaveCount(0);
   await page.getByTestId('next-life').click();
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await expect(page.getByTestId('peers-now-card').getByRole('heading', { name: '같은 해 태어난 사람들' })).toBeVisible();
@@ -503,7 +502,7 @@ test('수동 테마 사전 적용(매트릭스, 스크립트 차단): 수동 라
     { label: '저장 없음 · OS 다크', saved: null, os: 'dark', expected: 'dark' },
     { label: '저장 없음 · OS 라이트', saved: null, os: 'light', expected: 'light' },
     { label: '깨진 저장(수동 다크로 읽지 않는다) · OS 라이트', saved: '{"version":3,"data":', os: 'light', expected: 'light' },
-    { label: '모르는 버전의 다크 · OS 라이트', saved: JSON.stringify({ version: 6, data: { speed: 1, autoMode: false, theme: 'dark' } }), os: 'light', expected: 'light' },
+    { label: '모르는 버전의 다크 · OS 라이트', saved: JSON.stringify({ version: 7, data: { speed: 1, autoMode: false, theme: 'dark' } }), os: 'light', expected: 'light' },
   ];
   for (const c of cases) {
     const context = await browser.newContext({ viewport: { width: 360, height: 740 } });

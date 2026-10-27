@@ -1,33 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  PLAY_MAX_COUNT,
-  PLAY_MAX_MS,
-  PLAY_TICK_MAX_MS,
-  accruePlay,
-  addResume,
-  addSkip,
-  createSession,
-  displaySeconds,
-  emptyPlay,
-  enterLife,
-  formatPlayClock,
-  formatPlayTime,
-  isCleanRun,
-  parseGame,
-  playBucketOf,
-  playClockDatetime,
-  playDisplayMs,
-  playEqual,
-  playNotBehind,
-  readPlay,
-  serializeGame,
-  sessionReducer,
-  spokenPlayClock,
-  type GameState,
-  type PlayBucket,
-  type PlayInputs,
-  type PlayTime,
-} from '../src/core';
+import { PLAY_MAX_COUNT, PLAY_MAX_MS, PLAY_TICK_MAX_MS, accruePlay, addResume, addSkip, createSession, displaySeconds, emptyPlay, enterLife, formatPlayClock, formatPlayTime, isCleanRun, parseGame, playBucketOf, playClockDatetime, playDisplayMs, playEqual, playNotBehind, readPlay, serializeGame, sessionReducer, spokenPlayClock, type GameState, type PlayBucket, type PlayInputs, type PlayTime } from '../src/core';
 import { autoChooseArmed } from '../src/ui/decisionFold';
 import { startLife } from '../scripts/simulateLib';
 
@@ -263,7 +235,7 @@ describe('readPlay: 저장 검증 — 이상한 값은 undefined (완료 기준 
 });
 
 describe('parseGame: play는 선택 필드 — 없으면 시간을 재지 않은 판, 이상하면 그 필드만 버리고 판은 그대로 연다 (스키마 v8 유지 — LD-6)', () => {
-  const life = (): GameState => startLife(4242, 'present');
+  const life = (): GameState => startLife(4242, 'alpha');
   const withRaw = (patch: (d: Record<string, unknown>) => void): string => {
     const env = JSON.parse(serializeGame(life())) as { version: number; data: Record<string, unknown> };
     patch(env.data);
@@ -273,7 +245,7 @@ describe('parseGame: play는 선택 필드 — 없으면 시간을 재지 않은
   it('인생이 시작되면 play가 0으로 생긴다 (enterLife) — 새 판은 0에서 시작', () => {
     expect(life().play).toEqual(emptyPlay());
     // 첫 화면(title)·룰렛에는 없다
-    expect(startLife(1, 'past').play).toEqual(emptyPlay());
+    expect(startLife(1, 'industrial').play).toEqual(emptyPlay());
   });
 
   it('직렬화 왕복: play가 그대로 돌아온다', () => {
@@ -302,7 +274,7 @@ describe('parseGame: play는 선택 필드 — 없으면 시간을 재지 않은
   });
 
   it('인생·엔딩이 아닌 단계(첫 화면·룰렛·출생신고)에 붙은 play는 버린다', () => {
-    const roulette = startLife(1, 'present');
+    const roulette = startLife(1, 'alpha');
     for (const phase of ['roulette', 'birth'] as const) {
       const env = JSON.parse(serializeGame({ ...roulette, phase, history: [], age: 0 })) as { version: number; data: Record<string, unknown> };
       env.data.play = emptyPlay();
@@ -322,7 +294,7 @@ describe('parseGame: play는 선택 필드 — 없으면 시간을 재지 않은
 });
 
 describe('syncPlay (세션 reducer): 타이머가 쌓은 기록을 판 상태로 옮긴다', () => {
-  const session = () => createSession(startLife(4242, 'present'), { speed: 1, autoMode: false });
+  const session = () => createSession(startLife(4242, 'alpha'), { speed: 1, autoMode: false });
   const play = (hold: number): PlayTime => ({ ...emptyPlay(), hold });
 
   it('인생 단계에서 같은 판의 늘어난 기록을 받는다, tick은 그대로', () => {
@@ -349,7 +321,7 @@ describe('syncPlay (세션 reducer): 타이머가 쌓은 기록을 판 상태로
   });
 
   it('enterLife 직후의 0 기록과 새 판(다시 태어나기)은 이전 판의 기록을 이어받지 않는다', () => {
-    const fresh = enterLife({ ...startLife(77, 'past'), phase: 'birth', history: [] });
+    const fresh = enterLife({ ...startLife(77, 'industrial'), phase: 'birth', history: [] });
     expect(fresh.play).toEqual(emptyPlay());
   });
 });

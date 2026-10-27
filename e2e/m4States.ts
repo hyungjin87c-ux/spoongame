@@ -64,7 +64,7 @@ export function readyButton(page: Page, screen: M4Screen | M4ExtraScreen) {
 export async function adultState(page: Page): Promise<GameState> {
   return evalCore<GameState>(
     page,
-    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'present')));
+    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'alpha')));
      while (s.phase === 'life' && (s.age < 50 || s.pending !== null)) s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
      return s;`,
   );
@@ -94,7 +94,7 @@ export async function openM4Screen(page: Page, screen: M4Screen | M4ExtraScreen,
     // 도구 줄이 열린 상태는 BGM 「켜짐」을 설정으로 건다 — 새로고침 직후라 소리 장치는 만들지 않고(활성화 입력 전) 볼륨 슬라이더만 나타난다
     await injectSave(page, adult, '/', screen === 'dash-tools-open' ? { speed: 1, autoMode: false, bgm: { on: true, volume: 30 } } : { speed: 1, autoMode: false });
   } else if (screen === 'ending') {
-    const ended = await oracleAuto(page, await oracleLife(page, seed, 'present'));
+    const ended = await oracleAuto(page, await oracleLife(page, seed, 'alpha'));
     expect(ended.phase).toBe('ending');
     await injectSave(page, ended, '/', { speed: 1, autoMode: false });
   } else {

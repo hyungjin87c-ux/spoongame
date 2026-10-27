@@ -1,25 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import {
   BAND_GRACE,
-  ERAS,
+  R1_PRESENT,
   advanceYear,
   autoResolveStep,
   familyOf,
   finalWealthStanding,
+  lifeParamsOf,
   maxAgeOf,
   playToEnd,
   reviewEnding,
   standingScore,
   startBandOf,
+  wealthMixtureOfProfile,
   type EndingGame,
-  type Era,
   type GameState,
+  type GenerationId,
   type ParentWealth,
+  type ProfileId,
 } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
+import { GENERATION_CONFIG } from '../src/data/generationConfig';
 import { EVENT_POOL } from '../src/data/events';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_ALL, SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import {
   EXPECTED_BIRTH_YEARS,
   EXPECTED_GRACE,
@@ -58,13 +61,13 @@ function lazy<T>(compute: () => T): () => T {
 }
 
 /** 나이가 age 이상이 될 때까지(또는 끝날 때까지) 성향 자동 선택으로 진행한 인생 */
-function lifeAt(seed: number, era: Era, age: number): GameState {
+function lifeAt(seed: number, era: ProfileId, age: number): GameState {
   let s = startLife(seed, era);
   for (let i = 0; i < 1000 && s.phase === 'life' && s.age < age; i++) s = s.pending !== null ? autoResolveStep(s, s.pending.key).state : advanceYear(s);
   return s;
 }
 
-const endedGame = lazy(() => playToEnd(startLife(321, 'present'), null).state as EndingGame);
+const endedGame = lazy(() => playToEnd(startLife(321, 'alpha'), null).state as EndingGame);
 
 describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면 점검이 잡는다', () => {
   it('deepEqual: 객체·배열을 깊게, 키 순서와 무관하게 비교한다', () => {
@@ -88,8 +91,8 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
   });
 
   it('checkMoney: 20세 미만의 자산·20세 이상의 자산 없음·남은 집안 살림·부채 < −순자산·정수가 아닌 값을 각각 잡고, 정상 상태는 통과한다 (SPEC-003 M5 EC1 불변식)', () => {
-    const young = lifeAt(21, 'present', 12);
-    const adult = lifeAt(21, 'present', 30);
+    const young = lifeAt(21, 'alpha', 12);
+    const adult = lifeAt(21, 'alpha', 30);
     expect(young.phase).toBe('life');
     expect(adult.phase).toBe('life');
     expect(young.assets).toBeNull();
@@ -107,41 +110,44 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
     expect(checkMoney({ ...adult, assets: { ...adult.assets!, net: -500, debt: 9000 } }, 'x')).toEqual([]);
   });
 
-  it('checkCharacterName: 맞는 이름은 통과하고, 풀 밖 이름·다른 성별 풀·시대 밖 연도·없는 성·금지 이름·성과 첫 글자가 같은 이름은 각각 잡는다', () => {
-    // 맞는 이름: 지금 세상(2026년생, 2025년 풀) 여자 풀의 첫 이름 + 성씨 표의 성
+  it('checkCharacterName: 맞는 이름은 통과하고, 풀 밖 이름·다른 성별 풀·세대 밖 연도·없는 성·금지 이름·성과 첫 글자가 같은 이름은 각각 잡는다', () => {
+    // 맞는 이름: 시험 전용 R1 프로필(2026년생, 2025년 풀) 여자 풀의 첫 이름 + 성씨 표의 성
     const given = allowedGiven(2026, 'female')![0];
-    expect(checkCharacterName('present', `김${given}`, 2026, 'female')).toEqual([]);
-    expect(checkCharacterName('present', '김가나다', 2026, 'female').join()).toContain('풀에 없다');
+    expect(checkCharacterName(R1_PRESENT, `김${given}`, 2026, 'female')).toEqual([]);
+    expect(checkCharacterName(R1_PRESENT, '김가나다', 2026, 'female').join()).toContain('풀에 없다');
     // 같은 연도라도 성별 풀이 다르다: 남자 풀의 이름은 여자 풀에 없다 (두 풀이 완전히 같지 않다)
     const maleOnly = allowedGiven(2026, 'male')!.find((n) => !allowedGiven(2026, 'female')!.includes(n))!;
     expect(maleOnly).toBeTruthy();
-    expect(checkCharacterName('present', `김${maleOnly}`, 2026, 'female').join()).toContain('풀에 없다');
-    // 출생 연도가 시대 밖 (M2 시기의 지금 세상 연도 2022도 이제 밖이다)
-    expect(checkCharacterName('present', `김${given}`, 1995, 'female').join()).toContain('범위');
-    expect(checkCharacterName('present', `김${given}`, 2022, 'female').join()).toContain('범위');
-    expect(checkCharacterName('past', `김${allowedGiven(2026, 'female')![0]}`, 2026, 'female').join()).toContain('범위');
+    expect(checkCharacterName(R1_PRESENT, `김${maleOnly}`, 2026, 'female').join()).toContain('풀에 없다');
+    // 출생 연도가 그 프로필의 범위 밖 (R1은 2026 한 해뿐이고, 산업화 세대는 1940~1954년생뿐이다)
+    expect(checkCharacterName(R1_PRESENT, `김${given}`, 1995, 'female').join()).toContain('범위');
+    expect(checkCharacterName(R1_PRESENT, `김${given}`, 2022, 'female').join()).toContain('범위');
+    expect(checkCharacterName('industrial', `김${allowedGiven(2026, 'female')![0]}`, 2026, 'female').join()).toContain('범위');
     // 없는 성
-    expect(checkCharacterName('present', `뷁${given}`, 2026, 'female').join()).toContain('성씨 표에 없다');
+    expect(checkCharacterName(R1_PRESENT, `뷁${given}`, 2026, 'female').join()).toContain('성씨 표에 없다');
     // 금지 이름 (박정희: 1960년대 여자 풀에 "정희"가 있다)
-    expect(allowedGiven(1965, 'female')).toContain('정희');
-    expect(checkCharacterName('past', '박정희', 1965, 'female').join()).toContain('금지 이름');
-    // 성과 이름 첫 글자가 같은 조합 (이이서: 지금 세상 여자 풀(2025년)에 "이서")
+    expect(allowedGiven(1962, 'female')).toContain('정희');
+    expect(checkCharacterName('boomer', '박정희', 1962, 'female').join()).toContain('금지 이름');
+    // 성과 이름 첫 글자가 같은 조합 (이이서: R1 여자 풀(2025년)에 "이서")
     expect(allowedGiven(2026, 'female')).toContain('이서');
-    const same = checkCharacterName('present', '이이서', 2026, 'female');
+    const same = checkCharacterName(R1_PRESENT, '이이서', 2026, 'female');
     expect(same).toHaveLength(1);
     expect(same[0]).toContain('첫 글자');
     // 한글 3~4자가 아닌 이름
-    expect(checkCharacterName('present', 'Kim', 2026, 'female').join()).toContain('한글 3~4자');
+    expect(checkCharacterName(R1_PRESENT, 'Kim', 2026, 'female').join()).toContain('한글 3~4자');
   });
 
-  it('allowedGiven: 시대 밖 연도는 null, 지난 세상은 verified + estimated, 지금 세상(2026)은 2025년 풀 하나, 다가올 세상은 2021~2025 합집합', () => {
-    for (const y of [1949, 1990, 2007, 2008, 2025, 2029, 2061]) expect(allowedGiven(y, 'male'), String(y)).toBeNull();
+  it('allowedGiven: 세대 밖 연도는 null, 1940~2007년생은 연대 풀(verified + estimated), 2008~2020년생은 그 해 법원 풀, 2026(시험 전용 R1)은 2025년 풀 하나', () => {
+    for (const y of [1939, 2021, 2025, 2027, 2030, 2061]) expect(allowedGiven(y, 'male'), String(y)).toBeNull();
+    expect(allowedGiven(1940, 'male')!.length).toBeGreaterThanOrEqual(20);
     expect(allowedGiven(1955, 'male')!.length).toBeGreaterThanOrEqual(20);
+    expect(allowedGiven(2007, 'female')!.length).toBeGreaterThanOrEqual(20);
+    expect(allowedGiven(2008, 'male')!).toHaveLength(20);
+    expect(allowedGiven(2020, 'female')!).toHaveLength(20);
     expect(allowedGiven(2026, 'male')!).toHaveLength(20);
-    const future = allowedGiven(2040, 'female')!;
-    expect(future.length).toBeGreaterThan(20);
-    expect(new Set(future).size).toBe(future.length);
-    for (const n of allowedGiven(2026, 'female')!) expect(future).toContain(n); // 지금 세상 풀(2025년)은 다가올 세상 합집합 안에 있다
+    // 2025년 풀은 2026(R1)에만 쓰인다 — 세대 판의 2025년생은 없다
+    expect(allowedGiven(2026, 'female')).toEqual(allowedGiven(2026, 'female'));
+    expect(new Set(allowedGiven(2008, 'male')!).size).toBe(20);
   });
 
   describe('checkFamilyRules: 가족 정합 규칙 (BR6·CM9, R-272)', () => {
@@ -252,7 +258,7 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
   });
 
   describe('checkTransition: 한 걸음 전후의 불변식', () => {
-    const prev = lifeAt(11, 'present', 12);
+    const prev = lifeAt(11, 'alpha', 12);
     const step = () => {
       let s = prev;
       s = s.pending !== null ? autoResolveStep(s, s.pending.key).state : advanceYear(s);
@@ -287,8 +293,8 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
       expect(check({ ...next, history: [{ age: 0, kind: 'event' as const, text: '출생 아님' }, ...next.history.slice(1)] }).join()).toContain('출생 기록');
     });
 
-    it('시대·시드·캐릭터·출생 스냅샷이 바뀌면 잡는다', () => {
-      expect(check({ ...next, era: next.era === 'past' ? 'future' : 'past' }).join()).toContain('시대가 바뀌었다');
+    it('세대·시드·캐릭터·출생 스냅샷이 바뀌면 잡는다', () => {
+      expect(check({ ...next, generation: next.generation === 'genx' ? 'alpha' : 'genx' }).join()).toContain('세대가 바뀌었다');
       expect(check({ ...next, seed: next.seed + 1 }).join()).toContain('시드');
       expect(check({ ...next, character: { ...next.character!, looks: (next.character!.looks + 1) % 101 } }).join()).toContain('캐릭터가 바뀌었다');
       expect(check({ ...next, birthStats: { ...next.birthStats!, education: (next.birthStats!.education + 1) % 101 } }).join()).toContain('출생 스냅샷');
@@ -312,7 +318,7 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
   });
 
   it('roundTrip: 저장 검증을 통과하지 못하는 상태, 복원하면 달라지는 상태를 잡고, 정상 상태는 통과한다', () => {
-    const s = lifeAt(17, 'future', 9);
+    const s = lifeAt(17, 'genx', 9);
     expect(roundTrip(s, 'x').problems).toEqual([]);
     expect(roundTrip(s, 'x').restored).toEqual(s);
     expect(roundTrip({ ...s, stats: { ...s.stats, education: 101 } }, 'x').problems.join()).toContain('저장 검증');
@@ -379,35 +385,36 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
     });
   });
 
-  it('기준 표(EXPECTED_*)는 구현 값과 같다: 출발선 구간 15개·여유 2점·시대별 출생 연도, 도착 점수(분포표를 직접 센 값)는 세 시대 × 재산 0~100 전부에서 구현과 같다', () => {
-    for (const era of ERAS) {
+  it('기준 표(EXPECTED_*)는 구현 값과 같다: 출발선 구간 15개·여유 2점·세대별 출생 연도, 도착 점수(분포표를 직접 센 값)는 일곱 세대 × 재산 0~100 전부에서 구현과 같다', () => {
+    for (const era of SIM_ALL as readonly GenerationId[]) {
+      const mixture = wealthMixtureOfProfile(era);
       for (let w = 1; w <= 5; w++) {
-        const b = startBandOf(era, w as ParentWealth);
+        const b = startBandOf(mixture, w as ParentWealth);
         expect([b.low, b.high], `${era} ${w}단계`).toEqual([...EXPECTED_START_BANDS[era][w - 1]]);
       }
-      expect(EXPECTED_BIRTH_YEARS[era], era).toEqual(ERA_CONFIG[era].birthYears);
+      expect(EXPECTED_BIRTH_YEARS[era], era).toEqual({ min: GENERATION_CONFIG[era].birth.from, max: GENERATION_CONFIG[era].birth.to });
       for (let v = 0; v <= 100; v++) expect(expectedEndScore(era, v), `${era} 재산 ${v}`).toBe(standingScore(finalWealthStanding(era, v)));
     }
     expect(EXPECTED_GRACE).toBe(BAND_GRACE);
   });
 
-  it('pipelineSeed: 시대·전략마다 다른 시드 줄이고, uint32이며, 같은 인자면 같다', () => {
+  it('pipelineSeed: 세대·전략마다 다른 시드 줄이고, uint32이며, 같은 인자면 같다', () => {
     const seeds = new Set<number>();
-    for (const era of ERAS) for (const st of PIPELINE_STRATEGIES) for (let i = 1; i <= 1000; i++) seeds.add(pipelineSeed(i, era, st));
-    expect(seeds.size).toBe(6000);
+    for (const era of SIM_ALL) for (const st of PIPELINE_STRATEGIES) for (let i = 1; i <= 1000; i++) seeds.add(pipelineSeed(i, era, st));
+    expect(seeds.size).toBe(SIM_ALL.length * PIPELINE_STRATEGIES.length * 1000);
     for (const s of seeds) expect(Number.isInteger(s) && s >= 0 && s <= 0xffffffff).toBe(true);
-    expect(pipelineSeed(5, 'past', 'auto')).toBe(pipelineSeed(5, 'past', 'auto'));
+    expect(pipelineSeed(5, 'industrial', 'auto')).toBe(pipelineSeed(5, 'industrial', 'auto'));
   });
 
-  it('한 판 실행: 위반 없이 끝까지 가고(타이틀부터 다시 태어나기 뒤 첫 결정까지), 같은 인자는 같은 결과이며, 매 걸음 저장 모드도 같은 인생이다', () => {
-    for (const era of ERAS) {
+  it('한 판 실행: 위반 없이 끝까지 가고(타이틀부터 다시 태어나기 뒤 첫 결정까지), 같은 인자는 같은 결과이며, 매 걸음 저장 모드도 같은 인생이다 (일곱 세대 전부)', () => {
+    for (const era of SIM_ALL as readonly GenerationId[]) {
       for (const strategy of PIPELINE_STRATEGIES) {
         const seed = pipelineSeed(3, era, strategy);
         const a = runPipelineLife({ seed, era, strategy, stepSerialize: false });
         expect(a.problems, `${era}/${strategy}`).toEqual([]);
         expect(a.threw).toBe(false);
         expect(a.deathAge).toBeGreaterThan(0);
-        expect(a.deathAge).toBeLessThanOrEqual(maxAgeOf(era));
+        expect(a.deathAge).toBeLessThanOrEqual(maxAgeOf(lifeParamsOf(era, 2000)));
         expect(a.checks.names).toBe(2); // 첫 판 + 다시 태어난 판
         expect(a.checks.rebirths).toBe(1);
         expect(a.checks.endingTexts).toBe(1);
@@ -421,23 +428,23 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
     }
   });
 
-  it('전략 두 가지는 실제로 다른 경로다: 같은 시대·같은 시드 줄에서 자동 모드와 수동 흉내의 인생이 다르다', () => {
-    const deathAges = (strategy: PipelineStrategy) => Array.from({ length: 30 }, (_, i) => runPipelineLife({ seed: 100 + i, era: 'present', strategy, stepSerialize: false }).deathAge);
+  it('전략 두 가지는 실제로 다른 경로다: 같은 세대·같은 시드 줄에서 자동 모드와 수동 흉내의 인생이 다르다', () => {
+    const deathAges = (strategy: PipelineStrategy) => Array.from({ length: 30 }, (_, i) => runPipelineLife({ seed: 100 + i, era: 'alpha', strategy, stepSerialize: false }).deathAge);
     expect(deathAges('auto')).not.toEqual(deathAges('manual'));
   });
 });
 
-describe('1000판 전체 파이프라인 (SPEC-001 M6): 세 시대 × 자동 모드·수동 흉내 × 1000판, 타이틀 → 시대 선택 → 출생 → 인생 → 사망 → 엔딩 회고 → 다시 태어나기, 에러 0건', () => {
+describe('1000판 전체 파이프라인 (SPEC-001 M6): 대표 세대 셋(산업화·X·알파) × 자동 모드·수동 흉내 × 1000판, 타이틀 → 세대 선택 → 출생 → 인생 → 사망 → 엔딩 회고 → 다시 태어나기, 에러 0건', () => {
   const LIVES = 1000;
   const EVERY = 20; // 20판마다 한 판은 매 걸음 저장→복원 (50판/칸)
   const reports = new Map<string, ReturnType<typeof runPipelineCell>>();
-  const cell = (era: Era, strategy: PipelineStrategy) => {
+  const cell = (era: GenerationId, strategy: PipelineStrategy) => {
     const key = `${era}/${strategy}`;
     if (!reports.has(key)) reports.set(key, runPipelineCell(era, strategy, { lives: LIVES, stepSerializeEvery: EVERY }));
     return reports.get(key)!;
   };
 
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES as readonly GenerationId[]) {
     for (const strategy of PIPELINE_STRATEGIES) {
       it(
         `${era} / ${strategy === 'auto' ? '자동 모드' : '수동 흉내'}: ${LIVES}판 모두 예외 0, 불변식 위반 0 — 스탯 0~100 정수·나이 단조·연표 상한·사망 도달·이름 풀 일치·금지 이름 0·엔딩 문구 규칙·숫자-판정 일치·저장 검증`,
@@ -460,7 +467,7 @@ describe('1000판 전체 파이프라인 (SPEC-001 M6): 세 시대 × 자동 모
           expect(r.stepSerializedLives).toBe(LIVES / EVERY);
           // 모두 사망에 도달했고 사망 나이는 시대 상한 이하
           expect(r.journeys.none, '끝까지 가지 못한 판').toBe(0);
-          expect(r.deathAge.max).toBeLessThanOrEqual(maxAgeOf(era));
+          expect(r.deathAge.max).toBeLessThanOrEqual(maxAgeOf(lifeParamsOf(era, 2000)));
           expect(r.deathAge.min).toBeGreaterThanOrEqual(0);
           // 엔딩 회고의 세 방향이 모두 실제로 나왔다 (공허한 통과가 아니다)
           // 측정(M5 r3·r4, `npm run sim:1000` — 분포표는 수동 흉내로 만든다): 여섯 칸(세 시대 × 자동·수동 흉내) 모두 앞섬 250~325·비슷함 390~447·뒤쪽 270~337(1000판 중).
@@ -484,13 +491,13 @@ describe('1000판 전체 파이프라인 (SPEC-001 M6): 세 시대 × 자동 모
   }
 
   it('합계: 6000판, 위반 0, 예외 0 — 20세 전에 끝난 인생도 엔딩까지 갔다', () => {
-    const all = ERAS.flatMap((era) => PIPELINE_STRATEGIES.map((strategy) => cell(era, strategy)));
+    const all = (SIM_PROFILES as readonly GenerationId[]).flatMap((era) => PIPELINE_STRATEGIES.map((strategy) => cell(era, strategy)));
     expect(all).toHaveLength(6);
     expect(all.reduce((a, r) => a + r.lives, 0)).toBe(6000);
     expect(all.reduce((a, r) => a + r.problemCount, 0)).toBe(0);
     expect(all.reduce((a, r) => a + r.exceptions, 0)).toBe(0);
     expect(all.reduce((a, r) => a + r.journeys.early, 0)).toBeGreaterThan(0); // 스무 살 전 사망 문장 경로도 실제로 점검했다
-    // 이름: 세 시대 모두 다양한 이름이 나왔다
+    // 이름: 세 세대 모두 다양한 이름이 나왔다
     expect(all.reduce((a, r) => a + r.checks.names, 0)).toBe(12000);
   }, 240_000);
 });

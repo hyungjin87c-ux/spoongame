@@ -16,6 +16,13 @@ import { NOTE_CARDS } from '../src/data/noteCards';
 
 const CARDS = EVENT_POOL.events.filter((e) => e.choices !== undefined);
 const erasOf = (e: { eras?: readonly Era[] }): readonly Era[] => e.eras ?? ERAS;
+/**
+ * 연결해 놓고 **보이는 해가 없는 칸** (SPEC-004 GM4 임시 상태): 출생 연도가 1940~2020으로 닫히면서 영유아 카드의 「다가올 세상(2026년 이후)」 칸에는 그 카드가 뜰 해가 없고,
+ * 어린 아이 카드(육아휴직 0세 · 유치원 3~4세 · 아르바이트)의 「지금 세상」 칸은 인용 통계의 첫 유효 연도(`validFromYear` 2024~2025)가 카드가 뜰 수 있는 마지막 해보다 늦다.
+ * 인용을 연도 축으로 다시 잇는 일은 GM10(MG4)이 한다 — 그때까지 이 5칸은 화면에 보이지 않을 뿐 정적 연결률(분자)에도 세지 않는다. 목록이 늘면 시험이 실패한다.
+ */
+const GM4_DEAD_CELLS: readonly string[] = ['infant-care:future', 'infant-kindergarten:present', 'infant-new-sibling:future', 'infant-parental-leave:present', 'school-parttime:present'];
+const isDeadCell = (id: string, era: Era): boolean => GM4_DEAD_CELLS.includes(`${id}:${era}`);
 /** content-M7b 1-4절 — 원칙적 무인용 X1~X6 (사람이 적은 기대값. 이 목록의 변경은 마스터 승인, 결정 M-8) */
 const X_EVENTS: Record<string, string[]> = {
   X1: ['infant-fever', 'infant-meal-start', 'middle-health-check', 'middle-health-check-later', 'middle-health-crisis', 'senior-illness', 'senior-illness-later', 'senior-fall', 'senior-diet'],
@@ -127,28 +134,38 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
       if (era === 'future' && c.eras.includes('present')) expect(c.eraPrefix?.future, `${e.id} ${id}`).toBe('지금 기준으로는');
       if (era === 'past' && c.kind === 'research') expect(c.eraPrefix?.past, `${e.id} ${id}`).toBeDefined();
     }
-    expect(cells).toBe(89); // 지난 7 + 지금 42 + 다가올 40
+    expect(cells).toBe(88); // 지난 7 + 지금 42 + 다가올 39 (유치원 고르기의 다가올 칸은 이벤트 연도 구간이 2024년까지라 사라졌다 — 연도 구간 변환 MG2)
   });
 
   it('연결 칸마다 인용의 유효 연도 범위가 그 카드가 그 세상에서 뜰 수 있는 게임 속 연도 범위와 겹친다 — 연결해 놓고 영원히 안 보이는 칸이 없다', () => {
     for (const e of CARDS) for (const era of ERAS) {
-      if (citationIdFor(e, era) === null) continue;
+      if (citationIdFor(e, era) === null || isDeadCell(e.id, era)) continue;
       const { from, to } = cardCalendarYears(e, era);
       // 범위의 끝 해에서는 보여야 한다 (validFromYear를 통과하는 가장 늦은 해)
       expect(citationFor(e, era, to), `${e.id} ${era} (${from}~${to})`).not.toBeNull();
     }
   });
 
+  it('보이는 해가 없는 연결 칸은 알려진 5칸뿐이다 (GM4 임시 — 목록이 늘거나 줄면 알린다)', () => {
+    const dead: string[] = [];
+    for (const e of CARDS) for (const era of ERAS) {
+      if (citationIdFor(e, era) === null) continue;
+      const { from, to } = cardCalendarYears(e, era);
+      if (to < from || citationFor(e, era, to) === null) dead.push(`${e.id}:${era}`);
+    }
+    expect(dead.sort()).toEqual([...GM4_DEAD_CELLS].sort());
+  });
+
   it('표시 문자열(머리말 + 한 칸 + 요약)은 카드 × 세상 전수에서 100자 이하이고 출처 줄에 링크·DOI·URL이 없다 (MD2·EV6)', () => {
     let checked = 0;
     for (const e of CARDS) for (const era of ERAS) {
-      if (citationIdFor(e, era) === null) continue;
+      if (citationIdFor(e, era) === null || isDeadCell(e.id, era)) continue;
       const v = citationFor(e, era, cardCalendarYears(e, era).to)!;
       expect(v.text.length, `${e.id} ${era} ${v.id}`).toBeLessThanOrEqual(100);
       expect(v.sourceLine, `${e.id} ${era}`).not.toMatch(/https?:|www\.|doi|pmid/i);
       checked++;
     }
-    expect(checked).toBe(89);
+    expect(checked).toBe(88 - GM4_DEAD_CELLS.length);
   });
 
   it('지난 세상은 그 시기보다 늦은 값이 새지 않는다: 지난 세상 칸의 인용이 가진 가장 늦은 연도 이전의 게임 속 연도에서는 보이지 않는다', () => {
@@ -213,18 +230,18 @@ describe('usedBy 역색인 (M-5)', () => {
 describe('MD2 1차 게이트 (마스터 결정 M-1: 시대별 정적 연결률 지금 ≥ 40% · 다가올 ≥ 40% · 지난 ≥ 8%) — 70%는 2차 최종 목표', () => {
   const cov = citationCoverage(EVENT_POOL.events);
 
-  it('분모는 시대별 등장 가능한 선택지 카드 수다: 지난 76 · 지금 84 · 다가올 83', () => {
-    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual([76, 84, 83]);
+  it('분모는 시대별 등장 가능한 선택지 카드 수다: 지난 76 · 지금 84 · 다가올 84 (이벤트 연도 구간 변환 MG2 뒤 — 변환 전 다가올 83)', () => {
+    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual([76, 84, 84]);
   });
 
-  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 42/84 = 50.0%)', () => {
+  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 39/84 = 46.4% — 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {
     expect(cov.present.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.present);
-    expect(cov.present.connected).toBe(42);
+    expect(cov.present.connected).toBe(39);
   });
 
-  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 40/83 = 48.2%)', () => {
+  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 39/84 = 46.4% — 변환 전 40/83)', () => {
     expect(cov.future.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.future);
-    expect(cov.future.connected).toBe(40);
+    expect(cov.future.connected).toBe(39);
   });
 
   it('1차 게이트: 지난 세상 정적 연결률 ≥ 8% (실제 7/76 = 9.2%) — 약한 인용으로 채우지 않고 구조적 한계(중년·노년 33개는 1970~89 통계와 인생 시기가 겹치지 않는다)를 안고 간다', () => {
@@ -238,10 +255,10 @@ describe('MD2 1차 게이트 (마스터 결정 M-1: 시대별 정적 연결률 �
     expect(CITATION_DISTINCT_MIN).toBe(30);
   });
 
-  it('「인용 ≥ 30개」(1차 릴리스, M-4): 카드에 연결된 서로 다른 인용이 30개 이상이다 (실제 48개) — citations.json의 행 수(102)가 아니다', () => {
+  it('「인용 ≥ 30개」(1차 릴리스, M-4): 카드에 연결된 서로 다른 인용이 30개 이상이다 (실제 46개 — 변환 전 48) — citations.json의 행 수(102)가 아니다', () => {
     const distinct = connectedCitationIds(EVENT_POOL.events);
     expect(distinct.length).toBeGreaterThanOrEqual(CITATION_DISTINCT_MIN);
-    expect(distinct).toHaveLength(48);
+    expect(distinct).toHaveLength(46);
     expect(CITATION_TABLE.length).toBe(102); // 통계 84 + 연구 18(r4 QI13에서 c-102 추가 — c-037은 5세 카드에서 떼고 남겼다)
     // 연결된 서로 다른 인용의 usedBy가 모두 비어 있지 않다
     for (const id of distinct) expect(getCitation(id)!.usedBy?.length, id).toBeGreaterThan(0);

@@ -5,59 +5,11 @@ import eventsSrc from '../src/core/events.ts?raw';
 import statsSrc from '../src/core/stats.ts?raw';
 import timingSrc from '../src/core/timing.ts?raw';
 import historySrc from '../src/core/history.ts?raw';
-import {
-  AUTO_TEMPERATURE,
-  DEFAULT_SETTINGS,
-  ERAS,
-  PARENTING_STYLES,
-  PARENT_WEALTHS,
-  STAT_MAX,
-  STAT_MIN,
-  addDeltas,
-  advanceUntilDecision,
-  advanceYear,
-  appendHistory,
-  applyFlags,
-  applyStatDeltas,
-  autoChoiceWeights,
-  autoResolveStep,
-  clampStat,
-  createEventPool,
-  createInitialState,
-  createRng,
-  consumeNote,
-  createSession,
-  deathChance,
-  dueNote,
-  emptyCounts,
-  economyContextOf,
-  educationGrowthPerYear,
-  initialAssets,
-  isValidStat,
-  loadGame,
-  maxAgeOf,
-  naturalDeltas,
-  parseGame,
-  playToEnd,
-  resolveChoice,
-  resolveChoiceStep,
-  saveGame,
-  serializeGame,
-  sessionReducer,
-  stepYear,
-  totalCards,
-  validateEventFiles,
-  type Character,
-  type Era,
-  type EventPool,
-  type GameState,
-  type HistoryEntry,
-  type StorageLike,
-} from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
+import { AUTO_TEMPERATURE, DEFAULT_SETTINGS, lifeParamsOf, PARENTING_STYLES, PARENT_WEALTHS, STAT_MAX, STAT_MIN, addDeltas, advanceUntilDecision, advanceYear, appendHistory, applyFlags, applyStatDeltas, autoChoiceWeights, autoResolveStep, clampStat, createEventPool, createInitialState, createRng, consumeNote, createSession, deathChance, dueNote, emptyCounts, economyContextOf, educationGrowthPerYear, initialAssets, isValidStat, loadGame, maxAgeOf, naturalDeltas, parseGame, playToEnd, resolveChoice, resolveChoiceStep, saveGame, serializeGame, sessionReducer, stepYear, totalCards, type Character, type EventPool, type GameState, type HistoryEntry, type StorageLike, type ProfileId } from '../src/core';
+import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { EVENT_POOL } from '../src/data/events';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import { lifeView } from './helpers/notes';
 
 const poolOf = (...events: unknown[]): EventPool => createEventPool(validateEventFiles({ 'test.json': { events } }));
@@ -88,13 +40,16 @@ const choiceEvent = (over: Record<string, unknown> = {}) => ({
 });
 
 /** 시드·시대 → 0세 인생 (캐릭터 속성을 덮어쓸 수 있다) */
-function life(seed = 1, era: Era = 'present', character: Partial<Character> = {}, over: Partial<GameState> = {}): GameState {
+/** 사망 인자 한 벌(GM4 임시 — 모든 세대가 같은 값, NR5·MG4는 GM10) */
+const L = (profile: ProfileId) => lifeParamsOf(profile, 2000);
+
+function life(seed = 1, era: ProfileId = 'alpha', character: Partial<Character> = {}, over: Partial<GameState> = {}): GameState {
   const s = startLife(seed, era);
   return { ...s, character: { ...s.character!, ...character }, ...over };
 }
 
 /** 이벤트 확률을 1로 만든 풀에서 첫 선택지 이벤트까지 진행한 상태 (대기 중인 선택지가 반드시 있다) */
-function pendingState(pool = EVENT_POOL, seed = 5, era: Era = 'present'): GameState {
+function pendingState(pool = EVENT_POOL, seed = 5, era: ProfileId = 'alpha'): GameState {
   for (let s = seed; s < seed + 200; s++) {
     const r = advanceUntilDecision(startLife(s, era), pool).state;
     if (r.phase === 'life' && r.pending !== null) return r;
@@ -206,7 +161,7 @@ describe('한 해 진행 (stepYear / advanceYear)', () => {
   });
 
   it('중간에 직렬화↔복원을 매 걸음 해도 연속으로 진행한 것과 완전히 같다 (대기 중인 선택지·플래그·본 이벤트·연표 포함)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (const seed of [3, 31, 311]) {
         let direct = life(seed, era);
         let viaStorage = life(seed, era);
@@ -238,7 +193,7 @@ describe('한 해 진행 (stepYear / advanceYear)', () => {
     expect(after.seen['n-event']).toBe(0);
     expect(after.history[after.history.length - 1]).toMatchObject({ age: 0, kind: 'event', title: '서술', eventId: 'n-event' });
     // 효과 +7만큼 정확히 늘고, 영유아기 자연 변화는 학력뿐이다(naturalDeltas) → 나머지 스탯은 그대로, 나이는 한 살 많아진다.
-    const growth = naturalDeltas(0, before.character!, before.stats, before.era!);
+    const growth = naturalDeltas(0, before.character!, before.stats);
     expect(Object.keys(growth)).toEqual(['education']);
     expect(after.stats).toEqual({
       ...before.stats,
@@ -272,7 +227,7 @@ describe('선택지 이벤트: 대기 → 선택 → 효과·연표·플래그',
   const rich = (): GameState => pendingState(pool, 1); // 재력은 시드에 따라 다르므로 아래에서 직접 지정
   const decision = (parentWealth: 1 | 5) => {
     for (let seed = 1; seed < 400; seed++) {
-      const s = life(seed, 'present', { parentWealth });
+      const s = life(seed, 'alpha', { parentWealth });
       const d = advanceUntilDecision(s, pool).state;
       if (d.pending) return d;
     }
@@ -312,7 +267,7 @@ describe('선택지 이벤트: 대기 → 선택 → 효과·연표·플래그',
   it('보너스: 같은 선택도 부모 재력에 따라 효과가 다르다 (셋째: 학력 +5, 재력 4 이상이면 +3 더)', () => {
     const d = decision(5);
     const s = resolveChoice(d, d.pending!.key, 'c', pool);
-    const growth = naturalDeltas(d.age, d.character!, d.stats, d.era!).education ?? 0;
+    const growth = naturalDeltas(d.age, d.character!, d.stats).education ?? 0;
     expect(s.stats.education).toBe(Math.min(100, d.stats.education + 5 + 3 + growth));
   });
 
@@ -414,45 +369,45 @@ describe('플래그가 이후 이벤트를 열고 닫는다 (진행 루프 경�
 
 describe('사망: 건강과 나이에 따른 확률 + 절대 상한 나이', () => {
   it('deathChance: 0~1, 나이가 들수록(20세 이후) 커지고 건강이 나쁠수록 커진다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       let prev = 0;
       for (let age = 20; age <= 100; age += 5) {
-        const q = deathChance(age, 50, era);
+        const q = deathChance(age, 50, L(era));
         expect(q).toBeGreaterThanOrEqual(0);
         expect(q).toBeLessThanOrEqual(1);
         expect(q).toBeGreaterThan(prev);
         prev = q;
       }
       for (let health = 100; health > 0; health -= 10) {
-        expect(deathChance(60, health - 10, era)).toBeGreaterThan(deathChance(60, health, era));
+        expect(deathChance(60, health - 10, L(era))).toBeGreaterThan(deathChance(60, health, L(era)));
       }
     }
   });
 
   it('건강 계수: 건강 50 대비 75는 반(1/2), 25는 두 배 — 같은 나이·시대', () => {
-    for (const era of ERAS) {
-      const base = deathChance(60, 50, era);
-      expect(deathChance(60, 75, era)).toBeCloseTo(base / 2, 12);
-      expect(deathChance(60, 25, era)).toBeCloseTo(base * 2, 12);
+    for (const era of SIM_PROFILES) {
+      const base = deathChance(60, 50, L(era));
+      expect(deathChance(60, 75, L(era))).toBeCloseTo(base / 2, 12);
+      expect(deathChance(60, 25, L(era))).toBeCloseTo(base * 2, 12);
     }
   });
 
   it('건강이 위험 수준(15 미만) 아래로 내려가면 확률이 추가로 크게 오른다', () => {
-    expect(deathChance(30, 0, 'present')).toBeGreaterThan(0.15);
-    expect(deathChance(30, 20, 'present')).toBeLessThan(0.01);
+    expect(deathChance(30, 0, L('alpha'))).toBeGreaterThan(0.15);
+    expect(deathChance(30, 20, L('alpha'))).toBeLessThan(0.01);
   });
 
-  it('시대 계수: 같은 나이·건강이면 지난 세상 > 지금 세상 > 다가올 세상', () => {
+  it('세대 계수(GM4 임시): 연도 축 사망 모형(NR5·MG4)은 GM10에서 들어오므로 지금은 모든 세대가 같은 사망 인자를 쓴다 — 같은 나이·건강이면 확률이 세대와 무관하다', () => {
     for (const age of [10, 40, 70, 90]) {
-      expect(deathChance(age, 50, 'past')).toBeGreaterThan(deathChance(age, 50, 'present'));
-      expect(deathChance(age, 50, 'present')).toBeGreaterThan(deathChance(age, 50, 'future'));
+      for (const g of SIM_PROFILES) expect(deathChance(age, 50, L(g)), `${g} ${age}세`).toBe(deathChance(age, 50, L('alpha')));
     }
+    expect(lifeParamsOf('industrial', 1947)).toBe(lifeParamsOf('alpha', 2016));
   });
 
   it('절대 상한 나이: 시대별 상한 나이에서는 건강이 100이어도 반드시 사망한다 (연표에 나이·원인이 남는다)', () => {
-    for (const era of ERAS) {
-      const max = maxAgeOf(era);
-      expect(max).toBe(ERA_CONFIG[era].life.maxAge);
+    for (const era of SIM_PROFILES) {
+      const max = maxAgeOf(L(era));
+      expect(max).toBeLessThanOrEqual(110); // 절대 상한 나이 ▲ 110 (NR5)
       for (let seed = 1; seed <= 5; seed++) {
         const base = life(seed, era);
         const s = { ...base, age: max, stats: { ...base.stats, health: 100 }, history: base.history };
@@ -470,15 +425,16 @@ describe('사망: 건강과 나이에 따른 확률 + 절대 상한 나이', () 
   it('상한 나이 직전(상한-1세)에는 건강하면 보통 살아서 다음 해로 간다 (상한 규칙이 모두를 죽이지는 않는다)', () => {
     let alive = 0;
     for (let seed = 1; seed <= 200; seed++) {
-      const base = life(seed, 'future');
-      const s = { ...base, age: maxAgeOf('future') - 1, stats: { ...base.stats, health: 100 } };
+      const base = life(seed, 'alpha');
+      const s = { ...base, age: maxAgeOf(L('alpha')) - 1, stats: { ...base.stats, health: 100 } };
       if (stepYear(s, EMPTY_POOL).state.phase === 'life') alive++;
     }
     expect(alive).toBeGreaterThan(0);
   });
 
-  it('시대별 상한 나이는 지난 100 / 지금 105 / 다가올 110', () => {
-    expect([maxAgeOf('past'), maxAgeOf('present'), maxAgeOf('future')]).toEqual([100, 105, 110]);
+  it('상한 나이는 GM10 전까지 모든 세대가 같은 값이다 (절대 상한 110 — 세대별 상한은 NR5)', () => {
+    expect(new Set(SIM_PROFILES.map((g) => maxAgeOf(L(g)))).size).toBe(1);
+    expect(maxAgeOf(L('alpha'))).toBeLessThanOrEqual(110);
   });
 
   it('사망하면 phase가 ending이 되고 death가 채워지며, 사망 이후에는 진행도 선택도 되지 않는다', () => {
@@ -516,29 +472,29 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
   });
 
   it('단계별 자연 변화: 영유아·학창은 학력이 자라고, 노년은 건강이 해마다 줄며 80세부터 더 빠르다', () => {
-    expect(naturalDeltas(3, c(3, 'free'), st, 'present')).toEqual({ education: 1 });
-    expect(naturalDeltas(10, c(3, 'strict'), st, 'present').education).toBe(3);
-    expect(naturalDeltas(66, c(3, 'free'), st, 'present').health).toBe(-1);
-    expect(naturalDeltas(79, c(3, 'free'), st, 'present').health).toBe(-1);
-    expect(naturalDeltas(80, c(3, 'free'), st, 'present').health).toBe(-2);
-    expect(naturalDeltas(81, c(3, 'free'), st, 'present').health).toBe(-1);
-    expect(naturalDeltas(82, c(3, 'free'), st, 'present').health).toBe(-2);
+    expect(naturalDeltas(3, c(3, 'free'), st)).toEqual({ education: 1 });
+    expect(naturalDeltas(10, c(3, 'strict'), st).education).toBe(3);
+    expect(naturalDeltas(66, c(3, 'free'), st).health).toBe(-1);
+    expect(naturalDeltas(79, c(3, 'free'), st).health).toBe(-1);
+    expect(naturalDeltas(80, c(3, 'free'), st).health).toBe(-2);
+    expect(naturalDeltas(81, c(3, 'free'), st).health).toBe(-1);
+    expect(naturalDeltas(82, c(3, 'free'), st).health).toBe(-2);
   });
 
   it('청년·중년: 건강은 간격을 두고 조금씩 줄어든다 (재산은 자연 변화가 아니라 자산 정산이 맡는다 — tests/economy.test.ts)', () => {
-    expect(naturalDeltas(30, c(3, 'free'), st, 'present').health).toBe(-1);
-    expect(naturalDeltas(31, c(3, 'free'), st, 'present').health).toBeUndefined();
-    expect(naturalDeltas(35, c(3, 'free'), st, 'present').health).toBe(-1);
-    expect(naturalDeltas(25, c(3, 'free'), st, 'present').health).toBeUndefined(); // 30세 전에는 줄지 않는다
-    expect(naturalDeltas(40, c(3, 'free'), st, 'present').health).toBe(-1);
-    expect(naturalDeltas(41, c(3, 'free'), st, 'present').health).toBeUndefined();
-    expect(naturalDeltas(43, c(3, 'free'), st, 'present').health).toBe(-1);
+    expect(naturalDeltas(30, c(3, 'free'), st).health).toBe(-1);
+    expect(naturalDeltas(31, c(3, 'free'), st).health).toBeUndefined();
+    expect(naturalDeltas(35, c(3, 'free'), st).health).toBe(-1);
+    expect(naturalDeltas(25, c(3, 'free'), st).health).toBeUndefined(); // 30세 전에는 줄지 않는다
+    expect(naturalDeltas(40, c(3, 'free'), st).health).toBe(-1);
+    expect(naturalDeltas(41, c(3, 'free'), st).health).toBeUndefined();
+    expect(naturalDeltas(43, c(3, 'free'), st).health).toBe(-1);
   });
 
   it('재산 스탯은 없다: 어떤 나이·시대·학력에서도 자연 변화에 재산(wealth) 항목이 없다 (SPEC-003 M5 — 청년기 소득 간격·노년 생활비는 자산 정산으로 옮겨 갔다)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let age = 0; age <= 110; age++) {
-        for (const education of [10, 50, 80]) expect(Object.keys(naturalDeltas(age, c(3, 'free'), { ...st, education }, era)), `${era} ${age}세`).not.toContain('wealth');
+        for (const education of [10, 50, 80]) expect(Object.keys(naturalDeltas(age, c(3, 'free'), { ...st, education })), `${era} ${age}세`).not.toContain('wealth');
       }
     }
   });
@@ -546,7 +502,7 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
   it('이벤트 없는 풀에서 단계 진입 문구가 7·20·40·65세에 한 번씩 남고, 20세에 독립(자산 생성)이 정확히 한 번 일어난다', () => {
     let checked = 0;
     for (let seed = 1; seed <= 300 && checked < 3; seed++) {
-      const start = life(seed, 'future');
+      const start = life(seed, 'alpha');
       let s = start;
       let before20: GameState | null = null;
       while (s.phase === 'life') {
@@ -575,7 +531,7 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
   });
 
   it('출생 학력은 0~15의 낮은 값이다: 3시대 × 2000시드 (0세에 학력이 높게 시작하지 않는다), birthStats와 같은 의미', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       let max = 0;
       let sum = 0;
       const n = 2000;
@@ -594,7 +550,7 @@ describe('단계별 자연 변화와 출생 학력 의미 (R-025)', () => {
     const eduAt19 = (parentWealth: Character['parentWealth'], parenting: Character['parenting']) => {
       let sum = 0;
       for (let seed = 1; seed <= 40; seed++) {
-        let s = life(seed, 'present', { parentWealth, parenting });
+        let s = life(seed, 'alpha', { parentWealth, parenting });
         while (s.phase === 'life' && s.age < 19) s = advanceYear(s, EMPTY_POOL);
         sum += s.stats.education;
       }
@@ -642,7 +598,7 @@ describe('연표(history) 저장 상한/요약 정책', () => {
   });
 
   it('실제 한 판의 연표는 상한보다 훨씬 작고 저장 크기가 작다 (한 판 직렬화 40KB 이내)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 50; seed++) {
         const end = playToEnd(life(seed, era)).state;
         expect(end.history.length).toBeLessThan(HISTORY_LIMITS.maxEntries / 2);
@@ -667,7 +623,7 @@ describe('자동 모드: 성향 기반 선택', () => {
   );
   const decisionFor = (character: Partial<Character>, stats: Partial<GameState['stats']> = {}) => {
     for (let seed = 1; seed < 500; seed++) {
-      const d = advanceUntilDecision(life(seed, 'present', character), pool).state;
+      const d = advanceUntilDecision(life(seed, 'alpha', character), pool).state;
       if (d.pending) return { ...d, stats: { ...d.stats, ...stats } };
     }
     throw new Error('결정을 찾지 못했다');
@@ -711,7 +667,7 @@ describe('자동 모드: 성향 기반 선택', () => {
     expect(autoResolveStep(d, d.pending!.key, pool)).toEqual(a);
     const picked = new Set<string>();
     for (let seed = 1; seed <= 300; seed++) {
-      const s = advanceUntilDecision(life(seed, 'present', { parenting: 'free' }), pool).state;
+      const s = advanceUntilDecision(life(seed, 'alpha', { parenting: 'free' }), pool).state;
       if (!s.pending) continue;
       const r = autoResolveStep(s, s.pending.key, pool).state;
       picked.add([...r.history].reverse().find((h) => h.kind === 'choice')!.choice!);
@@ -733,7 +689,7 @@ describe('자동 모드: 성향 기반 선택', () => {
 
   it('자동이 고른 선택지를 수동으로 고르면 이후 상태가 완전히 같다 (R-039): 한 걸음 — 같은 시드, 시대 3개, 실제 이벤트 풀', () => {
     let checked = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 60; seed++) {
         const d = advanceUntilDecision(life(seed, era)).state;
         if (d.phase !== 'life' || d.pending === null) continue;
@@ -748,7 +704,7 @@ describe('자동 모드: 성향 기반 선택', () => {
 
   it('한 판 전체: 자동 모드가 고른 선택을 수동으로 따라 하거나 자동과 수동을 섞어도 최종 상태가 자동으로 끝까지 간 것과 완전히 같다 (R-039)', () => {
     let decisions = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 25; seed++) {
         const start = life(seed, era);
         // 자동으로 끝까지 가며 고른 선택을 기록한다.
@@ -811,7 +767,7 @@ describe('자동 모드: 성향 기반 선택', () => {
   });
 
   it('끝까지 도달한다: 세 시대 × 시드 100개, 자동 선택으로 사망에 닿고 모든 선택지가 해결됐다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 100; seed++) {
         const r = playToEnd(life(seed, era), null);
         expect(r.state.phase, `${era} ${seed}`).toBe('ending');
@@ -829,7 +785,7 @@ describe('자동 모드: 성향 기반 선택', () => {
 
 describe('다음 결정으로 (advanceUntilDecision)', () => {
   it('선택지 또는 사망에서 정확히 멈추고, 그 사이에는 선택지가 하나도 건너뛰어지지 않는다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 40; seed++) {
         let s = life(seed, era);
         let decisions = 0;
@@ -990,15 +946,15 @@ describe('세션 reducer: 타이머·클릭·자동 모드가 겹쳐도 한 해�
     expect(adopted.tick).toBeNull();
   });
 
-  it('화면 전환 액션(setEra/begin/enterLife)이 core 함수와 같고 연타는 같은 객체를 돌려준다', () => {
+  it('화면 전환 액션(setGeneration/begin/enterLife)이 core 함수와 같고 연타는 같은 객체를 돌려준다', () => {
     let s = createSession(createInitialState(9), { speed: 1, autoMode: false });
-    expect(s.game.phase).toBe('title'); // 첫 화면에서 곧바로 세상을 고르고 태어난다 — 시대 선택 화면은 없다
-    s = sessionReducer(s, { type: 'setEra', era: 'future' });
-    expect(s.settings.era).toBe('future');
-    expect(sessionReducer(s, { type: 'setEra', era: 'future' })).toBe(s); // 같은 선택은 같은 객체
+    expect(s.game.phase).toBe('title'); // 첫 화면에서 곧바로 세대를 고르고 태어난다 — 시대 선택 화면은 없다
+    s = sessionReducer(s, { type: 'setGeneration', generation: 'alpha' });
+    expect(s.settings.generation).toBe('alpha');
+    expect(sessionReducer(s, { type: 'setGeneration', generation: 'alpha' })).toBe(s); // 같은 선택은 같은 객체
     s = sessionReducer(s, { type: 'begin' });
     expect(s.game.phase).toBe('roulette'); // 출생 결과가 정해지고 룰렛 화면(M3)
-    expect(s.game.era).toBe('future');
+    expect(s.game.generation).toBe('alpha');
     const born = s;
     expect(sessionReducer(s, { type: 'begin' })).toBe(born); // 이중 추첨 없음
     expect(sessionReducer(s, { type: 'enterLife' }), '룰렛에서 곧바로 인생으로는 못 간다').toBe(s);

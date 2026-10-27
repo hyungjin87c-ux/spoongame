@@ -59,12 +59,12 @@ function richState(): GameState {
   return {
     ...createInitialState(2024),
     phase: 'life',
-    era: 'present',
+    generation: 'alpha',
     lifeLength: 'long60',
     character: {
       name: '김서연',
       gender: 'female',
-      birthYear: 2026, // 지금 세상 출생 연도(2026 고정, SPEC-003 Q1)
+      birthYear: 2016, // 알파 세대(2013~2020년생)의 한 해
       parentWealth: 3,
       parenting: 'helicopter',
       looks: 71,
@@ -86,7 +86,7 @@ describe('초기 상태', () => {
   it('타이틀 단계, 빈 캐릭터·연표, 시드가 RNG 상태로 들어간다', () => {
     const s = createInitialState(77);
     expect(s.phase).toBe('title');
-    expect(s.era).toBeNull();
+    expect(s.generation).toBeNull();
     expect(s.lifeLength).toBeNull();
     expect(s.character).toBeNull();
     expect(s.age).toBe(0);
@@ -159,7 +159,7 @@ describe('손상 데이터 복구', () => {
   Object.assign(bad, {
     // R-001 필드 간 정합성
     '정합성: life인데 character null': withData((d) => (d.character = null)),
-    '정합성: life인데 era null': withData((d) => (d.era = null)),
+    '정합성: life인데 generation null': withData((d) => (d.generation = null)),
     '정합성: life인데 birthStats null': withData((d) => (d.birthStats = null)),
     '정합성: birth인데 character null': withData((d) => {
       d.phase = 'birth';
@@ -174,7 +174,7 @@ describe('손상 데이터 복구', () => {
     '정합성: title인데 birthStats 있음': withData((d) => {
       d.phase = 'title';
       d.character = null;
-      d.era = null;
+      d.generation = null;
       d.lifeLength = null;
     }),
     // v5: 인생 길이(lifeLength). 시대 선택 단계(eraSelect)는 없어졌다
@@ -186,7 +186,7 @@ describe('손상 데이터 복구', () => {
       d.phase = 'title';
       d.character = null;
       d.birthStats = null;
-      d.era = null;
+      d.generation = null;
       d.age = 0;
       d.history = [];
       d.flags = [];
@@ -197,21 +197,26 @@ describe('손상 데이터 복구', () => {
       d.character = null;
       d.birthStats = null;
       d.lifeLength = null;
-      d.era = null;
+      d.generation = null;
       d.age = 0;
       d.history = [];
       d.flags = [];
       d.seen = {};
     }),
-    '정합성: 출생연도가 시대 범위 밖': withData((d) => (d.era = 'past')),
+    '정합성: 출생연도가 세대 범위 밖(알파 2016년생이 산업화 세대)': withData((d) => (d.generation = 'industrial')),
+    '정합성: 세대 id가 모르는 값(옛 시대 이름 past)': withData((d) => (d.generation = 'past')),
+    '정합성: 시험 전용 R1 프로필은 저장에 없다(2026년생이어도)': withData((d) => {
+      d.generation = 'r1-present';
+      d.character.birthYear = 2026;
+    }),
     '정합성: birth 단계인데 age != 0': withData((d) => (d.phase = 'birth')),
     // validCharacter 거부 분기
     'character: name 빈 문자열': withData((d) => (d.character.name = '')),
     'character: name 숫자': withData((d) => (d.character.name = 7)),
     'character: name 너무 김': withData((d) => (d.character.name = '가'.repeat(21))),
     'character: gender 이상값': withData((d) => (d.character.gender = 'x')),
-    'character: birthYear 소수': withData((d) => (d.character.birthYear = 2012.5)),
-    'character: birthYear 문자열': withData((d) => (d.character.birthYear = '2012')),
+    'character: birthYear 소수': withData((d) => (d.character.birthYear = 2016.5)),
+    'character: birthYear 문자열': withData((d) => (d.character.birthYear = '2016')),
     'character: parentWealth 0': withData((d) => (d.character.parentWealth = 0)),
     'character: parentWealth 6': withData((d) => (d.character.parentWealth = 6)),
     'character: parentWealth 문자열': withData((d) => (d.character.parentWealth = '3')),
@@ -277,7 +282,7 @@ describe('손상 데이터 복구', () => {
       d.birthStats = null;
       d.birthReport = null;
       d.peerSeed = null;
-      d.era = null;
+      d.generation = null;
       d.lifeLength = null;
       d.age = 0;
       d.history = [];
@@ -333,31 +338,28 @@ describe('손상 데이터 복구', () => {
     'rngState: 2^32': withData((d) => (d.rngState = 4294967296)),
     'rngState: 소수': withData((d) => (d.rngState = 0.5)),
     'rngState: null': withData((d) => (d.rngState = null)),
-    // R-012: 지금 세상 출생 연도 범위가 1990~2025 → 2008~2025로 바뀌었다
-    '정합성: 지금 세상인데 2007년생(새 범위 밖)': withData((d) => (d.character.birthYear = 2007)),
-    '정합성: 지금 세상인데 1995년생(구 범위에서는 유효)': withData((d) => (d.character.birthYear = 1995)),
-    // R-213(M3): 지금 세상 출생 연도가 2026 한 해로 고정됐다 — M2 시기의 2008~2025년생은 범위 밖이다(스키마 v6이라 v5 저장은 아예 읽지 않지만 같은 규칙을 검증기도 지킨다)
-    '정합성: 지금 세상인데 2025년생(M2 시기 범위의 끝, 2026 고정 뒤에는 범위 밖)': withData((d) => (d.character.birthYear = 2025)),
-    '정합성: 지금 세상인데 2008년생(M2 시기 범위의 처음)': withData((d) => (d.character.birthYear = 2008)),
-    '정합성: 지금 세상인데 2027년생': withData((d) => (d.character.birthYear = 2027)),
-    '정합성: 지난 세상인데 1990년생': withData((d) => {
-      d.era = 'past';
-      d.character.birthYear = 1990;
+    // 세대별 출생 연도 범위 (SPEC-004 GD1 · MG1): 시험 전용 2026년생·범위 밖 연도는 세대 판 저장에 없다
+    '정합성: 알파인데 2012년생(Z 세대의 마지막 해)': withData((d) => (d.character.birthYear = 2012)),
+    '정합성: 알파인데 2021년생(2020 뒤는 어느 세대에도 없다)': withData((d) => (d.character.birthYear = 2021)),
+    '정합성: 알파인데 2026년생(시험 전용 R1 연도)': withData((d) => (d.character.birthYear = 2026)),
+    '정합성: 산업화인데 1939년생': withData((d) => {
+      d.generation = 'industrial';
+      d.character.birthYear = 1939;
     }),
-    '정합성: 다가올 세상인데 2029년생': withData((d) => {
-      d.era = 'future';
-      d.character.birthYear = 2029;
+    '정합성: 산업화인데 1955년생(베이비붐 세대의 첫 해)': withData((d) => {
+      d.generation = 'industrial';
+      d.character.birthYear = 1955;
     }),
-    '정합성: 다가올 세상인데 2061년생': withData((d) => {
-      d.era = 'future';
-      d.character.birthYear = 2061;
+    '정합성: Z 세대인데 1996년생': withData((d) => {
+      d.generation = 'genz';
+      d.character.birthYear = 1996;
     }),
     // 구 스키마(v2) — 구 범위(1990~2025)에서는 유효했던 저장도 새 게임으로 시작한다
     'v2 저장(지금 세상 1995년생, 구 범위에서는 유효)': JSON.stringify({
       version: 2,
       data: { ...richState(), character: { ...richState().character, birthYear: 1995 } },
     }),
-    'v2 저장(2012년생, 형태는 현행과 같음)': JSON.stringify({ version: 2, data: richState() }),
+    'v2 저장(2016년생, 형태는 현행과 같음)': JSON.stringify({ version: 2, data: richState() }),
     // 구 스키마(v1) 흔적
     'v1 저장(recentRolls)': JSON.stringify({ version: 1, data: { ...createInitialState(1), recentRolls: [] } }),
   });
@@ -374,7 +376,7 @@ describe('손상 데이터 복구', () => {
     const title = (fund: number): string =>
       withData((d) => {
         d.phase = 'title';
-        for (const k of ['character', 'birthStats', 'birthReport', 'peerSeed', 'era', 'lifeLength', 'pending', 'lastChoiceAge', 'death', 'assets']) d[k] = null;
+        for (const k of ['character', 'birthStats', 'birthReport', 'peerSeed', 'generation', 'lifeLength', 'pending', 'lastChoiceAge', 'death', 'assets']) d[k] = null;
         d.age = 0;
         d.history = [];
         d.flags = [];
@@ -401,7 +403,7 @@ describe('손상 데이터 복구', () => {
     expect(born).toEqual(clean);
   });
 
-  it('경계값은 통과: age 105(지금 세상 상한), seed·rngState 0 / 2^32-1, looks 0·100, 연표 비어 있음', () => {
+  it('경계값은 통과: age 105(상한 근처), seed·rngState 0 / 2^32-1, looks 0·100, 연표 비어 있음', () => {
     const patches: Array<(d: Doc) => void> = [
       (d) => {
         d.age = 105; // 20세 이상이라 자산이 있고 집안 살림은 0이다 (v8)
@@ -427,33 +429,45 @@ describe('손상 데이터 복구', () => {
     }
   });
 
-  it('시대별 출생 연도 경계는 통과: 지난 1950·1989 / 지금 2026(한 해뿐) / 다가올 2030·2060 (R-012, SPEC-003 Q1)', () => {
+  it('세대별 출생 연도 경계는 통과: 산업화 1940·1954 / 베이비붐 1955·1963 / 86 1960(겹침)·1969 / X 1970·1980 / 밀레니얼 1981·1996 / Z 1997·2012 / 알파 2013·2020 (SPEC-004 GD1)', () => {
     const cases: Array<[string, number]> = [
-      ['past', 1950],
-      ['past', 1989],
-      ['present', 2026],
-      ['future', 2030],
-      ['future', 2060],
+      ['industrial', 1940],
+      ['industrial', 1954],
+      ['boomer', 1955],
+      ['boomer', 1963],
+      ['boomer', 1960],
+      ['g86', 1960],
+      ['g86', 1963],
+      ['g86', 1969],
+      ['genx', 1970],
+      ['genx', 1980],
+      ['millennial', 1981],
+      ['millennial', 1996],
+      ['genz', 1997],
+      ['genz', 2012],
+      ['alpha', 2013],
+      ['alpha', 2020],
     ];
-    for (const [era, year] of cases) {
+    for (const [generation, year] of cases) {
       const st = memoryStorage();
       st.map.set(
         GAME_KEY,
         withData((d) => {
-          d.era = era;
+          d.generation = generation;
           d.character.birthYear = year;
+          d.birthReport.region = '경기'; // 1940~1946년생에게는 서울·제주가 독립한 단위가 아니라 경기가 모든 해에 있는 칸이다 (출생 연도 표의 시도 구분)
         }),
       );
-      expect(loadGame(st), `${era} ${year}`).not.toBeNull();
+      expect(loadGame(st), `${generation} ${year}`).not.toBeNull();
     }
   });
 
-  it('스키마 버전은 8이다 (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이 / 6: 개편 M3 — 룰렛 단계·출생신고 상세·또래 시드, 지금 세상 2026 고정 / 7: 개편 M4 — 일시정지 여부(paused), 연표 상한 300 / 8: 개편 M5 — 재산 스탯 폐지, 자산(assets)·집안 살림(familyFund))', () => {
-    expect(SCHEMA_VERSION).toBe(8);
-    expect(JSON.parse(serializeGame(richState())).version).toBe(8);
+  it('스키마 버전은 9다 (9: SPEC-004 MG1 — `era`가 `generation`으로 바뀌고 `fromRandom`·`regionPicked`(선택 필드)가 더해졌다) (3: 지금 세상 출생 연도 범위 변경 R-012 / 4: 인생 진행 필드 추가 R-008 / 5: 개편 M2 — 시대 선택 단계 삭제·판마다 인생 길이 / 6: 개편 M3 — 룰렛 단계·출생신고 상세·또래 시드, 지금 세상 2026 고정 / 7: 개편 M4 — 일시정지 여부(paused), 연표 상한 300 / 8: 개편 M5 — 재산 스탯 폐지, 자산(assets)·집안 살림(familyFund))', () => {
+    expect(SCHEMA_VERSION).toBe(9);
+    expect(JSON.parse(serializeGame(richState())).version).toBe(9);
   });
 
-  it('v8 저장 왕복: 20세 이상 인생(자산 있음, 집안 살림 0)도 그대로 복원된다 — 순자산이 음수이고 부채가 있는 판도 (EC1 불변식)', () => {
+  it('v9 저장 왕복: 20세 이상 인생(자산 있음, 집안 살림 0)도 그대로 복원된다 — 순자산이 음수이고 부채가 있는 판도 (EC1 불변식)', () => {
     const adult = (assets: GameState['assets']): GameState => ({ ...richState(), age: 25, familyFund: 0, assets });
     for (const assets of [
       { net: 1200, income: 3000, debt: 0, incomeAdj: 0, dwelling: 'rent' as const },
@@ -492,7 +506,7 @@ describe('손상 데이터 복구', () => {
       expect(parseGame(serializeGame({ ...other, paused: true })), phase + '에 켜진 일시정지는 변조').toBeNull();
     }
     // 엔딩에도 켜져 있을 수 없다 (일시정지 중 고른 선택이 마지막이었어도 finishYear가 끈다)
-    const end = playToEnd({ ...startLife(5, 'present'), paused: true }, null).state;
+    const end = playToEnd({ ...startLife(5, 'alpha'), paused: true }, null).state;
     expect(end.phase).toBe('ending');
     expect(end.paused).toBe(false);
     expect(parseGame(serializeGame({ ...end, paused: true }))).toBeNull();
@@ -573,11 +587,11 @@ describe('손상 데이터 복구', () => {
     expect(classifySavedGame('null')).toBe('broken');
   });
 
-  it('title 상태(캐릭터·세상·인생 길이 없음)와 인생 길이가 값인 출생 이후 상태는 통과', () => {
+  it('title 상태(캐릭터·세대·인생 길이 없음)와 인생 길이가 값인 출생 이후 상태는 통과', () => {
     const t = createInitialState(3);
     expect(parseGame(serializeGame(t))).toEqual(t);
     for (const length of LIFE_LENGTHS) {
-      const born = beginBirth(createInitialState(3), 'future', length);
+      const born = beginBirth(createInitialState(3), 'alpha', length);
       expect(parseGame(serializeGame(born))).toEqual(born);
       expect(parseGame(serializeGame(born))!.lifeLength).toBe(length);
     }
@@ -619,15 +633,30 @@ describe('설정은 게임과 독립', () => {
     expect(SETTINGS_KEY).not.toBe(GAME_KEY);
   });
 
-  it('기본값: 1배속, 자동 꺼짐, 지금 세상, 약 30분', () => {
-    expect(loadSettings(memoryStorage())).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '' });
-    expect(DEFAULT_SETTINGS).toEqual({ speed: 1, autoMode: false, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '' }); // M4: BGM은 꺼짐·볼륨 낮음(30), 테마는 시스템 설정을 따름 / M7c: 자동 기록 카드는 켜짐 / SPEC-005 SV2(설정 v5): 무거운 장면 가리기는 꺼짐, 새 소식은 본 적 없음(빈 글자)
+  it('기본값: 1배속, 자동 꺼짐, 랜덤 세대, 약 30분 (+ 살아본 세대 없음 · 출신 시도 밝히지 않음 · 금액은 당시 화폐)', () => {
+    const expected = {
+      speed: 1,
+      autoMode: false,
+      generation: 'random',
+      lifeLength: 'short30',
+      bgm: { on: false, volume: 30 },
+      theme: 'system',
+      noteCards: true,
+      gentle: false,
+      notesSeen: '',
+      lived: [],
+      homeRegion: null,
+      moneyView: 'then',
+    };
+    expect(loadSettings(memoryStorage())).toEqual(expected);
+    expect(DEFAULT_SETTINGS).toEqual(expected); // M4: BGM은 꺼짐·볼륨 낮음(30), 테마는 시스템 설정을 따름 / M7c: 자동 기록 카드는 켜짐 / SPEC-005: 가림 꺼짐·새 소식 안 봄 / SPEC-004 MG1: 처음 방문의 세대 선택은 「랜덤 세대」(GS4)
   });
 
-  it('설정 저장 왕복 (배속·자동 모드·태어날 세상·인생 길이)', () => {
+  it('설정 저장 왕복 (배속·자동 모드·태어날 세대·인생 길이·살아본 세대·출신 시도·금액 보기)', () => {
     const st = memoryStorage();
-    saveSettings(st, { speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false, gentle: true, notesSeen: '0.2.0' });
-    expect(loadSettings(st)).toEqual({ speed: 8, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false, gentle: true, notesSeen: '0.2.0' });
+    const custom = { speed: 8, autoMode: true, generation: 'genx', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false, gentle: true, notesSeen: '0.2.0', lived: ['industrial', 'alpha'], homeRegion: '부산', moneyView: 'now' } as const;
+    saveSettings(st, { ...custom, lived: [...custom.lived] });
+    expect(loadSettings(st)).toEqual({ ...custom, lived: [...custom.lived] });
   });
 
   it('저장된 설정의 인생 길이가 아직 고를 수 없는 「약 1시간」(long60)이면 short30으로 읽는다 — 다른 필드는 그대로 (R-202)', () => {
@@ -637,29 +666,29 @@ describe('설정은 게임과 독립', () => {
     expect(selectableLifeLength('short30')).toBe('short30');
     expect(isLifeLengthSelectable('long60')).toBe(false);
     const st = memoryStorage();
-    saveSettings(st, { ...DEFAULT_SETTINGS, speed: 8, autoMode: true, era: 'future', lifeLength: 'long60' });
-    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true, era: 'future', lifeLength: 'short30' });
+    saveSettings(st, { ...DEFAULT_SETTINGS, speed: 8, autoMode: true, generation: 'alpha', lifeLength: 'long60' });
+    expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 8, autoMode: true, generation: 'alpha', lifeLength: 'short30' });
     // 현재 설정 봉투(v2)의 원문을 그대로 읽어도 같다 (v1 봉투에는 인생 길이 필드가 없어 이 검사 대상이 아니다 — 아래 「설정 v1 …」 테스트)
-    for (const version of [2, 3]) {
-      expect(parseSettings(JSON.stringify({ version, data: { speed: 4, autoMode: false, era: 'past', lifeLength: 'long60' } }))).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: false, era: 'past', lifeLength: 'short30' });
+    for (const version of [2, 3, 6]) {
+      expect(parseSettings(JSON.stringify({ version, data: { speed: 4, autoMode: false, generation: 'boomer', lifeLength: 'long60' } }))).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: false, generation: 'boomer', lifeLength: 'short30' });
     }
     // 알 수 없는 값은 기본값(이전 동작 그대로)
-    expect(parseSettings(JSON.stringify({ version: 2, data: { speed: 4, autoMode: false, era: 'past', lifeLength: 'x' } })).lifeLength).toBe('short30');
+    expect(parseSettings(JSON.stringify({ version: 2, data: { speed: 4, autoMode: false, lifeLength: 'x' } })).lifeLength).toBe('short30');
     // 판에 고정되는 값은 영향받지 않는다: 게임 저장의 long60은 그대로 통과한다(이미 태어난 판)
-    const born = beginBirth(createInitialState(3), 'future', 'long60');
+    const born = beginBirth(createInitialState(3), 'alpha', 'long60');
     expect(parseGame(serializeGame(born))).toEqual(born);
   });
 
   it('설정 v1(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — v5 게임 스키마 전환에서 설정을 잃지 않는다', () => {
-    expect(SETTINGS_VERSION).toBe(5); // v3(M4): BGM 켬/끔·볼륨과 화면 테마가 더해졌다 / v4(M7c): 자동 기록 카드 켬/끔(noteCards) / v5(SPEC-005 SV2): 무거운 장면 가리기(gentle)·새 소식을 본 버전(notesSeen) — 이전 버전은 그대로 읽고 새 필드는 기본값으로 채운다
+    expect(SETTINGS_VERSION).toBe(6); // v6(SPEC-004 MG1): 첫 화면의 마지막 세대 선택(generation)·살아본 세대(lived)·출신 시도(homeRegion)·금액 보기(moneyView) / v3(M4): BGM 켬/끔·볼륨과 화면 테마가 더해졌다 / v4(M7c): 자동 기록 카드 켬/끔(noteCards) / v5(SPEC-005 SV2): 무거운 장면 가리기(gentle)·새 소식을 본 버전(notesSeen) — 이전 버전은 그대로 읽고 새 필드는 기본값으로 채운다
     const st = memoryStorage();
     st.map.set(SETTINGS_KEY, JSON.stringify({ version: 1, data: { speed: 4, autoMode: true } }));
     expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: true });
-    // 읽은 뒤 저장하면 현재 버전(v5)으로 올라간다
+    // 읽은 뒤 저장하면 현재 버전(v6)으로 올라간다
     saveSettings(st, loadSettings(st));
     expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(SETTINGS_VERSION);
     // v2에서 알 수 없는 세상·인생 길이는 그 필드만 기본값(배속·자동 모드는 유지)
-    st.map.set(SETTINGS_KEY, JSON.stringify({ version: 2, data: { speed: 2, autoMode: true, era: 'mars', lifeLength: 7 } }));
+    st.map.set(SETTINGS_KEY, JSON.stringify({ version: 2, data: { speed: 2, autoMode: true, era: 'mars', generation: 'mars', lifeLength: 7 } }));
     expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, speed: 2, autoMode: true });
     // 게임이 v4 저장이라 새 게임이 돼도 설정은 그대로다
     st.map.set(GAME_KEY, JSON.stringify({ version: 4, data: createInitialState(1) }));

@@ -2,33 +2,32 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hasUnseenNotes } from '../core/build';
 import { DEFAULT_CHART_SIZE, buildCarousel, type CarouselData, type ChartSize } from '../core/carousel';
 import { buildFeedbackUrl, feedbackFieldsOf } from '../core/feedback';
-import { formatCount } from '../core/format';
-import { tryVirtualPopulation } from '../core/population';
-import { ERAS, LIFE_LENGTHS, isLifeLengthSelectable, type Era, type LifeLength } from '../core/types';
+import { pickAllowedForChoice, unpickableRegions } from '../core/birthProfile';
+import { GENERATION_IDS, LIFE_LENGTHS, isLifeLengthSelectable, type GenerationChoice, type GenerationId, type LifeLength } from '../core/types';
 import { BUILD_LABEL } from '../buildInfo';
 import { APP_VERSION, REPO_URL } from '../buildInfo';
 import { buildAboutFaq } from '../data/aboutFaq';
-import { ERA_CONFIG } from '../data/birthTable';
+import { GEN_ROWS, GEN_TEXT, REGION_CHIP_NAMES, formalNames, type GenRowText } from '../data/generationText';
+import { CURRENT_REGION_NAMES, REGION_KEYS, type CurrentRegionName } from '../data/regionKeys';
 import { INFO_TEXT } from '../data/infoText';
-import { NAMES } from '../data/names';
 import { RELEASE_NOTES } from '../data/releaseNotes';
-import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../data/titleText';
-import homeMapMobile from '../assets/home/home-map-mobile.webp';
-import homeMapPc from '../assets/home/home-map-pc.webp';
-import { Icon, Spoon, Sprite, TitleWordmark } from '../ui/Brand';
+import { LIFE_LENGTH_TEXT, NAME_CREDIT, NOT_READY_TEXT, TITLE_TEXT, footerStatsText } from '../data/titleText';
+import { Icon, Sprite, TitleWordmark } from '../ui/Brand';
 import { Glue } from '../ui/Glue';
 import { GuardedButton, useInputGuard } from '../ui/GuardedButton';
 import { InfoPanel, type InfoSection } from '../ui/InfoPanel';
 import { StatsCarousel } from '../ui/StatsCarousel';
 import { watchBarRelease } from '../ui/barRelease';
-import { revealTopOfTallFocus, revealWithinReleasedBar } from '../ui/focusReveal';
-import { useEpochMinute, useIsoLayoutEffect } from '../ui/hooks';
+import { revealGenRow, revealTopOfTallFocus, revealWithinReleasedBar } from '../ui/focusReveal';
+import { useIsoLayoutEffect } from '../ui/hooks';
 import { useFocusOnChange } from '../ui/useFocus';
 
 /**
- * 첫 화면 (SPEC-003 FS1~FS8, M2 → SPEC-005 QI3 HS1~HS5·SH1~SH7). 위에서부터 로고(워드마크) → (좁은 화면) 일러스트 배너 → 한 줄 설명 → 수저 다섯 자루 → 가상 인구 문구와 보조 문구 →
- * 선택 영역(큰 슬롯 「태어날 세상」 → 작은 슬롯 인생 길이 분절 컨트롤 → 설정 줄 — HS3의 슬롯 원칙: 큰 결정 → 작은 결정),
- * 폭 ≥ 960px에서는 오른쪽 열 맨 위에 일러스트(통계 카드 뒤로 살짝 겹침) 그 아래에 한국 사회 통계 캐러셀(그보다 좁으면 선택 아래), 맨 아래 출처·빌드 버전, 하단 중앙에 고정된 「태어나기」.
+ * 첫 화면 (SPEC-003 FS1~FS8, M2 → SPEC-005 QI3 HS1~HS5·SH1~SH7 → **SPEC-004 GS1~GS4·GS10·GS11·RG1~RG3**). 위에서부터 로고(워드마크) → 부제 「다른 세대, 다른 삶, 같은 대한민국」 → 체험 한 줄 →
+ * 선택 영역(큰 슬롯 「어느 세대로 살아보고 싶으세요?」 = **한 열 스크롤 세대 목록**(라디오 8줄: 첫 줄 「랜덤 세대」 + 세대 7종, 줄마다 작은 소개) → 작은 슬롯 태어나는 시도(룰렛에 맡기기 / 직접 고르기) · 인생 길이 분절 컨트롤 → 설정 줄 — HS3의 슬롯 원칙: 큰 결정 → 작은 결정),
+ * 폭 ≥ 960px에서는 오른쪽 열에 한국 사회 통계 캐러셀(그보다 좁으면 선택 아래 — 캐러셀은 이번 단계에서 그대로 둔다), 맨 아래 출처·빌드 버전, 하단 중앙에 고정된 「태어나기」.
+ * 오른쪽 위 일러스트·수저 다섯 자루 줄·가상 인구 문구는 없다(형진 님 GM3 게이트 ③ 답, D4-34·D4-36·5차 변경).
+ * 「랜덤 세대」는 버튼이 아니라 목록의 첫 라디오다 — **고르는 것만으로는 뽑지 않고** 「태어나기」를 누를 때 뽑는다(GS3). 처음 방문의 기본 선택은 「랜덤 세대」(GS4).
  * 진행 중인 판이 있는 채 첫 화면을 다시 열었을 때(`saved`)는 같은 자리에 「이어서 살기」가 기본 버튼이고 「새로 태어나기」는 보조다(이전 판이 사라진다는 확인 단계).
  * 구조·클래스는 docs/design/mockups/title-a.html·title-continue.html과 같다. 문구는 모두 data/titleText.ts.
  */
@@ -42,21 +41,29 @@ const GUARD_KEY_CONFIRM = 'title-confirm';
 export interface TitleSaved {
   onResume: () => void;
   /** 확인 단계를 거친 뒤에만 불린다 */
-  onBeginNew: () => void;
+  onBeginNew: (regionPick: string | null) => void;
 }
 
 interface Props {
-  era: Era;
+  /** 세대 목록에서 고른 줄 (설정 `generation` — 처음 방문은 `random`) */
+  generation: GenerationChoice;
+  /** 이 기기에서 끝까지 살아본 세대 (GS10 「살아봄」 표시) */
+  lived?: readonly GenerationId[];
+  /** 내 출신 시도 설정 (RG3 — 밝히지 않음이면 null). 이 값은 첫 화면의 칩 바로가기와 설정 줄에만 쓴다 */
+  homeRegion?: CurrentRegionName | null;
   lifeLength: LifeLength;
-  onSelectEra: (era: Era) => void;
+  onSelectGeneration: (generation: GenerationChoice) => void;
+  onSetHomeRegion?: (region: CurrentRegionName | null) => void;
   onSelectLifeLength: (lifeLength: LifeLength) => void;
-  onBegin: () => void;
+  /** 「태어나기」 — 시도를 직접 골랐으면 그 시도(줄임 이름), 룰렛에 맡겼으면 null. 이 단계에서 지연 로드 덩어리를 불러오므로 약속(Promise)을 돌려줄 수 있다 */
+  onBegin: (regionPick: string | null) => void;
+  /** 「태어나기」 뒤 지연 로드 덩어리를 불러오는 중인가 / 불러오기에 실패했는가 (MG8) */
+  loading?: 'idle' | 'loading' | 'failed';
+  onRetryLoad?: () => void;
   /** 진행 중인 판이 있고 첫 화면을 다시 연 상태 */
   saved?: TitleSaved | null;
   /** 이전 버전 저장을 버렸다는 안내(C6)를 보일지 */
   oldSaveNotice?: boolean;
-  /** 가상 인구 계산에 쓸 시각(에포크 분). 없으면 이 기기의 시계(분 단위). 테스트가 고정값을 넣는다. */
-  minute?: number;
   /** 캐러셀 데이터(테스트용 주입). 없으면 koreaStats.json에서 만든다(그래프는 화면에 그려지는 폭에 맞춰 다시 만든다). */
   carousel?: CarouselData;
   /**
@@ -77,49 +84,64 @@ interface Props {
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다. 패널이 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-interface RadioCardProps {
-  name: string;
-  value: string;
+interface GenRowProps {
+  row: GenRowText;
   checked: boolean;
+  lived: boolean;
   /** 화면 진입 직후 입력 가드가 풀렸는가. 닫혀 있는 동안의 클릭(엔딩의 「다시 태어나기」 더블탭의 둘째 입력 등)은 선택을 바꾸지 않는다(R-014·R-030 방식). */
   guardReady: boolean;
   onSelect: () => void;
-  title: string;
-  meta?: string;
-  desc: string;
-  testId: string;
-  /** 고를 수 없는 카드. 라디오 그룹 안에 그대로 있고, 비활성 이유는 meta 글자(카드의 접근 가능한 이름에 포함)로 알린다. */
-  disabled?: boolean;
 }
 
-function RadioCard({ name, value, checked, guardReady, onSelect, title, meta, desc, testId, disabled = false }: RadioCardProps) {
-  // 큰 슬롯(태어날 세상 3장 → SPEC-004 태어날 세대 7장 + 랜덤)의 카드는 모두 작은 변형(`radio-card--compact`)이다 — 카드 수·열 수에 의존하지 않는 격자(HS3 ①)
+/**
+ * 세대 목록의 한 줄 (GS1·GS2·GS10, 시안 `.gen-row`): 라디오 하나 + 표식 + [이름(+「살아봄」 체크+글자) ········ 메타 「{범위}년생 · 올해 N~M세」] / [작은 글씨 소개].
+ * 「랜덤 세대」 줄은 메타가 없다(5차). 접근 가능한 이름 = 이름 + 메타(`aria-labelledby`), 소개는 `aria-describedby`(같은 글자). 「살아봄」은 이 줄의 이름 꼬리에 읽힌다.
+ * 선택 상태는 색에만 의존하지 않는다(왼쪽 막대 + 표식 채움 + 체크 + 「선택됨」 읽기). 화살표 키는 라디오 묶음의 기본 동작이다.
+ */
+function GenRow({ row, checked, lived, guardReady, onSelect }: GenRowProps) {
+  const id = row.id;
   return (
-    <label className={`radio-card radio-card--compact${checked ? ' is-selected' : ''}${disabled ? ' is-disabled' : ''}`}>
+    <label className={`gen-row${checked ? ' is-selected' : ''}`} data-testid={`gen-row-${id}`}>
       <input
         type="radio"
-        name={name}
-        value={value}
+        name="gen"
+        value={id}
         checked={checked}
-        disabled={disabled}
+        aria-labelledby={`gen-name-${id}${row.meta === null ? '' : ` gen-meta-${id}`}${lived ? ` gen-lived-${id}` : ''}`}
+        aria-describedby={`gen-desc-${id}`}
         onChange={() => {
           // React는 라디오의 값이 바뀐 것을 click에서 알아채므로(preventDefault와 무관하게 onChange가 불린다) 가드가 닫혀 있으면 여기서도 막는다
-          if (guardReady && !disabled) onSelect();
+          if (guardReady) onSelect();
         }}
         onClick={(e) => {
           if (!guardReady) e.preventDefault(); // 가드가 닫혀 있으면 선택이 바뀌지 않는다(제어되는 라디오라 화면도 그대로다)
         }}
-        data-testid={testId}
+        data-testid={`gen-${id}`}
       />
-      <span className="radio-card__mark">
+      <span className="gen-row__mark" aria-hidden="true">
         <Icon name="i-check" />
       </span>
-      <span className="radio-card__body">
-        <span className="radio-card__head">
-          <span className="radio-card__title">{title}</span>
-          {meta !== undefined ? <span className="radio-card__meta">{meta}</span> : null}
+      <span className="gen-row__body">
+        <span className="gen-row__line">
+          <span className="gen-row__name" id={`gen-name-${id}`}>
+            {row.name}
+          </span>
+          {lived ? (
+            <span className="gen-row__lived" id={`gen-lived-${id}`} data-testid={`gen-lived-${id}`}>
+              <Icon name="i-check" />
+              {GEN_TEXT.lived}
+            </span>
+          ) : null}
+          {row.meta === null ? null : (
+            <span className="gen-row__meta" id={`gen-meta-${id}`}>
+              <Glue text={`${row.meta.range} · ${row.meta.age}`} />
+            </span>
+          )}
         </span>
-        <span className="radio-card__desc">{desc}</span>
+        <span className="gen-row__desc" id={`gen-desc-${id}`}>
+          {row.desc}
+          {row.note === null ? null : <span className="gen-row__note"> {row.note}</span>}
+        </span>
       </span>
       {checked ? <span className="sr-only">선택됨</span> : null}
     </label>
@@ -196,39 +218,112 @@ function GentleSwitch({ on, onToggle, guardReady }: { on: boolean; onToggle: () 
 }
 
 /**
- * 첫 화면 일러스트 (HS1, 형진 님 그림 — diff-005 D5-24~D5-33): 한반도 모양 안의 여러 세대·지역의 삶 장면. **장식**이다 — `figure aria-hidden` + `alt=""`(이름은 로고가 말한다), 그림 안에 글자 0, 클릭·선택 없음, 외부 요청 0.
- * 같은 그림이 두 자리에 있다: `banner`(< 960px, 로고 줄 아래 배너)와 `top`(≥ 960px, 오른쪽 열 맨 위·통계 카드 뒤로 살짝 겹침). CSS가 한 번에 하나만 보이게 한다 —
- * 두 `<picture>`가 같은 주소를 골라 내려받기는 한 번이다(≥ 960px은 PC 파일, 그 아래는 모바일 파일). `width`·`height` 속성이 자리를 미리 잡아 레이아웃이 흔들리지 않는다.
- * `loading="lazy"`(R-450 — **속성 순서가 중요하다: `loading`을 `src`보다 먼저 쓴다**, React가 쓴 순서대로 DOM에 속성을 주고 `src`를 주는 순간 가져오기가 시작되므로 그때 이미 lazy여야 한다): WebKit은 React가 `img`를 `picture`에 붙이기 전에 `src`(모바일 파일)를 먼저 받아 PC 화면에서 두 파일을 다 내려받았다 — 느린 로드는 레이아웃 뒤에 시작하므로 `source`가 붙은 뒤 고른 한 장만 받고,
- * `display: none`인 쪽 그림(화면에 안 보이는 배너·오른쪽 열)은 아예 받지 않는다. `srcSet`/`sizes`(w 단위)로 고르면 1280 DPR 1에서 375w를 먼저 고르는 문제가 있어 쓰지 않는다.
- * 파일은 vite가 해시 이름으로 내보낸다(`public/`에 두지 않는다 — 캐시). 흐림·겹침은 CSS(`title.css` 「일러스트」 블록).
+ * 태어나는 시도 묶음 (RG1·RG2, 시안 `.slot--region`): 분절 「룰렛에 맡기기 / 직접 고르기」 + 직접 고르기를 고르면 시·도 칩(라디오). 고를 수 없는 칩(세종 × 산업화~밀레니얼, 「랜덤 세대」에서도 세종)은
+ * 점선 + 비활성(`aria-disabled`) + 이유 한 줄로 알린다(색에만 의존하지 않는다). 설정에 「내 출신 시도」가 있으면 칩 맨 앞에 바로가기 칩(RG3). 확정(태어나기) 뒤에는 바꿀 수 없다.
  */
-function HomeIllustration({ variant }: { variant: 'banner' | 'top' }) {
+function RegionSlot({
+  generation,
+  mode,
+  picked,
+  homeRegion,
+  guardReady,
+  onMode,
+  onPick,
+}: {
+  generation: GenerationChoice;
+  mode: 'roulette' | 'pick';
+  picked: string | null;
+  homeRegion: CurrentRegionName | null;
+  guardReady: boolean;
+  onMode: (m: 'roulette' | 'pick') => void;
+  onPick: (name: string) => void;
+}) {
+  const disabledKeys = generation === 'random' ? [...new Set(GENERATION_IDS.flatMap((g) => unpickableRegions(g)))] : unpickableRegions(generation);
+  const disabledNames = new Set<string>(disabledKeys.map((k) => REGION_KEYS.find((r) => r.key === k)!.short));
+  const reason = disabledKeys.length === 0 ? null : generation === 'random' ? GEN_TEXT.regionNoneRandom(formalNames(disabledKeys)) : GEN_TEXT.regionNone(formalNames(disabledKeys));
+  const guarded = (fn: () => void) => () => {
+    if (guardReady) fn();
+  };
+  const chip = (name: CurrentRegionName, origin: boolean) => {
+    const disabled = disabledNames.has(name);
+    const on = picked === name && !disabled;
+    return (
+      <label key={`${origin ? 'o-' : ''}${name}`} className={`chip-opt${disabled ? ' is-disabled' : ''}${on ? ' is-selected' : ''}${origin ? ' chip-opt--origin' : ''}`} aria-disabled={disabled ? 'true' : undefined}>
+        <input type="radio" name="sido" value={name} checked={on} disabled={disabled} onChange={guarded(() => onPick(name))} onClick={(e) => (guardReady ? undefined : e.preventDefault())} data-testid={`${origin ? 'sido-origin' : 'sido'}-${name}`} />
+        <Icon name="i-check" />
+        <span>{origin ? GEN_TEXT.originChip(name) : name}</span>
+      </label>
+    );
+  };
   return (
-    <figure className={`illust illust--${variant}`} aria-hidden="true" data-testid={`home-illust-${variant}`}>
-      <picture>
-        <source media="(min-width: 960px)" srcSet={homeMapPc} type="image/webp" />
-        <img loading="lazy" decoding="async" width={375} height={440} alt="" src={homeMapMobile} />
-      </picture>
-    </figure>
+    <fieldset className="slot slot--small slot--region" data-testid="region-slot">
+      <legend className="group-title group-title--inline">{GEN_TEXT.regionTitle}</legend>
+      <div className="seg" role="radiogroup" aria-label={GEN_TEXT.regionModeLabel} data-testid="region-mode">
+        {(['roulette', 'pick'] as const).map((m) => (
+          <label key={m} className={`seg__opt${mode === m ? ' is-selected' : ''}`}>
+            <input type="radio" name="regmode" value={m} checked={mode === m} onChange={guarded(() => onMode(m))} onClick={(e) => (guardReady ? undefined : e.preventDefault())} data-testid={`regmode-${m}`} />
+            <Icon name="i-check" />
+            <span>{m === 'roulette' ? GEN_TEXT.regionRoulette : GEN_TEXT.regionPick}</span>
+            {mode === m ? <span className="sr-only">선택됨</span> : null}
+          </label>
+        ))}
+      </div>
+      {mode === 'roulette' ? (
+        <p className="seg__hint seg__hint--roulette" data-testid="region-hint">
+          <Glue text={GEN_TEXT.regionHint} />
+        </p>
+      ) : (
+        <>
+          <div className="chipset" role="radiogroup" aria-label={GEN_TEXT.regionChipsLabel} data-testid="region-chips">
+            {homeRegion === null ? null : chip(homeRegion, true)}
+            {REGION_CHIP_NAMES.map((name) => chip(name, false))}
+          </div>
+          <p className="seg__hint chipset__note" data-testid="region-pick-hint">
+            {GEN_TEXT.regionPickHint}
+            {reason === null ? null : ` ${reason}`}
+          </p>
+        </>
+      )}
+    </fieldset>
   );
 }
 
-/** 수저 다섯 단계의 이름 (줄바꿈 위치만 시안과 같게: 「다이아몬드/수저」) */
-const SPOONS: ReadonlyArray<{ grade: 1 | 2 | 3 | 4 | 5; name: string; lines?: [string, string] }> = [
-  { grade: 1, name: '흙수저' },
-  { grade: 2, name: '동수저' },
-  { grade: 3, name: '은수저' },
-  { grade: 4, name: '금수저' },
-  { grade: 5, name: '다이아몬드수저', lines: ['다이아몬드', '수저'] },
-];
+/** 내 출신 시도 설정 (RG3): 설정 줄의 접이식 한 줄 — 열면 선택 상자 + 「지우기」 + 개인정보 한 줄. 이 기기의 설정 키 하나에만 남는다(게임 저장·의견 보내기 주소·콘솔·공유 문구에 넣지 않는다) */
+function OriginSetting({ value, onChange }: { value: CurrentRegionName | null; onChange: (region: CurrentRegionName | null) => void }) {
+  return (
+    <details className="disclosure origin" id="origin" data-testid="origin-setting">
+      <summary>
+        {GEN_TEXT.originTitle} <span className="tag origin__cur" data-testid="origin-current">{value ?? GEN_TEXT.originNone}</span>
+      </summary>
+      <div className="origin__body">
+        <label>
+          <span className="sr-only">{GEN_TEXT.originTitle}</span>
+          <select className="origin__select" value={value ?? ''} onChange={(e) => onChange(e.target.value === '' ? null : (e.target.value as CurrentRegionName))} data-testid="origin-select">
+            <option value="">{GEN_TEXT.originNone}</option>
+            {CURRENT_REGION_NAMES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => onChange(null)} disabled={value === null} data-testid="origin-clear">
+          {GEN_TEXT.originClear}
+        </button>
+        <p className="origin__desc">
+          <Glue text={GEN_TEXT.originDesc} />
+        </p>
+      </div>
+    </details>
+  );
+}
 
-export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, onBegin, saved = null, oldSaveNotice = false, minute, carousel, gentle, notesSeen = '', onSeeNotes, appVersion = APP_VERSION, repoUrl = REPO_URL }: Props) {
+export function TitleScreen({ generation, lived = [], homeRegion = null, lifeLength, onSelectGeneration, onSetHomeRegion, onSelectLifeLength, onBegin, loading = 'idle', onRetryLoad, saved = null, oldSaveNotice = false, carousel, gentle, notesSeen = '', onSeeNotes, appVersion = APP_VERSION, repoUrl = REPO_URL }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
-  const tagKeep = heroTagKeepParts();
-  const clock = useEpochMinute();
-  // 근거 통계를 읽을 수 없으면 null — 가상 인구 줄만 빠지고 첫 화면은 그대로 뜬다(R-211)
-  const population = tryVirtualPopulation(minute ?? clock);
+  // 태어나는 시도 (RG1): 룰렛에 맡기기(기본) / 직접 고르기 — 고른 시도는 「태어나기」를 누를 때 함께 넘어간다. 저장하지 않는다(판마다 새로 정한다)
+  const [regionMode, setRegionMode] = useState<'roulette' | 'pick'>('roulette');
+  const [regionPicked, setRegionPicked] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const [chartSize, setChartSize] = useState<ChartSize>(DEFAULT_CHART_SIZE);
   const data = useMemo(() => carousel ?? buildCarousel(undefined, chartSize), [carousel, chartSize]);
   const [confirming, setConfirming] = useState(false);
@@ -252,7 +347,7 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
     if (panel === null && wasPanelOpen.current) panelOpener.current?.focus();
     wasPanelOpen.current = panel !== null;
   }, [panel]);
-  const feedbackUrl = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, repoUrl, BUILD_LABEL));
+  const feedbackUrl = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', generation: null, lifeLength: null }, repoUrl, BUILD_LABEL));
   const panelInert = panel === null ? {} : INERT;
   const barRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -314,11 +409,41 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
       if (!(t instanceof HTMLElement)) return;
       if (t.closest('.title__side') !== null && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 960px)').matches) return;
       const card = t instanceof HTMLInputElement && t.type === 'radio' ? t.closest('label') : null; // 라디오 카드는 label이 링·크기를 가진다
+      const genList = card !== null && card.classList.contains('gen-row') ? card.parentElement : null;
+      if (card !== null && genList !== null && genList.classList.contains('gen-list')) {
+        // 세대 목록 줄: 목록 창과 문서를 함께 맞춘다. 브라우저의 기본 포커스 스크롤이 끝난 뒤(다음 프레임)에도 한 번 더 맞춘다
+        revealGenRow(card, genList, t);
+        requestAnimationFrame(() => revealGenRow(card, genList, t));
+        return;
+      }
       revealTopOfTallFocus(card ?? t, 7, t);
     };
     document.addEventListener('focusin', onFocusIn);
     return () => document.removeEventListener('focusin', onFocusIn);
   }, []);
+
+  // 고른 세대에서 고를 수 없는 시도가 되면(세종 × 산업화~밀레니얼, 랜덤 세대의 세종) 고른 시도를 푼다 — 비활성 칩이 고른 채 남지 않는다 (RG2 b)
+  useEffect(() => {
+    if (regionPicked !== null && !pickAllowedForChoice(generation, regionPicked)) setRegionPicked(null);
+  }, [generation, regionPicked]);
+
+  // 고른 줄을 목록 창 안에 둔다 — 목록의 scrollTop만 움직인다(scrollIntoView는 문서까지 끌어올린다, D4-38). 처음 칠할 때는 즉시(smooth가 진행 중이면 첫 그림에서 고른 줄이 반쯤 걸친다)
+  useIsoLayoutEffect(() => {
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>('.gen-row.is-selected');
+    if (list === null || list === undefined || row === null || row === undefined) return;
+    const top = row.offsetTop;
+    const bottom = top + row.offsetHeight;
+    // 키보드(방향키)로 고른 줄이면 목록은 즉시 움직이고(부드러운 스크롤이 도는 동안 문서 위치를 잘못 잡지 않게) 문서도 그 줄이 하단 띠·위 가장자리에 가리지 않게 맞춘다(WCAG 2.4.11, ui/focusReveal.ts#revealGenRow).
+    // 눌러서 고른 줄은 문서를 건드리지 않는다(화면이 점프하면 안 된다).
+    const input = row.querySelector<HTMLInputElement>('input');
+    if (input !== null && document.activeElement === input && input.matches(':focus-visible')) {
+      revealGenRow(row, list, input);
+      return;
+    }
+    // 줄이 창 밖이면 그 줄의 윗변을 창 윗변에 맞춘다 — 목록은 scroll-snap(줄 윗변이 맞춤 자리)이라 「아랫변을 맞추는」 값은 브라우저가 가장 가까운 윗변 자리로 되돌려 줄 아래가 잘린다
+    if (top < list.scrollTop || bottom > list.scrollTop + list.clientHeight) list.scrollTop = top;
+  }, [generation]);
 
   const closeConfirm = () => {
     returnFocus.current = true;
@@ -357,76 +482,44 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
               {TITLE_TEXT.oldSaveNotice}
             </p>
           ) : null}
-          <header className="hero hero--005">
+          <header className="hero hero--005 hero--r3">
             <h1 ref={headingRef} tabIndex={-1} data-testid="title-heading">
               <span className="sr-only">수저 게임</span>
               <TitleWordmark />
             </h1>
-            {/* 좁은 화면(< 960px): 로고 줄 아래 배너. 넓은 화면의 같은 그림은 오른쪽 열 맨 위에 있다(HomeIllustration) */}
-            <HomeIllustration variant="banner" />
             <p className="hero__tag">
-              {TITLE_TEXT.heroTagLead}
-              <span className="keep-phrase">
-                {tagKeep[0]}
-                {tagKeep[1] === '' ? null : <span className="nowrap">{tagKeep[1]}</span>}
-                {tagKeep[2]}
-              </span>
+              {GEN_TEXT.tagLead}
+              <span className="nowrap">{GEN_TEXT.tagKeep}</span>
             </p>
-            <ul className="spoon-lineup" aria-label={TITLE_TEXT.spoonLineupLabel} data-testid="spoon-lineup">
-              {SPOONS.map((s) => (
-                <li key={s.grade} className={`spoon-fig grade--${s.grade}`}>
-                  <Spoon grade={s.grade} large />
-                  <span className="spoon-fig__name">
-                    {s.lines === undefined ? (
-                      s.name
-                    ) : (
-                      <>
-                        {s.lines[0]}
-                        <br />
-                        {s.lines[1]}
-                      </>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {population === null ? null : (
-              <>
-                {/* 「N명」을 함께 굵게(시안·docs/design/copy.md 1절: {N}명), 숫자만 data-testid로 따로 읽는다 */}
-                <p className="hero__pop" data-testid="population-line">
-                  <strong>
-                    <span data-testid="population-count">{formatCount(population)}</span>
-                    {TITLE_TEXT.populationUnit}
-                  </strong>
-                  {TITLE_TEXT.populationSuffix}
-                </p>
-                <p className="hero__note" data-testid="population-note">
-                  <Glue text={TITLE_TEXT.populationNote} />
-                </p>
-              </>
-            )}
+            <p className="hero__span" data-testid="hero-span">
+              <Glue text={GEN_TEXT.span} />
+            </p>
           </header>
-          <fieldset className="slot slot--big">
-            <legend className="group-title">{TITLE_TEXT.eraGroup}</legend>
-            <div className="choices choices--grid" role="radiogroup" aria-label={TITLE_TEXT.eraGroup} data-testid="era-group">
-              {ERAS.map((e) => (
-                <RadioCard
-                  key={e}
-                  name="era"
-                  value={e}
-                  checked={e === era}
+          <fieldset className="slot slot--big slot--gen8">
+            <legend className="group-title">{GEN_TEXT.question}</legend>
+            {/* 한 열 스크롤 라디오 목록 (GS1): 줄 8개 — 첫 줄 「랜덤 세대」, 이어서 세대 7종. 화면 비율에 맞춘 높이 안에서 스크롤하고 고른 줄은 늘 창 안에 있다(D4-37·D4-38) */}
+            <div className="gen-list" role="radiogroup" aria-label={GEN_TEXT.listLabel} ref={listRef} data-testid="gen-list">
+              {GEN_ROWS.map((row) => (
+                <GenRow
+                  key={row.id}
+                  row={row}
+                  checked={row.id === generation}
+                  lived={row.id !== 'random' && lived.includes(row.id)}
                   guardReady={guardReady}
-                  onSelect={() => onSelectEra(e)}
-                  title={ERA_CONFIG[e].label}
-                  meta={eraMetaText(e, ERA_CONFIG[e].birthYears)}
-                  desc={ERA_CONFIG[e].blurb}
-                  testId={`era-${e}`}
+                  onSelect={() => onSelectGeneration(row.id)}
                 />
               ))}
             </div>
+            <details className="disclosure slot__fold" data-testid="gen-fold">
+              <summary>{GEN_TEXT.foldSummary}</summary>
+              <p>
+                <Glue text={GEN_TEXT.foldBody} />
+              </p>
+            </details>
           </fieldset>
           {/* 작은 슬롯(HS3 ③) — 인생 길이 분절 컨트롤 + 한 줄 안내, 그 아래 설정 줄(④ 무거운 장면 가리기, QI6 전에는 gentle prop이 없어 그려지지 않는다) */}
           <div className="slots-bottom">
+            <RegionSlot generation={generation} mode={regionMode} picked={regionPicked} homeRegion={homeRegion} guardReady={guardReady} onMode={setRegionMode} onPick={setRegionPicked} />
             <fieldset className="slot slot--small">
               <legend className="group-title group-title--inline">{TITLE_TEXT.lifeLengthGroup}</legend>
               <div className="seg" role="radiogroup" aria-label={TITLE_TEXT.lifeLengthGroup} data-testid="life-length-group">
@@ -452,10 +545,14 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
               </p>
             </fieldset>
             {gentle === undefined ? null : <GentleSwitch on={gentle.on} onToggle={gentle.onToggle} guardReady={guardReady} />}
+            {onSetHomeRegion === undefined ? null : (
+              <div className="slot slot--setting" data-testid="origin-slot">
+                <OriginSetting value={homeRegion} onChange={onSetHomeRegion} />
+              </div>
+            )}
           </div>
         </main>
         <aside className="title__side">
-          <HomeIllustration variant="top" />
           <StatsCarousel data={data} onChartSize={carousel === undefined ? setChartSize : undefined} gentle={gentle?.on === true} />
         </aside>
         <footer className="title-foot" data-testid="title-foot">
@@ -497,15 +594,12 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
           </p>
           {/* 법원 통계 자료 이용 조건: 출처를 구체적으로 표시한다(문구·주소는 names.json의 meta.attribution). */}
           <p className="credit" data-testid="names-credit">
-            <a href={NAMES.meta.attribution.url} target="_blank" rel="noopener noreferrer">
-              <Glue text={NAMES.meta.attribution.text} />
+            <a href={NAME_CREDIT.url} target="_blank" rel="noopener noreferrer">
+              <Glue text={NAME_CREDIT.text} />
             </a>
           </p>
           <p data-testid="stats-credit">
             <Glue text={footerStatsText(data.orgs)} />
-          </p>
-          <p data-testid="population-info">
-            <Glue text={TITLE_TEXT.populationInfo} />
           </p>
           <p className="num" data-testid="build-version">
             {BUILD_LABEL}
@@ -515,9 +609,16 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
       <div className="page-end-space" {...panelInert} />
       <div className="bottom-bar" data-testid="bottom-bar" ref={barRef} {...panelInert}>
         {saved === null ? (
-          <GuardedButton className="btn btn--primary btn--lg" guardKey={GUARD_KEY} data-testid="start-birth" onClick={onBegin}>
-            {TITLE_TEXT.begin}
-          </GuardedButton>
+          <>
+            {loading === 'failed' ? (
+              <p className="bottom-bar__ask" role="alert" data-testid="load-failed">
+                {TITLE_TEXT.loadFailed}
+              </p>
+            ) : null}
+            <GuardedButton className="btn btn--primary btn--lg" guardKey={GUARD_KEY} data-testid="start-birth" aria-disabled={loading === 'loading' ? true : undefined} aria-busy={loading === 'loading' ? true : undefined} onClick={() => (loading === 'loading' ? undefined : loading === 'failed' && onRetryLoad !== undefined ? onRetryLoad() : onBegin(regionMode === 'pick' ? regionPicked : null))}>
+              {loading === 'loading' ? TITLE_TEXT.loading : loading === 'failed' ? TITLE_TEXT.loadRetry : TITLE_TEXT.begin}
+            </GuardedButton>
+          </>
         ) : confirming ? (
           <>
             <p className="bottom-bar__ask" role="alert" data-testid="confirm-new-ask" ref={askRef}>
@@ -528,7 +629,7 @@ export function TitleScreen({ era, lifeLength, onSelectEra, onSelectLifeLength, 
               「새로 태어나기」를 더블탭한 둘째 입력은 같은 자리의 「돌아가기」에 떨어져 가드에 막힌다 — 확인 없이 이전 판이 지워지는 일이 없다.
             */}
             <div className="bottom-bar__stack">
-              <GuardedButton className="btn btn--secondary" guardKey={GUARD_KEY_CONFIRM} data-testid="confirm-new-yes" onClick={saved.onBeginNew}>
+              <GuardedButton className="btn btn--secondary" guardKey={GUARD_KEY_CONFIRM} data-testid="confirm-new-yes" onClick={() => saved.onBeginNew(regionMode === 'pick' ? regionPicked : null)}>
                 {TITLE_TEXT.confirmNewYes}
               </GuardedButton>
               <GuardedButton ref={cancelRef} className="btn btn--primary btn--lg" guardKey={GUARD_KEY_CONFIRM} data-testid="confirm-new-no" onClick={closeConfirm}>

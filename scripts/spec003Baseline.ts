@@ -1,7 +1,7 @@
 import { ERAS, STAGES, totalCards } from '../src/core';
 import { STAGE_TABLE } from '../src/data/lifeTable';
 import { eventCounts, possibleEventsAt } from './spec003BaselineLib';
-import { distOf, simulateMany } from './simulateLib';
+import { SIM_PROFILES, distOf, simulateMany } from './simulateLib';
 
 /**
  * SPEC-003 M0 기준선(V1) 측정 실행 스크립트. 실행: npx vite-node scripts/spec003Baseline.ts [판수=1000]
@@ -23,7 +23,7 @@ const fx = (n: number, d = 2) => n.toFixed(d);
   }
 
   console.log(`\n## 시뮬레이션 ${lives}판 × 시대 (자동 모드)`);
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     const sims = simulateMany(era, lives, 'auto');
     const perAge: number[][] = Array.from({ length: 101 }, () => []);
     const emptyYears: number[] = [];

@@ -28,6 +28,7 @@ export function syntheticEvents(): unknown[] {
         title: `합성 선택 ${stage} ${i}`,
         text: `합성 표본 이벤트(${stage} 선택지 ${i}). 형태만 갖춘 자리표시 문장이다.`,
         stages: [stage],
+        track: 'common',
         ...(spec.ageRange ? { ageRange: spec.ageRange } : {}),
         weight: 10,
         once: true,
@@ -43,6 +44,7 @@ export function syntheticEvents(): unknown[] {
         title: `합성 서술 ${stage} ${i}`,
         text: `합성 표본 이벤트(${stage} 서술 ${i}). 형태만 갖춘 자리표시 문장이다.`,
         stages: [stage],
+        track: 'common',
         ...(spec.ageRange ? { ageRange: spec.ageRange } : {}),
         weight: 10,
         once: true,
@@ -53,7 +55,7 @@ export function syntheticEvents(): unknown[] {
   return events;
 }
 
-/** 검증을 통과한 합성 풀: 이벤트 40개(선택지 26 + 서술 14)를 세 시대가 모두 공유한다(시대별 필터가 없다). */
+/** 검증을 통과한 합성 풀: 이벤트 40개(선택지 26 + 서술 14)를 모든 세대가 공유한다(연도 구간이 없는 공통 이벤트 `track: 'common'`). */
 export function syntheticPool(): EventPool {
   return createEventPool(validateEventFiles({ 'synthetic.json': { events: syntheticEvents() } }));
 }

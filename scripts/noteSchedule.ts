@@ -1,4 +1,4 @@
-import { ERAS } from '../src/core';
+import { SIM_PROFILES as ERAS } from './simulateLib';
 import { NOTE_CARDS } from '../src/data/noteCards';
 import { chooserFor } from './simulateLib';
 import { runNoteSchedule } from './noteScheduleLib';

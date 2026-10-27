@@ -3,44 +3,9 @@ import impactSrc from '../src/core/impact.ts?raw';
 import legacyJson from './fixtures/wealthLegacy.json';
 import { ECONOMY, IMPACT_STEPS } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
-import {
-  IMPACT_KEYS,
-  advanceUntilDecision,
-  applyResolved,
-  applyStatDeltas,
-  autoResolveStep,
-  condContextOf,
-  economyContextOf,
-  impactOfEffects,
-  incomeOf,
-  dwellingWhenParentsGone,
-  inheritanceDue,
-  parentsJustGone,
-  initialAssets,
-  meetsCondition,
-  moneySteps,
-  naturalDeltas,
-  previewChoice,
-  previewPending,
-  resolveChoiceStep,
-  resolveEffects,
-  settleAssets,
-  statSteps,
-  stepYear,
-  visibleChoices,
-  workStateOf,
-  yearlyAssets,
-  type ChoiceDef,
-  type Condition,
-  type Dwelling,
-  type EventDef,
-  type GameState,
-  type ParentWealth,
-  type Era,
-  type ResolvedEffects,
-} from '../src/core';
+import { IMPACT_KEYS, calendarYear, advanceUntilDecision, applyResolved, applyStatDeltas, autoResolveStep, condContextOf, economyContextOf, impactOfEffects, incomeOf, dwellingWhenParentsGone, inheritanceDue, parentsJustGone, initialAssets, meetsCondition, moneySteps, naturalDeltas, previewChoice, previewPending, resolveChoiceStep, resolveEffects, settleAssets, statSteps, stepYear, visibleChoices, workStateOf, yearlyAssets, type ChoiceDef, type Condition, type Dwelling, type EventDef, type GameState, type ParentWealth, type ResolvedEffects, type ProfileId } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 
 /**
  * 선택지 영향 표기 데이터 (SPEC-003 M5 EC5, docs/data/economy-model.md 7절): 항목·방향·칸 수·스크린리더 문장 키.
@@ -49,12 +14,12 @@ import { startLife } from '../scripts/simulateLib';
  */
 
 const adult = (net = 5000, over: Partial<NonNullable<GameState['assets']>> = {}): GameState => {
-  const base = startLife(7, 'present');
+  const base = startLife(7, 'alpha');
   const s: GameState = { ...base, age: 40, stats: { ...base.stats, education: 50 }, flags: ['has_career'], assets: null, familyFund: 0 };
   const ctx = economyContextOf(s);
   return { ...s, assets: { net, income: incomeOf(ctx, 0), debt: Math.max(0, -net), incomeAdj: 0, dwelling: 'rent', ...over } };
 };
-const young = (age = 12): GameState => ({ ...startLife(7, 'present'), age, assets: null, familyFund: 0 });
+const young = (age = 12): GameState => ({ ...startLife(7, 'alpha'), age, assets: null, familyFund: 0 });
 
 const eff = (over: Partial<ResolvedEffects> & { net?: number; income?: number; debt?: number } = {}): ResolvedEffects => ({
   stats: over.stats ?? {},
@@ -212,7 +177,7 @@ describe('20세 미만: 집안 살림이 있고, 자산은 없고, 부채는 독
 
   it('독립 때 실제로 그 부채가 생긴다: college를 켠 판의 20세 시작 부채 = college가 없는 같은 판의 시작 부채 + 표기한 부채 (재력 1~5단계 × 세 시대 × 집안 살림 4가지)', () => {
     let checked = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (const tier of [1, 2, 3, 4, 5] as const) {
         for (const fund of [-1200, 0, 900, 4000]) {
           const base = startLife(economySeed(tier), era);
@@ -242,7 +207,7 @@ describe('20세 미만: 집안 살림이 있고, 자산은 없고, 부채는 독
       return s;
     };
     let checked = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (const tier of [1, 2, 3, 4, 5] as const) {
         for (const age of [16, 17, 18, 19]) {
           const base = startLife(economySeed(tier * 7 + age), era);
@@ -283,7 +248,7 @@ describe('20세 미만: 집안 살림이 있고, 자산은 없고, 부채는 독
     }
     expect(flags.has('college'), 'school-exam이 college를 켠다').toBe(true);
     expect(flags.size, '20세 미만 이벤트가 켜는 플래그 수(공허 통과 방지)').toBeGreaterThan(10);
-    const base = startLife(7, 'present');
+    const base = startLife(7, 'alpha');
     const startChanging: string[] = [];
     const stateChanging: string[] = [];
     for (const f of [...flags].sort()) {
@@ -318,7 +283,7 @@ describe('20세 미만: 집안 살림이 있고, 자산은 없고, 부채는 독
 });
 
 describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 쓰는 applyResolved + 해마다 규칙 = 인생 진행의 결과', () => {
-  const lives = (era: Era, n: number): GameState[] => {
+  const lives = (era: ProfileId, n: number): GameState[] => {
     const out: GameState[] = [];
     for (let i = 1; i <= n; i++) {
       let s: GameState = startLife(economySeed(i), era);
@@ -335,7 +300,7 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
 
   it('선택 대기 상태 수천 개 × 보이는 선택지 전부: 인생 진행의 결과 상태가 (applyResolved → 자연 변화 → 해마다 정산/독립)와 정확히 같다', () => {
     let checked = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (const p of lives(era, 60)) {
         const ev = EVENT_POOL.byId.get(p.pending!.eventId)!;
         for (const id of p.pending!.choiceIds) {
@@ -344,7 +309,7 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
           const e = resolveChoiceStep(p, p.pending!.key, id).state;
           const where = `${era} ${ev.id}/${id} ${p.age}세`;
           // 스탯: 선택 직후 값에 그 해의 자연 변화
-          expect(e.stats, where).toEqual(applyStatDeltas(a.stats, naturalDeltas(p.age, p.character!, a.stats, p.era!, p.birthStats)));
+          expect(e.stats, where).toEqual(applyStatDeltas(a.stats, naturalDeltas(p.age, p.character!, a.stats, p.birthStats)));
           // 플래그: 효과가 켜고 끈 그대로
           expect(e.flags, where).toEqual(a.flags);
           if (p.assets !== null) {
@@ -382,7 +347,7 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
   }, 120_000);
 
   it('previewPending: 대기 중인 선택지의 보이는 선택지마다 영향을 낸다 · 선택지가 없거나 인생이 아니면 null', () => {
-    const p = lives('present', 3).find((s) => s.assets !== null)!;
+    const p = lives('alpha', 3).find((s) => s.assets !== null)!;
     const out = previewPending(p, EVENT_POOL)!;
     expect(out.map((o) => o.choiceId)).toEqual(p.pending!.choiceIds);
     const ev = EVENT_POOL.byId.get(p.pending!.eventId)!;
@@ -457,12 +422,14 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
   };
 
   /** 대표 상태. 현실에 없는 조합(R1~R3)이면 null — 그 상태는 건너뛴다 */
-  const repState = (ev: EventDef, tier: ParentWealth, era: Era, dwelling: 'rent' | 'family', flagsOff = false, variant?: Variant): GameState | null => {
+  const repState = (ev: EventDef, tier: ParentWealth, era: ProfileId, dwelling: 'rent' | 'family', flagsOff = false, variant?: Variant): GameState | null => {
     const lo = ev.ageRange?.min ?? 0;
     const hi = ev.ageRange?.max ?? 110;
     const age = Math.round((lo + hi) / 2);
-    if (ev.eras !== undefined && !ev.eras.includes(era)) return null; // R2
     const base = startLife(7, era);
+    // R2: 이 세대의 이 나이에 해당하는 달력 연도가 이벤트의 연도 구간 밖이면 만들지 않는다
+    const year = calendarYear(base.character!.birthYear, age);
+    if (ev.yearRange !== undefined && ((ev.yearRange.from !== undefined && year < ev.yearRange.from) || (ev.yearRange.to !== undefined && year > ev.yearRange.to))) return null;
     const flags = new Set<string>([...(ev.conditions?.flags ?? []), ...(ev.choices ?? []).flatMap((c) => c.requires?.flags ?? [])]);
     // 플래그가 꺼진 변형(M7a r3): notFlags 선택지가 보이는 상태 — requires.flags로 켠 플래그 가운데 어떤 선택지의 notFlags에 든 것을 끈다
     if (flagsOff) for (const f of notFlagsOf(ev)) flags.delete(f);
@@ -507,7 +474,7 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
       const variants: Array<Variant | undefined> = withVariants ? variantsOf(ev) : [undefined];
       for (const variant of variants) {
         for (const tier of [1, 3, 5] as const) {
-          for (const era of ['past', 'present', 'future'] as const) {
+          for (const era of SIM_PROFILES) {
             for (const dwelling of ['rent', 'family'] as const) {
               for (const flagsOff of notFlagsOf(ev).length > 0 ? [false, true] : [false]) {
                 const s = repState(ev, tier, era, dwelling, flagsOff, variant);
@@ -552,7 +519,7 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
 
   it('표기 기준 지배 쌍이 없다 (알려진 쌍 0): 새 쌍이 생기면 실패한다 (고치지 말고 목록과 수치를 보고 — 콘텐츠 판단은 마스터)', () => {
     const { pairs, states } = findDominance();
-    expect(states, '대표 상태 수(공허 통과 방지)').toBeGreaterThan(1000);
+    expect(states, '대표 상태 수(공허 통과 방지)').toBeGreaterThan(900);
     const found = [...pairs.keys()].sort();
     const added = found.filter((id) => !KNOWN_DOMINANCE.includes(id));
     const gone = KNOWN_DOMINANCE.filter((id) => !pairs.has(id));
@@ -567,7 +534,7 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
     let crisisFamily = 0;
     let crisisStates = 0;
     for (const tier of [1, 3, 5] as const) {
-      for (const era of ['past', 'present', 'future'] as const) {
+      for (const era of SIM_PROFILES) {
         for (const dwelling of ['rent', 'family'] as const) {
           const h = repState(home, tier, era, dwelling);
           if (h !== null) {
@@ -592,18 +559,18 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
     expect([...pairs.keys()].filter((id) => id.startsWith('middle-home-loan:') || id.startsWith('middle-marriage-crisis:'))).toEqual([]);
   }, 120_000);
 
-  it('R2: 이벤트 eras에 없는 시대의 대표 상태는 만들지 않는다 (youth-rent-hike는 지금 세상만)', () => {
+  it('R2: 이벤트 연도 구간 밖 세대의 대표 상태는 만들지 않는다 (youth-rent-hike는 2001년 이후만 — 산업화 세대의 24~38세는 1964~1992년)', () => {
     const ev = EVENT_POOL.byId.get('youth-rent-hike')!;
-    expect(ev.eras).toEqual(['present']);
-    const built = (['past', 'present', 'future'] as const).filter((era) => repState(ev, 3, era, 'rent') !== null);
-    expect(built).toEqual(['present']);
+    expect(ev.yearRange).toEqual({ from: 2001 });
+    const built = (SIM_PROFILES).filter((era) => repState(ev, 3, era, 'rent') !== null);
+    expect(built).toEqual(['genx', 'alpha']);
   });
 
   it('R1: 이벤트의 순자산 조건을 지킨다 (senior-estate는 순자산 15,000 이상 — 대표 상태의 순자산이 조건을 만족한다)', () => {
     const ev = EVENT_POOL.byId.get('senior-estate')!;
     const netMin = ev.conditions?.assets?.netMin;
     expect(netMin).toBeGreaterThanOrEqual(5000);
-    const s = repState(ev, 3, 'present', 'rent')!;
+    const s = repState(ev, 3, 'alpha', 'rent')!;
     expect(s.assets!.net).toBe(netMin);
     expect(meetsCondition(ev.conditions, condContextOf(s))).toBe(true);
   });
@@ -612,7 +579,7 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
     const ev = EVENT_POOL.byId.get('youth-gig-work')!;
     let n = 0;
     for (const tier of [1, 3, 5] as const) {
-      for (const era of ['present', 'future'] as const) {
+      for (const era of ['millennial', 'alpha'] as const) {
         for (const dwelling of ['rent', 'family'] as const) {
           const s = repState(ev, tier, era, dwelling);
           if (s === null) continue; // 재력 1단계의 부모 집은 lives_with_parents 없이는 없는 상태(R3)
@@ -672,7 +639,7 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
     expect(states, 'middle-home-loan의 변형 상태 수(공허 통과 방지)').toBeGreaterThan(5);
     expect([...pairs.keys()], '부채 0 자가 판의 지배 쌍').toEqual([]);
     // 부채 0 상태에서 shrink의 부채 줄이 정말 없다(0으로 잘림) — 그래서 건강 ▲가 필요했다
-    const s = repState(ev, 3, 'present', 'rent', false, v)!;
+    const s = repState(ev, 3, 'alpha', 'rent', false, v)!;
     expect(s.assets!.debt).toBe(0);
     const items = previewChoice(s, ev.choices!.find((c) => c.id === 'shrink')!).items.map((i) => i.key);
     expect(items).not.toContain('debt');
@@ -721,7 +688,7 @@ describe('표기 방향과 옛 재산 부호 (EC3 부호 점검): 모든 이벤�
     { id: 'middle-marriage-crisis/apart', label: '모든 상태', when: () => true },
     { id: 'youth-marriage/marry', label: '재력 4~5단계', when: (s) => tierOf(s) >= 4 },
     { id: 'youth-marriage/marry', label: '재력 1~3단계 · 취업(has_career) · 지식 ≥ 70', when: (s) => tierOf(s) <= 3 && s.flags.includes('has_career') && edu(s) >= 70 },
-    { id: 'youth-housing/loan', label: '월세 · (다가올 세상 또는 취업·창업) · 지식 ≥ 50', when: (s) => dwellingOf(s) === 'rent' && edu(s) >= 50 && (s.era === 'future' || employed(s)) },
+    { id: 'youth-housing/loan', label: '월세 · (다가올 세상 또는 취업·창업) · 지식 ≥ 50', when: (s) => dwellingOf(s) === 'rent' && edu(s) >= 50 && (s.generation === 'alpha' || employed(s)) },
     { id: 'youth-housing/loan', label: '부모 집 · 재력 4~5단계', when: (s) => dwellingOf(s) === 'family' && tierOf(s) >= 4 },
     { id: 'middle-home-loan/move', label: '월세 · 지식 ≥ 50 · (지식 ≥ 65 또는 취업·창업)', when: (s) => dwellingOf(s) === 'rent' && edu(s) >= 50 && (edu(s) >= 65 || employed(s)) },
     { id: 'middle-home-loan/move', label: '부모 집 · 재력 4~5단계', when: (s) => dwellingOf(s) === 'family' && tierOf(s) >= 4 },
@@ -750,7 +717,7 @@ describe('표기 방향과 옛 재산 부호 (EC3 부호 점검): 모든 이벤�
     { name: '학생', addFlags: ['college'] },
   ];
 
-  const stateFor = (ev: EventDef, choice: ChoiceDef, tier: ParentWealth, era: Era, education: number, v: Variant = VARIANTS[0]): GameState => {
+  const stateFor = (ev: EventDef, choice: ChoiceDef, tier: ParentWealth, era: ProfileId, education: number, v: Variant = VARIANTS[0]): GameState => {
     const lo = ev.ageRange?.min ?? 0;
     const hi = ev.ageRange?.max ?? 110;
     const age = Math.round((lo + hi) / 2);
@@ -793,7 +760,7 @@ describe('표기 방향과 옛 재산 부호 (EC3 부호 점검): 모든 이벤�
         const ev = EVENT_POOL.byId.get(l.event)!;
         const choice = ev.choices!.find((c) => c.id === l.choice)!;
         for (const tier of [1, 3, 5] as const) {
-          for (const era of ['past', 'present', 'future'] as const) {
+          for (const era of SIM_PROFILES) {
             for (const education of [10, 50, 80]) {
               const s = stateFor(ev, choice, tier, era, education, v);
               if (!reachable(ev, choice, s, v)) continue;

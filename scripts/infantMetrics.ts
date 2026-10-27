@@ -1,4 +1,4 @@
-import { ERAS } from '../src/core';
+import { SIM_PROFILES as ERAS } from './simulateLib';
 import { EVENT_FREQUENCY } from '../src/data/lifeTable';
 import { infantLives, summarizeInfant } from './infantMetricsLib';
 

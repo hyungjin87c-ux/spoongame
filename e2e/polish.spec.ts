@@ -60,11 +60,11 @@ async function lines(page: Page, selector: string): Promise<Array<{ text: string
 test('프로그램이 제목으로 옮긴 포커스에는 링이 없고, 키보드로 닿은 버튼의 포커스 링은 그대로다 (QA 사용감 2)', async ({ page }) => {
   await page.goto('/');
   await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('H1'); // 화면이 뜨면 제목으로 포커스가 간다
-  await page.keyboard.press('Tab'); // 키보드 사용 시작(:focus-visible 모드): 제목 다음은 눌려 있는 세상 카드(라디오)
-  await expect(page.getByTestId('era-present')).toBeFocused();
-  // 라디오 입력은 보이지 않고 카드(label)가 :focus-within 링을 그린다
+  await page.keyboard.press('Tab'); // 키보드 사용 시작(:focus-visible 모드): 제목 다음은 눌려 있는 세대 줄(라디오)
+  await expect(page.getByTestId('gen-random')).toBeFocused();
+  // 라디오 입력은 보이지 않고 줄(label.gen-row)이 :focus-within 링을 그린다
   const cardRing = await page.evaluate(() => {
-    const cs = getComputedStyle(document.activeElement!.closest('.radio-card')!);
+    const cs = getComputedStyle(document.activeElement!.closest('.gen-row')!);
     return { outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth };
   });
   expect(cardRing.outlineStyle).toBe('solid');
@@ -134,20 +134,20 @@ test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all,
     }
   };
   await check('.hero__tag');
-  await check('.hero__pop');
-  await check('.hero__note');
-  await check('.radio-card__title, .radio-card__desc, .radio-card__meta');
+  await check('.hero__span');
+  await check('.gen-row__name, .gen-row__desc, .gen-row__meta');
   await check('.slide.is-active .t-sm');
   expect(await page.evaluate(() => getComputedStyle(document.body).wordBreak)).toBe('keep-all');
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.title-page')!).wordBreak)).toBe('keep-all');
   // 룰렛(결과 상태)과 출생신고 화면 (M3: 새 디자인 — 제목·상태 줄·서술문·안내 글)
-  await injectSave(page, rouletteState(KNOWN_SEED, 'present', 3, 50), '/');
+  await injectSave(page, rouletteState(KNOWN_SEED, 'alpha', 3, 50), '/');
   await expect(page.getByTestId('roulette-screen')).toBeVisible();
   await check('h1');
-  await check('.roulette__lead p');
+  // SPEC-004 GS6·17-11-6: 결과 줄은 시도(블록)와 수저 칩(구간 포함)이 다른 줄에 놓이는 두 덩이라 한 문단으로 합쳐 재지 않고 따로 잰다
+  await check('.roulette__gen, .roulette__place');
   await check('.roulette__after');
   expect(await noHorizontalOverflow(page)).toBe(true);
-  await injectSave(page, birthState(KNOWN_SEED, 'present', 3, 50), '/');
+  await injectSave(page, birthState(KNOWN_SEED, 'alpha', 3, 50), '/');
   await expect(page.getByTestId('birth-screen')).toBeVisible();
   await check('h1');
   await check('.doc__sentence');
@@ -252,7 +252,7 @@ for (const vp of LOW) {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await page.goto('/');
-    const decision = await findPendingState(page, 'present', { minChoices: 3 });
+    const decision = await findPendingState(page, 'alpha', { minChoices: 3 });
     await injectSave(page, decision, '/');
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await expect(page.getByTestId('auto')).toBeEnabled();
@@ -300,7 +300,7 @@ for (const vp of LOW) {
 test('데스크톱(1280x800): 선택지가 떠도 상태 4개(건강·행복·지식·관계)와 선택지 카드가 접힘 아래로 밀려나지 않고 진행 줄·머리에 가려지지 않는다 (QA 사용감 1, M4 3열)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', '기본 뷰포트(1280x800)를 쓰므로 desktop에서만 실행');
   await page.goto('/');
-  const decision = await findPendingState(page, 'present', { minChoices: 3 });
+  const decision = await findPendingState(page, 'alpha', { minChoices: 3 });
   // 연표가 길게 쌓인 인생(사건 기록 6줄 가득)에서 선택지가 뜬 상태
   const s = await evalCore<GameState>(
     page,
@@ -410,20 +410,27 @@ test('강제 색상 모드: 눌린 속도·자동 상태가 눌리지 않은 것
   expect(bar.trackBorder).toBe('solid');
 });
 
-test('강제 색상 모드: 첫 화면의 세상 카드 선택 상태도 구분된다', async ({ page }) => {
+test('강제 색상 모드: 첫 화면의 세대 줄 선택 상태도 구분된다 (고른 줄은 Highlight 바탕 + 체크 표식 + 3px 막대, 나머지는 아니다)', async ({ page }) => {
   await page.emulateMedia({ forcedColors: 'active' });
   await page.goto('/');
   await expect(page.getByTestId('title-screen')).toBeVisible();
-  const border = (era: string) => page.evaluate((e) => getComputedStyle(document.querySelector(`[data-testid="era-${e}"]`)!.closest('.radio-card')!).borderTopStyle, era);
-  expect(await border('present')).toBe('double');
-  expect(await border('past')).toBe('solid');
+  const look = (id: string) =>
+    page.evaluate((e) => {
+      const row = document.querySelector(`[data-testid="gen-row-${e}"]`)!;
+      return { bg: getComputedStyle(row).backgroundColor, mark: getComputedStyle(row.querySelector('.gen-row__mark .icon')!).opacity, bar: getComputedStyle(row, '::before').width };
+    }, id);
+  const selected = await look('random');
+  const plain = await look('genx');
+  expect(selected.bg).not.toBe(plain.bg);
+  expect([selected.mark, plain.mark]).toEqual(['1', '0']);
+  expect(selected.bar).toBe('3px');
 });
 
 // ---------- R-056: 비활성 "다음 결정으로"의 사유 ----------
 
 test('비활성 "다음 결정으로"는 왜 눌리지 않는지를 보조기기에 알린다: 선택지 대기 중 / 자동 모드 (R-056)', async ({ page }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   const skip = page.getByTestId('skip');
   // 수동 모드 + 선택지 대기 중
   await injectSave(page, decision, '/', { speed: 1, autoMode: false });
@@ -443,7 +450,7 @@ test('비활성 "다음 결정으로"는 왜 눌리지 않는지를 보조기기
   await expect(skip).toHaveAccessibleDescription('자동 모드에서는 선택지를 스스로 고르므로 누를 수 없습니다.');
   await expect(page.getByTestId('skip-reason')).toBeHidden();
   // 눌 수 있을 때(수동·선택지 없음)에는 설명이 없다
-  const start = await oracleLife(page, decision.seed, 'present');
+  const start = await oracleLife(page, decision.seed, 'alpha');
   await injectSave(page, start, '/?__timescale=0.01', { speed: 1, autoMode: false });
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await expect(page.getByTestId('choice-panel')).toHaveCount(0);
@@ -455,7 +462,7 @@ test('비활성 "다음 결정으로"는 왜 눌리지 않는지를 보조기기
 
 test('밀린 화면: 어디서 바뀌었는지 단정하지 않고(다른 탭·같은 탭의 직접 변경 모두), 이어받을 저장이 없으면 새 게임이 시작된다고 버튼 옆에 알린다 (R-054)', async ({ page }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/?__timescale=0.01');
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   // 같은 탭에서 저장을 직접 지운 뒤 앱이 알게 되는 경우(개발자 도구)를 storage 이벤트로 흉내 낸다
@@ -516,7 +523,7 @@ test('A66: 빈 저장소에서 두 탭을 동시에 열어도 둘 다 타이틀�
 test('A66 (결정적): 앱이 빈 저장소를 읽은 직후 다른 탭이 "진행 없는 타이틀"을 쓰면 밀리지 않고 자기 타이틀을 저장한다. 다른 탭이 진행(출생)을 썼다면 전처럼 밀린다', async ({ page, browser }) => {
   await page.goto('/');
   const titleRaw = JSON.stringify({ version: SAVE_VERSION, data: await evalCore<GameState>(page, 'return core.createInitialState(7);') });
-  const progressRaw = JSON.stringify({ version: SAVE_VERSION, data: birthState(8, 'present', 3, 50) });
+  const progressRaw = JSON.stringify({ version: SAVE_VERSION, data: birthState(8, 'alpha', 3, 50) });
 
   for (const [label, raw, superseded] of [
     ['다른 탭이 타이틀을 썼다', titleRaw, false],
@@ -563,7 +570,7 @@ test('A66 (결정적): 앱이 빈 저장소를 읽은 직후 다른 탭이 "진�
 
 test('A66: 진행이 있는 저장은 약화되지 않았다 — 빈 저장소를 읽은 탭이 아니라 진행한 탭이 이기고, 되돌아온 타이틀로 진행을 덮어쓰지 않는다', async ({ page, context }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/?__timescale=0.01');
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   // 다른 탭이 저장을 "타이틀"로 바꿨다고 알려 온다: 이 탭은 진행이 있으므로(아는 값이 진행 있는 저장) 밀린다

@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { GameState } from '../src/core/types';
+import type { GameState, GenerationId } from '../src/core/types';
 import { evalCore, withoutPlay } from './helpers';
 
 /**
@@ -15,7 +15,7 @@ export async function heavyLifeState(page: Page): Promise<GameState> {
   const s = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed <= 2000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        let farewell = false;
        while (s.phase === 'life' && s.age < 66) {
          if (s.pending !== null) {
@@ -37,7 +37,7 @@ export async function heavyLifeState(page: Page): Promise<GameState> {
  * 이벤트 하나가 **사람이 고르는 결정으로 대기 중인** 인생. 부모·흘러감 카드는 대기가 되지 않으므로(SPEC-005 PD) 이 도우미는 본인이 고르는 나이대의 이벤트에만 쓴다.
  * **실제로 그 나이까지 산 인생**에서 대기 카드를 직접 놓는다 — 20세 이상 판은 자산이 있어야 저장 검증을 통과한다(tests/helpers/forcedPending.ts는 서버 렌더만 보므로 0세 상태에서 나이만 옮겨 쓰지만 e2e는 앱이 저장을 읽는다).
  */
-export async function heavyPending(page: Page, eventId: string, opts: { era?: 'past' | 'present' | 'future'; age?: number } = {}): Promise<GameState> {
+export async function heavyPending(page: Page, eventId: string, opts: { era?: GenerationId; age?: number } = {}): Promise<GameState> {
   const s = await evalCore<GameState | null>(
     page,
     `const mod = await import('/src/data/events/index.ts');
@@ -56,7 +56,7 @@ export async function heavyPending(page: Page, eventId: string, opts: { era?: 'p
        return { ...s, seen: { ...s.seen, [arg.eventId]: target }, lastChoiceAge: target, pending: { eventId: arg.eventId, key: arg.eventId + '@' + target, age: target, choiceIds: visible.map((c) => c.id) } };
      }
      return null;`,
-    { eventId, era: opts.era ?? 'present', age: opts.age ?? null },
+    { eventId, era: opts.era ?? 'alpha', age: opts.age ?? null },
   );
   expect(s, `${eventId}: 보이는 선택지가 2개 이상인 대기 상태를 찾지 못했다`).not.toBeNull();
   return withoutPlay(s!);
@@ -67,7 +67,7 @@ export async function heavyEnding(page: Page): Promise<GameState> {
   const s = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed <= 400; seed++) {
-       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        const end = core.playToEnd(start, (s) => s.pending.choiceIds[0]).state;
        const heavy = end.history.filter((h) => core.heavyKindOfEntry(h) !== null);
        if (heavy.length >= 4 && heavy.some((h) => h.by !== undefined)) return end;
@@ -104,7 +104,7 @@ export async function noteDueState(page: Page, cardId: string): Promise<GameStat
   const s = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed <= 1500; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        for (let guard = 0; guard < 900 && s.phase === 'life'; guard++) {
          if (s.pending !== null) { s = core.autoResolveStep(s, s.pending.key).state; continue; }
          const due = core.dueNote(s);

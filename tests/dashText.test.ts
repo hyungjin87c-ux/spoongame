@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { longestWordLength } from '../src/data/birthReportText';
-import { NAMES, futurePool, officialPool, pastPool } from '../src/data/names';
+import { R1_PRESENT } from '../src/core';
+import { NAMES, officialPool, pastPool } from '../src/data/names';
 import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, SYSTEM_TITLE, SYSTEM_TITLE_CHARS, statusHelpText, titleCharsFor } from '../src/data/dashText';
 
 /**
@@ -29,12 +30,12 @@ describe('제목 글자 크기 상한의 칸 수 (R-321, QM3-2)', () => {
 });
 
 describe('대시보드 이름(h1)은 줄일 상한 없이 가장 좁은 조합에도 한 줄에 들어간다 (R-321)', () => {
-  it('이름 = 성씨 한 글자 + 풀의 이름이다: 모든 시대·성별 풀을 훑어 가장 긴 이름이 4글자 이하이고, 그 길이가 폭 320 · 글자 200%의 한 줄(헤더 내용 폭 288px ÷ 글자 32px = 9글자)에 여유 있게 든다', () => {
+  it('이름 = 성씨 한 글자 + 풀의 이름이다: 모든 연대·연도·성별 풀을 훑어 가장 긴 이름이 4글자 이하이고, 그 길이가 폭 320 · 글자 200%의 한 줄(헤더 내용 폭 288px ÷ 글자 32px = 9글자)에 여유 있게 든다', () => {
     const surnameMax = Math.max(...NAMES.surnames.items.map((x) => [...x.name].length));
     const pools: string[] = [];
     for (const gender of ['male', 'female'] as const) {
-      pools.push(...(officialPool(2025, gender) ?? []), ...futurePool(gender));
-      for (const decade of [1950, 1960, 1970, 1980]) pools.push(...(pastPool(decade, gender) ?? []));
+      for (let year = 2008; year <= 2025; year++) pools.push(...(officialPool(year, gender) ?? []));
+      for (const decade of [1940, 1950, 1960, 1970, 1980, 1990, 2000]) pools.push(...(pastPool(decade, gender) ?? []));
     }
     expect(pools.length, '공허 통과 방지: 풀을 실제로 훑었다').toBeGreaterThan(200);
     const givenMax = Math.max(...pools.map((n) => [...n].length));
@@ -49,19 +50,19 @@ describe('대시보드 이름(h1)은 줄일 상한 없이 가장 좁은 조합�
 describe('상태 도움말과 자산 (R-333 → M5 2b)', () => {
   it('자산 금액이 화면에 있으므로(M5 2b) ASSETS_AMOUNTS_SHIPPED가 켜졌고, 도움말은 시대별 단위 문장 + 가구 기준 한 문장을 싣는다 (copy.md 4-5절)', () => {
     expect(ASSETS_AMOUNTS_SHIPPED).toBe(true);
-    const base = statusHelpText(false, 'present');
+    const base = statusHelpText(false, R1_PRESENT);
     expect(base).not.toMatch(/자산|원 단위/);
-    for (const era of ['past', 'future'] as const) expect(statusHelpText(false, era)).toBe(base); // 자산 문장을 켜지 않으면 시대와 무관하다
+    for (const profile of ['industrial', 'genx', 'alpha'] as const) expect(statusHelpText(false, profile)).toBe(base); // 자산 문장을 켜지 않으면 프로필과 무관하다
     const household = '순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.';
     // M7e-3 (copy.md 5-2 ②): 끝에 선택지 아래 표시의 뜻 두 문장이 더해졌다 (선택만의 효과 · 해마다 소득·생활비는 따로 · 자산 변화에는 3년치)
     const impact = '선택지 아래 표시는 그 선택만으로 생기는 변화이고, 해마다의 소득과 생활비는 따로 더해집니다. 자산의 변화에는 앞으로 3년치 소득·지출 변화가 들어 있습니다.';
-    expect(statusHelpText(true, 'present')).toBe(`${base} 자산은 올해 가치 기준의 원 단위입니다. ${household} ${impact}`);
-    expect(statusHelpText(true, 'past')).toBe(`${base} 자산은 지금 가치로 환산한 원 단위입니다. ${household} ${impact}`);
-    expect(statusHelpText(true, 'future')).toBe(statusHelpText(true, 'past'));
+    expect(statusHelpText(true, R1_PRESENT)).toBe(`${base} 자산은 올해 가치 기준의 원 단위입니다. ${household} ${impact}`);
+    expect(statusHelpText(true, 'industrial')).toBe(`${base} 자산은 지금 가치로 환산한 원 단위입니다. ${household} ${impact}`);
+    for (const g of ['boomer', 'genx', 'alpha'] as const) expect(statusHelpText(true, g)).toBe(statusHelpText(true, 'industrial')); // 세대 판은 모두 「지금 가치로 환산」 (GM10 전까지)
     // 건강·행복·지식·관계 네 가지 설명은 두 경우 모두 있다
     for (const word of ['건강은', '행복은', '지식은', '관계는']) {
-      expect(statusHelpText(false, 'present')).toContain(word);
-      expect(statusHelpText(true, 'present')).toContain(word);
+      expect(statusHelpText(false, R1_PRESENT)).toContain(word);
+      expect(statusHelpText(true, 'alpha')).toContain(word);
     }
   });
 

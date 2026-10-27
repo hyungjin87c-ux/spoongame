@@ -14,7 +14,6 @@ import { LOG_TOP_SLACK, RESIZE_EPSILON, addedAbove, isAtLogTop, logRowKeys, logR
  * 브라우저가 있어야 하는 것(실제 스크롤 위치가 움직이지 않는지, Home/End, WebKit)은 e2e/log-order.spec.ts가 본다.
  */
 
-const MINUTE = 29_846_880;
 
 /** vitest는 CSS의 ?raw 가져오기를 빈 문자열로 돌려주므로 CSS는 파일 시스템으로 읽는다(tests/docCssFallback.test.ts와 같은 방법) */
 async function readText(relative: string): Promise<string> {
@@ -35,7 +34,7 @@ const BASE: HistoryEntry[] = [
   e(7, 'stage', '학교에 들어갈 나이가 되었습니다.'),
   e(7, 'event', '준비물을 샀습니다.', { eventId: 'school-supplies' }),
 ];
-const renderLog = (history: readonly HistoryEntry[], live = true) => renderToStaticMarkup(<LogCard history={history} name="김민준" live={live} minute={MINUTE} />);
+const renderLog = (history: readonly HistoryEntry[], live = true) => renderToStaticMarkup(<LogCard history={history} live={live} />);
 const rowsOf = (html: string) => [...html.matchAll(/<li class="([^"]*)" data-kind="([^"]*)" data-testid="log-row">([\s\S]*?)<\/li>/g)].map((m) => ({ cls: m[1], kind: m[2], html: m[3] }));
 const plain = (h: string) => h.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -66,7 +65,7 @@ describe('LR1 순서: 화면만 뒤집고 저장 순서는 그대로', () => {
   });
 
   it('진짜 한 판(세 시대): 화면 줄 = 연표를 거꾸로 읽은 것, 나이는 비증가, 단계 줄(출생 포함)이 각 묶음의 맨 아래에 온다 (LR3)', () => {
-    for (const [seed, era] of [[11, 'past'], [22, 'present'], [33, 'future']] as const) {
+    for (const [seed, era] of [[11, 'industrial'], [22, 'genx'], [33, 'alpha']] as const) {
       const game = playToEnd(startLife(seed, era)).state;
       const rows = rowsOf(renderLog(game.history));
       expect(rows).toHaveLength(game.history.length);
@@ -91,10 +90,11 @@ describe('LR1 순서: 화면만 뒤집고 저장 순서는 그대로', () => {
     expect(rows[1].kind).toBe('event');
   });
 
-  it('맨 위 고정 줄(가상 인구)은 쌓이는 기록 밖 맨 위 그대로다 (LR3)', () => {
+  it('맨 위 고정 줄(가상 인구)은 없다 — 기록 카드에는 쌓이는 기록만 있다 (SPEC-004 GS11: 가상 인구 표시 삭제, LR3 대체)', () => {
     const html = renderLog(BASE);
-    expect(html.indexOf('data-testid="log-pin"')).toBeGreaterThan(-1);
-    expect(html.indexOf('data-testid="log-pin"')).toBeLessThan(html.indexOf('data-testid="log-list"'));
+    expect(html).not.toContain('data-testid="log-pin"');
+    expect(html).not.toContain('log__pin');
+    expect(html.indexOf('data-testid="log-list"')).toBeGreaterThan(-1);
   });
 });
 

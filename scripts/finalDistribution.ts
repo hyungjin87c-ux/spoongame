@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs';
-import { ERAS, validateFinalDistribution } from '../src/core';
+import { GENERATION_IDS, R1_PRESENT, validateFinalDistribution, type ProfileId } from '../src/core';
 import { buildFinalDistribution, renderFinalDistributionModule } from './finalDistributionLib';
 
 /**
@@ -15,5 +15,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 writeFileSync(OUT, renderFinalDistributionModule(table), 'utf-8');
-for (const era of ERAS) console.log(`${era}: ${table[era].simulated}판 중 스무 살 넘어 마친 ${table[era].lives}판`);
+for (const era of [...GENERATION_IDS, R1_PRESENT] as ProfileId[]) console.log(`${era}: ${table[era].simulated}판 중 스무 살 넘어 마친 ${table[era].lives}판`);
 console.log(`${OUT} 를 다시 만들었다`);

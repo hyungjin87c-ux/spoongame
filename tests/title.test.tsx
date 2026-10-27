@@ -12,14 +12,14 @@ const scourt = scourtJson as unknown as { meta: { url: string; suggestedAttribut
 
 describe('첫 화면 출처 표기', () => {
   const html = renderToStaticMarkup(
-    <TitleScreen era="present" lifeLength="short30" onSelectEra={() => {}} onSelectLifeLength={() => {}} onBegin={() => {}} minute={29_850_000} />,
+    <TitleScreen generation="random" lifeLength="short30" onSelectGeneration={() => {}} onSelectLifeLength={() => {}} onBegin={() => {}} />,
   );
 
   it('첫 화면이 뜨고, 이름 통계 출처 표기(names-credit)가 「태어나기」 버튼보다 뒤(푸터)에 있다', () => {
     expect(html).toContain('data-testid="title-screen"');
     expect(html).toContain('수저 게임');
     const credit = html.indexOf('data-testid="names-credit"');
-    expect(credit).toBeGreaterThan(html.indexOf('data-testid="era-group"'));
+    expect(credit).toBeGreaterThan(html.indexOf('data-testid="gen-list"'));
     expect(credit).toBeGreaterThan(html.indexOf('data-testid="carousel"'));
   });
 
@@ -39,8 +39,8 @@ describe('첫 화면 출처 표기', () => {
     expect(m![2]).toContain('noopener');
   });
 
-  it('지난 세상 이름을 통계라고 표기하지 않는다 (공식 통계를 쓰는 지금·다가올 세상만 밝힌다)', () => {
-    expect(NAMES.meta.attribution.text).toContain('지금 세상·다가올 세상');
-    expect(NAMES.meta.attribution.text).not.toContain('지난 세상');
+  it('2007년 이전 출생 이름(연대 풀 — 통계가 아니다)을 통계라고 표기하지 않는다 (공식 통계를 쓰는 2008년 이후 출생만 밝힌다, NR4)', () => {
+    expect(NAMES.meta.attribution.text).toContain('2008년 이후 출생 이름 출처');
+    expect(NAMES.meta.attribution.text).not.toMatch(/지난 세상|지금 세상|다가올 세상|2007년 이전|연대/);
   });
 });

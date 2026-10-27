@@ -40,5 +40,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    // 지연 로드 덩어리가 앱에 놓는 데이터(이벤트 풀·출생 연도 표)를 모든 시험 앞에서 한 번 놓는다 (SPEC-004 MG8)
+    setupFiles: ['tests/setup.ts'],
   },
 });

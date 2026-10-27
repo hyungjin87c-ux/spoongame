@@ -47,7 +47,7 @@ for (const vp of [
 
     test(`${vp.name}: 출생신고 위·아래`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
-      await injectSave(page, birthState(KNOWN_SEED, 'present', 3, 70));
+      await injectSave(page, birthState(KNOWN_SEED, 'alpha', 3, 70));
       await expect(page.getByTestId('birth-screen')).toBeVisible();
       await expect(page.getByTestId('next-life')).toBeEnabled();
       await page.evaluate(() => window.scrollTo(0, 0));
@@ -84,11 +84,11 @@ for (const scheme of [
     test(`360x740 ${scheme.name}: 룰렛 결과·출생신고`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
       await page.emulateMedia({ colorScheme: scheme.colorScheme, forcedColors: scheme.forced ? 'active' : 'none' });
-      await injectSave(page, rouletteState(KNOWN_SEED, 'present', 4, 80));
+      await injectSave(page, rouletteState(KNOWN_SEED, 'alpha', 4, 80));
       await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'result');
       await expect(page.getByTestId('to-birth')).toBeEnabled();
       await shot(page, `roulette-result-${scheme.name}-360x740`);
-      await injectSave(page, birthState(KNOWN_SEED, 'present', 4, 80));
+      await injectSave(page, birthState(KNOWN_SEED, 'alpha', 4, 80));
       await expect(page.getByTestId('next-life')).toBeEnabled();
       await shot(page, `birth-top-${scheme.name}-360x740`);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
@@ -99,7 +99,7 @@ for (const scheme of [
 
 test.describe('증거 스크린샷 지난·다가올 세상', () => {
   test.use({ viewport: { width: 360, height: 740 } });
-  for (const era of ['past', 'future'] as const) {
+  for (const era of ['industrial', 'genz'] as const) {
     test(`360x740 ${era}: 룰렛 결과·출생신고 (시대 보정 표기)`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
       await injectSave(page, rouletteState(KNOWN_SEED, era, 2, 40));

@@ -11,7 +11,7 @@ import { useIsoLayoutEffect } from './hooks';
  */
 
 /** 토큰 `--c-bg`와 같은 주소 표시줄 색 (tests/theme.test.ts가 tokens.css와 대조한다) */
-export const THEME_COLOR = { light: '#f6f3ec', dark: '#14171f' } as const;
+export const THEME_COLOR = { light: '#f9f7f2', dark: '#14171f' } as const;
 
 interface Attrs {
   getAttribute(name: string): string | null;

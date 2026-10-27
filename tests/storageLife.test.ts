@@ -6,6 +6,7 @@ import {
   createEventPool,
   createInitialState,
   hasHiddenControl,
+  lifeParamsOf,
   loadGame,
   parseGame,
   playToEnd,
@@ -33,7 +34,7 @@ function memoryStorage(): StorageLike & { map: Map<string, string> } {
 /** 선택지 이벤트에서 멈춘 유효한 life 상태 (minChoices개 이상의 선택지가 보이는 것) */
 function pendingLife(minChoices = 2): GameState {
   for (let seed = 1; seed < 3000; seed++) {
-    const s = advanceUntilDecision(startLife(seed, 'present')).state;
+    const s = advanceUntilDecision(startLife(seed, 'alpha')).state;
     if (s.phase === 'life' && s.pending && s.pending.choiceIds.length >= minChoices) return s;
   }
   throw new Error('선택지가 있는 시드를 찾지 못했다');
@@ -51,10 +52,10 @@ const load = (text: string, pool?: EventPool): GameState | null => {
 
 const ok = pendingLife();
 const okThree = pendingLife(3);
-const ended = playToEnd(startLife(5, 'present')).state;
+const ended = playToEnd(startLife(5, 'alpha')).state;
 const evId = ok.pending!.eventId;
 /** 인생 중간(대기 없음)의 유효한 상태: 스탯·연표 변조용 */
-const midDecision = advanceUntilDecision(startLife(2, 'present')).state;
+const midDecision = advanceUntilDecision(startLife(2, 'alpha')).state;
 const mid: GameState = midDecision.pending ? resolveChoice(midDecision, midDecision.pending.key, midDecision.pending.choiceIds[0]) : midDecision;
 
 describe('스탯은 0~100의 정수여야 한다 (R-024)', () => {
@@ -93,7 +94,7 @@ describe('스탯은 0~100의 정수여야 한다 (R-024)', () => {
 
 describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면을 죽이지 않는다', () => {
   it('유효한 대기 중 선택지(2개·3개)·사망·출생 직후 상태는 왕복해도 같다', () => {
-    for (const s of [ok, okThree, ended, startLife(1, 'past'), startLife(1, 'future'), mid]) expect(parseGame(serializeGame(s))).toEqual(s);
+    for (const s of [ok, okThree, ended, startLife(1, 'genx'), startLife(1, 'genz'), mid]) expect(parseGame(serializeGame(s))).toEqual(s);
     expect(okThree.pending!.choiceIds).toHaveLength(3);
     expect(ended.phase).toBe('ending');
     expect(ended.death).not.toBeNull();
@@ -135,20 +136,14 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
     'death: 원인이 너무 김': d(ended, (x) => (x.death.cause = '가'.repeat(41))),
     'death: 원인이 숫자': d(ended, (x) => (x.death.cause = 3)),
     'death: age가 소수': d(ended, (x) => (x.death.age = 70.5)),
-    // 나이 상한(시대별)
-    '지금 세상 106세(상한 105 초과)': d(ended, (x) => {
-      x.age = 106;
-      x.death.age = 106;
+    // 나이 상한 (연도 축 사망 모형 GM10 전까지 모든 세대가 같은 상한 — 절대 상한 110)
+    '나이 111세(어느 세대도 초과)': d(ended, (x) => {
+      x.generation = 'industrial';
+      x.character.birthYear = 1947;
+      x.age = 111;
+      x.death.age = 111;
     }),
-    '지난 세상 101세(상한 100 초과)': d(ended, (x) => {
-      x.era = 'past';
-      x.character.birthYear = 1960;
-      x.age = 101;
-      x.death.age = 101;
-    }),
-    '나이 111세(어느 시대도 초과)': d(ended, (x) => {
-      x.era = 'future';
-      x.character.birthYear = 2040;
+    '알파 세대 111세(상한 초과)': d(ended, (x) => {
       x.age = 111;
       x.death.age = 111;
     }),
@@ -186,7 +181,7 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
     // 인생 시작 전에는 진행 기록이 비어 있어야 한다
     'title인데 연표가 있음': d(mid, (x) => {
       x.phase = 'title';
-      x.era = null;
+      x.generation = null;
       x.lifeLength = null;
       x.character = null;
       x.birthStats = null;
@@ -223,18 +218,23 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
     it(`${name} → 새 게임(null)`, () => expect(load(text)).toBeNull());
   }
 
-  it('시대별 상한 나이 경계는 통과: 지난 100 / 지금 105 / 다가올 110', () => {
-    for (const [era, year, max] of [
-      ['past', 1960, 100],
-      ['present', 2026, 105],
-      ['future', 2040, 110],
+  it('세대별 상한 나이 경계는 통과: 연도 축 사망 모형(GM10) 전까지 모든 세대가 같은 상한(LIFE_PARAMS_PLACEHOLDER.maxAge)이다 — 산업화 1947 · X 1975 · 알파 2016', () => {
+    const max = lifeParamsOf('alpha', 2016).maxAge;
+    expect(lifeParamsOf('industrial', 1947).maxAge).toBe(max);
+    for (const [generation, year] of [
+      ['industrial', 1947],
+      ['genx', 1975],
+      ['alpha', 2016],
     ] as const) {
       const x = clone(ended);
-      x.era = era;
+      x.generation = generation;
       x.character.birthYear = year;
       x.age = max;
       x.death.age = max;
-      expect(load(raw(x)), `${era} ${max}세`).not.toBeNull();
+      expect(load(raw(x)), `${generation} ${max}세`).not.toBeNull();
+      x.age = max + 1;
+      x.death.age = max + 1;
+      expect(load(raw(x)), `${generation} ${max + 1}세는 상한 밖`).toBeNull();
     }
   });
 
@@ -245,7 +245,7 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
     expect(repaired).not.toBeNull();
     expect(repaired!.pending).toBeNull();
     // 대기 중인 선택지가 없는 상태는 풀과 무관하게 그대로 통과
-    const fresh = startLife(1, 'present');
+    const fresh = startLife(1, 'alpha');
     expect(parseGame(serializeGame(fresh), without)).toEqual(fresh);
   });
 
@@ -258,7 +258,7 @@ describe('인생 진행 필드의 정합성: 손상된 저장이 인생 화면�
   });
 
   it('v3 저장(M2 스키마: 플래그·대기·사망 필드 없음)은 새 게임으로 시작한다. 버전이 4여도 필드가 없으면 거부한다', () => {
-    const v3 = clone(startLife(1, 'present'));
+    const v3 = clone(startLife(1, 'alpha'));
     for (const key of ['flags', 'seen', 'pending', 'lastChoiceAge', 'death']) delete v3[key];
     expect(load(JSON.stringify({ version: 3, data: v3 }))).toBeNull();
     expect(load(JSON.stringify({ version: 4, data: v3 }))).toBeNull();
@@ -383,8 +383,8 @@ describe('연표 상한 300 (SPEC-003 DB12)과 저장 크기', () => {
     expect(text.length, '공허 통과 방지: 실제로 상한을 꽉 채운 판이다').toBeGreaterThan(150_000);
   });
 
-  it('정상 플레이의 저장은 훨씬 작다: 세 시대 자동 완주 판의 저장이 30KB(글자 수)를 넘지 않는다', () => {
-    for (const era of ['past', 'present', 'future'] as const) {
+  it('정상 플레이의 저장은 훨씬 작다: 대표 세대 셋 자동 완주 판의 저장이 30KB(글자 수)를 넘지 않는다', () => {
+    for (const era of ['industrial', 'genx', 'alpha'] as const) {
       const end = playToEnd(startLife(11, era)).state;
       const text = serializeGame(end);
       expect(text.length, era).toBeLessThanOrEqual(30_000);

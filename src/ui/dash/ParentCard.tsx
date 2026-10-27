@@ -1,3 +1,4 @@
+import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { calendarYear, citationFor, heavyKindOfEvent, type CitationView, type EventDef, type EventPool, type TickInfo } from '../../core';
 import type { ImpactItem } from '../../core/impact';
@@ -51,7 +52,7 @@ export function parentCardModel(game: LifeGame, tick: TickInfo | null, pool: Eve
     ev,
     label: tick.by === 'parent' ? (choice.parentLabel ?? choice.label) : choice.label,
     impact: tick.impact ?? [],
-    cite: citationFor(ev, game.era, year),
+    cite: citationFor(ev, eraBucketOf(game.generation, year), year),
     year,
     age: tick.fromAge,
     firstParent: tick.firstParent === true,

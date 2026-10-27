@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { GameState } from '../src/core/types';
+import type { GameState, GenerationId } from '../src/core/types';
 import { evalCore, injectSave, startPageHidden } from './helpers';
 
 /**
@@ -12,7 +12,8 @@ export type ImpactScreen = 'impact-young' | 'impact-adult';
 export const IMPACT_SCREENS: readonly ImpactScreen[] = ['impact-young', 'impact-adult'];
 
 /** 영향 줄이 가장 긴 선택지가 minItems 항목 이상이고 선택지가 3개 이상인 결정 대기 상태를 찾는다 (앱 페이지가 열려 있어야 한다) */
-export async function findImpactState(page: Page, kind: 'young' | 'adult', era: 'past' | 'present' | 'future' = 'present'): Promise<GameState> {
+/** (기본 세대는 X세대: 알파는 20대 이후가 전망 구간이라 영향 줄이 긴 어른 카드 표본이 얇다 — SPEC-004 이전의 「지금 세상」 어른 카드 자리) */
+export async function findImpactState(page: Page, kind: 'young' | 'adult', era: GenerationId = 'genx'): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `const { EVENT_POOL } = await import('/src/data/events/index.ts');
@@ -31,7 +32,7 @@ export async function findImpactState(page: Page, kind: 'young' | 'adult', era: 
        }
      }
      return null;`,
-    { kind, era, min: kind === 'young' ? 4 : era === 'present' ? 5 : 4 },
+    { kind, era, min: kind === 'young' ? 4 : 5 },
   );
   expect(found, `${era}/${kind}: 영향 줄이 긴 결정 대기 상태를 찾지 못했다`).not.toBeNull();
   return found!;
@@ -73,7 +74,7 @@ export async function findFarewellState(page: Page, minWealth = 4): Promise<Game
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = 1000; seed < 2400; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        if (s.character.parentWealth < arg.min) continue;
        for (let guard = 0; guard < 40 && s.phase === 'life'; guard++) {
          s = core.advanceUntilDecision(s).state;
@@ -93,7 +94,7 @@ export async function findFarewellState(page: Page, minWealth = 4): Promise<Game
  * 특정 이벤트가 결정을 기다리는 상태를 찾는다 (R-351·R-352 증거 샷용): 시드를 차례로 돌려 그 이벤트를 만날 때까지 앞선 결정은 첫 선택지로 넘긴다.
  * tier를 주면 부모 재력 단계가 그 값인 판만 본다. 앱 페이지가 열려 있어야 한다.
  */
-export async function findPendingEvent(page: Page, eventId: string, opts: { era?: 'past' | 'present' | 'future'; tier?: number; seedFrom?: number; seedTo?: number } = {}): Promise<GameState> {
+export async function findPendingEvent(page: Page, eventId: string, opts: { era?: GenerationId; tier?: number; seedFrom?: number; seedTo?: number } = {}): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = arg.from; seed < arg.to; seed++) {
@@ -107,7 +108,7 @@ export async function findPendingEvent(page: Page, eventId: string, opts: { era?
        }
      }
      return null;`,
-    { id: eventId, era: opts.era ?? 'present', tier: opts.tier ?? null, from: opts.seedFrom ?? 1000, to: opts.seedTo ?? 6000 },
+    { id: eventId, era: opts.era ?? 'alpha', tier: opts.tier ?? null, from: opts.seedFrom ?? 1000, to: opts.seedTo ?? 6000 },
   );
   expect(found, `${eventId}${opts.tier ? ' 재력 ' + opts.tier : ''}: 결정을 기다리는 상태를 찾지 못했다`).not.toBeNull();
   return found!;
@@ -118,7 +119,7 @@ export async function findEarlyDeath(page: Page): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 4000; seed++) {
-       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        const end = core.playToEnd(start, null).state;
        if (end.phase === 'ending' && end.death.age < 20) return end;
      }
@@ -129,7 +130,7 @@ export async function findEarlyDeath(page: Page): Promise<GameState> {
 }
 
 /** 시대의 한 판을 40세까지 자동으로 살게 한 성인 상태(선택지 없음) — 자산 카드 시안용 */
-export async function adultStateOf(page: Page, era: 'past' | 'present' | 'future', seed = 777): Promise<GameState> {
+export async function adultStateOf(page: Page, era: GenerationId, seed = 777): Promise<GameState> {
   return evalCore<GameState>(
     page,
     `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), arg.era)));

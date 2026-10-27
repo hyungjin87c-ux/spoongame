@@ -12,6 +12,7 @@ import {
 } from '../src/core';
 import { EVENT_FILES, EVENT_POOL } from '../src/data/events';
 import { infantLives, summarizeInfant, INFANT_LAST_AGE, type InfantLife } from '../scripts/infantMetricsLib';
+import { SIM_PROFILES } from '../scripts/simulateLib';
 import { possibleEventsAt } from '../scripts/spec003BaselineLib';
 import { STAGE_ENTRY_TEXT } from '../src/data/lifeTable';
 import { M7A_ERA_ONLY, M7A_NEW_CHOICE_IDS, M7A_NEW_EVENT_IDS, M7A_WEALTH_GATES } from './helpers/m7a';
@@ -125,8 +126,9 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
     win('infant-kindergarten', 3, 4);
     win('infant-sibling-toy', 3, 6);
     win('infant-early-lessons', 5, 6);
-    expect(ev('infant-checkup').eras).toEqual(['present', 'future']);
-    expect(ev('infant-kindergarten').eras).toEqual(['present', 'future']);
+    // 시대 구간은 `yearRange`와 출생 상한(2020)에서 파생된다(SPEC-004 MG2): 건강검진(0~3세, 2008년부터)·유치원(3~4세, 2001년부터)은 2020년생이 4세인 2024년이 끝이라 「지금」 구간뿐이다
+    expect(ev('infant-checkup').eras).toEqual(['present']);
+    expect(ev('infant-kindergarten').eras).toEqual(['present']);
     expect(ev('infant-early-lessons').eras).toEqual(['present', 'future']);
     expect(ev('school-after-hours').eras).toEqual(['present', 'future']);
     expect(ev('infant-vaccine').eras).toBeUndefined();
@@ -143,23 +145,24 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
   });
 });
 
-describe('IN1 규모: 0~7세 각 나이 × 각 시대의 정적 후보 ≥ 4, 시대별 ≥ 25 (나이 기준 집계 — 마스터 결정 M-3)', () => {
+describe('IN1 규모: 0~7세 각 나이 × 각 시대 구간의 정적 후보 ≥ 4, 구간별 ≥ 25 (나이 기준 집계 — 마스터 결정 M-3)', () => {
   it('정적 후보 표가 문서 2-3절과 같다 (단계·ageRange·eras만 본다)', () => {
     const table = Array.from({ length: INFANT_LAST_AGE + 1 }, (_, a) => ERAS.map((e) => possibleEventsAt(a, e)));
+    // 연도 구간 변환(SPEC-004 MG2, docs/data/event-conversion.md) 뒤의 값: 「지금」 구간 후보가 늘고(2001년 이후 소재가 영유아에게 모두 열린다) 「다가올」은 영아 소재가 2026년 이후에 없어 줄었다
     expect(table).toEqual([
-      [4, 6, 6], // 0세
-      [13, 13, 13], // r3: 걸음마·첫 말·육아휴직이 1세·0세로 모여 1~2세·3세·1세 후보가 줄었다(문서 13-3·13-11)
-      [13, 14, 14],
-      [17, 18, 19],
-      [16, 16, 17],
-      [15, 15, 16],
-      [11, 12, 12],
+      [4, 7, 4], // 0세
+      [13, 14, 11], // r3: 걸음마·첫 말·육아휴직이 1세·0세로 모여 1~2세·3세·1세 후보가 줄었다(문서 13-3·13-11)
+      [13, 16, 13],
+      [17, 20, 17],
+      [16, 18, 16],
+      [15, 17, 16],
+      [11, 13, 13],
       [4, 4, 4], // 7세
     ]);
     for (const row of table) for (const n of row) expect(n).toBeGreaterThanOrEqual(4);
   });
 
-  it('시대별로 0~7세 어느 한 해에 일어날 수 있는 이벤트가 28 / 32 / 32개(≥ 25)이고, 나이 기준 영유아 이벤트가 총 39개(서술 22·선택 17)다', () => {
+  it('시대 구간별로 0~7세 어느 한 해에 일어날 수 있는 이벤트가 28 / 35 / 29개(≥ 25)이고, 나이 기준 영유아 이벤트가 총 39개(서술 22·선택 17)다', () => {
     const idsOf = (era: (typeof ERAS)[number]) => {
       const ids = new Set<string>();
       for (let a = 0; a <= INFANT_LAST_AGE; a++) {
@@ -173,7 +176,7 @@ describe('IN1 규모: 0~7세 각 나이 × 각 시대의 정적 후보 ≥ 4, �
       }
       return ids;
     };
-    expect(ERAS.map((era) => idsOf(era).size)).toEqual([28, 32, 32]);
+    expect(ERAS.map((era) => idsOf(era).size)).toEqual([28, 35, 29]);
     const all = new Set(ERAS.flatMap((era) => [...idsOf(era)]));
     expect(all.size).toBe(39);
     const evs = [...all].map(ev);
@@ -186,10 +189,10 @@ describe('IN1 규모: 0~7세 각 나이 × 각 시대의 정적 후보 ≥ 4, �
   });
 });
 
-describe(`IN2 사건 없는 해·기록 줄·선택지 (시대별 ${LIVES}판, 0~7세 여덟 해, 1차 목표: 빈 해 평균 ≤ 1.5·빈 해 5개 이상인 판 ≤ 0.5% / 줄 평균 ≥ 9 / 선택지 평균 ≥ 2.8 — M8 LD-9: 「최대 ≤ 4」는 시드 고정 표본의 최댓값이라 판 하나로 뒤집히는 취약한 통계라 비율로 바꿨다)`, () => {
+describe(`IN2 사건 없는 해·기록 줄·선택지 (세대 표본별 ${LIVES}판, 0~7세 여덟 해, 1차 목표: 빈 해 평균 ≤ 1.5·빈 해 5개 이상인 판 ≤ 0.5% / 줄 평균 ≥ 9 / 선택지 평균 ≥ 2.8 — M8 LD-9: 「최대 ≤ 4」는 시드 고정 표본의 최댓값이라 판 하나로 뒤집히는 취약한 통계라 비율로 바꿨다)`, () => {
   for (const strategy of ['auto', 'random'] as const) {
-    it(`${strategy}: 세 시대 모두 1차 목표를 넘는다`, () => {
-      for (const era of ERAS) {
+    it(`${strategy}: 세대 표본 3종 모두 1차 목표를 넘는다`, () => {
+      for (const era of SIM_PROFILES) {
         const s = summarizeInfant(infantLives(era, LIVES, strategy));
         expect(s.emptyMean, `${era} 빈 해 평균`).toBeLessThanOrEqual(1.5);
         expect(s.linesMean, `${era} 기록 줄 평균(출생 줄 제외)`).toBeGreaterThanOrEqual(9);
@@ -202,10 +205,10 @@ describe(`IN2 사건 없는 해·기록 줄·선택지 (시대별 ${LIVES}판, 0
 
   // 취약한 통계의 교체(M8 LD-9, content-M8.md 7-2절): 판정은 최댓값이 아니라 **비율**이다 — 「빈 해 5개 이상인 판」 ≤ 0.5%. 표본은 시대·전략마다 4000판(0~7세만 돌려 가볍다, EARLY_SEEDS 선례)이라 한계 0.5%는 20판이고,
   // 측정값(0판)에서 표준오차의 3배(참 비율 0.1%여도 4000판에서 20판을 넘을 확률은 사실상 0)보다 멀다. 최댓값과 4개 이상인 판의 비율은 보고만 하고 판정하지 않는다.
-  it('빈 해가 5개 이상인 판은 0.5% 이하이고 평균은 1.5 이하다 (시대 × 전략마다 4000판) — 최댓값은 판정하지 않는다 (LD-9)', () => {
+  it('빈 해가 5개 이상인 판은 0.5% 이하이고 평균은 1.5 이하다 (세대 표본 × 전략마다 4000판) — 최댓값은 판정하지 않는다 (LD-9)', () => {
     const SAMPLE = 4000;
     for (const strategy of ['auto', 'random'] as const) {
-      for (const era of ERAS) {
+      for (const era of SIM_PROFILES) {
         const lives = infantLives(era, SAMPLE, strategy);
         const five = lives.filter((l) => l.emptyYears >= 5).length;
         // 보고 줄(sim:infant·report:time)의 4개·5개 이상 비율이 이 판정과 같은 계산이다 (REV-003-M8-1 R-420)
@@ -220,7 +223,7 @@ describe(`IN2 사건 없는 해·기록 줄·선택지 (시대별 ${LIVES}판, 0
   });
 
   it('선택지 간격 2년 규칙은 그대로다: 0~7세의 선택지는 최대 4개이고 같은 판에서 연속한 두 해에 결정 카드가 뜨지 않는다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (const l of infantLives(era, 300, 'random')) {
         expect(l.choices, `${era} seed ${l.seed}`).toBeLessThanOrEqual(4);
         const ages = l.final.history.filter((h) => h.kind === 'choice' && h.age <= INFANT_LAST_AGE).map((h) => h.age);
@@ -231,14 +234,14 @@ describe(`IN2 사건 없는 해·기록 줄·선택지 (시대별 ${LIVES}판, 0
 });
 
 describe('IN4 동생 맞이 (BR6): 첫째 판에서만, 2~4세, 후속 장난감은 동생이 생긴 판에서만', () => {
-  const lives = ERAS.flatMap((era) => infantLives(era, 2000, 'random'));
+  const lives = SIM_PROFILES.flatMap((era) => infantLives(era, 2000, 'random'));
   const orderOf = (l: InfantLife): number => l.final.birthReport!.birthOrder;
 
-  it('첫째 판 중 동생이 생기는 비율이 출생 순서 통계에 맞는다 (r2, 마스터 결정 2): 지금 세상 45~55% · 다가올 세상 45~55% · 지난 세상 70~85%', () => {
+  it('첫째 판 중 동생이 생기는 비율이 출생 순서 통계에 맞는다 (r2, 마스터 결정 2): 알파(1990년 이후 갈래) 45~55% · 산업화·X(1989년 이전 갈래) 70~85%', () => {
     // 근거: 전국 출산 순위 비중 [첫째 62.4, 둘째 31.2, 셋째 이상 6.4]%(birthStats 전국) — 첫째 중 동생이 생기는 비율 ≈ 둘째 ÷ 첫째 = 50%. 다가올 세상 [66, 28, 6]은 42%, 지난 세상 [26, 26, 48]은 100%지만
     // 동생이 2~4세에 태어나야 하는 창과 어머니 나이 상한 때문에 지난 세상은 70~85%를 목표로 둔 설계값이다(마스터가 정한 목표 범위). 구현: infant-new-sibling 가중치 60 + 어머니 32세 이하 ×10(젊은 어머니일수록 형제가 많다)
-    const band: Record<string, [number, number]> = { past: [70, 85], present: [45, 55], future: [45, 55] };
-    for (const era of ERAS) {
+    const band: Record<string, [number, number]> = { industrial: [70, 85], genx: [70, 85], alpha: [45, 55] };
+    for (const era of SIM_PROFILES) {
       const firsts = lives.filter((l) => l.era === era && orderOf(l) === 1 && l.deathAge === null);
       expect(firsts.length, `${era} 첫째 판 표본`).toBeGreaterThan(300);
       const pct = (100 * firsts.filter((l) => l.seen['infant-new-sibling'] !== undefined).length) / firsts.length;
@@ -308,26 +311,43 @@ describe('IN4 동생 맞이 (BR6): 첫째 판에서만, 2~4세, 후속 장난감
   });
 });
 
-describe('IN6 시대 정합: 시대 전용 이벤트 각 3개 이상, 시대에 어긋난 소재는 금지어 점검이 잡는다 (금지어 시험은 tests/eventLint.test.ts)', () => {
-  it('시대 전용 신규 영유아·7세 이벤트가 지난 3 · 지금 3 · 다가올 3개이고 eras가 정확히 그 시대 하나다', () => {
-    for (const era of ERAS) {
-      expect(M7A_ERA_ONLY[era], era).toHaveLength(3);
-      for (const id of M7A_ERA_ONLY[era]) expect(ev(id).eras, id).toEqual([era]);
-    }
-    // 지난 세상의 기존 시대 전용 `infant-village`를 합치면 4개
-    expect(ev('infant-village').eras).toEqual(['past']);
-    // 시대 전용 목록 밖의 신규 이벤트 중 eras가 하나뿐인 것은 없다
-    const listed = new Set<string>(ERAS.flatMap((era) => [...M7A_ERA_ONLY[era]]));
-    for (const e of NEW) if (!listed.has(e.id)) expect(e.eras === undefined || e.eras.length >= 2, e.id).toBe(true);
+describe('IN6 시대 정합: 시대 소재 이벤트는 연도 구간(yearRange)으로 그 해의 아이에게만 열린다, 시대에 어긋난 소재는 금지어 점검이 잡는다 (금지어 시험은 tests/eventLint.test.ts)', () => {
+  /** 시대 소재 이벤트의 연도 구간 — docs/data/event-conversion.md 4절 표를 옮겨 적은 기대값 (SPEC-004 MG2). 옛 「시대 전용(eras)」 9개 + 기존 `infant-village` */
+  const YEAR_LIMITED: Record<string, { from?: number; to?: number }> = {
+    'infant-coal-winter': { from: 1955, to: 1989 },
+    'infant-market-day': { to: 2000 },
+    'school-first-walk': { to: 2000 },
+    'infant-village': { to: 1995 },
+    'infant-parental-leave': { from: 2001 },
+    'infant-daycare-wait': { from: 2001 },
+    'infant-noise': { from: 2001 },
+    'infant-care-alert': { from: 2016 },
+    'infant-talking-toy': { from: 2023 },
+    'infant-heat-day': { from: 2018 },
+  };
+  const OLD_WORLD = ['infant-coal-winter', 'infant-market-day', 'school-first-walk', 'infant-village'];
+  const NEW_WORLD = ['infant-parental-leave', 'infant-daycare-wait', 'infant-noise', 'infant-care-alert', 'infant-talking-toy', 'infant-heat-day'];
+
+  it('시대 소재 신규 영유아·7세 이벤트의 연도 구간이 문서 표와 같고(옛 시대 전용 9개 + infant-village), 파생된 시대 구간이 그에 맞다', () => {
+    for (const [id, range] of Object.entries(YEAR_LIMITED)) expect(ev(id).yearRange, id).toEqual(range);
+    for (const era of Object.keys(M7A_ERA_ONLY) as Array<keyof typeof M7A_ERA_ONLY>) expect(M7A_ERA_ONLY[era], era).toHaveLength(3);
+    for (const id of OLD_WORLD) expect(ev(id).eras, id).toEqual(['past']);
+    // 시대 소재 목록 밖의 신규 이벤트 중 연도 구간이 걸린 것은 건강검진·유치원·조기교육·방과후(2001/2008년부터)뿐이다
+    const listed = new Set<string>(Object.keys(YEAR_LIMITED));
+    const limited = NEW.filter((e) => !listed.has(e.id) && e.yearRange !== undefined).map((e) => e.id).sort();
+    expect(limited).toEqual(['infant-checkup', 'infant-early-lessons', 'infant-kindergarten', 'school-after-hours']);
   });
 
-  it('세 시대 판에서 시대 전용 이벤트는 그 시대에서만 일어난다 (1000판)', () => {
-    for (const era of ERAS) {
-      const lives = infantLives(era, 500, 'random');
-      const happened = new Set(lives.flatMap((l) => Object.keys(l.seen)));
-      for (const other of ERAS.filter((x) => x !== era)) for (const id of M7A_ERA_ONLY[other]) expect(happened.has(id), `${era}에서 ${other} 전용 ${id}`).toBe(false);
-      for (const id of M7A_ERA_ONLY[era]) expect(happened.has(id), `${era}에서 자기 전용 ${id}가 한 번도 없다`).toBe(true);
+  it('세대 표본 판에서 시대 소재 이벤트는 그 해의 아이에게만 일어난다 (판당 2000판): 산업화·X 영유아는 옛 소재만, 알파 영유아는 2001년 이후 소재만', () => {
+    const happened = (era: (typeof SIM_PROFILES)[number]) => new Set(infantLives(era, 2000, 'random').flatMap((l) => Object.keys(l.seen)));
+    for (const era of ['industrial', 'genx'] as const) {
+      const h = happened(era);
+      for (const id of NEW_WORLD) expect(h.has(id), `${era}에서 2001년 이후 소재 ${id}`).toBe(false);
+      for (const id of OLD_WORLD) expect(h.has(id), `${era}에서 옛 소재 ${id}가 한 번도 없다`).toBe(true);
     }
+    const alpha = happened('alpha');
+    for (const id of OLD_WORLD) expect(alpha.has(id), `알파에서 옛 소재 ${id}`).toBe(false);
+    for (const id of NEW_WORLD) expect(alpha.has(id), `알파에서 ${id}가 한 번도 없다`).toBe(true);
   });
 });
 
@@ -359,7 +379,7 @@ describe('IN7 수저에 따른 차이: 재력 단계에 따라 보이는 선택�
   });
 
   it('시뮬레이션: 재력 4~5단계 판만 문턱 선택지(영어 유치원·독립 병실 …)를 보고, 1~2단계 판은 한 번도 보지 못한다', () => {
-    const lives = ERAS.flatMap((era) => infantLives(era, 1500, 'random'));
+    const lives = SIM_PROFILES.flatMap((era) => infantLives(era, 1500, 'random'));
     const low = lives.filter((l) => l.final.character!.parentWealth <= 2);
     const high = lives.filter((l) => l.final.character!.parentWealth >= 4);
     expect(low.length).toBeGreaterThan(2000);
@@ -444,33 +464,20 @@ describe('r2: 영유아 콘텐츠가 스탯을 크게 올리지 않는다 (마�
    * 「한도 안」의 뜻 (R-460 낱말 정정): 한도 +2 / +3은 **PD가 더한 이동량(`PD_AT_8 − PRE_PD_AT_8`, 모두 ≤ +0.54 — `REPORTED_SHIFT_CAP`)**으로는 한참 안이고, **PD 전 트리 자체가 옛 `HEAD_AT_8`에서 움직인 양(`PRE_PD_AT_8 − HEAD_AT_8`)**도 옛 한도 안이다(지금 세상 지식 +1.59 · 건강 +1.86 · 행복 +1.53 · 관계 +2.68 — 아래 시험이 대조한다). 옛 `HEAD_AT_8` 대비 `PD_AT_8 − HEAD_AT_8`로는 두 항목이 넘는다. 앞으로 0~19세 콘텐츠를 바꾸면 이 기준선(`PD_AT_8`, 현재 트리와 0.01 이내)도 어긋난다 —
    * 효과를 줄이는 쪽이 먼저이고, 불가피하면 기준선 재측정과 보고 상한 수정을 마스터 승인으로 처리한다.
    */
-  const HEAD_AT_8: Record<string, [number, number, number, number]> = {
-    past: [15.58, 70.58, 43.68, 51.29],
-    present: [16.54, 71.2, 48.14, 53.42],
-    future: [16.51, 71.26, 48.8, 54.13],
-  };
-  /** QI5 구현 직전 트리(부모 결정·흘러감 끔)에서 같은 함수·표본으로 잰 8세 평균 — PD 이동 크기를 보고하는 기준으로만 쓴다 */
-  const PRE_PD_AT_8: Record<string, [number, number, number, number]> = {
-    past: [16.4536, 72.2345, 45.3814, 53.9025],
-    present: [18.1255, 73.0634, 49.6729, 56.0988],
-    future: [17.7877, 72.3832, 50.3391, 55.1896],
-  };
-  /** 가드 기준선: QI5 구현 직후 같은 함수·같은 표본(시드 i × 7919 + 13, 1500판, 무작위 선택)의 8세 평균 — 살아서 8세가 된 판 1497·1498·1498개 */
+  /**
+   * (SPEC-004 GM4 기준선 재측정) 옛 시대별 기준선(`HEAD_AT_8`·`PRE_PD_AT_8`·`PD_AT_8`·`REPORTED_SHIFT_CAP`)은 「세 시대」가 세대 7종으로 바뀌어 쓸 수 없다. 세대 표본 3종(산업화·X·알파)을
+   * *같은 함수·같은 표본*(시드 i × 7919 + 13, 1500판, 무작위 선택)으로 다시 쟀다 — 콘텐츠는 그대로이고(MG2는 연도 구간만 바꾼다) 옛 지난/지금/다가올 값과 ±1 안에서 이어진다.
+   * 한도 +2 / +3은 이 새 기준선 대비 *앞으로의 콘텐츠 변경*에만 적용한다.
+   */
   const PD_AT_8: Record<string, [number, number, number, number]> = {
-    past: [16.5738, 72.2532, 45.3427, 54.0935],
-    present: [18.2056, 73.2877, 50.0267, 56.5961],
-    future: [17.8511, 72.6435, 50.5828, 55.7236],
-  };
-  /** PD 이동 크기(`PD_AT_8 − PRE_PD_AT_8`)의 보고한 상한 — 기준선을 다시 재서 몰래 올리는 일을 막는다 */
-  const REPORTED_SHIFT_CAP: Record<string, [number, number, number, number]> = {
-    past: [0.13, 0.02, 0.01, 0.2],
-    present: [0.09, 0.23, 0.36, 0.5],
-    future: [0.07, 0.27, 0.25, 0.55],
+    industrial: [16.7463, 72.2296, 45.508, 54.1782],
+    genx: [17.1228, 72.5394, 47.8818, 56.0701],
+    alpha: [17.8097, 72.4372, 49.5374, 55.504],
   };
   const LIMIT = [2, 2, 2, 3];
   const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
 
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     it(`${era}: 지식·건강·행복 +2 이하, 관계 +3 이하 (1500판, 기준선 PD_AT_8 대비)`, () => {
       const alive = infantLives(era, 1500, 'random').filter((l) => l.deathAge === null);
       const now = [
@@ -485,23 +492,6 @@ describe('r2: 영유아 콘텐츠가 스탯을 크게 올리지 않는다 (마�
       now.forEach((v, i) => expect(Math.abs(v - PD_AT_8[era][i]), `${era} ${names[i]} 기준선 일치`).toBeLessThan(0.01));
     });
   }
-
-  it('PD 이동 크기는 보고한 표를 넘지 않는다 (기준선 PD_AT_8 − PRE_PD_AT_8 ≤ 보고 상한; 옛 HEAD 대비로는 지금 세상 건강 +2.09·관계 +3.18 두 항목이 옛 +2 / +3 한도를 넘는다 — 그래서 기준선을 교체했다)', () => {
-    for (const era of ERAS) {
-      PD_AT_8[era].forEach((v, i) => expect(v - PRE_PD_AT_8[era][i], `${era} ${i}`).toBeLessThanOrEqual(REPORTED_SHIFT_CAP[era][i]));
-    }
-    // 교체 사유의 증거 (R-453): 옛 기준선 HEAD_AT_8 대비로 옛 한도를 넘는 항목은 지금 세상의 건강(+2.09)과 관계(+3.18) 둘이다(지식 +1.67·행복 +1.89는 안, 지난·다가올 세상은 모두 안).
-    // 항목 하나만 단언하면 앞의 항목에서 멈춰 나머지가 보이지 않으므로 넘는 항목의 목록 전체를 대조한다.
-    const names = ['지식', '건강', '행복', '관계'];
-    const over = (base: Record<string, number[]>, era: string): string[] => names.filter((_, i) => PD_AT_8[era][i] - base[era][i] > LIMIT[i]);
-    expect({ past: over(HEAD_AT_8, 'past'), present: over(HEAD_AT_8, 'present'), future: over(HEAD_AT_8, 'future') }).toEqual({ past: [], present: ['건강', '관계'], future: [] });
-    expect(PD_AT_8.present[1] - HEAD_AT_8.present[1]).toBeGreaterThan(LIMIT[1]);
-    expect(PD_AT_8.present[3] - HEAD_AT_8.present[3], '관계 +3.18도 옛 한도 +3을 넘는다').toBeGreaterThan(LIMIT[3]);
-    // PD 전(PRE_PD) 트리의 같은 지표는 옛 `HEAD_AT_8` 대비 옛 한도 안이다 — 이 단언의 숫자는 PRE_PD − HEAD(PD 전 트리가 옛 기준선에서 움직인 양)이고, PD가 더한 이동량(PD_AT_8 − PRE_PD_AT_8 ≤ 보고 상한)은 위 단언이 따로 지킨다: 모든 세상·항목
-    for (const era of ERAS) {
-      PRE_PD_AT_8[era].forEach((v, i) => expect(v - HEAD_AT_8[era][i], `${era} ${names[i]} (PRE_PD − HEAD)`).toBeLessThanOrEqual(LIMIT[i]));
-    }
-  });
 });
 
 describe('r3 T04 (QA-003-M7a): 재력 조건 없이 모든 단계에 보이는 문장에는 형편(빠듯·숨통·겨우·만만치·형편이 어려·넉넉하지) 낱말이 없다', () => {
@@ -543,7 +533,7 @@ describe('r3 T04 (QA-003-M7a): 재력 조건 없이 모든 단계에 보이는 �
   });
 
   it('시뮬레이션: 재력 4·5단계 판이 본 영유아 문장 중 형편 낱말이 있는 것은 0건이다 (세 시대 × 1500판 연표)', () => {
-    const lives = ERAS.flatMap((era) => infantLives(era, 1500, 'random')).filter((l) => l.final.character!.parentWealth >= 4);
+    const lives = SIM_PROFILES.flatMap((era) => infantLives(era, 1500, 'random')).filter((l) => l.final.character!.parentWealth >= 4);
     expect(lives.length, '재력 4·5단계 판').toBeGreaterThan(300);
     let lines = 0;
     for (const l of lives) {
@@ -559,7 +549,7 @@ describe('r3 T04 (QA-003-M7a): 재력 조건 없이 모든 단계에 보이는 �
 
 describe('r3 R-362: 걸음마·첫 말은 모든 판의 만 1세 해에 일어나고, 한 해 세 줄이 연표에 순서대로 남는다', () => {
   it('세 시대 × 1000판: 사망하지 않은 모든 판에서 첫 걸음마·첫 말이 1세(100%)이고, 같은 해 연표는 걸음마 → 첫 말(id 오름차순)이다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const alive = infantLives(era, 1000, 'random').filter((l) => l.deathAge === null || l.deathAge >= 1);
       expect(alive.length).toBeGreaterThan(990);
       let threeLines = 0;
@@ -578,7 +568,7 @@ describe('r3 R-362: 걸음마·첫 말은 모든 판의 만 1세 해에 일어�
 });
 
 describe('r3 R-367·O06: 동생 맞이는 어떤 판에서도 선택지 3개가 보이고, 조부모 플래그가 없으면 「눈길 끌기(notice)」가 보인다', () => {
-  const lives = ERAS.flatMap((era) => infantLives(era, 2000, 'random'));
+  const lives = SIM_PROFILES.flatMap((era) => infantLives(era, 2000, 'random'));
   const sibCards = lives.filter((l) => l.shown['infant-new-sibling'] !== undefined);
 
   it('동생 맞이 카드가 뜬 모든 판에서 보인 선택지가 정확히 3개다 (플래그 있음 help·sulk·grandma / 없음 help·sulk·notice)', () => {

@@ -347,8 +347,8 @@ test('접은 채 자동 모드를 끄면 카드는 접힌 채 그대로이고 �
 test('수동 모드에서 시간이 흘러 선택지가 뜨면 포커스가 속도 버튼에 있었어도 시트의 제목으로 간다 (D-52 — 바깥이 inert가 되어 「알리기만」이 불가능하다). 이때 누른 Space는 선택을 확정하지 않는다', async ({ page }) => {
   await startPageHidden(page);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
-  const start = await oracleLife(page, decision.seed, 'present');
+  const decision = await findPendingState(page, 'alpha');
+  const start = await oracleLife(page, decision.seed, 'alpha');
   await injectSave(page, start, '/?__timescale=200', SETTINGS_MANUAL); // 풀리면 선택지가 곧바로 뜬다
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await expect.poll(() => activeTestId(page)).toBe('life-name');

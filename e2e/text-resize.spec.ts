@@ -37,7 +37,7 @@ for (const size of SIZES) {
             await setRootFontPercent(page, percent);
             const label = `${size.width}x${size.height}/${percent}%/${scheme}/${state}`;
             const m = await measureTextResize(page);
-            expect(m.nameCount, '수저 이름표를 실제로 잰 개수(공허 통과 방지)').toBe(5);
+            expect(m.nameCount, '첫 화면에는 수저 이름표가 없다(SPEC-004 GS11 — 수저 다섯 자루 줄 삭제)').toBe(0);
             expect(textResizeViolations(m, label), `루트 글자 ${m.rootFontPx}px`).toEqual([]);
             expect(barViolations(m, label)).toEqual([]);
             // 「태어나기」(또는 상태의 큰 버튼)가 실제로 눌린다: 한가운데를 눌러 동작을 본다는 대신, 한가운데에서 맞는 요소가 그 버튼인지(barViolations의 hit)를 본다

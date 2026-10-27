@@ -17,7 +17,7 @@ export const SHOT = 'qa/screenshots/003/dev-M7e-3';
 /** 알려진 시드의 엔딩 상태(core 자동 진행 결과) — 앱 페이지가 열려 있어야 한다 */
 export async function endedBase(page: Page): Promise<GameState> {
   await page.goto('/');
-  const ended = await oracleAuto(page, await oracleLife(page, KNOWN_SEED, 'present'));
+  const ended = await oracleAuto(page, await oracleLife(page, KNOWN_SEED, 'alpha'));
   expect(ended.phase).toBe('ending');
   expect(ended.assets).not.toBeNull();
   return ended;
@@ -71,6 +71,7 @@ export async function barOracle(page: Page, state: GameState): Promise<BarOracle
   if (page.url() === 'about:blank') await page.goto('/'); // 스무 살 전 상태는 앱을 열지 않고 만들어진다 — 모듈을 불러오려면 앱 페이지가 열려 있어야 한다
   return page.evaluate<BarOracle>(`(async () => {
     const core = await import('/src/core/index.ts');
+    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
     const text = await import('/src/data/endingText.ts');
     const birth = await import('/src/data/birthText.ts');
     const state = ${JSON.stringify(state)};

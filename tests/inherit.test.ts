@@ -4,26 +4,7 @@ import { ECONOMY } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
 import type { EventDef } from '../src/core';
 import { INHERIT_NOTE_TEXT } from '../src/data/lifeTable';
-import {
-  advanceYear,
-  familyOf,
-  inheritanceAmount,
-  inheritanceDue,
-  dwellingWhenParentsGone,
-  parentsJustGone,
-  incomeOf,
-  economyContextOf,
-  parseGame,
-  serializeGame,
-  parentsAllGone,
-  previewChoice,
-  resolveChoiceStep,
-  siblingCountOf,
-  stepYear,
-  type Dwelling,
-  type GameState,
-  type ParentWealth,
-} from '../src/core';
+import { advanceYear, familyOf, inheritanceAmount, inheritanceDue, dwellingWhenParentsGone, parentsJustGone, incomeOf, economyContextOf, parseGame, serializeGame, parentsAllGone, previewChoice, resolveChoiceStep, siblingCountOf, stepYear, type Dwelling, type GameState, type ParentWealth } from '../src/core';
 import { startLife } from '../scripts/simulateLib';
 
 /**
@@ -37,7 +18,7 @@ const NOTE = '부모님이 남기신 재산을 물려받았습니다.';
 
 /** 어머니 30세·아버지 33세에 태어난 중년 상태(재력 단계·형제 순서·나이·플래그를 고른다) */
 function stateOf(over: { tier?: ParentWealth; age?: number; flags?: string[]; birthOrder?: number; motherAge?: number; fatherAge?: number; net?: number; assets?: 'none'; dwelling?: Dwelling } = {}): GameState {
-  const base = startLife(11, 'present');
+  const base = startLife(11, 'alpha');
   const age = over.age ?? 55;
   const s: GameState = {
     ...base,

@@ -60,7 +60,7 @@ Playwright를 처음 쓰면 `npx playwright install chromium`이 한 번 필요�
 
 ## 데이터 출처
 
-지금 세상·다가올 세상 이름 출처: 대한민국 법원 전자가족관계등록시스템 통계서비스 「상위 출생신고 이름 현황」(등록일 기준 잠정치, 2026-10-13 조회)
+2008년 이후 출생 이름 출처: 대한민국 법원 전자가족관계등록시스템 통계서비스 「상위 출생신고 이름 현황」(등록일 기준 잠정치, 2026-10-13 조회)
 <https://stfamily.scourt.go.kr/st/StFrrStatcsView.do?pgmId=090000000025>
 
 (`src/data/names.json`의 `meta.attribution`과 같은 내용이며, 게임 첫 화면 하단에도 표기합니다.)

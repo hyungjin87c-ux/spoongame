@@ -5,9 +5,9 @@ import pkgRaw from '../package.json?raw';
 import titleScreenRaw from '../src/screens/TitleScreen.tsx?raw';
 import { resolveRepoUrl } from '../scripts/buildInfo';
 import { startLife } from '../scripts/simulateLib';
-import { ERA_CONFIG } from '../src/data/birthTable';
+import { GENERATIONS } from '../src/data/generations';
 import { LIFE_LENGTH_TEXT } from '../src/data/titleText';
-import { ERAS, LIFE_LENGTHS, PHASES, FEEDBACK_SCREEN_FIELD, FEEDBACK_SCREEN_LABEL, FEEDBACK_TEMPLATE, buildFeedbackUrl, feedbackFieldsOf, notesOf, writeNote, type FeedbackFields } from '../src/core';
+import { GENERATION_IDS, LIFE_LENGTHS, PHASES, FEEDBACK_SCREEN_FIELD, FEEDBACK_SCREEN_LABEL, FEEDBACK_TEMPLATE, buildFeedbackUrl, feedbackFieldsOf, notesOf, writeNote, type FeedbackFields } from '../src/core';
 
 /**
  * 의견 보내기 링크 (SPEC-003 DB7): GitHub 이슈 작성 화면으로 새 탭에서 열린다. 주소에 담기는 것은 허용 목록(빌드 버전·화면·세상·인생 길이)뿐이고,
@@ -15,7 +15,7 @@ import { ERAS, LIFE_LENGTHS, PHASES, FEEDBACK_SCREEN_FIELD, FEEDBACK_SCREEN_LABE
  */
 const REPO = 'https://github.com/owner/spoongame';
 const BUILD = 'v0.1.0 (abc1234)';
-const base: FeedbackFields = { repoUrl: REPO, screen: 'life', era: 'present', lifeLength: 'short30', buildLabel: BUILD };
+const base: FeedbackFields = { repoUrl: REPO, screen: 'life', generation: 'alpha', lifeLength: 'short30', buildLabel: BUILD };
 
 describe('resolveRepoUrl: package.json repository → 저장소 https 주소', () => {
   it('npm이 허용하는 여러 모양을 같은 주소로 읽는다', () => {
@@ -77,26 +77,26 @@ describe('buildFeedbackUrl: 허용 목록 필드만', () => {
 
   it('화면 칸은 「화면, 세상, 인생 길이, 빌드」 쉼표 나열이다 (가운뎃점·줄바꿈 없음)', () => {
     const screen = new URL(buildFeedbackUrl(base)!).searchParams.get(FEEDBACK_SCREEN_FIELD)!;
-    expect(screen).toBe(`${FEEDBACK_SCREEN_LABEL.life}, ${ERA_CONFIG.present.label}, ${LIFE_LENGTH_TEXT.short30.title}, ${BUILD}`);
+    expect(screen).toBe(`${FEEDBACK_SCREEN_LABEL.life}, ${GENERATIONS.find((g) => g.id === 'alpha')!.label}, ${LIFE_LENGTH_TEXT.short30.title}, ${BUILD}`);
     expect(screen).not.toMatch(/[·\n\r]/);
   });
 
-  it('모든 화면 단계 × 세상 × 인생 길이 조합이 주소로 만들어지고, 판이 없으면(첫 화면) 세상·인생 길이가 빠진다', () => {
+  it('모든 화면 단계 × 세대 × 인생 길이 조합이 주소로 만들어지고, 판이 없으면(첫 화면) 세대·인생 길이가 빠진다', () => {
     let n = 0;
     for (const screen of PHASES) {
-      for (const era of [null, ...ERAS]) {
+      for (const generation of [null, ...GENERATION_IDS]) {
         for (const lifeLength of [null, ...LIFE_LENGTHS]) {
-          const url = buildFeedbackUrl({ ...base, screen, era, lifeLength });
-          expect(url, `${screen} ${era} ${lifeLength}`).not.toBeNull();
+          const url = buildFeedbackUrl({ ...base, screen, generation, lifeLength });
+          expect(url, `${screen} ${generation} ${lifeLength}`).not.toBeNull();
           const text = new URL(url!).searchParams.get(FEEDBACK_SCREEN_FIELD)!;
           expect(text.startsWith(FEEDBACK_SCREEN_LABEL[screen])).toBe(true);
-          expect(text.includes(ERA_CONFIG.past.label) || text.includes(ERA_CONFIG.present.label) || text.includes(ERA_CONFIG.future.label)).toBe(era !== null);
+          expect(GENERATIONS.some((g) => text.includes(g.label)), `${screen} ${generation}`).toBe(generation !== null);
           n++;
         }
       }
     }
-    expect(n).toBe(PHASES.length * (ERAS.length + 1) * (LIFE_LENGTHS.length + 1));
-    expect(new URL(buildFeedbackUrl({ ...base, screen: 'title', era: null, lifeLength: null })!).searchParams.get(FEEDBACK_SCREEN_FIELD)).toBe(`${FEEDBACK_SCREEN_LABEL.title}, ${BUILD}`);
+    expect(n).toBe(PHASES.length * (GENERATION_IDS.length + 1) * (LIFE_LENGTHS.length + 1));
+    expect(new URL(buildFeedbackUrl({ ...base, screen: 'title', generation: null, lifeLength: null })!).searchParams.get(FEEDBACK_SCREEN_FIELD)).toBe(`${FEEDBACK_SCREEN_LABEL.title}, ${BUILD}`);
   });
 
   it('저장소 주소가 어긋나면 링크를 만들지 않는다 (null)', () => {
@@ -107,7 +107,7 @@ describe('buildFeedbackUrl: 허용 목록 필드만', () => {
 
   it('빌드 표기가 어긋나면(이름·기록 같은 자유 글이 끼어든 경우 포함) 빌드 부분만 빠지고 나머지는 그대로다', () => {
     const clean = new URL(buildFeedbackUrl({ ...base, buildLabel: '' })!).searchParams.get(FEEDBACK_SCREEN_FIELD)!;
-    expect(clean).toBe(`${FEEDBACK_SCREEN_LABEL.life}, ${ERA_CONFIG.present.label}, ${LIFE_LENGTH_TEXT.short30.title}`);
+    expect(clean).toBe(`${FEEDBACK_SCREEN_LABEL.life}, ${GENERATIONS.find((g) => g.id === 'alpha')!.label}, ${LIFE_LENGTH_TEXT.short30.title}`);
     for (const buildLabel of ['홍길동', 'v0.1.0 (홍길동)', 'v0.1.0 (abc1234) 홍길동', 'v0.1.0 (ABC1234)', 'v0.1.0', 'v0.1.0 (abc123)', 'v0.1.0 (abc1234)\n본문', `v${'9'.repeat(40)} (abc1234)`, 'v1 (개발 빌드) 이름=김']) {
       expect(new URL(buildFeedbackUrl({ ...base, buildLabel })!).searchParams.get(FEEDBACK_SCREEN_FIELD), JSON.stringify(buildLabel)).toBe(clean);
     }
@@ -129,13 +129,13 @@ describe('buildFeedbackUrl: 허용 목록 필드만', () => {
 
 describe('feedbackFieldsOf: 게임 상태에서 네 가지만', () => {
   const hostile = '홍길동<script>alert(1)</script>&screen=악성#해시?x=1';
-  const game = startLife(77, 'present');
+  const game = startLife(77, 'alpha');
   const named = { ...game, character: { ...game.character!, name: hostile } };
 
   it('결과는 정해진 다섯 키뿐이다 — 이름·나이·기록·저장 데이터는 읽지도 않는다', () => {
     const fields = feedbackFieldsOf(named, REPO, BUILD);
-    expect(Object.keys(fields).sort()).toEqual(['buildLabel', 'era', 'lifeLength', 'repoUrl', 'screen'].sort());
-    expect(fields).toEqual({ repoUrl: REPO, screen: named.phase, era: named.era, lifeLength: named.lifeLength, buildLabel: BUILD });
+    expect(Object.keys(fields).sort()).toEqual(['buildLabel', 'generation', 'lifeLength', 'repoUrl', 'screen'].sort());
+    expect(fields).toEqual({ repoUrl: REPO, screen: named.phase, generation: named.generation, lifeLength: named.lifeLength, buildLabel: BUILD });
     expect(JSON.stringify(fields)).not.toContain('홍길동');
   });
 
@@ -175,7 +175,7 @@ describe('feedbackFieldsOf: 게임 상태에서 네 가지만', () => {
       expect(url, '기록이 있든 없든 같은 주소').toBe(clean);
     }
     // 입력 타입이 글을 담을 자리가 없다: 결과 키는 여전히 다섯 개뿐이다
-    expect(Object.keys(feedbackFieldsOf(written, REPO, BUILD)).sort()).toEqual(['buildLabel', 'era', 'lifeLength', 'repoUrl', 'screen']);
+    expect(Object.keys(feedbackFieldsOf(written, REPO, BUILD)).sort()).toEqual(['buildLabel', 'generation', 'lifeLength', 'repoUrl', 'screen']);
   });
 
   it('M8 LD-11: 플레이 시간(play)은 주소에 싣지 않는다 — 시간이 많이 쌓인 판(엔딩)이어도 기록이 없는 같은 판의 주소와 글자까지 같고, 결과 키는 여전히 다섯 개뿐이다 (형진 님이 엔딩 숫자를 직접 알려 준다)', () => {
@@ -184,12 +184,12 @@ describe('feedbackFieldsOf: 게임 상태에서 네 가지만', () => {
     const decoded = decodeURIComponent(url);
     for (const piece of ['910900', '756900', '12345', '23456', '34567', '7777', '8888', '27:46', 'PT', '1666', 'play', 'hold', 'decide']) expect(decoded, piece).not.toContain(piece);
     expect(url, '플레이 시간이 있든 없든 같은 주소').toBe(buildFeedbackUrl(feedbackFieldsOf({ ...game, phase: 'ending' as const }, REPO, BUILD))!);
-    expect(Object.keys(feedbackFieldsOf(played, REPO, BUILD)).sort()).toEqual(['buildLabel', 'era', 'lifeLength', 'repoUrl', 'screen']);
+    expect(Object.keys(feedbackFieldsOf(played, REPO, BUILD)).sort()).toEqual(['buildLabel', 'generation', 'lifeLength', 'repoUrl', 'screen']);
   });
 
   it('첫 화면처럼 판이 없는 상태도 읽는다', () => {
-    const fields = feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, REPO, BUILD);
-    expect(fields).toEqual({ repoUrl: REPO, screen: 'title', era: null, lifeLength: null, buildLabel: BUILD });
+    const fields = feedbackFieldsOf({ phase: 'title', generation: null, lifeLength: null }, REPO, BUILD);
+    expect(fields).toEqual({ repoUrl: REPO, screen: 'title', generation: null, lifeLength: null, buildLabel: BUILD });
   });
 });
 
@@ -240,14 +240,14 @@ describe('이슈 양식 파일과의 대응 (.github/ISSUE_TEMPLATE/feedback.yml
  */
 describe('정보 패널의 「의견 보내기」 (N2): 같은 buildFeedbackUrl, 첫 화면 값', () => {
   it('첫 화면 필드(화면 title · 세상 없음 · 인생 길이 없음 + 빌드 표기)로 만든 주소가 이슈 양식의 screen 칸에 「첫 화면, {빌드}」로 채워진다', () => {
-    const url = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, REPO, BUILD))!;
+    const url = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', generation: null, lifeLength: null }, REPO, BUILD))!;
     expect(url.startsWith(`${REPO}/issues/new?template=${FEEDBACK_TEMPLATE}&${FEEDBACK_SCREEN_FIELD}=`)).toBe(true);
     expect(decodeURIComponent(new URL(url).searchParams.get(FEEDBACK_SCREEN_FIELD)!)).toBe(`${FEEDBACK_SCREEN_LABEL.title}, ${BUILD}`);
     expect([...new URL(url).searchParams.keys()].sort(), '허용 목록 필드 하나(screen) + 양식 이름').toEqual([FEEDBACK_SCREEN_FIELD, 'template'].sort());
   });
 
   it('TitleScreen의 패널 링크는 같은 함수·같은 허용 목록 필드 도우미로 주소를 만들고(소스), 이름·기록·저장 데이터를 읽지 않는다', () => {
-    expect(titleScreenRaw).toContain('buildFeedbackUrl(feedbackFieldsOf({ phase: \'title\', era: null, lifeLength: null }, repoUrl, BUILD_LABEL))');
+    expect(titleScreenRaw).toContain('buildFeedbackUrl(feedbackFieldsOf({ phase: \'title\', generation: null, lifeLength: null }, repoUrl, BUILD_LABEL))');
     expect(titleScreenRaw).toContain('<InfoPanel');
     expect(titleScreenRaw).not.toMatch(/character\.name|\.history|localStorage/);
   });

@@ -20,7 +20,7 @@ import type { YearClock } from '../src/ui/useYearClock';
 const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
 const noop = () => undefined;
 /** startLife가 만든 인생 단계 상태는 출생 결과(시대·출생신고·또래 시드)를 모두 갖고 있다 — 대시보드 화면이 받는 모양으로 좁힌다 */
-const asLifeGame = (g: GameState): LifeGame => ({ ...g, character: g.character!, era: g.era!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
+const asLifeGame = (g: GameState): LifeGame => ({ ...g, character: g.character!, generation: g.generation!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
 /** 대시보드(LifeScreen)를 서버 렌더한다. 설정은 기본값에 배속·자동 모드만 덮는다. */
 const renderLife = (g: GameState, autoMode = false) =>
   renderToString(
@@ -118,7 +118,7 @@ describe('GuardedButton: 지속 비활성 표식 data-unavailable (R-337)', () =
   });
 
   it('대시보드: 자동 모드에서는 「다음 결정으로」가, 선택지 대기 중에도 그렇다(「생각 남기기」는 M7c부터 보통 버튼이라 표식이 없다). 켜진 자동 모드·속도·일시정지 같은 버튼에는 없다', () => {
-    const life = startLife(5, 'present');
+    const life = startLife(5, 'alpha');
     const auto = renderLife(life, true);
     const tag = (html: string, id: string) => {
       const at = html.indexOf(`data-testid="${id}"`);
@@ -128,7 +128,7 @@ describe('GuardedButton: 지속 비활성 표식 data-unavailable (R-337)', () =
     for (const id of ['pause', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-exit']) expect(tag(auto, id), id).not.toContain('data-unavailable'); // 「생각 남기기」는 M7c부터 보통 버튼이다(지속 비활성 아님)
     const manual = renderLife(life, false);
     expect(tag(manual, 'skip'), '수동·선택지 없음: 「다음 결정으로」는 누를 수 있다').not.toContain('data-unavailable');
-    const pending = advanceUntilDecision(startLife(5, 'present')).state;
+    const pending = advanceUntilDecision(startLife(5, 'alpha')).state;
     if (pending.phase === 'life' && pending.pending !== null) expect(tag(renderLife(pending, false), 'skip'), '선택지 대기 중').toContain('data-unavailable="true"');
   });
 
@@ -282,7 +282,7 @@ function flatten(node: ReactNode, out: ReactElement[] = []): ReactElement[] {
  * "다음 결정으로"는 disabled가 아니라 aria-disabled로 막는다 — 선택지가 뜨든 사라지든 컨트롤 그룹의 Tab 순서가 변하지 않도록.
  */
 describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
-  const life = startLife(41, 'present');
+  const life = startLife(41, 'alpha');
   const game = { ...life, character: life.character! };
   const render = (g: GameState, autoMode = false) => renderLife(g, autoMode);
   /** 진행 줄(controls)만: 그 뒤에 이어지는 도구 줄(tools) 앞까지 */
@@ -372,7 +372,7 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
  * 실제 접근성 설명 계산은 e2e/polish.spec.ts(toHaveAccessibleDescription)가 본다 — hidden이어도 aria-describedby가 가리키면 설명으로 계산된다.
  */
 describe('비활성 "다음 결정으로"의 사유 전달 (R-056)', () => {
-  const life = startLife(41, 'present');
+  const life = startLife(41, 'alpha');
   const decision = advanceUntilDecision(life).state;
   const html = (autoMode: boolean, pending: boolean) => renderLife(pending ? decision : life, autoMode);
   const skipTag = (h: string) => h.match(/<button[^>]*data-testid="skip"[^>]*>/)![0];

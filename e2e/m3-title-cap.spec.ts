@@ -157,8 +157,8 @@ for (const [name, width, height, touch] of [
       await setRootPercentSync(page, 200);
       const spec = HEADINGS[0];
       expect(await headingProblems(page, spec, 200, `${name}/200%`), '상한이 있으면 위반 없음').toEqual([]);
-      // 이전 구현: 제목 글자 크기를 상한 없이 --fs-2xl로
-      await page.addStyleTag({ content: '.roulette__lead .t-title { font-size: var(--fs-2xl) !important; }' });
+      // 이전 구현: 제목 글자 크기를 상한 없이 키운다. (Noto Sans KR로 글꼴이 바뀐 뒤에는 --fs-2xl(28px)에서 「정해졌습니다」가 360px에 한 줄로 들어가 버려 대조가 눌리므로, 상한 없는 큰 제목의 대표로 --fs-3xl(36px)을 쓴다)
+      await page.addStyleTag({ content: '.roulette__lead .t-title { font-size: var(--fs-3xl) !important; }' });
       const before = await measureHeading(page, spec.heading, spec.body);
       const done = before.words.find((w) => w.word === '정해졌습니다');
       expect(done, '「정해졌습니다」를 쟀다').toBeDefined();

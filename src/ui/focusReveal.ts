@@ -29,6 +29,36 @@ export function revealTopOfTallFocus(el: HTMLElement, ringExtra = 7, focused: HT
   if (el.getBoundingClientRect().height + ringExtra * 2 > available) el.scrollIntoView({ block: 'start', inline: 'nearest' });
 }
 
+/**
+ * 세대 목록(`.gen-list`, 스크롤 창)의 줄이 키보드로 포커스를 받으면 그 줄을 **목록 창 안**과 **문서의 가용 영역**(화면 − 위·아래 스크롤 여백 = 하단 띠 위) 둘 다에 들인다 (SPEC-004 GS1, WCAG 2.4.11).
+ * 브라우저의 기본 포커스 스크롤은 줄이 목록 창에 잘려 보이는 부분만 보고 문서를 맞추므로, 창이 하단 띠 밑으로 걸친 화면(큰 글자·낮은 화면)에서 줄 아래가 띠에 가려진다.
+ *  1) 줄이 창 안에 다 보이지 않으면 줄의 윗변을 창 윗변에 맞춘다(목록은 줄 윗변이 맞춤 자리인 scroll-snap이라 아랫변 맞춤은 되돌려진다). 부드러운 스크롤이 돌지 않게 즉시 움직인다.
+ *  2) 문서: 줄 상자가 가용 영역보다 크면 윗변을 가용 영역 윗변에, 아니면 가장 가까운 변을 영역 안으로 문서를 민다.
+ * 눌러서 생긴 포커스(`:focus-visible`이 아님)는 화면이 점프하면 안 되므로 건드리지 않는다.
+ */
+export function revealGenRow(row: HTMLElement, list: HTMLElement, focused: HTMLElement): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!focused.matches(':focus-visible')) return;
+  } catch {
+    return;
+  }
+  const top = row.offsetTop;
+  if (top < list.scrollTop || top + row.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTo({ top, behavior: 'instant' });
+  const style = window.getComputedStyle(document.documentElement);
+  const px = (v: string): number => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const padTop = px(style.scrollPaddingTop);
+  const padBottom = px(style.scrollPaddingBottom);
+  const rect = row.getBoundingClientRect();
+  const bottomLimit = window.innerHeight - padBottom;
+  if (rect.height > bottomLimit - padTop) window.scrollBy(0, rect.top - padTop);
+  else if (rect.bottom > bottomLimit) window.scrollBy(0, rect.bottom - bottomLimit);
+  else if (rect.top < padTop) window.scrollBy(0, rect.top - padTop);
+}
+
 /** 문서 루트의 스크롤 여백(`scroll-padding-top·bottom`)이 고정 요소 높이에 더하는 틈 — `--sp-3`(12px). styles/title.css·dash.css의 `calc(고정 요소 높이 + var(--sp-3))`와 같은 값 */
 const SCROLL_GAP = 12;
 

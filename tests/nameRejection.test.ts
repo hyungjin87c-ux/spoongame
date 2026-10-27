@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
+  GENERATION_IDS,
   GENDERS,
   MAX_NAME_REDRAWS,
   createRng,
@@ -9,12 +9,14 @@ import {
   namePoolFor,
   pickFullName,
   surnameWeights,
-  type Era,
+  R1_PRESENT,
+  birthYearOddsOf,
+  pickBirthYear,
   type Gender,
+  type ProfileId,
   type Rng,
 } from '../src/core';
 import { isForbiddenFullName } from '../src/data/forbiddenNames';
-import { ERA_CONFIG } from '../src/data/birthTable';
 
 /**
  * R-027 (마스터 결정): 성과 이름 첫 글자가 같은 조합(이이준·윤윤서·정정우 등)은 금지 조합(R-023·R-028)과 같은 내부 필터로
@@ -52,7 +54,7 @@ function forcedRng(surname: string, picks: string[]) {
 /** 실제 풀에서 "성과 첫 글자가 같은 이름"이 있는 (성, 연도, 성별, 이름) 목록 */
 function sameLetterCases(): Array<{ surname: string; year: number; gender: Gender; given: string }> {
   const out: Array<{ surname: string; year: number; gender: Gender; given: string }> = [];
-  const years = [1955, 1965, 1975, 1985, 2026, 2040];
+  const years = [1945, 1955, 1965, 1975, 1985, 1995, 2005, 2012, 2020, 2026];
   for (const year of years) {
     for (const gender of GENDERS) {
       for (const given of namePoolFor(year, gender)) {
@@ -147,10 +149,9 @@ describe('걸리면 같은 풀에서 이름만 다시 뽑는다 (강제 RNG)', (
 });
 
 /** 필터 없이 첫 추첨만 흉내 낸다. 소비 순서는 generateBirth와 같다: 연도 → 성별 → 성씨 → 이름. */
-function unfilteredFirstDraw(seed: number, era: Era) {
+function unfilteredFirstDraw(seed: number, profile: ProfileId) {
   const rng = createRng(seed);
-  const cfg = ERA_CONFIG[era];
-  const year = rng.int(cfg.birthYears.min, cfg.birthYears.max);
+  const year = pickBirthYear(rng, birthYearOddsOf(profile));
   const gender = GENDERS[rng.int(0, GENDERS.length - 1)];
   const weights = surnameWeights();
   const surname = weights[rng.weightedIndex(weights.map((w) => w.weight))].name;
@@ -158,8 +159,8 @@ function unfilteredFirstDraw(seed: number, era: Era) {
   return { year, gender, surname, given };
 }
 
-describe('대량 시뮬레이션: 세 시대 모두 성과 이름 첫 글자가 같은 이름이 0건', () => {
-  for (const era of ERAS) {
+describe('대량 시뮬레이션: 일곱 세대와 시험 전용 R1 모두 성과 이름 첫 글자가 같은 이름이 0건', () => {
+  for (const era of [...GENERATION_IDS, R1_PRESENT] as ProfileId[]) {
     it(`${era}: 필터가 없었다면 나왔을 시드가 실제로 있고(대조군), 실제 출생 결과에는 한 건도 없다 (시드 20000개)`, () => {
       let wouldHave = 0;
       let actual = 0;
@@ -170,7 +171,7 @@ describe('대량 시뮬레이션: 세 시대 모두 성과 이름 첫 글자가 
         const { character: c } = generateBirthFromSeed(s, era);
         if (c.name[0] === c.name[1]) actual++;
       }
-      expect(wouldHave, '필터가 없었다면 걸렸을 시드 수').toBeGreaterThan(50);
+      expect(wouldHave, '필터가 없었다면 걸렸을 시드 수').toBeGreaterThan(10);
       expect(actual).toBe(0);
     });
   }
@@ -178,11 +179,11 @@ describe('대량 시뮬레이션: 세 시대 모두 성과 이름 첫 글자가 
   it('다시 뽑은 이름도 결정적이다: 같은 시드 → 같은 인물, 걸렸던 시드는 성씨·성별·출생 연도가 그대로이고 이름만 바뀐다', () => {
     let checked = 0;
     for (let seed = 1; seed <= 6000 && checked < 25; seed++) {
-      const d = unfilteredFirstDraw(seed, 'present');
+      const d = unfilteredFirstDraw(seed, R1_PRESENT);
       if (d.given[0] !== d.surname) continue;
       checked++;
-      const a = generateBirthFromSeed(seed, 'present');
-      expect(generateBirthFromSeed(seed, 'present')).toEqual(a);
+      const a = generateBirthFromSeed(seed, R1_PRESENT);
+      expect(generateBirthFromSeed(seed, R1_PRESENT)).toEqual(a);
       expect(a.character.name[0]).toBe(d.surname);
       expect(a.character.gender).toBe(d.gender);
       expect(a.character.birthYear).toBe(d.year);

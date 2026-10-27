@@ -1,8 +1,8 @@
-import { ERAS, type Era, type ParentWealth } from '../src/core';
+import { profileLabel, type ParentWealth, type ProfileId } from '../src/core';
 import { PARENTING_LABEL } from '../src/data/birthText';
 import { SELF_AREA_WEIGHT } from '../src/data/parentDecisionTable';
 import { MONOTONE_CARDS, OFFICIAL, cardCounts, careRows, dominanceCells, familyPriorityAccept, monotoneRows, parentalLeaveShare, parentingGap, privateEducationRows, sampleYoung, sampleYoungByTier, type YoungLife } from './parentReportLib';
-import type { Strategy } from './simulateLib';
+import { SIM_PROFILES as ERAS, type Strategy } from './simulateLib';
 
 /**
  * 어린 시절 부모님 결정 보고 (SPEC-005 PD12·PD13, 설계 문서 docs/data/parent-decision-model.md 5절 T5): **판정이 아니라 보고**다 — 손계산 칸(설계 문서 1-6·2-7·2-10절)을 실측으로 대체하고
@@ -30,12 +30,12 @@ if (!Number.isInteger(lives) || lives < 1 || !Number.isInteger(perTier) || perTi
 
 const f = (n: number | null, d = 1): string => (n === null ? '-' : n.toFixed(d));
 const pct = (n: number | null, d = 1): string => (n === null ? '-' : (n * 100).toFixed(d));
-const ERA_LABEL: Record<Era, string> = { past: '지난', present: '지금', future: '다가올' };
+const ERA_LABEL = (e: ProfileId): string => profileLabel(e);
 
 console.log(`# 부모님 결정 보고 (PD12·PD13) — 20세 전까지 · 시드 i×7919+13 · 전략 ${strategy} · 판수 ${lives} · 단계당 ${perTier}판`);
 
-const natural: Record<Era, YoungLife[]> = { past: [], present: [], future: [] };
-const tiered: Partial<Record<Era, Record<ParentWealth, YoungLife[]>>> = {};
+const natural = {} as Record<ProfileId, YoungLife[]>;
+const tiered: Partial<Record<ProfileId, Record<ParentWealth, YoungLife[]>>> = {};
 if (only.has('counts') || only.has('parenting') || only.has('dominance')) for (const era of ERAS) natural[era] = sampleYoung(era, lives, strategy);
 if (only.has('monotone') || only.has('calibration') || only.has('family') || only.has('dominance') || only.has('care')) for (const era of ERAS) tiered[era] = sampleYoungByTier(era, perTier, strategy);
 
@@ -46,7 +46,7 @@ if (only.has('counts')) {
   for (const era of ERAS) {
     const c = cardCounts(natural[era]);
     console.log(
-      `| ${ERA_LABEL[era]} | ${f(c.parent, 2)} ± ${f(c.parentSE, 2)} | ${f(c.child, 2)} ± ${f(c.childSE, 2)} | ${f(c.parent + c.child, 2)} | ${f(c.self13to18, 2)} | **${pct(c.self13to18Zero)}%** | ${f(c.selfUpTo19, 2)} | ${pct(c.selfUpTo19Zero)}% | ${c.dist13to18.map((x) => pct(x, 0)).join(' / ')} | ${pct(c.diedYoung, 2)}% |`,
+      `| ${ERA_LABEL(era)} | ${f(c.parent, 2)} ± ${f(c.parentSE, 2)} | ${f(c.child, 2)} ± ${f(c.childSE, 2)} | ${f(c.parent + c.child, 2)} | ${f(c.self13to18, 2)} | **${pct(c.self13to18Zero)}%** | ${f(c.selfUpTo19, 2)} | ${pct(c.selfUpTo19Zero)}% | ${c.dist13to18.map((x) => pct(x, 0)).join(' / ')} | ${pct(c.diedYoung, 2)}% |`,
     );
   }
   const all = ERAS.flatMap((e) => natural[e]);
@@ -56,14 +56,14 @@ if (only.has('counts')) {
   console.log(`\nPD13: 13~18세 본인 카드 0장인 판 비율 최댓값 ${pct(worst)}% — 현재 13~18세 본인 영역 가중 ×${SELF_AREA_WEIGHT} — ${worst > 0.25 ? '25% 초과 (1000판 표본의 잡음 폭은 약 ±1.4%p — 3000판으로 다시 재고, 계속 넘으면 가중을 더 올릴지 마스터 결정 + EK 재측정)' : '25% 이하 → 그대로'}`);
   const bad = all.reduce((n, l) => n + l.pendingLeak + l.byMismatch, 0);
   console.log(`구조 점검: pending 누수 + by 표지 불일치 = ${bad} (0이어야 한다)`);
-  console.log(`부모님이 정한 카드의 인용 박스 노출률(PD12 ⑪): ${ERAS.map((e) => `${ERA_LABEL[e]} ${pct(cardCounts(natural[e]).parentCiteShare)}%`).join(' · ')}`);
+  console.log(`부모님이 정한 카드의 인용 박스 노출률(PD12 ⑪): ${ERAS.map((e) => `${ERA_LABEL(e)} ${pct(cardCounts(natural[e]).parentCiteShare)}%`).join(' · ')}`);
 }
 
 if (only.has('monotone')) {
   console.log('\n## 수저 단조 (비용 합 = 집안 살림 효과 ≤ −300인 선택지의 확률 합, 고르기 직전 확률의 평균 %)');
   for (const era of ERAS) {
     const rows = monotoneRows(era, tiered[era]!);
-    console.log(`\n### ${ERA_LABEL[era]} 세상`);
+    console.log(`\n### ${ERA_LABEL(era)} 세상`);
     console.log('| 카드 | 1단계 | 2단계 | 3단계 | 4단계 | 5단계 | 비교(높 − 낮, %p) | 인접 최소 격차 |');
     console.log('|---|---:|---:|---:|---:|---:|---:|---:|');
     for (const r of rows) {
@@ -82,7 +82,7 @@ if (only.has('parenting')) {
   console.log('|---|---:|---:|---:|---:|---:|');
   for (const era of ERAS) {
     const g = parentingGap(natural[era]);
-    console.log(`| ${ERA_LABEL[era]} | ${pct(g.front)}% | ${pct(g.back)}% | **${f(g.gap)}** | ${g.n} | ${g.cards} |`);
+    console.log(`| ${ERA_LABEL(era)} | ${pct(g.front)}% | ${pct(g.back)}% | **${f(g.gap)}** | ${g.n} | ${g.cards} |`);
   }
 }
 
@@ -95,14 +95,14 @@ if (only.has('dominance')) {
         8,
       ).filter((c) => c.by === by);
       const top = [...cells].sort((a, b) => b.maxShare - a.maxShare).slice(0, 3);
-      console.log(`- ${by === 'parent' ? '부모' : '흘러감'} · ${ERA_LABEL[era]}: 칸 ${cells.length}개, 최대 ${top.map((c) => `${c.eventId}/${c.maxId} 수저${c.tier} ${PARENTING_LABEL[c.parenting] ?? c.parenting} ${pct(c.maxShare)}% (n=${c.n})`).join(' · ')}`);
+      console.log(`- ${by === 'parent' ? '부모' : '흘러감'} · ${ERA_LABEL(era)}: 칸 ${cells.length}개, 최대 ${top.map((c) => `${c.eventId}/${c.maxId} 수저${c.tier} ${PARENTING_LABEL[c.parenting] ?? c.parenting} ${pct(c.maxShare)}% (n=${c.n})`).join(' · ')}`);
     }
   }
 }
 
 if (only.has('calibration')) {
-  console.log('\n## 통계 보정 판정 (지금 세상) — 차 ≤ 15%p');
-  const present = tiered.present!;
+  console.log('\n## 통계 보정 판정 (알파 세대 — 최근 통계와 견줌) — 차 ≤ 15%p');
+  const present = tiered.alpha!; // 통계 보정은 최근 아이들(2025 조사)과 견준다 — 알파 세대
   for (const r of privateEducationRows(present)) {
     console.log(`\n### 사교육 참여: ${r.label}`);
     console.log('| 단계 | 시뮬(%) | 공식(%) | 차(%p) | 카드 관측 |');
@@ -118,7 +118,7 @@ if (only.has('family')) {
   console.log('\n## 학업 중단(school-family-priority) accept 비율 — 보고(대역 5~35%▲, 재력 1단계 ≥ 3단계)');
   for (const era of ERAS) {
     const rows = familyPriorityAccept(tiered[era]!);
-    console.log(`- ${ERA_LABEL[era]}: ${rows.map((r) => `${r.tier}단계 ${f(r.share)}% (n=${r.n})`).join(' · ')}`);
+    console.log(`- ${ERA_LABEL(era)}: ${rows.map((r) => `${r.tier}단계 ${f(r.share)}% (n=${r.n})`).join(' · ')}`);
   }
 }
 
@@ -127,7 +127,7 @@ if (only.has('care')) {
   console.log('fever.dismiss의 1단계 − 5단계 격차는 측정 5.0~6.1%p이고 상한 8%p, 세 카드(after-hours.alone·noise.hush·stories.alone)는 25%p다(설계 문서 10-9, tests/parentDecisionSim.test.ts가 상한을 지킨다).');
   for (const era of ERAS) {
     const rows = careRows(tiered[era]!);
-    console.log(`\n### ${ERA_LABEL[era]} 세상`);
+    console.log(`\n### ${ERA_LABEL(era)} 세상`);
     console.log('| 선택지 | 1단계 | 2단계 | 3단계 | 4단계 | 5단계 | 1단계 − 5단계(%p) | 방임 | 자유 | 헬리콥터 | 엄격 |');
     console.log('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
     for (const r of rows) {

@@ -40,14 +40,14 @@ vi.mock('../src/ui/GuardedButton', async (importOriginal) => {
 
 const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
 const noop = () => undefined;
-const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, era: g.era!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
+const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, generation: g.generation!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
 const settingsOf = (o: Partial<Settings> = {}): Settings => ({ ...DEFAULT_SETTINGS, speed: 1, autoMode: false, ...o });
 
 let cached: GameState | null = null;
 function pendingState(): GameState {
   if (cached !== null) return cached;
   for (let seed = 1; seed <= 200; seed++) {
-    const s = advanceUntilDecision(startLife(seed, 'present')).state;
+    const s = advanceUntilDecision(startLife(seed, 'alpha')).state;
     if (s.phase === 'life' && s.pending !== null) return (cached = s);
   }
   throw new Error('결정 대기 상태를 찾지 못했다');

@@ -38,6 +38,7 @@ const narrative = (over: Record<string, unknown> = {}) => ({
   title: '시험 이벤트',
   text: '시험용 서술 이벤트의 본문 문장이다.',
   stages: ['school'],
+  track: 'common',
   weight: 10,
   once: true,
   effects: { stats: { happiness: 1 } },
@@ -48,6 +49,7 @@ const choiceEvent = (over: Record<string, unknown> = {}) => ({
   title: '시험 선택',
   text: '시험용 선택지 이벤트의 본문 문장이다.',
   stages: ['school'],
+  track: 'common',
   weight: 10,
   once: true,
   choices: [
@@ -85,10 +87,11 @@ const ctx = (over: { character?: Partial<Character>; stats?: Partial<Stats>; fla
   flags: new Set(over.flags ?? []),
   assets: over.assets,
 });
-const view = (age: number, era: Era, over: Parameters<typeof ctx>[0] = {}, seen: Record<string, number> = {}): EligibilityView => ({
+/** 후보 판정 입력: `year`는 달력 연도(= 출생 연도 + 나이) — 이벤트의 `yearRange`를 가른다 */
+const view = (age: number, year: number, over: Parameters<typeof ctx>[0] = {}, seen: Record<string, number> = {}): EligibilityView => ({
   ...ctx(over),
   age,
-  era,
+  year,
   seen,
 });
 const one = (raw: unknown): EventDef => validateEventFiles(file(raw))[0];
@@ -117,7 +120,8 @@ describe('이벤트 스키마 검증: 유효한 데이터', () => {
       id: 'rich-event',
       stages: ['youth', 'middle'],
       ageRange: { min: 30, max: 45 },
-      eras: ['present', 'future'],
+      track: 'standard',
+      yearRange: { from: 2001 },
       cooldown: undefined,
       once: false,
       conditions: {
@@ -158,7 +162,15 @@ describe('이벤트 스키마 검증: 잘못된 데이터는 개발 중 바로 �
     ['stages가 빈 배열', file(narrative({ stages: [] })), 'stages'],
     ['stages에 없는 단계', file(narrative({ stages: ['teen'] })), '허용되지 않는 값'],
     ['stages 중복', file(narrative({ stages: ['school', 'school'] })), '중복'],
-    ['eras에 없는 시대', file(narrative({ eras: ['ancient'] })), '허용되지 않는 값'],
+    ['eras는 데이터에 쓰지 않는다(yearRange에서 파생)', file(narrative({ eras: ['present'] })), '알 수 없는 항목 "eras"'],
+    ['필수 항목 track 없음 (MG2)', file(narrative({ track: undefined })), '필수 항목 "track"'],
+    ['track에 없는 값', file(narrative({ track: 'premium' })), 'standard · common · assembled 중 하나'],
+    ['yearRange가 객체가 아님', file(narrative({ yearRange: 2000 })), 'yearRange'],
+    ['yearRange의 알 수 없는 항목', file(narrative({ yearRange: { from: 2000, until: 2010 } })), '알 수 없는 항목 "until"'],
+    ['yearRange 연도 범위 밖(1900 미만)', file(narrative({ yearRange: { from: 1800 } })), '1900~2300의 정수'],
+    ['yearRange 연도가 정수가 아님', file(narrative({ yearRange: { to: 2000.5 } })), '1900~2300의 정수'],
+    ['yearRange from > to', file(narrative({ yearRange: { from: 2030, to: 2020 } })), 'from(2030)이 to(2020)보다 크다'],
+    ['yearRange가 일어날 수 있는 달력 연도와 안 겹침', file(narrative({ stages: ['school'], yearRange: { from: 2100 } })), '절대 일어나지 않는다'],
     ['weight 0', file(narrative({ weight: 0 })), 'weight'],
     ['weight 문자열', file(narrative({ weight: '10' })), 'weight'],
     ['weight 101', file(narrative({ weight: 101 })), 'weight'],
@@ -379,14 +391,23 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     }
   });
 
-  it('시대마다 고유한 이벤트가 있다: 지난 세상·지금 세상·다가올 세상 전용이 각각 있고, 시대 중립 공용이 대부분이다 (R-045 d)', () => {
+  it('연도 구간(yearRange)이 있는 이벤트는 33개(MG2)이고 구간 없는 공통 이벤트가 대부분이다 — 파생 시대 구간으로 보면 옛 시대 전용이 각각 있다 (R-045 d → SPEC-004 MG2)', () => {
+    expect(events.filter((e) => e.yearRange !== undefined)).toHaveLength(33);
+    expect(events.filter((e) => e.yearRange === undefined).length).toBeGreaterThan(events.length / 2);
+    // 옛 `eras`는 yearRange에서 파생된다(데이터에 쓰지 않는다): 한 구간에만 걸치는 이벤트
     const only = (era: Era) => events.filter((e) => e.eras !== undefined && e.eras.length === 1 && e.eras[0] === era);
     expect(only('past').length).toBeGreaterThanOrEqual(4);
-    expect(only('present').length).toBeGreaterThanOrEqual(2);
+    expect(only('present').length).toBeGreaterThanOrEqual(1);
     expect(only('future').length).toBeGreaterThanOrEqual(3);
-    expect(events.filter((e) => e.eras === undefined).length).toBeGreaterThan(events.length / 2);
-    // 시대 전용 이벤트가 여러 단계에 흩어져 있다 (한 단계에만 몰리지 않는다)
-    for (const era of ERAS) expect(new Set(only(era).flatMap((e) => e.stages)).size, era).toBeGreaterThanOrEqual(2);
+    // 구간 전용 이벤트가 여러 단계에 흩어져 있다 (한 단계에만 몰리지 않는다)
+    for (const era of ERAS) expect(new Set(only(era).flatMap((e) => e.stages)).size, era).toBeGreaterThanOrEqual(1);
+    expect(new Set(events.filter((e) => e.yearRange !== undefined).flatMap((e) => e.stages)).size).toBeGreaterThanOrEqual(4);
+  });
+
+  it('track: 140개 모두 달려 있고 standard 17 · common 123 · assembled 0이다 (MG2, 기존 이벤트에 assembled는 없다 — 알파 신규 전용)', () => {
+    const count = (t: string) => events.filter((e) => e.track === t).length;
+    expect(events.every((e) => e.track !== undefined)).toBe(true);
+    expect([count('standard'), count('common'), count('assembled')]).toEqual([17, 123, 0]);
   });
 
   it('0세에도 일어날 수 있는 이벤트가 있다 (SPEC-003 IN1, M7a): 첫 해가 늘 빈 해가 아니다 — 첫 예방접종(마일스톤)이 모든 판의 0세에 일어난다. 옛 시험은 「0세는 후보 0개」였다 (e2e·스모크가 기대던 「첫 해는 선택지 없이 조용히 지나간다」는 M7a로 사라졌다)', () => {
@@ -525,8 +546,8 @@ describe('R-046: 예약어 id와 상속 속성 (런타임 방어)', () => {
 
   it('id가 constructor인 이벤트가 (검증을 우회해) 풀에 있어도, 본 적 없으면 후보가 되고 본 적 있으면 once에 걸린다', () => {
     const ev = { ...one(narrative({ id: 'plain-event' })), id: 'constructor' } as EventDef;
-    expect(isEventEligible(ev, view(10, 'present', {}, {}))).toBe(true);
-    expect(isEventEligible(ev, view(15, 'present', {}, { constructor: 10 }))).toBe(false);
+    expect(isEventEligible(ev, view(10, 2026, {}, {}))).toBe(true);
+    expect(isEventEligible(ev, view(15, 2026, {}, { constructor: 10 }))).toBe(false);
   });
 
   it('예약어 목록: constructor·prototype·__proto__와 Object.prototype의 모든 속성 이름(소문자)', () => {
@@ -743,42 +764,44 @@ describe('생애 단계와 이벤트 후보 판정', () => {
     expect(STAGES.map((s) => STAGE_TABLE[s].label)).toEqual(['영유아', '학창', '청년', '중년', '노년']);
   });
 
-  const ev = one(narrative({ stages: ['school'], ageRange: { min: 10, max: 12 }, eras: ['present'], once: false, cooldown: 4 }));
+  const ev = one(narrative({ stages: ['school'], ageRange: { min: 10, max: 12 }, yearRange: { from: 2001, to: 2030 }, once: false, cooldown: 4 }));
 
-  it('단계·나이 범위·시대가 모두 맞아야 후보가 된다', () => {
-    expect(isEventEligible(ev, view(11, 'present'))).toBe(true);
-    expect(isEventEligible(ev, view(9, 'present'))).toBe(false);
-    expect(isEventEligible(ev, view(13, 'present'))).toBe(false);
-    expect(isEventEligible(ev, view(11, 'past'))).toBe(false);
-    expect(isEventEligible(ev, view(11, 'future'))).toBe(false);
+  it('단계·나이 범위·달력 연도 구간(yearRange)이 모두 맞아야 후보가 된다', () => {
+    expect(isEventEligible(ev, view(11, 2026))).toBe(true);
+    expect(isEventEligible(ev, view(9, 2026))).toBe(false);
+    expect(isEventEligible(ev, view(13, 2026))).toBe(false);
+    expect(isEventEligible(ev, view(11, 1990))).toBe(false); // 구간 시작(2001) 전
+    expect(isEventEligible(ev, view(11, 2031))).toBe(false); // 구간 끝(2030) 뒤
+    expect(isEventEligible(ev, view(11, 2001))).toBe(true); // 양 끝은 포함
+    expect(isEventEligible(ev, view(11, 2030))).toBe(true);
     // 단계 밖(나이 범위는 맞지만 단계가 다름)
     const youthOnly = one(narrative({ stages: ['youth'], ageRange: { min: 20, max: 25 } }));
-    expect(isEventEligible(youthOnly, view(18, 'present'))).toBe(false);
+    expect(isEventEligible(youthOnly, view(18, 2026))).toBe(false);
   });
 
   it('once 이벤트는 한 번 본 뒤 다시 나오지 않고, 반복 이벤트는 cooldown 동안 쉰다', () => {
     const once = one(narrative({ once: true }));
-    expect(isEventEligible(once, view(10, 'present', {}, {}))).toBe(true);
-    expect(isEventEligible(once, view(15, 'present', {}, { 'test-narrative': 10 }))).toBe(false);
+    expect(isEventEligible(once, view(10, 2026, {}, {}))).toBe(true);
+    expect(isEventEligible(once, view(15, 2026, {}, { 'test-narrative': 10 }))).toBe(false);
     // cooldown 4: 11세에 봤으면 14세까지 쉰다, 15세부터 다시
     const wide = one(narrative({ once: false, cooldown: 4, ageRange: { min: 7, max: 19 } }));
-    expect(isEventEligible(wide, view(14, 'present', {}, { 'test-narrative': 11 }))).toBe(false);
-    expect(isEventEligible(wide, view(15, 'present', {}, { 'test-narrative': 11 }))).toBe(true);
+    expect(isEventEligible(wide, view(14, 2026, {}, { 'test-narrative': 11 }))).toBe(false);
+    expect(isEventEligible(wide, view(15, 2026, {}, { 'test-narrative': 11 }))).toBe(true);
   });
 
   it('cooldown을 안 쓰면 기본 10년', () => {
     const rep = one(narrative({ once: false, stages: ['middle'] }));
-    expect(isEventEligible(rep, view(50, 'present', {}, { 'test-narrative': 41 }))).toBe(false);
-    expect(isEventEligible(rep, view(51, 'present', {}, { 'test-narrative': 41 }))).toBe(true);
+    expect(isEventEligible(rep, view(50, 2026, {}, { 'test-narrative': 41 }))).toBe(false);
+    expect(isEventEligible(rep, view(51, 2026, {}, { 'test-narrative': 41 }))).toBe(true);
   });
 
   it('조건(스탯·플래그·외모·부모 재력)이 안 맞으면 후보가 아니다', () => {
     const cond = one(narrative({ conditions: { flags: ['has_job'], looks: { min: 60 }, parentWealth: { min: 3 } }, effects: { setFlags: ['has_job'] } }));
     const ok = { character: { looks: 60, parentWealth: 3 as const }, flags: ['has_job'] };
-    expect(isEventEligible(cond, view(10, 'present', ok))).toBe(true);
-    expect(isEventEligible(cond, view(10, 'present', { ...ok, flags: [] }))).toBe(false);
-    expect(isEventEligible(cond, view(10, 'present', { ...ok, character: { ...ok.character, looks: 59 } }))).toBe(false);
-    expect(isEventEligible(cond, view(10, 'present', { ...ok, character: { ...ok.character, parentWealth: 2 } }))).toBe(false);
+    expect(isEventEligible(cond, view(10, 2026, ok))).toBe(true);
+    expect(isEventEligible(cond, view(10, 2026, { ...ok, flags: [] }))).toBe(false);
+    expect(isEventEligible(cond, view(10, 2026, { ...ok, character: { ...ok.character, looks: 59 } }))).toBe(false);
+    expect(isEventEligible(cond, view(10, 2026, { ...ok, character: { ...ok.character, parentWealth: 2 } }))).toBe(false);
   });
 
   it('선택지 이벤트는 보이는 선택지가 2개 이상일 때만 후보이고, requires로 3번째 선택지가 열린다', () => {
@@ -793,12 +816,12 @@ describe('생애 단계와 이벤트 후보 판정', () => {
     );
     expect(visibleChoices(e, ctx({ character: { parentWealth: 3 } })).map((c) => c.id)).toEqual(['a', 'b']);
     expect(visibleChoices(e, ctx({ character: { parentWealth: 5 } })).map((c) => c.id)).toEqual(['a', 'b', 'c']);
-    expect(isEventEligible(e, view(10, 'present'))).toBe(true);
+    expect(isEventEligible(e, view(10, 2026))).toBe(true);
   });
 
   it('visibleChoices가 2개 미만이 되도록 만든 선택지 이벤트는 후보가 아니다 (런타임 방어)', () => {
     const fake = { ...one(choiceEvent()), choices: [one(choiceEvent()).choices![0]] } as EventDef;
-    expect(isEventEligible(fake, view(10, 'present'))).toBe(false);
+    expect(isEventEligible(fake, view(10, 2026))).toBe(false);
   });
 });
 
@@ -912,9 +935,9 @@ describe('인용 연결 필드 citation · noCitation (M7b)', () => {
     expect(problemsOf(file(narrative({ noCitation: 'D' }))).join('\n')).toContain('선택지 이벤트');
   });
 
-  it('이 카드가 뜨지 않는 세상(eras에 없음)에 인용을 적으면 영원히 쓰이지 않는 연결이라 오류다', () => {
-    expect(problemsOf(file(choiceEvent({ eras: ['present'], citation: { present: 'c-006' } })))).toEqual([]);
-    expect(problemsOf(file(choiceEvent({ eras: ['present'], citation: { past: 'c-006' } }))).join('\n')).toContain('past 세상에서 일어나지 않는다');
+  it('이 카드가 뜨지 않는 시대 구간(yearRange가 걸치지 않는 구간)에 인용을 적으면 영원히 쓰이지 않는 연결이라 오류다', () => {
+    expect(problemsOf(file(choiceEvent({ yearRange: { from: 2001 }, citation: { present: 'c-006' } })))).toEqual([]);
+    expect(problemsOf(file(choiceEvent({ yearRange: { from: 2001 }, citation: { past: 'c-006' } }))).join('\n')).toContain('past 시대 구간에서 일어나지 않는다');
   });
 
   it('실제 풀: 선택지 이벤트 90개 각각이 citation·noCitation 중 하나이거나 2차 대기 목록에 있다 (자세한 대조는 tests/citationLink.test.ts)', () => {

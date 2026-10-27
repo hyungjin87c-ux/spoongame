@@ -3,6 +3,9 @@ import {
   autoResolveStep,
   calendarYear,
   citationFor,
+  eraBucketOf,
+  wealthMixtureOfProfile,
+  R1_PRESENT,
   condContextOf,
   deciderOf,
   resolveChoiceStep,
@@ -10,15 +13,14 @@ import {
   stepYear,
   type DelegatedBy,
   type DelegatedObserver,
-  type Era,
   type EventPool,
+  type ProfileId,
   type GameState,
   type HistoryEntry,
   type ParentWealth,
   type ParentingStyle,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { PARENT_DECISION_TABLE } from '../src/data/parentDecisionTable';
 import { chooserFor, startLife, type Strategy } from './simulateLib';
 
@@ -46,7 +48,7 @@ export interface YoungObs {
 
 export interface YoungLife {
   seed: number;
-  era: Era;
+  era: ProfileId;
   tier: ParentWealth;
   parenting: ParentingStyle;
   order: number;
@@ -128,21 +130,21 @@ export function runYoungLife(start: GameState, seed: number, strategy: Strategy,
     if (h.by === 'parent') {
       parentCards++;
       const ev = h.eventId === undefined ? undefined : pool.byId.get(h.eventId);
-      if (ev !== undefined && citationFor(ev, s.era!, calendarYear(character.birthYear, h.age)) !== null) parentCited++;
+      if (ev !== undefined && citationFor(ev, eraBucketOf(s.generation, calendarYear(character.birthYear, h.age)), calendarYear(character.birthYear, h.age)) !== null) parentCited++;
     } else if (h.by === 'child') childCards++;
     else if (h.age >= 13 && h.age <= 19) {
       selfUpTo19++;
       if (h.age <= 18) self13to18++;
     }
   }
-  return { seed, era: s.era!, tier: character.parentWealth, parenting: character.parenting, order, history: s.history, obs, self13to18, selfUpTo19, diedYoung: s.phase === 'ending', pendingLeak, byMismatch: byMismatchOf(s.history), parentCards, childCards, parentCited };
+  return { seed, era: s.generation!, tier: character.parentWealth, parenting: character.parenting, order, history: s.history, obs, self13to18, selfUpTo19, diedYoung: s.phase === 'ending', pendingLeak, byMismatch: byMismatchOf(s.history), parentCards, childCards, parentCited };
 }
 
 /** 시드 `i × 7919 + 13` (i = 1…) — 기존 시험·sim:1000과 같은 규칙 */
 export const seedOf = (i: number): number => i * 7919 + 13;
 
 /** 자연 분포에서 N판 (수저·양육·형제 순서가 출생 생성기 그대로) */
-export function sampleYoung(era: Era, lives: number, strategy: Strategy, pool: EventPool = EVENT_POOL): YoungLife[] {
+export function sampleYoung(era: ProfileId, lives: number, strategy: Strategy, pool: EventPool = EVENT_POOL): YoungLife[] {
   const out: YoungLife[] = [];
   for (let i = 1; i <= lives; i++) {
     const seed = seedOf(i);
@@ -152,7 +154,7 @@ export function sampleYoung(era: Era, lives: number, strategy: Strategy, pool: E
 }
 
 /** 수저 단계마다 N판씩 (시드를 차례로 훑어 그 단계가 나온 판만 모은다 — 자연 분포의 조건부 표본). 단계당 판이 모이면 멈춘다. */
-export function sampleYoungByTier(era: Era, perTier: number, strategy: Strategy, pool: EventPool = EVENT_POOL): Record<ParentWealth, YoungLife[]> {
+export function sampleYoungByTier(era: ProfileId, perTier: number, strategy: Strategy, pool: EventPool = EVENT_POOL): Record<ParentWealth, YoungLife[]> {
   const out: Record<ParentWealth, YoungLife[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] };
   for (let i = 1; PARENT_WEALTHS.some((t) => out[t].length < perTier); i++) {
     if (i > 2_000_000) throw new Error('sampleYoungByTier: 표본을 모으지 못했다');
@@ -224,22 +226,22 @@ export function meanShare(obs: readonly YoungObs[], pick: (o: YoungObs, id: stri
 export const isCostly = (o: YoungObs, id: string): boolean => o.family[id] <= -300;
 
 /** 수저 단조 비교가 가능한 10장 (설계 문서 5절 T5-④) — `moving`은 재력 ≤ 3이라 1단계 대 3단계로 비교한다 */
-export const MONOTONE_CARDS: ReadonlyArray<{ id: string; low: ParentWealth; high: ParentWealth; eras?: readonly Era[] }> = [
+export const MONOTONE_CARDS: ReadonlyArray<{ id: string; low: ParentWealth; high: ParentWealth }> = [
   { id: 'infant-fever', low: 1, high: 5 },
   { id: 'infant-meal-start', low: 1, high: 5 },
-  { id: 'infant-parental-leave', low: 1, high: 5, eras: ['present'] },
-  { id: 'infant-daycare-wait', low: 1, high: 5, eras: ['present'] },
-  { id: 'infant-early-lessons', low: 1, high: 5, eras: ['present', 'future'] },
+  { id: 'infant-parental-leave', low: 1, high: 5 },
+  { id: 'infant-daycare-wait', low: 1, high: 5 },
+  { id: 'infant-early-lessons', low: 1, high: 5 },
   { id: 'infant-hospital-stay', low: 1, high: 5 },
   { id: 'infant-moving', low: 1, high: 3 },
   { id: 'school-supplies', low: 1, high: 5 },
   { id: 'school-tutoring', low: 1, high: 5 },
-  { id: 'school-academy-night', low: 1, high: 5, eras: ['present', 'future'] },
+  { id: 'school-academy-night', low: 1, high: 5 },
 ];
 
 export interface MonotoneRow {
   id: string;
-  era: Era;
+  era: ProfileId;
   /** 단계별 비용 합 확률(평균)과 관측 수 */
   byTier: Array<{ tier: ParentWealth; share: number | null; n: number }>;
   low: ParentWealth;
@@ -251,10 +253,9 @@ export interface MonotoneRow {
 }
 
 /** 수저 단조 표: 한 시대의 단계별 표본에서 카드별 비용 합 확률 */
-export function monotoneRows(era: Era, byTier: Record<ParentWealth, YoungLife[]>): MonotoneRow[] {
+export function monotoneRows(era: ProfileId, byTier: Record<ParentWealth, YoungLife[]>): MonotoneRow[] {
   const rows: MonotoneRow[] = [];
   for (const card of MONOTONE_CARDS) {
-    if (card.eras !== undefined && !card.eras.includes(era)) continue;
     const tiers = PARENT_WEALTHS.map((tier) => {
       const obs = obsOf(byTier[tier], card.id);
       return { tier, share: meanShare(obs, isCostly), n: obs.length };
@@ -365,8 +366,8 @@ export function privateEducationRows(byTier: Record<ParentWealth, YoungLife[]>):
 }
 
 /** 육아휴직 (지금 세상 전체, 수저 비율로 가중): one + share 비율(한 사람 이상 일을 쉼) % */
-export function parentalLeaveShare(byTier: Record<ParentWealth, YoungLife[]>, era: Era = 'present'): { share: number; byTier: Array<{ tier: ParentWealth; share: number | null; n: number }> } {
-  const weights = ERA_CONFIG[era].wealthWeights as readonly number[];
+export function parentalLeaveShare(byTier: Record<ParentWealth, YoungLife[]>, era: ProfileId = R1_PRESENT): { share: number; byTier: Array<{ tier: ParentWealth; share: number | null; n: number }> } {
+  const weights = wealthMixtureOfProfile(era);
   const rows = PARENT_WEALTHS.map((tier) => {
     const obs = obsOf(byTier[tier], 'infant-parental-leave');
     const s = meanShare(obs, (_o, id) => id === 'one' || id === 'share');

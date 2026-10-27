@@ -3,9 +3,10 @@ import endingSrc from '../src/core/ending.ts?raw';
 import finalDistributionSrc from '../src/data/finalDistribution.ts?raw';
 import {
   COMPARABLE_STATS,
-  DEFAULT_ERA,
+  DEFAULT_GENERATION,
   DEFAULT_SETTINGS,
-  ERAS,
+  GENERATION_IDS,
+  R1_PRESENT,
   BAND_GRACE,
   STAGES,
   bandFromRange,
@@ -33,8 +34,10 @@ import {
   standingScore,
   startBandOf,
   validateFinalDistribution,
+  wealthMixtureOfGame,
+  wealthMixtureOfProfile,
   wealthStanding,
-  type Era,
+  type ProfileId,
   type EndingGame,
   type FinalDistribution,
   type GameState,
@@ -46,17 +49,27 @@ import {
 import { FINAL_DISTRIBUTION, FINAL_DISTRIBUTION_SPEC } from '../src/data/finalDistribution';
 import { JOURNEY_NOTE, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, bandLabel, choiceCountText, deathLineText, journeyText, stageHeadingText } from '../src/data/endingText';
 import { STAGE_TABLE } from '../src/data/lifeTable';
-import { buildEraDistribution, buildFinalDistribution, distributionOf, finalDistributionSeed, finalLivesOf, FINAL_DISTRIBUTION_PARAMS, renderFinalDistributionModule, staleEras, type FinalLife } from '../scripts/finalDistributionLib';
-import { ERA_CONFIG } from '../src/data/birthTable';
+import { frozenR1Distribution, buildEraDistribution, buildFinalDistribution, distributionOf, finalDistributionSeed, finalLivesOf, FINAL_DISTRIBUTION_PARAMS, renderFinalDistributionModule, staleEras, type FinalLife } from '../scripts/finalDistributionLib';
+import reference from './fixtures/gm3-mixture-reference.json';
 import { LIMITS } from '../src/data/economyTable';
 import { standingLabel } from '../src/data/birthText';
-import { chooserFor, simulateLife, startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, chooserFor, simulateLife, startLife } from '../scripts/simulateLib';
 import { expectedMovement, numbersIn, readBand, readEnd } from '../scripts/endingReadback';
 
 /**
  * 엔딩 회고 (SPEC-001 M5). 계산(자리·방향·연표 묶기)은 core/ending.ts의 순수 함수, 문구는 data/endingText.ts.
  * 화면 렌더는 tests/endingScreen.test.tsx, 실제 브라우저 동작은 e2e/ending.spec.ts.
  */
+
+/**
+ * 가중치 표 세 벌 — SPEC-003 R1의 지난·지금·다가올 세상 표. 구간·문구 함수(`startBandOf`·`wealthStanding`·`bandLabel`)는 표(가중치 배열)를 받으므로 이 표 세 벌로 함수 자체를 시험한다(독립 계산의 15개 구간).
+ * 세대 판이 쓰는 표(세대 섞음 비율)는 「세대 판」 시험이 따로 본다.
+ */
+type TableKey = 'past' | 'present' | 'future';
+const TABLE_KEYS: readonly TableKey[] = ['past', 'present', 'future'];
+const WEIGHTS: Record<TableKey, readonly number[]> = { past: [40, 32, 20, 7, 1], present: [25, 30, 28, 14, 3], future: [30, 28, 24, 13, 5] };
+/** 세대 7종의 수저 섞음 비율(%, 정수) — 시안 생성기가 낸 독립 기준값 */
+const MIX_REF = (reference as unknown as { gens: Record<string, { wealth: number[] }> }).gens;
 
 function lazy<T>(compute: () => T): () => T {
   let cache: { value: T } | null = null;
@@ -70,20 +83,20 @@ function lazy<T>(compute: () => T): () => T {
  * M7e-3(마스터 결정 C, 동률 불리): 엔딩의 자리는 상위 = 이상 비율, 하위 = **미만** 비율이다(같은 금액으로 마친 사람을 내 아래로 세지 않는다).
  */
 const STEP_Q: readonly number[] = Array.from({ length: 101 }, (_, p) => 100 * Math.floor(p / 10));
-function tableOfQuantiles(q: readonly number[] = STEP_Q): Record<Era, FinalDistribution> {
+function tableOfQuantiles(q: readonly number[] = STEP_Q): Record<ProfileId, FinalDistribution> {
   const d: FinalDistribution = { simulated: 1000, lives: 1000, quantiles: q };
-  return { past: d, present: d, future: d };
+  return Object.fromEntries([...GENERATION_IDS, R1_PRESENT].map((k) => [k, d])) as Record<ProfileId, FinalDistribution>;
 }
 /** n칸이 차지하는 비율(%) — 101칸 중 n칸 */
 const cells = (n: number): number => (n * 100) / 101;
 
-/** 분포표를 만든 것과 같은 판들(시대마다 시드 1..4000, 무작위 전략): 표 재생성 검사와 방향 균형 검사가 함께 쓴다 (한 번만 돌린다, 약 12초) */
-const FINAL_LIVES = lazy(() => Object.fromEntries(ERAS.map((era) => [era, finalLivesOf(era)])) as Record<Era, FinalLife[]>);
+/** 분포표를 만든 것과 같은 판들(세대 표본 3종마다 시드 1..4000, 무작위 전략): 표 재생성 검사와 방향 균형 검사가 함께 쓴다 (한 번만 돌린다, 약 12초) */
+const FINAL_LIVES = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, finalLivesOf(era)])) as Record<ProfileId, FinalLife[]>);
 
 const EMOJI = /\p{Extended_Pictographic}/u;
 const GRADE_NAMES = /(흙|동|은|금|다이아)\s*수저|다이아/;
 
-const endingOf = (seed: number, era: Era, strategy: 'auto' | 'random' = 'random'): EndingGame => {
+const endingOf = (seed: number, era: ProfileId, strategy: 'auto' | 'random' = 'random'): EndingGame => {
   const f = playToEnd(startLife(seed, era), chooserFor(strategy, seed)).state;
   return f as EndingGame;
 };
@@ -141,40 +154,40 @@ describe('분포표에서 자리 구하기: 직접 센 작은 표 (R-045 c, D12 
   });
 
   it('상위: 이상 비율이 50 이하 — 900은 11칸 = 약 11%, 700은 31칸 = 약 31%, 600은 41칸 = 약 41%', () => {
-    expect(finalWealthStanding('present', 900, table)).toEqual({ kind: 'top', percent: Math.round(cells(11)), within: false });
-    expect(finalWealthStanding('present', 900, table)).toEqual({ kind: 'top', percent: 11, within: false });
-    expect(finalWealthStanding('present', 700, table)).toEqual({ kind: 'top', percent: 31, within: false });
-    expect(finalWealthStanding('present', 600, table)).toEqual({ kind: 'top', percent: 41, within: false });
+    expect(finalWealthStanding('alpha', 900, table)).toEqual({ kind: 'top', percent: Math.round(cells(11)), within: false });
+    expect(finalWealthStanding('alpha', 900, table)).toEqual({ kind: 'top', percent: 11, within: false });
+    expect(finalWealthStanding('alpha', 700, table)).toEqual({ kind: 'top', percent: 31, within: false });
+    expect(finalWealthStanding('alpha', 600, table)).toEqual({ kind: 'top', percent: 41, within: false });
   });
 
   it('하위(동률 불리, M7e-3): 이상 비율이 50을 넘고 **미만** 비율이 50 이하 — 100은 미만 10칸 = 약 10%, 200은 20칸 = 약 20%, 400은 40칸 = 약 40%, 500은 50칸(49.5 → 50)도 하위. 0은 미만이 0칸이라 하위 1% 안쪽', () => {
-    expect(finalWealthStanding('present', 0, table)).toEqual({ kind: 'bottom', percent: 1, within: true }); // 예전(이하 10칸) 「하위 약 10%」 — 같은 0원으로 마친 사람을 내 아래로 세지 않는다
-    expect(finalWealthStanding('present', 100, table)).toEqual({ kind: 'bottom', percent: 10, within: false });
-    expect(finalWealthStanding('present', 200, table)).toEqual({ kind: 'bottom', percent: 20, within: false });
-    expect(finalWealthStanding('present', 400, table)).toEqual({ kind: 'bottom', percent: 40, within: false });
-    expect(finalWealthStanding('present', 500, table)).toEqual({ kind: 'bottom', percent: 50, within: false });
+    expect(finalWealthStanding('alpha', 0, table)).toEqual({ kind: 'bottom', percent: 1, within: true }); // 예전(이하 10칸) 「하위 약 10%」 — 같은 0원으로 마친 사람을 내 아래로 세지 않는다
+    expect(finalWealthStanding('alpha', 100, table)).toEqual({ kind: 'bottom', percent: 10, within: false });
+    expect(finalWealthStanding('alpha', 200, table)).toEqual({ kind: 'bottom', percent: 20, within: false });
+    expect(finalWealthStanding('alpha', 400, table)).toEqual({ kind: 'bottom', percent: 40, within: false });
+    expect(finalWealthStanding('alpha', 500, table)).toEqual({ kind: 'bottom', percent: 50, within: false });
   });
 
   it('도착 자리에는 「가운데쯤」이 나오지 않는다 (M7e-3 동률 불리): 이상 비율 + 미만 비율 = 100이라 둘 중 하나는 늘 50 이하다 — 500은 이상 51칸(50.5%)·미만 50칸(49.5% → 하위 약 50%)', () => {
-    expect(finalWealthStanding('present', 500, table)).toEqual({ kind: 'bottom', percent: 50, within: false });
+    expect(finalWealthStanding('alpha', 500, table)).toEqual({ kind: 'bottom', percent: 50, within: false });
     // 같은 값이 판의 대부분을 차지할 때: 칸 대부분이 40인 표 — 예전(이하 100칸)에는 가운데쯤이었지만 미만은 1칸(0.99%)이라 하위 1% 안쪽
     const crowded = tableOfQuantiles(Array.from({ length: 101 }, (_, p) => (p === 0 ? 10 : p === 100 ? 90 : 40)));
-    expect(finalWealthStanding('present', 40, crowded)).toEqual({ kind: 'bottom', percent: 1, within: true });
+    expect(finalWealthStanding('alpha', 40, crowded)).toEqual({ kind: 'bottom', percent: 1, within: true });
     for (const v of [-30000, -1, 0, 40, 99, 100, 500, 600, 1000, 1001, 500000]) {
-      expect(finalWealthStanding('present', v, table).kind, String(v)).not.toBe('middle');
+      expect(finalWealthStanding('alpha', v, table).kind, String(v)).not.toBe('middle');
     }
   });
 
   it('표 밖의 값도 약 0%·약 100%가 아니다: 가장 높은 값(1000)보다 크면 "상위 1% 안쪽", 가장 낮은 값(0)보다 작으면 "하위 1% 안쪽" — 음수 순자산도 이렇게 읽힌다', () => {
-    expect(finalWealthStanding('present', 1001, table)).toEqual({ kind: 'top', percent: 1, within: true });
-    expect(finalWealthStanding('present', 1000, table)).toEqual({ kind: 'top', percent: 1, within: true }); // 1칸 = 0.99% < 1%
-    expect(finalWealthStanding('present', -1, table)).toEqual({ kind: 'bottom', percent: 1, within: true });
-    expect(finalWealthStanding('present', -30000, table)).toEqual({ kind: 'bottom', percent: 1, within: true });
+    expect(finalWealthStanding('alpha', 1001, table)).toEqual({ kind: 'top', percent: 1, within: true });
+    expect(finalWealthStanding('alpha', 1000, table)).toEqual({ kind: 'top', percent: 1, within: true }); // 1칸 = 0.99% < 1%
+    expect(finalWealthStanding('alpha', -1, table)).toEqual({ kind: 'bottom', percent: 1, within: true });
+    expect(finalWealthStanding('alpha', -30000, table)).toEqual({ kind: 'bottom', percent: 1, within: true });
   });
 
   it('standingOf와 같은 규칙이다: 표 안팎의 모든 값에서 퍼센트는 항상 1~50이고 상위/하위/중간 중 하나다', () => {
     for (const v of [-30000, -1, 0, 50, 100, 250, 400, 500, 600, 900, 1000, 1001, 500000]) {
-      const st = finalWealthStanding('present', v, table);
+      const st = finalWealthStanding('alpha', v, table);
       expect(st).toEqual(standingOf(shareAtLeast(q, v), shareBelow(q, v))); // M7e-3: 하위 = 미만
       if (st.kind !== 'middle') {
         expect(st.percent).toBeGreaterThanOrEqual(1);
@@ -190,7 +203,7 @@ describe('분포표에서 자리 구하기: 직접 센 작은 표 (R-045 c, D12 
   });
 
   it('분포표 검사기(validateFinalDistribution)가 잘못된 표를 잡는다: 칸 수·정수·줄어듦·lives', () => {
-    const bad = (over: Partial<FinalDistribution>) => validateFinalDistribution({ ...table, present: { ...table.present, ...over } });
+    const bad = (over: Partial<FinalDistribution>) => validateFinalDistribution({ ...table, alpha: { ...table.alpha, ...over } });
     expect(bad({ quantiles: q.slice(0, 100) }).join()).toContain('칸 수');
     expect(bad({ quantiles: q.map((x, i) => (i === 3 ? 0.5 : x)) }).join()).toContain('정수가 아닌');
     expect(bad({ quantiles: q.map((x, i) => (i === 50 ? -1 : x)) }).join()).toContain('앞 칸보다 작다');
@@ -217,7 +230,7 @@ describe('도착 자리의 점수 (standingScore)', () => {
 });
 
 /** 세 시대 × 5단계의 출발선 구간: 가중치 표(birthTable.ts)에서 손으로 계산 — 구간 = [이 단계 아래 누적 %, 이 단계까지 누적 %] (아래에서부터 센 백분위). 마지막은 엔딩에 나오는 문구. */
-const BANDS: Record<Era, ReadonlyArray<readonly [low: number, high: number, label: string]>> = {
+const BANDS: Record<TableKey, ReadonlyArray<readonly [low: number, high: number, label: string]>> = {
   past: [
     // 가중치 40·32·20·7·1
     [0, 40, '하위 40% 안쪽'],
@@ -259,7 +272,7 @@ function standingAt(score: number): Standing {
  * 그래서 비슷함은 [81, 97]까지, 98·99는 앞섬이다. 다른 14개 구간은 위쪽 끝 + 2가 98 이하이거나(지난 3단계 94·다가올 4단계 97) 구간 끝이 이미 99·100이다.
  * 아래쪽 여유가 0이 되는 구간(아래쪽 끝 - 2 <= 1)은 아래쪽 끝이 0인 맨 아래 단계뿐이라 값이 같다(점수 1부터 비슷함).
  */
-const SAME_RANGE: Record<Era, ReadonlyArray<readonly [from: number, to: number]>> = {
+const SAME_RANGE: Record<TableKey, ReadonlyArray<readonly [from: number, to: number]>> = {
   past: [[1, 42], [38, 74], [70, 94], [90, 99], [97, 99]],
   present: [[1, 27], [23, 57], [53, 85], [81, 97], [95, 99]],
   future: [[1, 32], [28, 60], [56, 84], [80, 97], [93, 99]],
@@ -267,11 +280,11 @@ const SAME_RANGE: Record<Era, ReadonlyArray<readonly [from: number, to: number]>
 
 describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구간을 가중치 표에서 계산해 문장에 담는다', () => {
   it('세 시대 × 5단계: 구간의 끝값과 문구가 가중치 표에서 직접 계산한 값과 같다 (지난 세상 1단계 "하위 40% 안쪽", 지금 세상 2단계 "하위 25% 선과 상위 45% 선 사이")', () => {
-    for (const era of ERAS) {
-      expect(ERA_CONFIG[era].wealthWeights.reduce((a, b) => a + b, 0), `${era} 가중치 합`).toBe(100); // 위 계산이 성립하는 전제
+    for (const era of TABLE_KEYS) {
+      expect(WEIGHTS[era].reduce((a, b) => a + b, 0), `${era} 가중치 합`).toBe(100); // 위 계산이 성립하는 전제
       for (let w = 1; w <= 5; w++) {
         const [low, high, label] = BANDS[era][w - 1];
-        const band = startBandOf(era, w as ParentWealth);
+        const band = startBandOf(WEIGHTS[era], w as ParentWealth);
         expect([band.low, band.high], `${era} ${w}단계 구간`).toEqual([low, high]);
         expect(bandLabel(band), `${era} ${w}단계 문구`).toBe(label);
       }
@@ -279,18 +292,33 @@ describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구
   });
 
   it('구간은 빈틈없이 이어진다: 1단계는 0에서 시작하고 한 단계의 위쪽 끝이 다음 단계의 아래쪽 끝이며 5단계는 100에서 끝난다 (출생아 전체를 덮는다)', () => {
-    for (const era of ERAS) {
-      expect(startBandOf(era, 1).low, era).toBe(0);
-      expect(startBandOf(era, 5).high, era).toBe(100);
-      for (let w = 1; w < 5; w++) expect(startBandOf(era, w as ParentWealth).high, `${era} ${w}→${w + 1}`).toBe(startBandOf(era, (w + 1) as ParentWealth).low);
+    for (const era of TABLE_KEYS) {
+      expect(startBandOf(WEIGHTS[era], 1).low, era).toBe(0);
+      expect(startBandOf(WEIGHTS[era], 5).high, era).toBe(100);
+      for (let w = 1; w < 5; w++) expect(startBandOf(WEIGHTS[era], w as ParentWealth).high, `${era} ${w}→${w + 1}`).toBe(startBandOf(WEIGHTS[era], (w + 1) as ParentWealth).low);
+    }
+  });
+
+  it('세대 판: 출발선 구간은 세대 섞음 비율(독립 기준값 `gm3-mixture-reference.json`)의 누적이고, 문구에서 다시 읽은 구간과 같다 — 7세대 × 5단계 (D4-48)', () => {
+    for (const g of GENERATION_IDS) {
+      const w = MIX_REF[g].wealth;
+      expect(wealthMixtureOfProfile(g), g).toEqual(w);
+      let acc = 0;
+      for (let tier = 1; tier <= 5; tier++) {
+        const band = startBandOf(wealthMixtureOfProfile(g), tier as ParentWealth);
+        expect([band.low, band.high], `${g} ${tier}단계`).toEqual([acc, acc + w[tier - 1]]);
+        expect(readBand(bandLabel(band)), `${g} ${tier}단계 문구`).toEqual([acc, acc + w[tier - 1]]);
+        acc += w[tier - 1];
+      }
+      expect(acc, g).toBe(100);
     }
   });
 
   it('출생 결과 화면의 문구는 그대로고 이 구간의 한쪽 끝값이다: 퍼센트가 구간 문구 안에 들어 있다 (중앙에 걸친 단계는 출생 화면도 "가운데쯤")', () => {
-    for (const era of ERAS) {
+    for (const era of TABLE_KEYS) {
       for (let w = 1; w <= 5; w++) {
-        const s = wealthStanding(era, w as ParentWealth);
-        const band = startBandOf(era, w as ParentWealth);
+        const s = wealthStanding(WEIGHTS[era], w as ParentWealth);
+        const band = startBandOf(WEIGHTS[era], w as ParentWealth);
         if (s.kind === 'middle') {
           expect(band.kind, `${era} ${w}단계 (출생 화면 "가운데쯤")`).toBe('center');
           continue;
@@ -298,9 +326,9 @@ describe('출발선 구간 (startBandOf·bandLabel, R-091): 재력 단계의 구
         expect(numbersIn(bandLabel(band)), `${era} ${w}단계 ${standingLabel(s)}`).toContain(s.percent);
       }
     }
-    expect(standingLabel(wealthStanding('past', 1))).toBe('하위 약 40%');
-    expect(standingLabel(wealthStanding('present', 3))).toBe('상위 약 45%');
-    expect(standingLabel(wealthStanding('present', 2))).toBe('가운데쯤');
+    expect(standingLabel(wealthStanding(WEIGHTS.past, 1))).toBe('하위 약 40%');
+    expect(standingLabel(wealthStanding(WEIGHTS.present, 3))).toBe('상위 약 45%');
+    expect(standingLabel(wealthStanding(WEIGHTS.present, 2))).toBe('가운데쯤');
   });
 
   it('구간의 모양(bandFromRange): 맨 아래/맨 위/한쪽 절반/50%를 걸침/한쪽에 붙었지만 반대편이 50%를 넘음/전체', () => {
@@ -420,9 +448,9 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
   });
 
   it('세 시대 × 5단계 × 도착 점수 1~99: 비슷함의 범위가 손으로 계산한 경계와 같고, 그 아래는 뒤쪽, 그 위는 앞섬이다', () => {
-    for (const era of ERAS) {
+    for (const era of TABLE_KEYS) {
       for (let w = 1; w <= 5; w++) {
-        const band = startBandOf(era, w as ParentWealth);
+        const band = startBandOf(WEIGHTS[era], w as ParentWealth);
         const [from, to] = SAME_RANGE[era][w - 1];
         const wrong: string[] = [];
         for (let s = 1; s <= 99; s++) {
@@ -435,7 +463,7 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
   });
 
   it('경계를 한 점씩: 지금 세상 3단계 "상위 17~45% 사이"(구간 [55, 83]) — 도착 상위 약 46%(점수 54)는 1점 차라 뒤쪽이 아니라 비슷함 (R-091 증상), 상위 약 48%(52)부터 뒤쪽', () => {
-    const band = startBandOf('present', 3);
+    const band = startBandOf(WEIGHTS.present, 3);
     const top = (percent: number): Standing => ({ kind: 'top', percent, within: false });
     expect(movementOf(band, top(45))).toBe('same'); // 구간의 끝 (55)
     expect(movementOf(band, top(46))).toBe('same'); // 54: 구간 밖 1점
@@ -452,9 +480,9 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
   });
 
   it('구간 안은 언제나 비슷함이다: 여유와 상관없이(여유 0에서도) 세 시대 × 5단계 × 구간 안의 모든 점수', () => {
-    for (const era of ERAS) {
+    for (const era of TABLE_KEYS) {
       for (let w = 1; w <= 5; w++) {
-        const band = startBandOf(era, w as ParentWealth);
+        const band = startBandOf(WEIGHTS[era], w as ParentWealth);
         const wrong: string[] = [];
         for (let s = Math.max(1, band.low); s <= Math.min(99, band.high); s++) {
           if (movementOf(band, standingAt(s), 0) !== 'same' || movementOf(band, standingAt(s)) !== 'same') wrong.push(`점수 ${s}`);
@@ -465,9 +493,9 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
   });
 
   it('구조상 없는 방향: 맨 아래 단계는 뒤쪽이, 맨 위 단계는 앞섬이 나올 수 없다 (어떤 도착 자리여도, 세 시대)', () => {
-    for (const era of ERAS) {
-      const lowest = startBandOf(era, 1);
-      const highest = startBandOf(era, 5);
+    for (const era of TABLE_KEYS) {
+      const lowest = startBandOf(WEIGHTS[era], 1);
+      const highest = startBandOf(WEIGHTS[era], 5);
       const wrong: string[] = [];
       for (let s = 1; s <= 99; s++) {
         if (movementOf(lowest, standingAt(s)) === 'down') wrong.push(`1단계 점수 ${s}: 뒤쪽`);
@@ -510,7 +538,7 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
   });
 
   it('점수 천장·바닥에 닿는 여유는 0이다 (R-095): 지금 세상 4단계 "상위 3~17% 사이" [83, 97]에서 상위 약 2%(98)·상위 1% 안쪽(99)은 앞섬, 상위 약 3%(97)는 구간 끝이라 비슷함', () => {
-    const band = startBandOf('present', 4);
+    const band = startBandOf(WEIGHTS.present, 4);
     expect([band.low, band.high]).toEqual([83, 97]);
     const top = (percent: number, within = false): Standing => ({ kind: 'top', percent, within });
     expect(movementOf(band, top(3))).toBe('same'); // 97 = 구간의 끝
@@ -522,7 +550,7 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
     expect(movementOf(band, top(19))).toBe('same'); // 81
     expect(movementOf(band, top(20))).toBe('down'); // 80
     // 같은 단계의 문장도 이어진다: 상위 3~17% 사이의 집 → 상위 1% 안쪽(표의 맨 위 1000만 원을 넘는 순자산) = 앞선 자리 (예전에는 "비슷한 자리"라 부유한 집이 더 부유해진 것이 안 보였다)
-    const l = endingOf(7, 'present');
+    const l = endingOf(7, 'alpha');
     const table = tableOfQuantiles();
     const g: EndingGame = { ...l, character: { ...l.character, parentWealth: 4 }, assets: { ...l.assets!, net: 1500 }, death: { age: 70, cause: '노환' }, age: 70 };
     const r = reviewEnding(g, table);
@@ -568,9 +596,9 @@ describe('출발선 구간에서 도착 자리의 방향 (movementOf, BAND_GRACE
 
   it('여유 0 처리는 현재 15개 구간 중 지금 세상 4단계 하나에만 걸린다: 위쪽 높이 + 여유가 99 이상이거나 아래쪽 끝 - 여유가 1 이하인 구간', () => {
     const touched: string[] = [];
-    for (const era of ERAS) {
+    for (const era of TABLE_KEYS) {
       for (let w = 1; w <= 5; w++) {
-        const b = startBandOf(era, w as ParentWealth);
+        const b = startBandOf(WEIGHTS[era], w as ParentWealth);
         // 구간 끝이 99·100이거나 0인 구간은 어차피 그 방향이 없다(구조): 여유 0 처리가 값을 바꾸는 구간만 센다
         if (b.high < 99 && b.high + BAND_GRACE >= 99) touched.push(`${era} ${w}단계 위쪽 [${b.low}, ${b.high}]`);
         if (b.low > 1 && b.low - BAND_GRACE <= 1) touched.push(`${era} ${w}단계 아래쪽 [${b.low}, ${b.high}]`);
@@ -591,7 +619,7 @@ describe('스무 살 전에 끝난 인생 (reachedIndependence)', () => {
 
   it('실제로 스무 살 전에 끝난 인생(분포표와 같은 시드 4000판에서 찾는다, 지난 세상)은 early, 스무 살 넘어 끝난 인생은 compared다', () => {
     // 19세 이하에서 죽은 판은 재산이 집안 형편 그대로고, 20세 이상까지 산 판은 독립 환산을 거쳤다 — 근거: core/life.ts#finishYear
-    const lives = Array.from({ length: 4000 }, (_, i) => endingOf(finalDistributionSeed(i + 1), 'past'));
+    const lives = Array.from({ length: 4000 }, (_, i) => endingOf(finalDistributionSeed(i + 1), 'industrial'));
     const early = lives.filter((l) => l.death.age < 20);
     expect(early.length).toBeGreaterThan(0); // 유년기 사망은 드물지만 있다(R-045 a)
     for (const l of early) {
@@ -604,21 +632,21 @@ describe('스무 살 전에 끝난 인생 (reachedIndependence)', () => {
 });
 
 describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
-  const lives = lazy(() => ERAS.flatMap((era) => Array.from({ length: 120 }, (_, i) => endingOf(i * 104729 + 5, era, i % 2 === 0 ? 'random' : 'auto'))));
+  const lives = lazy(() => SIM_PROFILES.flatMap((era) => Array.from({ length: 120 }, (_, i) => endingOf(i * 104729 + 5, era, i % 2 === 0 ? 'random' : 'auto'))));
 
-  it('출발선은 재력 단계의 구간이다: startBandOf(시대, 부모 재력) — 출생 결과 화면과 같은 가중치 표에서 계산한다 (R-091)', () => {
+  it('출발선은 재력 단계의 구간이다: startBandOf(세대 섞음 비율, 부모 재력) — 출생 결과 화면과 같은 표에서 계산한다 (R-091, D4-48)', () => {
     for (const l of lives()) {
       const j = reviewEnding(l).journey;
-      expect(j.start).toEqual(startBandOf(l.era, l.character.parentWealth));
+      expect(j.start).toEqual(startBandOf(wealthMixtureOfGame(l), l.character.parentWealth));
     }
   });
 
-  it('도착은 분포표에서 구한 자리다: 최종 순자산(만 원)과 시대만으로 정해진다', () => {
+  it('도착은 분포표에서 구한 자리다: 최종 순자산(만 원)과 세대만으로 정해진다', () => {
     for (const l of lives().filter((x) => x.death.age >= 20)) {
       const j = reviewEnding(l).journey;
       expect(j.kind).toBe('compared');
       if (j.kind === 'compared') {
-        expect(j.end).toEqual(finalWealthStanding(l.era, l.assets!.net));
+        expect(j.end).toEqual(finalWealthStanding(l.generation, l.assets!.net));
         expect(j.movement).toBe(movementOf(j.start, j.end));
       }
     }
@@ -633,11 +661,11 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
     }
     const richer = { ...l, character: { ...l.character, parentWealth: 5 as const } };
     const j = reviewEnding(richer).journey;
-    expect(j.start).toEqual(startBandOf(l.era, 5));
+    expect(j.start).toEqual(startBandOf(wealthMixtureOfGame({ ...l, birthReport: l.birthReport }), 5));
   });
 
   it('작은 표로 문장까지: 지금 세상 4단계(상위 3~17% 사이)·1단계(하위 25% 안쪽)·3단계(상위 17~45% 사이)·2단계(하위 25% 선과 상위 45% 선 사이) 출발선에서 도착 문장과 방향이 직접 적은 기대와 같다', () => {
-    const l = lives().find((x) => x.death.age >= 20 && x.era === 'present')!;
+    const l = lives().find((x) => x.death.age >= 20 && x.generation === 'alpha')!;
     const table = tableOfQuantiles();
     const born = (wealth: ParentWealth, net: number): EndingGame => ({ ...l, character: { ...l.character, parentWealth: wealth }, assets: { ...l.assets!, net, debt: Math.max(l.assets!.debt, -net) } });
     const sentence = (g: EndingGame) => {
@@ -686,10 +714,10 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
     const l = lives().find((x) => x.death.age >= 20)!;
     const young: EndingGame = { ...l, age: 9, death: { age: 9, cause: '갑작스러운 병' } };
     const r = reviewEnding(young);
-    expect(r.journey).toEqual({ kind: 'early', start: startBandOf(l.era, l.character.parentWealth) });
+    expect(r.journey).toEqual({ kind: 'early', start: startBandOf(wealthMixtureOfGame(l), l.character.parentWealth) });
     const text = journeyText(r.journey);
     // R-083: 출발선만 담담하게. 게임 용어("내가 가진 것")도, 윗줄(사망·선택 수)이 이미 말한 "생이 끝났다"도 되풀이하지 않는다.
-    expect(text).toBe(`${bandLabel(startBandOf(l.era, l.character.parentWealth))}의 집에서 태어났습니다.`);
+    expect(text).toBe(`${bandLabel(startBandOf(wealthMixtureOfGame(l), l.character.parentWealth))}의 집에서 태어났습니다.`);
     expect(text).not.toContain('형편으로 생을 마쳤습니다');
     expect(text).not.toContain('내가 가진 것');
     expect(text).not.toContain('생이 끝');
@@ -709,7 +737,7 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
 });
 
 describe('생애 연표 (buildTimeline): 하나도 빠뜨리지 않고 단계별로 묶는다', () => {
-  const lives = lazy(() => ERAS.flatMap((era) => Array.from({ length: 150 }, (_, i) => endingOf(i * 7919 + 13, era))));
+  const lives = lazy(() => SIM_PROFILES.flatMap((era) => Array.from({ length: 150 }, (_, i) => endingOf(i * 7919 + 13, era))));
 
   it('모든 항목이 시간순 그대로 들어 있다: 묶은 것을 이어 붙이면 연표와 같다', () => {
     for (const l of lives()) {
@@ -724,7 +752,7 @@ describe('생애 연표 (buildTimeline): 하나도 빠뜨리지 않고 단계별
       const picked = groups.flatMap((g) => g.entries).filter((e) => e.kind === 'choice');
       expect(picked.length).toBe(l.history.filter((h) => h.kind === 'choice').length);
       for (const e of picked) {
-        expect(e.choice, `${l.era} ${l.seed}: 고른 선택지 문구`).toBeTruthy();
+        expect(e.choice, `${l.generation} ${l.seed}: 고른 선택지 문구`).toBeTruthy();
         expect(e.title).toBeTruthy();
       }
     }
@@ -834,9 +862,9 @@ describe('엔딩 문구 (data/endingText.ts): 담담하고 R-018 표현 규칙�
     }
   });
 
-  it('전수 확인: 세 시대 × 판들의 출발선 대비 문장에 50을 넘는 숫자도, 약 0%·약 100%도, 0~·~100 같은 끝값도 없다', () => {
+  it('전수 확인: 세대 7종 × 판들의 출발선 대비 문장에 50을 넘는 숫자도, 약 0%·약 100%도, 0~·~100 같은 끝값도 없다', () => {
     let n = 0;
-    for (const era of ERAS) {
+    for (const era of GENERATION_IDS) {
       for (let i = 0; i < 250; i++) {
         const l = endingOf(i * 15485863 + 7, era, i % 3 === 0 ? 'auto' : 'random');
         const text = journeyText(reviewEnding(l).journey);
@@ -849,14 +877,15 @@ describe('엔딩 문구 (data/endingText.ts): 담담하고 R-018 표현 규칙�
         expect(text).not.toMatch(/!/);
       }
     }
-    expect(n).toBe(750);
+    expect(n).toBe(250 * GENERATION_IDS.length);
   });
 });
 
 describe('분포표 (data/finalDistribution.ts): 현재 엔진·이벤트에서 다시 만든 표와 같다 (R-045 c)', () => {
-  it('표의 모양: 시대마다 0~100번째 백분위 101칸·정수·줄지 않음, 판 수 4000 중 스무 살 넘어 마친 판이 99% 이상', () => {
+  it('표의 모양: 프로필마다(세대 7종 + 시험 전용 R1) 0~100번째 백분위 101칸·정수·줄지 않음, 판 수 4000 중 스무 살 넘어 마친 판이 99% 이상', () => {
     expect(validateFinalDistribution(FINAL_DISTRIBUTION)).toEqual([]);
-    for (const era of ERAS) {
+    expect(Object.keys(FINAL_DISTRIBUTION).sort()).toEqual([...GENERATION_IDS, R1_PRESENT].sort());
+    for (const era of [...GENERATION_IDS, R1_PRESENT] as ProfileId[]) {
       const d = FINAL_DISTRIBUTION[era];
       expect(d.simulated, era).toBe(FINAL_DISTRIBUTION_PARAMS.simulated);
       expect(d.lives / d.simulated, era).toBeGreaterThan(0.99);
@@ -876,26 +905,29 @@ describe('분포표 (data/finalDistribution.ts): 현재 엔진·이벤트에서 
   });
 
   it(
-    '현재 엔진·이벤트로 같은 시드·판 수로 다시 만들면 같은 표다 — 다르면 표가 낡았다: npx vite-node scripts/finalDistribution.ts (또는 점검만: npm run check:dist)',
+    '현재 엔진·이벤트로 같은 시드·판 수로 다시 만들면 같은 표다 — 다르면 표가 낡았다: ./node_modules/.bin/vite-node scripts/finalDistribution.ts (또는 점검만: npm run check:dist)',
     () => {
-      const regenerated = Object.fromEntries(ERAS.map((era) => [era, distributionOf(FINAL_LIVES()[era])])) as Record<Era, FinalDistribution>;
-      expect(
-        staleEras(regenerated, FINAL_DISTRIBUTION),
-        '분포표가 낡았다 (이벤트·밸런스를 고쳤다면 npx vite-node scripts/finalDistribution.ts 로 다시 만든다. 절차: docs/data/events-schema.md 10절)',
-      ).toEqual([]);
+      // 세대 표본 3종만 다시 만들어 견준다(전체 8개는 npm run check:dist가 본다)
+      const regenerated = Object.fromEntries(SIM_PROFILES.map((era) => [era, distributionOf(FINAL_LIVES()[era])])) as Record<ProfileId, FinalDistribution>;
+      for (const era of SIM_PROFILES) {
+        expect(regenerated[era], `${era}: 분포표가 낡았다 (이벤트·밸런스를 고쳤다면 ./node_modules/.bin/vite-node scripts/finalDistribution.ts 로 다시 만든다. 절차: docs/data/events-schema.md 10절)`).toEqual(FINAL_DISTRIBUTION[era]);
+      }
+      // 시험 전용 R1 프로필의 표는 얼린 값이다 — 다시 만들어도 같다(EY17 항등 시험이 판들을 다시 돌려 확인한다)
+      expect(frozenR1Distribution()).toEqual(FINAL_DISTRIBUTION[R1_PRESENT]);
     },
     180_000,
   );
 
-  it('생성기(buildFinalDistribution)는 판 수를 줄여도 판들에서 센 것과 같다: 시대별 200판', () => {
+  it('생성기(buildFinalDistribution)는 판 수를 줄여도 판들에서 센 것과 같다: 세대별 200판 (시험 전용 R1 표는 얼린 값 그대로)', () => {
     const small = buildFinalDistribution(200);
-    for (const era of ERAS) expect(small[era], era).toEqual(distributionOf(finalLivesOf(era, 200)));
-    expect(staleEras(small, FINAL_DISTRIBUTION)).toEqual([...ERAS]); // 판 수가 다르면 "낡았다"로 걸린다
+    for (const era of GENERATION_IDS) expect(small[era], era).toEqual(distributionOf(finalLivesOf(era, 200)));
+    expect(small[R1_PRESENT]).toEqual(FINAL_DISTRIBUTION[R1_PRESENT]);
+    expect(staleEras(small, FINAL_DISTRIBUTION)).toEqual([...GENERATION_IDS]); // 판 수가 다르면 "낡았다"로 걸린다 (R1은 얼린 값이라 같다)
     expect(staleEras(FINAL_DISTRIBUTION, FINAL_DISTRIBUTION)).toEqual([]);
   });
 
   it('생성기는 결정적이고 다른 경로로 센 값과 같다: 처음 300판을 simulateLife로 따로 모아 분위수를 직접 뽑아 본다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const nets: number[] = [];
       let lives = 0;
       for (let i = 1; i <= 300; i++) {
@@ -916,7 +948,7 @@ describe('분포표 (data/finalDistribution.ts): 현재 엔진·이벤트에서 
   });
 
   it('표가 합리적이다: 순자산 중앙값이 20억 원 미만이고(세 시대 모두 0 이상), 시대마다 값이 넓게 퍼지고(p10 < 중앙값 < p90) 음수(빚)와 큰 자산이 모두 있으며 한 점에 몰려 있지 않다 (0원 무더기만 예외)', () => {
-    for (const era of ERAS) {
+    for (const era of GENERATION_IDS) {
       const q = FINAL_DISTRIBUTION[era].quantiles;
       // r2(D19 차입 한도·D20 노년 안전망): 사망 시점 중앙값이 세 시대 모두 0 이상이다(2a의 다가올 세상은 약 -2.9억 원이었다). 다가올 세상은 중앙값이 정확히 0이다 — 절반이 자산을 다 쓰고 끝난다.
       expect(q[50], `${era} 중앙값`).toBeGreaterThanOrEqual(0);
@@ -937,8 +969,8 @@ describe('분포표 (data/finalDistribution.ts): 현재 엔진·이벤트에서 
     }
   });
 
-  it('실제 인생의 도착 자리를 표에서 직접 세어 본 값과 같다 (표 안팎의 순자산 값, 세 시대)', () => {
-    for (const era of ERAS) {
+  it('실제 인생의 도착 자리를 표에서 직접 세어 본 값과 같다 (표 안팎의 순자산 값, 세대 7종)', () => {
+    for (const era of GENERATION_IDS) {
       const q = FINAL_DISTRIBUTION[era].quantiles;
       for (const v of [...q.filter((_, i) => i % 7 === 0), q[0] - 1, q[100] + 1, 0, -1, 1]) {
         const ge = q.filter((x) => x >= v).length;
@@ -948,13 +980,13 @@ describe('분포표 (data/finalDistribution.ts): 현재 엔진·이벤트에서 
     }
   });
 
-  it('시대마다 표가 다르다 (같은 시대 안에서 견주기 때문): 세 시대의 표가 서로 같지 않다', () => {
-    expect(FINAL_DISTRIBUTION.past.quantiles).not.toEqual(FINAL_DISTRIBUTION.present.quantiles);
-    expect(FINAL_DISTRIBUTION.present.quantiles).not.toEqual(FINAL_DISTRIBUTION.future.quantiles);
+  it('세대마다 표가 있다 (같은 세대 안에서 견주기 때문, EY8·D4-31): 세대 표본 3종의 표가 서로 같지 않다', () => {
+    expect(FINAL_DISTRIBUTION.industrial.quantiles).not.toEqual(FINAL_DISTRIBUTION.genx.quantiles);
+    expect(FINAL_DISTRIBUTION.genx.quantiles).not.toEqual(FINAL_DISTRIBUTION.alpha.quantiles);
   });
 });
 
-describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·비슷함·뒤쪽', () => {
+describe('방향 판정의 균형 (R-091): 세대 표본 × 재력 단계별 앞섬·비슷함·뒤쪽', () => {
   interface Tally {
     n: number;
     up: number;
@@ -962,11 +994,11 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
     down: number;
   }
   /** 분포표를 만든 판들 중 스무 살 넘어 마친 판을 부모 재력 단계(1~5)별로 센다. grace: 구간 밖 여유(기본 BAND_GRACE) */
-  function tallyByStage(era: Era, grace: number = BAND_GRACE): Tally[] {
+  function tallyByStage(era: ProfileId, grace: number = BAND_GRACE): Tally[] {
     const out: Tally[] = [1, 2, 3, 4, 5].map(() => ({ n: 0, up: 0, same: 0, down: 0 }));
     for (const l of FINAL_LIVES()[era]) {
       if (!reachedIndependence(l.deathAge)) continue;
-      const m = movementOf(startBandOf(era, l.parentWealth), finalWealthStanding(era, l.net), grace);
+      const m = movementOf(startBandOf(wealthMixtureOfProfile(era), l.parentWealth), finalWealthStanding(era, l.net), grace);
       const t = out[l.parentWealth - 1];
       t.n++;
       t[m]++;
@@ -979,7 +1011,7 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
   const row = (t: Tally) => `n=${t.n} 앞섬 ${pct(share(t, 'up'))} / 비슷함 ${pct(share(t, 'same'))} / 뒤쪽 ${pct(share(t, 'down'))}`;
 
   it('표본: 어느 시대든 1~4단계는 100판 이상이다 (5단계는 상위 1~5%라 적다)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const t = tallyByStage(era);
       for (let w = 0; w < 4; w++) expect(t[w].n, `${era} ${w + 1}단계`).toBeGreaterThanOrEqual(100);
       expect(sum(t).n, era).toBe(FINAL_DISTRIBUTION[era].lives); // 분포표를 센 판과 같은 판이다
@@ -988,7 +1020,7 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
 
   // SPEC-003 M5 D12: 도착이 재산 스탯(0~100, 위·아래가 막힌 값)에서 순자산(만 원, 위아래가 열린 값)으로 바뀌어 방향의 분포가 달라졌다. 아래 관측값은 M5 r4 분위수표(src/data/finalDistribution.ts, 차입 한도·노년 안전망·간이 상속 반영) 기준이다.
   it('가장 낮은 단계 출생이 구간 안에서 마치면 "뒤쪽"이 될 수 없다: 1단계의 뒤쪽은 구조상 0이고, 비슷함이 40% 이상이며, 앞서는 판도 실제로 있다 (R-084 증상 해소; 관측 앞섬 42~52%·비슷함 48~58%)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const t = tallyByStage(era)[0];
       expect(t.down, `${era} 1단계 ${row(t)}`).toBe(0);
       expect(share(t, 'same'), `${era} 1단계 ${row(t)}`).toBeGreaterThanOrEqual(0.4);
@@ -998,10 +1030,10 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
   }, 180_000);
 
   /** 5단계 「뒤쪽」 천장(시대별): 지난 세상은 표본이 44판 안팎이라 넓게(0.8), 지금·다가올 세상은 관측값 위로 좁게 둔다 */
-  const FIFTH_TIER_DOWN_CEILING = { past: 0.8, present: 0.72, future: 0.68 } as const;
+  const FIFTH_TIER_DOWN_CEILING = { industrial: 0.8, genx: 0.8, alpha: 0.72 } as Record<string, number>;
 
   it('가장 높은 단계(5) 출생은 앞설 수 없다 (구조상 앞섬 0). 구간이 좁아(상위 1~5%) 뒤쪽이 많다 — 쏠림이 아니라 천장이다: 앞섬 0, 뒤쪽은 시대별 천장(지난 80%·지금 72%·다가올 68% — 관측 70.5·67.2·60.9%, R-365)(r2 이전 관측 49~61% — 간이 상속(D10 변경)이 들어와 예전 78~95%에서 내려왔다), 비슷함도 실제로 있다. 일반 상속 모형·증여는 아직 없다(2차)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const t = tallyByStage(era)[4];
       expect(t.n, `${era} 5단계 표본`).toBeGreaterThanOrEqual(40);
       expect(t.up, `${era} 5단계 ${row(t)}`).toBe(0);
@@ -1013,7 +1045,7 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
   }, 180_000);
 
   it('가운데 단계(1~3)는 한 방향이 몰리지 않는다: 표본 100판 이상인 단계의 앞섬·뒤쪽은 각각 65% 이하 (관측 최대 앞섬 52%·뒤쪽 60%). 위쪽 끝 단계(4·5)의 뒤쪽 쏠림은 따로 적는다(아래 시험들)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       tallyByStage(era).forEach((x, i) => {
         if (x.n < 100 || i >= 3) return;
         expect(share(x, 'up'), `${era} ${i + 1}단계 ${row(x)}`).toBeLessThanOrEqual(0.65);
@@ -1023,7 +1055,7 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
   }, 180_000);
 
   it('시대 전체로는 비슷함이 가장 많고 앞섬·뒤쪽도 나온다: 앞섬·뒤쪽 각 20~35%, 비슷함 35~55% (관측 앞섬 24~27%·비슷함 45~47%·뒤쪽 29% — r4 분위수표 기준)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const t = sum(tallyByStage(era));
       expect(share(t, 'up'), `${era} ${row(t)}`).toBeGreaterThanOrEqual(0.2);
       expect(share(t, 'up'), `${era} ${row(t)}`).toBeLessThanOrEqual(0.35);
@@ -1036,18 +1068,18 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
   }, 180_000);
 
   // R-095: 4단계(금수저급)의 앞섬은 시대마다 구조가 다르다 — 구간 위쪽 끝이 점수 천장(99)에 얼마나 가까운가에 달렸다. 시대별로 나눠 사실대로 적는다(관측값은 이 판들의 비율).
-  it('지난 세상 4단계 "상위 1~8% 사이"(구간 [92, 99]): 위쪽 끝이 천장(99)이라 앞섬은 구조상 0이다 — 쏠림이 아니라 천장', () => {
-    const t = tallyByStage('past')[3];
-    expect(startBandOf('past', 4).high).toBe(99);
+  it('산업화 세대 4단계 "상위 1~8% 사이"(구간 [92, 99]): 위쪽 끝이 천장(99)이라 앞섬은 구조상 0이다 — 쏠림이 아니라 천장', () => {
+    const t = tallyByStage('industrial')[3];
+    expect(startBandOf(wealthMixtureOfProfile('industrial'), 4).high).toBe(99);
     expect(t.n, `past 4단계 표본`).toBeGreaterThanOrEqual(100);
     expect(t.up, `past 4단계 ${row(t)}`).toBe(0);
     expect(share(t, 'same'), `past 4단계 ${row(t)}`).toBeGreaterThanOrEqual(0.25); // 관측 35% (예전 재산 스탯 시절 83% — 위가 열린 순자산에서는 같은 구간에 머무는 판이 줄었다)
     expect(share(t, 'down'), `past 4단계 ${row(t)}`).toBeLessThanOrEqual(0.75); // 관측 65%
   }, 180_000);
 
-  it('지금 세상 4단계 "상위 3~17% 사이"(구간 [83, 97]): 구간 위쪽 끝 + 여유가 천장에 닿아 여유가 0이라 상위 2%·1%에 이른 판은 앞섬이다 — 0%가 아니고 3% 이상 15% 이하 (R-095)', () => {
-    const t = tallyByStage('present')[3];
-    expect([startBandOf('present', 4).low, startBandOf('present', 4).high]).toEqual([83, 97]);
+  it('알파 세대 4단계 "상위 3~17% 사이"(구간 [83, 97]): 구간 위쪽 끝 + 여유가 천장에 닿아 여유가 0이라 상위 2%·1%에 이른 판은 앞섬이다 — 0%가 아니고 3% 이상 15% 이하 (R-095)', () => {
+    const t = tallyByStage('alpha')[3];
+    expect([startBandOf(wealthMixtureOfProfile('alpha'), 4).low, startBandOf(wealthMixtureOfProfile('alpha'), 4).high]).toEqual([83, 97]);
     expect(t.n, `present 4단계 표본`).toBeGreaterThanOrEqual(100);
     expect(t.up, `present 4단계 ${row(t)}`).toBeGreaterThan(0); // R-095 이전에는 구조상 0이었다 (앞섬 0%)
     expect(share(t, 'up'), `present 4단계 ${row(t)}`).toBeGreaterThanOrEqual(0.02); // 관측 4% (예전 재산 스탯 시절 10%)
@@ -1055,16 +1087,16 @@ describe('방향 판정의 균형 (R-091): 시대 × 재력 단계별 앞섬·�
     expect(share(t, 'down'), `present 4단계 ${row(t)}`).toBeLessThanOrEqual(0.6); // 관측 53% (예전 재산 스탯 시절 18%). economyBalance의 4단계 「뒤쪽」 50% 가드는 6000판으로 재서 48.5%이고, 여기는 분포표를 만든 4000판 자체라 5%p 넘게 높다
   }, 180_000);
 
-  it('다가올 세상 4단계 "상위 5~18% 사이"(구간 [82, 95]): 천장에서 떨어져 있어 여유 2가 그대로 쓰이고 앞섬은 8% 이하다 (관측 3%)', () => {
-    const t = tallyByStage('future')[3];
-    expect([startBandOf('future', 4).low, startBandOf('future', 4).high]).toEqual([82, 95]);
-    expect(t.n, `future 4단계 표본`).toBeGreaterThanOrEqual(100);
-    expect(t.up, `future 4단계 ${row(t)}`).toBeGreaterThan(0);
-    expect(share(t, 'up'), `future 4단계 ${row(t)}`).toBeLessThanOrEqual(0.08);
+  it('X 세대 4단계 "상위 2~12% 사이"(구간 [88, 98]): 위쪽 끝 + 여유가 천장에 닿아 상위 1% 안쪽에 이른 판만 앞섬이다 — 8% 이하 (X 세대 수저 비율 33·31·24·10·2)', () => {
+    const t = tallyByStage('genx')[3];
+    expect([startBandOf(wealthMixtureOfProfile('genx'), 4).low, startBandOf(wealthMixtureOfProfile('genx'), 4).high]).toEqual([88, 98]);
+    expect(t.n, `genx 4단계 표본`).toBeGreaterThanOrEqual(100);
+    expect(t.up, `genx 4단계 ${row(t)}`).toBeGreaterThan(0);
+    expect(share(t, 'up'), `genx 4단계 ${row(t)}`).toBeLessThanOrEqual(0.08);
   }, 180_000);
 
   it('대조: 여유를 0으로 두면 앞섬·뒤쪽이 더 많아진다 — 구간 밖 1~2점 차 판이 실제로 있어서 여유가 쓰이고, 그 판은 시대 전체의 12% 이하다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const withGrace = sum(tallyByStage(era));
       const without = sum(tallyByStage(era, 0));
       expect(without.n).toBe(withGrace.n);
@@ -1079,17 +1111,17 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
   // 문장을 다시 읽는 파서(readBand·readEnd)와 방향의 기준(expectedMovement)은 scripts/endingReadback.ts (R-096: 「밖」·「약 N%」·「하위 A~B%」·「모두가 같은 자리」까지 읽는다)
 
   it('파서 자체 검증: 15개 출발선 문구를 읽은 구간이 가중치 표에서 계산한 구간과 같다', () => {
-    for (const era of ERAS) for (const [low, high, label] of BANDS[era]) expect(readBand(label), `${era} ${label}`).toEqual([low, high]);
+    for (const era of TABLE_KEYS) for (const [low, high, label] of BANDS[era]) expect(readBand(label), `${era} ${label}`).toEqual([low, high]);
     expect(readEnd('상위 약 23%')).toBe(77);
     expect(readEnd('하위 1% 안쪽')).toBe(1);
     expect(readEnd('상위 1% 안쪽')).toBe(99);
     expect(readEnd('가운데쯤')).toBe(50);
   });
 
-  it('모든 판(세 시대, 스무 살 넘어 마친 약 12000판)의 reviewEnding 결과: 문장에서 읽은 숫자로 방향을 다시 정하면 같다. 구간 안인데 앞섬/뒤쪽, 구간 밖 여유(2점) 너머인데 비슷함이 0건이다 (천장·바닥 쪽은 여유 0 — R-095)', () => {
+  it('모든 판(세대 표본 3종, 스무 살 넘어 마친 약 12000판)의 reviewEnding 결과: 문장에서 읽은 숫자로 방향을 다시 정하면 같다. 구간 안인데 앞섬/뒤쪽, 구간 밖 여유(2점) 너머인데 비슷함이 0건이다 (천장·바닥 쪽은 여유 0 — R-095)', () => {
     const tally = { total: 0, inside: 0, graceSame: 0, up: 0, down: 0, ceilingUp: 0 };
     const wrong: string[] = [];
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const base = endingOf(finalDistributionSeed(1), era);
       for (const l of FINAL_LIVES()[era]) {
         if (!reachedIndependence(l.deathAge)) continue;
@@ -1159,7 +1191,7 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
 });
 
 describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title)에서 시작 (SPEC-003 규칙 19)', () => {
-  const ended = (seed = 77): GameState => playToEnd(startLife(seed, 'present'), chooserFor('random', seed)).state;
+  const ended = (seed = 77): GameState => playToEnd(startLife(seed, 'alpha'), chooserFor('random', seed)).state;
 
   it('ending → 첫 화면(title): 새 시드, 세상·인생 길이 미정(첫 화면의 선택은 설정에 있다), 이전 판의 흔적이 하나도 없다', () => {
     const before = ended();
@@ -1169,9 +1201,9 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
     expect(r.phase).toBe('title');
     expect(r.seed).toBe(9001);
     expect(r.rngState).toBe(9001);
-    expect(r.era).toBeNull(); // 첫 화면의 기본 선택 = DEFAULT_ERA (설정)
+    expect(r.generation).toBeNull(); // 첫 화면의 기본 선택 = DEFAULT_GENERATION (설정, 「랜덤 세대」)
     expect(r.lifeLength).toBeNull();
-    expect(DEFAULT_ERA).toBe('present');
+    expect(DEFAULT_GENERATION).toBe('random');
     for (const key of ['character', 'birthStats', 'death', 'pending', 'lastChoiceAge'] as const) expect(r[key], key).toBeNull();
     expect(r.history).toEqual([]);
     expect(r.flags).toEqual([]);
@@ -1183,7 +1215,7 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
 
   it('ending이 아닐 때는 같은 객체를 돌려준다 (title·roulette·birth·life에서 호출돼도 아무 일도 없다)', () => {
     const title = createInitialState(1);
-    const roulette = beginBirth(title, 'past');
+    const roulette = beginBirth(title, 'industrial');
     const birth = enterBirth(roulette);
     const life = enterLife(birth);
     for (const s of [title, roulette, birth, life]) expect(rebirth(s, 5)).toBe(s);
@@ -1208,29 +1240,30 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
   });
 
   it('설정(배속·자동 모드·고른 세상과 인생 길이)은 그대로 유지된다, tick은 비워진다, 인생 도중의 rebirth는 무시된다', () => {
-    const s0 = createSession(ended(), { speed: 4, autoMode: true, era: 'future', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark' });
+    const s0 = createSession(ended(), { speed: 4, autoMode: true, generation: 'genz', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark' });
     const s1 = sessionReducer(s0, { type: 'rebirth', seed: 5 });
     expect(s1.settings).toBe(s0.settings);
     // M4: 설정에 BGM·테마가 더해졌고, 다시 태어나도 그대로 유지된다 (M7c: 자동 기록 카드 켬/끔 noteCards도 기본값 켜짐 그대로)
-    expect(s1.settings).toEqual({ speed: 4, autoMode: true, era: 'future', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark', noteCards: true, gentle: false, notesSeen: '' }); // SPEC-005 QI6·QI7: 설정 v5의 새 필드 둘(가림 꺼짐·본 소식 없음)도 기본값 그대로
+    expect(s1.settings).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: true, generation: 'genz', lifeLength: 'long60', bgm: { on: true, volume: 70 }, theme: 'dark' }); // SPEC-005 QI6·QI7: 설정 v5의 새 필드 둘(가림 꺼짐·본 소식 없음)도 기본값 그대로
     expect(s1.tick).toBeNull();
-    const life = createSession(startLife(3, 'present'), { speed: 2, autoMode: false });
+    const life = createSession(startLife(3, 'alpha'), { speed: 2, autoMode: false });
     expect(sessionReducer(life, { type: 'rebirth', seed: 5 })).toBe(life);
   });
 
-  it('새 판: 세상을 고르지 않고 태어나면 지금 세상, 고르면 그 세상으로 태어난다. 같은 시드면 같은 인물이고 시드가 다르면 다른 인물이다', () => {
-    const born = (seed: number, era?: Era) => {
+  it('새 판: 세대를 고르지 않고 태어나면 「랜덤 세대」(7세대 중 하나), 고르면 그 세대로 태어난다. 같은 시드면 같은 인물이고 시드가 다르면 다른 인물이다', () => {
+    const born = (seed: number, generation?: ProfileId) => {
       let s = sessionReducer(createSession(ended(), { speed: 1, autoMode: false }), { type: 'rebirth', seed });
-      if (era !== undefined) s = sessionReducer(s, { type: 'setEra', era });
+      if (generation !== undefined && generation !== R1_PRESENT) s = sessionReducer(s, { type: 'setGeneration', generation });
       return sessionReducer(s, { type: 'begin' }).game;
     };
     const a = born(1001);
     expect(a.phase).toBe('roulette');
-    expect(a.era).toBe('present');
+    expect(GENERATION_IDS as readonly string[]).toContain(a.generation);
+    expect(a.fromRandom).toBe(true);
     expect(born(1001)).toEqual(a);
     expect(born(1002).character).not.toEqual(a.character);
-    expect(born(1001, 'future').era).toBe('future');
-    expect(born(1001, 'past').era).toBe('past');
+    expect(born(1001, 'genz').generation).toBe('genz');
+    expect(born(1001, 'industrial').generation).toBe('industrial');
     // 이전 판과 상관없이 시드에서만 정해진다
     expect(sessionReducer(sessionReducer(createSession(ended(5), { speed: 1, autoMode: false }), { type: 'rebirth', seed: 1001 }), { type: 'begin' }).game).toEqual(a);
   });
@@ -1260,7 +1293,7 @@ describe('다시 태어나기 (rebirth): 새 시드로 새 판, 첫 화면(title
 });
 
 describe('저장 검증: 엔딩 상태', () => {
-  const ended = playToEnd(startLife(88, 'future'), chooserFor('random', 88)).state;
+  const ended = playToEnd(startLife(88, 'genz'), chooserFor('random', 88)).state;
 
   it('사망 상태는 저장·복원해도 그대로고, 복원한 상태로 회고를 만들 수 있다 (새로고침해도 엔딩 유지)', () => {
     const back = parseGame(serializeGame(ended));
@@ -1269,14 +1302,14 @@ describe('저장 검증: 엔딩 상태', () => {
     expect(reviewEnding(back as EndingGame)).toEqual(reviewEnding(ended as EndingGame));
   });
 
-  it('엔딩 저장이 어긋나면 새 게임이다: 사망 정보 없음·사망 나이 불일치·대기 중인 선택지·캐릭터/시대/출생 스냅샷 없음', () => {
+  it('엔딩 저장이 어긋나면 새 게임이다: 사망 정보 없음·사망 나이 불일치·대기 중인 선택지·캐릭터/세대/출생 스냅샷 없음', () => {
     const bad = (patch: Partial<GameState>) => parseGame(serializeGame({ ...ended, ...patch }));
     expect(bad({})).not.toBeNull();
     expect(bad({ death: null })).toBeNull();
     expect(bad({ death: { age: ended.age + 1, cause: '노환' } })).toBeNull();
     expect(bad({ death: { age: ended.age, cause: '' } })).toBeNull();
     expect(bad({ character: null })).toBeNull();
-    expect(bad({ era: null })).toBeNull();
+    expect(bad({ generation: null })).toBeNull();
     expect(bad({ birthStats: null })).toBeNull();
     expect(bad({ pending: { eventId: 'school-exam', key: `school-exam@${ended.age}`, age: ended.age, choiceIds: ['a', 'b'] } })).toBeNull();
   });

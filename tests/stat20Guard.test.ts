@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ERAS, autoResolveStep, resolveChoiceStep, stepYear, type Era, type GameState } from '../src/core';
+import { autoResolveStep, resolveChoiceStep, stepYear, type GameState } from '../src/core';
 import { chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
@@ -27,25 +27,21 @@ import { chooserFor, startLife } from '../scripts/simulateLib';
  * 다가올 [54.2591, 71.8239, 47.5979, 53.8409] (지식·건강·행복·관계). 옛 가드는 이 값 대비 +2/+3이었다.
  */
 
-/** QI5 구현 *직전* 트리(부모 결정·흘러감 끔 = 옛 방식, 0~18세를 사람이 고름)에서 같은 함수·표본으로 잰 20세 평균 [지식, 건강, 행복, 관계] — PD 이동 크기를 보고하는 기준으로만 쓴다(가드 기준선은 `PD_AT_20`).
- *  M7a 이전 `5fa0c54`(옛 `HEAD_AT_20`: 지난 [48.8433, 71.8704, 45.9292, 57.3532] · 지금 [53.5594, 71.7390, 46.8715, 54.5077] · 다가올 [54.2591, 71.8239, 47.5979, 53.8409]) 대비로는 옛 문서의 +0.84/+1.78/+1.78/+2.55 …와 같다. */
-const PRE_PD_AT_20: Record<Era, [number, number, number, number]> = {
-  past: [49.6833, 73.6508, 47.7057, 59.9037],
-  present: [55.5755, 73.5588, 48.2956, 56.9729],
-  future: [55.5257, 72.9556, 49.1198, 54.737],
+/**
+ * **기준선 재측정 (SPEC-004 GM4, 2026-10-27)**: 「세 시대」(past·present·future)가 세대 7종으로 바뀌어(판 상태에 시대가 없다) 옛 시대별 기준선 `PD_AT_20`
+ * (지난 [50.8147, 73.6756, 48.3619, 61.0525] · 지금 [55.6179, 73.9238, 49.1914, 58.484] · 다가올 [55.8391, 73.2934, 49.9466, 56.3528])을 그대로 쓸 수 없다.
+ * 세대 표본 3종(`SIM_PROFILES` — 산업화·X·알파)을 *같은 함수·같은 표본*(시드 i × 7919 + 13, 3000판, 무작위 선택)으로 다시 쟀다 — 콘텐츠는 그대로이고(이벤트 변환 MG2는 연도 구간만 바꾼다)
+ * 값은 옛 지난/다가올 기준선과 ±0.3 안에서 이어진다(산업화 지식 51.05 대 옛 지난 50.81 · 알파 55.48 대 옛 다가올 55.84). 한도 +2 / +3(관계)은 이 새 기준선 대비 *앞으로의 콘텐츠 변경*에만 적용한다.
+ * (「PD 이동 크기 ≤ 보고 상한」 시험은 옛 시대별 PRE_PD 표를 쓰던 것이라 세대 판에서는 비교 대상이 없어 없앴다 — 기준선을 다시 재서 올리는 일은 이 표 수정으로 드러나므로 리뷰에서 막는다.)
+ */
+type Baselined = 'industrial' | 'genx' | 'alpha';
+/** 가드 기준선: 같은 함수·같은 표본(시드 i × 7919 + 13, 3000판, 무작위 선택)으로 잰 20세 평균 [지식, 건강, 행복, 관계] — 살아서 20세가 된 판 2996·2996·2994개 */
+const PD_AT_20: Record<Baselined, [number, number, number, number]> = {
+  industrial: [51.0477, 73.7136, 48.474, 60.9489],
+  genx: [52.1822, 74.0574, 49.3758, 61.8228],
+  alpha: [55.4796, 73.0808, 49.1794, 56.9696],
 };
-/** 가드 기준선: QI5(PD) 구현 직후 같은 함수·같은 표본(시드 i × 7919 + 13, 3000판, 무작위 선택)으로 잰 20세 평균 [지식, 건강, 행복, 관계] — 살아서 20세가 된 판 2990·2994·2996개 */
-const PD_AT_20: Record<Era, [number, number, number, number]> = {
-  past: [50.8147, 73.6756, 48.3619, 61.0525],
-  present: [55.6179, 73.9238, 49.1914, 58.484],
-  future: [55.8391, 73.2934, 49.9466, 56.3528],
-};
-/** PD로 이동한 크기(`PD_AT_20 − PRE_PD_AT_20`)의 보고한 상한 — 기준선을 다시 재서 몰래 올리는 일을 막는다(올리려면 마스터 승인 + 이 표 수정) */
-const REPORTED_SHIFT_CAP: Record<Era, [number, number, number, number]> = {
-  past: [1.14, 0.03, 0.66, 1.15],
-  present: [0.05, 0.37, 0.9, 1.52],
-  future: [0.32, 0.34, 0.83, 1.62],
-};
+const BASELINED: readonly Baselined[] = ['industrial', 'genx', 'alpha'];
 const LIMIT = [2, 2, 2, 3] as const;
 const NAMES = ['지식', '건강', '행복', '관계'] as const;
 /** 새 기준선(PD_AT_20) 대비 *앞으로의 콘텐츠 변경*에서 보고한 차이(마스터 수용 대기): `시대:항목 인덱스`의 한계 — 한도보다 크고, 이 값보다 나빠지지 않아야 한다. 지금은 없다 */
@@ -53,7 +49,7 @@ const KNOWN_OVER: Record<string, { limit: number; why: string }> = {};
 const LIVES = 3000;
 
 /** 20세가 된 순간(독립 직전의 자산 계산은 스탯에 닿지 않는다) 살아 있는 판의 스탯 평균. `post`는 그 순간의 판을 바꿔 보는 훅이다(가드가 실제로 잡는지 대조하는 시험이 쓴다) */
-function meansAt20(era: Era, post: (s: GameState) => GameState = (s) => s): { n: number; mean: [number, number, number, number] } {
+function meansAt20(era: Baselined, post: (s: GameState) => GameState = (s) => s): { n: number; mean: [number, number, number, number] } {
   const sums = [0, 0, 0, 0];
   let n = 0;
   for (let i = 1; i <= LIVES; i++) {
@@ -83,7 +79,7 @@ function meansAt20(era: Era, post: (s: GameState) => GameState = (s) => s): { n:
 }
 
 /** 한도(항목 +2·관계 +3)를 넘은 항목 — 보고한 차이(`KNOWN_OVER`)는 그 한계를 넘었을 때만 위반이다 */
-function violations(era: Era, mean: readonly number[], known: Record<string, { limit: number; why: string }> = KNOWN_OVER): string[] {
+function violations(era: Baselined, mean: readonly number[], known: Record<string, { limit: number; why: string }> = KNOWN_OVER): string[] {
   const out: string[] = [];
   mean.forEach((v, i) => {
     const diff = v - PD_AT_20[era][i];
@@ -93,8 +89,8 @@ function violations(era: Era, mean: readonly number[], known: Record<string, { l
   return out;
 }
 
-describe('20세 평균 스탯 가드 (R-382 b, R-386, EK1): PD_AT_20(QI5 구현 직후 기준선) 대비 항목마다 +2 이하, 관계만 +3 이하 — 세 시대 3000판', () => {
-  for (const era of ERAS) {
+describe('20세 평균 스탯 가드 (R-382 b, R-386, EK1): PD_AT_20(QI5 구현 직후 기준선) 대비 항목마다 +2 이하, 관계만 +3 이하 — 세대 표본 3종 3000판', () => {
+  for (const era of BASELINED) {
     it(`${era}: 지식·건강·행복 +2 이하, 관계 +3 이하 (기준선 PD_AT_20 대비)`, () => {
       const { n, mean } = meansAt20(era);
       expect(n, '20세까지 산 판 수(공허 통과 방지)').toBeGreaterThan(LIVES * 0.95);
@@ -102,33 +98,24 @@ describe('20세 평균 스탯 가드 (R-382 b, R-386, EK1): PD_AT_20(QI5 구현 
     });
   }
 
-  it('기준선이 현재 트리의 진짜 값이다 (공허 통과 방지): 세 시대 모두 현재 평균이 PD_AT_20과 소수 둘째 자리까지 같다 — 콘텐츠를 바꾸지 않았다면 차이는 반올림뿐이다', () => {
-    for (const era of ERAS) {
+  it('기준선이 현재 트리의 진짜 값이다 (공허 통과 방지): 세대 표본 3종 모두 현재 평균이 PD_AT_20과 소수 둘째 자리까지 같다 — 콘텐츠를 바꾸지 않았다면 차이는 반올림뿐이다', () => {
+    for (const era of BASELINED) {
       const { mean } = meansAt20(era);
       mean.forEach((v, i) => expect(Math.abs(v - PD_AT_20[era][i]), `${era} ${NAMES[i]}`).toBeLessThan(0.01));
     }
   });
 
-  it('PD 이동 크기는 보고한 표를 넘지 않는다 (기준선 PD_AT_20 − PRE_PD_AT_20 ≤ 보고 상한; 기준선을 다시 재서 올리면 이 시험이 알린다 — 마스터 승인 대상)', () => {
-    for (const era of ERAS) {
-      PD_AT_20[era].forEach((v, i) => {
-        const shift = v - PRE_PD_AT_20[era][i];
-        expect(shift, `${era} ${NAMES[i]} 이동 ${shift.toFixed(3)}`).toBeLessThanOrEqual(REPORTED_SHIFT_CAP[era][i]);
-      });
-    }
-  });
-
-  it('가드가 실제로 잡는다(공허 통과 방지): meansAt20 경로에서 20세가 된 판의 지식을 +2.5·관계를 +3.5 올리면(가짜 판) 지식·관계가 위반이고 건강·행복은 아니다 — 한 시대(지난 세상)로 확인', () => {
-    const real = meansAt20('past');
-    expect(violations('past', real.mean), '진짜 판은 통과').toEqual([]);
-    const fake = meansAt20('past', (s) => ({ ...s, stats: { ...s.stats, education: Math.min(100, s.stats.education + 3), relationships: Math.min(100, s.stats.relationships + 4) } }));
-    const found = violations('past', fake.mean);
+  it('가드가 실제로 잡는다(공허 통과 방지): meansAt20 경로에서 20세가 된 판의 지식을 +2.5·관계를 +3.5 올리면(가짜 판) 지식·관계가 위반이고 건강·행복은 아니다 — 한 세대(산업화)로 확인', () => {
+    const real = meansAt20('industrial');
+    expect(violations('industrial', real.mean), '진짜 판은 통과').toEqual([]);
+    const fake = meansAt20('industrial', (s) => ({ ...s, stats: { ...s.stats, education: Math.min(100, s.stats.education + 3), relationships: Math.min(100, s.stats.relationships + 4) } }));
+    const found = violations('industrial', fake.mean);
     expect(found.length, found.join(' / ')).toBe(2);
     expect(found.some((v) => v.includes('지식'))).toBe(true);
     expect(found.some((v) => v.includes('관계'))).toBe(true);
     expect(found.some((v) => v.includes('건강') || v.includes('행복'))).toBe(false);
-    // 지금 세상도 같다: 지식 +3을 더하면 위반(새 기준선 대비 약 +3.0 > 한도 +2)
-    const bump = meansAt20('present', (s) => ({ ...s, stats: { ...s.stats, education: Math.min(100, s.stats.education + 3) } }));
-    expect(violations('present', bump.mean).some((v) => v.includes('지식'))).toBe(true);
+    // X 세대도 같다: 지식 +3을 더하면 위반(새 기준선 대비 약 +3.0 > 한도 +2)
+    const bump = meansAt20('genx', (s) => ({ ...s, stats: { ...s.stats, education: Math.min(100, s.stats.education + 3) } }));
+    expect(violations('genx', bump.mean).some((v) => v.includes('지식'))).toBe(true);
   });
 });

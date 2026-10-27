@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { Era, GameState, PlaySettings } from '../src/core/types';
+import type { GameState, GenerationId as Era, PlaySettings } from '../src/core/types';
 import { evalCore, injectSave, startPageHidden } from './helpers';
 
 /**
@@ -11,7 +11,7 @@ export const SETTINGS_MANUAL: PlaySettings = { speed: 1, autoMode: false };
 export const SETTINGS_AUTO: PlaySettings = { speed: 1, autoMode: true };
 
 /** 카드 `eventId`가 대기 중인 인생 상태. 앱 페이지가 열려 있어야 한다(같은 origin). opts.minChoices: 보이는 선택지가 최소 이만큼 */
-export async function findCardState(page: Page, eventId: string, era: Era = 'present', opts: { minChoices?: number; from?: number; to?: number; maxAge?: number } = {}): Promise<GameState> {
+export async function findCardState(page: Page, eventId: string, era: Era = 'alpha', opts: { minChoices?: number; from?: number; to?: number; maxAge?: number } = {}): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = arg.from; seed < arg.to; seed++) {

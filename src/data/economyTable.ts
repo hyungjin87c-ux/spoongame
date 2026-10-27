@@ -1,5 +1,3 @@
-import type { Era } from '../core/types';
-
 /**
  * 경제 모델 계수 표 (SPEC-003 M5 EC2, docs/data/economy-model.md 4-3절·15절). 코드가 아니라 이 표만 고치면 밸런스를 바꿀 수 있다.
  * 모든 금액은 **만 원**(지금 가치로 환산한 값). 「근거」가 적힌 값은 koreaStats.json의 통계 행(s-0xx)에서 나왔고 tests/economy.test.ts가 그 대응을 점검한다.
@@ -19,19 +17,12 @@ export const LABOR_INCOME_CURVE_THOUSAND: readonly number[] = [
 export const CURVE_FIRST_AGE = 20;
 export const CURVE_LAST_AGE = 85;
 
-/** 시대 계수 (설계값). 지금 세상이 기준 1이다. 1차는 연도와 무관한 상수(SPEC-004 2차가 연도별 전망으로 바꾼다). */
+/** 연도 축 계수 (core/economy.ts#economyFactors가 돌려준다). 기준(R1 「지금 세상」)이 1이다. SPEC-004 GM4에서는 모든 연도가 1이고 GM10이 연도별 수준·모양·충격으로 바꾼다. */
 export interface EconomyFactors {
   income: number;
   living: number;
   housing: number;
 }
-
-export const ERA_ECONOMY: Record<Era, EconomyFactors> = {
-  past: { income: 0.6, living: 0.7, housing: 0.6 },
-  present: { income: 1, living: 1, housing: 1 },
-  /** 마스터 결정 D6(15절): 다가올 세상 생활 1.2·주거 1.3. 2a는 노년 안전망이 없어 65세 이상 순자산 중앙값(M-4 가드)이 아슬아슬해 주거를 1.2로 낮췄고, r2(D19 차입 한도·D20 노년 안전망·D10 상속)로 그 여유가 생겨 1.3으로 되돌렸다(economy-model.md 9-3절). */
-  future: { income: 1.15, living: 1.2, housing: 1.3 },
-};
 
 export const ECONOMY = {
   /** 취업·창업 상태 소득의 하한(28세 미만). **근거** s-032 최저임금 10,320원(2026) × 209시간 × 12 = 25,882,560원 → 2,588만 원 */

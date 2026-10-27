@@ -3,7 +3,7 @@ import namesJson from '../src/data/names.json';
 import scourtJson from '../src/data/sources/scourt-birth-names.json';
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
+  GENERATION_IDS,
   GENDERS,
   MAX_NAME_REDRAWS,
   createRng,
@@ -12,12 +12,14 @@ import {
   namePoolFor,
   pickFullName,
   surnameWeights,
-  type Era,
+  R1_PRESENT,
+  birthYearOddsOf,
+  pickBirthYear,
   type Gender,
+  type ProfileId,
   type Rng,
 } from '../src/core';
 import { FORBIDDEN_NAMES, isForbiddenFullName } from '../src/data/forbiddenNames';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { EPS, sigmaTolerancePct } from './helpers/stats';
 
 /**
@@ -43,12 +45,12 @@ const EXPECTED_FORBIDDEN = [
   '김일성', '김정일', '김정은', '김정남',
 ];
 
-/** 현재 성씨 × (모든 시대의 모든 풀)로 실제 만들어질 수 있는 금지 조합과 그 풀. 열거 결과를 그대로 적어 둔다. */
+/** 현재 성씨 × (모든 풀)로 실제 만들어질 수 있는 금지 조합과 그 풀. 열거 결과를 그대로 적어 둔다. */
 const EXPECTED_REACHABLE: Record<string, string[]> = {
   김정남: ['1950년대 male'], // R-028로 목록에 추가한 이름: 1950년대 남자 풀의 "정남"과 김 성이 만나면 만들어질 수 있었다
-  김정숙: ['1950년대 female', '1960년대 female'],
-  이순자: ['1950년대 female', '1960년대 female'],
-  박정희: ['1950년대 female', '1960년대 female', '1970년대 female'],
+  김정숙: ['1940년대 female', '1950년대 female', '1960년대 female'],
+  이순자: ['1940년대 female', '1950년대 female', '1960년대 female'], // 1940년대 풀(전부 추정)에도 「순자」가 있다
+  박정희: ['1940년대 female', '1950년대 female', '1960년대 female', '1970년대 female'],
 };
 
 interface PoolInfo {
@@ -57,7 +59,7 @@ interface PoolInfo {
   given: string[];
 }
 
-/** 세 시대의 모든 이름 풀 (지난: 연대별, 지금: 연도별, 다가올: 합집합) — 원자료에서 독립적으로 구성 */
+/** 모든 이름 풀 (연대 풀 1940~2000년대 + 법원 연도 풀 2008~2025) — 원자료에서 독립적으로 구성 */
 function allPools(): PoolInfo[] {
   const pools: PoolInfo[] = [];
   for (const [d, v] of Object.entries(names.decades)) {
@@ -66,11 +68,6 @@ function allPools(): PoolInfo[] {
   for (const [y, v] of Object.entries(scourt.years)) {
     pools.push({ label: `${y}년 male`, gender: 'male', given: v.M.map((r) => r.name) });
     pools.push({ label: `${y}년 female`, gender: 'female', given: v.F.map((r) => r.name) });
-  }
-  for (const g of GENDERS) {
-    const col = g === 'male' ? 'M' : 'F';
-    const union = [...new Set([2021, 2022, 2023, 2024, 2025].flatMap((y) => scourt.years[String(y)][col].map((r) => r.name)))];
-    pools.push({ label: `미래 ${g}`, gender: g, given: union });
   }
   return pools;
 }
@@ -122,8 +119,8 @@ describe('현재 성씨 × 이름 풀로 실제 만들어질 수 있는 금지 �
       }
     }
     expect(Object.fromEntries([...found].sort())).toEqual(EXPECTED_REACHABLE);
-    // 시대로 보면 지난 세상 풀에서만 만들어질 수 있다 (지금 세상·다가올 세상 풀에는 없다)
-    for (const places of found.values()) for (const place of places) expect(place).toMatch(/^19[5-8]0년대 (male|female)$/);
+    // 연대 풀 중 1940~1970년대 풀에서만 만들어질 수 있다 (1990·2000년대 풀과 2008년 이후 법원 연도 풀에는 없다)
+    for (const places of found.values()) for (const place of places) expect(place).toMatch(/^19[4-7]0년대 (male|female)$|^1950년대 male$/);
   });
 
   it('성씨 표에 없는 성(전·노·문·육·공·홍·손·권)의 금지 이름은 지금은 만들어질 수 없지만 목록에는 남겨 둔다', () => {
@@ -221,10 +218,9 @@ describe('금지 조합에 걸리면 같은 풀에서 이름을 다시 뽑는다
 });
 
 /** 실제 시드 RNG로, 필터가 없었다면 금지 이름이 나왔을 시드를 찾는다. 소비 순서는 generateBirth와 같다: 연도 → 성별 → 성씨 → 이름. */
-function unfilteredFirstDraw(seed: number, era: Era) {
+function unfilteredFirstDraw(seed: number, profile: ProfileId) {
   const rng = createRng(seed);
-  const cfg = ERA_CONFIG[era];
-  const year = rng.int(cfg.birthYears.min, cfg.birthYears.max);
+  const year = pickBirthYear(rng, birthYearOddsOf(profile));
   const gender = GENDERS[rng.int(0, GENDERS.length - 1)];
   const weights = surnameWeights();
   const surname = weights[rng.weightedIndex(weights.map((w) => w.weight))].name;
@@ -232,11 +228,11 @@ function unfilteredFirstDraw(seed: number, era: Era) {
   return { rng, year, gender, surname, given };
 }
 
-describe('실제 시드에서의 필터 (지난 세상에서만 금지 조합이 만들어질 수 있다)', () => {
-  // 지난 세상 약 1%의 시드가 필터 없이는 금지 이름을 만든다(40000개 중 약 390건) → 훑으면 수백 건
+describe('실제 시드에서의 필터 (옛 세대의 연대 풀에서만 금지 조합이 만들어질 수 있다)', () => {
+  // 산업화 세대 약 1%의 시드가 필터 없이는 금지 이름을 만든다(40000개 중 약 390건) → 훑으면 수백 건
   const hits: { seed: number; year: number; gender: Gender; surname: string; given: string }[] = [];
   for (let seed = 1; seed <= 40000; seed++) {
-    const d = unfilteredFirstDraw(seed, 'past');
+    const d = unfilteredFirstDraw(seed, 'industrial');
     if (isForbiddenFullName(d.surname + d.given)) hits.push({ seed, year: d.year, gender: d.gender, surname: d.surname, given: d.given });
   }
 
@@ -248,7 +244,7 @@ describe('실제 시드에서의 필터 (지난 세상에서만 금지 조합이
 
   it('그 시드들에서 실제 출생 결과는 금지 이름이 아니고, 성씨·성별·출생 연도는 그대로이며 이름만 같은 풀의 다른 이름이다', () => {
     for (const h of hits) {
-      const { character: c } = generateBirthFromSeed(h.seed, 'past');
+      const { character: c } = generateBirthFromSeed(h.seed, 'industrial');
       expect(isForbiddenFullName(c.name), `seed ${h.seed}: ${c.name}`).toBe(false);
       expect(c.name[0]).toBe(h.surname);
       expect(c.gender).toBe(h.gender);
@@ -261,18 +257,18 @@ describe('실제 시드에서의 필터 (지난 세상에서만 금지 조합이
 
   it('다시 뽑은 이름은 같은 RNG에서 이어 뽑은 결과와 같다 (결정적): 두 번째 뽑기 값 또는 그다음 값', () => {
     for (const h of hits) {
-      const d = unfilteredFirstDraw(h.seed, 'past'); // 첫 이름까지 소비한 RNG
+      const d = unfilteredFirstDraw(h.seed, 'industrial'); // 첫 이름까지 소비한 RNG
       const pool = namePoolFor(h.year, h.gender);
       let expected = d.given;
       for (let i = 0; i < MAX_NAME_REDRAWS && isRejectedName(h.surname, expected); i++) expected = d.rng.pick(pool);
       expect(isRejectedName(h.surname, expected)).toBe(false); // 이 시드들은 상한 안에 해결된다
-      expect(generateBirthFromSeed(h.seed, 'past').character.name).toBe(h.surname + expected);
+      expect(generateBirthFromSeed(h.seed, 'industrial').character.name).toBe(h.surname + expected);
     }
   });
 
   it('같은 시드 → 같은 결과: 걸렸던 시드들을 두 번 만들어도 인물 전체가 같다', () => {
     for (const h of hits) {
-      expect(generateBirthFromSeed(h.seed, 'past')).toEqual(generateBirthFromSeed(h.seed, 'past'));
+      expect(generateBirthFromSeed(h.seed, 'industrial')).toEqual(generateBirthFromSeed(h.seed, 'industrial'));
     }
   });
 
@@ -295,8 +291,8 @@ describe('실제 시드에서의 필터 (지난 세상에서만 금지 조합이
   });
 });
 
-describe('대량 시뮬레이션: 세 시대 모두 금지 조합 0건', () => {
-  for (const era of ERAS) {
+describe('대량 시뮬레이션: 일곱 세대와 시험 전용 R1 모두 금지 조합 0건', () => {
+  for (const era of [...GENERATION_IDS, R1_PRESENT] as ProfileId[]) {
     it(`${era}: 시드 20000개에서 금지 이름이 하나도 나오지 않는다`, () => {
       let forbiddenCount = 0;
       for (let seed = 1; seed <= 20000; seed++) {

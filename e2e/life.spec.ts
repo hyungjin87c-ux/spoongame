@@ -105,7 +105,7 @@ test('시간이 흐르면 나이가 오르고 선택지 이벤트에서 멈춘�
   expect((await readSave(page)).data.pending).toEqual(pending);
 
   // 선택 → 연표에 선택 내용이 남고 대기 중인 선택지가 바뀐다/사라진다
-  const first = page.getByTestId(`choice-${pending.choiceIds[0]}`);
+  const first = page.locator(`button[data-testid="choice-${pending.choiceIds[0]}"]`);
   await expect(first).toBeEnabled();
   await first.click();
   await expect.poll(async () => (await readSave(page)).data.history.some((h) => h.kind === 'choice' && h.eventId === pending.eventId)).toBe(true);
@@ -120,14 +120,14 @@ test('시간이 흐르면 나이가 오르고 선택지 이벤트에서 멈춘�
 /** 0세에서 시작해 첫 선택지까지는 시간으로 가는 시드의 0세 상태 */
 async function oracleLifeAt(page: Page) {
   await page.goto('/');
-  const withDecision = await findPendingState(page, 'present');
+  const withDecision = await findPendingState(page, 'alpha');
   // 같은 시드의 0세 상태를 다시 만든다(시드는 저장된 seed 필드)
-  return oracleLife(page, withDecision.seed, 'present');
+  return oracleLife(page, withDecision.seed, 'alpha');
 }
 
 test('선택지 화면에서 새로고침하면 같은 이벤트·같은 선택지가 그대로 보인다 (다시 굴려지거나 건너뛰지 않는다)', async ({ page }) => {
   await page.goto('/');
-  const state = await findPendingState(page, 'present');
+  const state = await findPendingState(page, 'alpha');
   await injectSave(page, state, '/');
   const panel = page.getByTestId('choice-panel');
   await expect(panel).toBeVisible();
@@ -171,8 +171,8 @@ test('배속 전환: 1/2/4/8배가 눌린 상태로 표시되고 설정에 저�
 
 test('다음 결정으로: 연출을 건너뛰고 첫 선택지에서 정확히 멈춘다 (저장도 core 기대값과 같다)', async ({ page }) => {
   await page.goto('/');
-  const found = await findPendingState(page, 'present');
-  const start = await oracleLife(page, found.seed, 'present');
+  const found = await findPendingState(page, 'alpha');
+  const start = await oracleLife(page, found.seed, 'alpha');
   await injectSave(page, start, '/', NO_NOTES);
   const skip = page.getByTestId('skip');
   await expect(skip).toBeEnabled();
@@ -187,8 +187,8 @@ test('다음 결정으로: 연출을 건너뛰고 첫 선택지에서 정확히 
 
 test('자동 모드로 끝까지 진행해 사망(엔딩 화면)에 도달하고, 저장이 core 자동 진행 결과와 같다', async ({ page }) => {
   await page.goto('/');
-  const found = await findPendingState(page, 'present');
-  const start = await oracleLife(page, found.seed, 'present');
+  const found = await findPendingState(page, 'alpha');
+  const start = await oracleLife(page, found.seed, 'alpha');
   await injectSave(page, start, '/?__timescale=2000', { speed: 8, autoMode: true });
   await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 30_000 });
   const save = await readSave(page);
@@ -205,7 +205,7 @@ test('자동 모드로 끝까지 진행해 사망(엔딩 화면)에 도달하고
 
 test('KNOWN_SEED 상수가 쓸 수 있는 시드다 (출생 → 인생 0세 오라클이 core 검증기를 통과)', async ({ page }) => {
   await page.goto('/');
-  const s = await oracleLife(page, KNOWN_SEED, 'future');
+  const s = await oracleLife(page, KNOWN_SEED, 'alpha');
   expect(s.phase).toBe('life');
   expect(s.history).toHaveLength(1);
 });
@@ -222,13 +222,13 @@ for (const vp of [
     await page.setViewportSize(vp);
     await startPageHidden(page); // 자동 선택 타이머가 카드를 치우지 않게
     await page.goto('/');
-    const state = await findPendingState(page, 'present', { minChoices: 3 });
+    const state = await findPendingState(page, 'alpha', { minChoices: 3 });
     expect(state.pending!.choiceIds.length).toBe(3);
     // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 진행 줄 7개가 카드와 함께 화면 안에 있다. 수동 모드의 모달 시트는 e2e/layout.spec.ts·m7b-*가 잰다
     await injectSave(page, state, '/', { speed: 1, autoMode: true });
     const panel = page.getByTestId('choice-panel');
     await expect(panel).toBeVisible();
-    await expect(page.getByTestId(`choice-${state.pending!.choiceIds[2]}`)).toBeEnabled();
+    await expect(page.locator(`button[data-testid="choice-${state.pending!.choiceIds[2]}"]`)).toBeEnabled();
     const boxes = await page.evaluate(() => {
       const rect = (el: Element) => {
         const r = el.getBoundingClientRect();
@@ -266,7 +266,7 @@ test('인생 기록(M4, 최신순 SPEC-005 LR1): 줄이 최신순으로 쌓여 �
   await page.goto('/');
   const mid = await evalCore<GameState>(
     page,
-    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'present')));
+    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'alpha')));
      while (s.phase === 'life' && s.age < 50) s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
      return s;`,
   );

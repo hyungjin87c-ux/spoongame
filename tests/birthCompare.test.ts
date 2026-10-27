@@ -1,7 +1,7 @@
 import statsJson from '../src/data/koreaStats.json';
 import { describe, expect, it } from 'vitest';
-import { PARENT_WEALTHS } from '../src/core';
-import { COMPARE_ERA, HOUSING_CLASS_LABEL, PRIVATE_EDU_BAND_BY_WEALTH, buildComparison, compareShown, lifeGapLine } from '../src/data/birthCompare';
+import { GENERATION_IDS, PARENT_WEALTHS, R1_PRESENT } from '../src/core';
+import { COMPARE_PROFILE, HOUSING_CLASS_LABEL, PRIVATE_EDU_BAND_BY_WEALTH, buildComparison, compareShown, lifeGapLine } from '../src/data/birthCompare';
 import { createStatsAccess, formatNumber, getUsableIndicator, type StatsFile } from '../src/data/koreaStatsAccess';
 
 /**
@@ -163,11 +163,10 @@ describe('기대수명 소득 격차는 표 칸이 아니라 모든 단계에 �
   });
 });
 
-describe('비교 표는 지금 세상에서만 보인다 (R-263)', () => {
-  it('compareShown: 지금 세상만 true, 지난·다가올 세상은 false', () => {
-    expect(COMPARE_ERA).toBe('present');
-    expect(compareShown('present')).toBe(true);
-    expect(compareShown('past')).toBe(false);
-    expect(compareShown('future')).toBe(false);
+describe('비교 표는 시험 전용 R1(2026년생)에서만 보인다 (R-263 → SPEC-004 BR5: 세대 판에서는 숨김)', () => {
+  it('compareShown: 시험 전용 R1 프로필만 true, 일곱 세대는 모두 false', () => {
+    expect(COMPARE_PROFILE).toBe(R1_PRESENT);
+    expect(compareShown(R1_PRESENT)).toBe(true);
+    for (const g of GENERATION_IDS) expect(compareShown(g), g).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { autoChoiceWeights, createRng, resolveChoiceStep, stepYear, type Chooser, type Era, type EventDef, type GameState, type StepResult } from '../src/core';
+import { autoChoiceWeights, createRng, resolveChoiceStep, stepYear, type Chooser, type EventDef, type ProfileId, type GameState, type StepResult } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
 import { snapshotAt, type LifeRecord, type Snapshot } from './baseline004Lib';
 import { chooserFor, startLife } from './simulateLib';
@@ -84,7 +84,7 @@ export interface L0Record extends LifeRecord {
 }
 
 /** `playRecorded`와 같은 걸음으로 한 판을 끝까지 돌리며 나이마다 상태와 모든 선택을 남긴다 (게임 규칙은 그대로) */
-export function playL0(seed: number, era: Era, selector: L0Selector): L0Record {
+export function playL0(seed: number, era: ProfileId, selector: L0Selector): L0Record {
   let s: GameState = startLife(seed, era);
   const chooser = selectorChooser(selector, seed);
   const at = new Map<number, Snapshot>();

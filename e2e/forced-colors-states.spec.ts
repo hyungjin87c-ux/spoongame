@@ -101,7 +101,7 @@ interface Target {
 const TARGETS: readonly Target[] = [
   { name: '하단 띠 버튼', selector: '[data-testid="bottom-bar"] button' },
   { name: '캐러셀 조작 버튼', selector: '[data-testid="carousel"] .carousel__nav button' },
-  { name: '라디오 카드', selector: '.radio-card' },
+  { name: '세대 목록 줄', selector: '.gen-row' }, // SPEC-004 GS1: 첫 화면의 큰 슬롯은 라디오 카드가 아니라 한 열 목록의 줄이다
   // SPEC-005 HS2: 인생 길이는 라디오 카드가 아니라 작은 분절 컨트롤의 칸(`.seg__opt`)이다 — 선택(Highlight 면)·비활성(GrayText 점선) 칸도 같은 규칙으로 잰다
   { name: '분절 컨트롤 칸', selector: '.seg__opt' },
 ];
@@ -121,7 +121,7 @@ async function auditStates(page: Page, label: string): Promise<{ problems: strin
       const id = (await page.evaluate(([sel, idx]) => (document.querySelectorAll(sel as string)[idx as number] as HTMLElement).getAttribute('data-testid') ?? (document.querySelectorAll(sel as string)[idx as number] as HTMLElement).textContent?.trim().slice(0, 12) ?? '', [t.selector, i] as const)) || `#${i}`;
       names.push(`${t.name}:${id}`);
       // 입력 안쪽(라디오 카드): 포커스는 안쪽 input이 받는다
-      const innerIds = t.selector === '.radio-card' || t.selector === '.seg__opt' ? await nodeIdsOf(cdp, rootId, `${t.selector} input`) : [];
+      const innerIds = t.selector === '.gen-row' || t.selector === '.seg__opt' ? await nodeIdsOf(cdp, rootId, `${t.selector} input`) : [];
       for (const s of [{ name: '쉬는 상태', classes: [] as string[] }, ...STATES]) {
         const focusish = s.classes.includes('focus');
         const nonFocus = s.classes.filter((c) => c !== 'focus' && c !== 'focus-visible');
@@ -152,7 +152,7 @@ async function noTransitions(page: Page): Promise<void> {
 
 for (const scheme of ['light', 'dark'] as const) {
   for (const state of BAR_STATES) {
-    test(`강제 색상 · ${scheme} · ${state}: 버튼·라디오 카드의 hover·active·키보드 포커스 상태에서 글자색 ≠ 배경색이고 대비 3:1 이상이다`, async ({ page }, testInfo) => {
+    test(`강제 색상 · ${scheme} · ${state}: 버튼·세대 줄·분절 칸의 hover·active·키보드 포커스 상태에서 글자색 ≠ 배경색이고 대비 3:1 이상이다`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
       test.setTimeout(90_000);
       await page.setViewportSize({ width: 360, height: 740 });
@@ -163,13 +163,13 @@ for (const scheme of ['light', 'dark'] as const) {
       await noTransitions(page);
       const audit = await auditStates(page, `${scheme}/${state}`);
       expect(audit.problems).toEqual([]);
-      // 공허 통과 방지: 하단 띠 버튼(상태에 맞는 개수)·캐러셀 조작 버튼 3개·라디오 카드 3장(태어날 세상)·분절 컨트롤 칸 2개(인생 길이 — SPEC-005 HS2 전에는 라디오 카드 5장이었다)를 실제로 쟀다
+      // 공허 통과 방지: 하단 띠 버튼(상태에 맞는 개수)·캐러셀 조작 버튼 3개·세대 목록 줄 8개(SPEC-004 GS1)·분절 컨트롤 칸 4개(태어나는 시도 방법 2 + 인생 길이 2)를 실제로 쟀다
       const expectedBar = state === 'new' ? 1 : 2;
       expect(audit.targets.filter((n) => n.startsWith('하단 띠 버튼')), '하단 띠 버튼').toHaveLength(expectedBar);
       expect(audit.targets.filter((n) => n.startsWith('캐러셀 조작 버튼')), '캐러셀 조작 버튼').toHaveLength(3);
-      expect(audit.targets.filter((n) => n.startsWith('라디오 카드')), '라디오 카드').toHaveLength(3);
-      expect(audit.targets.filter((n) => n.startsWith('분절 컨트롤 칸')), '분절 컨트롤 칸').toHaveLength(2);
-      expect(audit.measured, '잰 (요소, 상태, 글자) 수').toBeGreaterThan((expectedBar + 3 + 5) * 5);
+      expect(audit.targets.filter((n) => n.startsWith('세대 목록 줄')), '세대 목록 줄').toHaveLength(8);
+      expect(audit.targets.filter((n) => n.startsWith('분절 컨트롤 칸')), '분절 컨트롤 칸').toHaveLength(4);
+      expect(audit.measured, '잰 (요소, 상태, 글자) 수').toBeGreaterThan((expectedBar + 3 + 8) * 5);
       testInfo.annotations.push({ type: 'forced-states', description: `${audit.targets.length}개 대상 × 5상태, 잰 글자 ${audit.measured}` });
     });
   }

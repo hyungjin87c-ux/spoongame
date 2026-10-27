@@ -110,7 +110,7 @@ describe('다른 프로젝트의 키를 건드리지 않는다', () => {
     const { storage, data, log } = recorder(FOREIGN);
     const before = new Map(data);
     expect(saveGame(storage, createInitialState(5))).toBe(true);
-    expect(saveGame(storage, startLife(9, 'present'))).toBe(true);
+    expect(saveGame(storage, startLife(9, 'alpha'))).toBe(true);
     expect(saveSettings(storage, { ...DEFAULT_SETTINGS, speed: 4, bgm: { ...DEFAULT_BGM, on: true }, theme: 'dark' })).toBe(true);
     expect(loadGame(storage)).not.toBeNull();
     expect(loadSettings(storage).theme).toBe('dark');
@@ -134,7 +134,7 @@ describe('다른 프로젝트의 키를 건드리지 않는다', () => {
   });
 
   it('남의 save·settings 키에 우리 형식의 저장이 들어 있어도 읽지 않는다', () => {
-    const ours = JSON.stringify({ version: 7, data: startLife(3, 'present') });
+    const ours = JSON.stringify({ version: 7, data: startLife(3, 'alpha') });
     const { storage } = recorder({ save: ours, settings: JSON.stringify({ version: 3, data: { ...DEFAULT_SETTINGS, theme: 'dark' } }) });
     expect(loadGame(storage)).toBeNull();
     expect(loadSettings(storage).theme).toBe('system');

@@ -46,10 +46,10 @@ test.describe('열기 (NT4·NT5)', () => {
     await expect(versions.nth(0)).toContainText('결정 카드의 통계·연구 아래에 풀이 한 줄이 생겼어요.');
     await expect(versions.nth(1)).toContainText('어린 시절의 큰 결정은 부모님이 정해요.');
     await expect(versions.nth(0).locator('.note-kind').first()).toHaveText('추가');
-    // 소개: 질문 10개, 모두 접힘
+    // 소개: 질문 9개(SPEC-004 GS11에서 가상 인구 질문이 없어졌다), 모두 접힘
     const faq = page.getByTestId('faq-item');
-    await expect(faq).toHaveCount(10);
-    expect(await faq.evaluateAll((els) => els.map((e) => (e as HTMLDetailsElement).open))).toEqual(Array(10).fill(false));
+    await expect(faq).toHaveCount(9);
+    expect(await faq.evaluateAll((els) => els.map((e) => (e as HTMLDetailsElement).open))).toEqual(Array(9).fill(false));
   });
 
   test('「소개」 링크로 열면 그 구역 머리가 패널 위쪽에 와 있다 (sticky 머리 아래)', async ({ page }) => {
@@ -287,7 +287,7 @@ test.describe('소개 Q&A와 의견 보내기 (FQ1·N2)', () => {
     expect(await help.innerText()).not.toMatch(/자해|내용이 없/);
     const maker = await open('maker');
     await expect(maker).toContainText('AI(Anthropic의 Claude)');
-    await expect(maker).toContainText('AI 이미지 도구(OpenAI의 ChatGPT)');
+    await expect(maker, '일러스트가 없어져 이미지 도구 문장도 없다 (SPEC-004 GS11)').not.toContainText('ChatGPT');
   });
 
   test('패널 끝 「의견 보내기」: 새 탭 링크이고 주소가 buildFeedbackUrl의 값(첫 화면·빌드 표기)이며 읽기 이름에 「(새 탭으로 열립니다)」가 붙는다 — 누르면 새 탭이 열린다', async ({ page, context }) => {
@@ -380,13 +380,13 @@ test.describe('한 줄 구분 목록 (R-493·D5-77)', () => {
     expect(boxes.kinds, '공허 통과 방지: 종류 글자 칸이 실제로 있다').toBeGreaterThanOrEqual(8);
     // 제목의 「버전 2」는 R-493 당시 개수다(옛 기록이 이 제목을 가리켜 그대로 둔다). v0.2.1부터 새 소식 버전은 3개이고, 이 시험은 개수를 세어 맞춘다.
     expect(boxes.vers, '공허 통과 방지: 새 소식 버전 상자가 실제로 있다(v0.2.1·v0.2.0·v0.1.0)').toBe(3);
-    expect(boxes.total, '버전 3 + 질문 10 + 종류 글자 칸').toBe(boxes.vers + 10 + boxes.kinds);
+    expect(boxes.total, '버전 3 + 질문 9 + 종류 글자 칸').toBe(boxes.vers + 9 + boxes.kinds);
     expect(boxes.boxed, '테두리 상자는 0').toBe(0);
     expect(boxes.kindBorders, '종류 글자 칸에는 테두리가 없다').toBe(0);
     const border = await resolveColor(page, 'var(--c-border)');
     for (const selector of ['.info__ver', '.faq__item']) {
       const rows = await rowsOf(page, selector);
-      expect(rows.length, `${selector} 행 수`).toBe(selector === '.info__ver' ? 3 : 10);
+      expect(rows.length, `${selector} 행 수`).toBe(selector === '.info__ver' ? 3 : 9);
       rows.forEach((r, i) => {
         expect(r.others, `${selector} ${i + 1}번째: 구분줄 말고 다른 변에 테두리가 없다`).toBe(0);
         expect(r.top, `${selector} ${i + 1}번째: 윗줄`).toBe(i === 0 ? '0px' : '1px');

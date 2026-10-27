@@ -10,6 +10,7 @@ import {
   saveGame,
   type StorageLike,
 } from '../src/core';
+import { SIM_PROFILES } from '../scripts/simulateLib';
 
 function memoryStorage(): StorageLike {
   const m = new Map<string, string>();
@@ -51,9 +52,9 @@ describe('RNG', () => {
 
     // 기준: 같은 시드의 RNG로 출생 추첨을 직접 한 번 돌린 뒤 이어서 계속 쓰는 RNG
     const continuous = createRng(before.rngState);
-    generateBirth(continuous, 'past');
+    generateBirth(continuous, 'industrial');
 
-    const born = beginBirth(before, 'past');
+    const born = beginBirth(before, 'industrial');
     // 출생이 난수를 소비해 상태가 전진했다 (시드 그대로가 아니다)
     expect(born.rngState).not.toBe(before.rngState);
     expect(born.rngState).toBe(continuous.getState());
@@ -72,7 +73,7 @@ describe('RNG', () => {
   });
 
   it('beginBirth는 rngState를 전진시킨다 (시대별로 모두)', () => {
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       const before = createInitialState(31);
       const after = beginBirth(before, era);
       expect(after.rngState, era).not.toBe(before.rngState);

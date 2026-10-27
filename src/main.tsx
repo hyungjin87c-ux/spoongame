@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { SETTINGS_KEY, getBrowserStorage, parseSettings } from './core';
 import { applyTheme } from './ui/theme';
+import './styles/fonts.css';
 import './styles/tokens.css';
 import './styles.css';
 import './styles/title.css';

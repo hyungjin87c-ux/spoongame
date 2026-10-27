@@ -656,3 +656,8 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 @media (forced-colors: active) {
   .ending__gentle { border-left-color: CanvasText; }
 }
+
+/* ---------- SPEC-004 GM4: 엔딩 머리의 세대 표기 (GS9·GD2 — docs/design/mockups/gm3/gm3.css 「엔딩 머리」를 옮겼다) ----------
+   머리 이름 아래 한 줄: 「{세대} · {연도}년생」(연도가 드러나는 자리) — 시나리오 줄(PJ4)과 「같은 사건, 다른 자리」 카드(RG4)는 SPEC-004의 다음 단계다. */
+.ending__meta { display: flex; flex-direction: column; gap: 2px; margin-top: var(--sp-1); font-size: var(--fs-sm); color: var(--c-text-2); }
+.ending__meta b, .ending__meta strong { color: var(--c-text); font-weight: var(--fw-bold); }

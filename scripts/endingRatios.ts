@@ -1,7 +1,8 @@
-import { BAND_GRACE, ERAS, finalWealthStanding, movementOf, reachedIndependence, standingScore, startBandOf, type Era, type Movement, type ParentWealth } from '../src/core';
+import { BAND_GRACE, finalWealthStanding, movementOf, reachedIndependence, standingScore, startBandOf, wealthMixtureOfProfile, type Movement, type ParentWealth } from '../src/core';
 import { bandLabel } from '../src/data/endingText';
 import { standingLabel } from '../src/data/birthText';
 import { finalLivesOf } from './finalDistributionLib';
+import { SIM_ALL } from './simulateLib';
 
 /**
  * 엔딩 방향 판정의 단계별 비율 보고 (REV-001-M5-2 R-091).  실행: npx vite-node scripts/endingRatios.ts  (약 15초)
@@ -27,11 +28,12 @@ console.log(`방향 판정 비율 (앞섬 / 비슷함 / 뒤쪽, %), 여유 BAND_
 console.log('| 시대 | 단계 | 판 수 | 출발선 구간 | 앞섬 / 비슷함 / 뒤쪽 | 여유 0일 때 | 구간 밖·여유 안 |');
 console.log('|---|---|---:|---|---|---|---:|');
 const samples: string[] = [];
-for (const era of ERAS as readonly Era[]) {
+for (const era of SIM_ALL) {
+  const mixture = wealthMixtureOfProfile(era);
   const tallies: Tally[] = [1, 2, 3, 4, 5].map(() => ({ n: 0, counts: zero(), noGrace: zero(), inGrace: 0 }));
   for (const l of finalLivesOf(era)) {
     if (!reachedIndependence(l.deathAge)) continue;
-    const band = startBandOf(era, l.parentWealth);
+    const band = startBandOf(mixture, l.parentWealth);
     const end = finalWealthStanding(era, l.net);
     const t = tallies[l.parentWealth - 1];
     const score = standingScore(end);
@@ -43,7 +45,7 @@ for (const era of ERAS as readonly Era[]) {
   const total: Tally = { n: 0, counts: zero(), noGrace: zero(), inGrace: 0 };
   tallies.forEach((t, i) => {
     const wealth = (i + 1) as ParentWealth;
-    const label = bandLabel(startBandOf(era, wealth));
+    const label = bandLabel(startBandOf(mixture, wealth));
     console.log(`| ${era} | ${wealth} | ${t.n} | ${label} | ${triple(t.counts, t.n)} | ${triple(t.noGrace, t.n)} | ${pct(t.inGrace, t.n)} |`);
     total.n += t.n;
     total.inGrace += t.inGrace;

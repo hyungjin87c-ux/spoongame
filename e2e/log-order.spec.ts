@@ -33,7 +33,7 @@ async function chooseIfPending(page: Page): Promise<boolean> {
   const panel = page.getByTestId('choice-panel');
   if (!(await panel.isVisible())) return false;
   const pending = (await readSave(page)).data.pending!;
-  const choice = page.getByTestId(`choice-${pending.choiceIds[0]}`);
+  const choice = page.locator(`button[data-testid="choice-${pending.choiceIds[0]}"]`);
   await expect(choice).toBeEnabled();
   await choice.click();
   await expect(panel).toHaveCount(0);
@@ -332,13 +332,13 @@ async function cardAboveLog(page: Page, label: string): Promise<void> {
   const g = await page.evaluate(() => {
     const rect = (id: string) => document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect() ?? null;
     const card = rect('choice-panel') ?? rect('decision-fold');
-    return { card: card && { bottom: card.bottom }, log: rect('log'), pin: rect('log-pin'), list: rect('log-list'), vw: window.innerWidth };
+    return { card: card && { bottom: card.bottom }, log: rect('log'), list: rect('log-list'), vw: window.innerWidth };
   });
   expect(g.card && g.log, `${label}: 카드와 인생 기록이 모두 있다`).toBeTruthy();
   expect(g.card!.bottom, `${label}: 카드는 인생 기록 위(겹침 0)`).toBeLessThanOrEqual(g.log!.top + 0.5);
   expect(g.log!.right, `${label}: 인생 기록이 가로로 넘치지 않는다`).toBeLessThanOrEqual(g.vw + 0.5);
   expect(await noHorizontalOverflow(page), `${label}: 가로 넘침 0`).toBe(true);
-  expect(g.pin!.top, `${label}: 고정 가상 인구 줄은 스크롤 영역 밖 맨 위`).toBeLessThan(g.list!.top);
+  expect(g.log!.bottom, `${label}: 인생 기록 영역이 있다(고정 가상 인구 줄은 SPEC-004 GS11에서 없어졌다)`).toBeGreaterThan(g.list!.top);
 }
 
 for (const percent of [100, 200]) {
@@ -346,7 +346,7 @@ for (const percent of [100, 200]) {
     test.setTimeout(90_000);
     await startPageHidden(page);
     await page.goto('/');
-    const state = await findPendingState(page, 'present', { minChoices: 3 });
+    const state = await findPendingState(page, 'alpha', { minChoices: 3 });
     await injectSave(page, state, '/', { speed: 1, autoMode: true });
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     if (percent !== 100) await setRootFontPercent(page, percent);
@@ -358,7 +358,7 @@ for (const percent of [100, 200]) {
     test.setTimeout(90_000);
     await startPageHidden(page);
     await page.goto('/');
-    const state = await findPendingState(page, 'present', { minChoices: 3 });
+    const state = await findPendingState(page, 'alpha', { minChoices: 3 });
     await injectSave(page, state, '/', MANUAL);
     await expect(page.getByTestId('decision-fold-btn')).toBeEnabled();
     await page.getByTestId('decision-fold-btn').click();
@@ -543,7 +543,7 @@ test('R-439 맨 위(≤ 24px)를 보고 있으면 글자 크기가 바뀌어도 
 async function pendingAdultState(page: Page): Promise<GameState> {
   const state = await evalCore<GameState>(
     page,
-    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'present')));
+    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(777), 'alpha')));
      while (s.phase === 'life' && s.age < 30) s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
      for (let i = 0; i < 60 && s.phase === 'life' && !s.pending; i++) s = core.advanceUntilDecision(s).state;
      return s;`,

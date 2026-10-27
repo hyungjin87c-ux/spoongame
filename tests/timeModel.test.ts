@@ -18,6 +18,8 @@ import {
   stepYear,
   yearLineCount,
   type Era,
+  type ProfileId,
+  R1_PRESENT,
   type EventDef,
   type TickCounts,
   type TickInfo,
@@ -27,8 +29,17 @@ import { AUTO_CHOICE_MS, HOLD_MS, JUMP_OVERHEAD_SEC, LIFE_LENGTH_MODES, READ_MOD
 import { exposureOf } from '../scripts/citationExposureLib';
 import { INSIGHT_BY_ID } from '../src/data/citationInsights';
 import { DASH_TEXT } from '../src/data/dashText';
-import { chooserFor, startLife } from '../scripts/simulateLib';
+import { chooserFor, poolOf, startLife } from '../scripts/simulateLib';
 import { charStatsOf, measureMany, parseCandidates, poolCharStats, preciseCardSec, summarize } from '../scripts/timeReportLib';
+
+/**
+ * 읽는 시간 모델의 상수 표(READ_MODEL 등)는 아직 시대 구간(past·present·future) 단위다 — 연도 축 시간 모델은 SPEC-004 MG4·GM10에서 바뀐다.
+ * 상수의 구간에 대응하는 판: 「지금」은 시험 전용 R1 프로필(`r1-present`, 상수를 잰 그 세상)이고, 지난·다가올 구간은 대표 연도(출생 범위 가운데 + 40세)가 그 구간에 드는 세대(`timingEraOfProfile`)
+ * — 산업화(1987)=지난 · 알파(2056)=다가올. 상수와 **측정값을 견주는 시험은 「지금」(R1)만** 한다: 세대 판의 인용 노출률 등은 세대마다 달라(산업화 0.15 · X 0.32 · 알파 0.46) 상수 3개로 맞출 수 없고, 세대별 상수는 GM10에서 새로 잰다.
+ */
+const REP: Record<Era, ProfileId> = { past: 'industrial', present: R1_PRESENT, future: 'alpha' };
+/** 상수 ↔ 측정 비교를 하는 구간(= 상수를 잰 R1 「지금」) */
+const MEASURED_ERAS: readonly Era[] = ['present'];
 
 /**
  * 시간 모델 (SPEC-003 LM2, M8 — docs/data/content-M8.md 2절, 완료 기준 2~5): 연출 대기(모드 계수·한 해 여러 줄), 읽는 시간 r, `estimatePlaySeconds`를 **직접 계산한 값**과 맞추고,
@@ -177,7 +188,7 @@ describe('한 해 여러 줄: tick.lines · counts.extraLines (TODO M8 220행)',
   it('실제 풀: 1세에는 걸음마·첫 말이 한 해에 겹쳐 세 줄 서술 해(또는 결과 해)가 나오고 tick.lines가 그 줄 수와 같다', () => {
     let found = 0;
     for (let seed = 1; seed <= 300 && found < 3; seed++) {
-      let s = startLife(seed * 7919 + 13, 'present');
+      let s = startLife(seed * 7919 + 13, 'genx');
       for (let i = 0; i < 6 && s.phase === 'life' && s.pending === null; i++) {
         const r = stepYear(s);
         if (r.tick.fromAge === 1 && (r.tick.kind === 'narrative' || r.tick.kind === 'choice')) {
@@ -200,14 +211,14 @@ describe('한 해 여러 줄: tick.lines · counts.extraLines (TODO M8 220행)',
     for (const era of ERAS as readonly Era[]) {
       for (let i = 1; i <= 60; i++) {
         const seed = i * 7919 + 13;
-        const run = playToEnd(startLife(seed, era), chooserFor('random', seed));
+        const run = playToEnd(startLife(seed, REP[era]), chooserFor('random', seed));
         expect(run.counts.extraLines, `${era} 시드 ${seed}`).toBe(lineCountsIndependently(run.state));
       }
     }
   });
 
   it('둘째 줄이 있는 해가 한 판에 평균 2~3줄 있다 (M7a r3: 0~7세 중 평균 1.9해가 두 줄 이상)', () => {
-    const extra = ERAS.map((era) => mean(measureMany(era, 100, 'random', 'short30').map((l) => l.counts.extraLines)));
+    const extra = ERAS.map((era) => mean(measureMany(REP[era], 100, 'random', 'short30').map((l) => l.counts.extraLines)));
     for (const e of extra) {
       expect(e).toBeGreaterThan(1.5);
       expect(e).toBeLessThan(5);
@@ -215,7 +226,7 @@ describe('한 해 여러 줄: tick.lines · counts.extraLines (TODO M8 220행)',
   });
 
   it('사망 걸음·선택지 걸음의 tick에는 lines가 없다 (연출 대기가 없다)', () => {
-    let s = startLife(321, 'present');
+    let s = startLife(321, 'genx');
     for (let i = 0; i < 400 && s.phase === 'life'; i++) {
       if (s.pending !== null) {
         s = playToEnd({ ...s }, chooserFor('random', 321)).state;
@@ -385,7 +396,7 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
     near(pool.narrativeBody, 52, 0.15);
   });
 
-  const lives = (era: Era) => measureMany(era, 300, 'random', 'short30');
+  const lives = (era: Era) => measureMany(REP[era], 300, 'random', 'short30');
 
   it('뜬 카드(시대별 300판): 보인 선택지 수와 영향 줄 글자 수가 READ_MODEL과 ±10% 안이고 불변식 위반이 없다', () => {
     for (const era of ERAS as readonly Era[]) {
@@ -402,12 +413,12 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
   it('카드별 결과 문장 글자 수(resultLen)는 본인이 고른 선택 줄(by 없는 줄)에 짝지어진다 — 부모님이 정한·흘러간 줄이 섞여도 어긋나지 않는다 (R-458)', () => {
     let delegatedLives = 0;
     for (const era of ERAS as readonly Era[]) {
-      const measuredLives = measureMany(era, 25, 'random', 'short30'); // 시드 i × 7919 + 13 (i = 1…25)
+      const measuredLives = measureMany(REP[era], 25, 'random', 'short30'); // 시드 i × 7919 + 13 (i = 1…25)
       for (let i = 1; i <= 25; i++) {
         const seed = i * 7919 + 13;
         const measured = measuredLives[i - 1];
         // 같은 판을 따로 다시 돌려(같은 시드 → 같은 인생) 본인 선택 줄을 직접 꺼낸다
-        const final = playToEnd(startLife(seed, era, { lifeLength: 'short30' }), chooserFor('random', seed)).state;
+        const final = playToEnd(startLife(seed, REP[era], { lifeLength: 'short30' }), chooserFor('random', seed), poolOf(REP[era])).state;
         const choiceRows = final.history.filter((h) => h.kind === 'choice');
         const own = choiceRows.filter((h) => h.by === undefined);
         if (own.length < choiceRows.length) delegatedLives++;
@@ -419,15 +430,15 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
   });
 
   it('시대별 인용 노출률(report:citations — 자동 성향 1000판)이 READ_MODEL.citeExposure와 ±5%p 안이다', () => {
-    for (const era of ERAS as readonly Era[]) {
-      const row = exposureOf(era, 1000);
+    for (const era of MEASURED_ERAS) {
+      const row = exposureOf(REP[era], 1000);
       expect(Math.abs(row.rate - READ_MODEL.citeExposure[era]), `${era}: 측정 ${row.rate.toFixed(3)} / 상수 ${READ_MODEL.citeExposure[era]}`).toBeLessThanOrEqual(0.05);
     }
   });
 
   it('시대별 풀이 줄 노출률(report:citations — 자동 성향 1000판, 본인이 고른 카드 가운데 풀이가 보인 몫)이 READ_MODEL.insightExposure와 ±5%p 안이다 (r4 UX14 — 인용 노출률의 풀이 짝)', () => {
-    for (const era of ERAS as readonly Era[]) {
-      const row = exposureOf(era, 1000);
+    for (const era of MEASURED_ERAS) {
+      const row = exposureOf(REP[era], 1000);
       expect(row.insighted, `${era}: 풀이가 보인 카드가 있다 (공허 통과 방지)`).toBeGreaterThan(0);
       expect(Math.abs(row.insightRate - READ_MODEL.insightExposure[era]), `${era}: 측정 ${row.insightRate.toFixed(3)} / 상수 ${READ_MODEL.insightExposure[era]}`).toBeLessThanOrEqual(0.05);
       // 풀이는 인용이 보일 때만 보인다 — 풀이 노출률은 인용 노출률 이하다 (부모·흘러감 카드와 생략 3건이 빠진다)
@@ -436,7 +447,7 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
   });
 
   it('뜬 카드(시대별 300판): 질문 줄 글자 수는 카드마다 10자이고 풀이 줄의 평균 글자 수가 READ_MODEL.insight와 ±10% 안이다 (풀이가 실제로 보인 카드가 있다)', () => {
-    for (const era of ERAS as readonly Era[]) {
+    for (const era of MEASURED_ERAS) {
       const s = charStatsOf(lives(era));
       expect(s.ask, era).toBe(READ_MODEL.chars.ask);
       expect(s.insightExposure, `${era}: 풀이가 보인 카드`).toBeGreaterThan(0);
@@ -447,7 +458,7 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
 
   it('시대 상수 모델 T(중앙)가 카드별 정밀 합계(실제 글자 수·인용 박스 길이)와 ±5% 안이다 (시대별 300판 평균)', () => {
     for (const era of ERAS as readonly Era[]) {
-      const sum = summarize(era, 'short30', lives(era));
+      const sum = summarize(REP[era], 'short30', lives(era));
       const diff = Math.abs(sum.constantMin - sum.preciseMin) / sum.preciseMin;
       expect(diff, `${era}: 상수 ${sum.constantMin.toFixed(2)}분 / 정밀 ${sum.preciseMin.toFixed(2)}분`).toBeLessThanOrEqual(0.05);
     }
@@ -478,7 +489,7 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
   // 폐기된 제안값(카드 26.5장·결과 해 26)으로 계산하던 옛 시험은 낡은 입력 덕에 초록이었다 — 확정 설정(페이싱 24/30, 연출 계수 1.25)의 측정 평균으로 다시 썼다.
   const MODE = LIFE_LENGTH_MODES.short30;
   const shapes: Partial<Record<Era, ReturnType<typeof summarize>>> = {};
-  const shapeOf = (era: Era) => (shapes[era] ??= summarize(era, 'short30', measureMany(era, 300, 'random', 'short30')));
+  const shapeOf = (era: Era) => (shapes[era] ??= summarize(REP[era], 'short30', measureMany(REP[era], 300, 'random', 'short30')));
   const avgCounts = (era: Era): TickCounts => {
     const sum = shapeOf(era);
     // choice는 본인이 읽고 고르는 카드(c_self) — 부모님이 정한·흘러간 해는 parent·child와 연출 연장분(delegatedExtraMs)으로 센다 (SPEC-005 TM1·TM5)
@@ -500,7 +511,7 @@ describe('모드 표와 시간 모델이 함께 닫힌다 (REV-003-M8-1 R-418 �
       const saved = MODE.holdScale;
       try {
         MODE.holdScale = k;
-        v = summarize(era, 'short30', measureMany(era, 300, 'random', 'short30')).delegatedExtraSec;
+        v = summarize(REP[era], 'short30', measureMany(REP[era], 300, 'random', 'short30')).delegatedExtraSec;
       } finally {
         MODE.holdScale = saved;
       }

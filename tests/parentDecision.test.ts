@@ -1,31 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ERAS,
-  PARENTING_STYLES,
-  PARENT_WEALTHS,
-  STAT_KEYS,
-  balanceFactor,
-  condContextOf,
-  createEventPool,
-  deciderOf,
-  decisionFor,
-  isChoiceEvent,
-  isPreAdultChoice,
-  moneyNeedOf,
-  parentChoiceWeights,
-  parentTableProblems,
-  possibleAgesOf,
-  resolveEffects,
-  siblingFactor,
-  validateEventFiles,
-  visibleChoices,
-  type Decider,
-  type EventDef,
-  type GameState,
-  type ParentWealth,
-  type ParentingStyle,
-} from '../src/core';
+import { PARENTING_STYLES, PARENT_WEALTHS, STAT_KEYS, balanceFactor, condContextOf, createEventPool, deciderOf, decisionFor, isChoiceEvent, isPreAdultChoice, moneyNeedOf, parentChoiceWeights, parentTableProblems, possibleAgesOf, resolveEffects, siblingFactor, visibleChoices, type Decider, type EventDef, type GameState, type GenerationId, type ParentWealth, type ParentingStyle } from '../src/core';
+import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { EVENT_POOL } from '../src/data/events';
+import { generationDef } from '../src/data/generations';
 import {
   ALL_SELF_FROM_AGE,
   PARENT_AREAS,
@@ -39,7 +16,7 @@ import {
   SELF_FROM_AGE,
   parentFitOf,
 } from '../src/data/parentDecisionTable';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 
 /**
  * 어린 시절 부모님 결정 — 분류표·규칙·확률 모델 (SPEC-005 PD1·PD2·PD4, 설계 문서 docs/data/parent-decision-model.md 5절의 T1·T2·T4).
@@ -230,7 +207,7 @@ describe('T2 deciderOf 규칙 불변 (R1~R5)', () => {
 
 // ---------- T4 확률 모델 격자 ----------
 
-const BASE: GameState = startLife(20261020, 'present');
+const BASE: GameState = startLife(20261020, 'alpha');
 const STATS = [30, 50, 70] as const;
 const FUNDS = [-1500, 0, 1500] as const;
 const ORDERS = [1, 3] as const;
@@ -514,12 +491,14 @@ describe('영역 표 정합 (설계 문서 1-2절)', () => {
   });
 
   it('모든 시대에서 풀이 32장 전수를 가진다 (시대 제한 카드는 있는 시대에서만 일어난다)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
+      // 그 세대 아이들의 어린 시절(출생 첫 해 ~ 마지막 해 + 18세)과 연도 구간(yearRange)이 겹치는 카드
+      const def = generationDef(era as GenerationId);
       const inEra = Object.keys(PARENT_DECISION_TABLE).filter((id) => {
-        const ev = EVENT_POOL.byId.get(id)!;
-        return ev.eras === undefined || ev.eras.includes(era);
+        const r = EVENT_POOL.byId.get(id)!.yearRange;
+        return r === undefined || ((r.from === undefined || r.from <= def.birth.to + 18) && (r.to === undefined || r.to >= def.birth.from));
       });
-      expect(inEra.length, era).toBeGreaterThanOrEqual(24); // 시대 제한(eras) 카드가 빠진 가장 적은 시대(지난 세상)도 24장 이상
+      expect(inEra.length, era).toBeGreaterThanOrEqual(24); // 연도 구간 카드가 빠진 가장 적은 세대도 24장 이상
     }
   });
 });

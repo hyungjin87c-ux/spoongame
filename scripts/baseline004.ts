@@ -1,4 +1,5 @@
-import { ERAS, type Era } from '../src/core';
+import type { ProfileId } from '../src/core';
+import { SIM_PROFILES } from './simulateLib';
 import { isChoiceEvent } from '../src/core/events';
 import { EVENT_POOL } from '../src/data/events';
 import {
@@ -250,10 +251,10 @@ if (only.has('timeline')) {
 if (only.has('paths')) {
   const STRATS: Strategy[] = ['random', 'auto'];
   const BANDS_TL = AGE_BANDS;
-  type Group = { era: Era; strategy: Strategy; recs: LifeRecord[] };
+  type Group = { era: ProfileId; strategy: Strategy; recs: LifeRecord[] };
   const groups: Group[] = [];
   for (const strategy of STRATS) {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const recs: LifeRecord[] = [];
       for (let i = 1; i <= lives; i++) recs.push(playRecorded(i * 7919 + 13, era, strategy));
       groups.push({ era, strategy, recs });
@@ -261,7 +262,7 @@ if (only.has('paths')) {
   }
 
   const sig = (r: LifeRecord) => pathSignature(r);
-  console.log(`\n# 3) X·밀레니얼 대리 경로 측정 — 시대 ${ERAS.join('·')} × 전략 ${STRATS.join('·')} × ${lives}판 (시드 i×7919+13)`);
+  console.log(`\n# 3) X·밀레니얼 대리 경로 측정 — 프로필 ${SIM_PROFILES.join('·')} × 전략 ${STRATS.join('·')} × ${lives}판 (시드 i×7919+13)`);
   console.log('축 상태 정의 v0: 배움{정규·재교육·독학·수험·쉼} 일{학생·고용 1곳·사업·고용+사업·수험·임시·쉼·은퇴} 거처{부모 집·월세·전세·자가·돌봄 시설} 관계{혼자·파트너·결혼·결혼+자녀} 돌봄{없음·자녀·부모·자신}');
 
   for (const strategy of STRATS) {

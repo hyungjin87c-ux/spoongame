@@ -24,7 +24,7 @@ async function findHousing(page: Page, kind: 'independent' | 'family' | 'lonely'
     `const { EVENT_POOL } = await import('/src/data/events/index.ts');
      const ev = EVENT_POOL.byId.get('youth-housing');
      for (let seed = 1; seed < 4000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        if (arg.kind === 'family' && s.character.parentWealth < 3) continue;
        if (arg.kind !== 'family' && s.character.parentWealth > 2) continue;
        for (let guard = 0; guard < 80 && s.phase === 'life'; guard++) {
@@ -108,7 +108,7 @@ test('T03b: 부모님과 한집에 사는 미혼 판(가족 집)의 인생 기�
   const state = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 6000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        let n = 0;
        for (let guard = 0; guard < 4000 && s.phase === 'life'; guard++) {
          if (s.age >= 61 && s.pending === null) break;
@@ -183,7 +183,7 @@ test('R-379: 「따로 살기로 한다」를 고르면 인생 기록에 「따�
   const state = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 8000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        for (let guard = 0; guard < 80 && s.phase === 'life'; guard++) {
          s = core.advanceUntilDecision(s).state;
          if (s.phase !== 'life' || s.pending === null) break;

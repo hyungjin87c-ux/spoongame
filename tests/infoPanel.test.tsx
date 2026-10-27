@@ -20,7 +20,7 @@ import { visibleText } from './helpers/visible';
 
 const REPO = 'https://github.com/owner/spoongame';
 const BUILD = 'v0.2.0 (abc1234)';
-const FIELDS = feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, REPO, BUILD);
+const FIELDS = feedbackFieldsOf({ phase: 'title', generation: null, lifeLength: null }, REPO, BUILD);
 const URL_ = buildFeedbackUrl(FIELDS);
 const esc = (t: string): string => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 const faq = buildAboutFaq({ orgs: ['국가데이터처', '행정안전부', '교육부'] });
@@ -76,9 +76,9 @@ describe('패널의 모양 (NT5·FQ1) — 모달 시트', () => {
     }
   });
 
-  it('소개: 질문 열 개가 <details>/<summary>(키보드·aria-expanded는 브라우저가)이고 처음엔 모두 접혀 있다 · 답은 줄마다 <p>', () => {
+  it('소개: 질문 아홉 개가 <details>/<summary>(키보드·aria-expanded는 브라우저가)이고 처음엔 모두 접혀 있다 · 답은 줄마다 <p>', () => {
     const items = [...html.matchAll(/<details class="faq__item"( open="")? data-testid="faq-item" data-faq="([^"]+)">/g)];
-    expect(items).toHaveLength(10);
+    expect(items).toHaveLength(9);
     expect(items.every((m) => m[1] === undefined)).toBe(true);
     for (const q of faq) {
       expect(html).toContain(`<summary><span>${esc(q.question)}</span></summary>`);
@@ -143,7 +143,7 @@ describe('FeedbackLink 두 자리 (도구 줄 · 패널) — 같은 주소·같�
 
 describe('첫 화면 푸터 링크와 「새」 표시 (NT4)', () => {
   const title = (over: { notesSeen?: string; appVersion?: string } = {}): string =>
-    renderToStaticMarkup(<TitleScreen era="present" lifeLength="short30" onSelectEra={noop} onSelectLifeLength={noop} onBegin={noop} minute={29_850_000} {...over} />);
+    renderToStaticMarkup(<TitleScreen generation="random" lifeLength="short30" onSelectGeneration={noop} onSelectLifeLength={noop} onBegin={noop} {...over} />);
 
   it('푸터에 「새 소식」 · 「소개」 링크 둘이 있고 각각 data-panel로 구역을 가린다 (같은 패널을 연다)', () => {
     const html = title({ notesSeen: '0.2.0', appVersion: '0.2.0' });

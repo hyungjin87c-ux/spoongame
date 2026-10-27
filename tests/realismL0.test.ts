@@ -60,7 +60,7 @@ describe('선택자 course — 정석 문을 켜는 선택지를 고른다', () 
 
 describe('playL0 — 기준선과 같은 판을 만든다', () => {
   it('auto·random은 기준선 playRecorded와 사망 나이·끝 플래그·출생 연도가 같다', () => {
-    for (const era of ['past', 'present'] as const)
+    for (const era of ['genx', 'millennial'] as const)
       for (const sel of ['auto', 'random'] as const)
         for (let i = 1; i <= 4; i++) {
           const seed = i * 7919 + 13;
@@ -73,8 +73,8 @@ describe('playL0 — 기준선과 같은 판을 만든다', () => {
   });
 
   it('같은 시드·같은 선택자면 같은 기록이다(결정적)', () => {
-    const a = playL0(8123, 'past', 'course');
-    const b = playL0(8123, 'past', 'course');
+    const a = playL0(8123, 'genx', 'course');
+    const b = playL0(8123, 'genx', 'course');
     expect(a.pickLog).toEqual(b.pickLog);
     expect(a.deathAge).toBe(b.deathAge);
     expect(a.homeCause).toBe(b.homeCause);
@@ -84,7 +84,7 @@ describe('playL0 — 기준선과 같은 판을 만든다', () => {
     const share4 = (sel: 'random' | 'course') => {
       let ok = 0;
       let n = 0;
-      for (const era of ['past', 'present'] as const)
+      for (const era of ['genx', 'millennial'] as const)
         for (let i = 1; i <= 60; i++) {
           const f = firstsOf(playL0(i * 7919 + 13, era, sel));
           n++;
@@ -121,7 +121,7 @@ function fakeRecord(): L0Record {
   at.set(66, snap(66, ['own_business', 'married', 'has_child', 'own_home'], 'own', { 'senior-retire': 66 }));
   return {
     seed: 1,
-    era: 'past',
+    era: 'genx',
     selector: 'course',
     birthYear: 1970,
     gender: 'female',

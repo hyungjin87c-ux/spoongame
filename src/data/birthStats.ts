@@ -1,6 +1,9 @@
 import type { Gender, Housing, Occupation } from '../core/types';
 import { HOUSINGS, OCCUPATIONS } from '../core/types';
-import { ERA_CONFIG } from './birthTable';
+import { birthYearTables } from '../core/gameData';
+import { regionsInYear, regionShareOf } from '../core/generationMixture';
+import { REGION_KEYS } from './regionKeys';
+import { regionPickableInYear } from '../core/birthProfile';
 import { FATHER_GAP, NATIONAL_ROW, OCCUPATION_STAT_ROW, PARENT_AGE_SHIFT_BY_WEALTH } from './birthReportTable';
 import { buildParentAgeModel, type ParentAgeModel } from './parentAgeModel';
 import {
@@ -153,6 +156,8 @@ function readMotherAverages(): BirthStats['motherAverages'] {
   return { all: get('all'), first: get('first'), second: get('second'), thirdPlus: get('thirdPlus') };
 }
 
+const PARENT_AGE_WEALTH_WEIGHTS = [25, 30, 28, 14, 3] as const;
+
 let cache: BirthStats | null = null;
 
 /** 출생 통계 한 벌 (처음 부를 때 읽고 이후 같은 객체) */
@@ -202,7 +207,8 @@ export function getBirthStats(): BirthStats {
       fatherMean: readFatherAverage(),
       orderShares: need(orderRows[NATIONAL_ROW], `birth-order ${NATIONAL_ROW} 행`),
       orderMeans: [motherAverages.first, motherAverages.second, motherAverages.thirdPlus],
-      wealthWeights: ERA_CONFIG.present.wealthWeights,
+      // 공표 평균을 맞추는 기준 수저 비율 — 통계가 2025년 것이라 그 시기의 비율(SPEC-003 R1 「지금 세상」 표)
+      wealthWeights: PARENT_AGE_WEALTH_WEIGHTS,
       wealthOffsets: [1, 2, 3, 4, 5].map((w) => PARENT_AGE_SHIFT_BY_WEALTH[w as 1 | 2 | 3 | 4 | 5]),
       gap: FATHER_GAP,
     }),
@@ -216,11 +222,37 @@ export function getBirthStats(): BirthStats {
 
 // ---------- 지역 ----------
 
-/** 출생 연도의 룰렛 지역 목록(비율 합 100.0). 어느 시대에도 속하지 않는 연도는 throw. */
+/**
+ * 출생 연도의 룰렛 지역 목록(비율 합 100.0). 세대 판(1940~2020년생)은 그 해의 시·도 구분과 비율(출생 연도 표 — 1981~2020 시도별 출생아 비율, 1940~1980 도별 인구 비례 계단식, GS7)이고,
+ * 시험 전용 R1 프로필의 2026년생은 R1 때 목록(2026년 행정구역 16개)이다. 그 밖의 연도는 throw.
+ */
 export function regionsOf(birthYear: number): RouletteRegions {
-  const regions = getRouletteRegions(birthYear);
-  if (regions === undefined) throw new RangeError(`regionsOf: ${birthYear}년생의 룰렛 지역 목록이 없다`);
-  return regions;
+  if (birthYear === 2026) {
+    const r1 = getRouletteRegions(birthYear);
+    if (r1 === undefined) throw new RangeError(`regionsOf: ${birthYear}년생의 룰렛 지역 목록이 없다`);
+    return r1;
+  }
+  const tables = birthYearTables();
+  const keys = regionsInYear(birthYear, tables);
+  if (keys.length === 0) throw new RangeError(`regionsOf: ${birthYear}년생의 룰렛 지역 목록이 없다`);
+  const regions: RouletteRegion[] = keys.map((key) => {
+    const short = REGION_KEYS.find((r) => r.key === key)!.short;
+    const pct = regionShareOf(birthYear, key, tables)!;
+    return { name: short, from: [short], births: pct, sharePct: pct };
+  });
+  return { eraId: `y${birthYear}`, label: `${birthYear}년`, kind: birthYear <= 1989 ? 'past' : 'present', basis: birthYear >= 1981 ? 'statistic-derived' : 'design', regions };
+}
+
+/**
+ * 출생 연도와 시·도 줄임 이름으로 룰렛 지역 한 칸. 그 해의 룰렛 목록에 있으면 그것이고, 없으면 — **직접 고른 시도**가 그 해에 독립한 단위가 아닌 경우(도에 속한 부·시 시절의 지금 광역시, DC7 마스터 해석) —
+ * 이름 그대로의 칸(값 0)을 돌려준다. 이름이 시·도 표에 없거나(`전남광주`는 2026 목록에만 있다) 그 해에 세종이 없는 직접 고르기면 throw.
+ */
+export function regionOf(birthYear: number, name: string): RouletteRegion {
+  const found = regionsOf(birthYear).regions.find((r) => r.name === name);
+  if (found !== undefined) return found;
+  const def = REGION_KEYS.find((r) => r.short === name);
+  if (def === undefined || !regionPickableInYear(def.key, birthYear)) throw new RangeError(`regionOf: ${birthYear}년생에게 ${name}은(는) 고를 수 없는 시·도다`);
+  return { name, from: [name], births: 0, sharePct: 0 };
 }
 
 /** 합쳐진 지역(전남광주·지난 세상의 경기 등)의 값 = 속한 시·도 값의 출생아 수 가중 평균 */
@@ -262,8 +294,7 @@ export interface SigunguChoice {
  * (시·도, 이름) 쌍은 지역 안에서 유일하다.
  */
 export function sigunguChoices(birthYear: number, regionName: string): SigunguChoice[] {
-  const regions = regionsOf(birthYear);
-  const region = need(regions.regions.find((r) => r.name === regionName), `${birthYear}년생 룰렛 지역에 ${regionName}이 없다`);
+  const region = regionOf(birthYear, regionName);
   if (birthYear >= 2026) {
     return getSigunguRows2026()
       .filter((r) => r.sido2026 === region.name)

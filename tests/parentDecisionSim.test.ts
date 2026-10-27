@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ERAS, PARENT_WEALTHS, advanceUntilDecision, autoResolveStep, createSession, deciderOf, parseGame, resolveChoiceStep, serializeGame, sessionReducer, stepYear, type Era, type GameState, type HistoryEntry, type ParentWealth } from '../src/core';
+import { PARENT_WEALTHS, advanceUntilDecision, autoResolveStep, createSession, deciderOf, parseGame, resolveChoiceStep, serializeGame, sessionReducer, stepYear, type GameState, type HistoryEntry, type ParentWealth, type ProfileId } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
 import { PARENT_DECISION_TABLE, PARENT_FIT, SELF_AREA_WEIGHT } from '../src/data/parentDecisionTable';
 import { selfAreaWeightFactor } from '../src/core/parentDecision';
@@ -22,7 +22,7 @@ import {
   type CareRow,
   type YoungLife,
 } from '../scripts/parentReportLib';
-import { chooserFor, startLife, type Strategy } from '../scripts/simulateLib';
+import { SIM_PROFILES, chooserFor, startLife, type Strategy } from '../scripts/simulateLib';
 
 /**
  * T3 동치·결정론 + T5 분포 시험 = PD12 (SPEC-005, 설계 문서 docs/data/parent-decision-model.md 5절).
@@ -41,11 +41,11 @@ function lazy<T>(compute: () => T): () => T {
 }
 
 const natural = lazy(() => {
-  const out = {} as Record<Strategy, Record<Era, YoungLife[]>>;
-  for (const st of STRATEGIES) out[st] = Object.fromEntries(ERAS.map((era) => [era, sampleYoung(era, LIVES, st)])) as Record<Era, YoungLife[]>;
+  const out = {} as Record<Strategy, Record<ProfileId, YoungLife[]>>;
+  for (const st of STRATEGIES) out[st] = Object.fromEntries(SIM_PROFILES.map((era) => [era, sampleYoung(era, LIVES, st)])) as Record<ProfileId, YoungLife[]>;
   return out;
 });
-const tiered = lazy(() => Object.fromEntries(ERAS.map((era) => [era, sampleYoungByTier(era, PER_TIER, 'random')])) as Record<Era, Record<ParentWealth, YoungLife[]>>);
+const tiered = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, sampleYoungByTier(era, PER_TIER, 'random')])) as Record<ProfileId, Record<ParentWealth, YoungLife[]>>);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // T3 동치·결정론
@@ -70,7 +70,7 @@ interface Capture {
 }
 
 /** 한 판을 사망까지 돌리며 부모·흘러감으로 해결된 모든 해를 모은다 (본인 카드는 전략대로 고른다) */
-function playAndCapture(seed: number, era: Era, strategy: Strategy, onYear?: (s: GameState) => GameState): { final: GameState; captures: Capture[] } {
+function playAndCapture(seed: number, era: ProfileId, strategy: Strategy, onYear?: (s: GameState) => GameState): { final: GameState; captures: Capture[] } {
   const chooser = chooserFor(strategy, seed);
   const captures: Capture[] = [];
   let s = startLife(seed, era);
@@ -100,7 +100,7 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
   it('① 부모님이 정한 해는 같은 상태에서 그 선택지를 수동으로 고른 것과 같다: 연표 줄의 by(와 parentLabel/parentResult가 있는 카드의 문구)만 빼고 상태 전체가 같다', () => {
     let checked = 0;
     let labeled = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= SEEDS; i++) {
         const seed = seedOf(i);
         const { captures } = playAndCapture(seed, era, 'random');
@@ -128,7 +128,7 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
 
   it('② 흘러감은 autoResolveStep과 상태 전체가 같다 (by 표지만 다르다)', () => {
     let checked = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= SEEDS; i++) {
         const seed = seedOf(i);
         const { captures } = playAndCapture(seed, era, 'random');
@@ -144,7 +144,7 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
   });
 
   it('③ 같은 (시드, 세상, 본인 선택 목록)이면 최종 상태가 같다 — 두 번 돌려 직렬화가 한 글자도 다르지 않다 (세 시대 × 두 전략)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (const strategy of STRATEGIES) {
         for (let i = 1; i <= 15; i++) {
           const seed = seedOf(i);
@@ -159,7 +159,7 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
 
   it('④ 인생의 모든 나이에서 저장 → 복원 → 계속해도 같은 인생이다: 매 걸음 직렬화·복원한 판의 최종 상태가 한 번에 돌린 판과 같고, 복원한 상태에 부모·흘러감 카드가 pending으로 열려 있던 일은 0이다', () => {
     let restores = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= 12; i++) {
         const seed = seedOf(i);
         const straight = playAndCapture(seed, era, 'random').final;
@@ -178,7 +178,7 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
   });
 
   it('⑤ 부모 결정 해에 pending이 상태로 저장되는 일은 0이다: 걸음마다 부모·흘러감 카드가 열린 상태를 보지 못했다 (30판 × 세 시대)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= 30; i++) {
         const seed = seedOf(i);
         playAndCapture(seed, era, 'random', (s) => {
@@ -192,7 +192,7 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
   });
 
   it('변이 점검: 부모 해의 상태에서 다른 선택지를 고르면 대조가 실패한다 (공허 통과 방지)', () => {
-    const { captures } = playAndCapture(seedOf(3), 'present', 'random');
+    const { captures } = playAndCapture(seedOf(3), 'alpha', 'random');
     const c = captures.find((x) => x.by === 'parent' && x.before.pending!.choiceIds.length >= 2)!;
     expect(c).toBeDefined();
     const other = c.before.pending!.choiceIds.find((id) => id !== c.choiceId)!;
@@ -205,7 +205,7 @@ describe('PD7 자동 모드·다음 결정으로·일시정지 (세션 reducer �
   /** 첫 본인 카드 앞에 부모·흘러감 해가 둘 이상 있는 0세 상태(기록 카드 꺼짐 — 카드 멈춤은 tests/noteCards.test.ts가 본다) */
   function earlyLife(): GameState {
     for (let seed = 1; seed < 800; seed++) {
-      const s0 = startLife(seed, 'present');
+      const s0 = startLife(seed, 'alpha');
       const s = advanceUntilDecision(s0, EVENT_POOL, 'consume').state;
       if (s.phase === 'life' && s.pending !== null && s.history.filter((h) => h.by !== undefined).length >= 2) return s0;
     }
@@ -271,7 +271,7 @@ describe('PD7 자동 모드·다음 결정으로·일시정지 (세션 reducer �
 describe('T5 ①② 구조: 결정자 표지가 100% 맞고, 부모·흘러감 카드가 pending으로 남지 않는다', () => {
   it('① by: parent 줄이 부모 구간 카드의 100%, by: child가 흘러감 구간의 100%, 그 밖(본인 구간·19세 이상)은 0% — 세 시대 × 두 전략 × 1000판', () => {
     for (const st of STRATEGIES) {
-      for (const era of ERAS) {
+      for (const era of SIM_PROFILES) {
         const lives = natural()[st][era];
         expect(lives).toHaveLength(LIVES);
         const bad = lives.reduce((n, l) => n + l.byMismatch, 0);
@@ -284,7 +284,7 @@ describe('T5 ①② 구조: 결정자 표지가 100% 맞고, 부모·흘러감 �
 
   it('② 19세 미만에서 pending이 부모·흘러감 카드로 열린 판 0 (구조), 20세 전 사망은 1% 미만(측정 0.1~0.4%)', () => {
     for (const st of STRATEGIES) {
-      for (const era of ERAS) {
+      for (const era of SIM_PROFILES) {
         const lives = natural()[st][era];
         expect(lives.reduce((n, l) => n + l.pendingLeak, 0), `${era} ${st}`).toBe(0);
         expect(cardCounts(lives).diedYoung, `${era} ${st}`).toBeLessThan(0.01);
@@ -296,7 +296,7 @@ describe('T5 ①② 구조: 결정자 표지가 100% 맞고, 부모·흘러감 �
 describe('T5 ③ 판당 카드 수: 부모 결정 + 흘러감 합이 SPEC의 4.5~7장 안이다 (손계산 5.9)', () => {
   it('세 시대 × 두 전략 모두: 합 4.5 ≤ 평균 ≤ 7 · 부모 ≥ 3.5 · 흘러감 ≥ 0.8 (측정 부모 4.5~4.7 · 흘러감 1.3~1.4 · 합 5.9~6.0)', () => {
     for (const st of STRATEGIES) {
-      for (const era of ERAS) {
+      for (const era of SIM_PROFILES) {
         const c = cardCounts(natural()[st][era]);
         expect(c.parent + c.child, `${era} ${st} 합`).toBeGreaterThanOrEqual(4.5);
         expect(c.parent + c.child, `${era} ${st} 합`).toBeLessThanOrEqual(7);
@@ -308,14 +308,16 @@ describe('T5 ③ 판당 카드 수: 부모 결정 + 흘러감 합이 SPEC의 4.5
 });
 
 describe('T5 ④ 수저 단조: 재력이 높을수록 비용이 큰 선택지를 고르는 부모가 늘어난다', () => {
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     it(`${era}: 비교 가능한 카드 중 비용 합 확률이 5단계(또는 3단계)에서 1단계보다 ≥ 10%p 높은 카드가 70% 이상(지금 세상 10장 중 7장 이상), 역전(≤ −5%p) 0장, 인접 단계 격차 −8%p 이하 0곳`, () => {
       const rows = monotoneRows(era, tiered()[era]);
+      expect(rows, `${era} 줄 수`).toHaveLength(MONOTONE_CARDS.length);
       const comparable = rows.filter((r) => r.gap !== null);
-      expect(comparable.length, `${era} 비교 가능한 카드 수`).toBe(MONOTONE_CARDS.filter((c) => c.eras === undefined || c.eras.includes(era)).length);
+      // 그 세대의 달력 연도에 일어나지 않는 카드(육아휴직·어린이집 대기 같은 요즘 이야기)는 관측이 없어 비교에서 빠진다
+      expect(comparable.length, `${era} 비교 가능한 카드 수`).toBeGreaterThanOrEqual(era === 'alpha' ? 8 : 6);
       const passing = comparable.filter((r) => r.gap! >= 10);
       expect(passing.length / comparable.length, `${era}: ${passing.length}/${comparable.length} — ${comparable.map((r) => `${r.id} ${r.gap!.toFixed(1)}`).join(', ')}`).toBeGreaterThanOrEqual(0.7);
-      if (era === 'present') expect(passing.length, '지금 세상 10장 중').toBeGreaterThanOrEqual(7);
+      if (era === 'alpha') expect(passing.length, '알파 세대 10장 중').toBeGreaterThanOrEqual(7);
       expect(comparable.filter((r) => r.gap! <= -5).map((r) => r.id), `${era} 역전`).toEqual([]);
       // 균등 무작위(ε = 1)로도 「비싼 선택지가 높은 재력에서만 보인다」는 이유로 17%p 격차가 나오는 카드가 많아 7/10 기준만으로는 모델이 빠져도 통과한다(변이 점검: ε = 1이면 지금 세상 7/10, 평균 격차 10~12, 최소 0).
       // 그래서 모델이 실제로 일하는지 보는 두 단언을 더했다 — 평균 격차 ≥ 15%p(측정 19~21, 균등이면 10~12)와 모든 카드가 같은 방향 +1.5%p 이상(측정 최소 3.8~4.9, 균등이면 0).
@@ -328,7 +330,7 @@ describe('T5 ④ 수저 단조: 재력이 높을수록 비용이 큰 선택지�
 });
 
 describe('T5 ⑤ 양육 방식: 엄격·헬리콥터 부모가 자유·방임 부모보다 학력 효과가 가장 큰 선택지를 더 자주 고른다', () => {
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     it(`${era}: 차가 +8%p 이상이다 (SPEC 기준 +3%p▲ — 측정 11~17%p에서 측정값 − 3 SE로 올렸다)`, () => {
       const g = parentingGap(natural().random[era]);
       expect(g.cards, `${era} 카드 수`).toBeGreaterThanOrEqual(5);
@@ -339,7 +341,7 @@ describe('T5 ⑤ 양육 방식: 엄격·헬리콥터 부모가 자유·방임 �
 });
 
 describe('T5 ⑥ 지배 방지: 어떤 (카드 × 수저 × 양육) 칸에서도 한 선택지가 90%를 넘지 않는다 (부모 결정)', () => {
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     it(`${era}: 관측 8 이상인 모든 칸의 최대 평균 확률 ≤ 90% (측정 최대 80.1%)`, () => {
       const cells = dominanceCells([...natural().random[era], ...PARENT_WEALTHS.flatMap((t) => tiered()[era][t])], 8).filter((c) => c.by === 'parent');
       expect(cells.length, `${era} 칸 수`).toBeGreaterThan(100);
@@ -351,7 +353,7 @@ describe('T5 ⑥ 지배 방지: 어떤 (카드 × 수저 × 양육) 칸에서도
 
 describe('T5 ⑦ 통계 보정 판정 2곳 (지금 세상, 차 ≤ 15%p): 사교육 소득별 참여율 · 육아휴직 어머니 사용률', () => {
   it('사교육: school-tutoring·school-academy-night의 참여 선택지 확률이 소득별(수저 1~5단계) 공식 참여율 52.8·64.2·74.9·83.1·84.9%와 15%p 안이다 (측정 최대 tutoring 11.9 · academy-night 14.2)', () => {
-    const rows = privateEducationRows(tiered().present);
+    const rows = privateEducationRows(tiered().alpha);
     expect(rows).toHaveLength(2);
     expect(OFFICIAL.privateEdu).toEqual([52.8, 64.2, 74.9, 83.1, 84.9]);
     for (const r of rows) {
@@ -363,7 +365,7 @@ describe('T5 ⑦ 통계 보정 판정 2곳 (지금 세상, 차 ≤ 15%p): 사교
   });
 
   it('육아휴직: 한 사람 이상 일을 쉬는 선택(one + share)의 가구 비율이 어머니 사용률 72.2%와 15%p 안이다 (측정 60.0%, 차 12.2%p)', () => {
-    const leave = parentalLeaveShare(tiered().present);
+    const leave = parentalLeaveShare(tiered().alpha, 'alpha');
     expect(Math.abs(leave.share - OFFICIAL.parentalLeaveMother), `시뮬 ${leave.share.toFixed(1)}% 대 ${OFFICIAL.parentalLeaveMother}%`).toBeLessThanOrEqual(OFFICIAL.tolerancePp);
     for (const t of leave.byTier) expect(t.n, `${t.tier}단계 관측`).toBeGreaterThanOrEqual(30);
   });
@@ -386,11 +388,11 @@ describe('T5 ⑦ 통계 보정 판정 2곳 (지금 세상, 차 ≤ 15%p): 사교
  * (300판 표와 1000판 표가 1%p 안에서 같다). 격차 = 1단계 − 카드가 일어나는 가장 높은 단계(`noise.hush`는 재력 5단계에 카드가 없어 1 − 4단계, 나머지는 1 − 5단계).
  */
 describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10-9): 수저에 따른 비율 표, 아픈 아이를 넘기는 선택(fever.dismiss)의 1단계 대 5단계 격차 ≤ 8%p, 세 카드(after-hours.alone·noise.hush·stories.alone)의 격차 ≤ 25%p', () => {
-  const rowsOf = (era: Era) => Object.fromEntries(careRows(tiered()[era]).map((r) => [r.name, r]));
+  const rowsOf = (era: ProfileId) => Object.fromEntries(careRows(tiered()[era]).map((r) => [r.name, r]));
 
   it('표가 다섯 선택지 × 수저 5단계 × 양육 방식 4가지로 나온다 — fever.dismiss는 세 시대 모든 단계에 관측이 충분하고, 지금 세상은 다섯 선택지가 모두 관측된다 (공허 통과 방지)', () => {
     expect(CARE_CHOICES.map((c) => c.name)).toEqual(['fever.dismiss', 'after-hours.alone', 'stories.alone', 'screen.free', 'noise.hush']);
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const rows = careRows(tiered()[era]);
       expect(rows).toHaveLength(5);
       for (const r of rows) {
@@ -399,11 +401,11 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10
       }
       for (const t of rowsOf(era)['fever.dismiss'].byTier) expect(t.n, `${era} fever.dismiss ${t.tier}단계 관측`).toBeGreaterThanOrEqual(40);
     }
-    for (const r of careRows(tiered().present)) expect(r.byTier.filter((t) => t.share !== null).length, `지금 세상 ${r.name}`).toBeGreaterThanOrEqual(4); // noise.hush는 5단계에 보이지 않는다(requires)
+    for (const r of careRows(tiered().alpha)) expect(r.byTier.filter((t) => t.share !== null).length, `알파 세대 ${r.name}`).toBeGreaterThanOrEqual(4); // noise.hush는 5단계에 보이지 않는다(requires)
   });
 
   it('fever.dismiss의 수저 1단계 대 5단계 격차는 세 시대 모두 8%p 이하다 (측정 지난 5.9 · 지금 5.1 · 다가올 4.9%p — 설계 문서 2-5절의 옛 손계산 3~4%p보다 크지만 마스터가 수용했다(10-9 ①); 1단계가 더 자주 고른다)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const r = rowsOf(era)['fever.dismiss'];
       expect(r.gap1to5, `${era}`).not.toBeNull();
       expect(Math.abs(r.gap1to5!), `${era}: 1단계 ${r.byTier[0].share!.toFixed(1)}% 대 5단계 ${r.byTier[4].share!.toFixed(1)}%`).toBeLessThanOrEqual(8);
@@ -415,7 +417,7 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10
     const saved = table['infant-fever/dismiss'];
     try {
       table['infant-fever/dismiss'] = 2;
-      const r = careRows(sampleYoungByTier('present', PER_TIER, 'random')).find((x) => x.name === 'fever.dismiss')!;
+      const r = careRows(sampleYoungByTier('alpha', PER_TIER, 'random')).find((x) => x.name === 'fever.dismiss')!;
       expect(Math.abs(r.gap1to5!), '적합도 2.0일 때 격차').toBeGreaterThan(8);
     } finally {
       table['infant-fever/dismiss'] = saved;
@@ -428,10 +430,10 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10
   const THREE_CARD_GAP_CAP = 25;
   const THREE_CARDS = ['after-hours.alone', 'noise.hush', 'stories.alone'] as const;
   /** 시대마다 이 세 카드 가운데 일어나는 것 (이벤트의 `eras`·`requires`가 정한다 — 안 일어나는 칸은 관측 0이라 격차가 없다) */
-  const OBSERVED: Record<Era, readonly string[]> = {
-    past: ['stories.alone'],
-    present: ['after-hours.alone', 'noise.hush', 'stories.alone'],
-    future: ['after-hours.alone', 'stories.alone'],
+  const OBSERVED: Record<string, readonly string[]> = {
+    industrial: ['stories.alone'],
+    genx: ['stories.alone'],
+    alpha: ['after-hours.alone', 'noise.hush', 'stories.alone'],
   };
   /** 1단계 − 관측이 있는 가장 높은 단계 (noise.hush는 5단계에 카드가 없어 1−4단계). 관측이 없으면 null */
   function gapToLastTier(r: CareRow): { gap: number; last: number; n1: number; nLast: number } | null {
@@ -443,7 +445,7 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10
   }
 
   it('세 카드(after-hours.alone·noise.hush·stories.alone)의 1단계 대 끝단계 격차는 일어나는 모든 칸에서 25%p 이하이고 관측이 충분하다 (측정 지금 세상 19.0 · 18.4 · 14.4%p — 표본 단계당 300판, 시드 i×7919+13, 무작위 선택)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const observed: string[] = [];
       for (const name of THREE_CARDS) {
         const g = gapToLastTier(rowsOf(era)[name]);
@@ -475,7 +477,7 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10
           saved[key] = table[key];
           table[key] = v;
         }
-        const g = gapToLastTier(careRows(sampleYoungByTier('present', PER_TIER, 'random')).find((x) => x.name === m.card)!);
+        const g = gapToLastTier(careRows(sampleYoungByTier('alpha', PER_TIER, 'random')).find((x) => x.name === m.card)!);
         expect(g, `${m.card} 관측`).not.toBeNull();
         expect(g!.gap, `${m.card} 변이 뒤 격차`).toBeGreaterThan(THREE_CARD_GAP_CAP);
       } finally {
@@ -491,14 +493,14 @@ describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10
 
 describe('T5 ⑧ 에러 0 · 모순 0, ⑨ 같은 시드는 같은 인생', () => {
   it('⑧ 세 시대 × 두 전략 × 1000판이 모두 끝까지 돈다(예외 0) — 표본 수와 구조 점검이 위 시험이 본 값과 같다', () => {
-    for (const st of STRATEGIES) for (const era of ERAS) expect(natural()[st][era].length).toBe(LIVES);
+    for (const st of STRATEGIES) for (const era of SIM_PROFILES) expect(natural()[st][era].length).toBe(LIVES);
     // 모순: 부모가 학업 중단(school-family-priority accept)을 정했다면 이후 본인 카드에 학업 관련 이벤트가 뜨지 않는다는 규칙은 `tests/flow.test.ts`가 지킨다 — 여기서는 부모·흘러감 해가 상태 불변식을 깨지 않았는지만 본다
-    for (const l of natural().random.present) for (const h of l.history) expect(h.age).toBeLessThanOrEqual(20);
+    for (const l of natural().random.alpha) for (const h of l.history) expect(h.age).toBeLessThanOrEqual(20);
   });
 
   it('⑨ 같은 시드는 같은 인생이다: 30시드 × 세 시대 × 두 전략을 두 번 돌려 연표 전체가 같다', () => {
     for (const st of STRATEGIES) {
-      for (const era of ERAS) {
+      for (const era of SIM_PROFILES) {
         for (let i = 1; i <= 30; i++) {
           const seed = seedOf(i);
           const a = runYoungLife(startLife(seed, era), seed, st);
@@ -511,7 +513,7 @@ describe('T5 ⑧ 에러 0 · 모순 0, ⑨ 같은 시드는 같은 인생', () =
 });
 
 describe('T5 ⑩ 흘러감: 어떤 칸에서도 한 선택지 ≤ 90%, family-priority accept는 보고(대역 5~35%)', () => {
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     it(`${era}: 흘러감 카드의 칸마다 최대 평균 확률 ≤ 90% (측정 최대 86.4%, school-teacher-notice/accept 수저1 엄격)`, () => {
       const cells = dominanceCells([...natural().random[era], ...PARENT_WEALTHS.flatMap((t) => tiered()[era][t])], 8).filter((c) => c.by === 'child');
       expect(cells.length, `${era} 칸 수`).toBeGreaterThan(30);
@@ -521,7 +523,7 @@ describe('T5 ⑩ 흘러감: 어떤 칸에서도 한 선택지 ≤ 90%, family-pr
   }
 
   it('school-family-priority(지난 세상 12~17세, 둘째 이상)의 accept 확률이 재력 단계마다 대역 5~35% 안이다 (측정 13.0~14.8%) — 관측이 있는 단계만', () => {
-    const rows = familyPriorityAccept(tiered().past).filter((r) => r.share !== null);
+    const rows = familyPriorityAccept(tiered().industrial).filter((r) => r.share !== null);
     expect(rows.length, '관측이 있는 단계 수').toBeGreaterThanOrEqual(2);
     for (const r of rows) {
       expect(r.share!, `${r.tier}단계 accept ${r.share!.toFixed(1)}% (n=${r.n})`).toBeGreaterThanOrEqual(5);
@@ -532,7 +534,7 @@ describe('T5 ⑩ 흘러감: 어떤 칸에서도 한 선택지 ≤ 90%, family-pr
 
 describe('T5 ⑪ 보고: 13~18세·19세까지 본인 카드 수 분포와 0장 비율 (PD13), 부모 해 인용 노출률', () => {
   it('분포는 합이 1이고 13~18세 본인 카드 평균은 0.9장 이상 · 0장 비율은 30% 이하다 (1000판 측정 평균 1.00~1.08장 · 0장 22.3~25.8% — 1000판 표본은 잡음 폭이 ±1.4%p라 25% 목표 자체는 아래 3000판 시험이 본다)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const c = cardCounts(natural().random[era]);
       expect(c.dist13to18.reduce((a, b) => a + b, 0), era).toBeCloseTo(1, 10);
       expect(c.self13to18, `${era} 13~18세 본인 평균`).toBeGreaterThanOrEqual(0.9);
@@ -543,7 +545,7 @@ describe('T5 ⑪ 보고: 13~18세·19세까지 본인 카드 수 분포와 0장 
   });
 
   it('PD13 목표: 13~18세 본인 카드가 0장인 판이 세 시대 모두 25% 이하다 (3000판 측정 24.4 / 21.1 / 21.6% — 마스터 결정 9절 3번: ×1.5의 3000판 26.6~29.6%로는 못 미쳐 ×2.0으로 올렸다)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const c = cardCounts(sampleYoung(era, 3000, 'random'));
       expect(c.self13to18Zero, `${era} 13~18세 본인 0장 비율`).toBeLessThanOrEqual(0.25);
     }
@@ -562,9 +564,10 @@ describe('T5 ⑪ 보고: 13~18세·19세까지 본인 카드 수 분포와 0장 
   });
 
   it('부모님이 정한 카드의 인용 박스 노출률은 모든 시대에서 0보다 크고 1보다 작다 (보고: report:parent — 인용은 일부 카드·연도에만 붙는다)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const share = cardCounts(natural().random[era]).parentCiteShare;
-      expect(share, era).toBeGreaterThan(0);
+      // 산업화 세대의 어린 시절(1940~70년대)에는 연결된 인용이 없다 — 0이어도 된다
+      if (era !== 'industrial') expect(share, era).toBeGreaterThan(0);
       expect(share, era).toBeLessThan(1);
     }
   });

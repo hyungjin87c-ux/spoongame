@@ -38,7 +38,7 @@ describe('browserCss: 브라우저가 CSS를 읽는 방식 흉내 (합성 CSS)',
     expect(() => evaluateSupports('(a: b) and (c: d)', NO_CONTAINER_QUERIES), '모르는 꼴은 조용히 틀리지 않고 던진다').toThrow();
   });
 
-  it('R-489 @supports 값 안의 함수 호출: `(height: clamp(1px, 2px, 3px))`는 던지지 않고 두 브라우저 모두 참이다(title.css의 낮은 창 그림 높이 규칙), `not`은 뒤집고, 조건이 둘이면 여전히 던진다', () => {
+  it('R-489 @supports 값 안의 함수 호출: `(height: clamp(1px, 2px, 3px))`는 던지지 않고 두 브라우저 모두 참이다(함수 호출이 든 @supports 값의 예), `not`은 뒤집고, 조건이 둘이면 여전히 던진다', () => {
     const clamp = '(height: clamp(1px, 2px, 3px))';
     expect(evaluateSupports(clamp, WITH_CONTAINER_QUERIES)).toBe(true);
     expect(evaluateSupports(clamp, NO_CONTAINER_QUERIES), '컨테이너 질의를 모르는 브라우저도 clamp()는 지원한다').toBe(true);
@@ -54,8 +54,10 @@ describe('browserCss: 브라우저가 CSS를 읽는 방식 흉내 (합성 CSS)',
     const titleCss = await readText('../src/styles/title.css');
     expect(() => cssAppliedBy(titleCss, NO_CONTAINER_QUERIES)).not.toThrow();
     expect(() => cssAppliedBy(titleCss, WITH_CONTAINER_QUERIES)).not.toThrow();
-    // 공허 통과 방지: clamp() 규칙이 실제로 올라온다
-    expect(normalizeCss(cssAppliedBy(titleCss, NO_CONTAINER_QUERIES))).toContain('clamp(224px,calc((100vh - 334px) / 0.924),420px)');
+    // 공허 통과 방지: 컨테이너 단위 `@supports (width: 1cqw)` 규칙(SPEC-004 GS11 뒤 title.css에 남은 유일한 @supports)은 아는 브라우저에서만 올라온다.
+    // (옛 낮은 창 그림 높이 `clamp()` 규칙은 오른쪽 위 그림과 함께 없어졌다)
+    expect(normalizeCss(cssAppliedBy(titleCss, WITH_CONTAINER_QUERIES))).toContain('min(var(--fs-3xl),calc((100cqw');
+    expect(normalizeCss(cssAppliedBy(titleCss, NO_CONTAINER_QUERIES))).not.toContain('100cqw');
   });
 
   it('모르는 브라우저: @container 블록·container-type 선언·cqi 규칙이 사라지고 `@supports not (…)` 안쪽(@media 포함)이 올라온다', () => {

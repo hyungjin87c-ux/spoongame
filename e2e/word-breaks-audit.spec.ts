@@ -115,9 +115,11 @@ test('칸(flex 아이템) 사이는 공백이 없어도 다른 낱말이다: 「
  * 지금은 글자 사이에 바로 붙은 `<br>`가 낱말 한가운데를 가르는 것으로 잰다: 등록 낱말(FORCED_BREAKS)이면 `forced`로 따로 보고, 등록 없으면 폭과 상관없이 `broken`.
  */
 test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
+  // 제품의 등록 목록(e2e/intendedBreaks.ts#FORCED_BREAKS)은 SPEC-004 GS11에서 첫 화면 수저 띠(두 줄 이름표 「다이아몬드<br>수저」)가 없어져 비었다. 이 시험은 감사기의 등록 장치 자체를 보므로, 장치가 받는 목록을 시험 안에서 직접 준다
+  const REGISTERED = ['다이아몬드수저'] as const;
   test('등록 낱말: 「다이아몬드<br>수저」는 낱말 하나이고 forced로 따로 보고된다 — broken·unavoidable·intended는 아니다 (첫 화면 수저 띠의 두 줄 이름표)', async ({ page }) => {
     await render(page, '<p style="margin:0">다이아몬드<br>수저</p>');
-    const r = await measureWordBreaks(page);
+    const r = await measureWordBreaks(page, { forced: REGISTERED });
     expect(r.words).toEqual(['다이아몬드수저']);
     expect(r.forced.map((f) => f.word)).toEqual(['다이아몬드수저']);
     expect(r.broken).toEqual([]);
@@ -128,7 +130,7 @@ test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
 
   test('등록 없는 낱말: 폭이 아주 넉넉해도 낱말 한가운데의 `<br>`는 broken이다 — 「서울특별시<br>종로구」', async ({ page }) => {
     await render(page, '<p style="margin:0;width:2000px">서울특별시<br>종로구</p>');
-    const r = await measureWordBreaks(page);
+    const r = await measureWordBreaks(page, { forced: REGISTERED });
     expect(r.words).toEqual(['서울특별시종로구']);
     expect(r.broken.map((b) => b.word)).toEqual(['서울특별시종로구']);
     expect(r.forced).toEqual([]);
@@ -138,7 +140,7 @@ test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
   test('등록 없는 `<br>`는 좁은 폭에서도 unavoidable로 숨지 못한다: 한 줄보다 긴 낱말의 한가운데 `<br>`도 broken (폭 때문에 면제되지 않는다)', async ({ page }) => {
     const w = await natural(page, '전남광주통합특별시');
     await render(page, `<p style="margin:0;width:${w * 0.4}px">전남광주<br>통합특별시</p>`);
-    const r = await measureWordBreaks(page);
+    const r = await measureWordBreaks(page, { forced: REGISTERED });
     expect(r.broken.map((b) => b.word)).toEqual(['전남광주통합특별시']);
     expect(r.unavoidable).toEqual([]);
     expect(r.forced).toEqual([]);
@@ -155,7 +157,7 @@ test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
     const half = await natural(page, '다이아몬드');
     // 칸 폭이 앞 조각(다이아몬드)보다 좁다 → 「다이아몬드」 안에서도 줄이 나뉜다. 한 줄 전체 = 문단 폭 = 칸 폭이라 조각이 한 줄보다 길다
     await render(page, `<p style="margin:0;width:${half * 0.6}px">다이아몬드<br>수저</p>`);
-    const r = await measureWordBreaks(page);
+    const r = await measureWordBreaks(page, { forced: REGISTERED });
     expect(r.forced).toEqual([]);
     expect(r.unavoidable.map((u) => u.word)).toEqual(['다이아몬드수저']);
     expect(r.broken).toEqual([]);
@@ -166,7 +168,7 @@ test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
     // 가로 flex(한 줄 전체 = 칸들이 나눠 쓰는 넓은 상자) 안의 좁은 칸: 칸 폭(앞 조각의 70%)이 「다이아몬드」보다 좁아 `<wbr>`에서도 줄이 나뉜다.
     // 그래도 낱말(앞 조각 `다이아몬드`)은 한 줄 전체(flex 폭 = 앞 조각의 6배)에 들어가므로 자연 폭 ≤ 한 줄이다 → unavoidable이 아니라 broken이어야 한다.
     await render(page, `<div style="display:flex;width:${front * 6}px"><p style="margin:0;width:${front * 0.7}px">다이아<wbr>몬드<br>수저</p><p style="margin:0">옆 칸</p></div>`);
-    const r = await measureWordBreaks(page);
+    const r = await measureWordBreaks(page, { forced: REGISTERED });
     const dia = r.broken.filter((b) => b.word === '다이아몬드수저');
     expect(dia, '한 줄에 들어갈 폭인데 `<br>` 밖에서도 끊긴 등록 낱말은 결함').toHaveLength(1);
     expect(dia[0].natural, '자연 폭은 한 줄 전체 안이다(unavoidable이 될 수 없다)').toBeLessThanOrEqual(dia[0].line);
@@ -176,7 +178,7 @@ test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
 
   test('`<br>` 앞뒤에 공백이나 구두점이 있으면 낱말 사이의 줄바꿈이다: 「안녕 <br>하세요」「안녕.<br>하세요」는 낱말 둘 — 끊김도 forced도 아니다', async ({ page }) => {
     await render(page, '<p style="margin:0">안녕 <br>하세요</p><p style="margin:0">반가워.<br>잘가요</p><p style="margin:0">첫째<br> 둘째</p>');
-    const r = await measureWordBreaks(page);
+    const r = await measureWordBreaks(page, { forced: REGISTERED });
     expect(r.words.sort()).toEqual(['둘째', '반가워', '안녕', '잘가요', '첫째', '하세요'].sort());
     expect(r.broken).toEqual([]);
     expect(r.forced).toEqual([]);
@@ -185,7 +187,7 @@ test.describe('강제 줄바꿈 <br> (등록제, R-300)', () => {
 
   test('`<br>`가 하나도 없으면 forced는 비어 있다 (대조군)', async ({ page }) => {
     await render(page, '<p style="margin:0">다이아몬드수저 흙수저</p>');
-    const r = await measureWordBreaks(page);
+    const r = await measureWordBreaks(page, { forced: REGISTERED });
     expect(r.forced).toEqual([]);
     expect(r.broken).toEqual([]);
   });

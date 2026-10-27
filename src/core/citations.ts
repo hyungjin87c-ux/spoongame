@@ -1,8 +1,9 @@
-import { ERA_CONFIG } from '../data/birthTable';
-import { CITATION_TABLE, getCitation, type CitationRecord, type CitationSource } from '../data/citationsAccess';
+import { FIRST_BIRTH_YEAR, LAST_BIRTH_YEAR } from '../data/generations';
+import type { CitationRecord, CitationSource } from '../data/citationsAccess';
+import { citationTable } from './gameData';
 import { STAGE_TABLE } from '../data/lifeTable';
 import { NO_CITATION_CODES, type EventDef } from './events';
-import { ERAS, STAGES, type Era } from './types';
+import { ERAS, ERA_YEAR_SPAN, STAGES, type Era } from './types';
 
 /**
  * 중대 결정 카드의 인용 (SPEC-003 MD2·MD3·EV6, M7b 1단계 — 문구·규칙은 docs/design/copy.md 6-3절, 배치는 docs/data/content-M7b.md).
@@ -30,6 +31,23 @@ export interface CitationView {
 }
 
 /** 이벤트의 `citation`에서 그 세상의 인용 id를 꺼낸다(연결이 없으면 null). 카드가 뜨지 않는 세상(`eras`에 없음)은 문자열 형태여도 null이다. 인용이 실제로 쓸 수 있는지는 보지 않는다 */
+/** 인용 테이블의 id 색인 — 테이블(배열) 하나마다 한 번만 만든다 */
+const INDEX = new WeakMap<readonly CitationRecord[], ReadonlyMap<string, CitationRecord>>();
+
+/**
+ * id로 인용 하나 — `verified`이고 `usable`인 것만(아니면 undefined). 인용 테이블(citations.json, ≈ 36KB gzip)은 첫 화면 덩어리에 넣지 않는 지연 로드 데이터라
+ * (SPEC-004 MG8) core는 그 모듈을 정적으로 import하지 않고 `core/gameData.ts#citationTable()`로 읽는다. 같은 규칙의 정적 접근자는 `data/citationsAccess.ts#getCitation`(시험·스크립트 용).
+ */
+export function getCitation(id: string, table: readonly CitationRecord[] = citationTable()): CitationRecord | undefined {
+  let index = INDEX.get(table);
+  if (index === undefined) {
+    index = new Map(table.map((c) => [c.id, c]));
+    INDEX.set(table, index);
+  }
+  const c = index.get(id);
+  return c !== undefined && c.verified === true && c.usable === true ? c : undefined;
+}
+
 export function citationIdFor(event: Pick<EventDef, 'citation' | 'eras'>, era: Era): string | null {
   const c = event.citation;
   if (c === undefined) return null;
@@ -154,7 +172,7 @@ export function formatSourceLine(source: CitationSource, kind: 'stat' | 'researc
  * 이 카드가 이 세상·이 해에 보일 인용. 보일 인용이 없으면 null(인용 박스를 그리지 않는다 — 빈 박스 0).
  * 선택 순서: 이벤트의 `citation`에서 그 세상의 id → 인용 테이블(verified·usable)에서 찾기 → 인용의 `eras`에 그 세상이 있는가 → 게임 속 연도가 유효 범위인가.
  */
-export function citationFor(event: Pick<EventDef, 'citation' | 'eras'>, era: Era, calendarYear: number, table: readonly CitationRecord[] = CITATION_TABLE): CitationView | null {
+export function citationFor(event: Pick<EventDef, 'citation' | 'eras'>, era: Era, calendarYear: number, table: readonly CitationRecord[] = citationTable()): CitationView | null {
   const id = citationIdFor(event, era);
   if (id === null) return null;
   const c = getCitation(id, table);
@@ -174,9 +192,13 @@ export const CITATION_COVERAGE_MIN: Readonly<Record<Era, number>> = { present: 0
 /** 「인용 ≥ 30개」(1차 릴리스, M-4) — 카드에 연결된 서로 다른 인용 id 수의 하한 */
 export const CITATION_DISTINCT_MIN = 30;
 
-/** 이 카드가 이 세상에서 뜰 수 있는 게임 속 연도의 범위 [from, to] — 출생 연도 범위(시대 설정) + 카드의 나이 범위(`ageRange`와 단계가 겹치는 나이) */
-export function cardCalendarYears(ev: Pick<EventDef, 'stages' | 'ageRange'>, era: Era): { from: number; to: number } {
-  const { min, max } = ERA_CONFIG[era].birthYears;
+/**
+ * 이 카드가 이 시대 구간에서 뜰 수 있는 게임 속 연도의 범위 [from, to] — 출생 연도 범위(세대 7종 합집합 1940~2020) + 카드의 나이 범위(`ageRange`와 단계가 겹치는 나이)를
+ * 카드의 `yearRange`와 시대 구간(`ERA_YEAR_SPAN`)으로 좁힌 것. 겹치는 연도가 없으면 from > to다.
+ */
+export function cardCalendarYears(ev: Pick<EventDef, 'stages' | 'ageRange' | 'yearRange'>, era: Era): { from: number; to: number } {
+  const min = FIRST_BIRTH_YEAR;
+  const max = LAST_BIRTH_YEAR;
   const spans = ev.stages.map((st) => {
     const i = STAGES.indexOf(st);
     const next = STAGES[i + 1];
@@ -184,7 +206,11 @@ export function cardCalendarYears(ev: Pick<EventDef, 'stages' | 'ageRange'>, era
   });
   const lo = Math.max(ev.ageRange?.min ?? 0, Math.min(...spans.map((x) => x.lo)));
   const hi = Math.min(ev.ageRange?.max ?? 130, Math.max(...spans.map((x) => x.hi)));
-  return { from: min + lo, to: max + hi };
+  const span = ERA_YEAR_SPAN[era];
+  return {
+    from: Math.max(min + lo, span.from, ev.yearRange?.from ?? Number.NEGATIVE_INFINITY),
+    to: Math.min(max + hi, span.to, ev.yearRange?.to ?? Number.POSITIVE_INFINITY),
+  };
 }
 
 export interface CoverageCell {
@@ -202,7 +228,7 @@ export interface CoverageCell {
  * 인용의 `eras`에 그 세상이 있으며 인용의 유효 연도 범위가 그 카드가 그 세상에서 뜰 수 있는 게임 속 연도 범위와 **한 번이라도 겹치는** 이벤트의 비율. 노출률(1000판에서 실제 보인 몫)은 판정이 아니라 보고다(`scripts/citationExposureLib.ts`).
  * 조건(플래그·재력·성별)은 보지 않는 정적 기준이다.
  */
-export function citationCoverage(events: readonly EventDef[], table: readonly CitationRecord[] = CITATION_TABLE): Record<Era, CoverageCell> {
+export function citationCoverage(events: readonly EventDef[], table: readonly CitationRecord[] = citationTable()): Record<Era, CoverageCell> {
   const out = {} as Record<Era, CoverageCell>;
   for (const era of ERAS) {
     const ids: string[] = [];
@@ -224,7 +250,7 @@ export function citationCoverage(events: readonly EventDef[], table: readonly Ci
 }
 
 /** 카드에 연결된(정적 연결률의 분자에 든) 서로 다른 인용 id — 「인용 ≥ 30개」(M-4)를 센다 */
-export function connectedCitationIds(events: readonly EventDef[], table: readonly CitationRecord[] = CITATION_TABLE): string[] {
+export function connectedCitationIds(events: readonly EventDef[], table: readonly CitationRecord[] = citationTable()): string[] {
   const set = new Set<string>();
   const cov = citationCoverage(events, table);
   const byId = new Map(events.map((e) => [e.id, e]));
@@ -257,7 +283,7 @@ export function usedByIndex(events: readonly CitedCard[], notes: readonly CitedC
 /**
  * 이벤트(와 기록 카드 `notes`)가 가리키는 인용 id가 모두 `citations.json`에 있고 `verified`·`usable`인지, 인용이 금지한 이벤트(`usageCaution.forbiddenEvents`)에 연결하지 않았는지 본다. 형태(문자열·객체·사유 코드)는 `validateEventFiles`·`validateNoteFile`이 이미 봤다. 문제 목록(문장)을 돌려준다.
  */
-export function citationLinkProblems(events: readonly EventDef[], table: readonly CitationRecord[] = CITATION_TABLE, notes: readonly CitedCard[] = []): string[] {
+export function citationLinkProblems(events: readonly EventDef[], table: readonly CitationRecord[] = citationTable(), notes: readonly CitedCard[] = []): string[] {
   const problems: string[] = [];
   const byId = new Map(table.map((c) => [c.id, c]));
   const check = (ev: CitedCard, label: string): void => {

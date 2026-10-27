@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { Era, GameState } from '../src/core/types';
+import type { GameState, GenerationId as Era } from '../src/core/types';
 import { evalCore, readSave } from './helpers';
 
 /**
@@ -32,17 +32,17 @@ export async function dueState(page: Page, opts: { minAge?: number; cardId?: str
        }
      }
      return null;`,
-    { minAge: opts.minAge ?? 0, cardId: opts.cardId ?? null, era: opts.era ?? 'present', fromSeed: opts.fromSeed ?? 1 },
+    { minAge: opts.minAge ?? 0, cardId: opts.cardId ?? null, era: opts.era ?? 'alpha', fromSeed: opts.fromSeed ?? 1 },
   );
   expect(found, `기록 카드가 뜰 차례인 상태를 찾지 못했다 (${JSON.stringify(opts)})`).not.toBeNull();
   return found!;
 }
 
 /** 첫 기록 카드 ①(영유아기 기억, 5세, 인용 c-102 있음)이 뜰 차례인 상태 */
-export const infantDue = (page: Page, era: Era = 'present'): Promise<DueState> => dueState(page, { cardId: 'note-infant-memory', era });
+export const infantDue = (page: Page, era: Era = 'alpha'): Promise<DueState> => dueState(page, { cardId: 'note-infant-memory', era });
 
 /** 인용이 없는 카드(②~⑦)가 뜰 차례인 상태 — 나이 13 이상 */
-export const teenDue = (page: Page, era: Era = 'present'): Promise<DueState> => dueState(page, { minAge: 13, cardId: 'note-teen-envy', era });
+export const teenDue = (page: Page, era: Era = 'alpha'): Promise<DueState> => dueState(page, { minAge: 13, cardId: 'note-teen-envy', era });
 
 /**
  * 결정 카드를 고르면 곧바로 다음 해의 기록 카드가 뜰 차례가 되는 상태 (content-M7c 5-4절 둘째 행): 대기 중인 선택지가 있는 상태 + 고를 선택지.
@@ -68,7 +68,7 @@ export async function decisionBeforeDue(page: Page, opts: { era?: Era; fromSeed?
        }
      }
      return null;`,
-    { era: opts.era ?? 'present', fromSeed: opts.fromSeed ?? 1 },
+    { era: opts.era ?? 'alpha', fromSeed: opts.fromSeed ?? 1 },
   );
   expect(found, '결정 카드를 고르면 곧바로 기록 카드가 뜰 차례인 상태를 찾지 못했다').not.toBeNull();
   return found!;
@@ -106,7 +106,7 @@ export async function sheetReady(page: Page): Promise<void> {
 /**
  * 짧은 결정 시트(선택지 2개·인용 없음)가 대기 중인 상태 — 시트 안에 스크롤이 없어(넘침 없음) 휠·키가 곧바로 문서로 넘어가는 최악의 경우 (T1 (b)(c)).
  */
-export async function shortDecision(page: Page, era: Era = 'present'): Promise<GameState> {
+export async function shortDecision(page: Page, era: Era = 'alpha'): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `const { EVENT_POOL } = await import('/src/data/events/index.ts');
@@ -116,7 +116,7 @@ export async function shortDecision(page: Page, era: Era = 'present'): Promise<G
          s = core.advanceUntilDecision(s).state;
          if (s.phase !== 'life' || s.pending === null) break;
          const ev = EVENT_POOL.byId.get(s.pending.eventId);
-         if (s.pending.choiceIds.length === 2 && ev !== undefined && core.citationIdFor(ev, arg.era) === null && (ev.text ?? '').length < 120) return s;
+         if (s.pending.choiceIds.length === 2 && ev !== undefined && core.citationIdFor(ev, 'present') === null && (ev.text ?? '').length < 120) return s;
          s = core.resolveChoice(s, s.pending.key, s.pending.choiceIds[0]);
        }
      }

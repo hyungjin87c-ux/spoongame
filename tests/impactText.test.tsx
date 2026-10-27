@@ -88,7 +88,7 @@ describe('항목 이름 7개와 스크린리더 문장 42개 (copy.md 4-1·4-2)'
 
   it('데이터가 만드는 모든 문장 키가 문장 표에 있다 — 키 공간(7 × 2 × 3)이 빠짐없이 대응하고, 모든 이벤트 × 선택지 × 대표 상태(20세 전·성인·노년)의 영향 표기가 만드는 sr 키도 문장이 있다', () => {
     for (const k of IMPACT_KEYS) for (const d of ['up', 'down'] as const) for (const n of [1, 2, 3] as const) expect(IMPACT_SR[item(k, d, n).sr], item(k, d, n).sr).toBeDefined();
-    const base = startLife(7, 'present');
+    const base = startLife(7, 'alpha');
     const states = [10, 40, 70].map((age): GameState => {
       const s: GameState = { ...base, age, assets: null, familyFund: 0, flags: [] };
       if (age < 20) return s;

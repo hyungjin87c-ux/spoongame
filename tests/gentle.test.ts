@@ -1,37 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_SETTINGS,
-  ERAS,
-  HEAVY_KINDS,
-  HEAVY_LINES_WITHOUT_EVENT,
-  autoChoiceWeights,
-  createEventPool,
-  createInitialState,
-  createRng,
-  createSession,
-  heavyEvents,
-  heavyKindOfEntry,
-  heavyKindOfEvent,
-  parseGame,
-  parseSettings,
-  playToEnd,
-  resolveChoiceStep,
-  serializeGame,
-  serializeSettings,
-  sessionReducer,
-  validateEventFiles,
-  EventDataError,
-  type Era,
-  type GameState,
-  type HeavyKind,
-  type HistoryEntry,
-  type Session,
-  type SessionAction,
-} from '../src/core';
+import { DEFAULT_SETTINGS, SCHEMA_VERSION, SETTINGS_VERSION, classifySavedGame, HEAVY_KINDS, HEAVY_LINES_WITHOUT_EVENT, autoChoiceWeights, createEventPool, createInitialState, createRng, createSession, heavyEvents, heavyKindOfEntry, heavyKindOfEvent, parseGame, parseSettings, playToEnd, resolveChoiceStep, serializeGame, serializeSettings, sessionReducer, EventDataError, type GameState, type HeavyKind, type HistoryEntry, type Session, type SessionAction, type GenerationId, type ProfileId } from '../src/core';
+import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { EVENT_FILES, EVENT_POOL } from '../src/data/events';
 import { HEAVY_KIND_NAME_MAX, HEAVY_KIND_TEXT, HEAVY_SLIDE_TEXT, VEIL_TEXT } from '../src/data/gentleText';
 import { INHERIT_NOTE_TEXT } from '../src/data/lifeTable';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import copyMd from '../docs/design/copy.md?raw';
 import schemaMd from '../docs/data/events-schema.md?raw';
 import specMd from '../docs/spec/SPEC-005-빠른개선.md?raw';
@@ -194,7 +167,7 @@ describe('상속 줄 표지 (HV2-6·R-468·M20) — 줄에 필드를 더하지 �
   it('엔진이 만드는 eventId 없는 사건 줄은 상속 줄뿐이다 — 새로 이벤트 밖의 줄이 생기면 이 시험이 알려 표 갱신을 강제한다 (세 시대 × 120판)', () => {
     const texts = new Set<string>();
     let inheritLines = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 120; seed++) {
         const end = playToEnd(startLife(seed, era), null).state;
         for (const h of end.history) {
@@ -212,7 +185,7 @@ describe('상속 줄 표지 (HV2-6·R-468·M20) — 줄에 필드를 더하지 �
   it('새 판에서 상속을 받은 해의 줄이 loss로 잡히고, 바로 앞 「마지막 인사」 줄과 같은 분류다 (가린 farewell 줄 바로 뒤에서 내용이 새지 않는다)', () => {
     let found = 0;
     for (let seed = 1; seed <= 400 && found < 3; seed++) {
-      const end = playToEnd(startLife(seed, 'present'), (s) => (s.pending?.eventId === 'middle-parents-farewell' ? s.pending.choiceIds[0] : null)).state;
+      const end = playToEnd(startLife(seed, 'alpha'), (s) => (s.pending?.eventId === 'middle-parents-farewell' ? s.pending.choiceIds[0] : null)).state;
       const at = end.history.findIndex((h) => h.text === INHERIT_NOTE_TEXT);
       if (at < 0) continue;
       found++;
@@ -223,20 +196,20 @@ describe('상속 줄 표지 (HV2-6·R-468·M20) — 줄에 필드를 더하지 �
     expect(found).toBeGreaterThan(0);
   });
 
-  it('옛 v8 저장 표본(표지·gentleUsed 필드가 없는 이 변경 이전의 저장)이 그대로 열리고 그 상속 줄도 loss로 잡힌다 (M20, 저장 스키마 v8 유지)', () => {
+  it('옛 v8 저장 표본(표지·gentleUsed 필드가 없는 이 변경 이전의 저장)은 저장 v9에서 새 게임으로 시작하지만(세대가 없던 저장), 그 연표 줄은 여전히 loss로 잡힌다 (M20)', () => {
     const raw = JSON.stringify(legacyV8);
-    expect(legacyV8.version, '저장 스키마는 v8 그대로').toBe(8);
+    expect(legacyV8.version, '표본은 옛 v8 저장이다').toBe(8);
     expect(raw).not.toContain('gentleUsed');
     expect(raw).not.toContain('heavy');
-    const game = parseGame(raw);
-    expect(game, '옛 저장이 그대로 열린다').not.toBeNull();
-    expect(game!.gentleUsed, '필드가 없는 판은 켠 적이 없는 판').toBeUndefined();
-    const line = game!.history.find((h) => h.kind === 'event' && h.eventId === undefined && h.text === INHERIT_NOTE_TEXT);
+    expect(parseGame(raw), 'v9는 v8 저장을 열지 않는다 — 새 게임 + 안내(SPEC-004 MG1)').toBeNull();
+    expect(classifySavedGame(raw)).toBe('old-version');
+    const history = (legacyV8.data as unknown as { history: HistoryEntry[] }).history;
+    const line = history.find((h) => h.kind === 'event' && h.eventId === undefined && h.text === INHERIT_NOTE_TEXT);
     expect(line, '표본에 상속 줄이 있다').toBeDefined();
     expect(Object.keys(line!).sort(), '줄에는 표지 필드가 없다').toEqual(['age', 'kind', 'text']);
     expect(heavyKindOfEntry(line!)).toBe('loss');
     // 같은 표본의 무거운 이벤트 줄(「마지막 인사」)도 데이터의 표지로 잡힌다
-    const farewell = game!.history.find((h) => h.eventId === 'middle-parents-farewell');
+    const farewell = history.find((h) => h.eventId === 'middle-parents-farewell');
     expect(farewell).toBeDefined();
     expect(heavyKindOfEntry(farewell!)).toBe('loss');
   });
@@ -244,14 +217,14 @@ describe('상속 줄 표지 (HV2-6·R-468·M20) — 줄에 필드를 더하지 �
 
 // ---------- 3. 저장·설정 (SV1·SV2) ----------
 
-describe('저장: 선택 필드 gentleUsed (SV1) — 스키마는 v8 그대로, 이상한 값은 그 필드만 버린다', () => {
-  const life = (): GameState => startLife(7, 'present');
-  const parsedWith = (state: GameState, patch: Record<string, unknown>): GameState | null => parseGame(JSON.stringify({ version: 8, data: { ...state, ...patch } }));
+describe('저장: 선택 필드 gentleUsed (SV1) — 선택 필드라 스키마를 올리지 않는다, 이상한 값은 그 필드만 버린다', () => {
+  const life = (): GameState => startLife(7, 'alpha');
+  const parsedWith = (state: GameState, patch: Record<string, unknown>): GameState | null => parseGame(JSON.stringify({ version: SCHEMA_VERSION, data: { ...state, ...patch } }));
 
   it('gentleUsed: true인 판은 저장·복원에서 유지된다 (인생·엔딩 단계)', () => {
     const g = { ...life(), gentleUsed: true };
     expect(parseGame(serializeGame(g))).toEqual(g);
-    const end = { ...playToEnd(startLife(3, 'present'), null).state, gentleUsed: true };
+    const end = { ...playToEnd(startLife(3, 'alpha'), null).state, gentleUsed: true };
     expect(parseGame(serializeGame(end))?.gentleUsed).toBe(true);
     // false도 유효한 불리언이다(앱은 쓰지 않지만 버리지 않는다)
     expect(parsedWith(life(), { gentleUsed: false })?.gentleUsed).toBe(false);
@@ -291,13 +264,14 @@ describe('설정 v5: gentle·notesSeen (SV2)', () => {
       expect(s.speed).toBe(4);
       expect(s.autoMode).toBe(true);
     }
-    expect(parseSettings(env(4, { ...base, era: 'future', theme: 'dark' })).era).toBe('future');
-    expect(parseSettings(env(4, { ...base, era: 'future', theme: 'dark' })).theme).toBe('dark');
+    // 옛 「세상」(era) 설정은 세대 설정으로 옮기지 않는다 — 세대 기본은 「랜덤 세대」
+    expect(parseSettings(env(4, { ...base, era: 'future', theme: 'dark' })).generation).toBe('random');
+    expect(parseSettings(env(4, { ...base, era: 'alpha', theme: 'dark' })).theme).toBe('dark');
   });
 
   it('v5가 저장되고(왕복) 켜진 gentle·본 버전이 유지된다', () => {
     const s = { ...DEFAULT_SETTINGS, gentle: true, notesSeen: '0.2.0' };
-    expect(JSON.parse(serializeSettings(s)).version).toBe(5);
+    expect(JSON.parse(serializeSettings(s)).version).toBe(SETTINGS_VERSION);
     expect(parseSettings(serializeSettings(s))).toEqual(s);
     expect(DEFAULT_SETTINGS.gentle, '기본 꺼짐 = 모든 장면 그대로').toBe(false);
     expect(DEFAULT_SETTINGS.notesSeen).toBe('');
@@ -323,7 +297,7 @@ describe('설정 v5: gentle·notesSeen (SV2)', () => {
 const send = (s: Session, a: SessionAction): Session => sessionReducer(s, a);
 
 describe('세션: setGentle·gentleUsed (HV3) — 판 도중 한 번이라도 켜졌으면 참', () => {
-  const lifeSession = (gentle = false): Session => createSession(startLife(11, 'present'), { ...DEFAULT_SETTINGS, noteCards: false, gentle });
+  const lifeSession = (gentle = false): Session => createSession(startLife(11, 'alpha'), { ...DEFAULT_SETTINGS, noteCards: false, gentle });
 
   it('설정만 바꾼다: 같은 값이면 같은 객체, 이상한 입력은 무시', () => {
     const s = lifeSession();
@@ -360,10 +334,10 @@ describe('세션: setGentle·gentleUsed (HV3) — 판 도중 한 번이라도 �
     s = send(s, { type: 'begin' });
     expect(Object.prototype.hasOwnProperty.call(s.game, 'gentleUsed')).toBe(false);
     // 「새로 태어나기」(beginNew)도 설정을 따른다
-    const reopened = send(send(createSession(startLife(11, 'present'), { ...DEFAULT_SETTINGS, gentle: true }), { type: 'openTitle' }), { type: 'beginNew', seed: 77 });
+    const reopened = send(send(createSession(startLife(11, 'alpha'), { ...DEFAULT_SETTINGS, gentle: true }), { type: 'openTitle' }), { type: 'beginNew', seed: 77 });
     expect(reopened.game.phase).toBe('roulette');
     expect(reopened.game.gentleUsed).toBe(true);
-    const reopenedOff = send(send(createSession(startLife(11, 'present'), { ...DEFAULT_SETTINGS, gentle: false }), { type: 'openTitle' }), { type: 'beginNew', seed: 77 });
+    const reopenedOff = send(send(createSession(startLife(11, 'alpha'), { ...DEFAULT_SETTINGS, gentle: false }), { type: 'openTitle' }), { type: 'beginNew', seed: 77 });
     expect(Object.prototype.hasOwnProperty.call(reopenedOff.game, 'gentleUsed')).toBe(false);
   });
 
@@ -379,7 +353,7 @@ describe('세션: setGentle·gentleUsed (HV3) — 판 도중 한 번이라도 �
   });
 
   it('새 판(다시 태어나기)은 가림을 켠 기록 없이 시작한다 — 설정값은 다음 판의 기본값으로 남는다', () => {
-    const end = { ...playToEnd(startLife(3, 'present'), null).state, gentleUsed: true };
+    const end = { ...playToEnd(startLife(3, 'alpha'), null).state, gentleUsed: true };
     let s = createSession(end, { ...DEFAULT_SETTINGS, gentle: false });
     s = send(s, { type: 'rebirth', seed: 5 });
     expect(s.game.phase).toBe('title');
@@ -394,7 +368,7 @@ describe('세션: autoPick — 「이번에는 자동으로 고르기」 (HV4 �
   /** 본인이 고르는 중대 결정이 대기 중인 상태 (middle-layoff — 가린 카드의 예) */
   function pendingSession(autoMode: boolean): Session {
     for (let seed = 1; seed <= 600; seed++) {
-      let s = createSession(startLife(seed, 'present'), { ...DEFAULT_SETTINGS, noteCards: false, autoMode });
+      let s = createSession(startLife(seed, 'alpha'), { ...DEFAULT_SETTINGS, noteCards: false, autoMode });
       for (let guard = 0; guard < 400 && s.game.phase === 'life'; guard++) {
         if (s.game.pending !== null) {
           if (s.game.pending.eventId === 'middle-layoff') return s;
@@ -460,7 +434,7 @@ function withoutFlagAndPlay(g: GameState): Omit<GameState, 'gentleUsed' | 'play'
  * **끈 판은 같은 행동 열에서 `setGentle`만 뺀 것**이다(나가기·이어서 살기 같은 다른 행동은 그대로 한다 — 일시정지가 저장되는 판 상태라 같이 해야 한다).
  * 선택은 두 판이 같은 난수열에서 고른다(같은 시점에 같은 선택).
  */
-function driveLife(seed: number, era: Era, toggle: boolean): { game: GameState; settings: Session['settings']; everOn: boolean } {
+function driveLife(seed: number, era: ProfileId, toggle: boolean): { game: GameState; settings: Session['settings']; everOn: boolean } {
   const plan = createRng((seed * 2654435761) >>> 0);
   const startOn = plan.next() < 0.34;
   const flips = new Set<number>();
@@ -469,7 +443,7 @@ function driveLife(seed: number, era: Era, toggle: boolean): { game: GameState; 
   const viaTitle = new Set<number>([...flips].filter(() => plan.next() < 0.5));
   const chooseRng = createRng((seed ^ 0x5bd1e995) >>> 0);
 
-  let s = createSession(createInitialState(seed), { ...DEFAULT_SETTINGS, era, noteCards: false, gentle: toggle && startOn });
+  let s = createSession(createInitialState(seed), { ...DEFAULT_SETTINGS, generation: era as GenerationId, noteCards: false, gentle: toggle && startOn });
   let everOn = toggle && startOn;
   for (const a of [{ type: 'begin' }, { type: 'finishSpin' }, { type: 'enterBirth' }, { type: 'enterLife' }] as SessionAction[]) s = send(s, a);
   for (let step = 1; s.game.phase === 'life' && step < 3000; step++) {
@@ -498,12 +472,12 @@ function driveLife(seed: number, era: Era, toggle: boolean): { game: GameState; 
 describe('같은 시드·같은 선택이면 켠 판과 끈 판의 상태 전체가 같다 (HV4, 완료 기준 11) — 단 gentleUsed와 play는 비교에서 뺀다 (R-474)', () => {
   const LIVES = 1000;
 
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     it(`${era} 세상 ${LIVES}판: 판 도중 가림을 켜고 끄는 판의 최종 상태(연표·스탯·자산·플래그·난수 상태 포함)가 끈 판과 정확히 같고, gentleUsed는 한 번이라도 켠 판에서만 참이다`, () => {
       let withGentle = 0;
       let toggledMidway = 0;
       let mismatches = 0;
-      const seedOffset = ERAS.indexOf(era) * 100000;
+      const seedOffset = SIM_PROFILES.indexOf(era) * 100000;
       for (let i = 1; i <= LIVES; i++) {
         const seed = seedOffset + i;
         const off = driveLife(seed, era, false);
@@ -532,7 +506,7 @@ describe('같은 시드·같은 선택이면 켠 판과 끈 판의 상태 전체
   }
 
   it('대조(시험이 일을 하는지): 가림과 무관한 필드를 일부러 바꾸면 비교가 어긋난다 — gentleUsed·play만 비교에서 빠진다', () => {
-    const a = driveLife(5, 'present', false).game;
+    const a = driveLife(5, 'alpha', false).game;
     expect(withoutFlagAndPlay({ ...a, gentleUsed: true, play: undefined })).toEqual(withoutFlagAndPlay(a));
     expect(JSON.stringify(withoutFlagAndPlay({ ...a, rngState: a.rngState + 1 }))).not.toBe(JSON.stringify(withoutFlagAndPlay(a)));
     expect(JSON.stringify(withoutFlagAndPlay({ ...a, paused: !a.paused }))).not.toBe(JSON.stringify(withoutFlagAndPlay(a)));

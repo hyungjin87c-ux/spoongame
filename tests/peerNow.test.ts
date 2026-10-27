@@ -1,20 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  PARENT_WEALTHS,
-  PEER_COUNT,
-  PEER_STATUSES,
-  PEER_STATUS_AGES,
-  PEER_STATUS_LABEL,
-  PEER_STATUS_TABLE,
-  peerBandOf,
-  peerStatusAt,
-  peerStatusOf,
-  peerStatusSeries,
-  peersNow,
-  peersOf,
-  stepYear,
-  type PeerStatus,
-} from '../src/core';
+import { PARENT_WEALTHS, PEER_COUNT, PEER_STATUSES, PEER_STATUS_AGES, PEER_STATUS_LABEL, PEER_STATUS_TABLE, peerBandOf, peerStatusAt, peerStatusOf, peerStatusSeries, peersNow, peersOf, stepYear, type PeerStatus } from '../src/core';
 import { DASH_TEXT } from '../src/data/dashText';
 import { startLife } from '../scripts/simulateLib';
 
@@ -139,7 +124,7 @@ describe('peerStatusOf(나이, 수저, 인생 운): 모순 없이 결정적으�
 });
 
 describe('peersNow: 대시보드 또래 칸', () => {
-  const game = startLife(31, 'present');
+  const game = startLife(31, 'alpha');
 
   it('출생신고와 같은 또래 4명이다(이름·성별·장소·수저) — 라벨만 더해진다', () => {
     const now = peersNow(game);
@@ -181,7 +166,7 @@ describe('peersNow: 대시보드 또래 칸', () => {
 
   it('실제 판 전수(세 시대 × 30판 × 한 해씩): 어떤 나이에도 모순되는 라벨이 0개이고 라벨은 해마다 크게 흔들리지 않는다', () => {
     let points = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ['industrial', 'alpha', 'alpha'] as const) {
       for (let seed = 1; seed <= 30; seed++) {
         let g = startLife(seed, era);
         const last: Array<PeerStatus | null> = [null, null, null, null];

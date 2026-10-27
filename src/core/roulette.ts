@@ -1,8 +1,12 @@
-import { ERA_CONFIG } from '../data/birthTable';
 import { regionsOf } from '../data/birthStats';
 import { sortRegions } from '../data/regionNames';
-import type { RegionBasis } from '../data/koreaStatsAccess';
-import { PARENT_WEALTHS, type BirthReport, type Character, type Era, type ParentWealth } from './types';
+import type { RegionKey } from '../data/regionKeys';
+import { REGION_KEYS } from '../data/regionKeys';
+import { R1_PROFILE, candidateYearsOf, regionPickableInYear } from './birthProfile';
+import { GENERATIONS } from '../data/generations';
+import { birthYearTables } from './gameData';
+import { genMixture, type BirthYearTables, type YearBasis } from './generationMixture';
+import { PARENT_WEALTHS, R1_PRESENT, type BirthReport, type Character, type GameState, type ParentWealth, type ProfileId } from './types';
 
 /**
  * 출생 룰렛 (SPEC-003 RL1~RL6). 순수 함수 — 룰렛이 보이는 모든 값(릴의 칸 순서, 확률표, 멈출 자리)이 여기서 나온다.
@@ -12,8 +16,8 @@ import { PARENT_WEALTHS, type BirthReport, type Character, type Era, type Parent
  * 연출(회전·감속)은 확률을 바꾸지 않고, 연출 코드(ui/Reel.tsx·screens/RouletteScreen.tsx)에는 Math.random이 없다(tests/roulette.test.tsx가 소스를 점검).
  *
  * ## 확률 표기 (RL3)
- * 수저 = 선택한 세상의 `ERA_CONFIG[era].wealthWeights`(설계값)에서 계산해 합이 100이 되게 보정한 정수 %, 지역 = 시·도 출생아 비율(소수 첫째 자리, 합 100.0).
- * 보정은 가장 큰 나머지 방식(largestRemainder) — 반올림 때문에 합이 100에서 어긋나지 않는다.
+ * **고른 세대 전체 기준의 섞은 값** (SPEC-004 GS6·GS7, `core/generationMixture.ts#genMixture`): 수저 = Σ P(연도|세대) × `wealthFor(연도)`(정수 %, 합 100), 지역 = Σ P(연도|세대) × 그해 시·도 비율(소수 첫째 자리, 합 100.0).
+ * 출생 연도는 룰렛에 보이지 않게 먼저 뽑혀 있고(GS6) 표는 연도를 따라 바뀌지 않는다 — 릴이 도는 동안과 결과의 표가 같다. 보정은 가장 큰 나머지 방식(largestRemainder) — 반올림 때문에 합이 100에서 어긋나지 않는다.
  */
 
 /**
@@ -68,53 +72,101 @@ export function wealthReelIndex(wealth: ParentWealth): number {
 }
 
 export interface RouletteView {
-  era: Era;
-  birthYear: number;
-  /** 수저 확률표 순서: 흙→동→은→금→다이아몬드 (결과·움직임 줄이기도 같은 순서, R-171) */
+  generation: ProfileId;
+  /** 수저 확률표 순서: 흙→동→은→금→다이아몬드 (결과·움직임 줄이기도 같은 순서, R-171). 세대 전체 기준의 섞은 값 — 직접 고른 시도로 연도가 줄었으면 줄어든 집합으로 다시 섞은 값 */
   wealthOdds: WealthOdd[];
   /** 수저 릴 칸 순서(왕복, `WEALTH_REEL_ORDER`) */
   wealthReel: ParentWealth[];
   /** 수저 릴이 멈출 칸 (wealthReel 안의 인덱스, 저장된 출생 결과에서 읽는다) */
   wealthReelIndex: number;
-  /** 지역 릴·확률표 순서: REGION_ORDER(서울·부산·…·제주)의 부분 목록 */
+  /** 지역 확률표 줄(시·도 표 순서): 세대 범위 전체의 시·도 합집합 — 도는 동안 줄 수·값이 바뀌지 않는다. 직접 고른 판은 비어 있다(확률을 지어내지 않는다, RG2 d) */
   regionOdds: RegionOdd[];
-  /** 멈출 자리: wealthOdds / regionOdds 안의 인덱스 */
+  /** 지역 릴의 칸(시·도 줄임 이름, 시·도 표 순서) — 출생 연도의 시·도 목록(직접 고른 시도가 그 해에 독립한 단위가 아니면 그 칸이 더해진다) */
+  regionReel: string[];
+  /** 멈출 자리: wealthOdds 안의 인덱스 / regionReel 안의 인덱스 */
   wealthIndex: number;
   regionIndex: number;
-  /** 지역 확률의 성격(R-187): 지금 세상 = 통계 파생, 지난·다가올 세상 = 설계값 */
-  basis: RegionBasis;
+  /** 시도를 직접 골랐는가 — 지역 릴은 돌지 않고 고른 칸에 멈춰 있다(GS6) */
+  picked: boolean;
+  /** 연도 가중 기준(출생아 수 비례 / 균등) — 지역 표 주석 */
+  basis: YearBasis;
+  /** 1981년 앞의 해가 들어 있어 지역 값이 인구 비례인가 */
+  popYears: boolean;
+  /** 세대 범위 도중에 생긴 시·도(표 아래 주석 재료) */
+  later: string[];
+  /** 세대 범위 `{from}~{to}년생` (룰렛 머리의 「{범위}년생 가운데」 — 뽑힌 연도가 아니다) */
+  range: { from: number; to: number } | null;
 }
 
+/** 룰렛이 읽는 판의 부분 */
+export type RouletteGame = Pick<GameState, 'generation' | 'regionPicked'> & { character: Pick<Character, 'birthYear' | 'parentWealth'>; birthReport: Pick<BirthReport, 'region'> };
+
 /**
- * 저장된 출생 결과로 룰렛을 만든다. 결과(멈출 자리)는 저장된 값 그대로이고 확률표만 계산한다.
- * 지역이 그 출생 연도의 목록에 없으면 throw — 저장 검증(isValidBirthReport)이 걸러 주므로 정상 경로에서는 일어나지 않는다.
+ * 저장된 출생 결과로 룰렛을 만든다. 결과(멈출 자리)는 저장된 값 그대로이고 확률표만 계산한다(세대 전체 기준의 섞은 값).
+ * 지역이 그 출생 연도의 목록에 없고 직접 고른 시도도 아니면 throw — 저장 검증(isValidBirthReport)이 걸러 주므로 정상 경로에서는 일어나지 않는다.
  */
-export function buildRoulette(era: Era, character: Pick<Character, 'birthYear' | 'parentWealth'>, report: Pick<BirthReport, 'region'>): RouletteView {
-  const weights = ERA_CONFIG[era].wealthWeights;
-  const wealthPercents = largestRemainder(weights, 0);
-  const wealthOdds = PARENT_WEALTHS.map((wealth, i) => ({ wealth, percent: wealthPercents[i] }));
+export function buildRoulette(game: RouletteGame, tables: BirthYearTables = birthYearTables()): RouletteView {
+  const generation = game.generation;
+  if (generation === null) throw new RangeError('buildRoulette: 세대가 없다');
+  const picked = game.regionPicked === true;
+  const { birthYear, parentWealth } = game.character;
+  const region = game.birthReport.region;
 
-  const regions = regionsOf(character.birthYear);
-  const sorted = sortRegions(regions.regions);
-  const regionPercents = largestRemainder(
-    sorted.map((r) => r.sharePct),
-    1,
-  );
-  const regionOdds = sorted.map((r, i) => ({ name: r.name, percent: regionPercents[i] }));
+  let wealth: number[];
+  let regionOdds: RegionOdd[];
+  let basis: YearBasis = 'births';
+  let popYears = false;
+  let later: string[] = [];
+  let range: RouletteView['range'] = null;
+  if (generation === R1_PRESENT) {
+    // 시험 전용 R1 프로필: R1 때 표(2026 행정구역 16개, 수저는 고정 비율)
+    wealth = largestRemainder(R1_PROFILE.wealthWeights, 0);
+    const sorted = sortRegions(regionsOf(birthYear).regions);
+    const pct = largestRemainder(sorted.map((r) => r.sharePct), 1);
+    regionOdds = sorted.map((r, i) => ({ name: r.name, percent: pct[i] }));
+  } else {
+    const years = picked ? candidateYearsOf(generation, region) : undefined;
+    const mix = genMixture(generation, tables, years);
+    wealth = mix.wealth;
+    regionOdds = picked ? [] : mix.region.map((r) => ({ name: r.short, percent: r.pct }));
+    basis = mix.basis;
+    popYears = mix.popYears;
+    later = mix.later;
+    range = generationRange(generation);
+  }
+  const wealthOdds = PARENT_WEALTHS.map((w, i) => ({ wealth: w, percent: wealth[i] }));
 
-  const regionIndex = regionOdds.findIndex((r) => r.name === report.region);
-  if (regionIndex < 0) throw new RangeError(`buildRoulette: ${character.birthYear}년생 룰렛 지역에 ${report.region}이 없다`);
+  // 릴 칸: 출생 연도의 시·도 목록 (연도 자체는 화면에 나가지 않는다)
+  const names = regionsOf(birthYear).regions.map((r) => r.name);
+  if (!names.includes(region)) {
+    const def = REGION_KEYS.find((r) => r.short === region);
+    if (!picked || def === undefined || !regionPickableInYear(def.key as RegionKey, birthYear)) throw new RangeError(`buildRoulette: ${birthYear}년생 룰렛 지역에 ${region}이 없다`);
+    names.push(region);
+  }
+  const regionReel = sortRegions(names.map((name) => ({ name }))).map((r) => r.name);
+  const regionIndex = regionReel.indexOf(region);
   return {
-    era,
-    birthYear: character.birthYear,
+    generation,
     wealthOdds,
     wealthReel: [...WEALTH_REEL_ORDER],
-    wealthReelIndex: wealthReelIndex(character.parentWealth),
+    wealthReelIndex: wealthReelIndex(parentWealth),
     regionOdds,
-    wealthIndex: character.parentWealth - 1,
+    regionReel,
+    wealthIndex: parentWealth - 1,
     regionIndex,
-    basis: regions.basis,
+    picked,
+    basis,
+    popYears,
+    later,
+    range,
   };
+}
+
+const GENERATION_RANGE = Object.fromEntries(GENERATIONS.map((g) => [g.id, { from: g.birth.from, to: g.birth.to }])) as Record<string, { from: number; to: number }>;
+
+function generationRange(generation: ProfileId): { from: number; to: number } {
+  if (generation === R1_PRESENT) return { from: R1_PROFILE.birthYear, to: R1_PROFILE.birthYear };
+  return GENERATION_RANGE[generation];
 }
 
 // ---------- 연출 시간 (RL1: 총 4~6초, 수저 릴이 마지막) ----------

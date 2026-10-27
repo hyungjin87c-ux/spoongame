@@ -3,10 +3,10 @@ import namesJson from './names.json';
 import scourtJson from './sources/scourt-birth-names.json';
 
 /**
- * 이름 데이터. 시대마다 출처가 다르다(자세한 설명은 names.json의 meta, docs/data/names-source.md).
- *  - 지금 세상(올해 2026년생 고정): 가장 최근 연도(`PRESENT_POOL_YEAR` = 2025) 하나의 법원 통계서비스 상위 20위. 원자료 파일을 실행 시점에 그대로 읽는다(SPEC-003 EV7: 2026년은 진행 중이라 수집하지 않는다).
- *  - 다가올 세상(2030~2060년생): 통계가 없어 최근 5개 연도(meta.eras.future.sourceYears) 공식 풀의 합집합.
- *  - 지난 세상(1950~1989년생): names.json의 decades(언론 인용 확인분 + 추정 보충, 통계 아님).
+ * 이름 데이터. 출생 연도마다 출처가 다르다(자세한 설명은 names.json의 meta, docs/data/names-source.md). **풀 id 체계(SPEC-004 NR4·G-03)**:
+ *  - `court-YYYY`(2008~2020): 법원 통계서비스 「상위 출생신고 이름 현황」 그 해 상위 20위. 원자료 파일을 실행 시점에 그대로 읽는다. **등록 연도 기준**이라 출생 연도와 정확히 1:1이 아니다(연말 출생 → 이듬해 등록).
+ *  - `decade-1940`~`decade-2000`(2007년 이전): names.json의 decades(1950~80년대는 언론 인용 확인분 + 추정 보충, 1940·1990·2000~2007은 전부 추정 — 통계 아님). 2000은 2000~2007 한 풀.
+ *  - 시험 전용 R1 프로필(2026년생): 가장 최근 연도(`PRESENT_POOL_YEAR` = 2025)의 `court` 풀 하나 (SPEC-003 EV7: 2026년은 진행 중이라 수집하지 않는다).
  */
 
 // ---------- 지난 세상: names.json (손으로 관리하는 연대 풀) ----------
@@ -33,8 +33,9 @@ export interface SurnameItem {
 
 export interface NamesMeta {
   eras: {
-    present: { birthYears: { min: number; max: number }; level: string; derivation: string; source: string; rawFile: string };
-    future: { birthYears: { min: number; max: number }; level: string; source: string; sourceYears: number[]; derivation: string; note: string };
+    /** 법원 연도 풀(2008~2020)과 시험 전용 R1 프로필(2026년생 = 2025년 풀)의 출처 설명 */
+    present: { birthYears: { min: number; max: number }; poolYear: number; level: string; derivation: string; source: string; rawFile: string };
+    /** 연대 풀(2007년 이전)의 출처 설명 */
     past: { birthYears: { min: number; max: number }; level: string; source: string; derivation: string };
   };
   verificationLevels: Record<string, string>;
@@ -48,7 +49,7 @@ export interface NamesMeta {
 export interface NamesData {
   meta: NamesMeta;
   surnames: { censusYear: number; basis: string; items: SurnameItem[] };
-  /** 지난 세상의 연대 풀. 키는 연대의 첫 해("1950"…"1980"). */
+  /** 연대 풀. 키는 연대의 첫 해("1940"…"2000"; 2000은 2000~2007). */
   decades: Record<string, PastDecade>;
 }
 
@@ -116,7 +117,7 @@ const OFFICIAL: ReadonlyMap<number, Readonly<Record<Gender, readonly string[]>>>
 })();
 
 /**
- * 지금 세상(올해 2026년생)이 쓰는 이름 풀의 기준 연도 — 가장 최근 연도 하나(SPEC-003 EV7 R1). 올해(2026)는 진행 중이라 통계가 없다.
+ * 시험 전용 R1 프로필(2026년생)이 쓰는 이름 풀의 기준 연도 — 가장 최근 연도 하나(SPEC-003 EV7 R1). 올해(2026)는 진행 중이라 통계가 없다.
  * names.json의 meta.eras.present.poolYear와 같은 값이다(tests/names.test.ts가 대조한다).
  */
 export const PRESENT_POOL_YEAR = 2025;
@@ -126,29 +127,7 @@ export function officialPool(year: number, gender: Gender): readonly string[] | 
   return OFFICIAL.get(year)?.[gender] ?? null;
 }
 
-/** 다가올 세상 풀의 기준 연도들(names.json meta). */
-const FUTURE_SOURCE_YEARS: readonly number[] = Object.freeze([...NAMES.meta.eras.future.sourceYears]);
-
-const FUTURE: Readonly<Record<Gender, readonly string[]>> = (() => {
-  const out = {} as Record<Gender, readonly string[]>;
-  for (const gender of ['male', 'female'] as const) {
-    const union: string[] = [];
-    for (const year of FUTURE_SOURCE_YEARS) {
-      const pool = officialPool(year, gender);
-      if (!pool) throw new Error(`다가올 세상 풀의 기준 연도 ${year}가 원자료에 없다`);
-      for (const name of pool) if (!union.includes(name)) union.push(name);
-    }
-    out[gender] = Object.freeze(union);
-  }
-  return Object.freeze(out);
-})();
-
-/** 다가올 세상(2030~2060년생)의 이름 풀: 기준 연도들의 공식 풀 합집합. */
-export function futurePool(gender: Gender): readonly string[] {
-  return FUTURE[gender];
-}
-
-// ---------- 지난 세상 연대 풀 ----------
+// ---------- 연대 풀 (2007년 이전) ----------
 
 const PAST: ReadonlyMap<number, Readonly<Record<Gender, readonly string[]>>> = new Map(
   Object.entries(NAMES.decades).map(([decade, d]) => [
@@ -160,7 +139,51 @@ const PAST: ReadonlyMap<number, Readonly<Record<Gender, readonly string[]>>> = n
   ]),
 );
 
-/** 지난 세상 연대(1950·1960·1970·1980)의 이름 풀(verified + estimated). 풀이 없는 연대는 null. */
+/** 연대(1940·1950·…·1990·2000)의 이름 풀(verified + estimated). 풀이 없는 연대는 null. */
 export function pastPool(decade: number, gender: Gender): readonly string[] | null {
   return PAST.get(decade)?.[gender] ?? null;
+}
+
+// ---------- 출생 연도 → 풀 (NR4) ----------
+
+/** 이름 풀의 종류와 키: `court`(연도 풀) 또는 `decade`(연대 풀 — 2000은 2000~2007) */
+export type NamePoolId = { kind: 'court'; year: number } | { kind: 'decade'; decade: number };
+
+/** 풀 id 글자 (`court-2013` · `decade-1990`) — GENERATION_CONFIG.namePool과 같은 체계 */
+export function namePoolKey(id: NamePoolId): string {
+  return id.kind === 'court' ? `court-${id.year}` : `decade-${id.decade}`;
+}
+
+/** 법원 연도 풀이 있는 첫 해·마지막 해 (등록 연도 기준) */
+export const COURT_POOL_FIRST_YEAR = 2008;
+export const COURT_POOL_LAST_BIRTH_YEAR = 2020;
+
+/**
+ * 출생 연도 → 이름 풀 (SPEC-004 NR4): 2008~2020은 그 해 법원 풀, 1940~2007은 연대 풀(2000~2007은 `decade-2000` 한 풀), 시험 전용 R1 프로필의 2026년생은 2025년 법원 풀.
+ * 풀이 없는 연도(1939 이하, 2021~2025, 2027 이상)와 정수가 아닌 연도는 **throw**한다 — 다른 풀로 조용히 돌려보내면 「있지도 않은 통계」가 된다.
+ */
+export function namePoolIdOf(birthYear: number): NamePoolId {
+  if (!Number.isInteger(birthYear)) throw new RangeError(`namePoolIdOf: 정수 연도가 아니다 (${birthYear})`);
+  if (birthYear === 2026) {
+    if (officialPool(PRESENT_POOL_YEAR, 'male') === null) throw new RangeError(`namePoolIdOf: ${PRESENT_POOL_YEAR}년 공식 통계 풀이 없다`);
+    return { kind: 'court', year: PRESENT_POOL_YEAR };
+  }
+  if (birthYear >= COURT_POOL_FIRST_YEAR && birthYear <= COURT_POOL_LAST_BIRTH_YEAR) {
+    if (officialPool(birthYear, 'male') === null) throw new RangeError(`namePoolIdOf: ${birthYear}년 공식 통계 풀이 없다`);
+    return { kind: 'court', year: birthYear };
+  }
+  if (birthYear >= 1940 && birthYear <= 2007) {
+    const decade = Math.min(2000, Math.floor(birthYear / 10) * 10);
+    if (pastPool(decade, 'male') === null) throw new RangeError(`namePoolIdOf: ${decade}년대 이름 풀이 없다`);
+    return { kind: 'decade', decade };
+  }
+  throw new RangeError(`namePoolIdOf: ${birthYear}년생은 이름 풀이 없다 (풀은 1940~2020년생과 시험 전용 2026년생뿐이다)`);
+}
+
+/** 출생 연도·성별에 맞는 이름(성 제외) 풀. 읽기 전용. */
+export function namePoolFor(birthYear: number, gender: Gender): readonly string[] {
+  const id = namePoolIdOf(birthYear);
+  const pool = id.kind === 'decade' ? pastPool(id.decade, gender) : officialPool(id.year, gender);
+  if (pool === null || pool.length === 0) throw new RangeError(`namePoolFor: ${birthYear}년 ${gender} 이름 풀이 비어 있다`);
+  return pool;
 }

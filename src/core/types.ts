@@ -1,3 +1,5 @@
+import type { CurrentRegionName } from '../data/regionKeys';
+
 /**
  * 저장되는 화면 단계. SPEC-003 FS1: title → roulette → birth → life → ending. 별도 시대 선택 단계(eraSelect)는 없어졌다 — 세상·인생 길이는 첫 화면(title)에서 고른다.
  * roulette(룰렛 화면)는 「태어나기」를 누르는 순간 출생 결과가 정해져 저장된 상태다(RL5): 룰렛 도중·직후에 새로고침해도 다시 돌지 않고 결과가 확정된 모습으로 복원된다.
@@ -6,9 +8,44 @@
 export const PHASES = ['title', 'roulette', 'birth', 'life', 'ending'] as const;
 export type Phase = (typeof PHASES)[number];
 
-/** 시대: 지난 세상 / 지금 세상 / 다가올 세상 */
+/**
+ * 세대 7종 (SPEC-004 GD1) — 표시 이름·출생 연도 범위는 data/generations.ts, 세대별 설정값은 data/generationConfig.ts. 선택 순서(산업화 → 알파)가 이 배열의 순서다.
+ * 첫 화면의 「랜덤 세대」는 세대가 아니라 목록의 첫 줄이다(`GenerationChoice`, 설정에 저장되는 값 `random`).
+ */
+export const GENERATION_IDS = ['industrial', 'boomer', 'g86', 'genx', 'millennial', 'genz', 'alpha'] as const;
+export type GenerationId = (typeof GENERATION_IDS)[number];
+
+/** 첫 화면 세대 목록의 값 8가지: 「랜덤 세대」(`random`) 또는 세대 7종 중 하나 (GS1·GS4) */
+export const GENERATION_CHOICES = ['random', ...GENERATION_IDS] as const;
+export type GenerationChoice = (typeof GENERATION_CHOICES)[number];
+
+/**
+ * 시대 구간: 지난 / 지금 / 다가올 — **달력 연도의 구간**이다 (SPEC-004 MG2 주 규칙, 기준 연도 2000): 지난 ≤ 2000 · 지금 2001~2025 · 다가올 ≥ 2026.
+ * 게임의 「태어날 세상」 선택은 세대 7종으로 바뀌어 사라졌고(판 상태·설정에 시대는 없다), 이 구간은 **이벤트의 시대 소재 점검(lint)·인용 노출·읽는 시간 모델**처럼 달력 연도로 가르는 곳에만 남는다
+ * (인용·시간 모델의 연도 축 전환은 GM10 — MG4). 이벤트의 `yearRange`에서 파생되는 `EventDef.eras`도 이 구간이다.
+ */
 export const ERAS = ['past', 'present', 'future'] as const;
 export type Era = (typeof ERAS)[number];
+
+/** 시대 구간의 달력 연도 범위(포함) — 위쪽 끝은 출생 2020 + 110세 */
+export const ERA_YEAR_SPAN: Readonly<Record<Era, { readonly from: number; readonly to: number }>> = {
+  past: { from: 1940, to: 2000 },
+  present: { from: 2001, to: 2025 },
+  future: { from: 2026, to: 2130 },
+};
+
+/** 달력 연도 → 시대 구간 (2000 이하 지난 · 2001~2025 지금 · 2026 이상 다가올) */
+export function eraOfYear(calendarYear: number): Era {
+  return calendarYear <= ERA_YEAR_SPAN.past.to ? 'past' : calendarYear <= ERA_YEAR_SPAN.present.to ? 'present' : 'future';
+}
+
+/**
+ * R1 프로필(「지금 세상」 = 2026년생)의 판 표지 — **시험·스크립트 전용**이다 (SPEC-004 EY17 ② 항등 시험의 `forceR1`). 첫 화면 목록·설정·저장에는 나오지 않고(저장 검증이 거부한다),
+ * 연도 축 경제 배선이 R1 때의 값을 그대로 내는지 얼린 스냅숏(`tests/fixtures/r1-economy-snapshot.json`)과 줄 단위로 견주는 데만 쓴다.
+ */
+export const R1_PRESENT = 'r1-present' as const;
+/** 판의 출생 프로필: 세대 7종 또는 R1 프로필(시험 전용) */
+export type ProfileId = GenerationId | typeof R1_PRESENT;
 
 /** 인생 길이: 약 30분 / 약 1시간 (SPEC-003 FS5·LM1). 시간 모델은 M8의 모드 표(data/timingTable.ts#LIFE_LENGTH_MODES)가 정하고, 엔진은 판의 값을 읽는다(LM3). */
 export const LIFE_LENGTHS = ['short30', 'long60'] as const;
@@ -69,12 +106,15 @@ export interface Parent {
 export interface BirthReport {
   /** 출생 월 1~12 (월별 출생아 수 가중 추첨, 남은 결정 R1) */
   month: number;
-  /** 룰렛이 정한 시·도 — 줄임 이름(서울·부산…·전남광주·제주). 지난 세상은 그 시기의 시·도 구분(경기 = 경기+인천 등) */
+  /**
+   * 룰렛이 정한(또는 직접 고른) 시·도 — 줄임 이름(서울·부산·…·광주·전남·제주). 그 출생 연도의 시·도 구분이다(SPEC-004 NR3 — 1995년생 세종 0).
+   * R1 프로필(「지금 세상」 2026년생, 시험 전용)만 합쳐진 「전남광주」를 쓴다.
+   */
   region: string;
-  /** 시군구가 통계에서 속한 시·도(줄임 이름). 합쳐진 지역(전남광주·지난 세상의 경기 등) 안에서 같은 이름의 구를 가르는 데 쓴다. */
-  sigunguSido: string;
-  /** 시군구 이름. 일반구가 있는 시는 「수원시 장안구」처럼 시 이름을 함께 적는다. */
-  sigungu: string;
+  /** 시군구가 통계에서 속한 시·도(줄임 이름). **R1 프로필(2026년생)에만 있다** — 세대 판은 시도까지만 적는다(NR3 「출생지는 모든 세대 시도까지」). */
+  sigunguSido?: string;
+  /** 시군구 이름(R1 프로필만). 일반구가 있는 시는 「수원시 장안구」처럼 시 이름을 함께 적는다. */
+  sigungu?: string;
   mother: Parent;
   father: Parent;
   housing: Housing;
@@ -226,7 +266,8 @@ export interface PlayTime {
 
 export interface GameState {
   phase: Phase;
-  era: Era | null;
+  /** 이 판의 세대 (SPEC-004 GS·MG1): 출생 결과가 정해지는 「태어나기」에서 고정된다(랜덤 세대면 그때 뽑힌 세대). 첫 화면(title)에서는 null. */
+  generation: ProfileId | null;
   /** 이 판의 인생 길이(LM3: 판을 시작할 때 정해지고 진행 중에는 바뀌지 않는다). 출생 전(title)에는 null. */
   lifeLength: LifeLength | null;
   character: Character | null;
@@ -276,6 +317,13 @@ export interface GameState {
    * 선택 필드라 저장 스키마는 v8 그대로다 — 값이 이상하면 판을 버리지 않고 이 필드만 버린다(core/storage.ts#withValidGentleUsed). 분포·인생과 무관하다(같은 시드·같은 선택이면 이 필드와 `play`를 뺀 상태 전체가 같다, tests/gentle.test.ts).
    */
   gentleUsed?: boolean;
+  /**
+   * 시도를 직접 골라 시작한 판인가 (선택 필드 — SPEC-004 RG1·MG1): `true`만 쓴다(룰렛에 맡긴 판에는 필드가 없다). 값이 이상하면 판을 버리지 않고 그 필드만 버린다(core/storage.ts#withValidRegionPicked).
+   * 켜져 있으면 지역 릴은 돌지 않고 고른 칸에 멈춰 있으며(GS6), 룰렛 지역 표는 「직접 고른 시도」로 바뀐다.
+   */
+  regionPicked?: true;
+  /** 「랜덤 세대」 줄로 시작해 세대가 뽑힌 판인가 (선택 필드 — GS3): `true`만 쓴다. 룰렛 머리에 「랜덤 세대에서 뽑힌」이 보인다. */
+  fromRandom?: true;
 }
 
 export const SPEEDS = [1, 2, 4, 8] as const;
@@ -298,8 +346,8 @@ export const DEFAULT_BGM: BgmSettings = { on: false, volume: 30 };
 export interface Settings {
   speed: Speed;
   autoMode: boolean;
-  /** 첫 화면에서 마지막으로 고른 태어날 세상 — 다음 판의 기본 선택(FS4) */
-  era: Era;
+  /** 첫 화면 세대 목록에서 마지막으로 고른 줄 — 다음 첫 화면의 기본 선택(GS4). 처음 방문(선택 기록 없음)은 「랜덤 세대」(`random`)다. 설정 스키마 v6 */
+  generation: GenerationChoice;
   /** 첫 화면에서 마지막으로 고른 인생 길이 — 다음 판의 기본 선택(FS5·LM1) */
   lifeLength: LifeLength;
   /** BGM 켬/끔·볼륨 (DB4, 설정 스키마 v3) */
@@ -318,7 +366,21 @@ export interface Settings {
    * 패널을 열면 현재 버전으로 갱신된다. `x.y.z` 꼴이 아닌 값은 읽을 때 기본값(빈 글자)으로 본다.
    */
   notesSeen: string;
+  /**
+   * 이 기기에서 끝까지 살아본 세대 (GS10 「살아봄」 표시, 설정 스키마 v6). 세대 순서대로 정렬·중복 없음. 순위·점수·보상은 없고 이 기기에만 남는다.
+   */
+  lived: GenerationId[];
+  /**
+   * 「내가 실제로 태어난 시도」 (RG3, 설정 스키마 v6, 기본 null = 밝히지 않음): 지금의 시·도 16개 중 하나(`CurrentRegionName`, 시군구 없음)뿐이고 **이 설정 키 하나에만** 있다 — 게임 저장(`GameState`)·의견 보내기 주소·콘솔·공유 문구에 넣지 않는다.
+   */
+  homeRegion: CurrentRegionName | null;
+  /** 금액 보기 (EY11, 설정 스키마 v6): `then` 당시 화폐(기본) / `now` 지금 가치. GM10이 자산 카드에 쓴다 — 지금은 읽고 저장만 한다 */
+  moneyView: MoneyView;
 }
+
+/** 금액 보기 기준 (EY11) */
+export const MONEY_VIEWS = ['then', 'now'] as const;
+export type MoneyView = (typeof MONEY_VIEWS)[number];
 
 /** 인생 화면이 읽는 재생 설정(배속·자동 모드). Settings의 일부다. */
 export type PlaySettings = Pick<Settings, 'speed' | 'autoMode'>;

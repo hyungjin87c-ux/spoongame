@@ -93,7 +93,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
   // R-047 / QA TB01 (content-M8 13-3 (가)): 열기만 한 탭은 저장소에 쓰지 않아 활성 탭을 밀어내지 못한다. 관찰 창은 7초(첫 해 연출 11.81초(계수 1.6875, LM7b)·10초 주기 저장 이전)이고 게임 키·설정 키 모두 센다.
   type Kind = 'pending' | 'running' | 'paused';
   const startOf = async (page: Page, kind: Kind): Promise<GameState> => {
-    if (kind === 'pending') return withPlay(await findPendingState(page, 'present'));
+    if (kind === 'pending') return withPlay(await findPendingState(page, 'alpha'));
     const quiet = withPlay(await quietStart(page, 6));
     return kind === 'paused' ? { ...quiet, paused: true } : quiet;
   };
@@ -126,7 +126,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
   test('TB01-bg (시간을 재는 판): 가려진 채 열린 두 번째 탭은 7초 동안 쓰지 않고 첫 탭은 밀리지 않는다', async ({ page, context }) => {
     test.setTimeout(60_000);
     await page.goto('/');
-    await injectSave(page, withPlay(await findPendingState(page, 'present')), '/', MANUAL);
+    await injectSave(page, withPlay(await findPendingState(page, 'alpha')), '/', MANUAL);
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await page.waitForTimeout(500);
     const page2 = await context.newPage();
@@ -145,7 +145,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
   test('TB01-close (시간을 재는 판): 열자마자 곧바로 닫은 두 번째 탭(pagehide · 가림)은 쓰지 않아 첫 탭을 밀어내지 못한다 — 마지막 쓰기 뒤 1.5초 미만의 시간은 쓸 만큼이 아니다', async ({ page, context }) => {
     test.setTimeout(60_000);
     await page.goto('/');
-    await injectSave(page, withPlay(await findPendingState(page, 'present')), '/', MANUAL);
+    await injectSave(page, withPlay(await findPendingState(page, 'alpha')), '/', MANUAL);
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await page.waitForTimeout(500);
     for (const how of ['pagehide', 'hidden'] as const) {
@@ -191,7 +191,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
   test('R-006 (시간을 재는 판): 저장이 막힌 기기(?__quota)에서 열자마자 실패 안내가 뜨지 않는다 — 진행이 있어야(선택) 저장을 시도하고 그때 안내가 뜬다', async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto('/');
-    const decision = withPlay(await findPendingState(page, 'present'));
+    const decision = withPlay(await findPendingState(page, 'alpha'));
     await injectSave(page, decision, '/', MANUAL);
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await page.waitForTimeout(500); // 앱이 주입된 설정 원문을 표준 모양으로 다시 쓸 시간 — 막힌 페이지는 표준 모양을 읽어 설정을 다시 쓰려 하지 않는다
@@ -200,7 +200,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
     await page.waitForTimeout(1500); // 앱이 뜬 직후의 첫 저장 effect가 돌 시간
     const savedBefore = (await readSave(page)).data;
     await expect(page.getByTestId('save-notice'), '진행이 없으면 아직 저장을 시도하지 않는다').toHaveCount(0);
-    const first = page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
+    const first = page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`);
     await expect(first).toBeEnabled();
     await first.click();
     await expect(page.getByTestId('log')).toContainText('선택:');
@@ -230,14 +230,14 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
   test('R-011 (시간을 재는 판): 다른 탭이 저장을 바꾸면 이 탭은 멈추고 "이 탭에서 이어하기"로 최신 상태를 이어받는다 — 이어받은 판도 타이머가 다시 쌓는다', async ({ page, context }) => {
     test.setTimeout(90_000);
     await page.goto('/');
-    const decision = withPlay(await findPendingState(page, 'present'));
+    const decision = withPlay(await findPendingState(page, 'alpha'));
     const SLOW = '/?__timescale=0.25';
     await injectSave(page, decision, SLOW, MANUAL);
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     const page2 = await context.newPage();
     await page2.goto(SLOW);
     await expect(page2.getByTestId('choice-panel')).toBeVisible();
-    const first2 = page2.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
+    const first2 = page2.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`);
     await expect(first2).toBeEnabled();
     await first2.click();
     await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length).toBe(1);
@@ -263,7 +263,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
   test('M-2 (시간을 재는 판): 저장이 막힌 기기에서 결정 카드를 13.5초 열어 두어도(10초 주기 저장이 실패해도) · 탭 가림 · pagehide에서도 실패 안내가 없다 — 안내는 인생 상태를 담는 저장이 실패할 때만 뜬다 (마스터 결정 M-2, QA TB02-13s)', async ({ page }) => {
     test.setTimeout(90_000);
     await page.goto('/');
-    const decision = withPlay(await findPendingState(page, 'present'));
+    const decision = withPlay(await findPendingState(page, 'alpha'));
     await injectSave(page, decision, '/', MANUAL);
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await page.waitForTimeout(500);
@@ -282,7 +282,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
     await expect(page.getByTestId('save-notice'), '가림·pagehide 저장의 실패는 안내하지 않는다').toHaveCount(0);
     await setPageVisible(page, true);
     // 대조: 인생 상태를 담는 저장(선택)이 실패하면 안내가 뜨고 앱은 계속 동작한다
-    const first = page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
+    const first = page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`);
     await expect(first).toBeEnabled();
     await first.click();
     await expect(page.getByTestId('log')).toContainText('선택:');
@@ -293,7 +293,7 @@ test.describe('R-417 시간을 재는 판: 수동적인 시간만 바뀐 탭은 
   test('M-1 허용한 경우: 다른 탭이 가려져 있고 이 탭이 결정 카드를 10초 넘게 보이게 띄워 두면(decide가 쌓이면) 이 탭이 저장소에 쓴다 — 쓰면 가려진 탭이 밀린 화면이 된다 (마지막 쓰기 우선, R-011)', async ({ page, context }) => {
     test.setTimeout(90_000);
     await page.goto('/');
-    const decision = withPlay(await findPendingState(page, 'present'));
+    const decision = withPlay(await findPendingState(page, 'alpha'));
     await injectSave(page, decision, '/', MANUAL);
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     // 첫 탭은 가려진 탭(배경 탭)이 된다: 가려진 동안 시간은 idle이라 이 탭은 쓰지 않는다

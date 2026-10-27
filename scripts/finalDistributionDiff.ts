@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { ERAS, finalWealthStanding, type Era, type FinalDistribution } from '../src/core';
+import { GENERATION_IDS, R1_PRESENT, finalWealthStanding, type FinalDistribution, type ProfileId } from '../src/core';
+
+const ERAS: readonly ProfileId[] = [...GENERATION_IDS, R1_PRESENT];
 import { standingLabel } from '../src/data/birthText';
 
 /**
@@ -35,10 +37,10 @@ function sourceOf(spec: string | undefined, fallback: 'worktree' | 'HEAD'): { la
 }
 
 /** 생성된 표 파일에서 시대별 분위수표를 읽는다 (파일 모양: scripts/finalDistributionLib.ts#renderFinalDistributionModule) */
-function parseTable(text: string): Record<Era, FinalDistribution> {
-  const out = {} as Record<Era, FinalDistribution>;
+function parseTable(text: string): Record<ProfileId, FinalDistribution> {
+  const out = {} as Record<ProfileId, FinalDistribution>;
   for (const era of ERAS) {
-    const m = new RegExp(`\\n  ${era}: \\{\\s*simulated: (\\d+),\\s*lives: (\\d+),\\s*quantiles: \\[([^\\]]*)\\]`).exec(text);
+    const m = new RegExp(`\\n  '${era}': \\{\\s*simulated: (\\d+),\\s*lives: (\\d+),\\s*quantiles: \\[([^\\]]*)\\]`).exec(text);
     if (m === null) throw new Error(`${era}: 표를 읽지 못했다 (${TABLE_PATH} 모양이 바뀌었나? 옛 도수분포 표는 읽지 못한다)`);
     const quantiles = m[3].split(',').map((s) => s.trim()).filter((s) => s !== '').map(Number);
     out[era] = { simulated: Number(m[1]), lives: Number(m[2]), quantiles };

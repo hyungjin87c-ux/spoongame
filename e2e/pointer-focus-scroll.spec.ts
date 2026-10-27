@@ -5,7 +5,7 @@ import { BAR_MAIN_BUTTON, openBarState } from './titleStates';
 /**
  * 눌러서 생긴 포커스는 화면을 점프시키지 않는다 (REV-003-M2-4 R-241, QA-003-M2 M2-S01의 회귀 시험).
  * 첫 화면 전체의 `focusin`이 하는 「가용 높이보다 큰 포커스 대상의 위쪽 변 맞춤」(TitleScreen → ui/focusReveal.ts#revealTopOfTallFocus)은 **키보드 포커스(:focus-visible)에만** 일한다.
- * 마우스 클릭·터치 탭으로 라디오 카드를 눌러 생긴 포커스에는 scrollY가 그대로여야 한다 — 눌렀는데 화면이 점프하면 안 된다.
+ * 마우스 클릭·터치 탭으로 라디오 줄·칸(세대 목록 줄 · 인생 길이 칸)을 눌러 생긴 포커스에는 scrollY가 그대로여야 한다 — 눌렀는데 화면이 점프하면 안 된다. 세대 목록 줄은 SPEC-004부터 `revealGenRow`(키보드 포커스에만)가 맡는다.
  *
  * 조건: 360×568, 글자 200%, 확인 단계(띠 약 254px → 가용 높이 약 290px). 이때 「다가올 세상」 카드(약 314px)는 가용 높이보다 커서 키보드 포커스라면 반드시 맞춤이 일어난다(공허 통과 방지: 아래에서 확인).
  * 카드는 두 위치에서 누른다 — 위쪽 변이 화면 위로 40px 잘린 채, 위쪽 변이 화면 안(위에서 100px)에 있는 채. 라디오 카드 네 장(세상 3 + 약 30분)을 모두, 마우스와 터치로.
@@ -13,7 +13,7 @@ import { BAR_MAIN_BUTTON, openBarState } from './titleStates';
  */
 
 const SHOTS = 'qa/screenshots/003';
-const CARDS = ['era-past', 'era-present', 'era-future', 'life-short30'] as const;
+const CARDS = ['gen-random', 'gen-genx', 'gen-alpha', 'life-short30'] as const;
 type Kind = 'mouse' | 'touch';
 
 async function prepare(page: Page): Promise<void> {
@@ -23,8 +23,8 @@ async function prepare(page: Page): Promise<void> {
   // SPEC-005 D5-05: 큰 슬롯의 카드가 작은 변형(`radio-card--compact`)이 되어 「다가올 세상」 카드(216px)가 확인 단계의 가용 높이(약 290px)보다 작아졌다 — 키보드 포커스라면 맞춤이 일어날 만큼 큰 카드가
   // 있어야 이 시험이 공허하지 않다. SPEC-004의 세대 카드처럼 소개 문장이 긴 카드를 합성한다(글자만 늘린다 — React는 값이 바뀌지 않은 글자 노드를 다시 쓰지 않는다)
   await page.evaluate(() => {
-    const desc = document.querySelector('[data-testid="era-future"]')!.closest('label')!.querySelector('.radio-card__desc')!;
-    desc.textContent = `${desc.textContent} ${'소개 문장이 길게 이어지는 합성 카드입니다.'.repeat(5)}`;
+    const desc = document.querySelector('[data-testid="gen-alpha"]')!.closest('label')!.querySelector('.gen-row__desc')!;
+    desc.textContent = `${desc.textContent} ${'소개 문장이 길게 이어지는 합성 줄입니다.'.repeat(6)}`;
   });
   await expect(page.getByTestId(BAR_MAIN_BUTTON.confirm)).toBeEnabled(); // 입력 가드가 풀린 뒤 — 눌러도 선택이 막히지 않게
   await settle(page);
@@ -55,6 +55,12 @@ async function cardBox(page: Page, testId: string): Promise<CardBox> {
 
 /** 카드의 위쪽 변이 화면의 `top`px 자리에 오게 스크롤하고, 카드의 보이는 부분(띠 위) 한가운데 좌표를 돌려준다 */
 async function scrollCardTo(page: Page, testId: string, top: number): Promise<{ x: number; y: number }> {
+  // 세대 목록 줄이면 먼저 목록 창 안에 들인다(창 밖 줄은 눌러도 다른 줄에 떨어진다)
+  await page.evaluate((id) => {
+    const label = (document.querySelector(`[data-testid="${id}"]`) as HTMLInputElement).closest('label') as HTMLElement;
+    const list = label.closest('.gen-list') as HTMLElement | null;
+    if (list !== null) list.scrollTo({ top: label.offsetTop, behavior: 'instant' });
+  }, testId);
   const box = await cardBox(page, testId);
   await page.evaluate((y) => window.scrollTo(0, y), Math.max(0, box.docTop - top));
   await settle(page);
@@ -62,7 +68,8 @@ async function scrollCardTo(page: Page, testId: string, top: number): Promise<{ 
     const input = document.querySelector(`[data-testid="${id}"]`) as HTMLInputElement;
     const r = (input.closest('label') as HTMLElement).getBoundingClientRect();
     const barTop = (document.querySelector('[data-testid="bottom-bar"]') as HTMLElement).getBoundingClientRect().top;
-    const y = (Math.max(r.top, 0) + Math.min(r.bottom, barTop)) / 2;
+    const win = (input.closest('.gen-list') as HTMLElement | null)?.getBoundingClientRect(); // 목록 창에 잘리는 줄은 창 안에서 누른다
+    const y = (Math.max(r.top, 0, win?.top ?? 0) + Math.min(r.bottom, barTop, win?.bottom ?? Infinity)) / 2;
     return { x: r.left + r.width / 2, y };
   }, testId);
 }
@@ -76,7 +83,7 @@ async function runPointerCase(page: Page, kind: Kind): Promise<void> {
   await prepare(page);
   // 공허 통과 방지: 키보드 포커스라면 맞춤이 일어날 만큼 큰 카드(가용 높이 − 링 여유 14px 초과)가 실제로 있다
   const tall = (await Promise.all(CARDS.map(async (id) => ({ id, ...(await cardBox(page, id)) })))).filter((c) => c.height + 14 > c.available);
-  expect(tall.map((c) => c.id), `가용 높이보다 큰 카드 (가용 ${Math.round((await cardBox(page, 'era-future')).available)}px)`).toContain('era-future');
+  expect(tall.map((c) => c.id), `가용 높이보다 큰 카드 (가용 ${Math.round((await cardBox(page, 'gen-alpha')).available)}px)`).toContain('gen-alpha');
   const checks: string[] = [];
   for (const id of CARDS) {
     // 위쪽 변이 화면 위로 잘린 만큼: 큰 카드는 40px. 분절 컨트롤 칸(32px, SPEC-005 HS2)처럼 작은 대상은 통째로 화면 밖으로 나가면 누를 자리가 없으니 절반 안쪽까지만 자른다
@@ -106,7 +113,7 @@ async function runPointerCase(page: Page, kind: Kind): Promise<void> {
 }
 
 test.describe('마우스', () => {
-  test('360×568 글자 200% 확인 단계: 라디오 카드 네 장을 두 위치에서 마우스로 눌러도 scrollY가 변하지 않는다 (R-241)', async ({ page }, testInfo) => {
+  test('360×568 글자 200% 확인 단계: 라디오 줄·칸 네 개를 두 위치에서 마우스로 눌러도 scrollY가 변하지 않는다 (R-241)', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     test.setTimeout(90_000);
     await runPointerCase(page, 'mouse');
@@ -115,7 +122,7 @@ test.describe('마우스', () => {
 
 test.describe('터치', () => {
   test.use({ hasTouch: true });
-  test('360×568 글자 200% 확인 단계: 라디오 카드 네 장을 두 위치에서 터치로 탭해도 scrollY가 변하지 않는다 (R-241)', async ({ page }, testInfo) => {
+  test('360×568 글자 200% 확인 단계: 라디오 줄·칸 네 개를 두 위치에서 터치로 탭해도 scrollY가 변하지 않는다 (R-241)', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     test.setTimeout(90_000);
     await runPointerCase(page, 'touch');
@@ -129,10 +136,10 @@ test('대조: 같은 큰 카드를 키보드 포커스로 받으면 위쪽 변 �
   await page.evaluate(() => window.scrollTo(0, 0));
   await settle(page);
   const before = await page.evaluate(() => window.scrollY);
-  await page.evaluate(() => (document.querySelector('[data-testid="era-future"]') as HTMLInputElement).focus());
+  await page.evaluate(() => (document.querySelector('[data-testid="gen-alpha"]') as HTMLInputElement).focus());
   await settle(page);
   const after = await page.evaluate(() => {
-    const card = (document.querySelector('[data-testid="era-future"]') as HTMLInputElement).closest('label') as HTMLElement;
+    const card = (document.querySelector('[data-testid="gen-alpha"]') as HTMLInputElement).closest('label') as HTMLElement;
     return { y: window.scrollY, top: card.getBoundingClientRect().top };
   });
   expect(before).toBe(0);

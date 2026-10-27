@@ -215,3 +215,52 @@
      (시안 ds.css와 같다 — docs/design/design-system.md 11-5절). e2e/m3-colors.spec.ts가 렌더 픽셀로 글자가 보이는지 잰다 */
   .doc__band { background: Canvas; color: CanvasText; border-bottom: 3px solid CanvasText; }
 }
+
+/* ---------- SPEC-004 GM4: 룰렛 두 릴 · 세대 뽑기 · 확률표 머리 · 출생신고 세대 칸 (docs/design/mockups/gm3/gm3.css r3를 옮겼다 — diff-004.md 7절) ---------- */
+/* ---------- r3 룰렛 확률표: 두 릴(지역 · 수저) 아래 「○○세대 전체 기준」 표 (형진 님 답 2차 2 · N29 · DC7 마스터 결정) ----------
+   값은 고른 세대 전체 기준(연도 가중으로 섞은 값, genMixture)이라 **도는 동안 바뀌지 않는다** — 표는 live region이 아니고 멈춘 뒤 결과 상태 줄(role=status)이 한 번 읽는다. 연도 표·「예시」 알약·창의 해 굵은 줄은 없어졌다.
+   표 머리(.odds__head) 12px 보조 잉크 400 — app-screens §7.2(표 머리는 12px 회색 문장체). 표 글자는 12 → 14px(두 열이라 폭이 있고, 벤치마킹의 바닥 12px은 각주에만) — tiny-text 비율이 내려간다. 값 칸 최소 폭 5.5ch + tabular */
+.odds__head { margin: 0 0 var(--sp-1); font-size: var(--fs-xs); line-height: 1.4; font-weight: var(--fw-regular); color: var(--c-text-2); }
+.odds--r3 th, .odds--r3 td { font-size: var(--fs-sm); line-height: 1.55; }
+.odds--region td, .odds--spoon td { min-width: 5.5ch; }
+.odds--cols .odds__head { grid-column: 1 / -1; }
+
+/* ---------- 룰렛: 세대 뽑기 단계 + 2릴(지역 → 수저) (GS3·RG2 — r3: 연도 릴 없음, 2릴은 ds.css의 .reels 8.5rem 격자 그대로 = SPEC-003 룰렛과 같은 틀) ----------
+   세대 줄: 룰렛 제목 아래 「밀레니얼 세대 1981~1996년생 가운데」 — r3는 알약 대신 **굵은 글자**(벤치마킹: 알약은 상태 표시에만). 「랜덤 세대」 경로는 그 앞에 작은 글씨 「랜덤 세대에서 뽑힌」.
+   360(내용 328)에서 두 열 158px 나란히, 글자 200%에서는 한 열씩(CM11). 좁은 열 컨테이너 질의(< 7.5rem)는 2열에서는 닿지 않지만 320 · 200% 같은 극단을 위해 남긴다 */
+.roulette__gen { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); color: var(--c-text-2); margin: 0; }
+.roulette__from { flex-basis: 100%; font-size: var(--fs-xs); color: var(--c-text-3); }
+.gen-tag { font-size: var(--fs-md); font-weight: var(--fw-bold); line-height: var(--lh-snug); color: var(--c-text); max-width: 100%; text-align: center; } /* 줄바꿈 가능(Glue 묶음 .keep-phrase가 「A · B」를 지킨다): 「산업화 세대 · 전후 세대」가 320px · 글자 200%에서 한 줄에 못 들어가 3px 넘치던 것을 푼다 */
+.reels--2 { gap: var(--sp-3); }
+@media (min-width: 640px) { .reels--2 { gap: var(--sp-5); } }
+.reel-col { container-type: inline-size; }
+.reel__cell-gen { display: flex; flex-direction: column; align-items: center; gap: 0; line-height: 1.2; text-align: center; }
+.reel__cell-gen small { font-size: var(--fs-xs); font-weight: var(--fw-regular); color: var(--c-text-3); font-variant-numeric: tabular-nums; }
+.reel__item.is-result small { color: var(--c-text-2); }
+.reel-col--gen .reel { max-width: 20rem; width: 100%; margin: 0 auto; }
+.reel-col--gen { align-items: center; }
+@container (max-width: 7.5rem) {
+  .reel__item { font-size: var(--fs-md); padding: 0 var(--sp-1); gap: 0; }
+  .reel__item .grade { flex-direction: column; gap: 0; font-size: var(--fs-xs); text-align: center; line-height: 1.2; }
+  .reel-col__title { font-size: var(--fs-sm); }
+  /* 좁은 열의 확률표: 이름 칸은 낱말 단위로 접힌다(「다이아몬드<wbr>수저」) — 3열 104px에서 「다이아몬드수저 2%」가 3px 넘쳤다 */
+  .odds th { white-space: normal; }
+}
+/* 직접 고른 시도(RG1·RG2 d): 지역 릴은 돌지 않고 고른 칸에 멈춰 있다 — 흐림·줄무늬 없음, 확률표 자리에 「직접 고른 시도」 한 줄 */
+.reel.is-picked .reel__list { filter: none; }
+.odds__picked { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--c-text); text-align: center; margin: 0; }
+/* 결과 줄(r3): 시도 이름 18px 굵게 → 수저 칩 + 구간(세대 전체 기준의 섞은 값). 연도는 적지 않는다(출생신고에서 드러남) */
+.roulette__result { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); margin: 0; }
+.roulette__place { font-size: var(--fs-lg); font-weight: var(--fw-bold); color: var(--c-text); text-align: center; }
+.roulette__result .grade-line { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); color: var(--c-text-2); }
+.roulette__result .grade-line .grade { font-size: var(--fs-md); }
+
+/* ---------- r3 출생신고: 「세대」 칸 — 연도가 처음 드러나는 자리 (마스터 해석 · GD2 꼴 「{세대} · {연도}년생」) ----------
+   이름 칸 옆에 같은 라벨 문법(.label + 값)으로 둔다 — 새 부품 없음. 좁으면 아래로 접힌다 */
+.doc__who { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-7); align-items: flex-end; }
+.doc__gen { margin: 0; font-size: var(--fs-md); font-weight: var(--fw-bold); line-height: var(--lh-snug); color: var(--c-text); font-variant-numeric: tabular-nums; }
+
+@media (forced-colors: active) {
+  /* SPEC-004 GM4 (시안 gm3.css 「강제 색상」): 세대 뽑기·확률표 머리·세대 칸 글자 */
+  .gen-tag, .roulette__from, .odds__head, .doc__gen { color: CanvasText; }
+}

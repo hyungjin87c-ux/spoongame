@@ -1,11 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ERAS, PARENT_WEALTHS, finalWealthStanding, playToEnd, reviewEnding, standingScore, startBandOf, type EndingGame, type Era } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
+import { PARENT_WEALTHS, finalWealthStanding, playToEnd, reviewEnding, standingScore, startBandOf, wealthMixtureOfProfile, type EndingGame, type GenerationId, type ProfileId } from '../src/core';
+import { genLine } from '../src/data/birthReportText';
+import { profileLabel } from '../src/core/birthProfile';
 import { standingLabel } from '../src/data/birthText';
 import { ENDING_HEAD_LABEL, JOURNEY_BAR_LEGEND, MOVEMENT_TEXT, bandLabel, endingSpanText, journeyBarLabel } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { EXPECTED_START_BANDS } from '../scripts/pipelineLib';
+import { SIM_PROFILES } from '../scripts/simulateLib';
 import { chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
@@ -22,7 +24,7 @@ async function readText(relative: string): Promise<string> {
 }
 const dashCss = await readText('../src/styles/dash.css');
 
-const endingOf = (seed: number, era: Era): EndingGame => playToEnd(startLife(seed, era), chooserFor('random', seed)).state as EndingGame;
+const endingOf = (seed: number, era: ProfileId): EndingGame => playToEnd(startLife(seed, era), chooserFor('random', seed)).state as EndingGame;
 const render = (g: EndingGame) => renderToStaticMarkup(<EndingScreen game={g} onRebirth={() => {}} />);
 const textOf = (html: string) => html.replace(/<\/?(?:span|strong|em)[^>]*>/g, '').replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
@@ -34,17 +36,17 @@ const attr = (html: string, name: string): string => new RegExp(`${name}="([^"]*
 const barOf = (html: string): string => html.slice(html.indexOf('<div class="journey__bar"'), html.indexOf('</div></div>', html.indexOf('<div class="journey__bar"')) + 12);
 
 describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으로 적은 구간표와 같다 (R-327)', () => {
-  const bases = Object.fromEntries(ERAS.map((era) => [era, endingOf(2024, era)])) as Record<Era, EndingGame>;
+  const bases = Object.fromEntries(SIM_PROFILES.map((era) => [era, endingOf(2024, era)])) as Record<ProfileId, EndingGame>;
 
   it('세 시대 × 재력 5단계 × 도착 자리(분위수표의 5·50·95번째 칸 순자산): 띠의 --from·--to는 손으로 계산한 구간과 같고, 마름모 --at은 도착 점수(standingScore)다', () => {
     let checked = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (const wealth of PARENT_WEALTHS) {
         for (const net of [-3000, 0, 5000, 90000]) {
           const g = gameWith(bases[era], wealth, net);
           const html = render(g);
           const bar = barOf(html);
-          const [low, high] = EXPECTED_START_BANDS[era][wealth - 1];
+          const [low, high] = EXPECTED_START_BANDS[era as GenerationId][wealth - 1];
           const band = /<span class="journey__band" style="([^"]*)"/.exec(bar)![1];
           expect(band, `${era} ${wealth}단계`).toBe(`--from:${low}%;--to:${high}%`);
           const review = reviewEnding(g);
@@ -62,10 +64,10 @@ describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으�
   });
 
   it('구현 함수와 손으로 적은 표가 같다: startBandOf의 low·high가 모든 시대·단계에서 EXPECTED_START_BANDS와 같고, 0 ≤ low ≤ high ≤ 100이다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (const wealth of PARENT_WEALTHS) {
-        const b = startBandOf(era, wealth);
-        expect([b.low, b.high], `${era} ${wealth}`).toEqual([...EXPECTED_START_BANDS[era][wealth - 1]]);
+        const b = startBandOf(wealthMixtureOfProfile(era), wealth);
+        expect([b.low, b.high], `${era} ${wealth}`).toEqual([...EXPECTED_START_BANDS[era as GenerationId][wealth - 1]]);
         expect(b.low).toBeGreaterThanOrEqual(0);
         expect(b.high).toBeLessThanOrEqual(100);
         expect(b.low).toBeLessThanOrEqual(b.high);
@@ -74,7 +76,7 @@ describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으�
   });
 
   it('막대는 읽기용 이름 하나를 가진다: role="img" + aria-label = 「출발선 {구간}, 마지막 {자리}.」 (함수 조합 — 방향 문장은 바로 아래 문장이 읽는다, M7e-4 관찰 7), 축 글자(하위·상위)는 aria-hidden이다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const g = gameWith(bases[era], 3, 20000);
       const html = render(g);
       const review = reviewEnding(g);
@@ -93,7 +95,7 @@ describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으�
   });
 
   it('스무 살 전에 끝난 인생: 띠만 그리고 마름모·「마지막」 줄이 없다. 읽기용 이름은 「출발선 {구간}.」', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const base = bases[era];
       const young: EndingGame = { ...base, age: 9, assets: null, character: { ...base.character, parentWealth: 2 }, death: { ...base.death, age: 9, cause: '사고' } };
       const html = render(young);
@@ -102,14 +104,14 @@ describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으�
       expect(html).not.toContain('data-testid="ending-legend-end"');
       expect(html).toContain('journey__band');
       const label = attr(/<div class="journey__bar"[^>]*>/.exec(html)![0], 'aria-label');
-      expect(label).toBe(`출발선 ${bandLabel(startBandOf(era, 2))}.`);
+      expect(label).toBe(`출발선 ${bandLabel(startBandOf(wealthMixtureOfProfile(era), 2))}.`);
       expect(label).not.toContain('마지막');
     }
   });
 });
 
 describe('엔딩 범례와 머리 (R-327)', () => {
-  const base = endingOf(2024, 'present');
+  const base = endingOf(2024, 'alpha');
 
   it('범례: 출발선 = 수저 칩(이 인물의 부모 재력 단계) + 「({구간})」, 마지막 = 자리 글자. 표식 두 개는 aria-hidden이고 모양이 다르다(띠 모양 · 마름모)', () => {
     for (const wealth of PARENT_WEALTHS) {
@@ -117,20 +119,22 @@ describe('엔딩 범례와 머리 (R-327)', () => {
       const html = render(g);
       const legend = /<dl class="journey__legend"[^>]*>[^]*?<\/dl>/.exec(html)![0];
       expect(legend).toContain(`data-grade="${wealth}"`);
-      expect(textOf(/data-testid="grade-range">([^]*?)<\/dd>/.exec(legend)![1])).toBe(`(${bandLabel(startBandOf('present', wealth))})`);
+      expect(textOf(/data-testid="grade-range">([^]*?)<\/dd>/.exec(legend)![1])).toBe(`(${bandLabel(startBandOf(wealthMixtureOfProfile('alpha'), wealth))})`);
       expect(legend).toContain('<i class="journey__key journey__key--band" aria-hidden="true"></i>');
       expect(legend).toContain('<i class="journey__key journey__key--end" aria-hidden="true"></i>');
       expect(textOf(legend)).toContain(JOURNEY_BAR_LEGEND.start);
       expect(textOf(legend)).toContain(JOURNEY_BAR_LEGEND.end);
-      expect(textOf(/data-testid="ending-legend-end">([^]*?)<\/dd>/.exec(legend)![1])).toBe(standingLabel(finalWealthStanding('present', 8000)));
+      expect(textOf(/data-testid="ending-legend-end">([^]*?)<\/dd>/.exec(legend)![1])).toBe(standingLabel(finalWealthStanding('alpha', 8000)));
     }
   });
 
   it('머리: 라벨 「{세상} · 생애 기록」(Glue)과 셋째 줄 「{출생 연월} ~ {사망 연도}년 · {나이}세」 — 예전 출생 줄은 없다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const g = endingOf(7, era);
       const html = render(g);
-      expect(textOf(/data-testid="ending-era">([^]*?)<\/p>/.exec(html)![1])).toBe(`${ERA_CONFIG[era].label} · ${ENDING_HEAD_LABEL}`);
+      expect(textOf(/data-testid="ending-era">([^]*?)<\/p>/.exec(html)![1])).toBe(ENDING_HEAD_LABEL);
+      // 세대·출생 연도는 머리의 「{세대} · {연도}년생」 줄이 처음 보인다 (GS9·GD2)
+      expect(textOf(/data-testid="ending-gen">([^]*?)<\/p>/.exec(html)![1])).toContain(genLine(profileLabel(era), g.character.birthYear));
       const c = g.character;
       expect(textOf(/data-testid="ending-span">([^]*?)<\/p>/.exec(html)![1])).toBe(endingSpanText(c.birthYear, g.birthReport!.month, c.birthYear + g.death.age, g.death.age));
       expect(textOf(/data-testid="ending-span">([^]*?)<\/p>/.exec(html)![1])).toMatch(/^\d{4}년 \d{1,2}월 ~ \d{4}년 · \d+세$/);

@@ -1,4 +1,4 @@
-import { ERAS, type LifeLength } from '../src/core';
+import { GENERATION_IDS as ERAS, type LifeLength } from '../src/core';
 import { LIFE_LENGTH_MODES } from '../src/data/timingTable';
 import { PIPELINE_STRATEGIES, runPipelineCell, type CellReport } from './pipelineLib';
 import type { Dist } from './simulateLib';
@@ -26,7 +26,7 @@ const cardsIn = (r: CellReport, m: (typeof LIFE_LENGTH_MODES)[LifeLength]): bool
 const timeIn = (r: CellReport, m: (typeof LIFE_LENGTH_MODES)[LifeLength]): boolean => r.minutes1x.mean >= m.timeMin.modelLow - 1.5 && r.minutes1x.mean <= m.timeMin.modelHigh + 1.5;
 const dist = (label: string, d: Dist, digits = 1) => `    ${label.padEnd(24)} 평균 ${f(d.mean, digits).padStart(6)} | 최소 ${f(d.min, digits).padStart(6)} | 5% ${f(d.p05, digits).padStart(6)} | 중앙 ${f(d.p50, digits).padStart(6)} | 95% ${f(d.p95, digits).padStart(6)} | 최대 ${f(d.max, digits).padStart(6)}`;
 
-console.log(`1000판 전체 파이프라인: 시대 ${ERAS.length}개 × 전략 ${PIPELINE_STRATEGIES.length}개(자동 모드 / 무작위 수동 흉내) × 인생 길이 ${MODES.length}개 × ${lives}판 = ${ERAS.length * PIPELINE_STRATEGIES.length * MODES.length * lives}판`);
+console.log(`1000판 전체 파이프라인: 세대 ${ERAS.length}개 × 전략 ${PIPELINE_STRATEGIES.length}개(자동 모드 / 무작위 수동 흉내) × 인생 길이 ${MODES.length}개 × ${lives}판 = ${ERAS.length * PIPELINE_STRATEGIES.length * MODES.length * lives}판`);
 console.log(`경로: 첫 화면 → 세상·인생 길이 고르기 → 태어나기 → 인생(세션 reducer: 한 해씩·다음 결정으로·선택·자동 선택·플레이 시간 기록 옮기기) → 사망 → 엔딩 회고(reviewEnding) → 다시 태어나기 → 새 판 출생·첫 결정`);
 console.log(`저장 검증: 단계가 바뀌는 지점·선택지·엔딩·다시 태어난 직후는 모든 판에서, ${every > 0 ? `매 걸음은 ${every}판마다 한 판(그 판은 매 걸음 복원한 상태로 이어간다)` : '매 걸음은 하지 않음'}\n`);
 

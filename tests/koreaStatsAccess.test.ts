@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import statsJson from '../src/data/koreaStats.json';
 // 예비 지표까지 합친 전체 데이터(첫 화면 묶음에서 뺀 지표 포함, SPEC-005 QI4 2단계) — 「미확인은 어떤 접근자로도 안 나온다」는 기본 접근자와 합친 접근자 둘 다 본다
 import { FULL_STATS } from '../src/data/koreaStatsFull';
-import { ERAS } from '../src/core/types';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import {
   CAROUSEL_ORDER,
   createStatsAccess,
@@ -358,21 +356,22 @@ describe('행정구역·룰렛 함수 (M3가 쓰는 함수, R-145·R-146)', () =
     expect(getRouletteRegions(1955)!.regions.map((x) => x.name)).not.toContain('울산');
   });
 
-  // REV-003-M6a-2 R-187 (M3 착수 조건): ERA_CONFIG의 **모든 출생 연도**에서 목록이 나오고, 지금 세상(2026)만 통계 파생·지난·다가올 세상은 설계값이다
-  it('R-187: ERA_CONFIG의 모든 출생 연도(지난 1950~1989·지금 2026·다가올 2030~2060)에서 룰렛 지역 목록이 있고, basis가 지금 세상 = statistic-derived / 지난·다가올 = design이다', () => {
+  // REV-003-M6a-2 R-187: 이 접근자의 기준 목록은 R1 때의 시대 표(지난 1950~1989·지금 2026·다가올 2030~2060)다. 세대 판(1940~2020년생)의 지역 목록은 출생 연도 표(birthYearData)가 맡고
+  // (`birthStats.regionsOf`), 이 접근자는 시험 전용 R1 프로필의 2026년생 목록(통계 파생)에만 쓰인다 — 아래 범위는 접근자가 가진 자료의 범위를 직접 적은 값이다.
+  it('R-187: 접근자가 가진 모든 출생 연도(1950~1989·2026·2030~2060)에서 룰렛 지역 목록이 있고, basis가 2026 = statistic-derived / 그 밖 = design이다', () => {
     let checked = 0;
-    for (const era of ERAS) {
-      const { min, max } = ERA_CONFIG[era].birthYears;
+    const RANGES: ReadonlyArray<readonly [number, number]> = [[1950, 1989], [2026, 2026], [2030, 2060]];
+    for (const [min, max] of RANGES) {
       for (let y = min; y <= max; y++) {
         const r = getRouletteRegions(y);
-        expect(r, `${era} ${y}`).toBeDefined();
-        expect(r!.regions.length, `${era} ${y}`).toBeGreaterThanOrEqual(10);
-        expect(r!.basis, `${era} ${y}`).toBe(era === 'present' ? 'statistic-derived' : 'design');
+        expect(r, `${y}`).toBeDefined();
+        expect(r!.regions.length, `${y}`).toBeGreaterThanOrEqual(10);
+        expect(r!.basis, `${y}`).toBe(y === 2026 ? 'statistic-derived' : 'design');
         checked++;
       }
     }
     expect(checked, '검사한 출생 연도 수 = 40 + 1 + 31').toBe(72);
-    // 시대 밖 연도에는 목록이 없다
+    // 자료 범위 밖 연도에는 목록이 없다
     for (const y of [1949, 1990, 2007, 2025, 2027, 2029, 2061]) expect(getRouletteRegions(y), String(y)).toBeUndefined();
   });
 

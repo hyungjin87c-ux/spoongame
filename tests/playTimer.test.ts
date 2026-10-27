@@ -1,24 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  adoptPlay,
-  advancePlay,
-  emptyPlay,
-  ensurePlay,
-  isIdleOnlyChange,
-  isNegligibleChange,
-  NEGLIGIBLE_PLAY_MS,
-  newPlayTimerState,
-  retargetPlay,
-  samplePlay,
-  serializeGame,
-  setHidden,
-  skipPlay,
-  type GameState,
-  type PlayBucket,
-  type PlayLive,
-  type PlayTime,
-  type PlayTimerState,
-} from '../src/core';
+import { adoptPlay, advancePlay, emptyPlay, ensurePlay, isIdleOnlyChange, isNegligibleChange, NEGLIGIBLE_PLAY_MS, newPlayTimerState, retargetPlay, samplePlay, serializeGame, setHidden, skipPlay, type GameState, type PlayBucket, type PlayLive, type PlayTime, type PlayTimerState } from '../src/core';
 import { startLife } from '../scripts/simulateLib';
 
 /**
@@ -102,7 +83,7 @@ describe('이어하기 횟수는 hold·decide가 처음 쌓일 때 올린다 (R-
 
   it('다른 탭의 판을 이어받으면(adopt) 그 판의 기록에서 다시 쌓고, 이 탭에서 hold가 처음 쌓일 때 이어하기가 하나 오른다', () => {
     let s = booted('idle');
-    const other: GameState = { ...startLife(77, 'present'), play: { ...emptyPlay(), hold: 40_000, resumes: 2 } };
+    const other: GameState = { ...startLife(77, 'alpha'), play: { ...emptyPlay(), hold: 40_000, resumes: 2 } };
     s = adoptPlay(s, other, 500);
     expect(s.play).toEqual(other.play);
     s = advancePlay(s, live(77, other.play, 'hold'), 500);
@@ -189,7 +170,7 @@ describe('탭이 가려진 동안 흐른 시간은 버킷과 무관하게 idle�
 });
 
 describe('isIdleOnlyChange: 수동적인 시간(idle)만 다르면 쓰지 않는다 (R-417)', () => {
-  const base = (): GameState => ({ ...startLife(21, 'present') });
+  const base = (): GameState => ({ ...startLife(21, 'alpha') });
   const known = (): string => serializeGame(base());
   const withPlayOver = (g: GameState, over: Partial<PlayTime>): GameState => ({ ...g, play: { ...g.play!, ...over } });
 
@@ -221,7 +202,7 @@ describe('isIdleOnlyChange: 수동적인 시간(idle)만 다르면 쓰지 않는
 });
 
 describe('isNegligibleChange: 마지막 쓰기 뒤 쌓인 사람의 시간이 1.5초 미만이면 쓰지 않는다 — 열자마자 곧바로 닫은 탭 (content-M8 13-3 TB01-close, R-047)', () => {
-  const base = (): GameState => ({ ...startLife(21, 'present') });
+  const base = (): GameState => ({ ...startLife(21, 'alpha') });
   const known = (): string => serializeGame(base());
   const withPlayOver = (g: GameState, over: Partial<PlayTime>): GameState => ({ ...g, play: { ...g.play!, ...over } });
 

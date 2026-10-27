@@ -114,7 +114,8 @@ test('대조: 묶음 규칙을 끄면(`.keep-phrase { display: inline }`) 같은
   const split: string[] = [];
   for (const id of ROULETTE_RESULT_IDS) {
     await openWordBreakState(page, id);
-    await page.addStyleTag({ content: '.keep-phrase { display: inline !important; }' });
+    // 결과 줄은 SPEC-004부터 「수저 칩」과 「구간」(.grade-line__range)이 따로 놓이는 두 덩이라 구간이 저절로 칩 옆에서 갈라지지 않는다. 묶음 규칙이 꺼진 옛 모습을 만들려고 구간 칸을 좁혀(4em) 안에서 줄이 바뀌게 한다
+    await page.addStyleTag({ content: '.keep-phrase { display: inline !important; } .grade-line__range { display: block !important; max-width: 4em !important; }' });
     for (const percent of [150, 200] as const) {
       await setRootFontPercent(page, percent);
       for (const b of await measureBands(page)) if (b.lines > 1 && b.natural <= b.line + 0.5) split.push(`${id}/${percent}% 「${b.text}」`);

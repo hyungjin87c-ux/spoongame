@@ -2,7 +2,6 @@ import { expect, test, type Page } from '@playwright/test';
 import { INTENDED_BREAK_WORDS } from './intendedBreaks';
 import { describeWordBreak, measureWordBreaks, type WordBreakReport } from './lineBreaks';
 import { freezeTime } from './m3States';
-import { BIRTH_VARIANTS } from './m3Variants';
 import { setRootFontPercent } from './textResize';
 import { STANDARD_VIEWPORTS } from './viewports';
 import { BIRTH_STATE_IDS, PLAIN_STATE_IDS, ROULETTE_RESULT_IDS, isRouletteState, openWordBreakState, type WordBreakStateId } from './wordBreakStates';
@@ -41,9 +40,9 @@ type Category = keyof typeof WORD_CATEGORIES;
 /** 상태마다 잰 낱말 수의 하한(실측: 룰렛 96~100, 지금 세상 출생신고 280~295, 지난·다가올 세상 213~225)과 꼭 들어 있어야 하는 낱말의 종류 */
 function expectations(id: WordBreakStateId): { floor: number; categories: readonly Category[] } {
   if (isRouletteState(id)) return { floor: 80, categories: id === 'roulette-reduced' ? ['heading', 'reel', 'bar'] : ['heading', 'chip', 'reel', 'bar'] };
-  const compare = id in BIRTH_VARIANTS ? BIRTH_VARIANTS[id as keyof typeof BIRTH_VARIANTS].compareRows > 0 : true; // 추가 표본 둘은 지금 세상
+  // 비교 표(와 그 출처 줄 `.cmp__source`)는 SPEC-004 BR5(N20)에서 모든 세대 판에 숨겨졌다 — 표본 전부가 표 없는 서류다(compareRows 0). 하한은 표 없는 표본의 실측(235~240)보다 낮게 둔다
   const base: Category[] = ['heading', 'chip', 'job', 'place', 'sentence', 'foot', 'bar'];
-  return { floor: compare ? 250 : 190, categories: compare ? [...base, 'source'] : base };
+  return { floor: 190, categories: base };
 }
 
 interface AuditOutcome {
@@ -135,17 +134,18 @@ test.describe('QA의 낱말 분류 320x568', () => {
     await openWordBreakState(page, 'birth-labor-jeju');
     await setRootFontPercent(page, 200);
     const r = await measureWordBreaks(page);
-    const jeju = r.unavoidable.filter((u) => u.word === '제주특별자치도');
+    const jeju = r.unavoidable.filter((u) => u.word.startsWith('제주특별자치도')); // (서술문에서는 조사가 붙은 「제주특별자치도의」가 한 낱말이다)
     expect(jeju.length, `unavoidable ${r.unavoidable.map(describeWordBreak).join(' / ')}`).toBeGreaterThanOrEqual(1);
     for (const u of jeju) expect(u.natural, '자연 폭 > 한 줄 전체').toBeGreaterThan(u.line + 0.5);
     expect(r.broken).toEqual([]);
   });
 });
 
-test.describe('QA의 낱말 분류 375x812', () => {
-  test.use({ viewport: { width: 375, height: 812 } });
+test.describe('QA의 낱말 분류 320x568 (전남광주통합특별시)', () => {
+  // (Noto Sans KR로 글꼴이 바뀐 뒤 9글자 낱말의 폭이 줄어 폭 375 · 글자 200%에서는 한 줄에 들어간다 — 같은 상황이 되는 가장 넓은 폭 쪽으로 320을 쓴다)
+  test.use({ viewport: { width: 320, height: 568 } });
 
-  test('「전남광주통합특별시」(폭 375 · 글자 200%): 서술문·태어난 곳의 9글자 낱말은 한 줄 전체보다 길어 unavoidable이다 — 목록(320·360)이 아니라 측정이 가른다', async ({ page }, testInfo) => {
+  test('「전남광주통합특별시」(폭 320 · 글자 200%): 서술문·태어난 곳의 9글자 낱말은 한 줄 전체보다 길어 unavoidable이다 — 목록(320·360)이 아니라 측정이 가른다', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
     await openWordBreakState(page, 'birth-dirt');
     await setRootFontPercent(page, 200);
@@ -157,23 +157,7 @@ test.describe('QA의 낱말 분류 375x812', () => {
   });
 });
 
-for (const [name, width, height] of [
-  ['667x375 가로', 667, 375],
-  ['640x400 확대 200% 상당', 640, 400],
-] as const) {
-  test.describe(`QA의 낱말 분류 ${name}`, () => {
-    test.use({ viewport: { width, height } });
-    test(`「초중고사교육비조사」(글자 200% · 폭 ${width}대): 비교 표 출처 줄의 낱말이 끊기지 않는다 — 예전에는 표 첫 칸 안에서 끊겼다(결함, 고침)`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
-      await openWordBreakState(page, 'birth');
-      await setRootFontPercent(page, 200);
-      const r = await measureWordBreaks(page, { categories: { source: WORD_CATEGORIES.source } });
-      expect(r.words, '출처 줄의 낱말을 쟀다').toContain('초중고사교육비조사');
-      expect(r.categories.source).toBeGreaterThanOrEqual(3);
-      expect(r.broken.concat(r.unavoidable).filter((b) => b.word === '초중고사교육비조사')).toEqual([]);
-    });
-  });
-}
+// (667x375·640x400 비교 표 출처 줄 「초중고사교육비조사」 시험은 SPEC-004 BR5(N20)에서 비교 표가 세대 판에 숨겨져 없앴다)
 
 // ---------- 측정기 대조 (QM3-1 (f)) ----------
 // 변조를 일부러 만들어(스타일을 덮어씀) 이 감사가 실제로 그 낱말을 `broken`으로 잡는지 본다. 선택자가 바뀌어 덮어쓰기가 안 먹으면(선택자 썩음) 끊김이 안 생겨 이 시험이 실패한다.
@@ -182,7 +166,7 @@ for (const [name, width, height] of [
 test.describe('측정기 대조: 어머니·아버지 칸을 반쪽으로 되돌리면', () => {
   test.use({ viewport: { width: 320, height: 568 } });
   const HALF_CELLS = '.doc__grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } .doc__grid .span-2 { grid-column: span 2 !important; }';
-  for (const percent of [150, 200] as const) {
+  for (const percent of [200] as const) { // (Noto Sans KR로 폭이 줄어 150%의 반쪽 칸에서는 「단순노무직」이 끊기지 않는다 — 같은 상황이 되는 200%만)
     test(`폭 320 · 글자 ${percent}%: 「단순노무직」(5글자, 한 줄 전체의 절반 가까이)이 broken으로 잡힌다 — 덮어쓰기 전에는 없다`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
       await openWordBreakState(page, 'birth-labor-jeju');
@@ -197,7 +181,7 @@ test.describe('측정기 대조: 어머니·아버지 칸을 반쪽으로 되돌
   }
   test('폭 320 · 글자 200%: 「서비스직」(4글자)도 반쪽 칸에서 broken으로 잡힌다', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
-    await openWordBreakState(page, 'birth-service-gangwon');
+    await openWordBreakState(page, 'birth-service-sejong');
     await setRootFontPercent(page, 200);
     expect((await measureWordBreaks(page)).broken, '덮어쓰기 전에는 결함이 없다').toEqual([]);
     await page.addStyleTag({ content: HALF_CELLS });
@@ -222,27 +206,7 @@ test.describe('측정기 대조: 의도된 낱말 목록에서 「다이아몬�
   });
 });
 
-test.describe('측정기 대조: 비교 표를 표 칸 안으로 되돌리면', () => {
-  for (const [width, height] of [
-    [667, 375],
-    [640, 400],
-  ] as const) {
-    test.describe(`${width}x${height}`, () => {
-      test.use({ viewport: { width, height } });
-      test(`폭 ${width} · 글자 200%: 출처 줄의 「초중고사교육비조사」가 표 첫 칸 안에서 끊겨 broken으로 잡힌다 — 덮어쓰기 전에는 없다`, async ({ page }, testInfo) => {
-        test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
-        await openWordBreakState(page, 'birth');
-        await setRootFontPercent(page, 200);
-        expect((await measureWordBreaks(page)).broken, '덮어쓰기 전에는 결함이 없다').toEqual([]);
-        // 카드의 컨테이너 질의(글자 크기를 따라 한 행 한 덩어리로 쌓는다)를 끄면 예전처럼 뷰포트 폭이 640 이상일 때 항상 표다
-        await page.addStyleTag({ content: '.card--cmp { container-type: normal !important; }' });
-        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-        const after = await measureWordBreaks(page);
-        expect(after.broken.map((b) => b.word), `broken ${after.broken.map(describeWordBreak).join(' / ')}`).toContain('초중고사교육비조사');
-      });
-    });
-  }
-});
+// (비교 표를 표 칸 안으로 되돌려 「초중고사교육비조사」가 끊기는 것을 잡던 측정기 대조는 SPEC-004 BR5(N20)에서 비교 표가 세대 판에 숨겨져 없앴다)
 
 // 추가 표본이 의도한 낱말을 담는지(공허 통과 방지)는 tests/m3Variants.test.tsx가 마크업으로 본다 — 여기서는 표본 목록이 비지 않았음만 확인한다.
 test('추가 출생신고 표본 둘이 상태 목록에 들어 있다', () => {

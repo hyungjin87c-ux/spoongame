@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import economySrc from '../src/core/economy.ts?raw';
+import * as economyTable from '../src/data/economyTable';
 import statsJson from '../src/data/koreaStats.json';
 import {
   CURVE_FIRST_AGE,
   CURVE_LAST_AGE,
   ECONOMY,
-  ERA_ECONOMY,
   LABOR_INCOME_CURVE_THOUSAND,
   LIMITS,
 } from '../src/data/economyTable';
@@ -34,7 +34,6 @@ import {
   type Assets,
   type Dwelling,
   type EconomyContext,
-  type Era,
   type ParentWealth,
 } from '../src/core';
 
@@ -48,12 +47,17 @@ const ctx = (over: Omit<Partial<EconomyContext>, 'flags'> & { flags?: string[] }
   age: 45,
   education: 50,
   flags: new Set(over.flags ?? []),
-  era: 'present',
   tier: 3,
+  // 연도 축 입력 (SPEC-004 EY4): GM4에서는 계수가 연도를 보지 않는다 — 어느 해든 같은 값(EY17 ② 항등)
+  year: 2026,
+  birthYear: 1981,
+  regionClass: 'other',
   ...(over.age !== undefined ? { age: over.age } : {}),
   ...(over.education !== undefined ? { education: over.education } : {}),
-  ...(over.era !== undefined ? { era: over.era } : {}),
   ...(over.tier !== undefined ? { tier: over.tier } : {}),
+  ...(over.year !== undefined ? { year: over.year } : {}),
+  ...(over.birthYear !== undefined ? { birthYear: over.birthYear } : {}),
+  ...(over.regionClass !== undefined ? { regionClass: over.regionClass } : {}),
 });
 
 const assets = (over: Partial<Assets> = {}): Assets => ({ net: 0, income: 0, debt: 0, incomeAdj: 0, dwelling: 'rent', ...over });
@@ -126,14 +130,12 @@ describe('계수 표와 통계 근거의 대응 (src/data/economyTable.ts ↔ ko
     expect(ECONOMY.interest).toBeLessThan(0.03);
   });
 
-  it('시대 계수: 지난 세상은 소득·생활·주거가 모두 지금보다 낮고, 다가올 세상은 소득이 더 높지만 생활·주거 부담도 더 높다 (설계값, SPEC-004가 연도별 전망으로 바꾼다)', () => {
-    expect(economyFactors('present')).toEqual({ income: 1, living: 1, housing: 1 });
-    for (const k of ['income', 'living', 'housing'] as const) expect(ERA_ECONOMY.past[k], k).toBeLessThan(1);
-    expect(ERA_ECONOMY.future.income).toBeGreaterThan(1);
-    expect(ERA_ECONOMY.future.living).toBeGreaterThan(1);
-    expect(ERA_ECONOMY.future.housing).toBeGreaterThan(1);
-    // 마스터 결정 D6: 다가올 세상 생활 1.2 (생활비 곡선을 더한 뒤 주거는 M-4 가드 여유를 위해 1.2로 낮췄다 — 9-3절)
-    expect(ERA_ECONOMY.future.living).toBe(1.2);
+  it('연도 축 계수(EY4·EY17 ②): GM4에서는 모든 규칙이 항등이다 — 연도·출생 연도·수저·지역이 무엇이든, forceR1이든 아니든 소득·생활·주거 계수가 모두 1이다. 옛 시대 계수(ERA_ECONOMY 지난 0.6·0.7·0.6 / 다가올 1.15·1.2·1.3)는 없다 (GM10이 연도별 수준·모양·충격으로 바꾼다)', () => {
+    for (const tier of [1, 3, 5] as const) for (const year of [1950, 1997, 2026, 2060]) for (const regionClass of ['capital', 'metro', 'other'] as const) {
+      expect(economyFactors({ year, birthYear: 1950, tier, regionClass }), `${year}/${tier}/${regionClass}`).toEqual({ income: 1, living: 1, housing: 1 });
+    }
+    expect(economyFactors({ year: 1960, birthYear: 1940, tier: 1, regionClass: 'capital', forceR1: true })).toEqual({ income: 1, living: 1, housing: 1 });
+    expect('ERA_ECONOMY' in economyTable, '옛 시대 계수 표는 없다').toBe(false);
   });
 
   it('독립 부모 지원 SUPPORT는 재력 단계마다 늘어난다 (G3 방향) · 한계 값은 서로 앞뒤가 맞다', () => {
@@ -206,18 +208,18 @@ describe('소득 (EC2): 곡선 × 학력 × 일 상태 × 시대, 결혼·소득
     expect(incomeOf(ctx({ age: 25, flags: [] }), 0)).toBe(Math.round(laborCurve(25) * 1.1 * 0.55)); // 하한은 취업·창업에만
   });
 
-  it('incomeOf: 65세부터 연금 660이 더해지고 소득 보정은 0.3배로 줄어든다 · 시대 계수는 노동 소득에만 곱해진다', () => {
+  it('incomeOf: 65세부터 연금 660이 더해지고 소득 보정은 0.3배로 줄어든다 · 연도 계수(GM4 항등)도 노동 소득에만 곱해진다', () => {
     const c = ctx({ age: 65, flags: [] });
     expect(incomeOf(c, 0)).toBe(Math.round(laborCurve(65) * 1.1 * 0.55 + 660));
     expect(incomeOf(c, 1000)).toBe(Math.round(laborCurve(65) * 1.1 * 0.55 + 300 + 660)); // 보정 1000 × 0.3
     expect(incomeOf(ctx({ age: 64, flags: [] }), 1000)).toBe(Math.round(laborCurve(64) * 1.1 * 0.55 + 1000)); // 64세는 그대로, 연금 없음
     expect(incomeOf(ctx({ age: 90, flags: [] }), -99999)).toBe(660); // 연금은 보정이 아무리 깎아도 남는다
-    const era = (e: Era) => incomeOf(ctx({ age: 45, era: e, flags: ['has_career'] }), 0);
-    expect(era('past')).toBe(Math.round(4650.8 * 1.1 * ERA_ECONOMY.past.income));
-    expect(era('future')).toBe(Math.round(4650.8 * 1.1 * ERA_ECONOMY.future.income));
-    expect(era('past')).toBeLessThan(era('present'));
-    expect(era('present')).toBeLessThan(era('future'));
-    expect(incomeOf(ctx({ age: 70, era: 'past', flags: [] }), 0)).toBe(Math.round(laborCurve(70) * 1.1 * 0.55 * ERA_ECONOMY.past.income + 660));
+    // 연도 계수는 GM4에서 항등이라 달력 연도·출생 연도가 달라도 소득이 같다 (노동 소득 4650.8 × 1.1)
+    const at = (year: number, birthYear: number) => incomeOf(ctx({ age: 45, year, birthYear, flags: ['has_career'] }), 0);
+    expect(at(2026, 1981)).toBe(Math.round(4650.8 * 1.1));
+    expect(at(1995, 1950)).toBe(at(2026, 1981));
+    expect(at(2060, 2015)).toBe(at(2026, 1981));
+    expect(incomeOf(ctx({ age: 70, year: 2000, birthYear: 1930, flags: [] }), 0)).toBe(Math.round(laborCurve(70) * 1.1 * 0.55 + 660));
   });
 
   it('incomeOf: 한계(LIMITS.incomeMax)로 자른다', () => {
@@ -249,9 +251,9 @@ describe('생활비·의료·주거비 (EC2)', () => {
     // 부모 집에 사는 동안 부모가 생활비 일부를 부담한다 (M-2 FAMILY_LIVING)
     expect(livingOf(ctx({ age: 22, flags: ['college'] }), 'family')).toBe(Math.round(base * ECONOMY.living.student * ECONOMY.living.familyLiving * profile(22)));
     expect(livingOf(ctx({ age: 22, flags: ['college'] }), 'family')).toBeLessThan(livingOf(ctx({ age: 22, flags: ['college'] }), 'rent'));
-    // 시대 계수
-    expect(livingOf(ctx({ age: 45, era: 'past' }), 'rent')).toBe(Math.round(base * ERA_ECONOMY.past.living * profile(45)));
-    expect(livingOf(ctx({ age: 45, era: 'future' }), 'rent')).toBe(Math.round(base * ERA_ECONOMY.future.living * profile(45)));
+    // 연도 계수(GM4 항등): 달력 연도가 달라도 같다
+    expect(livingOf(ctx({ age: 45, year: 1995, birthYear: 1950 }), 'rent')).toBe(Math.round(base * profile(45)));
+    expect(livingOf(ctx({ age: 45, year: 2060, birthYear: 2015 }), 'rent')).toBe(Math.round(base * profile(45)));
   });
 
   it('생활비 곡선(나이별 배수)은 20~39세 < 40~64세 > 65세~ 의 혹 모양이고 구간이 빠짐없이 이어진다 (설계값 D18)', () => {
@@ -272,15 +274,16 @@ describe('생활비·의료·주거비 (EC2)', () => {
   });
 
   it('housingCostOf: 자가 150 · 월세 max(360, 소득의 15.8%) · 전세 월세의 절반 · 가족 0 · 요양 1,800 — 시대 주거 계수를 곱한다', () => {
-    expect(housingCostOf('own', 5000, 'present')).toBe(150);
-    expect(housingCostOf('rent', 2000, 'present')).toBe(360); // 15.8% = 316 < 하한 360
-    expect(housingCostOf('rent', 4000, 'present')).toBe(632); // 4000 × 0.158
-    expect(housingCostOf('jeonse', 4000, 'present')).toBe(316);
-    expect(housingCostOf('jeonse', 2000, 'present')).toBe(180);
-    expect(housingCostOf('family', 4000, 'present')).toBe(0);
-    expect(housingCostOf('care', 0, 'present')).toBe(1800);
-    expect(housingCostOf('own', 5000, 'past')).toBe(Math.round(150 * ERA_ECONOMY.past.housing));
-    expect(housingCostOf('care', 0, 'future')).toBe(Math.round(1800 * ERA_ECONOMY.future.housing));
+    expect(housingCostOf('own', 5000, 1)).toBe(150);
+    expect(housingCostOf('rent', 2000, 1)).toBe(360); // 15.8% = 316 < 하한 360
+    expect(housingCostOf('rent', 4000, 1)).toBe(632); // 4000 × 0.158
+    expect(housingCostOf('jeonse', 4000, 1)).toBe(316);
+    expect(housingCostOf('jeonse', 2000, 1)).toBe(180);
+    expect(housingCostOf('family', 4000, 1)).toBe(0);
+    expect(housingCostOf('care', 0, 1)).toBe(1800);
+    // 주거비 계수는 `economyFactors(...).housing`(GM4에서는 늘 1) — 계수가 있으면 곱해진다
+    expect(housingCostOf('own', 5000, 0.6)).toBe(Math.round(150 * 0.6));
+    expect(housingCostOf('care', 0, 1.2)).toBe(Math.round(1800 * 1.2));
   });
 });
 
@@ -308,7 +311,7 @@ describe('현금흐름 (cashFlowOf): 소득 − 생활비 − 의료 − 주거�
     const a = assets({ dwelling: 'rent' });
     // 소득 보정이 늘어난 만큼의 산술은 흑자 쪽 나이(38세 — 나이 곡선 ×0.85)에서 본다. 40~64세의 곡선(M7a 재보정 뒤 ×1.73)에서는 생활비가 최소 생활(minShare) 바닥에 닿아 현금흐름이 같은 값으로 막힐 수 있다
     const y = ctx({ age: 38, flags: ['has_career'] });
-    expect(cashFlowOf(y, { ...a, incomeAdj: 400 }).total - cashFlowOf(y, a).total).toBe(400 - (housingCostOf('rent', incomeOf(y, 0) + 400, 'present') - housingCostOf('rent', incomeOf(y, 0), 'present')));
+    expect(cashFlowOf(y, { ...a, incomeAdj: 400 }).total - cashFlowOf(y, a).total).toBe(400 - (housingCostOf('rent', incomeOf(y, 0) + 400, 1) - housingCostOf('rent', incomeOf(y, 0), 1)));
     const married = ctx({ age: 45, flags: ['has_career', 'married'] });
     // 소득 +30%(약 +1,535)와 생활 인원 +0.5(약 +2,150)의 차이: 중년 부부는 혼자일 때보다 현금흐름이 줄어든다(소득이 낮은 사람일수록 더)
     // 차입 한도(limits)를 끈 값으로 견준다 — M7a 재보정 뒤 40~64세는 둘 다 한도(−300)에 막혀 같은 값이 된다
@@ -703,16 +706,16 @@ describe('해마다 정산 (yearlyAssets): 현금흐름을 더하고, 흑자의 
     expect(yearlyAssets.length).toBe(2);
   });
 
-  it('긴 인생 한 판을 돌려도 매해 불변식과 한계가 지켜진다 (20~100세, 세 시대 × 일 상태 4가지 × 주거 5가지)', () => {
-    const eras: Era[] = ['past', 'present', 'future'];
+  it('긴 인생 한 판을 돌려도 매해 불변식과 한계가 지켜진다 (20~100세, 출생 연도 셋(1950·1985·2016) × 일 상태 4가지 × 주거 5가지)', () => {
+    const births = [1950, 1985, 2016];
     const stateFlags = [['has_career'], ['own_business'], [], ['has_career', 'married', 'has_child']];
-    for (const era of eras) {
+    for (const birthYear of births) {
       for (const flags of stateFlags) {
         for (const dwelling of DWELLINGS) {
           let a = assets({ net: 0, dwelling });
           for (let age = 20; age <= 100; age++) {
-            a = yearlyAssets(a, ctx({ age, era, flags }));
-            expect(isValidAssets(a, DWELLINGS), `${era} ${flags.join(',')} ${dwelling} ${age}세 ${JSON.stringify(a)}`).toBe(true);
+            a = yearlyAssets(a, ctx({ age, year: birthYear + age, birthYear, flags }));
+            expect(isValidAssets(a, DWELLINGS), `${birthYear} ${flags.join(',')} ${dwelling} ${age}세 ${JSON.stringify(a)}`).toBe(true);
           }
         }
       }

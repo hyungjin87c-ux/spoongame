@@ -1,12 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { startLife } from '../scripts/simulateLib';
-import { DEFAULT_SETTINGS, IMPACT_KEYS, SPEEDS, advanceUntilDecision, calendarYear, educationLabel, familyOf, peersOf, previewPending, resolveChoice, stepYear, type GameState, type Settings } from '../src/core';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
+import { DEFAULT_SETTINGS, IMPACT_KEYS, R1_PRESENT, SPEEDS, advanceUntilDecision, calendarYear, educationLabel, familyOf, peersOf, previewPending, resolveChoice, stepYear, wealthMixtureOfGame, type GameState, type Settings } from '../src/core';
 import { looksStanding } from '../src/core/birth';
 import { reportPlaceLabel } from '../src/core/birthReport';
 import { startBandOf } from '../src/core/ending';
-import { formatCount, formatMan } from '../src/core/format';
-import { tryVirtualPopulation } from '../src/core/population';
+import { formatMan } from '../src/core/format';
 import { PEER_STATUS_LABEL, peersNow } from '../src/core/peerNow';
 import { DASHBOARD_PEERS_SHIPPED, BIRTH_TEXT, GRADE_NAME, genderLabel, peersNoteText, yearMonthText } from '../src/data/birthReportText';
 import { standingLabel } from '../src/data/birthText';
@@ -14,7 +13,7 @@ import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, statusHe
 import { EVENT_POOL } from '../src/data/events';
 import { choiceAccessibleName } from '../src/data/impactText';
 import { bandLabel } from '../src/data/endingText';
-import { placeLabel } from '../src/data/regionNames';
+import { regionLabelAt } from '../src/data/regionNames';
 import { LifeScreen } from '../src/screens/LifeScreen';
 import { GradeLine } from '../src/ui/Grade';
 import type { LifeGame } from '../src/ui/dash/Cards';
@@ -31,7 +30,7 @@ const REPO = 'https://github.com/hyungjin87c-ux/spoongame';
 const BUILD = 'v0.1.0 (abc1234)';
 const MINUTE = 29_846_880;
 
-const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, era: g.era!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
+const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, generation: g.generation!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
 const settingsOf = (o: Partial<Settings> = {}): Settings => ({ ...DEFAULT_SETTINGS, speed: 1, autoMode: false, ...o });
 
 interface Opts {
@@ -71,7 +70,7 @@ function ageTo(g: GameState, age: number): GameState {
 /** 선택지가 떠 있는 상태를 찾는다 */
 function decisionState(): GameState {
   for (let seed = 1; seed <= 60; seed++) {
-    const s = advanceUntilDecision(startLife(seed, 'present')).state;
+    const s = advanceUntilDecision(startLife(seed, 'alpha')).state;
     if (s.phase === 'life' && s.pending !== null && s.age >= 3) return s;
   }
   throw new Error('선택지 상태를 찾지 못했다');
@@ -113,8 +112,8 @@ function buttonsIn(html: string): Array<{ tag: string; label: string }> {
   return [...html.matchAll(/<(button|a)\b([^>]*)>([\s\S]*?)<\/\1>/g)].map((m) => ({ tag: `<${m[1]}${m[2]}>`, label: text(m[3]) }));
 }
 
-const infant = startLife(11, 'present', { looks: 97 });
-const adult = ageTo(startLife(11, 'present', { looks: 97 }), 31);
+const infant = startLife(11, 'alpha', { looks: 97 });
+const adult = ageTo(startLife(11, 'alpha', { looks: 97 }), 31);
 const decision = decisionState();
 const character = infant.character!;
 
@@ -350,11 +349,11 @@ describe('프로필 카드 (DB9)', () => {
     expect(flat(openTagBlock(card, 'profile-name'))).toBe(nospace(c.name));
     expect(flat(openTagBlock(card, 'profile-gender'))).toBe(nospace(genderLabel(c.gender)));
     expect(flat(openTagBlock(card, 'profile-born'))).toBe(nospace(yearMonthText(c.birthYear, infant.birthReport!.month)));
-    expect(flat(openTagBlock(card, 'profile-place'))).toBe(nospace(reportPlaceLabel(infant.birthReport!, infant.era!)));
+    expect(flat(openTagBlock(card, 'profile-place'))).toBe(nospace(reportPlaceLabel(infant.birthReport!, infant.character!.birthYear)));
     const home = openTagBlock(card, 'profile-home');
     expect(home).toContain(`data-grade="${c.parentWealth}"`);
     expect(home).toContain(gradeStem(c.parentWealth));
-    expect(flat(openTagBlock(home, 'grade-range'))).toBe(nospace(`(${bandLabel(startBandOf(infant.era!, c.parentWealth))})`));
+    expect(flat(openTagBlock(home, 'grade-range'))).toBe(nospace(`(${bandLabel(startBandOf(wealthMixtureOfGame(infant), c.parentWealth))})`));
     expect(flat(openTagBlock(card, 'profile-edu'))).toBe(nospace(educationLabel(infant.age, infant.flags)));
     expect(flat(openTagBlock(card, 'profile-looks'))).toBe(nospace(`${BIRTH_TEXT.looksSub} ${standingLabel(looksStanding(c.looks))}`)); // M7e-3: 값 앞에 「또래 사이에서」
   });
@@ -398,18 +397,19 @@ describe('상태 카드 (DB10)', () => {
   });
 
   it('상태 도움말: 자산 금액이 화면에 있으므로 시대별 단위 문장과 가구 기준 한 문장이 있다 — 지금 세상은 「올해 가치 기준」, 지난·다가올 세상은 「지금 가치로 환산」 (M5 2b, copy.md 4-5절)', () => {
-    const present = text(sectionOf(render(adult), 'stats'));
+    // 「올해 가치 기준」 문장은 시험 전용 R1 프로필(2026년생)만 쓴다 — 세대 판은 GM10 전까지 모두 「지금 가치로 환산」이다(SPEC-004 EY·표시 규칙)
+    const present = text(sectionOf(render(ageTo(startLife(11, R1_PRESENT), 31)), 'stats'));
     expect(present).toContain('0에서 100 사이의 값입니다.');
     expect(present).toContain('관계는 가족·친구와의 유대입니다.');
     expect(present).toContain(DASH_TEXT.statusHelpSummary);
     // 글자(Glue)가 숫자+단위(「3년」)를 요소로 감싸 text()가 사이에 공백을 끼우므로 공백을 모두 없애고 견준다
-    expect(nospace(present)).toContain(nospace(statusHelpText(ASSETS_AMOUNTS_SHIPPED, 'present')));
+    expect(nospace(present)).toContain(nospace(statusHelpText(ASSETS_AMOUNTS_SHIPPED, R1_PRESENT)));
     // M7e-3 (copy.md 5-2 ②, QA-003-M5 O01): 선택지 아래 표시의 뜻 두 문장이 끝에 더해졌다
     expect(nospace(present)).toContain(nospace('선택지 아래 표시는 그 선택만으로 생기는 변화이고, 해마다의 소득과 생활비는 따로 더해집니다.'));
     expect(nospace(present)).toContain(nospace('자산의 변화에는 앞으로 3년치 소득·지출 변화가 들어 있습니다.'));
     expect(present).toContain('자산은 올해 가치 기준의 원 단위입니다.');
     expect(present).toContain('순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.');
-    for (const era of ['past', 'future'] as const) {
+    for (const era of ['genx', 'alpha'] as const) {
       const other = text(sectionOf(render(ageTo(startLife(11, era), 31)), 'stats'));
       expect(other, era).toContain('자산은 지금 가치로 환산한 원 단위입니다.');
       expect(other, era).not.toContain('올해 가치 기준');
@@ -428,9 +428,10 @@ describe('자산 현황 (DB11, M5 2b)', () => {
     expect(young).not.toContain('class="tag"');
   });
 
-  it('스무 살부터 지금 세상: 순자산·연 소득·부채가 formatWon 그대로(「약」 없음)이고 태그가 없다 — dl은 aria-describedby가 없다. 이름에 「(가구)」가 없다', () => {
-    const asset = adult.assets!;
-    const html = sectionOf(render(adult), 'assets-card');
+  it('스무 살부터 지금 세상(시험 전용 R1 프로필): 순자산·연 소득·부채가 formatWon 그대로(「약」 없음)이고 태그가 없다 — dl은 aria-describedby가 없다. 이름에 「(가구)」가 없다', () => {
+    const r1 = ageTo(startLife(11, R1_PRESENT), 31);
+    const asset = r1.assets!;
+    const html = sectionOf(render(r1), 'assets-card');
     expect(html).toContain('class="card card--assets"');
     expect(html).toContain('aria-labelledby="assets-title"');
     expect(html).toContain(`>${DASH_TEXT.assetsTitle}</h2>`);
@@ -453,7 +454,7 @@ describe('자산 현황 (DB11, M5 2b)', () => {
   });
 
   it('지난·다가올 세상: 카드 머리에 「지금 가치로 환산」 태그가 항상 있고 금액 묶음(dl)이 aria-describedby로 그 태그를 가리킨다', () => {
-    for (const era of ['past', 'future'] as const) {
+    for (const era of ['genx', 'alpha'] as const) {
       const g = ageTo(startLife(11, era), 31);
       const html = sectionOf(render(g), 'assets-card');
       const tag = openTag(html, 'assets-basis');
@@ -505,7 +506,7 @@ describe('선택지 영향 줄 (M5 2b, copy.md 4-3·4-4)', () => {
   /** 선택지가 뜬 상태 하나(minAge 이상) */
   function decisionFrom(minAge: number, maxAge = 120): GameState {
     for (let seed = 1; seed <= 60; seed++) {
-      let s: GameState = startLife(seed, 'present');
+      let s: GameState = startLife(seed, 'alpha');
       for (let guard = 0; guard < 60 && s.phase === 'life'; guard++) {
         s = advanceUntilDecision(s).state;
         if (s.phase !== 'life' || s.pending === null) break;
@@ -621,14 +622,11 @@ describe('인생 기록 (DB12·DB14)', () => {
     expect(adult.history.length).toBeGreaterThan(5);
   });
 
-  it('맨 위 고정 줄: 「이 세상의 가상 인구 {N}명」 + 「{이름}도 그중 한 사람」, 쌓이는 기록보다 앞이다', () => {
+  // (SPEC-004 GS11-3: 인생 기록 맨 위의 「가상 인구」 고정 줄 `log__pin`은 없어졌다 — 아래 시험이 그 줄이 없음을 잠근다)
+  it('맨 위 고정 줄(가상 인구)은 없다 — 스크롤 영역 앞에 쌓이는 기록만 있다 (GS11-3)', () => {
     const html = render(adult);
-    const pin = flat(openTagBlock(html, 'log-pin'));
-    const pop = tryVirtualPopulation(MINUTE);
-    expect(pop).not.toBeNull();
-    expect(nospace(pin)).toContain(nospace(DASH_TEXT.logPinA(formatCount(pop!))));
-    expect(nospace(pin)).toContain(nospace(DASH_TEXT.logPinB(adult.character!.name)));
-    expect(posOf(html, 'data-testid="log-pin"')).toBeLessThan(posOf(html, 'data-testid="log-list"'));
+    expect(html).not.toContain('data-testid="log-pin"');
+    expect(html).not.toContain('log__pin');
   });
 
   it('스크롤 영역: 키보드로 닿고(tabindex 0) 이름이 있는 region. 새 기록 안내 버튼은 처음엔 없다', () => {
@@ -663,7 +661,7 @@ describe('식구 (DB13)', () => {
   it('어머니·아버지·형제자매 줄이 있고, 배우자·자녀는 있을 때만 나온다 (여러 판 전수)', () => {
     let withSpouse = 0;
     let withChild = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 12; seed++) {
         const g = ageTo(startLife(seed, era), 20 + (seed % 25));
         if (g.phase !== 'life') continue;
@@ -696,7 +694,7 @@ describe('같은 해 태어난 사람들 (VP4)', () => {
       expect(li).toContain(gradeStem(now[i].wealth));
       expect(flat(li)).toContain(nospace(now[i].name));
       expect(flat(li)).toContain(nospace(genderLabel(now[i].gender)));
-      expect(flat(li)).toContain(nospace(placeLabel(now[i], adult.era!)));
+      expect(flat(li)).toContain(nospace(regionLabelAt(now[i].region, adult.character!.birthYear)));
       expect(flat(openTagBlock(li, 'peer-now-label'))).toBe(nospace(now[i].label)); // M7e-3(E-7): 은퇴 뒤 다시 일하는 모습은 「다시 일하는 사람」이라 상태 라벨이 아니라 peersNow의 label이다
     });
     expect(text(card)).toContain(DASH_TEXT.peersTitle);

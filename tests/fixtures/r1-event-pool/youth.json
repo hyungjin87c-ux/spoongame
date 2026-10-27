@@ -1,0 +1,824 @@
+{
+  "note": "청년(20~39세) 이벤트. 커뮤니티 사연을 모티브로만 새로 쓴 글이다. 작성법: docs/data/events-schema.md",
+  "events": [
+    {
+      "id": "youth-military",
+      "title": "정해진 날짜",
+      "text": "정해진 날짜에 짐을 싸서 집을 나섰습니다. 낯선 사람들과 같은 방에서 지내는 날들이 시작되었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 20, "max": 24 },
+      "eras": ["past", "present"],
+      "weight": 40,
+      "once": true,
+      "conditions": { "gender": ["male"] },
+      "effects": { "stats": { "health": 2, "relationships": 3, "happiness": -2 } }
+    },
+    {
+      "id": "youth-work-pressure",
+      "title": "끝나지 않는 일",
+      "text": "일은 끝이 없었습니다. 퇴근한 뒤에도 연락이 이어졌고, 쉬는 날에도 마음 한쪽은 일터에 남아 있었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 22, "max": 39 },
+      "weight": 10,
+      "once": true,
+      "conditions": { "flags": ["has_career"] },
+      "effects": { "stats": { "health": -2, "happiness": -1 }, "assets": { "income": 400 } }
+    },
+    {
+      "id": "youth-first-job",
+      "title": "일자리를 고를 때",
+      "text": "일자리를 고를 수 있는 처지가 되었습니다. 기준을 어디에 둘지가 문제였습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 22, "max": 32 },
+      "weight": 24,
+      "once": true,
+      "citation": { "past": "c-091", "present": "c-011", "future": "c-011" },
+      "conditions": { "notFlags": ["has_career", "own_business"] },
+      "choices": [
+        {
+          "id": "stable",
+          "label": "안정적인 곳을 고른다",
+          "result": "월급날이 일정한 곳에 자리를 잡았습니다. 낯익은 얼굴이 하나둘 늘었고 큰 기대는 없었지만 불안도 작았습니다.",
+          "effects": { "stats": { "happiness": -1, "relationships": 1 }, "assets": { "income": 800 }, "setFlags": ["has_career"] },
+          "bonuses": [
+            { "when": { "stats": { "education": { "min": 70 } } }, "effects": { "assets": { "income": 600 } } },
+            { "when": { "flags": ["early_work"] }, "effects": { "assets": { "income": 400 } } },
+            { "when": { "flags": ["skilled_trade"] }, "effects": { "assets": { "income": 400 } } }
+          ]
+        },
+        {
+          "id": "dream",
+          "label": "하고 싶은 일을 따라간다",
+          "result": "벌이는 시원치 않았지만 하루하루가 내 일처럼 느껴졌습니다.",
+          "effects": { "stats": { "happiness": 4 }, "assets": { "income": 200 }, "setFlags": ["has_career"] },
+          "bonuses": [{ "when": { "flags": ["college"] }, "effects": { "stats": { "happiness": 1 } } }]
+        },
+        {
+          "id": "family",
+          "label": "가족이 하는 일을 이어받는다",
+          "result": "이미 자리가 마련돼 있던 곳이었습니다. 아는 얼굴이 많았고 배울 것도 적지 않았지만 출발선이 달랐습니다.",
+          "effects": { "stats": { "happiness": -1, "relationships": 1 }, "assets": { "income": 1600 }, "setFlags": ["has_career", "family_business"] },
+          "requires": { "parentWealth": { "min": 4 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-meeting",
+      "title": "소개받은 자리",
+      "text": "아는 사람이 만나 볼 사람이 있다며 자리를 만들었습니다. 약속 장소는 부담 없는 가까운 곳이었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 24, "max": 36 },
+      "weight": 11,
+      "once": true,
+      "conditions": { "notFlags": ["has_partner", "married"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 70 } }, "weight": 2.5 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.4 },
+        { "when": { "flags": ["first_love"] }, "weight": 1.3 }
+      ],
+      "choices": [
+        {
+          "id": "meet",
+          "label": "약속 장소에 나간다",
+          "result": "두 번째 만남이 있었고 세 번째 만남이 있었습니다. 어느새 서로의 연락이 하루의 습관으로 자리 잡았습니다.",
+          "effects": { "stats": { "relationships": 5, "happiness": 3 }, "assets": { "net": -400 }, "setFlags": ["has_partner", "met_intro"] },
+          "bonuses": [{ "when": { "looks": { "min": 70 } }, "effects": { "stats": { "happiness": 1 } } }]
+        },
+        {
+          "id": "later",
+          "label": "바쁘다며 미룬다",
+          "result": "일정을 핑계로 약속을 미뤘습니다. 한동안은 마음이 편했습니다.",
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": 400 }, "setFlags": ["met_intro"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-marriage",
+      "title": "함께 사는 일",
+      "text": "함께한 시간이 쌓였습니다. 주변에서는 슬슬 결혼 이야기를 꺼냈고, 두 사람도 같은 생각을 하고 있었습니다.",
+      "stages": ["youth", "middle"],
+      "ageRange": { "min": 27, "max": 45 },
+      "weight": 40,
+      "once": true,
+      "citation": { "past": "c-098", "present": "c-013", "future": "c-013" },
+      "conditions": { "flags": ["has_partner"], "notFlags": ["married"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 70 } }, "weight": 1.8 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.5 }
+      ],
+      "choices": [
+        {
+          "id": "marry",
+          "label": "함께 살기로 한다",
+          "result": "작게 식을 올리고 한 집에서 살기 시작했습니다. 생활비와 집안 사정이 한꺼번에 합쳐졌습니다.",
+          "effects": { "stats": { "relationships": 6, "happiness": 4 }, "assets": { "net": -800 }, "setFlags": ["married"] },
+          "bonuses": [
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 2000 } } },
+            { "when": { "parentWealth": { "max": 2 } }, "effects": { "assets": { "net": -800 } } }
+          ]
+        },
+        {
+          "id": "wait",
+          "label": "조금 더 기다리자고 말한다",
+          "result": "서두르지 않기로 했습니다. 몸과 마음의 짐은 덜었지만 상대의 얼굴에 아쉬운 기색이 스쳤습니다.",
+          "effects": { "stats": { "happiness": -2, "relationships": -2, "health": 1 }, "setFlags": ["marriage_waited"] }
+        },
+        {
+          "id": "part",
+          "label": "헤어지기로 한다",
+          "result": "오래 고민한 끝에 정리하기로 했습니다. 한동안 일상이 유난히 조용했고, 함께 쓰던 돈과 시간은 가벼워졌습니다.",
+          "effects": { "stats": { "happiness": -5, "relationships": -3 }, "assets": { "net": 800 }, "clearFlags": ["has_partner"], "setFlags": ["broke_up"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-marriage-again",
+      "title": "다시 꺼낸 이야기",
+      "text": "지난번 미뤄 둔 이야기를 다시 꺼낼 때가 왔습니다. 상대는 아무 말 없이 기다리고 있었습니다.",
+      "stages": ["youth", "middle"],
+      "ageRange": { "min": 30, "max": 48 },
+      "weight": 40,
+      "once": true,
+      "citation": { "present": "c-044", "future": "c-044" },
+      "conditions": { "flags": ["has_partner", "marriage_waited"], "notFlags": ["married"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 70 } }, "weight": 1.5 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.6 }
+      ],
+      "choices": [
+        {
+          "id": "marry",
+          "label": "이번에는 함께 살기로 한다",
+          "result": "작게 식을 올렸습니다. 늦었다고 생각했지만 늦은 만큼 서로를 잘 알고 있었습니다.",
+          "effects": { "stats": { "relationships": 6, "happiness": 4 }, "assets": { "net": -600 }, "setFlags": ["married"], "clearFlags": ["marriage_waited"] }
+        },
+        {
+          "id": "wait",
+          "label": "좀 더 시간을 갖자고 한다",
+          "result": "대답을 다시 미뤘습니다. 이번에는 상대의 표정이 쉽게 풀리지 않았습니다.",
+          "effects": { "stats": { "happiness": -2, "relationships": -3 }, "setFlags": ["marriage_waited_twice"], "clearFlags": ["marriage_waited"] }
+        },
+        {
+          "id": "part",
+          "label": "이쯤에서 헤어지기로 한다",
+          "result": "긴 시간 끝에 서로를 놓아 주기로 했습니다. 아쉬움보다 담담함이 먼저 왔고 함께 쓰던 돈은 가벼워졌습니다.",
+          "effects": { "stats": { "happiness": -3, "relationships": -3 }, "assets": { "net": 800 }, "clearFlags": ["has_partner", "marriage_waited"], "setFlags": ["broke_up"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-partner-leaves",
+      "title": "떠나간 사람",
+      "text": "오랜 시간 함께한 사람이 끝내 마음을 거두고 돌아섰습니다. 기다려 달라는 말은 더 이상 통하지 않았습니다.",
+      "stages": ["youth", "middle"],
+      "ageRange": { "min": 31, "max": 50 },
+      "weight": 60,
+      "once": true,
+      "heavy": { "kind": "bond" },
+      "conditions": { "flags": ["has_partner", "marriage_waited_twice"], "notFlags": ["married"] },
+      "effects": { "stats": { "happiness": -4, "relationships": -4 }, "clearFlags": ["has_partner", "marriage_waited_twice"], "setFlags": ["broke_up"] }
+    },
+    {
+      "id": "youth-reunion",
+      "title": "다시 온 연락",
+      "text": "헤어진 사람에게서 오랜만에 연락이 왔습니다. 안부를 묻는 짧은 글이었습니다.",
+      "stages": ["youth", "middle"],
+      "ageRange": { "min": 25, "max": 50 },
+      "weight": 20,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "flags": ["broke_up"], "notFlags": ["has_partner", "married"] },
+      "modifiers": [{ "when": { "looks": { "min": 70 } }, "weight": 1.5 }],
+      "choices": [
+        {
+          "id": "meet",
+          "label": "만나서 이야기를 나눈다",
+          "result": "마주 앉아 차를 마셨습니다. 서로 달라진 얼굴을 보며 그간의 시간이 천천히 풀렸습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": 2 }, "assets": { "net": -400 }, "setFlags": ["has_partner", "reunited"], "clearFlags": ["broke_up"] }
+        },
+        {
+          "id": "reply",
+          "label": "짧게 안부만 전한다",
+          "result": "안부를 짧게 적어 보냈습니다. 연락은 그 뒤로 이어지지 않았어도 마음 한쪽은 가벼워졌습니다.",
+          "effects": { "stats": { "happiness": -1, "relationships": 1 }, "clearFlags": ["broke_up"] }
+        },
+        {
+          "id": "ignore",
+          "label": "답하지 않는다",
+          "result": "답장을 쓰지 않았습니다. 마음이 가라앉기까지는 며칠이 걸렸고, 그 시간에 몸을 돌보았습니다.",
+          "effects": { "stats": { "happiness": -1, "health": 1 }, "clearFlags": ["broke_up"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-second-chance",
+      "title": "다시 이어진 사이",
+      "text": "다시 만나기 시작한 사람과 시간이 쌓였습니다. 이번에는 함께 살지를 서로 숨기지 않고 이야기했습니다.",
+      "stages": ["youth", "middle"],
+      "ageRange": { "min": 26, "max": 56 },
+      "weight": 60,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "flags": ["has_partner", "reunited"], "notFlags": ["married"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 70 } }, "weight": 1.8 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.5 }
+      ],
+      "choices": [
+        {
+          "id": "marry",
+          "label": "이번에는 함께 살기로 한다",
+          "result": "작게 식을 올리고 한 집에서 살기 시작했습니다. 한 번 돌아온 사이라 서로의 말을 오래 들었습니다.",
+          "effects": { "stats": { "relationships": 6, "happiness": 4 }, "assets": { "net": -600 }, "setFlags": ["married"], "clearFlags": ["reunited"] }
+        },
+        {
+          "id": "stay",
+          "label": "지금처럼 만나며 지낸다",
+          "result": "함께 살지는 않기로 했습니다. 각자의 집에서 주말마다 얼굴을 보는 사이가 이어졌습니다.",
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 400 }, "clearFlags": ["reunited"] }
+        },
+        {
+          "id": "part",
+          "label": "이쯤에서 다시 정리한다",
+          "result": "오래 이야기한 끝에 다시 갈라서기로 했습니다. 두 번째 이별은 첫 번째보다 조용했습니다.",
+          "effects": { "stats": { "happiness": -3, "relationships": -3 }, "assets": { "net": 800 }, "clearFlags": ["has_partner", "reunited"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-meeting-again",
+      "title": "뒤늦은 소개",
+      "text": "한참 뒤에 다시 소개받을 기회가 생겼습니다. 나가 볼지 사양할지 마음이 갈렸습니다.",
+      "stages": ["youth", "middle"],
+      "ageRange": { "min": 30, "max": 46 },
+      "weight": 10,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "flags": ["met_intro"], "notFlags": ["has_partner", "married"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 70 } }, "weight": 2.5 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.4 }
+      ],
+      "choices": [
+        {
+          "id": "meet",
+          "label": "나가서 만나 본다",
+          "result": "오랜만에 옷을 갖춰 입고 나갔습니다. 어색한 인사 끝에 이야기가 길어졌습니다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 3 }, "setFlags": ["has_partner"] }
+        },
+        {
+          "id": "later",
+          "label": "정중히 사양한다",
+          "result": "정중히 사양했습니다. 혼자인 시간이 더 편하다는 생각도 들었습니다.",
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": 400 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-matchmaker",
+      "title": "어른들이 마련한 자리",
+      "text": "어른들이 맞선 자리를 마련했다며 옷을 단정히 입으라고 했습니다. 상대의 얼굴은 만나기 전까지 알 수 없었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 23, "max": 34 },
+      "eras": ["past"],
+      "weight": 16,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "notFlags": ["has_partner", "married"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 70 } }, "weight": 2.2 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.4 }
+      ],
+      "choices": [
+        {
+          "id": "meet",
+          "label": "맞선 자리에 나간다",
+          "result": "어색한 인사를 나누고 몇 번 더 만났습니다. 어른들은 일이 빠르게 진행되기를 바랐습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": 2 }, "setFlags": ["has_partner", "met_intro"] }
+        },
+        {
+          "id": "decline",
+          "label": "아직 이르다며 사양한다",
+          "result": "어른들께 아직 마음이 없다고 말씀드렸습니다. 한동안 집안 분위기가 서늘했고 그 사이 내 일에 마음을 쏟았습니다.",
+          "effects": { "stats": { "relationships": -2, "happiness": 1 }, "assets": { "net": 400 }, "setFlags": ["met_intro"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-approached",
+      "title": "먼저 건네 온 말",
+      "text": "처음 보는 사람이 먼저 말을 걸어 왔습니다. 연락처를 묻는 얼굴이 조금 쑥스러워 보였습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 22, "max": 36 },
+      "weight": 10,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "looks": { "min": 60 }, "notFlags": ["has_partner", "married"] },
+      "choices": [
+        {
+          "id": "give",
+          "label": "연락처를 알려 준다",
+          "result": "머뭇대다 연락처를 건넸습니다. 며칠 뒤 온 짧은 안부가 하루를 환하게 만들었습니다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 3 }, "setFlags": ["has_partner"] }
+        },
+        {
+          "id": "polite",
+          "label": "정중히 사양한다",
+          "result": "마음이 없다고 정중히 말했습니다. 상대는 고개를 숙이고 돌아섰고, 나는 하던 일로 돌아갔습니다.",
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 400 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-child",
+      "title": "아이를 맞을 것인가",
+      "text": "함께 산 지 몇 해가 지나, 아이를 가질지 이야기를 나누었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 27, "max": 39 },
+      "weight": 24,
+      "once": true,
+      "citation": { "past": "c-099", "present": "c-003", "future": "c-003" },
+      "conditions": { "flags": ["married"] },
+      "choices": [
+        {
+          "id": "have",
+          "label": "아이를 갖기로 한다",
+          "result": "새 식구가 태어났습니다. 집 안은 바빠지고 밤은 짧아지는 동안 아이 웃음이 하루를 채웠습니다.",
+          "effects": { "stats": { "happiness": 4, "relationships": 4, "health": -2 }, "assets": { "net": -1000 }, "setFlags": ["has_child"] },
+          "bonuses": [
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 1200 } } },
+            { "when": { "parentWealth": { "max": 2 } }, "effects": { "assets": { "net": -800 } } }
+          ]
+        },
+        {
+          "id": "later",
+          "label": "조금 더 기다리기로 한다",
+          "result": "형편이 나아지면 생각하기로 했습니다. 시간은 소리 없이 지나갔고, 둘은 서로에게 더 기댔습니다.",
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 400 }, "setFlags": ["child_postponed"] }
+        },
+        {
+          "id": "none",
+          "label": "아이 없이 살기로 한다",
+          "result": "둘이서 살아가는 모습을 그려 보았습니다. 서로에게 쓸 시간과 돈이 오래 남았습니다.",
+          "effects": { "stats": { "happiness": 1 }, "assets": { "net": 800 }, "setFlags": ["no_child"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-child-again",
+      "title": "늦어진 이야기",
+      "text": "미뤄 둔 이야기를 다시 꺼내야 할 나이가 되었습니다. 더 미루면 길이 좁아진다는 것을 둘 다 알았습니다.",
+      "stages": ["youth", "middle"],
+      "ageRange": { "min": 33, "max": 44 },
+      "weight": 30,
+      "once": true,
+      "citation": { "present": "c-004", "future": "c-004" },
+      "conditions": { "flags": ["married", "child_postponed"], "notFlags": ["has_child", "no_child"] },
+      "choices": [
+        {
+          "id": "have",
+          "label": "이제라도 아이를 맞이한다",
+          "result": "늦은 나이에 아이를 맞이했습니다. 체력은 달리는 대신 아이를 바라보는 눈이 깊어졌습니다.",
+          "effects": { "stats": { "happiness": 4, "relationships": 4, "health": -3 }, "assets": { "net": -1000 }, "setFlags": ["has_child", "child_late"], "clearFlags": ["child_postponed"] }
+        },
+        {
+          "id": "none",
+          "label": "둘이서 살기로 마음을 굳힌다",
+          "result": "오래 이야기한 끝에 둘이서 살기로 했습니다. 한동안 마음이 허전하더니 곧 일상이 채워졌습니다.",
+          "effects": { "stats": { "relationships": 1 }, "assets": { "net": 800 }, "setFlags": ["no_child"], "clearFlags": ["child_postponed"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-workplace-romance",
+      "title": "같은 팀의 사람",
+      "text": "같은 팀의 한 사람과 점심을 먹는 날이 늘었습니다. 퇴근길에 방향이 같다는 것을 알게 된 뒤로 대화가 길어졌습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 24, "max": 38 },
+      "weight": 9,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "flags": ["has_career"], "notFlags": ["has_partner", "married", "own_business"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 70 } }, "weight": 2.5 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.4 }
+      ],
+      "choices": [
+        {
+          "id": "ask",
+          "label": "먼저 저녁을 함께 하자고 한다",
+          "result": "큰마음 먹고 저녁을 청했습니다. 어색한 침묵 뒤에 웃음이 터졌고, 그날 이후 둘의 거리가 달라졌습니다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 3 }, "setFlags": ["has_partner"] }
+        },
+        {
+          "id": "keep",
+          "label": "일터에서는 선을 지킨다",
+          "result": "선을 넘지 않기로 했습니다. 서로 편한 동료로 남았고, 일에 쏟는 마음은 더 단단해졌습니다.",
+          "effects": { "stats": { "relationships": 1, "happiness": -1 }, "assets": { "net": 400 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-housing",
+      "title": "살 곳을 구하는 일",
+      "text": "살 곳을 새로 구해야 했습니다. 가진 돈과 원하는 곳 사이의 거리가 멀었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 22, "max": 36 },
+      "weight": 14,
+      "once": true,
+      "citation": { "present": "c-015", "future": "c-015" },
+      "conditions": { "notFlags": ["own_home", "married"] },
+      "choices": [
+        {
+          "id": "rent",
+          "label": "보증금이 낮은 월세방을 구한다",
+          "result": "좁은 방에 짐을 풀었습니다. 매달 빠져나가는 돈은 아팠지만 빚 없이 얻은 내 방이 든든했습니다.",
+          "effects": { "stats": { "happiness": 1 }, "assets": { "net": -600 }, "setFlags": ["renting"] }
+        },
+        {
+          "id": "parents",
+          "label": "부모님 집에 머문다",
+          "result": "집을 나서지 않기로 했습니다. 돈은 아꼈지만 독립은 조금씩 미뤄졌습니다.",
+          "effects": { "stats": { "relationships": 1, "happiness": -1 }, "assets": { "net": 400 }, "setFlags": ["lives_with_parents"] },
+          "requires": { "assets": { "dwelling": ["family"] } }
+        },
+        {
+          "id": "return",
+          "label": "부모님 집으로 돌아간다",
+          "result": "짐을 싸 부모님 집으로 돌아갔습니다. 한 식탁에 앉는 저녁이 다시 늘었고 살림도 가벼워졌습니다. 독립은 한 걸음 물러섰습니다.",
+          "effects": { "stats": { "relationships": 2, "happiness": -2 }, "assets": { "net": 400 }, "setFlags": ["lives_with_parents"] },
+          "requires": { "assets": { "dwelling": ["rent", "jeonse", "own"] }, "notFlags": ["lives_alone"] }
+        },
+        {
+          "id": "loan",
+          "label": "빚을 내서라도 집을 마련한다",
+          "result": "빚을 얻어 작은 집을 마련했습니다. 이자 날짜가 올 때마다 가슴이 내려앉았지만 문을 열면 내 집이었습니다.",
+          "effects": { "stats": { "happiness": 3, "health": -1 }, "assets": { "net": -800, "debt": 9000 }, "setFlags": ["own_home"] },
+          "bonuses": [
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 2400 } } },
+            { "when": { "stats": { "education": { "min": 60 } } }, "effects": { "assets": { "net": 600 } } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "youth-exam-prep",
+      "title": "길어지는 준비",
+      "text": "안정된 자리를 얻으려고 시험 준비를 시작했습니다. 같은 책을 몇 번째 펴는지 세는 일도 그만두었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 21, "max": 30 },
+      "weight": 14,
+      "once": true,
+      "citation": { "present": "c-076", "future": "c-076" },
+      "conditions": { "notFlags": ["has_career"], "stats": { "education": { "min": 30 } } },
+      "modifiers": [{ "when": { "parentWealth": { "min": 3 } }, "weight": 1.4 }],
+      "choices": [
+        {
+          "id": "persist",
+          "label": "기한을 두지 않고 계속 준비한다",
+          "result": "도서관에서 보내는 하루가 이어졌습니다. 통장은 비어 갔고 마음은 자꾸 좁아졌습니다.",
+          "effects": { "stats": { "education": 5, "happiness": -3 }, "assets": { "net": -1600 }, "setFlags": ["exam_prep"] },
+          "requires": { "assets": { "netMin": -5000 } }
+        },
+        {
+          "id": "work",
+          "label": "일을 하며 틈틈이 준비한다",
+          "result": "낮에는 일하고 밤에 책을 폈습니다. 몸은 고단했는데도 생활은 무너지지 않았습니다.",
+          "effects": { "stats": { "education": 2, "health": -2 }, "assets": { "income": 400 }, "setFlags": ["has_career", "exam_prep"] }
+        },
+        {
+          "id": "quit",
+          "label": "접고 다른 길을 찾는다",
+          "result": "준비하던 책을 덮었습니다. 홀가분한 마음 한편에 아쉬움이 남았습니다.",
+          "effects": { "stats": { "happiness": 1 }, "setFlags": ["gave_up_exam"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-exam-passed",
+      "title": "합격 소식",
+      "text": "결과가 나온 날, 이름을 찾아 몇 번이나 다시 확인했습니다. 긴 준비가 끝났습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 23, "max": 38 },
+      "weight": 50,
+      "once": true,
+      "conditions": { "flags": ["exam_prep"], "stats": { "education": { "min": 50 } } },
+      "effects": { "stats": { "happiness": 5 }, "assets": { "income": 1000 }, "setFlags": ["has_career", "passed_exam"], "clearFlags": ["exam_prep"] }
+    },
+    {
+      "id": "youth-exam-failed",
+      "title": "돌아서는 길",
+      "text": "결과에는 내 이름이 없었습니다. 한참을 앉아 있다가 책을 정리했습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 23, "max": 38 },
+      "weight": 50,
+      "once": true,
+      "conditions": { "flags": ["exam_prep"], "stats": { "education": { "max": 49 } } },
+      "effects": { "stats": { "happiness": -4 }, "assets": { "income": -200 }, "setFlags": ["failed_exam"], "clearFlags": ["exam_prep"] }
+    },
+    {
+      "id": "youth-friend-wedding",
+      "title": "오랜 친구의 결혼식",
+      "text": "가장 오래된 친구가 결혼한다는 소식을 전해 왔습니다. 식에 가려면 먼 길을 가야 했습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 25, "max": 36 },
+      "weight": 12,
+      "once": true,
+      "conditions": { "flags": ["close_friend"] },
+      "choices": [
+        {
+          "id": "go",
+          "label": "먼 길을 가서 참석한다",
+          "result": "새벽 기차를 타고 식장에 갔습니다. 친구의 환한 얼굴을 보며 함께 보낸 시간이 떠올랐습니다.",
+          "effects": { "stats": { "relationships": 4, "happiness": 2 }, "assets": { "net": -800 } }
+        },
+        {
+          "id": "gift",
+          "label": "축하금만 보낸다",
+          "result": "사정을 적어 축하금을 보냈습니다. 마음만 갔을 뿐 내 자리는 비어 있었습니다.",
+          "effects": { "stats": { "relationships": -1 }, "assets": { "net": -400 } }
+        },
+        {
+          "id": "skip",
+          "label": "바쁘다며 연락을 미룬다",
+          "result": "바쁜 일을 핑계로 답을 미루다 때를 놓쳤습니다. 이후 연락이 조금씩 뜸해졌습니다.",
+          "effects": { "stats": { "relationships": -3 }, "clearFlags": ["close_friend"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-colleague",
+      "title": "일터에서의 일",
+      "text": "상사의 부당한 지시가 이어졌습니다. 같은 팀 동료들은 눈치만 보고 있었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 24, "max": 38 },
+      "weight": 12,
+      "once": true,
+      "conditions": { "flags": ["has_career"], "notFlags": ["own_business"] },
+      "choices": [
+        {
+          "id": "object",
+          "label": "분명하게 이의를 제기한다",
+          "result": "회의에서 내 생각을 말했습니다. 분위기는 서늘해졌는데 몇몇 동료가 뒤에서 고개를 끄덕였습니다.",
+          "effects": { "stats": { "relationships": 2, "happiness": 1 }, "assets": { "income": -200 } },
+          "bonuses": [{ "when": { "stats": { "education": { "min": 60 } } }, "effects": { "assets": { "income": 400 } } }]
+        },
+        {
+          "id": "endure",
+          "label": "참고 맡은 일을 한다",
+          "result": "입을 닫고 일을 이어 갔습니다. 평온하게 지내면서도 그날 이후 퇴근길은 조금 무거웠습니다.",
+          "effects": { "stats": { "happiness": -2 }, "assets": { "income": 200 } }
+        },
+        {
+          "id": "leave",
+          "label": "다른 곳을 알아본다",
+          "result": "몇 달 뒤 새 직장으로 옮겼습니다. 낯선 곳이었지만 굳었던 어깨가 풀리는 기분이 들었습니다.",
+          "effects": { "stats": { "happiness": 2, "health": 1 }, "assets": { "income": -200 }, "setFlags": ["job_changed"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-startup",
+      "title": "직접 해 보자는 제안",
+      "text": "직접 작은 사업을 해 보지 않겠느냐는 제안이 왔습니다. 해 보고 싶은 마음과 잃을 것이 많다는 마음이 부딪혔습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 26, "max": 39 },
+      "weight": 6,
+      "once": true,
+      "citation": { "present": "c-077", "future": "c-077" },
+      "conditions": { "notFlags": ["own_business"] },
+      "modifiers": [
+        { "when": { "looks": { "min": 65 } }, "weight": 2.5 },
+        { "when": { "looks": { "max": 30 } }, "weight": 0.4 },
+        { "when": { "parentWealth": { "min": 4 } }, "weight": 1.6 }
+      ],
+      "choices": [
+        {
+          "id": "start",
+          "label": "사업을 시작한다",
+          "result": "작은 사무실을 얻어 일을 시작했습니다. 잠을 줄이며 한 해를 보내는 사이 배운 것이 쌓였고 윤곽이 잡혀 갔습니다.",
+          "effects": { "stats": { "happiness": -1, "health": -2, "education": 2 }, "assets": { "net": -1200 }, "setFlags": ["own_business"] },
+          "bonuses": [
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 3200 } } },
+            { "when": { "looks": { "min": 70 } }, "effects": { "assets": { "income": 600 } } },
+            { "when": { "stats": { "education": { "min": 60 } } }, "effects": { "assets": { "income": 800 } } }
+          ]
+        },
+        {
+          "id": "side",
+          "label": "본업을 두고 조금씩 해 본다",
+          "result": "퇴근 뒤와 주말에 작게 일을 벌였습니다. 크게 벌지는 못했고 가능성을 가늠해 보는 정도였습니다.",
+          "effects": { "stats": { "health": -2, "happiness": 1 }, "assets": { "net": 400 } },
+          "requires": { "flags": ["has_career"] }
+        },
+        {
+          "id": "decline",
+          "label": "안정을 택해 거절한다",
+          "result": "고민 끝에 거절했습니다. 잃은 것은 없었지만 한동안 그 장면이 떠올랐습니다.",
+          "effects": { "stats": { "happiness": -1 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-night-study",
+      "title": "일과 배움 사이",
+      "text": "낮에는 일하고 밤에는 배울 수 있는 길이 있다는 이야기를 들었습니다. 몸이 버틸지가 걱정이었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 20, "max": 28 },
+      "weight": 16,
+      "once": true,
+      "noCitation": "X4",
+      "conditions": { "parentWealth": { "max": 2 }, "stats": { "education": { "max": 45 } } },
+      "choices": [
+        {
+          "id": "study",
+          "label": "밤에 공부를 이어 간다",
+          "result": "일이 끝나면 곧장 교실로 갔습니다. 몇 해 뒤 손에 쥔 증서는 더 이상 먼 이야기가 아니었습니다.",
+          "effects": { "stats": { "education": 10, "health": -3, "happiness": -1 }, "setFlags": ["late_learner"] },
+          "bonuses": [{ "when": { "stats": { "education": { "max": 25 } } }, "effects": { "stats": { "education": 3 } } }]
+        },
+        {
+          "id": "work",
+          "label": "일에만 매달린다",
+          "result": "배움은 접고 일을 늘렸습니다. 당장은 손에 쥐는 돈이 늘었습니다.",
+          "effects": { "stats": { "education": -1 }, "assets": { "income": 600 } }
+        },
+        {
+          "id": "save",
+          "label": "돈을 모아 나중에 돌아가기로 한다",
+          "result": "배움을 미루고 돈을 모았습니다. 돌아갈 날이 올지는 알 수 없었지만 통장은 조금씩 두꺼워졌습니다.",
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": 1600 }, "setFlags": ["saving_for_school"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-return-school",
+      "title": "다시 돌아갈 자리",
+      "text": "모아 둔 돈이 어느 정도 쌓였습니다. 미뤄 둔 공부로 돌아갈 수 있는 때가 온 듯했습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 23, "max": 36 },
+      "weight": 30,
+      "once": true,
+      "citation": { "present": "c-095", "future": "c-095" },
+      "conditions": { "flags": ["saving_for_school"], "assets": { "netMin": 0 } },
+      "choices": [
+        {
+          "id": "return",
+          "label": "일을 줄이고 공부로 돌아간다",
+          "result": "일을 줄이고 책상 앞에 다시 앉았습니다. 늦은 만큼 한 줄 한 줄이 절실했습니다.",
+          "effects": { "stats": { "education": 12, "happiness": 1 }, "assets": { "net": -2400 }, "setFlags": ["late_learner"], "clearFlags": ["saving_for_school"] }
+        },
+        {
+          "id": "stay",
+          "label": "그냥 일을 이어 간다",
+          "result": "돌아가지 않기로 했습니다. 모아 둔 돈은 다른 곳에 쓰였고 그 계획은 조용히 접혔습니다.",
+          "effects": { "stats": { "happiness": -2 }, "assets": { "net": 800 }, "clearFlags": ["saving_for_school"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-rent-hike",
+      "title": "오르는 월세",
+      "text": "계약을 갱신할 때가 되자 월세가 크게 올랐습니다. 이사를 가자니 보증금이 모자랐습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 24, "max": 38 },
+      "eras": ["present"],
+      "weight": 13,
+      "once": true,
+      "citation": "c-094",
+      "conditions": { "flags": ["renting"], "notFlags": ["own_home"] },
+      "choices": [
+        {
+          "id": "pay",
+          "label": "오른 값을 감당하며 머문다",
+          "result": "오른 월세를 감당하기로 했습니다. 다른 지출을 줄이며 한 해를 보냈습니다.",
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": -1600 } }
+        },
+        {
+          "id": "move",
+          "label": "더 먼 곳으로 옮긴다",
+          "result": "오가는 길이 먼 동네로 옮겼습니다. 방은 넓어진 대신 하루가 길 위에서 줄어들었습니다.",
+          "effects": { "stats": { "health": -1, "relationships": -2 }, "assets": { "net": -400 } }
+        },
+        {
+          "id": "share",
+          "label": "함께 살 사람을 구한다",
+          "result": "함께 살 사람을 구해 방값을 나눴습니다. 생활 습관이 달라 자주 부딪혔지만 서로 맞춰 갔습니다.",
+          "effects": { "stats": { "happiness": -3, "relationships": 1 }, "assets": { "net": -400 } },
+          "requires": { "notFlags": ["married"] }
+        }
+      ]
+    },
+    {
+      "id": "youth-gig-work",
+      "title": "쪼개진 일자리",
+      "text": "일자리가 짧은 단위로 쪼개져 나왔습니다. 하루하루 일감을 이어 붙이는 날들이 계속되었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 21, "max": 32 },
+      "eras": ["present", "future"],
+      "weight": 12,
+      "once": true,
+      "citation": "c-079",
+      "conditions": { "notFlags": ["has_career", "own_business"] },
+      "choices": [
+        {
+          "id": "juggle",
+          "label": "여러 일을 이어 붙여 버틴다",
+          "result": "일과 일 사이를 뛰어다니며 여러 사람과 안면을 익혔습니다. 통장은 겨우 유지되었지만 몸은 어느새 지쳐 있었습니다.",
+          "effects": { "stats": { "health": -3, "happiness": -2, "relationships": 2 }, "assets": { "income": 600 } }
+        },
+        {
+          "id": "settle",
+          "label": "한 곳에 자리 잡을 길을 찾는다",
+          "result": "여러 곳에 이력서를 냈습니다. 수입이 끊긴 몇 달은 불안했지만, 한 곳에서 오래 일할 자리를 얻었습니다.",
+          "effects": { "stats": { "happiness": -1, "education": 1 }, "assets": { "net": -800 }, "setFlags": ["has_career"] }
+        },
+        {
+          "id": "learn",
+          "label": "틈틈이 새로운 기술을 익힌다",
+          "result": "일이 비는 시간마다 새로운 기술을 익혔습니다. 당장 눈에 띄는 변화는 없었지만 선택지가 늘었습니다.",
+          "effects": { "stats": { "education": 4 }, "assets": { "net": -800 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-machine-partner",
+      "title": "일을 나누는 새 동료",
+      "text": "일터에 새로 들어온 기계가 내 일의 한 부분을 맡기 시작했습니다. 어디까지 맡길지는 아직 열려 있었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 24, "max": 38 },
+      "eras": ["future"],
+      "weight": 14,
+      "once": true,
+      "noCitation": "X5",
+      "conditions": { "flags": ["has_career"] },
+      "choices": [
+        {
+          "id": "adapt",
+          "label": "새 도구를 익혀 함께 일한다",
+          "result": "새 도구를 익히느라 몇 달을 고생했습니다. 그 뒤로는 같은 시간에 훨씬 많은 일이 손에 잡혔습니다.",
+          "effects": { "stats": { "education": 3, "health": -1 }, "assets": { "income": 400 } }
+        },
+        {
+          "id": "human",
+          "label": "사람이 해야 할 부분에 집중한다",
+          "result": "사람이 맡아야 할 일을 더 깊게 파고들었습니다. 기계가 못 하는 일이 곧 내 자리가 되었습니다.",
+          "effects": { "stats": { "happiness": 1, "relationships": 1 }, "assets": { "income": 200 } }
+        },
+        {
+          "id": "resist",
+          "label": "기계에 맡기는 것을 거부한다",
+          "result": "익숙한 방식을 고집했습니다. 새로 배우는 수고는 덜었지만 내 몫의 일은 해마다 조금씩 줄어들었습니다.",
+          "effects": { "stats": { "health": 1 }, "assets": { "income": -600 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-lonely-city",
+      "title": "혼자 먹는 저녁",
+      "text": "낯선 동네에서 혼자 저녁을 먹는 날이 늘었습니다. 사람 사는 소리는 벽 너머로만 들렸습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 20, "max": 28 },
+      "weight": 10,
+      "once": true,
+      "conditions": { "assets": { "dwelling": ["rent", "jeonse", "own"] }, "notFlags": ["married", "lives_with_parents"] },
+      "effects": { "stats": { "relationships": -2, "happiness": -1 }, "setFlags": ["lives_alone"] },
+      "bonuses": [{ "when": { "flags": ["close_friend"] }, "effects": { "stats": { "relationships": 2 } } }]
+    },
+    {
+      "id": "youth-single-years",
+      "title": "혼자의 시간",
+      "text": "혼자 보내는 주말이 어느새 익숙해졌습니다. 쓸쓸한 날도 있었지만 내 시간을 내 뜻대로 쓸 수 있었습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 30, "max": 39 },
+      "weight": 12,
+      "once": true,
+      "conditions": { "notFlags": ["has_partner", "married"] },
+      "effects": { "stats": { "happiness": 1, "relationships": -1 } }
+    },
+    {
+      "id": "youth-job-rejections",
+      "title": "연락이 없는 날들",
+      "text": "지원서를 낸 곳에서는 번번이 소식이 없었습니다. 방 안에서 보내는 날들이 길어졌습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 21, "max": 30 },
+      "weight": 12,
+      "once": true,
+      "heavy": { "kind": "work" },
+      "conditions": { "notFlags": ["has_career", "own_business"] },
+      "effects": { "stats": { "happiness": -3, "education": 1 }, "assets": { "income": -200 } }
+    },
+    {
+      "id": "youth-factory-night",
+      "title": "멈추지 않는 기계",
+      "text": "기계가 멈추지 않는 공장에서 밤샘 근무가 이어졌습니다. 월급날만 기다리며 하루하루를 버텼습니다.",
+      "stages": ["youth"],
+      "ageRange": { "min": 20, "max": 28 },
+      "eras": ["past"],
+      "weight": 14,
+      "once": true,
+      "conditions": { "parentWealth": { "max": 3 }, "notFlags": ["own_business", "passed_exam"] },
+      "effects": { "stats": { "health": -3, "happiness": -1 }, "assets": { "income": 600 } }
+    }
+  ]
+}

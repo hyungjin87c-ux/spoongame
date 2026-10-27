@@ -44,7 +44,7 @@ export async function openM3Screen(page: Page, screen: M3Screen, seed = KNOWN_SE
     await pressBegin(page);
     await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'spinning');
   } else if (screen === 'roulette-result') {
-    await injectSave(page, rouletteState(seed, 'present', 3, 50));
+    await injectSave(page, rouletteState(seed, 'alpha', 3, 50));
     await expect(page.getByTestId('roulette-screen')).toHaveAttribute('data-state', 'result');
   } else {
     await injectSave(page, birthVariantState(screen, seed));

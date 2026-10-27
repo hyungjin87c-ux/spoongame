@@ -1,15 +1,18 @@
 import { useMemo, useRef, type ReactNode } from 'react';
 import { looksStanding } from '../core/birth';
+import { wealthMixtureOfGame } from '../core/birthProfile';
 import { birthSentence, reportPlaceLabel, weightStanding } from '../core/birthReport';
 import { startBandOf } from '../core/ending';
 import { peersOf } from '../core/peers';
-import type { BirthReport, Character, Era } from '../core/types';
+import { yearBasisOf } from '../core/generationMixture';
+import { R1_PRESENT, type BirthReport, type Character, type ProfileId } from '../core/types';
 import { buildComparison, compareShown, lifeGapLine } from '../data/birthCompare';
 import { PARENTING_LABEL, standingLabel } from '../data/birthText';
-import { BIRTH_TEXT, REPORT_NOTES, formatKg, genderLabel, housingText, orderText, parentingDocText, yearMonthText } from '../data/birthReportText';
+import { BIRTH_TEXT, REPORT_NOTES, formatKg, genderLabel, housingText, orderText, parentingDocText, yearMonthText, yearNoteText } from '../data/birthReportText';
+import { profileLabel } from '../core/birthProfile';
 import { bandLabel } from '../data/endingText';
 import { getRegionFootnote } from '../data/koreaStatsAccess';
-import { placeLabel } from '../data/regionNames';
+import { placeLabel, regionLabelAt } from '../data/regionNames';
 import { SiteHead, Sprite } from '../ui/Brand';
 import { FitPair } from '../ui/FitPair';
 import { Glue } from '../ui/Glue';
@@ -24,16 +27,19 @@ import { useFocusOnChange } from '../ui/useFocus';
  * 같은 해 태어난 사람들(VP3) · 다른 집 아이들과 견주면(BR5, 출처가 확인된 행만) · 하단 고정 「살아가기」.
  *
  * - 값은 모두 저장된 출생 결과(`character`·`birthReport`)에서 읽는다 — 화면은 계산하지 않고 core의 결과를 문구로 그리기만 한다(R-018). 새로고침해도 같은 출생신고다(R-021).
- * - 집안 형편 = 수저 칩 + `bandLabel(startBandOf(era, wealth))`(「흙수저(하위 25% 안쪽)」, R-170) 한 함수의 출력. 통계 소득 5분위라고 쓰지 않는다.
+ * - 집안 형편 = 수저 칩 + `bandLabel(startBandOf(세대 전체 기준의 섞은 값, wealth))`(「흙수저(하위 25% 안쪽)」, R-170, D4-48) 한 함수의 출력. 통계 소득 5분위라고 쓰지 않는다.
+ * - **출생 연도는 여기서 처음 드러난다**(SPEC-004 GS6): 이름 옆 「세대」 칸의 「{세대 이름} · {연도}년생」과 첫 문장·「출생 연월」 칸. 각주가 연도 가중을 알린다.
  * - 외모는 점수(N점)로 적지 않는다 — `standingLabel(looksStanding)`의 「상위/하위 약 N%」만(R-135, 옛 출생 화면의 「외모 N점」은 없어졌다).
  * - 「살아가기」는 입력 가드(진입 직후 0.4초, R-014)와 연타 방어(reducer가 birth 단계에서만 받는다)를 가진다(BR7).
  */
 
 interface Props {
-  era: Era;
+  generation: ProfileId;
   character: Character;
   report: BirthReport;
   peerSeed: number;
+  /** 시도를 직접 골라 시작한 판인가 (수저 구간을 줄어든 연도 집합으로 센다, RG2) */
+  regionPicked?: boolean;
   onNext: () => void;
 }
 
@@ -62,22 +68,25 @@ function Field({ id, label, wide, span2, children }: { id: string; label: string
   );
 }
 
-export function BirthScreen({ era, character: c, report, peerSeed, onNext }: Props) {
+export function BirthScreen({ generation, character: c, report, peerSeed, regionPicked = false, onNext }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const barRef = useRef<HTMLDivElement>(null);
   useThemeSurface();
   useScrollTopOnMount();
   useBottomBar(barRef);
 
-  const sentence = birthSentence(c, report, era);
-  const place = reportPlaceLabel(report, era);
-  const band = bandLabel(startBandOf(era, c.parentWealth));
+  const r1 = generation === R1_PRESENT;
+  const sentence = birthSentence(c, report);
+  const place = reportPlaceLabel(report, c.birthYear);
+  // 수저 구간은 룰렛 표와 같은 섞은 값으로 센다(D4-48) — 직접 고른 시도로 연도가 줄었으면 줄어든 집합으로
+  const band = bandLabel(startBandOf(wealthMixtureOfGame({ generation, regionPicked, birthReport: report }), c.parentWealth));
+  const yearBasis = r1 ? null : yearBasisOf(generation);
   const looks = standingLabel(looksStanding(c.looks));
   const weight = `${formatKg(report.birthWeightKg)}`;
   const weightRank = standingLabel(weightStanding(report.birthWeightKg, c.gender));
   const peers = useMemo(() => peersOf(peerSeed, c.birthYear, report.month, c.name), [peerSeed, c.birthYear, c.name, report.month]);
-  // 비교 표는 지금 세상에서만 보인다(통계가 2024~2025년 값, R-263). 지난·다가올 세상은 만들지도 않는다.
-  const showCompare = compareShown(era);
+  // 비교 표(BR5)는 숨긴다(N20) — 2026년생이 없어 어떤 세대의 출생신고에도 보이지 않는다. 코드·데이터는 남겼다(시험 전용 R1 프로필만 보인다)
+  const showCompare = compareShown(generation);
   const rows = useMemo(() => (showCompare ? buildComparison(c.parentWealth) : []), [showCompare, c.parentWealth]);
   const gapLine = useMemo(() => (showCompare ? lifeGapLine() : null), [showCompare]);
 
@@ -100,11 +109,20 @@ export function BirthScreen({ era, character: c, report, peerSeed, onNext }: Pro
             <div className="stamp" aria-hidden="true">
               {BIRTH_TEXT.stamp}
             </div>
-            <div>
-              <p className="label">{BIRTH_TEXT.nameLabel}</p>
-              <p className="doc__name" data-testid="birth-name">
-                {c.name}
-              </p>
+            <div className="doc__who">
+              <div>
+                <p className="label">{BIRTH_TEXT.nameLabel}</p>
+                <p className="doc__name" data-testid="birth-name">
+                  {c.name}
+                </p>
+              </div>
+              <div>
+                <p className="label">{BIRTH_TEXT.genLabel}</p>
+                <p className="doc__gen" data-testid="birth-generation">
+                  {/* 「{세대 이름} · {연도}년생」: 한 줄에 들어가면 가운뎃점으로 잇고, 좁으면 점 없이 두 줄로 나눈다 — 「· 1947년생」이 줄 첫머리에 혼자 남지 않는다(QM2-10 규칙 3) */}
+                  <FitPair a={profileLabel(generation)} b={`${c.birthYear}년생`} />
+                </p>
+              </div>
             </div>
             <p className="doc__sentence" data-testid="birth-sentence">
               <Sentence text={sentence} />
@@ -167,7 +185,7 @@ export function BirthScreen({ era, character: c, report, peerSeed, onNext }: Pro
                     </span>
                   </div>
                   <div className="sub" data-testid="peer-place">
-                    {placeLabel(p, era)}
+                    {p.sigungu !== undefined && p.sigunguSido !== undefined ? placeLabel({ region: p.region, sigunguSido: p.sigunguSido, sigungu: p.sigungu }) : regionLabelAt(p.region, c.birthYear)}
                   </div>
                 </div>
                 <GradeChip grade={p.wealth} />
@@ -239,9 +257,14 @@ export function BirthScreen({ era, character: c, report, peerSeed, onNext }: Pro
         ) : null}
 
         <div className="doc-notes t-xs t-faint" data-testid="page-foot">
+          {yearBasis === null ? null : (
+            <p data-testid="report-footnote-year">
+              <Glue text={yearNoteText(yearBasis)} />
+            </p>
+          )}
           <p data-testid="report-footnote-region">
-            {/* 지난 세상은 시·군·구가 2025년 행정구역 이름이라는 한 줄, 지금·다가올 세상은 2026년 개편 설계값 한 줄(R-264) */}
-            <Glue text={era === 'past' ? REPORT_NOTES.regionPast : getRegionFootnote()} />
+            {/* 세대 판은 시·도까지만(NR3), 시험 전용 2026년생은 2026년 개편 설계값 한 줄(R-264) */}
+            <Glue text={r1 ? getRegionFootnote() : REPORT_NOTES.regionGen} />
           </p>
           <p>
             <Glue text={REPORT_NOTES.stats} />
@@ -252,9 +275,9 @@ export function BirthScreen({ era, character: c, report, peerSeed, onNext }: Pro
           <p>
             <Glue text={REPORT_NOTES.design} />
           </p>
-          {era === 'present' ? null : (
+          {r1 ? null : (
             <p data-testid="report-footnote-era">
-              <Glue text={era === 'past' ? REPORT_NOTES.eraPast : REPORT_NOTES.eraFuture} />
+              <Glue text={c.birthYear <= 1989 ? REPORT_NOTES.eraOld : REPORT_NOTES.eraRecent} />
             </p>
           )}
         </div>

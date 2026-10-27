@@ -16,6 +16,7 @@ import {
   sessionReducer,
   type Era,
   type GameState,
+  type ProfileId,
   type TickInfo,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
@@ -39,7 +40,7 @@ import parentCardSrc from '../src/ui/dash/ParentCard.tsx?raw';
 import type { LifeGame } from '../src/ui/dash/Cards';
 import { ParentCard, parentCardModel } from '../src/ui/dash/ParentCard';
 import type { YearClock } from '../src/ui/useYearClock';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import { forcedPending } from './helpers/forcedPending';
 
 /**
@@ -50,7 +51,7 @@ import { forcedPending } from './helpers/forcedPending';
 
 const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
 const noop = () => undefined;
-const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, era: g.era!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
+const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, generation: g.generation!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
 
 function renderScreen(game: GameState, tick: TickInfo | null): string {
   return renderToStaticMarkup(
@@ -491,7 +492,7 @@ describe('「다음 결정으로」가 기록 카드 앞에서 멈추면 부모�
   // 그때 `advanceUntilDecision`이 돌려주는 마지막 걸음은 4세 해의 것이다 — 그 해가 위임 해(`by`)면 나이가 `fromAge + 1`이라 카드가 기록 시트 뒤에 뜨던 것이 R-451이다.
   const manual = { speed: 1 as const, autoMode: false, noteCards: true };
 
-  function stopped(seed: number, era: Era) {
+  function stopped(seed: number, era: ProfileId) {
     const game = startLife(seed, era);
     const raw = advanceUntilDecision(game, EVENT_POOL, 'stop'); // 멈춘 자리의 core 기대값 (reducer와 같은 호출)
     return { game, raw, after: sessionReducer(createSession(game, manual), { type: 'skip' }) };
@@ -499,7 +500,7 @@ describe('「다음 결정으로」가 기록 카드 앞에서 멈추면 부모�
 
   it('noteCards 켬(수동): 4세가 위임 해인 시드에서 멈춘 세션의 틱은 null이고 카드 모델이 없다 — 고치기 전 틱(r.last)으로는 카드가 만들어진다(공허 통과 방지)', () => {
     let delegated = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 60; seed++) {
         const { raw, after } = stopped(seed, era);
         if (raw.stoppedForNote === undefined || raw.last.by === undefined) continue;
@@ -527,7 +528,7 @@ describe('「다음 결정으로」가 기록 카드 앞에서 멈추면 부모�
   it('위임이 아닌 해에서 멈추면 직전 해의 걸음을 그대로 남긴다 (연출 대기 계산은 지금과 같다)', () => {
     let kept = 0;
     for (let seed = 1; seed <= 60; seed++) {
-      const { raw, after } = stopped(seed, 'present');
+      const { raw, after } = stopped(seed, 'alpha');
       if (raw.stoppedForNote === undefined || raw.last.by !== undefined) continue;
       kept++;
       expect(after.tick, `시드 ${seed}`).toEqual(raw.last);
@@ -538,7 +539,7 @@ describe('「다음 결정으로」가 기록 카드 앞에서 멈추면 부모�
 
   it('기록 카드를 끄면(소비) 멈추지 않아 걸음을 그대로 남긴다: 끝까지 간 마지막 걸음 = core 기대값(consume)', () => {
     for (let seed = 1; seed <= 12; seed++) {
-      const game = startLife(seed, 'present');
+      const game = startLife(seed, 'alpha');
       const raw = advanceUntilDecision(game, EVENT_POOL, 'consume');
       const after = sessionReducer(createSession(game, { ...manual, noteCards: false }), { type: 'skip' });
       expect(raw.stoppedForNote, `시드 ${seed}`).toBeUndefined();

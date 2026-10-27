@@ -1,3 +1,4 @@
+import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type FocusEvent, type MouseEvent } from 'react';
 import { NOTE_LIMITS, calendarYear, citationFor, liveGraphemes, noteQuestion, sanitizeLive, type NoteCardDef } from '../../core';
 import { titleCharsFor } from '../../data/dashText';
@@ -59,7 +60,7 @@ export function NoteSheet({ via, card, game, count, cardsOn, guardKey, onSave, o
   const question = noteQuestion(card, game);
   const heading = full ? NOTE_TEXT.limitTitle : question;
   const year = calendarYear(game.character.birthYear, game.age);
-  const cite = card === null ? null : citationFor(card, game.era, year);
+  const cite = card === null ? null : citationFor(card, eraBucketOf(game.generation, year), year);
 
   const [text, setText] = useState('');
   /** 글자 수·알림의 기준 값 — 조합이 끝난 마지막 값 */

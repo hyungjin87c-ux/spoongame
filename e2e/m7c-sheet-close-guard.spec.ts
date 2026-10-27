@@ -49,7 +49,7 @@ async function buildWorld(page: Page, timed = false): Promise<World> {
     page,
     `const { EVENT_POOL } = await import('/src/data/events/index.ts');
      for (let seed = 1; seed < 3000; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        for (let guard = 0; guard < 80 && s.phase === 'life'; guard++) {
          s = core.advanceUntilDecision(s).state;
          if (s.phase !== 'life' || s.pending === null) break;

@@ -1,9 +1,9 @@
-import { ERAS } from '../src/core';
+import { ERAS, timingEraOfProfile } from '../src/core';
 import { isChoiceEvent } from '../src/core/events';
 import { EVENT_POOL } from '../src/data/events';
 import { eventCounts } from './spec003BaselineLib';
 import { APPENDIX_A, BANDS, choiceEventsInBand, meanOf, seOf, tallyLife, underNineteenChoiceIds, type BandKey, type CardTally } from './spec005BaselineLib';
-import { simulateMany, type Strategy } from './simulateLib';
+import { SIM_PROFILES, simulateMany, type Strategy } from './simulateLib';
 
 /**
  * SPEC-005 QI0 기준선 측정 실행 스크립트. 실행: ./node_modules/.bin/vite-node scripts/spec005Baseline.ts [판수=1000]
@@ -57,9 +57,9 @@ for (const [strategy, sLabel] of STRATEGIES) {
   console.log(`\n### 전략: ${sLabel} (${strategy})`);
   console.log(`| 시대 | 총 카드 | ${BANDS.map((b) => b.label).join(' | ')} | 규칙상 부모 소관 | 그중 순수 부모 | 그중 M2 후보(R / P / V) | 13~18세 본인 | 본인이 고르는 카드(총 − 부모 소관) |`);
   const rows: Array<{ era: string; t: CardTally[] }> = [];
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     const sims = simulateMany(era, lives, strategy);
-    const t = sims.map((l) => tallyLife(l.final.history, era, l.final.character!.birthYear));
+    const t = sims.map((l) => tallyLife(l.final.history, timingEraOfProfile(era), l.final.character!.birthYear));
     rows.push({ era, t });
     const m = (f: (x: CardTally) => number) => meanOf(t.map(f));
     const byBand = KEYS.map((k) => m((x) => x.band[k]));

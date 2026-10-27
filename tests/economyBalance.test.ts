@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { R1_PRESENT, type ProfileId } from '../src/core';
 import {
   BANDS,
   CONDITION_TOLERANCE,
+  ECONOMY_PROFILES,
   END_LIMITS,
-  ERA_RATIO_RANGE,
   KNOWN_GAPS,
   KNOWN_GUARD_GAPS,
   TARGETS,
@@ -32,7 +33,7 @@ import {
 } from '../scripts/economyCheckLib';
 
 /**
- * 경제 모델 밸런스 (SPEC-003 M5 EC7, docs/data/economy-model.md 9절): 무작위 선택 6000판 × 세 시대(= \`npm run check:economy\`와 같은 표본·같은 시드)로 잰 연령대별 순자산·부채·소득이
+ * 경제 모델 밸런스 (SPEC-003 M5 EC7, docs/data/economy-model.md 9절): 무작위 선택 6000판 × (시험 전용 R1 프로필 + 대표 세대 산업화·X·알파)(= \`npm run check:economy\`와 같은 표본·같은 시드)로 잰 연령대별 순자산·부채·소득이
  *  - 지금 세상 목표(가계금융복지조사 s-030·s-031)의 허용 폭 안에 있는가  - 설계 가드(G3 수저 순서, M-2 20대 순자산<0 ≤ 60%, M-4 다가올 세상 65세 이상 순자산 중앙값 ≥ 0)를 지키는가
  *  - 지난·다가올 세상의 40대 순자산이 지금 세상 대비 목표 비율 안에 있는가
  *  - 엔딩 가드(r2, 15-4절): 사망 시점 순자산<0 비율·하한 도달 판 0%·재력 단계별 중앙값 순서·지금 세상 4·5단계 「뒤쪽」 비율 / 자동 모드 가드(40대 순자산 ≤ 수동 흉내의 1.5배, 엔딩 「앞섬」 ≤ 45%)
@@ -139,18 +140,18 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
   });
 
   it('playLife: 한 판의 끝 — 사망 시점 순자산·평생 가장 낮은 순자산·스무 살 넘어 마쳤는가·엔딩 방향 · 같은 시드는 같은 값', () => {
-    const a = playLife(economySeed(5), 'present', 'random');
+    const a = playLife(economySeed(5), R1_PRESENT, 'random');
     expect(a.outcome.reached).toBe(a.outcome.deathAge >= 20);
     expect(a.outcome.minNet).toBeLessThanOrEqual(a.outcome.net);
     expect(a.outcome.movement === null).toBe(!a.outcome.reached);
     expect(a.samples.length).toBeGreaterThan(0);
-    expect(playLife(economySeed(5), 'present', 'random')).toEqual(a);
-    expect(a.samples).toEqual(samplesOfLife(economySeed(5), 'present', 'random'));
+    expect(playLife(economySeed(5), R1_PRESENT, 'random')).toEqual(a);
+    expect(a.samples).toEqual(samplesOfLife(economySeed(5), R1_PRESENT, 'random'));
   });
 
-  it("지금 세상 end-g3는 더 이상 알려진 차이가 아니다 (SPEC-005 QI5가 1·2단계 0 = 0 동률을 0 < 1,251(PD13 ×2.0 최종값)로 되돌려 KNOWN_GUARD_GAPS에서 뺐다): 엄격한 순서만 통과이고, 어느 인접 단계의 동률·뒤집힘도 통과시키지 않는다 (REV-003-M8-1 R-419의 한계 시험을 이 뜻으로 옮김)", () => {
-    expect(KNOWN_GUARD_GAPS['present:end-g3'], '목록에서 뺐다 — 다시 동률이 되면 마스터 보고와 함께 다시 올린다').toBeUndefined();
-    const guardFor = (nets: number[]) => Object.fromEntries(endingGuardsOf('present', nets.map((n, i) => life((i + 1) as 1, n))).map((x) => [x.id, x]))['end-g3'];
+  it("R1 end-g3는 알려진 차이가 아니다 (SPEC-005 QI5가 1·2단계 0 = 0 동률을 0 < 1,251(PD13 ×2.0 최종값)로 되돌려 KNOWN_GUARD_GAPS에서 뺐다): 엄격한 순서만 통과이고, 어느 인접 단계의 사망 시점 순자산 중앙값이 같거나 뒤집혀도 어긋남이다", () => {
+    expect(KNOWN_GUARD_GAPS[`${R1_PRESENT}:end-g3`], '목록에서 뺐다 — 다시 동률이 되면 마스터 보고와 함께 다시 올린다').toBeUndefined();
+    const guardFor = (nets: number[]) => Object.fromEntries(endingGuardsOf(R1_PRESENT, nets.map((n, i) => life((i + 1) as 1, n))).map((x) => [x.id, x]))['end-g3'];
     const passes = (nets: number[]) => guardFor(nets).ok;
     expect(guardFor([0, 0, 5, 9, 30]).parts).toEqual([0, 5, 4, 21]);
     expect(passes([0, 616, 1000, 2000, 5000]), '엄격한 순서').toBe(true);
@@ -170,24 +171,24 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
     const sh = movementShares(lives);
     expect(sh.down).toBeCloseTo((2 * 100) / 8, 10); // 스무 살 전에 마친 판은 세지 않는다
     expect(sh.up).toBeCloseTo(100 / 8, 10);
-    const g = (era: 'past' | 'present' | 'future') => Object.fromEntries(endingGuardsOf(era, lives).map((x) => [x.id, x]));
-    expect(g('present')['end-negative'].ok).toBe(true); // 1/8 = 12.5%
-    expect(g('present')['end-floor'].ok).toBe(true);
-    expect(g('present')['end-g3'].ok).toBe(true);
-    expect(g('present')['end-down4'].ok).toBe(false); // 4단계 1판 중 1판이 뒤쪽 = 100%
-    expect(g('present')['end-down4'].reference).toBe(false);
-    expect(g('past')['end-down4'].reference).toBe(true); // 엔딩 방향은 지금 세상만 판정
-    expect(g('present')['end-down5'].ok).toBe(true); // 5단계 2판 중 1판 = 50%
+    const g = (profile: ProfileId) => Object.fromEntries(endingGuardsOf(profile, lives).map((x) => [x.id, x]));
+    expect(g(R1_PRESENT)['end-negative'].ok).toBe(true); // 1/8 = 12.5%
+    expect(g(R1_PRESENT)['end-floor'].ok).toBe(true);
+    expect(g(R1_PRESENT)['end-g3'].ok).toBe(true);
+    expect(g(R1_PRESENT)['end-down4'].ok).toBe(false); // 4단계 1판 중 1판이 뒤쪽 = 100%
+    expect(g(R1_PRESENT)['end-down4'].reference).toBe(false);
+    expect(g('industrial')['end-down4'].reference).toBe(true); // 엔딩 방향은 R1(통계가 지금 세상 것)만 판정
+    expect(g(R1_PRESENT)['end-down5'].ok).toBe(true); // 5단계 2판 중 1판 = 50%
     // 위반을 잡는다: 하한(-20억)에 닿은 판 · 중앙값이 같은 두 단계 · 음수 비율
     const floorHit = [...lives, life(1, -150000, 'same', { minNet: -200000 })];
-    expect(Object.fromEntries(endingGuardsOf('present', floorHit).map((x) => [x.id, x]))['end-floor'].ok).toBe(false);
+    expect(Object.fromEntries(endingGuardsOf(R1_PRESENT, floorHit).map((x) => [x.id, x]))['end-floor'].ok).toBe(false);
     const tie = [life(1, 0), life(2, 0), life(3, 1), life(4, 2), life(5, 3)];
-    expect(Object.fromEntries(endingGuardsOf('present', tie).map((x) => [x.id, x]))['end-g3'].ok).toBe(false);
+    expect(Object.fromEntries(endingGuardsOf(R1_PRESENT, tie).map((x) => [x.id, x]))['end-g3'].ok).toBe(false);
     const negs = Array.from({ length: 10 }, (_, i) => life(((i % 5) + 1) as 1, i < 4 ? -1 : 1));
-    const negGuard = (era: 'past' | 'present' | 'future') => Object.fromEntries(endingGuardsOf(era, negs).map((x) => [x.id, x]))['end-negative'];
-    expect(negGuard('present').ok).toBe(false); // 40% > 25%
-    expect(negGuard('future').ok).toBe(false); // 40% > 35%
-    expect(END_LIMITS.negativeShare).toEqual({ past: 25, present: 25, future: 35 });
+    const negGuard = (profile: ProfileId) => Object.fromEntries(endingGuardsOf(profile, negs).map((x) => [x.id, x]))['end-negative'];
+    expect(negGuard(R1_PRESENT).ok).toBe(false); // 40% > 25%
+    expect(negGuard('alpha').ok).toBe(false); // 세대 판도 같은 한계(연도 축 경제 GM10 전까지 모두 R1 모형이라 25 하나다)
+    expect(END_LIMITS.negativeShare).toBe(25);
   });
 
   it('자동 모드 가드 도구: 40대 순자산 중앙값 비 ≤ 1.5배 · 엔딩 「앞섬」 ≤ 45%', () => {
@@ -261,7 +262,7 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
   });
 
   it('samplesOfLife: 20세부터 해마다 한 줄, 나이가 1씩 늘고 불변식(부채 ≥ −순자산, 소득 ≥ 0)을 지킨다 · 같은 시드는 같은 줄', () => {
-    const a = samplesOfLife(economySeed(3), 'present', 'random');
+    const a = samplesOfLife(economySeed(3), R1_PRESENT, 'random');
     expect(a.length).toBeGreaterThan(30);
     expect(a[0].age).toBe(20);
     a.forEach((r, i) => {
@@ -269,27 +270,27 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
       expect(r.debt).toBeGreaterThanOrEqual(Math.max(0, -r.net));
       expect(r.income).toBeGreaterThanOrEqual(0);
     });
-    expect(samplesOfLife(economySeed(3), 'present', 'random')).toEqual(a);
-    expect(samplesOfLife(economySeed(4), 'present', 'random')).not.toEqual(a);
+    expect(samplesOfLife(economySeed(3), R1_PRESENT, 'random')).toEqual(a);
+    expect(samplesOfLife(economySeed(4), R1_PRESENT, 'random')).not.toEqual(a);
   });
 
-  it('가드: M-2는 지금 세상만 판정하고 다른 시대는 참고(reference)다 · M-4는 다가올 세상에만 있다', () => {
+  it('가드: M-2는 시험 전용 R1(통계가 지금 세상 것)만 판정하고 세대 판은 참고(reference)다 · M-4(다가올 세상 65세 이상)는 세상 3종이 없어지며 함께 없어졌다', () => {
     const lowAll: Sample[] = Array.from({ length: 200 }, (_, i) => ({ age: 20 + (i % 10), parentWealth: ((i % 5) + 1) as 1, net: -100, debt: 100, income: 100 }));
-    const g = (era: 'past' | 'present' | 'future') => guardsOf(era, lowAll);
-    const m2 = (era: 'past' | 'present' | 'future') => g(era).find((x) => x.id === 'm2-young')!;
-    expect(m2('present').ok).toBe(false);
-    expect(m2('present').reference).toBeFalsy();
-    expect(m2('past').ok).toBe(false);
-    expect(m2('past').reference).toBe(true);
-    expect(g('present').some((x) => x.id === 'm4-future65')).toBe(false);
-    expect(g('future').some((x) => x.id === 'm4-future65')).toBe(true);
+    const g = (profile: ProfileId) => guardsOf(profile, lowAll);
+    const m2 = (profile: ProfileId) => g(profile).find((x) => x.id === 'm2-young')!;
+    expect(m2(R1_PRESENT).ok).toBe(false);
+    expect(m2(R1_PRESENT).reference).toBeFalsy();
+    expect(m2('industrial').ok).toBe(false);
+    expect(m2('industrial').reference).toBe(true);
+    for (const p of ECONOMY_PROFILES) expect(g(p).some((x) => x.id === 'm4-future65'), p).toBe(false);
   });
 });
 
-describe('경제 밸런스 측정 (무작위 선택 6000판 × 3시대, 시드 고정 — npm run check:economy와 같은 값)', () => {
+describe('경제 밸런스 측정 (무작위 선택 6000판 × 시험 전용 R1 + 대표 세대 셋, 시드 고정 — npm run check:economy와 같은 값)', () => {
   it('표본이 충분하다: 시대마다 20세 이상 줄이 30만 개를 넘고 연령대마다 1만 줄을 넘는다', () => {
     const r = REPORT();
-    for (const era of ['past', 'present', 'future'] as const) {
+    expect(Object.keys(r.rows).sort()).toEqual([...ECONOMY_PROFILES].sort());
+    for (const era of ECONOMY_PROFILES) {
       expect(r.rows[era].length, era).toBeGreaterThan(300_000);
       for (const b of BANDS) expect(bandRows(r.rows[era], b.from, b.to).length, `${era} ${b.label}`).toBeGreaterThan(10_000);
     }
@@ -309,31 +310,30 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 3시대, 시드 �
     }
   }, 180_000);
 
-  it('설계 가드: G3(재력 5단계 대 1단계 40대 순자산 ≥ 4배 · 1단계 50대 > 0 · 5단계 60대 순자산<0 < 15%)는 세 시대 모두, M-2(20대 순자산<0 ≤ 60%)는 지금 세상, M-4(다가올 세상 65세 이상 중앙값 ≥ 0)는 다가올 세상 — 보고한 가드 차이(KNOWN_GUARD_GAPS)를 빼면 모두 통과', () => {
+  it('설계 가드: G3(재력 5단계 대 1단계 40대 순자산 ≥ 4배 · 1단계 50대 > 0 · 5단계 60대 순자산<0 < 15%)는 R1과 대표 세대 셋 모두, M-2(20대 순자산<0 ≤ 60%)는 R1 — 보고한 차이(KNOWN_GUARD_GAPS)는 보고한 한계 안이다', () => {
     const r = REPORT();
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ECONOMY_PROFILES) {
       const judged = r.guards[era].filter((g) => g.reference !== true);
       expect(judged.length, era).toBeGreaterThanOrEqual(3);
       expect(judged.filter((g) => !g.ok && KNOWN_GUARD_GAPS[`${era}:${g.id}`] === undefined).map((g) => `${g.label}: ${g.value}`), era).toEqual([]);
     }
-    expect(r.guards.present.find((g) => g.id === 'm2-young')!.ok).toBe(true);
-    expect(r.guards.future.find((g) => g.id === 'm4-future65')!.ok).toBe(true);
+    expect(r.guards[R1_PRESENT].find((g) => g.id === 'm2-young')!.ok).toBe(true);
   }, 180_000);
 
-  it('G3 방향: 부모 재력이 높을수록 40대 순자산 중앙값이 단계마다 커진다 (세 시대, 1<2<3<4<5)', () => {
+  it('G3 방향: 부모 재력이 높을수록 40대 순자산 중앙값이 단계마다 커진다 (R1과 대표 세대 셋, 1<2<3<4<5)', () => {
     const r = REPORT();
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ECONOMY_PROFILES) {
       const m = [1, 2, 3, 4, 5].map((w) => median(bandRows(r.rows[era].filter((x) => x.parentWealth === w), 40, 49).map((x) => x.net)));
       for (let i = 1; i < 5; i++) {
-        // 지난 세상 5단계는 전체의 약 1%(6000판 중 약 60판)라 40대 중앙값의 표본 잡음이 ±10%다(KNOWN_GUARD_GAPS past:g3-ratio) — 4단계와 5단계의 차가 잡음 안(5% 이내)이면 순서가 뒤집힌 것으로 세지 않는다. 다른 단계·시대는 엄격하다.
-        const noise = era === 'past' && i === 4 ? 0.95 : 1;
+        // 산업화 세대 5단계는 전체의 약 1%(6000판 중 약 60판)라 40대 중앙값의 표본 잡음이 ±10%다 — 4단계와 5단계의 차가 잡음 안(5% 이내)이면 순서가 뒤집힌 것으로 세지 않는다
+        const noise = era === 'industrial' && i === 4 ? 0.95 : 1;
         expect(m[i], `${era} ${i + 1}단계`).toBeGreaterThan(m[i - 1] * noise);
       }
     }
   }, 180_000);
 
   it('R-354: 옛 재산 조건 7곳을 최종 모델로 같은 나이에서 재니 통과율이 옛 통과율의 ±15% 안이다 (youth-return-school은 R-355로 문구를 우선해 수용 — 옛 97% → netMin 0의 통과율)', () => {
-    const results = judgeConditions(REPORT().rows.present);
+    const results = judgeConditions(REPORT().rows[R1_PRESENT]);
     for (const r of results) expect(r.n, `${r.check.where} ${r.check.age}세 표본 줄`).toBeGreaterThan(3000);
     const out = results.filter((r) => !r.ok).map((r) => `${r.check.where} ${r.check.age}세: 지금 ${r.rate.toFixed(1)}% (옛 ${r.check.oldRate}%, 허용 ${r.lo.toFixed(1)}~${r.hi.toFixed(1)}%)`);
     expect(out, '같은 통과율에서 벗어난 조건 (값을 다시 정하거나 마스터 수용을 기록한다)').toEqual([]);
@@ -344,15 +344,9 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 3시대, 시드 �
     expect(ret.rate).toBeLessThan(70);
   });
 
-  it('지난·다가올 세상의 40대 순자산 중앙값이 지금 세상 대비 목표 비율 안이다 (지난 0.5~0.9배, 다가올 0.3~0.9배)', () => {
+  it('엔딩 가드 (15-4절): 순자산 하한(-20억)에 닿은 판 0% · 재력 단계별 사망 시점 순자산 중앙값 1 < 2 < 3 < 4 < 5 (R1·대표 세대, 엄격 — 보고한 차이 제외) · R1 4단계 「뒤쪽」 ≤ 50%, 5단계 ≤ 70% (보고한 차이 제외)', () => {
     const r = REPORT();
-    expect(ERA_RATIO_RANGE).toEqual({ past: [0.5, 0.9], future: [0.3, 0.9] });
-    for (const x of r.ratios) expect(x.ok, `${x.era} ${x.ratio.toFixed(2)}배 (목표 ${x.lo}~${x.hi})`).toBe(true);
-  }, 180_000);
-
-  it('엔딩 가드 (15-4절): 순자산 하한(-20억)에 닿은 판 0% · 재력 단계별 사망 시점 순자산 중앙값 1 < 2 < 3 < 4 < 5 (세 시대, 엄격) · 지금 세상 4단계 「뒤쪽」 ≤ 50%, 5단계 ≤ 70%', () => {
-    const r = REPORT();
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ECONOMY_PROFILES) {
       const g = (id: string) => r.guards[era].find((x) => x.id === id)!;
       expect(g('end-floor').ok, `${era} 하한 ${g('end-floor').value}`).toBe(true);
       expect(g('end-floor').metric, era).toBe(0);
@@ -367,25 +361,25 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 3시대, 시드 �
         expect(gap.limit(g('end-g3').metric, g('end-g3')), `${gap.why}: 지금 ${g('end-g3').value}`).toBe(true);
       }
     }
-    const present = (id: string) => r.guards.present.find((x) => x.id === id)!;
-    const down4 = KNOWN_GUARD_GAPS['present:end-down4'];
-    if (down4 === undefined) expect(present('end-down4').ok, `지금 세상 4단계 뒤쪽 ${present('end-down4').value}`).toBe(true);
+    const present = (id: string) => r.guards[R1_PRESENT].find((x) => x.id === id)!;
+    const down4 = KNOWN_GUARD_GAPS[`${R1_PRESENT}:end-down4`];
+    if (down4 === undefined) expect(present('end-down4').ok, `R1 4단계 뒤쪽 ${present('end-down4').value}`).toBe(true);
     else {
-      expect(present('end-down4').ok, '지금 세상 4단계 뒤쪽이 통과했다 — KNOWN_GUARD_GAPS에서 뺀다').toBe(false);
+      expect(present('end-down4').ok, 'R1 4단계 뒤쪽이 통과했다 — KNOWN_GUARD_GAPS에서 뺀다').toBe(false);
       expect(down4.limit(present('end-down4').metric), `${down4.why}: 지금 ${present('end-down4').value}`).toBe(true);
     }
-    const down5 = KNOWN_GUARD_GAPS['present:end-down5'];
-    if (down5 === undefined) expect(present('end-down5').ok, `지금 세상 5단계 뒤쪽 ${present('end-down5').value}`).toBe(true);
+    const down5 = KNOWN_GUARD_GAPS[`${R1_PRESENT}:end-down5`];
+    if (down5 === undefined) expect(present('end-down5').ok, `R1 5단계 뒤쪽 ${present('end-down5').value}`).toBe(true);
     else {
-      expect(present('end-down5').ok, '지금 세상 5단계 뒤쪽이 통과했다 — KNOWN_GUARD_GAPS에서 뺀다').toBe(false);
+      expect(present('end-down5').ok, 'R1 5단계 뒤쪽이 통과했다 — KNOWN_GUARD_GAPS에서 뺀다').toBe(false);
       expect(down5.limit(present('end-down5').metric), `${down5.why}: 지금 ${present('end-down5').value}`).toBe(true);
     }
     expect(present('end-down4').reference).toBeFalsy();
   }, 180_000);
 
-  it('사망 시점 순자산<0 비율 (15-4절: 지난·지금 ≤ 25%, 다가올 ≤ 35%): 보고한 차이(KNOWN_GUARD_GAPS)는 보고한 한계 안이고 아직 어긋나 있다 — 한계 안으로 들어오면 목록에서 뺀다', () => {
+  it('사망 시점 순자산<0 비율 (15-4절: ≤ 25% — 세대 판은 연도 축 경제 GM10 전까지 R1 모형이라 같은 한계): 보고한 차이(KNOWN_GUARD_GAPS)는 보고한 한계 안이고 아직 어긋나 있다 — 한계 안으로 들어오면 목록에서 뺀다', () => {
     const r = REPORT();
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ECONOMY_PROFILES) {
       const g = r.guards[era].find((x) => x.id === 'end-negative')!;
       const gap = KNOWN_GUARD_GAPS[`${era}:end-negative`];
       if (g.ok) expect(gap, `${era}가 통과했다 — KNOWN_GUARD_GAPS에서 빼고 문서 9-3절을 고친다`).toBeUndefined();
@@ -395,17 +389,17 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 3시대, 시드 �
       }
     }
     for (const [key, gap] of Object.entries(KNOWN_GUARD_GAPS)) {
-      const [era, id] = key.split(':') as ['past' | 'present' | 'future', string];
+      const [era, id] = key.split(':') as [ProfileId, string];
       const g = r.guards[era].find((x) => x.id === id)!;
       expect(g.ok, `${key}가 통과했다 — KNOWN_GUARD_GAPS에서 뺀다`).toBe(false);
       expect(gap.limit(g.metric, g), `${gap.why}: 지금 ${g.value}`).toBe(true);
     }
   }, 180_000);
 
-  it('자동 모드 가드 (15-4절, EC6 우선): 자동 2000판 × 세 시대의 40대 순자산 중앙값이 수동 흉내의 1.5배 이하이고 엔딩 「앞섬」이 45% 이하다', () => {
+  it('자동 모드 가드 (15-4절, EC6 우선): 자동 2000판 × (R1과 대표 세대 셋)의 40대 순자산 중앙값이 수동 흉내의 1.5배 이하이고 엔딩 「앞섬」이 45% 이하다', () => {
     const manual = REPORT();
     const auto = AUTO_REPORT();
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ECONOMY_PROFILES) {
       const gs = autoGuardsOf({ rows: manual.rows[era], lives: manual.lives[era] }, { rows: auto.rows[era], lives: auto.lives[era] });
       expect(gs.filter((g) => !g.ok).map((g) => `${g.label}: ${g.value}`), era).toEqual([]);
       expect(movementShares(auto.lives[era]).up, era).toBeLessThanOrEqual(45);

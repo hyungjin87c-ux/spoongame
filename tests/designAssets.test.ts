@@ -1502,8 +1502,8 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
       expect(html, file).not.toContain('undefined');
     }
   });
-  it('R-445 재발 방지: 시안 생성기(scripts/design/buildMockups.mjs)가 쓰는 구현 상수가 실재한다 — `../../src/…`에서 가져오는 이름이 모두 그 모듈에 있고, `*_TEXT.<키>`·`LIFE_LENGTH_TEXT[…].<필드>`가 그 객체에 있다 (지운 상수를 쓰는 생성기가 실행하자마자 멈추던 일을 시험이 잡는다)', async () => {
-    const generator = await readText('../scripts/design/buildMockups.mjs');
+  it('R-445 재발 방지: 지금 쓰는 시안 생성기(scripts/design/buildR4Mockups.mjs)가 쓰는 구현 상수가 실재한다 — `../../src/…`에서 가져오는 이름이 모두 그 모듈에 있고, `*_TEXT.<키>`가 그 객체에 있다 (지운 상수를 쓰는 생성기가 실행하자마자 멈추던 일을 시험이 잡는다). 옛 시대 모델 생성기(buildMockups.mjs)는 SPEC-004 GM4에서 시대 표가 사라져 보관본이 됐다 — 아래 마지막 단언', async () => {
+    const generator = await readText('../scripts/design/buildR4Mockups.mjs');
     const modules = import.meta.glob('../src/**/*.{ts,tsx}') as Record<string, () => Promise<Record<string, unknown>>>;
     const loaded = new Map<string, Record<string, unknown>>();
     const scope: Record<string, unknown> = {}; // 생성기 이름 → 값
@@ -1524,7 +1524,7 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
         scope[local] = mod[name];
       }
     }
-    expect(namedImports, '공허 통과 방지: 가져오는 이름이 충분히 많다').toBeGreaterThan(60);
+    expect(namedImports, '공허 통과 방지: 가져오는 이름이 충분히 많다').toBeGreaterThanOrEqual(10);
     // `X_TEXT.키` — 평범한 객체인 *_TEXT 상수는 키가 실재해야 한다 (함수·원시값이면 건너뛴다)
     let propChecks = 0;
     for (const m of generator.matchAll(/\b([A-Z][A-Z0-9_]*_TEXT)\.([A-Za-z_]\w*)/g)) {
@@ -1533,25 +1533,26 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
       propChecks++;
       expect(m[2] in (obj as object), `${m[1]}.${m[2]}가 없다`).toBe(true);
     }
-    expect(propChecks, '공허 통과 방지').toBeGreaterThan(30);
-    // `LIFE_LENGTH_TEXT[…].필드`: 두 인생 길이 모두에 있어야 한다
-    const lifeLength = scope.LIFE_LENGTH_TEXT as Record<string, Record<string, unknown>>;
-    const fields = [...generator.matchAll(/LIFE_LENGTH_TEXT\[[^\]]*\]\.([A-Za-z_]\w*)/g)].map((m) => m[1]);
-    expect(fields.length, 'LIFE_LENGTH_TEXT 필드 사용처가 있다').toBeGreaterThan(0);
-    for (const f of fields) for (const k of Object.keys(lifeLength)) expect(f in lifeLength[k], `LIFE_LENGTH_TEXT.${k}.${f}가 없다`).toBe(true);
+    expect(propChecks, '공허 통과 방지').toBeGreaterThan(3);
     // 변이 점검: 지운 상수를 쓰는 가짜 생성기 조각은 이 점검이 잡는다
-    const fake = "TITLE_TEXT.carouselAutoNote(9) LIFE_LENGTH_TEXT[l].desc";
+    const fake = 'DASH_TEXT.noSuchKeyEver(9)';
     const missing = [...fake.matchAll(/\b([A-Z][A-Z0-9_]*_TEXT)\.([A-Za-z_]\w*)/g)].filter((m) => !((scope[m[1]] as object) && m[2] in (scope[m[1]] as object)));
-    expect(missing.map((m) => `${m[1]}.${m[2]}`)).toContain('TITLE_TEXT.carouselAutoNote');
-    expect(fields.includes('desc') ? false : !('desc' in lifeLength.short30)).toBe(true);
+    expect(missing.map((m) => `${m[1]}.${m[2]}`)).toContain('DASH_TEXT.noSuchKeyEver');
+    // 옛 시대 모델 생성기는 보관본이다: 사라진 시대 표(birthTable)·시대 문구를 가져오는 줄이 그대로 남아 있어 다시 실행할 수 없다(실행하면 멈춘다) — 그 산출물(정적 HTML)만 다른 시험이 읽는다
+    const archived = await readText('../scripts/design/buildMockups.mjs');
+    expect(archived).toContain("../../src/data/birthTable.ts");
+    expect(Object.keys(import.meta.glob('../src/data/birthTable.ts'))).toEqual([]);
   });
   it('D-97·D-98(2026-10-20, design-system.md 11-4 관형사 묶음 — 구현 glue.ts r2 규칙을 생성기가 import): 나머지 고정 문장 셋의 시안도 구현과 같은 묶음을 품는다 — 엔딩 다시 태어나기 안내 「이 인생의」, 대시보드 나가기 확인 「이 기기에」, 결정 카드 영향 안내 「이 선택만으로」; 글자는 바뀌지 않고 생성기의 세 자리는 esc가 아니라 glueHtml이다', async () => {
-    expect(endingMockHtml).toContain(`<p class="t-sm t-muted">${REBIRTH_NOTE.replace('이 인생의', '<span class="keep-phrase">이 인생의</span>')}</p>`);
+    // 엔딩 시안(ending.html)은 SPEC-003/005 때의 한 문장이다 — SPEC-004에서 앞에 「첫 화면의 세대 선택으로 돌아갑니다.」가 붙었으므로 시안에는 뒤 문장(다시 태어나면 …)이 있다
+    const rebirthTail = REBIRTH_NOTE.slice(REBIRTH_NOTE.indexOf('다시 태어나면'));
+    expect(rebirthTail).toContain('이 인생의 기록은 사라집니다');
+    expect(endingMockHtml).toContain(`<p class="t-sm t-muted">${rebirthTail.replace('이 인생의', '<span class="keep-phrase">이 인생의</span>')}</p>`);
     const dashboard = await readText('../docs/design/mockups/dashboard-infant.html');
     expect(dashboard).toContain(`<p class="t-sm t-muted">${DASH_TEXT.exitAskSub.replace('이 기기에', '<span class="keep-phrase">이 기기에</span>')}</p>`);
     const decision = await readText('../docs/design/mockups/decision-adult.html');
     expect(decision).toContain('<span class="keep-phrase">이 선택만으로</span>');
-    for (const [html, text] of [[endingMockHtml, REBIRTH_NOTE], [dashboard, DASH_TEXT.exitAskSub]] as const) expect(html.replace(/<[^>]+>/g, ''), text).toContain(text);
+    for (const [html, text] of [[endingMockHtml, rebirthTail], [dashboard, DASH_TEXT.exitAskSub]] as const) expect(html.replace(/<[^>]+>/g, ''), text).toContain(text);
     // 생성기: D-98의 여섯 자리 중 부품이 아닌 다섯(FS5·가상 인구 주석·플레이 시간 조각·다시 태어나기·나가기 확인)이 glueHtml — 영향 안내는 구현 부품 ImpactHint의 서버 렌더라 따로 적지 않는다
     const generator = await readText('../scripts/design/buildMockups.mjs');
     for (const s of ['${glueHtml(TITLE_TEXT.lifeLengthHint)}', '${glueHtml(TITLE_TEXT.populationNote)}', '${glueHtml(lead)}', '${glueHtml(mid)}', '${glueHtml(tail)}', 'glueHtml(t.excluded)', 'glueHtml(t.notClean)', 'glueHtml(t.device)', '${glueHtml(REBIRTH_NOTE)}', '${glueHtml(T.exitAskSub)}']) expect(generator, s).toContain(s);
@@ -1570,66 +1571,32 @@ describe('M8 플레이 시간 블록 · 첫 화면 인생 길이 설명 계약 (
 });
 
 /**
- * 첫 화면 일러스트 자산 계약 (SPEC-005 QI3 HS1 · diff-005.md D5-25·D5-29·D5-32·D5-33 · design-system.md 12-5, designer 제안 시험).
- * 형진 님 그림(`docs/design/source/home-illustration-source-2026-10-20.webp`)을 다듬은 알파 WebP 두 장(PC·모바일)이 약속을 지킨다 — 합계 ≤ 100KB▲(SPEC 「형진 님 결정 — 첫 화면 그림」 ⑤)·WebP·
- * `width`·`height` 속성이 파일 크기와 같다(레이아웃 이동 0)·테마별 파일 없음(한 벌)·`public/`에 두지 않는다(vite 해시 이름 — 캐시)·CSS 배경으로 깔지 않는다(글자 대비를 해친다).
- * 마크업(`figure aria-hidden` · `alt=""`)과 CSS(흐림 2단계·강제 색상)는 tests/titleScreen.test.tsx와 tests/homeScreen.test.ts가 본다.
+ * 첫 화면 일러스트 삭제 (SPEC-004 GS11 / D4-59): SPEC-005 HS1의 오른쪽 위 그림(형진 님 그림을 다듬은 알파 WebP 두 장 — `home-map-pc.webp`·`home-map-mobile.webp`)은 3차 시안에서 없어졌다.
+ * 그림이 차지하던 초기 로드 몫(≤ 100KB)을 지우고 오른쪽 열에는 통계 캐러셀이 선다(GS11-3, 2부). 자산 파일·그림 마크업·CSS가 모두 사라졌음을 잠근다.
  */
-describe('첫 화면 일러스트 자산 (SPEC-005 D5-25: 합계 ≤ 100KB · WebP · width/height 속성)', () => {
+describe('첫 화면 일러스트 삭제 (SPEC-004 GS11: 자산·마크업·CSS 모두 없다)', () => {
   const fsSpec = 'node:fs';
-  async function readBytes(relative: string): Promise<Uint8Array> {
-    const fs = (await import(/* @vite-ignore */ fsSpec)) as { readFileSync(path: URL): Uint8Array };
-    return fs.readFileSync(new URL(relative, import.meta.url));
+  type Fs = { existsSync(path: URL): boolean; readdirSync(path: URL): string[] };
+  async function fsOf(): Promise<Fs> {
+    return (await import(/* @vite-ignore */ fsSpec)) as Fs;
   }
-  /** WebP 머리(RIFF 컨테이너)에서 형식·크기·알파를 읽는다 — 외부 도구 없이 */
-  function webpInfo(b: Uint8Array): { format: string; width: number; height: number; alpha: boolean } {
-    const tag = (o: number): string => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
-    expect(tag(0), 'RIFF 머리').toBe('RIFF');
-    expect(tag(8), 'WEBP 표지').toBe('WEBP');
-    const format = tag(12);
-    if (format === 'VP8X') return { format, alpha: (b[20] & 0x10) !== 0, width: 1 + (b[24] | (b[25] << 8) | (b[26] << 16)), height: 1 + (b[27] | (b[28] << 8) | (b[29] << 16)) };
-    if (format === 'VP8L') return { format, alpha: (b[24] & 0x10) !== 0, width: 1 + (((b[22] & 0x3f) << 8) | b[21]), height: 1 + (((b[24] & 0x0f) << 10) | (b[23] << 2) | ((b[22] & 0xc0) >> 6)) };
-    return { format, alpha: false, width: (b[26] | (b[27] << 8)) & 0x3fff, height: (b[28] | (b[29] << 8)) & 0x3fff };
-  }
-  const BUDGET_BYTES = 100 * 1024;
 
-  it('파일 둘(PC·모바일)이 있고 모두 WebP다', async () => {
-    for (const name of ['home-map-pc.webp', 'home-map-mobile.webp']) {
-      const b = await readBytes(`../src/assets/home/${name}`);
-      expect(b.length, name).toBeGreaterThan(1000);
-      expect(webpInfo(b).format, name).toMatch(/^VP8[XL ]$/);
-    }
+  it('src/assets/home 폴더와 home-map-*.webp 파일이 없다 (public/에도 없다)', async () => {
+    const fs = await fsOf();
+    expect(fs.existsSync(new URL('../src/assets/home/', import.meta.url))).toBe(false);
+    const pub = new URL('../public/', import.meta.url);
+    expect(fs.existsSync(pub) ? fs.readdirSync(pub).filter((n) => n.includes('home-map')) : []).toEqual([]);
   });
 
-  it('두 파일의 합계가 100KB 이하다(▲ 예산) — 초기 로드 gzip 400KB 안에서 그림이 차지하는 몫. WebP는 이미 압축돼 있어 gzip 값도 같다', async () => {
-    const pc = await readBytes('../src/assets/home/home-map-pc.webp');
-    const mobile = await readBytes('../src/assets/home/home-map-mobile.webp');
-    expect(pc.length + mobile.length, `${pc.length} + ${mobile.length}`).toBeLessThanOrEqual(BUDGET_BYTES);
-    // 한 화면이 내려받는 것은 하나(같은 주소를 고른다) — 그중 큰 PC 파일도 예산의 70% 이하
-    expect(Math.max(pc.length, mobile.length)).toBeLessThanOrEqual(BUDGET_BYTES * 0.7);
-  });
-
-  it('크기: PC 613×720 · 모바일 375×440, 알파 채널이 있다(가장자리가 바탕색에 녹는다) — 두 파일의 가로세로 비율이 같다(≤ 1%)', async () => {
-    const pc = webpInfo(await readBytes('../src/assets/home/home-map-pc.webp'));
-    const mobile = webpInfo(await readBytes('../src/assets/home/home-map-mobile.webp'));
-    expect([pc.width, pc.height]).toEqual([613, 720]);
-    expect([mobile.width, mobile.height]).toEqual([375, 440]);
-    expect(pc.alpha && mobile.alpha, '알파 WebP').toBe(true);
-    expect(Math.abs(pc.width / pc.height / (mobile.width / mobile.height) - 1)).toBeLessThan(0.01);
-  });
-
-  it('화면 마크업의 width·height 속성이 모바일 파일의 크기와 같다(자리를 미리 잡아 레이아웃 이동 0), 테마별 파일이 없다(한 벌), public/에 두지 않는다, CSS 배경으로 깔지 않는다', async () => {
-    const mobile = webpInfo(await readBytes('../src/assets/home/home-map-mobile.webp'));
+  it('첫 화면 코드가 그림 파일을 가져오지 않고, 그림 마크업(figure·illust·home-map)이 없다', async () => {
     const screenSrc = await readText('../src/screens/TitleScreen.tsx');
-    expect(screenSrc).toContain(`width={${mobile.width}} height={${mobile.height}} alt=""`);
-    expect(screenSrc).toContain("import homeMapPc from '../assets/home/home-map-pc.webp';");
-    expect(screenSrc).toContain("import homeMapMobile from '../assets/home/home-map-mobile.webp';");
-    const fs = (await import(/* @vite-ignore */ fsSpec)) as { readdirSync(path: URL): string[]; existsSync(path: URL): boolean };
-    expect(fs.readdirSync(new URL('../src/assets/home/', import.meta.url)).sort(), '테마별 파일 없음 — 두 장뿐').toEqual(['home-map-mobile.webp', 'home-map-pc.webp']);
-    expect(fs.existsSync(new URL('../public/', import.meta.url)) ? fs.readdirSync(new URL('../public/', import.meta.url)).filter((n) => n.includes('home-map')) : [], 'public/에 두지 않는다(해시 이름 — 캐시)').toEqual([]);
+    for (const gone of ['home-map', 'assets/home', 'home-illust', 'className="illust']) expect(screenSrc, gone).not.toContain(gone);
+  });
+
+  it('title.css에 그림 규칙(.illust·.home__illust·home-map)이 없고, 그림을 배경 이미지로 깔지도 않는다', async () => {
     const titleCss = await readText('../src/styles/title.css');
+    for (const gone of ['.illust', 'home__illust', 'home-map']) expect(titleCss, gone).not.toContain(gone);
     expect(titleCss, '그림을 배경 이미지로 깔지 않는다(글자 대비)').not.toMatch(/background(-image)?:[^;]*url\(/);
-    expect(titleCss).toMatch(/\.illust img \{[^}]*object-fit: contain[^}]*\}/); // 찌그러짐 0 안전장치
   });
 });
 

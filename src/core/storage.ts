@@ -1,7 +1,8 @@
-import { ERA_CONFIG } from '../data/birthTable';
-import { EVENT_POOL } from '../data/events';
 import { LIMITS } from '../data/economyTable';
-import { HISTORY_LIMITS, STAGE_TABLE, STATE_LIMITS } from '../data/lifeTable';
+import { generationDef } from '../data/generations';
+import { HISTORY_LIMITS, LIFE_PARAMS_PLACEHOLDER, STAGE_TABLE, STATE_LIMITS } from '../data/lifeTable';
+import { isCurrentRegionName } from '../data/regionKeys';
+import { eventPool, isGameDataReady } from './gameData';
 import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
 import { isValidBirthReport } from './birthReport';
 import { isValidStat } from './stats';
@@ -12,10 +13,12 @@ import {
   BGM_VOLUME_MIN,
   DELEGATED_BYS,
   DWELLINGS,
-  ERAS,
   GENDERS,
+  GENERATION_CHOICES,
+  GENERATION_IDS,
   HISTORY_KINDS,
   LIFE_LENGTHS,
+  MONEY_VIEWS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
   PHASES,
@@ -34,6 +37,7 @@ import { cleanNoteForLoad, isInvisibleOnly } from './noteText';
 import { readPlay } from './playClock';
 import { DEFAULT_SETTINGS } from './state';
 import { VERSION_PATTERN } from './build';
+import type { GenerationId } from './types';
 
 /**
  * 게임 진행과 설정은 별도 키. 스키마(또는 저장 검증 규칙)가 바뀌면 SCHEMA_VERSION을 올린다.
@@ -46,7 +50,10 @@ import { VERSION_PATTERN } from './build';
  *     연표 상한도 160 → 300줄로 올랐다(data/lifeTable.ts#HISTORY_LIMITS, DB12). v6 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6).
  * v8: 개편(SPEC-003 M5) — **재산(wealth) 스탯이 없어지고** 20세부터의 자산 현황(`assets`: 순자산·연 소득·부채·소득 보정·주거 형태, 만 원 정수)과 20세 미만의 집안 살림(`familyFund`)이 판 상태에 더해졌다.
  *     v7 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6 — `classifySavedGame`이 `version < SCHEMA_VERSION`을 이전 버전으로 분류한다). docs/data/economy-model.md 10절.
- * (M7c: 게임 스키마는 v8 그대로다 — 연표 종류에 `note`가 더해지고 `seen`에 `note-…` 키가 생길 수 있지만 허용 범위만 넓어졌고, 기록이 없는 v8 저장은 새 규칙에서도 그대로 유효하다. 진행 중인 판을 잃지 않으려고 올리지 않았다, NC-1.)
+ * v9: 개편(SPEC-004 GM4, MG1) — 판 상태의 `era`(지난·지금·다가올 세상)가 `generation`(세대 7종)으로 바뀌었다. 출생 연도는 고른 세대의 범위(1940~2020) 안이고, 출생지는 시도까지다(시군구 없음, NR3).
+ *     선택 필드 `regionPicked`(시도를 직접 골라 시작한 판)·`fromRandom`(「랜덤 세대」로 세대가 뽑힌 판)이 더해졌다. **v8 이하(R1) 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄**(C6 전례 — R1의 2026년생은 알파 범위 밖이라 옮기지 않는다, N18 닫힘).
+ *     SPEC-008 필드는 예약하지 않는다(N24): 앞으로의 선택 필드는 SPEC-005 SV1 방식(필드 단위 검증, 없는 저장은 기본값)으로 더하고 저장 버전을 올리지 않는다(tests/storageOptional.test.ts).
+ * (M7c: 게임 스키마는 v8 그대로였다 — 연표 종류에 `note`가 더해지고 `seen`에 `note-…` 키가 생길 수 있지만 허용 범위만 넓어졌고, 기록이 없는 v8 저장은 새 규칙에서도 그대로 유효하다. 진행 중인 판을 잃지 않으려고 올리지 않았다, NC-1.)
  * (SPEC-005 QI6: 게임 스키마는 v8 그대로다 — 판 상태에 **선택 필드 `gentleUsed`**(판 도중 한 번이라도 「무거운 장면 가리기」가 켜졌으면 `true`, 엔딩 맨 위 한 줄의 기준)가 더해졌다. 없으면 켠 적이 없는 판이다. 값이 이상하면 판을 버리지 않고 그 필드만 버린다(`withValidGentleUsed`).
  *     `eventId`가 없는 상속 줄의 표지는 줄에 필드를 더하지 않고 글자 상수로 잡는다(core/gentle.ts) — 이 변경 이전에 저장된 판의 상속 줄도 같다(M20).)
  * (SPEC-005 QI5: 게임 스키마는 v8 그대로다 — 연표 줄에 **선택 필드 `by`**(`'parent'` 부모님이 정했다 · `'child'` 아이의 일로 흘러갔다, `kind: 'choice'`에만)가 더해졌다. 없으면 본인이 고른 선택이다. 다른 값이거나 선택 줄이 아니면 판을 버리지 않고 그 필드만 버린다(`withValidBy`).
@@ -55,7 +62,7 @@ import { VERSION_PATTERN } from './build';
  */
 export const GAME_KEY = 'suzeo-game:save';
 export const SETTINGS_KEY = 'suzeo-game:settings';
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 /**
  * 설정 스키마는 게임 스키마와 따로 버전을 관리한다(게임 스키마가 바뀌어도 설정은 유지).
  * v2: 첫 화면에서 고른 세상(era)·인생 길이(lifeLength)가 더해졌다. v1 설정(배속·자동 모드만)은 그대로 읽고 새 필드는 기본값으로 채운다 — 배속·자동 모드를 잃지 않는다.
@@ -63,10 +70,12 @@ export const SCHEMA_VERSION = 8;
  * v4: 기록 카드(SPEC-003 M7c)의 `noteCards`(자동 기록 카드 켬/끔, 기본 켜짐)가 더해졌다. v1~v3 설정은 그대로 읽고 새 필드는 기본값으로 채운다 — 이미 고른 값을 잃지 않는다.
  * v5: 「무거운 장면 가리기」(SPEC-005 HV3)의 `gentle`(기본 꺼짐)과 마지막으로 본 새 소식 버전 `notesSeen`(NT4, 기본 빈 글자)이 더해졌다. v1~v4 설정은 그대로 읽고 새 필드는 기본값으로 채운다 — 이미 고른 값을 잃지 않는다.
  *     index.html의 첫 그림 전 테마 스크립트의 읽을 수 있는 버전 목록도 같이 고쳤다(tests/themeInline.test.ts가 대조).
+ * v6: 세대 선택(SPEC-004 MG1) — `era`가 `generation`(첫 화면 세대 목록의 마지막 줄, 기본 `random`)으로 바뀌고, 살아본 세대 `lived`(GS10)·내 출신 시도 `homeRegion`(RG3, 이 키 하나에만)·금액 보기 `moneyView`(EY11)가 더해졌다.
+ *     v1~v5 설정은 그대로 읽고 새 필드는 기본값으로 채운다(옛 `era`는 버린다) — 이미 고른 배속·BGM·테마를 잃지 않는다. index.html의 테마 스크립트 목록도 같이 고쳤다.
  */
-export const SETTINGS_VERSION = 5;
+export const SETTINGS_VERSION = 6;
 /** 읽을 수 있는 설정 버전 (현재 + 이전 버전). 이 밖의 버전은 기본값. index.html의 첫 그림 전 테마 스크립트도 같은 목록이다(tests/themeInline.test.ts가 대조한다). */
-const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2, 3, 4, 5];
+const READABLE_SETTINGS_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6];
 
 /** localStorage와 같은 최소 인터페이스 (테스트에서 가짜를 주입). */
 export interface StorageLike {
@@ -134,8 +143,8 @@ function validCharacter(v: unknown): v is Character {
     CHARACTER_NAME_PATTERN.test(v.name) &&
     isOneOf(GENDERS, v.gender) &&
     isInt(v.birthYear) &&
-    v.birthYear >= 1800 &&
-    v.birthYear <= 2200 &&
+    v.birthYear >= 1940 &&
+    v.birthYear <= 2020 &&
     isOneOf(PARENT_WEALTHS, v.parentWealth) &&
     isOneOf(PARENTING_STYLES, v.parenting) &&
     isInt(v.looks) &&
@@ -144,8 +153,8 @@ function validCharacter(v: unknown): v is Character {
   );
 }
 
-/** 어느 시대에서든 가능한 가장 큰 나이 (시대를 알기 전의 상한) */
-const ABSOLUTE_MAX_AGE = Math.max(...ERAS.map((e) => ERA_CONFIG[e].life.maxAge));
+/** 어느 출생 연도에서든 가능한 가장 큰 나이 (세대를 알기 전의 상한 — 사망 모형이 연도 축으로 바뀌면 GM10이 연도별 값으로 바꾼다) */
+const ABSOLUTE_MAX_AGE = LIFE_PARAMS_PLACEHOLDER.maxAge;
 
 const optString = (v: unknown, max: number): boolean => v === undefined || (typeof v === 'string' && v.length <= max && !hasHiddenControl(v));
 
@@ -187,6 +196,26 @@ function withValidPlay(state: GameState): GameState {
   if (play !== undefined) return { ...state, play };
   const rest = { ...state } as Record<string, unknown>;
   delete rest.play;
+  return rest as unknown as GameState;
+}
+
+/**
+ * 판의 `regionPicked`(SPEC-004 RG1·MG1 — 시도를 직접 골라 시작한 판)는 **선택 필드**라 이상한 값이 판을 버리게 하지 않는다 — `true`가 아니거나 출생 이후 단계가 아닌 판에 있으면 **그 필드만 버린다**. 없는 저장은 룰렛에 맡긴 판이다.
+ */
+function withValidRegionPicked(state: GameState): GameState {
+  if (!Object.prototype.hasOwnProperty.call(state, 'regionPicked')) return state;
+  if ((state as { regionPicked?: unknown }).regionPicked === true && state.phase !== 'title') return state;
+  const rest = { ...state } as Record<string, unknown>;
+  delete rest.regionPicked;
+  return rest as unknown as GameState;
+}
+
+/** 판의 `fromRandom`(GS3 — 「랜덤 세대」로 세대가 뽑힌 판): `regionPicked`와 같은 규칙의 선택 필드 */
+function withValidFromRandom(state: GameState): GameState {
+  if (!Object.prototype.hasOwnProperty.call(state, 'fromRandom')) return state;
+  if ((state as { fromRandom?: unknown }).fromRandom === true && state.phase !== 'title') return state;
+  const rest = { ...state } as Record<string, unknown>;
+  delete rest.fromRandom;
   return rest as unknown as GameState;
 }
 
@@ -284,7 +313,7 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   if (!isObj(v)) return 'invalid';
   const basic =
     isOneOf(PHASES, v.phase) &&
-    (v.era === null || isOneOf(ERAS, v.era)) &&
+    (v.generation === null || isOneOf(GENERATION_IDS, v.generation)) &&
     (v.lifeLength === null || isOneOf(LIFE_LENGTHS, v.lifeLength)) &&
     (v.character === null || validCharacter(v.character)) &&
     (v.birthReport === null || isObj(v.birthReport)) &&
@@ -321,14 +350,13 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   const afterBirth = phase === 'roulette' || phase === 'birth' || phase === 'life' || phase === 'ending';
   const age = v.age as number;
   if (afterBirth) {
-    if (v.era === null || v.lifeLength === null || v.character === null || v.birthStats === null) return 'invalid';
-    const era = v.era as keyof typeof ERA_CONFIG;
-    const range = ERA_CONFIG[era].birthYears;
+    if (v.generation === null || v.lifeLength === null || v.character === null || v.birthStats === null) return 'invalid';
+    const range = generationDef(v.generation as GenerationId).birth;
     const year = (v.character as Character).birthYear;
-    if (year < range.min || year > range.max) return 'invalid';
-    if (age > ERA_CONFIG[era].life.maxAge) return 'invalid';
-    // 출생신고 상세(M3): 룰렛 이후 모든 단계에 있어야 하고, 지역·시군구·체중·부모·주거가 그 출생 연도·성별에 맞아야 한다. 또래 시드도 있어야 한다.
-    if (v.peerSeed === null || !isValidBirthReport(v.birthReport, year, (v.character as Character).gender)) return 'invalid';
+    if (year < range.from || year > range.to) return 'invalid';
+    if (age > LIFE_PARAMS_PLACEHOLDER.maxAge) return 'invalid';
+    // 출생신고 상세(M3): 룰렛 이후 모든 단계에 있어야 하고, 지역·체중·부모·주거가 그 출생 연도·성별에 맞아야 한다(시도를 직접 골랐으면 그 시도). 또래 시드도 있어야 한다.
+    if (v.peerSeed === null || !isValidBirthReport(v.birthReport, year, (v.character as Character).gender, v.regionPicked === true)) return 'invalid';
   } else if (v.character !== null || v.birthStats !== null || v.birthReport !== null || v.peerSeed !== null) {
     return 'invalid';
   }
@@ -337,8 +365,8 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
   if (age >= STAGE_TABLE.youth.startAge && v.familyFund !== 0) return 'invalid';
   // 출생 전 단계(title·roulette·birth)에는 집안 살림이 쌓일 수 없다(R-357): 변조한 첫 화면 저장의 familyFund가 새 판의 20세 자산에 합쳐지지 않게 막는다
   if (!(phase === 'life' || phase === 'ending') && v.familyFund !== 0) return 'invalid';
-  // 첫 화면(title)에서는 세상·인생 길이가 아직 정해지지 않았다(고르는 값은 설정에 있다). 판 상태에 있으면 변조·손상이다.
-  if (phase === 'title' && (v.era !== null || v.lifeLength !== null)) return 'invalid';
+  // 첫 화면(title)에서는 세대·인생 길이가 아직 정해지지 않았다(고르는 값은 설정에 있다). 판 상태에 있으면 변조·손상이다.
+  if (phase === 'title' && (v.generation !== null || v.lifeLength !== null)) return 'invalid';
   // 일시정지는 인생(life) 단계에서만 있을 수 있다(DB3). 다른 단계에 켜져 있으면 변조·손상이다.
   if (v.paused === true && phase !== 'life') return 'invalid';
 
@@ -372,7 +400,11 @@ function readSettings(v: unknown): Settings | null {
   return {
     speed: v.speed as Settings['speed'],
     autoMode: v.autoMode,
-    era: isOneOf(ERAS, v.era) ? (v.era as Settings['era']) : DEFAULT_SETTINGS.era,
+    // v6 필드: 없거나 알 수 없는 값이면 그 필드만 기본값 — 옛 `era`(v5 이하)는 읽지 않고 버린다
+    generation: isOneOf(GENERATION_CHOICES, v.generation) ? (v.generation as Settings['generation']) : DEFAULT_SETTINGS.generation,
+    lived: readLived(v.lived),
+    homeRegion: isCurrentRegionName(v.homeRegion) ? v.homeRegion : null,
+    moneyView: isOneOf(MONEY_VIEWS, v.moneyView) ? (v.moneyView as Settings['moneyView']) : DEFAULT_SETTINGS.moneyView,
     // 아직 고를 수 없는 인생 길이(1차에서는 「약 1시간」)가 저장돼 있으면 고를 수 있는 값(약 30분)으로 읽는다(R-202)
     lifeLength: isOneOf(LIFE_LENGTHS, v.lifeLength) ? selectableLifeLength(v.lifeLength as Settings['lifeLength']) : DEFAULT_SETTINGS.lifeLength,
     // v3 필드: 없거나 형태가 어긋나면 그 필드만 기본값으로 채운다(이미 고른 다른 설정을 잃지 않는다)
@@ -384,6 +416,17 @@ function readSettings(v: unknown): Settings | null {
     gentle: typeof v.gentle === 'boolean' ? v.gentle : DEFAULT_SETTINGS.gentle,
     notesSeen: typeof v.notesSeen === 'string' && VERSION_PATTERN.test(v.notesSeen) ? v.notesSeen : DEFAULT_SETTINGS.notesSeen,
   };
+}
+
+/** 기본 설정의 새 사본 — 배열(lived)·객체(bgm)까지 복사해, 한 호출이 고친 값이 기본값과 다음 호출에 새지 않는다 */
+function defaultSettings(): Settings {
+  return { ...DEFAULT_SETTINGS, lived: [...DEFAULT_SETTINGS.lived], bgm: { ...DEFAULT_SETTINGS.bgm } };
+}
+
+/** 살아본 세대: 세대 id의 배열을 세대 순서로 정렬·중복 없이. 알 수 없는 값은 버린다(이상한 저장이 표시를 만들어 내지 않는다) */
+function readLived(v: unknown): Settings['lived'] {
+  if (!Array.isArray(v)) return [];
+  return GENERATION_IDS.filter((id) => v.includes(id));
 }
 
 /** BGM 설정: 켬/끔은 불리언, 볼륨은 0~100 정수. 어느 쪽이든 어긋나면 그 값만 기본값(BGM은 꺼짐이 기본이라 어긋난 저장이 갑자기 소리를 내지 않는다). */
@@ -420,7 +463,7 @@ export type SavedGameKind = 'none' | 'valid' | 'old-version' | 'old-version-empt
 /** 이전 스키마(v4 이하)에서 아직 태어나기 전이던 화면 단계 이름 (v4의 eraSelect는 지금은 없는 단계) */
 const OLD_SCHEMA_NO_PROGRESS_PHASES: readonly string[] = ['title', 'eraSelect'];
 
-export function classifySavedGame(raw: string | null, pool: EventPool = EVENT_POOL): SavedGameKind {
+export function classifySavedGame(raw: string | null, pool?: EventPool): SavedGameKind {
   if (raw === null) return 'none';
   if (parseGame(raw, pool) !== null) return 'valid';
   try {
@@ -440,17 +483,32 @@ export function classifySavedGame(raw: string | null, pool: EventPool = EVENT_PO
  * pool은 대기 중인 선택지가 실제 이벤트인지 대조할 때 쓴다: 콘텐츠 갱신으로 그 이벤트가 사라졌거나 선택지가 바뀌었다면
  * 저장 전체를 버리지 않고 **대기만 풀어** 이어간다(R-046 — 저장 형식은 그대로라 SCHEMA_VERSION은 올리지 않는다).
  */
-export function parseGame(raw: string | null, pool: EventPool = EVENT_POOL): GameState | null {
+export function parseGame(raw: string | null, poolArg?: EventPool): GameState | null {
   const data = parseEnvelope(raw, SCHEMA_VERSION);
+  // 진행 중인 판(룰렛 이후)은 출생 연도 표·이벤트 풀로 검증한다 — 지연 로드 덩어리가 오기 전에는 읽지 않는다(null). 앱은 `savedNeedsGameData`로 먼저 불러온다(MG8).
+  if (isObj(data) && data.phase !== 'title' && !isGameDataReady()) return null;
+  const pool = poolArg ?? (isGameDataReady() ? eventPool() : EMPTY_POOL);
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
-  return withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool))));
+  return withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool)))))) ;
+}
+
+/** 이벤트 풀이 아직 없는 첫 화면 단계의 저장을 읽을 때만 쓰는 빈 풀 (title 단계 저장은 풀을 읽지 않는다) */
+const EMPTY_POOL: EventPool = Object.freeze({ events: [], byId: new Map() });
+
+/**
+ * 저장된 게임 원문이 읽히려면 지연 로드 덩어리(출생 연도 표·이벤트 풀)가 먼저 와야 하는가 (MG8): 지금 버전으로 읽히는 모양이고 첫 화면(title)이 아닌 단계면 참.
+ * 이전 버전·손상·첫 화면 단계·저장 없음은 거짓이다(그 경우는 덩어리 없이 새 게임/첫 화면으로 열린다).
+ */
+export function savedNeedsGameData(raw: string | null): boolean {
+  const data = parseEnvelope(raw, SCHEMA_VERSION);
+  return isObj(data) && typeof data.phase === 'string' && data.phase !== 'title' && isOneOf(PHASES, data.phase);
 }
 
 /** 문자열 → 설정. 문제가 있으면 기본값. */
 export function parseSettings(raw: string | null): Settings {
-  return readSettings(parseEnvelope(raw, READABLE_SETTINGS_VERSIONS)) ?? { ...DEFAULT_SETTINGS };
+  return readSettings(parseEnvelope(raw, READABLE_SETTINGS_VERSIONS)) ?? defaultSettings();
 }
 
 // ---------- 저장 직전 판단 (R-052) ----------
@@ -551,7 +609,7 @@ export function isSupersedingChange(changed: string | null, known: string | null
 
 // ---------- 읽기/쓰기 (예외 안전) ----------
 
-export function loadGame(storage: StorageLike | null, pool: EventPool = EVENT_POOL): GameState | null {
+export function loadGame(storage: StorageLike | null, pool?: EventPool): GameState | null {
   if (!storage) return null;
   try {
     return parseGame(storage.getItem(GAME_KEY), pool);
@@ -583,11 +641,11 @@ export function clearGame(storage: StorageLike | null): boolean {
 }
 
 export function loadSettings(storage: StorageLike | null): Settings {
-  if (!storage) return { ...DEFAULT_SETTINGS };
+  if (!storage) return defaultSettings();
   try {
     return parseSettings(storage.getItem(SETTINGS_KEY));
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return defaultSettings();
   }
 }
 

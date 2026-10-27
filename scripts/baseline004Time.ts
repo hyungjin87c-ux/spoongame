@@ -1,4 +1,4 @@
-import { ERAS } from '../src/core';
+import { SIM_ALL } from './simulateLib';
 import { HOLD_MS, LIFE_LENGTH_MODES } from '../src/data/timingTable';
 import { extraLineMsFor, measureMany, summarize } from './timeReportLib';
 
@@ -13,7 +13,7 @@ const lives = Number(process.argv[2] ?? 1000);
 const mode = LIFE_LENGTH_MODES.short30;
 const f = (n: number, d = 2) => n.toFixed(d);
 
-const sums = ERAS.map((era) => summarize(era, 'short30', measureMany(era, lives, 'random', 'short30')));
+const sums = SIM_ALL.map((era) => summarize(era, 'short30', measureMany(era, lives, 'random', 'short30')));
 const scale = mode.holdScale;
 const extraLineSec = extraLineMsFor('short30') / 1000; // 둘째 줄부터 더하는 대기
 const quietToNarrativeSec = ((HOLD_MS.narrative - HOLD_MS.quiet) * scale) / 1000; // 조용한 해가 서술 해가 될 때 늘어나는 대기

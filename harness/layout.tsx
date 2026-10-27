@@ -1,13 +1,13 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { DEFAULT_SETTINGS, ERAS, citationFor, citationIdFor, citationValidRange, createEventPool, worstCaseVisibleChoiceIds, type BirthReport, type Character, type Era, type EventDef, type EventPool, type HistoryEntry, type NoteCardDef } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
+import { DEFAULT_SETTINGS, ERAS, ERA_YEAR_SPAN, citationFor, citationIdFor, citationValidRange, createEventPool, worstCaseVisibleChoiceIds, type BirthReport, type Character, type Era, type GenerationId, type EventDef, type EventPool, type HistoryEntry, type NoteCardDef } from '../src/core';
 import { getCitation } from '../src/data/citationsAccess';
 import { EVENT_POOL } from '../src/data/events';
 import { NOTE_CARDS } from '../src/data/noteCards';
 import { LifeScreen, type LifeGame } from '../src/screens/LifeScreen';
 import { NoteSheet } from '../src/ui/dash/NoteSheet';
 import type { YearClock } from '../src/ui/useYearClock';
+import '../src/data/installAll'; // 지연 로드 데이터(이벤트 풀·출생 연도 표·인용 테이블)를 정적으로 놓는다 — core의 기본 인자가 읽는다(MG8)
 import '../src/styles/tokens.css';
 import '../src/styles.css';
 import '../src/styles/title.css';
@@ -20,11 +20,18 @@ import '../src/styles/dash.css';
  * 앱 전체를 이벤트마다 새로 띄우면 이벤트 수 × 뷰포트 수만큼 페이지를 새로 열어야 해서, 화면 컴포넌트만 띄우고 window.__layout.show(id)로 이벤트를 바꾼다.
  * 보여 주는 선택지는 requires와 무관하게 **같은 상태에서 함께 보일 수 있는 가장 큰 묶음**이다(최악의 경우: 3개가 모두 보이는 경우 — 정의가 4개인 infant-new-sibling은 라벨이 더 긴 묶음, M7a r3).
  */
-/** 지금 세상은 2026년생만 있다(SPEC-003 Q1) — 대시보드 또래 칸이 출생 연도에서 시대를 읽으므로 실제와 같은 연도를 쓴다 */
-const character: Character = { name: '김민준', gender: 'male', birthYear: 2026, parentWealth: 3, parenting: 'free', looks: 50 };
+/**
+ * 인용 박스 감사용 세 구간(과거·지금·다가올)의 출생 표본 — 인용 표는 GM10 전까지 옛 시대 구간으로 열린다(MG4). 대시보드 또래 칸이 출생 연도의 시·도 목록을 읽으므로 세대 판에 실제로 있는 연도를 쓴다(1940~2020).
+ */
+const ERA_SAMPLE: Record<Era, { generation: GenerationId; birthYear: number }> = {
+  past: { generation: 'industrial', birthYear: 1950 },
+  present: { generation: 'alpha', birthYear: 2016 },
+  future: { generation: 'alpha', birthYear: 2020 },
+};
+const character: Character = { name: '김민준', gender: 'male', birthYear: 2016, parentWealth: 3, parenting: 'free', looks: 50 };
 const stats = { education: 40, health: 60, happiness: 50, relationships: 50 };
 /** 출생신고 상세(대시보드 프로필·식구가 읽는다) — 이 하니스는 이벤트 카드의 레이아웃만 보지만 화면이 받는 모양은 실제와 같다 */
-const birthReport: BirthReport = { month: 3, region: '서울', sigunguSido: '서울', sigungu: '종로구', mother: { age: 31, job: 'clerk' }, father: { age: 34, job: 'professional' }, housing: 'own', birthWeightKg: 3.2, birthOrder: 2 };
+const birthReport: BirthReport = { month: 3, region: '서울', mother: { age: 31, job: 'clerk' }, father: { age: 34, job: 'professional' }, housing: 'own', birthWeightKg: 3.2, birthOrder: 2 };
 /** 서버·타이머 없이 고정된 올해 시계(진행률 0) */
 const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
 
@@ -42,7 +49,7 @@ function stateFor(pool: EventPool, eventId: string, extraHistory: readonly Histo
   const age = cell?.age ?? 30;
   return {
     phase: 'life',
-    era: cell?.era ?? 'present',
+    generation: ERA_SAMPLE[cell?.era ?? 'present'].generation,
     lifeLength: 'short30',
     character: cell === null ? character : { ...character, birthYear: cell.birthYear },
     stats,
@@ -93,9 +100,13 @@ function connectedCells(): Array<{ id: string; era: Era; birthYear: number; age:
       const c = cid === null ? undefined : getCitation(cid);
       if (cid === null || c === undefined) continue;
       const range = citationValidRange(c);
-      // 이 세상의 가장 이른 출생 연도로, 인용이 보이는 해 안에서 30세 근처에 놓는다(나이는 0~100 안)
-      const birthYear = ERA_CONFIG[era].birthYears.min;
-      const year = Math.min(Math.max(birthYear + 30, range.from), range.until);
+      // 이 세상의 출생 표본으로, 인용이 보이는 해 안에서 30세 근처에 놓는다(나이는 0~100 안). 시대 구간은 **달력 연도**로 갈리므로(`eraOfYear` — 앱이 카드의 구간을 정하는 방식 그대로)
+      // 칸의 해는 그 세상의 달력 구간(ERA_YEAR_SPAN)과 인용 유효 범위가 겹치는 곳에 있어야 한다. 겹치는 해가 없는 연결(옛 「지금」 인용 중 2026년 이후에만 유효한 것)은 앱에서 보일 수 없어 칸이 없다
+      const birthYear = ERA_SAMPLE[era].birthYear;
+      const lo = Math.max(range.from, ERA_YEAR_SPAN[era].from, birthYear);
+      const hi = Math.min(range.until, ERA_YEAR_SPAN[era].to, birthYear + 100);
+      if (lo > hi) continue;
+      const year = Math.min(Math.max(birthYear + 30, lo), hi);
       const age = year - birthYear;
       if (age >= 0 && age <= 100 && citationFor(ev, era, year) !== null) out.push({ id: ev.id, era, birthYear, age, year, citation: cid });
     }
@@ -104,7 +115,7 @@ function connectedCells(): Array<{ id: string; era: Era; birthYear: number; age:
   for (const card of NOTE_CARDS) {
     if (card.citation === undefined) continue;
     for (const era of ERAS) {
-      const birthYear = ERA_CONFIG[era].birthYears.min;
+      const birthYear = ERA_SAMPLE[era].birthYear;
       const age = card.ageRange.min;
       const year = birthYear + age;
       const cid = citationIdFor(card, era);

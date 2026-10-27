@@ -1,5 +1,10 @@
+// 스크립트(vite-node)는 앱과 달리 지연 로드를 기다리지 않는다 — 이벤트·출생 연도 데이터를 한 번에 놓는다(MG8, 시험의 tests/setup.ts와 같다)
+import '../src/data/installAll';
 import {
-  ERAS,
+  GENERATION_IDS,
+  R1_PRESENT,
+  eventPool,
+  timingEraOf,
   PARENT_WEALTHS,
   STAGES,
   STAT_KEYS,
@@ -13,7 +18,7 @@ import {
   stageOfAge,
   totalCards,
   type Chooser,
-  type Era,
+  type ProfileId,
   type EventPool,
   type GameState,
   type LifeLength,
@@ -23,6 +28,7 @@ import {
   type TickCounts,
 } from '../src/core';
 import { LIMITS } from '../src/data/economyTable';
+import { r1EventPool } from './r1EventPool';
 import { lifeModeOf } from '../src/data/timingTable';
 
 /**
@@ -33,12 +39,28 @@ import { lifeModeOf } from '../src/data/timingTable';
 export type Strategy = 'auto' | 'first' | 'random';
 
 /**
- * 시대·시드로 인생 시작 직전(life, 0세)까지 만든다.
- * looks를 주면 외모를 그 값으로 고정한다(외모 구간별 조우율 비교용: 시드·시대가 같은 인생에서 외모만 다르게 한다).
+ * 시뮬레이션이 도는 프로필 (SPEC-004): 무거운 시뮬레이션의 기본 표본은 대표 세 세대(산업화·X·알파 — 이른 출생·가운데·늦은 출생)이고, 전체 7세대는 `SIM_ALL`이다.
+ * 시험 전용 R1 프로필(`r1-present`, EY17)은 R1 스냅숏을 다시 재는 쪽(scripts/r1Runner.ts)만 부른다. 변수 이름 `era`는 R1 때 이름이 남은 것이고 값은 프로필이다.
  */
-export function startLife(seed: number, era: Era, opts: { looks?: number; lifeLength?: LifeLength } = {}): GameState {
+export const SIM_SAMPLE: readonly ProfileId[] = ['industrial', 'genx', 'alpha'];
+export const SIM_ALL: readonly ProfileId[] = GENERATION_IDS;
+/** 이 스크립트 묶음의 기본 순회 대상 (옛 `ERAS` 자리) */
+export const SIM_PROFILES: readonly ProfileId[] = SIM_SAMPLE;
+
+/**
+ * 프로필의 이벤트 풀: 시험 전용 R1 프로필은 **얼린 R1 풀**(변환 전 「지금 세상」 이벤트 — EY17 ②)로, 세대 판은 지금 풀로 돈다.
+ */
+export function poolOf(profile: ProfileId): EventPool {
+  return profile === R1_PRESENT ? r1EventPool() : eventPool();
+}
+
+/**
+ * 프로필·시드로 인생 시작 직전(life, 0세)까지 만든다.
+ * looks를 주면 외모를 그 값으로 고정한다(외모 구간별 조우율 비교용: 시드·프로필이 같은 인생에서 외모만 다르게 한다). regionPick은 시도를 직접 고른 판(RG1).
+ */
+export function startLife(seed: number, era: ProfileId, opts: { looks?: number; lifeLength?: LifeLength; regionPick?: string | null } = {}): GameState {
   // 첫 화면 → 태어나기(룰렛 단계에서 출생 결과 확정) → 출생신고 보기 → 살아가기(인생 0세)
-  const s = enterLife(enterBirth(beginBirth(createInitialState(seed), era, opts.lifeLength)));
+  const s = enterLife(enterBirth(beginBirth(createInitialState(seed), era, opts.lifeLength, opts.regionPick ?? null)));
   if (opts.looks === undefined || s.character === null) return s;
   return { ...s, character: { ...s.character, looks: opts.looks } };
 }
@@ -53,7 +75,7 @@ export function chooserFor(strategy: Strategy, seed: number): Chooser | null {
 
 export interface LifeSummary {
   seed: number;
-  era: Era;
+  era: ProfileId;
   final: GameState;
   counts: TickCounts;
   deathAge: number;
@@ -80,10 +102,10 @@ export function choicesByStage(final: GameState): Record<Stage, number> {
  * 한 판을 끝까지 돌리고 매 걸음 불변식을 검사한다(위반하면 throw):
  * 스탯 0~100 정수, 나이 단조(줄어들지 않음, 한 걸음에 +1 이하), 사망에 도달, 연표 상한.
  */
-export function simulateLife(seed: number, era: Era, strategy: Strategy, pool?: EventPool, opts: { looks?: number; lifeLength?: LifeLength } = {}): LifeSummary {
+export function simulateLife(seed: number, era: ProfileId, strategy: Strategy, pool?: EventPool, opts: { looks?: number; lifeLength?: LifeLength; regionPick?: string | null } = {}): LifeSummary {
   const start = startLife(seed, era, opts);
   const chooser = chooserFor(strategy, seed);
-  const run = playToEnd(start, chooser, pool);
+  const run = playToEnd(start, chooser, pool ?? poolOf(era));
   const final = run.state;
   if (final.phase !== 'ending' || final.death === null) throw new Error(`seed ${seed} ${era}: 사망에 도달하지 못했다`);
   for (const k of STAT_KEYS) {
@@ -92,6 +114,8 @@ export function simulateLife(seed: number, era: Era, strategy: Strategy, pool?: 
   }
   const slow = { speed: 1 as const, skipToDecision: false };
   const fast = { speed: 8 as const, skipToDecision: true };
+  // 읽는 시간 모델의 시대 구간: 한 판의 대표 시대 (GM10이 연도별 값으로 바꾼다)
+  const timingEra = timingEraOf(final.generation, final.character?.birthYear ?? 2000);
   return {
     seed,
     era,
@@ -99,12 +123,12 @@ export function simulateLife(seed: number, era: Era, strategy: Strategy, pool?: 
     counts: run.counts,
     deathAge: final.death.age,
     choicesByStage: choicesByStage(final),
-    seconds1x: estimatePlaySeconds(run.counts, slow, final.lifeLength, era, 'median'),
-    seconds1xHigh: estimatePlaySeconds(run.counts, slow, final.lifeLength, era, 'high'),
-    seconds1xUpper: estimatePlaySeconds(run.counts, slow, final.lifeLength, era, 'upper'),
-    secondsFast: estimatePlaySeconds(run.counts, fast, final.lifeLength, era, 'median'),
-    secondsFastHigh: estimatePlaySeconds(run.counts, fast, final.lifeLength, era, 'high'),
-    secondsFastUpper: estimatePlaySeconds(run.counts, fast, final.lifeLength, era, 'upper'),
+    seconds1x: estimatePlaySeconds(run.counts, slow, final.lifeLength, timingEra, 'median'),
+    seconds1xHigh: estimatePlaySeconds(run.counts, slow, final.lifeLength, timingEra, 'high'),
+    seconds1xUpper: estimatePlaySeconds(run.counts, slow, final.lifeLength, timingEra, 'upper'),
+    secondsFast: estimatePlaySeconds(run.counts, fast, final.lifeLength, timingEra, 'median'),
+    secondsFastHigh: estimatePlaySeconds(run.counts, fast, final.lifeLength, timingEra, 'high'),
+    secondsFastUpper: estimatePlaySeconds(run.counts, fast, final.lifeLength, timingEra, 'upper'),
   };
 }
 
@@ -150,7 +174,7 @@ export function correlation(a: readonly number[], b: readonly number[]): number 
 }
 
 export interface EraReport {
-  era: Era;
+  era: ProfileId;
   lives: number;
   deathAge: Dist;
   choices: Dist;
@@ -179,13 +203,13 @@ export interface EraReport {
   earlyDeathPct: number;
 }
 
-export function simulateMany(era: Era, seeds: number, strategy: Strategy, pool?: EventPool, opts: { looks?: number; lifeLength?: LifeLength } = {}): LifeSummary[] {
+export function simulateMany(era: ProfileId, seeds: number, strategy: Strategy, pool?: EventPool, opts: { looks?: number; lifeLength?: LifeLength; regionPick?: string | null } = {}): LifeSummary[] {
   const lives: LifeSummary[] = [];
   for (let i = 1; i <= seeds; i++) lives.push(simulateLife(i * 7919 + 13, era, strategy, pool, opts));
   return lives;
 }
 
-export function reportOf(era: Era, lives: readonly LifeSummary[]): EraReport {
+export function reportOf(era: ProfileId, lives: readonly LifeSummary[]): EraReport {
   const deathByDecade: Record<string, number> = {};
   for (const l of lives) {
     const key = `${Math.floor(l.deathAge / 10) * 10}대`;
@@ -219,12 +243,12 @@ export function reportOf(era: Era, lives: readonly LifeSummary[]): EraReport {
   };
 }
 
-export function reportEra(era: Era, seeds: number, strategy: Strategy, pool?: EventPool, opts: { lifeLength?: LifeLength } = {}): EraReport {
+export function reportEra(era: ProfileId, seeds: number, strategy: Strategy, pool?: EventPool, opts: { lifeLength?: LifeLength } = {}): EraReport {
   return reportOf(era, simulateMany(era, seeds, strategy, pool, opts));
 }
 
 export function reportAll(seeds: number, strategy: Strategy, pool?: EventPool, opts: { lifeLength?: LifeLength } = {}): EraReport[] {
-  return ERAS.map((era) => reportEra(era, seeds, strategy, pool, opts));
+  return SIM_PROFILES.map((era) => reportEra(era, seeds, strategy, pool, opts));
 }
 
 // ---------- 밸런스: 부모 재력 단계별 최종 스탯, 출생값과의 상관 (R-045 b) ----------
@@ -298,7 +322,7 @@ export function balanceOf(lives: readonly LifeSummary[]): BalanceReport {
 
 export function balanceAll(seeds: number, strategy: Strategy, pool?: EventPool): BalanceReport {
   const lives: LifeSummary[] = [];
-  for (const era of ERAS) lives.push(...simulateMany(era, seeds, strategy, pool));
+  for (const era of SIM_PROFILES) lives.push(...simulateMany(era, seeds, strategy, pool));
   return balanceOf(lives);
 }
 
@@ -337,7 +361,7 @@ export interface EncounterRow {
 export function encounterTable(seeds: number, strategy: Strategy, pool?: EventPool): EncounterRow[] {
   return LOOKS_TIERS.map((tier) => {
     const lives: LifeSummary[] = [];
-    for (const era of ERAS) lives.push(...simulateMany(era, seeds, strategy, pool, { looks: tier.looks }));
+    for (const era of SIM_PROFILES) lives.push(...simulateMany(era, seeds, strategy, pool, { looks: tier.looks }));
     const met = (l: LifeSummary, group: EncounterGroup) => ENCOUNTER_GROUPS[group].some((id) => Object.prototype.hasOwnProperty.call(l.final.seen, id));
     const pct = (f: (l: LifeSummary) => boolean) => Math.round((lives.filter(f).length / lives.length) * 1000) / 10;
     return {

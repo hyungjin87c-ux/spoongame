@@ -3,7 +3,7 @@ import docSrc from '../docs/data/economy-model.md?raw';
 import legacyJson from './fixtures/wealthLegacy.json';
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FILES } from '../src/data/events';
-import { type ChoiceDef, type EventDef, type Era } from '../src/core';
+import { type ChoiceDef, type EventDef, type ProfileId } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
 import { startLife } from '../scripts/simulateLib';
 import { M7A_NEW_EVENT_IDS, M7A_WEALTH_GATES } from './helpers/m7a';
@@ -314,7 +314,7 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
 
   it('실제 인생에서 보이는 선택지 수가 달라진다 (REV-003-M5-1 관찰 7): 세 시대 × 300판의 대기 상태에서 10개 이벤트 모두 2개일 때도 3개일 때도 관측된다 — 게이트가 실제로 선택지를 숨기고 보인다', () => {
     const counts = new Map<string, Map<number, number>>();
-    for (const era of ['past', 'present', 'future'] as Era[]) {
+    for (const era of ['industrial', 'alpha', 'alpha'] as ProfileId[]) {
       for (let i = 1; i <= 300; i++) {
         // SPEC-005: 어린 시절의 카드는 부모님이 정하거나 아이의 일로 흘러가 `pending`이 되지 않는다 — 고르기 직전의 대기 상태를 playDecisions가 모두 넘긴다
         playDecisions(startLife(economySeed(i), era), (p) => {

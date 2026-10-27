@@ -149,7 +149,7 @@ test('선택지 대기 중의 「다음 결정으로」도 지속 비활성 모�
   await page.setViewportSize({ width: 360, height: 740 });
   await startPageHidden(page);
   await page.goto('/');
-  await injectSave(page, await findPendingState(page, 'present'), '/', { speed: 1, autoMode: false });
+  await injectSave(page, await findPendingState(page, 'alpha'), '/', { speed: 1, autoMode: false });
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect(page.getByTestId('auto')).toBeEnabled();
   const look = await lookOf(page, 'skip');

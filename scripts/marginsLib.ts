@@ -1,8 +1,8 @@
-import { ERAS, totalCards, type Era } from '../src/core';
+import { totalCards, timingEraOfProfile, type ProfileId } from '../src/core';
 import { INFANT_CHOICE_MEAN_MIN, LIFE_LENGTH_MODES, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { infantLives } from './infantMetricsLib';
 import { pipelineSeed } from './pipelineLib';
-import { simulateLife, type LifeSummary, type Strategy } from './simulateLib';
+import { SIM_PROFILES, simulateLife, type LifeSummary, type Strategy } from './simulateLib';
 
 /**
  * 판정 여유 표 (SPEC-003 M8, REV-003-M8-1 R-415 / LD-9): 30분 모드의 **새 판정 지표 전부**가 측정값에서 얼마나 떨어져 있는지를 표준오차(SE) 배수로 보인다.
@@ -38,13 +38,13 @@ export const MARGIN_LINES: readonly MarginLine[] = [
   { id: 'sim-auto', label: 'sim:1000 · 자동 성향', seedLine: 'sim:1000', strategy: 'auto' },
 ];
 
-export function marginSeeds(line: MarginLine, era: Era, count: number): number[] {
+export function marginSeeds(line: MarginLine, era: ProfileId, count: number): number[] {
   const out: number[] = [];
   for (let i = 1; i <= count; i++) out.push(line.seedLine === 'test' ? i * 7919 + 13 : pipelineSeed(i, era, line.strategy === 'auto' ? 'auto' : 'manual', 'short30'));
   return out;
 }
 
-export function marginLives(line: MarginLine, era: Era, count: number): LifeSummary[] {
+export function marginLives(line: MarginLine, era: ProfileId, count: number): LifeSummary[] {
   return marginSeeds(line, era, count).map((seed) => simulateLife(seed, era, line.strategy, undefined, { lifeLength: 'short30' }));
 }
 
@@ -86,7 +86,7 @@ export interface MarginMetric {
   /** 한계를 말로 */
   limit: string;
   /** 시대·줄 하나에서 값을 낸다 */
-  of: (lives: readonly LifeSummary[], era: Era) => MarginValue;
+  of: (lives: readonly LifeSummary[], era: ProfileId) => MarginValue;
 }
 
 const minutesOf = (l: LifeSummary): number => l.seconds1x / 60;
@@ -98,7 +98,7 @@ const mode = LIFE_LENGTH_MODES.short30;
 export const ERA_TIME_BAND = { low: mode.timeMin.modelLow - 1.5, high: mode.timeMin.modelHigh + 1.5 };
 
 /** 평균 ≥ 하한 / 평균 ≤ 상한 꼴 */
-const meanMetric = (id: string, label: string, limit: string, pick: (l: LifeSummary) => number, bound: (era: Era) => number, dir: 'min' | 'max', digits = 2): MarginMetric => ({
+const meanMetric = (id: string, label: string, limit: string, pick: (l: LifeSummary) => number, bound: (era: ProfileId) => number, dir: 'min' | 'max', digits = 2): MarginMetric => ({
   id,
   label,
   limit,
@@ -143,7 +143,7 @@ export const CARD_METRICS: readonly MarginMetric[] = [
     },
   },
   shareMetric('under20', '사망 70세+ 중 20장 미만 판 비율 (%)', '≤ 10%', (lives) => lives.filter((l) => l.deathAge >= 70), (l) => totalCards(l.counts) < 20, 0.1),
-  meanMetric('senior', '노년(65세+) 결정 카드 평균', `≥ 시대별 하한 (${ERAS.map((e) => SENIOR_CHOICE_MEAN_MIN[e].toFixed(2)).join(' / ')})`, (l) => l.choicesByStage.senior, (era) => SENIOR_CHOICE_MEAN_MIN[era], 'min'),
+  meanMetric('senior', '노년(65세+) 결정 카드 평균', `≥ 시대별 하한 (${SIM_PROFILES.map((e) => SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(e)].toFixed(2)).join(' / ')})`, (l) => l.choicesByStage.senior, (era) => SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(era)], 'min'),
   meanMetric('infant7', '영유아(0~7세) 결정 카드 평균', `≥ ${INFANT_CHOICE_MEAN_MIN}`, infantCards, () => INFANT_CHOICE_MEAN_MIN, 'min'),
 ];
 
@@ -176,13 +176,13 @@ export const ALL_METRICS: readonly MarginMetric[] = [...CARD_METRICS, ...TIME_ME
 
 export interface MarginCellResult {
   line: MarginLine;
-  era: Era;
+  era: ProfileId;
   lives: LifeSummary[];
 }
 
 /** 세 시대 평균 시간의 여유 (줄마다 하나): 하한 27, 상한 33 */
 export function threeEraAverage(cells: readonly MarginCellResult[], line: MarginLine): { mean: number; se: number; marginLow: number; marginHigh: number } {
-  const eras = ERAS.map((era) => cells.find((c) => c.line.id === line.id && c.era === era)!.lives.map(minutesOf));
+  const eras = SIM_PROFILES.map((era) => cells.find((c) => c.line.id === line.id && c.era === era)!.lives.map(minutesOf));
   const avg = mean(eras.map(mean));
   const se = Math.sqrt(eras.reduce((a, xs) => a + meanSe(xs) ** 2, 0)) / eras.length;
   return { mean: avg, se, marginLow: (avg - mode.timeMin.modelLow) / se, marginHigh: (mode.timeMin.modelHigh - avg) / se };
@@ -212,7 +212,7 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
   const cells: MarginCellResult[] = [];
   const problems: string[] = [];
   for (const line of lines) {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       onProgress?.(`${line.label} / ${era}`);
       const lives = marginLives(line, era, count);
       for (const l of lives) if (totalCards(l.counts) > mode.pacing.hard) problems.push(`${line.id}/${era} 시드 ${l.seed}: 결정 카드 ${totalCards(l.counts)}장이 하드 상한을 넘었다`);
@@ -223,14 +223,14 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
   const lineUnder3: MarginReport['lineUnder3'] = [];
   const out: string[] = [];
   // 합친 표본: 시대마다 모든 줄의 판을 이어 붙인다
-  for (const era of ERAS) cells.push({ line: POOLED_LINE, era, lives: lines.flatMap((line) => cells.find((c) => c.line.id === line.id && c.era === era)!.lives) });
-  const valueOf = (m: MarginMetric, line: MarginLine, era: Era): MarginValue => m.of(cells.find((c) => c.line.id === line.id && c.era === era)!.lives, era);
+  for (const era of SIM_PROFILES) cells.push({ line: POOLED_LINE, era, lives: lines.flatMap((line) => cells.find((c) => c.line.id === line.id && c.era === era)!.lives) });
+  const valueOf = (m: MarginMetric, line: MarginLine, era: ProfileId): MarginValue => m.of(cells.find((c) => c.line.id === line.id && c.era === era)!.lives, era);
 
   out.push(`### 시대 × 전략 × 시드 줄별 모델 시간·카드 평균 (${count}판, 30분 모드 — 연출 계수 ${mode.holdScale}, 페이싱 soft ${mode.pacing.soft} / hard ${mode.pacing.hard}, 읽기 중앙, 1배속 수동)`);
   out.push(`| 시드 줄 · 전략 | 시대 | 카드 평균 ± SE | 모델 시간(분) ± SE | 시간 표준편차(분) | 사망 나이 |`);
   out.push(`|---|---|---:|---:|---:|---:|`);
   for (const line of lines) {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const lv = cells.find((c) => c.line.id === line.id && c.era === era)!.lives;
       const cards = lv.map((l) => totalCards(l.counts));
       const mins = lv.map(minutesOf);
@@ -239,7 +239,7 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
     const a = threeEraAverage(cells, line);
     out.push(`| ${line.label} | **세 시대 평균** | | **${f(a.mean, 2)}** ±${f(a.se, 2)} | | |`);
   }
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     const lv = cells.find((c) => c.line.id === POOLED_LINE.id && c.era === era)!.lives;
     const cards = lv.map((l) => totalCards(l.counts));
     const mins = lv.map(minutesOf);
@@ -257,7 +257,7 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
     out.push(`**${metric.label}** — 한계 ${metric.limit}`);
     out.push(`| 시대 | ${lines.map((l) => l.label).join(' | ')} | **${POOLED_LINE.label}** |`);
     out.push(`|---|${lines.map(() => '---:').join('|')}|---:|`);
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const row = lines.map((line) => {
         const v = valueOf(metric, line, era);
         if (v.margin !== null && v.margin < 3) lineUnder3.push({ metric: metric.label, era, line: line.label, margin: v.margin });
@@ -289,7 +289,7 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
 // ---------- IN2 (빈 해) ----------
 
 export interface InfantMarginRow {
-  era: Era;
+  era: ProfileId;
   strategy: 'auto' | 'random';
   five: { hits: number; n: number; shareMax: number; margin: number };
   four: { hits: number; n: number };
@@ -301,7 +301,7 @@ export interface InfantMarginRow {
 export function infantMargins(count: number): InfantMarginRow[] {
   const out: InfantMarginRow[] = [];
   for (const strategy of ['auto', 'random'] as const) {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const lives = infantLives(era, count, strategy);
       const five = lives.filter((l) => l.emptyYears >= 5).length;
       const four = lives.filter((l) => l.emptyYears >= 4).length;

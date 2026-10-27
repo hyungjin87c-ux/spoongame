@@ -1,4 +1,4 @@
-import type { Era, ParentWealth } from '../core/types';
+import { R1_PRESENT, type ParentWealth, type ProfileId } from '../core/types';
 import { HOUSING_CLASS_PRIMARY, INCOME_CLASS_ROW, NATIONAL_ROW } from './birthReportTable';
 import { formatNumber, getUsableIndicator, type UsableIndicator } from './koreaStatsAccess';
 
@@ -35,12 +35,15 @@ export interface ComparisonRow {
 /** 지표를 id로 꺼내는 함수 (기본: 검증된 지표만 돌려주는 접근자) */
 export type IndicatorGetter = (id: string) => UsableIndicator | undefined;
 
-/** 비교 표(와 기대수명 서술)를 보여 주는 세상: 통계가 지금(2024~2025년) 값이라 지금 세상뿐이다 (R-263) */
-export const COMPARE_ERA: Era = 'present';
+/**
+ * 비교 표(와 기대수명 서술)를 보여 주는 판: 통계가 지금(2024~2025년) 값이라 2026년생 전용이었다(R-263). **2026년생이 없는 지금은 어떤 세대의 출생신고에도 보이지 않는다**(SPEC-004 NR2·N20 마스터 결정 2026-10-27: 숨긴다) —
+ * 코드·데이터는 지우지 않고 남겨, 나중에 세대별 공식 통계로 비교 표를 다시 열 때 쓴다. 시험 전용 R1 프로필(2026년생)만 R1 때처럼 보인다.
+ */
+export const COMPARE_PROFILE: ProfileId = R1_PRESENT;
 
-/** 이 세상에서 비교 표를 보여 주는가 */
-export function compareShown(era: Era): boolean {
-  return era === COMPARE_ERA;
+/** 이 판의 출생신고에 비교 표를 보여 주는가 (세대 7종은 모두 false) */
+export function compareShown(profile: ProfileId): boolean {
+  return profile === COMPARE_PROFILE;
 }
 
 /** 수저 단계 → 사교육비조사의 가구 월평균 소득 구간 (설계 대응, 8구간 중) */

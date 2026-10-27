@@ -240,7 +240,7 @@ test('(g) 결정 시트 → 기록 시트로 이어질 때 잠금이 풀렸다 �
     };
     requestAnimationFrame(tick);
   });
-  await page.getByTestId(`choice-${d.choiceId}`).click();
+  await page.locator(`button[data-testid="choice-${d.choiceId}"]`).click();
   await expect(page.getByTestId('note-sheet')).toBeVisible();
   await page.waitForTimeout(400);
   const frames = await page.evaluate(() => {

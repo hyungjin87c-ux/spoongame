@@ -3,7 +3,6 @@ import birthSrc from '../src/core/birth.ts?raw';
 import statsJson from '../src/data/koreaStats.json';
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
   GENDERS,
   HOUSINGS,
   OCCUPATIONS,
@@ -22,18 +21,22 @@ import {
   isValidBirthReport,
   jobWeights,
   mixSeed,
+  R1_PRESENT,
   parentAgeAt,
   playToEnd,
   reportPlaceLabel,
   rollBirthReport,
   weightStanding,
   type BirthReport,
-  type Era,
   type Gender,
   type ParentWealth,
+  type ProfileId,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { ERA_CONFIG } from '../src/data/birthTable';
+import { R1_PROFILE } from '../src/core/birthProfile';
+import { regionsInYear } from '../src/core/generationMixture';
+import { regionShort } from '../src/data/regionKeys';
+import type { ReportTilt } from '../src/data/birthReportTable';
 import {
   BIRTH_ORDER_LABEL,
   ERA_REPORT_ADJUST,
@@ -52,7 +55,7 @@ import {
 import { getBirthStats, parseAgeBand, parseWeightBin, regionsOf, sigunguChoices } from '../src/data/birthStats';
 import { formatKg } from '../src/data/birthReportText';
 import { standingLabel } from '../src/data/birthText';
-import { REGION_ORDER, formalSido, placeLabel, sortRegions } from '../src/data/regionNames';
+import { REGION_ORDER, formalSido, placeLabel, regionLabelAt, sortRegions } from '../src/data/regionNames';
 import { startLife, chooserFor } from '../scripts/simulateLib';
 import { codeOnly } from './helpers/code';
 import { EPS, sigmaTolerancePct } from './helpers/stats';
@@ -72,7 +75,14 @@ const N = 20000;
 /** core/birth.ts의 갈래 salt (값을 바꾸면 알려진 시드의 출생신고가 달라진다 — 그 값 자체를 여기서도 못 박는다) */
 const REPORT_SALT_FOR_TEST = 0x52505254;
 const PEER_SALT_FOR_TEST = 0x50454552;
-const BIRTH_YEAR: Record<Era, number> = { past: 1970, present: 2026, future: 2045 };
+/**
+ * 부모 나이·직업·형제 순서 보정은 두 갈래다(SPEC-004 NR3 — 1989년 이전 출생 `past` · 1990년 이후 `present`; 옛 「다가올 세상」 갈래는 없다).
+ * 갈래마다 대표 표본: `past` = X 세대(1970~1980년생), `present` = 시험 전용 R1 프로필(2026년생 — 시군구·2025 통계가 붙은 유일한 프로필).
+ */
+const ERAS: readonly ReportTilt[] = ['past', 'present'];
+type Era = ReportTilt;
+const PROFILE_OF: Record<Era, ProfileId> = { past: 'genx', present: R1_PRESENT };
+const BIRTH_YEAR: Record<Era, number> = { past: 1970, present: 2026 };
 
 /** (시대, n)마다 같은 시드로 한 번만 뽑는다 */
 const cache = new Map<string, ReturnType<typeof generateBirth>[]>();
@@ -81,7 +91,7 @@ function sample(era: Era, n = N) {
   let v = cache.get(key);
   if (!v) {
     const rng = createRng(20261016);
-    v = Array.from({ length: n }, () => generateBirth(rng, era));
+    v = Array.from({ length: n }, () => generateBirth(rng, PROFILE_OF[era]));
     cache.set(key, v);
   }
   return v;
@@ -98,7 +108,6 @@ describe('설계 보정 표 모양 (data/birthReportTable.ts) — 모든 칸이 
       for (const era of ERAS) expect(JOB_TILT_BY_ERA[era][job]).toBeGreaterThan(0);
       expect(JOB_TILT_BY_WEALTH[3][job]).toBe(1);
       expect(JOB_TILT_BY_ERA.present[job]).toBe(1);
-      expect(JOB_TILT_BY_ERA.future[job]).toBe(1);
     }
     // 화면 이름에 가운뎃점이 없다(줄바꿈에서 「·」가 줄 끝·첫머리에 혼자 남지 않게, QM2-5)
     for (const job of OCCUPATIONS) expect(OCCUPATION_LABEL[job]).not.toMatch(/[·/—]/);
@@ -115,7 +124,7 @@ describe('설계 보정 표 모양 (data/birthReportTable.ts) — 모든 칸이 
 
   it('부모 나이 보정은 단계에 대해 비감소이고, 단계 비율로 가중한 평균이 0에 가깝다(통계 평균 출산 연령을 거의 바꾸지 않는다)', () => {
     for (let w = 1; w < 5; w++) expect(PARENT_AGE_SHIFT_BY_WEALTH[(w + 1) as ParentWealth]).toBeGreaterThanOrEqual(PARENT_AGE_SHIFT_BY_WEALTH[w as ParentWealth]);
-    const weights = ERA_CONFIG.present.wealthWeights;
+    const weights = R1_PROFILE.wealthWeights;
     const mean = PARENT_WEALTHS.reduce((a, w) => a + PARENT_AGE_SHIFT_BY_WEALTH[w] * weights[w - 1], 0) / 100;
     expect(Math.abs(mean)).toBeLessThan(0.2);
   });
@@ -217,12 +226,20 @@ describe('rollBirthReport: 결정적이고 모든 값이 유효하다', () => {
   for (const era of ERAS) {
     it(`${era}: 시드 1000개 전부 — 월 1~12, 지역은 룰렛 목록 안, 시군구는 그 지역 후보, 부모 나이·직업·주거·체중(격자)·순서가 범위 안이고 저장 검증을 통과한다`, () => {
       for (let seed = 1; seed <= 1000; seed++) {
-        const { character: c, report: r } = generateBirthFromSeed(seed * 104729, era);
+        const { character: c, report: r } = generateBirthFromSeed(seed * 104729, PROFILE_OF[era]);
         const where = `${era} 시드 ${seed}`;
         expect(isValidBirthReport(r, c.birthYear, c.gender), where).toBe(true);
         expect(Number.isInteger(r.month) && r.month >= 1 && r.month <= 12, where).toBe(true);
-        expect(regionsOf(c.birthYear).regions.map((x) => x.name), where).toContain(r.region);
-        expect(sigunguChoices(c.birthYear, r.region).some((x) => x.sido === r.sigunguSido && x.name === r.sigungu), where).toBe(true);
+        if (era === 'present') {
+          // 시험 전용 R1 프로필: 2026년 행정구역 16개 + 시군구
+          expect(regionsOf(c.birthYear).regions.map((x) => x.name), where).toContain(r.region);
+          expect(sigunguChoices(c.birthYear, r.region).some((x) => x.sido === r.sigunguSido && x.name === r.sigungu), where).toBe(true);
+        } else {
+          // 세대 판: 시도까지만 적는다(NR3) — 그 출생 연도에 있던 시·도 가운데 하나이고 시군구는 없다
+          expect(regionsInYear(c.birthYear).map(regionShort), where).toContain(r.region);
+          expect(r.sigungu, where).toBeUndefined();
+          expect(r.sigunguSido, where).toBeUndefined();
+        }
         for (const p of [r.mother, r.father]) {
           expect(p.age, where).toBeGreaterThanOrEqual(PARENT_AGE_LIMITS.min);
           expect(p.age, where).toBeLessThanOrEqual(PARENT_AGE_LIMITS.max);
@@ -241,14 +258,13 @@ describe('rollBirthReport: 결정적이고 모든 값이 유효하다', () => {
   const BEFORE_M3_STATE = [4167084903, 4167084904, 4167084905, 4187345915, 4167085679, 4167089144, 4167093903, 4290541691] as const;
 
   it('R-273: 출생신고 상세의 추첨은 인생 진행용 RNG를 전진시키지 않는다 — 출생신고가 생기기 전(9a8ac7f)에 구한 인생 RNG 상태와 같다 (지난·다가올 세상 8시드 전부, 지금 세상은 이름 풀이 바뀐 시드 3만 빼고)', () => {
+    // 세대 판은 출생 연도를 먼저 뽑아(GS7) 난수 소비가 달라지므로 이 대조는 시험 전용 R1 프로필(2026년생, 난수 소비가 R1 때와 같다 — EY17)만 한다
     BEFORE_M3_SEEDS.forEach((seed, i) => {
-      for (const era of ERAS) {
-        if (era === 'present' && seed === 3) continue;
-        expect(generateBirthFromSeed(seed, era).rngState, `${era} 시드 ${seed}`).toBe(BEFORE_M3_STATE[i]);
-      }
+      if (seed === 3) return;
+      expect(generateBirthFromSeed(seed, R1_PRESENT).rngState, `R1 시드 ${seed}`).toBe(BEFORE_M3_STATE[i]);
     });
     // 공허 통과 방지: 위에서 뺀 시드 3의 지금 세상은 실제로 M3 이전과 다르다(이름 풀 변경) — 비교가 값을 구별한다
-    expect(generateBirthFromSeed(3, 'present').rngState).not.toBe(BEFORE_M3_STATE[2]);
+    expect(generateBirthFromSeed(3, R1_PRESENT).rngState).not.toBe(BEFORE_M3_STATE[2]);
   });
 
   it('R-273: 출생신고 상세·또래 시드를 만들 때 부모(인생) RNG에서 난수를 뽑지 않는다 — RNG 호출 기록: 첫 getState() 뒤에는 뽑는 호출이 없다', () => {
@@ -262,7 +278,7 @@ describe('rollBirthReport: 결정적이고 모든 값이 유효하다', () => {
         weightedIndex: (w: readonly number[]) => (calls.push('weightedIndex'), real.weightedIndex(w)),
         getState: () => (calls.push('getState'), real.getState()),
       };
-      generateBirth(spy, era);
+      generateBirth(spy, PROFILE_OF[era]);
       const firstState = calls.indexOf('getState');
       expect(firstState, `${era}: getState로 갈래를 만든다`).toBeGreaterThan(5);
       expect(calls.slice(firstState).every((c) => c === 'getState'), `${era}: 갈래를 만든 뒤 호출 ${calls.slice(firstState).join(',')}`).toBe(true);
@@ -276,7 +292,7 @@ describe('rollBirthReport: 결정적이고 모든 값이 유효하다', () => {
   it('R-273: 출생신고 상세 = 인생 RNG의 최종 상태에서 갈라낸 RNG로 다시 뽑은 것과 같다(독립 재구성) — 또래 시드도 같은 상태에서 섞어 만든다', () => {
     for (const era of ERAS) {
       for (const seed of [1, 99, 20261013]) {
-        const b = generateBirthFromSeed(seed, era);
+        const b = generateBirthFromSeed(seed, PROFILE_OF[era]);
         const again = rollBirthReport(forkRng(createRng(b.rngState), REPORT_SALT_FOR_TEST), era, b.character.birthYear, b.character.gender, b.character.parentWealth);
         expect(again, `${era} 시드 ${seed}`).toEqual(b.report);
         expect(b.peerSeed).toBe(mixSeed(b.rngState, PEER_SALT_FOR_TEST));
@@ -284,12 +300,14 @@ describe('rollBirthReport: 결정적이고 모든 값이 유효하다', () => {
     }
   });
 
-  it('지난 세상 지역은 그 시기의 시·도 목록(울산·세종 없음)에서, 시군구는 그 시·도 구분에 속한 2025년 행정구역에서 나온다', () => {
-    for (let seed = 1; seed <= 400; seed++) {
-      const { character: c, report: r } = generateBirthFromSeed(seed, 'past');
-      const region = regionsOf(c.birthYear).regions.find((x) => x.name === r.region)!;
-      expect(region.from, `${c.birthYear}년생 ${r.region}`).toContain(r.sigunguSido);
-      if (c.birthYear <= 1980) expect(r.region).not.toBe('울산');
+  it('세대 판의 지역은 그 출생 연도에 있던 시·도 목록에서 나온다 (세종은 2012년생부터, 시군구는 없다)', () => {
+    for (const g of ['industrial', 'genx', 'millennial', 'genz', 'alpha'] as const) {
+      for (let seed = 1; seed <= 400; seed++) {
+        const { character: c, report: r } = generateBirthFromSeed(seed, g);
+        expect(regionsInYear(c.birthYear).map(regionShort), `${g} ${c.birthYear}년생 ${r.region}`).toContain(r.region);
+        if (c.birthYear < 2012) expect(r.region, `${g} ${c.birthYear}년생`).not.toBe('세종');
+        expect(r.sigungu).toBeUndefined();
+      }
     }
   });
 
@@ -424,15 +442,12 @@ describe('분포가 통계와 맞는다 (허용오차 4σ, 지금 세상 20000�
     expect(ownShare(3)).toBeLessThan(ownShare(5));
   });
 
-  it('시대 보정: 지난 세상은 어머니 나이가 6세쯤 어리고 형제가 많으며, 다가올 세상은 첫째가 조금 많다 (설계값, 표대로)', () => {
+  it('갈래 보정: 1989년 이전 출생(X)은 어머니 나이가 6세쯤 어리고 형제가 많다 (설계값, 표대로)', () => {
     const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     const past = sample('past');
     const present = sample('present');
-    const future = sample('future');
     expect(mean(present.map((x) => x.report.mother.age)) - mean(past.map((x) => x.report.mother.age))).toBeGreaterThan(5);
     expect(mean(past.map((x) => x.report.birthOrder))).toBeGreaterThan(mean(present.map((x) => x.report.birthOrder)) + 0.5);
-    const first = (xs: typeof past) => xs.filter((x) => x.report.birthOrder === 1).length / xs.length;
-    expect(first(future)).toBeGreaterThan(first(present));
     // 지난 세상 직업: 농림어업이 지금보다 훨씬 많다
     const agri = (xs: typeof past) => xs.filter((x) => x.report.father.job === 'agri').length / xs.length;
     expect(agri(past)).toBeGreaterThan(agri(present) * 3);
@@ -485,15 +500,15 @@ describe('출생 체중의 순위 표현 (R-018 규칙, 같은 성별 출생아 
 });
 
 describe('한 줄 서술문 (BR3, 합쇼체)과 서류의 장소 표기', () => {
-  it('형식: 「{연}년 {월}월, {장소}의 {형편} 가정에서 {체중}kg {남자아이|여자아이}로 태어났습니다. {순서}입니다. ({체중}kg은 …)」 — 세 시대 × 시드 300개 전부', () => {
+  it('형식: 「{연}년 {월}월, {장소}의 {형편} 가정에서 {체중}kg {남자아이|여자아이}로 태어났습니다. {순서}입니다. ({체중}kg은 …)」 — 두 갈래 × 시드 300개 전부', () => {
     const FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (남자아이|여자아이)로 태어났습니다\. (첫째|둘째|셋째|넷째|다섯째 이상)입니다\. \(\d\.\dkg은 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|가운데쯤)\)$/;
     for (const era of ERAS) {
       for (let seed = 1; seed <= 300; seed++) {
-        const { character: c, report: r } = generateBirthFromSeed(seed * 31, era);
-        const text = birthSentence(c, r, era);
+        const { character: c, report: r } = generateBirthFromSeed(seed * 31, PROFILE_OF[era]);
+        const text = birthSentence(c, r);
         expect(text, `${era} ${seed}`).toMatch(FORMAT);
         expect(text).toContain(WEALTH_ADJECTIVE[c.parentWealth]);
-        expect(text).toContain(reportPlaceLabel(r, era));
+        expect(text).toContain(reportPlaceLabel(r, c.birthYear));
         expect(text).toContain(formatKg(r.birthWeightKg));
         expect(text, '수저 이름·구간·소득 분위 표현이 없다(인생 기록 첫 줄, C4)').not.toMatch(/수저|다이아|분위|하위 \d+% 안쪽의|%와/);
         expect(text).not.toMatch(/!|[\u{1F300}-\u{1FAFF}]/u);
@@ -504,25 +519,24 @@ describe('한 줄 서술문 (BR3, 합쇼체)과 서류의 장소 표기', () => 
 
   it('인생 기록 0세 첫 줄 = 같은 문장 (출생신고 「살아가기」 → enterLife)', () => {
     for (const era of ERAS) {
-      const born = enterBirth(beginBirth(createInitialState(4242), era));
+      const born = enterBirth(beginBirth(createInitialState(4242), PROFILE_OF[era]));
       const life = enterLife(born);
-      expect(life.history[0]).toMatchObject({ age: 0, kind: 'stage', text: birthSentence(born.character!, born.birthReport!, era) });
+      expect(life.history[0]).toMatchObject({ age: 0, kind: 'stage', text: birthSentence(born.character!, born.birthReport!) });
       expect(life.history[0].text.length).toBeLessThanOrEqual(400); // HISTORY_LIMITS.maxTextLength
     }
   });
 
-  it('placeLabel: 세종은 한 번만, 전남광주 구는 통합 이름 + 시군구, 새 구는 시 이름과 함께, 지난 세상은 합쳐진 시·도의 원래 이름을 밝힌다', () => {
-    expect(placeLabel({ region: '세종', sigunguSido: '세종', sigungu: '세종특별자치시' }, 'present')).toBe('세종특별자치시');
-    expect(placeLabel({ region: '전남광주', sigunguSido: '전남', sigungu: '순천시' }, 'present')).toBe('전남광주통합특별시 순천시');
-    expect(placeLabel({ region: '전남광주', sigunguSido: '광주', sigungu: '동구' }, 'future')).toBe('전남광주통합특별시 동구');
-    expect(placeLabel({ region: '경기', sigunguSido: '경기', sigungu: '화성시 동탄구' }, 'present')).toBe('경기도 화성시 동탄구');
-    expect(placeLabel({ region: '제주', sigunguSido: '제주', sigungu: '제주시' }, 'present')).toBe('제주특별자치도 제주시');
-    expect(placeLabel({ region: '경기', sigunguSido: '인천', sigungu: '중구' }, 'past')).toBe('경기도 인천 중구');
-    expect(placeLabel({ region: '경기', sigunguSido: '경기', sigungu: '수원시 장안구' }, 'past')).toBe('경기도 수원시 장안구');
-    expect(placeLabel({ region: '부산', sigunguSido: '부산', sigungu: '동래구' }, 'past')).toBe('부산직할시 동래구');
-    expect(placeLabel({ region: '충남', sigunguSido: '세종', sigungu: '세종특별자치시' }, 'past')).toBe('충청남도 세종 지역');
-    expect(() => formalSido('없는시', 'present')).toThrow(RangeError);
-    expect(() => formalSido('전남광주', 'past')).toThrow(RangeError); // 지난 세상에는 통합 이름이 없다
+  it('placeLabel(시험 전용 R1 프로필의 2026년 행정구역): 세종은 한 번만, 전남광주 구는 통합 이름 + 시군구, 새 구는 시 이름과 함께 / 세대 판의 장소는 그 해의 행정구역 이름(regionLabelAt)', () => {
+    expect(placeLabel({ region: '세종', sigunguSido: '세종', sigungu: '세종특별자치시' })).toBe('세종특별자치시');
+    expect(placeLabel({ region: '전남광주', sigunguSido: '전남', sigungu: '순천시' })).toBe('전남광주통합특별시 순천시');
+    expect(placeLabel({ region: '전남광주', sigunguSido: '광주', sigungu: '동구' })).toBe('전남광주통합특별시 동구');
+    expect(placeLabel({ region: '경기', sigunguSido: '경기', sigungu: '화성시 동탄구' })).toBe('경기도 화성시 동탄구');
+    expect(placeLabel({ region: '제주', sigunguSido: '제주', sigungu: '제주시' })).toBe('제주특별자치도 제주시');
+    expect(() => formalSido('없는시')).toThrow(RangeError);
+    // 세대 판: 시도까지 — 그 해의 이름 + 바뀌었으면 「(지금의 …)」
+    expect(regionLabelAt('부산', 1970)).toBe('부산직할시(지금의 부산광역시)');
+    expect(regionLabelAt('서울', 1970)).toBe('서울특별시');
+    expect(regionLabelAt('경기', 2000)).toBe('경기도');
   });
 
   it('sortRegions: 룰렛 지역 순서(copy.md)대로 정렬하고, 지금 세상 16개는 서울·부산·…·전남광주·…·제주 순서다', () => {
@@ -536,7 +550,7 @@ describe('한 줄 서술문 (BR3, 합쇼체)과 서류의 장소 표기', () => 
 });
 
 describe('저장 검증: 손상·변조된 출생신고 상세는 거부한다 (isValidBirthReport)', () => {
-  const good = generateBirthFromSeed(5, 'present');
+  const good = generateBirthFromSeed(5, R1_PRESENT);
   const ok = (r: unknown, year = good.character.birthYear, g: Gender = good.character.gender) => isValidBirthReport(r, year, g);
   const base = good.report;
 
@@ -549,7 +563,7 @@ describe('저장 검증: 손상·변조된 출생신고 상세는 거부한다 (
       ['월 13', { ...base, month: 13 }],
       ['월 소수', { ...base, month: 1.5 }],
       ['지역 없음', { ...base, region: '화성' }],
-      ['지난 세상 지역(울산 아님·광주)', { ...base, region: '광주' }],
+      ['R1(2026년 행정구역)에 없는 시·도(광주 — 전남광주로 합쳐졌다)', { ...base, region: '광주' }],
       ['시군구 없음', { ...base, sigungu: '없는구' }],
       ['시군구가 다른 지역', { ...base, region: base.region === '서울' ? '부산' : '서울' }],
       ['시·도 이름 틀림', { ...base, sigunguSido: '없는도' }],
@@ -568,7 +582,7 @@ describe('저장 검증: 손상·변조된 출생신고 상세는 거부한다 (
     for (const [name, r] of bad) expect(ok(r), name).toBe(false);
   });
 
-  it('지금 세상 지역은 지난 세상 출생 연도에서는 맞지 않는다(전남광주 ≠ 1970년의 목록)', () => {
+  it('합쳐진 「전남광주」는 2026년 행정구역(시험 전용 R1)에서만 맞고 세대 출생 연도(1970년)에서는 맞지 않는다', () => {
     const jg = { ...base, region: '전남광주', sigunguSido: '전남', sigungu: '순천시' };
     expect(isValidBirthReport(jg, 2026, 'male')).toBe(true);
     expect(isValidBirthReport(jg, 1970, 'male')).toBe(false);
@@ -601,7 +615,7 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
 
   it('isEventEligible: 부모가 너무 많은 나이가 되는 판에서는 병환·임종 사건이 후보가 되지 않고, 알맞은 나이면 후보가 된다 / 동생 사건은 첫째만', () => {
     const base = { character: { name: '김민준', gender: 'male', birthYear: 2026, parentWealth: 3, parenting: 'free', looks: 50 } as never, stats: { wealth: 50, education: 50, health: 50, happiness: 50, relationships: 50 }, flags: new Set<string>(), era: 'present' as Era, seen: {} };
-    const at = (age: number, motherBirthAge: number, fatherBirthAge: number, birthOrder = 1) => ({ ...base, age, family: { birthOrder, motherBirthAge, fatherBirthAge } });
+    const at = (age: number, motherBirthAge: number, fatherBirthAge: number, birthOrder = 1) => ({ ...base, age, year: 2026 + age, family: { birthOrder, motherBirthAge, fatherBirthAge } });
     const farewell = EVENT_POOL.byId.get('middle-parents-farewell')!;
     const care = EVENT_POOL.byId.get('middle-parents-care')!;
     const sibling = EVENT_POOL.byId.get('infant-new-sibling')!;
@@ -627,11 +641,11 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
   });
 
   it('R-268: 출생 때 어머니가 높은 나이인 판 400개 — 동생 사건이 일어난 나이에 어머니는 45세 이하이고, 어머니 47세 판에서는 동생 사건이 없다 / 어머니 38세 판에서는 있다(공허 통과 방지)', () => {
-    const withMother = (seed: number, era: Era, motherAge: number) => {
+    const withMother = (seed: number, era: ProfileId, motherAge: number) => {
       const start = startLife(seed * 29, era);
       return { ...start, birthReport: { ...start.birthReport!, birthOrder: 1, mother: { ...start.birthReport!.mother, age: motherAge } } };
     };
-    for (const era of ERAS) {
+    for (const era of ['industrial', 'genx', 'alpha'] as const) {
       const counts = { old: 0, young: 0 };
       for (let seed = 1; seed <= 400; seed++) {
         for (const [key, motherAge] of [['old', 47], ['young', 38]] as const) {
@@ -648,7 +662,7 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
     }
   });
 
-  for (const era of ERAS) {
+  for (const era of ['industrial', 'genx', 'alpha'] as const) {
     it(`${era}: 한 판 400개 — 부모 병환·임종 사건이 일어난 나이에 나이 많은 부모가 설계 범위 안이고, 동생 사건은 첫째 판에서만 나오며, 사별(parents_gone)이 있으면 그 사건이 있었다`, () => {
       let seen = 0;
       let sibling = 0;

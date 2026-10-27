@@ -124,7 +124,7 @@ describe('index.html 메타·아이콘 (파비콘·터치 아이콘 A안, 탭 �
 
   it('주소 표시줄 색은 라이트·다크 바탕 토큰과 같고, 색 구성표는 라이트·다크 둘 다 지원한다', () => {
     expect(indexHtml).toContain('<meta name="color-scheme" content="light dark" />');
-    expect(indexHtml).toContain('content="#f6f3ec" media="(prefers-color-scheme: light)"');
+    expect(indexHtml).toContain('content="#f9f7f2" media="(prefers-color-scheme: light)"');
     expect(indexHtml).toContain('content="#14171f" media="(prefers-color-scheme: dark)"');
   });
 

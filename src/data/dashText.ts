@@ -1,4 +1,4 @@
-import type { Era, StatKey } from '../core/types';
+import { R1_PRESENT, type ProfileId, type StatKey } from '../core/types';
 import { longestWordLength } from './birthReportText';
 
 /**
@@ -50,20 +50,27 @@ export const SYSTEM_TITLE_CHARS = titleCharsFor(SYSTEM_TITLE.superseded, SYSTEM_
 export const ASSETS_AMOUNTS_SHIPPED = true;
 
 const STATUS_HELP_BASE = '0에서 100 사이의 값입니다. 건강은 몸의 상태, 행복은 마음의 만족, 지식은 배우고 익힌 정도, 관계는 가족·친구와의 유대입니다.';
-/** 자산의 단위 문장 (docs/design/copy.md 4-5절): 지금 세상은 올해 가치 기준, 지난·다가올 세상은 지금 가치로 환산한 원 단위 */
-const STATUS_HELP_ASSETS: Record<Era, string> = {
-  present: '자산은 올해 가치 기준의 원 단위입니다.',
-  past: '자산은 지금 가치로 환산한 원 단위입니다.',
-  future: '자산은 지금 가치로 환산한 원 단위입니다.',
-};
+/**
+ * 자산의 단위 문장 (docs/design/copy.md 4-5절): 시험 전용 R1 프로필(지금 세상)은 올해 가치 기준, 세대 판은 지금 가치로 환산한 원 단위.
+ * (당시 화폐 ↔ 「지금 가치로 보기」 전환 문구는 EY10~EY13 — GM10이 이 문장을 바꾼다. 그 전에는 R1 방식: 항상 지금 가치 + 「지금 가치로 환산」 태그, EY12)
+ */
+const STATUS_HELP_ASSETS = {
+  now: '자산은 올해 가치 기준의 원 단위입니다.',
+  converted: '자산은 지금 가치로 환산한 원 단위입니다.',
+} as const;
+
+/** 금액에 「지금 가치로 환산」 태그가 붙는 판인가: 세대 판은 모두 붙고(GM10 전까지, EY12), 시험 전용 R1 프로필만 올해 가치라 태그가 없다 */
+export function amountsConverted(profile: ProfileId | null): boolean {
+  return profile !== R1_PRESENT;
+}
 /** 가구 기준 한 문장 (M-3): 결혼 전에는 나 혼자의 가구임이 드러난다 */
 const STATUS_HELP_HOUSEHOLD = '순자산, 연 소득, 부채는 내 가구 기준이며 결혼한 뒤에는 배우자와 자녀의 몫까지 합한 값입니다.';
 /** 선택지 아래 표시의 뜻 두 문장 (M7e-3, copy.md 5-2 ②): 선택만의 효과이고 해마다의 소득·생활비는 따로이며, 자산 항목은 3년치 소득·지출 변화를 담는다(economy-model.md 7절) */
 const STATUS_HELP_IMPACT = '선택지 아래 표시는 그 선택만으로 생기는 변화이고, 해마다의 소득과 생활비는 따로 더해집니다. 자산의 변화에는 앞으로 3년치 소득·지출 변화가 들어 있습니다.';
 
 /** 상태 카드의 접이식 도움말. 자산 금액이 있을 때만 자산 문장(시대별 단위 + 가구 기준)이 붙는다 */
-export function statusHelpText(assetsShipped: boolean, era: Era): string {
-  return assetsShipped ? `${STATUS_HELP_BASE} ${STATUS_HELP_ASSETS[era]} ${STATUS_HELP_HOUSEHOLD} ${STATUS_HELP_IMPACT}` : STATUS_HELP_BASE;
+export function statusHelpText(assetsShipped: boolean, profile: ProfileId | null): string {
+  return assetsShipped ? `${STATUS_HELP_BASE} ${STATUS_HELP_ASSETS[amountsConverted(profile) ? 'converted' : 'now']} ${STATUS_HELP_HOUSEHOLD} ${STATUS_HELP_IMPACT}` : STATUS_HELP_BASE;
 }
 
 export const DASH_TEXT = {
@@ -177,8 +184,6 @@ export const DASH_TEXT = {
   /** 최신순 (SPEC-005 LR2 d, docs/design/copy.md 10절 ①): 「{순서 이름} · {지난 기록을 보는 방법}」 — 옛 「시간순 · 위로 스크롤하면 …」과 같은 꼴. 처음 임시 문구는 「위 · 아래로」가 이어져 「위아래로」로 읽혀 버렸다(R-437) */
   logHint: '최신순 · 아래로 스크롤하면 지난 기록',
   logJump: (n: number) => `새 기록 ${n}개 · 맨 위로`,
-  logPinA: (n: string) => `이 세상의 가상 인구 ${n}명`,
-  logPinB: (name: string) => `${name}도 그중 한 사람`,
   logChoicePrefix: '선택: ',
 
   // ---------- 식구 (DB13) ----------

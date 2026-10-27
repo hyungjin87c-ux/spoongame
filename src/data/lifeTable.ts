@@ -2,7 +2,7 @@ import type { Stage } from '../core/types';
 
 /**
  * 인생 진행 상수 표 (게임 설계값, 통계가 아님). 코드가 아니라 이 표만 고치면 밸런스를 바꿀 수 있다.
- * 시대별 차이는 data/birthTable.ts#ERA_CONFIG(life 계수, priceIndex)와 이벤트 풀로만 만든다.
+ * 시대·세대별 차이는 이벤트 풀(yearRange)과 출생 분포(data/generationConfig.ts)로 만든다 — 사망 모형(LifeParams)은 GM10 전까지 모든 출생 연도가 같다.
  * 특정 달력 연도나 실제 사건을 가정하지 않는다: 모든 기준은 나이다.
  */
 
@@ -135,7 +135,7 @@ export const MOOD_DRIFT = {
 /** 노년기 관계 자연 감소(년 간격). 오래 곁에 있던 사람들이 하나둘 줄어든다. */
 export const SENIOR_RELATIONSHIP_DECAY_EVERY = 4;
 
-/** 노년기 생활비로 재산이 줄어드는 간격 = max(2, round(이 값 / ERA_CONFIG.priceIndex)) 년마다 -1 */
+/** 노년기 생활비로 재산이 줄어드는 간격 = max(2, round(이 값 / 물가 계수)) 년마다 -1 (물가 계수는 연도 축 표로 옮겨 가 지금은 쓰이지 않는다) */
 export const SENIOR_WEALTH_DRAIN_BASE = 4;
 
 /**
@@ -147,8 +147,20 @@ export const INDEPENDENCE = { familyShare: 0.5, educationShare: 0.2, base: 10 };
 // ---------- 사망 ----------
 
 /**
- * 연간 사망 확률 = (baseline + A·exp(B·나이)) × 건강 계수 × 시대 계수(ERA_CONFIG.life.mortalityScale),
- * 건강이 criticalBelow 미만이면 모자란 만큼 criticalStep씩 더한다. 절대 상한 나이(ERA_CONFIG.life.maxAge)에서는 반드시 사망.
+ * 사망 모형 인자: 연간 사망 확률에 곱하는 계수와 절대 상한 나이. 시대 3종 `ERA_CONFIG.life`는 없어졌고(SPEC-004 G-08) 연도별 기대수명·사망률 표(NR5)는 GM10이 채운다 —
+ * **그 전에는 모든 출생 연도가 R1 「지금 세상」의 값(계수 1, 상한 105세)이다**(EY2 「점진 활성」: 확보 전에는 R1 값, 항등).
+ */
+export interface LifeParams {
+  /** 연간 사망 확률에 곱하는 계수 (1 = 기준) */
+  mortalityScale: number;
+  /** 절대 상한 나이: 이 나이가 되면 건강과 무관하게 한 해를 못 넘긴다 */
+  maxAge: number;
+}
+export const LIFE_PARAMS_PLACEHOLDER: LifeParams = Object.freeze({ mortalityScale: 1, maxAge: 105 });
+
+/**
+ * 연간 사망 확률 = (baseline + A·exp(B·나이)) × 건강 계수 × 사망 계수(LifeParams.mortalityScale),
+ * 건강이 criticalBelow 미만이면 모자란 만큼 criticalStep씩 더한다. 절대 상한 나이(LifeParams.maxAge)에서는 반드시 사망.
  * 건강 계수 = 2^((50 - 건강) / healthDoubling): 건강 50이면 1, 25 모자랄 때마다 두 배, 25 넘칠 때마다 반.
  */
 export const MORTALITY = {

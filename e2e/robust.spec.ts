@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { GameState } from '../src/core/types';
+import type { GameState, GenerationId } from '../src/core/types';
 import {
   GAME_KEY,
   SAVE_VERSION,
@@ -38,7 +38,7 @@ function trackErrors(page: Page): string[] {
 }
 
 /** 첫 결정(선택지)이 있는 시드의 0세 상태와 그 결정 상태 */
-async function lifeWithDecision(page: Page, era: 'past' | 'present' | 'future' = 'present') {
+async function lifeWithDecision(page: Page, era: GenerationId = 'alpha') {
   await page.goto('/');
   const decision = await findPendingState(page, era);
   const start = await oracleLife(page, decision.seed, era);
@@ -109,7 +109,7 @@ test('선택 버튼을 연타해도 첫 클릭만 반영되고, 바로 다음에
   const a = await evalCore<GameState | null>(
     page,
     `for (let seed = 3000; seed < 3400; seed++) {
-       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       const start = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        const s = core.advanceUntilDecision(start, undefined, 'consume').state;
        if (s.phase !== 'life' || !s.pending) continue;
        const t = core.advanceUntilDecision(core.resolveChoice(s, s.pending.key, s.pending.choiceIds[0]), undefined, 'consume').state;
@@ -128,7 +128,7 @@ test('선택 버튼을 연타해도 첫 클릭만 반영되고, 바로 다음에
   expect(expected.pending!.key).not.toBe(a!.pending!.key);
 
   await injectSave(page, a!, '/?__timescale=100000', NO_NOTES); // 연출이 사실상 0ms → B가 곧바로 뜬다
-  const first = page.getByTestId(`choice-${firstId}`);
+  const first = page.locator(`button[data-testid="choice-${firstId}"]`);
   await expect(first).toBeEnabled();
   await rapidInput(page, 'mouse3', first); // 같은 자리를 3번 연속 클릭
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-key', expected.pending!.key);
@@ -197,10 +197,10 @@ test('키보드만으로 타이틀부터 사망까지 진행할 수 있다 (Tab�
 
 test('키보드로 선택지를 고른다: 복원된 선택지도 선택지 제목에 포커스가 있고 Tab 한 번에 첫 선택지로 간다 (플레이 중 뜬 선택지와 같은 대상, R-036)', async ({ page }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/');
   await expect(page.getByTestId('choice-panel')).toBeVisible();
-  const first = page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
+  const first = page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`);
   await expect(first).toBeEnabled();
   await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('choice-title');
   expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('H2');
@@ -215,7 +215,7 @@ test('키보드로 선택지를 고른다: 복원된 선택지도 선택지 제�
 test('자동 모드는 언제든 해제할 수 있다: 해제하면 대기 중인 자동 선택이 취소되고 선택지에서 멈춘다', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   // 자동 선택 지연을 시간 배율 0.4로 늘린다(3초 → 7.5초): 부하로 클릭이 늦어져도 해제가 선택보다 먼저 일어난다. 해제는 그 지연이 다 지나도록 지켜본다.
   const AUTO_DELAY_MS = 3000 / 0.4;
   await injectSave(page, decision, '/?__timescale=0.4', { speed: 1, autoMode: true });
@@ -235,7 +235,7 @@ test('자동 모드는 언제든 해제할 수 있다: 해제하면 대기 중�
 
 test('자동 모드가 켜져 있으면 선택지를 잠깐 보여 준 뒤 성향대로 스스로 고르고 이어간다', async ({ page }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/?__timescale=5', { speed: 8, autoMode: true });
   await expect.poll(async () => (await readSave(page)).data.history.filter((h) => h.kind === 'choice' && h.eventId === decision.pending!.eventId).length).toBe(1);
   const auto = await evalCore<GameState>(page, 'return core.autoResolveStep(arg, arg.pending.key).state;', decision);
@@ -266,7 +266,7 @@ test('탭이 가려져 있는 동안은 진행이 멈추고, 다시 보이면 �
 test('다중 탭: 다른 탭이 저장을 바꾸면 이 탭은 멈추고(덮어쓰지 않음), "이 탭에서 이어하기"로 최신 상태를 이어받는다 (R-011)', async ({ page, context }) => {
   const errors = trackErrors(page);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   // 시간 배율 0.25: 두 탭이 선택 뒤 저절로 한 해를 진행하는 시각(8초 → 32초)을 늦춘다. 아래 단계가 부하로 늦어져도 진행 타이머가 끼어들어
   // 밀린 탭을 다시 밀어내지 않는다. 이 탭의 진행은 마지막에 "다음 결정으로"를 눌러 직접 일으킨다(타이머를 기다리지 않는다).
   const SLOW = '/?__timescale=0.25';
@@ -279,7 +279,7 @@ test('다중 탭: 다른 탭이 저장을 바꾸면 이 탭은 멈추고(덮어�
   await page2.goto(SLOW);
   await expect(page2.getByTestId('choice-panel')).toBeVisible();
   const firstId = decision.pending!.choiceIds[0];
-  const first2 = page2.getByTestId(`choice-${firstId}`);
+  const first2 = page2.locator(`button[data-testid="choice-${firstId}"]`);
   await expect(first2).toBeEnabled();
   await first2.click();
   await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length).toBe(1);
@@ -313,7 +313,7 @@ test('다중 탭: 다른 탭이 저장을 바꾸면 이 탭은 멈추고(덮어�
 
 test('다중 탭: 새 탭이 마운트 직후 읽은 값을 그대로 다시 쓰지 않는다 — 열기만 한 탭은 저장소에 한 번도 쓰지 않아 활성 탭을 밀어내지 못한다 (R-047)', async ({ page, context }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/');
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   const before = await readSave(page);
@@ -346,7 +346,7 @@ test('다중 탭: 새 탭이 마운트 직후 읽은 값을 그대로 다시 쓰
 test('저장이 실패해도(쿼터/차단) 가벼운 안내만 띄우고 앱은 계속 동작한다 (R-006)', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/');
   const savedBefore = (await readSave(page)).data;
   await expect(page.getByTestId('save-notice')).toHaveCount(0); // 평소에는 안내가 없다
@@ -357,7 +357,7 @@ test('저장이 실패해도(쿼터/차단) 가벼운 안내만 띄우고 앱은
   // 안내는 진행이 생겨 저장을 시도하다 실패할 때 뜬다. (저장소가 비어 있었다면 첫 상태를 쓰려다 실패해 곧바로 뜬다 — 아래 별도 테스트.)
   await expect(page.getByTestId('save-notice')).toHaveCount(0);
   // 선택하면 저장을 시도하다 실패해 안내가 뜬다. 안내가 떠 있어도 선택·화면은 계속 동작한다
-  const first = page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
+  const first = page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`);
   await expect(first).toBeEnabled();
   await first.click();
   await expect(page.getByTestId('log')).toContainText('선택:');
@@ -389,7 +389,7 @@ test('저장소가 비어 있고 쓰기가 막혀 있으면(처음 연 사용자
 test('저장소를 읽은 직후, 다른 탭 변경을 알리는 storage 리스너를 붙이는 순간에 그 탭이 저장을 바꿔도 덮어쓰지 않고 밀린 화면이 뜬다 — "이어하기"로 그 탭의 진행을 이어받는다 (결정적: 리스너 등록 순간에 쓰기를 끼워 넣는다, R-052·R-053)', async ({ page, browser }) => {
   // 다른 탭이 쓸 값: 알려진 시드의 다른 인생
   await page.goto('/');
-  const other = await oracleLife(page, 4242, 'past');
+  const other = await oracleLife(page, 4242, 'industrial');
   const otherRaw = JSON.stringify({ version: SAVE_VERSION, data: other });
 
   // 새 컨텍스트(저장소가 비어 있다)에서, 앱이 저장소를 읽은 뒤 `storage` 리스너를 붙이는 바로 그 순간 "다른 탭"이 저장을 쓴 것처럼 한다.
@@ -447,7 +447,7 @@ test('저장이 막힌 동안 다른 탭이 저장을 바꿔 "이 탭에서 이�
     };
   }, GAME_KEY);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/');
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect(page.getByTestId('save-notice')).toHaveCount(0);
@@ -455,7 +455,7 @@ test('저장이 막힌 동안 다른 탭이 저장을 바꿔 "이 탭에서 이�
   // 1) 저장이 막힌 채 선택한다 → 저장을 시도하다 실패해 안내가 뜬다
   await page.evaluate(() => ((window as unknown as { __failGame: boolean }).__failGame = true));
   const firstId = decision.pending!.choiceIds[0];
-  const first = page.getByTestId(`choice-${firstId}`);
+  const first = page.locator(`button[data-testid="choice-${firstId}"]`);
   await expect(first).toBeEnabled();
   await first.click();
   await expect(page.getByTestId('save-notice')).toBeVisible();
@@ -465,7 +465,7 @@ test('저장이 막힌 동안 다른 탭이 저장을 바꿔 "이 탭에서 이�
   await startPageHidden(page2);
   await page2.goto('/');
   await expect(page2.getByTestId('choice-panel')).toBeVisible();
-  const first2 = page2.getByTestId(`choice-${firstId}`);
+  const first2 = page2.locator(`button[data-testid="choice-${firstId}"]`);
   await expect(first2).toBeEnabled();
   await first2.click();
   await expect.poll(async () => (await readSave(page2)).data.history.filter((h) => h.kind === 'choice' && h.by === undefined).length).toBe(1);
@@ -485,7 +485,7 @@ test('저장이 막힌 동안 다른 탭이 저장을 바꿔 "이 탭에서 이�
 test('대기 중인 선택지가 실제 이벤트와 맞지 않는 저장: 모양이 어긋난 것(손상)은 크래시 없이 새 게임, 풀과만 어긋난 것(콘텐츠 갱신)은 대기만 풀고 같은 인생으로 이어진다 (R-046)', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   const pending = decision.pending!;
   // 1) 모양이 어긋난 저장(손상·변조): 새 게임
   const shapeBroken: GameState[] = [
@@ -530,7 +530,7 @@ test('대기 중인 선택지가 실제 이벤트와 맞지 않는 저장: 모�
 });
 
 test('첫 결정 상태에서 자동 모드로 이어도 core 자동 진행과 같은 결과가 나온다 (중간에서 시작한 판)', async ({ page }) => {
-  const { start } = await lifeWithDecision(page, 'past');
+  const { start } = await lifeWithDecision(page, 'industrial');
   const decision = await oracleDecision(page, start);
   await injectSave(page, decision, '/?__timescale=3000', { speed: 8, autoMode: true });
   await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 30_000 });
@@ -541,7 +541,7 @@ test('첫 결정 상태에서 자동 모드로 이어도 core 자동 진행과 �
 
 test('개발자 도구로 같은 탭의 저장을 지우고 새로고침하면 새 게임이다 (떠나는 앱이 지워진 저장을 되살리지 않는다)', async ({ page }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/');
   await expect(page.getByTestId('choice-panel')).toBeVisible();
 
@@ -552,7 +552,7 @@ test('개발자 도구로 같은 탭의 저장을 지우고 새로고침하면 �
   expect((await readSave(page)).data.phase).toBe('title');
 
   // 같은 탭에서 저장을 다른 인생으로 바꿔도 그 변경이 존중된다
-  const other = await oracleLife(page, 4242, 'past');
+  const other = await oracleLife(page, 4242, 'industrial');
   await page.evaluate(
     ([key, value]) => localStorage.setItem(key, value),
     [GAME_KEY, JSON.stringify({ version: SAVE_VERSION, data: other })],
@@ -564,9 +564,9 @@ test('개발자 도구로 같은 탭의 저장을 지우고 새로고침하면 �
 
 test('저장 쓰기 없이 곧바로 떠나도 마지막 상태는 남는다: 선택 직후 바로 새로고침해도 그 선택이 저장돼 있다', async ({ page }) => {
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/');
-  const first = page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
+  const first = page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`);
   await expect(first).toBeEnabled();
   await first.click();
   await page.reload({ waitUntil: 'commit' }); // 효과(저장)가 돌기 전에 떠날 수도 있다
@@ -578,7 +578,7 @@ test('저장 쓰기 없이 곧바로 떠나도 마지막 상태는 남는다: �
 test('이름·연표 글에 방향 제어·제로폭 문자가 든 저장은 손상으로 보고 크래시 없이 첫 화면으로 시작한다 (QA-003-M7b A12b)', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   const ch = (cp: number) => String.fromCodePoint(cp);
   const name = decision.character!.name;
   const tampered: Array<[string, GameState]> = [

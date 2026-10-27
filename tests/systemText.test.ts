@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
+  GENERATION_IDS,
   PARENT_WEALTHS,
+  R1_PRESENT,
   bandFromRange,
   finalWealthStanding,
   splitSentences,
   standingOf,
   startBandOf,
   toneOf,
-  type Era,
+  wealthMixtureOfProfile,
+  type ProfileId,
   type Standing,
   type WealthJourney,
 } from '../src/core';
@@ -73,9 +75,10 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
       add(`deathEntryText(${cause})`, deathEntryText(cause));
     }
     for (const n of [0, 1, 27]) add(`choiceCountText(${n})`, choiceCountText(n));
-    // 출발선 문장: 모든 시대 × 재력 5단계 × 도착 자리 갈래, 스무 살 전
-    for (const era of ERAS) for (const wealth of PARENT_WEALTHS) {
-      const start = startBandOf(era as Era, wealth);
+    // 출발선 문장: 일곱 세대와 시험 전용 R1 × 재력 5단계 × 도착 자리 갈래, 스무 살 전
+    const PROFILES: readonly ProfileId[] = [...GENERATION_IDS, R1_PRESENT];
+    for (const era of PROFILES) for (const wealth of PARENT_WEALTHS) {
+      const start = startBandOf(wealthMixtureOfProfile(era), wealth);
       add(`journeyText(early·${era}·${wealth})`, journeyText({ kind: 'early', start }));
       for (const end of STANDINGS) {
         const j: WealthJourney = { kind: 'compared', start, end, movement: 'same' };
@@ -90,8 +93,8 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
     for (const [k, v] of Object.entries(STAGE_ENTRY_TEXT)) add(`STAGE_ENTRY_TEXT.${k}`, v);
     add('INHERIT_NOTE_TEXT', INHERIT_NOTE_TEXT);
     // 도움말·주석·안내 줄의 설명 문장
-    for (const era of ERAS) add(`statusHelpText(${era})`, statusHelpText(true, era as Era));
-    add('statusHelpText(자산 없음)', statusHelpText(false, 'present'));
+    for (const era of PROFILES) add(`statusHelpText(${era})`, statusHelpText(true, era));
+    add('statusHelpText(자산 없음)', statusHelpText(false, R1_PRESENT));
     add('DASH_TEXT.assetsYoung', DASH_TEXT.assetsYoung);
     add('DASH_TEXT.assetsNote', DASH_TEXT.assetsNote);
     add('IMPACT_HINT.lead', IMPACT_HINT.lead('이서연'));
@@ -193,9 +196,9 @@ describe('시스템 문구 어체 (2): 문구 파일의 소스에는 해라체 �
 
 describe('0원·동률 규칙 (M7e-3, 마스터 결정 C: 동률 불리)', () => {
   it('하위는 「미만」 비율이라 같은 금액으로 마친 인생을 내 아래로 세지 않는다 — 0원이 현행(≤)보다 낮은 하위 자리(또는 가운데쯤이 아닌 하위)로 읽힌다', () => {
-    for (const era of ERAS) {
-      const zero = finalWealthStanding(era as Era, 0);
-      // 0원은 어느 시대에서도 「앞선 위쪽」이 아니라 하위로 읽힌다(빚으로 마친 사람보다 낫지만 같은 0원끼리 위아래가 없다)
+    for (const era of [...GENERATION_IDS, R1_PRESENT] as ProfileId[]) {
+      const zero = finalWealthStanding(era, 0);
+      // 0원은 어느 세대에서도 「앞선 위쪽」이 아니라 하위로 읽힌다(빚으로 마친 사람보다 낫지만 같은 0원끼리 위아래가 없다)
       expect(zero.kind, `${era}: 0원`).toBe('bottom');
     }
   });

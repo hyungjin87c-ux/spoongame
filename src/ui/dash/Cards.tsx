@@ -1,3 +1,4 @@
+import { wealthMixtureOfGame } from '../../core/birthProfile';
 import { useMemo } from 'react';
 import { looksStanding } from '../../core/birth';
 import { formatMan } from '../../core/format';
@@ -6,14 +7,14 @@ import { startBandOf } from '../../core/ending';
 import { familyOf, type ParentView, type SiblingView } from '../../core/family';
 import { peersNow } from '../../core/peerNow';
 import { educationLabel } from '../../core/profile';
-import type { Character, BirthReport, Era, GameState } from '../../core/types';
+import type { Character, BirthReport, GameState, ProfileId } from '../../core/types';
 import { OCCUPATION_LABEL } from '../../data/birthReportTable';
 import { BIRTH_TEXT, genderLabel, yearMonthText } from '../../data/birthReportText';
 import { standingLabel } from '../../data/birthText';
-import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, statusHelpText } from '../../data/dashText';
+import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, amountsConverted, statusHelpText } from '../../data/dashText';
 import { bandLabel } from '../../data/endingText';
 import { CHILD_LABEL, GONE_LABEL, PARENT_STATE_LABEL, SPOUSE_LABEL, siblingGapText, siblingLabel } from '../../data/familyText';
-import { placeLabel } from '../../data/regionNames';
+import { placeLabel, regionLabelAt } from '../../data/regionNames';
 import { Icon } from '../Brand';
 import { Face } from '../Face';
 import { FitPair } from '../FitPair';
@@ -26,7 +27,7 @@ import { Glue } from '../Glue';
  */
 
 /** 인생 단계(life)의 게임 상태 — 출생 결과가 모두 있다 */
-export type LifeGame = GameState & { character: Character; era: Era; birthReport: BirthReport; peerSeed: number };
+export type LifeGame = GameState & { character: Character; generation: ProfileId; birthReport: BirthReport; peerSeed: number };
 
 // ---------- 프로필 (DB9) ----------
 
@@ -49,11 +50,11 @@ export function ProfileCard({ game }: { game: LifeGame }) {
         <dt>{DASH_TEXT.profileBorn}</dt>
         <dd data-testid="profile-born">{yearMonthText(c.birthYear, game.birthReport.month)}</dd>
         <dt>{DASH_TEXT.profileLive}</dt>
-        <dd data-testid="profile-place">{reportPlaceLabel(game.birthReport, game.era)}</dd>
+        <dd data-testid="profile-place">{reportPlaceLabel(game.birthReport, game.character.birthYear)}</dd>
         <dt>{DASH_TEXT.profileHome}</dt>
         <dd data-testid="profile-home">
           {/* 수저 칩 + 구간: 룰렛·출생신고와 같은 함수 한 곳의 출력(bandLabel(startBandOf)) — 같은 인물의 구간이 화면마다 달라지지 않는다(R-170) */}
-          <GradeLine grade={c.parentWealth} range={`(${bandLabel(startBandOf(game.era, c.parentWealth))})`} />
+          <GradeLine grade={c.parentWealth} range={`(${bandLabel(startBandOf(wealthMixtureOfGame(game), c.parentWealth))})`} />
         </dd>
         <dt>{DASH_TEXT.profileEdu}</dt>
         <dd data-testid="profile-edu">{educationLabel(game.age, game.flags)}</dd>
@@ -69,7 +70,7 @@ export function ProfileCard({ game }: { game: LifeGame }) {
 
 // ---------- 상태 (DB10) ----------
 
-export function StatusCard({ stats, era }: { stats: GameState['stats']; era: Era }) {
+export function StatusCard({ stats, generation }: { stats: GameState['stats']; generation: ProfileId }) {
   return (
     <section className="card stack stack--sm" aria-label={DASH_TEXT.statusTitle} data-testid="stats">
       <div className="card__head card__head--flush">
@@ -92,7 +93,7 @@ export function StatusCard({ stats, era }: { stats: GameState['stats']; era: Era
       <details className="disclosure">
         <summary>{DASH_TEXT.statusHelpSummary}</summary>
         <p>
-          <Glue text={statusHelpText(ASSETS_AMOUNTS_SHIPPED, era)} />
+          <Glue text={statusHelpText(ASSETS_AMOUNTS_SHIPPED, generation)} />
         </p>
       </details>
     </section>
@@ -104,9 +105,9 @@ export function StatusCard({ stats, era }: { stats: GameState['stats']; era: Era
 /**
  * 자산 현황 카드 (SPEC-003 DB11·M5 — 문구·DOM은 docs/design/copy.md 4-5절, CSS는 styles/dash.css 「자산 현황」). 20세 미만은 안내 한 줄만(집안 살림 누적값은 화면에 없다).
  * 20세부터 순자산·연 소득·부채를 `formatMan`(= `formatWon`)으로 보인다. `.neg`(▼ 접두)는 쓰지 않는다 — ▼는 영향 줄의 「줄어듦」 기호라 수준(음수)에 쓰면 변화로 읽힌다(D-32).
- * 지난·다가올 세상은 카드 머리에 「지금 가치로 환산」 태그가 있고 금액 묶음이 `aria-describedby`로 그것을 가리킨다. 지금 세상은 태그가 없다(기준은 상태 도움말이 밝힌다).
+ * 세대 판은 카드 머리에 「지금 가치로 환산」 태그가 있고 금액 묶음이 `aria-describedby`로 그것을 가리킨다. 시험 전용 R1 프로필(지금 세상)은 태그가 없다(기준은 상태 도움말이 밝힌다).
  */
-export function AssetsCard({ age, assets, era }: { age: number; assets: GameState['assets']; era: Era }) {
+export function AssetsCard({ age, assets, generation }: { age: number; assets: GameState['assets']; generation: ProfileId }) {
   if (age < 20 || assets === null) {
     return (
       <section className="card" aria-label={DASH_TEXT.assetsTitle} data-testid="assets-card">
@@ -119,7 +120,7 @@ export function AssetsCard({ age, assets, era }: { age: number; assets: GameStat
       </section>
     );
   }
-  const converted = era !== 'present';
+  const converted = amountsConverted(generation);
   return (
     <section className="card card--assets" aria-labelledby="assets-title" data-testid="assets-card">
       <div className="card__head">
@@ -240,7 +241,7 @@ export function PeersNowCard({ game }: { game: LifeGame }) {
                 </span>{' '}
                 <span className="sub">{genderLabel(p.gender)}</span>
               </div>
-              <div className="sub">{placeLabel(p, game.era)}</div>
+              <div className="sub">{p.sigungu !== undefined && p.sigunguSido !== undefined ? placeLabel({ region: p.region, sigunguSido: p.sigunguSido, sigungu: p.sigungu }) : regionLabelAt(p.region, game.character.birthYear)}</div>
             </div>
             {/* 수저 칩: 출생신고 또래 목록과 같은 표기 — 「수저 → 지금의 삶」 연결이 읽히게 (M4 착수 결정 1, 등급명 허용 화면에 VP4 추가) */}
             <GradeChip grade={p.wealth} />

@@ -1,11 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
-import { formatCount } from '../../core/format';
-import { tryVirtualPopulation } from '../../core/population';
 import type { HistoryEntry } from '../../core/types';
 import { DASH_TEXT } from '../../data/dashText';
-import { FitPair } from '../FitPair';
 import { Glue } from '../Glue';
-import { useEpochMinute, useReducedMotion } from '../hooks';
+import { useReducedMotion } from '../hooks';
 import { LogList } from './LogList';
 import { useVeilOpen } from './Veil';
 import { isAtLogTop, logRows } from './logOrder';
@@ -28,15 +25,13 @@ import { isAtLogTop, logRows } from './logOrder';
  *  - **무거운 장면 가리기**(SPEC-005 QI6): `gentle`(설정값)이 켜져 있으면 무거운 장면 줄이 지난 줄까지 가려지고 「펼쳐 보기」로 연다. 펼침은 이 컴포넌트의 상태일 뿐 저장하지 않고, 설정이 바뀌면 초기화된다(M19, `useVeilOpen`).
  */
 
-export function LogCard({ history, name, live, minute, gentle = false }: { history: readonly HistoryEntry[]; name: string; live: boolean; minute?: number; /** 「무거운 장면 가리기」(설정값) */ gentle?: boolean }) {
+export function LogCard({ history, live, gentle = false }: { history: readonly HistoryEntry[]; live: boolean; /** 「무거운 장면 가리기」(설정값) */ gentle?: boolean }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const rows = useMemo(() => logRows(history), [history]);
   /** 「맨 위로」를 누른 직후 부드럽게 올라가는 중인가 — 그동안 새 줄이 와도 맨 위로 따라간다 */
   const following = useRef(false);
   const [unread, setUnread] = useState(0);
-  const clock = useEpochMinute();
   const reduced = useReducedMotion();
-  const population = tryVirtualPopulation(minute ?? clock);
   const veil = useVeilOpen(gentle);
 
   /**
@@ -82,11 +77,6 @@ export function LogCard({ history, name, live, minute, gentle = false }: { histo
           <Glue text={DASH_TEXT.logHint} />
         </span>
       </div>
-      {population === null ? null : (
-        <p className="log__pin" data-testid="log-pin">
-          <FitPair a={DASH_TEXT.logPinA(formatCount(population))} b={DASH_TEXT.logPinB(name)} />
-        </p>
-      )}
       <LogList
         rows={rows}
         jump={

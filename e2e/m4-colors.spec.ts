@@ -77,7 +77,7 @@ test('수동 테마 확인: 수동 다크는 OS가 라이트여도 바탕이 다
     expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), `${screen}: OS 라이트 + 수동 다크`).toBe('rgb(20, 23, 31)');
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
-    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), `${screen}: OS 다크 + 수동 라이트`).toBe('rgb(246, 243, 236)');
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), `${screen}: OS 다크 + 수동 라이트`).toBe('rgb(249, 247, 242)');
     await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
     expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), `${screen}: 수동 선택 없음 → OS(다크)를 따른다`).toBe('rgb(20, 23, 31)');
   }
@@ -182,7 +182,7 @@ async function rendered(page: Page) {
       if (fill === null || fill.a === 0) continue;
       out.logo.push({ fill: paint, ratio: ratio(fill, backgroundOf(path)) });
     }
-    for (const sel of ['.radio-card:has(input:checked) .radio-card__meta', '.radio-card:has(input:checked) .radio-card__desc', '.radio-card:has(input:checked) .radio-card__title']) {
+    for (const sel of ['.gen-row.is-selected .gen-row__meta', '.gen-row.is-selected .gen-row__desc', '.gen-row.is-selected .gen-row__name']) {
       const el = document.querySelector(sel);
       if (el === null) continue;
       const color = parse(getComputedStyle(el).color);

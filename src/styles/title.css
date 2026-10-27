@@ -205,9 +205,8 @@ html.bar-released .page-end-space { display: none; }
 /* 머리 줄 (SPEC-005 D5-01 A안·D5-04): 로고는 워드마크만이고(좁은 화면 52px → 글자 높이 41px로 DS1 ≥ 40px, 넓은 화면 64px → 51px) 머리 아래 글은 두 폭 모두 **왼쪽 정렬**이다 — 로고 줄 아래의 일러스트 배너(좁은 화면)·한 줄 설명·수저 띠가 한 축을 쓴다 */
 .hero--005 { align-items: stretch; text-align: left; gap: var(--sp-3); }
 .hero--005 h1 { min-width: 0; }
-.hero--005 .spoon-lineup { max-width: 420px; padding: var(--sp-2) 0; }
-.hero--005 .hero__pop { max-width: none; }
-.hero__tag { font-size: var(--fs-lg); line-height: var(--lh-snug); color: var(--c-text-2); max-width: 22em; }
+.hero__tag { font-size: var(--fs-md); line-height: var(--lh-body); font-weight: var(--fw-regular); color: var(--c-text-2); max-width: 30em; } /* SPEC-004 GM4 (GS11): 부제 16/1.6 · 굵기는 제목에만 — 벤치마킹 8곳 (docs/design/benchmark-004.md 3절) */
+.hero__span { margin: 0; font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--c-text-2); max-width: 32em; } /* 체험 한 줄 ② 14/1.6 (GS11) */
 /* 줄바꿈 묶음(QM2-5, core/glue.ts): 「A · B」 같은 구분 기호 묶음과 한 줄 설명의 끝 구절(「한국인의 한 번의 인생」)은 줄이 바뀌어도 쪼개지지 않게 묶되(inline-block — 줄에 안 들어가면 통째로 다음 줄로 내려간다),
    묶음 자체가 한 줄보다 길어지는 큰 글자(200%)·좁은 폭(320px)에서는 묶음 안에서 줄을 바꾼다. white-space: nowrap으로 묶으면 그 폭에서 가로로 넘쳤다(CM11, QA-003-M2 M2-V04).
    짧은 숫자+단위·날짜 묶음(.nowrap)만 줄이 바뀌지 않는다. */
@@ -230,17 +229,6 @@ html.bar-released .page-end-space { display: none; }
   .pair--meta .pair__item { display: block; }
   .pair--meta .pair__sep { display: none; }
 }
-/* 수저 다섯 자루 줄: 같은 숟가락, 재질(색·무늬)만 다르다. 이름을 항상 함께 적는다 */
-/* 수저 다섯 자루 줄: 보통 폭에서는 한 줄에 다섯 칸(앞 넷은 같은 폭, 다이아몬드는 1.3배 — 이전 격자와 같다). 글자가 커지거나 폭이 좁아 한 줄에 못 들어가면 가로로 밀지 않고 다음 줄로 접는다
-   (칸마다 최소 폭 = 이름의 가장 긴 낱말, flex-wrap — CM11, 이름표가 서로 겹치거나 띠 밖으로 나가지 않는다). */
-.spoon-lineup { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2) var(--sp-1); width: 100%; max-width: 420px; padding: var(--sp-3) 0 var(--sp-2); border-top: 1px solid var(--c-border-strong); border-bottom: 1px solid var(--c-border-strong); }
-.spoon-fig { flex: 1 1 0; min-width: min-content; display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); color: var(--grade-solid); }
-.spoon-fig.grade--5 { flex-grow: 1.3; }
-.spoon-fig__name { font-size: var(--fs-xs); line-height: 1.2; color: var(--c-text-2); text-align: center; font-weight: var(--fw-bold); overflow-wrap: normal; word-break: keep-all; }
-.hero__pop { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-regular); max-width: 22em; }
-.hero__pop strong { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
-.hero__note { font-size: var(--fs-sm); color: var(--c-text-3); margin-top: calc(var(--sp-2) * -1); }
-.choices--grid { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
 .title__side { min-width: 0; }
 .title-foot { min-width: 0; font-size: var(--fs-xs); color: var(--c-text-3); display: flex; flex-direction: column; gap: var(--sp-1); }
 .title-foot .credit { margin: 0; font-size: var(--fs-xs); line-height: 1.5; color: var(--c-text-3); }
@@ -359,22 +347,6 @@ html.bar-released .page-end-space { display: none; }
 .dots button i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--c-border-strong); background: transparent; box-sizing: content-box; }
 .dots button[aria-current='true'] i { width: 12px; border-radius: var(--r-pill); background: var(--c-brand); border-color: var(--c-brand); }
 
-/* ---------- 일러스트 (SPEC-005 HS1, 형진 님 결정 2026-10-20 → r3 「조금 더 키우고, 약간 흐리게」, diff-005 D5-24~D5-33) ----------
-   파일: src/assets/home/home-map-pc.webp(613×720, 63.6KB) · home-map-mobile.webp(375×440, 32.7KB) — 알파 WebP 한 벌로 라이트·다크 모두(가장자리의 흰 테두리 + 크림색 광이 바탕색에 녹는다). 합계 ≤ 100KB.
-   흐림은 파일에 굽지 않고 CSS(opacity·filter)가 맡는다 — 자산은 한 벌. <picture>의 source media로 ≥ 960px은 PC 파일, 그 아래는 모바일 파일을 고르고, 배너(< 960px)와 오른쪽 열(≥ 960px)의 두 그림은 같은 주소라 내려받기 한 번이다.
-   width·height 속성 + height 고정·width auto → 그림이 오기 전에도 자리가 잡혀 레이아웃이 흔들리지 않는다. 장식(alt="" · figure aria-hidden), 클릭 없음, 외부 요청 0, 그림 위에 글·UI 없음(대비 무관).
-   크기: 배너 224px(232면 360×740에서 「태어날 세상」 제목 아래끝이 띠에 닿는다) · 1280×800 오른쪽 열 420px · ≥ 1600px 500px(오른쪽 열 폭 428px에 그림 비율 0.851로 들어가는 최대 — 560이면 max-width가 폭을 눌러 세로로 찌그러진다; object-fit: contain이 그 안전장치).
-   넓은 화면은 그림 아래 --illust-tuck(32px, ≥ 1600 36px)만큼 통계 카드 뒤로 들어간다 — 카드에 position: relative + z-index: 1을 줘야 한다: filter·opacity가 있는 img는 자체 스태킹 컨텍스트라 뒤에 오는 형제의 배경보다 위에 그려진다.
-   흐림 2단계 「부드럽게」(형진 님 확인): 라이트 opacity .8 + saturate(.85) contrast(.92) blur(.5px) / 다크 opacity .8 + brightness(.9) saturate(.78) contrast(.92) blur(.5px) / 강제 색상 불투명 · filter 없음(래스터 장식 그림은 원색 그대로).
-   첫 화면 지역 변수라 tokens.css에 넣지 않는다. */
-.illust { display: none; margin: 0; --illust-opacity: 0.8; --illust-filter: saturate(0.85) contrast(0.92) blur(0.5px); }
-.illust img { display: block; height: var(--illust-h, 224px); width: auto; max-width: 100%; object-fit: contain; opacity: var(--illust-opacity); filter: var(--illust-filter); }
-.illust--banner { display: flex; justify-content: center; --illust-h: 224px; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .illust { --illust-filter: brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px); }
-}
-:root[data-theme='dark'] .illust { --illust-filter: brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px); }
-
 /* 통계 카드를 그림의 하늘·연두·살구 톤에 맞춘다(형진 님 「일러스트와 통계 그래프는 웹페이지 배경과 어울리도록」, D5-27): 카드 위쪽 88px 옅은 하늘 띠, 차가운 회색 테두리, 푸른빛 그림자,
    실측 선·점·막대·범례는 이 카드 안에서만 --c-brand를 --c-chart로 바꾼다. 전망(놋쇠 긴 점선·빗금)·보조 계열(점선)·칩·글자 색은 그대로 — 실측 실선 / 전망 점선 구분 유지(색에만 의존하지 않는다).
    토큰 4개(--c-chart·--c-card-tint·--c-card-border·--shadow-card)는 tokens.css, 대비 쌍 5개는 scripts/checkContrastLib.ts. 강제 색상은 토큰이 시스템 색으로 돌아간다. 다른 카드는 공용 .card 그대로. */
@@ -392,24 +364,11 @@ html.bar-released .page-end-space { display: none; }
   .slide:not(.is-active) { position: absolute; top: 0; left: 0; right: 0; }
   .title__main, .hero { gap: var(--sp-4); }
   .hero { align-items: flex-start; text-align: left; }
-  .spoon-lineup { max-width: 460px; }
   .hero__tag { max-width: none; }
   .hero .logo--word { --logo-h: 64px; }
   .hero--005 { gap: var(--sp-3); }
-  .hero--005 .spoon-lineup { max-width: 460px; }
   /* 1280×800: 왼쪽 열(큰 슬롯 → 인생 길이 → 설정 줄)이 하단 띠 위에 다 들어가도록 세로 간격을 한 단 줄인다 — 큰 슬롯 카드가 8장(SPEC-004)이 되면 스크롤이 생기지만 띠가 포커스를 가리지 않는다(scroll-padding, CM10) */
   .slots-bottom { gap: var(--sp-2); }
-  .hero__pop { max-width: none; }
-  /* 일러스트(HS1): 배너는 숨기고 오른쪽 열 맨 위의 그림을 보인다 — 가운데 정렬, 아래 --illust-tuck만큼은 통계 카드 뒤(D5-24·D5-32) */
-  .illust--banner { display: none; }
-  /* 겹침(--illust-tuck)은 그림 높이의 7.62%(420px일 때 32px) — 낮은 창에서 그림이 줄어도 제주 타일이 카드 뒤로 더 들어가지 않는다(D5-34). 420·500px에서는 32·36 그대로 */
-  .illust--top { display: flex; justify-content: center; --illust-h: 420px; --illust-tuck: min(32px, calc(var(--illust-h) * 0.0762)); margin-bottom: calc(-1 * var(--illust-tuck)); }
-  /* 낮은 창(REV-005-QI3-1 R-447, diff-005 D5-34): 그림 높이를 창 높이에 맞춰 줄여 이어서 살기 띠(120px)에서도, 표제어가 두 줄인 슬라이드에서도 값 줄 아래끝이 열의 보이는 끝 위(여유 8px)에 있게 한다.
-     예산 334px = 띠 120 + 열 아래 간격 6 + 여유 8 + 위 여백 24 + 카드 위끝→값 아래끝 176(표제어 두 줄). ÷ 0.924 = 겹침(7.62%)을 뺀 그림 높이 비율. 창 높이 ≥ 722면 420(지금 그대로), 541 이하는 바닥 224(모바일 배너와 같은 최소).
-     clamp()를 모르는 엔진은 위 420px 그대로(@supports). --bar-h를 쓰지 않는 이유: JS가 재기 전 첫 그림과 확인 단계(156px)에서 그림이 뛴다(CLS·움직임). */
-  @supports (height: clamp(1px, 2px, 3px)) {
-    .illust--top { --illust-h: clamp(224px, calc((100vh - 334px) / 0.924), 420px); }
-  }
   /* 따라다니는 카드가 하단 띠 위에 머문다: 낮은 화면(예: 높이 650px의 노트북 창)에서 카드가 더 크면 카드 안쪽이 스크롤된다(안쪽 스크롤 전에는 조작 줄이 카드 머리라 보이고, 안쪽을 내리면 머리도 함께 올라가며 PageUp·휠로 되돌린다 — R-224).
      바깥 여백 3px은 카드 그림자·테두리가 스크롤 영역에 잘리지 않게 하려는 것이다.
      R-220: 카드가 놓인 격자 영역은 본문 줄과 푸터 줄을 합친 높이(grid-row: 1 / span 2)라서 따라다니는 범위가 문서 끝까지 이어진다 — 맨 아래까지 내려도 카드가 열 끝에 밀려 올라가지 않고
@@ -421,17 +380,8 @@ html.bar-released .page-end-space { display: none; }
   html.bar-released .title__side { max-height: calc(100vh - var(--sp-6) - 3px); }
 }
 
-@media (min-width: 1600px) {
-  .illust--top { --illust-h: 500px; --illust-tuck: min(36px, calc(var(--illust-h) * 0.0762)); }
-  @supports (height: clamp(1px, 2px, 3px)) {
-    .illust--top { --illust-h: clamp(224px, calc((100vh - 334px) / 0.924), 500px); }
-  }
-}
-
 /* ---------- 강제 색상(고대비) ---------- */
 @media (forced-colors: active) {
-  /* 일러스트: 래스터 그림은 강제 색상에서도 원색·불투명 그대로(장식이라 정보 손실 없음). 선택자 셋·소스 순서로 다크 두 규칙을 이긴다(tokens.css R-251과 같은 방식) */
-  .illust, :root:not([data-theme='light']) .illust, :root[data-theme='dark'] .illust { --illust-opacity: 1; --illust-filter: none; }
   .carousel--005 { background: Canvas; }
   .nav-btn, .seg, .switch__track, .seg__meta { border-color: CanvasText; }
   .seg__opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
@@ -479,6 +429,97 @@ html.bar-released .page-end-space { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .slide, .slide.is-active { transition: none; }
+}
+
+
+/* ---------- SPEC-004 GM4: 세대 고르기 · 태어나는 시도 · 내 출신 시도 (docs/design/mockups/gm3/gm3.css r3~r5를 옮겼다 — diff-004.md 7절 D4-xx) ----------
+   첫 화면의 큰 슬롯은 한 세대 한 줄·한 열의 라디오 목록(.gen-list)이다. 아래 블록은 시안과 같은 글자이고, 이 파일의 `[hidden]`은 시안과 같이 `display: none !important`다. */
+[hidden] { display: none !important; }
+
+/* ---------- r3 세대 고르기: 한 세대 한 줄 · 한 열 · 상자 없이 줄(규칙선) · 줄마다 작은 소개 (형진 님 답 2차 1 — GS1·GS2·GS3·GS4·GS10) ----------
+   r2의 「창 상자(1px 경계 + 둥근 모서리 + 면)」를 뺀다 — 벤치마킹 8곳 가운데 목록을 상자 안 상자로 그린 곳이 없고(A Dark Room·Paperclips·Pudding은 규칙선·여백, 16personalities는 원 표식만), 상자가 없으면 왼쪽 열의 상자 겹이 「슬롯 > 목록 > 줄」에서 「줄」 하나로 준다.
+   줄 = 표식(원 18px) · [이름 14px 700 (+「살아봄」 체크+글자) ········ 메타 12px tabular 오른쪽] / [소개 12px 보조 잉크] — 이름을 16 → 14로(형진 님 「웹게임이라 충분히 읽힌다」), 메타 14 → 12(셋째 잉크 5.3:1 ≥ 4.5), 소개는 1차처럼 줄마다 작은 글씨(12px --c-text-2 7.9:1). 이름이 길어 메타가 안 들어가면(360의 「산업화 세대 · 전후 세대」) 메타만 다음 줄로 접힌다(flex-wrap, margin-left:auto).
+   줄 높이 ≈ 49px(두 줄) ≥ 44(--hit). 창 높이는 r2 그대로(모바일 clamp(9rem, 100svh − 29rem, 22.5rem) · PC clamp(9rem, 100vh − 34rem, 22.5rem)) — 1280×800 ≈ 5.2줄, 마지막 줄이 반쯤 보여 스크롤을 알린다. 위아래 1px 규칙선이 창의 끝이다. scroll-snap(proximity)·키보드 규칙은 r2와 같다(목록의 scrollTop만 움직인다).
+   고른 줄: 옅은 쪽빛 면(목록 좌우로 8px 넘쳐 글자 열은 그대로) + 왼쪽 3px 쪽빛 막대 + 표식 채움·체크 — 색·모양·아이콘 세 겹. 포커스 링은 줄 안쪽(outline-offset −3px). */
+/* 태어나는 시도를 「직접 고르기」로 바꾸면 시도 칩이 그 아래에 끼어든다(SPEC-004 GS3). 브라우저의 스크롤 고정(scroll anchoring)은 그 아래 요소를 닻으로 잡아 끼어든 높이만큼 문서를 밀어 올려,
+   방금 방향키로 닿은 분절 컨트롤이 화면 위로 사라진다(320×256 · 400% 확대에서 −127px). 첫 화면에서는 끄고 초점이 있는 곳이 그대로 있게 한다. */
+.title-page { overflow-anchor: none; }
+.gen-list { --gen-list-h: clamp(12rem, 100svh - 27rem - var(--bar-h, 68px) + 68px, 24rem); position: relative; display: flex; flex-direction: column; max-height: var(--gen-list-h); overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y proximity; scroll-padding-block: 1px; margin: 0; border-top: 1px solid var(--c-border-strong); border-bottom: 1px solid var(--c-border-strong); }
+/* 이어서 살기(120px)·확인 단계(150px) 띠는 새 판 띠(68px)보다 높다 — 그만큼 창을 줄여(--bar-h − 68px) 인생 길이 칸이 띠에 가리지 않게 한다(SPEC-005 D5-19). 새 판 띠에서는 식이 그대로다. */
+/* 창 높이(r3): 줄이 두 줄(≈ 51px)이 되어 r2 값(PC −34rem · 모바일 −29rem)이면 1280×800에서 4.8줄 — 2rem씩 늘려 PC 288px(5.6줄) · 360×740 308px(≈ 5줄, 긴 이름 줄 포함). 상한 24rem(1920에서 8줄 전부 = 7 × 53 + 70 = 441 > 384라 7.3줄 — 마지막 줄이 반쯤 보여 스크롤을 알린다) */
+@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(12rem, 100vh - 32rem - var(--bar-h, 68px) + 68px, 24rem); } }
+@media (prefers-reduced-motion: no-preference) { .gen-list { scroll-behavior: smooth; } }
+:root[data-motion='reduce'] .gen-list { scroll-behavior: auto; }
+/* flex: none — 세로 flex 컨테이너(max-height) 안에서 min-height를 준 항목은 flex-shrink로 44px까지 눌린다(첫 측정에서 두 줄 글이 다음 줄과 겹쳤다). 줄은 제 높이를 갖고 목록이 스크롤한다 */
+/* 오른쪽 안쪽 여백 8px — 메타(「올해 6~86세」)가 목록 끝선에 붙거나 마지막 글자가 잘리지 않게(마스터 지적 2026-10-27, 360 선택 줄) */
+.gen-row { position: relative; flex: none; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; column-gap: var(--sp-3); min-height: var(--hit); padding: 6px var(--sp-2) 7px 0; border-top: 1px solid var(--c-border); scroll-snap-align: start; scroll-margin-block: 1px; cursor: pointer; color: var(--c-text); }
+.gen-row:first-child { border-top: 0; }
+.gen-row input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.gen-row__mark { width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; border: 2px solid var(--c-border-strong); display: grid; place-items: center; background: var(--c-surface); }
+.gen-row__mark .icon { width: 12px; height: 12px; stroke-width: 3; opacity: 0; }
+.gen-row__body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gen-row__line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--sp-2); min-width: 0; }
+.gen-row__name { font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: var(--lh-snug); color: var(--c-text); }
+/* 메타는 한 덩어리로 이름 옆 오른쪽에, 안 들어가면 통째로 다음 줄(flex 항목), 그래도 넓으면(320 · 200%) 「·」 뒤에서 접힌다 — 안쪽 두 묶음(「{범위}년생」·「올해 {나이}」)은 nowrap */
+.gen-row__meta { margin-left: auto; font-size: var(--fs-xs); line-height: var(--lh-snug); color: var(--c-text-3); font-variant-numeric: tabular-nums; text-align: right; }
+.gen-row__desc { font-size: var(--fs-xs); line-height: var(--lh-snug); color: var(--c-text-2); }
+.gen-row__note { color: var(--c-text-3); }
+.gen-row.is-selected { background: var(--c-brand-soft); }
+.gen-row.is-selected .gen-row__name, .gen-row.is-selected .gen-row__meta, .gen-row.is-selected .gen-row__desc, .gen-row.is-selected .gen-row__note, .gen-row.is-selected .gen-row__lived { color: var(--c-on-brand-soft); }
+/* 왼쪽 3px 막대는 절대 위치 가상 요소 — border-left로 두면 고른 줄만 글자가 3px 밀려 흔들린다(그림자가 아니라 막대) */
+.gen-row.is-selected::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c-brand); pointer-events: none; }
+.gen-row.is-selected .gen-row__mark { background: var(--c-brand); border-color: var(--c-brand); color: var(--c-on-brand); }
+.gen-row.is-selected .gen-row__mark .icon { opacity: 1; }
+.gen-row:focus-within { outline: 3px solid var(--c-focus); outline-offset: -3px; z-index: 1; }
+/* 살아본 세대 표시(GS10 ▲, 답 3 「켜져 있다」): r3는 알약 대신 체크 아이콘 + 글자 「살아봄」(12px 셋째 잉크) — 순위·점수 없음, 이 기기에만 */
+.gen-row__lived { display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-xs); font-weight: var(--fw-regular); line-height: var(--lh-snug); color: var(--c-text-3); white-space: nowrap; }
+.gen-row__lived .icon { width: 12px; height: 12px; stroke-width: 3; }
+/* 접이식 설명(GS2 「세대 범위는 자료마다 조금씩 달라요」): 목록 아래 한 줄, 보조색 */
+.slot__fold { margin-top: var(--sp-2); }
+.slot__fold summary { font-size: var(--fs-sm); color: var(--c-text-2); min-height: 32px; }
+.slot__fold p { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); margin: 0 0 var(--sp-1); }
+@media (pointer: coarse) { .slot__fold summary { min-height: var(--hit); } }
+
+/* ---------- 첫 화면: 태어나는 시도 — 「룰렛에 맡기기 / 직접 고르기」 분절 + 시·도 칩 묶음 (RG1·RG2) ----------
+   분절 컨트롤은 인생 길이(.seg)와 같은 부품. 직접 고르기를 고르면 아래에 칩 묶음(role=radiogroup, 라디오 + 글자 + 체크)이 펼쳐진다 — 고른 세대의 어느 해에도 없던 시·도는 점선 + 옅은 글자 + 이유 한 줄(색에만 의존하지 않음).
+   설정에 「내 출신 시도」가 있으면 같은 칩 묶음 맨 앞에 바로가기 칩(RG3) */
+/* 분절 컨트롤 공통 보정(인생 길이·태어나는 시도 둘 다): 칸 글자는 낱말 안에서 끊지 않고(nowrap), 두 칸이 한 줄에 안 들어가면(320 · 200%) 칸이 다음 줄로 내려간다 — 시안 측정에서 「약 30분」「준비 중」「고르기」가 글자 사이에서 끊겼다(diff-004 D4-07) */
+.seg { flex-wrap: wrap; }
+.seg__opt { white-space: nowrap; }
+.chipset { display: flex; flex-wrap: wrap; gap: var(--sp-2); flex-basis: 100%; }
+.chip-opt { position: relative; display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 32px; padding: 0 var(--sp-3); border: 1px solid var(--c-border-strong); border-radius: var(--r-pill); background: var(--c-surface); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.2; color: var(--c-text-2); cursor: pointer; white-space: nowrap; }
+.chip-opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.chip-opt .icon { width: 14px; height: 14px; stroke-width: 3; display: none; }
+.chip-opt.is-selected { border: 2px solid var(--c-brand); padding: 0 calc(var(--sp-3) - 1px); background: var(--c-brand-soft); color: var(--c-on-brand-soft); }
+.chip-opt.is-selected .icon { display: block; }
+.chip-opt.is-disabled { border-style: dashed; color: var(--c-text-3); cursor: not-allowed; }
+.chip-opt.is-disabled input { cursor: not-allowed; }
+.chip-opt:focus-within { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.chip-opt--origin { font-weight: var(--fw-bold); }
+.chipset__note { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin: 0; }
+@media (pointer: coarse) { .chip-opt input { top: -6px; bottom: -6px; height: auto; } } /* 보이는 32px, 누르는 영역 44px */
+
+/* ---------- 첫 화면: 내 출신 시도 설정 (RG3 — 이 기기의 설정 키 하나) ----------
+   설정 줄의 접이식 한 줄: 「내가 실제로 태어난 시도 (밝히지 않음)」 → 열면 선택 상자 + 「지우기」 + 개인정보 한 줄 */
+.origin summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--c-text); }
+.origin__cur { font-weight: var(--fw-bold); }
+.origin__body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-1) 0 var(--sp-2); }
+.origin__select { min-height: 40px; min-width: 10em; padding: 0 var(--sp-3); border: 1px solid var(--c-border-strong); border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-text); font: inherit; font-size: var(--fs-sm); }
+.origin__body .btn { min-height: 40px; }
+.origin__desc { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin: 0; }
+
+@media (forced-colors: active) {
+  /* SPEC-004 GM4 (시안 gm3.css 「강제 색상」): 시스템 색 한 짝, 모양(점선·굵기·체크·아이콘·글자)이 뜻을 전한다 */
+  .chip-opt, .origin__select { border-color: CanvasText; background: Canvas; color: CanvasText; }
+  .gen-row__lived { color: CanvasText; }
+  .chip-opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
+  .chip-opt.is-disabled { color: GrayText; border-color: GrayText; }
+  /* 세대 목록: 위아래 규칙선·줄 경계 CanvasText, 고른 줄은 Highlight 면 + 체크(모양) — 왼쪽 막대도 HighlightText로 남긴다 */
+  .gen-list, .gen-row, .gen-row__mark { border-color: CanvasText; }
+  .gen-row.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  .gen-row.is-selected::before { background: HighlightText; }
+  .gen-row.is-selected .gen-row__mark { background: HighlightText; border-color: HighlightText; color: Highlight; }
+  .gen-row.is-selected .gen-row__name, .gen-row.is-selected .gen-row__meta, .gen-row.is-selected .gen-row__desc, .gen-row.is-selected .gen-row__note, .gen-row.is-selected .gen-row__lived { color: HighlightText; }
 }
 
 

@@ -21,7 +21,7 @@ type Combo = 'light' | 'dark' | 'manual-dark' | 'manual-light' | 'forced-light' 
 const COMBOS: readonly Combo[] = ['light', 'dark', 'manual-dark', 'manual-light', 'forced-light', 'forced-dark'];
 // SPEC-005 QI5: 사람이 고르는 카드(시트·접힌 띠·인라인)는 통계 인용이 붙은 youth-startup(예전 school-tutoring)으로, 「연구」 인용이 붙는 카드(infant-new-sibling)는
 // 이제 아이의 일로 흘러간 비모달 카드라 아래 별도 묶음(`부모님이 정한·흘러간 카드`)에서 색을 잰다.
-const CARDS = [{ id: 'youth-startup', era: 'present' as const, kind: '통계' }];
+const CARDS = [{ id: 'youth-startup', era: 'alpha' as const, kind: '통계' }];
 
 async function applyCombo(page: Page, combo: Combo): Promise<void> {
   const forced = combo.startsWith('forced');

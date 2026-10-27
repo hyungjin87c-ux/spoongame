@@ -1,52 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import {
-  CITATION_COVERAGE_MIN,
-  ERAS,
-  ERA_BANNED_WORDS,
-  MANUAL_NOTE_ID,
-  NOTE_CAUSE_WORDS,
-  NOTE_EMOTION_WORDS,
-  NOTE_ID_PATTERN,
-  NOTE_LIMITS,
-  NOTE_SAFETY_WORDS,
-  NoteDataError,
-  advanceUntilDecision,
-  calendarYear,
-  citationCoverage,
-  citationFor,
-  citationLinkProblems,
-  connectedCitationIds,
-  consumeNote,
-  createSession,
-  dueNote,
-  lifeLineCount,
-  lintNoteFile,
-  noteCardPoolProblems,
-  noteCount,
-  noteFlagsRead,
-  noteJitterAge,
-  notePromptOf,
-  notePromptProblems,
-  noteQuestion,
-  noteResponse,
-  notesOf,
-  sessionReducer,
-  validateEventFiles,
-  validateNoteFile,
-  writeNote,
-  type Era,
-  type GameState,
-  type NoteCardDef,
-  type NoteFile,
-  type Session,
-  type SessionAction,
-} from '../src/core';
+import { CITATION_COVERAGE_MIN, ERAS, eraBucketOf, lifeParamsOf, maxAgeOf, type GenerationId, type ProfileId, ERA_BANNED_WORDS, MANUAL_NOTE_ID, NOTE_CAUSE_WORDS, NOTE_EMOTION_WORDS, NOTE_ID_PATTERN, NOTE_LIMITS, NOTE_SAFETY_WORDS, NoteDataError, advanceUntilDecision, calendarYear, citationCoverage, citationFor, citationLinkProblems, connectedCitationIds, consumeNote, createSession, dueNote, lifeLineCount, lintNoteFile, noteCardPoolProblems, noteCount, noteFlagsRead, noteJitterAge, notePromptOf, notePromptProblems, noteQuestion, noteResponse, notesOf, sessionReducer, validateNoteFile, writeNote, type Era, type GameState, type NoteCardDef, type NoteFile, type Session, type SessionAction } from '../src/core';
+import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { NOTE_CARDS, NOTE_FILE_RAW, NOTE_MANUAL } from '../src/data/noteCards';
 import { EVENT_POOL } from '../src/data/events';
+import { generationDef } from '../src/data/generations';
 import { CITATION_TABLE, getCitation } from '../src/data/citationsAccess';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { runNoteSchedule } from '../scripts/noteScheduleLib';
-import { chooserFor, startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
  * 기록 카드 7종 (SPEC-003 M7c FR1·FR2 — docs/data/content-M7c.md 1·2절): 데이터 검증·문구 lint·`dueNote` 표 시험·소비/정지·세션 reducer·1000판 스케줄.
@@ -65,8 +25,8 @@ const ID = {
 } as const;
 
 /** 인생(life) 상태를 만들고 나이·플래그·본 이벤트·스탯·부모 나이를 덮어쓴다 (dueNote는 상태만 본다) */
-function stateAt(age: number, o: { era?: Era; seed?: number; flags?: string[]; seen?: Record<string, number>; health?: number; parentAges?: [number, number]; pending?: boolean } = {}): GameState {
-  const g = startLife(o.seed ?? 11, o.era ?? 'present');
+function stateAt(age: number, o: { profile?: ProfileId; seed?: number; flags?: string[]; seen?: Record<string, number>; health?: number; parentAges?: [number, number]; pending?: boolean } = {}): GameState {
+  const g = startLife(o.seed ?? 11, o.profile ?? 'alpha');
   const report = o.parentAges === undefined ? g.birthReport! : { ...g.birthReport!, mother: { ...g.birthReport!.mother, age: o.parentAges[0] }, father: { ...g.birthReport!.father, age: o.parentAges[1] } };
   return {
     ...g,
@@ -148,8 +108,8 @@ describe('notes.json: 카드 7종이 설명서 1-3절 표와 같다', () => {
     expect(() => validateEventFiles({ 'x.json': { events: [{ ...sample, id: 'infant-extra' }] } })).not.toThrow();
   });
 
-  it('나이 창은 모든 시대의 사망 가능 나이 안이고, 때의 흔들림은 나이 창 안이다', () => {
-    const maxAge = Math.min(...ERAS.map((e) => ERA_CONFIG[e].life.maxAge));
+  it('나이 창은 모든 세대의 사망 가능 나이 안이고, 때의 흔들림은 나이 창 안이다', () => {
+    const maxAge = Math.min(...SIM_PROFILES.map((p) => maxAgeOf(lifeParamsOf(p, 2000))));
     for (const c of NOTE_CARDS) {
       expect(c.ageRange.max, c.id).toBeLessThanOrEqual(maxAge);
       if (c.timing !== 'asap') {
@@ -392,10 +352,13 @@ describe('인용 (FR2·NC-9): ①만 c-102(r4 QI13 — 옛 경제학 논문 c-03
     }
   });
 
-  it('calendarYear로 만든 실제 게임 속 연도에서도 ① 인용이 보인다 (지난 세상 출생 1950~89년생의 5세)', () => {
-    for (const era of ERAS) {
-      const { min, max } = ERA_CONFIG[era].birthYears;
-      for (const birthYear of [min, max]) expect(citationFor(card(ID.infant), era, calendarYear(birthYear, 5)), `${era} ${birthYear}`).not.toBeNull();
+  it('calendarYear로 만든 실제 게임 속 연도에서도 ① 인용이 보인다 (세대 표본의 출생 첫 해·마지막 해 5세)', () => {
+    for (const profile of SIM_PROFILES) {
+      const { from, to } = generationDef(profile as GenerationId).birth;
+      for (const birthYear of [from, to]) {
+        const year = calendarYear(birthYear, 5);
+        expect(citationFor(card(ID.infant), eraBucketOf(profile, year), year), `${profile} ${birthYear}`).not.toBeNull();
+      }
     }
   });
 });
@@ -413,8 +376,8 @@ describe('dueNote 표 시험: 카드별 조건·시기·변형·창', () => {
     expect(dueNote({ ...stateAt(5), character: null })).toBeNull();
   });
 
-  it('모든 카드는 세 시대에 나온다 (eras 생략)', () => {
-    for (const era of ERAS) expect(dueId(stateAt(5, { era })), era).toBe(ID.infant);
+  it('모든 카드는 모든 세대에 나온다 (eras 생략)', () => {
+    for (const profile of SIM_PROFILES) expect(dueId(stateAt(5, { profile })), profile).toBe(ID.infant);
   });
 
   it('② 13~17세의 시드로 정해진 나이에 뜬다: 흔들림은 13~17 안, 같은 시드는 늘 같은 나이, 시드마다 다르고 다섯 값이 모두 나온다', () => {
@@ -568,7 +531,7 @@ describe('dueNote 표 시험: 카드별 조건·시기·변형·창', () => {
 // ---------- 소비 · 정지 ----------
 
 describe('advanceUntilDecision의 기록 카드 옵션 (ignore · stop · consume)', () => {
-  const start = startLife(2, 'present');
+  const start = startLife(2, 'alpha');
 
   it('기본(ignore)은 카드를 보지 않아 기존 동작과 같다: seen에 note- 키가 없고, 옵션을 명시한 ignore와 상태가 같다', () => {
     const base = advanceUntilDecision(start);
@@ -605,7 +568,7 @@ describe('advanceUntilDecision의 기록 카드 옵션 (ignore · stop · consum
 
   it('consume: 멈추지 않고 소비하며 간다 — 인생은 ignore와 같고 seen에 note- 키만 더해진다', () => {
     for (const seed of [1, 2, 3, 4, 5]) {
-      const s0 = startLife(seed, 'present');
+      const s0 = startLife(seed, 'alpha');
       let a = s0;
       let b = s0;
       for (let i = 0; i < 40 && a.phase === 'life'; i++) {
@@ -856,8 +819,8 @@ describe('writeNote (상태 함수)', () => {
 
 // ---------- 스케줄 시뮬레이션 ----------
 
-describe('카드 스케줄 (완료 기준 1): 세 시대 × 1000판, dueNote 소비 모드', () => {
-  for (const era of ERAS) {
+describe('카드 스케줄 (완료 기준 1): 세대 표본 3종 × 1000판, dueNote 소비 모드', () => {
+  for (const era of SIM_PROFILES) {
     it(`${era}: 판당 ≤ 7장 · 같은 종류 ≤ 1 · 한 해 ≤ 1장 · 간격 ≥ 2년 · 창 밖 0장 · 에러 0 — 평균 카드 수가 6.0~7.0 안`, () => {
       const r = runNoteSchedule(era, 1000, (seed) => chooserFor('auto', seed), 1);
       expect(r.problems, `${era} 불변식 위반`).toEqual([]);

@@ -1,20 +1,24 @@
-import { EVENT_POOL } from '../data/events';
+import { isGameDataReady, eventPool } from './gameData';
 import type { EventPool } from './events';
 import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type RunResult, type TickInfo } from './life';
 import { consumeNote, dueNote, noteResponse, writeNote, type NoteMode } from './notes';
 import { VERSION_PATTERN } from './build';
 import { playEqual, playNotBehind, readPlay } from './playClock';
+import { isCurrentRegionName } from '../data/regionKeys';
+import { pickAllowedForChoice } from './birthProfile';
 import { DEFAULT_SETTINGS, beginBirth, createInitialState, enterBirth, enterLife, rebirth, setPaused } from './state';
 import {
   BGM_VOLUME_MAX,
   BGM_VOLUME_MIN,
-  ERAS,
+  GENERATION_CHOICES,
+  GENERATION_IDS,
   SPEEDS,
   THEMES,
   isLifeLengthSelectable,
   type BgmSettings,
-  type Era,
   type GameState,
+  type GenerationChoice,
+  type GenerationId,
   type LifeLength,
   type PlaySettings,
   type PlayTime,
@@ -74,18 +78,20 @@ export interface Session {
 }
 
 export type SessionAction =
-  /** 첫 화면: 태어날 세상 고르기(설정에 저장되어 다음 판의 기본값이 된다) */
-  | { type: 'setEra'; era: Era }
+  /** 첫 화면: 세대 목록에서 줄 고르기 — 세대 7종 또는 「랜덤 세대」(`random`). 설정에 저장되어 다음 첫 화면의 기본 선택이 된다(GS4). 고르는 것만으로는 뽑지 않는다(GS3). */
+  | { type: 'setGeneration'; generation: GenerationChoice }
+  /** 첫 화면 설정: 「내가 실제로 태어난 시도」(RG3). null이면 밝히지 않음(지우기). 이 기기의 설정 키 하나에만 남는다. */
+  | { type: 'setHomeRegion'; region: string | null }
   /** 첫 화면: 인생 길이 고르기(설정에 저장). 고를 수 없는 값(SELECTABLE_LIFE_LENGTHS 밖, 지금은 long60)은 무시한다. */
   | { type: 'setLifeLength'; lifeLength: LifeLength }
   /** 첫 화면의 「태어나기」: 설정의 세상·인생 길이로 출생 결과를 만든다(title 단계에서만). */
-  | { type: 'begin' }
+  | { type: 'begin'; regionPick?: string | null }
   /** 진행 중인 판을 그대로 두고 첫 화면을 다시 연다(「나가기」, M4가 부른다). birth·life 단계에서만. */
   | { type: 'openTitle' }
   /** 첫 화면에서 「이어서 살기」: 저장된 화면으로 돌아간다. */
   | { type: 'resume' }
   /** 첫 화면에서 「새로 태어나기」: 이전 판을 버리고 새 시드로 새 판을 시작한다(첫 화면을 다시 연 상태에서만). 시드는 UI가 정해 넘긴다. */
-  | { type: 'beginNew'; seed: number }
+  | { type: 'beginNew'; seed: number; regionPick?: string | null }
   /** 첫 화면: 「무거운 장면 가리기」 켜기·끄기(설정에 저장). 진행 중인 판(룰렛~인생)에서 켜면 그 판의 `gentleUsed`가 참이 된다(SPEC-005 HV3). */
   | { type: 'setGentle'; on: boolean }
   /** 가린 결정 카드의 「이번에는 자동으로 고르기」: 자동 모드와 상관없이 지금의 자동 선택 성향으로 대기 중인 선택지를 한 번 고른다(SPEC-005 HV4 ②). */
@@ -169,26 +175,44 @@ function settleNotes(game: GameState, mode: NoteMode): GameState {
   return due === null ? game : consumeNote(game, due);
 }
 
-export function sessionReducer(s: Session, a: SessionAction, pool: EventPool = EVENT_POOL, handling: NoteHandling = 'live'): Session {
+export function sessionReducer(s: Session, a: SessionAction, pool: EventPool | undefined = undefined, handling: NoteHandling = 'live'): Session {
   const next = reduceSession(s, a, pool, handling);
   // 무시된 입력(같은 세션)은 그대로 돌려준다 — 연타·늦게 온 입력이 판을 흔들지 않는다
-  return next === s ? s : markGentleUsed(next);
+  return next === s ? s : markLived(s, markGentleUsed(next));
 }
 
-function reduceSession(s: Session, a: SessionAction, pool: EventPool, handling: NoteHandling): Session {
+/**
+ * 판이 끝까지 가면(사망 → 엔딩) 그 세대를 「살아본 세대」에 더한다 (GS10): 세대 순서로 정렬·중복 없음. 순위·점수·보상은 없고 이 기기의 설정에만 남는다. 시험 전용 R1 프로필은 더하지 않는다.
+ */
+function markLived(before: Session, s: Session): Session {
+  const g = s.game.generation;
+  if (before.game.phase === 'ending' || s.game.phase !== 'ending' || g === null || !(GENERATION_IDS as readonly string[]).includes(g)) return s;
+  if (s.settings.lived.includes(g as GenerationId)) return s;
+  const lived = GENERATION_IDS.filter((id) => id === g || s.settings.lived.includes(id));
+  return { ...s, settings: { ...s.settings, lived } };
+}
+
+function reduceSession(s: Session, a: SessionAction, poolArg: EventPool | undefined, handling: NoteHandling): Session {
+  // 이벤트 풀은 「태어나기」 뒤에 불러온다(MG8) — 인자를 안 주면 불러온 것을 쓴다. 진행 액션이 아닌 입력은 풀을 읽지 않는다
+  const pool = (): EventPool => poolArg ?? eventPool();
   const mode: NoteMode = handling === 'ignore' ? 'ignore' : noteResponse(s.settings, s.game);
   // 첫 화면을 다시 연 동안에는 인생이 흐르지 않는다(늦게 울린 타이머·입력이 와도 무시).
   if (s.showTitle && (a.type === 'advance' || a.type === 'choose' || a.type === 'autoChoose' || a.type === 'autoPick' || a.type === 'skip' || a.type === 'enterLife' || a.type === 'enterBirth' || a.type === 'finishSpin')) return s;
   switch (a.type) {
-    case 'setEra':
-      return !(ERAS as readonly string[]).includes(a.era) || a.era === s.settings.era ? s : { ...s, settings: { ...s.settings, era: a.era } };
+    case 'setGeneration':
+      return !(GENERATION_CHOICES as readonly string[]).includes(a.generation) || a.generation === s.settings.generation ? s : { ...s, settings: { ...s.settings, generation: a.generation } };
+    case 'setHomeRegion': {
+      if (a.region !== null && !isCurrentRegionName(a.region)) return s; // 지금의 시·도 16개에 없는 값은 받지 않는다
+      return a.region === s.settings.homeRegion ? s : { ...s, settings: { ...s.settings, homeRegion: a.region } };
+    }
     case 'setLifeLength':
       // 지금 고를 수 있는 값(SELECTABLE_LIFE_LENGTHS)만 받는다: 「약 1시간」(long60)은 2차(M8)라 화면이 막아 두지만 변조된 입력·늦게 울린 이벤트도 설정을 바꾸지 못하게 reducer에서도 막는다(REV-003-M2-2 마스터 결정).
       // 목록에 없는 값(알 수 없는 문자열 포함)은 isLifeLengthSelectable이 false다.
       return !isLifeLengthSelectable(a.lifeLength) || a.lifeLength === s.settings.lifeLength ? s : { ...s, settings: { ...s.settings, lifeLength: a.lifeLength } };
     case 'begin': {
       if (s.showTitle) return s; // 진행 중인 판이 있는 첫 화면에서는 beginNew(이전 판을 버린다는 확인을 거친 길)만 새 판을 시작한다
-      const game = beginBirth(s.game, s.settings.era, s.settings.lifeLength);
+      if (!isGameDataReady() || !pickAllowedForChoice(s.settings.generation, a.regionPick ?? null)) return s; // 데이터가 오기 전·고를 수 없는 시도(RG2)는 무시
+      const game = beginBirth(s.game, s.settings.generation, s.settings.lifeLength, a.regionPick ?? null);
       return game === s.game ? s : { ...s, game, tick: null, spin: true };
     }
     case 'openTitle':
@@ -198,7 +222,8 @@ function reduceSession(s: Session, a: SessionAction, pool: EventPool, handling: 
       return s.showTitle ? { ...s, showTitle: false } : s;
     case 'beginNew': {
       if (!s.showTitle) return s;
-      return { ...s, game: beginBirth(createInitialState(a.seed), s.settings.era, s.settings.lifeLength), tick: null, showTitle: false, spin: true };
+      if (!isGameDataReady() || !pickAllowedForChoice(s.settings.generation, a.regionPick ?? null)) return s;
+      return { ...s, game: beginBirth(createInitialState(a.seed), s.settings.generation, s.settings.lifeLength, a.regionPick ?? null), tick: null, showTitle: false, spin: true };
     }
     case 'setGentle': {
       if (typeof a.on !== 'boolean') return s;
@@ -224,28 +249,28 @@ function reduceSession(s: Session, a: SessionAction, pool: EventPool, handling: 
           game = consumeNote(game, due);
         }
       }
-      const r = stepYear(game, pool);
+      const r = stepYear(game, pool());
       return withGame(s, settleNotes(r.state, mode), r.tick);
     }
     case 'choose': {
-      const r = resolveChoiceStep(s.game, a.key, a.choiceId, pool);
+      const r = resolveChoiceStep(s.game, a.key, a.choiceId, pool());
       return withGame(s, settleNotes(r.state, mode), r.tick);
     }
     case 'autoChoose': {
       if (!s.settings.autoMode || s.game.paused) return s;
-      const r = autoResolveStep(s.game, a.key, pool);
+      const r = autoResolveStep(s.game, a.key, pool());
       return withGame(s, settleNotes(r.state, mode), r.tick);
     }
     case 'autoPick': {
       // 가린 결정 카드의 「이번에는 자동으로 고르기」(SPEC-005 HV4 ②): 사람이 누른 입력이다 — 자동 모드 여부·일시정지와 무관하게 대기 중인 카드(key가 맞을 때)를 지금의 성향으로 한 번 고른다
-      const r = autoResolveStep(s.game, a.key, pool);
+      const r = autoResolveStep(s.game, a.key, pool());
       return withGame(s, settleNotes(r.state, mode), r.tick);
     }
     case 'skip': {
       // 다음 결정으로: 선택지(또는 사망)까지 연출 없이 즉시. 선택은 사람이 한다(자동 모드에서는 이 동작이 없다 — 위 설명).
       // 일시정지(`paused`) 중에도 동작한다 — 사용자가 직접 누르는 입력이라 시계(advance·autoChoose가 멈춘다)와 상관이 없고, 선택지에서 멈춘 판은 일시정지 그대로다(R-331, tests/dashSession.test.ts).
       if (s.settings.autoMode || s.game.phase !== 'life' || s.game.pending !== null) return s;
-      const r = advanceUntilDecision(s.game, pool, mode);
+      const r = advanceUntilDecision(s.game, pool(), mode);
       return withGame(s, r.state, tickAfterSkip(r));
     }
     case 'setSpeed':

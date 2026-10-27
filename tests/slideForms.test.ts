@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import copyMd from '../docs/design/copy.md?raw';
-import { LINE_H, LINE_H_STACKED, buildCarousel, buildSlide, isDrawable, segmentHitsRect, selectCarouselIndicators, valueWidthEm, type BarsChartModel, type CarouselSlide, type LineChartModel, type StackChartModel } from '../src/core';
+import { LINE_H, LINE_H_STACKED, R1_PROFILE, buildCarousel, buildSlide, isDrawable, segmentHitsRect, selectCarouselIndicators, valueWidthEm, type BarsChartModel, type CarouselSlide, type LineChartModel, type StackChartModel } from '../src/core';
 import { FIRST_LABEL_BOX, buildHeatSlide, gapEveryYear, manLabel, placeProjectionFirstLabel, scenarioMeaning } from '../src/core/slideForms';
 import { hasBatchim, josa, sourceTextOf } from '../src/core/slideKit';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { heatProjectionInput } from '../src/data/heatProjectionAdapter';
 import { BASE_STATS_FILE, createStatsAccess, type StatsFile, type UsableIndicator } from '../src/data/koreaStatsAccess';
 import { SLIDE_TEXT } from '../src/data/slideText';
@@ -360,11 +359,10 @@ describe('지금 태어나는 아기라면? (연령 3구간 가로 누적 막대
     expect(s.chartLabel.match(/\(\d+세\)/g)).toHaveLength(5);
   });
 
-  it('cohort.birthYear = 게임의 「지금 세상」 출생 연도 상수이고 첫 행의 해(0세)와 같다 — 어긋나면 이 시험이 실패한다 (R-484)', () => {
-    const birth = ERA_CONFIG.present.birthYears;
-    expect(birth.min, '지금 세상은 출생 연도 한 해로 고정').toBe(birth.max);
+  it('cohort.birthYear = 올해 출생 연도(시험 전용 R1 프로필의 2026)이고 첫 행의 해(0세)와 같다 — 어긋나면 이 시험이 실패한다 (R-484)', () => {
+    expect(R1_PROFILE.birthYear, '올해 출생은 한 해로 고정').toBe(2026);
     const cohort = ind('projection-newborn-age-structure').cohort!;
-    expect(cohort.birthYear, 'cohort.birthYear = 지금 세상 출생 연도 상수').toBe(birth.min);
+    expect(cohort.birthYear, 'cohort.birthYear = 올해 출생 연도 상수').toBe(R1_PROFILE.birthYear);
     expect(c.rows[0].year, '첫 행 = 0세가 되는 해 = 출생 연도').toBe(cohort.birthYear);
     expect(c.rows.map((r) => r.age)).toEqual(cohort.ages);
     expect(s.chartLabel).toContain(`${cohort.birthYear}년에 태어난 아기`);

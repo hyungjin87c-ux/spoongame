@@ -27,14 +27,14 @@ async function findLifeDecision(page: Page, eventId: string, opts: { era?: Era; 
        }
      }
      return null;`,
-    { id: eventId, era: opts.era ?? 'present', min: opts.minChoices ?? 3, to: opts.to ?? 400 },
+    { id: eventId, era: opts.era ?? 'alpha', min: opts.minChoices ?? 3, to: opts.to ?? 400 },
   );
   expect(found, `${eventId}: 결정 카드가 떠 있는 상태를 찾지 못했다`).not.toBeNull();
   return found!;
 }
 
 /** 70세 이상에서 선택지 없이 멈춘 대시보드 상태 중, 학창·청년·중년·노년 이벤트의 연표 줄이 모두 있는 것 (첫 선택지로 자동 진행) */
-async function findFullLifeLog(page: Page, era: Era = 'present'): Promise<GameState> {
+async function findFullLifeLog(page: Page, era: Era = 'alpha'): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `const M7A = ['school-first-day', 'school-first-walk', 'school-supplies', 'school-after-hours'];

@@ -42,7 +42,7 @@ class FakeEl {
 function makeDoc(htmlAttrs: Record<string, string> = {}) {
   const html = new FakeEl(htmlAttrs);
   const scheme = new FakeEl({ name: 'color-scheme', content: 'light dark' });
-  const themeLight = new FakeEl({ name: 'theme-color', content: '#f6f3ec', media: '(prefers-color-scheme: light)' });
+  const themeLight = new FakeEl({ name: 'theme-color', content: '#f9f7f2', media: '(prefers-color-scheme: light)' });
   const themeDark = new FakeEl({ name: 'theme-color', content: '#14171f', media: '(prefers-color-scheme: dark)' });
   const doc: ThemeDocument = { documentElement: html, querySelectorAll: () => [scheme, themeLight, themeDark] };
   return { doc, html, scheme, themeLight, themeDark, all: () => [html, scheme, themeLight, themeDark].map((e) => e.snapshot()) };

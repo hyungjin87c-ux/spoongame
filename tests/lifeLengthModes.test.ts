@@ -1,19 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ERAS,
-  LIFE_LENGTHS,
-  SELECTABLE_LIFE_LENGTHS,
-  createSession,
-  parseSettings,
-  playToEnd,
-  sessionReducer,
-  stepYear,
-  type Era,
-  type GameState,
-  type LifeLength,
-} from '../src/core';
+import { LIFE_LENGTHS, SELECTABLE_LIFE_LENGTHS, createSession, parseSettings, playToEnd, sessionReducer, stepYear, type GameState, type LifeLength, type ProfileId } from '../src/core';
 import { LIFE_LENGTH_MODES, READ_MODEL, lifeModeOf, type ChoicePacing } from '../src/data/timingTable';
-import { chooserFor, startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
  * 인생 길이 모드 표 (SPEC-003 LM2·LM3·LM4, M8 — docs/data/content-M8.md 4-2절, 완료 기준 1·14): 표의 불변식과, 엔진이 **판의 모드**를 읽는다는 것(LM3).
@@ -99,7 +87,7 @@ describe('LM3 모드 고정: 엔진은 설정이 아니라 판의 인생 길이�
   const PACING_WITH_ONE_CARD: ChoicePacing = { soft: 0, softFactor: 0.5, hard: 1 };
 
   it('판의 인생 길이가 long60이면 long60 표의 페이싱을, short30이면 short30 표의 페이싱을 쓴다 (같은 시드·같은 선택이라도 표가 다르면 카드 수가 갈린다)', () => {
-    const cards = (mode: LifeLength) => playToEnd(startLife(77, 'present', { lifeLength: mode }), chooserFor('random', 77)).state.history.filter((h) => h.kind === 'choice').length;
+    const cards = (mode: LifeLength) => playToEnd(startLife(77, 'alpha', { lifeLength: mode }), chooserFor('random', 77)).state.history.filter((h) => h.kind === 'choice').length;
     const base = { short30: cards('short30'), long60: cards('long60') };
     expect(base.short30).toBeGreaterThan(5);
     // long60의 표만 hard 1로 조이면 long60 판만 1장으로 줄고, short30 판은 그대로다
@@ -115,7 +103,7 @@ describe('LM3 모드 고정: 엔진은 설정이 아니라 판의 인생 길이�
   });
 
   it('설정(settings.lifeLength)이 판과 달라도 진행 중인 판은 흔들리지 않는다: 판은 short30인데 설정이 long60이어도 stepYear·세션 reducer는 판의 값을 따른다 (첫 화면에서 설정을 바꿔도 이어하기가 같다)', () => {
-    const game = startLife(77, 'present'); // short30 판
+    const game = startLife(77, 'alpha'); // short30 판
     expect(game.lifeLength).toBe('short30');
     // 설정만 long60인 세션(변조 저장·늦게 울린 이벤트): reducer의 setLifeLength는 고를 수 없는 값을 무시한다
     const session = createSession(game, { speed: 1, autoMode: false, lifeLength: 'long60' });
@@ -136,7 +124,7 @@ describe('LM3 모드 고정: 엔진은 설정이 아니라 판의 인생 길이�
   });
 
   it('페이싱 표가 같으면 두 모드의 인생이 같다: 같은 시드·같은 선택 → 인생인 필드(스탯·자산·연표·플래그·본 이벤트·rngState)가 모두 같고 다른 것은 판의 lifeLength뿐 — 모드는 연출·페이싱만 바꾼다 (임시 페이싱 = short30과 같은 값)', () => {
-    for (const era of ERAS as readonly Era[]) {
+    for (const era of SIM_PROFILES as readonly ProfileId[]) {
       for (let i = 1; i <= 15; i++) {
         const seed = i * 7919 + 13;
         const a = playToEnd(startLife(seed, era, { lifeLength: 'short30' }), chooserFor('random', seed)).state;
@@ -147,7 +135,7 @@ describe('LM3 모드 고정: 엔진은 설정이 아니라 판의 인생 길이�
   });
 
   it('저장된 설정의 인생 길이가 long60이면 short30으로 읽힌다 (R-202 유지 — 1차는 닫혀 있다)', () => {
-    const raw = JSON.stringify({ version: 4, data: { speed: 1, autoMode: false, era: 'present', lifeLength: 'long60', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true } });
+    const raw = JSON.stringify({ version: 4, data: { speed: 1, autoMode: false, era: 'alpha', lifeLength: 'long60', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true } });
     expect(parseSettings(raw).lifeLength).toBe('short30');
   });
 });

@@ -1,73 +1,19 @@
-import { ERA_CONFIG } from '../data/birthTable';
 import { isForbiddenFullName } from '../data/forbiddenNames';
-import { NAMES, PRESENT_POOL_YEAR, futurePool, officialPool, pastPool } from '../data/names';
+import { NAMES, namePoolFor } from '../data/names';
+import { birthYearOddsOf, candidateYearsOf, parentingWeightsFor, wealthWeightsFor } from './birthProfile';
+import { reportTiltOf } from '../data/birthReportTable';
 import { rollBirthReport } from './birthReport';
+import { pickBirthYear } from './generationMixture';
 import { createRng, forkRng, mixSeed, type Rng } from './rng';
 import { standingOf, type Standing } from './standing';
-import {
-  ERAS,
-  GENDERS,
-  PARENTING_STYLES,
-  PARENT_WEALTHS,
-  type BirthReport,
-  type Character,
-  type Era,
-  type Gender,
-  type ParentWealth,
-  type ParentingStyle,
-  type Stats,
-} from './types';
+import { GENDERS, PARENTING_STYLES, PARENT_WEALTHS, R1_PRESENT, type BirthReport, type Character, type Gender, type ParentWealth, type ParentingStyle, type ProfileId, type Stats } from './types';
 
-/** 순수 출생 로직. React와 무관하고 시드 RNG만 쓴다. 같은 RNG 상태 + 같은 시대 → 같은 결과. */
+/** 순수 출생 로직. React와 무관하고 시드 RNG만 쓴다. 같은 RNG 상태 + 같은 세대(+ 직접 고른 시도) → 같은 결과. */
 
 // ---------- 이름 ----------
 
-/** 출생 연도가 속한 시대(ERA_CONFIG.birthYears 기준). 어느 시대에도 속하지 않으면 null. */
-export function eraOfBirthYear(birthYear: number): Era | null {
-  for (const era of ERAS) {
-    const { min, max } = ERA_CONFIG[era].birthYears;
-    if (birthYear >= min && birthYear <= max) return era;
-  }
-  return null;
-}
-
-/**
- * 이름 풀의 종류와 키. 시대마다 풀이 다르다(R-012).
- *  - past: 1950~1989년생 → 연대(decade) 풀. 언론 인용 확인분 + 추정 보충(통계 아님).
- *  - present: 올해(2026)년생 고정 → 가장 최근 연도(2025) 하나의 법원 통계서비스 상위 20위(공식 통계). `year`는 풀의 기준 연도다(출생 연도가 아니다 — 2026년은 진행 중이라 통계가 없다).
- *  - future: 2030~2060년생 → 통계가 없어 최근 5개 연도(2021~2025) 공식 풀의 합집합.
- */
-export type NamePoolId = { kind: 'past'; decade: number } | { kind: 'present'; year: number } | { kind: 'future' };
-
-/**
- * 출생 연도 → 이름 풀. 풀이 없는 연도(1949 이하, 1990~2007, 2026~2029, 2061 이상 등)와
- * 정수가 아닌 연도는 **throw**한다. 다른 풀로 조용히 돌려보내면 "있지도 않은 통계"가 되므로,
- * 데이터·시대 설정이 어긋났을 때 깨져서 드러나는 편이 낫다. 게임은 시대 설정(ERA_CONFIG.birthYears)의
- * 연도만 넘기므로 정상 경로에서는 발생하지 않는다.
- */
-export function namePoolIdOf(birthYear: number): NamePoolId {
-  if (!Number.isInteger(birthYear)) throw new RangeError(`namePoolIdOf: 정수 연도가 아니다 (${birthYear})`);
-  const era = eraOfBirthYear(birthYear);
-  if (era === null) throw new RangeError(`namePoolIdOf: ${birthYear}년생은 어느 시대에도 속하지 않아 이름 풀이 없다`);
-  if (era === 'past') {
-    const decade = Math.floor(birthYear / 10) * 10;
-    if (pastPool(decade, 'male') === null) throw new RangeError(`namePoolIdOf: ${decade}년대 이름 풀이 없다`);
-    return { kind: 'past', decade };
-  }
-  if (era === 'present') {
-    if (officialPool(PRESENT_POOL_YEAR, 'male') === null) throw new RangeError(`namePoolIdOf: ${PRESENT_POOL_YEAR}년 공식 통계 풀이 없다`);
-    return { kind: 'present', year: PRESENT_POOL_YEAR };
-  }
-  return { kind: 'future' };
-}
-
-/** 출생 연도·성별에 맞는 이름(성 제외) 풀. 읽기 전용. */
-export function namePoolFor(birthYear: number, gender: Gender): readonly string[] {
-  const id = namePoolIdOf(birthYear);
-  const pool = id.kind === 'past' ? pastPool(id.decade, gender) : id.kind === 'present' ? officialPool(id.year, gender) : futurePool(gender);
-  if (pool === null || pool.length === 0) throw new RangeError(`namePoolFor: ${birthYear}년 ${gender} 이름 풀이 비어 있다`);
-  return pool;
-}
+// 풀 id·연도 → 풀은 data/names.ts(namePoolIdOf·namePoolFor — SPEC-004 NR4). 기존 import 경로가 그대로 동작하게 다시 내보낸다.
+export { namePoolFor, namePoolIdOf, namePoolKey, type NamePoolId } from '../data/names';
 
 /** 성씨별 가중치: 인구수에 비례 */
 export function surnameWeights(): { name: string; weight: number }[] {
@@ -200,19 +146,19 @@ export function cumulativeBottomPercent(weights: readonly number[], wealth: Pare
   return Math.min(100, Math.max(0, (sum * 100) / total));
 }
 
-/** 해당 시대 출생아 중 이 재력 단계 이상의 비율(%) */
-export function wealthTopPercent(era: Era, wealth: ParentWealth): number {
-  return cumulativeTopPercent(ERA_CONFIG[era].wealthWeights, wealth);
+/** 이 수저 비율(세대 전체 기준의 섞은 값 등) 안에서 이 재력 단계 이상의 비율(%) */
+export function wealthTopPercent(weights: readonly number[], wealth: ParentWealth): number {
+  return cumulativeTopPercent(weights, wealth);
 }
 
-/** 해당 시대 출생아 중 이 재력 단계 이하의 비율(%) */
-export function wealthBottomPercent(era: Era, wealth: ParentWealth): number {
-  return cumulativeBottomPercent(ERA_CONFIG[era].wealthWeights, wealth);
+/** 이 수저 비율 안에서 이 재력 단계 이하의 비율(%) */
+export function wealthBottomPercent(weights: readonly number[], wealth: ParentWealth): number {
+  return cumulativeBottomPercent(weights, wealth);
 }
 
-/** 재력 단계의 표현. 가중치 표의 누적합에서 계산한다. */
-export function wealthStanding(era: Era, wealth: ParentWealth): Standing {
-  return standingOf(wealthTopPercent(era, wealth), wealthBottomPercent(era, wealth));
+/** 재력 단계의 표현. 수저 비율의 누적합에서 계산한다. */
+export function wealthStanding(weights: readonly number[], wealth: ParentWealth): Standing {
+  return standingOf(wealthTopPercent(weights, wealth), wealthBottomPercent(weights, wealth));
 }
 
 /** 외모 점수의 표현. 외모 분포(looksPmf)의 꼬리 확률에서 계산한다. 재력과 같은 규칙. */
@@ -264,31 +210,45 @@ export interface BirthResult {
   peerSeed: number;
 }
 
+/**
+ * 출생 입력: 세대(랜덤 세대는 호출하는 쪽이 `pickRandomGeneration`으로 먼저 뽑아 넘긴다)와, 시도를 직접 골랐으면 그 시도(줄임 이름 — RG1).
+ * 시도를 직접 고르면 그 시도가 있던 연도만 출생 연도 후보가 되고 확률이 다시 계산된다(RG2).
+ */
+export interface BirthTarget {
+  generation: ProfileId;
+  regionPick?: string | null;
+}
+
 /** 갈래 RNG의 salt: 출생신고 상세 / 같은 해 태어난 사람들. 값은 바꾸지 않는다(같은 시드 → 같은 인물이 새 판에서도 이어지도록 — 바꾸면 알려진 시드의 출생신고가 달라진다). */
 const REPORT_SALT = 0x52505254; // 'RPRT'
 const PEER_SALT = 0x50454552; // 'PEER'
 
 /**
  * 난수 소비 순서(고정): 연도 → 성별 → 성씨 → 이름 → 재력 → 교육방식 → 외모 → 스탯.
+ * 출생 연도는 **룰렛에 보이지 않게** GS7 가중(출생아 수 비례/균등, 직접 고른 시도가 있으면 줄어든 연도 집합)으로 먼저 뽑힌다(GS6) — 그 해의 수저 비율(`wealthFor`)·시·도 목록이 이어서 정해진다.
  * 출생신고 상세(report)와 또래 시드(peerSeed)는 이 RNG를 **전진시키지 않고** 현재 상태에서 갈라낸 별도 수열로 만든다(forkRng·mixSeed) —
  * 그래서 인생 진행의 난수 수열(rngState)과 엔딩 분포표(finalDistribution)는 출생신고가 생기기 전과 같다(R-022 「정확히 한 번 뽑는다」도 그대로).
+ * 시험 전용 R1 프로필(`r1-present`)은 연도가 2026 한 해 100%라 R1 때와 난수 소비·결과가 같다(EY17 항등 시험).
  */
-export function generateBirth(rng: Rng, era: Era): BirthResult {
-  const cfg = ERA_CONFIG[era];
-  const birthYear = rng.int(cfg.birthYears.min, cfg.birthYears.max);
+export function generateBirth(rng: Rng, target: ProfileId | BirthTarget): BirthResult {
+  const t: BirthTarget = typeof target === 'string' ? { generation: target } : target;
+  const profile = t.generation;
+  const picked = t.regionPick ?? null;
+  const years = profile === R1_PRESENT ? undefined : candidateYearsOf(profile, picked);
+  const birthYear = pickBirthYear(rng, birthYearOddsOf(profile, undefined, years));
   const gender = GENDERS[rng.int(0, GENDERS.length - 1)];
   const name = pickFullName(rng, birthYear, gender);
-  const parentWealth = PARENT_WEALTHS[rng.weightedIndex(cfg.wealthWeights)];
-  const parenting = PARENTING_STYLES[rng.weightedIndex(PARENTING_STYLES.map((p) => cfg.parentingWeights[p]))];
+  const parentWealth = PARENT_WEALTHS[rng.weightedIndex(wealthWeightsFor(profile, birthYear))];
+  const parenting = PARENTING_STYLES[rng.weightedIndex(parentingWeightsFor(profile))];
   const looks = rollLooks(rng);
   const stats = rollBirthStats(rng, parentWealth, parenting);
-  const report = rollBirthReport(forkRng(rng, REPORT_SALT), era, birthYear, gender, parentWealth);
+  const report = rollBirthReport(forkRng(rng, REPORT_SALT), reportTiltOf(birthYear), birthYear, gender, parentWealth, picked);
   return { character: { name, gender, birthYear, parentWealth, parenting, looks }, stats, report, peerSeed: mixSeed(rng.getState(), PEER_SALT) };
 }
 
 /** 시드에서 바로 출생 결과를 만든다(테스트·시뮬레이션용). */
-export function generateBirthFromSeed(seed: number, era: Era): BirthResult & { rngState: number } {
+export function generateBirthFromSeed(seed: number, target: ProfileId | BirthTarget): BirthResult & { rngState: number } {
   const rng = createRng(seed);
-  const result = generateBirth(rng, era);
+  const result = generateBirth(rng, target);
   return { ...result, rngState: rng.getState() };
 }

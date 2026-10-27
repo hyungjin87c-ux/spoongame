@@ -7,11 +7,9 @@ import {
   beginBirth,
   buildCarousel,
   buildFeedbackUrl,
-  buildPopulationModel,
   createInitialState,
   decisionFor,
   feedbackFieldsOf,
-  populationModelInputs,
 } from '../src/core';
 import { commaList } from '../src/core/glue';
 import { REPORT_NOTES, ROULETTE_TEXT } from '../src/data/birthReportText';
@@ -20,13 +18,12 @@ import { JOURNEY_BAR_LEGEND } from '../src/data/endingText';
 import { ECONOMY } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
 import { VEIL_TEXT } from '../src/data/gentleText';
-import { BASE_STATS_FILE, getUsableIndicator } from '../src/data/koreaStatsAccess';
+import { BASE_STATS_FILE } from '../src/data/koreaStatsAccess';
 import { NAMES } from '../src/data/names';
 import { ALL_SELF_FROM_AGE, CHILD_FLOW_TEXT, FAMILY_NEED_BASE, PARENT_DECIDED_TEXT, SELF_FROM_AGE } from '../src/data/parentDecisionTable';
-import { LIFE_LENGTH_TEXT, POPULATION_BASIS, TITLE_TEXT, footerStatsText } from '../src/data/titleText';
-import { buildAboutFaq, faqHelpLine, nameSourceOrg, nativeCount, nativeTeenAge, populationBasisFaqText, spoonNames, type FaqItem } from '../src/data/aboutFaq';
+import { LIFE_LENGTH_TEXT, TITLE_TEXT, footerStatsText } from '../src/data/titleText';
+import { buildAboutFaq, faqHelpLine, nameSourceOrg, nativeCount, nativeTeenAge, spoonNames, type FaqItem } from '../src/data/aboutFaq';
 import aboutFaqSrc from '../src/data/aboutFaq.ts?raw';
-import titleTextSrc from '../src/data/titleText.ts?raw';
 import appSrc from '../src/App.tsx?raw';
 import lifeScreenSrc from '../src/screens/LifeScreen.tsx?raw';
 import e2eFirstScreen from '../e2e/first-screen.spec.ts?raw';
@@ -59,8 +56,8 @@ const sentencesOf = (t: string): string[] =>
     .filter((s) => s !== '');
 
 describe('소개 Q&A: 구성과 규칙 (FQ1·FQ2·FQ4)', () => {
-  it('질문 10개, 순서는 초안 2절의 정본(수저·가상 인구·힘든 마음이 들 때가 ①~⑦ 밖에서 더해졌다), id는 유일하고 답이 비어 있지 않다 — 5개 이상이어야 한다(FQ2)', () => {
-    expect(faq.map((q) => q.id)).toEqual(['what', 'spoon', 'numbers', 'population', 'storage', 'parents', 'gentle', 'help', 'maker', 'feedback']);
+  it('질문 9개, 순서는 초안 2절의 정본(수저·힘든 마음이 들 때가 ①~⑦ 밖에서 더해졌다; 가상 인구 질문은 GS11-3으로 인구 숫자가 없어지며 빠졌다), id는 유일하고 답이 비어 있지 않다 — 5개 이상이어야 한다(FQ2)', () => {
+    expect(faq.map((q) => q.id)).toEqual(['what', 'spoon', 'numbers', 'storage', 'parents', 'gentle', 'help', 'maker', 'feedback']);
     expect(faq.length).toBeGreaterThanOrEqual(5);
     expect(new Set(faq.map((q) => q.id)).size).toBe(faq.length);
     for (const q of faq) {
@@ -104,17 +101,17 @@ describe('소개 Q&A: 구성과 규칙 (FQ1·FQ2·FQ4)', () => {
         .replaceAll('{번호}', faqHelpLine()!.number)
         .replaceAll('{시간}', faqHelpLine()!.hours);
     const filledSec = fill(sec);
+    // copy.md 16-10 「FAQ·다른 문구 영향(D4-65)」: 일러스트가 빠져 Q9의 「첫 화면의 그림은 AI 이미지 도구(OpenAI의 ChatGPT)로 만든 그림을 다듬어 썼어요.」 한 문장이 없어졌고, 인구 숫자가 없어 Q4가 빠졌다 — 13-3 본문은 그대로 두고(디자인 문서) 구현만 따른다
+    const D4_65_REMOVED_MAKER_SENTENCE = ' 첫 화면의 그림은 AI 이미지 도구(OpenAI의 ChatGPT)로 만든 그림을 다듬어 썼어요.';
     for (const q of faq) {
       expect(filledSec, `질문 ${q.id}`).toContain(q.question);
       for (const line of q.answer) {
-        if (q.id === 'population') continue; // {가상 인구 계산 기준}은 아래 Q4 시험이 상수에서 만든 문장과 대조한다
         // 숫자 수사 자리(열두·열세·열여덟·열아홉)는 문서에 한글로 적혀 있어 그대로 대조된다
-        expect(filledSec, `${q.id}: ${line}`).toContain(line);
+        const want = q.id === 'maker' && line === '기획, 개발, 디자인, 검수에 AI를 도구로 썼어요.' ? line + D4_65_REMOVED_MAKER_SENTENCE : line;
+        expect(filledSec, `${q.id}: ${line}`).toContain(want);
       }
     }
-    // Q4: 첫 줄은 「아니에요. 이 기기 안에서 계산한 가상의 숫자예요. {가상 인구 계산 기준}」
-    expect(byId('population').answer[0]).toBe(`아니에요. 이 기기 안에서 계산한 가상의 숫자예요. ${populationBasisFaqText()}`);
-    expect(sec).toContain(`**「${populationBasisFaqText().replace(`(${POPULATION_BASIS.registeredMonth})`, '({기준 연월})').replace(POPULATION_BASIS.ratio, '{비율}').replace(`${POPULATION_BASIS.statsYear} 출생`, '{통계 연도} 출생')}」**`);
+    expect(faq.some((q) => q.id === 'population'), '가상 인구 질문은 없다 (D4-65)').toBe(false);
   });
 
   it('자리표시자 6개는 본문에 손으로 쓴 값이 아니라 데이터에서 만든다 — 소스에 기관 이름·상담전화 번호·계산 기준 숫자가 적혀 있지 않다 (FQ3)', () => {
@@ -122,7 +119,6 @@ describe('소개 Q&A: 구성과 규칙 (FQ1·FQ2·FQ4)', () => {
       expect(aboutFaqSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''), `aboutFaq.ts 본문에 「${literal}」이 손으로 적혀 있다`).not.toContain(literal);
     }
     expect(spoonNames().join(', ')).toBe('흙수저, 동수저, 은수저, 금수저, 다이아몬드수저');
-    expect(populationBasisFaqText()).toContain(POPULATION_BASIS.registeredMonth);
   });
 
   it('금지 주장이 없다 (N4): 「사건·선택지·기록 카드에 자살·자해를 다루는 내용이 없다」 류 문장·「자해」 낱말, 109 밖의 번호(1577-0199 등)가 없다', () => {
@@ -211,27 +207,11 @@ describe('소개 Q&A: 근거 대응 (FQ3 — 주장 ⇔ 코드·시험)', () => 
     expect(buildCarousel(noProjection).slides.filter((s) => s.projection !== null)).toHaveLength(0);
   });
 
-  it('Q4 가상 인구 계산 기준 ⇔ 푸터 populationInfo와 같은 상수(POPULATION_BASIS) · 근거 통계(주민등록 인구의 기준 연월·1/1000·출생·사망 통계 연도) · 서버와 통신하지 않음 e2e', () => {
-    // 같은 상수에서 두 문장을 만든다 — 값을 두 곳에 따로 적지 않는다
-    expect(TITLE_TEXT.populationInfo).toContain(`(${POPULATION_BASIS.registeredMonth})`);
-    expect(TITLE_TEXT.populationInfo).toContain(`${POPULATION_BASIS.ratio}로 줄이고`);
-    expect(TITLE_TEXT.populationInfo).toContain(`${POPULATION_BASIS.statsYear} 출생·사망 통계`);
-    expect(populationBasisFaqText()).toContain(`(${POPULATION_BASIS.registeredMonth})`);
-    expect(populationBasisFaqText()).toContain(`${POPULATION_BASIS.ratio}로 줄이고`);
-    expect(populationBasisFaqText()).toContain(`${POPULATION_BASIS.statsYear} 출생·사망 통계`);
-    for (const literal of [POPULATION_BASIS.registeredMonth, POPULATION_BASIS.ratio]) {
-      expect(titleTextSrc.split(literal).length - 1, `${literal}은 titleText.ts에 POPULATION_BASIS 한 곳에만 적힌다`).toBeLessThanOrEqual(2); // 상수 정의 한 줄 + 설명 주석 한 줄
-    }
-    // 상수가 근거 통계와 같다 (core/population.ts가 읽는 값)
-    const pop = getUsableIndicator('region-population-registered')!;
-    expect(pop.latestLabel?.startsWith(POPULATION_BASIS.registeredMonth), `주민등록 인구의 기준 연월(「${pop.latestLabel}」)`).toBe(true);
-    const inputs = populationModelInputs();
-    expect(buildPopulationModel(inputs).base, `주민등록 인구 ÷ ${POPULATION_BASIS.ratio}`).toBe(Math.round(inputs.registeredPopulation / 1000));
-    expect(POPULATION_BASIS.ratio).toBe('1,000분의 1');
-    expect(`${getUsableIndicator('births')!.latest.year}년`, '출생 통계 연도').toBe(POPULATION_BASIS.statsYear);
-    // 「서버와 통신하지도 않아요」 ⇔ 첫 화면 푸터 설명과 같은 사실 + 외부 요청 0 e2e
-    expect(TITLE_TEXT.populationInfo).toContain('서버와 통신하지 않고');
-    expect(byId('population').answer[1]).toContain('서버와 통신하지도 않아요');
+  it('가상 인구(Q4) 질문과 푸터 설명은 없다 (GS11-3 — 인구 숫자가 첫 화면·인생 기록에서 빠졌다): 외부 요청 0은 e2e가 그대로 본다', () => {
+    expect(faq.some((q) => q.id === 'population')).toBe(false);
+    expect(faq.flatMap((q) => [q.question, ...q.answer]).join(' ')).not.toMatch(/인구 숫자|가상의 숫자|가상 인구/);
+    expect(TITLE_TEXT).not.toHaveProperty('populationInfo');
+    expect(TITLE_TEXT).not.toHaveProperty('populationNote');
     expect(e2eFirstScreen).toContain('외부 요청 0건(FS8·CM3)');
     expect(e2eMisc).toContain('외부 요청 0');
   });
@@ -302,10 +282,10 @@ describe('소개 Q&A: 근거 대응 (FQ3 — 주장 ⇔ 코드·시험)', () => 
     expect(byId('help').answer[2]).toBe('이 게임은 상담이나 치료를 대신하지 않아요.');
   });
 
-  it('Q9 만든 사람: 이름 없이 AI(Anthropic의 Claude)와 함께 · 일러스트는 AI 이미지 도구(OpenAI의 ChatGPT) · 게임 중 AI가 글을 만들지 않음 ⇔ 의존성에 AI SDK 없음·외부 요청 0 (M15·N3)', () => {
+  it('Q9 만든 사람: 이름 없이 AI(Anthropic의 Claude)와 함께 · 게임 중 AI가 글을 만들지 않음 ⇔ 의존성에 AI SDK 없음·외부 요청 0 (M15·N3)', () => {
     const a = byId('maker').answer;
     expect(a[0]).toBe('한 사람이 기획하고 AI(Anthropic의 Claude)와 함께 만들었어요.');
-    expect(a[1]).toContain('AI 이미지 도구(OpenAI의 ChatGPT)로 만든 그림을 다듬어 썼어요');
+    expect(a[1]).toBe('기획, 개발, 디자인, 검수에 AI를 도구로 썼어요.'); // 첫 화면 일러스트가 없어져 「그림은 AI 이미지 도구」 문장이 빠졌다(copy.md 16-10 D4-65)
     expect(a[2]).toContain('게임을 하는 동안 AI가 글을 새로 만들지는 않아요');
     expect(Object.keys((pkg as { dependencies: Record<string, string> }).dependencies).sort(), 'AI SDK·외부 API 클라이언트 의존성이 없다').toEqual(['react', 'react-dom']);
     expect(e2eMisc).toContain('외부 요청 0');
@@ -314,7 +294,7 @@ describe('소개 Q&A: 근거 대응 (FQ3 — 주장 ⇔ 코드·시험)', () => 
   it('Q10 의견 보내기: GitHub 의견 작성 화면이 새 탭 · 도구 줄에도 같은 버튼 · 미리 채우는 값은 화면 이름·세상·인생 길이·버전뿐 · 계정 필요 ⇔ buildFeedbackUrl · FeedbackLink · 이슈 양식 설정', () => {
     const a = byId('feedback').answer;
     expect(a[0]).toContain(`아래 「${DASH_TEXT.toolFeedback}」를 누르면 GitHub의 의견 작성 화면이 새 탭으로 열려요`);
-    const url = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', era: null, lifeLength: null }, 'https://github.com/owner/spoongame', 'v0.2.0 (abc1234)'))!;
+    const url = buildFeedbackUrl(feedbackFieldsOf({ phase: 'title', generation: null, lifeLength: null }, 'https://github.com/owner/spoongame', 'v0.2.0 (abc1234)'))!;
     expect(url.startsWith('https://github.com/owner/spoongame/issues/new?template=feedback.yml&')).toBe(true);
     // 인생이 진행되는 화면의 도구 줄에도 같은 버튼이 있다
     expect(lifeScreenSrc).toContain('<FeedbackLink');

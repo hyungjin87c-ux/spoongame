@@ -113,8 +113,34 @@ async function centerHit(page: Page, s: Omit<FocusSample, 'centerHit'>): Promise
   );
 }
 
+/**
+ * 스크롤이 멈출 때까지 기다린다: 문서와 안쪽 스크롤 칸(세대 목록 `.gen-list`처럼 `scroll-behavior: smooth`인 것)의 스크롤 위치가 30ms 간격 세 번 연속 같으면 멈춘 것이다(최대 2.5초).
+ * 부드러운 스크롤이 도는 중에 재면 포커스 링이 아직 도착하지 않은 자리를 가림·잘림으로 잘못 판정한다.
+ */
+async function settleScroll(page: Page): Promise<void> {
+  // 기다림은 Node 쪽에서 센다(page.waitForTimeout): 룰렛 회전 중처럼 시간을 붙든 페이지(startPageHidden)는 안의 타이머·프레임이 돌지 않아 페이지 안에서 세면 영영 끝나지 않는다
+  const key = (): Promise<string> =>
+    page.evaluate(() => {
+      const scrollers = Array.from(document.querySelectorAll<HTMLElement>('*')).filter((e) => e.scrollHeight > e.clientHeight + 1 && ['auto', 'scroll'].includes(getComputedStyle(e).overflowY));
+      return [window.scrollY, ...scrollers.map((e) => e.scrollTop)].join(',');
+    });
+  let last = await key();
+  let stable = 0;
+  const t0 = Date.now();
+  while (stable < 3 && Date.now() - t0 < 2500) {
+    await page.waitForTimeout(30);
+    const k = await key();
+    if (k === last) stable++;
+    else {
+      stable = 0;
+      last = k;
+    }
+  }
+}
+
 /** 지금 포커스를 잰다 */
 export async function sampleFocus(page: Page): Promise<FocusStop> {
+  await settleScroll(page);
   const raw = await measure(page);
   // 눈에 보이는 링을 그리는 요소로 상자를 잰다(R-232): 보이지 않는 요소(opacity 0·visibility hidden·clip)는 건너뛰고, 보이는 후보가 여럿이면 각자의 링을 포함한 합집합
   const pick = raw.isBody ? { box: { left: 0, top: 0, right: 0, bottom: 0 }, ring: 0, owners: [] as string[] } : pickRing(raw.chain);
@@ -142,6 +168,12 @@ export async function listTabbables(page: Page): Promise<string[]> {
       if (el.tabIndex < 0) continue;
       if ((el as HTMLButtonElement).disabled) continue;
       if (el.closest('[inert]') !== null) continue;
+      // 닫힌 <details> 안(자기 <summary> 말고)은 Tab으로 닿지 않는다
+      let closedAncestor = false;
+      for (let d = el.parentElement?.closest('details') ?? null; d !== null; d = d.parentElement?.closest('details') ?? null) {
+        if (!d.open && !(el.tagName === 'SUMMARY' && el.parentElement === d)) closedAncestor = true;
+      }
+      if (closedAncestor) continue;
       const cs = getComputedStyle(el);
       if (cs.visibility === 'hidden' || cs.display === 'none') continue;
       if (el.getClientRects().length === 0) continue;
@@ -248,6 +280,11 @@ async function focusTabbable(page: Page, index: number): Promise<void> {
     const radios = all.filter((e) => e instanceof HTMLInputElement && e.type === 'radio');
     for (const el of all) {
       if (el.tabIndex < 0 || (el as HTMLButtonElement).disabled || el.closest('[inert]') !== null) continue;
+      let closedAncestor = false; // 닫힌 <details> 안(자기 <summary> 말고)은 Tab으로 닿지 않는다 — listTabbables와 같은 규칙
+      for (let d = el.parentElement?.closest('details') ?? null; d !== null; d = d.parentElement?.closest('details') ?? null) {
+        if (!d.open && !(el.tagName === 'SUMMARY' && el.parentElement === d)) closedAncestor = true;
+      }
+      if (closedAncestor) continue;
       const cs = getComputedStyle(el);
       if (cs.visibility === 'hidden' || cs.display === 'none' || el.getClientRects().length === 0) continue;
       if (el instanceof HTMLInputElement && el.type === 'radio') {

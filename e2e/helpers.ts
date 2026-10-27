@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import type { Character, Era, GameState, LifeLength, Settings } from '../src/core/types';
-import { DEFAULT_ERA_CHOICE, DEFAULT_LIFE_LENGTH_CHOICE, GAME_KEY, SAVE_VERSION, SETTINGS_KEY, settingsEnvelope, type InjectedSettings } from './saves';
+import type { Character, GameState, GenerationChoice, GenerationId, LifeLength, Settings } from '../src/core/types';
+import { DEFAULT_GENERATION_CHOICE, DEFAULT_LIFE_LENGTH_CHOICE, GAME_KEY, SAVE_VERSION, SETTINGS_KEY, settingsEnvelope, type InjectedSettings } from './saves';
 
 /**
  * e2e 공용 헬퍼 (R-022 d): 알려진 시드의 저장을 주입해 실패를 재현 가능하게 만든다.
@@ -113,18 +113,19 @@ export interface BirthOracle {
  * core 순수 함수가 계산한 기대값. 개발 서버의 실제 모듈을 브라우저에서 불러 같은 코드를 쓴다.
  * 앱 페이지가 열려 있어야 한다(같은 origin).
  */
-export async function expectedBirth(page: Page, before: GameState, era: Era = DEFAULT_ERA_CHOICE, lifeLength: LifeLength = DEFAULT_LIFE_LENGTH_CHOICE): Promise<BirthOracle> {
+export async function expectedBirth(page: Page, before: GameState, generation: GenerationChoice = DEFAULT_GENERATION_CHOICE, lifeLength: LifeLength = DEFAULT_LIFE_LENGTH_CHOICE): Promise<BirthOracle> {
   return page.evaluate<BirthOracle>(`(async () => {
     const core = await import('/src/core/index.ts');
+    await (await import('/src/data/gameData.ts')).loadGameData(); // 출생 연도 표·이벤트 풀은 「태어나기」 뒤에 불러오는 지연 로드 덩어리다(MG8) — 앱 밖에서 core를 부를 때는 먼저 불러온다
     const before = ${JSON.stringify(before)};
-    const once = core.beginBirth(before, ${JSON.stringify(era)}, ${JSON.stringify(lifeLength)});
+    const once = core.beginBirth(before, ${JSON.stringify(generation)}, ${JSON.stringify(lifeLength)});
     const born = core.enterBirth(once);
-    const second = core.generateBirth(core.createRng(once.rngState), once.era).character;
+    const second = core.generateBirth(core.createRng(once.rngState), once.generation).character;
     return { once, born, second };
   })()`);
 }
 
-/** 첫 화면에서 세상·인생 길이를 고른다(라디오 카드). 이미 골라져 있어도 된다. */
+/** 첫 화면에서 세대·인생 길이를 고른다(세대 목록의 라디오 줄 · 분절 컨트롤). 이미 골라져 있어도 된다. */
 /**
  * 라디오 카드를 가운데로 스크롤한 뒤 누른다. 하단 고정 「태어나기」 띠가 화면 아래쪽 카드를 덮을 수 있어(사람은 스크롤해서 누른다),
  * 자동 스크롤(보이면 그대로 둔다)에 맡기지 않고 띠 위로 올려 둔다.
@@ -137,12 +138,22 @@ async function checkRadio(page: Page, testId: string): Promise<void> {
   await expect(input).toBeChecked();
 }
 
-export async function chooseEra(page: Page, era: Era): Promise<void> {
-  await checkRadio(page, `era-${era}`);
+export async function chooseGeneration(page: Page, generation: GenerationChoice): Promise<void> {
+  await checkRadio(page, `gen-${generation}`);
 }
 
 export async function chooseLifeLength(page: Page, lifeLength: LifeLength): Promise<void> {
   await checkRadio(page, `life-${lifeLength}`);
+}
+
+/**
+ * 지연 로드 덩어리(이벤트 풀·출생 연도 표, MG8)를 미리 불러 둔다. 데이터가 이미 와 있으면 「태어나기」가 같은 JS 작업 안에서 출생을 시작한다 — 아니면 첫 클릭이 덩어리를 받은 뒤(비동기)에야 룰렛이 뜬다.
+ * 「같은 작업 안의 연속 입력」을 재는 시험(R-014 결정적 검증)이 쓴다. 앱 페이지가 열려 있어야 한다.
+ */
+export async function preloadGameData(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await (await import(/* @vite-ignore */ '/src/data/gameData.ts' as string)).loadGameData();
+  });
 }
 
 /** 첫 화면의 하단 고정 「태어나기」 (진입 가드가 풀릴 때까지 기다린 뒤 누른다) */
@@ -159,7 +170,8 @@ export async function pressBegin(page: Page): Promise<void> {
 export async function skipRoulette(page: Page): Promise<void> {
   const roulette = page.getByTestId('roulette-screen');
   await expect(roulette).toBeVisible();
-  if ((await roulette.getAttribute('data-state')) === 'spinning') {
+  const state = await roulette.getAttribute('data-state');
+  if (state === 'spinning' || state === 'draw') { // draw = 「랜덤 세대」의 세대 뽑기 단계(GS3) — 「건너뛰기」가 뽑기와 두 릴을 한 번에 건너뛴다
     const skip = page.getByTestId('skip-roulette');
     await expect(skip).toBeEnabled(); // 화면 진입 입력 가드가 풀린 뒤
     await skip.click();
@@ -315,6 +327,7 @@ export async function evalCore<T>(page: Page, body: string, arg: unknown = null)
   // 결과 속 판 상태(phase·rngState가 있는 객체)에서 플레이 시간 기록(play)을 뺀다 — 이유는 아래 withoutPlay: core의 enterLife가 만든 0 기록을 주입하면 앱 타이머가 실제 시간을 쌓아 저장이 오라클과 어긋난다
   return page.evaluate<T>(`(async () => {
     const core = await import('/src/core/index.ts');
+    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리(출생 연도 표·이벤트 풀)를 먼저 불러온다
     const arg = ${JSON.stringify(arg)};
     const stripPlay = (v) => {
       if (Array.isArray(v)) return v.map(stripPlay);
@@ -349,7 +362,7 @@ export function withPlay(state: GameState, over: Partial<NonNullable<GameState['
  * M7a 이전에는 0세에서 시작해도 첫 N해가 조용한 시드가 있었다. 지금은 0세에 첫 예방접종(마일스톤)이 늘 일어나고 영유아 빈도가 높아 영유아기에는 그런 시드가 없다 —
  * 그래서 영유아·학창기를 자동 성향으로 지나 20세 이후(중년은 사건이 드물다) 앞으로 N해가 조용한 첫 상태를 찾는다. 앱 페이지가 열려 있어야 한다.
  */
-export async function quietStart(page: Page, years: number, era: Era = 'present'): Promise<GameState> {
+export async function quietStart(page: Page, years: number, era: GenerationId = 'alpha'): Promise<GameState> {
   const s = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 8000; seed++) {
@@ -373,7 +386,7 @@ export async function quietStart(page: Page, years: number, era: Era = 'present'
 }
 
 /** 시드·시대로 만든 "인생 0세" 상태 (core 순수 함수로 계산) */
-export async function oracleLife(page: Page, seed: number, era: Era): Promise<GameState> {
+export async function oracleLife(page: Page, seed: number, era: GenerationId): Promise<GameState> {
   return withoutPlay(
     await evalCore<GameState>(page, 'return core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), arg.era)));', { seed, era }),
   );
@@ -407,7 +420,7 @@ export async function oracleAuto(page: Page, state: GameState): Promise<GameStat
  * 첫 결정(선택지)이 있는 시드를 찾아 그 상태(대기 중인 선택지 포함)를 돌려준다.
  * minChoices: 보이는 선택지가 최소 이만큼인 것(3개짜리 레이아웃 검사용). 앱 페이지가 열려 있어야 한다(같은 origin).
  */
-export async function findPendingState(page: Page, era: Era, opts: { minChoices?: number; fromSeed?: number } = {}): Promise<GameState> {
+export async function findPendingState(page: Page, era: GenerationId, opts: { minChoices?: number; fromSeed?: number } = {}): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = arg.from; seed < arg.from + 400; seed++) {

@@ -50,14 +50,11 @@ export interface ForcedBreak extends IntendedBreak {
   tags: number;
 }
 
-export const FORCED_BREAKS: readonly ForcedBreak[] = [
-  {
-    word: '다이아몬드수저',
-    file: 'src/screens/TitleScreen.tsx',
-    tags: 1,
-    why: '첫 화면 수저 띠(다섯 단계 이름표) 가운데 가장 긴 이름이라 「다이아몬드 / 수저」 두 줄 이름표로 세운다 — 글쓴이가 정한 줄 구조(시안과 같은 위치)이고 폭 때문에 낱말이 끊긴 것이 아니다. 읽는 이름은 「다이아몬드수저」 그대로다.',
-  },
-];
+/**
+ * 등록한 강제 줄바꿈 `<br>`: 지금은 **없다** (SPEC-004 GS11 — 첫 화면 제목 아래 다섯 수저 이름표 띠를 없애며 「다이아몬드 / 수저」 `<br>`도 함께 없어졌다. 룰렛·출생신고의 수저 이름표는 `<wbr>`다).
+ * `<br>`가 다시 생기면 이 목록에 낱말·이유와 함께 올려야 tests/wordBreaks.test.ts가 통과한다.
+ */
+export const FORCED_BREAKS: readonly ForcedBreak[] = [];
 
 /** 목록의 낱말만 */
 export const FORCED_BREAK_WORDS: readonly string[] = FORCED_BREAKS.map((b) => b.word);

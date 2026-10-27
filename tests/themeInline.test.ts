@@ -94,29 +94,30 @@ describe('index.html 인라인 테마 스크립트: parseSettings와 같은 판�
     expect(calls.calls, 'system이면 문서를 건드리지 않는다').toBe(0);
   });
 
-  it('다른 필드(세상·인생 길이·BGM 볼륨)가 달라도 theme 판정은 같다', () => {
-    for (const era of ['past', 'present', 'future'] as const) {
+  it('다른 필드(세대·인생 길이·BGM 볼륨)가 달라도 theme 판정은 같다', () => {
+    for (const generation of ['random', 'industrial', 'alpha'] as const) {
       for (const lifeLength of ['short30', 'long60'] as const) {
         for (const theme of ['light', 'dark'] as const) {
-          const raw = settingsOf({ era, lifeLength, theme, bgm: { on: true, volume: 0 } });
+          const raw = settingsOf({ generation, lifeLength, theme, bgm: { on: true, volume: 0 } });
           expect(applied(raw)).toBe(parseSettings(raw).theme);
         }
       }
     }
   });
 
-  it('봉투 버전: 읽을 수 있는 1·2·3·4·5는 data를 그대로 읽고, 그 밖(0·6·소수·문자열·없음)은 기본값(system)이다 — 현재 저장 버전은 5(SPEC-005 SV2: gentle·notesSeen)', () => {
-    expect(SETTINGS_VERSION).toBe(5);
+  it('봉투 버전: 읽을 수 있는 1·2·3·4·5·6은 data를 그대로 읽고, 그 밖(0·7·소수·문자열·없음)은 기본값(system)이다 — 현재 저장 버전은 6(SPEC-004 MG1: generation·lived·homeRegion·moneyView)', () => {
+    expect(SETTINGS_VERSION).toBe(6);
     const data = { ...DEFAULT_SETTINGS, theme: 'dark' };
-    for (const version of [0, 1, 2, 3, 4, 5, 6, 3.5, -1, '3', '4', null, undefined, true]) {
+    for (const version of [0, 1, 2, 3, 4, 5, 6, 7, 3.5, -1, '3', '4', null, undefined, true]) {
       const raw = envelope(version, data);
       expect(applied(raw), `version=${String(version)}`).toBe(parseSettings(raw).theme);
     }
     expect(applied(JSON.stringify({ data }))).toBe('system');
     expect(applied(envelope(3, data))).toBe('dark'); // 대조: 정상 저장은 실제로 걸린다
     expect(applied(envelope(4, data))).toBe('dark'); // 대조: 이전 버전(v4)도 건다
-    expect(applied(envelope(5, data))).toBe('dark'); // 대조: 현재 버전(v5)도 건다 — 지금 빌드가 쓰는 저장이 첫 그림 전에 읽혀야 한다
-    expect(applied(envelope(6, data))).toBe('system'); // 대조: 모르는 버전은 안 건다
+    expect(applied(envelope(5, data))).toBe('dark'); // 대조: 이전 버전(v5)도 건다
+    expect(applied(envelope(6, data))).toBe('dark'); // 대조: 현재 버전(v6)도 건다 — 지금 빌드가 쓰는 저장이 첫 그림 전에 읽혀야 한다
+    expect(applied(envelope(7, data))).toBe('system'); // 대조: 모르는 버전은 안 건다
   });
 
   it('data의 모양이 어긋나면 설정 전체가 기본값(system)이다: 배속·자동 모드가 형식에 안 맞는 경우, data가 객체가 아닌 경우', () => {

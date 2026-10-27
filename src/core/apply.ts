@@ -1,7 +1,7 @@
-import { applyAssetEffects, clampFamilyFund, type EconomyContext } from './economy';
+import { applyAssetEffects, clampFamilyFund, regionClassOf, type EconomyContext } from './economy';
 import type { CondContext, ResolvedEffects } from './events';
 import { applyStatDeltas } from './stats';
-import type { GameState } from './types';
+import { R1_PRESENT, type GameState } from './types';
 
 /**
  * 효과 적용의 공통 부분 (순수 함수): 인생 진행(life.ts)과 영향 표기(impact.ts)가 **같은 코드**로 선택의 결과를 계산한다 —
@@ -30,10 +30,21 @@ export function condContextOf(state: GameState): CondContext {
   };
 }
 
-/** 경제 계산이 읽는 상태: 나이·지식·플래그·시대·부모 재력 단계 */
+/** 경제 계산이 읽는 상태: 나이·지식·플래그·부모 재력 단계·연도 축 입력(출생 연도·시도 지역군) */
 export function economyContextOf(state: GameState): EconomyContext {
-  if (state.character === null || state.era === null) throw new Error('economyContextOf: 캐릭터/시대가 없다');
-  return { age: state.age, education: state.stats.education, flags: new Set(state.flags), era: state.era, tier: state.character.parentWealth };
+  if (state.character === null || state.generation === null) throw new Error('economyContextOf: 캐릭터/세대가 없다');
+  const birthYear = state.character.birthYear;
+  // 시험 전용 R1 프로필은 항등 스위치(forceR1)를 켜 같은 배선을 지난다(EY17 ②) — 세대 판은 연도 규칙이 아직 없어 늘 항등이다(GM4)
+  return {
+    age: state.age,
+    education: state.stats.education,
+    flags: new Set(state.flags),
+    tier: state.character.parentWealth,
+    year: birthYear + state.age,
+    birthYear,
+    regionClass: regionClassOf(state.birthReport?.region),
+    forceR1: state.generation === R1_PRESENT,
+  };
 }
 
 /**

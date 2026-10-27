@@ -1,36 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DOMINANCE_EXCEPTIONS,
-  ERAS,
-  ERA_BANNED_WORDS,
-  FUTURE_WORLD_WORDS,
-  MIN_REPEAT_COOLDOWN,
-  NEW_WORLD_WORDS,
-  OLD_WORLD_WORDS,
-  PAST_ALLOWED_NEW_WORDS,
-  STATE_WORD_RULES,
-  TEXT_LIMITS,
-  bannedWordsFor,
-  choiceBalanceProblems,
-  conditionsCompatible,
-  lintEvent,
-  lintEventData,
-  lintEventFiles,
-  lintEvents,
-  maskQuotes,
-  maxVisibleChoices,
-  splitSentences,
-  stateWordProblems,
-  stripSafePhrases,
-  textPartsOf,
-  toneOf,
-  validateEventFiles,
-  visibleChoiceProblems,
-  visibleChoiceSets,
-  worstCaseVisibleChoiceIds,
-  type EventDef,
-  type Tone,
-} from '../src/core';
+import { DOMINANCE_EXCEPTIONS, ERAS, ERA_BANNED_WORDS, FUTURE_WORLD_WORDS, MIN_REPEAT_COOLDOWN, NEW_WORLD_WORDS, OLD_WORLD_WORDS, PAST_ALLOWED_NEW_WORDS, STATE_WORD_RULES, TEXT_LIMITS, bannedWordsFor, choiceBalanceProblems, conditionsCompatible, lintEvent, lintEventData, lintEventFiles, lintEvents, maskQuotes, maxVisibleChoices, splitSentences, stateWordProblems, stripSafePhrases, textPartsOf, toneOf, visibleChoiceProblems, visibleChoiceSets, worstCaseVisibleChoiceIds, type EventDef, type Tone } from '../src/core';
+import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import * as core from '../src/core';
 import { LENGTH_SAMPLE_IDS, lengthSample } from '../e2e/lengthSamples';
 import { EVENT_POOL } from '../src/data/events';
@@ -40,8 +10,16 @@ import { EVENT_POOL } from '../src/data/events';
  * 점검이 "아무것도 못 잡는" 일이 없도록, 규칙마다 일부러 어긴 글이 실제로 걸리는지 본다.
  */
 
-/** 점검을 모두 통과하는 기준 이벤트 */
-const base = (over: Record<string, unknown> = {}): EventDef =>
+/**
+ * 점검을 모두 통과하는 기준 이벤트. `eras`는 이제 데이터에 쓰지 않는(yearRange에서 파생되는) 값이라 검증기에 넣지 않고, 점검 규칙(`bannedWordsFor`)이 읽는 파생 필드로 나중에 얹는다 —
+ * 시대 금지어 규칙을 시대 구간마다 시험하는 데 필요하다.
+ */
+const base = (overAll: Record<string, unknown> = {}): EventDef => {
+  const { eras, ...over } = overAll;
+  const ev = baseValidated(over);
+  return eras === undefined ? ev : { ...ev, eras: eras as EventDef['eras'] };
+};
+const baseValidated = (over: Record<string, unknown> = {}): EventDef =>
   validateEventFiles({
     'x.json': {
       events: [

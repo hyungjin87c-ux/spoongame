@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
   STAGES,
   STAT_KEYS,
   advanceYear,
@@ -18,8 +17,10 @@ import {
   resolveEffects,
   stepYear,
   serializeGame,
-  type Era,
   type GameState,
+  type ProfileId,
+  lifeParamsOf,
+  timingEraOfProfile,
   type TickCounts,
   emptyCounts,
   totalCards,
@@ -27,7 +28,7 @@ import {
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FREQUENCY, HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
 import { AUTO_CHOICE_MS, HOLD_MS, INFANT_CHOICE_MEAN_MIN, JUMP_OVERHEAD_SEC, LIFE_LENGTH_MODES, READ_MODEL, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
-import { balanceOf, chooserFor, encounterTable, reportOf, simulateLife, simulateMany, startLife, type LifeSummary, type Strategy } from '../scripts/simulateLib';
+import { SIM_PROFILES, balanceOf, chooserFor, encounterTable, reportOf, simulateLife, simulateMany, startLife, type LifeSummary, type Strategy } from '../scripts/simulateLib';
 import { syntheticEvents, syntheticPool } from '../scripts/syntheticPool';
 
 /**
@@ -46,12 +47,12 @@ const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / 
 
 /** 실제 EVENT_POOL로 세 시대 x 시드 1000개를 '무작위 수동 선택'으로 한 번만 돌린 판들 — 수명·시간 모델·밸런스 단언이 함께 쓴다 (npm run sim과 같은 계산). */
 const REPORT_SEEDS = 1000;
-const sharedLives = lazy(() => Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'random')])) as Record<Era, LifeSummary[]>);
+const sharedLives = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'random')])) as Record<ProfileId, LifeSummary[]>);
 const seedOf = (i: number) => i * 7919 + 13;
 const STRATEGIES: Strategy[] = ['auto', 'random'];
 
 /** 걸음마다 불변식을 검사하며 끝까지 진행한다. 위반하면 throw(메시지에 시드·시대·나이). */
-function checkedPlay(seed: number, era: Era, strategy: Strategy, deepValidate: boolean): GameState {
+function checkedPlay(seed: number, era: ProfileId, strategy: Strategy, deepValidate: boolean): GameState {
   let s = startLife(seed, era);
   const pickRng = strategy === 'random' ? seed % 3 : 0;
   let prevAge = s.age;
@@ -100,7 +101,7 @@ function checkedPlay(seed: number, era: Era, strategy: Strategy, deepValidate: b
 }
 
 describe('헤드리스 시뮬레이션: 세 시대 × 시드 400개 × 두 선택 전략, 에러 0건', () => {
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     for (const strategy of STRATEGIES) {
       it(`${era} / ${strategy}: ${SEEDS}판 모두 스탯 범위·나이 단조·연표 상한을 지키며 사망에 도달한다`, () => {
         let deaths = 0;
@@ -108,7 +109,7 @@ describe('헤드리스 시뮬레이션: 세 시대 × 시드 400개 × 두 선�
           const end = checkedPlay(seedOf(i), era, strategy, i <= 25); // 앞 25판은 매 걸음 저장 검증까지
           expect(end.phase).toBe('ending');
           expect(end.death).not.toBeNull();
-          expect(end.death!.age).toBeLessThanOrEqual(maxAgeOf(era));
+          expect(end.death!.age).toBeLessThanOrEqual(maxAgeOf(lifeParamsOf(era, 2000)));
           deaths++;
         }
         expect(deaths).toBe(SEEDS);
@@ -117,34 +118,30 @@ describe('헤드리스 시뮬레이션: 세 시대 × 시드 400개 × 두 선�
   }
 
   it('시뮬레이션 보조(simulateLife)도 같은 불변식으로 시대별 300판을 에러 없이 돌린다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= 300; i++) expect(() => simulateLife(seedOf(i) + 1, era, i % 2 ? 'auto' : 'random')).not.toThrow();
     }
   });
 
   it('합성 풀(형태만 갖춘 이벤트 40개, 참고용)에서도 에러 없이 끝난다', () => {
     const pool = syntheticPool();
-    for (const era of ERAS) for (let i = 1; i <= 100; i++) expect(() => simulateLife(seedOf(i) + 2, era, 'auto', pool)).not.toThrow();
+    for (const era of SIM_PROFILES) for (let i = 1; i <= 100; i++) expect(() => simulateLife(seedOf(i) + 2, era, 'auto', pool)).not.toThrow();
   });
 });
 
 describe('평균 수명·사망 분포 (시대별 계수)', () => {
-  const lifeReports = lazy(() => Object.fromEntries(ERAS.map((era) => [era, reportOf(era, sharedLives()[era])])) as Record<Era, ReturnType<typeof reportOf>>);
+  const lifeReports = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, reportOf(era, sharedLives()[era])])) as Record<ProfileId, ReturnType<typeof reportOf>>);
 
-  it('시대별 평균 사망 나이: 지난 세상 < 지금 세상 < 다가올 세상, 현실적인 범위 안', () => {
-    const mean = (e: Era) => lifeReports()[e].deathAge.mean;
-    expect(mean('past')).toBeLessThan(mean('present'));
-    expect(mean('present')).toBeLessThan(mean('future'));
-    expect(mean('past')).toBeGreaterThan(68);
-    expect(mean('past')).toBeLessThan(82);
-    expect(mean('present')).toBeGreaterThan(74);
-    expect(mean('present')).toBeLessThan(88);
-    expect(mean('future')).toBeGreaterThan(77);
-    expect(mean('future')).toBeLessThan(92);
+  it('세대별 평균 사망 나이: 현실적인 범위(74~88세) 안이다 — 사망 모형은 GM10 전까지 모든 세대가 같은 값을 쓴다(연도 축 사망 모형은 SPEC-004 MG4·GM10)', () => {
+    const mean = (e: ProfileId) => lifeReports()[e].deathAge.mean;
+    for (const era of SIM_PROFILES) {
+      expect(mean(era), era).toBeGreaterThan(74);
+      expect(mean(era), era).toBeLessThan(88);
+    }
   });
 
   it('요절(20세 전 사망)은 드물다 (3% 미만), 대부분 70~90대에 사망한다', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const r = lifeReports()[era];
       const early = Object.entries(r.deathByDecade)
         .filter(([k]) => Number.parseInt(k, 10) < 20)
@@ -154,7 +151,7 @@ describe('평균 수명·사망 분포 (시대별 계수)', () => {
         .filter(([k]) => Number.parseInt(k, 10) >= 70)
         .reduce((a, [, v]) => a + v, 0);
       expect(late, era).toBeGreaterThan(75);
-      expect(r.deathAge.max, era).toBeLessThanOrEqual(maxAgeOf(era));
+      expect(r.deathAge.max, era).toBeLessThanOrEqual(maxAgeOf(lifeParamsOf(era, 2000)));
     }
   });
 });
@@ -167,7 +164,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
     expect(HOLD_MS.quiet).toBeLessThan(HOLD_MS.narrative);
     expect(HOLD_MS.resolved).toBeLessThan(HOLD_MS.narrative * 1.5);
     expect(HOLD_MS.quiet).toBeGreaterThan(0);
-    for (const era of ERAS) expect(readSecFor(era)).toBeGreaterThan(0);
+    for (const era of SIM_PROFILES) expect(readSecFor(timingEraOfProfile(era))).toBeGreaterThan(0);
     for (const f of Object.values(EVENT_FREQUENCY)) {
       expect(f.choice).toBeGreaterThan(0);
       expect(f.choice).toBeLessThan(1);
@@ -220,7 +217,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
   });
 
   it('배속이 빠를수록, 건너뛸수록 짧다: 1배 > 2배 > 4배 > 8배 > 8배+다음 결정으로', () => {
-    const r = simulateLife(seedOf(7), 'present', 'random');
+    const r = simulateLife(seedOf(7), 'alpha', 'random');
     const t = (speed: 1 | 2 | 4 | 8, skip: boolean) => estimatePlaySeconds(r.counts, { speed, skipToDecision: skip }, 'short30', 'present');
     expect(t(1, false)).toBeGreaterThan(t(2, false));
     expect(t(2, false)).toBeGreaterThan(t(4, false));
@@ -232,7 +229,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
     '목표 시간 (실제 이벤트 풀, SPEC-003 LM2·LM4, M8 — SPEC-001의 시간 시험(`TIME_TARGET_MIN` 1배속 19.5~30분·8배속 7~10.5분, 읽기 18초, 판당 20~25개)을 모드별 구간으로 **교체**한다, 마스터 결정 LD-12: 기준의 교체이지 약화가 아니다 — 옛 기준은 SPEC-003 개편(합쇼체 글자 수·인용 박스·영유아 콘텐츠)으로 전제가 달라졌고 SPEC 83행이 LM으로 대체한다고 적었다)',
     () => {
       // 세 시대 x 시드 1000개(REPORT_SEEDS)를 실제 EVENT_POOL로 한 번만 돌려 아래 단언들이 함께 쓴다 (npm run sim과 같은 계산)
-      const reportsOf = lazy(() => Object.fromEntries(ERAS.map((era) => [era, reportOf(era, sharedLives()[era])])) as Record<Era, ReturnType<typeof reportOf>>);
+      const reportsOf = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, reportOf(era, sharedLives()[era])])) as Record<ProfileId, ReturnType<typeof reportOf>>);
       const mode = LIFE_LENGTH_MODES.short30;
 
       // 임계 규칙(content-M8.md 7-4절, LD-9): 임계 = 측정값 + 표준오차 3배 이상. 최댓값은 판정하지 않고(보고) 평균·비율·분위수를 판정한다. 이 시험에는 「25장 초과 판 ≤ 30%」·「측정값 + 0.1%p」 단언이 없다(폐기).
@@ -244,11 +241,11 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
       // 같은 판정을 자동 성향 전략에도 1000판 단위로 건다(REV-003-M8-1 R-416 — 파이프라인 칸(시대 × 전략)에서 SPEC-001 판정을 빼면서 자동 성향의 카드 수 판정이 1000판 단위에서 사라졌었다).
       // 시드 줄은 수동 흉내와 같은 `simulateMany`(i × 7919 + 13)다. 측정(report:time -- 1000 --only=margins, 시험 · 자동 성향): 카드 평균 23.85 / 24.84 / 25.00(표준오차 0.08~0.09, 하한 23.3까지 6.0 SE 이상),
       // 하드−1↑ 1.0 / 3.7 / 4.3%(10%까지 8.7 SE 이상), 5% 분위 19 / 20 / 21(16장 미만 판 ≤ 5%까지 9 SE 이상), 70세+ 중 20장 미만 1.8 / 0.95 / 0.63%(10%까지 17 SE 이상), 노년 4.28 / 5.19 / 5.33(하한 3.95 / 4.72 / 5.00까지 4.7 SE 이상) — 모두 3 SE 이상이다.
-      const autoLives = lazy(() => Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'auto')])) as Record<Era, LifeSummary[]>);
-      const autoReportsOf = lazy(() => Object.fromEntries(ERAS.map((era) => [era, reportOf(era, autoLives()[era])])) as Record<Era, ReturnType<typeof reportOf>>);
-      type Reports = Record<Era, ReturnType<typeof reportOf>>;
+      const autoLives = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'auto')])) as Record<ProfileId, LifeSummary[]>);
+      const autoReportsOf = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, reportOf(era, autoLives()[era])])) as Record<ProfileId, ReturnType<typeof reportOf>>);
+      type Reports = Record<ProfileId, ReturnType<typeof reportOf>>;
       const judgeCards = (reports: Reports, who: string): void => {
-        for (const era of ERAS) {
+        for (const era of SIM_PROFILES) {
           const r = reports[era];
           expect(r.choices.mean, `${who} ${era}: 결정 카드 수 평균`).toBeGreaterThanOrEqual(mode.cards.meanLow);
           expect(r.choices.mean, `${who} ${era}: 결정 카드 수 평균`).toBeLessThanOrEqual(mode.cards.meanHigh);
@@ -271,18 +268,18 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
       });
 
       it('단계별 분포: 노년은 M7a가 굶긴 몫을 돌려받았고(하한 3.95 / 4.72 / 5.00 이상 — 처음 HEAD − 0.3에서 M-3으로 내림), 영유아(0~7세)는 IN2 하한(2.8)을 지키며, 어느 한 단계가 전체의 40%를 넘게 차지하지 않는다 (수동 흉내 · 자동 성향 1000판)', () => {
-        const strategies: Array<[string, Reports, Record<Era, LifeSummary[]>]> = [
+        const strategies: Array<[string, Reports, Record<ProfileId, LifeSummary[]>]> = [
           ['수동 흉내', reportsOf(), sharedLives()],
           ['자동 성향', autoReportsOf(), autoLives()],
         ];
         for (const [who, reports, lives] of strategies) {
-        for (const era of ERAS) {
+        for (const era of SIM_PROFILES) {
           const m = reports[era].choicesByStageMean;
           expect(m.infant, `${who} ${era} 영유아`).toBeGreaterThanOrEqual(1.2);
           expect(m.school, `${who} ${era} 학창`).toBeGreaterThanOrEqual(3);
           expect(m.youth, `${who} ${era} 청년`).toBeGreaterThanOrEqual(5);
           expect(m.middle, `${who} ${era} 중년`).toBeGreaterThanOrEqual(5);
-          expect(m.senior, `${who} ${era} 노년`).toBeGreaterThanOrEqual(SENIOR_CHOICE_MEAN_MIN[era]);
+          expect(m.senior, `${who} ${era} 노년`).toBeGreaterThanOrEqual(SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(era)]);
           const total = STAGES.reduce((a, s) => a + m[s], 0);
           for (const s of STAGES) expect(m[s] / total, `${who} ${era} ${s}`).toBeLessThan(0.4);
           // 0~7세(영유아 빈도표 구간) 평균은 연표의 나이로 센다
@@ -299,10 +296,10 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
         const saved = { ...mode.pacing };
         try {
           Object.assign(mode.pacing, { soft: 23, softFactor: 0.3, hard: 26 });
-          for (const era of ['present', 'future'] as const) {
+          for (const era of ['genx', 'alpha'] as const) {
             const lives = simulateMany(era, REPORT_SEEDS, 'random');
             const senior = mean(lives.map((l) => l.choicesByStage.senior));
-            expect(senior, `${era}: 옛 페이싱의 노년 평균 ${senior.toFixed(2)}`).toBeLessThan(SENIOR_CHOICE_MEAN_MIN[era]);
+            expect(senior, `${era}: 옛 페이싱의 노년 평균 ${senior.toFixed(2)}`).toBeLessThan(SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(era)]);
           }
         } finally {
           Object.assign(mode.pacing, saved);
@@ -311,7 +308,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
 
       it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~36.5분 — M24로 상단을 올렸다) 안, 세 시대 평균이 27~35분, 판 하나하나의 95%가 40분 이하이고 최대 45분 이하', () => {
         let sum = 0;
-        for (const era of ERAS) {
+        for (const era of SIM_PROFILES) {
           const r = reportsOf()[era];
           expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeGreaterThanOrEqual(mode.timeMin.modelLow - 1.5);
           expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeLessThanOrEqual(mode.timeMin.modelHigh + 1.5);
@@ -319,12 +316,12 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
           expect(r.minutes1x.max, `${era}: 1배속 최대(분)`).toBeLessThanOrEqual(45);
           sum += r.minutes1x.mean;
         }
-        expect(sum / ERAS.length, '세 시대 평균(분)').toBeGreaterThanOrEqual(mode.timeMin.modelLow);
-        expect(sum / ERAS.length, '세 시대 평균(분)').toBeLessThanOrEqual(mode.timeMin.modelHigh);
+        expect(sum / SIM_PROFILES.length, '세 시대 평균(분)').toBeGreaterThanOrEqual(mode.timeMin.modelLow);
+        expect(sum / SIM_PROFILES.length, '세 시대 평균(분)').toBeLessThanOrEqual(mode.timeMin.modelHigh);
       });
 
       it('읽는 시간 수준별 보고 (판정 아님 — 사람 실측이 정한다): 낮음 < 중앙 < 높음 < 상한, 높음의 세 시대 평균이 40분을 넘지 않는다', () => {
-        for (const era of ERAS) {
+        for (const era of SIM_PROFILES) {
           const r = reportsOf()[era];
           expect(r.minutes1xHigh.mean).toBeGreaterThan(r.minutes1x.mean);
           expect(r.minutes1xUpper.mean).toBeGreaterThan(r.minutes1xHigh.mean);
@@ -333,7 +330,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
       });
 
       it('배속·건너뛰기 순서가 실제 풀에서도 성립한다: 1배속 > 8배속 > 8배속+다음 결정으로 (8배속 + 다음 결정으로의 시간은 참고로만 본다 — 판정 단언 삭제, LD-12)', () => {
-        for (const era of ERAS) {
+        for (const era of SIM_PROFILES) {
           const r = reportsOf()[era];
           expect(r.minutes1x.mean).toBeGreaterThan(r.minutesFast.mean);
           expect(r.minutesFastUpper.mean).toBeGreaterThan(r.minutesFastHigh.mean);
@@ -357,9 +354,9 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
       // 한계 계산: 측정된 차의 최댓값 0.23장(자동 성향 지금 세상 24.84 − 24.61) + 차의 표준오차(√(0.09² + 0.08²) ≈ 0.12)의 3배 0.36 = 0.59 → 0.6장 (여유 3.0 SE 이상). 첫 선택지: 지난 −0.11 · 지금 +0.14 · 다가올 −0.04.
       it('선택지 빈도는 자동·수동 전략과 무관하게 비슷하다 (자동 성향·첫 선택지 1000판의 카드 수 평균이 수동 흉내와 0.6장 안, 시대별) (R-416: 100판 → 1000판)', () => {
         const STRATEGY_GAP_MAX = 0.6;
-        const strategies = { auto: autoLives(), first: Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'first')])) as Record<Era, LifeSummary[]> };
+        const strategies = { auto: autoLives(), first: Object.fromEntries(SIM_PROFILES.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'first')])) as Record<ProfileId, LifeSummary[]> };
         for (const [name, lives] of Object.entries(strategies)) {
-          for (const era of ERAS) {
+          for (const era of SIM_PROFILES) {
             const strategyMean = mean(lives[era].map((l) => totalCards(l.counts)));
             const randomMean = mean(sharedLives()[era].map((l) => totalCards(l.counts)));
             expect(Math.abs(strategyMean - randomMean), `${era}/${name}: 카드 수 평균 ${strategyMean.toFixed(2)} 대 수동 흉내 ${randomMean.toFixed(2)}`).toBeLessThanOrEqual(STRATEGY_GAP_MAX);
@@ -377,11 +374,11 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
       });
 
       describe('LM4 약 1시간 모드 (1차는 닫혀 있다 — 표·시험·시뮬레이션 준비): 세 시대 × 1000판에서 에러 0·모순 0이고 카드 수·시간은 보고만 한다', () => {
-        const longLives = lazy(() => Object.fromEntries(ERAS.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'random', undefined, { lifeLength: 'long60' })])) as Record<Era, LifeSummary[]>);
+        const longLives = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, simulateMany(era, REPORT_SEEDS, 'random', undefined, { lifeLength: 'long60' })])) as Record<ProfileId, LifeSummary[]>);
 
         it('모든 판이 사망에 도달하고 판의 인생 길이가 long60이며 하드 상한을 넘지 않는다', () => {
           const hard = LIFE_LENGTH_MODES.long60.pacing.hard;
-          for (const era of ERAS) {
+          for (const era of SIM_PROFILES) {
             for (const l of longLives()[era]) {
               expect(l.final.phase, `${era} 시드 ${l.seed}`).toBe('ending');
               expect(l.final.lifeLength).toBe('long60');
@@ -391,7 +388,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
         });
 
         it('영유아(0~7세) 평균은 IN2 하한(2.8) 이상이고, 같은 시드라면 연출 계수만 달라 카드 수는 30분 모드와 같으며(임시 페이싱 = 30분 모드와 같은 값) 모델 시간은 연출 몫이 계수 비를 따라 길다(읽기 몫은 계수와 무관해 전체 비는 계수 비보다 작다)', () => {
-          for (const era of ERAS) {
+          for (const era of SIM_PROFILES) {
             const upTo7 = longLives()[era].reduce((a, l) => a + l.final.history.filter((h) => h.kind === 'choice' && h.age <= 7).length, 0) / REPORT_SEEDS;
             expect(upTo7, `${era} 0~7세`).toBeGreaterThanOrEqual(INFANT_CHOICE_MEAN_MIN);
             const shortLives = sharedLives()[era];
@@ -418,7 +415,7 @@ describe('유년기 사망 (R-045 a): 담담하게 끝난다', () => {
   const EARLY_SEEDS = 4000;
   const earlyDeathsOf = lazy(() => {
     const out: GameState[] = [];
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= EARLY_SEEDS; i++) {
         const seed = i * 7919 + 13;
         const choose = chooserFor('random', seed)!;
@@ -432,7 +429,7 @@ describe('유년기 사망 (R-045 a): 담담하게 끝난다', () => {
 
   it('20세 전 사망은 드물지만 있다 (전체의 0.03~2%, 실측 약 0.14% — 지난 세상이 가장 높다)', () => {
     const earlyDeaths = earlyDeathsOf();
-    const rate = earlyDeaths.length / (ERAS.length * EARLY_SEEDS);
+    const rate = earlyDeaths.length / (SIM_PROFILES.length * EARLY_SEEDS);
     expect(earlyDeaths.length).toBeGreaterThanOrEqual(5);
     expect(rate).toBeGreaterThan(0.0003);
     expect(rate).toBeLessThan(0.02);
@@ -467,7 +464,7 @@ describe('유년기 사망 (R-045 a): 담담하게 끝난다', () => {
 
 describe('한 판에서 같은 문구가 되풀이되지 않는다 (QA 사용감 7)', () => {
   it('연표의 서술·선택 항목에서 같은 이벤트 id가 두 번 나오지 않고, 같은 (제목, 본문) 쌍도 되풀이되지 않는다 — 세 시대 x 150판', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= 150; i++) {
         const seed = i * 7919 + 13;
         const final = playToEnd(startLife(seed, era), chooserFor('random', seed)).state;
@@ -486,7 +483,7 @@ describe('한 판에서 같은 문구가 되풀이되지 않는다 (QA 사용감
     expect(later.once).toBe(true);
     expect(first.text).not.toBe(later.text);
     for (let i = 1; i <= 300; i++) {
-      const final = playToEnd(startLife(i * 7919 + 13, 'present'), chooserFor('random', i)).state;
+      const final = playToEnd(startLife(i * 7919 + 13, 'alpha'), chooserFor('random', i)).state;
       expect(final.history.filter((h) => h.eventId === 'middle-health-check').length).toBeLessThanOrEqual(1);
     }
   });
@@ -538,7 +535,7 @@ describe('외모 구간별 평생 조우율 (R-044): 외모가 연애·결혼·�
 });
 
 describe('밸런스 (R-045 b): 행복·관계는 출생값에 종속되지 않고, 낮은 계층에도 길이 있고, 높은 계층의 재산이 100에 붙지 않는다', () => {
-  const balanceLazy = lazy(() => balanceOf(ERAS.flatMap((era) => sharedLives()[era])));
+  const balanceLazy = lazy(() => balanceOf(SIM_PROFILES.flatMap((era) => sharedLives()[era])));
 
   it('출생값과 최종값의 상관계수: 행복·관계 모두 0.45 미만', () => {
     const b = balanceLazy();
@@ -605,7 +602,7 @@ describe('밸런스 (R-045 b): 행복·관계는 출생값에 종속되지 않�
     };
     let n = 0;
     let reached = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= 400; i++) {
         const start = startLife(i * 7919 + 13, era);
         if (start.character!.parentWealth !== 1) continue;

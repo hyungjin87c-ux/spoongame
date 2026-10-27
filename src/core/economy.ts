@@ -2,12 +2,11 @@ import {
   CURVE_FIRST_AGE,
   CURVE_LAST_AGE,
   ECONOMY,
-  ERA_ECONOMY,
   LABOR_INCOME_CURVE_THOUSAND,
   LIMITS,
   type EconomyFactors,
 } from '../data/economyTable';
-import { type Assets, type AssetDeltas, type Dwelling, type Era, type ParentWealth } from './types';
+import { type Assets, type AssetDeltas, type Dwelling, type ParentWealth } from './types';
 
 /**
  * 경제 모델 (SPEC-003 M5 EC1·EC2, docs/data/economy-model.md 3·4절). **순수 함수**: React·타이머·Date·Math.random을 쓰지 않고 난수를 쓰지 않는다(RNG 스트림 보존).
@@ -17,18 +16,59 @@ import { type Assets, type AssetDeltas, type Dwelling, type Era, type ParentWeal
  * 선택지의 자산 효과(`assets.net`·`income`·`debt`)와 그 선택이 켜는 플래그가 바꾸는 주거 형태(`dwellingAfterFlags`)는 `applyAssetEffects`가 한 번에 적용한다.
  */
 
-export const economyFactors = (era: Era): EconomyFactors => ERA_ECONOMY[era];
+/**
+ * 연도 축 경제 계수의 입력 (SPEC-004 EY4 — `economyFactors({ year, birthYear, tier, regionClass })`). `year`는 달력 연도(= 출생 연도 + 나이).
+ * **GM4 단계의 사실**: `economyByYear`의 열이 아직 하나도 확보·배선되지 않았으므로(EY2 「점진 활성」) 모든 규칙이 항등이다 — 어느 연도·수저·지역이든 R1 「지금 세상」 계수(소득·생활·주거 모두 1)다.
+ * 연도별 수준 `L(y)`·모양·`SHIELD`·`SPOON_SPREAD`·`REGION_WEIGHT`는 GM10이 이 함수 안에서 켠다(입력 모양은 그대로).
+ * `forceR1`은 시험·스크립트 전용 스위치다(EY17 ② 항등 시험): 켜면 연도 규칙이 있든 없든 R1 값을 돌려준다 — 지금은 켜든 끄든 같지만, GM10이 규칙을 켠 뒤에도 R1 스냅숏(`tests/fixtures/r1-economy-snapshot.json`)과 줄 단위로 같음을 이 스위치로 잰다.
+ * 시대 3종 계수(`ERA_ECONOMY` — 지난 0.6·0.7·0.6 / 다가올 1.15·1.2·1.3)는 없어졌다: 연도별 수준 `L(y)`·모양·충격으로 GM10이 대체하고, 그 전에는 항등이다.
+ */
+export interface EconomyFactorsInput {
+  /** 달력 연도 = 출생 연도 + 나이 */
+  year: number;
+  birthYear: number;
+  tier: ParentWealth;
+  regionClass: RegionClass;
+  forceR1?: boolean;
+}
+
+/** 지역군 (RG9 — 수도권 / 광역시·특별자치시 / 그 밖). GM10의 `region.income`·`region.housing`이 쓴다. 지금은 계수에 닿지 않는다. */
+export type RegionClass = 'capital' | 'metro' | 'other';
+
+const R1_FACTORS: EconomyFactors = Object.freeze({ income: 1, living: 1, housing: 1 });
+
+export function economyFactors(input: EconomyFactorsInput): EconomyFactors {
+  void input; // GM4: 모든 규칙이 항등이라 입력이 계수를 바꾸지 않는다 (forceR1이든 아니든 같은 값)
+  return R1_FACTORS;
+}
+
+/** 출생 시도(줄임 이름) → 지역군 (RG9): 서울·경기·인천 = capital, 광역시·세종 = metro, 그 밖 = other. 모르는 이름은 other */
+export function regionClassOf(region: string | null | undefined): RegionClass {
+  if (region === '서울' || region === '경기' || region === '인천') return 'capital';
+  if (region === '부산' || region === '대구' || region === '광주' || region === '대전' || region === '울산' || region === '세종' || region === '전남광주') return 'metro';
+  return 'other';
+}
+
+/** 경제 계산 상태가 가리키는 계수 (EconomyContext → economyFactors) */
+function factorsOf(ctx: EconomyContext): EconomyFactors {
+  return economyFactors({ year: ctx.year, birthYear: ctx.birthYear, tier: ctx.tier, regionClass: ctx.regionClass, forceR1: ctx.forceR1 });
+}
 
 /** 일 상태: 플래그(has_career·own_business·college·exam_prep)와 나이에서 정한다 */
 export type WorkState = 'student' | 'exam' | 'working' | 'business' | 'casual';
 
-/** 경제 계산이 읽는 상태 한 벌 (나이·지식 스탯·플래그·시대·부모 재력 단계) */
+/** 경제 계산이 읽는 상태 한 벌 (나이·지식 스탯·플래그·부모 재력 단계·연도 축 입력) */
 export interface EconomyContext {
   age: number;
   education: number;
   flags: ReadonlySet<string>;
-  era: Era;
   tier: ParentWealth;
+  /** 달력 연도 = 출생 연도 + 나이 (EY4). 아직 계수가 연도를 보지 않는다(GM4) */
+  year: number;
+  birthYear: number;
+  regionClass: RegionClass;
+  /** R1 항등 스위치 (EY17 ②, 시험·스크립트 전용) */
+  forceR1?: boolean;
 }
 
 const clampInt = (v: number, lo: number, hi: number): number => {
@@ -60,7 +100,7 @@ export function incomeOf(ctx: EconomyContext, incomeAdj: number): number {
   const state = workStateOf(ctx.flags, ctx.age);
   const curve = laborCurve(ctx.age);
   const base = (state === 'working' || state === 'business') && ctx.age < ECONOMY.floorBelowAge ? Math.max(ECONOMY.fullTimeFloor, curve) : curve;
-  const labor = base * educationMultiplier(ctx.education) * ECONOMY.state[state] * ERA_ECONOMY[ctx.era].income;
+  const labor = base * educationMultiplier(ctx.education) * ECONOMY.state[state] * factorsOf(ctx).income;
   const spouse = ctx.flags.has('married') ? ECONOMY.spouseIncome : 1;
   const adj = incomeAdj * (ctx.age >= ECONOMY.pension.fromAge ? ECONOMY.pension.adjFade : 1);
   const pension = ctx.age >= ECONOMY.pension.fromAge ? ECONOMY.pension.amount : 0;
@@ -78,18 +118,19 @@ export function livingOf(ctx: EconomyContext, dwelling: Dwelling): number {
   const old = ctx.age >= 80 ? ECONOMY.living.old80 : 1;
   const family = dwelling === 'family' ? ECONOMY.living.familyLiving : 1;
   const profile = ECONOMY.living.ageProfile.find((p) => ctx.age <= p.upTo)?.mult ?? 1;
-  return Math.round(ECONOMY.living.base * ERA_ECONOMY[ctx.era].living * livingEquivalent(ctx.flags) * old * student * family * profile);
+  return Math.round(ECONOMY.living.base * factorsOf(ctx).living * livingEquivalent(ctx.flags) * old * student * family * profile);
 }
 
 export function medicalOf(age: number): number {
   return (age >= 65 ? ECONOMY.medical.from65 : 0) + (age >= 80 ? ECONOMY.medical.from80Extra : 0);
 }
 
-export function housingCostOf(dwelling: Dwelling, income: number, era: Era): number {
+/** 주거비. `housingFactor`는 `economyFactors(...).housing`(연도·지역 보정, GM4에서는 늘 1) */
+export function housingCostOf(dwelling: Dwelling, income: number, housingFactor: number): number {
   const h = ECONOMY.housing;
   const rent = Math.max(h.rentFloor, h.rentRate * income);
   const cost = dwelling === 'own' ? h.own : dwelling === 'rent' ? rent : dwelling === 'jeonse' ? h.jeonseShare * rent : dwelling === 'care' ? h.care : h.family;
-  return Math.round(cost * ERA_ECONOMY[era].housing);
+  return Math.round(cost * housingFactor);
 }
 
 /** 연 현금흐름의 내역(만 원). total = income − living − medical − housing − interest + subsidy (subsidy는 노년 안전망이 메운 적자, 아니면 0) */
@@ -119,10 +160,10 @@ export function cashFlowOf(
 ): CashFlow {
   const income = incomeOf(ctx, assets.incomeAdj);
   const medical = medicalOf(ctx.age);
-  const housing = housingCostOf(assets.dwelling, income, ctx.era);
+  const housing = housingCostOf(assets.dwelling, income, factorsOf(ctx).housing);
   const interest = Math.round(assets.debt * ECONOMY.interest);
   const desired = livingOf(ctx, assets.dwelling);
-  const floor = Math.round(ECONOMY.living.base * ERA_ECONOMY[ctx.era].living * ECONOMY.living.minShare);
+  const floor = Math.round(ECONOMY.living.base * factorsOf(ctx).living * ECONOMY.living.minShare);
   const affordable = income - medical - housing - interest + Math.max(0, assets.net) + ECONOMY.living.maxBorrow;
   // limits=false: 한도·안전망 없이 「원래 씀씀이」로 계산한다 — 선택이 바꾸는 연 현금흐름(구조)을 읽는 영향 표기용. 한도는 쌓인 자산에 따라 생활을 줄이는 반응이라 선택의 효과가 아니다.
   const limited = options.limits !== false;

@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
   PARENT_WEALTHS,
+  R1_PRESENT,
   createRng,
   generateBirth,
   looksStanding,
@@ -11,13 +11,22 @@ import {
   wealthStanding,
   wealthTopPercent,
   type Character,
-  type Era,
+  type ProfileId,
 } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { MIDDLE_LABEL, standingLabel } from '../src/data/birthText';
 import { GRADE_NAME } from '../src/data/birthReportText';
 import { bandLabel } from '../src/data/endingText';
 import { startBandOf } from '../src/core/ending';
+
+/**
+ * 가중치 표 세 벌 — SPEC-003 R1의 지난·지금·다가올 세상 표. `wealthStanding`·`startBandOf`는 표(가중치 배열)를 받는 순수 함수라 이 표 세 벌로 함수 자체를 시험한다.
+ * 표본 시험은 같은 표를 쓰는 프로필로 한다: past = 산업화 세대(섞음 비율 40·32·20·7·1) · present = 시험 전용 R1 프로필(25·30·28·14·3) · future = 표본 없음(X 세대 33·31·24·10·2로 대신 본다).
+ */
+type Era = 'past' | 'present' | 'future';
+const ERAS: readonly Era[] = ['past', 'present', 'future'];
+const WEIGHTS: Record<Era, readonly number[]> = { past: [40, 32, 20, 7, 1], present: [25, 30, 28, 14, 3], future: [30, 28, 24, 13, 5] };
+const SAMPLE_PROFILE: Record<Era, ProfileId> = { past: 'industrial', present: R1_PRESENT, future: 'genx' };
+const SAMPLE_WEIGHTS: Record<Era, readonly number[]> = { past: [40, 32, 20, 7, 1], present: [25, 30, 28, 14, 3], future: [33, 31, 24, 10, 2] };
 import { BirthScreen } from '../src/screens/BirthScreen';
 import { PEER_SEED, report as sampleReport } from '../e2e/saves';
 import { EPS, sigmaTolerancePct } from './helpers/stats';
@@ -98,45 +107,45 @@ describe('standingOf: 경계 값을 직접 적은 규칙 단위 테스트', () =
 
 describe('재력: 세 시대 × 5단계의 기대 표현 (표에 직접 적은 값)', () => {
   it('가중치 표가 이 테스트가 가정한 값 그대로다 — 표가 바뀌면 아래 기대표도 다시 계산해야 한다', () => {
-    expect(ERA_CONFIG.past.wealthWeights).toEqual([40, 32, 20, 7, 1]);
-    expect(ERA_CONFIG.present.wealthWeights).toEqual([25, 30, 28, 14, 3]);
-    expect(ERA_CONFIG.future.wealthWeights).toEqual([30, 28, 24, 13, 5]);
+    expect(WEIGHTS.past).toEqual([40, 32, 20, 7, 1]);
+    expect(WEIGHTS.present).toEqual([25, 30, 28, 14, 3]);
+    expect(WEIGHTS.future).toEqual([30, 28, 24, 13, 5]);
   });
 
   for (const era of ERAS) {
     it(`${era}: 5단계 표현이 표와 같다`, () => {
       for (const tier of PARENT_WEALTHS) {
         const expected = WEALTH_LABELS[era][tier];
-        const standing = wealthStanding(era, tier);
+        const standing = wealthStanding(WEIGHTS[era], tier);
         expect(standingLabel(standing), `${era} ${tier}단계`).toBe(expected);
       }
     });
   }
 
   it('Standing의 종류·숫자도 직접 적는다 (past 1단계 하위 40 / 2단계 중간 / 3단계 상위 28 …)', () => {
-    expect(wealthStanding('past', 1)).toEqual({ kind: 'bottom', percent: 40, within: false });
-    expect(wealthStanding('past', 2)).toEqual({ kind: 'middle' });
-    expect(wealthStanding('past', 3)).toEqual({ kind: 'top', percent: 28, within: false });
-    expect(wealthStanding('past', 4)).toEqual({ kind: 'top', percent: 8, within: false });
-    expect(wealthStanding('past', 5)).toEqual({ kind: 'top', percent: 1, within: false });
-    expect(wealthStanding('present', 1)).toEqual({ kind: 'bottom', percent: 25, within: false });
-    expect(wealthStanding('present', 2)).toEqual({ kind: 'middle' });
-    expect(wealthStanding('present', 3)).toEqual({ kind: 'top', percent: 45, within: false });
-    expect(wealthStanding('present', 4)).toEqual({ kind: 'top', percent: 17, within: false });
-    expect(wealthStanding('present', 5)).toEqual({ kind: 'top', percent: 3, within: false });
-    expect(wealthStanding('future', 1)).toEqual({ kind: 'bottom', percent: 30, within: false });
-    expect(wealthStanding('future', 2)).toEqual({ kind: 'middle' });
-    expect(wealthStanding('future', 3)).toEqual({ kind: 'top', percent: 42, within: false });
-    expect(wealthStanding('future', 4)).toEqual({ kind: 'top', percent: 18, within: false });
-    expect(wealthStanding('future', 5)).toEqual({ kind: 'top', percent: 5, within: false });
+    expect(wealthStanding(WEIGHTS.past, 1)).toEqual({ kind: 'bottom', percent: 40, within: false });
+    expect(wealthStanding(WEIGHTS.past, 2)).toEqual({ kind: 'middle' });
+    expect(wealthStanding(WEIGHTS.past, 3)).toEqual({ kind: 'top', percent: 28, within: false });
+    expect(wealthStanding(WEIGHTS.past, 4)).toEqual({ kind: 'top', percent: 8, within: false });
+    expect(wealthStanding(WEIGHTS.past, 5)).toEqual({ kind: 'top', percent: 1, within: false });
+    expect(wealthStanding(WEIGHTS.present, 1)).toEqual({ kind: 'bottom', percent: 25, within: false });
+    expect(wealthStanding(WEIGHTS.present, 2)).toEqual({ kind: 'middle' });
+    expect(wealthStanding(WEIGHTS.present, 3)).toEqual({ kind: 'top', percent: 45, within: false });
+    expect(wealthStanding(WEIGHTS.present, 4)).toEqual({ kind: 'top', percent: 17, within: false });
+    expect(wealthStanding(WEIGHTS.present, 5)).toEqual({ kind: 'top', percent: 3, within: false });
+    expect(wealthStanding(WEIGHTS.future, 1)).toEqual({ kind: 'bottom', percent: 30, within: false });
+    expect(wealthStanding(WEIGHTS.future, 2)).toEqual({ kind: 'middle' });
+    expect(wealthStanding(WEIGHTS.future, 3)).toEqual({ kind: 'top', percent: 42, within: false });
+    expect(wealthStanding(WEIGHTS.future, 4)).toEqual({ kind: 'top', percent: 18, within: false });
+    expect(wealthStanding(WEIGHTS.future, 5)).toEqual({ kind: 'top', percent: 5, within: false });
   });
 
   it('중앙에 걸친 단계(전 시대 2단계)만 중간이고, 그 외에는 상위 또는 하위다', () => {
     for (const era of ERAS) {
       for (const tier of PARENT_WEALTHS) {
-        const top = wealthTopPercent(era, tier);
-        const bottom = wealthBottomPercent(era, tier);
-        const kind = wealthStanding(era, tier).kind;
+        const top = wealthTopPercent(WEIGHTS[era], tier);
+        const bottom = wealthBottomPercent(WEIGHTS[era], tier);
+        const kind = wealthStanding(WEIGHTS[era], tier).kind;
         expect(kind === 'middle', `${era} ${tier}`).toBe(top > 50 && bottom > 50);
         expect(kind === 'middle').toBe(tier === 2);
       }
@@ -147,14 +156,14 @@ describe('재력: 세 시대 × 5단계의 기대 표현 (표에 직접 적은 �
     const n = 30000;
     for (const era of ERAS) {
       const rng = createRng(20261013);
-      const births = Array.from({ length: n }, () => generateBirth(rng, era));
+      const births = Array.from({ length: n }, () => generateBirth(rng, SAMPLE_PROFILE[era]));
       for (const tier of PARENT_WEALTHS) {
-        const s = wealthStanding(era, tier);
+        const s = wealthStanding(SAMPLE_WEIGHTS[era], tier);
         if (s.kind === 'middle') continue;
         const count = births.filter((b) => (s.kind === 'top' ? b.character.parentWealth >= tier : b.character.parentWealth <= tier)).length;
         const observed = (count / n) * 100;
         expect(Math.abs(observed - s.percent), `${era} ${tier}단계 ${s.kind} ${s.percent}% / 관측 ${observed.toFixed(2)}%`).toBeLessThanOrEqual(
-          sigmaTolerancePct(s.percent, n) + EPS,
+          sigmaTolerancePct(s.percent, n) + 0.5 + EPS, // 세대 섞음 비율은 정수 %로 반올림한 값이라 최대 0.5%p 다르다
         );
       }
     }
@@ -205,7 +214,7 @@ describe('외모: 0점 / 중앙 / 100점과 경계', () => {
   it('표시되는 퍼센트가 실제 표본의 비율과 맞는다 (상위=그 점수 이상 / 하위=그 점수 이하, 반올림 0.5%p + 4σ)', () => {
     const n = 30000;
     const rng = createRng(20261013);
-    const looks = Array.from({ length: n }, () => generateBirth(rng, 'present').character.looks);
+    const looks = Array.from({ length: n }, () => generateBirth(rng, R1_PRESENT).character.looks);
     let checked = 0;
     for (let l = 5; l <= 95; l += 3) {
       const s = looksStanding(l);
@@ -222,7 +231,7 @@ describe('외모: 0점 / 중앙 / 100점과 경계', () => {
 
 describe('표시 문자열 전수 확인: 50을 넘는 숫자도, 약 0%/약 100%도 없다', () => {
   const labels: string[] = [];
-  for (const era of ERAS) for (const tier of PARENT_WEALTHS) labels.push(standingLabel(wealthStanding(era, tier)));
+  for (const era of ERAS) for (const tier of PARENT_WEALTHS) labels.push(standingLabel(wealthStanding(WEIGHTS[era], tier)));
   for (let l = 0; l <= 100; l++) labels.push(standingLabel(looksStanding(l)));
 
   it('재력 15개 + 외모 101개 표현의 모든 "N%"는 50 이하다', () => {
@@ -245,9 +254,12 @@ describe('표시 문자열 전수 확인: 50을 넘는 숫자도, 약 0%/약 100
 });
 
 describe('출생신고 화면은 core의 결과만 그린다 (BirthScreen 서버 렌더 전수, SPEC-003 BR·R-135·R-170)', () => {
+  /** 이 표의 가중치를 쓰는 프로필로 화면을 그린다 (구간 표기는 `wealthMixtureOfProfile`이 같은 표를 준다) — past·present·future 순서의 표 세 벌 */
+  const PROFILE_OF_TABLE: Record<Era, ProfileId> = { past: 'industrial', present: R1_PRESENT, future: 'genx' };
   const html = (era: Era, wealth: Character['parentWealth'], looks: number): string => {
-    const character: Character = { name: '김민준', gender: 'male', birthYear: ERA_CONFIG[era].birthYears.min, parentWealth: wealth, parenting: 'free', looks };
-    return renderToStaticMarkup(<BirthScreen era={era} character={character} report={sampleReport()} peerSeed={PEER_SEED} onNext={() => {}} />);
+    const profile = PROFILE_OF_TABLE[era];
+    const character: Character = { name: '김민준', gender: 'male', birthYear: profile === R1_PRESENT ? 2026 : profile === 'industrial' ? 1950 : 1975, parentWealth: wealth, parenting: 'free', looks };
+    return renderToStaticMarkup(<BirthScreen generation={profile} character={character} report={sampleReport()} peerSeed={PEER_SEED} onNext={() => {}} />);
   };
   /** 그 칸(dd)의 글: 태그를 걷어 낸 텍스트. 줄바꿈 기회 표시(<wbr>, 「다이아몬드<wbr>수저」)는 눈에 보이는 공백이 아니라서 먼저 지운다(R-262: 좁은 칩에서 이름을 두 줄로 나누려고 모든 크기에 둔다). */
   const field = (markup: string, testId: string): string => {
@@ -262,7 +274,7 @@ describe('출생신고 화면은 core의 결과만 그린다 (BirthScreen 서버
         const markup = html(era, tier, 50);
         const text = field(markup, 'birth-wealth');
         expect(text, `${era} ${tier}단계`).toContain(GRADE_NAME[tier]);
-        expect(text.replace(/\s+/g, ''), `${era} ${tier}단계`).toBe(`${GRADE_NAME[tier]}(${bandLabel(startBandOf(era, tier))})`.replace(/\s+/g, ''));
+        expect(text.replace(/\s+/g, ''), `${era} ${tier}단계`).toBe(`${GRADE_NAME[tier]}(${bandLabel(startBandOf(SAMPLE_WEIGHTS[era], tier))})`.replace(/\s+/g, ''));
         expect(markup.replace(/<[^>]+>/g, ' ')).not.toMatch(/소득\s*\d\s*분위/);
       }
     }

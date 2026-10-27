@@ -26,19 +26,19 @@ import { startLife } from '../scripts/simulateLib';
 const send = (s: Session, a: SessionAction): Session => sessionReducer(s, a);
 /** M7a: 0세에는 첫 예방접종·예측하기 어려운 결정이 있어 시드에 따라 첫 걸음이 결정에서 멈춘다 — 첫 걸음이 나이를 올리는 시드 2를 쓴다 (SPEC-005부터 skip은 2세의 부모님 결정을 지나 본인이 고르는 카드에서 멈춘다) */
 const SEED = 2;
-const life = () => createSession(startLife(SEED, 'present'), { speed: 1, autoMode: false });
+const life = () => createSession(startLife(SEED, 'alpha'), { speed: 1, autoMode: false });
 const pausedLife = () => send(life(), { type: 'setPaused', paused: true });
 /**
  * 「다음 결정으로」가 **사람이 고르는 카드**에서 멈추는지 보는 시험용 세션: SPEC-005부터 0~12세와 13~18세 중 돈·진학·이사·집안 영역은 부모님이 정하거나 아이의 일로 흘러가(pending이 생기지 않는다)
  * 첫 본인 카드가 13세 이후라, 기본 세션(기록 카드 켜짐)에서는 그 앞의 기록 카드(5세 …)에서 멈춘다. 이 묶음은 선택지에서 멈추는 규칙을 보므로 카드를 끈 세션(시트 없이 소비)으로 돌린다 —
  * 카드 멈춤 자체는 tests/noteCards.test.ts가 본다. 시드 2는 그 세션에서 (여러 해를 지나) 본인 카드에서 멈춘다.
  */
-const lifeNoNotes = () => createSession(startLife(SEED, 'present'), { speed: 1, autoMode: false, noteCards: false });
+const lifeNoNotes = () => createSession(startLife(SEED, 'alpha'), { speed: 1, autoMode: false, noteCards: false });
 const pausedLifeNoNotes = () => send(lifeNoNotes(), { type: 'setPaused', paused: true });
 
 describe('setPaused (상태 함수)', () => {
   it('인생 단계에서만 바뀌고, 같은 값이면 같은 객체를 돌려준다 (연타·늦게 도착한 입력이 상태를 흔들지 않는다)', () => {
-    const g = startLife(SEED, 'present');
+    const g = startLife(SEED, 'alpha');
     expect(g.paused).toBe(false);
     const p = setPaused(g, true);
     expect(p).not.toBe(g);
@@ -102,8 +102,8 @@ describe('일시정지 (세션)', () => {
   });
 
   it('시드 2의 첫 걸음은 나이를 올리고 첫 「다음 결정으로」는 선택지에서 멈춘다 (위 시험들이 공허하게 통과하지 않는다)', () => {
-    expect(stepYear(startLife(SEED, 'present')).state.pending).toBeNull();
-    expect(stepYear(startLife(SEED, 'present')).state.age).toBe(1);
+    expect(stepYear(startLife(SEED, 'alpha')).state.pending).toBeNull();
+    expect(stepYear(startLife(SEED, 'alpha')).state.age).toBe(1);
     expect(send(pausedLifeNoNotes(), { type: 'skip' }).game.pending).not.toBeNull();
   });
 

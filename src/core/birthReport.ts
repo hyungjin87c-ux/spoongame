@@ -11,14 +11,18 @@ import {
   minMotherAgeForOrder,
 } from '../data/birthReportTable';
 import { babyLabel, formatKg, orderText } from '../data/birthReportText';
-import { getBirthStats, housingRow, nationalHousing, regionHousing, regionOrderShares, regionsOf, sigunguChoices } from '../data/birthStats';
+import { getBirthStats, housingRow, nationalHousing, regionHousing, regionOf, regionOrderShares, regionsOf, sigunguChoices } from '../data/birthStats';
 import { standingLabel } from '../data/birthText';
-import { placeLabel } from '../data/regionNames';
+import { placeLabel, regionLabelAt } from '../data/regionNames';
+import { regionPickableInYear } from './birthProfile';
+import { MERGED_PICK, MERGED_PICK_PARTS, REGION_KEYS, regionShort } from '../data/regionKeys';
+import { regionShareOf } from './generationMixture';
 import type { Rng } from './rng';
 import { standingOf, type Standing } from './standing';
 
 // 개발자용 오류 메시지(throw)는 「~다」로 끝내고 마침표를 찍지 않는다 — 화면에 나오는 서술 문장이 아니고, 마침표를 찍으면 tests/systemText.test.ts의 해라체 문장 끝 점검(「~다.」)이 오탐한다(REV-003-M7e-2 관찰 3).
-import { HOUSINGS, OCCUPATIONS, type BirthReport, type Era, type Gender, type Occupation, type Parent, type ParentWealth } from './types';
+import type { ReportTilt } from '../data/birthReportTable';
+import { HOUSINGS, OCCUPATIONS, type BirthReport, type Gender, type Occupation, type Parent, type ParentWealth } from './types';
 
 /**
  * 출생신고 상세 (SPEC-003 BR2~BR4). 순수 함수 — 시드 RNG만 쓰고 React·Date·Math.random이 없다(CM2). 통계(data/birthStats.ts)에 수저 단계·시대 설계 보정(data/birthReportTable.ts)을 얹는다.
@@ -48,6 +52,14 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 
 // ---------- 지역·시군구 ----------
 
+/** 합쳐진 「전남광주」 칩을 고른 판: 그 해의 광주·전남 출생 비율대로 하나를 뽑는다(난수 1번 — 광주가 아직 따로 없던 해는 전남). */
+function rollMergedPick(rng: Rng, birthYear: number): string {
+  const shares = MERGED_PICK_PARTS.map((key) => regionShareOf(birthYear, key) ?? 0);
+  const total = shares.reduce((a, b) => a + b, 0);
+  const idx = total > 0 ? rng.weightedIndex(shares) : (rng.next(), 1);
+  return regionShort(MERGED_PICK_PARTS[idx]);
+}
+
 /** 룰렛이 정한 지역(시·도) 이름을 가중으로 뽑는다 */
 export function rollRegion(rng: Rng, birthYear: number): string {
   const { regions } = regionsOf(birthYear);
@@ -56,10 +68,9 @@ export function rollRegion(rng: Rng, birthYear: number): string {
 
 // ---------- 형제 순서·부모 나이 ----------
 
-function rollOrder(rng: Rng, era: Era, regionName: string, birthYear: number): { order: number; bucket: 0 | 1 | 2 } {
-  const region = regionsOf(birthYear).regions.find((r) => r.name === regionName);
-  if (region === undefined) throw new RangeError(`rollOrder: ${birthYear}년생 룰렛 지역에 ${regionName}이 없다`);
-  const shares = ERA_REPORT_ADJUST[era].orderShares ?? regionOrderShares(region);
+function rollOrder(rng: Rng, tilt: ReportTilt, regionName: string, birthYear: number): { order: number; bucket: 0 | 1 | 2 } {
+  const region = regionOf(birthYear, regionName);
+  const shares = ERA_REPORT_ADJUST[tilt].orderShares ?? regionOrderShares(region);
   const bucket = rng.weightedIndex(shares) as 0 | 1 | 2;
   if (bucket < 2) return { order: bucket + 1, bucket };
   return { order: 3 + rng.weightedIndex(THIRD_PLUS_SPLIT), bucket };
@@ -74,9 +85,9 @@ function rollOrder(rng: Rng, era: Era, regionName: string, birthYear: number): {
  * 어머니 나이 분포」(= 예전 분포에서 불가능한 칸을 잘라낸 것)에서 다시 뽑힌다. 그래서 **형제 순서 비중(공표 출산 순위 비중)은 그대로**이고(순서를 먼저 뽑는다), 바뀌는 것은 불가능했던
  * 칸(어머니 16~17세의 둘째 이상 …)의 질량뿐이다. `order`를 안 주면 첫째로 본다(제한 없음).
  */
-export function rollParentAges(rng: Rng, era: Era, wealth: ParentWealth, bucket: 0 | 1 | 2, order = 1): { mother: number; father: number } {
+export function rollParentAges(rng: Rng, tilt: ReportTilt, wealth: ParentWealth, bucket: 0 | 1 | 2, order = 1): { mother: number; father: number } {
   const model = getBirthStats().parentAges;
-  const shift = ERA_REPORT_ADJUST[era].parentAgeShift;
+  const shift = ERA_REPORT_ADJUST[tilt].parentAgeShift;
   const finalAge = (age: number) => clamp(age + shift, PARENT_AGE_LIMITS.min, PARENT_AGE_LIMITS.max);
   const need = minMotherAgeForOrder(order);
   const weights = model.motherGiven[bucket][wealth - 1];
@@ -89,22 +100,21 @@ export function rollParentAges(rng: Rng, era: Era, wealth: ParentWealth, bucket:
 // ---------- 직업 ----------
 
 /** 직업별 가중치(통계 × 설계 배율). 나이가 40 미만이면 30대 열, 아니면 40대 열. 테스트가 이 배열을 직접 대조한다. */
-export function jobWeights(who: 'mother' | 'father', age: number, wealth: ParentWealth, era: Era): number[] {
+export function jobWeights(who: 'mother' | 'father', age: number, wealth: ParentWealth, tilt: ReportTilt): number[] {
   const occ = getBirthStats().occupation;
   const base = age < 40 ? occ.a30 : occ.a40;
-  return OCCUPATIONS.map((job) => base[job] * JOB_TILT_BY_WEALTH[wealth][job] * JOB_TILT_BY_PARENT[who][job] * JOB_TILT_BY_ERA[era][job]);
+  return OCCUPATIONS.map((job) => base[job] * JOB_TILT_BY_WEALTH[wealth][job] * JOB_TILT_BY_PARENT[who][job] * JOB_TILT_BY_ERA[tilt][job]);
 }
 
-function rollJob(rng: Rng, who: 'mother' | 'father', age: number, wealth: ParentWealth, era: Era): Occupation {
-  return pickWeighted(rng, OCCUPATIONS, jobWeights(who, age, wealth, era));
+function rollJob(rng: Rng, who: 'mother' | 'father', age: number, wealth: ParentWealth, tilt: ReportTilt): Occupation {
+  return pickWeighted(rng, OCCUPATIONS, jobWeights(who, age, wealth, tilt));
 }
 
 // ---------- 사는 집 ----------
 
 /** 사는 집 확률 [자가, 임차, 무상](합 1): 지역 점유형태 × 소득계층 배율(수저 단계에 맞춘 계층의 섞음). 테스트가 직접 대조한다. */
 export function housingProbs(regionName: string, birthYear: number, wealth: ParentWealth): [number, number, number] {
-  const region = regionsOf(birthYear).regions.find((r) => r.name === regionName);
-  if (region === undefined) throw new RangeError(`housingProbs: ${birthYear}년생 룰렛 지역에 ${regionName}이 없다`);
+  const region = regionOf(birthYear, regionName);
   const base = regionHousing(region);
   const national = nationalHousing();
   const ratio = [0, 0, 0];
@@ -155,21 +165,21 @@ function rollWeight(rng: Rng, gender: Gender): number {
  * 출생신고 상세를 한 번에 뽑는다. rng는 호출하는 쪽(generateBirth)이 인생 진행용 RNG에서 갈라낸(forkRng) 것이다.
  * 같은 rng 상태·같은 입력 → 같은 결과.
  */
-export function rollBirthReport(rng: Rng, era: Era, birthYear: number, gender: Gender, wealth: ParentWealth): BirthReport {
-  const region = rollRegion(rng, birthYear);
-  const choices = sigunguChoices(birthYear, region);
-  const place = pickWeighted(rng, choices, choices.map((c) => c.births));
+export function rollBirthReport(rng: Rng, tilt: ReportTilt, birthYear: number, gender: Gender, wealth: ParentWealth, regionPick: string | null = null): BirthReport {
+  // 직접 고른 시도는 난수를 쓰지 않고 그대로 쓴다(RG1) — 룰렛에 맡긴 판은 그 해의 시·도 비율로 뽑는다
+  const region = regionPick === null ? rollRegion(rng, birthYear) : regionPick === MERGED_PICK ? rollMergedPick(rng, birthYear) : regionPick;
+  // 시군구는 시험 전용 R1 프로필(2026년생)만 적는다 — 세대 판의 출생지는 시도까지다(NR3)
+  const place = birthYear >= 2026 ? ((choices) => pickWeighted(rng, choices, choices.map((c) => c.births)))(sigunguChoices(birthYear, region)) : null;
   const month = rng.weightedIndex(getBirthStats().monthWeights) + 1;
-  const { order, bucket } = rollOrder(rng, era, region, birthYear);
-  const ages = rollParentAges(rng, era, wealth, bucket, order);
-  const motherJob = rollJob(rng, 'mother', ages.mother, wealth, era);
-  const fatherJob = rollJob(rng, 'father', ages.father, wealth, era);
+  const { order, bucket } = rollOrder(rng, tilt, region, birthYear);
+  const ages = rollParentAges(rng, tilt, wealth, bucket, order);
+  const motherJob = rollJob(rng, 'mother', ages.mother, wealth, tilt);
+  const fatherJob = rollJob(rng, 'father', ages.father, wealth, tilt);
   const housing = pickWeighted(rng, HOUSINGS, housingProbs(region, birthYear, wealth));
   return {
     month,
     region,
-    sigunguSido: place.sido,
-    sigungu: place.name,
+    ...(place === null ? {} : { sigunguSido: place.sido, sigungu: place.name }),
     mother: { age: ages.mother, job: motherJob },
     father: { age: ages.father, job: fatherJob },
     housing,
@@ -180,18 +190,19 @@ export function rollBirthReport(rng: Rng, era: Era, birthYear: number, gender: G
 
 // ---------- 표시 ----------
 
-/** 서류에 적는 「태어난 곳」(정식 시·도 이름 + 시군구) */
-export function reportPlaceLabel(report: BirthReport, era: Era): string {
-  return placeLabel({ region: report.region, sigunguSido: report.sigunguSido, sigungu: report.sigungu }, era);
+/** 서류에 적는 「태어난 곳」: 세대 판은 그 해의 행정구역 이름 + 지금의 시도(RG2 c), 시험 전용 R1 프로필은 정식 시·도 이름 + 시군구 */
+export function reportPlaceLabel(report: BirthReport, birthYear: number): string {
+  if (report.sigunguSido !== undefined && report.sigungu !== undefined) return placeLabel({ region: report.region, sigunguSido: report.sigunguSido, sigungu: report.sigungu });
+  return regionLabelAt(report.region, birthYear);
 }
 
 /**
  * 한 줄 서술문 (BR3, 합쇼체): 「2026년 1월, 경기도 화성시의 형편이 빠듯한 가정에서 3.3kg 여자아이로 태어났습니다. 첫째입니다. (3.3kg은 상위 약 38%)」.
  * 같은 문장이 인생 기록 0세의 첫 줄이 된다(core/state.ts#enterLife) — 그래서 수저 이름·구간을 쓰지 않는다(C4: 인생 기록에는 등급명을 쓰지 않는다).
  */
-export function birthSentence(c: { birthYear: number; gender: Gender; parentWealth: ParentWealth }, report: BirthReport, era: Era): string {
+export function birthSentence(c: { birthYear: number; gender: Gender; parentWealth: ParentWealth }, report: BirthReport): string {
   const kg = formatKg(report.birthWeightKg);
-  return `${c.birthYear}년 ${report.month}월, ${reportPlaceLabel(report, era)}의 ${WEALTH_ADJECTIVE[c.parentWealth]} 가정에서 ${kg} ${babyLabel(c.gender)}로 태어났습니다. ${orderText(report.birthOrder)}입니다. (${kg}은 ${standingLabel(weightStanding(report.birthWeightKg, c.gender))})`;
+  return `${c.birthYear}년 ${report.month}월, ${reportPlaceLabel(report, c.birthYear)}의 ${WEALTH_ADJECTIVE[c.parentWealth]} 가정에서 ${kg} ${babyLabel(c.gender)}로 태어났습니다. ${orderText(report.birthOrder)}입니다. (${kg}은 ${standingLabel(weightStanding(report.birthWeightKg, c.gender))})`;
 }
 
 /** 아이가 childAge살일 때 부모의 나이 (BR6: 가족 정합 — 부모 나이는 해마다 오른다) */
@@ -212,17 +223,26 @@ function validParent(v: unknown, maxAge: number): v is Parent {
  * 저장된 출생신고 상세가 맞는 모양인가(저장 검증, CM1): 월·부모 나이·직업·주거·체중·형제 순서가 범위 안이고, 지역이 그 출생 연도의 룰렛 지역 목록에 있으며,
  * 시군구가 그 지역의 후보에 있고, 체중이 격자(0.1kg) 위에 있다. 손상·변조되면 false(→ 새 게임).
  */
-export function isValidBirthReport(v: unknown, birthYear: number, gender: Gender): v is BirthReport {
+export function isValidBirthReport(v: unknown, birthYear: number, gender: Gender, regionPicked = false): v is BirthReport {
   if (!isObj(v)) return false;
   if (!isInt(v.month) || v.month < 1 || v.month > 12) return false;
-  if (typeof v.region !== 'string' || typeof v.sigunguSido !== 'string' || typeof v.sigungu !== 'string') return false;
+  if (typeof v.region !== 'string') return false;
+  // 시군구는 시험 전용 R1 프로필(2026년생)만 있다 — 세대 판에는 없다(NR3)
+  const withPlace = birthYear >= 2026;
+  if (withPlace ? typeof v.sigunguSido !== 'string' || typeof v.sigungu !== 'string' : v.sigunguSido !== undefined || v.sigungu !== undefined) return false;
   if (!validParent(v.mother, PARENT_AGE_LIMITS.max) || !validParent(v.father, PARENT_AGE_LIMITS.max)) return false;
   if (!(HOUSINGS as readonly unknown[]).includes(v.housing)) return false;
   if (!isInt(v.birthOrder) || v.birthOrder < 1 || v.birthOrder > 5) return false;
   if (typeof v.birthWeightKg !== 'number' || !Number.isFinite(v.birthWeightKg)) return false;
   try {
     if (weightIndex(gender, v.birthWeightKg) < 0) return false;
-    if (!regionsOf(birthYear).regions.some((r) => r.name === v.region)) return false;
+    const inList = regionsOf(birthYear).regions.some((r) => r.name === v.region);
+    if (!inList) {
+      // 직접 고른 판만: 그 해에 독립한 단위가 아니어도 고를 수 있는 시·도(세종은 2012년 앞 제외 — RG2)
+      const def = REGION_KEYS.find((r) => r.short === v.region);
+      if (!regionPicked || def === undefined || !regionPickableInYear(def.key, birthYear)) return false;
+    }
+    if (!withPlace) return true;
     return sigunguChoices(birthYear, v.region).some((c) => c.sido === v.sigunguSido && c.name === v.sigungu);
   } catch {
     return false;

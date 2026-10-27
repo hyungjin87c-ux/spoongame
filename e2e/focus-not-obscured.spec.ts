@@ -40,15 +40,15 @@ for (const vp of STANDARD_VIEWPORTS) {
           if (percent !== 100) await setRootFontPercent(page, percent);
           const audit = await auditFocus(page, `${vp.name}/${percent}%/${state}`);
           expect(audit.violations, summarize(audit)).toEqual([]);
-          // 공허 통과 방지: 첫 화면의 조작 요소(라디오 묶음 둘 + 캐러셀 머리 3 + 슬라이드 영역 + 푸터 링크 + 띠 버튼 1~2)가 실제로 순회됐다
-          const expectedMin = state === 'new' ? 8 : 9;
+          // 공허 통과 방지: 첫 화면의 조작 요소(라디오 묶음 셋 + 접이식 둘 + 스위치 + 캐러셀 머리 3 + 슬라이드 영역 + 푸터 링크 + 띠 버튼 1~2)가 실제로 순회됐다
+          const expectedMin = state === 'new' ? 12 : 13;
           expect(audit.tabbables.length, `조작 요소 ${audit.tabbables.join(' → ')}`).toBeGreaterThanOrEqual(expectedMin);
           expect(audit.forward.length).toBe(audit.tabbables.length);
           expect(audit.programmatic.length).toBeGreaterThanOrEqual(audit.tabbables.length);
-          // 라디오: 활성 가능한 라디오(세상 3 + 약 30분 1 = 4)가 전부 방향키·focus()로 측정됐다 (R-234)
-          expect(audit.radios, '활성 가능한 라디오').toHaveLength(4);
-          expect(audit.arrow.length, '방향키로 잰 칸 — 세상 묶음 3칸 + 인생 길이 묶음 1칸').toBe(4);
-          expect(new Set(audit.arrow.map((s) => s.id)).size, '방향키로 닿은 서로 다른 라디오').toBe(4);
+          // 라디오: 활성 가능한 라디오(세대 8 + 태어나는 시도 방법 2 + 약 30분 1 = 11)가 전부 방향키·focus()로 측정됐다 (R-234)
+          expect(audit.radios, '활성 가능한 라디오').toHaveLength(11);
+          expect(audit.arrow.length, '방향키로 잰 칸 — 세대 묶음 8칸 + 시도 방법 2칸 + 인생 길이 묶음 1칸').toBe(11);
+          expect(new Set(audit.arrow.map((s) => s.id)).size, '방향키로 닿은 서로 다른 라디오').toBe(11);
           // 고정 요소 자동 수집: 띠가 고정이면 모이고, 풀렸으면(position: static) 모이지 않는다 (QM2-12 d)
           const fixed = await barIsFixed(page);
           if (fixed) expect(audit.fixedIds, '띠가 고정이면 고정 요소로 모인다').toContain('bottom-bar');
@@ -81,13 +81,13 @@ for (const vp of STANDARD_VIEWPORTS) {
   });
 }
 
-test('라디오 카드의 측정 링 = label border box + 5 — 보이지 않는 input(opacity 0)이 아니라 label의 외곽선(3px + 간격 2px)으로 잰다 (REV-003-M2-3 R-232)', async ({ page }, testInfo) => {
+test('라디오 줄·카드의 측정 링 — 보이지 않는 input(opacity 0)이 아니라 label의 외곽선으로 잰다: 세대 줄은 안쪽 3px(오프셋 −3px), 인생 길이 칸은 3px + 간격 2px (REV-003-M2-3 R-232, SPEC-004 GS1)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   await openBarState(page, 'new');
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   for (const [testId, selected] of [
-    ['era-present', true], // 선택된 카드: 테두리 3px (예전 측정은 label보다 3px 작은 상자였다)
-    ['era-future', false], // 선택되지 않은 카드: 테두리 1px
+    ['gen-random', true], // 선택된 줄: 왼쪽 3px 막대 + 안쪽 링(오프셋 −3px)
+    ['gen-alpha', false], // 선택되지 않은 줄
     ['life-short30', true],
   ] as const) {
     await page.keyboard.press('Shift'); // 키보드 사용 중(:focus-visible)
@@ -101,15 +101,16 @@ test('라디오 카드의 측정 링 = label border box + 5 — 보이지 않는
     });
     expect(card.selected, `${testId} 선택 상태`).toBe(selected);
     expect(card.inputOpacity, '라디오 input은 보이지 않는다(opacity 0) — 이 input의 외곽선으로 재면 안 된다').toBe('0');
-    expect(card.outline, '라디오 카드 링 = 외곽선 3px + 간격 2px').toBe(5);
+    // 세대 줄(.gen-row)의 링은 안쪽으로 그려진다(outline-offset −3px → 3 + (−3) = 0), 분절 칸(.seg__opt)은 3px + 2px = 5 (title.css)
+    expect(card.outline, '링 = 외곽선 + 간격').toBe(testId.startsWith('gen-') ? 0 : 5);
     expect(stop.sample.owners, '링을 그리는 요소로 label이 골라졌다(투명 input이 아니다)').not.toContain(testId);
     const ringBox = grow(stop.sample.box, stop.sample.ring);
-    const want = grow(card.box, 5);
+    const want = grow(card.box, testId.startsWith('gen-') ? 0 : 5);
     for (const side of ['left', 'top', 'right', 'bottom'] as const) expect(ringBox[side], `${testId} 링 ${side}`).toBeCloseTo(want[side], 1);
   }
 });
 
-test('증거 스크린샷(M2-N14 재현 상황, 고친 뒤): 360x740 첫 Tab이 「지금 세상」 카드를 하단 띠 위에 보인다 · 320x568·1280x800·1280x620의 둘째 Tab(「약 30분」)도', async ({ browser, baseURL }, testInfo) => {
+test('증거 스크린샷(M2-N14 재현 상황, 고친 뒤): 360x740 첫 Tab이 「랜덤 세대」 줄을 하단 띠 위에 보인다 · 320x568·1280x800·1280x620의 둘째 Tab(세대 설명 접이식)도', async ({ browser, baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   for (const [name, w, h, tabs, file] of [
     ['360x740', 360, 740, 1, 'dev-M2-r4-n14-360x740-first-tab.png'],

@@ -1,4 +1,4 @@
-import type { Era, Gender, Housing, ParentingStyle, ParentWealth } from '../core/types';
+import type { Gender, Housing, ParentingStyle, ParentWealth } from '../core/types';
 import { BIRTH_ORDER_LABEL, HOUSING_LABEL } from './birthReportTable';
 
 /**
@@ -39,14 +39,44 @@ export const ROULETTE_TEXT = {
   toBirth: '출생신고 보기',
 } as const;
 
-/** 지역 확률표 주석 (RL3·R-187): 지금 세상은 출생 통계에서 합친 파생값(출처·기준 연도), 지난·다가올 세상은 설계값 */
-export function regionOddsNote(basis: 'statistic-derived' | 'design', era: Era, source: { org: string; year: number }): string {
-  if (basis === 'statistic-derived') {
-    return `${source.year}년 시·도별 출생아 수 비율(${source.org}, ${source.year}년 출생 통계). 광주·전남은 통합(2026)에 맞춰 합산. 이름은 줄여 적었어요.`;
-  }
-  return era === 'past'
-    ? `지금 통계를 바탕으로 한 설계값이에요. ${source.year}년 시·도별 출생아 수 비율을 그 시기의 시·도 구분에 맞게 합친 값이고, 실제 당시 분포가 아니에요. 이름은 줄여 적었어요.`
-    : `지금 통계를 바탕으로 한 설계값이에요. ${source.year}년 시·도별 출생아 수 비율(${source.org}, ${source.year}년 출생 통계)을 광주·전남 통합(2026)에 맞춰 합산해 그대로 옮겼어요. 이름은 줄여 적었어요.`;
+/**
+ * 룰렛의 세대 관련 문구 (SPEC-004 GS3·GS6·GS7, copy.md 16-3·16-11). 룰렛 화면 글자에는 **뽑힌 출생 연도가 없다** — 세대 범위의 양 끝(「{범위}년생 가운데」)만 나온다(GS6, tests/roulette.test.tsx).
+ * 표 머리·주석은 「고른 세대 전체 기준」의 섞은 값(GS7)이 무엇을 어떻게 섞은 것인지 말한다. 어체: 안내는 해요체.
+ */
+export const ROULETTE_GEN_TEXT = {
+  /** 세대 줄 뒤: 「밀레니얼 세대 1981~1996년생 가운데」 */
+  among: (from: number, to: number) => `${from}~${to}년생 가운데`,
+  /** 「랜덤 세대」 경로에서 세대 줄 앞 작은 글씨 */
+  fromRandom: '랜덤 세대에서 뽑힌',
+  /** 표 머리 (두 표 모두) */
+  oddsHead: (generation: string) => `${generation} 전체 기준`,
+  /** 직접 고른 시도의 지역 표 자리 (RG2 d) */
+  pickedRegion: '직접 고른 시도',
+  spinNotePicked: '태어나는 시도는 직접 골랐어요. 어느 집에 태어날지는 확률대로 돌아가요.',
+  regionNoteBirths: '해마다 그해 출생아 수만큼 무게를 두어 섞은 시·도별 출생아 비율이에요. 이름은 줄여 적었어요.',
+  regionNoteUniform: '출생 통계가 없는 해라 해마다 같은 무게로 섞은 시·도별 비율이에요. 이름은 줄여 적었어요.',
+  regionNotePop: '1981년 전은 출생 자료가 없어 도별 인구 비례로 셌어요.',
+  /** 범위 도중에 생긴 시·도: 조사 「는/은」이 이름의 받침에 따라 달라지지 않게 「…의 몫은」 */
+  regionNoteLater: (names: string) => `세대 범위 도중에 생긴 ${names}의 몫은 생긴 뒤 해의 것만 들어 있어요.`,
+  wealthNote: (from: number, to: number) => `${from}~${to}년생의 설계값을 해마다 섞은 값이에요. 게임의 설계값이에요(통계가 아님).`,
+  /** 시험 전용 R1 프로필(2026년생)의 수저 표 주석 */
+  wealthNoteR1: '게임의 설계값이에요(통계가 아님).',
+  /** 시험 전용 R1 프로필의 지역 표 주석 */
+  regionNoteR1: '2025년 시·도별 출생아 수 비율을 2026년 시·도에 맞춰 합친 값이에요. 이름은 줄여 적었어요.',
+  // ----- 세대 뽑기 단계 (GS3, N3) -----
+  drawTitle: '어느 세대로 살아볼지 뽑는 중',
+  drawNote: '일곱 세대 가운데 하나를 같은 확률로 뽑아요.',
+  drawOddsCaption: '세대별 확률',
+  drawOddsNote: '일곱 세대가 같은 확률이에요(인구 비례가 아님).',
+  drawOdds: '1/7',
+  drawReelTitle: '세대',
+} as const;
+
+/** 지역 표 주석 한 단락 (births/uniform + 인구 비례 + 범위 도중에 생긴 시·도) */
+export function regionNoteText(m: { basis: 'births' | 'uniform'; popYears: boolean; later: readonly string[] }): string {
+  return [m.basis === 'uniform' ? ROULETTE_GEN_TEXT.regionNoteUniform : ROULETTE_GEN_TEXT.regionNoteBirths, m.popYears ? ROULETTE_GEN_TEXT.regionNotePop : '', m.later.length > 0 ? ROULETTE_GEN_TEXT.regionNoteLater(m.later.join('·')) : '']
+    .filter((x) => x !== '')
+    .join(' ');
 }
 
 // ---------- 제목(h1) 글자 크기 상한 (QM3-2) ----------
@@ -92,6 +122,8 @@ export const BIRTH_TEXT = {
   docTag: ['수저 게임', '가상의 서류'],
   stamp: '접수',
   nameLabel: '이름',
+  /** 「세대」 칸 (SPEC-004 GS6·GD2 — 연도가 처음 드러나는 자리): 값은 `genLine` */
+  genLabel: '세대',
   next: '살아가기',
   gridLabels: {
     gender: '성별',
@@ -119,6 +151,17 @@ export const BIRTH_TEXT = {
   /** 비교 표 아래 안내(서류 본문이라 합쇼체로 통일 — QM3-4): 평균이 출생아 평균이 아니라는 것, 대응이 설계값이라는 것 */
   compareNote: '평균은 각 통계의 전체 대상(학생, 가구) 기준이고, 이 가정 열은 수저 단계에 맞춘 소득 구간의 값입니다. 단계와 소득 구간의 대응은 게임의 설계값입니다.',
 } as const;
+
+/** 「밀레니얼 세대 · 1988년생」 (GD2의 엔딩 꼴 — 세대 이름과 연도를 함께) */
+export function genLine(generation: string, birthYear: number): string {
+  return `${generation} · ${birthYear}년생`;
+}
+
+/** 출생신고 각주 첫 문장: 태어난 해가 어떻게 정해졌는지 (GS7 가중을 플레이어 말로, copy.md 16-11). 출생 통계가 없는 세대(산업화·베이비붐·86)는 「같은 확률로」 */
+export function yearNoteText(basis: 'births' | 'uniform'): string {
+  const how = basis === 'births' ? '그해 출생아 수에 비례해' : '같은 확률로';
+  return `태어난 해는 고른 세대의 범위 안에서 ${how} 정해졌어요. 룰렛에는 보이지 않고 이 서류에서 처음 적혀요.`;
+}
 
 export function genderLabel(gender: Gender): string {
   return gender === 'male' ? '남성' : '여성';
@@ -156,14 +199,14 @@ export const REPORT_NOTES = {
   /** 수저 단계별 보정이 설계값이라는 고지 */
   design: '수저 단계에 따른 부모 나이, 직업, 사는 집의 차이는 게임의 설계값이며 통계가 아닙니다.',
   /**
-   * 지난·다가올 세상 한 줄 (BR4). 범위는 **이 서류 격자의 항목**(출생 월, 출생 체중, 부모의 나이와 직업, 형제 순서, 사는 집)이다 — 비교 표는 이 세상에서 보이지 않고(지금 세상만, R-263),
-   * 태어난 곳의 시·군·구 이름은 따로 밝힌다(`regionPast`·getRegionFootnote). 지난 세상은 그중 부모 나이·직업·형제 순서를 그 시대에 맞게 조정했다(ERA_REPORT_ADJUST·JOB_TILT_BY_ERA).
+   * 세대 판(1940~2020년생)의 한 줄 (BR4·NR2 「추정」 표기): 이 서류 격자의 항목(출생 월, 출생 체중, 부모의 나이와 직업, 형제 순서, 사는 집)은 지금(2025년) 통계를 바탕으로 한 설계값이며 실제 당시 통계가 아니다.
+   * 1989년 이전 출생은 부모 나이·직업·형제 순서를 그 시대에 맞게 조정했다(ERA_REPORT_ADJUST·JOB_TILT_BY_ERA — 연도별 표 NR2가 들어오기 전의 전환기 규칙). 1940년대생은 근거가 가장 얇다.
    */
-  eraPast:
-    '지난 세상의 출생 월, 출생 체중, 부모의 나이와 직업, 형제 순서, 사는 집은 지금(2025년) 통계를 바탕으로 한 설계값이며 실제 당시 통계가 아닙니다. 부모의 나이, 직업, 형제 순서는 그 시대에 맞게 조정했습니다.',
-  eraFuture: '다가올 세상의 출생 월, 출생 체중, 부모의 나이와 직업, 형제 순서, 사는 집은 지금(2025년) 통계를 바탕으로 조금 조정한 설계값이며 예측이 아닙니다.',
-  /** 지난 세상의 지역 표기 (R-264): 시·군·구 이름이 2025년 행정구역 이름이다 — 지금·다가올 세상의 「2026년에 바뀐 시·도…」 문구(getRegionFootnote)는 쓰지 않는다 */
-  regionPast: '시·군·구 이름은 지금(2025년) 행정구역 이름이며 당시와 다를 수 있습니다.',
+  eraOld:
+    '이 서류의 출생 월, 출생 체중, 부모의 나이와 직업, 형제 순서, 사는 집은 지금(2025년) 통계를 바탕으로 한 추정(설계값)이며 실제 당시 통계가 아닙니다. 부모의 나이, 직업, 형제 순서는 그 시대에 맞게 조정했습니다.',
+  eraRecent: '이 서류의 출생 월, 출생 체중, 부모의 나이와 직업, 형제 순서, 사는 집은 지금(2025년) 통계를 바탕으로 한 추정(설계값)이며 실제 당시 통계가 아닙니다.',
+  /** 세대 판의 태어난 곳 표기: 시·도까지만 적고, 그 해의 행정구역 이름에 지금의 시도를 괄호로 덧붙인다 (NR3·RG2 c) */
+  regionGen: '태어난 곳은 시·도까지만 적고, 그 해의 행정구역 이름에 지금의 시도를 괄호로 덧붙였습니다.',
   /** 사는 집 통계의 한계 */
   housing: '사는 집은 출생아 가구가 아니라 일반 가구 전체의 점유형태를 바탕으로 한 근사입니다.',
 } as const;

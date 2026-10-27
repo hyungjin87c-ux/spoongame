@@ -1,23 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ERAS,
-  EventDataError,
-  MILESTONES_PER_YEAR_MAX,
-  advanceUntilDecision,
-  createEventPool,
-  isMilestoneEvent,
-  lintEvents,
-  milestoneWindowProblems,
-  resolveChoiceStep,
-  stepYear,
-  validateEventFiles,
-  type EventDef,
-  type EventPool,
-  type GameState,
-} from '../src/core';
+import { EventDataError, MILESTONES_PER_YEAR_MAX, advanceUntilDecision, createEventPool, isMilestoneEvent, lintEvents, milestoneWindowProblems, resolveChoiceStep, stepYear, type EventDef, type EventPool, type GameState } from '../src/core';
+import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { EARLY_YEARS_MAX_AGE, EVENT_FREQUENCY } from '../src/data/lifeTable';
 import { EVENT_POOL } from '../src/data/events';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import { M7A_MILESTONES } from './helpers/m7a';
 
 /**
@@ -69,7 +55,7 @@ const choiceEvent = (id: string, min: number, max: number) => ({
 const SEEDS = 600;
 /** 시드로 0세 인생을 만들어 narrow한 합성 풀로 한 해씩 진행한다 */
 function lifeYears(seed: number, pool: EventPool, years: number, chooseFirst = true): { states: GameState[]; ticks: ReturnType<typeof stepYear>['tick'][] } {
-  let s = startLife(seed, 'present');
+  let s = startLife(seed, 'alpha');
   const states: GameState[] = [s];
   const ticks: ReturnType<typeof stepYear>['tick'][] = [];
   for (let i = 0; i < years && s.phase === 'life'; i++) {
@@ -143,7 +129,7 @@ describe('stepYear의 마일스톤 슬롯', () => {
   it('창이 한 해(0세)뿐이면 난수 없이 100%다', () => {
     const pool = poolOf(milestone('ms', 0, 0));
     for (let seed = 1; seed <= SEEDS; seed++) {
-      const r = stepYear(startLife(seed, 'present'), pool);
+      const r = stepYear(startLife(seed, 'alpha'), pool);
       expect(linesOf(r.state, 'ms'), `seed ${seed}`).toHaveLength(1);
       expect(r.tick.kind === 'narrative' || r.tick.kind === 'death').toBe(true);
       expect(r.tick.eventId).toBe('ms');
@@ -154,7 +140,7 @@ describe('stepYear의 마일스톤 슬롯', () => {
     const pool = poolOf(milestone('ms', 1, 3));
     let atOne = 0;
     for (let seed = 1; seed <= 3000; seed++) {
-      let s = startLife(seed, 'present');
+      let s = startLife(seed, 'alpha');
       s = stepYear(s, pool).state; // 0세
       if (s.phase !== 'life') continue;
       s = stepYear(s, pool).state; // 1세
@@ -169,7 +155,7 @@ describe('stepYear의 마일스톤 슬롯', () => {
     let both = 0;
     let onlyMilestone = 0;
     for (let seed = 1; seed <= SEEDS; seed++) {
-      let s = startLife(seed, 'present');
+      let s = startLife(seed, 'alpha');
       s = stepYear(s, pool).state;
       if (s.phase !== 'life') continue;
       const r = stepYear(s, pool);
@@ -198,7 +184,7 @@ describe('stepYear의 마일스톤 슬롯', () => {
     const pool = poolOf(milestone('ms', 1, 1), choiceEvent('ch', 1, 1));
     let withChoice = 0;
     for (let seed = 1; seed <= SEEDS && withChoice < 40; seed++) {
-      let s = startLife(seed, 'present');
+      let s = startLife(seed, 'alpha');
       s = stepYear(s, pool).state;
       if (s.phase !== 'life' || s.pending !== null) continue;
       const r = stepYear(s, pool);
@@ -241,7 +227,7 @@ describe('stepYear의 마일스톤 슬롯', () => {
     let withRegular = 0;
     let withChoice = 0;
     for (let seed = 1; seed <= SEEDS; seed++) {
-      let s = startLife(seed, 'present');
+      let s = startLife(seed, 'alpha');
       s = stepYear(s, pool).state; // 0세
       if (s.phase !== 'life' || s.pending !== null) continue;
       const r = stepYear(s, pool); // 1세
@@ -268,7 +254,7 @@ describe('stepYear의 마일스톤 슬롯', () => {
     expect(MILESTONES_PER_YEAR_MAX).toBe(3);
     const pool = poolOf(milestone('ms-a', 1, 1), milestone('ms-b', 1, 1), milestone('ms-c', 1, 1));
     for (let seed = 1; seed <= 200; seed++) {
-      let s = startLife(seed, 'present');
+      let s = startLife(seed, 'alpha');
       s = stepYear(s, pool).state;
       if (s.phase !== 'life') continue;
       const r = stepYear(s, pool);
@@ -310,7 +296,7 @@ describe('7세는 영유아 빈도표를 쓴다 (M7a, EARLY_YEARS_MAX_AGE)', () 
       let hit = 0;
       let n = 0;
       for (let seed = 1; seed <= 1500; seed++) {
-        const g = { ...startLife(seed, 'present'), age, stats: startLife(seed, 'present').stats };
+        const g = { ...startLife(seed, 'alpha'), age, stats: startLife(seed, 'alpha').stats };
         const r = stepYear(g, pool);
         n++;
         if (linesOf(r.state, `rg${age}`).length > 0) hit++;
@@ -346,16 +332,18 @@ describe('실제 마일스톤 데이터 (첫 예방접종·첫 걸음마·첫 �
   });
 
   it('milestoneWindowProblems (r3): 같은 해에 끝나는 마일스톤이 한 해 칸(3개)을 넘을 때만 잡는다 — 둘·셋은 통과 (같은 시대일 때만 센다)', () => {
-    const mk = (id: string, max: number, eras?: string[]): EventDef => validateEventFiles({ 'x.json': { events: [milestone(id, 0, max, eras ? { eras } : {})] } })[0];
+    const mk = (id: string, max: number, yearRange?: { from?: number; to?: number }): EventDef => createEventPool(validateEventFiles({ 'x.json': { events: [milestone(id, 0, max, yearRange ? { track: 'standard', yearRange } : {})] } })).events[0];
+    const PAST = { to: 2000 };
+    const FUTURE = { from: 2001 };
     expect(milestoneWindowProblems([mk('ms-a', 2), mk('ms-b', 2)])).toEqual([]); // r2까지는 걸렸다 — 한 해 여러 개를 허용하면서 풀었다
     expect(milestoneWindowProblems([mk('ms-a', 2), mk('ms-b', 2), mk('ms-c', 2)])).toEqual([]);
     const four = [mk('ms-a', 2), mk('ms-b', 2), mk('ms-c', 2), mk('ms-d', 2)];
     expect(milestoneWindowProblems(four).join('\n')).toContain('4개의 창이 같은 2세에 끝난다');
     expect(milestoneWindowProblems(four)).toHaveLength(1); // 세 시대가 같은 문제를 세 번 적지 않는다
     expect(milestoneWindowProblems([mk('ms-a', 2), mk('ms-b', 2), mk('ms-c', 2), mk('ms-d', 3)])).toEqual([]); // 끝이 다르면 괜찮다
-    // 시대가 겹치지 않으면 괜찮다: 지난 세상 셋 + 지금 세상 둘
-    expect(milestoneWindowProblems([mk('ms-a', 2, ['past']), mk('ms-b', 2, ['past']), mk('ms-c', 2, ['past']), mk('ms-d', 2, ['present']), mk('ms-e', 2, ['present'])])).toEqual([]);
-    expect(milestoneWindowProblems([mk('ms-a', 2, ['past']), mk('ms-b', 2, ['past']), mk('ms-c', 2, ['past']), mk('ms-d', 2)]).length).toBe(1); // 지난 세상에 넷이 몰린다
+    // 연도 구간이 겹치지 않으면 괜찮다: 지난 구간(~2000) 셋 + 이후 구간(2001~) 둘
+    expect(milestoneWindowProblems([mk('ms-a', 2, PAST), mk('ms-b', 2, PAST), mk('ms-c', 2, PAST), mk('ms-d', 2, FUTURE), mk('ms-e', 2, FUTURE)])).toEqual([]);
+    expect(milestoneWindowProblems([mk('ms-a', 2, PAST), mk('ms-b', 2, PAST), mk('ms-c', 2, PAST), mk('ms-d', 2)]).length).toBe(1); // 지난 구간에 넷이 몰린다
   });
 
   it('스키마(R-371 ①): 창의 모든 나이가 stages에 덮여야 한다 — 6~7세 창에 stages: [infant]면 7세(학창 단계)가 비어 100%가 조용히 깨지므로 오류다', () => {
@@ -371,7 +359,7 @@ describe('실제 마일스톤 데이터 (첫 예방접종·첫 걸음마·첫 �
   });
 
   it('세 시대 × 1000판: 사망하지 않은 모든 판에 세 마일스톤이 창 안에서 한 번씩 일어난다 (IN3 100%) — 걸음마·첫 말은 모두 1세다 (r3: 나이 분포 1세 100%)', () => {
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       let checked = 0;
       for (let i = 0; i < 1000; i++) {
         const seed = i * 7919 + 13;
@@ -397,7 +385,7 @@ describe('실제 마일스톤 데이터 (첫 예방접종·첫 걸음마·첫 �
   it('advanceUntilDecision(다음 결정으로)도 마일스톤 줄을 남기고 결정 카드가 뜬 해에 멈춘다', () => {
     let seen = 0;
     for (let seed = 1; seed <= 200; seed++) {
-      const r = advanceUntilDecision(startLife(seed, 'present'));
+      const r = advanceUntilDecision(startLife(seed, 'alpha'));
       if (r.state.pending === null) continue;
       const age = r.state.age;
       const lines = r.state.history.filter((h) => h.age <= age && h.eventId === 'infant-vaccine');

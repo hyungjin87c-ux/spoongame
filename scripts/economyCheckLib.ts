@@ -1,21 +1,25 @@
 import {
-  ERAS,
+  R1_PRESENT,
   autoResolveStep,
+  eventPool,
   finalWealthStanding,
   movementOf,
   reachedIndependence,
   resolveChoiceStep,
   startBandOf,
   stepYear,
-  type Era,
   type FinalDistribution,
   type GameState,
   type Movement,
   type ParentWealth,
+  type ProfileId,
+  wealthMixtureOfProfile,
 } from '../src/core';
 import { LIMITS } from '../src/data/economyTable';
-import { EVENT_POOL } from '../src/data/events';
-import { chooserFor, startLife, type Strategy } from './simulateLib';
+import { SIM_SAMPLE, chooserFor, poolOf, startLife, type Strategy } from './simulateLib';
+
+/** 경제 점검이 재는 프로필: R1 「지금 세상」(목표 19개·스냅숏의 기준) + 대표 세 세대. 연도 축 경제가 GM10에서 켜지면 단면 재구성으로 바뀐다(EY8·16-10) */
+export const ECONOMY_PROFILES: readonly ProfileId[] = [R1_PRESENT, ...SIM_SAMPLE];
 
 /**
  * 경제 모델 밸런스 측정 (SPEC-003 EC7, docs/data/economy-model.md 9절). 순수 계산이라 `scripts/economyCheck.ts`(npm run check:economy)와
@@ -53,16 +57,17 @@ export interface LifeOutcome {
 }
 
 /** 분포표를 주어 판들의 엔딩 방향을 다시 정한다(표를 바꿔 본다: 튜닝 도구용) */
-export function withMovements(era: Era, lives: readonly LifeOutcome[], table: Record<Era, FinalDistribution>): LifeOutcome[] {
+export function withMovements(era: ProfileId, lives: readonly LifeOutcome[], table: Record<ProfileId, FinalDistribution>): LifeOutcome[] {
   return lives.map((l) => ({
     ...l,
-    movement: l.reached ? movementOf(startBandOf(era, l.parentWealth), finalWealthStanding(era, l.net, table)) : null,
+    movement: l.reached ? movementOf(startBandOf(wealthMixtureOfProfile(era), l.parentWealth), finalWealthStanding(era, l.net, table)) : null,
   }));
 }
 
 /** 한 판을 끝까지 돌려 20세부터의 줄과 끝(LifeOutcome)을 모은다 (core/life.ts#playToEnd와 같은 걸음 — 걸음 사이에 자산을 읽는 것만 다르다) */
-export function playLife(seed: number, era: Era, strategy: Strategy): { samples: Sample[]; outcome: LifeOutcome } {
+export function playLife(seed: number, era: ProfileId, strategy: Strategy): { samples: Sample[]; outcome: LifeOutcome } {
   let s: GameState = startLife(seed, era);
+  const pool = poolOf(era);
   const chooser = chooserFor(strategy, seed);
   const out: Sample[] = [];
   let lastAge = -1;
@@ -77,22 +82,22 @@ export function playLife(seed: number, era: Era, strategy: Strategy): { samples:
       s.pending !== null
         ? (() => {
             const picked = chooser === null ? null : chooser(s);
-            return picked === null ? autoResolveStep(s, s.pending.key) : resolveChoiceStep(s, s.pending.key, picked);
+            return picked === null ? autoResolveStep(s, s.pending.key, pool) : resolveChoiceStep(s, s.pending.key, picked, pool);
           })()
-        : stepYear(s);
+        : stepYear(s, pool);
     s = r.state;
     record(s);
   }
   if (s.character === null || s.death === null) throw new Error('playLife: 사망에 도달하지 못했다');
   const reached = reachedIndependence(s.death.age) && s.assets !== null;
   const net = s.assets?.net ?? 0;
-  const movement = reached ? movementOf(startBandOf(era, s.character.parentWealth), finalWealthStanding(era, net)) : null;
+  const movement = reached ? movementOf(startBandOf(wealthMixtureOfProfile(era), s.character.parentWealth), finalWealthStanding(era, net)) : null;
   const minNet = Math.min(net, ...out.map((x) => x.net));
   return { samples: out, outcome: { parentWealth: s.character.parentWealth, deathAge: s.death.age, reached, net, minNet, movement } };
 }
 
 /** 한 판의 20세부터의 줄만 */
-export function samplesOfLife(seed: number, era: Era, strategy: Strategy): Sample[] {
+export function samplesOfLife(seed: number, era: ProfileId, strategy: Strategy): Sample[] {
   return playLife(seed, era, strategy).samples;
 }
 
@@ -102,7 +107,7 @@ export function economySeed(i: number): number {
 }
 
 /** 시대·전략의 판 1..plays를 돌려 모은 모든 줄과 판마다의 끝 */
-export function collectLives(era: Era, plays: number, strategy: Strategy): { rows: Sample[]; lives: LifeOutcome[] } {
+export function collectLives(era: ProfileId, plays: number, strategy: Strategy): { rows: Sample[]; lives: LifeOutcome[] } {
   const rows: Sample[] = [];
   const lives: LifeOutcome[] = [];
   for (let i = 1; i <= plays; i++) {
@@ -114,7 +119,7 @@ export function collectLives(era: Era, plays: number, strategy: Strategy): { row
 }
 
 /** 시대·전략의 판 1..plays를 돌려 모은 모든 줄 */
-export function collectEra(era: Era, plays: number, strategy: Strategy): Sample[] {
+export function collectEra(era: ProfileId, plays: number, strategy: Strategy): Sample[] {
   return collectLives(era, plays, strategy).rows;
 }
 
@@ -293,7 +298,8 @@ const byWealth = (rows: readonly Sample[], w: ParentWealth): Sample[] => rows.fi
 
 /** 엔딩 쪽 가드의 한계 (15-4절): 사망 시점 순자산<0 비율(%) 지난·지금 ≤ 25, 다가올 ≤ 35 · 하한에 닿은 판 0% · 지금 세상 4단계 「뒤쪽」 ≤ 50%, 5단계 ≤ 70% · 자동 모드 40대 ≤ 수동의 1.5배, 앞섬 ≤ 45% */
 export const END_LIMITS = {
-  negativeShare: { past: 25, present: 25, future: 35 } as Record<Era, number>,
+  /** 사망 시점 순자산<0 비율 상한(%) — R1 때 지난·지금 25, 다가올 35였다. 세대 판은 연도 축 경제(GM10) 전까지 모두 R1 「지금 세상」 모형이라 25 하나다 */
+  negativeShare: 25,
   floorShare: 0,
   downShare: { 4: 50, 5: 70 } as Record<number, number>,
   autoNet40Ratio: 1.5,
@@ -322,10 +328,14 @@ export function movementShares(lives: readonly LifeOutcome[]): Record<Movement, 
  * 허용 폭 밖으로 **보고한** 가드(키 `시대:가드 id`)와 보고한 값보다 나빠지지 않도록 지키는 한계 (KNOWN_GAPS와 같은 규칙, 15-3절). 못 맞춘 이유·시도한 레버는 docs/data/economy-model.md 9-3절.
  */
 export const KNOWN_GUARD_GAPS: Record<string, { limit: (metric: number, guard?: Guard) => boolean; why: string }> = {
-  'past:g3-ratio': { limit: (v) => v >= 3.2, why: '지난 세상 5단계 대 1단계 40대 순자산 비 3.6배(≥ 4배; M7a r3 뒤 3.5배) — 지난 세상 5단계는 전체의 약 1%(6000판 중 약 60판)라 중앙값 잡음이 ±10%이고, 지난 세상은 생활비·집값이 낮아(0.7·0.6) 가난한 집이 그만큼 더 모은다. 지난 세상 생활비 계수를 0.75로 올리면 4.7배가 되지만 사망 시점 순자산<0이 32%가 된다' },
-  'past:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.8%(≤ 25%; M7a r3 뒤 28.9%) — 1·2단계의 일부가 평생 빚에서 못 나온 채 끝난다(노년 안전망이 부채를 동결할 뿐 없애지 않는다)' },
-  'present:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.5%(≤ 25%; M7a r3 뒤 26.4%) — 같은 이유. 사망 시점 순자산의 하한을 0으로 두는 규칙(상속 포기·한정승인의 근사, D22)이면 0%가 되지만 마스터가 채택하지 않았다(15-6절) — 빚으로 끝나는 인생도 엔딩에 그대로 보인다' },
-  'future:end-negative': { limit: (v) => v <= 41, why: '사망 시점 순자산<0 38.3%(≤ 35%; M7a r3 뒤 38.3%) — 같은 이유 + 다가올 세상의 소득 대 생활·주거 계수(1.15 대 1.2·1.3)가 가난한 집에 더 무겁다' },
+  // (세대 판의 목표 수준은 연도 축 경제가 켜지는 GM10에서 단면 재구성 가드로 다시 정한다 — 그때까지는 GM4 측정값(전 연도 R1 「지금 세상」 모형)이 보고한 값보다 나빠지지 않게만 지킨다)
+  // GM4(SPEC-004)에서 새로 보고하는 차이: 대표 세대 셋(산업화·X·알파)의 R1 모형 측정. R1 자신의 값은 SPEC-005 때와 같다(EY17 항등).
+  'industrial:g3-ratio': { limit: (v) => v >= 3.1, why: 'GM4 측정 산업화 세대 5단계 대 1단계 40대 순자산 비 3.4배(≥ 4배) — 세대 판은 연도 축 경제(GM10) 전까지 모두 R1 모형이고 세대마다 수저 섞음 비율만 다르다(산업화 세대는 1~2단계가 72%라 5단계 표본이 적다). GM10이 단면 재구성 가드로 다시 정한다' },
+  'industrial:end-negative': { limit: (v) => v <= 33, why: 'GM4 측정 산업화 세대 사망 시점 순자산<0 29.4%(≤ 25%) — 세대 판은 연도 축 경제(GM10) 전까지 R1 모형이라 수저 섞음 비율(1~2단계 72%)만큼 빚으로 끝나는 인생이 늘어난다. GM10이 세대별 가드로 다시 정한다' },
+  'genx:end-negative': { limit: (v) => v <= 31, why: 'GM4 측정 X세대 사망 시점 순자산<0 27.8%(≤ 25%) — 같은 이유' },
+  'alpha:end-negative': { limit: (v) => v <= 32, why: 'GM4 측정 알파 세대 사망 시점 순자산<0 28.8%(≤ 25%) — 같은 이유' },
+  'genx:g3-ratio': { limit: (v) => v >= 3.5, why: 'GM4 측정 X세대 5단계 대 1단계 40대 순자산 비 3.8배(≥ 4배) — 같은 이유' },
+  'r1-present:end-negative': { limit: (v) => v <= 30, why: '사망 시점 순자산<0 26.5%(≤ 25%; M7a r3 뒤 26.4%) — 같은 이유. 사망 시점 순자산의 하한을 0으로 두는 규칙(상속 포기·한정승인의 근사, D22)이면 0%가 되지만 마스터가 채택하지 않았다(15-6절) — 빚으로 끝나는 인생도 엔딩에 그대로 보인다' },
   // `present:end-g3`(지금 세상 재력 1·2단계 사망 시점 순자산 중앙값 0 = 0 동률, M8이 보고·마스터 승인 2026-10-20)은 SPEC-005 QI5(부모 결정)로 **통과로 돌아와 뺐다** — 2단계 중앙값이 0 → 1,251(PD13 본인 영역 가중 ×2.0 최종값: 1·2·3·4·5단계 0 < 1,251 < 36,353 < 124,629 < 178,212; 처음 ×1.5로 쟀을 때는 0 < 971 < 37,360 < 124,518 < 184,411).
   // 다만 2단계 중앙값은 0 근처에서 출렁이는 지표라(표본 1805판, 중앙값의 표준오차 약 1,700) 다음 콘텐츠 변경에서 다시 동률이 될 수 있다 — 그때는 이 목록에 다시 올리고 마스터에게 보고한다(옛 한계 기록: 1·2단계의 차만 0 이상, 나머지 인접 차는 0 초과).
   // M7a r2가 보고했던 지금 세상 4단계 엔딩 「뒤쪽」(51.4%)은 M7e-3의 「동률 불리」 규칙(엔딩 마스터 결정 C, 9-8절)과 순자산 상승으로 47.4%가 되어 통과로 돌아와 뺐다(M7e-4: 주석의 45.8%는 오기였다 — 9-8절·로그의 47.4%가 맞다, REV-003-M7e-1 R-382 (c)) — `present:end-down4`.
@@ -364,7 +374,7 @@ function assetsOf(c: { assets?: { netMin?: number; netMax?: number } } | undefin
 /** 7곳의 조건을 이벤트 데이터에서 읽어 만든다 */
 export function conditionChecks(): ConditionCheck[] {
   const ev = (id: string) => {
-    const e = EVENT_POOL.byId.get(id);
+    const e = eventPool().byId.get(id);
     if (e === undefined) throw new Error(`conditionChecks: 이벤트 ${id}가 없다`);
     return e;
   };
@@ -441,7 +451,7 @@ export function judgeConditions(rows: readonly Sample[], checks: readonly Condit
 }
 
 /** 한 시대(지금 세상 기준)의 가드. rows는 그 시대의 표본, lives는 그 시대의 판마다의 끝(없으면 엔딩 쪽 가드는 건너뛴다) */
-export function guardsOf(era: Era, rows: readonly Sample[], lives: readonly LifeOutcome[] = []): Guard[] {
+export function guardsOf(era: ProfileId, rows: readonly Sample[], lives: readonly LifeOutcome[] = []): Guard[] {
   const out: Guard[] = [];
   const m40 = (w: ParentWealth) => median(bandRows(byWealth(rows, w), 40, 49).map((x) => x.net));
   const m1 = m40(1);
@@ -459,21 +469,17 @@ export function guardsOf(era: Era, rows: readonly Sample[], lives: readonly Life
   out.push({ id: 'g3-rich60', label: '재력 5단계의 60대 순자산<0 비율 < 15%', value: `${neg60.toFixed(1)}%`, metric: neg60, ok: neg60 < 15 });
   const neg20 = sharePct(bandRows(rows, 20, 29), (x) => x.net < 0);
   // M-2의 근거(통계: 가구주 29세 이하 순자산 중앙값 5,000만 원 > 0)는 지금 세상 것이라 다른 시대는 참고로만 본다
-  out.push({ id: 'm2-young', label: '20~29세 순자산<0 비율 ≤ 60% (M-2)', value: `${neg20.toFixed(1)}%`, metric: neg20, ok: neg20 <= 60, reference: era !== 'present' });
-  if (era === 'future') {
-    const m65 = median(bandRows(rows, 65, 130).map((x) => x.net));
-    out.push({ id: 'm4-future65', label: '다가올 세상 65세 이상 순자산 중앙값 ≥ 0 (M-4)', value: `${Math.round(m65)}`, metric: m65, ok: m65 >= 0 });
-  }
+  out.push({ id: 'm2-young', label: '20~29세 순자산<0 비율 ≤ 60% (M-2)', value: `${neg20.toFixed(1)}%`, metric: neg20, ok: neg20 <= 60, reference: era !== R1_PRESENT });
   if (lives.length > 0) out.push(...endingGuardsOf(era, lives));
   return out;
 }
 
 /** 엔딩(사망 시점 순자산) 가드 (15-4절) */
-export function endingGuardsOf(era: Era, lives: readonly LifeOutcome[]): Guard[] {
+export function endingGuardsOf(era: ProfileId, lives: readonly LifeOutcome[]): Guard[] {
   const out: Guard[] = [];
   const reached = reachedLives(lives);
   const neg = sharePct(reached, (l) => l.net < 0);
-  out.push({ id: 'end-negative', label: `사망 시점 순자산<0 비율 ≤ ${END_LIMITS.negativeShare[era]}%`, value: `${neg.toFixed(1)}%`, metric: neg, ok: neg <= END_LIMITS.negativeShare[era] });
+  out.push({ id: 'end-negative', label: `사망 시점 순자산<0 비율 ≤ ${END_LIMITS.negativeShare}%`, value: `${neg.toFixed(1)}%`, metric: neg, ok: neg <= END_LIMITS.negativeShare });
   const floor = sharePct(lives, (l) => l.minNet <= LIMITS.netMin);
   out.push({ id: 'end-floor', label: '순자산 하한(−20억 원)에 닿은 판 0%', value: `${floor.toFixed(2)}%`, metric: floor, ok: floor <= END_LIMITS.floorShare });
   const med = deathNetMedians(lives);
@@ -494,7 +500,7 @@ export function endingGuardsOf(era: Era, lives: readonly LifeOutcome[]): Guard[]
       value: `${down.toFixed(1)}%`,
       metric: down,
       ok: down <= END_LIMITS.downShare[w],
-      reference: era !== 'present',
+      reference: era !== R1_PRESENT,
     });
   }
   return out;
@@ -521,48 +527,27 @@ export function autoGuardsOf(
   ];
 }
 
-/** 지난·다가올 세상의 40대 순자산 중앙값을 지금 세상과 견준 비율의 목표 구간 (9-1절) */
-export const ERA_RATIO_RANGE: Record<Exclude<Era, 'present'>, readonly [number, number]> = { past: [0.5, 0.9], future: [0.3, 0.9] };
-
-export interface EraRatio {
-  era: Exclude<Era, 'present'>;
-  ratio: number;
-  lo: number;
-  hi: number;
-  ok: boolean;
-}
-
-export function eraRatios(byEra: Record<Era, readonly Sample[]>): EraRatio[] {
-  const base = statsOfBand(byEra.present, band('b40')).netMedian;
-  return (['past', 'future'] as const).map((era) => {
-    const ratio = statsOfBand(byEra[era], band('b40')).netMedian / base;
-    const [lo, hi] = ERA_RATIO_RANGE[era];
-    return { era, ratio, lo, hi, ok: ratio >= lo && ratio <= hi };
-  });
-}
-
 /** 전체 측정: 시대별 표본을 모아 목표·가드·시대 비율을 판정한다 */
 export interface EconomyReport {
   plays: number;
   strategy: Strategy;
-  rows: Record<Era, Sample[]>;
-  lives: Record<Era, LifeOutcome[]>;
+  rows: Record<string, Sample[]>;
+  lives: Record<string, LifeOutcome[]>;
+  /** 19개 목표는 R1 「지금 세상」 표본으로 판정한다(통계가 지금 세상 것이다, 9-1절) */
   targets: TargetResult[];
-  guards: Record<Era, Guard[]>;
-  ratios: EraRatio[];
+  guards: Record<string, Guard[]>;
 }
 
-export function measureEconomy(plays: number, strategy: Strategy): EconomyReport {
-  const collected = Object.fromEntries(ERAS.map((era) => [era, collectLives(era, plays, strategy)])) as Record<Era, { rows: Sample[]; lives: LifeOutcome[] }>;
-  const rows = Object.fromEntries(ERAS.map((era) => [era, collected[era].rows])) as Record<Era, Sample[]>;
-  const lives = Object.fromEntries(ERAS.map((era) => [era, collected[era].lives])) as Record<Era, LifeOutcome[]>;
+export function measureEconomy(plays: number, strategy: Strategy, profiles: readonly ProfileId[] = ECONOMY_PROFILES): EconomyReport {
+  const collected = Object.fromEntries(profiles.map((p) => [p, collectLives(p, plays, strategy)])) as Record<string, { rows: Sample[]; lives: LifeOutcome[] }>;
+  const rows = Object.fromEntries(profiles.map((p) => [p, collected[p].rows])) as Record<string, Sample[]>;
+  const lives = Object.fromEntries(profiles.map((p) => [p, collected[p].lives])) as Record<string, LifeOutcome[]>;
   return {
     plays,
     strategy,
     rows,
     lives,
-    targets: TARGETS.map((t) => judgeTarget(t, rows.present)),
-    guards: Object.fromEntries(ERAS.map((era) => [era, guardsOf(era, rows[era], lives[era])])) as Record<Era, Guard[]>,
-    ratios: eraRatios(rows),
+    targets: TARGETS.map((t) => judgeTarget(t, rows[R1_PRESENT] ?? Object.values(rows)[0])),
+    guards: Object.fromEntries(profiles.map((p) => [p, guardsOf(p, rows[p], lives[p])])) as Record<string, Guard[]>,
   };
 }

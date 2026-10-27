@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ERAS, PARENT_WEALTHS, buildCarousel, commaList, glueSegments, segmentsText, splitPair, type GlueSegment } from '../src/core';
+import { PARENT_WEALTHS, buildCarousel, commaList, glueSegments, segmentsText, splitPair, wealthMixtureOfProfile, type GlueSegment } from '../src/core';
+import { SIM_PROFILES } from '../scripts/simulateLib';
 import { startBandOf } from '../src/core/ending';
 import { GRADE_NAME } from '../src/data/birthReportText';
 import { DASH_TEXT } from '../src/data/dashText';
@@ -20,9 +21,17 @@ const kinds = (segments: readonly GlueSegment[]): string[] => segments.map((s) =
 describe('glueSegments: 묶는 것', () => {
   it('숫자와 바로 뒤 단위는 한 묶음(nowrap)이다: 「240,326 건」「27.8명」「37.7%」「66세」', () => {
     expect(kinds(glueSegments('240,326 건 기준'))).toEqual(['nowrap:240,326 건', 'plain: 기준']);
-    expect(kinds(glueSegments('총 27.8명이'))).toEqual(['plain:총 ', 'nowrap:27.8명', 'plain:이']);
+    expect(kinds(glueSegments('총 27.8명이'))).toEqual(['plain:총 ', 'nowrap:27.8명이']); // 단위 뒤에 붙은 조사까지 한 낱말로 묶는다
     expect(kinds(glueSegments('37.7%'))).toEqual(['nowrap:37.7%']);
     expect(kinds(glueSegments('66세 이상'))).toEqual(['nowrap:66세', 'plain: 이상']);
+  });
+
+  it('단위 뒤에 바로 붙은 조사·어미(한글)는 같은 낱말이라 한 묶음이다 — 「하위 20% / 의 몇 배인지」·「40세 / 가」처럼 조사만 떨어져 나가지 않는다', () => {
+    expect(kinds(glueSegments('하위 20%의 몇 배인지'))).toEqual(['plain:하위 ', 'nowrap:20%의', 'plain: 몇 배인지']);
+    expect(kinds(glueSegments('상위 20%가 하위 20%와'))).toEqual(['plain:상위 ', 'nowrap:20%가', 'plain: 하위 ', 'nowrap:20%와']);
+    expect(kinds(glueSegments('37.7% 입니다'))).toEqual(['nowrap:37.7%', 'plain: 입니다']);
+    expect(kinds(glueSegments('3명이었다'))).toEqual(['nowrap:3명이었다']);
+    expect(kinds(glueSegments('3명, 40세 이상'))).toEqual(['nowrap:3명', 'plain:, ', 'nowrap:40세', 'plain: 이상']); // 쉼표·공백 앞에서 끝난다
   });
 
   it('날짜·시각은 통째로 한 묶음이다: 「11월 1일 0시」(고령인구 정의에서 「1일」과 「0시」 사이가 끊기던 곳)·「2026년 9월」·「2026-10-15」', () => {
@@ -248,13 +257,14 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
   const stripComments = (src: string): string => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
   const files = Object.entries(sources).map(([path, raw]) => ({ file: path.replace('../src/', ''), code: stripComments(raw) }));
 
-  it("join(' · ')·join('·')·join(' / ')은 개발자용 점검 메시지(core/eventLint.ts 2곳) 말고 어디에도 없다 — 화면 글자를 가운뎃점·빗금으로 잇는 목록 조립이 없다", () => {
+  it("join(' · ')·join('·')·join(' / ')은 개발자용 점검 메시지(core/eventLint.ts 2곳 · core/events.ts 1곳)와 룰렛 지역 표 주석의 시·도 이름 나열 한 곳(copy.md 16-x 「{이름·이름}」) 말고 어디에도 없다 — 화면 글자를 가운뎃점·빗금으로 잇는 목록 조립이 없다", () => {
     const hits: Record<string, number> = {};
     for (const f of files) {
       const n = [...f.code.matchAll(/\.join\(\s*(['"`])\s*[·/—]\s*\1\s*\)/g)].length;
       if (n > 0) hits[f.file] = n;
     }
-    expect(hits).toEqual({ 'core/eventLint.ts': 2 });
+    // data/birthReportText.ts: 지역 표 주석 「세대 범위 도중에 생긴 {이름·이름}의 몫은…」의 짧은 시·도 이름 나열(SPEC-004 GS6, 시안 문구 그대로)
+    expect(hits).toEqual({ 'core/eventLint.ts': 2, 'core/events.ts': 1, 'data/birthReportText.ts': 1 });
     expect(files.length, '공허 통과 방지: src 전체를 읽었다').toBeGreaterThan(40);
   });
 
@@ -266,12 +276,18 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     }
     expect(hits).toEqual({
       // (SPEC-005 QI3: core/carousel.ts의 기준 줄 「{분모 문구} · {연도}년 기준」 조립은 없어졌다 — 연도는 공식 통계명 줄 「합계출산율(2025년)」로 옮겼고 기준 줄에는 분모만 남는다)
+      'core/events.ts': 1, // 개발자용 점검 메시지(「standard · common · assembled 중 하나여야 한다」)
       'core/glue.ts': 1, // splitPair의 분해 기호
+      // SPEC-004: 세대 이름과 연도의 짧은 쌍 「{세대} · {연도}년생」(출생신고 머리, GD2 엔딩 꼴)·세대 목록의 표제 「산업화 세대 · 전후 세대」(GD1 표 이름)·내 출신 칩 「내 출신 시도 · {시도}」 — 항목이 고정된 짧은 쌍이고 ui/Glue·FitPair로 그린다
+      'data/birthReportText.ts': 1,
+      'data/generations.ts': 1,
+      'data/generationText.ts': 1,
       // SPEC-005 QI6: 가린 자살률 슬라이드의 표제어 「무거운 주제 · 마음 건강 통계」(copy.md 12-1) — 고정된 짧은 쌍 한 곳. 슬라이드가 ui/Glue(hideSeparator)로 그려 「·」가 줄 가장자리에 서지 않고 낭독에서 빠진다
       // (결정 카드·접힌 띠·부모 카드의 「무거운 주제 · {분류}」는 문구를 조립하지 않고 ui/FitPair의 두 항목으로 그린다)
       'data/gentleText.ts': 1,
       'data/endingText.ts': 2, // 엔딩 연표의 단계 줄: 단계 · 나이 범위, 엔딩 머리 셋째 줄: 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (M7e-3 — 둘 다 엔딩 화면이 ui/Glue로 그린다)
-      'screens/EndingScreen.tsx': 1, // 엔딩 머리 라벨 「{세상} · 생애 기록」 (M7e-3, ui/Glue 묶음 — 「·」가 줄 가장자리에 남지 않는다)
+      // 첫 화면 세대 목록 줄의 메타 「{범위}년생 · 올해 N~M세」 (SPEC-004 GS1, 시안 `.gen-row` — 두 항목을 nowrap으로 따로 묶어 그린다)
+      'screens/TitleScreen.tsx': 1,
       // SPEC-003 M4 대시보드: 인생 기록 머리 보조 「시간순 · 위로 스크롤하면 지난 기록」과 새 줄 버튼 「새 기록 N개 · 맨 아래로」 — 둘 다 항목이 둘로 고정된 짧은 쌍이고 ui/Glue 묶음(.keep-phrase)으로 그려 기호가 줄 가장자리에 혼자 남지 않는다(copy.md 대시보드 행, 11-4절).
       'data/dashText.ts': 2,
       'data/koreaStatsAccess.ts': 2, // 「통계 기준: {연도}년 · 마지막 갱신 {날짜}」, 카드 출처 줄(화면에 쓰이지 않는 접근자 값)
@@ -360,9 +376,9 @@ describe('괄호 안 짧은 구간은 괄호째 한 묶음이다 (M3-O13)', () =
 
   it('우리 문구의 모든 구간이 묶인다: 세 시대 × 수저 5단계의 「{수저}({구간})」는 구간 하나가 한 묶음이고 그 밖에는 괄호가 없다 — 묶음은 글자를 바꾸지 않는다', () => {
     let seen = 0;
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (const grade of PARENT_WEALTHS) {
-        const band = bandLabel(startBandOf(era, grade));
+        const band = bandLabel(startBandOf(wealthMixtureOfProfile(era), grade));
         const sentence = `${GRADE_NAME[grade]}(${band})`;
         const segs = glueSegments(sentence);
         expect(segmentsText(segs), sentence).toBe(sentence);
@@ -373,7 +389,7 @@ describe('괄호 안 짧은 구간은 괄호째 한 묶음이다 (M3-O13)', () =
         seen++;
       }
     }
-    expect(seen, '공허 통과 방지').toBe(ERAS.length * PARENT_WEALTHS.length);
+    expect(seen, '공허 통과 방지').toBe(SIM_PROFILES.length * PARENT_WEALTHS.length);
   });
 
   it('범위 밖은 건드리지 않는다: 상위·하위로 시작하지 않는 괄호, 24글자를 넘는 괄호, 닫히지 않은 괄호는 이 규칙의 묶음이 아니다', () => {
@@ -411,7 +427,7 @@ describe('지시 관형사 「이」「그」「저」 + 바로 뒤 어절은 �
   });
 
   it('뒤 어절이 한글로 시작하지 않으면(숫자·라틴 글자·기호) 묶지 않는다: 「이 3명」「이 ABC」', () => {
-    expect(kinds(glueSegments('이 3명이'))).toEqual(['plain:이 ', 'nowrap:3명', 'plain:이']);
+    expect(kinds(glueSegments('이 3명이'))).toEqual(['plain:이 ', 'nowrap:3명이']);
     expect(kinds(glueSegments('이 ABC 표'))).toEqual(['plain:이 ABC 표']);
   });
 
@@ -434,7 +450,6 @@ describe('지시 관형사 「이」「그」「저」 + 바로 뒤 어절은 �
   it('묶어도 글자는 바뀌지 않는다 — 조각을 이어 붙이면 원래 글자와 같고, Glue 마크업에서 태그를 벗기면 원래 글자다', () => {
     const samples = [
       TITLE_TEXT.lifeLengthHint,
-      TITLE_TEXT.populationNote,
       '넣지 않았습니다. 이 기기에만 저장됩니다.',
       '그 밖에 멈춰 있던 시간과 생각을 적은 시간은 넣지 않았습니다.',
       '다시 태어나면 이 인생의 기록은 사라집니다.',
@@ -448,10 +463,9 @@ describe('지시 관형사 「이」「그」「저」 + 바로 뒤 어절은 �
     }
   });
 
-  it('D-98의 고정 문장 여섯은 모두 지시 관형사가 뒤 어절과 한 묶음이다 (FS5 · 가상 인구 주석 · 플레이 시간 보조 · 다시 태어나기 · 나가기 확인 · 영향 안내)', () => {
+  it('D-98의 고정 문장은 모두 지시 관형사가 뒤 어절과 한 묶음이다 (FS5 · 플레이 시간 보조 · 다시 태어나기 · 나가기 확인 · 영향 안내)', () => {
     const chainStarts = (t: string): string[] => glueSegments(t).flatMap((s) => (s.kind === 'chain' ? [segmentsText(s.parts)] : []));
     expect(chainStarts(TITLE_TEXT.lifeLengthHint)).toEqual(['이 기기에']); // 첫 화면 FS5 설명
-    expect(chainStarts(TITLE_TEXT.populationNote)).toEqual(['이 기기']); // 가상 인구 주석
     // 엔딩 플레이 시간 보조 문장의 조각 둘 — 「그 밖에」(제외 범위)·「이 기기에만」(저장 안내). 나머지 조각(분해 셋·깨끗하지 않은 판 문장)에는 관형사가 없어 묶음이 생기지 않는다
     expect(chainStarts(PLAYTIME_TEXT.excluded)).toEqual(['그 밖에']);
     expect(chainStarts(PLAYTIME_TEXT.device)).toEqual(['이 기기에만']);

@@ -1,4 +1,4 @@
-import { ERAS, type Era } from '../src/core';
+import type { ProfileId } from '../src/core';
 import { courseOf, playRecorded } from './baseline004Lib';
 import {
   CHAIN_EVENTS,
@@ -26,13 +26,13 @@ import { countBy } from './baseline004Lib';
  */
 const args = process.argv.slice(2);
 const lives = Number(args.find((a) => !a.startsWith('--')) ?? 1000);
-const ERA_LIST: Era[] = ERAS.filter((e) => e === 'past' || e === 'present');
-const eraLabel = (e: Era) => (e === 'past' ? '지난(X 대리)' : '지금(밀레니얼 대리)');
+const ERA_LIST: ProfileId[] = ['genx', 'millennial'];
+const eraLabel = (e: ProfileId) => (e === 'genx' ? 'X세대' : '밀레니얼');
 const pct = (n: number, d = 1) => (Number.isNaN(n) ? '–' : `${(n * 100).toFixed(d)}%`);
 const fx = (n: number, d = 1) => (Number.isNaN(n) ? '–' : n.toFixed(d));
 
 interface Group {
-  era: Era;
+  era: ProfileId;
   sel: L0Selector;
   recs: L0Record[];
 }

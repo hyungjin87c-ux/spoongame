@@ -139,7 +139,7 @@ test.describe('다음 결정으로 (PD3·PD7)', () => {
          if (s.phase === 'life' && s.pending && s.history.filter((h) => h.by).length >= 2) return s0;
        }
        return null;`,
-      { era: 'present' },
+      { era: 'alpha' },
     );
     expect(start, '부모·흘러감 해가 둘 이상 앞서는 시드를 찾지 못했다').not.toBeNull();
     const s0 = withoutPlay(start!);
@@ -183,7 +183,7 @@ test.describe('다음 결정으로 + 기록 카드 (R-451, PD7-3)', () => {
            }
          }
          return null;`,
-        { era: 'present', by },
+        { era: 'alpha', by },
       );
       expect(found, `4세가 ${by} 해이고 5세에 기록 카드가 뜨며 5세 해는 위임 해가 아닌 시드를 찾지 못했다`).not.toBeNull();
       // 건너뛴 4세 해의 카드: 어떤 상황에서도 뜨지 않는다 (키 = `{이벤트 id}@{나이}`, ParentCard의 data-key)

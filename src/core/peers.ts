@@ -1,13 +1,13 @@
-import { ERA_CONFIG } from '../data/birthTable';
 import { regionsOf, sigunguChoices } from '../data/birthStats';
-import { eraOfBirthYear, pickFullName } from './birth';
+import { pickFullName } from './birth';
+import { wealthFor } from './generationMixture';
 import { createRng, mixSeed, type Rng } from './rng';
 import { GENDERS, PARENT_WEALTHS, type Gender, type ParentWealth } from './types';
 
 /**
  * 같은 해 태어난 사람들 (SPEC-003 VP3). `peersOf(시드, 출생 연월)`는 결정적 순수 함수라 같은 시드는 새로고침해도 같은 인물이다(상태에는 시드만 저장한다).
- * 이름은 그 시대·성별의 이름 풀에서(지금 세상은 2025년 풀 하나 — EV7 R1), 성씨는 인구 가중, 금지 이름 필터는 주인공과 같은 함수(pickFullName)를 쓴다.
- * 지역은 룰렛 지역 확률(RL)과 같은 가중으로, 시군구는 출생신고와 같은 규칙으로, 수저는 시대 가중치(ERA_CONFIG.wealthWeights)로 정한다. 서로 이름이 겹치지 않는다(주인공과도).
+ * 이름은 그 출생 연도·성별의 이름 풀에서(NR4), 성씨는 인구 가중, 금지 이름 필터는 주인공과 같은 함수(pickFullName)를 쓴다.
+ * 지역은 룰렛 지역 확률(RL)과 같은 가중으로, 시군구는 출생신고와 같은 규칙으로(시험 전용 2026년생만 — 세대 판은 시도까지), 수저는 그 출생 연도의 수저 비율(`wealthFor`, N29)로 정한다. 서로 이름이 겹치지 않는다(주인공과도).
  */
 
 export const PEER_COUNT = 4;
@@ -17,8 +17,9 @@ export interface Peer {
   gender: Gender;
   /** 룰렛 지역(시·도 줄임 이름) */
   region: string;
-  sigunguSido: string;
-  sigungu: string;
+  /** 시군구는 시험 전용 R1 프로필(2026년생)만 있다 — 세대 판의 또래는 시도까지 */
+  sigunguSido?: string;
+  sigungu?: string;
   wealth: ParentWealth;
 }
 
@@ -43,8 +44,6 @@ function uniqueName(rng: Rng, birthYear: number, gender: Gender, used: ReadonlyS
  * 출생 연월은 시드에 섞여 같은 시드라도 연월이 다르면 다른 인물이 나온다(연월이 같은 판에서는 새로고침해도 같다).
  */
 export function peersOf(peerSeed: number, birthYear: number, birthMonth: number, avoidName: string | null = null): Peer[] {
-  const era = eraOfBirthYear(birthYear);
-  if (era === null) throw new RangeError(`peersOf: ${birthYear}년생은 어느 시대에도 속하지 않는다`);
   if (!Number.isInteger(birthMonth) || birthMonth < 1 || birthMonth > 12) throw new RangeError(`peersOf: 출생 월이 1~12가 아니다 (${birthMonth})`);
   const rng = createRng(mixSeed(peerSeed, birthYear * 12 + birthMonth));
   const regions = regionsOf(birthYear).regions;
@@ -55,10 +54,9 @@ export function peersOf(peerSeed: number, birthYear: number, birthMonth: number,
     const name = uniqueName(rng, birthYear, gender, used);
     used.add(name);
     const region = regions[rng.weightedIndex(regions.map((r) => r.sharePct))].name;
-    const choices = sigunguChoices(birthYear, region);
-    const place = choices[rng.weightedIndex(choices.map((c) => c.births))];
-    const wealth = PARENT_WEALTHS[rng.weightedIndex(ERA_CONFIG[era].wealthWeights)];
-    out.push({ name, gender, region, sigunguSido: place.sido, sigungu: place.name, wealth });
+    const place = birthYear >= 2026 ? ((choices) => choices[rng.weightedIndex(choices.map((c) => c.births))])(sigunguChoices(birthYear, region)) : null;
+    const wealth = PARENT_WEALTHS[rng.weightedIndex(wealthFor(birthYear))];
+    out.push({ name, gender, region, ...(place === null ? {} : { sigunguSido: place.sido, sigungu: place.name }), wealth });
   }
   return out;
 }

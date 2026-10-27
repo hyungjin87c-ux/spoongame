@@ -38,7 +38,7 @@ async function longestDelegated(page: Page, n: number): Promise<LongDelegated[]>
        const ages = core.possibleAgesOf(ev);
        const who = ages.map((a) => core.decisionFor(ev.id, a)).find((w) => w !== 'self');
        if (who === undefined) continue;
-       for (const era of ['past', 'present', 'future']) {
+       for (const era of ['industrial', 'alpha', 'genz']) {
          if (ev.eras !== undefined && !ev.eras.includes(era)) continue;
          const age = ages.find((a) => core.decisionFor(ev.id, a) !== 'self');
          const cite = core.citationFor(ev, era, core.calendarYear(2026, age));

@@ -117,7 +117,7 @@ for (const kind of KINDS) {
         expect(words.broken.map(describeWordBreak), `${label} 낱말 끊김`).toEqual([]);
         if (percent === 100) expect(words.unavoidable.map(describeWordBreak), `${label} 100%에서는 한 줄보다 긴 낱말도 0`).toEqual([]);
         // 머리: 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」, 제목은 한 줄 이름 「…의 인생」
-        await expect(page.getByTestId('ending-era'), label).toContainText('· 생애 기록');
+        await expect(page.getByTestId('ending-era'), label).toHaveText('생애 기록'); // 세대 표기는 `ending-gen`이 맡는다 (SPEC-004 GS9)
         await expect(page.getByTestId('ending-span'), label).toHaveText(/^\d{4}년( \d{1,2}월)? ~ \d{4}년 · \d+세$/);
       }
     }
@@ -249,7 +249,7 @@ for (const fixture of [
     await page.setViewportSize({ width: 360, height: 740 });
     await startPageHidden(page);
     await page.goto('/');
-    const state = await findPendingEvent(page, fixture.id, { era: 'present', tier: fixture.tier, seedFrom: 1000, seedTo: 9000 });
+    const state = await findPendingEvent(page, fixture.id, { era: 'alpha', tier: fixture.tier, seedFrom: 1000, seedTo: 9000 });
     await injectSave(page, state, '/', { speed: 1, autoMode: false });
     await expect(page.getByTestId('choice-panel')).toBeVisible();
     await expect(page.getByTestId('auto')).toBeEnabled(); // 입력 가드가 풀린 뒤(선택지가 흐리지 않은 화면)

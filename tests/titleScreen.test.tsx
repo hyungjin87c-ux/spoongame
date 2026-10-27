@@ -1,36 +1,34 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import copyMd from '../docs/design/copy.md?raw';
-import mockupTitle from '../docs/design/mockups/title-a.html?raw';
 import titleScreenSrc from '../src/screens/TitleScreen.tsx?raw';
 import barReleaseSrc from '../src/ui/barRelease.ts?raw';
 import { BUILD_LABEL } from '../src/buildInfo';
-import { CAROUSEL_MAX_DOTS, SELECTABLE_LIFE_LENGTHS, buildCarousel, formatCount, virtualPopulation, type CarouselData, type Era, type LifeLength } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
-import { ICON_IDS, PATTERN_IDS, SPOON_IDS, SPOON_LG_IDS, SPRITE_SVG } from '../src/ui/brandAssets';
-import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, eraMetaText, footerStatsText, heroTagKeepParts } from '../src/data/titleText';
+import { CAROUSEL_MAX_DOTS, GENERATION_IDS, SELECTABLE_LIFE_LENGTHS, buildCarousel, type CarouselData, type GenerationChoice, type GenerationId, type LifeLength } from '../src/core';
+import { GEN_ROWS, GEN_TEXT, genMetaText } from '../src/data/generationText';
+import { GENERATIONS } from '../src/data/generations';
+import { ICON_IDS, PATTERN_IDS, SPRITE_SVG } from '../src/ui/brandAssets';
+import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT, footerStatsText } from '../src/data/titleText';
 import { TitleScreen, type TitleSaved } from '../src/screens/TitleScreen';
 import { AUTO_ADVANCE_MS } from '../src/core';
 
 /**
- * 첫 화면의 구성 (SPEC-003 FS1~FS8, VP2, SC6). 서버 렌더로 마크업을 본다 — 실제 폭·스크롤·동작은 e2e/first-screen.spec.ts.
- * 시각은 고정해서(minute) 가상 인구를 결정적으로 만든다.
+ * 첫 화면의 구성 (SPEC-003 FS1~FS8, SC6 + SPEC-004 GS1~GS4·GS10·GS11 1부). 서버 렌더로 마크업을 본다 — 실제 폭·스크롤·동작은 e2e/first-screen.spec.ts.
+ * 세대 목록(라디오 8줄) · 「살아봄」 표시 · 오른쪽 위 일러스트·수저 다섯 자루 줄·가상 인구 문구가 없어졌음(GS11-3)을 잠근다.
  */
-
-const MINUTE = 29_850_000; // 2026-10-21 근처
 const saved: TitleSaved = { onResume: () => {}, onBeginNew: () => {} };
 
-function render(over: Partial<{ era: Era; lifeLength: LifeLength; saved: TitleSaved | null; oldSaveNotice: boolean; minute: number; carousel: CarouselData; gentle: { on: boolean; onToggle: () => void } }> = {}): string {
+function render(over: Partial<{ generation: GenerationChoice; lived: readonly GenerationId[]; lifeLength: LifeLength; saved: TitleSaved | null; oldSaveNotice: boolean; carousel: CarouselData; gentle: { on: boolean; onToggle: () => void } }> = {}): string {
   return renderToStaticMarkup(
     <TitleScreen
-      era={over.era ?? 'present'}
+      generation={over.generation ?? 'random'}
+      lived={over.lived}
       lifeLength={over.lifeLength ?? 'short30'}
-      onSelectEra={() => {}}
+      onSelectGeneration={() => {}}
       onSelectLifeLength={() => {}}
       onBegin={() => {}}
       saved={over.saved ?? null}
       oldSaveNotice={over.oldSaveNotice ?? false}
-      minute={over.minute ?? MINUTE}
       carousel={over.carousel}
       gentle={over.gentle}
     />,
@@ -39,7 +37,7 @@ function render(over: Partial<{ era: Era; lifeLength: LifeLength; saved: TitleSa
 
 const text = (html: string): string =>
   html
-    // 줄바꿈 묶음(QM2-5, ui/Glue.tsx)의 span은 글자를 바꾸지 않는 표시일 뿐이라 벗겨 낸다 — 태그를 공백으로 바꾸는 아래 규칙이 묶음 안에 공백을 넣어 「(2026-10-15 조회)」가 「( 2026-10-15 조회)」로 읽히지 않게
+    // 줄바꿈 묶음(QM2-5, ui/Glue.tsx)의 span은 글자를 바꾸지 않는 표시일 뿐이라 벗겨 낸다 — 태그를 공백으로 바꾸는 아래 규칙이 묶음 안에 공백을 넣어
     .replace(/<span class="nowrap">([^<]*)<\/span>/g, '$1')
     .replace(/<span class="keep-phrase">([^<]*)<\/span>/g, '$1')
     .replace(/<style[\s\S]*?<\/style>/g, '')
@@ -64,11 +62,18 @@ function radio(html: string, testId: string): { checked: boolean; name: string; 
   return { checked: /\schecked(=|\s|\/|>)/.test(tag), name: /name="([^"]*)"/.exec(tag)![1], value: /value="([^"]*)"/.exec(tag)![1] };
 }
 
+/** 세대 줄 하나의 마크업 (label.gen-row 전체) */
+function genRow(html: string, id: GenerationChoice): string {
+  const m = new RegExp(`<label class="gen-row[^"]*" data-testid="gen-row-${id}">[\\s\\S]*?</label>`).exec(html);
+  if (m === null) throw new Error(`세대 줄 없음: ${id}`);
+  return m[0];
+}
+
 describe('서버 렌더 (수집 시점 출력 금지)', () => {
-  it('첫 화면을 서버 렌더해도 콘솔에 아무것도 내지 않는다 — 이 파일의 describe 본문은 수집(import) 시점에 렌더하고, 그때의 console 출력(예: React 18의 useLayoutEffect 서버 경고)은 vitest list --json의 리포터를 죽여 check:todo가 실패한다', () => {
+  it('첫 화면을 서버 렌더해도 콘솔에 아무것도 내지 않는다 — 이 파일의 describe 본문은 수집(import) 시점에 렌더하고, 그때의 console 출력(예: React 18의 useLayoutEffect 서버 경고)은 vitest list --json이 JSON을 깨뜨린다', () => {
     const spies = (['error', 'warn', 'log', 'info', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
     try {
-      for (const over of [{}, { saved }, { oldSaveNotice: true }, { era: 'past' as const }]) render(over);
+      for (const over of [{}, { saved }, { oldSaveNotice: true }, { generation: 'industrial' as const }, { lived: ['genx' as const] }]) render(over);
       for (const spy of spies) expect(spy.mock.calls, String(spy.getMockName())).toEqual([]);
     } finally {
       for (const spy of spies) spy.mockRestore();
@@ -76,17 +81,17 @@ describe('서버 렌더 (수집 시점 출력 금지)', () => {
   });
 });
 
-describe('첫 화면 구성 (FS1)', () => {
+describe('첫 화면 구성 (FS1 · GS11 1부)', () => {
   const html = render();
 
-  it('위에서부터: 로고(제목) → (좁은 화면) 일러스트 배너 → 한 줄 설명 → 수저 다섯 자루 → 가상 인구 문구와 보조 문구 → 태어날 세상 → 인생 길이, 오른쪽(좁으면 아래)에 일러스트 → 캐러셀, 푸터, 하단 고정 버튼', () => {
-    const order = ['data-testid="title-heading"', 'data-testid="home-illust-banner"', 'hero__tag', 'data-testid="spoon-lineup"', 'data-testid="population-line"', 'data-testid="population-note"', 'data-testid="era-group"', 'data-testid="life-length-group"', 'data-testid="home-illust-top"', 'data-testid="carousel"', 'data-testid="title-foot"', 'data-testid="bottom-bar"'];
+  it('위에서부터: 로고(제목) → 한 줄 부제 → 세대 목록 → 태어나는 시도 → 인생 길이, 오른쪽(좁으면 아래)에 통계 캐러셀, 맨 아래에 푸터와 하단 띠', () => {
+    const order = ['data-testid="title-heading"', 'data-testid="hero-span"', 'data-testid="gen-list"', 'data-testid="region-slot"', 'data-testid="life-length-group"', 'data-testid="carousel"', 'data-testid="title-foot"', 'data-testid="bottom-bar"'];
     const at = order.map((k) => html.indexOf(k));
     for (const [i, k] of order.entries()) expect(at[i], k).toBeGreaterThanOrEqual(0);
     for (let i = 1; i < at.length; i++) expect(at[i], `${order[i - 1]} → ${order[i]}`).toBeGreaterThan(at[i - 1]);
   });
 
-  it('게임명 「수저 게임」이 제목(h1)의 읽히는 글자로 있고, 로고는 워드마크(글자) 하나가 장식으로 들어 있다 — 두 폭 모두 같은 것이고 세로·가로 로고(심볼 + 워드마크)는 없다 (SPEC-005 D5-01 A안·D5-31)', () => {
+  it('게임명 「수저 게임」이 제목(h1)의 읽히는 글자로 있고, 로고는 워드마크(글자) 하나가 장식으로 들어 있다 — 세로·가로 로고(심볼 + 워드마크)는 없다 (SPEC-005 로고 결정)', () => {
     expect(html).toMatch(/<h1[^>]*data-testid="title-heading"[^>]*><span class="sr-only">수저 게임<\/span>/);
     expect(html).toMatch(/<span class="logo-wrap logo--word" data-testid="title-logo-word" aria-hidden="true">/);
     expect(html.match(/viewBox="0 0 425 100"/g)?.length).toBe(1); // 워드마크 하나
@@ -94,144 +99,142 @@ describe('첫 화면 구성 (FS1)', () => {
     expect(html).not.toContain('title-logo-row');
   });
 
-  it('수저 다섯 단계: 이름이 글자로 있고(색에만 의존하지 않는다) 큰 변형 도형(sp-1-lg~sp-5-lg, 32px 이상)을 쓴다 — 칩 변형(sp-N)은 쓰지 않는다', () => {
-    for (const name of ['흙수저', '동수저', '은수저', '금수저', '다이아몬드']) expect(html).toContain(name);
-    for (const id of SPOON_LG_IDS) expect(html).toContain(`href="#${id}"`);
-    for (const id of SPOON_IDS) expect(html, `${id}는 칩(<= 24px)용이다`).not.toContain(`href="#${id}"`);
-    expect(html).toContain('aria-label="수저 다섯 단계: 흙수저, 동수저, 은수저, 금수저, 다이아몬드수저"');
+  it('GS11-3: 오른쪽 위 일러스트·수저 다섯 자루 줄·가상 인구 문구가 없다 (삭제 — 서버 렌더 어디에도 흔적이 없다)', () => {
+    for (const gone of ['home-illust', 'home-map', 'spoon-lineup', 'population-line', 'population-note', 'hero__pop', 'log-pin']) expect(html, gone).not.toContain(gone);
+    expect(text(html)).not.toMatch(/각자의 삶을 살고 있어요|가상 인구|실제로 게임하는 사람 수/);
+    expect(text(html)).not.toMatch(/접속자|동시 접속/);
+    // 수저 다섯 단계의 이름은 이 화면에 없다(룰렛·출생신고에서만 쓴다)
+    for (const name of ['흙수저', '동수저', '은수저', '금수저', '다이아몬드']) expect(text(html), name).not.toContain(name);
   });
 
-  it('사용하는 아이콘·수저 스프라이트 id가 디자이너 자산에 모두 있다 (도형 내용은 점검하지 않는다)', () => {
-    for (const id of [...ICON_IDS, ...SPOON_IDS, ...SPOON_LG_IDS]) expect(SPRITE_SVG, id).toContain(`id="${id}"`);
+  it('사용하는 아이콘 id가 디자이너 자산에 모두 있다 (도형 내용은 점검하지 않는다)', () => {
+    for (const id of ICON_IDS) expect(SPRITE_SVG, id).toContain(`id="${id}"`);
     // QI4: 「전망」 칩 아이콘 i-proj(ICON_IDS)와 그래프 무늬 hatch·dots(PATTERN_IDS)도 스프라이트에 있다 — 차트 CSS의 fill: url(#hatch|#dots)가 이 한 곳을 가리킨다
     for (const id of PATTERN_IDS) expect(SPRITE_SVG, id).toContain(`<pattern id="${id}"`);
     expect(ICON_IDS).toContain('i-proj');
   });
 
-  it('이전의 「시작」 버튼과 시대 선택 화면은 없다', () => {
+  it('이전의 「시작」 버튼과 시대 선택 화면, 「태어날 세상」 라디오 카드 3개는 없다', () => {
     expect(html).not.toContain('era-screen');
     expect(html).not.toContain('confirm-era');
-    expect(text(html)).not.toMatch(/어느 세상에서 태어날까|이 세상에서 태어나기/);
+    expect(html).not.toContain('era-group');
+    expect(text(html)).not.toMatch(/어느 세상에서 태어날까|이 세상에서 태어나기|태어날 세상|지난 세상|지금 세상|다가올 세상/);
     expect(html).not.toMatch(/>시작</);
   });
-});
 
-describe('가상 인구 문구 (FS2·VP2)', () => {
-  it('형진 님 지정 문구 「{N}명이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요.」, N은 천 단위 쉼표의 가상 인구 값', () => {
-    const html = render();
-    const n = formatCount(virtualPopulation(MINUTE));
-    expect(n).toMatch(/^5\d,\d{3}$/);
-    // 「{N}명」이 함께 굵고(시안 title-a.html의 <strong>51,284명</strong>이 …, R-209), 숫자만 따로 읽을 수 있게 안쪽 span에 testid
-    expect(html).toContain(`<strong><span data-testid="population-count">${n}</span>명</strong>이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요.`);
-    expect(plain(html)).toContain(`${n}명이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요.`);
-    expect(mockupTitle).toMatch(/<p class="hero__pop"><strong>[\d,]+명<\/strong>이 이 시뮬레이션 속에서 각자의 삶을 살고 있어요\.<\/p>/); // 시안과 같은 구조
-  });
-
-  it('근거 통계를 읽을 수 없어도(가상 인구 모델을 만들 수 없어도) 첫 화면은 뜨고 가상 인구 줄과 보조 문구만 빠진다 (R-211: 흰 화면·오류 화면이 되지 않는다)', async () => {
-    vi.resetModules();
-    vi.doMock('../src/data/koreaStatsAccess', async (importOriginal) => ({ ...(await importOriginal<typeof import('../src/data/koreaStatsAccess')>()), getUsableIndicator: () => undefined }));
-    try {
-      const { TitleScreen: BrokenInputsTitle } = await import('../src/screens/TitleScreen');
-      const html = renderToStaticMarkup(
-        <BrokenInputsTitle era="present" lifeLength="short30" onSelectEra={() => {}} onSelectLifeLength={() => {}} onBegin={() => {}} minute={MINUTE} />,
-      );
-      expect(html).toContain('data-testid="title-heading"');
-      expect(html).toContain('data-testid="start-birth"');
-      expect(html).toContain('data-testid="carousel"');
-      expect(html).not.toContain('data-testid="population-line"');
-      expect(html).not.toContain('data-testid="population-note"');
-      expect(html).not.toMatch(/NaN|undefined/);
-    } finally {
-      vi.doUnmock('../src/data/koreaStatsAccess');
-      vi.resetModules();
-    }
-  });
-
-  it('같은 시각이면 같은 값, 시각이 다르면 값이 달라질 수 있다 (분 단위)', () => {
-    expect(render({ minute: MINUTE })).toBe(render({ minute: MINUTE }));
-    const values = new Set(Array.from({ length: 30 }, (_, i) => virtualPopulation(MINUTE + i)));
-    expect(values.size).toBeGreaterThan(3);
-    expect(render({ minute: MINUTE })).not.toBe(render({ minute: MINUTE + 7 }));
-  });
-
-  it('보조 문구는 항상 보인다 (세상·인생 길이·이어하기 상태와 무관하게): 가상의 사람들이며 실제 사람 수가 아니다', () => {
-    for (const over of [{}, { era: 'past' as const }, { era: 'future' as const }, { saved }, { oldSaveNotice: true }]) {
-      const html = render(over);
-      // 보조 문구는 Glue를 거친다(D-98 — 「이 기기」가 한 묶음) → 태그를 벗긴 글자가 문구 그대로인지 본다
-      expect(text(html.match(/data-testid="population-note">([^]*?)<\/p>/)![1]).trim()).toBe(TITLE_TEXT.populationNote);
-      expect(TITLE_TEXT.populationNote).toContain('가상');
-      expect(TITLE_TEXT.populationNote).toContain('실제로 게임하는 사람 수가 아니에요');
-    }
-  });
-
-  it('가상 인구 설명이 푸터에 한 곳 있다 (규모의 근거·반영한 통계·서버와 통신하지 않음)', () => {
-    const html = render();
-    expect(html).toContain('data-testid="population-info"');
-    expect(TITLE_TEXT.populationInfo).toContain('1,000분의 1');
-    expect(TITLE_TEXT.populationInfo).toContain('출생·사망 통계');
-    expect(TITLE_TEXT.populationInfo).toContain('서버와 통신하지 않고');
-  });
-
-  it('어느 상태의 화면에도 「접속자」「동시 접속」 표현이 없다 (VP2) — 문구 상수 전체와 마크업 전체를 점검', () => {
-    const banned = /접속자|동시\s*접속|접속\s*중|접속한/;
-    const all = [render(), render({ saved }), render({ oldSaveNotice: true }), render({ era: 'future' })];
-    for (const html of all) expect(text(html)).not.toMatch(banned);
-    for (const value of Object.values(TITLE_TEXT)) expect(value).not.toMatch(banned); // (SPEC-005: 함수형 문구 carouselAutoNote가 없어져 모두 글자다)
-    for (const v of Object.values(LIFE_LENGTH_TEXT)) expect(v.title).not.toMatch(banned);
+  it('한 줄 부제(N30): 「다른 세대, 다른 삶, 같은 대한민국」 — 뒤쪽 구절은 줄바꿈 묶음이다. 「한 판 약 30분」 슬롯은 이 단계에 없다', () => {
+    const tag = plain(/<p class="hero__tag"[\s\S]*?<\/p>/.exec(html)?.[0] ?? '');
+    expect(tag).toBe(`${GEN_TEXT.tagLead}${GEN_TEXT.tagKeep}`);
+    expect(html).toContain(`<span class="nowrap">${GEN_TEXT.tagKeep}</span>`);
+    expect(text(html)).not.toContain('한 판 약 30분');
+    expect(text(html)).toContain(GEN_TEXT.span);
   });
 });
 
-describe('태어날 세상·인생 길이 선택 (FS4·FS5)', () => {
-  it('세상 3개를 라디오 카드로 보인다(radiogroup, 이름·연도 안내·한 줄 설명), 기본은 지금 세상', () => {
+describe('세대 목록 (GS1·GS2·GS10 — 한 열 스크롤 라디오 8줄)', () => {
+  const html = render();
+
+  it('큰 슬롯 제목은 「어느 세대로 살아보고 싶으세요?」이고 목록은 이름 있는 radiogroup이다', () => {
+    expect(text(html)).toContain(GEN_TEXT.question);
+    expect(html).toMatch(new RegExp(`<div[^>]*role="radiogroup"[^>]*aria-label="${GEN_TEXT.listLabel}"[^>]*data-testid="gen-list"|<div[^>]*data-testid="gen-list"[^>]*role="radiogroup"[^>]*aria-label="${GEN_TEXT.listLabel}"`));
+  });
+
+  it('줄은 8개: 첫 줄 「랜덤 세대」 + 세대 7종(GD1 순서). 모두 같은 라디오 묶음(name="gen")이다', () => {
+    const ids: GenerationChoice[] = ['random', ...GENERATION_IDS];
+    expect(GEN_ROWS.map((r) => r.id)).toEqual(ids);
+    expect(html.match(/<label class="gen-row/g)).toHaveLength(8);
+    const at = ids.map((id) => html.indexOf(`data-testid="gen-row-${id}"`));
+    for (const [i, a] of at.entries()) expect(a, ids[i]).toBeGreaterThan(i === 0 ? -1 : at[i - 1]);
+    for (const id of ids) expect(radio(html, `gen-${id}`), id).toMatchObject({ name: 'gen', value: id });
+  });
+
+  it('처음 방문의 기본은 「랜덤 세대」다 — 그 줄만 선택돼 있고 선택은 색에만 의존하지 않는다(체크 표식 + 「선택됨」 읽기)', () => {
+    for (const id of ['random', ...GENERATION_IDS] as GenerationChoice[]) expect(radio(html, `gen-${id}`).checked, id).toBe(id === 'random');
+    const row = genRow(html, 'random');
+    expect(row).toContain('is-selected');
+    expect(row).toContain('<span class="sr-only">선택됨</span>');
+    expect(row).toContain('href="#i-check"');
+    expect(html.match(/class="gen-row is-selected"/g)).toHaveLength(1);
+    expect(html.match(/<span class="sr-only">선택됨<\/span>/g)?.length).toBeGreaterThanOrEqual(2); // 세대 줄 하나 + 인생 길이 칸 하나
+  });
+
+  it('설정이 고른 세대로 열린다(GS4): 고른 줄만 선택된다', () => {
+    for (const id of GENERATION_IDS) {
+      const h = render({ generation: id });
+      for (const other of ['random', ...GENERATION_IDS] as GenerationChoice[]) expect(radio(h, `gen-${other}`).checked, `${id}/${other}`).toBe(other === id);
+    }
+  });
+
+  it('「랜덤 세대」 줄에는 오른쪽 메타가 없고, 세대 줄은 「{범위}년생 · 올해 N~M세」 메타가 GD1 표에서 나온다 (5차 변경)', () => {
+    expect(genRow(html, 'random')).not.toContain('gen-row__meta');
+    for (const g of GENERATIONS) {
+      const row = genRow(html, g.id);
+      const meta = genMetaText(g.birth.from, g.birth.to);
+      expect(text(row)).toContain(`${meta.range} · ${meta.age}`);
+      expect(plain(row)).toContain(g.label);
+    }
+    expect(genMetaText(1940, 1954)).toEqual({ range: '1940~1954년생', age: '올해 72~86세' });
+    expect(genMetaText(2013, 2020)).toEqual({ range: '2013~2020년생', age: '올해 6~13세' });
+  });
+
+  it('줄의 접근 가능한 이름은 이름 + 메타이고(aria-labelledby), 소개는 aria-describedby로 같은 글자를 읽힌다', () => {
+    for (const row of GEN_ROWS) {
+      const tag = new RegExp(`<input [^>]*data-testid="gen-${row.id}"[^>]*>`).exec(html)![0];
+      expect(tag).toContain(`aria-labelledby="gen-name-${row.id}${row.meta === null ? '' : ` gen-meta-${row.id}`}"`);
+      expect(tag).toContain(`aria-describedby="gen-desc-${row.id}"`);
+      expect(html).toContain(`id="gen-desc-${row.id}"`);
+      expect(plain(genRow(html, row.id))).toContain(row.desc);
+    }
+  });
+
+  it('알파 줄에만 「2026년부터는 공식 전망을 바탕으로 한 이야기예요」 보조 문장이 있다 (G-06)', () => {
+    for (const row of GEN_ROWS) expect(genRow(html, row.id).includes(GEN_TEXT.alphaNote), row.id).toBe(row.id === 'alpha');
+  });
+
+  it('「살아봄」(GS10): 끝까지 살아본 세대 줄에만 체크 + 글자가 붙고(색에만 의존하지 않는다) 이름 꼬리에 읽힌다. 순위·점수·보상 낱말은 없다', () => {
+    expect(html).not.toContain('gen-lived');
+    const h = render({ lived: ['boomer', 'alpha'] });
+    for (const id of GENERATION_IDS) {
+      const row = genRow(h, id);
+      const on = id === 'boomer' || id === 'alpha';
+      expect(row.includes(`data-testid="gen-lived-${id}"`), id).toBe(on);
+      if (on) {
+        expect(text(row)).toContain(GEN_TEXT.lived);
+        expect(row).toContain(`gen-lived-${id}"`);
+        expect(new RegExp(`<input [^>]*data-testid="gen-${id}"[^>]*>`).exec(h)![0]).toContain(`gen-lived-${id}`);
+      }
+    }
+    expect(genRow(h, 'random')).not.toContain('gen-lived');
+    expect(GEN_TEXT.lived).toBe('살아봄');
+    expect(text(h)).not.toMatch(/순위|점수|보상|업적|도전 과제|달성/);
+  });
+
+  it('접이식 설명(GS2): 「세대 범위는 자료마다 조금씩 달라요」 — 목록 아래에 닫힌 채 있다', () => {
+    const fold = /<details[^>]*data-testid="gen-fold"[\s\S]*?<\/details>/.exec(html)?.[0];
+    expect(fold, '접이식').toBeDefined();
+    expect(fold).not.toContain(' open');
+    expect(plain(fold!)).toContain(GEN_TEXT.foldSummary);
+    expect(plain(fold!)).toContain('1960~1963년생');
+    expect(html.indexOf('data-testid="gen-fold"')).toBeGreaterThan(html.indexOf('data-testid="gen-row-alpha"'));
+  });
+
+  it('출생 연도를 먼저 보이지 않는다: 목록에는 세대 범위의 양 끝 연도만 있고 그 밖의 네 자리 연도(뽑힌 해)가 없다 (GS3)', () => {
+    const ends = new Set<number>(GENERATIONS.flatMap((g) => [g.birth.from, g.birth.to]));
+    const years = [...plain(/<div[^>]*data-testid="gen-list"[\s\S]*?<\/fieldset>|<div[^>]*data-testid="gen-list"[\s\S]*?data-testid="gen-fold"/.exec(html)?.[0] ?? '').matchAll(/(?<!\d)(19[4-9]\d|20[0-2]\d)(?!\d)/g)].map((m) => Number(m[1]));
+    expect(years.length).toBeGreaterThan(0);
+    for (const y of years) expect(ends.has(y) || y === 2026, `목록의 연도 ${y}`).toBe(true);
+  });
+});
+
+describe('태어나는 시도와 인생 길이 (RG1 · FS5)', () => {
+  it('시도 묶음: 분절 「룰렛에 맡기기 / 직접 고르기」, 기본은 룰렛(이 서버 렌더에서는 칩이 접혀 있다) — 한 줄 안내가 보인다', () => {
     const html = render();
-    expect(html).toMatch(/role="radiogroup" aria-label="태어날 세상"/);
-    for (const era of ['past', 'present', 'future'] as const) {
-      expect(html).toContain(`data-testid="era-${era}"`);
-      expect(text(html)).toContain(ERA_CONFIG[era].label);
-      expect(text(html)).toContain(ERA_CONFIG[era].blurb);
-    }
-    expect(radio(html, 'era-present')).toEqual({ checked: true, name: 'era', value: 'present' });
-    expect(radio(html, 'era-past')).toEqual({ checked: false, name: 'era', value: 'past' });
-    expect(radio(html, 'era-future')).toEqual({ checked: false, name: 'era', value: 'future' });
-  });
-
-  it('선택 상태는 색에만 의존하지 않는다: 체크 표시(아이콘)와 「선택됨」 글자가 선택된 카드에만 있다', () => {
-    for (const era of ['past', 'present', 'future'] as const) {
-      const html = render({ era });
-      expect(html.match(/is-selected/g)?.length).toBe(2); // 세상 1 + 인생 길이 1
-      expect(html.match(/<span class="sr-only">선택됨<\/span>/g)?.length).toBe(2);
-      for (const other of ['past', 'present', 'future'] as const) expect(radio(html, `era-${other}`).checked, `${era} 선택 → ${other}`).toBe(other === era);
-    }
-  });
-
-  it('카드의 연도 안내는 출생 로직의 연도 범위(ERA_CONFIG)에서 만든다: 지금 세상은 출생 연도가 2026 한 해일 때만 「올해(2026) 태어나는 아이」, 그 전에는 실제 범위 (형진 님 결정 Q1, R-201)', () => {
-    const html = render();
-    // 카드에 보이는 문구 ⇔ ERA_CONFIG (이 단언이 바뀐 이유: 예전에는 지금 세상 카드가 범위와 무관하게 「올해(2026)」를 적어 출생 화면의 연도와 모순이었다)
-    for (const era of ['past', 'present', 'future'] as const) {
-      const { min, max } = ERA_CONFIG[era].birthYears;
-      const expected = era === 'present' && min === 2026 && max === 2026 ? '올해(2026) 태어나는 아이' : min === max ? `${min}년생` : `${min}~${max}년생`;
-      expect(eraMetaText(era, ERA_CONFIG[era].birthYears), era).toBe(expected);
-      expect(html, era).toContain(`<span class="radio-card__meta">${expected}</span>`);
-    }
-    // 지금 세상은 실제 범위가 2026 한 해가 아닌 동안 「올해(2026)」를 적지 않는다 — M3가 범위를 2026으로 고정하면 이 단언이 문구를 바꿔 따라온다
-    const present = ERA_CONFIG.present.birthYears;
-    expect(text(html).includes('올해(2026) 태어나는 아이')).toBe(present.min === 2026 && present.max === 2026);
-    // 합성 범위: 규칙 자체
-    expect(eraMetaText('present', { min: 2026, max: 2026 })).toBe('올해(2026) 태어나는 아이');
-    expect(eraMetaText('present', { min: 2008, max: 2025 })).toBe('2008~2025년생');
-    expect(eraMetaText('present', { min: 2008, max: 2026 })).toBe('2008~2026년생');
-    expect(eraMetaText('present', { min: 2025, max: 2025 })).toBe('2025년생');
-    expect(eraMetaText('future', { min: 2026, max: 2026 })).toBe('2026년생'); // 「올해」 문구는 지금 세상 전용
-    expect(eraMetaText('past', ERA_CONFIG.past.birthYears)).toBe('1950~1989년생');
-    expect(text(html)).toContain('1950~1989년생');
-    expect(text(html)).toContain('2030~2060년생');
-  });
-
-  it('세상 카드의 한 줄 설명은 시안(title-a.html)과 같다 — 다가올 세상도 「…고들 합니다」 (R-209)', () => {
-    for (const era of ['past', 'present', 'future'] as const) {
-      expect(mockupTitle, era).toContain(`<span class="radio-card__desc">${ERA_CONFIG[era].blurb}</span>`);
-      expect(mockupTitle, era).toContain(`<span class="radio-card__title">${ERA_CONFIG[era].label}</span>`);
-    }
+    expect(html).toContain('data-testid="region-slot"');
+    expect(text(html)).toContain(GEN_TEXT.regionTitle);
+    expect(radio(html, 'regmode-roulette')).toEqual({ checked: true, name: 'regmode', value: 'roulette' });
+    expect(radio(html, 'regmode-pick')).toEqual({ checked: false, name: 'regmode', value: 'pick' });
+    expect(text(html)).toContain(GEN_TEXT.regionHint);
+    expect(html).not.toContain('data-testid="region-chips"');
   });
 
   it('인생 길이(HS2): 「약 30분」/「약 1시간」 작은 분절 컨트롤(radiogroup, 라디오 둘), 기본 약 30분, 한 줄 안내(저장 안내) — 라디오 카드·카드 보조문·세 문장 안내는 없다', () => {
@@ -239,7 +242,7 @@ describe('태어날 세상·인생 길이 선택 (FS4·FS5)', () => {
     expect(html).toMatch(/<div class="seg" role="radiogroup" aria-label="인생 길이" data-testid="life-length-group">/);
     expect(radio(html, 'life-short30')).toEqual({ checked: true, name: 'lifeLength', value: 'short30' });
     expect(radio(html, 'life-long60')).toEqual({ checked: false, name: 'lifeLength', value: 'long60' });
-    expect(html.match(/<label class="seg__opt/g)?.length).toBe(2);
+    expect(html.match(/<label class="seg__opt/g)?.length).toBeGreaterThanOrEqual(2);
     expect(text(html)).toContain('약 30분');
     expect(text(html)).toContain('약 1시간');
     // 한 줄 안내(copy.md 9-4): 평균 수명까지 · 생각을 적는 시간은 뺐다 · 나가도 이 기기에 남는다 — 세 뜻이 한 줄에 있다
@@ -254,12 +257,11 @@ describe('태어날 세상·인생 길이 선택 (FS4·FS5)', () => {
 
   it('분절 컨트롤의 선택 상태는 색에만 의존하지 않는다: 체크 아이콘과 「선택됨」 글자가 선택된 칸에만 있다 (HS2 ①)', () => {
     const html = render();
-    const sel = /<label class="seg__opt is-selected">[\s\S]*?<\/label>/.exec(html)?.[0];
+    const sel = /<label class="seg__opt is-selected">(?:(?!<\/label>)[\s\S])*?data-testid="life-short30"[\s\S]*?<\/label>/.exec(html)?.[0];
     expect(sel, '선택된 칸').toBeDefined();
     expect(sel).toContain('href="#i-check"');
     expect(sel).toContain('<span class="sr-only">선택됨</span>');
     expect(sel).toContain('<span>약 30분</span>');
-    expect(html.match(/class="seg__opt is-selected"/g)?.length).toBe(1);
   });
 
   /** 입력 태그 하나에서 disabled 속성 여부 */
@@ -280,10 +282,10 @@ describe('태어날 세상·인생 길이 선택 (FS4·FS5)', () => {
     // 라디오 그룹은 그대로 2개 — 카드를 숨기지 않는다
     expect(html.match(/name="lifeLength"/g)?.length).toBe(2);
     expect(html).toMatch(/role="radiogroup" aria-label="인생 길이"/);
-    // 선택할 수 있는 카드에는 준비 중 표기가 없다
+    // 선택할 수 있는 칸에는 준비 중 표기가 없다
     expect(html.match(new RegExp(NOT_READY_TEXT, 'g'))?.length).toBe(1);
-    // 세상 카드는 모두 선택할 수 있다
-    for (const era of ['past', 'present', 'future']) expect(isDisabled(html, `era-${era}`), era).toBe(false);
+    // 세대 줄은 모두 선택할 수 있다
+    for (const id of ['random', ...GENERATION_IDS]) expect(isDisabled(html, `gen-${id}`), id).toBe(false);
   });
 });
 
@@ -590,17 +592,7 @@ describe('2회차 보완 화면 문구 (SPEC-003 QM2-10·QM2-11, REV-003-M2-3 R-
     expect(text(slide)).not.toContain('인구 10만 명당 · 2025년 기준');
   });
 
-  it('한 줄 설명의 끝 「한 번의 인생」은 줄바꿈 금지 묶음(nowrap)이고 글자는 그대로다 — 마지막 낱말 「인생」이 혼자 줄에 남지 않는다 (R-237, QA 3회차 마스터 결정: 마지막 두 어절 묶음)', () => {
-    expect(html).toContain('<span class="keep-phrase">한국인의 <span class="nowrap">한 번의 인생</span></span>');
-    expect(text(html)).toContain('태어난 집에 따라 달라지는, 한국인의 한 번의 인생');
-    expect(TITLE_TEXT.heroTagKeep).toBe('한국인의 한 번의 인생');
-    expect(heroTagKeepParts()).toEqual(['한국인의 ', '한 번의 인생', '']);
-    // 갈라지지 않는 부분은 마지막 두 어절(「번의 인생」)을 포함한다 — 「한 번의」는 R-237로 이미 한 덩어리라 세 어절이 한 덩어리가 된다
-    const [lead, noBreak, tail] = heroTagKeepParts();
-    expect(`${lead}${noBreak}${tail}`).toBe(TITLE_TEXT.heroTagKeep);
-    expect(noBreak.endsWith('번의 인생')).toBe(true);
-    expect(noBreak.startsWith('한 번의')).toBe(true);
-  });
+  // (한 줄 부제의 줄바꿈 묶음은 위 「첫 화면 구성」의 부제 시험이 본다 — 「같은 대한민국」 nowrap, SPEC-004 N30)
 
   it('문구 기준표(docs/design/copy.md)에 푸터 통계 출처 줄(쉼표 나열)과 조혼인율 줄 행이 있다 (마스터 결정)', () => {
     const footer = copyMd.split('\n').find((line) => line.includes('푸터 · 통계 출처 줄'));

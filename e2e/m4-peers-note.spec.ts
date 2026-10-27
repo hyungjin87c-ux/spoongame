@@ -12,9 +12,9 @@ import { KNOWN_SEED, birthState, injectSave } from './helpers';
  */
 
 const ERAS = [
-  { era: 'present', wealth: 3 },
-  { era: 'past', wealth: 2 },
-  { era: 'future', wealth: 5 },
+  { era: 'alpha', wealth: 3 },
+  { era: 'industrial', wealth: 2 },
+  { era: 'genz', wealth: 5 },
 ] as const;
 
 for (const { era, wealth } of ERAS) {
@@ -60,15 +60,18 @@ test('또래 칸의 요즘 모습은 나이와 모순되지 않는다: 같은 �
   await page.goto('/');
   const adult = await page.evaluate<unknown>(`(async () => {
     const core = await import('/src/core/index.ts');
-    let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(${KNOWN_SEED}), 'present')));
+    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
+    let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(${KNOWN_SEED}), 'alpha')));
     while (s.phase === 'life' && (s.age < 40 || s.pending !== null)) s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
     return s;
   })()`);
   await injectSave(page, adult as Parameters<typeof injectSave>[1], '/');
-  const read = async () => ({
-    names: await page.getByTestId('peer-now-name').allInnerTexts(),
-    labels: await page.getByTestId('peer-now-label').allInnerTexts(),
-  });
+  const read = async () => {
+    // 지연 로드(MG8) 뒤 인생 화면이 그려지는 동안 목록이 비어 있을 수 있다 — 네 사람이 모두 그려진 뒤에 읽는다(이름을 먼저 읽고 라벨을 나중에 읽어 둘이 어긋나던 경합)
+    await expect(page.getByTestId('peer-now-name')).toHaveCount(4);
+    await expect(page.getByTestId('peer-now-label')).toHaveCount(4);
+    return { names: await page.getByTestId('peer-now-name').allInnerTexts(), labels: await page.getByTestId('peer-now-label').allInnerTexts() };
+  };
   const first = await read();
   expect(first.labels).toHaveLength(4);
   const ALLOWED = ['일하는 사람', '다시 일하는 사람', '구직 중', '돌봄', '은퇴', '학교에 다님', '어린 시절'];

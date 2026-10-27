@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { GameState } from '../src/core/types';
+import type { GameState, GenerationId } from '../src/core/types';
 import { expectedLooksLabel } from '../tests/helpers/standingExpectations';
 import {
   KNOWN_SEED,
@@ -51,7 +51,7 @@ async function endingTextWithoutChip(page: Page): Promise<string> {
 }
 
 /** 알려진 시드의 엔딩 상태(core 자동 진행 결과)를 만든다. 앱 페이지가 열려 있어야 한다. */
-async function endedState(page: Page, seed = KNOWN_SEED, era: 'past' | 'present' | 'future' = 'present'): Promise<GameState> {
+async function endedState(page: Page, seed = KNOWN_SEED, era: GenerationId = 'alpha'): Promise<GameState> {
   await page.goto('/');
   const ended = await oracleAuto(page, await oracleLife(page, seed, era));
   expect(ended.phase).toBe('ending');
@@ -74,6 +74,7 @@ interface ReviewOracle {
 async function reviewOracle(page: Page, state: GameState): Promise<ReviewOracle> {
   return page.evaluate<ReviewOracle>(`(async () => {
     const core = await import('/src/core/index.ts');
+    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
     const text = await import('/src/data/endingText.ts');
     const state = ${JSON.stringify(state)};
     const r = core.reviewEnding(state);
@@ -117,8 +118,8 @@ async function visualLines(page: Page, selector: string): Promise<string[][]> {
 
 test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·출발선 대비가 보이고 core의 회고와 같다. 등급명·감탄사가 없고 가로로 넘치지 않는다', async ({ page }) => {
   await page.goto('/');
-  const found = await findPendingState(page, 'present');
-  const start = await oracleLife(page, found.seed, 'present');
+  const found = await findPendingState(page, 'alpha');
+  const start = await oracleLife(page, found.seed, 'alpha');
   await injectSave(page, start, '/?__timescale=2000', SETTINGS);
   await expect(page.getByTestId('ending-screen')).toBeVisible({ timeout: 30_000 });
   const save = (await readSave(page)).data;
@@ -132,7 +133,8 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   await expect(page.getByTestId('header-logo')).toBeVisible();
   await expect(page.locator('h1')).toHaveCount(1);
   // M7e-3(R-327): 머리는 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (출생 문장은 연표의 첫 줄이 말한다)
-  await expect(page.getByTestId('ending-era')).toContainText(' · 생애 기록');
+  await expect(page.getByTestId('ending-era')).toHaveText('생애 기록'); // 세대 표기는 아래 `ending-gen`(「{세대 이름} · {연도}년생」)이 맡는다 (SPEC-004 GS9)
+  await expect(page.getByTestId('ending-gen')).toContainText(`${c.birthYear}년생`);
   await expect(page.getByTestId('ending-span')).toHaveText(new RegExp(`^${c.birthYear}년( \\d{1,2}월)? ~ ${c.birthYear + save.death!.age}년 · ${save.death!.age}세$`));
   await expect(page.getByTestId('ending-death')).toHaveText(oracle.death);
   await expect(page.getByTestId('ending-choices')).toContainText(`${oracle.choiceCount}번의 선택`);
@@ -142,7 +144,7 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   expect(oracle.journey).toMatch(/의 집에서 태어나, .+의 형편으로 생을 마쳤습니다\.$/);
   expect(oracle.journey, '출발선은 재력 단계의 구간 표현 (R-091)').toMatch(BAND_SENTENCE);
   await expect(page.getByTestId('ending-movement')).toHaveText(oracle.movement!);
-  await expect(page.getByTestId('ending-note')).toContainText('같은 세상 안의 자리로 견주었습니다');
+  await expect(page.getByTestId('ending-note')).toContainText('같은 세대 안의 자리로 견주었습니다');
   for (const m of oracle.journey.matchAll(/(\d+)%/g)) expect(Number(m[1])).toBeLessThanOrEqual(50);
   expect(oracle.journey).not.toMatch(/약 (0|100)%/);
 
@@ -252,7 +254,7 @@ test('가장 긴 연표(세 시대에서 찾은 가장 긴 인생)도 360px와 3
   const longest = await evalCore<GameState>(
     page,
     `let best = null;
-     for (const era of ['past', 'present', 'future']) {
+     for (const era of ['industrial', 'genx', 'alpha']) {
        for (let seed = 1; seed <= 150; seed++) {
          const s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), era)));
          const f = core.playToEnd(s, null).state;
@@ -411,7 +413,7 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   const ended = await endedState(page);
   await startPageHidden(page); // 새 판이 자동 모드로 곧바로 흐르지 않게 타이머를 멈춰 둔다
   // 이 판은 지금 세상이었지만 첫 화면의 마지막 선택은 다가올 세상·약 30분. (「약 1시간」은 준비 중이라 고를 수 없다 — R-202. 이 테스트의 인생 길이 쪽 값이 long60에서 short30으로 바뀐 이유.)
-  const SETTINGS_CHOSEN = { ...SETTINGS, era: 'future', lifeLength: 'short30' } as const;
+  const SETTINGS_CHOSEN = { ...SETTINGS, generation: 'genz', lifeLength: 'short30' } as const;
   await injectSave(page, ended, '/', SETTINGS_CHOSEN);
   await expect(page.getByTestId('ending-screen')).toBeVisible();
   const rebirth = page.getByTestId('rebirth');
@@ -421,9 +423,9 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
 
   // 곧바로 첫 화면: 마지막에 고른 세상(다가올 세상)·인생 길이(약 30분)가 눌려 있고, 포커스는 새 화면 제목 (R-030 M5 몫)
   await expect(page.getByTestId('title-screen')).toBeVisible();
-  await expect(page.getByTestId('era-future')).toBeChecked();
-  await expect(page.getByTestId('era-present')).not.toBeChecked();
-  await expect(page.getByTestId('era-past')).not.toBeChecked();
+  await expect(page.getByTestId('gen-genz')).toBeChecked();
+  await expect(page.getByTestId('gen-alpha')).not.toBeChecked();
+  await expect(page.getByTestId('gen-industrial')).not.toBeChecked();
   await expect(page.getByTestId('life-short30')).toBeChecked();
   await expect(page.getByTestId('life-long60')).not.toBeChecked();
   await expect.poll(() => page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.textContent?.trim()}`)).toBe('H1:수저 게임');
@@ -432,7 +434,7 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   await expect.poll(async () => (await readSave(page)).data.phase).toBe('title');
   const fresh = (await readSave(page)).data;
   expect(fresh.seed).not.toBe(ended.seed);
-  expect(fresh.era).toBeNull(); // 세상·인생 길이는 설정에 있고, 판에는 태어날 때 들어간다
+  expect(fresh.generation).toBeNull(); // 세상·인생 길이는 설정에 있고, 판에는 태어날 때 들어간다
   expect(fresh.lifeLength).toBeNull();
   expect(fresh.character).toBeNull();
   expect(fresh.history).toEqual([]);
@@ -440,7 +442,7 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   expect(fresh.flags).toEqual([]);
   expect(JSON.stringify(fresh)).not.toContain(ended.character!.name);
   // 설정은 그대로. M4: 설정 봉투 v3에 BGM(꺼짐·볼륨 30)과 테마(시스템)가 더해져 기본값이 함께 저장된다 — 값은 바뀌지 않는다.
-  expect(await readSettings(page)).toEqual({ ...SETTINGS_CHOSEN, bgm: { on: false, volume: 30 }, theme: 'system', noteCards: false, gentle: false, notesSeen: '' }); // 주입 봉투는 e2e 기본(기록 카드 꺼짐)이다 — 앱 기본이 아니다. 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘(가림 꺼짐·본 소식 없음)도 함께 저장된다 — 값은 바뀌지 않는다
+  expect(await readSettings(page)).toEqual({ ...SETTINGS_CHOSEN, bgm: { on: false, volume: 30 }, theme: 'system', noteCards: false, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then' }); // 주입 봉투는 e2e 기본(기록 카드 꺼짐)이다 — 앱 기본이 아니다. 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘(가림 꺼짐·본 소식 없음)도 함께 저장된다 — 값은 바뀌지 않는다
 
   // 새로고침해도 첫 화면에서 이어진다 (엔딩이 되살아나지 않는다)
   await page.reload();
@@ -448,13 +450,13 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   await expect(page.getByTestId('ending-screen')).toHaveCount(0);
 
   // 태어나기를 누르면 새 인물: 같은 시드·마지막 선택(다가올 세상·약 30분)의 core 출생 결과와 같다
-  const expected = await evalCore<GameState>(page, 'return core.beginBirth(arg, "future", "short30");', fresh);
+  const expected = await evalCore<GameState>(page, 'return core.beginBirth(arg, "genz", "short30");', fresh);
   await pressBegin(page);
   await skipRoulette(page); // 룰렛(결과는 태어나기 순간에 이미 정해져 있다) → 출생신고
   await toBirthReport(page);
   const born = (await readSave(page)).data;
   expect(born.character).toEqual(expected.character);
-  expect(born.era).toBe('future');
+  expect(born.generation).toBe('genz');
   expect(born.lifeLength).toBe('short30');
   // 살아가기 → 새 인생: 설정(8배속·자동 모드)이 그대로 눌려 있고 0세다
   const next = page.getByTestId('next-life');
@@ -539,10 +541,10 @@ for (const fraction of [1 / 4, 1 / 2, 3 / 4]) {
       expect(context.pages().length, '새 창이 열리지 않았다').toBe(1);
       const save = (await readSave(page)).data;
       expect(save.phase).toBe('title');
-      expect(save.era, '태어나기가 눌리지 않았다(판에는 아직 세상이 없다)').toBeNull();
+      expect(save.generation, '태어나기가 눌리지 않았다(판에는 아직 세대가 없다)').toBeNull();
       expect(save.history).toEqual([]);
       const chosen = await readSettings(page);
-      expect([chosen.era, chosen.lifeLength], '세상·인생 길이 선택이 바뀌지 않았다').toEqual(['present', 'short30']);
+      expect([chosen.generation, chosen.lifeLength], '세대·인생 길이 선택이 바뀌지 않았다').toEqual(['random', 'short30']);
       // 첫 입력은 "다시 태어나기", 이후 입력은 새 화면의 닫힌 버튼(가드)이나 버튼이 아닌 곳에 떨어졌다
       const clicks = await recordedClicks(page);
       expect(clicks[0]).toBe('rebirth');
@@ -570,7 +572,7 @@ test('키보드만으로 엔딩 → 다시 태어나기: Tab으로 버튼에 닿
     expect((await readSave(page)).data.phase).toBe('title');
     // 다음 Tab은 외부 링크가 아니라 눌려 있는 세상 카드(라디오 묶음은 Tab 정지점이 하나)
     await page.keyboard.press('Tab');
-    expect(await activeTestId(page)).toBe('era-present');
+    expect(await activeTestId(page)).toBe('gen-random');
   }
 });
 
@@ -650,7 +652,7 @@ async function burst(page: Page, ended: GameState, at: { x: number; y: number },
   return {
     eraStillShown: save.phase === 'title' && (await page.getByTestId('title-screen').count()) === 1,
     birth: save.phase !== 'title',
-    eraChosen: chosen.era !== 'present' || chosen.lifeLength !== 'short30' ? `${chosen.era}/${chosen.lifeLength}` : null,
+    eraChosen: chosen.generation !== 'random' || chosen.lifeLength !== 'short30' ? `${chosen.generation}/${chosen.lifeLength}` : null,
     landed: (await recordedClicks(page)).slice(1), // 첫 입력(다시 태어나기)을 뺀 나머지
   };
 }
@@ -659,7 +661,7 @@ test('낮은 화면(겹침과 최악의 착지점을 측정): 다시 태어나�
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   test.setTimeout(420_000);
   await page.goto('/');
-  const ended = await oracleAuto(page, await oracleLife(page, KNOWN_SEED, 'present'));
+  const ended = await oracleAuto(page, await oracleLife(page, KNOWN_SEED, 'alpha'));
   let withLandings = 0;
   let controlChanged = 0;
   const report: string[] = [];

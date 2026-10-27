@@ -5,6 +5,7 @@ import {
   autoChoiceDelayMs,
   classifySavedGame,
   createInitialState,
+  isGameDataReady,
   createSession,
   decideSave,
   dueNote,
@@ -22,6 +23,7 @@ import {
   playBucketOf,
   playNotBehind,
   saveGame,
+  savedNeedsGameData,
   saveSettings,
   serializeGame,
   serializeSettings,
@@ -39,6 +41,8 @@ import { ErrorBoundary } from './screens/ErrorBoundary';
 import { LifeScreen, type NoteSheetState } from './screens/LifeScreen';
 import { SupersededScreen } from './screens/SupersededScreen';
 import { TitleScreen } from './screens/TitleScreen';
+import { TITLE_TEXT } from './data/titleText';
+import { loadGameData } from './data/gameData';
 import { useApplyTheme } from './ui/theme';
 import { FOLD_INITIAL, autoChooseArmed, foldCard as foldState, isFolded, leaveLife, reopenCard as reopenState, type FoldState } from './ui/decisionFold';
 import { useBgm } from './ui/useBgm';
@@ -174,9 +178,9 @@ function withPlayNow(game: GameState, now: { seed: number; play: PlayTime } | nu
   return now !== null && game.phase === 'life' && game.play !== undefined && game.seed === now.seed && playNotBehind(now.play, game.play) ? { ...game, play: now.play } : game;
 }
 
-function Game() {
-  // 저장소는 여기서 한 번만 읽는다(lazy 초기값). 이 탭이 마지막으로 읽거나 쓴 원문(written)은 아래 effect들이 갱신하는 가변 객체다.
-  const [{ session: initial, written, oldSave }] = useState(readBoot);
+function Game({ boot }: { boot: Boot }) {
+  // 저장소는 부팅 때 한 번만 읽는다(`Booting`). 이 탭이 마지막으로 읽거나 쓴 원문(written)은 아래 effect들이 갱신하는 가변 객체다.
+  const [{ session: initial, written, oldSave }] = useState(boot);
   const [session, rawDispatch] = useReducer(sessionReducer, initial);
   // 상태를 바꾸는 모든 액션은 이 dispatch를 거친다: 그 직전에 플레이 시간 타이머가 지금까지의 시간을 판 상태로 옮긴다(syncPlay) — 사망으로 엔딩에 들어가는 액션 직전의 시간까지 정확히 담긴다. 타이머는 아래에서 만들어 ref에 넣는다.
   const timerRef = useRef<PlayTimer | null>(null);
@@ -185,6 +189,24 @@ function Game() {
     rawDispatch(a);
   }, []);
   const { game, settings, tick, showTitle, spin } = session;
+  // 「태어나기」: 지연 로드 덩어리(이벤트 풀·출생 연도 표)가 아직 없으면 불러오고, 오면 출생을 시작한다 (MG8). 같은 약속을 공유해 연타해도 한 번만 요청한다
+  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'failed'>('idle');
+  const pendingPick = useRef<string | null>(null);
+  const beginBirth = useCallback((regionPick: string | null) => {
+    pendingPick.current = regionPick;
+    if (isGameDataReady()) {
+      dispatch({ type: 'begin', regionPick });
+      return;
+    }
+    setLoadState('loading');
+    loadGameData().then(
+      () => {
+        setLoadState('idle');
+        dispatch({ type: 'begin', regionPick: pendingPick.current });
+      },
+      () => setLoadState('failed'),
+    );
+  }, [dispatch]);
   // 이전 버전 저장 안내는 첫 화면에 한 번만: 새 판이 시작되면(첫 화면을 떠나면) 다시 보이지 않는다.
   const [showOldNotice, setShowOldNotice] = useState(oldSave);
   useEffect(() => {
@@ -435,11 +457,19 @@ function Game() {
   const takeOver = useCallback(() => {
     // 저장소를 한 번만 읽어, 그 원문을 파싱해 이어받고 "내가 아는 값"으로도 기록한다(R-052). 이어받은 값은 저장소에 이미 있는 값이라 같은 값을 다시 쓰지 않는다.
     const raw = readRaw(GAME_KEY);
-    written.game = raw;
-    const adopted = parseGame(raw) ?? createInitialState(newSeed());
-    timerRef.current?.adopt(adopted); // 이어받은 판의 플레이 시간 기록에서 다시 쌓는다(이어받은 값을 그대로 쓴다)
-    dispatch({ type: 'adopt', game: adopted });
-    setSuperseded(false);
+    const finish = () => {
+      written.game = raw;
+      const adopted = parseGame(raw) ?? createInitialState(newSeed());
+      timerRef.current?.adopt(adopted); // 이어받은 판의 플레이 시간 기록에서 다시 쌓는다(이어받은 값을 그대로 쓴다)
+      dispatch({ type: 'adopt', game: adopted });
+      setSuperseded(false);
+    };
+    // 이 탭이 첫 화면에서 밀렸다면 지연 로드 덩어리(이벤트 풀·출생 연도 표·인용, MG8)를 아직 받지 않았을 수 있다 — 진행 중인 판을 읽고 검증하려면 먼저 받는다. 실패하면 밀린 화면에 그대로 남아 다시 누를 수 있다
+    if (savedNeedsGameData(raw) && !isGameDataReady()) {
+      loadGameData().then(finish, () => undefined);
+      return;
+    }
+    finish();
   }, [setSuperseded, written]);
 
   let screen;
@@ -450,36 +480,39 @@ function Game() {
     // 첫 화면: 새 판의 시작(title 단계) 또는 진행 중인 판을 둔 채 다시 연 화면(showTitle, 「나가기」). 후자는 「이어서 살기」가 기본 버튼이다.
     screen = (
       <TitleScreen
-        era={settings.era}
+        generation={settings.generation}
+        lived={settings.lived}
+        homeRegion={settings.homeRegion}
         lifeLength={settings.lifeLength}
         gentle={{ on: settings.gentle, onToggle: () => dispatch({ type: 'setGentle', on: !settings.gentle }) }}
         notesSeen={settings.notesSeen}
         onSeeNotes={(version) => dispatch({ type: 'seeNotes', version })}
-        onSelectEra={(era) => dispatch({ type: 'setEra', era })}
+        onSelectGeneration={(generation) => dispatch({ type: 'setGeneration', generation })}
+        onSetHomeRegion={(region) => dispatch({ type: 'setHomeRegion', region })}
         onSelectLifeLength={(lifeLength) => dispatch({ type: 'setLifeLength', lifeLength })}
-        onBegin={() => dispatch({ type: 'begin' })}
-        saved={showTitle && hasProgress(game) ? { onResume: () => dispatch({ type: 'resume' }), onBeginNew: () => dispatch({ type: 'beginNew', seed: newSeed() }) } : null}
+        onBegin={beginBirth}
+        loading={loadState}
+        onRetryLoad={() => beginBirth(pendingPick.current)}
+        saved={showTitle && hasProgress(game) ? { onResume: () => dispatch({ type: 'resume' }), onBeginNew: (regionPick) => dispatch({ type: 'beginNew', seed: newSeed(), regionPick }) } : null}
         oldSaveNotice={showOldNotice && game.phase === 'title'}
       />
     );
-  } else if (game.phase === 'roulette' && game.era && game.character && game.birthReport) {
+  } else if (game.phase === 'roulette' && game.generation && game.character && game.birthReport) {
     // 룰렛: 결과는 「태어나기」 순간 이미 저장돼 있고(RL5) 이 화면은 그 결과를 연출로 보여 준다. spin은 저장되지 않는 세션 상태라 새로고침하면 결과가 확정된 모습으로 열린다.
     screen = (
       <RouletteScreen
-        era={game.era}
-        character={game.character}
-        report={game.birthReport}
+        game={{ ...game, character: game.character, birthReport: game.birthReport }}
         spin={spin}
         onFinishSpin={() => dispatch({ type: 'finishSpin' })}
         onNext={() => dispatch({ type: 'enterBirth' })}
       />
     );
-  } else if (game.phase === 'birth' && game.era && game.character && game.birthReport && game.peerSeed !== null) {
-    screen = <BirthScreen era={game.era} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} onNext={() => dispatch({ type: 'enterLife' })} />;
-  } else if (game.phase === 'life' && game.character && game.era && game.birthReport && game.peerSeed !== null) {
+  } else if (game.phase === 'birth' && game.generation && game.character && game.birthReport && game.peerSeed !== null) {
+    screen = <BirthScreen generation={game.generation} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} regionPicked={game.regionPicked === true} onNext={() => dispatch({ type: 'enterLife' })} />;
+  } else if (game.phase === 'life' && game.character && game.generation && game.birthReport && game.peerSeed !== null) {
     screen = (
       <LifeScreen
-        game={{ ...game, character: game.character, era: game.era, birthReport: game.birthReport, peerSeed: game.peerSeed }}
+        game={{ ...game, character: game.character, generation: game.generation, birthReport: game.birthReport, peerSeed: game.peerSeed }}
         settings={settings}
         tick={tick}
         clock={clock}
@@ -520,11 +553,11 @@ function Game() {
         }}
       />
     );
-  } else if (game.phase === 'ending' && game.character && game.death && game.era && game.birthStats) {
+  } else if (game.phase === 'ending' && game.character && game.death && game.generation && game.birthStats) {
     // 다시 태어나기: 새 시드를 UI에서 한 번 뽑아 넘긴다(core는 난수 원천을 만들지 않는다). reducer는 ending에서만 받아들여 연타에도 새 판은 하나뿐이다.
     screen = (
       <EndingScreen
-        game={{ ...game, character: game.character, death: game.death, era: game.era, birthStats: game.birthStats }}
+        game={{ ...game, character: game.character, death: game.death, generation: game.generation, birthStats: game.birthStats }}
         onRebirth={() => dispatch({ type: 'rebirth', seed: newSeed() })}
         gentle={settings.gentle}
       />
@@ -546,11 +579,48 @@ function Game() {
   );
 }
 
+/**
+ * 부팅: 저장소를 읽어 첫 상태를 만든다. 진행 중인 판(룰렛 이후)이 저장돼 있으면 그 판을 읽고 검증하는 데 지연 로드 덩어리(이벤트 풀·출생 연도 표)가 필요해서 먼저 불러온다(MG8 「또는 저장 복원 때」).
+ * 저장이 없거나 첫 화면 단계면 덩어리 없이 곧바로 열린다 — 첫 화면의 초기 로드에 덩어리가 들어가지 않는다.
+ */
+function Booting() {
+  const [boot, setBoot] = useState<Boot | null>(() => (savedNeedsGameData(readRaw(GAME_KEY)) && !isGameDataReady() ? null : readBoot()));
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (boot !== null) return;
+    let alive = true;
+    setFailed(false);
+    loadGameData().then(
+      () => {
+        if (alive) setBoot(readBoot());
+      },
+      () => {
+        if (alive) setFailed(true);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [boot, attempt]);
+  if (boot !== null) return <Game boot={boot} />;
+  return (
+    <main className="boot-wait" data-testid="boot-wait" role="status">
+      <p>{failed ? TITLE_TEXT.loadFailed : TITLE_TEXT.restoring}</p>
+      {failed ? (
+        <button type="button" className="btn btn--primary" data-testid="boot-retry" onClick={() => setAttempt((n) => n + 1)}>
+          {TITLE_TEXT.loadRetry}
+        </button>
+      ) : null}
+    </main>
+  );
+}
+
 export function App() {
   return (
     <ErrorBoundary>
       <CrashProbe />
-      <Game />
+      <Booting />
     </ErrorBoundary>
   );
 }

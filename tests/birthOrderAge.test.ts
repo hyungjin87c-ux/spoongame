@@ -2,7 +2,6 @@ import birthReportSrc from '../src/core/birthReport.ts?raw';
 import familySrc from '../src/core/family.ts?raw';
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
   MAX_OLDER_SIBLINGS as FAMILY_MAX_OLDER,
   MIN_FIRST_BIRTH_AGE as FAMILY_MIN_FIRST,
   SIBLING_GAP as FAMILY_SIBLING_GAP,
@@ -12,7 +11,7 @@ import {
   generateBirth,
   mixSeed,
   rollParentAges,
-  type Era,
+  type ProfileId,
   type ParentWealth,
   type Rng,
 } from '../src/core';
@@ -31,6 +30,14 @@ import {
 import { getBirthStats } from '../src/data/birthStats';
 import { codeOnly } from './helpers/code';
 import { EPS, sigmaTolerancePct } from './helpers/stats';
+import { SIM_PROFILES } from '../scripts/simulateLib';
+import type { ReportTilt } from '../src/data/birthReportTable';
+
+/** 부모 나이·형제 순서 보정의 두 갈래(SPEC-004 NR3 — 1989년 이전 출생 `past` · 1990년 이후 `present`; 옛 「다가올 세상」 갈래는 없어졌다) */
+const ERAS: readonly ReportTilt[] = ['past', 'present'];
+type Era = ReportTilt;
+/** 출생 생성기 시험의 세대 표본: 산업화·X(1989년 이전 갈래) · 알파(1990년 이후 갈래) */
+const tiltOfProfile = (p: ProfileId): ReportTilt => (p === 'alpha' ? 'present' : 'past');
 
 /**
  * 출생 순서 ↔ 어머니 나이 정합 (SPEC-003 BR6·CM9, REV-003-M4-1 R-330 r3, 마스터 결정: **생성기를 고친다**).
@@ -162,13 +169,6 @@ describe('rollParentAges: 형제 순서가 가능한 어머니 나이만 만든�
     const first = scripted([mAt(16), 0]);
     expect(rollParentAges(first.rng, 'past', 3, 0, 1).mother).toBe(PARENT_AGE_LIMITS.min);
     expect(first.calls).toHaveLength(2);
-    // 다가올 세상(+1): 보정 전 16세 → 최종 17세는 둘째에게 어긋나고 17세 → 18세는 맞는다
-    const f16 = scripted([mAt(16), mAt(33), 0]);
-    expect(rollParentAges(f16.rng, 'future', 3, 1, 2).mother).toBe(34);
-    expect(f16.calls).toHaveLength(3);
-    const f17 = scripted([mAt(17), 0]);
-    expect(rollParentAges(f17.rng, 'future', 3, 1, 2).mother).toBe(18);
-    expect(f17.calls).toHaveLength(2);
   });
 
   it('order를 안 주면 첫째로 본다(제한 없음): 어머니 16세도 그대로', () => {
@@ -190,7 +190,7 @@ describe('rollParentAges: 형제 순서가 가능한 어머니 나이만 만든�
     }
   });
 
-  it('대량 추첨(시대 3 × 순서 5 × 수저 5 × 400): 어머니 최종 나이 ≥ 순서의 최소 나이, 허용 범위·아버지 나이 차 안, 아버지는 다시 뽑은 어머니의 조건부 분포', () => {
+  it('대량 추첨(갈래 2 × 순서 5 × 수저 5 × 400): 어머니 최종 나이 ≥ 순서의 최소 나이, 허용 범위·아버지 나이 차 안, 아버지는 다시 뽑은 어머니의 조건부 분포', () => {
     let n = 0;
     for (const era of ERAS) {
       for (let order = 1; order <= 5; order++) {
@@ -209,7 +209,7 @@ describe('rollParentAges: 형제 순서가 가능한 어머니 나이만 만든�
         }
       }
     }
-    expect(n).toBe(3 * 5 * 5 * 400);
+    expect(n).toBe(ERAS.length * 5 * 5 * 400);
   });
 
   /** 예전 구현(순서를 몰랐다) 그대로 — 첫 추첨이 맞은 판은 새 구현과 같고 난수 소비도 같아야 한다 */
@@ -249,12 +249,11 @@ describe('rollParentAges: 형제 순서가 가능한 어머니 나이만 만든�
     for (const era of ERAS) expect(stat[era].same, era).toBeGreaterThan(5000);
     expect(stat.past.fixed, JSON.stringify(stat)).toBeGreaterThan(100);
     expect(stat.present.fixed, JSON.stringify(stat)).toBeGreaterThan(0);
-    expect(stat.future.fixed, JSON.stringify(stat)).toBeGreaterThan(0);
   });
 
   it('다시 뽑은 나이는 「순서가 가능한 나이만 남긴 조건부 분포」를 따른다 (예전 분포에서 불가능한 칸을 잘라 다시 맞춘 것): 4σ 이내', () => {
     const N = 200000;
-    for (const [era, order, w] of [['present', 2, 3], ['present', 5, 2], ['past', 3, 4], ['future', 2, 1]] as const) {
+    for (const [era, order, w] of [['present', 2, 3], ['present', 5, 2], ['past', 3, 4]] as const) {
       const shift = ERA_REPORT_ADJUST[era].parentAgeShift;
       const need = minMotherAgeForOrder(order);
       const weights = model.motherGiven[bucketOf(order)][w - 1];
@@ -285,14 +284,14 @@ describe('rollParentAges: 형제 순서가 가능한 어머니 나이만 만든�
   });
 });
 
-describe('출생 생성기 대량 표본 (세 시대 × 60000판): 출생신고 형제 순서 ⇔ 식구 카드 위 형제 수 (모순 0, R-330 r3)', () => {
+describe('출생 생성기 대량 표본 (세대 표본 3종 × 60000판): 출생신고 형제 순서 ⇔ 식구 카드 위 형제 수 (모순 0, R-330 r3)', () => {
   const N = 60000;
-  const sample = (era: Era) => {
-    const rng = createRng(20261017 + ERAS.indexOf(era));
+  const sample = (era: ProfileId) => {
+    const rng = createRng(20261017 + SIM_PROFILES.indexOf(era));
     return Array.from({ length: N }, () => generateBirth(rng, era));
   };
 
-  for (const era of ERAS) {
+  for (const era of SIM_PROFILES) {
     it(`${era}: 모든 판에서 위 형제 수 ≤ ⌊(어머니 나이 − 16) / 2⌋이고, 출생신고 문장의 「N째입니다」와 식구 카드의 위 형제 수가 같다`, () => {
       const draws = sample(era);
       let withOlder = 0;
@@ -302,7 +301,7 @@ describe('출생 생성기 대량 표본 (세 시대 × 60000판): 출생신고 
         expect(olderSiblingsOf(r.birthOrder), at).toBeLessThanOrEqual(olderSiblingLimit(r.mother.age));
         expect(r.mother.age, at).toBeGreaterThanOrEqual(minMotherAgeForOrder(r.birthOrder));
         // 출생신고 문장이 말하는 형제 순서 (구현의 표 대신 따로 적은 낱말로 읽는다)
-        const m = ORDER_RE.exec(birthSentence(d.character, r, era));
+        const m = ORDER_RE.exec(birthSentence(d.character, r));
         expect(m, `${at}: 서술문에 형제 순서가 없다`).not.toBeNull();
         const said = WORDS.indexOf(m![1] as (typeof WORDS)[number]) + 1;
         expect(said, at).toBe(r.birthOrder);
@@ -314,21 +313,21 @@ describe('출생 생성기 대량 표본 (세 시대 × 60000판): 출생신고 
           expect(older.at(-1)!.gap, at).toBeLessThanOrEqual(r.mother.age - MIN_FIRST_BIRTH_AGE);
         }
       }
-      expect(withOlder, '공허 통과 방지: 위 형제가 있는 판').toBeGreaterThan(N * (era === 'future' ? 0.3 : 0.35));
+      expect(withOlder, '공허 통과 방지: 위 형제가 있는 판').toBeGreaterThan(N * 0.35);
     });
   }
 
-  it('공표 출산 순위 비중은 그대로다: 지난 세상 26·26·48, 다가올 세상 66·28·6(설계 비중), 지금 세상은 전국 62.4·31.2·6.4(공표)와 같고, 셋째 이상의 셋째·넷째·다섯째 분할(74·19·7)도 그대로 — 순서를 먼저 뽑고 어머니 나이를 그 순서에 맞추기 때문', () => {
-    const expectedShares: Record<Era, [number, number, number]> = { past: [...ERA_REPORT_ADJUST.past.orderShares!], present: [62.4, 31.2, 6.4], future: [...ERA_REPORT_ADJUST.future.orderShares!] };
+  it('공표 출산 순위 비중은 그대로다: 1989년 이전 출생(산업화·X)은 26·26·48(설계 비중), 1990년 이후(알파)는 전국 62.4·31.2·6.4(공표)와 같고, 셋째 이상의 셋째·넷째·다섯째 분할(74·19·7)도 그대로 — 순서를 먼저 뽑고 어머니 나이를 그 순서에 맞추기 때문', () => {
+    const expectedShares: Record<ReportTilt, [number, number, number]> = { past: [...ERA_REPORT_ADJUST.past.orderShares!], present: [62.4, 31.2, 6.4] };
     expect(THIRD_PLUS_SPLIT).toEqual([74, 19, 7]);
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       const draws = sample(era);
       const count = (pick: (o: number) => boolean) => draws.filter((d) => pick(d.report.birthOrder)).length;
       const observed = [count((o) => o === 1), count((o) => o === 2), count((o) => o >= 3)].map((c) => (c / N) * 100);
       observed.forEach((pct, i) => {
-        const expected = expectedShares[era][i];
+        const expected = expectedShares[tiltOfProfile(era)][i];
         // 지금 세상의 기대값은 지역별 통계를 출생아 수로 가중한 값이라 공표 전국값과 조금 다르다 → 표본 오차 4σ에 0.3%p를 더한다
-        const slack = era === 'present' ? 0.3 : 0;
+        const slack = tiltOfProfile(era) === 'present' ? 0.3 : 0;
         expect(Math.abs(pct - expected), `${era} 순위 ${i + 1} 관측 ${pct.toFixed(2)}% / 기대 ${expected}%`).toBeLessThanOrEqual(sigmaTolerancePct(expected, N) + slack + EPS);
       });
       const thirdPlus = count((o) => o >= 3);

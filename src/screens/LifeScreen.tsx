@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
-import { EVENT_POOL } from '../data/events';
+import { eventPool } from '../core/gameData';
 import { DASH_TEXT } from '../data/dashText';
 import { BUILD_LABEL, REPO_URL } from '../buildInfo';
 import { HeaderLogo, Icon, Sprite } from '../ui/Brand';
@@ -265,7 +265,8 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, minute, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+  const pool = poolProp ?? eventPool(); // 이벤트 풀은 「태어나기」 뒤에 불러온다(MG8) — 인생 화면이 열릴 때는 이미 놓여 있다
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headRef = useRef<HTMLElement>(null);
@@ -456,8 +457,8 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
       <main className="dash" {...inert}>
         <div className="col col--left">
           <ProfileCard game={game} />
-          <StatusCard stats={game.stats} era={game.era} />
-          <AssetsCard age={game.age} assets={game.assets} era={game.era} />
+          <StatusCard stats={game.stats} generation={game.generation} />
+          <AssetsCard age={game.age} assets={game.assets} generation={game.generation} />
         </div>
         <div className="col col--center">
           {/* 카드 자리: 접히면 접힌 띠, 자동 모드면 인라인 카드. 모달 시트는 아래(이 형제들 바깥)에서 그린다 */}
@@ -469,7 +470,7 @@ export function LifeScreen({ game, settings, pool = EVENT_POOL, tick = null, clo
           ) : null}
           {/* 부모님이 정한·흘러간 카드: 인생 기록 바로 위(LR5 b — [결정 카드 또는 접힌 띠 → 부모 결정 카드 → 인생 기록]). 비모달이라 포커스·inert와 무관하다 */}
           {parentCard !== null ? <ParentCard key={`${parentCard.ev.id}@${parentCard.age}`} model={parentCard} gentle={settings.gentle} /> : null}
-          <LogCard history={game.history} name={c.name} live={!fast} minute={minute} gentle={settings.gentle} />
+          <LogCard history={game.history} live={!fast} gentle={settings.gentle} />
         </div>
         <div className="col col--right">
           <FamilyCard game={game} />

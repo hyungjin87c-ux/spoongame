@@ -22,7 +22,7 @@ import {
   type GameState,
   type PeerStatus,
 } from '../src/core';
-import { chooserFor, startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
  * M7e-3 콘텐츠 판단의 반영 (SPEC-003 M7e-3, planner `docs/data/content-M7e.md` 1~5·9절, 마스터 결정 E-1~E-12):
@@ -103,7 +103,7 @@ describe('E-4: 「혼자 먹는 저녁」(youth-lonely-city)은 독립 주거(�
     let happened = 0;
     let filtered = 0;
     const bad: string[] = [];
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (let k = 0; k < 1000; k++) {
         const seed = 5000 + k * 7919;
         let s: GameState = startLife(seed, era);
@@ -242,7 +242,7 @@ describe('E-7: 은퇴 뒤 다시 일하는 또래의 표시 라벨 「다시 일
   });
 
   it('peersNow: 화면 라벨(label)은 peerLabelOf의 마지막 해와 같고 status는 상태 키 그대로다', () => {
-    const base = startLife(7, 'present');
+    const base = startLife(7, 'alpha');
     for (const age of [30, 60, 70, 80, 90]) {
       const game = { age, peerSeed: base.peerSeed, character: base.character, birthReport: base.birthReport };
       const peers = peersNow(game);
@@ -276,7 +276,7 @@ describe('M7e-4 T03b·F-2: 「혼자 맞는 명절」과 「혼자 사는 집」
     const happened: Record<string, number> = { 'middle-lonely-holiday': 0, 'senior-alone': 0 };
     const filtered: Record<string, number> = { 'middle-lonely-holiday': 0, 'senior-alone': 0 };
     const bad: string[] = [];
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (let k = 0; k < 1000; k++) {
         const seed = 9000 + k * 7919;
         let s: GameState = startLife(seed, era);
@@ -315,7 +315,7 @@ describe('M7e-4 T03b·F-2: 「혼자 맞는 명절」과 「혼자 사는 집」
 describe('M7e-4 T03a: 「살 곳을 구하는 일」 — 부모님 집에 머문다(가족 집 판) / 부모님 집으로 돌아간다(독립 판)', () => {
   const ev = eventOf('youth-housing');
   const stateAt = (dwelling: 'family' | 'rent' | 'jeonse' | 'own', flags: string[] = []): GameState => {
-    const base = startLife(7, 'present');
+    const base = startLife(7, 'alpha');
     const s: GameState = { ...base, age: 25, flags: [...flags].sort(), assets: null, familyFund: 0, seen: {}, pending: null };
     return { ...s, assets: { net: 5000, income: incomeOf(economyContextOf(s), 0), debt: 0, incomeAdj: 0, dwelling } };
   };

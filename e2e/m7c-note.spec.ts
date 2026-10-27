@@ -392,7 +392,7 @@ test('결정을 고른 직후 다음 해의 기록 카드: 결정 시트가 닫�
   await injectSave(page, d.state, '/', MANUAL);
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'sheet');
   await expect(page.getByRole('dialog')).toHaveCount(1);
-  const choice = page.getByTestId(`choice-${d.choiceId}`);
+  const choice = page.locator(`button[data-testid="choice-${d.choiceId}"]`);
   await expect(choice).toBeEnabled();
   await choice.click();
   await expect(sheet(page)).toBeVisible();
@@ -530,7 +530,7 @@ test('엔딩 연표에 「나의 기록」 줄이 시간순으로 나오고 새�
   await page.goto('/');
   const state = await evalCore<GameState>(
     page,
-    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), 'present')));
+    `let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(arg.seed), 'alpha')));
      let n = 0;
      for (let guard = 0; guard < 2000 && s.phase === 'life'; guard++) {
        if (s.pending !== null) { s = core.autoResolveStep(s, s.pending.key).state; continue; }

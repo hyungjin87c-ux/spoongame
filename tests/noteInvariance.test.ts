@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ERAS, NOTE_LIMITS, isNoteKey, notesOf, parseGame, playToEnd, serializeGame, type Era } from '../src/core';
-import { startLife } from '../scripts/simulateLib';
+import { NOTE_LIMITS, isNoteKey, notesOf, parseGame, playToEnd, serializeGame, type ProfileId } from '../src/core';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import { lifeView, playSession, skipIt, writeIt } from './helpers/notes';
 
 /**
@@ -12,7 +12,7 @@ import { lifeView, playSession, skipIt, writeIt } from './helpers/notes';
 const SEEDS = Array.from({ length: 200 }, (_, i) => 1000 + i * 7);
 const first = (s: { pending: { choiceIds: string[] } | null }): string => s.pending!.choiceIds[0];
 
-describe.each(ERAS)('카드 응답 방식이 인생을 바꾸지 않는다 (%s)', (era: Era) => {
+describe.each(SIM_PROFILES)('카드 응답 방식이 인생을 바꾸지 않는다 (%s)', (era: ProfileId) => {
   it('쓴 판 · 건너뛴 판 · 자동 모드 판 · 카드를 끈 판 · 다음 결정으로 판 · 시트 없는 판 · 순수 엔진: 상태가 같다 (200판)', () => {
     let writtenRows = 0;
     let lives = 0;

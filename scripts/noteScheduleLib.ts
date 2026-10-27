@@ -1,4 +1,4 @@
-import { NOTE_LIMITS, autoResolveStep, consumeNote, dueNote, resolveChoiceStep, stepYear, type Chooser, type Era, type GameState, type NoteCardDef } from '../src/core';
+import { NOTE_LIMITS, autoResolveStep, consumeNote, dueNote, resolveChoiceStep, stepYear, type Chooser, type GameState, type ProfileId, type NoteCardDef } from '../src/core';
 import { NOTE_CARDS } from '../src/data/noteCards';
 import { startLife } from './simulateLib';
 
@@ -22,7 +22,7 @@ export interface LifeSchedule {
 }
 
 /** 한 판을 끝까지 돌리며 기록 카드 스케줄을 모은다. chooser가 null이면 자동 모드(성향 선택)와 같은 선택이다. */
-export function scheduleOneLife(seed: number, era: Era, chooser: Chooser | null, cards: readonly NoteCardDef[] = NOTE_CARDS): LifeSchedule {
+export function scheduleOneLife(seed: number, era: ProfileId, chooser: Chooser | null, cards: readonly NoteCardDef[] = NOTE_CARDS): LifeSchedule {
   let s: GameState = startLife(seed, era);
   const shown: ShownNote[] = [];
   let guard = 0;
@@ -74,7 +74,7 @@ export function scheduleProblems(life: LifeSchedule, cards: readonly NoteCardDef
 }
 
 export interface ScheduleReport {
-  era: Era;
+  era: ProfileId;
   lives: number;
   problems: string[];
   /** 판당 카드 수의 평균 (전체 / 사망 나이 70세 이상) */
@@ -94,7 +94,7 @@ export interface ScheduleReport {
   totalCards: number;
 }
 
-export function runNoteSchedule(era: Era, lives: number, chooser: (seed: number) => Chooser | null, seed0 = 1, cards: readonly NoteCardDef[] = NOTE_CARDS): ScheduleReport {
+export function runNoteSchedule(era: ProfileId, lives: number, chooser: (seed: number) => Chooser | null, seed0 = 1, cards: readonly NoteCardDef[] = NOTE_CARDS): ScheduleReport {
   const problems: string[] = [];
   const histogram = Array.from({ length: NOTE_LIMITS.autoCards + 1 }, () => 0);
   const count: Record<string, number> = {};

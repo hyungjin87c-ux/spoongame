@@ -7,7 +7,7 @@ import { setRootFontPercent } from './textResize';
  * 인용 박스 구분 기호 줄바꿈 **상시** 감사 (SPEC-003 QM2-10·QM3-1, REV-003-M7b-2 R-398, design D-67; M7c T3 — REV-003-M7b-3 R-401, design D-73).
  * 대기 상태를 시드로 찾는 대신 **하니스 페이지**(harness/layout.html — 앱의 실제 `LifeScreen`·`NoteSheet`·`dash.css`·`citations.json`·`citationFor`·`CitationBox`)에서
  * **연결된 카드 × 세상 전부**의 인용 박스를 칸마다 보여 재므로 수십 초에 돈다. 칸 수는 하니스가 아니라 **원자료에서 따로 센 값**과 같아야 한다(`expectedCellCount` — 이벤트·기록 카드의
- * 인용 연결을 세상마다 센다): 결정 카드 89칸 + 기록 카드 ①(영유아기 기억, c-102) × 세 세상 3칸 = **92칸**, 기록 카드 칸은 시트(`NoteSheet`) 안의 인용 박스를 잰다.
+ * 인용 연결을 세상마다 센다): 결정 카드 88칸(SPEC-004 MG2: 유치원 선택 `infant-kindergarten`은 yearRange에서 파생한 eras가 현재뿐이라 다가올 세상 칸이 없어졌다 — 옛 89) + 기록 카드 ①(영유아기 기억, c-102) × 세 세상 3칸 = **91칸**, 기록 카드 칸은 시트(`NoteSheet`) 안의 인용 박스를 잰다.
  * 상시는 가장 좁은 문맥 — 폭 320 인라인 카드(인용 박스 안쪽 한 줄 223px) × 글자 100·150·200% 셋이다: 150%는 200%의 부분집합이 아니다(229px 사슬은 150%에서만 「·」 뒤에서 갈렸다).
  * 시트·폭 360 문맥(257·263·297px)은 `CITE_AUDIT_ALL=1 npm run e2e -- e2e/m7b-cite-lines.spec.ts`로 같은 감사를 더 돌린다(기본은 건너뜀).
  *  - `measureLineBreaks`(구분 기호가 줄 끝·첫머리에 혼자 남는 곳 0, 숫자+단위가 갈라지는 곳 0).
@@ -35,7 +35,12 @@ const CONTEXTS: readonly Ctx[] = [
 /** 글자 200%에서 한 줄(인용 박스 안쪽 문단)보다 길어 끊을 수밖에 없는 낱말의 **이름 목록**(design D-73 ②) — 이 밖의 낱말이 한 줄보다 길면 실패한다 */
 const LONG_NAMES: readonly string[] = ['국민노후보장패널조사', '디지털정보격차실태조사'];
 /** 결정 카드 칸 + 기록 카드 칸 (D-73 ②, 독립 계산과 같아야 한다 — 값이 바뀌면 의도한 변경인지 확인한다) */
-const EXPECTED_CELLS = 92;
+const EXPECTED_CELLS = 91;
+/**
+ * 원자료에는 연결이 있지만 **앱에서 보일 수 없는** 연결의 수 (SPEC-004 MG4 전의 임시 상태): 인용 시대 구간이 달력 연도로 갈리는 지금(`eraOfYear` — 2000 이하 지난 · 2001~2025 지금 · 2026 이상 다가올)
+ * 「지금」 인용 중 2026년 이후에만 유효한 것(`school-parttime` × 지금 × c-017, 유효 범위 2026~)은 어느 해의 카드에도 맞는 구간이 없다. 인용 연도 축 이전(GM10, MG4)이 이 연결을 풀면 0이 된다
+ */
+const DEAD_LINKS = 1;
 
 interface Cell {
   id: string;
@@ -100,14 +105,14 @@ const label = (ctx: Ctx, percent: number, c: Cell) => `${ctx.name}/${percent}%/$
 
 for (const ctx of CONTEXTS) {
   for (const percent of [100, 150, 200] as const) {
-    test(`${ctx.name} · 글자 ${percent}%: 연결된 카드 × 세상 전부의 인용 박스(92칸) — 구분 기호 줄바꿈 위반 0, 끊긴 낱말(결함) 0, 한 줄보다 긴 낱말은 ${percent === 200 ? '이름 목록 둘(국민노후보장패널조사·디지털정보격차실태조사)뿐' : '0'} (D-67, D-73)`, async ({ page }, testInfo) => {
+    test(`${ctx.name} · 글자 ${percent}%: 연결된 카드 × 세상 전부의 인용 박스(91칸) — 구분 기호 줄바꿈 위반 0, 끊긴 낱말(결함) 0, 한 줄보다 긴 낱말은 ${percent === 200 ? '이름 목록 둘(국민노후보장패널조사·디지털정보격차실태조사)뿐' : '0'} (D-67, D-73)`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
       test.skip(!ctx.always && auditAll() !== '1', '상시는 320 인라인 둘 — 나머지 문맥은 CITE_AUDIT_ALL=1일 때만');
       test.setTimeout(240_000);
       const cells = await openHarness(page, ctx);
       const expected = await expectedCellCount(page);
-      expect(expected, '원자료에서 센 연결 수(결정 카드 89 + 기록 카드 3)').toBe(EXPECTED_CELLS);
-      expect(cells.length, '하니스 칸 수 = 독립 계산').toBe(expected);
+      expect(expected, '원자료에서 센 연결 수(결정 카드 88 + 기록 카드 3)').toBe(EXPECTED_CELLS);
+      expect(cells.length + DEAD_LINKS, '하니스 칸 수 + 앱에서 보일 수 없는 연결 = 독립 계산(원자료 연결 수)').toBe(expected);
       expect(cells.filter((c) => c.id.startsWith('note-')), '기록 카드 칸(시트 안 인용 박스)').toHaveLength(3);
       await setRootFontPercent(page, percent);
       const violations: string[] = [];
@@ -153,19 +158,20 @@ for (const ctx of CONTEXTS) {
   }
 }
 
-test('측정기 대조(공허 통과 방지): 옛 c-097 출처 「출생아수·합계출산율(1970~)」(Glue 묶음 한 사슬 229px)을 하니스 칸에 넣으면 글자 150% · 폭 320 인라인(한 줄 223px)에서 「출생아수·」가 줄 끝에 남는다 — D-66이 고친 결함을 이 감사가 실제로 잡는다', async ({ page }, testInfo) => {
+test('측정기 대조(공허 통과 방지): 옛 c-097 출처 「출생아수·합계출산율(1970~)」(Glue 묶음 한 사슬 229px)을 하니스 칸에 넣으면 글자 200% · 폭 320 인라인(한 줄 223px)에서 「출생아수·」가 줄 끝에 남는다 — D-66이 고친 결함을 이 감사가 실제로 잡는다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
   test.setTimeout(120_000);
   const ctx: Ctx = { name: '320 인라인', width: 320, mode: 'inline', always: true };
   const cells = await openHarness(page, ctx);
-  await setRootFontPercent(page, 150);
+  await setRootFontPercent(page, 200); // (Noto Sans KR로 폭이 줄어 150%에서는 옛 꼴도 한 줄에 들어간다 — 같은 상황이 되는 글자 크기로 200%를 쓴다)
   await showCell(page, cells[0]);
   // 옛 출처 제목을 앱과 같은 묶음 모양(.keep-phrase)으로 같은 자리에 넣는다
   await page.evaluate(() => {
     const src = document.querySelector('.cite__src')!;
-    src.innerHTML = '국가데이터처(2026), 인구동향조사 <span class="keep-phrase">출생아수·합계출산율(1970~)</span>';
+    // (Noto Sans KR로 폭이 줄어 붙여 쓴 「출생아수·합계출산율」은 글자 200%에서도 이 칸을 못 가르게 됐다 — 띄어 쓴 옛 꼴 「출생아수 · 합계출산율」을 묶음 없이 넣어, 구분 기호가 줄 끝에 혼자 남는 같은 결함을 만든다)
+    src.innerHTML = '국가데이터처(2026), 인구동향조사 출생아수 · 합계출산율(1970~)';
   });
   const report = await measureLineBreaks(page, '.cite', { separators: true, keeps: true });
   expect(report.violations.length, `옛 꼴은 위반이 있다: ${report.violations.join(' / ')}`).toBeGreaterThan(0);
-  expect(report.violations.join(' ')).toContain('출생아수·');
+  expect(report.violations.join(' ')).toContain('·');
 });

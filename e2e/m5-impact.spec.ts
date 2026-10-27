@@ -346,7 +346,7 @@ test('impact-adult: 선택지마다 화면의 영향 줄이 그 상태에서 선
       `return core.resolveChoiceStep(arg.state, arg.key, arg.id).state;`,
       { state, key: before.pending.key, id: d.choiceId },
     );
-    await page.getByTestId(`choice-${d.choiceId}`).click();
+    await page.locator(`button[data-testid="choice-${d.choiceId}"]`).click(); // 선택지 id가 `ask`이면 질문 줄(`choice-ask`)과 data-testid가 겹친다 — 버튼만 고른다
     await expect(page.getByTestId('choice-panel')).toHaveCount(0);
     const after = (await readSave(page)).data as unknown as { stats: Record<string, number>; assets: { net: number; debt: number }; flags: string[]; age: number };
     expect(after.stats, `선택지 ${d.choiceId}: 저장된 상태 = core 해결 결과`).toEqual(expected.stats);
@@ -384,7 +384,7 @@ test('impact-young: 20세 미만 선택지는 첫 항목이 「집안 살림」�
   for (const d of dom) if (d.items.some((i) => i.key === 'family')) expect(d.items[0].key, `선택지 ${d.choiceId}: 집안 살림이 첫 항목`).toBe('family');
   const pick = dom.find((d) => d.items.some((i) => i.key === 'family'))!;
   const expected = await evalCore<{ familyFund: number; stats: Record<string, number> }>(page, `return core.resolveChoiceStep(arg.state, arg.state.pending.key, arg.id).state;`, { state, id: pick.choiceId });
-  await page.getByTestId(`choice-${pick.choiceId}`).click();
+  await page.locator(`button[data-testid="choice-${pick.choiceId}"]`).click();
   await expect(page.getByTestId('choice-panel')).toHaveCount(0);
   const after = (await readSave(page)).data as unknown as { familyFund: number; stats: Record<string, number> };
   expect(after.familyFund).toBe(expected.familyFund);

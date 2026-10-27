@@ -1,13 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ERAS, PARENT_WEALTHS, parseGame, peersOf, type Era, type GameState, type ParentWealth } from '../src/core';
+import { GENERATION_IDS, PARENT_WEALTHS, R1_PRESENT, parseGame, peersOf, type GameState, type ParentWealth } from '../src/core';
 import { HOUSING_LABEL, OCCUPATION_LABEL } from '../src/data/birthReportTable';
 import { BIRTH_ORDER_LABEL } from '../src/data/birthReportTable';
-import { regionsOf, sigunguChoices } from '../src/data/birthStats';
-import { placeLabel } from '../src/data/regionNames';
+import { regionsOf } from '../src/data/birthStats';
+import { regionLabelAt } from '../src/data/regionNames';
 import { BirthScreen } from '../src/screens/BirthScreen';
 import { BIRTH_VARIANTS, BIRTH_VARIANT_IDS, birthVariantState, type BirthVariantId } from '../e2e/m3Variants';
-import { birthState, SAVE_VERSION } from '../e2e/saves';
+import { birthState, report as sampleReport, SAVE_VERSION } from '../e2e/saves';
 import { WORD_BREAK_EXTRAS, WORD_BREAK_EXTRA_IDS, wordBreakExtraState } from '../e2e/wordBreakVariants';
 
 /**
@@ -17,7 +17,7 @@ import { WORD_BREAK_EXTRAS, WORD_BREAK_EXTRA_IDS, wordBreakExtraState } from '..
  */
 
 function render(state: GameState): string {
-  return renderToStaticMarkup(<BirthScreen era={state.era!} character={state.character!} report={state.birthReport!} peerSeed={state.peerSeed!} onNext={() => {}} />);
+  return renderToStaticMarkup(<BirthScreen generation={state.generation!} character={state.character!} report={state.birthReport!} peerSeed={state.peerSeed!} onNext={() => {}} />);
 }
 const strip = (html: string): string => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 const compareRows = (html: string): number => (html.match(/data-testid="compare-row"/g) ?? []).length;
@@ -26,6 +26,12 @@ const footNotes = (html: string): number => {
   return (m[1].match(/<p[ >]/g) ?? []).length;
 };
 const longestWord = (label: string): number => Math.max(...label.split(' ').map((w) => w.length));
+/** 시험 전용 R1 프로필(2026년생)의 출생신고 화면 — 시군구와 비교 표(BR5)가 있는 유일한 판 */
+function r1State(wealth: ParentWealth): GameState {
+  const base = birthState(1, 'alpha', wealth, 50);
+  return { ...base, generation: R1_PRESENT, character: { ...base.character!, birthYear: 2026 }, birthReport: sampleReport({ sigunguSido: '서울', sigungu: '종로구' }), peerSeed: 5 };
+}
+const placeOf = (state: GameState): string => regionLabelAt(state.birthReport!.region, state.character!.birthYear);
 
 describe('출생신고 e2e 표본: 저장 검증을 통과하고, 의도한 내용이 화면에 실제로 나온다', () => {
   for (const id of BIRTH_VARIANT_IDS) {
@@ -45,74 +51,53 @@ describe('출생신고 e2e 표본: 저장 검증을 통과하고, 의도한 내�
 });
 
 describe('출생신고 e2e 표본: 가장 긴 조합을 실제로 담았다 (core로 다시 계산)', () => {
-  const presentIds = BIRTH_VARIANT_IDS.filter((id) => BIRTH_VARIANTS[id].era === 'present');
-
-  it('비교 표 행 수가 최대인 조합(지금 세상, 3행)이 표본에 있고, 모든 수저 단계에서 최대 행 수가 같다 — 흙수저·다이아몬드수저 표본이 모두 있다', () => {
-    const rowsByWealth = PARENT_WEALTHS.map((w) => compareRows(render({ ...birthState(1, 'present', w, 50), peerSeed: 5 })));
-    const max = Math.max(...rowsByWealth);
-    expect(max).toBe(3);
-    expect(rowsByWealth.every((n) => n === max), `단계별 행 수 ${rowsByWealth.join(',')}`).toBe(true);
-    // 지난·다가올 세상은 표가 없다(0행)
-    for (const era of ['past', 'future'] as const) for (const w of PARENT_WEALTHS) expect(compareRows(render({ ...birthState(1, era, w, 50), peerSeed: 5 })), `${era} ${w}`).toBe(0);
-    expect(presentIds.map((id) => BIRTH_VARIANTS[id].compareRows).every((n) => n === max)).toBe(true);
-    const wealths = new Set(presentIds.map((id) => BIRTH_VARIANTS[id].wealth));
-    for (const w of [1, 3, 5] as const) expect(wealths.has(w), `지금 세상 ${w}단계 표본`).toBe(true);
+  it('비교 표는 세대 판에서 숨긴다(BR5): 일곱 세대 × 수저 5단계 모두 0행이고, 시험 전용 R1(2026년생)만 3행이다 — 표본의 compareRows가 이 규칙을 따른다', () => {
+    for (const g of GENERATION_IDS) for (const w of PARENT_WEALTHS) expect(compareRows(render({ ...birthState(1, g, w, 50), peerSeed: 5 })), `${g} ${w}`).toBe(0);
+    for (const w of PARENT_WEALTHS) expect(compareRows(render(r1State(w))), `R1 ${w}`).toBe(3);
+    expect(BIRTH_VARIANT_IDS.every((id) => BIRTH_VARIANTS[id].compareRows === 0)).toBe(true);
   });
 
-  it('하단 표기 줄 수가 최대인 조합(지난·다가올 세상, 5줄)이 표본에 있다', () => {
-    const byEra = ERAS.map((era) => footNotes(render({ ...birthState(1, era, 3, 50), peerSeed: 5 })));
-    const max = Math.max(...byEra);
-    expect(max).toBe(5);
-    for (const era of ['past', 'future'] as const) {
-      const ids = BIRTH_VARIANT_IDS.filter((id) => BIRTH_VARIANTS[id].era === era);
-      expect(ids.length, era).toBeGreaterThan(0);
-      expect(ids.every((id) => BIRTH_VARIANTS[id].footNotes === max), era).toBe(true);
-    }
-    expect(footNotes(render({ ...birthState(1, 'present', 3, 50), peerSeed: 5 }))).toBe(4);
+  it('하단 표기 줄 수: 세대 판은 모두 같은 줄 수(표본의 footNotes, 6줄)이고, 시험 전용 R1은 4줄이다 (R1 때 그대로)', () => {
+    const byGen = GENERATION_IDS.map((g) => footNotes(render({ ...birthState(1, g, 3, 50), peerSeed: 5 })));
+    expect(new Set(byGen).size, `세대별 줄 수 ${byGen.join(',')}`).toBe(1);
+    for (const id of BIRTH_VARIANT_IDS) expect(BIRTH_VARIANTS[id].footNotes, id).toBe(byGen[0]);
+    expect(byGen[0]).toBe(6);
+    expect(footNotes(render(r1State(3)))).toBe(4);
   });
 
-  /** 시대의 표본 출생 연도에서 가능한 모든 장소 */
+  /** 표본 출생 연도에서 가능한 모든 장소 라벨 (그 해의 행정구역 이름 + 지금의 시도) */
   function places(id: BirthVariantId) {
     const state = birthVariantState(id);
-    const era = state.era as Era;
     const year = state.character!.birthYear;
-    const out: Array<{ label: string; word: number }> = [];
-    for (const r of regionsOf(year).regions) {
-      for (const c of sigunguChoices(year, r.name)) {
-        const label = placeLabel({ region: r.name, sigunguSido: c.sido, sigungu: c.name }, era);
-        out.push({ label, word: longestWord(label) });
-      }
-    }
-    return { era, year, state, all: out };
+    const all = regionsOf(year).regions.map((r) => {
+      const label = regionLabelAt(r.name, year);
+      return { region: r.name, label, word: longestWord(label) };
+    });
+    return { year, state, all };
   }
 
-  it('태어난 곳: 시대마다 낱말이 가장 긴 장소(지금·다가올 세상 「전남광주통합특별시」, 지난 세상 5글자)나 전체가 가장 긴 장소(지금 15글자·지난 14글자)를 표본이 쓴다', () => {
+  it('태어난 곳: 낱말이 가장 긴 장소(「전남광주통합특별시)」 10글자)이자 전체가 가장 긴 장소를 표본이 쓴다 — 기준선 서울은 짧은 쪽이다', () => {
     const maxWord = (id: BirthVariantId) => Math.max(...places(id).all.map((p) => p.word));
     const maxLen = (id: BirthVariantId) => Math.max(...places(id).all.map((p) => p.label.length));
-    const heroLabel = (id: BirthVariantId) => {
-      const { era, state } = places(id);
-      const r = state.birthReport!;
-      return placeLabel({ region: r.region, sigunguSido: r.sigunguSido, sigungu: r.sigungu }, era);
-    };
-    expect(longestWord(heroLabel('birth-dirt')), '지금 세상 낱말 최대').toBe(maxWord('birth-dirt'));
-    expect(maxWord('birth-dirt')).toBe('전남광주통합특별시'.length);
-    expect(heroLabel('birth-diamond').length, '지금 세상 전체 길이 최대').toBe(maxLen('birth-diamond'));
-    expect(heroLabel('birth-past').length, '지난 세상 전체 길이 최대').toBe(maxLen('birth-past'));
-    expect(longestWord(heroLabel('birth-past')), '지난 세상 낱말 최대').toBe(maxWord('birth-past'));
-    expect(longestWord(heroLabel('birth-future')), '다가올 세상 낱말 최대').toBe(maxWord('birth-future'));
-    expect(maxWord('birth-future')).toBe('전남광주통합특별시'.length);
+    expect(maxWord('birth-dirt')).toBe('전남광주통합특별시)'.length);
+    for (const id of ['birth-dirt', 'birth-diamond', 'birth-industrial', 'birth-genz'] as const) {
+      expect(longestWord(placeOf(birthVariantState(id))), `${id} 낱말 최대`).toBe(maxWord(id));
+      expect(placeOf(birthVariantState(id)).length, `${id} 전체 길이 최대`).toBe(maxLen(id));
+      expect(strip(/data-testid="birth-place">([^]*?)<\/dd>/.exec(render(birthVariantState(id)))![1])).toContain(BIRTH_VARIANTS[id].placeWord);
+    }
+    expect(placeOf(birthVariantState('birth')).length).toBeLessThan(maxLen('birth') / 2);
   });
 
-  it('또래 4명: 시대마다 장소가 가장 긴 조합을 포함하고(지금·다가올 세상 「전남광주통합특별시」 둘 이상) 다이아몬드수저 또래가 있다', () => {
+  it('또래 4명: 표본마다 장소 낱말이 가장 긴 조합을 둘 이상 포함하고 다이아몬드수저 또래가 정확히 한 명 있다', () => {
     for (const id of BIRTH_VARIANT_IDS) {
       if (id === 'birth') continue; // 기준선(짧은 쪽)
-      const { era, state, all } = places(id);
-      const peers = peersOf(state.peerSeed!, state.character!.birthYear, state.birthReport!.month, state.character!.name);
-      const words = peers.map((p) => longestWord(placeLabel(p, era)));
+      const { year, state, all } = places(id);
+      const peers = peersOf(state.peerSeed!, year, state.birthReport!.month, state.character!.name);
+      const words = peers.map((p) => longestWord(regionLabelAt(p.region, year)));
       const best = Math.max(...all.map((p) => p.word));
       expect(Math.max(...words), `${id} 또래 중 가장 긴 낱말`).toBe(best);
-      expect(peers.some((p) => p.wealth === 5), `${id} 다이아몬드수저 또래`).toBe(true);
-      if (era !== 'past') expect(words.filter((w) => w === best).length, `${id} 가장 긴 낱말을 가진 또래`).toBeGreaterThanOrEqual(2);
+      expect(peers.filter((p) => p.wealth === 5).length, `${id} 다이아몬드수저 또래`).toBe(1);
+      expect(words.filter((w) => w === best).length, `${id} 가장 긴 낱말을 가진 또래`).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -135,28 +120,28 @@ describe('출생신고 e2e 표본: 가장 긴 조합을 실제로 담았다 (cor
     }
   });
 
-  it('표본의 수저 단계·시대 조합: 흙수저(지금·지난)·다이아몬드수저(지금·다가올)가 모두 있다', () => {
-    const combos = new Set(BIRTH_VARIANT_IDS.map((id) => `${BIRTH_VARIANTS[id].era}/${BIRTH_VARIANTS[id].wealth as ParentWealth}`));
-    for (const c of ['present/1', 'present/5', 'past/1', 'future/5']) expect(combos.has(c), c).toBe(true);
+  it('표본의 수저 단계·세대 조합: 흙수저(알파·산업화)·다이아몬드수저(알파·Z)가 모두 있다', () => {
+    const combos = new Set(BIRTH_VARIANT_IDS.map((id) => `${BIRTH_VARIANTS[id].generation}/${BIRTH_VARIANTS[id].wealth as ParentWealth}`));
+    for (const c of ['alpha/1', 'alpha/5', 'industrial/1', 'genz/5']) expect(combos.has(c), c).toBe(true);
   });
 });
 
 describe('낱말 끊김 감사의 추가 출생신고 표본 둘 (e2e/wordBreakVariants.ts, QM3-1)', () => {
   // 가장 긴 내용 표본 5가지는 부모 직업이 모두 「기계 조작직」이라 반쪽 칸의 5글자 직업 이름(「단순노무직」)·4글자(「서비스직」) 끊김을 못 잡았다(QA M3-L02). 이 표본이 그 낱말을 담는다.
   for (const id of WORD_BREAK_EXTRA_IDS) {
-    it(`${id}: parseGame 통과, 지금 세상, 어머니·아버지 칸에 의도한 직업 이름, 태어난 곳에 의도한 7글자 지명, 비교 표 3행·하단 표기 4줄·또래 4명`, () => {
+    it(`${id}: parseGame 통과, 알파 세대, 어머니·아버지 칸에 의도한 직업 이름, 태어난 곳에 의도한 7글자 지명, 비교 표 없음·하단 표기 줄 수는 기준선과 같음·또래 4명`, () => {
       const v = WORD_BREAK_EXTRAS[id];
       const state = wordBreakExtraState(id);
       expect(parseGame(JSON.stringify({ version: SAVE_VERSION, data: state })), id).toEqual(state);
-      expect(state.era).toBe('present');
+      expect(state.generation).toBe('alpha');
       const html = render(state);
       const field = (testId: string) => strip(new RegExp(`data-testid="${testId}">([^]*?)</dd>`).exec(html)![1]);
       expect(field('birth-mother'), id).toContain(v.jobs[0]);
       expect(field('birth-father'), id).toContain(v.jobs[1]);
       expect(field('birth-place'), id).toContain(v.placeWord);
       expect(strip(/data-testid="birth-sentence">([^]*?)<\/p>/.exec(html)![1]), `${id} 서술문에도 지명이 나온다`).toContain(v.placeWord);
-      expect(compareRows(html)).toBe(3);
-      expect(footNotes(html)).toBe(4);
+      expect(compareRows(html)).toBe(0);
+      expect(footNotes(html)).toBe(BIRTH_VARIANTS.birth.footNotes);
       expect(html.match(/data-testid="peer"/g)).toHaveLength(4);
       expect(longestWord(v.placeWord), '7글자 지명 낱말').toBe(7);
     });

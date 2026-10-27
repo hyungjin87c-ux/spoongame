@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { displaySeconds, formatPlayTime, playToEnd, type EndingGame, type Era, type PlayTime } from '../src/core';
+import { displaySeconds, formatPlayTime, playToEnd, type EndingGame, type PlayTime, type ProfileId } from '../src/core';
 import { PLAYTIME_TEXT, breakdownParts } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { chooserFor, startLife } from '../scripts/simulateLib';
@@ -10,12 +10,12 @@ import { chooserFor, startLife } from '../scripts/simulateLib';
  * 새로고침 뒤 같은 값·다시 태어나기 뒤 0·실제 브라우저의 타이머는 e2e/m8-playtime.spec.ts와 e2e/ending.spec.ts가 본다.
  */
 
-const endingOf = (seed: number, era: Era): EndingGame => playToEnd(startLife(seed, era), chooserFor('random', seed)).state as EndingGame;
+const endingOf = (seed: number, era: ProfileId): EndingGame => playToEnd(startLife(seed, era), chooserFor('random', seed)).state as EndingGame;
 const render = (g: EndingGame) => renderToStaticMarkup(<EndingScreen game={g} onRebirth={() => {}} />);
 const textOf = (html: string) => html.replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 const EMOJI = /\p{Extended_Pictographic}/u;
 
-const base = endingOf(2024, 'present');
+const base = endingOf(2024, 'alpha');
 const clean: PlayTime = { hold: 910_900, decide: 756_900, fold: 12_000, note: 20_000, idle: 31_000, offSpeed: 0, auto: 0, skips: 0, resumes: 4 };
 const withPlay = (play: PlayTime | undefined): EndingGame => ({ ...base, play });
 const block = (g: EndingGame): string => render(g).match(/<div class="playtime"[^]*?<\/p><\/div>/)?.[0] ?? '';
@@ -114,7 +114,7 @@ describe('엔딩 플레이 시간 블록: 보조 문장과 상태 (D-95)', () =>
   it('스무 살 전에 끝난 인생에도 같은 블록이 있다', () => {
     let early: EndingGame | null = null;
     for (let seed = 1; seed < 4000 && early === null; seed++) {
-      const g = endingOf(seed * 7919 + 13, 'past');
+      const g = endingOf(seed * 7919 + 13, 'genx');
       if (g.death.age < 20) early = g;
     }
     expect(early, '스무 살 전 사망 판').not.toBeNull();

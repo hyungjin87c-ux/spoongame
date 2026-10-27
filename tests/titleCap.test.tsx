@@ -20,8 +20,8 @@ const docCss = await readText('../src/styles/doc.css');
 
 /** 룰렛 화면 h1의 안쪽 글자와 style 속성 */
 function headingOf(spin: boolean): { text: string; style: string | null } {
-  const born = beginBirth(createInitialState(11), 'present');
-  const html = renderToStaticMarkup(<RouletteScreen era="present" character={born.character!} report={born.birthReport!} spin={spin} onFinishSpin={() => {}} onNext={() => {}} />);
+  const born = beginBirth(createInitialState(11), 'alpha');
+  const html = renderToStaticMarkup(<RouletteScreen game={born as never} spin={spin} onFinishSpin={() => {}} onNext={() => {}} />);
   const m = /<h1 ([^>]*)>([^]*?)<\/h1>/.exec(html);
   expect(m, 'h1').not.toBeNull();
   return { text: m![2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), style: /style="([^"]*)"/.exec(m![1])?.[1] ?? null };

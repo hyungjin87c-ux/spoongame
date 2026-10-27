@@ -1,20 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  FAMILY_ADULT_AGE,
-  FAMILY_MAX_AGE,
-  MAX_OLDER_SIBLINGS,
-  MIN_FIRST_BIRTH_AGE,
-  PARENT_AGED_FROM,
-  SIBLING_GAP,
-  YOUNGER_SIBLING_EVENT,
-  autoResolveStep,
-  familyOf,
-  parentAgeAt,
-  parentStateOf,
-  spouseStateOf,
-  stepYear,
-  type GameState,
-} from '../src/core';
+import { FAMILY_ADULT_AGE, FAMILY_MAX_AGE, MAX_OLDER_SIBLINGS, MIN_FIRST_BIRTH_AGE, PARENT_AGED_FROM, SIBLING_GAP, YOUNGER_SIBLING_EVENT, autoResolveStep, familyOf, parentAgeAt, parentStateOf, spouseStateOf, stepYear, type GameState } from '../src/core';
 import { CHILD_LABEL, PARENT_STATE_LABEL, SPOUSE_LABEL, siblingGapText, siblingLabel } from '../src/data/familyText';
 import { startLife } from '../scripts/simulateLib';
 
@@ -23,7 +8,7 @@ import { startLife } from '../scripts/simulateLib';
  * 출생 때 정한 형제 순서·부모 나이·직업과 어긋나지 않는다(BR6·CM9).
  */
 
-const base = (): GameState => startLife(7, 'present');
+const base = (): GameState => startLife(7, 'alpha');
 const withBirthOrder = (g: GameState, order: number): GameState => ({ ...g, birthReport: { ...g.birthReport!, birthOrder: order } });
 
 describe('부모 (나이·직업·상태)', () => {
@@ -135,7 +120,7 @@ describe('형제자매 (관계·나이 차)', () => {
   it('실제 판 전수(세 시대 × 600판): 어떤 출생에서도 가장 위 형제와의 나이 차가 어머니의 첫 출산 한도 안이고, 인생 기록 첫 줄의 「N째입니다」와 식구 카드의 위 형제 수가 같다 — 줄여서 보이는 판이 0이다 (R-330 r3: 생성기가 순서에 맞는 어머니 나이만 만든다)', () => {
     let checked = 0;
     let clamped = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ['industrial', 'alpha', 'alpha'] as const) {
       for (let seed = 1; seed <= 600; seed++) {
         const g = startLife(seed, era);
         const r = g.birthReport!;
@@ -181,7 +166,7 @@ describe('형제자매 (관계·나이 차)', () => {
     let withSibling = 0;
     let without = 0;
     for (let seed = 1; seed <= 400 && withSibling < 3; seed++) {
-      let g = startLife(seed, 'present');
+      let g = startLife(seed, 'alpha');
       if (g.birthReport!.birthOrder !== 1) continue;
       for (let i = 0; i < 8 && g.phase === 'life'; i++) {
         const r = stepYear(g);
@@ -241,7 +226,7 @@ describe('배우자·자녀 (플래그와 표시가 일치)', () => {
 
   it('실제 판 전수(세 시대 × 40판): 자동으로 끝까지 살며 해마다 배우자·자녀·부모 표시가 플래그·나이와 같다', () => {
     let years = 0;
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of ['industrial', 'alpha', 'alpha'] as const) {
       for (let seed = 1; seed <= 40; seed++) {
         let g = startLife(seed, era);
         for (let i = 0; i < 200 && g.phase === 'life'; i++) {

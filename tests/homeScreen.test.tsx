@@ -22,7 +22,7 @@ const stripComments = (css: string): string => css.replace(/\/\*[^]*?\*\//g, '')
 const css = stripComments(titleCss);
 
 function render(gentle?: { on: boolean; onToggle: () => void }): string {
-  return renderToStaticMarkup(<TitleScreen era="present" lifeLength="short30" onSelectEra={() => {}} onSelectLifeLength={() => {}} onBegin={() => {}} minute={29_850_000} gentle={gentle} />);
+  return renderToStaticMarkup(<TitleScreen generation="random" lifeLength="short30" onSelectGeneration={() => {}} onSelectLifeLength={() => {}} onBegin={() => {}} gentle={gentle} />);
 }
 const html = render();
 
@@ -34,98 +34,75 @@ function ruleBody(selector: string, source: string = css): string {
   return m![1];
 }
 
-describe('일러스트 마크업 (HS1 · D5-24): 장식 — 이름은 로고가 말한다', () => {
-  const figures = [...html.matchAll(/<figure class="illust illust--(banner|top)" aria-hidden="true" data-testid="home-illust-(?:banner|top)">[\s\S]*?<\/figure>/g)];
-
-  it('같은 그림이 두 자리(배너·오른쪽 열 맨 위)에 있고 둘 다 figure[aria-hidden] > picture > source + img[alt=""] 이다', () => {
-    expect(figures.map((m) => m[1])).toEqual(['banner', 'top']);
-    for (const [markup] of figures) {
-      expect(markup).toMatch(/<picture><source media="\(min-width: 960px\)" srcSet="[^"]+home-map-pc[^"]*\.webp" type="image\/webp"\/><img loading="lazy" decoding="async" width="375" height="440" alt="" src="[^"]+home-map-mobile[^"]*\.webp"\/><\/picture>/);
-      // R-450: `loading="lazy"`가 `src`보다 앞에 있다 — React가 쓴 속성 순서대로 DOM에 주므로 `src`를 주는 순간 이미 lazy여야 WebKit이 `source`가 붙기 전에 모바일 파일을 먼저 받지 않는다
-      expect(markup.indexOf('loading="lazy"')).toBeGreaterThan(-1);
-      expect(markup.indexOf('loading="lazy"')).toBeLessThan(markup.indexOf(' src="'));
-    }
+describe('그림이 없다 (SPEC-004 GS11 · 3차): 오른쪽 위 일러스트·지도 자산을 모두 걷어 냈다', () => {
+  it('마크업에 figure·img·picture가 하나도 없고, 일러스트 자리(data-testid home-illust-*)와 가상 인구 줄·수저 줄이 없다', () => {
+    expect(html).not.toMatch(/<figure|<img\b|<picture|illust/);
+    for (const gone of ['home-illust', 'spoon-lineup', 'population-line', 'population-note', 'population-info', 'log__pin']) expect(html, gone).not.toContain(gone);
+    expect(html).not.toContain('한 판 약 30분');
   });
 
-  it('대체 글이 없다(장식): 접근 가능한 이름·글자가 없고 figure 안에 글자 0, 클릭·선택 기능이 없다', () => {
-    for (const [markup] of figures) {
-      expect(markup.replace(/<[^>]+>/g, '').trim(), '그림 안 글자 0').toBe('');
-      expect(markup).not.toMatch(/aria-label|role=|tabindex|onclick|<a |<button|<map|usemap/i);
-      expect(markup).toContain('alt=""');
-    }
-    // 그림 자리 밖에 대체 글을 가진 이미지가 없다 — 이 화면의 <img>는 일러스트 둘뿐이다
-    expect(html.match(/<img\b/g)?.length).toBe(2);
-    expect(html.match(/<img\b[^>]*\balt="[^"]/g)).toBeNull();
-  });
-
-  it('외부 요청 0(FS8): 그림 주소가 같은 출처의 자산이다(vite 해시 이름), 외부 주소·data 주소가 아니다', () => {
-    for (const m of html.matchAll(/(?:src|srcSet)="([^"]+)"/g)) {
-      expect(m[1], '그림 주소').not.toMatch(/^(https?:)?\/\//);
-      expect(m[1]).toMatch(/home-map-(pc|mobile)/);
-    }
-  });
-
-  it('배너는 머리(header) 안 로고 줄 바로 아래, 위쪽 그림은 aside(오른쪽 열) 맨 위 통계 카드 앞에 있다', () => {
-    const header = html.slice(html.indexOf('<header class="hero hero--005">'), html.indexOf('</header>'));
-    expect(header.indexOf('</h1>')).toBeGreaterThan(0);
-    expect(header.indexOf('illust--banner')).toBeGreaterThan(header.indexOf('</h1>'));
-    expect(header.indexOf('illust--banner')).toBeLessThan(header.indexOf('class="hero__tag"'));
-    const aside = html.slice(html.indexOf('<aside class="title__side">'), html.indexOf('</aside>'));
-    expect(aside.indexOf('illust--top')).toBeGreaterThan(-1);
-    expect(aside.indexOf('illust--top')).toBeLessThan(aside.indexOf('data-testid="carousel"'));
-  });
-});
-
-describe('일러스트 CSS (D5-24~D5-26·D5-29·D5-32·D5-33): 크기·겹침·흐림 2단계 「부드럽게」', () => {
-  it('높이는 CSS 변수 --illust-h(배너 224px · ≥ 960px 420px · ≥ 1600px 500px), width auto + max-width 100% + object-fit: contain — 찌그러짐 0', () => {
-    expect(ruleBody('.illust img')).toMatch(/height:\s*var\(--illust-h,\s*224px\)/);
-    expect(ruleBody('.illust img')).toMatch(/width:\s*auto/);
-    expect(ruleBody('.illust img')).toMatch(/max-width:\s*100%/);
-    expect(ruleBody('.illust img')).toMatch(/object-fit:\s*contain/);
-    expect(ruleBody('.illust--banner')).toMatch(/--illust-h:\s*224px/);
-    // R-447(D5-34): 겹침은 그림 높이의 7.62% — 420px에서 32px, 500px에서 36px 그대로이고(min), 낮은 창에서 그림이 줄면 같이 줄어든다
-    expect(css).toMatch(/\.illust--top \{[^}]*--illust-h:\s*420px;[^}]*--illust-tuck:\s*min\(32px,\s*calc\(var\(--illust-h\) \* 0\.0762\)\);[^}]*margin-bottom:\s*calc\(-1 \* var\(--illust-tuck\)\)/);
-    expect(css).toMatch(/@media \(min-width: 1600px\) \{\s*\.illust--top \{[^}]*--illust-h:\s*500px;[^}]*--illust-tuck:\s*min\(36px,\s*calc\(var\(--illust-h\) \* 0\.0762\)\)/);
-  });
-
-  it('낮은 창(R-447, D5-34): 그림 높이는 창 높이에 맞춰 clamp(224px, (100vh − 334px) ÷ 0.924, 420px | 500px)로 줄고, clamp()를 모르는 엔진은 @supports 밖의 420·500px 그대로다', () => {
-    expect(css).toMatch(/@supports \(height: clamp\(1px, 2px, 3px\)\) \{\s*\.illust--top \{ --illust-h: clamp\(224px, calc\(\(100vh - 334px\) \/ 0\.924\), 420px\); \}/);
-    expect(css).toMatch(/@supports \(height: clamp\(1px, 2px, 3px\)\) \{\s*\.illust--top \{ --illust-h: clamp\(224px, calc\(\(100vh - 334px\) \/ 0\.924\), 500px\); \}/);
-  });
-
-  it('배너는 < 960px에서만, 오른쪽 열 그림은 ≥ 960px에서만 보인다(같은 그림이라 한 번에 하나)', () => {
-    expect(ruleBody('.illust')).toMatch(/display:\s*none/);
-    expect(ruleBody('.illust--banner')).toMatch(/display:\s*flex/);
-    const wide = css.slice(css.indexOf('@media (min-width: 960px)'));
-    expect(wide).toMatch(/\.illust--banner \{ display: none; \}/);
-    expect(wide).toMatch(/\.illust--top \{ display: flex;/);
-  });
-
-  it('통계 카드가 그림 위에 얹힌다: .carousel--005에 position: relative + z-index: 1 (filter·opacity가 있는 img는 자체 스태킹 컨텍스트라 카드를 띄워야 그림이 뒤로 간다, D5-32)', () => {
-    const body = ruleBody('.carousel--005');
-    expect(body).toMatch(/position:\s*relative/);
-    expect(body).toMatch(/z-index:\s*1\b/);
-  });
-
-  it('흐림 2단계(형진 님 확인): 라이트 opacity 0.8 + saturate(.85) contrast(.92) blur(.5px) / 다크 같은 불투명도 + brightness(.9) saturate(.78) contrast(.92) blur(.5px) / 강제 색상 불투명·filter 없음', () => {
-    expect(ruleBody('.illust')).toMatch(/--illust-opacity:\s*0\.8;/);
-    expect(ruleBody('.illust')).toMatch(/--illust-filter:\s*saturate\(0\.85\) contrast\(0\.92\) blur\(0\.5px\);/);
-    expect(ruleBody('.illust img')).toMatch(/opacity:\s*var\(--illust-opacity\)/);
-    expect(ruleBody('.illust img')).toMatch(/filter:\s*var\(--illust-filter\)/);
-    // 다크: 미디어쿼리(수동 라이트가 아닐 때) + 수동 다크 — 테마 규칙(DB6) 두 선택자
-    const DARK = 'brightness(0.9) saturate(0.78) contrast(0.92) blur(0.5px)';
-    expect(css).toContain(`:root:not([data-theme='light']) .illust { --illust-filter: ${DARK}; }`);
-    expect(css).toContain(`:root[data-theme='dark'] .illust { --illust-filter: ${DARK}; }`);
-    expect(css).toMatch(/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme='light'\]\) \.illust/);
-    // 강제 색상: 세 선택자(다크 두 규칙과 같은 특이도 + 소스 순서)로 값이 불투명·filter 없음
-    expect(css).toContain(".illust, :root:not([data-theme='light']) .illust, :root[data-theme='dark'] .illust { --illust-opacity: 1; --illust-filter: none; }");
-    expect(css.indexOf('--illust-opacity: 1;'), '강제 색상 규칙은 다크 규칙보다 뒤').toBeGreaterThan(css.indexOf(`--illust-filter: ${DARK}`));
-    // 흐림은 파일에 굽지 않는다 — CSS 변수가 맡는다(자산 한 벌). 첫 화면 지역 변수라 tokens.css에 넣지 않는다
+  it('CSS에 .illust 규칙·--illust-* 변수가 없고, tokens.css에도 없다', () => {
+    expect(css).not.toMatch(/\.illust|--illust/);
     expect(tokensCss).not.toContain('--illust');
   });
 
-  it('그림 위에 글·UI를 얹지 않는다: 그림 요소(figure) 안에는 img뿐이고 CSS가 figure에 글자·버튼을 위치시키지 않는다', () => {
-    expect(css).not.toMatch(/\.illust[^{]*\{[^}]*(position:\s*absolute|[;{\s]content:)/); // (justify-content 같은 속성 이름은 앞에 하이픈이 있어 걸리지 않는다)
+  it('자산: home-map-*.webp 파일이 저장소에 없고, 소스 어디에서도 가져오지 않는다', async () => {
+    const fs = (await import(/* @vite-ignore */ 'node:fs' as string)) as { existsSync(p: URL): boolean; readdirSync(p: URL): string[] };
+    expect(fs.existsSync(new URL('../src/assets/home/', import.meta.url)), 'src/assets/home 폴더').toBe(false);
+    const all = Object.keys(import.meta.glob('../src/**/*.{ts,tsx,css}', { query: '?raw', eager: false }));
+    expect(all.length).toBeGreaterThan(50); // 공허 통과 방지
+    for (const url of Object.values(import.meta.glob('../src/**/*.{ts,tsx,css}', { query: '?raw', import: 'default', eager: true })) as string[]) expect(url).not.toContain('home-map');
+  });
+
+  it('외부 요청 0(FS8): 첫 화면 마크업이 불러오는 주소(src·srcSet)에 외부 주소가 없다 (푸터의 출처 링크 href는 사용자가 누를 때만 열리는 이동이라 요청이 아니다)', () => {
+    expect(html).not.toMatch(/(?:src|srcSet)="(?:https?:)?\/\//);
+  });
+
+  it('머리(header)는 로고 → 한 줄 설명 → 기간 문장 순이고, 세대 고르기 fieldset이 그 다음, 통계 카드는 오른쪽 열(aside) 맨 위에서 시작한다', () => {
+    const header = html.slice(html.indexOf('<header class="hero hero--005'), html.indexOf('</header>'));
+    expect(header.indexOf('</h1>')).toBeGreaterThan(0);
+    expect(header.indexOf('</h1>')).toBeLessThan(header.indexOf('class="hero__tag"'));
+    expect(header.indexOf('class="hero__tag"')).toBeLessThan(header.indexOf('data-testid="hero-span"'));
+    expect(html.indexOf('</header>')).toBeLessThan(html.indexOf('slot--gen8'));
+    const aside = html.slice(html.indexOf('<aside class="title__side">'), html.indexOf('</aside>'));
+    expect(aside.trimStart().startsWith('<aside class="title__side"><section class="card carousel carousel--005"'), '오른쪽 열 맨 위가 통계 카드').toBe(true);
+  });
+});
+
+describe('세대 목록 마크업 (GS1·GS2·GS4·GS10): 한 열 라디오 줄 8개', () => {
+  const rows = [...html.matchAll(/<label class="gen-row[^"]*" data-testid="gen-row-([a-z0-9]+)">/g)].map((m) => m[1]);
+
+  it('라디오 묶음 하나(role=radiogroup, 이름 「태어날 세대」)에 줄 8개: 랜덤 세대 → 산업화 → 베이비붐 → 86 → X → 밀레니얼 → Z → 알파', () => {
+    expect(html).toContain('<div class="gen-list" role="radiogroup" aria-label="태어날 세대" data-testid="gen-list">');
+    expect(rows).toEqual(['random', 'industrial', 'boomer', 'g86', 'genx', 'millennial', 'genz', 'alpha']);
+    expect(html.match(/<input type="radio"[^>]*name="gen"/g)?.length).toBe(8);
+  });
+
+  it('기본은 랜덤 세대가 눌려 있고(is-selected · checked), 랜덤 줄에는 메타가 없고 세대 줄에는 「{범위}년생 · 올해 N~M세」 메타가 있다', () => {
+    expect(html).toMatch(/<label class="gen-row is-selected" data-testid="gen-row-random">/);
+    expect(html.match(/gen-row is-selected"/g)?.length, '고른 줄은 하나').toBe(1);
+    const random = html.slice(html.indexOf('data-testid="gen-row-random"'), html.indexOf('data-testid="gen-row-industrial"'));
+    expect(random).not.toContain('gen-row__meta');
+    expect(html.match(/class="gen-row__meta"/g)?.length).toBe(7);
+    // 메타는 Glue 묶음이다: 「범위 · 나이」가 한 묶음(keep-phrase)이고 안의 숫자+단위는 줄바꿈 금지(nowrap) — 「·」가 줄 끝에 혼자 남지 않는다
+    for (const [id, text] of [['genx', '1970~1980년생 · 올해 46~56세'], ['alpha', '2013~2020년생 · 올해 6~13세']]) {
+      const start = html.indexOf(`id="gen-meta-${id}">`) + `id="gen-meta-${id}">`.length;
+      expect(start, id).toBeGreaterThan(0);
+      const meta = html.slice(start, html.indexOf('<span class="gen-row__desc"', start));
+      expect(meta.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), id).toBe(text);
+      expect(meta, id).toContain('keep-phrase');
+    }
+  });
+
+  it('고른 줄에는 체크 표식과 스크린리더용 「선택됨」이 있고 색에만 기대지 않는다', () => {
+    const random = html.slice(html.indexOf('data-testid="gen-row-random"'), html.indexOf('data-testid="gen-row-industrial"'));
+    expect(random).toContain('선택됨');
+    expect(random).toContain('gen-row__mark');
+  });
+
+  it('살아본 세대가 없으면 「살아봄」 표시가 없다 (GS10) — 순위·점수 말도 없다', () => {
+    expect(html).not.toContain('gen-row__lived');
+    expect(html).not.toMatch(/점수|순위|업적/);
   });
 });
 
@@ -173,19 +150,20 @@ describe('조작 줄 · 분절 컨트롤 크기 (SH5 ① · HS2 ⑤ — 보이�
     expect(css).toMatch(/@media \(pointer: coarse\) \{\s*\.seg__opt input \{ top: -8px; bottom: auto; height: calc\(100% \+ 16px\); \}/);
   });
 
-  it('슬롯 격자(HS3 ①): 큰 슬롯은 카드 수·열 수에 의존하지 않는 auto-fit 격자다 — 3장이든 8장이든 같은 컴포넌트', () => {
-    expect(ruleBody('.choices--grid')).toMatch(/grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(100%,\s*15rem\),\s*1fr\)\)/);
-    expect(html).toContain('class="choices choices--grid" role="radiogroup" aria-label="태어날 세상"');
-    expect(html.match(/radio-card radio-card--compact/g)?.length).toBe(3);
+  it('큰 슬롯(세대 목록)은 한 열 스크롤 창이다(GS1): 높이가 제한되고 안에서 스크롤하며 줄은 최소 44px(--hit)다 — 줄 수에 따라 열이 길어지지 않는다', () => {
+    expect(ruleBody('.gen-list')).toMatch(/max-height:/);
+    expect(ruleBody('.gen-list')).toMatch(/overflow-y:\s*auto/);
+    expect(ruleBody('.gen-row')).toMatch(/min-height:\s*var\(--hit\)/);
+    expect(html.match(/class="gen-row[ "]/g)?.length).toBe(8);
   });
 });
 
 describe('설정 줄 — 「무거운 장면 가리기」 스위치 자리 (HV3 · HS3 ④, 동작은 QI6)', () => {
-  it('QI6 전에는 App이 넘기지 않아 첫 화면에 스위치가 그려지지 않는다(동작하지 않는 스위치를 보이지 않는다) — 슬롯(.slots-bottom)은 인생 길이 하나로 이미 자리가 잡혀 있다', () => {
+  it('QI6 전에는 App이 넘기지 않아 첫 화면에 스위치가 그려지지 않는다(동작하지 않는 스위치를 보이지 않는다) — 슬롯(.slots-bottom)은 태어나는 시도·인생 길이로 이미 자리가 잡혀 있다', () => {
     expect(html).not.toContain('role="switch"');
     expect(html).not.toContain('gentle-slot');
     expect(html).toContain('<div class="slots-bottom">');
-    expect(html.indexOf('data-testid="era-group"')).toBeLessThan(html.indexOf('class="slots-bottom"'));
+    expect(html.indexOf('data-testid="gen-list"')).toBeLessThan(html.indexOf('class="slots-bottom"'));
     expect(html.indexOf('class="slots-bottom"')).toBeLessThan(html.indexOf('data-testid="life-length-group"'));
   });
 

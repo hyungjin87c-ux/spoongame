@@ -1,9 +1,11 @@
 import { NOTE_CARDS, NOTE_MANUAL } from '../data/noteCards';
 import { condContextOf } from './apply';
+import { eraBucketOf } from './birthProfile';
 import { lastSeenAge, meetsCondition, NOTE_ID_PREFIX, type CondContext } from './events';
 import { appendHistory } from './history';
 import { MANUAL_NOTE_ID, type NoteCardDef, type NoteCondition, type NoteManualDef } from './noteCards';
 import { NOTE_LIMITS, finalizeNote } from './noteText';
+import { calendarYear } from './profile';
 import { mixSeed } from './rng';
 import type { GameState, HistoryEntry, Settings } from './types';
 
@@ -61,7 +63,7 @@ function variantMatches(card: NoteCardDef, ctx: CondContext): boolean {
 function eligible(card: NoteCardDef, game: GameState, ctx: CondContext): boolean {
   const age = game.age;
   if (age < card.ageRange.min || age > card.ageRange.max) return false;
-  if (card.eras !== undefined && game.era !== null && !card.eras.includes(game.era)) return false;
+  if (card.eras !== undefined && game.generation !== null && game.character !== null && !card.eras.includes(eraBucketOf(game.generation, calendarYear(game.character.birthYear, age)))) return false;
   if (!meetsCondition(card.conditions, ctx)) return false;
   for (const id of card.unlessSeen ?? []) if (lastSeenAge(game.seen, id) !== undefined) return false;
   if (card.triggers !== undefined) {
@@ -84,7 +86,7 @@ function eligible(card: NoteCardDef, game: GameState, ctx: CondContext): boolean
  * 때(timing): `asap`은 적격이 된 첫 해, `jitter`는 흔들림 나이(`noteJitterAge`) 이후의 첫 적격 해이고, 변형 조건이 먼저 맞으면 바로 뜬다.
  */
 export function dueNote(game: GameState, cards: readonly NoteCardDef[] = NOTE_CARDS): NoteCardDef | null {
-  if (game.phase !== 'life' || game.pending !== null || game.character === null || game.era === null) return null;
+  if (game.phase !== 'life' || game.pending !== null || game.character === null || game.generation === null) return null;
   const age = game.age;
   let shown = 0;
   let lastAge = Number.NEGATIVE_INFINITY;

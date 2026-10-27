@@ -1,5 +1,5 @@
-import { ERAS, type Era } from '../src/core';
-import { BANDS, CONDITION_TOLERANCE, KNOWN_GAPS, KNOWN_GUARD_GAPS, autoGuardsOf, deathNetMedians, judgeConditions, measureEconomy, movementShares, statsOfBand, type EconomyReport } from './economyCheckLib';
+import { R1_PRESENT, type ProfileId } from '../src/core';
+import { BANDS, CONDITION_TOLERANCE, ECONOMY_PROFILES, KNOWN_GAPS, KNOWN_GUARD_GAPS, autoGuardsOf, deathNetMedians, judgeConditions, measureEconomy, movementShares, statsOfBand, type EconomyReport } from './economyCheckLib';
 
 /**
  * 경제 모델 밸런스 점검 (SPEC-003 EC7, docs/data/economy-model.md 9절).  실행: npm run check:economy
@@ -23,7 +23,7 @@ const AUTO_PLAYS = argNumber('--auto', 2000);
 const f0 = (x: number): string => (Number.isFinite(x) ? Math.round(x).toLocaleString('en-US') : '-');
 const f1 = (x: number): string => (Number.isFinite(x) ? x.toFixed(1) : '-');
 
-function printBandTable(era: Era, rep: EconomyReport): void {
+function printBandTable(era: ProfileId, rep: EconomyReport): void {
   console.log(`\n### ${era} — ${rep.strategy} ${rep.plays}판 (연령대별, 만 원)`);
   console.log('| 연령 | 줄 수 | 순자산 중앙값 | 평균 | p10 | p90 | 부채 보유(%) | 부채 중앙값(보유자) | 순자산<0(%) | 소득 중앙값 |');
   console.log('|---|---|---|---|---|---|---|---|---|---|');
@@ -33,7 +33,7 @@ function printBandTable(era: Era, rep: EconomyReport): void {
   }
 }
 
-function printWealthTable(era: Era, rep: EconomyReport): void {
+function printWealthTable(era: ProfileId, rep: EconomyReport): void {
   console.log(`\n### ${era} — 부모 재력 단계별 순자산 중앙값 (만 원)`);
   console.log('| 단계 | 20~29 | 30~39 | 40~49 | 50~59 | 60~64 | 65~79 | 80 이상 |');
   console.log('|---|---|---|---|---|---|---|---|');
@@ -50,9 +50,9 @@ const fail = (msg: string): void => {
   console.log(`  불합격: ${msg}`);
 };
 
-console.log(`# 경제 모델 밸런스 점검 (EC7): 무작위 선택 ${PLAYS}판 × 3시대`);
+console.log(`# 경제 모델 밸런스 점검 (EC7): 무작위 선택 ${PLAYS}판 × 프로필(R1 지금 세상 + 대표 세 세대)`);
 const random = measureEconomy(PLAYS, 'random');
-for (const era of ERAS) {
+for (const era of ECONOMY_PROFILES) {
   printBandTable(era, random);
   printWealthTable(era, random);
 }
@@ -70,7 +70,7 @@ for (const r of random.targets) {
 }
 
 // 사망 시점 순자산(엔딩이 읽는 값) 분포: 재력 단계별 중앙값·음수 비율과 엔딩 방향 (15-4절)
-for (const era of ERAS) {
+for (const era of ECONOMY_PROFILES) {
   const lives = random.lives[era].filter((l) => l.reached);
   console.log(`\n### ${era} — 사망 시점 순자산 (스무 살 넘어 마친 ${lives.length}판, 만 원)`);
   console.log('| 재력 | 판 수 | 중앙값 | p10 | p90 | 순자산<0(%) | 앞섬(%) | 비슷함(%) | 뒤쪽(%) |');
@@ -88,7 +88,7 @@ for (const era of ERAS) {
 }
 
 console.log('\n## 설계 가드');
-for (const era of ERAS) {
+for (const era of ECONOMY_PROFILES) {
   for (const g of random.guards[era]) {
     // G3는 세 시대 모두 본다(지난·다가올 세상도 방향은 같아야 한다). M-2는 지금 세상만 판정하고(통계가 지금 세상 것), M-4는 다가올 세상에만 있다.
     const gap = KNOWN_GUARD_GAPS[`${era}:${g.id}`];
@@ -100,17 +100,11 @@ for (const era of ERAS) {
   }
 }
 
-console.log('\n## 지난·다가올 세상의 40대 순자산 중앙값 (지금 세상 대비)');
-for (const r of random.ratios) {
-  console.log(`- ${r.era}: ${r.ratio.toFixed(2)}배 (목표 ${r.lo}~${r.hi}배) — ${r.ok ? '통과' : '불합격'}`);
-  if (!r.ok) fail(`${r.era} 40대 순자산 비율 ${r.ratio.toFixed(2)}배 (목표 ${r.lo}~${r.hi}배)`);
-}
-
 // 옛 재산 조건 7곳의 「같은 통과율」(R-354, 문서 5-A): 지금 모델에서 같은 나이의 통과율이 옛 통과율의 ±15% 안이어야 한다
 console.log('\n## 조건 변환 7곳의 통과율 (지금 세상, R-354 — 옛 재산 조건의 통과율과 같아야 한다)');
 console.log(`| 위치 | 나이 | 조건(순자산, 만 원) | 옛 통과율 | 지금 통과율 | 허용 범위(±${CONDITION_TOLERANCE * 100}%) | 판정 |`);
 console.log('|---|---|---|---|---|---|---|');
-for (const r of judgeConditions(random.rows.present)) {
+for (const r of judgeConditions(random.rows[R1_PRESENT])) {
   const c = r.check.condition;
   const cond = [c.netMin !== undefined ? `≥ ${f0(c.netMin)}` : '', c.netMax !== undefined ? `≤ ${f0(c.netMax)}` : ''].filter(Boolean).join(' ');
   console.log(`| ${r.check.where} | ${r.check.age}세 | ${cond} | ${r.check.oldRate}% | ${f1(r.rate)}% | ${f1(r.lo)} ~ ${f1(r.hi)}% | ${r.check.accepted !== undefined ? '수용(문구 우선)' : r.known ? '알려진 차이(보고함)' : r.ok ? '통과' : '불합격'} |`);
@@ -120,13 +114,12 @@ for (const r of judgeConditions(random.rows.present)) {
 }
 
 if (AUTO_PLAYS > 0) {
-  console.log(`\n# 자동 모드 ${AUTO_PLAYS}판 × 3시대 (참고 — 판정하지 않는다)`);
+  console.log(`\n# 자동 모드 ${AUTO_PLAYS}판 × 프로필(R1 지금 세상 + 대표 세 세대) (참고 — 판정하지 않는다)`);
   const auto = measureEconomy(AUTO_PLAYS, 'auto');
-  for (const era of ERAS) printBandTable(era, auto);
-  for (const era of ERAS) for (const g of auto.guards[era]) console.log(`- [${era}] ${g.label}: ${g.value} — ${g.ok ? '통과' : '어긋남(참고)'}`);
-  for (const r of auto.ratios) console.log(`- ${r.era} 40대 비율: ${r.ratio.toFixed(2)}배`);
+  for (const era of ECONOMY_PROFILES) printBandTable(era, auto);
+  for (const era of ECONOMY_PROFILES) for (const g of auto.guards[era]) console.log(`- [${era}] ${g.label}: ${g.value} — ${g.ok ? '통과' : '어긋남(참고)'}`);
   console.log('\n## 자동 모드 가드 (15-4절, EC6 우선)');
-  for (const era of ERAS) {
+  for (const era of ECONOMY_PROFILES) {
     for (const g of autoGuardsOf({ rows: random.rows[era], lives: random.lives[era] }, { rows: auto.rows[era], lives: auto.lives[era] })) {
       console.log(`- [${era}] ${g.label}: ${g.value} — ${g.ok ? '통과' : '불합격'}`);
       if (!g.ok) fail(`[${era}] ${g.label}: ${g.value}`);

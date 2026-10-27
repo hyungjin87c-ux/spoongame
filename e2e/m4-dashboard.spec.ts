@@ -91,7 +91,7 @@ test('올해 진행률 바: 0에서 시작해 한 해 동안 단조 증가하고
 test('선택지가 떠 있는 동안 바는 가득 찬 채(100%) 멈추고, 선택하면 다음 해가 0에서 다시 흐른다 (DB2)', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, decision, '/?__timescale=7', MANUAL);
   const panel = page.getByTestId('choice-panel');
   await expect(panel).toBeVisible();
@@ -100,13 +100,13 @@ test('선택지가 떠 있는 동안 바는 가득 찬 채(100%) 멈추고, 선�
   await page.waitForTimeout(1500); // 일어나지 않아야 하는 일: 선택지 앞에서는 시간이 흐르지 않는다
   await expect(page.getByTestId('year-pct')).toHaveText('100%');
   expect((await readSave(page)).data.age).toBe(decision.age);
-  const first = page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`);
+  const first = page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`);
   await expect(first).toBeEnabled();
   await recordProgress(page);
   await page.reload();
   await expect(panel).toBeVisible();
-  await expect(page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`)).toBeEnabled();
-  await page.getByTestId(`choice-${decision.pending!.choiceIds[0]}`).click();
+  await expect(page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`)).toBeEnabled();
+  await page.locator(`button[data-testid="choice-${decision.pending!.choiceIds[0]}"]`).click();
   await expect(panel).toHaveCount(0);
   await expect.poll(async () => (await samples(page)).some((s) => s.pct > 0 && s.pct < 100 && s.age === decision.age + 1), { timeout: 20_000 }).toBe(true); // 선택하면 그 해가 끝나(나이 +1) 결과 연출 동안 바가 0에서 다시 흐른다
 });
@@ -159,7 +159,7 @@ test('일시정지: 멈추면 나이와 진행률이 그 자리에 머물고 저
 test('일시정지 중에도 「다음 결정으로」는 눌리고, 자동 모드는 선택지를 고르지 않는다 (reducer가 막는다)', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present');
+  const decision = await findPendingState(page, 'alpha');
   await injectSave(page, { ...decision, paused: true }, '/?__timescale=200', { speed: 1, autoMode: true }); // 자동 모드의 고르는 시간이 짧아져 풀리면 곧 고른다
   await expect(page.getByTestId('choice-panel')).toBeVisible();
   await expect(page.getByTestId('pause')).toHaveText('다시 진행');
@@ -284,7 +284,7 @@ test('인생 기록(최신순, SPEC-005 LR1·LR2): 새 줄이 맨 위에 쌓이�
   const choosePending = async () => {
     if (!(await panel.isVisible())) return false;
     const pending = (await readSave(page)).data.pending!;
-    const choice = page.getByTestId(`choice-${pending.choiceIds[0]}`);
+    const choice = page.locator(`button[data-testid="choice-${pending.choiceIds[0]}"]`);
     await expect(choice).toBeEnabled();
     await choice.click();
     await expect(panel).toHaveCount(0);
@@ -307,13 +307,13 @@ test('인생 기록(최신순, SPEC-005 LR1·LR2): 새 줄이 맨 위에 쌓이�
   await expect(page.getByTestId('log-jump')).toHaveCount(0);
 
   // 맨 위를 보고 있으면 새 줄이 와도 맨 위에 머문다(버튼 없음)
-  // 고정 줄이 「기록 카드 안에서」 제자리인지 본다: 화면 좌표는 선택지 카드(M5부터 영향 줄이 있어 더 높다)가 떴다 사라질 때 달라지는 스크롤 위치에도 흔들리므로 카드 윗변에서의 거리로 잰다
-  const pinOffset = async () => (await page.getByTestId('log-pin').boundingBox())!.y - (await page.getByTestId('log').boundingBox())!.y;
+  // (고정 가상 인구 줄은 SPEC-004 GS11에서 없어졌다 — 기록 카드 머리 자리는 `log-list` 윗변으로 본다.) 줄이 「기록 카드 안에서」 제자리인지 본다: 화면 좌표는 선택지 카드(M5부터 영향 줄이 있어 더 높다)가 떴다 사라질 때 달라지는 스크롤 위치에도 흔들리므로 카드 윗변에서의 거리로 잰다
+  const pinOffset = async () => (await page.getByTestId('log-list').boundingBox())!.y - (await page.getByTestId('log').boundingBox())!.y;
   const pinBefore = await pinOffset();
   await addRows();
   await expect(page.getByTestId('log-jump')).toHaveCount(0);
   expect(await scrollTop(), '맨 위에 머문다(새 줄이 바로 보인다)').toBeLessThanOrEqual(24);
-  expect(await pinOffset(), '가상 인구 줄은 기록이 쌓여도 제자리').toBe(pinBefore);
+  expect(await pinOffset(), '기록 목록의 윗변은 기록이 쌓여도 제자리').toBe(pinBefore);
   await expect(page.getByTestId('log-row').first()).toHaveClass(/latest/);
   expect(await list.evaluate((el) => el.querySelectorAll('.log__row--latest').length), '굵은 줄은 하나').toBe(1);
 
@@ -563,7 +563,7 @@ test('다크 모드: 시스템이 라이트이면 꺼짐 → 누르면 다크(�
   await expect(page.getByTestId('tool-dark')).toHaveAttribute('aria-pressed', 'false');
   expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBe('light');
   expect((await readSettings(page)).theme).toBe('light');
-  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '바탕이 라이트 토큰').toBe('rgb(246, 243, 236)');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '바탕이 라이트 토큰').toBe('rgb(249, 247, 242)');
 });
 
 test('다크 모드: 시스템이 다크이면 처음부터 켜짐으로 보이고, 누르면 라이트(수동)로 바뀐다 — 보이는 상태를 뒤집는다 (DB6)', async ({ page }) => {
@@ -579,7 +579,7 @@ test('다크 모드: 시스템이 다크이면 처음부터 켜짐으로 보이�
   await expect(dark).toHaveAttribute('aria-pressed', 'false');
   expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBe('light');
   expect((await readSettings(page)).theme).toBe('light');
-  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '시스템은 다크여도 수동 라이트가 우선').toBe('rgb(246, 243, 236)');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), '시스템은 다크여도 수동 라이트가 우선').toBe('rgb(249, 247, 242)');
 });
 
 // ---------- DB7: 의견 보내기 ----------
@@ -601,7 +601,7 @@ test('의견 보내기: 새 탭으로 GitHub 이슈 작성 화면이 열리고 �
   expect(href).toMatch(/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/new\?template=feedback\.yml&screen=/);
   const screen = decodeURIComponent(href.split('&screen=')[1]);
   expect(screen).toContain('인생 진행 중');
-  expect(screen).toContain('지금 세상');
+  expect(screen).toContain('알파 세대'); // 화면 이름에는 세대 이름이 들어간다(SPEC-004 — 옛 「지금 세상」 자리)
   expect(screen).not.toContain(state.character!.name);
   expect(screen).not.toMatch(/\d+세|기록|저장/);
   expect(Object.keys(Object.fromEntries(new URL(href).searchParams)).sort()).toEqual(['screen', 'template']);
@@ -724,7 +724,7 @@ test('나가기 확인 단계의 더블탭: 「나가기」를 두 번 눌러도
 // ---------- C6: 이전 버전 저장 ----------
 
 test('이전 버전(v6) 인생 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄이 한 번 뜬다. 설정(BGM·테마는 기본값)은 이어진다 (C6)', async ({ page }) => {
-  expect(SAVE_VERSION).toBe(8); // M5 2a에서 7 → 8 (재산 스탯 폐지) — 여기서 쓰는 v6 저장은 지금도 「이전 버전」이다
+  expect(SAVE_VERSION).toBe(9); // SPEC-004 MG1에서 8 → 9 (세대 선택·출생 연도) — 여기서 쓰는 v6 저장은 지금도 「이전 버전」이다
   await page.addInitScript(
     ([gameKey, settingsKey, life]) => {
       if (localStorage.getItem(gameKey) === null) {
@@ -740,7 +740,7 @@ test('이전 버전(v6) 인생 저장은 새 게임으로 시작하고 첫 화�
   await expect(page.getByTestId('old-save-notice')).toHaveText('이전 버전에서 저장된 판은 이어서 할 수 없어 새 게임으로 시작합니다.');
   await expect(page.getByTestId('resume')).toHaveCount(0);
   expect((await readSave(page)).version).toBe(SAVE_VERSION);
-  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, era: 'present', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '' }); // 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘이 기본값으로 함께 저장된다
+  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, generation: 'random', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then' }); // v2 설정의 옛 era는 버리고 세대는 기본값(랜덤)이다 (SPEC-004 MG1) // 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘이 기본값으로 함께 저장된다
 });
 
 // ---------- DB1: 열 배치 ----------
@@ -748,7 +748,7 @@ test('이전 버전(v6) 인생 저장은 새 게임으로 시작하고 첫 화�
 test('배치: 폭 < 960은 한 열(결정 카드가 맨 위, 프로필 → 상태 → 자산 → 기록 → 식구 → 또래), 폭 ≥ 960은 3열(왼쪽 프로필·상태·자산 / 가운데 결정·기록 / 오른쪽 식구·또래) (DB1)', async ({ page }, testInfo) => {
   await startPageHidden(page);
   await page.goto('/');
-  const decision = await findPendingState(page, 'present', { minChoices: 2 });
+  const decision = await findPendingState(page, 'alpha', { minChoices: 2 });
   // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 카드가 가운데 열 맨 위(1열은 헤더 바로 아래)에 놓인다. 수동 모드의 카드는 모달 시트(화면 위에 뜬다)라 열 배치에 들지 않는다
   await injectSave(page, decision, '/', { ...MANUAL, autoMode: true });
   await expect(page.getByTestId('choice-panel')).toBeVisible();

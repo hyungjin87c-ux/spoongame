@@ -1,5 +1,4 @@
 import { ERAS, STAGES, flagsRead, flagsWritten, isChoiceEvent, type Era, type EventDef, type EventPool, type Stage } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { STAGE_TABLE } from '../src/data/lifeTable';
 import { EVENT_MOTIFS } from './eventMotifs';
 
@@ -8,7 +7,7 @@ import { EVENT_MOTIFS } from './eventMotifs';
  * 문서는 손으로 고치지 않는다: `npx vite-node scripts/eventDistribution.ts` 로 다시 만들고, tests/eventDistribution.test.ts 가 파일과 이 함수의 출력이 같은지 본다.
  */
 
-const ERA_LABEL: Record<Era, string> = { past: ERA_CONFIG.past.label, present: ERA_CONFIG.present.label, future: ERA_CONFIG.future.label };
+const ERA_LABEL: Record<Era, string> = { past: '지난 세상', present: '지금 세상', future: '다가올 세상' };
 const ERA_SHORT: Record<Era, string> = { past: '지난', present: '지금', future: '다가올' };
 
 /** 이 이벤트가 일어날 수 있는 시대 */

@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUTO_ASSET } from '../src/data/economyTable';
-import {
-  AUTO_PRIORITY,
-  autoChoiceWeights,
-  autoResolveStep,
-  choiceBalanceProblems,
-  previewChoice,
-  stepYear,
-  type GameState,
-} from '../src/core';
+import { AUTO_PRIORITY, autoChoiceWeights, autoResolveStep, choiceBalanceProblems, previewChoice, stepYear, type GameState } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
 import { economySeed } from '../scripts/economyCheckLib';
 import { startLife } from '../scripts/simulateLib';
@@ -43,7 +35,7 @@ const RECORDS = lazy((): Rec[] => {
   const out: Rec[] = [];
   const meetLabel = EVENT_POOL.byId.get(EVENT_ID)!.choices!.find((c) => c.id === MEET)!.label;
   for (let i = 1; i <= PLAYS; i++) {
-    let s: GameState = startLife(economySeed(i), 'present');
+    let s: GameState = startLife(economySeed(i), 'alpha');
     while (s.phase === 'life') {
       if (s.pending === null) {
         s = stepYear(s).state;
@@ -174,7 +166,7 @@ describe('돈 항의 절실함 (need): 순자산이 음수일수록 커지고 �
 /** 연애 시작 결정이 대기 중인 상태 하나(순자산 3000만 원 안팎의 자동 모드 판) */
 function stateAtMeeting(): GameState {
   for (let i = 1; i <= PLAYS; i++) {
-    let s: GameState = startLife(economySeed(i), 'present');
+    let s: GameState = startLife(economySeed(i), 'alpha');
     while (s.phase === 'life') {
       if (s.pending === null) {
         s = stepYear(s).state;

@@ -117,7 +117,7 @@ describe('두 화면이 같은 부품을 쓴다 (D3, FR4·FR9)', () => {
   ];
 
   it('인생 기록(LogCard): note 줄은 log__row--note이고 라벨 + 글(NoteText)이 들어 있으며, 다른 줄은 그대로다', () => {
-    const html = renderToStaticMarkup(<LogCard history={entries} name="김민준" live={false} minute={29_846_880} />);
+    const html = renderToStaticMarkup(<LogCard history={entries} live={false} />);
     const rows = html.match(/<li class="log__row[^"]*"[^>]*data-kind="[a-z]+"[^>]*>[^]*?<\/li>/g)!;
     expect(rows).toHaveLength(3);
     expect(rows[1]).toContain('log__row--note');
@@ -135,7 +135,7 @@ describe('두 화면이 같은 부품을 쓴다 (D3, FR4·FR9)', () => {
   });
 
   it('엔딩 연표(TimelineItem)와 인생 기록 줄의 안쪽 마크업이 같은 부품이다: 라벨과 글 요소가 똑같고 연표는 글에 tl-text 클래스만 더한다', () => {
-    const game = playSession(startLife(2024, 'present'), { respond: writeIt }).session.game as EndingGame;
+    const game = playSession(startLife(2024, 'alpha'), { respond: writeIt }).session.game as EndingGame;
     expect(game.phase).toBe('ending');
     const notes = notesOf(game);
     expect(notes.length).toBeGreaterThan(0);
@@ -147,7 +147,7 @@ describe('두 화면이 같은 부품을 쓴다 (D3, FR4·FR9)', () => {
     expect(ages).toEqual([...ages].sort((a, b) => a - b));
     expect(ages).toEqual(notes.map((n) => n.age));
     // 같은 부품: 같은 줄을 인생 기록(LogCard)에 그린 것과 라벨·글 요소가 같다
-    const logHtml = renderToStaticMarkup(<LogCard history={game.history} name={game.character.name} live={false} minute={29_846_880} />);
+    const logHtml = renderToStaticMarkup(<LogCard history={game.history} live={false} />);
     // 인생 기록은 최신순(SPEC-005 LR1)이라 뒤집어 연표(시간순)와 같은 순서로 맞대어 본다
     const logRows = logHtml.match(/<li class="log__row[^"]*log__row--note[^"]*"[^>]*>[^]*?<\/li>/g)!.reverse();
     expect(logRows).toHaveLength(notes.length);
@@ -164,7 +164,7 @@ describe('두 화면이 같은 부품을 쓴다 (D3, FR4·FR9)', () => {
   });
 
   it('엔딩에서도 note 줄 하나 안의 요소는 라벨 + 글(격리 요소 하나)뿐이다 — 글 안에 요소가 없다', () => {
-    const game = playSession(startLife(2024, 'present'), { respond: writeIt }).session.game as EndingGame;
+    const game = playSession(startLife(2024, 'alpha'), { respond: writeIt }).session.game as EndingGame;
     const ending = renderToStaticMarkup(<EndingScreen game={game} onRebirth={() => {}} />);
     for (const li of ending.match(/<li class="is-note"[^>]*>[^]*?<\/li>/g)!) {
       const bdi = /<bdi[^]*?<\/bdi>/.exec(li)![0];

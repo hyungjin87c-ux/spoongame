@@ -17,8 +17,8 @@ import type { LifeGame } from '../src/ui/dash/Cards';
  * 키 입력·IME 조합·확인 단계 흐름·연타·40개·새로고침은 브라우저가 필요해 e2e/m7c-note.spec.ts·m7c-input-attack.spec.ts가 본다(이 파일은 DOM 환경이 없다).
  */
 
-const base = startLife(2024, 'present');
-const lifeAt = (age: number, over: Partial<GameState> = {}): LifeGame => ({ ...base, ...over, age, character: base.character!, era: base.era!, birthReport: base.birthReport!, peerSeed: base.peerSeed! });
+const base = startLife(2024, 'alpha');
+const lifeAt = (age: number, over: Partial<GameState> = {}): LifeGame => ({ ...base, ...over, age, character: base.character!, generation: base.generation!, birthReport: base.birthReport!, peerSeed: base.peerSeed! });
 const CITED = NOTE_CARDS.find((c) => c.citation !== undefined)!;
 const UNCITED = NOTE_CARDS.find((c) => c.citation === undefined)!;
 

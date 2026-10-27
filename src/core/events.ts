@@ -4,6 +4,7 @@ import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
 import {
   DWELLINGS,
   ERAS,
+  ERA_YEAR_SPAN,
   GENDERS,
   HEAVY_KINDS,
   HOUSINGS,
@@ -41,6 +42,33 @@ const PARENT_AGE_MAX = 130;
 export interface Range {
   min?: number;
   max?: number;
+}
+
+/** 달력 연도 닫힌 구간 (이벤트 `yearRange`) */
+export interface YearRange {
+  from?: number;
+  to?: number;
+}
+
+export const EVENT_TRACKS = ['standard', 'common', 'assembled'] as const;
+export type EventTrack = (typeof EVENT_TRACKS)[number];
+
+/** 달력 연도가 `yearRange` 안인가 (없으면 모든 연도) */
+export function inYearRange(year: number, r: YearRange | undefined): boolean {
+  return r === undefined || ((r.from === undefined || year >= r.from) && (r.to === undefined || year <= r.to));
+}
+
+/**
+ * `yearRange`가 걸치는 시대 구간들(`ERA_YEAR_SPAN`): 세 구간 모두에 걸치거나 범위가 없으면 undefined(= 모든 시대). 구간 위쪽 끝은 출생 2020 + 110세까지.
+ * 예) `{ to: 2000 }` → ['past'] · `{ from: 2001 }` → ['present', 'future'] · `{ from: 2026 }` → ['future'] · `{ from: 1955, to: 1989 }` → ['past'].
+ */
+export function erasOfYearRange(r: YearRange | undefined, window?: { from: number; to: number }): Era[] | undefined {
+  if (r === undefined) return undefined;
+  // 이벤트가 실제로 일어날 수 있는 달력 연도(`reachableYears` — 출생 1940~2020 + 단계·나이 범위)와 구간이 겹치는 시대만 센다: 영아 이벤트는 2026년 이후에 일어날 수 없다
+  const lo = Math.max(r.from ?? -Infinity, window?.from ?? -Infinity);
+  const hi = Math.min(r.to ?? Infinity, window?.to ?? Infinity);
+  const eras = ERAS.filter((e) => lo <= ERA_YEAR_SPAN[e].to && hi >= ERA_YEAR_SPAN[e].from);
+  return eras.length === ERAS.length ? undefined : eras;
 }
 
 /** 20세 이상 이벤트의 자산 조건(만 원): 순자산 하한·상한, 부채 상한, 연 소득 하한, 지금 사는 집(주거 `Assets.dwelling` 중 하나). 자산이 없는 20세 미만 상태에서는 맞지 않는다. */
@@ -112,6 +140,20 @@ export interface EventDef {
   text: string;
   stages: Stage[];
   ageRange?: Range;
+  /**
+   * 달력 연도(= 출생 연도 + 나이) 닫힌 구간 `[from, to]` 안에서만 일어난다 (SPEC-004 MG2). 한쪽이 없으면 열려 있고, 필드가 없거나 `{}`면 모든 연도다.
+   * 제도·기술이 있던 연도에 걸린 소재의 시대 제한을 이것으로 건다(`docs/data/event-conversion.md`). 이벤트 id·선택지 id·본문은 바뀌지 않았다.
+   */
+  yearRange?: YearRange;
+  /**
+   * 알파 판에서의 취급 (SPEC-004 AL3·MG2): `standard` 정석 코스형(알파 판에서 변형으로 바꾸거나 닫는다 — GM9) · `common` 공통 · `assembled` 알파 전용. 데이터의 모든 이벤트가 갖는다.
+   * 다른 세대에서는 `standard`·`common` 모두 지금처럼 나온다.
+   */
+  track?: EventTrack;
+  /**
+   * **파생 필드**(데이터에 쓰지 않는다): `yearRange`가 걸치는 시대 구간(`ERA_YEAR_SPAN`)들. 세 구간 모두에 걸치면 undefined다 — 시대 소재 점검(eventLint)·인용 연결(citations)이 시대 구간으로 묻는 곳에서 읽는다.
+   * `createEventPool`이 채운다. 인용·시간 모델이 연도 축으로 바뀌면(GM10) 없어진다.
+   */
   eras?: Era[];
   weight: number;
   once: boolean;
@@ -170,8 +212,13 @@ export interface EventPool {
 }
 
 /** 이벤트 목록 → 풀. id가 겹치면 throw. 개별 이벤트의 형태 검증은 validateEventFiles가 한다. */
-export function createEventPool(events: readonly EventDef[]): EventPool {
+export function createEventPool(input: readonly EventDef[]): EventPool {
   const byId = new Map<string, EventDef>();
+  // 파생 `eras`를 채운다(yearRange가 있는 이벤트만; 세 시대 모두에 걸치면 필드 없음). 입력 객체는 건드리지 않는다
+  const events = input.map((ev) => {
+    const eras = erasOfYearRange(ev.yearRange, reachableYears(ev));
+    return eras === undefined ? ev : { ...ev, eras };
+  });
   for (const ev of events) {
     if (byId.has(ev.id)) throw new Error(`createEventPool: 이벤트 id가 겹친다 (${ev.id})`);
     byId.set(ev.id, ev);
@@ -252,7 +299,8 @@ export function visibleChoices(ev: EventDef, ctx: CondContext): ChoiceDef[] {
 /** 이벤트가 일어날 수 있는 상태의 요약 (state에서 필요한 것만) */
 export interface EligibilityView extends CondContext {
   age: number;
-  era: Era;
+  /** 달력 연도 = 출생 연도 + 나이 (`yearRange`를 가른다) */
+  year: number;
   /** id -> 마지막으로 일어난 나이 */
   seen: Readonly<Record<string, number>>;
 }
@@ -271,7 +319,7 @@ export function lastSeenAge(seen: Readonly<Record<string, number>>, id: string):
 export function isEventEligible(ev: EventDef, view: EligibilityView): boolean {
   if (!ev.stages.includes(stageOfAge(view.age))) return false;
   if (!inRange(view.age, ev.ageRange)) return false;
-  if (ev.eras && !ev.eras.includes(view.era)) return false;
+  if (!inYearRange(view.year, ev.yearRange)) return false;
   const last = lastSeenAge(view.seen, ev.id);
   if (last !== undefined) {
     if (ev.once) return false;
@@ -600,7 +648,7 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
 }
 
 const EVENT_KEYS = [
-  'id', 'title', 'text', 'stages', 'ageRange', 'eras', 'weight', 'once', 'cooldown',
+  'id', 'title', 'text', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
   'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'citation', 'noCitation', 'heavy',
 ] as const;
 
@@ -680,9 +728,10 @@ function checkCitationShape(ev: Obj, path: string, p: Problems): void {
         if (!(ERAS as readonly string[]).includes(k)) p.add(`${path}.citation.${k}`, `알 수 없는 세상이다 (${ERAS.join(', ')} 중 하나)`);
         else if (typeof c[k] !== 'string' || !CITATION_ID_PATTERN.test(c[k] as string)) p.add(`${path}.citation.${k}`, '인용 id 형식이어야 한다 (예: c-006)');
       }
-      // 이 카드가 뜨지 않는 세상(eras에 없는 세상)에 인용을 적으면 영원히 쓰이지 않는 연결이다
-      if (Array.isArray(ev.eras)) {
-        for (const k of keys) if ((ERAS as readonly string[]).includes(k) && !ev.eras.includes(k)) p.add(`${path}.citation.${k}`, `이 이벤트는 ${k} 세상에서 일어나지 않는다 (eras: ${ev.eras.join(', ')})`);
+      // 이 카드가 뜨지 않는 시대 구간(yearRange가 걸치지 않는 구간)에 인용을 적으면 영원히 쓰이지 않는 연결이다 (기록 카드는 authored `eras`를 그대로 쓴다)
+      const reach: readonly string[] | undefined = Array.isArray(ev.eras) ? (ev.eras as string[]) : isObj(ev.yearRange) ? erasOfYearRange(ev.yearRange as YearRange, Array.isArray(ev.stages) ? reachableYears({ stages: ev.stages as Stage[], ...(isObj(ev.ageRange) ? { ageRange: ev.ageRange as EventDef['ageRange'] } : {}) }) : undefined) : undefined;
+      if (reach !== undefined) {
+        for (const k of keys) if ((ERAS as readonly string[]).includes(k) && !reach.includes(k)) p.add(`${path}.citation.${k}`, `이 이벤트는 ${k} 시대 구간에서 일어나지 않는다 (${Array.isArray(ev.eras) ? 'eras' : 'yearRange'}가 걸치는 구간: ${reach.join(', ')})`);
       }
     } else {
       p.add(`${path}.citation`, '인용 id 문자열 또는 { past?, present?, future? } 객체여야 한다');
@@ -707,9 +756,51 @@ export function conditionProblems(cond: unknown, path: string): string[] {
   return p.list;
 }
 
+/** 이벤트가 일어날 수 있는 달력 연도 창 [first, last] — 출생 연도(1940~2020, 세대 7종 합집합) + 단계·나이 범위의 나이. 단계가 없으면 undefined */
+export function reachableYears(ev: Pick<EventDef, 'stages' | 'ageRange'>): { from: number; to: number } | undefined {
+  const stages = (ev.stages ?? []).filter((s): s is Stage => (STAGES as readonly unknown[]).includes(s));
+  if (stages.length === 0) return undefined;
+  const lo = ev.ageRange?.min ?? 0;
+  const hi = ev.ageRange?.max ?? MAX_AGE_ABS;
+  const ageLo = Math.max(lo, Math.min(...stages.map((st) => stageSpan(st)[0])));
+  const ageHi = Math.min(hi, Math.max(...stages.map((st) => stageSpan(st)[1])));
+  return { from: FIRST_BIRTH_YEAR_FOR_RANGE + ageLo, to: LAST_BIRTH_YEAR_FOR_RANGE + ageHi };
+}
+
+/**
+ * `yearRange`의 형태 (SPEC-004 MG2): `{ from?, to? }` 정수(1900~2300), `from ≤ to`. 이 이벤트가 일어날 수 있는 달력 연도(출생 1940~2020 + 단계·나이 범위)와 겹쳐야 한다 —
+ * 겹치지 않으면 영원히 일어나지 않는 이벤트다(예: 알파가 2026년 이후 영유아가 없어 후보가 없던 이벤트 — `event-conversion.md` 5절).
+ */
+function checkYearRange(ev: Obj, path: string, p: Problems): void {
+  const r = ev.yearRange;
+  const at = `${path}.yearRange`;
+  if (!isObj(r)) return void p.add(at, '{ "from": 연도, "to": 연도 } 객체여야 한다 (한쪽은 생략할 수 있다)');
+  const before = p.list.length;
+  checkKeys(r, ['from', 'to'], [], at, p);
+  for (const k of ['from', 'to'] as const) {
+    const v = r[k];
+    if (v !== undefined && (!isInt(v) || v < 1900 || v > 2300)) p.add(`${at}.${k}`, '1900~2300의 정수(달력 연도)여야 한다');
+  }
+  if (isInt(r.from) && isInt(r.to) && r.from > r.to) p.add(at, `from(${r.from})이 to(${r.to})보다 크다`);
+  if (p.list.length !== before || !Array.isArray(ev.stages)) return;
+  const stages = ev.stages.filter((s): s is Stage => (STAGES as readonly unknown[]).includes(s));
+  if (stages.length === 0) return;
+  const lo = isObj(ev.ageRange) && isInt(ev.ageRange.min) ? ev.ageRange.min : 0;
+  const hi = isObj(ev.ageRange) && isInt(ev.ageRange.max) ? ev.ageRange.max : MAX_AGE_ABS;
+  const ageLo = Math.max(lo, Math.min(...stages.map((s) => stageSpan(s)[0])));
+  const ageHi = Math.min(hi, Math.max(...stages.map((s) => stageSpan(s)[1])));
+  const first = FIRST_BIRTH_YEAR_FOR_RANGE + ageLo;
+  const last = LAST_BIRTH_YEAR_FOR_RANGE + ageHi;
+  if ((isInt(r.from) && r.from > last) || (isInt(r.to) && r.to < first)) p.add(at, `이 이벤트가 일어날 수 있는 달력 연도(${first}~${last})와 겹치지 않아 절대 일어나지 않는다`);
+}
+
+/** 출생 연도 범위(세대 7종 합집합) — data/generations.ts의 FIRST_BIRTH_YEAR·LAST_BIRTH_YEAR와 같다(core가 data를 거꾸로 부르지 않으려고 따로 적고, tests/events.test.ts가 같은 값임을 잠근다) */
+const FIRST_BIRTH_YEAR_FOR_RANGE = 1940;
+const LAST_BIRTH_YEAR_FOR_RANGE = 2020;
+
 function checkEvent(ev: unknown, path: string, p: Problems): void {
   if (!isObj(ev)) return void p.add(path, '이벤트 객체여야 한다');
-  checkKeys(ev, EVENT_KEYS, ['id', 'title', 'text', 'stages', 'weight', 'once'], path, p);
+  checkKeys(ev, EVENT_KEYS, ['id', 'title', 'text', 'stages', 'weight', 'once', 'track'], path, p);
   if (typeof ev.id !== 'string' || !EVENT_ID_PATTERN.test(ev.id)) p.add(`${path}.id`, '소문자·숫자·하이픈 2~48자(예: school-exam)여야 한다');
   else if (RESERVED_EVENT_IDS.has(ev.id.toLowerCase())) p.add(`${path}.id`, `예약어라 id로 쓸 수 없다 (${ev.id}) — 본 이벤트 기록에서 상속 속성과 헷갈릴 수 있다`);
   else if (ev.id.startsWith(NOTE_ID_PREFIX)) p.add(`${path}.id`, `「${NOTE_ID_PREFIX}」로 시작하는 id는 기록 카드(notes.json) 전용 예약이라 이벤트 id로 쓸 수 없다 (본 이벤트 기록 seen에서 둘의 키가 섞이지 않게)`);
@@ -717,7 +808,8 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
   if (ev.text !== undefined) checkText(ev.text, `${path}.text`, 10, 400, p);
   if (ev.stages !== undefined) checkEnumList(ev.stages, STAGES, `${path}.stages`, p);
   checkMoneyKinds(ev, path, p);
-  if (ev.eras !== undefined) checkEnumList(ev.eras, ERAS, `${path}.eras`, p);
+  if (ev.track !== undefined && !(EVENT_TRACKS as readonly unknown[]).includes(ev.track)) p.add(`${path}.track`, `${EVENT_TRACKS.join(' · ')} 중 하나여야 한다`);
+  if (ev.yearRange !== undefined) checkYearRange(ev, path, p);
   if (ev.ageRange !== undefined) {
     checkRange(ev.ageRange, `${path}.ageRange`, 0, MAX_AGE_ABS, p);
     // 단계와 겹치는 나이가 없으면 영원히 일어나지 않는 이벤트다

@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SETTINGS,
-  type Era,
+  type ProfileId,
   autoResolveStep,
   buildCarousel,
   heavyKindOfEntry,
@@ -36,7 +36,6 @@ import { startLife } from '../scripts/simulateLib';
 import { forcedPending } from './helpers/forcedPending';
 import { dropHidden, visibleText } from './helpers/visible';
 import legacyV8 from './fixtures/saveV8Inherit.json';
-import { parseGame } from '../src/core';
 
 /**
  * 무거운 장면 가리기의 화면 (SPEC-005 QI6 HV3·HV4·HV6·HV7·HV8, 완료 기준 11) — 서버 렌더로 DOM을 본다. 원문은 `hidden` 요소로 DOM에 있으므로 「새지 않는다」는 `hidden` 부분을 뺀 글자
@@ -49,7 +48,7 @@ const esc = (t: string): string => t.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 const ev = (id: string) => EVENT_POOL.byId.get(id)!;
 const CLOCK: YearClock = { get: () => 0, subscribe: () => () => undefined };
 const noop = () => undefined;
-const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, era: g.era!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
+const asLife = (g: GameState): LifeGame => ({ ...g, character: g.character!, generation: g.generation!, birthReport: g.birthReport!, peerSeed: g.peerSeed! });
 
 /** 실제 이벤트 데이터로 만든 연표 줄 (서술 / 선택 결과 / 부모·흘러감) */
 function narrative(id: string, age: number): HistoryEntry {
@@ -84,7 +83,7 @@ const HISTORY: HistoryEntry[] = [
 const HEAVY_ROWS = HISTORY.filter((h) => heavyKindOfEntry(h) !== null);
 
 function renderLog(history: readonly HistoryEntry[], gentle: boolean | undefined): string {
-  return renderToStaticMarkup(<LogCard history={history} name="김민준" live minute={MINUTE} gentle={gentle} />);
+  return renderToStaticMarkup(<LogCard history={history} live gentle={gentle} />);
 }
 
 describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
@@ -154,8 +153,9 @@ describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
     expect(visibleText(body('school-bully'))).toContain(`(${CHILD_FLOW_TEXT}: ${HISTORY[2].choice})`);
   });
 
-  it('옛 v8 저장의 상속 줄(표지 필드 없음)도 켜면 같은 모양으로 가려진다 (M20)', () => {
-    const game = parseGame(JSON.stringify(legacyV8))!;
+  it('옛 v8 저장 표본의 상속 줄(표지 필드 없음)도 켜면 같은 모양으로 가려진다 (M20) — v9는 v8 저장을 열지 않으므로(새 게임 + 안내, SPEC-004 MG1) 표본의 연표 줄을 그대로 그린다', () => {
+    const history = (legacyV8.data as unknown as { history: HistoryEntry[] }).history;
+    const game = { history };
     const html = renderLog(game.history, true);
     const inherit = game.history.filter((h) => h.text === INHERIT_NOTE_TEXT);
     expect(inherit).toHaveLength(1);
@@ -295,7 +295,7 @@ describe('가린 결정 카드: 시트·인라인·접힌 띠 (HV4 ②⑤, 접�
   });
 
   it('인용 박스가 붙은 무거운 카드(school-bully 13세 이상의 본인 결정 — c-050 「학교폭력 실태조사」)도 인용까지 가려진다 (HV4 ⑦)', () => {
-    const bully = forcedPending('school-bully', 'present', { age: 14 });
+    const bully = forcedPending('school-bully', 'alpha', { age: 14 });
     const open = renderLife(bully, { gentle: false });
     const cited = open.includes('data-testid="cite"');
     expect(cited, '이 시나리오에서 인용이 보이는 카드다(공허하지 않다)').toBe(true);
@@ -308,7 +308,7 @@ describe('가린 결정 카드: 시트·인라인·접힌 띠 (HV4 ②⑤, 접�
 // ---------- 부모·흘러감 카드 ----------
 
 /** 무거운 장면의 부모님이 정한·흘러간 해(카드가 뜨는 틱)를 찾는다 */
-function heavyDelegatedYear(eventId: string, by: 'parent' | 'child', era: Era = 'present'): { game: GameState; tick: TickInfo } {
+function heavyDelegatedYear(eventId: string, by: 'parent' | 'child', era: ProfileId = 'alpha'): { game: GameState; tick: TickInfo } {
   for (let seed = 1; seed <= 3000; seed++) {
     let s = startLife(seed, era);
     for (let guard = 0; guard < 80 && s.phase === 'life' && s.age <= 19; guard++) {
@@ -325,12 +325,12 @@ function heavyDelegatedYear(eventId: string, by: 'parent' | 'child', era: Era = 
 }
 
 describe('가린 부모·흘러감 카드 (HV4 ③ 「부모」 단위, HV8 — 칩·도장·첫 부모 카드 안내는 가리지 않는다)', () => {
-  const cases: Array<{ id: string; by: 'parent' | 'child'; era?: Era }> = [
+  const cases: Array<{ id: string; by: 'parent' | 'child'; era?: ProfileId }> = [
     { id: 'infant-fever', by: 'parent' },
     { id: 'infant-hospital-stay', by: 'parent' },
     { id: 'school-bully', by: 'child' },
-    { id: 'school-family-priority', by: 'child', era: 'past' }, // 지난 세상만 (12~17세, 전 구간 흘러감)
-    { id: 'school-early-work', by: 'parent', era: 'past' }, // 지난 세상만 (13~16세)
+    { id: 'school-family-priority', by: 'child', era: 'industrial' }, // 옛 연도만 (2000년까지, 12~17세, 전 구간 흘러감)
+    { id: 'school-early-work', by: 'parent', era: 'industrial' }, // 옛 연도만 (2000년까지, 13~16세)
   ];
 
   for (const { id, by, era } of cases) {
@@ -379,7 +379,7 @@ describe('가린 부모·흘러감 카드 (HV4 ③ 「부모」 단위, HV8 — 
 /** 연표에 무거운 줄이 여럿(부모 결정 포함) 든 판의 엔딩 */
 function endingWithHeavy(): EndingGame {
   for (let seed = 1; seed <= 400; seed++) {
-    const end = playToEnd(startLife(seed, 'present'), (s) => s.pending!.choiceIds[0]).state as EndingGame;
+    const end = playToEnd(startLife(seed, 'alpha'), (s) => s.pending!.choiceIds[0]).state as EndingGame;
     const heavy = end.history.filter((h) => heavyKindOfEntry(h) !== null);
     if (heavy.length >= 4 && heavy.some((h) => h.by !== undefined)) return end;
   }
@@ -528,7 +528,7 @@ describe('첫 화면 자살률 슬라이드 (HV7, REV-005-HV-1 7절)', () => {
 
 describe('첫 화면: 스위치 연결 (HV3)', () => {
   const render = (gentle: { on: boolean; onToggle: () => void } | undefined) =>
-    renderToStaticMarkup(<TitleScreen era="present" lifeLength="short30" onSelectEra={noop} onSelectLifeLength={noop} onBegin={noop} minute={MINUTE} gentle={gentle} />);
+    renderToStaticMarkup(<TitleScreen generation="random" lifeLength="short30" onSelectGeneration={noop} onSelectLifeLength={noop} onBegin={noop} gentle={gentle} />);
 
   it('스위치의 켜짐 상태가 aria-checked·글자(꺼짐/켜짐)에 반영되고 켜면 오른쪽 통계 카드의 자살률이 가려진다', () => {
     const off = render({ on: false, onToggle: noop });

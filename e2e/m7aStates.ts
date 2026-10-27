@@ -1,12 +1,12 @@
 import { expect, type Page } from '@playwright/test';
-import type { GameState } from '../src/core/types';
+import type { GameState, GenerationId } from '../src/core/types';
 import { evalCore, injectSave, startPageHidden } from './helpers';
 
 /**
  * M7a(영유아 0~7세 콘텐츠, SPEC-003 IN1~IN8)의 e2e 상태 — 마일스톤 줄(한 해 두 줄)·동생 맞이 카드·재력 문턱 카드·7세 카드·시대 전용 장면.
  * 상태는 앱 페이지가 연 개발 서버의 core로 찾는다(같은 시드·같은 선택 → 같은 상태, 오라클). 가려진 탭처럼 시간을 멈춰(startPageHidden) 연다.
  */
-export type Era = 'past' | 'present' | 'future';
+export type Era = GenerationId;
 
 /** 영유아 결정 카드(pending)가 떠 있는 상태 중 eventId인 것을 찾는다. 앞선 결정은 첫 선택지로 넘긴다. 앱 페이지가 열려 있어야 한다. */
 export async function findInfantDecision(
@@ -28,7 +28,7 @@ export async function findInfantDecision(
        }
      }
      return null;`,
-    { id: eventId, era: opts.era ?? 'present', tier: opts.tier ?? null, min: opts.minChoices ?? 2, firstBorn: opts.firstBorn ?? false, inc: opts.mustInclude ?? null, exc: opts.mustExclude ?? null, from: opts.from ?? 1, to: opts.to ?? 8000 },
+    { id: eventId, era: opts.era ?? 'alpha', tier: opts.tier ?? null, min: opts.minChoices ?? 2, firstBorn: opts.firstBorn ?? false, inc: opts.mustInclude ?? null, exc: opts.mustExclude ?? null, from: opts.from ?? 1, to: opts.to ?? 8000 },
   );
   expect(found, `${eventId}${opts.tier ? ' 재력 ' + opts.tier : ''}: 결정 카드가 떠 있는 영유아 상태를 찾지 못했다`).not.toBeNull();
   return found!;
@@ -66,7 +66,7 @@ export async function findInfantLog(page: Page, era: Era, opts: { minAge: number
 }
 
 /** 끝까지 자동으로 살아 엔딩에 닿은 판 중 영유아기에 한 해 minPerYear줄(기본 3 — 1세의 걸음마 + 첫 말 + 일반 사건)이 있는 것 (엔딩 연표의 영유아 묶음이 한 해의 여러 줄을 그대로 보인다) */
-export async function findInfantEnding(page: Page, era: Era = 'present', minPerYear = 3): Promise<GameState> {
+export async function findInfantEnding(page: Page, era: Era = 'alpha', minPerYear = 3): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 300; seed++) {

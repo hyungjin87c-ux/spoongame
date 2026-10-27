@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { COMPARABLE_STATS, displaySeconds, heavyKindOfEntry, isCleanRun, looksStanding, reviewEnding, standingScore, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
-import { ERA_CONFIG } from '../data/birthTable';
+import { profileLabel } from '../core/birthProfile';
+import { reportPlaceLabel } from '../core/birthReport';
 import { BIRTH_TEXT } from '../data/birthReportText';
 import { standingLabel } from '../data/birthText';
 import { VEIL_TEXT } from '../data/gentleText';
@@ -9,6 +10,7 @@ import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/da
 import {
   ENDING_HEADINGS,
   ENDING_HEAD_LABEL,
+  endingBornText,
   JOURNEY_NOTE,
   JOURNEY_BAR_LEGEND,
   MOVEMENT_TEXT,
@@ -27,6 +29,7 @@ import {
 } from '../data/endingText';
 import { SiteHead, Icon, Sprite } from '../ui/Brand';
 import { Face } from '../ui/Face';
+import { FitPair } from '../ui/FitPair';
 import { Glue } from '../ui/Glue';
 import { GradeChip } from '../ui/Grade';
 import { GuardedButton } from '../ui/GuardedButton';
@@ -200,11 +203,18 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
           {/* 텍스트 칸: 제목 글자 크기 상한의 컨테이너다(R-320·R-321 — 얼굴 타일이 아니라 이 칸만 flex로 늘어난다, dash.css `.ending__who`) */}
           <div className="ending__who">
             <p className="label" data-testid="ending-era">
-              <Glue text={`${ERA_CONFIG[game.era].label} · ${ENDING_HEAD_LABEL}`} hideSeparator />
+              {ENDING_HEAD_LABEL}
             </p>
             <h1 className="t-title" ref={headingRef} tabIndex={-1} data-testid="ending-name" style={{ '--title-chars': titleCharsFor(title) } as CSSProperties}>
               {title}
             </h1>
+            {/* 세대 표기 (GS9·GD2): 「{세대 이름} · {연도}년생」과 태어난 곳(그 해의 행정구역 이름 + 지금의 시도) */}
+            <p className="ending__meta" data-testid="ending-gen">
+              <strong>
+                <FitPair a={profileLabel(game.generation)} b={`${c.birthYear}년생`} hideSeparator />
+              </strong>
+              {game.birthReport === null ? null : <span>{endingBornText(reportPlaceLabel(game.birthReport, c.birthYear))}</span>}
+            </p>
             <p className="t-muted" data-testid="ending-span">
               <Glue text={endingSpanText(c.birthYear, game.birthReport === null ? null : game.birthReport.month, c.birthYear + game.death.age, game.death.age)} hideSeparator />
             </p>
@@ -293,7 +303,7 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
             return <FinalMeter key={key} stat={key} label={STATUS_LABEL[key]} value={game.stats[key]} tone={tone} icon={icon} started={started} />;
           })}
           {/* 「재산」 막대 자리: 최종 순자산 한 줄(M5) — 위끝 1px 선이 네 막대와 가른다 */}
-          <FinalNetLine era={game.era} net={review.journey.kind === 'compared' && game.assets !== null ? game.assets.net : null} />
+          <FinalNetLine generation={game.generation} net={review.journey.kind === 'compared' && game.assets !== null ? game.assets.net : null} />
           <dl className="facts">
             <dt>{DASH_TEXT.profileLooks}</dt>
             <dd data-testid="final-looks">

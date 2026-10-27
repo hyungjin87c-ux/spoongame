@@ -512,7 +512,7 @@ test.describe('첫 화면 스위치와 설정·저장 (HV3·SV2)', () => {
     await sw.click();
     await expect(sw).toHaveAttribute('aria-checked', 'true');
     await expect.poll(async () => (await readSettings(page)).gentle).toBe(true);
-    expect(JSON.parse((await page.evaluate(() => localStorage.getItem('suzeo-game:settings')))!).version).toBe(5);
+    expect(JSON.parse((await page.evaluate(() => localStorage.getItem('suzeo-game:settings')))!).version).toBe(6); // v6: SPEC-004 MG1(세대 선택·살아본 세대·출신 시도·금액 보기)
     await page.reload();
     await expect(page.getByTestId('gentle-switch')).toHaveAttribute('aria-checked', 'true');
     // 켠 채 태어나기 → 저장된 판의 gentleUsed

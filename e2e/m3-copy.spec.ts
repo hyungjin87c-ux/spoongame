@@ -33,22 +33,18 @@ test.describe('출생신고 문구 360x740', () => {
   }
 
   test('세 세상(지금·지난·다가올)을 모두 덮는다 — 표본 7가지에 세 시대가 모두 있다 (공허 통과 방지)', () => {
-    const eras = new Set(BIRTH_STATE_IDS.map((id) => (id in BIRTH_VARIANTS ? BIRTH_VARIANTS[id as keyof typeof BIRTH_VARIANTS].era : 'present')));
-    expect([...eras].sort()).toEqual(['future', 'past', 'present']);
+    const gens = new Set(BIRTH_STATE_IDS.map((id) => (id in BIRTH_VARIANTS ? BIRTH_VARIANTS[id as keyof typeof BIRTH_VARIANTS].generation : 'alpha')));
+    expect([...gens].sort()).toEqual(['alpha', 'genz', 'industrial']);
   });
 
+  // 비교 표와 그 안내(COMPARE_NOTE)는 SPEC-004 BR5(N20)에서 세대 판에 숨겨졌다 — 표본 전부에서 둘 다 없다. 문구 자체의 합쇼체 규칙은 단위 시험(tests/birthCompare.test.ts)이 상수를 본다
   for (const id of BIRTH_STATE_IDS) {
-    const present = !(id in BIRTH_VARIANTS) || BIRTH_VARIANTS[id as keyof typeof BIRTH_VARIANTS].era === 'present';
-    if (!present) continue;
-    test(`${id}: 비교 표 안내는 서류 본문이라 합쇼체다 — 문구 전체 단언, 해요체 종결(「…요.」) 0 (QM3-4)`, async ({ page }, testInfo) => {
+    test(`${id}: 비교 표와 비교 표 안내는 숨겨져 있다 — 서류에 표도 안내도 없다 (BR5, QM3-4의 합쇼체 안내는 숨김 동안 화면에 없다)`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
       await openWordBreakState(page, id);
-      const note = (await page.getByTestId('compare-note').innerText()).replace(/\s+/g, ' ').trim();
-      expect(note).toBe(COMPARE_NOTE);
-      for (const sentence of note.split(/(?<=\.)\s+/)) {
-        expect(sentence).toMatch(/(입니다|합니다|됩니다|습니다)\.$/);
-        expect(sentence).not.toMatch(/요\.$/);
-      }
+      await expect(page.getByTestId('compare-table')).toHaveCount(0);
+      await expect(page.getByTestId('compare-note')).toHaveCount(0);
+      expect(await page.getByTestId('birth-screen').innerText()).not.toContain(COMPARE_NOTE);
     });
   }
 });

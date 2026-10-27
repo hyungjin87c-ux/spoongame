@@ -112,6 +112,13 @@ export const ERA_BANNED_WORDS: Record<Era, readonly string[]> = {
 const ALL_ERAS: readonly Era[] = ['past', 'present', 'future'];
 
 /**
+ * 「다가올」 소재 낱말이 쓰이기 시작한 연도 (docs/data/event-conversion.md 4·5절 — 고아 2개의 기술 연도). 이벤트의 `yearRange.from`이 이 연도 이상이면 그 낱말은 금지하지 않는다:
+ * 시대 구간은 연도에서 파생(`present` = 2001~2025)되므로 「돌봄 기계」(2016~)·「인공지능」(2023~)을 구간째 막으면 연도 구간으로 연 이벤트가 걸린다.
+ * 연도별 낱말표 `WORD_YEARS`(TL11, timeline-schema.md 7절)가 들어오면 이 임시 표는 그 표로 바뀐다(GM5 이후).
+ */
+export const FUTURE_WORD_FIRST_YEAR: Readonly<Record<string, number>> = { '돌봄 기계': 2016, 인공지능: 2023 };
+
+/**
  * 이벤트에 쓰면 안 되는 말. stages를 주면 생애 단계도 본다(R-067): 이벤트의 모든 단계가 노년이면
  * 지난 세상의 새 기기 소재(휴대전화·인터넷 …)를 쓸 수 있다 — 지난 세상 노년은 이미 그 세상에서 산다. stages를 생략하면 모든 단계로 본다.
  */
@@ -568,7 +575,8 @@ const NO_SPACE_AFTER_PERIOD = /[가-힣)]\.(?=[가-힣])/;
  */
 export function lintEvent(ev: EventDef): string[] {
   const problems: string[] = [];
-  const banned = bannedWordsFor(ev.eras, ev.stages);
+  const from = ev.yearRange?.from;
+  const banned = bannedWordsFor(ev.eras, ev.stages).filter((w) => !(from !== undefined && FUTURE_WORD_FIRST_YEAR[w] !== undefined && from >= FUTURE_WORD_FIRST_YEAR[w]));
   // 영유아 문구(1인칭 금지): 단계가 영유아뿐이거나, 나이 창이 7세 안에서 끝나는 이벤트(7세 school-* 포함, R-371 ②)
   const earlyChildhood = ev.stages.every((s) => s === 'infant') || (ev.ageRange?.max !== undefined && ev.ageRange.max <= 7);
   const limits = TEXT_LIMITS;

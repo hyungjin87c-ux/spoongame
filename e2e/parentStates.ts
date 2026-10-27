@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { GameState } from '../src/core/types';
+import type { GameState, GenerationId } from '../src/core/types';
 import type { TickInfo } from '../src/core/life';
 import { activeTestId, evalCore, injectSave, setPageVisible, withoutPlay, type InjectedSettings } from './helpers';
 
@@ -10,7 +10,7 @@ import { activeTestId, evalCore, injectSave, setPageVisible, withoutPlay, type I
  * 비모달 카드(`parent-card`)가 뜬다. 그래서 예전에 「결정 시트를 심어서」 보던 e2e는 이 카드를 **띄워서** 본다: 그 해 직전 상태를 심고(`findDelegatedYear`) 카드가 뜨면 일시정지로 붙잡는다(`showParentCard`).
  * 모든 상태는 개발 서버의 실제 core 모듈로 찾는다(같은 시드·같은 선택 → 같은 상태, 오라클).
  */
-export type Era = 'past' | 'present' | 'future';
+export type Era = GenerationId;
 
 export interface DelegatedYear {
   /** 그 해가 시작되기 직전 상태(본인 카드는 자동 성향으로 넘겼다) — 앱이 이 상태에서 한 해를 진행하면 카드가 뜬다 */
@@ -71,7 +71,7 @@ export async function findDelegatedYear(page: Page, opts: FindOpts = {}): Promis
     {
       by: opts.by ?? null,
       id: opts.eventId ?? null,
-      era: opts.era ?? 'present',
+      era: opts.era ?? 'alpha',
       tier: opts.tier ?? null,
       firstBorn: opts.firstBorn ?? false,
       min: opts.minChoices ?? 2,

@@ -1,6 +1,5 @@
-import { ERAS, autoResolveStep, resolveChoiceStep, stepYear, type Era, type EventPool, type GameState } from '../src/core';
-import { EVENT_POOL } from '../src/data/events';
-import { chooserFor, startLife, type Strategy } from './simulateLib';
+import { autoResolveStep, resolveChoiceStep, stepYear, type EventPool, type GameState, type ProfileId } from '../src/core';
+import { chooserFor, poolOf, startLife, type Strategy } from './simulateLib';
 
 /**
  * SPEC-003 M7a 영유아(0~7세) 콘텐츠 지표 (IN1~IN7 단언의 측정 도우미). 순수 계산 — tests/infantContent.test.ts와 scripts/infantMetrics.ts가 함께 쓴다.
@@ -12,7 +11,7 @@ export const INFANT_LAST_AGE = 7;
 
 export interface InfantLife {
   seed: number;
-  era: Era;
+  era: ProfileId;
   /** 0~7세 안에서 죽었으면 사망 나이, 아니면 null */
   deathAge: number | null;
   /** 0~7세 여덟 해(사망 전까지) 중 인생 기록에 사건·선택 줄이 하나도 없는 해 */
@@ -34,7 +33,7 @@ export interface InfantLife {
 }
 
 /** 한 판을 0~7세까지 돌린다. strategy: auto(성향) / first / random */
-export function infantLife(seed: number, era: Era, strategy: Strategy, pool: EventPool = EVENT_POOL, start?: GameState): InfantLife {
+export function infantLife(seed: number, era: ProfileId, strategy: Strategy, pool: EventPool = poolOf(era), start?: GameState): InfantLife {
   let s = start ?? startLife(seed, era);
   const chooser = chooserFor(strategy, seed);
   const shown: Record<string, string[]> = {};
@@ -81,7 +80,7 @@ export function infantLife(seed: number, era: Era, strategy: Strategy, pool: Eve
 }
 
 export interface InfantSummary {
-  era: Era;
+  era: ProfileId;
   lives: number;
   emptyMean: number;
   emptyMax: number;
@@ -112,10 +111,10 @@ export function summarizeInfant(lives: readonly InfantLife[]): InfantSummary {
 }
 
 /** 시대별로 count판을 돌린다 (시드는 시드 간격 7919로 고정 — 같은 입력이면 같은 결과) */
-export function infantLives(era: Era, count: number, strategy: Strategy, pool: EventPool = EVENT_POOL): InfantLife[] {
+export function infantLives(era: ProfileId, count: number, strategy: Strategy, pool: EventPool = poolOf(era)): InfantLife[] {
   const out: InfantLife[] = [];
   for (let i = 0; i < count; i++) out.push(infantLife(i * 7919 + 13, era, strategy, pool));
   return out;
 }
 
-export { ERAS };
+export { SIM_PROFILES as ERAS } from './simulateLib';

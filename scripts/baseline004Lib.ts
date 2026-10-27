@@ -1,4 +1,3 @@
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { EVENT_POOL } from '../src/data/events';
 import {
   autoResolveStep,
@@ -8,6 +7,7 @@ import {
   yearLineCount,
   type Era,
   type EventDef,
+  type ProfileId,
   type GameState,
   type StepResult,
 } from '../src/core';
@@ -73,12 +73,19 @@ export const AGE_BANDS: readonly AgeBand[] = [
  * R 중간(달력 연도 규칙): 이벤트 `eras`를 SPEC-004 MG2가 만들 `yearRange`의 첫 근사로 옮긴다 — 지난 = 달력 연도 ≤ cut(기본 1999) · 지금 = 달력 연도 ≥ cut+1 · 다가올 = 달력 연도 ≥ 2026(전망 구간).
  *   세 갈래 중 하나라도 맞으면 통과(`eras` 생략 = 통과). cut은 GM1이 정한다(여기서는 1995·2000·2005를 견준다).
  */
+/** 지난 모델(R1)의 시대별 출생 연도 — 기준선 비교용으로 얼린 값 (옛 `ERA_CONFIG[era].birthYears`) */
+const LEGACY_ERA_BIRTH_YEARS: Readonly<Record<Era, { min: number; max: number }>> = {
+  past: { min: 1950, max: 1989 },
+  present: { min: 2026, max: 2026 },
+  future: { min: 2030, max: 2060 },
+};
+
 export type Rule = 'U' | 'L' | { rule: 'R'; cut: number };
 
 export function eraPasses(ev: Pick<EventDef, 'eras'>, birthYear: number, age: number, rule: Rule): boolean {
   if (!ev.eras || rule === 'U') return true;
   const cal = birthYear + age;
-  if (rule === 'L') return ev.eras.some((e) => birthYear >= ERA_CONFIG[e].birthYears.min && birthYear <= ERA_CONFIG[e].birthYears.max);
+  if (rule === 'L') return ev.eras.some((e) => birthYear >= LEGACY_ERA_BIRTH_YEARS[e].min && birthYear <= LEGACY_ERA_BIRTH_YEARS[e].max);
   const cut = rule.cut;
   return ev.eras.some((e) => (e === 'past' ? cal <= cut : e === 'present' ? cal > cut : cal > LAST_ACTUAL_YEAR));
 }
@@ -425,7 +432,7 @@ export interface Snapshot {
 
 export interface LifeRecord {
   seed: number;
-  era: Era;
+  era: ProfileId;
   birthYear: number;
   deathAge: number;
   /** 나이 → 그 나이의 마지막 상태 */
@@ -437,7 +444,7 @@ export interface LifeRecord {
 }
 
 /** playToEnd와 같은 걸음으로 한 판을 끝까지 돌리며 나이마다 상태를 남긴다 (게임 규칙은 그대로) */
-export function playRecorded(seed: number, era: Era, strategy: Strategy): LifeRecord {
+export function playRecorded(seed: number, era: ProfileId, strategy: Strategy): LifeRecord {
   let s: GameState = startLife(seed, era);
   const chooser = chooserFor(strategy, seed);
   const at = new Map<number, Snapshot>();

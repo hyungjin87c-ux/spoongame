@@ -1,5 +1,4 @@
-import { ERA_CONFIG } from '../data/birthTable';
-import { EVENT_POOL } from '../data/events';
+import type { LifeParams } from '../data/lifeTable';
 import { AUTO_ASSET } from '../data/economyTable';
 import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, FAMILY_NEED_BASE, FIRST_PARENT_HINT, PARENT_CHIP_TEXT, PARENT_DECIDED_TEXT } from '../data/parentDecisionTable';
 import { IMPACT_LABEL } from '../data/impactText';
@@ -38,12 +37,14 @@ import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllG
 import type { NoteCardDef } from './noteCards';
 import { consumeNote, dueNote, type NoteMode } from './notes';
 import { decisionFor, parentChoiceWeights, selfAreaWeightFactor } from './parentDecision';
+import { eraBucketOf, lifeParamsOf } from './birthProfile';
+import { eventPool } from './gameData';
 import { calendarYear } from './profile';
 import { citationFor } from './citations';
 import { createRng, type Rng } from './rng';
 import { applyStatDeltas, type StatDeltas } from './stats';
 import { cardReadNeedMs, holdMsFor } from './timing';
-import { PARENT_WEALTHS, type Character, type DelegatedBy, type Era, type GameState, type HistoryEntry, type LifeLength, type Stage, type StatKey, type Stats } from './types';
+import { PARENT_WEALTHS, type Character, type DelegatedBy, type GameState, type HistoryEntry, type LifeLength, type Stage, type StatKey, type Stats } from './types';
 
 /**
  * 인생 진행 루프(순수 함수). React·타이머·Date·Math.random을 쓰지 않고 시드 RNG만 쓴다.
@@ -60,15 +61,15 @@ import { PARENT_WEALTHS, type Character, type DelegatedBy, type Era, type GameSt
 
 export { stageOfAge as stageOf };
 
-export function maxAgeOf(era: Era): number {
-  return ERA_CONFIG[era].life.maxAge;
+export function maxAgeOf(life: LifeParams): number {
+  return life.maxAge;
 }
 
 /** 나이 a를 사는 해에 죽을 확률. 절대 상한 나이는 호출하는 쪽(finishYear)이 따로 처리한다. */
-export function deathChance(age: number, health: number, era: Era): number {
+export function deathChance(age: number, health: number, life: LifeParams): number {
   const base = MORTALITY.baseline + MORTALITY.gompertzA * Math.exp(MORTALITY.gompertzB * age);
   const healthFactor = Math.pow(2, (50 - health) / MORTALITY.healthDoubling);
-  let q = base * healthFactor * ERA_CONFIG[era].life.mortalityScale;
+  let q = base * healthFactor * life.mortalityScale;
   if (health < MORTALITY.criticalBelow) q += (MORTALITY.criticalBelow - health) * MORTALITY.criticalStep;
   return Math.min(1, Math.max(0, q));
 }
@@ -107,7 +108,7 @@ export function birthFadeDelta(birthValue: number, age: number): number {
  * 나이 a를 살고 난 뒤의 단계별 자연 변화(정수, 스케줄 방식이라 RNG를 쓰지 않는다).
  * birth(출생 스탯)를 주면 학창기에 행복·관계의 출생 편차를 걷어 낸다(birthFadeDelta). 주지 않으면 학창기 회귀는 없다.
  */
-export function naturalDeltas(age: number, character: Character, stats: Stats, _era: Era, birth?: Pick<Stats, 'happiness' | 'relationships'> | null): StatDeltas {
+export function naturalDeltas(age: number, character: Character, stats: Stats, birth?: Pick<Stats, 'happiness' | 'relationships'> | null): StatDeltas {
   const stage = stageOfAge(age);
   const d: StatDeltas = {};
   const add = (k: StatKey, v: number) => {
@@ -244,14 +245,15 @@ const inheritanceLine = (age: number): HistoryEntry => ({ age, kind: 'event', te
  * 연표 한 줄은 그 해 사건·선택 기록 바로 뒤에 남는다(나이 상한으로 처음 떠나는 해는 한 살 많은 나이의 줄).
  */
 function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: GameState; died: boolean } {
-  if (s.character === null || s.era === null) throw new Error('finishYear: 캐릭터/시대가 없다');
+  if (s.character === null || s.generation === null) throw new Error('finishYear: 캐릭터/세대가 없다');
   const age = s.age;
-  const stats = applyStatDeltas(s.stats, naturalDeltas(age, s.character, s.stats, s.era, s.birthStats));
+  const life = lifeParamsOf(s.generation, s.character.birthYear);
+  const stats = applyStatDeltas(s.stats, naturalDeltas(age, s.character, s.stats, s.birthStats));
   // 20세 이상: 이 해의 경제(소득 − 생활비 − 주거비 − 이자, 상환, 자동 대출). 자연 변화로 바뀐 지식(학력 배수)을 반영한다. 난수를 쓰지 않는다.
   const assets = s.assets === null ? null : yearlyAssets(s.assets, { ...economyContextOf(s), education: stats.education });
   // 난수는 해마다 정확히 한 번 쓴다(상한 나이에서도 소비해 수열이 일정하다).
   const roll = rng.next();
-  const died = age >= maxAgeOf(s.era) || roll < deathChance(age, stats.health, s.era);
+  const died = age >= maxAgeOf(life) || roll < deathChance(age, stats.health, life);
   // 간이 상속(해 끝 규칙): 이 해 끝(사망이면 같은 나이, 아니면 한 살 많은 나이 — 부모의 나이도 한 해 오른다)에 부모가 처음 모두 떠났다면 정산 뒤 순자산에 한 번 더한다. 난수를 쓰지 않는다.
   const inherited = assets === null ? 0 : inheritanceDue(before, { ...s, age: died ? age : age + 1, assets });
   const inheritedAssets = inherited > 0 && assets !== null ? settleAssets({ ...assets, net: assets.net + inherited }) : assets;
@@ -305,8 +307,8 @@ function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: Gam
  * 한 해를 진행한다. 진행할 수 없는 상태(life가 아님 / 대기 중인 선택지가 있음)면 같은 상태를 돌려준다
  * → 타이머가 겹치거나 버튼을 연타해도 한 해가 두 번 진행되거나 선택지를 건너뛰지 않는다.
  */
-export function stepYear(state: GameState, pool: EventPool = EVENT_POOL, observe?: DelegatedObserver): StepResult {
-  if (state.phase !== 'life' || state.pending !== null || state.character === null || state.era === null) return noop(state);
+export function stepYear(state: GameState, pool: EventPool = eventPool(), observe?: DelegatedObserver): StepResult {
+  if (state.phase !== 'life' || state.pending !== null || state.character === null || state.generation === null) return noop(state);
 
   const rng = createRng(state.rngState);
   const age = state.age;
@@ -316,7 +318,7 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL, observe
   const rollNarrative = rng.next();
 
   const ctx = condContextOf(state);
-  const view = { ...ctx, age, era: state.era, seen: state.seen };
+  const view = { ...ctx, age, year: calendarYear(state.character.birthYear, age), seen: state.seen };
   const eligible = eventsForStage(pool, stageOfAge(age)).filter((ev) => isEventEligible(ev, view));
 
   // 마일스톤 슬롯 (SPEC-003 IN3, M7a r3): 일반 추첨과 별개로, 창 안의 마일스톤을 한 해에 **여러 개(최대 MILESTONES_PER_YEAR_MAX)** 일으킨다. 창이 일찍 끝나는(급한) 것부터, 끝이 같으면 id 오름차순으로 따져
@@ -397,7 +399,7 @@ export function stepYear(state: GameState, pool: EventPool = EVENT_POOL, observe
 }
 
 /** 한 해 진행의 상태만 필요할 때 */
-export function advanceYear(state: GameState, pool: EventPool = EVENT_POOL): GameState {
+export function advanceYear(state: GameState, pool: EventPool = eventPool()): GameState {
   return stepYear(state, pool).state;
 }
 
@@ -405,7 +407,7 @@ export function advanceYear(state: GameState, pool: EventPool = EVENT_POOL): Gam
  * 대기 중인 선택지에 답한다. key가 대기 중인 이벤트 인스턴스의 키와 다르거나, choiceId가 화면에 보인 선택지가 아니면
  * 같은 상태를 돌려준다(연타·늦게 도착한 입력이 다음 선택지를 건드리지 못한다).
  */
-export function resolveChoiceStep(state: GameState, key: string, choiceId: string, pool: EventPool = EVENT_POOL): StepResult {
+export function resolveChoiceStep(state: GameState, key: string, choiceId: string, pool: EventPool = eventPool()): StepResult {
   return resolveChoiceCore(state, key, choiceId, pool);
 }
 
@@ -417,7 +419,7 @@ export function resolveChoiceStep(state: GameState, key: string, choiceId: strin
 function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool: EventPool, by?: DelegatedBy): StepResult {
   const pending = state.pending;
   if (state.phase !== 'life' || pending === null || pending.key !== key || !pending.choiceIds.includes(choiceId)) return noop(state);
-  if (state.character === null || state.era === null) return noop(state);
+  if (state.character === null || state.generation === null) return noop(state);
   const ev = pool.byId.get(pending.eventId);
   const choice = ev?.choices?.find((c) => c.id === choiceId);
   if (ev === undefined || choice === undefined) throw new Error(`resolveChoice: 이벤트/선택지를 찾을 수 없다 (${pending.eventId}/${choiceId})`);
@@ -469,9 +471,9 @@ export function impactReadChars(items: readonly ImpactItem[]): number {
  * 고르는 난수는 `resolveChoiceCore`가 먼저 소비하는 그 한 번과 같다(같은 상태에서 시작하는 수열의 첫 값) — 그래서 결과는 「그 선택지를 수동으로 고른 것」과 상태 전체가 같고(`by`·`parentLabel`/`parentResult` 문구만 다르다),
  * 흘러감은 `autoResolveStep`과 상태 전체가 같다. 영향 줄은 **해결 전 상태**로 계산해 틱에 담는다.
  */
-export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool: EventPool = EVENT_POOL, milestoneIds: readonly string[] = [], observe?: DelegatedObserver): StepResult {
+export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool: EventPool = eventPool(), milestoneIds: readonly string[] = [], observe?: DelegatedObserver): StepResult {
   const pending = pendingState.pending;
-  if (pending === null || pendingState.character === null || pendingState.era === null) return noop(pendingState);
+  if (pending === null || pendingState.character === null || pendingState.generation === null) return noop(pendingState);
   const w = by === 'parent' ? parentChoiceWeights(pendingState, pool) : childFlowWeights(pendingState, pool);
   if (w === null) return noop(pendingState);
   const choiceId = w.ids[createRng(pendingState.rngState).weightedIndex(w.weights)];
@@ -491,14 +493,14 @@ export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool:
   const stamp = by === 'parent' ? PARENT_DECIDED_TEXT : CHILD_FLOW_TEXT;
   const chip = by === 'parent' ? PARENT_CHIP_TEXT : CHILD_CHIP_TEXT;
   const chars = chip.length + ev.title.length + ev.text.length + labelText.length + stamp.length + impactReadChars(impact) + resultText.length + (firstParent ? FIRST_PARENT_HINT.length : 0);
-  const cited = citationFor(ev, pendingState.era, calendarYear(pendingState.character.birthYear, pending.age)) !== null;
+  const cited = citationFor(ev, eraBucketOf(pendingState.generation, calendarYear(pendingState.character.birthYear, pending.age)), calendarYear(pendingState.character.birthYear, pending.age)) !== null;
   return {
     state: r.state,
     tick: { ...r.tick, ...withMilestones, impact, readNeedMs: cardReadNeedMs(chars, cited), ...(firstParent ? { firstParent: true } : {}) },
   };
 }
 
-export function resolveChoice(state: GameState, key: string, choiceId: string, pool: EventPool = EVENT_POOL): GameState {
+export function resolveChoice(state: GameState, key: string, choiceId: string, pool: EventPool = eventPool()): GameState {
   return resolveChoiceStep(state, key, choiceId, pool).state;
 }
 
@@ -526,7 +528,7 @@ export const AUTO_TEMPERATURE = 6;
 export const AUTO_EXPONENT_LIMIT = 40;
 
 /** 보이는 선택지마다의 자동 선택 가중치 (순서는 pending.choiceIds와 같다). RNG를 쓰지 않는 순수 계산. */
-export function autoChoiceWeights(state: GameState, pool: EventPool = EVENT_POOL): { ids: string[]; weights: number[] } | null {
+export function autoChoiceWeights(state: GameState, pool: EventPool = eventPool()): { ids: string[]; weights: number[] } | null {
   const pending = state.pending;
   if (state.phase !== 'life' || pending === null || state.character === null) return null;
   const ev = pool.byId.get(pending.eventId);
@@ -561,7 +563,7 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = EVENT_POOL
  * 고르는 난수는 resolveChoiceStep이 선택마다 먼저 소비하는 바로 그 한 번의 난수와 같다(같은 상태에서 시작하므로 수열의 첫 값).
  * 따라서 결과는 "자동이 고른 선택지를 수동으로 고른 것"과 상태 전체가 같다(R-039).
  */
-export function autoResolveStep(state: GameState, key: string, pool: EventPool = EVENT_POOL): StepResult {
+export function autoResolveStep(state: GameState, key: string, pool: EventPool = eventPool()): StepResult {
   if (state.pending === null || state.pending.key !== key) return noop(state);
   const w = autoChoiceWeights(state, pool);
   if (w === null) return noop(state);
@@ -646,7 +648,7 @@ export interface RunResult {
  * `'stop'`: 카드가 뜰 차례인 해의 첫머리에서 멈추고 `stoppedForNote`에 그 카드를 담는다(이미 그 해의 첫머리라면 한 걸음도 가지 않는다).
  * `'consume'`: 카드를 시트 없이 소비(`seen` 표시, 연표 줄 없음)하고 계속 간다. 소비는 스탯·자산·플래그·`rngState`를 바꾸지 않아 인생이 같다.
  */
-export function advanceUntilDecision(state: GameState, pool: EventPool = EVENT_POOL, notes: NoteMode = 'ignore'): RunResult {
+export function advanceUntilDecision(state: GameState, pool: EventPool = eventPool(), notes: NoteMode = 'ignore'): RunResult {
   let s = state;
   const counts = emptyCounts();
   let last: TickInfo = { kind: 'none', fromAge: s.age };
@@ -675,7 +677,7 @@ export type Chooser = (state: GameState) => string | null;
  * 같은 시드 + 같은 선택 → 같은 결과.
  * 시뮬레이션·테스트·e2e 기대값 계산용이다. 화면(세션 reducer)은 쓰지 않는다 — 자동 모드도 타이머가 선택지를 한 걸음씩 고른다(R-038).
  */
-export function playToEnd(state: GameState, chooser: Chooser | null = null, pool: EventPool = EVENT_POOL): RunResult {
+export function playToEnd(state: GameState, chooser: Chooser | null = null, pool: EventPool = eventPool()): RunResult {
   let s = state;
   const counts = emptyCounts();
   let last: TickInfo = { kind: 'none', fromAge: s.age };

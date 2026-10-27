@@ -1,3 +1,4 @@
+import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { calendarYear, citationFor, heavyKindOfEvent, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
 import type { ImpactItem } from '../../core/impact';
@@ -57,7 +58,7 @@ export function useDecisionModel(game: LifeGame, pool: EventPool): DecisionModel
   const ev = pending ? pool.byId.get(pending.eventId) : undefined;
   const previews = useMemo(() => (pending && ev ? previewPending(game, pool) : null), [game, pool, pending, ev]);
   const year = calendarYear(game.character.birthYear, game.age);
-  const cite = useMemo(() => (ev ? citationFor(ev, game.era, year) : null), [ev, game.era, year]);
+  const cite = useMemo(() => (ev ? citationFor(ev, eraBucketOf(game.generation, year), year) : null), [ev, game.generation, year]);
   return useMemo(() => {
     if (!pending || !ev) return null;
     const choices = pending.choiceIds.map((id) => ev.choices?.find((c) => c.id === id)).filter((c): c is ChoiceDef => c !== undefined);

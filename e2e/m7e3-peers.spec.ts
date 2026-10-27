@@ -18,7 +18,7 @@ async function findReturnState(page: Page): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
     `for (let seed = 1; seed < 400; seed++) {
-       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'present')));
+       let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), 'alpha')));
        for (let g = 0; s.phase === 'life' && g < 4000; g++) {
          if (s.age >= 76 && s.pending === null) break;
          s = s.pending ? core.autoResolveStep(s, s.pending.key).state : core.stepYear(s).state;
@@ -47,6 +47,7 @@ test('다시 일하는 사람: 또래 칸의 라벨이 core의 peersNow와 같�
   const state = await findReturnState(page);
   const expected = await page.evaluate<Array<{ label: string; status: string }>>(`(async () => {
     const core = await import('/src/core/index.ts');
+    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
     return core.peersNow(${JSON.stringify(state)}).map((p) => ({ label: p.label, status: p.status }));
   })()`);
   expect(expected.map((p) => p.label)).toContain(RETURN);

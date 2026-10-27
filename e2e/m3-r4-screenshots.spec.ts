@@ -51,16 +51,7 @@ test.describe('QA FLAG 상황의 고친 뒤 모습', () => {
     await shot(page, 'birth-labor-jeju-320x568-200-top');
   });
 
-  test('667x375 가로 · 글자 200% · 출생신고 비교 카드: 표를 한 행 한 덩어리로 쌓아 출처 줄 「초중고사교육비조사」가 끊기지 않는다 (M3-L02 출처 줄)', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
-    await page.setViewportSize({ width: 667, height: 375 });
-    await openWordBreakState(page, 'birth');
-    await setRootFontPercent(page, 200);
-    const card = page.getByTestId('compare-card');
-    await card.scrollIntoViewIfNeeded();
-    await page.addStyleTag({ content: '[data-testid="bottom-bar"] { visibility: hidden !important; }' });
-    await card.screenshot({ path: `${SHOTS}/dev-M3-r4-birth-compare-667x375-200.png` });
-  });
+  // (667×375 가로 · 글자 200% 출생신고 비교 카드 스크린샷은 SPEC-004 BR5(N20)에서 비교 카드가 세대 판에 숨겨져 없앴다)
 
   test('360x740 · 출생신고 또래 카드: 안내는 첫 문장 하나뿐이다 — 없는 대시보드 칸을 가리키지 않는다 (M3-O05)', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CHARACTER_NAME_PATTERN,
   DEFAULT_SETTINGS,
-  ERAS,
+  GENERATION_IDS,
   GAME_KEY,
   GENDERS,
   HISTORY_KINDS,
@@ -29,7 +29,6 @@ import {
   type GameState,
   type StorageLike,
 } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { startLife } from '../scripts/simulateLib';
 
@@ -51,7 +50,7 @@ function memoryStorage(): StorageLike & { map: Map<string, string> } {
 
 /** 나이가 조금 든 유효한 인생 상태 */
 const life = (): GameState => {
-  const g = advanceUntilDecision(startLife(3, 'present')).state;
+  const g = advanceUntilDecision(startLife(3, 'alpha')).state;
   return g.pending === null ? g : { ...g, pending: null, seen: Object.fromEntries(Object.entries(g.seen).filter(([k]) => k !== g.pending!.eventId)) };
 };
 const withNote = (g: GameState, text: string, extra: Partial<GameState['history'][number]> = {}): GameState => ({
@@ -63,10 +62,10 @@ const json = (g: GameState): { version: number; data: Record<string, unknown> & 
 const raw = (env: unknown): string => JSON.stringify(env);
 
 describe('연표 종류에 note가 있다 (H1~H4)', () => {
-  it('HISTORY_KINDS에 note가 더해졌고 게임 스키마는 v8 그대로다 (진행 중인 판을 잃지 않는다, NC-1)', () => {
+  it('HISTORY_KINDS에 note가 더해졌고 게임 스키마는 현재 v9다 (v8 판은 새 게임 + 안내로 시작한다 — SPEC-004 MG1; note 종류 추가는 스키마를 올리지 않았다, NC-1)', () => {
     expect(HISTORY_KINDS).toEqual(['stage', 'event', 'choice', 'death', 'note']);
-    expect(SCHEMA_VERSION).toBe(8);
-    expect(json(life()).version).toBe(8);
+    expect(SCHEMA_VERSION).toBe(9);
+    expect(json(life()).version).toBe(9);
   });
 
   it('H6 (a): 그림 문자·깃발·피부색·결합 문자·RTL 글을 담은 note 줄은 저장 → parseGame → 같은 글이다', () => {
@@ -92,7 +91,7 @@ describe('연표 종류에 note가 있다 (H1~H4)', () => {
     const rlo = json(g);
     rlo.data.history[0].title = `제목${RLO}`;
     expect(parseGame(raw(rlo)), '일반 줄 title의 RLO').toBeNull();
-    const ended = playToEnd(startLife(4, 'present')).state;
+    const ended = playToEnd(startLife(4, 'alpha')).state;
     const dead = JSON.parse(serializeGame(ended)) as { data: { death: { cause: string } } };
     dead.data.death.cause = `병${RLO}`;
     expect(parseGame(raw(dead)), '사망 원인의 RLO').toBeNull();
@@ -168,7 +167,7 @@ describe('연표 종류에 note가 있다 (H1~H4)', () => {
   });
 
   it('엔딩에서도 note 줄이 새로고침을 넘어 남는다 (끝난 인생의 글은 다음 판을 시작할 때까지 남는다, P5)', () => {
-    const ended = playToEnd(startLife(6, 'present')).state;
+    const ended = playToEnd(startLife(6, 'alpha')).state;
     const withRow = { ...ended, history: [...ended.history.slice(0, -1), { age: 20, kind: 'note' as const, title: '연애의 기억', text: `끝난 뒤에도 ${FAMILY}`, eventId: 'note-youth-romance' }, ended.history.at(-1)!] };
     const loaded = parseGame(serializeGame(withRow))!;
     expect(loaded.phase).toBe('ending');
@@ -197,12 +196,11 @@ describe('연표 종류에 note가 있다 (H1~H4)', () => {
 });
 
 describe('이름 한글 음절 화이트리스트 (T2·NC-13, QA-003-M7b A12d)', () => {
-  it('(a) 이름 풀 전체가 통과한다: 세 시대의 모든 출생 연도 × 성별의 모든 이름 × 모든 성씨 조합', () => {
+  it('(a) 이름 풀 전체가 통과한다: 모든 출생 연도(1940~2020, 시험 전용 2026) × 성별의 모든 이름 × 모든 성씨 조합', () => {
     const surnames = surnameWeights().map((s) => s.name);
     const given = new Set<string>();
-    for (const era of ERAS) {
-      const { min, max } = ERA_CONFIG[era].birthYears;
-      for (let year = min; year <= max; year++) for (const gender of GENDERS) for (const n of namePoolFor(year, gender)) given.add(n);
+    for (const year of [...Array.from({ length: 2020 - 1940 + 1 }, (_, i) => 1940 + i), 2026]) {
+      for (const gender of GENDERS) for (const n of namePoolFor(year, gender)) given.add(n);
     }
     expect(surnames.length).toBeGreaterThanOrEqual(10);
     expect(given.size).toBeGreaterThan(100);
@@ -216,8 +214,8 @@ describe('이름 한글 음절 화이트리스트 (T2·NC-13, QA-003-M7b A12d)',
     expect(checked).toBe(surnames.length * given.size);
   });
 
-  it('(a-2) 실제로 출생한 인물의 이름이 든 저장이 통과한다 (세 시대 × 시드 60개)', () => {
-    for (const era of ERAS) {
+  it('(a-2) 실제로 출생한 인물의 이름이 든 저장이 통과한다 (일곱 세대 × 시드 60개)', () => {
+    for (const era of GENERATION_IDS) {
       for (let seed = 1; seed <= 60; seed++) {
         const g = startLife(seed, era);
         expect(parseGame(serializeGame(g)), `${era} ${seed} ${g.character!.name}`).not.toBeNull();
@@ -271,13 +269,13 @@ describe('이름 한글 음절 화이트리스트 (T2·NC-13, QA-003-M7b A12d)',
 });
 
 describe('설정 v3 → v4: noteCards (FR7)', () => {
-  it('현재 설정 버전은 5(v4에서 noteCards, v5에서 gentle·notesSeen이 더해졌다 — SPEC-005 QI6·QI7)이고 기본값은 noteCards 켜짐이다', () => {
-    expect(SETTINGS_VERSION).toBe(5);
+  it('현재 설정 버전은 6(v4에서 noteCards, v5에서 gentle·notesSeen, v6에서 generation·lived·homeRegion·moneyView가 더해졌다 — SPEC-005 QI6·QI7, SPEC-004 MG1)이고 기본값은 noteCards 켜짐이다', () => {
+    expect(SETTINGS_VERSION).toBe(6);
     expect(DEFAULT_SETTINGS.noteCards).toBe(true);
-    expect(JSON.parse(serializeSettings(DEFAULT_SETTINGS))).toEqual({ version: 5, data: { ...DEFAULT_SETTINGS, noteCards: true } });
+    expect(JSON.parse(serializeSettings(DEFAULT_SETTINGS))).toEqual({ version: 6, data: { ...DEFAULT_SETTINGS, noteCards: true } });
   });
 
-  it('v1·v2·v3 설정은 그대로 읽고 noteCards는 기본값(켜짐)으로 채운다 — 이미 고른 값(배속·세상·BGM·테마)을 잃지 않는다', () => {
+  it('v1·v2·v3 설정은 그대로 읽고 noteCards는 기본값(켜짐)으로 채운다 — 이미 고른 값(배속·BGM·테마)을 잃지 않는다 — 옛 시대 선택(era)은 읽지 않고 버린다', () => {
     const v3 = { speed: 4, autoMode: true, era: 'future', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark' };
     for (const version of [1, 2, 3]) {
       const read = parseSettings(JSON.stringify({ version, data: version === 3 ? v3 : { speed: 4, autoMode: true } }));
@@ -285,14 +283,15 @@ describe('설정 v3 → v4: noteCards (FR7)', () => {
       expect(read.speed).toBe(4);
       expect(read.autoMode).toBe(true);
     }
-    expect(parseSettings(JSON.stringify({ version: 3, data: v3 }))).toEqual({ ...v3, noteCards: true, gentle: false, notesSeen: '' }); // v5의 새 필드 둘도 기본값으로 채워진다
+    // v5·v6의 새 필드(gentle·notesSeen·generation·lived·homeRegion·moneyView)도 기본값으로 채워지고, 옛 `era`는 버려진다
+    expect(parseSettings(JSON.stringify({ version: 3, data: v3 }))).toEqual({ ...DEFAULT_SETTINGS, speed: 4, autoMode: true, lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark' });
   });
 
   it('v4: noteCards 켬/끔이 저장·복원된다. 불리언이 아니면 그 필드만 기본값(켜짐)이고 다른 설정은 그대로다', () => {
     const st = memoryStorage();
     saveSettings(st, { ...DEFAULT_SETTINGS, noteCards: false, speed: 2 });
     expect(loadSettings(st)).toEqual({ ...DEFAULT_SETTINGS, noteCards: false, speed: 2 });
-    expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(5); // 저장은 현재 버전(5)으로 쓴다 — v4 봉투도 아래에서 그대로 읽힌다
+    expect(JSON.parse(st.map.get(SETTINGS_KEY)!).version).toBe(6); // 저장은 현재 버전(6)으로 쓴다 — v4 봉투도 아래에서 그대로 읽힌다
     const read = (noteCards: unknown) => parseSettings(JSON.stringify({ version: 4, data: { speed: 2, autoMode: false, theme: 'dark', noteCards } }));
     for (const bad of ['no', 0, 1, null, {}, []]) {
       const r = read(bad);
@@ -303,9 +302,9 @@ describe('설정 v3 → v4: noteCards (FR7)', () => {
     expect(read(false).noteCards).toBe(false);
   });
 
-  it('모르는 버전(6)은 기본값이다. 게임 저장과 설정은 따로다 (설정을 읽는 일이 게임 저장 키를 건드리지 않는다)', () => {
-    // 설정 v5(SPEC-005 QI6·QI7)부터 5는 읽을 수 있는 버전이라, 아직 없는 다음 버전 6으로 올렸다 — 경계(읽을 수 없는 첫 버전)를 보는 시험의 뜻은 그대로다
-    expect(parseSettings(JSON.stringify({ version: 6, data: { speed: 2, autoMode: true, noteCards: false } }))).toEqual(DEFAULT_SETTINGS);
+  it('모르는 버전(7)은 기본값이다. 게임 저장과 설정은 따로다 (설정을 읽는 일이 게임 저장 키를 건드리지 않는다)', () => {
+    // 설정 v6(SPEC-004 MG1)부터 6은 읽을 수 있는 버전이라, 아직 없는 다음 버전 7로 올렸다 — 경계(읽을 수 없는 첫 버전)를 보는 시험의 뜻은 그대로다
+    expect(parseSettings(JSON.stringify({ version: 7, data: { speed: 2, autoMode: true, noteCards: false } }))).toEqual(DEFAULT_SETTINGS);
     expect(GAME_KEY).not.toBe(SETTINGS_KEY);
   });
 });

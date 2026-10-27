@@ -1,29 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  AUTO_EXPONENT_LIMIT,
-  ERAS,
-  STAGES,
-  advanceYear,
-  applyStatDeltas,
-  autoChoiceWeights,
-  autoResolveStep,
-  birthFadeDelta,
-  createEventPool,
-  naturalDeltas,
-  playToEnd,
-  resolveChoice,
-  resolveEffects,
-  stageOf,
-  validateEventFiles,
-  type Character,
-  type EventDef,
-  type GameState,
-  type Stats,
-} from '../src/core';
+import { AUTO_EXPONENT_LIMIT, STAGES, advanceYear, applyStatDeltas, autoChoiceWeights, autoResolveStep, birthFadeDelta, createEventPool, naturalDeltas, playToEnd, resolveChoice, resolveEffects, stageOf, type Character, type EventDef, type GameState, type Stats } from '../src/core';
+import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FREQUENCY, MIN_YEARS_BETWEEN_CHOICES, MOOD_DRIFT } from '../src/data/lifeTable';
 import { LIFE_LENGTH_MODES } from '../src/data/timingTable';
-import { chooserFor, correlation, startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, chooserFor, correlation, startLife } from '../scripts/simulateLib';
 
 /**
  * 한 판의 선택지 수 조절(페이싱)은 인생 길이 모드 표에 있다(M8, data/timingTable.ts#LIFE_LENGTH_MODES) — 이 시험은 30분 모드(기본)의 표를 읽고, 상한 시험은 표 값을 **시험 안에서만** 낮춰 끼운다
@@ -47,7 +28,7 @@ function withPacing<T>(pacing: { soft: number; softFactor: number; hard: number 
 const character = (over: Partial<Character> = {}): Character => ({ name: '김민준', gender: 'male', birthYear: 2012, parentWealth: 3, parenting: 'free', looks: 50, ...over });
 const stats = (over: Partial<Stats> = {}): Stats => ({ education: 50, health: 50, happiness: 50, relationships: 50, ...over });
 const drift = (age: number, over: Partial<Stats>, birth?: Pick<Stats, 'happiness' | 'relationships'>) =>
-  naturalDeltas(age, character(), stats(over), 'present', birth);
+  naturalDeltas(age, character(), stats(over), birth);
 const birthOf = (happiness: number, relationships: number = happiness) => ({ happiness, relationships });
 
 /** 행복·관계를 가장 많이 올리는(sign=1) / 가장 많이 깎는(sign=-1) 선택지를 늘 고르는 전략 (현재 상태에서 보너스까지 계산한 실제 효과로 고른다) */
@@ -113,7 +94,7 @@ describe('행복·관계의 출생 편차 걷어 내기 (R-045 b, R-063): 출생
 
   it('출생 값을 주지 않으면 학창기 회귀는 없다 (부분 상태·옛 호출 방어)', () => {
     expect(drift(12, { happiness: 80 }).happiness).toBeUndefined();
-    expect(naturalDeltas(12, character(), stats({ happiness: 80 }), 'present', null).happiness).toBeUndefined();
+    expect(naturalDeltas(12, character(), stats({ happiness: 80 }), null).happiness).toBeUndefined();
   });
 
   it('영유아기(0~6세)에는 걷어 내지 않는다 — 출생값은 어린 시절의 사실이다', () => {
@@ -127,7 +108,7 @@ describe('행복·관계의 출생 편차 걷어 내기 (R-045 b, R-063): 출생
     const run = (startOffset: number) => {
       const born = birthOf(64, 36);
       let s = stats({ happiness: 64 + startOffset, relationships: 36 + startOffset });
-      for (let age = 7; age <= 19; age++) s = applyStatDeltas(s, naturalDeltas(age, character(), s, 'present', born));
+      for (let age = 7; age <= 19; age++) s = applyStatDeltas(s, naturalDeltas(age, character(), s, born));
       return s;
     };
     const base = run(0);
@@ -143,7 +124,7 @@ describe('행복·관계의 출생 편차 걷어 내기 (R-045 b, R-063): 출생
     const run = (start: number) => {
       const born = birthOf(start);
       let s = stats({ happiness: start, relationships: start });
-      for (let age = 7; age <= 19; age++) s = applyStatDeltas(s, naturalDeltas(age, character(), s, 'present', born));
+      for (let age = 7; age <= 19; age++) s = applyStatDeltas(s, naturalDeltas(age, character(), s, born));
       return s;
     };
     const low = run(30);
@@ -171,7 +152,7 @@ describe('행복·관계의 출생 편차 걷어 내기 (R-045 b, R-063): 출생
   it('실제 한 판들에서 출생값과 최종값의 상관이 낮다: 행복·관계 모두 0.45 미만 (회귀 장치 없이는 M3 표본 풀에서 0.8)', () => {
     const born: number[][] = [[], []];
     const last: number[][] = [[], []];
-    for (const era of ERAS) {
+    for (const era of SIM_PROFILES) {
       for (let i = 1; i <= 250; i++) {
         const seed = i * 7919 + 13;
         const start = startLife(seed, era);
@@ -196,7 +177,7 @@ describe('행복·관계의 출생 편차 걷어 내기 (R-045 b, R-063): 출생
     const MIN_GAP = 30;
     const result = (() => {
       const acc = { up: { h: 0, r: 0 }, rand: { h: 0, r: 0 }, down: { h: 0, r: 0 }, n: 0 };
-      for (const era of ERAS) {
+      for (const era of SIM_PROFILES) {
         for (let i = 1; i <= SEEDS_PER_ERA; i++) {
           const seed = i * 7919 + 13;
           const up = playToEnd(startLife(seed, era), moodChooser(1)).state;
@@ -215,8 +196,8 @@ describe('행복·관계의 출생 편차 걷어 내기 (R-045 b, R-063): 출생
       return { up: { h: m(acc.up.h), r: m(acc.up.r) }, rand: { h: m(acc.rand.h), r: m(acc.rand.r) }, down: { h: m(acc.down.h), r: m(acc.down.r) }, n: acc.n };
     })();
 
-    it(`표본은 ${ERAS.length * SEEDS_PER_ERA}판이다`, () => {
-      expect(result.n).toBe(ERAS.length * SEEDS_PER_ERA);
+    it(`표본은 ${SIM_PROFILES.length * SEEDS_PER_ERA}판이다`, () => {
+      expect(result.n).toBe(SIM_PROFILES.length * SEEDS_PER_ERA);
     });
 
     it(`행복: 올리는 전략의 최종 평균이 깎는 전략보다 ${MIN_GAP}점 이상 높다`, () => {
@@ -242,7 +223,7 @@ describe('행복·관계의 출생 편차 걷어 내기 (R-045 b, R-063): 출생
     it('13세 이후 본인이 고른 선택이 졸업(20세) 시점까지 남는다: 올리는 전략의 20세 행복+관계가 깎는 전략보다 평균 5점 이상 높다 (옛 기준 18점 → 측정값 − 3 SE로 교체; 시험 표본 ×2.0에서 7.37, ×1.5에서 6.63)', () => {
       let gap = 0;
       let n = 0;
-      for (const era of ERAS) {
+      for (const era of SIM_PROFILES) {
         for (let i = 1; i <= 60; i++) {
           const seed = i * 7919 + 13;
           const at20 = (sign: 1 | -1) => {
@@ -302,7 +283,7 @@ describe('한 판의 선택지 수 조절 (CHOICE_PACING)', () => {
   const mixedPool = createEventPool(validateEventFiles({ 'pace.json': { events: paceEvents(true) } }));
 
   const choicesIn = (final: GameState) => final.history.filter((h) => h.kind === 'choice').length;
-  const playMany = (n: number, era: (typeof ERAS)[number] = 'present') => {
+  const playMany = (n: number, era: (typeof SIM_PROFILES)[number] = 'alpha') => {
     const counts: number[] = [];
     for (let i = 1; i <= n; i++) {
       const seed = i * 7919 + 13;
@@ -350,7 +331,7 @@ describe('한 판의 선택지 수 조절 (CHOICE_PACING)', () => {
     try {
       CHOICE_PACING.hard = 3;
       CHOICE_PACING.soft = 2;
-      const end = playToEnd(startLife(11, 'present'), chooserFor('random', 11), mixedPool).state;
+      const end = playToEnd(startLife(11, 'alpha'), chooserFor('random', 11), mixedPool).state;
       expect(end.phase).toBe('ending');
       expect(choicesIn(end), '하드 상한(3)까지 선택지를 다 쓴다').toBe(3);
       // R-066: 예전 단언(서술 이벤트 수 >= 0)은 항상 참이었다. 상한 뒤에도 서술 이벤트가 실제로 나오고, 인생이 마지막 선택지 뒤로 이어져 사망한다.
@@ -379,7 +360,7 @@ describe('자동 선택 가중치의 지수 제한 (R-046): 비정상적으로 �
   };
   const pool = createEventPool([huge]);
   const pendingState = (): GameState => {
-    const base = startLife(5, 'present');
+    const base = startLife(5, 'alpha');
     const age = 25;
     return { ...base, age, seen: { 'huge-event': age }, lastChoiceAge: age, pending: { eventId: 'huge-event', key: `huge-event@${age}`, age, choiceIds: ['up', 'down'] } };
   };

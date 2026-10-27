@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { GenerationId } from '../src/core/types';
 import { openCardIn, startHidden } from './m7bCards';
 import { findCardState } from './m7bStates';
 import { findDelegatedYear, showParentCard } from './parentStates';
@@ -17,7 +18,7 @@ const SHOTS = 'qa/screenshots/003';
 test.use({ deviceScaleFactor: 2 });
 
 /** 「연구」 인용이 붙는 흘러간 카드(infant-new-sibling)를 띄워 일시정지로 붙잡는다 — 시트가 아니라 비모달 카드다 */
-async function openResearchCard(page: Page, era: 'present' | 'past' | 'future' = 'present'): Promise<void> {
+async function openResearchCard(page: Page, era: GenerationId = 'alpha'): Promise<void> {
   await page.goto('/');
   const y = await findDelegatedYear(page, { eventId: 'infant-new-sibling', by: 'child', era, firstBorn: true });
   await showParentCard(page, y);
@@ -27,7 +28,7 @@ async function ready(page: Page): Promise<void> {
   await expect(page.locator('[aria-disabled="true"]:not([data-unavailable="true"])'), '입력 가드가 풀린 뒤').toHaveCount(0);
 }
 
-async function open(page: Page, eventId: string, ui: 'sheet' | 'inline' | 'folded', era: 'present' | 'past' | 'future' = 'present'): Promise<void> {
+async function open(page: Page, eventId: string, ui: 'sheet' | 'inline' | 'folded', era: GenerationId = 'alpha'): Promise<void> {
   await startHidden(page);
   const state = await findCardState(page, eventId, era);
   await openCardIn(page, state, ui);
@@ -72,10 +73,10 @@ test('폭 320 · 글자 200%: 가장 긴 연구 인용(Teti 외, 영문 원제)�
   test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 320, height: 568 });
-  await openResearchCard(page, 'past');
+  await openResearchCard(page, 'industrial');
   await setRootFontPercent(page, 200);
   await page.screenshot({ path: `${SHOTS}/dev-M7b-parentcard-research-past-320-text200.png`, fullPage: true });
-  await open(page, 'youth-startup', 'folded', 'future');
+  await open(page, 'youth-startup', 'folded', 'genz');
   await setRootFontPercent(page, 200);
   await page.screenshot({ path: `${SHOTS}/dev-M7b-folded-320-text200.png`, fullPage: true });
 });
@@ -84,10 +85,10 @@ test('지난 세상 · 다가올 세상 머리말: 「지금의 연구로는」 
   test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 360, height: 740 });
-  await openResearchCard(page, 'past');
+  await openResearchCard(page, 'industrial');
   await expect(page.getByTestId('cite-text')).toContainText('지금의 연구로는');
   await page.screenshot({ path: `${SHOTS}/dev-M7b-parentcard-past-prefix-360x740.png` });
-  await open(page, 'youth-startup', 'sheet', 'future');
+  await open(page, 'youth-startup', 'sheet', 'genz');
   await expect(page.getByTestId('cite-text')).toContainText('지금 기준으로는');
   await page.screenshot({ path: `${SHOTS}/dev-M7b-sheet-future-prefix-360x740.png` });
 });

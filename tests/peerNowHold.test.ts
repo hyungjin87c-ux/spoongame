@@ -13,7 +13,7 @@ import {
   type ParentWealth,
   type PeerStatus,
 } from '../src/core';
-import { startLife } from '../scripts/simulateLib';
+import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 
 /**
  * 한 해짜리 끼임 0 — 새 상태는 최소 2년 유지한다 (QA-003-M4 N10c, 마스터 결정).
@@ -177,7 +177,7 @@ describe('한 해짜리 끼임 0: 새 상태는 최소 2년 유지한다 (QA-003
     let seen = 0;
     let runCount = 0;
     const bad: string[] = [];
-    for (const era of ['past', 'present', 'future'] as const) {
+    for (const era of SIM_PROFILES) {
       for (let seed = 1; seed <= 40; seed++) {
         let g = startLife(seed, era);
         const labels: PeerStatus[][] = [[], [], [], []];

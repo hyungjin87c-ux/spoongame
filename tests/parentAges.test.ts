@@ -1,6 +1,6 @@
 import statsJson from '../src/data/koreaStats.json';
 import { describe, expect, it } from 'vitest';
-import { createRng, generateBirth, type Era, type ParentWealth } from '../src/core';
+import { R1_PRESENT, createRng, generateBirth, type ParentWealth, type ProfileId } from '../src/core';
 import { ERA_REPORT_ADJUST, FATHER_GAP, PARENT_AGE_LIMITS } from '../src/data/birthReportTable';
 import { getBirthStats } from '../src/data/birthStats';
 import { buildParentAgeModel, fitBandPmf } from '../src/data/parentAgeModel';
@@ -137,10 +137,10 @@ describe('(가) 부모 나이 모델: 공표 구간 비중·평균·집단 합·
   });
 });
 
-describe('(나) 실제 추첨 대량 표본 (지금 세상 60000건): 구간 비중·35세 이상 비중 ±1%p, 평균 ±0.3세', () => {
+describe('(나) 실제 추첨 대량 표본 (시험 전용 R1 「지금 세상」 프로필 60000건): 구간 비중·35세 이상 비중 ±1%p, 평균 ±0.3세', () => {
   const N = 60000;
   const rng = createRng(20261016);
-  const draws = Array.from({ length: N }, () => generateBirth(rng, 'present'));
+  const draws = Array.from({ length: N }, () => generateBirth(rng, R1_PRESENT));
   const mothers = draws.map((d) => d.report.mother.age);
   const fathers = draws.map((d) => d.report.father.age);
   const shareOf = (ages: number[], a: number, b: number) => (ages.filter((x) => x >= a && x <= b).length / ages.length) * 100;
@@ -193,8 +193,8 @@ describe('(나) 실제 추첨 대량 표본 (지금 세상 60000건): 구간 비
 });
 
 describe('시대 보정: 두 부모에게 같은 살수를 더하고 허용 범위로 맞춘다 (나이 차는 그대로)', () => {
-  const meanAge = (era: Era, n: number, who: 'mother' | 'father') => {
-    const rng = createRng(77 + (era === 'past' ? 1 : era === 'future' ? 2 : 0));
+  const meanAge = (era: ProfileId, n: number, who: 'mother' | 'father') => {
+    const rng = createRng(77 + (era === 'genx' ? 1 : 0));
     const ages: number[] = [];
     let gapsOk = true;
     for (let i = 0; i < n; i++) {
@@ -205,18 +205,15 @@ describe('시대 보정: 두 부모에게 같은 살수를 더하고 허용 범�
     return { mean: meanOf(ages), gapsOk, min: Math.min(...ages), max: Math.max(...ages) };
   };
 
-  it('지금 세상 보정 0살, 다가올 세상 +1살, 지난 세상 −6살(허용 범위 아래에서 잘리는 만큼은 평균이 높다): 평균 어머니 나이가 지금 세상과 보정만큼 다르다', () => {
+  it('보정 0살(1990년 이후 출생 갈래 — 시험 전용 R1 프로필) 대 −6살(1989년 이전 갈래 — X 세대; 허용 범위 아래에서 잘리는 만큼은 평균이 높다): 평균 어머니 나이가 보정만큼 다르다', () => {
     expect(ERA_REPORT_ADJUST.present.parentAgeShift).toBe(0);
-    const base = meanAge('present', 20000, 'mother');
-    const future = meanAge('future', 20000, 'mother');
-    const past = meanAge('past', 20000, 'mother');
-    expect(future.mean - base.mean, '다가올 세상').toBeGreaterThan(ERA_REPORT_ADJUST.future.parentAgeShift - 0.5);
-    expect(future.mean - base.mean, '다가올 세상').toBeLessThan(ERA_REPORT_ADJUST.future.parentAgeShift + 0.5);
+    const base = meanAge(R1_PRESENT, 20000, 'mother');
+    const past = meanAge('genx', 20000, 'mother');
     // 지난 세상은 형제 순서 비중도 시대 보정(셋째 이상 48%)이라 어머니 평균이 순서 효과만큼 더 높다 → 보정 −6살보다 1.5살 안쪽으로 비교
     expect(past.mean).toBeLessThan(base.mean - 4);
     expect(past.mean).toBeGreaterThan(base.mean - 6 - 0.5);
-    for (const r of [base, future, past]) expect(r.gapsOk).toBe(true);
+    for (const r of [base, past]) expect(r.gapsOk).toBe(true);
     expect(past.min).toBeGreaterThanOrEqual(PARENT_AGE_LIMITS.min);
-    expect(future.max).toBeLessThanOrEqual(PARENT_AGE_LIMITS.max);
+    expect(base.max).toBeLessThanOrEqual(PARENT_AGE_LIMITS.max);
   });
 });

@@ -37,8 +37,8 @@ async function stateOf(page: Page, screen: Screen): Promise<GameState> {
   if (hit !== undefined) return hit;
   await page.goto('/');
   let s: GameState;
-  if (screen === 'log') s = await findInfantLog(page, 'present', { minAge: 5, includeAny: ['infant-vaccine'], minPerYear: 3 });
-  else if (screen === 'ending') s = await findInfantEnding(page, 'present');
+  if (screen === 'log') s = await findInfantLog(page, 'alpha', { minAge: 5, includeAny: ['infant-vaccine'], minPerYear: 3 });
+  else if (screen === 'ending') s = await findInfantEnding(page, 'alpha');
   else throw new Error(`${screen}: 카드 화면은 yearOf로 찾는다`);
   cache.set(screen, s);
   return s;
@@ -200,9 +200,9 @@ test.describe('증거 스크린샷 (360×740)', () => {
 
   /** 재력 1단계 대 5단계 같은 이벤트 카드 — 선택지 수가 다르다(2 대 3). 같은 이벤트의 같은 카드 두 장을 나란히 증거로 남긴다. */
   const PAIRS: Array<{ file: string; event: string; era: Era; low: string[]; high: string[] }> = [
-    { file: 'first-birthday', event: 'infant-first-birthday', era: 'present', low: ['small', 'skip'], high: ['grand', 'small', 'skip'] },
-    { file: 'kindergarten', event: 'infant-kindergarten', era: 'present', low: ['near', 'home'], high: ['near', 'famous', 'home'] },
-    { file: 'early-lessons', event: 'infant-early-lessons', era: 'present', low: ['lessons', 'play'], high: ['lessons', 'english', 'play'] },
+    { file: 'first-birthday', event: 'infant-first-birthday', era: 'alpha', low: ['small', 'skip'], high: ['grand', 'small', 'skip'] },
+    { file: 'kindergarten', event: 'infant-kindergarten', era: 'alpha', low: ['near', 'home'], high: ['near', 'famous', 'home'] },
+    { file: 'early-lessons', event: 'infant-early-lessons', era: 'alpha', low: ['lessons', 'play'], high: ['lessons', 'english', 'play'] },
   ];
   for (const pair of PAIRS) {
     test(`재력 1·5 비교 카드: ${pair.event} — dev-M7a-wealth-${pair.file}-1.png / -5.png (1단계 ${pair.low.length}개 대 5단계 ${pair.high.length}개)`, async ({ page }, testInfo) => {
@@ -221,15 +221,15 @@ test.describe('증거 스크린샷 (360×740)', () => {
 
   /** 시대 전용 장면: 지난 세상(연탄불의 겨울밤·장날·걸어서 등교)과 다가올 세상(돌봄 기계·말하는 인형·더위)의 서술이 연표에 한 줄씩 있다 */
   const SCENES: Array<{ file: string; era: Era; ids: string[] }> = [
-    { file: 'scene-past', era: 'past', ids: ['infant-coal-winter', 'infant-market-day', 'school-first-walk'] },
-    { file: 'scene-future', era: 'future', ids: ['infant-care-alert', 'infant-talking-toy', 'infant-heat-day'] },
+    { file: 'scene-past', era: 'industrial', ids: ['infant-coal-winter', 'infant-market-day', 'school-first-walk'] },
+    { file: 'scene-future', era: 'genz', ids: ['infant-care-alert', 'infant-talking-toy', 'infant-heat-day'] },
   ];
   for (const scene of SCENES) {
     test(`시대 전용 장면 — ${scene.era}: dev-M7a-${scene.file}.png`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
       test.setTimeout(180_000);
       await page.goto('/');
-      const state = await findInfantLog(page, scene.era, { minAge: scene.era === 'past' ? 8 : 7, includeAny: scene.ids, from: 1, to: 6000 });
+      const state = await findInfantLog(page, scene.era, { minAge: scene.era === 'industrial' ? 8 : 7, includeAny: scene.ids, from: 1, to: 6000 });
       const entry = state.history.find((h) => scene.ids.includes(h.eventId ?? ''))!;
       await shotLog(page, state, `dev-M7a-${scene.file}`);
       const rows = await readLogRows(page);
@@ -255,7 +255,7 @@ test.describe('포커스 링이 하단 띠에 가려지지 않는다 (C10f)', ()
       test.setTimeout(120_000);
       await page.setViewportSize({ width, height });
       await page.goto('/');
-      const state = await findCardState(page, 'youth-housing', 'present', { minChoices: 3 });
+      const state = await findCardState(page, 'youth-housing', 'alpha', { minChoices: 3 });
       const lastChoice = state.pending!.choiceIds[state.pending!.choiceIds.length - 1];
       await openState(page, state);
       await expect(page.getByTestId('choice-panel')).toBeVisible();
@@ -313,7 +313,7 @@ test.describe('r3 증거 스크린샷 (360×740)', () => {
     test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
     test.setTimeout(240_000);
     await page.goto('/');
-    const own = await findHousingLife(page, 'present', 'own');
+    const own = await findHousingLife(page, 'alpha', 'own');
     expect(own.birth.birthReport!.housing).toBe('own');
     expect(own.moved, '자가 판은 이삿짐이 일어나지 않았다').toBe(false);
     expect(Object.keys(own.life.seen)).not.toContain('infant-moving');
@@ -325,13 +325,13 @@ test.describe('r3 증거 스크린샷 (360×740)', () => {
     expect(ownRows.some((r) => r.text.includes('이삿짐') || r.text.includes('살던 집을 비워야')), '자가 판의 인생 기록에 이삿짐 줄이 없다').toBe(false);
     // 임차 판: 출생신고 화면(사는 집: 임차) + 이삿짐 결정 카드(「빚을 내어 작은 집을 산다」는 재력 3에서만 보인다)
     await page.goto('/');
-    const rent = await findHousingLife(page, 'present', 'rent');
+    const rent = await findHousingLife(page, 'alpha', 'rent');
     expect(rent.birth.birthReport!.housing).toBe('rent');
     expect(rent.moved, '임차 판은 이삿짐이 일어났다').toBe(true);
     await openStateAny(page, rent.birth, 'birth-screen');
     await page.getByTestId('birth-screen').screenshot({ path: `${SHOTS}/dev-M7a-r3-housing-rent-birth.png` });
     await page.goto('/');
-    const card = await findDelegatedYear(page, { eventId: 'infant-moving', era: 'present', minChoices: 2, from: 1, to: 30000 });
+    const card = await findDelegatedYear(page, { eventId: 'infant-moving', era: 'alpha', minChoices: 2, from: 1, to: 30000 });
     expect(card.start.birthReport!.housing === 'rent' || card.start.birthReport!.housing === 'free').toBe(true);
     await shotParentCard(page, card, 'dev-M7a-r3-housing-rent-card');
   });

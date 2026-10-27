@@ -12,7 +12,9 @@ import {
   stageOfAge,
   totalCards,
   type Chooser,
-  type Era,
+  type ProfileId,
+  eraBucketOf,
+  timingEraOfProfile,
   type EventPool,
   type GameState,
   type LifeLength,
@@ -25,7 +27,7 @@ import { EVENT_POOL } from '../src/data/events';
 import { IMPACT_LABEL } from '../src/data/impactText';
 import { EVENT_FREQUENCY } from '../src/data/lifeTable';
 import { HOLD_MS, LIFE_LENGTH_MODES, READ_MODEL, lifeModeOf, type ChoicePacing } from '../src/data/timingTable';
-import { chooserFor, startLife, type Strategy } from './simulateLib';
+import { chooserFor, poolOf, startLife, type Strategy } from './simulateLib';
 
 /**
  * 시간 모델 측정 도우미 (SPEC-003 LM2·LM4·LM7, M8 — docs/data/content-M8.md 6-5절). `npm run report:time`(scripts/timeReport.ts)과 tests/timeModel.test.ts가 함께 쓴다.
@@ -71,7 +73,7 @@ export interface CardFeature {
 
 export interface LifeMeasure {
   seed: number;
-  era: Era;
+  era: ProfileId;
   lifeLength: LifeLength;
   deathAge: number;
   counts: TickCounts;
@@ -89,7 +91,7 @@ const len = (s: string): number => [...s].length;
 /** 카드가 뜬 상태(대기 중인 선택지)에서 카드 한 장의 글자·영향·인용을 잰다. 결과 문구 길이는 나중에 채운다. */
 export function featureOf(s: GameState, pool: EventPool): CardFeature | null {
   const pending = s.pending;
-  if (pending === null || s.character === null || s.era === null) return null;
+  if (pending === null || s.character === null || s.generation === null) return null;
   const ev = pool.byId.get(pending.eventId);
   if (ev === undefined) return null;
   const shown = pending.choiceIds.map((id) => ev.choices?.find((c) => c.id === id)).filter((c) => c !== undefined);
@@ -102,7 +104,7 @@ export function featureOf(s: GameState, pool: EventPool): CardFeature | null {
       impactItems++;
     }
   }
-  const cite = citeOf(ev, s.era, s.character.birthYear, s.age);
+  const cite = citeOf(ev, s.generation, s.character.birthYear, s.age);
   return {
     eventId: ev.id,
     stage: stageOfAge(s.age),
@@ -121,15 +123,16 @@ export function featureOf(s: GameState, pool: EventPool): CardFeature | null {
   };
 }
 
-function citeOf(ev: EventPool['events'][number], era: Era, birthYear: number, age: number) {
-  return citationFor(ev, era, calendarYear(birthYear, age));
+function citeOf(ev: EventPool['events'][number], profile: ProfileId, birthYear: number, age: number) {
+  const year = calendarYear(birthYear, age);
+  return citationFor(ev, eraBucketOf(profile, year), year);
 }
 
 /**
  * 한 판을 끝까지 돌리며 연출 집계(해 수·둘째 줄 수)와 카드별 글자·인용·영향을 잰다. strategy는 simulateLib와 같다(random = 수동 흉내).
  * 불변식: 해 수 합 = 사망 나이 + 1, 카드 수 = 결정 틱 수 = 연표의 선택 기록 수, 하드 상한 이하, 인생 길이가 판에 고정.
  */
-export function measureLife(seed: number, era: Era, strategy: Strategy, lifeLength: LifeLength, pool: EventPool = EVENT_POOL): LifeMeasure {
+export function measureLife(seed: number, era: ProfileId, strategy: Strategy, lifeLength: LifeLength, pool: EventPool = poolOf(era)): LifeMeasure {
   const start = startLife(seed, era, { lifeLength });
   const base = chooserFor(strategy, seed);
   const cards: CardFeature[] = [];
@@ -171,7 +174,7 @@ export function measureLife(seed: number, era: Era, strategy: Strategy, lifeLeng
 }
 
 /** 시대 × 모드 × 전략의 count판 (simulateMany와 같은 시드 줄) */
-export function measureMany(era: Era, count: number, strategy: Strategy, lifeLength: LifeLength, pool: EventPool = EVENT_POOL): LifeMeasure[] {
+export function measureMany(era: ProfileId, count: number, strategy: Strategy, lifeLength: LifeLength, pool: EventPool = poolOf(era)): LifeMeasure[] {
   const out: LifeMeasure[] = [];
   for (let i = 1; i <= count; i++) out.push(measureLife(i * 7919 + 13, era, strategy, lifeLength, pool));
   return out;
@@ -205,7 +208,7 @@ export function distStats(xs: readonly number[]): Dist {
 }
 
 export interface EraSummary {
-  era: Era;
+  era: ProfileId;
   lifeLength: LifeLength;
   lives: number;
   deathAge: number;
@@ -267,7 +270,7 @@ export function preciseCardSec(f: CardFeature, level: 'low' | 'median' | 'high')
  * 시대 하나의 집계. hardRef는 페이싱을 끈 자연 분포(하드 상한이 무한)에서 「하드 상한 −1 이상」 비율을 **현재 하드 상한을 기준으로** 보려는 참조값이다 — 현재 모드의 하드 상한이 유한이면 그것을 쓴다.
  * 후보 비교는 withCandidate 안에서 부르므로 그 후보의 하드 상한이 곧 모드 표의 값이다.
  */
-export function summarize(era: Era, lifeLength: LifeLength, lives: readonly LifeMeasure[], hardRef = LIFE_LENGTH_MODES.short30.pacing.hard): EraSummary {
+export function summarize(era: ProfileId, lifeLength: LifeLength, lives: readonly LifeMeasure[], hardRef = LIFE_LENGTH_MODES.short30.pacing.hard): EraSummary {
   const modeHard = lifeModeOf(lifeLength).pacing.hard;
   const hard = Number.isFinite(modeHard) ? modeHard : hardRef;
   const choice = lives.map((l) => totalCards(l.counts));
@@ -275,9 +278,9 @@ export function summarize(era: Era, lifeLength: LifeLength, lives: readonly Life
   const min = (sec: (l: LifeMeasure) => number) => distStats(lives.map((l) => sec(l) / 60));
   const slow = { speed: 1 as const, skipToDecision: false };
   const fast = { speed: 8 as const, skipToDecision: true };
-  const t = (l: LifeMeasure, level: 'low' | 'median' | 'high' | 'upper') => estimatePlaySeconds(l.counts, slow, lifeLength, era, level);
+  const t = (l: LifeMeasure, level: 'low' | 'median' | 'high' | 'upper') => estimatePlaySeconds(l.counts, slow, lifeLength, timingEraOfProfile(era), level);
   const long = lives.filter((l) => l.deathAge >= 70);
-  const holdSec = (l: LifeMeasure) => estimatePlaySeconds({ ...l.counts, choice: 0 }, slow, lifeLength, era, 'median');
+  const holdSec = (l: LifeMeasure) => estimatePlaySeconds({ ...l.counts, choice: 0 }, slow, lifeLength, timingEraOfProfile(era), 'median');
   const byStage = Object.fromEntries(STAGES.map((st) => [st, mean(lives.map((l) => l.byStage[st]))])) as Record<Stage, number>;
   return {
     era,
@@ -308,7 +311,7 @@ export function summarize(era: Era, lifeLength: LifeLength, lives: readonly Life
     median: min((l) => t(l, 'median')),
     high: min((l) => t(l, 'high')),
     upper: min((l) => t(l, 'upper')),
-    fastMin: min((l) => estimatePlaySeconds(l.counts, fast, lifeLength, era, 'median')),
+    fastMin: min((l) => estimatePlaySeconds(l.counts, fast, lifeLength, timingEraOfProfile(era), 'median')),
     holdMin: mean(lives.map((l) => holdSec(l) / 60)),
     preciseMin: mean(lives.map((l) => (holdSec(l) + l.cards.reduce((a, f) => a + preciseCardSec(f, 'median'), 0)) / 60)),
     constantMin: mean(lives.map((l) => t(l, 'median') / 60)),

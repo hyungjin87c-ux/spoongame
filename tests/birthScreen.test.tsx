@@ -1,11 +1,12 @@
 import birthScreenSrc from '../src/screens/BirthScreen.tsx?raw';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ERAS, PARENT_WEALTHS, beginBirth, birthSentence, createInitialState, enterBirth, peersOf, type Era } from '../src/core';
-import { BIRTH_TEXT, DASHBOARD_PEERS_SHIPPED, GRADE_NAME, REPORT_NOTES, genderLabel, housingText, orderText, peersNoteText, yearMonthText } from '../src/data/birthReportText';
+import { PARENT_WEALTHS, R1_PRESENT, beginBirth, birthSentence, createInitialState, enterBirth, peersOf, wealthMixtureOfGame, type ProfileId } from '../src/core';
+import { profileLabel } from '../src/core/birthProfile';
+import { BIRTH_TEXT, DASHBOARD_PEERS_SHIPPED, GRADE_NAME, REPORT_NOTES, genLine, genderLabel, housingText, orderText, peersNoteText, yearMonthText, yearNoteText } from '../src/data/birthReportText';
 import { lifeGapLine } from '../src/data/birthCompare';
 import { DASH_TEXT } from '../src/data/dashText';
-import { placeLabel } from '../src/data/regionNames';
+import { placeLabel, regionLabelAt } from '../src/data/regionNames';
 import { OCCUPATION_LABEL } from '../src/data/birthReportTable';
 import { getRegionFootnote } from '../src/data/koreaStatsAccess';
 import { startBandOf } from '../src/core/ending';
@@ -13,6 +14,11 @@ import { bandLabel } from '../src/data/endingText';
 import { BirthScreen } from '../src/screens/BirthScreen';
 import { reportPlaceLabel } from '../src/core/birthReport';
 import { codeOnly } from './helpers/code';
+import { SIM_PROFILES } from '../scripts/simulateLib';
+
+/** 이 시험이 보는 프로필: 세대 표본 3종 + 시험 전용 R1 프로필(2026년생 — 시군구·비교 표가 붙은 유일한 프로필) */
+const PROFILES: readonly ProfileId[] = [...SIM_PROFILES, R1_PRESENT];
+/** 장소 표기 (세대 판은 그 해의 행정구역 이름, R1은 2026년 행정구역 + 시군구) */
 
 /** vitest는 CSS의 ?raw 가져오기를 빈 문자열로 돌려주므로 CSS는 파일 시스템으로 읽는다(tests/barRelease.test.ts와 같은 방법) */
 async function readText(relative: string): Promise<string> {
@@ -26,11 +32,11 @@ const docCss = await readText('../src/styles/doc.css');
  * 출생신고 화면 (SPEC-003 BR1~BR7, VP3, 완료 기준 4). 서버 렌더로 마크업을 읽는다. 값은 저장된 출생 결과에서 그대로 나오는지(화면은 계산하지 않는다) 본다.
  */
 
-function render(era: Era, seed: number) {
+function render(era: ProfileId, seed: number) {
   const born = enterBirth(beginBirth(createInitialState(seed), era));
   const c = born.character!;
   const r = born.birthReport!;
-  const html = renderToStaticMarkup(<BirthScreen era={era} character={c} report={r} peerSeed={born.peerSeed!} onNext={() => {}} />);
+  const html = renderToStaticMarkup(<BirthScreen generation={era} character={c} report={r} peerSeed={born.peerSeed!} regionPicked={born.regionPicked === true} onNext={() => {}} />);
   const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const field = (id: string): string => {
     const m = new RegExp(`data-testid="birth-field-${id}"><dt>[^<]*</dt><dd data-testid="[^"]*">([^]*?)</dd>`).exec(html);
@@ -41,20 +47,25 @@ function render(era: Era, seed: number) {
 }
 
 describe('출생신고 문서 구성과 값 (BR1·BR2)', () => {
-  for (const era of ERAS) {
-    it(`${era}: 헤더 「출생 신고」, 큰 이름, 한 줄 서술문, 정보 격자 11칸이 저장된 출생 결과 그대로 보인다`, () => {
+  for (const era of PROFILES) {
+    it(`${era}: 헤더 「출생 신고」, 큰 이름, 세대·연도 줄, 한 줄 서술문, 정보 격자 11칸이 저장된 출생 결과 그대로 보인다`, () => {
       for (let seed = 1; seed <= 20; seed++) {
         const { c, r, html, text, field } = render(era, seed * 101);
         expect(html).toContain('data-testid="site-head"'); // 게임명 로고가 헤더에 있다(DS1)
         expect(html).toContain('data-testid="header-logo"');
         expect(text).toContain(BIRTH_TEXT.docTitle);
         expect(html).toContain(`data-testid="birth-name">${c.name}<`);
-        expect(html.replace(/<[^>]+>/g, '')).toContain(birthSentence(c, r, era));
+        expect(html.replace(/<[^>]+>/g, '')).toContain(birthSentence(c, r));
+        // 연도가 처음 드러나는 자리 (GS6·GD2): 「{세대} · {연도}년생」
+        const gen = /data-testid="birth-generation">([^]*?)<\/(?:p|div|dd)>/.exec(html);
+        expect(gen, `${era} ${seed}: 세대 줄`).not.toBeNull();
+        expect(gen![1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).toContain(genLine(profileLabel(era), c.birthYear));
         // 격자 11칸: 성별·출생 연월·태어난 곳·집안 형편·어머니·아버지·사는 집·출생 체중·형제 순서·외모·교육방식
         expect(html.match(/data-testid="birth-field-/g)).toHaveLength(11);
         expect(field('gender')).toBe(genderLabel(c.gender));
         expect(field('month')).toBe(yearMonthText(c.birthYear, r.month));
-        expect(field('place')).toBe(reportPlaceLabel(r, era));
+        expect(field('place')).toBe(reportPlaceLabel(r, c.birthYear));
+        if (era !== R1_PRESENT) expect(r.sigungu, '세대 판은 시도까지만').toBeUndefined();
         expect(field('mother')).toBe(`${r.mother.age}세 · ${OCCUPATION_LABEL[r.mother.job]}`);
         expect(field('father')).toBe(`${r.father.age}세 · ${OCCUPATION_LABEL[r.father.job]}`);
         expect(field('housing')).toBe(housingText(r.housing));
@@ -65,20 +76,20 @@ describe('출생신고 문서 구성과 값 (BR1·BR2)', () => {
     });
   }
 
-  it('지금 세상은 모든 판이 2026년생이다 (1000판): 출생 연월 칸이 「2026년 N월」이다', () => {
+  it('시험 전용 R1 프로필은 모든 판이 2026년생이다 (1000판): 출생 연월 칸이 「2026년 N월」이다', () => {
     for (let seed = 1; seed <= 1000; seed++) {
-      const born = beginBirth(createInitialState(seed * 3571), 'present');
+      const born = beginBirth(createInitialState(seed * 3571), R1_PRESENT);
       expect(born.character!.birthYear).toBe(2026);
       expect(yearMonthText(born.character!.birthYear, born.birthReport!.month)).toMatch(/^2026년 (1[0-2]|[1-9])월$/);
     }
   });
 
-  it('집안 형편 = 수저 칩(이름 + 점) + bandLabel(startBandOf()) — 「흙수저(하위 25% 안쪽)」 형식, 점 5개 중 N개가 켜진다 (R-170)', () => {
-    for (const era of ERAS) {
+  it('집안 형편 = 수저 칩(이름 + 점) + bandLabel(startBandOf(세대 섞음 비율)) — 「흙수저(하위 33% 안쪽)」 형식, 점 5개 중 N개가 켜진다 (R-170, D4-48)', () => {
+    for (const era of PROFILES) {
       for (let seed = 1; seed <= 40; seed++) {
-        const { c, html, field } = render(era, seed * 17);
+        const { born, c, html, field } = render(era, seed * 17);
         const text = field('wealth').replace(/\s+/g, '');
-        expect(text).toBe(`${GRADE_NAME[c.parentWealth]}(${bandLabel(startBandOf(era, c.parentWealth))})`.replace(/\s+/g, ''));
+        expect(text).toBe(`${GRADE_NAME[c.parentWealth]}(${bandLabel(startBandOf(wealthMixtureOfGame(born), c.parentWealth))})`.replace(/\s+/g, ''));
         const dots = new RegExp(`data-testid="birth-field-wealth"[^]*?aria-label="5단계 중 ${c.parentWealth}단계">([^]*?)</span>`).exec(html);
         expect(dots, `${era} ${c.parentWealth}`).not.toBeNull();
         expect(dots![1].match(/<i class="on">/g) ?? []).toHaveLength(c.parentWealth);
@@ -89,7 +100,7 @@ describe('출생신고 문서 구성과 값 (BR1·BR2)', () => {
   });
 
   it('외모는 점수가 아니라 「상위/하위 약 N%」(또래 사이에서)뿐이다 — 「N점」·「소득 N분위」가 화면 어디에도 없다 (R-135, 완료 기준 4)', () => {
-    for (const era of ERAS) {
+    for (const era of PROFILES) {
       for (let seed = 1; seed <= 60; seed++) {
         const { field, text } = render(era, seed * 29);
         expect(field('looks')).toMatch(/^또래 사이에서 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|가운데쯤)$/);
@@ -103,7 +114,7 @@ describe('출생신고 문서 구성과 값 (BR1·BR2)', () => {
 
 describe('같은 해 태어난 사람들 (VP3)', () => {
   it('또래 4명: 이름·장소·성별·수저 칩이 peersOf의 결과 그대로이고, 안내 문구가 있다', () => {
-    for (const era of ERAS) {
+    for (const era of PROFILES) {
       const { born, c, r, html, text } = render(era, 77);
       const peers = peersOf(born.peerSeed!, c.birthYear, r.month, c.name);
       expect(html.match(/data-testid="peer"/g)).toHaveLength(4);
@@ -123,7 +134,7 @@ describe('같은 해 태어난 사람들 (VP3)', () => {
     // 안내가 가리키는 칸의 이름은 대시보드 칸 제목과 같은 글자이고, 누를 버튼 이름은 출생신고 하단 띠의 「살아가기」다
     expect(full).toContain(`「${DASH_TEXT.peersTitle}」`);
     expect(full).toContain(`${BIRTH_TEXT.next}를 누르면`);
-    for (const era of ERAS) {
+    for (const era of PROFILES) {
       for (let seed = 1; seed <= 40; seed++) {
         const { html, text } = render(era, seed * 47);
         // 좁은 화면(1열)에서는 그 칸이 맨 아래라 「오른쪽 칸」은 틀린 위치 서술이고, 「대시보드」는 화면에 적히지 않는 내부 이름이다(M4 착수 결정 3)
@@ -143,7 +154,7 @@ describe('같은 해 태어난 사람들 (VP3)', () => {
   });
 
   it('R-269: 성별은 「여성/남성」으로 이름 옆에 있고, 장소 줄에는 장소 이름뿐이다(「· 여」·「· 남」 한 글자가 줄 끝에 혼자 남을 일이 없다)', () => {
-    for (const era of ERAS) {
+    for (const era of PROFILES) {
       for (let seed = 1; seed <= 25; seed++) {
         const { born, c, r, html } = render(era, seed * 53);
         const peers = peersOf(born.peerSeed!, c.birthYear, r.month, c.name);
@@ -157,7 +168,7 @@ describe('같은 해 태어난 사람들 (VP3)', () => {
         peers.forEach((p, i) => {
           expect(textOf(items[i], 'peer-name')).toBe(p.name);
           expect(textOf(items[i], 'peer-gender')).toBe(genderLabel(p.gender)); // 「남성」/「여성」
-          expect(textOf(items[i], 'peer-place')).toBe(placeLabel(p, era)); // 장소만 — 가운뎃점·성별 한 글자 없음
+          expect(textOf(items[i], 'peer-place')).toBe(p.sigungu !== undefined && p.sigunguSido !== undefined ? placeLabel({ region: p.region, sigunguSido: p.sigunguSido, sigungu: p.sigungu }) : regionLabelAt(p.region, c.birthYear)); // 장소만 — 가운뎃점·성별 한 글자 없음
           expect(textOf(items[i], 'peer-place')).not.toMatch(/ · |[남여]$/);
         });
       }
@@ -174,7 +185,7 @@ describe('같은 해 태어난 사람들 (VP3)', () => {
 
 describe('서류 격자 — 「태어난 곳」은 두 칸을 쓴다 (R-281)', () => {
   it('「태어난 곳」 칸에만 span-2 표시가 있고(수저·교육방식은 wide 한 줄), CSS는 그 칸이 두 칸(좁은 화면 2열에서는 한 줄 전체, 넓은 화면 3열에서는 3분의 2)을 쓰게 한다', () => {
-    for (const era of ERAS) {
+    for (const era of PROFILES) {
       const { html } = render(era, 29);
       const classOf = (id: string) => new RegExp(`<div(?: class="([^"]*)")? data-testid="birth-field-${id}">`).exec(html)?.[1];
       expect(classOf('place'), `${era}: 태어난 곳`).toBe('span-2');
@@ -194,10 +205,10 @@ describe('서류 격자 — 「태어난 곳」은 두 칸을 쓴다 (R-281)', (
   });
 });
 
-describe('비교 표 (BR5)는 지금 세상에서만 보인다 (R-263)', () => {
+describe('비교 표 (BR5)는 시험 전용 R1 프로필(2026년생)에서만 보인다 (R-263 · N20 — 세대 판은 숨긴다)', () => {
   it('지금 세상: 행 3개, 열 이름 「항목·전체 평균·이 가정 형편」, 각 행에 출처(기관, 조사 이름 (연도))가 있고, 평균이 올해 출생아 평균이 아님을 밝힌다', () => {
     for (let seed = 1; seed <= 40; seed++) {
-      const { html, text, c } = render('present', seed * 13);
+      const { html, text, c } = render(R1_PRESENT, seed * 13);
       expect(html.match(/data-testid="compare-row"/g), `${c.parentWealth}단계`).toHaveLength(3);
       expect(html).toContain('data-testid="compare-card"');
       expect(text).toContain(BIRTH_TEXT.compareTitle);
@@ -216,7 +227,7 @@ describe('비교 표 (BR5)는 지금 세상에서만 보인다 (R-263)', () => {
     expect(BIRTH_TEXT.compareNote).toBe(expected);
     expect(BIRTH_TEXT.compareNote).not.toContain('인구');
     for (let seed = 1; seed <= 10; seed++) {
-      const { html, text } = render('present', seed * 19);
+      const { html, text } = render(R1_PRESENT, seed * 19);
       expect(text, `seed ${seed * 19}`).toContain(expected);
       const note = /data-testid="compare-note">([^]*?)<\/p>/.exec(html);
       expect(note, '안내 문단').not.toBeNull();
@@ -235,7 +246,7 @@ describe('비교 표 (BR5)는 지금 세상에서만 보인다 (R-263)', () => {
     }
     expect(note).not.toMatch(/요[.!?]?(\s|$)/); // 문단 어디에도 해요체 어미가 없다
     for (let seed = 1; seed <= 10; seed++) {
-      const { html, text } = render('present', seed * 23);
+      const { html, text } = render(R1_PRESENT, seed * 23);
       const shown = /data-testid="compare-note">([^]*?)<\/p>/.exec(html);
       expect(shown, '안내 문단').not.toBeNull();
       expect(shown![1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), `seed ${seed * 23}: 화면 문단 = 문구 그대로`).toBe(note);
@@ -247,7 +258,7 @@ describe('비교 표 (BR5)는 지금 세상에서만 보인다 (R-263)', () => {
     for (const w of PARENT_WEALTHS) {
       let found = false;
       for (let seed = 1; seed <= 400 && !found; seed++) {
-        const { born, html, text } = render('present', seed * 7);
+        const { born, html, text } = render(R1_PRESENT, seed * 7);
         if (born.character!.parentWealth !== w) continue;
         found = true;
         expect(html).not.toContain('data-row-id="income-persistence"');
@@ -262,7 +273,7 @@ describe('비교 표 (BR5)는 지금 세상에서만 보인다 (R-263)', () => {
     for (const w of PARENT_WEALTHS) {
       let found = false;
       for (let seed = 1; seed <= 400 && !found; seed++) {
-        const { born, html, text } = render('present', seed * 11);
+        const { born, html, text } = render(R1_PRESENT, seed * 11);
         if (born.character!.parentWealth !== w) continue;
         found = true;
         const m = /data-testid="life-gap">([^]*?)<\/p>/.exec(html);
@@ -279,8 +290,8 @@ describe('비교 표 (BR5)는 지금 세상에서만 보인다 (R-263)', () => {
     expect([...lines][0]).toBe('소득 상위 20%와 하위 20%의 기대수명 차이는 6.48세입니다(2017년). 집단의 평균 차이입니다.');
   });
 
-  it('지난·다가올 세상은 비교 표(카드·행·열 이름·안내·기대수명 서술)가 화면에 없다 — 2024~2025년 통계를 그 시대 가정과 견주지 않는다', () => {
-    for (const era of ['past', 'future'] as const) {
+  it('세대 판은 비교 표(카드·행·열 이름·안내·기대수명 서술)가 화면에 없다 — 2024~2025년 통계를 그 시대 가정과 견주지 않는다 (BR5 숨김, N20)', () => {
+    for (const era of [...SIM_PROFILES, 'millennial', 'genz'] as const) {
       for (let seed = 1; seed <= 25; seed++) {
         const { html, text } = render(era, seed * 17);
         expect(html, `${era} ${seed}`).not.toContain('data-testid="compare-card"');
@@ -297,63 +308,80 @@ describe('비교 표 (BR5)는 지금 세상에서만 보인다 (R-263)', () => {
         expect(html).toContain('data-testid="page-foot"');
       }
     }
-    // 대조군: 지금 세상은 같은 조건에서 비교 표가 있다
-    expect(render('present', 17).html).toContain('data-testid="compare-card"');
+    // 대조군: 시험 전용 R1 프로필은 같은 조건에서 비교 표가 있다
+    expect(render(R1_PRESENT, 17).html).toContain('data-testid="compare-card"');
   });
 });
 
 describe('하단 표기 (BR4): 어떤 값이 통계이고 어떤 값이 설계값인가', () => {
   /** 줄바꿈 묶음(Glue)이 같은 글자를 span으로 감싸므로, 태그를 공백 없이 걷어 낸 글자로 본다 */
-  const footText = (era: Era, seed: number) => {
+  const footText = (era: ProfileId, seed: number) => {
     const { html } = render(era, seed);
     return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
   };
 
-  it('세 시대 모두: 통계 출처·설계 보정·주거 한계가 있고, 지난·다가올 세상은 시대 보정 한 줄이 더 있다', () => {
-    for (const era of ERAS) {
-      const text = footText(era, 5);
-      expect(text).toContain(REPORT_NOTES.stats);
-      expect(text).toContain(REPORT_NOTES.design);
-      expect(text).toContain(REPORT_NOTES.housing);
-      expect(text.includes(REPORT_NOTES.eraPast)).toBe(era === 'past');
-      expect(text.includes(REPORT_NOTES.eraFuture)).toBe(era === 'future');
-    }
-  });
-
-  it('R-264: 지역 표기 — 지금·다가올 세상은 2026년 개편 설계값 한 줄, 지난 세상은 「시·군·구 이름은 지금(2025년) 행정구역 이름이며 당시와 다를 수 있습니다」(2026 개편 문구는 쓰지 않는다)', () => {
-    expect(REPORT_NOTES.regionPast).toBe('시·군·구 이름은 지금(2025년) 행정구역 이름이며 당시와 다를 수 있습니다.');
-    for (const era of ERAS) {
-      const { html } = render(era, 9);
-      const m = /data-testid="report-footnote-region">([^]*?)<\/p>/.exec(html);
-      expect(m, era).not.toBeNull();
-      const regionText = m![1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-      if (era === 'past') {
-        expect(regionText).toBe(REPORT_NOTES.regionPast);
-        expect(regionText).not.toContain('2026년에 바뀐');
-        expect(regionText).not.toContain('설계값');
-      } else {
-        expect(regionText).toBe(getRegionFootnote());
-        expect(regionText).toContain('2026년에 바뀐 시·도와 시·군·구는 인구 비례로 옮긴 설계값');
+  it('모든 프로필: 통계 출처·설계 보정·주거 한계가 있고, 세대 판은 「추정(설계값)」 한 줄이 더 있다 — 1989년 이전 출생은 그 시대에 맞게 조정했다는 말까지 (NR2·BR4)', () => {
+    for (const era of PROFILES) {
+      for (let seed = 5; seed <= 9; seed++) {
+        const { c } = render(era, seed);
+        const text = footText(era, seed);
+        expect(text).toContain(REPORT_NOTES.stats);
+        expect(text).toContain(REPORT_NOTES.design);
+        expect(text).toContain(REPORT_NOTES.housing);
+        if (era === R1_PRESENT) {
+          expect(text).not.toContain(REPORT_NOTES.eraOld);
+          expect(text).not.toContain(REPORT_NOTES.eraRecent);
+        } else {
+          expect(text.includes(REPORT_NOTES.eraOld), `${era} ${c.birthYear}`).toBe(c.birthYear <= 1989);
+          expect(text.includes(REPORT_NOTES.eraRecent), `${era} ${c.birthYear}: 추정(설계값) 한 줄은 모든 세대 판에 있다(1989년 이전 출생 문구는 그 앞부분을 그대로 포함한다)`).toBe(true);
+        }
       }
     }
   });
 
-  it('R-263: 시대 보정 문구의 범위는 이 서류 격자의 항목(출생 월·출생 체중·부모의 나이와 직업·형제 순서·사는 집)이다 — 비교 표나 「모든 항목」을 말하지 않는다', () => {
-    for (const note of [REPORT_NOTES.eraPast, REPORT_NOTES.eraFuture]) {
+  it('GS6: 각주 첫 줄이 태어난 해가 어떻게 정해졌는지 밝힌다 — 출생 통계가 있는 세대는 「출생아 수에 비례해」, 산업화·베이비붐·86은 「같은 확률로」 (R1에는 없다)', () => {
+    for (const g of ['industrial', 'genx', 'alpha'] as const) {
+      const { html } = render(g, 9);
+      const m = /data-testid="report-footnote-year">([^]*?)<\/p>/.exec(html);
+      expect(m, g).not.toBeNull();
+      const t = m![1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      expect(t).toBe(yearNoteText(g === 'industrial' ? 'uniform' : 'births'));
+    }
+    expect(render(R1_PRESENT, 9).html).not.toContain('report-footnote-year');
+  });
+
+  it('R-264: 지역 표기 — 세대 판은 「시·도까지만 적고 그 해의 행정구역 이름에 지금의 시도를 덧붙였습니다」, 시험 전용 R1은 2026년 개편 설계값 한 줄', () => {
+    for (const era of PROFILES) {
+      const { html } = render(era, 9);
+      const m = /data-testid="report-footnote-region">([^]*?)<\/p>/.exec(html);
+      expect(m, era).not.toBeNull();
+      const regionText = m![1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      if (era === R1_PRESENT) {
+        expect(regionText).toBe(getRegionFootnote());
+        expect(regionText).toContain('2026년에 바뀐 시·도와 시·군·구는 인구 비례로 옮긴 설계값');
+      } else {
+        expect(regionText).toBe(REPORT_NOTES.regionGen);
+        expect(regionText).not.toContain('시·군·구 이름');
+      }
+    }
+  });
+
+  it('R-263: 세대 판 추정 문구의 범위는 이 서류 격자의 항목(출생 월·출생 체중·부모의 나이와 직업·형제 순서·사는 집)이다 — 비교 표나 「모든 항목」을 말하지 않는다', () => {
+    for (const note of [REPORT_NOTES.eraOld, REPORT_NOTES.eraRecent]) {
       for (const item of ['출생 월', '출생 체중', '부모의 나이와 직업', '형제 순서', '사는 집']) expect(note, item).toContain(item);
       expect(note).not.toMatch(/비교|통계표|사교육|항목은/);
       expect(note).toMatch(/설계값/);
       expect(note).not.toMatch(/[!！]/);
     }
-    expect(REPORT_NOTES.eraPast).toContain('지금(2025년) 통계를 바탕으로 한 설계값이며 실제 당시 통계가 아닙니다');
-    expect(REPORT_NOTES.eraPast).toContain('그 시대에 맞게 조정했습니다');
-    expect(REPORT_NOTES.eraFuture).toContain('예측이 아닙니다');
+    expect(REPORT_NOTES.eraOld).toContain('지금(2025년) 통계를 바탕으로 한 추정(설계값)이며 실제 당시 통계가 아닙니다');
+    expect(REPORT_NOTES.eraOld).toContain('그 시대에 맞게 조정했습니다');
+    expect(REPORT_NOTES.eraRecent).not.toContain('그 시대에 맞게');
   });
 });
 
 describe('안전한 이동 (BR7)와 접근성', () => {
   it('「살아가기」 버튼이 하단 고정 띠에 있고 입력 가드(GuardedButton)를 쓰며, 화면 제목(h1)이 포커스를 받을 수 있다(tabIndex -1)', () => {
-    const { html } = render('present', 3);
+    const { html } = render('genx', 3);
     expect(html).toContain('data-testid="next-life"');
     expect(html).toMatch(/<div class="bottom-bar" data-testid="bottom-bar">/);
     expect(html).toContain('data-testid="birth-heading"');
@@ -364,7 +392,7 @@ describe('안전한 이동 (BR7)와 접근성', () => {
   });
 
   it('외부 이미지·링크가 없고(CM3) 원시 HTML 삽입이 없다', () => {
-    const { html } = render('future', 9);
+    const { html } = render('alpha', 9);
     // 로고 SVG의 xmlns 선언(XML 이름공간 이름이지 주소로 내려받는 것이 아니다)만 빼고 http(s) 주소가 없다
     expect(html.replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, '')).not.toMatch(/https?:\/\//);
     expect(birthScreenSrc).not.toContain('dangerouslySetInnerHTML');

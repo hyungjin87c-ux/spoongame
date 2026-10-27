@@ -4,29 +4,33 @@ import rouletteScreenSrc from '../src/screens/RouletteScreen.tsx?raw';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
-  ERAS,
+  GENERATION_IDS,
   PARENT_WEALTHS,
+  R1_PRESENT,
   ROULETTE_TIMING,
   WEALTH_REEL_ORDER,
   beginBirth,
-  buildRoulette,
+  buildRoulette as buildRouletteOf,
   createInitialState,
   generateBirthFromSeed,
   largestRemainder,
   reelPosition,
   sumScaled,
+  wealthMixtureOfGame,
   wealthReelIndex,
-  type Era,
+  type GenerationId,
+  type ProfileId,
 } from '../src/core';
-import { ERA_CONFIG } from '../src/data/birthTable';
-import { GRADE_NAME, ROULETTE_TEXT, regionOddsNote } from '../src/data/birthReportText';
+import reference from './fixtures/gm3-mixture-reference.json';
+import { GRADE_NAME, ROULETTE_GEN_TEXT, ROULETTE_TEXT, regionNoteText } from '../src/data/birthReportText';
 import { bandLabel } from '../src/data/endingText';
 import { startBandOf } from '../src/core/ending';
+import { profileLabel } from '../src/core/birthProfile';
+import { GENERATIONS } from '../src/data/generations';
 import { REGION_ORDER } from '../src/data/regionNames';
-import { getUsableIndicator } from '../src/data/koreaStatsAccess';
 import { RouletteScreen } from '../src/screens/RouletteScreen';
 import { restCells, spinCells, spinCycles } from '../src/ui/Reel';
-import { rawRegions } from '../scripts/pipelineLib';
+import { SIM_PROFILES } from '../scripts/simulateLib';
 import { codeOnly } from './helpers/code';
 
 /**
@@ -65,75 +69,113 @@ describe('largestRemainder: 합이 정확히 100이 되게 나타낸다 (RL3)', 
   });
 });
 
-describe('buildRoulette: 확률표와 멈출 자리 (RL2·RL3)', () => {
-  for (const era of ERAS) {
-    it(`${era}: 수저 확률 = 시대 가중치(합 100), 지역 확률 = 원자료 시·도 출생아 비율(합 100.0, 룰렛 순서), 멈출 자리 = 저장된 출생 결과`, () => {
-      const born = beginBirth(createInitialState(99), era);
-      const view = buildRoulette(era, born.character!, born.birthReport!);
+/** 세대 7종의 섞음 비율 독립 기준값 (시안 생성기가 낸 값 — 정수 수저 %, 소수 첫째 자리 지역 %) */
+const REF = (reference as unknown as { gens: Record<string, { wealth: number[]; region: Array<{ key: string; short: string; pct: string }> }> }).gens;
+
+/** 출생 뒤의 GameState(인물이 있다)를 룰렛 입력으로 좁혀 부른다 */
+const buildRoulette = (game: unknown, ...rest: [] | [Parameters<typeof buildRouletteOf>[1]]) => buildRouletteOf(game as Parameters<typeof buildRouletteOf>[0], ...rest);
+
+describe('buildRoulette: 세대 전체 기준의 확률표와 멈출 자리 (RL2·RL3 · GS6·GS7)', () => {
+  for (const g of GENERATION_IDS) {
+    it(`${g}: 수저 확률 = 세대 섞음 비율(합 100), 지역 확률 = 세대 섞음 지역 비율(합 100.0, 룰렛 순서) — 독립 기준값과 같고, 멈출 자리 = 저장된 출생 결과`, () => {
+      const born = beginBirth(createInitialState(99), g);
+      const view = buildRoulette(born);
       expect(view.wealthOdds.map((o) => o.wealth)).toEqual([...PARENT_WEALTHS]);
-      expect(view.wealthOdds.map((o) => o.percent)).toEqual([...ERA_CONFIG[era].wealthWeights]);
+      expect(view.wealthOdds.map((o) => o.percent)).toEqual(REF[g].wealth);
       expect(sumScaled(view.wealthOdds.map((o) => o.percent), 0)).toBe(100);
-      const raw = rawRegions(born.character!.birthYear)!; // 지역 목록은 출생 연도에 따라 다르다(지난 세상은 1950~89 중 그 판의 연도)
-      expect(view.regionOdds).toHaveLength(raw.length);
+      expect(view.regionOdds.map((o) => o.name)).toEqual(REF[g].region.map((r) => r.short));
+      expect(view.regionOdds.map((o) => o.percent)).toEqual(REF[g].region.map((r) => Number(r.pct)));
       expect(sumScaled(view.regionOdds.map((o) => o.percent), 1)).toBe(1000);
-      for (const o of view.regionOdds) expect(o.percent, o.name).toBe(raw.find((r) => r.name === o.name)!.sharePct);
       // 룰렛 순서: REGION_ORDER의 부분 목록(회전·결과·움직임 줄이기가 같은 순서, R-171)
-      expect(view.regionOdds.map((o) => o.name)).toEqual(REGION_ORDER.filter((n) => raw.some((r) => r.name === n)));
+      expect(view.regionOdds.map((o) => o.name)).toEqual(REGION_ORDER.filter((n) => view.regionOdds.some((o) => o.name === n)));
       expect(view.wealthIndex).toBe(born.character!.parentWealth - 1);
-      expect(view.regionOdds[view.regionIndex].name).toBe(born.birthReport!.region);
+      expect(view.regionReel[view.regionIndex]).toBe(born.birthReport!.region);
+      const def = GENERATIONS.find((x) => x.id === g)!;
+      expect(view.range).toEqual({ from: def.birth.from, to: def.birth.to });
     });
   }
 
-  it('RL2: 결과 = 출생 로직 결과 — 세 시대 × 시드 1000개 전부, 룰렛이 멈출 자리는 generateBirth가 정한 값이다 (룰렛은 난수를 뽑지 않는다)', () => {
-    for (const era of ERAS) {
+  it('RL2: 결과 = 출생 로직 결과 — 세대 표본 3종 × 시드 1000개 전부, 룰렛이 멈출 자리는 generateBirth가 정한 값이다 (룰렛은 난수를 뽑지 않는다)', () => {
+    for (const g of SIM_PROFILES) {
       for (let seed = 1; seed <= 1000; seed++) {
-        const b = generateBirthFromSeed(seed * 8191, era);
-        const view = buildRoulette(era, b.character, b.report);
-        expect(view.wealthOdds[view.wealthIndex].wealth, `${era} ${seed}`).toBe(b.character.parentWealth);
-        expect(view.regionOdds[view.regionIndex].name, `${era} ${seed}`).toBe(b.report.region);
+        const b = generateBirthFromSeed(seed * 8191, g);
+        const view = buildRoulette({ generation: g, character: b.character, birthReport: b.report });
+        expect(view.wealthOdds[view.wealthIndex].wealth, `${g} ${seed}`).toBe(b.character.parentWealth);
+        expect(view.regionReel[view.regionIndex], `${g} ${seed}`).toBe(b.report.region);
+      }
+    }
+  });
+
+  it('GS7: 표는 뽑힌 해·시도·수저와 무관하다 — 같은 세대의 어느 결과로 열어도 두 확률표가 같다(도는 동안 바뀌지 않는다)', () => {
+    for (const g of SIM_PROFILES) {
+      const first = buildRoulette(beginBirth(createInitialState(1), g));
+      for (let seed = 2; seed <= 60; seed++) {
+        const v = buildRoulette(beginBirth(createInitialState(seed), g));
+        expect(v.wealthOdds, `${g} ${seed}`).toEqual(first.wealthOdds);
+        expect(v.regionOdds, `${g} ${seed}`).toEqual(first.regionOdds);
       }
     }
   });
 
   it('같은 입력이면 같은 룰렛이다(순수 함수) — 호출을 되풀이해도 결과가 바뀌지 않는다 (다시 굴리기 없음)', () => {
-    const born = beginBirth(createInitialState(5), 'present');
-    const a = buildRoulette('present', born.character!, born.birthReport!);
-    for (let i = 0; i < 20; i++) expect(buildRoulette('present', born.character!, born.birthReport!)).toEqual(a);
+    const born = beginBirth(createInitialState(5), 'millennial');
+    const a = buildRoulette(born);
+    for (let i = 0; i < 20; i++) expect(buildRoulette(born)).toEqual(a);
   });
 
-  it('R-187: 지역 확률의 성격 — 지금 세상은 통계 파생, 지난·다가올 세상은 설계값', () => {
-    const view = (era: Era) => {
-      const b = beginBirth(createInitialState(7), era);
-      return buildRoulette(era, b.character!, b.birthReport!);
-    };
-    expect(view('present').basis).toBe('statistic-derived');
-    expect(view('past').basis).toBe('design');
-    expect(view('future').basis).toBe('design');
+  it('R-187 · GS7: 연도 가중의 성격 — 출생 통계가 있는 1970년 이후 세대는 출생아 수 비례(births), 산업화·베이비붐·86은 균등(uniform)이다', () => {
+    const view = (g: GenerationId) => buildRoulette(beginBirth(createInitialState(7), g));
+    for (const g of ['industrial', 'boomer', 'g86'] as const) expect(view(g).basis, g).toBe('uniform');
+    for (const g of ['genx', 'millennial', 'genz', 'alpha'] as const) expect(view(g).basis, g).toBe('births');
+    // 1981년 앞의 해가 들어 있는 세대(지역 값이 인구 비례) — 산업화~X
+    for (const g of ['industrial', 'boomer', 'g86', 'genx'] as const) expect(view(g).popYears, g).toBe(true);
+    for (const g of ['millennial', 'genz', 'alpha'] as const) expect(view(g).popYears, g).toBe(false);
   });
 
-  it('지역이 그 출생 연도의 목록에 없으면 throw (손상된 저장은 저장 검증이 먼저 거른다)', () => {
-    const born = beginBirth(createInitialState(7), 'present');
-    expect(() => buildRoulette('present', born.character!, { region: '울산광역시' })).toThrow(RangeError);
+  it('시도를 직접 고르면(RG2): 지역 릴은 고른 칸에 멈추고 지역 표는 비며, 수저 표는 그 시도가 있던 해만으로 다시 섞는다 — 세종 × Z 세대는 2012년생만 후보다', () => {
+    const picked = beginBirth(createInitialState(7), 'genz', 'short30', '세종');
+    const view = buildRoulette(picked);
+    expect(picked.character!.birthYear).toBe(2012);
+    expect(view.picked).toBe(true);
+    expect(view.regionOdds).toEqual([]);
+    expect(view.regionReel[view.regionIndex]).toBe('세종');
+    // 수저 표 = 2012년 한 해의 수저 비율(독립 기준값 `wealthFor`)
+    expect(view.wealthOdds.map((o) => o.percent)).toEqual((reference as unknown as { wealthFor: Record<string, number[]> }).wealthFor['2012']);
+    expect(view.wealthOdds.map((o) => o.percent)).toEqual(wealthMixtureOfGame(picked));
+    // 서울을 고르면 모든 해가 후보라 세대 전체 기준과 같다
+    const seoul = beginBirth(createInitialState(7), 'genz', 'short30', '서울');
+    expect(buildRoulette(seoul).wealthOdds.map((o) => o.percent)).toEqual(REF.genz.wealth);
+  });
+
+  it('지역이 그 출생 연도의 목록에 없고 직접 고른 시도도 아니면 throw (손상된 저장은 저장 검증이 먼저 거른다)', () => {
+    const born = beginBirth(createInitialState(7), 'genx');
+    expect(() => buildRoulette({ ...born, birthReport: { ...born.birthReport!, region: '세종' } } as never)).toThrow(RangeError);
+  });
+
+  it('시험 전용 R1 프로필: 수저는 고정 비율, 지역은 2026년 행정구역 16개 (EY17 항등 기준)', () => {
+    const born = beginBirth(createInitialState(99), R1_PRESENT);
+    const view = buildRoulette(born);
+    expect(view.wealthOdds.map((o) => o.percent)).toEqual([25, 30, 28, 14, 3]);
+    expect(view.regionOdds).toHaveLength(16);
+    expect(sumScaled(view.regionOdds.map((o) => o.percent), 1)).toBe(1000);
   });
 });
 
-describe('확률 표기 문구 (RL3)', () => {
-  const stats = getUsableIndicator('birth-by-sido')!;
-  const source = { org: stats.source.org, year: stats.latest.year };
-
-  it('지금 세상: 기준 연도·출처·합산 안내, 지난·다가올 세상: 「지금 통계를 바탕으로 한 설계값」', () => {
-    const now = regionOddsNote('statistic-derived', 'present', source);
-    expect(now).toContain(`${source.year}년`);
-    expect(now).toContain(source.org);
-    expect(now).toContain('광주·전남은 통합(2026)에 맞춰 합산');
-    expect(now).not.toContain('설계값');
-    const past = regionOddsNote('design', 'past', source);
-    expect(past).toContain('지금 통계를 바탕으로 한 설계값');
-    expect(past).toContain('실제 당시 분포가 아니에요');
-    const future = regionOddsNote('design', 'future', source);
-    expect(future).toContain('지금 통계를 바탕으로 한 설계값');
+describe('확률 표기 문구 (RL3 · GS7)', () => {
+  it('지역 표 주석: births/uniform + 1981년 앞은 인구 비례 + 범위 도중에 생긴 시·도 — 설계값·출처 낱말을 정직하게 적는다', () => {
+    const births = regionNoteText({ basis: 'births', popYears: false, later: [] });
+    expect(births).toBe(ROULETTE_GEN_TEXT.regionNoteBirths);
+    expect(regionNoteText({ basis: 'uniform', popYears: false, later: [] })).toBe(ROULETTE_GEN_TEXT.regionNoteUniform);
+    const full = regionNoteText({ basis: 'births', popYears: true, later: ['대구', '인천'] });
+    expect(full).toContain(ROULETTE_GEN_TEXT.regionNotePop);
+    expect(full).toContain(ROULETTE_GEN_TEXT.regionNoteLater('대구·인천'));
     expect(ROULETTE_TEXT.wealthOddsNote).toBe('게임의 설계값이에요(통계가 아님).');
-    for (const t of [now, past, future, ...Object.values(ROULETTE_TEXT)]) expect(t).not.toMatch(/[!！]|접속자/);
+    for (const t of [births, full, ...Object.values(ROULETTE_TEXT)]) expect(t).not.toMatch(/[!！]|접속자/);
+  });
+
+  it('수저 표 주석은 세대 범위의 양 끝과 「설계값」을 말한다 (연도별 값을 해마다 섞은 값)', () => {
+    expect(ROULETTE_GEN_TEXT.wealthNote(1981, 1996)).toBe('1981~1996년생의 설계값을 해마다 섞은 값이에요. 게임의 설계값이에요(통계가 아님).');
+    expect(ROULETTE_GEN_TEXT.oddsHead('X세대')).toBe('X세대 전체 기준');
   });
 });
 
@@ -250,13 +292,13 @@ describe('수저 릴 칸 순서: 왕복 (R-274, 마스터 결정) — 정지 직
     expect(Math.abs(old[cells[total - 1 + 2]] - 1)).toBe(4); // 이웃 단계(1)가 아니다
   });
 
-  it('buildRoulette: 세 시대 × 시드 500개 전부, 릴 칸 목록은 왕복 순서이고 멈출 칸의 단계 = 저장된 출생 결과 (결과 무결성 — 릴은 저장된 결과에서 멈춘다)', () => {
-    for (const era of ERAS) {
+  it('buildRoulette: 세대 표본 3종 × 시드 500개 전부, 릴 칸 목록은 왕복 순서이고 멈출 칸의 단계 = 저장된 출생 결과 (결과 무결성 — 릴은 저장된 결과에서 멈춘다)', () => {
+    for (const g of SIM_PROFILES) {
       for (let seed = 1; seed <= 500; seed++) {
-        const b = generateBirthFromSeed(seed * 6007, era);
-        const view = buildRoulette(era, b.character, b.report);
-        expect(view.wealthReel, `${era} ${seed}`).toEqual([...WEALTH_REEL_ORDER]);
-        expect(view.wealthReel[view.wealthReelIndex], `${era} ${seed}`).toBe(b.character.parentWealth);
+        const b = generateBirthFromSeed(seed * 6007, g);
+        const view = buildRoulette({ generation: g, character: b.character, birthReport: b.report });
+        expect(view.wealthReel, `${g} ${seed}`).toEqual([...WEALTH_REEL_ORDER]);
+        expect(view.wealthReel[view.wealthReelIndex], `${g} ${seed}`).toBe(b.character.parentWealth);
       }
     }
   });
@@ -268,21 +310,25 @@ describe('수저 릴 칸 순서: 왕복 (R-274, 마스터 결정) — 정지 직
   });
 });
 
-describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양)', () => {
-  const render = (era: Era, seed: number, spin: boolean): { html: string; text: string; wealth: number; region: string; year: number } => {
-    const born = beginBirth(createInitialState(seed), era);
-    const html = renderToStaticMarkup(<RouletteScreen era={era} character={born.character!} report={born.birthReport!} spin={spin} onFinishSpin={() => {}} onNext={() => {}} />);
-    // 줄바꿈 묶음(ui/Glue.tsx)의 span은 글자를 바꾸지 않는 표시일 뿐이라 벗겨 낸다 — 태그를 공백으로 바꾸는 규칙이 묶음 안에 공백을 넣어 「흙수저(하위…」가 「흙수저 (하위…」로 읽히지 않게 (tests/titleScreen.test.tsx와 같다)
+describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양 · 세대 뽑기)', () => {
+  const render = (g: ProfileId | 'random', seed: number, spin: boolean, regionPick: string | null = null): { html: string; text: string; wealth: number; region: string; year: number; game: ReturnType<typeof beginBirth> } => {
+    const born = beginBirth(createInitialState(seed), g, 'short30', regionPick);
+    const html = renderToStaticMarkup(<RouletteScreen game={born as never} spin={spin} onFinishSpin={() => {}} onNext={() => {}} />);
+    // 줄바꿈 묶음(ui/Glue.tsx)의 span은 글자를 바꾸지 않는 표시일 뿐이라 벗겨 낸다 — 태그를 공백으로 바꾸는 규칙이 묶음 안에 공백을 넣어 「흙수저(하위…」가 「흙수저 (하위…」로 읽히지 않�
     const unglued = html.replace(/<span class="nowrap">([^<]*)<\/span>/g, '$1').replace(/<span class="keep-phrase">([^<]*)<\/span>/g, '$1');
-    return { html, text: unglued.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), wealth: born.character!.parentWealth, region: born.birthReport!.region, year: born.character!.birthYear };
+    return { html, text: unglued.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), wealth: born.character!.parentWealth, region: born.birthReport!.region, year: born.character!.birthYear, game: born };
   };
+  const GENS = ['industrial', 'boomer', 'g86', 'genx', 'millennial', 'genz', 'alpha'] as const;
 
-  it('결과 상태(복원·움직임 줄이기·건너뛴 뒤): 제목 「태어날 곳이 정해졌습니다」, 상태 줄에 「{수저}({구간}) · {시·도}」, 결과 아래 작은 글, 「출생신고 보기」 — 건너뛰기는 없다', () => {
-    for (const era of ERAS) {
-      for (let seed = 1; seed <= 30; seed++) {
-        const { html, text, wealth, region } = render(era, seed * 13, false);
-        expect(text, `${era} ${seed}`).toContain(ROULETTE_TEXT.doneTitle);
-        expect(text).toContain(`${GRADE_NAME[wealth as 1]}(${bandLabel(startBandOf(era, wealth as 1))})`);
+  it('결과 상태(복원·움직임 줄이기·건너뛴 뒤): 제목 「태어날 곳이 정해졌습니다」, 세대 줄 「{세대} {범위}년생 가운데」, 상태 줄에 「{수저}({구간}) · {시·도}」, 결과 아래 작은 글, 「출생신고 보기」 — 건너뛰기는 없다', () => {
+    for (const g of GENS) {
+      for (let seed = 1; seed <= 20; seed++) {
+        const { html, text, wealth, region, game } = render(g, seed * 13, false);
+        expect(text, `${g} ${seed}`).toContain(ROULETTE_TEXT.doneTitle);
+        const def = GENERATIONS.find((x) => x.id === g)!;
+        expect(text).toContain(profileLabel(g));
+        expect(text).toContain(ROULETTE_GEN_TEXT.among(def.birth.from, def.birth.to));
+        expect(text.replace(/\s+/g, '')).toContain(`${GRADE_NAME[wealth as 1]}(${bandLabel(startBandOf(wealthMixtureOfGame(game), wealth as 1))})`.replace(/\s+/g, ''));
         expect(text).toContain(region);
         expect(text).toContain(ROULETTE_TEXT.afterNote);
         expect(html).toContain('data-testid="to-birth"');
@@ -297,14 +343,47 @@ describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양)', () => {
     }
   });
 
-  it('M3-O13: 결과 문장의 구간 표기 「(상위 3% 안쪽)」은 괄호째 한 묶음(keep-phrase)이다 — 줄이 바뀌어도 「(상위 / 3% 안쪽)」으로 갈리지 않는다 (세 시대 × 시드 30개, 다섯 수저 단계 모두, 수저 이름은 묶음 밖)', () => {
+  it('GS6: 릴은 지역과 수저 둘뿐이고 출생 연도 릴·연도 확률표는 없다 — 룰렛 화면 어디에도 뽑힌 연도가 나오지 않는다 (네 자리 연도는 세대 범위의 양 끝뿐; 1981년 앞 출생 자료 안내의 「1981년」은 정해진 문구)', () => {
+    const rangeEnds = new Set<number>(GENERATIONS.flatMap((g) => [g.birth.from, g.birth.to]));
+    for (const g of GENS) {
+      for (const spin of [false, true]) {
+        for (let seed = 1; seed <= 25; seed++) {
+          const { html, text, year } = render(g, seed * 7, spin);
+          expect(html.match(/data-testid="reel-[a-z]+"/g)?.sort(), `${g} ${seed}`).toEqual(['data-testid="reel-region"', 'data-testid="reel-wealth"']);
+          expect(html).not.toContain('reel-year');
+          expect(html).not.toContain('odds-year');
+          // 정해진 문구(1981년 안내)를 빼고 센다
+          const scan = text.replace(ROULETTE_GEN_TEXT.regionNotePop, '');
+          const years = [...scan.matchAll(/(?<!\d)(19[4-9]\d|20[0-2]\d)(?!\d)/g)].map((m) => Number(m[1]));
+          for (const y of years) expect(rangeEnds.has(y), `${g} ${seed} 룰렛 화면의 연도 ${y} (뽑힌 해 ${year})`).toBe(true);
+          // 뽑힌 해가 범위의 끝과 겹치지 않는 판에서는 그 해가 어디에도 없다(결과 상태·회전 상태 모두)
+          if (!rangeEnds.has(year)) expect(scan, `${g} ${seed}: 뽑힌 해 ${year}`).not.toContain(String(year));
+        }
+      }
+    }
+  });
+
+  it('GS7: 회전 중에도 결과 상태에도 두 확률표(수저·지역)가 글자까지 같다 — 도는 동안 표가 바뀌지 않는다', () => {
+    const block = (html: string, id: string): string => new RegExp(`data-testid="${id}">([^]*?)</table>`).exec(html)![1];
+    for (const g of GENS) {
+      const rest = render(g, 5, false).html;
+      const spin = render(g, 5, true).html;
+      for (const id of ['odds-wealth', 'odds-region']) expect(block(spin, id), `${g} ${id}`).toBe(block(rest, id));
+      // 같은 세대의 다른 시드(다른 해·시도·수저)로 열어도 표는 같다
+      const other = render(g, 77, false).html;
+      for (const id of ['odds-wealth', 'odds-region']) expect(block(other, id), `${g} ${id} 다른 시드`).toBe(block(rest, id));
+    }
+  });
+
+  it('M3-O13: 결과 문장의 구간 표기 「(상위 3% 안쪽)」은 괄호째 한 묶음(keep-phrase)이다 — 줄이 바뀌어도 「(상위 / 3% 안쪽)」으로 갈리지 않는다 (세대 7종 × 시드 30개, 다섯 수저 단계 모두, 수저 이름 · 구간이 괄호째)', () => {
     const grades = new Set<number>();
-    for (const era of ERAS) {
+    for (const g of GENS) {
       for (let seed = 1; seed <= 30; seed++) {
-        const { html, wealth } = render(era, seed * 13, false);
+        const { html, wealth, game } = render(g, seed * 13, false);
         const status = /data-testid="roulette-status">([^]*?)<\/p>/.exec(html)![1].replace(/<span class="nowrap">([^<]*)<\/span>/g, '$1');
-        const band = bandLabel(startBandOf(era, wealth as 1));
-        expect(status, `${era} ${seed}: 구간 「(${band})」가 한 묶음`).toContain(`${GRADE_NAME[wealth as 1]}<span class="keep-phrase">(${band})</span>`);
+        const band = bandLabel(startBandOf(wealthMixtureOfGame(game), wealth as 1));
+        expect(status, `${g} ${seed}: 구간 「(${band})」가 한 묶음`).toContain(`<span class="grade-line__range" data-testid="grade-range"><span class="keep-phrase">(${band})</span></span>`);
+        expect(status.replace(/<[^>]+>/g, '')).toContain(GRADE_NAME[wealth as 1]);
         // 괄호가 묶음 밖에 따로 남지 않는다(묶음 하나뿐; 눈에 안 보이는 한 줄 폭 탐침의 data-text는 글자가 아니라 속성이다)
         expect(status.replace(/<span class="fit-pair__probe"[^>]*><\/span>/, '').replace(/<span class="keep-phrase">\([^<]*\)<\/span>/, '')).not.toMatch(/[()]/);
         grades.add(wealth);
@@ -314,20 +393,20 @@ describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양)', () => {
   });
 
   it('R-274: 결과 상태의 수저 릴은 가운데 칸이 저장된 수저 단계이고 위아래 두 칸이 이웃 단계로 이어진다 (흙수저 위아래에 다이아몬드수저가 없다)', () => {
-    for (const era of ERAS) {
+    for (const g of ['industrial', 'genx', 'alpha'] as const) {
       for (let seed = 1; seed <= 60; seed++) {
-        const { html, wealth } = render(era, seed * 29, false);
+        const { html, wealth } = render(g, seed * 29, false);
         const reel = /data-testid="reel-wealth"[^>]*>([^]*?)<\/ul>/.exec(html)![1];
         const grades = [...reel.matchAll(/<li class="reel__item[^"]*"[^>]*>[^]*?data-grade="(\d)"/g)].map((m) => Number(m[1]));
-        expect(grades, `${era} ${seed}`).toHaveLength(5);
+        expect(grades, `${g} ${seed}`).toHaveLength(5);
         expect(grades[2]).toBe(wealth);
-        for (let k = 0; k < 4; k++) expect(Math.abs(grades[k] - grades[k + 1]), `${era} ${seed} ${grades.join('')}`).toBe(1);
+        for (let k = 0; k < 4; k++) expect(Math.abs(grades[k] - grades[k + 1]), `${g} ${seed} ${grades.join('')}`).toBe(1);
       }
     }
   });
 
   it('회전 상태: 제목 「태어날 집과 땅을 고르는 중」, 건너뛰기 버튼, 결과 문장·고지는 보이지 않는다(고지 줄은 자리만 차지하고 aria-hidden) — 릴은 aria-hidden', () => {
-    const { html, text } = render('present', 1, true);
+    const { html, text } = render('genx', 1, true);
     expect(text).toContain(ROULETTE_TEXT.spinTitle);
     expect(text).toContain(ROULETTE_TEXT.spinNote);
     expect(text).not.toContain(ROULETTE_TEXT.doneTitle);
@@ -338,7 +417,40 @@ describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양)', () => {
     expect(html).toMatch(/class="t-xs t-faint roulette__after" data-testid="page-foot" aria-hidden="true"/);
   });
 
-  it('QM3-4(마스터 확인 2): 회전 중 안내 문단은 화면 안내문이라 해요체로 통일한다 — 문구 전체 단언 「…고를 수 없어요. 확률대로 돌아가요.」, 합쇼체 종결(「…ㅂ니다.」)이 없고 화면에 그대로 나온다 (이전 구현은 「…돌아갑니다.」)', () => {
+  it('GS3 · N3: 「랜덤 세대」로 태어난 판의 회전은 먼저 세대 뽑기 단계(일곱 세대 릴, 세대별 1/7 표)를 거친다 — 고른 세대로 태어난 판에는 이 단계가 없다', () => {
+    const rnd = render('random', 3, true);
+    expect(rnd.game.fromRandom).toBe(true);
+    expect(rnd.text).toContain(ROULETTE_GEN_TEXT.drawTitle);
+    expect(rnd.text).toContain(ROULETTE_GEN_TEXT.drawNote);
+    expect(rnd.html).toContain('data-testid="reel-generation"');
+    expect(rnd.html).toContain('data-testid="odds-generation"');
+    expect(rnd.html.match(/1\/7/g)).toHaveLength(7);
+    expect(rnd.html).toContain('data-testid="skip-roulette"');
+    // 세대 뽑기 단계에도 뽑힌 해는 없다
+    const drawRangeEnds = GENERATIONS.flatMap((x) => [x.birth.from, x.birth.to]);
+    if (!drawRangeEnds.includes(rnd.year)) expect(rnd.text).not.toContain(String(rnd.year));
+    const chosen = render('genx', 3, true);
+    expect(chosen.html).not.toContain('reel-generation');
+    // 복원된 판(연출 아님)은 곧바로 결과 상태다
+    const restored = render('random', 3, false);
+    expect(restored.html).not.toContain('reel-generation');
+    expect(restored.text).toContain(ROULETTE_TEXT.doneTitle);
+    expect(restored.text).toContain(ROULETTE_GEN_TEXT.fromRandom);
+  });
+
+  it('직접 고른 시도(RG2 d): 지역 릴은 고른 칸에 멈춰 있고, 지역 표 자리에는 「직접 고른 시도」만 있다 — 확률을 지어내지 않는다', () => {
+    const { html, text, region } = render('genx', 4, false, '서울');
+    expect(region).toBe('서울');
+    expect(html).toMatch(/data-testid="reel-region" data-state="stopped"/);
+    expect(text).toContain(ROULETTE_GEN_TEXT.pickedRegion);
+    expect(html).not.toContain('data-testid="odds-region-note"');
+    const regionTable = /data-testid="odds-region">([^]*?)<\/table>/.exec(html);
+    expect(regionTable === null || !/<td>\d+\.\d%<\/td>/.test(regionTable[1])).toBe(true);
+    // 회전 중에는 시도를 직접 골랐다는 안내가 나온다
+    expect(render('genx', 4, true, '서울').text).toContain(ROULETTE_GEN_TEXT.spinNotePicked);
+  });
+
+  it('QM3-4(마스터 확인 2): 회전 중 안내 문단은 화면 안내문이라 해요체로 통일한다 — 문구 전체 단언 「…고를 수 없어요. 확률대로 돌아가요.」, 합쇼체 종결(「…ㅂ니다.」)이 없고 화면에 그대로 나온다', () => {
     const note = '어느 집, 어느 땅에 태어날지는 고를 수 없어요. 확률대로 돌아가요.';
     expect(ROULETTE_TEXT.spinNote).toBe(note);
     const sentences = note.split(/(?<=\.)\s+/);
@@ -347,31 +459,30 @@ describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양)', () => {
       expect(sentence, `해요체 종결: ${sentence}`).toMatch(/요\.$/);
       expect(sentence, `합쇼체 종결 없음: ${sentence}`).not.toMatch(/(니다)\.$/);
     }
-    const { text } = render('present', 1, true);
+    const { text } = render('genx', 1, true);
     expect(text).toContain(note);
     expect(text).not.toContain('돌아갑니다');
   });
 
-  it('확률표: 수저 5행(합 100%)과 지역 행(합 100.0%)이 모두 화면에 있고, 주석(설계값·출처)이 붙는다 — 세 시대', () => {
-    for (const era of ERAS) {
-      const { html, text, year } = render(era, 3, false);
+  it('확률표: 수저 5행(합 100%)과 지역 행(합 100.0%)이 모두 화면에 있고, 주석(설계값·표 머리 「{세대} 전체 기준」)이 붙는다 — 세대 7종', () => {
+    for (const g of GENS) {
+      const { html, text } = render(g, 3, false);
       const wealthTable = /data-testid="odds-wealth">([^]*?)<\/table>/.exec(html)![1];
       const wealthPercents = [...wealthTable.matchAll(/<td>(\d+)%<\/td>/g)].map((m) => Number(m[1]));
-      expect(wealthPercents).toHaveLength(5);
-      expect(wealthPercents.reduce((a, b) => a + b, 0)).toBe(100);
+      expect(wealthPercents).toEqual(REF[g].wealth);
       const regionTable = /data-testid="odds-region">([^]*?)<\/table>/.exec(html)![1];
       const regionPercents = [...regionTable.matchAll(/<td>(\d+\.\d)%<\/td>/g)].map((m) => Math.round(Number(m[1]) * 10));
       expect(regionPercents.reduce((a, b) => a + b, 0)).toBe(1000);
-      expect(regionPercents.length).toBe(rawRegions(year)!.length); // 지역 칸 수는 그 판의 출생 연도 기준
-      expect(text).toContain(ROULETTE_TEXT.wealthOddsNote);
-      expect(text).toContain(era === 'present' ? '국가데이터처' : '지금 통계를 바탕으로 한 설계값');
+      expect(regionPercents.length).toBe(REF[g].region.length);
+      expect(text).toContain(ROULETTE_GEN_TEXT.oddsHead(profileLabel(g)));
+      expect(text).toContain('설계값');
       expect(text).not.toMatch(/외모\s*\d+\s*점|접속자/);
     }
   });
 
-  it('RL1 · M3-O09 · R-301: 움직임 줄이기(결과 상태)에서도 후보 전체는 릴 아래 확률표로 보인다 — 릴은 결과 칸 앞뒤 2칸(5칸: 지역은 확률표 순서의 이웃 칸, 수저는 왕복 순서의 이웃 단계)뿐이고, 수저 후보 5단계와 지역 후보 전체(14~16곳)는 확률표(합 100%)가 보인다', () => {
-    for (const era of ERAS) {
-      const { html, wealth, region, year } = render(era, 7, false);
+  it('RL1 · M3-O09 · R-301: 움직임 줄이기(결과 상태)에서도 후보 전체는 릴 아래 확률표로 보인다 — 릴은 결과 칸 앞뒤 2칸(5칸: 지역은 확률표 순서의 이웃 칸, 수저는 왕복 순서의 이웃 단계)뿐이고, 릴의 칸은 모두 확률표에 있다', () => {
+    for (const g of GENS) {
+      const { html, wealth, region } = render(g, 7, false);
       const items = (testId: string) => {
         const reel = new RegExp(`data-testid="${testId}"[^>]*>([^]*?)</ul>`).exec(html)![1];
         return [...reel.matchAll(/<li class="reel__item[^"]*"[^>]*>([^]*?)<\/li>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
@@ -380,44 +491,44 @@ describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양)', () => {
       const regionReel = items('reel-region');
       const table = /data-testid="odds-region">([^]*?)<\/table>/.exec(html)![1];
       const tableNames = [...table.matchAll(/<th scope="row">([^<]*)<\/th>/g)].map((m) => m[1]);
-      expect(tableNames.length, `${era}: 확률표의 지역 후보`).toBe(rawRegions(year)!.length);
-      expect(tableNames.length, `${era}: 지역 후보가 릴 5칸보다 많다 — 릴에는 일부만 보인다`).toBeGreaterThan(5);
-      expect(regionReel, `${era}: 지역 릴은 결과 칸 앞뒤 2칸`).toHaveLength(5);
-      expect(regionReel[2], `${era}: 가운데 칸이 결과`).toBe(region);
-      for (const name of regionReel) expect(tableNames, `${era}: 릴의 칸 「${name}」은 확률표에도 있다`).toContain(name);
+      expect(tableNames.length, `${g}: 확률표의 지역 후보`).toBe(REF[g].region.length);
+      expect(tableNames.length, `${g}: 지역 후보가 릴 5칸보다 많다 — 릴에는 일부만 보인다`).toBeGreaterThan(5);
+      expect(regionReel, `${g}: 지역 릴은 결과 칸 앞뒤 2칸`).toHaveLength(5);
+      expect(regionReel[2], `${g}: 가운데 칸이 결과`).toBe(region);
+      for (const name of regionReel) expect(tableNames, `${g}: 릴의 칸 「${name}」은 확률표에도 있다`).toContain(name);
       expect(new Set(tableNames).size, '확률표의 후보 이름은 겹치지 않는다').toBe(tableNames.length);
-      // 수저 릴도 결과 칸 앞뒤 2칸(5칸)이다 — 왕복 순서라 5단계가 다 보이는 것은 은수저 결과뿐이고, 후보 5단계 전체는 확률표 5행이 보인다 (아래 시험이 다섯 단계를 모두 훑는다)
+      // 수저 릴도 결과 칸 앞뒤 2칸(5칸)이다 — 왕복 순서라 5단계가 다 보이는 것은 은수저 결과뿐이고, 후보 5단계 전체는 확률표 5행이 보인다
       const wealthTable = /data-testid="odds-wealth">([^]*?)<\/table>/.exec(html)![1];
       const wealthNames = [...wealthTable.matchAll(/<th scope="row">([^<]*)<\/th>/g)].map((m) => m[1]);
-      expect(wealthNames, `${era}: 수저 확률표는 후보 5단계 전체`).toEqual([1, 2, 3, 4, 5].map((g) => GRADE_NAME[g as 1]));
-      expect(wealthReel, `${era}: 수저 릴은 결과 칸 앞뒤 2칸`).toHaveLength(5);
-      expect(wealthReel[2], `${era}: 가운데 칸이 결과`).toBe(GRADE_NAME[wealth as 1]);
-      for (const name of wealthReel) expect(wealthNames, `${era}: 릴의 칸 「${name}」은 확률표에도 있다`).toContain(name);
+      expect(wealthNames, `${g}: 수저 확률표는 후보 5단계 전체`).toEqual([1, 2, 3, 4, 5].map((n) => GRADE_NAME[n as 1]));
+      expect(wealthReel, `${g}: 수저 릴은 결과 칸 앞뒤 2칸`).toHaveLength(5);
+      expect(wealthReel[2], `${g}: 가운데 칸이 결과`).toBe(GRADE_NAME[wealth as 1]);
+      for (const name of wealthReel) expect(wealthNames, `${g}: 릴의 칸 「${name}」은 확률표에도 있다`).toContain(name);
     }
   });
 
-  it('R-301: 결과 상태의 수저 릴은 결과 ±2칸이 이웃 단계(한 단계씩 이어진다)이고, 다섯 수저 단계 어느 결과에서도 5칸이다 — 5단계가 다 보이는 것은 은수저 결과뿐이라 나머지 단계의 후보는 확률표로 보인다', () => {
-    const level = (name: string): number => [1, 2, 3, 4, 5].find((g) => GRADE_NAME[g as 1] === name)!;
+  it('R-301: 결과 상태의 수저 릴은 결과 ±2칸이 이웃 단계(한 단계씩 이어진다)이고, 다섯 수저 단계 어느 결과에서도 5칸이다 — 5단계가 다 보이는 것은 은수저 결과뿐이라 나머지 단계의 후보는 확률표가 보인다', () => {
+    const level = (name: string): number => [1, 2, 3, 4, 5].find((n) => GRADE_NAME[n as 1] === name)!;
     const seen = new Set<number>();
-    for (const era of ERAS) {
-      for (let seed = 1; seed <= 400 && seen.size < 5 * ERAS.length; seed++) {
-        const { html, wealth } = render(era, seed * 17, false);
+    for (const g of ['industrial', 'genx', 'alpha'] as const) {
+      for (let seed = 1; seed <= 600 && seen.size < 5; seed++) {
+        const { html, wealth } = render(g, seed * 17, false);
         const reel = /data-testid="reel-wealth" data-state="stopped"[^>]*>([^]*?)<\/ul>/.exec(html)![1];
         const names = [...reel.matchAll(/<li class="reel__item[^"]*"[^>]*>([^]*?)<\/li>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
-        expect(names, `${era} ${seed}`).toHaveLength(5);
+        expect(names, `${g} ${seed}`).toHaveLength(5);
         const levels = names.map(level);
-        expect(levels[2], `${era} ${seed}: 가운데 칸이 결과`).toBe(wealth);
-        for (let k = 0; k < 4; k++) expect(Math.abs(levels[k] - levels[k + 1]), `${era} ${seed} ${levels.join('')}: 이웃 단계`).toBe(1);
-        expect(levels, `${era} ${seed}: 왕복 순서의 결과 앞뒤 2칸`).toEqual(restCells(WEALTH_REEL_ORDER.length, wealthReelIndex(wealth as 1)).map((i) => WEALTH_REEL_ORDER[i]));
-        expect(new Set(levels).size === 5, `${era} ${seed} ${levels.join('')}: 5단계가 모두 보이는 것은 은수저(3단계) 결과뿐`).toBe(wealth === 3);
-        seen.add(wealth * 10 + ERAS.indexOf(era));
+        expect(levels[2], `${g} ${seed}: 가운데 칸이 결과`).toBe(wealth);
+        for (let k = 0; k < 4; k++) expect(Math.abs(levels[k] - levels[k + 1]), `${g} ${seed} ${levels.join('')}: 이웃 단계`).toBe(1);
+        expect(levels, `${g} ${seed}: 왕복 순서의 결과 앞뒤 2칸`).toEqual(restCells(WEALTH_REEL_ORDER.length, wealthReelIndex(wealth as 1)).map((i) => WEALTH_REEL_ORDER[i]));
+        expect(new Set(levels).size === 5, `${g} ${seed} ${levels.join('')}: 5단계가 모두 보이는 것은 은수저(3단계) 결과뿐`).toBe(wealth === 3);
+        seen.add(wealth);
       }
     }
-    expect([...new Set([...seen].map((v) => Math.floor(v / 10)))].sort(), '공허 통과 방지: 다섯 수저 단계가 모두 한 번 이상 나왔다').toEqual([1, 2, 3, 4, 5]);
+    expect([...seen].sort(), '공허 통과 방지: 다섯 수저 단계가 모두 한 번 이상 나왔다').toEqual([1, 2, 3, 4, 5]);
   });
 
   it('수저 이름 「다이아몬드수저」가 확률표·릴에 그대로 나온다 (RL4)', () => {
-    const { text } = render('present', 4, false);
+    const { text } = render('genx', 4, false);
     expect(text).toContain('다이아몬드수저');
     expect(text).toContain(GRADE_NAME[5]);
   });

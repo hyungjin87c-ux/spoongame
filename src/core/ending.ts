@@ -1,8 +1,9 @@
 import { FINAL_DISTRIBUTION } from '../data/finalDistribution';
 import { STAGE_TABLE } from '../data/lifeTable';
 import { standingOf, wealthBottomPercent, wealthTopPercent, type Standing } from './birth';
+import { wealthMixtureOfGame } from './birthProfile';
 import { stageOfAge } from './events';
-import { STAGES, type Character, type Death, type Era, type GameState, type HistoryEntry, type ParentWealth, type Stage, type Stats } from './types';
+import { STAGES, type Character, type Death, type GameState, type ProfileId, type HistoryEntry, type ParentWealth, type Stage, type Stats } from './types';
 
 /**
  * 엔딩 회고의 계산 (순수 함수). React·타이머·Date·Math.random을 쓰지 않는다. 문구는 data/endingText.ts, 화면은 screens/EndingScreen.tsx.
@@ -75,8 +76,8 @@ export function shareBelow(quantiles: readonly number[], value: number): number 
  * 0원이 「하위 약 26%」(지금 세상)처럼 「26%는 빚으로 마쳤다」는 사실 그대로 읽힌다. 0원이 아닌 값에서는 예전 규칙과 1칸 이내로 같다(분위수표가 연속이라 동률은 0원 근처뿐).
  * 표(table)를 주입할 수 있어 단위 테스트가 직접 적은 작은 표로 경계를 확인한다.
  */
-export function finalWealthStanding(era: Era, net: number, table: Record<Era, FinalDistribution> = FINAL_DISTRIBUTION): Standing {
-  const q = table[era].quantiles;
+export function finalWealthStanding(profile: ProfileId, net: number, table: Record<ProfileId, FinalDistribution> = FINAL_DISTRIBUTION): Standing {
+  const q = table[profile].quantiles;
   return standingOf(shareAtLeast(q, net), shareBelow(q, net));
 }
 
@@ -133,11 +134,11 @@ export function bandFromRange(low: number, high: number): StartBand {
 }
 
 /**
- * 이 시대·이 재력 단계 출생아의 출발선 구간. 숫자는 재력 가중치표의 누적에서 계산한다(하드코딩 없음).
+ * 이 세대 전체 기준(섞은 값 — `wealthMixtureOfGame`, GS7·D4-48)에서 이 재력 단계 출생아의 출발선 구간. 숫자는 수저 비율의 누적에서 계산한다(하드코딩 없음).
  * 구간 = [이 단계보다 낮은 단계의 비율, 이 단계까지의 비율]을 정수로 반올림한 값 (현재 표는 가중치가 정수라 반올림이 값을 바꾸지 않는다).
  */
-export function startBandOf(era: Era, wealth: ParentWealth): StartBand {
-  return bandFromRange(Math.round(100 - wealthTopPercent(era, wealth)), Math.round(wealthBottomPercent(era, wealth)));
+export function startBandOf(wealthMixture: readonly number[], wealth: ParentWealth): StartBand {
+  return bandFromRange(Math.round(100 - wealthTopPercent(wealthMixture, wealth)), Math.round(wealthBottomPercent(wealthMixture, wealth)));
 }
 
 export type Movement = 'up' | 'same' | 'down';
@@ -206,7 +207,7 @@ export function stageRangeOf(stage: Stage): { from: number; to: number | null } 
 // ---------- 회고 한 벌 ----------
 
 /** 엔딩 화면이 필요로 하는 상태: 사망·시대·캐릭터·출생 스냅샷이 모두 있다(저장 검증이 ending 단계에서 보장한다). */
-export type EndingGame = GameState & { era: Era; character: Character; death: Death; birthStats: Stats };
+export type EndingGame = GameState & { generation: ProfileId; character: Character; death: Death; birthStats: Stats };
 
 /** 학력·행복·관계: 처음 값과 마지막 값을 그대로 견줄 수 있는(뜻이 변하지 않는) 스탯 */
 export const COMPARABLE_STATS = ['education', 'happiness', 'relationships'] as const;
@@ -231,11 +232,11 @@ export interface EndingReview {
   timeline: TimelineGroup[];
 }
 
-export function reviewEnding(game: EndingGame, table: Record<Era, FinalDistribution> = FINAL_DISTRIBUTION): EndingReview {
-  const start = startBandOf(game.era, game.character.parentWealth);
+export function reviewEnding(game: EndingGame, table: Record<ProfileId, FinalDistribution> = FINAL_DISTRIBUTION): EndingReview {
+  const start = startBandOf(wealthMixtureOfGame(game), game.character.parentWealth);
   let journey: WealthJourney = { kind: 'early', start };
   if (reachedIndependence(game.death.age) && game.assets !== null) {
-    const end = finalWealthStanding(game.era, game.assets.net, table);
+    const end = finalWealthStanding(game.generation, game.assets.net, table);
     journey = { kind: 'compared', start, end, movement: movementOf(start, end) };
   }
   return {
@@ -251,9 +252,9 @@ export function reviewEnding(game: EndingGame, table: Record<Era, FinalDistribut
 }
 
 /** 분포표의 모양이 맞는가 (생성 스크립트와 테스트가 쓴다): 시대마다 0~100번째 백분위 101칸, 정수, 줄지 않음, lives는 1 이상이고 simulated 이하 */
-export function validateFinalDistribution(table: Record<Era, FinalDistribution>): string[] {
+export function validateFinalDistribution(table: Record<string, FinalDistribution>): string[] {
   const problems: string[] = [];
-  for (const era of Object.keys(table) as Era[]) {
+  for (const era of Object.keys(table)) {
     const d = table[era];
     if (d.quantiles.length !== QUANTILE_COUNT) problems.push(`${era}: 칸 수가 ${d.quantiles.length}개다 (${QUANTILE_COUNT}칸이어야 한다)`);
     if (!d.quantiles.every((n) => Number.isInteger(n))) problems.push(`${era}: 정수가 아닌 칸이 있다`);

@@ -1,10 +1,11 @@
 import namesJson from '../src/data/names.json';
 import forbiddenJson from '../src/data/forbiddenNames.json';
 import scourtJson from '../src/data/sources/scourt-birth-names.json';
-import statsJson from '../src/data/koreaStats.json';
+import mixtureReference from '../tests/fixtures/gm3-mixture-reference.json';
 import {
   DEFAULT_SETTINGS,
-  ERAS,
+  GENERATION_IDS,
+  R1_PRESENT,
   STAT_KEYS,
   birthSentence,
   buildRoulette,
@@ -13,8 +14,11 @@ import {
   createSession,
   decisionFor,
   estimatePlaySeconds,
+  eventPool,
   familyOf,
+  lifeParamsOf,
   maxAgeOf,
+  timingEraOfProfile,
   parseGame,
   peersOf,
   playToEnd,
@@ -25,8 +29,9 @@ import {
   type EndingGame,
   type EndingReview,
   type FamilySummary,
-  type Era,
   type Gender,
+  type GenerationId,
+  type ProfileId,
   type GameState,
   type LifeLength,
   type Session,
@@ -34,19 +39,19 @@ import {
   type Settings,
   type Stats,
 } from '../src/core';
-import { EVENT_POOL } from '../src/data/events';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import { HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
 import { JOURNEY_NOTE, MOVEMENT_TEXT, choiceCountText, deathLineText, journeyText, stageHeadingText, startedAtText } from '../src/data/endingText';
 import { delegatedSummaryText } from '../src/data/parentDecisionTable';
 import { expectedMovement, numbersIn, readBand, readEnd } from './endingReadback';
+import { regionsOf, sigunguChoices } from '../src/data/birthStats';
 import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
 
 /**
  * 1000판 전체 파이프라인 (SPEC-001 M6 "1000판 자동 시뮬레이션에서 에러 0건").  테스트(tests/pipeline.test.ts)와 `npm run sim:1000`(scripts/simulate1000.ts)이 함께 쓴다.
  *
  * 한 판 = 화면(UI)이 쓰는 **세션 reducer**(core/session.ts#sessionReducer)로 사람이 누르는 순서 그대로 끝까지 간다:
- *   첫 화면(타이틀) → 세상·인생 길이 고르기 → 태어나기(출생 결과 확정·룰렛) → 출생신고 보기(건너뛰기 포함) → 살아가기(인생 시작) → [한 해씩 진행 / 다음 결정으로 / 선택 / 자동 선택] → 사망(엔딩) → 엔딩 회고(reviewEnding) → 다시 태어나기 → 새 판 출생·첫 결정까지
+ *   첫 화면(타이틀) → 세대·인생 길이 고르기 → 태어나기(출생 결과 확정·룰렛) → 출생신고 보기(건너뛰기 포함) → 살아가기(인생 시작) → [한 해씩 진행 / 다음 결정으로 / 선택 / 자동 선택] → 사망(엔딩) → 엔딩 회고(reviewEnding) → 다시 태어나기 → 새 판 출생·첫 결정까지
  * 선택 전략 두 가지: auto = 자동 모드(한 해씩 진행 + 성향 자동 선택), manual = 수동 흉내(무작위 선택, 한 해씩 진행과 "다음 결정으로"를 섞어 쓴다).
  * 난수는 시드 RNG뿐이다(Math.random·Date 없음) — 같은 인자면 같은 판이 나온다.
  *
@@ -59,11 +64,15 @@ export const PIPELINE_STRATEGIES: readonly PipelineStrategy[] = ['auto', 'manual
 
 // ---------- 독립 기준: 이름 ----------
 
-/** SPEC '시대 선택': 시대별 출생 연도 (구현이 읽는 ERA_CONFIG 표가 아니라 SPEC의 리터럴) */
-export const EXPECTED_BIRTH_YEARS: Record<Era, { min: number; max: number }> = {
-  past: { min: 1950, max: 1989 },
-  present: { min: 2026, max: 2026 }, // 올해(2026) 출생 고정 (SPEC-003 Q1)
-  future: { min: 2030, max: 2060 },
+/** SPEC-004 GD1 세대 표: 세대별 출생 연도 범위 (구현이 읽는 GENERATIONS 표가 아니라 SPEC의 리터럴, 양 끝 포함 — 1960~1963은 베이비붐·86세대 양쪽) */
+export const EXPECTED_BIRTH_YEARS: Record<GenerationId, { min: number; max: number }> = {
+  industrial: { min: 1940, max: 1954 },
+  boomer: { min: 1955, max: 1963 },
+  g86: { min: 1960, max: 1969 },
+  genx: { min: 1970, max: 1980 },
+  millennial: { min: 1981, max: 1996 },
+  genz: { min: 1997, max: 2012 },
+  alpha: { min: 2013, max: 2020 },
 };
 
 interface PastPool {
@@ -77,60 +86,34 @@ const forbidden = forbiddenJson as unknown as { names: { name: string }[] };
 const SURNAMES: ReadonlySet<string> = new Set(names.surnames.items.map((s) => s.name));
 const FORBIDDEN: ReadonlySet<string> = new Set(forbidden.names.map((n) => n.name));
 const officialNames = (year: number, gender: Gender): string[] => scourt.years[String(year)][gender === 'male' ? 'M' : 'F'].map((r) => r.name);
-const FUTURE_SOURCE_YEARS = [2021, 2022, 2023, 2024, 2025];
 
-/** 출생 연도·성별에 허용되는 이름(성 제외) — 구현의 풀 함수를 거치지 않고 원자료/names.json에서 직접 계산한다. 어느 시대에도 속하지 않는 연도는 null. */
+/** 출생 연도·성별에 허용되는 이름(성 제외) — 구현의 풀 함수를 거치지 않고 원자료/names.json에서 직접 계산한다 (SPEC-004 NR4: 2008~2020은 그 해 법원 풀 `court-YYYY`, 2007 이전은 연대 풀 `decade-*` — 2000~2007은 한 풀). 세대 밖 연도는 null. */
 export function allowedGiven(birthYear: number, gender: Gender): string[] | null {
-  if (birthYear >= 1950 && birthYear <= 1989) {
-    const d = names.decades[String(Math.floor(birthYear / 10) * 10)][gender];
+  if (birthYear >= 2008 && birthYear <= 2020) return officialNames(birthYear, gender);
+  if (birthYear === 2026) return officialNames(2025, gender); // 시험 전용 R1 프로필(2026년생): 가장 최근 연도(2025) 풀 하나 (SPEC-003 EV7)
+  if (birthYear >= 1940 && birthYear <= 2007) {
+    const d = names.decades[String(Math.min(2000, Math.floor(birthYear / 10) * 10))][gender];
     return [...d.verified, ...d.estimated];
   }
-  if (birthYear === 2026) return officialNames(2025, gender); // 지금 세상: 가장 최근 연도(2025) 풀 하나 (EV7 R1)
-  if (birthYear >= 2030 && birthYear <= 2060) return [...new Set(FUTURE_SOURCE_YEARS.flatMap((y) => officialNames(y, gender)))];
   return null;
 }
 
 // ---------- 독립 기준: 출생신고 상세·룰렛·또래 (koreaStats.json 원자료를 직접 읽는다) ----------
 
-interface RawRegion {
-  name: string;
-  from: string[];
-  sharePct: number;
-}
-interface RawInd {
-  id: string;
-  rows?: Array<Record<string, unknown>>;
-  eraRegions?: Array<{ kind: 'past' | 'present'; birthYears: [number, number]; regions: RawRegion[] }>;
-  regionChanges2026?: { retired: string[]; rows: Array<{ sido: string; name: string; parent?: string }> };
-}
-const RAW_STATS = (statsJson as unknown as { indicators: RawInd[] }).indicators;
-const rawInd = (id: string): RawInd => RAW_STATS.find((i) => i.id === id)!;
+/** 시·도 17곳의 줄임 이름 (SPEC-004 RG5 안정 키 17개의 표기 — 구현의 표를 읽지 않고 따로 적었다). 세종은 2012년생부터 */
+export const RAW_REGION_NAMES = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'] as const;
+export const SEJONG_FIRST_YEAR = 2012;
 
-/** 출생 연도의 룰렛 지역 목록(원자료 eraRegions에서 직접). 지난 세상은 해당 연대 목록, 지금(2026)·다가올(2030~2060) 세상은 16개 시·도. 시대 밖 연도는 null. */
-export function rawRegions(birthYear: number): RawRegion[] | null {
-  const eras = rawInd('birth-by-sido').eraRegions!;
-  const era = eras.find((e) => birthYear >= e.birthYears[0] && birthYear <= e.birthYears[1] && (e.kind === 'past' || birthYear === 2026 || (birthYear >= 2030 && birthYear <= 2060)));
-  return era === undefined ? null : era.regions;
+/** 이 출생 연도에 룰렛에서 나올 수 있는 시·도 이름 (세종은 2012년 앞에는 없다) */
+export function rawRegionNames(birthYear: number): string[] {
+  return RAW_REGION_NAMES.filter((n) => n !== '세종' || birthYear >= SEJONG_FIRST_YEAR);
 }
 
-/** 이 출생 연도·지역에서 허용되는 시군구 키 「시도|이름」 (원자료에서 직접: 지금·다가올 세상은 2026 개편 반영, 지난 세상은 2025 행정구역을 그 시기 시·도 구분에 맞춰) */
-export function rawSigungu(birthYear: number, region: string): Set<string> {
-  const regions = rawRegions(birthYear);
-  const def = regions?.find((r) => r.name === region);
-  const out = new Set<string>();
-  if (def === undefined) return out;
-  const rows = rawInd('birth-by-sigungu').rows as Array<{ sido: string; name: string }>;
-  const changes = rawInd('birth-by-sigungu').regionChanges2026!;
-  if (birthYear >= 2026) {
-    const retired = new Set(changes.retired);
-    const sido2026 = (s: string) => (s === '광주' || s === '전남' ? '전남광주' : s);
-    for (const r of rows) if (!retired.has(r.sido + ' ' + r.name) && sido2026(r.sido) === region) out.add(r.sido + '|' + r.name);
-    for (const r of changes.rows) if (sido2026(r.sido) === region) out.add(r.sido + '|' + (r.parent === undefined ? r.name : r.parent + ' ' + r.name));
-  } else {
-    for (const r of rows) if (def.from.includes(r.sido)) out.add(r.sido + '|' + r.name);
-  }
-  return out;
+interface MixtureRef {
+  region: Array<{ key: string; short: string; pct: string }>;
+  wealth: number[];
 }
+const MIXTURE = (mixtureReference as unknown as { gens: Record<string, MixtureRef> }).gens;
 
 const RAW_JOBS = ['manager', 'professional', 'clerk', 'service', 'sales', 'agri', 'craft', 'machine', 'labor'];
 const RAW_HOUSINGS = ['own', 'rent', 'free'];
@@ -138,12 +121,16 @@ const SENTENCE_FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (�
 
 // ---------- 독립 기준: 엔딩 ----------
 
-/** 세 시대 × 재력 5단계의 출발선 구간 [low, high] (아래에서부터 센 백분위). 재력 가중치 표(40·32·20·7·1 / 25·30·28·14·3 / 30·28·24·13·5)의 누적을 손으로 계산한 리터럴 — tests/ending.test.ts BANDS와 같다. */
-export const EXPECTED_START_BANDS: Record<Era, ReadonlyArray<readonly [low: number, high: number]>> = {
-  past: [[0, 40], [40, 72], [72, 92], [92, 99], [99, 100]],
-  present: [[0, 25], [25, 55], [55, 83], [83, 97], [97, 100]],
-  future: [[0, 30], [30, 58], [58, 82], [82, 95], [95, 100]],
-};
+/**
+ * 세대 7종 × 재력 5단계의 출발선 구간 [low, high] (아래에서부터 센 백분위): 세대 전체 섞음 비율(`tests/fixtures/gm3-mixture-reference.json`의 `gens[세대].wealth` — 시안 생성기가 낸 독립 기준값)의 누적.
+ * 직접 시·도를 고른 판은 줄어든 연도 집합으로 다시 섞이므로 이 표를 쓰지 않는다(이 파이프라인은 고르지 않는 판만 돈다).
+ */
+export const EXPECTED_START_BANDS: Record<GenerationId, ReadonlyArray<readonly [low: number, high: number]>> = Object.fromEntries(
+  GENERATION_IDS.map((g) => {
+    let acc = 0;
+    return [g, MIXTURE[g].wealth.map((w) => [acc, (acc += w)] as const)];
+  }),
+) as unknown as Record<GenerationId, ReadonlyArray<readonly [low: number, high: number]>>;
 /** 구간 밖 여유(점수): tests/ending.test.ts가 BAND_GRACE === 2를 따로 확인한다 */
 export const EXPECTED_GRACE = 2;
 
@@ -158,7 +145,7 @@ const GRADE_NAMES = /(흙|동|은|금|다이아)\s*수저|다이아/;
  * 둘 다 50 초과면 가운데쯤(50). N은 반올림하되 1% 미만은 1 (약 0%를 말하지 않는다).
  */
 /** 최종 순자산(만 원)의 도착 점수. 분위수표 101칸에서 직접 센다 — 이 값 이상인 칸 수 ÷ 101 = 이 값 이상 비율. */
-export function expectedEndScore(era: Era, wealth: number): number {
+export function expectedEndScore(era: ProfileId, wealth: number): number {
   const quantiles = FINAL_DISTRIBUTION[era].quantiles;
   let atLeast = 0;
   let below = 0;
@@ -223,16 +210,16 @@ export function checkMoney(game: GameState, label: string): string[] {
 }
 
 /** 이름(성+이름)·출생 연도·성별이 시대의 풀과 100% 맞고 금지 이름이 아니다 */
-export function checkCharacterName(era: Era, name: string, birthYear: number, gender: Gender): string[] {
+export function checkCharacterName(era: ProfileId, name: string, birthYear: number, gender: Gender): string[] {
   const out: string[] = [];
-  const range = EXPECTED_BIRTH_YEARS[era];
-  if (!Number.isInteger(birthYear) || birthYear < range.min || birthYear > range.max) out.push(`출생 연도 ${birthYear}가 ${era} 범위(${range.min}~${range.max}) 밖이다`);
+  const range = era === 'r1-present' ? { min: 2026, max: 2026 } : EXPECTED_BIRTH_YEARS[era];
+  if (!Number.isInteger(birthYear) || birthYear < range.min || birthYear > range.max) out.push(`출생 연도 ${birthYear}가 ${era} 세대 범위(${range.min}~${range.max}) 밖이다`);
   if (!/^[가-힣]{3,4}$/.test(name)) out.push(`이름 "${name}"이 한글 3~4자가 아니다`);
   const surname = name.slice(0, 1);
   const given = name.slice(1);
   if (!SURNAMES.has(surname)) out.push(`성 "${surname}"이 성씨 표에 없다 (${name})`);
   const allowed = allowedGiven(birthYear, gender);
-  if (allowed === null) out.push(`${birthYear}년생은 어느 시대에도 속하지 않는다 (${name})`);
+  if (allowed === null) out.push(`${birthYear}년생은 어느 세대에도 속하지 않는다 (${name})`);
   else if (!allowed.includes(given)) out.push(`이름 "${given}"이 ${birthYear}년 ${gender} 풀에 없다 (${name})`);
   if (FORBIDDEN.has(name)) out.push(`금지 이름 ${name}이 나왔다`);
   if (given.length > 0 && given[0] === surname) out.push(`성과 이름 첫 글자가 같은 조합 ${name}`);
@@ -245,18 +232,28 @@ export function checkCharacterName(era: Era, name: string, birthYear: number, ge
  *  - 룰렛: 멈출 자리 = 저장된 결과(RL2), 확률표 합 = 정확히 100(수저 정수 %, 지역 소수 1자리), 지역 확률은 원자료 sharePct
  *  - 서술문: 형식(BR3)이 맞고 수저 이름·구간이 없다. 또래 4명: 이름이 시대 풀과 100% 일치·서로 겹치지 않음·주인공과도 다름, 지역·시군구·수저가 유효
  */
+/** 시군구 후보 (없는 시·도면 빈 목록 — 점검이 예외로 끊기지 않고 위반으로 알린다) */
+const safeSigungu = (year: number, region: string) => {
+  try {
+    return sigunguChoices(year, region);
+  } catch {
+    return [];
+  }
+};
+
 export function checkBirthReport(game: GameState, where: string): string[] {
   const out: string[] = [];
   const bad = (msg: string) => out.push(`${where}: ${msg}`);
   const c = game.character;
   const r = game.birthReport;
-  if (c === null || r === null || game.era === null) return [`${where}: 출생 결과가 비어 있다`];
+  if (c === null || r === null || game.generation === null) return [`${where}: 출생 결과가 비어 있다`];
   if (game.peerSeed === null || !Number.isInteger(game.peerSeed)) bad('또래 시드가 없다');
   if (!Number.isInteger(r.month) || r.month < 1 || r.month > 12) bad(`출생 월 ${r.month}`);
-  const regions = rawRegions(c.birthYear);
-  if (regions === null) return [...out, `${where}: ${c.birthYear}년생의 룰렛 지역 목록이 원자료에 없다`];
-  if (!regions.some((x) => x.name === r.region)) bad(`지역 ${r.region}이 룰렛 목록에 없다`);
-  if (!rawSigungu(c.birthYear, r.region).has(`${r.sigunguSido}|${r.sigungu}`)) bad(`시군구 ${r.sigunguSido} ${r.sigungu}이 ${r.region}의 후보가 아니다`);
+  const regions = game.generation === R1_PRESENT ? regionsOf(c.birthYear).regions.map((x) => x.name) : rawRegionNames(c.birthYear); // R1(2026년 행정구역)은 16곳(전남광주 합침)
+  if (!regions.includes(r.region)) bad(`지역 ${r.region}이 ${c.birthYear}년생의 시·도 목록(세종은 ${SEJONG_FIRST_YEAR}년생부터)에 없다`);
+  if (game.generation === R1_PRESENT) {
+    if (!safeSigungu(c.birthYear, r.region).some((x) => x.sido === r.sigunguSido && x.name === r.sigungu)) bad(`시군구 ${r.sigunguSido} ${r.sigungu}이 ${r.region}의 후보가 아니다`);
+  } else if (r.sigungu !== undefined || r.sigunguSido !== undefined) bad(`세대 판의 출생지는 시·도까지인데 시군구 ${r.sigunguSido} ${r.sigungu}가 있다 (NR3)`);
   for (const [who, p] of [['어머니', r.mother], ['아버지', r.father]] as const) {
     if (!Number.isInteger(p.age) || p.age < 16 || p.age > 56) bad(`${who} 나이 ${p.age}`);
     if (!RAW_JOBS.includes(p.job)) bad(`${who} 직업 ${p.job}`);
@@ -274,23 +271,34 @@ export function checkBirthReport(game: GameState, where: string): string[] {
       bad(`${label}: 예외 ${(e as Error).message}`);
     }
   };
-  const era = game.era;
+  const era = game.generation;
 
-  // 룰렛(RL2·RL3)
+  // 룰렛(RL2·RL3, GS6·GS7)
   guard('룰렛', () => {
-    const view = buildRoulette(era, c, r);
+    const view = buildRoulette(game as Parameters<typeof buildRoulette>[0]);
+    const ref = era === R1_PRESENT ? { wealth: [25, 30, 28, 14, 3], region: null } : MIXTURE[era];
     if (view.wealthIndex !== c.parentWealth - 1) bad(`룰렛 수저 멈출 자리 ${view.wealthIndex} ≠ 출생 결과 ${c.parentWealth - 1}`);
-    if (view.regionOdds[view.regionIndex]?.name !== r.region) bad(`룰렛 지역 멈출 자리가 출생 결과 ${r.region}와 다르다`);
+    if (view.regionReel[view.regionIndex] !== r.region) bad(`룰렛 지역 멈출 자리가 출생 결과 ${r.region}와 다르다`);
     if (view.wealthOdds.reduce((a2, o) => a2 + o.percent, 0) !== 100) bad('수저 확률표 합이 100이 아니다');
     if (view.regionOdds.reduce((a2, o) => a2 + Math.round(o.percent * 10), 0) !== 1000) bad('지역 확률표 합이 100.0이 아니다');
-    if (view.regionOdds.length !== regions.length) bad(`지역 확률표 칸 수 ${view.regionOdds.length} ≠ 원자료 ${regions.length}`);
-    for (const o of view.regionOdds) if (Math.abs(o.percent - regions.find((x) => x.name === o.name)!.sharePct) > 1e-9) bad(`지역 확률 ${o.name} ${o.percent}이 원자료 비율과 다르다`);
-    if (view.basis !== (era === 'present' ? 'statistic-derived' : 'design')) bad(`지역 확률의 성격(basis) ${view.basis}`);
+    // 세대 전체 섞음 비율은 시안 생성기가 낸 독립 기준값과 같다 (정수/소수 첫째 자리까지)
+    if (game.regionPicked !== true) {
+      if (view.wealthOdds.map((o) => o.percent).join(',') !== ref.wealth.join(',')) bad(`수저 확률표 ${view.wealthOdds.map((o) => o.percent)}가 독립 기준 ${ref.wealth}와 다르다`);
+      if (ref.region === null) {
+        if (view.regionOdds.length !== regions.length) bad(`지역 확률표 칸 수 ${view.regionOdds.length} ≠ 기준 ${regions.length}`);
+      } else {
+        if (view.regionOdds.length !== ref.region.length) bad(`지역 확률표 칸 수 ${view.regionOdds.length} ≠ 기준 ${ref.region.length}`);
+        for (const o of view.regionOdds) {
+          const want = ref.region.find((x) => x.short === o.name);
+          if (want === undefined || Math.abs(o.percent - Number(want.pct)) > 1e-9) bad(`지역 확률 ${o.name} ${o.percent}이 독립 기준 ${want?.pct}와 다르다`);
+        }
+      }
+    }
   });
 
   // 서술문(BR3)
   guard('서술문', () => {
-    const sentence = birthSentence(c, r, era);
+    const sentence = birthSentence(c, r);
     if (!SENTENCE_FORMAT.test(sentence)) bad(`서술문 형식이 다르다: ${sentence}`);
     if (/수저|다이아|분위/.test(sentence) || /[!！]/.test(sentence)) bad(`서술문에 등급명·소득 분위·느낌표가 있다: ${sentence}`);
   });
@@ -307,8 +315,10 @@ export function checkBirthReport(game: GameState, where: string): string[] {
         if (names.has(p.name)) bad(`또래 이름 ${p.name}이 겹친다`);
         names.add(p.name);
         for (const msg of checkCharacterName(era, p.name, c.birthYear, p.gender)) bad(`또래: ${msg}`);
-        if (!regions.some((x) => x.name === p.region)) bad(`또래 지역 ${p.region}`);
-        if (!rawSigungu(c.birthYear, p.region).has(`${p.sigunguSido}|${p.sigungu}`)) bad(`또래 시군구 ${p.sigungu}`);
+        if (!regions.includes(p.region)) bad(`또래 지역 ${p.region}`);
+        if (game.generation === R1_PRESENT) {
+          if (!safeSigungu(c.birthYear, p.region).some((x) => x.sido === p.sigunguSido && x.name === p.sigungu)) bad(`또래 시군구 ${p.sigungu}`);
+        } else if (p.sigungu !== undefined) bad(`세대 판의 또래는 시·도까지인데 시군구 ${p.sigungu}가 있다`);
         if (![1, 2, 3, 4, 5].includes(p.wealth)) bad(`또래 수저 ${p.wealth}`);
       }
     });
@@ -396,7 +406,7 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
   const bad = (msg: string) => out.push(`${where}: ${msg}`);
   out.push(...checkStats(next.stats, where));
   out.push(...checkMoney(next, where));
-  if (next.era !== prev.era) bad(`시대가 바뀌었다 ${prev.era} → ${next.era}`);
+  if (next.generation !== prev.generation) bad(`세대가 바뀌었다 ${prev.generation} → ${next.generation}`);
   if (next.lifeLength !== prev.lifeLength) bad(`인생 길이가 바뀌었다 ${prev.lifeLength} → ${next.lifeLength} (LM3: 판에 고정된다)`);
   if (next.seed !== prev.seed) bad('시드가 바뀌었다');
   const pc = prev.character;
@@ -428,14 +438,14 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
     if (next.death !== null) bad('인생 중인데 사망 정보가 있다');
     if (next.pending !== null) {
       const p = next.pending;
-      const ev = EVENT_POOL.byId.get(p.eventId);
+      const ev = eventPool().byId.get(p.eventId);
       if (p.age !== next.age) bad(`대기 나이 ${p.age} ≠ 현재 나이 ${next.age}`);
       // PD12 ②: 19세 미만에서 pending이 부모님이 정하거나 흘러가는 카드로 열린 판은 없다 — 그런 카드는 그 해 안에서 즉시 해결된다(PD3)
       if (decisionFor(p.eventId, p.age) !== 'self') bad(`부모님이 정하거나 아이의 일로 흘러가는 카드(${p.eventId}@${p.age})가 pending으로 열렸다 (PD3·PD12 ②)`);
       if (p.key !== `${p.eventId}@${p.age}`) bad(`대기 키 불일치 ${p.key}`);
       if (ev === undefined || ev.choices === undefined) bad(`대기 중인 이벤트 ${p.eventId}가 풀의 선택지 이벤트가 아니다`);
       else {
-        const known = new Set(ev.choices.map((c) => c.id));
+        const known = new Set(ev.choices.map((c: { id: string }) => c.id));
         if (!p.choiceIds.every((id) => known.has(id))) bad('대기 선택지가 이벤트의 것이 아니다');
       }
       if (p.choiceIds.length < 2 || p.choiceIds.length > 3 || new Set(p.choiceIds).size !== p.choiceIds.length) bad(`선택지 수 ${p.choiceIds.length}`);
@@ -447,7 +457,7 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
     if (next.death === null) bad('엔딩인데 사망 정보가 없다');
     else {
       if (next.death.age !== next.age) bad(`사망 나이 ${next.death.age} ≠ 나이 ${next.age}`);
-      if (next.era !== null && next.death.age > maxAgeOf(next.era)) bad(`사망 나이 ${next.death.age}가 시대 상한 ${maxAgeOf(next.era)}을 넘었다`);
+      if (next.generation !== null && next.character !== null && next.death.age > maxAgeOf(lifeParamsOf(next.generation, next.character.birthYear))) bad(`사망 나이 ${next.death.age}가 세대 상한 ${maxAgeOf(lifeParamsOf(next.generation, next.character.birthYear))}을 넘었다`);
       if (next.death.cause.length === 0) bad('사망 원인이 비어 있다');
     }
     const last = next.history[next.history.length - 1];
@@ -486,9 +496,9 @@ function checkPlainText(text: string, where: string): string[] {
 export function checkEnding(game: EndingGame, where: string, review: EndingReview = reviewEnding(game)): string[] {
   const out: string[] = [];
   const bad = (msg: string) => out.push(`${where}: ${msg}`);
-  const era = game.era;
+  const era = game.generation;
   const j = review.journey;
-  const expectedBand = EXPECTED_START_BANDS[era][game.character.parentWealth - 1];
+  const expectedBand = EXPECTED_START_BANDS[era as GenerationId][game.character.parentWealth - 1];
 
   if (j.kind !== (game.death.age < INDEPENDENCE_AGE ? 'early' : 'compared')) bad(`사망 나이 ${game.death.age}인데 회고가 ${j.kind}이다`);
   const text = journeyText(j);
@@ -572,7 +582,7 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
 
 export interface PipelineOptions {
   seed: number;
-  era: Era;
+  era: GenerationId;
   strategy: PipelineStrategy;
   /** true면 매 걸음 저장→복원을 하고 복원한 상태로 이어간다(새로고침을 매 걸음 한 것과 같다). false면 단계가 바뀌는 지점·선택지·엔딩에서만 저장 검증한다. */
   stepSerialize: boolean;
@@ -582,7 +592,7 @@ export interface PipelineOptions {
 
 export interface PipelineLife {
   seed: number;
-  era: Era;
+  era: GenerationId;
   strategy: PipelineStrategy;
   /** 이 판의 불변식 위반·예외 (비어 있으면 통과) */
   problems: string[];
@@ -599,9 +609,9 @@ export interface PipelineLife {
   checks: { names: number; roundTrips: number; transitions: number; duplicateInputs: number; rebirths: number; endingTexts: number; familyRules: number };
 }
 
-/** 시드 → 파이프라인 시드: 시대·전략마다 서로 다른 시드 줄을 쓴다(uint32) */
-export function pipelineSeed(i: number, era: Era, strategy: PipelineStrategy, lifeLength?: LifeLength): number {
-  const salt = (ERAS.indexOf(era) * 2 + PIPELINE_STRATEGIES.indexOf(strategy)) * 1000003 + (lifeLength === 'long60' ? 7000003 : 0); // 모드 축에서 약 1시간 칸은 다른 시드 줄을 쓴다(독립 표본)
+/** 시드 → 파이프라인 시드: 세대·전략마다 서로 다른 시드 줄을 쓴다(uint32) */
+export function pipelineSeed(i: number, era: ProfileId, strategy: PipelineStrategy, lifeLength?: LifeLength): number {
+  const salt = (Math.max(0, (GENERATION_IDS as readonly string[]).indexOf(era)) * 2 + PIPELINE_STRATEGIES.indexOf(strategy)) * 1000003 + (lifeLength === 'long60' ? 7000003 : 0); // 모드 축에서 약 1시간 칸은 다른 시드 줄을 쓴다(독립 표본)
   return (i * 2654435761 + 12345 + salt) >>> 0;
 }
 
@@ -647,15 +657,15 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
 
     // 1. 첫 화면(타이틀): 출생 전에는 인생을 진행하거나 첫 화면 이동·이어하기를 하는 입력이 모두 무시된다
     if (session.game.phase !== 'title') problems.push(`${tag}: 새 게임이 타이틀이 아니다 (${session.game.phase})`);
-    if (session.game.era !== null || session.game.lifeLength !== null) problems.push(`${tag}: 새 게임에 세상·인생 길이가 이미 정해져 있다`);
+    if (session.game.generation !== null || session.game.lifeLength !== null) problems.push(`${tag}: 새 게임에 세대·인생 길이가 이미 정해져 있다`);
     for (const a of [{ type: 'enterLife' }, { type: 'enterBirth' }, { type: 'finishSpin' }, { type: 'advance', fromAge: 0 }, { type: 'skip' }, { type: 'resume' }, { type: 'openTitle' }, { type: 'beginNew', seed: 1 }] as const) {
       if (reduceIgnoringNotes(session, a) !== session) problems.push(`${tag}: 타이틀에서 ${a.type} 입력이 무시되지 않았다`);
     }
     session = { ...session, game: keep(session.game, '첫 화면') };
-    // 2. 세상·인생 길이 고르기 (지금 세상·약 30분은 기본 선택 그대로 확정하는 판도 있다 — 기본값이면 입력이 바뀌는 것이 없다)
-    if (era !== session.settings.era) {
-      session = send({ type: 'setEra', era }, '세상 고르기');
-      if (session.settings.era !== era) problems.push(`${tag}: 고른 세상이 설정에 반영되지 않았다`);
+    // 2. 세대·인생 길이 고르기 (기본 선택 그대로 확정하는 판도 있다 — 기본값이면 입력이 바뀌는 것이 없다)
+    if (era !== session.settings.generation) {
+      session = send({ type: 'setGeneration', generation: era }, '세대 고르기');
+      if (session.settings.generation !== era) problems.push(`${tag}: 고른 세대가 설정에 반영되지 않았다`);
     }
     if (lifeLength !== session.settings.lifeLength) {
       session = send({ type: 'setLifeLength', lifeLength }, '인생 길이 고르기');
@@ -672,8 +682,8 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     session = send({ type: 'begin' }, '태어나기');
     if (reduceIgnoringNotes(session, { type: 'begin' }) !== session) problems.push(`${tag}: 태어나기 연타가 같은 객체를 돌려주지 않았다`);
     const rolled = session.game;
-    if (rolled.phase !== 'roulette' || !session.spin || rolled.era !== era || rolled.lifeLength !== lifeLength || rolled.character === null) {
-      problems.push(`${tag}: 룰렛 상태가 이상하다 (phase ${rolled.phase}, spin ${session.spin}, era ${rolled.era}, 인생 길이 ${rolled.lifeLength})`);
+    if (rolled.phase !== 'roulette' || !session.spin || rolled.generation !== era || rolled.lifeLength !== lifeLength || rolled.character === null) {
+      problems.push(`${tag}: 룰렛 상태가 이상하다 (phase ${rolled.phase}, spin ${session.spin}, 세대 ${rolled.generation}, 인생 길이 ${rolled.lifeLength})`);
       return finish();
     }
     // 룰렛: 출생신고 상세·룰렛 결과·또래를 원자료 기준으로 점검(RL2·BR2~BR4·VP3)하고, 룰렛 도중 새로고침해도 결과가 같고 연출 중이 아니다(RL5)
@@ -708,7 +718,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     // 4. 인생 시작
     session = send({ type: 'enterLife' }, '인생 시작');
     if (session.game.phase !== 'life' || session.game.history.length !== 1) problems.push(`${tag}: 인생 시작 상태가 이상하다`);
-    else if (session.game.birthReport !== null && session.game.character !== null && session.game.history[0].text !== birthSentence(session.game.character, session.game.birthReport, era)) {
+    else if (session.game.birthReport !== null && session.game.character !== null && session.game.history[0].text !== birthSentence(session.game.character, session.game.birthReport)) {
       problems.push(`${tag}: 인생 기록 0세 첫 줄이 출생신고의 한 줄 서술문과 다르다`);
     }
     session = { ...session, game: keep(session.game, '인생 시작') };
@@ -756,7 +766,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     }
     result.steps = step;
     const ended = session.game;
-    if (ended.phase !== 'ending' || ended.death === null || ended.character === null || ended.era === null || ended.birthStats === null) {
+    if (ended.phase !== 'ending' || ended.death === null || ended.character === null || ended.generation === null || ended.birthStats === null) {
       problems.push(`${tag}: 사망(엔딩)에 도달하지 못했다 (phase ${ended.phase})`);
       return finish();
     }
@@ -773,8 +783,8 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     if (ended.play === undefined) problems.push(`${tag}: 엔딩에 플레이 시간 기록이 없다`);
     else if (step > 6 && ended.play.hold <= 0) problems.push(`${tag}: 옮긴 플레이 시간 기록이 엔딩까지 이어지지 않았다`);
     result.choices = totalCards(reference.counts); // 판의 결정 카드 총수(본인 + 부모님이 정한 + 흘러간) — 총 카드 수 판정의 단위
-    result.minutes1x = estimatePlaySeconds(reference.counts, { speed: 1, skipToDecision: false }, lifeLength, era, 'median') / 60;
-    result.minutesFast = estimatePlaySeconds(reference.counts, { speed: 8, skipToDecision: true }, lifeLength, era, 'median') / 60;
+    result.minutes1x = estimatePlaySeconds(reference.counts, { speed: 1, skipToDecision: false }, lifeLength, timingEraOfProfile(era), 'median') / 60;
+    result.minutesFast = estimatePlaySeconds(reference.counts, { speed: 8, skipToDecision: true }, lifeLength, timingEraOfProfile(era), 'median') / 60;
     problems.push(...checkStats(ended.stats, `${tag} 최종 스탯`));
 
     // 7. 엔딩 회고 + 엔딩 저장 복원
@@ -792,14 +802,17 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       if (reduceIgnoringNotes(session, a) !== session) problems.push(`${tag}: 엔딩에서 ${a.type} 입력이 무시되지 않았다`);
     }
 
-    // 8. 다시 태어나기: 새 시드, 첫 화면에서 시작, 설정(세상·인생 길이 포함)은 그대로, 연타는 같은 객체
+    // 8. 다시 태어나기: 새 시드, 첫 화면에서 시작, 설정(세대·인생 길이 포함)은 그대로, 연타는 같은 객체
     const newSeed = (seed * 48271 + 11) >>> 0;
     const reborn = reduceIgnoringNotes(session, { type: 'rebirth', seed: newSeed });
     checks.rebirths++;
     if (reborn === session) problems.push(`${tag}: 다시 태어나기가 적용되지 않았다`);
     else {
       if (!deepEqual(reborn.game, createInitialState(newSeed))) problems.push(`${tag}: 다시 태어난 상태가 새 시드의 첫 화면이 아니다`);
-      if (reborn.settings !== settings0 && !deepEqual(reborn.settings, settings0)) problems.push(`${tag}: 다시 태어나도 설정이 그대로여야 한다`);
+      // 설정은 그대로 — 단 「살아본 세대」(GS10)는 끝까지 간 이 판의 세대가 더해져 있어야 한다(세대 순서·중복 없음)
+      const expectedLived = (GENERATION_IDS as readonly string[]).filter((id) => id === era || settings0.lived.includes(id as GenerationId));
+      if (!deepEqual(reborn.settings.lived, expectedLived)) problems.push(`${tag}: 끝까지 간 판의 세대가 살아본 세대에 더해지지 않았다 (${JSON.stringify(reborn.settings.lived)} / 기대 ${JSON.stringify(expectedLived)})`);
+      if (reborn.settings !== settings0 && !deepEqual({ ...reborn.settings, lived: settings0.lived }, settings0)) problems.push(`${tag}: 다시 태어나도 설정이 그대로여야 한다`);
       if (reborn.tick !== null) problems.push(`${tag}: 다시 태어난 뒤 tick이 남아 있다`);
       if (reduceIgnoringNotes(reborn, { type: 'rebirth', seed: newSeed + 1 }) !== reborn) problems.push(`${tag}: 다시 태어나기 연타가 같은 객체를 돌려주지 않았다`);
       for (const a of [{ type: 'enterLife' }, { type: 'skip' }, { type: 'advance', fromAge: 0 }, { type: 'resume' }] as const) {
@@ -807,7 +820,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       }
       checks.roundTrips++;
       problems.push(...roundTrip(reborn.game, `${tag} 다시 태어난 직후`).problems);
-      // 새 판: 같은 시대로 태어나 첫 결정(또는 사망)까지 간다
+      // 새 판: 같은 세대로 태어나 첫 결정(또는 사망)까지 간다
       let next: Session = reborn;
       const go = (a: SessionAction, label: string) => {
         const n = reduceIgnoringNotes(next, a);
@@ -816,7 +829,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
       };
       go({ type: 'begin' }, '태어나기');
       const born = next.game;
-      if (born.phase !== 'roulette' || !next.spin || born.era !== era || born.lifeLength !== lifeLength || born.character === null) problems.push(`${tag}: 새 판 출생 상태가 이상하다(고른 세상·인생 길이가 그대로 이어져야 하고 룰렛이 다시 돈다)`);
+      if (born.phase !== 'roulette' || !next.spin || born.generation !== era || born.lifeLength !== lifeLength || born.character === null) problems.push(`${tag}: 새 판 출생 상태가 이상하다(고른 세대·인생 길이가 그대로 이어져야 하고 룰렛이 다시 돈다)`);
       else {
         checks.names++;
         problems.push(...checkBirthReport(born, `${tag} 새 판 룰렛`));
@@ -853,7 +866,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
 // ---------- 여러 판 ----------
 
 export interface CellReport {
-  era: Era;
+  era: GenerationId;
   strategy: PipelineStrategy;
   /** 모드 축으로 돈 칸이면 그 모드, 시드 짝홀로 섞어 돈 칸이면 null */
   lifeLength: LifeLength | null;
@@ -879,9 +892,9 @@ export interface CellReport {
 }
 
 export interface PipelineParams {
-  /** 시대·전략마다 판 수 */
+  /** 세대·전략마다 판 수 */
   lives: number;
-  eras?: readonly Era[];
+  eras?: readonly GenerationId[];
   strategies?: readonly PipelineStrategy[];
   /** 이 간격의 판(i % every === 0)은 매 걸음 저장→복원 (0이면 없음) */
   stepSerializeEvery?: number;
@@ -891,7 +904,7 @@ export interface PipelineParams {
   onLife?: (life: PipelineLife) => void;
 }
 
-export function runPipelineCell(era: Era, strategy: PipelineStrategy, params: PipelineParams): CellReport {
+export function runPipelineCell(era: GenerationId, strategy: PipelineStrategy, params: PipelineParams): CellReport {
   const every = params.stepSerializeEvery ?? 0;
   const lives: PipelineLife[] = [];
   for (let i = 1; i <= params.lives; i++) {
@@ -933,6 +946,6 @@ export function runPipelineCell(era: Era, strategy: PipelineStrategy, params: Pi
 
 export function runPipeline(params: PipelineParams): CellReport[] {
   const out: CellReport[] = [];
-  for (const era of params.eras ?? ERAS) for (const strategy of params.strategies ?? PIPELINE_STRATEGIES) out.push(runPipelineCell(era, strategy, params));
+  for (const era of params.eras ?? GENERATION_IDS) for (const strategy of params.strategies ?? PIPELINE_STRATEGIES) out.push(runPipelineCell(era, strategy, params));
   return out;
 }
