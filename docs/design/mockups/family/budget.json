@@ -4,16 +4,16 @@
   "styles": {
     "s1": {
       "name": "종이 오림",
-      "pieces": 51,
-      "rawTotal": 62628,
-      "gzEachTotal": 17437,
-      "gzEachAvg": 342,
-      "chunkRaw": 69782,
-      "chunkGz": 7025,
-      "chunkPerPiece": 138,
-      "chunkRatio": 0.4,
-      "projected93": 12810,
-      "projected110": 15152,
+      "pieces": 45,
+      "rawTotal": 59784,
+      "gzEachTotal": 16110,
+      "gzEachAvg": 358,
+      "chunkRaw": 66486,
+      "chunkGz": 6701,
+      "chunkPerPiece": 149,
+      "chunkRatio": 0.42,
+      "projected93": 13849,
+      "projected110": 16380,
       "layerAvg": {
         "배경": {
           "n": 5,
@@ -26,10 +26,6 @@
         "소품": {
           "n": 14,
           "gzAvg": 205
-        },
-        "매체": {
-          "n": 6,
-          "gzAvg": 221
         },
         "식구": {
           "n": 19,
@@ -258,66 +254,6 @@
           ],
           "raw": 260,
           "gz": 145
-        },
-        {
-          "id": "media-radio",
-          "layer": "매체",
-          "years": [
-            1940,
-            null
-          ],
-          "raw": 509,
-          "gz": 260
-        },
-        {
-          "id": "media-tv-bw",
-          "layer": "매체",
-          "years": [
-            1961,
-            1985
-          ],
-          "raw": 758,
-          "gz": 294
-        },
-        {
-          "id": "media-tv-color",
-          "layer": "매체",
-          "years": [
-            1981,
-            2005
-          ],
-          "raw": 472,
-          "gz": 210
-        },
-        {
-          "id": "media-tv-flat",
-          "layer": "매체",
-          "years": [
-            2005,
-            null
-          ],
-          "raw": 480,
-          "gz": 197
-        },
-        {
-          "id": "media-tv-wall",
-          "layer": "매체",
-          "years": [
-            2010,
-            null
-          ],
-          "raw": 312,
-          "gz": 181
-        },
-        {
-          "id": "media-handheld",
-          "layer": "매체",
-          "years": [
-            2010,
-            null
-          ],
-          "raw": 313,
-          "gz": 185
         },
         {
           "id": "fig-young-f-e2",
@@ -635,39 +571,69 @@
       "note": "비교용 — FM2 게이트 실측(24조각)을 그대로 둔다. 다시 재려면 --with-s2"
     }
   },
-  "screens": {
-    "note": "화면 속 그해의 장면(FT2) 표본. 장당 개별 gzip과, 덩어리 비율(s1 chunkRatio)을 곱한 합계 추정. 승인 전(approved: false).",
+  "era": {
+    "note": "시대의 창 그림(FT2 — FM2c에서 TV 화면 밖으로 옮김, 좌표계 40×20). 장당 개별 gzip과 덩어리 비율(s1 chunkRatio)을 곱한 합계 추정. 그림 자리 PC 약 175×78px · 휴대폰 88×44px(시안 실측은 shootFamily). 승인 전(approved: false). lineGz는 한 줄 문장의 추정 gzip.",
     "rows": [
       {
-        "id": "screen-stadium-flame",
-        "year": 1988,
-        "kind": "문화·스포츠",
+        "id": "era-stadium-flame",
+        "years": [
+          1988,
+          1988
+        ],
+        "kind": "event",
+        "topic": "문화·스포츠",
+        "line": "서울에서 올림픽이 열렸습니다.",
+        "lineChars": 16,
         "approved": false,
         "raw": 589,
-        "gz": 276
+        "gz": 280
       },
       {
-        "id": "screen-ballot-box",
-        "year": 1987,
-        "kind": "정치(일반 상징)",
+        "id": "era-ballot-box",
+        "years": [
+          1987,
+          1987
+        ],
+        "kind": "event",
+        "topic": "정치(일반 상징)",
+        "line": "국민이 대통령을 직접 뽑았습니다.",
+        "lineChars": 18,
         "approved": false,
-        "raw": 644,
-        "gz": 241
+        "raw": 651,
+        "gz": 240
+      },
+      {
+        "id": "era-kite-roofs",
+        "years": [
+          1960,
+          1979
+        ],
+        "kind": "daily",
+        "topic": "생활(겨울 놀이)",
+        "line": "겨울이면 동네 하늘에 연이 떴습니다.",
+        "lineChars": 20,
+        "approved": false,
+        "raw": 826,
+        "gz": 376
       }
     ],
-    "gzEachAvg": 259,
-    "chunkGzTwo": 446,
+    "gzEachAvg": 299,
+    "chunkGzSamples": 704,
+    "lineGz": 32,
     "projected": {
       "years": 81,
-      "one": {
-        "pieces": 81,
-        "gzEach": 20979,
-        "chunkEst": 8392
+      "daily": 17,
+      "eventOnePerYear": {
+        "pieces": 98,
+        "gzEach": 29302,
+        "chunkEst": 12307,
+        "withLines": 15443
       },
-      "two": {
-        "pieces": 162,
-        "gzEach": 41958,
-        "chunkEst": 16783
+      "eventTwoPerYear": {
+        "pieces": 179,
+        "gzEach": 53521,
+        "chunkEst": 22479,
+        "withLines": 28207
       }
     }
   }

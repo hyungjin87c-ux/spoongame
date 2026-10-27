@@ -1,5 +1,5 @@
 {
-  "note": "장면별 한 줄(sceneLineOf 시안 규칙, LINE_MAX 40) · 매체 자리 · 빈 화면 자리 크기(단위: 그림 좌표 640, PC 534px, 휴대폰 326px)",
+  "note": "장면별 한 줄(sceneLineOf 시안 규칙, LINE_MAX 40) · 장면 연도에 맞는 시대의 창 그림(eraFor) · 배치 비율별 식구 조각 크기(px, 그림 좌표 640 기준 환산 — 실측은 shootFamily)",
   "scenes": [
     {
       "id": "a",
@@ -7,24 +7,10 @@
       "line": "서울 성북구 · 단독주택 셋방 · 부모님·누나 둘·할머니와 함께",
       "lineChars": 35,
       "people": 6,
-      "media": "media-tv-bw",
-      "mediaAt": [
-        105,
-        127
-      ],
-      "screen": {
-        "units": [
-          16,
-          12
-        ],
-        "pc": [
-          13.4,
-          10
-        ],
-        "mobile": [
-          8.2,
-          6.1
-        ]
+      "era": {
+        "id": "era-kite-roofs",
+        "kind": "daily",
+        "line": "겨울이면 동네 하늘에 연이 떴습니다."
       }
     },
     {
@@ -33,25 +19,7 @@
       "line": "경기 안양시 동안구 · 아파트 · 부모님과 함께",
       "lineChars": 26,
       "people": 3,
-      "media": "media-tv-color",
-      "mediaAt": [
-        305,
-        32
-      ],
-      "screen": {
-        "units": [
-          20,
-          15
-        ],
-        "pc": [
-          16.7,
-          12.5
-        ],
-        "mobile": [
-          10.2,
-          7.6
-        ]
-      }
+      "era": null
     },
     {
       "id": "c",
@@ -59,12 +27,7 @@
       "line": "전남 고흥군 · 단독주택 · 부모님·누나·형·할머니·할아버지와 함께",
       "lineChars": 37,
       "people": 7,
-      "media": "media-radio",
-      "mediaAt": [
-        213.4,
-        172.4
-      ],
-      "screen": null
+      "era": null
     },
     {
       "id": "d",
@@ -72,25 +35,7 @@
       "line": "서울 관악구 · 다세대주택 · 부모님과 함께",
       "lineChars": 24,
       "people": 3,
-      "media": "media-tv-wall",
-      "mediaAt": [
-        214,
-        88
-      ],
-      "screen": {
-        "units": [
-          40,
-          22
-        ],
-        "pc": [
-          33.4,
-          18.4
-        ],
-        "mobile": [
-          20.4,
-          11.2
-        ]
-      }
+      "era": null
     },
     {
       "id": "e",
@@ -98,12 +43,61 @@
       "line": "대구 중구 · 단독주택 · 부모님·누나·오빠·동생·할머니·할아버지와 함께",
       "lineChars": 40,
       "people": 8,
-      "media": "media-radio",
-      "mediaAt": [
-        209.5,
-        174.2
-      ],
-      "screen": null
+      "era": {
+        "id": "era-kite-roofs",
+        "kind": "daily",
+        "line": "겨울이면 동네 하늘에 연이 떴습니다."
+      }
     }
-  ]
+  ],
+  "layouts": {
+    "FM2b 집만(PC 534)": {
+      "housePx": 534,
+      "houseH": 213.6,
+      "adult": 78.4,
+      "child": 55.1,
+      "toddler": 41.7,
+      "headR": 8.8
+    },
+    "2:1 (PC 집 350.7 · 창 175.3)": {
+      "housePx": 350.7,
+      "houseH": 140.3,
+      "adult": 51.5,
+      "child": 36.2,
+      "toddler": 27.4,
+      "headR": 5.8
+    },
+    "5:2 (PC 집 375.7 · 창 150.3)": {
+      "housePx": 375.7,
+      "houseH": 150.3,
+      "adult": 55.2,
+      "child": 38.7,
+      "toddler": 29.4,
+      "headR": 6.2
+    },
+    "3:1 (PC 집 394.5 · 창 131.5)": {
+      "housePx": 394.5,
+      "houseH": 157.8,
+      "adult": 57.9,
+      "child": 40.7,
+      "toddler": 30.8,
+      "headR": 6.5
+    },
+    "휴대폰 쌓기(집 326 전폭)": {
+      "housePx": 326,
+      "houseH": 130.4,
+      "adult": 47.9,
+      "child": 33.6,
+      "toddler": 25.5,
+      "headR": 5.3
+    },
+    "휴대폰 나란히 2:1(집 212)": {
+      "housePx": 212,
+      "houseH": 84.8,
+      "adult": 31.1,
+      "child": 21.9,
+      "toddler": 16.6,
+      "headR": 3.5
+    }
+  }
 }

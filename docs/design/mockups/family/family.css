@@ -85,13 +85,43 @@
   --c-scene-face: #4a362c;
 }
 
-/* 그림 카드 — 가운데 열: 결정 카드 → 이 카드 → (올해 마음 쓸 곳 자리) → 인생 기록 (FH1). 그림은 카드 위끝에 꽉 차게(이미지창), 아래 한 줄·펼침·접기 */
-.scene-card { padding-top: 0; overflow: hidden; }
+/* 그림 카드 — 가운데 열: 결정 카드 → 이 카드 → (올해 마음 쓸 곳 자리) → 인생 기록 (FH1). 그림 띠(집 그림 + 시대의 창)는 카드 위끝에 꽉 차게, 아래 한 줄·펼침·접기 */
+.scene-card { padding-top: 0; overflow: hidden; container-type: inline-size; container-name: scene; }
 .scene-card[data-fold='true'] { padding-top: var(--sp-4); }
 .scene-card[data-fold='true'] .scene { display: none; }
-.scene { margin: 0 calc(-1 * var(--sp-4)); background: var(--c-scene-sky); }
+/* FM2c 배치(형진 님 제안 2026-10-27): 왼쪽 집 그림 : 오른쪽 「시대의 창」 = 2 : 1(기본, data-split로 5:2 · 3:1 실측 비교). 둘 사이 8px은 카드 바탕. 줄 높이는 둘 중 큰 쪽(보통 집 그림) */
+.scene { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--sp-2); align-items: stretch; margin: 0 calc(-1 * var(--sp-4)); }
+.scene[data-split='2.5'] { grid-template-columns: minmax(0, 5fr) minmax(0, 2fr); }
+.scene[data-split='3'] { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); }
+.scene__house { position: relative; min-width: 0; background: var(--c-surface-2); }
+/* 집 그림이 줄 높이보다 짧아지는 경우(글자 200%에서 창의 글이 길어질 때)만 집 그림 아래에 --c-surface-2가 보인다 — 평소에는 집 그림이 줄 높이를 정한다 */
 /* 높이: 폭 ÷ 2.5, 화면 높이의 25%를 넘지 않는다(FH1 ▲, 형진 님 선택 2026-10-27). 넘으면 양옆을 조금 잘라 보인다(preserveAspectRatio slice — 안전 영역 x 20~620) */
 .scene__svg { display: block; width: 100%; aspect-ratio: 640 / 256; max-height: 25vh; forced-color-adjust: none; }
+/* 연도 표 — 집 그림 오른쪽 위. 그림 안 글자가 아니라 HTML(종이 꼬리표): 바탕은 카드 면 색이라 어느 하늘·지붕 위에서도 글자 대비가 토큰 그대로(라이트 15.5:1 · 다크 13.9:1). 강제 색상은 Canvas/CanvasText + 1px 테두리 */
+.scene__year { position: absolute; top: var(--sp-2); right: var(--sp-2); margin: 0; padding: 2px var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.4; font-variant-numeric: tabular-nums; color: var(--c-text); background: var(--c-surface); border-radius: var(--r-sm); white-space: nowrap; }
+/* 「시대의 창」 칸 — 그해 장면 그림 한 장 + 한 줄, 칸 전체가 그해 기록으로 가는 링크 하나(초점 정지점 1, FT5). 창틀 장식 없음: 그림이 위, 한 줄이 아래(면 한 단계 어두운 --c-surface-2) */
+.era { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
+.era__pic { display: block; flex: 1 1 0; min-height: 48px; overflow: hidden; background: var(--c-scene-sky); }
+.era[data-hidden='true'] .era__pic { background: var(--c-surface-2); }
+.era__pic svg { display: block; width: 100%; height: 100%; forced-color-adjust: none; }
+.era__cap { display: block; flex: none; padding: var(--sp-1) var(--sp-2) var(--sp-2); font-size: var(--fs-xs); line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
+/* 칸 머리 글자 「시대의 창」: PC 칸에서는 한 줄 위에 따로(회색), 휴대폰 띠에서는 문장 앞에 이어 쓴다(두 줄 안에 들어가게) */
+.era__label { display: block; color: var(--c-text-2); }
+.era__sep { display: none; }
+.era:hover .era__line, .era:focus-visible .era__line { text-decoration: underline; text-underline-offset: 2px; }
+.era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
+/* 바뀌는 해의 교차 페이드는 집 그림과 같은 규칙(.scene--swap) — 움직임 줄이기면 즉시 교체 */
+.scene--swap .era__pic svg { transition: opacity var(--dur-slow) var(--ease, ease); }
+/* 휴대폰(카드 폭 ≤ 480px — 360에서 카드 326px): 나란히 두면 집 그림이 217px(어른 32px)로 줄어 읽히지 않는다. 집 그림은 전폭(326×130), 시대의 창은 그 아래 **가로 띠**(그림 88×44 + 머리 글자·한 줄 14px 두 줄) — 띠 합계 ≈ 185px = 25vh@740 */
+@container scene (max-width: 480px) {
+  .scene { grid-template-columns: minmax(0, 1fr); }
+  .scene[data-split='2.5'], .scene[data-split='3'] { grid-template-columns: minmax(0, 1fr); }
+  .era { flex-direction: row; align-items: stretch; min-height: var(--hit); }
+  .era__pic { flex: none; width: 88px; aspect-ratio: 2 / 1; min-height: 0; align-self: center; }
+  .era__cap { flex: 1 1 auto; min-width: 0; align-self: center; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
+  .era__label { display: inline; }
+  .era__sep { display: inline; color: var(--c-text-2); }
+}
 .scene__line { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text); font-weight: var(--fw-bold); word-break: keep-all; overflow-wrap: anywhere; }
 .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-2); }
 .scene__more { flex: 1 1 auto; min-width: 0; }
@@ -111,6 +141,10 @@
   .scene-card { order: -1; }
 }
 @media (forced-colors: active) {
-  .scene { border-bottom: 1px solid CanvasText; }
+  .scene__house, .era, .scene__year { border: 1px solid CanvasText; }
+  .era__pic { border-bottom: 1px solid CanvasText; }
   .scene__people li::before { background: CanvasText; }
+}
+@container scene (max-width: 480px) {
+  @media (forced-colors: active) { .era__pic { border-bottom: 0; border-right: 1px solid CanvasText; } }
 }
