@@ -152,6 +152,31 @@ describe('buildRoulette: 세대 전체 기준의 확률표와 멈출 자리 (RL2
     expect(() => buildRoulette({ ...born, birthReport: { ...born.birthReport!, region: '세종' } } as never)).toThrow(RangeError);
   });
 
+  it('R-515 b: 지역 릴의 칸 = 세대 범위의 시·도 합집합(확률표의 줄과 같다) — 어느 해가 뽑혀도 칸 구성이 같아 칸으로 연도 대를 짐작할 수 없다 (Z 릴에 세종이 늘 있다)', () => {
+    for (const g of GENERATION_IDS) {
+      const base = buildRoulette(beginBirth(createInitialState(1), g));
+      expect(base.regionReel, `${g}: 릴 칸 = 지역 표의 줄(룰렛 순서)`).toEqual(base.regionOdds.map((o) => o.name));
+      const years = new Set<number>();
+      for (let seed = 1; seed <= 120; seed++) {
+        const born = beginBirth(createInitialState(seed * 31), g);
+        years.add(born.character!.birthYear);
+        const v = buildRoulette(born);
+        expect(v.regionReel, `${g} ${seed}`).toEqual(base.regionReel);
+        expect(v.regionReel[v.regionIndex], `${g} ${seed}: 멈출 칸 = 저장된 출생 시도`).toBe(born.birthReport!.region);
+      }
+      expect(years.size, `${g}: 표본이 여러 해를 덮는다`).toBeGreaterThan(1);
+    }
+    // 합집합이라 Z·알파 릴에는 세종이 있고, 산업화·밀레니얼 릴에는 없다
+    const reelOf = (g: GenerationId) => buildRoulette(beginBirth(createInitialState(2), g)).regionReel;
+    expect(reelOf('genz')).toContain('세종');
+    expect(reelOf('alpha')).toContain('세종');
+    expect(reelOf('industrial')).not.toContain('세종');
+    expect(reelOf('millennial')).not.toContain('세종');
+    // 직접 고른 시도가 합집합에 없으면(산업화의 대구 등) 그 칸이 더해진다 — 멈출 칸은 늘 저장된 시도
+    const picked = buildRoulette(beginBirth(createInitialState(7), 'industrial', 'short30', '대구'));
+    expect(picked.regionReel[picked.regionIndex]).toBe('대구');
+  });
+
   it('시험 전용 R1 프로필: 수저는 고정 비율, 지역은 2026년 행정구역 16개 (EY17 항등 기준)', () => {
     const born = beginBirth(createInitialState(99), R1_PRESENT);
     const view = buildRoulette(born);
@@ -358,6 +383,10 @@ describe('룰렛 화면 서버 렌더 (결과 모양 · 회전 모양 · 세대 
           for (const y of years) expect(rangeEnds.has(y), `${g} ${seed} 룰렛 화면의 연도 ${y} (뽑힌 해 ${year})`).toBe(true);
           // 뽑힌 해가 범위의 끝과 겹치지 않는 판에서는 그 해가 어디에도 없다(결과 상태·회전 상태 모두)
           if (!rangeEnds.has(year)) expect(scan, `${g} ${seed}: 뽑힌 해 ${year}`).not.toContain(String(year));
+          // R-515 a: 글자뿐 아니라 속성(aria-label·data-*·title·style 등)까지 — 마크업 전체에서 뽑힌 해가 한 번도 안 나온다. 정해진 문구(1981년 안내)는 빼고 센다
+          const markup = html.replace(/ xmlns="[^"]*"/g, '').replace(/<span class="(?:nowrap|keep-phrase)">([^<]*)<\/span>/g, '$1').replace(ROULETTE_GEN_TEXT.regionNotePop, '');
+          for (const m of markup.matchAll(/(?<!\d)(19[4-9]\d|20[0-2]\d)(?!\d)/g)) expect(rangeEnds.has(Number(m[1])), `${g} ${seed} 마크업(속성 포함)의 연도 ${m[1]} (뽑힌 해 ${year})`).toBe(true);
+          if (!rangeEnds.has(year)) expect(markup, `${g} ${seed}: 마크업에 뽑힌 해 ${year}`).not.toContain(String(year));
         }
       }
     }

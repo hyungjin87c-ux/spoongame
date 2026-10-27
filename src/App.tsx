@@ -454,7 +454,10 @@ function Game({ boot }: { boot: Boot }) {
     return () => window.clearTimeout(id);
   }, [settings.autoMode, settings.speed, game.pending, game.paused, exitAsk, folded, noteOpen, superseded, visible, showTitle]);
 
+  // 밀린 탭의 「이어받기」가 지연 덩어리를 받지 못했을 때의 안내 (R-516) — 밀린 화면에 그대로 남아 다시 누를 수 있다
+  const [takeOverFailed, setTakeOverFailed] = useState(false);
   const takeOver = useCallback(() => {
+    setTakeOverFailed(false);
     // 저장소를 한 번만 읽어, 그 원문을 파싱해 이어받고 "내가 아는 값"으로도 기록한다(R-052). 이어받은 값은 저장소에 이미 있는 값이라 같은 값을 다시 쓰지 않는다.
     const raw = readRaw(GAME_KEY);
     const finish = () => {
@@ -466,7 +469,7 @@ function Game({ boot }: { boot: Boot }) {
     };
     // 이 탭이 첫 화면에서 밀렸다면 지연 로드 덩어리(이벤트 풀·출생 연도 표·인용, MG8)를 아직 받지 않았을 수 있다 — 진행 중인 판을 읽고 검증하려면 먼저 받는다. 실패하면 밀린 화면에 그대로 남아 다시 누를 수 있다
     if (savedNeedsGameData(raw) && !isGameDataReady()) {
-      loadGameData().then(finish, () => undefined);
+      loadGameData().then(finish, () => setTakeOverFailed(true));
       return;
     }
     finish();
@@ -475,7 +478,7 @@ function Game({ boot }: { boot: Boot }) {
   let screen;
   // 모든 화면이 새 디자인이다(첫 화면·룰렛·출생신고·대시보드·엔딩·밀린 화면·오류 화면) — 시스템의 라이트·다크를 따르거나 설정의 수동 선택을 따른다. 옛 화면을 라이트로 고정하던 장치는 M4에서 없어졌다.
   if (superseded) {
-    screen = <SupersededScreen onTakeOver={takeOver} />;
+    screen = <SupersededScreen onTakeOver={takeOver} loadFailed={takeOverFailed} />;
   } else if (game.phase === 'title' || showTitle) {
     // 첫 화면: 새 판의 시작(title 단계) 또는 진행 중인 판을 둔 채 다시 연 화면(showTitle, 「나가기」). 후자는 「이어서 살기」가 기본 버튼이다.
     screen = (

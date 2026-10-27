@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GENERATION_CHOICES, GENERATION_IDS } from '../src/core/types';
 import { createRng } from '../src/core/rng';
+import { beginBirth, createInitialState } from '../src/core';
 import { pickRandomGeneration } from '../src/core/generationMixture';
 import { ALL_GENERATIONS_RANGE, FIRST_BIRTH_YEAR, GENERATIONS, LAST_BIRTH_YEAR, generationDef, generationsOfYear, isGenerationId, yearsOfGeneration } from '../src/data/generations';
 import { GENERATION_CONFIG } from '../src/data/generationConfig';
@@ -82,5 +83,25 @@ describe('랜덤 세대 (GS3)', () => {
 
   it('같은 시드면 같은 세대가 나온다 (새로고침해도 같은 결과)', () => {
     for (let seed = 1; seed <= 200; seed++) expect(pickRandomGeneration(createRng(seed))).toBe(pickRandomGeneration(createRng(seed)));
+  });
+
+  it('GS3 경로 동치(1000판): 「랜덤 세대」 줄로 태어난 판 = 같은 RNG 상태에서 뽑은 세대를 직접 고른 판 — 둘 다 같은 generateBirth를 거쳐 인물·출생신고·또래 시드·난수 상태가 같다', () => {
+    for (let seed = 1; seed <= 1000; seed++) {
+      const init = createInitialState(seed * 7919);
+      const viaRandom = beginBirth(init, 'random');
+      // 랜덤 경로가 한 일을 손으로 되짚는다: 난수 1번으로 세대를 뽑고, 그 상태에서 직접 고른 경로를 부른다
+      const rng = createRng(init.rngState);
+      const g = pickRandomGeneration(rng);
+      expect(viaRandom.generation, `시드 ${seed}`).toBe(g);
+      const direct = beginBirth({ ...init, rngState: rng.getState() }, g);
+      expect(direct.character, `시드 ${seed}`).toEqual(viaRandom.character);
+      expect(direct.stats, `시드 ${seed}`).toEqual(viaRandom.stats);
+      expect(direct.birthReport, `시드 ${seed}`).toEqual(viaRandom.birthReport);
+      expect(direct.peerSeed, `시드 ${seed}`).toBe(viaRandom.peerSeed);
+      expect(direct.rngState, `시드 ${seed}`).toBe(viaRandom.rngState);
+      // 표지만 다르다: 랜덤 경로는 fromRandom을 단다
+      expect(viaRandom.fromRandom).toBe(true);
+      expect(direct.fromRandom).toBeUndefined();
+    }
   });
 });

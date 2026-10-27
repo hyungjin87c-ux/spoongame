@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { COMMIT_LENGTH, commitConstant, resolveBuildInfo } from '../scripts/buildInfo';
 import { formatBuildLabel } from '../src/core';
 import { APP_COMMIT, APP_VERSION, BUILD_LABEL } from '../src/buildInfo';
+import titleFooterSrc from '../src/ui/TitleFooter.tsx?raw';
 import pkgRaw from '../package.json?raw';
 import viteConfig from '../vite.config.ts?raw';
 import deployYml from '../.github/workflows/deploy.yml?raw';
@@ -104,9 +105,11 @@ describe('빌드 상수 연결', () => {
   });
 
   it('QM2-7 (d) 빌드 버전의 출처는 하나다: 푸터는 BUILD_LABEL을 그대로 쓰고, 의견 보내기 주소(M4 DB7 buildFeedbackUrl)도 같은 BUILD_LABEL(또는 APP_VERSION·APP_COMMIT)을 가져다 쓴다', () => {
-    expect(titleScreenSrc).toContain("import { BUILD_LABEL } from '../buildInfo';");
-    expect(titleScreenSrc).toContain('{BUILD_LABEL}');
+    expect(titleScreenSrc).toContain("import { BUILD_LABEL } from '../buildInfo';"); // 의견 보내기 주소
+    expect(titleFooterSrc).toContain("import { BUILD_LABEL } from '../buildInfo';"); // 하단 「운영자 cottonchild · 버전」 줄(GS12)
+    expect(titleFooterSrc).toContain('{BUILD_LABEL}');
     expect(titleScreenSrc).not.toMatch(/__APP_(VERSION|COMMIT)__/); // 화면이 상수를 직접 읽지 않는다
+    expect(titleFooterSrc).not.toMatch(/__APP_(VERSION|COMMIT)__/);
   });
 });
 

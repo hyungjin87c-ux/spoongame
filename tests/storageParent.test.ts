@@ -6,8 +6,8 @@ import { startLife } from '../scripts/simulateLib';
 import { forcedPending } from './helpers/forcedPending';
 
 /**
- * T7 저장·호환 (SPEC-005 PD10·SV1, 설계 문서 5절): 연표 줄의 선택 필드 `by`는 `kind: 'choice'`에만 허용되고 `'parent' | 'child'` 외 값은 **그 필드만** 버린다 · `by`가 없는 v8 저장은 그대로 열린다 ·
- * 부모 영역·흘러감 카드가 `pending`인 v8 저장은 열자마자 같은 해 안에서 처리되고 같은 기록 줄이 남는다(이미 지난 해의 줄은 바뀌지 않는다) · 엔딩의 부모·흘러감 집계가 연표와 같다.
+ * T7 저장·호환 (SPEC-005 PD10·SV1, 설계 문서 5절): 연표 줄의 선택 필드 `by`는 `kind: 'choice'`에만 허용되고 `'parent' | 'child'` 외 값은 **그 필드만** 버린다 · `by`가 없는 저장(지금 버전 v9)은 그대로 열린다 ·
+ * 부모 영역·흘러감 카드가 `pending`인 저장(지금 버전 v9)은 열자마자 같은 해 안에서 처리되고 같은 기록 줄이 남는다(이미 지난 해의 줄은 바뀌지 않는다) · 엔딩의 부모·흘러감 집계가 연표와 같다.
  * 저장 스키마 버전은 올리지 않았다(SV1) — 선택 필드 하나가 더해졌을 뿐이다.
  */
 
@@ -94,7 +94,7 @@ describe('T7-1 연표 줄의 by 필드: choice 줄에만, 값은 parent | child�
   });
 });
 
-describe('T7-2 부모 영역·흘러감 카드가 pending인 v8 저장은 열자마자 처리된다 (PD10)', () => {
+describe('T7-2 부모 영역·흘러감 카드가 pending인 저장(지금 버전 v9)은 열자마자 처리된다 (PD10)', () => {
   it('부모 영역 카드(infant-fever)가 대기 중인 저장: 열면 대기가 없고, 그 해가 부모님이 정한 선택으로 끝나 연표 줄 하나(by: parent)가 남고 나이가 한 살 오른다', () => {
     const pendingState = forcedPending('infant-fever');
     expect(pendingState.pending).not.toBeNull();

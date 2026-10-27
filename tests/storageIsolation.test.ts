@@ -76,7 +76,8 @@ describe('키 이름', () => {
     const users: string[] = [];
     for (const [name, raw] of Object.entries(files)) {
       const src = strip(raw);
-      if (/\b(?:window\.)?(?:localStorage|sessionStorage)\b/.test(src)) users.push(name);
+      // data/policyText.ts는 개인정보 처리방침 초안의 글에 낱말 「localStorage」를 적을 뿐 저장소를 부르지 않는다(키 이름은 core/storage.ts의 상수에서 가져온다)
+      if (name !== '../src/data/policyText.ts' && /\b(?:window\.)?(?:localStorage|sessionStorage)\b/.test(src)) users.push(name);
       expect(src, `${name}: 저장소 전체 지우기`).not.toMatch(/(?:localStorage|sessionStorage|storage)\.clear\s*\(/);
       expect(src, `${name}: 저장소 열거`).not.toMatch(/Object\.(?:keys|entries|values)\(\s*(?:window\.)?(?:localStorage|sessionStorage)\s*\)|(?:localStorage|sessionStorage)\.(?:key|length)\b/);
       expect(src, `${name}: 쿠키·IndexedDB`).not.toMatch(/document\.cookie|indexedDB|openDatabase/);

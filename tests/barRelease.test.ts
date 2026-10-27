@@ -107,8 +107,8 @@ describe('해제 상태에서 함께 풀 것 (QM2-12 규칙 3)', () => {
 
   it('폭 ≥ 960의 오른쪽 따라다니는 카드 max-height가 --bar-h를 빼지 않는다 (고정일 때는 뺀다)', () => {
     const wide = css.slice(css.indexOf('@media (min-width: 960px)'));
-    expect(wide).toMatch(/\.title__side \{[^}]*max-height: calc\(100vh - var\(--bar-h, 164px\) - var\(--sp-6\) - 3px\)/);
-    expect(wide).toMatch(/html\.bar-released \.title__side \{ max-height: calc\(100vh - var\(--sp-6\) - 3px\); \}/);
+    expect(wide).toMatch(/\.carousel--005 \{[^}]*max-height: calc\(100vh - var\(--bar-h, 164px\) - var\(--sp-6\) - var\(--sp-3\)\)/);
+    expect(wide).toMatch(/html\.bar-released \.carousel--005 \{ max-height: calc\(100vh - var\(--sp-6\) - var\(--sp-3\)\); \}/);
   });
 
   it('풀린 띠는 높이가 달라지지 않는다 — 테두리가 아니라 그림자로 위끝 선을 그어 --bar-h가 해제 때문에 어긋나지 않는다', () => {

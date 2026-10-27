@@ -24,6 +24,7 @@ import {
   playToEnd,
   saveGame,
   saveSettings,
+  savedNeedsGameData,
   selectableLifeLength,
   serializeGame,
   serializeSettings,
@@ -559,6 +560,24 @@ describe('손상 데이터 복구', () => {
     expect(classifySavedGame(JSON.stringify({ version: 4, data: v4Life }))).toBe('old-version');
     // 시대 선택 화면이던 v4 저장
     expect(parseGame(JSON.stringify({ version: 4, data: { ...createInitialState(5), phase: 'eraSelect' } }))).toBeNull();
+  });
+
+  it('v8 저장(세대 선택 이전, SPEC-004 MG1·R-518): 진행했던 판은 「이전 버전」(새 게임 + 안내), 첫 화면이던 저장은 안내 없는 「이전 버전·빈 저장」이다 — 둘 다 지연 덩어리 없이 열린다(savedNeedsGameData 거짓)', () => {
+    expect(SCHEMA_VERSION).toBe(9); // 이 시험의 「바로 앞 버전」 = 8
+    for (const phase of ['roulette', 'birth', 'life', 'ending'] as const) {
+      const raw = JSON.stringify({ version: 8, data: { ...richState(), phase } });
+      expect(parseGame(raw), `v8 ${phase}`).toBeNull();
+      expect(classifySavedGame(raw), `v8 ${phase}`).toBe('old-version');
+      expect(savedNeedsGameData(raw), `v8 ${phase}: 이전 버전은 읽지 않으므로 덩어리를 받을 이유가 없다`).toBe(false);
+    }
+    const title = JSON.stringify({ version: 8, data: createInitialState(5) });
+    expect(parseGame(title)).toBeNull();
+    expect(classifySavedGame(title)).toBe('old-version-empty');
+    expect(savedNeedsGameData(title)).toBe(false);
+    // 같은 모양의 지금 버전(v9) 진행 저장은 읽히고 덩어리가 필요하다(대조)
+    const now = JSON.stringify({ version: SCHEMA_VERSION, data: richState() });
+    expect(classifySavedGame(now)).toBe('valid');
+    expect(savedNeedsGameData(now)).toBe(true);
   });
 
   it('classifySavedGame(R-214): 이전 버전이라도 진행 전 단계(title·eraSelect)였으면 안내가 필요 없는 old-version-empty, 진행했던 단계나 알 수 없는 단계면 old-version', () => {

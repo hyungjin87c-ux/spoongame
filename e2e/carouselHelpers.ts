@@ -13,7 +13,7 @@ export const AUTO_MS = 9_000;
 /** 「한 주기 안에 넘어간다」를 보는 시간 = 주기 + 1초 여유 */
 export const CYCLE_MS = AUTO_MS + 1_000;
 
-/** 캐러셀의 현재 순서 「3 / 20」 */
+/** 캐러셀의 현재 순서 「3 / 21」 */
 export const countText = (page: Page): Promise<string> => page.getByTestId('carousel-count').innerText();
 
 export const slideCount = (page: Page): Promise<number> => page.getByTestId('stat-slide').count();
@@ -76,12 +76,13 @@ export async function autoplayDisplay(page: Page): Promise<AutoplayDisplay> {
 
 /**
  * 표시 둘이 서로 어긋나지 않는다 (I2): 버튼의 아이콘과 이름은 늘 짝이고(일시정지 아이콘 ↔ 「자동 넘김 일시정지」, 재생 아이콘 ↔ 「자동 넘김 다시 시작」),
- * 자동 전환이 돌고 있으면(on) 일시정지 아이콘·이름이며, 이름이 「다시 시작」이면(사용자가 멈춤) data-autoplay는 off다. 포인터·포커스로 멈춘 것은 버튼 상태가 그대로일 수 있다(사용자가 멈춘 것이 아니다).
+ * 자동 전환이 돌고 있으면(on) 일시정지 아이콘·이름이며, 이름이 「다시 시작」이면(사용자가 멈춤) data-autoplay는 paused다(D4-71: on · held 포인터/초점/가려진 탭 · paused 손으로 멈춤 · none 움직임 줄이기).
+ * 포인터·포커스로 멈춘 것(held)은 버튼 상태가 그대로일 수 있다(사용자가 멈춘 것이 아니다).
  */
 export function displayIsConsistent(d: AutoplayDisplay): string | null {
   if (d.pauseName === '자동 넘김 일시정지' && d.pauseIcon !== '#i-pause') return `버튼 이름은 「일시정지」인데 아이콘이 ${d.pauseIcon}`;
   if (d.pauseName === '자동 넘김 다시 시작' && d.pauseIcon !== '#i-play') return `버튼 이름은 「다시 시작」인데 아이콘이 ${d.pauseIcon}`;
   if (d.auto === 'on' && d.pauseName !== '자동 넘김 일시정지') return `자동 전환 on인데 버튼 이름이 「${d.pauseName}」`;
-  if (d.pauseName === '자동 넘김 다시 시작' && d.auto !== 'off') return `버튼 이름은 「다시 시작」인데 data-autoplay가 ${d.auto}`;
+  if (d.pauseName === '자동 넘김 다시 시작' && d.auto !== 'paused') return `버튼 이름은 「다시 시작」인데 data-autoplay가 ${d.auto}`;
   return null;
 }

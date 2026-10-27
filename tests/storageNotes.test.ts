@@ -33,7 +33,7 @@ import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { startLife } from '../scripts/simulateLib';
 
 /**
- * 기록(note) 저장 (SPEC-003 M7c — docs/data/content-M7c.md 3-6·3-7절 H1~H6, T2 이름 한글 음절 화이트리스트, 설정 v3 → v4, 게임 스키마 v8 유지).
+ * 기록(note) 저장 (SPEC-003 M7c — docs/data/content-M7c.md 3-6·3-7절 H1~H6, T2 이름 한글 음절 화이트리스트, 설정 v3 → v4, 게임 스키마는 이 단계에서 v8, 지금은 v9 — SPEC-004 MG1).
  * 핵심: 사용자가 쓴 글은 게임이 만든 글이 아니라서 `hasHiddenControl` 거부를 쓰지 않는다 — 이모지 하나(ZWJ)로 인생 전체가 날아가면 안 된다.
  */
 
@@ -157,7 +157,7 @@ describe('연표 종류에 note가 있다 (H1~H4)', () => {
     expect(parseGame(raw(env)), '알 수 없는 종류').toBeNull();
   });
 
-  it('seen의 note- 키는 허용 범위 안이면 그대로 통과한다 (v8 저장이 새 규칙에서도 유효): 키 길이 48 · 나이 ≤ 현재 나이 · 개수', () => {
+  it('seen의 note- 키는 허용 범위 안이면 그대로 통과한다 (그 전 규칙으로 만든 저장이 새 규칙에서도 유효): 키 길이 48 · 나이 ≤ 현재 나이 · 개수', () => {
     const g = life();
     const seen = { ...g.seen, 'note-infant-memory': Math.min(5, g.age) };
     expect(parseGame(serializeGame({ ...g, seen }))!.seen['note-infant-memory']).toBe(Math.min(5, g.age));
@@ -177,7 +177,7 @@ describe('연표 종류에 note가 있다 (H1~H4)', () => {
     expect(loadGame(st)).toEqual(withRow);
   });
 
-  it('기록이 없는 v8 저장은 새 규칙에서도 그대로 이어진다 (진행 중인 판이 새 게임이 되지 않는다) — classifySavedGame도 valid', () => {
+  it('기록이 없는 저장(지금 버전 v9)은 새 규칙에서도 그대로 이어진다 (진행 중인 판이 새 게임이 되지 않는다) — classifySavedGame도 valid', () => {
     const g = life();
     expect(g.history.some((h) => h.kind === 'note')).toBe(false);
     expect(Object.keys(g.seen).some((k) => k.startsWith('note-'))).toBe(false);

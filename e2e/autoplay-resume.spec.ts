@@ -78,17 +78,17 @@ test('M2-A15 재현 절차(QM2-2 a): 카드 밖 → 일시정지 → 카드 밖 
   await page.mouse.down();
   await page.mouse.up();
   await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 다시 시작');
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'paused');
   await expectConsistent(page, '일시정지 직후');
   // 카드 밖으로 → 여전히 멈춤(사용자가 멈췄다)
   await page.mouse.move(2, 2, { steps: 8 });
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'paused');
   await expect(page.getByTestId('carousel-pause').locator('use')).toHaveAttribute('href', '#i-play'); // 상태 표시는 버튼의 아이콘·이름(SH6) — 머리글 문구는 없다
   // 다시 버튼 위로 → 「다시 시작」 클릭
   await page.mouse.move(pause.x, pause.y, { steps: 8 });
   await page.mouse.down();
   await page.mouse.up();
-  // 이동 1번(steps: 1)으로 마우스를 카드 밖으로 — 누르자마자 곧바로. 이전 구현은 여기서 hovering이 남아 data-autoplay="off"로 멈춰 있었다
+  // 이동 1번(steps: 1)으로 마우스를 카드 밖으로 — 누르자마자 곧바로. 이전 구현은 여기서 hovering이 남아 data-autoplay가 held로 멈춰 있었다
   await page.mouse.move(2, 2, { steps: 1 });
   await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 일시정지');
   await expect(carousel, '재개 직후 카드 밖으로 한 번에 치우면 자동 전환이 켜져 있어야 한다').toHaveAttribute('data-autoplay', 'on', { timeout: 3_000 });
@@ -157,6 +157,18 @@ for (const steps of [1, 12]) {
   }
 }
 
+/** 포커스가 카드 안에 있는 동안 Tab을 눌러 카드 밖으로 나간다 — 첫 장(세대 그래프)에는 슬라이드 영역 다음에 「표로 보기」 요약도 있어 눌러야 하는 횟수가 슬라이드마다 다르다(최대 5번, 공허 방지로 2번 이상) */
+async function tabOutOfCard(page: Page): Promise<void> {
+  let presses = 0;
+  while (presses < 5) {
+    await page.keyboard.press('Tab');
+    presses++;
+    const inside = await page.evaluate(() => document.querySelector('[data-testid="carousel"]')!.contains(document.activeElement));
+    if (!inside) break;
+  }
+  expect(presses, '슬라이드 영역을 지나 카드 밖으로 나갔다').toBeGreaterThanOrEqual(2);
+}
+
 test('다른 재개 경로(QM2-2 c): 키보드 Space로 멈췄다 재개하고 Tab으로 카드 밖 · 포인터만 올렸다가 한 번에 뺌 · 탭 가림 복귀 — 모두 풀린 뒤 한 주기 안에 재개', async ({ page }, testInfo) => {
   desktopOnly(testInfo);
   await openWithClock(page);
@@ -169,14 +181,13 @@ test('다른 재개 경로(QM2-2 c): 키보드 Space로 멈췄다 재개하고 T
   await page.getByTestId('carousel-pause').focus();
   await page.keyboard.press('Space');
   await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 다시 시작');
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'paused');
   await expectHoldsOverCycle(page, '키보드로 멈춘 동안');
   await page.keyboard.press('Space');
   await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 일시정지');
-  await expect(carousel, '재개했어도 포커스가 카드 안이면 멈춘 채다(사유 ⓒ)').toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel, '재개했어도 포커스가 카드 안이면 멈춘 채다(사유 ⓒ)').toHaveAttribute('data-autoplay', 'held');
   await expectHoldsOverCycle(page, '재개했지만 포커스가 카드 안일 때');
-  await page.keyboard.press('Tab'); // → 슬라이드 영역
-  await page.keyboard.press('Tab'); // → 카드 밖
+  await tabOutOfCard(page); // → 슬라이드 영역 → (첫 장 세대 그래프의 「표로 보기」 요약) → 카드 밖
   expect(await page.evaluate(() => document.querySelector('[data-testid="carousel"]')!.contains(document.activeElement)), '포커스가 카드 밖으로 나갔다').toBe(false);
   await expect(carousel).toHaveAttribute('data-autoplay', 'on');
   await expectConsistent(page, '키보드로 카드를 떠난 직후');
@@ -187,7 +198,7 @@ test('다른 재개 경로(QM2-2 c): 키보드 Space로 멈췄다 재개하고 T
   await page.getByTestId('start-birth').focus();
   const card = await centerOf(page, 'carousel-viewport');
   await page.mouse.move(card.x, card.y, { steps: 6 });
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'held');
   await expectConsistent(page, '포인터가 올라간 동안');
   await expectHoldsOverCycle(page, '포인터가 올라간 동안');
   await page.mouse.move(2, 2, { steps: 1 });
@@ -201,7 +212,7 @@ test('다른 재개 경로(QM2-2 c): 키보드 Space로 멈췄다 재개하고 T
       document.dispatchEvent(new Event('visibilitychange'));
     }, v);
   await setVisibility('hidden');
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'held');
   await expectHoldsOverCycle(page, '탭이 가려진 동안');
   await setVisibility('visible');
   await expect(carousel).toHaveAttribute('data-autoplay', 'on');
@@ -220,16 +231,15 @@ test('키보드 Enter 경로(QM2-2 c): Enter로 멈췄다 재개하고 Tab으로
   await page.getByTestId('carousel-pause').focus();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 다시 시작');
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'paused');
   await expectConsistent(page, 'Enter로 멈춘 직후');
   await expectHoldsOverCycle(page, 'Enter로 멈춘 동안');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 일시정지');
-  await expect(carousel, '재개했어도 포커스가 카드 안이면 멈춘 채다(사유 ⓒ)').toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel, '재개했어도 포커스가 카드 안이면 멈춘 채다(사유 ⓒ)').toHaveAttribute('data-autoplay', 'held');
   await expectConsistent(page, 'Enter로 재개했지만 포커스가 카드 안일 때');
   await expectHoldsOverCycle(page, 'Enter로 재개했지만 포커스가 카드 안일 때');
-  await page.keyboard.press('Tab'); // → 슬라이드 영역
-  await page.keyboard.press('Tab'); // → 카드 밖
+  await tabOutOfCard(page); // → 슬라이드 영역 → (첫 장 세대 그래프의 「표로 보기」 요약) → 카드 밖
   expect(await page.evaluate(() => document.querySelector('[data-testid="carousel"]')!.contains(document.activeElement)), '포커스가 카드 밖으로 나갔다').toBe(false);
   await expect(carousel).toHaveAttribute('data-autoplay', 'on');
   await expectConsistent(page, 'Enter 경로로 카드를 떠난 직후');
@@ -245,11 +255,11 @@ test('사유가 겹친 경우(QM2-2 d): 포인터 사유만 풀고 포커스 사
   // 키보드 포커스를 카드 안(다음 지표 버튼)에 둔 채 포인터를 카드에 올렸다가 뺀다
   await page.keyboard.press('Tab');
   await page.getByTestId('carousel-next').focus();
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'held');
   const card = await centerOf(page, 'carousel-viewport');
   await page.mouse.move(card.x, card.y, { steps: 6 });
   await page.mouse.move(2, 2, { steps: 1 });
-  await expect(carousel, '포인터는 풀렸지만 키보드 포커스가 남아 있다').toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel, '포인터는 풀렸지만 키보드 포커스가 남아 있다').toHaveAttribute('data-autoplay', 'held');
   await expectConsistent(page, '포인터만 풀린 상태');
   await expectHoldsOverCycle(page, '포인터만 풀리고 포커스가 남은 동안');
   // 마지막 사유(포커스)가 풀린다: 카드 밖으로 Tab
@@ -264,7 +274,7 @@ test('사유가 겹친 경우(QM2-2 d): 포인터 사유만 풀고 포커스 사
   await page.mouse.down();
   await page.mouse.up();
   await page.mouse.move(2, 2, { steps: 1 });
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
+  await expect(carousel).toHaveAttribute('data-autoplay', 'paused');
   await expectConsistent(page, '일시정지 + 포인터 이탈');
   await expectHoldsOverCycle(page, '일시정지 상태');
 });

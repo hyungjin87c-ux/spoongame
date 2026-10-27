@@ -144,6 +144,9 @@ for (const g of FIXED) {
     const text = await screen.innerText();
     const years = [...text.matchAll(/\b(1[89]\d\d|20\d\d)\b/g)].map((m) => Number(m[1]));
     for (const y of years) expect([GENERATIONS[g].from, GENERATIONS[g].to, 1981], `화면에 나온 연도 ${y}`).toContain(y); // 1981 = 지역 표 주석의 「1981년 전은 출생 자료가 없어」(고정 문장)
+    // R-515 a: 속성(aria-label·data-*·title·style)까지 — 마크업 전체에서도 세대 범위 양 끝·정해진 문구의 1981 밖의 연도는 없다. xmlns(w3.org/2000/svg)는 연도가 아니라 빼고 센다
+    const markup = (await screen.evaluate((el) => el.outerHTML)).replace(/ xmlns="[^"]*"/g, '');
+    for (const m of markup.matchAll(/(?<!\d)(19[4-9]\d|20[0-2]\d)(?!\d)/g)) expect([GENERATIONS[g].from, GENERATIONS[g].to, 1981], `마크업(속성 포함)에 나온 연도 ${m[1]}`).toContain(Number(m[1]));
   });
 }
 

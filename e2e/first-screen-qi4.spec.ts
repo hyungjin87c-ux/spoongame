@@ -4,9 +4,9 @@ import { MANUAL } from './parentStates';
 import { openBarState } from './titleStates';
 
 /**
- * 첫 화면 캐러셀 20장 (SPEC-005 QI4 2단계 FC1~FC5·SH1~SH7·HS3 ④) + QI6·QI7 뒤 마스터 결정 ①(WebKit 왼쪽 열)·③(펼친 동안 자동 넘김 멈춤)을 실제 브라우저에서 본다.
+ * 첫 화면 캐러셀 21장(첫 장 세대 그래프 + 20장 — SPEC-005 QI4 2단계 FC1~FC5·SH1~SH7·HS3 ④) + QI6·QI7 뒤 마스터 결정 ①(WebKit 왼쪽 열)·③(펼친 동안 자동 넘김 멈춤)을 실제 브라우저에서 본다.
  *  · 「인생 길이」 제목이 분절 컨트롤 왼쪽 같은 줄에 있고 왼쪽 열 끝이 하단 띠(새 판 732 / 이어서 살기 680) 위다 — **Chromium·WebKit 모두** (결정 ①, `.slot--small { display: block }`)
- *  · 20장 모두 표제어·값이 스크롤 0에서 띠 위에 보인다(1280×800·1920×1080, 스위치 꺼짐·켜짐), 360×740은 카드 맨 위를 화면 맨 위에 둔 뒤 보인다 (HS3 ④)
+ *  · 21장 모두 표제어·값이 스크롤 0에서 띠 위에 보인다(1280×800·1920×1080, 스위치 꺼짐·켜짐), 360×740은 카드 맨 위를 화면 맨 위에 둔 뒤 보인다 (HS3 ④)
  *  · 「전망」 칩(글자 + 아이콘)·한 줄 안내·숨긴 표·무늬(빗금·점무늬)와 강제 색상(빗금 막대는 stroke만 시스템 색)
  *  · 자살률 슬라이드를 「펼쳐 보기」로 연 동안 자동 넘김이 멈춘다 — 마우스·터치 모두, 접거나 떠나면 다시 돈다 (결정 ③)
  * 값·글자 자체(문구·좌표·20장 순서)는 단위 시험(tests/slideForms.test.ts·carousel.test.ts·statHeadlines.test.ts)이 본다. 여기서는 뷰포트를 직접 지정한다.
@@ -53,7 +53,10 @@ async function systemColor(page: Page, name: 'ButtonText' | 'CanvasText' | 'Canv
   }, name);
 }
 
-const SLIDE_COUNT = 20;
+/** 슬라이드 수: 첫 장 세대 그래프(gen-births) + 20장 (SPEC-004 GM4 2차, D4-71) */
+const SLIDE_COUNT = 21;
+/** 첫 장(세대 그래프)의 큰 값은 `slide-value`가 아니라 `.gen-chart__big`이다 — 둘을 한 선택자로 */
+const VALUE_SEL = '.slide.is-active [data-testid="slide-value"], .slide.is-active .gen-chart__big';
 const PROJECTION_IDS = ['projection-population-total', 'projection-aging-share', 'projection-one-person-households', 'heat-projection', 'projection-newborn-age-structure'];
 
 // ---------- ① 왼쪽 열 (두 엔진) ----------
@@ -89,22 +92,22 @@ for (const state of ['new', 'continue'] as const) {
     await expect(page.getByTestId('start-birth').or(page.getByTestId('resume'))).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const m = { main: await rectOf(page, '.title__main'), bar: await rectOf(page, '[data-testid="bottom-bar"]'), life: await rectOf(page, '[data-testid="life-length-group"]') };
-    // SPEC-004 GM4 1차: 세대 목록(스크롤 창 288px)과 「태어나는 시도」 칸이 왼쪽 열에 더해져 열 끝(접이식 「내가 실제로 태어난 시도」·설정 줄)은 1280×800에서 띠 밑으로 내려간다 —
-    // 접는 선 정리(제목 키우기·설명 두 줄·열 끝)는 GM4 2차(docs/TODO.md 「GM4 2차」)에서 다시 잡는다. 지금은 고르는 컨트롤(인생 길이까지)이 띠 위에 있음을 지킨다
-    expect(m.life!.bottom, `인생 길이 아래끝 ${Math.round(m.life!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
+    // 복원(GM4 2차 ④): 1차에서 「인생 길이까지」로 줄여 두었던 단언을 되돌렸다 — 세대 목록 창(PC 하한 9rem · 식 100vh − 37.5rem)과 설정 둘을 한 줄에 놓아 왼쪽 열 끝이 띠 위에 든다
+    expect(m.main!.bottom, `왼쪽 열 끝 ${Math.round(m.main!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
+    expect(m.life!.bottom).toBeLessThan(m.bar!.y);
     expect(await noHorizontalOverflow(page)).toBe(true);
-    console.log(`[QI4 ① ${testInfo.project.name} ${state}] main.bottom=${Math.round(m.main!.bottom)} life.bottom=${Math.round(m.life!.bottom)} bar.y=${Math.round(m.bar!.y)} (인생 길이 여유 ${Math.round(m.bar!.y - m.life!.bottom)}px)`);
+    console.log(`[QI4 ① ${testInfo.project.name} ${state}] main.bottom=${Math.round(m.main!.bottom)} bar.y=${Math.round(m.bar!.y)} (여유 ${Math.round(m.bar!.y - m.main!.bottom)}px)`);
   });
 }
 
-// ---------- HS3 ④: 20장 모두 스크롤 0에서 표제어·값이 띠 위에 보인다 ----------
+// ---------- HS3 ④: 21장 모두 스크롤 0에서 표제어·값이 띠 위에 보인다 ----------
 
 for (const vp of [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ] as const) {
   for (const gentle of [false, true] as const) {
-    test(`HS3 ④ ${vp.name} · 스위치 ${gentle ? '켜짐' : '꺼짐'}: 20장 모두 칩·표제어·값이 스크롤 0에서 하단 띠 위에 보이고 값 아래끝 ≤ 오른쪽 열의 보이는 끝, 가로 넘침 0`, async ({ page }, testInfo) => {
+    test(`HS3 ④ ${vp.name} · 스위치 ${gentle ? '켜짐' : '꺼짐'}: 21장 모두 칩·표제어·값이 스크롤 0에서 하단 띠 위에 보이고 값 아래끝 ≤ 오른쪽 열의 보이는 끝, 가로 넘침 0`, async ({ page }, testInfo) => {
       test.skip(kindOf(testInfo.project.name) !== 'desktop', DESKTOP_ONLY);
       await openTitle(page, vp.width, vp.height, gentle);
       await page.getByTestId('carousel-pause').click(); // 측정하는 동안 슬라이드가 바뀌지 않게
@@ -115,7 +118,7 @@ for (const vp of [
         const m = {
           chip: await rectOf(page, '.slide.is-active .chip'),
           insight: await rectOf(page, '.slide.is-active .slide__insight'),
-          value: await rectOf(page, '.slide.is-active [data-testid="slide-value"]'),
+          value: await rectOf(page, VALUE_SEL),
           bar: await rectOf(page, '[data-testid="bottom-bar"]'),
           side: await rectOf(page, '.title__side'),
         };
@@ -145,7 +148,7 @@ for (const vp of [
 }
 
 for (const gentle of [false, true] as const) {
-  test(`HS3 ④ 360x740 · 스위치 ${gentle ? '켜짐' : '꺼짐'}: 20장 모두 카드 맨 위를 화면 맨 위에 둔 뒤 표제어·값이 하단 띠 위에 보이고 가로 넘침 0 (한 칸 레이아웃이라 카드는 스크롤해서 본다)`, async ({ page }, testInfo) => {
+  test(`HS3 ④ 360x740 · 스위치 ${gentle ? '켜짐' : '꺼짐'}: 21장 모두 카드 맨 위를 화면 맨 위에 둔 뒤 표제어·값이 하단 띠 위에 보이고 가로 넘침 0 (한 칸 레이아웃이라 카드는 스크롤해서 본다)`, async ({ page }, testInfo) => {
     test.skip(kindOf(testInfo.project.name) !== 'mobile', MOBILE_ONLY);
     await openTitle(page, 360, 740, gentle);
     await page.getByTestId('carousel-pause').click();
@@ -159,7 +162,7 @@ for (const gentle of [false, true] as const) {
       });
       const m = {
         insight: await rectOf(page, '.slide.is-active .slide__insight'),
-        value: await rectOf(page, '.slide.is-active [data-testid="slide-value"]'),
+        value: await rectOf(page, VALUE_SEL),
         bar: await rectOf(page, '[data-testid="bottom-bar"]'),
         chip: await rectOf(page, '.slide.is-active .chip'),
       };
@@ -203,7 +206,7 @@ test('전망 5장: 칩 「전망」(글자 + 아이콘 i-proj, 14px)·정의 아
         return [y('.slide__chips'), y('.slide__insight'), y('p.t-muted'), y('.slide__projnote'), y('.slide__meta')];
       });
       expect([...order].sort((a, b) => a - b), `${id} 칩 → 표제어 → 정의 → 한 줄 → 출처 순서`).toEqual(order);
-      expect(await slide.getAttribute('aria-label'), `${id} 읽기 이름은 「n/20 전망, …」`).toMatch(/^\d+\/20 전망, /);
+      expect(await slide.getAttribute('aria-label'), `${id} 읽기 이름은 「n/21 전망, …」`).toMatch(/^\d+\/21 전망, /);
     } else {
       await expect(slide.locator('.chip')).toHaveCount(0);
       await expect(slide.getByTestId('slide-projnote')).toHaveCount(0);
@@ -311,7 +314,7 @@ test.describe('자살률 슬라이드를 펼쳐 둔 동안 자동 넘김이 멈�
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await parkMouse(page);
-    await expect.poll(() => autoplay(page), '펼친 동안은 멈춘다').toBe('off');
+    await expect.poll(() => autoplay(page), '펼친 동안은 멈춘다(held — 접으면 이어 간다)').toBe('held');
     await page.waitForTimeout(10_500); // 한 주기(9초)가 넘게 기다린다
     expect(await active(page), '펼친 동안 슬라이드가 넘어가지 않는다').toBe('suicide-rate');
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
@@ -344,7 +347,7 @@ test.describe('자살률 슬라이드를 펼쳐 둔 동안 자동 넘김이 멈�
       const btn = page.locator('.slide.is-active').getByTestId('slide-veil-btn');
       await btn.tap();
       await expect(btn).toHaveAttribute('aria-expanded', 'true');
-      await expect.poll(() => autoplay(page), '펼친 동안은 멈춘다(터치 포함)').toBe('off');
+      await expect.poll(() => autoplay(page), '펼친 동안은 멈춘다(터치 포함)').toBe('held');
       await page.waitForTimeout(10_500);
       expect(await active(page), '펼친 동안 슬라이드가 넘어가지 않는다').toBe('suicide-rate');
       await expect(btn).toHaveAttribute('aria-expanded', 'true');
@@ -354,7 +357,7 @@ test.describe('자살률 슬라이드를 펼쳐 둔 동안 자동 넘김이 멈�
       // 펼친 채 다음으로 가면(슬라이드를 떠남) 다시 돈다
       await btn.tap();
       await expect(btn).toHaveAttribute('aria-expanded', 'true');
-      await expect.poll(() => autoplay(page)).toBe('off');
+      await expect.poll(() => autoplay(page)).toBe('held');
       await page.getByTestId('carousel-next').tap();
       await expect.poll(() => active(page)).not.toBe('suicide-rate');
       await expect.poll(() => autoplay(page), '떠나면 다시 돈다').toBe('on');

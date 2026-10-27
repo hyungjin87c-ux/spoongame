@@ -9,24 +9,33 @@ import { useInputGuard, type GuardKey } from './GuardedButton';
  * 진짜 링크(<a href>)라 길게 눌러 복사·새 탭 열기도 되고, 입력 가드(화면 진입 직후 0.4초, R-035)와 연타 방지(한 번 연 뒤 1.5초는 다시 열지 않는다 — 팝업 차단·탭 폭주 방지)를 가진다.
  * 가드로 닫혀 있는 동안은 `aria-disabled="true"`이고 눌러도 이동하지 않는다. 주소를 만들 수 없으면(저장소 주소가 빌드 설정에 없다) 아무것도 그리지 않는다.
  *
- * 두 자리에 같은 부품이 놓인다(SPEC-005 N2): 인생 화면 도구 줄(`variant="tool"`, 기본) · 첫 화면 정보 패널의 끝(`variant="panel"` — 보조 작은 버튼, 같은 주소 함수·같은 속성·같은 읽기 이름 「(새 탭으로 열립니다)」).
+ * 같은 부품이 여러 자리에 놓인다(SPEC-005 N2 → SPEC-004 GS12): 인생 화면 도구 줄(`variant="tool"`, 기본) · 첫 화면 정보 패널의 끝(`variant="panel"` — 보조 작은 버튼, 같은 주소 함수·같은 속성·같은 읽기 이름 「(새 탭으로 열립니다)」) ·
+ * 첫 화면 하단의 작은 단추(`foot-btn`)와 아주 작은 링크 줄의 글자 링크(`foot-link`) — 모두 같은 주소·같은 속성이다.
  */
 
 /** 한 번 열린 뒤 다시 열리지 않는 시간(ms) */
 export const FEEDBACK_COOLDOWN_MS = 1500;
 
-export function FeedbackLink({ url, guardKey, variant = 'tool' }: { url: string | null; guardKey: GuardKey; variant?: 'tool' | 'panel' }) {
+type FeedbackVariant = 'tool' | 'panel' | 'foot-btn' | 'foot-link';
+const VARIANT: Record<FeedbackVariant, { className: string | undefined; testId: string; icon: boolean }> = {
+  tool: { className: 'btn btn--tool', testId: 'tool-feedback', icon: true },
+  panel: { className: 'btn btn--secondary btn--sm', testId: 'info-feedback', icon: true },
+  'foot-btn': { className: 'btn btn--secondary btn--sm', testId: 'foot-feedback', icon: false },
+  'foot-link': { className: undefined, testId: 'foot-feedback-link', icon: false },
+};
+
+export function FeedbackLink({ url, guardKey, variant = 'tool' }: { url: string | null; guardKey: GuardKey; variant?: FeedbackVariant }) {
   const ready = useInputGuard(guardKey);
   const lastOpen = useRef<number | null>(null);
   if (url === null) return null;
   return (
     <a
-      className={variant === 'panel' ? 'btn btn--secondary btn--sm' : 'btn btn--tool'}
+      className={VARIANT[variant].className}
       href={url}
       target="_blank"
       rel="noopener noreferrer"
       aria-disabled={ready ? undefined : true}
-      data-testid={variant === 'panel' ? 'info-feedback' : 'tool-feedback'}
+      data-testid={VARIANT[variant].testId}
       onClick={(e) => {
         const now = performance.now();
         if (!ready || (lastOpen.current !== null && now - lastOpen.current < FEEDBACK_COOLDOWN_MS)) {
@@ -36,7 +45,7 @@ export function FeedbackLink({ url, guardKey, variant = 'tool' }: { url: string 
         lastOpen.current = now;
       }}
     >
-      <Icon name="i-message" className={variant === 'panel' ? 'icon--sm' : undefined} />
+      {VARIANT[variant].icon ? <Icon name="i-message" className={variant === 'panel' ? 'icon--sm' : undefined} /> : null}
       <span>{DASH_TEXT.toolFeedback}</span>
       <span className="sr-only">{DASH_TEXT.feedbackNewTab}</span>
     </a>

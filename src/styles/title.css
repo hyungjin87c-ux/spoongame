@@ -201,7 +201,7 @@ html.bar-released .page-end-space { display: none; }
 .title__main { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
 .title__notice { padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--c-notice-bg); color: var(--c-on-notice); font-size: var(--fs-sm); }
 .hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-4); }
-.hero .logo--word { --logo-h: 52px; max-width: 100%; }
+.hero .logo--word { --logo-h: 64px; max-width: 100%; } /* SPEC-004 GS11 · D4-60: 제목을 더 크게 — 좁은 화면 52 → 64px(글자 획 상자 51px, 폭 272px ≤ 360의 328·320의 288) */
 /* 머리 줄 (SPEC-005 D5-01 A안·D5-04): 로고는 워드마크만이고(좁은 화면 52px → 글자 높이 41px로 DS1 ≥ 40px, 넓은 화면 64px → 51px) 머리 아래 글은 두 폭 모두 **왼쪽 정렬**이다 — 로고 줄 아래의 일러스트 배너(좁은 화면)·한 줄 설명·수저 띠가 한 축을 쓴다 */
 .hero--005 { align-items: stretch; text-align: left; gap: var(--sp-3); }
 .hero--005 h1 { min-width: 0; }
@@ -241,9 +241,9 @@ html.bar-released .page-end-space { display: none; }
 .carousel__nav { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-1); margin: calc(var(--sp-2) * -1) calc(var(--sp-2) * -1) 0 0; }
 /* 조작 버튼: 보이는 상자(.nav-btn__box)는 28px(≤ 32px▲, 포인터 클릭 대상 ≥ 24×24, WCAG 2.5.8), 누르는 요소(button)는 거친 포인터(터치)에서 44px로 커진다 — 보이지 않는 여백이 버튼 자신이라 요소가 부모 밖으로 넘치지 않는다 */
 .nav-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-2); cursor: pointer; }
-.nav-btn__box { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--c-border-strong); border-radius: var(--r-sm); background: var(--c-surface); }
+.nav-btn__box { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent; } /* 테두리·면 없이 아이콘만 (D4-55 · 답 4차 3 「화살표는 작게」) — 강제 색상은 아래에서 경계를 남긴다 */
 .nav-btn:hover .nav-btn__box { background: var(--c-surface-2); color: var(--c-text); }
-.nav-btn .icon { width: 18px; height: 18px; }
+.nav-btn .icon { width: 16px; height: 16px; }
 /* 입력 가드(진입 직후 0.4초)의 과도 상태 — 다른 버튼(.btn)과 같은 흐림 */
 .nav-btn[aria-disabled='true'] { opacity: 0.55; cursor: default; }
 .carousel__nav .carousel__status { min-width: 3.4em; text-align: center; font-size: var(--fs-xs); color: var(--c-text-2); }
@@ -257,9 +257,12 @@ html.bar-released .page-end-space { display: none; }
 /* 좁은 화면(한 칸 레이아웃): 모든 슬라이드를 같은 칸에 겹쳐 두고 보이는 하나만 드러낸다 — 카드 높이가 가장 큰 슬라이드에 맞춰 고정되어 전환 때 아래 내용(푸터)이 흔들리지 않는다.
    짧은 슬라이드에 남는 빈 칸은 카드 끝에 생긴다(슬라이드 안의 줄은 위에서부터 차례로 놓이고 「통계 기준」 줄을 아래로 끌어내리지 않는다 — 빈 칸이 출처와 통계 기준 사이에 끼는 깨진 배치를 피한다, REV-003-M2-2 마스터 결정). */
 .slides { display: grid; }
-.slide { container-type: inline-size; grid-area: 1 / 1; display: flex; flex-direction: column; gap: calc(var(--sp-2) - 2px); min-width: 0; visibility: hidden; opacity: 0; transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur); }
-.slide.is-active { visibility: visible; opacity: 1; transition: opacity var(--dur) var(--ease); }
+/* 전환 = 불투명도 크로스페이드 320ms (--dur × 1.6, D4-71): 끊기지도 흐르지도 않는 길이 — 움직임 줄이기이면 --dur이 0.01ms라 즉시 바뀐다 */
+.slide { container-type: inline-size; grid-area: 1 / 1; display: flex; flex-direction: column; gap: calc(var(--sp-2) - 2px); min-width: 0; visibility: hidden; opacity: 0; transition: opacity calc(var(--dur) * 1.6) var(--ease), visibility 0s linear calc(var(--dur) * 1.6); }
+.slide.is-active { visibility: visible; opacity: 1; transition: opacity calc(var(--dur) * 1.6) var(--ease); }
 .slide .t-sm { line-height: var(--lh-snug); }
+/* 정의 문장은 12px (형진 님 답 4차 2 「설명 글자는 조금 작게」, 바닥 12px R-206) — 표제어 22 · 큰 값 36은 그대로 */
+.slide > .t-sm { font-size: var(--fs-xs); line-height: 1.5; }
 /* 표제어(SH1·SH2): 인사이트형 질문, 슬라이드의 제목(h3). 줄 균형(text-wrap: balance)으로 글자 200%에서 두 줄이 되어도 한 낱말만 홀로 남지 않는다 */
 .slide__insight { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); text-wrap: balance; }
 /* 공식 통계명(기준): 작고 연한 글씨이지만 대비 4.5:1 이상 — --c-text-3(면 위 라이트 5.78 / 다크 5.96, 띠 위 5.30 / 5.54, contrast-report.md) */
@@ -347,16 +350,16 @@ html.bar-released .page-end-space { display: none; }
 .dots button i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--c-border-strong); background: transparent; box-sizing: content-box; }
 .dots button[aria-current='true'] i { width: 12px; border-radius: var(--r-pill); background: var(--c-brand); border-color: var(--c-brand); }
 
-/* 통계 카드를 그림의 하늘·연두·살구 톤에 맞춘다(형진 님 「일러스트와 통계 그래프는 웹페이지 배경과 어울리도록」, D5-27): 카드 위쪽 88px 옅은 하늘 띠, 차가운 회색 테두리, 푸른빛 그림자,
-   실측 선·점·막대·범례는 이 카드 안에서만 --c-brand를 --c-chart로 바꾼다. 전망(놋쇠 긴 점선·빗금)·보조 계열(점선)·칩·글자 색은 그대로 — 실측 실선 / 전망 점선 구분 유지(색에만 의존하지 않는다).
-   토큰 4개(--c-chart·--c-card-tint·--c-card-border·--shadow-card)는 tokens.css, 대비 쌍 5개는 scripts/checkContrastLib.ts. 강제 색상은 토큰이 시스템 색으로 돌아간다. 다른 카드는 공용 .card 그대로. */
-.carousel--005 { --c-brand: var(--c-chart); border-color: var(--c-card-border); box-shadow: var(--shadow-card); background: linear-gradient(180deg, var(--c-card-tint) 0, var(--c-surface) 88px); position: relative; z-index: 1; }
+/* 통계 카드 (SPEC-004 GM4 2차, D4-55 정본 · 마스터 결정 2026-10-27): 일러스트가 빠져 하늘 띠·푸른 그림자·차가운 테두리의 이유가 없어졌다 — 카드는 면 + 1px 경계 하나(.card)이고 조작 버튼은 테두리 없이 아이콘만이다(.nav-btn__box).
+   실측 선·점·막대·범례는 이 카드 안에서만 --c-brand를 --c-chart로 바꾼다(비텍스트 3:1). 전망(놋쇠 긴 점선·빗금)·보조 계열(점선)·칩·글자 색은 그대로 — 실측 실선 / 전망 점선 구분 유지(색에만 의존하지 않는다). */
+.carousel--005 { --c-brand: var(--c-chart); position: relative; z-index: 1; box-shadow: none; }
 
 /* ---------- 넓은 화면 ---------- */
 @media (min-width: 960px) {
-  .title { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); column-gap: var(--sp-8); padding-top: var(--sp-6); align-items: start; }
+  /* 그래프는 크게(형진 님 답 4차 2): 열 비율 1.45fr/1fr → 1.15fr/1fr — 1280에서 오른쪽 열 428 → 487px. 하단(GS12)은 두 열을 가로지르는 둘째 줄 전체다 */
+  .title { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: var(--sp-8); padding-top: var(--sp-6); align-items: start; }
   .title__main { grid-column: 1; grid-row: 1; }
-  .title-foot { grid-column: 1; grid-row: 2; }
+  .title-foot { grid-column: 1 / -1; grid-row: 2; margin-top: var(--sp-4); }
   /* 넓은 화면의 캐러셀(R-200): 카드 높이는 보이는 슬라이드만큼이다 — 가장 큰 슬라이드에 맞춰 고정하면 짧은 슬라이드 아래가 비고, 카드 전체가 하단 띠에 가려졌다.
      오른쪽 열이라 카드 높이가 바뀌어도 아래 내용은 흔들리지 않는다. 안 보이는 슬라이드는 겹쳐 두되 흐름에서 빠지고(absolute), 넘치는 부분은 잘라 문서 높이에 보태지 않는다. */
   .slides { display: block; position: relative; overflow: hidden; }
@@ -365,25 +368,30 @@ html.bar-released .page-end-space { display: none; }
   .title__main, .hero { gap: var(--sp-4); }
   .hero { align-items: flex-start; text-align: left; }
   .hero__tag { max-width: none; }
-  .hero .logo--word { --logo-h: 64px; }
+  .hero .logo--word { --logo-h: 84px; } /* 64 → 84px(글자 획 상자 66px, 폭 357px — 왼쪽 열 안) */
   .hero--005 { gap: var(--sp-3); }
   /* 1280×800: 왼쪽 열(큰 슬롯 → 인생 길이 → 설정 줄)이 하단 띠 위에 다 들어가도록 세로 간격을 한 단 줄인다 — 큰 슬롯 카드가 8장(SPEC-004)이 되면 스크롤이 생기지만 띠가 포커스를 가리지 않는다(scroll-padding, CM10) */
   .slots-bottom { gap: var(--sp-2); }
+  /* 설정 둘(무거운 장면 가리기 · 내 출신 시도)은 한 줄에 나란히 — 왼쪽 열 끝이 하단 띠 위에 들어오게 한 줄(약 50px)을 아낀다 (GM4 2차 ④). 태어나는 시도·인생 길이는 전체 폭 그대로 */
+  .slots-bottom { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-5); align-items: start; }
+  .slots-bottom > .slot--small { grid-column: 1 / -1; }
   /* 따라다니는 카드가 하단 띠 위에 머문다: 낮은 화면(예: 높이 650px의 노트북 창)에서 카드가 더 크면 카드 안쪽이 스크롤된다(안쪽 스크롤 전에는 조작 줄이 카드 머리라 보이고, 안쪽을 내리면 머리도 함께 올라가며 PageUp·휠로 되돌린다 — R-224).
-     바깥 여백 3px은 카드 그림자·테두리가 스크롤 영역에 잘리지 않게 하려는 것이다.
-     R-220: 카드가 놓인 격자 영역은 본문 줄과 푸터 줄을 합친 높이(grid-row: 1 / span 2)라서 따라다니는 범위가 문서 끝까지 이어진다 — 맨 아래까지 내려도 카드가 열 끝에 밀려 올라가지 않고
-     늘 같은 자리에 있어 슬라이드가 바뀌어도 조작 줄이 움직이지 않는다. max-height(−3px)는 카드(바깥 여백 포함)가 격자 끝 = 하단 띠 위끝 − 8px(본문 끝 여백)에 1px도 걸려 밀려 올라가지 않게 잡았다
-     (이전 값 −1px에서는 확인 단계(띠 약 150px)의 안쪽 스크롤 슬라이드가 맨 아래에서 1px 밀렸다 — R-224 e2e가 잡았다). */
-  .title__side { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: calc(var(--sp-6) - 3px); margin: -3px; padding: 3px; max-height: calc(100vh - var(--bar-h, 164px) - var(--sp-6) - 3px); overflow-y: auto; scroll-padding: var(--sp-3) 0; }
+     하단이 두 열을 가로지르면서(둘째 줄 전체) 오른쪽 열(aside)은 첫 줄에만 있다. 따라다니기(sticky)는 열(aside)이 아니라 **카드**에 둔다 — 크롬은 격자 항목의 sticky를 격자 영역이 아니라 격자 컨테이너(.title)로 묶어,
+     aside를 sticky로 두면 카드가 하단 위로 올라탔다(디자인 시안 첫 측정, design-system.md 17-12-3 ⑨). 카드의 containing block은 aside(첫 줄 높이로 늘어난 상자)라 본문 끝에서 멈춘다.
+     카드 최대 높이 = 창 − 띠 − 위아래 여백(R-224와 같은 식, 확인 단계의 약 150px 띠에서도 맨 아래에서 밀리지 않게 −3px 여유), 넘치면 카드 안이 스크롤한다. */
+  .title__side { grid-column: 2; grid-row: 1; align-self: stretch; }
+  .carousel--005 { position: sticky; top: var(--sp-6); max-height: calc(100vh - var(--bar-h, 164px) - var(--sp-6) - var(--sp-3)); overflow-y: auto; scroll-padding: var(--sp-3) 0; }
   /* ↑ scroll-padding: 카드 안쪽을 스크롤해 포커스를 보일 때 포커스 링(최대 7px)이 카드의 위·아래 가장자리에 잘리거나 하단 띠에 닿지 않게 한다(CM10) */
   /* 띠가 풀리면(위 html.bar-released) 카드가 피할 하단 띠가 없다 — --bar-h에 묶인 max-height를 푼다(QM2-12) */
-  html.bar-released .title__side { max-height: calc(100vh - var(--sp-6) - 3px); }
+  html.bar-released .carousel--005 { max-height: calc(100vh - var(--sp-6) - var(--sp-3)); }
 }
 
 /* ---------- 강제 색상(고대비) ---------- */
 @media (forced-colors: active) {
   .carousel--005 { background: Canvas; }
   .nav-btn, .seg, .switch__track, .seg__meta { border-color: CanvasText; }
+  .nav-btn__box { border-color: CanvasText; background: Canvas; } /* 강제 색상에서는 아이콘 버튼의 경계를 남긴다 */
+  .carousel--005[data-autoplay='paused'] .carousel__pause .nav-btn__box { border-color: Highlight; } /* 멈춘 상태: 아이콘(재생)·aria-pressed에 더해 경계 색으로도 */
   .seg__opt.is-selected { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: CanvasText; }
   .seg__opt.is-disabled, .seg__opt.is-disabled .seg__meta { color: GrayText; border-color: GrayText; }
   .switch[aria-checked='true'] .switch__track { forced-color-adjust: none; background: Highlight; border-color: CanvasText; }
@@ -447,7 +455,9 @@ html.bar-released .page-end-space { display: none; }
 .gen-list { --gen-list-h: clamp(12rem, 100svh - 27rem - var(--bar-h, 68px) + 68px, 24rem); position: relative; display: flex; flex-direction: column; max-height: var(--gen-list-h); overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y proximity; scroll-padding-block: 1px; margin: 0; border-top: 1px solid var(--c-border-strong); border-bottom: 1px solid var(--c-border-strong); }
 /* 이어서 살기(120px)·확인 단계(150px) 띠는 새 판 띠(68px)보다 높다 — 그만큼 창을 줄여(--bar-h − 68px) 인생 길이 칸이 띠에 가리지 않게 한다(SPEC-005 D5-19). 새 판 띠에서는 식이 그대로다. */
 /* 창 높이(r3): 줄이 두 줄(≈ 51px)이 되어 r2 값(PC −34rem · 모바일 −29rem)이면 1280×800에서 4.8줄 — 2rem씩 늘려 PC 288px(5.6줄) · 360×740 308px(≈ 5줄, 긴 이름 줄 포함). 상한 24rem(1920에서 8줄 전부 = 7 × 53 + 70 = 441 > 384라 7.3줄 — 마지막 줄이 반쯤 보여 스크롤을 알린다) */
-@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(12rem, 100vh - 32rem - var(--bar-h, 68px) + 68px, 24rem); } }
+/* PC(≥ 960px)의 창 높이 (GM4 2차 ④ — 1280×800 「왼쪽 열 끝 < 하단 띠」 복원): 하한 9rem · 식 100vh − 37.5rem(= 800 → 200px, 이전 288px) · 상한 24rem. 이어서 살기 띠(120px)·확인 단계 띠는 아래 식이 그만큼 더 줄인다(−(띠 − 68px)).
+   폭이 넓어 줄이 두세 줄로 접히지 않으므로 하한을 12rem에서 9rem으로 내려도 글자 200%에서 한 줄이 창보다 커지지 않는다(그 하한은 좁은 화면에 그대로 있다). 값 근거: 1280×800 왼쪽 열(제목 84px · 설명 두 줄 · 목록 · 접이식 · 태어나는 시도 · 인생 길이 · 설정 둘이 한 줄) 끝 724 < 띠 732, 이어서 살기 띠 672 < 680. */
+@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(9rem, 100vh - 37.5rem - var(--bar-h, 68px) + 68px, 24rem); } }
 @media (prefers-reduced-motion: no-preference) { .gen-list { scroll-behavior: smooth; } }
 :root[data-motion='reduce'] .gen-list { scroll-behavior: auto; }
 /* flex: none — 세로 flex 컨테이너(max-height) 안에서 min-height를 준 항목은 flex-shrink로 44px까지 눌린다(첫 측정에서 두 줄 글이 다음 줄과 겹쳤다). 줄은 제 높이를 갖고 목록이 스크롤한다 */
@@ -496,6 +506,11 @@ html.bar-released .page-end-space { display: none; }
 .chip-opt.is-disabled input { cursor: not-allowed; }
 .chip-opt:focus-within { outline: 3px solid var(--c-focus); outline-offset: 2px; }
 .chip-opt--origin { font-weight: var(--fw-bold); }
+/* 내 출신 시도 바로가기는 단추(R-519 a)이고 시·도 칩은 role=radiogroup 한 묶음 — 묶음 상자는 줄바꿈 격자에 끼지 않게 풀어 칩이 단추와 같은 줄에 흐른다 */
+.chipset__radios { display: contents; }
+button.chip-opt { font: inherit; font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.2; }
+button.chip-opt:disabled { cursor: not-allowed; }
+.chipset__alert { color: var(--c-text); font-weight: var(--fw-bold); }
 .chipset__note { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); margin: 0; }
 @media (pointer: coarse) { .chip-opt input { top: -6px; bottom: -6px; height: auto; } } /* 보이는 32px, 누르는 영역 44px */
 
@@ -583,10 +598,112 @@ html.bar-released .page-end-space { display: none; }
 .info__items li > span:last-child { flex: 1 1 14em; min-width: min(14em, 100%); }
 .faq__a { padding: 0 var(--sp-2) var(--sp-3) calc(var(--sp-2) + 12px + var(--sp-2)); display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); line-height: var(--lh-body); }
 .faq__a p { margin: 0; }
+.policy { margin: 0; }
+.policy > div { padding: var(--sp-3) 0; border-top: 1px solid var(--c-border); }
+.policy dt { font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: var(--lh-snug); }
+.policy dd { margin: var(--sp-1) 0 0; font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--c-text-2); }
 .info__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 calc(-1 * var(--sp-2)); padding: var(--sp-4) var(--sp-2) 0; border-top: 1px solid var(--c-border); font-size: var(--fs-sm); color: var(--c-text-2); }
 .info__foot .btn { white-space: normal; word-break: keep-all; overflow-wrap: normal; }
 @media (forced-colors: active) {
   /* 구분줄·꺾쇠는 CanvasText. hover 면은 강제 색상이 지우므로 따로 두지 않는다(꺾쇠·포커스 링이 남는다) */
-  .info__ver + .info__ver, .faq__item + .faq__item { border-top-color: CanvasText; }
+  .info__ver + .info__ver, .faq__item + .faq__item, .policy > div { border-top-color: CanvasText; }
   .info__ver > summary::before, .faq__item > summary::before { border-color: CanvasText; }
 }
+
+
+/* ---------- SPEC-004 GM4 2차: 캐러셀 첫 장 「세대 그래프」 (docs/design/mockups/gm3/gm3.css r4·r5 블록을 옮겼다 — design-system.md 17-12-3·17-13, diff-004.md D4-61·D4-71·D4-72) ----------
+   한 질문 한 계열(app-screens §6): 「고른 세대는 한 해에 몇 명이 태어났을까?」 1940~2020 선 하나, 고른 세대 구간만 강조(쪽빛 2.5px + 옅은 쪽빛 띠), 나머지 보조 1.5px, 격자 3줄 실선 + 기준선, y 눈금 0/40만/80만/120만(최댓값 102만 위),
+   x 눈금 5(끝 둘은 안쪽), 직접 라벨은 구간 최댓값 하나, 범례 없음. 글자는 잉크 토큰(계열 색을 글자에 쓰지 않는다). 1940~1969는 공식 연간 통계가 없어 비워 두고 「연간 통계 없음」 글자(빈 구간을 그대로).
+   첫 장도 다른 장과 같은 슬라이드 문법 — 물음 표제어 · 세대 줄(공식 통계명 자리) · 큰 값(한 해 평균) · 그림 · 숫자 둘 · 표로 보기 · 출처. 가리킴: 플롯 위에서 가장 가까운 해 — 세로 선 + 점 + 글자(값은 표에도 있어 가리킴이 없어도 읽힌다). */
+.slide--gen .slide__official { margin: 0; }
+.slide--gen .gen-chart__gen { font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); font-variant-numeric: tabular-nums; }
+.slide--gen .gen-chart__gen b { color: var(--c-text); font-weight: var(--fw-bold); }
+.gen-chart__bigsub { margin: calc(var(--sp-1) * -1) 0 0; font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); }
+.gchart { width: 100%; height: auto; display: block; color: var(--c-brand); overflow: visible; margin-top: var(--sp-1); }
+.gchart text { font-size: 12px; fill: var(--c-text-3); paint-order: stroke; stroke: var(--c-surface); stroke-width: 3px; stroke-linejoin: round; font-variant-numeric: tabular-nums; }
+.gchart .grid { stroke: var(--c-border); stroke-width: 1; }
+.gchart .axis { stroke: var(--c-border-strong); stroke-width: 1; }
+.gchart__band { fill: var(--c-brand-soft); }
+.gchart__line { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.gchart__line--rest { stroke: var(--c-border-strong); stroke-width: 1.5; }
+.gchart__line--span { stroke: var(--c-brand); stroke-width: 2.5; }
+.gchart__dot { fill: var(--c-brand); stroke: var(--c-surface); stroke-width: 2; }
+.gchart__peak { fill: var(--c-text); font-weight: var(--fw-bold); }
+.gchart__none { fill: var(--c-text-3); }
+.gchart__hit { fill: transparent; stroke: none; }
+.gchart__cursor { stroke: var(--c-text-3); stroke-width: 1; pointer-events: none; }
+.gchart__cursor-dot { fill: var(--c-text); stroke: var(--c-surface); stroke-width: 2; pointer-events: none; }
+.gchart__cursor-text { fill: var(--c-text); pointer-events: none; }
+.gen-chart__nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; border-top: 1px solid var(--c-border); }
+.gen-chart__nums > div { padding: var(--sp-2) var(--sp-2) 0 var(--sp-3); border-left: 1px solid var(--c-border); min-width: 0; }
+.gen-chart__nums > div:first-child { border-left: 0; padding-left: 0; }
+.gen-chart__nums dt { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-2); }
+.gen-chart__nums dd { margin: 2px 0 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* 값 18px(--fs-lg) — 22px이면 「62.3~66.1세」가 1280의 칸을 넘쳤다(시안 첫 측정). 넓은 폭은 글줄 안에서 접히게 두고(안전장치 overflow-wrap), 좁은 폭(아래 줄 배치)은 nowrap + 라벨·값이 안 들어가면 값이 다음 줄로(flex-wrap) */
+.gen-chart__val { font-size: var(--fs-lg); line-height: var(--lh-tight); font-weight: var(--fw-regular); color: var(--c-text); overflow-wrap: anywhere; }
+.gen-chart__nums small { font-size: var(--fs-xs); line-height: 1.4; color: var(--c-text-3); white-space: nowrap; }
+.gen-chart__dash { color: var(--c-text-3); }
+.gen-chart__table:not([open]) > table { display: none; } /* 접힌 표는 그리지 않는다 — 안 보이는 칸의 「—」가 줄바꿈 감사에 혼자 한 줄에 선 구분 기호로 잡히지 않게(닫힌 details의 내용은 화면·접근성 트리에 없다) */
+.gen-chart__table summary { font-size: var(--fs-sm); color: var(--c-text-2); min-height: 28px; }
+.gen-chart__table table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); line-height: 1.5; font-variant-numeric: tabular-nums; }
+.gen-chart__table th, .gen-chart__table td { padding: 2px 0; border-bottom: 1px solid var(--c-border); text-align: left; font-weight: var(--fw-regular); color: var(--c-text-2); }
+.gen-chart__table td { text-align: right; color: var(--c-text); }
+.gen-chart__table thead th { font-size: var(--fs-xs); color: var(--c-text-3); }
+.gen-chart__table thead th:last-child { text-align: right; }
+@media (max-width: 479px) {
+  .gen-chart__nums { grid-template-columns: 1fr; }
+  .gen-chart__nums > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--sp-1) var(--sp-3); padding: var(--sp-2) 0; border-left: 0; border-top: 1px solid var(--c-border); }
+  .gen-chart__nums > div:first-child { border-top: 0; }
+  .gen-chart__nums dd { align-items: flex-end; text-align: right; margin-left: auto; }
+  .gen-chart__val { white-space: nowrap; }
+}
+@media (forced-colors: active) {
+  /* 띠는 면이 사라지는 대신 점선 테두리(모양), 구간 선 CanvasText 2.5px / 나머지 GrayText 1.5px(굵기로도 갈린다), 글자 CanvasText */
+  .gchart__band { fill: Canvas; stroke: CanvasText; stroke-width: 1; stroke-dasharray: 2 3; }
+  .gchart__line--span, .gchart .axis { stroke: CanvasText; }
+  .gchart__line--rest, .gchart .grid, .gchart__cursor { stroke: GrayText; }
+  .gchart__dot, .gchart__cursor-dot { fill: CanvasText; stroke: Canvas; }
+  .gchart text { fill: CanvasText; stroke: Canvas; }
+  .gen-chart__nums, .gen-chart__nums > div, .gen-chart__table th, .gen-chart__table td { border-color: CanvasText; }
+}
+
+/* ---------- SPEC-004 GM4 2차: 누리집 하단 (GS12 — docs/design/mockups/gm3/gm3.css r4 블록, design-system.md 17-12-5) ----------
+   상자 없이 가는 줄(1px --c-border)과 작은 글씨로만 나눈다. 세 칸(PC 3열 · 720px 아래 쌓기, 머리 14px 700 + 본문 14px/1.6 보조 잉크) → 문단 둘 → 의견 줄 + 작은 단추 둘 → 가족 한 줄 → 아주 작은 링크 줄(12px) → 출처·운영자·버전(12px 셋째 잉크).
+   넓은 화면에서는 두 열을 가로지른다(.title 격자의 둘째 줄 전체 — 오른쪽 열은 첫 줄에만, 따라다니기는 카드). 어체는 첫 화면의 해요체 하나 */
+.title-foot--r4 { gap: var(--sp-4); padding-top: var(--sp-5); border-top: 1px solid var(--c-border); font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--c-text-2); }
+.foot-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4) var(--sp-7); }
+.foot-cols section { min-width: 0; }
+.foot-cols h2 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); line-height: var(--lh-snug); font-weight: var(--fw-bold); color: var(--c-text); }
+.foot-cols p, .foot-p { margin: 0; max-width: 64em; }
+.foot-beta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); }
+.foot-beta__actions { display: inline-flex; flex-wrap: wrap; gap: var(--sp-2); }
+.foot-beta .btn { min-height: 32px; font-weight: var(--fw-regular); text-decoration: none; }
+.foot-family { color: var(--c-text-2); }
+.foot-small { margin: 0; font-size: var(--fs-xs); line-height: 1.6; color: var(--c-text-3); }
+.foot-links { padding-top: var(--sp-3); border-top: 1px solid var(--c-border); container-type: inline-size; }
+.title-foot--r4 a { color: inherit; text-decoration: underline; text-decoration-color: var(--c-border-strong); }
+.title-foot--r4 .btn { text-decoration: none; }
+.foot-links a, .title-foot--r4 .credit a { display: inline-block; line-height: max(24px, 1.6em); }
+.foot-links a:not([href^='mailto:']) { min-width: 24px; } /* 두 글자 링크 「소개」도 누르는 폭 ≥ 24px (WCAG 2.5.8) */
+/* 한 줄에 못 들어가는 좁은 칸(46em 미만): 링크를 줄마다 하나씩 쌓고 「·」를 숨긴다 — 「·」가 줄 끝·첫머리에 혼자 서지 않게(줄바꿈 감사, 푸터 링크 줄의 짧은 쌍과 같은 방식) */
+@container (max-width: 46em) {
+  .foot-links > a:not([href^='mailto:']) { display: block; width: fit-content; }
+  .foot-links > span[aria-hidden='true'] { display: none; }
+}
+/* 운영자 줄 「운영자 cottonchild · v버전」: 한 줄에 못 들어가는 칸(24em 미만)에서는 둘을 따로 줄로 두고 「·」를 숨긴다 */
+.foot-op { container-type: inline-size; }
+@container (max-width: 24em) {
+  .foot-op > span:not([aria-hidden='true']) { display: block; width: fit-content; }
+  .foot-op > span[aria-hidden='true'] { display: none; }
+}
+.foot-links a[href^='mailto:'] { display: inline; overflow-wrap: anywhere; } /* 주소는 글줄 안에서 어디서든 접힌다(320 · 200%에서 nowrap이면 402px로 넘쳤다) */
+@media (pointer: coarse) { .foot-links a, .title-foot--r4 .credit a { line-height: max(var(--hit), 1.6em); } .foot-beta .btn { min-height: var(--hit); } }
+@media (min-width: 720px) { .foot-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (forced-colors: active) {
+  .title-foot--r4, .foot-links { border-color: CanvasText; }
+}
+
+/* 좁은 화면의 범례 접이식 (D4-75 ① — 360폭의 긴 장 아래 빈 띠를 줄인다): 요약은 범례 이름, 누르는 영역은 28px(거친 포인터 44px) */
+.legend-fold summary { min-height: 28px; font-size: var(--fs-sm); color: var(--c-text-2); }
+.legend-fold .legend { padding-top: var(--sp-1); }
+@media (pointer: coarse) { .legend-fold summary, .gen-chart__table summary { min-height: var(--hit); } }

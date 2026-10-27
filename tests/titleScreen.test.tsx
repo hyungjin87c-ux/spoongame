@@ -338,19 +338,20 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
   const html = render();
   const data = buildCarousel();
 
-  it('모든 슬라이드가 마크업에 있고(전환은 보이기/숨기기), 첫 슬라이드가 현재이며, 위치는 「1 / 20」 한 줄이다. 지표가 6개 이상이면 점은 그리지 않는다(R-133). 슬라이드의 이름은 「n/N 표제어, 공식 통계명(기준)」이다(SH3)', () => {
-    expect(html.match(/data-testid="stat-slide"/g)?.length).toBe(data.slides.length);
-    expect(html.match(/class="slide is-active"/g)?.length).toBe(1);
+  it('모든 슬라이드가 마크업에 있고(전환은 보이기/숨기기), 첫 슬라이드가 현재이며, 위치는 「1 / 21」 한 줄이다(첫 장 = 세대 그래프 + 20장). 지표가 6개 이상이면 점은 그리지 않는다(R-133). 슬라이드의 이름은 「n/N 표제어, 공식 통계명(기준)」이다(SH3)', () => {
+    expect(html.match(/data-testid="stat-slide"/g)?.length).toBe(data.slides.length + 1); // 세대 그래프(첫 장) + 20장
+    expect(html.match(/class="slide(?: slide--gen)? is-active"/g)?.length).toBe(1);
     expect(data.slides.length).toBeGreaterThan(CAROUSEL_MAX_DOTS);
     expect(html).not.toContain('data-testid="carousel-dots"');
     expect(html).not.toMatch(/data-testid="carousel-dot-\d+"/);
-    expect(html).toContain(`aria-label="1/${data.slides.length} ${data.slides[0].insight}, ${data.slides[0].officialText}"`); // 「1/14 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)」
-    expect(html).toContain('aria-label="1/20 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)"'); // QI4 2단계: 14 → 20
+    expect(html).toContain('aria-label="1/21 고른 세대는 한 해에 몇 명이 태어났을까?, 출생아 수(1970~2020년)"'); // 첫 장 = 세대 그래프(D4-71)
+    expect(html).toContain(`aria-label="2/${data.slides.length + 1} ${data.slides[0].insight}, ${data.slides[0].officialText}"`);
+    expect(html).toContain('aria-label="2/21 한 여성이 평생 낳을 아이는 몇 명일까?, 합계출산율(2025년)"'); // 번호가 하나씩 민다(21장)
     // 전망 슬라이드의 이름에는 「전망,」이 든다 — 칩 글자뿐 아니라 이름에도 있어 색·아이콘 없이도 전한다 (FC2, copy.md 14-1)
-    expect(html).toContain('aria-label="16/20 전망, 앞으로 인구는 어떻게 달라질까?, 장래인구추계 총인구(2023년 발표, 2022년 기준, 중위 추계)"');
-    expect(html).toContain('aria-label="20/20 전망, 지금 태어나는 아기라면?, 장래인구추계 인구 구조·부양비(2023년 발표, 2022년 기준, 중위 추계)"');
-    expect(html).toContain('aria-label="5/20 나이들수록 또래들과 경제력 차이가 극심해져요, 연령계층별 소득 5분위배율(2024년)"');
-    expect(html).toContain(`data-testid="carousel-count" aria-hidden="true">1 / ${data.slides.length}<`);
+    expect(html).toContain('aria-label="17/21 전망, 앞으로 인구는 어떻게 달라질까?, 장래인구추계 총인구(2023년 발표, 2022년 기준, 중위 추계)"');
+    expect(html).toContain('aria-label="21/21 전망, 지금 태어나는 아기라면?, 장래인구추계 인구 구조·부양비(2023년 발표, 2022년 기준, 중위 추계)"');
+    expect(html).toContain('aria-label="6/21 나이들수록 또래들과 경제력 차이가 극심해져요, 연령계층별 소득 5분위배율(2024년)"');
+    expect(html).toContain(`data-testid="carousel-count" aria-hidden="true">1 / ${data.slides.length + 1}<`);
   });
 
   it('머리글 삭제(SH4): 눈에 보이는 「한국 사회 통계」「7초마다 다음 지표」「자동 넘김 멈춤」이 없다. 영역 이름은 aria-label로 남고 제목은 h2.sr-only — 슬라이드 h3 위에 h2가 있다', () => {
@@ -363,7 +364,7 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(html).not.toContain('carousel__head');
     expect(html).toContain('aria-roledescription="캐러셀" aria-label="한국 사회 통계 캐러셀"');
     expect(html).toContain('<h2 class="sr-only">한국 사회 통계</h2>');
-    const carousel = html.slice(html.indexOf('data-testid="carousel"'));
+    const carousel = html.slice(html.indexOf('data-testid="carousel"'), html.indexOf('</section>', html.indexOf('data-testid="carousel"')));
     expect(carousel.indexOf('<h2 class="sr-only">')).toBeGreaterThan(-1);
     expect(carousel.indexOf('<h2 class="sr-only">')).toBeLessThan(carousel.indexOf('<h3 class="slide__insight">')); // 제목 단계를 건너뛰지 않는다
     expect(carousel.match(/<h2/g)?.length).toBe(1);
@@ -392,7 +393,7 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(nav).toMatch(/data-testid="carousel-next" aria-label="다음 지표"[^>]*><span class="nav-btn__box"><svg[^>]*><use href="#i-forward"/);
     expect(nav).toMatch(/data-testid="carousel-pause" aria-label="자동 넘김 일시정지"[^>]*><span class="nav-btn__box"><svg[^>]*><use href="#i-pause"/);
     expect(nav).not.toContain('#i-play');
-    expect(nav).toContain(`>1 / ${data.slides.length}<`);
+    expect(nav).toContain(`>1 / ${data.slides.length + 1}<`);
     // 보이는 상자 28px·거친 포인터 44px는 CSS(실측은 e2e/first-screen-layout.spec.ts). 점은 지표가 많아 없다
     expect(TITLE_TEXT.carouselPause).toBe('자동 넘김 일시정지');
     expect(TITLE_TEXT.carouselPlay).toBe('자동 넘김 다시 시작');
@@ -402,18 +403,19 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(AUTO_ADVANCE_MS).toBe(9000);
   });
 
-  it('슬라이드가 5개 이하일 때만 점을 그리고, 점 버튼의 이름은 「3/5 표제어」이다 (R-133)', () => {
-    const few: CarouselData = { ...data, slides: data.slides.slice(0, CAROUSEL_MAX_DOTS) };
+  it('슬라이드(세대 그래프 첫 장 포함)가 5개 이하일 때만 점을 그리고, 점 버튼의 이름은 「3/5 표제어」이다 (R-133)', () => {
+    const few: CarouselData = { ...data, slides: data.slides.slice(0, CAROUSEL_MAX_DOTS - 1) }; // + 첫 장 = 5
     const dotsHtml = render({ carousel: few });
     expect(dotsHtml).toContain('data-testid="carousel-dots"');
     expect(dotsHtml.match(/data-testid="carousel-dot-\d+"/g)?.length).toBe(CAROUSEL_MAX_DOTS);
-    expect(dotsHtml).toContain(`aria-label="3/${CAROUSEL_MAX_DOTS} ${few.slides[2].insight}"`); // 점 버튼의 이름은 표제어(SPEC-005 SH1)
+    expect(dotsHtml).toContain('aria-label="1/5 고른 세대는 한 해에 몇 명이 태어났을까?"'); // 첫 점 = 세대 그래프
+    expect(dotsHtml).toContain(`aria-label="3/${CAROUSEL_MAX_DOTS} ${few.slides[1].insight}"`); // 점 버튼의 이름은 표제어(SPEC-005 SH1)
     expect(dotsHtml.match(/aria-current="true"/g)?.length).toBe(1);
     // 6개부터는 점이 없다
-    const many: CarouselData = { ...data, slides: data.slides.slice(0, CAROUSEL_MAX_DOTS + 1) };
+    const many: CarouselData = { ...data, slides: data.slides.slice(0, CAROUSEL_MAX_DOTS) };
     expect(render({ carousel: many })).not.toContain('data-testid="carousel-dots"');
-    // 하나뿐이면 점도 없다
-    expect(render({ carousel: { ...data, slides: data.slides.slice(0, 1) } })).not.toContain('data-testid="carousel-dots"');
+    // 하나뿐이면(첫 장만) 점도 없다
+    expect(render({ carousel: { ...data, slides: [] } })).not.toContain('data-testid="carousel-dots"');
   });
 
   it('막대 그래프(시·도별)는 값 16~17개 전부를 시각적으로 숨긴 표로도 준다 — 보통 선 그래프에는 표가 없다 (R-207) · QI4: 격차 2011~2024·폭염 권역 6곳·아기 5행도 숨긴 표로 준다', () => {
@@ -445,11 +447,14 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(tfr).not.toContain('chart-table');
   });
 
-  it('이전·다음·일시정지 버튼과 자동 전환은 스크린리더가 읽지 않는다(aria-live=off)', () => {
+  it('자동 전환은 스크린리더가 읽지 않는다: 슬라이드 영역에 aria-live가 없고, 손으로 넘길 때만 읽는 전용 영역(.carousel__live, polite)이 처음엔 비어 있다 (D4-71)', () => {
     expect(html).toContain('aria-label="이전 지표"');
     expect(html).toContain('aria-label="다음 지표"');
     expect(html).toContain('aria-label="자동 넘김 일시정지"');
-    expect(html).toContain('<div class="slides" aria-live="off">');
+    expect(html).toContain('aria-pressed="false"'); // 멈춤/재생 단추의 상태
+    expect(html).toContain('<div class="slides">');
+    expect(html).toContain('<p class="sr-only carousel__live" aria-live="polite" aria-atomic="true" data-testid="carousel-live"></p>');
+    expect(html).toContain('data-autoplay="on"');
     expect(html).toContain('aria-roledescription="캐러셀"');
   });
 
@@ -497,11 +502,12 @@ describe('캐러셀과 푸터 (FS3·FS7·SC)', () => {
     expect(html).not.toMatch(/<(img|script|iframe|link)\b[^>]*(src|href)="https?:/i);
     expect(html).not.toMatch(/url\(\s*['"]?https?:/i);
     const links = [...html.matchAll(/<a ([^>]*)href="([^"]+)"([^>]*)>/g)].map((m) => ({ href: m[2], tag: m[0] }));
-    // 푸터의 「새 소식」「소개」(SPEC-005 QI7)는 같은 화면 안의 패널을 여는 링크라 `#`이다 — 네트워크로 나가지 않고 `data-panel`로 가려진다(둘뿐)
+    // 푸터의 「새 소식」「소개」「개인정보 처리방침」「이용 안내」(SPEC-005 QI7 · SPEC-004 GS12)는 같은 화면 안의 패널을 여는 링크라 `#`이다 — 네트워크로 나가지 않고 `data-panel`로 가려진다(넷)
     const panelLinks = links.filter((l) => l.href === '#');
-    expect(panelLinks.length).toBe(2);
+    expect(panelLinks.length).toBe(4);
     for (const l of panelLinks) expect(l.tag, '주소가 #인 링크는 정보 패널을 여는 링크뿐').toContain('data-panel=');
-    for (const { href } of links.filter((l) => l.href !== '#')) expect(href.startsWith('tel:') || href.startsWith('https://'), href).toBe(true);
+    // 그 밖: 전화(tel:)·https(출처·GitHub 이슈) · 문의 메일 주소(mailto: — 링크 이동일 뿐 자원을 불러오지 않는다)
+    for (const { href } of links.filter((l) => l.href !== '#')) expect(href.startsWith('tel:') || href.startsWith('https://') || href.startsWith('mailto:'), href).toBe(true);
   });
 
   it('이모지·느낌표가 없다 (담담한 어조)', () => {
@@ -557,10 +563,10 @@ describe('2회차 보완 화면 문구 (SPEC-003 QM2-10·QM2-11, REV-003-M2-3 R-
   const html = render();
   const data = buildCarousel();
 
-  it('푸터 통계 출처 줄은 쉼표 나열이다: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」 — 기관 이름 사이에 「·」가 없다 (QM2-10 b · QI4 2단계: 3곳 → 7곳 · R-488: 같은 기관은 한 번만 → 6곳)', () => {
-    const credit = html.slice(html.indexOf('data-testid="stats-credit"'), html.indexOf('data-testid="population-info"'));
+  it('푸터 통계 출처 줄은 쉼표 나열이다: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요)」 — 기관 이름 사이에 「·」가 없다 (QM2-10 b · QI4 2단계: 3곳 → 7곳 · R-488: 같은 기관은 한 번만 → 6곳 · GS12: 꼬리를 해요체 「그래프와 통계 카드마다 적혀 있어요」로)', () => {
+    const credit = html.slice(html.indexOf('data-testid="stats-credit"'), html.indexOf('</p>', html.indexOf('data-testid="stats-credit"')) + 4);
     // 1단계까지의 기대 글자(국가데이터처, 행정안전부, 교육부 — 3곳)를 슬라이드 20장에서 모인 7곳으로 바꿨다가, R-488로 「통계청(현 국가데이터처)」를 「국가데이터처」에 모아 6곳이 됐다(tests/glue.test.ts 「실제 푸터」와 같은 글자)
-    expect(text(credit)).toContain('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
+    expect(text(credit)).toContain('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요)');
     expect(text(credit).includes('통계청'), '푸터에 옛 이름 「통계청」이 없다(R-488)').toBe(false);
     expect(plain(credit)).toContain(footerStatsText(data.orgs));
     for (const org of data.orgs) expect(plain(credit).includes(`${org} ·`) || plain(credit).includes(`· ${org}`), `${org} 앞뒤의 「·」`).toBe(false);
@@ -603,5 +609,32 @@ describe('2회차 보완 화면 문구 (SPEC-003 QM2-10·QM2-11, REV-003-M2-3 R-
     expect(marriage, 'copy.md에 「조혼인율 줄」 행').toBeDefined();
     expect(marriage).toContain('조혼인율 인구 1천 명당 4.7건');
     expect(marriage).toContain('QM2-11');
+  });
+});
+
+describe('REV-004-GM4-1 반영: 안내·실패 문구 (R-516 · R-519 b · regionHint)', () => {
+  it('R-516: 밀린 탭의 이어받기가 지연 데이터를 못 받으면 밀린 화면에 안내 한 줄(role=alert)과 같은 버튼이 남는다 — 정상일 때는 안내가 없다', async () => {
+    const { SupersededScreen } = await import('../src/screens/SupersededScreen');
+    const ok = renderToStaticMarkup(<SupersededScreen onTakeOver={() => {}} />);
+    expect(ok).not.toContain('data-testid="take-over-failed"');
+    const failed = renderToStaticMarkup(<SupersededScreen onTakeOver={() => {}} loadFailed />);
+    expect(failed).toContain(`role="alert" data-testid="take-over-failed">${TITLE_TEXT.loadFailed}</p>`);
+    expect(failed).toContain('data-testid="take-over"'); // 같은 버튼을 다시 눌러 다시 시도한다
+  });
+
+  it('R-519 b: 「직접 고르기」에서 칩을 고르지 않고 태어나려 할 때의 안내 문구(draft)가 data의 첫 화면 문구 모음에 있다 — 시·도를 고르거나 「룰렛에 맡기기」를 고르라는 뜻', () => {
+    expect(GEN_TEXT.regionPickNeeded).toBe('시·도를 고르거나, 「룰렛에 맡기기」를 골라 주세요.');
+    expect(GEN_TEXT.regionPickNeeded).toContain(GEN_TEXT.regionRoulette);
+    expect(titleScreenSrc).toContain('GEN_TEXT.regionPickNeeded');
+    expect(titleScreenSrc).toContain('pickBlocked ? requirePick()'); // 「태어나기」·「새로 태어나기」 둘 다 진행하지 않는다
+  });
+
+  it('참고 regionHint: 1940~1980년생(인구 비례)에게도 맞는 말 — 「그해 시·도별 출생아·인구 비율대로」', () => {
+    expect(GEN_TEXT.regionHint).toBe('룰렛은 그해 시·도별 출생아·인구 비율대로 돌아요.');
+  });
+
+  it('R-519 a: 내 출신 시도 바로가기는 라디오가 아니라 단추다 — 같은 시도의 일반 칩과 함께 「고른」 모양이 되지 않는다 (소스: chip은 label+radio, originShortcut은 button)', () => {
+    expect(titleScreenSrc).toMatch(/<button type="button" className=\{`chip-opt chip-opt--origin/);
+    expect(titleScreenSrc).not.toContain("origin ? 'sido-origin'");
   });
 });

@@ -1,5 +1,6 @@
 import { isForbiddenFullName } from '../data/forbiddenNames';
-import { NAMES, namePoolFor } from '../data/names';
+import { namePoolKey, type NamePoolId } from '../data/namePoolId';
+import { namesApi } from './gameData';
 import { birthYearOddsOf, candidateYearsOf, parentingWeightsFor, wealthWeightsFor } from './birthProfile';
 import { reportTiltOf } from '../data/birthReportTable';
 import { rollBirthReport } from './birthReport';
@@ -12,12 +13,23 @@ import { GENDERS, PARENTING_STYLES, PARENT_WEALTHS, R1_PRESENT, type BirthReport
 
 // ---------- 이름 ----------
 
-// 풀 id·연도 → 풀은 data/names.ts(namePoolIdOf·namePoolFor — SPEC-004 NR4). 기존 import 경로가 그대로 동작하게 다시 내보낸다.
-export { namePoolFor, namePoolIdOf, namePoolKey, type NamePoolId } from '../data/names';
+// 풀 id·연도 → 풀은 data/names.ts(namePoolIdOf·namePoolFor — SPEC-004 NR4)가 하되, 이름 풀 JSON은 「태어나기」 뒤의 지연 덩어리에 있다(R-520) — 여기서는 `core/gameData.ts`가 놓은 것을 부른다.
+// 기존 import 경로(`core/birth`·`core`)가 그대로 동작하게 같은 이름으로 다시 내보낸다. 데이터가 놓이기 전에 부르면 throw한다(다른 지연 데이터와 같다).
+export { namePoolKey, type NamePoolId };
+
+/** 출생 연도 → 이름 풀 id (풀이 없는 연도는 throw) */
+export function namePoolIdOf(birthYear: number): NamePoolId {
+  return namesApi().namePoolIdOf(birthYear);
+}
+
+/** 출생 연도·성별에 맞는 이름(성 제외) 풀. 읽기 전용. */
+export function namePoolFor(birthYear: number, gender: Gender): readonly string[] {
+  return namesApi().namePoolFor(birthYear, gender);
+}
 
 /** 성씨별 가중치: 인구수에 비례 */
 export function surnameWeights(): { name: string; weight: number }[] {
-  return NAMES.surnames.items.map((s) => ({ name: s.name, weight: s.populationThousands }));
+  return namesApi().surnames.map((s) => ({ name: s.name, weight: s.populationThousands }));
 }
 
 /** 이름이 걸렸을 때 같은 풀에서 이름을 다시 뽑는 최대 횟수. 넘으면 풀에서 안 걸리는 첫 이름으로 대체한다. */

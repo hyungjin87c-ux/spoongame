@@ -74,7 +74,8 @@ for (const vp of [
       wordmark: await rectOf(page, '[data-testid="title-logo-word"] svg'),
       card: await rectOf(page, '[data-testid="carousel"]'),
       insight: await rectOf(page, '.slide.is-active .slide__insight'),
-      value: await rectOf(page, '.slide.is-active [data-testid="slide-value"]'),
+      // 첫 장(세대 그래프)의 큰 값은 `.gen-chart__big`이다
+      value: await rectOf(page, '.slide.is-active [data-testid="slide-value"], .slide.is-active .gen-chart__big'),
       bar: await rectOf(page, '[data-testid="bottom-bar"]'),
       main: await rectOf(page, '.title__main'),
       gen: await rectOf(page, '[data-testid="gen-list"]'),
@@ -116,9 +117,9 @@ test('배치 1280x800 · 이어서 살기 띠(120px): 인생 길이가 띠 위�
 // ---------- 세대 목록 창 높이 (GS1, design-system 17-11-5) ----------
 
 for (const [w, h, expected, kind] of [
-  [1280, 800, 288, 'desktop'], //            PC clamp(12rem, 100vh − 32rem, 24rem) = 800 − 512
+  [1280, 800, 200, 'desktop'], //            PC clamp(9rem, 100vh − 37.5rem, 24rem) = 800 − 600 (GM4 2차 ④: 왼쪽 열 끝 < 하단 띠 복원 — 이전 288)
   [1920, 1080, 384, 'desktop'], //           상한 24rem
-  [1280, 640, 192, 'desktop'], //            하한 12rem (640 − 512 = 128 < 192) — 큰 글자에서 한 줄(약 11rem)이 창보다 커지지 않게 올린 값
+  [1280, 640, 144, 'desktop'], //            PC 하한 9rem (640 − 600 = 40 < 144) — 폭이 넓어 줄이 접히지 않는 PC에서만 내렸다(좁은 화면은 12rem 그대로)
   [360, 740, 308, 'mobile'], //              모바일 clamp(12rem, 100svh − 27rem, 24rem) = 740 − 432
   [320, 568, 192, 'mobile'], //              하한
 ] as const) {
@@ -174,24 +175,22 @@ for (const vp of [
 }
 
 for (const theme of ['light', 'dark'] as const) {
-  test(`통계 카드 색 ${theme}: 테두리 --c-card-border · 위쪽 띠 --c-card-tint · 실측 선 --c-chart (카드 안에서만), 공용 카드는 그대로 (D5-27)`, async ({ page }, testInfo) => {
+  test(`통계 카드 색 ${theme}: 평면 카드 — 테두리 공용 --c-border · 배경은 면 색 하나(그라디언트·그림자 없음) · 실측 선 --c-chart (D4-55)`, async ({ page }, testInfo) => {
     test.skip(kindOf(testInfo.project.name) !== 'desktop', DESKTOP_ONLY);
     await page.emulateMedia({ colorScheme: theme });
     await openTitle(page, 1280, 800);
+    // 첫 장(세대 그래프)이 아닌 선 그래프 장의 실측 선을 본다
+    await page.getByTestId('carousel-pause').click();
+    await page.getByTestId('carousel-next').click();
     const c = await page.evaluate(() => {
       const card = document.querySelector('[data-testid="carousel"]') as HTMLElement;
       const line = card.querySelector('.slide.is-active .chart .line') as SVGPathElement;
-      const genList = document.querySelector('[data-testid="gen-list"]') as HTMLElement;
-      return { border: getComputedStyle(card).borderTopColor, bg: getComputedStyle(card).backgroundImage, line: getComputedStyle(line).stroke, eraBorder: getComputedStyle(genList).borderTopColor, shadow: getComputedStyle(card).boxShadow };
+      return { border: getComputedStyle(card).borderTopColor, bg: getComputedStyle(card).backgroundImage, line: getComputedStyle(line).stroke, shadow: getComputedStyle(card).boxShadow };
     });
-    expect(c.border, '카드 테두리 = --c-card-border').toBe(await tokenRgb(page, theme, '--c-card-border'));
+    expect(c.border, '카드 테두리 = 공용 --c-border').toBe(await tokenRgb(page, theme, '--c-border'));
     expect(c.line, '실측 선 = --c-chart').toBe(await tokenRgb(page, theme, '--c-chart'));
-    const tint = await tokenRgb(page, theme, '--c-card-tint');
-    expect(c.bg, '위쪽 띠 그라데이션이 --c-card-tint로 시작').toContain(tint);
-    expect(c.bg).toContain('linear-gradient');
-    expect(c.eraBorder, '세대 목록의 선은 공용 테두리색 그대로(카드 전용 토큰이 아니다)').not.toBe(c.border);
-    if (theme === 'light') expect(c.shadow, '라이트는 푸른빛 그림자').not.toBe('none');
-    else expect(c.shadow, '다크는 그림자 없음').toBe('none');
+    expect(c.bg, '그라디언트 없음').toBe('none');
+    expect(c.shadow, '그림자 없음').toBe('none');
   });
 }
 
@@ -200,6 +199,8 @@ test('강제 색상: 카드·차트는 시스템 색이다 — 실측 선 Button
   test.skip(browserName === 'webkit', '강제 색상 에뮬레이션은 Chromium에서만');
   await page.emulateMedia({ forcedColors: 'active' });
   await openTitle(page, 1280, 800);
+  await page.getByTestId('carousel-pause').click();
+  await page.getByTestId('carousel-next').click(); // 첫 장(세대 그래프)이 아닌 선 그래프 장의 실측 선을 본다
   const c = await page.evaluate(() => {
     const probe = (value: string, prop: 'color' | 'backgroundColor') => {
       const d = document.createElement('div');
@@ -246,7 +247,7 @@ test('머리글 삭제(SH4): 눈에 보이는 글자에 「한국 사회 통계�
     return { visible: texts.join(' '), headings: [...document.querySelectorAll('.title-page h1, .title-page h2, .title-page h3')].filter((h) => getComputedStyle(h.closest('.slide') ?? h).visibility !== 'hidden').map((h) => Number(h.tagName[1])) };
   });
   for (const gone of ['한국 사회 통계', '7초마다', '9초마다', '다음 지표', '자동 넘김 멈춤', '자동 넘김']) expect(visible, `눈에 보이는 글자에 「${gone}」`).not.toContain(gone);
-  expect(visible, '공허 통과 방지: 눈에 보이는 슬라이드 글자는 모였다').toContain('합계출산율');
+  expect(visible, '공허 통과 방지: 눈에 보이는 슬라이드 글자는 모였다(첫 장 = 세대 그래프)').toContain('고른 세대는 한 해에 몇 명이 태어났을까?');
   await expect(page.getByRole('heading', { level: 2, name: '한국 사회 통계' })).toHaveCount(1); // 읽기 도구에는 제목이 남는다
   await expect(page.getByRole('region', { name: '한국 사회 통계 캐러셀' })).toBeVisible();
   for (let i = 1; i < headings.length; i++) expect(headings[i] - headings[i - 1], `제목 단계 ${headings.join(' → ')}`).toBeLessThanOrEqual(1);
@@ -347,7 +348,7 @@ test('일시정지 버튼(SH6): 늘 보이고 아이콘·이름이 상태를 맡
   await pause.click();
   await expect(pause).toHaveAccessibleName('자동 넘김 다시 시작');
   await expect(icon).toHaveAttribute('href', '#i-play');
-  await expect(page.getByTestId('carousel')).toHaveAttribute('data-autoplay', 'off');
+  await expect(page.getByTestId('carousel')).toHaveAttribute('data-autoplay', 'paused');
   await page.mouse.move(2, 2, { steps: 4 });
   await expect(icon, '포인터가 나가도 사용자가 멈춘 상태는 버튼이 말한다').toHaveAttribute('href', '#i-play');
   await pause.click();

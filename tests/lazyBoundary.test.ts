@@ -78,6 +78,9 @@ const HEAVY = [
   'src/data/birthYearData.json',
   'src/data/citationsAccess.ts',
   'src/data/citations.json',
+  'src/data/names.ts',
+  'src/data/names.json',
+  'src/data/sources/scourt-birth-names.json',
   'src/data/installAll.ts',
 ] as const;
 
@@ -87,7 +90,7 @@ describe('앱 진입점(main.tsx)의 정적 import 그래프 (MG8)', () => {
     for (const f of ['src/App.tsx', 'src/screens/TitleScreen.tsx', 'src/core/session.ts', 'src/core/storage.ts', 'src/data/gameData.ts', 'src/core/gameData.ts']) expect(graph.has(f), f).toBe(true);
   });
 
-  it('이벤트 풀(index.ts·JSON 5개)·출생 연도 표·인용 테이블(citations.json)·installAll이 정적으로 닿지 않는다 — 닿으면 닿는 길을 이름으로 알려 준다', () => {
+  it('이벤트 풀(index.ts·JSON 5개)·출생 연도 표·인용 테이블(citations.json)·이름 풀(names.ts·JSON 둘, R-520)·installAll이 정적으로 닿지 않는다 — 닿으면 닿는 길을 이름으로 알려 준다', () => {
     const leaked = HEAVY.filter((f) => graph.has(f)).map((f) => chain(graph, f));
     expect(leaked, '첫 덩어리로 새는 무거운 데이터 (core는 core/gameData.ts의 eventPool()·birthYearTables()로 읽는다)').toEqual([]);
   });
@@ -97,12 +100,13 @@ describe('앱 진입점(main.tsx)의 정적 import 그래프 (MG8)', () => {
     expect(resolve('src/core/gentle.ts', '../data/events')).toBe('src/data/events/index.ts');
   });
 
-  it('src/data/gameData.ts는 동적 import()로만 이벤트 풀·출생 연도 표·인용 테이블을 부른다', () => {
+  it('src/data/gameData.ts는 동적 import()로만 이벤트 풀·출생 연도 표·인용 테이블·이름 풀을 부른다', () => {
     const source = fs.readFileSync(at(`${ROOT}src/data/gameData.ts`), 'utf-8');
     expect(staticImports(source)).toEqual(['../core/gameData']);
     expect(source).toMatch(/import\('\.\/events'\)/);
     expect(source).toMatch(/import\('\.\/birthYearData'\)/);
     expect(source).toMatch(/import\('\.\/citationsAccess'\)/);
+    expect(source).toMatch(/import\('\.\/names'\)/);
   });
 
   it('src 안에서 installAll.ts를 부르는 파일이 없다 — 시험·스크립트·하니스 전용이다', () => {

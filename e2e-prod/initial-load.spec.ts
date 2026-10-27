@@ -8,7 +8,8 @@ import { expect, test, type Page, type Response } from '@playwright/test';
  *    파일 이름이 아니라 **본문**(이벤트 id 표지·출생 연도 표 표지)으로 가린다 — 빌드가 덩어리 이름을 바꿔도 새는 것을 잡는다.
  *  · 같은 주소를 두 번 요청하지 않는다(첫 화면 로드, 그리고 「태어나기」 연타 뒤의 지연 로드 모두).
  *  · 그림(webp·png·jpg)은 첫 화면에서 아이콘 몇 개를 빼면 받지 않는다 — 오른쪽 위 일러스트(home-map-*)는 SPEC-004 GS11에서 없어졌다.
- *  · 글꼴: 첫 화면이 처음 받는 조각은 s0 400·700 둘(미리 받기)과, 화면에 그려지는 글자가 s0b 범위에 있으면 s0b — s1(룰렛)·s2(그 밖 게임 글자)·s3(꼬리)는 받지 않는다.
+ *  · 글꼴: 첫 화면이 처음 받는 조각은 s0 400·700 둘뿐이다 — 첫 화면이 그리는 글자(숨은 슬라이드 글자 포함)를 s0가 모두 담아 s0b·s1(룰렛)·s2(그 밖 게임 글자)·s3(꼬리)는 받지 않는다(GM4 2차).
+ *  · 인용 테이블·이름 풀(R-513·R-520)도 「태어나기」 뒤 덩어리에만 있다(본문 표지로 가린다).
  * 개발 서버는 모듈을 하나씩 내려 받으므로 이 한도는 여기(프로덕션 번들)에서만 의미가 있다. 한도 숫자는 docs/TODO.md QI4 줄과 ai-log/2026-10-21_SPEC-005_dev-QI4-2.md의 묶음 크기 표가 같은 값이다
  */
 
@@ -28,6 +29,19 @@ async function eventPoolMark(): Promise<string> {
   const fs = (await import(nodeFs)) as { readFileSync(path: string, encoding: 'utf-8'): string };
   const infant = JSON.parse(fs.readFileSync('src/data/events/infant.json', 'utf-8')) as { events: Array<{ text?: string }> };
   return (infant.events.find((e) => (e.text ?? '').length > 30)?.text ?? '').slice(0, 24);
+}
+
+/**
+ * 인용 테이블(citations.json) 덩어리의 본문 표지: 첫 인용 글의 앞 16자. 이름 풀 덩어리(R-520)의 표지: 1990년대 이름 풀의 앞 네 이름을 JSON 모양 그대로 이은 것(따옴표·쉼표 포함).
+ * 둘 다 「태어나기」 뒤에만 내려와야 한다 — 첫 화면에서 한 번이라도 보이면 지연 덩어리 밖으로 샌 것이다(파일 이름이 아니라 본문으로 가린다).
+ */
+async function dataMarks(): Promise<{ citation: string; names: string }> {
+  const nodeFs = 'node:fs';
+  const fs = (await import(nodeFs)) as { readFileSync(path: string, encoding: 'utf-8'): string };
+  const cit = JSON.parse(fs.readFileSync('src/data/citations.json', 'utf-8')) as { citations: Array<{ text: string }> };
+  const names = JSON.parse(fs.readFileSync('src/data/names.json', 'utf-8')) as { decades: Record<string, { male: { verified: string[]; estimated: string[] } }> };
+  const pool = [...names.decades['1990'].male.verified, ...names.decades['1990'].male.estimated].slice(0, 4);
+  return { citation: cit.citations[0].text.slice(0, 16), names: pool.map((n) => JSON.stringify(n)).join(',') };
 }
 
 type Got = { file: string; url: string; bytes: number; kind: 'image' | 'font' | 'text'; body: string | null };
@@ -84,6 +98,7 @@ for (const vp of VIEWPORTS) {
     await page.setViewportSize({ width: vp.width, height: vp.height });
     const origin = new URL(baseURL ?? 'http://localhost:4199').origin;
     const EVENT_POOL_MARK = await eventPoolMark();
+    const MARKS = await dataMarks();
     const c = collect(page, origin);
     await page.goto('/');
     await expect(page.getByTestId('title-screen')).toBeVisible();
@@ -101,13 +116,18 @@ for (const vp of VIEWPORTS) {
     // 지연 로드: 본문으로 가린다
     expect(got.filter((g) => g.body?.includes(EVENT_POOL_MARK)).map((g) => g.file), '이벤트 풀이 첫 화면에서 내려왔다').toEqual([]);
     expect(got.filter((g) => /birthYearData|koreaStatsReserve/i.test(g.file)).map((g) => g.file), '지연 로드 덩어리·예비 지표 묶음은 첫 화면에서 받지 않는다').toEqual([]);
+    // 인용 테이블·이름 풀(R-513·R-520)도 본문으로 가린다 — 표지가 공허하지 않은지(길이)도 본다
+    expect(MARKS.citation.length, '인용 표지').toBe(16);
+    expect(MARKS.names.length, '이름 풀 표지').toBeGreaterThan(10);
+    expect(got.filter((g) => g.body?.includes(MARKS.citation)).map((g) => g.file), '인용 테이블이 첫 화면에서 내려왔다').toEqual([]);
+    expect(got.filter((g) => g.body?.includes(MARKS.names)).map((g) => g.file), '이름 풀이 첫 화면에서 내려왔다(R-520)').toEqual([]);
     // 같은 주소 두 번 요청 없음
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
     // 그림: 오른쪽 위 일러스트는 없다(GS11) — 이미지 응답은 아이콘 계열뿐
     expect(got.filter((g) => g.kind === 'image' && /home-map/.test(g.file)).map((g) => g.file), 'home-map 그림').toEqual([]);
     // 글꼴: s0 두 조각은 받고, 룰렛·게임 글자 조각(s1·s2)과 꼬리(s3)는 받지 않는다
     expect(fonts.some((g) => /400\.s0-/.test(g.file)) && fonts.some((g) => /700\.s0-/.test(g.file)), `s0 400·700을 받았다: ${describeGot(fonts)}`).toBe(true);
-    expect(fonts.filter((g) => /\.(s1|s2|s3)-/.test(g.file)).map((g) => g.file), '첫 화면에서 받으면 안 되는 글꼴 조각').toEqual([]);
+    expect(fonts.filter((g) => /\.(s0b|s1|s2|s3)-/.test(g.file)).map((g) => g.file), '첫 화면에서 받으면 안 되는 글꼴 조각(s0b 포함 — 숨은 슬라이드 글자까지 s0에 모았다, GM4 2차)').toEqual([]);
     expect(total, `초기 로드 ${total} B ≤ ${LIMIT_BYTES} B`).toBeLessThanOrEqual(LIMIT_BYTES);
   });
 
@@ -115,6 +135,7 @@ for (const vp of VIEWPORTS) {
     await page.setViewportSize({ width: vp.width, height: vp.height });
     const origin = new URL(baseURL ?? 'http://localhost:4199').origin;
     const EVENT_POOL_MARK = await eventPoolMark();
+    const MARKS = await dataMarks();
     await page.goto('/');
     await expect(page.getByTestId('title-screen')).toBeVisible();
     await page.waitForLoadState('networkidle');
@@ -131,6 +152,33 @@ for (const vp of VIEWPORTS) {
     const { got } = c;
     expect(got.filter((g) => g.body?.includes(EVENT_POOL_MARK)).length, `이벤트 풀 덩어리를 한 번 받았다: ${describeGot(got)}`).toBe(1);
     expect(got.filter((g) => /birthYearData/i.test(g.file)).length, `출생 연도 표 덩어리를 한 번 받았다: ${describeGot(got)}`).toBe(1);
+    // 인용 테이블·이름 풀(R-513·R-520): 「태어나기」 뒤 지연 덩어리에 한 번씩 들어 있다 (같은 덩어리 하나에 함께 있어도 된다)
+    expect(got.filter((g) => g.body?.includes(MARKS.citation)).length, `인용 테이블을 한 번 받았다: ${describeGot(got)}`).toBe(1);
+    expect(got.filter((g) => g.body?.includes(MARKS.names)).length, `이름 풀을 한 번 받았다: ${describeGot(got)}`).toBe(1);
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
+  });
+
+  test(`지연 로드 — ${vp.name}: 진행 중인 판이 저장된 채 새로고침을 연타해도 매번 같은 덩어리 주소를 한 번씩만 요청한다 (MG8·R-513)`, async ({ page, baseURL }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    const origin = new URL(baseURL ?? 'http://localhost:4199').origin;
+    const EVENT_POOL_MARK = await eventPoolMark();
+    await page.goto('/');
+    await expect(page.getByTestId('start-birth')).toBeEnabled();
+    await page.getByTestId('start-birth').click();
+    await expect(page.getByTestId('roulette-screen')).toBeVisible({ timeout: 15_000 });
+    // 룰렛 단계의 저장은 첫 화면이 아니라 지연 덩어리가 필요한 진행 저장이다 — 부팅 때 먼저 받는다(Booting). 저장이 저장소에 적힌 것을 보고 나서 새로고침을 연달아 한다
+    await page.waitForFunction(() => (localStorage.getItem('suzeo-game:save') ?? '').includes('"phase":"roulette"'));
+    for (let i = 0; i < 4; i++) {
+      const c = collect(page, origin);
+      await page.reload();
+      await expect(page.getByTestId('roulette-screen')).toBeVisible({ timeout: 15_000 });
+      await page.waitForLoadState('networkidle');
+      await c.finish();
+      // 브라우저 캐시가 응답을 돌려줄 수 있어 「받은 응답」이 아니라 **요청 주소**로 센다: 지연 덩어리(주 번들이 아닌 assets/*.js)는 각각 한 번씩만 요청된다
+      const jsRequests = c.requested.filter((u) => /\/assets\/[^/]+\.js$/.test(new URL(u).pathname));
+      const chunkRequests = jsRequests.filter((u) => !/\/assets\/index-[^/]+\.js$/.test(u) || c.got.some((g) => g.url === u && g.body?.includes(EVENT_POOL_MARK)));
+      expect(chunkRequests.length, `새로고침 ${i + 1}: 지연 덩어리를 요청했다 (${jsRequests.map((u) => new URL(u).pathname.split('/').pop()).join(', ')})`).toBeGreaterThanOrEqual(1);
+      expect(dupes(c.requested), `새로고침 ${i + 1}: 같은 주소를 두 번 요청했다`).toEqual([]);
+    }
   });
 }

@@ -66,3 +66,20 @@ export function useEpochMinute(): number {
   }, []);
   return minute;
 }
+
+/**
+ * 미디어 쿼리가 지금 맞는가. 서버 렌더·matchMedia가 없는 환경은 false(넓은 화면의 모양)다. 크기가 바뀌면 따라간다.
+ */
+export function useMediaQuery(query: string): boolean {
+  const read = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
+  const [matches, setMatches] = useState(read);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia(query);
+    const update = () => setMatches(mq.matches);
+    mq.addEventListener('change', update);
+    update();
+    return () => mq.removeEventListener('change', update);
+  }, [query]);
+  return matches;
+}

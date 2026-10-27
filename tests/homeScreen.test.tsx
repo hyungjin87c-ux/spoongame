@@ -106,35 +106,41 @@ describe('세대 목록 마크업 (GS1·GS2·GS4·GS10): 한 열 라디오 줄 8
   });
 });
 
-describe('통계 카드 색 토큰 4개 (D5-27 · design-system.md 12-6)', () => {
+describe('통계 카드 색 토큰 (D5-27 → SPEC-004 D4-55 평면화)', () => {
   const blocks = readThemeBlocks(tokensCss);
 
-  it('라이트·다크 두 블록 모두 --c-chart·--c-card-tint·--c-card-border·--shadow-card가 있다 (값은 12-6 표 그대로)', () => {
+  it('라이트·다크 두 블록 모두 --c-chart가 있고(값은 12-6 표 그대로), 평면화로 쓰는 곳이 없어진 --c-card-tint·--c-card-border·--shadow-card는 어디에도 없다', () => {
     const light = themeTokens(blocks, 'light');
     const dark = themeTokens(blocks, 'dark');
-    expect([light['--c-chart'], light['--c-card-tint'], light['--c-card-border']]).toEqual(['#2f5f8f', '#eef4f9', '#d3dce6']);
-    expect(light['--shadow-card']).toBe('0 1px 2px rgba(38, 50, 74, 0.06), 0 8px 20px rgba(38, 50, 74, 0.08)');
-    expect([dark['--c-chart'], dark['--c-card-tint'], dark['--c-card-border'], dark['--shadow-card']]).toEqual(['#9fc4ea', '#1f2735', '#343d4e', 'none']);
+    expect(light['--c-chart']).toBe('#2f5f8f');
+    expect(dark['--c-chart']).toBe('#9fc4ea');
     expect(blocks.darkMedia['--c-chart']).toBe(blocks.darkAttr['--c-chart']); // 다크 두 블록이 같다
+    for (const t of ['--c-card-tint', '--c-card-border', '--shadow-card']) {
+      expect(stripComments(tokensCss), t).not.toContain(t);
+      expect(css, t).not.toContain(t);
+    }
   });
 
-  it('강제 색상 블록은 시스템 색으로 돌아간다: --c-chart ButtonText · --c-card-tint Canvas · --c-card-border CanvasText · --shadow-card none', () => {
+  it('강제 색상 블록은 시스템 색으로 돌아간다: --c-chart ButtonText', () => {
     const forced = tokensCss.slice(tokensCss.indexOf('@media (forced-colors: active)'));
-    expect(forced).toMatch(/--c-chart: ButtonText;\s*--c-card-tint: Canvas;\s*--c-card-border: CanvasText;\s*--shadow-card: none;/);
+    expect(forced).toMatch(/--c-chart: ButtonText;/);
   });
 
-  it('통계 카드(.carousel--005)만 새 토큰을 쓴다: 카드 안 --c-brand를 --c-chart로 바꾸고 테두리·그림자·위쪽 88px 띠를 맞춘다 — 공용 .card·다른 카드는 그대로', () => {
+  it('통계 카드(.carousel--005)는 평면이다: 카드 안 --c-brand만 --c-chart로 바꾸고 하늘 띠 그라디언트·푸른 그림자·카드 전용 테두리색이 없다 — 공용 .card의 면 + 1px 경계 그대로 (D4-55 정본)', () => {
     const body = ruleBody('.carousel--005');
     expect(body).toContain('--c-brand: var(--c-chart)');
-    expect(body).toContain('border-color: var(--c-card-border)');
-    expect(body).toContain('box-shadow: var(--shadow-card)');
-    expect(body).toContain('linear-gradient(180deg, var(--c-card-tint) 0, var(--c-surface) 88px)');
+    expect(body).toContain('box-shadow: none');
+    expect(body).not.toContain('gradient');
     expect(ruleBody('.card')).toMatch(/background:\s*var\(--c-surface\)/); // 공용 카드는 그대로
+    expect(ruleBody('.card')).toMatch(/border:\s*1px solid var\(--c-border\)/);
     expect(html.match(/carousel--005/g)?.length).toBe(1);
-    for (const t of ['--c-chart', '--c-card-tint', '--c-card-border', '--shadow-card']) {
-      const uses = css.match(new RegExp(`var\\(${t}\\)`, 'g'))?.length ?? 0;
-      expect(uses, `${t}를 쓰는 곳`).toBeGreaterThanOrEqual(1);
-    }
+    expect(css.match(/var\(--c-chart\)/g)?.length ?? 0).toBeGreaterThanOrEqual(1);
+  });
+
+  it('조작 버튼 상자는 테두리·면 없이 아이콘만이다(강제 색상에서만 경계를 남긴다)', () => {
+    const box = ruleBody('.nav-btn__box');
+    expect(box).toContain('border: 1px solid transparent');
+    expect(box).toContain('background: transparent');
   });
 });
 
@@ -211,3 +217,23 @@ describe('copy.md 9절 문구와 구현 상수 (CM-C)', () => {
     expect(sec9).toContain('**9초**');
   });
 });
+
+describe('GM4 2차 ④ 접는 선: 1280×800 왼쪽 열 끝 < 하단 띠 (CSS 값 — 실측은 e2e/first-screen-qi4.spec.ts·first-screen-gentle-layout.spec.ts)', () => {
+  it('PC 세대 목록 창: 하한 9rem · 식 100vh − 37.5rem − (띠 − 68px) · 상한 24rem, 좁은 화면 식(하한 12rem)은 그대로다', () => {
+    expect(css).toContain('@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(9rem, 100vh - 37.5rem - var(--bar-h, 68px) + 68px, 24rem); } }');
+    expect(css).toMatch(/\.gen-list \{ --gen-list-h: clamp\(12rem, 100svh - 27rem - var\(--bar-h, 68px\) \+ 68px, 24rem\);/);
+  });
+  it('설정 둘(무거운 장면 가리기 · 내 출신 시도)은 PC에서 한 줄 두 칸이고 태어나는 시도·인생 길이는 전체 폭이다', () => {
+    expect(css).toMatch(/\.slots-bottom \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+    expect(css).toContain('.slots-bottom > .slot--small { grid-column: 1 / -1; }');
+  });
+  it('제목 워드마크 --logo-h: 좁은 화면 64px · ≥ 960px 84px (GS11 제목 확대), 「한 판 약 30분」 줄·수저 다섯 자루 줄은 없다', () => {
+    expect(css).toContain('.hero .logo--word { --logo-h: 64px;');
+    expect(css).toContain('.hero .logo--word { --logo-h: 84px; }');
+    expect(html).not.toContain('hero__time');
+    expect(visibleTextOf(html)).not.toContain('한 판 약 30분');
+  });
+});
+function visibleTextOf(h: string): string {
+  return h.replace(/<[^>]+>/g, ' ');
+}

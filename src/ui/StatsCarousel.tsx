@@ -1,19 +1,25 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { AUTO_ADVANCE_MS, chartSizeFor, dotLabel, nextSlideIndex, pointerCountsAsHover, shouldAutoAdvance, showDots, slideReadName, swipeStep, valueWidthEm, type CarouselData, type CarouselSlide, type ChartSize, type SlideSideValue } from '../core/carousel';
+import type { GenChartSource } from '../core/genChart';
+import type { GenerationChoice } from '../core/types';
+import { GEN_CHART_TEXT } from '../data/genChartText';
 import { HEAVY_SLIDE_TEXT, VEIL_TEXT } from '../data/gentleText';
 import { TITLE_TEXT } from '../data/titleText';
 import { Icon } from './Brand';
 import { Glue } from './Glue';
 import { GuardedButton } from './GuardedButton';
+import { GenSlide } from './GenSlide';
 import { Pair } from './Pair';
 import { BarTable, SlideChartView, SrTable, Swatch, SwatchRect } from './StatsChart';
-import { useIsoLayoutEffect, usePageHidden, useReducedMotion } from './hooks';
+import { useIsoLayoutEffect, useMediaQuery, usePageHidden, useReducedMotion } from './hooks';
 
 /**
- * 한국 사회 통계 캐러셀 (SPEC-003 SC1~SC7). 슬라이드 모델은 core/carousel.ts, 값은 koreaStats.json(접근자는 data/koreaStatsAccess.ts).
- * 동작(SC5): 자동 전환 9초(SPEC-005 M8), 이전·다음 버튼·일시정지 버튼(점은 지표가 5개 이하일 때만, R-133), 포인터가 올라가거나 포커스가 안에 있으면 정지, 터치 스와이프, 키보드 ←/→,
- * 움직임 줄이기이면 자동 전환 없음. 스크린리더 알림(aria-live)은 **자동으로 넘어가는 동안에만 off**이고, 멈춘 상태(일시정지·포커스·포인터·움직임 줄이기)에서는
- * 사용자가 직접 넘길 때 바뀐 슬라이드를 읽도록 polite다(R-205: 멈춘 사유와 무관하게 `auto` 하나로 정한다).
+ * 한국 사회 통계 캐러셀 (SPEC-003 SC1~SC7 → SPEC-004 GM4 2차: 21장). 슬라이드 모델은 core/carousel.ts, 값은 koreaStats.json(접근자는 data/koreaStatsAccess.ts).
+ * **첫 장은 세대 그래프**(`GenSlide`, diff-004.md D4-71·D4-72)다: 첫 화면 왼쪽 세대 목록이 손잡이라, 고른 세대가 바뀌면 캐러셀이 첫 장으로 돌아오고 자동 넘김 타이머를 다시 센다. 나머지 20장은 `data.slides`.
+ * 동작(SC5): 자동 전환 9초(SPEC-005 M8), 이전·다음 버튼·멈춤/재생 버튼(점은 지표가 5개 이하일 때만, R-133), 터치 스와이프, 키보드 ←/→. 전환은 불투명도 크로스페이드 320ms(`--dur` × 1.6 — 움직임 줄이기이면 즉시).
+ * WCAG 2.2.2(D4-71): 포인터가 올라가거나 키보드 초점이 들면 멈추고 나가면 이어 간다(`data-autoplay="held"`), 손으로 멈추면 나가도 이어 가지 않는다(`paused`), 움직임 줄이기(시스템 설정·`html[data-motion=reduce]`)이면 자동 넘김이 없고 멈춤 단추도 없다(`none`),
+ * 탭이 가려지면 멈춘다(`held`). **스크린리더**: 자동으로 넘어갈 때와 세대를 바꿔 첫 장으로 돌아올 때는 알리지 않고, 손으로(화살표·←→ 키·점·스와이프) 넘길 때만 전용 영역(`.carousel__live`, `aria-live=polite`)이
+ * 「{i} / {N} · {표제어}」를 읽는다 — 슬라이드 영역 자체는 알리지 않는다(예전에는 멈춘 동안 슬라이드 전체가 polite였다, R-205 → 대체).
  * 조작 줄(이전·위치·다음·일시정지)은 카드 **오른쪽 위**에 작게 있다(SPEC-005 SH5, 보이는 상자 28px · 거친 포인터 44px) — 슬라이드의 높이가 달라도 같은 자리에 있고, 낮은 화면에서도 하단 띠에 가려지지 않는다(R-200).
  * 카드 머리글(「한국 사회 통계」·「7초마다 다음 지표」/「자동 넘김 멈춤」)은 눈에 보이지 않는다(SH4): 제목은 `h2.sr-only`, 영역 이름은 `aria-label`이 맡고, **자동 넘김의 상태는 일시정지 버튼 자체**(아이콘 + 이름)가 말한다(SH6, WCAG 2.2.2).
  * 슬라이드 위에서부터 표제어(`h3`, 큰 글씨) → 공식 통계명(기준)(작고 연하게) → 값 → 그래프 → 정의 → 출처(SH1).
@@ -83,9 +89,30 @@ function SideLine({ side }: { side: SlideSideValue }) {
 
 function SlideView({ slide, index, count, active, gentle = false, open = false, onToggleVeil }: { slide: CarouselSlide; index: number; count: number; active: boolean; gentle?: boolean; open?: boolean; onToggleVeil?: () => void }) {
   const veilable = isVeilableSlide(slide, gentle);
+  const stacked = useMediaQuery(STACKED_LAYOUT_QUERY);
   const veiled = veilable && !open;
   const chart = <SlideChartView chart={slide.chart} label={slide.chartLabel} />;
   const unit = slide.unitText !== '' ? <small className="slide__unit">{slide.unitText}</small> : null;
+  const legendEl =
+    slide.legend.length >= 2 ? (
+
+        <ul className="legend" aria-label={slide.legendLabel}>
+          {slide.legend.map((l) => (
+            <li key={l.key}>
+              {l.rect === undefined ? <Swatch dash={l.dash} /> : <SwatchRect kind={l.rect} />}
+              <span>
+                <Glue text={l.label} />
+                {l.valueText === '' ? null : (
+                  <>
+                    {' '}
+                    <strong>{l.valueText}</strong>
+                  </>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+    ) : null;
   // 표제어 아래 ~ 정의 줄 (가림 대상의 앞 묶음) — 공식 통계명·값·기준·그래프·범례·정의
   const top = (
     <>
@@ -131,24 +158,15 @@ function SlideView({ slide, index, count, active, gentle = false, open = false, 
       {slide.tables.map((t) => (
         <SrTable table={t} key={t.caption} />
       ))}
-      {slide.legend.length >= 2 ? (
-        <ul className="legend" aria-label={slide.legendLabel}>
-          {slide.legend.map((l) => (
-            <li key={l.key}>
-              {l.rect === undefined ? <Swatch dash={l.dash} /> : <SwatchRect kind={l.rect} />}
-              <span>
-                <Glue text={l.label} />
-                {l.valueText === '' ? null : (
-                  <>
-                    {' '}
-                    <strong>{l.valueText}</strong>
-                  </>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {legendEl === null ? null : stacked ? (
+        // 좁은 한 칸 레이아웃(< 960px)에서는 범례를 접는다 — 모든 슬라이드가 가장 긴 장의 높이를 나눠 쓰므로(R-200) 긴 장의 범례가 짧은 장 아래 빈 띠를 만든다 (D4-75 ①, 마스터 결정). 값은 그래프의 직접 라벨에도 있다
+        <details className="disclosure legend-fold" data-testid="legend-fold">
+          <summary>{slide.legendLabel}</summary>
+          {legendEl}
+        </details>
+      ) : (
+        legendEl
+      )}
       {slide.seriesNote !== null ? (
         <p className="slide__meta">
           <Glue text={slide.seriesNote} />
@@ -230,17 +248,42 @@ function SlideView({ slide, index, count, active, gentle = false, open = false, 
   );
 }
 
+/** 한 칸으로 쌓이는 좁은 레이아웃 — title.css의 같은 경계(960px 미만) */
+const STACKED_LAYOUT_QUERY = '(max-width: 959px)';
+
 /** 캐러셀이 오른쪽 열에 놓이는(카드 높이가 슬라이드마다 다른) 넓은 레이아웃인가 — title.css의 같은 경계(960px) */
 const WIDE_LAYOUT_QUERY = '(min-width: 960px)';
 
-export function StatsCarousel({ data, onChartSize, gentle = false }: { data: CarouselData; /** 그래프를 그릴 크기(화면에 그려지는 폭·레이아웃)가 바뀔 때 알린다. 없으면 알리지 않는다(주입된 데이터로 그릴 때). */ onChartSize?: (size: ChartSize) => void; /** 「무거운 장면 가리기」(설정값) — 켜져 있으면 자살률 슬라이드가 가려진다(HV7). 기본 꺼짐 */ gentle?: boolean }) {
-  const count = data.slides.length;
+export function StatsCarousel({
+  data,
+  onChartSize,
+  gentle = false,
+  generation,
+  genSource = null,
+}: {
+  data: CarouselData;
+  /** 그래프를 그릴 크기(화면에 그려지는 폭·레이아웃)가 바뀔 때 알린다. 없으면 알리지 않는다(주입된 데이터로 그릴 때). */
+  onChartSize?: (size: ChartSize) => void;
+  /** 「무거운 장면 가리기」(설정값) — 켜져 있으면 자살률 슬라이드가 가려진다(HV7). 기본 꺼짐 */
+  gentle?: boolean;
+  /** 첫 화면 세대 목록에서 고른 줄 — 주면 첫 장이 세대 그래프가 되고(21장), 이 값이 바뀌면 첫 장으로 돌아와 타이머를 다시 센다 (D4-71·D4-72) */
+  generation?: GenerationChoice;
+  /** 세대 그래프의 재료(출생아 수·기대수명). 없으면(확인된 값이 없으면) 첫 장이 없다 */
+  genSource?: GenChartSource | null;
+}) {
+  const hasGen = generation !== undefined && genSource !== null;
+  const offset = hasGen ? 1 : 0;
+  const count = data.slides.length + offset;
   const slidesRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
+  // 손으로 넘길 때만 읽히는 알림 글자 (D4-71): 자동으로 넘어갈 때·세대를 바꿔 첫 장으로 돌아올 때는 비워 둔다
+  const [live, setLive] = useState('');
+  // 세대를 바꿔 첫 장으로 돌아올 때 이미 첫 장이어도 타이머를 다시 세게 하는 표 (타이머 효과의 의존값)
+  const [epoch, setEpoch] = useState(0);
   // 펼친 가린 슬라이드의 id (HV7) — 저장하지 않는다. 슬라이드를 떠나거나 설정이 바뀌면 다시 가린다(아래 효과)
   const [veilOpenId, setVeilOpenId] = useState<string | null>(null);
   const reduced = useReducedMotion();
@@ -294,10 +337,22 @@ export function StatsCarousel({ data, onChartSize, gentle = false }: { data: Car
   }, [hasCard]);
   useEffect(() => {
     if (!auto) return;
-    // 슬라이드가 바뀔 때마다(자동이든 손으로든) 9초를 다시 센다
-    const id = window.setTimeout(() => setIndex((i) => nextSlideIndex(i, count, 1)), AUTO_ADVANCE_MS);
+    // 슬라이드가 바뀔 때마다(자동이든 손으로든) 9초를 다시 센다. 자동으로 넘어갈 때는 알리지 않는다(알림 글자를 비운다)
+    const id = window.setTimeout(() => {
+      setIndex((i) => nextSlideIndex(i, count, 1));
+      setLive('');
+    }, AUTO_ADVANCE_MS);
     return () => window.clearTimeout(id);
-  }, [auto, index, count]);
+  }, [auto, index, count, epoch]);
+  // 세대를 바꾸면 첫 장(세대 그래프)으로 돌아오고 타이머를 다시 센다. 알림은 세대 줄(aria-live)이 이미 하므로 이 영역은 비운다 (D4-72). 처음 그릴 때는 하지 않는다
+  const lastGeneration = useRef(generation);
+  useEffect(() => {
+    if (lastGeneration.current === generation) return;
+    lastGeneration.current = generation;
+    setIndex(0);
+    setLive('');
+    setEpoch((n) => n + 1);
+  }, [generation]);
 
   const currentIndex = Math.min(index, Math.max(count - 1, 0));
   // 가린 슬라이드를 떠나면(이전·다음·점·자동 넘김) 다시 가린다 — 그리고 설정이 바뀌면 펼침을 모두 지운다(M19). 현재 슬라이드가 바뀌거나 설정이 바뀔 때마다 비운다
@@ -307,7 +362,18 @@ export function StatsCarousel({ data, onChartSize, gentle = false }: { data: Car
 
   if (count === 0) return null;
   const current = currentIndex;
-  const go = (step: 1 | -1) => setIndex((i) => nextSlideIndex(i, count, step));
+  /** i번째 장의 표제어 (손 넘김 알림 글자 — 가린 자살률 장은 가린 이름으로: 무거운 글을 알림이 먼저 읽지 않는다) */
+  const insightAt = (i: number): string => {
+    if (hasGen && i === 0) return GEN_CHART_TEXT.insight;
+    const slide = data.slides[i - offset];
+    return isVeilableSlide(slide, gentle) ? HEAVY_SLIDE_TEXT.title : slide.insight;
+  };
+  /** 손으로 i번째 장으로 간다 — 알림 글자를 「{i} / {N} · {표제어}」로 바꾼다 */
+  const goTo = (i: number) => {
+    setIndex(i);
+    setLive(`${i + 1} / ${count} · ${insightAt(i)}`);
+  };
+  const go = (step: 1 | -1) => goTo(nextSlideIndex(current, count, step));
 
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key === 'ArrowLeft') {
@@ -329,14 +395,16 @@ export function StatsCarousel({ data, onChartSize, gentle = false }: { data: Car
     const step = swipeStep(e.clientX - start.x, e.clientY - start.y);
     if (step !== null) go(step);
   };
+  // 자동 넘김의 상태 (data-autoplay): 돌고 있다 on · 포인터/초점/가려진 탭/펼친 가림이 멈췄다 held(풀리면 이어 간다) · 손으로 멈췄다 paused(나가도 이어 가지 않는다) · 움직임 줄이기라 자동 넘김이 없다 none
+  const mode = reduced ? 'none' : paused ? 'paused' : auto ? 'on' : 'held';
 
   return (
     <section
       ref={sectionRef}
       className="card carousel carousel--005"
       data-testid="carousel"
-      // 지금 자동 전환이 돌고 있는가(멈춤 사유: 사용자 일시정지·포인터·키보드 포커스·움직임 줄이기·가려진 탭). e2e가 시계를 흘리기 전에 기다리는 기준이다.
-      data-autoplay={auto ? 'on' : 'off'}
+      // 지금 자동 전환이 돌고 있는가(on) / 멈춘 사유(held·paused·none). e2e가 시계를 흘리기 전에 기다리는 기준이다.
+      data-autoplay={mode}
       aria-roledescription="캐러셀"
       aria-label={TITLE_TEXT.carouselRegionLabel}
       onKeyDown={onKeyDown}
@@ -360,13 +428,14 @@ export function StatsCarousel({ data, onChartSize, gentle = false }: { data: Car
             <Icon name="i-forward" />
           </span>
         </GuardedButton>
-        {/* 자동 넘김의 상태는 이 버튼의 아이콘·이름이 말한다(SH6): 돌고 있으면 일시정지 아이콘 + 「자동 넘김 일시정지」, 멈추면 재생 아이콘 + 「자동 넘김 다시 시작」. 움직임 줄이기에서는 자동 넘김이 없어 버튼도 없다 */}
+        {/* 자동 넘김의 상태는 이 버튼의 아이콘·이름이 말한다(SH6): 돌고 있으면 일시정지 아이콘 + 「자동 넘김 일시정지」, 멈추면 재생 아이콘 + 「자동 넘김 다시 시작」(aria-pressed). 움직임 줄이기에서는 자동 넘김이 없어 버튼도 없다 */}
         {reduced ? null : (
           <GuardedButton
             className="nav-btn carousel__pause"
             guardKey={CAROUSEL_GUARD_KEY}
             data-testid="carousel-pause"
             aria-label={paused ? TITLE_TEXT.carouselPlay : TITLE_TEXT.carouselPause}
+            aria-pressed={paused}
             onClick={() => setPaused((p) => !p)}
           >
             <span className="nav-btn__box">
@@ -375,6 +444,10 @@ export function StatsCarousel({ data, onChartSize, gentle = false }: { data: Car
           </GuardedButton>
         )}
       </div>
+      {/* 손으로 넘길 때만 읽히는 알림 (D4-71) — 자동 넘김·세대 바꿈은 비워 둔다 */}
+      <p className="sr-only carousel__live" aria-live="polite" aria-atomic="true" data-testid="carousel-live">
+        {live}
+      </p>
       <div
         className="carousel__viewport"
         role="group"
@@ -389,16 +462,29 @@ export function StatsCarousel({ data, onChartSize, gentle = false }: { data: Car
           touchStart.current = null;
         }}
       >
-        <div className="slides" ref={slidesRef} aria-live={auto ? 'off' : 'polite'}>
+        <div className="slides" ref={slidesRef}>
+          {hasGen ? <GenSlide choice={generation} source={genSource} active={current === 0} index={0} count={count} /> : null}
           {data.slides.map((s, i) => (
-            <SlideView key={s.id} slide={s} index={i} count={count} active={i === current} gentle={gentle} open={i === current && veilOpenId === s.id} onToggleVeil={() => setVeilOpenId((id) => (id === s.id ? null : s.id))} />
+            <SlideView key={s.id} slide={s} index={i + offset} count={count} active={i + offset === current} gentle={gentle} open={i + offset === current && veilOpenId === s.id} onToggleVeil={() => setVeilOpenId((id) => (id === s.id ? null : s.id))} />
           ))}
         </div>
       </div>
       {showDots(count) ? (
         <div className="dots" role="group" aria-label="지표 선택" data-testid="carousel-dots">
+          {hasGen ? (
+            <GuardedButton guardKey={CAROUSEL_GUARD_KEY} data-testid="carousel-dot-0" aria-label={dotLabel(0, count, GEN_CHART_TEXT.insight)} aria-current={current === 0 ? 'true' : undefined} onClick={() => goTo(0)}>
+              <i />
+            </GuardedButton>
+          ) : null}
           {data.slides.map((s, i) => (
-            <GuardedButton key={s.id} guardKey={CAROUSEL_GUARD_KEY} data-testid={`carousel-dot-${i}`} aria-label={dotLabel(i, count, isVeilableSlide(s, gentle) && !(i === current && veilOpenId === s.id) ? HEAVY_SLIDE_TEXT.readName : s.insight)} aria-current={i === current ? 'true' : undefined} onClick={() => setIndex(i)}>
+            <GuardedButton
+              key={s.id}
+              guardKey={CAROUSEL_GUARD_KEY}
+              data-testid={`carousel-dot-${i + offset}`}
+              aria-label={dotLabel(i + offset, count, isVeilableSlide(s, gentle) && !(i + offset === current && veilOpenId === s.id) ? HEAVY_SLIDE_TEXT.readName : s.insight)}
+              aria-current={i + offset === current ? 'true' : undefined}
+              onClick={() => goTo(i + offset)}
+            >
               <i />
             </GuardedButton>
           ))}

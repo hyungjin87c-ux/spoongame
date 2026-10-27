@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hasUnseenNotes } from '../core/build';
 import { DEFAULT_CHART_SIZE, buildCarousel, type CarouselData, type ChartSize } from '../core/carousel';
 import { buildFeedbackUrl, feedbackFieldsOf } from '../core/feedback';
+import { genChartSource } from '../core/genChart';
 import { pickAllowedForChoice, unpickableRegions } from '../core/birthProfile';
 import { GENERATION_IDS, LIFE_LENGTHS, isLifeLengthSelectable, type GenerationChoice, type GenerationId, type LifeLength } from '../core/types';
 import { BUILD_LABEL } from '../buildInfo';
@@ -9,14 +10,14 @@ import { APP_VERSION, REPO_URL } from '../buildInfo';
 import { buildAboutFaq } from '../data/aboutFaq';
 import { GEN_ROWS, GEN_TEXT, REGION_CHIP_NAMES, formalNames, type GenRowText } from '../data/generationText';
 import { CURRENT_REGION_NAMES, REGION_KEYS, type CurrentRegionName } from '../data/regionKeys';
-import { INFO_TEXT } from '../data/infoText';
 import { RELEASE_NOTES } from '../data/releaseNotes';
-import { LIFE_LENGTH_TEXT, NAME_CREDIT, NOT_READY_TEXT, TITLE_TEXT, footerStatsText } from '../data/titleText';
+import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT } from '../data/titleText';
 import { Icon, Sprite, TitleWordmark } from '../ui/Brand';
 import { Glue } from '../ui/Glue';
 import { GuardedButton, useInputGuard } from '../ui/GuardedButton';
 import { InfoPanel, type InfoSection } from '../ui/InfoPanel';
 import { StatsCarousel } from '../ui/StatsCarousel';
+import { TitleFooter } from '../ui/TitleFooter';
 import { watchBarRelease } from '../ui/barRelease';
 import { revealGenRow, revealTopOfTallFocus, revealWithinReleasedBar } from '../ui/focusReveal';
 import { useIsoLayoutEffect } from '../ui/hooks';
@@ -227,6 +228,7 @@ function RegionSlot({
   picked,
   homeRegion,
   guardReady,
+  pickNeeded,
   onMode,
   onPick,
 }: {
@@ -235,6 +237,8 @@ function RegionSlot({
   picked: string | null;
   homeRegion: CurrentRegionName | null;
   guardReady: boolean;
+  /** 「직접 고르기」인데 칩을 고르지 않고 「태어나기」를 눌렀다 — 안내 한 줄을 보인다 (R-519 b) */
+  pickNeeded: boolean;
   onMode: (m: 'roulette' | 'pick') => void;
   onPick: (name: string) => void;
 }) {
@@ -244,17 +248,27 @@ function RegionSlot({
   const guarded = (fn: () => void) => () => {
     if (guardReady) fn();
   };
-  const chip = (name: CurrentRegionName, origin: boolean) => {
+  const chip = (name: CurrentRegionName) => {
     const disabled = disabledNames.has(name);
     const on = picked === name && !disabled;
     return (
-      <label key={`${origin ? 'o-' : ''}${name}`} className={`chip-opt${disabled ? ' is-disabled' : ''}${on ? ' is-selected' : ''}${origin ? ' chip-opt--origin' : ''}`} aria-disabled={disabled ? 'true' : undefined}>
-        <input type="radio" name="sido" value={name} checked={on} disabled={disabled} onChange={guarded(() => onPick(name))} onClick={(e) => (guardReady ? undefined : e.preventDefault())} data-testid={`${origin ? 'sido-origin' : 'sido'}-${name}`} />
+      <label key={name} className={`chip-opt${disabled ? ' is-disabled' : ''}${on ? ' is-selected' : ''}`} aria-disabled={disabled ? 'true' : undefined}>
+        <input type="radio" name="sido" value={name} checked={on} disabled={disabled} onChange={guarded(() => onPick(name))} onClick={(e) => (guardReady ? undefined : e.preventDefault())} data-testid={`sido-${name}`} />
         <Icon name="i-check" />
-        <span>{origin ? GEN_TEXT.originChip(name) : name}</span>
+        <span>{name}</span>
       </label>
     );
   };
+  /**
+   * 내 출신 시도 바로가기 (RG3): 칩 맨 앞의 **단추** — 누르면 같은 시·도의 일반 칩을 고른다. 라디오가 아니라서 같은 시도의 칩과 둘 다 「고른」 모양이 되지 않는다(화면·접근성 상태 하나, R-519 a).
+   * 고를 수 없는 시·도(세종 × 산업화~밀레니얼)이면 비활성이다.
+   */
+  const originShortcut =
+    homeRegion === null ? null : (
+      <button type="button" className={`chip-opt chip-opt--origin${disabledNames.has(homeRegion) ? ' is-disabled' : ''}`} disabled={disabledNames.has(homeRegion)} onClick={guarded(() => onPick(homeRegion))} data-testid={`sido-origin-${homeRegion}`}>
+        {GEN_TEXT.originChip(homeRegion)}
+      </button>
+    );
   return (
     <fieldset className="slot slot--small slot--region" data-testid="region-slot">
       <legend className="group-title group-title--inline">{GEN_TEXT.regionTitle}</legend>
@@ -274,14 +288,21 @@ function RegionSlot({
         </p>
       ) : (
         <>
-          <div className="chipset" role="radiogroup" aria-label={GEN_TEXT.regionChipsLabel} data-testid="region-chips">
-            {homeRegion === null ? null : chip(homeRegion, true)}
-            {REGION_CHIP_NAMES.map((name) => chip(name, false))}
+          <div className="chipset" data-testid="region-chipset">
+            {originShortcut}
+            <div className="chipset__radios" role="radiogroup" aria-label={GEN_TEXT.regionChipsLabel} data-testid="region-chips">
+              {REGION_CHIP_NAMES.map((name) => chip(name))}
+            </div>
           </div>
           <p className="seg__hint chipset__note" data-testid="region-pick-hint">
             {GEN_TEXT.regionPickHint}
             {reason === null ? null : ` ${reason}`}
           </p>
+          {pickNeeded ? (
+            <p className="seg__hint chipset__note chipset__alert" role="alert" data-testid="region-pick-needed">
+              {GEN_TEXT.regionPickNeeded}
+            </p>
+          ) : null}
         </>
       )}
     </fieldset>
@@ -323,9 +344,19 @@ export function TitleScreen({ generation, lived = [], homeRegion = null, lifeLen
   // 태어나는 시도 (RG1): 룰렛에 맡기기(기본) / 직접 고르기 — 고른 시도는 「태어나기」를 누를 때 함께 넘어간다. 저장하지 않는다(판마다 새로 정한다)
   const [regionMode, setRegionMode] = useState<'roulette' | 'pick'>('roulette');
   const [regionPicked, setRegionPicked] = useState<string | null>(null);
+  // 「직접 고르기」인데 칩을 고르지 않고 「태어나기」를 눌렀다 (R-519 b): 진행하지 않고 안내 한 줄을 보인다. 칩을 고르거나 「룰렛에 맡기기」로 바꾸면 사라진다
+  const [pickNeeded, setPickNeeded] = useState(false);
+  const pickBlocked = regionMode === 'pick' && regionPicked === null;
+  const requirePick = () => {
+    setPickNeeded(true);
+    // 포커스를 첫 칩으로 — 안내가 화면 밖일 때 칩이 보이는 자리로 오고, 안내(role=alert)는 읽힌다
+    window.setTimeout(() => document.querySelector<HTMLInputElement>('[data-testid="region-chips"] input:not(:disabled)')?.focus(), 0);
+  };
   const listRef = useRef<HTMLDivElement>(null);
   const [chartSize, setChartSize] = useState<ChartSize>(DEFAULT_CHART_SIZE);
   const data = useMemo(() => carousel ?? buildCarousel(undefined, chartSize), [carousel, chartSize]);
+  // 캐러셀 첫 장 「세대 그래프」의 재료 (출생아 수·기대수명 — koreaStats.json에서, 확인된 값이 없으면 null이고 그러면 첫 장이 없다)
+  const genSource = useMemo(() => genChartSource(), []);
   const [confirming, setConfirming] = useState(false);
   const guardReady = useInputGuard(GUARD_KEY);
   // 정보 패널 「새 소식과 소개」 (QI7 NT4·NT5·FQ1): 열려 있는 구역(없으면 닫힘)과 열었던 링크(닫히면 포커스가 돌아간다). 저장하지 않는다 — 새로고침하면 닫힌 첫 화면이다(SV3)
@@ -407,7 +438,8 @@ export function TitleScreen({ generation, lived = [], homeRegion = null, lifeLen
     const onFocusIn = (e: FocusEvent) => {
       const t = e.target;
       if (!(t instanceof HTMLElement)) return;
-      if (t.closest('.title__side') !== null && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 960px)').matches) return;
+      // 넓은 레이아웃의 따라다니는 카드(스스로 안쪽 스크롤) 안은 카드가 맡는다 — 단, 카드가 본문 끝에서 문서와 함께 올라가 대상의 윗변이 화면 위로 나가 있으면(GM4 2차: 하단이 두 열을 가로지르며 카드는 본문 첫 줄까지만 따라다닌다) 문서 스크롤로 윗변을 들인다
+      if (t.closest('.title__side') !== null && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 960px)').matches && t.getBoundingClientRect().top >= 0) return;
       const card = t instanceof HTMLInputElement && t.type === 'radio' ? t.closest('label') : null; // 라디오 카드는 label이 링·크기를 가진다
       const genList = card !== null && card.classList.contains('gen-row') ? card.parentElement : null;
       if (card !== null && genList !== null && genList.classList.contains('gen-list')) {
@@ -519,7 +551,17 @@ export function TitleScreen({ generation, lived = [], homeRegion = null, lifeLen
           </fieldset>
           {/* 작은 슬롯(HS3 ③) — 인생 길이 분절 컨트롤 + 한 줄 안내, 그 아래 설정 줄(④ 무거운 장면 가리기, QI6 전에는 gentle prop이 없어 그려지지 않는다) */}
           <div className="slots-bottom">
-            <RegionSlot generation={generation} mode={regionMode} picked={regionPicked} homeRegion={homeRegion} guardReady={guardReady} onMode={setRegionMode} onPick={setRegionPicked} />
+            <RegionSlot generation={generation} mode={regionMode} picked={regionPicked} homeRegion={homeRegion} guardReady={guardReady}
+              pickNeeded={pickNeeded && pickBlocked}
+              onMode={(m) => {
+                setRegionMode(m);
+                setPickNeeded(false);
+              }}
+              onPick={(name) => {
+                setRegionPicked(name);
+                setPickNeeded(false);
+              }}
+            />
             <fieldset className="slot slot--small">
               <legend className="group-title group-title--inline">{TITLE_TEXT.lifeLengthGroup}</legend>
               <div className="seg" role="radiogroup" aria-label={TITLE_TEXT.lifeLengthGroup} data-testid="life-length-group">
@@ -553,58 +595,10 @@ export function TitleScreen({ generation, lived = [], homeRegion = null, lifeLen
           </div>
         </main>
         <aside className="title__side">
-          <StatsCarousel data={data} onChartSize={carousel === undefined ? setChartSize : undefined} gentle={gentle?.on === true} />
+          <StatsCarousel data={data} onChartSize={carousel === undefined ? setChartSize : undefined} gentle={gentle?.on === true} generation={generation} genSource={genSource} />
         </aside>
-        <footer className="title-foot" data-testid="title-foot">
-          {/* 푸터 링크 둘 (NT4·FQ1): 같은 패널의 두 구역을 연다. 링크 이름 = 구역 이름. 「새」 표시 = 알약 글자(aria-hidden) + 읽기 전용 꼬리 — 색 + 글자(색에만 의존하지 않는다) */}
-          <p className="title-foot__links" data-testid="info-links">
-            <a
-              href="#"
-              data-panel="news"
-              data-testid="link-news"
-              aria-haspopup="dialog"
-              onClick={(e) => {
-                e.preventDefault();
-                openPanel('news', e.currentTarget);
-              }}
-            >
-              {INFO_TEXT.newsName}
-              {unseenNotes ? (
-                <>
-                  <span className="news-badge" aria-hidden="true" data-testid="news-badge">
-                    {INFO_TEXT.badge}
-                  </span>
-                  <span className="sr-only">{INFO_TEXT.badgeSr}</span>
-                </>
-              ) : null}
-            </a>{' '}
-            <span aria-hidden="true">·</span>{' '}
-            <a
-              href="#"
-              data-panel="intro"
-              data-testid="link-intro"
-              aria-haspopup="dialog"
-              onClick={(e) => {
-                e.preventDefault();
-                openPanel('intro', e.currentTarget);
-              }}
-            >
-              {INFO_TEXT.introName}
-            </a>
-          </p>
-          {/* 법원 통계 자료 이용 조건: 출처를 구체적으로 표시한다(문구·주소는 names.json의 meta.attribution). */}
-          <p className="credit" data-testid="names-credit">
-            <a href={NAME_CREDIT.url} target="_blank" rel="noopener noreferrer">
-              <Glue text={NAME_CREDIT.text} />
-            </a>
-          </p>
-          <p data-testid="stats-credit">
-            <Glue text={footerStatsText(data.orgs)} />
-          </p>
-          <p className="num" data-testid="build-version">
-            {BUILD_LABEL}
-          </p>
-        </footer>
+        {/* 하단 (GS12): 서비스 소개 · 운영자 의도 · 작은 링크 줄 · 이름·통계 출처 · 운영자와 버전 — 푸터 링크는 같은 정보 패널의 구역(소개·개인정보 처리방침·이용 안내·새 소식)을 연다. 링크 이름 = 구역 이름 */}
+        <TitleFooter orgs={data.orgs} feedbackUrl={feedbackUrl} unseenNotes={unseenNotes} openPanel={openPanel} guardKey="title-foot" />
       </div>
       <div className="page-end-space" {...panelInert} />
       <div className="bottom-bar" data-testid="bottom-bar" ref={barRef} {...panelInert}>
@@ -615,7 +609,7 @@ export function TitleScreen({ generation, lived = [], homeRegion = null, lifeLen
                 {TITLE_TEXT.loadFailed}
               </p>
             ) : null}
-            <GuardedButton className="btn btn--primary btn--lg" guardKey={GUARD_KEY} data-testid="start-birth" aria-disabled={loading === 'loading' ? true : undefined} aria-busy={loading === 'loading' ? true : undefined} onClick={() => (loading === 'loading' ? undefined : loading === 'failed' && onRetryLoad !== undefined ? onRetryLoad() : onBegin(regionMode === 'pick' ? regionPicked : null))}>
+            <GuardedButton className="btn btn--primary btn--lg" guardKey={GUARD_KEY} data-testid="start-birth" aria-disabled={loading === 'loading' ? true : undefined} aria-busy={loading === 'loading' ? true : undefined} onClick={() => (loading === 'loading' ? undefined : loading === 'failed' && onRetryLoad !== undefined ? onRetryLoad() : pickBlocked ? requirePick() : onBegin(regionMode === 'pick' ? regionPicked : null))}>
               {loading === 'loading' ? TITLE_TEXT.loading : loading === 'failed' ? TITLE_TEXT.loadRetry : TITLE_TEXT.begin}
             </GuardedButton>
           </>
@@ -642,7 +636,7 @@ export function TitleScreen({ generation, lived = [], homeRegion = null, lifeLen
             <GuardedButton className="btn btn--primary btn--lg" guardKey={GUARD_KEY_SAVED} data-testid="resume" onClick={saved.onResume}>
               {TITLE_TEXT.resume}
             </GuardedButton>
-            <GuardedButton ref={beginNewRef} className="btn btn--ghost btn--sm" guardKey={GUARD_KEY_SAVED} data-testid="begin-new" onClick={() => setConfirming(true)}>
+            <GuardedButton ref={beginNewRef} className="btn btn--ghost btn--sm" guardKey={GUARD_KEY_SAVED} data-testid="begin-new" onClick={() => (pickBlocked ? requirePick() : setConfirming(true))}>
               {TITLE_TEXT.beginNew}
             </GuardedButton>
           </>

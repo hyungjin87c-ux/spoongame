@@ -20,7 +20,7 @@ import {
   titleState,
   toBirthReport,
 } from './helpers';
-import { SAVE_VERSION, SETTINGS_KEY } from './saves';
+import { GAME_KEY, SAVE_VERSION, SETTINGS_KEY } from './saves';
 import { synthesizeBigSlot } from './titleStates';
 import { readThemeBlocks, themeTokens, type Theme } from '../scripts/checkContrastLib';
 
@@ -60,7 +60,7 @@ async function hideBottomBar(page: Page): Promise<void> {
   await page.addStyleTag({ content: '[data-testid="bottom-bar"] { visibility: hidden !important; }' });
 }
 
-/** 첫 화면 캐러셀의 현재 순서 「3 / 20」 */
+/** 첫 화면 캐러셀의 현재 순서 「3 / 21」 */
 const countText = (page: Page) => page.getByTestId('carousel-count').innerText();
 const slideCount = async (page: Page): Promise<number> => page.getByTestId('stat-slide').count();
 const activeSlideId = (page: Page) => page.evaluate(() => document.querySelector('.slide.is-active')?.getAttribute('data-slide-id') ?? '');
@@ -84,7 +84,7 @@ async function tick(page: Page, ms: number): Promise<void> {
 }
 
 /** 캐러셀 밖의 빈 곳을 눌러 포인터·포커스를 캐러셀에서 뺀다(포인터가 나간 것을 앱이 알 때까지는 시계를 흘리지 않는다). */
-async function leaveCarousel(page: Page, expectAutoplay: 'on' | 'off' = 'on'): Promise<void> {
+async function leaveCarousel(page: Page, expectAutoplay: 'on' | 'held' | 'paused' | 'none' = 'on'): Promise<void> {
   await page.mouse.click(2, 2);
   await expect(page.getByTestId('carousel')).toHaveAttribute('data-autoplay', expectAutoplay);
 }
@@ -134,7 +134,7 @@ test('첫 화면 구성(FS1·GS11): 로고 → 한 줄 설명 → 세대 고르�
     // 오른쪽 열 맨 위에 그림이 없어(GS11) 카드는 열 맨 위에서 시작하고 표제어·값이 스크롤 0에서 하단 띠 위에 보인다
     const vis = await page.evaluate(() => {
       const r = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
-      return { insightBottom: r('.slide.is-active .slide__insight').bottom, valueBottom: r('.slide.is-active [data-testid="slide-value"]').bottom, barTop: r('[data-testid="bottom-bar"]').top };
+      return { insightBottom: r('.slide.is-active .slide__insight').bottom, valueBottom: r('.slide.is-active [data-testid="slide-value"], .slide.is-active .gen-chart__big').bottom, barTop: r('[data-testid="bottom-bar"]').top };
     });
     expect(vis.insightBottom, '표제어가 스크롤 0에서 하단 띠 위에 보인다').toBeLessThan(vis.barTop);
     expect(vis.valueBottom, '값이 스크롤 0에서 하단 띠 위에 보인다').toBeLessThan(vis.barTop);
@@ -250,6 +250,110 @@ test('살아본 세대(GS10): 끝까지 살아본 세대 줄에 체크 + 글자 
   await expect(page.getByTestId('title-screen')).not.toContainText(/점수|순위|보상|업적/);
 });
 
+test('세대 목록 왕복(GS1·D4-38, R-512): 랜덤 → 알파 → 랜덤 → 산업화 → 알파 → Z → 랜덤 — 고른 줄은 그때마다 목록 창 안에 있다', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
+  const room = () =>
+    page.evaluate(() => {
+      const list = document.querySelector('[data-testid="gen-list"]') as HTMLElement;
+      const row = list.querySelector('.gen-row.is-selected') as HTMLElement;
+      const l = list.getBoundingClientRect();
+      const r = row.getBoundingClientRect();
+      return { id: row.getAttribute('data-testid'), above: Math.round(r.top - l.top), below: Math.round(l.bottom - r.bottom) };
+    });
+  for (const id of ['alpha', 'random', 'industrial', 'alpha', 'genz', 'random'] as const) {
+    await chooseGeneration(page, id);
+    // 목록은 부드럽게 스크롤하므로 멈출 때까지 기다린 뒤, 고른 줄 상자가 창 안(위·아래 모두 여유 ≥ 0)에 있다
+    await expect
+      .poll(async () => {
+        const w = await room();
+        return w.id === `gen-row-${id}` && w.above >= -1 && w.below >= -1;
+      }, { message: `${id}: 고른 줄이 목록 창 안에 있어야 한다`, timeout: 5_000 })
+      .toBe(true);
+  }
+});
+
+test('시도 직접 고르기 화면(RG1·RG2·RG3, R-511 b · R-519): 내 출신 시도 단추는 칩 맨 앞이고 누르면 같은 시도의 일반 칩 하나만 선택된다 · 세종은 비활성 + 사유 문장 · 칩을 고르지 않고 「태어나기」를 누르면 진행하지 않고 안내 한 줄', async ({ page }) => {
+  await injectSave(page, titleState(KNOWN_SEED), '/', { speed: 1, autoMode: false, generation: 'industrial', homeRegion: '제주' });
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
+  // 룰렛에 맡기기(기본)에서는 칩이 없다
+  await expect(page.getByTestId('region-chips')).toHaveCount(0);
+  await page.getByTestId('regmode-pick').check();
+  const chipset = page.getByTestId('region-chipset');
+  await expect(chipset).toBeVisible();
+  // 출신 단추가 맨 앞(R-511 b), 그 뒤에 라디오 묶음
+  expect(await chipset.evaluate((el) => (el.firstElementChild as HTMLElement).getAttribute('data-testid'))).toBe('sido-origin-제주');
+  await expect(page.getByTestId('sido-origin-제주')).toHaveText('내 출신 시도 · 제주');
+  expect(await page.getByTestId('sido-origin-제주').evaluate((el) => el.tagName)).toBe('BUTTON');
+  // 비활성: 이 세대가 태어난 해에는 세종이 없었다 — 칩은 비활성이고 사유 문장이 있다
+  await expect(page.getByTestId('sido-세종')).toBeDisabled();
+  await expect(page.locator('label.chip-opt.is-disabled', { has: page.getByTestId('sido-세종') })).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByTestId('region-pick-hint')).toContainText('이 세대가 태어난 해에는 세종특별자치시가 없었어요.');
+  // 칩을 고르지 않고 「태어나기」: 진행하지 않고 안내 한 줄(R-519 b)
+  await expect(page.getByTestId('region-pick-needed')).toHaveCount(0);
+  await page.getByTestId('start-birth').click();
+  await expect(page.getByTestId('region-pick-needed')).toHaveText('시·도를 고르거나, 「룰렛에 맡기기」를 골라 주세요.');
+  await expect(page.getByTestId('title-screen')).toBeVisible();
+  await expect(page.getByTestId('roulette-screen')).toHaveCount(0);
+  expect((await readSave(page)).data.phase, '진행하지 않았다').toBe('title');
+  // 출신 단추를 누르면 같은 시도의 일반 칩 하나만 선택된다(둘 다 선택된 모양이 아니다, R-519 a) · 안내는 사라진다
+  await page.getByTestId('sido-origin-제주').click();
+  await expect(page.getByTestId('sido-제주')).toBeChecked();
+  await expect(page.getByTestId('region-pick-needed')).toHaveCount(0);
+  expect(await page.locator('[data-testid="region-chips"] input:checked').count()).toBe(1);
+  await expect(page.locator('[data-testid="region-chipset"] button[aria-checked], [data-testid="region-chipset"] [role="radio"]:not(input)')).toHaveCount(0);
+  // 이제 「태어나기」는 진행하고, 출생 시도는 고른 시도다
+  await pressBegin(page);
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  const saved = (await readSave(page)).data;
+  expect(saved.regionPicked).toBe(true);
+  expect(saved.birthReport!.region).toBe('제주');
+});
+
+test('「룰렛에 맡기기」로 돌아가면 안내가 사라지고 칩을 고르지 않아도 태어난다 (R-519 b)', async ({ page }) => {
+  await injectSave(page, titleState(KNOWN_SEED), '/', { speed: 1, autoMode: false, generation: 'genx' });
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
+  await page.getByTestId('regmode-pick').check();
+  await page.getByTestId('start-birth').click();
+  await expect(page.getByTestId('region-pick-needed')).toBeVisible();
+  await page.getByTestId('regmode-roulette').check();
+  await expect(page.getByTestId('region-pick-needed')).toHaveCount(0);
+  await pressBegin(page);
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  expect((await readSave(page)).data.regionPicked).toBeUndefined();
+});
+
+test('내 출신 시도 설정(RG3, R-511 b): 설정 키 하나에만 남는다 — 고르면 설정에 들어가고, 판이 시작돼도 게임 저장·의견 보내기 주소에 시·도 이름이 없고, 「지우기」 뒤에는 설정에도 흔적이 없다', async ({ page }) => {
+  await injectSave(page, titleState(KNOWN_SEED), '/', { speed: 1, autoMode: false, generation: 'genx' });
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
+  await expect(page.getByTestId('origin-current')).toHaveText('밝히지 않음');
+  await page.getByTestId('origin-setting').locator('summary').click();
+  await page.getByTestId('origin-select').selectOption('제주');
+  await expect(page.getByTestId('origin-current')).toHaveText('제주');
+  await expect.poll(async () => (await readSettings(page)).homeRegion).toBe('제주');
+  // 의견 보내기 주소: 정보 패널의 의견 보내기 링크에 시·도 이름이 없다
+  await page.getByTestId('link-intro').click();
+  const href = (await page.getByTestId('info-feedback').getAttribute('href')) ?? '';
+  expect(href).toContain('github.com');
+  expect(decodeURIComponent(href)).not.toContain('제주');
+  await page.keyboard.press('Escape');
+  // 판을 시작해도 게임 저장 원문에는 homeRegion이 없다(설정 키에만 있다)
+  await pressBegin(page);
+  await expect(page.getByTestId('roulette-screen')).toBeVisible();
+  const rawGame = (await page.evaluate((k) => localStorage.getItem(k), GAME_KEY)) ?? '';
+  expect(rawGame).not.toContain('homeRegion');
+  const rawSettings = (await page.evaluate((k) => localStorage.getItem(k), SETTINGS_KEY)) ?? '';
+  expect(rawSettings).toContain('"homeRegion":"제주"');
+  // 첫 화면으로 돌아가 지운다: 설정이 null이 되고 저장소 어디에도 이전 이름이 남지 않는다(출생 시도가 우연히 제주였던 판의 저장은 빼고 설정 키만 본다)
+  await injectSave(page, titleState(KNOWN_SEED), '/', { speed: 1, autoMode: false, generation: 'genx', homeRegion: '제주' });
+  await expect(page.getByTestId('origin-current')).toHaveText('제주');
+  await page.getByTestId('origin-setting').locator('summary').click();
+  await page.getByTestId('origin-clear').click();
+  await expect(page.getByTestId('origin-current')).toHaveText('밝히지 않음');
+  await expect.poll(async () => (await readSettings(page)).homeRegion).toBeNull();
+  expect((await page.evaluate((k) => localStorage.getItem(k), SETTINGS_KEY)) ?? '').not.toContain('제주');
+});
+
 test('화면 사이 거짓 안내 없음(R-201): 세대 줄에서 읽은 출생 범위와 출생 화면의 실제 출생 연도가 어긋나지 않는다 — 세 세대', async ({ page }) => {
   for (const [i, id] of (['industrial', 'genx', 'alpha'] as const).entries()) {
     await injectSave(page, titleState(KNOWN_SEED + i), '/', { speed: 1, autoMode: false, generation: id });
@@ -342,8 +446,8 @@ test('키보드: 라디오 묶음에서 방향키로 선택을 바꾸고(Tab 정
     stops.push(await activeTestId(page));
     if (stops[stops.length - 1] === 'life-short30') break;
   }
-  expect(stops, `Tab 정지점: ${stops.join(' → ')}`).toEqual(['regmode-roulette', 'life-short30'].length === 2 && stops.length === 2 ? ['regmode-roulette', 'life-short30'] : stops);
-  expect(stops[stops.length - 1]).toBe('life-short30');
+  // 세대 목록(고른 줄에서 시작) → 접이식 「세대 범위는 …」(SUMMARY) → 태어나는 시도 분절 → 인생 길이 분절. 묶음 안의 나머지 라디오는 건너뛴다 (R-514: 기대 순서를 값으로 적는다)
+  expect(stops, `Tab 정지점: ${stops.join(' → ')}`).toEqual(['SUMMARY', 'regmode-roulette', 'life-short30']);
   // 「약 1시간」은 준비 중이라 방향키가 건너뛴다: 선택은 약 30분에 머문다(비활성 카드로 선택이 옮겨 가지 않는다)
   await page.keyboard.press('ArrowRight');
   await expect(page.getByTestId('life-short30')).toBeChecked();
@@ -446,7 +550,7 @@ for (const [i, vp] of [
           version: document.querySelector('[data-testid="build-version"]')!.getBoundingClientRect().bottom,
           // 넓은 화면의 카드는 열 안쪽 스크롤로 아랫부분에 닿는다(SPEC-005 D5-30 — 일러스트가 열 맨 위에 있다): 안쪽을 끝까지 내린 뒤의 카드 아래끝을 잰다
           carousel: (() => {
-            const side = document.querySelector('.title__side') as HTMLElement;
+            const side = document.querySelector('[data-testid="carousel"]') as HTMLElement; // 넓은 화면은 카드 자신이 안쪽 스크롤한다(GM4 2차 — 카드가 따라다닌다)
             if (matchMedia('(min-width: 960px)').matches) side.scrollTop = side.scrollHeight;
             return document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect().bottom;
           })(),
@@ -518,7 +622,12 @@ test('캐러셀(SC1·SC2): 지표 10개 이상, 요청의 5개 포함, 슬라이
   const ids = await page.evaluate(() => [...document.querySelectorAll('[data-testid="stat-slide"]')].map((s) => s.getAttribute('data-slide-id')));
   for (const id of ['tfr', 'cdr', 'elderly-poverty', 'suicide-rate', 'region-population-registered']) expect(ids).toContain(id);
   expect(ids).not.toContain('region-population'); // 17개 시도 센서스 지표는 뺐다(마스터 결정: 2026 주민등록 16개 시·도)
-  // 첫 슬라이드: 합계출산율 — 시안의 가짜 값(0.68·2023)이 아니라 실제 값 0.80명·2025년 기준
+  // 첫 장은 세대 그래프(D4-71)이고, 합계출산율은 둘째 장이다
+  expect(ids[0]).toBe('gen-births');
+  await expect(page.locator('.slide.is-active').locator('h3.slide__insight')).toHaveText('고른 세대는 한 해에 몇 명이 태어났을까?');
+  await page.getByTestId('start-birth').waitFor();
+  await page.getByTestId('carousel-next').click();
+  // 둘째 슬라이드: 합계출산율 — 시안의 가짜 값(0.68·2023)이 아니라 실제 값 0.80명·2025년 기준
   const first = page.locator('.slide.is-active');
   await expect(first.locator('h3.slide__insight')).toHaveText('한 여성이 평생 낳을 아이는 몇 명일까?'); // 표제어(SH1) — 슬라이드의 제목
   await expect(first.locator('.slide__official')).toHaveText('합계출산율(2025년)'); // 공식 통계명(기준) 줄(SH3) — 연도만 있던 기준 줄은 없다
@@ -537,11 +646,13 @@ test('캐러셀(SC1·SC2): 지표 10개 이상, 요청의 5개 포함, 슬라이
   await expect(page.getByTestId('carousel-pause')).toHaveAccessibleName('자동 넘김 일시정지');
   await expect(page.getByTestId('carousel-auto-note')).toHaveCount(0);
   // 보이는 슬라이드는 하나뿐이다(나머지는 스크린리더·화면에서 숨는다)
-  const visible = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-testid="stat-slide"]')].filter((s) => getComputedStyle(s).visibility === 'visible').length);
-  expect(visible).toBe(1);
+  // (크로스페이드 320ms 동안은 나가는 장도 잠깐 보인다 — 전환이 끝나면 하나뿐이다)
+  await expect
+    .poll(() => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-testid="stat-slide"]')].filter((s) => getComputedStyle(s).visibility === 'visible').length), { timeout: 3_000 })
+    .toBe(1);
 });
 
-test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는 「3 / 20」 한 줄, 지표가 6개 이상이면 점이 없다(R-133), 끝에서는 반대쪽으로 돈다', async ({ page }) => {
+test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는 「3 / 21」 한 줄, 지표가 6개 이상이면 점이 없다(R-133), 끝에서는 반대쪽으로 돈다', async ({ page }) => {
   await page.goto('/');
   const n = await slideCount(page);
   await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀린 뒤
@@ -553,7 +664,7 @@ test('캐러셀(SC5): 이전·다음·키보드 ←/→·스와이프, 위치는
   expect(await countText(page)).toBe(`${n} / ${n}`); // 처음에서 이전 → 마지막
   await page.getByTestId('carousel-next').click();
   expect(await countText(page)).toBe(`1 / ${n}`);
-  // 지표가 많으면(20개) 점을 그리지 않는다 — 점 10개가 두 줄로 꺾이던 문제(R-133). 위치는 「n / N」 한 줄로 보인다
+  // 지표가 많으면(21개) 점을 그리지 않는다 — 점 10개가 두 줄로 꺾이던 문제(R-133). 위치는 「n / N」 한 줄로 보인다
   expect(n).toBeGreaterThan(5);
   await expect(page.getByTestId('carousel-dots')).toHaveCount(0);
   await expect(page.locator('[data-testid^="carousel-dot-"]')).toHaveCount(0);
@@ -602,50 +713,53 @@ test('캐러셀 자동 전환(SC5): 9초마다 다음 슬라이드, 포인터가
   const n = await slideCount(page);
   const carousel = page.getByTestId('carousel');
   const count = page.getByTestId('carousel-count');
+  const live = page.getByTestId('carousel-live');
   await leaveCarousel(page); // 포인터는 캐러셀 밖
   expect(await countText(page)).toBe(`1 / ${n}`);
-  await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'off'); // 자동 전환은 스크린리더가 읽지 않는다
+  // 슬라이드 영역은 알리지 않는다(자동·손 모두) — 손으로 넘길 때만 전용 영역(.carousel__live)이 「{i} / {N} · {표제어}」를 읽는다 (D4-71)
+  expect(await page.locator('.slides').getAttribute('aria-live')).toBeNull();
+  await expect(live).toHaveText('');
   await tick(page, 8_000);
   expect(await countText(page)).toBe(`1 / ${n}`); // 아직 9초가 안 됐다
   await tick(page, 2_000);
   await expect(count).toHaveText(`2 / ${n}`);
+  await expect(live, '자동으로 넘어갈 때는 알리지 않는다').toHaveText('');
   await tick(page, 9_100);
   await expect(count).toHaveText(`3 / ${n}`);
+  await expect(live, '자동으로 넘어갈 때는 알리지 않는다').toHaveText('');
 
   // 포인터가 올라가면 정지
   await carousel.scrollIntoViewIfNeeded(); // 좁은 화면에서는 캐러셀이 아래에 있다
   const box = (await carousel.boundingBox())!;
   // 좁은 화면에서는 카드가 창보다 높아(20장: 360×740에서 약 970px) 가운데로 스크롤하면 카드 위끝이 화면 밖이다 — 보이는 부분 안의 점을 고른다
   await page.mouse.move(box.x + box.width / 2, Math.max(box.y, 0) + 60);
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
-  await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'polite'); // 포인터로 멈췄으면 직접 넘길 때 읽는다(R-205)
+  await expect(carousel).toHaveAttribute('data-autoplay', 'held'); // 포인터가 올라와 멈췄다(풀리면 이어 간다)
   await tick(page, 20_000);
   await expect(count).toHaveText(`3 / ${n}`);
   await leaveCarousel(page);
-  await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'off'); // 다시 자동 전환 중이면 읽지 않는다
+  expect(await page.locator('.slides').getAttribute('aria-live')).toBeNull();
   await tick(page, 9_100);
   await expect(count).toHaveText(`4 / ${n}`);
 
   // 키보드 포커스가 안에 있으면 정지 (키보드 사용자)
   await page.keyboard.press('Tab'); // 키보드 사용 시작(:focus-visible)
   await page.getByTestId('carousel-next').focus();
-  await expect(carousel).toHaveAttribute('data-autoplay', 'off');
-  await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'polite'); // 키보드 포커스로 멈췄을 때도 polite(R-205: 예전에는 일시정지·움직임 줄이기만 polite였다)
+  await expect(carousel).toHaveAttribute('data-autoplay', 'held'); // 키보드 초점이 카드 안이라 멈췄다
   await tick(page, 20_000);
   await expect(count).toHaveText(`4 / ${n}`);
   await leaveCarousel(page);
-  await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'off');
   await tick(page, 9_100);
   await expect(count).toHaveText(`5 / ${n}`);
 
-  // 일시정지 버튼: 멈추고(이름이 「다시 시작」으로 바뀐다, 읽어 주도록 live=polite), 다시 누르면 이어서 돈다
+  // 일시정지 버튼: 멈추고(이름이 「다시 시작」으로 바뀐다 · aria-pressed), 다시 누르면 이어서 돈다
   const pause = page.getByTestId('carousel-pause');
   await expect(pause).toHaveAccessibleName('자동 넘김 일시정지');
+  await expect(pause).toHaveAttribute('aria-pressed', 'false');
   await pause.click();
   await expect(pause).toHaveAccessibleName('자동 넘김 다시 시작');
-  await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'polite');
+  await expect(pause).toHaveAttribute('aria-pressed', 'true');
   await expect(pause.locator('use')).toHaveAttribute('href', '#i-play'); // 상태는 버튼의 아이콘·이름이 말한다(SH6) — 머리글 문구는 없다
-  await leaveCarousel(page, 'off');
+  await leaveCarousel(page, 'paused'); // 손으로 멈춘 것은 포인터가 나가도 이어 가지 않는다
   await tick(page, 30_000);
   await expect(count).toHaveText(`5 / ${n}`);
   await pause.click(); // 마우스로 다시 시작: 버튼에 포커스가 남아도(마우스 포커스는 정지 사유가 아니다) 포인터가 나가면 바로 돈다
@@ -672,17 +786,19 @@ test('움직임 줄이기(SC5·CM4): 자동 전환이 꺼지고(일시정지 버
   await tick(page, 60_000);
   await expect(page.getByTestId('carousel-count')).toHaveText(`1 / ${n}`);
   await expect(page.getByTestId('carousel-pause')).toHaveCount(0);
-  await expect(page.locator('.slides')).toHaveAttribute('aria-live', 'polite');
+  await expect(page.getByTestId('carousel')).toHaveAttribute('data-autoplay', 'none'); // 움직임 줄이기: 자동 넘김 없음 + 단추 없음
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   await page.getByTestId('carousel-next').click();
   await expect(page.getByTestId('carousel-count')).toHaveText(`2 / ${n}`);
-  // 전환 애니메이션도 없다
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.slide.is-active')!).transitionDuration)).toMatch(/^(0s|0\.01ms|1e-05s)$/);
+  await expect(page.getByTestId('carousel-live'), '손으로 넘기면 알린다').toHaveText(/^2 \/ 21 · /);
+  // 전환 애니메이션도 없다 (크로스페이드 320ms = --dur × 1.6 — 움직임 줄이기에서는 --dur이 0.01ms라 즉시)
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.slide.is-active')!).transitionDuration)).toMatch(/^(0s|0\.016ms|0\.01ms|1e-05s|1\.6e-05s)$/);
 
   // 앱 설정(data-motion)만 켜져 있어도 같다 (시스템 설정은 움직임 허용)
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.evaluate(() => document.documentElement.setAttribute('data-motion', 'reduce'));
   await expect(page.getByTestId('carousel-pause')).toHaveCount(0);
+  await expect(page.getByTestId('carousel')).toHaveAttribute('data-autoplay', 'none');
   await page.getByTestId('carousel-prev').click();
   await page.mouse.click(2, 2);
   await tick(page, 60_000);
@@ -709,6 +825,88 @@ test('탭이 가려지면 자동 전환이 멈추고 다시 보이면 이어진�
   await setVisibility('visible');
   await tick(page, 9_100);
   await expect(page.getByTestId('carousel-count')).toHaveText(`2 / ${n}`);
+});
+
+test('캐러셀 21장(D4-71·D4-72): 첫 장은 세대 그래프이고, 세대 줄을 바꾸면 첫 장으로 돌아와 9초를 다시 센다 — 알림 영역은 자동·세대 바꿈에는 비고 손 넘김에만 「{i} / 21 · {표제어}」를 읽는다', async ({ page }) => {
+  await openWithClock(page);
+  const n = await slideCount(page);
+  expect(n, '20장 + 세대 그래프 첫 장').toBe(21);
+  const live = page.getByTestId('carousel-live');
+  const count = page.getByTestId('carousel-count');
+  await tick(page, 500); // 입력 가드(0.4초)가 풀리도록
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
+  // 첫 장 = 세대 그래프: 처음 방문의 기본 선택(랜덤)을 그린다
+  await expect(count).toHaveText('1 / 21');
+  expect(await activeSlideId(page)).toBe('gen-births');
+  await expect(page.locator('.slide--gen')).toHaveAttribute('data-gen', 'random');
+  await expect(page.getByTestId('gen-chart-gen')).toHaveText('어느 세대든 · 1940~2020년생');
+  await leaveCarousel(page);
+  await tick(page, 9_100);
+  await expect(count).toHaveText('2 / 21');
+  await expect(live, '자동 넘김은 알리지 않는다').toHaveText('');
+  // 9초 주기 중간(5초)에 세대를 바꾼다 — 첫 장으로 돌아오고 타이머를 다시 센다. 알림 영역은 비어 있다(세대 줄 aria-live가 알린다)
+  await tick(page, 5_000);
+  await chooseGeneration(page, 'genx');
+  await leaveCarousel(page);
+  await expect(count).toHaveText('1 / 21');
+  expect(await activeSlideId(page)).toBe('gen-births');
+  await expect(page.locator('.slide--gen')).toHaveAttribute('data-gen', 'genx');
+  await expect(page.getByTestId('gen-chart-gen')).toHaveText('X세대 · 1970~1980년생');
+  await expect(page.getByTestId('gen-chart-big')).toContainText('89만');
+  await expect(live, '세대를 바꿔 첫 장으로 돌아올 때는 알리지 않는다').toHaveText('');
+  await tick(page, 8_000);
+  await expect(count, '타이머를 다시 셌다 — 바꾸기 전 주기(남은 4초)가 아니라 9초').toHaveText('1 / 21');
+  await tick(page, 1_300);
+  await expect(count).toHaveText('2 / 21');
+  // 이미 첫 장일 때 세대를 바꿔도 타이머를 다시 센다
+  await page.getByTestId('carousel-prev').click();
+  await expect(count).toHaveText('1 / 21');
+  await leaveCarousel(page);
+  await tick(page, 6_000);
+  await chooseGeneration(page, 'alpha');
+  await leaveCarousel(page);
+  await tick(page, 6_000);
+  await expect(count, '세대를 바꾼 시각부터 9초를 센다').toHaveText('1 / 21');
+  await tick(page, 3_300);
+  await expect(count).toHaveText('2 / 21');
+  // 손으로 넘기면 알린다: 「{i} / 21 · {표제어}」
+  await page.getByTestId('carousel-next').click();
+  await expect(count).toHaveText('3 / 21');
+  const insight = await page.locator('.slide.is-active h3').innerText();
+  await expect(live).toHaveText(`3 / 21 · ${insight.replace(/\s+/g, ' ').trim()}`);
+  await page.getByTestId('carousel-viewport').focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(live).toHaveText(/^2 \/ 21 · /);
+  // 손으로 멈춘 뒤 세대를 바꿔도 멈춘 채 첫 장으로 돌아온다
+  await page.getByTestId('carousel-pause').click();
+  await chooseGeneration(page, 'genz');
+  await expect(count).toHaveText('1 / 21');
+  await expect(page.getByTestId('carousel')).toHaveAttribute('data-autoplay', 'paused');
+  await leaveCarousel(page, 'paused');
+  await tick(page, 30_000);
+  await expect(count).toHaveText('1 / 21');
+});
+
+test('범례 접이식(D4-75 ①): 한 칸으로 쌓이는 좁은 화면(360)에서는 범례가 닫힌 접이식(요약 = 범례 이름)이고, 넓은 화면(1280)에서는 그대로 펼쳐 보인다 — 열면 범례 항목이 보인다 · 카드 높이는 이전(범례 펼침)보다 낮다', async ({ page }, testInfo) => {
+  const mobile = testInfo.project.name === 'mobile-360';
+  await page.goto('/');
+  await expect(page.getByTestId('start-birth')).toBeEnabled();
+  await page.getByTestId('carousel-pause').click();
+  for (let i = 0; i < 21 && (await activeSlideId(page)) !== 'life-expectancy'; i++) await page.getByTestId('carousel-next').click();
+  expect(await activeSlideId(page)).toBe('life-expectancy');
+  const slide = page.locator('.slide.is-active');
+  if (mobile) {
+    const fold = slide.getByTestId('legend-fold');
+    await expect(fold).toHaveCount(1);
+    expect(await fold.evaluate((el) => (el as HTMLDetailsElement).open), '처음엔 닫혀 있다').toBe(false);
+    await expect(fold.locator('summary')).toHaveText('그래프 범례와 최근 값');
+    await expect(slide.locator('.legend li').first()).toBeHidden();
+    await fold.locator('summary').click();
+    await expect(slide.locator('.legend li').first()).toBeVisible();
+  } else {
+    await expect(slide.getByTestId('legend-fold')).toHaveCount(0);
+    await expect(slide.locator('.legend li').first()).toBeVisible();
+  }
 });
 
 test('자살률 슬라이드(SC6): 값·기준 연도·출처와 자살예방 상담전화 109(24시간) 안내가 같은 슬라이드 안에 있고, 다른 슬라이드에는 없다', async ({ page }) => {
@@ -817,7 +1015,7 @@ async function carouselGeometry(page: Page) {
   return page.evaluate(() => {
     const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
     const card = rect('[data-testid="carousel"]');
-    const side = document.querySelector('.title__side')!;
+    const side = document.querySelector('[data-testid="carousel"]')!;
     const bar = rect('[data-testid="bottom-bar"]');
     const ctrl = ['carousel-prev', 'carousel-next', 'carousel-pause'].map((id) => {
       const r = rect(`[data-testid="${id}"]`);
@@ -861,13 +1059,13 @@ for (const vp of [
         expect(g0.sideBottom, `scrollY 0 · ${g0.slide}: 오른쪽 열 맨 아래 ${Math.round(g0.sideBottom)} ≤ bar.top ${Math.round(g0.barTop)}`).toBeLessThanOrEqual(g0.barTop + 0.5);
         expect(g0.cardTop).toBeGreaterThanOrEqual(0);
         await page.evaluate(() => {
-          const side = document.querySelector('.title__side')!;
+          const side = document.querySelector('[data-testid="carousel"]')!;
           side.scrollTop = side.scrollHeight;
         });
         const gEnd = await carouselGeometry(page);
         expect(gEnd.cardBottom, `안쪽 끝 · ${g0.slide}: carousel.bottom ${Math.round(gEnd.cardBottom)} ≤ bar.top ${Math.round(gEnd.barTop)}`).toBeLessThanOrEqual(gEnd.barTop + 0.5);
         await page.evaluate(() => {
-          document.querySelector('.title__side')!.scrollTop = 0;
+          document.querySelector('[data-testid="carousel"]')!.scrollTop = 0;
         });
         for (const c of g0.ctrl) {
           expect(c.bottom, `${g0.slide} ${c.id}이 띠 위`).toBeLessThanOrEqual(g0.barTop);
@@ -878,7 +1076,8 @@ for (const vp of [
         // 따라다니는(sticky) 상태: 페이지를 내렸을 때 카드는 위쪽(24px)에 붙어 있고 카드 전체가 띠 위다.
         // 붙어 있는 마지막 위치(열 끝 − 카드 높이 − 24)와, 맨 아래(열 끝에 맞춰 카드가 위로 밀려 올라간 상태)도 본다.
         const stuckEnd = await page.evaluate(() => {
-          const row = document.querySelector('.title')!.getBoundingClientRect();
+          // 따라다니는 범위는 오른쪽 열(aside = 본문 첫 줄 높이)의 끝까지다 — 하단(GS12)이 두 열을 가로지르는 둘째 줄로 내려가면서 카드는 푸터 위로 올라타지 않는다(design-system.md 17-12-3 ⑨)
+          const row = document.querySelector('.title__side')!.getBoundingClientRect();
           const card = document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect();
           return Math.max(0, Math.floor(row.bottom + window.scrollY - card.height - 24 - 2));
         });
@@ -948,7 +1147,7 @@ async function geometryAt(page: Page, y: number) {
       y: window.scrollY,
       cardTop: card.top,
       cardBottom: card.bottom,
-      sideBottom: rect('.title__side').bottom,
+      sideBottom: rect('[data-testid="carousel"]').bottom,
       barTop: rect('[data-testid="bottom-bar"]').top,
       footDocTop: foot.top + window.scrollY,
       docHeight: document.documentElement.scrollHeight,
@@ -984,38 +1183,53 @@ for (const vp of [
       const maxY = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
       expect(maxY, '페이지가 스크롤되고 따라다니는 구간(scrollY ≥ 3)이 있다(공허 통과 방지)').toBeGreaterThan(100);
       const stops = scrollStops(maxY);
-      const topsByY = new Map<number, Set<number>>(); // 스크롤 위치 → 모든 슬라이드에서 잰 조작 줄 위끝
+      const topsByY = new Map<number, Set<number>>(); // 스크롤 위치 → 모든 슬라이드에서 잰 조작 줄 위끝 (따라다니는 범위 안에서만)
       const stuckTops = new Set<number>(); // 따라다니는 동안(scrollY ≥ 10) 모든 위치·슬라이드의 조작 줄 위끝
+      const stuckEnds: number[] = [];
       const footTops = new Set<number>();
       const docHeights = new Set<number>();
       let tallest = { index: 0, height: 0 };
       for (let i = 0; i < ids.length; i++) {
         await page.evaluate(() => window.scrollTo(0, 0));
         if (i > 0) await page.getByTestId('carousel-next').click();
+        // GM4 2차(design-system.md 17-12-3 ⑨, diff-004 D4-67 ⑦): 하단(GS12)이 두 열을 가로지르는 둘째 줄로 내려가 카드는 **본문 첫 줄(오른쪽 열의 끝)까지만** 따라다닌다 — 그 뒤로는 본문과 함께 올라가고 푸터 위로 올라타지 않는다.
+        // 따라다니는 범위의 끝 = 열 아래끝(문서 기준) − 카드 높이 − 위 여백(24px)
+        const stuckEnd = await page.evaluate(() => {
+          const side = document.querySelector('.title__side')!.getBoundingClientRect();
+          const card = document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect();
+          return Math.floor(side.bottom + window.scrollY - card.height - 24 - 2);
+        });
+        stuckEnds.push(stuckEnd);
         for (const y of stops) {
           const g = await geometryAt(page, y);
           const tag = `${ids[i]} scrollY ${y}`;
           expect(g.slide, `${tag}: 지금 슬라이드`).toBe(ids[i]);
           expect(g.y, `${tag}: 실제로 그 위치까지 갔다`).toBeCloseTo(y, 0);
-          expect(g.sideBottom, `${tag}: 오른쪽 열 아래끝 ${Math.round(g.sideBottom)} ≤ 띠 위끝 ${Math.round(g.barTop)} (카드 아랫부분은 열 안쪽 스크롤로 닿는다 — D5-30)`).toBeLessThanOrEqual(g.barTop + 0.5);
+          expect(g.sideBottom, `${tag}: 카드 아래끝 ${Math.round(g.sideBottom)} ≤ 띠 위끝 ${Math.round(g.barTop)} (카드 아랫부분은 카드 안쪽 스크롤로 닿는다 — D5-30)`).toBeLessThanOrEqual(g.barTop + 0.5);
+          expect(g.cardBottom, `${tag}: 카드는 푸터 위로 올라타지 않는다(카드 아래끝 ${Math.round(g.cardBottom)} ≤ 푸터 위끝 ${Math.round(g.footDocTop - g.y)})`).toBeLessThanOrEqual(g.footDocTop - g.y + 0.5);
+          const sticking = y <= stuckEnd;
           for (const c of g.ctrl) {
-            expect(c.top, `${tag} ${c.id}: 화면 위로 잘리지 않는다 (ctrl.top ≥ 0)`).toBeGreaterThanOrEqual(0);
             expect(c.bottom, `${tag} ${c.id}: 하단 띠 위`).toBeLessThanOrEqual(g.barTop + 0.5);
-            expect(c.hit, `${tag} ${c.id} 한가운데를 누르면 그 버튼이다(다른 것이 가리지 않는다)`).toBe(c.id);
+            if (sticking) expect(c.top, `${tag} ${c.id}: 붙어 있는 동안은 화면 위로 잘리지 않는다 (ctrl.top ≥ 0)`).toBeGreaterThanOrEqual(0);
+            // 화면 안에 있는 단추는 한가운데를 누르면 그 버튼이다(다른 것이 가리지 않는다) — 본문과 함께 올라가 화면 밖인 단추는 누를 수 없으니 보지 않는다
+            if (c.top >= 0 && c.bottom <= g.barTop) expect(c.hit, `${tag} ${c.id} 한가운데를 누르면 그 버튼이다`).toBe(c.id);
           }
           const top = Math.round(g.ctrl[0].top * 10) / 10;
-          if (!topsByY.has(y)) topsByY.set(y, new Set());
-          topsByY.get(y)!.add(top);
-          if (y >= 10) stuckTops.add(top);
+          if (sticking) {
+            if (!topsByY.has(y)) topsByY.set(y, new Set());
+            topsByY.get(y)!.add(top);
+            if (y >= 10) stuckTops.add(top);
+          }
           footTops.add(Math.round(g.footDocTop * 10) / 10);
           docHeights.add(g.docHeight);
           if (y === 0 && g.cardBottom - g.cardTop > tallest.height) tallest = { index: i, height: g.cardBottom - g.cardTop };
         }
       }
-      // ① 같은 스크롤 위치에서는 슬라이드가 바뀌어도 조작 줄 위치가 하나다
-      for (const y of stops) expect([...topsByY.get(y)!], `scrollY ${y}: 슬라이드마다 조작 줄 위끝이 다르다`).toHaveLength(1);
-      // 따라다니는 동안에는 맨 아래까지 한 자리다 — 카드가 열 끝에 밀려 올라가지 않는다(예전에는 맨 아래에서 가장 큰 슬라이드의 카드 머리가 화면 위로 잘렸다)
-      expect([...stuckTops], `scrollY ≥ 10에서 조작 줄이 움직였다(밀려 올라감): ${[...stuckTops]}`).toHaveLength(1);
+      // ① 따라다니는 동안 같은 스크롤 위치에서는 슬라이드가 바뀌어도 조작 줄 위치가 하나다
+      for (const [y, set] of topsByY) expect([...set], `scrollY ${y}: 슬라이드마다 조작 줄 위끝이 다르다`).toHaveLength(1);
+      expect(Math.max(...stuckEnds), '따라다니는 구간(scrollY ≥ 10)이 실제로 있다(공허 통과 방지)').toBeGreaterThan(10);
+      // 따라다니는 동안에는 한 자리다
+      expect([...stuckTops], `따라다니는 동안 조작 줄이 움직였다: ${[...stuckTops]}`).toHaveLength(1);
       // ④ 아래 내용(푸터)·문서 높이는 슬라이드와 무관하다
       expect([...footTops], `슬라이드마다 푸터 위끝이 다르다: ${[...footTops]}`).toHaveLength(1);
       expect([...docHeights], `슬라이드마다 문서 높이가 다르다: ${[...docHeights]}`).toHaveLength(1);
@@ -1043,6 +1257,8 @@ const FOOTER_VIEWPORTS = [
 
 /** 문서 기준 푸터 위끝·빌드 버전 줄·본문 끝 여백과 문서 높이 — 슬라이드가 바뀌어도 변하면 안 되는 「아래 내용」 */
 async function belowContent(page: Page) {
+  // 글꼴 조각이 늦게 도착하면(부하가 큰 전체 실행) 글자 폭이 바뀌어 푸터가 다시 흐른다 — 슬라이드와 무관한 움직임이라 글꼴이 다 도착한 뒤에 잰다
+  await page.evaluate(() => document.fonts.ready);
   return page.evaluate(() => {
     const doc = (sel: string) => {
       const r = document.querySelector(sel)!.getBoundingClientRect();
@@ -1135,19 +1351,19 @@ test('낮은 데스크톱 창(1280x620)에서 키보드로 카드 안쪽을 끝�
   for (let i = 0; i < n && found === ''; i++) {
     if (i > 0) await page.getByTestId('carousel-next').click();
     const g = await carouselGeometry(page);
-    if (g.innerScroll > 1) found = g.slide;
+    if (g.innerScroll > 1 && g.slide !== 'gen-births') found = g.slide; // 첫 장(세대 그래프)은 「통계 기준」 줄이 없다
   }
   expect(found, '안쪽 스크롤이 필요한 슬라이드가 있다(공허 통과 방지)').not.toBe('');
-  const scrollTop = () => page.evaluate(() => document.querySelector('.title__side')!.scrollTop);
+  const scrollTop = () => page.evaluate(() => document.querySelector('[data-testid="carousel"]')!.scrollTop);
   expect(await scrollTop()).toBe(0);
   const viewport = page.getByTestId('carousel-viewport');
   await viewport.focus(); // 슬라이드 영역(tabindex=0)에 포커스
   await expect(viewport).toBeFocused();
   await page.keyboard.press('PageDown');
   await expect.poll(scrollTop, { message: 'PageDown으로 카드 안쪽이 내려간다' }).toBeGreaterThan(0);
-  await expect.poll(async () => (await page.evaluate(() => { const el = document.querySelector('.title__side')!; return el.scrollHeight - el.clientHeight - el.scrollTop; }))).toBeLessThanOrEqual(1); // 끝까지(이 여유는 한 쪽 안)
+  await expect.poll(async () => (await page.evaluate(() => { const el = document.querySelector('[data-testid="carousel"]')!; return el.scrollHeight - el.clientHeight - el.scrollTop; }))).toBeLessThanOrEqual(1); // 끝까지(이 여유는 한 쪽 안)
   const after = await page.evaluate(() => {
-    const side = document.querySelector('.title__side')!.getBoundingClientRect();
+    const side = document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect();
     const basis = document.querySelector('.slide.is-active [data-testid="slide-basis"]')!.getBoundingClientRect();
     const bar = document.querySelector('[data-testid="bottom-bar"]')!.getBoundingClientRect();
     return { basisTop: basis.top, basisBottom: basis.bottom, sideTop: side.top, sideBottom: side.bottom, barTop: bar.top };
@@ -1166,7 +1382,7 @@ test('낮은 데스크톱 창(1280x620)에서 키보드로 카드 안쪽을 끝�
   while (pageUps < PAGE_UP_LIMIT && (await scrollTop()) > 0) {
     await page.keyboard.press('PageUp');
     pageUps++;
-    await waitScrollSettled(page, '.title__side');
+    await waitScrollSettled(page, '[data-testid="carousel"]');
   }
   expect(await scrollTop(), `PageUp ${pageUps}번(상한 ${PAGE_UP_LIMIT}) 뒤 맨 위`).toBe(0);
   const back = await carouselGeometry(page);
@@ -1189,31 +1405,38 @@ test('1024x768 「새로 태어나기」 확인 단계(하단 띠가 가장 높�
   const n = await slideCount(page);
   const maxY = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
   let scrolled = 0;
-  const stuckTops = new Set<number>(); // 따라다니는 동안(scrollY ≥ 10) 모든 슬라이드·위치의 조작 줄 위끝 — 안쪽 스크롤을 쓰는 큰 슬라이드도 맨 아래까지 한 자리다
+  const stuckTops = new Set<number>(); // 따라다니는 동안(scrollY ≥ 10) 모든 슬라이드·위치의 조작 줄 위끝 — 안쪽 스크롤을 쓰는 큰 슬라이드도 따라다니는 범위에서는 한 자리다
   const stuckWhere: string[] = [];
   for (let i = 0; i < n; i++) {
     await page.evaluate(() => window.scrollTo(0, 0));
     if (i > 0) await page.getByTestId('carousel-next').click();
+    // 따라다니는 범위의 끝 = 열 아래끝(문서 기준) − 카드 높이 − 위 여백(24px) — 그 뒤로는 본문과 함께 올라간다(GM4 2차, 푸터 위로 올라타지 않는다)
+    const stuckEnd = await page.evaluate(() => {
+      const side = document.querySelector('.title__side')!.getBoundingClientRect();
+      const card = document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect();
+      return Math.floor(side.bottom + window.scrollY - card.height - 24 - 2);
+    });
     for (const y of [0, Math.floor(maxY / 2), maxY]) {
       const g = await geometryAt(page, y);
       const side = await carouselGeometry(page);
       const tag = `${g.slide} scrollY ${y}`;
-      expect(side.sideBottom, `${tag}: 오른쪽 열 아래끝 ${Math.round(side.sideBottom)} ≤ 띠 위끝 ${Math.round(g.barTop)}`).toBeLessThanOrEqual(g.barTop + 0.5);
-      // (카드 전체의 아래끝은 안쪽 스크롤이 쓰일 때 보이는 영역 아래로 이어지므로 보지 않는다 — 보이는 영역인 오른쪽 열 아래끝이 띠 위다)
+      expect(side.sideBottom, `${tag}: 카드 아래끝 ${Math.round(side.sideBottom)} ≤ 띠 위끝 ${Math.round(g.barTop)}`).toBeLessThanOrEqual(g.barTop + 0.5);
+      // (카드 전체의 아래끝은 안쪽 스크롤이 쓰일 때 보이는 영역 아래로 이어지므로 보지 않는다 — 보이는 영역인 카드 아래끝이 띠 위다)
+      const sticking = y <= stuckEnd;
       for (const c of g.ctrl) {
-        expect(c.top, `${tag} ${c.id}`).toBeGreaterThanOrEqual(0);
+        if (sticking) expect(c.top, `${tag} ${c.id}`).toBeGreaterThanOrEqual(0);
         expect(c.bottom, `${tag} ${c.id}`).toBeLessThanOrEqual(g.barTop + 0.5);
-        expect(c.hit, `${tag} ${c.id}`).toBe(c.id);
+        if (c.top >= 0 && c.bottom <= g.barTop) expect(c.hit, `${tag} ${c.id}`).toBe(c.id);
       }
       if (y === 0 && side.innerScroll > 1) scrolled++;
-      if (y >= 10) {
+      if (y >= 10 && sticking) {
         stuckTops.add(Math.round(g.ctrl[0].top * 10) / 10);
         stuckWhere.push(`${g.slide}@${y}:${Math.round(g.ctrl[0].top * 10) / 10}`);
       }
     }
   }
   expect(scrolled, '이 높이에서는 큰 슬라이드의 안쪽 스크롤이 실제로 쓰인다(공허 통과 방지)').toBeGreaterThan(0);
-  expect([...stuckTops], `확인 단계에서도 따라다니는 동안 조작 줄이 한 자리다: ${[...stuckTops]} (${stuckWhere.join(' ')})`).toHaveLength(1);
+  expect(stuckTops.size, `확인 단계에서도 따라다니는 동안 조작 줄이 한 자리다: ${[...stuckTops]} (${stuckWhere.join(' ')})`).toBeLessThanOrEqual(1);
 });
 
 // ---------- R-206: 차트 글자 12px 이상 (320px 포함) ----------
@@ -1547,7 +1770,8 @@ test('키보드(CM4): Tab 순서는 제목 → 세대 → 태어나는 시도 �
   // 조작 줄(이전·다음·일시정지)이 카드 머리로 옮겨져(R-200) 슬라이드 영역보다 먼저 닿는다 — 이 순서가 바뀐 이유는 ai-log dev-M2-r2. APG 캐러셀도 회전 제어를 슬라이드보다 앞에 두기를 권한다.
   // SPEC-005 QI6·QI7: 설정 줄의 「무거운 장면 가리기」 스위치(gentle-switch, 인생 길이 바로 다음)와 푸터의 「새 소식」·「소개」 링크(출처 링크 앞)가 정지점에 더해졌다 — 나머지 순서는 그대로다.
   // SPEC-004 GS1~GS4: 세대 목록(라디오 묶음 하나) 다음에 접이식 설명(SUMMARY), 태어나는 시도 묶음(regmode-roulette)이 오고, 인생 길이·스위치 다음에 「태어나는 곳(현재 거주지)」 접이식이 온다.
-  const expected = ['gen-random', 'SUMMARY', 'regmode-roulette', 'life-short30', 'gentle-switch', 'SUMMARY', 'carousel-prev', 'carousel-next', 'carousel-pause', 'carousel-viewport', 'link-news', 'link-intro', 'A', 'start-birth'];
+  const expected = ['gen-random', 'SUMMARY', 'regmode-roulette', 'life-short30', 'gentle-switch', 'SUMMARY', 'carousel-prev', 'carousel-next', 'carousel-pause', 'carousel-viewport', 'SUMMARY', 'foot-feedback', 'link-news', 'link-intro', 'link-privacy', 'link-terms', 'foot-feedback-link', 'foot-mail', 'A', 'start-birth'];
+  // SPEC-004 GM4 2차: 캐러셀 첫 장(세대 그래프)의 「표로 보기」(SUMMARY) · 하단(GS12)의 「의견 보내기」·「새 소식」 단추, 링크 줄(소개 → 개인정보 처리방침 → 이용 안내 → 의견 보내기 → 문의 메일), 그다음 이름 출처 링크(A)
   expect(stops).toEqual(expected);
   // 포커스 링: 하단 버튼은 :focus-visible 링(3px 이상), 화면 안에 있다
   const ring = await page.evaluate(() => {
@@ -1598,7 +1822,7 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
         text: getComputedStyle(document.querySelector('[data-testid="gen-row-genx"] .gen-row__name')!).color,
         btnBg: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).backgroundColor,
         btnText: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).color,
-        card: getComputedStyle(document.querySelector('.carousel')!).backgroundImage, // 위쪽 띠(--c-card-tint)에서 면(--c-surface)으로 가는 그라데이션(SPEC-005 D5-27)
+        card: getComputedStyle(document.querySelector('.carousel')!).backgroundColor, // 평면 카드(D4-55): 면(--c-surface) 하나
         logo: getComputedStyle(logoPath).stroke,
         scheme: css(document.documentElement, 'color-scheme'),
       };
@@ -1606,8 +1830,7 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     const dark = await tokenColors(page, 'dark');
     expect(c.body, 'body 바탕 = --c-bg 다크').toBe(dark('--c-bg'));
     expect(c.page).toBe(dark('--c-bg'));
-    expect(c.card, '카드 = 위쪽 띠 --c-card-tint → 면 --c-surface 다크').toContain(dark('--c-surface'));
-    expect(c.card).toContain(dark('--c-card-tint'));
+    expect(c.card, '카드 = 면 --c-surface 다크(평면 — 그라디언트 없음)').toBe(dark('--c-surface'));
     expect(c.text, '글자 = --c-text 다크').toBe(dark('--c-text'));
     expect(c.btnBg, '주요 버튼 = --c-brand 다크').toBe(dark('--c-brand'));
     expect(c.btnText).toBe(dark('--c-on-brand'));
@@ -2001,6 +2224,11 @@ test('모바일(폭 < 960): 카드 높이는 고정이고, 짧은 슬라이드�
     let widest = { index: 0, blank: -1, id: '' };
     for (let i = 0; i < n; i++) {
       await goToSlide(page, i);
+      // 첫 장(세대 그래프)은 「출처 → 통계 기준」 줄 쌍이 아니라 출처 한 줄로 끝난다 — 카드 높이만 같은지 본다
+      if ((await activeSlideId(page)) === 'gen-births') {
+        heights.add(await page.evaluate(() => Math.round(document.querySelector('[data-testid="carousel"]')!.getBoundingClientRect().height)));
+        continue;
+      }
       const m = await page.evaluate(() => {
         const slide = document.querySelector('.slide.is-active')!.getBoundingClientRect();
         const basis = document.querySelector('.slide.is-active [data-testid="slide-basis"]')!;

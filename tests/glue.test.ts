@@ -182,7 +182,7 @@ describe('쉼표 나열과 짧은 쌍 (SPEC-003 QM2-10: 한 줄을 넘을 수 �
     for (const n of [1, 2, 3, 5]) {
       const orgs = all.slice(0, n);
       const text = footerStatsText(orgs);
-      expect(text, `${n}개`).toBe(`통계 출처: ${orgs.join(', ')} (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)`);
+      expect(text, `${n}개`).toBe(`통계 출처: ${orgs.join(', ')} (통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요)`);
       // 기관 이름 사이만 떼어 본다: 구분자는 모두 「, 」이고 「·」가 없다
       const listPart = text.slice(TITLE_TEXT.footerStatsLead.length, text.indexOf(' (통계표'));
       expect(listPart, `${n}개: 기관 이름 목록`).toBe(orgs.join(', '));
@@ -190,15 +190,15 @@ describe('쉼표 나열과 짧은 쌍 (SPEC-003 QM2-10: 한 줄을 넘을 수 �
       expect(listPart.split(', '), `${n}개: 쉼표로 나뉜 항목`).toEqual(orgs);
     }
     // 기관이 없어도 이중 공백이 없다
-    expect(footerStatsText([])).toBe('통계 출처: (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
+    expect(footerStatsText([])).toBe('통계 출처: (통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요)');
   });
 
-  it('실제 푸터: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)」 — 같은 기관은 현재 이름으로 한 번만 (R-488)', () => {
+  it('실제 푸터: 「통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요)」 — 같은 기관은 현재 이름으로 한 번만 (R-488)', () => {
     const data = buildCarousel();
     // QI4 2단계(슬라이드 20장): 기관이 3곳에서 7곳으로 늘었다 — 격차 지표의 한국은행·금융감독원(5번째 슬라이드), 공식 전망의 발표 당시 명칭 「통계청(현 국가데이터처)」, 폭염의 기상청.
     // R-488: 「통계청(현 국가데이터처)」는 이미 있는 「국가데이터처」와 같은 기관이라 현재 이름으로 한 번만 나온다(7곳 → 6곳). 슬라이드 출처 줄의 발행 당시 이름은 그대로(tests/carousel.test.ts).
     // 1단계까지의 기대 글자(3곳)를 이 글자로 바꿨다 — 푸터 기관 목록은 슬라이드의 `source.org`에서 슬라이드 차례대로 모인다(core/carousel.ts#buildCarousel).
-    expect(footerStatsText(data.orgs)).toBe('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 카드마다 적혀 있습니다)');
+    expect(footerStatsText(data.orgs)).toBe('통계 출처: 국가데이터처, 한국은행, 금융감독원, 행정안전부, 교육부, 기상청(국립기상과학원) (통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요)');
     expect(footerStatsText(data.orgs).includes('통계청'), '푸터에 옛 이름 「통계청」이 없다(R-488)').toBe(false);
   });
 
@@ -278,6 +278,12 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       // (SPEC-005 QI3: core/carousel.ts의 기준 줄 「{분모 문구} · {연도}년 기준」 조립은 없어졌다 — 연도는 공식 통계명 줄 「합계출산율(2025년)」로 옮겼고 기준 줄에는 분모만 남는다)
       'core/events.ts': 1, // 개발자용 점검 메시지(「standard · common · assembled 중 하나여야 한다」)
       'core/glue.ts': 1, // splitPair의 분해 기호
+      // SPEC-004 GM4 2차: 첫 장 세대 그래프의 짧은 쌍 — 큰 값 아래 「한 해 평균 · {첫해}~{끝해}년」(core/genChart.ts, ui/Glue 묶음) · 가리킴 글자 「{연도}년 · {값}만 명」(data/genChartText.ts, 그림 안 한 줄) · (세대 줄 「{세대 이름} · {범위}년생」은 `.pair--meta` 마크업이라 글자 안에 「 · 」가 없다 — ui/GenSlide.tsx) ·
+      // 개인정보 처리방침·이용 안내의 머리 줄 「… (법률 검토 전 초안 · {날짜})」(data/policyText.ts, 항목 둘) · 캐러셀 손 넘김 알림 「{i} / {N} · {표제어}」(ui/StatsCarousel.tsx — 화면에 안 보이는 읽기 전용 글자)
+      'core/genChart.ts': 1,
+      'data/genChartText.ts': 1,
+      'data/policyText.ts': 2,
+      'ui/StatsCarousel.tsx': 1,
       // SPEC-004: 세대 이름과 연도의 짧은 쌍 「{세대} · {연도}년생」(출생신고 머리, GD2 엔딩 꼴)·세대 목록의 표제 「산업화 세대 · 전후 세대」(GD1 표 이름)·내 출신 칩 「내 출신 시도 · {시도}」 — 항목이 고정된 짧은 쌍이고 ui/Glue·FitPair로 그린다
       'data/birthReportText.ts': 1,
       'data/generations.ts': 1,

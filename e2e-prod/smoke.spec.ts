@@ -587,10 +587,10 @@ test('DP8 배포 확인(QM2-7 c): 공개 주소 푸터의 커밋 7자가 방금 
 /**
  * 제품 번들의 캐러셀 화면 글자 (REV-003-M2-4 R-243). 개발 서버 e2e(e2e/slide-text.spec.ts)는 기대값을 개발 서버의 `/src` 모듈(앱 모델)에서 가져오므로 제품 번들에서는 돌지 않는다 —
  * 형진 님이 보는 것은 Pages의 최소화된 번들이라 **CSS 최소화가 `@container`·`cqw`를 바꾸거나 빠뜨려도** 그쪽 e2e로는 못 잡는다. 이 시험은 **모델 없이 화면 DOM만으로** 가장 나쁜 조건
- * (폭 320px · 글자 200%)의 20장을 본다: ① 번들 CSS가 짧은 쌍의 컨테이너 쿼리·슬라이드 칸 컨테이너·`cqw` 값 크기를 유지한다 ② 20장 금지 패턴 0·값 줄 모양·기준 줄 모양
+ * (폭 320px · 글자 200%)의 21장(첫 장 세대 그래프 + 지표 20장)을 본다: ① 번들 CSS가 짧은 쌍의 컨테이너 쿼리·슬라이드 칸 컨테이너·`cqw` 값 크기를 유지한다 ② 20장 금지 패턴 0·값 줄 모양·기준 줄 모양
  * ③ 혼인 건수 슬라이드의 「조혼인율 인구 1천 명당 N.N건」 줄 ④ B형 기준 줄(조사망률·자살률)은 두 줄로 나뉘고 가운뎃점이 감춰진다 ⑤ 가로 넘침·글자 잘림 0.
  */
-test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨테이너 쿼리를 유지하고, 화면 글자가 20장 금지 패턴 0·조혼인율 줄·B형 기준 줄 두 줄(기호 숨김)·넘침 0이다 (R-243, 모델 없이 DOM만)', async ({ page, request }) => {
+test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨테이너 쿼리를 유지하고, 화면 글자가 21장 금지 패턴 0·조혼인율 줄·B형 기준 줄 두 줄(기호 숨김)·넘침 0이다 (R-243, 모델 없이 DOM만)', async ({ page, request }) => {
   test.setTimeout(120_000);
 
   // ① 번들 CSS (vite 최소화 결과) — 컨테이너 쿼리와 슬라이드 칸 컨테이너가 살아 있다
@@ -605,17 +605,27 @@ test('제품 번들 캐러셀(폭 320px·글자 200%): 최소화된 CSS가 컨�
   expect(css, '슬라이드 칸이 컨테이너다').toMatch(/\.slide\s*\{[^}]*container-type:\s*inline-size/);
   expect(css, '값 글자 크기가 칸 폭(cqw)에 맞춘다').toMatch(/@supports\s*\(\s*width:\s*1cqw\s*\)\s*\{\s*\.slide__value\s*\{[^}]*100cqw/);
 
-  // ② 화면: 폭 320px · 글자 200%, 20장을 모두 넘기며 눈에 보이는 글자를 모은다
+  // ② 화면: 폭 320px · 글자 200%, 21장을 모두 넘기며 눈에 보이는 글자를 모은다
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/');
   await expect(page.getByTestId('start-birth')).toBeEnabled();
   await page.getByTestId('carousel-pause').click();
   await setRootFontPercent(page, 200);
   const n = await slideCount(page);
-  expect(n).toBe(20);
+  expect(n, '첫 장 세대 그래프 + 지표 20장').toBe(21);
   const doms: SlideDom[] = [];
   const problems: string[] = [];
   for (let i = 0; i < n; i++) {
+    if (i === 0) {
+      // 첫 장(세대 그래프)은 지표 슬라이드의 형식표를 따르지 않는다 — 금지 패턴과 가로 넘침·글자 잘림만 본다(e2e/slide-text.spec.ts와 같은 규칙)
+      expect(await page.locator('.slide.is-active').getAttribute('data-slide-id')).toBe('gen-births');
+      const text = (await page.locator('.slide.is-active').innerText()).replace(/\s+/g, ' ');
+      expect(text.length, '첫 장이 실제로 글자를 그렸다').toBeGreaterThan(80);
+      for (const name of forbiddenIn(text)) problems.push(`gen-births: 금지 패턴(${name}): 「${text.slice(0, 60)}」`);
+      problems.push(...textResizeViolations(await measureTextResize(page), '320px/200% gen-births'));
+      await page.getByTestId('carousel-next').click();
+      continue;
+    }
     const dom = await collectSlideDom(page);
     doms.push(dom);
     const bad = (msg: string) => problems.push(`${dom.id}: ${msg}`);

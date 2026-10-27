@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { GENERATION_IDS, type GenerationId } from '../src/core/types';
 import { createRng } from '../src/core/rng';
+import { generateBirth } from '../src/core/birth';
+import { PARENT_WEALTHS } from '../src/core/types';
+import { regionShort } from '../src/data/regionKeys';
 import { genMixture, largestRemainderTo, pickBirthYear, regionRowsOf, regionShareOf, regionsInYear, wealthFor, yearBasisOf, yearOddsOf } from '../src/core/generationMixture';
 import { generationDef, yearsOfGeneration } from '../src/data/generations';
 import { BIRTH_YEAR_TABLES } from '../src/data/birthYearData';
@@ -179,5 +182,55 @@ describe('genMixture — 고른 세대 전체 기준 (D4-47)', () => {
       const { from, to } = generationDef(id).birth;
       for (const o of mixOf(id).odds) expect(o.year >= from && o.year <= to).toBe(true);
     }
+  });
+});
+
+describe('경험 비율 = 표 (GS7, R-512): 표(섞은 값)가 곧 실제로 뽑히는 확률이다', () => {
+  const N = 20000;
+  // 표의 값은 소수 1자리(지역)·정수(수저)로 보정된 값이라 실제 확률과 최대 반올림 폭만큼 다르다 — 허용 = 4σ + 보정 폭
+  const within = (count: number, pctShown: number, roundingPct: number): boolean => {
+    const p = pctShown / 100;
+    return Math.abs(count - N * p) <= 4 * Math.sqrt(N * p * (1 - p)) + (N * roundingPct) / 100;
+  };
+
+  it('세대 7종 × 20000판: 출생 시도의 경험 비율이 표(genMixture(...).region)와 4σ(+0.05%p) 이내이고, 표에 없는 시도가 뽑히는 일이 없다', () => {
+    for (const id of GENERATION_IDS) {
+      const m = mixOf(id);
+      const rng = createRng(7000 + GENERATION_IDS.indexOf(id));
+      const counts = new Map<string, number>();
+      for (let i = 0; i < N; i++) {
+        const region = generateBirth(rng, id).report.region;
+        counts.set(region, (counts.get(region) ?? 0) + 1);
+      }
+      expect([...counts.keys()].every((r) => m.region.some((x) => x.short === r)), `${id}: 표에 없는 시도`).toBe(true);
+      for (const row of m.region) expect(within(counts.get(row.short) ?? 0, row.pct, 0.05), `${id} ${row.short}: 관측 ${(((counts.get(row.short) ?? 0) / N) * 100).toFixed(2)}% / 표 ${row.pct}%`).toBe(true);
+    }
+  });
+
+  it('세대 7종 × 20000판: 수저의 경험 비율이 표(genMixture(...).wealth)와 4σ(+0.5%p) 이내다', () => {
+    for (const id of GENERATION_IDS) {
+      const m = mixOf(id);
+      const rng = createRng(8000 + GENERATION_IDS.indexOf(id));
+      const counts = [0, 0, 0, 0, 0];
+      for (let i = 0; i < N; i++) counts[generateBirth(rng, id).character.parentWealth - 1]++;
+      PARENT_WEALTHS.forEach((w, k) => expect(within(counts[k], m.wealth[k], 0.5), `${id} ${w}단계: 관측 ${((counts[k] / N) * 100).toFixed(2)}% / 표 ${m.wealth[k]}%`).toBe(true));
+    }
+  });
+
+  it('줄어든 집합(세종 × Z → 2012 한 해)의 수저 경험 비율이 줄어든 표(genMixture(genz, [2012]).wealth)와 4σ(+0.5%p) 이내이고, 모든 판이 2012년·세종이다', () => {
+    const reduced = genMixture('genz', BIRTH_YEAR_TABLES, [2012]);
+    const rng = createRng(9001);
+    const counts = [0, 0, 0, 0, 0];
+    for (let i = 0; i < N; i++) {
+      const b = generateBirth(rng, { generation: 'genz', regionPick: '세종' });
+      expect(b.character.birthYear).toBe(2012);
+      expect(b.report.region).toBe(regionShort('sejong'));
+      counts[b.character.parentWealth - 1]++;
+    }
+    PARENT_WEALTHS.forEach((w, k) => expect(within(counts[k], reduced.wealth[k], 0.5), `${w}단계: 관측 ${((counts[k] / N) * 100).toFixed(2)}% / 줄어든 표 ${reduced.wealth[k]}%`).toBe(true));
+    // 줄어든 표 = 2012년 한 해의 수저 비율(wealthFor). 이 세대의 닻이 2012년부터 평평해 세대 전체 표와 값이 같을 수 있다 — 같은 값이어도 이 시험은 「직접 고른 경로의 경험 비율 = 줄어든 표」를 잠근다.
+    expect(reduced.wealth).toEqual(wealthFor(2012));
+    // 판별력은 줄어든 집합이 값을 바꾸는 쪽에서 본다: 밀레니얼을 두 해(1981·1996)로 줄이면 표가 세대 전체 표와 달라진다
+    expect(genMixture('millennial', BIRTH_YEAR_TABLES, [1981, 1996]).wealth).not.toEqual(mixOf('millennial').wealth);
   });
 });

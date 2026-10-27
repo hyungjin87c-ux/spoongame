@@ -8,6 +8,7 @@ import { DASH_TEXT } from '../src/data/dashText';
 import { TitleScreen } from '../src/screens/TitleScreen';
 import { FeedbackLink } from '../src/ui/FeedbackLink';
 import { InfoPanel } from '../src/ui/InfoPanel';
+import { POLICY_SECTIONS } from '../src/data/policyText';
 import { PANEL_STATE_KEY, decideCloseRequest, hasPanelMark } from '../src/ui/infoPanelHistory';
 import historySrc from '../src/ui/infoPanelHistory.ts?raw';
 import infoPanelSrc from '../src/ui/InfoPanel.tsx?raw';
@@ -26,7 +27,7 @@ const esc = (t: string): string => t.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 const faq = buildAboutFaq({ orgs: ['국가데이터처', '행정안전부', '교육부'] });
 const noop = () => undefined;
 
-const render = (over: Partial<{ section: 'news' | 'intro'; notes: readonly ReleaseNote[]; feedbackUrl: string | null }> = {}): string =>
+const render = (over: Partial<{ section: 'news' | 'intro' | 'privacy' | 'terms'; notes: readonly ReleaseNote[]; feedbackUrl: string | null }> = {}): string =>
   renderToStaticMarkup(<InfoPanel section={over.section ?? 'news'} notes={over.notes ?? RELEASE_NOTES} faq={faq} feedbackUrl={over.feedbackUrl === undefined ? URL_ : over.feedbackUrl} onClosed={noop} guardKey="info-panel:1" />);
 
 describe('패널의 모양 (NT5·FQ1) — 모달 시트', () => {
@@ -105,9 +106,28 @@ describe('패널의 모양 (NT5·FQ1) — 모달 시트', () => {
     expect(none).not.toContain('info-feedback');
   });
 
-  it('이름·연락처 없이 문구만 있다: 보이는 글자에 이메일·전화·주소 문자열이 없다 (주소는 의견 보내기 링크의 href에만)', () => {
+  it('연락처는 운영자 문의 메일 하나뿐이다: 보이는 글자의 이메일은 kottonchild@gmail.com(개인정보 처리방침·이용 안내의 문의 항목)이고 주소(https://)·전화번호 문자열은 없다 (주소는 의견 보내기 링크의 href에만)', () => {
     const shown = visibleText(html);
-    expect(shown).not.toMatch(/@|https?:\/\//);
+    expect(shown).not.toMatch(/https?:\/\//);
+    expect([...shown.matchAll(/[\w.+-]+@[\w.-]+/g)].map((m) => m[0].replace(/\.$/, '')).every((m) => m === 'kottonchild@gmail.com')).toBe(true);
+    // 새 소식·소개 구역(첫 두 구역)에는 이메일이 없다
+    const firstTwo = html.slice(html.indexOf('id="info-news"'), html.indexOf('id="info-privacy"'));
+    expect(visibleText(firstTwo)).not.toContain('@');
+  });
+
+  it('GS12 구역 둘: 「개인정보 처리방침」·「이용 안내」(id info-privacy·info-terms)가 소개 뒤·의견 보내기 앞에 있고, 각 구역은 「법률 검토 전 초안」 표시가 있는 머리 줄 + 항목 목록(dl)이다 — 새 경로·새 페이지는 없다', () => {
+    const order = ['id="info-news"', 'id="info-intro"', 'id="info-privacy"', 'id="info-terms"', 'class="info__foot"'].map((k) => html.indexOf(k));
+    expect(order.every((i) => i > 0), `조각 위치 ${order}`).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    for (const sec of POLICY_SECTIONS) {
+      expect(html).toContain(`<section class="info__section" id="info-${sec.id}" aria-labelledby="info-${sec.id}-h" data-testid="info-${sec.id}" data-draft="true">`);
+      expect(html).toContain(`<h3 id="info-${sec.id}-h" class="info__h">${sec.name}</h3>`);
+      expect(html).toContain(`data-testid="info-${sec.id}-head">${esc(sec.head)}</p>`);
+      expect(sec.head, '머리 줄에 초안 표시').toContain('법률 검토 전 초안');
+      for (const it of sec.items) expect(html).toContain(`<dt>${esc(it.h)}</dt><dd>${esc(it.p)}</dd>`);
+    }
+    expect(POLICY_SECTIONS.map((x) => x.name)).toEqual(['개인정보 처리방침', '이용 안내']);
+    expect(html).not.toMatch(/href="\/|href="\.\//); // 새 경로 없음
   });
 
   it('두 푸터 링크 이름과 구역 이름이 같다 (QM3-3: 가리키는 이름 일치)', () => {
@@ -145,11 +165,12 @@ describe('첫 화면 푸터 링크와 「새」 표시 (NT4)', () => {
   const title = (over: { notesSeen?: string; appVersion?: string } = {}): string =>
     renderToStaticMarkup(<TitleScreen generation="random" lifeLength="short30" onSelectGeneration={noop} onSelectLifeLength={noop} onBegin={noop} {...over} />);
 
-  it('푸터에 「새 소식」 · 「소개」 링크 둘이 있고 각각 data-panel로 구역을 가린다 (같은 패널을 연다)', () => {
+  it('푸터에 「새 소식」 단추와 링크 줄 「소개」·「개인정보 처리방침」·「이용 안내」가 있고 각각 data-panel로 구역을 가린다 (같은 패널을 연다) — 링크 줄은 푸터 안이고 「새 소식」 단추보다 뒤다', () => {
     const html = title({ notesSeen: '0.2.0', appVersion: '0.2.0' });
-    expect(html).toMatch(/<p class="title-foot__links" data-testid="info-links"><a href="#" data-panel="news" data-testid="link-news" aria-haspopup="dialog">새 소식<\/a> <span aria-hidden="true">·<\/span> <a href="#" data-panel="intro" data-testid="link-intro" aria-haspopup="dialog">소개<\/a><\/p>/);
-    // 빌드 표기 옆(푸터 안)이다
+    expect(html).toMatch(/<a href="#" class="btn btn--secondary btn--sm" data-panel="news" data-testid="link-news" aria-haspopup="dialog">새 소식<\/a>/);
+    expect(html).toMatch(/<p class="foot-small foot-links" data-testid="info-links"><a href="#" data-panel="intro" data-testid="link-intro" aria-haspopup="dialog">소개<\/a> <span aria-hidden="true">·<\/span> <a href="#" data-panel="privacy" data-testid="link-privacy" aria-haspopup="dialog">개인정보 처리방침<\/a> <span aria-hidden="true">·<\/span> <a href="#" data-panel="terms" data-testid="link-terms" aria-haspopup="dialog">이용 안내<\/a>/);
     expect(html.indexOf('info-links')).toBeGreaterThan(html.indexOf('data-testid="title-foot"'));
+    expect(html.indexOf('data-testid="info-links"')).toBeGreaterThan(html.indexOf('data-testid="link-news"'));
   });
 
   it('「새」 표시: 지금 버전이 마지막으로 본 버전보다 높거나 본 적이 없으면 알약 글자(aria-hidden) + 읽기 전용 꼬리가 뜨고, 같으면 둘 다 없다', () => {
@@ -164,7 +185,7 @@ describe('첫 화면 푸터 링크와 「새」 표시 (NT4)', () => {
 
   it('알약의 글자(「새」)는 스크린리더에 읽히지 않고 뜻은 「(읽지 않은 소식 있음)」이 전한다 — 링크 이름이 「새 소식 새」로 읽히지 않는다 (색 + 글자)', () => {
     const html = title({ notesSeen: '', appVersion: '0.2.0' });
-    const link = html.match(/<a href="#" data-panel="news"[\s\S]*?<\/a>/)![0];
+    const link = html.match(/<a href="#" class="btn btn--secondary btn--sm" data-panel="news"[\s\S]*?<\/a>/)![0];
     expect(visibleText(link, { ariaHidden: true })).toBe('새 소식 (읽지 않은 소식 있음)');
   });
 

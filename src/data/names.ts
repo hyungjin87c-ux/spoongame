@@ -1,4 +1,6 @@
 import type { Gender } from '../core/types';
+import type { NamesApi } from '../core/gameData';
+import { namePoolKey, type NamePoolId } from './namePoolId';
 import namesJson from './names.json';
 import scourtJson from './sources/scourt-birth-names.json';
 
@@ -146,13 +148,7 @@ export function pastPool(decade: number, gender: Gender): readonly string[] | nu
 
 // ---------- 출생 연도 → 풀 (NR4) ----------
 
-/** 이름 풀의 종류와 키: `court`(연도 풀) 또는 `decade`(연대 풀 — 2000은 2000~2007) */
-export type NamePoolId = { kind: 'court'; year: number } | { kind: 'decade'; decade: number };
-
-/** 풀 id 글자 (`court-2013` · `decade-1990`) — GENERATION_CONFIG.namePool과 같은 체계 */
-export function namePoolKey(id: NamePoolId): string {
-  return id.kind === 'court' ? `court-${id.year}` : `decade-${id.decade}`;
-}
+export { namePoolKey, type NamePoolId };
 
 /** 법원 연도 풀이 있는 첫 해·마지막 해 (등록 연도 기준) */
 export const COURT_POOL_FIRST_YEAR = 2008;
@@ -187,3 +183,9 @@ export function namePoolFor(birthYear: number, gender: Gender): readonly string[
   if (pool === null || pool.length === 0) throw new RangeError(`namePoolFor: ${birthYear}년 ${gender} 이름 풀이 비어 있다`);
   return pool;
 }
+
+/**
+ * 지연 덩어리(`data/gameData.ts`)가 `core/gameData.ts`에 놓는 이름 데이터의 얼굴 (R-520): 뽑기에 쓰는 성씨 가중 목록과 풀 함수 둘.
+ * core(birth.ts)는 이 파일을 정적으로 import하지 않는다 — 이름 풀 JSON(names.json·scourt-birth-names.json, gzip 약 7.3KB)이 첫 화면 덩어리에 들지 않게.
+ */
+export const NAMES_API: NamesApi = { surnames: NAMES.surnames.items, namePoolFor, namePoolIdOf };

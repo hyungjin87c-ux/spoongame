@@ -1,11 +1,11 @@
 import { regionsOf } from '../data/birthStats';
 import { sortRegions } from '../data/regionNames';
 import type { RegionKey } from '../data/regionKeys';
-import { REGION_KEYS } from '../data/regionKeys';
+import { REGION_KEYS, regionShort } from '../data/regionKeys';
 import { R1_PROFILE, candidateYearsOf, regionPickableInYear } from './birthProfile';
 import { GENERATIONS } from '../data/generations';
 import { birthYearTables } from './gameData';
-import { genMixture, type BirthYearTables, type YearBasis } from './generationMixture';
+import { genMixture, regionRowsOf, type BirthYearTables, type YearBasis } from './generationMixture';
 import { PARENT_WEALTHS, R1_PRESENT, type BirthReport, type Character, type GameState, type ParentWealth, type ProfileId } from './types';
 
 /**
@@ -136,13 +136,15 @@ export function buildRoulette(game: RouletteGame, tables: BirthYearTables = birt
   }
   const wealthOdds = PARENT_WEALTHS.map((w, i) => ({ wealth: w, percent: wealth[i] }));
 
-  // 릴 칸: 출생 연도의 시·도 목록 (연도 자체는 화면에 나가지 않는다)
-  const names = regionsOf(birthYear).regions.map((r) => r.name);
-  if (!names.includes(region)) {
+  // 릴 칸: 세대 범위의 시·도 합집합 — 뽑힌 연도의 시·도 목록을 그대로 두면 칸 구성이 연도 대를 알려 준다(Z 릴에 세종 → 2012년생 등, R-515 b).
+  // 결과 칸(저장된 지역)은 그 해의 목록에 있어야 하고(저장 검증), 직접 고른 시도면 목록에 없는 지금의 광역시도 허용한다.
+  const inYear = regionsOf(birthYear).regions.some((r) => r.name === region);
+  if (!inYear) {
     const def = REGION_KEYS.find((r) => r.short === region);
     if (!picked || def === undefined || !regionPickableInYear(def.key as RegionKey, birthYear)) throw new RangeError(`buildRoulette: ${birthYear}년생 룰렛 지역에 ${region}이 없다`);
-    names.push(region);
   }
+  const names = generation === R1_PRESENT ? regionsOf(birthYear).regions.map((r) => r.name) : regionRowsOf(generation, tables).map((k) => regionShort(k));
+  if (!names.includes(region)) names.push(region);
   const regionReel = sortRegions(names.map((name) => ({ name }))).map((r) => r.name);
   const regionIndex = regionReel.indexOf(region);
   return {

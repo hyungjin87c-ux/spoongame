@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { slideCount } from './carouselHelpers';
+import { forbiddenIn } from './carouselForms';
 import { checkSlideDom, collectSlideDom, fetchExpected, type SlideDom } from './slideText';
 import { measureTextResize, setRootFontPercent, textResizeViolations } from './textResize';
 
 /**
- * 캐러셀 20장의 **화면 글자**를 같은 금지 패턴·형식표로 판정한다 (SPEC-003 QM2-4 완료 기준 c, QM2-11 완료 기준 c, REV-003-M2-3 R-230·R-231).
+ * 캐러셀 21장(첫 장 세대 그래프 + 지표 20장)의 **화면 글자**를 같은 금지 패턴·형식표로 판정한다 (SPEC-003 QM2-4 완료 기준 c, QM2-11 완료 기준 c, REV-003-M2-3 R-230·R-231).
  * 단위 테스트(tests/carousel.test.ts)는 모델의 글자를 보지만 실제 화면이 그 글자를 그리는지는 DOM으로만 안다 — 범례가 그려지는지, 값 줄 아래 줄이 그려지는지,
  * 폭·글자 크기에 따라 기준 줄이 나뉘어도 형식이 지켜지는지. 폭 320·360·1280 × 글자 100·200%에서 20장 전부, 눈에 보이는 글자(e2e/slideText.ts: 계산된 display·visibility·opacity가 보이고
  * 글자 상자 폭·높이 > 0, `.sr-only`·대체 텍스트 제외)를 모아 판정한다:
@@ -18,7 +19,7 @@ const PERCENTS = [100, 200] as const;
 
 for (const width of WIDTHS) {
   for (const percent of PERCENTS) {
-    test(`${width}px · 글자 ${percent}%: 20장 전부 화면 글자가 금지 패턴 0·형식표 A~E·P·기준 연도 한 값이고, 제목에 이름이 든 지표의 값이 눈에 보인다 (QM2-4 c, QM2-11 c)`, async ({ page }, testInfo) => {
+    test(`${width}px · 글자 ${percent}%: 21장 전부(지표 20장은 형식표까지, 첫 장 세대 그래프는 금지 패턴·잘림만) 화면 글자가 금지 패턴 0·형식표 A~E·P·기준 연도 한 값이고, 제목에 이름이 든 지표의 값이 눈에 보인다 (QM2-4 c, QM2-11 c)`, async ({ page }, testInfo) => {
       const mobile = testInfo.project.name === 'mobile-360';
       test.skip(mobile !== (width < 960), width < 960 ? 'mobile-360에서만 실행' : 'desktop에서만 실행');
       test.setTimeout(120_000);
@@ -29,7 +30,7 @@ for (const width of WIDTHS) {
       if (percent !== 100) await setRootFontPercent(page, percent);
       const expected = await fetchExpected(page);
       const n = await slideCount(page);
-      expect(n).toBe(20);
+      expect(n, '첫 장 세대 그래프 + 지표 20장').toBe(21);
       expect(expected).toHaveLength(20);
 
       const label = `${width}px/${percent}%`;
@@ -38,9 +39,19 @@ for (const width of WIDTHS) {
       let titleChecked = 0;
       let sideChecked = 0;
       for (let i = 0; i < n; i++) {
+        if (i === 0) {
+          // 첫 장(세대 그래프)은 지표 슬라이드의 형식표(값 줄·기준 줄·정의)를 따르지 않는다 — 금지 패턴과 가로 넘침·글자 잘림만 본다
+          expect(await page.locator('.slide.is-active').getAttribute('data-slide-id')).toBe('gen-births');
+          const text = (await page.locator('.slide.is-active').innerText()).replace(/\s+/g, ' ');
+          expect(text.length, '첫 장이 실제로 글자를 그렸다').toBeGreaterThan(80);
+          for (const name of forbiddenIn(text)) problems.push(`${label} gen-births: 금지 패턴(${name}): 「${text.slice(0, 70)}」`);
+          problems.push(...textResizeViolations(await measureTextResize(page), `${label} gen-births`));
+          await page.getByTestId('carousel-next').click();
+          continue;
+        }
         const dom = await collectSlideDom(page);
         doms.push(dom);
-        const exp = expected[i];
+        const exp = expected[i - 1];
         expect(dom.id, `${i + 1}번째 슬라이드`).toBe(exp.id);
         problems.push(...checkSlideDom(dom, exp, label));
         titleChecked += exp.titleIndicators.length;

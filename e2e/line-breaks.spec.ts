@@ -59,7 +59,7 @@ function add(tally: Tally, label: string, r: LineReport): void {
   }
 }
 
-/** 캐러셀 20장을 모두 넘기며 장마다 잰다 (일시정지 상태에서) */
+/** 캐러셀 21장을 모두 넘기며 장마다 잰다 (일시정지 상태에서) */
 async function measureSlides(page: Page, label: string, tally: Tally, percent: number): Promise<number> {
   const n = await slideCount(page);
   for (let i = 0; i < n; i++) {
@@ -73,7 +73,7 @@ async function measureSlides(page: Page, label: string, tally: Tally, percent: n
 
 for (const width of WIDTHS) {
   for (const percent of PERCENTS) {
-    test(`${width}px · 글자 ${percent}%: 첫 화면 본문·하단 띠 세 상태·푸터·캐러셀 20장에서 줄 끝·첫머리에 혼자 남는 구분 기호 0(쉼표·마침표가 줄 첫머리 0), 숫자와 단위·날짜가 갈라지는 곳 0 (QM2-5 a·b, QM2-10 a)`, async ({ page }, testInfo) => {
+    test(`${width}px · 글자 ${percent}%: 첫 화면 본문·하단 띠 세 상태·푸터·캐러셀 21장에서 줄 끝·첫머리에 혼자 남는 구분 기호 0(쉼표·마침표가 줄 첫머리 0), 숫자와 단위·날짜가 갈라지는 곳 0 (QM2-5 a·b, QM2-10 a)`, async ({ page }, testInfo) => {
       const mobile = testInfo.project.name === 'mobile-360';
       test.skip(mobile !== (width < 960), width < 960 ? 'mobile-360에서만 실행' : 'desktop에서만 실행');
       test.setTimeout(180_000);
@@ -92,7 +92,7 @@ for (const width of WIDTHS) {
       add(tally, `${label} 푸터`, await measureLineBreaks(page, '[data-testid="title-foot"]'));
       addWords(tally, `${label} 첫 화면(새 판)`, await measureWordBreaks(page), percent, FORCED_BREAK_WORDS); // 본문·띠·푸터·지금 보이는 슬라이드의 모든 낱말
       const slides = await measureSlides(page, label, tally, percent);
-      expect(slides).toBe(20);
+      expect(slides, '첫 장 세대 그래프 + 지표 20장').toBe(21);
 
       // 이어하기 · 확인 단계의 띠 글자
       for (const state of BAR_STATES.filter((s): s is Exclude<BarState, 'new'> => s !== 'new')) {
@@ -126,8 +126,8 @@ for (const [width, height] of [
     const credit = page.getByTestId('stats-credit');
     const text = (await credit.innerText()).replace(/\s+/g, ' ').trim();
     // 20장(SPEC-005 QI4)이 되면서 푸터 기관이 3곳 → 7곳으로 늘었다(한국은행·금융감독원·통계청(현 국가데이터처)·기상청(국립기상과학원) 추가) — 기관 이름을 박아 두지 않고 줄 모양(쉼표 나열, 「·」 0개)과 기관 수만 본다
-    expect(text).toMatch(/^통계 출처: [^·]+ \(통계표 이름과 기준 연도는 카드마다 적혀 있습니다\)$/);
-    const list = text.replace(/^통계 출처: /, '').replace(/ \(통계표 이름과 기준 연도는 카드마다 적혀 있습니다\)$/, '');
+    expect(text).toMatch(/^통계 출처: [^·]+ \(통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요\)$/);
+    const list = text.replace(/^통계 출처: /, '').replace(/ \(통계표 이름과 기준 연도는 그래프와 통계 카드마다 적혀 있어요\)$/, '');
     const items = list.split(/, (?![^(]*\))/); // 괄호 안의 쉼표는 항목 사이가 아니다
     expect(items.length, `기관 나열 항목 수 ${items.length}: ${items.join(' | ')}`).toBeGreaterThanOrEqual(3);
     expect(items.every((it) => it.trim().length > 0), '빈 항목이 없다').toBe(true);

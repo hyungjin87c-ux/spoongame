@@ -276,13 +276,8 @@ export const PAIRS: Pair[] = [
   ...['--c-stat-health', '--c-stat-happy', '--c-stat-knowledge', '--c-stat-relation'].flatMap((s) => U(s, ['--c-surface', '--c-meter-track'], '상태 바 면·아이콘')),
   ...GRADES.flatMap((n) => U(`--c-grade-${n}`, ['--c-surface', '--c-bg', `--c-grade-${n}-soft`], `수저 ${n}단계 아이콘·테두리·점`, 'graphic')),
   ...U('--c-accent', ['--c-accent-soft'], '나의 기록 줄 왼쪽 막대'),
-  // SPEC-005 D5-27(design-system.md 12-6): 첫 화면 통계 카드 — 그림 바로 아래 카드 하나만 위쪽 88px을 옅은 하늘 띠(--c-card-tint)로 칠하고 실측 선·점·막대를 --c-chart로 그린다.
-  // 쌍 5개: 선/면 · 선/띠(비텍스트 3:1) · 공식 통계명 --c-text-3/띠(4.5:1) · 조작 상자 테두리/띠(3:1) · 전망 놋쇠/띠(4.5:1)
+  // SPEC-005 D5-27(design-system.md 12-6) → SPEC-004 D4-55: 통계 카드 실측 선·점·막대는 --c-chart로 그린다(카드 면 위). 위쪽 띠(--c-card-tint)는 평면화로 없어졌다.
   ...U('--c-chart', ['--c-surface'], '통계 카드 실측 선·점·막대(카드 면 위)', 'graphic'),
-  ...U('--c-chart', ['--c-card-tint'], '통계 카드 실측 선·점·막대(카드 위쪽 띠 위)', 'graphic'),
-  ...T('--c-text-3', ['--c-card-tint'], '통계 카드 공식 통계명·작은 주석(카드 위쪽 띠 위)'),
-  ...U('--c-border-strong', ['--c-card-tint'], '통계 카드 조작 상자 테두리(카드 위쪽 띠 위)'),
-  ...T('--c-accent', ['--c-card-tint'], '통계 카드 전망 놋쇠(카드 위쪽 띠 위)'),
   // 얼굴 (그림: 이목구비·머리가 피부·바탕에서 구분되는지, 3:1)
   { fg: '--c-face-line', bg: '--c-face-skin', min: 3, kind: 'graphic', alpha: 0.62, use: '이목구비 선(외모 1단계, 가장 흐린 값)' },
   { fg: '--c-face-line', bg: '--c-face-skin', min: 3, kind: 'graphic', alpha: 1, use: '이목구비 선(외모 5단계)' },

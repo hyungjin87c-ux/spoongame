@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { SYSTEM_TITLE, SYSTEM_TITLE_CHARS } from '../data/dashText';
+import { TITLE_TEXT } from '../data/titleText';
 import { SiteHead } from '../ui/Brand';
 import { GuardedButton } from '../ui/GuardedButton';
 import { useScrollTopOnMount, useThemeSurface } from '../ui/useBottomBar';
@@ -7,6 +8,8 @@ import { useFocusOnChange } from '../ui/useFocus';
 
 interface Props {
   onTakeOver: () => void;
+  /** 이어받기에 필요한 게임 데이터(지연 덩어리, MG8)를 받지 못했다 — 안내 한 줄을 보이고 같은 버튼으로 다시 시도한다 (R-516) */
+  loadFailed?: boolean;
 }
 
 /** 공통 헤더의 화면 이름 (DS1, docs/design/copy.md 「밀린 화면」 행) */
@@ -20,7 +23,7 @@ export const SUPERSEDED_HEAD_NAME = '저장 안내';
  *
  * 공통 헤더(DS1, M4): 옛 `<h1>수저 게임</h1>` 대신 게임명 로고가 헤더에 있고 화면 이름은 「저장 안내」, `<h1>`은 이 화면의 메시지다. 문구는 현행 그대로(docs/design/copy.md).
  */
-export function SupersededScreen({ onTakeOver }: Props) {
+export function SupersededScreen({ onTakeOver, loadFailed = false }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   useThemeSurface();
   useScrollTopOnMount();
@@ -35,6 +38,11 @@ export function SupersededScreen({ onTakeOver }: Props) {
             {SYSTEM_TITLE.superseded}
           </h1>
           <p className="t-muted">다른 탭이나 창에서 진행했거나, 저장이 직접 지워지거나 바뀌었을 수 있습니다. 이 화면은 최신이 아닐 수 있습니다. 이어서 하려면 아래 버튼을 누르세요. 저장된 가장 최근 내용을 이어받습니다.</p>
+          {loadFailed ? (
+            <p className="t-sm" role="alert" data-testid="take-over-failed">
+              {TITLE_TEXT.loadFailed}
+            </p>
+          ) : null}
           <GuardedButton className="btn btn--primary" guardKey="superseded" onClick={onTakeOver} data-testid="take-over">
             이 탭에서 이어하기
           </GuardedButton>

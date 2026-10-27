@@ -136,7 +136,7 @@ test('한국어는 단어 중간에서 끊기지 않는다: word-break keep-all,
   await check('.hero__tag');
   await check('.hero__span');
   await check('.gen-row__name, .gen-row__desc, .gen-row__meta');
-  await check('.slide.is-active .t-sm');
+  await check('.slide.is-active .gen-chart__bigsub, .slide.is-active .slide__meta'); // 첫 장(세대 그래프)의 작은 글: 값 설명 줄·출처 줄
   expect(await page.evaluate(() => getComputedStyle(document.body).wordBreak)).toBe('keep-all');
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.title-page')!).wordBreak)).toBe('keep-all');
   // 룰렛(결과 상태)과 출생신고 화면 (M3: 새 디자인 — 제목·상태 줄·서술문·안내 글)
@@ -194,7 +194,7 @@ async function visibleLines(page: Page, selector: string): Promise<Array<{ text:
 }
 
 for (const width of [320, 360] as const) {
-  test(`한국어는 단어 중간에서 끊기지 않는다 — 캐러셀 20장의 모든 글자 블록 (${width}px, 글자 100%, REV-003-M2-4 R-244: 혼인 건수 정의의 「(신고월 기준) / 으로」)`, async ({ page }, testInfo) => {
+  test(`한국어는 단어 중간에서 끊기지 않는다 — 캐러셀 21장의 모든 글자 블록 (${width}px, 글자 100%, REV-003-M2-4 R-244: 혼인 건수 정의의 「(신고월 기준) / 으로」)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 740 });
@@ -202,7 +202,7 @@ for (const width of [320, 360] as const) {
     await expect(page.getByTestId('start-birth')).toBeEnabled();
     await page.getByTestId('carousel-pause').click();
     const slides = await page.locator('.slide').count();
-    expect(slides).toBe(20);
+    expect(slides, "첫 장 세대 그래프 + 지표 20장").toBe(21);
     // 값 줄(큰 숫자 + 작은 단위)은 글자 크기가 달라 줄 나누기 기준이 맞지 않으므로 뺀다 — 값 줄은 nowrap이라 갈라질 수 없다
     const BLOCKS = '.slide.is-active h3, .slide.is-active .slide__caption, .slide.is-active .slide__side, .slide.is-active .slide__basis, .slide.is-active .legend li, .slide.is-active .slide__meta, .slide.is-active p.t-muted, .slide.is-active .slide__help p';
     const problems: string[] = [];
@@ -221,7 +221,7 @@ for (const width of [320, 360] as const) {
       if (i < slides - 1) await page.getByTestId('carousel-next').click();
     }
     expect(problems).toEqual([]);
-    // 공허 통과 방지: 20장 × 블록 여러 개를 실제로 봤고, 여러 줄로 나뉜 블록도 많이 봤다. 혼인 건수 정의는 여러 줄이다
+    // 공허 통과 방지: 21장 × 블록 여러 개를 실제로 봤고, 여러 줄로 나뉜 블록도 많이 봤다. 혼인 건수 정의는 여러 줄이다
     expect(blocks, '검사한 글자 블록 수').toBeGreaterThan(70);
     expect(multiLine, '여러 줄로 나뉜 블록 수').toBeGreaterThan(20);
     expect(marriageDefinition, '혼인 건수 정의가 여러 줄로 나뉘었다').toContain(' / ');

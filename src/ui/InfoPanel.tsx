@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { FaqItem } from '../data/aboutFaq';
 import { INFO_TEXT, NOTES_OPEN_COUNT } from '../data/infoText';
+import { POLICY_SECTIONS } from '../data/policyText';
 import { NOTE_KIND_TEXT, type ReleaseNote } from '../data/releaseNotes';
 import { FeedbackLink } from './FeedbackLink';
 import { useInfoPanelHistory } from './infoPanelHistory';
@@ -9,7 +10,7 @@ import { useScrollLock } from './useScrollLock';
 /**
  * 정보 패널 「새 소식과 소개」 (SPEC-005 QI7 NT4·NT5·FQ1, docs/design/design-system.md 14-7·copy.md 13절, diff-005 D5-50). 첫 화면 **위에** 뜨는 모달 시트다 —
  * `.overlay > .sheet.sheet--info[role=dialog aria-modal aria-labelledby=info-title]`. 바깥(`.title`·본문 끝 여백·하단 띠)을 `inert`로 두는 일은 이 패널을 렌더하는 `TitleScreen`이 한다(결정 시트·기록 시트와 같은 방식, design-system.md 11-10).
- * 본문은 두 구역이다: 「새 소식」(버전별 `<details>`, **최신 3개가 펼쳐져** 있고 나머지는 접힘) → 「소개」(질문 `<details>` 열 개, 처음엔 모두 접힘) → 끝의 「의견 보내기」(도구 줄과 같은 `FeedbackLink`·`buildFeedbackUrl`, N2).
+ * 본문은 네 구역이다: 「새 소식」(버전별 `<details>`, **최신 3개가 펼쳐져** 있고 나머지는 접힘) → 「소개」(질문 `<details>` 열 개, 처음엔 모두 접힘) → 「개인정보 처리방침」 → 「이용 안내」(SPEC-004 GS12 — 첫 화면 하단 링크 줄이 여는 구역, **법률 검토 전 초안** 표시, 새 경로 없음) → 끝의 「의견 보내기」(도구 줄과 같은 `FeedbackLink`·`buildFeedbackUrl`, N2).
  * `<details>/<summary>`는 Enter·Space 조작과 `aria-expanded`를 브라우저가 준다.
  *
  * 열고 닫기 (NT5):
@@ -19,10 +20,10 @@ import { useScrollLock } from './useScrollLock';
  * 서버 호출·방문 분석은 없다. 문구는 `data/infoText.ts`·`releaseNotes.ts`·`aboutFaq.ts`(copy.md 13절 확정 글).
  */
 
-export type InfoSection = 'news' | 'intro';
+export type InfoSection = 'news' | 'intro' | 'privacy' | 'terms';
 
 export interface InfoPanelProps {
-  /** 어느 구역으로 열었는가 (푸터의 「새 소식」/「소개」 링크) */
+  /** 어느 구역으로 열었는가 (푸터의 「새 소식」 단추와 링크 줄의 「소개」·「개인정보 처리방침」·「이용 안내」) */
   section: InfoSection;
   notes: readonly ReleaseNote[];
   faq: readonly FaqItem[];
@@ -42,7 +43,7 @@ export function InfoPanel({ section, notes, faq, feedbackUrl, onClosed, guardKey
   // 열릴 때: 제목으로 포커스(스크롤 없이). 「소개」로 열었으면 그 구역 머리가 패널 위에 오게 한다
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
-    if (section === 'intro') document.getElementById('info-intro')?.scrollIntoView({ block: 'start' });
+    if (section !== 'news') document.getElementById(`info-${section}`)?.scrollIntoView({ block: 'start' });
   }, [section]);
 
   // Esc = 닫기 (뒤로가기·「닫기」와 같은 일)
@@ -113,6 +114,24 @@ export function InfoPanel({ section, notes, faq, feedbackUrl, onClosed, guardKey
               </details>
             ))}
           </section>
+          {POLICY_SECTIONS.map((sec) => (
+            <section className="info__section" id={`info-${sec.id}`} aria-labelledby={`info-${sec.id}-h`} data-testid={`info-${sec.id}`} data-draft="true" key={sec.id}>
+              <h3 id={`info-${sec.id}-h`} className="info__h">
+                {sec.name}
+              </h3>
+              <p className="info__lead" data-testid={`info-${sec.id}-head`}>
+                {sec.head}
+              </p>
+              <dl className="policy">
+                {sec.items.map((it) => (
+                  <div key={it.h}>
+                    <dt>{it.h}</dt>
+                    <dd>{it.p}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ))}
           {feedbackUrl === null ? null : (
             <div className="info__foot">
               <FeedbackLink url={feedbackUrl} guardKey={guardKey} variant="panel" />

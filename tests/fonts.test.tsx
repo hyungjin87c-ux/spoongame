@@ -80,10 +80,10 @@ describe('Noto Sans KR 조각 CSS (17-11-3·17-11-4 ③)', () => {
     for (const f of faces) expect(fs.existsSync(at(`../src/assets/fonts/${f.src}`)), f.src).toBe(true);
   });
 
-  it("대체 글꼴 'Noto Sans KR Fallback' = 맑은 고딕에 size-adjust 92.19% · ascent 116.00% · descent 28.80% · line-gap 0.00% (바뀜 흔들림 방지)", () => {
+  it("대체 글꼴 'Noto Sans KR Fallback' = 맑은 고딕에 size-adjust 92.12% · ascent 116.00% · descent 28.80% · line-gap 0.00% (바뀜 흔들림 방지)", () => {
     const m = /@font-face \{ font-family: 'Noto Sans KR Fallback'; src: local\('Malgun Gothic'\), local\('맑은 고딕'\); size-adjust: ([\d.]+%); ascent-override: ([\d.]+%); descent-override: ([\d.]+%); line-gap-override: ([\d.]+%); \}/.exec(fontsCss);
     expect(m, 'fallback face').not.toBeNull();
-    expect(m!.slice(1)).toEqual(['92.19%', '116.00%', '28.80%', '0.00%']);
+    expect(m!.slice(1)).toEqual(['92.12%', '116.00%', '28.80%', '0.00%']);
   });
 
   it("--font-sans는 'Noto Sans KR', 'Noto Sans KR Fallback'으로 시작하고 시스템 글꼴이 뒤를 받친다", () => {
@@ -111,12 +111,12 @@ describe('조각 파일 바이트 (17-11-3 표 ±10% · 마스터 결정: 정적
   const sum = (slices: readonly Slice[]): number => faces.filter((f) => slices.includes(f.slice)).reduce((n, f) => n + size(f), 0);
   const within = (actual: number, expected: number): boolean => Math.abs(actual - expected) <= expected * 0.1;
 
-  it('첫 화면이 처음 받는 s0 400+700 ≈ 57,780B', () => {
-    expect(sum(['s0']), 's0').toSatisfy((n: number) => within(n, 57_780));
+  it('첫 화면이 처음 받는 s0 400+700 ≈ 77,784B (GM4 2차: 숨은 슬라이드·하단 글자까지 처음 그려지는 글자를 s0에 모았다 — 1차는 s0 57,780B + s0b 38,000B를 함께 받았다)', () => {
+    expect(sum(['s0']), 's0').toSatisfy((n: number) => within(n, 77_784));
   });
 
-  it('s3을 뺀 전체(s0+s0b+s1+s2) ≈ 206,944B, s3 꼬리 ≈ 211,600B', () => {
-    expect(sum(['s0', 's0b', 's1', 's2']), 's0+s0b+s1+s2').toSatisfy((n: number) => within(n, 206_944));
+  it('s3을 뺀 전체(s0+s0b+s1+s2) ≈ 204,760B, s3 꼬리 ≈ 211,600B', () => {
+    expect(sum(['s0', 's0b', 's1', 's2']), 's0+s0b+s1+s2').toSatisfy((n: number) => within(n, 204_760));
     expect(sum(['s3']), 's3').toSatisfy((n: number) => within(n, 211_600));
   });
 

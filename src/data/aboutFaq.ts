@@ -2,9 +2,8 @@ import { commaList } from '../core/glue';
 import { DASH_TEXT } from './dashText';
 import { VEIL_TEXT } from './gentleText';
 import { getUsableIndicator } from './koreaStatsAccess';
-import { NAMES } from './names';
 import { ALL_SELF_FROM_AGE, CHILD_FLOW_TEXT, PARENT_DECIDED_TEXT, SELF_FROM_AGE } from './parentDecisionTable';
-import { LIFE_LENGTH_TEXT, TITLE_TEXT } from './titleText';
+import { LIFE_LENGTH_TEXT, NAME_CREDIT, TITLE_TEXT } from './titleText';
 
 /**
  * 소개 Q&A (SPEC-005 FQ1~FQ4, docs/data/release-notes-faq-draft.md 2절 + 5절 마스터 결정 N1~N8) — 첫 화면 푸터 「소개」 링크가 여는 패널(`ui/InfoPanel.tsx`)의 둘째 구역.
@@ -56,7 +55,7 @@ export function spoonNames(): string[] {
 
 /** `{이름 출처}`: 이름 출처 표기(`meta.attribution.text`)에서 기관 이름을 뽑는다 — 「…이름 출처: <기관> 「표 이름」(…)」의 `<기관>`. 꼴이 다르면 표기 전체 */
 export function nameSourceOrg(): string {
-  const text = NAMES.meta.attribution.text;
+  const text = NAME_CREDIT.text;
   const m = /:\s*(.+?)\s*「/.exec(text);
   return m === null ? text : m[1];
 }
