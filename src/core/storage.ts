@@ -418,6 +418,8 @@ function readSettings(v: unknown): Settings | null {
     // v5 필드: 없거나 형태가 어긋나면 그 필드만 기본값(꺼짐·본 적 없음) — 이상한 저장이 갑자기 장면을 가리거나 「새」 표시를 없애지 않는다
     gentle: typeof v.gentle === 'boolean' ? v.gentle : DEFAULT_SETTINGS.gentle,
     notesSeen: typeof v.notesSeen === 'string' && VERSION_PATTERN.test(v.notesSeen) ? v.notesSeen : DEFAULT_SETTINGS.notesSeen,
+    // SPEC-009 FH1 선택 필드: 접었을 때만 있다. 없거나 `true`가 아니면 없는 것(펼침) — 이상한 저장이 그림을 숨기지 않고, 접은 적 없는 옛 설정의 모양도 그대로다
+    ...(v.sceneFold === true ? { sceneFold: true } : {}),
   };
 }
 

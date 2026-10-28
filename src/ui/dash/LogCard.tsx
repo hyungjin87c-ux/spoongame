@@ -1,11 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
+import type { EraRow } from '../../core/eraWindow';
 import type { HistoryEntry } from '../../core/types';
 import { DASH_TEXT } from '../../data/dashText';
 import { Glue } from '../Glue';
 import { useReducedMotion } from '../hooks';
 import { LogList } from './LogList';
 import { useVeilOpen } from './Veil';
-import { isAtLogTop, logRows } from './logOrder';
+import { isAtLogTop, mergeLogRows } from './logOrder';
 
 /**
  * 인생 기록 카드 (SPEC-003 DB12·DB14, SPEC-005 LR1~LR7): 가운데 영역에 **한 줄씩 쌓이고** 영역 안에서 스크롤된다. **위가 최신**이다 — 새 줄은 맨 위에 붙는다.
@@ -22,12 +23,15 @@ import { isAtLogTop, logRows } from './logOrder';
  *  - 스크롤 영역은 키보드로 닿을 수 있다(tabindex 0 + 이름 + 안내 문구가 설명) — 방향키·PageUp/Down으로 지난 기록을 읽고 Home = 맨 위(가장 최근) · End = 맨 아래(가장 오래된)다.
  *    영역(최대 520px)이 가용 높이(화면 − 고정 머리 − 진행 줄)보다 크면 키보드 포커스를 받을 때 위쪽 변이 머리 밑에 오게 맞춘다(CM10 예외 ②).
  *  - 처음 뜰 때·새로고침 복원 때는 맨 위(가장 최근)에서 시작한다 — 새로 만든 스크롤 영역의 기본 위치다.
+ *  - **시대의 창 줄**(SPEC-009 FM5, `data-tl="era"`): 저장하지 않는 파생 줄이 그해의 첫 기록 앞(시간순)에 끼어든다 — 없으면 이 카드는 이전과 똑같다(`mergeLogRows`가 같은 배열을 돌려준다).
  *  - **무거운 장면 가리기**(SPEC-005 QI6): `gentle`(설정값)이 켜져 있으면 무거운 장면 줄이 지난 줄까지 가려지고 「펼쳐 보기」로 연다. 펼침은 이 컴포넌트의 상태일 뿐 저장하지 않고, 설정이 바뀌면 초기화된다(M19, `useVeilOpen`).
  */
 
-export function LogCard({ history, live, gentle = false }: { history: readonly HistoryEntry[]; live: boolean; /** 「무거운 장면 가리기」(설정값) */ gentle?: boolean }) {
+const NO_ERA: readonly EraRow[] = [];
+
+export function LogCard({ history, live, gentle = false, eraRows = NO_ERA }: { history: readonly HistoryEntry[]; live: boolean; /** 「무거운 장면 가리기」(설정값) */ gentle?: boolean; /** 인생 기록에 끼우는 「시대의 창」 파생 줄(SPEC-009 A-12 — 저장하지 않는다). 승인된 그림이 없으면 비어 있다 */ eraRows?: readonly EraRow[] }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const rows = useMemo(() => logRows(history), [history]);
+  const rows = useMemo(() => mergeLogRows(history, eraRows), [history, eraRows]);
   /** 「맨 위로」를 누른 직후 부드럽게 올라가는 중인가 — 그동안 새 줄이 와도 맨 위로 따라간다 */
   const following = useRef(false);
   const [unread, setUnread] = useState(0);

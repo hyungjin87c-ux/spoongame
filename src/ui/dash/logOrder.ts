@@ -1,3 +1,4 @@
+import type { EraRow } from '../../core/eraWindow';
 import type { HistoryEntry } from '../../core/types';
 
 /**
@@ -19,6 +20,20 @@ export interface LogRow {
   /** 가장 최근 줄 — 화면의 첫 줄이고 굵게 보인다 (LR3) */
   latest: boolean;
 }
+
+/**
+ * 인생 기록의 「시대의 창」 줄 (SPEC-009 FM5, A-12): 저장하지 않는 **파생 줄**이다 — 저장 순서(`history`)에는 없고 화면이 그릴 때만 끼워 넣는다.
+ * 키는 `era-y<연도>`라 해마다 하나이고 안정적이다(`history`가 상한에서 오래된 줄을 지워도 이 줄의 키는 그대로다).
+ */
+export interface EraLogRow {
+  era: EraRow;
+  key: string;
+  latest: false;
+  /** 저장 순서 인덱스가 없다 */
+  index: -1;
+}
+export type AnyLogRow = LogRow | EraLogRow;
+export const isEraRow = (r: AnyLogRow): r is EraLogRow => 'era' in r;
 
 /**
  * 줄마다 안정된 키를 만든다 (저장 순서). `나이-종류-이벤트 id-같은 꼴의 몇 번째` — 같은 나이·종류·이벤트가 겹치는 경우는 「나의 기록」 여러 줄뿐이고 그때는 먼저 쌓인 순서로 가른다.
@@ -44,10 +59,36 @@ export function logRows(history: readonly HistoryEntry[]): LogRow[] {
 }
 
 /**
+ * 화면에 그릴 줄: `logRows(history)`에 시대의 창 줄을 끼운다. 시대 줄은 그해의 **첫 기록 앞**(시간순)에 선다 — 화면에서는 그해 줄들 **아래**, 앞 해 줄들 위다. 그래야 해 중간에 새 줄이 쌓여도
+ * 시대 줄이 움직이지 않는다(새 줄은 늘 맨 위). 0세는 출생 줄 바로 뒤. 시대 줄이 없으면(승인된 그림이 없다) `logRows(history)`를 **그대로** 돌려준다(같은 배열 — 기존 화면과 달라지는 것이 없다).
+ * 남은 기록의 첫 나이보다 앞선 해(`history` 상한에서 지워진 해)의 시대 줄은 빼서 목록 끝에 홀로 남지 않게 한다.
+ */
+export function mergeLogRows(history: readonly HistoryEntry[], era: readonly EraRow[]): AnyLogRow[] {
+  const base = logRows(history);
+  if (era.length === 0 || history.length === 0) return base;
+  const firstAge = history[0].age;
+  const rows = era.filter((r) => r.age >= firstAge);
+  if (rows.length === 0) return base;
+  // 시간순으로 합친다(base는 최신순이므로 뒤집어 쓴다)
+  const chrono: AnyLogRow[] = [];
+  const hist = [...base].reverse();
+  let e = 0;
+  const eraAsRow = (r: EraRow): EraLogRow => ({ era: r, key: `era-y${r.year}`, latest: false, index: -1 });
+  hist.forEach((h, i) => {
+    // 이 줄 앞에 와야 하는 시대 줄: 나이가 이 줄의 나이 이하인 것 (0세는 출생 줄 뒤)
+    while (e < rows.length && rows[e].age <= h.entry.age && !(rows[e].age === 0 && i === 0)) chrono.push(eraAsRow(rows[e++]));
+    chrono.push(h);
+    if (i === 0) while (e < rows.length && rows[e].age === 0) chrono.push(eraAsRow(rows[e++]));
+  });
+  while (e < rows.length) chrono.push(eraAsRow(rows[e++]));
+  return chrono.reverse();
+}
+
+/**
  * 지난번 그렸을 때 맨 위였던 줄(`prevNewestKey`) 위에 새로 쌓인 줄 수. 상한에서 오래된 줄이 지워져 전체 길이가 그대로여도 센다.
  * 지난 맨 위 줄이 이번 목록에 없으면(다른 판으로 바뀜) `null` — 호출한 쪽이 맨 위로 되돌린다.
  */
-export function addedAbove(rows: readonly LogRow[], prevNewestKey: string | null): number | null {
+export function addedAbove(rows: readonly { key: string }[], prevNewestKey: string | null): number | null {
   if (prevNewestKey === null) return 0;
   const at = rows.findIndex((r) => r.key === prevNewestKey);
   return at === -1 ? null : at;

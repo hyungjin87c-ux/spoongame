@@ -35,7 +35,7 @@ async function eventPoolMark(): Promise<string> {
  * 인용 테이블(citations.json) 덩어리의 본문 표지: 첫 인용 글의 앞 16자. 이름 풀 덩어리(R-520)의 표지: 1990년대 이름 풀의 앞 네 이름을 JSON 모양 그대로 이은 것(따옴표·쉼표 포함).
  * 가족 모델 표(SPEC-009 `familyData`)의 표지도 같은 방식이다. 모두 「태어나기」 뒤에만 내려와야 한다 — 첫 화면에서 한 번이라도 보이면 지연 덩어리 밖으로 샌 것이다(파일 이름이 아니라 본문으로 가린다).
  */
-async function dataMarks(): Promise<{ citation: string; names: string; family: string }> {
+async function dataMarks(): Promise<{ citation: string; names: string; family: string; art: string }> {
   const nodeFs = 'node:fs';
   const fs = (await import(nodeFs)) as { readFileSync(path: string, encoding: 'utf-8'): string };
   const cit = JSON.parse(fs.readFileSync('src/data/citations.json', 'utf-8')) as { citations: Array<{ text: string }> };
@@ -43,7 +43,9 @@ async function dataMarks(): Promise<{ citation: string; names: string; family: s
   const pool = [...names.decades['1990'].male.verified, ...names.decades['1990'].male.estimated].slice(0, 4);
   // 가족 모델 표(SPEC-009 D-4 `familyData`)의 표지: tables.json 머리 설명 글의 앞 24자 — 표가 첫 화면 덩어리로 새면 이 글자가 보인다
   const fam = JSON.parse(fs.readFileSync('src/data/family/tables.json', 'utf-8')) as { note: string };
-  return { citation: cit.citations[0].text.slice(0, 16), names: pool.map((n) => JSON.stringify(n)).join(','), family: fam.note.slice(0, 24) };
+  // 집과 가족 그림 덩어리(SPEC-009 FM5 `familyArt`)의 표지: 조각 JSON 한 조각의 본문(색 토큰 이름이 든 마크업 앞 60자) — 첫 화면 덩어리로 새면 이 글자가 보인다
+  const art = JSON.parse(fs.readFileSync('src/data/familyArt/pieces.json', 'utf-8')) as Record<string, string>;
+  return { citation: cit.citations[0].text.slice(0, 16), names: pool.map((n) => JSON.stringify(n)).join(','), family: fam.note.slice(0, 24), art: art['bg-metro-b2'].slice(0, 60) };
 }
 
 type Got = { file: string; url: string; bytes: number; kind: 'image' | 'font' | 'text'; body: string | null };
@@ -126,6 +128,10 @@ for (const vp of VIEWPORTS) {
     // 가족 모델 표(SPEC-009 D-4 `familyData`)도 「태어나기」 뒤 덩어리에만 있다
     expect(MARKS.family.length, '가족 표 표지').toBe(24);
     expect(got.filter((g) => g.body?.includes(MARKS.family)).map((g) => g.file), '가족 모델 표가 첫 화면에서 내려왔다(SPEC-009 D-4)').toEqual([]);
+    // 집과 가족 그림 덩어리·시대의 창 10년 덩어리(SPEC-009 FM5, A-10)도 인생 화면이 뜬 뒤에만 받는다 — 첫 화면에서는 요청 0건
+    expect(MARKS.art.length, '그림 덩어리 표지').toBe(60);
+    expect(got.filter((g) => g.body?.includes(MARKS.art)).map((g) => g.file), '집과 가족 그림 덩어리가 첫 화면에서 내려왔다(SPEC-009 A-10)').toEqual([]);
+    expect(got.filter((g) => /familyArt|eraWindows|^d(19|20)\d0-/i.test(g.file)).map((g) => g.file), '그림 덩어리·시대의 창 덩어리는 첫 화면에서 받지 않는다').toEqual([]);
     // 같은 주소 두 번 요청 없음
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
     // 그림: 오른쪽 위 일러스트는 없다(GS11) — 이미지 응답은 아이콘 계열뿐
@@ -161,6 +167,39 @@ for (const vp of VIEWPORTS) {
     expect(got.filter((g) => g.body?.includes(MARKS.citation)).length, `인용 테이블을 한 번 받았다: ${describeGot(got)}`).toBe(1);
     expect(got.filter((g) => g.body?.includes(MARKS.names)).length, `이름 풀을 한 번 받았다: ${describeGot(got)}`).toBe(1);
     expect(got.filter((g) => g.body?.includes(MARKS.family)).length, `가족 모델 표를 한 번 받았다(SPEC-009 D-4): ${describeGot(got)}`).toBe(1);
+    expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
+  });
+
+  test(`지연 로드 — ${vp.name}: 인생 화면이 뜬 뒤에야 집과 가족 그림 덩어리를 한 번 받고(표 덩어리와 따로), 승인된 그림이 없는 시대의 창 덩어리는 받지 않는다 (SPEC-009 FM5·A-10)`, async ({ page, baseURL }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    const origin = new URL(baseURL ?? 'http://localhost:4199').origin;
+    const MARKS = await dataMarks();
+    await page.goto('/');
+    await expect(page.getByTestId('start-birth')).toBeEnabled();
+    await page.waitForLoadState('networkidle');
+    const c = collect(page, origin);
+    await page.getByTestId('start-birth').click();
+    await expect(page.getByTestId('roulette-screen')).toBeVisible({ timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
+    // 룰렛·출생신고까지는 그림 덩어리가 필요 없다 — 인생 화면이 뜰 때 받는다
+    await page.getByTestId('skip-roulette').click();
+    await page.getByTestId('to-birth').click();
+    const before = c.requested.length;
+    await page.getByTestId('next-life').click();
+    await expect(page.getByTestId('life-screen')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('family-scene')).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
+    await c.finish();
+    const { got } = c;
+    expect(c.requested.length, '인생 화면이 뜬 뒤 새 요청이 있어야 한다(그림 덩어리)').toBeGreaterThan(before);
+    const art = got.filter((g) => g.body?.includes(MARKS.art));
+    expect(art.length, `집과 가족 그림 덩어리를 한 번 받았다: ${describeGot(got)}`).toBe(1);
+    expect(art[0].bytes, `그림 덩어리 gzip ${art[0].bytes}B ≤ 75KB(FH8 합계 한도 — 시대의 창 하위 덩어리 별도)`).toBeLessThanOrEqual(75 * 1024);
+    console.log(`[SPEC-009 A-10 ${vp.name}] 그림 덩어리 ${art[0].file} ${art[0].bytes} B(gzip)`);
+    // 표 덩어리(familyData)와는 다른 파일이다 — 따로 지연 로드
+    expect(got.filter((g) => g.body?.includes(MARKS.family)).map((g) => g.file)).not.toContain(art[0].file);
+    // 승인된 그림이 없는 10년 덩어리는 요청하지 않는다(지금 0장)
+    expect(got.filter((g) => /^d(19|20)\d0-/.test(g.file)).map((g) => g.file), '시대의 창 10년 덩어리').toEqual([]);
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
   });
 

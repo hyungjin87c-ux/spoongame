@@ -121,6 +121,8 @@ export type SessionAction =
   | { type: 'dismissNote'; cardId: string }
   /** 기록 시트의 「자동 기록 카드 끄기/켜기」: 설정만 바꾼다 */
   | { type: 'setNoteCards'; on: boolean }
+  /** 집과 가족 그림의 「그림 접기」/「그림 펼치기」(설정에 저장, SPEC-009 FH1) */
+  | { type: 'setSceneFold'; fold: boolean }
   /** 엔딩에서 새 시드로 새 판을 시작해 첫 화면으로 간다(설정은 그대로). 시드는 UI가 정해 넘긴다. */
   | { type: 'rebirth'; seed: number }
   /** 플레이 시간 타이머(ui/usePlayTimer.ts)가 쌓은 기록을 판 상태에 옮긴다. seed는 그 기록이 속한 판의 시드(다른 판의 오래된 기록이 새 판에 새지 않게). 인생 단계에서만, 줄어드는 기록·같은 기록은 같은 객체. */
@@ -173,6 +175,12 @@ function settleNotes(game: GameState, mode: NoteMode): GameState {
   if (mode !== 'consume') return game;
   const due = dueNote(game);
   return due === null ? game : consumeNote(game, due);
+}
+
+/** 설정에서 접힘 표지를 지운다(펼침 = 필드 없음 — 접은 적 없는 설정과 모양이 같다) */
+function withoutSceneFold(settings: Settings): Settings {
+  const { sceneFold: _sceneFold, ...rest } = settings;
+  return rest;
 }
 
 export function sessionReducer(s: Session, a: SessionAction, pool: EventPool | undefined = undefined, handling: NoteHandling = 'live'): Session {
@@ -304,6 +312,8 @@ function reduceSession(s: Session, a: SessionAction, poolArg: EventPool | undefi
     }
     case 'setNoteCards':
       return typeof a.on !== 'boolean' || a.on === s.settings.noteCards ? s : { ...s, settings: { ...s.settings, noteCards: a.on } };
+    case 'setSceneFold':
+      return typeof a.fold !== 'boolean' || a.fold === (s.settings.sceneFold === true) ? s : { ...s, settings: a.fold ? { ...s.settings, sceneFold: true } : withoutSceneFold(s.settings) };
     case 'rebirth':
       return withGame(s, rebirth(s.game, a.seed));
     case 'syncPlay': {

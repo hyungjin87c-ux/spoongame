@@ -38,6 +38,8 @@ export * from './familyBirth';
 export * from './familyView';
 export * from './familyStorage';
 export * from './familyFlags';
+export * from './scene';
+export * from './eraWindow';
 export * from './peerNow';
 export * from './feedback';
 export * from './citations';

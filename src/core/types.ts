@@ -383,6 +383,11 @@ export interface Settings {
   homeRegion: CurrentRegionName | null;
   /** 금액 보기 (EY11, 설정 스키마 v6): `then` 당시 화폐(기본) / `now` 지금 가치. GM10이 자산 카드에 쓴다 — 지금은 읽고 저장만 한다 */
   moneyView: MoneyView;
+  /**
+   * 집과 가족 그림을 접었는가 (SPEC-009 FH1). 접으면 그림(집 그림 + 시대의 창)이 사라지고 아래 한 줄·펼침만 남는다. 설정에 저장되어 새 판에도 유지된다.
+   * **선택 필드**: 접었을 때만 `true`로 있고 펼침은 필드가 없다 — 옛 설정(이 필드 없음)은 그대로 읽히고, 접은 적 없는 설정은 모양이 변하지 않는다. 설정 스키마 버전은 올리지 않는다.
+   */
+  sceneFold?: boolean;
 }
 
 /** 금액 보기 기준 (EY11) */

@@ -25,6 +25,7 @@
     "check:economy": "vite-node scripts/economyCheck.ts",
     "gen:basis": "vite-node scripts/checkBasis.ts --write",
     "gen:family": "vite-node scripts/genFamilyTables.ts",
+    "gen:art": "vite-node scripts/genFamilyArt.ts",
     "check:citations": "vite-node scripts/syncCitations.ts",
     "gen:citations": "vite-node scripts/syncCitations.ts --write",
     "report:citations": "vite-node scripts/citationExposure.ts",

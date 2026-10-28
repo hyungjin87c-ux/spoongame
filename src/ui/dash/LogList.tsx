@@ -7,7 +7,8 @@ import { Icon } from '../Brand';
 import { revealTopOfTallFocus } from '../focusReveal';
 import { NoteBody } from './NoteText';
 import { VeiledText, VeilStamp } from './Veil';
-import { addedAbove, isAtLogTop, resizePlan, scrollPlan, type LogRow } from './logOrder';
+import { EraLogRow } from './EraRow';
+import { addedAbove, isAtLogTop, isEraRow, resizePlan, scrollPlan, type AnyLogRow } from './logOrder';
 
 /**
  * 인생 기록의 스크롤 영역과 줄들 (SPEC-005 LR1·LR2·LR4·LR7). `LogCard`가 머리·고정 줄·「새 기록 N개」 버튼을 맡고, 이 컴포넌트는 **줄이 위에 쌓일 때 보던 줄이 움직이지 않게 하는 일**을 맡는다.
@@ -30,7 +31,7 @@ import { addedAbove, isAtLogTop, resizePlan, scrollPlan, type LogRow } from './l
  */
 
 interface Props {
-  rows: readonly LogRow[];
+  rows: readonly AnyLogRow[];
   /**
    * 「새 기록 N개 · 맨 위로」 알약 (R-438, docs/design/log-order-qi1.md). 상태(`unread`)와 동작은 `LogCard`가 갖고 이 컴포넌트는 **자리**만 준다:
    * 스크롤 영역 안, 줄 목록(`ol`) 앞의 **높이 0 sticky 슬롯** — 알약이 영역 위 가장자리(새 줄이 쌓이는 쪽)에 떠 있고, 나타나고 사라져도 줄이 밀리지 않는다.
@@ -131,7 +132,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
   }
 
   /** 영역 안에서 보이는 첫 줄(아랫변이 영역 윗변 아래인 첫 줄)과 영역 윗변에서의 거리. `rows`는 지금 DOM에 있는 줄들이다. 줄은 위에서 아래로 놓여 이진 탐색이 맞다 */
-  private firstSeen(rows: readonly LogRow[], el: HTMLElement, ol: HTMLElement): { key: string; offset: number } | null {
+  private firstSeen(rows: readonly AnyLogRow[], el: HTMLElement, ol: HTMLElement): { key: string; offset: number } | null {
     const top = el.getBoundingClientRect().top;
     const count = Math.min(ol.children.length, rows.length);
     let lo = 0;
@@ -146,7 +147,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
   }
 
   /** 지금 모습을 「보던 자리」로 기억한다 */
-  private remember(rows: readonly LogRow[]): void {
+  private remember(rows: readonly AnyLogRow[]): void {
     const el = this.props.scrollerRef.current;
     const ol = this.olRef.current;
     if (el === null || ol === null) return;
@@ -164,7 +165,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
    * 줄이 다시 흐른 뒤 기억한 줄을 기억한 거리에 되돌려 놓는다 (R-439). 기억한 위치가 맨 위였거나 「맨 위로」가 올라가는 중이면 건드리지 않고 지금 모습을 새로 기억한다.
    * 되맞춘 뒤에는 줄과 거리는 **기억한 그대로** 두고 위치·크기만 갱신한다 — 창 크기를 끌며 줄이는 동안 반올림 오차가 쌓여 자리가 흘러가지 않는다.
    */
-  private realign(rows: readonly LogRow[]): void {
+  private realign(rows: readonly AnyLogRow[]): void {
     const el = this.props.scrollerRef.current;
     const ol = this.olRef.current;
     if (el === null || ol === null) return;
@@ -271,7 +272,9 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
       >
         {jump ? <div className="log__jump-slot">{jump}</div> : null}
         <ol aria-live={live ? 'polite' : 'off'} aria-relevant="additions" className="log__rows" ref={this.olRef}>
-          {rows.map(({ entry: h, key, latest }) => {
+          {rows.map((row) => {
+            if (isEraRow(row)) return <EraLogRow key={row.key} row={row.era} open={veilOpen?.(row.key) ?? false} onToggle={() => onVeilToggle?.(row.key)} />;
+            const { entry: h, key, latest } = row;
             const heavy = gentle ? heavyKindOfEntry(h) : null;
             const className = `log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${h.kind === 'note' ? ' log__row--note' : ''}${latest ? ' log__row--latest' : ''}`;
             const age = (

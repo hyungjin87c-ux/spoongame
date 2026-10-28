@@ -188,7 +188,7 @@ export function FamilyCard({ game }: { game: LifeGame }) {
   const f = familyOf(game);
   return (
     <section className="card family" aria-labelledby="family-t" data-testid="family-card">
-      <h2 id="family-t" className="card__title card__title--gap">
+      <h2 id="family-t" className="card__title card__title--gap" tabIndex={-1}>
         {DASH_TEXT.familyTitle}
       </h2>
       <dl className="family-list">

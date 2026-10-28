@@ -1,5 +1,5 @@
-import { useEffect, useRef, type RefObject } from 'react';
-import { SPEEDS, buildFeedbackUrl, calendarYear, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { SPEEDS, buildFeedbackUrl, calendarYear, eraRowsOf, famSeedOf, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { eventPool } from '../core/gameData';
 import { DASH_TEXT } from '../data/dashText';
@@ -12,6 +12,8 @@ import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, useDecisionM
 import { LogCard } from '../ui/dash/LogCard';
 import { ParentCard, useParentCardModel } from '../ui/dash/ParentCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
+import { SceneCard } from '../ui/scene/SceneCard';
+import { useSceneArt } from '../ui/scene/useFamilyArt';
 import { Glue } from '../ui/Glue';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
 import { useDismissibleTips } from '../ui/dismissibleTips';
@@ -105,6 +107,8 @@ interface Props {
   onNoteDismiss?: () => void;
   /** 시트의 「저절로 뜨는 기록 카드 끄기/켜기」 */
   onNoteCards?: (on: boolean) => void;
+  /** 집과 가족 그림의 「그림 접기」/「그림 펼치기」 (설정에 저장, SPEC-009 FH1) */
+  onSceneFold?: (fold: boolean) => void;
   onChoose: (key: string, choiceId: string) => void;
   onSkip: () => void;
   onSpeed: (speed: Speed) => void;
@@ -265,7 +269,7 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onSceneFold = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const pool = poolProp ?? eventPool(); // 이벤트 풀은 「태어나기」 뒤에 불러온다(MG8) — 인생 화면이 열릴 때는 이미 놓여 있다
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -310,6 +314,13 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
     wasVeilOpened.current = veilOpened;
   }, [veilOpened]);
   const fast = settings.speed >= 4 || settings.autoMode;
+  // 집과 가족 그림(SPEC-009 FM5): 그림 덩어리와 시대의 창 10년 덩어리는 카드와 인생 기록의 시대 줄이 함께 쓴다 — 여기서 한 번 부른다
+  const calYear = calendarYear(c.birthYear, game.age);
+  const sceneArt = useSceneArt(c.birthYear, calYear);
+  const eraRows = useMemo(
+    () => eraRowsOf(c.birthYear, game.age, { regionKey: game.birthReport.region, gentle: settings.gentle, seed: famSeedOf(game.peerSeed ?? game.seed), windows: sceneArt.era.windows }),
+    [c.birthYear, game.age, game.birthReport.region, game.peerSeed, game.seed, settings.gentle, sceneArt.era.windows],
+  );
   // 진행 줄·도구 줄의 입력 가드: 화면이 뜰 때 + 카드를 접거나 다시 연 직후(U9). 접기 더블탭의 둘째 입력이 시트가 사라진 자리의 컨트롤에 떨어지지 않게 한다
   const controlsGuard = controlsGuardKey(guardEpoch);
   // 기록 시트도 모달이다(M7c): 열려 있는 동안 바깥 전부 inert. 결정 시트와 동시에 열리는 일은 없다 — 기록 카드는 해의 첫머리(결정 대기 없음), 수동 기록은 결정 시트가 열린 동안 도구 줄이 inert라 누를 수 없다(content-M7c 5-4절)
@@ -470,7 +481,9 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
           ) : null}
           {/* 부모님이 정한·흘러간 카드: 인생 기록 바로 위(LR5 b — [결정 카드 또는 접힌 띠 → 부모 결정 카드 → 인생 기록]). 비모달이라 포커스·inert와 무관하다 */}
           {parentCard !== null ? <ParentCard key={`${parentCard.ev.id}@${parentCard.age}`} model={parentCard} gentle={settings.gentle} /> : null}
-          <LogCard history={game.history} live={!fast} gentle={settings.gentle} />
+          {/* 집과 가족 그림(FH1): 결정 카드 → 이 카드 → (올해 마음 쓸 곳 — SPEC-008, 아직 없음) → 인생 기록. 결정 카드가 떠 있거나 접혀 있어도 그림이 결정 카드를 밀어내지 않는다 */}
+          <SceneCard game={game} gentle={settings.gentle} fold={settings.sceneFold === true} onFold={onSceneFold} scene={sceneArt} animate={!fast} />
+          <LogCard history={game.history} live={!fast} gentle={settings.gentle} eraRows={eraRows} />
         </div>
         <div className="col col--right">
           <FamilyCard game={game} />

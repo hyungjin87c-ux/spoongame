@@ -264,7 +264,8 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       if (n > 0) hits[f.file] = n;
     }
     // data/birthReportText.ts: 지역 표 주석 「세대 범위 도중에 생긴 {이름·이름}의 몫은…」의 짧은 시·도 이름 나열(SPEC-004 GS6, 시안 문구 그대로)
-    expect(hits).toEqual({ 'core/eventLint.ts': 2, 'core/events.ts': 1, 'data/birthReportText.ts': 1 });
+    // core/scene.ts: 집과 가족 그림의 아래 한 줄 「부모님·누나 둘·할머니와 함께」(SPEC-009 FH3 — 함께 사는 사람 낱말을 가운뎃점으로 잇는 것이 시안·문구 정본이다. 화면은 한 줄 규칙(40자, 360px에서 두 줄까지)과 word-break: keep-all로 그리며 말줄임 없이 길면 낱말을 줄인다)
+    expect(hits).toEqual({ 'core/eventLint.ts': 2, 'core/events.ts': 1, 'core/scene.ts': 1, 'data/birthReportText.ts': 1 });
     expect(files.length, '공허 통과 방지: src 전체를 읽었다').toBeGreaterThan(40);
   });
 
@@ -302,6 +303,10 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       'ui/FitPair.tsx': 2,
       // SPEC-003 M7c D-74: `Glue hideSeparator`가 띄어 쓴 가운뎃점 사슬 「A · B」를 가르는 자리 — 문구를 조립하지 않고(조립은 위 곳들) 이미 만들어진 글에서 「·」만 낭독에서 숨긴다
       'ui/Glue.tsx': 2,
+      // SPEC-009 FM5 집과 가족 그림: 아래 한 줄 「{사는 곳} · {집 낱말} · {사람 묶음}과 함께」(core/scene.ts — 항목 셋이 고정된 한 줄 문구, FH3 시안 그대로, 길이는 LINE_MAX 40자로 맞춘다) · 시대의 창 접근 이름·툴팁 「시대의 창 · {문장}」(data/sceneText.ts, 눈에 보이지 않는 글) · 펼침의 사람 줄 「{호칭} · {나이}세」(ui/scene/SceneCard.tsx — 항목 둘의 짧은 쌍)
+      'core/scene.ts': 2,
+      'data/sceneText.ts': 2,
+      'ui/scene/SceneCard.tsx': 1,
     });
     // 쌍을 그리는 곳(ui/Pair.tsx)은 공백이 기호 조각 밖에 있어 「 · 」 문자열이 없다 — 대신 기호 조각이 「· 」이고 앞에 일반 공백이 따로 있음을 본다
     const pair = files.find((f) => f.file === 'ui/Pair.tsx')!;

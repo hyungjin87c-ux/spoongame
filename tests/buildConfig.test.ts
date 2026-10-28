@@ -53,8 +53,9 @@ describe('vite-node 선언 (R-049)', () => {
     // report:time(시간 모델 측정 보고 — 판당 카드 수 분포·자연 분포·글자 수 실측·읽기 수준별 판 시간, SPEC-003 M8 LM2·LM7 · content-M8 6-5절)은 M8에서 더했다
     // report:notes(기록 카드 스케줄 보고 — 판당 카드 수·도달률·결정 카드와 같은 해 겹침, SPEC-003 M7c 완료 기준 1)는 M7c core에서 더했다
     // gen:family(가족 모델 표 만들기 — fd-a-family.json·koreaStats.json에서 data/family/tables.json을 다시 만듦, SPEC-009 FM4a)는 FM4a에서 더했다
+    // gen:art(집과 가족 그림 조각 덩어리 만들기 — designer의 조각 SVG에서 data/familyArt/pieces.json을 다시 만들고 식구·집 코드가 시안과 바이트 일치하는지 대조, SPEC-009 FM5)는 FM5에서 더했다
     // report:parent(부모 결정 보고 — 판당 부모·흘러감·본인 카드 수, 13~18세 본인 카드 0장 비율, 수저별 선택 분포, SPEC-005 QI5 PD12·TM3·PD13)는 QI5에서 더했다
-    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:basis', 'gen:citations', 'gen:family', 'report:citations', 'report:notes', 'report:parent', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
+    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:art', 'gen:basis', 'gen:citations', 'gen:family', 'report:citations', 'report:notes', 'report:parent', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
   });
 });
 

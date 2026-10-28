@@ -104,6 +104,37 @@
   --c-face-cloth: #6c7f9e;
   --c-face-bg: #e8e3d6;
 
+  /* ---------- 색: 집과 가족 그림 조각 · 시대의 창 (SPEC-009 FM2~FM5, 마스터 승인 24개 + 2개) ----------
+     집·배경·소품·식구·반려동물 조각(`data/familyArt`)이 `var(--c-scene-*, 라이트 값)`로 읽는 24개. 낮밤·계절 표현이 아니라 같은 그림을 어두운 종이에 놓은 것이다(다크의 창 불빛 glass는 유지). 얼굴 시스템과 살색·머리색이 같다.
+     --c-era / --c-era-soft = 인생 기록 「시대의 창」 줄의 표지·겹선 색 / 시대의 창 칸을 누른 뒤 줄의 잠깐 강조 면(오디색 — 대비 라이트 9.53 / 다크 8.79, family-scene.md 5-4절). 강제 색상은 시스템 색. */
+  --c-scene-sky: #dfe6ed;
+  --c-scene-far: #b9c4d0;
+  --c-scene-far2: #cfd8e2;
+  --c-scene-ground: #e4dccb;
+  --c-scene-ground2: #cfc5ae;
+  --c-scene-wall: #f5f0e5;
+  --c-scene-wall2: #cdc3ac;
+  --c-scene-roof: #5b6879;
+  --c-scene-roof2: #404b58;
+  --c-scene-wood: #8a6b4c;
+  --c-scene-clay: #926f52;
+  --c-scene-ink: #2b2a27;
+  --c-scene-shade: rgba(38,50,74,0.2);
+  --c-scene-glass: #fbf3d4;
+  --c-scene-green: #6e8a5b;
+  --c-scene-cloth1: #26324a;
+  --c-scene-cloth2: #8a6a14;
+  --c-scene-cloth3: #f7f2e8;
+  --c-scene-cloth4: #6c7f9e;
+  --c-scene-skin: #f1c9a5;
+  --c-scene-hair: #2b2420;
+  --c-scene-hairw: #d6d2ca;
+  --c-scene-pet: #a98c66;
+  --c-scene-pet2: #4a453d;
+  --c-scene-face: #4a362c;
+  --c-era: #6d2f4e;
+  --c-era-soft: #f4e3ec;
+
   /* ---------- 간격 (4px 기준) ---------- */
   --sp-1: 4px;
   --sp-2: 8px;
@@ -226,6 +257,34 @@
     --c-face-blush: #e8998d;
     --c-face-cloth: #6c7f9e;
     --c-face-bg: #e8e3d6;
+
+    --c-scene-sky: #1e2633;
+    --c-scene-far: #2b3443;
+    --c-scene-far2: #252e3c;
+    --c-scene-ground: #2b3039;
+    --c-scene-ground2: #222730;
+    --c-scene-wall: #4a5264;
+    --c-scene-wall2: #3a4151;
+    --c-scene-roof: #7b8a9c;
+    --c-scene-roof2: #5d6b7d;
+    --c-scene-wood: #a0805e;
+    --c-scene-clay: #a07d60;
+    --c-scene-ink: #ece8de;
+    --c-scene-shade: rgba(0,0,0,0.38);
+    --c-scene-glass: #efdc9a;
+    --c-scene-green: #7f9a6c;
+    --c-scene-cloth1: #b3c2e8;
+    --c-scene-cloth2: #dcb85c;
+    --c-scene-cloth3: #e6e0d3;
+    --c-scene-cloth4: #93a3bf;
+    --c-scene-skin: #f1c9a5;
+    --c-scene-hair: #2b2420;
+    --c-scene-hairw: #d6d2ca;
+    --c-scene-pet: #b89c78;
+    --c-scene-pet2: #c9c3b8;
+    --c-scene-face: #4a362c;
+    --c-era: #f5a8d6;
+    --c-era-soft: #3a2434;
     --shadow-1: none;
     --shadow-2: none;
     --shadow-bar: 0 -1px 0 #323a4b;
@@ -291,6 +350,34 @@
   --c-face-blush: #e8998d;
   --c-face-cloth: #6c7f9e;
   --c-face-bg: #e8e3d6;
+
+  --c-scene-sky: #1e2633;
+  --c-scene-far: #2b3443;
+  --c-scene-far2: #252e3c;
+  --c-scene-ground: #2b3039;
+  --c-scene-ground2: #222730;
+  --c-scene-wall: #4a5264;
+  --c-scene-wall2: #3a4151;
+  --c-scene-roof: #7b8a9c;
+  --c-scene-roof2: #5d6b7d;
+  --c-scene-wood: #a0805e;
+  --c-scene-clay: #a07d60;
+  --c-scene-ink: #ece8de;
+  --c-scene-shade: rgba(0,0,0,0.38);
+  --c-scene-glass: #efdc9a;
+  --c-scene-green: #7f9a6c;
+  --c-scene-cloth1: #b3c2e8;
+  --c-scene-cloth2: #dcb85c;
+  --c-scene-cloth3: #e6e0d3;
+  --c-scene-cloth4: #93a3bf;
+  --c-scene-skin: #f1c9a5;
+  --c-scene-hair: #2b2420;
+  --c-scene-hairw: #d6d2ca;
+  --c-scene-pet: #b89c78;
+  --c-scene-pet2: #c9c3b8;
+  --c-scene-face: #4a362c;
+  --c-era: #f5a8d6;
+  --c-era-soft: #3a2434;
   --shadow-1: none;
   --shadow-2: none;
   --shadow-bar: 0 -1px 0 #323a4b;
@@ -370,6 +457,8 @@
     --c-grade-4-ink: CanvasText;
     --c-grade-5-ink: CanvasText;
     --c-logo: CanvasText;
+    --c-era: CanvasText;
+    --c-era-soft: Canvas;
     /* 수저 아이콘 큰 변형(sp-3-lg 은·sp-4-lg 금)의 밝은 표식 색. 이름은 간격 토큰(--sp-N)과 겹치지만 스프라이트가 읽는 변수라 그대로 둔다(평상시에는 정의하지 않아 기본 흰빛).
        강제 색상에서는 바탕색(Canvas)으로 두어 검은 글자·흰 글자 두 극성 모두에서 몸체(CanvasText) 위에 표식이 남는다(REV-003-D-4 관찰 (a)). */
     --sp-mark: Canvas;

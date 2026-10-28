@@ -538,6 +538,7 @@ function Game({ boot }: { boot: Boot }) {
         onNoteSave={saveNote}
         onNoteDismiss={dismissNote}
         onNoteCards={setNoteCards}
+        onSceneFold={(fold) => dispatch({ type: 'setSceneFold', fold })}
         onChoose={(key, choiceId) => {
           dispatch({ type: 'choose', key, choiceId });
           bumpGuard(); // 사용자가 결정 시트(또는 인라인 카드)에서 고른 순간 — 사라지는 카드 자리의 컨트롤에 같은 렌더에서 가드 (F-1)

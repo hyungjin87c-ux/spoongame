@@ -84,6 +84,15 @@ const HEAVY = [
   'src/data/familyTables.ts',
   'src/data/family/tables.json',
   'src/data/installAll.ts',
+  // 집과 가족 그림 덩어리 `familyArt`와 시대의 창 10년 하위 덩어리(SPEC-009 FM5, A-10) — 표 덩어리와 따로 지연 로드
+  'src/data/familyArt/index.ts',
+  'src/data/familyArt/pieces.json',
+  'src/data/familyArt/figure.ts',
+  'src/data/familyArt/house.ts',
+  'src/data/familyArt/svg.ts',
+  'src/data/eraWindows/index.ts',
+  'src/data/eraWindows/d1940.ts',
+  'src/data/eraWindows/d2020.ts',
 ] as const;
 
 describe('앱 진입점(main.tsx)의 정적 import 그래프 (MG8)', () => {
@@ -110,6 +119,26 @@ describe('앱 진입점(main.tsx)의 정적 import 그래프 (MG8)', () => {
     expect(source).toMatch(/import\('\.\/citationsAccess'\)/);
     expect(source).toMatch(/import\('\.\/names'\)/);
     expect(source).toMatch(/import\('\.\/familyTables'\)/);
+  });
+
+  it('src/data/familyArtLoader.ts는 동적 import()로만 그림 덩어리(familyArt)와 시대의 창 10년 덩어리(eraWindows)를 부르고, 그 둘을 부르는 함수는 인생 화면의 그림 훅(ui/scene/useFamilyArt.ts)에서만 쓴다 — 첫 화면 유휴 중 미리 받기 없음 (SPEC-009 A-10)', () => {
+    const source = fs.readFileSync(at(`${ROOT}src/data/familyArtLoader.ts`), 'utf-8');
+    expect(staticImports(source)).toEqual([]);
+    expect(source).toMatch(/import\('\.\/familyArt'\)/);
+    expect(source).toMatch(/import\('\.\/eraWindows'\)/);
+    const callers: string[] = [];
+    const walk = (dir: string): void => {
+      for (const e of fs.readdirSync(at(`${ROOT}${dir}`), { withFileTypes: true })) {
+        const p = `${dir}${e.name}`;
+        if (e.isDirectory()) walk(`${p}/`);
+        else if (/\.(ts|tsx)$/.test(p) && p !== 'src/data/familyArtLoader.ts') {
+          const code = fs.readFileSync(at(`${ROOT}${p}`), 'utf-8').replace(/\/\*[^]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+          if (/loadFamilyArt\(|loadEraDecade\(/.test(code)) callers.push(p);
+        }
+      }
+    };
+    walk('src/');
+    expect(callers).toEqual(['src/ui/scene/useFamilyArt.ts']);
   });
 
   it('src 안에서 installAll.ts를 부르는 파일이 없다 — 시험·스크립트·하니스 전용이다', () => {

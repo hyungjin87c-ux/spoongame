@@ -30,6 +30,8 @@ export const FAMILY_TAG = {
   ERA: 14,
   DIVORCE: 15,
   MOVE: 16,
+  /** 집 그림 고르기(SPEC-009 FM5, family-scene.md 3절): 소품 선택·옷 색 변형. 해마다 바뀌지 않게 (판 시드, 조각 id)로만 쓴다 */
+  SCENE: 17,
 } as const;
 
 /** 전체 자녀 수 상한 (주인공 포함) */
