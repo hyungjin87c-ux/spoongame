@@ -452,6 +452,9 @@
     - [ ] (REV-009-FM4a-2 R-538·R-539·R-541, developer — FM4b 첫 커밋) INV-2b 잘린 판 단언 · R-533 경로 시험 · T-FA3c 측정값 갱신 — docs/review/REV-009-FM4a-2.md
     - [ ] (R-540, developer — FM4b, 마스터 결정 2026-10-28 추천안) 옛 저장 스냅샷(lg: 1)의 이미 본 동생 나이보다 앞선 이혼 계획 없앰·별세 goneAt ≥ k 하한 + 옛 저장 표본 INV-2b 시험
     - [ ] (K6 배포 직전, developer) 「L0F 가족 골든」 — FM4b·c 확정 구성으로 family 값 고정 골든(배포 뒤 One-way)
+    - [ ] **(공개 배포 차단 — REV-009-FM5-1 R-542·R-544, 마스터 2026-10-28)** FM4b(K2)·FM6(식구 카드가 familyViewOf를 읽음)·FC10 시험(카드 사람 수 = 그림 식구 + 따로 사는 사람 + 떠난 사람)과 안 그린 조각 33개 drawn·승인 시대의 창 그림 반영 전에는 main 병합·GitHub Pages 배포 금지(SPEC-009 K6)
+    - [ ] (REV-009-FM5-1 R-543·R-547·R-548·R-549, developer — 승인 그림 넣기 회차) 초가 기본값 diff · 시대 줄 낭독/미읽음 제외 · 문구 6자·주석 · svgNodes class 허용 목록 + family.css 토큰
+    - [ ] (REV-009-FM5-1 R-544·R-545·R-546·R-550, developer·designer) stand 연도 허용 목록 시험·33조각 drawn · SCENE_RULES · PER_GEN 100·scene 골든·창→줄 jsdom 시험 · 엔딩 연표 시대 줄
   - [ ] SPEC-009 FM4b (K2 A안 `trigger: 'family'` 강제 사건 엔진·`familyChangesFor`/`applyFamilyChanges`·시스템 플래그·`fam-` 줄·`family.log`·이른 부모 별세 효과 ▲·K1 켜기와 경제 재측정·식구 이름·학력/집안일·성인기 식구) — FM4a 후속
   - [ ] SPEC-009 FM4a 후속 관찰(마스터 결정): ① 1940년 이전 출생 어머니의 총 자녀 수가 FD6보다 1~2.4명 낮다(모형 3.2명 vs 4.1~5.6) — 기존 형제 순서 분포(지난 세상 설계값 [26,26,48])·3째 이상 분할 포화가 원인, 보정 여부 ② 이른 부모 사별 비율(0~19세 중 한 분이 떠남: 산업화 29% · X 16% · 알파 6.6%)이 FM4b 효과를 켜기 전 측정 대상 ③ 같은 시드는 세대가 달라도 같은 `peerSeed`라 가족 추첨 값이 세대 사이에 상관(분포 시험은 `spreadSeeds`로 피함)
 - [x] M9 검증·QA·배포 확인 — **1차 릴리스 선언 2026-10-20(태그 v0.1.0)** — 근거: 아래 하위 항목, docs/review/REV-003-M9-2.md, qa/reports/QA-003-M9.md, docs/data/time-measure-M8.md, docs/data/realdevice-checklist-M9.md
