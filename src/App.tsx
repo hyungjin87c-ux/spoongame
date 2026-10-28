@@ -12,6 +12,7 @@ import {
   getBrowserStorage,
   hasProgress,
   holdDelayMs,
+  isFamilyFillOnly,
   isIdleOnlyChange,
   isNegligibleChange,
   isSupersedingChange,
@@ -369,6 +370,8 @@ function Game({ boot }: { boot: Boot }) {
       setGameSaveFailed(false);
       return;
     }
+    // 옛 저장을 열며 family만 채운 상태는 쓰지 않는다 — 열기만 한 탭은 쓰지 않는다 (R-417·R-532)
+    if (isFamilyFillOnly(written.game, game)) return;
     const ok = saveGame(storage, game);
     if (ok) written.game = raw;
     setGameSaveFailed(!ok);

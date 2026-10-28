@@ -1,9 +1,7 @@
 import { FAMILY_ADULT_AGE, FAMILY_MAX_AGE, type SiblingKind } from './family';
-import { goneAtMyAge, grandBirthYears, parentBirthYear } from './familyBirth';
+import { divorcePlan, firstGoneOf, goneAtMyAge, grandBirthYears, parentBirthYear, parentGoneAtOf } from './familyBirth';
+export { parentDivorceRate } from './familyBirth';
 import {
-  DIVORCE_AGES,
-  DIVORCE_FATHER_LEAVES,
-  FAMILY_TAG,
   GRAND_COHABIT_UNTIL,
   GRAND_IDS,
   NO_DEATH_PLAN,
@@ -17,9 +15,8 @@ import {
   type SceneFamilyState,
   type SceneMember,
 } from './familyModel';
-import { famHash01, famSeedOf } from './familyRng';
+import { famSeedOf } from './familyRng';
 import { legacyFamilyFrom } from './familyStorage';
-import { familyTables } from './gameData';
 import type { GameState, Gender } from './types';
 
 /**
@@ -31,22 +28,6 @@ import type { GameState, Gender } from './types';
  */
 
 export type FamilyGame = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'character' | 'peerSeed' | 'seed' | 'assets'> & { family?: FamilyData };
-
-// ---------- 부모 이혼 비율 (4-7절 (2)) ----------
-
-const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n));
-
-/**
- * 해마다 미성년 자녀가 부모 이혼을 맞는 비율(%). 1993~2025는 표 값(확인(환산)), 2025 뒤는 2025 값 유지,
- * 1993 앞은 `h(1993) × 조이혼율(y) ÷ 조이혼율(1993)`(추정, 1970 앞은 1970 조이혼율 유지 — 설계값).
- */
-export function parentDivorceRate(year: number): number {
-  const d = familyTables().divorce;
-  const last = d.rateFrom + d.rate.length - 1;
-  if (year >= d.rateFrom) return d.rate[Math.min(year, last) - d.rateFrom];
-  const crudeAt = (y: number): number => d.crude[clamp(y, d.crudeFrom, d.crudeFrom + d.crude.length - 1) - d.crudeFrom];
-  return (d.rate[0] * crudeAt(year)) / crudeAt(d.rateFrom);
-}
 
 // ---------- 일정 (주인공 나이와 무관한 계획) ----------
 
@@ -76,23 +57,9 @@ export function familyScheduleOf(game: FamilyGame): FamilySchedule {
   const Y = character.birthYear;
   const famSeed = famSeedOf(game.peerSeed ?? game.seed);
   const parentBy: [number, number] = [parentBirthYear(Y, report.mother.age), parentBirthYear(Y, report.father.age)];
-  const goneAt = (i: 0 | 1): number => {
-    const d = family.p[i].d;
-    return d >= NO_DEATH_PLAN ? Infinity : goneAtMyAge(parentBy[i], d, Y);
-  };
-  const parentGoneAt: [number, number] = [goneAt(0), goneAt(1)];
-  let firstGone: FamilySchedule['firstGone'] = null;
-  if (Number.isFinite(parentGoneAt[0]) || Number.isFinite(parentGoneAt[1])) {
-    const who: 0 | 1 = parentGoneAt[1] <= parentGoneAt[0] ? 1 : 0;
-    firstGone = { who, at: parentGoneAt[who] };
-  }
-  let divorce: FamilySchedule['divorce'] = null;
-  for (let a = DIVORCE_AGES.min; a <= DIVORCE_AGES.max && divorce === null; a++) {
-    if (firstGone !== null && a >= firstGone.at) break; // 한 분이 떠난 해부터는 일어나지 않는다
-    if (famHash01(famSeed, FAMILY_TAG.DIVORCE, a, 0) * 100 < parentDivorceRate(Y + a)) {
-      divorce = { at: a, leaver: famHash01(famSeed, FAMILY_TAG.DIVORCE, a, 1) < DIVORCE_FATHER_LEAVES ? 1 : 0 };
-    }
-  }
+  const parentGoneAt = parentGoneAtOf(Y, report, family.p);
+  const firstGone = firstGoneOf(parentGoneAt);
+  const divorce = divorcePlan(famSeed, Y, firstGone);
   const grandBy = grandBirthYears(Y, report.mother.age, report.father.age, family.g);
   const grandGoneAt = grandBy.map((by, i) => (family.g[i].d >= NO_DEATH_PLAN ? Infinity : goneAtMyAge(by, family.g[i].d, Y))) as FamilySchedule['grandGoneAt'];
   return { family, birthYear: Y, famSeed, parentBy, parentGoneAt, firstGone, divorce, grandBy, grandGoneAt };

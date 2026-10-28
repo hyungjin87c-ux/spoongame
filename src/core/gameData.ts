@@ -47,6 +47,28 @@ export interface FamilyTables {
   };
   household: { multiplier: number; points: Array<[number, number, string]> };
   divorce: { rateFrom: number; rate: number[]; crudeFrom: number; crude: number[] };
+  /** 코어가 쓰는 설계값 (R-534) — 값과 근거를 한 자리에 둔다 */
+  design: FamilyDesign;
+}
+
+/** 설계값 하나: 값 · 근거 구분(`design` 설계값 / `estimated` 추정) · 근거 글. 화면의 「이 칸은 어떻게 정했나요」(FM6)가 읽는다 */
+export interface DesignValue<T> {
+  value: T;
+  basis: 'design' | 'estimated';
+  note: string;
+}
+
+export interface FamilyDesign {
+  /** 함께 사는 조부모 쪽이 두 쪽 모두 후보일 때 친가를 고를 확률 */
+  paternalSideShare: DesignValue<number>;
+  /** 부모 이혼 때 떠나는 쪽이 아버지일 확률 */
+  divorceFatherLeaves: DesignValue<number>;
+  /** 아래 동생의 성별이 남자일 확률 */
+  maleShare: DesignValue<number>;
+  /** 형제 독립 나이 (min~max 균등) */
+  leaveAge: DesignValue<{ min: number; max: number }>;
+  /** 아래 동생 이어짐 확률 `a_1`·`a_2`의 상한 */
+  continueCap: DesignValue<number>;
 }
 
 export interface GameData {

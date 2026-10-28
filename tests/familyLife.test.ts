@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import statsJson from '../src/data/koreaStats.json';
 import { FAMILY_TABLES } from '../src/data/familyTables';
-import { NO_DEATH_PLAN, deathAgeGiven, familyTables, mortalityClassOf, mortalityScalePre1970, survivalCurve } from '../src/core';
+import { NO_DEATH_PLAN, deathAgeGiven, familyTables, mortalityClassOf, mortalityScalePre1970, periodE0, survivalCurve } from '../src/core';
 
 /**
  * 코호트 생존 곡선과 별세 나이 (SPEC-009 FM4a, docs/data/family-model.md 4-4절·12-5절 `familyLife`):
@@ -82,6 +83,40 @@ describe('survivalCurve', () => {
     const s = survivalCurve('male', 1930);
     expect(1 - s[1]).toBeGreaterThan(q1970);
     expect(1 - s[1]).toBeLessThanOrEqual(0.999);
+  });
+});
+
+describe('기대수명 대조 (R-536)', () => {
+  /** 표의 이 성별·해 열로 만든 기간 생명표 (배율 `mult`를 곱한 사망확률, 100세 이상 구간 Q = 1, 상한 0.999 — 코어의 탐색과 같은 식) */
+  const periodQs = (si: 0 | 1, year: number, mult = 1): number[] => {
+    const m = familyTables().mortality;
+    return Array.from({ length: m.classes }, (_, c) => (c === m.classes - 1 ? 1 : Math.min(0.999, m.qx[si][c][year - m.firstYear] * mult)));
+  };
+  const officialE0 = (label: '남자' | '여자', year: number): number => {
+    const le = (statsJson as unknown as { indicators: Array<{ id: string; extraSeries?: Array<{ label: string; series: Array<{ year: number; value: number }> }> }> }).indicators.find((i) => i.id === 'life-expectancy')!;
+    return le.extraSeries!.find((e) => e.label === label)!.series.find((p) => p.year === year)!.value;
+  };
+
+  it('표의 1970·2000·2024 열로 계산한 기간 기대수명이 koreaStats 공식 기대수명(남·여)과 ±1.5세 이내다 — 곡선 자체를 공식 값과 대조', () => {
+    for (const [si, label] of [[0, '남자'], [1, '여자']] as const) {
+      for (const year of [1970, 2000, 2024]) {
+        const got = periodE0(periodQs(si, year));
+        const official = officialE0(label, year);
+        expect(Math.abs(got - official), `${label} ${year}: 표 ${got.toFixed(2)} vs 공식 ${official}`).toBeLessThanOrEqual(1.5);
+      }
+    }
+  });
+
+  it('1970 앞 배율은 목표 기대수명을 맞춘다: t = 1960·1940에서 배율을 적용한 기간 기대수명이 e0(1970) − 기울기 × (1970 − t)(하한 30)의 ±0.1세 이내다', () => {
+    const m = familyTables().mortality;
+    for (const [si, sex] of [[0, 'male'], [1, 'female']] as const) {
+      const e0Base = periodE0(periodQs(si, m.firstYear));
+      for (const t of [1960, 1940]) {
+        const target = Math.max(30, e0Base - m.e0Slope[si] * (m.firstYear - t));
+        const got = periodE0(periodQs(si, m.firstYear, mortalityScalePre1970(sex, t)));
+        expect(Math.abs(got - target), `${sex} ${t}: 배율 적용 ${got.toFixed(2)} vs 목표 ${target.toFixed(2)}`).toBeLessThanOrEqual(0.1);
+      }
+    }
   });
 });
 

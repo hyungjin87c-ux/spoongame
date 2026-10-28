@@ -5,16 +5,19 @@ import {
   FAMILY_MAX_CHILDREN,
   MOTHER_BIRTH_MAX,
   YOUNGER_MOTHER_MAX,
-  LEAVE_AGE,
   aliveAtSixRate,
   cohabitShare,
   continueProbability,
+  divorcePlan,
   famSeedOf,
+  familyTables,
+  firstGoneOf,
   generateBirthFromSeed,
   grandBirthYears,
   motherAgeShares,
   olderSiblingPlan,
   orderSharesOf,
+  parentGoneAtOf,
   rollFamilyBirth,
   rollGrandparents,
   rollYoungerSiblings,
@@ -50,6 +53,14 @@ const ALL: Born[] = GENERATION_IDS.flatMap((gen, gi) =>
   }),
 );
 
+/** 동생이 태어날 수 있는 마지막 주인공 나이 (R-530): min(부모 한 분이 떠나는 해, 이혼한 해) — 출생 때 구성과 같은 식 */
+const lastAtOf = (b: Born): number => {
+  const firstGone = firstGoneOf(parentGoneAtOf(b.birthYear, b.report, b.family.p));
+  return Math.min(firstGone?.at ?? Infinity, divorcePlan(famSeedOf(b.peerSeed), b.birthYear, firstGone)?.at ?? Infinity);
+};
+
+const LEAVE_AGE = familyTables().design.leaveAge.value;
+
 const sharesOf = (b: Born) => orderSharesOf(reportTiltOf(b.birthYear), b.report.region, b.birthYear);
 
 /** 관측 개수 vs 기대 Σp, 허용 4·√Σp(1−p) */
@@ -82,7 +93,7 @@ describe('같은 입력은 같은 구성이다 (순수성·결정성)', () => {
 
   it('스트림 독립: 조부모 추첨이 바뀌어도(같은 부모, 다른 출생 연도 보정 없이) 형제 구성의 굴림은 해시라 서로 밀리지 않는다 — 같은 famSeed로 동생을 따로 굴려도 같다', () => {
     for (const b of ALL.slice(0, 200)) {
-      expect(rollYoungerSiblings(famSeedOf(b.peerSeed), b.report.birthOrder, b.report.mother.age, sharesOf(b))).toEqual(b.family.y);
+      expect(rollYoungerSiblings(famSeedOf(b.peerSeed), b.report.birthOrder, b.report.mother.age, sharesOf(b), lastAtOf(b))).toEqual(b.family.y);
     }
   });
 
@@ -311,7 +322,7 @@ describe('T-FA3a·b 형제 구성', () => {
       const ps = rows.map((b) => {
         const a = continueProbability(order, sharesOf(b));
         let ok = 0;
-        for (let gap = SIBLING_GAP.min; gap <= SIBLING_GAP.max; gap++) if (b.report.mother.age + gap <= YOUNGER_MOTHER_MAX) ok++;
+        for (let gap = SIBLING_GAP.min; gap <= SIBLING_GAP.max; gap++) if (b.report.mother.age + gap <= YOUNGER_MOTHER_MAX && gap <= lastAtOf(b)) ok++;
         return order + 1 <= FAMILY_MAX_CHILDREN ? (a * ok) / (SIBLING_GAP.max - SIBLING_GAP.min + 1) : 0;
       });
       // 터울은 해시 균등이라 이 기대값은 정확하다(0.25 단위)

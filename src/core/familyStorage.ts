@@ -138,6 +138,10 @@ export function withValidFamily(state: GameState): GameState {
   const rest = { ...state } as Record<string, unknown>;
   delete rest.family;
   const bare = rest as unknown as GameState;
-  if (AFTER_BIRTH.includes(bare.phase) && bare.character !== null && bare.birthReport !== null && isGameDataReady()) return { ...bare, family: rebuildFamily(bare) };
+  if (AFTER_BIRTH.includes(bare.phase) && bare.character !== null && bare.birthReport !== null && isGameDataReady()) {
+    // 옛 저장에서 만든 스냅샷이 손상됐으면 옛 저장 규칙으로 되살린다 — 새 판 방식은 이미 본 아래 동생(seen)과 어긋난다 (DF25)
+    const wasLegacy = isObj(raw) && raw.lg === 1;
+    return { ...bare, family: wasLegacy ? legacyFamilyFrom(bare) : rebuildFamily(bare) };
+  }
   return bare;
 }

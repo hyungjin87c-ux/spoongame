@@ -35,7 +35,7 @@ function rawQ(si: 0 | 1, cls: number, year: number): number {
 }
 
 /** 구간 사망확률로 만든 기간 생명표의 출생 시 기대수명 (구간 안 균등 사망 근사). 배율 탐색용이라 절대값의 오차는 중요하지 않고, 같은 함수를 목표와 탐색에 함께 쓴다 */
-function periodE0(qs: readonly number[]): number {
+export function periodE0(qs: readonly number[]): number {
   let l = 1;
   let e = 0;
   for (let cls = 0; cls < qs.length; cls++) {

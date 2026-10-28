@@ -499,11 +499,21 @@ export function parseGame(raw: string | null, poolArg?: EventPool): GameState | 
 
 /**
  * 앱이 판을 **열 때** 쓰는 읽기: `parseGame` 뒤에 가족 스냅샷을 채운다(`ensureFamily`, SPEC-009 K5). 필드가 없는 옛 저장도 열자마자 `family`가 있다 — 다음 저장 때 기록된다.
- * 저장 직전 판단(`isIdleOnlyChange`·`isNegligibleChange`)이 「알던 값」을 읽을 때도 이 함수를 써서, 가족 필드가 채워진 것만으로 아무것도 하지 않은 탭이 저장소에 쓰지 않게 한다.
+ * 저장 직전 판단(`isIdleOnlyChange`·`isNegligibleChange`)이 「알던 값」을 읽을 때도 이 함수를 써서, 가족 필드가 채워진 것만으로 아무것도 하지 않은 탭이 저장소에 쓰지 않게 한다(마운트 때 도는 저장 effect는 `isFamilyFillOnly`가 따로 막는다, R-532).
  */
 export function parseOpened(raw: string | null, poolArg?: EventPool): GameState | null {
   const game = parseGame(raw, poolArg);
   return game === null ? null : ensureFamily(game);
+}
+
+/** 옛 저장을 열며 `ensureFamily`가 `family`만 채운 상태인가 (R-532) — 그렇다면 열기만 한 탭은 쓰지 않는다(R-417). 사람이 한 일이 생기면 그 저장에 함께 기록된다 */
+export function isFamilyFillOnly(knownRaw: string | null, game: GameState): boolean {
+  if (knownRaw === null || game.family === undefined) return false;
+  const plain = parseGame(knownRaw);
+  if (plain === null || plain.family !== undefined) return false;
+  const rest = { ...game } as Record<string, unknown>;
+  delete rest.family;
+  return serializeGame(rest as unknown as GameState) === serializeGame(plain);
 }
 
 /** 이벤트 풀이 아직 없는 첫 화면 단계의 저장을 읽을 때만 쓰는 빈 풀 (title 단계 저장은 풀을 읽지 않는다) */

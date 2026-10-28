@@ -12,6 +12,8 @@ import {
   ensureFamily,
   familyOf,
   generateBirthFromSeed,
+  isFamilyFillOnly,
+  isIdleOnlyChange,
   isValidFamily,
   legacyFamilyFrom,
   olderSiblingPlan,
@@ -139,6 +141,9 @@ describe('옛 저장(v0.3.0, family 없음) 이어하기 — 0·20·65세 고정
       expect(again.family).toEqual(opened.family);
       // 같은 원문은 늘 같은 family (결정성)
       expect(parseOpened(raw)!.family).toEqual(opened.family);
+      // 열기만 한 탭은 쓰지 않는다 (R-417·R-532): family만 채운 상태는 저장 대상이 아니다
+      expect(isFamilyFillOnly(raw, opened)).toBe(true);
+      expect(isIdleOnlyChange(raw, opened)).toBe(true);
     });
 
     it(`${name}: 위 형제는 옛 familyOf와 같고, 아래 동생은 seen의 사건이 있을 때만 한 명이다`, () => {

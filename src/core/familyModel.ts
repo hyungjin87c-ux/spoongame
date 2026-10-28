@@ -40,8 +40,6 @@ export const MOTHER_BIRTH_MAX = 49;
 export const YOUNGER_MOTHER_MAX = 45;
 /** 「이른」 부모 별세 = 주인공 19세 이하 (4-7절) — 효과 수치는 FM4b */
 export const EARLY_LOSS_MAX_AGE = 19;
-/** 형제 독립 나이 (설계값, SPEC FA3 ▲) */
-export const LEAVE_AGE = { min: 20, max: 30 } as const;
 /** 별세 나이 상한. 표에서 이 나이를 넘기면 `NO_DEATH_PLAN`(계획 없음) */
 export const FAMILY_AGE_CAP = 100;
 export const NO_DEATH_PLAN = 101;
@@ -49,8 +47,6 @@ export const NO_DEATH_PLAN = 101;
 export const GRAND_COHABIT_UNTIL = 19;
 /** 부모 이혼·별거가 일어날 수 있는 주인공 나이 (0~18, 4-7절 (2)) */
 export const DIVORCE_AGES = { min: 0, max: 18 } as const;
-/** 이혼 때 떠나는 쪽이 아버지일 확률 (설계값, 4-7절 (2)) */
-export const DIVORCE_FATHER_LEAVES = 0.8;
 /** 형제 위 최대 4명, 그림의 식구 수 상한(주인공 제외 7) */
 export const SCENE_MEMBER_MAX = 7;
 

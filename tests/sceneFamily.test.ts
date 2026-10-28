@@ -209,6 +209,16 @@ describe('조부모 · 함께 사는 쪽', () => {
 });
 
 describe('T-FA7 부모 한 분 별세(K3)와 이혼·별거', () => {
+  it('INV-2b 아래 동생은 부모 한 분이 떠난 해·이혼한 해 뒤에 태어나지 않는다(재혼·의붓 없음)', () => {
+    for (const s of SAMPLES) {
+      const sc = familyScheduleOf(s.game);
+      for (const y of s.game.family!.y) {
+        if (sc.firstGone !== null) expect(y.k, `${s.gen} ${s.seed}`).toBeLessThanOrEqual(sc.firstGone.at);
+        if (sc.divorce !== null) expect(y.k, `${s.gen} ${s.seed}`).toBeLessThanOrEqual(sc.divorce.at);
+      }
+    }
+  });
+
   it('모델이 정한 별세는 한 분뿐이다: 먼저 떠나는 분 쪽만 gone이 되고, 같은 해면 아버지가 먼저다(설계값). 두 번째 분은 100세 규칙(또는 parents_gone)만 따른다', () => {
     for (const s of SAMPLES) {
       const sc = familyScheduleOf(s.game);
