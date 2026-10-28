@@ -457,6 +457,8 @@
     - [ ] (REV-009-FM5-1 R-550, developer — 마스터 판단) 엔딩 연표에도 시대 줄(`.timeline li.is-tl[data-tl="era"]`, family-scene.md 5-4)을 같은 규칙으로 — 엔딩 화면이 시대의 창 덩어리를 받아야 하고 단계별 묶음에 끼우는 일이라 FM5b에서 하지 않았다
     - [ ] (FM5b 마스터 결정, developer) 1987년 12월 투표소를 가리기 켬 때 1987 대체 그림으로(eraOf)
     - [ ] (FM5b 마스터 결정, designer → developer) 시골·바닷가 흙수저 1970~75 단독 h2의 초가·슬레이트 변형 판단 · mockups/gm3/fonts 사본 갱신
+    - [ ] (REV-009-FM5-2 R-551·R-552·R-554, developer — FM4b 회차) 승인 장수 가드 · s2·s3 글꼴 재생성 절차/스크립트 · ERA_BAND_RULES·주석
+    - [ ] (REV-009-FM5-2 R-553, designer — 다음 그림 묶음) 360 시대의 창 띠 빈 바탕 · 1960년대 톤 밝기 — 공개 배포 전
     - [ ] (FM5b 관찰, designer 질문) 시골·바닷가 수저 하위의 1970~75 단독집이 초가가 아니라 designer가 그린 슬래브 양옥(`house-detached-h2`)으로 그려진다 — `SCENE_RULES.thatch.lastYear` 1975는 지붕 값이 있는 h1(~1969)에서만 작동한다 · 같은 해에 사건과 그 해 한정 일상이 겹친 4건은 사건 연도에서 그 해를 뺐다(`scripts/genEraWindows.ts#TRIM`) · 1987년 12월 투표소는 6월(무거움)에 가려 고르기에서 나오지 않는다(era-window.md 3-1 ①·3)
   - [ ] SPEC-009 FM4b (K2 A안 `trigger: 'family'` 강제 사건 엔진·`familyChangesFor`/`applyFamilyChanges`·시스템 플래그·`fam-` 줄·`family.log`·이른 부모 별세 효과 ▲·K1 켜기와 경제 재측정·식구 이름·학력/집안일·성인기 식구) — FM4a 후속
   - [ ] SPEC-009 FM4a 후속 관찰(마스터 결정): ① 1940년 이전 출생 어머니의 총 자녀 수가 FD6보다 1~2.4명 낮다(모형 3.2명 vs 4.1~5.6) — 기존 형제 순서 분포(지난 세상 설계값 [26,26,48])·3째 이상 분할 포화가 원인, 보정 여부 ② 이른 부모 사별 비율(0~19세 중 한 분이 떠남: 산업화 29% · X 16% · 알파 6.6%)이 FM4b 효과를 켜기 전 측정 대상 ③ 같은 시드는 세대가 달라도 같은 `peerSeed`라 가족 추첨 값이 세대 사이에 상관(분포 시험은 `spreadSeeds`로 피함)
