@@ -65,10 +65,10 @@ describe('패널의 모양 (NT5·FQ1) — 모달 시트', () => {
     expect(details.map((d) => d[2])).toEqual(['0.5.0', '0.4.0', '0.3.0', '0.2.0', '0.1.0']);
     expect(details.map((d) => d[1] !== undefined)).toEqual([true, true, true, false, false]);
     expect(NOTES_OPEN_COUNT).toBe(3);
-    // 실제 노트: 두 버전, 둘 다 펼침
+    // 실제 노트: 버전 수와 상관없이 앞에서 NOTES_OPEN_COUNT개만 펼침(v0.3.0부터 네 버전 — 마지막 v0.1.0은 접힘)
     const real = [...html.matchAll(/<details class="info__ver"( open="")? data-testid="info-version" data-version="([^"]+)">/g)];
     expect(real.map((d) => d[2])).toEqual(RELEASE_NOTES.map((n) => n.version));
-    expect(real.every((d) => d[1] !== undefined)).toBe(true);
+    expect(real.map((d) => d[1] !== undefined)).toEqual(RELEASE_NOTES.map((_, i) => i < NOTES_OPEN_COUNT));
     // 버전 줄: 굵은 v + 날짜, 요약
     for (const n of RELEASE_NOTES) {
       expect(html).toContain(`<strong>v${n.version}</strong> <span class="info__ver-date">${n.date}</span>`);

@@ -36,15 +36,17 @@ test.describe('열기 (NT4·NT5)', () => {
     // 바깥(본문·본문 끝 여백·하단 띠)은 inert, 문서 스크롤은 잠긴다
     expect(await page.locator('.title[inert], .page-end-space[inert], .bottom-bar[inert]').count()).toBe(3);
     expect(await page.evaluate(() => document.documentElement.classList.contains('sheet-open'))).toBe(true);
-    // 새 소식: 최신이 위(v0.2.1 → v0.2.0 → v0.1.0), 최신 3개 펼침(지금은 세 버전 모두), 항목 종류는 글자 칩
+    // 새 소식: 최신이 위(v0.3.0 → v0.2.1 → v0.2.0 → v0.1.0), 최신 3개 펼침(네 버전 중 마지막 v0.1.0은 접힘), 항목 종류는 글자 칩
     const versions = page.getByTestId('info-version');
-    await expect(versions).toHaveCount(3);
-    await expect(versions.nth(0)).toHaveAttribute('data-version', '0.2.1');
-    await expect(versions.nth(1)).toHaveAttribute('data-version', '0.2.0');
-    await expect(versions.nth(2)).toHaveAttribute('data-version', '0.1.0');
-    expect(await versions.evaluateAll((els) => els.map((e) => (e as HTMLDetailsElement).open))).toEqual([true, true, true]);
-    await expect(versions.nth(0)).toContainText('결정 카드의 통계·연구 아래에 풀이 한 줄이 생겼어요.');
-    await expect(versions.nth(1)).toContainText('어린 시절의 큰 결정은 부모님이 정해요.');
+    await expect(versions).toHaveCount(4);
+    await expect(versions.nth(0)).toHaveAttribute('data-version', '0.3.0');
+    await expect(versions.nth(1)).toHaveAttribute('data-version', '0.2.1');
+    await expect(versions.nth(2)).toHaveAttribute('data-version', '0.2.0');
+    await expect(versions.nth(3)).toHaveAttribute('data-version', '0.1.0');
+    expect(await versions.evaluateAll((els) => els.map((e) => (e as HTMLDetailsElement).open))).toEqual([true, true, true, false]);
+    await expect(versions.nth(0)).toContainText('첫 화면에서 「태어날 세상」 대신 세대 일곱과 「랜덤 세대」 중 하나를 골라요.');
+    await expect(versions.nth(1)).toContainText('결정 카드의 통계·연구 아래에 풀이 한 줄이 생겼어요.');
+    await expect(versions.nth(2)).toContainText('어린 시절의 큰 결정은 부모님이 정해요.');
     await expect(versions.nth(0).locator('.note-kind').first()).toHaveText('추가');
     // 소개: 질문 9개(SPEC-004 GS11에서 가상 인구 질문이 없어졌다), 모두 접힘
     const faq = page.getByTestId('faq-item');
@@ -224,7 +226,7 @@ test.describe('「새」 표시와 notesSeen (NT4, 설정 v5)', () => {
     await page.getByTestId('info-close').click();
     await expect(panel(page)).toHaveCount(0);
     await expect(page.getByTestId('news-badge')).toHaveCount(0);
-    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe('0.2.1');
+    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe('0.3.0');
     await page.reload();
     await expect(page.getByTestId('title-screen')).toBeVisible();
     await expect(page.getByTestId('news-badge')).toHaveCount(0);
@@ -235,15 +237,17 @@ test.describe('「새」 표시와 notesSeen (NT4, 설정 v5)', () => {
     await expect(page.getByTestId('news-badge')).toBeVisible();
     await page.getByTestId('link-intro').click();
     await expect(panel(page)).toBeVisible();
-    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe('0.2.1');
+    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe('0.3.0');
   });
 
-  test('이전 버전을 본 사람(notesSeen 0.1.0·0.2.0)에게는 뜨고, 현재 버전을 본 사람에게는 안 뜬다', async ({ page }) => {
+  test('이전 버전을 본 사람(notesSeen 0.1.0·0.2.0·0.2.1)에게는 뜨고, 현재 버전을 본 사람에게는 안 뜬다', async ({ page }) => {
     await openTitle(page, { notesSeen: '0.1.0' });
     await expect(page.getByTestId('news-badge')).toBeVisible();
     await openTitle(page, { notesSeen: '0.2.0' });
-    await expect(page.getByTestId('news-badge')).toBeVisible(); // 0.2.1이 나왔으니 0.2.0까지 본 사람에게도 뜬다
+    await expect(page.getByTestId('news-badge')).toBeVisible(); // 0.3.0이 나왔으니 0.2.0까지 본 사람에게도 뜬다
     await openTitle(page, { notesSeen: '0.2.1' });
+    await expect(page.getByTestId('news-badge')).toBeVisible(); // 직전 버전 0.2.1까지 본 사람에게도 뜬다
+    await openTitle(page, { notesSeen: '0.3.0' });
     await expect(page.getByTestId('news-badge')).toHaveCount(0);
     await expect(page.getByTestId('link-news')).toBeVisible();
   });
@@ -306,7 +310,7 @@ test.describe('소개 Q&A와 의견 보내기 (FQ1·N2)', () => {
     expect(`${url.origin}${url.pathname}`).toBe('https://github.com/hyungjin87c-ux/spoongame/issues/new');
     expect(url.searchParams.get('template')).toBe('feedback.yml');
     const screen = url.searchParams.get('screen')!;
-    expect(screen).toMatch(/^첫 화면, v0\.2\.1 \((?:[0-9a-f]{7}\+?|개발 빌드)\)$/);
+    expect(screen).toMatch(/^첫 화면, v0\.3\.0 \((?:[0-9a-f]{7}\+?|개발 빌드)\)$/);
     expect([...url.searchParams.keys()].sort()).toEqual(['screen', 'template']); // 이름·기록이 들어갈 자리는 없다
     // 입력 가드(열린 직후 0.4초)가 풀린 뒤 누르면 새 탭이 열린다
     await expect(link).not.toHaveAttribute('aria-disabled', 'true');
@@ -378,15 +382,15 @@ test.describe('한 줄 구분 목록 (R-493·D5-77)', () => {
       return { total: all.length, vers: document.querySelectorAll('.info__ver').length, boxed: all.filter(isBox).length, kinds: document.querySelectorAll('.note-kind').length, kindBorders: [...document.querySelectorAll('.note-kind')].filter((el) => parseFloat(getComputedStyle(el).borderTopWidth) > 0).length };
     });
     expect(boxes.kinds, '공허 통과 방지: 종류 글자 칸이 실제로 있다').toBeGreaterThanOrEqual(8);
-    // 제목의 「버전 2」는 R-493 당시 개수다(옛 기록이 이 제목을 가리켜 그대로 둔다). v0.2.1부터 새 소식 버전은 3개이고, 이 시험은 개수를 세어 맞춘다.
-    expect(boxes.vers, '공허 통과 방지: 새 소식 버전 상자가 실제로 있다(v0.2.1·v0.2.0·v0.1.0)').toBe(3);
-    expect(boxes.total, '버전 3 + 질문 9 + 종류 글자 칸').toBe(boxes.vers + 9 + boxes.kinds);
+    // 제목의 「버전 2」는 R-493 당시 개수다(옛 기록이 이 제목을 가리켜 그대로 둔다). v0.3.0부터 새 소식 버전은 4개이고, 이 시험은 개수를 세어 맞춘다.
+    expect(boxes.vers, '공허 통과 방지: 새 소식 버전 상자가 실제로 있다(v0.3.0·v0.2.1·v0.2.0·v0.1.0)').toBe(4);
+    expect(boxes.total, '버전 4 + 질문 9 + 종류 글자 칸').toBe(boxes.vers + 9 + boxes.kinds);
     expect(boxes.boxed, '테두리 상자는 0').toBe(0);
     expect(boxes.kindBorders, '종류 글자 칸에는 테두리가 없다').toBe(0);
     const border = await resolveColor(page, 'var(--c-border)');
     for (const selector of ['.info__ver', '.faq__item']) {
       const rows = await rowsOf(page, selector);
-      expect(rows.length, `${selector} 행 수`).toBe(selector === '.info__ver' ? 3 : 9);
+      expect(rows.length, `${selector} 행 수`).toBe(selector === '.info__ver' ? 4 : 9);
       rows.forEach((r, i) => {
         expect(r.others, `${selector} ${i + 1}번째: 구분줄 말고 다른 변에 테두리가 없다`).toBe(0);
         expect(r.top, `${selector} ${i + 1}번째: 윗줄`).toBe(i === 0 ? '0px' : '1px');
