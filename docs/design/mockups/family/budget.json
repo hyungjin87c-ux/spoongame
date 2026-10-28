@@ -4,36 +4,36 @@
   "styles": {
     "s1": {
       "name": "종이 오림",
-      "pieces": 45,
-      "rawTotal": 59784,
-      "gzEachTotal": 16110,
-      "gzEachAvg": 358,
-      "chunkRaw": 66486,
-      "chunkGz": 6701,
-      "chunkPerPiece": 149,
-      "chunkRatio": 0.42,
-      "projected93": 13849,
-      "projected110": 16380,
+      "pieces": 78,
+      "rawTotal": 128755,
+      "gzEachTotal": 33015,
+      "gzEachAvg": 423,
+      "chunkRaw": 142996,
+      "chunkGz": 15118,
+      "chunkPerPiece": 194,
+      "chunkRatio": 0.46,
+      "projected93": 18025,
+      "projected110": 21320,
       "layerAvg": {
         "배경": {
-          "n": 5,
-          "gzAvg": 369
+          "n": 12,
+          "gzAvg": 368
         },
         "집": {
-          "n": 4,
-          "gzAvg": 612
+          "n": 22,
+          "gzAvg": 647
         },
         "소품": {
-          "n": 14,
-          "gzAvg": 205
+          "n": 19,
+          "gzAvg": 238
         },
         "식구": {
           "n": 19,
           "gzAvg": 421
         },
         "반려동물": {
-          "n": 3,
-          "gzAvg": 319
+          "n": 6,
+          "gzAvg": 310
         }
       },
       "rows": [
@@ -408,6 +408,324 @@
           "years": null,
           "raw": 524,
           "gz": 246
+        },
+        {
+          "id": "bg-metro-b1",
+          "layer": "배경",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 1001,
+          "gz": 333
+        },
+        {
+          "id": "bg-town-b2",
+          "layer": "배경",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 1581,
+          "gz": 464
+        },
+        {
+          "id": "bg-rural-b2",
+          "layer": "배경",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 1339,
+          "gz": 406
+        },
+        {
+          "id": "bg-rural-b3",
+          "layer": "배경",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 1039,
+          "gz": 340
+        },
+        {
+          "id": "bg-coast-b1",
+          "layer": "배경",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 1151,
+          "gz": 322
+        },
+        {
+          "id": "bg-coast-b2",
+          "layer": "배경",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 1227,
+          "gz": 345
+        },
+        {
+          "id": "bg-coast-b3",
+          "layer": "배경",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 1934,
+          "gz": 363
+        },
+        {
+          "id": "house-detached-h2",
+          "layer": "집",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 2223,
+          "gz": 601
+        },
+        {
+          "id": "house-detached-h3",
+          "layer": "집",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 2917,
+          "gz": 688
+        },
+        {
+          "id": "house-detached-rent-h1",
+          "layer": "집",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 4008,
+          "gz": 855
+        },
+        {
+          "id": "house-detached-rent-h3",
+          "layer": "집",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 3422,
+          "gz": 617
+        },
+        {
+          "id": "house-multi-h1",
+          "layer": "집",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 2859,
+          "gz": 586
+        },
+        {
+          "id": "house-multi-h2",
+          "layer": "집",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 3530,
+          "gz": 591
+        },
+        {
+          "id": "house-apt-h1",
+          "layer": "집",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 1817,
+          "gz": 431
+        },
+        {
+          "id": "house-apt-h2",
+          "layer": "집",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 3377,
+          "gz": 539
+        },
+        {
+          "id": "house-shack-h1",
+          "layer": "집",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 1935,
+          "gz": 568
+        },
+        {
+          "id": "house-shack-h2",
+          "layer": "집",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 2310,
+          "gz": 670
+        },
+        {
+          "id": "house-shack-h3",
+          "layer": "집",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 1855,
+          "gz": 601
+        },
+        {
+          "id": "house-other-h1",
+          "layer": "집",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 2756,
+          "gz": 735
+        },
+        {
+          "id": "house-other-h2",
+          "layer": "집",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 2692,
+          "gz": 616
+        },
+        {
+          "id": "house-other-h3",
+          "layer": "집",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 2988,
+          "gz": 600
+        },
+        {
+          "id": "house-estate-h1",
+          "layer": "집",
+          "years": [
+            1940,
+            1969
+          ],
+          "raw": 3955,
+          "gz": 861
+        },
+        {
+          "id": "house-estate-h2",
+          "layer": "집",
+          "years": [
+            1970,
+            1999
+          ],
+          "raw": 3434,
+          "gz": 825
+        },
+        {
+          "id": "house-estate-h3",
+          "layer": "집",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 3280,
+          "gz": 744
+        },
+        {
+          "id": "house-care-h3",
+          "layer": "집",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 2481,
+          "gz": 647
+        },
+        {
+          "id": "prop-car",
+          "layer": "소품",
+          "years": [
+            1985,
+            null
+          ],
+          "raw": 961,
+          "gz": 318
+        },
+        {
+          "id": "prop-plastic-greenhouse",
+          "layer": "소품",
+          "years": [
+            1980,
+            null
+          ],
+          "raw": 685,
+          "gz": 327
+        },
+        {
+          "id": "prop-scooter",
+          "layer": "소품",
+          "years": [
+            2000,
+            null
+          ],
+          "raw": 988,
+          "gz": 329
+        },
+        {
+          "id": "prop-ev-charger",
+          "layer": "소품",
+          "years": [
+            2020,
+            null
+          ],
+          "raw": 674,
+          "gz": 286
+        },
+        {
+          "id": "prop-hanging-fish",
+          "layer": "소품",
+          "years": null,
+          "raw": 2106,
+          "gz": 396
+        },
+        {
+          "id": "pet-cat-yard",
+          "layer": "반려동물",
+          "years": null,
+          "raw": 887,
+          "gz": 307
+        },
+        {
+          "id": "pet-other-indoor",
+          "layer": "반려동물",
+          "years": null,
+          "raw": 693,
+          "gz": 312
+        },
+        {
+          "id": "pet-other-yard",
+          "layer": "반려동물",
+          "years": null,
+          "raw": 866,
+          "gz": 282
         }
       ]
     },
@@ -626,14 +944,14 @@
       "eventOnePerYear": {
         "pieces": 98,
         "gzEach": 32830,
-        "chunkEst": 13789,
-        "withLines": 16925
+        "chunkEst": 15102,
+        "withLines": 18238
       },
       "eventTwoPerYear": {
         "pieces": 179,
         "gzEach": 59965,
-        "chunkEst": 25185,
-        "withLines": 30913
+        "chunkEst": 27584,
+        "withLines": 33312
       }
     }
   }

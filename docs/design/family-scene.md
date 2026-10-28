@@ -154,6 +154,39 @@
 
 `frame-paper`(카드 안 그림 틀 — CSS가 맡으므로 조각 0일 수 있음) · `ground-empty`(집이 없는 상태 — 저장 복원 중 자리 틀, FH9: 하늘·땅만) · `fold-placeholder`(접힘 자리 — CSS) · `swap-veil`(교차 페이드 덮개 — CSS). 실제 SVG 조각은 `ground-empty` 하나(추정 150B)이고 나머지는 CSS라 **예산 4에서 3이 비어 상한 여유가 된다**.
 
+### 2-8. FM5 보강 — 안 그렸던 조각 33을 그림 (designer 2026-10-28)
+
+developer가 FM5를 구현해 보니 `drawn: false` 조각 33이 `stand`로 대신 그려져 시대가 어긋났다(`ai-log/2026-10-28_SPEC-009_dev-FM5.md` 4절 — 「2000년대 단독 → 1970~90년대 셋방 집」). 그 33을 같은 그림체(s1)로 그렸다 — 생성 `scripts/design/familyPiecesFm5.mjs`(→ `buildFamilyMockups.mjs`가 `pieces/s1/<id>.svg`·`pieces.html`·`budget.json`에 함께 넣는다), 시트 `mockups/family/fm5-pieces.html`(장면 18 + 밴드별 조각 33), 캡처 `screens/009/fm5-pieces.jpg`, 실측 `fm5-budget.json`. 공용 도우미(토큰·`mk`·식구·기와·창호)는 `familyPieceLib.mjs`로 옮겼다(출력 바이트 동일 — 기존 45조각 svg 불변). 위 2-2~2-6 표의 빈 「그림」 칸은 모두 ✓가 됐다.
+
+- **그린 것**: 배경 7(`bg-metro-b1` · `bg-town-b2` · `bg-rural-b2` · `bg-rural-b3` · `bg-coast-b1` · `bg-coast-b2` · `bg-coast-b3`) · 집 18(아래 표) · 소품 5(`prop-car` · `prop-plastic-greenhouse` · `prop-scooter` · `prop-ev-charger` · `prop-hanging-fish` — 상자·연도는 sceneTables 그대로) · 반려동물 3(`pet-cat-yard` 옆으로 선 고양이 · `pet-other-indoor` 새장의 새 · `pet-other-yard` 앉은 토끼 — 상자 [-16,-30,32,30]).
+- **그리지 않은 것**: 파라미터 변형(단독 h2의 2층 유무·연립 층 수 등)은 두지 않았다 — 수저는 `scale`과 마당·담으로만(DF14). 점유 형태 0, 간판·번호판·화면은 빈 면, 얼굴 0. `shack`은 빨래·화분·신발이 있는 사는 집(낙인 0). `bg-rural-b2`에 비닐하우스 띠를 넣지 않았다(1970년대 초에도 보이게 되므로) — 1980~는 소품 `prop-plastic-greenhouse`가 맡는다.
+- **반복 도형은 `<pattern>`**(4절): 기와 물결 `-tl`, 난간 살 `-rl`, 아파트·요양 시설 창 줄 `-w`, 복도식 아파트 단위(창+문) `-u`, 컨테이너 골 `-rib`, 중소도시 창 `-tw2`. 패턴 참조는 `<g transform="translate(x y)">` 안의 `rect(0,0)`이라 원점이 그 자리에 맞고(`patternUnits="userSpaceOnUse"`), id는 조각 안에서만 유일하다 — 한 장면에 집·배경은 하나씩이라 겹치지 않고, 교차 페이드의 두 장면은 `svgNodes`의 인스턴스 접두어가 가른다. 허용 태그·속성(`g rect path defs pattern` · `transform opacity patternUnits`)만 썼다.
+- **크기(실측 `fm5-budget.json`)**: 새 조각 33의 개별 gzip 합 16,905B(평균 512, 최대 `house-detached-rent-h1` 861). 지금 `src/data/familyArt/pieces.json`(25조각, 읽기만) 3,990B → 새 조각을 더하면 **12,120B**(58조각, +8,130B). `familyArt` 덩어리 추정 7,180 + 8,130 = **≈ 15.3KB gzip**(상한 16KB 안 — 보수적 추정: 덩어리 안에서는 토큰 문자열이 더 겹쳐 실제는 이보다 작다). 합 110KB 안. 첫 빌드는 17.3KB라 기와·난간·창 줄을 패턴으로 바꾸고 부속 그림자·문손잡이·화분 원을 줄여 2KB를 뺐다.
+- **developer에게(`src/data/sceneTables.ts` — designer는 고치지 않는다)**: ① `BG_DRAWN`에 7 id 추가, `BG_STAND`의 그 항목 삭제 ② `HOUSE_STAND` 18 항목을 지우고 `HOUSE_DRAWN`에 아래 상자·슬롯을 적는다 ③ `PROPS`의 다섯 `prop(…, false)`에서 `false`를 뺀다 ④ `PETS` 셋을 `drawn: true, stand: null`로 ⑤ `npm run gen:art`(pieces.json 58조각) → `tests/sceneAssets.test.ts`. `house-detached-h1`처럼 코드가 만드는 집은 더 없다(18채 모두 정적 마크업).
+
+| id | 상자 `box` | 슬롯 `window` | 슬롯 `porch` | 한 줄 |
+|---|---|---|---|---|
+| `house-detached-h2` | [-4,-130,372,130] | [111,-52] | – | 슬래브 양옥, 담·철제 대문, 보일러 굴뚝, 화단 |
+| `house-detached-h3` | [-4,-170,372,170] | [119,-22] | – | 2층, 경사 지붕, 주차 공간(차양), 현관 계단 |
+| `house-detached-rent-h1` | [-4,-130,372,130] | [118,-34] | [260,-14] | 기와 본채·마루 + 대문 옆 문간방(쪽문·작은 창·굴뚝) |
+| `house-detached-rent-h3` | [0,-180,340,180] | [60,-64] | – | 3층 벽돌 다가구, 바깥 계단, 층마다 현관 |
+| `house-multi-h1` | [0,-124,320,124] | [130,-62] | – | 2층 연립(설계값), 기와, 현관 둘 |
+| `house-multi-h2` | [0,-150,330,150] | [53,-54] | – | 3층 연립, 가운데 발코니·난간 |
+| `house-apt-h1` | [0,-130,400,130] | [30,-8] | – | 초기 저층 아파트(설계값 3층), 현관 둘·계단실 창 |
+| `house-apt-h2` | [0,-196,400,196] | [35,-14] | – | 복도식 5층 판상, 복도 난간, 계단탑 |
+| `house-shack-h1` | [0,-100,260,100] | [55,-34] | – | 널빤지 벽·루핑 지붕·깡통 굴뚝, 빨래·화분·신발 |
+| `house-shack-h2` | [0,-104,270,104] | [53,-32] | – | 블록 벽·슬레이트 지붕·연탄 굴뚝, 빨래·화분·대야 |
+| `house-shack-h3` | [0,-104,280,104] | [155,-36] | – | 컨테이너(FD14 범위 안) — 골 벽, 차양 단 문, 계단, 화분 |
+| `house-other-h1` | [-4,-130,372,130] | [252,-40] | – | 기와 아래 미닫이 가게(빈 간판 판·차양) + 뒤쪽 방 창호 |
+| `house-other-h2` | [0,-150,340,150] | [66,-92] | – | 2층 슬래브, 1층 셔터·차양, 옆 출입문 |
+| `house-other-h3` | [0,-180,340,180] | [75,-76] | – | 1층 유리 가게 + 2~3층 집·발코니 |
+| `house-estate-h1` | [-4,-150,404,150] | [70,-66] | [160,-50] | 솟을대문·긴 담·기와 본채(대청)·별채 |
+| `house-estate-h2` | [-4,-170,404,170] | [145,-26] | – | 2층 양옥, 베란다 난간, 차고, 정원 나무 |
+| `house-estate-h3` | [-4,-170,404,170] | [175,-14] | – | 평지붕 2층, 큰 유리창, 별동, 데크·정원·울타리 |
+| `house-care-h3` | [0,-170,400,170] | [42,-16] | – | 요양 시설 외관 — 3층, 차양 단 유리문, 경사로·난간, 화단 |
+
+슬롯 `window`는 **창턱(아래쪽)** 기준이라 반려동물이 창턱에 앉는다(`house-detached-rent-h2`의 [105,−73]은 창 가운데 — 그 집은 그대로 둔다). 큰 집 h1~h3 폭 404는 식구 8명(집 `scale` 0.86 → 347)에서 안전 영역 안에 들어간다(1절 규칙과 같음).
+
 ## 3. `sceneOf` 입력 → 조각 id 고르기
 
 `sceneOf(game): SceneSpec`(FH5)의 입력은 나이·달력 연도·플래그·`seen`·출생신고·가족 출생 스냅샷·`family.log`·「가진 것」 임계값이다. 표의 규칙은 전부 **순수 함수**(해시 판정은 `hash01(seed, 'scene', 종류)`)이고, 결과 `SceneSpec`은 `{ bg, back[], house:{id, scale, params}, media, front[], pets[], family[] }`다.
