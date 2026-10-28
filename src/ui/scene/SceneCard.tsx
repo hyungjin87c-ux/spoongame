@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
-import { eraOf, type EraPick } from '../../core/eraWindow';
+import { bandOfWealth, eraOf, type EraPick } from '../../core/eraWindow';
 import { petPhrases, sceneInputOf, sceneKey, sceneLineOf, sceneOf, scenePetsText, sceneRowsOf, type SceneSpec } from '../../core/scene';
 import type { FamilyGame } from '../../core/familyView';
 import { eraAccessibleName, eraTitle, SCENE_TEXT } from '../../data/sceneText';
 import { useReducedMotion } from '../hooks';
 import { SvgMarkup } from '../svgNodes';
+import { goToLogRow } from './eraLink';
 import { SceneSvg } from './SceneSvg';
 import type { SceneArt } from './useFamilyArt';
 
@@ -14,7 +15,7 @@ import type { SceneArt } from './useFamilyArt';
  * 구성: 그림 띠(왼쪽 집 그림 : 오른쪽 「시대의 창」 = 2 : 1, 휴대폰은 집 아래 80px 띠) → 아래 한 줄 → 펼침 「함께 사는 사람」 · 「그림 접기」.
  *  - 집 그림은 `role="img"`이고 대체 글은 연도 표 + 아래 한 줄 + 반려동물 문장(`aria-labelledby`)이다. 그림에만 있는 정보는 없다(FH6). 연도 표 「1988년」은 집 그림 오른쪽 위의 HTML이다(그림 안 글자 0).
  *  - 그림 덩어리(`familyArt`)가 오기 전·실패한 동안에는 **크기가 고정된 자리 틀**만 보이고 아래 한 줄·펼침(글)이 먼저 보인다(FH9). 실패하면 「다시 불러오기」가 나온다.
- *  - 시대의 창: 승인된 그림이 없으면 연도 표만 있는 빈 틀이다(지금 0장). 있으면 칸 전체가 그해 인생 기록 줄로 가는 링크 하나(초점 정지점 1, FT5). 「무거운 장면 가리기」(`settings.gentle`)가 켜지면 그해 일상 그림으로, 없으면 빈 틀로.
+ *  - 시대의 창: 그해에 승인된 그림이 없으면(1990년대 대부분·2000년 이후 등) 연도 표만 있는 빈 틀이다. 있으면 칸 전체가 그해 인생 기록 줄로 가는 링크 하나(초점 정지점 1, FT5). 「무거운 장면 가리기」(`settings.gentle`)가 켜지면 무거운 장면(재난·정치)은 그해 일상 그림으로, 없으면 빈 틀로. 고르기는 `core/eraWindow.ts#eraOf`(출생 연도·수저 구간·나이대를 본다).
  *  - 바뀌는 해(구성이 달라진 해)에는 짧은 교차 페이드, 움직임 줄이기·빠른 진행(4배속 이상·자동 모드)이면 즉시 교체한다. 변화의 내용은 인생 기록 문장이 알린다 — 그림은 `aria-live`를 쓰지 않는다(이중 낭독 방지).
  *  - 접으면(`fold`) 그림이 사라지고 아래 한 줄·펼침만 남는다. 접힘은 설정에 저장된다(`settings.sceneFold`).
  */
@@ -54,15 +55,10 @@ function usePrevWhileSwapping<T>(value: T, key: string, enabled: boolean): T | n
 
 // ---------------------------------------------------------------- 그해 인생 기록 줄로
 
-/** 인생 기록의 그해 시대 줄(`#log-y<year>`)로 가서 초점을 주고 잠깐 강조한다. 주소(#)는 바꾸지 않는다 — 뒤로가기 기록을 더럽히지 않는다 */
-function goToLogRow(event: MouseEvent, year: number, reduced: boolean): void {
+/** 시대의 창을 누르면 인생 기록의 그해 시대 줄로 간다 — 동작은 `eraLink.ts`(합성 요소로 시험). 주소(#)는 바꾸지 않는다 */
+function onEraClick(event: MouseEvent, year: number, reduced: boolean): void {
   event.preventDefault();
-  const row = document.getElementById(`log-y${year}`);
-  if (row === null) return;
-  row.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
-  row.focus({ preventScroll: true });
-  row.setAttribute('data-flash', 'true');
-  window.setTimeout(() => row.removeAttribute('data-flash'), 2600);
+  goToLogRow((id) => document.getElementById(id), year, reduced, (fn, ms) => void window.setTimeout(fn, ms));
 }
 
 // ---------------------------------------------------------------- 시대의 창 칸
@@ -117,7 +113,7 @@ function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: n
       data-hidden={shown === null ? 'true' : 'false'}
       data-dec={shown === null ? undefined : Math.floor(Math.min(year, 2025) / 10) * 10}
       title={eraTitle(text, shown === null)}
-      onClick={(e) => goToLogRow(e, year, reduced)}
+      onClick={(e) => onEraClick(e, year, reduced)}
     >
       <span className="era__pic" aria-hidden="true">
         {prev !== null && prev.pic !== null && art[prev.pic.draw] !== undefined && prev.pic.id !== shown?.id ? (
@@ -143,7 +139,9 @@ export function SceneCard({ game, gentle, fold, onFold, scene, animate = true }:
   const petsText = scenePetsText(spec.pets);
   const { rows, more } = sceneRowsOf(input);
   const calYear = input.state.calYear;
-  const pick = useMemo(() => eraOf(calYear, { regionKey: input.region, gentle, seed: input.seed, windows: era.windows }), [calYear, input.region, input.seed, gentle, era.windows]);
+  const birthYear = calYear - input.state.me.age;
+  const band = bandOfWealth(input.wealth);
+  const pick = useMemo(() => eraOf(calYear, { regionKey: input.region, gentle, seed: input.seed, windows: era.windows, birthYear, band }), [calYear, birthYear, band, input.region, input.seed, gentle, era.windows]);
   const swapKey = useMemo(() => sceneKey(spec), [spec]);
   const prevSpec = usePrevWhileSwapping<SceneSpec>(spec, swapKey, animate && !reduced && art !== null);
   const phrases = petPhrases(spec.pets);

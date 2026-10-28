@@ -21,11 +21,10 @@ export const SCENE_TEXT = {
   eraName: '시대의 창',
   eraVeiled: '가려 둔 장면',
   eraGo: '그해 기록으로',
-  eraEmpty: '이 해의 장면 그림은 아직 없습니다.',
   /** 인생 기록 시대 줄의 표지 글자 */
   eraMark: '시대의 창',
-  /** 무거운 장면 가리기 안내의 분류 이름 (「무거운 일이 있었습니다 · 시대의 큰 일」) — 사건 분류 여섯(`HEAVY_KIND_TEXT`)에 없는 세상의 큰 사건용. 6자 이하 */
-  eraVeilKind: '시대의 큰 일',
+  /** 무거운 장면 가리기 안내의 분류 이름 (「무거운 일이 있었습니다 · 시대의 일」) — 사건 분류 여섯(`HEAVY_KIND_TEXT`)에 없는 세상의 큰 사건용. 6자 이하(`HEAVY_KIND_NAME_MAX`, `tests/eraLog.test.tsx`가 잠근다). 임시 문구 — FM7에서 확정한다 (R-548) */
+  eraVeilKind: '시대의 일',
 } as const;
 
 /** 시대의 창 접근 이름 = 「시대의 창 · {문장} 그해 기록으로」, 말풍선 글 = 「시대의 창 · {문장}」 */

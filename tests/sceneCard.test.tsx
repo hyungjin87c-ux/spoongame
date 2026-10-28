@@ -1,16 +1,25 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
-import { DEFAULT_SETTINGS, advanceUntilDecision, stepYear, type GameState, type Settings } from '../src/core';
+import { DEFAULT_SETTINGS, advanceUntilDecision, createInitialState, generateBirthFromSeed, stepYear, type GameState, type Settings } from '../src/core';
 import type { EraWindow } from '../src/core/eraWindow';
 import { petPhrases, sceneInputOf, sceneLineOf, sceneOf, scenePetsText, sceneRowsOf } from '../src/core/scene';
 import { LifeScreen } from '../src/screens/LifeScreen';
 import { familyArtIfLoaded, loadFamilyArt } from '../src/data/familyArtLoader';
 import type { FamilyArt } from '../src/data/sceneTables';
+import { SCENE_PIECES } from '../src/data/sceneTables';
 import { SCENE_TEXT } from '../src/data/sceneText';
+import { resolvePiece } from '../src/ui/scene/SceneSvg';
 import type { LifeGame } from '../src/ui/dash/Cards';
 import { SceneCard } from '../src/ui/scene/SceneCard';
 import type { SceneArt } from '../src/ui/scene/useFamilyArt';
+import { mergeEraData } from '../src/ui/scene/useFamilyArt';
+import { ERA_DECADE as D1940 } from '../src/data/eraWindows/d1940';
+import { ERA_DECADE as D1950 } from '../src/data/eraWindows/d1950';
+import { ERA_DECADE as D1960 } from '../src/data/eraWindows/d1960';
+import { ERA_DECADE as D1970 } from '../src/data/eraWindows/d1970';
+import { ERA_DECADE as D1980 } from '../src/data/eraWindows/d1980';
+import { ERA_DECADE as D1990 } from '../src/data/eraWindows/d1990';
 import type { YearClock } from '../src/ui/useYearClock';
 
 /**
@@ -168,13 +177,12 @@ describe('그림 덩어리 상태 (FH9) — 글을 먼저, 실패해도 글은 �
   it('이미 받은 덩어리는 훅의 첫 렌더부터 ready다(깜박이지 않는다)', () => {
     expect(familyArtIfLoaded()).toBe(art);
   });
-  it('안 그린 조각은 대신 그림으로 그려지고(data-via), 그릴 것이 없는 조각은 그리지 않는다 — 어느 쪽이든 칸이 비지 않는다', () => {
-    let seen = 0;
-    for (let seed = 1; seed <= 25 && seen === 0; seed++) {
-      const gg = life(seed, 'genx', 6);
-      if ((html(gg).match(/data-via="/g) ?? []).length > 0) seen++;
+  it('FM5b: 모든 조각이 그려져 있어 대신 그림(data-via)이 한 번도 나오지 않는다 — 25판 × 세 시대, 표의 모든 조각이 덩어리에서 직접 마크업을 받는다', () => {
+    for (const gen of ['alpha', 'genx', 'industrial'] as const) {
+      for (let seed = 1; seed <= 25; seed++) expect(html(life(seed, gen, 6)), `${gen} ${seed}`).not.toContain('data-via="');
     }
-    expect(seen, '25판 안에 대신 그림이 한 번은 나와야 한다').toBeGreaterThan(0);
+    for (const p of SCENE_PIECES) expect(resolvePiece(art, p.id), p.id).toMatchObject({ markup: expect.any(String) });
+    for (const p of SCENE_PIECES) expect(resolvePiece(art, p.id)!.via, p.id).toBeUndefined();
   });
 });
 
@@ -244,5 +252,85 @@ describe('CSS 규칙 (family-scene.md 5-1절 — PC 2:1 · 휴대폰 80px 띠 ·
   it('색은 토큰뿐이다: family.css에 #rrggbb 하드코딩 색이 없다 (강제 색상 시스템 색 제외)', async () => {
     const css = (await readText('../src/styles/family.css')).replace(/\/\*[\s\S]*?\*\//g, '');
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).toEqual([]);
+  });
+});
+
+describe('시대의 창 칸 — 승인된 43장이 칸에 오른다 (FM5b, FT1~FT6)', () => {
+  /** 달력 연도가 `calYear`가 되는 나이의 판 (세대·시드를 훑어 0~80세 안에 드는 것) */
+  function lifeInYear(calYear: number): GameState {
+    for (const gen of ['industrial', 'genx', 'alpha'] as const) {
+      for (let seed = 1; seed <= 40; seed++) {
+        const b = generateBirthFromSeed(seed, gen);
+        const age = calYear - b.character.birthYear;
+        if (age < 3 || age > 80) continue;
+        const base = { ...createInitialState(seed), phase: 'life', generation: gen, character: b.character, birthReport: b.report, peerSeed: b.peerSeed, family: b.family } as GameState;
+        return { ...base, age, assets: age >= 20 ? { net: 0, income: 0, debt: 0, incomeAdj: 0, dwelling: 'family' } : null } as GameState;
+      }
+    }
+    throw new Error(`${calYear}년의 판을 못 찾았다`);
+  }
+  const era = (): SceneArt['era'] => mergeEraData([D1940, D1950, D1960, D1970, D1980, D1990]);
+
+  it('1980년: 금남로 그림이 링크 하나로 오른다 — 톤 A 필터용 data-dec, 그림은 aria-hidden, 접근 이름은 문장, 그림 안은 class 색·사람 심볼 참조(<use>)뿐(<style> 없음)', () => {
+    const g = lifeInYear(1980);
+    expect(sceneInputOf(g).state.calYear).toBe(1980);
+    const out = html(g, { s: scene({ era: era() }) });
+    expect(out).toContain('<a class="era" id="scene-era" href="#log-y1980"');
+    expect(out).toContain('data-era="era-1980-may-geumnam-ro"');
+    expect(out).toContain('data-dec="1980"');
+    expect(out).toContain('title="시대의 창 · 5월, 광주에 민주화 시위가 있었습니다."');
+    expect(out).toContain('<span class="sr-only">시대의 창 · 5월, 광주에 민주화 시위가 있었습니다. 그해 기록으로</span>');
+    const pic = out.slice(out.indexOf('<span class="era__pic"'), out.indexOf('</a>'));
+    expect(pic).toContain('aria-hidden="true"');
+    expect(pic).toMatch(/<pattern id="era-era-dots"/); // 반복 무늬는 이 10년 덩어리 defs에 한 번(인스턴스 접두어 era-)
+    expect(pic).toMatch(/class="e-[a-z0-9]+"/);
+    expect(pic).not.toMatch(/<style|<text|<image|style=/);
+    expect((out.match(/<a /g) ?? []).length, '초점 정지점 1').toBe(1);
+  });
+
+  it('1958년: 보릿고개 장면이 오르고 문장이 접근 이름이다', () => {
+    const out = html(lifeInYear(1958), { s: scene({ era: era() }) });
+    expect(out).toContain('data-era="era-1958-barley-spring"');
+    expect(out).toContain('data-dec="1950"');
+    expect(out).toContain('title="시대의 창 · 보릿고개에는 나물로 끼니를 이었습니다."');
+    // r4 그림은 사람을 심볼 참조로 그린다: 심볼은 10년 덩어리 defs에 한 번, 조각에는 <use href> + 색 변수 class
+    const pic = out.slice(out.indexOf('<span class="era__pic"'), out.indexOf('</a>'));
+    expect(pic).toMatch(/<symbol id="era-ps"/);
+    expect(pic).toMatch(/<use href="#era-p[a-z]+"[^>]*class="[^"]*(et|eb|eh|ek)-/);
+    expect(pic).not.toMatch(/<style/);
+  });
+
+  it('가리기를 켜면 1980년은 무거운 사건 대신 그해 일상 그림으로 바뀐다 — 같은 10년의 필터, 접근 이름은 일상의 문장, 금남로 문장은 어디에도 없다', () => {
+    const g = lifeInYear(1980);
+    const off = html(g, { gentle: false, s: scene({ era: era() }) });
+    const on = html(g, { gentle: true, s: scene({ era: era() }) });
+    expect(off).toContain('data-era="era-1980-may-geumnam-ro"');
+    const m = /data-era="(era-198[^"]*)"/.exec(on);
+    expect(m, '일상 그림').not.toBeNull();
+    expect(m![1]).not.toBe('era-1980-may-geumnam-ro');
+    expect(on).toContain('data-dec="1980"');
+    expect(on).toContain('data-kind="daily"');
+    expect(on).not.toContain('광주');
+    expect(on).not.toContain('금남로');
+  });
+
+  it('승인된 그림이 없는 해(1992)는 빈 틀이다 — 링크도 그림도 없다', () => {
+    const out = html(lifeInYear(1992), { s: scene({ era: era() }) });
+    expect(out).toMatch(/<div class="era" id="scene-era" data-empty="true"/);
+    expect(out).not.toContain('<a class="era"');
+  });
+
+  it('같은 판·같은 해는 늘 같은 그림이다(같은 입력 → 같은 출력)', () => {
+    const g = lifeInYear(1975);
+    expect(html(g, { s: scene({ era: era() }) })).toBe(html(g, { s: scene({ era: era() }) }));
+  });
+
+  it('수저 구간 변주: 같은 1973년이라도 아래 구간(부모 재력 1·2)은 셋방, 위 구간(4·5)은 양옥 거실이 오른다', () => {
+    const g = lifeInYear(1973);
+    const wealthy = { ...g, character: { ...g.character!, parentWealth: 5 as const } } as GameState;
+    const poor = { ...g, character: { ...g.character!, parentWealth: 1 as const } } as GameState;
+    // 그림 카드의 수저 구간은 sceneInputOf의 wealth(부모 재력)에서 온다
+    expect(html(poor, { s: scene({ era: era() }) })).toContain('data-era="era-1970s-low-kerosene-room"');
+    expect(html(wealthy, { s: scene({ era: era() }) })).toContain('data-era="era-1970s-high-piano-living"');
   });
 });

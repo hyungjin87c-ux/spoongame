@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { EraRow } from '../src/core/eraWindow';
 import type { HistoryEntry } from '../src/core';
 import { lifeLineCount } from '../src/core/notes';
+import { HEAVY_KIND_NAME_MAX } from '../src/data/gentleText';
+import { SCENE_TEXT } from '../src/data/sceneText';
 import { EraLogRow } from '../src/ui/dash/EraRow';
 import { LogCard } from '../src/ui/dash/LogCard';
 import { isEraRow, logRows, mergeLogRows } from '../src/ui/dash/logOrder';
@@ -88,7 +90,7 @@ describe('EraLogRow — 줄의 구조(세 겹 구분)', () => {
     expect(out).toContain('data-veiled="true"');
     expect(out).toContain('시대의 창');
     expect(out).toContain('무거운 일이 있었습니다');
-    expect(out).toContain('시대의 큰 일');
+    expect(out).toContain('시대의 일');
     expect(out).toContain('aria-expanded="false"');
     expect(out).toMatch(/aria-controls="veil-era-1980"/);
     expect(out).toMatch(/<span class="veil__body log__sent" id="veil-era-1980" hidden="" data-testid="veil-body">5월의 일입니다\.<\/span>/);
@@ -103,5 +105,13 @@ describe('EraLogRow — 줄의 구조(세 겹 구분)', () => {
     // 화면은 최신순이라 시간순으로 그해 첫 기록 앞에 선 시대 줄은 그해 기록들 **아래**에 그려진다
     expect(with2.indexOf('id="log-y1982"')).toBeGreaterThan(with2.indexOf('열이 났습니다.'));
     expect(with2.indexOf('id="log-y1982"')).toBeLessThan(with2.indexOf('태어났습니다.'));
+  });
+});
+
+describe('문구 (R-548)', () => {
+  it('가리기 안내의 분류 이름 「시대의 일」은 6자 이하(HEAVY_KIND_NAME_MAX)이고, 안 쓰는 문구(eraEmpty)는 없다', () => {
+    expect(SCENE_TEXT.eraVeilKind).toBe('시대의 일');
+    expect(SCENE_TEXT.eraVeilKind.length).toBeLessThanOrEqual(HEAVY_KIND_NAME_MAX);
+    expect('eraEmpty' in SCENE_TEXT).toBe(false);
   });
 });

@@ -9,6 +9,8 @@ import { FitPair } from '../FitPair';
  * 인생 기록의 「시대의 창」 줄 (SPEC-009 FM5·FM2d, `docs/design/family-scene.md` 5-4절): 연표 줄 문법(`.log__row--tl`)의 다섯째 종류 `data-tl="era"`.
  *  - **저장하지 않는 파생 줄**이다(A-12): 인생 기록을 그릴 때 해마다 `eraOf`로 만든다. 판 길이 모델·`yearLineCount`·저장 크기·`history` 상한에 닿지 않는다.
  *  - 세 겹으로 다른 줄과 갈린다(색에만 의존하지 않는다): 새 색 토큰 `--c-era`(오디색) · 왼쪽 5px **겹선** · 표지 글자 「시대의 창」 + 창 아이콘 `#i-era`.
+ *  - **낭독·미읽음에서 뺀다**(FM5b R-547): 줄 목록은 `aria-live="polite"` 영역인데, 늦게 도착한 10년 덩어리가 과거 해의 시대 줄 수십 개를 한꺼번에 끼워도 읽히지 않게 이 줄에 `aria-live="off"`를 둔다(줄은 탐색하면 읽힌다).
+ *    「새 기록 N개」 수(`addedAbove`)와 읽던 자리 보존(`LogList`)도 이 줄의 끼어듦을 따로 다룬다.
  *  - 시대의 창 칸을 누르면 이 줄로 온다 — `id="log-y<연도>"`, `tabindex="-1"`(초점을 받는다), 잠깐 강조(`data-flash`). 줄의 id는 한 문서 안에서 유일하다.
  *  - 무거운 장면(`veiled`: 「무거운 장면 가리기」가 켜져 있고 재난·참상에 가까운 장면)은 기존 가리기 부품과 같은 모양 — 안내 + 「펼쳐 보기」, 원문은 `hidden`. 표지와 겹선은 가리지 않는다.
  */
@@ -16,7 +18,7 @@ import { FitPair } from '../FitPair';
 export function EraLogRow({ row, open, onToggle }: { row: EraRow; open: boolean; onToggle: () => void }) {
   const bodyId = `veil-era-${row.year}`;
   return (
-    <li className="log__row log__row--tl" data-kind="timeline" data-tl="era" id={`log-y${row.year}`} tabIndex={-1} data-veiled={row.veiled ? 'true' : undefined} data-testid="log-row-era">
+    <li className="log__row log__row--tl" data-kind="timeline" data-tl="era" id={`log-y${row.year}`} tabIndex={-1} aria-live="off" data-veiled={row.veiled ? 'true' : undefined} data-testid="log-row-era">
       <span className="log__age">
         {row.age}
         {DASH_TEXT.ageSuffix}

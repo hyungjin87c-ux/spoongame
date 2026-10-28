@@ -85,13 +85,34 @@ export function mergeLogRows(history: readonly HistoryEntry[], era: readonly Era
 }
 
 /**
- * 지난번 그렸을 때 맨 위였던 줄(`prevNewestKey`) 위에 새로 쌓인 줄 수. 상한에서 오래된 줄이 지워져 전체 길이가 그대로여도 센다.
+ * 지난번 그렸을 때 맨 위였던 줄(`prevNewestKey`) 위에 새로 쌓인 **기록** 줄 수. 상한에서 오래된 줄이 지워져 전체 길이가 그대로여도 센다.
+ * 시대의 창 줄(파생 줄)은 세지 않는다 — 늦게 도착한 10년 덩어리가 과거 해의 시대 줄을 한꺼번에 끼워도 「새 기록 N개」는 늘지 않는다 (FM5b R-547).
  * 지난 맨 위 줄이 이번 목록에 없으면(다른 판으로 바뀜) `null` — 호출한 쪽이 맨 위로 되돌린다.
  */
-export function addedAbove(rows: readonly { key: string }[], prevNewestKey: string | null): number | null {
+export function addedAbove(rows: readonly { key: string; era?: unknown }[], prevNewestKey: string | null): number | null {
   if (prevNewestKey === null) return 0;
   const at = rows.findIndex((r) => r.key === prevNewestKey);
-  return at === -1 ? null : at;
+  if (at === -1) return null;
+  return rows.slice(0, at).filter((r) => r.era === undefined).length;
+}
+
+/**
+ * 시대 줄의 구성이 달라졌는가 (FM5b R-547): 늦게 온 10년 덩어리·가리기 설정 변화가 아니라 **줄이 끼거나 빠진** 경우만 참이다. 기록 줄은 보지 않는다.
+ * 맨 위 줄이 그대로여도 시대 줄이 보던 줄 위에 끼면 보던 줄이 밀리므로, `LogList`가 이때도 보던 자리를 지킨다(새 기록 수는 늘리지 않는다).
+ */
+export function eraKeysChanged(prev: readonly { key: string; era?: unknown }[], next: readonly { key: string; era?: unknown }[]): boolean {
+  const keys = (rows: readonly { key: string; era?: unknown }[]): string => rows.filter((r) => r.era !== undefined).map((r) => r.key).join('|');
+  return keys(prev) !== keys(next);
+}
+
+/**
+ * 맨 위 줄은 그대로인데 시대 줄만 끼거나 빠졌을 때의 스크롤 계획 (FM5b R-547). 맨 위를 보고 있었거나 「맨 위로」가 올라가는 중이면 건드리지 않고(`null`),
+ * 읽는 중이면 보던 줄이 밀린 만큼 옮겨 그 줄의 화면 위치를 지킨다. 「새 기록」 수는 늘지 않는다.
+ */
+export function eraInsertPlan(input: { scrollTop: number; shift: number; follow: boolean }): number | null {
+  if (input.follow || isAtLogTop(input.scrollTop)) return null;
+  if (Math.abs(input.shift) < RESIZE_EPSILON) return null;
+  return Math.max(0, input.scrollTop + input.shift);
 }
 
 /** 스크롤 위치 `scrollTop`이 맨 위(가장 최근)를 보는 범위인가 */

@@ -23,6 +23,8 @@ import {
   type SceneSpec,
 } from '../src/core';
 import { FIGURE_ID, INFANT_CARRIED, MAX_PIECES, PIECE_BY_ID, PLANNED_PIECES, SCENE_PIECE_COUNT, pieceInYear, regionKindOf } from '../src/data/sceneTables';
+import { FAMILY_ART } from '../src/data/familyArt';
+import { detachedH1Markup } from '../src/data/familyArt/house';
 import { spreadSeeds } from './helpers/familyGolden';
 
 /**
@@ -37,7 +39,8 @@ function gameOf(seed: number, gen: ProfileId): GameState {
 /** 20세 이상은 가족 집에 사는 것으로 한다 */
 const at = (g: GameState, age: number): GameState => ({ ...g, age, assets: age >= 20 ? { net: 0, income: 0, debt: 0, incomeAdj: 0, dwelling: 'family' } : null }) as GameState;
 
-const PER_GEN = 25;
+/** 7세대 × 100판 (R-546: FH5의 「7세대 × 100판」 — 25판이던 것을 올렸다) */
+const PER_GEN = 100;
 const SAMPLES = GENERATION_IDS.flatMap((gen, gi) => spreadSeeds(PER_GEN, gi).map((seed) => ({ gen, seed, game: gameOf(seed, gen) })));
 const AGES = Array.from({ length: 101 }, (_, i) => i);
 
@@ -60,7 +63,7 @@ function input(over: Partial<SceneInput['state']> = {}, top: Partial<SceneInput>
 
 const placed = (s: SceneSpec) => [s.bg, ...s.back, s.house, ...s.front, ...s.pets, ...s.family];
 
-describe('sceneOf — 순수성·유효성·모순 0 (7세대 × 25판 × 0~100세)', () => {
+describe('sceneOf — 순수성·유효성·모순 0 (7세대 × 100판 × 0~100세)', () => {
   it('같은 입력 → 같은 출력: 두 번 만든 spec·열쇠·한 줄이 모두 같다(Date·Math.random 없음)', () => {
     let n = 0;
     for (const s of SAMPLES.slice(0, 80)) {
@@ -162,7 +165,7 @@ describe('sceneOf — 순수성·유효성·모순 0 (7세대 × 25판 × 0~100�
     expect(SCENE_PIECE_COUNT).toBeLessThanOrEqual(PLANNED_PIECES + 1); // 계획 87 + 요양 시설 1 (소품 3은 아직 이름이 없다)
   });
 
-  it('한 줄 sceneLineOf(FH3): 항상 ≤ 40자·말줄임 없음·완전한 문장이고, 주인공 혼자인 판은 「혼자 지냅니다」다 (7세대 × 25판 × 0~100세)', () => {
+  it('한 줄 sceneLineOf(FH3): 항상 ≤ 40자·말줄임 없음·완전한 문장이고, 주인공 혼자인 판은 「혼자 지냅니다」다 (7세대 × 100판 × 0~100세)', () => {
     for (const s of SAMPLES) {
       for (const age of AGES) {
         const inp = sceneInputOf(at(s.game, age));
@@ -259,8 +262,17 @@ describe('집 고르기 · 주택 종류가 없을 때(homeKind null)의 기본 
     const rural = (wealth: 1 | 2 | 3 | 4 | 5, year: number) => sceneOf(input({ calYear: year, housing: 'own' }, { region: '강원', wealth })).house.opt?.roof;
     expect(rural(1, 1955)).toBe('thatch');
     expect(rural(3, 1955)).toBeUndefined();
-    expect(rural(1, 1975)).toBe('thatch'); // ~1975는 h2 밴드에서도 초가 (그 밴드의 대신 그림이 지붕 파라미터가 있는 조각)
+    expect(rural(1, 1969)).toBe('thatch'); // 지붕 파라미터가 있는 집은 h1(~1969)뿐이다
+    // FM5b: 1970~75의 단독 h2는 designer가 그린 슬래브 양옥(지붕이 하나뿐)이라 초가 조건(~1975)을 채워도 지붕 값이 없다 — designer 질문(보고)
+    expect(rural(1, 1975)).toBeUndefined();
+    expect(sceneOf(input({ calYear: 1975, housing: 'own' }, { region: '강원', wealth: 1 })).house.id).toBe('house-detached-h2');
     expect(rural(1, 1976)).toBeUndefined();
+    // 실제로 그려지는 지붕까지 본다(opt가 없을 때 기본 지붕이 기와여야 한다)
+    const metro = sceneOf(input({ calYear: 1965, housing: 'own' }, { region: '서울', wealth: 4 }));
+    expect(metro.house.id).toBe('house-detached-h1');
+    expect(FAMILY_ART.piece(metro.house.id, metro.house.opt)).toBe(detachedH1Markup('tile'));
+    const farm = sceneOf(input({ calYear: 1955, housing: 'own' }, { region: '강원', wealth: 1 }));
+    expect(FAMILY_ART.piece(farm.house.id, farm.house.opt)).toBe(detachedH1Markup('thatch'));
   });
 });
 

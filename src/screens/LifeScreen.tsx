@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { SPEEDS, buildFeedbackUrl, calendarYear, eraRowsOf, famSeedOf, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
+import { SPEEDS, bandOfWealth, buildFeedbackUrl, calendarYear, eraRowsOf, famSeedOf, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { eventPool } from '../core/gameData';
 import { DASH_TEXT } from '../data/dashText';
@@ -318,8 +318,8 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
   const calYear = calendarYear(c.birthYear, game.age);
   const sceneArt = useSceneArt(c.birthYear, calYear);
   const eraRows = useMemo(
-    () => eraRowsOf(c.birthYear, game.age, { regionKey: game.birthReport.region, gentle: settings.gentle, seed: famSeedOf(game.peerSeed ?? game.seed), windows: sceneArt.era.windows }),
-    [c.birthYear, game.age, game.birthReport.region, game.peerSeed, game.seed, settings.gentle, sceneArt.era.windows],
+    () => eraRowsOf(c.birthYear, game.age, { regionKey: game.birthReport.region, gentle: settings.gentle, seed: famSeedOf(game.peerSeed ?? game.seed), windows: sceneArt.era.windows, band: bandOfWealth(c.parentWealth) }),
+    [c.birthYear, c.parentWealth, game.age, game.birthReport.region, game.peerSeed, game.seed, settings.gentle, sceneArt.era.windows],
   );
   // 진행 줄·도구 줄의 입력 가드: 화면이 뜰 때 + 카드를 접거나 다시 연 직후(U9). 접기 더블탭의 둘째 입력이 시트가 사라진 자리의 컨트롤에 떨어지지 않게 한다
   const controlsGuard = controlsGuardKey(guardEpoch);

@@ -1,10 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { GameState } from '../src/core/types';
 import { KNOWN_SEED, SETTINGS_KEY, findPendingState, injectSave, lifeState, noHorizontalOverflow, readSave, skipRoulette, toBirthReport } from './helpers';
 
 /**
  * 집과 가족 그림 카드 · 시대의 창 칸 · 인생 기록 시대 줄 (SPEC-009 FM5, FH1·FH4·FH6·FH9·FT1~FT6). 실제 브라우저(Chromium) — desktop(1280×800)과 mobile-360 두 프로젝트에서 돈다.
  * 구조·문구·접근성 속성은 tests/sceneCard.test.tsx(서버 렌더)가 보고, 여기서는 **실제 폭·연속 동작**을 본다: PC 2:1 · 360 띠(80px) 배치, 접기 저장, 해가 바뀔 때 그림·연도 표, 가로 넘침 0, 다크, 움직임 줄이기,
- * 그림 덩어리 요청 실패·재시도, 승인된 그림 0장일 때 빈 틀.
+ * 그림 덩어리 요청 실패·재시도, 승인된 그림이 없는 해의 빈 틀, 승인된 그림이 있는 해(1980년 무렵)의 창(FM5b): 톤 A 필터·색 class 규칙이 실제로 칠해지는지, 가리기, 창 → 그해 줄 이동, 늦게 온 10년 덩어리가 읽던 자리를 밀지 않는지.
  */
 
 /** 개발 서버 전용 탐침: 연출 시간을 N배 빠르게(실제로 기다리지 않는다) */
@@ -85,7 +86,7 @@ test('배치(FM2d): PC는 집 : 시대의 창 = 2 : 1(둘 사이 8px, 높이가 
   expect(vw).toBeGreaterThan(0);
 });
 
-test('승인된 그림이 0장이면 시대의 창은 빈 틀이다: 링크도 그림도 없고, 인생 기록에 시대 줄(data-tl="era")이 없다 — 연도 표만 보인다', async ({ page }) => {
+test('승인된 그림이 없는 해(2016년 — 2000년대 이후는 승인된 장면이 없다)의 시대의 창은 빈 틀이다: 링크도 그림도 없고, 인생 기록에 시대 줄(data-tl="era")이 없다 — 연도 표만 보인다', async ({ page }) => {
   await injectSave(page, still(), FAST, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
   await expect(page.locator('#scene-era')).toHaveAttribute('data-empty', 'true');
@@ -269,4 +270,123 @@ test('가운데 열 순서(FH1): 결정 카드가 떠 있어도(자동 모드 �
   await expect(page.locator('[role="dialog"]')).toBeVisible();
   expect(await before(page, '[data-testid="family-scene"]', '[data-testid="log"]')).toBe(true);
   expect(await noHorizontalOverflow(page)).toBe(true);
+});
+
+// ---------------------------------------------------------------- 승인된 시대의 창 그림 (FM5b)
+
+/** 1975년생 X세대 5세 = 1980년의 멈춘 판 — 형진 님이 승인한 시대의 창 그림이 있는 해(금남로). 나이마다 기록 줄 `perAge`개 */
+function era1980(perAge = 1): GameState {
+  const base = lifeState(KNOWN_SEED);
+  const history: GameState['history'] = [{ age: 0, kind: 'stage', text: '1975년 1월, 서울특별시의 평범한 가정에서 3.2kg 남자아이로 태어났습니다. 첫째입니다.' }];
+  for (let a = 0; a <= 5; a++) for (let j = 0; j < perAge; j++) if (!(a === 0 && j === 0)) history.push({ age: a, kind: 'event', text: `${a}세 ${j}번째 일입니다.`, eventId: `e${a}-${j}` });
+  return { ...base, generation: 'genx', character: { ...base.character!, birthYear: 1975 }, age: 5, paused: true, history };
+}
+
+test('승인된 그림(FM5b): 1980년 무렵 판의 창에 금남로 그림이 오르고, 톤 A 필터(1980년대 세피아 .18)와 색 class 규칙이 실제로 칠해지며, 접근 이름은 문장이다', async ({ page }) => {
+  await injectSave(page, era1980(), FAST, MANUAL);
+  await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
+  const era = page.locator('#scene-era');
+  await expect(era).toHaveAttribute('data-era', 'era-1980-may-geumnam-ro', { timeout: 15_000 });
+  await expect(era).toHaveAttribute('data-dec', '1980');
+  await expect(era).toHaveAttribute('href', '#log-y1980');
+  expect(await page.locator('#scene-era svg rect').count(), '도형이 있다 — 빈 틀이 아니다').toBeGreaterThan(30);
+  // 색은 class 규칙이 칠한다: 하늘 면(e-sky)이 토큰 --c-scene-sky(#dfe6ed)다. 칠이 없으면 SVG 기본값(검정)이 된다
+  const fill = await page.locator('#scene-era svg .e-sky').first().evaluate((el) => getComputedStyle(el).fill);
+  expect(fill).toBe('rgb(223, 230, 237)');
+  // 톤 A: 1980년대 필터(세피아 .18)
+  const filter = await page.locator('#scene-era svg').first().evaluate((el) => getComputedStyle(el).filter);
+  expect(filter).toContain('sepia(0.18)');
+  await expect(era).toHaveAccessibleName(/시대의 창 · 5월, 광주에 민주화 시위가 있었습니다\. 그해 기록으로/);
+  const b = (await era.boundingBox())!;
+  expect(b.width).toBeGreaterThan(90);
+  expect(await noHorizontalOverflow(page)).toBe(true);
+});
+
+test('승인된 그림 · 다크: 같은 그림이 다크 토큰으로 칠해지고 톤 A 필터가 약해진다(세피아 .08)', async ({ page }) => {
+  await injectSave(page, era1980(), FAST, { ...MANUAL, theme: 'dark' });
+  await expect(page.locator('#scene-era')).toHaveAttribute('data-era', 'era-1980-may-geumnam-ro', { timeout: 15_000 });
+  const fill = await page.locator('#scene-era svg .e-sky').first().evaluate((el) => getComputedStyle(el).fill);
+  expect(fill).toBe('rgb(30, 38, 51)'); // 다크 --c-scene-sky #1e2633
+  const filter = await page.locator('#scene-era svg').first().evaluate((el) => getComputedStyle(el).filter);
+  expect(filter).toContain('sepia(0.08)');
+});
+
+test('무거운 장면 가리기(FM5b): 꺼짐이면 1980년 금남로 그림과 원문 시대 줄, 켜면 그해 일상 그림으로 바뀌고 시대 줄은 가려진다(펼쳐 보기)', async ({ page }) => {
+  await injectSave(page, era1980(), FAST, { ...MANUAL, gentle: false });
+  await expect(page.locator('#scene-era')).toHaveAttribute('data-era', 'era-1980-may-geumnam-ro', { timeout: 15_000 });
+  const row = page.locator('#log-y1980');
+  await expect(row).toContainText('5월, 광주에 민주화 시위가 있었습니다.');
+  await expect(row).not.toHaveAttribute('data-veiled', 'true');
+  await injectSave(page, era1980(), FAST, { ...MANUAL, gentle: true });
+  const era = page.locator('#scene-era');
+  await expect(era).toHaveAttribute('data-kind', 'daily', { timeout: 15_000 });
+  await expect(era).toHaveAttribute('data-dec', '1980');
+  expect(await era.getAttribute('data-era')).not.toBe('era-1980-may-geumnam-ro');
+  expect(await page.locator('#scene-era svg rect').count(), '일상 그림이 오른다').toBeGreaterThan(20);
+  const veiled = page.locator('#log-y1980');
+  await expect(veiled).toHaveAttribute('data-veiled', 'true');
+  await expect(veiled.getByTestId('veil-btn')).toBeVisible();
+  await expect(veiled.locator('.veil__body')).toBeHidden(); // 원문은 hidden — 펼치기 전에는 보이지 않는다
+});
+
+test('창 → 그해 줄(FM5b): 시대의 창을 누르면 인생 기록의 그해 시대 줄로 가서 초점을 받고 잠깐 강조되며, 주소(#)는 바뀌지 않는다', async ({ page }) => {
+  await injectSave(page, era1980(8), FAST, MANUAL);
+  const era = page.locator('#scene-era');
+  await expect(era).toHaveAttribute('data-era', 'era-1980-may-geumnam-ro', { timeout: 15_000 });
+  await expect(page.locator('#log-y1980')).toHaveCount(1, { timeout: 15_000 });
+  const urlBefore = page.url();
+  await era.click();
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('log-y1980');
+  await expect(page.locator('#log-y1980')).toHaveAttribute('data-flash', 'true');
+  expect(page.url(), '뒤로가기 기록을 더럽히지 않는다').toBe(urlBefore);
+  // 강조는 잠깐 뒤에 꺼진다
+  await expect(page.locator('#log-y1980')).not.toHaveAttribute('data-flash', 'true', { timeout: 6_000 });
+  // 키보드: 창은 초점 정지점 하나이고 Enter로도 같다
+  await era.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('log-y1980');
+});
+
+test('늦게 온 10년 덩어리(FM5b R-547): 아래에서 지난 기록을 읽는 중에 과거 해의 시대 줄이 한꺼번에 끼어도 읽던 줄이 움직이지 않고, 「새 기록 N개」는 생기지 않는다', async ({ page }) => {
+  let release = (): void => undefined;
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
+  await page.route(/\/eraWindows\/d19\d0\.ts/, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await injectSave(page, era1980(9), FAST, MANUAL);
+  await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
+  expect(await page.locator('[data-tl="era"]').count(), '덩어리가 오기 전에는 시대 줄이 없다').toBe(0);
+  const list = page.getByTestId('log-list');
+  // 맨 아래(오래된 기록)를 읽는 중
+  // (.log__list는 scroll-behavior: smooth라 즉시 이동으로 — 미끄러지는 중에 재면 읽던 자리가 흔들린다)
+  await list.evaluate((el) => {
+    el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
+  });
+  await page.waitForTimeout(250);
+  // 읽는 줄 = 영역 윗변에 걸친 첫 줄(보정이 붙드는 줄). 그 줄의 글과 윗변에서의 거리를 기억해 두었다가 덩어리가 온 뒤 같은 줄을 찾아 잰다
+  const reading = await page.evaluate(() => {
+    const box = document.querySelector('[data-testid="log-list"]')!.getBoundingClientRect();
+    const row = [...document.querySelectorAll('[data-testid="log-row"]')].find((r) => r.getBoundingClientRect().bottom > box.top + 0.5)!;
+    return { text: row.textContent ?? '', top: row.getBoundingClientRect().top - box.top };
+  });
+  expect(reading.text, '읽는 줄은 기록 줄이다').toMatch(/번째 일입니다|태어났습니다/);
+  const topOf = (): Promise<number> =>
+    page.evaluate((text) => {
+      const row = [...document.querySelectorAll('[data-testid="log-row"]')].find((r) => r.textContent === text);
+      const box = document.querySelector('[data-testid="log-list"]')!;
+      return row!.getBoundingClientRect().top - box.getBoundingClientRect().top;
+    }, reading.text);
+  const before = reading.top;
+  const scrollBefore = await list.evaluate((el) => el.scrollTop);
+  expect(scrollBefore, '아래에서 읽는 중이어야 한다').toBeGreaterThan(24);
+  release();
+  await expect.poll(() => page.locator('[data-tl="era"]').count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(5);
+  await page.waitForTimeout(400);
+  const after = await topOf();
+  expect(Math.abs(after - before), `읽던 줄이 ${before} → ${after}로 밀렸다`).toBeLessThan(2);
+  expect(await list.evaluate((el) => el.scrollTop), '시대 줄이 끼며 스크롤 위치가 보정됐다').toBeGreaterThan(scrollBefore);
+  await expect(page.getByTestId('log-jump')).toHaveCount(0);
 });

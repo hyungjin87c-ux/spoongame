@@ -3,11 +3,12 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { startLife } from '../scripts/simulateLib';
 import { playToEnd, type HistoryEntry } from '../src/core';
+import type { EraRow } from '../src/core/eraWindow';
 import { appendHistory } from '../src/core/history';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { LogCard } from '../src/ui/dash/LogCard';
 import { LogList } from '../src/ui/dash/LogList';
-import { LOG_TOP_SLACK, RESIZE_EPSILON, addedAbove, isAtLogTop, logRowKeys, logRows, resizePlan, scrollPlan } from '../src/ui/dash/logOrder';
+import { LOG_TOP_SLACK, RESIZE_EPSILON, addedAbove, eraInsertPlan, eraKeysChanged, isAtLogTop, isEraRow, logRowKeys, logRows, mergeLogRows, resizePlan, scrollPlan } from '../src/ui/dash/logOrder';
 
 /**
  * 인생 기록 최신순 (SPEC-005 QI1, LR1~LR7) — 순서·키·위치 보정 계획·문구·CSS 규칙을 확인한다.
@@ -332,5 +333,69 @@ describe('LR2 문구 · LR4 접근성 · CSS 규칙', () => {
     // 단계 줄의 구분선은 줄 아래(LR3)
     expect(rule('.log__row--stage')).toMatch(/border-bottom: 2px solid var\(--c-border-strong\)/);
     expect(rule('.log__row--stage')).not.toMatch(/border-top/);
+  });
+});
+
+describe('R-547 시대 줄(파생 줄)은 「새 기록 N개」·읽던 자리 보존·낭독과 겹치지 않는다 — 늦게 온 10년 덩어리를 흉내 낸 합성 시험 (FM5b)', () => {
+  const eraRow = (year: number): EraRow => ({ year, age: year - 1950, line: `${year}년의 한 줄입니다.`, heavy: false, veiled: false });
+  const hist = (n: number): HistoryEntry[] => Array.from({ length: n }, (_, i) => ({ age: i, kind: 'event' as const, text: `${i}세의 일입니다.`, eventId: `ev-${i}` }));
+
+  it('addedAbove는 기록 줄만 센다: 시대 줄이 맨 위 기록 줄 위에 끼어도 수가 늘지 않는다', () => {
+    const before = mergeLogRows(hist(5), [eraRow(1951), eraRow(1953)]);
+    const newest = before.find((r) => !isEraRow(r))!.key;
+    // 늦게 도착한 덩어리가 과거 해(0~4세)의 시대 줄 다섯을 한꺼번에 끼운다 + 현재 해(맨 위 기록 앞) 시대 줄
+    const after = mergeLogRows(hist(5), [eraRow(1950), eraRow(1951), eraRow(1952), eraRow(1953), eraRow(1954)]);
+    expect(addedAbove(after, newest)).toBe(0);
+    // 기록 줄이 둘 쌓이고 시대 줄이 셋 같이 끼면 기록 줄 둘만 센다
+    const grown = mergeLogRows([...hist(5), { age: 5, kind: 'event', text: '다섯 살의 일입니다.' }, { age: 5, kind: 'event', text: '또 하나입니다.' }], [eraRow(1950), eraRow(1951), eraRow(1952), eraRow(1953), eraRow(1954), eraRow(1955)]);
+    expect(addedAbove(grown, newest)).toBe(2);
+    // 시대 줄이 하나도 없는 기존 동작은 그대로
+    expect(addedAbove(logRows(hist(5)), null)).toBe(0);
+  });
+
+  it('eraKeysChanged: 시대 줄이 끼거나 빠졌을 때만 참 — 기록 줄만 바뀌거나 아무것도 안 바뀌면 거짓', () => {
+    const a = mergeLogRows(hist(5), [eraRow(1951)]);
+    expect(eraKeysChanged(a, a)).toBe(false);
+    expect(eraKeysChanged(a, mergeLogRows(hist(5), [eraRow(1951)]))).toBe(false);
+    expect(eraKeysChanged(a, mergeLogRows(hist(6), [eraRow(1951)]))).toBe(false); // 기록 줄만 늘었다
+    expect(eraKeysChanged(a, mergeLogRows(hist(5), [eraRow(1950), eraRow(1951)]))).toBe(true); // 늦게 온 덩어리
+    expect(eraKeysChanged(a, mergeLogRows(hist(5), []))).toBe(true);
+    // 가리기 켜고 끄기(veiled 표시)는 줄의 집합을 바꾸지 않는다
+    expect(eraKeysChanged(a, mergeLogRows(hist(5), [{ ...eraRow(1951), veiled: true, heavy: true }]))).toBe(false);
+  });
+
+  it('eraInsertPlan: 맨 위를 보고 있었으면 가만히(null), 읽는 중이면 보던 줄이 밀린 만큼 내려 그 줄의 화면 위치를 지킨다 — 「맨 위로」가 올라가는 중이면 건드리지 않는다', () => {
+    expect(eraInsertPlan({ scrollTop: 0, shift: 400, follow: false })).toBeNull();
+    expect(eraInsertPlan({ scrollTop: LOG_TOP_SLACK, shift: 400, follow: false })).toBeNull();
+    expect(eraInsertPlan({ scrollTop: 600, shift: 0, follow: false })).toBeNull();
+    expect(eraInsertPlan({ scrollTop: 600, shift: RESIZE_EPSILON - 0.01, follow: false })).toBeNull();
+    expect(eraInsertPlan({ scrollTop: 600, shift: 360, follow: false })).toBe(960);
+    expect(eraInsertPlan({ scrollTop: 600, shift: 360, follow: true })).toBeNull();
+    // 위치는 0 밑으로 내려가지 않는다(시대 줄이 빠져 위로 당겨질 때)
+    expect(eraInsertPlan({ scrollTop: 100, shift: -500, follow: false })).toBe(0);
+    // 수식: 보던 줄의 새 화면 위치 = 옛 화면 위치
+    const before = 300; // 보던 줄이 영역 윗변에서 떨어진 거리
+    const shift = 360;
+    const top = eraInsertPlan({ scrollTop: 600, shift, follow: false })!;
+    expect(before + shift - (top - 600)).toBe(before);
+  });
+
+  it('LogList가 늦게 온 시대 줄에도 보던 자리를 지킨다: 맨 위 줄이 그대로여도 시대 줄 구성이 바뀌면 스냅샷을 잡고(eraKeysChanged), 새 기록이 없으면 eraInsertPlan으로만 움직이며 「새 기록」 수는 늘리지 않는다', async () => {
+    const src = await readText('../src/ui/dash/LogList.tsx');
+    expect(src).toContain("newestBefore === (this.props.rows[0]?.key ?? null) && !eraKeysChanged(prev.rows, this.props.rows)");
+    expect(src).toMatch(/if \(added <= 0\) \{[\s\S]*eraInsertPlan\([\s\S]*this\.remember\(rows\);\s*return;\s*\}/);
+    // 위쪽 분기(새 기록)에서만 onUnread를 부른다
+    const eraBranch = src.slice(src.indexOf('if (added <= 0) {'), src.indexOf('const plan = scrollPlan('));
+    expect(eraBranch).not.toContain('onUnread');
+  });
+
+  it('시대 줄은 낭독에서 빠진다: 줄 목록이 aria-live=polite·additions여도 시대 줄 li에는 aria-live="off"가 있고, 기록 줄 li에는 없다', () => {
+    const out = renderToStaticMarkup(<LogCard history={hist(3)} live eraRows={[eraRow(1950), eraRow(1951)]} />);
+    expect(out).toMatch(/<ol aria-live="polite" aria-relevant="additions"/);
+    const lis = out.match(/<li [^>]*>/g) ?? [];
+    const eraLis = lis.filter((l) => l.includes('data-tl="era"'));
+    expect(eraLis.length).toBe(2);
+    for (const l of eraLis) expect(l, '시대 줄').toContain('aria-live="off"');
+    for (const l of lis.filter((x) => !x.includes('data-tl="era"'))) expect(l, '기록 줄').not.toContain('aria-live');
   });
 });

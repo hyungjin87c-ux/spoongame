@@ -19,3 +19,8 @@ declare module 'node:fs' {
 declare module 'node:child_process' {
   export function execFileSync(file: string, args: string[], options: { encoding: 'utf-8'; maxBuffer?: number }): string;
 }
+
+/** scripts/genEraWindows.ts: 만든 덩어리의 gzip 크기를 보고한다 */
+declare module 'node:zlib' {
+  export function gzipSync(data: string): { length: number };
+}

@@ -1,8 +1,10 @@
 import { createElement, type ReactNode } from 'react';
+import { SCENE_TOKEN_NAMES } from '../data/sceneTables';
 
 /**
  * 그림 조각 마크업(문자열) → React 노드 (SPEC-009 FM5). `dangerouslySetInnerHTML`을 쓰지 않는다(CR-UI, `tests/innerHtml.test.ts`) — 우리 저장소의 조각 마크업을 **허용 목록**(태그·속성)만 통과시켜 React 요소로 옮긴다:
  * 목록 밖 태그·`on*` 속성·`style`·바깥 주소(`href`는 `#id`만)·`<script>` 따위는 **버린다**. 조각 마크업은 `familyArt` 덩어리의 상수라 사용자 글이 들어올 길이 없지만, 그림이 늘 때(designer 파일 → 덩어리) 한 번 더 막는다.
+ * **`class`는 허용 목록에 있는 것만** 통과한다(FM5b R-549): 시대의 창 조각의 색 규칙 `e-<토큰>`(채움) · `es-`(선) · `et-`·`eb-`·`eh-`·`ek-`(사람 `<use>`의 윗옷·아래·머리·모자 색 변수)뿐이고, 규칙 자체는 `styles/family.css`의 토큰 규칙이다 — 조각 안의 `<style>` 태그는 허용 목록 밖이라 버려진다.
  * 같은 화면에 그림이 둘일 때(교차 페이드) `<pattern id>`가 겹치지 않게 `id`·`url(#…)`·`href="#…"`에 **인스턴스 접두어**를 붙인다(family-scene.md 4절).
  */
 
@@ -17,11 +19,21 @@ const ATTR_NAME: Readonly<Record<string, string>> = {
   'fill-opacity': 'fillOpacity',
   'fill-rule': 'fillRule',
   'clip-rule': 'clipRule',
+  class: 'className',
 };
 const ATTRS = new Set([
   'x', 'y', 'x1', 'x2', 'y1', 'y2', 'cx', 'cy', 'r', 'rx', 'ry', 'width', 'height', 'd', 'points', 'transform', 'fill', 'stroke', 'opacity', 'id', 'href', 'viewBox', 'patternUnits', 'patternTransform',
   'strokeWidth', 'strokeLinecap', 'strokeLinejoin', 'strokeDasharray', 'strokeOpacity', 'fillOpacity', 'fillRule', 'clipRule',
+  'className', 'preserveAspectRatio', 'overflow',
 ]);
+
+/** 허용되는 `class` 이름: 색 토큰 규칙뿐 (`e-sky` · `es-ink` · `et-cloth3` · `eb-cloth1` · `eh-hair` · `ek-roof2` …) */
+export const ALLOWED_CLASSES: ReadonlySet<string> = new Set(['e', 'es', 'et', 'eb', 'eh', 'ek'].flatMap((p) => SCENE_TOKEN_NAMES.map((t) => `${p}-${t}`)));
+/** 값이 정해진 속성 */
+const SPECIAL_VALUE: Readonly<Record<string, RegExp>> = {
+  overflow: /^visible$/,
+  preserveAspectRatio: /^(none|x(Min|Mid|Max)Y(Min|Mid|Max)( (meet|slice))?)$/,
+};
 /** 값에 들어갈 수 없는 것: 태그 시작 · 스크립트 주소 · 바깥 주소 */
 const BAD_VALUE = /[<>]|javascript:|data:|https?:|\/\//i;
 
@@ -70,6 +82,12 @@ export function parseSvgMarkup(markup: string, inst: string): SvgNode[] {
     for (const a of rawAttrs.matchAll(ATTR)) {
       const name = ATTR_NAME[a[1]] ?? a[1];
       if (!ATTRS.has(name) || /^on/i.test(name) || BAD_VALUE.test(a[2])) continue;
+      if (name === 'className') {
+        const ok = a[2].split(/\s+/).filter((c) => ALLOWED_CLASSES.has(c));
+        if (ok.length > 0) props.className = ok.join(' ');
+        continue;
+      }
+      if (SPECIAL_VALUE[name] !== undefined && !SPECIAL_VALUE[name].test(a[2])) continue;
       const value = prefixed(name, a[2], inst);
       if (value === '' && name === 'href') continue;
       props[name] = value;

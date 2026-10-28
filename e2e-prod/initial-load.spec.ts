@@ -170,7 +170,7 @@ for (const vp of VIEWPORTS) {
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
   });
 
-  test(`지연 로드 — ${vp.name}: 인생 화면이 뜬 뒤에야 집과 가족 그림 덩어리를 한 번 받고(표 덩어리와 따로), 승인된 그림이 없는 시대의 창 덩어리는 받지 않는다 (SPEC-009 FM5·A-10)`, async ({ page, baseURL }) => {
+  test(`지연 로드 — ${vp.name}: 인생 화면이 뜬 뒤에야 집과 가족 그림 덩어리를 한 번 받고(표 덩어리와 따로, ≤ 16KB), 시대의 창 10년 덩어리는 승인된 그림이 있는 10년대만 하나씩(각 ≤ 24KB, 한 번에 받는 양 ≤ 75KB) 받는다 (SPEC-009 FM5·FM5b·A-10)`, async ({ page, baseURL }) => {
     await page.setViewportSize({ width: vp.width, height: vp.height });
     const origin = new URL(baseURL ?? 'http://localhost:4199').origin;
     const MARKS = await dataMarks();
@@ -194,12 +194,23 @@ for (const vp of VIEWPORTS) {
     expect(c.requested.length, '인생 화면이 뜬 뒤 새 요청이 있어야 한다(그림 덩어리)').toBeGreaterThan(before);
     const art = got.filter((g) => g.body?.includes(MARKS.art));
     expect(art.length, `집과 가족 그림 덩어리를 한 번 받았다: ${describeGot(got)}`).toBe(1);
-    expect(art[0].bytes, `그림 덩어리 gzip ${art[0].bytes}B ≤ 75KB(FH8 합계 한도 — 시대의 창 하위 덩어리 별도)`).toBeLessThanOrEqual(75 * 1024);
+    expect(art[0].bytes, `그림 덩어리 gzip ${art[0].bytes}B ≤ 16KB(FH8 — 집과 가족 그림 조각 58 + 식구 코드)`).toBeLessThanOrEqual(16 * 1024);
     console.log(`[SPEC-009 A-10 ${vp.name}] 그림 덩어리 ${art[0].file} ${art[0].bytes} B(gzip)`);
     // 표 덩어리(familyData)와는 다른 파일이다 — 따로 지연 로드
     expect(got.filter((g) => g.body?.includes(MARKS.family)).map((g) => g.file)).not.toContain(art[0].file);
-    // 승인된 그림이 없는 10년 덩어리는 요청하지 않는다(지금 0장)
-    expect(got.filter((g) => /^d(19|20)\d0-/.test(g.file)).map((g) => g.file), '시대의 창 10년 덩어리').toEqual([]);
+    // 시대의 창 10년 덩어리: 출생 10년대부터 승인된 그림이 있는 10년대(1940~1990년대)만 받는다 — 없는 10년대(2000년대~)는 요청하지 않고, 각 ≤ 24KB(gzip), 같은 덩어리는 한 번만
+    const eraChunks = got.filter((g) => /^d(19|20)\d0-/.test(g.file));
+    for (const g of eraChunks) {
+      expect(/^d19[4-9]0-/.test(g.file), `${g.file}: 승인된 그림이 없는 10년대 덩어리를 받았다`).toBe(true);
+      expect(g.bytes, `${g.file} gzip ${g.bytes}B ≤ 24KB(10년 덩어리)`).toBeLessThanOrEqual(24 * 1024);
+    }
+    expect(new Set(eraChunks.map((g) => g.file)).size, '같은 10년 덩어리를 두 번 받지 않는다').toBe(eraChunks.length);
+    // 판 하나가 한 번에 받는 양 = 그림 덩어리 + 표 덩어리 + 가장 큰 10년 덩어리 ≤ 75KB (마스터 결정 FH8)
+    const tables = got.filter((g) => g.body?.includes(MARKS.family));
+    const maxEra = Math.max(0, ...eraChunks.map((g) => g.bytes));
+    const oneShot = art[0].bytes + tables.reduce((n, g) => n + g.bytes, 0) + maxEra;
+    console.log(`[FM5b ${vp.name}] 한 번에 받는 양 ${oneShot} B = 그림 ${art[0].bytes} + 표 ${tables.map((g) => g.bytes).join('+')} + 최대 10년 ${maxEra} (받은 10년 덩어리 ${eraChunks.map((g) => `${g.file} ${g.bytes}`).join(', ') || '없음'})`);
+    expect(oneShot, `한 번에 받는 양 ${oneShot}B ≤ 75KB`).toBeLessThanOrEqual(75 * 1024);
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
   });
 

@@ -47,7 +47,7 @@ function neededDecades(art: FamilyArt | null, birthYear: number, calYear: number
 export interface EraData {
   /** 지금까지 받은 승인된 장면 전부(10년 덩어리의 합) */
   windows: readonly EraWindow[];
-  /** 장면 id → 그림 조각 마크업 */
+  /** 장면 id → 그림 마크업(그 10년 덩어리의 defs + 조각 도형) */
   art: Readonly<Record<string, string>>;
 }
 const NONE: EraData = { windows: [], art: {} };
@@ -59,7 +59,7 @@ const NONE: EraData = { windows: [], art: {} };
 export function useEraData(art: FamilyArt | null, birthYear: number, calYear: number): EraData {
   const decades = neededDecades(art, birthYear, calYear);
   const key = decades.join(',');
-  const read = (): EraData => merge(decades.map((d) => eraDecadeIfLoaded(d)));
+  const read = (): EraData => mergeEraData(decades.map((d) => eraDecadeIfLoaded(d)));
   const [data, setData] = useState<EraData>(read);
   const seq = useRef(0);
   useEffect(() => {
@@ -69,7 +69,7 @@ export function useEraData(art: FamilyArt | null, birthYear: number, calYear: nu
       setData(NONE);
       return;
     }
-    setData(merge(wanted.map((d) => eraDecadeIfLoaded(d))));
+    setData(mergeEraData(wanted.map((d) => eraDecadeIfLoaded(d))));
     let alive = true;
     (async () => {
       for (const d of wanted) {
@@ -80,7 +80,7 @@ export function useEraData(art: FamilyArt | null, birthYear: number, calYear: nu
           continue; // 이 덩어리는 건너뛴다
         }
         if (!alive || mine !== seq.current) return;
-        setData(merge(wanted.map((x) => eraDecadeIfLoaded(x))));
+        setData(mergeEraData(wanted.map((x) => eraDecadeIfLoaded(x))));
       }
     })();
     return () => {
@@ -90,7 +90,8 @@ export function useEraData(art: FamilyArt | null, birthYear: number, calYear: nu
   return data;
 }
 
-function merge(parts: readonly (EraDecadeData | null)[]): EraData {
+/** 받은 10년 덩어리들을 한 묶음으로 (그림 하나 = 그 덩어리의 defs + 조각 도형). 시험도 같은 함수를 쓴다 */
+export function mergeEraData(parts: readonly (EraDecadeData | null)[]): EraData {
   const windows: EraWindow[] = [];
   const art: Record<string, string> = {};
   let any = false;
@@ -98,7 +99,9 @@ function merge(parts: readonly (EraDecadeData | null)[]): EraData {
     if (p === null) continue;
     any = true;
     windows.push(...p.windows);
-    Object.assign(art, p.art);
+    // 그림 하나 = 그 10년 덩어리의 공유 defs(무늬·사람 심볼, 덩어리에 한 번 저장) + 조각 도형 — 한 SVG 안에서 같이 쓰인다
+    const defs = p.defs ?? '';
+    for (const [id, body] of Object.entries(p.art)) art[id] = defs + body;
   }
   return any ? { windows, art } : NONE;
 }

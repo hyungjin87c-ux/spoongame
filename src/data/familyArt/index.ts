@@ -18,7 +18,7 @@ export const FAMILY_ART: FamilyArt = {
     const fig = FIGURE_ID.exec(id);
     if (fig !== null) return figureMarkup(fig[1] as FigureGroup, fig[2] as 'f' | 'm', fig[3] as OutfitEra, opt);
     if (id === INFANT_CARRIED) return infantCarriedMarkup(opt);
-    if (id === 'house-detached-h1') return detachedH1Markup(opt.roof ?? 'thatch');
+    if (id === 'house-detached-h1') return detachedH1Markup(opt.roof ?? 'tile'); // 초가는 sceneOf가 명시한 때만 — 기본은 기와
     return PIECES[id] ?? null;
   },
   eraDecades: ERA_DECADES_WITH_DATA,

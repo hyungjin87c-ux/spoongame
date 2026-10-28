@@ -5,6 +5,7 @@ import {
   INFANT_CARRIED,
   PIECE_BY_ID,
   PROP_PIECES,
+  SCENE_RULES,
   bandOf,
   hasYard,
   houseWordOf,
@@ -138,12 +139,13 @@ export function houseKindOf(state: SceneFamilyState, wealth: ParentWealth): Hous
   return kind;
 }
 
-/** 수저 단계 → 집 크기 (설계값: 하위 0.86 · 중 0.92 · 상 1.0). 마당이 있는 집만 — 아파트·다세대는 틀이 정해져 있다 */
+/** 수저 단계 → 집 크기 (`SCENE_RULES.houseScale`, 설계값: 하위 0.86 · 중 0.92 · 상 1.0). 마당이 있는 집만 — 아파트·다세대는 틀이 정해져 있다 */
 function houseScaleOf(kind: HouseKind, wealth: ParentWealth, crowded: boolean): number {
-  if (kind === 'shack') return 0.86;
+  const r = SCENE_RULES.houseScale;
+  if (kind === 'shack') return r.shack;
   if (kind === 'apt' || kind === 'multi' || kind === 'care') return 1;
-  const base = kind === 'estate' ? 1 : wealth <= 2 ? 0.86 : wealth === 3 ? 0.92 : 1;
-  return crowded ? Math.min(base, 0.86) : base;
+  const base = kind === 'estate' ? r.high : wealth <= r.lowMaxWealth ? r.low : wealth === 3 ? r.mid : r.high;
+  return crowded ? Math.min(base, r.crowded) : base;
 }
 
 // ---------------------------------------------------------------- 식구 줄
@@ -282,7 +284,7 @@ function propAllowed(p: PropMeta, year: number, kind: HouseKind, bgKind: RegionK
   if (p.urban === true && bgKind !== 'metro' && bgKind !== 'town') return false;
   if (p.coastOnly === true && bgKind !== 'coast') return false;
   // 전봇대는 시골에는 1970년부터 (family-scene 2-4절 ▲)
-  if (p.id === 'prop-pole' && (bgKind === 'rural' || bgKind === 'coast') && year < 1970) return false;
+  if (p.id === 'prop-pole' && (bgKind === 'rural' || bgKind === 'coast') && year < SCENE_RULES.poleRuralFrom.year) return false;
   // 집 위 물통는 다세대(옥상) 집에만
   if (p.id === 'prop-water-tank' && kind !== 'multi') return false;
   // 연탄은 아파트 단지에 쌓아 두지 않는다
@@ -296,7 +298,7 @@ const SLOT_CAP = { yard: 2, roof: 1, back: 1 } as const;
 function propPlacements(input: SceneInput, kind: HouseKind, bgKind: RegionKind, geo: HouseGeo, familyLeft: number): ScenePlacement[][] {
   const { seed, state, possessions } = input;
   const year = state.calYear;
-  const n = 2 + Math.floor(hashOf(seed, 'props:n') * 3); // 2~4개
+  const n = SCENE_RULES.propCount.min + Math.floor(hashOf(seed, 'props:n') * SCENE_RULES.propCount.spread); // 2~4개 (설계값)
   const cands = PROP_PIECES.filter((p) => propAllowed(p, year, kind, bgKind, possessions)).sort((a, b) => hashOf(seed, a.id) - hashOf(seed, b.id) || (a.id < b.id ? -1 : 1));
   const used = { yard: 0, roof: 0, back: 0 };
   const back: ScenePlacement[] = [];
@@ -346,7 +348,7 @@ function petPlacements(input: SceneInput, kind: HouseKind, house: ScenePlacement
   let indoorCount = 0;
   let yardCount = 0;
   for (const pet of state.pets.slice(0, 2)) {
-    const yardOk = hasYard(kind) && state.calYear < 1990;
+    const yardOk = hasYard(kind) && state.calYear < SCENE_RULES.yardPetBefore.year;
     const place: 'yard' | 'indoor' = yardOk && pet.species !== 'other' ? 'yard' : 'indoor';
     const sp = pet.species;
     if (place === 'yard') {
@@ -380,7 +382,7 @@ export function sceneOf(input: SceneInput): SceneSpec {
   const bgKind = regionKindOf(input.region, year);
   const band = bandOf(year);
   const kind = houseKindOf(state, input.wealth);
-  const crowded = state.members.length + 1 >= 7;
+  const crowded = state.members.length + 1 >= SCENE_RULES.houseScale.crowdedFrom;
   const scale = houseScaleOf(kind, input.wealth, crowded);
   const houseBand: Band = kind === 'care' ? 3 : band;
   const houseId = `house-${kind}-h${houseBand}`;
@@ -391,7 +393,8 @@ export function sceneOf(input: SceneInput): SceneSpec {
   const house: ScenePlacement = { id: houseId, x: x0, y: GROUND_Y, scale: scale === 1 ? undefined : scale };
   // 초가: 시골·해안 · ~1975 · 수저 하위. 이 조각의 지붕 파라미터가 있는 집(단독 h1·그 대신 그리는 조각)에서만 쓰인다
   const art = meta.drawn ? meta : PIECE_BY_ID.get(meta.stand!.id)!;
-  if (art.id === 'house-detached-h1' && kind !== 'estate' && (bgKind === 'rural' || bgKind === 'coast') && input.wealth <= 2 && year <= 1975 && kind !== 'care') house.opt = { roof: 'thatch' };
+  const thatch = SCENE_RULES.thatch;
+  if (art.id === 'house-detached-h1' && kind !== 'estate' && thatch.regions.includes(bgKind) && input.wealth <= thatch.maxWealth && year <= thatch.lastYear && kind !== 'care') house.opt = { roof: 'thatch' };
 
   const family = familyPlacements(state, input.seed, year, geo.right);
   const familyLeft = family.length === 0 ? FAMILY_RIGHT : Math.min(...family.map((f) => f.x)) - 22;

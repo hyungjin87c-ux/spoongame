@@ -3,7 +3,7 @@
  * 「어느 조각을 어디에 놓는가」를 정하는 데 필요한 연도·상자·자리·대체 조각만 가진다(작아서 첫 화면 덩어리에 들어가도 된다 — 정적 import 그래프는 `tests/lazyBoundary.test.ts`가 잠근다).
  *
  * 조각 수 예산(FH8): 계획 87 · 상한 110. 층별로 센다 — 배경 12(종류 4 × 시대 3) · 집 21(종류 7 × 시대 3) + 요양 시설 1(마스터 결정) · 시대 소품 · 식구 22(몸 16 + 시대 옷 6, 코드 분기로 센다 — 마스터 결정) · 반려동물 6 · 틀 4(CSS).
- * 아직 **그리지 않은 조각**(designer 몫)은 `drawn: false`로 두고 `stand`에 가장 가까운 그려진 조각을 적는다 — 그림이 도착하면 `drawn: true`로 바꾸고 조각 파일만 더하면 된다(`tests/sceneAssets.test.ts`가 표와 덩어리의 일치를 잠근다).
+ * 아직 **그리지 않은 조각**(designer 몫)이 생기면 `drawn: false`로 두고 `stand`에 가장 가까운 그려진 조각을 적는다 — 그림이 도착하면 `drawn: true`로 바꾸고 조각 파일만 더하면 된다(`tests/sceneAssets.test.ts`가 표와 덩어리의 일치를 잠그고, 대신 그리는 조각의 연도가 요청 연도를 덮지 않으면 허용 목록에만 둔다). FM5b에서 33조각이 모두 그려져 지금은 안 그린 조각이 0이다.
  */
 
 export type RegionKind = 'metro' | 'town' | 'rural' | 'coast';
@@ -41,51 +41,36 @@ export interface PieceMeta {
 const b = (n: Band): readonly [number, number | null] => (n === 1 ? [1940, 1969] : n === 2 ? [1970, 1999] : [2000, null]);
 
 // ---------------------------------------------------------------- 배경 12: 종류 4 × 시대 3
-const BG_DRAWN = new Set(['bg-metro-b2', 'bg-metro-b3', 'bg-town-b1', 'bg-town-b3', 'bg-rural-b1']);
-const BG_STAND: Record<string, string> = {
-  'bg-metro-b1': 'bg-metro-b2',
-  'bg-town-b2': 'bg-town-b1',
-  'bg-rural-b2': 'bg-rural-b1',
-  'bg-rural-b3': 'bg-rural-b1',
-  'bg-coast-b1': 'bg-rural-b1',
-  'bg-coast-b2': 'bg-rural-b1',
-  'bg-coast-b3': 'bg-town-b3',
-};
 const BACKGROUNDS: PieceMeta[] = (['metro', 'town', 'rural', 'coast'] as const).flatMap((kind) =>
-  ([1, 2, 3] as const).map((band): PieceMeta => {
-    const id = `bg-${kind}-b${band}`;
-    return { id, layer: 'bg', years: b(band), box: [0, 0, 640, 256], drawn: BG_DRAWN.has(id), stand: BG_DRAWN.has(id) ? null : { id: BG_STAND[id] } };
-  }),
+  ([1, 2, 3] as const).map((band): PieceMeta => ({ id: `bg-${kind}-b${band}`, layer: 'bg', years: b(band), box: [0, 0, 640, 256], drawn: true, stand: null })),
 );
 
 // ---------------------------------------------------------------- 집 21 + 요양 1
+/** 집 조각의 상자와 자리. 슬롯 `window`는 창턱(아래쪽) 기준, `porch`는 마루. 모두 designer가 그렸다(family-scene.md 2-8절 — FM5b에서 안 그린 18채가 들어와 `stand`가 없다) */
 const HOUSE_DRAWN: Record<string, Pick<PieceMeta, 'box' | 'slots'>> = {
   'house-detached-h1': { box: [-4, -130, 372, 130], slots: { porch: [214, 0], window: [232, -30] } },
+  'house-detached-h2': { box: [-4, -130, 372, 130], slots: { window: [111, -52] } },
+  'house-detached-h3': { box: [-4, -170, 372, 170], slots: { window: [119, -22] } },
+  'house-detached-rent-h1': { box: [-4, -130, 372, 130], slots: { porch: [260, -14], window: [118, -34] } },
   'house-detached-rent-h2': { box: [-4, -140, 408, 140], slots: { window: [105, -73] } },
+  'house-detached-rent-h3': { box: [0, -180, 340, 180], slots: { window: [60, -64] } },
+  'house-multi-h1': { box: [0, -124, 320, 124], slots: { window: [130, -62] } },
+  'house-multi-h2': { box: [0, -150, 330, 150], slots: { window: [53, -54] } },
+  'house-multi-h3': { box: [0, -170, 330, 170], slots: { window: [122, -112] } },
+  'house-apt-h1': { box: [0, -130, 400, 130], slots: { window: [30, -8] } },
+  'house-apt-h2': { box: [0, -196, 400, 196], slots: { window: [35, -14] } },
   // 아파트: 시안은 맨 아래층 오른쪽 칸의 창턱(절대 y 166)에 앉혔다 → 집 원점(y 200) 기준 −34
   'house-apt-h3': { box: [0, -200, 400, 200], slots: { window: [300, -34] } },
-  'house-multi-h3': { box: [0, -170, 330, 170], slots: { window: [122, -112] } },
-};
-/** 안 그린 집 → 가장 가까운 시대·모양의 그려진 집 (임시 — designer가 그리면 `drawn`을 true로) */
-const HOUSE_STAND: Record<string, { id: string; opt?: PieceOpt }> = {
-  'house-detached-h2': { id: 'house-detached-h1', opt: { roof: 'tile' } },
-  'house-detached-h3': { id: 'house-detached-rent-h2' },
-  'house-detached-rent-h1': { id: 'house-detached-h1', opt: { roof: 'tile' } },
-  'house-detached-rent-h3': { id: 'house-detached-rent-h2' },
-  'house-multi-h1': { id: 'house-detached-h1', opt: { roof: 'tile' } },
-  'house-multi-h2': { id: 'house-detached-rent-h2' },
-  'house-apt-h1': { id: 'house-apt-h3' },
-  'house-apt-h2': { id: 'house-apt-h3' },
-  'house-shack-h1': { id: 'house-detached-h1', opt: { roof: 'thatch' } },
-  'house-shack-h2': { id: 'house-detached-h1', opt: { roof: 'tile' } },
-  'house-shack-h3': { id: 'house-detached-rent-h2' },
-  'house-other-h1': { id: 'house-detached-rent-h2' },
-  'house-other-h2': { id: 'house-detached-rent-h2' },
-  'house-other-h3': { id: 'house-multi-h3' },
-  'house-estate-h1': { id: 'house-detached-h1', opt: { roof: 'tile' } },
-  'house-estate-h2': { id: 'house-detached-rent-h2' },
-  'house-estate-h3': { id: 'house-detached-rent-h2' },
-  'house-care-h3': { id: 'house-apt-h3' },
+  'house-shack-h1': { box: [0, -100, 260, 100], slots: { window: [55, -34] } },
+  'house-shack-h2': { box: [0, -104, 270, 104], slots: { window: [53, -32] } },
+  'house-shack-h3': { box: [0, -104, 280, 104], slots: { window: [155, -36] } },
+  'house-other-h1': { box: [-4, -130, 372, 130], slots: { window: [252, -40] } },
+  'house-other-h2': { box: [0, -150, 340, 150], slots: { window: [66, -92] } },
+  'house-other-h3': { box: [0, -180, 340, 180], slots: { window: [75, -76] } },
+  'house-estate-h1': { box: [-4, -150, 404, 150], slots: { porch: [160, -50], window: [70, -66] } },
+  'house-estate-h2': { box: [-4, -170, 404, 170], slots: { window: [145, -26] } },
+  'house-estate-h3': { box: [-4, -170, 404, 170], slots: { window: [175, -14] } },
+  'house-care-h3': { box: [0, -170, 400, 170], slots: { window: [42, -16] } },
 };
 const HOUSE_KINDS = ['detached', 'detached-rent', 'multi', 'apt', 'shack', 'other', 'estate'] as const;
 const HOUSES: PieceMeta[] = [
@@ -93,14 +78,11 @@ const HOUSES: PieceMeta[] = [
     ([1, 2, 3] as const).map((band): PieceMeta => {
       const id = `house-${kind}-h${band}`;
       const art = HOUSE_DRAWN[id];
-      if (art !== undefined) return { id, layer: 'house', years: b(band), box: art.box, drawn: true, stand: null, slots: art.slots };
-      const stand = HOUSE_STAND[id];
-      const target = HOUSE_DRAWN[stand.id];
-      return { id, layer: 'house', years: b(band), box: target.box, drawn: false, stand, slots: target.slots };
+      return { id, layer: 'house', years: b(band), box: art.box, drawn: true, stand: null, slots: art.slots };
     }),
   ),
   // 요양 시설(마스터 결정: 상한 110 안에서 1 더한다) — 건물 외관만
-  { id: 'house-care-h3', layer: 'house', years: b(3), box: HOUSE_DRAWN['house-apt-h3'].box, drawn: false, stand: HOUSE_STAND['house-care-h3'], slots: HOUSE_DRAWN['house-apt-h3'].slots },
+  { id: 'house-care-h3', layer: 'house', years: b(3), box: HOUSE_DRAWN['house-care-h3'].box, drawn: true, stand: null, slots: HOUSE_DRAWN['house-care-h3'].slots },
 ];
 
 // ---------------------------------------------------------------- 시대 소품
@@ -141,12 +123,12 @@ const PROPS: PropMeta[] = [
   prop('prop-parcel', [2000, null], [-12, -20, 24, 20], 'yard'),
   prop('prop-bicycle', null, [-28, -32, 56, 32], 'yard'),
   prop('prop-planter', null, [-12, -26, 24, 26], 'yard'),
-  // 아직 안 그린 소품(designer 몫) — 그려지기 전에는 고르지 않는다
-  prop('prop-car', [1985, null], [-34, -30, 68, 30], 'beside', { tie: 'car' }, false),
-  prop('prop-plastic-greenhouse', [1980, null], [-60, -30, 120, 30], 'back', { rural: true }, false),
-  prop('prop-scooter', [2000, null], [-22, -30, 44, 30], 'yard', { urban: true }, false),
-  prop('prop-ev-charger', [2020, null], [-8, -34, 16, 34], 'beside', { tie: 'car' }, false),
-  prop('prop-hanging-fish', null, [-40, -44, 80, 44], 'yard', { coastOnly: true, needsYard: true }, false),
+  // 시대 소품 다섯(승용차·비닐하우스·스쿠터·전기차 충전기·말린 생선)은 FM5b에서 그려졌다
+  prop('prop-car', [1985, null], [-34, -30, 68, 30], 'beside', { tie: 'car' }),
+  prop('prop-plastic-greenhouse', [1980, null], [-60, -30, 120, 30], 'back', { rural: true }),
+  prop('prop-scooter', [2000, null], [-22, -30, 44, 30], 'yard', { urban: true }),
+  prop('prop-ev-charger', [2020, null], [-8, -34, 16, 34], 'beside', { tie: 'car' }),
+  prop('prop-hanging-fish', null, [-40, -44, 80, 44], 'yard', { coastOnly: true, needsYard: true }),
 ];
 
 // ---------------------------------------------------------------- 반려동물 6
@@ -154,9 +136,9 @@ const PETS: PieceMeta[] = [
   { id: 'pet-dog-yard', layer: 'pet', years: null, box: [-72, -46, 104, 46], drawn: true, stand: null },
   { id: 'pet-dog-indoor', layer: 'pet', years: null, box: [-14, -26, 28, 26], drawn: true, stand: null },
   { id: 'pet-cat-indoor', layer: 'pet', years: null, box: [-16, -30, 32, 30], drawn: true, stand: null },
-  { id: 'pet-cat-yard', layer: 'pet', years: null, box: [-16, -30, 32, 30], drawn: false, stand: { id: 'pet-cat-indoor' } },
-  { id: 'pet-other-indoor', layer: 'pet', years: null, box: [-16, -30, 32, 30], drawn: false, stand: null },
-  { id: 'pet-other-yard', layer: 'pet', years: null, box: [-16, -30, 32, 30], drawn: false, stand: null },
+  { id: 'pet-cat-yard', layer: 'pet', years: null, box: [-16, -30, 32, 30], drawn: true, stand: null },
+  { id: 'pet-other-indoor', layer: 'pet', years: null, box: [-16, -30, 32, 30], drawn: true, stand: null },
+  { id: 'pet-other-yard', layer: 'pet', years: null, box: [-16, -30, 32, 30], drawn: true, stand: null },
 ];
 
 /** 그림 조각 표(식구 제외 — 식구는 `person()`이 연령대 × 성별 × 시대로 만든다) */
@@ -172,6 +154,30 @@ export const PLANNED_PIECES = 87;
 export const MAX_PIECES = 110;
 /** 이 표가 세는 조각 수(그림 조각 + 식구 22 + 틀 4). 계획 87에 요양 시설 1(마스터 결정)을 더하고, 시대 소품 3개(「▲ 목록 위」)는 아직 이름이 없어 덜 세어진다 */
 export const SCENE_PIECE_COUNT = SCENE_PIECES.length + FIGURE_BODIES + FIGURE_OUTFITS + FRAME_PIECES;
+
+// ---------------------------------------------------------------- 장면 규칙 상수 (R-545: 코어에 박지 않고 표에 둔다)
+/**
+ * `sceneOf`가 쓰는 설계값 상수 (SPEC-009 FM5b, 검수 R-545 CR-DATA). 모두 **설계값**이다 — 통계 주장이 아니라 「그림이 어색하지 않게」 정한 값이고, 근거 칸 `basis`가 그것을 적는다.
+ * 숫자를 바꾸면 `tests/fixtures/scene-golden.json`(고정 시드 골든)이 달라져 의도한 변경인지 보게 한다(R-546).
+ */
+export const SCENE_RULES = {
+  /** 초가: 시골·해안 배경 · 이 연도까지 · 수저 이 단계 이하 (지붕 파라미터가 있는 집 `house-detached-h1`에서만 쓰인다) */
+  thatch: { regions: ['rural', 'coast'] as readonly RegionKind[], lastYear: 1975, maxWealth: 2, basis: '설계값' },
+  /** 전봇대는 시골·해안에는 이 연도부터 (family-scene 2-4절 ▲) */
+  poleRuralFrom: { year: 1970, basis: '설계값' },
+  /** 마당이 있는 집의 반려동물은 이 연도 앞이면 마당, 그 뒤는 실내 */
+  yardPetBefore: { year: 1990, basis: '설계값' },
+  /** 집 크기(`scale`): 작은 집 · 수저 하위(wealth ≤ lowMax) · 가운데 · 위 · 식구가 많은 집(crowdedFrom명 이상)의 상한 */
+  houseScale: { shack: 0.86, low: 0.86, mid: 0.92, high: 1, lowMaxWealth: 2, crowded: 0.86, crowdedFrom: 7, basis: '설계값' },
+  /** 시대 소품 개수: min 이상 min + spread - 1 이하 (2~4개) */
+  propCount: { min: 2, spread: 3, basis: '설계값' },
+} as const;
+
+/** 시대의 창·집 그림 조각이 쓰는 색 토큰 이름 25개 (`--c-scene-*`). 그림 조각의 `class` 허용 목록(`ui/svgNodes.tsx`)과 `styles/family.css`의 토큰 규칙이 이 이름에서 나온다 — `tests/sceneAssets.test.ts`가 `familyArt/svg.ts#SCENE_LIGHT`·CSS와 대조한다 */
+export const SCENE_TOKEN_NAMES = [
+  'sky', 'far', 'far2', 'ground', 'ground2', 'wall', 'wall2', 'roof', 'roof2', 'wood', 'clay', 'ink', 'shade', 'glass', 'green',
+  'cloth1', 'cloth2', 'cloth3', 'cloth4', 'skin', 'hair', 'hairw', 'pet', 'pet2', 'face',
+] as const;
 
 // ---------------------------------------------------------------- 식구 몸 기하 (family-scene 2-5절 — 얼굴 시스템 ageGroupOf와 같은 경계)
 export type FigureGroup = 'toddler' | 'child' | 'teen' | 'young' | 'middle' | 'senior' | 'elder';

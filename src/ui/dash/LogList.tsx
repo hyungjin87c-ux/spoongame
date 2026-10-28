@@ -8,7 +8,7 @@ import { revealTopOfTallFocus } from '../focusReveal';
 import { NoteBody } from './NoteText';
 import { VeiledText, VeilStamp } from './Veil';
 import { EraLogRow } from './EraRow';
-import { addedAbove, isAtLogTop, isEraRow, resizePlan, scrollPlan, type AnyLogRow } from './logOrder';
+import { addedAbove, eraInsertPlan, eraKeysChanged, isAtLogTop, isEraRow, resizePlan, scrollPlan, type AnyLogRow } from './logOrder';
 
 /**
  * 인생 기록의 스크롤 영역과 줄들 (SPEC-005 LR1·LR2·LR4·LR7). `LogCard`가 머리·고정 줄·「새 기록 N개」 버튼을 맡고, 이 컴포넌트는 **줄이 위에 쌓일 때 보던 줄이 움직이지 않게 하는 일**을 맡는다.
@@ -206,7 +206,8 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
   getSnapshotBeforeUpdate(prev: Props): Snapshot | null {
     if (prev.rows === this.props.rows) return null;
     const newestBefore = prev.rows[0]?.key ?? null;
-    if (newestBefore === (this.props.rows[0]?.key ?? null)) return null; // 맨 위 줄이 그대로 — 위에 쌓인 줄이 없다
+    // 맨 위 줄이 그대로 — 위에 쌓인 줄이 없다. 다만 시대 줄(파생 줄)이 보던 줄 위에 끼거나 빠졌으면(늦게 온 10년 덩어리) 보던 자리는 지킨다 (R-547)
+    if (newestBefore === (this.props.rows[0]?.key ?? null) && !eraKeysChanged(prev.rows, this.props.rows)) return null;
     const el = this.props.scrollerRef.current;
     const ol = this.olRef.current;
     if (el === null || ol === null) return null;
@@ -235,7 +236,6 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
       this.remember(rows);
       return;
     }
-    if (added <= 0) return;
     const box = el.getBoundingClientRect();
     const at = snap.anchorKey === null ? -1 : rows.findIndex((r) => r.key === snap.anchorKey);
     const anchor = at === -1 ? undefined : ol.children[at];
@@ -244,6 +244,13 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
       anchor !== undefined
         ? anchor.getBoundingClientRect().top - box.top - snap.anchorOffset
         : (ol.children[added]?.getBoundingClientRect().top ?? 0) - (ol.children[0]?.getBoundingClientRect().top ?? 0);
+    if (added <= 0) {
+      // 새 기록은 없고 시대 줄만 끼거나 빠졌다(늦게 온 10년 덩어리): 보던 줄의 화면 위치만 지킨다. 「새 기록」 수는 늘지 않는다 (R-547)
+      const top = eraInsertPlan({ scrollTop: snap.scrollTop, shift, follow: following.current });
+      if (top !== null) el.scrollTo({ top, behavior: 'instant' });
+      this.remember(rows);
+      return;
+    }
     const plan = scrollPlan({ scrollTop: snap.scrollTop, shift, added, follow: following.current });
     // 부드러운 스크롤(CSS scroll-behavior)이 보정을 미끄러뜨리지 않게 늘 behavior: 'instant'
     if (Math.abs(plan.top - el.scrollTop) >= 0.5) el.scrollTo({ top: plan.top, behavior: 'instant' });
