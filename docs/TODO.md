@@ -386,7 +386,7 @@
       - 검증 명령: npm test(144 파일 · 4,200 통과), npm run typecheck, npm run build, npm run check:todo, npm run check:events, npm run check:dist, npm run check:economy, e2e Chromium 3,529 통과(+ 글꼴 늦은 도착에 흔들리던 시험 4건은 `belowContent` 글꼴 대기로 고쳐 재통과), WebKit 323 통과, e2e-prod 29 통과 — ai-log/2026-10-28_SPEC-004_dev-GM4-2.md
     - [ ] (GM4 2차 ⑤ 남은 것, designer) 캐러셀 슬라이드 글의 줄바꿈 후속 — 「지금 태어나는 아기라면?」 슬라이드의 코호트 나열 「0·10·20·30·40세가」가 폭 320 · 글자 200%에서 「0·10·20·30·」로 끝나는 예외(e2e/line-breaks.spec.ts의 `projection-newborn-age-structure` 면제)는 그대로 — 나열을 쉼표로 바꾸는 것이 시안 글(copy.md 15-2)의 결정이라 디자이너 몫
     - [x] (R-521, planner — QA 전) SPEC-004 본문·안 할 것·규칙 표 18행·QA 15를 형진 님 답 4차·게이트 ③ 통과에 맞춤(캐러셀 21장·자동 넘김·멈춤 단추, 「한 판 약 30분」·수저 줄 없음) — 근거: SPEC-004 문서 r6(GS11-3·QA 15·안 할 것), ai-log/2026-10-28_SPEC-004_spec-r6.md, SPEC-005 문서 HS 대체 표지 3곳 r6 갱신
-    - [ ] (R-522, designer → developer) copy.md 13-3 Q10·17-1 「세상」 → 「세대」, 설정 목록 GM4 값, 정책 「통계 출처 … 링크」 과장 정정 → src/data/aboutFaq.ts·src/data/policyText.ts 반영
+    - [ ] (R-522, designer → developer) copy.md 13-3 Q10·17-1 「세상」 → 「세대」, 설정 목록 GM4 값, 정책 「통계 출처 … 링크」 과장 정정 → src/data/aboutFaq.ts·src/data/policyText.ts 반영 (배포 전 aboutFaq·policyText 반영 완료 — 근거: src/data/aboutFaq.ts, src/data/policyText.ts, tests/aboutFaq.test.ts)
     - [ ] (R-523, designer) design-system 17-13·17-12-5·diff-004 9절에 구현 값 기록(PC 목록 clamp·설정 두 줄 나란히, 푸터 46em·24em 문턱, 접힌 표 display:none) + 1280×800 약 4줄·1366×768/1280×640 약 3줄 목록 창 시각 확인
     - [ ] (R-524, developer) tests/fonts.test.tsx s0 덮기 단언에 TitleScreen 전체·POLICY_SECTIONS·FAQ 글자 포함
     - [ ] (R-525, developer) e2e/first-screen.spec.ts 「카드 높이는 이전(범례 펼침)보다 낮다」에 높이 단언 추가
