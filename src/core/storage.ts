@@ -5,6 +5,7 @@ import { isCurrentRegionName } from '../data/regionKeys';
 import { eventPool, isGameDataReady } from './gameData';
 import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
 import { isValidBirthReport } from './birthReport';
+import { ensureFamily, withValidFamily } from './familyStorage';
 import { isValidStat } from './stats';
 import { resolveDelegated } from './life';
 import { decisionFor } from './parentDecision';
@@ -52,6 +53,8 @@ import type { GenerationId } from './types';
  *     v7 이하 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄(C6 — `classifySavedGame`이 `version < SCHEMA_VERSION`을 이전 버전으로 분류한다). docs/data/economy-model.md 10절.
  * v9: 개편(SPEC-004 GM4, MG1) — 판 상태의 `era`(지난·지금·다가올 세상)가 `generation`(세대 7종)으로 바뀌었다. 출생 연도는 고른 세대의 범위(1940~2020) 안이고, 출생지는 시도까지다(시군구 없음, NR3).
  *     선택 필드 `regionPicked`(시도를 직접 골라 시작한 판)·`fromRandom`(「랜덤 세대」로 세대가 뽑힌 판)이 더해졌다. **v8 이하(R1) 저장은 새 게임으로 시작하고 첫 화면에 안내 한 줄**(C6 전례 — R1의 2026년생은 알파 범위 밖이라 옮기지 않는다, N18 닫힘).
+ *     SPEC-009 FM4a: 판 상태에 **선택 필드 `family`**(가족 구성 — 조부모·부모 별세 나이, 위·아래 형제, 함께 사는 조부모 쪽, 알린 변화 로그)가 더해졌다. 버전은 9 그대로다(N24) — 값이 이상하면 판을 버리지 않고 그 필드만 버리고(`withValidFamily`),
+ *     필드가 없는 판은 앱이 열 때 `ensureFamily`가 옛 계산 결과를 스냅샷으로 삼아 채운다(`legacyFamilyFrom` — 이미 본 값은 바꾸지 않는다). docs/data/family-model.md 2절.
  *     SPEC-008 필드는 예약하지 않는다(N24): 앞으로의 선택 필드는 SPEC-005 SV1 방식(필드 단위 검증, 없는 저장은 기본값)으로 더하고 저장 버전을 올리지 않는다(tests/storageOptional.test.ts).
  * (M7c: 게임 스키마는 v8 그대로였다 — 연표 종류에 `note`가 더해지고 `seen`에 `note-…` 키가 생길 수 있지만 허용 범위만 넓어졌고, 기록이 없는 v8 저장은 새 규칙에서도 그대로 유효하다. 진행 중인 판을 잃지 않으려고 올리지 않았다, NC-1.)
  * (SPEC-005 QI6: 게임 스키마는 v8 그대로다 — 판 상태에 **선택 필드 `gentleUsed`**(판 도중 한 번이라도 「무거운 장면 가리기」가 켜졌으면 `true`, 엔딩 맨 위 한 줄의 기준)가 더해졌다. 없으면 켠 적이 없는 판이다. 값이 이상하면 판을 버리지 않고 그 필드만 버린다(`withValidGentleUsed`).
@@ -491,7 +494,16 @@ export function parseGame(raw: string | null, poolArg?: EventPool): GameState | 
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
-  return withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool)))))) ;
+  return withValidFamily(withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool)))))));
+}
+
+/**
+ * 앱이 판을 **열 때** 쓰는 읽기: `parseGame` 뒤에 가족 스냅샷을 채운다(`ensureFamily`, SPEC-009 K5). 필드가 없는 옛 저장도 열자마자 `family`가 있다 — 다음 저장 때 기록된다.
+ * 저장 직전 판단(`isIdleOnlyChange`·`isNegligibleChange`)이 「알던 값」을 읽을 때도 이 함수를 써서, 가족 필드가 채워진 것만으로 아무것도 하지 않은 탭이 저장소에 쓰지 않게 한다.
+ */
+export function parseOpened(raw: string | null, poolArg?: EventPool): GameState | null {
+  const game = parseGame(raw, poolArg);
+  return game === null ? null : ensureFamily(game);
 }
 
 /** 이벤트 풀이 아직 없는 첫 화면 단계의 저장을 읽을 때만 쓰는 빈 풀 (title 단계 저장은 풀을 읽지 않는다) */
@@ -543,7 +555,7 @@ export function decideSave(stored: string | null, known: string | null, next: st
  */
 export function isIdleOnlyChange(knownRaw: string | null, game: GameState): boolean {
   if (knownRaw === null || game.play === undefined) return false;
-  const known = parseGame(knownRaw);
+  const known = parseOpened(knownRaw);
   if (known === null || known.play === undefined) return false;
   return serializeGame({ ...game, play: { ...game.play, idle: known.play.idle } }) === serializeGame(known);
 }
@@ -563,7 +575,7 @@ export const NEGLIGIBLE_PLAY_MS = 1500;
  */
 export function isNegligibleChange(knownRaw: string | null, game: GameState): boolean {
   if (knownRaw === null || game.play === undefined) return false;
-  const known = parseGame(knownRaw);
+  const known = parseOpened(knownRaw);
   if (known === null || known.play === undefined) return false;
   const k = known.play;
   const p = game.play;

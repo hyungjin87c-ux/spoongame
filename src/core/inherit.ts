@@ -1,6 +1,7 @@
 import { ECONOMY } from '../data/economyTable';
 import { parentAgeAt } from './birthReport';
 import { familyOf, parentStateOf } from './family';
+import { livingSiblingCount } from './familyView';
 import type { Dwelling, GameState } from './types';
 
 /**
@@ -11,7 +12,7 @@ import type { Dwelling, GameState } from './types';
  * 금액은 화면에 쓰지 않는다(설계값, S6) — 인생 기록에 한 줄만 남는다(data/lifeTable.ts#INHERIT_NOTE_TEXT).
  */
 
-type View = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'character' | 'peerSeed' | 'seed' | 'assets'>;
+type View = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'character' | 'peerSeed' | 'seed' | 'assets' | 'family'>;
 
 /** 이 상태에서 부모가 모두 세상을 떠났는가 (둘 다 「gone」) */
 export function parentsAllGone(game: Pick<GameState, 'age' | 'flags' | 'birthReport'>): boolean {
@@ -22,9 +23,19 @@ export function parentsAllGone(game: Pick<GameState, 'age' | 'flags' | 'birthRep
   );
 }
 
-/** 형제 수 (출생 때 정해진 위 형제 + 「동생이 생겼다」 이후의 동생, core/family.ts#familyOf와 같은 계산) */
-export function siblingCountOf(game: View): number {
-  return familyOf(game).siblings.length;
+/**
+ * 형제 수를 세는 규칙 (SPEC-009 K1):
+ *  - `'legacy'` 출생 때 정해진 위 형제 + 「동생이 생겼다」 이후의 동생 한 명(core/family.ts#familyOf와 같은 계산) — **지금 판이 쓰는 규칙**이다.
+ *  - `'view'` 새 정의 하나: 태어났고 떠나지 않은 위·아래 형제 전원(독립 여부 무관, `FamilyView.siblingCount.living`). 카드·한 줄·그림·대체 글이 읽는 값과 같다.
+ * 새 정의로 바꾸면 아래 동생 구성(둘째 이상·여럿)이 상속 나누기에 들어가 경제 분포가 바뀐다. 구성이 사건·인생 기록과 맞춰지는 FM4b(K2)보다 먼저 켜면 「인생 기록에 없는 동생」이 상속을 나누게 되고
+ * 경제 항등(`tests/economyIdentity`)과 해시 불변 L1이 깨지므로 FM4a는 `'legacy'`로 두고 `'view'`는 인자로만 부른다(측정·시험). 켜는 일은 FM4b의 재측정 뒤 마스터가 정한다.
+ */
+export type SiblingCountRule = 'legacy' | 'view';
+export const SIBLING_COUNT_RULE: SiblingCountRule = 'legacy';
+
+/** 형제 수 (상속 나누기 `÷ (형제 수 + 1)`에 쓰인다) */
+export function siblingCountOf(game: View, rule: SiblingCountRule = SIBLING_COUNT_RULE): number {
+  return rule === 'view' ? livingSiblingCount(game) : familyOf(game).siblings.length;
 }
 
 /** 상속액(만 원, 정수): INHERIT[재력 단계] ÷ (형제 수 + 1) */

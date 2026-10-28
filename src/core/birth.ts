@@ -3,7 +3,10 @@ import { namePoolKey, type NamePoolId } from '../data/namePoolId';
 import { namesApi } from './gameData';
 import { birthYearOddsOf, candidateYearsOf, parentingWeightsFor, wealthWeightsFor } from './birthProfile';
 import { reportTiltOf } from '../data/birthReportTable';
-import { rollBirthReport } from './birthReport';
+import { orderSharesOf, rollBirthReport } from './birthReport';
+import { rollFamilyBirth } from './familyBirth';
+import { famSeedOf } from './familyRng';
+import type { FamilyData } from './familyModel';
 import { pickBirthYear } from './generationMixture';
 import { createRng, forkRng, mixSeed, type Rng } from './rng';
 import { standingOf, type Standing } from './standing';
@@ -220,6 +223,11 @@ export interface BirthResult {
   report: BirthReport;
   /** 같은 해 태어난 사람들(VP3)을 만드는 시드 */
   peerSeed: number;
+  /**
+   * 가족 구성 (SPEC-009 FM4a): 조부모·부모 별세 나이, 위·아래 형제, 함께 사는 조부모 쪽. 인생 진행 RNG를 쓰지 않고 `peerSeed`에서 파생한 태그별 독립 스트림으로 뽑는다(core/familyRng.ts) —
+   * 그래서 위 필드(character·stats·report·peerSeed)와 `rngState`는 가족 모델이 생기기 전과 같다(tests/familyHash.test.ts L0).
+   */
+  family: FamilyData;
 }
 
 /**
@@ -254,8 +262,12 @@ export function generateBirth(rng: Rng, target: ProfileId | BirthTarget): BirthR
   const parenting = PARENTING_STYLES[rng.weightedIndex(parentingWeightsFor(profile))];
   const looks = rollLooks(rng);
   const stats = rollBirthStats(rng, parentWealth, parenting);
-  const report = rollBirthReport(forkRng(rng, REPORT_SALT), reportTiltOf(birthYear), birthYear, gender, parentWealth, picked);
-  return { character: { name, gender, birthYear, parentWealth, parenting, looks }, stats, report, peerSeed: mixSeed(rng.getState(), PEER_SALT) };
+  const tilt = reportTiltOf(birthYear);
+  const report = rollBirthReport(forkRng(rng, REPORT_SALT), tilt, birthYear, gender, parentWealth, picked);
+  const peerSeed = mixSeed(rng.getState(), PEER_SALT);
+  // 가족 구성은 peerSeed에서 파생한 독립 스트림으로 뽑는다 — rng를 전진시키지 않는다 (출생 난수 흐름 불변, 설계 문서 D-1)
+  const family = rollFamilyBirth(famSeedOf(peerSeed), { birthYear, gender, report, parentWealth, orderShares: orderSharesOf(tilt, report.region, birthYear), siblingSeed: peerSeed });
+  return { character: { name, gender, birthYear, parentWealth, parenting, looks }, stats, report, peerSeed, family };
 }
 
 /** 시드에서 바로 출생 결과를 만든다(테스트·시뮬레이션용). */

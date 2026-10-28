@@ -18,7 +18,7 @@ import {
   lifeLineCount,
   noteCount,
   noteResponse,
-  parseGame,
+  parseOpened,
   parseSettings,
   playBucketOf,
   playNotBehind,
@@ -122,7 +122,7 @@ function readBoot(): Boot {
   const settings = readRaw(SETTINGS_KEY);
   // 이어하기 횟수(플레이 시간 기록 — 그 해 연출이 처음부터 다시 흘러 hold가 한 해 안쪽만큼 늘 수 있어 보정에서 감안한다, content-M8.md 5-2절)는 여기서 올리지 않는다: 읽은 원문과 상태가 달라져 사람이 아무것도 하지 않은 탭도 첫 저장 effect가 쓰기 때문이다(R-417).
   // 그 탭에서 hold·decide가 처음 쌓일 때 타이머가 올린다(core/playTimer.ts).
-  const parsed = parseGame(game) ?? createInitialState(newSeed());
+  const parsed = parseOpened(game) ?? createInitialState(newSeed());
   // 진행 중인 판이 저장돼 있으면 새로고침해도 저장된 화면이 그대로 복원된다(C3). 첫 화면은 「나가기」로 다시 연 때에만 보인다(개발 서버 탐침 ?__exit은 그 상태로 시작).
   return {
     session: createSession(parsed, parseSettings(settings), PROBE_EXIT && hasProgress(parsed)),
@@ -462,7 +462,7 @@ function Game({ boot }: { boot: Boot }) {
     const raw = readRaw(GAME_KEY);
     const finish = () => {
       written.game = raw;
-      const adopted = parseGame(raw) ?? createInitialState(newSeed());
+      const adopted = parseOpened(raw) ?? createInitialState(newSeed());
       timerRef.current?.adopt(adopted); // 이어받은 판의 플레이 시간 기록에서 다시 쌓는다(이어받은 값을 그대로 쓴다)
       dispatch({ type: 'adopt', game: adopted });
       setSuperseded(false);
@@ -511,7 +511,7 @@ function Game({ boot }: { boot: Boot }) {
       />
     );
   } else if (game.phase === 'birth' && game.generation && game.character && game.birthReport && game.peerSeed !== null) {
-    screen = <BirthScreen generation={game.generation} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} regionPicked={game.regionPicked === true} onNext={() => dispatch({ type: 'enterLife' })} />;
+    screen = <BirthScreen generation={game.generation} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} regionPicked={game.regionPicked === true} family={game.family} onNext={() => dispatch({ type: 'enterLife' })} />;
   } else if (game.phase === 'life' && game.character && game.generation && game.birthReport && game.peerSeed !== null) {
     screen = (
       <LifeScreen

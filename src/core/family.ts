@@ -1,10 +1,12 @@
 import { MAX_OLDER_SIBLINGS, MIN_FIRST_BIRTH_AGE, SIBLING_GAP, olderSiblingLimit, olderSiblingsOf } from '../data/birthReportTable';
 import { parentAgeAt } from './birthReport';
 import { mixSeed } from './rng';
-import type { Gender, GameState, Occupation } from './types';
+import type { BirthReport, Gender, GameState, Occupation } from './types';
 
 /**
  * 가족과 삶 (SPEC-003 DB13, 식구 카드): 어머니·아버지(나이·직업·상태), 형제자매(관계·나이 차), 성인 이후 배우자·자녀.
+ * (SPEC-009 FM4a: 이 파일의 `familyOf`는 식구 카드가 읽는 **옛 계산 그대로**다 — 새 가족 모델(저장 필드 `family`, 조부모·부모 별세·이혼·아래 동생 구성)은 `core/familyView.ts#familyViewOf`·`sceneFamilyOf`가 읽는다.
+ *  두 계산은 위 형제(`olderSiblingPlan`)를 같은 함수로 만들고, 아래 동생·조부모는 카드가 새 모델을 읽게 되는 FM4b(K2 — 사건을 구성에 맞춤)·FM6(카드 개편)에서 하나로 합친다. 그 전에 카드가 새 구성의 아래 동생을 읽으면 사건 `infant-new-sibling`과 어긋난다.)
  * 모두 **저장된 상태에서 다시 계산하는 순수 함수**다 — 새로 저장하는 값이 없다. 출생 때 정한 형제 순서·부모 나이·직업(BirthReport)과 인생 중 켜진 플래그·본 이벤트(GameState)만 읽는다.
  * 그래서 새로고침해도 같고, 출생신고·이후 사건과 모순되지 않는다(BR6·CM9): 부모 나이는 해마다 오르고, 사별(`parents_gone`)은 표시에 반영된다.
  *
@@ -81,8 +83,8 @@ export function spouseStateOf(flags: readonly string[]): SpouseState {
   return flags.includes('has_partner') ? 'partner' : 'none';
 }
 
-/** 시드에서 위 형제 한 명의 (나이 차, 성별)을 정한다. 같은 시드·같은 순번 → 같은 값. */
-function olderSiblingDraw(seed: number, index: number): { gap: number; gender: Gender } {
+/** 시드에서 위 형제 한 명의 (나이 차, 성별)을 정한다. 같은 시드·같은 순번 → 같은 값. 아래 동생은 순번 99(옛 규칙) */
+export function olderSiblingDraw(seed: number, index: number): { gap: number; gender: Gender } {
   const h = mixSeed(seed, 0x51b10000 + index);
   const span = SIBLING_GAP.max - SIBLING_GAP.min + 1;
   return { gap: SIBLING_GAP.min + (h % span), gender: (mixSeed(h, 0x2f) & 1) === 0 ? 'male' : 'female' };
@@ -90,6 +92,29 @@ function olderSiblingDraw(seed: number, index: number): { gap: number; gender: G
 
 function siblingKind(older: boolean, gender: Gender): SiblingKind {
   return older ? (gender === 'male' ? 'olderBrother' : 'olderSister') : gender === 'male' ? 'youngerBrother' : 'youngerSister';
+}
+
+/**
+ * 위 형제 구성 (가까운 순): 나이 차는 시드에서 한 명당 2~5살씩 누적하고(누적값 `gap`), 어머니의 출생 때 나이 한도(R-330)를 넘지 않는다.
+ * `familyOf`(옛 계산)와 가족 모델(core/familyBirth.ts — 새로 태어난 판의 `family.o`, 옛 저장의 `legacyFamilyFrom`)이 **같은 이 함수**를 쓴다 — 그래서 위 형제는 어느 경로로 만들어도 같다 (설계 문서 1-3절).
+ * `seed`는 `peerSeed ?? seed`다.
+ */
+export function olderSiblingPlan(seed: number, report: Pick<BirthReport, 'birthOrder' | 'mother'>): Array<{ gap: number; gender: Gender }> {
+  const plan: Array<{ gap: number; gender: Gender }> = [];
+  const wantedOlder = olderSiblingsOf(report.birthOrder);
+  // 위 형제 전체의 나이 차 한도(R-330): 어머니가 첫 아이를 낳은 나이가 MIN_FIRST_BIRTH_AGE 이상이어야 한다
+  const gapBudget = Math.max(0, report.mother.age - MIN_FIRST_BIRTH_AGE);
+  // 새로 태어난 판은 생성기가 형제 순서에 맞는 어머니 나이만 만들므로 늘 wantedOlder명이다(R-330 r3). 이 방어는 옛 저장 판용이다 — 최소 간격으로도 못 들어가는 형제는 보이지 않는다
+  const olderCount = Math.min(wantedOlder, olderSiblingLimit(report.mother.age));
+  let cumulative = 0;
+  for (let i = 0; i < olderCount; i++) {
+    const d = olderSiblingDraw(seed, i);
+    // 남은 형제(이 형제 포함) 각각에게 최소 간격을 남기고 나머지만 이 형제의 간격으로 쓸 수 있다 → 마지막 누적은 한도 이하, 간격은 늘 SIBLING_GAP.min 이상
+    const room = gapBudget - cumulative - (olderCount - i - 1) * SIBLING_GAP.min;
+    cumulative += Math.min(d.gap, room);
+    plan.push({ gap: cumulative, gender: d.gender });
+  }
+  return plan;
 }
 
 /** 가족 보기. 출생 이후 단계의 상태만 받는다(character·birthReport가 있어야 한다 — 없으면 throw). */
@@ -104,19 +129,9 @@ export function familyOf(game: Pick<GameState, 'age' | 'flags' | 'seen' | 'birth
   };
 
   const siblings: SiblingView[] = [];
-  const wantedOlder = olderSiblingsOf(report.birthOrder);
-  // 위 형제 전체의 나이 차 한도(R-330): 어머니가 첫 아이를 낳은 나이가 MIN_FIRST_BIRTH_AGE 이상이어야 한다
-  const gapBudget = Math.max(0, report.mother.age - MIN_FIRST_BIRTH_AGE);
-  // 새로 태어난 판은 생성기가 형제 순서에 맞는 어머니 나이만 만들므로 늘 wantedOlder명이다(R-330 r3). 이 방어는 옛 저장 판용이다 — 최소 간격으로도 못 들어가는 형제는 보이지 않는다
-  const olderCount = Math.min(wantedOlder, olderSiblingLimit(report.mother.age));
-  let cumulative = 0;
-  for (let i = 0; i < olderCount; i++) {
-    const d = olderSiblingDraw(seed, i);
-    // 남은 형제(이 형제 포함) 각각에게 최소 간격을 남기고 나머지만 이 형제의 간격으로 쓸 수 있다 → 마지막 누적은 한도 이하, 간격은 늘 SIBLING_GAP.min 이상
-    const room = gapBudget - cumulative - (olderCount - i - 1) * SIBLING_GAP.min;
-    cumulative += Math.min(d.gap, room);
-    const sibAge = age + cumulative;
-    siblings.push({ kind: siblingKind(true, d.gender), age: sibAge, gap: cumulative, older: true, gone: sibAge > FAMILY_MAX_AGE });
+  for (const o of olderSiblingPlan(seed, report)) {
+    const sibAge = age + o.gap;
+    siblings.push({ kind: siblingKind(true, o.gender), age: sibAge, gap: o.gap, older: true, gone: sibAge > FAMILY_MAX_AGE });
   }
   const bornAt = game.seen[YOUNGER_SIBLING_EVENT];
   if (typeof bornAt === 'number' && report.birthOrder === 1) {

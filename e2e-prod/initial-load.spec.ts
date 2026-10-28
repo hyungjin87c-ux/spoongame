@@ -33,15 +33,17 @@ async function eventPoolMark(): Promise<string> {
 
 /**
  * 인용 테이블(citations.json) 덩어리의 본문 표지: 첫 인용 글의 앞 16자. 이름 풀 덩어리(R-520)의 표지: 1990년대 이름 풀의 앞 네 이름을 JSON 모양 그대로 이은 것(따옴표·쉼표 포함).
- * 둘 다 「태어나기」 뒤에만 내려와야 한다 — 첫 화면에서 한 번이라도 보이면 지연 덩어리 밖으로 샌 것이다(파일 이름이 아니라 본문으로 가린다).
+ * 가족 모델 표(SPEC-009 `familyData`)의 표지도 같은 방식이다. 모두 「태어나기」 뒤에만 내려와야 한다 — 첫 화면에서 한 번이라도 보이면 지연 덩어리 밖으로 샌 것이다(파일 이름이 아니라 본문으로 가린다).
  */
-async function dataMarks(): Promise<{ citation: string; names: string }> {
+async function dataMarks(): Promise<{ citation: string; names: string; family: string }> {
   const nodeFs = 'node:fs';
   const fs = (await import(nodeFs)) as { readFileSync(path: string, encoding: 'utf-8'): string };
   const cit = JSON.parse(fs.readFileSync('src/data/citations.json', 'utf-8')) as { citations: Array<{ text: string }> };
   const names = JSON.parse(fs.readFileSync('src/data/names.json', 'utf-8')) as { decades: Record<string, { male: { verified: string[]; estimated: string[] } }> };
   const pool = [...names.decades['1990'].male.verified, ...names.decades['1990'].male.estimated].slice(0, 4);
-  return { citation: cit.citations[0].text.slice(0, 16), names: pool.map((n) => JSON.stringify(n)).join(',') };
+  // 가족 모델 표(SPEC-009 D-4 `familyData`)의 표지: tables.json 머리 설명 글의 앞 24자 — 표가 첫 화면 덩어리로 새면 이 글자가 보인다
+  const fam = JSON.parse(fs.readFileSync('src/data/family/tables.json', 'utf-8')) as { note: string };
+  return { citation: cit.citations[0].text.slice(0, 16), names: pool.map((n) => JSON.stringify(n)).join(','), family: fam.note.slice(0, 24) };
 }
 
 type Got = { file: string; url: string; bytes: number; kind: 'image' | 'font' | 'text'; body: string | null };
@@ -121,6 +123,9 @@ for (const vp of VIEWPORTS) {
     expect(MARKS.names.length, '이름 풀 표지').toBeGreaterThan(10);
     expect(got.filter((g) => g.body?.includes(MARKS.citation)).map((g) => g.file), '인용 테이블이 첫 화면에서 내려왔다').toEqual([]);
     expect(got.filter((g) => g.body?.includes(MARKS.names)).map((g) => g.file), '이름 풀이 첫 화면에서 내려왔다(R-520)').toEqual([]);
+    // 가족 모델 표(SPEC-009 D-4 `familyData`)도 「태어나기」 뒤 덩어리에만 있다
+    expect(MARKS.family.length, '가족 표 표지').toBe(24);
+    expect(got.filter((g) => g.body?.includes(MARKS.family)).map((g) => g.file), '가족 모델 표가 첫 화면에서 내려왔다(SPEC-009 D-4)').toEqual([]);
     // 같은 주소 두 번 요청 없음
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
     // 그림: 오른쪽 위 일러스트는 없다(GS11) — 이미지 응답은 아이콘 계열뿐
@@ -155,6 +160,7 @@ for (const vp of VIEWPORTS) {
     // 인용 테이블·이름 풀(R-513·R-520): 「태어나기」 뒤 지연 덩어리에 한 번씩 들어 있다 (같은 덩어리 하나에 함께 있어도 된다)
     expect(got.filter((g) => g.body?.includes(MARKS.citation)).length, `인용 테이블을 한 번 받았다: ${describeGot(got)}`).toBe(1);
     expect(got.filter((g) => g.body?.includes(MARKS.names)).length, `이름 풀을 한 번 받았다: ${describeGot(got)}`).toBe(1);
+    expect(got.filter((g) => g.body?.includes(MARKS.family)).length, `가족 모델 표를 한 번 받았다(SPEC-009 D-4): ${describeGot(got)}`).toBe(1);
     expect(dupes(c.requested), '같은 주소를 두 번 요청했다').toEqual([]);
   });
 

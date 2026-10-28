@@ -228,8 +228,11 @@ export function createEventPool(input: readonly EventDef[]): EventPool {
 
 // ---------- 조건 평가 ----------
 
-/** 조건이 읽는 출생 가족 정보 (출생신고 상세에서 온다: 형제 순서와 태어났을 때 부모 나이) */
-export interface FamilyView {
+/**
+ * 조건이 읽는 출생 가족 정보 (출생신고 상세에서 온다: 형제 순서와 태어났을 때 부모 나이).
+ * (SPEC-009 FM4a: 예전 이름 `FamilyView`는 가족 모델의 보기 `core/familyModel.ts#FamilyView`가 가져갔다 — 이 타입은 이름만 바꿨고 모양은 그대로다.)
+ */
+export interface CondFamilyInfo {
   birthOrder: number;
   motherBirthAge: number;
   fatherBirthAge: number;
@@ -244,7 +247,7 @@ export interface CondContext {
   /** 지금 아이의 나이 (parentAge 조건에 필요) */
   age?: number;
   /** 출생 가족 정보 (birthOrder·parentAge 조건에 필요). 없으면 그 조건은 맞지 않는 것으로 본다. */
-  family?: FamilyView | null;
+  family?: CondFamilyInfo | null;
   /** 자산 현황 (assets 조건에 필요). 20세 미만은 null이고, 모르면(undefined) 그 조건은 맞지 않는다. */
   assets?: Assets | null;
 }

@@ -68,9 +68,16 @@ export function rollRegion(rng: Rng, birthYear: number): string {
 
 // ---------- 형제 순서·부모 나이 ----------
 
+/**
+ * 이 판의 형제 순서(출산 순위) 비중 [첫째, 둘째, 셋째 이상] — `rollOrder`가 주인공의 순서를 뽑는 데 쓰는 바로 그 분포(지역 통계, 지난 세상은 설계값).
+ * 가족 모델(core/familyBirth.ts)이 아래 동생 수의 이어짐 확률을 이 분포에서 유도하려고 내보낸다 (SPEC-009 FM4a). 동작은 예전과 같다.
+ */
+export function orderSharesOf(tilt: ReportTilt, regionName: string, birthYear: number): readonly [number, number, number] {
+  return ERA_REPORT_ADJUST[tilt].orderShares ?? regionOrderShares(regionOf(birthYear, regionName));
+}
+
 function rollOrder(rng: Rng, tilt: ReportTilt, regionName: string, birthYear: number): { order: number; bucket: 0 | 1 | 2 } {
-  const region = regionOf(birthYear, regionName);
-  const shares = ERA_REPORT_ADJUST[tilt].orderShares ?? regionOrderShares(region);
+  const shares = orderSharesOf(tilt, regionName, birthYear);
   const bucket = rng.weightedIndex(shares) as 0 | 1 | 2;
   if (bucket < 2) return { order: bucket + 1, bucket };
   return { order: 3 + rng.weightedIndex(THIRD_PLUS_SPLIT), bucket };

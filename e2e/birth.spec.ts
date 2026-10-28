@@ -81,7 +81,7 @@ async function expectedPlace(page: Page, region: string, year: number): Promise<
 // 세대·인생 길이를 고르는 첫 화면 자체(기본 선택·새로고침 유지)는 e2e/first-screen.spec.ts가 본다.
 
 for (const era of GENS) {
-  test(`${GENERATIONS[era].name}: 알려진 시드로 출생 — 룰렛 단계 저장 = core 기대값, 출생신고 화면·저장도 일치, 격자 11칸·세대 칸·서술문·외모 상위 %·집안 형편 구간·가로 넘침 확인`, async ({ page }) => {
+  test(`${GENERATIONS[era].name}: 알려진 시드로 출생 — 룰렛 단계 저장 = core 기대값, 출생신고 화면·저장도 일치, 격자 12칸·세대 칸·서술문·외모 상위 %·집안 형편 구간·가로 넘침 확인`, async ({ page }) => {
     await injectSave(page, titleState(KNOWN_SEED));
     await expect(page.getByTestId('title-screen')).toBeVisible();
     await chooseGeneration(page, era);
@@ -119,8 +119,8 @@ for (const era of GENS) {
     expect(sentence).toContain(`${r.birthWeightKg.toFixed(1)}kg ${c.gender === 'male' ? '남자아이' : '여자아이'}`);
     expect(sentence).not.toMatch(/수저|다이아|분위|[!！]/); // 서술문에는 등급명·소득 분위가 없다(인생 기록 첫 줄과 같은 문장, C4)
 
-    // 격자 11칸: 값이 저장된 출생 결과 그대로다 (화면은 계산하지 않는다)
-    await expect(page.locator('[data-testid^="birth-field-"]')).toHaveCount(11);
+    // 격자 12칸(SPEC-009 FM4a: 「형제자매」 칸이 더해졌다): 값이 저장된 출생 결과 그대로다 (화면은 계산하지 않는다)
+    await expect(page.locator('[data-testid^="birth-field-"]')).toHaveCount(12);
     expect(await field(page, 'gender')).toBe(c.gender === 'male' ? '남성' : '여성');
     expect(await field(page, 'month')).toBe(`${c.birthYear}년 ${r.month}월`);
     expect((await field(page, 'place')).replace(/\s+/g, '')).toBe((await expectedPlace(page, r.region, c.birthYear)).replace(/\s+/g, ''));
@@ -130,6 +130,8 @@ for (const era of GENS) {
     expect(HOUSING_LABELS).toContain(await field(page, 'housing'));
     expect(await field(page, 'weight')).toMatch(new RegExp(`^${r.birthWeightKg.toFixed(1)}kg \\([^()]+\\)$`));
     expect(ORDER_LABELS).toContain(await field(page, 'order'));
+    // 형제자매 칸은 기본값이 「위 형제만」이다(B-1) — 아래 동생은 어디에도 없다
+    expect(await field(page, 'siblings')).toMatch(/^위로 (없음|(형|누나|오빠|언니) \d명(, (형|누나|오빠|언니) \d명)*)$/);
     // 집안 형편: 「흙수저(하위 25% 안쪽)」 형식 = 수저 이름 + 세대 전체 기준 섞음 비율에서 만든 구간 (R-170, D4-48 — 연도를 드러내지 않는다)
     expect((await field(page, 'wealth')).replace(/\s+/g, '')).toBe((await expectedWealthLineOf(page, era, c.parentWealth)).replace(/\s+/g, ''));
     // 외모: 점수가 아니라 「상위/하위 약 N%」 (R-135), 교육방식

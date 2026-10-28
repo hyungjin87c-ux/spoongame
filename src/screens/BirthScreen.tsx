@@ -3,6 +3,8 @@ import { looksStanding } from '../core/birth';
 import { wealthMixtureOfGame } from '../core/birthProfile';
 import { birthSentence, reportPlaceLabel, weightStanding } from '../core/birthReport';
 import { startBandOf } from '../core/ending';
+import type { FamilyData } from '../core/familyModel';
+import { BIRTH_SIBLING_TEXT, birthSiblingLine } from '../data/birthSiblingText';
 import { peersOf } from '../core/peers';
 import { yearBasisOf } from '../core/generationMixture';
 import { R1_PRESENT, type BirthReport, type Character, type ProfileId } from '../core/types';
@@ -40,6 +42,8 @@ interface Props {
   peerSeed: number;
   /** 시도를 직접 골라 시작한 판인가 (수저 구간을 줄어든 연도 집합으로 센다, RG2) */
   regionPicked?: boolean;
+  /** 가족 구성 (SPEC-009 FM4a) — 있으면 「형제자매」 칸을 보인다(위 형제만, B-1 기본값 — `data/birthSiblingText.ts#BIRTH_SIBLING_DISPLAY`). 없는 옛 상태는 칸이 없다 */
+  family?: FamilyData;
   onNext: () => void;
 }
 
@@ -68,7 +72,7 @@ function Field({ id, label, wide, span2, children }: { id: string; label: string
   );
 }
 
-export function BirthScreen({ generation, character: c, report, peerSeed, regionPicked = false, onNext }: Props) {
+export function BirthScreen({ generation, character: c, report, peerSeed, regionPicked = false, family, onNext }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const barRef = useRef<HTMLDivElement>(null);
   useThemeSurface();
@@ -155,6 +159,11 @@ export function BirthScreen({ generation, character: c, report, peerSeed, region
               <Field id="order" label={BIRTH_TEXT.gridLabels.order}>
                 {orderText(report.birthOrder)}
               </Field>
+              {family === undefined ? null : (
+                <Field id="siblings" label={BIRTH_SIBLING_TEXT.label}>
+                  {birthSiblingLine(family, c.gender)}
+                </Field>
+              )}
               <Field id="looks" label={BIRTH_TEXT.gridLabels.looks}>
                 <span className="cell-sub">{BIRTH_TEXT.looksSub}</span> {looks}
               </Field>

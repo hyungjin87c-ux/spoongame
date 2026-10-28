@@ -97,7 +97,7 @@ export function beginBirth(
   // 랜덤 세대: 난수 1번으로 세대를 먼저 뽑고(같은 시드 → 같은 세대), 이어서 그 세대의 출생 결과를 정한다
   const fromRandom = choice === 'random';
   const generation: ProfileId = choice === 'random' ? pickRandomGeneration(rng) : choice;
-  const { character, stats, report, peerSeed } = generateBirth(rng, { generation, regionPick });
+  const { character, stats, report, peerSeed, family } = generateBirth(rng, { generation, regionPick });
   const next: GameState = {
     ...state,
     phase: 'roulette',
@@ -108,6 +108,7 @@ export function beginBirth(
     birthStats: { ...stats },
     birthReport: report,
     peerSeed,
+    family,
     age: 0,
     history: [],
     flags: [],

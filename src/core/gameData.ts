@@ -21,6 +21,34 @@ export interface NamesApi {
   namePoolIdOf(birthYear: number): NamePoolId;
 }
 
+/**
+ * 가족 모델의 표 (SPEC-009 FM4a — 설계 문서 D-4 `familyData` 덩어리): 사망확률·어머니 출산 연령 분포·조부모 동거 비율·부모 이혼 비율. 묶음 B(집)·C·D 자료가 오면 칸이 늘어난다(없는 칸은 코어가 「자료가 오기 전 동작」으로 돈다).
+ * 값의 출처와 정리 규칙은 `scripts/genFamilyTables.ts`와 `data/familyTables.ts#FAMILY_BASIS`에 있다. 구현은 `data/familyTables.ts`(지연 덩어리)다.
+ */
+export interface FamilyTables {
+  mortality: {
+    firstYear: number;
+    lastYear: number;
+    classes: number;
+    /** 5세 구간 사망확률 Q: [성 0 남 1 여][구간 0~21][해 − firstYear] */
+    qx: number[][][];
+    /** 공식 기대수명 1970~1985 최소제곱 기울기(살/년): [남, 여] */
+    e0Slope: number[];
+  };
+  motherAge: {
+    bins: string[];
+    vitalFrom: number;
+    /** 인구동향조사 1981~: [해 − vitalFrom][일곱 칸 %] */
+    vital: number[][];
+    /** 센서스 역산 5년 묶음 1956~1980 */
+    census: Array<{ from: number; to: number; census: number; childAge: number; pct: number[] }>;
+    /** 부모 출생 연도가 `to` 이하이면 출산 연령을 `by`살 이른 쪽으로 (추정) */
+    shift: Array<{ to: number; by: number }>;
+  };
+  household: { multiplier: number; points: Array<[number, number, string]> };
+  divorce: { rateFrom: number; rate: number[]; crudeFrom: number; crude: number[] };
+}
+
 export interface GameData {
   eventPool: EventPool;
   birthYears: BirthYearTables;
@@ -28,6 +56,8 @@ export interface GameData {
   citations: readonly CitationRecord[];
   /** 이름 풀과 성씨 — 첫 화면은 쓰지 않아 지연 로드 덩어리에 들어간다(출처 줄은 `titleText.ts#NAME_CREDIT`에 따로 있다) */
   names: NamesApi;
+  /** 가족 모델의 표 (SPEC-009 FM4a `familyData`) — 첫 화면은 쓰지 않아 지연 로드 덩어리에 들어간다 */
+  family: FamilyTables;
 }
 
 let installed: GameData | null = null;
@@ -66,4 +96,8 @@ export function citationTable(): readonly CitationRecord[] {
 
 export function namesApi(): NamesApi {
   return gameData().names;
+}
+
+export function familyTables(): FamilyTables {
+  return gameData().family;
 }

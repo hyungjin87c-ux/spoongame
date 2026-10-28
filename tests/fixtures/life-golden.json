@@ -1,0 +1,28 @@
+{
+  "note": "SPEC-009 FM4a 이전 코드로 만든 골든 해시 (scripts/familyGolden.ts)",
+  "seeds": {
+    "l0": 1000,
+    "l1": 40
+  },
+  "step": 37,
+  "strategies": [
+    "auto",
+    "first"
+  ],
+  "cells": {
+    "industrial/auto": "f470c1d1",
+    "industrial/first": "92e45185",
+    "boomer/auto": "72e2d1ee",
+    "boomer/first": "7cb2b112",
+    "g86/auto": "a3daab59",
+    "g86/first": "c564b5ac",
+    "genx/auto": "4346cc1a",
+    "genx/first": "09f206f3",
+    "millennial/auto": "f7d0df4d",
+    "millennial/first": "b079b32d",
+    "genz/auto": "0e6d384e",
+    "genz/first": "b5ab8dc0",
+    "alpha/auto": "b484c051",
+    "alpha/first": "041b9bd1"
+  }
+}

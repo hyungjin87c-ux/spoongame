@@ -1,4 +1,5 @@
 import type { CurrentRegionName } from '../data/regionKeys';
+import type { FamilyData } from './familyModel';
 
 /**
  * 저장되는 화면 단계. SPEC-003 FS1: title → roulette → birth → life → ending. 별도 시대 선택 단계(eraSelect)는 없어졌다 — 세상·인생 길이는 첫 화면(title)에서 고른다.
@@ -324,6 +325,12 @@ export interface GameState {
   regionPicked?: true;
   /** 「랜덤 세대」 줄로 시작해 세대가 뽑힌 판인가 (선택 필드 — GS3): `true`만 쓴다. 룰렛 머리에 「랜덤 세대에서 뽑힌」이 보인다. */
   fromRandom?: true;
+  /**
+   * 가족 구성 (선택 필드 — SPEC-009 FK·FM4a, 설계 문서 `docs/data/family-model.md` 2절): 조부모·부모 별세 나이, 위·아래 형제, 함께 사는 조부모 쪽, 알린 변화 로그. 「태어나기」에서 한 번 뽑는다(core/familyBirth.ts).
+   * 나이·생존·동거·사이는 저장하지 않고 이 값과 주인공 나이에서 다시 계산한다(core/familyView.ts). 저장 스키마는 v9 그대로이고 값이 이상하면 판을 버리지 않고 이 필드만 버린다(core/familyStorage.ts#withValidFamily).
+   * 없는 판(v0.3.0까지의 저장)은 `ensureFamily`가 옛 계산 결과를 스냅샷으로 삼아 채운다.
+   */
+  family?: FamilyData;
 }
 
 export const SPEEDS = [1, 2, 4, 8] as const;
