@@ -58,3 +58,7 @@
 - 대체 글꼴 맞춤(맑은 고딕 → Noto Sans KR 수직 metric·폭): size-adjust 92.19% · ascent-override 116.00% · descent-override 28.80% · line-gap-override 0.00% (Noto: upm 1000, hhea 1160/-288/0, 표본 평균 폭 905.8 · 맑은 고딕: upm 2048, hhea 2229/-495/0, 표본 평균 폭 2012.2; 표본 = 첫 화면 한글 247자 + 숫자).
 
 - `noto-sans-kr.css` 39,024B(원문) · brotli 압축 ≈ **4,133B**(unicode-range 목록이 길지만 압축이 잘 된다 — 초기 로드 셈에는 이 압축 바이트가 들어간다).
+
+## 갱신(2026-10-28, SPEC-009 FM5b 후속 — designer r5)
+
+- `s2`·`s3` 네 파일과 `noto-sans-kr.css`의 s2·s3 `unicode-range`를 `src/assets/fonts/`·`src/styles/fonts.css`와 같게 맞췄다(FM5b에서 developer가 새 문장 글자 7개 — 볐 잣 탱 웅 텔 땔 엌 — 때문에 s2·s3만 다시 만듦: 400 s2 52,648B · 700 s2 52,244B · 400 s3 105,692B · 700 s3 105,164B). `s0`·`s0b`·`s1`은 GM4 이후 src 쪽이 다른 글자 집합(첫 화면 글자 재배치)으로 바뀌어 있어 **이 사본과 다르다** — 시안(gm3 목업)은 자기 CSS의 범위로 s0·s0b·s1을 쓰므로 그대로 두었고, 전부 맞추려면 `buildGm3Fonts.mjs`를 다시 돌려야 한다(마스터 판단).
