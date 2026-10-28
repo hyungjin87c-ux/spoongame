@@ -1,0 +1,12 @@
+import { open, sleep, rec, GAME_KEY } from './g4-lib.mjs';
+import fs from 'node:fs';
+const LAZY = /assets\/(birthYearData|names|citationsAccess)-.*\.js/;
+const { browser, page } = await open('d1280');
+await page.goto('http://localhost:4377/'); await page.evaluate(([k, s]) => localStorage.setItem(k, s), [GAME_KEY, fs.readFileSync(process.argv[2] + '/life-save.json', 'utf8')]);
+await page.route(LAZY, (r) => r.abort()); await page.reload(); await sleep(2500);
+const a = await page.evaluate(() => ({ txt: document.body.innerText.replace(/\n/g, ' ').slice(0, 120), btns: [...document.querySelectorAll('button')].map((b) => b.innerText.trim()) , role: document.querySelector('[role=alert],[role=status]')?.innerText }));
+await page.unroute(LAZY); await sleep(300);
+await page.getByRole('button', { name: '다시 시도' }).click(); await sleep(2500);
+const b = await page.evaluate(() => ({ life: !!document.querySelector('[data-testid="life-screen"]'), txt: document.body.innerText.replace(/\n/g, ' ').slice(0, 60) }));
+rec('O04c', '저장이 있는 채 부팅 + 지연 덩어리 막힘 → 해제 후 「다시 시도」', '실패 안내 → 다시 시도로 인생 복원', JSON.stringify(a) + ' → ' + JSON.stringify(b), b.life ? 'PASS' : 'FAIL');
+await browser.close();

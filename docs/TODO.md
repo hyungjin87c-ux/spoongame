@@ -395,6 +395,7 @@
     - [ ] (R-528, designer → developer) SupersededScreen 불러오기 실패 안내를 합쇼체 한 줄로(copy.md에 정한 뒤 반영)
     - [ ] (R-529, developer) e2e-prod 글꼴 2.5초 지연 상태 첫 화면 layout-shift 합 < 0.1 (1280·360)
     - [ ] (R-523 후속, developer — 마스터 결정 2026-10-28: designer 추천 C 채택) PC 세대 목록 창 clamp 하한 9rem → 10.5rem(src/styles/title.css .gen-list, e2e/first-screen-layout.spec.ts clamp 글자) — 800·768 높이 값 불변, 768 미만만 +24px. 근거 docs/design/design-system.md 17-13-1
+    - [ ] (QA-004-GM4 RECORD 2, designer → developer — 마스터 결정 2026-10-28) PC 캐러셀 카드 높이가 장마다 436~696px로 달라 9초마다 오르내림 → 360처럼 가장 높은 장 기준으로 카드 높이 고정(또는 디자이너 대안) — qa/reports/QA-004-GM4.md
   - [ ] GM5 세대별 BGM(developer·designer, **게이트 ⑤ 형진 님 청취**, SPEC-004 문서 BG1~BG10) — 장르 엔진 확장·7장르 악보·변주 사양·`bgm-lab`, 순수 함수 `eraGenreOf`·`bgmGenreAt`·`bgmMoodAt`(변주는 채택 6군 8년을 임시 상수로 먼저, 연표가 들어오면 `BGM_MOOD_YEARS` 자동 생성), 악보·엔진은 BGM을 켤 때만 불러옴. GM4와 병렬 가능, 선행: GM1
   - [ ] GM6 연표 코어 + 체험 1차(developer, SPEC-004 문서 TL1~TL17·GE) — `timeline.json` 스키마·`check:timeline` V-01~V-27 · 앵커(TL14)·줄 예산(TL15)·`requires`(TL16) · 연표 줄 시간(TL13: `timelineLineMs`·`holdMsFor`·`report:time`의 `timelineLines` 열) · lint 규칙 세트·`WORD_YEARS` · tier 1 체험 사건 ≥ 20(GD5 최소 커버 밴드 우선, 40세 이상 변형 보강) · GE2 보강·GE3 새 후보 번호 배정 · `check:motifs`·겹침 점검에 받은 글 31건 확장(GE7). 선행: GM1, GM4
   - [ ] GM7 지역 체감(developer·reviewer·형진 님, **게이트 ④ 사건별 승인**, SPEC-004 문서 RG4~RG11·SS) — 지역 체감 사건 작성·수위 판독·비교 카드. R-11 태풍 루사 승인 시 2002 월드컵 변주가 사라지는 효과를 함께 보여 드림(BG3). 선행: GM2(DC13), GM6
