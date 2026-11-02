@@ -1,4 +1,4 @@
-import { familyTables, type EarlyLossRule } from '../src/core';
+import { familyTables, withParentsGoneRule, withSiblingCountRule, type EarlyLossRule } from '../src/core';
 
 /**
  * 가족 규칙 스위치 (SPEC-009 FM4b — 측정·시험 전용): 이른 부모 별세 효과(`design.earlyLoss.enabled`)를 `fn` 동안만 켜거나 끈다. 앱은 쓰지 않는다 — 켜진 채가 배포 값이다.
@@ -32,3 +32,11 @@ export const EARLY_LOSS_HALF: Partial<EarlyLossRule> = {
   stats: { happiness: -4, relationships: -1, health: -1 },
   family: { father: -250, mother: -150, motherHomemaker: -75 },
 };
+
+/**
+ * K1(형제 수 새 정의로 상속)과 R-562(「두 분 모두 떠남」을 가족 보기와 같게)를 **켜기 전의 옛 규칙**으로 `fn` 동안만 돌린다 — 해시 불변 L1 시험(변경 전 골든)과 재측정의 V0~V3 세계가 쓴다.
+ * 앱은 쓰지 않는다 — 켜진 채가 배포 값이다 (FM6).
+ */
+export function withLegacyInheritance<T>(fn: () => T): T {
+  return withSiblingCountRule('legacy', () => withParentsGoneRule('legacy', fn));
+}

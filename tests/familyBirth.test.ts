@@ -19,6 +19,7 @@ import {
   olderSiblingPlan,
   orderSharesOf,
   parentGoneAtOf,
+  peersOf,
   rollFamilyBirth,
   rollGrandparents,
   rollYoungerSiblings,
@@ -45,12 +46,14 @@ interface Born {
   family: FamilyData;
   peerSeed: number;
   wealth: number;
+  name: string;
+  month: number;
 }
 
 const ALL: Born[] = GENERATION_IDS.flatMap((gen, gi) =>
   spreadSeeds(N, gi).map((seed) => {
     const b = generateBirthFromSeed(seed, gen);
-    return { gen, seed, birthYear: b.character.birthYear, gender: b.character.gender, report: b.report, family: b.family, peerSeed: b.peerSeed, wealth: b.character.parentWealth };
+    return { gen, seed, birthYear: b.character.birthYear, gender: b.character.gender, report: b.report, family: b.family, peerSeed: b.peerSeed, wealth: b.character.parentWealth, name: b.character.name, month: b.report.month };
   }),
 );
 
@@ -94,13 +97,17 @@ describe('같은 입력은 같은 구성이다 (순수성·결정성)', () => {
 
   it('스트림 독립: 조부모 추첨이 바뀌어도(같은 부모, 다른 출생 연도 보정 없이) 형제 구성의 굴림은 해시라 서로 밀리지 않는다 — 같은 famSeed로 동생을 따로 굴려도 같다', () => {
     for (const b of ALL.slice(0, 200)) {
-      expect(rollYoungerSiblings(famSeedOf(b.peerSeed), b.report.birthOrder, b.report.mother.age, sharesOf(b), lastAtOf(b), b.birthYear - b.report.mother.age)).toEqual(b.family.y);
+      // 식구 이름(`n`)은 FM6에서 구성에 들어갔다 — 이 시험은 굴림(성별·터울·독립 나이)만 견준다
+      const bare = b.family.y.map(({ n: _n, ...rest }) => rest);
+      expect(rollYoungerSiblings(famSeedOf(b.peerSeed), b.report.birthOrder, b.report.mother.age, sharesOf(b), lastAtOf(b), b.birthYear - b.report.mother.age)).toEqual(bare);
     }
   });
 
   it('출생 결과의 family는 재생성과 같다: generateBirth가 만든 값 = rollFamilyBirth(famSeedOf(peerSeed), …)', () => {
     for (const b of ALL.filter((_, i) => i % 7 === 0)) {
-      const input = { birthYear: b.birthYear, gender: b.gender, report: b.report, parentWealth: b.wealth as 1, orderShares: sharesOf(b), siblingSeed: b.peerSeed };
+      // 식구 이름은 주인공·또래(VP3)와 겹치지 않게 뽑는다(FA0-6) — 출생과 같은 피할 이름 목록(주인공 + 또래)을 준다
+      const avoidNames = [b.name, ...peersOf(b.peerSeed, b.birthYear, b.month, b.name).map((p) => p.name)];
+      const input = { birthYear: b.birthYear, gender: b.gender, report: b.report, parentWealth: b.wealth as 1, orderShares: sharesOf(b), siblingSeed: b.peerSeed, name: b.name, avoidNames };
       expect(rollFamilyBirth(famSeedOf(b.peerSeed), input)).toEqual(b.family);
     }
   });

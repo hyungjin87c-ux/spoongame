@@ -5,6 +5,7 @@ import {
   STATE_WORD_RULES,
   YOUNGER_SIBLING_EVENT,
   deriveFamilyFlags,
+  familyCardOf,
   familyViewOf,
   heavyKindOfEntry,
   isValidFamily,
@@ -50,10 +51,14 @@ interface Tally {
   /** 판 끝의 `family` 저장 길이(JSON 글자 수) 최댓값 · 로그 줄 수 최댓값 (2-3절 ≤ 1000자) */
   maxLen: number;
   maxLog: number;
+  /** FM6 카드: 배우자·자녀·친구가 보인 판 수 */
+  spouse: number;
+  child: number;
+  friend: number;
 }
 
 describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
-  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0 };
+  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0, spouse: 0, child: 0, friend: 0 };
   const problems: string[] = [];
   const bad = (where: string, msg: string): void => {
     if (problems.length < 40) problems.push(`${where}: ${msg}`);
@@ -67,6 +72,9 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
         const where = `${gen}/${seed}`;
         const goneEver = new Set<PersonId>();
         let prevLogLen = 0;
+        // 사이는 사건 없이 슬며시 바뀌지 않는다(FC2): 사람마다 (사이, 사이에 닿는 플래그 모음)을 기억해 플래그가 같은데 사이가 바뀌면 위반
+        const closeSeen = new Map<string, { closeness: number; sig: string }>();
+        const kinds = { spouse: false, child: false, friend: false };
         for (const { state, before } of steps) {
           tally.checks++;
           const f = state.family!;
@@ -108,11 +116,42 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
           prevLogLen = f.l.length;
           // 저장 검증을 통과한다
           if (!isValidFamily(f, state)) bad(where, `${age}세 family가 저장 검증을 통과하지 못한다`);
+          // FC10 (R-542 해소): 카드의 사람 수(친구 제외) = 함께 사는 사람 + 따로 사는 사람 + 떠난 사람 = 보기의 사람 전체, 카드의 형제 줄(떠난 형제 제외) = 상속이 읽는 형제 수(INV-10)
+          const card = familyCardOf(state);
+          const together = view.people.filter((p) => p.state === 'with').length;
+          const apart = view.people.filter((p) => p.state === 'apart').length;
+          const goneN = view.people.filter((p) => p.state === 'gone').length;
+          if (card.counts.people !== together + apart + goneN || card.together.length + card.apart.length + card.adult.length + card.gone.length !== view.people.length) bad(where, `${age}세 카드 사람 수 ${card.counts.people} ≠ ${together}+${apart}+${goneN}`);
+          if (card.together.length + card.adult.filter((r) => r.state === 'with').length !== view.household.length) bad(where, `${age}세 카드의 함께 사는 사람 ≠ 보기의 함께 사는 사람`);
+          const sibRows = [...card.together, ...card.apart].filter((r) => r.role === 'sibling').length;
+          if (sibRows !== siblingCountOf(state)) bad(where, `${age}세 카드의 형제 줄 ${sibRows} ≠ 상속의 형제 수 ${siblingCountOf(state)}`);
+          const everyone = [...card.together, ...card.apart, ...card.adult, ...card.friends, ...card.gone];
+          const fullNames = [state.character!.name, ...everyone.map((r) => r.name)];
+          if (new Set(fullNames).size !== fullNames.length) bad(where, `${age}세 이름이 겹친다`);
+          if (everyone.some((r) => !/^[가-힣]{2,5}$/.test(r.name))) bad(where, `${age}세 이름 모양이 이상하다`);
+          const kids = card.adult.filter((r) => r.role === 'child').length;
+          if (kids > 4 || card.adult.filter((r) => r.role === 'spouse').length > 1 || card.friends.length > 3) bad(where, `${age}세 자녀 ${kids}·배우자·친구 ${card.friends.length} 한도`);
+          if (card.things.length > 8) bad(where, `${age}세 가진 것 ${card.things.length} > 8`);
+          for (const r of card.gone) if (r.goneText === undefined && r.role !== 'friend') bad(where, `${age}세 떠난 ${r.key}의 「N세에 세상을 떠남」이 없다`);
+          for (const r of everyone) {
+            if (r.state === 'gone') continue;
+            if (r.closeness === null || r.closeness < 1 || r.closeness > 5) bad(where, `${age}세 ${r.key} 사이 ${r.closeness}`);
+            // 사이에 닿는 플래그 모음: 표의 플래그 + 시스템 별거 플래그. 같은 모음에서 사이가 바뀌면 안 된다
+            const sig = ['sibling_close', 'grandparent_close', 'cared_parents', 'child_distant', 'child_left', 'friend_back', 'close_friend', 'divorced', 'broke_up', 'reunited', 'mother_apart', 'father_apart'].map((x) => (state.flags.includes(x) ? 1 : 0)).join('');
+            const prev = closeSeen.get(r.key);
+            if (prev !== undefined && prev.sig === sig && prev.closeness !== r.closeness) bad(where, `${age}세 ${r.key} 사이가 사건 없이 바뀌었다 (${prev.closeness} → ${r.closeness})`);
+            closeSeen.set(r.key, { closeness: r.closeness ?? 0, sig });
+          }
+          if (card.adult.some((r) => r.role === 'spouse')) kinds.spouse = true;
+          if (kids > 0) kinds.child = true;
+          if (card.friends.length > 0) kinds.friend = true;
           // INV-11: 그림은 7명·반려동물 2마리 이하
           const scene = sceneFamilyOf(state);
+          // FC10: 그림의 식구(밀려난 사람 포함) = 함께 사는 사람 = 카드의 함께 사는 사람
+          if (scene.members.length + scene.overflow !== together) bad(where, `${age}세 그림 식구 ${scene.members.length}+${scene.overflow} ≠ 함께 사는 사람 ${together}`);
           if (scene.members.length > 7 || scene.pets.length > 2) bad(where, `${age}세 그림 식구 ${scene.members.length}`);
-          // INV-10: 보기의 형제 수 = 새 정의의 상속 형제 수
-          if (siblingCountOf(state, 'view') !== view.siblingCount.living) bad(where, `${age}세 형제 수 불일치`);
+          // INV-10: 보기의 형제 수 = 상속이 실제로 쓰는 형제 수 (K1을 켰다 — 규칙 인자를 주지 않고 지금 규칙 그대로 부른다. 'view'를 넘기면 동어반복이다, R-559)
+          if (siblingCountOf(state) !== view.siblingCount.living) bad(where, `${age}세 형제 수 불일치`);
           // 이 걸음에서 새로 생긴 줄만 센다
           const added = state.history.slice(before.history.length);
           for (const h of added) {
@@ -135,6 +174,9 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
         const last = steps[steps.length - 1].state;
         const f = last.family!;
         // 크기(2-3절): 판을 끝까지 돌린 뒤의 family도 저장 한도 안이다 (R-560)
+        if (kinds.spouse) tally.spouse++;
+        if (kinds.child) tally.child++;
+        if (kinds.friend) tally.friend++;
         const size = JSON.stringify(f).length;
         tally.maxLen = Math.max(tally.maxLen, size);
         tally.maxLog = Math.max(tally.maxLog, f.l.length);
@@ -192,6 +234,9 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
     expect(tally.gp, '조부모 별세 줄').toBeGreaterThan(100);
     expect(tally.parentGone, '부모 한 분 별세 줄').toBeGreaterThan(30);
     expect(tally.apart, '이혼·별거 줄').toBeGreaterThan(10);
+    expect(tally.spouse, 'FM6 카드: 배우자가 보인 판').toBeGreaterThan(30);
+    expect(tally.child, 'FM6 카드: 자녀가 보인 판').toBeGreaterThan(30);
+    expect(tally.friend, 'FM6 카드: 친구가 보인 판').toBeGreaterThan(30);
     expect(tally.heavy, '가림 분류가 붙은 줄(별세·이혼)').toBeGreaterThan(100);
     expect(tally.plain, '분류 없는 줄(동생 출생·독립)').toBeGreaterThan(100);
     expect(tally.maxLen, `판 끝 family 최대 ${tally.maxLen}자 · 로그 최대 ${tally.maxLog}줄`).toBeLessThanOrEqual(1000);

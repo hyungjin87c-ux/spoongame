@@ -51,6 +51,8 @@ export interface FamilyTables {
   housing: HousingTables;
   /** 코어가 쓰는 설계값 (R-534) — 값과 근거를 한 자리에 둔다 */
   design: FamilyDesign;
+  /** 표 칸마다의 근거 구분과 한 줄 설명 (FA0-4) — 가족과 삶 카드 맨 아래 접이식 「이 칸은 어떻게 정했나요」가 읽는다 */
+  basis: ReadonlyArray<{ id: string; basis: 'official' | 'calc' | 'estimated' | 'design'; note: string }>;
 }
 
 /** 집 표(FD11~FD13): 거처 종류 여섯 칸의 순서는 `kinds`(단독 · 아파트 · 연립 · 다세대 · 비거주용 건물 내 · 주택 이외의 거처)다 */
@@ -96,6 +98,83 @@ export interface FamilyDesign {
   home: DesignValue<HomeDesign>;
   /** 이른 부모 별세 효과 (4-7절 (1), FA0-8 예외 · A-6 초안 ▲): 주인공 `maxAge` 이하에 한 분이 떠나는 해에만 한 번. `enabled: false`면 기록 전용(측정·시험에서 끈다) */
   earlyLoss: DesignValue<EarlyLossRule>;
+  /** 성인기 식구 (FC5·FC6, 10절): 배우자 나이 차 · 자녀 수·터울 · 친구 수 */
+  adult: DesignValue<AdultDesign>;
+  /** 사이 말의 계산 (FC2): 호칭별 기본값 · 양육 방식 기울임 · 시드 ±1 · 플래그가 만드는 변화 표 */
+  closeness: DesignValue<ClosenessDesign>;
+  /** 반려동물 (FK1): 이름 목록(끝에만 추가) · 종별 수명 */
+  pets: DesignValue<PetDesign>;
+  /** 가진 것 (FK2): 항목 · 보급률 시계열 · 수저 기울임 */
+  possessions: DesignValue<PossessionDesign>;
+}
+
+export interface AdultDesign {
+  /** 남편 − 아내 나이 차 분포의 모양 (`FATHER_GAP`과 같은 꼴: 범위·봉우리·퍼짐) */
+  spouseGap: { min: number; max: number; peak: number; spread: number };
+  /** 첫 자녀 출생 연도 `upTo` 이하일 때 자녀 수 1~4명의 가중 */
+  childCount: Array<{ upTo: number; weights: [number, number, number, number] }>;
+  childGap: { min: number; max: number };
+  /** 둘째 이후 자녀가 태어날 수 있는 마지막 주인공 나이 */
+  childLastAge: number;
+  /** 가까운 친구 1·2·3명의 확률 */
+  friendCount: [number, number, number];
+  /** 친구의 나이 차(친구 출생 연도 − 주인공 출생 연도) 범위 */
+  friendAgeOffset: { min: number; max: number };
+  /** 사건을 본 나이를 알 수 없는 상태(시험이 직접 만든 플래그)에서 쓰는 나이 */
+  fallbackAt: { spouse: number; child: number; friend: number };
+}
+
+export type ClosenessRole = 'mother' | 'father' | 'grandparent' | 'sibling' | 'spouse' | 'child' | 'friend';
+
+/** 플래그가 만드는 사이 변화 한 줄: `who`의 사이에 `delta`를 더하고, `floor`보다 낮지 않게 · `cap`보다 높지 않게 한다 (1 멀어짐 … 5 아주 가까움) */
+export interface ClosenessFlagRule {
+  flag: string;
+  /** `'off'`이면 이 플래그가 **꺼져 있을 때** 적용한다 (기본 `'on'`) */
+  when?: 'on' | 'off';
+  who: ClosenessRole[];
+  delta?: number;
+  floor?: number;
+  cap?: number;
+  /** 이 변화를 만드는 사건의 방향을 한 줄로 (시험이 사건의 관계 점수 방향과 맞춘다) */
+  note: string;
+}
+
+export interface ClosenessDesign {
+  base: Record<ClosenessRole, number>;
+  /** 양육 방식 기울임 — 부모에게만 */
+  parenting: Record<'neglect' | 'free' | 'helicopter' | 'strict', number>;
+  /** 시드 ±1단계: 한 단계 낮을 확률 · 높을 확률 */
+  seedStep: { down: number; up: number };
+  flags: ClosenessFlagRule[];
+}
+
+export interface PetDesign {
+  /** 반려동물 이름 (상호 아님). **끝에만 추가**한다 — 순서를 바꾸면 알려진 시드의 이름이 달라진다 */
+  names: string[];
+  /** 종별 수명(년, 균등) — 공식 통계가 없는 설계값 */
+  lifeYears: Record<'dog' | 'cat' | 'other', { min: number; max: number }>;
+}
+
+export interface PossessionItem {
+  id: string;
+  /** 일반 명사 (상호·제품명 금지) */
+  name: string;
+  /** 보급이 시작된 연도 — 이 앞에는 집에 없다 */
+  start: number;
+  /** 가구 보급률(%) 시계열 `[연도, %]` — 사이는 선형, 앞은 0, 뒤는 마지막 값 유지(2025 뒤는 새 물건 없음) */
+  points: Array<[number, number]>;
+  /** 그림에 그려지는 소품과 묶인 항목 */
+  tie?: 'tv' | 'aircon' | 'car';
+  /** 이 항목을 가지면 카드에서 가려지는 앞 세대 물건 (컬러 텔레비전 → 흑백 텔레비전) */
+  supersedes?: string;
+}
+
+export interface PossessionDesign {
+  items: PossessionItem[];
+  /** 수저 기울임 세기 0~1 (평균 보존 방식 — 0이면 수저와 무관) */
+  wealthTilt: number;
+  /** 카드 「집에 있는 것」에 글자로 보이는 항목 수 상한 */
+  displayMax: number;
 }
 
 /** 집 고르기의 설계값: 표가 없는 구간을 메우는 방법과 매핑 */

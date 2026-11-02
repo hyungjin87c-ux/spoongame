@@ -22,6 +22,7 @@ import {
 } from '../data/sceneTables';
 import { FAMILY_TAG, type PersonId, type SceneFamilyState, type SceneMember } from './familyModel';
 import { famHash01, famSeedOf } from './familyRng';
+import { possessionTiesOf } from './possessions';
 import { sceneFamilyOf, type FamilyGame } from './familyView';
 import type { Gender, ParentWealth } from './types';
 
@@ -55,7 +56,7 @@ export interface SceneInput {
   wealth: ParentWealth;
   /** 가족 시드(`famSeedOf`) */
   seed: number;
-  /** 「가진 것」(FK2)에서 이 집이 가진 항목 중 그림에 묶인 것. FM6 전에는 비어 있다 */
+  /** 「가진 것」(FK2)에서 이 집이 가진 항목 중 그림에 묶인 것 (`core/possessions.ts#possessionTiesOf`) */
   possessions: ReadonlySet<PropTie>;
 }
 
@@ -103,8 +104,8 @@ function placeTextOf(region: string, year: number, sigungu: string | undefined):
   }
 }
 
-/** 게임 상태 → 그림 입력. 가족 상태는 `sceneFamilyOf`가 만든다(FA0-1) */
-export function sceneInputOf(game: FamilyGame, possessions: ReadonlySet<PropTie> = new Set()): SceneInput {
+/** 게임 상태 → 그림 입력. 가족 상태는 `sceneFamilyOf`가, 그림에 묶인 「가진 것」(안테나·에어컨·승용차)은 `possessionTiesOf`(FK2)가 만든다(FA0-1) */
+export function sceneInputOf(game: FamilyGame, possessions: ReadonlySet<PropTie> = possessionTiesOf(game)): SceneInput {
   const state = sceneFamilyOf(game);
   const report = game.birthReport!;
   const where = placeTextOf(report.region, state.calYear, report.sigungu);
@@ -512,6 +513,22 @@ export function sceneLineOf(input: SceneInput): string {
   }
   const last = crowdedLine(input.placeShort);
   return last;
+}
+
+/**
+ * 신원 카드 「지금 사는 곳」 (SPEC-009 FC8): 「{사는 곳} · {집 낱말}」 — 그림·아래 한 줄과 **같은 입력**(`sceneInputOf`)에서 같은 함수(`houseKindOf`·`houseWordOf`)로 만든다.
+ * 시도는 평생 출생 시도(SPEC-004 RG5·RG9, K16 — 이사는 같은 시도 안의 이동만이고 이사 사건은 FM7 이후)이고 그 해의 행정구역 이름이다. 시군구는 출생신고에 있는 판(시험 전용 2026년생)만 보인다.
+ */
+export function currentHomeOf(input: SceneInput): { place: string; word: string } {
+  const { state } = input;
+  const kind = state.homeKind === null && state.dwelling !== 'care' ? null : houseKindOf(state, input.wealth);
+  return { place: input.place, word: houseWordOf(kind, state.calYear) };
+}
+
+/** 「지금 사는 곳」을 한 줄 글자로 (시험·대체 글용) — 화면은 두 항목을 `FitPair`로 그려 좁으면 기호 없이 두 줄이 된다 */
+export function currentHomeTextOf(input: SceneInput): string {
+  const { place, word } = currentHomeOf(input);
+  return `${place} · ${word}`;
 }
 
 export interface SceneRow {

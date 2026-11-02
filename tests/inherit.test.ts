@@ -4,7 +4,7 @@ import { ECONOMY } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
 import type { EventDef } from '../src/core';
 import { INHERIT_NOTE_TEXT } from '../src/data/lifeTable';
-import { advanceYear, familyOf, inheritanceAmount, inheritanceDue, dwellingWhenParentsGone, parentsJustGone, incomeOf, economyContextOf, parseGame, serializeGame, parentsAllGone, previewChoice, resolveChoiceStep, siblingCountOf, stepYear, type Dwelling, type GameState, type ParentWealth } from '../src/core';
+import { NO_DEATH_PLAN, advanceYear, familyOf, familyViewOf, inheritanceAmount, legacyFamilyFrom, withParentsGoneRule, inheritanceDue, dwellingWhenParentsGone, parentsJustGone, incomeOf, economyContextOf, parseGame, serializeGame, parentsAllGone, previewChoice, resolveChoiceStep, siblingCountOf, stepYear, type Dwelling, type GameState, type ParentWealth } from '../src/core';
 import { startLife } from '../scripts/simulateLib';
 
 /**
@@ -16,8 +16,12 @@ import { startLife } from '../scripts/simulateLib';
 const FAREWELL = 'middle-parents-farewell';
 const NOTE = '부모님이 남기신 재산을 물려받았습니다.';
 
-/** 어머니 30세·아버지 33세에 태어난 중년 상태(재력 단계·형제 순서·나이·플래그를 고른다) */
-function stateOf(over: { tier?: ParentWealth; age?: number; flags?: string[]; birthOrder?: number; motherAge?: number; fatherAge?: number; net?: number; assets?: 'none'; dwelling?: Dwelling } = {}): GameState {
+/**
+ * 어머니 30세·아버지 33세에 태어난 중년 상태(재력 단계·형제 순서·나이·플래그를 고른다).
+ * 출생신고를 손으로 고친 상태라 `family`는 **그 출생신고에서 다시 만든 옛 저장 스냅샷**이다(위 형제 = 출생 순서, 아래 동생 = `seen`의 사건 동생) — 그리고 부모의 별세 계획을 지워(`NO_DEATH_PLAN`) 이 파일의 산식 시험이
+ * 모델이 정한 별세(K3)가 아니라 `parents_gone` 플래그와 나이 상한만으로 움직이게 한다. 모델이 정한 별세와 R-562 규칙은 맨 아래 describe가 따로 본다.
+ */
+function stateOf(over: { tier?: ParentWealth; age?: number; flags?: string[]; birthOrder?: number; motherAge?: number; fatherAge?: number; net?: number; assets?: 'none'; dwelling?: Dwelling; seen?: Record<string, number> } = {}): GameState {
   const base = startLife(11, 'alpha');
   const age = over.age ?? 55;
   const s: GameState = {
@@ -31,14 +35,16 @@ function stateOf(over: { tier?: ParentWealth; age?: number; flags?: string[]; bi
       father: { ...base.birthReport!.father, age: over.fatherAge ?? 33 },
       birthOrder: over.birthOrder ?? 1,
     },
-    seen: {},
+    seen: over.seen ?? {},
     pending: null,
     assets: null,
     familyFund: 0,
   };
-  if (over.assets === 'none') return s;
+  const snapshot = legacyFamilyFrom(s);
+  const withFamily: GameState = { ...s, family: { ...snapshot, p: [{ ...snapshot.p[0], d: NO_DEATH_PLAN }, { ...snapshot.p[1], d: NO_DEATH_PLAN }] } };
+  if (over.assets === 'none') return withFamily;
   const net = over.net ?? 20000;
-  return { ...s, assets: { net, income: incomeOf(economyContextOf(s), 0), debt: Math.max(0, -net), incomeAdj: 0, dwelling: over.dwelling ?? 'own' } };
+  return { ...withFamily, assets: { net, income: incomeOf(economyContextOf(withFamily), 0), debt: Math.max(0, -net), incomeAdj: 0, dwelling: over.dwelling ?? 'own' } };
 }
 
 const withPending = (s: GameState, eventId: string): GameState => {
@@ -70,7 +76,7 @@ describe('상속액 표 (설계값, EC7 조정): INHERIT[재력 단계] ÷ (형�
   });
 });
 
-describe('부모가 모두 떠났는가 (parentsAllGone): core/family.ts#parentStateOf와 같은 판정', () => {
+describe('부모가 모두 떠났는가 (parentsAllGone): 모델이 정한 별세가 없는 판에서는 core/family.ts#parentStateOf(플래그·나이 상한)와 같은 판정', () => {
   it('사별 플래그(parents_gone)가 켜지면 둘 다 떠난 것이다', () => {
     expect(parentsAllGone(stateOf({ age: 55 }))).toBe(false);
     expect(parentsAllGone(stateOf({ age: 55, flags: ['parents_gone'] }))).toBe(true);
@@ -139,7 +145,7 @@ describe('inheritanceDue: 가족 상태가 처음 「gone」이 되는 전환에
   });
 
   it('동생이 생긴 첫째도 형제로 센다 (infant-new-sibling을 본 첫째)', () => {
-    const s = { ...stateOf({ tier: 5, birthOrder: 1 }), seen: { 'infant-new-sibling': 3 } };
+    const s = stateOf({ tier: 5, birthOrder: 1, seen: { 'infant-new-sibling': 3 } });
     expect(siblingCountOf(s)).toBe(1);
   });
 });
@@ -476,3 +482,58 @@ function stepOnce(s: GameState): GameState {
   if (r.state.pending === null) return r.state;
   return resolveChoiceStep(r.state, r.state.pending.key, r.state.pending.choiceIds[0]).state;
 }
+
+describe('K1·R-562 (SPEC-009 FM6): 상속이 가족 보기와 같은 사람 수, 같은 해를 읽는다', () => {
+  /** 어머니 30세·아버지 45세에 태어난 판: 아버지는 아이 56세에 101세가 되고, 어머니는 아이 71세에 101세가 된다. 모델은 어머니를 **아이 50세**(어머니 80세)에 먼저 별세시킨다 */
+  const motherFirst = (age: number): GameState => {
+    const s = stateOf({ age, fatherAge: 45, tier: 5 });
+    const [m, f] = s.family!.p;
+    return { ...s, family: { ...s.family!, p: [{ ...m, d: 80 }, f] } };
+  };
+
+  it('K1: 켠 규칙에서 상속의 형제 수는 가족 보기의 살아 있는 형제 수이고(독립한 형제 포함, 별세한 형제 제외) 상속액은 그 수로 나뉜다', () => {
+    const s = stateOf({ tier: 5, birthOrder: 3, motherAge: 38, age: 55 });
+    const living = familyViewOf(s).siblingCount.living;
+    expect(living).toBeGreaterThanOrEqual(2);
+    expect(siblingCountOf(s)).toBe(living);
+    // 아래 동생이 구성에 있으면 옛 규칙에는 없던 형제가 상속을 나눈다
+    const withYounger = { ...s, family: { ...s.family!, y: [{ g: 1 as const, k: 3, s: 25 }] } };
+    expect(siblingCountOf(withYounger)).toBe(living + 1);
+    expect(siblingCountOf(withYounger, 'legacy')).toBe(living);
+    expect(inheritanceDue(withYounger, { ...withYounger, flags: ['parents_gone'] })).toBe(inheritanceAmount(5, living + 1));
+  });
+
+  it('R-562: 모델이 먼저 별세시킨 한 분과 100세를 넘긴 다른 분은 가족 보기에서도, 상속·월세 전환에서도 같은 해(아이 56세)에 「두 분 모두」가 된다', () => {
+    expect(parentsAllGone(motherFirst(55))).toBe(false);
+    expect(familyViewOf(motherFirst(55)).parentsGone).toBe(false);
+    expect(parentsAllGone(motherFirst(56))).toBe(true);
+    expect(familyViewOf(motherFirst(56)).parentsGone).toBe(true);
+    // 상속은 그 해 끝에 한 번 — 55 → 56세 전환
+    const before = motherFirst(55);
+    const after = { ...before, age: 56 };
+    expect(parentsJustGone(before, after)).toBe(true);
+    expect(inheritanceDue(before, after)).toBe(inheritanceAmount(5, siblingCountOf(after)));
+    // 한 번뿐이다: 다음 해에는 0
+    expect(inheritanceDue(after, { ...after, age: 57 })).toBe(0);
+  });
+
+  it('R-562: 옛 규칙은 먼저 떠난 분의 실제 나이가 100을 넘는 아이 71세까지 「아직」이었다 (측정 전용 훅 withParentsGoneRule)', () => {
+    withParentsGoneRule('legacy', () => {
+      expect(parentsAllGone(motherFirst(56))).toBe(false);
+      expect(parentsAllGone(motherFirst(70))).toBe(false);
+      expect(parentsAllGone(motherFirst(71))).toBe(true);
+    });
+  });
+
+  it('R-562: 한 분만 떠난 동안(다른 분이 100세 이하)에는 상속도 월세 전환도 없다 — 모델이 정한 별세 하나는 경제를 움직이지 않는다 (K3)', () => {
+    const before = motherFirst(54);
+    const after = { ...before, age: 55 };
+    expect(parentsAllGone(after)).toBe(false);
+    expect(inheritanceDue(before, after)).toBe(0);
+    expect(parentsJustGone(before, after)).toBe(false);
+  });
+
+  it('R-562: 사별 플래그(parents_gone)는 어느 규칙에서도 둘 다 떠난 것이다', () => {
+    for (const rule of ['view', 'legacy'] as const) withParentsGoneRule(rule, () => expect(parentsAllGone(stateOf({ age: 55, flags: ['parents_gone'] }))).toBe(true));
+  });
+});

@@ -5,8 +5,8 @@ import type { BirthReport, Gender, GameState, Occupation } from './types';
 
 /**
  * 가족과 삶 (SPEC-003 DB13, 식구 카드): 어머니·아버지(나이·직업·상태), 형제자매(관계·나이 차), 성인 이후 배우자·자녀.
- * (SPEC-009 FM4a: 이 파일의 `familyOf`는 식구 카드가 읽는 **옛 계산 그대로**다 — 새 가족 모델(저장 필드 `family`, 조부모·부모 별세·이혼·아래 동생 구성)은 `core/familyView.ts#familyViewOf`·`sceneFamilyOf`가 읽는다.
- *  두 계산은 위 형제(`olderSiblingPlan`)를 같은 함수로 만들고, 아래 동생·조부모는 카드가 새 모델을 읽게 되는 FM4b(K2 — 사건을 구성에 맞춤)·FM6(카드 개편)에서 하나로 합친다. 그 전에 카드가 새 구성의 아래 동생을 읽으면 사건 `infant-new-sibling`과 어긋난다.)
+ * (SPEC-009 FM6: 이 파일의 `familyOf`는 **식구 카드가 읽던 옛 계산 그대로**이고 지금은 측정·시험(`scripts/familyRemeasure.ts`의 옛 규칙의 세계, 구형 저장 호환)만 쓴다 — 식구 카드·그림·아래 한 줄·상속은 모두
+ *  `core/familyView.ts#familyViewOf`(새 가족 모델: 저장 필드 `family`, 조부모·부모 별세·이혼·아래 동생 구성, 성인기 식구)를 읽는다. 두 계산은 위 형제(`olderSiblingPlan`)를 같은 함수로 만든다.)
  * 모두 **저장된 상태에서 다시 계산하는 순수 함수**다 — 새로 저장하는 값이 없다. 출생 때 정한 형제 순서·부모 나이·직업(BirthReport)과 인생 중 켜진 플래그·본 이벤트(GameState)만 읽는다.
  * 그래서 새로고침해도 같고, 출생신고·이후 사건과 모순되지 않는다(BR6·CM9): 부모 나이는 해마다 오르고, 사별(`parents_gone`)은 표시에 반영된다.
  *

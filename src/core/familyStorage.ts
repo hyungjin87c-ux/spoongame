@@ -1,7 +1,9 @@
 import { olderSiblingsOf, reportTiltOf } from '../data/birthReportTable';
 import { olderSiblingDraw, YOUNGER_SIBLING_EVENT } from './family';
 import { orderSharesOf } from './birthReport';
+import { avoidNamesOf } from './familyAdult';
 import { leaveAgeOf, rollFamilyBirth, rollFamilyCore, rollHomeFor, rollOlderSiblings } from './familyBirth';
+import { rollFamilyNames, withNames } from './familyNames';
 import { FAMILY_AGE_CAP, FAMILY_DATA_VERSION, FAMILY_MAX_CHILDREN, NO_DEATH_PLAN, YOUNGER_MOTHER_MAX, type FamilyData } from './familyModel';
 import { famSeedOf } from './familyRng';
 import { isGameDataReady } from './gameData';
@@ -41,7 +43,9 @@ export function legacyFamilyFrom(game: Source): FamilyData {
   }) as FamilyData['p']);
   const o = rollOlderSiblings(famSeed, siblingSeed, report);
   // 집은 옛 저장에 없던 값이라 시드에서 채운다(옛 `Housing`·직업은 그대로 — 점유 형태는 입력일 뿐 바꾸지 않는다)
-  return { v: FAMILY_DATA_VERSION, lg: 1, ...core, p, o, y, h: rollHomeFor(famSeed, { birthYear: character.birthYear, report, parentWealth: character.parentWealth }, core, o), l: [] };
+  const snapshot: FamilyData = { v: FAMILY_DATA_VERSION, lg: 1, ...core, p, o, y, h: rollHomeFor(famSeed, { birthYear: character.birthYear, report, parentWealth: character.parentWealth }, core, o), l: [] };
+  // 식구 이름은 옛 저장에 없던 값이라 시드에서 채운다(DF25 — 옛 화면은 이름을 보이지 않았다)
+  return withNames(snapshot, rollFamilyNames(famSeed, { birthYear: character.birthYear, name: character.name, report, avoid: avoidNamesOf(game), g: snapshot.g, o: snapshot.o, y: snapshot.y }));
 }
 
 /** 새로 태어난 판과 같은 방식으로 가족 구성을 (다시) 만든다 — 저장에서 `family`만 이상해 버려진 판을 같은 시드로 되살린다 (결정성, 12-3절 ③) */
@@ -56,6 +60,8 @@ export function rebuildFamily(game: Source): FamilyData {
     parentWealth: character.parentWealth,
     orderShares: orderSharesOf(reportTiltOf(character.birthYear), report.region, character.birthYear),
     siblingSeed,
+    name: character.name,
+    avoidNames: avoidNamesOf(game),
   });
 }
 

@@ -38,6 +38,9 @@ const WRITE = process.argv.includes('--write');
 const NET20_MEAN_ABS_LIMIT = 150; // 20세 시작 순자산 평균의 절대 변화 (만 원)
 const FINAL_MEAN_LIMIT = 3; // 최종 순자산 평균 변화 (%)
 const MOVE_LIMIT = 2; // 엔딩 방향 판정 분포 변화 (%p)
+/** K1(형제 수 새 정의로 상속)의 수용 기준 (마스터 지시 2026-11-02, REV-009-FM4b-1 3절): 단계 순서 뒤바뀜 0 · 최종 순자산 평균 변화 ≤ 8% · 판정 변화 ≤ 5%p. INHERIT 값은 다시 맞추지 않는다 */
+const K1_FINAL_MEAN_LIMIT = 8;
+const K1_MOVE_LIMIT = 5;
 
 const pct = (x: number, d = 1): string => `${x.toFixed(d)}%`;
 const num = (x: number, d = 0): string => x.toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -171,11 +174,21 @@ compare(R('V0'), R('V1'), 'K2: 동생 반응 카드를 구성이 정한 해에 �
 compare(R('V1'), R('V2'), 'K4: 가족 낱말 사건에 가족 조건 (V1 → V2)');
 compare(R('V0'), R('V2'), 'K2 + K4 합계 (V0 → V2)');
 
-say('## 3. K1 형제 수 새 정의 (V3 → V4, 켜지 않는다)');
+const passesK1 = (c: Cmp): boolean => c.maxFinalMean <= K1_FINAL_MEAN_LIMIT && c.orderFlips === 0 && c.maxMovePp <= K1_MOVE_LIMIT;
+const describeK1 = (c: Cmp): string => `최종 평균 ${pct(c.maxFinalMean, 2)} · 판정 ${c.maxMovePp.toFixed(2)}%p · 뒤바뀜 ${c.orderFlips}쌍 (참고: 20세 시작 평균 ${num(c.maxNet20MeanAbs)}만 원)`;
+const K1_CRITERIA = `① 재력 단계 순서 뒤바뀜 0 ② 재력 단계별 최종 순자산 평균 변화 ≤ ${K1_FINAL_MEAN_LIMIT}% ③ 엔딩 방향 판정 변화 ≤ ${K1_MOVE_LIMIT}%p (중앙값은 보고만, INHERIT 값은 다시 맞추지 않는다)`;
+
+say('## 3. K1 형제 수 새 정의 (V3 → V4, FM6에서 켰다 — 형진 님 결정 「실제 형제 수로 나누기」)');
 say();
-compare(R('V3'), R('V4'), '재력 단계별 (V3 배포 값 → V4 K1 켬)');
+say(`수용 기준(마스터 지시 2026-11-02, REV-009-FM4b-1 3절): ${K1_CRITERIA}. 기준을 넘으면 값을 맞추지 않고 이 표와 함께 보고한다.`);
+say();
+const k1Cmp = compare(R('V3'), R('V4'), '재력 단계별 (V3 K1 켜기 전 → V4 K1 켬)');
+say(`판정: ${passesK1(k1Cmp) ? '**합격**' : '**기준 초과**'} (${describeK1(k1Cmp)}) — ${K1_CRITERIA}.`);
+say();
 {
   const rows = R('V4');
+  say('**세대별·재력별 형제 수와 상속액**(끝난 판의 형제 수 평균과 `INHERIT[재력] ÷ (형제 수 + 1)`의 평균, 만 원 — 옛 규칙 → 새 정의):');
+  say();
   say('| 재력 | 판 수 | 형제 수 평균 (옛 → 새 정의) | 상속액 평균 (만 원, 옛 → 새) | 변화 |');
   say('|---:|---:|---|---|---:|');
   for (const t of TIERS) {
@@ -196,10 +209,30 @@ compare(R('V3'), R('V4'), '재력 단계별 (V3 배포 값 → V4 K1 켬)');
   say();
 }
 
+say('### 3-2. R-562: 「두 분 모두 떠남」 규칙 (V4 → V5, FM6 판단 — 상속·월세 전환을 가족 보기와 같은 해에)');
+say();
+say('한 분은 모델이 먼저 별세시키고 다른 분이 100세를 넘으면 가족 보기는 「두 분 모두 떠남」인데 옛 규칙의 `parentsAllGone`은 먼저 떠난 분의 **실제 나이**가 100을 넘을 때까지 거짓이었다 (`scripts/familyParentsGone.ts`: 7세대 × 300판의 8.1%, 평균 3.5년, 최대 13년, 주인공 47~82세). 상속·월세 전환을 보기와 같은 해로 맞췄다. 같은 기준(위 K1용)으로 견준다.');
+say();
+const goneCmp = compare(R('V4'), R('V5'), '재력 단계별 (V4 K1만 → V5 K1 + R-562)');
+say(`판정: ${passesK1(goneCmp) ? '**합격**' : '**기준 초과**'} (${describeK1(goneCmp)}) — ${K1_CRITERIA}.`);
+say();
+{
+  const rows = R('V5');
+  const hit = rows.filter((r, i) => r.finalNet !== R('V4')[i].finalNet).length;
+  say(`- 최종 순자산이 달라진 판: ${hit} / ${rows.length} (${pct((100 * hit) / rows.length)}).`);
+  say();
+}
+
+say('### 3-3. 합계 (V3 → V5): 이번 회차에 배포 값이 바뀐 만큼');
+say();
+const totalCmp = compare(R('V3'), R('V5'), '재력 단계별 (V3 켜기 전 → V5 배포 값)');
+say(`판정: ${passesK1(totalCmp) ? '**합격**' : '**기준 초과**'} (${describeK1(totalCmp)}) — ${K1_CRITERIA}.`);
+say();
+
 say('## 4. 판 길이 (FA0-7: 가족 변화 줄은 연표 줄과 같은 규칙으로 센다)');
 say();
 {
-  const rows = R('V3');
+  const rows = R('V5');
   say('| 세대 | 판당 가족 줄 | 한 판 시간 (분, 1배속 수동·읽기 중앙) 가족 줄 포함 | 가족 줄 뺀 | 차이 (초) |');
   say('|---|---:|---:|---:|---:|');
   for (const gen of GENERATION_IDS) {
@@ -312,14 +345,14 @@ say();
 say('## 7. 성인기 「부모님」 사건이 부모 한 분 별세 뒤에도 나오는 비율 (R-564, FM7 변형의 근거)');
 say();
 {
-  const all = R('V3');
+  const all = R('V5');
   const after = (r: LifeRow, i: number): boolean => r.adultParent[i] !== null && r.adultParent[i]! >= r.lossAge!;
   const events = [0, 1, 2]; // 사건 셋(middle-parents-care · middle-parents-farewell · youth-housing)
   const any3 = (r: LifeRow): boolean => events.some((i) => after(r, i));
   const any4 = (r: LifeRow): boolean => [0, 1, 2, 3].some((i) => after(r, i));
   const names = ADULT_PARENT_IDS.slice(0, 3).map((x) => '`' + x + '`').join(' · ');
   say(
-    `- 대상: 배포 값 세계(V3)의 ${all.length}판. 「한 분 별세 판」 = 모형이 부모 한 분 별세(\`family.log\` 종류 5)를 알린 판. 「나온다」 = 별세 나이 이후(같은 해 포함)에 사건이 일어났다(\`seen\`). 사건 ${names} 셋의 어느 하나를 「사건 셋」으로 센다. 글감 \`${ADULT_PARENT_IDS[3]}\`은 따로 센다(자동 선택 판에서는 글감 카드가 나오지 않는다).`,
+    `- 대상: 배포 값 세계(V5)의 ${all.length}판. 「한 분 별세 판」 = 모형이 부모 한 분 별세(\`family.log\` 종류 5)를 알린 판. 「나온다」 = 별세 나이 이후(같은 해 포함)에 사건이 일어났다(\`seen\`). 사건 ${names} 셋의 어느 하나를 「사건 셋」으로 센다. 글감 \`${ADULT_PARENT_IDS[3]}\`은 따로 센다(자동 선택 판에서는 글감 카드가 나오지 않는다).`,
   );
   say('- **두 가지 분모를 함께 싣는다**: 「전체 판 대비」는 FM4b 보고(ai-log)의 「약 80.6% 판에서 나온다」와 같은 읽기(판 전체 중 몇 %에서 별세 뒤에 사건이 일어났나)이고, 「별세 판 대비」는 한 분이 떠난 판만 분모로 한 것이다. 80.6%는 그때 스크립트가 없던 수치라 이 표가 그 숫자의 출처다.');
   say();

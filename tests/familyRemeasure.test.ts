@@ -63,13 +63,13 @@ describe('이른 부모 별세 효과의 분포 (V2 → V3, 같은 시드 짝)',
   });
 }, 600_000);
 
-describe('K1은 켜지 않았다 (형제 수 규칙은 옛 규칙)', () => {
-  it('SIBLING_COUNT_RULE은 legacy이고, 새 정의로 상속을 나누면 형제 수가 늘어 상속액 평균이 내려간다(측정 전용 훅 withSiblingCountRule)', () => {
-    expect(SIBLING_COUNT_RULE).toBe('legacy');
+describe('K1은 FM6에서 켰다 (형제 수 규칙은 새 정의, 옛 규칙은 측정 전용 훅)', () => {
+  it('SIBLING_COUNT_RULE은 view이고, 새 정의로 상속을 나누면 형제 수가 늘어 상속액 평균이 내려간다(옛 규칙은 측정 전용 훅 withSiblingCountRule)', () => {
+    expect(SIBLING_COUNT_RULE).toBe('view');
     const rows = measureVariant(V.V4, 100);
     expect(mean(rows.map((r) => r.siblingsView))).toBeGreaterThan(mean(rows.map((r) => r.siblingsLegacy)));
     expect(mean(rows.map((r) => r.inheritView))).toBeLessThan(mean(rows.map((r) => r.inheritLegacy)));
-    // 배포 값 V3는 옛 규칙으로 돌았다 — 같은 시드의 V3와 V4는 상속이 다르다
+    // V3는 K1을 켜기 전(옛 규칙)의 세계다 — 같은 시드의 V3와 V4(배포 값)는 상속이 다르다
     const v3 = measureVariant(V.V3, 100);
     expect(v3.some((r, i) => r.finalNet !== rows[i].finalNet)).toBe(true);
   }, 300_000);

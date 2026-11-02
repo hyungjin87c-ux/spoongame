@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
-import { DEFAULT_SETTINGS, IMPACT_KEYS, R1_PRESENT, SPEEDS, advanceUntilDecision, calendarYear, educationLabel, familyOf, peersOf, previewPending, resolveChoice, stepYear, wealthMixtureOfGame, type GameState, type Settings } from '../src/core';
+import { DEFAULT_SETTINGS, IMPACT_KEYS, R1_PRESENT, SPEEDS, advanceUntilDecision, calendarYear, currentHomeTextOf, educationLabel, familyCardOf, familyViewOf, peersOf, sceneInputOf, previewPending, resolveChoice, stepYear, wealthMixtureOfGame, type GameState, type Settings } from '../src/core';
 import { looksStanding } from '../src/core/birth';
 import { reportPlaceLabel } from '../src/core/birthReport';
 import { startBandOf } from '../src/core/ending';
@@ -16,7 +16,7 @@ import { bandLabel } from '../src/data/endingText';
 import { regionLabelAt } from '../src/data/regionNames';
 import { LifeScreen } from '../src/screens/LifeScreen';
 import { GradeLine } from '../src/ui/Grade';
-import type { LifeGame } from '../src/ui/dash/Cards';
+import { FAMILY_ROWS_VISIBLE, type LifeGame } from '../src/ui/dash/Cards';
 import type { YearClock } from '../src/ui/useYearClock';
 
 /**
@@ -339,7 +339,7 @@ describe('도구 줄 (DB3·DB4·DB6·DB7·DB8)', () => {
 });
 
 describe('프로필 카드 (DB9)', () => {
-  it('얼굴 + 이름 + 성별 + 출생 + 거주 + 출신 가정(수저 칩과 구간) + 학력 + 외모(순위)', () => {
+  it('얼굴 + 이름 + 성별 + 출생 + 태어난 곳 + 지금 사는 곳(FC8) + 출신 가정(수저 칩과 구간) + 학력 + 외모(순위)', () => {
     const c = infant.character!;
     const card = sectionOf(render(infant), 'profile-card');
     expect(card).toContain('data-testid="face"');
@@ -350,6 +350,12 @@ describe('프로필 카드 (DB9)', () => {
     expect(flat(openTagBlock(card, 'profile-gender'))).toBe(nospace(genderLabel(c.gender)));
     expect(flat(openTagBlock(card, 'profile-born'))).toBe(nospace(yearMonthText(c.birthYear, infant.birthReport!.month)));
     expect(flat(openTagBlock(card, 'profile-place'))).toBe(nospace(reportPlaceLabel(infant.birthReport!, infant.character!.birthYear)));
+    // FC8: 「태어난 곳」(출생신고)과 「지금 사는 곳」(그림·아래 한 줄과 같은 입력에서 만든 「사는 곳 · 집 낱말」)이 나뉜다
+    expect(text(card)).toContain(DASH_TEXT.profileLive);
+    expect(text(card)).toContain(DASH_TEXT.profileNow);
+    expect(DASH_TEXT.profileLive).toBe('태어난 곳');
+    expect(DASH_TEXT.profileNow).toBe('지금 사는 곳');
+    expect(flat(openTagBlock(card, 'profile-now'))).toBe(nospace(currentHomeTextOf(sceneInputOf(infant))));
     const home = openTagBlock(card, 'profile-home');
     expect(home).toContain(`data-grade="${c.parentWealth}"`);
     expect(home).toContain(gradeStem(c.parentWealth));
@@ -657,27 +663,55 @@ describe('인생 기록 (DB12·DB14)', () => {
   });
 });
 
-describe('식구 (DB13)', () => {
-  it('어머니·아버지·형제자매 줄이 있고, 배우자·자녀는 있을 때만 나온다 (여러 판 전수)', () => {
+describe('식구 (DB13) — SPEC-009 FC1~FC10 카드 개편', () => {
+  it('카드는 가족 보기(familyViewOf)의 같은 사람을 그린다: 부모는 늘 있고, 배우자·자녀·친구는 있을 때만 나온다 (여러 판 전수)', () => {
     let withSpouse = 0;
     let withChild = 0;
+    let withFriend = 0;
     for (const era of SIM_PROFILES) {
-      for (let seed = 1; seed <= 12; seed++) {
-        const g = ageTo(startLife(seed, era), 20 + (seed % 25));
-        if (g.phase !== 'life') continue;
+      for (let seed = 1; seed <= 40; seed++) {
+        // `ageTo`는 선택지를 건너뛰어 혼인·출산·친구 플래그가 안 켜진다 — 판의 반은 그 플래그를 직접 켠다(사건을 본 나이를 모르는 상태의 대체 나이 경로도 함께 본다)
+        const base = ageTo(startLife(seed, era), 28 + (seed % 33));
+        if (base.phase !== 'life') continue;
+        const g: GameState = seed % 2 === 0 ? { ...base, flags: [...new Set([...base.flags, 'married', 'has_child', 'close_friend'])].sort() } : base;
         const card = sectionOf(render(g), 'family-card');
-        const f = familyOf(g);
-        expect(card).toContain('data-testid="family-mother"');
-        expect(card).toContain('data-testid="family-father"');
-        expect(card).toContain('data-testid="family-sibling"');
-        expect(card.includes('data-testid="family-spouse"'), `${era} ${seed} ${g.age}세 배우자`).toBe(f.spouse !== null);
-        expect(card.includes('data-testid="family-child"'), `${era} ${seed} ${g.age}세 자녀`).toBe(f.child !== null);
-        if (f.spouse !== null) withSpouse++;
-        if (f.child !== null) withChild++;
+        const model = familyCardOf(g);
+        const living = [...model.together, ...model.apart, ...model.adult, ...model.friends];
+        const visible = living.slice(0, Math.max(4, FAMILY_ROWS_VISIBLE - model.gone.length));
+        const has = (id: string) => card.includes(`data-testid="${id}"`);
+        // 부모는 함께 살든 따로 살든 떠났든 카드에 있다
+        expect(has('family-mother'), `${era} ${seed} 어머니`).toBe(true);
+        expect(has('family-father'), `${era} ${seed} 아버지`).toBe(true);
+        // 줄 수: 보이는 줄(떠난 가족은 늘 보인다) = 모델의 사람 줄
+        const rows = (card.match(/data-testid="family-(mother|father|grandparent|sibling|spouse|child|friend)"/g) ?? []).length;
+        expect(rows, `${era} ${seed} 사람 줄`).toBe(visible.length + model.gone.length);
+        expect(has('family-spouse'), `${era} ${seed} ${g.age}세 배우자`).toBe([...visible, ...model.gone].some((r) => r.role === 'spouse'));
+        expect(has('family-child'), `${era} ${seed} ${g.age}세 자녀`).toBe([...visible, ...model.gone].some((r) => r.role === 'child'));
+        if (model.adult.some((r) => r.role === 'spouse')) withSpouse++;
+        if (model.adult.some((r) => r.role === 'child')) withChild++;
+        if (model.friends.length > 0) withFriend++;
       }
     }
     expect(withSpouse, '배우자가 보이는 판이 있어야 공허 통과가 아니다').toBeGreaterThan(0);
     expect(withChild).toBeGreaterThan(0);
+    expect(withFriend).toBeGreaterThan(0);
+  });
+
+  it('FC10: 카드의 사람 수(친구 제외) = 함께 사는 사람 + 따로 사는 사람 + 떠난 사람 = 가족 보기의 사람 전체', () => {
+    for (const era of SIM_PROFILES) {
+      for (let seed = 1; seed <= 12; seed++) {
+        const g = ageTo(startLife(seed, era), (seed * 7) % 80);
+        if (g.phase !== 'life') continue;
+        const model = familyCardOf(g);
+        const view = familyViewOf(g);
+        const together = view.people.filter((p) => p.state === 'with').length;
+        const apart = view.people.filter((p) => p.state === 'apart').length;
+        const gone = view.people.filter((p) => p.state === 'gone').length;
+        expect(model.counts.people, `${era} ${seed} ${g.age}세`).toBe(together + apart + gone);
+        expect(model.together.length + model.apart.length + model.adult.length + model.gone.length, `${era} ${seed} ${g.age}세 줄`).toBe(view.people.length);
+        expect(view.household.length, `${era} ${seed} ${g.age}세 함께 사는 사람`).toBe(together);
+      }
+    }
   });
 });
 

@@ -1,4 +1,5 @@
 import { FAMILY_ADULT_AGE, FAMILY_MAX_AGE, type SiblingKind } from './family';
+import { adultSlotsOf, latestSetterAge, namesOfFamily } from './familyAdult';
 import { divorcePlan, firstGoneOf, goneAtMyAge, grandBirthYears, parentBirthYear, parentGoneAtOf } from './familyBirth';
 export { parentDivorceRate } from './familyBirth';
 import {
@@ -16,6 +17,7 @@ import {
   type SceneMember,
 } from './familyModel';
 import { homeKindOf } from './familyHome';
+import { petsWithOf } from './familyPets';
 import { famSeedOf } from './familyRng';
 import { legacyFamilyFrom } from './familyStorage';
 import type { GameState, Gender } from './types';
@@ -24,9 +26,9 @@ import type { GameState, Gender } from './types';
  * 가족 보기 `FamilyView`와 그림 상태 `SceneFamilyState` (SPEC-009 FM4a, 설계 문서 3-1·8절). **저장된 `family`(출생 때 한 번 뽑은 값)와 주인공 나이·플래그·자산에서 다시 계산하는 순수 함수**다 —
  * 나이·생존·동거·사이는 저장하지 않는다. 같은 상태 → 같은 값(INV-12), 새로고침해도 같다. 난수는 쓰지 않고 해마다의 판정(부모 이혼)만 `famHash01`이다.
  *
- * 이 파일은 **파생 상태**다: 조부모·부모 한 분의 별세, 부모 이혼·별거, 아래 동생의 출생, 형제의 독립이 나이에 따라 `people`·`household`에 반영된다. 이 변화를 인생 기록 줄·플래그·`family.log`로 알리는
- * `familyChangesFor`/`applyFamilyChanges`(4-7절, `familyTick.ts`)와 이른 부모 별세의 스탯·집안 살림 효과, `infant-new-sibling`을 구성에 맞추는 K2(FM4b)가 이 보기를 읽는다. 화면에서는 집과 가족 그림(`sceneFamilyOf`)이 읽고,
- * 식구 카드와 엔딩의 식구 줄(`familyOf`)은 FM6(식구 카드 개편)까지 옛 계산 그대로다 — 그 전까지 카드와 그림의 가족이 다를 수 있다(공개 배포 차단 R-542).
+ * 이 파일은 **파생 상태**다: 조부모·부모 한 분의 별세, 부모 이혼·별거, 아래 동생의 출생, 형제의 독립, 성인기 식구(배우자·자녀 — `familyAdult.ts`)가 나이에 따라 `people`·`household`에 반영된다. 이 변화를 인생 기록 줄·플래그·`family.log`로 알리는
+ * `familyChangesFor`/`applyFamilyChanges`(4-7절, `familyTick.ts`)와 이른 부모 별세의 스탯·집안 살림 효과, `infant-new-sibling`을 구성에 맞추는 K2가 이 보기를 읽는다. **집과 가족 그림(`sceneFamilyOf`)·아래 한 줄·가족과 삶 카드(`familyCardOf`)·신원 카드 「지금 사는 곳」·상속의 형제 수와 「두 분 모두 떠남」(K1·R-562)이
+ * 모두 이 보기 하나를 읽는다**(FA0-1, FM6) — 카드 사람 수 = 함께 사는 사람 + 따로 사는 사람 + 떠난 사람(FC10). 옛 계산 `familyOf`는 측정·시험(옛 규칙의 세계)과 구형 저장 호환 시험만 쓴다.
  */
 
 export type FamilyGame = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'character' | 'peerSeed' | 'seed' | 'assets'> & { family?: FamilyData };
@@ -72,6 +74,14 @@ export function familyScheduleOf(game: FamilyGame): FamilySchedule {
 // ---------- 보기 ----------
 
 const GRAND_GENDER: Readonly<Record<string, Gender>> = { pgf: 'male', pgm: 'female', mgf: 'male', mgm: 'female' };
+
+/** 떠난 사람의 표시값: 떠난 때 그 사람의 나이(`own`)와 그때 주인공의 나이(`my`, 음수면 주인공이 태어나기 전) */
+function markGone(p: Person, own: number, my: number): void {
+  p.age = own;
+  p.goneAtOwnAge = own;
+  p.goneAtMyAge = my;
+  if (my < 0) p.beforeMyBirth = true;
+}
 const SIB_O: readonly PersonId[] = ['o1', 'o2', 'o3', 'o4'];
 const SIB_Y: readonly PersonId[] = ['y1', 'y2', 'y3', 'y4', 'y5', 'y6', 'y7'];
 
@@ -96,6 +106,7 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
   const adultHome = adult && ((game.assets?.dwelling === 'family' && !flags.includes('moved_home')) || flags.includes('lives_with_parents'));
 
   const people: Person[] = [];
+  const names = namesOfFamily(game, f);
   const stateOf = (gone: boolean, apartByEvent: boolean, wouldLive: boolean): PersonState => (gone ? 'gone' : apartByEvent || !wouldLive ? 'apart' : 'with');
 
   // 부모
@@ -108,17 +119,23 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
     const p: Person = {
       id: role,
       role,
-      name: f.p[i].n ?? '',
+      name: names.p[i],
       gender: role === 'mother' ? 'female' : 'male',
       birthYear: sc.parentBy[i],
       age: ownAge,
       state: stateOf(gone, apartByEvent, !adult || adultHome),
     };
     if (p.state === 'apart') p.apartBy = apartByEvent ? 'split' : 'away';
-    if (gone && modeledGone) {
-      p.goneAtOwnAge = f.p[i].d;
-      p.goneAtMyAge = sc.parentGoneAt[i];
-      p.age = f.p[i].d;
+    if (gone) {
+      // 떠난 나이(카드의 「N세에 세상을 떠남」): 모델이 정한 별세 · 사별 사건이 켠 `parents_gone` 때 · 나이 상한(100세)
+      if (modeledGone) markGone(p, f.p[i].d, sc.parentGoneAt[i]);
+      else if (parentsGoneFlag) {
+        const partAt = Math.min(age, latestSetterAge(game, 'parents_gone') ?? age);
+        const ownAtParting = ownAge - age + partAt;
+        // 사별 사건이 알려진 나이가 100세를 넘으면(손으로 켠 플래그) 나이 상한으로 읽는다
+        if (ownAtParting > FAMILY_MAX_AGE) markGone(p, FAMILY_MAX_AGE, FAMILY_MAX_AGE - (ownAge - age));
+        else markGone(p, ownAtParting, partAt);
+      } else markGone(p, FAMILY_MAX_AGE, FAMILY_MAX_AGE - (ownAge - age));
     }
     people.push(p);
   });
@@ -132,18 +149,13 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
     // 이혼으로 떠난 부모와 같은 쪽 조부모는 `divorce.at + 1`부터 따로 산다 (R-537, 마스터 결정 2026-10-28: 이혼 뒤 그 집안 조부모와 함께 사는 경우는 드물다). 친가 = 아버지 쪽(leaver 1), 외가 = 어머니 쪽(leaver 0)
     const leftWithParent = sc.divorce !== null && age > sc.divorce.at && (sc.divorce.leaver === 1 ? 1 : 2) === side;
     const lives = !adult && age <= GRAND_COHABIT_UNTIL && f.c === side && !leftWithParent;
-    const p: Person = { id, role: 'grandparent', name: gp.n ?? '', gender: GRAND_GENDER[id], birthYear: sc.grandBy[i], age: ownAge, state: stateOf(gone, false, lives) };
-    if (gone) {
-      p.goneAtOwnAge = Math.min(gp.d, FAMILY_MAX_AGE);
-      p.goneAtMyAge = sc.grandGoneAt[i];
-      p.age = p.goneAtOwnAge;
-      if (sc.grandGoneAt[i] < 0) p.beforeMyBirth = true;
-    }
+    const p: Person = { id, role: 'grandparent', name: names.g[i], gender: GRAND_GENDER[id], birthYear: sc.grandBy[i], age: ownAge, state: stateOf(gone, false, lives) };
+    if (gone) markGone(p, Math.min(gp.d, FAMILY_MAX_AGE), sc.grandGoneAt[i] === Infinity ? sc.grandBy[i] + FAMILY_MAX_AGE - Y : sc.grandGoneAt[i]);
     people.push(p);
   });
 
   // 형제: 위(가까운 순) · 아래(태어난 순)
-  const sibling = (id: PersonId, s: FamilyData['o'][number], older: boolean): Person | null => {
+  const sibling = (id: PersonId, s: FamilyData['o'][number], older: boolean, name: string): Person | null => {
     const ownAge = older ? age + s.k : age - s.k;
     if (ownAge < 0) return null; // 아직 태어나지 않았다
     const gender: Gender = s.g === 0 ? 'male' : 'female';
@@ -153,7 +165,7 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
     const person: Person = {
       id,
       role: 'sibling',
-      name: s.n ?? '',
+      name,
       gender,
       birthYear: older ? Y - s.k : Y + s.k,
       age: ownAge,
@@ -162,16 +174,40 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
       older,
     };
     if (independent) person.independent = true;
+    if (gone) markGone(person, FAMILY_MAX_AGE, older ? FAMILY_MAX_AGE - s.k : FAMILY_MAX_AGE + s.k);
     return person;
   };
   f.o.forEach((s, i) => {
-    const p = sibling(SIB_O[i], s, true);
+    const p = sibling(SIB_O[i], s, true, names.o[i]);
     if (p !== null) people.push(p);
   });
   f.y.forEach((s, j) => {
-    const p = sibling(SIB_Y[j], s, false);
+    const p = sibling(SIB_Y[j], s, false, names.y[j]);
     if (p !== null) people.push(p);
   });
+
+  // 성인기 식구 (FC5, 10절): 배우자 · 자녀 각각. 친구는 가족이 아니라 보기에 넣지 않는다(카드가 따로 읽는다 — `familyCard.ts`)
+  for (const sl of adultSlotsOf(game, f)) {
+    if (sl.role === 'friend' || sl.at > age) continue;
+    const ownAge = calYear - sl.birthYear;
+    if (ownAge < 0) continue; // 아직 태어나지 않은 자녀
+    const gone = ownAge > FAMILY_MAX_AGE;
+    const base = { id: sl.id as PersonId, name: sl.name, gender: sl.gender, birthYear: sl.birthYear };
+    if (sl.role === 'spouse') {
+      // 혼인 중이면 함께 산다. 연인(만나는 중)·이혼한 사람은 따로 산다
+      const together = flags.includes('married');
+      const p: Person = { ...base, role: 'spouse', age: ownAge, state: stateOf(gone, !together, true) };
+      if (p.state === 'apart') p.apartBy = flags.includes('divorced') ? 'split' : 'away';
+      if (gone) markGone(p, FAMILY_MAX_AGE, sl.birthYear + FAMILY_MAX_AGE - Y);
+      people.push(p);
+    } else {
+      // 자녀: `child_left`면 따로 산다
+      const p: Person = { ...base, role: 'child', age: ownAge, state: stateOf(gone, flags.includes('child_left'), true) };
+      if (p.state === 'apart') p.apartBy = 'away';
+      if (gone) markGone(p, FAMILY_MAX_AGE, sl.birthYear + FAMILY_MAX_AGE - Y);
+      people.push(p);
+    }
+  }
 
   // 형제 수 (K1): 태어났고 떠나지 않은 위·아래 형제 전원 — 독립 여부 무관
   const sibs = people.filter((p) => p.role === 'sibling');
@@ -182,8 +218,7 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
   const household = displayOrder(people).filter((id) => withIds.has(id));
 
   const bothParentsGone = people.filter((p) => p.role === 'mother' || p.role === 'father').every((p) => p.state === 'gone');
-  const pets: FamilyView['pets'] = [];
-  for (const [flag, species] of [['pet_dog', 'dog'], ['pet_cat', 'cat'], ['pet_other', 'other']] as const) if (flags.includes(flag)) pets.push({ species, name: '', since: null });
+  const pets: FamilyView['pets'] = petsWithOf({ flags, peerSeed: game.peerSeed, seed: game.seed, family: f }).map((p) => ({ species: p.species, name: p.name, since: p.since }));
 
   return {
     age,
@@ -191,7 +226,7 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
     people,
     siblingCount: { older: livingOlder, younger: livingYounger, living: livingOlder + livingYounger, total: sibs.length },
     household,
-    pets: pets.slice(0, 2),
+    pets,
     parentsGone: parentsGoneFlag || bothParentsGone,
   };
 }
@@ -275,6 +310,7 @@ export function sceneFamilyOf(game: FamilyGame): SceneFamilyState {
       const before = prevById.get(p.id);
       if (before === undefined) {
         if (p.role === 'sibling' && p.state !== 'gone') changed.push('sib-born');
+        else if (p.role === 'child' && p.state !== 'gone') changed.push('child-born');
         continue;
       }
       // 형제가 독립한 때: 독립 나이를 넘긴 해 (주인공이 스무 살이 되어 집을 나서는 것은 아래 `independent`가 따로 알린다)

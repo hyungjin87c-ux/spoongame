@@ -1,8 +1,8 @@
 import { ECONOMY } from '../data/economyTable';
 import { parentAgeAt } from './birthReport';
 import { familyOf, parentStateOf } from './family';
-import { livingSiblingCount } from './familyView';
-import type { Dwelling, GameState } from './types';
+import { familyViewOf, livingSiblingCount } from './familyView';
+import { R1_PRESENT, type Dwelling, type GameState } from './types';
 
 /**
  * 간이 상속 (SPEC-003 M5, 마스터 결정 D10 변경 — docs/data/economy-model.md 15-4절, 위치는 r3 15-6절). **순수 함수**, 난수를 쓰지 않는다.
@@ -12,28 +12,50 @@ import type { Dwelling, GameState } from './types';
  * 금액은 화면에 쓰지 않는다(설계값, S6) — 인생 기록에 한 줄만 남는다(data/lifeTable.ts#INHERIT_NOTE_TEXT).
  */
 
-type View = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'character' | 'peerSeed' | 'seed' | 'assets' | 'family'>;
+type View = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'character' | 'peerSeed' | 'seed' | 'assets' | 'family' | 'generation'>;
 
-/** 이 상태에서 부모가 모두 세상을 떠났는가 (둘 다 「gone」) */
-export function parentsAllGone(game: Pick<GameState, 'age' | 'flags' | 'birthReport'>): boolean {
+/**
+ * 「두 분 모두 떠남」을 세는 규칙 (SPEC-009 R-562, FM6 판단):
+ *  - `'view'` 가족 보기(`FamilyView.parentsGone`)와 같은 판정 — 부모 각자가 `parents_gone` 플래그 · **모델이 정한 별세(한 분 먼저, K3)** · 나이 100세 초과 중 하나로 떠났으면 「gone」이고 둘 다 gone이면 두 분 모두다.
+ *    카드·그림이 「두 분 모두 떠남」을 보이는 해와 상속·월세 전환이 같은 해에 일어난다 — **지금 판이 쓰는 규칙**이다.
+ *  - `'legacy'` 플래그 또는 **실제 나이** 100세 초과만 본다(`parentStateOf`) — 모델이 한 분을 먼저 별세시켜도 그분의 실제 나이가 100을 넘을 때까지 「떠나지 않은 것」으로 셌다. 그래서 다른 분이 100세를 넘겨 카드가 「두 분 모두」를 보이는데도
+ *    상속·주거 전환이 그분의 나이 100 초과까지 (평균 3.5년, 최대 13년) 늦었다(R-562: 7세대 × 300판의 8.1%, `scripts/familyParentsGone.ts`). **측정·시험 전용**: 해시 불변 L1 시험과 재측정이 `withParentsGoneRule('legacy', …)`로 옛 세계를 만든다.
+ */
+export type ParentsGoneRule = 'legacy' | 'view';
+export const PARENTS_GONE_RULE: ParentsGoneRule = 'view';
+let activeGoneRule: ParentsGoneRule = PARENTS_GONE_RULE;
+
+/** 측정·시험 전용: `fn` 동안만 「두 분 모두 떠남」 규칙을 바꾼다(끝나면 되돌린다) */
+export function withParentsGoneRule<T>(rule: ParentsGoneRule, fn: () => T): T {
+  const before = activeGoneRule;
+  activeGoneRule = rule;
+  try {
+    return fn();
+  } finally {
+    activeGoneRule = before;
+  }
+}
+
+/** 이 상태에서 부모가 모두 세상을 떠났는가 (둘 다 「gone」) — 규칙은 위 `ParentsGoneRule`. `'view'`는 출생 이후 상태(`character`·`birthReport`)에서만 거짓이 아닐 수 있다 */
+export function parentsAllGone(game: View, rule: ParentsGoneRule = activeGoneRule): boolean {
   const r = game.birthReport;
   if (r === null) return false;
-  return (
-    parentStateOf(parentAgeAt(r.mother, game.age), game.flags) === 'gone' && parentStateOf(parentAgeAt(r.father, game.age), game.flags) === 'gone'
-  );
+  // 시험 전용 R1 프로필(2026년생)은 얼린 세계다 — 가족 변화·이른 별세 효과를 쓰지 않는 것과 같이 옛 규칙을 그대로 쓴다(EY17 항등, `tests/economyIdentity.test.ts`)
+  if (rule === 'view' && game.generation !== R1_PRESENT) return game.character !== null && familyViewOf(game).parentsGone;
+  return parentStateOf(parentAgeAt(r.mother, game.age), game.flags) === 'gone' && parentStateOf(parentAgeAt(r.father, game.age), game.flags) === 'gone';
 }
 
 /**
- * 형제 수를 세는 규칙 (SPEC-009 K1):
- *  - `'legacy'` 출생 때 정해진 위 형제 + 「동생이 생겼다」 이후의 동생 한 명(core/family.ts#familyOf와 같은 계산) — **지금 판이 쓰는 규칙**이다.
- *  - `'view'` 새 정의 하나: 태어났고 떠나지 않은 위·아래 형제 전원(독립 여부 무관, `FamilyView.siblingCount.living`). 카드·한 줄·그림·대체 글이 읽는 값과 같다.
- * 새 정의로 바꾸면 아래 동생 구성(둘째 이상·여럿)이 상속 나누기에 들어가 경제 분포가 바뀐다. 구성이 사건·인생 기록과 맞춰지는 FM4b(K2)보다 먼저 켜면 「인생 기록에 없는 동생」이 상속을 나누게 되고
- * 경제 항등(`tests/economyIdentity`)과 해시 불변 L1이 깨지므로 FM4a는 `'legacy'`로 두고 `'view'`는 인자로만 부른다(측정·시험). 켜는 일은 FM4b의 재측정 뒤 마스터가 정한다.
+ * 형제 수를 세는 규칙 (SPEC-009 K1, 형진 님 결정 2026-11-02 「실제 형제 수로 나누기」 — FM6에서 켰다):
+ *  - `'view'` 새 정의 하나: 태어났고 떠나지 않은 위·아래 형제 전원(독립 여부 무관, `FamilyView.siblingCount.living`). 카드·한 줄·그림·대체 글이 읽는 값과 같다 — **지금 판이 쓰는 규칙**이다.
+ *  - `'legacy'` 출생 때 정해진 위 형제 + 「동생이 생겼다」 이후의 동생 한 명(core/family.ts#familyOf와 같은 계산) — 켜기 전의 규칙이다. **측정·시험 전용**: 해시 불변 L1 시험(`tests/familyHash.test.ts`)과 재측정(`scripts/familyRemeasure.ts`)이
+ *    `withSiblingCountRule('legacy', …)`로 감싸 옛 세계를 만든다. 옛 저장(`lg`)의 스냅샷은 옛 구성(위 형제 + 사건 동생 ≤ 1)이라 새 정의로 세어도 옛 값과 같다(진행 중인 판의 상속액이 바뀌지 않는다, 설계 문서 7-1절).
+ * 새 정의는 아래 동생 구성(둘째 이상·여럿)을 상속 나누기에 넣어 분포가 바뀐다: 재측정과 수용 기준은 `docs/data/family-remeasure.md` 3절(뒤바뀜 0 · 최종 평균 변화 ≤ 8% · 판정 변화 ≤ 5%p), INHERIT 값은 다시 맞추지 않았다.
  */
 export type SiblingCountRule = 'legacy' | 'view';
-export const SIBLING_COUNT_RULE: SiblingCountRule = 'legacy';
+export const SIBLING_COUNT_RULE: SiblingCountRule = 'view';
 
-/** 지금 상속이 쓰는 규칙. 앱은 바꾸지 않는다 — 측정·시험(`scripts/familyRemeasure.ts`)이 `withSiblingCountRule`로 잠깐 바꿔 K1을 켠 판의 분포를 잰다 */
+/** 지금 상속이 쓰는 규칙. 앱은 바꾸지 않는다 — 측정·시험(`scripts/familyRemeasure.ts`)이 `withSiblingCountRule`로 잠깐 바꿔 K1을 켜기 전(legacy)의 세계를 만든다 */
 let activeRule: SiblingCountRule = SIBLING_COUNT_RULE;
 
 /** 측정·시험 전용: `fn` 동안만 상속의 형제 수 규칙을 바꾼다(끝나면 되돌린다) */
@@ -49,7 +71,8 @@ export function withSiblingCountRule<T>(rule: SiblingCountRule, fn: () => T): T 
 
 /** 형제 수 (상속 나누기 `÷ (형제 수 + 1)`에 쓰인다) */
 export function siblingCountOf(game: View, rule: SiblingCountRule = activeRule): number {
-  return rule === 'view' ? livingSiblingCount(game) : familyOf(game).siblings.length;
+  // 시험 전용 R1 프로필(2026년생)은 얼린 세계라 옛 규칙을 그대로 쓴다(EY17 항등)
+  return rule === 'view' && game.generation !== R1_PRESENT ? livingSiblingCount(game) : familyOf(game).siblings.length;
 }
 
 /** 상속액(만 원, 정수): INHERIT[재력 단계] ÷ (형제 수 + 1) */

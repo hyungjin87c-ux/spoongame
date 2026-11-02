@@ -8,6 +8,7 @@ import {
   generateBirthFromSeed,
   houseKindOf,
   petPhrases,
+  possessionTiesOf,
   sceneAltOf,
   sceneInputOf,
   sceneKey,
@@ -141,7 +142,15 @@ describe('sceneOf — 순수성·유효성·모순 0 (7세대 × 100판 × 0~100
           const thatchH1 = p === spec.house && p.opt?.roof === 'thatch' && spec.year <= SCENE_RULES.thatch.lastYear && meta.years !== null && spec.year >= meta.years[0];
           expect(pieceInYear(meta, spec.year) || thatchH1, `${s.gen} ${s.seed} ${spec.year}년 ← ${p.id} [${meta.years}]`).toBe(true);
         }
-        for (const p of [...spec.back, ...spec.front]) expect(['prop-antenna', 'prop-ac-unit', 'prop-car', 'prop-ev-charger'], `${spec.year}년 ← 「가진 것」이 없는데 ${p.id}`).not.toContain(p.id);
+        // 「가진 것」(FK2)과 묶인 소품: 가진 것이 없으면(빈 집합) 하나도 나오지 않고, 이 집의 가진 것으로 그리면 가진 항목과 묶인 소품만 나온다
+        const tieProps = ['prop-antenna', 'prop-ac-unit', 'prop-car', 'prop-ev-charger'];
+        const bare = sceneOf(sceneInputOf(at(s.game, age), new Set()));
+        for (const p of [...bare.back, ...bare.front]) expect(tieProps, `${spec.year}년 ← 「가진 것」이 없는데 ${p.id}`).not.toContain(p.id);
+        const ties = possessionTiesOf(at(s.game, age));
+        for (const p of [...spec.back, ...spec.front]) {
+          const tie = (PIECE_BY_ID.get(p.id) as { tie?: 'tv' | 'aircon' | 'car' }).tie;
+          if (tie !== undefined) expect(ties.has(tie), `${spec.year}년 ← ${p.id}는 「${tie}」를 가진 집에만`).toBe(true);
+        }
         // 아직 그리지 않은 소품은 고르지 않는다
         for (const p of [...spec.back, ...spec.front]) expect(PIECE_BY_ID.get(p.id)!.drawn, p.id).toBe(true);
         expect(spec.front.length + spec.back.length, '소품 수는 장면당 0~4').toBeLessThanOrEqual(4);

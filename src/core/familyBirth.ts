@@ -17,6 +17,7 @@ import {
   type SiblingData,
 } from './familyModel';
 import { rollHome } from './familyHome';
+import { rollFamilyNames, withNames } from './familyNames';
 import { famHash01, famStream } from './familyRng';
 import { familyTables, type FamilyTables } from './gameData';
 import { createRng, mixSeed, type Rng } from './rng';
@@ -38,6 +39,9 @@ export interface FamilyBirthInput {
   orderShares: readonly [number, number, number];
   /** 옛 위 형제 계산의 시드 `peerSeed ?? seed` (옛 저장과 같은 값을 만들려고) */
   siblingSeed: number;
+  /** 주인공 이름 전체 (성 = 첫 글자) · 주인공과 또래(VP3)의 전체 이름 — 식구 이름이 겹치지 않게 피한다 (FA0-6). 둘 다 주면 식구 이름이 구성에 들어간다 */
+  name?: string;
+  avoidNames?: readonly string[];
 }
 
 // ---------- 어머니 출산 연령 분포 (4-1절) ----------
@@ -336,7 +340,7 @@ export function rollFamilyBirth(famSeed: number, input: FamilyBirthInput): Famil
   const divorce = divorcePlan(famSeed, input.birthYear, firstGone);
   const lastAt = Math.min(firstGone?.at ?? Infinity, divorce?.at ?? Infinity);
   const o = rollOlderSiblings(famSeed, input.siblingSeed, input.report);
-  return {
+  const family: FamilyData = {
     v: FAMILY_DATA_VERSION,
     ...core,
     o,
@@ -344,4 +348,6 @@ export function rollFamilyBirth(famSeed: number, input: FamilyBirthInput): Famil
     h: rollHomeFor(famSeed, input, core, o),
     l: [],
   };
+  if (input.name === undefined || input.avoidNames === undefined) return family;
+  return withNames(family, rollFamilyNames(famSeed, { birthYear: input.birthYear, name: input.name, report: input.report, avoid: input.avoidNames, g: family.g, o: family.o, y: family.y }));
 }

@@ -155,7 +155,8 @@ export const DASH_TEXT = {
   // ---------- 프로필 카드 (DB9) ----------
   profileLabel: '프로필',
   profileBorn: '출생',
-  profileLive: '거주',
+  profileLive: '태어난 곳',
+  profileNow: '지금 사는 곳',
   profileHome: '출신 가정',
   profileEdu: '학력',
   profileLooks: '외모',

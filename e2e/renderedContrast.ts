@@ -133,6 +133,7 @@ async function textRectsOf(page: Page, index: number): Promise<{ width: number; 
       if (parent === null || isHidden(parent)) continue;
       if (parent.closest('.reel') !== null && parent.closest('.is-result') === null) continue;
       if (parent.closest('[inert]') !== null) continue; // 모달 뒤 스크림에 가린 바깥 글자 (D-59)
+      if (parent.closest('details:not([open])') !== null && parent.closest('summary') === null) continue; // 닫힌 <details>의 본문(요약 밖)은 화면에 없다 — 상자를 모을 때(collectBoxes)와 같은 규칙. 상자 안에 닫힌 접이식이 있는 카드(가족과 삶 카드의 근거 칸)에서 칠해지지 않은 자리를 글자로 읽지 않게
       if (nearestBox(parent) !== box) continue; // 안쪽 다른 색 바탕 상자의 글자는 그 상자가 잰다
       // 글자와 상자 사이의 스크롤 영역(overflow가 visible이 아닌 조상)이 잘라 내는 곳: 완전히 보이는 줄만 잰다. 스크롤 영역 밖으로 밀려난 줄이나 가장자리에 반쯤 걸린 줄은
       // 요소 스크린샷에 글자가 없거나 일부만 있어 「글자 색 = 바탕 색」으로 잘못 읽힌다(대시보드 인생 기록의 스크롤 영역, M4). 사용자가 읽을 수 없는 글자라 대비의 대상도 아니다.
@@ -234,10 +235,22 @@ export async function measureRenderedContrast(page: Page, options: { min?: numbe
       const bar = document.querySelector('[data-testid="bottom-bar"]') as HTMLElement | null;
       if (bar !== null) bar.style.visibility = hide ? 'hidden' : '';
     }, !inBar);
-    await loc.scrollIntoViewIfNeeded();
-    const info = await textRectsOf(page, i);
-    if (info === null || info.rects.length === 0 || info.width < 2 || info.height < 2) continue;
-    const png = await loc.screenshot({ animations: 'disabled' });
+    // 화면보다 키가 큰 상자(SPEC-009 FM6 가족과 삶 카드 — 식구 줄이 많으면 360×740을 넘는다)는 요소 스크린샷이 화면 높이에서 잘려 아래 글자가 바탕색으로 읽힌다 —
+    // 잴 동안만 화면 높이를 상자 키 + 여유로 키운다(색은 화면 높이와 무관하다). 끝나면 되돌린다
+    const vp = page.viewportSize();
+    const boxHeight = await loc.evaluate((el) => el.getBoundingClientRect().height);
+    const grown = vp !== null && boxHeight > vp.height - 160;
+    if (grown) await page.setViewportSize({ width: vp.width, height: Math.ceil(boxHeight + 200) });
+    let png: PngBytes;
+    let info: Awaited<ReturnType<typeof textRectsOf>>;
+    try {
+      await loc.scrollIntoViewIfNeeded();
+      info = await textRectsOf(page, i);
+      if (info === null || info.rects.length === 0 || info.width < 2 || info.height < 2) continue;
+      png = await loc.screenshot({ animations: 'disabled' });
+    } finally {
+      if (grown && vp !== null) await page.setViewportSize(vp);
+    }
     const results = await analyze(page, png, info.rects, { width: info.width, height: info.height });
     let boxLow = false;
     for (const r of results) {

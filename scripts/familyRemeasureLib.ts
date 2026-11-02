@@ -9,11 +9,13 @@ import {
   siblingCountOf,
   stepYear,
   timingEraOfProfile,
+  withParentsGoneRule,
   withSiblingCountRule,
   yearLineCount,
   type EndingGame,
   type EventPool,
   type GameState,
+  type ParentsGoneRule,
   type ProfileId,
   type SiblingCountRule,
   type TickCounts,
@@ -31,27 +33,31 @@ import { spreadSeeds } from '../tests/helpers/familyGolden';
  *   V0 FM4a 기준(FM4b 전 영유아·학창 이벤트 · 이른 별세 효과 끔 · 형제 수 옛 규칙)
  *   V1 + K2(동생 반응 카드를 구성이 정한 해에 강제)
  *   V2 + K4(가족 낱말 사건에 가족 조건 — 지금의 풀)
- *   V3 + 이른 부모 별세 효과 ← 배포 값(K1은 꺼 둔다)
- *   V4 + K1(형제 수 새 정의로 상속) — 켜지 않는다, 켰을 때의 영향만 잰다
+ *   V3 + 이른 부모 별세 효과 (K1·R-562를 켜기 전 값 — 옛 형제 수 규칙 · 옛 「두 분 모두 떠남」 규칙)
+ *   V4 + K1(형제 수 새 정의로 상속) — 형진 님 결정 「실제 형제 수로 나누기」 (FM6에서 켰다)
+ *   V5 + R-562(상속·월세 전환이 가족 보기의 「두 분 모두 떠남」과 같은 해에) ← 배포 값 (FM6 판단, 8.1%의 판에서 평균 3.5년 늦던 것)
  * 같은 시드·같은 선택 전략(자동 성향)이라 변이 사이의 차이는 켠 원인에서만 온다(짝지은 표본). 실행: `npm run report:family` (docs/data/family-remeasure.md를 쓴다).
  */
 
 export interface Variant {
-  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V3h';
+  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V3h';
   label: string;
   pool: () => EventPool;
   /** true 배포 값 · false 끔 · 'half' 효과 절반(측정용 대안) */
   earlyLoss: boolean | 'half';
   rule: SiblingCountRule;
+  /** 「두 분 모두 떠남」 규칙 (R-562) */
+  goneRule: ParentsGoneRule;
 }
 
 export const VARIANTS: readonly Variant[] = [
-  { id: 'V0', label: 'FM4a 기준 (FM4b 전 풀 · 효과 끔 · 옛 형제 수)', pool: preFm4bPool, earlyLoss: false, rule: 'legacy' },
-  { id: 'V1', label: '+ K2 (동생 반응 카드 강제)', pool: k2OnlyPool, earlyLoss: false, rule: 'legacy' },
-  { id: 'V2', label: '+ K4 (가족 낱말 사건에 가족 조건)', pool: eventPool, earlyLoss: false, rule: 'legacy' },
-  { id: 'V3', label: '+ 이른 부모 별세 효과 (배포 값)', pool: eventPool, earlyLoss: true, rule: 'legacy' },
-  { id: 'V4', label: '+ K1 켜기 (형제 수 새 정의로 상속)', pool: eventPool, earlyLoss: true, rule: 'view' },
-  { id: 'V3h', label: '(대안) 이른 별세 효과를 절반으로', pool: eventPool, earlyLoss: 'half', rule: 'legacy' },
+  { id: 'V0', label: 'FM4a 기준 (FM4b 전 풀 · 효과 끔 · 옛 규칙)', pool: preFm4bPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy' },
+  { id: 'V1', label: '+ K2 (동생 반응 카드 강제)', pool: k2OnlyPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy' },
+  { id: 'V2', label: '+ K4 (가족 낱말 사건에 가족 조건)', pool: eventPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy' },
+  { id: 'V3', label: '+ 이른 부모 별세 효과 (K1·R-562를 켜기 전 값)', pool: eventPool, earlyLoss: true, rule: 'legacy', goneRule: 'legacy' },
+  { id: 'V4', label: '+ K1 켜기 (형제 수 새 정의로 상속)', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'legacy' },
+  { id: 'V5', label: '+ R-562 (「두 분 모두 떠남」을 가족 보기와 같게) ← 배포 값', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'view' },
+  { id: 'V3h', label: '(대안) 이른 별세 효과를 절반으로', pool: eventPool, earlyLoss: 'half', rule: 'legacy', goneRule: 'legacy' },
 ];
 
 export interface LifeRow {
@@ -112,7 +118,7 @@ function secondsWithoutFamily(final: GameState, counts: TickCounts, era: ReturnT
 export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
   const run = <T>(fn: () => T): T => (v.earlyLoss === 'half' ? withEarlyLoss(true, () => withEarlyLossRule(EARLY_LOSS_HALF, fn)) : withEarlyLoss(v.earlyLoss, fn));
   return run(() =>
-    withSiblingCountRule(v.rule, () => {
+    withSiblingCountRule(v.rule, () => withParentsGoneRule(v.goneRule, () => {
       const pool = v.pool();
       let s: GameState = startLife(seed, gen);
       let net20: number | null = null;
@@ -151,7 +157,7 @@ export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
         lossAge: s.family!.l.find((e) => e[0] === 5)?.[1] ?? null,
         adultParent: ADULT_PARENT_IDS.map((id) => s.seen[id] ?? null),
       };
-    }),
+    })),
   );
 }
 
@@ -266,7 +272,8 @@ export const REPORT_NOTES = `## 8. 읽는 법과 한계
 
 - **이른 별세 효과의 수용 기준(마스터 결정 2026-11-02, 검수 REV-009-FM4b-1 2절)** — 처음 기준(재력 단계별 20세 시작·최종 순자산 **중앙값** 변화 ≤ 3%)은 지표가 틀렸다. 낮은 재력 단계의 20세 시작 순자산은 학자금 대출 바닥(−150만 원 등)에 모여 있어 중앙값이 한 칸(150만 원) 옮겨 가면 분모 바닥 1,000만 원 기준으로 15%가 나온다(효과 크기와 무관 — 반 크기 변형도 같다). 그래서 **평균**으로 본다: ① 최종 순자산 평균 변화 ≤ 3% ② 20세 시작 평균의 절대 변화 ≤ 150만 원 ③ 단계 순서 뒤바뀜 0 ④ 판정 변화 ≤ 2%p. 중앙값 변화와 효과가 걸린 판만의 차이는 **보고만** 한다(판정에 쓰지 않는다).
 - **K2·K4(2절)의 중앙값 흔들림**은 효과가 아니라 난수 흐름이 옮겨 간 잡음이다(같은 사건 풀을 공유하지 않는 세계끼리라 짝지은 표본이어도 사건이 달라진다) — 같은 규칙의 이른 별세 효과(V2 → V3)는 난수 흐름이 같아 짝이 정확하다.
-- **K1(3절)** 형제 수는 \`siblingCountOf(final, 'view')\`(살아 있는 형제 전원, 독립 포함, 별세 제외)와 옛 규칙의 비교이고, 상속액은 \`INHERIT[재력] ÷ (형제 수 + 1)\`을 두 값으로 계산한 평균이다. 출산이 많던 코호트(산업화·베이비붐)에서 새 정의의 형제 수가 크게 늘어(FM4b의 1945년 이전 어머니 보정이 출산 수를 센서스 평균에 맞췄다) 상속액이 절반 가까이 준다. 형진 님이 「실제 형제 수로 나누기」로 정했고 FM6(식구 카드 개편)과 한 묶음으로 켠다 — 켤 때의 기준은 REV-009-FM4b-1 3절.
+- **K1(3절)** 형제 수는 \`siblingCountOf(final, 'view')\`(살아 있는 형제 전원, 독립 포함, 별세 제외)와 옛 규칙의 비교이고, 상속액은 \`INHERIT[재력] ÷ (형제 수 + 1)\`을 두 값으로 계산한 평균이다. 출산이 많던 코호트(산업화·베이비붐)에서 새 정의의 형제 수가 크게 늘어(FM4b의 1945년 이전 어머니 보정이 출산 수를 센서스 평균에 맞췄다) 상속액이 절반 가까이 준다. 형진 님이 「실제 형제 수로 나누기」로 정해 FM6(식구 카드 개편)에서 켰다. 수용 기준(마스터 지시 2026-11-02): 단계 순서 뒤바뀜 0 · 최종 평균 변화 ≤ 8% · 판정 변화 ≤ 5%p, INHERIT 값은 다시 맞추지 않는다. 5단계는 표본이 작아(세대당 판 수의 약 2~7%) 판정 변화가 한두 판에 크게 흔들린다 — 판정 열의 %p는 그 표본 크기와 함께 읽는다.
+- **R-562(3-2절)** 한 분은 모델이 먼저 별세시키고 다른 분이 100세를 넘으면 가족 보기는 「두 분 모두 떠남」인데 옛 \`parentsAllGone\`은 먼저 떠난 분의 **실제 나이**가 100을 넘을 때까지 거짓이었다 — 상속·월세 전환이 보기보다 평균 3.5년(최대 13년) 늦었다. FM6에서 보기와 같은 해로 맞췄고 \`withParentsGoneRule('legacy')\`가 옛 규칙의 세계를 만든다.
 - **판 길이(4절)**는 자동 성향 선택으로 잰 추정 시간이다(판정에 쓰는 수동 흉내·시대별 표본은 \`tests/simulation.test.ts\`·\`npm run report:time\`). 가족 줄을 뺀 값은 같은 판의 걸음 집계에서 가족 줄만 있는 해를 조용한 해로 바꾸고, 다른 줄이 있는 해는 줄 대기를 뺀 근사다.
 - **노년 카드 평균(5절)** 은 알파 한 세대(2013~2020년생)의 값이다. 시간 모델·판정 임계는 옛 시대 3구간 상수라 알파는 「다가올 세상」 하한 5.00을 쓴다 — 세대별 시간 모델(GM10)에서 다시 정한다.
 - **성인기 「부모님」 사건(7절)** 은 배포 값 세계(V3)에서 모형이 부모 한 분 별세를 알린 판만 센다. 사건 문장은 FM7 변형이 한 분 별세에 맞게 바꾼다(13-2절).

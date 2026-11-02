@@ -1,5 +1,5 @@
 import { regionsOf, sigunguChoices } from '../data/birthStats';
-import { pickFullName } from './birth';
+import { pickFullName } from './naming';
 import { wealthFor } from './generationMixture';
 import { createRng, mixSeed, type Rng } from './rng';
 import { GENDERS, PARENT_WEALTHS, type Gender, type ParentWealth } from './types';

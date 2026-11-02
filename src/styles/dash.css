@@ -170,6 +170,14 @@ html.head-released { --head-fixed-h: 0px; }
 .family-list dd { font-weight: var(--fw-bold); min-width: 0; }
 .family-list dd small { display: block; font-weight: var(--fw-regular); color: var(--c-text-2); font-size: inherit; }
 .family-list dd + dd { margin-top: var(--sp-1); }
+/* 가족과 삶 카드 개편(SPEC-009 FC1~FC10): 사람 줄은 호칭(dt) — 이름 · 나이(.family-who) 아래 한 줄(사이 · 직업 · 따로 삶, FitList). 소제목(떠난 가족 · 함께 사는 동물 · 집에 있는 것)과 더 보기·근거 칸 */
+.family-who { display: block; overflow-wrap: anywhere; }
+.family-sub { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--c-text-2); }
+.family-things { margin: 0; font-size: var(--fs-sm); }
+.family-more { margin-top: var(--sp-3); }
+.family-basis { margin-top: var(--sp-4); }
+.family-basis ul { margin: var(--sp-2) 0 0; padding-left: 1.2em; font-size: var(--fs-sm); }
+.family-basis li + li { margin-top: var(--sp-2); }
 /* 식구 목록의 1열 쌓기: 위 .facts 규칙과 같은 컨테이너 조건. .family-list 기본 규칙(위) 뒤에 두어야 같은 선택자 우선순위에서 이긴다(앞에 두면 기본 2열이 덮어쓴다 — e2e/m4-breaks.spec.ts가 글자 200%에서 「단순노무직」이 끊기는 것으로 잡았다) */
 @container facts (max-width: 15.5rem) {
   .family-list { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
