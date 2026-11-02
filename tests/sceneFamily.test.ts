@@ -8,9 +8,12 @@ import {
   familyScheduleOf,
   familyViewOf,
   generateBirthFromSeed,
+  homeKindOf,
   householdOf,
   livingSiblingCount,
+  orderSharesOf,
   parentDivorceRate,
+  rollYoungerSiblings,
   sceneFamilyOf,
   siblingCountOf,
   survivalCurve,
@@ -20,6 +23,7 @@ import {
   type ProfileId,
   type SceneChange,
 } from '../src/core';
+import { reportTiltOf } from '../src/data/birthReportTable';
 import { sigmaTolerance } from './helpers/stats';
 import { spreadSeeds } from './helpers/familyGolden';
 
@@ -210,13 +214,19 @@ describe('조부모 · 함께 사는 쪽', () => {
 
 describe('T-FA7 부모 한 분 별세(K3)와 이혼·별거', () => {
   it('INV-2b 아래 동생은 부모 한 분이 떠난 해·이혼한 해 뒤에 태어나지 않는다(재혼·의붓 없음)', () => {
+    let cut = 0;
     for (const s of SAMPLES) {
       const sc = familyScheduleOf(s.game);
       for (const y of s.game.family!.y) {
         if (sc.firstGone !== null) expect(y.k, `${s.gen} ${s.seed}`).toBeLessThanOrEqual(sc.firstGone.at);
         if (sc.divorce !== null) expect(y.k, `${s.gen} ${s.seed}`).toBeLessThanOrEqual(sc.divorce.at);
       }
+      // 끊는 규칙이 실제로 일했는가: 끊지 않고 굴리면 동생이 더 많은 판
+      const r = s.game.birthReport!;
+      const free = rollYoungerSiblings(sc.famSeed, r.birthOrder, r.mother.age, orderSharesOf(reportTiltOf(sc.birthYear), r.region, sc.birthYear));
+      if (free.length > s.game.family!.y.length) cut++;
     }
+    expect(cut, '끊긴 판이 표본에 있어야 이 시험이 위반을 잡는다').toBeGreaterThan(0);
   });
 
   it('모델이 정한 별세는 한 분뿐이다: 먼저 떠나는 분 쪽만 gone이 되고, 같은 해면 아버지가 먼저다(설계값). 두 번째 분은 100세 규칙(또는 parents_gone)만 따른다', () => {
@@ -338,11 +348,11 @@ describe('changed — 이번 해에 바뀐 것 (8절)', () => {
 });
 
 describe('그 밖의 그림 상태', () => {
-  it('집 종류·방 수는 묶음 B 표가 오기 전이라 null이고(점유 형태 기본 모양), 출생 점유 형태와 20세 이상의 주거는 그대로 실린다', () => {
+  it('집 종류·방 수는 어린 시절(부모 집)에 출생 때 정한 값이 실리고(묶음 B, FM4b), 출생 점유 형태와 20세 이상의 주거는 그대로 실린다', () => {
     const s = SAMPLES[3];
     const kid = sceneFamilyOf(at(s.game, 5));
-    expect(kid.homeKind).toBeNull();
-    expect(kid.rooms).toBeNull();
+    expect(kid.homeKind).toBe(homeKindOf(s.game.family!.h!));
+    expect(kid.rooms).toBe(s.game.family!.h!.r);
     expect(kid.housing).toBe(s.game.birthReport!.housing);
     expect(kid.dwelling).toBeNull();
     expect(sceneFamilyOf(at(s.game, 30)).dwelling).toBe('family');

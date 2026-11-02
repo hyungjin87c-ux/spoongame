@@ -159,6 +159,16 @@ describe('옛 저장(v0.3.0, family 없음) 이어하기 — 0·20·65세 고정
     });
   }
 
+  it('옛 저장에서 만든 스냅샷(lg: 1)이 손상되면 옛 저장 규칙으로 되살린다 — 새 판 방식으로 만들지 않는다 (R-533, DF25)', () => {
+    for (const fixture of [age0, age20, age65]) {
+      const opened = parseOpened(JSON.stringify(fixture))!;
+      const broken = { ...opened, family: { ...opened.family!, c: 3 } } as unknown as GameState;
+      const parsed = parseGame(serializeGame(broken))!;
+      expect(parsed.family!.lg).toBe(1);
+      expect(parsed.family).toEqual(legacyFamilyFrom(opened));
+    }
+  });
+
   it('ensureFamily: 이미 있으면 같은 객체, 첫 화면이면 그대로, 출생 이후이고 없으면 legacyFamilyFrom 결과를 채운다', () => {
     const s = life();
     expect(ensureFamily(s)).toBe(s);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { autoResolveStep, resolveChoiceStep, stepYear, type GameState } from '../src/core';
 import { chooserFor, startLife } from '../scripts/simulateLib';
+import { withEarlyLoss } from '../scripts/familyRulesLib';
 
 /**
  * 20세 평균 스탯 가드 (SPEC-003 M7a r2 마스터 결정 r2-1, REV-003-M7e-1 R-382 (b) — 마스터가 시험으로 잠그라고 했다):
@@ -37,10 +38,15 @@ import { chooserFor, startLife } from '../scripts/simulateLib';
 type Baselined = 'industrial' | 'genx' | 'alpha';
 /** 가드 기준선: 같은 함수·같은 표본(시드 i × 7919 + 13, 3000판, 무작위 선택)으로 잰 20세 평균 [지식, 건강, 행복, 관계] — 살아서 20세가 된 판 2996·2996·2994개 */
 const PD_AT_20: Record<Baselined, [number, number, number, number]> = {
-  industrial: [51.0477, 73.7136, 48.474, 60.9489],
-  genx: [52.1822, 74.0574, 49.3758, 61.8228],
-  alpha: [55.4796, 73.0808, 49.1794, 56.9696],
+  industrial: [51.2437, 73.7867, 48.6646, 60.9359],
+  genx: [52.2153, 74.1188, 49.3845, 61.9065],
+  alpha: [55.5309, 73.0952, 49.2083, 57.195],
 };
+/**
+ * **SPEC-009 FM4b 기준선 재측정 (K2·K4 — 이른 부모 별세 효과는 끈 세계에서)**: 영유아·학창 콘텐츠의 가족 조건(K4)과 동생 반응 카드의 강제(K2)로 20세 평균이 움직였다. 옛 값(industrial [51.0477, 73.7136, 48.474, 60.9489] ·
+ * genx [52.1822, 74.0574, 49.3758, 61.8228] · alpha [55.4796, 73.0808, 49.1794, 56.9696]) 대비 이동은 모두 0.32 이하다(지식 +0.20·+0.03·+0.05 / 건강 +0.07·+0.06·+0.01 / 행복 +0.19·+0.01·+0.03 / 관계 −0.01·+0.08·+0.23).
+ * 이른 부모 별세 효과(행복 −8 · 관계 −2 · 건강 −1과 집안 살림)를 켠 20세 평균은 행복 −2.5/−1.4/−0.5, 관계 −0.6/−0.4/−0.1, 건강 −0.3/−0.2/−0.07 낮다 — 한도는 위쪽(+) 가드라 닿지 않고, 효과 자체의 분포 보고는 docs/data/family-remeasure.md.
+ */
 const BASELINED: readonly Baselined[] = ['industrial', 'genx', 'alpha'];
 const LIMIT = [2, 2, 2, 3] as const;
 const NAMES = ['지식', '건강', '행복', '관계'] as const;
@@ -50,6 +56,9 @@ const LIVES = 3000;
 
 /** 20세가 된 순간(독립 직전의 자산 계산은 스탯에 닿지 않는다) 살아 있는 판의 스탯 평균. `post`는 그 순간의 판을 바꿔 보는 훅이다(가드가 실제로 잡는지 대조하는 시험이 쓴다) */
 function meansAt20(era: Baselined, post: (s: GameState) => GameState = (s) => s): { n: number; mean: [number, number, number, number] } {
+  return withEarlyLoss(false, () => meansAt20On(era, post));
+}
+function meansAt20On(era: Baselined, post: (s: GameState) => GameState): { n: number; mean: [number, number, number, number] } {
   const sums = [0, 0, 0, 0];
   let n = 0;
   for (let i = 1; i <= LIVES; i++) {

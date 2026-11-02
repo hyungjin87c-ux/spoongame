@@ -1,5 +1,6 @@
 import { eventPool } from './gameData';
 import { INHERIT_NOTE_TEXT } from '../data/lifeTable';
+import { FAMILY_LINE_HEAVY } from '../data/familyLineText';
 import type { EventDef, EventPool } from './events';
 import type { HeavyKind, HistoryEntry } from './types';
 
@@ -33,6 +34,9 @@ export const HEAVY_LINES_WITHOUT_EVENT: ReadonlyMap<string, HeavyKind> = new Map
 export function heavyKindOfEntry(entry: HistoryEntry, pool: EventPool = eventPool()): HeavyKind | null {
   if (entry.kind !== 'event' && entry.kind !== 'choice') return null;
   if (entry.eventId === undefined) return entry.kind === 'event' ? (HEAVY_LINES_WITHOUT_EVENT.get(entry.text) ?? null) : null;
+  // 가족 변화 줄(`fam-…`, SPEC-009 4-9절): 풀에 없는 이벤트 밖의 줄이라 `eventId` 접두어 → 분류 표로 잡는다 (분류 없는 줄은 가리지 않는다)
+  const fam = FAMILY_LINE_HEAVY[entry.eventId];
+  if (fam !== undefined) return entry.kind === 'event' ? fam : null;
   return heavyKindOfEvent(pool.byId.get(entry.eventId));
 }
 

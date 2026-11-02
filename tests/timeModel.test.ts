@@ -221,7 +221,9 @@ describe('한 해 여러 줄: tick.lines · counts.extraLines (TODO M8 220행)',
     const extra = ERAS.map((era) => mean(measureMany(REP[era], 100, 'random', 'short30').map((l) => l.counts.extraLines)));
     for (const e of extra) {
       expect(e).toBeGreaterThan(1.5);
-      expect(e).toBeLessThan(5);
+      // 상한 5 → 12 (SPEC-009 FM4b, FA0-7): 가족 변화 줄(fam-…: 동생 출생·형제 독립·조부모 별세·부모 별세·이혼)이 연표 줄과 같은 규칙으로 센다 — 판당 평균 5~10줄이 더해져 둘째 줄이 늘었다
+      // (측정은 docs/data/family-remeasure.md 4절: 판당 가족 줄 평균 6.8, 시간 +81초). 가족 줄을 뺀 값은 옛 상한 5 안이다
+      expect(e).toBeLessThan(12);
     }
   });
 

@@ -15,6 +15,7 @@ import {
   generateBirthFromSeed,
   grandBirthYears,
   motherAgeShares,
+  oldCohortOf,
   olderSiblingPlan,
   orderSharesOf,
   parentGoneAtOf,
@@ -93,7 +94,7 @@ describe('같은 입력은 같은 구성이다 (순수성·결정성)', () => {
 
   it('스트림 독립: 조부모 추첨이 바뀌어도(같은 부모, 다른 출생 연도 보정 없이) 형제 구성의 굴림은 해시라 서로 밀리지 않는다 — 같은 famSeed로 동생을 따로 굴려도 같다', () => {
     for (const b of ALL.slice(0, 200)) {
-      expect(rollYoungerSiblings(famSeedOf(b.peerSeed), b.report.birthOrder, b.report.mother.age, sharesOf(b), lastAtOf(b))).toEqual(b.family.y);
+      expect(rollYoungerSiblings(famSeedOf(b.peerSeed), b.report.birthOrder, b.report.mother.age, sharesOf(b), lastAtOf(b), b.birthYear - b.report.mother.age)).toEqual(b.family.y);
     }
   });
 
@@ -315,15 +316,35 @@ describe('T-FA3a·b 형제 구성', () => {
     expect(continueProbability(0, [1, 1, 1])).toBe(0);
   });
 
+  it('1940년 이전 출생 어머니(코호트 표 `highOrderContinue`)는 상한 cap(k = 1·2)과 고차 q(k ≥ 3)를 쓰고, 1941년생부터는 보정이 없다', () => {
+    const rows = familyTables().design.highOrderContinue.value;
+    expect(rows.map((r) => r.upTo)).toEqual([1900, 1905, 1910, 1915, 1920, 1925, 1930, 1935, 1940]);
+    for (const row of rows) {
+      const mby = row.upTo;
+      expect(continueProbability(1, [10, 50, 40], mby)).toBe(row.cap);
+      expect(continueProbability(3, [1, 1, 1], mby)).toBe(row.q);
+      expect(continueProbability(5, [1, 1, 1], mby)).toBe(row.q);
+      expect(row.gapMax).toBeGreaterThanOrEqual(SIBLING_GAP.min);
+      expect(row.gapMax).toBeLessThanOrEqual(SIBLING_GAP.max);
+    }
+    // 코호트가 이를수록 짧은 터울·높은 이어짐(출산이 많던 때): 터울 상한은 줄지 않는다
+    for (let i = 1; i < rows.length; i++) expect(rows[i].gapMax).toBeGreaterThanOrEqual(rows[i - 1].gapMax);
+    expect(continueProbability(3, [1, 1, 1], 1941)).toBeCloseTo(26 / 74, 10);
+    expect(continueProbability(1, [10, 50, 40], 1941)).toBe(0.9);
+    expect(continueProbability(3, [1, 1, 1])).toBeCloseTo(26 / 74, 10); // 어머니 출생 연도를 안 주면 보정 없음
+  });
+
   it('첫 동생이 있을 비율이 판마다 기대값 a_n × (터울이 어머니 나이 한도에 걸리지 않을 비율)의 합과 4σ 이내다 (형제 순서별)', () => {
     for (const order of [1, 2, 3, 4, 5]) {
       const rows = ALL.filter((b) => b.report.birthOrder === order);
       expect(rows.length, `순서 ${order}`).toBeGreaterThan(100);
       const ps = rows.map((b) => {
-        const a = continueProbability(order, sharesOf(b));
+        const mby = b.birthYear - b.report.mother.age;
+        const a = continueProbability(order, sharesOf(b), mby);
+        const gapMax = oldCohortOf(mby)?.gapMax ?? SIBLING_GAP.max; // 1940년 이전 어머니는 코호트의 짧은 터울
         let ok = 0;
-        for (let gap = SIBLING_GAP.min; gap <= SIBLING_GAP.max; gap++) if (b.report.mother.age + gap <= YOUNGER_MOTHER_MAX && gap <= lastAtOf(b)) ok++;
-        return order + 1 <= FAMILY_MAX_CHILDREN ? (a * ok) / (SIBLING_GAP.max - SIBLING_GAP.min + 1) : 0;
+        for (let gap = SIBLING_GAP.min; gap <= gapMax; gap++) if (b.report.mother.age + gap <= YOUNGER_MOTHER_MAX && gap <= lastAtOf(b)) ok++;
+        return order + 1 <= FAMILY_MAX_CHILDREN ? (a * ok) / (gapMax - SIBLING_GAP.min + 1) : 0;
       });
       // 터울은 해시 균등이라 이 기대값은 정확하다(0.25 단위)
       expectCount(rows.filter((b) => b.family.y.length > 0).length, ps, `${order}째의 첫 동생`);
@@ -337,14 +358,25 @@ describe('T-FA3a·b 형제 구성', () => {
     expect(Math.abs(males / ys.length - 0.5)).toBeLessThanOrEqual(sigmaTolerance(0.5, ys.length));
   });
 
-  it('T-FA3c 총 자녀 수(어머니 가중 1/N 환산 평균)가 FD6 코호트값과 ±0.45 이내다(설계 문서 ▲ 0.4 — 측정 0.41) — 어머니가 1941년생 이후인 코호트. 1940년 이전은 모형이 낮게 나온다(설계 문서가 알리는 기간 단면 근사의 한계)', () => {
-    // FD6: 어머니 출생 코호트 → 센서스 45~49세 평균 출생아 수 (fd6_mean_children_by_age_calc: 1990년 3.43 · 2000년 2.31 · 2005년 2.00)
-    const cohorts: Array<[number, number, number]> = [[1941, 1945, 3.43], [1951, 1955, 2.31], [1956, 1960, 2.0]];
+  it('T-FA3c 총 자녀 수(어머니 가중 1/N 환산 평균)가 FD6 코호트값과 ±0.45 이내다 — 어머니가 1911년생 이후인 코호트 전부(1940년 이전은 FM4b의 코호트 보정, 마스터 결정 2026-10-28)', () => {
+    // FD6 어머니 출생 코호트 → 센서스 연령 계급 평균 출생아 수 (fd6_mean_children_by_age_calc): 1970 센서스 55-59세 5.42 · 50-54세 5.65 · 45-49세 5.62 / 1975 45-49세 5.23 / 1980 4.69 / 1985 4.07 / 1990 3.43 / 2000 2.31 / 2005 2.00
+    const cohorts: Array<[number, number, number]> = [
+      [1911, 1915, 5.42],
+      [1916, 1920, 5.65],
+      [1921, 1925, 5.62],
+      [1926, 1930, 5.23],
+      [1931, 1935, 4.69],
+      [1936, 1940, 4.07],
+      [1941, 1945, 3.43],
+      [1951, 1955, 2.31],
+      [1956, 1960, 2.0],
+    ];
     const inv: number[] = cohorts.map(() => 0);
     const cnt: number[] = cohorts.map(() => 0);
-    // 어머니 코호트당 표본을 늘리려고 세대별로 더 많은 시드를 쓴다
-    for (const gen of ['g86', 'genx', 'millennial'] as const) {
-      for (const seed of spreadSeeds(5000, GENERATION_IDS.indexOf(gen))) {
+    // 어머니 코호트당 표본을 늘리려고 이른 세대는 시드를 더 쓴다 (산업화·베이비붐은 어머니 출생 1911~1935, 86세대·X는 1926~1960)
+    const draws: Array<[(typeof GENERATION_IDS)[number], number]> = [['industrial', 12000], ['boomer', 12000], ['g86', 8000], ['genx', 6000], ['millennial', 6000]];
+    for (const [gen, n] of draws) {
+      for (const seed of spreadSeeds(n, GENERATION_IDS.indexOf(gen))) {
         const b = generateBirthFromSeed(seed, gen);
         const mby = b.character.birthYear - b.report.mother.age;
         cohorts.forEach(([lo, hi], i) => {
@@ -358,21 +390,11 @@ describe('T-FA3a·b 형제 구성', () => {
     cohorts.forEach(([lo, hi, fd6], i) => {
       expect(cnt[i], `${lo}~${hi}년생 어머니 표본`).toBeGreaterThan(1500);
       const model = cnt[i] / inv[i];
-      // 설계 문서 12-4절의 ▲ 0.4명은 FM4 측정 뒤 마스터가 확정하는 값이다. 측정: 1941~45 −0.25 · 1951~55 +0.41 · 1956~60 +0.16 → 0.45로 둔다(1951~55가 0.4를 0.01 넘는다)
+      // 허용 0.45는 설계 문서 12-4절의 ▲ 0.4에 FM4a 측정(1951~55가 +0.41)을 얹어 마스터가 정한 값이다.
+      // R-530(부모 별세·이혼 뒤 동생을 끊음)과 1940년 이전 코호트 보정(FM4b) 뒤 다시 잰 값(R-541, 이 표본 그대로): 1911~15 −0.02 · 1916~20 −0.08 · 1921~25 −0.12 · 1926~30 0.00 · 1931~35 −0.04 · 1936~40 −0.03 ·
+      // **1941~45 −0.39**(−0.45에 가깝다 — 마스터에게 알림) · 1951~55 +0.37 · 1956~60 +0.18 (ai-log/2026-10-28_SPEC-009_dev-FM4b.md 3절)
       expect(Math.abs(model - fd6), `${lo}~${hi}: 모형 ${model.toFixed(2)} vs FD6 ${fd6}`).toBeLessThanOrEqual(0.45);
     });
-    // 관찰(실패 조건 아님, 방향만 못박는다): 1940년 이전 어머니의 모형값은 FD6(1970 센서스 5.62 · 1975 5.23 · 1980 4.69 · 1985 4.07)보다 낮다
-    let oldInv = 0;
-    let oldN = 0;
-    for (const seed of spreadSeeds(5000, 0)) {
-      const b = generateBirthFromSeed(seed, 'industrial');
-      if (b.character.birthYear - b.report.mother.age <= 1935) {
-        oldInv += 1 / (Math.min(b.report.birthOrder, 5) + b.family.y.length);
-        oldN++;
-      }
-    }
-    expect(oldN).toBeGreaterThan(1000);
-    expect(oldN / oldInv).toBeLessThan(4.0);
   });
 });
 

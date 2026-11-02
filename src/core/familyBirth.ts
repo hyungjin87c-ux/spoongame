@@ -12,10 +12,12 @@ import {
   YOUNGER_MOTHER_MAX,
   type FamilyData,
   type GrandData,
+  type HomeData,
   type SiblingData,
 } from './familyModel';
+import { rollHome } from './familyHome';
 import { famHash01, famStream } from './familyRng';
-import { familyTables } from './gameData';
+import { familyTables, type FamilyTables } from './gameData';
 import { createRng, mixSeed, type Rng } from './rng';
 import type { BirthReport, Gender, ParentWealth } from './types';
 
@@ -211,13 +213,22 @@ export function rollOlderSiblings(famSeed: number, siblingSeed: number, report: 
   return olderSiblingPlan(siblingSeed, report).map((o, i) => ({ g: o.gender === 'male' ? 0 : 1, k: o.gap, s: leaveAgeOf(famSeed, i) }));
 }
 
+/** 어머니 출생 연도가 속한 1940년 이전 코호트의 보정 행 (없으면 보정 없음) */
+export function oldCohortOf(motherBirthYear: number | undefined): FamilyTables['design']['highOrderContinue']['value'][number] | undefined {
+  return motherBirthYear === undefined ? undefined : familyTables().design.highOrderContinue.value.find((c) => motherBirthYear <= c.upTo);
+}
+
 /**
  * 어머니의 최종 자녀 수를 이어짐 확률 `a_k`(전체 자녀가 k명 이상일 때 k+1명 이상일 확률)로 굴린다.
  *  a_1 = s[1]/s[0], a_2 = s[2]/s[1] (이 판의 출산 순위 비중, [0, `design.continueCap`(0.9)]로 자름) · a_3 = (19+7)/74 · a_4 이상 = 7/19 (THIRD_PLUS_SPLIT) — 설계값(공표 출산 순위 비중에서 유도한 근사).
  */
-export function continueProbability(k: number, shares: readonly [number, number, number]): number {
+export function continueProbability(k: number, shares: readonly [number, number, number], motherBirthYear?: number): number {
   if (k <= 0) return 0;
-  const cap = familyTables().design.continueCap.value;
+  const design = familyTables().design;
+  // 1940년 이전 출생 어머니: 코호트별 보정값(FD6 ±0.45에 맞춘 설계값) — 상한 `cap`(k = 1·2)과 고차 이어짐 `q`(k ≥ 3)
+  const cohort = oldCohortOf(motherBirthYear);
+  if (cohort !== undefined && k >= 3) return cohort.q;
+  const cap = cohort?.cap ?? design.continueCap.value;
   if (k === 1) return shares[0] > 0 ? clamp(shares[1] / shares[0], 0, cap) : 0;
   if (k === 2) return shares[1] > 0 ? clamp(shares[2] / shares[1], 0, cap) : 0;
   const [third, fourth, fifth] = THIRD_PLUS_SPLIT;
@@ -228,16 +239,18 @@ export function continueProbability(k: number, shares: readonly [number, number,
  * 아래 동생: 동생 한 명씩 차례로 이어짐을 굴린다(`j = 1, 2, …`). 굴림·터울·성별은 `j`마다 해시로 미리 뽑아 두어(스트림 위치에 기대지 않는다) 멈춰도 다른 값이 밀리지 않는다.
  * 터울 `SIBLING_GAP`(2~5), 성별 `design.maleShare`(균등), 어머니의 그 출산 나이가 `YOUNGER_MOTHER_MAX`(45)를 넘으면 거기서 멈추고, 전체 자녀 수는 8명 이하다.
  * `lastAt`: 동생이 태어날 수 있는 마지막 주인공 나이 = min(부모 한 분이 떠나는 해, 이혼한 해) — 재혼은 만들지 않는다(4-7 (2), R-530).
+ * `motherBirthYear`: 어머니 출생 연도 — 주면 1940년 이전 코호트의 고차 출산 보정(`design.highOrderContinue`)을 쓴다. 주지 않으면 보정 없이 굴린다.
  */
-export function rollYoungerSiblings(famSeed: number, birthOrder: number, motherAge: number, shares: readonly [number, number, number], lastAt: number = Infinity): SiblingData[] {
+export function rollYoungerSiblings(famSeed: number, birthOrder: number, motherAge: number, shares: readonly [number, number, number], lastAt: number = Infinity, motherBirthYear?: number): SiblingData[] {
   const out: SiblingData[] = [];
   const maleShare = familyTables().design.maleShare.value;
+  const gapMax = oldCohortOf(motherBirthYear)?.gapMax ?? SIBLING_GAP.max;
   let k = 0;
   for (let j = 1; birthOrder + j <= FAMILY_MAX_CHILDREN; j++) {
-    k += SIBLING_GAP.min + Math.floor(famHash01(famSeed, FAMILY_TAG.SIBLINGS, 100 + j, 1) * (SIBLING_GAP.max - SIBLING_GAP.min + 1));
+    k += SIBLING_GAP.min + Math.floor(famHash01(famSeed, FAMILY_TAG.SIBLINGS, 100 + j, 1) * (gapMax - SIBLING_GAP.min + 1));
     if (motherAge + k > YOUNGER_MOTHER_MAX) break;
     if (k > lastAt) break;
-    if (!(famHash01(famSeed, FAMILY_TAG.SIBLINGS, 100 + j, 0) < continueProbability(birthOrder + j - 1, shares))) break;
+    if (!(famHash01(famSeed, FAMILY_TAG.SIBLINGS, 100 + j, 0) < continueProbability(birthOrder + j - 1, shares, motherBirthYear))) break;
     out.push({ g: famHash01(famSeed, FAMILY_TAG.SIBLINGS, 10 + j, 2) < maleShare ? 0 : 1, k, s: leaveAgeOf(famSeed, 10 + j) });
   }
   return out;
@@ -294,17 +307,40 @@ export function rollFamilyCore(famSeed: number, input: Pick<FamilyBirthInput, 'b
   return { p: [{ d: dm }, { d: df }], g, c };
 }
 
+/** 태어날 때 함께 사는 사람 수(주인공 포함): 부모 둘 + 함께 사는 쪽의 살아 계신 조부모 + 독립 전의 위 형제. 집 방 수의 문턱(`familyHome.ts`)이 읽는다 */
+export function householdSizeAtBirth(birthYear: number, report: Pick<BirthReport, 'mother' | 'father'>, core: Pick<FamilyData, 'g' | 'c'>, older: readonly SiblingData[]): number {
+  let n = 3;
+  if (core.c !== 0) {
+    const by = grandBirthYears(birthYear, report.mother.age, report.father.age, core.g);
+    for (const i of core.c === 1 ? [0, 1] : [2, 3]) if (goneAtMyAge(by[i], core.g[i].d, birthYear) >= 0) n++;
+  }
+  return n + older.filter((s) => s.k < s.s).length;
+}
+
+/** 출생 때 집 (FA5, 묶음 B): 점유 형태(`report.housing`)는 입력으로 받을 뿐 바꾸지 않는다 */
+export function rollHomeFor(famSeed: number, input: Pick<FamilyBirthInput, 'birthYear' | 'report' | 'parentWealth'>, core: Pick<FamilyData, 'g' | 'c'>, older: readonly SiblingData[]): HomeData {
+  return rollHome(famSeed, {
+    birthYear: input.birthYear,
+    region: input.report.region,
+    housing: input.report.housing,
+    parentWealth: input.parentWealth,
+    householdSize: householdSizeAtBirth(input.birthYear, input.report, core, older),
+  });
+}
+
 /** 출생 때 가족 구성을 한 번에 뽑는다. 같은 `famSeed`·같은 입력 → 같은 `FamilyData`. 로그(`l`)는 비어 있다 */
 export function rollFamilyBirth(famSeed: number, input: FamilyBirthInput): FamilyData {
   const core = rollFamilyCore(famSeed, input);
   const firstGone = firstGoneOf(parentGoneAtOf(input.birthYear, input.report, core.p));
   const divorce = divorcePlan(famSeed, input.birthYear, firstGone);
   const lastAt = Math.min(firstGone?.at ?? Infinity, divorce?.at ?? Infinity);
+  const o = rollOlderSiblings(famSeed, input.siblingSeed, input.report);
   return {
     v: FAMILY_DATA_VERSION,
     ...core,
-    o: rollOlderSiblings(famSeed, input.siblingSeed, input.report),
-    y: rollYoungerSiblings(famSeed, input.report.birthOrder, input.report.mother.age, input.orderShares, lastAt),
+    o,
+    y: rollYoungerSiblings(famSeed, input.report.birthOrder, input.report.mother.age, input.orderShares, lastAt, parentBirthYear(input.birthYear, input.report.mother.age)),
+    h: rollHomeFor(famSeed, input, core, o),
     l: [],
   };
 }

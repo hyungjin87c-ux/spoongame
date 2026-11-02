@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { Glue } from './Glue';
 import { useIsoLayoutEffect } from './hooks';
 
@@ -51,6 +51,52 @@ export function FitPair({ a, b, className = '', hideSeparator = false }: { a: st
             <Glue text={a} /> · <Glue text={b} />
           </>
         )
+      )}
+    </span>
+  );
+}
+
+/**
+ * 「A · B · C」 항목이 셋 이상인 짧은 줄 — `FitPair`와 같은 규칙(한 줄에 들어가면 「A · B · C」, 안 들어가면 기호 없이 항목마다 따로 줄)을 N개 항목으로 넓힌 것.
+ * 집과 가족 그림 아래 한 줄(SPEC-009 FM4b: 집 낱말이 「집」에서 「아파트」·「단독주택 셋방」으로 길어져 큰 글자에서 가운뎃점이 줄 끝에 남았다)에 쓴다.
+ * 항목 안의 붙여 쓴 「부모님·누나와」는 Glue가 한 낱말로 묶는다.
+ */
+export function FitList({ items, className = '' }: { items: readonly string[]; className?: string }) {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const probeRef = useRef<HTMLSpanElement>(null);
+  const [split, setSplit] = useState(false);
+  const joined = items.join(' · ');
+
+  useIsoLayoutEffect(() => {
+    const box = boxRef.current;
+    const probe = probeRef.current;
+    if (box === null || probe === null) return;
+    const measure = () => setSplit(probe.getBoundingClientRect().width > box.getBoundingClientRect().width + 0.5);
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    observer.observe(probe);
+    return () => observer.disconnect();
+  }, [joined]);
+
+  return (
+    <span className={`fit-pair${split ? ' is-split' : ''}${className === '' ? '' : ` ${className}`}`} ref={boxRef} data-split={split ? 'true' : 'false'}>
+      <span className="fit-pair__probe" ref={probeRef} data-text={joined} aria-hidden="true" />
+      {items.map((item, i) =>
+        split ? (
+          <Fragment key={i}>
+            {i === 0 ? null : ' '}
+            <span className="fit-pair__item">
+              <Glue text={item} />
+            </span>
+          </Fragment>
+        ) : (
+          <Fragment key={i}>
+            {i === 0 ? null : ' · '}
+            <Glue text={item} />
+          </Fragment>
+        ),
       )}
     </span>
   );

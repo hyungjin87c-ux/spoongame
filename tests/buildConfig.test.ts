@@ -57,7 +57,8 @@ describe('vite-node 선언 (R-049)', () => {
     // gen:era(시대의 창 10년 덩어리 만들기 — designer의 승인된 조각 SVG에서 data/eraWindows/d<10년대>.ts를 다시 만들고 --check로 지금 파일과 같은지 본다, SPEC-009 FM5b)는 FM5b에서 더했다
     // golden:scene(집 그림·시대의 창 고정 시드 골든 tests/fixtures/scene-golden.json 만들기, 일부러 규칙을 바꿀 때만, SPEC-009 FM5b R-546)은 FM5b에서 더했다
     // report:parent(부모 결정 보고 — 판당 부모·흘러감·본인 카드 수, 13~18세 본인 카드 0장 비율, 수저별 선택 분포, SPEC-005 QI5 PD12·TM3·PD13)는 QI5에서 더했다
-    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:art', 'gen:basis', 'gen:citations', 'gen:era', 'gen:family', 'golden:scene', 'report:citations', 'report:notes', 'report:parent', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
+    // report:family(가족 변화 재측정 보고 — 조기 상실 효과·자녀 수·K1 영향·판 시간, docs/data/family-remeasure.md, SPEC-009 FM4b)는 FM4b에서 더했다
+    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:art', 'gen:basis', 'gen:citations', 'gen:era', 'gen:family', 'golden:scene', 'report:citations', 'report:family', 'report:notes', 'report:parent', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
   });
 });
 

@@ -33,6 +33,7 @@ import { applyResolved, condContextOf, economyContextOf } from './apply';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
+import { applyFamilyChanges, familyChangesFor } from './familyTick';
 import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllGone, parentsJustGone, siblingCountOf } from './inherit';
 import type { NoteCardDef } from './noteCards';
 import { consumeNote, dueNote, type NoteMode } from './notes';
@@ -195,6 +196,8 @@ export interface TickInfo {
   fromAge: number;
   /** 그 해의 주된 사건(선택지·서술). 일반 추첨에서 아무것도 안 나온 해에 마일스톤만 있었다면 첫 마일스톤(id 오름차순)의 id다 */
   eventId?: string;
+  /** 그 해 인생 기록에 남은 가족 변화 줄(`fam-…`, SPEC-009 FA7)의 id들(종류 코드 오름차순). 이벤트 풀의 id가 아니라서 `eventId`와 따로 둔다 — 줄은 판 길이 모델이 연표 줄과 같은 규칙으로 센다(`lines`) */
+  familyIds?: string[];
   /** 그 해 마일스톤 슬롯에서 일어난 이벤트 id들(id 오름차순) (SPEC-003 IN3, M7a r3 — 일반 사건과 별개 줄이라 한 해 연표에 여러 줄이 남을 수 있다: 1세는 걸음마 + 첫 말 + 일반 사건 최대 3줄 이상) */
   milestoneIds?: string[];
   /**
@@ -340,9 +343,19 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   const canChoice = (state.lastChoiceAge === null || age - state.lastChoiceAge >= MIN_YEARS_BETWEEN_CHOICES) && choicesSoFar < pacing.hard;
   const choiceChance = freq.choice * (choicesSoFar >= pacing.soft ? pacing.softFactor : 1);
 
+  // 가족 변화 (SPEC-009 FA7, K2): 이 해에 구성이 정한 변화(조부모·부모 별세, 이혼, 동생 출생, 형제 독립)와 구성이 일으키는 사건. 진행 RNG를 쓰지 않는다. 적용은 마일스톤 줄 바로 뒤, 일반 사건 앞이다(아래)
+  const fam = familyChangesFor(state, age, pool);
+  const forced = fam.forcedEvent !== undefined ? (pool.byId.get(fam.forcedEvent) ?? null) : null;
+
   let picked: EventDef | null = null;
-  if (rollChoice < choiceChance && canChoice) picked = pickWeighted(rng, eligible.filter(isChoiceEvent), ctx, age, true);
-  if (picked === null && rollNarrative < freq.narrative) picked = pickWeighted(rng, eligible.filter((ev) => !isChoiceEvent(ev) && !isMilestoneEvent(ev)), ctx);
+  if (forced !== null) {
+    // 구성이 정한 해: 첫째의 첫 동생 반응 카드를 선택지 간격·페이싱과 무관하게 띄우고 그 해 일반 추첨은 건너뛴다. 추첨 한 번(`pickWeighted`)을 대신해 난수를 한 번 소비해 이후 수열의 칸을 맞춘다 (7-2절 2)
+    rng.next();
+    picked = forced;
+  } else {
+    if (rollChoice < choiceChance && canChoice) picked = pickWeighted(rng, eligible.filter(isChoiceEvent), ctx, age, true);
+    if (picked === null && rollNarrative < freq.narrative) picked = pickWeighted(rng, eligible.filter((ev) => !isChoiceEvent(ev) && !isMilestoneEvent(ev)), ctx);
+  }
 
   // 마일스톤 효과·연표 한 줄은 그 해의 일반 사건보다 먼저 적용한다(선택지가 뜨는 해에도 마일스톤 줄은 이미 남는다)
   let s: GameState = state;
@@ -355,6 +368,7 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     };
   }
   const milestoneIds = chosenMilestones.map((m) => m.id);
+  s = applyFamilyChanges(s, fam);
 
   if (picked !== null && isChoiceEvent(picked)) {
     const visible = visibleChoices(picked, ctx);
@@ -386,14 +400,17 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   const { state: next, died } = finishYear(s, rng, state);
   const lines = yearLineCount(next.history, age); // 이 해의 줄 수(마일스톤 + 일반 사건 + 해 끝 규칙의 상속 줄이 이 나이에 붙었다면 그것도) — 단계 줄은 세지 않는다
   const eventId = picked?.id ?? milestoneIds[0];
+  const familyIds = fam.lines.map((l) => l.eventId!);
   return {
     state: next,
     tick: {
-      kind: died ? 'death' : eventId !== undefined ? 'narrative' : 'quiet',
+      // 가족 변화 줄만 있는 해도 연표에 줄이 남은 해라 서술 해로 센다(판 길이 모델은 줄을 같은 규칙으로 센다, FA0-7)
+      kind: died ? 'death' : eventId !== undefined || familyIds.length > 0 ? 'narrative' : 'quiet',
       fromAge: age,
       ...(eventId !== undefined ? { eventId } : {}),
+      ...(familyIds.length > 0 ? { familyIds } : {}),
       ...(milestoneIds.length > 0 ? { milestoneIds } : {}),
-      ...(!died && eventId !== undefined ? { lines } : {}),
+      ...(!died && (eventId !== undefined || familyIds.length > 0) ? { lines } : {}),
     },
   };
 }
@@ -627,6 +644,9 @@ function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): vo
   counts[tick.kind]++;
   if (tick.kind === 'narrative' || tick.kind === 'resolved') counts.extraLines += Math.max(0, (tick.lines ?? 1) - 1);
 }
+
+/** 걸음 하나를 판 집계에 더한다 — `playToEnd`와 같은 규칙을 밖에서 쓰는 측정(scripts/familyRemeasureLib.ts)이 부른다 */
+export { count as countTick };
 
 /** 안전장치: 한 번의 연속 진행이 이 걸음 수를 넘으면 무한 루프로 보고 throw */
 const MAX_STEPS = 1000;

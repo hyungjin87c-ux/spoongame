@@ -1,8 +1,8 @@
 import { olderSiblingsOf, reportTiltOf } from '../data/birthReportTable';
 import { olderSiblingDraw, YOUNGER_SIBLING_EVENT } from './family';
 import { orderSharesOf } from './birthReport';
-import { leaveAgeOf, rollFamilyBirth, rollFamilyCore, rollOlderSiblings } from './familyBirth';
-import { FAMILY_DATA_VERSION, FAMILY_MAX_CHILDREN, YOUNGER_MOTHER_MAX, type FamilyData } from './familyModel';
+import { leaveAgeOf, rollFamilyBirth, rollFamilyCore, rollHomeFor, rollOlderSiblings } from './familyBirth';
+import { FAMILY_AGE_CAP, FAMILY_DATA_VERSION, FAMILY_MAX_CHILDREN, NO_DEATH_PLAN, YOUNGER_MOTHER_MAX, type FamilyData } from './familyModel';
 import { famSeedOf } from './familyRng';
 import { isGameDataReady } from './gameData';
 import type { GameState } from './types';
@@ -32,7 +32,16 @@ export function legacyFamilyFrom(game: Source): FamilyData {
   const bornAt = game.seen[YOUNGER_SIBLING_EVENT];
   const y: FamilyData['y'] =
     typeof bornAt === 'number' && report.birthOrder === 1 ? [{ g: olderSiblingDraw(siblingSeed, 99).gender === 'male' ? 0 : 1, k: bornAt, s: leaveAgeOf(famSeed, 11) }] : [];
-  return { v: FAMILY_DATA_VERSION, lg: 1, ...core, o: rollOlderSiblings(famSeed, siblingSeed, report), y, l: [] };
+  // R-540: 이미 본 동생(`k`)이 있으면 부모 별세 계획이 그 동생이 태어난 해보다 앞서지 않게 아래쪽을 막는다(`goneAt ≥ k`) — 재혼이 없으니 한 분이 떠난 집에 동생이 새로 태어나지 않는다.
+  // 시드에서 새로 뽑은 계획이라 사용자가 본 적 없는 값이고 DF25(이미 본 값 불변)와 부딪치지 않는다. 이혼 계획은 `familyScheduleOf`가 같은 이유로 없앤다
+  const p = y.length === 0 ? core.p : (core.p.map((par, i) => {
+    const ageAtBirth = i === 0 ? report.mother.age : report.father.age;
+    const lowest = y[0].k + ageAtBirth; // goneAt = d − ageAtBirth ≥ k  ⇔  d ≥ k + ageAtBirth
+    return par.d >= NO_DEATH_PLAN || par.d >= lowest ? par : { ...par, d: lowest > FAMILY_AGE_CAP ? NO_DEATH_PLAN : lowest };
+  }) as FamilyData['p']);
+  const o = rollOlderSiblings(famSeed, siblingSeed, report);
+  // 집은 옛 저장에 없던 값이라 시드에서 채운다(옛 `Housing`·직업은 그대로 — 점유 형태는 입력일 뿐 바꾸지 않는다)
+  return { v: FAMILY_DATA_VERSION, lg: 1, ...core, p, o, y, h: rollHomeFor(famSeed, { birthYear: character.birthYear, report, parentWealth: character.parentWealth }, core, o), l: [] };
 }
 
 /** 새로 태어난 판과 같은 방식으로 가족 구성을 (다시) 만든다 — 저장에서 `family`만 이상해 버려진 판을 같은 시드로 되살린다 (결정성, 12-3절 ③) */
@@ -119,7 +128,7 @@ export function isValidFamily(v: unknown, state: Pick<GameState, 'age' | 'birthR
   // 새로 태어난 판의 아래 동생은 어머니 나이 한도 안이다 (INV-1) — 옛 저장에서 만든 스냅샷(`lg`)은 사건이 일으킨 값이라 따지지 않는다
   if (v.lg !== 1 && !(v.y as Array<{ k: number }>).every((s) => report.mother.age + s.k <= YOUNGER_MOTHER_MAX)) return false;
   if (v.c !== 0 && v.c !== 1 && v.c !== 2) return false;
-  if (v.h !== undefined && !(isObj(v.h) && isInt(v.h.k) && isInt(v.h.r))) return false;
+  if (v.h !== undefined && !(isObj(v.h) && intIn(v.h.k, 0, 5) && intIn(v.h.r, 1, 6) && (v.h.s === undefined || v.h.s === 1) && Object.keys(v.h).every((k) => k === 'k' || k === 'r' || k === 's'))) return false;
   if (v.t !== undefined && !(Array.isArray(v.t) && v.t.length === 2 && v.t.every(isInt))) return false;
   if (v.u !== undefined && !isInt(v.u)) return false;
   if (v.ad !== undefined && !(Array.isArray(v.ad) && v.ad.length <= 5 && v.ad.every((n) => typeof n === 'string' && FAMILY_NAME_PATTERN.test(n)))) return false;

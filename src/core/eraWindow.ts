@@ -1,3 +1,4 @@
+import { ERA_BAND_RULES } from '../data/sceneTables';
 import { FAMILY_TAG } from './familyModel';
 import { famHash01 } from './familyRng';
 
@@ -64,9 +65,9 @@ export interface EraContext {
   band?: EraBand;
 }
 
-/** 부모 재력 5단계 → 수저 구간: 1·2 아래 · 3 가운데 · 4·5 위 (설계값) */
+/** 부모 재력 5단계 → 수저 구간: 1·2 아래 · 3 가운데 · 4·5 위 (설계값, 경계는 `data/sceneTables.ts#ERA_BAND_RULES`) */
 export function bandOfWealth(wealth: number): EraBand {
-  return wealth <= 2 ? 'low' : wealth >= 4 ? 'high' : 'mid';
+  return wealth <= ERA_BAND_RULES.lowMaxWealth ? 'low' : wealth >= ERA_BAND_RULES.highMinWealth ? 'high' : 'mid';
 }
 
 export interface EraPick {
@@ -148,7 +149,11 @@ function stepPick(y: number, ctx: EraContext, future: boolean, recent: readonly 
   const national = events.filter((w) => w.regionKey === undefined);
   const chosenEvent = pickOne(heavyFirst(regional), ctx.seed, y, 1) ?? pickOne(heavyFirst(national), ctx.seed, y, 1);
   if (chosenEvent !== null) {
-    if (ctx.gentle && chosenEvent.heavy) return { pic: dailyPick(y, ctx, recent, true, age), line: chosenEvent, veiled: true, sourceYear: y };
+    if (ctx.gentle && chosenEvent.heavy) {
+      // 같은 해에 무겁지 않은 사건 그림이 따로 있으면(1987년: 6월 시위 ↔ 12월 투표소) 가린 해의 대체 그림으로 쓴다(FM5b 마스터 결정 2026-10-28). 줄은 가려진 무거운 사건 그대로다. 없으면 그 10년의 (무겁지 않은) 일상
+      const alt = pickOne(regional.filter((w) => !w.heavy), ctx.seed, y, 4) ?? pickOne(national.filter((w) => !w.heavy), ctx.seed, y, 4);
+      return { pic: alt ?? dailyPick(y, ctx, recent, true, age), line: chosenEvent, veiled: true, sourceYear: y };
+    }
     return { pic: chosenEvent, line: chosenEvent, veiled: false, sourceYear: y };
   }
   const chosen = dailyPick(y, ctx, recent, false, age);

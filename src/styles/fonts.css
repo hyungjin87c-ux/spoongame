@@ -1,4 +1,5 @@
 /* Noto Sans KR 부분 집합 @font-face (SPEC-004 GM4, 17-11-4 배치) — 파일은 src/assets/fonts/, 생성 `node scripts/design/buildGm3Fonts.mjs`(글자 집합이 바뀌면 다시 만든다). 라이선스 SIL OFL 1.1 — src/assets/fonts/OFL.txt */
+/* FM5b(SPEC-009) 이후 s2·s3 조각은 `node scripts/buildFamilyFonts.mjs`로 다시 만든다(`--check`는 지금 파일이 규칙의 결과와 바이트까지 같은지 본다) — s0·s0b·s1은 첫 화면 글꼴이라 건드리지 않는다. 절차: `src/**`의 글자가 늘어 tests/fonts.test.tsx가 실패하면 이 스크립트를 한 번 돌린다. */
 /* Noto Sans KR 부분 집합 @font-face — 생성: node scripts/design/buildGm3Fonts.mjs (SPEC-004 GM3 r3). 손으로 고치지 않는다.
    조각 s0(첫 화면) · s1(룰렛·출생신고) · s2(그 밖 게임 글자) · s3(KS X 1001 꼬리 — 그 글자가 화면에 있을 때만 받는다). 굵기 400·700.
    표시 전략: font-display: swap + 첫 화면 조각(s0 400·700) <link rel="preload"> + 대체 글꼴 metric 맞춤('Noto Sans KR Fallback' = 맑은 고딕에 size-adjust·ascent/descent/line-gap-override) → 바뀜 흔들림(CLS)을 줄인다.

@@ -1,10 +1,13 @@
+import { applyFlags } from './apply';
 import { birthSentence } from './birthReport';
 import { generateBirth } from './birth';
+import { deriveFamilyFlags } from './familyFlags';
+import { familyViewOf } from './familyView';
 import { pickRandomGeneration } from './generationMixture';
 import { appendHistory } from './history';
 import { emptyPlay } from './playClock';
 import { createRng } from './rng';
-import { DEFAULT_BGM, type GameState, type GenerationChoice, type LifeLength, type ProfileId, type Settings, type Stats } from './types';
+import { DEFAULT_BGM, R1_PRESENT, type GameState, type GenerationChoice, type LifeLength, type ProfileId, type Settings, type Stats } from './types';
 
 /** 출생 전 자리표시 스탯. 실제 값은 beginBirth가 채운다(건강은 0이 되지 않게 중립값). */
 export const INITIAL_STATS: Stats = {
@@ -138,8 +141,11 @@ export function enterBirth(state: GameState): GameState {
 /** 출생신고 → 인생 진행(「살아가기」). 생애 연표의 첫 줄(출생)에 출생신고의 한 줄 서술문(BR3)을 남긴다. */
 export function enterLife(state: GameState): GameState {
   if (state.phase !== 'birth' || state.character === null || state.birthReport === null || state.generation === null) return state;
+  // 처음 시스템 플래그 (SPEC-009 6-2절): 태어날 때의 가족 보기에서 파생한 집합을 한 번 놓는다. 그 뒤로는 `familyChangesFor`가 차이만 낸다. 가족이 없는 상태(옛 시험 상태)는 플래그를 놓지 않는다
+  const flags = state.family === undefined || state.generation === R1_PRESENT ? state.flags : applyFlags(state.flags, [...deriveFamilyFlags(familyViewOf(state, 0), state.family.l)], []);
   return {
     ...state,
+    flags,
     phase: 'life',
     history: appendHistory(state.history, {
       age: 0,

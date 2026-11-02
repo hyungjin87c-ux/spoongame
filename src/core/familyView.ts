@@ -15,6 +15,7 @@ import {
   type SceneFamilyState,
   type SceneMember,
 } from './familyModel';
+import { homeKindOf } from './familyHome';
 import { famSeedOf } from './familyRng';
 import { legacyFamilyFrom } from './familyStorage';
 import type { GameState, Gender } from './types';
@@ -59,7 +60,9 @@ export function familyScheduleOf(game: FamilyGame): FamilySchedule {
   const parentBy: [number, number] = [parentBirthYear(Y, report.mother.age), parentBirthYear(Y, report.father.age)];
   const parentGoneAt = parentGoneAtOf(Y, report, family.p);
   const firstGone = firstGoneOf(parentGoneAt);
-  const divorce = divorcePlan(famSeed, Y, firstGone);
+  const rawDivorce = divorcePlan(famSeed, Y, firstGone);
+  // 옛 저장 스냅샷(`lg`)의 아래 동생은 이미 본 `infant-new-sibling` 나이에서 왔다 — 그보다 앞선 이혼 계획은 없는 것으로 본다 (R-540, 재혼이 없으므로 이혼한 집에 동생이 새로 태어나지 않는다). 사용자가 본 적 없는 값이라 DF25와 부딪치지 않는다
+  const divorce = family.lg === 1 && family.y.length > 0 && rawDivorce !== null && rawDivorce.at < family.y[0].k ? null : rawDivorce;
   const grandBy = grandBirthYears(Y, report.mother.age, report.father.age, family.g);
   const grandGoneAt = grandBy.map((by, i) => (family.g[i].d >= NO_DEATH_PLAN ? Infinity : goneAtMyAge(by, family.g[i].d, Y))) as FamilySchedule['grandGoneAt'];
   return { family, birthYear: Y, famSeed, parentBy, parentGoneAt, firstGone, divorce, grandBy, grandGoneAt };
@@ -97,10 +100,10 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
   // 부모
   (['mother', 'father'] as const).forEach((role, i) => {
     const ownAge = (i === 0 ? report.mother.age : report.father.age) + age;
-    const flagGone = flags.includes(`${role}_gone`);
+    // 상태는 **계획(스냅샷)과 나이**에서 다시 계산한다 — `*_gone`·`*_apart` 플래그는 이 보기에서 파생된 결과라 입력으로 읽지 않는다(읽으면 지난 나이의 보기가 지금 플래그를 따라가 `changed`가 어긋난다, FM4b)
     const modeledGone = sc.firstGone !== null && sc.firstGone.who === i && age > sc.firstGone.at;
-    const gone = parentsGoneFlag || flagGone || modeledGone || ownAge > FAMILY_MAX_AGE;
-    const apartByEvent = flags.includes(`${role}_apart`) || (sc.divorce !== null && sc.divorce.leaver === i && age > sc.divorce.at);
+    const gone = parentsGoneFlag || modeledGone || ownAge > FAMILY_MAX_AGE;
+    const apartByEvent = sc.divorce !== null && sc.divorce.leaver === i && age > sc.divorce.at;
     const p: Person = {
       id: role,
       role,
@@ -111,7 +114,7 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
       state: stateOf(gone, apartByEvent, !adult || adultHome),
     };
     if (p.state === 'apart') p.apartBy = apartByEvent ? 'split' : 'away';
-    if (gone && modeledGone && !parentsGoneFlag && !flagGone) {
+    if (gone && modeledGone) {
       p.goneAtOwnAge = f.p[i].d;
       p.goneAtMyAge = sc.parentGoneAt[i];
       p.age = f.p[i].d;
@@ -125,7 +128,9 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
     const ownAge = calYear - sc.grandBy[i];
     const gone = ownAge > Math.min(gp.d, FAMILY_MAX_AGE);
     const side: 1 | 2 = i < 2 ? 1 : 2;
-    const lives = !adult && age <= GRAND_COHABIT_UNTIL && f.c === side;
+    // 이혼으로 떠난 부모와 같은 쪽 조부모는 `divorce.at + 1`부터 따로 산다 (R-537, 마스터 결정 2026-10-28: 이혼 뒤 그 집안 조부모와 함께 사는 경우는 드물다). 친가 = 아버지 쪽(leaver 1), 외가 = 어머니 쪽(leaver 0)
+    const leftWithParent = sc.divorce !== null && age > sc.divorce.at && (sc.divorce.leaver === 1 ? 1 : 2) === side;
+    const lives = !adult && age <= GRAND_COHABIT_UNTIL && f.c === side && !leftWithParent;
     const p: Person = { id, role: 'grandparent', name: gp.n ?? '', gender: GRAND_GENDER[id], birthYear: sc.grandBy[i], age: ownAge, state: stateOf(gone, false, lives) };
     if (gone) {
       p.goneAtOwnAge = Math.min(gp.d, FAMILY_MAX_AGE);
@@ -284,6 +289,9 @@ export function sceneFamilyOf(game: FamilyGame): SceneFamilyState {
     if (game.age === FAMILY_ADULT_AGE && game.assets !== null && game.assets.dwelling !== 'family') changed.push('independent');
   }
 
+  const family = familyScheduleOf(game).family;
+  const inParentsHome = game.age < FAMILY_ADULT_AGE || (game.assets?.dwelling === 'family' && !game.flags.includes('moved_home'));
+  const home = family.h !== undefined && inParentsHome ? family.h : null;
   return {
     calYear: view.calYear,
     me: { age: game.age, gender: game.character!.gender },
@@ -291,8 +299,9 @@ export function sceneFamilyOf(game: FamilyGame): SceneFamilyState {
     overflow: dropped,
     housing: game.birthReport!.housing,
     dwelling: game.assets?.dwelling ?? null,
-    homeKind: null,
-    rooms: null,
+    // 집 종류·방 수는 부모 집(어린 시절 · 가족 집에 사는 동안)에서만 읽는다. 독립한 어른은 집 종류를 새로 뽑지 않고 `Dwelling`에 따른 기본 모양을 쓴다(4-5절)
+    homeKind: home === null ? null : homeKindOf(home),
+    rooms: home === null ? null : home.r,
     pets: view.pets.map((p) => ({ species: p.species, place: 'indoor' as const })),
     changed,
   };

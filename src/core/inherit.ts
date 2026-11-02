@@ -33,8 +33,22 @@ export function parentsAllGone(game: Pick<GameState, 'age' | 'flags' | 'birthRep
 export type SiblingCountRule = 'legacy' | 'view';
 export const SIBLING_COUNT_RULE: SiblingCountRule = 'legacy';
 
+/** 지금 상속이 쓰는 규칙. 앱은 바꾸지 않는다 — 측정·시험(`scripts/familyRemeasure.ts`)이 `withSiblingCountRule`로 잠깐 바꿔 K1을 켠 판의 분포를 잰다 */
+let activeRule: SiblingCountRule = SIBLING_COUNT_RULE;
+
+/** 측정·시험 전용: `fn` 동안만 상속의 형제 수 규칙을 바꾼다(끝나면 되돌린다) */
+export function withSiblingCountRule<T>(rule: SiblingCountRule, fn: () => T): T {
+  const before = activeRule;
+  activeRule = rule;
+  try {
+    return fn();
+  } finally {
+    activeRule = before;
+  }
+}
+
 /** 형제 수 (상속 나누기 `÷ (형제 수 + 1)`에 쓰인다) */
-export function siblingCountOf(game: View, rule: SiblingCountRule = SIBLING_COUNT_RULE): number {
+export function siblingCountOf(game: View, rule: SiblingCountRule = activeRule): number {
   return rule === 'view' ? livingSiblingCount(game) : familyOf(game).siblings.length;
 }
 

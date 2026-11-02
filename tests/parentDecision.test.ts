@@ -30,7 +30,7 @@ const EXPECTED: Readonly<Record<string, ReadonlyArray<readonly [number, number, 
   'infant-fever': [[1, 5, 'parent']],
   'infant-stories': [[2, 6, 'parent']],
   'infant-screen': [[2, 6, 'parent']],
-  'infant-new-sibling': [[2, 4, 'child']],
+  'infant-new-sibling': [[2, 5, 'child']], // K2(SPEC-009 FM4b): 구성이 정한 터울 2~5 — 5세도 아이의 반응(흘러감)
   'infant-meal-start': [[0, 1, 'parent']],
   'infant-parental-leave': [[0, 0, 'parent']],
   'infant-first-birthday': [[1, 1, 'parent']],

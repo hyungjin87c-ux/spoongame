@@ -26,13 +26,14 @@
       "weight": 12,
       "once": true,
       "citation": { "present": "c-060", "future": "c-060" },
-      "conditions": { "notFlags": ["childcare_set"] },
+      "conditions": { "notFlags": ["childcare_set", "mother_gone", "father_gone", "parents_gone"] },
       "choices": [
         {
           "id": "grandparents",
           "label": "조부모님 곁에서 지낸다",
           "result": "낮에는 조부모님 곁에서 지냈습니다. 끼니와 낮잠 시간이 일정했고, 옛이야기를 많이 들었습니다.",
-          "effects": { "stats": { "relationships": 3 }, "setFlags": ["grandparent_close", "childcare_set"] }
+          "effects": { "stats": { "relationships": 3 }, "setFlags": ["grandparent_close", "childcare_set"] },
+          "requires": { "flags": ["has_grandparent"] }
         },
         {
           "id": "daycare",
@@ -155,11 +156,11 @@
       "text": "집에 동생이 생겼습니다. 어른들의 손과 눈이 온통 갓난아이에게 쏠렸습니다.",
       "stages": ["infant"],
       "track": "common",
-      "ageRange": { "min": 2, "max": 4 },
+      "ageRange": { "min": 2, "max": 5 },
       "weight": 60,
       "once": true,
+      "trigger": "family",
       "citation": "c-033",
-      "conditions": { "birthOrder": { "max": 1 }, "motherAge": { "max": 45 } },
       "modifiers": [{ "when": { "motherAge": { "max": 32 } }, "weight": 10 }],
       "choices": [
         {
@@ -179,7 +180,7 @@
           "label": "조부모님 품에서 마음을 달랜다",
           "result": "서운한 마음을 안고 조부모님께 갔습니다. 그 품에서 먹고 자는 일이 한결 편안해졌습니다.",
           "effects": { "stats": { "happiness": 2, "relationships": 1, "health": 1 }, "setFlags": ["younger_sibling"] },
-          "requires": { "flags": ["grandparent_close"] }
+          "requires": { "flags": ["grandparent_close", "has_grandparent"] }
         },
         {
           "id": "notice",
@@ -211,7 +212,7 @@
       "ageRange": { "min": 1, "max": 6 },
       "weight": 14,
       "once": true,
-      "conditions": { "flags": ["grandparent_close"] },
+      "conditions": { "flags": ["grandparent_close", "has_grandparent"] },
       "effects": { "stats": { "happiness": 2, "relationships": 1 } }
     },
     {
@@ -224,7 +225,7 @@
       "weight": 14,
       "once": true,
       "heavy": { "kind": "home" },
-      "conditions": { "parenting": ["neglect"] },
+      "conditions": { "parenting": ["neglect"], "notFlags": ["mother_gone", "father_gone", "parents_gone"] },
       "effects": { "stats": { "happiness": -2, "relationships": -2 } }
     },
     {
@@ -436,7 +437,8 @@
           "id": "grandparents",
           "label": "조부모님께 맡기며 순번을 기다린다",
           "result": "조부모님이 낮 동안 아이를 맡으셨습니다. 순번이 돌아올 때까지 몇 달이 그렇게 흘렀습니다.",
-          "effects": { "stats": { "relationships": 3, "education": 1 }, "setFlags": ["grandparent_close", "childcare_set"] }
+          "effects": { "stats": { "relationships": 3, "education": 1 }, "setFlags": ["grandparent_close", "childcare_set"] },
+          "requires": { "flags": ["has_grandparent"] }
         },
         {
           "id": "center",
@@ -462,7 +464,7 @@
       "ageRange": { "min": 1, "max": 5 },
       "weight": 14,
       "once": true,
-      "conditions": { "birthOrder": { "min": 2 } },
+      "conditions": { "flags": ["has_older_sibling"] },
       "effects": { "stats": { "relationships": 1, "happiness": 1 } }
     },
     {
@@ -614,7 +616,7 @@
       "weight": 16,
       "once": true,
       "noCitation": "D",
-      "conditions": { "flags": ["younger_sibling"] },
+      "conditions": { "flags": ["younger_sibling", "has_younger_sibling"] },
       "choices": [
         {
           "id": "share",

@@ -253,7 +253,9 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
 
     it('점검 규칙표가 이벤트 데이터의 조건과 같다 (독립으로 적은 표와 데이터가 어긋나면 어느 쪽이 틀렸는지 여기서 드러난다)', () => {
       for (const [id, [min, max]] of Object.entries(FAMILY_RULES.olderParentAtEvent)) expect(EVENT_POOL.byId.get(id)!.conditions?.parentAge, id).toEqual({ min, max });
-      expect(EVENT_POOL.byId.get('infant-new-sibling')!.conditions).toEqual({ birthOrder: { max: 1 }, motherAge: { max: FAMILY_RULES.siblingMotherMax } });
+      // SPEC-009 K2(FM4b): 동생 사건의 첫째·어머니 나이 한도는 사건 조건이 아니라 가족 구성(`family.y`)이 지킨다 — 점검 규칙(첫째 · 어머니 ≤ 45)은 그대로 유효하고 사건 데이터에는 조건이 없다
+      expect(EVENT_POOL.byId.get('infant-new-sibling')!.conditions).toBeUndefined();
+      expect(EVENT_POOL.byId.get('infant-new-sibling')!.trigger).toBe('family');
     });
   });
 

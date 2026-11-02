@@ -284,11 +284,25 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     const heavyDaily = w('무거운일상', [1980, 1989], { kind: 'daily', heavy: true });
     expect(eraOf(1980, ctx([heavy80, heavyDaily], { gentle: true })).pic).toBeNull();
   });
-  it('가리기는 같은 해의 다른 사건 그림(12월 투표소)이 아니라 그 10년 일상으로 간다 (alt가 아니라)', () => {
+  it('가리기: 같은 해에 무겁지 않은 사건 그림(12월 투표소)이 따로 있으면 그것이 대체 그림이다 — 줄은 가려진 6월 그대로 (FM5b 마스터 결정 2026-10-28)', () => {
     const dec = w('십이월', [1987, 1987]);
     const june = w('유월', [1987, 1987], { heavy: true });
     const d80 = w('일상80', [1980, 1989], { kind: 'daily' });
-    expect(eraOf(1987, ctx([june, dec, d80], { gentle: true })).pic?.id).toBe('일상80');
+    const on = eraOf(1987, ctx([june, dec, d80], { gentle: true }));
+    expect(on.pic?.id).toBe('십이월');
+    expect(on.line?.id).toBe('유월');
+    expect(on.veiled).toBe(true);
+    // 꺼져 있으면 무거운 쪽(6월)이 그대로 그림이다
+    const off = eraOf(1987, ctx([june, dec, d80], { gentle: false }));
+    expect(off.pic?.id).toBe('유월');
+    expect(off.veiled).toBe(false);
+    // 무겁지 않은 사건이 없는 해(1980 광주 하나뿐)는 그 10년 일상으로 간다
+    expect(eraOf(1980, ctx([heavy80, d80], { gentle: true })).pic?.id).toBe('일상80');
+  });
+  it('가리기의 대체 사건은 지역 사건·전국 사건 순서를 지킨다: 무거운 지역 사건이면 같은 해의 무겁지 않은 지역 사건이 먼저', () => {
+    const june = w('유월', [1987, 1987], { heavy: true });
+    const decNat = w('십이월전국', [1987, 1987]);
+    expect(eraOf(1987, ctx([june, decNat], { gentle: true })).pic?.id).toBe('십이월전국');
   });
   it('10년 덩어리 번호: 1940~2029 → 1940~2020, 그 앞·뒤는 가장자리 10년대', () => {
     expect([1940, 1949, 1950, 1999, 2000, 2025, 2026, 2060].map(eraDecadeOf)).toEqual([1940, 1940, 1950, 1990, 2000, 2020, 2020, 2020]);
@@ -373,7 +387,7 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     expect(eraOf(2010, c()).pic).toBeNull();
     expect(eraOf(2031, c()).pic).toBeNull();
   });
-  it('실제 승인 데이터 · 가리기: 무거운 장면(재난·정치) 10장의 해는 가려지고 그해 일상 그림으로 바뀐다 — 경제(1997~98 금 모으기)는 가리지 않는다', () => {
+  it('실제 승인 데이터 · 가리기: 무거운 장면(재난·정치) 10장의 해는 가려지고 그해 일상 그림(1987년은 12월 투표소)으로 바뀐다 — 경제(1997~98 금 모으기)는 가리지 않는다', () => {
     for (const hv of ALL.filter((x) => x.heavy)) {
       const year = hv.years[0];
       const off = eraOf(year, ctx(ALL, { gentle: false, birthYear: year - 30 }));
@@ -383,7 +397,11 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
       expect(on.line?.id, hv.id).toBe(hv.id);
       if (on.pic !== null) {
         expect(on.pic.heavy, `${hv.id}: 대신 띄우는 그림은 무겁지 않다`).toBe(false);
-        expect(on.pic.kind, hv.id).toBe('daily');
+        // 1987년만 같은 해에 무겁지 않은 사건 그림(12월 투표소)이 있어 그것이 대체 그림이다(FM5b 마스터 결정) — 그 밖은 그 10년의 일상
+        if (hv.id === 'era-1987-june-street') {
+          expect(on.pic.id).toBe('era-1987-polling-station-r3');
+          expect(on.pic.kind).toBe('event');
+        } else expect(on.pic.kind, hv.id).toBe('daily');
         expect(on.pic.id).not.toBe(hv.id);
       }
     }

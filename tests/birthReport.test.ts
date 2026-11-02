@@ -23,6 +23,7 @@ import {
   mixSeed,
   R1_PRESENT,
   parentAgeAt,
+  rebuildFamily,
   playToEnd,
   reportPlaceLabel,
   rollBirthReport,
@@ -608,9 +609,12 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
       const ev = EVENT_POOL.byId.get(rule.id)!;
       expect(ev.conditions?.parentAge, rule.id).toEqual({ min: rule.min, max: rule.max });
     }
-    expect(EVENT_POOL.byId.get('infant-new-sibling')!.conditions?.birthOrder).toEqual({ max: 1 });
-    // R-268: 동생이 생기는 때의 어머니 나이 상한
-    expect(EVENT_POOL.byId.get('infant-new-sibling')!.conditions?.motherAge).toEqual({ max: 45 });
+    // SPEC-009 K2 (FM4b): 동생 반응 카드는 추첨 사건이 아니라 가족 구성이 정한 해에 강제로 일어난다(`trigger: 'family'`) — 첫째만(birthOrder)·어머니 나이 한도(R-268)는 사건 조건이 아니라
+    // 구성(`family.y` — 출생 때 첫째의 첫 동생만 · 어머니 나이 ≤ 45 · INV-1 T-FA3d)이 지킨다. 그래서 조건은 지워졌고 나이 창은 구성의 터울(2~5)과 같다.
+    const sibling = EVENT_POOL.byId.get('infant-new-sibling')!;
+    expect(sibling.trigger).toBe('family');
+    expect(sibling.conditions).toBeUndefined();
+    expect(sibling.ageRange).toEqual({ min: 2, max: 5 });
   });
 
   it('isEventEligible: 부모가 너무 많은 나이가 되는 판에서는 병환·임종 사건이 후보가 되지 않고, 알맞은 나이면 후보가 된다 / 동생 사건은 첫째만', () => {
@@ -628,22 +632,17 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
     // 가족 정보를 모르면 가족 조건이 걸린 사건은 일어나지 않는다
     expect(isEventEligible(farewell, { ...base, age: 52 } as never)).toBe(false);
     expect(isEventEligible(farewell, { ...base, age: 52, family: null } as never)).toBe(false);
-    // 동생 사건: 첫째만
-    expect(isEventEligible(sibling, at(3, 30, 33, 1))).toBe(true);
-    for (const order of [2, 3, 4, 5]) expect(isEventEligible(sibling, at(3, 30, 33, order)), `${order}번째`).toBe(false);
-    // R-268: 어머니가 동생을 낳을 때 45세를 넘으면 후보가 아니다 (사건 시점 어머니 나이 = 출생 때 나이 + 아이 나이, 아버지 나이는 상관없다)
-    expect(isEventEligible(sibling, at(2, 43, 33, 1)), '어머니 45세').toBe(true);
-    expect(isEventEligible(sibling, at(3, 43, 33, 1)), '어머니 46세').toBe(false);
-    expect(isEventEligible(sibling, at(2, 47, 50, 1)), '어머니 49세').toBe(false);
-    expect(isEventEligible(sibling, at(4, 40, 60, 1)), '어머니 44세, 아버지가 많아도').toBe(true); // M7a: 동생 사건은 2~4세(옛 2~6세라 6세·어머니 38세였다)
-    expect(isEventEligible(sibling, at(5, 39, 33, 1)), '5세는 창(2~4세) 밖').toBe(false);
-    expect(isEventEligible(sibling, at(1, 30, 33, 1)), '1세는 창(2~4세) 밖').toBe(false);
+    // 동생 사건(K2, FM4b): 가족 구성이 일으키는 사건(`trigger: 'family'`)은 어떤 상태에서도 일반 추첨의 후보가 아니다 — 첫째만·어머니 나이 한도는 구성이 지킨다(tests/familyTick.test.ts)
+    for (const order of [1, 2, 3, 4, 5]) expect(isEventEligible(sibling, at(3, 30, 33, order)), `${order}번째`).toBe(false);
+    expect(isEventEligible(sibling, at(2, 43, 33, 1))).toBe(false);
   });
 
   it('R-268: 출생 때 어머니가 높은 나이인 판 400개 — 동생 사건이 일어난 나이에 어머니는 45세 이하이고, 어머니 47세 판에서는 동생 사건이 없다 / 어머니 38세 판에서는 있다(공허 통과 방지)', () => {
     const withMother = (seed: number, era: ProfileId, motherAge: number) => {
       const start = startLife(seed * 29, era);
-      return { ...start, birthReport: { ...start.birthReport!, birthOrder: 1, mother: { ...start.birthReport!.mother, age: motherAge } } };
+      // 가족 구성(`family.y`)은 출생 때 정한 값이다 — 어머니 나이를 바꾼 판은 같은 시드에서 구성을 다시 만든다(K2: 동생 사건은 구성이 일으킨다)
+      const changed = { ...start, birthReport: { ...start.birthReport!, birthOrder: 1, mother: { ...start.birthReport!.mother, age: motherAge } } };
+      return { ...changed, family: rebuildFamily(changed) };
     };
     for (const era of ['industrial', 'genx', 'alpha'] as const) {
       const counts = { old: 0, young: 0 };

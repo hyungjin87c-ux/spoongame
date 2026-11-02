@@ -338,3 +338,9 @@ R-532 · R-533 · R-534 · R-535 · R-536 · R-537. 이번 회차가 중간 지�
 | R-537 | 이번에 하지 않았다(마스터 결정: FM4b에서 반영). TODO에 선행 줄만 추가했다 | `docs/TODO.md` | — |
 
 검증 수치와 실행 방법은 `ai-log/2026-10-28_SPEC-009_dev-FM4a-r2.md`에 있다.
+
+## 반영 내역 (developer, 2026-10-28, FM4b 회차 — R-537, 커밋은 마스터가 한다)
+
+| ID | 처리 | 파일 | 시험 |
+|---|---|---|---|
+| R-537 | 마스터 결정대로 반영. 이혼으로 떠난 부모와 같은 쪽 조부모(떠난 이가 아버지면 친가, 어머니면 외가)는 `divorce.at + 1`부터 함께 살지 않는다(`apart`). 함께 사는 사람·그림·`lives_with_grandparent` 플래그가 이 보기에서 따라 바뀐다 | `src/core/familyView.ts#familyViewOf`(`leftWithParent`) | `tests/familyTick.test.ts` "이혼·별거: 줄 fam-parents-apart, father_apart 또는 mother_apart, 떠난 쪽 조부모는 다음 해부터 따로 산다 (R-537), 재혼·의붓 없음"(같은 쪽·반대쪽 모두 사례 > 0), `tests/sceneFamily.test.ts` "INV-2·10·11·12" 통과 |

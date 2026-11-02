@@ -3,7 +3,7 @@ import docSrc from '../docs/data/economy-model.md?raw';
 import legacyJson from './fixtures/wealthLegacy.json';
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FILES } from '../src/data/events';
-import { type ChoiceDef, type EventDef, type ProfileId } from '../src/core';
+import { FAMILY_SYSTEM_FLAGS, type ChoiceDef, type EventDef, type ProfileId } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
 import { startLife } from '../scripts/simulateLib';
 import { M7A_NEW_EVENT_IDS, M7A_WEALTH_GATES } from './helpers/m7a';
@@ -307,7 +307,9 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
     for (const [e, c] of GATES) {
       const ev = eventOf(e);
       const open = ev.choices!.filter((x) => x.requires === undefined);
-      expect(open.length, `${e}`).toBeGreaterThanOrEqual(2);
+      // 조부모가 계신 판에서만 보이는 선택지(K4, SPEC-009)는 조건 없는 선택지 하나와 함께 세어 둘이면 된다 — 그 판이 아니면 이벤트가 후보에서 빠진다(isEventEligible)
+      const gated = ev.choices!.filter((x) => x.requires !== undefined && Object.keys(x.requires).join() === 'flags' && x.requires.flags!.every((f) => FAMILY_SYSTEM_FLAGS.includes(f)));
+      expect(open.length >= 2 || (open.length >= 1 && open.length + gated.length >= 2), `${e}`).toBe(true);
       expect(choiceOf(ev, c).requires, `${e}/${c}`).toBeDefined();
     }
   });

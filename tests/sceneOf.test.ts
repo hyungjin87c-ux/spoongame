@@ -22,7 +22,7 @@ import {
   type SceneMember,
   type SceneSpec,
 } from '../src/core';
-import { FIGURE_ID, INFANT_CARRIED, MAX_PIECES, PIECE_BY_ID, PLANNED_PIECES, SCENE_PIECE_COUNT, pieceInYear, regionKindOf } from '../src/data/sceneTables';
+import { FIGURE_ID, INFANT_CARRIED, MAX_PIECES, PIECE_BY_ID, PLANNED_PIECES, SCENE_PIECE_COUNT, houseWordOf, pieceInYear, regionKindOf } from '../src/data/sceneTables';
 import { FAMILY_ART } from '../src/data/familyArt';
 import { detachedH1Markup } from '../src/data/familyArt/house';
 import { spreadSeeds } from './helpers/familyGolden';
@@ -175,7 +175,9 @@ describe('sceneOf — 순수성·유효성·모순 0 (7세대 × 100판 × 0~100
         expect(line, tag).not.toContain('…');
         expect(line, tag).toMatch(/(함께|지냅니다)$/);
         expect(line.startsWith(`${inp.place} · `) || line.startsWith(`${inp.placeShort} · `), tag).toBe(true);
-        expect(line, `${tag}: 주택 종류 표(묶음 B)가 오기 전에는 집 낱말이 「집」이다`).toContain(' · 집 · ');
+        // 집 낱말은 집 종류에서 온다(묶음 B의 표가 채운 부모 집 종류 · 독립한 어른은 `Dwelling` 기본 모양) — 종류가 없으면(null) 「집」이다
+        const kind = inp.state.homeKind === null && inp.state.dwelling !== 'care' ? null : houseKindOf(inp.state, inp.wealth);
+        expect(line, `${tag}: 집 낱말은 집 종류의 낱말이다`).toContain(` · ${houseWordOf(kind, inp.state.calYear)} · `);
         const total = inp.state.members.length + inp.state.overflow;
         if (total === 0) expect(line, tag).toMatch(/혼자 지냅니다$/);
         else expect(line, tag).not.toMatch(/혼자/);

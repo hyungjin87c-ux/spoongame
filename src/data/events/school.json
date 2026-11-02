@@ -178,7 +178,7 @@
       "once": true,
       "heavy": { "kind": "home" },
       "citation": "c-100",
-      "conditions": { "parentWealth": { "max": 2 }, "notFlags": ["left_school"] },
+      "conditions": { "parentWealth": { "max": 2 }, "notFlags": ["left_school", "mother_gone", "father_gone", "parents_gone"] },
       "choices": [
         {
           "id": "stay",
@@ -283,7 +283,8 @@
           "id": "ask",
           "label": "집에 가서 부모님과 의논한다",
           "result": "부모님과 늦도록 이야기를 나눴습니다. 결국 하루 몇 시간씩 공부하는 일을 허락받았습니다.",
-          "effects": { "stats": { "education": 4, "relationships": 2 } }
+          "effects": { "stats": { "education": 4, "relationships": 2 } },
+          "requires": { "notFlags": ["mother_gone", "father_gone", "parents_gone"] }
         },
         {
           "id": "decline",
@@ -406,7 +407,7 @@
       "once": true,
       "heavy": { "kind": "home" },
       "citation": "c-097",
-      "conditions": { "parentWealth": { "max": 3 }, "birthOrder": { "min": 2 }, "notFlags": ["left_school"] },
+      "conditions": { "parentWealth": { "max": 3 }, "birthOrder": { "min": 2 }, "flags": ["has_sibling"], "notFlags": ["left_school"] },
       "choices": [
         {
           "id": "accept",

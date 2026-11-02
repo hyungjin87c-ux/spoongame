@@ -47,8 +47,23 @@ export interface FamilyTables {
   };
   household: { multiplier: number; points: Array<[number, number, string]> };
   divorce: { rateFrom: number; rate: number[]; crudeFrom: number; crude: number[] };
+  /** 집(묶음 B, FM4b) — 값은 `docs/data/fd-b-house.json`에서 `scripts/genFamilyTables.ts`가 옮긴 칸 그대로이고, 보간·베이즈·절단은 `core/familyHome.ts`가 한다 */
+  housing: HousingTables;
   /** 코어가 쓰는 설계값 (R-534) — 값과 근거를 한 자리에 둔다 */
   design: FamilyDesign;
+}
+
+/** 집 표(FD11~FD13): 거처 종류 여섯 칸의 순서는 `kinds`(단독 · 아파트 · 연립 · 다세대 · 비거주용 건물 내 · 주택 이외의 거처)다 */
+export interface HousingTables {
+  kinds: string[];
+  /** 시도 안정 키 → 센서스 해별 구성비(%, 가구 기준) — 시도마다 자기 연도 목록(승격 전 광역시는 줄이 없어 코어가 부모 도 줄을 쓴다) */
+  regions: Record<string, { years: number[]; shares: number[][] }>;
+  /** 전국 점유 형태(자가 · 임차 · 무상) 안의 거처 종류 구성(%): [거처 종류][해 2010·2015·2020][자가, 임차, 무상] — 센서스 거처 종류 × 점유 */
+  tenure: { years: number[]; byKind: number[][][] };
+  /** 주거실태조사 소득계층별 거처 종류 구성비(%): [소득(전체·저·중·고)][지역 3분류][해 2006~2024][거처 종류 여섯] */
+  income: { years: number[]; regionClasses: string[]; classes: string[]; shares: number[][][][] };
+  /** 사용 방 수: [거처 종류][해 1980~2010][가구원 수 1~6·7인 이상][방 1~6+개] 구성비 ×1000 */
+  rooms: { years: number[]; hhNames: string[]; byKind: number[][][][] };
 }
 
 /** 설계값 하나: 값 · 근거 구분(`design` 설계값 / `estimated` 추정) · 근거 글. 화면의 「이 칸은 어떻게 정했나요」(FM6)가 읽는다 */
@@ -69,6 +84,47 @@ export interface FamilyDesign {
   leaveAge: DesignValue<{ min: number; max: number }>;
   /** 아래 동생 이어짐 확률 `a_1`·`a_2`의 상한 */
   continueCap: DesignValue<number>;
+  /**
+   * 1940년 이전 출생 어머니의 출산 이어짐 보정 (FM4b, 마스터 결정 2026-10-28): 어머니 출생 연도가 `upTo` 이하인 코호트(오름차순 표, 마지막 `upTo`보다 크면 보정 없음)는 아래 동생 구성에서
+   *  - 전체 자녀가 1·2명일 때의 이어짐 `a_1`·`a_2`의 상한을 `continueCap` 대신 `cap`으로,
+   *  - 3명 이상일 때의 이어짐 `a_k`(k ≥ 3)를 `q`로,
+   *  - 동생 터울의 상한을 `SIBLING_GAP.max` 대신 `gapMax`(출산이 많던 코호트의 짧은 터울)로 쓴다.
+   * 공표 출산 순위 비중에서 유도한 값은 기간 단면 근사라 출산이 많던 코호트의 총 자녀 수를 낮게 만든다(모형 3.2명 vs FD6 4.1~5.6) — 코호트별로 FD6(센서스 코호트 평균 출생아 수) ±0.45 안에 들도록 `scripts/calibrateHighOrder.ts`가 맞춘 설계값(calibrated)이다.
+   */
+  highOrderContinue: DesignValue<Array<{ upTo: number; cap: number; q: number; gapMax: number }>>;
+  /** 집 고르기의 설계값 (FM4b, `fd-b-house.md` 10절 마스터 결정) */
+  home: DesignValue<HomeDesign>;
+  /** 이른 부모 별세 효과 (4-7절 (1), FA0-8 예외 · A-6 초안 ▲): 주인공 `maxAge` 이하에 한 분이 떠나는 해에만 한 번. `enabled: false`면 기록 전용(측정·시험에서 끈다) */
+  earlyLoss: DesignValue<EarlyLossRule>;
+}
+
+/** 집 고르기의 설계값: 표가 없는 구간을 메우는 방법과 매핑 */
+export interface HomeDesign {
+  /** 1969 이하 출생은 1970 구성비를 거슬러 쓰되 아파트 칸을 이 값(%)으로 줄인다(마스터 결정 1: 「아파트 칸은 0에 가깝게」) */
+  before1970AptPct: number;
+  /** 주택 이외의 거처를 쓸 수 있는 출생 연도 `[처음, 마지막]` (FD14, 범위 밖은 확률 0 — 이 뒤의 센서스 값은 오피스텔·고시원이라 「작은 집」이 아니다) */
+  shackYears: readonly [number, number];
+  /** 임차 단독주택이 셋방(딸림)일 확률: `[출생 연도, 확률]` 점, 사이는 선형, 바깥은 끝점 값 */
+  rentRoomPoints: ReadonlyArray<readonly [number, number]>;
+  /** 방 수 문턱(연도 함수, 마스터 결정 4): 그 해·거처·가구원 수의 센서스 방 분포에서 누적이 이 값(천분율)에 닿기 전의 드문 방 수는 쓰지 않는다 */
+  roomFloorPermille: number;
+  /** 시도 안정 키 → 주거실태조사 지역 3분류 (수저 단계 → 소득계층은 `INCOME_CLASS_BLEND`) */
+  regionClassOf: Readonly<Record<string, 'capital' | 'metro' | 'province'>>;
+  /** 센서스에 시도 줄이 없는 해(직할시·광역시 승격 전)에 쓰는 부모 도 */
+  parentOf: Readonly<Record<string, string>>;
+  /** 분류·정의가 바뀌어 보간하지 않는 센서스 해 구간: 사이 연도는 가까운 쪽 해의 값(같은 거리면 이른 해) */
+  stepSegments: ReadonlyArray<readonly [number, number]>;
+}
+
+/** 이른 부모 별세 효과의 수치. `family`는 집안 살림(만 원, 20세 미만이라 `familyFund`로 간다)이고 재력 단계 배율을 곱해 반올림한다 */
+export interface EarlyLossRule {
+  enabled: boolean;
+  /** 이 주인공 나이 이하에 떠난 경우만 (19) */
+  maxAge: number;
+  stats: { happiness: number; relationships: number; health: number };
+  family: { father: number; mother: number; motherHomemaker: number };
+  /** 부모 재력 1~5단계 배율 */
+  wealthMultiplier: readonly [number, number, number, number, number];
 }
 
 export interface GameData {

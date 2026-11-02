@@ -102,12 +102,86 @@ const dv = stats.find((s) => s.id === 'divorce');
 const crude = dv?.extraSeries?.find((e) => e.label.startsWith('조이혼율'));
 if (crude === undefined) throw new Error('조이혼율 시리즈가 없다');
 
+// ---------- 5. 집 (FD11~FD13, 묶음 B — `docs/data/fd-b-house.json`, 마스터 결정 fd-b-house.md 10절) ----------
+// 출생 연도 × 시도 → 주택 종류(여섯 칸), 점유 형태·소득계층 배율, 사용 방 수. 값은 읽은 칸 그대로(정수·소수 둘째 자리)이고, 코어(`core/familyHome.ts`)가 보간·베이즈·절단을 한다.
+const bh = JSON.parse(readFileSync('docs/data/fd-b-house.json', 'utf-8')) as Array<{
+  series: string;
+  dims: Record<string, string>;
+  years?: number[];
+  columns?: string[];
+  values?: Array<Array<number | null> | number | null>;
+  byYear?: Record<string, { columns: string[]; values: Array<number | null> }>;
+}>;
+const bhSeries = (name: string) => bh.filter((r) => r.series === name);
+const KIND_COLUMNS = ['단독주택', '아파트', '연립주택', '다세대주택', '비거주용 건물 내 주택', '주택 이외의 거처'] as const;
+const n0 = (v: number | null | undefined): number => (typeof v === 'number' ? v : 0);
+
+// 5-1. 시도별 거처 종류 구성비(%, 가구 기준): 시도마다 자기 연도 목록 — 승격 전 광역시는 코어가 부모 도 줄을 쓴다
+const dwellingRows = bhSeries('fd11_dwelling_share_pct_calc').filter((r) => r.dims.regionKey !== undefined);
+const homeRegions: Record<string, { years: number[]; shares: number[][] }> = {};
+for (const r of dwellingRows) {
+  if (r.columns?.join('|') !== KIND_COLUMNS.join('|')) throw new Error(`fd11_dwelling_share_pct_calc ${r.dims.region} 열 이름이 다르다`);
+  homeRegions[r.dims.regionKey] = { years: r.years as number[], shares: (r.values as Array<Array<number | null>>).map((row) => row.map((v) => r2(n0(v)))) };
+}
+
+// 5-2. 점유 형태(자가 · 임차 · 무상) 안의 거처 종류 구성: 전국, 2010·2015·2020 (센서스 거처 종류 × 점유). 열 = 자가, 전세, 보증금 있는 월세, 보증금 없는 월세, 사글세, 무상
+const TENURE_KIND_NAMES = ['단독주택', '아파트', '연립주택', '다세대주택', '비주거용 건물 내 주택', '주택이외의 거처'];
+const tenureRows = bhSeries('fd12_tenure_share_pct_by_dwelling_calc').filter((r) => r.dims.region === '전국');
+const tenureYears = tenureRows[0].years as number[];
+const tenure = TENURE_KIND_NAMES.map((name) => {
+  const row = tenureRows.find((r) => r.dims.dwelling === name);
+  if (row === undefined) throw new Error(`fd12_tenure_share_pct_by_dwelling_calc 전국 ${name} 줄이 없다`);
+  return (row.values as number[][]).map((v) => [r2(n0(v[0])), r2(n0(v[1]) + n0(v[2]) + n0(v[3]) + n0(v[4])), r2(n0(v[5]))]);
+});
+
+// 5-3. 소득계층별 거처 종류 구성비(%): 저·중·고소득층 × 지역 3분류(수도권 · 광역시 등 · 도지역) × 2006~2024 14개 해, 같은 지역의 「전체」 행도 함께(코어가 비를 만든다)
+const INCOME_NAMES = ['전체', '저소득층', '중소득층', '고소득층'];
+const REGION_CLASS_NAMES = ['수도권', '광역시 등', '도지역'];
+const incomeRows = bhSeries('fd12_dwelling_share_by_income_pct');
+const incomeYears = incomeRows[0].years as number[];
+const incomeShares = INCOME_NAMES.map((inc) =>
+  REGION_CLASS_NAMES.map((rg) => {
+    const row = incomeRows.find((r) => r.dims.income === inc && r.dims.region === rg);
+    if (row === undefined) throw new Error(`fd12_dwelling_share_by_income_pct ${rg} ${inc} 줄이 없다`);
+    // 열: 계, 단독, 아파트, 연립, 다세대, 비거주용, 주택이외
+    return (row.values as number[][]).map((v) => v.slice(1).map((x) => r2(n0(x))));
+  }),
+);
+
+// 5-4. 사용 방 수: 전국, 거처 종류 여섯 × 센서스 해 7개(1980~2010) × 가구원 수 7칸(1~6인, 7인 이상) × 방 1~6+개(구성비 ×1000 정수). 1980·85는 방 1~8+ 열을 6+에 합친다
+const ROOM_KIND_NAMES = ['단독주택', '아파트', '연립주택', '다세대주택', '비주거용 건물 내 주택', '주택이외의 거처'];
+const HH_NAMES = ['1인 가구', '2인 가구', '3인 가구', '4인 가구', '5인 가구', '6인 가구', '7인 가구 이상'];
+const roomRows = bhSeries('fd13_rooms_by_dwelling_hhsize_national');
+const roomYears = [1980, 1985, 1990, 1995, 2000, 2005, 2010];
+const rooms = ROOM_KIND_NAMES.map((kind) =>
+  roomYears.map((year) =>
+    HH_NAMES.map((hh) => {
+      const row = roomRows.find((r) => r.dims.dwelling === kind && r.dims.hhsize === hh);
+      const cell = row?.byYear?.[String(year)];
+      if (cell === undefined) throw new Error(`fd13 ${kind} ${hh} ${year} 칸이 없다`);
+      const byName = (col: string): number => n0(cell.values[cell.columns.indexOf(col)]);
+      const counts = [1, 2, 3, 4, 5].map((r) => byName(`방${r}`));
+      // 6+ : 1990부터 「방6이상」 한 열, 그 앞은 방6·방7·방8이상 세 열
+      counts.push(cell.columns.includes('방6이상') ? byName('방6이상') : byName('방6') + byName('방7') + byName('방8이상'));
+      const total = counts.reduce((a, b) => a + b, 0);
+      return total === 0 ? counts.map(() => 0) : counts.map((c) => Math.round((c / total) * 1000));
+    }),
+  ),
+);
+
 const out = {
   note: 'scripts/genFamilyTables.ts가 docs/data/fd-a-family.json + src/data/koreaStats.json에서 만든 표 — 직접 고치지 않는다',
   mortality: { firstYear: 1970, lastYear: 2024, classes: CLASS_NAMES.length, qx, e0Slope },
   motherAge: { bins: ['≤19', '20-24', '25-29', '30-34', '35-39', '40-44', '45+'], vitalFrom, vital, census, shift: [{ to: 1915, by: 3 }, { to: 1935, by: 2 }, { to: 1955, by: 1 }] },
   household: { multiplier: MULT, points: household },
   divorce: { rateFrom: 1993, rate: (rate.values as number[]).map((v) => r5(v)), crudeFrom: 1970, crude: crude.series.map((p) => p.value) },
+  housing: {
+    kinds: ['단독', '아파트', '연립', '다세대', '비거주용', '주택 이외'],
+    regions: homeRegions,
+    tenure: { years: tenureYears, byKind: tenure },
+    income: { years: incomeYears, regionClasses: REGION_CLASS_NAMES, classes: INCOME_NAMES, shares: incomeShares },
+    rooms: { years: roomYears, hhNames: HH_NAMES, byKind: rooms },
+  },
 };
 writeFileSync('src/data/family/tables.json', JSON.stringify(out) + '\n', 'utf-8');
-console.log(`src/data/family/tables.json: 사망확률 ${CLASS_NAMES.length}구간 × 55해 × 2성 · 출산연령 ${vitalYears}해 + 센서스 ${census.length}칸 · 조부모 동거 ${household.length}점 · 이혼 ${out.divorce.rate.length}해`);
+console.log(`src/data/family/tables.json: 집 ${Object.keys(homeRegions).length}개 시도 · 사망확률 ${CLASS_NAMES.length}구간 × 55해 × 2성 · 출산연령 ${vitalYears}해 + 센서스 ${census.length}칸 · 조부모 동거 ${household.length}점 · 이혼 ${out.divorce.rate.length}해`);

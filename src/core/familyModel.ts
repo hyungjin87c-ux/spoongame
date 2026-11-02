@@ -52,6 +52,18 @@ export const DIVORCE_AGES = { min: 0, max: 18 } as const;
 /** 형제 위 최대 4명, 그림의 식구 수 상한(주인공 제외 7) */
 export const SCENE_MEMBER_MAX = 7;
 
+/**
+ * `family.log` 종류 코드 (2-2절): `[종류, 주인공 나이, 대상, 부가]`. 코드는 바꾸지 않는다.
+ *  대상 — 동생 출생: `20+j`(아래 동생 y_j, j는 1부터) · 형제 독립: `10+i`(위 o_i) / `20+j` · 조부모 별세: 3 pgf · 4 pgm · 5 mgf · 6 mgm · 부모 한 분 별세: 1 어머니 / 2 아버지 · 이혼: 1 어머니가 떠남 / 2 아버지가 떠남.
+ */
+export const LOG_SIB_BORN = 1;
+export const LOG_SIB_LEFT = 2;
+export const LOG_GRAND_GONE = 4;
+export const LOG_PARENT_GONE = 5;
+export const LOG_PARENTS_APART = 6;
+/** 인생 기록에 남는 가족 줄의 `eventId` 접두어 */
+export const FAMILY_LINE_PREFIX = 'fam-';
+
 /** 가족 모양 버전 — 저장 `SCHEMA_VERSION`(9)과 별개. FM4a~c는 같은 릴리스라 1 하나다 (K5) */
 export const FAMILY_DATA_VERSION = 1;
 

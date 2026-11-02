@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ERAS,
+  FAMILY_SYSTEM_FLAGS,
   familyOf,
   isChoiceEvent,
   lintEvent,
@@ -13,6 +14,7 @@ import {
 import { EVENT_FILES, EVENT_POOL } from '../src/data/events';
 import { infantLives, summarizeInfant, INFANT_LAST_AGE, type InfantLife } from '../scripts/infantMetricsLib';
 import { SIM_PROFILES } from '../scripts/simulateLib';
+import { withEarlyLoss } from '../scripts/familyRulesLib';
 import { possibleEventsAt } from '../scripts/spec003BaselineLib';
 import { STAGE_ENTRY_TEXT } from '../src/data/lifeTable';
 import { M7A_ERA_ONLY, M7A_NEW_CHOICE_IDS, M7A_NEW_EVENT_IDS, M7A_WEALTH_GATES } from './helpers/m7a';
@@ -78,15 +80,17 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
     expect(tell.effects?.stats?.education).toBe(1); // r1 3 → 2, r3 2 → 1 (20세 평균 지식 +2 이하 가드, 마스터 결정 r2-1)
     expect(tell.result).toBe('머리맡에서 지어낸 이야기가 매일 밤 이어졌습니다. 아이는 이야기 속 사람들의 이름을 외웠습니다.'); // r3: 영유아 기존 9개를 합쇼체로 다시 썼다(뜻 그대로)
     const sib = ev('infant-new-sibling');
-    expect(sib.ageRange).toEqual({ min: 2, max: 4 });
-    expect(sib.conditions).toEqual({ birthOrder: { max: 1 }, motherAge: { max: 45 } });
+    // SPEC-009 K2 (FM4b): 가족 구성이 정한 해에 강제로 일어난다 — 추첨 조건(첫째·어머니 나이)은 구성이 지키고, 나이 창은 구성의 터울(2~5)이다
+    expect(sib.ageRange).toEqual({ min: 2, max: 5 });
+    expect(sib.trigger).toBe('family');
+    expect(sib.conditions).toBeUndefined();
     expect(sib.choices!.map((c) => c.id)).toEqual(['help', 'sulk', 'grandma', 'notice']); // r3(R-367): 정의 4개, 보이는 것은 늘 3개 — grandma ⇄ notice가 grandparent_close로 배타
     expect(sib.weight).toBe(60); // r2: 동생 맞이를 출생 순서 통계에 맞게 자주 일어나게 한다 (IN4 시험이 비율을 지킨다)
     expect(sib.modifiers).toEqual([{ when: { motherAge: { max: 32 } }, weight: 10 }]);
     expect(lintEvent(sib)).toEqual([]); // 합쇼체 · 새 길이 한도
     for (const c of sib.choices!) expect(c.effects?.setFlags, c.id).toContain('younger_sibling');
     expect(sib.choices!.find((c) => c.id === 'help')!.effects?.setFlags).toContain('sibling_close');
-    expect(sib.choices!.find((c) => c.id === 'grandma')!.requires).toEqual({ flags: ['grandparent_close'] });
+    expect(sib.choices!.find((c) => c.id === 'grandma')!.requires).toEqual({ flags: ['grandparent_close', 'has_grandparent'] }); // K4: 조부모가 계신 판에서만
     expect(sib.choices!.find((c) => c.id === 'grandma')!.effects?.stats?.health).toBe(1); // 지배 쌍 해소: grandma에 건강 +1
     expect(sib.choices!.find((c) => c.id === 'grandma')!.effects?.stats?.relationships).toBe(1); // r3: 관계 +2 → +1 (help·notice와의 균형)
     const help = sib.choices!.find((c) => c.id === 'help')!;
@@ -132,16 +136,17 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
     expect(ev('infant-early-lessons').eras).toEqual(['present', 'future']);
     expect(ev('school-after-hours').eras).toEqual(['present', 'future']);
     expect(ev('infant-vaccine').eras).toBeUndefined();
-    expect(ev('infant-follow-sibling').conditions).toEqual({ birthOrder: { min: 2 } });
-    expect(ev('infant-sibling-toy').conditions).toEqual({ flags: ['younger_sibling'] });
+    expect(ev('infant-follow-sibling').conditions).toEqual({ flags: ['has_older_sibling'] }); // K4 (SPEC-009 13-2절): 손위 형제가 있는 판
+    expect(ev('infant-sibling-toy').conditions).toEqual({ flags: ['younger_sibling', 'has_younger_sibling'] }); // K4: 동생이 태어난 다음 해부터(younger_sibling) 곁에 있는 동안(has_younger_sibling)
     expect(ev('infant-night-wake').conditions).toEqual({ parenting: ['free', 'helicopter', 'strict'] });
     expect(ev('infant-moving').conditions).toEqual({ parentWealth: { max: 3 }, housing: ['rent', 'free'] }); // r3(T05): 자가 판에서는 일어나지 않는다
     expect(ev('infant-moving').modifiers).toEqual([{ when: { parentWealth: { max: 2 } }, weight: 1.8 }]);
     expect(ev('infant-noise').conditions).toEqual({ parentWealth: { max: 4 } });
     // 켜는 플래그: 어린이집 대기의 조부모 선택은 grandparent_close(동생 맞이의 「조부모님 품」과 이어진다)
     expect(ev('infant-daycare-wait').choices!.find((c) => c.id === 'grandparents')!.effects?.setFlags).toEqual(['grandparent_close', 'childcare_set']); // r3: 맡김을 정한 선택은 childcare_set도 켠다
-    expect(ev('infant-care').conditions).toEqual({ notFlags: ['childcare_set'] });
+    expect(ev('infant-care').conditions).toEqual({ notFlags: ['childcare_set', 'mother_gone', 'father_gone', 'parents_gone'] }); // K4: 「부모님」 낱말 — 한 분이라도 떠난 판에는 나오지 않는다(변형은 FM7)
     expect(ev('infant-daycare-wait').conditions).toEqual({ notFlags: ['childcare_set'] });
+    for (const id of ['infant-care', 'infant-daycare-wait']) expect(ev(id).choices!.find((c) => c.id === 'grandparents')!.requires, id).toEqual({ flags: ['has_grandparent'] }); // K4: 조부모에게 맡기는 길은 조부모가 계신 판에서만
   });
 });
 
@@ -155,7 +160,7 @@ describe('IN1 규모: 0~7세 각 나이 × 각 시대 구간의 정적 후보 �
       [13, 16, 13],
       [17, 20, 17],
       [16, 18, 16],
-      [15, 17, 16],
+      [16, 18, 17], // 5세: K2(SPEC-009 FM4b)로 동생 반응 카드의 나이 창이 2~4 → 2~5가 되어 각 시대 +1 (구성이 일으키는 사건이라 일반 추첨 후보는 아니다)
       [11, 13, 13],
       [4, 4, 4], // 7세
     ]);
@@ -184,8 +189,13 @@ describe('IN1 규모: 0~7세 각 나이 × 각 시대 구간의 정적 후보 �
     expect(evs.filter((e) => !isChoiceEvent(e))).toHaveLength(22);
   });
 
-  it('선택지 이벤트마다 조건(requires) 없는 선택지가 2개 이상이다 (재력이 낮아도 늘 고를 길이가 있다)', () => {
-    for (const e of NEW.filter(isChoiceEvent)) expect(e.choices!.filter((c) => c.requires === undefined).length, e.id).toBeGreaterThanOrEqual(2);
+  it('선택지 이벤트마다 조건(requires) 없는 선택지가 2개 이상이다 (재력이 낮아도 늘 고를 길이가 있다) — 조부모가 계신 판에서만 보이는 선택지(K4)는 조건 없는 선택지 하나 + 그 선택지로 센다', () => {
+    const familyGated = (c: { requires?: Condition }): boolean => c.requires !== undefined && Object.keys(c.requires).join() === 'flags' && c.requires.flags!.every((f) => FAMILY_SYSTEM_FLAGS.includes(f));
+    for (const e of NEW.filter(isChoiceEvent)) {
+      const open = e.choices!.filter((c) => c.requires === undefined).length;
+      const gated = e.choices!.filter(familyGated).length;
+      expect(open >= 2 || (open >= 1 && open + gated >= 2), e.id).toBe(true);
+    }
   });
 });
 
@@ -222,25 +232,33 @@ describe(`IN2 사건 없는 해·기록 줄·선택지 (세대 표본별 ${LIVES
     }
   });
 
-  it('선택지 간격 2년 규칙은 그대로다: 0~7세의 선택지는 최대 4개이고 같은 판에서 연속한 두 해에 결정 카드가 뜨지 않는다', () => {
+  it('선택지 간격 2년 규칙은 그대로다: 0~7세의 선택지는 최대 4개이고 같은 판에서 연속한 두 해에 결정 카드가 뜨지 않는다 — 구성이 정한 동생 반응 카드(K2)만 예외다', () => {
     for (const era of SIM_PROFILES) {
       for (const l of infantLives(era, 300, 'random')) {
-        expect(l.choices, `${era} seed ${l.seed}`).toBeLessThanOrEqual(4);
+        // 2년 간격이면 0~7세에 최대 4개다. 구성이 정한 해에 강제로 일어나는 동생 반응 카드(K2)는 간격을 무시하므로 그 한 장까지 5개가 될 수 있다
+        const withForced = l.final.history.some((h) => h.eventId === 'infant-new-sibling');
+        expect(l.choices, `${era} seed ${l.seed}`).toBeLessThanOrEqual(withForced ? 5 : 4);
         const ages = l.final.history.filter((h) => h.kind === 'choice' && h.age <= INFANT_LAST_AGE).map((h) => h.age);
-        for (let i = 1; i < ages.length; i++) expect(ages[i] - ages[i - 1], `${era} seed ${l.seed}`).toBeGreaterThanOrEqual(2);
+        // 예외: 구성이 정한 해에 강제로 일어나는 동생 반응 카드(K2)는 선택지 간격을 무시한다(설계 문서 7-2절 2) — 그 카드와 이웃한 해만 1년 간격이 허용된다
+        const sibAt = l.final.history.find((h) => h.eventId === 'infant-new-sibling')?.age;
+        for (let i = 1; i < ages.length; i++) {
+          if (sibAt !== undefined && (ages[i] === sibAt || ages[i - 1] === sibAt)) continue;
+          expect(ages[i] - ages[i - 1], `${era} seed ${l.seed}`).toBeGreaterThanOrEqual(2);
+        }
       }
     }
   });
 });
 
-describe('IN4 동생 맞이 (BR6): 첫째 판에서만, 2~4세, 후속 장난감은 동생이 생긴 판에서만', () => {
+describe('IN4 동생 맞이 (BR6, K2): 첫째 판에서만, 구성이 정한 2~5세, 후속 장난감은 동생이 태어난 다음 해부터', () => {
   const lives = SIM_PROFILES.flatMap((era) => infantLives(era, 2000, 'random'));
   const orderOf = (l: InfantLife): number => l.final.birthReport!.birthOrder;
 
-  it('첫째 판 중 동생이 생기는 비율이 출생 순서 통계에 맞는다 (r2, 마스터 결정 2): 알파(1990년 이후 갈래) 45~55% · 산업화·X(1989년 이전 갈래) 70~85%', () => {
-    // 근거: 전국 출산 순위 비중 [첫째 62.4, 둘째 31.2, 셋째 이상 6.4]%(birthStats 전국) — 첫째 중 동생이 생기는 비율 ≈ 둘째 ÷ 첫째 = 50%. 다가올 세상 [66, 28, 6]은 42%, 지난 세상 [26, 26, 48]은 100%지만
-    // 동생이 2~4세에 태어나야 하는 창과 어머니 나이 상한 때문에 지난 세상은 70~85%를 목표로 둔 설계값이다(마스터가 정한 목표 범위). 구현: infant-new-sibling 가중치 60 + 어머니 32세 이하 ×10(젊은 어머니일수록 형제가 많다)
-    const band: Record<string, [number, number]> = { industrial: [70, 85], genx: [70, 85], alpha: [45, 55] };
+  it('첫째 판 중 동생이 생기는 비율이 가족 구성의 이어짐 확률에 맞는다 (K2, SPEC-009 FM4b): 알파(1990년 이후 갈래) 42~55% · X(1989년 이전 갈래) 82~94% · 산업화(1940년 이전 어머니 코호트 보정) 90~99%', () => {
+    // 근거: 전국 출산 순위 비중 [첫째 62.4, 둘째 31.2, 셋째 이상 6.4]%(birthStats 전국) — 첫째 중 동생이 생기는 비율 ≈ 둘째 ÷ 첫째 = 50%(알파 47%). 지난 세상 [26, 26, 48]은 이어짐 상한 0.9(`design.continueCap`)에 걸리고
+    // 터울 2~5·어머니 나이 ≤ 45가 더해져 X 88%, 산업화는 출산이 많던 코호트 보정(`design.highOrderContinue`: 상한 0.98 · 터울 2~3)으로 95%다.
+    // 옛 목표(r2 마스터 결정 2): 산업화·X 70~85% — 옛 사건 추첨(가중치 60 · 어머니 32세 이하 ×10)이 만든 비율은 산업화 86%·X 81%였다(FM4b 전 측정). 구성이 정본이 되며(K2) 이어짐 확률에서 직접 나오는 값으로 바뀌었다 — 변화량은 ai-log/2026-10-28_SPEC-009_dev-FM4b.md
+    const band: Record<string, [number, number]> = { industrial: [90, 99], genx: [82, 94], alpha: [42, 55] };
     for (const era of SIM_PROFILES) {
       const firsts = lives.filter((l) => l.era === era && orderOf(l) === 1 && l.deathAge === null);
       expect(firsts.length, `${era} 첫째 판 표본`).toBeGreaterThan(300);
@@ -250,7 +268,7 @@ describe('IN4 동생 맞이 (BR6): 첫째 판에서만, 2~4세, 후속 장난감
     }
   });
 
-  it('infant-new-sibling은 birthOrder ≥ 2인 판에서 0건이고, 첫째 판에서는 일어난다 (일어난 나이는 2~4세)', () => {
+  it('infant-new-sibling은 birthOrder ≥ 2인 판에서 0건이고, 첫째 판에서는 일어난다 (일어난 나이는 구성의 터울 2~5세)', () => {
     const later = lives.filter((l) => orderOf(l) >= 2);
     const firsts = lives.filter((l) => orderOf(l) === 1);
     expect(later.length).toBeGreaterThan(1500);
@@ -260,19 +278,23 @@ describe('IN4 동생 맞이 (BR6): 첫째 판에서만, 2~4세, 후속 장난감
     expect(happened.length, '첫째 판에서 일어난 수').toBeGreaterThan(100);
     for (const l of happened) {
       expect(l.seen['infant-new-sibling']).toBeGreaterThanOrEqual(2);
-      expect(l.seen['infant-new-sibling']).toBeLessThanOrEqual(4);
+      expect(l.seen['infant-new-sibling']).toBeLessThanOrEqual(5);
+      expect(l.seen['infant-new-sibling'], `${l.era} seed ${l.seed}: 구성이 정한 해와 같다`).toBe(l.final.family!.y[0].k);
     }
   });
 
-  it('infant-sibling-toy는 younger_sibling 플래그가 없는 판에서 0건이다 · 플래그는 동생 맞이를 겪은 판에만 있다 (둘이 늘 같다)', () => {
+  it('infant-sibling-toy는 동생이 태어난 다음 해부터만 일어난다 · younger_sibling 플래그는 아래 동생이 태어난 판에만 있다 (구성의 동생 = 플래그, 첫째의 첫 동생은 반응 카드가 켠다 · 그 밖은 상태 줄이 켠다)', () => {
     let toy = 0;
     for (const l of lives) {
+      const y = l.final.family!.y;
+      const bornBy = (age: number): boolean => y.length > 0 && y[0].k <= age;
       const flagged = l.final.flags.includes('younger_sibling');
-      expect(flagged, `${l.era} seed ${l.seed}: 플래그 ⇔ 동생 맞이`).toBe(l.seen['infant-new-sibling'] !== undefined);
+      // 동생이 태어난 해(k)를 넘겨 살았다면 플래그가 있고, 그 전에 죽었다면 없다
+      expect(flagged, `${l.era} seed ${l.seed}: 플래그 ⇔ 구성의 동생`).toBe(bornBy(l.final.age));
       if (l.seen['infant-sibling-toy'] !== undefined) {
         toy++;
-        expect(flagged, `${l.era} seed ${l.seed}: 장난감은 동생이 있는 판에서만`).toBe(true);
-        expect(l.seen['infant-sibling-toy'], `${l.era} seed ${l.seed}`).toBeGreaterThan(l.seen['infant-new-sibling']); // 동생이 생긴 뒤에
+        expect(y.length, `${l.era} seed ${l.seed}: 장난감은 동생이 있는 판에서만`).toBeGreaterThan(0);
+        expect(l.seen['infant-sibling-toy'], `${l.era} seed ${l.seed}`).toBeGreaterThan(y[0].k); // 동생이 생긴 뒤에
       }
     }
     expect(toy, '공허 통과 방지: 장난감 이벤트가 일어난 판').toBeGreaterThan(20);
@@ -469,17 +491,23 @@ describe('r2: 영유아 콘텐츠가 스탯을 크게 올리지 않는다 (마�
    * *같은 함수·같은 표본*(시드 i × 7919 + 13, 1500판, 무작위 선택)으로 다시 쟀다 — 콘텐츠는 그대로이고(MG2는 연도 구간만 바꾼다) 옛 지난/지금/다가올 값과 ±1 안에서 이어진다.
    * 한도 +2 / +3은 이 새 기준선 대비 *앞으로의 콘텐츠 변경*에만 적용한다.
    */
+  /**
+   * **SPEC-009 FM4b 기준선 재측정 (K2·K4 — 이른 부모 별세 효과는 끈 세계에서)**: 영유아 콘텐츠 변경(동생 반응 카드가 구성이 정한 해에 강제로 일어나고, 조부모·형제·부모 낱말 사건에 가족 조건이 붙었다)으로 8세 평균이 움직였다.
+   * 옛 값(industrial [16.7463, 72.2296, 45.508, 54.1782] · genx [17.1228, 72.5394, 47.8818, 56.0701] · alpha [17.8097, 72.4372, 49.5374, 55.504]) 대비 이동은 모두 0.2 이하라 한도 +2 / +3 안이다
+   * (industrial 지식 −0.004 · 건강 +0.040 · 행복 +0.136 · 관계 +0.108 / genx +0.009 · +0.005 · +0.029 · +0.196 / alpha +0.035 · +0.046 · +0.033 · +0.339).
+   */
   const PD_AT_8: Record<string, [number, number, number, number]> = {
-    industrial: [16.7463, 72.2296, 45.508, 54.1782],
-    genx: [17.1228, 72.5394, 47.8818, 56.0701],
-    alpha: [17.8097, 72.4372, 49.5374, 55.504],
+    industrial: [16.7423, 72.2697, 45.6435, 54.2864],
+    genx: [17.1322, 72.5441, 47.9105, 56.2664],
+    alpha: [17.8451, 72.4826, 49.5701, 55.8425],
   };
   const LIMIT = [2, 2, 2, 3];
   const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
 
   for (const era of SIM_PROFILES) {
     it(`${era}: 지식·건강·행복 +2 이하, 관계 +3 이하 (1500판, 기준선 PD_AT_8 대비)`, () => {
-      const alive = infantLives(era, 1500, 'random').filter((l) => l.deathAge === null);
+      // 이른 부모 별세 효과(SPEC-009 FM4b, A-6)는 기록 전용 기준선(콘텐츠가 스탯을 올리지 않는다)과 다른 층이라 끈 세계에서 잰다 — 효과 자체의 분포는 docs/data/family-remeasure.md
+      const alive = withEarlyLoss(false, () => infantLives(era, 1500, 'random')).filter((l) => l.deathAge === null);
       const now = [
         mean(alive.map((l) => l.final.stats.education)),
         mean(alive.map((l) => l.final.stats.health)),
@@ -571,19 +599,26 @@ describe('r3 R-367·O06: 동생 맞이는 어떤 판에서도 선택지 3개가 
   const lives = SIM_PROFILES.flatMap((era) => infantLives(era, 2000, 'random'));
   const sibCards = lives.filter((l) => l.shown['infant-new-sibling'] !== undefined);
 
-  it('동생 맞이 카드가 뜬 모든 판에서 보인 선택지가 정확히 3개다 (플래그 있음 help·sulk·grandma / 없음 help·sulk·notice)', () => {
+  it('동생 맞이 카드가 뜬 판에서 보인 선택지는 3개다 (조부모 플래그 있음 help·sulk·grandma / 없음 help·sulk·notice) — 돌봐 준 조부모가 이미 떠난 판(K4: grandma는 has_grandparent도 요구)만 2개(help·sulk)다', () => {
     expect(sibCards.length, '동생 맞이 카드가 뜬 판').toBeGreaterThan(1000);
+    let two = 0;
     for (const l of sibCards) {
       const shown = l.shown['infant-new-sibling'];
-      expect(shown, `${l.era}/${l.seed}`).toHaveLength(3);
       expect(shown.slice(0, 2), `${l.era}/${l.seed}`).toEqual(['help', 'sulk']);
+      if (shown.length === 2) {
+        two++;
+        expect(l.final.flags, `${l.era}/${l.seed}: 두 개만 보였으면 조부모 플래그는 있고 조부모는 계시지 않았다`).toContain('grandparent_close');
+        continue;
+      }
+      expect(shown, `${l.era}/${l.seed}`).toHaveLength(3);
       const hasFlagThen = shown[2] === 'grandma';
       expect(['grandma', 'notice'], `${l.era}/${l.seed}`).toContain(shown[2]);
       // 조부모 품(grandma)이 보였다면 그때 grandparent_close가 있었다 — 이 플래그는 한 번 켜지면 꺼지지 않으므로 마지막 상태에도 남아 있다
       if (hasFlagThen) expect(l.final.flags, `${l.era}/${l.seed}: grandma가 보였으면 조부모 플래그가 있었다`).toContain('grandparent_close');
     }
+    expect(two / sibCards.length, '두 개만 보인 카드의 비율(드물다)').toBeLessThan(0.05);
     const notice = sibCards.filter((l) => l.shown['infant-new-sibling'][2] === 'notice').length;
-    const grandma = sibCards.length - notice;
+    const grandma = sibCards.filter((l) => l.shown['infant-new-sibling'][2] === 'grandma').length;
     expect(notice / sibCards.length, '눈길 끌기가 보인 카드의 비율').toBeGreaterThan(0.5); // 조부모 플래그가 없는 판이 더 많다
     expect(grandma / sibCards.length, '조부모 품이 보인 카드의 비율').toBeGreaterThan(0.02);
   });

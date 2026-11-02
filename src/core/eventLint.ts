@@ -151,6 +151,8 @@ export interface StateWordRule {
 }
 
 const ADULT_STAGES: readonly Stage[] = ['youth', 'middle', 'senior'];
+/** 가족 낱말 규칙(SPEC-009 6-3절)이 적용되는 단계 — 어린 시절. 어른 시점의 「부모님」은 FM7 변형이 맡는다(중년 사건 3개 · 청년 사건) */
+const CHILD_STAGES: readonly Stage[] = ['infant', 'school'];
 
 export const STATE_WORD_RULES: readonly StateWordRule[] = [
   {
@@ -177,6 +179,68 @@ export const STATE_WORD_RULES: readonly StateWordRule[] = [
     forbid: ['parents_gone'],
     // 임종 이벤트는 임종을 알리는 이벤트이므로 스스로 parents_gone을 켠다.
     exceptions: ['middle-parents-farewell'],
+  },
+  // ---------- 가족 낱말 ↔ 조건 (SPEC-009 FA0-3 ④, family-model.md 6-3절 — K4): 어린 시절 사건이 그 시점에 없는 가족을 말하지 않게 한다 ----------
+  {
+    name: '조부모(살아 계신 판에서만)',
+    words: /조부모|할머니|할아버지/,
+    stages: CHILD_STAGES,
+    requireAny: ['has_grandparent'],
+    exceptions: [],
+  },
+  {
+    name: '동생(태어난 뒤에만)',
+    words: /동생/,
+    stages: CHILD_STAGES,
+    requireAny: ['has_younger_sibling'],
+    // 동생이 태어나는 사건 자신: 구성이 정한 해에 일으키고(`trigger: "family"`, K2) 그 사건이 동생을 알린다
+    exceptions: ['infant-new-sibling'],
+  },
+  {
+    // 「형」은 인형·형편·형태의 글자이기도 해서 낱말의 시작이고 조사가 바로 붙는 경우만 본다
+    name: '형·누나·오빠·언니(손위 형제가 있는 판에서만)',
+    words: /(?<![가-힣])(?:형|누나|오빠|언니)(?=[이가을를은는의도와과에께만]|$|[\s,.])/,
+    stages: CHILD_STAGES,
+    requireAny: ['has_older_sibling'],
+    exceptions: [],
+  },
+  {
+    name: '형제·남매(형제가 있는 판에서만)',
+    words: /형제|남매/,
+    stages: CHILD_STAGES,
+    // 손위(`has_older_sibling`)·손아래(`has_younger_sibling`)가 있으면 형제가 있는 것이다
+    requireAny: ['has_sibling', 'has_older_sibling', 'has_younger_sibling'],
+    exceptions: [],
+  },
+  {
+    name: '아버지·아빠(떠난 뒤에는 나오지 않는다)',
+    words: /아버지|아빠/,
+    stages: CHILD_STAGES,
+    forbid: ['father_gone', 'parents_gone'],
+    exceptions: [],
+  },
+  {
+    name: '어머니·엄마(떠난 뒤에는 나오지 않는다)',
+    words: /어머니|엄마/,
+    stages: CHILD_STAGES,
+    forbid: ['mother_gone', 'parents_gone'],
+    exceptions: [],
+  },
+  {
+    // 한 분이 떠난 판은 「남은 한 분」 변형 문장을 쓴 사건(FM7)에서만 나온다
+    name: '부모님(한 분이라도 떠난 뒤에는 나오지 않는다)',
+    words: /(?<!조)부모님/, // 「조부모님」은 조부모 규칙이 본다
+    stages: CHILD_STAGES,
+    forbid: ['mother_gone', 'father_gone', 'parents_gone'],
+    exceptions: [],
+  },
+  {
+    name: '반려동물(함께 사는 판에서만)',
+    words: /강아지|고양이|반려/,
+    stages: CHILD_STAGES,
+    requireAny: ['pet_dog', 'pet_cat', 'pet_other'],
+    // 집 앞에 서성이던 떠돌이 강아지 이야기(SPEC-009 5-1절 — 입양 전)라 우리 집 반려동물이 아니다. 입양 플래그(K10)는 FM7이 `keep` 선택에 단다
+    exceptions: ['school-puppy'],
   },
   {
     name: '일터(무직 판에는 나오지 않는다)',

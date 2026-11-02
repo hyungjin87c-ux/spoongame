@@ -819,9 +819,9 @@ describe('상태 어휘 (R-067): 가족·부모님·일터·혼자 같은 말은
   const tail = ' 창밖으로 바람이 지나갔다.';
   const textEv = (head: string, over: Record<string, unknown> = {}) => raw({ text: head + tail, ...over });
 
-  it('규칙 표: 자식·배우자·부모님·일터·혼자 다섯 가지가 있고, 예외는 아이를 가질지 정하는 두 이벤트와 임종 이벤트뿐이다', () => {
-    expect(STATE_WORD_RULES.map((r) => r.name.split('(')[0])).toEqual(['자식·손주', '배우자', '부모님', '일터', '혼자']);
-    expect(STATE_WORD_RULES.flatMap((r) => r.exceptions).sort()).toEqual(['middle-parents-farewell', 'youth-child', 'youth-child-again']);
+  it('규칙 표: 어른 시점 다섯 가지(자식·배우자·부모님·일터·혼자) + 어린 시절 가족 낱말 여덟 가지(조부모·동생·형누나·형제·아버지·어머니·부모님·반려동물, SPEC-009 6-3절)이고, 예외는 아이를 가질지 정하는 두 이벤트·임종 이벤트·동생이 태어나는 사건·떠돌이 강아지 이야기뿐이다', () => {
+    expect(STATE_WORD_RULES.map((r) => r.name.split('(')[0])).toEqual(['자식·손주', '배우자', '부모님', '조부모', '동생', '형·누나·오빠·언니', '형제·남매', '아버지·아빠', '어머니·엄마', '부모님', '반려동물', '일터', '혼자']);
+    expect(STATE_WORD_RULES.flatMap((r) => r.exceptions).sort()).toEqual(['infant-new-sibling', 'middle-parents-farewell', 'school-puppy', 'youth-child', 'youth-child-again']);
   });
 
   describe('자식·손주 -> has_child', () => {

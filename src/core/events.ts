@@ -1,6 +1,7 @@
 import { DEFAULT_COOLDOWN, STAGE_TABLE } from '../data/lifeTable';
 import { LIMITS } from '../data/economyTable';
 import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
+import { FAMILY_SYSTEM_FLAGS } from './familyFlags';
 import {
   DWELLINGS,
   ERAS,
@@ -172,6 +173,11 @@ export interface EventDef {
    */
   milestone?: boolean;
   /**
+   * 일으키는 방식 (SPEC-009 K2, 설계 문서 7-2절): `'family'`이면 **일반 추첨·마일스톤 슬롯 후보가 아니다** — 가족 구성이 정한 해에만 `life.ts#stepYear`의 강제 슬롯이 일으킨다(`familyChangesFor`의 `forcedEvent`).
+   * 지금은 `infant-new-sibling`(첫째의 첫 동생 반응 카드) 하나다. 조건(`conditions`)·`weight`·`modifiers`는 읽히지 않는다(검증은 그대로 한다). 선택지 이벤트·`once` 전용이고 `ageRange`가 있어야 한다.
+   */
+  trigger?: 'family';
+  /**
    * 중대 결정 카드의 인용 연결 (SPEC-003 MD2, M7b — docs/data/content-M7b.md 5절 안 A). 선택지 이벤트만 쓴다.
    * 문자열 `"c-006"` = 이 카드가 뜨는 모든 세상에서 같은 인용, 객체 `{ past?, present?, future? }` = 세상마다 다른 인용(적히지 않은 세상은 인용 없음).
    * 인용이 그 세상에서 실제로 보이는지(시대·게임 속 연도)는 `core/citations.ts#citationFor`가 가른다.
@@ -320,6 +326,7 @@ export function lastSeenAge(seen: Readonly<Record<string, number>>, id: string):
 }
 
 export function isEventEligible(ev: EventDef, view: EligibilityView): boolean {
+  if (ev.trigger !== undefined) return false; // 가족 구성이 일으키는 사건은 일반 추첨 후보가 아니다 (K2)
   if (!ev.stages.includes(stageOfAge(view.age))) return false;
   if (!inRange(view.age, ev.ageRange)) return false;
   if (!inYearRange(view.year, ev.yearRange)) return false;
@@ -652,7 +659,7 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
 
 const EVENT_KEYS = [
   'id', 'title', 'text', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
-  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'citation', 'noCitation', 'heavy',
+  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy',
 ] as const;
 
 /** 단계가 덮는 나이 구간 [시작, 끝] (노년은 상한 없음) */
@@ -879,6 +886,17 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
     }
   }
 
+  if (ev.trigger !== undefined) {
+    if (ev.trigger !== 'family') p.add(`${path}.trigger`, `"family"만 쓸 수 있다 (지금 ${JSON.stringify(ev.trigger)})`);
+    else {
+      // 가족 구성이 정한 해에 한 번 일으키는 선택지 사건: 일반 후보가 아니라서 once·나이 창(구성의 나이 차와 같다)이 있어야 하고 마일스톤과 함께 쓰지 않는다
+      if (ev.once !== true) p.add(`${path}.trigger`, 'trigger: "family" 사건은 once:true여야 한다');
+      if (ev.choices === undefined) p.add(`${path}.trigger`, 'trigger: "family" 사건은 선택지 이벤트여야 한다 (서술 줄은 familyChangesFor가 상태 줄로 낸다)');
+      if (ev.ageRange === undefined) p.add(`${path}.trigger`, 'trigger: "family" 사건은 ageRange가 있어야 한다 (구성이 일으킬 수 있는 나이)');
+      if (ev.milestone === true) p.add(`${path}.trigger`, 'trigger: "family"와 milestone은 함께 쓸 수 없다');
+    }
+  }
+
   checkCitationFields(ev, path, p);
   checkHeavy(ev, path, p);
 
@@ -889,6 +907,7 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
     } else {
       const ids = new Set<string>();
       let unconditional = 0;
+      let familyGated = 0; // requires가 시스템 가족 플래그만 읽는 선택지(조부모가 계신 판에서만 보인다 등) — 보이는 수는 런타임이 지킨다(isEventEligible: 보이는 선택지 ≥ 2)
       ev.choices.forEach((c: unknown, i: number) => {
         checkChoice(c, `${path}.choices[${i}]`, p);
         if (isObj(c)) {
@@ -897,9 +916,11 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
             ids.add(c.id);
           }
           if (c.requires === undefined) unconditional++;
+          else if (isObj(c.requires) && Object.keys(c.requires).every((k) => k === 'flags') && Array.isArray(c.requires.flags) && c.requires.flags.every((x: unknown) => typeof x === 'string' && FAMILY_SYSTEM_FLAGS.includes(x))) familyGated++;
         }
       });
-      if (unconditional < 2) p.add(`${path}.choices`, `조건(requires) 없는 선택지가 2개 이상 있어야 한다 (항상 2개 이상 보여야 한다. 지금 ${unconditional}개)`);
+      // 조건 없는 선택지가 2개 이상이거나(항상 2개 이상 보인다), 1개 + 가족 플래그로만 갈리는 선택지로 2개 이상이다(그 가족이 없는 판에서는 이벤트가 후보에서 빠진다, K4)
+      if (unconditional < 2 && !(unconditional >= 1 && unconditional + familyGated >= 2)) p.add(`${path}.choices`, `조건(requires) 없는 선택지가 2개 이상 있어야 한다 (항상 2개 이상 보여야 한다. 지금 ${unconditional}개)`);
     }
     if (ev.effects !== undefined || ev.bonuses !== undefined) {
       p.add(path, '선택지 이벤트는 이벤트 단위의 effects·bonuses를 쓰지 않는다 (효과는 선택지마다 적는다)');
@@ -993,9 +1014,17 @@ export function validateEventFiles(files: Readonly<Record<string, unknown>>): Ev
     w.set.forEach((f) => setAnywhere.add(f));
     w.clear.forEach((f) => clearAnywhere.add(f));
   }
+  // 시스템 소유 가족 플래그(SPEC-009 6절)는 `familyChangesFor`·`enterLife`가 켜고 끈다: 이벤트는 읽을 수만 있고(어디선가 켜진다고 본다) 쓸 수 없다
+  const systemOwned: ReadonlySet<string> = new Set(FAMILY_SYSTEM_FLAGS);
+  for (const ev of all) {
+    const w = flagsWritten(ev);
+    for (const f of [...w.set, ...w.clear]) {
+      if (systemOwned.has(f)) problems.push(`이벤트 "${ev.id}": 시스템이 소유한 가족 플래그 "${f}"를 이벤트가 켜거나 끌 수 없다 (familyChangesFor만 쓴다 — 읽는 것은 된다)`);
+    }
+  }
   for (const ev of all) {
     for (const f of flagsRead(ev)) {
-      if (!setAnywhere.has(f)) problems.push(`이벤트 "${ev.id}": 조건에서 읽는 플래그 "${f}"를 켜는 이벤트가 어디에도 없다 (오타이거나 setFlags가 빠졌다)`);
+      if (!setAnywhere.has(f) && !systemOwned.has(f)) problems.push(`이벤트 "${ev.id}": 조건에서 읽는 플래그 "${f}"를 켜는 이벤트가 어디에도 없다 (오타이거나 setFlags가 빠졌다)`);
     }
     for (const f of flagsWritten(ev).clear) {
       if (!setAnywhere.has(f)) problems.push(`이벤트 "${ev.id}": clearFlags의 플래그 "${f}"를 켜는 이벤트가 어디에도 없다`);

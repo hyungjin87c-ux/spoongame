@@ -117,6 +117,9 @@ interface Built {
 const built: Built[] = [];
 for (const [i, metaPath] of META.entries()) {
   const rows = (JSON.parse(readFileSync(metaPath, 'utf-8')) as { rows: Row[] }).rows;
+  // 승인 게이트: designer JSON의 행이 곧 승인은 아니다 — 형진 님이 승인한 장수(era-window.md 「승인 표기」: r3 15 + 1987년 12월 1 = 16, r4 27)와 같아야 만든다
+  const approvedCount = i === 0 ? 16 : 27;
+  if (rows.length !== approvedCount) throw new Error(`${metaPath}: 행 ${rows.length}개 ≠ 승인된 ${approvedCount}장 — 승인 뒤에만 이 수를 고친다`);
   for (const r of rows) {
     const dir = i === 0 ? DIR3 : DIR4;
     const piece = readPiece(`${dir}${r.id}.svg`, i === 0);

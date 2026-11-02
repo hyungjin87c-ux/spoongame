@@ -31,14 +31,14 @@
 | id | 제목 | 나이 | 시대 | 유형 | 모티브 | 플래그 |
 |---|---|---|---|---|---|---|
 | `infant-first-word` | 첫 말 | 1~1 | 공용 | 서술 | 아이의 첫 말에 온 가족이 웃던 일 | - |
-| `infant-care` | 맡겨지는 낮 | 1~5 | 공용 | 선택지 3 | 맞벌이 부모가 아이를 어디에 맡길지 정하는 일 | 켬 `childcare_set` `grandparent_close` / 읽음 `childcare_set` |
+| `infant-care` | 맡겨지는 낮 | 1~5 | 공용 | 선택지 3 | 맞벌이 부모가 아이를 어디에 맡길지 정하는 일 | 켬 `childcare_set` `grandparent_close` / 읽음 `childcare_set` `father_gone` `has_grandparent` `mother_gone` `parents_gone` |
 | `infant-fever` | 한밤의 열 | 1~5 | 공용 | 선택지 3 | 한밤에 아이가 열이 올라 병원에 갈지 망설이던 일 | - |
 | `infant-stories` | 자기 전의 이야기 | 2~6 | 공용 | 선택지 3 | 자기 전 이야기를 졸라 대던 아이를 대하는 방식의 차이 | - |
 | `infant-screen` | 화면 앞의 아이 | 2~6 | 지금·다가올 전용 | 선택지 3 | 아이에게 화면을 보여 줄지 말지 고민하는 부모 | - |
-| `infant-new-sibling` | 동생이 생겼다 | 2~4 | 공용 | 선택지 4 | 동생이 생기면서 느낀 서운함 | 켬 `sibling_close` `younger_sibling` / 읽음 `grandparent_close` |
+| `infant-new-sibling` | 동생이 생겼다 | 2~5 | 공용 | 선택지 4 | 동생이 생기면서 느낀 서운함 | 켬 `sibling_close` `younger_sibling` / 읽음 `grandparent_close` `has_grandparent` |
 | `infant-village` | 온 골목의 아이 | 1~6 | 지난 전용 | 서술 | 골목 전체가 아이를 함께 키우던 어린 시절 | - |
-| `infant-grandparent-song` | 무릎 위의 노래 | 1~6 | 공용 | 서술 | 조부모 무릎에서 듣던 노래의 기억 | 읽음 `grandparent_close` |
-| `infant-neglect-night` | 불 꺼진 집 | 1~6 | 공용 | 서술 | 부모가 늦게까지 돌아오지 않던 밤의 외로움 | - |
+| `infant-grandparent-song` | 무릎 위의 노래 | 1~6 | 공용 | 서술 | 조부모 무릎에서 듣던 노래의 기억 | 읽음 `grandparent_close` `has_grandparent` |
+| `infant-neglect-night` | 불 꺼진 집 | 1~6 | 공용 | 서술 | 부모가 늦게까지 돌아오지 않던 밤의 외로움 | 읽음 `father_gone` `mother_gone` `parents_gone` |
 | `infant-hovering` | 한 걸음 앞의 어른 | 1~6 | 공용 | 서술 | 아이를 늘 앞서서 지켜 주던 과보호 육아 | - |
 | `infant-free-play` | 마음껏 뛰놀던 날들 | 2~6 | 공용 | 서술 | 흙투성이로 마음껏 놀게 두던 자유로운 육아 | - |
 | `infant-vaccine` | 첫 예방접종 | 0~0 | 공용 | 서술 | 첫 예방접종 날 크게 울던 아이를 안아 달래던 일 | - |
@@ -50,8 +50,8 @@
 | `infant-care-alert` | 곁을 지키는 기계 | 0~2 | 지금 전용 | 서술 | 돌봄 기계가 밤새 곁을 살피던 집 | - |
 | `infant-first-steps` | 첫 걸음마 | 1~1 | 공용 | 서술 | 처음 혼자 걷던 날 숨을 죽이고 지켜보던 가족 | - |
 | `infant-first-birthday` | 첫 생일 | 1~1 | 공용 | 선택지 3 | 첫 생일을 어떻게 치를지 의견이 갈리던 가족 | - |
-| `infant-daycare-wait` | 어린이집 대기 | 1~2 | 지금 전용 | 선택지 3 | 어린이집 대기 순번이 줄지 않아 맡길 곳을 찾던 부모 | 켬 `childcare_set` `grandparent_close` / 읽음 `childcare_set` |
-| `infant-follow-sibling` | 형제를 따라 하는 아이 | 1~5 | 공용 | 서술 | 형제의 말투와 놀이를 따라 하던 막내 | - |
+| `infant-daycare-wait` | 어린이집 대기 | 1~2 | 지금 전용 | 선택지 3 | 어린이집 대기 순번이 줄지 않아 맡길 곳을 찾던 부모 | 켬 `childcare_set` `grandparent_close` / 읽음 `childcare_set` `has_grandparent` |
+| `infant-follow-sibling` | 형제를 따라 하는 아이 | 1~5 | 공용 | 서술 | 형제의 말투와 놀이를 따라 하던 막내 | 읽음 `has_older_sibling` |
 | `infant-coal-winter` | 겨울밤의 아랫목 | 1~5 | 지난 전용 | 서술 | 연탄불이 꺼질까 번갈아 일어나던 겨울밤 | - |
 | `infant-tantrum` | 드러누운 아이 | 2~3 | 공용 | 서술 | 길 한복판에 드러누워 떼를 쓰던 아이 | - |
 | `infant-market-day` | 장날의 손 | 2~6 | 지난 전용 | 서술 | 장날마다 어른 손을 잡고 나가던 아이 | - |
@@ -60,7 +60,7 @@
 | `infant-noise` | 이웃의 항의 | 2~6 | 지금·다가올 전용 | 선택지 3 | 아이 뛰는 소리로 이웃의 항의를 받던 집 | - |
 | `infant-questions` | 묻기 시작한 아이 | 3~5 | 공용 | 서술 | 눈에 띄는 것마다 이름과 까닭을 묻던 아이 | - |
 | `infant-kindergarten` | 유치원 고르기 | 3~4 | 지금 전용 | 선택지 3 | 아이가 다닐 유치원을 두고 고민하던 부모 | - |
-| `infant-sibling-toy` | 동생의 장난감 | 3~6 | 공용 | 선택지 3 | 동생이 만지는 장난감을 놓지 않던 첫째 | 읽음 `younger_sibling` |
+| `infant-sibling-toy` | 동생의 장난감 | 3~6 | 공용 | 선택지 3 | 동생이 만지는 장난감을 놓지 않던 첫째 | 읽음 `has_younger_sibling` `younger_sibling` |
 | `infant-hospital-stay` | 병실에서 보낸 며칠 | 3~6 | 공용 | 선택지 3 | 아이가 입원해 곁을 지킬 사람을 정하던 가족 | - |
 | `infant-moving` | 이삿짐을 싸던 날 | 3~6 | 공용 | 선택지 3 | 계약이 끝나 정든 동네를 떠나던 가족 | - |
 | `infant-early-lessons` | 취학 전의 시간표 | 5~6 | 지금·다가올 전용 | 선택지 3 | 입학 전에 무엇을 시킬지 고민하던 부모 | - |
@@ -75,14 +75,14 @@
 | `school-tutoring` | 성적표를 받은 저녁 | 10~16 | 공용 | 선택지 3 | 성적표를 받고 공부 방법을 가족과 정하던 저녁 | 읽음 `left_school` |
 | `school-first-love` | 자꾸 눈에 들어오는 사람 | 15~19 | 공용 | 선택지 2 | 같은 반 아이를 좋아하게 된 첫 감정 | 켬 `first_love` / 읽음 `left_school` |
 | `school-exam` | 입시를 앞둔 해 | 16~19 | 공용 | 선택지 3 | 입시 앞에서 지원·재수·취업 사이의 갈림길 | 켬 `college` `early_work` / 읽음 `left_school` `mentor_teacher` `scholar` `skilled_trade` |
-| `school-early-work` | 어려워진 집안 형편 | 13~16 | 지난 전용 | 선택지 2 | 집안이 기울어 학교와 일 사이에서 고민하던 일 | 읽음 `left_school` |
+| `school-early-work` | 어려워진 집안 형편 | 13~16 | 지난 전용 | 선택지 2 | 집안이 기울어 학교와 일 사이에서 고민하던 일 | 읽음 `father_gone` `left_school` `mother_gone` `parents_gone` |
 | `school-bully` | 교실의 한 아이 | 9~15 | 공용 | 선택지 3 | 교실의 따돌림을 곁에서 보게 된 일 | 켬 `stood_up` / 읽음 `left_school` |
 | `school-club` | 방과 후의 모임 | 11~17 | 공용 | 선택지 3 | 방과 후 어디에 어울릴지 정하던 일 | 켬 `close_friend` / 읽음 `left_school` |
-| `school-teacher-notice` | 눈여겨보신 선생님 | 12~18 | 공용 | 선택지 3 | 선생님이 눈여겨보고 따로 도와주겠다고 한 일 | 켬 `mentor_teacher` / 읽음 `left_school` |
+| `school-teacher-notice` | 눈여겨보신 선생님 | 12~18 | 공용 | 선택지 3 | 선생님이 눈여겨보고 따로 도와주겠다고 한 일 | 켬 `mentor_teacher` / 읽음 `father_gone` `left_school` `mother_gone` `parents_gone` |
 | `school-scholarship` | 받을 수 있는 도움 | 15~19 | 공용 | 선택지 2 | 학비 지원 제도를 알고도 신청이 번거로웠던 일 | 켬 `scholar` / 읽음 `left_school` |
 | `school-friend-quarrel` | 틀어진 사이 | 11~17 | 공용 | 선택지 3 | 가장 친한 친구와 사소한 일로 틀어진 일 | 켬 `close_friend` / 읽음 `left_school` |
 | `school-academy-night` | 늦은 밤의 학원가 | 11~18 | 지금·다가올 전용 | 선택지 3 | 친구들이 저녁을 학원에서 보내기 시작하던 밤 | - |
-| `school-family-priority` | 먼저 가야 할 사람 | 12~17 | 지난 전용 | 선택지 3 | 형제 많은 집에서 학비 순서가 정해지던 일 | 켬 `early_work` `fought_for_school` `left_school` / 읽음 `left_school` |
+| `school-family-priority` | 먼저 가야 할 사람 | 12~17 | 지난 전용 | 선택지 3 | 형제 많은 집에서 학비 순서가 정해지던 일 | 켬 `early_work` `fought_for_school` `left_school` / 읽음 `has_sibling` `left_school` |
 | `school-career-choice` | 갈림길 앞에서 | 14~17 | 공용 | 선택지 3 | 공부를 계속할지 기술을 배울지 정하던 갈림길 | 켬 `skilled_trade` / 읽음 `left_school` |
 | `school-parttime` | 처음 번 돈 | 16~19 | 공용 | 선택지 3 | 용돈이 모자라 처음 일을 해 보던 일 | 읽음 `left_school` |
 | `school-puppy` | 집 앞의 강아지 | 8~14 | 공용 | 선택지 3 | 집 앞의 떠돌이 강아지를 데려올지 망설인 일 | - |
@@ -239,7 +239,7 @@
 | `no_child` | `youth-child` `youth-child-again` | `youth-child-again` |
 | `own_business` | `middle-business` `middle-layoff` `youth-startup` | `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-own-shop-year` `senior-retire` `youth-colleague` `youth-factory-night` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-startup` `youth-workplace-romance` |
 | `own_home` | `middle-home-loan` `youth-housing` | `middle-home-loan` `youth-housing` `youth-rent-hike` |
-| `parents_gone` | `middle-parents-farewell` | `middle-parents-care` |
+| `parents_gone` | `middle-parents-farewell` | `infant-care` `infant-neglect-night` `middle-parents-care` `school-early-work` `school-teacher-notice` |
 | `passed_exam` | `youth-exam-passed` | `middle-layoff` `youth-factory-night` |
 | `promoted` | `middle-career-peak` | - |
 | `renting` | `youth-housing` | `youth-rent-hike` |

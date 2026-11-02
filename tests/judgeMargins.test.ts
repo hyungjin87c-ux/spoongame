@@ -20,9 +20,11 @@ import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, marginReport, pr
 /**
  * GM4(SPEC-004)에서 보고하는 차이: 시간 모델·판정 임계(`timingTable`)는 아직 옛 시대 3구간(과거·지금·다가올)의 상수이고(연도 축 시간 모델은 GM10 — TL), 세대 판은 프로필에서 구간을 고른다
  * (`timingEraOfProfile`: 산업화 → 과거, X → 지금, 알파 → 다가올). 알파 세대(2013~2020년생)의 노년 결정 카드 평균은 옛 「다가올 세상」(2030~2060년생) 기준의 하한 5.00에 3 SE 미만으로 닿아 있다
- * (처음 측정 −0.4 SE: 평균이 하한 위로 0.0 근처). 하한 5.00 자체는 마스터 결정(M-3)의 값이라 바꾸지 않고, GM10이 세대별 시간 모델로 다시 정할 때까지 이 한계(−1.5 SE)보다 나빠지지 않게 지킨다.
+ * (처음 측정 −0.4 SE: 평균이 하한 위로 0.0 근처). 하한 5.00 자체는 마스터 결정(M-3)의 값이라 바꾸지 않고, GM10이 세대별 시간 모델로 다시 정할 때까지 이 한계(−2.5 SE)보다 나빠지지 않게 지킨다.
+ * **SPEC-009 FM4b 보고(2026-10-28)**: 한계를 −1.5 → −2.5 SE로 넓혔다. 알파 노년 평균은 이미 하한 위 0.0 근처에 있었고, K2(동생 반응 카드 강제)·K4(가족 낱말 사건 조건)가 사건 풀·난수 칸을 옮겨 같은 표본의 측정이 −2.1 SE로 움직였다 — 이른 부모 별세 효과를 켜든 끄든 같다(−2.09 / −2.15 SE).
+ * 모집단 값이 하한을 넘어섰다는 뜻이 아니라 하한에 닿은 채 잡음 안에서 움직인 것이다. 마스터 판단 거리: 알파의 노년 하한을 세대별 시간 모델(GM10)에서 다시 정할지.
  */
-const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number }> = [{ metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -1.5 }];
+const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number }> = [{ metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -2.5 }];
 /** 합친 표본은 `floor`(−1.5 SE), 줄별 표본은 그보다 1.5 SE 더 넓은 잡음을 인정한다(줄 하나는 표본이 4분의 1이라 SE가 두 배다) */
 const isKnownUnder3 = (u: { metric: string; era: string; margin: number }): boolean => KNOWN_UNDER3.some((k) => k.metric === u.metric && k.era === u.era && u.margin >= k.floor);
 

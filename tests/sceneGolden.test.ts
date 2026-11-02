@@ -5,6 +5,8 @@ import { ALL_ERA_WINDOWS, ERA_GOLDEN_BANDS, ERA_GOLDEN_BIRTHS, ERA_GOLDEN_SEEDS,
 /**
  * 집 그림(`sceneOf`)과 시대의 창(`eraOf`)의 고정 시드 골든 (SPEC-009 FM5b, 검수 R-546). 골든은 `scripts/sceneGolden.ts`(`npm run golden:scene`)가 만든다 — 규칙·표·승인된 데이터를 **일부러** 바꿀 때만 다시 만들고
  * 바뀐 글을 눈으로 확인한다. 이 시험이 깨졌다면 의도한 변경인지 먼저 본다(예: 소품 개수·집 크기 규칙, 시대의 창 고르기·데이터).
+ * **FM4b 갱신(2026-10-28)**: 골든을 다시 만들었다. 사유 둘 — ① 집 종류·방 수가 출생 때 정한 값(`family.h`, 묶음 B)으로 채워져 장면 칸 104개의 집 모양·크기가 표의 모양대로 달라졌다(이전: 점유 형태 기본 모양)
+ * ② 가리기를 켠 1987년의 대체 그림이 12월 투표소가 되었다(FM5b 마스터 결정) — 시대의 창 칸 중 1987년 가리기 칸만 달라졌다.
  */
 describe('고정 시드 골든 — 집 그림 sceneOf (7세대 × 3시드 × 9나이)', () => {
   const now = sceneGolden();

@@ -1,4 +1,4 @@
-import { GENERATION_IDS, generateBirthFromSeed, type GameState, type ProfileId } from '../../src/core';
+import { GENERATION_IDS, generateBirthFromSeed, type EventPool, type GameState, type ProfileId } from '../../src/core';
 import { simulateLife, type Strategy } from '../../scripts/simulateLib';
 
 /**
@@ -59,12 +59,14 @@ export function l0Hash(gen: ProfileId, seeds: readonly number[]): string {
 
 export function l1Projection(final: GameState): string {
   const history = final.history.filter((h) => !(h.eventId ?? '').startsWith('fam-')).map((h) => [h.age, h.kind, h.text, h.eventId ?? '', h.choice ?? '', h.title ?? '']);
-  const flags = final.flags.filter((f) => !SYSTEM_FLAGS.has(f));
+  // `younger_sibling`은 사건(옛 동생 반응 카드)이 켜던 플래그인데 FM4b부터 시스템이 상태 줄 동생에게도 더하기만 한다 — 옛 세계와 견주려고 사건을 겪은 판에서만 센다
+  const flags = final.flags.filter((f) => !SYSTEM_FLAGS.has(f) && (f !== 'younger_sibling' || final.seen['infant-new-sibling'] !== undefined));
   return JSON.stringify([final.stats, final.assets, final.familyFund, flags, final.age, final.death, final.rngState, final.seen, history]);
 }
 
-export function l1Hash(gen: ProfileId, strategy: Strategy, seeds: readonly number[]): string {
-  return fnv(seeds.map((s) => l1Projection(simulateLife(s, gen, strategy).final)).join('\n'));
+/** `pool`을 주면 그 이벤트 풀로 돈다(FM4b 전 풀 — `scripts/preFm4bPool.ts`) */
+export function l1Hash(gen: ProfileId, strategy: Strategy, seeds: readonly number[], pool?: EventPool): string {
+  return fnv(seeds.map((s) => l1Projection(simulateLife(s, gen, strategy, pool).final)).join('\n'));
 }
 
 export { GENERATION_IDS };

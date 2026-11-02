@@ -79,8 +79,8 @@ describe('tables.json 모양', () => {
     expect(d.crude[0]).toBeCloseTo(0.4, 5);
   });
 
-  it('표는 한 글자도 숨은 문자·이름을 담지 않고, 크기는 25KB 안이다(지연 덩어리)', () => {
-    expect(tablesRaw.length).toBeLessThan(25_000);
+  it('표는 한 글자도 숨은 문자·이름을 담지 않고, 크기는 64KB 안이다(지연 덩어리 — 집 표(묶음 B)가 들어와 25KB에서 올렸다)', () => {
+    expect(tablesRaw.length).toBeLessThan(64_000);
     expect(JSON.parse(tablesRaw)).toBeTypeOf('object');
   });
 });

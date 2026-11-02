@@ -265,7 +265,8 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     }
     // data/birthReportText.ts: 지역 표 주석 「세대 범위 도중에 생긴 {이름·이름}의 몫은…」의 짧은 시·도 이름 나열(SPEC-004 GS6, 시안 문구 그대로)
     // core/scene.ts: 집과 가족 그림의 아래 한 줄 「부모님·누나 둘·할머니와 함께」(SPEC-009 FH3 — 함께 사는 사람 낱말을 가운뎃점으로 잇는 것이 시안·문구 정본이다. 화면은 한 줄 규칙(40자, 360px에서 두 줄까지)과 word-break: keep-all로 그리며 말줄임 없이 길면 낱말을 줄인다)
-    expect(hits).toEqual({ 'core/eventLint.ts': 2, 'core/events.ts': 1, 'core/scene.ts': 1, 'data/birthReportText.ts': 1 });
+    // ui/FitPair.tsx: `FitList`(SPEC-009 FM4b — 집과 가족 그림 아래 한 줄 「{사는 곳} · {집 낱말} · {함께 사는 사람}」, 항목 셋 고정)의 보이지 않는 탐침 글자 `data-text`(aria-hidden, DOM 글자에 안 들어간다) — 화면 글자 조립이 아니다. 한 줄에 안 들어가면 기호 없이 항목마다 줄이다
+    expect(hits).toEqual({ 'core/eventLint.ts': 2, 'core/events.ts': 1, 'core/scene.ts': 1, 'data/birthReportText.ts': 1, 'ui/FitPair.tsx': 1 });
     expect(files.length, '공허 통과 방지: src 전체를 읽었다').toBeGreaterThan(40);
   });
 
@@ -300,7 +301,7 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       'data/koreaStatsAccess.ts': 2, // 「통계 기준: {연도}년 · 마지막 갱신 {날짜}」, 카드 출처 줄(화면에 쓰이지 않는 접근자 값)
       // SPEC-003 M3: 항목이 둘로 고정된 짧은 쌍(룰렛 결과 「{수저(구간)} · {시·도}」, 출생신고의 「나이 · 직업」·「장소 · 성별」·「수저 게임 · 가상의 서류」)을 그린다 — 탐침 글자(data-text)와 한 줄 모양의 JSX 두 곳.
       // 한 줄에 들어가는지 재서(탐침) 안 들어가면 기호 없이 두 항목을 따로 줄로 나눈다(QM2-10 규칙 3) — 기호가 줄 끝·첫머리에 혼자 남지 않는다.
-      'ui/FitPair.tsx': 2,
+      'ui/FitPair.tsx': 4, // FitPair의 「A · B」 탐침·한 줄 모양 + FitList(SPEC-009 FM4b, 항목 셋 고정인 집 아래 한 줄)의 탐침·한 줄 모양 — 안 들어가면 기호 없이 항목마다 줄
       // SPEC-003 M7c D-74: `Glue hideSeparator`가 띄어 쓴 가운뎃점 사슬 「A · B」를 가르는 자리 — 문구를 조립하지 않고(조립은 위 곳들) 이미 만들어진 글에서 「·」만 낭독에서 숨긴다
       'ui/Glue.tsx': 2,
       // SPEC-009 FM5 집과 가족 그림: 아래 한 줄 「{사는 곳} · {집 낱말} · {사람 묶음}과 함께」(core/scene.ts — 항목 셋이 고정된 한 줄 문구, FH3 시안 그대로, 길이는 LINE_MAX 40자로 맞춘다) · 시대의 창 접근 이름·툴팁 「시대의 창 · {문장}」(data/sceneText.ts, 눈에 보이지 않는 글) · 펼침의 사람 줄 「{호칭} · {나이}세」(ui/scene/SceneCard.tsx — 항목 둘의 짧은 쌍)

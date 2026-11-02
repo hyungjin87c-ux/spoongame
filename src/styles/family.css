@@ -96,6 +96,8 @@ a.era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 .scene__more > summary:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; border-radius: var(--r-sm); }
 .scene__people { margin: var(--sp-2) 0 0; padding: 0 0 0 var(--sp-2); list-style: none; display: grid; gap: var(--sp-1); font-size: var(--fs-sm); color: var(--c-text); }
 .scene__people li { padding-left: var(--sp-3); position: relative; }
+/* 「아버지 · 42세」는 FitPair가 한 줄에 들어간다고 잰 모양이다 — 소수 픽셀 차로 가운뎃점 뒤에서 줄이 바뀌지 않게 한다(FM4b: 식구 줄이 늘어 글자 200%에서 드러났다) */
+.scene__people li .fit-pair:not(.is-split) { white-space: nowrap; }
 .scene__people li::before { content: ''; position: absolute; left: 0; top: 0.65em; width: 5px; height: 5px; border-radius: 50%; background: var(--c-text-3); }
 .scene__open { margin: var(--sp-2) 0 0; }
 .scene__fold { white-space: nowrap; }

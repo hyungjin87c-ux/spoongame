@@ -276,7 +276,7 @@ describe('parseGame: play는 선택 필드 — 없으면 시간을 재지 않은
   it('인생·엔딩이 아닌 단계(첫 화면·룰렛·출생신고)에 붙은 play는 버린다', () => {
     const roulette = startLife(1, 'alpha');
     for (const phase of ['roulette', 'birth'] as const) {
-      const env = JSON.parse(serializeGame({ ...roulette, phase, history: [], age: 0 })) as { version: number; data: Record<string, unknown> };
+      const env = JSON.parse(serializeGame({ ...roulette, phase, history: [], age: 0, flags: [] })) as { version: number; data: Record<string, unknown> };
       env.data.play = emptyPlay();
       const g = parseGame(JSON.stringify(env));
       expect(g, phase).not.toBeNull();

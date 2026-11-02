@@ -4,6 +4,7 @@ import { petPhrases, sceneInputOf, sceneKey, sceneLineOf, sceneOf, scenePetsText
 import type { FamilyGame } from '../../core/familyView';
 import { eraAccessibleName, eraTitle, SCENE_TEXT } from '../../data/sceneText';
 import { useReducedMotion } from '../hooks';
+import { FitList, FitPair } from '../FitPair';
 import { SvgMarkup } from '../svgNodes';
 import { goToLogRow } from './eraLink';
 import { SceneSvg } from './SceneSvg';
@@ -184,7 +185,7 @@ export function SceneCard({ game, gentle, fold, onFold, scene, animate = true }:
         </p>
       ) : null}
       <p className="scene__line" id="scene-line" data-testid="scene-line">
-        {line}
+        <FitList items={line.split(' · ')} />
       </p>
       {petsText === '' ? null : (
         <p className="sr-only" id="scene-pets" data-testid="scene-pets">
@@ -197,8 +198,7 @@ export function SceneCard({ game, gentle, fold, onFold, scene, animate = true }:
           <ul className="scene__people" data-testid="scene-people">
             {rows.map((r, i) => (
               <li key={i} data-self={r.self ? 'true' : undefined}>
-                {r.label} · {r.age}
-                {SCENE_TEXT.ageSuffix}
+                <FitPair a={r.label} b={`${r.age}${SCENE_TEXT.ageSuffix}`} />
               </li>
             ))}
             {more > 0 ? <li>{SCENE_TEXT.moreOthers(more)}</li> : null}

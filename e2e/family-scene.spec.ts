@@ -47,9 +47,9 @@ test('태어나기 → 살아가기: 집과 가족 그림 카드가 인생 기�
   // 연도 표는 머리 연도와 같다
   const year = (await page.locator('.scene__year time').textContent())!;
   expect(await page.locator('.year-row').first().textContent()).toContain(year.replace('년', ''));
-  // 대체 글: 그림은 role=img이고 이름이 「{연도}년 {사는 곳} · 집 · …」
+  // 대체 글: 그림은 role=img이고 이름이 「{연도}년 {사는 곳} · {집 낱말} · …」 (FM4b부터 집 종류가 정해져 「집」 한 낱말이 아니다)
   const img = page.locator('[data-testid="scene-house"] [role="img"]');
-  await expect(img).toHaveAccessibleName(/^\d{4}년 .+ · 집 · .+(함께|지냅니다)/);
+  await expect(img).toHaveAccessibleName(/^\d{4}년 .+ · (?:단독주택|단독주택 셋방|다가구 단독주택|연립주택|다세대주택|아파트|작은 집|가게 딸린 집|상가주택|넓은 단독주택|요양 시설) · .+(함께|지냅니다)/);
   // 순서: 그림 카드가 인생 기록보다 위(같은 열 · 한 열 모두)
   const s = await box(page, '[data-testid="family-scene"]');
   const l = await box(page, '[data-testid="log"]');
@@ -209,7 +209,7 @@ test('그림 덩어리(familyArt) 요청이 막혀도 게임은 계속되고 글
   await injectSave(page, lifeState(KNOWN_SEED), FAST, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'failed', { timeout: 15_000 });
   await expect(page.getByTestId('scene-art-failed')).toBeVisible();
-  await expect(page.getByTestId('scene-line')).toContainText(' · 집 · ');
+  await expect(page.getByTestId('scene-line')).toContainText(/ · (?:단독주택|단독주택 셋방|다가구 단독주택|연립주택|다세대주택|아파트|작은 집|가게 딸린 집|상가주택|넓은 단독주택|요양 시설) · /);
   await expect(page.getByTestId('scene-placeholder')).toBeVisible();
   expect(await page.locator('[data-piece]').count(), '그림 조각 없음').toBe(0);
   // 게임은 계속된다

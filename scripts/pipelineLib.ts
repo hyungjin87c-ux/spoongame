@@ -573,7 +573,8 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
     if (/[!！]/.test(line) || EMOJI.test(line)) bad(`연표에 느낌표·이모지가 있다: ${line}`);
   }
   // 같은 이벤트가 두 번 나오지 않는다 (한 판에 한 번만)
-  const ids = game.history.filter((h) => h.eventId !== undefined).map((h) => h.eventId!);
+  // (가족 변화 줄 `fam-…`은 판마다 여러 번 나오는 줄 종류 이름이라 센 대상이 아니다 — 같은 대상의 중복은 `family.log`가 막고 tests/familyConsistency.test.ts가 센다)
+  const ids = game.history.filter((h) => h.eventId !== undefined && !h.eventId.startsWith('fam-')).map((h) => h.eventId!);
   if (new Set(ids).size !== ids.length) bad('연표에 같은 이벤트가 두 번 나온다');
   return out;
 }
