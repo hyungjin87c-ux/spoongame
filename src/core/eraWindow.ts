@@ -7,9 +7,10 @@ import { famHash01 } from './familyRng';
  *
  *  - 창에는 **그림만** 있다(FM2d). 그해를 나타내는 문장 `line`은 접근 이름이자 인생 기록의 `data-tl="era"` 줄이다.
  *  - **승인한 것만 데이터에 들어온다**(FT3, RG11 방식): `EraWindow.approved`의 타입이 `true`뿐이라 `false`를 쓰면 `npm run typecheck`(= build의 첫 단계)가 막고, `tests/eraWindows.test.ts`가 데이터 파일을 한 번 더 점검한다.
- *    FM5b에서 형진 님이 승인한 43장(r3 15 + 1987년 12월 1 + r4 27)이 들어왔다(`scripts/genEraWindows.ts`가 designer 조각에서 `data/eraWindows/d<10년대>.ts`를 만든다). 승인된 그림이 없는 해의 창은 빈 틀이다.
+ *    FM5b에서 형진 님이 승인한 43장(r3 15 + 1987년 12월 1 + r4 27)이, 시대의 창 r5 반영(2026-11-02)에서 나머지 51장(r5 40 + r5b 11 = 합 94장)이 들어왔다(`scripts/genEraWindows.ts`가 designer 조각에서 `data/eraWindows/d<10년대>.ts`를 만든다). 승인된 그림이 없는 해의 창은 빈 틀이다.
  *  - 순수 함수다(`Date`·`Math.random` 없음): 한 해에 후보가 둘이면 `famHash01(판 시드, ERA, 연도, salt)`로 하나 — 같은 판에서는 늘 같은 그림이다.
  *    사건이 둘이면 무거운 쪽, 사건이 없는 해는 그 10년 일상 중 수저 구간(`band`)·나이대(`ages`)에 맞는 것이고 같은 그림을 3해 연속 쓰지 않는다(그 10년의 첫 해부터 같은 규칙으로 걸어와 정한다).
+ *    사건에도 수저 구간 분기가 있다(era-window.md 10-1절, 2009년 세 갈래): 같은 구간의 `band` 사건 → `band` 없는 사건(무거운 쪽 먼저) → 일상(구간 변주 먼저). 가운데 구간은 `band` 사건을 보지 않는다.
  *  - 인생 기록의 시대 줄은 **저장하지 않는 파생 줄**이다(A-12): 인생 기록을 그릴 때 해마다 `eraOf`로 만든다. 그래서 판 길이 모델·`yearLineCount`·저장 크기에 닿지 않는다.
  */
 
@@ -36,7 +37,10 @@ export interface EraWindow {
   approved: true;
   /** 그림 조각 id (40×32 좌표계) — 같은 10년대 파일의 `art`에 마크업이 있다 */
   draw: string;
-  /** 계층 변주: 이 수저 구간(low·high)의 플레이어에게만 먼저 보인다. 없으면 모든 구간 (`mid`는 변주를 보지 않는다) */
+  /**
+   * 계층 변주: 이 수저 구간(low·high)의 플레이어에게만 보인다. 없으면 모든 구간 (`mid`는 변주를 보지 않는다).
+   * 일상(`daily`)은 그 구간에게 먼저 보이는 변주이고, **사건(`event`)에도 쓴다**(2009년: 철거 현장 low · 첫 스마트폰 high, era-window.md 10-1절) — 그 구간의 플레이어는 같은 해의 `band` 없는 사건 대신 이것을 본다.
+   */
   band?: 'low' | 'high';
   /** 나이대 [처음, 마지막] (일상 장면). 없으면 모두 */
   ages?: readonly [number, number];
@@ -140,18 +144,30 @@ function dailyPick(y: number, ctx: EraContext, recent: readonly string[], calm: 
   );
 }
 
+/** 사건 후보에서 하나: 출생 시도의 지역 사건 먼저, 없으면 전국 사건. 각각 무거운 쪽 먼저, 둘 다 무겁지 않으면 시드로 하나 */
+function pickEvent(pool: readonly EraWindow[], regionKey: string, seed: number, y: number): EraWindow | null {
+  const regional = pool.filter((w) => w.regionKey !== undefined && w.regionKey === regionKey);
+  const national = pool.filter((w) => w.regionKey === undefined);
+  return pickOne(heavyFirst(regional), seed, y, 1) ?? pickOne(heavyFirst(national), seed, y, 1);
+}
+
 /** 한 해의 고르기. `recent`는 걸어오며 정해진 직전 두 해의 그림 id */
 function stepPick(y: number, ctx: EraContext, future: boolean, recent: readonly string[]): EraPick {
   const age = ctx.birthYear === undefined ? null : y - ctx.birthYear;
   const live = ctx.windows.filter((w) => inYears(w, y));
   const events = future ? [] : live.filter((w) => w.kind === 'event');
-  const regional = events.filter((w) => w.regionKey !== undefined && w.regionKey === ctx.regionKey);
-  const national = events.filter((w) => w.regionKey === undefined);
-  const chosenEvent = pickOne(heavyFirst(regional), ctx.seed, y, 1) ?? pickOne(heavyFirst(national), ctx.seed, y, 1);
+  // 사건의 수저 구간 분기(era-window.md 10-1절): `band` 없는 사건은 모두가 보고, `band`가 있는 사건은 그 구간만 본다(가운데 구간은 `band` 사건을 보지 않는다)
+  const band = ctx.band ?? 'mid';
+  const seen = events.filter((w) => w.band === undefined || w.band === band);
+  const sameBand = seen.filter((w) => w.band !== undefined);
+  const plainEvents = seen.filter((w) => w.band === undefined);
+  // ① 같은 구간의 `band` 사건 → ② `band` 없는 사건(무거운 쪽 먼저)
+  const chosenEvent = pickEvent(sameBand, ctx.regionKey, ctx.seed, y) ?? pickEvent(plainEvents, ctx.regionKey, ctx.seed, y);
   if (chosenEvent !== null) {
     if (ctx.gentle && chosenEvent.heavy) {
       // 같은 해에 무겁지 않은 사건 그림이 따로 있으면(1987년: 6월 시위 ↔ 12월 투표소) 가린 해의 대체 그림으로 쓴다(FM5b 마스터 결정 2026-10-28). 줄은 가려진 무거운 사건 그대로다. 없으면 그 10년의 (무겁지 않은) 일상
-      const alt = pickOne(regional.filter((w) => !w.heavy), ctx.seed, y, 4) ?? pickOne(national.filter((w) => !w.heavy), ctx.seed, y, 4);
+      const calmEvents = seen.filter((w) => !w.heavy);
+      const alt = pickOne(calmEvents.filter((w) => w.regionKey !== undefined && w.regionKey === ctx.regionKey), ctx.seed, y, 4) ?? pickOne(calmEvents.filter((w) => w.regionKey === undefined), ctx.seed, y, 4);
       return { pic: alt ?? dailyPick(y, ctx, recent, true, age), line: chosenEvent, veiled: true, sourceYear: y };
     }
     return { pic: chosenEvent, line: chosenEvent, veiled: false, sourceYear: y };
@@ -163,7 +179,8 @@ function stepPick(y: number, ctx: EraContext, future: boolean, recent: readonly 
 }
 
 /**
- * 그해의 창. 고르는 순서(era-window.md 3-1·8-2): ① 출생 시도의 지역 사건 ② 전국 연표 사건(둘이면 무거운 쪽) ③ 그 10년의 일상(수저 구간 변주 먼저, 나이대, 같은 그림 3해 연속 금지) ④ 기본 장면 — 승인된 후보만.
+ * 그해의 창. 고르는 순서(era-window.md 3-1·8-2·10-1): ① 내 수저 구간의 `band` 사건(2009년 철거 현장·첫 스마트폰) ② `band` 없는 사건 — 출생 시도의 지역 사건 먼저, 전국 연표 사건(둘이면 무거운 쪽) ③ 그 10년의 일상(수저 구간 변주 먼저, 나이대, 같은 그림 3해 연속 금지) ④ 기본 장면 — 승인된 후보만.
+ * 가운데 구간은 ①을 보지 않는다(`band` 사건은 아래·위 구간에게만).
  * 2026년 이후는 사건을 쓰지 않고 2025년의 생활·기본 장면을 유지한다. 가리기(`gentle`)가 켜져 있고 고른 장면이 `heavy`이면 `veiled`: 칸에는 그해의 (무겁지 않은) 일상을 띄우고 — 없으면 빈 틀 — 인생 기록 줄은 `.veil` 부품이 문장을 가린다.
  * 「3해 연속 금지」는 상태 없이 정한다: 그 10년의 첫 해부터 해마다 같은 규칙으로 걸어와 직전 두 해의 그림을 안다(같은 입력 → 같은 출력).
  */

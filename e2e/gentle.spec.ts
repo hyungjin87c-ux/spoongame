@@ -48,6 +48,8 @@ test.describe('화면 규칙 (A): 지금의 설정값으로 지난 줄까지 가
     expect(rows.length).toBeGreaterThanOrEqual(4);
     await injectSave(page, game, '/', { ...MANUAL, gentle: false });
     const log = page.getByTestId('log');
+    // 시대의 창 r5 반영(2026-11-02): 알파 세대의 평생(2010년대 출생)에는 무거운 시대 줄(2016 촛불·2017 지진·2022 골목)도 있어 같이 가려진다 — 기록 줄(저장된 연표)의 가림만 따로 센다
+    const histVeiled = log.locator('[data-veiled="true"]:not([data-tl="era"])');
     await expect(page.getByTestId('life-screen')).toBeVisible();
 
     // 1. 끈 상태(기본): 모든 줄이 원문이고 가림 부품이 없다
@@ -57,7 +59,7 @@ test.describe('화면 규칙 (A): 지금의 설정값으로 지난 줄까지 가
 
     // 2. 켜기: 지난 줄까지 모든 무거운 줄이 가려진다 — 가린 줄의 수 = 무거운 줄의 수, 원문은 보이지 않는다
     await setGentleViaTitle(page, true);
-    await expect(log.locator('[data-veiled="true"]')).toHaveCount(rows.length);
+    await expect(histVeiled).toHaveCount(rows.length);
     const veiledText = await shown(log);
     for (const r of rows) {
       expect(veiledText, `${r.age}세 ${r.heavyKind}: 문장`).not.toContain(r.text);
@@ -71,12 +73,12 @@ test.describe('화면 규칙 (A): 지금의 설정값으로 지난 줄까지 가
     expect((await readSettings(page)).gentle).toBe(true);
 
     // 3. 펼치기: 「펼쳐 보기」가 aria-expanded=true가 되고 원문이 보인다 — 같은 줄을 다시 누르면 접힌다
-    const first = log.getByTestId('veil-btn').first();
+    const first = histVeiled.getByTestId('veil-btn').first();
     await expect(first).toHaveAttribute('aria-expanded', 'false');
     await first.click();
     await expect(first).toHaveAttribute('aria-expanded', 'true');
     await expect(first).toContainText('접기');
-    const openRow = log.locator('[data-veiled="true"]').first();
+    const openRow = histVeiled.first();
     await expect(openRow.getByTestId('veil-body')).toBeVisible();
     const openedText = await shown(openRow);
     expect(rows.some((r) => openedText.includes(r.text)), '펼친 줄에는 그 줄의 원문이 보인다').toBe(true);
@@ -95,16 +97,16 @@ test.describe('화면 규칙 (A): 지금의 설정값으로 지난 줄까지 가
 
     // 5. 다시 켜기: 그 전에 펼쳐 둔 줄도 다시 가려진다 (M19 — 설정이 바뀌면 펼침 초기화)
     await setGentleViaTitle(page, true);
-    await expect(log.locator('[data-veiled="true"]')).toHaveCount(rows.length);
+    await expect(histVeiled).toHaveCount(rows.length);
     for (const b of await log.getByTestId('veil-btn').all()) await expect(b).toHaveAttribute('aria-expanded', 'false');
     expect(await shown(log)).not.toContain(rows[0].text);
 
     // 6. 새로고침: 설정(gentle)은 남아 가림이 이어지고 펼침은 저장하지 않으므로 다시 가려진다 (SV3)
-    await log.getByTestId('veil-btn').nth(1).click();
-    await expect(log.getByTestId('veil-btn').nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await histVeiled.getByTestId('veil-btn').nth(1).click();
+    await expect(histVeiled.getByTestId('veil-btn').nth(1)).toHaveAttribute('aria-expanded', 'true');
     await page.reload();
     await expect(page.getByTestId('life-screen')).toBeVisible();
-    await expect(page.getByTestId('log').locator('[data-veiled="true"]')).toHaveCount(rows.length);
+    await expect(page.getByTestId('log').locator('[data-veiled="true"]:not([data-tl="era"])')).toHaveCount(rows.length);
     for (const b of await page.getByTestId('log').getByTestId('veil-btn').all()) await expect(b).toHaveAttribute('aria-expanded', 'false');
   });
 

@@ -1,7 +1,7 @@
 import type { EraDecadeData } from './types';
 
 /**
- * 시대의 창 1940년대 덩어리 — **생성 파일**이다(`npm run gen:era` = scripts/genEraWindows.ts). 직접 고치지 않는다: 그림은 designer 조각(docs/design/mockups/family/pieces/era-r3·era-r4)에서, 문장·연도는 designer 실측 JSON에서 온다.
+ * 시대의 창 1940년대 덩어리 — **생성 파일**이다(`npm run gen:era` = scripts/genEraWindows.ts). 직접 고치지 않는다: 그림은 designer 조각(docs/design/mockups/family/pieces/era-r3·r4·r5·r5b)에서, 문장·연도는 designer 실측 JSON에서 온다.
  * 장면 6장은 모두 형진 님이 승인했다(`approved: true` — 타입이 `true`뿐이라 미승인은 들어올 수 없다, FT3 「승인한 것만」). `defs`는 이 10년 덩어리의 그림이 함께 쓰는 반복 무늬·사람 심볼로 덩어리마다 한 번만 둔다.
  * 색은 `class`(`e-<토큰>` 따위)뿐이고 규칙은 styles/family.css의 토큰 규칙이다.
  */

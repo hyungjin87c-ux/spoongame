@@ -5,7 +5,7 @@ import { KNOWN_SEED, SETTINGS_KEY, findPendingState, injectSave, lifeState, noHo
 /**
  * 집과 가족 그림 카드 · 시대의 창 칸 · 인생 기록 시대 줄 (SPEC-009 FM5, FH1·FH4·FH6·FH9·FT1~FT6). 실제 브라우저(Chromium) — desktop(1280×800)과 mobile-360 두 프로젝트에서 돈다.
  * 구조·문구·접근성 속성은 tests/sceneCard.test.tsx(서버 렌더)가 보고, 여기서는 **실제 폭·연속 동작**을 본다: PC 2:1 · 360 띠(80px) 배치, 접기 저장, 해가 바뀔 때 그림·연도 표, 가로 넘침 0, 다크, 움직임 줄이기,
- * 그림 덩어리 요청 실패·재시도, 승인된 그림이 없는 해의 빈 틀, 승인된 그림이 있는 해(1980년 무렵)의 창(FM5b): 톤 A 필터·색 class 규칙이 실제로 칠해지는지, 가리기, 창 → 그해 줄 이동, 늦게 온 10년 덩어리가 읽던 자리를 밀지 않는지.
+ * 그림 덩어리 요청 실패·재시도, 시대의 창 덩어리를 못 받았을 때의 빈 틀(승인 94장이 1940~2025 모든 해에 닿으므로 데이터가 있는 판에는 빈 틀이 없다), 승인된 그림이 있는 해(1980년 무렵·2016년)의 창(FM5b): 톤 A 필터·색 class 규칙이 실제로 칠해지는지, 가리기, 창 → 그해 줄 이동, 늦게 온 10년 덩어리가 읽던 자리를 밀지 않는지.
  */
 
 /** 개발 서버 전용 탐침: 연출 시간을 N배 빠르게(실제로 기다리지 않는다) */
@@ -79,6 +79,12 @@ test('배치(FM2d): PC는 집 : 시대의 창 = 2 : 1(둘 사이 8px, 높이가 
     expect(Math.abs(pic.width - 100)).toBeLessThan(1);
     expect(Math.abs(pic.height - 80)).toBeLessThan(1);
     expect(Math.abs(house.width - (card.width - 2)), '집 그림은 카드 전폭(카드 테두리 1px씩 안쪽)').toBeLessThan(1);
+    // R-553 ① A안: 띠 바탕이 카드 바탕(--c-surface)과 같다 — 그림 옆 빈 자리가 「카드 위에 놓인 그림 한 장」으로 읽힌다
+    const bg = await page.evaluate(() => {
+      const css = (el: Element | null): string => (el === null ? '' : getComputedStyle(el).backgroundColor);
+      return { era: css(document.querySelector('#scene-era')), card: css(document.querySelector('[data-testid="family-scene"]')) };
+    });
+    expect(bg.era, '띠 바탕은 카드 바탕과 같다').toBe(bg.card);
   }
   // 집 그림 높이 ≤ 25vh(FH1)
   const vh = page.viewportSize()!.height;
@@ -87,7 +93,8 @@ test('배치(FM2d): PC는 집 : 시대의 창 = 2 : 1(둘 사이 8px, 높이가 
   expect(vw).toBeGreaterThan(0);
 });
 
-test('승인된 그림이 없는 해(2016년 — 2000년대 이후는 승인된 장면이 없다)의 시대의 창은 빈 틀이다: 링크도 그림도 없고, 인생 기록에 시대 줄(data-tl="era")이 없다 — 연도 표만 보인다', async ({ page }) => {
+test('시대의 창 덩어리를 받지 못한 판(2016년, 2010년대 덩어리 요청 차단)의 창은 빈 틀이다: 링크도 그림도 없고, 인생 기록에 시대 줄(data-tl="era")이 없다 — 연도 표만 보인다', async ({ page }) => {
+  await page.route(/\/eraWindows\/d2010\.ts/, (route) => route.abort());
   await injectSave(page, still(), FAST, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
   await expect(page.locator('#scene-era')).toHaveAttribute('data-empty', 'true');
@@ -97,6 +104,20 @@ test('승인된 그림이 없는 해(2016년 — 2000년대 이후는 승인된 
   await expect(page.locator('.scene__year')).toBeVisible();
   // 빈 틀은 키보드 정지점이 아니다
   expect(await page.locator('[data-testid="family-scene"] a').count()).toBe(0);
+});
+
+test('승인된 그림(시대의 창 r5 반영): 2016년 판의 창에 겨울 광장의 촛불이 오르고, 2010년대는 톤 필터가 없으며, 줄은 승인 표기 문장이다', async ({ page }) => {
+  await injectSave(page, still(), FAST, MANUAL);
+  await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
+  const era = page.locator('#scene-era');
+  await expect(era).toHaveAttribute('data-era', 'era-2016-candle-winter', { timeout: 15_000 });
+  await expect(era).toHaveAttribute('data-dec', '2010');
+  await expect(era).toHaveAttribute('href', '#log-y2016');
+  await expect(era).toHaveAccessibleName(/시대의 창 · 겨울 밤마다 광장에 촛불이 모였습니다\. 그해 기록으로/);
+  expect(await page.locator('#scene-era svg rect').count(), '도형이 있다 — 빈 틀이 아니다').toBeGreaterThan(30);
+  const filter = await page.locator('#scene-era svg').first().evaluate((el) => getComputedStyle(el).filter);
+  expect(filter, '2010년대는 톤 필터 없음').toBe('none');
+  expect(await noHorizontalOverflow(page)).toBe(true);
 });
 
 test('「그림 접기」: 그림(집 + 시대의 창)이 사라지고 아래 한 줄·펼침만 남는다 — 설정에 저장되어 새로고침해도 접혀 있고, 「그림 펼치기」로 돌아온다', async ({ page }) => {

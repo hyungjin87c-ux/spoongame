@@ -7,6 +7,7 @@ import { ALL_ERA_WINDOWS, ERA_GOLDEN_BANDS, ERA_GOLDEN_BIRTHS, ERA_GOLDEN_SEEDS,
  * 바뀐 글을 눈으로 확인한다. 이 시험이 깨졌다면 의도한 변경인지 먼저 본다(예: 소품 개수·집 크기 규칙, 시대의 창 고르기·데이터).
  * **FM4b 갱신(2026-10-28)**: 골든을 다시 만들었다. 사유 둘 — ① 집 종류·방 수가 출생 때 정한 값(`family.h`, 묶음 B)으로 채워져 장면 칸 104개의 집 모양·크기가 표의 모양대로 달라졌다(이전: 점유 형태 기본 모양)
  * ② 가리기를 켠 1987년의 대체 그림이 12월 투표소가 되었다(FM5b 마스터 결정) — 시대의 창 칸 중 1987년 가리기 칸만 달라졌다.
+ * **FM4b 검수 1회차 반영 갱신(2026-11-02, R-557·R-558·R-565)**: 장면 189칸 중 4칸(식구 수·열쇠 해시)을 다시 만들었다 — 조부모 별세 해·함께 사는 쪽·동생 구성이 달라져 그 나이의 식구 수가 달라진 칸이다(ai-log/2026-11-02_SPEC-009_dev-FM4b-r2.md 2절).
  */
 describe('고정 시드 골든 — 집 그림 sceneOf (7세대 × 3시드 × 9나이)', () => {
   const now = sceneGolden();
@@ -24,11 +25,11 @@ describe('고정 시드 골든 — 집 그림 sceneOf (7세대 × 3시드 × 9�
 
 describe('고정 시드 골든 — 시대의 창 eraOf (시드 2 × 수저 구간 3 × 가리기 2 × 출생 6, 출생~2025)', () => {
   const now = eraGolden();
-  it('골든이 정한 칸과 같고, 그림 번호표(승인된 43장)가 같다', () => {
+  it('골든이 정한 칸과 같고, 그림 번호표(승인된 94장)가 같다', () => {
     expect(golden.eraSeeds).toEqual([...ERA_GOLDEN_SEEDS]);
     expect(golden.eraBands).toEqual([...ERA_GOLDEN_BANDS]);
     expect(golden.eraBirths).toEqual([...ERA_GOLDEN_BIRTHS]);
-    expect(ALL_ERA_WINDOWS.length).toBe(43);
+    expect(ALL_ERA_WINDOWS.length).toBe(94);
     expect(now.ids).toEqual(golden.eraIds);
     expect(Object.keys(now.rows).sort()).toEqual(Object.keys(golden.era).sort());
   });
@@ -40,9 +41,8 @@ describe('고정 시드 골든 — 시대의 창 eraOf (시드 2 × 수저 구�
     const rows = Object.entries(golden.era);
     for (const [k, line] of rows) {
       const pics = (line.match(/\d\d[.v]/g) ?? []).filter((c) => c.slice(0, 2) !== '00').length;
-      // 승인된 그림은 1940~1990년대뿐이라 2003년생은 한 해도 그림이 없다(빈 틀) — 그 밖의 출생은 있어야 한다
-      if (!k.endsWith('/2003')) expect(pics, k).toBeGreaterThan(0);
-      else expect(pics, k).toBe(0);
+      // 승인된 그림이 1940~2025 모든 해에 닿으므로(94장) 어느 출생이든 그림이 있는 해가 있어야 한다 — 2003년생도 (2003~2025)
+      expect(pics, k).toBeGreaterThan(0);
       if (k.includes('/plain/')) expect(line.includes('v'), k).toBe(false);
     }
     expect(rows.filter(([k, line]) => k.includes('/gentle/') && k.endsWith('/1944') && line.includes('v')).length).toBeGreaterThan(0);

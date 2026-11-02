@@ -384,7 +384,10 @@ export function sceneOf(input: SceneInput): SceneSpec {
   const kind = houseKindOf(state, input.wealth);
   const crowded = state.members.length + 1 >= SCENE_RULES.houseScale.crowdedFrom;
   const scale = houseScaleOf(kind, input.wealth, crowded);
-  const houseBand: Band = kind === 'care' ? 3 : band;
+  // 초가 규칙(시대의 창 r5 반영, era-window.md 9-4절 ③): 시골·해안 · ~1975 · 수저 하위의 단독 집은 1970~75에도 지붕 값이 있는 h1(초가)을 쓴다 — 새 그림 없이 h1의 연도 범위를 이 조건에서만 1975로 늘린다(슬레이트 변형은 다음 묶음)
+  const thatch = SCENE_RULES.thatch;
+  const thatchHouse = kind === 'detached' && thatch.regions.includes(bgKind) && input.wealth <= thatch.maxWealth && year <= thatch.lastYear;
+  const houseBand: Band = kind === 'care' ? 3 : thatchHouse ? 1 : band;
   const houseId = `house-${kind}-h${houseBand}`;
   const meta = PIECE_BY_ID.get(houseId)!;
   const x0 = scale >= 1 ? 0 : 8;
@@ -393,7 +396,6 @@ export function sceneOf(input: SceneInput): SceneSpec {
   const house: ScenePlacement = { id: houseId, x: x0, y: GROUND_Y, scale: scale === 1 ? undefined : scale };
   // 초가: 시골·해안 · ~1975 · 수저 하위. 이 조각의 지붕 파라미터가 있는 집(단독 h1·그 대신 그리는 조각)에서만 쓰인다
   const art = meta.drawn ? meta : PIECE_BY_ID.get(meta.stand!.id)!;
-  const thatch = SCENE_RULES.thatch;
   if (art.id === 'house-detached-h1' && kind !== 'estate' && thatch.regions.includes(bgKind) && input.wealth <= thatch.maxWealth && year <= thatch.lastYear && kind !== 'care') house.opt = { roof: 'thatch' };
 
   const family = familyPlacements(state, input.seed, year, geo.right);

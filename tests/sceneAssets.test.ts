@@ -267,6 +267,10 @@ describe('그림 조각의 색 class와 토큰 규칙 (FM5b R-549)', () => {
     for (let i = 0; i < dark.length; i++) expect(dark[i], '다크 필터는 라이트보다 약하다').toBeLessThan(light[i]);
     const media = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'));
     expect(media).toContain(":root:not([data-theme='light']) .era[data-dec='1940'] svg { filter: sepia(.3) saturate(.75); }");
+    // R-553 ② 1960년대 톤 밝기(era-window.md 9-4절 2번): 세피아 단계는 그대로 두고 밝기만 한 단 — 라이트 brightness(1.05), 다크(시스템·수동 둘 다) brightness(1.04)
+    expect(filterOf(1960)).toBe('sepia(.42) saturate(.72) contrast(.93) brightness(1.05)');
+    expect(filterOf(1960, ":root\\[data-theme='dark'\\] ")).toBe('sepia(.2) saturate(.85) brightness(1.04)');
+    expect(media).toContain(":root:not([data-theme='light']) .era[data-dec='1960'] svg { filter: sepia(.2) saturate(.85) brightness(1.04); }");
     // 망점은 그림 안의 한 겹(불투명도가 10년대별로 줄어 2000년대부터 0)이라 CSS 필터에는 없다 — 필터에 blur·url()·drop-shadow가 없다
     expect(css.match(/\.era\[data-dec='\d+'\] svg \{ filter: [^}]*\}/g)!.join('')).not.toMatch(/blur|url\(|drop-shadow/);
   });

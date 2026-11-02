@@ -108,11 +108,16 @@ test('LR1 순서: 새 판을 진행하면 줄이 위가 최신으로 쌓인다 �
   const lines = tree.split('\n');
   const starts = lines.flatMap((l, i) => (/^\s*- listitem\b/.test(l) ? [i] : []));
   const items = starts.map((from, k) => lines.slice(from, starts[k + 1] ?? lines.length).join('\n'));
-  expect(items.length, '접근성 트리의 항목 수 = 줄 수').toBe(history.length);
+  // 인생 기록 목록에는 저장하지 않는 파생 줄인 시대의 창 줄(data-tl="era")도 있다(시대의 창 r5 반영: 2016년생 판의 평생에는 시대 줄이 있다) — 항목 수 = 저장된 줄 + 시대 줄
+  const eraRows = await page.locator('[data-testid="log-list"] [data-testid="log-row-era"]').count();
+  expect(items.length, '접근성 트리의 항목 수 = 저장된 줄 수 + 시대 줄 수').toBe(history.length + eraRows);
+  // 읽기 순서는 저장된 줄만 가려서 본다: 시대 줄은 그해 첫 기록 앞(화면에서는 그해 줄들 아래)에 서므로 지금 나이의 시대 줄이 맨 위에 올 수 있다
+  const recordItems = items.filter((it) => !it.includes('시대의 창'));
+  expect(recordItems.length, '시대 줄을 뺀 항목 수 = 저장된 줄 수').toBe(history.length);
   const latest = history.at(-1)!;
-  expect(items[0], '첫 항목이 가장 최근 줄(나이)').toContain(`${latest.age}세`);
-  expect(items[0], '첫 항목이 가장 최근 줄(글)').toContain(latest.text.slice(0, 8));
-  expect(items.at(-1)!, '마지막 항목은 출생').toContain('0세');
+  expect(recordItems[0], '첫 항목이 가장 최근 줄(나이)').toContain(`${latest.age}세`);
+  expect(recordItems[0], '첫 항목이 가장 최근 줄(글)').toContain(latest.text.slice(0, 8));
+  expect(recordItems.at(-1)!, '마지막 항목은 출생').toContain('0세');
   // live region 속성이 유지된다
   const ol = page.locator('[data-testid="log-list"] > ol');
   await expect(ol).toHaveAttribute('aria-live', 'polite');
@@ -384,7 +389,7 @@ test('LR2 8배속 자동 진행으로 줄이 폭주하는 중에도 아래에서
   // 프레임마다 보던 줄(영역 안에서 윗변이 영역 윗변 아래에 걸린 첫 줄을 처음 한 번 정해 끝까지 그 줄만)의 영역 안 위치를 기록한다 — 한 프레임이라도 튀면 최대 변화가 커진다
   const result = await page.evaluate(
     () =>
-      new Promise<{ maxDelta: number; frames: number; rowsAdded: number; text: string }>((resolve) => {
+      new Promise<{ maxDelta: number; maxJump: number; frames: number; rowsAdded: number; eraAdded: number; text: string }>((resolve) => {
         const el = document.querySelector('[data-testid="log-list"]') as HTMLElement;
         const all = () => [...el.querySelectorAll('[data-testid="log-row"]')] as HTMLElement[];
         const box = () => el.getBoundingClientRect();
@@ -392,21 +397,30 @@ test('LR2 8배속 자동 진행으로 줄이 폭주하는 중에도 아래에서
         const offsetNow = () => watched.getBoundingClientRect().top - box().top;
         const first = offsetNow();
         const startCount = all().length;
+        const eraCount = (): number => el.querySelectorAll('[data-testid="log-row-era"]').length;
+        const startEras = eraCount();
         let maxDelta = 0;
+        let maxJump = 0;
+        let last = first;
         let frames = 0;
         const t0 = performance.now();
         const tick = () => {
           frames++;
           maxDelta = Math.max(maxDelta, Math.abs(offsetNow() - first));
+          maxJump = Math.max(maxJump, Math.abs(offsetNow() - last));
+          last = offsetNow();
           // 줄이 5개 쌓일 때까지(최대 40초) 계속 잰다
           if (all().length - startCount < 5 && performance.now() - t0 < 40_000) requestAnimationFrame(tick);
-          else resolve({ maxDelta, frames, rowsAdded: all().length - startCount, text: (watched.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 20) });
+          else resolve({ maxDelta, maxJump, frames, rowsAdded: all().length - startCount, eraAdded: eraCount() - startEras, text: (watched.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 20) });
         };
         requestAnimationFrame(tick);
       }),
   );
   expect(result.rowsAdded, `줄이 여러 개 쌓였다(${result.rowsAdded}개, ${result.frames}프레임)`).toBeGreaterThanOrEqual(5);
-  expect(result.maxDelta, `보던 줄(「${result.text}」)의 프레임별 최대 이동(px) — ${result.rowsAdded}줄이 쌓이는 동안`).toBeLessThanOrEqual(2);
+  // 시대의 창 r5 반영: 이 판(2017년생 50세, 미래 해)은 해마다 시대 줄이 끼고, 그 줄 높이는 소수(69.59px)인데 스크롤 위치는 정수 픽셀로만 옮겨져 줄 하나에 0.41px씩 슬며시 밀린다(튀지 않고 쌓이는 반올림 오차).
+  // 그래서 보던 줄의 이동은 「기록 줄 하나당 2px 이내 + 시대 줄 하나당 0.5px 이내」로 본다 — 한 프레임에 튀는 일은 여전히 막는다(시대 줄 없는 판은 종전대로 2px).
+  expect(result.maxDelta, `보던 줄(「${result.text}」)의 프레임별 최대 이동(px) — ${result.rowsAdded}줄이 쌓이는 동안 시대 줄 ${result.eraAdded}개`).toBeLessThanOrEqual(2 + 0.5 * result.eraAdded);
+  expect(result.maxJump, '한 프레임에 튄 최대 이동(px)').toBeLessThanOrEqual(1);
   expect((await rows.count()) - count0).toBeGreaterThanOrEqual(5);
   await expect(page.getByTestId('log-jump')).toBeVisible();
 });
@@ -627,7 +641,8 @@ for (const key of ['Home', 'PageUp', 'ArrowUp']) {
     expect(await scrollTopOf(list), '아직 아래에서 읽는 중이라 알약이 떠 있다').toBeGreaterThan(TOP_SLACK);
     const pageY = await page.evaluate(() => window.scrollY);
     // 맨 위에 닿을 때까지 키를 누른다(Home·PageUp은 한두 번, ↑는 40px씩이라 여러 번) — 닿으면 알약이 저절로 사라진다
-    for (let i = 0; i < 16 && (await jump.count()) > 0; i++) {
+    // (시대 줄이 해마다 끼는 판이라 「다음 결정으로」 한 번에 쌓이는 높이가 늘었다 — ↑ 40px씩 60번(2,400px)까지 누른다)
+    for (let i = 0; i < 60 && (await jump.count()) > 0; i++) {
       await page.keyboard.press(key);
       await page.waitForTimeout(150);
     }

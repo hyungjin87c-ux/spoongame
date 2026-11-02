@@ -22,7 +22,7 @@ import {
   type SceneMember,
   type SceneSpec,
 } from '../src/core';
-import { FIGURE_ID, INFANT_CARRIED, MAX_PIECES, PIECE_BY_ID, PLANNED_PIECES, SCENE_PIECE_COUNT, houseWordOf, pieceInYear, regionKindOf } from '../src/data/sceneTables';
+import { FIGURE_ID, INFANT_CARRIED, MAX_PIECES, PIECE_BY_ID, PLANNED_PIECES, SCENE_PIECE_COUNT, SCENE_RULES, houseWordOf, pieceInYear, regionKindOf } from '../src/data/sceneTables';
 import { FAMILY_ART } from '../src/data/familyArt';
 import { detachedH1Markup } from '../src/data/familyArt/house';
 import { spreadSeeds } from './helpers/familyGolden';
@@ -137,7 +137,9 @@ describe('sceneOf — 순수성·유효성·모순 0 (7세대 × 100판 × 0~100
         const spec = sceneOf(sceneInputOf(at(s.game, age)));
         for (const p of [spec.bg, spec.house, ...spec.back, ...spec.front]) {
           const meta = PIECE_BY_ID.get(p.id)!;
-          expect(pieceInYear(meta, spec.year), `${s.gen} ${s.seed} ${spec.year}년 ← ${p.id} [${meta.years}]`).toBe(true);
+          // 초가 규칙: 지붕 값이 초가인 h1은 ~1975까지 쓴다 — h1의 연도 범위를 그 조건(SCENE_RULES.thatch)에서만 늘린다 (시대의 창 r5 반영, era-window.md 9-4절 ③)
+          const thatchH1 = p === spec.house && p.opt?.roof === 'thatch' && spec.year <= SCENE_RULES.thatch.lastYear && meta.years !== null && spec.year >= meta.years[0];
+          expect(pieceInYear(meta, spec.year) || thatchH1, `${s.gen} ${s.seed} ${spec.year}년 ← ${p.id} [${meta.years}]`).toBe(true);
         }
         for (const p of [...spec.back, ...spec.front]) expect(['prop-antenna', 'prop-ac-unit', 'prop-car', 'prop-ev-charger'], `${spec.year}년 ← 「가진 것」이 없는데 ${p.id}`).not.toContain(p.id);
         // 아직 그리지 않은 소품은 고르지 않는다
@@ -264,11 +266,19 @@ describe('집 고르기 · 주택 종류가 없을 때(homeKind null)의 기본 
     const rural = (wealth: 1 | 2 | 3 | 4 | 5, year: number) => sceneOf(input({ calYear: year, housing: 'own' }, { region: '강원', wealth })).house.opt?.roof;
     expect(rural(1, 1955)).toBe('thatch');
     expect(rural(3, 1955)).toBeUndefined();
-    expect(rural(1, 1969)).toBe('thatch'); // 지붕 파라미터가 있는 집은 h1(~1969)뿐이다
-    // FM5b: 1970~75의 단독 h2는 designer가 그린 슬래브 양옥(지붕이 하나뿐)이라 초가 조건(~1975)을 채워도 지붕 값이 없다 — designer 질문(보고)
-    expect(rural(1, 1975)).toBeUndefined();
-    expect(sceneOf(input({ calYear: 1975, housing: 'own' }, { region: '강원', wealth: 1 })).house.id).toBe('house-detached-h2');
+    expect(rural(1, 1969)).toBe('thatch'); // 지붕 파라미터가 있는 집은 h1(~1969)뿐이다 …
+    // … 시대의 창 r5 반영(era-window.md 9-4절 ③): 초가 조건(시골·해안 · 수저 하위 · ~1975)이 맞으면 1970~75에도 h2(슬래브 양옥)가 아니라 지붕 값이 있는 h1(초가)을 쓴다 — 새 그림 없음, 슬레이트 변형은 미룸
+    expect(rural(1, 1970)).toBe('thatch');
+    expect(rural(2, 1975)).toBe('thatch');
+    expect(sceneOf(input({ calYear: 1975, housing: 'own' }, { region: '강원', wealth: 1 })).house.id).toBe('house-detached-h1');
+    // 1976년부터는 지금처럼 h2(기와·슬래브 양옥)
     expect(rural(1, 1976)).toBeUndefined();
+    expect(sceneOf(input({ calYear: 1976, housing: 'own' }, { region: '강원', wealth: 1 })).house.id).toBe('house-detached-h2');
+    // 조건이 하나라도 안 맞으면 1970~75는 그대로 h2: 수저 3 이상 · 도시 · 단독이 아닌 집
+    expect(rural(3, 1972)).toBeUndefined();
+    expect(sceneOf(input({ calYear: 1972, housing: 'own' }, { region: '강원', wealth: 3 })).house.id).toBe('house-detached-h2');
+    expect(sceneOf(input({ calYear: 1972, housing: 'own' }, { region: '서울', wealth: 1 })).house.id).toBe('house-detached-h2');
+    expect(sceneOf(input({ calYear: 1972, housing: 'rent' }, { region: '강원', wealth: 1 })).house.id, '셋방 단독은 지붕 값이 없는 집이라 그대로').not.toBe('house-detached-h1');
     // 실제로 그려지는 지붕까지 본다(opt가 없을 때 기본 지붕이 기와여야 한다)
     const metro = sceneOf(input({ calYear: 1965, housing: 'own' }, { region: '서울', wealth: 4 }));
     expect(metro.house.id).toBe('house-detached-h1');

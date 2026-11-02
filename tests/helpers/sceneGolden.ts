@@ -6,6 +6,9 @@ import { ERA_DECADE as D1960 } from '../../src/data/eraWindows/d1960';
 import { ERA_DECADE as D1970 } from '../../src/data/eraWindows/d1970';
 import { ERA_DECADE as D1980 } from '../../src/data/eraWindows/d1980';
 import { ERA_DECADE as D1990 } from '../../src/data/eraWindows/d1990';
+import { ERA_DECADE as D2000 } from '../../src/data/eraWindows/d2000';
+import { ERA_DECADE as D2010 } from '../../src/data/eraWindows/d2010';
+import { ERA_DECADE as D2020 } from '../../src/data/eraWindows/d2020';
 import { fnv, spreadSeeds } from './familyGolden';
 
 /**
@@ -13,7 +16,7 @@ import { fnv, spreadSeeds } from './familyGolden';
  * 규칙·표·승인된 데이터가 바뀌면 이 시험이 깨져 「의도한 변경인지」 보게 한다. 같은 입력 → 같은 출력이므로 값은 늘 같아야 한다 — 일부러 바꿀 때만 `npm run golden:scene`으로 다시 만든다.
  */
 
-export const ALL_ERA_WINDOWS: readonly EraWindow[] = [D1940, D1950, D1960, D1970, D1980, D1990].flatMap((d) => d.windows);
+export const ALL_ERA_WINDOWS: readonly EraWindow[] = [D1940, D1950, D1960, D1970, D1980, D1990, D2000, D2010, D2020].flatMap((d) => d.windows);
 
 function gameOf(seed: number, gen: ProfileId): GameState {
   const b = generateBirthFromSeed(seed, gen);

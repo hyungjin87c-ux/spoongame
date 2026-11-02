@@ -198,10 +198,10 @@ for (const vp of VIEWPORTS) {
     console.log(`[SPEC-009 A-10 ${vp.name}] 그림 덩어리 ${art[0].file} ${art[0].bytes} B(gzip)`);
     // 표 덩어리(familyData)와는 다른 파일이다 — 따로 지연 로드
     expect(got.filter((g) => g.body?.includes(MARKS.family)).map((g) => g.file)).not.toContain(art[0].file);
-    // 시대의 창 10년 덩어리: 출생 10년대부터 승인된 그림이 있는 10년대(1940~1990년대)만 받는다 — 없는 10년대(2000년대~)는 요청하지 않고, 각 ≤ 24KB(gzip), 같은 덩어리는 한 번만
+    // 시대의 창 10년 덩어리: 출생 10년대부터 승인된 그림이 있는 10년대(1940~2020년대 아홉, 승인 94장)만 받는다 — 각 ≤ 24KB(gzip), 같은 덩어리는 한 번만
     const eraChunks = got.filter((g) => /^d(19|20)\d0-/.test(g.file));
     for (const g of eraChunks) {
-      expect(/^d19[4-9]0-/.test(g.file), `${g.file}: 승인된 그림이 없는 10년대 덩어리를 받았다`).toBe(true);
+      expect(/^d(19[4-9]|20[0-2])0-/.test(g.file), `${g.file}: 승인된 그림이 없는 10년대 덩어리를 받았다`).toBe(true);
       expect(g.bytes, `${g.file} gzip ${g.bytes}B ≤ 24KB(10년 덩어리)`).toBeLessThanOrEqual(24 * 1024);
     }
     expect(new Set(eraChunks.map((g) => g.file)).size, '같은 10년 덩어리를 두 번 받지 않는다').toBe(eraChunks.length);

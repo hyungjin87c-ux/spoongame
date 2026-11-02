@@ -272,13 +272,13 @@ export interface FamilyView {
 
 - 어머니의 어머니(`mgm`)와 아버지의 어머니(`pgm`)의 「부모 출생 때 나이」는 **그 부모의 출생 연도 `by`의 모 연령 분포**에서 뽑는다. 조부(`mgf`·`pgf`)는 같은 쪽 조모 나이에 **아버지−어머니 나이 차 모형**(`getBirthStats().parentAges.fatherGivenMother`, 범위 `FATHER_GAP` −4~15)의 조건부 분포를 쓴다(모형의 어머니 나이 범위 밖은 가장자리 줄로 자른다). 두 조부모 나이가 `PARENT_AGE_LIMITS` 16~56 밖이면 가장자리로 자른다. 조부모 출생 연도 = `by − 나이`.
 
-| 부모 출생 연도 `by` | 모 연령 분포(6칸: ≤19·20~24·25~29·30~34·35~39·40~49) | 근거 |
+| 부모 출생 연도 `by` | 모 연령 분포(7칸: ≤19·20~24·25~29·30~34·35~39·40~44·45~49) | 근거 |
 |---|---|---|
 | 1981 ~ 2004 | 인구동향조사 5세 계급 구성비, 그 해 값 | **확인** `fd-a#fd1_mother_age_share_pct`(1981~2025) |
 | 1956 ~ 1980 | 센서스 「모의 연령별 적생아」 역산, 5년 단위 가장 가까운 칸 | **확인(환산)** `fd-a#fd1_mother_age_at_birth_share_pct_calc`(±0.5세, 1981 이후는 인구동향조사 우선 — A-2 마스터 결정 1) |
 | ≤ 1955 | **1966 센서스 표본(10%)의 1965.10~1966.9 출생아 어머니 나이 분포**(전국, 15~49세 합 866,440명: ≤19 1.4 · 20~24 19.9 · 25~29 36.3 · 30~34 23.7 · 35~39 12.8 · 40~44 5.1 · 45~49 0.7%, 평균 29.7세)를 **이동 없이 그대로** | **추정**(한 해의 직접 분포를 거슬러 쓴다). A-3 마스터 결정 7(`fd-b-house.md` 10절, 2026-10-28)로 옛 「이른 쪽으로 옮김」(1936~55 −1세 · 1916~35 −2세 · ≤1915 −3세, 크기는 설계값)을 **폐기**했다 — 출산력이 높던 시대의 어머니는 젊어지지 않고 같거나 늦은 쪽이라는 증거. 코드 `familyTables().motherAge.before1956`(`scripts/genFamilyTables.ts`가 `fd1_a3_births_by_mother_age_1965_66_share_pct_calc` 전국 줄에서 만든다), 구현 R-557(FM4b 검수 1회차). 1948 연감은 묶음 C 회차에 한 번 더 시도한다 |
 
-- 6칸 안은 균등으로 펼친다(≤19 → 16~19, 40~49 → 40~49의 앞쪽 85%·45~49 15% — 설계값, 1981 이후는 `fd1_births_by_mother_age`의 45~49 비중이 있으면 그 값). 지수적 부드러움은 두지 않는다.
+- 7칸 안은 균등으로 펼친다(≤19 → 16~19, 45세 이상 → 45~49, `familyBirth.ts#MOTHER_BINS`). 지수적 부드러움은 두지 않는다.
 - **세대 이름**(`generationNamesOf(year): string[]`): 부모에게만 붙인다. `GENERATIONS` 범위 안이면 이름 하나, 겹침 해(1960~1963)는 두 이름, 1940 앞은 `null`(화면은 「1910년대생」처럼 연대만 + 「추정」, FA0-4). 평가어(`GENERATION_EVAL_WORDS`) 0.
 - 엔딩 바로가기(Q1)의 입력은 `generationNamesOf(motherBirthYear)`·`(fatherBirthYear)`이다. 겹침·1940 앞 분기는 이 함수의 반환 길이(2 / `null`)로 판단한다. 선택 상태 저장은 이 문서가 정하지 않는다(SPEC-004 GS 쪽 — 이번 판 한정이라 `GameState`가 아니라 앱 상태에 둔다는 것이 권장).
 - 시험: 12절 T-GP1.
@@ -611,6 +611,7 @@ export function eraOf(calYear: number, ctx: { regionKey: string; gentle: boolean
 2. **전국 연표 사건**: `hCode`가 그 연도(`years`)인 승인 후보(부록 A). 같은 해 둘이면 `famHash01(…, ERA, calYear, 1)`로 하나(같은 판에서는 항상 같은 그림).
 3. **생활 장면**: `kind: 'daily'`, `years` 범위 안인 승인 후보. 겹치면 해시로 하나.
 4. **기본 생활 장면** `kind: 'base'`(9-3절).
+- **(시대의 창 r5 반영, 2026-11-02) 사건에도 수저 구간 분기가 있다**(`docs/design/era-window.md` 10-1절, 2009년 세 갈래): `band`가 적힌 사건은 그 구간(`low`·`high`)의 플레이어에게만 보이고, 순서는 ① 같은 구간의 `band` 사건 → ② `band` 없는 사건(지역 먼저, 무거운 쪽 먼저) → ③ 일상(구간 변주 먼저). 가운데 구간은 `band` 사건을 보지 않는다. 2009 = 아래 철거 현장 · 가운데 5월 광장 조문 줄 · 위 첫 스마트폰. 구현 `core/eraWindow.ts#stepPick`, 시험 `tests/eraWindows.test.ts`의 「사건의 수저 구간 분기」.
 - `gentle`이 켜져 있고 고른 `window.heavy`이면 `{ window, veiled: true }` — 그림 없이 칸의 틀(`--c-surface-2`)만, 인생 기록 줄은 `.veil` 부품이 문장을 가린다. **가려진 해에 생활 장면으로 바꿔 넣지 않는다**(family-scene 5-3).
 - **2026년 이후**: 사건 그림 후보를 쓰지 않고(출처 없는 미래 사건 금지, SPEC-004 S6) 2025년 생활 장면 세트를 유지한다. 줄의 「전망」 표지 낱말은 `copy.md`(FM6/FM7)에서 정한다(14절 A-12).
 
@@ -675,7 +676,7 @@ FA0-2·완료 기준 2의 문장 「해시 일치」는 L0·L1에만 적용된�
 
 ### 12-2. 모순 0 (INV-1~12)
 
-- `tests/familyConsistency.test.ts`: 7세대 × 1000판 × 나이 0~100 전수에서 INV-1~12(+INV-2c) 위반 0 — **평소 `npm test`는 세대당 90판, 이 절의 전수(1000판)는 `FAMILY_INV_LIVES=1000`으로 돌린다**(사망 걸음도 INV-7·8을 건너뛰지 않는다: 사망 해는 나이가 오르지 않으므로 플래그를 해 끝의 보기 `age + 1`과 견준다) (한 판을 끝까지 `playToEnd`로 돌리며 해마다 `familyViewOf`·`sceneFamilyOf`·`deriveFamilyFlags` 검사). 구체 단언 예: 별세한 부모가 `members`에 없음 · `mother_gone`인 판에서 `household`에 어머니 0 · `parents_gone`이 켜진 해 이전에 `mother_gone`과 `father_gone`이 함께 켜지지 않음 · `family.l`의 `(종류,대상)` 중복 0 · 인생 기록 `fam-` 줄 수 = 줄을 쓴 로그 수 · 동생이 생기는 해 `fam-sib-born` + `infant-new-sibling` 줄 합 정확히 1.
+- `tests/familyConsistency.test.ts`: 7세대 × 1000판을 태어나서 사망까지 해마다 돌려 인생이 진행되며 쓰는 쪽(줄·플래그·로그·보기)의 INV(+INV-2c) 위반 0 — INV-1과 보기 쪽 0~100세 전수는 `tests/familyBirth.test.ts`·`tests/sceneFamily.test.ts`(7세대 × 150판)가 본다. **평소 `npm test`는 세대당 90판, 이 절의 전수(1000판)는 `FAMILY_INV_LIVES=1000`으로 돌린다**(사망 걸음도 INV-7·8을 건너뛰지 않는다: 사망 해는 나이가 오르지 않으므로 플래그를 해 끝의 보기 `age + 1`과 견준다) (한 판을 끝까지 `playToEnd`로 돌리며 해마다 `familyViewOf`·`sceneFamilyOf`·`deriveFamilyFlags` 검사). 구체 단언 예: 별세한 부모가 `members`에 없음 · `mother_gone`인 판에서 `household`에 어머니 0 · `parents_gone`이 켜진 해 이전에 `mother_gone`과 `father_gone`이 함께 켜지지 않음 · `family.l`의 `(종류,대상)` 중복 0 · 인생 기록 `fam-` 줄 수 = 줄을 쓴 로그 수 · 동생이 생기는 해 `fam-sib-born` + `infant-new-sibling` 줄 합 정확히 1.
 - 낱말 ↔ `requires` lint(`tests/familyLint.test.ts`): 6-3절 표가 이벤트 풀 전체에 적용되고(예외 목록은 이유와 함께), 연표 줄·변형의 가족 낱말도 같은 표(TL16 소개정 뒤).
 
 ### 12-3. 구형 저장 호환 (FS3)
@@ -732,7 +733,7 @@ FA0-2·완료 기준 2의 문장 「해시 일치」는 L0·L1에만 적용된�
 | `school-family-priority` | `conditions: { flags: ['has_sibling'] }` |
 | `school-puppy` | `keep` 선택에 `setFlags: ['pet_dog']` (K10, FM7) |
 | 노년 사건의 `grandparent_close` 보너스 | 읽기만 — `has_grandparent`가 꺼져도 보너스가 남는 것은 사이 단계(FC2)의 몫이라 변경 없음 |
-| 중년 `middle-parents-farewell` · `middle-parents-care` · `cared_parents` 쪽, 청년 `youth-housing`, 글감 `note-parents-aging`(`src/data/notes.json`, 조건이 `parents_gone`뿐) | FM7 변형(「남은 한 분」), `parents_gone` 세터 불변. 부모 한 분 별세 뒤에도 이 사건·글감이 그대로 나오는 판 비율은 `docs/data/family-remeasure.md` 6절(`npm run report:family`)이 잰다 — 성인기 「부모님」 문장이 FM7 변형을 받기 전까지 **공개 배포 차단 조건**이다(R-564) |
+| 중년 `middle-parents-farewell` · `middle-parents-care` · `cared_parents` 쪽, 청년 `youth-housing`, 글감 `note-parents-aging`(`src/data/notes.json`, 조건이 `parents_gone`뿐) | FM7 변형(「남은 한 분」), `parents_gone` 세터 불변. 부모 한 분 별세 뒤에도 이 사건·글감이 그대로 나오는 판 비율은 `docs/data/family-remeasure.md` 7절(`npm run report:family`)이 잰다 — 성인기 「부모님」 문장이 FM7 변형을 받기 전까지 **공개 배포 차단 조건**이다(R-564) |
 | 그 밖 | 6-3절 표를 `eventLint`가 전 풀에 적용해 위반을 목록으로 낸다(낱말 → 조건). 부모/아버지/어머니 낱말이 든 서술 사건이 많으면 위반 수를 마스터에게 먼저 보고 |
 
 ### 13-3. SPEC-004 TL16 소개정 입력 (승인 뒤 planner가 SPEC-004에 적용)

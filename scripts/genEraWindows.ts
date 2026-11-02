@@ -2,25 +2,39 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 /**
- * 시대의 창 10년 덩어리 만들기 (SPEC-009 FM5b): 형진 님이 승인한 43장(r3 15 + 1987년 12월 1 + r4 27, `docs/design/era-window.md` 「형진 님 승인 · 마스터 결정」·「승인 표기」)의 designer 조각 SVG를 읽어
- * `src/data/eraWindows/d<10년대>.ts`를 다시 만든다. designer 파일(`docs/design/mockups/family/pieces/era-r3·era-r4/`, `era-window-r3·r4-budget.json`)은 읽기만 한다.
+ * 시대의 창 10년 덩어리 만들기 (SPEC-009 FM5b · 시대의 창 r5 반영): 형진 님이 승인한 **94장**(r3 16 + r4 27 + r5 40 + r5b 11, `docs/design/era-window.md` 「승인 표기」 — 2026-10-28·11-02)의 designer 조각 SVG를 읽어
+ * `src/data/eraWindows/d<10년대>.ts`를 다시 만든다. designer 파일(`docs/design/mockups/family/pieces/era-r3·era-r4·era-r5·era-r5b/`, `era-window-r3·r4·r5·r5b-budget.json`)은 읽기만 한다.
  *
- *  - 한 줄 문장·연도·종류·무거움·수저 구간·나이대는 designer 실측 JSON의 행에서 가져온다(문장은 era-window.md 문장 표 그대로, 1958년은 r4b의 「보릿고개에는 나물로 끼니를 이었습니다.」).
+ *  - r5의 49장 가운데 r5b로 **다시 그린 9장**은 r5판을 쓰지 않는다(같은 id — r5b가 r5를 덮는다, era-window.md 10-6절 ①). r5에서 가져오는 것은 나머지 40장(사건 20 · 일상 12 · 계층 변주 8)이고,
+ *    r5b 11장은 다시 그린 9장 + 2009 새 그림 2장(철거 현장 `band: 'low'` · 첫 스마트폰 `band: 'high'`, 10-1절)이다.
+ *  - 한 줄 문장·연도·종류·무거움·수저 구간·나이대는 designer 실측 JSON의 행에서 가져온다(문장은 era-window.md 문장 표 그대로, 1958년은 r4b의 「보릿고개에는 나물로 끼니를 이었습니다.」). r5b 행은 `years`가 없어 `year` 한 해로 읽는다.
  *  - 조각 SVG에서 `<style>`(토큰 색 규칙)은 버린다 — 규칙은 `src/styles/family.css`에 한 번 있다. 반복 무늬(`<pattern>`)와 사람 `<symbol>`은 **10년 덩어리마다 한 번** `defs`에 모으고(조각이 실제로 참조하는 것만), 조각에는 도형만 남긴다.
  *  - r3 조각의 본문은 색을 `fill="var(--c-scene-…)"`로 갖고 있어 r4와 같은 `class`(e-·es-)로 바꾼다(한 요소에 채움·선 토큰이 둘이면 class 하나로 합친다). 도형은 한 개도 바꾸지 않는다. defs(무늬·심볼)는 designer 그대로다.
- *  - 연도 조정 4건(아래 `TRIM`): 같은 해에 그 해 한정 일상이 있는 사건의 범위에서 그 해를 뺀다 — 안 그러면 「사건이 있는 해는 사건 그림」 규칙에 가려 그 일상(1955·1956·1958·1965·1967)이 가리기를 켠 때밖에 안 보인다.
+ *  - 연도 조정 5건(아래 `TRIM`): 같은 해에 그 해 한정 일상이 있거나 다른 사건이 따로 있는 사건의 범위에서 그 해를 뺀다 — 안 그러면 「사건이 있는 해는 사건 그림」 규칙에 가려 그 일상(1955·1956·1958·1965·1967)이 가리기를 켠 때밖에 안 보이고,
+ *    1997 새벽 인력시장(r5)이 금 모으기(1997~98)에 가려진다.
  * 실행: `npm run gen:era`. 점검만: `--check` (파일을 쓰지 않고 지금 파일과 같은지 본다).
  */
 
-const DIR3 = 'docs/design/mockups/family/pieces/era-r3/';
-const DIR4 = 'docs/design/mockups/family/pieces/era-r4/';
-const META = ['docs/design/mockups/family/era-window-r3-budget.json', 'docs/design/mockups/family/era-window-r4-budget.json'] as const;
+const PIECES = 'docs/design/mockups/family/pieces/';
+const FAMILY = 'docs/design/mockups/family/';
+/** 승인된 장수 가드 (R-551): r3 16 · r4 27 · r5 40(49 − r5b로 다시 그린 9) · r5b 11 = 94. 형진 님이 승인한 뒤에만 이 수를 고친다 */
+const APPROVED = { r3: 16, r4: 27, r5: 40, r5b: 11 } as const;
+const APPROVED_TOTAL = APPROVED.r3 + APPROVED.r4 + APPROVED.r5 + APPROVED.r5b;
+const SOURCES = [
+  { key: 'r3', dir: `${PIECES}era-r3/`, meta: `${FAMILY}era-window-r3-budget.json`, convert: true },
+  { key: 'r4', dir: `${PIECES}era-r4/`, meta: `${FAMILY}era-window-r4-budget.json`, convert: false },
+  { key: 'r5', dir: `${PIECES}era-r5/`, meta: `${FAMILY}era-window-r5-budget.json`, convert: false },
+  { key: 'r5b', dir: `${PIECES}era-r5b/`, meta: `${FAMILY}era-window-r5b-budget.json`, convert: false },
+] as const;
+const DIR4 = SOURCES[1].dir;
 const OUT_DIR = 'src/data/eraWindows/';
 const check = process.argv.includes('--check');
 
 interface Row {
   id: string;
-  years: [number, number];
+  /** r5b 행에는 없다 — `year` 한 해 */
+  years?: [number, number];
+  year?: number;
   decade: number;
   kind: 'event' | 'daily';
   topic: string;
@@ -33,6 +47,7 @@ interface Row {
 
 /** 사건 범위에서 뺄 해 (이유: 위 설명). 키는 designer 조각 id */
 const TRIM: Readonly<Record<string, [number, number]>> = {
+  'era-1998-gold-drive-queue': [1998, 1998], // 1997은 새벽 인력시장(r5)이 보이고, 1998은 금 모으기 ↔ 역 광장 급식 줄(둘 다 무겁지 않아 시드로 하나)
   'era-1954-relief-queue': [1954, 1954], // 1955 라디오 · 1956 구슬치기 일상이 보이게
   'era-1957-new-roof-tiles': [1957, 1957], // 1958 보릿고개(r4b, 형진 님 결정)가 보이게 — 1959는 그 10년 일상
   'era-1962-two-shift-gate': [1962, 1962], // 1963 방직·1964 공항 사건과 겹치고, 1965 이웃집 TV 일상이 보이게
@@ -114,16 +129,24 @@ interface Built {
   piece: Piece;
 }
 
+const rowsOf = (metaPath: string): Row[] => (JSON.parse(readFileSync(metaPath, 'utf-8')) as { rows: Row[] }).rows;
+// r5b가 다시 그린 장면은 r5판을 쓰지 않는다 (같은 id — r5b가 r5를 덮는다)
+const redrawn = new Set(rowsOf(SOURCES[3].meta).map((r) => r.id));
 const built: Built[] = [];
-for (const [i, metaPath] of META.entries()) {
-  const rows = (JSON.parse(readFileSync(metaPath, 'utf-8')) as { rows: Row[] }).rows;
-  // 승인 게이트: designer JSON의 행이 곧 승인은 아니다 — 형진 님이 승인한 장수(era-window.md 「승인 표기」: r3 15 + 1987년 12월 1 = 16, r4 27)와 같아야 만든다
-  const approvedCount = i === 0 ? 16 : 27;
-  if (rows.length !== approvedCount) throw new Error(`${metaPath}: 행 ${rows.length}개 ≠ 승인된 ${approvedCount}장 — 승인 뒤에만 이 수를 고친다`);
+for (const src of SOURCES) {
+  const all = rowsOf(src.meta);
+  const rows = src.key === 'r5' ? all.filter((r) => !redrawn.has(r.id)) : all;
+  if (src.key === 'r5') {
+    const dropped = all.length - rows.length;
+    if (dropped !== 9) throw new Error(`r5에서 r5b로 다시 그려 뺄 장면이 ${dropped}장이다 (era-window.md 10-2절: 9장)`);
+  }
+  // 승인 게이트(R-551): designer JSON의 행이 곧 승인은 아니다 — 형진 님이 승인한 장수(era-window.md 「승인 표기」: r3 16 · r4 27 · r5 40 · r5b 11)와 같아야 만든다
+  const approvedCount = APPROVED[src.key];
+  if (rows.length !== approvedCount) throw new Error(`${src.meta}: 행 ${rows.length}개 ≠ 승인된 ${approvedCount}장 — 승인 뒤에만 이 수를 고친다`);
   for (const r of rows) {
-    const dir = i === 0 ? DIR3 : DIR4;
-    const piece = readPiece(`${dir}${r.id}.svg`, i === 0);
-    const years = TRIM[r.id] ?? r.years;
+    const piece = readPiece(`${src.dir}${r.id}.svg`, src.convert);
+    const years = TRIM[r.id] ?? r.years ?? (r.year === undefined ? undefined : ([r.year, r.year] as [number, number]));
+    if (years === undefined) throw new Error(`${r.id}: 연도가 없다`);
     const decade = decadeOfYear(years[0]);
     if (decadeOfYear(years[1]) !== decade) throw new Error(`${r.id}: 10년을 넘는다`);
     const fields: string[] = [
@@ -131,7 +154,7 @@ for (const [i, metaPath] of META.entries()) {
       `years: [${years[0]}, ${years[1]}]`,
       `kind: ${q(r.kind)}`,
       `topic: ${q(r.topic)}`,
-      ...(r.hCode ? [`hCode: ${q(r.hCode)}`] : []),
+      ...(r.hCode && r.kind === "event" ? [`hCode: ${q(r.hCode)}`] : []), // 연표 사건 코드는 사건에만 (EraWindow.hCode)
       `line: ${q(r.line)}`,
       `heavy: ${r.heavy ? 'true' : 'false'}`,
       'approved: true',
@@ -141,6 +164,15 @@ for (const [i, metaPath] of META.entries()) {
     ];
     built.push({ window: `    { ${fields.join(', ')} },`, start: years[0], id: r.id, decade, body: piece.body, piece });
   }
+}
+
+// 승인 장수 합과 id 유일성 (R-551): r3 16 + r4 27 + r5 40 + r5b 11 = 94
+if (built.length !== APPROVED_TOTAL) throw new Error(`만든 장면 ${built.length}장 ≠ 승인된 ${APPROVED_TOTAL}장`);
+if (new Set(built.map((b) => b.id)).size !== built.length) throw new Error("장면 id가 겹친다");
+// 2009년 세 갈래(era-window.md 10-1절): 아래 철거 현장 · 위 첫 스마트폰 · 가운데는 band 없는 5월 조문 줄
+for (const [id, band] of [["era-2009-demolition-fire", "low"], ["era-2009-first-smartphone", "high"], ["era-2009-square-mourning-queue", undefined]] as const) {
+  const mine = built.find((b) => b.id === id);
+  if (mine === undefined || mine.window.includes("band:") !== (band !== undefined) || (band !== undefined && !mine.window.includes(`band: '${band}'`))) throw new Error(`2009년 세 갈래가 다르다: ${id}`);
 }
 
 // 문장 표와 r4b 문장 대조 (1958 · 1961 · 1970년대 셋방 · 1980년대 반지하)
@@ -179,7 +211,7 @@ for (const decade of decades) {
   const text = `import type { EraDecadeData } from './types';
 
 /**
- * 시대의 창 ${decade}년대 덩어리 — **생성 파일**이다(\`npm run gen:era\` = scripts/genEraWindows.ts). 직접 고치지 않는다: 그림은 designer 조각(docs/design/mockups/family/pieces/era-r3·era-r4)에서, 문장·연도는 designer 실측 JSON에서 온다.
+ * 시대의 창 ${decade}년대 덩어리 — **생성 파일**이다(\`npm run gen:era\` = scripts/genEraWindows.ts). 직접 고치지 않는다: 그림은 designer 조각(docs/design/mockups/family/pieces/era-r3·r4·r5·r5b)에서, 문장·연도는 designer 실측 JSON에서 온다.
  * 장면 ${mine.length}장은 모두 형진 님이 승인했다(\`approved: true\` — 타입이 \`true\`뿐이라 미승인은 들어올 수 없다, FT3 「승인한 것만」). \`defs\`는 이 10년 덩어리의 그림이 함께 쓰는 반복 무늬·사람 심볼로 덩어리마다 한 번만 둔다.
  * 색은 \`class\`(\`e-<토큰>\` 따위)뿐이고 규칙은 styles/family.css의 토큰 규칙이다.
  */

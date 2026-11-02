@@ -17,7 +17,7 @@ import { ALLOWED_CLASSES, parseSvgMarkup, type SvgNode } from '../src/ui/svgNode
 
 /**
  * 시대의 창 데이터와 고르기 (SPEC-009 FM5·FM5b, FT1~FT6, family-model.md 9절 · era-window.md 3-1·8절 · T-ERA).
- * FM5b에서 형진 님이 승인한 **43장**(r3 15 + 1987년 12월 1 + r4 27)이 10년 덩어리 여섯(1940~1990년대)에 들어왔다. 데이터 파일은 `npm run gen:era`가 designer 조각에서 만든 생성 파일이고,
+ * FM5b에서 형진 님이 승인한 43장(r3 15 + 1987년 12월 1 + r4 27)이, 시대의 창 r5 반영(2026-11-02)에서 나머지 51장(r5 40 + r5b 11)이 들어와 **승인 94장**이 10년 덩어리 아홉(1940~2020년대)에 있다. 데이터 파일은 `npm run gen:era`가 designer 조각에서 만든 생성 파일이고,
  * 이 시험은 그 내용(승인·형식·색 class·defs 한 번)과 크기 예산, 고르기 규칙(`eraOf`)을 합성 데이터와 진짜 데이터 둘로 잠근다.
  * 「승인한 것만」(FT3): `EraWindow.approved`의 타입이 `true`뿐이라 미승인 장면은 데이터 파일에 쓰는 순간 `npm run typecheck`(= build의 첫 단계)가 막고, 이 시험이 파일 내용과 원문을 한 번 더 점검한다.
  */
@@ -45,28 +45,52 @@ async function readText(relative: string): Promise<string> {
 }
 
 describe('데이터 파일 — 승인한 것만 (FT3)', () => {
-  it('10년 덩어리 9개가 모두 있고, 승인된 43장이 1940~1990년대 여섯 덩어리에 있다(장면 6·8·10·7·10·2) — 2000년대~는 빈 덩어리', () => {
+  it('10년 덩어리 9개가 모두 있고, 승인된 94장이 아홉 덩어리에 있다(장면 6·8·10·7·10·14·15·13·11) — r3 16 + r4 27 + r5 40 + r5b 11 (scripts/genEraWindows.ts의 승인 장수 가드와 같은 수)', () => {
     expect(DECADES.map(([d]) => d)).toEqual([1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020]);
-    expect(DECADES.map(([, d]) => d.windows.length)).toEqual([6, 8, 10, 7, 10, 2, 0, 0, 0]);
-    expect(ALL.length).toBe(43);
-    expect([...ERA_DECADES_WITH_DATA]).toEqual([1940, 1950, 1960, 1970, 1980, 1990]);
+    expect(DECADES.map(([, d]) => d.windows.length)).toEqual([6, 8, 10, 7, 10, 14, 15, 13, 11]);
+    expect(ALL.length).toBe(94);
+    expect([...ERA_DECADES_WITH_DATA]).toEqual([1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020]);
     expect(Object.keys(ERA_DECADE_LOADERS).map(Number)).toEqual(DECADES.map(([d]) => d));
   });
 
-  it('승인된 43장의 구성: 사건 / 일상 수, 무거운 장면 10장(재난·정치만), 수저 구간 변주 4장(1970·80년대 아래·위)', () => {
-    expect(ALL.filter((x) => x.kind === 'event').length).toBe(24); // r3 사건 10(1950·1974·1979·1980·1982·1987×2·1988·1995·1997~98) + r4 사건 14
-    expect(ALL.filter((x) => x.kind === 'daily').length).toBe(19); // r3 일상 6 + r4 일상 9 + 수저 구간 변주 4
+  it('승인된 94장의 구성: 사건 55 / 일상 39, 무거운 장면 20장(재난·정치만), 수저 구간 분기 14장(변주 일상 12 + 2009년 사건 2)', () => {
+    expect(ALL.filter((x) => x.kind === 'event').length).toBe(55); // 승인 43장의 사건 24 + r5 사건 20 + r5b 11(모두 사건)
+    expect(ALL.filter((x) => x.kind === 'daily').length).toBe(39); // 승인 43장의 일상 19(변주 4 포함) + r5 일상 12 + r5 변주 8
     expect(ALL.filter((x) => x.heavy).map((x) => x.id).sort()).toEqual([
       'era-1945-liberation-street', 'era-1948-polling-queue', 'era-1950-refugee-column', 'era-1952-ruins-shanty', 'era-1960-april-street', 'era-1961-dawn-tank',
-      'era-1979-autumn-martial-street', 'era-1980-may-geumnam-ro', 'era-1987-june-street', 'era-1995-sampoong-rescue',
+      'era-1979-autumn-martial-street', 'era-1980-may-geumnam-ro', 'era-1987-june-street', 'era-1994-bridge-collapse', 'era-1995-sampoong-rescue', 'era-2003-subway-entrance-smoke',
+      'era-2008-candle-summer', 'era-2009-demolition-fire', 'era-2009-square-mourning-queue', 'era-2010-west-sea-search', 'era-2014-tilted-ferry-ribbons', 'era-2016-candle-winter',
+      'era-2017-quake-street', 'era-2022-alley-tape-flowers',
     ]);
     for (const x of ALL.filter((y) => y.heavy)) expect(['정치', '재난'], `${x.id}: 가리기 대상은 재난·정치뿐`).toContain(x.topic);
     for (const x of ALL.filter((y) => !y.heavy && y.topic !== '정치')) expect(x.heavy, x.id).toBe(false);
     expect(ALL.filter((x) => x.band !== undefined).map((x) => `${x.id}:${x.band}`).sort()).toEqual([
       'era-1970s-high-piano-living:high', 'era-1970s-low-kerosene-room:low', 'era-1980s-high-apt-stereo:high', 'era-1980s-low-banjiha-room:low',
+      'era-1990s-high-newtown-living:high', 'era-1990s-low-rooftop-room:low', 'era-2000s-high-hagwon-street:high', 'era-2000s-low-goshiwon:low',
+      'era-2009-demolition-fire:low', 'era-2009-first-smartphone:high', 'era-2010s-high-airport-departure:high', 'era-2010s-low-studio-room:low',
+      'era-2020s-high-highrise-wfh:high', 'era-2020s-low-logistics-dawn:low',
     ]);
+    // 사건에 band가 있는 것은 2009년 둘뿐이다(철거 현장 low ○ · 첫 스마트폰 high), 가운데 구간의 5월 조문 줄은 band가 없다 (era-window.md 10-1절)
+    expect(ALL.filter((x) => x.kind === 'event' && x.band !== undefined).map((x) => `${x.id}:${x.band}:${x.heavy}`).sort()).toEqual(['era-2009-demolition-fire:low:true', 'era-2009-first-smartphone:high:false']);
+    expect(byId('era-2009-square-mourning-queue').band).toBeUndefined();
+    expect(ALL.filter((x) => x.kind === 'event' && x.years[0] <= 2009 && x.years[1] >= 2009).length).toBe(3);
     // 1987년은 6월(무거움)과 12월 투표소 둘
     expect(ALL.filter((x) => x.kind === 'event' && x.years[0] <= 1987 && x.years[1] >= 1987).map((x) => x.id).sort()).toEqual(['era-1987-june-street', 'era-1987-polling-station-r3']);
+  });
+
+  it('r5·r5b 문장은 era-window.md 승인 표기 그대로다: 2009년 세 갈래(철거 현장·조문 줄·첫 스마트폰), 1997 인력시장·1998 급식 줄, 다시 그린 장면의 줄', () => {
+    expect(byId('era-2009-demolition-fire').line).toBe('1월, 철거 현장에서 불이 났습니다.');
+    expect(byId('era-2009-square-mourning-queue').line).toBe('5월, 광장에 조문 줄이 길었습니다.');
+    expect(byId('era-2009-first-smartphone').line).toBe('첫 스마트폰이 손에 들어왔습니다.');
+    expect(byId('era-1997-dawn-labor-market').line).toBe('새벽 인력시장에 사람이 늘었습니다.');
+    expect(byId('era-1998-station-soup-queue').line).toBe('역 광장에 무료 급식 줄이 늘어섰습니다.');
+    expect(byId('era-2022-alley-tape-flowers').line).toBe('10월, 좁은 골목에서 참사가 났습니다.');
+    expect(byId('era-1994-bridge-collapse').line).toBe('한강 다리의 한 구간이 무너졌습니다.');
+  });
+
+  it('r5b가 다시 그린 아홉은 같은 id가 한 번씩만 있다(r5판과 r5b판이 겹쳐 들어오지 않는다) — 조각이 designer 조각과 같은지는 `npm run gen:era -- --check`가 잠근다', () => {
+    const redrawn = ['era-1994-bridge-collapse', 'era-2003-subway-entrance-smoke', 'era-2008-candle-summer', 'era-2009-square-mourning-queue', 'era-2010-west-sea-search', 'era-2014-tilted-ferry-ribbons', 'era-2016-candle-winter', 'era-2017-quake-street', 'era-2022-alley-tape-flowers'];
+    for (const id of redrawn) expect(ALL.filter((x) => x.id === id).length, id).toBe(1);
   });
 
   it('한 줄 문장은 era-window.md 문장 표 그대로다: 1958은 r4b의 「보릿고개에는 나물로 끼니를 이었습니다.」, 1961·1970년대 셋방·1980년대 반지하도 r4b 문장', () => {
@@ -80,7 +104,10 @@ describe('데이터 파일 — 승인한 것만 (FT3)', () => {
     expect(byId('era-1945-liberation-street').line).toBe('8월, 거리가 태극기로 가득 찼습니다.');
   });
 
-  it('연도 조정 4건(같은 해의 일상이 사건에 가리지 않게): 1954 구호물자 · 1957 새 기와 · 1962 2부제 · 1966 완행열차의 범위가 한 해이고, 그 사이 해(1955·56·58·65·67)에 일상이 있다', () => {
+  it('연도 조정 5건(같은 해의 일상·다른 사건이 사건에 가리지 않게): 1998 금 모으기는 1998만(1997은 새벽 인력시장)이고, 1954 구호물자 · 1957 새 기와 · 1962 2부제 · 1966 완행열차의 범위가 한 해이며, 그 사이 해(1955·56·58·65·67)에 일상이 있다', () => {
+    expect(byId('era-1998-gold-drive-queue').years).toEqual([1998, 1998]);
+    expect(byId('era-1997-dawn-labor-market').years).toEqual([1997, 1997]);
+    expect(ALL.filter((x) => x.kind === 'event' && x.years[0] <= 1997 && x.years[1] >= 1997).map((x) => x.id)).toEqual(['era-1997-dawn-labor-market']);
     for (const [id, y] of [['era-1954-relief-queue', 1954], ['era-1957-new-roof-tiles', 1957], ['era-1962-two-shift-gate', 1962], ['era-1966-slow-train-platform', 1966]] as const) expect(byId(id).years, id).toEqual([y, y]);
     for (const [id, y] of [['era-1955-radio-evening', 1955], ['era-1956-alley-marbles', 1956], ['era-1958-barley-spring', 1958], ['era-1965-neighbors-tv', 1965], ['era-1967-wood-stove-kitchen', 1967]] as const) {
       expect(byId(id).kind, id).toBe('daily');
@@ -201,6 +228,20 @@ describe('데이터 파일 — 승인한 것만 (FT3)', () => {
   });
 });
 
+describe('그림 한 장의 크기 (r5 예산, era-window.md 9-2·10-3절)', () => {
+  it('조각 하나 gzip ≤ 2.5KB, 군중이 많은 무거운 장면은 ≤ 3.5KB — 2.5KB를 넘는 장은 무거운 군중 장면 둘(1980 금남로 · 2009 철거 현장)뿐이다', async () => {
+    const over: string[] = [];
+    for (const [, data] of DECADES) {
+      for (const win of data.windows) {
+        const gz = await gzipOf(data.art[win.draw]);
+        expect(gz, `${win.id} gzip ${gz}B`).toBeLessThanOrEqual(win.heavy ? 3500 : 2500);
+        if (gz > 2500) over.push(win.id);
+      }
+    }
+    expect(over.sort()).toEqual(['era-1980-may-geumnam-ro', 'era-2009-demolition-fire']);
+  });
+});
+
 describe('10년 덩어리 로더 (A-10)', () => {
   it('데이터가 있는 10년대(1980)는 덩어리를 받아 장면 10장과 defs를 돌려주고, 같은 10년대를 다시 부르면 같은 약속·같은 결과다', async () => {
     resetFamilyArtForTest();
@@ -212,9 +253,14 @@ describe('10년 덩어리 로더 (A-10)', () => {
     expect(data.defs).toContain('<symbol id="pf"'); // 이 10년 덩어리의 그림이 쓰는 사람 심볼만 담는다
     expect(eraDecadeIfLoaded(1980)).toBe(data);
   });
-  it('승인된 그림이 없는 10년대(2000·2010·2020)는 아무 덩어리도 받지 않고 빈 데이터를 돌려준다', async () => {
+  it('승인된 그림이 있는 10년대는 모두 자기 덩어리를 받는다(2000·2010·2020 포함) — 목록에 없는 10년대(1930·2030)만 아무 덩어리도 받지 않고 빈 데이터를 돌려준다', async () => {
     resetFamilyArtForTest();
-    for (const d of [2000, 2010, 2020]) expect(await loadEraDecade(d)).toEqual({ windows: [], art: {} });
+    for (const [d, n] of [[2000, 15], [2010, 13], [2020, 11]] as const) {
+      const data = await loadEraDecade(d);
+      expect(data.windows.length, `${d}`).toBe(n);
+      expect(data.defs, `${d}`).toMatch(/^<defs>/);
+    }
+    for (const d of [1930, 2030]) expect(await loadEraDecade(d)).toEqual({ windows: [], art: {} });
   });
 });
 
@@ -370,29 +416,57 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
       }
     }
   });
-  it('실제 승인 데이터: 사건 해는 사건 그림, 1958은 보릿고개, 1970년대 아래·위 구간은 셋방·양옥, 1980년대는 반지하·아파트 거실', () => {
+  it('실제 승인 데이터: 사건 해는 사건 그림, 1958은 보릿고개, 1970년대 아래·위 구간은 셋방·양옥, 1980년대는 반지하·아파트 거실, 1990년대 이후도 해마다 그림이 닿는다', () => {
     const c = (o: Partial<EraContext> = {}): EraContext => ctx(ALL, o);
     expect(eraOf(1980, c()).pic?.id).toBe('era-1980-may-geumnam-ro');
     expect(eraOf(1987, c()).pic?.id, '6월(무거움) > 12월').toBe('era-1987-june-street');
     expect(eraOf(1995, c()).pic?.id).toBe('era-1995-sampoong-rescue');
-    expect(eraOf(1998, c()).pic?.id).toBe('era-1998-gold-drive-queue');
+    // 1997은 새벽 인력시장(금 모으기는 1998만 — TRIM), 1998은 금 모으기 ↔ 역 광장 급식 줄(둘 다 무겁지 않아 시드로 하나, 둘 다 나온다)
+    expect(eraOf(1997, c()).pic?.id).toBe('era-1997-dawn-labor-market');
+    const y98 = new Set(Array.from({ length: 60 }, (_, s) => eraOf(1998, c({ seed: s * 7919 })).pic?.id));
+    expect([...y98].sort()).toEqual(['era-1998-gold-drive-queue', 'era-1998-station-soup-queue']);
+    expect(eraOf(1998, c({ gentle: true })).veiled, '경제 장면은 가리기 대상이 아니다').toBe(false);
+    expect(eraOf(2014, c()).pic?.id).toBe('era-2014-tilted-ferry-ribbons');
+    expect(eraOf(2022, c()).pic?.id).toBe('era-2022-alley-tape-flowers');
     expect(eraOf(1958, c({ birthYear: 1950 })).pic?.id).toBe('era-1958-barley-spring');
     expect(eraOf(1961, c()).pic?.id).toBe('era-1961-dawn-tank');
     expect(eraOf(1973, c({ band: 'low', birthYear: 1950 })).pic?.id).toBe('era-1970s-low-kerosene-room');
     expect(eraOf(1973, c({ band: 'high', birthYear: 1950 })).pic?.id).toBe('era-1970s-high-piano-living');
     expect(eraOf(1983, c({ band: 'low', birthYear: 1960 })).pic?.id).toBe('era-1980s-low-banjiha-room');
     expect(eraOf(1983, c({ band: 'high', birthYear: 1960 })).pic?.id).toBe('era-1980s-high-apt-stereo');
-    // 승인된 그림이 없는 해(1990년대 대부분 · 2000년 이후)는 빈 틀
-    expect(eraOf(1992, c()).pic).toBeNull();
-    expect(eraOf(2010, c()).pic).toBeNull();
-    expect(eraOf(2031, c()).pic).toBeNull();
+    // 1990년대 이후도 사건 없는 해는 그 10년의 일상, 사건이 있는 해는 사건이다
+    for (const [year, kind, dec] of [[1992, 'daily', 1990], [2007, 'daily', 2000], [2013, 'daily', 2010], [2010, 'event', 2010], [2025, 'event', 2020]] as const) {
+      const pick = eraOf(year, c({ birthYear: year - 25 }));
+      expect(pick.pic, `${year}`).not.toBeNull();
+      expect(pick.pic!.kind, `${year}`).toBe(kind);
+      expect(Math.floor(pick.pic!.years[0] / 10) * 10, `${year}`).toBe(dec);
+    }
+    // 전망 구간: 2026년 이후는 사건을 쓰지 않고 2020년대 일상이 오른다(2025 사건이 아니라)
+    expect(eraOf(2031, c({ birthYear: 2010 })).pic?.kind).toBe('daily');
+    expect(eraOf(2031, c({ birthYear: 2010 })).sourceYear).toBe(ERA_LAST_YEAR);
   });
-  it('실제 승인 데이터 · 가리기: 무거운 장면(재난·정치) 10장의 해는 가려지고 그해 일상 그림(1987년은 12월 투표소)으로 바뀐다 — 경제(1997~98 금 모으기)는 가리지 않는다', () => {
+
+  it('실제 승인 데이터: 1940~2040 어느 해·구간·나이에서도 승인된 그림이 닿는다 — 빈 틀은 데이터가 안 온 때(덩어리 실패)뿐이다', () => {
+    for (const band of ['low', 'mid', 'high'] as const) {
+      for (const gentle of [false, true]) {
+        for (let y = 1940; y <= 2040; y++) {
+          for (const birthYear of [y - 3, y - 15, y - 25, y - 45, y - 70]) {
+            if (birthYear > y || y - birthYear > 100) continue;
+            const pick = eraOf(y, ctx(ALL, { band, gentle, birthYear, seed: 99 }));
+            expect(pick.pic, `${band}/${gentle}/${y}/${birthYear}년생`).not.toBeNull();
+          }
+        }
+      }
+    }
+  });
+  it('실제 승인 데이터 · 가리기: 무거운 장면(재난·정치) 20장의 해는 가려지고 그해 일상 그림(1987년은 12월 투표소)으로 바뀐다 — 경제(1997~98)는 가리지 않는다. 2009 철거 현장은 아래 구간에게만 보이므로 아래 구간으로 본다', () => {
     for (const hv of ALL.filter((x) => x.heavy)) {
       const year = hv.years[0];
-      const off = eraOf(year, ctx(ALL, { gentle: false, birthYear: year - 30 }));
+      const band: EraBand = hv.band ?? 'mid'; // 그 장면을 보는 구간 (band 없는 장면은 가운데도 본다)
+      const off = eraOf(year, ctx(ALL, { gentle: false, birthYear: year - 30, band }));
       expect(off, hv.id).toMatchObject({ veiled: false });
-      const on = eraOf(year, ctx(ALL, { gentle: true, birthYear: year - 30 }));
+      expect(off.pic?.id, hv.id).toBe(hv.id);
+      const on = eraOf(year, ctx(ALL, { gentle: true, birthYear: year - 30, band }));
       expect(on.veiled, `${hv.id}: 가리기를 켜면 가려진다`).toBe(true);
       expect(on.line?.id, hv.id).toBe(hv.id);
       if (on.pic !== null) {
@@ -407,7 +481,105 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     }
     expect(eraOf(1998, ctx(ALL, { gentle: true })).veiled).toBe(false);
     expect(eraOf(1980, ctx(ALL, { gentle: true, birthYear: 1950 })).pic, '1980년대에는 대신 띄울 일상이 있다').not.toBeNull();
-    expect(eraOf(1995, ctx(ALL, { gentle: true, birthYear: 1965 })).pic, '1990년대에는 일상이 없어 빈 틀').toBeNull();
+    // 1990년대도 일상이 있다 — 나이대가 안 맞아도(30세) 풀어서라도 그 10년의 일상을 띄운다
+    const nineties = eraOf(1995, ctx(ALL, { gentle: true, birthYear: 1965 }));
+    expect(nineties.pic?.kind).toBe('daily');
+    expect(nineties.pic?.heavy).toBe(false);
+    expect(nineties.line?.id).toBe('era-1995-sampoong-rescue');
+  });
+});
+
+describe('eraOf — 사건의 수저 구간 분기, 2009년 세 갈래 (era-window.md 10-1절)', () => {
+  // 합성: 같은 해의 band 사건 둘 + band 없는 사건 하나
+  const demo = w('철거', [2009, 2009], { band: 'low', heavy: true, topic: '재난', line: '철거 현장 문장입니다.' });
+  const mourn = w('조문', [2009, 2009], { heavy: true, topic: '정치', line: '조문 줄 문장입니다.' });
+  const phone = w('스마트폰', [2009, 2009], { band: 'high', line: '스마트폰 문장입니다.' });
+  // 일상은 2009 한 해만 — 앞선 두 해에 같은 일상이 이어져 3해 연속 규칙에 걸리는 일이 없다
+  const lowDaily = w('고시원', [2009, 2009], { kind: 'daily', band: 'low', line: '고시원 문장입니다.' });
+  const plainDaily = w('분식', [2009, 2009], { kind: 'daily', line: '분식 문장입니다.' });
+  const pool = [demo, mourn, phone, lowDaily, plainDaily];
+
+  it('① 같은 구간의 band 사건 → ② band 없는 사건 → ③ 일상: 아래는 철거 현장, 가운데는 조문 줄, 위는 첫 스마트폰 (band를 안 주면 가운데)', () => {
+    for (let seed = 0; seed < 20; seed++) {
+      expect(eraOf(2009, ctx(pool, { band: 'low', seed })).pic?.id, `low ${seed}`).toBe('철거');
+      expect(eraOf(2009, ctx(pool, { band: 'mid', seed })).pic?.id, `mid ${seed}`).toBe('조문');
+      expect(eraOf(2009, ctx(pool, { band: 'high', seed })).pic?.id, `high ${seed}`).toBe('스마트폰');
+      expect(eraOf(2009, ctx(pool, { seed })).pic?.id, 'band를 안 주면 가운데').toBe('조문');
+    }
+    // 줄은 그림의 문장이다
+    expect(eraOf(2009, ctx(pool, { band: 'low' })).line?.line).toBe('철거 현장 문장입니다.');
+  });
+  it('같은 구간의 band 사건은 band 없는 사건이 더 무거워도 먼저다(① → ②) — 그 구간이 아닌 band 사건은 보이지 않는다', () => {
+    const calmLow = w('저구간', [2009, 2009], { band: 'low', line: '아래 구간 문장입니다.' });
+    expect(eraOf(2009, ctx([calmLow, mourn], { band: 'low' })).pic?.id).toBe('저구간');
+    expect(eraOf(2009, ctx([calmLow, mourn], { band: 'high' })).pic?.id, '위 구간은 아래 구간의 사건을 보지 않는다').toBe('조문');
+    expect(eraOf(2009, ctx([calmLow, mourn], { band: 'mid' })).pic?.id, '가운데는 band 사건을 보지 않는다').toBe('조문');
+    // band 사건뿐인 해: 가운데는 그 사건을 못 보고 일상으로 내려간다 (사건이 없는 해 → 일상)
+    expect(eraOf(2009, ctx([phone, plainDaily], { band: 'mid' })).pic?.id).toBe('분식');
+    expect(eraOf(2009, ctx([phone, plainDaily], { band: 'low' })).pic?.id, '아래 구간도 위 구간의 사건은 못 본다').toBe('분식');
+    expect(eraOf(2009, ctx([phone, plainDaily], { band: 'high' })).pic?.id).toBe('스마트폰');
+  });
+  it('가리기를 켜면: 무거운 사건(철거·조문)은 그해 일상으로 — 아래는 구간 변주 일상 먼저, 가운데는 변주 없는 일상 · 줄은 가려진 사건 그대로 · 위의 스마트폰은 무겁지 않아 가리기와 무관', () => {
+    const low = eraOf(2009, ctx(pool, { band: 'low', gentle: true }));
+    expect(low).toMatchObject({ veiled: true });
+    expect(low.pic?.id).toBe('고시원');
+    expect(low.line?.id).toBe('철거');
+    const mid = eraOf(2009, ctx(pool, { band: 'mid', gentle: true }));
+    expect(mid).toMatchObject({ veiled: true });
+    expect(mid.pic?.id, '가운데는 구간 변주를 보지 않는다').toBe('분식');
+    expect(mid.line?.id).toBe('조문');
+    const high = eraOf(2009, ctx(pool, { band: 'high', gentle: true }));
+    expect(high).toMatchObject({ veiled: false });
+    expect(high.pic?.id).toBe('스마트폰');
+    // 가리기 대체 그림은 내 구간에게 보이는 무겁지 않은 사건이 먼저다 — 보이지 않는 band 사건은 대체 그림이 되지 않는다
+    expect(eraOf(2009, ctx([mourn, phone, plainDaily], { band: 'mid', gentle: true })).pic?.id).toBe('분식');
+    expect(eraOf(2009, ctx([mourn, phone, plainDaily], { band: 'low', gentle: true })).pic?.id).toBe('분식');
+  });
+
+  const real = (o: Partial<EraContext>): ReturnType<typeof eraOf> => eraOf(2009, ctx(ALL, { birthYear: 1984, ...o }));
+  it('실제 승인 데이터 · 고정: 2009년 아래(1·2단계)는 철거 현장, 가운데(3)는 5월 조문 줄, 위(4·5)는 첫 스마트폰 — 어느 시드·출생에서도, 줄은 승인 표기 문장 그대로', () => {
+    const cases: Array<[number, EraBand, string, string, boolean]> = [
+      [1, 'low', 'era-2009-demolition-fire', '1월, 철거 현장에서 불이 났습니다.', true],
+      [2, 'low', 'era-2009-demolition-fire', '1월, 철거 현장에서 불이 났습니다.', true],
+      [3, 'mid', 'era-2009-square-mourning-queue', '5월, 광장에 조문 줄이 길었습니다.', true],
+      [4, 'high', 'era-2009-first-smartphone', '첫 스마트폰이 손에 들어왔습니다.', false],
+      [5, 'high', 'era-2009-first-smartphone', '첫 스마트폰이 손에 들어왔습니다.', false],
+    ];
+    for (const [wealth, band, id, line, heavy] of cases) {
+      expect(bandOfWealth(wealth), `재력 ${wealth}`).toBe(band);
+      for (const seed of [1, 99, 4242, 123456]) {
+        for (const birthYear of [1944, 1962, 1984, 1991, 2003]) {
+          const p = real({ band: bandOfWealth(wealth), seed, birthYear });
+          expect(p.pic?.id, `재력 ${wealth} 시드 ${seed} ${birthYear}년생`).toBe(id);
+          expect(p.line?.line).toBe(line);
+          expect(p.pic?.heavy).toBe(heavy);
+          expect(p.veiled).toBe(false);
+        }
+      }
+    }
+  });
+  it('실제 승인 데이터 · 2009 가리기: 아래·가운데는 무거운 사건 대신 2000년대 일상(무겁지 않음)이 오르고 줄은 가려진 사건 그대로, 위 구간은 가리기와 무관하다', () => {
+    const low = real({ band: 'low', gentle: true });
+    expect(low).toMatchObject({ veiled: true });
+    expect(low.pic?.kind).toBe('daily');
+    expect(low.pic?.heavy).toBe(false);
+    expect(low.line?.id).toBe('era-2009-demolition-fire');
+    const mid = real({ band: 'mid', gentle: true });
+    expect(mid).toMatchObject({ veiled: true });
+    expect(mid.pic?.kind).toBe('daily');
+    expect(mid.pic?.band, '가운데는 구간 변주를 보지 않는다').toBeUndefined();
+    expect(mid.line?.id).toBe('era-2009-square-mourning-queue');
+    const high = real({ band: 'high', gentle: true });
+    expect(high).toMatchObject({ veiled: false });
+    expect(high.pic?.id).toBe('era-2009-first-smartphone');
+  });
+  it('실제 승인 데이터 · 인생 기록의 시대 줄: 2009년 줄도 칸이 그해 띄우는 그림의 문장이다 — 구간마다 다른 줄, 가리기 켠 아래·가운데 줄은 가림 표시', () => {
+    for (const [band, line, veiled] of [['low', '1월, 철거 현장에서 불이 났습니다.', true], ['mid', '5월, 광장에 조문 줄이 길었습니다.', true], ['high', '첫 스마트폰이 손에 들어왔습니다.', false]] as const) {
+      const row = eraRowsOf(1984, 30, ctx(ALL, { band, gentle: true })).find((r) => r.year === 2009)!;
+      expect(row.line, band).toBe(line);
+      expect(row.veiled, band).toBe(veiled);
+      expect(eraRowsOf(1984, 30, ctx(ALL, { band, gentle: false })).find((r) => r.year === 2009)!.veiled, band).toBe(false);
+    }
   });
 });
 

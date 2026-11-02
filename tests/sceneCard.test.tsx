@@ -20,6 +20,9 @@ import { ERA_DECADE as D1960 } from '../src/data/eraWindows/d1960';
 import { ERA_DECADE as D1970 } from '../src/data/eraWindows/d1970';
 import { ERA_DECADE as D1980 } from '../src/data/eraWindows/d1980';
 import { ERA_DECADE as D1990 } from '../src/data/eraWindows/d1990';
+import { ERA_DECADE as D2000 } from '../src/data/eraWindows/d2000';
+import { ERA_DECADE as D2010 } from '../src/data/eraWindows/d2010';
+import { ERA_DECADE as D2020 } from '../src/data/eraWindows/d2020';
 import type { YearClock } from '../src/ui/useYearClock';
 
 /**
@@ -238,7 +241,7 @@ describe('CSS 규칙 (family-scene.md 5-1절 — PC 2:1 · 휴대폰 80px 띠 ·
     expect(css).toMatch(/\.scene__svg \{[^}]*aspect-ratio: 640 \/ 256; max-height: 25vh;/);
     const q = css.slice(css.indexOf('@container scene (max-width: 480px)'));
     expect(q).toContain('.scene { grid-template-columns: minmax(0, 1fr); }');
-    expect(q).toContain('.era { height: 80px; }');
+    expect(q).toContain('.era { height: 80px; background: var(--c-surface); }'); // R-553 ① A안: 띠 바탕 = 카드 바탕(--c-surface)
     expect(q).toMatch(/\.era__pic \{ width: 100px; height: 80px;/);
     expect(css).toContain(".scene-card[data-fold='true'] .scene { display: none; }");
     expect(css).toContain('.scene-card { padding-top: 0; overflow: hidden; container-type: inline-size; container-name: scene; }');
@@ -255,7 +258,7 @@ describe('CSS 규칙 (family-scene.md 5-1절 — PC 2:1 · 휴대폰 80px 띠 ·
   });
 });
 
-describe('시대의 창 칸 — 승인된 43장이 칸에 오른다 (FM5b, FT1~FT6)', () => {
+describe('시대의 창 칸 — 승인된 94장이 칸에 오른다 (FM5b · 시대의 창 r5 반영, FT1~FT6)', () => {
   /** 달력 연도가 `calYear`가 되는 나이의 판 (세대·시드를 훑어 0~80세 안에 드는 것) */
   function lifeInYear(calYear: number): GameState {
     for (const gen of ['industrial', 'genx', 'alpha'] as const) {
@@ -269,7 +272,7 @@ describe('시대의 창 칸 — 승인된 43장이 칸에 오른다 (FM5b, FT1~F
     }
     throw new Error(`${calYear}년의 판을 못 찾았다`);
   }
-  const era = (): SceneArt['era'] => mergeEraData([D1940, D1950, D1960, D1970, D1980, D1990]);
+  const era = (): SceneArt['era'] => mergeEraData([D1940, D1950, D1960, D1970, D1980, D1990, D2000, D2010, D2020]);
 
   it('1980년: 금남로 그림이 링크 하나로 오른다 — 톤 A 필터용 data-dec, 그림은 aria-hidden, 접근 이름은 문장, 그림 안은 class 색·사람 심볼 참조(<use>)뿐(<style> 없음)', () => {
     const g = lifeInYear(1980);
@@ -314,10 +317,41 @@ describe('시대의 창 칸 — 승인된 43장이 칸에 오른다 (FM5b, FT1~F
     expect(on).not.toContain('금남로');
   });
 
-  it('승인된 그림이 없는 해(1992)는 빈 틀이다 — 링크도 그림도 없다', () => {
-    const out = html(lifeInYear(1992), { s: scene({ era: era() }) });
-    expect(out).toMatch(/<div class="era" id="scene-era" data-empty="true"/);
-    expect(out).not.toContain('<a class="era"');
+  it('그 10년 덩어리가 아직 오지 않은 해(1992 — 1990년대 덩어리 없이)는 빈 틀이다 — 링크도 그림도 없다. 덩어리가 오면 그 10년의 일상이 오른다(94장 모두 승인되어 데이터가 있는 해는 빈 틀이 없다)', () => {
+    const g = lifeInYear(1992);
+    const without = html(g, { s: scene({ era: mergeEraData([D1940, D1950, D1960, D1970, D1980]) }) });
+    expect(without).toMatch(/<div class="era" id="scene-era" data-empty="true"/);
+    expect(without).not.toContain('<a class="era"');
+    const withIt = html(g, { s: scene({ era: era() }) });
+    expect(withIt).toMatch(/data-era="era-1990s-[a-z-]+"/);
+    expect(withIt).toContain('data-dec="1990"');
+    expect(withIt).toContain('data-kind="daily"');
+  });
+
+  it('2009년 세 갈래: 부모 재력 1·2는 1월 철거 현장, 3은 5월 광장의 조문 줄, 4·5는 첫 스마트폰이 칸에 오른다 — 줄 글은 승인 표기 그대로, 톤 필터용 data-dec는 2000', () => {
+    const g = lifeInYear(2009);
+    expect(sceneInputOf(g).state.calYear).toBe(2009);
+    const withWealth = (w: 1 | 2 | 3 | 4 | 5): GameState => ({ ...g, character: { ...g.character!, parentWealth: w } }) as GameState;
+    const expected: Array<[1 | 2 | 3 | 4 | 5, string, string]> = [
+      [1, 'era-2009-demolition-fire', '1월, 철거 현장에서 불이 났습니다.'],
+      [2, 'era-2009-demolition-fire', '1월, 철거 현장에서 불이 났습니다.'],
+      [3, 'era-2009-square-mourning-queue', '5월, 광장에 조문 줄이 길었습니다.'],
+      [4, 'era-2009-first-smartphone', '첫 스마트폰이 손에 들어왔습니다.'],
+      [5, 'era-2009-first-smartphone', '첫 스마트폰이 손에 들어왔습니다.'],
+    ];
+    for (const [w, id, line] of expected) {
+      const out = html(withWealth(w), { s: scene({ era: era() }) });
+      expect(out, `재력 ${w}`).toContain(`data-era="${id}"`);
+      expect(out, `재력 ${w}`).toContain(`title="시대의 창 · ${line}"`);
+      expect(out, `재력 ${w}`).toContain('data-dec="2000"');
+    }
+    // 가리기: 철거 현장·조문 줄(무거움)은 그해 일상으로 바뀌고(문장도 가려져 어디에도 없다), 위 구간의 스마트폰은 무겁지 않아 가리지 않는다
+    const gentle = (w: 1 | 3 | 5): string => html(withWealth(w), { gentle: true, s: scene({ era: era() }) });
+    expect(gentle(1)).toContain('data-kind="daily"');
+    expect(gentle(1)).not.toContain('철거');
+    expect(gentle(3)).toContain('data-kind="daily"');
+    expect(gentle(3)).not.toContain('조문');
+    expect(gentle(5)).toContain('data-era="era-2009-first-smartphone"');
   });
 
   it('같은 판·같은 해는 늘 같은 그림이다(같은 입력 → 같은 출력)', () => {
