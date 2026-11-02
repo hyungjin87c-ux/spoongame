@@ -473,7 +473,8 @@ export function worstCaseVisibleChoiceIds(ev: EventDef): string[] {
 
 /**
  * 선택지가 어떤 상태에서도 `MAX_VISIBLE_CHOICES`(3)개를 넘게 보이면 안 된다 — 카드가 선택지 3개를 한 화면에 담도록 만들어져 있다(정의는 최대 4개: infant-new-sibling의 grandma·notice는 `grandparent_close`로 서로 배타).
- * 보이는 선택지가 2개 아래로 내려가지 않는 것은 스키마가 「조건 없는 선택지 2개 이상」으로 지킨다.
+ * 보이는 선택지가 2개 아래로 내려가지 않는 것은 스키마가 「조건 없는 선택지 2개 이상」(또는 1개 + 가족 플래그로만 갈리는 선택지 — 일반 추첨에서는 `isEventEligible`이 보이는 선택지 2개 미만을 후보에서 뺀다)으로 지킨다.
+ * `trigger` 사건은 강제 슬롯이라 `isEventEligible`을 거치지 않으므로 완화 없이 「조건 없는 선택지 2개 이상」이어야 한다 (R-563).
  */
 export function visibleChoiceProblems(ev: EventDef): string[] {
   if (ev.choices === undefined) return [];

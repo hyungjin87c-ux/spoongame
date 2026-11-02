@@ -21,7 +21,9 @@ import {
 import { eventPool } from '../src/core';
 import { EARLY_LOSS_HALF, withEarlyLoss, withEarlyLossRule } from './familyRulesLib';
 import { k2OnlyPool, preFm4bPool } from './preFm4bPool';
-import { startLife } from './simulateLib';
+import { MARGIN_LINES, marginSeeds, meanSe } from './marginsLib';
+import { SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
+import { simulateLife, startLife } from './simulateLib';
 import { spreadSeeds } from '../tests/helpers/familyGolden';
 
 /**
@@ -78,7 +80,14 @@ export interface LifeRow {
   seconds1xNoFam: number;
   /** 이 판의 최종 인생 기록 줄 수 */
   historyLength: number;
+  /** 모형이 알린 부모 한 분 별세의 주인공 나이(`family.log` 종류 5), 없으면 null */
+  lossAge: number | null;
+  /** 성인기 「부모님」 사건·글감이 일어난 나이(`seen`), 안 일어났으면 null — `ADULT_PARENT_IDS` 순서 */
+  adultParent: Array<number | null>;
 }
+
+/** 성인기에 「부모님」 낱말이 나오는 사건·글감 (설계 문서 13-2절 FM7 변형 목록) */
+export const ADULT_PARENT_IDS = ['middle-parents-care', 'middle-parents-farewell', 'youth-housing', 'note-parents-aging'] as const;
 
 /** 줄을 연표 줄과 같은 규칙으로 센다(FA0-7)는 약속에서 가족 줄을 뺀 추정 시간 — 가족 줄만 있는 해는 서술 해에서 조용한 해로, 다른 줄이 있는 해는 줄 대기를 뺀다 */
 function secondsWithoutFamily(final: GameState, counts: TickCounts, era: ReturnType<typeof timingEraOfProfile>): number {
@@ -139,6 +148,8 @@ export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
         seconds1x: estimatePlaySeconds(counts, { speed: 1, skipToDecision: false }, s.lifeLength, era, 'median'),
         seconds1xNoFam: secondsWithoutFamily(s, counts, era),
         historyLength: s.history.length,
+        lossAge: s.family!.l.find((e) => e[0] === 5)?.[1] ?? null,
+        adultParent: ADULT_PARENT_IDS.map((id) => s.seen[id] ?? null),
       };
     }),
   );
@@ -154,7 +165,7 @@ export interface TierStats {
   movement: { up: number; same: number; down: number; early: number };
 }
 
-const median = (xs: readonly number[]): number => {
+export const median = (xs: readonly number[]): number => {
   if (xs.length === 0) return 0;
   const s = [...xs].sort((a, b) => a - b);
   return s.length % 2 === 1 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
@@ -187,11 +198,76 @@ export function measureVariant(v: Variant, perGen: number): LifeRow[] {
 
 export const GEN_LIST = GENERATION_IDS;
 
-/** 보고서 끝에 붙는 읽는 법 (정적 글 — 숫자는 위 표에서 읽는다) */
-export const REPORT_NOTES = `## 5. 읽는 법과 한계
+// ---------- 알파 노년 결정 카드 평균 (R-555) ----------
 
-- **중앙값 변화 ≤ 3%(합격 기준 ①)** — 낮은 재력 단계의 20세 시작 순자산은 학자금 대출 바닥(−150만 원 등)에 모여 있어, 효과가 걸린 판이 17%뿐이어도 중앙값이 한 칸(150만 원) 옮겨 가면 상대 변화가 크게 읽힌다. 그래서 표에 평균을 함께 두었다. 평균 기준의 변화는 1절 표의 평균 칸이다. 효과를 절반으로 줄인 대안(V3h)도 같은 칸에서 같은 모양이라, 크기를 줄여도 이 칸은 풀리지 않는다 — 기준 ①을 평균으로 바꿀지는 마스터가 정한다.
+/**
+ * 알파 노년(65세+) 결정 카드 평균의 세계별 측정 (FM4b 검수 R-555): `tests/judgeMargins.test.ts`의 알파 한계(−2.5 SE)와 `tests/simulation.test.ts`의 잡음 0.05가 **무엇 때문에** 움직였는지 가른다.
+ *   S0 FM4b 전 풀(V0 세계: 동생 반응 카드가 옛 추첨 사건, 가족 조건 없음) · 효과 끔
+ *   S2 지금 풀(K2·K4) · 효과 끔 (V2 세계)
+ *   S3 지금 풀 · 효과 켬 (배포 값, V3 세계)
+ * 표본은 둘이다: **판정 표본**(합친 4줄 — `MARGIN_LINES`, 줄마다 1000판, 판정이 보는 4000판)과 **독립 줄**(시험 시드 줄 `i × 7919 + 13`의 i = 1001~4000, 수동·자동 — 판정 표본과 겹치지 않는다, SPEC-005 QI5 때와 같은 방식).
+ * 세계 사이 차이는 같은 시드끼리 짝지어(판마다 차이) 표준오차를 낸다. 독립 줄에서도 같은 크기·같은 방향으로 움직이면 잡음이 아니라 **구조적 이동**이다.
+ */
+export interface SeniorWorld {
+  id: 'S0' | 'S2' | 'S3';
+  label: string;
+  pool: () => EventPool;
+  earlyLoss: boolean;
+}
+
+export const SENIOR_WORLDS: readonly SeniorWorld[] = [
+  { id: 'S0', label: 'FM4b 전 풀 · 효과 끔', pool: preFm4bPool, earlyLoss: false },
+  { id: 'S2', label: '지금 풀(K2·K4) · 효과 끔', pool: eventPool, earlyLoss: false },
+  { id: 'S3', label: '지금 풀 · 효과 켬 (배포 값)', pool: eventPool, earlyLoss: true },
+];
+
+/** 판정 표본 한 줄 1000판 · 독립 줄 시드 번호 구간 */
+export const SENIOR_LINE_LIVES = 1000;
+export const SENIOR_INDEPENDENT = { from: 1001, to: 4000 } as const;
+/** 알파의 노년 카드 평균 하한 (마스터 결정 M-3, 옛 「다가올 세상」 구간) */
+export const SENIOR_FLOOR = SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile('alpha')];
+
+export interface SeniorSample {
+  id: 'judged' | 'independent';
+  label: string;
+  /** 판 순서가 세계 사이에 같다 — 짝지은 차이를 낸다 */
+  seeds: Array<{ seed: number; strategy: 'auto' | 'random' }>;
+}
+
+export function seniorSamples(): SeniorSample[] {
+  const judged = MARGIN_LINES.flatMap((line) => marginSeeds(line, 'alpha', SENIOR_LINE_LIVES).map((seed) => ({ seed, strategy: line.strategy })));
+  const indep = (['random', 'auto'] as const).flatMap((strategy) =>
+    Array.from({ length: SENIOR_INDEPENDENT.to - SENIOR_INDEPENDENT.from + 1 }, (_, k) => ({ seed: (SENIOR_INDEPENDENT.from + k) * 7919 + 13, strategy })),
+  );
+  return [
+    { id: 'judged', label: '판정 표본 (합친 4줄 × 1000판)', seeds: judged },
+    { id: 'independent', label: `독립 줄 (시험 시드 줄 i = ${SENIOR_INDEPENDENT.from}~${SENIOR_INDEPENDENT.to}, 수동·자동)`, seeds: indep },
+  ];
+}
+
+/** 한 세계에서 알파 판마다의 노년 결정 카드 수 */
+export function seniorCards(world: SeniorWorld, sample: SeniorSample): number[] {
+  return withEarlyLoss(world.earlyLoss, () => {
+    const pool = world.pool();
+    return sample.seeds.map((s) => simulateLife(s.seed, 'alpha', s.strategy, pool, { lifeLength: 'short30' }).choicesByStage.senior);
+  });
+}
+
+/** 짝지은 차이(뒤 − 앞)의 평균과 표준오차 */
+export function pairedDiff(a: readonly number[], b: readonly number[]): { diff: number; se: number } {
+  const d = a.map((x, i) => b[i] - x);
+  return { diff: mean(d), se: meanSe(d) };
+}
+
+export { meanSe };
+
+/** 보고서 끝에 붙는 읽는 법 (정적 글 — 숫자는 위 표에서 읽는다) */
+export const REPORT_NOTES = `## 8. 읽는 법과 한계
+
+- **이른 별세 효과의 수용 기준(마스터 결정 2026-11-02, 검수 REV-009-FM4b-1 2절)** — 처음 기준(재력 단계별 20세 시작·최종 순자산 **중앙값** 변화 ≤ 3%)은 지표가 틀렸다. 낮은 재력 단계의 20세 시작 순자산은 학자금 대출 바닥(−150만 원 등)에 모여 있어 중앙값이 한 칸(150만 원) 옮겨 가면 분모 바닥 1,000만 원 기준으로 15%가 나온다(효과 크기와 무관 — 반 크기 변형도 같다). 그래서 **평균**으로 본다: ① 최종 순자산 평균 변화 ≤ 3% ② 20세 시작 평균의 절대 변화 ≤ 150만 원 ③ 단계 순서 뒤바뀜 0 ④ 판정 변화 ≤ 2%p. 중앙값 변화와 효과가 걸린 판만의 차이는 **보고만** 한다(판정에 쓰지 않는다).
 - **K2·K4(2절)의 중앙값 흔들림**은 효과가 아니라 난수 흐름이 옮겨 간 잡음이다(같은 사건 풀을 공유하지 않는 세계끼리라 짝지은 표본이어도 사건이 달라진다) — 같은 규칙의 이른 별세 효과(V2 → V3)는 난수 흐름이 같아 짝이 정확하다.
-- **K1(3절)** 형제 수는 \`siblingCountOf(final, 'view')\`(살아 있는 형제 전원, 독립 포함, 별세 제외)와 옛 규칙의 비교이고, 상속액은 \`INHERIT[재력] ÷ (형제 수 + 1)\`을 두 값으로 계산한 평균이다. 출산이 많던 코호트(산업화·베이비붐)에서 새 정의의 형제 수가 크게 늘어(FM4b의 1940년 이전 어머니 보정이 출산 수를 센서스 평균에 맞췄다) 상속액이 절반 가까이 준다.
+- **K1(3절)** 형제 수는 \`siblingCountOf(final, 'view')\`(살아 있는 형제 전원, 독립 포함, 별세 제외)와 옛 규칙의 비교이고, 상속액은 \`INHERIT[재력] ÷ (형제 수 + 1)\`을 두 값으로 계산한 평균이다. 출산이 많던 코호트(산업화·베이비붐)에서 새 정의의 형제 수가 크게 늘어(FM4b의 1945년 이전 어머니 보정이 출산 수를 센서스 평균에 맞췄다) 상속액이 절반 가까이 준다. 형진 님이 「실제 형제 수로 나누기」로 정했고 FM6(식구 카드 개편)과 한 묶음으로 켠다 — 켤 때의 기준은 REV-009-FM4b-1 3절.
 - **판 길이(4절)**는 자동 성향 선택으로 잰 추정 시간이다(판정에 쓰는 수동 흉내·시대별 표본은 \`tests/simulation.test.ts\`·\`npm run report:time\`). 가족 줄을 뺀 값은 같은 판의 걸음 집계에서 가족 줄만 있는 해를 조용한 해로 바꾸고, 다른 줄이 있는 해는 줄 대기를 뺀 근사다.
+- **노년 카드 평균(5절)** 은 알파 한 세대(2013~2020년생)의 값이다. 시간 모델·판정 임계는 옛 시대 3구간 상수라 알파는 「다가올 세상」 하한 5.00을 쓴다 — 세대별 시간 모델(GM10)에서 다시 정한다.
+- **성인기 「부모님」 사건(7절)** 은 배포 값 세계(V3)에서 모형이 부모 한 분 별세를 알린 판만 센다. 사건 문장은 FM7 변형이 한 분 별세에 맞게 바꾼다(13-2절).
 `;

@@ -4,6 +4,7 @@ import { olderSiblingPlan } from './family';
 import { deathAgeGiven } from './familyLife';
 import {
   DIVORCE_AGES,
+  EARLY_LOSS_MAX_AGE,
   FAMILY_MAX_CHILDREN,
   FAMILY_TAG,
   FAMILY_DATA_VERSION,
@@ -53,28 +54,22 @@ const MOTHER_BINS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 /**
- * 부모 출생 연도 `by`의 어머니 출산 연령 일곱 칸 비중(%)과 이른 쪽으로 옮기는 살수.
- * 1981~: 인구동향조사(확인) · 1956~1980: 센서스 역산(확인(환산)) · 1955 앞: 1956~60 칸에서 옮긴 추정.
+ * 부모 출생 연도 `by`의 어머니 출산 연령 일곱 칸 비중(%).
+ * 1981~: 인구동향조사(확인) · 1956~1980: 센서스 역산(확인(환산)) · 1955 앞: 1966 센서스 표본의 직접 분포를 그대로(추정 — 한 해 분포를 거슬러 쓴다, 마스터 결정 fd-b-house.md 10절 7번).
  */
-export function motherAgeShares(by: number): { pct: readonly number[]; shift: number } {
+export function motherAgeShares(by: number): readonly number[] {
   const t = familyTables().motherAge;
-  if (by >= t.vitalFrom) return { pct: t.vital[Math.min(by, t.vitalFrom + t.vital.length - 1) - t.vitalFrom], shift: 0 };
-  const first = t.census[0];
-  if (by < first.from) {
-    const rule = t.shift.find((r) => by <= r.to);
-    return { pct: first.pct, shift: rule === undefined ? 0 : rule.by };
-  }
-  const group = t.census.find((c) => by >= c.from && by <= c.to) ?? t.census[t.census.length - 1];
-  return { pct: group.pct, shift: 0 };
+  if (by >= t.vitalFrom) return t.vital[Math.min(by, t.vitalFrom + t.vital.length - 1) - t.vitalFrom];
+  if (by < t.census[0].from) return t.before1956.pct;
+  return (t.census.find((c) => by >= c.from && by <= c.to) ?? t.census[t.census.length - 1]).pct;
 }
 
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n));
 
-/** 조모(어머니의 어머니)의 출생 때 나이: 칸 하나를 비중대로, 칸 안은 균등으로 뽑고 이른 쪽 옮김을 뺀 뒤 범위로 자른다 (난수 2번) */
+/** 조모(어머니의 어머니)의 출생 때 나이: 칸 하나를 비중대로, 칸 안은 균등으로 뽑는다 (난수 2번) */
 function rollGrandmotherAge(rng: Rng, by: number): number {
-  const { pct, shift } = motherAgeShares(by);
-  const [lo, hi] = MOTHER_BINS[rng.weightedIndex(pct)];
-  return clamp(rng.int(lo, hi) - shift, PARENT_AGE_LIMITS.min, MOTHER_BIRTH_MAX);
+  const [lo, hi] = MOTHER_BINS[rng.weightedIndex(motherAgeShares(by))];
+  return rng.int(lo, hi);
 }
 
 /** 조부(아버지의 아버지)의 출생 때 나이: 같은 쪽 조모의 나이에 대한 아버지 나이 조건부 분포(전국 모형)에서 뽑는다 (난수 1번) */
@@ -213,7 +208,7 @@ export function rollOlderSiblings(famSeed: number, siblingSeed: number, report: 
   return olderSiblingPlan(siblingSeed, report).map((o, i) => ({ g: o.gender === 'male' ? 0 : 1, k: o.gap, s: leaveAgeOf(famSeed, i) }));
 }
 
-/** 어머니 출생 연도가 속한 1940년 이전 코호트의 보정 행 (없으면 보정 없음) */
+/** 어머니 출생 연도가 속한 1945년 이전 코호트의 보정 행 (없으면 보정 없음) */
 export function oldCohortOf(motherBirthYear: number | undefined): FamilyTables['design']['highOrderContinue']['value'][number] | undefined {
   return motherBirthYear === undefined ? undefined : familyTables().design.highOrderContinue.value.find((c) => motherBirthYear <= c.upTo);
 }
@@ -225,7 +220,7 @@ export function oldCohortOf(motherBirthYear: number | undefined): FamilyTables['
 export function continueProbability(k: number, shares: readonly [number, number, number], motherBirthYear?: number): number {
   if (k <= 0) return 0;
   const design = familyTables().design;
-  // 1940년 이전 출생 어머니: 코호트별 보정값(FD6 ±0.45에 맞춘 설계값) — 상한 `cap`(k = 1·2)과 고차 이어짐 `q`(k ≥ 3)
+  // 1945년 이전 출생 어머니: 코호트별 보정값(FD6 ±0.45에 맞춘 설계값) — 상한 `cap`(k = 1·2)과 고차 이어짐 `q`(k ≥ 3)
   const cohort = oldCohortOf(motherBirthYear);
   if (cohort !== undefined && k >= 3) return cohort.q;
   const cap = cohort?.cap ?? design.continueCap.value;
@@ -239,7 +234,7 @@ export function continueProbability(k: number, shares: readonly [number, number,
  * 아래 동생: 동생 한 명씩 차례로 이어짐을 굴린다(`j = 1, 2, …`). 굴림·터울·성별은 `j`마다 해시로 미리 뽑아 두어(스트림 위치에 기대지 않는다) 멈춰도 다른 값이 밀리지 않는다.
  * 터울 `SIBLING_GAP`(2~5), 성별 `design.maleShare`(균등), 어머니의 그 출산 나이가 `YOUNGER_MOTHER_MAX`(45)를 넘으면 거기서 멈추고, 전체 자녀 수는 8명 이하다.
  * `lastAt`: 동생이 태어날 수 있는 마지막 주인공 나이 = min(부모 한 분이 떠나는 해, 이혼한 해) — 재혼은 만들지 않는다(4-7 (2), R-530).
- * `motherBirthYear`: 어머니 출생 연도 — 주면 1940년 이전 코호트의 고차 출산 보정(`design.highOrderContinue`)을 쓴다. 주지 않으면 보정 없이 굴린다.
+ * `motherBirthYear`: 어머니 출생 연도 — 주면 1945년 이전 코호트의 고차 출산 보정(`design.highOrderContinue`)을 쓴다. 주지 않으면 보정 없이 굴린다.
  */
 export function rollYoungerSiblings(famSeed: number, birthOrder: number, motherAge: number, shares: readonly [number, number, number], lastAt: number = Infinity, motherBirthYear?: number): SiblingData[] {
   const out: SiblingData[] = [];
@@ -285,12 +280,18 @@ export function firstGoneOf(parentGoneAt: readonly [number, number]): { who: 0 |
   return { who, at: parentGoneAt[who] };
 }
 
-/** 부모 이혼·별거: 주인공 나이 `at`의 해에 일어나 `at + 1`부터 한 분이 따로 산다. `leaver` 0 어머니 · 1 아버지 */
-export function divorcePlan(famSeed: number, birthYear: number, firstGone: { at: number } | null): { at: number; leaver: 0 | 1 } | null {
+/**
+ * 부모 이혼·별거: 주인공 나이 `at`의 해에 일어나 `at + 1`부터 한 분이 따로 산다. `leaver` 0 어머니 · 1 아버지.
+ * 이미 정해진 `leaver`가 먼저 떠나는 분(`firstGone.who`)과 다르고 그분이 `EARLY_LOSS_MAX_AGE`(19) 이하에 떠나면 **그 판은 이혼 없음(null)** 이다 —
+ * 함께 살던 분이 아이가 미성년일 때 별세하면 아이 곁에 부모가 한 분도 없게 되는데, 재혼·새 부모를 만들지 않으므로(4-7 (2)) 새 문구 없이 모순만 없앤다 (R-558, 안 B).
+ */
+export function divorcePlan(famSeed: number, birthYear: number, firstGone: { who: 0 | 1; at: number } | null): { at: number; leaver: 0 | 1 } | null {
   for (let a = DIVORCE_AGES.min; a <= DIVORCE_AGES.max; a++) {
     if (firstGone !== null && a >= firstGone.at) break; // 한 분이 떠난 해부터는 일어나지 않는다
     if (famHash01(famSeed, FAMILY_TAG.DIVORCE, a, 0) * 100 < parentDivorceRate(birthYear + a)) {
-      return { at: a, leaver: famHash01(famSeed, FAMILY_TAG.DIVORCE, a, 1) < familyTables().design.divorceFatherLeaves.value ? 1 : 0 };
+      const leaver: 0 | 1 = famHash01(famSeed, FAMILY_TAG.DIVORCE, a, 1) < familyTables().design.divorceFatherLeaves.value ? 1 : 0;
+      if (firstGone !== null && firstGone.who !== leaver && firstGone.at <= EARLY_LOSS_MAX_AGE) return null; // 함께 사는 분이 미성년 때 별세 → 아이 곁에 부모 0 (R-558)
+      return { at: a, leaver };
     }
   }
   return null;

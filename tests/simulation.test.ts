@@ -279,9 +279,10 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
           expect(m.school, `${who} ${era} 학창`).toBeGreaterThanOrEqual(3);
           expect(m.youth, `${who} ${era} 청년`).toBeGreaterThanOrEqual(5);
           expect(m.middle, `${who} ${era} 중년`).toBeGreaterThanOrEqual(5);
-          // 알파의 노년 평균은 하한 5.00 위 0.0 근처에 닿아 있다(GM4 보고, judgeMargins.test.ts) — FM4b의 난수 칸 이동이 측정을 4.997로 옮겼다. 하한(마스터 결정 M-3)은 그대로 두고 이 한 칸에만 잡음 폭 0.05를 인정한다(보고)
-          const seniorNoise = era === 'alpha' ? 0.05 : 0;
-          expect(m.senior + seniorNoise, `${who} ${era} 노년`).toBeGreaterThanOrEqual(SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(era)]);
+          // 알파의 노년 평균은 하한 5.00에 닿아 있다(GM4 보고, judgeMargins.test.ts) — FM4b의 K2(동생 반응 카드 강제)가 측정을 4.997로 옮겼다. 이 이동은 잡음이 아니라 구조적이다(docs/data/family-remeasure.md 5절: 같은 시드 짝지은 차이 −0.06, 독립 줄에서도 같은 방향 −0.05)
+          // 이고 알파의 모집단 평균은 하한 아래다(독립 줄 4.85). 하한(마스터 결정 M-3)은 그대로 두고 이 한 칸에만 허용 폭 0.05를 인정한다(보고) — 세대별 시간 모델(GM10)에서 알파 하한을 다시 정한다(docs/TODO.md)
+          const seniorAllowance = era === 'alpha' ? 0.05 : 0;
+          expect(m.senior + seniorAllowance, `${who} ${era} 노년`).toBeGreaterThanOrEqual(SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(era)]);
           const total = STAGES.reduce((a, s) => a + m[s], 0);
           for (const s of STAGES) expect(m[s] / total, `${who} ${era} ${s}`).toBeLessThan(0.4);
           // 0~7세(영유아 빈도표 구간) 평균은 연표의 나이로 센다

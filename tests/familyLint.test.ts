@@ -203,3 +203,57 @@ describe('trigger 필드 검증', () => {
     expect(() => validateEventFiles(file([sibling({ ageRange: undefined })]))).toThrow(/ageRange/);
   });
 });
+
+describe('선택지 스키마 완화와 trigger 사건 (R-563): 가족 플래그로만 갈리는 선택지는 일반 추첨에서만 허용된다', () => {
+  const file = (events: unknown[]): Record<string, unknown> => ({ 'x.json': { events, note: '시험' } });
+  const A = { id: 'a', label: '가만히 바라본다', result: '아이는 한참을 가만히 바라보았습니다. 그뿐이었습니다.' };
+  const B = { id: 'b', label: '곁으로 다가간다', result: '아이는 곁으로 다가가 앉았습니다. 말없이 한참을 있었습니다.' };
+  const ev = (choices: unknown[], over: Record<string, unknown> = {}): Record<string, unknown> => ({
+    id: 'infant-zz-schema',
+    title: '시험 사건',
+    text: '아이가 하루를 조용히 보냈습니다. 별일 없이 지나갔습니다.',
+    stages: ['infant'],
+    track: 'common',
+    weight: 10,
+    once: true,
+    choices,
+    ...over,
+  });
+  const trig = { ageRange: { min: 2, max: 5 }, trigger: 'family' };
+  const familyOnly = { ...B, id: 'c', requires: { flags: ['has_grandparent'] } }; // 가족 플래그로만 갈리는 선택지
+  const otherCond = { ...B, id: 'c', requires: { parentWealth: { min: 4 } } }; // 가족 플래그가 아닌 조건
+
+  it('일반 사건: 조건 없음 1 + 가족 플래그 선택지 1은 통과한다 (그 가족이 없는 판에서는 isEventEligible이 후보에서 뺀다)', () => {
+    expect(() => validateEventFiles(file([ev([A, familyOnly])]))).not.toThrow();
+  });
+
+  it('일반 사건: 조건 없음 1 + 다른 requires 1은 실패한다 (완화는 가족 시스템 플래그에만)', () => {
+    expect(() => validateEventFiles(file([ev([A, otherCond])]))).toThrow(/조건\(requires\) 없는 선택지가 2개 이상/);
+  });
+
+  it('일반 사건: 조건 없음 0 + 가족 플래그 선택지 둘은 실패한다 (보이는 선택지가 0개일 수 있다)', () => {
+    expect(() => validateEventFiles(file([ev([{ ...A, requires: { flags: ['has_grandparent'] } }, { ...familyOnly, id: 'b' }])]))).toThrow(/조건\(requires\) 없는 선택지가 2개 이상/);
+  });
+
+  it('일반 사건: 조건 없음 2는 통과한다 (완화 없이도)', () => {
+    expect(() => validateEventFiles(file([ev([A, B])]))).not.toThrow();
+  });
+
+  it('trigger 사건: 조건 없음 1 + 가족 플래그 선택지 1은 실패한다 — 강제 슬롯은 isEventEligible을 거치지 않아 선택지 1개로 대기가 생긴다', () => {
+    expect(() => validateEventFiles(file([ev([A, familyOnly], trig)]))).toThrow(/trigger 사건은 조건 없는 선택지가 2개 이상/);
+  });
+
+  it('trigger 사건: 조건 없음 1 + 다른 requires 1도 실패한다 (기존 메시지)', () => {
+    expect(() => validateEventFiles(file([ev([A, otherCond], trig)]))).toThrow(/조건\(requires\) 없는 선택지가 2개 이상/);
+  });
+
+  it('trigger 사건: 조건 없음 2 + 가족 플래그 선택지(infant-new-sibling 모양)는 통과한다', () => {
+    expect(() => validateEventFiles(file([ev([A, B, familyOnly], trig)]))).not.toThrow();
+  });
+
+  it('실제 trigger 사건(infant-new-sibling)은 조건 없는 선택지가 2개 이상이다', () => {
+    const e = EVENT_POOL.byId.get('infant-new-sibling')!;
+    expect(e.trigger).toBe('family');
+    expect(e.choices!.filter((c) => c.requires === undefined).length).toBeGreaterThanOrEqual(2);
+  });
+});

@@ -46,9 +46,10 @@ export const FAMILY_DESIGN: FamilyDesign = {
       { upTo: 1930, cap: 0.98, q: 0.964, gapMax: 4 },
       { upTo: 1935, cap: 0.98, q: 0.909, gapMax: 5 },
       { upTo: 1940, cap: 0.98, q: 0.754, gapMax: 5 },
+      { upTo: 1945, cap: 0.98, q: 0.469, gapMax: 5 },
     ],
     basis: 'design',
-    note: '1940년 이전 출생 어머니의 3째 이후 이어짐 확률 — 공표 출산 순위 비중에서 유도한 값은 출산이 많던 코호트의 총 자녀 수를 낮게 만들어(모형 3.2명 vs FD6 4.1~5.6), 코호트별로 FD6 센서스 평균 출생아 수에 맞춘 설계값',
+    note: '1945년 이전 출생 어머니의 3째 이후 이어짐 확률 — 공표 출산 순위 비중에서 유도한 값은 출산이 많던 코호트의 총 자녀 수를 낮게 만들어(모형 3.0~3.2명 vs FD6 3.4~5.6), 코호트별로 FD6 센서스 평균 출생아 수에 맞춘 설계값(1941~45는 FM4b 검수 R-565로 더했다)',
   },
   earlyLoss: {
     value: {
@@ -73,7 +74,7 @@ export const FAMILY_BASIS: ReadonlyArray<{ id: string; basis: 'official' | 'calc
   { id: 'mortality-before-1970', basis: 'estimated', note: '1970 앞 생명표는 없어 1970 사망확률에 배율을 곱한다 — 기대수명이 1970~1985 추세선을 거꾸로 이은 값이 되게 풀었다(하한 30세)' },
   { id: 'mother-age-1981+', basis: 'official', note: '인구동향조사 모의 연령별 출생아 구성비(1981~2025)' },
   { id: 'mother-age-1956-1980', basis: 'calc', note: '센서스 모의 연령별 적생아 역산(±0.5세)' },
-  { id: 'mother-age-before-1956', basis: 'estimated', note: '1956~60 칸에서 출산 연령을 이른 쪽으로 옮긴 값(1936~55 −1세, 1916~35 −2세, 그 앞 −3세 — 크기는 설계값)' },
+  { id: 'mother-age-before-1956', basis: 'estimated', note: '1966 센서스 표본(10%)의 1965.10~1966.9 출생아 어머니 나이 분포(평균 29.7세)를 1956년 앞 출생분에 그대로 썼다 — 한 해의 직접 분포를 거슬러 쓴 추정이다(출산이 많던 시대의 어머니는 젊어지지 않고 같거나 늦은 쪽이라는 증거, 이동 없음)' },
   { id: 'grand-cohabit-2000-2005', basis: 'calc', note: '인구총조사 아동 가구 세대 구성 환산' },
   { id: 'grand-cohabit-other', basis: 'estimated', note: '3세대 이상 가구 비율 × 1.85(2000·2005 실측 1.73·1.99의 가운데)' },
   { id: 'grand-side', basis: 'design', note: `함께 사는 조부모는 친가 ${FAMILY_DESIGN.paternalSideShare.value}, 외가 ${+(1 - FAMILY_DESIGN.paternalSideShare.value).toFixed(2)} — 통계가 없는 설계값` },
@@ -86,7 +87,7 @@ export const FAMILY_BASIS: ReadonlyArray<{ id: string; basis: 'official' | 'calc
   { id: 'home-tenure-income', basis: 'design', note: '점유 형태(자가·임차·무상)와 소득계층(수저 단계)은 센서스 점유 × 거처 종류(2010·15·20)와 주거실태조사 소득계층 × 주택유형(2006~2024)에서 독립 가정의 곱으로 얻었다. 수저 단계 → 소득계층 섞음은 출생신고와 같고, 시도 → 지역 3분류(수도권·광역시 등·도지역)는 게임이 정했다' },
   { id: 'home-rent-room', basis: 'design', note: '단독주택에 임차로 사는 가구가 셋방인 비율(1990 앞 85% → 2005 60% → 2020 50%)은 통계가 없는 설계값' },
   { id: 'home-rooms', basis: 'calc', note: '사용 방 수는 센서스(1980~2010) 거처 종류 × 가구원 수 표에서 뽑고, 1980 앞은 1980, 2010 뒤는 2010 값을 쓴다(1990→95 방 수 정의 변화 의심). 그 연도 분포에서 하위 5%에 못 미치는 드문 방 수는 쓰지 않는다(문턱은 연도 함수)' },
-  { id: 'siblings-old-cohort', basis: 'design', note: '1940년 이전 출생 어머니는 출산이 많던 코호트라 이어짐 상한·고차 이어짐·터울 상한을 코호트별로 센서스 평균 출생아 수(FD6)에 맞춘 설계값을 쓴다(모형이 3.2명으로 낮게 나오던 것을 ±0.45 안으로)' },
+  { id: 'siblings-old-cohort', basis: 'design', note: '1945년 이전 출생 어머니는 출산이 많던 코호트라 이어짐 상한·고차 이어짐·터울 상한을 코호트별로 센서스 평균 출생아 수(FD6)에 맞춘 설계값을 쓴다(모형이 3.2명으로 낮게 나오던 것을 ±0.45 안으로)' },
   { id: 'early-loss', basis: 'design', note: '19세 이하에 부모 한 분이 떠난 해에 한 번만 행복 −8, 관계 −2, 건강 −1과 집안 살림(아버지 −500, 어머니 −300만 원 × 재력 배율 0.8~2.0)이 더해진다 — 통계가 없는 설계값(재측정은 docs/data/family-remeasure.md)'},
   {
     id: 'siblings',

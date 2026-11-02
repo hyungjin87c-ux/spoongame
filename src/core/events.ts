@@ -921,6 +921,8 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
       });
       // 조건 없는 선택지가 2개 이상이거나(항상 2개 이상 보인다), 1개 + 가족 플래그로만 갈리는 선택지로 2개 이상이다(그 가족이 없는 판에서는 이벤트가 후보에서 빠진다, K4)
       if (unconditional < 2 && !(unconditional >= 1 && unconditional + familyGated >= 2)) p.add(`${path}.choices`, `조건(requires) 없는 선택지가 2개 이상 있어야 한다 (항상 2개 이상 보여야 한다. 지금 ${unconditional}개)`);
+      // 강제 슬롯은 isEventEligible을 거치지 않는다 — 보이는 선택지가 1개면 대기 저장이 깨진다(pendingShapeOk)
+      else if (ev.trigger !== undefined && unconditional < 2) p.add(`${path}.choices`, `trigger 사건은 조건 없는 선택지가 2개 이상이어야 한다 (지금 ${unconditional}개)`);
     }
     if (ev.effects !== undefined || ev.bonuses !== undefined) {
       p.add(path, '선택지 이벤트는 이벤트 단위의 effects·bonuses를 쓰지 않는다 (효과는 선택지마다 적는다)');

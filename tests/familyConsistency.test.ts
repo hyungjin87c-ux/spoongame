@@ -24,7 +24,10 @@ import { lifeSteps, seedsFor } from './helpers/familyLife';
  * INV-1(출산 나이)·INV-2(떠난 사람)·INV-10~12의 출생·보기 쪽은 tests/familyBirth.test.ts·tests/sceneFamily.test.ts가 0~100세 전수로 따로 본다 — 여기서는 **인생이 진행되며 쓰는 쪽**(줄·플래그·로그)이 보기와 같은지를 본다.
  */
 
-const PER_GEN = 90;
+// tests/는 Node 타입을 쓰지 않는다(tsconfig.json) — 환경 변수 읽기에 필요한 모양만 선언한다 (R-559 diff는 이 선언 없이는 typecheck를 통과하지 못한다)
+declare const process: { env: Record<string, string | undefined> };
+/** 평소 npm test는 세대당 90판, 12-2절 전수(1000판)는 FAMILY_INV_LIVES=1000으로 돌린다 */
+const PER_GEN = Number(process.env.FAMILY_INV_LIVES ?? 90);
 /** 이 모듈이 켜고 끄는 플래그 (familyTick.ts#MANAGED_FLAGS와 같은 목록 — 시스템 플래그 중 보기에서 파생되는 것) */
 const MANAGED = ['has_grandparent', 'lives_with_grandparent', 'has_older_sibling', 'has_younger_sibling', 'has_sibling', 'mother_gone', 'father_gone', 'mother_apart', 'father_apart'];
 /** 로그 종류 → 줄을 남기는가 */
@@ -41,17 +44,23 @@ interface Tally {
   parentGone: number;
   apart: number;
   checks: number;
+  /** 분류가 붙은 줄(loss·home) · 분류 없는 줄 수 (4-9절 가림) */
+  heavy: number;
+  plain: number;
+  /** 판 끝의 `family` 저장 길이(JSON 글자 수) 최댓값 · 로그 줄 수 최댓값 (2-3절 ≤ 1000자) */
+  maxLen: number;
+  maxLog: number;
 }
 
 describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
-  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0 };
+  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0 };
   const problems: string[] = [];
   const bad = (where: string, msg: string): void => {
     if (problems.length < 40) problems.push(`${where}: ${msg}`);
   };
 
   for (const [gi, gen] of GENERATION_IDS.entries()) {
-    it(`${gen}: ${PER_GEN}판`, { timeout: 120_000 }, () => {
+    it(`${gen}: ${PER_GEN}판`, { timeout: Math.max(120_000, PER_GEN * 1_500) }, () => {
       for (const seed of seedsFor(PER_GEN, gi)) {
         const steps = lifeSteps(seed, gen as ProfileId);
         tally.lives++;
@@ -70,9 +79,12 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
             if (p.state === 'gone') goneEver.add(p.id);
             else if (goneEver.has(p.id)) bad(where, `${age}세 ${p.id}가 떠난 뒤 돌아왔다`);
           }
-          if (state.phase !== 'life') continue;
+          // INV-2c (R-558): 20세 전에는 함께 사는 부모가 한 분 이상이다 — 이혼 뒤 함께 살던 분이 미성년 때 별세해 아이 곁에 부모가 없는 판이 없다
+          if (age < 20 && !view.household.some((id) => id === 'mother' || id === 'father')) bad(where, `${age}세 함께 사는 부모가 없다`);
+          // 사망 걸음(R-559): 사망 해는 나이가 오르지 않지만 그 해의 가족 변화·플래그는 해 끝의 보기(age + 1)로 맞춰져 있으므로, 같은 나이로 견주어 INV-7·8을 건너뛰지 않는다
+          const dead = state.phase !== 'life';
           // INV-7: 시스템 소유 플래그 = 파생 집합 (보기 + 로그). 해가 끝난 상태(age)의 보기와 같다
-          const derived = deriveFamilyFlags(view, f.l);
+          const derived = deriveFamilyFlags(dead ? familyViewOf(state, age + 1) : view, f.l);
           const have = new Set(state.flags.filter((x) => MANAGED.includes(x)));
           for (const x of MANAGED) {
             if (derived.has(x) !== have.has(x)) bad(where, `${age}세 플래그 ${x}: 파생 ${derived.has(x)} 실제 ${have.has(x)}`);
@@ -110,11 +122,23 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
             else if (h.eventId === 'fam-parent-gone') tally.parentGone++;
             else if (h.eventId === 'fam-parents-apart') tally.apart++;
             else if (h.eventId === YOUNGER_SIBLING_EVENT) tally.cards++;
+            // 가림(4-9절): 모든 가족 줄의 분류가 글자 표와 같고, 분류가 붙은 줄(별세·이혼)은 가림을 켜면 문장이 가려지는 줄이다 (R-560)
+            if ((h.eventId ?? '').startsWith('fam-')) {
+              const want = FAMILY_LINE_HEAVY[h.eventId!] ?? null;
+              if (heavyKindOfEntry(h) !== want) bad(where, `${age}세 ${h.eventId}: 가림 분류 ${heavyKindOfEntry(h)} ≠ ${want}`);
+              if (want === null) tally.plain++;
+              else tally.heavy++;
+            }
           }
         }
         // 한 판 전체: 동생이 태어나는 해마다 인생 기록 줄이 정확히 하나(상태 줄 또는 반응 카드, 둘째 이후 동생은 상태 줄)
         const last = steps[steps.length - 1].state;
         const f = last.family!;
+        // 크기(2-3절): 판을 끝까지 돌린 뒤의 family도 저장 한도 안이다 (R-560)
+        const size = JSON.stringify(f).length;
+        tally.maxLen = Math.max(tally.maxLen, size);
+        tally.maxLog = Math.max(tally.maxLog, f.l.length);
+        if (size > 1000) bad(where, `판 끝 family가 ${size}자`);
         f.y.forEach((s, j) => {
           const lived = s.k <= last.age;
           const lines = last.history.filter((h) => h.age === s.k && (h.eventId === 'fam-sib-born' || h.eventId === YOUNGER_SIBLING_EVENT)).length;
@@ -157,6 +181,8 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
   }
 
   it('위반 0건, 시험이 공허하지 않다: 변화가 일어난 판이 충분하다', () => {
+    // 전수 실행(FAMILY_INV_LIVES)일 때만 위반 수와 tally를 찍는다 — ai-log에 옮겨 적는 값 (R-559)
+    if (process.env.FAMILY_INV_LIVES !== undefined) console.info(`[INV 전수] 위반 ${problems.length}건 · tally ${JSON.stringify(tally)}`);
     expect(problems).toEqual([]);
     expect(tally.lives).toBe(GENERATION_IDS.length * PER_GEN);
     expect(tally.checks, '해마다 점검 횟수').toBeGreaterThan(20_000);
@@ -166,6 +192,9 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
     expect(tally.gp, '조부모 별세 줄').toBeGreaterThan(100);
     expect(tally.parentGone, '부모 한 분 별세 줄').toBeGreaterThan(30);
     expect(tally.apart, '이혼·별거 줄').toBeGreaterThan(10);
+    expect(tally.heavy, '가림 분류가 붙은 줄(별세·이혼)').toBeGreaterThan(100);
+    expect(tally.plain, '분류 없는 줄(동생 출생·독립)').toBeGreaterThan(100);
+    expect(tally.maxLen, `판 끝 family 최대 ${tally.maxLen}자 · 로그 최대 ${tally.maxLog}줄`).toBeLessThanOrEqual(1000);
   });
 
   it('가림 분류(4-9절): 별세·이혼 줄은 loss·home으로 잡히고 동생 출생·독립 줄은 가리지 않는다', () => {

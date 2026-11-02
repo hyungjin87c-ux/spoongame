@@ -67,7 +67,7 @@ describe('K1은 켜지 않았다 (형제 수 규칙은 옛 규칙)', () => {
   }, 300_000);
 });
 
-describe('1940년 이전 출생 어머니 보정과 설계값 표', () => {
+describe('1945년 이전 출생 어머니 보정과 설계값 표', () => {
   it('보정 표는 모든 코호트가 FD6 센서스 코호트 평균에 맞춘 값이다(tests/familyBirth.test.ts T-FA3c가 ±0.45를 단언) — 표는 근거 칸과 함께 있다', () => {
     const d = familyTables().design;
     expect(d.highOrderContinue.basis).toBe('design');

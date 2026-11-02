@@ -4,6 +4,7 @@ import {
   SCENE_MEMBER_MAX,
   createInitialState,
   deriveFamilyFlags,
+  divorcePlan,
   familyOf,
   familyScheduleOf,
   familyViewOf,
@@ -67,6 +68,8 @@ describe('INV-2·10·11·12 — 0~100세 전수 (7세대 × 150판)', () => {
           const p = byId.get(id)!;
           expect(p.state, `${s.gen} ${s.seed} ${age}세 ${id}`).toBe('with');
         }
+        // INV-2c (R-558): 20세 전에는 함께 사는 부모가 한 분 이상이다(이혼 뒤 함께 살던 분이 미성년 때 별세해 아이 곁에 부모가 없는 판이 없다)
+        if (age < 20) expect(view.household.some((id) => id === 'mother' || id === 'father'), `${s.gen} ${s.seed} ${age}세 함께 사는 부모`).toBe(true);
         for (const p of view.people) {
           if (p.role === 'sibling' && p.older === false) {
             const k = s.game.family!.y[Number(p.id.slice(1)) - 1].k;
@@ -279,6 +282,37 @@ describe('T-FA7 부모 한 분 별세(K3)와 이혼·별거', () => {
     expect(parentDivorceRate(1970)).toBeCloseTo((0.47 * 0.4) / 1.3, 5);
     expect(parentDivorceRate(1950)).toBeCloseTo(parentDivorceRate(1970), 10);
     expect(parentDivorceRate(1980)).toBeLessThan(parentDivorceRate(1993));
+  });
+
+  it('R-558 안 B: 이혼한 쪽이 먼저 떠나는 분과 다르고 그분이 19세 이하에 떠나면 그 판은 이혼 없음이다(아이 곁에 부모 0 방지) — 그 밖은 규칙 없이 굴린 값과 같다', () => {
+    let nulled = 0;
+    let kept = 0;
+    for (const s of SAMPLES) {
+      const sc = familyScheduleOf(s.game);
+      const free = divorcePlan(sc.famSeed, sc.birthYear, null);
+      // 먼저 떠나는 분을 가정으로 바꿔 가며(누가·몇 살에) 규칙이 일하는지 본다
+      for (const who of [0, 1] as const) {
+        for (const at of [3, 10, 18, 19, 20, 30]) {
+          const plan = divorcePlan(sc.famSeed, sc.birthYear, { who, at });
+          // 한 분이 떠난 해부터는 이혼이 없다(기존 규칙)
+          if (plan !== null) expect(plan.at).toBeLessThan(at);
+          // 함께 살던 분(떠난 분)이 미성년 때 별세하는 계획은 어디에도 없다
+          if (plan !== null && at <= 19) expect(plan.leaver, `${s.gen} ${s.seed} who ${who} at ${at}`).toBe(who);
+          // 규칙이 없을 때의 값과 견준다: 같거나(이혼 없음 포함) 규칙 때문에 null이 되었거나
+          if (free !== null && free.at < at) {
+            if (free.leaver !== who && at <= 19) {
+              expect(plan).toBeNull();
+              nulled++;
+            } else {
+              expect(plan).toEqual(free);
+              kept++;
+            }
+          }
+        }
+      }
+    }
+    expect(nulled, '규칙이 실제로 일한 경우가 표본에 있다').toBeGreaterThan(10);
+    expect(kept, '규칙이 건드리지 않은 경우도 있다').toBeGreaterThan(10);
   });
 
   it('T-FA7a 1993~2006년생이 0~18세 사이 부모 이혼을 겪는 비율이 15.6~18.0% 근방(4σ)이다', () => {

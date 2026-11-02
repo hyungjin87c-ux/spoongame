@@ -49,7 +49,8 @@ test('태어나기 → 살아가기: 집과 가족 그림 카드가 인생 기�
   expect(await page.locator('.year-row').first().textContent()).toContain(year.replace('년', ''));
   // 대체 글: 그림은 role=img이고 이름이 「{연도}년 {사는 곳} · {집 낱말} · …」 (FM4b부터 집 종류가 정해져 「집」 한 낱말이 아니다)
   const img = page.locator('[data-testid="scene-house"] [role="img"]');
-  await expect(img).toHaveAccessibleName(/^\d{4}년 .+ · (?:단독주택|단독주택 셋방|다가구 단독주택|연립주택|다세대주택|아파트|작은 집|가게 딸린 집|상가주택|넓은 단독주택|요양 시설) · .+(함께|지냅니다)/);
+  // 360px에서 아래 한 줄이 한 줄에 안 들어가면 FitList가 가운뎃점 없이 항목마다 줄을 나누므로(QM2-10 규칙 3) 항목 사이는 「 · 」 또는 공백이다 — 출생 구성은 판마다 달라 긴 줄이 나오는 판에서만 그렇다
+  await expect(img).toHaveAccessibleName(/^\d{4}년 .+(?: · | )(?:단독주택|단독주택 셋방|다가구 단독주택|연립주택|다세대주택|아파트|작은 집|가게 딸린 집|상가주택|넓은 단독주택|요양 시설)(?: · | ).+(함께|지냅니다)/);
   // 순서: 그림 카드가 인생 기록보다 위(같은 열 · 한 열 모두)
   const s = await box(page, '[data-testid="family-scene"]');
   const l = await box(page, '[data-testid="log"]');

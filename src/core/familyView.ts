@@ -24,8 +24,9 @@ import type { GameState, Gender } from './types';
  * 가족 보기 `FamilyView`와 그림 상태 `SceneFamilyState` (SPEC-009 FM4a, 설계 문서 3-1·8절). **저장된 `family`(출생 때 한 번 뽑은 값)와 주인공 나이·플래그·자산에서 다시 계산하는 순수 함수**다 —
  * 나이·생존·동거·사이는 저장하지 않는다. 같은 상태 → 같은 값(INV-12), 새로고침해도 같다. 난수는 쓰지 않고 해마다의 판정(부모 이혼)만 `famHash01`이다.
  *
- * FM4a는 **파생 상태**까지다: 조부모·부모 한 분의 별세, 부모 이혼·별거, 아래 동생의 출생, 형제의 독립이 나이에 따라 `people`·`household`에 반영된다. 이 변화를 인생 기록 줄·플래그·`family.log`로 알리는
- * `familyChangesFor`/`applyFamilyChanges`(4-7절)와 이른 부모 별세의 스탯·집안 살림 효과, `infant-new-sibling`을 구성에 맞추는 K2는 FM4b다 — 그래서 아직 어느 화면도 이 보기를 읽지 않는다(식구 카드는 `familyOf` 그대로).
+ * 이 파일은 **파생 상태**다: 조부모·부모 한 분의 별세, 부모 이혼·별거, 아래 동생의 출생, 형제의 독립이 나이에 따라 `people`·`household`에 반영된다. 이 변화를 인생 기록 줄·플래그·`family.log`로 알리는
+ * `familyChangesFor`/`applyFamilyChanges`(4-7절, `familyTick.ts`)와 이른 부모 별세의 스탯·집안 살림 효과, `infant-new-sibling`을 구성에 맞추는 K2(FM4b)가 이 보기를 읽는다. 화면에서는 집과 가족 그림(`sceneFamilyOf`)이 읽고,
+ * 식구 카드와 엔딩의 식구 줄(`familyOf`)은 FM6(식구 카드 개편)까지 옛 계산 그대로다 — 그 전까지 카드와 그림의 가족이 다를 수 있다(공개 배포 차단 R-542).
  */
 
 export type FamilyGame = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'character' | 'peerSeed' | 'seed' | 'assets'> & { family?: FamilyData };
@@ -236,8 +237,9 @@ function wasWith(prev: FamilyView, id: PersonId): boolean {
 }
 
 /**
- * FM5 그림이 먼저 읽는 최소 가족 상태. 식구 구성(`members`)·조부모 동거·형제(위·아래·독립·별세)·부모 별세·이혼은 채워지고, 집 종류·방 수는 묶음 B 표가 오기 전이라 `null`(그림은 점유 형태 기본 모양),
- * 반려동물은 사건이 켠 `pet_*` 플래그만 읽는다(부모 집 반려동물 유무는 묶음 D 뒤). 배우자·자녀(성인기 식구 자리)·이사·시대 변화는 FM4b/FM4c — `changed`에도 아직 없다.
+ * FM5 그림이 읽는 가족 상태. 식구 구성(`members`)·조부모 동거·형제(위·아래·독립·별세)·부모 별세·이혼이 채워지고, 집 종류·방 수는 출생 때 정한 `family.h`(묶음 B, FM4b)에서 온다 —
+ * 부모 집(어린 시절 · 가족 집에 사는 동안)이 아니면, 또는 `h`가 없는 옛 상태면 `null`(그림은 점유 형태 기본 모양). 반려동물은 사건이 켠 `pet_*` 플래그만 읽는다(부모 집 반려동물 유무는 묶음 D 뒤).
+ * 배우자·자녀(성인기 식구 자리)·이사·시대 변화는 FM4c 이후라 `changed`에도 아직 없다.
  */
 export function sceneFamilyOf(game: FamilyGame): SceneFamilyState {
   const view = familyViewOf(game);

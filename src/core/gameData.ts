@@ -42,8 +42,8 @@ export interface FamilyTables {
     vital: number[][];
     /** 센서스 역산 5년 묶음 1956~1980 */
     census: Array<{ from: number; to: number; census: number; childAge: number; pct: number[] }>;
-    /** 부모 출생 연도가 `to` 이하이면 출산 연령을 `by`살 이른 쪽으로 (추정) */
-    shift: Array<{ to: number; by: number }>;
+    /** 1956년 앞 출생분(추정): 1966 센서스 표본(전국, 1965.10~1966.9 출생아)의 어머니 나이 일곱 칸 %를 그대로 쓴다 — 마스터 결정 fd-b-house.md 10절 7번 */
+    before1956: { sample: string; meanAge: number; pct: number[] };
   };
   household: { multiplier: number; points: Array<[number, number, string]> };
   divorce: { rateFrom: number; rate: number[]; crudeFrom: number; crude: number[] };
@@ -85,11 +85,11 @@ export interface FamilyDesign {
   /** 아래 동생 이어짐 확률 `a_1`·`a_2`의 상한 */
   continueCap: DesignValue<number>;
   /**
-   * 1940년 이전 출생 어머니의 출산 이어짐 보정 (FM4b, 마스터 결정 2026-10-28): 어머니 출생 연도가 `upTo` 이하인 코호트(오름차순 표, 마지막 `upTo`보다 크면 보정 없음)는 아래 동생 구성에서
+   * 1945년 이전 출생 어머니의 출산 이어짐 보정 (FM4b, 마스터 결정 2026-10-28 · 1941~45는 R-565, 2026-11-02): 어머니 출생 연도가 `upTo` 이하인 코호트(오름차순 표, 마지막 `upTo`보다 크면 보정 없음)는 아래 동생 구성에서
    *  - 전체 자녀가 1·2명일 때의 이어짐 `a_1`·`a_2`의 상한을 `continueCap` 대신 `cap`으로,
    *  - 3명 이상일 때의 이어짐 `a_k`(k ≥ 3)를 `q`로,
    *  - 동생 터울의 상한을 `SIBLING_GAP.max` 대신 `gapMax`(출산이 많던 코호트의 짧은 터울)로 쓴다.
-   * 공표 출산 순위 비중에서 유도한 값은 기간 단면 근사라 출산이 많던 코호트의 총 자녀 수를 낮게 만든다(모형 3.2명 vs FD6 4.1~5.6) — 코호트별로 FD6(센서스 코호트 평균 출생아 수) ±0.45 안에 들도록 `scripts/calibrateHighOrder.ts`가 맞춘 설계값(calibrated)이다.
+   * 공표 출산 순위 비중에서 유도한 값은 기간 단면 근사라 출산이 많던 코호트의 총 자녀 수를 낮게 만든다(모형 3.0~3.2명 vs FD6 3.4~5.6) — 코호트별로 FD6(센서스 코호트 평균 출생아 수) ±0.45 안에 들도록 `scripts/calibrateHighOrder.ts`가 맞춘 설계값(calibrated)이다.
    */
   highOrderContinue: DesignValue<Array<{ upTo: number; cap: number; q: number; gapMax: number }>>;
   /** 집 고르기의 설계값 (FM4b, `fd-b-house.md` 10절 마스터 결정) */

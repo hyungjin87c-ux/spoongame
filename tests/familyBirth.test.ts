@@ -166,28 +166,47 @@ describe('INV-1 가능한 나이 범위 (7세대 × 1000판)', () => {
 });
 
 describe('T-GP1 조부모 출생 때 나이 분포 (어머니 출산 연령 분포, 4-1절)', () => {
-  it('출산 연령 일곱 칸 비중: 부모 출생 연도별 표가 합 100이고, 1955 앞은 1956~60 칸에서 이른 쪽으로 옮긴 값(1936~55 −1, 1916~35 −2, 그 앞 −3)이다', () => {
+  it('출산 연령 일곱 칸 비중: 부모 출생 연도별 표가 합 100이고, 1955 앞은 1966 표본 분포를 이동 없이 그대로 쓴다 (R-557, fd-b-house.md 10절 7번)', () => {
     for (const by of [1900, 1915, 1916, 1935, 1936, 1955, 1956, 1965, 1980, 1981, 1995, 2010, 2030]) {
-      const { pct, shift } = motherAgeShares(by);
+      const pct = motherAgeShares(by);
       expect(pct).toHaveLength(7);
       expect(pct.reduce((a, b) => a + b, 0)).toBeGreaterThan(99.5);
       expect(pct.reduce((a, b) => a + b, 0)).toBeLessThan(100.5);
-      expect(shift, `${by}`).toBe(by <= 1915 ? 3 : by <= 1935 ? 2 : by <= 1955 ? 1 : 0);
     }
+    const sample66 = familyTables().motherAge.before1956;
+    expect(sample66.pct).toEqual([1.4, 19.9, 36.3, 23.7, 12.8, 5.1, 0.7]);
+    for (const by of [1850, 1900, 1915, 1916, 1935, 1936, 1955]) expect(motherAgeShares(by), `${by}`).toEqual(sample66.pct);
+    expect(motherAgeShares(1956)).toEqual(familyTables().motherAge.census[0].pct); // 센서스 역산은 1956부터
+    expect(motherAgeShares(1956)).not.toEqual(sample66.pct);
   });
 
-  it('조모(어머니의 어머니)의 출산 연령 칸 비율이 표와 4σ 이내다 (옮김이 없는 1956년생 이후 부모 — 판마다 기대값을 더해 비교)', () => {
+  it('조모(어머니의 어머니)의 출산 연령 칸 비율이 표와 4σ 이내다 (부모 출생 연도 전체 — 판마다 기대값을 더해 비교)', () => {
     const bins: ReadonlyArray<readonly [number, number]> = [[16, 19], [20, 24], [25, 29], [30, 34], [35, 39], [40, 44], [45, 49]];
     const rows = ALL.flatMap((b) => [
       { by: b.birthYear - b.report.father.age, a: b.family.g[1].a },
       { by: b.birthYear - b.report.mother.age, a: b.family.g[3].a },
-    ]).filter((r) => motherAgeShares(r.by).shift === 0);
-    expect(rows.length).toBeGreaterThan(5000);
+    ]);
+    expect(rows.filter((r) => r.by <= 1955).length, '1955년 앞 출생 부모 표본(이동 없는 1966 분포)').toBeGreaterThan(3000);
     bins.forEach(([lo, hi], i) => {
-      const ps = rows.map((r) => motherAgeShares(r.by).pct[i] / 100);
+      const ps = rows.map((r) => motherAgeShares(r.by)[i] / 100);
       const obs = rows.filter((r) => r.a >= lo && r.a <= hi).length;
       expectCount(obs, ps, `조모 출산 연령 ${lo}~${hi}`);
     });
+  });
+
+  it('1955년 앞 출생 부모의 조모는 출생 때 평균 29세 안팎이다(1966 표본 평균 29.74세 — 옛 「이른 쪽」 이동은 25~27세였다)', () => {
+    const old = ALL.flatMap((b) => [
+      { by: b.birthYear - b.report.father.age, a: b.family.g[1].a },
+      { by: b.birthYear - b.report.mother.age, a: b.family.g[3].a },
+    ]).filter((r) => r.by <= 1955);
+    const mean = old.reduce((a, r) => a + r.a, 0) / old.length;
+    // 칸 안 균등 가정의 기대값(≈29.2, 첫 칸이 16~19라 계급 중앙값 근사 29.74보다 0.5 낮다)에 ±0.3
+    const pct = familyTables().motherAge.before1956.pct;
+    const mid = [17.5, 22, 27, 32, 37, 42, 47];
+    const expected = pct.reduce((a, p, i) => a + p * mid[i], 0) / pct.reduce((a, p) => a + p, 0);
+    expect(Math.abs(mean - expected), `평균 ${mean.toFixed(2)} vs 기대 ${expected.toFixed(2)}`).toBeLessThan(0.3);
+    expect(mean).toBeGreaterThan(28.5);
+    expect(mean).toBeLessThan(30);
   });
 
   it('조부의 나이는 같은 쪽 조모보다 대체로 많다(아버지 − 어머니 나이 차 모형): 평균 나이 차가 양수이고 모형 범위 안이다', () => {
@@ -316,9 +335,9 @@ describe('T-FA3a·b 형제 구성', () => {
     expect(continueProbability(0, [1, 1, 1])).toBe(0);
   });
 
-  it('1940년 이전 출생 어머니(코호트 표 `highOrderContinue`)는 상한 cap(k = 1·2)과 고차 q(k ≥ 3)를 쓰고, 1941년생부터는 보정이 없다', () => {
+  it('1945년 이전 출생 어머니(코호트 표 `highOrderContinue`)는 상한 cap(k = 1·2)과 고차 q(k ≥ 3)를 쓰고, 1946년생부터는 보정이 없다', () => {
     const rows = familyTables().design.highOrderContinue.value;
-    expect(rows.map((r) => r.upTo)).toEqual([1900, 1905, 1910, 1915, 1920, 1925, 1930, 1935, 1940]);
+    expect(rows.map((r) => r.upTo)).toEqual([1900, 1905, 1910, 1915, 1920, 1925, 1930, 1935, 1940, 1945]);
     for (const row of rows) {
       const mby = row.upTo;
       expect(continueProbability(1, [10, 50, 40], mby)).toBe(row.cap);
@@ -329,8 +348,10 @@ describe('T-FA3a·b 형제 구성', () => {
     }
     // 코호트가 이를수록 짧은 터울·높은 이어짐(출산이 많던 때): 터울 상한은 줄지 않는다
     for (let i = 1; i < rows.length; i++) expect(rows[i].gapMax).toBeGreaterThanOrEqual(rows[i - 1].gapMax);
-    expect(continueProbability(3, [1, 1, 1], 1941)).toBeCloseTo(26 / 74, 10);
-    expect(continueProbability(1, [10, 50, 40], 1941)).toBe(0.9);
+    expect(continueProbability(3, [1, 1, 1], 1946)).toBeCloseTo(26 / 74, 10);
+    expect(continueProbability(1, [10, 50, 40], 1946)).toBe(0.9);
+    expect(oldCohortOf(1945)).toMatchObject({ upTo: 1945, cap: 0.98, gapMax: 5 }); // R-565: 1941~45도 FD6에 맞춘 보정 행이 있다
+    expect(oldCohortOf(1946)).toBeUndefined();
     expect(continueProbability(3, [1, 1, 1])).toBeCloseTo(26 / 74, 10); // 어머니 출생 연도를 안 주면 보정 없음
   });
 
@@ -341,7 +362,7 @@ describe('T-FA3a·b 형제 구성', () => {
       const ps = rows.map((b) => {
         const mby = b.birthYear - b.report.mother.age;
         const a = continueProbability(order, sharesOf(b), mby);
-        const gapMax = oldCohortOf(mby)?.gapMax ?? SIBLING_GAP.max; // 1940년 이전 어머니는 코호트의 짧은 터울
+        const gapMax = oldCohortOf(mby)?.gapMax ?? SIBLING_GAP.max; // 1945년 이전 어머니는 코호트의 짧은 터울
         let ok = 0;
         for (let gap = SIBLING_GAP.min; gap <= gapMax; gap++) if (b.report.mother.age + gap <= YOUNGER_MOTHER_MAX && gap <= lastAtOf(b)) ok++;
         return order + 1 <= FAMILY_MAX_CHILDREN ? (a * ok) / (gapMax - SIBLING_GAP.min + 1) : 0;
@@ -358,7 +379,7 @@ describe('T-FA3a·b 형제 구성', () => {
     expect(Math.abs(males / ys.length - 0.5)).toBeLessThanOrEqual(sigmaTolerance(0.5, ys.length));
   });
 
-  it('T-FA3c 총 자녀 수(어머니 가중 1/N 환산 평균)가 FD6 코호트값과 ±0.45 이내다 — 어머니가 1911년생 이후인 코호트 전부(1940년 이전은 FM4b의 코호트 보정, 마스터 결정 2026-10-28)', () => {
+  it('T-FA3c 총 자녀 수(어머니 가중 1/N 환산 평균)가 FD6 코호트값과 ±0.45 이내다 — 어머니가 1911년생 이후인 코호트 전부(1945년 이전은 FM4b의 코호트 보정, 마스터 결정 2026-10-28 · 1941~45는 R-565)', () => {
     // FD6 어머니 출생 코호트 → 센서스 연령 계급 평균 출생아 수 (fd6_mean_children_by_age_calc): 1970 센서스 55-59세 5.42 · 50-54세 5.65 · 45-49세 5.62 / 1975 45-49세 5.23 / 1980 4.69 / 1985 4.07 / 1990 3.43 / 2000 2.31 / 2005 2.00
     const cohorts: Array<[number, number, number]> = [
       [1911, 1915, 5.42],
@@ -391,8 +412,8 @@ describe('T-FA3a·b 형제 구성', () => {
       expect(cnt[i], `${lo}~${hi}년생 어머니 표본`).toBeGreaterThan(1500);
       const model = cnt[i] / inv[i];
       // 허용 0.45는 설계 문서 12-4절의 ▲ 0.4에 FM4a 측정(1951~55가 +0.41)을 얹어 마스터가 정한 값이다.
-      // R-530(부모 별세·이혼 뒤 동생을 끊음)과 1940년 이전 코호트 보정(FM4b) 뒤 다시 잰 값(R-541, 이 표본 그대로): 1911~15 −0.02 · 1916~20 −0.08 · 1921~25 −0.12 · 1926~30 0.00 · 1931~35 −0.04 · 1936~40 −0.03 ·
-      // **1941~45 −0.39**(−0.45에 가깝다 — 마스터에게 알림) · 1951~55 +0.37 · 1956~60 +0.18 (ai-log/2026-10-28_SPEC-009_dev-FM4b.md 3절)
+      // R-530(부모 별세·이혼 뒤 동생을 끊음)·R-558(이혼 없음 규칙)·1945년 이전 코호트 보정(FM4b + R-565) 뒤 다시 잰 값(이 표본 그대로): 1911~15 0.00 · 1916~20 −0.07 · 1921~25 −0.11 · 1926~30 +0.01 · 1931~35 −0.03 · 1936~40 −0.02 ·
+      // 1941~45 +0.01(R-565 전 −0.39: 한계 −0.45에 여유 0.06뿐이던 것을 코호트 행을 더해 맞췄다) · 1951~55 +0.38 · 1956~60 +0.18 (ai-log/2026-11-02_SPEC-009_dev-FM4b-r2.md)
       expect(Math.abs(model - fd6), `${lo}~${hi}: 모형 ${model.toFixed(2)} vs FD6 ${fd6}`).toBeLessThanOrEqual(0.45);
     });
   });

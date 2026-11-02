@@ -304,7 +304,7 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       'ui/FitPair.tsx': 4, // FitPair의 「A · B」 탐침·한 줄 모양 + FitList(SPEC-009 FM4b, 항목 셋 고정인 집 아래 한 줄)의 탐침·한 줄 모양 — 안 들어가면 기호 없이 항목마다 줄
       // SPEC-003 M7c D-74: `Glue hideSeparator`가 띄어 쓴 가운뎃점 사슬 「A · B」를 가르는 자리 — 문구를 조립하지 않고(조립은 위 곳들) 이미 만들어진 글에서 「·」만 낭독에서 숨긴다
       'ui/Glue.tsx': 2,
-      // SPEC-009 FM5 집과 가족 그림: 아래 한 줄 「{사는 곳} · {집 낱말} · {사람 묶음}과 함께」(core/scene.ts — 항목 셋이 고정된 한 줄 문구, FH3 시안 그대로, 길이는 LINE_MAX 40자로 맞춘다) · 시대의 창 접근 이름·툴팁 「시대의 창 · {문장}」(data/sceneText.ts, 눈에 보이지 않는 글) · 펼침의 사람 줄 「{호칭} · {나이}세」(ui/scene/SceneCard.tsx — 항목 둘의 짧은 쌍)
+      // SPEC-009 FM5 집과 가족 그림: 아래 한 줄 「{사는 곳} · {집 낱말} · {사람 묶음}과 함께」(core/scene.ts — 항목 셋이 고정된 한 줄 문구, FH3 시안 그대로, 길이는 LINE_MAX 40자로 맞춘다) · 시대의 창 접근 이름·툴팁 「시대의 창 · {문장}」(data/sceneText.ts, 눈에 보이지 않는 글) · ui/scene/SceneCard.tsx의 1곳은 아래 한 줄 문구를 항목으로 가르는 `line.split(' · ')`(FitList에 넘긴다 — 조립이 아니라 core/scene.ts가 만든 글을 가르는 자리). 펼침의 사람 줄 「{호칭} · {나이}세」는 FitPair가 그리므로 위 `ui/FitPair.tsx` 칸에 센다
       'core/scene.ts': 2,
       'data/sceneText.ts': 2,
       'ui/scene/SceneCard.tsx': 1,

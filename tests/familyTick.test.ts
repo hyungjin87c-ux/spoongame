@@ -10,6 +10,7 @@ import {
   autoResolveStep,
   createEventPool,
   createInitialState,
+  createRng,
   deriveFamilyFlags,
   enterLife,
   eventPool,
@@ -17,6 +18,7 @@ import {
   familyScheduleOf,
   familyTables,
   familyViewOf,
+  heavyKindOfEntry,
   legacyFamilyFrom,
   parseOpened,
   stepYear,
@@ -25,6 +27,7 @@ import {
 } from '../src/core';
 import { startLife } from '../scripts/simulateLib';
 import { withEarlyLoss } from '../scripts/familyRulesLib';
+import { FAMILY_LINE_HEAVY } from '../src/data/familyLineText';
 import { lifeSteps, seedsFor } from './helpers/familyLife';
 
 /**
@@ -144,6 +147,58 @@ describe('K2 강제 슬롯: 첫째의 첫 동생 반응 카드는 구성이 정�
     expect(b.state.history.some((h) => h.age === before.age && h.eventId === 'fam-sib-born')).toBe(true);
     expect(b.state.history.some((h) => h.eventId === YOUNGER_SIBLING_EVENT)).toBe(false);
     expect(b.state.family!.l.some((e) => e[0] === 1 && e[2] === 21 && e[3] === 0)).toBe(true); // 풀에 사건이 없으면 로그의 부가는 0(상태 줄)
+  });
+
+  it('난수 한 칸 규칙을 칸 수로 센다 (R-560): 강제 해는 아무것도 뽑지 않은 해보다 정확히 두 칸 더 쓰고(강제 슬롯 한 칸 + 카드 해결 한 칸), 일반 추첨으로 같은 카드를 뽑은 해와 칸 수가 같다', () => {
+    // 칸 수 = createRng(before.rngState)을 한 칸씩 나아가게 해 해 끝의 rngState와 만날 때까지의 횟수.
+    // 아무것도 뽑지 않은 해: rollChoice · rollNarrative · (마일스톤 따짐) · 해 끝 굴림. 카드가 있는 해는 거기에 카드를 고르는 난수 한 칸(선택 해결, R-039)이 더해지고,
+    // 일반 추첨의 카드는 추첨 한 칸(pickWeighted)을, 강제 카드는 추첨을 대신하는 강제 슬롯 한 칸을 더 쓴다 — 그래서 둘 다 통제 해보다 두 칸 많다.
+    const used = (from: number, to: number): number => {
+      const rng = createRng(from);
+      for (let n = 0; n <= 40; n++) {
+        if (rng.getState() === to) return n;
+        rng.next();
+      }
+      return -1;
+    };
+    const card = eventPool().byId.get(YOUNGER_SIBLING_EVENT)!;
+    const milestones = eventPool().events.filter((e) => e.milestone === true); // 후보가 마일스톤뿐이면 일반 추첨이 아무것도 뽑지 않는다(추첨 0칸)
+    const withTrigger = createEventPool([...milestones, card]);
+    const noTrigger = createEventPool(milestones);
+    const asNormal = createEventPool([...milestones, { ...card, trigger: undefined }]); // 같은 카드를 일반 추첨 후보로 둔 풀
+    let forcedChecked = 0;
+    let normalChecked = 0;
+    for (const gen of GEN) {
+      for (const seed of seedsFor(40, GENERATION_IDS.indexOf(gen as (typeof GENERATION_IDS)[number]))) {
+        for (const st of lifeSteps(seed, gen)) {
+          const { before, state: real } = st;
+          if (before.age < 2 || before.age > 5 || before.seen[YOUNGER_SIBLING_EVENT] !== undefined || before.phase !== 'life') continue;
+          const control = stepYear(before, noTrigger);
+          if (control.state.phase !== 'life') continue; // 사망 해는 사망 원인 뽑기가 더해져 칸 수가 달라진다
+          const c = used(before.rngState, control.state.rngState);
+          expect(c, `${gen}/${seed} ${before.age}세: 통제 해 칸 수(rollChoice · rollNarrative · 해 끝 굴림 + 마일스톤 따짐)`).toBeGreaterThanOrEqual(3);
+          // 구성이 정한 해: 강제 슬롯
+          if (real.seen[YOUNGER_SIBLING_EVENT] !== undefined) {
+            const forced = stepYear(before, withTrigger);
+            expect(forced.state.seen[YOUNGER_SIBLING_EVENT], `${gen}/${seed}: 강제 사건이 일어났다`).toBe(before.age);
+            if (forced.state.phase === 'life') {
+              expect(used(before.rngState, forced.state.rngState) - c, `${gen}/${seed} ${before.age}세: 강제 해 − 통제 해`).toBe(2);
+              forcedChecked++;
+            }
+          }
+          // 일반 추첨으로 같은 카드가 뽑힌 해(트리거 없는 풀): 강제 해와 같은 두 칸
+          if (normalChecked < 40) {
+            const normal = stepYear(before, asNormal);
+            if (normal.state.seen[YOUNGER_SIBLING_EVENT] === before.age && normal.state.phase === 'life' && normal.tick.kind === 'resolved') {
+              expect(used(before.rngState, normal.state.rngState) - c, `${gen}/${seed} ${before.age}세: 일반 추첨 해 − 통제 해`).toBe(2);
+              normalChecked++;
+            }
+          }
+        }
+      }
+    }
+    expect(forcedChecked, '공허 통과 방지: 강제 해가 실제로 여러 번 있다').toBeGreaterThan(30);
+    expect(normalChecked, '공허 통과 방지: 일반 추첨으로 뽑힌 같은 카드 해도 있다').toBeGreaterThan(10);
   });
 
   it('첫째가 아닌 판의 동생은 사건 없이 상태 줄로 알리고 younger_sibling을 더한다 — 둘째 이후 동생은 순서가 붙는다', () => {
@@ -287,6 +342,30 @@ describe('인생 기록 줄 · 로그 · 플래그 (4-7절)', () => {
   it('가림(4-9절): 설정이 켜져 있어도 상태·플래그·로그는 그대로다 — 줄의 분류는 글자 표(eventId 접두어)로 잡는다', () => {
     const s = lifeSteps(seedsFor(1, 0)[0], 'industrial').slice(-1)[0].state;
     expect(s.family!.l.length).toBeGreaterThan(0);
+  });
+
+  it('가림 전수 (R-560): 7세대 × 120판의 모든 가족 줄이 글자 표대로 분류되고, 분류가 붙은 줄(별세·이혼)은 가림을 켜면 문장이 가려지는 줄이다 — 분류 없는 줄(동생 출생·독립)은 가리지 않는다', () => {
+    const counts = { loss: 0, home: 0, plain: 0 };
+    for (const gen of GEN) {
+      for (const seed of seedsFor(120, GENERATION_IDS.indexOf(gen as (typeof GENERATION_IDS)[number]))) {
+        const last = lifeSteps(seed, gen).slice(-1)[0].state;
+        for (const h of last.history.filter((x) => (x.eventId ?? '').startsWith('fam-'))) {
+          const want = FAMILY_LINE_HEAVY[h.eventId!] ?? null;
+          const kind = heavyKindOfEntry(h);
+          expect(kind, `${gen}/${seed} ${h.eventId}`).toBe(want);
+          // 가림이 켜진 로그(LogList·EndingScreen)는 분류가 있는 줄의 문장을 보이지 않는다 — 그 분류의 줄만 가림 대상이다
+          if (kind === 'loss') counts.loss++;
+          else if (kind === 'home') counts.home++;
+          else {
+            expect(kind).toBeNull();
+            counts.plain++;
+          }
+        }
+      }
+    }
+    expect(counts.loss, '별세 줄').toBeGreaterThan(50);
+    expect(counts.home, '이혼 줄').toBeGreaterThan(5);
+    expect(counts.plain, '분류 없는 줄').toBeGreaterThan(50);
   });
 });
 

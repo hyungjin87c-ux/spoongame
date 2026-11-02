@@ -159,10 +159,12 @@ describe('holdMsFor: 모드 × 종류 × 줄 수 표 (직접 계산 — 완료 �
 });
 
 describe('한 해 여러 줄: tick.lines · counts.extraLines (TODO M8 220행)', () => {
-  const lineCountsIndependently = (final: ReturnType<typeof playToEnd>['state']): number => {
+  /** `skipFamily`: 가족 변화 줄(fam-…)을 셈에서 뺀다 — FM4b 전 둘째 줄(옛 상한 5)을 그대로 지키는 가드용 (R-556) */
+  const lineCountsIndependently = (final: ReturnType<typeof playToEnd>['state'], skipFamily = false): number => {
     // 연표로 다시 센 둘째 줄 수의 합: 사망 직전까지의 해마다 max(0, 줄 − 1) — 그 나이의 event·choice 줄 전부(조용한 해는 줄 0, 해 끝 규칙의 상속 줄도 그 나이의 event 줄이다)
     const byAge = new Map<number, number>();
     for (const h of final.history) {
+      if (skipFamily && (h.eventId ?? '').startsWith('fam-')) continue;
       if (h.kind === 'event' || h.kind === 'choice') byAge.set(h.age, (byAge.get(h.age) ?? 0) + 1);
     }
     let extra = 0;
@@ -218,13 +220,28 @@ describe('한 해 여러 줄: tick.lines · counts.extraLines (TODO M8 220행)',
   });
 
   it('둘째 줄이 있는 해가 한 판에 평균 2~3줄 있다 (M7a r3: 0~7세 중 평균 1.9해가 두 줄 이상)', () => {
-    const extra = ERAS.map((era) => mean(measureMany(REP[era], 100, 'random', 'short30').map((l) => l.counts.extraLines)));
-    for (const e of extra) {
+    const runs = ERAS.map((era) =>
+      Array.from({ length: 100 }, (_, k) => {
+        const seed = (k + 1) * 7919 + 13; // measureMany와 같은 시드 줄·같은 걸음(수동 흉내, 30분 모드)
+        return playToEnd(startLife(seed, REP[era], { lifeLength: 'short30' }), chooserFor('random', seed));
+      }),
+    );
+    const extra = runs.map((rs) => mean(rs.map((r) => r.counts.extraLines)));
+    // 가족 줄(fam-…)을 뺀 둘째 줄은 판마다 연표로 따로 센다 (R-556) — FM4b 전 가드(상한 5)를 그대로 지킨다
+    const nonFamily = runs.map((rs) => mean(rs.map((r) => lineCountsIndependently(r.state, true))));
+    extra.forEach((e, i) => {
       expect(e).toBeGreaterThan(1.5);
-      // 상한 5 → 12 (SPEC-009 FM4b, FA0-7): 가족 변화 줄(fam-…: 동생 출생·형제 독립·조부모 별세·부모 별세·이혼)이 연표 줄과 같은 규칙으로 센다 — 판당 평균 5~10줄이 더해져 둘째 줄이 늘었다
-      // (측정은 docs/data/family-remeasure.md 4절: 판당 가족 줄 평균 6.8, 시간 +81초). 가족 줄을 뺀 값은 옛 상한 5 안이다
+      // 합계 가드: 상한 5 → 12 (SPEC-009 FM4b, FA0-7): 가족 변화 줄(fam-…: 동생 출생·형제 독립·조부모 별세·부모 별세·이혼)이 연표 줄과 같은 규칙으로 센다 — 판당 평균 5~10줄이 더해져 둘째 줄이 늘었다
+      // (측정은 docs/data/family-remeasure.md 4절: 판당 가족 줄 평균 6.8, 시간 +81초)
       expect(e).toBeLessThan(12);
-    }
+      // 옛 가드: 가족 줄을 뺀 값은 옛 상한 5 안이다 (비가족 둘째 줄이 늘어나는 것을 12가 가리지 않게)
+      expect(nonFamily[i], `${ERAS[i]}: 가족 줄을 뺀 둘째 줄 평균`).toBeGreaterThan(1.5);
+      expect(nonFamily[i], `${ERAS[i]}: 가족 줄을 뺀 둘째 줄 평균`).toBeLessThan(5);
+      expect(nonFamily[i]).toBeLessThanOrEqual(e);
+    });
+    // 공허 통과 방지: 가족 줄이 있는 세대(R1 프로필의 지금 세상은 가족 변화를 쓰지 않는다)에서는 가족 줄이 둘째 줄을 실제로 더한다
+    expect(extra[0] - nonFamily[0], '과거 세대: 가족 줄이 더한 둘째 줄').toBeGreaterThan(1);
+    expect(extra[2] - nonFamily[2], '알파: 가족 줄이 더한 둘째 줄').toBeGreaterThan(1);
   });
 
   it('사망 걸음·선택지 걸음의 tick에는 lines가 없다 (연출 대기가 없다)', () => {

@@ -177,3 +177,33 @@ INV 전수가 정본(7세대 × 1000판, 12-2절)의 약 9%다. 지시와 다른
 - **집 매핑(수저 → 소득, 시도 → 지역)** 사후 승인. 세종 = 「광역시 등」. 근거 표기를 「지역 3분류」로 고친다.
 - **R-561·R-562·R-564의 FM7·FM6 몫**은 해당 회차에. R-564의 TODO·13-2 수정과 `report:family` 표는 이번에.
 - **K1:** 형진 님께 묻는다(게임 체감이 바뀌는 결정).
+
+## 반영 내역 (developer, 2026-11-02, FM4b 검수 1회차 반영 — 커밋은 마스터가 한다)
+
+원칙: 검수자의 diff는 해석·변형 없이 적용하고 시험을 다시 돌렸다. 아래 「표」의 diff 칸이 `그대로`면 한 글자도 바꾸지 않았다. 상세 기록은 `ai-log/2026-11-02_SPEC-009_dev-FM4b-r2.md`.
+
+| 지적 | 처리 | 고친 곳 · 근거 |
+|---|---|---|
+| R-555 | diff 그대로 + 측정 표 + 주석을 사실대로. **결과: 구조적 이동**(잡음 아님) | `tests/judgeMargins.test.ts` 28행 주석(−2.5 SE, diff 그대로) + 머리 주석을 재측정 사실로 교체, `tests/simulation.test.ts` 주석·`seniorAllowance`, `scripts/familyRemeasure.ts` 5절 · `scripts/familyRemeasureLib.ts#SENIOR_WORLDS#seniorSamples#seniorCards#pairedDiff`, `docs/data/family-remeasure.md` 5절 표(S0/S2/S3 × 판정 표본·독립 줄), `docs/TODO.md` GM10 줄. 판정 표본 4.987 → 4.926(K2·K4, 짝지은 −0.060 = −4.4 SE, 독립 줄에서도 −0.047 = −4.1 SE) → 4.925(효과 −0.002). **독립 줄에서는 FM4b 전 풀도 4.903(−3.3 SE)으로 하한 5.00 아래** — 모집단 평균이 이미 하한 아래이고 판정 표본이 운 좋은 줄이었다 |
+| R-556 | 반영 | `tests/timeModel.test.ts` "둘째 줄이 있는 해가 한 판에 평균 2~3줄 있다": 판마다 `fam-` 줄을 뺀 둘째 줄을 연표로 따로 세어 `< 5`(측정 3.26 / 3.22 / 3.30), 합계 `< 12` 유지(8.66 / 3.22 / 6.18), 가족 줄이 둘째 줄을 더하는지 공허 통과 방지 단언 |
+| R-557 | 반영 (지시 4항 모두) | ① `scripts/genFamilyTables.ts`가 `fd1_a3_births_by_mother_age_1965_66_share_pct_calc` 전국 줄로 `motherAge.before1956`을 만들고 `shift` 삭제(`npm run gen:family`) ② `src/core/familyBirth.ts#motherAgeShares`가 칸 비중 배열 하나를 돌려주고 `rollGrandmotherAge`의 이동·자르기 삭제 ③ `src/data/familyTables.ts#FAMILY_BASIS` `mother-age-before-1956`, `docs/data/family-model.md` 4-1 표 ④ `tests/familyBirth.test.ts` T-GP1(표 비중 4σ를 부모 출생 연도 전체로 넓힘 + 1955 앞 평균 29세 안팎 시험), `tests/familyTables.test.ts`, `tests/rngSnapshot.test.ts` 5판(줄 수·플래그 수만), `tests/fixtures/scene-golden.json` 4칸, `tests/infantContent.test.ts` `PD_AT_8` · `tests/stat20Guard.test.ts` `PD_AT_20` 기준선(이동 ≤ 0.02), `src/data/finalDistribution.ts` 분포표(`finalDistribution.ts` 재생성 — `check:dist`), `report:family` 재실행 |
+| R-558 | **안 B** | `src/core/familyBirth.ts#divorcePlan`(인자 `{ who, at }`, 이혼한 쪽이 먼저 떠나는 분과 다르고 그분이 19세 이하에 떠나면 null), `tests/sceneFamily.test.ts` "R-558 안 B…"·INV-2c(0~100세 전수), `tests/familyConsistency.test.ts` INV-2c, `docs/data/family-model.md` 1-4·4-7 (2). 20세 전 곁에 부모 0인 판 37/21000 → 0, T-FA7a(1993~2006년생 5,499판) 이혼 비율 16.62% → 16.11%(허용 15.6~18.0) |
+| R-559 | diff 적용 + 전수 1회 + 설계 문서 + 사망 걸음 | `tests/familyConsistency.test.ts`(`PER_GEN`·timeout diff **그대로**, `declare const process` 한 줄 추가 — 아래 「diff가 그대로는 안 맞은 곳」), 1000판 전수 **위반 0**·tally는 ai-log 4절, `docs/data/family-model.md` 12-2·12-5·6-2(`familyFlags.test.ts`는 없다 → `familyConsistency`·`sceneFamily`로), 사망 걸음은 INV-7을 `familyViewOf(state, age + 1)`로 견주어 INV-7·8·9·저장 검증·그림·INV-10 모두 건너뛰지 않는다 |
+| R-560 | 반영 | `tests/familyTick.test.ts` "난수 한 칸 규칙을 칸 수로 센다 (R-560)"(`createRng(before.rngState)`을 나아가게 해 센 칸 수: 강제 해와 일반 추첨으로 같은 카드가 뽑힌 해는 아무것도 뽑지 않은 통제 해보다 똑같이 2칸 많다) · "가림 전수 (R-560)"(7세대 × 120판의 모든 `fam-` 줄이 `FAMILY_LINE_HEAVY`대로), `tests/familyConsistency.test.ts`(7000판 가림 분류 25,503 + 21,737줄, 판 끝 `family` 최댓값 519자·로그 19줄 ≤ 1000자) |
+| R-561 | **미반영 (FM7)** | `docs/TODO.md`에 `[ ]` 줄 |
+| R-562 | **미반영 (FM6)** | `docs/TODO.md`에 `[ ]` 줄 |
+| R-563 | diff 그대로 + 시험 셋 + 주석 | `src/core/events.ts`, `tests/familyLint.test.ts` "선택지 스키마 완화와 trigger 사건 (R-563)"(조건 없음 1 + 가족 플래그 1 통과 · 조건 없음 1 + 다른 requires 실패 · trigger + 조건 없음 1 실패 등 8개), `src/core/eventLint.ts#visibleChoiceProblems` 주석 |
+| R-564 (이번 몫) | 반영 | `docs/data/family-model.md` 13-2(`youth-housing`·`note-parents-aging`·`middle-parents-care`, 공개 배포 차단 조건), `scripts/familyRemeasure.ts` 7절 + `docs/data/family-remeasure.md` 7절: 사건 셋 중 하나라도 별세 뒤에 나온 판 **전체 판 대비 81.6%**(FM4b 보고의 약 80.6%와 같은 읽기) · 별세 판 대비 87.6% · 글감 `note-parents-aging` 0%(자동 선택 판에는 글감 카드가 나오지 않는다). 공개 배포 차단 줄(TODO 455행)은 마스터 몫 |
+| R-565 | 마스터 결정대로 | `scripts/calibrateHighOrder.ts`(1945/3.43 줄), `src/data/familyTables.ts#FAMILY_DESIGN.highOrderContinue` `{ upTo: 1945, cap: 0.98, q: 0.469, gapMax: 5 }`, `docs/data/family-model.md` 16절(범위 1940 → 1945), `tests/familyBirth.test.ts`. 1941~45 모형 3.04(−0.39) → 3.44(+0.01) |
+| R-566 | 반영 | `src/core/familyView.ts` 머리·`sceneFamilyOf` 주석, `docs/TODO.md`(엔진 묶음 줄 `[x]` → `[ ]`, 체크는 검수 승인·QA 뒤), 전체 `npm test` 재실행 결과는 ai-log 4절 |
+| 마스터: 수용 기준 | 반영 | `scripts/familyRemeasure.ts#passes`(최종 평균 ≤ 3% · 20세 평균 절대 ≤ 150만 원 · 뒤바뀜 0 · 판정 ≤ 2%p, 중앙값은 표에 두되 판정 제외), `docs/data/family-model.md` 4-7 (1)·12-1·14절 A-6·16절. 재측정: 0.45% / 126만 원 / 0.35%p / 0 → **합격**(반 크기도 합격) |
+| 마스터: 집 매핑 | 반영 | 코드 `FAMILY_BASIS`는 이미 「지역 3분류」였다. 「4분류」가 남은 `docs/data/fd-b-house.md` 10절 3번·표 머리·9절 4번을 정정, `docs/data/family-model.md` 4-5에 구현 사실 |
+| `glue.test.ts` 307 | 반영 | 주석을 지금 구조로(`ui/scene/SceneCard.tsx`의 1곳 = 아래 한 줄을 가르는 `split(' · ')`→FitList, 사람 줄은 FitPair) |
+
+### diff가 그대로는 안 맞은 곳 / 판단한 곳
+- **R-559 diff**: `process.env.FAMILY_INV_LIVES`를 쓰는 두 줄은 그대로 적용했지만 `tests/`는 Node 타입이 없는 `tsconfig.json`이라 `typecheck`가 TS2591로 깨진다. 맞춰 고치지 않고 파일 안에 `declare const process: { env: Record<string, string | undefined> };` 한 줄만 더했다.
+- **R-558의 `≤ 19`**: 정확히는 `at ≤ 18`이면 아이 곁에 부모가 없어진다(`at = 19`는 20세에 비로소 떠난 것으로 보인다). 검수 안 그대로 19를 썼고 영향은 28판/5,499(0.5%p) 안이다 — 마스터 판단 거리.
+- **R-565**: 기존 9개 코호트 행의 `q`는 다시 맞추지 않았다(R-558 뒤 재보정하면 ±0.002 달라지지만 알려진 시드의 가족을 이유 없이 흔들지 않으려고).
+- **검수가 말하지 않은 영향**: 이 반영으로 `rngSnapshot` 5판·`scene-golden` 4칸·`PD_AT_8`·`PD_AT_20`·`finalDistribution` 표가 달라졌다(모두 줄 수·구성 변화에서 온 작은 이동, ai-log 2절). 얼린 값 교체 사유는 각 파일 주석에 적었다.
+  `src/data/finalDistribution.ts`는 생성물이라 `vite-node scripts/finalDistribution.ts`로 다시 만들었다(101칸 중 바뀐 칸 산업화 46·베이비붐 44·86 66·X 63·밀레니얼 31·Z 1·알파 0, 최대 상대 변화 5.5%, 중앙 칸 ±1.2% 안) — **src 변경**이다.
+- **그 밖에 내가 고친 시험 둘**: (1) `e2e/family-scene.spec.ts` 그림 접근 이름 정규식 — 360px에서 아래 한 줄이 갈린 판(FitList)에는 「 · 」가 없어 mobile-360에서 12번 중 3번 실패했다(FM4b부터 있던 판마다의 흔들림, 항목 사이를 「 · 」 또는 공백으로 받게 고침, 양쪽 프로젝트 30/30). (2) 내 주석의 「의붓」 한 글자가 글꼴 조각 밖이라 `tests/fonts.test.tsx`가 깨져 주석을 바꿨다.

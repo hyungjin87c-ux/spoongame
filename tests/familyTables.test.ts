@@ -39,7 +39,7 @@ describe('tables.json 모양', () => {
     expect(m.bins).toHaveLength(7);
     expect(m.vitalFrom).toBe(1981);
     expect(m.vital).toHaveLength(45);
-    for (const row of [...m.vital, ...m.census.map((c) => c.pct)]) {
+    for (const row of [...m.vital, ...m.census.map((c) => c.pct), m.before1956.pct]) {
       expect(row).toHaveLength(7);
       expect(row.reduce((a, b) => a + b, 0)).toBeGreaterThan(99.5);
       expect(row.reduce((a, b) => a + b, 0)).toBeLessThan(100.6);
@@ -51,7 +51,11 @@ describe('tables.json 모양', () => {
     // 1981년: 20~24세 38.68 · 25~29세 41.59 (인구동향조사)
     expect(m.vital[0][1]).toBeCloseTo(38.68, 1);
     expect(m.vital[0][2]).toBeCloseTo(41.59, 1);
-    expect(m.shift).toEqual([{ to: 1915, by: 3 }, { to: 1935, by: 2 }, { to: 1955, by: 1 }]);
+    // 1956 앞은 1966 센서스 표본(10%)의 1965.10~1966.9 출생아 어머니 나이 분포(전국 15~49세 합 866,440명)를 그대로 쓴다 — 이동 없음(R-557, fd-b-house.md 10절 7번)
+    expect((m as { shift?: unknown }).shift).toBeUndefined();
+    expect(m.before1956).toEqual({ sample: '1965.10~1966.9', meanAge: 29.74, pct: [1.4, 19.9, 36.3, 23.7, 12.8, 5.1, 0.7] });
+    expect(m.before1956.pct.reduce((a, b) => a + b, 0)).toBeGreaterThan(99.5);
+    expect(m.before1956.pct.reduce((a, b) => a + b, 0)).toBeLessThan(100.6);
   });
 
   it('조부모와 사는 아동: 2000·2005는 센서스 환산(15.00·14.65), 1970 42.9 · 1995 18.4 · 2025 4.7(3세대 이상 × 1.85), 시간순', () => {

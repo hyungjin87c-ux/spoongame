@@ -78,6 +78,12 @@ const census = [...new Set(censusRows.map((r) => `${r.from}~${r.to}`))]
   .sort((a, b) => a.from - b.from)
   .map((r) => ({ from: r.from, to: r.to, census: r.census, childAge: r.childAge, pct: r.pct }));
 
+// 1956년 앞 출생분(부모 출생 연도 1910~1955)의 모 연령 분포: 1966 센서스 표본(10%)의 1965.10~1966.9 출생아 어머니 나이 구성(전국, 15~49세 합 866,440명) — 마스터 결정 fd-b-house.md 10절 7번(2026-10-28).
+// 이 표는 한 해(1965~66)의 분포라 1956 앞에 **그대로** 쓴다(옛 「이른 쪽으로 옮김」은 폐기: 출산력이 높던 시대의 어머니는 젊어지지 않고 같거나 늦은 쪽이라는 증거). 15세 미만·50세 이상은 이 표에 값이 없다.
+const sample66 = bySeries('fd1_a3_births_by_mother_age_1965_66_share_pct_calc').find((r) => r.dims?.region === '전국');
+if (sample66 === undefined || sample66.values.length < 8) throw new Error('fd1_a3_births_by_mother_age_1965_66_share_pct_calc 전국 줄이 없다');
+const before1956 = { sample: '1965.10~1966.9', meanAge: sample66.values[7] as number, pct: (sample66.values.slice(0, 7) as number[]).map(r2) };
+
 // ---------- 3. 조부모와 사는 아동 비율 (FA4) ----------
 // 2000·2005는 센서스 직접 환산(확인(환산)), 나머지는 FD9 3세대 이상 가구 비율 × 1.85(A-2 결정 4의 1.7~2.0 가운데; 2000·2005 실측 1.73·1.99)로 늘린 추정.
 const MULT = 1.85;
@@ -172,7 +178,7 @@ const rooms = ROOM_KIND_NAMES.map((kind) =>
 const out = {
   note: 'scripts/genFamilyTables.ts가 docs/data/fd-a-family.json + src/data/koreaStats.json에서 만든 표 — 직접 고치지 않는다',
   mortality: { firstYear: 1970, lastYear: 2024, classes: CLASS_NAMES.length, qx, e0Slope },
-  motherAge: { bins: ['≤19', '20-24', '25-29', '30-34', '35-39', '40-44', '45+'], vitalFrom, vital, census, shift: [{ to: 1915, by: 3 }, { to: 1935, by: 2 }, { to: 1955, by: 1 }] },
+  motherAge: { bins: ['≤19', '20-24', '25-29', '30-34', '35-39', '40-44', '45+'], vitalFrom, vital, census, before1956 },
   household: { multiplier: MULT, points: household },
   divorce: { rateFrom: 1993, rate: (rate.values as number[]).map((v) => r5(v)), crudeFrom: 1970, crude: crude.series.map((p) => p.value) },
   housing: {
