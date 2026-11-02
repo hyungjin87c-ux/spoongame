@@ -417,9 +417,8 @@ test('LR2 8배속 자동 진행으로 줄이 폭주하는 중에도 아래에서
       }),
   );
   expect(result.rowsAdded, `줄이 여러 개 쌓였다(${result.rowsAdded}개, ${result.frames}프레임)`).toBeGreaterThanOrEqual(5);
-  // 시대의 창 r5 반영: 이 판(2017년생 50세, 미래 해)은 해마다 시대 줄이 끼고, 그 줄 높이는 소수(69.59px)인데 스크롤 위치는 정수 픽셀로만 옮겨져 줄 하나에 0.41px씩 슬며시 밀린다(튀지 않고 쌓이는 반올림 오차).
-  // 그래서 보던 줄의 이동은 「기록 줄 하나당 2px 이내 + 시대 줄 하나당 0.5px 이내」로 본다 — 한 프레임에 튀는 일은 여전히 막는다(시대 줄 없는 판은 종전대로 2px).
-  expect(result.maxDelta, `보던 줄(「${result.text}」)의 프레임별 최대 이동(px) — ${result.rowsAdded}줄이 쌓이는 동안 시대 줄 ${result.eraAdded}개`).toBeLessThanOrEqual(2 + 0.5 * result.eraAdded);
+  // 시대 줄(소수 높이 69.59px)이 해마다 끼어도 정수 픽셀 보정의 반올림 오차가 쌓이지 않는다(LogList.rememberKept, R-571)
+  expect(result.maxDelta, `보던 줄(「${result.text}」)의 프레임별 최대 이동(px) — ${result.rowsAdded}줄이 쌓이는 동안 시대 줄 ${result.eraAdded}개`).toBeLessThanOrEqual(2);
   expect(result.maxJump, '한 프레임에 튄 최대 이동(px)').toBeLessThanOrEqual(1);
   expect((await rows.count()) - count0).toBeGreaterThanOrEqual(5);
   await expect(page.getByTestId('log-jump')).toBeVisible();

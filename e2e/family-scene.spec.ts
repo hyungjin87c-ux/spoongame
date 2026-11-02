@@ -10,6 +10,11 @@ import { KNOWN_SEED, SETTINGS_KEY, findPendingState, injectSave, lifeState, noHo
 
 /** 개발 서버 전용 탐침: 연출 시간을 N배 빠르게(실제로 기다리지 않는다) */
 const FAST = '/?__timescale=1000';
+/**
+ * 해가 한 걸음씩 보이는 빠른 시계(한 해 약 0.3초). FAST(1000배)는 한 해가 50~80ms라 13세(결정 모달이 뜨는 나이)까지 1초 안에 가서, 시험이 「나이가 올랐다」를 확인하고 「일시정지」나
+ * 「다시 불러오기」를 누르는 사이에 모달이 덮을 수 있다. 달리는 판에서 어느 나이 앞에 멈춰 읽어야 하는 시험은 이 시계를 쓴다.
+ */
+const STEADY = '/?__timescale=100';
 /** 수동·1배속·기록 카드 꺼짐(e2e 기본) — 13세 전에는 부모님이 정하거나 흘러가므로 선택지에서 멈추지 않는다 */
 const MANUAL = { speed: 1, autoMode: false, noteCards: false } as const;
 /** 시간을 멈춘 0세 판 — 해가 바뀌지 않아야 하는 시험(배치·접기·다크·빈 틀)이 빠른 시계에 흔들리지 않게 한다 */
@@ -61,6 +66,9 @@ test('태어나기 → 살아가기: 집과 가족 그림 카드가 인생 기�
 test('배치(FM2d): PC는 집 : 시대의 창 = 2 : 1(둘 사이 8px, 높이가 같다), 휴대폰(카드 480px 이하)은 집 전폭 + 그 아래 창 띠 80px(그림 100×80)', async ({ page }) => {
   await injectSave(page, still(), FAST, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
+  // 시대의 창 덩어리(10년대 묶음)는 집 그림과 따로 도착한다 — 빈 틀(data-empty)이 그림 있는 칸으로 바뀐 뒤에 잰다
+  await expect(page.locator('#scene-era')).not.toHaveAttribute('data-empty', 'true');
+  await expect(page.locator('#scene-era .era__pic')).toBeVisible();
   const vw = page.viewportSize()!.width;
   const house = await box(page, '[data-testid="scene-house"]');
   const era = await box(page, '#scene-era');
@@ -94,9 +102,14 @@ test('배치(FM2d): PC는 집 : 시대의 창 = 2 : 1(둘 사이 8px, 높이가 
 });
 
 test('시대의 창 덩어리를 받지 못한 판(2016년, 2010년대 덩어리 요청 차단)의 창은 빈 틀이다: 링크도 그림도 없고, 인생 기록에 시대 줄(data-tl="era")이 없다 — 연도 표만 보인다', async ({ page }) => {
-  await page.route(/\/eraWindows\/d2010\.ts/, (route) => route.abort());
+  let blocked = 0;
+  await page.route(/\/eraWindows\/d2010\.ts/, (route) => {
+    blocked++;
+    return route.abort();
+  });
   await injectSave(page, still(), FAST, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
+  await expect.poll(() => blocked, '2010년대 덩어리 요청을 실제로 막았다(공허 통과 방지)').toBeGreaterThan(0);
   await expect(page.locator('#scene-era')).toHaveAttribute('data-empty', 'true');
   expect(await page.locator('a.era').count()).toBe(0);
   expect(await page.locator('#scene-era svg[viewBox="0 0 40 32"] [data-piece]').count()).toBe(0);
@@ -166,12 +179,12 @@ test('펼침 「함께 사는 사람」: 키보드로 열리고(Enter), 그림�
 });
 
 test('해가 바뀌면 그림과 연도 표가 바뀐다: 0세(업힌 아기) → 3세 넘어(유아 조각)로 식구 조각이 바뀌고, 연도 표가 해마다 오르며 인생 기록 연도와 같다', async ({ page }) => {
-  await injectSave(page, lifeState(KNOWN_SEED), FAST, MANUAL);
+  await injectSave(page, lifeState(KNOWN_SEED), STEADY, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
   const first = await page.locator('.scene__year time').getAttribute('datetime');
   const pieceIds = () => page.locator('[data-testid="scene-house"] [data-layer="식구"] [data-piece]').evaluateAll((els) => els.map((e) => e.getAttribute('data-piece')));
-  // 나이가 오를 때까지(빠른 시계) 기다린 뒤 멈춘다 — 멈춘 화면에서 읽는다(빠른 시계가 읽는 사이에 해를 넘기지 않게)
-  await expect.poll(async () => (await readSave(page)).data.age, { timeout: 20_000 }).toBeGreaterThanOrEqual(4);
+  // 나이가 오를 때까지(빠른 시계) 기다린 뒤 멈춘다 — 멈춘 화면에서 읽는다(빠른 시계가 읽는 사이에 해를 넘기지 않게). STEADY(한 해 약 0.3초)라 13세 결정 모달이 「일시정지」를 덮기 전에 누른다
+  await expect.poll(async () => (await readSave(page)).data.age, { timeout: 20_000, intervals: [50] }).toBeGreaterThanOrEqual(4);
   await page.getByTestId('pause').click();
   await expect(page.getByTestId('pause')).toHaveAttribute('data-paused', 'true');
   await page.waitForTimeout(700); // 교차 페이드가 끝나 겹친 이전 그림이 사라질 때까지
@@ -228,7 +241,7 @@ test('다크: 토큰이 어두운 값으로 바뀌고 그림 하늘 조각이 �
 
 test('그림 덩어리(familyArt) 요청이 막혀도 게임은 계속되고 글만 보인다(그림 칸만 빈다): 「다시 불러오기」로 되살아난다 (FH9)', async ({ page }) => {
   await page.route('**/data/familyArt/**', (route) => route.abort());
-  await injectSave(page, lifeState(KNOWN_SEED), FAST, MANUAL);
+  await injectSave(page, lifeState(KNOWN_SEED), STEADY, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'failed', { timeout: 15_000 });
   await expect(page.getByTestId('scene-art-failed')).toBeVisible();
   await expect(page.getByTestId('scene-line')).toContainText(/ · (?:단독주택|단독주택 셋방|다가구 단독주택|연립주택|다세대주택|아파트|작은 집|가게 딸린 집|상가주택|넓은 단독주택|요양 시설) · /);
@@ -236,7 +249,10 @@ test('그림 덩어리(familyArt) 요청이 막혀도 게임은 계속되고 글
   expect(await page.locator('[data-piece]').count(), '그림 조각 없음').toBe(0);
   // 게임은 계속된다
   const age0 = (await readSave(page)).data.age;
-  await expect.poll(async () => (await readSave(page)).data.age, { timeout: 20_000 }).toBeGreaterThan(age0);
+  await expect.poll(async () => (await readSave(page)).data.age, { timeout: 20_000, intervals: [50] }).toBeGreaterThan(age0);
+  // 멈춘다 — 달리는 판에서는 부모님 카드가 끼어 들며 줄이 밀리고(5·7세), 13세에는 결정 모달이 「다시 불러오기」를 덮는다. 「게임은 계속된다」는 위에서 이미 확인했다
+  await page.getByTestId('pause').click();
+  await expect(page.getByTestId('pause')).toHaveAttribute('data-paused', 'true');
   expect(await noHorizontalOverflow(page)).toBe(true);
   // 풀고 다시 불러오기
   await page.unroute('**/data/familyArt/**');

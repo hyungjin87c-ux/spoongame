@@ -383,7 +383,7 @@ describe('R-547 시대 줄(파생 줄)은 「새 기록 N개」·읽던 자리 �
   it('LogList가 늦게 온 시대 줄에도 보던 자리를 지킨다: 맨 위 줄이 그대로여도 시대 줄 구성이 바뀌면 스냅샷을 잡고(eraKeysChanged), 새 기록이 없으면 eraInsertPlan으로만 움직이며 「새 기록」 수는 늘리지 않는다', async () => {
     const src = await readText('../src/ui/dash/LogList.tsx');
     expect(src).toContain("newestBefore === (this.props.rows[0]?.key ?? null) && !eraKeysChanged(prev.rows, this.props.rows)");
-    expect(src).toMatch(/if \(added <= 0\) \{[\s\S]*eraInsertPlan\([\s\S]*this\.remember\(rows\);\s*return;\s*\}/);
+    expect(src).toMatch(/if \(added <= 0\) \{[\s\S]*eraInsertPlan\([\s\S]*this\.remember(?:Kept)?\([^)]*\);\s*return;\s*\}/);
     // 위쪽 분기(새 기록)에서만 onUnread를 부른다
     const eraBranch = src.slice(src.indexOf('if (added <= 0) {'), src.indexOf('const plan = scrollPlan('));
     expect(eraBranch).not.toContain('onUnread');

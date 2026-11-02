@@ -155,6 +155,16 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
     this.place = { key: seen?.key ?? null, offset: seen?.offset ?? 0, scrollTop: el.scrollTop, ...this.dims(el, ol) };
   }
 
+  /**
+   * 보정을 마친 모습을 「보던 자리」로 기억한다. 보던 줄이 지키려던 거리(`snap.anchorOffset`)에서 1px 안쪽으로만 벗어나 있으면(정수 픽셀 스크롤의 반올림 오차)
+   * 거리는 지금 잰 값이 아니라 지키려던 값 그대로 둔다 — 다음 보정이 이 오차까지 되돌려, 소수 높이의 시대 줄이 해마다 끼는 판에서 오차(줄마다 0.41px)가 쌓이지 않는다(`realign`이 기억한 거리를 그대로 두는 것과 같은 방법).
+   */
+  private rememberKept(rows: readonly AnyLogRow[], snap: Snapshot): void {
+    this.remember(rows);
+    const p = this.place;
+    if (p !== null && p.key !== null && p.key === snap.anchorKey && Math.abs(p.offset - snap.anchorOffset) < 1) this.place = { ...p, offset: snap.anchorOffset };
+  }
+
   /** 기억한 뒤로 영역이나 목록의 크기가 달라졌는가 — 줄이 다시 흘렀다(관찰자가 곧 되맞춘다) */
   private reflowed(el: HTMLElement, ol: HTMLElement, was: Place): boolean {
     const d = this.dims(el, ol);
@@ -218,7 +228,9 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
       return { newestBefore, scrollTop: el.scrollTop, anchorKey: was.key, anchorOffset: was.offset };
     }
     const seen = this.firstSeen(prev.rows, el, ol);
-    return { newestBefore, scrollTop: el.scrollTop, anchorKey: seen?.key ?? null, anchorOffset: seen?.offset ?? 0 };
+    // 지난 보정이 남긴 1px 안쪽 오차는 새 기준으로 삼지 않고 지키려던(기억한) 거리를 기준으로 한다 — 오차가 쌓이지 않게
+    const anchorOffset = seen !== null && was !== null && was.key === seen.key && Math.abs(was.offset - seen.offset) < 1 ? was.offset : (seen?.offset ?? 0);
+    return { newestBefore, scrollTop: el.scrollTop, anchorKey: seen?.key ?? null, anchorOffset };
   }
 
   componentDidUpdate(_prev: Props, _state: Record<string, never>, snap: Snapshot | null): void {
@@ -248,7 +260,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
       // 새 기록은 없고 시대 줄만 끼거나 빠졌다(늦게 온 10년 덩어리): 보던 줄의 화면 위치만 지킨다. 「새 기록」 수는 늘지 않는다 (R-547)
       const top = eraInsertPlan({ scrollTop: snap.scrollTop, shift, follow: following.current });
       if (top !== null) el.scrollTo({ top, behavior: 'instant' });
-      this.remember(rows);
+      this.rememberKept(rows, snap);
       return;
     }
     const plan = scrollPlan({ scrollTop: snap.scrollTop, shift, added, follow: following.current });
@@ -256,7 +268,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
     if (Math.abs(plan.top - el.scrollTop) >= 0.5) el.scrollTo({ top: plan.top, behavior: 'instant' });
     if (plan.unread > 0) onUnread(plan.unread);
     // 보정한 모습을 새 「보던 자리」로 기억한다 — 줄이 늘어 목록 높이가 바뀌었다고 곧 도는 관찰자는 어긋남 0을 보고 가만히 있는다(한 번만 움직인다)
-    this.remember(rows);
+    this.rememberKept(rows, snap);
   }
 
   render() {
