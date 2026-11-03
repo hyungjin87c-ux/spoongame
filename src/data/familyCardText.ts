@@ -41,6 +41,7 @@ export const FAMILY_CARD_TEXT = {
   friend: '친구',
   friendFaded: '멀어진 친구',
   spouse: '배우자',
+  exSpouse: '전 배우자',
   partner: '연인',
   son: '아들',
   daughter: '딸',

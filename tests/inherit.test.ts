@@ -488,6 +488,13 @@ describe('K1·R-562 (SPEC-009 FM6): 상속이 가족 보기와 같은 사람 수
   const motherFirst = (age: number): GameState => {
     const s = stateOf({ age, fatherAge: 45, tier: 5 });
     const [m, f] = s.family!.p;
+    const { lg: _lg, ...fresh } = s.family!;
+    return { ...s, family: { ...fresh, p: [{ ...m, d: 80 }, f] } };
+  };
+  /** 같은 판이지만 옛 저장에서 만든 스냅샷(`lg: 1`)이다 — 옛 규칙을 그대로 쓴다 (R-580) */
+  const motherFirstSaved = (age: number): GameState => {
+    const s = stateOf({ age, fatherAge: 45, tier: 5 });
+    const [m, f] = s.family!.p;
     return { ...s, family: { ...s.family!, p: [{ ...m, d: 80 }, f] } };
   };
 
@@ -523,6 +530,21 @@ describe('K1·R-562 (SPEC-009 FM6): 상속이 가족 보기와 같은 사람 수
       expect(parentsAllGone(motherFirst(70))).toBe(false);
       expect(parentsAllGone(motherFirst(71))).toBe(true);
     });
+  });
+
+  it('R-580: 옛 저장(lg)은 옛 규칙을 그대로 쓴다 — 이미 지난 어긋남 구간에서 열려도 먼저 떠난 분의 실제 나이가 100을 넘는 아이 71세에 전환이 일어나고 상속을 받는다', () => {
+    expect(motherFirstSaved(56).family!.lg).toBe(1);
+    expect(motherFirst(56).family!.lg).toBeUndefined();
+    // 규칙은 기본(view)인데도 옛 저장은 71세까지 거짓이다 — 새 판(위 시험)은 56세에 참
+    expect(parentsAllGone(motherFirstSaved(56))).toBe(false);
+    expect(parentsAllGone(motherFirstSaved(70))).toBe(false);
+    expect(parentsAllGone(motherFirstSaved(71))).toBe(true);
+    // 어긋남 구간(56~70세)에서 열린 저장도 71세 전환 때 상속을 받는다 — 처음부터 참이라 영영 거짓이던 전환이 아니다
+    const before = motherFirstSaved(70);
+    const after = { ...before, age: 71 };
+    expect(parentsJustGone(before, after)).toBe(true);
+    expect(inheritanceDue(before, after)).toBe(inheritanceAmount(5, siblingCountOf(after)));
+    expect(inheritanceDue(before, after)).toBeGreaterThan(0);
   });
 
   it('R-562: 한 분만 떠난 동안(다른 분이 100세 이하)에는 상속도 월세 전환도 없다 — 모델이 정한 별세 하나는 경제를 움직이지 않는다 (K3)', () => {

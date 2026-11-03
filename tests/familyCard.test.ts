@@ -154,6 +154,23 @@ describe('성인기 식구 (FC5·FC6·FC9, 설계 문서 10절): 플래그와 �
     expect(adultSlotsOf(none, none.family!).filter((s) => s.role !== 'friend')).toHaveLength(0);
   });
 
+  it('배우자·연인은 처음 만난 해에 20세 이상이다 — 22세에 만나도 나이 차가 커서 미성년이 되는 판이 없다 (R-573)', () => {
+    const min = familyTables().design.adult.value.spouseMinAge;
+    expect(min).toBe(20);
+    let pulled = 0;
+    for (const [gi, gen] of GENERATION_IDS.entries()) {
+      for (const seed of spreadSeeds(200, gi)) {
+        const g = craft(seed, gen, { age: 40, flags: ['has_partner'], seen: { 'youth-approached': 22 } });
+        const spouse = adultSlotsOf(g, g.family!).find((s) => s.role === 'spouse')!;
+        const Y = g.character!.birthYear;
+        expect(Y + 22 - spouse.birthYear, `${gen} ${seed} 만난 해 배우자 나이`).toBeGreaterThanOrEqual(min);
+        // 하한이 실제로 일한 판(표의 나이 차가 더 어리게 만들 판)이 있다 — 공허 통과 방지
+        if (Y + 22 - spouse.birthYear === min) pulled++;
+      }
+    }
+    expect(pulled, '하한이 출생 연도를 당긴 판').toBeGreaterThan(0);
+  });
+
   it('자녀: 1~4명(표시 전용), 첫 자녀는 사건을 본 나이에 태어나고 둘째부터 2~5살 터울·주인공 45세까지, 아직 태어나지 않은 자녀는 보이지 않는다', () => {
     expect(CHILD_EVENTS.length).toBeGreaterThan(0);
     const counts = new Map<number, number>();
@@ -291,6 +308,29 @@ describe('사이 말 (FC2): closenessOf — 호칭 기본값 + 양육 방식 + �
 describe('직업 줄 (FC3): 학생 · 직업 · 은퇴 · 집안일', () => {
   it('새 낱말은 「집안일」「쉬는 중」「은퇴」「학생」뿐이다', () => {
     expect(Object.values(JOB_LINE_LABEL).sort()).toEqual(['쉬는 중', '은퇴', '집안일', '학생'].sort());
+  });
+
+  it('나이 값(학생 6~22세 · 은퇴 농림어업 65~75·그 밖 55~65)은 코드가 아니라 표에 있고, 근거 칸 글이 그 값으로 조립된다 (R-582)', () => {
+    const jobs = familyTables().design.adult.value.jobs;
+    expect(jobs).toEqual({ studentAge: { min: 6, max: 22 }, retireAge: { agri: { min: 65, max: 75 }, other: { min: 55, max: 65 } }, homemakerRetireAge: 65 });
+    const note = (id: string): string => FAMILY_BASIS.find((b) => b.id === id)!.note;
+    expect(note('parent-job-retire')).toContain(`농림어업 ${jobs.retireAge.agri.min}~${jobs.retireAge.agri.max}세, 그 밖 ${jobs.retireAge.other.min}~${jobs.retireAge.other.max}세`);
+    expect(note('relatives-job')).toContain(`${jobs.studentAge.min}~${jobs.studentAge.max}세는 「학생」`);
+    // 표 값을 바꾸면 동작이 따라 바뀐다(값이 코드에 박혀 있지 않다): 학생 나이와 은퇴 나이의 경계가 표 값 그대로다
+    const base = { famSeed: 77, key: 5, job: 'service' as const };
+    expect(jobInfoOf({ ...base, age: jobs.studentAge.min - 1 }).line).toBeNull();
+    expect(jobInfoOf({ ...base, age: jobs.studentAge.min }).line).toBe('student');
+    expect(jobInfoOf({ ...base, age: jobs.studentAge.max + 1 }).line).toBe('employed');
+    for (let key = 0; key < 200; key++) {
+      const o = retireAgeOf(77, key, 'service');
+      const a = retireAgeOf(77, key, 'agri');
+      expect(o).toBeGreaterThanOrEqual(jobs.retireAge.other.min);
+      expect(o).toBeLessThanOrEqual(jobs.retireAge.other.max);
+      expect(a).toBeGreaterThanOrEqual(jobs.retireAge.agri.min);
+      expect(a).toBeLessThanOrEqual(jobs.retireAge.agri.max);
+    }
+    expect(jobInfoOf({ ...base, age: jobs.homemakerRetireAge - 1, homemaker: true, grownUp: true }).line).toBe('homemaker');
+    expect(jobInfoOf({ ...base, age: jobs.homemakerRetireAge, homemaker: true, grownUp: true }).line).toBe('retired');
   });
 
   it('학령 전은 줄이 없고, 6~22세는 학생, 그 뒤는 직업, 은퇴 나이부터는 은퇴다. 직업 종류는 평생 한 번 정해진다', () => {
@@ -577,7 +617,7 @@ describe('카드 모델 (FC1·FC4·FC9·FC10): 줄 순서 · 떠난 사람 글�
   it('이혼한 배우자는 따로 살고(사이 「멀어짐」), 독립한 자녀(child_left)도 따로 산다 — 둘 다 카드에 남는다', () => {
     const g = craft(52, 'genx', { age: 55, flags: ['divorced', 'has_child', 'child_left'] });
     const c = familyCardOf(g);
-    expect(c.adult.find((r) => r.role === 'spouse')).toMatchObject({ state: 'apart', closeness: 1 });
+    expect(c.adult.find((r) => r.role === 'spouse')).toMatchObject({ state: 'apart', closeness: 1, label: '전 배우자' });
     expect(c.adult.filter((r) => r.role === 'child').every((r) => r.state === 'apart')).toBe(true);
   });
 

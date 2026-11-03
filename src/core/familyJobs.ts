@@ -2,6 +2,7 @@ import { reportTiltOf } from '../data/birthReportTable';
 import { jobWeights } from './birthReport';
 import { FAMILY_TAG } from './familyModel';
 import { famHash01 } from './familyRng';
+import { familyTables } from './gameData';
 import { OCCUPATIONS, type Gender, type Occupation, type ParentWealth } from './types';
 
 /**
@@ -20,13 +21,13 @@ export interface JobInfo {
   job?: Occupation;
 }
 
-/** 학생으로 보는 나이(설계값): 6~22세 (초등 입학 ~ 대학 졸업 무렵) */
-export const STUDENT_AGES = { min: 6, max: 22 } as const;
+/** 직업 줄의 나이 값(설계값, R-582): `FAMILY_DESIGN.adult.jobs` — 학생 6~22세(초등 입학 ~ 대학 졸업 무렵), 은퇴 농림어업 65~75·그 밖 55~65 균등. 근거 칸 글도 이 값으로 조립된다 */
+const jobsDesign = () => familyTables().design.adult.value.jobs;
 
-/** 은퇴 나이 (FA2 설계값): 농림어업 65~75 균등, 그 밖 55~65 균등 */
+/** 은퇴 나이 (FA2 설계값): 농림어업·그 밖 각각 `retireAge`의 min~max 균등 */
 export function retireAgeOf(famSeed: number, key: number, job: Occupation): number {
-  const lo = job === 'agri' ? 65 : 55;
-  return lo + Math.floor(famHash01(famSeed, FAMILY_TAG.EMPLOY, key, 2) * 11);
+  const r = jobsDesign().retireAge[job === 'agri' ? 'agri' : 'other'];
+  return r.min + Math.floor(famHash01(famSeed, FAMILY_TAG.EMPLOY, key, 2) * (r.max - r.min + 1));
 }
 
 /** 한 사람의 직업 종류를 출생신고 직업 분포에서 뽑는다 (그 사람이 서른다섯 무렵의 시대 보정) */
@@ -47,10 +48,11 @@ export function drawJob(famSeed: number, key: number, gender: Gender, birthYear:
  */
 export function jobInfoOf(opts: { famSeed: number; key: number; age: number; job: Occupation; homemaker?: boolean; retireAt?: number; /** 부모처럼 이미 어른인 사람은 학생 나이를 건너뛴다 */ grownUp?: boolean }): JobInfo {
   const { age, job } = opts;
-  if (opts.homemaker === true) return age >= (opts.retireAt ?? 65) ? { line: 'retired' } : { line: 'homemaker' };
+  const design = jobsDesign();
+  if (opts.homemaker === true) return age >= (opts.retireAt ?? design.homemakerRetireAge) ? { line: 'retired' } : { line: 'homemaker' };
   if (opts.grownUp !== true) {
-    if (age < STUDENT_AGES.min) return { line: null };
-    if (age <= STUDENT_AGES.max) return { line: 'student' };
+    if (age < design.studentAge.min) return { line: null };
+    if (age <= design.studentAge.max) return { line: 'student' };
   }
   const retireAt = opts.retireAt ?? retireAgeOf(opts.famSeed, opts.key, job);
   return age >= retireAt ? { line: 'retired' } : { line: 'employed', job };

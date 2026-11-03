@@ -65,6 +65,7 @@ export const FAMILY_DESIGN: FamilyDesign = {
   adult: {
     value: {
       spouseGap: { min: -4, max: 15, peak: 2.5, spread: 3.5 },
+      spouseMinAge: 20,
       childCount: [
         { upTo: 1975, weights: [0.1, 0.25, 0.35, 0.3] },
         { upTo: 1985, weights: [0.2, 0.45, 0.25, 0.1] },
@@ -76,9 +77,10 @@ export const FAMILY_DESIGN: FamilyDesign = {
       friendCount: [0.45, 0.35, 0.2],
       friendAgeOffset: { min: -2, max: 2 },
       fallbackAt: { spouse: 24, child: 28, friend: 12 },
+      jobs: { studentAge: { min: 6, max: 22 }, retireAge: { agri: { min: 65, max: 75 }, other: { min: 55, max: 65 } }, homemakerRetireAge: 65 },
     },
     basis: 'design',
-    note: '성인기 식구(배우자·자녀·가까운 친구)의 수와 나이는 통계가 아니라 게임이 정한 값이다 — 배우자 나이 차는 부모 나이 차(FATHER_GAP)와 같은 모양, 자녀는 첫 자녀를 낳은 시대에 따라 1~4명(표시 전용 — 경제는 자녀 수를 읽지 않는다), 터울 2~5년, 친구는 1~3명. 출산력 코호트 분포(FD6)에 맞춘 값이 아니다',
+    note: '성인기 식구(배우자·자녀·가까운 친구)의 수와 나이는 통계가 아니라 게임이 정한 값이다 — 배우자 나이 차는 부모 나이 차(FATHER_GAP)와 같은 모양이되 처음 만난 해에는 20세 이상(표의 나이 차가 더 어리게 만들면 출생 연도를 당긴다, R-573), 자녀는 첫 자녀를 낳은 시대에 따라 1~4명(표시 전용 — 경제는 자녀 수를 읽지 않는다), 터울 2~5년, 친구는 1~3명. 출산력 코호트 분포(FD6)에 맞춘 값이 아니다',
   },
   closeness: {
     value: {
@@ -94,8 +96,6 @@ export const FAMILY_DESIGN: FamilyDesign = {
         { flag: 'friend_back', who: ['friend'], delta: 1, note: '친구가 곁으로 돌아왔다 — 관계 +5' },
         { flag: 'close_friend', when: 'off', who: ['friend'], cap: 1, note: '가까운 친구와 멀어졌다 — 관계 −3, −2 (친구는 「멀어진 친구」로 남는다)' },
         { flag: 'divorced', who: ['spouse'], cap: 1, note: '이혼 — 관계 −4' },
-        { flag: 'broke_up', who: ['spouse'], delta: -2, note: '헤어졌다 — 관계 −3, −4' },
-        { flag: 'reunited', who: ['spouse'], delta: 1, note: '다시 만났다 — 관계 +3' },
         { flag: 'mother_apart', who: ['mother'], delta: -1, note: '부모 이혼·별거로 따로 삶 (인생 기록 줄만, 점수 없음)' },
         { flag: 'father_apart', who: ['father'], delta: -1, note: '부모 이혼·별거로 따로 삶 (인생 기록 줄만, 점수 없음)' },
       ],
@@ -143,6 +143,8 @@ export const FAMILY_DESIGN: FamilyDesign = {
  * 합쇼체 한 두 문장이고 내부 이름(표 번호·파일 경로·상수 이름)을 쓰지 않는다 — 시험(`tests/familyCard.test.ts`)이 그것을 지킨다. 값의 출처와 정리 규칙은 `docs/data/family-model.md`·`fd-a-family.md`에 있다.
  */
 const pct = (x: number): string => `${Math.round(x * 100)}%`;
+/** 직업 줄의 나이 값 — 근거 칸 글이 이 값으로 조립된다(표와 글이 갈리지 않게, R-582) */
+const JOBS = FAMILY_DESIGN.adult.value.jobs;
 export const FAMILY_BASIS: ReadonlyArray<{ id: string; basis: 'official' | 'calc' | 'estimated' | 'design'; note: string }> = [
   { id: 'mortality-1970-2024', basis: 'official', note: '식구가 몇 살까지 사셨는지는 통계청 간이생명표(1970~2024년)의 나이대별 사망확률로 정했습니다. 2024년 뒤에는 2024년 값을 그대로 씁니다.' },
   { id: 'mortality-before-1970', basis: 'estimated', note: '1970년 앞의 생명표는 없어서, 1970년 값에 배율을 곱해 기대수명이 1970년대 추세선을 거꾸로 이은 값이 되게 맞췄습니다(30세 아래로는 내리지 않았습니다).' },
@@ -168,9 +170,9 @@ export const FAMILY_BASIS: ReadonlyArray<{ id: string; basis: 'official' | 'calc
     basis: 'design',
     note: `아래 동생 수는 출생 순위별 출생 비중에서 유도한 근사이고, 터울 2~5년, 독립 나이 ${FAMILY_DESIGN.leaveAge.value.min}~${FAMILY_DESIGN.leaveAge.value.max}세, 성별은 반반으로 게임이 정했습니다.`,
   },
-  { id: 'names', basis: 'design', note: '식구 이름은 그 사람의 출생 연도에 맞는 이름 풀에서 뽑았습니다. 1940년대보다 앞서 태어난 분(주로 조부모)은 가장 오래된 1940년대 풀을 대신 썼고, 풀 자체도 통계가 아닌 추정 목록입니다. 성은 아버지 쪽과 형제가 주인공과 같고 어머니와 조모는 따로 뽑았습니다.' },
-  { id: 'parent-job-retire', basis: 'design', note: '부모의 직업은 출생신고에 적힌 값입니다. 은퇴 나이는 농림어업 65~75세, 그 밖 55~65세로 게임이 정했고, 그 나이가 되면 직업 줄이 「은퇴」로 바뀝니다.' },
-  { id: 'relatives-job', basis: 'design', note: '형제, 배우자, 자녀, 친구, 조부모의 직업은 통계가 없어, 출생신고의 직업 분포에 시대 보정을 한 값에서 한 번 뽑았습니다. 6~22세는 「학생」으로 봅니다.' },
+  { id: 'names', basis: 'design', note: '식구 이름은 그 사람의 출생 연도에 맞는 이름 풀에서 뽑았습니다. 1940년대보다 앞서 태어난 분(주로 조부모)은 가장 오래된 1940년대 풀을, 2020년 뒤에 태어난 자녀는 가장 최근 풀을 대신 썼고, 1940년대 풀 자체도 통계가 아닌 추정 목록입니다. 성은 아버지 쪽과 형제가 주인공과 같고 어머니와 조모는 따로 뽑았습니다.' },
+  { id: 'parent-job-retire', basis: 'design', note: `부모의 직업은 출생신고에 적힌 값입니다. 은퇴 나이는 농림어업 ${JOBS.retireAge.agri.min}~${JOBS.retireAge.agri.max}세, 그 밖 ${JOBS.retireAge.other.min}~${JOBS.retireAge.other.max}세로 게임이 정했고, 그 나이가 되면 직업 줄이 「은퇴」로 바뀝니다.` },
+  { id: 'relatives-job', basis: 'design', note: `형제, 배우자, 자녀, 친구, 조부모의 직업은 통계가 없어, 출생신고의 직업 분포에 시대 보정을 한 값에서 한 번 뽑았습니다. ${JOBS.studentAge.min}~${JOBS.studentAge.max}세는 「학생」으로 봅니다.` },
   { id: 'adult-family', basis: 'design', note: '배우자, 자녀, 가까운 친구의 수와 나이는 통계가 아니라 게임이 정했습니다. 배우자와의 나이 차는 부모 나이 차와 같은 모양이고, 자녀는 첫 자녀를 낳은 시대에 따라 1~4명(경제에는 쓰이지 않고 보이기만 합니다), 터울은 2~5년, 친구는 1~3명입니다.' },
   { id: 'closeness', basis: 'design', note: '사이의 다섯 단계(아주 가까움~멀어짐)는 통계가 없습니다. 호칭별 기본값, 부모는 양육 방식, 사람마다 한 단계 안팎의 차이에 더해 사건이 바꾼 것만 반영합니다. 사건 없이 슬며시 바뀌지 않습니다.' },
   { id: 'pets', basis: 'design', note: '반려동물의 이름 목록과 수명(개 10~16년, 고양이 12~18년, 그 밖 2~8년)은 통계가 없어 게임이 정했습니다. 부모 집의 반려동물은 아직 만들지 않고, 사건으로 들인 동물만 보입니다.' },

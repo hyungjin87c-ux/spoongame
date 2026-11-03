@@ -27,8 +27,9 @@ import {
  *   (npm run report:family -- 600 --write)
  * 같은 시드·같은 자동 성향 선택으로 원인(K2 · K4 · 이른 부모 별세 효과 · K1)을 하나씩 켠 다섯 세계를 돌려 짝지어 견준다.
  * **이른 부모 별세 효과의 합격 기준은 설계 문서 4-7절 (1)** (마스터 결정 2026-11-02 — 처음의 「중앙값 변화 ≤ 3%」는 중앙값 한 칸(150만 원)이 15%로 읽히는 틀린 지표라 평균으로 바꿨다):
- *   ① 재력 단계별 최종 순자산 평균 변화 ≤ 3% · 20세 시작 평균의 절대 변화 ≤ 150만 원  ② 단계 순서 뒤바뀜 0  ③ 엔딩 방향 판정 분포 변화 ≤ 2%p  ④ 효과가 걸린 판 비율 보고.
+ *   ① 재력 단계별 최종 순자산 평균 변화 ≤ 3% · 20세 시작 평균의 절대 변화 ≤ 150만 원(**1~4단계만** — 5단계는 표본이 작아(세대당 1000판에서 약 146판, 걸린 판 약 25판, 표준오차 약 34만 원) 보고만, 마스터 결정 2026-11-03)  ② 단계 순서 뒤바뀜 0  ③ 엔딩 방향 판정 분포 변화 ≤ 2%p  ④ 효과가 걸린 판 비율 보고.
  *   중앙값 변화·효과가 걸린 판만의 차이는 보고만 한다(판정에 쓰지 않는다).
+ * K1·R-562 수용 기준의 5단계 판정 변화는 표본(n=146)이 작아 기준선 부근이면 「합격」 대신 「기준선 부근(약 N~M%p, n=…)」으로 적는다(REV-009-FM6-1 2절, 마스터 결정 2026-11-03).
  */
 const argN = process.argv.slice(2).find((a) => /^\d+$/.test(a));
 const PER_GEN = Number(argN ?? 600);
@@ -62,8 +63,12 @@ const say = (s = ''): void => void out.push(s);
 
 // ---------- 비교 표 ----------
 interface Cmp {
-  /** 20세 시작 평균의 절대 변화 (만 원) · 최종 평균 변화 (%) — 판정에 쓴다 */
+  /** 20세 시작 평균의 절대 변화 (만 원): 1~4단계의 최댓값은 판정에 쓰고(`maxNet20MeanAbs`), 5단계는 표본이 작아 보고만 한다(`net20MeanAbsTier5`, 2026-11-03) · 최종 평균 변화 (%) — 판정에 쓴다 */
   maxNet20MeanAbs: number;
+  net20MeanAbsTier5: number;
+  /** 5단계의 판정 변화 (%p, 세 방향 중 가장 큰 것) · 5단계 표본 수 — K1 판정 문구가 「기준선 부근」을 가리는 데 쓴다 */
+  movePpTier5: number;
+  nTier5: number;
   maxFinalMean: number;
   /** 중앙값 변화 (%) — 보고만 */
   maxNet20Median: number;
@@ -78,6 +83,8 @@ function compare(from: LifeRow[], to: LifeRow[], title: string): Cmp {
   say('| 재력 | 판 수 | 20세 시작 순자산 평균 (만 원) | 절대 변화 | 최종 순자산 평균 (만 원) | 변화 | 20세 시작 중앙값 (보고) | 변화 | 최종 중앙값 (보고) | 변화 | 앞섬 / 비슷함 / 뒤쪽 (%p 변화) |');
   say('|---:|---:|---|---:|---|---:|---|---:|---|---:|---|');
   let maxNet20MeanAbs = 0;
+  let net20MeanAbsTier5 = 0;
+  let movePpTier5 = 0;
   let maxFinalMean = 0;
   let maxNet20Median = 0;
   let maxFinalMedian = 0;
@@ -91,13 +98,15 @@ function compare(from: LifeRow[], to: LifeRow[], title: string): Cmp {
     const dFMean = rel(a.meanFinalNet, b.meanFinalNet);
     const d20Med = rel(a.medianNet20, b.medianNet20);
     const dFMed = rel(a.medianFinalNet, b.medianFinalNet);
-    maxNet20MeanAbs = Math.max(maxNet20MeanAbs, Math.abs(d20Abs));
+    if (t === 5) net20MeanAbsTier5 = Math.abs(d20Abs);
+    else maxNet20MeanAbs = Math.max(maxNet20MeanAbs, Math.abs(d20Abs));
     maxFinalMean = Math.max(maxFinalMean, Math.abs(dFMean));
     maxNet20Median = Math.max(maxNet20Median, Math.abs(d20Med));
     maxFinalMedian = Math.max(maxFinalMedian, Math.abs(dFMed));
     const share = (s: typeof a, k: 'up' | 'same' | 'down') => (100 * s.movement[k]) / Math.max(1, s.movement.up + s.movement.same + s.movement.down);
     const dm = (['up', 'same', 'down'] as const).map((k) => share(b, k) - share(a, k));
     maxMovePp = Math.max(maxMovePp, ...dm.map(Math.abs));
+    if (t === 5) movePpTier5 = Math.max(...dm.map(Math.abs));
     say(
       `| ${t} | ${a.n} | ${num(a.meanNet20)} → ${num(b.meanNet20)} | ${signed(d20Abs)} | ${num(a.meanFinalNet)} → ${num(b.meanFinalNet)} | ${pct(dFMean, 2)} | ${num(a.medianNet20)} → ${num(b.medianNet20)} | ${pct(d20Med, 2)} | ${num(a.medianFinalNet)} → ${num(b.medianFinalNet)} | ${pct(dFMed, 2)} | ${dm.map((x) => `${x >= 0 ? '+' : ''}${x.toFixed(2)}`).join(' / ')} |`,
     );
@@ -111,15 +120,15 @@ function compare(from: LifeRow[], to: LifeRow[], title: string): Cmp {
   }
   say();
   say(
-    `- 가장 큰 변화(판정): 20세 시작 평균 ${num(maxNet20MeanAbs)}만 원 · 최종 평균 ${pct(maxFinalMean, 2)} · 판정 ${maxMovePp.toFixed(2)}%p · 단계 순서 뒤바뀜 ${flips}쌍 / (보고만) 중앙값 20세 시작 ${pct(maxNet20Median, 2)} · 최종 ${pct(maxFinalMedian, 2)}`,
+    `- 가장 큰 변화(판정): 20세 시작 평균 ${num(maxNet20MeanAbs)}만 원(1~4단계; 5단계 ${num(net20MeanAbsTier5)}만 원은 보고만) · 최종 평균 ${pct(maxFinalMean, 2)} · 판정 ${maxMovePp.toFixed(2)}%p · 단계 순서 뒤바뀜 ${flips}쌍 / (보고만) 중앙값 20세 시작 ${pct(maxNet20Median, 2)} · 최종 ${pct(maxFinalMedian, 2)}`,
   );
   say();
-  return { maxNet20MeanAbs, maxFinalMean, maxNet20Median, maxFinalMedian, maxMovePp, orderFlips: flips };
+  return { maxNet20MeanAbs, net20MeanAbsTier5, movePpTier5, nTier5: g[4].n, maxFinalMean, maxNet20Median, maxFinalMedian, maxMovePp, orderFlips: flips };
 }
 
 const passes = (c: Cmp): boolean => c.maxNet20MeanAbs <= NET20_MEAN_ABS_LIMIT && c.maxFinalMean <= FINAL_MEAN_LIMIT && c.orderFlips === 0 && c.maxMovePp <= MOVE_LIMIT;
-const describe = (c: Cmp): string => `20세 시작 평균 ${num(c.maxNet20MeanAbs)}만 원 · 최종 평균 ${pct(c.maxFinalMean, 2)} · 판정 ${c.maxMovePp.toFixed(2)}%p · 뒤바뀜 ${c.orderFlips}쌍`;
-const CRITERIA = `① 최종 순자산 평균 변화 ≤ ${FINAL_MEAN_LIMIT}% · 20세 시작 평균의 절대 변화 ≤ ${NET20_MEAN_ABS_LIMIT}만 원 ② 단계 순서 뒤바뀜 0 ③ 판정 변화 ≤ ${MOVE_LIMIT}%p (중앙값은 보고만)`;
+const describe = (c: Cmp): string => `20세 시작 평균 ${num(c.maxNet20MeanAbs)}만 원(1~4단계; 5단계 ${num(c.net20MeanAbsTier5)}만 원은 보고만) · 최종 평균 ${pct(c.maxFinalMean, 2)} · 판정 ${c.maxMovePp.toFixed(2)}%p · 뒤바뀜 ${c.orderFlips}쌍`;
+const CRITERIA = `① 최종 순자산 평균 변화 ≤ ${FINAL_MEAN_LIMIT}% · 20세 시작 평균의 절대 변화 ≤ ${NET20_MEAN_ABS_LIMIT}만 원(1~4단계만 — 5단계는 표본이 작아 보고만, 마스터 결정 2026-11-03) ② 단계 순서 뒤바뀜 0 ③ 판정 변화 ≤ ${MOVE_LIMIT}%p (중앙값은 보고만)`;
 
 say('# 가족 변경의 분포 재측정 (SPEC-009 FM4b)');
 say();
@@ -175,6 +184,14 @@ compare(R('V1'), R('V2'), 'K4: 가족 낱말 사건에 가족 조건 (V1 → V2)
 compare(R('V0'), R('V2'), 'K2 + K4 합계 (V0 → V2)');
 
 const passesK1 = (c: Cmp): boolean => c.maxFinalMean <= K1_FINAL_MEAN_LIMIT && c.orderFlips === 0 && c.maxMovePp <= K1_MOVE_LIMIT;
+/** K1 판정 문구: 기준 안이어도 5단계(표본이 작다)의 판정 변화가 기준선 부근이면 「합격」 대신 「기준선 부근(약 N~M%p, n=…)」으로 적는다 (REV-009-FM6-1 2절, 2026-11-03) */
+const NEAR_LIMIT_PP = 1.5;
+const verdictK1 = (c: Cmp): string => {
+  if (!passesK1(c)) return '**기준 초과**';
+  if (c.movePpTier5 < K1_MOVE_LIMIT - NEAR_LIMIT_PP) return '**합격**';
+  const lo = Math.floor(c.movePpTier5);
+  return `1~4단계 **합격**, 5단계 판정 변화 **기준선 부근(약 ${lo}~${lo + 1}%p, n=${c.nTier5})** — 표본이 작아 한두 판에 1~2%p가 움직인다(측정 ${c.movePpTier5.toFixed(2)}%p, 기준 ${K1_MOVE_LIMIT}%p)`;
+};
 const describeK1 = (c: Cmp): string => `최종 평균 ${pct(c.maxFinalMean, 2)} · 판정 ${c.maxMovePp.toFixed(2)}%p · 뒤바뀜 ${c.orderFlips}쌍 (참고: 20세 시작 평균 ${num(c.maxNet20MeanAbs)}만 원)`;
 const K1_CRITERIA = `① 재력 단계 순서 뒤바뀜 0 ② 재력 단계별 최종 순자산 평균 변화 ≤ ${K1_FINAL_MEAN_LIMIT}% ③ 엔딩 방향 판정 변화 ≤ ${K1_MOVE_LIMIT}%p (중앙값은 보고만, INHERIT 값은 다시 맞추지 않는다)`;
 
@@ -183,7 +200,7 @@ say();
 say(`수용 기준(마스터 지시 2026-11-02, REV-009-FM4b-1 3절): ${K1_CRITERIA}. 기준을 넘으면 값을 맞추지 않고 이 표와 함께 보고한다.`);
 say();
 const k1Cmp = compare(R('V3'), R('V4'), '재력 단계별 (V3 K1 켜기 전 → V4 K1 켬)');
-say(`판정: ${passesK1(k1Cmp) ? '**합격**' : '**기준 초과**'} (${describeK1(k1Cmp)}) — ${K1_CRITERIA}.`);
+say(`판정: ${verdictK1(k1Cmp)} (${describeK1(k1Cmp)}) — ${K1_CRITERIA}.`);
 say();
 {
   const rows = R('V4');
@@ -214,7 +231,7 @@ say();
 say('한 분은 모델이 먼저 별세시키고 다른 분이 100세를 넘으면 가족 보기는 「두 분 모두 떠남」인데 옛 규칙의 `parentsAllGone`은 먼저 떠난 분의 **실제 나이**가 100을 넘을 때까지 거짓이었다 (`scripts/familyParentsGone.ts`: 7세대 × 300판의 8.1%, 평균 3.5년, 최대 13년, 주인공 47~82세). 상속·월세 전환을 보기와 같은 해로 맞췄다. 같은 기준(위 K1용)으로 견준다.');
 say();
 const goneCmp = compare(R('V4'), R('V5'), '재력 단계별 (V4 K1만 → V5 K1 + R-562)');
-say(`판정: ${passesK1(goneCmp) ? '**합격**' : '**기준 초과**'} (${describeK1(goneCmp)}) — ${K1_CRITERIA}.`);
+say(`판정: ${verdictK1(goneCmp)} (${describeK1(goneCmp)}) — ${K1_CRITERIA}.`);
 say();
 {
   const rows = R('V5');
@@ -226,7 +243,7 @@ say();
 say('### 3-3. 합계 (V3 → V5): 이번 회차에 배포 값이 바뀐 만큼');
 say();
 const totalCmp = compare(R('V3'), R('V5'), '재력 단계별 (V3 켜기 전 → V5 배포 값)');
-say(`판정: ${passesK1(totalCmp) ? '**합격**' : '**기준 초과**'} (${describeK1(totalCmp)}) — ${K1_CRITERIA}.`);
+say(`판정: ${verdictK1(totalCmp)} (${describeK1(totalCmp)}) — ${K1_CRITERIA}.`);
 say();
 
 say('## 4. 판 길이 (FA0-7: 가족 변화 줄은 연표 줄과 같은 규칙으로 센다)');

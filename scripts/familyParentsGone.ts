@@ -35,7 +35,7 @@ GENERATION_IDS.forEach((gen, gi) => {
       // 걸음이 끝난 상태의 나이(사망 걸음은 나이가 오르지 않는다)
       const age = s.age;
       const v = familyViewOf(s, age).parentsGone;
-      const e = parentsAllGone({ ...s, age });
+      const e = parentsAllGone({ ...s, age }, 'legacy'); // 규칙을 켠 뒤에도 옛 규칙과의 어긋남을 잰다 (R-579)
       if (v && viewAt === null) viewAt = age;
       if (e && econAt === null) econAt = age;
       if (v && !e) mismatch.push(age);

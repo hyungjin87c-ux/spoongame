@@ -17,7 +17,7 @@ type View = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthReport' | 'characte
 /**
  * 「두 분 모두 떠남」을 세는 규칙 (SPEC-009 R-562, FM6 판단):
  *  - `'view'` 가족 보기(`FamilyView.parentsGone`)와 같은 판정 — 부모 각자가 `parents_gone` 플래그 · **모델이 정한 별세(한 분 먼저, K3)** · 나이 100세 초과 중 하나로 떠났으면 「gone」이고 둘 다 gone이면 두 분 모두다.
- *    카드·그림이 「두 분 모두 떠남」을 보이는 해와 상속·월세 전환이 같은 해에 일어난다 — **지금 판이 쓰는 규칙**이다.
+ *    카드·그림이 「두 분 모두 떠남」을 보이는 해와 상속·월세 전환이 같은 해에 일어난다 — **지금 판이 쓰는 규칙**이다. 단 옛 저장에서 만든 스냅샷(`family.lg`)은 옛 규칙을 그대로 쓴다(진행 중인 판의 상속이 바뀌지 않고, 지난 어긋남 구간에서 열려도 전환이 사라지지 않는다, R-580).
  *  - `'legacy'` 플래그 또는 **실제 나이** 100세 초과만 본다(`parentStateOf`) — 모델이 한 분을 먼저 별세시켜도 그분의 실제 나이가 100을 넘을 때까지 「떠나지 않은 것」으로 셌다. 그래서 다른 분이 100세를 넘겨 카드가 「두 분 모두」를 보이는데도
  *    상속·주거 전환이 그분의 나이 100 초과까지 (평균 3.5년, 최대 13년) 늦었다(R-562: 7세대 × 300판의 8.1%, `scripts/familyParentsGone.ts`). **측정·시험 전용**: 해시 불변 L1 시험과 재측정이 `withParentsGoneRule('legacy', …)`로 옛 세계를 만든다.
  */
@@ -41,7 +41,8 @@ export function parentsAllGone(game: View, rule: ParentsGoneRule = activeGoneRul
   const r = game.birthReport;
   if (r === null) return false;
   // 시험 전용 R1 프로필(2026년생)은 얼린 세계다 — 가족 변화·이른 별세 효과를 쓰지 않는 것과 같이 옛 규칙을 그대로 쓴다(EY17 항등, `tests/economyIdentity.test.ts`)
-  if (rule === 'view' && game.generation !== R1_PRESENT) return game.character !== null && familyViewOf(game).parentsGone;
+  // 옛 저장 스냅샷(`lg`)도 옛 규칙이다 — 이미 지난 어긋남 구간에서 열리면 전환이 영영 안 일어난다 (R-580)
+  if (rule === 'view' && game.generation !== R1_PRESENT && game.family?.lg !== 1) return game.character !== null && familyViewOf(game).parentsGone;
   return parentStateOf(parentAgeAt(r.mother, game.age), game.flags) === 'gone' && parentStateOf(parentAgeAt(r.father, game.age), game.flags) === 'gone';
 }
 

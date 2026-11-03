@@ -190,7 +190,9 @@ export function adultSlotsOf(game: AdultSource, family: FamilyData): AdultSlot[]
     const ages = seenAges(game, [...(idx.setters.get('has_partner') ?? []), ...(idx.setters.get('married') ?? [])]);
     const at = ages[0] ?? Math.min(game.age, design.fallbackAt.spouse);
     const gap = spouseGap(famSeed, design.spouseGap);
-    plans.push({ id: 'spouse', role: 'spouse', gender: character.gender === 'male' ? 'female' : 'male', birthYear: character.gender === 'male' ? Y + gap : Y - gap, at, rank: 0, key: NAME_KEY.spouse });
+    // 처음 만난 해에 배우자는 어른이다 (R-573). `at`은 처음 본 사건의 나이라 실제 만남보다 늦지 않다 — 안전한 쪽
+    const birthYear = Math.min(character.gender === 'male' ? Y + gap : Y - gap, Y + at - design.spouseMinAge);
+    plans.push({ id: 'spouse', role: 'spouse', gender: character.gender === 'male' ? 'female' : 'male', birthYear, at, rank: 0, key: NAME_KEY.spouse });
   }
   if (childOn) {
     const ages = seenAges(game, idx.setters.get('has_child'));
@@ -230,7 +232,8 @@ export function adultSlotsOf(game: AdultSource, family: FamilyData): AdultSlot[]
   if (hit !== undefined) return hit;
 
   // 이름: 만들어진 순서(나이 → 배우자·자녀·친구)대로 장부에 적어, 뒤에 생긴 식구가 앞선 식구와 겹치지 않게 한다
-  const book = new NameBook(famSeed, [...avoidNamesOf(game), ...fam.p, ...fam.g, ...fam.o, ...fam.y]);
+  const book = new NameBook(famSeed, avoidNamesOf(game));
+  for (const n of [...fam.p, ...fam.g, ...fam.o, ...fam.y]) book.take(n);
   const S = character.name.slice(0, 1);
   const names = new Map<AdultId, string>();
   // 배우자의 성: 배우자가 먼저 이름을 받든 나중에 받든 같은 값이다(아이는 아버지의 성을 따르므로 여자 주인공의 자녀는 이 성)

@@ -36,7 +36,7 @@ export interface CardRow {
   jobText: string | null;
   /** 부모의 병환 표지(「병환 중」 — 병간호 사건이 켠 `cared_parents`, 옛 카드가 보이던 상태 문구). 그 밖에는 null */
   statusText: string | null;
-  /** 「N세에 세상을 떠남」 / 「내가 태어나기 전에 세상을 떠남 · N세」 (떠난 사람만) */
+  /** 「N세에 세상을 떠남」 / 「내가 태어나기 전에 세상을 떠남(N세)」 (떠난 사람만) */
   goneText?: string;
   /** 펼치면 붙는 「내가 M세였던 해」 (떠난 사람 중 주인공이 태어난 뒤에 떠난 분만) */
   goneMyText?: string;
@@ -104,6 +104,7 @@ export function familyCardOf(game: FamilyGame): FamilyCardModel {
   const player = character.gender;
   const wealth = character.parentWealth;
   const hasPartnerOnly = game.flags.includes('has_partner') && !game.flags.includes('married');
+  const isExSpouse = game.flags.includes('divorced') && !game.flags.includes('married') && !game.flags.includes('has_partner');
   const closenessRole = (role: PersonRole | 'friend', id: string): ClosenessRole => (role === 'grandparent' ? 'grandparent' : role === 'mother' || role === 'father' ? role : role === 'sibling' ? 'sibling' : role === 'spouse' ? 'spouse' : role === 'child' ? 'child' : id.startsWith('f') ? 'friend' : 'friend');
 
   const jobOf = (p: Person): JobInfo => {
@@ -125,7 +126,7 @@ export function familyCardOf(game: FamilyGame): FamilyCardModel {
     const row: CardRow = {
       key: p.id,
       role: p.role,
-      label: personLabel(p.id, p.role, p.gender, player, p.sibKind, p.role === 'spouse' && hasPartnerOnly),
+      label: p.role === 'spouse' && isExSpouse ? FAMILY_CARD_TEXT.exSpouse : personLabel(p.id, p.role, p.gender, player, p.sibKind, p.role === 'spouse' && hasPartnerOnly),
       name: p.name,
       age: p.age,
       gender: p.gender,

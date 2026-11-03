@@ -111,6 +111,8 @@ export interface FamilyDesign {
 export interface AdultDesign {
   /** 남편 − 아내 나이 차 분포의 모양 (`FATHER_GAP`과 같은 꼴: 범위·봉우리·퍼짐) */
   spouseGap: { min: number; max: number; peak: number; spread: number };
+  /** 처음 만난 해의 배우자 나이 하한 — 표의 나이 차가 이보다 어리게 만들면 출생 연도를 당긴다 (R-573) */
+  spouseMinAge: number;
   /** 첫 자녀 출생 연도 `upTo` 이하일 때 자녀 수 1~4명의 가중 */
   childCount: Array<{ upTo: number; weights: [number, number, number, number] }>;
   childGap: { min: number; max: number };
@@ -122,6 +124,12 @@ export interface AdultDesign {
   friendAgeOffset: { min: number; max: number };
   /** 사건을 본 나이를 알 수 없는 상태(시험이 직접 만든 플래그)에서 쓰는 나이 */
   fallbackAt: { spouse: number; child: number; friend: number };
+  /** 직업 줄의 나이 값 (FC3, R-582): 학생으로 보는 나이 · 은퇴 나이(농림어업·그 밖, 각 min~max 균등) · 집안일을 하는 부모가 은퇴 나이를 모를 때 쓰는 나이. 근거 칸 글이 이 값으로 조립된다 */
+  jobs: {
+    studentAge: { min: number; max: number };
+    retireAge: { agri: { min: number; max: number }; other: { min: number; max: number } };
+    homemakerRetireAge: number;
+  };
 }
 
 export type ClosenessRole = 'mother' | 'father' | 'grandparent' | 'sibling' | 'spouse' | 'child' | 'friend';

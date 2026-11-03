@@ -525,12 +525,6 @@ export function currentHomeOf(input: SceneInput): { place: string; word: string 
   return { place: input.place, word: houseWordOf(kind, state.calYear) };
 }
 
-/** 「지금 사는 곳」을 한 줄 글자로 (시험·대체 글용) — 화면은 두 항목을 `FitPair`로 그려 좁으면 기호 없이 두 줄이 된다 */
-export function currentHomeTextOf(input: SceneInput): string {
-  const { place, word } = currentHomeOf(input);
-  return `${place} · ${word}`;
-}
-
 export interface SceneRow {
   label: string;
   age: number;

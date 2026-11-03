@@ -4,6 +4,7 @@ import {
   GENERATION_IDS,
   STATE_WORD_RULES,
   YOUNGER_SIBLING_EVENT,
+  adultSlotsOf,
   deriveFamilyFlags,
   familyCardOf,
   familyViewOf,
@@ -55,10 +56,12 @@ interface Tally {
   spouse: number;
   child: number;
   friend: number;
+  /** 판 끝에 문장과 견준 성인기 식구 이름 수 (R-576 안 B ②) */
+  adultNames: number;
 }
 
 describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
-  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0, spouse: 0, child: 0, friend: 0 };
+  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0, spouse: 0, child: 0, friend: 0, adultNames: 0 };
   const problems: string[] = [];
   const bad = (where: string, msg: string): void => {
     if (problems.length < 40) problems.push(`${where}: ${msg}`);
@@ -121,7 +124,10 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
           const together = view.people.filter((p) => p.state === 'with').length;
           const apart = view.people.filter((p) => p.state === 'apart').length;
           const goneN = view.people.filter((p) => p.state === 'gone').length;
-          if (card.counts.people !== together + apart + goneN || card.together.length + card.apart.length + card.adult.length + card.gone.length !== view.people.length) bad(where, `${age}세 카드 사람 수 ${card.counts.people} ≠ ${together}+${apart}+${goneN}`);
+          // 독립 기준: 저장된 구성과 성인기 식구 계획에서 센 사람 수 — 보기가 사람을 빠뜨리면 여기서 걸린다
+          const expected = 6 + f.o.length + f.y.filter((s) => s.k <= age).length + adultSlotsOf(state, f).filter((s) => s.role !== 'friend' && s.at <= age).length;
+          if (view.people.length !== expected) bad(where, `${age}세 보기 사람 ${view.people.length} ≠ 구성 ${expected}`);
+          if (card.together.length + card.apart.length + card.adult.length + card.gone.length !== expected || together + apart + goneN !== expected) bad(where, `${age}세 카드 사람 수 ≠ 구성 ${expected}`);
           if (card.together.length + card.adult.filter((r) => r.state === 'with').length !== view.household.length) bad(where, `${age}세 카드의 함께 사는 사람 ≠ 보기의 함께 사는 사람`);
           const sibRows = [...card.together, ...card.apart].filter((r) => r.role === 'sibling').length;
           if (sibRows !== siblingCountOf(state)) bad(where, `${age}세 카드의 형제 줄 ${sibRows} ≠ 상속의 형제 수 ${siblingCountOf(state)}`);
@@ -131,6 +137,8 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
           if (everyone.some((r) => !/^[가-힣]{2,5}$/.test(r.name))) bad(where, `${age}세 이름 모양이 이상하다`);
           const kids = card.adult.filter((r) => r.role === 'child').length;
           if (kids > 4 || card.adult.filter((r) => r.role === 'spouse').length > 1 || card.friends.length > 3) bad(where, `${age}세 자녀 ${kids}·배우자·친구 ${card.friends.length} 한도`);
+          const partner = card.adult.find((r) => r.role === 'spouse');
+          if (partner !== undefined && partner.age < 20) bad(where, `${age}세 배우자·연인이 ${partner.age}세다 (R-573)`);
           if (card.things.length > 8) bad(where, `${age}세 가진 것 ${card.things.length} > 8`);
           for (const r of card.gone) if (r.goneText === undefined && r.role !== 'friend') bad(where, `${age}세 떠난 ${r.key}의 「N세에 세상을 떠남」이 없다`);
           for (const r of everyone) {
@@ -218,6 +226,14 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
             if (both && !(alive(['father']) && alive(['mother']))) bad(where, `${h.age}세 ${h.eventId}: 부모님 낱말인데 한 분이 떠나셨다`);
           }
         }
+        // 성인기 식구(배우자·자녀·친구)의 이름은 사건·인생 기록 문장에 쓰이지 않는다 (SPEC-009 FS2 예외 ②, R-576 안 B): 이 식구는 저장하지 않고 다시 계산하므로 표·이름 풀이 개정되면 이름이 바뀔 수 있다.
+        // 문장에 쓰려면 먼저 이름을 저장으로 옮겨야 한다 — 옮기기 전에 쓰면 여기서 걸린다
+        const adultNames = adultSlotsOf(last, f).map((s) => s.name);
+        tally.adultNames += adultNames.length;
+        for (const h of last.history) {
+          const text = `${h.title ?? ''} ${h.text} ${h.choice ?? ''}`;
+          for (const n of adultNames) if (text.includes(n)) bad(where, `${h.age}세 ${h.eventId}: 성인기 식구 이름 「${n}」이 문장에 쓰였다 (R-576)`);
+        }
       }
     });
   }
@@ -237,9 +253,26 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
     expect(tally.spouse, 'FM6 카드: 배우자가 보인 판').toBeGreaterThan(30);
     expect(tally.child, 'FM6 카드: 자녀가 보인 판').toBeGreaterThan(30);
     expect(tally.friend, 'FM6 카드: 친구가 보인 판').toBeGreaterThan(30);
+    expect(tally.adultNames, '성인기 식구 이름을 문장과 견준 수 (공허 통과 방지, R-576)').toBeGreaterThan(100);
     expect(tally.heavy, '가림 분류가 붙은 줄(별세·이혼)').toBeGreaterThan(100);
     expect(tally.plain, '분류 없는 줄(동생 출생·독립)').toBeGreaterThan(100);
     expect(tally.maxLen, `판 끝 family 최대 ${tally.maxLen}자 · 로그 최대 ${tally.maxLog}줄`).toBeLessThanOrEqual(1000);
+  });
+
+  it('성인기 식구 이름은 코드에서도 카드·보기에만 닿는다 — 인생 기록 줄을 쓰는 모듈은 이름을 읽지 않는다 (SPEC-009 FS2 예외 ②, R-576 안 B)', () => {
+    const files = import.meta.glob('../src/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const code = (src: string): string => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const users = Object.entries(files)
+      .filter(([, src]) => /\b(adultSlotsOf|namesOfFamily|AdultSlot)\b/.test(code(src)))
+      .map(([path]) => path.replace('../src/', ''))
+      .sort();
+    expect(users, '성인기 식구 이름을 만드는 함수를 부르는 곳 — 늘리려면 이름을 저장으로 옮긴 뒤에 한다').toEqual(['core/familyAdult.ts', 'core/familyCard.ts', 'core/familyView.ts']);
+    // 인생 기록 줄·가족 변화 문장을 만드는 곳은 사람의 이름을 읽지 않는다
+    for (const path of ['core/familyTick.ts', 'data/familyLineText.ts', 'core/familyLife.ts']) {
+      const src = files[`../src/${path}`];
+      expect(src, path).toBeDefined();
+      expect(code(src), `${path}가 사람 이름을 읽는다`).not.toMatch(/\.name\b|\bNameBook\b|\bnamesOfFamily\b/);
+    }
   });
 
   it('가림 분류(4-9절): 별세·이혼 줄은 loss·home으로 잡히고 동생 출생·독립 줄은 가리지 않는다', () => {

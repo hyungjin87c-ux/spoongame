@@ -133,3 +133,103 @@ test('새로고침을 여러 번 해도 카드의 이름·나이·사이가 똑�
     expect(await read()).toBe(first);
   }
 });
+
+/**
+ * 360px 사람 줄의 줄 수 측정 (SPEC-009 FC10 「360px에서 사람 줄이 2줄 이하로 접힌다」, R-577).
+ * 사람 줄 = `dd` 하나: 이름 · 나이 줄(`.family-who`) + 보조 줄(사이 · 직업 · 병환 중 · 따로 삶, FitList). 글자가 실제로 놓인 줄(글자 상자의 위쪽 좌표 묶음)을 센다.
+ * 가장 긴 줄은 판을 훑어 `이름 나이 + 보조 항목`의 글자 수가 가장 큰 사람으로 고른다.
+ */
+async function longestRowCase(page: Page): Promise<{ state: GameState; name: string; items: string[] }> {
+  await page.goto('/');
+  const best = await evalCore<{ state: GameState | null; name: string; items: string[]; len: number }>(
+    page,
+    `const best = { len: 0, state: null, name: '', items: [] };
+     for (const gen of arg.gens) {
+       for (let seed = 1; seed <= arg.seeds; seed++) {
+         let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), gen)));
+         while (s.phase === 'life' && s.age < 45) {
+           if (s.pending !== null) s = core.resolveChoiceStep(s, s.pending.key, s.pending.choiceIds[0]).state;
+           else s = core.stepYear(s).state;
+         }
+         if (s.phase !== 'life' || s.pending !== null) continue;
+         const flags = [...new Set([...s.flags, 'married', 'has_child', 'close_friend', 'cared_parents'])].sort();
+         const cand = { ...s, flags, paused: true };
+         const card = core.familyCardOf(cand);
+         for (const r of [...card.together, ...card.apart, ...card.adult, ...card.friends]) {
+           const items = [r.closenessText, r.jobText, r.statusText, r.state === 'apart' && r.role !== 'friend' ? '따로 삶' : null].filter((x) => x !== null);
+           const len = (r.name + ' ' + r.age + '세').length + items.join(' · ').length;
+           if (len > best.len) { best.len = len; best.state = cand; best.name = r.name; best.items = items; }
+         }
+       }
+     }
+     return best;`,
+    { gens: ['alpha', 'millennial', 'genx'], seeds: 40 },
+  );
+  expect(best.state, '긴 줄을 가진 판을 찾지 못했다').not.toBeNull();
+  return { state: withoutPlay(best.state!), name: best.name, items: best.items };
+}
+
+/** 한 요소 안에서 글자가 놓인 줄 수 (보이지 않는 탐침·읽기 전용 글자는 뺀다) */
+async function textLines(row: ReturnType<Page['locator']>): Promise<number> {
+  return row.evaluate((el) => {
+    const range = document.createRange();
+    const tops: number[] = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n !== null; n = walker.nextNode()) {
+      const parent = n.parentElement;
+      if (parent === null || parent.closest('.fit-pair__probe, .sr-only') !== null || (n.textContent ?? '').trim() === '') continue;
+      range.selectNodeContents(n);
+      for (const r of Array.from(range.getClientRects())) if (r.width > 0 && r.height > 0) tops.push(r.top);
+    }
+    tops.sort((a, b) => a - b);
+    let lines = 0;
+    let last = -Infinity;
+    for (const t of tops) {
+      if (t - last > 4) lines++;
+      last = t;
+    }
+    return lines;
+  });
+}
+
+// tests/·e2e/는 Node 타입을 쓰지 않는다(tsconfig.json) — 환경 변수 읽기에 필요한 모양만 선언한다
+declare const process: { env: Record<string, string | undefined> };
+
+test('360px 사람 줄 줄 수 측정: 가장 긴 사람 줄이 글자 크기 100·150·200%에서 몇 줄인지 잰다 (FC10, R-577)', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) > 400, '360px 폭에서만 잰다');
+  const { state, name, items } = await longestRowCase(page);
+  await openCard(page, state);
+  const card = page.getByTestId('family-card');
+  const more = card.getByTestId('family-more');
+  if ((await more.count()) > 0) await more.click(); // 12줄 밖에 있는 사람도 잰다
+  const rows = card.locator('dd[data-testid^="family-"]:not([data-testid="family-pet"]):not([data-testid="family-things"])');
+  const longest = rows.filter({ has: page.locator('.family-who', { hasText: name }) });
+  await expect(longest).toHaveCount(1);
+  const measured: Record<string, { longest: number; worst: number; worstText: string; histogram: Record<number, number> }> = {};
+  for (const pct of [100, 150, 200]) {
+    await page.addStyleTag({ content: `html { font-size: ${pct}% !important; }` });
+    await page.waitForTimeout(150); // 탐침(ResizeObserver)이 항목 쪼개기를 마칠 때까지
+    const count = await rows.count();
+    let worst = 0;
+    let worstText = '';
+    const histogram: Record<number, number> = {};
+    for (let i = 0; i < count; i++) {
+      const lines = await textLines(rows.nth(i));
+      histogram[lines] = (histogram[lines] ?? 0) + 1;
+      if (lines > worst) {
+        worst = lines;
+        worstText = (await rows.nth(i).innerText()).replace(/\s+/g, ' ');
+      }
+    }
+    measured[`${pct}%`] = { longest: await textLines(longest), worst, worstText, histogram };
+  }
+  const report = `가장 긴 줄 「${name} + ${items.join(' · ')}」 (줄 수별 사람 수 = histogram) ${JSON.stringify(measured)}`;
+  console.log(`[R-577 줄 수] ${report}`);
+  test.info().annotations.push({ type: 'R-577 줄 수', description: report });
+  // 측정 도구가 일한다: 어떤 크기에서도 가장 긴 줄은 한 줄 이상이고 사람 줄이 하나 이상 잡힌다
+  for (const m of Object.values(measured)) expect(m.longest).toBeGreaterThanOrEqual(1);
+  // FC10 「360px에서 사람 줄 2줄 이하」: 지금 구조는 이 값을 지키지 못한다(R-577 측정 — 보고서·TODO). 값에 맞춰 느슨하게 두지 않고, 디자인 해법이 정해진 뒤 켜도록 **환경 변수로 연다**:
+  // FAMILY_ROW_MAX_LINES=2 로 돌리면 100%에서 가장 긴 줄이 그 줄 수 이하임을 단언한다. 해법이 들어가면 이 분기를 지우고 2를 고정한다.
+  const limit = Number(process.env.FAMILY_ROW_MAX_LINES ?? '');
+  if (Number.isFinite(limit) && limit > 0) expect(measured['100%'].longest, `가장 긴 줄 「${name}」 100%`).toBeLessThanOrEqual(limit);
+});

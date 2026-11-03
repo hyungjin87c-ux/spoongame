@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
-import { DEFAULT_SETTINGS, IMPACT_KEYS, R1_PRESENT, SPEEDS, advanceUntilDecision, calendarYear, currentHomeTextOf, educationLabel, familyCardOf, familyViewOf, peersOf, sceneInputOf, previewPending, resolveChoice, stepYear, wealthMixtureOfGame, type GameState, type Settings } from '../src/core';
+import { DEFAULT_SETTINGS, IMPACT_KEYS, R1_PRESENT, SPEEDS, advanceUntilDecision, calendarYear, currentHomeOf, educationLabel, familyCardOf, familyViewOf, peersOf, sceneInputOf, previewPending, resolveChoice, stepYear, wealthMixtureOfGame, type GameState, type Settings } from '../src/core';
 import { looksStanding } from '../src/core/birth';
 import { reportPlaceLabel } from '../src/core/birthReport';
 import { startBandOf } from '../src/core/ending';
@@ -355,7 +355,8 @@ describe('프로필 카드 (DB9)', () => {
     expect(text(card)).toContain(DASH_TEXT.profileNow);
     expect(DASH_TEXT.profileLive).toBe('태어난 곳');
     expect(DASH_TEXT.profileNow).toBe('지금 사는 곳');
-    expect(flat(openTagBlock(card, 'profile-now'))).toBe(nospace(currentHomeTextOf(sceneInputOf(infant))));
+    const nowHome = currentHomeOf(sceneInputOf(infant));
+    expect(flat(openTagBlock(card, 'profile-now'))).toBe(nospace(`${nowHome.place} · ${nowHome.word}`));
     const home = openTagBlock(card, 'profile-home');
     expect(home).toContain(`data-grade="${c.parentWealth}"`);
     expect(home).toContain(gradeStem(c.parentWealth));
