@@ -1,0 +1,168 @@
+# 미래 연표(U01~U44) 예측 근거 조사 — 누가 어디서 이렇게 내다봤는가 (FU11 입력)
+
+- 상태: **조사 결과 초안.** 코드·`docs/spec/`·TODO·다른 문서는 고치지 않았다. 이 문서 하나만 새로 썼다. 기획자·작업자가 FU11 데이터를 만들 때 입력으로 쓴다.
+- 확인일: **2026-11-03.** 규칙은 SPEC-010 「예측 근거 규칙」(실제로 한 말만, 자기 말 요약, 직접 인용 15단어 미만, 정치인·정당 인사 발언 제외, 가상 전쟁·정권 붕괴 전망 제외).
+- 이 문서의 요약 문장은 **게임 근거 칸에 그대로 쓸 수 있게** 합쇼체로 썼다. 분석·조사 결과를 전하는 자료는 「전망했습니다」 대신 「분석했습니다」「밝혔습니다」로 구분했다(예측이 아닌 것을 예측처럼 쓰지 않으려는 것).
+- 아래 1절 표가 본문이다. 2절 이후는 현황·한계·제외·접근 기록이다.
+
+## 0. 읽는 법
+
+| 용어 | 뜻 |
+|---|---|
+| 확인 `원문` | 본인이 쓴 글·논문·보고서, 기관이 낸 공식 페이지(보도자료 포함), 또는 발언자와 직접 인터뷰한 매체 본문을 **열어서** 해당 문장을 확인했다. |
+| 확인 `2차` | 다른 기사·다른 매체의 인터뷰를 통해 전해진 것을 열어서 확인했다. 발언자의 원문 페이지는 열지 못했거나 막혔다. **2차 행에는 직접 인용을 적지 않았다**(규칙 2). |
+| 어긋남 | 발언·자료의 시점·범위가 게임 줄과 다른 점. 게임 해와 발언 해가 다르면 숫자로 적었다. 「반대」는 같은 주제에서 반대 방향을 가리키는 근거다. |
+| 직접 인용 | 영어 원문은 15단어 미만. 한국어 자료는 짧은 구절만. 한 행에 하나까지. 외국어 발언은 「옮김」이 필요하다(요약 문장이 옮김 역할). |
+| 열람 도구의 한계 | 페이지는 열람 도구가 본문을 요약해 돌려주는 방식으로 읽었다. 따옴표 안의 구절은 도구가 「원문 그대로」라고 돌려준 것이지만 한 글자까지 같음을 내가 보증하지는 못한다. **출시 전에 주소에서 한 번 더 확인하기를 권한다**(인용이 있는 행만 대조하면 된다). |
+| 번호 범위 | `U07(U06·U08 공통)`처럼 적은 행은 여러 줄에 같이 쓸 수 있는 근거다. |
+
+## 1. 근거 표
+
+2026년 줄(U01·U02)은 이미 일어난 일이라 「예측」 칩이 없다. 그 근거는 사실 확인용이며 근거 칸을 달지는 마스터가 정한다.
+
+| 번호 | 사람·기관 | 직함 | 자료(종류) | 날짜 | 게임에 쓸 요약 | 직접 인용 | 주소 | 확인 | 게임 줄과 어긋나는 점 |
+|---|---|---|---|---|---|---|---|---|---|
+| U01 | 한진수·오삼일 (한국은행 조사국 고용연구팀) | 한국은행 조사역·팀장 | 한국은행 블로그 「AI 확산 초기, 청년고용은 왜 감소하는가?」(이슈노트 제2025-30호 해설, 기관 글) | 2025-11-06 | 한국은행은 AI 확산이 청년에게 부담으로 작용했다고 분석했습니다. | 「청년에게는 부담으로 작용한 것이다」(한국어 일부) | https://www.bok.or.kr/portal/bbs/B0000347/view.do?nttId=10094423&menuNo=201106 | 원문 | 분석이지 전망이 아님. 업종별 AI 노출도와 고용 변화의 연관성 분석이라 인과 단정이 아님(글에 별도 단서는 없음). 줄은 AI와 공고 감소를 나란히 놓아 서로 맞음. |
+| U01 | 한국은행 연구진 (이슈노트 제2026-19호) | 한국은행 | 이슈노트 보도(아시아경제 김혜민 기자) | 2026-08-18 | 한국은행은 청년 일자리 감소의 대부분이 AI 고노출 업종에서 나왔다고 밝혔습니다. | — | https://view.asiae.co.kr/article/2026081814283987947 | 2차 | 기사에 「AI만의 탓으로 돌려서는 안 된다」고 연구진이 강조했다고 나옴. 보고서 저자 이름은 기사에 없음. 이슈노트 원문은 열지 못함. |
+| U01 | 에릭 브린욜프슨 외 (Stanford·ADP, Erik Brynjolfsson) | 스탠퍼드 경제학자 | 「Canaries」 갱신 보도(Fortune, Nick Lichtenberg) | 2026-06-27 | 스탠퍼드 연구진은 AI에 많이 노출된 직종의 22~25세 고용이 줄고 있다고 분석했습니다. | — | https://fortune.com/2026/06/27/what-is-ai-impact-entry-level-jobs-stanford-adp-canaries-brynjolfsson-richardson/ | 2차 | 미국 급여 자료. 모든 노동자 전체 효과는 작음(가장 노출된 직종 연 약 0.2% 감소). 금리·과잉채용·저채용 시장 같은 다른 설명과 논쟁 중(기사에 병기). |
+| U02 | Korea Times 보도, IMF 자료를 한국은행이 정리한 36개국 비교 | 기사(Lee Hyo-jin) | 기사 「Korea's Q2 current account surplus tops Germany, Japan combined on chip boom」 | 2026-10-25 | 한국의 2분기 경상수지 흑자가 독일과 일본 합계를 넘었다고 집계됐습니다. | — | https://www.koreatimes.co.kr/20261025/koreas-q2-current-account-surplus-tops-germany-japan-combined-on-chip-boom | 2차 | **한 분기(2분기), 경상수지 기준.** 줄 「합을 넘었습니다」는 분기가 빠져 한 해 내내처럼 읽힐 수 있음. 무역수지 기준 비교는 기사에 없음. |
+| U02 | 강성진 (기사 표기: Korea University) | 고려대 경제학자(직함은 기사에 없음) | 같은 Korea Times 기사 속 발언 | 2026-10-25 | 한 경제학자는 이 흑자가 반도체 호황이 만든 착시일 수 있다고 경고했습니다. | — | https://www.koreatimes.co.kr/20261025/koreas-q2-current-account-surplus-tops-germany-japan-combined-on-chip-boom | 2차 | **[반대·유보]** 일시적일 수 있다는 경고. 줄은 사실만 말하므로 어긋나지는 않으나 지속성은 근거가 없음. |
+| U02 | 국제통화기금(IMF) 전망, 같은 기사가 인용 | 국제기구 | 같은 Korea Times 기사 속 IMF 전망 인용 | 2026-10-25 | IMF는 한국의 경상흑자가 2029년 이후 줄어들 것으로 전망했다고 전해졌습니다. | — | https://www.koreatimes.co.kr/20261025/koreas-q2-current-account-surplus-tops-germany-japan-combined-on-chip-boom | 2차 | **[반대·유보]** IMF 원문 전망 자료는 열지 못함(기사 인용만). |
+| U03 | 보건복지부 (기본소득 제도화 착수 보도) | 정부 부처 | 기사 「정부, 기본소득 제도화 착수…2027년 시범사업」(아시아경제) | 2026-04-10 | 보건복지부는 2027년 참여소득 시범사업을 위한 기초작업에 들어갔다고 보도됐습니다. | — | https://view.asiae.co.kr/article/2026041010003852773 | 2차 | **계획 단계.** 기사는 참여소득 모델을 우선 검토한다고 했고 「문제는 역시 돈」이라 적음. 전국 단위 도입 여부는 기사에서 확인되지 않음. 줄 「시작됐습니다」가 계획보다 확정적. |
+| U04 | 통계청 | 정부 통계기관 | 정책브리핑 「장래인구추계: 2022~2072년」 부처 브리핑 | 2023-12-14 | 통계청은 초등 연령 인구(6~11세)가 2028년 200만 명 밑으로 내려간다고 전망했습니다. | 「6~11세가 200만 미만인 경우는 2028년도」(한국어 일부) | https://www.korea.kr/briefing/policyBriefingView.do?newsId=156605259 | 원문 | 2023 추계(출산율 2025년 0.65 가정)라 실제 출산 반등 뒤 새 추계에서 해가 바뀔 수 있음(SPEC 위험 절). 「학급 수」가 아니라 인구 전망. |
+| U04 | 조영태 | 서울대 보건대학원 교수 | 서울신문 인구포럼 기조강연 보도(서울신문) | 2023-06-14 | 조영태 교수는 학령인구 감소가 이미 정해진 미래라고 강조했습니다. | — | https://www.seoul.co.kr/news/2023/06/15/20230615002001 | 2차 | 발언은 이미 지방대 신입생 유치와 교사 정원 감축이 벌어진 현재형 진단. 2028년 특정 아님. |
+| U05 | 강수와 외 이화여대 연구팀 | 이화여대 연구팀 | 서울 무더위쉼터 입지 연구 보도(뉴시스) | 2025-07-11 | 이화여대 연구팀은 서울의 무더위쉼터가 노인 밀집 지역에 충분하지 않다고 분석했습니다. | — | https://www.newsis.com/view/NISX20250710_0003247471 | 2차 | 현재 상황 분석(서울 한정)이지 2029년 전망이 아님. 2029년 쉼터 장면을 직접 예측한 자료는 못 찾음. |
+| U05 | 기상청 | 정부 기관 | 2025년 기후 분석 보도(헤럴드경제 전새날 기자) | 2026-01-05 | 기상청은 2025년 서울의 열대야가 46일로 관측 이래 가장 많았다고 집계했습니다. | — | https://www.heraldk.com/article/2026010517011401751 | 2차 | 실측(과거) 기록. 전망 아님. |
+| U06 | 에바 비발트 외 OpenResearch 연구진 (Eva Vivalt, 첫 저자) | 논문 첫 저자(소속은 페이지에 없음) | 논문 「The Employment Effects of a Guaranteed Income」 NBER 워킹페이퍼 32719 | 2024-07 | 미국 두 주 실험에서 월 현금 지급이 근로 참여를 소폭 줄였다고 보고했습니다. | 「a 4.2 percentage point decrease in labor market participation」 | https://www.nber.org/papers/w32719 | 원문 | 실험 결과이며 한국 시범이나 2030년을 내다본 것이 아님. 초록은 주당 근로 1~2시간 감소도 적음. 해석이 갈리는 연구(이전 조사 E5). |
+| U06 | 샘 올트먼 (Sam Altman) | OpenAI CEO | 에세이 「Moore's Law for Everything」 | 2021-03-16 | 올트먼은 AI로 힘이 노동에서 자본으로 옮겨 가니 그 부를 시민에게 나누자고 제안했습니다. | 「Even more power will shift from labor to capital.」 | https://moores.samaltman.com/ | 원문 | 정책 제안(미국 시민 대상 지분 기금). 기본소득 시범의 해를 말하지 않음. 글에서 「10년쯤 뒤」라는 말은 자산 가치 가정에 쓰임. |
+| U06 | 제프리 힌턴 (Geoffrey Hinton) | AI 연구자(보도 표기: 「AI의 대부」) | 파이낸셜타임스 인터뷰, Fortune 보도(Jason Ma) | 2025-09-06(Fortune 재게재 2026-01-12) | 힌턴은 기본소득만으로는 일이 주는 존엄을 채우지 못한다고 말했습니다. | — | https://fortune.com/2025/09/06/godfather-of-ai-geoffrey-hinton-massive-unemployment-soaring-profits-capitalist-system/ | 2차 | **[반대·유보]** 기본소득의 시점이 아니라 효과에 대한 의견. FT 원문은 열지 못함. |
+| U06 | 다론 아세모글루 외 (Daron Acemoglu 등) | MIT 경제학자 | CNBC 기사 「Silicon Valley leaders think A.I. will one day fund free cash handouts. But experts aren't convinced」 | 2021-03-30 | 아세모글루는 AI가 기본소득을 댈 만큼 혁명적이라는 낙관에 의문을 제기했습니다. | — | https://www.cnbc.com/2021/03/30/openai-ceo-sam-altman-says-ai-could-pay-for-ubi-experts-disagree.html | 2차 | **[반대]** 같은 기사에 다른 학자 여럿의 비판도 실림. 2021년 오래된 논쟁. |
+| U07(U06·U08 공통) | AI Impacts 연구진 (Katja Grace 첫 저자) | 연구진(소속은 초록에 없음) | 논문 「Thousands of AI Authors on the Future of AI」 arXiv 2401.02843, 연구자 2,778명 설문 | 2024-01-05 | AI 연구자 설문은 모든 과제에서 기계가 사람을 앞서는 시점을 2047년경으로 내다봤습니다. | 「50% as late as 2116」(모든 직업 완전 자동화 50%) | https://arxiv.org/abs/2401.02843 | 원문 | 설문 50%가 2047이고 게임은 2030(**17년 차**). 모든 직업의 완전 자동화 50%는 2116. 설문의 「모든 과제」 기준이 AGI와 같은 말은 아님. |
+| U07 | 다리오 아모데이 (Dario Amodei) | Anthropic CEO | 에세이 「Machines of Loving Grace」 | 2024-10 | 아모데이는 강력한 AI가 이르면 2026년에 올 수 있다고 내다봤습니다. | 「it could come as early as 2026」 | https://www.darioamodei.com/essay/machines-of-loving-grace | 원문 | 발언은 「이르면 2026」, 게임은 2030. 같은 문장에 「훨씬 늦어질 수도 있다」는 단서가 붙음. |
+| U07 | 레이 커즈와일 (Ray Kurzweil) | 미래학자·발명가, 저서 『The Singularity Is Nearer』 | BBC Science Focus 인터뷰(Alex Hughes) | 2024-08-23 | 커즈와일은 인간 수준의 AI(AGI)가 2029년까지 나온다고 내다봤습니다. | 「starting to look like a conservative view」 | https://www.sciencefocus.com/future-technology/heres-what-2050-will-look-like-according-to-the-godfather-of-ai | 원문(인터뷰) | 발언 2029, 게임 2030(**1년 차**). 기사는 AGI 2029를 기자 서술로 적고 「보수적인 견해」는 본인 말로 인용. |
+| U07 | 샘 올트먼 (Sam Altman) | OpenAI CEO | 블로그 글 「The Gentle Singularity」 | 2025-06(페이지에 날짜 없음, 검색 결과는 6월 10일로 전함) | 올트먼은 2026년에 새 통찰을 내는 AI가 나오고 일자리 부류 전체가 사라지는 어려움도 있겠다고 내다봤습니다. | 「whole classes of jobs going away」 | https://blog.samaltman.com/the-gentle-singularity | 원문 | 2026~2027 단계 전망이고 2030 AGI 단정이 아님. 글은 「2030년대는 중요한 면에서 크게 다르지 않을 수도」라고도 씀. |
+| U07 | 제프리 힌턴 (Geoffrey Hinton) | AI 연구자 | CBS 「60 Minutes」 인터뷰 대본(Scott Pelley) | 2023-10-08(갱신 2024-06-16) | 힌턴은 AI가 곧 사람보다 잘 추론할 수 있고 일자리를 잃은 계층이 생길 수 있다고 우려했습니다. | 「it may well be able to reason better than us」 | https://www.cbsnews.com/news/geoffrey-hinton-ai-dangers-60-minutes-transcript/ | 원문(인터뷰 대본) | 「5년」은 기자 질문에서 나온 틀(2028 무렵). 게임 2030과 근접. 실업 우려 구절은 같은 대본에 있음. |
+| U07 | 데미스 허사비스 (Demis Hassabis) | Google DeepMind CEO | CBS 「60 Minutes」 보도 | 2025-04-20 | 허사비스가 AGI를 5~10년 앞으로 본다고 방송이 전했습니다. | — | https://www.cbsnews.com/news/google-artificial-intelligence-demis-hassabis-60-minutes | 2차 | 기사의 「5~10년」은 기자 서술이고 본인의 직접 인용이 아님. 2030~2035 무렵으로 읽혀 게임 2030의 뒤쪽과 맞닿음. |
+| U07 | 다리오 아모데이 (Dario Amodei) | Anthropic CEO | CNN 보도(Axios 인터뷰 인용) | 2025-05-29(Axios 2025-05-28) | 아모데이는 AI가 1~5년 안에 실업률을 최대 20%까지 끌어올릴 수 있다고 경고했다고 전해졌습니다. | — | https://abc17news.com/money/cnn-business-consumer/2025/05/29/why-this-leading-ai-ceo-is-warning-the-tech-could-cause-mass-unemployment-2/ | 2차 | 입사 초급 화이트칼라가 대상이고 미국 이야기. 기사는 정확한 시점은 모른다고 했다고 적음. Axios 원문은 접근이 막혀(403) 열지 못함. |
+| U07 | 세계경제포럼 (『Future of Jobs Report 2025』) | 국제기구 | EU 디지털 기술·일자리 플랫폼의 보고서 요약 | 2025-01 보고서(페이지 갱신 2026-02-16) | 세계경제포럼은 2030년까지 일자리 1억 7천만 개가 생기고 9,200만 개가 사라질 것으로 내다봤습니다. | — | https://digital-skills-jobs.europa.eu/en/latest/research/future-jobs-report-2025 | 2차 | 순증(약 7,800만)과 기술 39% 변화 전망이라 「재교육 붐」과 맞음. 대량 실직 전망은 아님. WEF 본문은 접근이 막혀(403) 열지 못함. |
+| U07 | 국제통화기금(IMF) 총재 글 (Kristalina Georgieva) | 국제기구 블로그 | IMF 블로그 「AI Will Transform the Global Economy. Let's Make Sure It Benefits Humanity」 | 2024-01-14 | IMF는 세계 일자리의 약 40%가 AI의 영향권에 있다고 분석했습니다. | 「almost 40 percent of global employment is exposed to AI」 | https://www.imf.org/en/Blogs/Articles/2024/01/14/ai-will-transform-the-global-economy-lets-make-sure-it-benefits-humanity | 원문 | 노출 규모 추정이지 시점 전망이 아님. 총재 명의 글이라 **기관 글로 표기**하기를 권한다(개인 정치 경력 여부는 마스터 판단). |
+| U07(U08 공통) | 다론 아세모글루 (Daron Acemoglu) | MIT 경제학자 | 논문 「The Simple Macroeconomics of AI」 NBER 워킹페이퍼 32487 | 2024-05 | 아세모글루는 AI가 향후 10년간 생산성에 주는 효과가 크지 않을 것으로 내다봤습니다. | 「nontrivial but modest」 | https://www.nber.org/papers/w32487 | 원문 | **[반대]** 총요소생산성 증가가 10년간 0.66% 이하(수정 0.53% 미만)로 추산. AGI급 급변을 가정하지 않아 2030 시나리오와 정면으로 다름. |
+| U08 | 스탠퍼드 HAI 『AI Index 2025』 | 대학 연구소 | 연례 보고서 | 2025 | 스탠퍼드 AI 지수는 2024년 미국 민간 AI 투자가 크게 늘었다고 집계했습니다. | 「U.S. private AI investment grew to $109.1 billion」 | https://hai.stanford.edu/ai-index/2025-ai-index-report | 원문 | 실측(과거) 투자액이며 앞으로의 몰림을 전망한 것이 아님. 줄 「AI를 가진 쪽에 투자가 몰렸습니다」의 사실 바탕. |
+| U08 | 국제통화기금(IMF) 총재 글 (Kristalina Georgieva) | 국제기구 블로그 | IMF 블로그 (위와 같음) | 2024-01-14 | IMF는 대부분의 시나리오에서 AI가 전체 불평등을 키울 것으로 내다봤습니다. | 「In most scenarios, AI will likely worsen overall inequality.」 | https://www.imf.org/en/Blogs/Articles/2024/01/14/ai-will-transform-the-global-economy-lets-make-sure-it-benefits-humanity | 원문 | 불평등 일반론. 투자가 AI 소유 쪽에 몰린다는 직접 전망은 아님. |
+| U08 | 제프리 힌턴 (Geoffrey Hinton) | AI 연구자 | 파이낸셜타임스 인터뷰, Fortune 보도 | 2025-09-06(재게재 2026-01-12) | 힌턴은 AI가 소수를 훨씬 부유하게 하고 대다수를 가난하게 만들 수 있다고 우려했습니다. | — | https://fortune.com/2025/09/06/godfather-of-ai-geoffrey-hinton-massive-unemployment-soaring-profits-capitalist-system/ | 2차 | 기사에서 힌턴은 이를 AI가 아니라 자본주의 체제의 문제라고 말함. 시점 언급 없음. |
+| U09 | S&P Global Mobility | 시장조사 기관 | 보도자료 「Autonomous Vehicle Reality Check: Widespread Adoption Remains at Least a Decade Away」 | 2023-09-25 | S&P 글로벌 모빌리티는 자율주행 대중화가 앞으로도 10년 넘게 걸릴 것으로 내다봤습니다. | — | https://press.spglobal.com/2023-09-25-Autonomous-Vehicle-Reality-Check-Widespread-Adoption-Remains-at-Least-a-Decade-Away,-according-to-S-P-Global-Mobility | 원문 | **[반대·유보]** 2035년 신차 중 레벨4 기능이 있는 차는 6% 미만, 로보택시는 80만 대 미만이라고 추산. 시범 운행 셔틀을 부정하지는 않으나 동네를 도는 일이 흔해진다는 근거는 아님. 한국 정부 로드맵 원문은 못 열음. |
+| U10 | 한국개발연구원(KDI) 『노인돌봄 인력의 전망과 정책 대응』 | 정부 출연 연구기관 | 보고서 보도(베이비뉴스, Daum 게재) | 2026-04-29 | KDI는 요양 인력이 2035년 약 50만 명 더 필요할 것으로 추산했습니다. | — | https://v.daum.net/v/20260429151946545 | 2차 | 업무 부담을 현재 수준으로 유지하는 조건의 추가 필요 인력(2035 약 49.8만, 2040 약 77만). 「일손을 못 구한 집」 자체는 추정이 아님. 보고서 원문·연구자 이름은 열지 못함. |
+| U13 | 통계청 | 정부 통계기관 | 정책브리핑 「장래인구추계: 2022~2072년」 | 2023-12-14 | 통계청은 6~21세 학령인구가 2040년까지 337만 명 줄 것으로 전망했습니다. | 「2040년까지 337만 명 감소」(한국어 일부) | https://www.korea.kr/briefing/policyBriefingView.do?newsId=156605259 | 원문 | 2023 추계. 대학 학과 통합은 이 자료에 없음. |
+| U13 | 한국개발연구원(KDI) 연구보고서 (제목 『지역대학의 구조적 전환과 발전방안』은 검색 요약 기준) | 정부 출연 연구기관 | 보고서 인용 기사(KBR경영연구소) | 2025-10-29(보고서 발간 2024-10-17은 검색 요약 기준) | KDI는 2040년 비수도권 대학 충원율이 27~43%에 머물 수 있다고 전망했습니다. | — | https://www.koreabizreview.com/articles/kbr-legacy-7092 | 2차 | 정원을 조정하지 않는다는 가정. 학과가 합쳐졌다는 장면은 근거 없음. KDI 보고서 원문은 못 열음(한국경제 기사는 접근이 막혀 403). |
+| U14 | 니컬러스 카드 외 (Nicholas S. Card, 첫 저자) | 논문 첫 저자(소속은 페이지에 없음) | 논문 「An Accurate and Rapidly Calibrating Speech Neuroprosthesis」 New England Journal of Medicine | 2024-08-15 | 미국 연구진은 이식형 기기로 중증 환자의 말을 높은 정확도로 해독했다고 보고했습니다. | 「the neuroprosthesis sustained 97.5% accuracy over a period of 8.4 months」 | https://profiles.wustl.edu/en/publications/an-accurate-and-rapidly-calibrating-speech-neuroprosthesis/ | 원문(초록) | **발표 2024, 게임 2044(20년 차).** 이미 임상 연구 단계이고 환자 치료로 정착됐는지(승인)는 확인 못 함. PubMed 페이지는 쿠키 요구로 열리지 않아 대학 연구자 프로필 초록으로 확인. |
+| U14 | 톰 옥슬리 (Tom Oxley) | 싱크론(Synchron) CEO — 회사명은 근거 칸에만 가능 | 기사 인용(Engadget, Andrew Tarantola) | 2023-08-28 | 뇌 기기 회사 대표는 앞으로 5년 안에 시판 승인을 목표로 하며 소비자 오락용은 아니라고 밝혔습니다. | — | https://www.engadget.com/bci-implant-severe-paralysis-synchron-medicine-stroke-160012833.html | 2차 | 5년 목표(2028 무렵)가 이미 지났을 수 있음. 승인 여부는 못 찾음. 의료용 우선이라는 점은 게임 기본값과 맞음. 기사 속 발언이 인터뷰인지 행사 발언인지 페이지에서 확인 못 함. |
+| U14 | 레이 커즈와일 (Ray Kurzweil) | 미래학자·발명가 | Noema 기사(Kathleen Miles) | 2015-10-01 | 커즈와일은 2030년대에 나노봇이 뇌를 클라우드에 이을 수 있다고 내다봤습니다. | — | https://www.noemamag.com/ray-kurzweil-in-the-2030s-nanobots-in-our-brains-will-make-us-godlike/ | 2차 | 발언 2030년대, 게임 2044. 의료용 치료가 아니라 뇌 확장 구상. 2015년 글이라 오래됨. |
+| U14 | 데이비드 린든·제임스 프렌드 (기사 속 인물) | 존스홉킨스대 신경과학자 · UC샌디에이고 연구자 | 같은 Noema 기사 속 반론 | 2015-10-01 | 한 신경과학자는 커즈와일의 2030년대 일정이 이르다고 봤고, 한 연구자는 승인까지 몇 년에서 영영 안 될 수도 있다고 말했습니다. | — | https://www.noemamag.com/ray-kurzweil-in-the-2030s-nanobots-in-our-brains-will-make-us-godlike/ | 2차 | **[반대]** 린든은 직접 인용 없이 기사가 풀어 쓴 것. 프렌드는 「몇 년에서 영영 안 될 수도」라고 인용됨. |
+| U16 | WTO 경제학자들 | 국제기구 | WTO 뉴스 항목(보고서명은 페이지에 없음. 『World Trade Report 2023』과 같은 추정으로 보이나 이번에 보고서는 열지 않음) | 2023-08-26 | WTO 경제학자들은 세계가 두 블록으로 갈라지면 장기 GDP가 적어도 5% 줄 것으로 추정했습니다. | 「lower the long-run level of real global GDP by at least 5 per cent」 | https://www.wto.org/english/news_e/news23_e/dgno_26aug23_e.htm | 원문 | **시나리오 추정(예측 아님).** 줄은 「물가가 흔들렸다」인데 GDP 영향 추정이고 물가 직접 근거는 아님. 2046년과도 무관. 같은 기관 2023-06-21 뉴스 항목(https://www.wto.org/english/news_e/news23_e/igo_21jun23_e.htm)에 「5% 넘게」로 적힘. 개인 발언이 아니라 **WTO 경제학자들의 추정**으로 표기. |
+| U16 | 국제통화기금(IMF) 직원 | 국제기구 | 직원 토론 노트 「Geoeconomic Fragmentation and the Future of Multilateralism」 | 2023-01 | IMF 직원 보고서는 분절의 경제 비용을 줄이려면 무역 개방을 지켜야 한다고 권고했습니다. | 「Address trade barriers and defend trade openness」 | https://www.imf.org/en/Publications/Staff-Discussion-Notes/Issues/2023/01/11/Geo-Economic-Fragmentation-and-the-Future-of-Multilateralism-527266 | 원문 | 권고문이며 비용 수치는 이 페이지에서 확인 못 함(이전 조사의 0.2~7%는 CNBC 보도 기준). 직원 개인 견해라는 면책 문구가 있음. |
+| U17 | 통계청 『장래가구추계 시도편 2022~2052』 | 정부 통계기관 | 발표 보도(뉴시스) | 2024-12-12 | 통계청은 1인 가구 비중이 2052년 41%대로 늘 것으로 전망했습니다. | — | https://www.newsis.com/view/NISX20241212_0002993974 | 2차 | 수치는 2052년이고 줄은 2040년대. 고령 가구 비중도 2052년 50.6%로 전망. 통계청 원문은 못 열음. |
+| U18 | 통계청 | 정부 통계기관 | 정책브리핑 「장래인구추계: 2022~2072년」 | 2023-12-14 | 통계청은 2072년 연간 출생아가 16만 명 수준일 것으로 전망했습니다. | 「2072년에는 16만 명 수준일 것으로 전망됩니다」(한국어) | https://www.korea.kr/briefing/policyBriefingView.do?newsId=156605259 | 원문 | 2023 추계라 실제 출산 반등으로 수정될 수 있음. 「놀이터에 아이가 몇 안 남았다」는 장면은 해석. |
+| U18 | IHME (워싱턴대 보건지표평가연구소) 『Lancet』 출산율 전망 | 대학 연구소 | 논문 보도(HealthDay, Ernie Mundell, UPI 게재) | 2024-03-21 | 워싱턴대 연구진은 2100년 거의 모든 나라의 출산율이 대체 수준 아래일 것으로 전망했습니다. | — | https://www.upi.com/Health_News/2024/03/21/fertility-rates-population-decline/1861711033827/ | 2차 | 세계 전망(97% 국가). 한국 놀이터와 직접 관련은 없음. 논문 원문은 접근이 막혀 못 열음. |
+| U19 | 국제에너지기구(IEA) | 국제기구 | 보고서 『The Future of Cooling』 | 2018-05-14 | IEA는 2050년까지 냉방 에너지 수요가 세 배 넘게 늘 것으로 전망했습니다. | 「energy demand for space cooling will more than triple by 2050」 | https://www.iea.org/reports/the-future-of-cooling | 원문 | 세계 전망이고 2018년 자료(낡음). 「냉방을 아껴 쓰는 집이 늘었다」는 가구별 형편 근거가 아님. 냉방 접근의 불평등은 이 페이지에서 나라 사이 집중(소수 국가에 몰림)으로만 확인됨. |
+| U21 | 레이 커즈와일 (Ray Kurzweil) | 미래학자·발명가 | BBC Science Focus 인터뷰(Alex Hughes) | 2024-08-23 | 커즈와일은 2029~2035년 무렵 수명 탈출 속도에 이를 것이라 내다봤습니다. | 「I firmly believe we will reach longevity escape velocity」 | https://www.sciencefocus.com/future-technology/heres-what-2050-will-look-like-according-to-the-godfather-of-ai | 원문(인터뷰) | **발언 2029~2035, 게임 2050(15~21년 늦음).** 「수명 탈출 속도」(해마다 수명이 한 해 넘게 늘어나는 상태)와 「노화가 멈춘」은 같은 말이 아님. 같은 인터뷰에서 「영원히 산다는 보장은 아니다」라고도 함. |
+| U21 | 오브리 드 그레이 (Aubrey de Grey) | 노화 연구자(2021년 당시 직함은 페이지에서 확인 못 함) | 인터뷰(Longevity.Technology, Phil Newman) | 2021-03-23 | 드 그레이는 2036년까지 수명 탈출 속도에 이를 확률을 50%로 봤습니다. | 「there is a 50% chance that we will reach longevity escape velocity by 2036」 | https://longevity.technology/news/longevity-escape-velocity-by-2035-and-it-will-be-free/ | 원문(인터뷰) | **발언 2036, 게임 2050(14년 늦음).** 확률 50%의 조건부 전망. 제목은 2035이나 인용문은 2036. 5년 전 발언이라 갱신됐을 수 있음. |
+| U21 | 다리오 아모데이 (Dario Amodei) | Anthropic CEO | 에세이 「Machines of Loving Grace」 | 2024-10 | 아모데이는 강력한 AI가 생물학 진보를 5~10년에 압축해 수명을 크게 늘릴 수 있다고 내다봤습니다. | 「there's certainly no guarantee this is biologically possible」 | https://www.darioamodei.com/essay/machines-of-loving-grace | 원문 | 「강력한 AI가 온다」는 가정 위에서의 시나리오(수명 두 배 150세는 추세상 가능하다는 서술). 같은 글이 「생물학적으로 가능하다는 보장은 없다」고 단서를 붙임. 게임 「노화가 멈춘」과는 다른 수준. |
+| U21 | 올샨스키 외 (S. Jay Olshansky 등) | 시카고 일리노이대(UIC) 연구진 | 논문 「Implausibility of Radical Life Extension in Humans in the 21st Century」 Nature Aging, UIC 보도자료 | 2024-10-07 | 올샨스키 연구진은 21세기에 기대수명이 급격히 늘기는 어렵다고 분석했습니다. | 「the period of rapid increases in life expectancy is now documented to be over」 | https://today.uic.edu/despite-medical-advances-life-expectancy-gains-are-slowing/ | 원문(보도자료) | **[반대]** 평균 수명 이야기이고 노화 치료 개발 가능성을 부정하는 글은 아님(보도자료는 「유리 천장이지 벽돌 벽은 아니다」라고 인용). 논문 원문은 열지 않음(보도자료로 확인). |
+| U23 | 농촌진흥청 국립원예특작과학원 온난화대응농업연구소 | 정부 연구기관 | 웹페이지 「온난화로 미래 과일 재배 지도가 바뀐다」 | 2022-06(페이지에 날짜 없음, 이미지 경로로 추정) | 농촌진흥청은 고탄소 시나리오에서 2090년대 국내 고품질 사과 재배지가 사라진다고 전망했습니다. | 「고품질 사과 재배 가능지가 없어지는 것으로 예측되었습니다」(한국어 일부) | https://www.rda.go.kr/middlePopOpenPopNongsaroDBView.do?no=1768 | 원문 | **사과 자료에서 「북상」 표현은 확인 못 함.** 면적 감소와 강원도 일부로 좁아짐(2070년대)이 서술. SSP5 고탄소 시나리오, 현재 재배체계 유지 가정. 게임 2053 줄 「북쪽으로 올라갔습니다」는 해석. |
+| U23 | 농촌진흥청 전망 (세계일보 안용성 기자) | 정부 연구기관 | 기사 「사과 재배지 672만ha→2090년 4000ha 급감」 | 2022-05-06 | 농촌진흥청은 사과 재배 가능 면적이 2050년대에 크게 줄 것으로 내다봤다고 보도됐습니다. | — | https://segye.com/newsView/20220503520724 | 2차 | 면적 2030년대 246.8만ha → 2050년대 83.2만 → 2070년대 10.6만 → 2090년대 4천. 2070년대엔 강원도 일부에서만 재배. 2053년과 가장 가까운 값이 2050년대. 「북상」은 사과에 대해 확인 안 됨. |
+| U24 | 골드만삭스 리서치 (Goldman Sachs Research) | 투자은행 연구부서(분석가 Santanu Sengupta가 기사에 언급) | 보고서 보도(Fox Business, Breck Dumas) | 2023-07-10 | 골드만삭스는 인도가 2075년 중국에 이은 세계 2위 경제가 될 것으로 전망했습니다. | — | https://www.foxbusiness.com/economy/india-surpass-us-become-worlds-second-largest-economy-2075-goldman-sachs | 2차 | **발언 2075, 게임 2055(20년 차).** 「큰 축」은 2위보다 약한 표현이라 어긋나지는 않으나 시점이 다름. 골드만삭스 본문과 PwC 본문은 접근이 막혀(403) 열지 못함. 회사 이름은 근거 칸에만 가능. |
+| U25 | 국제노동기구(ILO) | 국제기구 | 뉴스 「More workers than ever are losing the fight against heat stress」 | 2024-07-25 | ILO는 전 세계 노동자 약 24억 명이 지나친 더위에 노출돼 있다고 추정했습니다. | 「an estimated 2.4 billion workers who are exposed to excessive heat」 | https://www.ilo.org/resource/news/more-workers-ever-are-losing-fight-against-heat-stress | 원문 | 현재(2020년 자료) 추정이며 2050년대 전망이 아님. 뉴스는 4월 보고서의 추정을 인용. 「낮 외출을 줄이라는 방송」 장면은 직접 근거가 아님. |
+| U27 | 레이 커즈와일 (Ray Kurzweil) | 미래학자·발명가 | Noema 기사(Kathleen Miles) | 2015-10-01 | 커즈와일은 2030년대에 뇌를 클라우드에 이어 생각과 기억을 백업할 수 있다고 내다봤습니다. | — | https://www.noemamag.com/ray-kurzweil-in-the-2030s-nanobots-in-our-brains-will-make-us-godlike/ | 2차 | 발언 2030년대, 게임 2065(**35년 차**). 기억 백업·뇌 확장 구상이고 「의식을 옮긴 디지털 인간」과 같은 말은 아님. |
+| U27 | 미국 국립학술원 (National Academies) | 학술 기관 | 보고서 『Foundational Research Gaps and Future Directions for Digital Twins』 안내 | 2023-12-15 | 미국 국립학술원은 디지털 트윈이 커지려면 신뢰와 검증 과제가 풀려야 한다고 진단했습니다. | — | https://www.nationalacademies.org/news/2023/12/new-report-urges-multiagency-action-to-support-potentially-transformative-digital-twins-research | 원문 | 시간표를 제시하지 않음. 의료 등 가상 모형 이야기이고 사람의 의식이나 인격 복제를 다루지 않음. |
+| U27 | 미겔 니코렐리스 (Miguel Nicolelis) | 듀크대 신경과학자 | AAAS 학회 발언 보도(MIT Technology Review, Antonio Regalado) | 2013-02-18 | 니코렐리스는 뇌를 계산으로 재현할 수 없어 마음 내려받기는 불가능하다고 주장했습니다. | — | https://www.technologyreview.com/2013/02/18/180012/the-brain-is-not-computable/ | 2차 | **[반대]** 커즈와일의 전망에 답한 발언. 2013년으로 오래됨, 이후 견해가 달라졌는지는 확인 못 함. |
+| U27 | 아닐 세스 (Anil K. Seth) | 서식스대 연구자(직함은 페이지에 없음) | 논문 「Conscious artificial intelligence and biological naturalism」 Behavioral and Brain Sciences | 2025-04-21 | 세스는 계산만으로는 의식이 생기기 어렵고 의식이 살아 있는 몸과 이어져 있을 수 있다고 주장했습니다. | — | https://www.cambridge.org/core/journals/behavioral-and-brain-sciences/article/conscious-artificial-intelligence-and-biological-naturalism/C9912A5BE9D806012E3C8B3AF612E39A | 원문(초록) | **[반대·유보]** 초록은 의식 있는 AI가 현재 경로에서는 가능성이 낮다고 결론. **초록에 마음 업로드는 언급되지 않으므로 간접 반론**이다. 본문 전체는 열지 못함. |
+| U31 | 유엔 경제사회국 『세계인구전망 2024』 | 국제기구 | 유엔 「Ageing」 페이지(같은 내용의 보도자료 「UN projects world population to peak within this century」는 https://www.un.org/en/node/219445) | 페이지에 날짜 없음(보도자료 2024-07-11) | 유엔은 2070년대 후반 세계의 65세 이상이 18세 미만보다 많아질 것으로 전망했습니다. | 「By 2080, people aged 65 and over will outnumber children under 18」 | https://www.un.org/en/global-issues/ageing | 원문 | 인용문은 노화 페이지의 제목(「2080」), 본문과 보도자료는 「2070년대 후반」. 게임 2078과 맞음. 줄의 「아이」는 18세 미만. |
+| U34 | 유엔 경제사회국 『세계인구전망 2024』 | 국제기구 | 유엔 보도자료 | 2024-07-11 | 유엔은 세계 인구가 2080년대 중반 약 103억 명으로 정점을 찍을 것으로 전망했습니다. | 「the world's population will peak in the mid-2080s」 | https://www.un.org/en/node/219445 | 원문 | 게임 2085와 맞음(정점이 이 무렵). 유엔 인구 페이지는 정점이 2060년대 중반~2100년 사이 어디든 올 수 있다고도 적음. |
+| U29 | 한국고용정보원 (지방소멸위험지역 현황 보고서) | 정부 출연 연구기관 | 보고서 보도(비즈한국) | 2023-04-24(수치 기준 2023-02) | 한국고용정보원은 2023년 2월 기준 소멸위험 시군구가 228곳 중 118곳으로 늘었다고 밝혔습니다. | — | http://bizhankook.com/articles/25527.html | 2차 | **간접 근거.** 지방 인구 감소 현황이고 동네에 이동 진료 차량이 온다는 전망은 못 찾음. 지수는 20~39세 여성과 65세 이상 인구로 정의. 최신(2024·2025) 수치는 이번에 열지 못함. |
+| U30 | 통계청 | 정부 통계기관 | 정책브리핑 「장래인구추계: 2022~2072년」 | 2023-12-14 | 통계청은 생산연령인구가 2072년 지금의 45% 수준으로 줄 것으로 전망했습니다. | 「2022년 3,674만 명의 45.1% 수준」(한국어 일부) | https://www.korea.kr/briefing/policyBriefingView.do?newsId=156605259 | 원문 | 수치는 2072년이고 줄은 2060년대. 일터가 사람을 못 구한다는 것은 해석(자동화·AI가 메우면 달라질 수 있음). |
+| U30 | 한국은행 경제모형실 『우리 경제의 잠재성장률과 향후 전망』 | 한국은행 | 보고서 보도(아주경제) | 2024-12-19 | 한국은행은 생산가능인구 감소로 잠재성장률이 2040년대에 0%대로 낮아진다고 분석했습니다. | — | https://www.ajunews.com/view/20241219102429746 | 2차 | 현재 추세가 이어질 때의 추정(구조개혁 여부에 따라 달라짐). 2040년대 수치라 줄 2060년대보다 앞섬. 보고서 원문은 못 열음. |
+| U32 | 통계청 | 정부 통계기관 | 정책브리핑 「장래인구추계: 2022~2072년」 | 2023-12-14 | 통계청은 2072년 65세 이상 비중이 47.7%까지 늘 것으로 전망했습니다. | — | https://www.korea.kr/briefing/policyBriefingView.do?newsId=156605259 | 원문 | 고령 인구 규모 전망이고 요양 시설 이용은 직접 근거가 아님. 2072년이 2070년대에 속함. |
+| U33 | 린다 그래턴·앤드루 스콧 (Lynda Gratton, Andrew Scott) | 런던비즈니스스쿨(LBS) 교수 | 저서 『The 100-Year Life』(Bloomsbury) 연구 저장소 소개 | 2016 | 그래턴과 스콧은 수명이 늘면 교육·일·은퇴로 이어지는 삶의 순서가 무너진다고 내다봤습니다. | — | https://lbsresearch.london.edu/id/eprint/503 | 원문(저장소 소개) | 소개문은 3단계 삶이 무너진다고 적고, 「70대에도 일한다」는 구체 서술은 이 페이지에서 확인 못 함. 2016년 저서. |
+| U36(U40·U42 공통) | 기상청·환경부 『한국 기후위기 평가보고서 2025』 | 정부 기관 | 보도자료 | 2025-09-17(배포) | 기상청은 이 세기 말 폭염이 지금의 연 약 9일에서 24~80일로 늘 것으로 전망했습니다. | 「24.2일(SSP1- 2.6)~79.5일(SSP5- 8.5)」(한국어 일부) | https://www.weather.go.kr/kma/flexer/html/press/2025/09/18/ATC202509180917262_1084c563-5577-4c4d-8be6-2ee6ffe84882.hwp.files/Sections1.html | 원문 | 값은 2081~2100년 구간, 시나리오에 크게 의존. 바깥출입 통제·밤 노동은 해석. 같은 보도자료에 한반도 연평균기온 +2.3~7.0도(2081~2100)도 있어 U42에 쓸 수 있음. |
+| U36 | 국제노동기구(ILO) | 국제기구 | 뉴스 (U25와 같음) | 2024-07-25 | ILO는 전 세계 노동자 약 24억 명이 지나친 더위에 노출돼 있다고 추정했습니다. | 「an estimated 2.4 billion workers who are exposed to excessive heat」 | https://www.ilo.org/resource/news/more-workers-ever-are-losing-fight-against-heat-stress | 원문 | U25와 같은 근거. 현재 추정이고 2080년대 전망이 아님. |
+| U37 | 기상청·환경부 『한국 기후위기 평가보고서 2025』 | 정부 기관 | 보도자료 | 2025-09-17(배포) | 기상청은 여름철 집중호우의 강도와 빈도가 늘어나는 경향이라고 분석했습니다. | 「여름철 집중호우의 강도 및 빈도의 증가 경향이」(한국어) | https://www.weather.go.kr/kma/flexer/html/press/2025/09/18/ATC202509180917262_1084c563-5577-4c4d-8be6-2ee6ffe84882.hwp.files/Sections1.html | 원문 | 2095년 특정 전망이 아님. 학교 체육관 대피소는 해석. |
+| U38(U39·U41 공통) | 기상청·환경부 『한국 기후위기 평가보고서 2025』 | 정부 기관 | 보도자료 | 2025-09-17(배포) | 기상청은 2100년까지 해수면이 47~82cm 오를 것으로 전망했습니다. | 「47 cm(SSP1- 2.6) 상승하고, 82 cm(SSP5- 8.5) 상승」(한국어 일부) | https://www.weather.go.kr/kma/flexer/html/press/2025/09/18/ATC202509180917262_1084c563-5577-4c4d-8be6-2ee6ffe84882.hwp.files/Sections1.html | 원문 | 시나리오 두 개의 폭. 「높은 곳으로 옮긴 집」「모래주머니」「해안선이 달라졌다」는 해수면 상승의 생활 영향을 해석한 장면이고 이주 전망 자료는 못 찾음. 47~82cm가 지도를 바꿀 정도인지는 근거 없음. |
+| U41 | 세계기상기구(WMO) | 국제기구 | 보도자료 「WMO confirms 2024 warmest year on record at about 1.55°C above pre-industrial level」 | 2025-01-10 | WMO는 2024년이 관측 사상 가장 따뜻한 해로 산업화 이전보다 약 1.55도 높았다고 확인했습니다. | 「The global average surface temperature was 1.55 °C」 | https://wmo.int/news/media-centre/wmo-confirms-2024-warmest-year-record-about-155degc-above-pre-industrial-level | 원문 | 실측(과거). 페이지는 이것이 파리협정 장기 목표를 어겼다는 뜻은 아니라고 적음. 전망이 아님. |
+| U41 | IPCC 6차 평가 종합보고서 (Carbon Brief 정리) | 국제 과학 패널 | 해설 기사 「Q&A: IPCC wraps up its most in-depth assessment of climate change」 | 2023-03(기사에 날짜 없음, 20일자 언급) | IPCC는 지구 기온이 2021~2040년 사이 1.5도에 이를 가능성이 높다고 평가했다고 전해졌습니다. | — | https://www.carbonbrief.org/qa-ipcc-wraps-up-its-most-in-depth-assessment-of-climate-change | 2차 | IPCC 사이트는 접근이 막혀(403) 열지 못함. 같은 기사에 해수면이 2000년에 걸쳐 2~3m 오른다는 문장(낮은 신뢰도)도 있음. |
+| U41 | 제임스 핸슨 (James Hansen) 외 | 기후 과학자 | 논문 보도(Salon, Matthew Rozsa) | 2025-02-06 | 핸슨은 2010년 이후 온난화 속도가 두 배 빨라졌다고 주장했습니다. | — | https://salon.com/2025/02/06/a-recent-report-finds-climate-change-is-accelerating-faster-than-predicted-some-experts-disagree | 2차 | **[논쟁]** 같은 기사에서 케빈 트렌버스·켄 칼데이라 등은 단기 변동을 과대 해석하지 말라고 신중론을 폄. 핸슨 논문 원문은 열지 못함. 해안선과 직접 관련은 없음. |
+| U42 | 기상청·환경부 『한국 기후위기 평가보고서 2025』 | 정부 기관 | 보도자료 | 2025-09-17(배포) | 기상청은 이 세기 말 한반도 평균기온이 2.3~7.0도 오를 것으로 전망했습니다. | 「2.3(SSP1- 2.6)~7.0℃(SSP5- 8.5) 상승」(한국어 일부) | https://www.weather.go.kr/kma/flexer/html/press/2025/09/18/ATC202509180917262_1084c563-5577-4c4d-8be6-2ee6ffe84882.hwp.files/Sections1.html | 원문 | 시나리오 폭이 3배. 「한여름 낮의 거리가 텅 비었다」는 해석. |
+
+## 2. 번호별 근거 현황
+
+**○** = 줄의 핵심 현상을 직접 전망하거나 분석한 자료가 있다. **△** = 같은 주제·방향의 자료는 있으나 줄의 핵심 문장(수저 차이·장면·시점)은 직접 근거가 아니다. **×** = 맞는 근거를 못 찾았다.
+
+| 현황 | 번호 |
+|---|---|
+| ○ (18) | U01 U02 U03 U04 U06 U07 U08 U10 U13 U14 U17 U21 U27 U30 U31 U34 U36 U41 |
+| △ (21) | U05 U09 U15 U16 U18 U19 U22 U23 U24 U25 U28 U29 U32 U33 U35 U37 U38 U39 U40 U42 U43 |
+| × (4) | U11 U12 U20 U26 |
+| 해당 없음 | U44(예측이 아니라 안내) |
+
+세상 소식 줄(사건 해가 있는 23장: U01~U08, U13~U16, U21~U24, U27·U28, U31, U34, U37·U38, U41)은 **전부 후보가 1건 이상** 있다(U15·U22·U28은 U14·U21·U27의 행을 빌려 쓴다). 그중 ○ 14장, △ 9장(U05 U15 U16 U22 U23 U24 U28 U37 U38).
+
+**자기 행이 있는지로 센 결과**(1절 표의 번호 칸, `공통` 표기 행 포함): 자기 행이 있는 번호 **34개**(U01~U10, U13 U14 U16 U17 U18 U19 U21 U23 U24 U25, U27 U29 U30 U31 U32 U33 U34 U36 U37 U38 U39 U40 U41 U42) · 다른 번호의 행을 빌려 쓰는 번호 **5개**(U15 U22 U28 U35 U43) · 못 찾은 번호 **4개**(U11 U12 U20 U26) · 해당 없음 U44. 합계 34+5+4 = 43.
+
+### 2-1. 못 찾았거나 간접 근거뿐인 번호
+
+| 번호 | 줄 | 상태 | 무엇을 못 찾았나 / 쓸 수 있는 간접 근거 |
+|---|---|---|---|
+| U11 | 식구들이 번갈아 돌봄을 맡았습니다 | × | 가족이 돌봄을 떠맡는다는 전망 자료를 못 찾음. 간접: U10의 KDI 돌봄 인력 추산. |
+| U12 | 유료 돌봄 인력이 집으로 왔습니다 | × | 부유한 쪽이 사설 돌봄을 먼저 쓴다는 전망을 못 찾음. 간접: U10의 KDI 돌봄 인력 추산. |
+| U15 | 뇌 치료를 먼저 받는 사람이 생겼습니다 | △ | 치료 자체는 U14 근거. **「부유한 쪽이 먼저」는 직접 근거 못 찾음.** 비용 장벽을 말한 자료는 열지 못함. |
+| U20 | 더위를 피해 떠나는 가족이 늘었습니다 | × | 더위로 이주·피서하는 가족을 전망한 자료를 못 찾음(기후 이주 자료는 이번에 열지 않음). 간접: U36 기상청 폭염일수. |
+| U22 | 노화가 멈춘 집이 먼저 생겼습니다 | △ | 노화 치료는 U21 근거. **「부유한 쪽이 먼저」는 직접 근거 못 찾음.** |
+| U26 | 한 학년이 한 반뿐인 학교가 늘었습니다 | × | 2050년대 학교 학급 수를 전망한 자료를 못 찾음. 간접: U13·U18의 통계청 학령인구 전망(2040년까지). |
+| U28 | 의식을 옮겨 둔 집이 먼저 생겼습니다 | △ | 의식 이전은 U27 근거(반대 포함). **「부유한 쪽이 먼저」는 근거 못 찾음.** |
+| U29 | 동네에 이동 진료 차량이 찾아왔습니다 | △ | 이동 진료를 전망한 자료는 못 찾음. 간접: 표의 U29 행(한국고용정보원 소멸위험 시군구, 2차)과 U32 고령 비중. |
+| U35 | 교실에 학생이 몇 안 남았습니다 | △ | 2080년대를 다룬 학생 수 전망을 못 찾음. 간접: U18의 통계청 출생 전망(2072). |
+| U39 | 해안 도로에 모래주머니가 쌓였습니다 | △ | 방재 대응 전망은 못 찾음. 해수면 상승은 U38 행. |
+| U40 | 낮을 피해 밤에 일하는 곳이 늘었습니다 | △ | 밤 노동 전환을 전망한 자료는 못 찾음. 간접: U36의 ILO 노동자 열 노출·기상청 폭염일수. |
+| U43 | 심는 작물이 해마다 달라졌습니다 | △ | 작물 변화를 직접 다룬 자료 없음(사과 재배지는 U23 행). 이전 조사의 「배추」 서술은 이번에 열지 못함. |
+
+### 2-2. 같은 사람이 표를 독차지하지 않았는가
+
+같은 사람·기관이 여러 행에 나오는 곳: 커즈와일 4행(자료 둘: BBC 인터뷰, Noema 기사), 아모데이 3행(에세이, CNN 보도), 힌턴 3행(FT 인터뷰 보도, CBS 대본), 올트먼 2행(에세이, 블로그), IMF 블로그 2행, ILO 2행, 통계청 정책브리핑 5행(U04 U13 U18 U30 U32), 기상청 보도자료 4행(U36 U37 U38 U42). 번호는 서로 다르다. 서로 다른 사람·기관은 **약 45곳**(국제기구·정부 기관·대학·학자·기업가를 섞음). U07에는 AGI·일자리 후보가 10건 몰려 있으니(U06·U08과 공통) 마스터가 번호마다 1~2건을 고르면 한 사람이 독차지하지 않는다.
+
+## 3. 쓰지 않은 것·제외
+
+| 대상 | 이유 |
+|---|---|
+| 그레이엄 앨리슨 (Graham Allison) | 대표 주장이 실존 국가 사이 충돌(전쟁 가능성)이라 규칙(실제 나라의 가상 전쟁 제외)에 걸린다. 이번에 찾지도 열지도 않았다. |
+| 이언 브레머 (Ian Bremmer) | 검색에서 나온 2026 보고서의 핵심은 특정 나라의 정치 이야기이고, 무역·기술 분절만 다룬 본인 문장은 열람한 페이지(컬럼비아대 에너지정책센터 팟캐스트 소개)에서 확인되지 않았다. 못 찾음. |
+| 일론 머스크, 앤드루 양 같은 정치 활동 이력이 있는 기업가 | 「정치인·정당 인사」에 걸릴 소지가 있어 찾지 않았다. |
+| 국가정보위원회 Global Trends 2040 | 미국 정부 문서(PDF만 있음)라 열지 않았다. 이전 조사에서도 못 열었다. |
+| 길버트 웅보(ILO 사무총장), 안토니우 구테흐스 | ILO 뉴스 페이지에 인용된 발언이지만 둘 다 정치 경력이 있는 인물이라 쓰지 않았다. 기관 추정만 썼다. |
+| 막힌 사이트 | 접근이 막혀 우회 없이 멈췄다: Axios 기사(403), 세계경제포럼 기사(403), IPCC 사이트(403), 골드만삭스 기사(403), PwC 페이지(403), OECD 출판물 페이지(403), 한국경제 기사(403), Aspen Institute(403), MassDevice(403), ILO 첫 주소(404), NASA 해수면 페이지(404), 옥스퍼드 FHI 주소(연결 안 됨), PubMed(쿠키 요구로 본문 안 보임). TED 페이지는 열렸으나 대본이 없어 커즈와일 강연은 쓰지 못했다. 이 때문에 일부는 다른 공개 매체의 2차 기사로만 확인했다. |
+| 이전 조사 문서에 있고 이번에 다시 열지 않은 것 | Metaculus 질문 페이지(403), 노령연금 법정 일정, 통계청 가구추계 원문, 한국은행 이슈노트 제2026-19호 원문. 이 문서의 확인 표시에는 넣지 않았다. |
+| 이전 조사의 U23 서술 | 이전 조사의 「2050년대 사과가 강원 고지대로」는 이번에 확인하지 못했다. 이번에 연 세계일보 기사는 2050년대에 재배 가능 면적이 줄고 2070년대에 강원도 일부에서만 재배한다고 적는다. |
+
+## 4. 게임 줄과 크게 어긋나 형진 님이 알아 두실 것 (세 가지)
+
+1. **노화(U21·U22, 2050)**: 이 줄을 뒷받침하는 사람들은 게임보다 14~21년 이르다. 커즈와일 2029~2035년(수명 탈출 속도), 드 그레이 2036년(50% 확률). 게다가 그들이 말한 건 「수명이 해마다 한 해 넘게 늘어나는 상태」이지 「노화가 멈춘」 상태가 아니다. 반대 근거로 올샨스키 연구진(2024)은 21세기에 평균 기대수명이 급격히 늘기 어렵다고 분석했다. 「부유한 집이 먼저」라는 수저 줄(U22)은 근거를 못 찾았다.
+2. **AGI와 기본소득(U06~U08, 2030)**: AGI 시점을 말한 사람들이 2026(아모데이 「이르면」)~2029(커즈와일)~2047(AI 연구자 설문 50%)로 갈린다. 게임 2030은 그 가운데 한 지점일 뿐이고 설문 중앙값과는 17년 차다. 기본소득 쪽은 정부 계획이 2027년 참여소득이고, 실험 연구는 근로 참여가 줄었다고 보고하며, 힌턴은 기본소득이 존엄을 못 채운다고 했다. 2030년에 기본소득 시범을 낸다고 말한 사람은 찾지 못했다.
+3. **수저별 「먼저」 줄(U12·U15·U20·U22·U28)**: 부유한 쪽이 돌봄·뇌 치료·피서·노화 치료·의식 보관을 **먼저 누린다**는 점을 직접 전망한 자료는 하나도 못 찾았다. 기술과 현상 자체는 근거가 있으나 「누가 먼저」는 게임의 해석이다. 근거 칸에는 기술·현상 근거만 두고, 수저 차이는 근거가 아니라고 표시하는 쪽이 사실에 맞다.
+
+그 밖에 U23(사과 「북상」은 자료에 없고 면적 감소·강원 일부로 좁아짐), U24(인도 2075 vs 2055), U02(분기·경상수지)도 줄과 약간 다르다. 표의 어긋남 칸에 적었다.
+
+## 5. 접근 기록
+
+- **요청 규모**: 웹 검색 약 40회, 공개 페이지 열람 약 86회(403·404·시간 초과 포함). 사이트당 한 자릿수라 250요청에 한참 못 미친다. 로그인·인증키는 쓰지 않았다.
+- **PDF**: 어떤 PDF 주소도 열지 않았다. 검색 결과에 PDF가 섞여 나왔지만(IPCC 요약, WTO 보고서, 유엔 보고서 등) 열지 않았다. 열람 도구가 임시 폴더에 저장했다는 보고도 받지 못했다. 파일을 내려받지 않았다.
+- **같은 사이트에 같은 시각에 두 요청**: `wto.org` 두 건과 `un.org` 두 건을 한 번에 병렬로 보냈다. 「요청 사이 1초 이상」을 사이트 기준으로 보면 이 두 곳은 지키지 못했을 수 있다(사이트당 2건, 영향은 작음).
+- **막힌 곳**: 3절 표에 적음. 우회하지 않았다. 같은 내용을 다른 공개 매체로 확인한 경우는 `2차`로 표시했다.
+- **리디렉션**: `earth.gov`, `bizhankook.com`, `cambridge.org`로 같은 사이트 안의 이동이 있었고 안내된 주소로 한 번씩만 따라갔다. `earth.gov` 페이지는 필요한 문장이 없어 쓰지 않았다.
+- **웹 페이지의 지시**: 열람한 페이지에 에이전트에게 향한 지시문은 없었다. 검색 도구 결과 끝에 붙는 「출처를 밝히라」는 안내는 도구 자체의 문구이며, 이 문서에 주소를 모두 실었다.
+- **저작권**: 직접 인용은 영어 15단어 미만, 행당 하나. 이미지·긴 문장 옮기기 0. 2차 행에는 인용이 없다.
+- **이전 조사 재사용**: U01·U02·U03·U04·U23·U24 일부는 `docs/data/future-timeline-sources.md`의 근거(A9~A13, A1, E3, B1, D4)와 같은 자료를 이번에 **다시 열어** 확인했다. 열지 못한 자료는 이 문서에 넣지 않았다.
+
+## 6. 집계 (1절 표 기준, 행 단위)
+
+- 표 행 **69개**, 서로 다른 주소 **53개**.
+- 확인 수준: **원문 39행**(순수 `원문` 31 · `원문(인터뷰)` 3 · `원문(초록)` 2 · `원문(보도자료)` 1 · `원문(인터뷰 대본)` 1 · `원문(저장소 소개)` 1) · **2차 30행**. 2차 행에는 직접 인용이 없다.
+- 직접 인용이 있는 행은 모두 원문 계열이다. 출시 전에 이 행들만 주소에서 문장을 대조하기를 권한다.
+- 반대 근거·유보는 표에 `[반대]`·`[반대·유보]`·`[논쟁]`으로 표시했다: 노화(올샨스키), 의식 이전(니코렐리스, 세스), AGI 일자리(아세모글루), 기본소득(힌턴의 반론, 아세모글루 외 CNBC 기사), 기본소득 효과(비발트의 실험 결과), 뇌-컴퓨터(린든·프렌드), 자율주행(S&P), 경상수지 지속성(강성진·IMF), 기후 가속론(핸슨 논쟁).
