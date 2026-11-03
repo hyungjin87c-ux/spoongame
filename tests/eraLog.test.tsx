@@ -21,7 +21,7 @@ const BASE: HistoryEntry[] = [
   e(2, 'choice', '병원에 갔습니다.', { eventId: 'infant-care', choice: '병원에 간다' }),
   e(7, 'stage', '학교에 들어갈 나이가 되었습니다.'),
 ];
-const row = (age: number, year: number, over: Partial<EraRow> = {}): EraRow => ({ age, year, line: `${year}년의 한 줄입니다.`, heavy: false, veiled: false, ...over });
+const row = (age: number, year: number, over: Partial<EraRow> = {}): EraRow => ({ age, year, line: `${year}년의 한 줄입니다.`, heavy: false, veiled: false, forecast: false, ...over });
 
 describe('mergeLogRows — 끼워 넣기', () => {
   it('시대 줄이 없으면 logRows(history)와 **같은 배열 내용**이고 모든 줄이 기존 줄이다(승인된 그림 0장일 때 인생 기록은 이전과 같다)', () => {

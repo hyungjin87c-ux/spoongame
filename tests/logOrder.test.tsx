@@ -337,7 +337,7 @@ describe('LR2 문구 · LR4 접근성 · CSS 규칙', () => {
 });
 
 describe('R-547 시대 줄(파생 줄)은 「새 기록 N개」·읽던 자리 보존·낭독과 겹치지 않는다 — 늦게 온 10년 덩어리를 흉내 낸 합성 시험 (FM5b)', () => {
-  const eraRow = (year: number): EraRow => ({ year, age: year - 1950, line: `${year}년의 한 줄입니다.`, heavy: false, veiled: false });
+  const eraRow = (year: number): EraRow => ({ year, age: year - 1950, line: `${year}년의 한 줄입니다.`, heavy: false, veiled: false, forecast: false });
   const hist = (n: number): HistoryEntry[] => Array.from({ length: n }, (_, i) => ({ age: i, kind: 'event' as const, text: `${i}세의 일입니다.`, eventId: `ev-${i}` }));
 
   it('addedAbove는 기록 줄만 센다: 시대 줄이 맨 위 기록 줄 위에 끼어도 수가 늘지 않는다', () => {

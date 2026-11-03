@@ -12,7 +12,7 @@ export const ERA_DECADE: EraDecadeData = {
     { id: 'era-2020s-delivery-alley', years: [2020, 2029], kind: 'daily', topic: '생활', line: '골목마다 배달 오토바이가 섰습니다.', heavy: false, approved: true, draw: 'era-2020s-delivery-alley' },
     { id: 'era-2020s-high-highrise-wfh', years: [2020, 2029], kind: 'daily', topic: '생활', line: '높은 층 거실에서 강이 보였습니다.', heavy: false, approved: true, draw: 'era-2020s-high-highrise-wfh', band: 'high' },
     { id: 'era-2020s-kiosk-queue', years: [2020, 2029], kind: 'daily', topic: '생활', line: '키오스크 앞에서 차례를 기다렸습니다.', heavy: false, approved: true, draw: 'era-2020s-kiosk-queue' },
-    { id: 'era-2020s-low-logistics-dawn', years: [2020, 2029], kind: 'daily', topic: '생활', line: '새벽 셔틀을 타고 물류센터로 갔습니다.', heavy: false, approved: true, draw: 'era-2020s-low-logistics-dawn', band: 'low' },
+    { id: 'era-2020s-low-logistics-dawn', years: [2020, 2029], kind: 'daily', topic: '생활', line: '새벽 셔틀을 타고 물류센터로 갔습니다.', heavy: false, approved: true, draw: 'era-2020s-low-logistics-dawn', band: 'low', ages: [19, 100] },
     { id: 'era-2020s-wfh-table', years: [2020, 2029], kind: 'daily', topic: '생활', line: '식탁에서 일하고 수업을 들었습니다.', heavy: false, approved: true, draw: 'era-2020s-wfh-table' },
     { id: 'era-2021-empty-classroom-online', years: [2021, 2021], kind: 'event', topic: '사회', hCode: 'H-S14', line: '빈 교실에서 화면 수업을 했습니다.', heavy: false, approved: true, draw: 'era-2021-empty-classroom-online' },
     { id: 'era-2022-alley-tape-flowers', years: [2022, 2022], kind: 'event', topic: '재난', hCode: 'H-B10', line: '10월, 좁은 골목에서 참사가 났습니다.', heavy: true, approved: true, draw: 'era-2022-alley-tape-flowers' },

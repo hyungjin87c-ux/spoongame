@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ERA_FIRST_DECADE, ERA_LAST_DECADE, ERA_LAST_YEAR, ERA_LINE_MAX, bandOfWealth, eraDecadeOf, eraOf, eraRowsOf, type EraBand, type EraContext, type EraWindow } from '../src/core/eraWindow';
+import { ERA_FIRST_DECADE, ERA_LAST_DECADE, ERA_LINE_MAX, bandOfWealth, eraDecadeOf, eraOf, eraRowsOf, type EraBand, type EraContext, type EraWindow } from '../src/core/eraWindow';
 import { ERA_DECADES_WITH_DATA, ERA_DECADE_LOADERS } from '../src/data/eraWindows';
 import { ERA_DECADE as D1940 } from '../src/data/eraWindows/d1940';
 import { ERA_DECADE as D1950 } from '../src/data/eraWindows/d1950';
@@ -14,6 +14,7 @@ import type { EraDecadeData } from '../src/data/eraWindows/types';
 import { eraDecadeIfLoaded, loadEraDecade, resetFamilyArtForTest } from '../src/data/familyArtLoader';
 import { SCENE_LIGHT } from '../src/data/familyArt/svg';
 import { ALLOWED_CLASSES, parseSvgMarkup, type SvgNode } from '../src/ui/svgNodes';
+import { realCovered } from './helpers/eraFutureData';
 
 /**
  * 시대의 창 데이터와 고르기 (SPEC-009 FM5·FM5b, FT1~FT6, family-model.md 9절 · era-window.md 3-1·8절 · T-ERA).
@@ -301,16 +302,28 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     expect(eraOf(1988, ctx([sneaky])).pic).toBeNull();
     expect(eraOf(1988, ctx([sneaky, base])).pic?.id).toBe('창가');
   });
-  it('2026년 이후: 사건은 쓰지 않고(출처 없는 미래 사건 금지) 2025년의 생활·기본 장면을 유지한다 — 해가 달라도 같은 그림', () => {
+  it('2026년 이후도 그해 표를 따르고(사건 → 그 10년의 일상) 같은 그림이 3해 연속 나오지 않는다 — 2025년 세트를 되풀이하지 않는다 (SPEC-010 FU7, 옛 「해가 달라도 같은 그림」을 대체)', () => {
     const ev2025 = w('이천이십오', [2025, 2025]);
-    const daily2025 = w('요즘', [2020, 2025], { kind: 'daily' });
-    const daily2025b = w('요즘둘', [2020, 2025], { kind: 'daily' });
-    const pick = eraOf(2031, ctx([ev2025, daily2025]));
-    expect(pick.pic?.id).toBe('요즘');
-    expect(pick.sourceYear).toBe(ERA_LAST_YEAR);
+    const ev2031 = w('이천삼십일', [2031, 2031]);
+    const d2020 = w('요즘', [2020, 2029], { kind: 'daily' });
+    const d2020b = w('요즘둘', [2020, 2029], { kind: 'daily' });
+    const d2030 = w('삼십년대', [2030, 2039], { kind: 'daily' });
+    const d2030b = w('삼십년대둘', [2030, 2039], { kind: 'daily' });
+    const pool = [ev2025, ev2031, d2020, d2020b, d2030, d2030b];
+    // 2031은 그해 사건, 2032는 2030년대 일상이다 — 2025년 일상이 아니다. sourceYear는 그해다
+    const y31 = eraOf(2031, ctx(pool));
+    expect(y31.pic?.id).toBe('이천삼십일');
+    expect(y31.sourceYear).toBe(2031);
+    const y32 = eraOf(2032, ctx(pool));
+    expect(['삼십년대', '삼십년대둘']).toContain(y32.pic?.id);
+    // 그 10년의 덩어리가 없으면(2030년대 일상이 없는 풀) 2025년 세트로 돌아가지 않고 빈 틀이다
+    expect(eraOf(2032, ctx([ev2025, d2020, d2020b])).pic).toBeNull();
     expect(eraOf(2031, ctx([ev2025])).pic).toBeNull();
-    const ids = new Set([2026, 2030, 2044, 2090].map((y) => eraOf(y, ctx([ev2025, daily2025, daily2025b])).pic?.id));
-    expect(ids.size, '전망 구간은 2025년 그림을 유지한다').toBe(1);
+    // 해마다 그 10년 안에서 걸어온다: 3해 연속 같은 그림이 없다
+    for (let seed = 0; seed < 30; seed++) {
+      const picks = Array.from({ length: 10 }, (_, i) => eraOf(2030 + i, ctx(pool, { seed, birthYear: 2000 })).pic?.id);
+      for (let i = 2; i < picks.length; i++) expect(picks[i - 2] === picks[i - 1] && picks[i - 1] === picks[i], `시드 ${seed}: ${picks.join(',')}`).toBe(false);
+    }
   });
   it('무거운 장면 가리기: 꺼짐(기본)이면 그대로, 켜면 그해 일상 그림으로 바뀌고 줄은 가려진다 — 일상이 없으면 빈 틀', () => {
     const d80 = w('도시락80', [1980, 1989], { kind: 'daily' });
@@ -350,10 +363,11 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     const decNat = w('십이월전국', [1987, 1987]);
     expect(eraOf(1987, ctx([june, decNat], { gentle: true })).pic?.id).toBe('십이월전국');
   });
-  it('10년 덩어리 번호: 1940~2029 → 1940~2020, 그 앞·뒤는 가장자리 10년대', () => {
-    expect([1940, 1949, 1950, 1999, 2000, 2025, 2026, 2060].map(eraDecadeOf)).toEqual([1940, 1940, 1950, 1990, 2000, 2020, 2020, 2020]);
+  it('10년 덩어리 번호: 1940~2109 → 1940~2100, 그 앞·뒤는 가장자리 10년대 (SPEC-010 FU7: 2060 → 2060, 2200 → 2100)', () => {
+    expect([1940, 1949, 1950, 1999, 2000, 2025, 2026, 2060, 2109, 2110].map(eraDecadeOf)).toEqual([1940, 1940, 1950, 1990, 2000, 2020, 2020, 2060, 2100, 2100]);
     expect(eraDecadeOf(1920)).toBe(ERA_FIRST_DECADE);
     expect(eraDecadeOf(2200)).toBe(ERA_LAST_DECADE);
+    expect(ERA_LAST_DECADE).toBe(2100);
   });
   it('수저 구간 변주: 아래·위 구간은 사건 없는 해에 자기 구간 변주를 먼저 보고, 가운데는 변주를 보지 않는다', () => {
     const low = w('셋방', [1970, 1979], { kind: 'daily', band: 'low' });
@@ -441,22 +455,38 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
       expect(pick.pic!.kind, `${year}`).toBe(kind);
       expect(Math.floor(pick.pic!.years[0] / 10) * 10, `${year}`).toBe(dec);
     }
-    // 전망 구간: 2026년 이후는 사건을 쓰지 않고 2020년대 일상이 오른다(2025 사건이 아니라)
-    expect(eraOf(2031, c({ birthYear: 2010 })).pic?.kind).toBe('daily');
-    expect(eraOf(2031, c({ birthYear: 2010 })).sourceYear).toBe(ERA_LAST_YEAR);
+    // 2026년 이후도 그해 표를 따른다(SPEC-010 FU7): 고른 그림은 2020년대 덩어리의 것이고 sourceYear는 2025가 아니라 그해다. 2026~2029는 사건이 오기 전(FU5 전)에는 2020년대 일상이, 온 뒤에는 그해 사건이 오른다
+    const y2027 = eraOf(2027, c({ birthYear: 2010 }));
+    expect(y2027.sourceYear).toBe(2027);
+    expect(y2027.pic, '2027').not.toBeNull();
+    expect(Math.floor(y2027.pic!.years[0] / 10) * 10).toBe(2020);
+    expect(y2027.pic!.years[0] <= 2027 && y2027.pic!.years[1] >= 2027, '그림은 2027년을 덮는다').toBe(true);
+    expect(y2027.pic!.kind === 'daily' || y2027.pic!.years[0] === 2027, '사건이면 2027년 사건, 아니면 일상').toBe(true);
   });
 
-  it('실제 승인 데이터: 1940~2040 어느 해·구간·나이에서도 승인된 그림이 닿는다 — 빈 틀은 데이터가 안 온 때(덩어리 실패)뿐이다', () => {
+  it('실제 승인 데이터: 1940~2112 어느 해·구간·나이에서도 승인된 그림이 닿는다 — 빈 틀은 데이터가 안 온 때(덩어리 실패)뿐이다 (2030년 이후는 해당 10년대 데이터가 들어온 해만 잰다 · tests/eraFuture.test.ts)', () => {
+    let measured = 0;
     for (const band of ['low', 'mid', 'high'] as const) {
       for (const gentle of [false, true]) {
-        for (let y = 1940; y <= 2040; y++) {
+        for (let y = 1940; y <= 2112; y++) {
+          if (y > 2029 && !realCovered(y)) continue; // 2030년 이후는 승인된 묶음이 들어온 10년대부터 잰다(FU5). 안 온 해는 빈 틀이다 — 아래 「중간 상태」 시험이 따로 잠근다
           for (const birthYear of [y - 3, y - 15, y - 25, y - 45, y - 70]) {
             if (birthYear > y || y - birthYear > 100) continue;
             const pick = eraOf(y, ctx(ALL, { band, gentle, birthYear, seed: 99 }));
             expect(pick.pic, `${band}/${gentle}/${y}/${birthYear}년생`).not.toBeNull();
+            measured++;
           }
         }
       }
+    }
+    expect(measured, '1940~2029는 늘 잰다: 구간 3 × 가리기 2 × 90해 × 출생 5').toBeGreaterThanOrEqual(3 * 2 * 90 * 5);
+  });
+  it('실제 승인 데이터 · 중간 상태(FU5 전): 데이터가 아직 없는 10년대의 해는 빈 틀이다 — 2025 세트로 돌아가지 않는다(SPEC-010, QA-009-FM4b F01)', () => {
+    for (let y = 2030; y <= 2112; y++) {
+      if (realCovered(y)) continue; // 데이터가 들어온 해는 위 시험이 잰다
+      const pick = eraOf(y, ctx(ALL, { birthYear: y - 30, seed: 99 }));
+      expect(pick.pic, `${y}`).toBeNull();
+      expect(pick.line, `${y}`).toBeNull();
     }
   });
   it('실제 승인 데이터 · 가리기: 무거운 장면(재난·정치) 20장의 해는 가려지고 그해 일상 그림(1987년은 12월 투표소)으로 바뀐다 — 경제(1997~98)는 가리지 않는다. 2009 철거 현장은 아래 구간에게만 보이므로 아래 구간으로 본다', () => {
@@ -601,7 +631,7 @@ describe('eraRowsOf — 인생 기록의 시대 줄(저장하지 않는 파생 �
   });
   it('가려진 해는 줄에 veiled가 켜진다(문장은 화면의 가리기 부품이 가린다)', () => {
     const rows = eraRowsOf(1978, 4, ctx([w('오월', [1980, 1980], { heavy: true })], { gentle: true }));
-    expect(rows).toEqual([{ year: 1980, age: 2, line: '오월 문장입니다.', heavy: true, veiled: true }]);
+    expect(rows).toEqual([{ year: 1980, age: 2, line: '오월 문장입니다.', heavy: true, veiled: true, forecast: false }]); // 2026 이하는 「예측」 줄이 아니다 (SPEC-010 EraRow.forecast)
     expect(eraRowsOf(1978, 4, ctx([w('오월', [1980, 1980], { heavy: true })], { gentle: false }))[0].veiled).toBe(false);
   });
   it('실제 승인 데이터: 1962년생의 시대 줄은 사건·일상 문장을 해마다 담고, 줄의 해는 칸(eraOf)이 그해 띄우는 그림의 문장과 같다', () => {

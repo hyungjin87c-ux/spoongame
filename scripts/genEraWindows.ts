@@ -54,6 +54,16 @@ const TRIM: Readonly<Record<string, [number, number]>> = {
   'era-1966-slow-train-platform': [1966, 1966], // 1967 아궁이 부엌 일상이 보이게
 };
 
+/**
+ * 나이대 보정 (SPEC-010 FU8): designer 실측 JSON의 `ageBand`가 「모두」인데 어른의 개인 행동을 서술해 어린이 기록에 나오면 안 되는 일상 줄에 `ages`를 단다. 키는 designer 조각 id.
+ * designer 파일(JSON)은 읽기만 하므로 고치지 않고 여기서 덮는다 — 이 파일이 생성 파일 `d<10년대>.ts`의 정본 입구다. JSON 행이 이미 나이대를 가진 줄에는 쓰지 않는다(조용히 덮어쓰지 않으려고 만들 때 막는다).
+ * 골든에 닿는 칸: 2020~2025년 어려운 쪽(`band: 'low'`) 19세 미만 — 이 줄이 더는 어린이에게 오르지 않는다(`tests/sceneGolden.test.ts` 머리 주석).
+ */
+const AGES_FIX: Readonly<Record<string, [number, number]>> = {
+  'era-2020s-low-logistics-dawn': [19, 100], // 「새벽 셔틀을 타고 물류센터로 갔습니다.」 — QA-009-FM4b F01: 14세(2030년) 기록에 나왔다
+};
+const agesFixUsed = new Set<string>();
+
 const TOKENS = new Set([
   'sky', 'far', 'far2', 'ground', 'ground2', 'wall', 'wall2', 'roof', 'roof2', 'wood', 'clay', 'ink', 'shade', 'glass', 'green',
   'cloth1', 'cloth2', 'cloth3', 'cloth4', 'skin', 'hair', 'hairw', 'pet', 'pet2', 'face',
@@ -149,6 +159,10 @@ for (const src of SOURCES) {
     if (years === undefined) throw new Error(`${r.id}: 연도가 없다`);
     const decade = decadeOfYear(years[0]);
     if (decadeOfYear(years[1]) !== decade) throw new Error(`${r.id}: 10년을 넘는다`);
+    const fix = AGES_FIX[r.id];
+    if (fix !== undefined && AGES(r.ageBand) !== undefined) throw new Error(`${r.id}: designer 행에 이미 나이대가 있어 AGES_FIX로 덮지 않는다 (${r.ageBand})`);
+    if (fix !== undefined) agesFixUsed.add(r.id);
+    const ages = fix ?? AGES(r.ageBand);
     const fields: string[] = [
       `id: ${q(r.id)}`,
       `years: [${years[0]}, ${years[1]}]`,
@@ -160,11 +174,14 @@ for (const src of SOURCES) {
       'approved: true',
       `draw: ${q(r.id)}`,
       ...(r.band === 'low' || r.band === 'high' ? [`band: ${q(r.band)}`] : []),
-      ...(AGES(r.ageBand) !== undefined ? [`ages: [${AGES(r.ageBand)![0]}, ${AGES(r.ageBand)![1]}]`] : []),
+      ...(ages !== undefined ? [`ages: [${ages[0]}, ${ages[1]}]`] : []),
     ];
     built.push({ window: `    { ${fields.join(', ')} },`, start: years[0], id: r.id, decade, body: piece.body, piece });
   }
 }
+
+// 나이대 보정은 모두 쓰였다 (id가 바뀌어 조용히 사라지는 일을 막는다)
+for (const id of Object.keys(AGES_FIX)) if (!agesFixUsed.has(id)) throw new Error(`AGES_FIX의 ${id}에 맞는 장면이 없다`);
 
 // 승인 장수 합과 id 유일성 (R-551): r3 16 + r4 27 + r5 40 + r5b 11 = 94
 if (built.length !== APPROVED_TOTAL) throw new Error(`만든 장면 ${built.length}장 ≠ 승인된 ${APPROVED_TOTAL}장`);
