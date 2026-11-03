@@ -60,8 +60,12 @@ export function FitPair({ a, b, className = '', hideSeparator = false }: { a: st
  * 「A · B · C」 항목이 셋 이상인 짧은 줄 — `FitPair`와 같은 규칙(한 줄에 들어가면 「A · B · C」, 안 들어가면 기호 없이 항목마다 따로 줄)을 N개 항목으로 넓힌 것.
  * 집과 가족 그림 아래 한 줄(SPEC-009 FM4b: 집 낱말이 「집」에서 「아파트」·「단독주택 셋방」으로 길어져 큰 글자에서 가운뎃점이 줄 끝에 남았다)에 쓴다.
  * 항목 안의 붙여 쓴 「부모님·누나와」는 Glue가 한 낱말로 묶는다.
+ *
+ * `flow`(SPEC-009 FC10, R-577 마스터 결정 2026-11-03): 안 들어갈 때 **항목마다 줄** 대신 **쉼표로 이은 자연 줄바꿈**으로 그린다 — 항목은 한 덩어리로 다음 줄에 넘어가고(`.fit-pair--flow`),
+ * 쉼표는 앞 항목 뒤에 붙어 줄 끝에 남아도 되는 기호라 가운뎃점이 줄 끝·첫머리에 혼자 남지 않는다(QM2-10 규칙 3). 쉼표는 진짜 글자라 낭독 이름에도 항목 사이 구분이 남는다.
+ * 식구 카드 사람 줄(보조 줄이 항목 넷까지 늘어 360px에서 줄이 5줄이 되던 것)만 쓰고, 다른 곳의 `FitList`·`FitPair`는 그대로 항목마다 줄이다.
  */
-export function FitList({ items, className = '' }: { items: readonly string[]; className?: string }) {
+export function FitList({ items, className = '', flow = false }: { items: readonly string[]; className?: string; flow?: boolean }) {
   const boxRef = useRef<HTMLSpanElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const [split, setSplit] = useState(false);
@@ -81,12 +85,12 @@ export function FitList({ items, className = '' }: { items: readonly string[]; c
   }, [joined]);
 
   return (
-    <span className={`fit-pair${split ? ' is-split' : ''}${className === '' ? '' : ` ${className}`}`} ref={boxRef} data-split={split ? 'true' : 'false'}>
+    <span className={`fit-pair${flow ? ' fit-pair--flow' : ''}${split ? ' is-split' : ''}${className === '' ? '' : ` ${className}`}`} ref={boxRef} data-split={split ? 'true' : 'false'}>
       <span className="fit-pair__probe" ref={probeRef} data-text={joined} aria-hidden="true" />
       {items.map((item, i) =>
         split ? (
           <Fragment key={i}>
-            {i === 0 ? null : ' '}
+            {i === 0 ? null : flow ? ', ' : ' '}
             <span className="fit-pair__item">
               <Glue text={item} />
             </span>

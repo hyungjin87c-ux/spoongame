@@ -135,7 +135,7 @@ test('새로고침을 여러 번 해도 카드의 이름·나이·사이가 똑�
 });
 
 /**
- * 360px 사람 줄의 줄 수 측정 (SPEC-009 FC10 「360px에서 사람 줄이 2줄 이하로 접힌다」, R-577).
+ * 360px 사람 줄의 줄 수 (SPEC-009 FC10 「360px에서 사람 줄 3줄 이하」, R-577 마스터 결정 2026-11-03 — 보조 줄이 항목마다 줄이던 때는 가장 긴 줄이 5줄이었다).
  * 사람 줄 = `dd` 하나: 이름 · 나이 줄(`.family-who`) + 보조 줄(사이 · 직업 · 병환 중 · 따로 삶, FitList). 글자가 실제로 놓인 줄(글자 상자의 위쪽 좌표 묶음)을 센다.
  * 가장 긴 줄은 판을 훑어 `이름 나이 + 보조 항목`의 글자 수가 가장 큰 사람으로 고른다.
  */
@@ -192,10 +192,44 @@ async function textLines(row: ReturnType<Page['locator']>): Promise<number> {
   });
 }
 
-// tests/·e2e/는 Node 타입을 쓰지 않는다(tsconfig.json) — 환경 변수 읽기에 필요한 모양만 선언한다
-declare const process: { env: Record<string, string | undefined> };
+/** 줄 첫머리·끝에 혼자 남은 구분 기호(쉼표 · 가운뎃점)가 있는 줄의 글자들 — 쉼표는 줄 끝에 남아도 되지만 첫머리에는 오면 안 되고, 가운뎃점은 어느 쪽에도 남으면 안 된다 (QM2-10 규칙 3) */
+async function strayMarks(row: ReturnType<Page['locator']>): Promise<string[]> {
+  return row.evaluate((el) => {
+    const chars: Array<{ ch: string; top: number; left: number }> = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n !== null; n = walker.nextNode()) {
+      const parent = n.parentElement;
+      if (parent === null || parent.closest('.fit-pair__probe, .sr-only') !== null) continue;
+      const text = n.textContent ?? '';
+      for (let k = 0; k < text.length; k++) {
+        if (text[k].trim() === '') continue;
+        const range = document.createRange();
+        range.setStart(n, k);
+        range.setEnd(n, k + 1);
+        const r = range.getClientRects()[0];
+        if (r !== undefined && r.width > 0) chars.push({ ch: text[k], top: r.top, left: r.left });
+      }
+    }
+    chars.sort((a, b) => a.top - b.top || a.left - b.left);
+    const lines: Array<typeof chars> = [];
+    for (const c of chars) {
+      const last = lines[lines.length - 1];
+      if (last !== undefined && Math.abs(last[0].top - c.top) <= 4) last.push(c);
+      else lines.push([c]);
+    }
+    const stray: string[] = [];
+    for (const line of lines) {
+      line.sort((a, b) => a.left - b.left);
+      const first = line[0].ch;
+      const end = line[line.length - 1].ch;
+      if (first === ',' || first === '·') stray.push(`첫머리 ${first}`);
+      if (end === '·' || (line.length === 1 && end === ',')) stray.push(`줄 끝 ${end}`);
+    }
+    return stray;
+  });
+}
 
-test('360px 사람 줄 줄 수 측정: 가장 긴 사람 줄이 글자 크기 100·150·200%에서 몇 줄인지 잰다 (FC10, R-577)', async ({ page }) => {
+test('360px 사람 줄 줄 수 (FC10 「사람 줄 3줄 이하」, R-577): 가장 긴 사람 줄이 글자 100%에서 3줄 이하이고, 150·200%는 재서 남긴다. 구분 기호가 줄 가장자리에 혼자 남지 않고 낭독 글자에 구분이 있다', async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 0) > 400, '360px 폭에서만 잰다');
   const { state, name, items } = await longestRowCase(page);
   await openCard(page, state);
@@ -205,7 +239,7 @@ test('360px 사람 줄 줄 수 측정: 가장 긴 사람 줄이 글자 크기 10
   const rows = card.locator('dd[data-testid^="family-"]:not([data-testid="family-pet"]):not([data-testid="family-things"])');
   const longest = rows.filter({ has: page.locator('.family-who', { hasText: name }) });
   await expect(longest).toHaveCount(1);
-  const measured: Record<string, { longest: number; worst: number; worstText: string; histogram: Record<number, number> }> = {};
+  const measured: Record<string, { longest: number; worst: number; worstText: string; histogram: Record<number, number>; stray: string[] }> = {};
   for (const pct of [100, 150, 200]) {
     await page.addStyleTag({ content: `html { font-size: ${pct}% !important; }` });
     await page.waitForTimeout(150); // 탐침(ResizeObserver)이 항목 쪼개기를 마칠 때까지
@@ -213,23 +247,33 @@ test('360px 사람 줄 줄 수 측정: 가장 긴 사람 줄이 글자 크기 10
     let worst = 0;
     let worstText = '';
     const histogram: Record<number, number> = {};
+    const stray: string[] = [];
     for (let i = 0; i < count; i++) {
       const lines = await textLines(rows.nth(i));
       histogram[lines] = (histogram[lines] ?? 0) + 1;
+      stray.push(...(await strayMarks(rows.nth(i))));
       if (lines > worst) {
         worst = lines;
         worstText = (await rows.nth(i).innerText()).replace(/\s+/g, ' ');
       }
     }
-    measured[`${pct}%`] = { longest: await textLines(longest), worst, worstText, histogram };
+    measured[`${pct}%`] = { longest: await textLines(longest), worst, worstText, histogram, stray };
   }
-  const report = `가장 긴 줄 「${name} + ${items.join(' · ')}」 (줄 수별 사람 수 = histogram) ${JSON.stringify(measured)}`;
+  const report = `가장 긴 줄 「${name} + ${items.join(' · ')}」 (histogram = 줄 수별 사람 수) ${JSON.stringify(measured)}`;
   console.log(`[R-577 줄 수] ${report}`);
   test.info().annotations.push({ type: 'R-577 줄 수', description: report });
-  // 측정 도구가 일한다: 어떤 크기에서도 가장 긴 줄은 한 줄 이상이고 사람 줄이 하나 이상 잡힌다
-  for (const m of Object.values(measured)) expect(m.longest).toBeGreaterThanOrEqual(1);
-  // FC10 「360px에서 사람 줄 2줄 이하」: 지금 구조는 이 값을 지키지 못한다(R-577 측정 — 보고서·TODO). 값에 맞춰 느슨하게 두지 않고, 디자인 해법이 정해진 뒤 켜도록 **환경 변수로 연다**:
-  // FAMILY_ROW_MAX_LINES=2 로 돌리면 100%에서 가장 긴 줄이 그 줄 수 이하임을 단언한다. 해법이 들어가면 이 분기를 지우고 2를 고정한다.
-  const limit = Number(process.env.FAMILY_ROW_MAX_LINES ?? '');
-  if (Number.isFinite(limit) && limit > 0) expect(measured['100%'].longest, `가장 긴 줄 「${name}」 100%`).toBeLessThanOrEqual(limit);
+  // FC10: 360px · 글자 100%에서 가장 긴 사람 줄은 3줄 이하(이름 줄 + 보조 줄 최대 2줄). 150%·200%는 재서 남기기만 한다
+  expect(measured['100%'].longest, `가장 긴 줄 「${name}」 100%`).toBeLessThanOrEqual(3);
+  expect(measured['100%'].worst, `모든 사람 줄 100% ${measured['100%'].worstText}`).toBeLessThanOrEqual(3);
+  // QM2-10 규칙 3: 구분 기호가 줄 첫머리·끝에 혼자 남지 않는다 (세 크기 모두)
+  for (const [pct, m] of Object.entries(measured)) expect(m.stray, `${pct} 줄 가장자리 구분 기호`).toEqual([]);
+  // 낭독: 항목 사이 구분이 글자로 남는다 — 안 들어가 흐름으로 바뀐 줄은 쉼표로 이어진다(들어가면 「 · 」)
+  await page.addStyleTag({ content: 'html { font-size: 100% !important; }' });
+  await page.waitForTimeout(150);
+  const spoken = (await longest.innerText()).replace(/\s+/g, ' ');
+  expect(spoken, '긴 줄의 항목 사이 구분').toContain(items.join(', '));
+  expect(spoken).not.toMatch(/ · /);
+  // 접근성 트리(낭독이 읽는 것)에도 같은 글자가 있다
+  // (접근성 트리는 항목 덩어리 사이 쉼표 앞에 공백을 끼워 읽는다 — 「A , B」. 쉼표 글자가 있으면 된다)
+  expect((await longest.ariaSnapshot()).replace(/\s+/g, ' '), '접근성 트리의 항목 사이 구분').toMatch(new RegExp(items.join(' ?, ')));
 });

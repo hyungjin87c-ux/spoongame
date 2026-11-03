@@ -194,11 +194,11 @@ function PersonRow({ r, expanded }: { r: CardRow; expanded: boolean }) {
         <span className="family-who">{gone ? r.name : `${r.name} ${r.age}${DASH_TEXT.ageSuffix}`}</span>
         {gone ? (
           <small>
-            <FitList items={[r.goneText ?? FAMILY_CARD_TEXT.goneAt(r.age), ...(expanded && r.goneMyText !== undefined ? [r.goneMyText] : [])]} />
+            <FitList flow items={[r.goneText ?? FAMILY_CARD_TEXT.goneAt(r.age), ...(expanded && r.goneMyText !== undefined ? [r.goneMyText] : [])]} />
           </small>
         ) : (
           <small>
-            <FitList items={items} />
+            <FitList flow items={items} />
           </small>
         )}
       </dd>
