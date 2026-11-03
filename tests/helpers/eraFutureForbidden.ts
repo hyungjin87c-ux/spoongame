@@ -29,25 +29,27 @@ export const COMPANY_NAMES_EXTRA: readonly string[] = [
 export const ALARM_WORDS: readonly string[] = ['종말', '붕괴', '멸망', '재앙', '파국', '참사', '위기'];
 
 /** 정당 이름 (실존 정당 0) */
-export const PARTY_NAMES: readonly string[] = ['더불어민주당', '국민의힘', '정의당', '개혁신당', '조국혁신당', '민주당'];
+export const PARTY_NAMES: readonly string[] = ['더불어민주당', '국민의힘', '정의당', '개혁신당', '조국혁신당', '민주당', '기본소득당', '진보당'];
 
 /** 나라 이름 — 줄에 나와도 되는 곳은 경제·인구 사실 줄(일본·독일·인도)뿐이다 (SPEC-010 「줄 규칙」). 시험은 허용 줄 목록을 따로 받는다 */
 export const COUNTRY_NAMES: readonly string[] = ['미국', '중국', '일본', '독일', '인도', '러시아', '북한', '영국', '프랑스', '대만', '이란', '이스라엘', '우크라이나', '캐나다', '호주', '브라질'];
 
 /**
  * 주인공 행동 낱말 (SPEC-010 구현 규칙 6): 2027년 이후 줄에 주인공이 한 일처럼 읽히는 낱말이 0이다. 마스터 목록 「갔|탔|샀|받았|일했|출근|퇴근|배웠|먹었|마셨」을 그대로 고정한다.
- * 견주는 방식: 동사 어간 여덟은 **낱말의 첫머리**에서만 본다 — 「물류센터로 갔습니다」(낱말 「갔습니다」)는 걸리고 「올라갔습니다」(U23, 주어가 재배지라는 사물)는 걸리지 않는다. 「출근」·「퇴근」은 낱말 어디에 있든 건다.
+ * 견주는 방식: 낱말 **어디에 있든** 건다 — 「나갔습니다」·「갈아탔습니다」·「돌려받았습니다」 같은 합성어도 걸린다. 주어가 사물이라 사람이 확인한 줄만 문장 통째로 `ACTION_ALLOW_LINES`에 적어 풀어 준다(U23 「올라갔습니다」, 주어는 재배지).
  * 「먼저 받는」·「일하는」처럼 사람을 꾸미는 말은 어간이 다르므로(「받는」·「일하는」) 걸리지 않는다(U15·U22·U33·U40).
  */
 export const ACTION_STEMS: readonly string[] = ['갔', '탔', '샀', '받았', '일했', '배웠', '먹었', '마셨'];
 export const ACTION_ANYWHERE: readonly string[] = ['출근', '퇴근'];
+/** 어간이 들어 있지만 주어가 사회·사물임을 사람이 확인한 줄 (문장 통째로 견준다 — 새 줄은 시험이 멈춰 세우고 사람이 판단한다) */
+export const ACTION_ALLOW_LINES: ReadonlySet<string> = new Set(['사과 재배지가 북쪽으로 올라갔습니다.']); // U23
 
 /** 줄 하나에서 걸리는 주인공 행동 낱말 (없으면 빈 목록) */
 export function actionWordsIn(line: string): string[] {
+  if (ACTION_ALLOW_LINES.has(line)) return [];
   const hits: string[] = [];
   for (const token of line.split(/\s+/)) {
-    for (const stem of ACTION_STEMS) if (token.startsWith(stem)) hits.push(token);
-    for (const w of ACTION_ANYWHERE) if (token.includes(w)) hits.push(token);
+    for (const w of [...ACTION_STEMS, ...ACTION_ANYWHERE]) if (token.includes(w)) hits.push(token);
   }
   return hits;
 }
@@ -60,7 +62,7 @@ export function lineViolations(line: string, maxLen: number): string[] {
   if ((line.match(/[.?!。]/g) ?? []).length !== 1) out.push('문장이 하나가 아님(마침표 하나만, 물음표·느낌표 0)');
   if (/[0-9０-９]/.test(line)) out.push('숫자');
   for (const word of line.match(/[A-Za-z]+/g) ?? []) if (word !== 'AI' && word !== 'AGI') out.push(`알파벳 ${word}`);
-  const lower = line.toLowerCase();
+  const lower = line.replace(/\s/g, '').toLowerCase(); // 「오픈 AI」처럼 띄어 써도 잡는다
   for (const name of [...COMPANY_NAMES_FROM_DOC, ...COMPANY_NAMES_EXTRA]) if (lower.includes(name.toLowerCase())) out.push(`회사·제품 이름 ${name}`);
   for (const word of ALARM_WORDS) if (line.includes(word)) out.push(`평가·공포어 ${word}`);
   for (const name of PARTY_NAMES) if (line.includes(name)) out.push(`정당 이름 ${name}`);

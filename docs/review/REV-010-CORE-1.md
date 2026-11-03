@@ -271,3 +271,24 @@ U44 `years: [2110, 2130]`이 넣는 경로의 세 곳에 걸린다.
 ## 마스터 처리 (2026-11-03)
 - 중간 3건과 R-599·R-603~R-607을 다음 developer 회차에 diff대로 반영한다. R-596·R-597은 U09·U10 줄 수정(R-591~595 회차)이 끝난 뒤 넣는다. R-601은 FU3 회차, R-600·R-602는 묶음 C 회차.
 - 2회차는 CLAUDE.md 2-6에 따라 표준보다 가볍게, diff 적용과 시험 통과를 본다.
+
+## 반영 내역 (developer, 2026-11-03, 기록 `ai-log/2026-11-03_SPEC-010_dev-core-r2.md`)
+
+검수자 diff를 해석·변형 없이 적용했다. 맥락이 안 맞는 곳은 없었다(줄 번호는 모두 문장 기준으로 맞췄다). 코드(`eraWindow.ts`)는 건드리지 않았다.
+
+| 지적 | 적용 | 곳 | 확인 |
+|---|---|---|---|
+| R-596 | diff 그대로 | `tests/eraFuture.test.ts` 실제 데이터 묶음의 「합성 표와 대조」 | `describe.runIf` 묶음 안이라 **지금은 건너뜀** — FU5가 켤 때 처음 돈다. 타입 점검 통과 |
+| R-597 | diff 그대로(U09·U10 줄 수정 뒤 — 이전 회차 `ai-log/2026-11-03_SPEC-009_dev-FM6-r3.md`) | `tests/eraFuture.test.ts` 「표의 줄·해·구간·무거움·basis가 SPEC-010 문서의 연표 표 원문과 같다」 | **정규식이 지금 문서 표 44행 전부에 맞는다** — 시험 통과, 어긋난 행 0 |
+| R-598 | diff 그대로 | `tests/helpers/eraFutureForbidden.ts#ACTION_ALLOW_LINES`·`#actionWordsIn`, `tests/eraFuture.test.ts` 「주인공 행동 낱말(2027년 이후)…」 | 통과(합성 44줄 0, 합성어 다섯 문장은 각 1건 걸림, 허용 줄은 U23 하나) |
+| R-599 | diff 그대로 | `tests/eraFuture.test.ts` 실제 데이터 묶음의 「같은 그림 3해 연속 0」 | 건너뜀(같은 묶음). 합성 쪽 시험은 이미 2109에서 끊는다 |
+| R-603 | diff 그대로 | 같은 묶음 「band가 있는 사건이 있는 해에는…」 | 건너뜀 |
+| R-604 | diff 그대로 | `tests/eraFuture.test.ts` 「검사기 자체가 공허하지 않다」 | 통과 |
+| R-605 | diff 그대로 | `tests/helpers/eraFutureForbidden.ts#PARTY_NAMES`·`#lineViolations` | 통과(합성 44줄 위반 0 유지) |
+| R-606 | 네 `it`의 세 번째 인자에 `60_000` | `tests/eraFuture.test.ts` 「2026~2112 모든 해…」·「ages 없는 일상이 10년에 2장 이상이면…」(합성), 실제 데이터 묶음의 「재는 해마다…」·「0~12세 기록의 줄에…」 | 앞 둘 통과, 뒤 둘 건너뜀 |
+| R-607 | diff 그대로 | `scripts/genEraWindows.ts` `AGES_FIX` 머리 주석 | `npm run gen:era -- --check` 통과 |
+| R-600 | **이번 아님** — TODO 조건으로 적었다 | `docs/TODO.md` 「(REV-010-CORE-1 R-600·R-602 …)」 | – |
+| R-601 | **이번 아님** — TODO 조건으로 적었다(FU3/FU5) | `docs/TODO.md` 「(REV-010-CORE-1 R-601 …)」 | – |
+| R-602 | **이번 아님** — TODO 조건으로 적었다(FU5 묶음 C) | 같은 줄 | – |
+
+전체: `npm test` 167 파일 4710 통과 · 8 건너뜀(R-597 1건 늘어남), `npm run typecheck`·`npm run build`·`npm run check:todo`·`npm run gen:era -- --check` 통과, e2e Chromium `family-card`·`m4-breaks` 120 통과 · 108 건너뜀 · 0 실패.

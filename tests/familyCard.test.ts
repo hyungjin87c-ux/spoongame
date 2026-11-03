@@ -164,8 +164,9 @@ describe('성인기 식구 (FC5·FC6·FC9, 설계 문서 10절): 플래그와 �
         const spouse = adultSlotsOf(g, g.family!).find((s) => s.role === 'spouse')!;
         const Y = g.character!.birthYear;
         expect(Y + 22 - spouse.birthYear, `${gen} ${seed} 만난 해 배우자 나이`).toBeGreaterThanOrEqual(min);
-        // 하한이 실제로 일한 판(표의 나이 차가 더 어리게 만들 판)이 있다 — 공허 통과 방지
-        if (Y + 22 - spouse.birthYear === min) pulled++;
+        // 하한이 실제로 일한 판: 40세에 만났다면(하한이 닿지 않는다) 더 늦게 태어났을 사람을 당겼다 — 나이 차가 우연히 20세를 만든 판은 세지 않는다
+        const late = craft(seed, gen, { age: 40, flags: ['has_partner'], seen: { 'youth-approached': 40 } });
+        if (adultSlotsOf(late, late.family!).find((s) => s.role === 'spouse')!.birthYear > spouse.birthYear) pulled++;
       }
     }
     expect(pulled, '하한이 출생 연도를 당긴 판').toBeGreaterThan(0);

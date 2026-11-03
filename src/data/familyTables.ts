@@ -173,7 +173,7 @@ export const FAMILY_BASIS: ReadonlyArray<{ id: string; basis: 'official' | 'calc
   { id: 'names', basis: 'design', note: '식구 이름은 그 사람의 출생 연도에 맞는 이름 풀에서 뽑았습니다. 1940년대보다 앞서 태어난 분(주로 조부모)은 가장 오래된 1940년대 풀을, 2020년 뒤에 태어난 자녀는 가장 최근 풀을 대신 썼고, 1940년대 풀 자체도 통계가 아닌 추정 목록입니다. 성은 아버지 쪽과 형제가 주인공과 같고 어머니와 조모는 따로 뽑았습니다.' },
   { id: 'parent-job-retire', basis: 'design', note: `부모의 직업은 출생신고에 적힌 값입니다. 은퇴 나이는 농림어업 ${JOBS.retireAge.agri.min}~${JOBS.retireAge.agri.max}세, 그 밖 ${JOBS.retireAge.other.min}~${JOBS.retireAge.other.max}세로 게임이 정했고, 그 나이가 되면 직업 줄이 「은퇴」로 바뀝니다.` },
   { id: 'relatives-job', basis: 'design', note: `형제, 배우자, 자녀, 친구, 조부모의 직업은 통계가 없어, 출생신고의 직업 분포에 시대 보정을 한 값에서 한 번 뽑았습니다. ${JOBS.studentAge.min}~${JOBS.studentAge.max}세는 「학생」으로 봅니다.` },
-  { id: 'adult-family', basis: 'design', note: '배우자, 자녀, 가까운 친구의 수와 나이는 통계가 아니라 게임이 정했습니다. 배우자와의 나이 차는 부모 나이 차와 같은 모양이고, 자녀는 첫 자녀를 낳은 시대에 따라 1~4명(경제에는 쓰이지 않고 보이기만 합니다), 터울은 2~5년, 친구는 1~3명입니다.' },
+  { id: 'adult-family', basis: 'design', note: `배우자, 자녀, 가까운 친구의 수와 나이는 통계가 아니라 게임이 정했습니다. 배우자와의 나이 차는 부모 나이 차와 같은 모양이되 처음 만난 해에 ${FAMILY_DESIGN.adult.value.spouseMinAge}세 이상이고, 자녀는 첫 자녀를 낳은 시대에 따라 1~4명(경제에는 쓰이지 않고 보이기만 합니다), 터울은 2~5년, 친구는 1~3명입니다.` },
   { id: 'closeness', basis: 'design', note: '사이의 다섯 단계(아주 가까움~멀어짐)는 통계가 없습니다. 호칭별 기본값, 부모는 양육 방식, 사람마다 한 단계 안팎의 차이에 더해 사건이 바꾼 것만 반영합니다. 사건 없이 슬며시 바뀌지 않습니다.' },
   { id: 'pets', basis: 'design', note: '반려동물의 이름 목록과 수명(개 10~16년, 고양이 12~18년, 그 밖 2~8년)은 통계가 없어 게임이 정했습니다. 부모 집의 반려동물은 아직 만들지 않고, 사건으로 들인 동물만 보입니다.' },
   { id: 'possessions', basis: 'design', note: '집에 있는 것의 보급된 해와 보급 속도는 가구 내구재 보급 통계를 찾아 맞추기 전에 게임이 정한 값입니다. 수저 단계가 높을수록 일찍 들이지만 전체 평균은 이 곡선 그대로입니다. 2025년 뒤에는 새 물건을 만들지 않고, 보급률 숫자는 화면에 쓰지 않습니다.' },

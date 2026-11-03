@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ERA_ACTUAL_LAST_YEAR, ERA_FIRST_DECADE, ERA_LAST_DECADE, ERA_LAST_YEAR, ERA_LINE_MAX, eraDecadeOf, eraOf, eraRowsOf, type EraBand, type EraContext, type EraRow, type EraWindow } from '../src/core/eraWindow';
 import { END_SCENE, FUTURE_NO_END, FUTURE_TABLE, REAL_COVERED_FUTURE_YEARS, REAL_FUTURE_WINDOWS, REAL_WINDOWS, futureById, realCovered } from './helpers/eraFutureData';
-import { ACTION_ANYWHERE, ACTION_STEMS, COMPANY_NAMES_EXTRA, COMPANY_NAMES_FROM_DOC, COUNTRY_NAMES, actionWordsIn, lineViolations } from './helpers/eraFutureForbidden';
+import { ACTION_ALLOW_LINES, ACTION_ANYWHERE, ACTION_STEMS, COMPANY_NAMES_EXTRA, COMPANY_NAMES_FROM_DOC, COUNTRY_NAMES, actionWordsIn, lineViolations } from './helpers/eraFutureForbidden';
 
 /**
  * SPEC-010 미래 연표 — 코어 시험 (FU1·FU2·FU7·FU8, 정밀 레인). 대상: `core/eraWindow.ts`의 2026~2109 고르기, `basis`·`forecast`, 표 끝(2110~), 나이 규칙, 주인공 행동 낱말·금지어(M11).
@@ -76,6 +76,22 @@ describe('합성 표 U01~U44가 SPEC-010 연표 표와 같다 (시험 데이터 
       expect(plain.length, `${decade}년대`).toBeGreaterThanOrEqual(2);
     }
   });
+  it('표의 줄·해·구간·무거움·basis가 SPEC-010 문서의 연표 표 원문과 같다 — 복사본끼리 견주지 않고 문서를 직접 읽는다', () => {
+    const docs = import.meta.glob('../docs/spec/SPEC-010-*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const spec = Object.values(docs)[0];
+    const rows = [...spec.matchAll(/^\| (U\d\d) \|([^|]+)\|([^|]+)\|[^|]+\|([^|]+)\|\s*$/gm)];
+    expect(rows.map((m) => m[1])).toEqual(Array.from({ length: 44 }, (_, i) => `U${String(i + 1).padStart(2, '0')}`));
+    const LABEL: Record<string, string> = { '공식 전망 바탕': 'official', '전문가 전망 바탕': 'expert', '가상 시나리오': 'scenario' };
+    for (const [, id, when, lineCol, basisCol] of rows) {
+      const w = futureById(id === 'U44' ? 'era-end-horizon' : id);
+      expect(w.line, id).toBe(/「([^」]+)」/.exec(lineCol)![1]);
+      expect(w.years[0], id).toBe(Number(when.trim().slice(0, 4)));
+      expect(w.band, id).toBe(/· 부유한 쪽/.test(when) ? 'high' : /· 어려운 쪽( 먼저)?\s*$/.test(when) ? 'low' : undefined);
+      expect(w.heavy, id).toBe(lineCol.includes('○'));
+      const shown = /→ (공식 전망 바탕|전문가 전망 바탕|가상 시나리오)/.exec(basisCol);
+      expect(w.basis, id).toBe(shown === null ? undefined : LABEL[shown[1]]);
+    }
+  });
 });
 
 describe('줄 문장 규칙 (SPEC-010 「줄 규칙」 · 구현 규칙 6 · M11)', () => {
@@ -90,7 +106,7 @@ describe('줄 문장 규칙 (SPEC-010 「줄 규칙」 · 구현 규칙 6 · M11
     expect(bad('뉴럴링크가 승인됐습니다.').join()).toContain('회사·제품 이름');
     expect(bad('neuralink가 승인됐습니다.').join()).toContain('회사·제품 이름');
     expect(bad('도시가 붕괴했습니다.').join()).toContain('평가·공포어 붕괴');
-    expect(bad('국민의힘이 이겼습니다.').join()).toContain('정당 이름');
+    expect(bad('정의당 소식이 늘었습니다.').join()).toContain('정당 이름');
     expect(bad('일이 늘었다.').join()).toContain('습니다');
     expect(bad('일이 늘었습니다. 또 늘었습니다.').join()).toContain('문장이 하나가 아님');
     expect(bad('AI와 AGI가 퍼졌습니다.')).toEqual([]);
@@ -99,8 +115,10 @@ describe('줄 문장 규칙 (SPEC-010 「줄 규칙」 · 구현 규칙 6 · M11
     for (const name of ['Neuralink', 'Neuracle', 'ChatGPT', 'PwC', 'Metaculus']) expect(COMPANY_NAMES_FROM_DOC).toContain(name);
     expect([...COMPANY_NAMES_FROM_DOC, ...COMPANY_NAMES_EXTRA].some((n) => /https?:|www\./i.test(n))).toBe(false);
   });
-  it('주인공 행동 낱말(2027년 이후): 목록은 마스터 지정 그대로이고, 사건·일상 줄 모두 0이다 — 낱말 첫머리 견주기라 「올라갔습니다」(U23)는 걸리지 않는다', () => {
+  it('주인공 행동 낱말(2027년 이후): 목록은 마스터 지정 그대로이고, 사건·일상 줄 모두 0이다 — 낱말 어디에 있든 걸고, 사람이 확인한 U23 한 줄만 문장 통째로 풀어 준다', () => {
     expect([...ACTION_STEMS, ...ACTION_ANYWHERE].join('|')).toBe('갔|탔|샀|받았|일했|배웠|먹었|마셨|출근|퇴근');
+    expect([...ACTION_ALLOW_LINES]).toEqual([futureById('U23').line]);
+    for (const line of ['일터로 나갔습니다.', '병원에 들어갔습니다.', '버스를 갈아탔습니다.', '월급을 돌려받았습니다.', '라면을 사먹었습니다.']) expect(actionWordsIn(line).length, line).toBe(1);
     for (const w of FUTURE_NO_END.filter((x) => x.years[0] >= 2027)) expect(actionWordsIn(w.line), `${w.id} 「${w.line}」`).toEqual([]);
     // 검사기: 어른의 개인 행동 줄(옛 물류센터 줄)은 걸리고, 사물이 주어인 줄·사람을 꾸미는 말은 걸리지 않는다
     expect(actionWordsIn('새벽 셔틀을 타고 물류센터로 갔습니다.')).toEqual(['갔습니다.']);
@@ -131,7 +149,7 @@ describe('FU1 고르기: 2026~2109도 그해 표를 따른다', () => {
         }
       }
     }
-  });
+  }, 60_000);
   it('사건이 있는 해는 사건 그림, 없는 해는 그 10년의 일상 그림이고 sourceYear는 그해다 (옛 「2025 세트 반복」이 아니다)', () => {
     for (const w of FUTURE_NO_END.filter((x) => x.kind === 'event' && x.band === undefined && x.years[0] >= 2026)) {
       // 같은 해에 band 사건이 짝으로 있는 해(2026·2030·2044·2050·2065·2095)는 아래 「사건 band 규칙」 시험이 맡는다
@@ -344,7 +362,7 @@ describe('FU2 나이 규칙: 어린이 기록에 어른의 개인 행동 줄이 
 
   it('ages 없는 일상이 10년에 2장 이상이면 나이를 풀어서 고르는 4단계에 닿는 해·나이·구간이 0이다 (어린이가 ages [19, 100] 줄을 보지 않는다)', () => {
     expect(violations(AGED_POOL, FUTURE_DAILY_YEARS, [1, 99, 4242])).toEqual([]);
-  });
+  }, 60_000);
   it('검사기가 공허하지 않다: ages 없는 일상이 한 장뿐이면 3해째에 나이를 풀어서 어린이에게 ages 줄이 간다 — 위 점검이 그것을 잡는다', () => {
     const oneOnly = [...PAST_REAL, ...FUTURE_NO_END.filter((w) => w.id !== 'U10' && w.id !== 'U11' && w.id !== 'U12'), aged(2030)];
     const found = violations(oneOnly, [2033, 2034, 2035, 2036], [1, 99]);
@@ -467,11 +485,11 @@ describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 2
     for (const band of BANDS) for (const gentle of [false, true]) for (const y of coveredYears) for (let age = 0; age <= 100; age++) {
       expect(eraOf(y, ctxOf(REAL_WINDOWS, { band, gentle, birthYear: y - age, seed: 99 })).pic, `${band}/${gentle}/${y}/${age}세`).not.toBeNull();
     }
-  });
+  }, 60_000);
   it('같은 그림 3해 연속 0 (시드 100 × 구간 3 × 출생 2013·2020): 재는 해만 본다', () => {
     const ok = new Set(coveredYears);
     for (const seed of SEEDS_100) for (const band of BANDS) for (const birth of [2013, 2020]) {
-      const picks = picksOf(REAL_WINDOWS, birth, 100, { seed, band }).map((id, i) => (id !== undefined && (birth + i <= 2025 || ok.has(birth + i)) ? id : undefined));
+      const picks = picksOf(REAL_WINDOWS, birth, ERA_LAST_YEAR - birth, { seed, band }).map((id, i) => (id !== undefined && (birth + i <= 2025 || ok.has(birth + i)) ? id : undefined)); // 표 끝(2110~)의 끝 장면은 일부러 같은 그림이다
       expect(threeInARow(picks), `시드 ${seed}/${band}/${birth}`).toBe(-1);
     }
   });
@@ -488,12 +506,17 @@ describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 2
       if (w.years[0] >= 2027 && w.kind !== 'base') expect(actionWordsIn(w.line), w.id).toEqual([]);
     }
   });
-  it('합성 표와 대조: 실제 장면의 줄이 표(U01~U44)에 있으면 해·종류·구간·무거움·basis가 표와 같다', () => {
+  it('합성 표와 대조: 실제 2026년 이후 장면의 줄은 모두 표(U01~U44)에 있고 해·종류·구간·무거움·basis가 같다 · 재는 해의 표 줄은 실제 데이터에도 있다', () => {
     const byLine = new Map(FUTURE_TABLE.map((w) => [w.line, w]));
     for (const w of REAL_FUTURE_WINDOWS) {
       const t = byLine.get(w.line);
-      if (t === undefined) continue; // 승인 과정에서 다듬은 문장은 형진 님 승인 뒤 표를 고친다
+      expect(t, `${w.id} 「${w.line}」: 표에 없는 줄이다 — 문장을 바꿨으면 형진 님 승인 뒤 SPEC과 표를 먼저 고친다`).toBeDefined();
+      if (t === undefined) continue;
       expect({ years: w.years, kind: w.kind, band: w.band, heavy: w.heavy, basis: w.basis }, `${w.id} ↔ ${t.id}`).toEqual({ years: t.years, kind: t.kind, band: t.band, heavy: t.heavy, basis: t.basis });
+    }
+    const realLines = new Set(REAL_FUTURE_WINDOWS.map((w) => w.line));
+    for (const t of FUTURE_TABLE) {
+      if (realCovered(t.years[0])) expect(realLines.has(t.line), `${t.id} 「${t.line}」: 재는 해인데 실제 데이터에 없다`).toBe(true);
     }
   });
   it('band가 있는 사건이 있는 해에는 band 없는 사건이 함께 있고, 일상은 10년마다 band도 ages도 없는 것이 2장 이상이다', () => {
@@ -501,7 +524,7 @@ describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 2
       expect(futureStarts.filter((x) => x.kind === 'event' && x.years[0] === w.years[0] && x.band === undefined).length, `${w.id} (${w.years[0]})`).toBeGreaterThanOrEqual(1);
     }
     const decades = new Set(futureStarts.filter((x) => x.kind === 'daily').map((x) => x.years[0]));
-    for (const d of decades) expect(futureStarts.filter((x) => x.kind === 'daily' && x.years[0] === d && x.band === undefined && x.ages === undefined).length, `${d}년대`).toBeGreaterThanOrEqual(2);
+    for (const d of decades) expect(futureStarts.filter((x) => x.kind === 'daily' && x.years[0] === d && x.band === undefined && x.ages === undefined && !x.heavy).length, `${d}년대`).toBeGreaterThanOrEqual(2);
   });
   it('0~12세 기록의 줄에 주인공 행동 낱말이 없고, 고른 일상은 그 나이를 포함한다(나이를 풀어 고름 0)', () => {
     for (const birth of [2013, 2016, 2020]) for (const band of BANDS) {
@@ -512,7 +535,7 @@ describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 2
       const a = eraOf(y, ctxOf(REAL_WINDOWS, { band, gentle, birthYear: y - age, seed: 99 })).pic?.ages;
       if (a !== undefined) expect(age >= a[0] && age <= a[1], `${band}/${gentle}/${y}/${age}세`).toBe(true);
     }
-  });
+  }, 60_000);
 });
 
 describe('실제 데이터가 아직 못 재는 것의 상태 (건너뜀이 아니라 보고)', () => {

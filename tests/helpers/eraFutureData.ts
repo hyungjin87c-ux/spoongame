@@ -24,8 +24,8 @@ export const FUTURE_TABLE: readonly EraWindow[] = [
   ev('U06', 2030, '기본소득 시범에 신청 줄이 길었습니다.', 'scenario', { band: 'low' }),
   ev('U07', 2030, 'AI가 일을 맡자 재교육이 붐볐습니다.', 'scenario'),
   ev('U08', 2030, 'AI를 가진 쪽에 투자가 몰렸습니다.', 'scenario', { band: 'high', topic: '경제' }),
-  day('U09', 2030, '자율주행 셔틀이 시범 운행에 나섰습니다.', 'scenario'),
-  day('U10', 2030, '돌봄 일손이 모자란 집이 늘었습니다.', 'expert'),
+  day('U09', 2030, '자율주행 셔틀이 동네를 돌았습니다.', 'scenario'),
+  day('U10', 2030, '돌봄 일손을 못 구한 집이 늘었습니다.', 'expert'),
   day('U11', 2030, '식구들이 번갈아 돌봄을 맡았습니다.', 'expert', { band: 'low' }),
   day('U12', 2030, '유료 돌봄 인력이 집으로 왔습니다.', 'expert', { band: 'high' }),
   // 2040년대

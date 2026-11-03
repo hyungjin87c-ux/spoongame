@@ -62,7 +62,8 @@ export function FitPair({ a, b, className = '', hideSeparator = false }: { a: st
  * 항목 안의 붙여 쓴 「부모님·누나와」는 Glue가 한 낱말로 묶는다.
  *
  * `flow`(SPEC-009 FC10, R-577 마스터 결정 2026-11-03): 안 들어갈 때 **항목마다 줄** 대신 **쉼표로 이은 자연 줄바꿈**으로 그린다 — 항목은 한 덩어리로 다음 줄에 넘어가고(`.fit-pair--flow`),
- * 쉼표는 앞 항목 뒤에 붙어 줄 끝에 남아도 되는 기호라 가운뎃점이 줄 끝·첫머리에 혼자 남지 않는다(QM2-10 규칙 3). 쉼표는 진짜 글자라 낭독 이름에도 항목 사이 구분이 남는다.
+ * 쉼표는 항목 덩어리 **안의 끝**에 붙인다. inline-block 앞뒤는 쉼표 앞에서도 줄이 바뀔 수 있어(CSS Text 3 5.1절) 밖에 두면 쉼표가 줄 첫머리에 올 수 있다(R-591).
+ * 그래서 가운뎃점·쉼표가 줄 첫머리에 혼자 남지 않는다(QM2-10 규칙 3). 쉼표는 진짜 글자라 낭독 이름에도 항목 사이 구분이 남는다.
  * 식구 카드 사람 줄(보조 줄이 항목 넷까지 늘어 360px에서 줄이 5줄이 되던 것)만 쓰고, 다른 곳의 `FitList`·`FitPair`는 그대로 항목마다 줄이다.
  */
 export function FitList({ items, className = '', flow = false }: { items: readonly string[]; className?: string; flow?: boolean }) {
@@ -90,9 +91,10 @@ export function FitList({ items, className = '', flow = false }: { items: readon
       {items.map((item, i) =>
         split ? (
           <Fragment key={i}>
-            {i === 0 ? null : flow ? ', ' : ' '}
+            {i === 0 ? null : ' '}
             <span className="fit-pair__item">
               <Glue text={item} />
+              {flow && i < items.length - 1 ? ',' : null}
             </span>
           </Fragment>
         ) : (

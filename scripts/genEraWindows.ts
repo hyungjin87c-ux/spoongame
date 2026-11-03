@@ -57,7 +57,7 @@ const TRIM: Readonly<Record<string, [number, number]>> = {
 /**
  * 나이대 보정 (SPEC-010 FU8): designer 실측 JSON의 `ageBand`가 「모두」인데 어른의 개인 행동을 서술해 어린이 기록에 나오면 안 되는 일상 줄에 `ages`를 단다. 키는 designer 조각 id.
  * designer 파일(JSON)은 읽기만 하므로 고치지 않고 여기서 덮는다 — 이 파일이 생성 파일 `d<10년대>.ts`의 정본 입구다. JSON 행이 이미 나이대를 가진 줄에는 쓰지 않는다(조용히 덮어쓰지 않으려고 만들 때 막는다).
- * 골든에 닿는 칸: 2020~2025년 어려운 쪽(`band: 'low'`) 19세 미만 — 이 줄이 더는 어린이에게 오르지 않는다(`tests/sceneGolden.test.ts` 머리 주석).
+ * 달라지는 칸: 2020~2025년 어려운 쪽(`band: 'low'`) 19세 미만(실제로는 가리기를 켠 2022년) — 이 줄이 더는 어린이에게 오르지 않는다. 골든의 출생 연도에는 이 칸이 없어 `scene-golden.json`은 그대로다(`tests/eraFuture.test.ts` 「FU8가 바꾸는 조합은…」).
  */
 const AGES_FIX: Readonly<Record<string, [number, number]>> = {
   'era-2020s-low-logistics-dawn': [19, 100], // 「새벽 셔틀을 타고 물류센터로 갔습니다.」 — QA-009-FM4b F01: 14세(2030년) 기록에 나왔다

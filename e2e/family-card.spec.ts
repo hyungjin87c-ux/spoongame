@@ -274,6 +274,5 @@ test('360px 사람 줄 줄 수 (FC10 「사람 줄 3줄 이하」, R-577): 가�
   expect(spoken, '긴 줄의 항목 사이 구분').toContain(items.join(', '));
   expect(spoken).not.toMatch(/ · /);
   // 접근성 트리(낭독이 읽는 것)에도 같은 글자가 있다
-  // (접근성 트리는 항목 덩어리 사이 쉼표 앞에 공백을 끼워 읽는다 — 「A , B」. 쉼표 글자가 있으면 된다)
   expect((await longest.ariaSnapshot()).replace(/\s+/g, ' '), '접근성 트리의 항목 사이 구분').toMatch(new RegExp(items.join(' ?, ')));
 });

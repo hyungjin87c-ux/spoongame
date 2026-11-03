@@ -145,7 +145,7 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
             if (r.state === 'gone') continue;
             if (r.closeness === null || r.closeness < 1 || r.closeness > 5) bad(where, `${age}세 ${r.key} 사이 ${r.closeness}`);
             // 사이에 닿는 플래그 모음: 표의 플래그 + 시스템 별거 플래그. 같은 모음에서 사이가 바뀌면 안 된다
-            const sig = ['sibling_close', 'grandparent_close', 'cared_parents', 'child_distant', 'child_left', 'friend_back', 'close_friend', 'divorced', 'broke_up', 'reunited', 'mother_apart', 'father_apart'].map((x) => (state.flags.includes(x) ? 1 : 0)).join('');
+            const sig = ['sibling_close', 'grandparent_close', 'cared_parents', 'child_distant', 'child_left', 'friend_back', 'close_friend', 'divorced', 'mother_apart', 'father_apart'].map((x) => (state.flags.includes(x) ? 1 : 0)).join('');
             const prev = closeSeen.get(r.key);
             if (prev !== undefined && prev.sig === sig && prev.closeness !== r.closeness) bad(where, `${age}세 ${r.key} 사이가 사건 없이 바뀌었다 (${prev.closeness} → ${r.closeness})`);
             closeSeen.set(r.key, { closeness: r.closeness ?? 0, sig });
