@@ -1,0 +1,602 @@
+{
+  "measuredAt": "2026-11-03",
+  "round": "r6",
+  "spec": "SPEC-010 미래 연표 묶음 A(2026~2039)",
+  "tone": "a",
+  "futureTone": {
+    "draft": {
+      "name": "밑그림",
+      "filter": "saturate(.5) contrast(.92) brightness(1.06)",
+      "dark": "saturate(.55) brightness(.94)"
+    },
+    "frame": {
+      "name": "점선 틀",
+      "filter": "none",
+      "dark": "none"
+    }
+  },
+  "note": "r6 12장(U01~U12). gz는 그림 안쪽 마크업(2010년대~와 같이 톤 겹 0)을 class·use로 바꾼 뒤 gzip. chunk는 10년마다 {id: 마크업} JSON으로 묶어 gzip + 한 줄 + 공유 패턴·사람 심볼 defs + 토큰 CSS 1회(보수적 — 실제 덩어리는 참조하는 defs만 싣는다). 2020년대는 기존 11장(r5 10 + r5b 2022)에 U01~U05를 보충한 덩어리. 예산(SPEC-010): 장당 평균 ≤ 1.6KB · 상한 2.5KB(○ 없음) · 10년 덩어리 ≤ 24KB · 2027년 이후가 늘린 양 ≤ 98.7KB(목표 80KB) · 누적 ≤ 230KB · 한 번에 ≤ 75KB. 승인 표기 0(approved: false).",
+  "budget": {
+    "perPicture": 2500,
+    "perPictureCrowdHeavy": 3500,
+    "perPictureAvgTarget": 1600,
+    "perDecadeChunk": 24000,
+    "totalLazy": 230000,
+    "perLoad": 75000,
+    "futureAdded": 98700,
+    "futureAddedTarget": 80000
+  },
+  "pieces": 12,
+  "events": 8,
+  "daily": 4,
+  "heavy": 0,
+  "forecast": 10,
+  "basisCount": {
+    "official": 2,
+    "expert": 3,
+    "scenario": 5
+  },
+  "shapesAvg": 74,
+  "shapesMax": 139,
+  "usesAvg": 8,
+  "gzEachAvg": 1116,
+  "gzEachMax": 1906,
+  "gzEachMin": 687,
+  "gzEachTotal": 13393,
+  "over25": [],
+  "overLimit": [],
+  "avgOverTarget": false,
+  "defsGz": 1573,
+  "cssGz": 1125,
+  "decadeBefore2020": {
+    "label": "2020년대 기존 11장(r5 10 + r5b 2022)",
+    "note": "",
+    "pieces": 11,
+    "chunkGz": 9113,
+    "withLines": 9646,
+    "withDefs": 12344,
+    "overMax": false
+  },
+  "decades": [
+    {
+      "label": "2020년대 16장(기존 11 + U01~U05)",
+      "note": "",
+      "pieces": 16,
+      "chunkGz": 13215,
+      "withLines": 13973,
+      "withDefs": 16671,
+      "overMax": false
+    },
+    {
+      "label": "2030년대 7장(U06~U12)",
+      "note": "",
+      "pieces": 7,
+      "chunkGz": 7202,
+      "withLines": 7622,
+      "withDefs": 10320,
+      "overMax": false
+    }
+  ],
+  "futureAdded": {
+    "d2020": 4327,
+    "d2030": 10320,
+    "total": 14647
+  },
+  "lazyEst": {
+    "before": 123060,
+    "after": 137707,
+    "limit": 230000
+  },
+  "contrast": {
+    "tokens": {
+      "--c-era": {
+        "light": "#6d2f4e",
+        "dark": "#f5a8d6"
+      },
+      "--c-era-soft": {
+        "light": "#f4e3ec",
+        "dark": "#3a2434"
+      },
+      "--c-surface": {
+        "light": "#fffdf8",
+        "dark": "#1c212c"
+      },
+      "--c-surface-2": {
+        "light": "#f1ede4",
+        "dark": "#262c3a"
+      },
+      "--c-bg": {
+        "light": "#f9f7f2",
+        "dark": "#14171f"
+      },
+      "--c-text": {
+        "light": "#23211d",
+        "dark": "#ece8de"
+      },
+      "--c-text-2": {
+        "light": "#4f4a41",
+        "dark": "#c4bfb2"
+      },
+      "--c-accent": {
+        "light": "#8a6a14",
+        "dark": "#dcb85c"
+      },
+      "--c-accent-soft": {
+        "light": "#f3e9cc",
+        "dark": "#3a3118"
+      },
+      "--c-on-accent-soft": {
+        "light": "#5f4808",
+        "dark": "#f0dc9c"
+      },
+      "--c-brand": {
+        "light": "#26324a",
+        "dark": "#b3c2e8"
+      }
+    },
+    "pairs": [
+      {
+        "name": "「예측」 칩 글자 / 칩 면",
+        "a": "--c-era",
+        "b": "--c-era-soft",
+        "min": 4.5,
+        "light": 7.87,
+        "dark": 7.73
+      },
+      {
+        "name": "「예측」 칩 테두리 / 카드 면",
+        "a": "--c-era",
+        "b": "--c-surface",
+        "min": 3,
+        "light": 9.53,
+        "dark": 8.79
+      },
+      {
+        "name": "「예측」 칩 면 / 카드 면(장식)",
+        "a": "--c-era-soft",
+        "b": "--c-surface",
+        "min": 0,
+        "light": 1.21,
+        "dark": 1.14
+      },
+      {
+        "name": "근거 종류 글자 / 카드 면",
+        "a": "--c-text-2",
+        "b": "--c-surface",
+        "min": 4.5,
+        "light": 8.65,
+        "dark": 8.78
+      },
+      {
+        "name": "창 표 글자 / 표 면(카드 면)",
+        "a": "--c-era",
+        "b": "--c-surface",
+        "min": 4.5,
+        "light": 9.53,
+        "dark": 8.79
+      },
+      {
+        "name": "시대 줄 겹선·표지 / 카드 면(기존)",
+        "a": "--c-era",
+        "b": "--c-surface",
+        "min": 3,
+        "light": 9.53,
+        "dark": 8.79
+      },
+      {
+        "name": "(비교) 「전망」 칩 글자 / 칩 면",
+        "a": "--c-on-accent-soft",
+        "b": "--c-accent-soft",
+        "min": 4.5,
+        "light": 7.17,
+        "dark": 9.45
+      },
+      {
+        "name": "(비교) 「전망」 테두리 / 카드 면",
+        "a": "--c-accent",
+        "b": "--c-surface",
+        "min": 3,
+        "light": 4.97,
+        "dark": 8.48
+      }
+    ]
+  },
+  "rows": [
+    {
+      "id": "era-2026-job-board-waiting",
+      "u": "U01",
+      "year": 2026,
+      "years": [
+        2026,
+        2026
+      ],
+      "decade": 2020,
+      "hCode": null,
+      "name": "2026년 — 구직 목록 앞의 청년과 대기 의자",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "band": null,
+      "ageBand": null,
+      "who": "어려운 쪽·가운데",
+      "line": "AI가 퍼지고 신입 공고는 줄었습니다.",
+      "lineChars": 21,
+      "forecast": false,
+      "basis": null,
+      "basisLabel": null,
+      "basisNote": "형진 지정 · 중간(청년·신입 현상은 높음, AI 원인 통계 없음) · A9~A13 → 사실(칩 없음)",
+      "draws": "고용센터 대기실 — 벽의 큰 구직 목록 화면(색 블록 세 줄과 그 아래 빈 줄들)을 올려다보는 청년 둘의 뒷모습(가방·휴대전화 빛), 오른쪽으로 길게 줄지은 면접 대기 의자와 거기 앉은 사람들의 뒷모습, 빈 안내판과 화분, 형광등.",
+      "ft3": "사람은 뒷모습(얼굴 0). 화면·안내판에 글자·회사명·숫자 0(색 블록·빈 줄). 2026은 사실 — 칩·근거 없음. 사진 모사 0. 수저 구간 아래·가운데가 보는 2026(위 구간은 U02).",
+      "shapes": 62,
+      "uses": 7,
+      "raw": 5415,
+      "gz": 994,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2026-port-night-surplus",
+      "u": "U02",
+      "year": 2026,
+      "years": [
+        2026,
+        2026
+      ],
+      "decade": 2020,
+      "hCode": null,
+      "name": "2026년 — 항구의 밤과 오르는 막대",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "band": "high",
+      "ageBand": null,
+      "who": "부유한 쪽",
+      "line": "경상흑자가 일본·독일 합을 넘었습니다.",
+      "lineChars": 21,
+      "forecast": false,
+      "basis": null,
+      "basisLabel": null,
+      "basisNote": "형진 지정 · 높음(경상수지 기준만 확인) · A1~A5 → 사실(칩 없음)",
+      "draws": "밤의 높은 사무실 창가 — 창 밖으로 항구의 컨테이너 더미와 갠트리 크레인, 불 켜진 공장 띠와 굴뚝의 옅은 김, 켜진 가로등. 창 앞 책상의 모니터에 오르는 색 막대(숫자 0), 창을 바라보고 선 정장 차림의 뒷모습(어깨 너머).",
+      "ft3": "사람은 뒷모습(얼굴 0). 모니터·컨테이너에 숫자·로고·국기 0(막대는 색만). 메모리 호황은 그림(항만·공장 밤)이 말하고 「일본·독일」은 줄에만. 사진 모사 0. 수저 구간 위(high)만 보는 2026.",
+      "shapes": 122,
+      "uses": 1,
+      "raw": 11866,
+      "gz": 1602,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2027-participation-income-desk",
+      "u": "U03",
+      "year": 2027,
+      "years": [
+        2027,
+        2027
+      ],
+      "decade": 2020,
+      "hCode": null,
+      "name": "2027년 — 참여소득 접수 창구 앞의 줄",
+      "kind": "event",
+      "topic": "사회",
+      "heavy": false,
+      "band": null,
+      "ageBand": null,
+      "who": "모두",
+      "line": "참여소득 시범사업이 시작됐습니다.",
+      "lineChars": 18,
+      "forecast": true,
+      "basis": "scenario",
+      "basisLabel": "가상 시나리오",
+      "basisNote": "공식 계획 · 낮음(계획 단계, 전국 도입 근거 없음) · E3 → 가상 시나리오",
+      "draws": "주민센터 안 — 유리 칸막이 접수 창구 셋과 그 뒤 직원의 뒷모습, 빈 번호판, 벽의 빈 안내판과 세움 안내판, 창구로 이어지는 줄(청년과 중장년이 섞인 뒷모습 — 서류와 가방), 화분, 형광등. 앞줄은 어깨 너머.",
+      "ft3": "사람은 뒷모습·먼 인물(얼굴 0). 번호판·안내판·서류에 글자·숫자 0(빈 면). 기관 이름 0. 사진 모사 0.",
+      "shapes": 55,
+      "uses": 20,
+      "raw": 4401,
+      "gz": 947,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2028-school-fewer-classes",
+      "u": "U04",
+      "year": 2028,
+      "years": [
+        2028,
+        2028
+      ],
+      "decade": 2020,
+      "hCode": null,
+      "name": "2028년 — 비어 가는 학교 복도",
+      "kind": "event",
+      "topic": "사회",
+      "heavy": false,
+      "band": null,
+      "ageBand": null,
+      "who": "모두",
+      "line": "학급 수가 줄어드는 학교가 늘었습니다.",
+      "lineChars": 21,
+      "forecast": true,
+      "basis": "official",
+      "basisLabel": "공식 전망 바탕",
+      "basisNote": "공식 전망 · 중간(2023 추계 — 2026년 새 추계가 나오면 해가 바뀔 수 있음) · B1·B4 → 공식 전망 바탕",
+      "draws": "오후의 학교 복도(원근) — 왼쪽 벽의 닫힌 교실 문 넷(문마다 빈 쪽지), 오른쪽 창으로 보이는 운동장의 적은 아이들(먼 인물 셋), 복도를 걸어가는 아이 하나의 뒷모습, 창에서 바닥으로 드는 햇빛, 끝의 밝은 창.",
+      "ft3": "사람은 뒷모습·먼 인물(얼굴 0). 문의 쪽지·끝 창에 글자 0(빈 면). 학교 이름 0. 쓸쓸함은 빛과 빈 자리로만(낙인·폐허 표현 0). 사진 모사 0.",
+      "shapes": 41,
+      "uses": 4,
+      "raw": 2925,
+      "gz": 851,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2029-heat-shelter-fans",
+      "u": "U05",
+      "year": 2029,
+      "years": [
+        2029,
+        2029
+      ],
+      "decade": 2020,
+      "hCode": null,
+      "name": "2029년 — 무더위쉼터의 선풍기 앞",
+      "kind": "event",
+      "topic": "재난",
+      "heavy": false,
+      "band": null,
+      "ageBand": null,
+      "who": "모두",
+      "line": "무더위쉼터에 사람들이 모였습니다.",
+      "lineChars": 18,
+      "forecast": true,
+      "basis": "official",
+      "basisLabel": "공식 전망 바탕",
+      "basisNote": "공식 전망(실측 포함) · 높음 · D1·D6 → 공식 전망 바탕",
+      "draws": "경로당 쉼터 안 — 열린 뒷문 너머 햇빛에 하얗게 바랜 빈 골목(강한 그림자·전봇대), 안에는 서 있는 선풍기와 벽걸이 냉방기, 장판 바닥에 둘러앉은 노인들의 뒷모습(흰머리), 쟁반의 물컵, 벽의 빈 안내판.",
+      "ft3": "사람은 뒷모습(얼굴 0). 안내판·냉방기에 글자·상표 0. 쓰러진 사람·구조 순간 0(쉼터의 일상까지). 붉은 하늘·공포 연출 0 — 더위는 바깥의 흰 빛으로. 사진 모사 0.",
+      "shapes": 37,
+      "uses": 5,
+      "raw": 2958,
+      "gz": 755,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2030-basic-income-queue-rain",
+      "u": "U06",
+      "year": 2030,
+      "years": [
+        2030,
+        2030
+      ],
+      "decade": 2030,
+      "hCode": null,
+      "name": "2030년 — 빗속 센터 앞의 신청 줄",
+      "kind": "event",
+      "topic": "사회",
+      "heavy": false,
+      "band": "low",
+      "ageBand": null,
+      "who": "어려운 쪽",
+      "line": "기본소득 시범에 신청 줄이 길었습니다.",
+      "lineChars": 21,
+      "forecast": true,
+      "basis": "scenario",
+      "basisLabel": "가상 시나리오",
+      "basisNote": "형진 지정 · 낮음 · E3~E5 → 가상 시나리오",
+      "draws": "비 오는 날 센터 앞 — 유리 출입구 안쪽의 창구와 높이 쌓인 서류 더미, 출입구에서 보도로 길게 꺾여 내려오는 신청 줄(우산 든 뒷모습 — 세 깊이), 젖은 보도와 물웅덩이, 빗줄기, 빈 간판 띠와 세움 안내판. 앞줄의 우산은 어깨 너머.",
+      "ft3": "사람은 뒷모습(얼굴 0). 간판·안내판·서류에 글자·기관명 0(빈 면). 분노·충돌 0 — 비 속의 기다림까지. 사진 모사 0. 2030 어려운 쪽(low)만.",
+      "shapes": 103,
+      "uses": 17,
+      "raw": 11323,
+      "gz": 1906,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2030-reskill-evening-class",
+      "u": "U07",
+      "year": 2030,
+      "years": [
+        2030,
+        2030
+      ],
+      "decade": 2030,
+      "hCode": null,
+      "name": "2030년 — 저녁 재교육 강의실",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "band": null,
+      "ageBand": null,
+      "who": "모두",
+      "line": "AI가 일을 맡자 재교육이 붐볐습니다.",
+      "lineChars": 21,
+      "forecast": true,
+      "basis": "scenario",
+      "basisLabel": "가상 시나리오",
+      "basisNote": "형진 지정 · 낮음 · E1·E2 → 가상 시나리오",
+      "draws": "저녁의 재교육 강의실 — 앞 화면의 색 블록 도식(글자 0), 옆에 선 강사의 옆모습, 빽빽이 들어찬 책상 줄과 어른들의 뒷모습(흰머리 섞임)·노트북 빛, 왼쪽 창의 밤, 형광등. 앞줄은 어깨 너머.",
+      "ft3": "사람은 뒷모습·옆모습(얼굴 0). 화면·노트북에 글자·로고 0(색 블록·빛). 학원 이름 0. 사진 모사 0. 2030 가운데 구간(band 없음)이 본다.",
+      "shapes": 84,
+      "uses": 23,
+      "raw": 6573,
+      "gz": 977,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2030-ai-capital-night-office",
+      "u": "U08",
+      "year": 2030,
+      "years": [
+        2030,
+        2030
+      ],
+      "decade": 2030,
+      "hCode": null,
+      "name": "2030년 — 밤 사무실의 그래프와 서버실 불빛",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "band": "high",
+      "ageBand": null,
+      "who": "부유한 쪽",
+      "line": "AI를 가진 쪽에 투자가 몰렸습니다.",
+      "lineChars": 20,
+      "forecast": true,
+      "basis": "scenario",
+      "basisLabel": "가상 시나리오",
+      "basisNote": "형진 지정 · 낮음 · E1·E2 → 가상 시나리오",
+      "draws": "고층 사무실의 밤 — 통유리 밖의 도시 야경, 왼쪽 벽 화면의 오르는 꺾은선(숫자·축 글자 0), 오른쪽 유리 칸막이 너머 서버 선반의 작은 불빛, 화면을 보고 선 정장 차림 둘의 뒷모습(한 사람은 태블릿 빛). 어깨 너머.",
+      "ft3": "사람은 뒷모습(얼굴 0). 화면·서버·건물에 숫자·로고·회사명 0(실존 로봇·기기 모사 0 — 일반형 선반). 사진 모사 0. 2030 부유한 쪽(high)만.",
+      "shapes": 139,
+      "uses": 2,
+      "raw": 12879,
+      "gz": 1450,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2030s-driverless-shuttle-stop",
+      "u": "U09",
+      "year": 2030,
+      "years": [
+        2030,
+        2039
+      ],
+      "decade": 2030,
+      "hCode": null,
+      "name": "2030년대 — 정류장의 운전석 없는 셔틀",
+      "kind": "daily",
+      "topic": "생활",
+      "heavy": false,
+      "band": null,
+      "ageBand": "모두",
+      "who": "모두",
+      "line": "자율주행 셔틀이 시범 운행에 나섰습니다.",
+      "lineChars": 22,
+      "forecast": true,
+      "basis": "scenario",
+      "basisLabel": "가상 시나리오",
+      "basisNote": "공식 목표 · 낮음(2022·2025·2026 로드맵에서 반복, 지연) · E7 → 가상 시나리오",
+      "draws": "낮의 단지 앞 정류장 — 양 끝이 같은 둥근 상자꼴의 작은 셔틀(운전석 없음, 지붕의 감지기, 둘러친 창에 앉은 사람 윤곽), 열린 문으로 오르는 사람들의 뒷모습(지팡이 짚은 어르신·아이 손을 잡은 어른), 셸터에서 기다리는 사람, 아파트와 가로수.",
+      "ft3": "사람은 뒷모습·먼 인물(얼굴 0). 셔틀·셸터에 번호·로고·회사명 0(일반형 — 실존 차량 모사 0). 사진 모사 0.",
+      "shapes": 77,
+      "uses": 7,
+      "raw": 5899,
+      "gz": 1165,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2030s-care-intake-empty-chairs",
+      "u": "U10",
+      "year": 2030,
+      "years": [
+        2030,
+        2039
+      ],
+      "decade": 2030,
+      "hCode": null,
+      "name": "2030년대 — 방문 요양 접수 복도",
+      "kind": "daily",
+      "topic": "사회",
+      "heavy": false,
+      "band": null,
+      "ageBand": "모두",
+      "who": "모두",
+      "line": "돌봄 일손이 모자란 집이 늘었습니다.",
+      "lineChars": 20,
+      "forecast": true,
+      "basis": "expert",
+      "basisLabel": "전문가 전망 바탕",
+      "basisNote": "전문가 전망 · 중간~낮음(수치 편차 큼) · B7 → 전문가 전망 바탕",
+      "draws": "방문 요양 접수 복도 — 유리창 너머 비어 있는 사무용 의자와 높이 쌓인 신청서 더미, 유리에 붙은 빈 쪽지, 창구 앞에 선 사람의 뒷모습, 복도 의자 줄에는 지팡이를 든 어르신과 곁의 사람만 앉아 있고 나머지 의자는 비었다. 끝 창의 햇빛, 화분.",
+      "ft3": "사람은 뒷모습(얼굴 0). 쪽지·신청서·안내판에 글자·기관명 0. 일손 모자람은 빈 의자·서류 더미·빈 쪽지로만(비난·평가 표현 0). 사진 모사 0.",
+      "shapes": 76,
+      "uses": 3,
+      "raw": 6741,
+      "gz": 1104,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2030s-low-family-care-floor",
+      "u": "U11",
+      "year": 2030,
+      "years": [
+        2030,
+        2039
+      ],
+      "decade": 2030,
+      "hCode": null,
+      "name": "2030년대 — 좁은 거실의 이불 곁",
+      "kind": "daily",
+      "topic": "생활",
+      "heavy": false,
+      "band": "low",
+      "ageBand": "모두",
+      "who": "어려운 쪽",
+      "line": "식구들이 번갈아 돌봄을 맡았습니다.",
+      "lineChars": 19,
+      "forecast": true,
+      "basis": "expert",
+      "basisLabel": "전문가 전망 바탕",
+      "basisNote": "전문가 전망 · 중간~낮음 · B7 → 전문가 전망 바탕",
+      "draws": "좁은 거실 — 바닥에 편 요와 이불에 누운 어르신(뒤통수만), 곁을 지키는 식구들의 뒷모습(앉은 어른 둘과 아이), 작은 상의 물컵과 약 상자(빈 면), 빨랫줄의 옷, 저녁빛 창, 꺼진 TV, 문가에서 바라보는 식구의 어깨. 양옆 벽이 바짝 붙어 있다.",
+      "ft3": "사람은 뒷모습·뒤통수(얼굴 0). 약 상자·TV에 글자·상표 0. 시술·주사·고통 표현 0(곁을 지키는 저녁까지). 낙인·불결 강조 0 — 정돈된 살림. 사진 모사 0. 계층 변주(아래).",
+      "shapes": 37,
+      "uses": 4,
+      "raw": 2796,
+      "gz": 687,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2030s-high-paid-care-living",
+      "u": "U12",
+      "year": 2030,
+      "years": [
+        2030,
+        2039
+      ],
+      "decade": 2030,
+      "hCode": null,
+      "name": "2030년대 — 넓은 거실과 조끼 입은 돌봄 인력",
+      "kind": "daily",
+      "topic": "생활",
+      "heavy": false,
+      "band": "high",
+      "ageBand": "모두",
+      "who": "부유한 쪽",
+      "line": "유료 돌봄 인력이 집으로 왔습니다.",
+      "lineChars": 19,
+      "forecast": true,
+      "basis": "expert",
+      "basisLabel": "전문가 전망 바탕",
+      "basisNote": "전문가 전망 · 중간~낮음 · B7 → 전문가 전망 바탕",
+      "draws": "넓은 거실 — 큰 창 너머 나무와 하늘, 창가의 화분 셋, 창을 향해 앉은 어르신의 팔걸이의자(등받이 위로 흰머리만), 곁에 선 조끼 입은 돌봄 인력의 뒷모습, 긴 소파와 벽걸이 TV, 쟁반을 올린 작은 탁자, 바닥의 햇빛.",
+      "ft3": "사람은 뒷모습(얼굴 0). TV·조끼에 글자·로고·기관명 0. 과시 표현 0 — 공간과 물건, 사람 수만 다르다. 시술·간병 근접 0(곁에 선 모습까지). 사진 모사 0. 계층 변주(위).",
+      "shapes": 51,
+      "uses": 1,
+      "raw": 4138,
+      "gz": 955,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    }
+  ]
+}
