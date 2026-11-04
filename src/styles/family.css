@@ -21,7 +21,7 @@
 /* 연도 표 — 집 그림 오른쪽 위. 그림 안 글자가 아니라 HTML(종이 꼬리표): 바탕은 카드 면 색이라 어느 하늘·지붕 위에서도 글자 대비가 토큰 그대로. 강제 색상은 Canvas/CanvasText + 1px 테두리 */
 .scene__year { position: absolute; top: var(--sp-2); right: var(--sp-2); margin: 0; padding: 2px var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.4; font-variant-numeric: tabular-nums; color: var(--c-text); background: var(--c-surface); border-radius: var(--r-sm); white-space: nowrap; }
 /* 「시대의 창」 칸 — 그림만(FM2d). 승인된 그림이 있으면 칸 전체가 그해 기록의 시대 줄로 가는 링크 하나(초점 정지점 1, FT5), 없으면 링크 없는 빈 틀. 창틀 장식 없음. PC 칸 175×140 = 5:4 = 그림 좌표계 40×32(잘림 0) */
-.era { display: block; min-width: 0; min-height: 0; background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
+.era { position: relative; display: block; min-width: 0; min-height: 0; background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
 .era__pic { position: relative; display: block; width: 100%; height: 100%; min-height: 48px; overflow: hidden; background: var(--c-scene-sky); }
 .era[data-hidden='true'] .era__pic, .era[data-empty='true'] .era__pic { background: var(--c-surface-2); }
 .era__pic svg { display: block; width: 100%; height: 100%; forced-color-adjust: none; }
@@ -79,12 +79,24 @@ a.era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 :root[data-theme='dark'] .era[data-dec='1960'] svg { filter: sepia(.2) saturate(.85) brightness(1.04); }
 :root[data-theme='dark'] .era[data-dec='1970'] svg { filter: sepia(.14) saturate(.9); }
 :root[data-theme='dark'] .era[data-dec='1980'] svg { filter: sepia(.08); }
+/* ===== 미래 톤 「밑그림」 (SPEC-010 FU3, 형진 님 승인 2026-11-03 안 1): 2027년 이후 그림(`data-future`는 **해**로 정한다 — core/eraWindow.ts#isForecastYear)은 채도를 절반으로, 조금 밝게 — 「아직 색이 다 칠해지지 않은 그림」.
+   그림 바이트 0(CSS 필터만). 인계 원문(`scripts/design/eraR6Lib.mjs#FUTURE_TONE`)은 `.era[data-future] svg`인데 창 표 아이콘(`.era__fc`)까지 걸려 그림 상자 안(`.era__pic svg`)으로 좁혔다. 다크는 약하게. 강제 색상은 `.era__pic svg`의 forced-color-adjust: none 그대로 ===== */
+.era[data-future='true'] .era__pic svg { filter: saturate(.5) contrast(.92) brightness(1.06); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .era[data-future='true'] .era__pic svg { filter: saturate(.55) brightness(.94); }
+}
+:root[data-theme='dark'] .era[data-future='true'] .era__pic svg { filter: saturate(.55) brightness(.94); }
+/* 「예측」 표 — 시대의 창 칸(안 B, 형진 님 승인: 줄과 창 양쪽, FM2d 「창에는 그림만」의 작은 예외 하나). 연도 표 `.scene__year`와 같은 카드 면 색 꼬리표 문법 — 어느 하늘 위에서도 대비가 토큰 그대로(글자/카드 면 9.53·8.79). 그림 상자의 형제(링크 안)라 그림에 가려지거나 잘리지 않는다 */
+.era__fc { position: absolute; top: var(--sp-1); left: var(--sp-1); display: inline-flex; align-items: center; gap: 3px; padding: 0 5px; border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-era); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; white-space: nowrap; }
+.era__fc .icon { width: 12px; height: 12px; stroke-width: 2.6; }
 /* 휴대폰(카드 폭 ≤ 480px — 360에서 카드 326px): 집 그림은 전폭(326×130), 시대의 창은 그 아래 **가로 띠 80px**(5:4 그림 100×80을 왼쪽에, 나머지는 띠 바탕 --c-surface — 카드 바탕과 같아 「카드 위에 놓인 그림 한 장」으로 읽힌다, R-553 ① A안).
    가려 둔·빈 칸(`.era[data-hidden]`·`[data-empty]`)의 `--c-surface-2` 네모는 그대로라 「그림 없음」과 구분된다. 띠 합계 130 + 8 + 80 = 218px */
 @container scene (max-width: 480px) {
   .scene { grid-template-columns: minmax(0, 1fr); }
   .era { height: 80px; background: var(--c-surface); }
   .era__pic { width: 100px; height: 80px; min-height: 0; }
+  /* 「예측」 표는 100×80 그림을 가리지 않게 그림 옆 띠 바탕 위에 선다 */
+  .era__fc { top: var(--sp-2); left: calc(100px + var(--sp-2)); }
 }
 .scene__line { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text); font-weight: var(--fw-bold); word-break: keep-all; overflow-wrap: anywhere; }
 .scene__note { margin: var(--sp-2) 0 0; font-size: var(--fs-sm); color: var(--c-text-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
@@ -117,6 +129,24 @@ a.era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 .log__row--tl[data-tl='era'] { border-left: 5px double var(--c-era); padding-left: calc(var(--sp-1) + 3px); }
 .log__row--tl[data-tl='era'] .log__tl { color: var(--c-era); }
 .log__row--tl[data-tl='era'] .log__sent { color: var(--c-text); }
+/* 「예측」 칩 (SPEC-010 FU3·구현 규칙 7, 인계 원문 `scripts/design/eraR6Lib.mjs#chipCss`) — 세 겹: 색(시대 줄의 오디 `--c-era`/`--c-era-soft` 재사용, 새 토큰 0) + 글자 「예측」 + 아이콘 `#i-ahead`. 경제 칸의 「전망」(놋쇠 알약 + 꺾은선)과 색·아이콘·모양(꼬리표 6px ↔ 알약)이 모두 다르다.
+   표지 · 칩 · 근거 종류 글자는 한 줄(`.log__tlrow`, flex-wrap) — 좁거나 글자가 크면 다음 줄로 내려가고 가로 넘침 0. 대비(토큰 값): 칩 글자/면 7.87·7.73, 칩 테두리/카드 면 9.53·8.79, 근거 글자/카드 면 8.65·8.78 */
+.log__tlrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); min-width: 0; }
+.chip--fc { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: var(--r-sm); border: 1px solid var(--c-era); background: var(--c-era-soft); color: var(--c-era); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.7; white-space: nowrap; }
+.chip--fc .icon { width: 14px; height: 14px; stroke-width: 2.4; }
+.log__basis { font-size: var(--fs-xs); line-height: 1.7; color: var(--c-text-2); }
+/* 예측 근거 보기 (SPEC-010 FU11): 근거 종류 글자가 단추가 되어 문장 아래 접이식 칸을 연다 — 모양은 기존 접이식(`.scene__more`·`.disclosure`)과 같은 꺾쇠. 보이는 글자는 작지만 누르는 영역은 44px(`--hit`, ::before — 줄 위아래 여백 안에서) */
+.log__basis--btn { position: relative; display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; background: none; font: inherit; font-size: var(--fs-xs); line-height: 1.7; color: var(--c-text-2); text-align: left; cursor: pointer; }
+.log__basis--btn::before { content: ''; position: absolute; left: -4px; right: -4px; top: min(0px, calc((100% - var(--hit)) / 2)); bottom: min(0px, calc((100% - var(--hit)) / 2)); }
+.log__basis--btn::after { content: ''; flex: none; width: 6px; height: 6px; margin-top: -3px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform var(--dur) var(--ease); }
+.log__basis--btn[aria-expanded='true']::after { margin-top: 3px; transform: rotate(-135deg); }
+.log__basis--btn:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; border-radius: var(--r-sm); }
+.log__why { margin: var(--sp-1) 0 0; padding-left: var(--sp-2); font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text-2); word-break: keep-all; overflow-wrap: anywhere; }
+.log__why[hidden] { display: none; }
+.log__why-intro { margin: 0; }
+.log__why ul { margin: var(--sp-2) 0 0; padding-left: 1.2em; }
+.log__why li + li { margin-top: var(--sp-2); }
+.log__why-tag { color: var(--c-text); }
 /* 링크로 닿은 줄(tabindex=-1)에 초점이 오면 시스템 초점 테두리(3px --c-focus) */
 .log__row[tabindex='-1']:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 /* 시대의 창을 누르면 그 줄로 — 잠깐 강조: 면 --c-era-soft가 1.2초 머물다 1.2초에 걸쳐 사라진다. 움직임 줄이기면 애니메이션 없이 면만 남긴다(강조만). :target도 같은 모양(주소의 #로 들어온 경우) */
@@ -134,5 +164,7 @@ a.era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
   .scene__people li::before { background: CanvasText; }
   .log__row--tl { border-left-color: CanvasText; }
   .log__row--tl .log__tl, .log__year { color: CanvasText; }
+  .chip--fc { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  .era__fc { background: Canvas; color: CanvasText; border: 1px solid CanvasText; }
   .log__row--tl[data-tl='era'][data-flash='true'], .log__row--tl[data-tl='era']:target { outline: 2px solid Highlight; outline-offset: -2px; animation: none; }
 }

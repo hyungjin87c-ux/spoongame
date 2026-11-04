@@ -258,7 +258,7 @@ describe('CSS 규칙 (family-scene.md 5-1절 — PC 2:1 · 휴대폰 80px 띠 ·
   });
 });
 
-describe('시대의 창 칸 — 승인된 94장이 칸에 오른다 (FM5b · 시대의 창 r5 반영, FT1~FT6)', () => {
+describe('시대의 창 칸 — 승인된 그림이 칸에 오른다 (FM5b · 시대의 창 r5 반영 94장 + SPEC-010 묶음 A 12장, FT1~FT6 — 2027년 이후 칩은 tests/eraChip.test.tsx)', () => {
   /** 달력 연도가 `calYear`가 되는 나이의 판 (세대·시드를 훑어 0~80세 안에 드는 것) */
   function lifeInYear(calYear: number): GameState {
     for (const gen of ['industrial', 'genx', 'alpha'] as const) {

@@ -26,6 +26,37 @@ export type EraBand = 'low' | 'mid' | 'high';
 /** 2027년 이후 장면의 근거 종류 (SPEC-010 구현 규칙 4): 공식 전망 바탕 / 전문가 전망 바탕 / 가상 시나리오. 화면 글은 `data/sceneText.ts`(FU3) */
 export type EraBasis = 'official' | 'expert' | 'scenario';
 
+/**
+ * 예측 근거 한 건 (SPEC-010 FU11 「예측 근거 보기」): 인생 기록 시대 줄의 근거 종류 글자를 펼치면 나오는 한 줄 — 「사람 · 직함 · 자료 · 연도: 자기 말 요약」.
+ * 규칙(「예측 근거 규칙」): 실제로 한 말만 · 자기 말 요약만(직접 인용 0) · 기관 글은 기관 이름으로 · 게임의 해와 발언의 해가 다르면 `gap`에 그 차이를 적는다. 사람·회사 이름은 **이 칸에만** 쓰이고
+ * 시대 줄·그림에는 없다. 출처 주소는 게임 안에 두지 않는다(`docs/data/future-foresight-quotes.md`). 글은 10년 덩어리에 함께 실려 초기 로드에 들어가지 않는다.
+ */
+export interface EraForesightNote {
+  /** 사람 또는 기관 이름 (기관 글은 기관 이름) */
+  who: string;
+  /** 직함·소속 */
+  role: string;
+  /** 자료 이름(종류 포함) — 책·논문·기사 제목은 「」로 감싼다 */
+  work: string;
+  /** 자료가 나온 해 */
+  year: number;
+  /** 자기 말 요약(합쇼체, 인용부호 없음) */
+  said: string;
+  /** 다른 매체가 전한 내용을 바탕으로 한 요약이면 true — 칸에 「보도 기준」을 적는다 */
+  reported?: true;
+  /** 게임 줄과 어긋나는 점(해가 다르거나 범위가 다른 것). 합쇼체 한두 문장 */
+  gap?: string;
+  /** 줄과 반대 쪽을 가리키는 근거(노화·의식 이전에는 한 건 필수) — 칸에 「반대 근거」 표시 */
+  counter?: true;
+}
+
+export interface EraForesight {
+  /** 한두 건. 비면 이 객체를 두지 않는다(근거 종류 글자만 보인다) */
+  notes: readonly EraForesightNote[];
+  /** 부유한 쪽이 먼저 누린다는 장면(수저별 「먼저」 줄) — 칸 끝에 「수저별 차이는 게임의 설정입니다.」를 덧붙인다 */
+  byBand?: true;
+}
+
 export interface EraWindow {
   id: string;
   /** 사건은 [연도, 연도], 생활 장면은 같은 10년 안의 범위 */
@@ -57,6 +88,10 @@ export interface EraWindow {
    * 근거가 약해 확실성이 「낮음」인 것 단독은 출처가 공식·전문가여도 `scenario`로 내려 적는다(SPEC-010 「표기 규칙」). 글꼴 조각 밖 글자는 소스에 쓰지 않는다(주석 포함) — `tests/fonts.test.tsx`가 센다.
    */
   basis?: EraBasis;
+  /**
+   * 예측 근거 보기 글 (SPEC-010 FU11). 2027년 이후 장면에만, 근거 후보가 있는 장면에만 있다(후보 없는 줄은 근거 종류 글자만). 생성 파일이 `scripts/eraForesightNotes.ts`에서 싣는다.
+   */
+  foresight?: EraForesight;
 }
 
 /** 시대 줄 문장의 글자 수 상한 (360px에서 2줄 안 — 본문 16px) */
@@ -74,6 +109,9 @@ export const ERA_LAST_DECADE = 2100;
  * 시대의 창 한정 값이다 — SPEC-004의 경제 `LAST_ACTUAL_YEAR`(2025)와는 별개다(마스터 M4). 해가 바뀌어 사실이 늘면 이 값만 올린다.
  */
 export const ERA_ACTUAL_LAST_YEAR = 2026;
+
+/** 「예측」으로 표시하는 해 (SPEC-010 구현 규칙 4): `ERA_ACTUAL_LAST_YEAR`보다 뒤이고 표 안(`ERA_LAST_YEAR` 이하)이다. 2110년의 끝 줄과 끝 장면은 예측이 아니라 안내다. 칩·창 표·미래 톤은 **그림이 아니라 해**로 정한다 */
+export const isForecastYear = (year: number): boolean => year > ERA_ACTUAL_LAST_YEAR && year <= ERA_LAST_YEAR;
 
 export interface EraContext {
   /** 출생 시도 줄임 이름 — 지역 사건 후보를 가린다 */
@@ -246,6 +284,8 @@ export interface EraRow {
   forecast: boolean;
   /** 그 줄을 낳은 장면의 근거 종류 — 예측 줄(`forecast`)에만, 장면에 `basis`가 있을 때만 */
   basis?: EraBasis;
+  /** 그 줄을 낳은 장면의 예측 근거 보기 글 — 예측 줄(`forecast`)에만, 장면에 있을 때만 (SPEC-010 FU11) */
+  foresight?: EraForesight;
 }
 
 /**
@@ -260,8 +300,17 @@ export function eraRowsOf(birthYear: number, ageNow: number, ctx: EraContext): E
     const year = birthYear + age;
     const pick = eraOf(year, withBirth);
     if (pick.line === null) continue;
-    const forecast = year > ERA_ACTUAL_LAST_YEAR && year <= ERA_LAST_YEAR; // 2110 끝 줄은 예측이 아니라 안내다
-    rows.push({ year, age, line: pick.line.line, heavy: pick.line.heavy, veiled: pick.veiled, forecast, ...(forecast && pick.line.basis !== undefined ? { basis: pick.line.basis } : {}) });
+    const forecast = isForecastYear(year); // 2110 끝 줄은 예측이 아니라 안내다
+    rows.push({
+      year,
+      age,
+      line: pick.line.line,
+      heavy: pick.line.heavy,
+      veiled: pick.veiled,
+      forecast,
+      ...(forecast && pick.line.basis !== undefined ? { basis: pick.line.basis } : {}),
+      ...(forecast && pick.line.foresight !== undefined ? { foresight: pick.line.foresight } : {}),
+    });
   }
   return rows;
 }

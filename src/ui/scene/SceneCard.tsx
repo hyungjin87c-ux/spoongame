@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
-import { bandOfWealth, eraOf, type EraPick } from '../../core/eraWindow';
+import { bandOfWealth, eraDecadeOf, eraOf, isForecastYear, type EraPick, type EraWindow } from '../../core/eraWindow';
 import { petPhrases, sceneInputOf, sceneKey, sceneLineOf, sceneOf, scenePetsText, sceneRowsOf, type SceneSpec } from '../../core/scene';
 import type { FamilyGame } from '../../core/familyView';
 import { eraAccessibleName, eraTitle, SCENE_TEXT } from '../../data/sceneText';
 import { useReducedMotion } from '../hooks';
 import { FitList, FitPair } from '../FitPair';
+import { Icon } from '../Brand';
 import { SvgMarkup } from '../svgNodes';
 import { goToLogRow } from './eraLink';
 import { SceneSvg } from './SceneSvg';
@@ -90,6 +91,20 @@ function EmptyFrame() {
   );
 }
 
+/** 시대의 창 칸의 그림 상자: 지금 그림 + 바뀌는 해의 교차 페이드용 이전 그림 */
+function EraPicBox({ shown, prev, pick, art }: { shown: EraWindow | null; prev: EraPick | null; pick: EraPick; art: Readonly<Record<string, string>> }) {
+  return (
+    <span className="era__pic" aria-hidden="true">
+      {prev !== null && prev.pic !== null && art[prev.pic.draw] !== undefined && prev.pic.id !== shown?.id ? (
+        <span className="era__prev">
+          <EraPic pick={prev} art={art} inst="era-prev" />
+        </span>
+      ) : null}
+      {shown === null ? null : <EraPic pick={pick} art={art} inst="era" />}
+    </span>
+  );
+}
+
 function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: number; art: Readonly<Record<string, string>>; animate: boolean; reduced: boolean }) {
   const shown = pick.pic !== null && art[pick.pic.draw] !== undefined ? pick.pic : null;
   const key = shown?.id ?? (pick.veiled ? 'veiled' : 'none');
@@ -104,6 +119,18 @@ function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: n
     );
   }
   const text = shown !== null ? shown.line : null;
+  // 톤 A의 10년대 번호(필터는 1940~2000년대에만 있다) — 2026년 이후도 그 해의 10년대다(옛 `min(해, 2025)`는 2026년 뒤를 모두 2020년대로 두었다)
+  const dec = shown === null ? undefined : eraDecadeOf(year);
+  // 「예측」은 해로 정한다(그림으로 정하지 않는다) — 칩 표·미래 톤(밑그림)이 같은 판단이다 (SPEC-010 구현 규칙 4·7)
+  const forecast = isForecastYear(year);
+  // 줄이 없는 칸(2111년부터의 끝 장면, SPEC-010 구현 규칙 3)은 갈 곳이 없으니 링크가 아니라 그림만이다 (REV-010-CORE-1 R-601)
+  if (shown !== null && pick.line === null) {
+    return (
+      <div className="era" id="scene-era" data-end="true" data-era={shown.id} data-kind={shown.kind} data-hidden="false" data-dec={dec} role="img" aria-label={eraTitle(text, false)} title={eraTitle(text, false)}>
+        <EraPicBox shown={shown} prev={prev} pick={pick} art={art} />
+      </div>
+    );
+  }
   return (
     <a
       className="era"
@@ -112,19 +139,19 @@ function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: n
       data-era={shown?.id ?? ''}
       data-kind={shown?.kind ?? pick.line?.kind}
       data-hidden={shown === null ? 'true' : 'false'}
-      data-dec={shown === null ? undefined : Math.floor(Math.min(year, 2025) / 10) * 10}
-      title={eraTitle(text, shown === null)}
+      data-dec={dec}
+      data-future={forecast ? 'true' : undefined}
+      title={eraTitle(text, shown === null, forecast)}
       onClick={(e) => onEraClick(e, year, reduced)}
     >
-      <span className="era__pic" aria-hidden="true">
-        {prev !== null && prev.pic !== null && art[prev.pic.draw] !== undefined && prev.pic.id !== shown?.id ? (
-          <span className="era__prev">
-            <EraPic pick={prev} art={art} inst="era-prev" />
-          </span>
-        ) : null}
-        {shown === null ? null : <EraPic pick={pick} art={art} inst="era" />}
-      </span>
-      <span className="sr-only">{eraAccessibleName(text, shown === null)}</span>
+      <EraPicBox shown={shown} prev={prev} pick={pick} art={art} />
+      {forecast ? (
+        <span className="era__fc" data-testid="era-fc" aria-hidden="true">
+          <Icon name="i-ahead" />
+          {SCENE_TEXT.forecast}
+        </span>
+      ) : null}
+      <span className="sr-only">{eraAccessibleName(text, shown === null, forecast)}</span>
     </a>
   );
 }

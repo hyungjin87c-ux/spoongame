@@ -16,7 +16,11 @@ import { fnv, spreadSeeds } from './familyGolden';
  * 규칙·표·승인된 데이터가 바뀌면 이 시험이 깨져 「의도한 변경인지」 보게 한다. 같은 입력 → 같은 출력이므로 값은 늘 같아야 한다 — 일부러 바꿀 때만 `npm run golden:scene`으로 다시 만든다.
  */
 
-export const ALL_ERA_WINDOWS: readonly EraWindow[] = [D1940, D1950, D1960, D1970, D1980, D1990, D2000, D2010, D2020].flatMap((d) => d.windows);
+/**
+ * 골든이 도는 승인된 94장 — 1940~2025년에 시작하는 장면뿐이다(출생~2025 골든이라 2026년 이후 장면은 닿지 않는다). SPEC-010 묶음 A가 2020년대 덩어리에 U01~U05(2026~2029)를 더했지만 번호표·칸은 **그대로 두고**
+ * 이 필터로 골든 판을 94장에 묶는다 — 「2025년 이하의 고르기가 바뀌지 않는다」(SPEC-010 완료 기준 10)를 이 골든이 계속 잠근다. 2026년 이후는 `tests/eraFuture.test.ts`가 잰다.
+ */
+export const ALL_ERA_WINDOWS: readonly EraWindow[] = [D1940, D1950, D1960, D1970, D1980, D1990, D2000, D2010, D2020].flatMap((d) => d.windows).filter((w) => w.years[0] <= 2025);
 
 function gameOf(seed: number, gen: ProfileId): GameState {
   const b = generateBirthFromSeed(seed, gen);

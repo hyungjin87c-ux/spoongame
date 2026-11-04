@@ -19,7 +19,7 @@ export const LOGO_HEADER_SVG: string = logoHeaderRaw;
 /**
  * 아이콘(`i-*`)과 수저 5단계(칩 `sp-1`~`sp-5`, 큰 변형 `sp-1-lg`~`sp-5-lg`)의 <symbol>이 들어 있는 스프라이트 셋.
  * 셋째는 결정자 글리프 둘 `i-by-parent`(집 한 채)·`i-by-child`(물결 둘) — 부모님이 정한 카드·아이의 일로 흘러간 카드의 칩과 기록 줄·엔딩 연표 표지 (R-455, design-system 13-3절 · diff-005 D5-35).
- * 넷째 `scene-icons.svg`는 인생 기록 「시대의 창」 줄의 창문 아이콘 `i-era`(SPEC-009 FM5, 네모 + 십자살 — design-system 18-3절). designer의 `ui-icons.svg` 생성기(`buildIcons.mjs`)가 다시 만들어도 지워지지 않게 따로 둔다.
+ * 넷째 `scene-icons.svg`는 인생 기록 「시대의 창」 줄의 창문 아이콘 `i-era`(SPEC-009 FM5, 네모 + 십자살 — design-system 18-3절)와 「예측」 칩의 `i-ahead`(SPEC-010 FU3, 찬 점 → 짧은 선 → 빈 점: 지금에서 아직 채워지지 않은 자리로 — era-window.md 11-1절). designer의 `ui-icons.svg` 생성기(`buildIcons.mjs`)가 다시 만들어도 지워지지 않게 따로 둔다.
  */
 export const SPRITE_SVG: string = iconsRaw + spoonGradesRaw + deciderRaw + sceneIconsRaw;
 
