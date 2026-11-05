@@ -375,6 +375,7 @@ test('시트 안 「저절로 뜨는 기록 카드 끄기」: 설정만 바뀌�
 });
 
 test('자동 모드이거나 카드를 끈 설정에서는 시트가 뜨지 않고 카드가 소비되며 연표에 줄이 없다', async ({ page }) => {
+  test.setTimeout(90_000); // 두 설정을 차례로 열고 카드 소비를 기다린다 — 혼자 돌려도 26~28초라 기본 30초 한도에 마진이 없었다(QA-009-FM4b·FM6-010에서 흔들림)
   for (const [name, settings] of [['자동 모드', AUTO], ['카드 끔', OFF]] as const) {
     await openInfant(page, settings);
     await expect(page.getByTestId('life-screen'), name).toBeVisible();

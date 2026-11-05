@@ -200,11 +200,16 @@ for (const vp of STANDARD_VIEWPORTS) {
 
 // ---------- R-438: 「새 기록 N개 · 맨 위로」 알약이 떠 있는 대시보드 (스크롤 영역 안 위 가장자리) ----------
 
-/** 인생 기록을 아래로 읽는 중에 새 줄이 쌓여 「새 기록 N개 · 맨 위로」 알약이 떠 있는 50세 대시보드 */
-async function openDashWithJumpPill(page: Page): Promise<void> {
-  await openM4Screen(page, 'dash-adult');
+/**
+ * 인생 기록을 아래로 읽는 중에 새 줄이 쌓여 「새 기록 N개 · 맨 위로」 알약이 떠 있게 한다. 이미 떠 있으면 그대로 둔다.
+ * 「다음 결정으로」는 결정 시트(수동 모드의 모달 — 뒤가 inert)를 열고, 선택하면 시트가 닫힌다. 알약이 떴어도 시트가 열려 있으면(알약은 줄이 쌓일 때 뜨고 시트는 그 직후 비동기로 열린다) 한 번 더 골라 닫는다 —
+ * 시트가 닫혀 포커스가 인생 화면으로 돌아온 상태에서 끝나야 다음 측정이 흔들리지 않는다.
+ */
+async function ensureJumpPill(page: Page): Promise<void> {
+  const sheetOpen = async (): Promise<boolean> => (await page.getByTestId('choice-panel').count()) > 0;
+  if ((await page.getByTestId('log-jump').count()) > 0 && !(await sheetOpen())) return;
   await page.getByTestId('log-list').evaluate((el) => el.scrollTo({ top: 220, behavior: 'instant' }));
-  for (let i = 0; i < 80 && (await page.getByTestId('log-jump').count()) === 0; i++) {
+  for (let i = 0; i < 80 && ((await page.getByTestId('log-jump').count()) === 0 || (await sheetOpen())); i++) {
     // 선택지가 떠 있으면 첫 선택지를, 아니면 「다음 결정으로」를 누른다(입력 가드 중이면 눌리지 않고 다음 바퀴에 다시)
     await page.evaluate(() => {
       const choice = document.querySelector('[data-testid="choice-panel"] button[data-testid^="choice-"]') as HTMLElement | null;
@@ -214,6 +219,14 @@ async function openDashWithJumpPill(page: Page): Promise<void> {
     await settleDash(page);
   }
   await expect(page.getByTestId('log-jump'), '알약이 떴다').toHaveCount(1);
+  await expect(page.getByTestId('choice-panel'), '결정 시트가 닫혀 있다').toHaveCount(0);
+  await expect(page.getByTestId('life-name'), '시트가 닫히면 포커스는 인생 화면으로 돌아온다').toBeFocused();
+}
+
+/** 50세 대시보드 + 알약 */
+async function openDashWithJumpPill(page: Page): Promise<void> {
+  await openM4Screen(page, 'dash-adult');
+  await ensureJumpPill(page);
 }
 
 for (const vpName of ['320x568', '360x740-touch', '1280x800', '640x400-zoom200']) {
@@ -228,16 +241,35 @@ for (const vpName of ['320x568', '360x740-touch', '1280x800', '640x400-zoom200']
         await openDashWithJumpPill(page);
         if (percent !== 100) await setRootFontPercent(page, percent);
         await settleDash(page);
-        const audit = await auditFocus(page, `${vp.name}/${percent}%/dash-adult+알약`, { headingTestId: 'life-name' });
+        // SPEC-010 이후 인생 기록 안에 「근거 보기」 단추가 줄마다 있다(50세 판 38개). 첫 단추에 포커스가 가면 브라우저가 기록을 맨 위로 끌어 올리고, 기록이 맨 위에 닿으면 알약은 **앱 설계대로** 사라진다(logOrder.isAtLogTop).
+        // 그래서 ① 순회마다 알약이 뜬 상태에서 시작하게 되돌리고(restore) ② 알약은 순회 도중 사라져도 되되 **실제로 문서에서 사라졌을 때만** 허용한다(mayVanish). 알약이 Shift+Tab 순서에서 단추 바로 앞인지는 아래에서 따로 본다.
+        const audit = await auditFocus(page, `${vp.name}/${percent}%/dash-adult+알약`, {
+          headingTestId: 'life-name',
+          mayVanish: ['log-jump'],
+          restore: async () => {
+            await ensureJumpPill(page);
+            await settleDash(page);
+          },
+        });
         expect(audit.violations, summarize(audit)).toEqual([]);
         for (const id of ['pause', 'skip', 'auto', 'tool-exit', 'log-list', 'log-jump']) {
           expect(audit.tabbables, `조작 요소 ${audit.tabbables.join(' → ')}`).toContain(id);
           expect(audit.forward.map((s) => s.id), `Tab 순회 ${id}`).toContain(id);
-          expect(audit.backward.map((s) => s.id), `Shift+Tab 순회 ${id}`).toContain(id);
+          // 알약은 첫 「근거 보기」 단추에 닿으면 사라지므로 뒤로 한 바퀴에는 못 든다 — 아래의 「알약 바로 뒤에서 Shift+Tab」이 대신 본다
+          if (id !== 'log-jump') expect(audit.backward.map((s) => s.id), `Shift+Tab 순회 ${id}`).toContain(id);
         }
         // 키보드 순서: 인생 기록 영역 다음이 알약이다(스크롤 영역 안, 줄 목록 앞)
         const order = audit.forward.map((s) => s.id);
         expect(order.indexOf('log-jump'), '알약은 영역 바로 다음').toBe(order.indexOf('log-list') + 1);
+        // 뒤로 순서: 알약 바로 뒤의 첫 「근거 보기」 단추에 **스크롤 없이** 포커스를 주고(기록이 맨 위로 끌리면 알약이 사라진다) Shift+Tab — 알약에 닿고 가려지지 않는다
+        await ensureJumpPill(page);
+        await settleDash(page);
+        await page.keyboard.press('Shift');
+        await page.getByTestId('why-btn').first().evaluate((el) => (el as HTMLElement).focus({ preventScroll: true }));
+        await page.keyboard.press('Shift+Tab');
+        await expect(page.getByTestId('log-jump'), '첫 「근거 보기」 단추에서 Shift+Tab → 알약').toBeFocused();
+        const pillStop = await sampleFocus(page);
+        expect(pillStop.judgement.violations, '알약 포커스(Shift+Tab으로 도착)').toEqual([]);
       });
     }
   });

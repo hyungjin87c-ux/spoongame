@@ -51,7 +51,15 @@ async function measure(page: Page): Promise<RawMeasure> {
   return page.evaluate(() => {
     const label = (el: Element): string => {
       const t = el.getAttribute('data-testid');
-      if (t) return t;
+      if (t) {
+        // 같은 data-testid가 문서에 여럿이면(SPEC-010 「근거 보기」 단추 `why-btn`은 시대 줄마다 하나) 정지점 이름을 구분한다: aria-controls가 그 중 하나뿐이면 그것으로, 아니면 DOM 순서로.
+        // 이름이 같으면 순회 대조(닿은 집합 = 조작 요소 집합)가 여러 요소를 하나로 뭉친다. 이름 계산은 measure·listTabbables·listRadioGroups가 똑같이 쓴다.
+        const same = Array.from(document.querySelectorAll(`[data-testid="${CSS.escape(t)}"]`));
+        if (same.length <= 1) return t;
+        const controls = el.getAttribute('aria-controls');
+        if (controls !== null && same.filter((e) => e.getAttribute('aria-controls') === controls).length === 1) return `${t}[${controls}]`;
+        return `${t}#${same.indexOf(el) + 1}`;
+      }
       const text = (el.getAttribute('aria-label') ?? el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 24);
       const cls = typeof (el as HTMLElement).className === 'string' && (el as HTMLElement).className ? `.${(el as HTMLElement).className.split(/\s+/)[0]}` : '';
       return `${el.tagName}${cls}${text ? `[${text}]` : ''}`;
@@ -155,13 +163,21 @@ export async function listTabbables(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const label = (el: Element): string => {
       const t = el.getAttribute('data-testid');
-      if (t) return t;
+      if (t) {
+        // 같은 data-testid가 여럿이면 이름을 구분한다 — 규칙은 measure()의 label과 같다
+        const same = Array.from(document.querySelectorAll(`[data-testid="${CSS.escape(t)}"]`));
+        if (same.length <= 1) return t;
+        const controls = el.getAttribute('aria-controls');
+        if (controls !== null && same.filter((e) => e.getAttribute('aria-controls') === controls).length === 1) return `${t}[${controls}]`;
+        return `${t}#${same.indexOf(el) + 1}`;
+      }
       const text = (el.getAttribute('aria-label') ?? el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 24);
       const cls = typeof (el as HTMLElement).className === 'string' && (el as HTMLElement).className ? `.${(el as HTMLElement).className.split(/\s+/)[0]}` : '';
       return `${el.tagName}${cls}${text ? `[${text}]` : ''}`;
     };
     const all = Array.from(document.body.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, summary, [tabindex]'));
     const out: string[] = [];
+    const els: HTMLElement[] = [];
     const seenGroups = new Set<string>();
     const radios = all.filter((e) => e instanceof HTMLInputElement && e.type === 'radio');
     for (const el of all) {
@@ -186,9 +202,41 @@ export async function listTabbables(page: Page): Promise<string[]> {
         seenGroups.add(groupKey);
       }
       out.push(label(el));
+      els.push(el);
     }
+    // 프로그램 focus()는 이 목록의 요소 **자체**에 건다(focusTabbable): 색인으로 다시 찾으면 순회 도중 화면이 바뀔 때 엉뚱한 요소에 걸린다
+    (window as unknown as { __auditTabbables: HTMLElement[] }).__auditTabbables = els;
     return out;
   });
+}
+
+/** 아직 응답을 못 받았고 실패하지도 않은(= 날아가는 중인) 요청 수 */
+async function pendingRequests(page: Page): Promise<number> {
+  try {
+    return (await page.requests()).filter((r) => r.existingResponse() === null && r.failure() === null).length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * 조작 요소 목록이 **자리 잡을 때까지** 기다렸다가 그 목록을 돌려준다. 시대의 창 10년 덩어리(SPEC-009 FM5 · SPEC-010)는 동적 `import()`로 **하나씩 차례로** 늦게 도착해 줄(「근거 보기」 단추·시대의 창 링크)을 한꺼번에 끼워 넣는다 —
+ * 차가운 개발 서버나 부하가 걸린 실행에서 목록을 뜬 뒤에 덩어리가 오면 순회가 「목록에 없는 요소에 닿았다」고 어긋난다(QA-009-FM6-010 3절의 흔들림이 아닌 F1 뒤 남은 어긋남).
+ * 날아가는 요청이 없고 목록이 100ms 간격 네 번 연속 같으면 자리 잡은 것이다(최대 15초). 마지막 listTabbables 호출이 요소 참조(focusTabbable이 쓰는)를 남긴다.
+ */
+async function listStableTabbables(page: Page): Promise<string[]> {
+  let list = await listTabbables(page);
+  let stable = 0;
+  const t0 = Date.now();
+  while (stable < 4 && Date.now() - t0 < 15_000) {
+    await page.waitForTimeout(100);
+    const next = await listTabbables(page);
+    const pending = await pendingRequests(page);
+    if (pending === 0 && next.length === list.length && next.every((id, k) => id === list[k])) stable++;
+    else stable = 0;
+    list = next;
+  }
+  return list;
 }
 
 /** 활성 가능한(disabled 아닌) 라디오들을 묶음(name)별로. 각 묶음의 이름·DOM 순서의 라디오 이름·선택된 라디오의 순서 */
@@ -202,7 +250,14 @@ export async function listRadioGroups(page: Page): Promise<RadioGroup[]> {
   return page.evaluate(() => {
     const label = (el: Element): string => {
       const t = el.getAttribute('data-testid');
-      if (t) return t;
+      if (t) {
+        // 같은 data-testid가 여럿이면 이름을 구분한다 — 규칙은 measure()의 label과 같다
+        const same = Array.from(document.querySelectorAll(`[data-testid="${CSS.escape(t)}"]`));
+        if (same.length <= 1) return t;
+        const controls = el.getAttribute('aria-controls');
+        if (controls !== null && same.filter((e) => e.getAttribute('aria-controls') === controls).length === 1) return `${t}[${controls}]`;
+        return `${t}#${same.indexOf(el) + 1}`;
+      }
       const text = (el.getAttribute('aria-label') ?? el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 24);
       const cls = typeof (el as HTMLElement).className === 'string' && (el as HTMLElement).className ? `.${(el as HTMLElement).className.split(/\s+/)[0]}` : '';
       return `${el.tagName}${cls}${text ? `[${text}]` : ''}`;
@@ -254,94 +309,129 @@ async function resetFocus(page: Page): Promise<void> {
 
 /**
  * Tab(또는 Shift+Tab)으로 한 칸씩 가며 포커스가 바뀔 때마다 측정한다. 이미 거친 요소로 돌아오거나 포커스가 body로 빠지면(한 바퀴) 멈춘다.
+ * 「이미 거친 요소」는 이름이 아니라 **요소 자체**로 가른다(브라우저 안의 WeakSet): 같은 이름의 요소가 여럿이어도(SPEC-010 「근거 보기」 단추처럼 줄마다 같은 data-testid) 순회가 도중에 끊기지 않는다.
  * 출발점은 부르는 쪽이 정한다: 앞으로 순회는 문서 맨 위(resetFocus)에서, 뒤로 순회는 마지막 조작 요소에 프로그램 focus()를 건 자리(auditFocus)에서 시작한다.
  */
 async function walk(page: Page, direction: 'forward' | 'backward', max: number): Promise<FocusStop[]> {
   const stops: FocusStop[] = [];
   const key = direction === 'forward' ? 'Tab' : 'Shift+Tab';
+  await page.evaluate(() => {
+    (window as unknown as { __walkSeen: WeakSet<Element> }).__walkSeen = new WeakSet<Element>();
+  });
   for (let i = 0; i < max; i++) {
     await page.keyboard.press(key);
     const stop = await sampleFocus(page);
     // 출발점이 마지막 요소였으면 첫 Tab이 문서 밖(body)으로 나갔다 오므로, 아직 하나도 못 거쳤을 때의 body는 한 번 더 누른다
     if (stop.sample.isBody && stops.length === 0 && i === 0) continue;
     if (stop.sample.isBody) break;
-    if (stops.some((s) => s.id === stop.id)) break;
+    const again = await page.evaluate(() => {
+      const seen = (window as unknown as { __walkSeen: WeakSet<Element> }).__walkSeen;
+      const active = document.activeElement;
+      if (active === null) return false;
+      if (seen.has(active)) return true;
+      seen.add(active);
+      return false;
+    });
+    if (again) break;
     stops.push(stop);
   }
   return stops;
 }
 
-/** DOM 순서 index번째 조작 요소에 프로그램 focus()를 건다 (listTabbables와 같은 규칙으로 고른다) */
-async function focusTabbable(page: Page, index: number): Promise<void> {
-  await page.evaluate((i) => {
-    const all = Array.from(document.body.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, summary, [tabindex]'));
-    const list: HTMLElement[] = [];
-    const seenGroups = new Set<string>();
-    const radios = all.filter((e) => e instanceof HTMLInputElement && e.type === 'radio');
-    for (const el of all) {
-      if (el.tabIndex < 0 || (el as HTMLButtonElement).disabled || el.closest('[inert]') !== null) continue;
-      let closedAncestor = false; // 닫힌 <details> 안(자기 <summary> 말고)은 Tab으로 닿지 않는다 — listTabbables와 같은 규칙
-      for (let d = el.parentElement?.closest('details') ?? null; d !== null; d = d.parentElement?.closest('details') ?? null) {
-        if (!d.open && !(el.tagName === 'SUMMARY' && el.parentElement === d)) closedAncestor = true;
-      }
-      if (closedAncestor) continue;
-      const cs = getComputedStyle(el);
-      if (cs.visibility === 'hidden' || cs.display === 'none' || el.getClientRects().length === 0) continue;
-      if (el instanceof HTMLInputElement && el.type === 'radio') {
-        if (seenGroups.has(el.name)) continue;
-        const group = radios.filter((r) => r instanceof HTMLInputElement && r.name === el.name && !r.disabled);
-        const stop = group.find((r) => (r as HTMLInputElement).checked) ?? group[0];
-        if (stop !== el) continue;
-        seenGroups.add(el.name);
-      }
-      list.push(el);
-    }
-    list[i]?.focus();
+/**
+ * 가장 최근 listTabbables가 모은 index번째 조작 요소 **자체**에 프로그램 focus()를 건다.
+ * 'gone' = 그 요소가 문서에서 사라졌다(앱이 스스로 없앴다) · 'missed' = focus()를 걸었는데 포커스가 그 요소에 가지 않았다 · 'ok'.
+ */
+async function focusTabbable(page: Page, index: number): Promise<'ok' | 'gone' | 'missed'> {
+  return page.evaluate((i) => {
+    const el = (window as unknown as { __auditTabbables?: HTMLElement[] }).__auditTabbables?.[i];
+    if (el === undefined || !el.isConnected) return 'gone';
+    el.focus();
+    return document.activeElement === el ? 'ok' : 'missed';
+  }, index);
+}
+
+/** 가장 최근 listTabbables가 모은 index번째 조작 요소가 지금 문서에 없는가 */
+async function isDetached(page: Page, index: number): Promise<boolean> {
+  return page.evaluate((i) => {
+    const el = (window as unknown as { __auditTabbables?: HTMLElement[] }).__auditTabbables?.[i];
+    return el === undefined || !el.isConnected;
   }, index);
 }
 
 export interface AuditOptions {
-  /** 한 방향 순회의 최대 칸 수 (무한 반복 방지) */
+  /** 한 방향 순회의 최대 칸 수 (무한 반복 방지). 기본: 조작 요소 수 + 5 (최소 60) */
   maxStops?: number;
   /** 프로그램 focus()로 건드릴 제목 선택자 (화면 전환 뒤 포커스가 가는 곳). 기본: 첫 화면 제목 */
   headingTestId?: string | null;
+  /**
+   * 순회 도중 앱이 **스스로 없애는** 조작 요소의 이름(예: 「새 기록 N개 · 맨 위로」 알약 `log-jump`는 인생 기록이 맨 위에 닿으면 사라진다 — logOrder.isAtLogTop).
+   * 이 이름의 요소는 순회가 닿지 못해도 **순회가 끝났을 때 문서에서 실제로 사라졌으면** 위반으로 세지 않는다(사라지지 않았는데 못 닿았으면 위반이다).
+   */
+  mayVanish?: string[];
+  /**
+   * 화면을 처음 잰 상태로 되돌리는 함수. 주면 Shift+Tab 순회와 프로그램 focus() 순회 **직전마다** 부르고 그 순회의 조작 요소 목록을 새로 만들어 대조한다(Tab 순회는 처음 상태 그대로 돈다).
+   * 순회가 화면을 바꾸는 화면(`mayVanish`가 있는 화면)이 순회마다 같은 상태에서 시작하게 한다. 방향키(라디오) 순회에는 쓰지 않는다.
+   */
+  restore?: () => Promise<void>;
 }
 
 /** 화면 하나(이미 열려 있는 상태)의 포커스 가림을 전부 점검한다. 위반은 report.violations에 모은다. */
 export async function auditFocus(page: Page, label: string, options: AuditOptions = {}): Promise<FocusAudit> {
-  const maxStops = options.maxStops ?? 60;
   const headingTestId = options.headingTestId === undefined ? 'title-heading' : options.headingTestId;
+  const mayVanish = new Set(options.mayVanish ?? []);
   const violations: string[] = [];
   const note = (path: string, stops: FocusStop[]) => {
     stops.forEach((s, n) => {
       for (const v of s.judgement.violations) violations.push(`[${label}] ${path} ${n + 1}번째(scrollY ${s.scrollY}): ${v}`);
     });
   };
+  /** 순회가 닿지 못한 조작 요소. `mayVanish`에 든 요소는 지금 문서에서 실제로 사라졌을 때만 뺀다 */
+  const unreachedOf = async (list: string[], reached: Set<string>): Promise<string[]> => {
+    const out: string[] = [];
+    for (const id of [...new Set(list)]) {
+      if (reached.has(id)) continue;
+      if (mayVanish.has(id) && (await isDetached(page, list.indexOf(id)))) continue;
+      out.push(id);
+    }
+    return out;
+  };
+  /** 순회 직전에 화면을 되돌리고(restore가 있으면) 그 순회의 조작 요소 목록을 새로 만든다. 없으면 처음 목록 그대로 */
+  const startPass = async (): Promise<string[]> => {
+    if (options.restore === undefined) return tabbables;
+    await options.restore();
+    await page.keyboard.press('Shift'); // 키보드 사용 중이라는 신호(:focus-visible)를 다시
+    return listStableTabbables(page);
+  };
 
-  const tabbables = await listTabbables(page);
+  const tabbables = await listStableTabbables(page);
+  // 한 방향 순회의 상한: 기본은 조작 요소 수 + 여유 5(SPEC-010 이후 50세 판은 「근거 보기」 단추만 38개라 고정 60칸으로는 모자란다). 상한은 무한 반복 방지용일 뿐 — 넘치면 forward 수가 조작 요소 수와 달라 단언이 깨진다.
+  const maxStopsOf = (list: string[]): number => options.maxStops ?? Math.max(60, list.length + 5);
   // 키보드 사용 중이라는 신호(:focus-visible)를 먼저 준다
   await page.keyboard.press('Shift');
   await resetFocus(page);
-  const forward = await walk(page, 'forward', maxStops);
+  const forward = await walk(page, 'forward', maxStopsOf(tabbables));
   note('Tab', forward);
 
   // 순회로 닿은 집합 = 화면의 조작 요소 집합 (공허 통과 방지)
   const reached = new Set(forward.map((s) => s.id));
   const expected = new Set(tabbables);
-  const missed = [...expected].filter((id) => !reached.has(id));
+  const missed = await unreachedOf(tabbables, reached);
   const extra = [...reached].filter((id) => !expected.has(id));
   if (missed.length > 0) violations.push(`[${label}] Tab 순회가 닿지 못한 조작 요소: ${missed.join(', ')}`);
   if (extra.length > 0) violations.push(`[${label}] Tab 순회가 닿았지만 조작 요소 목록에 없는 요소: ${extra.join(', ')}`);
 
   // 뒤로: 마지막 조작 요소에서 시작해 Shift+Tab으로 처음까지
+  const backList = await startPass();
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await focusTabbable(page, tabbables.length - 1);
+  const startResult = await focusTabbable(page, backList.length - 1);
+  if (startResult !== 'ok') violations.push(`[${label}] Shift+Tab 출발: 마지막 조작 요소(${backList[backList.length - 1]})에 focus()가 가지 않았다(${startResult})`);
   const last = await sampleFocus(page);
   const backward: FocusStop[] = [last];
-  backward.push(...(await walk(page, 'backward', maxStops)));
+  backward.push(...(await walk(page, 'backward', maxStopsOf(backList))));
   note('Shift+Tab', backward);
   const reachedBack = new Set(backward.map((s) => s.id));
-  const missedBack = [...expected].filter((id) => !reachedBack.has(id));
+  const missedBack = await unreachedOf(backList, reachedBack);
   if (missedBack.length > 0) violations.push(`[${label}] Shift+Tab 순회가 닿지 못한 조작 요소: ${missedBack.join(', ')}`);
 
   // 방향키: 라디오 묶음마다 선택된 라디오에서 시작해 ↓로 묶음의 활성 라디오를 한 바퀴 돈다(끝에서 처음으로 되돌아온다). 묶음의 모든 라디오를 쟀는지 대조한다 — Tab은 묶음당 하나만 멈춘다(R-234).
@@ -367,15 +457,23 @@ export async function auditFocus(page: Page, label: string, options: AuditOption
   note('방향키', arrow);
 
   // 프로그램 포커스: 모든 조작 요소에 focus()를 걸고, 걸기 전에 문서를 위·아래 끝으로 번갈아 보내 브라우저가 스크롤해야만 닿게 한다
+  const focusList = await startPass();
+  const focusGroups = options.restore === undefined ? groups : await listRadioGroups(page);
   const programmatic: FocusStop[] = [];
-  for (let i = 0; i < tabbables.length; i++) {
+  for (let i = 0; i < focusList.length; i++) {
     await page.evaluate((toBottom) => window.scrollTo(0, toBottom ? document.documentElement.scrollHeight : 0), i % 2 === 0);
-    await focusTabbable(page, i);
+    const result = await focusTabbable(page, i);
+    if (result === 'gone') {
+      // 앞서 건 focus()가 앱 쪽 변화를 일으켜 이 요소를 없앴다 — 허용 목록에 없으면 위반(조용히 건너뛰지 않는다)
+      if (!mayVanish.has(focusList[i])) violations.push(`[${label}] focus() ${i + 1}번째: ${focusList[i]}이(가) 문서에서 사라져 focus()를 걸 수 없다`);
+      continue;
+    }
+    if (result === 'missed') violations.push(`[${label}] focus() ${i + 1}번째: ${focusList[i]}에 focus()를 걸었는데 포커스가 그 요소에 가지 않았다`);
     programmatic.push(await sampleFocus(page));
   }
   // Tab 정지점이 아닌 나머지 라디오도(활성 가능한 모든 라디오) 같은 방식으로 — 묶음의 선택되지 않은 카드는 Tab으로는 안 닿지만 방향키·프로그램 포커스로 닿는다
   let radioTurn = 0;
-  for (const g of groups) {
+  for (const g of focusGroups) {
     for (let k = 0; k < g.ids.length; k++) {
       if (k === g.selected) continue;
       await page.evaluate((toBottom) => window.scrollTo(0, toBottom ? document.documentElement.scrollHeight : 0), radioTurn++ % 2 === 0);
