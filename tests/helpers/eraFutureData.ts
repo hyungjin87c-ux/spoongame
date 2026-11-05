@@ -66,7 +66,7 @@ export const FUTURE_TABLE: readonly EraWindow[] = [
   day('U41', 2090, '밤에 깨어나는 도시가 늘었습니다.', 'scenario'),
   day('U42', 2090, '바닷물이 드는 길이 해마다 늘었습니다.', 'official'),
   // 2100년대 + 끝 장면
-  ev('U43', 2100, '한국 인구가 지금의 절반으로 줄었습니다.', 'scenario'),
+  ev('U43', 2100, '한국 인구가 절반 아래로 줄었습니다.', 'scenario'),
   day('U44', 2100, '밤하늘에 우주 정거장이 늘었습니다.', 'scenario'),
   day('U45', 2100, '화면 속에 사는 사람이 늘었습니다.', 'scenario'),
   { id: 'era-end-horizon', years: [2110, 2130], kind: 'base', topic: '안내', line: '한 세기가 흘러 연표가 끝났습니다.', heavy: false, approved: true, draw: 'era-end-horizon' }, // U46
