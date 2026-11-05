@@ -51,9 +51,12 @@ export interface EraForesightNote {
 }
 
 export interface EraForesight {
-  /** 한두 건. 비면 이 객체를 두지 않는다(근거 종류 글자만 보인다) */
+  /**
+   * 한두 건. 근거 후보가 없는 줄은 이 객체를 두지 않는다(근거 종류 글자만 보인다) — 단, **근거가 없는 수저별 「먼저」 줄**(U12·U20, 마스터 2026-11-04)은 `notes`가 빈 목록이고 `byBand: true`인 칸으로
+   * 「수저별 차이는 게임의 설정입니다.」 한 줄만 보인다(소개 문장 없이).
+   */
   notes: readonly EraForesightNote[];
-  /** 부유한 쪽이 먼저 누린다는 장면(수저별 「먼저」 줄) — 칸 끝에 「수저별 차이는 게임의 설정입니다.」를 덧붙인다 */
+  /** 부유한 쪽이 먼저 누린다는 장면(수저별 「먼저」 줄) — 칸 끝에 「수저별 차이는 게임의 설정입니다.」를 덧붙인다. `notes`가 비면 이 켜짐이 필수다 */
   byBand?: true;
 }
 
@@ -89,7 +92,7 @@ export interface EraWindow {
    */
   basis?: EraBasis;
   /**
-   * 예측 근거 보기 글 (SPEC-010 FU11). 2027년 이후 장면에만, 근거 후보가 있는 장면에만 있다(후보 없는 줄은 근거 종류 글자만). 생성 파일이 `scripts/eraForesightNotes.ts`에서 싣는다.
+   * 예측 근거 보기 글 (SPEC-010 FU11). 2027년 이후 장면에만, 근거 후보가 있는 장면(과 근거 없는 수저별 「먼저」 줄의 안내 칸)에만 있다(그 밖의 후보 없는 줄은 근거 종류 글자만). 생성 파일이 `scripts/eraForesightNotes.ts`에서 싣는다.
    */
   foresight?: EraForesight;
 }

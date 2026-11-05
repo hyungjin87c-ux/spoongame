@@ -33,9 +33,13 @@ export const QUOTE_ROWS: readonly QuoteRow[] = SECTION_1.split('\n')
   });
 
 /**
- * 다른 번호의 행을 빌려 쓰는 줄 (문서 2절): 「부유한 쪽이 먼저」 줄은 기술 근거를 짝 줄의 행에서 가져오고(U15←U14, U22←U21, U28←U27), U35는 U18의, U43은 U23의 행을 쓴다.
+ * 다른 번호의 행을 빌려 쓰는 줄: 「부유한 쪽이 먼저」 줄은 기술 근거를 짝 줄의 행에서 가져온다(U15←U14, U22←U21).
+ *
+ * **번호가 같은 범위는 U26까지다.** 조사 문서 1절의 번호는 r2 개정(2026-11-04) 전의 옛 번호(U01~U44)이고 SPEC-010 본표는 U27부터 새 번호(U27~U46)다 — 묶음 B(U13~U26)까지는 같지만 U27 이후는 다르다
+ * (예: 새 U34 「빈 학교가 노인 시설로」는 문서의 U13·U31·U32행을, 새 U35 「AI가 일자리 대부분을」은 U07·U08행을 쓴다 — SPEC 표의 「quotes U##행」). 옛 표(U28←U27·U35←U18·U43←U23)를 그대로 두면
+ * 묶음 C가 들어올 때 새 번호가 옛 번호의 엉뚱한 행을 읽으므로, **묶음 C 회차에 새 번호 → 문서 행 번호 표로 바꾼다**(그때까지 U27 이후는 자기 번호의 행만 본다).
  */
-export const BORROWED_ROWS: Readonly<Record<string, readonly string[]>> = { U15: ['U14'], U22: ['U21'], U28: ['U27'], U35: ['U18'], U43: ['U23'] };
+export const BORROWED_ROWS: Readonly<Record<string, readonly string[]>> = { U15: ['U14'], U22: ['U21'] };
 
 /** 번호 `u`의 줄이 쓸 수 있는 문서 표 행 (자기 행 + 빌려 쓰는 행) */
 export function rowsFor(u: string): QuoteRow[] {

@@ -9,6 +9,8 @@ import { QUOTE_ROWS, QUOTES_DOC, rowsFor, type QuoteRow } from './helpers/foresi
  * SPEC-010 FU11 예측 근거 보기 — 근거 칸 글 시험 (표준 레인). 규칙의 정본은 SPEC-010 「예측 근거 규칙」(맨 아래 마스터 결정 포함), 출처는 `docs/data/future-foresight-quotes.md`의 1절 표다.
  *  - 글은 10년 덩어리에 함께 실려(`EraWindow.foresight`) 초기 로드에 들어가지 않는다. 사람·회사 이름은 이 칸에만 쓰이고, 시대 줄·그림의 금지어 시험(`tests/eraFuture.test.ts`의 `lineViolations`)은 줄에만 걸린다.
  *  - 근거 글이 늘어도(묶음 B·C) 이 시험이 그대로 잰다: 문서 표를 직접 읽어 사람·자료·연도·보도 기준·반대 표시를 견주고, 문서에 후보가 있는 예측 줄에는 글이 있어야 한다.
+ *  - 묶음 B(U13~U26, 2026-11-04)까지의 번호는 SPEC-010 번호와 조사 문서 1절의 번호가 같다. **U27부터는 다르다**(r2 개정으로 SPEC 번호가 바뀌었고 조사 문서는 옛 번호) — 묶음 C 회차에 `tests/helpers/foresightDoc.ts#BORROWED_ROWS`를 새 번호 표로 바꾼다.
+ *  - 근거 글이 없는 수저별 「먼저」 줄(U12·U20)은 `notes: []` + `byBand`인 안내 칸이다(마스터 2026-11-04).
  */
 
 /** 문서 행이 이 근거 한 건과 맞는가: 이름 · 자료 제목(이름 칸 또는 자료 칸에 — 「위와 같음」 행은 같은 이름의 다른 행에서) · 날짜의 해 */
@@ -26,6 +28,9 @@ const FORECAST_REAL: readonly EraWindow[] = REAL_FUTURE_WINDOWS.filter((w) => w.
 const WITH_NOTES: readonly EraWindow[] = REAL_WINDOWS.filter((w) => w.foresight !== undefined);
 const allNotes = (): Array<{ w: EraWindow; u: string; n: EraForesightNote }> => WITH_NOTES.flatMap((w) => w.foresight!.notes.map((n) => ({ w, u: uOf(w)!, n })));
 
+/** 부유한 쪽이 먼저 누린다는 줄(SPEC-010 「예측 근거 규칙」 4: U12·U15·U20·U22·U28·U32·U36·U40) — 그 전망은 찾지 못해 칸에 「수저별 차이는 게임의 설정입니다.」를 덧붙인다 */
+const FIRST = ['U12', 'U15', 'U20', 'U22', 'U28', 'U32', 'U36', 'U40'];
+
 const QUOTE_MARKS = /[“”"'‘’「」『』]/;
 /** 합쇼체 문장 끝: 「…습니다.」·「…ㅂ니다.」(아닙니다·됩니다) */
 const HAPSYO_END = /니다\.$/;
@@ -36,14 +41,16 @@ const yearsIn = (text: string): number[] => [...text.matchAll(/\b(19|20|21)\d\d(
 
 describe('근거 글의 모양 (FU11)', () => {
   it('근거 글이 있는 장면은 2027년 이후 예측 장면뿐이고, basis가 있으며, 근거는 한두 건이다 · 2026년 줄(U01·U02)과 끝 장면에는 근거 칸이 없다', () => {
-    expect(WITH_NOTES.length, '묶음 A에서 근거 글이 있는 장면').toBeGreaterThanOrEqual(8);
+    expect(WITH_NOTES.length, '묶음 A·B에서 근거 칸이 있는 장면: A 9(U03~U10 + U12 안내) + B 13(U13~U25, U20 안내)').toBe(22);
     for (const w of WITH_NOTES) {
       expect(w.years[0], w.id).toBeGreaterThan(ERA_ACTUAL_LAST_YEAR);
       expect(w.basis, `${w.id}: 근거 글은 근거 종류와 함께`).toBeDefined();
       expect(w.kind, w.id).not.toBe('base');
       const n = w.foresight!.notes.length;
-      expect(n, w.id).toBeGreaterThanOrEqual(1);
+      // 근거는 한두 건. 단 근거 후보가 없는 수저별 「먼저」 줄(U12·U20)은 0건 + byBand(설정 안내 한 줄만)
+      expect(n, w.id).toBeGreaterThanOrEqual(w.foresight!.byBand === true ? 0 : 1);
       expect(n, `${w.id}: 한두 줄`).toBeLessThanOrEqual(2);
+      if (n === 0) expect(w.band, `${w.id}: 근거 없는 안내 칸은 부유한 쪽 「먼저」 줄에만`).toBe('high');
     }
     for (const w of REAL_WINDOWS.filter((x) => x.years[0] <= ERA_ACTUAL_LAST_YEAR || x.kind === 'base')) expect(w.foresight, w.id).toBeUndefined();
   });
@@ -89,10 +96,12 @@ describe('근거 글의 모양 (FU11)', () => {
 });
 
 describe('출처 문서(docs/data/future-foresight-quotes.md)와 같다 — 문서에 없는 사람·기관·자료를 게임 안에 두지 않는다 (규칙 1)', () => {
-  it('문서 표를 읽었다: 69행, 그 가운데 U03~U12 행이 있다 (공허 통과 방지)', () => {
+  it('문서 표를 읽었다: 69행(R-608 회차에 비발트 행에 [반대·유보] 표시만 더했고 행 수는 그대로다), 그 가운데 U03~U25의 후보 행이 있다 (공허 통과 방지)', () => {
     expect(QUOTES_DOC.length).toBeGreaterThan(10_000);
     expect(QUOTE_ROWS.length).toBe(69);
-    for (const u of ['U03', 'U04', 'U05', 'U06', 'U07', 'U08', 'U09', 'U10']) expect(rowsFor(u).length, u).toBeGreaterThan(0);
+    for (const u of ['U03', 'U04', 'U05', 'U06', 'U07', 'U08', 'U09', 'U10', 'U13', 'U14', 'U15', 'U16', 'U17', 'U18', 'U19', 'U21', 'U22', 'U23', 'U24', 'U25']) expect(rowsFor(u).length, u).toBeGreaterThan(0);
+    // 비발트 행은 6절의 집계(기본소득 효과 = 반대·유보)와 맞게 [반대…] 표시가 있다 → 그 근거 글은 counter다
+    expect(QUOTE_ROWS.find((r) => r.who.includes('비발트'))?.gap).toMatch(/\[반대·유보\]/);
   });
 
   it('근거 한 건마다 그 줄의 번호(또는 빌려 쓰는 번호)로 적힌 문서 행이 있다: 사람·기관 이름 ⊂ 행의 이름 칸, 자료 제목 ⊂ 행의 이름·자료 칸, 자료의 해 = 행 날짜의 해', () => {
@@ -133,16 +142,23 @@ describe('출처 문서(docs/data/future-foresight-quotes.md)와 같다 — 문�
     expect(checked, '이 규칙이 실제로 일한다: 커즈와일 2029 · AI 연구자 설문 2047').toBeGreaterThanOrEqual(2);
   });
 
-  it('후보가 있는 예측 줄에는 근거 글이 있고, 후보가 없는 줄(U11·U12·U20·U26)은 근거 종류 글자만 둔다 — 문서에 행이 있는 번호만 글이 있다', () => {
+  it('후보가 있는 예측 줄에는 근거 글이 있고, 후보가 없는 줄(U11·U12·U20·U26)은 근거 종류 글자만 두되 부유한 쪽 「먼저」 줄(U12·U20)만 설정 안내 한 줄(notes 0건 + byBand)을 둔다 — 문서에 행이 있는 번호만 글이 있다', () => {
     for (const w of FORECAST_REAL) {
       const u = uOf(w);
       expect(u, `${w.id}`).toBeDefined();
       const candidates = rowsFor(u!).length;
-      if (candidates === 0) expect(w.foresight, `${w.id} (${u}): 문서에 후보가 없는 줄에는 근거 글을 두지 않는다`).toBeUndefined();
-      else expect(w.foresight, `${w.id} (${u}): 문서에 후보 ${candidates}행이 있는데 근거 글이 없다`).toBeDefined();
+      if (candidates === 0) {
+        if (FIRST.includes(u!)) expect(w.foresight, `${w.id} (${u}): 후보가 없는 「먼저」 줄은 설정 안내 한 줄만`).toEqual({ notes: [], byBand: true });
+        else expect(w.foresight, `${w.id} (${u}): 문서에 후보가 없는 줄에는 근거 글을 두지 않는다`).toBeUndefined();
+      } else {
+        expect(w.foresight, `${w.id} (${u}): 문서에 후보 ${candidates}행이 있는데 근거 글이 없다`).toBeDefined();
+        expect(w.foresight!.notes.length, `${w.id} (${u}): 후보가 있으면 근거 글 한 건 이상`).toBeGreaterThanOrEqual(1);
+      }
     }
     const none = FORECAST_REAL.filter((w) => w.foresight === undefined).map(uOf);
-    expect(none).toEqual(expect.arrayContaining(['U11', 'U12']));
+    expect(none).toEqual(expect.arrayContaining(['U11', 'U26']));
+    const onlyNote = FORECAST_REAL.filter((w) => w.foresight !== undefined && w.foresight.notes.length === 0).map(uOf);
+    expect(onlyNote).toEqual(expect.arrayContaining(['U12', 'U20']));
     for (const u of ['U11', 'U12', 'U20', 'U26']) expect(rowsFor(u).length, `${u}: 문서에 후보가 없다`).toBe(0);
   });
 
@@ -154,8 +170,8 @@ describe('출처 문서(docs/data/future-foresight-quotes.md)와 같다 — 문�
 });
 
 describe('수저별 「먼저」 줄과 가상 시나리오의 약한 근거 (규칙 4)', () => {
-  const FIRST = ['U12', 'U15', 'U20', 'U22', 'U28']; // 부유한 쪽이 먼저 누린다는 줄 — 그 전망은 찾지 못했다
-  const AGING_OR_MIND = ['U21', 'U22', 'U27', 'U28']; // 노화·의식 이전 — 반대 근거 한 건 필수
+  // (FIRST는 파일 맨 위 상수 — 부유한 쪽이 먼저 누린다는 줄)
+  const AGING_OR_MIND = ['U21', 'U22', 'U27', 'U28', 'U31', 'U32']; // 노화(2050·2075)·의식 이전(2065) — 반대 근거 한 건 필수
 
   it('근거 글이 있는 「먼저」 줄은 byBand가 켜져 있고, byBand는 「먼저」 줄에만 켜져 있다 (칸 끝에 「수저별 차이는 게임의 설정입니다.」)', () => {
     for (const w of WITH_NOTES) {
@@ -167,10 +183,25 @@ describe('수저별 「먼저」 줄과 가상 시나리오의 약한 근거 (�
     expect(foresightLines({ notes: sample.notes })).toHaveLength(1);
   });
 
-  it('노화(U21·U22)·의식 이전(U27·U28) 줄에 근거 글이 있으면 반대 근거(counter)가 한 건 이상 있다 (묶음 B·C가 들어오면 처음 잰다)', () => {
-    for (const w of WITH_NOTES) {
-      if (AGING_OR_MIND.includes(uOf(w)!)) expect(w.foresight!.notes.some((n) => n.counter === true), `${w.id} (${uOf(w)})`).toBe(true);
+  it('근거 글이 없는 「먼저」 줄(U12·U20)은 notes 0건 + byBand인 칸이다 — 칸에는 설정 안내 한 줄만 나온다 (마스터 2026-11-04)', () => {
+    const only = WITH_NOTES.filter((w) => w.foresight!.notes.length === 0);
+    expect(only.map(uOf).sort()).toEqual(['U12', 'U20']);
+    for (const w of only) {
+      expect(w.foresight, w.id).toEqual({ notes: [], byBand: true });
+      expect(foresightLines(w.foresight!), w.id).toEqual(['수저별 차이는 게임의 설정입니다.']);
+      expect(w.basis, w.id).toBe(w.id === 'era-2030s-high-paid-care-living' ? 'expert' : 'official');
     }
+    expect(foresightLines({ notes: [], byBand: true })).toEqual(['수저별 차이는 게임의 설정입니다.']);
+  });
+
+  it('노화(U21·U22·U31·U32)·의식 이전(U27·U28) 줄에 근거 글이 있으면 반대 근거(counter)가 한 건 이상 있다 — 지금은 묶음 B의 U21·U22가 처음 잰다', () => {
+    const seen: string[] = [];
+    for (const w of WITH_NOTES) {
+      if (!AGING_OR_MIND.includes(uOf(w)!)) continue;
+      seen.push(uOf(w)!);
+      expect(w.foresight!.notes.some((n) => n.counter === true), `${w.id} (${uOf(w)})`).toBe(true);
+    }
+    expect(seen.sort(), '공허 통과 방지: 묶음 B의 노화 두 줄').toEqual(['U21', 'U22']);
   });
 
   it('가상 시나리오 줄의 근거 칸이 시점 차이를 숨기지 않는다: 2030 재교육(U07)은 2029·2047 두 시점을 모두 말한다', () => {
@@ -178,6 +209,13 @@ describe('수저별 「먼저」 줄과 가상 시나리오의 약한 근거 (�
     const text = foresightLines(u07.foresight!).join(' ');
     expect(text).toContain('2029년');
     expect(text).toContain('2047년');
+  });
+
+  it('묶음 B의 시점 차이도 숨기지 않는다: 노화 U21은 2029~2035와 2050, U22는 2036과 2050, 인도 U24는 2075와 2055, 사과밭 U23은 2090년대·2050년대와 2053, 뇌-컴퓨터 U14는 2024와 2044', () => {
+    const textOf = (u: string): string => foresightLines(WITH_NOTES.find((w) => uOf(w) === u)!.foresight!).join(' ');
+    for (const [u, years] of [['U21', ['2035년', '2050년']], ['U22', ['2036년', '2050년']], ['U24', ['2075년', '2055년']], ['U23', ['2090년대', '2050년대', '2053년']], ['U14', ['2024년', '2044년']]] as const) {
+      for (const y of years) expect(textOf(u), `${u}: ${y}`).toContain(y);
+    }
   });
 });
 
@@ -206,9 +244,9 @@ describe('이름의 범위: 사람·회사 이름은 근거 칸에만 있다 (�
     expect(d2030).toContain('샘 올트먼');
   });
 
-  it('근거 글이 실린 10년 덩어리는 REAL_DECADES의 일부다(2020·2030년대): 근거 글 바이트가 덩어리 예산에 들어간다', () => {
+  it('근거 글이 실린 10년 덩어리는 REAL_DECADES의 일부다(2020·2030·2040·2050년대): 근거 글 바이트가 덩어리 예산에 들어간다', () => {
     const decadesWithNotes = REAL_DECADES.filter(([, d]) => d.windows.some((w) => w.foresight !== undefined)).map(([y]) => y);
-    expect(decadesWithNotes).toEqual([2020, 2030]);
+    expect(decadesWithNotes).toEqual([2020, 2030, 2040, 2050]);
   });
 });
 

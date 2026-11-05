@@ -157,3 +157,22 @@ U23을 바꾸면 `ACTION_ALLOW_LINES`의 예외 줄이 가리키는 문장이 �
 - 판단 거리 2: 조사 문서 1절의 비발트 행에 [반대·유보] 표시를 단다(6절과 맞춤).
 - 판단 거리 3: 출시 전 대조 목록에 더한다(TODO).
 - 묶음 B 데이터 반영 때 3회차(변경분만)로 A를 다시 본다.
+
+## 반영 내역 (developer, 2026-11-04 — REV-010-UI-1 「마스터 처리」 기준, 커밋은 마스터가 만든다)
+
+검수자 diff는 해석·변형 없이 적용했다(R-608은 마스터 처리대로 ①을 r2 46행으로 바꿈). 적용 뒤 시험을 다시 돌렸다.
+
+| 지적 | 적용 | 곳(파일) | 시험 |
+|---|---|---|---|
+| R-608 ② U23 새 줄 · `ACTION_ALLOW_LINES` 0줄 | diff 그대로 | `tests/helpers/eraFutureData.ts`(U23), `tests/helpers/eraFutureForbidden.ts#ACTION_ALLOW_LINES`, `tests/eraFuture.test.ts` 「주인공 행동 낱말(2027년 이후)」 | 옛 줄 「…올라갔습니다.」이 이제 걸린다는 단언 포함 |
+| R-608 ① (마스터 처리: r2 46행으로) | 합성 표 `FUTURE_TABLE`을 SPEC 본표 U01~U46으로 갈고(U27~U46 r2), R-597 시험의 정규식이 번호 칸의 `U39 ○`와 `→ **가상 시나리오**`(굵게)를 읽게 하고 단언을 46행으로 | `tests/helpers/eraFutureData.ts`, `tests/eraFuture.test.ts` 「표의 줄·해·구간·무거움·basis가 SPEC-010 문서의 연표 표 원문과 같다」 | 46행 전부 맞음 |
+| FU7 번호 갈이 | 장수·집계(공식 10 · 전문가 4 · 가상 29)·band 13장·heavy U39·사건 해(2065·2075·2085·2095)·끝 장면 U46·가리기 U39→U41·U42·`['U15','U22','U32','U36']`(옛 U33·U40 주석) | `tests/eraFuture.test.ts` | 52개 통과 |
+| 나라 이름 시험 | `COUNTRY_NAMES`에 한국·미·중·미중을 더하고 허용 줄(U02·U24·U38·U43)과 낱말을 `COUNTRY_ALLOWED`로 따로 두고, 허용 줄에도 전쟁·충돌·정권·군사 낱말 0을 건다. 실제 데이터 쪽도 같은 허용 줄만 본다 | `tests/helpers/eraFutureForbidden.ts`, `tests/eraFuture.test.ts` 「나라 이름은 경제·인구·국제 질서 사실 줄에만…」 | 「미·중」·「한국」이 허용 줄 밖이면 멈춘다는 공허 방지 단언 포함 |
+| R-609 | diff 그대로(U03 기사 제목 → 「기본소득 제도화 착수 보도(아시아경제)」, U07 「내다본 해는…」, U08 시나리오 문장) | `scripts/eraForesightNotes.ts` → `npm run gen:era` → `d2020.ts`·`d2030.ts` | `tests/eraForesight.test.ts`, `gen:era -- --check` |
+| R-610 | diff 그대로(소개 문장 「이 장면과 관련된 말과 자료입니다.」) | `src/data/sceneText.ts#SCENE_TEXT.foresightIntro`, `tests/eraChip.test.tsx`, `e2e/era-chip.spec.ts` | `tests/eraChip.test.tsx`, e2e `era-chip` |
+| 판단 거리 1: 근거 없는 「먼저」 줄 안내 칸 | `EraForesight.notes` 빈 목록 + `byBand`(U12·U20). 생성기는 부유한 쪽 줄에만 notes 0건을 허용, 화면은 소개 문장 없이 안내 한 줄만 | `src/core/eraWindow.ts#EraForesight`, `scripts/genEraWindows.ts`, `src/ui/dash/EraRow.tsx`, `scripts/eraForesightNotes.ts` | `tests/eraChip.test.tsx` 「근거 글이 없는 수저별 「먼저」 줄…」, `tests/eraForesight.test.ts` |
+| 판단 거리 2: 비발트 행 [반대·유보] | 조사 문서 1절 행에 표시를 달았고, 그 근거 글(U06)에 `counter: true`가 필요해져 달았다(표 행 수 69 그대로 — `foresightDoc`의 행 수 단언은 바뀌지 않았다) | `docs/data/future-foresight-quotes.md`, `scripts/eraForesightNotes.ts` | `tests/eraForesight.test.ts` 「보도 기준 … 반대 근거」 |
+| 판단 거리 3: 출시 전 주소 대조 | TODO에 줄 추가 | `docs/TODO.md` | – |
+| 판단 거리 4 | 행 모양을 바꾸지 않았다. 두 시험을 함께 돌렸다 | – | `tests/eraFuture.test.ts`·`tests/eraForesight.test.ts` |
+
+묶음 B 데이터 반영은 `ai-log/2026-11-04_SPEC-010_dev-b.md`. 3회차(변경분만)로 A 코어를 다시 볼 때 이 회차의 변경 파일: `tests/eraFuture.test.ts`·`tests/helpers/eraFutureData.ts`·`tests/helpers/eraFutureForbidden.ts`(시험만), `src/core/eraWindow.ts`(타입 주석), `src/ui/dash/EraRow.tsx`(소개 문장 조건 한 줄).

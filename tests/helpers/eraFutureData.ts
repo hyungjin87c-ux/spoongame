@@ -4,7 +4,8 @@ import type { EraDecadeData } from '../../src/data/eraWindows/types';
 /**
  * SPEC-010 미래 연표의 시험 데이터 (코어 회차, 2026-11-03).
  *
- * `FUTURE_TABLE` = SPEC-010 「연표 표」 U01~U44를 **합성 장면**으로 옮긴 것이다 — 번호·해·누가 보나(`band`)·종류·무거움·줄·`basis`는 표 그대로. 그림 데이터(FU5)가 들어오기 전에도
+ * `FUTURE_TABLE` = SPEC-010 「연표 표」 U01~U46(2026-11-04 r2 반영 — 2060~2109는 r2 개정안의 20장, 형진 님 「이대로 그리기」)을 **합성 장면**으로 옮긴 것이다 — 번호·해·누가 보나(`band`)·종류·무거움·줄·`basis`는 표 그대로.
+ * 끝 장면은 U46이고 id만 SPEC의 `era-end-horizon`이다(R-608: 시험이 SPEC 표 원문을 직접 읽어 이 표와 견준다). 그림 데이터(FU5)가 들어오기 전에도
  * `eraOf`·`eraRowsOf`의 새 규칙(2026~2109 고르기, `basis`/`forecast`, 표 끝, 3해 연속 금지, 나이 규칙)을 **실제 문장 길이로** 재기 위한 것이고, `draw`는 id와 같은 자리표시다(조각 마크업은 없다).
  * 실제 데이터(`src/data/eraWindows/d2030.ts`~)가 들어오면 `tests/eraFuture.test.ts`의 「표 대조」가 줄·해·`basis`를 이 표와 견주어 어긋남을 잡는다. id는 표의 번호(`U01`…)이고 끝 장면만 SPEC의 id `era-end-horizon`이다.
  */
@@ -12,7 +13,7 @@ import type { EraDecadeData } from '../../src/data/eraWindows/types';
 const ev = (id: string, year: number, line: string, basis: EraBasis | undefined, over: Partial<EraWindow> = {}): EraWindow => ({ id, years: [year, year], kind: 'event', topic: '사회', line, heavy: false, approved: true, draw: id, ...(basis === undefined ? {} : { basis }), ...over });
 const day = (id: string, decade: number, line: string, basis: EraBasis, over: Partial<EraWindow> = {}): EraWindow => ({ id, years: [decade, decade + 9], kind: 'daily', topic: '생활', line, heavy: false, approved: true, draw: id, basis, ...over });
 
-/** SPEC-010 연표 표 U01~U44 (44장). 2026 = 사실(`basis` 없음), 2027~2109 = 예측(`basis` 필수), U44 = 끝 장면(`basis` 없음) */
+/** SPEC-010 연표 표 U01~U46 (46장, r2 반영 2026-11-04). 2026 = 사실(`basis` 없음), 2027~2109 = 예측(`basis` 필수), U46 = 끝 장면(`basis` 없음) */
 export const FUTURE_TABLE: readonly EraWindow[] = [
   // 2026~2029
   ev('U01', 2026, 'AI가 퍼지고 신입 공고는 줄었습니다.', undefined),
@@ -40,36 +41,38 @@ export const FUTURE_TABLE: readonly EraWindow[] = [
   // 2050년대
   ev('U21', 2050, '노화가 멈춘 사람들이 생겼습니다.', 'scenario'),
   ev('U22', 2050, '노화가 멈춘 집이 먼저 생겼습니다.', 'scenario', { band: 'high' }),
-  ev('U23', 2053, '사과 재배지가 북쪽으로 올라갔습니다.', 'official'),
+  ev('U23', 2053, '사과밭이 북쪽 산자락에만 남았습니다.', 'official'), // 형진 님 묶음 B 승인(2026-11-03)에서 바뀐 줄
   ev('U24', 2055, '인도가 세계 경제의 큰 축이 됐습니다.', 'scenario', { topic: '경제' }),
   day('U25', 2050, '낮 외출을 줄이라는 방송이 흘렀습니다.', 'official'),
   day('U26', 2050, '한 학년이 한 반뿐인 학교가 늘었습니다.', 'scenario'),
-  // 2060년대
-  ev('U27', 2065, '의식을 옮긴 디지털 인간이 생겼습니다.', 'scenario'),
-  ev('U28', 2065, '의식을 옮겨 둔 집이 먼저 생겼습니다.', 'scenario', { band: 'high' }),
-  day('U29', 2060, '동네에 이동 진료 차량이 찾아왔습니다.', 'scenario'),
-  day('U30', 2060, '일할 사람이 모자란 일터가 늘었습니다.', 'scenario'),
+  // 2060년대 (r2 개정, 2026-11-04)
+  ev('U27', 2065, '의식을 옮긴 디지털 인간이 거래됐습니다.', 'scenario'),
+  ev('U28', 2065, '의식을 옮겨 이어 가는 집이 생겼습니다.', 'scenario', { band: 'high' }),
+  day('U29', 2060, '사람이 떠난 마을에 빈집이 늘었습니다.', 'official'),
+  day('U30', 2060, '사람 없는 공장이 도시마다 생겼습니다.', 'scenario'),
   // 2070년대
-  ev('U31', 2078, '세계에서도 노인이 아이보다 많아졌습니다.', 'official'),
-  day('U32', 2070, '요양 시설에 머무는 노인이 늘었습니다.', 'official'),
-  day('U33', 2070, '일하는 나이가 길어진 일터가 늘었습니다.', 'official'),
+  ev('U31', 2075, '늙는 쪽과 늙지 않는 쪽으로 갈렸습니다.', 'scenario'),
+  ev('U32', 2075, '늙지 않는 사람이 늘었습니다.', 'scenario', { band: 'high' }),
+  day('U33', 2070, '로봇이 노인을 돌보는 시설이 늘었습니다.', 'scenario'),
+  day('U34', 2070, '빈 학교가 노인 시설로 바뀌었습니다.', 'scenario'),
   // 2080년대
-  ev('U34', 2085, '세계 인구가 늘기를 멈췄습니다.', 'official'),
-  day('U35', 2080, '교실에 학생이 몇 안 남았습니다.', 'scenario'),
-  day('U36', 2080, '폭염에 바깥출입을 막은 날이 늘었습니다.', 'official'),
-  // 2090년대 — U37은 무거운 장면(○) 하나
-  ev('U37', 2095, '큰비에 학교 체육관이 대피소가 됐습니다.', 'official', { heavy: true, topic: '재난' }),
-  ev('U38', 2095, '높은 곳으로 옮긴 집이 늘었습니다.', 'official', { band: 'high' }),
-  day('U39', 2090, '해안 도로에 모래주머니가 쌓였습니다.', 'official'),
-  day('U40', 2090, '낮을 피해 밤에 일하는 곳이 늘었습니다.', 'official'),
+  ev('U35', 2085, 'AI가 일자리 대부분을 맡았습니다.', 'scenario', { topic: '경제' }), // 경제 장면이라 ○가 아니다(그림 수위 9)
+  ev('U36', 2085, '일하지 않아도 사는 집이 늘었습니다.', 'scenario', { band: 'high' }),
+  day('U37', 2080, '바람과 햇빛이 전기의 중심이 됐습니다.', 'scenario'),
+  day('U38', 2080, '미·중 두 진영으로 세계가 갈렸습니다.', 'scenario'), // 형진 님 답(2026-11-04): 국제 질서는 나라 이름으로 — 「미·중」은 미국·중국의 줄임말, 진영의 갈림만 말한다(가상 전쟁 0)
+  // 2090년대 — U39는 무거운 장면(○) 하나
+  ev('U39', 2095, '물에 잠긴 동네를 사람들이 떠났습니다.', 'official', { heavy: true, topic: '재난' }),
+  ev('U40', 2095, '방벽이 도시를 둘러 물을 막았습니다.', 'scenario', { band: 'high' }),
+  day('U41', 2090, '밤에 깨어나는 도시가 늘었습니다.', 'scenario'),
+  day('U42', 2090, '바닷물이 드는 길이 해마다 늘었습니다.', 'official'),
   // 2100년대 + 끝 장면
-  ev('U41', 2100, '예전 지도와 해안선이 달라졌습니다.', 'official'),
-  day('U42', 2100, '한여름 낮의 거리가 텅 비었습니다.', 'scenario'),
-  day('U43', 2100, '심는 작물이 해마다 달라졌습니다.', 'scenario'),
-  { id: 'era-end-horizon', years: [2110, 2130], kind: 'base', topic: '안내', line: '여기서부터는 그려진 연표가 없습니다.', heavy: false, approved: true, draw: 'era-end-horizon' },
+  ev('U43', 2100, '한국 인구가 지금의 절반으로 줄었습니다.', 'scenario'),
+  day('U44', 2100, '밤하늘에 우주 정거장이 늘었습니다.', 'scenario'),
+  day('U45', 2100, '화면 속에 사는 사람이 늘었습니다.', 'scenario'),
+  { id: 'era-end-horizon', years: [2110, 2130], kind: 'base', topic: '안내', line: '한 세기가 흘러 연표가 끝났습니다.', heavy: false, approved: true, draw: 'era-end-horizon' }, // U46
 ];
 
-/** 표 끝 장면(U44)을 뺀 43장 — 2026~2109만 */
+/** 표 끝 장면(U46)을 뺀 45장 — 2026~2109만 */
 export const FUTURE_NO_END: readonly EraWindow[] = FUTURE_TABLE.filter((w) => w.kind !== 'base');
 export const END_SCENE: EraWindow = FUTURE_TABLE.find((w) => w.kind === 'base')!;
 export const futureById = (id: string): EraWindow => FUTURE_TABLE.find((w) => w.id === id)!;

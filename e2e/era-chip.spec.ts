@@ -112,7 +112,7 @@ test('근거 보기: 근거 종류 글자를 누르면 칸이 열리고 닫힌�
   await btn.click();
   await expect(btn).toHaveAttribute('aria-expanded', 'true');
   await expect(body).toBeVisible();
-  await expect(body).toContainText('이 장면을 그릴 때 참고한 말과 자료입니다.');
+  await expect(body).toContainText('이 장면과 관련된 말과 자료입니다.');
   await expect(body).toContainText('통계청, 정부 통계기관, 정책브리핑');
   await expect(body).toContainText('2023년');
   await expect(body).toContainText('조영태, 서울대 보건대학원 교수');

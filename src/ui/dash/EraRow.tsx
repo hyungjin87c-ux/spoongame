@@ -17,6 +17,7 @@ import { FitPair } from '../FitPair';
  *    칩 글자는 시각용(`aria-hidden`)이고 읽기 이름 「예측, <근거 종류>.」는 근거 종류 글자(단추의 접근 이름 또는 숨은 글)가 맡는다. 줄이 길어지거나 글자가 커지면 칩이 다음 줄로 내려가고 가로 넘침은 0이다.
  *  - **예측 근거 보기 (FU11)**: 장면에 근거 글(`row.foresight`)이 있으면 근거 종류 글자가 단추가 되어 문장 아래 접이식 칸을 연다(기본 닫힘, 펼침 상태는 저장하지 않는다 — 줄이 바뀌면 닫힌다).
  *    글(사람 · 직함 · 자료 · 연도: 자기 말 요약)은 10년 덩어리에서 오고 사람·회사 이름은 이 칸에만 있다. 가려진 줄은 가림을 펼치기 전에는 근거 단추도 내지 않는다(근거가 가린 장면의 내용을 말하지 않게).
+ *    근거 글이 없는 수저별 「먼저」 줄(U12·U20)의 칸은 소개 문장 없이 「수저별 차이는 게임의 설정입니다.」 한 줄만 있다(`foresight.notes`가 빈 목록 + `byBand`, 마스터 2026-11-04).
  *  - 무거운 장면(`veiled`: 「무거운 장면 가리기」가 켜져 있고 재난·참상에 가까운 장면)은 기존 가리기 부품과 같은 모양 — 안내 + 「펼쳐 보기」, 원문은 `hidden`. 표지와 겹선은 가리지 않는다.
  */
 
@@ -103,7 +104,7 @@ export function EraLogRow({ row, open, onToggle }: { row: EraRow; open: boolean;
         )}
         {foresight === undefined ? null : (
           <div className="log__why" id={whyId} hidden={!(whyOpen && canWhy)} data-testid="why-body">
-            <p className="log__why-intro">{SCENE_TEXT.foresightIntro}</p>
+            {foresight.notes.length > 0 ? <p className="log__why-intro">{SCENE_TEXT.foresightIntro}</p> : null}
             <ul>
               {foresightLines(foresight).map((text, i) => {
                 const note = foresight.notes[i];

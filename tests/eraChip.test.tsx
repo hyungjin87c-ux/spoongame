@@ -93,11 +93,22 @@ describe('예측 근거 보기 (FU11)', () => {
   it('칸의 글: 소개 한 줄 + 근거 건마다 한 줄(사람, 직함, 자료, 연도: 요약 어긋남), 보도 기준 표시, 반대 근거 표시, 수저별 설정 안내 한 줄', () => {
     const out = rowHtml(row({ basis: 'scenario', foresight: FORESIGHT }));
     const body = out.slice(out.indexOf('data-testid="why-body"'));
-    expect(body).toContain('<p class="log__why-intro">이 장면을 그릴 때 참고한 말과 자료입니다.</p>');
+    expect(body).toContain('<p class="log__why-intro">이 장면과 관련된 말과 자료입니다.</p>');
     expect(body).toContain('가나다, 교수, 논문 「시험」, 2024년: 내다봤습니다. 발언은 2029년, 게임은 2030년입니다.</li>');
     expect(body).toContain('<li data-counter="true"><strong class="log__why-tag">반대 근거</strong> 라마바, 기관, 보도, 2025년, 보도 기준: 분석했습니다.</li>');
     expect(body).toContain('<li>수저별 차이는 게임의 설정입니다.</li>');
     expect((body.match(/<li/g) ?? []).length).toBe(3);
+  });
+
+  it('근거 글이 없는 수저별 「먼저」 줄(U12·U20)은 notes 0건 + byBand인 칸 — 단추는 있고 칸에는 소개 문장 없이 「수저별 차이는 게임의 설정입니다.」 한 줄만 있다 (마스터 2026-11-04)', () => {
+    const only: EraForesight = { notes: [], byBand: true };
+    const out = rowHtml(row({ basis: 'expert', foresight: only }));
+    expect(out).toContain('aria-label="예측, 전문가 전망 바탕. 근거 보기"');
+    const body = out.slice(out.indexOf('data-testid="why-body"'));
+    expect(body).not.toContain('log__why-intro');
+    expect(body).toContain('<li>수저별 차이는 게임의 설정입니다.</li>');
+    expect((body.match(/<li/g) ?? []).length).toBe(1);
+    expect(body).not.toContain('log__why-tag');
   });
 
   it('근거 글이 없는 예측 줄(후보 없는 줄)은 단추도 칸도 없다 — 근거 종류 글자만', () => {

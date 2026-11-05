@@ -34,7 +34,8 @@ export const SCENE_TEXT = {
   forecastBasis: { official: '공식 전망 바탕', expert: '전문가 전망 바탕', scenario: '가상 시나리오' } as const satisfies Record<EraBasis, string>,
   /** 근거 종류 글자를 누르면 펼쳐지는 「예측 근거 보기」 (SPEC-010 FU11) */
   foresightOpen: '근거 보기',
-  foresightIntro: '이 장면을 그릴 때 참고한 말과 자료입니다.',
+  /** 근거 칸 소개 한 줄 (REV-010-UI-1 R-610: 근거는 그림이 승인된 뒤에 조사됐고 U09의 근거는 반대 근거뿐이라 「그릴 때 참고한」은 사실과 다르다). 근거 글이 한 건도 없는 칸(수저별 안내만)에는 소개를 두지 않는다 */
+  foresightIntro: '이 장면과 관련된 말과 자료입니다.',
   foresightReported: '보도 기준',
   foresightCounter: '반대 근거',
   foresightByBand: '수저별 차이는 게임의 설정입니다.',
