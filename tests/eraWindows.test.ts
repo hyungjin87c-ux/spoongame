@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ERA_FIRST_DECADE, ERA_LAST_DECADE, ERA_LINE_MAX, bandOfWealth, eraDecadeOf, eraOf, eraRowsOf, type EraBand, type EraContext, type EraWindow } from '../src/core/eraWindow';
+import { ERA_FIRST_DECADE, ERA_LAST_DECADE, ERA_LAST_YEAR, ERA_LINE_MAX, bandOfWealth, eraDecadeOf, eraOf, eraRowsOf, type EraBand, type EraContext, type EraWindow } from '../src/core/eraWindow';
 import { ERA_DECADES_WITH_DATA, ERA_DECADE_LOADERS } from '../src/data/eraWindows';
 import { ERA_DECADE as D1940 } from '../src/data/eraWindows/d1940';
 import { ERA_DECADE as D1950 } from '../src/data/eraWindows/d1950';
@@ -13,21 +13,26 @@ import { ERA_DECADE as D2020 } from '../src/data/eraWindows/d2020';
 import { ERA_DECADE as D2030 } from '../src/data/eraWindows/d2030';
 import { ERA_DECADE as D2040 } from '../src/data/eraWindows/d2040';
 import { ERA_DECADE as D2050 } from '../src/data/eraWindows/d2050';
+import { ERA_DECADE as D2060 } from '../src/data/eraWindows/d2060';
+import { ERA_DECADE as D2070 } from '../src/data/eraWindows/d2070';
+import { ERA_DECADE as D2080 } from '../src/data/eraWindows/d2080';
+import { ERA_DECADE as D2090 } from '../src/data/eraWindows/d2090';
+import { ERA_DECADE as D2100 } from '../src/data/eraWindows/d2100';
 import type { EraDecadeData } from '../src/data/eraWindows/types';
 import { eraDecadeIfLoaded, loadEraDecade, resetFamilyArtForTest } from '../src/data/familyArtLoader';
 import { SCENE_LIGHT } from '../src/data/familyArt/svg';
 import { ALLOWED_CLASSES, parseSvgMarkup, type SvgNode } from '../src/ui/svgNodes';
-import { realCovered } from './helpers/eraFutureData';
 
 /**
  * 시대의 창 데이터와 고르기 (SPEC-009 FM5·FM5b, FT1~FT6, family-model.md 9절 · era-window.md 3-1·8절 · T-ERA).
- * FM5b에서 형진 님이 승인한 43장(r3 15 + 1987년 12월 1 + r4 27)이, 시대의 창 r5 반영(2026-11-02)에서 나머지 51장(r5 40 + r5b 11)이, SPEC-010 묶음 A(2026-11-03)에서 미래 연표 12장(r6 U01~U12)이, 묶음 B(2026-11-04)에서 14장(r7 U13~U26)이 들어와 **승인 120장**이 10년 덩어리 열두 개(1940~2050년대)에 있다. 데이터 파일은 `npm run gen:era`가 designer 조각에서 만든 생성 파일이고,
+ * FM5b에서 형진 님이 승인한 43장(r3 15 + 1987년 12월 1 + r4 27)이, 시대의 창 r5 반영(2026-11-02)에서 나머지 51장(r5 40 + r5b 11)이, SPEC-010 묶음 A(2026-11-03)에서 미래 연표 12장(r6 U01~U12)이, 묶음 B(2026-11-04)에서 14장(r7 U13~U26)이, 묶음 C(2026-11-05)에서 20장(r9 U27~U46, 끝 장면 포함)이 들어와 **승인 140장**이 10년 덩어리 열일곱 개(1940~2100년대)에 있다. 데이터 파일은 `npm run gen:era`가 designer 조각에서 만든 생성 파일이고,
  * 이 시험은 그 내용(승인·형식·색 class·defs 한 번)과 크기 예산, 고르기 규칙(`eraOf`)을 합성 데이터와 진짜 데이터 둘로 잠근다.
  * 「승인한 것만」(FT3): `EraWindow.approved`의 타입이 `true`뿐이라 미승인 장면은 데이터 파일에 쓰는 순간 `npm run typecheck`(= build의 첫 단계)가 막고, 이 시험이 파일 내용과 원문을 한 번 더 점검한다.
  */
 
 const DECADES: Array<[number, EraDecadeData]> = [
   [1940, D1940], [1950, D1950], [1960, D1960], [1970, D1970], [1980, D1980], [1990, D1990], [2000, D2000], [2010, D2010], [2020, D2020], [2030, D2030], [2040, D2040], [2050, D2050],
+  [2060, D2060], [2070, D2070], [2080, D2080], [2090, D2090], [2100, D2100],
 ];
 const ALL: readonly EraWindow[] = DECADES.flatMap(([, d]) => d.windows);
 /** SPEC-010 전의 2020년대 덩어리 gzip(승인 11장, `JSON.stringify` 기준) — 2027년 이후가 늘린 양을 재는 기준선. 이 값은 고치지 않는다 */
@@ -53,22 +58,23 @@ async function readText(relative: string): Promise<string> {
 }
 
 describe('데이터 파일 — 승인한 것만 (FT3)', () => {
-  it('10년 덩어리 12개가 모두 있고, 승인된 120장이 열두 덩어리에 있다(장면 6·8·10·7·10·14·15·13·16·7·8·6) — r3 16 + r4 27 + r5 40 + r5b 11 + r6 12 + r7 14 (scripts/genEraWindows.ts의 승인 장수 가드와 같은 수. 2020년대는 기존 11장 + U01~U05, 2030년대는 U06~U12, 2040년대는 U13~U20, 2050년대는 U21~U26)', () => {
-    expect(DECADES.map(([d]) => d)).toEqual([1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050]);
-    expect(DECADES.map(([, d]) => d.windows.length)).toEqual([6, 8, 10, 7, 10, 14, 15, 13, 16, 7, 8, 6]);
-    expect(ALL.length).toBe(120);
-    expect([...ERA_DECADES_WITH_DATA]).toEqual([1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050]);
+  it('10년 덩어리 17개가 모두 있고, 승인된 140장이 열일곱 덩어리에 있다(장면 6·8·10·7·10·14·15·13·16·7·8·6·4·4·4·4·4) — r3 16 + r4 27 + r5 40 + r5b 11 + r6 12 + r7 14 + r9 20 (scripts/genEraWindows.ts의 승인 장수 가드와 같은 수. 2020년대는 기존 11장 + U01~U05, 2030년대는 U06~U12, 2040년대는 U13~U20, 2050년대는 U21~U26, 2060~2100년대는 U27~U46 — 2100년대는 끝 장면 U46 포함)', () => {
+    expect(DECADES.map(([d]) => d)).toEqual([1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]);
+    expect(DECADES.map(([, d]) => d.windows.length)).toEqual([6, 8, 10, 7, 10, 14, 15, 13, 16, 7, 8, 6, 4, 4, 4, 4, 4]);
+    expect(ALL.length).toBe(140);
+    expect([...ERA_DECADES_WITH_DATA]).toEqual([1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]);
     expect(Object.keys(ERA_DECADE_LOADERS).map(Number)).toEqual(DECADES.map(([d]) => d));
   });
 
-  it('승인된 120장의 구성: 사건 71 / 일상 49, 무거운 장면 20장(재난·정치만), 수저 구간 분기 23장(변주 일상 16 + 사건 7: 2009년 둘 · 2026 U02 · 2030 U06·U08 · 2044 U15 · 2050 U22)', () => {
-    expect(ALL.filter((x) => x.kind === 'event').length).toBe(71); // 승인 43장의 사건 24 + r5 사건 20 + r5b 11(모두 사건) + r6 사건 8(U01~U08) + r7 사건 8(U13~U16·U21~U24)
-    expect(ALL.filter((x) => x.kind === 'daily').length).toBe(49); // 승인 43장의 일상 19(변주 4 포함) + r5 일상 12 + r5 변주 8 + r6 일상 4(U09~U12, 변주 둘) + r7 일상 6(U17~U20·U25·U26, 변주 둘)
+  it('승인된 140장의 구성: 사건 80 / 일상 59 / 끝 장면 1, 무거운 장면 21장(재난·정치만), 수저 구간 분기 27장(변주 일상 16 + 사건 11: 2009년 둘 · 2026 U02 · 2030 U06·U08 · 2044 U15 · 2050 U22 · 2065 U28 · 2075 U32 · 2085 U36 · 2095 U40)', () => {
+    expect(ALL.filter((x) => x.kind === 'event').length).toBe(80); // 승인 43장의 사건 24 + r5 사건 20 + r5b 11(모두 사건) + r6 사건 8(U01~U08) + r7 사건 8(U13~U16·U21~U24) + r9 사건 9(U27·U28·U31·U32·U35·U36·U39·U40·U43)
+    expect(ALL.filter((x) => x.kind === 'daily').length).toBe(59); // 승인 43장의 일상 19(변주 4 포함) + r5 일상 12 + r5 변주 8 + r6 일상 4(U09~U12, 변주 둘) + r7 일상 6(U17~U20·U25·U26, 변주 둘) + r9 일상 10(U29·U30·U33·U34·U37·U38·U41·U42·U44·U45, 변주 없음)
+    expect(ALL.filter((x) => x.kind === 'base').map((x) => x.id)).toEqual(['era-end-horizon']); // r9 끝 장면 U46(2110~2130) — 표 끝 뒤를 덮는 한 장
     expect(ALL.filter((x) => x.heavy).map((x) => x.id).sort()).toEqual([
       'era-1945-liberation-street', 'era-1948-polling-queue', 'era-1950-refugee-column', 'era-1952-ruins-shanty', 'era-1960-april-street', 'era-1961-dawn-tank',
       'era-1979-autumn-martial-street', 'era-1980-may-geumnam-ro', 'era-1987-june-street', 'era-1994-bridge-collapse', 'era-1995-sampoong-rescue', 'era-2003-subway-entrance-smoke',
       'era-2008-candle-summer', 'era-2009-demolition-fire', 'era-2009-square-mourning-queue', 'era-2010-west-sea-search', 'era-2014-tilted-ferry-ribbons', 'era-2016-candle-winter',
-      'era-2017-quake-street', 'era-2022-alley-tape-flowers',
+      'era-2017-quake-street', 'era-2022-alley-tape-flowers', 'era-2095-flooded-town-leaving-line',
     ]);
     for (const x of ALL.filter((y) => y.heavy)) expect(['정치', '재난'], `${x.id}: 가리기 대상은 재난·정치뿐`).toContain(x.topic);
     for (const x of ALL.filter((y) => !y.heavy && y.topic !== '정치')) expect(x.heavy, x.id).toBe(false);
@@ -79,8 +85,9 @@ describe('데이터 파일 — 승인한 것만 (FT3)', () => {
       'era-2020s-high-highrise-wfh:high', 'era-2020s-low-logistics-dawn:low',
       'era-2026-port-night-surplus:high', 'era-2030-ai-capital-night-office:high', 'era-2030-basic-income-queue-rain:low', 'era-2030s-high-paid-care-living:high', 'era-2030s-low-family-care-floor:low',
       'era-2040s-high-departure-family:high', 'era-2040s-low-fan-dark-room:low', 'era-2044-private-ward-window:high', 'era-2050-clinic-quiet-corridor:high',
+      'era-2065-high-family-table-screen:high', 'era-2075-high-lakeside-park-empty-benches:high', 'era-2085-high-sea-terrace-no-work:high', 'era-2095-high-seawall-city-lit:high',
     ].sort());
-    // 사건에 band가 있는 것은 2009년 둘(철거 현장 low ○ · 첫 스마트폰 high)과 미래 연표의 다섯(2026 U02 · 2030 U06·U08 · 2044 U15 · 2050 U22)이다. 가운데 구간의 5월 조문 줄은 band가 없다 (era-window.md 10-1절·11절)
+    // 사건에 band가 있는 것은 2009년 둘(철거 현장 low ○ · 첫 스마트폰 high)과 미래 연표의 아홉(2026 U02 · 2030 U06·U08 · 2044 U15 · 2050 U22 · 2065 U28 · 2075 U32 · 2085 U36 · 2095 U40)이다. 가운데 구간의 5월 조문 줄은 band가 없다 (era-window.md 10-1절·11절)
     expect(ALL.filter((x) => x.kind === 'event' && x.band !== undefined).map((x) => `${x.id}:${x.band}:${x.heavy}`).sort()).toEqual([
       'era-2009-demolition-fire:low:true',
       'era-2009-first-smartphone:high:false',
@@ -89,6 +96,10 @@ describe('데이터 파일 — 승인한 것만 (FT3)', () => {
       'era-2030-basic-income-queue-rain:low:false',
       'era-2044-private-ward-window:high:false',
       'era-2050-clinic-quiet-corridor:high:false',
+      'era-2065-high-family-table-screen:high:false',
+      'era-2075-high-lakeside-park-empty-benches:high:false',
+      'era-2085-high-sea-terrace-no-work:high:false',
+      'era-2095-high-seawall-city-lit:high:false',
     ]);
     expect(byId('era-2009-square-mourning-queue').band).toBeUndefined();
     expect(ALL.filter((x) => x.kind === 'event' && x.years[0] <= 2009 && x.years[1] >= 2009).length).toBe(3);
@@ -139,8 +150,14 @@ describe('데이터 파일 — 승인한 것만 (FT3)', () => {
     for (const [decade, data] of DECADES) {
       for (const win of data.windows) {
         expect(win.approved, `${win.id}: 미승인 장면은 데이터에 들어올 수 없다`).toBe(true);
-        expect(win.years[0], win.id).toBeGreaterThanOrEqual(decade);
-        expect(win.years[1], win.id).toBeLessThanOrEqual(decade + 9);
+        if (win.kind === 'base') {
+          // 끝 장면(SPEC-010 U46, R-602)만 10년을 넘는다: 2110~2130을 덮되 덩어리는 2100년대로 고정(안 그러면 d2110.ts가 생겨 영영 요청되지 않는다)
+          expect({ decade, id: win.id, years: win.years }, `${win.id}: kind base는 2100년대 덩어리의 끝 장면 하나뿐이다`).toEqual({ decade: 2100, id: 'era-end-horizon', years: [2110, 2130] });
+          expect(win.years[0], win.id).toBe(ERA_LAST_YEAR + 1);
+        } else {
+          expect(win.years[0], win.id).toBeGreaterThanOrEqual(decade);
+          expect(win.years[1], win.id).toBeLessThanOrEqual(decade + 9);
+        }
         expect(win.years[0], win.id).toBeLessThanOrEqual(win.years[1]);
         expect(win.line.length, `${win.id}: 시대 줄 문장 ${win.line.length}자`).toBeLessThanOrEqual(ERA_LINE_MAX);
         expect(win.line, `${win.id}: 평가어·물음표 없음`).not.toMatch(/[?!]/);
@@ -277,14 +294,15 @@ describe('10년 덩어리 로더 (A-10)', () => {
     expect(data.defs).toContain('<symbol id="pf"'); // 이 10년 덩어리의 그림이 쓰는 사람 심볼만 담는다
     expect(eraDecadeIfLoaded(1980)).toBe(data);
   });
-  it('승인된 그림이 있는 10년대는 모두 자기 덩어리를 받는다(2000·2010·2020·2030·2040·2050 포함) — 목록에 없는 10년대(1930·2060: 묶음 C가 들어오기 전)만 아무 덩어리도 받지 않고 빈 데이터를 돌려준다', async () => {
+  it('승인된 그림이 있는 10년대는 모두 자기 덩어리를 받는다(2000·2010·2020·2030·2040·2050·2060~2100 포함) — 목록에 없는 10년대(1930·2110: 표 밖)만 아무 덩어리도 받지 않고 빈 데이터를 돌려준다 (2110년 뒤의 끝 장면은 2100년대 덩어리에 있다)', async () => {
     resetFamilyArtForTest();
-    for (const [d, n] of [[2000, 15], [2010, 13], [2020, 16], [2030, 7], [2040, 8], [2050, 6]] as const) {
+    for (const [d, n] of [[2000, 15], [2010, 13], [2020, 16], [2030, 7], [2040, 8], [2050, 6], [2060, 4], [2070, 4], [2080, 4], [2090, 4], [2100, 4]] as const) {
       const data = await loadEraDecade(d);
       expect(data.windows.length, `${d}`).toBe(n);
       expect(data.defs, `${d}`).toMatch(/^<defs>/);
     }
-    for (const d of [1930, 2060]) expect(await loadEraDecade(d)).toEqual({ windows: [], art: {} });
+    for (const d of [1930, 2110]) expect(await loadEraDecade(d)).toEqual({ windows: [], art: {} });
+    expect((await loadEraDecade(2100)).windows.some((x) => x.kind === 'base' && x.years[0] === 2110), '2110년 뒤를 덮는 끝 장면은 2100년대 덩어리에 들어 있다').toBe(true);
   });
 });
 
@@ -487,12 +505,11 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     expect(y2027.pic!.kind === 'daily' || y2027.pic!.years[0] === 2027, '사건이면 2027년 사건, 아니면 일상').toBe(true);
   });
 
-  it('실제 승인 데이터: 1940~2112 어느 해·구간·나이에서도 승인된 그림이 닿는다 — 빈 틀은 데이터가 안 온 때(덩어리 실패)뿐이다 (2030년 이후는 해당 10년대 데이터가 들어온 해만 잰다 · tests/eraFuture.test.ts)', () => {
+  it('실제 승인 데이터: 1940~2112 어느 해·구간·나이에서도 승인된 그림이 닿는다 — 빈 틀은 데이터가 안 온 때(덩어리 실패)뿐이다 (묶음 C까지 들어와 2026~2112 모든 해를 잰다 · 규칙별 시험은 tests/eraFuture.test.ts)', () => {
     let measured = 0;
     for (const band of ['low', 'mid', 'high'] as const) {
       for (const gentle of [false, true]) {
         for (let y = 1940; y <= 2112; y++) {
-          if (y > 2029 && !realCovered(y)) continue; // 2030년 이후는 승인된 묶음이 들어온 10년대부터 잰다(FU5). 안 온 해는 빈 틀이다 — 아래 「중간 상태」 시험이 따로 잠근다
           for (const birthYear of [y - 3, y - 15, y - 25, y - 45, y - 70]) {
             if (birthYear > y || y - birthYear > 100) continue;
             const pick = eraOf(y, ctx(ALL, { band, gentle, birthYear, seed: 99 }));
@@ -502,15 +519,16 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
         }
       }
     }
-    expect(measured, '1940~2029는 늘 잰다: 구간 3 × 가리기 2 × 90해 × 출생 5').toBeGreaterThanOrEqual(3 * 2 * 90 * 5);
+    expect(measured, '1940~2112 전부 잰다: 구간 3 × 가리기 2 × 173해 × 출생 5(나이 100세 넘는 칸은 뺀다)').toBeGreaterThanOrEqual(3 * 2 * 170 * 4);
   });
-  it('실제 승인 데이터 · 중간 상태(묶음 C 전, 2060년 이후): 데이터가 아직 없는 10년대의 해는 빈 틀이다 — 2025 세트로 돌아가지 않는다(SPEC-010, QA-009-FM4b F01)', () => {
-    for (let y = 2030; y <= 2112; y++) {
-      if (realCovered(y)) continue; // 데이터가 들어온 해는 위 시험이 잰다
-      const pick = eraOf(y, ctx(ALL, { birthYear: y - 30, seed: 99 }));
+  it('덩어리를 못 받은 판(2060년대 이후 덩어리가 오지 않은 상태): 받지 못한 10년대의 해는 빈 틀이고 줄이 없다 — 2025 세트로 돌아가지 않는다(SPEC-010, QA-009-FM4b F01). 받은 2050년대까지는 그림이 있다', () => {
+    const got = DECADES.filter(([d]) => d <= 2050).flatMap(([, data]) => data.windows); // 2060~2100년대 덩어리(끝 장면 포함)가 실패한 판
+    for (let y = 2060; y <= 2112; y++) {
+      const pick = eraOf(y, ctx(got, { birthYear: y - 30, seed: 99 }));
       expect(pick.pic, `${y}`).toBeNull();
       expect(pick.line, `${y}`).toBeNull();
     }
+    for (const y of [2030, 2044, 2050, 2059]) expect(eraOf(y, ctx(got, { birthYear: y - 30, seed: 99 })).pic, `${y}: 받은 덩어리의 해`).not.toBeNull();
   });
   it('실제 승인 데이터 · 가리기: 무거운 장면(재난·정치) 20장의 해는 가려지고 그해 일상 그림(1987년은 12월 투표소)으로 바뀐다 — 경제(1997~98)는 가리지 않는다. 2009 철거 현장은 아래 구간에게만 보이므로 아래 구간으로 본다', () => {
     for (const hv of ALL.filter((x) => x.heavy)) {

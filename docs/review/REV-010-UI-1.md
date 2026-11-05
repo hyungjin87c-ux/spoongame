@@ -176,3 +176,16 @@ U23을 바꾸면 `ACTION_ALLOW_LINES`의 예외 줄이 가리키는 문장이 �
 | 판단 거리 4 | 행 모양을 바꾸지 않았다. 두 시험을 함께 돌렸다 | – | `tests/eraFuture.test.ts`·`tests/eraForesight.test.ts` |
 
 묶음 B 데이터 반영은 `ai-log/2026-11-04_SPEC-010_dev-b.md`. 3회차(변경분만)로 A 코어를 다시 볼 때 이 회차의 변경 파일: `tests/eraFuture.test.ts`·`tests/helpers/eraFutureData.ts`·`tests/helpers/eraFutureForbidden.ts`(시험만), `src/core/eraWindow.ts`(타입 주석), `src/ui/dash/EraRow.tsx`(소개 문장 조건 한 줄).
+
+## 반영 내역 2 (developer, 2026-11-05 — 묶음 C 데이터 회차: 지난 지적 R-600·R-602 조건 줄 + 3회차(변경분만) 입력, 커밋은 마스터가 만든다)
+
+새 지적 반영은 없다(이번 회차는 REV-010-UI-1 이후 새 `CHANGES_REQUESTED`가 없다). 기존 조건 줄 R-600·R-602와 묶음 C 데이터(FU5(C)·FU6·FU9·FU11)를 넣었다. 정본: `ai-log/2026-11-05_SPEC-010_dev-c.md`.
+
+| 지적·조건 | 적용 | 곳(파일) | 시험 |
+|---|---|---|---|
+| R-600(낮음, 묶음 C 조건) | 「다 들어왔는가」 시험을 `REAL_COVERED_FUTURE_YEARS.length` 87 · `REAL_FUTURE_WINDOWS.length` 46으로 바꾸고 `console.log` 삭제 | `tests/eraFuture.test.ts` | 「실제 데이터가 다 들어왔다」 |
+| R-602(낮음, 묶음 C 조건) | 끝 장면 U46 `era-end-horizon`만 `decade = 2100` 고정(`END_SCENE`), 「10년을 넘는다」 가드·basis 검사는 `kind: 'base'`만 예외(id·해가 END_SCENE과 다르면 막고, 끝 장면에 basis·근거 글이 있으면 막음), 시험은 `kind: 'base'`만 예외 | `scripts/genEraWindows.ts#END_SCENE`, `src/data/eraWindows/d2100.ts`, `tests/eraWindows.test.ts` | 「모든 장면은 approved: true이고…」·「승인된 그림이 있는 10년대는 모두 자기 덩어리를 받는다」·`tests/eraFuture.test.ts` 「표 끝 뒤(구현 규칙 3, R-602)」·e2e `era-chip` 「표 끝 뒤(R-601·R-602, 실제 데이터)」 |
+| 묶음 C 회차 조건(BORROWED_ROWS) | 「SPEC 새 번호 → 조사 문서 행 번호」 표 `DOC_NUMBERS_OF`(U01~U46)와 7-1절 읽기(`R2_ROWS`) | `tests/helpers/foresightDoc.ts` | `tests/eraForesight.test.ts` 「SPEC 번호 → 문서 행 번호 표(DOC_NUMBERS_OF)는 U01~U46을 모두 갖고…」 |
+| 판단 거리 4(행 모양을 바꾸면 시험이 멈춘다) | 조사 문서는 고치지 않았다(표 모양 그대로) — 시험이 7-1절 15행도 읽는다 | `docs/data/future-foresight-quotes.md`(읽기만) | `tests/eraForesight.test.ts` 「문서 표를 읽었다」 |
+
+3회차(변경분만) 검수 입력 — 이번 회차에 바뀐 파일: `scripts/genEraWindows.ts`(r9·`END_SCENE`·가드 140) · `scripts/eraForesightNotes.ts`(묶음 C 구간 18칸) · `tests/helpers/foresightDoc.ts` · `tests/eraWindows.test.ts`(17덩어리·140장·base 예외·「덩어리를 못 받은 판」) · `tests/eraForesight.test.ts`(40칸·묶음 C 시험 7·`rowOf` 요약 우선) · `tests/eraFuture.test.ts`(R-600·실제 끝 장면 시험 1) · `e2e/era-chip.spec.ts`(끝 두 판) · 생성 파일 `src/data/eraWindows/d2060.ts`~`d2100.ts`·`index.ts` · 글꼴 s2·s3(`src/assets/fonts/NotoSansKR-*.s2·s3.woff2`·`src/styles/fonts.css`) · `docs/TODO.md`. `src/core/`·`src/ui/`는 이번 회차에 바뀐 것이 없다. 켜진 실제 데이터 시험 7개는 수정 없이 통과했고(재는 해 87/87), 추가한 시험 쪽 판단은 dev 로그 6절에 적었다.

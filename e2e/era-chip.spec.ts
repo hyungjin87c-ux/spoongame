@@ -272,3 +272,44 @@ test('2026년 판(사실): 창에 「예측」 표도 data-future도 없다 — 
   expect(await page.locator('#scene-era [data-testid="era-fc"]').count()).toBe(0);
   await expect(page.locator('#scene-era')).toHaveAccessibleName(/^시대의 창 · (?!예측)/);
 });
+
+/** 알파 2016년생 `age`세의 멈춘 판 (2110년 = 94세, 2111년 = 95세 — 표 끝 뒤). 나이마다 기록 줄 하나 */
+function atAge(age: number): GameState {
+  const base = lifeState(KNOWN_SEED);
+  const history: GameState['history'] = [{ age: 0, kind: 'stage', text: '2016년 1월, 서울특별시의 평범한 가정에서 3.2kg 남자아이로 태어났습니다. 첫째입니다.' }];
+  for (let a = 1; a <= age; a++) history.push({ age: a, kind: 'event', text: `${a}세의 일입니다.`, eventId: `e${a}` });
+  // 20세 이상에는 자산이 있어야 저장 검증을 통과한다(독립이 만든다) — layout.spec.ts와 같은 값
+  return { ...base, age, paused: true, history, assets: { net: 5000, income: 4500, debt: 0, incomeAdj: 0, dwelling: 'rent' }, familyFund: 0 };
+}
+
+test('표 끝 뒤(R-601·R-602, 실제 데이터): 2111년 판의 창은 링크 없는 끝 장면이고, 인생 기록은 2110년에 끝 줄 한 번(칩 없음)뿐 — 2111년 줄은 없고 2109년 줄에는 칩이 있다', async ({ page }) => {
+  await injectSave(page, atAge(95), FAST, MANUAL);
+  const era = page.locator('#scene-era');
+  // 끝 장면은 2100년대 덩어리에 있다(d2110.ts 없음) — 덩어리가 오면 그림이 선다
+  await expect(era).toHaveAttribute('data-era', 'era-end-horizon', { timeout: 20_000 });
+  await expect(era).toHaveAttribute('data-end', 'true');
+  await expect(era).toHaveAttribute('data-dec', '2100');
+  await expect(era, '링크가 아니라 그림만(눌러도 갈 줄이 없다)').toHaveAttribute('role', 'img');
+  expect(await era.evaluate((el) => el.tagName)).toBe('DIV');
+  expect(await era.getAttribute('data-future'), '끝 장면에는 예측 톤이 없다').toBeNull();
+  expect(await era.getByTestId('era-fc').count(), '끝 장면에는 「예측」 표가 없다').toBe(0);
+  await expect(era).toHaveAccessibleName(/^시대의 창 · 한 세기가 흘러 연표가 끝났습니다\.$/);
+  // 인생 기록: 2110년에만 끝 줄, 2111년은 줄 없음
+  await expect(page.locator('#log-y2110')).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.locator('#log-y2110')).toContainText('한 세기가 흘러 연표가 끝났습니다.');
+  expect(await page.locator('#log-y2110 .chip--fc, #log-y2110 .log__basis, #log-y2110 .log__tlrow').count(), '끝 줄에는 칩도 근거 종류도 없다').toBe(0);
+  await expect(page.locator('#log-y2111')).toHaveCount(0);
+  await expect(page.locator('#log-y2109').getByTestId('chip-fc'), '표 안의 마지막 해는 예측 줄이다').toBeVisible();
+  expect(await noHorizontalOverflow(page)).toBe(true);
+});
+
+test('표 끝(2110년 판): 창은 끝 줄로 가는 링크이고 끝 장면 그림이 서며, 칩도 예측 표도 없다', async ({ page }) => {
+  await injectSave(page, atAge(94), FAST, MANUAL);
+  const era = page.locator('#scene-era');
+  await expect(era).toHaveAttribute('data-era', 'era-end-horizon', { timeout: 20_000 });
+  await expect(era).toHaveAttribute('href', '#log-y2110');
+  expect(await era.getByTestId('era-fc').count()).toBe(0);
+  expect(await era.getAttribute('data-future')).toBeNull();
+  await expect(page.locator('#log-y2110')).toContainText('한 세기가 흘러 연표가 끝났습니다.');
+  expect(await noHorizontalOverflow(page)).toBe(true);
+});

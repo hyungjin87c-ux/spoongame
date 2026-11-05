@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { ERA_ACTUAL_LAST_YEAR, ERA_FIRST_DECADE, ERA_LAST_DECADE, ERA_LAST_YEAR, ERA_LINE_MAX, eraDecadeOf, eraOf, eraRowsOf, type EraBand, type EraContext, type EraRow, type EraWindow } from '../src/core/eraWindow';
-import { END_SCENE, FUTURE_NO_END, FUTURE_TABLE, REAL_COVERED_FUTURE_YEARS, REAL_FUTURE_WINDOWS, REAL_WINDOWS, futureById, realCovered } from './helpers/eraFutureData';
+import { END_SCENE, FUTURE_NO_END, FUTURE_TABLE, REAL_COVERED_FUTURE_YEARS, REAL_DECADES, REAL_FUTURE_WINDOWS, REAL_WINDOWS, futureById, realCovered } from './helpers/eraFutureData';
 import { ACTION_ALLOW_LINES, ACTION_ANYWHERE, ACTION_STEMS, COMPANY_NAMES_EXTRA, COMPANY_NAMES_FROM_DOC, COUNTRY_ALLOWED, COUNTRY_NAMES, COUNTRY_WAR_WORDS, actionWordsIn, lineViolations } from './helpers/eraFutureForbidden';
 
 /**
  * SPEC-010 미래 연표 — 코어 시험 (FU1·FU2·FU7·FU8, 정밀 레인). 대상: `core/eraWindow.ts`의 2026~2109 고르기, `basis`·`forecast`, 표 끝(2110~), 나이 규칙, 주인공 행동 낱말·금지어(M11).
  *
- * **합성 데이터와 실제 데이터** — 그림 데이터(FU5)는 아직 없다. 그래서 규칙은 SPEC-010 「연표 표」 U01~U46(r2 반영)을 옮긴 합성 장면(`tests/helpers/eraFutureData.ts#FUTURE_TABLE`)에 실제 1940~2025 데이터를 더한 풀(`SYNTH`)로 잰다.
- * 실제 데이터가 있어야 재는 단언은 `describe.runIf`로 묶어 두었다 — FU5가 `src/data/eraWindows/d2030.ts`~를 더하면 `tests/helpers/eraFutureData.ts`가 그 파일을 자동으로 모아 **저절로 켜진다**(꺼져 있는 동안은 건너뜀으로 보인다, 통과가 아니다).
- * 데이터가 아직 못 재는 것: 실제 2026~2109년의 전 해·구간·나이 닿음 · 실제 3해 연속 · 실제 `basis` 필수 · 실제 줄 문장 규칙 · 합성 표와의 대조 · 실제 일상의 `ages` 구조 · 실제 끝 장면. (ai-log/2026-11-03_SPEC-010_dev-core.md 4절)
+ * **합성 데이터와 실제 데이터** — 규칙은 SPEC-010 「연표 표」 U01~U46(r2 반영)을 옮긴 합성 장면(`tests/helpers/eraFutureData.ts#FUTURE_TABLE`)에 실제 1940~2025 데이터를 더한 풀(`SYNTH`)로 잰다.
+ * 실제 데이터가 있어야 재는 단언은 `describe.runIf`로 묶여 있다 — FU5가 `src/data/eraWindows/d2030.ts`~를 더하면 `tests/helpers/eraFutureData.ts`가 그 파일을 자동으로 모아 **저절로 켜진다**(꺼져 있는 동안은 건너뜀으로 보인다, 통과가 아니다).
+ * 묶음 A(2026-11-03)·B(11-04)·C(11-05)가 모두 들어와 **지금은 실제 2026~2112년 87해가 전부 켜져 있다**(재는 해 87/87, 실제 2026년 이후 장면 46장 — 마지막 「다 들어왔는가」 시험이 수로 잠근다, R-600).
+ * 실제 데이터가 재는 것: 2026~2109년의 전 해·구간·나이 닿음 · 실제 3해 연속 · 실제 `basis` 필수 · 실제 줄 문장 규칙 · 합성 표와의 대조 · 실제 일상의 `ages` 구조 · 실제 끝 장면(2110 끝 줄 · 2111 줄 없음, R-602).
  */
 
 const BANDS: readonly EraBand[] = ['low', 'mid', 'high'];
@@ -495,7 +496,7 @@ describe('저장·파생 줄 불변 (완료 기준 9, A-12)', () => {
   });
 });
 
-describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 2026~ 장면을 넣으면 켜진다) — 실제 장면으로 같은 규칙을 잰다', () => {
+describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 넣은 2026~2109 장면 + 끝 장면) — 실제 장면으로 같은 규칙을 잰다', () => {
   const coveredYears = REAL_COVERED_FUTURE_YEARS;
   const futureStarts = REAL_FUTURE_WINDOWS.filter((w) => w.kind !== 'base');
 
@@ -539,6 +540,23 @@ describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 2
       if (realCovered(t.years[0])) expect(realLines.has(t.line), `${t.id} 「${t.line}」: 재는 해인데 실제 데이터에 없다`).toBe(true);
     }
   });
+  it('표 끝 뒤(구현 규칙 3, R-602): 실제 끝 장면은 2100년대 덩어리의 `kind: base` 한 장(id era-end-horizon, 2110~2130, basis 없음)이고, 2110년에 끝 줄 한 번 · 2111~2130년 줄 없는 그림 · 칩 없음', () => {
+    const ends = REAL_WINDOWS.filter((w) => w.kind === 'base');
+    expect(ends.map((w) => ({ id: w.id, years: w.years, basis: w.basis, foresight: w.foresight }))).toEqual([{ id: 'era-end-horizon', years: [2110, 2130], basis: undefined, foresight: undefined }]);
+    expect(REAL_DECADES.some(([d]) => d > ERA_LAST_DECADE), 'd2110.ts 같은 덩어리는 없다 — 끝 장면은 2100년대에 있다').toBe(false);
+    expect(REAL_DECADES.find(([d]) => d === 2100)![1].windows.some((w) => w.id === 'era-end-horizon')).toBe(true);
+    const end = ends[0];
+    const y2110 = eraOf(2110, ctxOf(REAL_WINDOWS, { birthYear: 2020 }));
+    expect(y2110.pic).toBe(end);
+    expect(y2110.line).toBe(end);
+    for (let y = 2111; y <= 2130; y++) expect(eraOf(y, ctxOf(REAL_WINDOWS, { birthYear: 2020 })), `${y}`).toMatchObject({ pic: end, line: null, veiled: false, sourceYear: ERA_LAST_YEAR });
+    // 인생 기록: 2020년생 100세까지 줄은 2110년에 끝 줄 한 번뿐이고 칩이 없다
+    for (const band of BANDS) {
+      const rows = eraRowsOf(2020, 100, ctxOf(REAL_WINDOWS, { band, seed: 4242 }));
+      expect(rows.filter((r) => r.year > ERA_LAST_YEAR), band).toEqual([{ year: 2110, age: 90, line: end.line, heavy: false, veiled: false, forecast: false }]);
+      expect(rows.filter((r) => r.line === end.line).length, band).toBe(1);
+    }
+  });
   it('band가 있는 사건이 있는 해에는 band 없는 사건이 함께 있고, 일상은 10년마다 band도 ages도 없는 것이 2장 이상이다', () => {
     for (const w of futureStarts.filter((x) => x.kind === 'event' && x.band !== undefined)) {
       expect(futureStarts.filter((x) => x.kind === 'event' && x.years[0] === w.years[0] && x.band === undefined).length, `${w.id} (${w.years[0]})`).toBeGreaterThanOrEqual(1);
@@ -558,11 +576,11 @@ describe.runIf(REAL_COVERED_FUTURE_YEARS.length > 0)('실제 데이터 (FU5가 2
   }, 60_000);
 });
 
-describe('실제 데이터가 아직 못 재는 것의 상태 (건너뜀이 아니라 보고)', () => {
-  it('재는 해 수: 실제 데이터로 잴 수 있는 2026~2112년의 해를 센다 — 지금 값이 0이면 위 「실제 데이터」 묶음이 건너뛰어진다 (ai-log 4절에 같은 수)', () => {
-    const total = 2112 - 2026 + 1;
-    expect(REAL_COVERED_FUTURE_YEARS.length).toBeLessThanOrEqual(total);
+describe('실제 데이터가 다 들어왔다 (R-600 — 건너뜀이 아니라 수로 잠근다)', () => {
+  it('재는 해 수: 실제 데이터로 잴 수 있는 2026~2112년이 87해 전부이고(위 「실제 데이터」 묶음이 87해를 모두 잰다), 실제 2026년 이후 장면이 46장(U01~U46)이다 — 한 해라도 빠지면 묶음이 조용히 줄어드는 것을 막는다', () => {
+    expect(REAL_COVERED_FUTURE_YEARS.length).toBe(87);
+    expect(REAL_COVERED_FUTURE_YEARS).toEqual(Array.from({ length: 87 }, (_, i) => 2026 + i));
     expect(REAL_COVERED_FUTURE_YEARS.every((y) => realCovered(y))).toBe(true);
-    console.log(`[SPEC-010 코어] 실제 데이터로 잰 2026~2112년: ${REAL_COVERED_FUTURE_YEARS.length}/${total}해 · 실제 2026년 이후 장면 ${REAL_FUTURE_WINDOWS.length}장 (FU5가 넣으면 위 묶음이 켜진다)`);
+    expect(REAL_FUTURE_WINDOWS.length).toBe(46);
   });
 });
