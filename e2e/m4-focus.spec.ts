@@ -252,6 +252,8 @@ for (const vpName of ['320x568', '360x740-touch', '1280x800', '640x400-zoom200']
           },
         });
         expect(audit.violations, summarize(audit)).toEqual([]);
+        // mayVanish(알약은 순회 도중 사라져도 된다)가 「프로그램 focus()로 알약을 재는 일」까지 건너뛰게 두지 않는다 — 알약은 첫 「근거 보기」 단추보다 앞이라 그 칸에서는 아직 떠 있다
+        expect(audit.programmatic.map((s) => s.id), '프로그램 focus()로 알약을 쟀다').toContain('log-jump');
         for (const id of ['pause', 'skip', 'auto', 'tool-exit', 'log-list', 'log-jump']) {
           expect(audit.tabbables, `조작 요소 ${audit.tabbables.join(' → ')}`).toContain(id);
           expect(audit.forward.map((s) => s.id), `Tab 순회 ${id}`).toContain(id);

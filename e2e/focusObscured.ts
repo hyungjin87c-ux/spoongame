@@ -386,12 +386,17 @@ export async function auditFocus(page: Page, label: string, options: AuditOption
       for (const v of s.judgement.violations) violations.push(`[${label}] ${path} ${n + 1}번째(scrollY ${s.scrollY}): ${v}`);
     });
   };
-  /** 순회가 닿지 못한 조작 요소. `mayVanish`에 든 요소는 지금 문서에서 실제로 사라졌을 때만 뺀다 */
+  /**
+   * `mayVanish`에 든 요소가 **정말 사라졌는가**: 붙든 요소가 문서에서 떨어졌고, 같은 이름(data-testid)의 요소가 지금 문서에 하나도 없다.
+   * 앱이 요소를 새로 끼워 넣었다면(옛 요소만 떨어지고 새 것이 문서에 있다) 사라진 것이 아니므로 면제하지 않는다.
+   */
+  const vanished = async (id: string, index: number): Promise<boolean> => mayVanish.has(id) && (await isDetached(page, index)) && (await page.getByTestId(id).count()) === 0;
+  /** 순회가 닿지 못한 조작 요소. `mayVanish`에 든 요소는 `vanished`일 때만 뺀다 */
   const unreachedOf = async (list: string[], reached: Set<string>): Promise<string[]> => {
     const out: string[] = [];
     for (const id of [...new Set(list)]) {
       if (reached.has(id)) continue;
-      if (mayVanish.has(id) && (await isDetached(page, list.indexOf(id)))) continue;
+      if (await vanished(id, list.indexOf(id))) continue;
       out.push(id);
     }
     return out;
@@ -465,7 +470,7 @@ export async function auditFocus(page: Page, label: string, options: AuditOption
     const result = await focusTabbable(page, i);
     if (result === 'gone') {
       // 앞서 건 focus()가 앱 쪽 변화를 일으켜 이 요소를 없앴다 — 허용 목록에 없으면 위반(조용히 건너뛰지 않는다)
-      if (!mayVanish.has(focusList[i])) violations.push(`[${label}] focus() ${i + 1}번째: ${focusList[i]}이(가) 문서에서 사라져 focus()를 걸 수 없다`);
+      if (!(await vanished(focusList[i], i))) violations.push(`[${label}] focus() ${i + 1}번째: ${focusList[i]}이(가) 문서에서 사라져 focus()를 걸 수 없다`);
       continue;
     }
     if (result === 'missed') violations.push(`[${label}] focus() ${i + 1}번째: ${focusList[i]}에 focus()를 걸었는데 포커스가 그 요소에 가지 않았다`);
