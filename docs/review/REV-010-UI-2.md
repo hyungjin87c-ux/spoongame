@@ -113,3 +113,14 @@
 ## 마스터 처리 (2026-11-05)
 - APPROVED 수용. R-611·R-612는 QA 전에 developer가 diff 그대로 반영한다(src 데이터가 바뀌므로 QA보다 먼저). R-613은 같은 회차에 TODO를 지시대로 고친다.
 - 판단 거리 2: U31은 커즈와일 그대로 둔다(근거 반복은 감수, 이해 충돌로 읽힐 여지를 피한다). 3: 하지 않는다. 4: 마스터가 SPEC 254행을 고친다. 5: designer 기록은 그대로 두고 승인 표기를 정본으로 한다.
+
+## 반영 내역 (developer, 2026-11-05 — 경량 회차, 검수자 diff 그대로, 커밋은 마스터가 만든다)
+
+| 지적 | 적용 | 곳(파일) | 확인 |
+|---|---|---|---|
+| R-611(낮음) | diff 그대로 — 아세모글루 `gap` 두 곳(U30 2060년대·U36 2085년)에 시점 차이를 적고 「정면으로 다릅니다」를 뺐다 | `scripts/eraForesightNotes.ts`, `npm run gen:era`로 재생성한 `src/data/eraWindows/d2060.ts`·`d2080.ts` | `gen:era -- --check` 통과, `tests/eraForesight.test.ts`·`tests/fonts.test.tsx`(조각 밖 글자 0)·`tests/eraWindows.test.ts` 83 통과 |
+| R-612(낮음) | diff 그대로 — Bonadio 외 5명 `role`을 「경제학자」로 | `scripts/eraForesightNotes.ts`, `src/data/eraWindows/d2080.ts`(재생성) | 같음 |
+| R-613(낮음) | 지시 그대로 — 「출시 전 주소 대조」 줄 ④에 빠진 값 네 가지, 줄 끝에 ⑦ | `docs/TODO.md`(482행) | `npm run check:todo` |
+
+- 전체: `npm test` 169 파일·4769 통과·1 건너뜀·0 실패, `npm run typecheck`·`npm run build` 통과. 글꼴(s2·s3)은 다시 만들지 않았다(조각 밖 글자 없음). 정본: `ai-log/2026-11-05_SPEC-010_dev-c2.md`.
+- TODO: `[x]` 줄 3개(R-611·R-612·R-613)를 482행 바로 뒤에 넣었다.
