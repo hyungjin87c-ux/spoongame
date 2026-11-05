@@ -826,3 +826,60 @@ test('R-438 글자 200%: 알약이 두 줄로 접혀도 영역 안·화면 안�
     if (width < 700) expect(g.height, `${width}px · 200%: 글자가 커서 두 줄 이상이다(공허 통과 방지)`).toBeGreaterThan(60);
   }
 });
+
+test('R-438 위 여백(QA-009-FM6-010 F1 뒤): 알약이 떠 있는 동안 영역의 위쪽 scroll-padding = 알약 아랫변까지 + 12px(폭 320·글자 200%로 알약이 접혀 커져도 알약 높이를 따른다)이고, 알약이 없을 때와 알약 자신이 포커스를 가진 동안은 12px 그대로다', async ({ page }) => {
+  test.setTimeout(120_000);
+  await openAdult(page);
+  const list = listOf(page);
+  /** 영역의 위쪽 scroll-padding(px), 알약 아랫변까지의 높이(px, 알약이 없으면 null), 기준 여백 var(--sp-3)(px), 영역에 건 변수 */
+  const read = () =>
+    list.evaluate((el) => {
+      const probe = document.createElement('div');
+      probe.style.paddingTop = 'var(--sp-3)';
+      document.body.appendChild(probe);
+      const base = parseFloat(getComputedStyle(probe).paddingTop);
+      probe.remove();
+      const pill = el.querySelector('.log__jump');
+      const slot = el.querySelector('.log__jump-slot');
+      return {
+        pad: parseFloat(getComputedStyle(el).scrollPaddingTop),
+        pillBottom: pill !== null && slot !== null ? pill.getBoundingClientRect().bottom - slot.getBoundingClientRect().top : null,
+        base,
+        variable: el.style.getPropertyValue('--log-jump-bottom'),
+      };
+    });
+  const none = await read();
+  expect(none.pad, '알약이 없을 때 위 여백은 var(--sp-3) 그대로').toBeCloseTo(none.base, 0);
+  expect(none.variable, '알약이 없으면 변수도 없다').toBe('');
+
+  await pinMidRow(list);
+  await addRows(page, 1);
+  await expect(page.getByTestId('log-jump')).toBeVisible();
+  await settle(page);
+  const full = page.viewportSize()!;
+  for (const [width, percent] of full.width < 960 ? ([[360, 100], [320, 200]] as const) : ([[full.width, 100], [full.width, 200]] as const)) {
+    await page.setViewportSize({ width, height: full.height });
+    await setRootFontPercent(page, percent);
+    await settle(page);
+    await expect(page.getByTestId('log-jump')).toBeVisible();
+    // 크기가 바뀐 뒤 관찰자가 다시 재도록 한 프레임 기다린다
+    await expect.poll(async () => { const r = await read(); return Math.abs(r.pad - (r.pillBottom! + r.base)); }, { message: `${width}px·${percent}%: 위 여백 = 알약 아랫변 + 기준 여백`, timeout: 5_000 }).toBeLessThanOrEqual(1.5);
+    const shown = await read();
+    expect(shown.pillBottom!, `${width}px·${percent}%: 알약 아랫변(${shown.pillBottom!.toFixed(1)}px)이 영역 위 가장자리 +8px보다 아래`).toBeGreaterThan(8);
+    expect(shown.pad, `${width}px·${percent}%: 알약이 있으면 기준 여백보다 크다`).toBeGreaterThan(shown.base + 20);
+  }
+  if (full.width < 960) expect((await read()).pillBottom!, '폭 320·글자 200%에서 알약이 접혀 100%보다 커졌다(공허 통과 방지)').toBeGreaterThan(60);
+
+  // 알약 자신이 포커스를 가진 동안은 12px(알약이 여백 밖에 있다고 보고 영역·문서를 엉뚱하게 스크롤하지 않게)
+  await page.keyboard.press('Shift');
+  await page.getByTestId('log-jump').focus();
+  await expect(page.getByTestId('log-jump')).toBeFocused();
+  const focused = await read();
+  expect(focused.pad, '알약이 포커스를 가진 동안 위 여백은 기준 여백').toBeCloseTo(focused.base, 0);
+  // 알약이 사라지면(눌러서 맨 위로) 기준 여백과 변수 없음으로 돌아간다
+  await page.getByTestId('log-jump').click();
+  await expect(page.getByTestId('log-jump')).toHaveCount(0);
+  const gone = await read();
+  expect(gone.pad, '알약이 사라지면 위 여백은 기준 여백').toBeCloseTo(gone.base, 0);
+  expect(gone.variable, '알약이 사라지면 변수도 지운다').toBe('');
+});

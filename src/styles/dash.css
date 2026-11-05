@@ -137,6 +137,14 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
    안쪽 스크롤 영역은 자기 scroll-padding을 둔다(11-1): 키보드 포커스·「맨 위로」가 줄을 화면 안으로 스크롤할 때 포커스 링이 영역 가장자리에 잘리지 않게. 스크롤 영역이므로 키보드로 닿을 수 있다(tabindex 0 — 방향키로 지난 기록을 읽는다) */
 .log__rows { display: flex; flex-direction: column; }
 .log__list { display: flex; flex-direction: column; gap: 0; margin-top: var(--sp-2); max-height: min(520px, max(6rem, calc(100svh - var(--head-fixed-h, 0px) - var(--bar-fixed-h, 0px) - 2 * (var(--sp-3) + 7px)))); overflow-y: auto; scroll-behavior: smooth; scroll-padding: var(--sp-3) 0; overscroll-behavior: contain; overflow-anchor: none; }
+/* 알약이 떠 있는 동안 위쪽 scroll-padding = 알약 아랫변까지(--log-jump-bottom, LogList.syncJumpPad가 재서 넘긴다) + 12px: 알약이 영역 위 가장자리에 떠 있어서, 키보드 포커스(Shift+Tab으로 거슬러 오를 때)가 줄 안의 단추를
+   영역 위 가장자리에 맞추면 알약 밑에 통째로 숨었다(「근거 보기」 단추가 줄마다 생긴 SPEC-010 뒤 드러남, CM10). 알약이 없으면 변수가 없어 12px 그대로다.
+   알약 **자신**이 포커스를 받는 동안은 12px로 되돌린다 — 알약은 이 영역의 자손이라 여백이 알약 밑까지 늘어난 채 focus()를 걸면 브라우저가 알약을 여백 밖에 있다고 보고 영역·문서를 엉뚱하게 스크롤한다(스타일 규칙이라 스크롤 계산 전에 적용된다).
+   `:has()`를 모르는 브라우저(Firefox 120 이하)는 두 규칙을 함께 건너뛰고 12px 그대로다(알약이 가리는 옛 모습 — 포커스 스크롤이 엉뚱해지는 새 문제는 없다). */
+@supports selector(:has(*)) {
+  .log__list { scroll-padding-top: calc(var(--log-jump-bottom, 0px) + var(--sp-3)); }
+  .log__list:has(.log__jump:focus) { scroll-padding-top: var(--sp-3); }
+}
 /* 인생 기록 영역의 높이 상한(위 .log__list): 고정 요소가 실제로 화면을 덮는 높이를 변수로 알린다. 영역이 가용 높이(화면 − 고정 머리 − 하단 고정 진행 줄 − 위아래 여유 12px − 포커스 링 7px)보다 커지면
    키보드 포커스를 받을 때 링의 위나 아래가 머리·진행 줄에 가리므로 그 안에 들어오게 줄인다(CM10). 풀린 요소(head-released·bar-released)와 데스크톱의 보통 행 진행 줄은 덮지 않으므로 0이다. */
 html.has-sticky-head { --head-fixed-h: var(--head-h, 0px); }

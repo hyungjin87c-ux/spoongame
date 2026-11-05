@@ -107,14 +107,19 @@ interface Place {
 
 export class LogList extends Component<Props, Record<string, never>, Snapshot | null> {
   private readonly olRef = createRef<HTMLOListElement>();
+  private readonly slotRef = createRef<HTMLDivElement>();
   private place: Place | null = null;
   private observer: ResizeObserver | null = null;
+  /** 알약 크기를 보는 관찰자와 지금 보고 있는 알약 */
+  private jumpObserver: ResizeObserver | null = null;
+  private jumpWatched: Element | null = null;
 
   componentDidMount(): void {
     const el = this.props.scrollerRef.current;
     const ol = this.olRef.current;
     if (el === null || ol === null) return;
     this.remember(this.props.rows);
+    this.syncJumpPad();
     if (typeof ResizeObserver === 'undefined') return;
     // 영역(폭·높이)과 목록(내용 높이)을 함께 본다: 글자 크기·폭 변화는 줄바꿈을 바꿔 목록 높이를 바꾸고, 화면 회전·창 크기는 영역 크기를 바꾼다
     this.observer = new ResizeObserver(() => this.realign(this.props.rows));
@@ -125,6 +130,41 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
   componentWillUnmount(): void {
     this.observer?.disconnect();
     this.observer = null;
+    this.jumpObserver?.disconnect();
+    this.jumpObserver = null;
+    this.jumpWatched = null;
+  }
+
+  /**
+   * 알약이 떠 있는 동안 영역 위 가장자리에서 **알약 아랫변까지의 높이**(px)를 영역의 CSS 변수 `--log-jump-bottom`으로 알린다(알약이 없으면 변수를 지운다).
+   * `.log__list`의 위쪽 scroll-padding이 이 값 + 12px이라, 키보드 포커스(Shift+Tab으로 거슬러 오를 때 등)가 줄의 단추·링크를 영역 위 가장자리에 맞춰도 알약 밑으로 숨지 않는다(CM10, QA-009-FM6-010 F1 뒤 발견).
+   * 알약 높이는 글자 크기와 영역 폭에 따라 줄바꿈이 달라져 CSS로 셈할 수 없어 재서 넘긴다(글자 200%·좁은 폭에서 약 87px). 크기가 바뀌면(`ResizeObserver`) 다시 잰다.
+   * 알약 자신이 포커스를 받는 동안은 CSS가 여백을 12px로 되돌린다(`.log__list:has(.log__jump:focus)`, dash.css): 알약은 이 영역 안(스크롤 영역의 자손)이라 여백이 알약 밑까지 늘어난 채 알약에 focus()를 걸면
+   * 브라우저가 알약을 여백 밖(위)에 있는 것으로 보고 영역과 문서를 엉뚱하게 스크롤한다(알약이 고정 머리 밑으로 숨거나 화면 밖으로 나간다). 포커스 이벤트(onFocus)로 변수를 지우는 길은 브라우저의 스크롤 계산보다 늦어 안 된다 — 스타일 규칙이 맞다.
+   * 스타일만 바꾸고 레이아웃은 건드리지 않으므로 보던 줄 위치 보정(R-439)과 무관하다.
+   */
+  private syncJumpPad(): void {
+    const el = this.props.scrollerRef.current;
+    if (el === null) return;
+    const slot = this.slotRef.current;
+    const pill = slot?.firstElementChild ?? null;
+    if (slot === null || pill === null) {
+      el.style.removeProperty('--log-jump-bottom');
+      this.watchJump(null);
+      return;
+    }
+    this.watchJump(pill);
+    const bottom = pill.getBoundingClientRect().bottom - slot.getBoundingClientRect().top;
+    el.style.setProperty('--log-jump-bottom', `${Math.ceil(bottom)}px`);
+  }
+
+  private watchJump(pill: Element | null): void {
+    if (this.jumpWatched === pill) return;
+    if (this.jumpWatched !== null) this.jumpObserver?.unobserve(this.jumpWatched);
+    this.jumpWatched = pill;
+    if (pill === null || typeof ResizeObserver === 'undefined') return;
+    this.jumpObserver ??= new ResizeObserver(() => this.syncJumpPad());
+    this.jumpObserver.observe(pill);
   }
 
   private dims(el: HTMLElement, ol: HTMLElement): Pick<Place, 'width' | 'height' | 'content'> {
@@ -234,6 +274,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
   }
 
   componentDidUpdate(_prev: Props, _state: Record<string, never>, snap: Snapshot | null): void {
+    this.syncJumpPad();
     if (snap === null) return;
     const { rows, scrollerRef, following, onUnread, onReset } = this.props;
     const el = scrollerRef.current;
@@ -289,7 +330,11 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
         tabIndex={0}
         data-testid="log-list"
       >
-        {jump ? <div className="log__jump-slot">{jump}</div> : null}
+        {jump ? (
+          <div className="log__jump-slot" ref={this.slotRef}>
+            {jump}
+          </div>
+        ) : null}
         <ol aria-live={live ? 'polite' : 'off'} aria-relevant="additions" className="log__rows" ref={this.olRef}>
           {rows.map((row) => {
             if (isEraRow(row)) return <EraLogRow key={row.key} row={row.era} open={veilOpen?.(row.key) ?? false} onToggle={() => onVeilToggle?.(row.key)} />;
