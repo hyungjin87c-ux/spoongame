@@ -737,6 +737,15 @@ describe('R-632: 가족 줄이 난 해에 보이는 선택지 = 해 시작 ctx�
     expect(events, '그 사건이 일어난 시도').toBeGreaterThan(10);
     expect(legacyAsk, 'legacy에서 ask가 보이거나 골라진 시도(공허 통과 방지)').toBeGreaterThan(3);
   });
+
+  it('강제 사건(K2, trigger: "family")의 안전망은 닿지 않는다: 조건(requires) 없는 선택지가 둘 이상이라 줄 뒤 교집합이 늘 2개 이상이다', () => {
+    const forced = EVENT_POOL.events.filter((e) => e.trigger === 'family');
+    expect(forced.length, '강제 사건(공허 통과 방지)').toBeGreaterThan(0);
+    for (const ev of forced) {
+      const free = (ev.choices ?? []).filter((c) => c.requires === undefined);
+      expect(free.length, `${ev.id}: requires 없는 선택지가 둘 미만이면 life.ts의 안전망(해 시작 값)이 R-632를 깬다`).toBeGreaterThanOrEqual(2);
+    }
+  });
 });
 
 describe('R-632 가드: 이혼 줄이 켜는 플래그(*_apart)를 읽는 사건·선택지가 풀에 없다 — 줄 뒤 ctx는 이혼 줄을 보지 않는다 (후속 200)', () => {

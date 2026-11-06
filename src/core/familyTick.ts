@@ -139,7 +139,7 @@ export function familyChangesFor(game: GameState, age: number, pool?: EventPool)
     const who = sc.firstGone.who === 0 ? 'mother' : 'father';
     if (byId0.get(who)?.state !== 'gone') {
       // 별세 나이 N은 카드의 「N세에 세상을 떠남」과 같은 값(보기의 `goneAtOwnAge` = 저장된 `d`, 0세 해 → 1세 해로 옮겨진 별세만 `d + 1` — R-634 (a))이고, 주인공 19세 이하(`EARLY_LOSS_MAX_AGE`)일 때만 아이가 본 것 한 줄이 붙는다 (T01·T02, R-618)
-      lines.push({ code: LOG_PARENT_GONE, line: entry(age, FAMILY_LINE_ID.parentGone, FAMILY_LINE_TEXT.parentGone(who, byId1.get(who)?.goneAtOwnAge ?? f.p[sc.firstGone.who].d, age <= EARLY_LOSS_MAX_AGE)) });
+      lines.push({ code: LOG_PARENT_GONE, line: entry(age, FAMILY_LINE_ID.parentGone, FAMILY_LINE_TEXT.parentGone(who, byId1.get(who)?.goneAtOwnAge ?? sc.parentGoneOwn[sc.firstGone.who], age <= EARLY_LOSS_MAX_AGE)) });
       log.push([LOG_PARENT_GONE, age, sc.firstGone.who === 0 ? 1 : 2, 0]);
       earlyLoss = { who };
     }

@@ -427,9 +427,9 @@ say();
     ['V5', 'V6', '「남은 한 분」 변형 사건 4개 · 원본 제외 조건 (V5 → V6)'],
     ['V6', 'V7', 'R-561 같은 해 겹침 정리: parents_gone을 켜는 사건을 별세 해 후보에서 뺀다 (V6 → V7)'],
     ['V7', 'V8', '별세 해 notFlags 규칙(후속 199): 그 해 별세한 한 분의 플래그를 notFlags로 읽는 사건도 별세 해 후보에서 뺀다 (V7 → V8)'],
-    ['V8', 'V9', 'R-631·R-632: 형제·조부모 줄이 난 해, 줄 뒤 꺼지는 플래그를 요구하는 사건을 빼고 보이는 선택지를 해 시작 ∩ 줄 뒤로 줄인다 (V8 → V9)'],
+    ['V8', 'V9', 'R-631·R-632: 가족 줄이 난 해, 줄 뒤 꺼지는 플래그를 요구하는 사건을 빼고 보이는 선택지를 해 시작 ∩ 줄 뒤로 줄인다 (V8 → V9)'],
     ['V9', 'V10', 'R-586 senior-alone이 함께 사는 자녀가 있는 판을 거른다 (V9 → V10)'],
-    ['V10', 'V11', 'Q3 어린 형제의 이른 별세 → 상속의 형제 수 · 청년 「본가」 (V10 → V11)'],
+    ['V10', 'V11', 'Q3 어린 형제의 이른 별세 → 상속의 형제 수 · 형제 줄이 난 해의 R-631·R-632 · 청년 「본가」 (V10 → V11)'],
   ];
   const cmps: Array<{ label: string; c: Cmp }> = [];
   for (const [from, to, label] of steps) {
@@ -471,7 +471,7 @@ say();
     `- 같은 해 겹침은 V6에서 ${same.length}판(한 분 별세 판의 ${pct((100 * same.length) / Math.max(1, lostCount(v6)), 2)}, 전체 판의 ${pct((100 * same.length) / v6.length, 2)})이고 V7 이후에는 0판이다. 이 겹침 판 중 **같은 시드의 V7 판에서 임종 사건을 아예 놓친 판은 ${missed7.length}판**(${pct((100 * missed7.length) / Math.max(1, same.length))}), **V8 판에서는 ${missed8.length}판**(${pct((100 * missed8.length) / Math.max(1, same.length))}), **V9 판에서는 ${missed9.length}판**(${pct((100 * missed9.length) / Math.max(1, same.length))})이고, 나머지는 이듬해 이후에 임종 사건이 일어났다(별세 나이가 가족 나이 상한 앞에서 끝나면 \`parents_gone\`을 나이 상한이 맡는다, R-562).`,
   );
   say(
-    `- **「마지막 인사를 놓친 판」 비율(완료 기준 5, 전체 판 대비)**: V6 → V7 ${pct((100 * missed7.length) / v6.length, 2)}, V6 → V8 ${pct((100 * missed8.length) / v6.length, 2)}, V6 → V9 ${pct((100 * missed9.length) / v6.length, 2)}(한 분 별세 판 대비 ${pct((100 * missed7.length) / Math.max(1, lostCount(v6)), 2)} · ${pct((100 * missed8.length) / Math.max(1, lostCount(v6)), 2)} · ${pct((100 * missed9.length) / Math.max(1, lostCount(v6)), 2)}). 별세 해 notFlags 규칙이 새로 거르는 사건 중 임종 원본은 이미 R-561이 막고 있고, R-631·R-632는 형제·조부모 줄이 난 해에만 닿아 이 규칙들로 임종을 놓치는 판이 늘지는 않는다(V7 → V8 → V9 차이는 난수 흐름이 옮겨 간 판 수준).`,
+    `- **「마지막 인사를 놓친 판」 비율(완료 기준 5, 전체 판 대비)**: V6 → V7 ${pct((100 * missed7.length) / v6.length, 2)}, V6 → V8 ${pct((100 * missed8.length) / v6.length, 2)}, V6 → V9 ${pct((100 * missed9.length) / v6.length, 2)}(한 분 별세 판 대비 ${pct((100 * missed7.length) / Math.max(1, lostCount(v6)), 2)} · ${pct((100 * missed8.length) / Math.max(1, lostCount(v6)), 2)} · ${pct((100 * missed9.length) / Math.max(1, lostCount(v6)), 2)}). 별세 해 notFlags 규칙이 새로 거르는 사건 중 임종 원본은 이미 R-561이 막고 있고, R-631은 형제·조부모 줄이 난 해에만, R-632는 그에 더해 한 분 별세 줄이 난 해의 선택지에만 닿고, 임종 사건은 그 해에 이미 R-561이 빼므로 이 규칙들로 임종을 놓치는 판이 늘지는 않는다(V7 → V8 → V9 차이는 난수 흐름이 옮겨 간 판 수준).`,
   );
   say();
 
@@ -533,7 +533,7 @@ say();
   say();
 
   // R-631·R-632
-  say('### 8-4. R-631·R-632: 형제·조부모 줄이 난 해의 후보·선택지 정리의 영향 — 바뀐 판 · 같은 해 점검 (V8 → V9)');
+  say('### 8-4. R-631·R-632: 가족 줄(형제·조부모 별세 · 부모 한 분 별세)이 난 해의 후보·선택지 정리의 영향 — 바뀐 판 · 같은 해 점검 (V8 → V9, 형제 줄은 V11)');
   say();
   const by8 = new Map(v8.map((r) => [key(r), r]));
   const lineChanged = v9.filter((r) => by8.get(key(r))!.histSig !== r.histSig);
@@ -548,11 +548,11 @@ say();
   say();
   const sumLen = (rows: LifeRow[], f: (r: LifeRow) => unknown[]): number => rows.reduce((n, r) => n + f(r).length, 0);
   const livesWith = (rows: LifeRow[], f: (r: LifeRow) => unknown[]): number => rows.filter((r) => f(r).length > 0).length;
-  say('| 점검 (형제·조부모 줄이 난 해 · 줄 뒤 플래그 기준) | V8 (R-631·R-632 없음) | V9 | 0이어야 한다 |');
-  say('|---|---:|---:|---|');
-  say(`| 줄 뒤 꺼지는 플래그를 요구하는 사건이 같은 해에 일어난 판 (R-631, 건수) | ${livesWith(v8, (r) => r.sameYearCleared)} (${sumLen(v8, (r) => r.sameYearCleared)}건) | ${livesWith(v9, (r) => r.sameYearCleared)} (${sumLen(v9, (r) => r.sameYearCleared)}건) | V9 |`);
-  say(`| 줄 뒤 ctx로는 안 보이는 선택지가 골라진 판 (R-632, 건수) | ${livesWith(v8, (r) => r.lineChoiceBad)} (${sumLen(v8, (r) => r.lineChoiceBad)}건) | ${livesWith(v9, (r) => r.lineChoiceBad)} (${sumLen(v9, (r) => r.lineChoiceBad)}건) | V9 |`);
-  say(`| 점검한 선택(가족 줄이 난 해에 보이거나 골라진 선택지 수) | ${v8.reduce((n, r) => n + r.lineChoiceN, 0)} | ${v9.reduce((n, r) => n + r.lineChoiceN, 0)} | – |`);
+  say('| 점검 (가족 줄이 난 해 · 줄 뒤 플래그 기준) | V8 (R-631·R-632 없음) | V9 | V11 (배포 값, 형제 줄 포함) | 0이어야 한다 |');
+  say('|---|---:|---:|---:|---|');
+  say(`| 줄 뒤 꺼지는 플래그를 요구하는 사건이 같은 해에 일어난 판 (R-631, 건수) | ${livesWith(v8, (r) => r.sameYearCleared)} (${sumLen(v8, (r) => r.sameYearCleared)}건) | ${livesWith(v9, (r) => r.sameYearCleared)} (${sumLen(v9, (r) => r.sameYearCleared)}건) | ${livesWith(v11b, (r) => r.sameYearCleared)} (${sumLen(v11b, (r) => r.sameYearCleared)}건) | V9 · V11 |`);
+  say(`| 줄 뒤 ctx로는 안 보이는 선택지가 골라진 판 (R-632, 건수) | ${livesWith(v8, (r) => r.lineChoiceBad)} (${sumLen(v8, (r) => r.lineChoiceBad)}건) | ${livesWith(v9, (r) => r.lineChoiceBad)} (${sumLen(v9, (r) => r.lineChoiceBad)}건) | ${livesWith(v11b, (r) => r.lineChoiceBad)} (${sumLen(v11b, (r) => r.lineChoiceBad)}건) | V9 · V11 |`);
+  say(`| 점검한 선택(가족 줄이 난 해에 보이거나 골라진 선택지 수) | ${v8.reduce((n, r) => n + r.lineChoiceN, 0)} | ${v9.reduce((n, r) => n + r.lineChoiceN, 0)} | ${v11b.reduce((n, r) => n + r.lineChoiceN, 0)} | – |`);
   say();
   const tally = (rows: LifeRow[], f: (r: LifeRow) => string[]): Map<string, number> => {
     const m = new Map<string, number>();
@@ -578,6 +578,8 @@ say();
   say(
     `- 「인생 기록이 달라진 판」은 연표(나이 · 사건 · 고른 선택지)의 해시가 V8과 다른 판이다 — 줄 해의 후보·선택지가 바뀐 판과, 그 뒤 흐름이 옮겨 간 판을 함께 센다. 이름을 적은 배열(\`familyTick.ts#SIBLING_LINE_FLAGS·GRANDPARENT_LINE_FLAGS\`) 밖의 플래그는 보지 않는다. R-632의 교집합은 새로 열리는 선택지가 없다(한 방향).`,
   );
+  say();
+  say('- **V8·V9에는 형제 줄이 없다**(Q3는 V11에서 켠다 — `sibLoss: false`). 그래서 위 V8 → V9의 바뀐 판·사건 표는 조부모 줄과 부모 한 분 별세 줄(R-632)만의 영향이고, 형제 쪽 사건(`infant-follow-sibling`·`infant-sibling-toy`·`school-family-priority`)의 「+0」은 측정값이 아니다. 형제 줄이 난 해의 R-631·R-632 영향은 V10 → V11 표에 함께 들어 있고, 같은 해 점검은 위 V11 열과 tests/familyConsistency.test.ts(7000판 INV)·tests/familyFm7a.test.ts 「R-631: …」 합성 시험이 본다.');
   say();
 
   // senior-alone
