@@ -87,6 +87,14 @@ export function flagBlockersOf(pool: EventPool, flag: string): readonly string[]
   return flagIndexOf(pool).blockers.get(flag) ?? [];
 }
 
+/**
+ * 이 플래그를 **요구하는** 사건의 id들 — 사건 수준 `conditions.flags`(선택지 `requires`는 보지 않는다). 사건 id를 코드에 박지 않고 풀에서 찾는다.
+ * 어린 형제·마지막 조부모가 떠난 해에 그 해 끝에 꺼지는 형제·조부모 플래그를 읽는 사건을 그 해 후보에서 빼는 데 쓴다(FM7a Q3·조부모 별세, R-631).
+ */
+export function flagRequirersOf(pool: EventPool, flag: string): readonly string[] {
+  return flagIndexOf(pool).requirers.get(flag) ?? [];
+}
+
 /** 이 플래그를 켜는 사건 중 이미 본 것의 주인공 나이들 (오름차순) */
 function seenAges(game: Pick<AdultSource, 'seen' | 'age'>, ids: readonly string[] | undefined): number[] {
   return (ids ?? [])

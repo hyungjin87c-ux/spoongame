@@ -4,6 +4,7 @@ import { GENERATION_IDS, generateBirthFromSeed } from '../src/core';
 import { spreadSeeds } from '../tests/helpers/familyGolden';
 import {
   ADULT_PARENT_IDS,
+  CLEARED_READER_IDS,
   GONE_READER_IDS,
   REPORT_NOTES,
   SENIOR_FLOOR,
@@ -26,7 +27,7 @@ import {
  * 가족 변경(SPEC-009 FM4b)의 분포 재측정 보고 (설계 문서 12-1절 L2): `docs/data/family-remeasure.md`를 쓴다.
  * 실행: ./node_modules/.bin/vite-node scripts/familyRemeasure.ts [세대당 판수=600] [--write]
  *   (npm run report:family -- 600 --write)
- * 같은 시드·같은 자동 성향 선택으로 원인(K2 · K4 · 이른 부모 별세 효과 · K1 · R-562 · FM7a의 변형 사건 · R-561 · 별세 해 notFlags 규칙 · R-586 · Q3)을 하나씩 켠 세계를 돌려 짝지어 견준다.
+ * 같은 시드·같은 자동 성향 선택으로 원인(K2 · K4 · 이른 부모 별세 효과 · K1 · R-562 · FM7a의 변형 사건 · R-561 · 별세 해 notFlags 규칙 · R-631·R-632 · R-586 · Q3)을 하나씩 켠 세계를 돌려 짝지어 견준다.
  * **이른 부모 별세 효과의 합격 기준은 설계 문서 4-7절 (1)** (마스터 결정 2026-11-02 — 처음의 「중앙값 변화 ≤ 3%」는 중앙값 한 칸(150만 원)이 15%로 읽히는 틀린 지표라 평균으로 바꿨다):
  *   ① 재력 단계별 최종 순자산 평균 변화 ≤ 3% · 20세 시작 평균의 절대 변화 ≤ 150만 원(**1~4단계만** — 5단계는 표본이 작아(세대당 1000판에서 약 146판, 걸린 판 약 25판, 표준오차 약 34만 원) 보고만, 마스터 결정 2026-11-03)  ② 단계 순서 뒤바뀜 0  ③ 엔딩 방향 판정 분포 변화 ≤ 2%p  ④ 효과가 걸린 판 비율 보고.
  *   중앙값 변화·효과가 걸린 판만의 차이는 보고만 한다(판정에 쓰지 않는다).
@@ -249,10 +250,10 @@ const totalCmp = compare(R('V3'), R('V5'), '재력 단계별 (V3 켜기 전 → 
 say(`판정: ${verdictK1(totalCmp)} (${describeK1(totalCmp)}) — ${K1_CRITERIA}.`);
 say();
 
-say('## 4. 판 길이 (FA0-7: 가족 변화 줄은 연표 줄과 같은 규칙으로 센다) — FM7a 배포 값(V10)');
+say('## 4. 판 길이 (FA0-7: 가족 변화 줄은 연표 줄과 같은 규칙으로 센다) — FM7a 배포 값(V11)');
 say();
 {
-  const rows = R('V10');
+  const rows = R('V11');
   say('| 세대 | 판당 가족 줄 | 한 판 시간 (분, 1배속 수동·읽기 중앙) 가족 줄 포함 | 가족 줄 뺀 | 차이 (초) |');
   say('|---|---:|---:|---:|---:|');
   for (const gen of GENERATION_IDS) {
@@ -371,7 +372,7 @@ say();
   say(
     `- 「한 분 별세 판」 = 모형이 부모 한 분 별세(\`family.log\` 종류 5)를 알린 판. 「나온다」 = 별세 나이 이후(같은 해 포함)에 사건이 일어났다(\`seen\`). **FM7a는 열을 원본 둘(\`middle-parents-care\` · \`middle-parents-farewell\`)로 다시 정의했다** — \`youth-housing\`은 「본가」로 낱말이 중립이 되었고 글감 \`note-parents-aging\`은 기록 카드라 \`seen\`의 사건 집계에 따로 센다(별세 판 대비 0.0%는 글감이 \`seen\`에 사건 id로 남지 않기 때문이다 — 문장은 변형이 맡는다, tests/noteCards.test.ts).`,
   );
-  say(`- **두 가지 분모를 함께 싣는다**: 「전체 판 대비」는 FM4b 보고(ai-log)의 「약 80.6% 판에서 나온다」와 같은 읽기이고, 「별세 판 대비」는 한 분이 떠난 판만 분모로 한 것이다. 앞 표(V5)가 FM7a **전**(원본이 별세 뒤에도 나온다), 뒤 표(V10)가 FM7a **뒤**(배포 값)다. 사건 셋 = ${names}.`);
+  say(`- **두 가지 분모를 함께 싣는다**: 「전체 판 대비」는 FM4b 보고(ai-log)의 「약 80.6% 판에서 나온다」와 같은 읽기이고, 「별세 판 대비」는 한 분이 떠난 판만 분모로 한 것이다. 앞 표(V5)가 FM7a **전**(원본이 별세 뒤에도 나온다), 뒤 표(V11)가 FM7a **뒤**(배포 값)다. 사건 셋 = ${names}.`);
   say();
   const table = (title: string, all: LifeRow[], variants: boolean): void => {
     say(`#### ${title}`);
@@ -397,16 +398,18 @@ say();
     say();
   };
   table('FM7a 전 (V5: 문장이 두 분을 말한다 — 원본 두 사건이 별세 뒤에도 나온다, 같은 해 포함)', R('V5'), false);
-  table('FM7a 뒤 (V10, 배포 값: 원본에 한 분이 떠난 판 제외 조건 · 별세 해 notFlags 규칙, 변형 4개가 맡는다 — 같은 해 포함 원본 열이 0%여야 한다)', R('V10'), true);
-  const v10 = R('V10');
+  table('FM7a 뒤 (V11, 배포 값: 원본에 한 분이 떠난 판 제외 조건 · 별세 해 notFlags 규칙, 변형 4개가 맡는다 — 같은 해 포함 원본 열이 0%여야 한다)', R('V11'), true);
+  const v11 = R('V11');
   const origAt = (rows: LifeRow[], sameOnly: boolean): number =>
     rows.filter((r) => r.lossAge !== null && ([0, 1] as const).some((i) => r.adultParent[i] !== null && (sameOnly ? r.adultParent[i]! === r.lossAge! : r.adultParent[i]! >= r.lossAge!))).length;
-  const origAll = origAt(v10, false);
-  const origSame = origAt(v10, true);
+  const origAll = origAt(v11, false);
+  const origSame = origAt(v11, true);
   const origSame7 = origAt(R('V7'), true);
   const lost7 = lostCount(R('V7'));
+  const v5Lost = R('V5').filter((r) => r.lossAge !== null);
+  const v5Pct = (i: 0 | 1): string => pct((100 * v5Lost.filter((r) => after(r, i)).length) / Math.max(1, v5Lost.length));
   say(
-    `- **판정(완료 기준 3, 마스터 결정 후속 199 — 「켜진 해부터」는 별세 줄이 난 그 해를 포함): 별세 줄이 난 해를 포함해 원본 사건이 나온 판 ${origAll}건 ${origAll === 0 ? '— 합격(46.3%·70.6% → 0%)' : '— **불합격**'}** (그중 별세 줄과 같은 해에 겹친 원본 ${origSame}건, 한 분 별세 판 ${lostCount(v10)}판 중). 변형은 한 분이 떠난 판에서만 일어난다(tests/familyText.test.ts).`,
+    `- **판정(완료 기준 3, 마스터 결정 후속 199 — 「켜진 해부터」는 별세 줄이 난 그 해를 포함): 별세 줄이 난 해를 포함해 원본 사건이 나온 판 ${origAll}건 ${origAll === 0 ? `— 합격(${v5Pct(0)}·${v5Pct(1)} → 0%)` : '— **불합격**'}** (그중 별세 줄과 같은 해에 겹친 원본 ${origSame}건, 한 분 별세 판 ${lostCount(v11)}판 중). 변형은 한 분이 떠난 판에서만 일어난다(tests/familyText.test.ts).`,
   );
   say(
     `- **같은 해 겹침의 원인 구분**: R-561만 켠 세계(V7)에서는 별세 줄과 같은 해에 병환·임종 원본이 겹친 판이 ${origSame7}건(한 분 별세 판 ${lost7}판의 ${pct((100 * origSame7) / Math.max(1, lost7), 2)})이었다. 임종 원본은 \`parents_gone\`을 켜서 R-561이 막았지만, 병환 원본은 \`parents_gone\`을 켜지 않아 줄이 난 해에도 뽑혔다(원본의 \`notFlags\`는 줄이 난 해 끝에 켜지는 플래그를 읽고 그 해 안의 후보는 해 시작의 플래그로 가려지는 FA7 시간 규칙 때문이다). 별세 해 notFlags 규칙(후속 199, V8)이 줄이 난 해에 그 한 분의 \`mother_gone\`·\`father_gone\`을 \`notFlags\`로 읽는 사건을 그 해 후보에서 빼 0건이 된다(원인 열은 아래 8절 V7 → V8).`,
@@ -415,7 +418,7 @@ say();
 }
 
 // ---------- 8. FM7a ----------
-say('## 8. FM7a 원인별 재측정 (SPEC-009 「FM7 나눔」 완료 기준 5·11, V5 → V10)');
+say('## 8. FM7a 원인별 재측정 (SPEC-009 「FM7 나눔」 완료 기준 5·11, V5 → V11)');
 say();
 {
   say(`수용 기준(이른 별세 효과의 기존 합격선을 그대로 쓴다, 완료 기준 11): ${CRITERIA}. 넘으면 임계를 올리지 않고 마스터에게 올린다.`);
@@ -424,8 +427,9 @@ say();
     ['V5', 'V6', '「남은 한 분」 변형 사건 4개 · 원본 제외 조건 (V5 → V6)'],
     ['V6', 'V7', 'R-561 같은 해 겹침 정리: parents_gone을 켜는 사건을 별세 해 후보에서 뺀다 (V6 → V7)'],
     ['V7', 'V8', '별세 해 notFlags 규칙(후속 199): 그 해 별세한 한 분의 플래그를 notFlags로 읽는 사건도 별세 해 후보에서 뺀다 (V7 → V8)'],
-    ['V8', 'V9', 'R-586 senior-alone이 함께 사는 자녀가 있는 판을 거른다 (V8 → V9)'],
-    ['V9', 'V10', 'Q3 어린 형제의 이른 별세 → 상속의 형제 수 · 청년 「본가」 (V9 → V10)'],
+    ['V8', 'V9', 'R-631·R-632: 형제·조부모 줄이 난 해, 줄 뒤 꺼지는 플래그를 요구하는 사건을 빼고 보이는 선택지를 해 시작 ∩ 줄 뒤로 줄인다 (V8 → V9)'],
+    ['V9', 'V10', 'R-586 senior-alone이 함께 사는 자녀가 있는 판을 거른다 (V9 → V10)'],
+    ['V10', 'V11', 'Q3 어린 형제의 이른 별세 → 상속의 형제 수 · 청년 「본가」 (V10 → V11)'],
   ];
   const cmps: Array<{ label: string; c: Cmp }> = [];
   for (const [from, to, label] of steps) {
@@ -434,7 +438,7 @@ say();
     say(`판정: ${passes(c) ? '**합격**' : '**기준 초과**'} (${describe(c)})`);
     say();
   }
-  const total = compare(R('V5'), R('V10'), '합계: FM6 배포 값 → FM7a 배포 값 (V5 → V10)');
+  const total = compare(R('V5'), R('V11'), '합계: FM6 배포 값 → FM7a 배포 값 (V5 → V11)');
   say(`**합계 판정 (완료 기준 11): ${passes(total) ? '합격' : '기준 초과'}** (${describe(total)}).`);
   say();
 
@@ -444,6 +448,7 @@ say();
   const v8 = R('V8');
   const v9 = R('V9');
   const v10 = R('V10');
+  const v11b = R('V11');
 
   // 별세 해 후보 정리로 놓친 판
   say('### 8-1. 별세 해 후보 정리로 임종 사건을 놓친 판 (완료 기준 5)');
@@ -455,17 +460,18 @@ say();
   };
   const missed7 = missedIn(v7);
   const missed8 = missedIn(v8);
+  const missed9 = missedIn(v9);
   say('| 세계 | 판 수 | 한 분 별세 판 | 임종 사건이 일어난 판 | 한 분 별세와 같은 해에 임종이 겹친 판 |');
   say('|---|---:|---:|---:|---:|');
-  for (const [label, rows] of [['V6 (겹침 정리 전)', v6], ['V7 (R-561)', v7], ['V8 (R-561 + 별세 해 notFlags 규칙)', v8]] as const) {
+  for (const [label, rows] of [['V6 (겹침 정리 전)', v6], ['V7 (R-561)', v7], ['V8 (R-561 + 별세 해 notFlags 규칙)', v8], ['V9 (+ R-631·R-632)', v9]] as const) {
     say(`| ${label} | ${rows.length} | ${lostCount(rows)} | ${rows.filter((r) => r.farewellAge !== null).length} | ${rows.filter((r) => r.sameYearGone).length} |`);
   }
   say();
   say(
-    `- 같은 해 겹침은 V6에서 ${same.length}판(한 분 별세 판의 ${pct((100 * same.length) / Math.max(1, lostCount(v6)), 2)}, 전체 판의 ${pct((100 * same.length) / v6.length, 2)})이고 V7·V8에서는 0판이다. 이 겹침 판 중 **같은 시드의 V7 판에서 임종 사건을 아예 놓친 판은 ${missed7.length}판**(${pct((100 * missed7.length) / Math.max(1, same.length))}), **V8 판에서는 ${missed8.length}판**(${pct((100 * missed8.length) / Math.max(1, same.length))})이고, 나머지는 이듬해 이후에 임종 사건이 일어났다(별세 나이가 가족 나이 상한 앞에서 끝나면 \`parents_gone\`을 나이 상한이 맡는다, R-562).`,
+    `- 같은 해 겹침은 V6에서 ${same.length}판(한 분 별세 판의 ${pct((100 * same.length) / Math.max(1, lostCount(v6)), 2)}, 전체 판의 ${pct((100 * same.length) / v6.length, 2)})이고 V7 이후에는 0판이다. 이 겹침 판 중 **같은 시드의 V7 판에서 임종 사건을 아예 놓친 판은 ${missed7.length}판**(${pct((100 * missed7.length) / Math.max(1, same.length))}), **V8 판에서는 ${missed8.length}판**(${pct((100 * missed8.length) / Math.max(1, same.length))}), **V9 판에서는 ${missed9.length}판**(${pct((100 * missed9.length) / Math.max(1, same.length))})이고, 나머지는 이듬해 이후에 임종 사건이 일어났다(별세 나이가 가족 나이 상한 앞에서 끝나면 \`parents_gone\`을 나이 상한이 맡는다, R-562).`,
   );
   say(
-    `- **「마지막 인사를 놓친 판」 비율(완료 기준 5, 전체 판 대비)**: V6 → V7 ${pct((100 * missed7.length) / v6.length, 2)}, V6 → V8 ${pct((100 * missed8.length) / v6.length, 2)}(한 분 별세 판 대비 ${pct((100 * missed7.length) / Math.max(1, lostCount(v6)), 2)} · ${pct((100 * missed8.length) / Math.max(1, lostCount(v6)), 2)}). 별세 해 notFlags 규칙이 새로 거르는 사건 중 임종 원본은 이미 R-561이 막고 있어 이 규칙으로 임종을 놓치는 판이 늘지는 않는다(V7 → V8 차이는 난수 흐름이 옮겨 간 판 수준).`,
+    `- **「마지막 인사를 놓친 판」 비율(완료 기준 5, 전체 판 대비)**: V6 → V7 ${pct((100 * missed7.length) / v6.length, 2)}, V6 → V8 ${pct((100 * missed8.length) / v6.length, 2)}, V6 → V9 ${pct((100 * missed9.length) / v6.length, 2)}(한 분 별세 판 대비 ${pct((100 * missed7.length) / Math.max(1, lostCount(v6)), 2)} · ${pct((100 * missed8.length) / Math.max(1, lostCount(v6)), 2)} · ${pct((100 * missed9.length) / Math.max(1, lostCount(v6)), 2)}). 별세 해 notFlags 규칙이 새로 거르는 사건 중 임종 원본은 이미 R-561이 막고 있고, R-631·R-632는 형제·조부모 줄이 난 해에만 닿아 이 규칙들로 임종을 놓치는 판이 늘지는 않는다(V7 → V8 → V9 차이는 난수 흐름이 옮겨 간 판 수준).`,
   );
   say();
 
@@ -478,7 +484,7 @@ say();
   });
   say('| 세계 | 판 수 | 병환 사건(원본 또는 변형)이 일어난 판 | 원본을 본 뒤 변형이 이어진 판 | 전체 판 대비 | 병환이 일어난 판 대비 |');
   say('|---|---:|---:|---:|---:|---:|');
-  for (const [label, rows] of [['V7 (R-561)', v7], ['V8 (+ 별세 해 notFlags 규칙)', v8], ['V10 (배포 값)', v10]] as const) {
+  for (const [label, rows] of [['V7 (R-561)', v7], ['V8 (+ 별세 해 notFlags 규칙)', v8], ['V9 (+ R-631·R-632)', v9], ['V11 (배포 값)', v11b]] as const) {
     const c = careStat(rows);
     say(`| ${label} | ${rows.length} | ${c.ever} | ${c.both} | ${pct((100 * c.both) / rows.length, 2)} | ${pct((100 * c.both) / Math.max(1, c.ever), 2)} |`);
   }
@@ -526,34 +532,82 @@ say();
   );
   say();
 
-  // senior-alone
-  say('### 8-4. senior-alone과 함께 사는 자녀 (R-586)');
+  // R-631·R-632
+  say('### 8-4. R-631·R-632: 형제·조부모 줄이 난 해의 후보·선택지 정리의 영향 — 바뀐 판 · 같은 해 점검 (V8 → V9)');
   say();
-  const sa8 = v8.filter((r) => r.seniorAlone).length;
+  const by8 = new Map(v8.map((r) => [key(r), r]));
+  const lineChanged = v9.filter((r) => by8.get(key(r))!.histSig !== r.histSig);
+  say('| 세대 | 판 수 | 규칙으로 인생 기록(연표)이 달라진 판 | 전체 판 대비 |');
+  say('|---|---:|---:|---:|');
+  for (const gen of GENERATION_IDS) {
+    const g = v9.filter((r) => r.gen === gen);
+    const ch = g.filter((r) => lineChanged.includes(r)).length;
+    say(`| ${gen} | ${g.length} | ${ch} | ${pct((100 * ch) / Math.max(1, g.length), 2)} |`);
+  }
+  say(`| 전체 | ${v9.length} | ${lineChanged.length} | ${pct((100 * lineChanged.length) / v9.length, 2)} |`);
+  say();
+  const sumLen = (rows: LifeRow[], f: (r: LifeRow) => unknown[]): number => rows.reduce((n, r) => n + f(r).length, 0);
+  const livesWith = (rows: LifeRow[], f: (r: LifeRow) => unknown[]): number => rows.filter((r) => f(r).length > 0).length;
+  say('| 점검 (형제·조부모 줄이 난 해 · 줄 뒤 플래그 기준) | V8 (R-631·R-632 없음) | V9 | 0이어야 한다 |');
+  say('|---|---:|---:|---|');
+  say(`| 줄 뒤 꺼지는 플래그를 요구하는 사건이 같은 해에 일어난 판 (R-631, 건수) | ${livesWith(v8, (r) => r.sameYearCleared)} (${sumLen(v8, (r) => r.sameYearCleared)}건) | ${livesWith(v9, (r) => r.sameYearCleared)} (${sumLen(v9, (r) => r.sameYearCleared)}건) | V9 |`);
+  say(`| 줄 뒤 ctx로는 안 보이는 선택지가 골라진 판 (R-632, 건수) | ${livesWith(v8, (r) => r.lineChoiceBad)} (${sumLen(v8, (r) => r.lineChoiceBad)}건) | ${livesWith(v9, (r) => r.lineChoiceBad)} (${sumLen(v9, (r) => r.lineChoiceBad)}건) | V9 |`);
+  say(`| 점검한 선택(가족 줄이 난 해에 보이거나 골라진 선택지 수) | ${v8.reduce((n, r) => n + r.lineChoiceN, 0)} | ${v9.reduce((n, r) => n + r.lineChoiceN, 0)} | – |`);
+  say();
+  const tally = (rows: LifeRow[], f: (r: LifeRow) => string[]): Map<string, number> => {
+    const m = new Map<string, number>();
+    for (const r of rows) for (const x of f(r)) m.set(x, (m.get(x) ?? 0) + 1);
+    return m;
+  };
+  const sy8 = tally(v8, (r) => r.sameYearCleared);
+  const sy9 = tally(v9, (r) => r.sameYearCleared);
+  const cb8 = tally(v8, (r) => [...new Set(r.lineChoiceBad)]);
+  const cb9 = tally(v9, (r) => [...new Set(r.lineChoiceBad)]);
+  say('| 걸린 것 | 구분 | V8 일어난 판 | V9 일어난 판 |');
+  say('|---|---|---:|---:|');
+  for (const id of [...new Set([...sy8.keys(), ...sy9.keys()])].sort()) say(`| \`${id}\` | 사건 (R-631) | ${sy8.get(id) ?? 0} | ${sy9.get(id) ?? 0} |`);
+  for (const id of [...new Set([...cb8.keys(), ...cb9.keys()])].sort()) say(`| \`${id}\` | 선택지 (R-632) | ${cb8.get(id) ?? 0} | ${cb9.get(id) ?? 0} |`);
+  say();
+  say('| 사건 (조건 flags가 형제·조부모 플래그) | V8 일어난 판 | V9 일어난 판 | 변화 |');
+  say('|---|---:|---:|---:|');
+  CLEARED_READER_IDS.forEach((id, i) => {
+    const seenN = (rows: LifeRow[]): number => rows.filter((r) => r.clearedSeen[i] !== null).length;
+    say(`| \`${id}\` | ${seenN(v8)} | ${seenN(v9)} | ${signed(seenN(v9) - seenN(v8))} |`);
+  });
+  say();
+  say(
+    `- 「인생 기록이 달라진 판」은 연표(나이 · 사건 · 고른 선택지)의 해시가 V8과 다른 판이다 — 줄 해의 후보·선택지가 바뀐 판과, 그 뒤 흐름이 옮겨 간 판을 함께 센다. 이름을 적은 배열(\`familyTick.ts#SIBLING_LINE_FLAGS·GRANDPARENT_LINE_FLAGS\`) 밖의 플래그는 보지 않는다. R-632의 교집합은 새로 열리는 선택지가 없다(한 방향).`,
+  );
+  say();
+
+  // senior-alone
+  say('### 8-5. senior-alone과 함께 사는 자녀 (R-586)');
+  say();
   const sa9 = v9.filter((r) => r.seniorAlone).length;
-  say(`- \`senior-alone\`이 일어난 판: V8 ${sa8} → V9 ${sa9} (판의 ${pct((100 * sa8) / v8.length, 2)} → ${pct((100 * sa9) / v9.length, 2)}). 자녀는 늦어도 주인공 45세에 태어나 75세에는 30세 이상이라 \`leaveAge\`(20~30)에 모두 닿아, 이 조건이 거르는 것은 70~74세의 늦둥이 판뿐이다.`);
+  const sa10 = v10.filter((r) => r.seniorAlone).length;
+  say(`- \`senior-alone\`이 일어난 판: V9 ${sa9} → V10 ${sa10} (판의 ${pct((100 * sa9) / v9.length, 2)} → ${pct((100 * sa10) / v10.length, 2)}). 자녀는 늦어도 주인공 45세에 태어나 75세에는 30세 이상이라 \`leaveAge\`(20~30)에 모두 닿아, 이 조건이 거르는 것은 70~74세의 늦둥이 판뿐이다.`);
   say();
 
   // Q3
-  say('### 8-5. Q3 어린 형제의 이른 별세와 상속');
+  say('### 8-6. Q3 어린 형제의 이른 별세와 상속');
   say();
-  const by9 = new Map(v9.map((r) => [key(r), r]));
+  const by10 = new Map(v10.map((r) => [key(r), r]));
   say('| 세대 | 판 수 | 형제가 떠난 판 | 비율 |');
   say('|---|---:|---:|---:|');
   for (const gen of GENERATION_IDS) {
-    const g = v10.filter((r) => r.gen === gen);
+    const g = v11b.filter((r) => r.gen === gen);
     const hit = g.filter((r) => r.siblingLost).length;
     say(`| ${gen} | ${g.length} | ${hit} | ${pct((100 * hit) / Math.max(1, g.length))} |`);
   }
-  const q3 = v10.filter((r) => r.siblingLost);
-  say(`| 전체 | ${v10.length} | ${q3.length} | ${pct((100 * q3.length) / v10.length)} |`);
+  const q3 = v11b.filter((r) => r.siblingLost);
+  say(`| 전체 | ${v11b.length} | ${q3.length} | ${pct((100 * q3.length) / v11b.length)} |`);
   say();
-  const q3pairs = q3.map((r) => [by9.get(key(r))!, r] as const);
+  const q3pairs = q3.map((r) => [by10.get(key(r))!, r] as const);
   const dSib = q3pairs.map(([a, b]) => b.siblingsView - a.siblingsView);
   const dInh = q3pairs.map(([a, b]) => b.inheritView - a.inheritView);
   const dFin = q3pairs.filter(([a, b]) => a.finalNet !== null && b.finalNet !== null).map(([a, b]) => b.finalNet! - a.finalNet!);
   say(
-    `- **형제가 떠난 판만 본 차이**(같은 시드의 V9와 짝지음, 보고만): 판 ${q3pairs.length}개 · 끝난 판의 형제 수 평균 ${num(mean(dSib), 2)} · 상속액 평균 ${num(mean(dInh), 0)}만 원(상속식 \`INHERIT ÷ (형제 수 + 1)\`의 형제 수가 하나 줄어든다 — 두 분이 모두 떠난 해 한 번) · 최종 순자산 평균 ${num(mean(dFin), 0)}만 원. 전체 판의 평균으로 풀면 재력 단계별 변화는 위 8절 V9 → V10 표가 보인다.`,
+    `- **형제가 떠난 판만 본 차이**(같은 시드의 V10과 짝지음, 보고만): 판 ${q3pairs.length}개 · 끝난 판의 형제 수 평균 ${num(mean(dSib), 2)} · 상속액 평균 ${num(mean(dInh), 0)}만 원(상속식 \`INHERIT ÷ (형제 수 + 1)\`의 형제 수가 하나 줄어든다 — 두 분이 모두 떠난 해 한 번) · 최종 순자산 평균 ${num(mean(dFin), 0)}만 원. 전체 판의 평균으로 풀면 재력 단계별 변화는 위 8절 V10 → V11 표가 보인다.`,
   );
   say();
 }

@@ -1,6 +1,6 @@
 import { FAMILY_ADULT_AGE, FAMILY_MAX_AGE, type SiblingKind } from './family';
 import { adultSlotsOf, latestSetterAge, namesOfFamily } from './familyAdult';
-import { childLeaveAgeOf, divorcePlan, firstGoneOf, goneAtMyAge, grandBirthYears, parentBirthYear, parentGoneAtOf, siblingLossPlan } from './familyBirth';
+import { childLeaveAgeOf, divorcePlan, firstGoneOf, goneAtMyAge, grandBirthYears, parentBirthYear, parentGoneAtOf, parentGoneOwnAgeOf, siblingLossPlan } from './familyBirth';
 export { parentDivorceRate } from './familyBirth';
 import {
   CHILD_APART_MIN_AGE,
@@ -44,6 +44,8 @@ export interface FamilySchedule {
   parentBy: [number, number];
   /** 주인공 나이로 본 부모 별세 시점 (101 = 계획 없음 → Infinity) */
   parentGoneAt: [number, number];
+  /** 별세 줄·카드에 쓰는 그 분의 별세 나이 N — 저장된 `d` 그대로, 0세 해 → 1세 해로 옮겨진 별세만 `d + 1` (R-634 (a)) */
+  parentGoneOwn: [number, number];
   /** 먼저 떠나는 한 분 (같은 해면 아버지가 먼저 — 설계값). 두 번째 분의 별세는 모델이 정하지 않는다 (K3, 4-7절 (1)) */
   firstGone: { who: 0 | 1; at: number } | null;
   /** 부모 이혼·별거: 주인공 나이 `at`의 해에 일어나 `at + 1`부터 한 분이 따로 산다. `leaver` 0 어머니 · 1 아버지 */
@@ -65,6 +67,7 @@ export function familyScheduleOf(game: FamilyGame): FamilySchedule {
   const famSeed = famSeedOf(game.peerSeed ?? game.seed);
   const parentBy: [number, number] = [parentBirthYear(Y, report.mother.age), parentBirthYear(Y, report.father.age)];
   const parentGoneAt = parentGoneAtOf(Y, report, family.p);
+  const parentGoneOwn = parentGoneOwnAgeOf(Y, report, family.p);
   const firstGone = firstGoneOf(parentGoneAt);
   const rawDivorce = divorcePlan(famSeed, Y, firstGone);
   // 옛 저장 스냅샷(`lg`)의 아래 동생은 이미 본 `infant-new-sibling` 나이에서 왔다 — 그보다 앞선 이혼 계획은 없는 것으로 본다 (R-540, 재혼이 없으므로 이혼한 집에 동생이 새로 태어나지 않는다). 사용자가 본 적 없는 값이라 DF25와 부딪치지 않는다
@@ -73,7 +76,7 @@ export function familyScheduleOf(game: FamilyGame): FamilySchedule {
   const siblingLoss = family.lg === 1 ? null : siblingLossPlan(famSeed, Y, family);
   const grandBy = grandBirthYears(Y, report.mother.age, report.father.age, family.g);
   const grandGoneAt = grandBy.map((by, i) => (family.g[i].d >= NO_DEATH_PLAN ? Infinity : goneAtMyAge(by, family.g[i].d, Y))) as FamilySchedule['grandGoneAt'];
-  return { family, birthYear: Y, famSeed, parentBy, parentGoneAt, firstGone, divorce, siblingLoss, grandBy, grandGoneAt };
+  return { family, birthYear: Y, famSeed, parentBy, parentGoneAt, parentGoneOwn, firstGone, divorce, siblingLoss, grandBy, grandGoneAt };
 }
 
 // ---------- 보기 ----------
@@ -133,7 +136,7 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
     if (p.state === 'apart') p.apartBy = apartByEvent ? 'split' : 'away';
     if (gone) {
       // 떠난 나이(카드의 「N세에 세상을 떠남」): 모델이 정한 별세 · 사별 사건이 켠 `parents_gone` 때 · 나이 상한(100세)
-      if (modeledGone) markGone(p, f.p[i].d, sc.parentGoneAt[i]);
+      if (modeledGone) markGone(p, sc.parentGoneOwn[i], sc.parentGoneAt[i]);
       else if (parentsGoneFlag) {
         const partAt = Math.min(age, latestSetterAge(game, 'parents_gone') ?? age);
         const ownAtParting = ownAge - age + partAt;

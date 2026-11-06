@@ -53,7 +53,7 @@ export const NO_DEATH_PLAN = 101;
 export const GRAND_COHABIT_UNTIL = 19;
 /**
  * 부모 이혼·별거가 일어날 수 있는 주인공 나이 (1~18, 4-7절 (2)). 하한 1세(FM7a R-618, 마스터 2026-11-06): 0세 해의 이혼 줄은 한부모 출생으로 읽혀 문장으로는 풀리지 않는다(FA0-5 ①).
- * 부모 별세도 같은 이유로 주인공 0세 해를 1세 해로 옮긴다(`familyBirth.ts#parentGoneAtOf`) — 별세 나이 N(`d`)은 그대로다.
+ * 부모 별세도 같은 이유로 주인공 0세 해를 1세 해로 옮긴다(`familyBirth.ts#parentGoneAtOf`) — 옮겨진 별세만 별세 나이 N이 `d + 1`이고(`parentGoneOwnAgeOf`, R-634 (a)), 그 밖은 `d` 그대로다.
  */
 export const DIVORCE_AGES = { min: 1, max: 18 } as const;
 /** 부모 별세 줄이 나올 수 있는 주인공 나이의 하한 (R-618) */

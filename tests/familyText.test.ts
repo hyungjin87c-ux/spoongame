@@ -57,6 +57,16 @@ describe('승인 게이트 (완료 기준 1, RG11 방식)', () => {
   it('승인 표가 깨진 것도 잡는다: 번호가 겹치거나 덮는 코드 위치가 없다', () => {
     expect(familyApprovalProblems([...FM7A_APPROVALS, FM7A_APPROVALS[0]], sibLossOn).join('\n')).toContain('겹친다');
     expect(familyApprovalProblems([{ id: 'T99', what: '시험', approved: true, covers: [] }], sibLossOn).join('\n')).toContain('covers');
+    // R-637: 표에서 번호를 지워도 막힌다 — T03을 뺀 표는 T03을 대며 실패하고, 어느 번호를 빼도 그 번호 하나만 대며 실패한다(T06도 표에는 있어야 한다)
+    const noT03 = familyApprovalProblems(FM7A_APPROVALS.filter((a) => a.id !== 'T03'), sibLossOn);
+    expect(noT03).toHaveLength(1);
+    expect(noT03[0]).toContain('T03');
+    expect(noT03[0]).toContain('표에 없다');
+    for (const target of FM7A_APPROVALS) {
+      const dropped = familyApprovalProblems(FM7A_APPROVALS.filter((a) => a.id !== target.id), sibLossOn);
+      expect(dropped, `${target.id}를 뺀 표`).toHaveLength(1);
+      expect(dropped[0], target.id).toContain(`${target.id}: 승인 표에 없다`);
+    }
   });
 
   it('승인 표가 덮는 코드 위치가 실제로 있다: 줄 id · 사건 id · 선택지 id · 글감 카드 (이름만 남고 코드가 사라진 승인이 없다)', () => {

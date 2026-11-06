@@ -21,10 +21,12 @@ import {
   isChoiceEvent,
   isEventEligible,
   isMilestoneEvent,
+  meetsCondition,
   MILESTONES_PER_YEAR_MAX,
   resolveEffects,
   stageOfAge,
   visibleChoices,
+  type ChoiceDef,
   type CondContext,
   type EventDef,
   type EventPool,
@@ -34,9 +36,9 @@ import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
-import { flagBlockersOf, flagSettersOf } from './familyAdult';
+import { flagBlockersOf, flagRequirersOf, flagSettersOf } from './familyAdult';
 import { LOG_PARENT_GONE } from './familyModel';
-import { applyFamilyChanges, familyChangesFor, goneYearRuleNow, syncPostEventFlags } from './familyTick';
+import { applyFamilyChanges, familyChangesFor, flagsAfterLine, goneYearRuleNow, lineClearedFlags, syncPostEventFlags } from './familyTick';
 import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllGone, parentsJustGone, siblingCountOf } from './inherit';
 import type { NoteCardDef } from './noteCards';
 import { consumeNote, dueNote, type NoteMode } from './notes';
@@ -341,13 +343,26 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   let blocked: Set<string> | null = null;
   if (rule !== 'legacy' && fam.lines.some((l) => l.eventId === FAMILY_LINE_ID.parentGone)) {
     blocked = new Set(flagSettersOf(pool, 'parents_gone'));
-    if (rule === 'exclude') {
+    if (rule === 'notflags' || rule === 'exclude') {
       const who = fam.log.find((e) => e[0] === LOG_PARENT_GONE);
       for (const id of flagBlockersOf(pool, who?.[2] === 1 ? 'mother_gone' : 'father_gone')) blocked.add(id);
     }
   }
+  // R-631·R-632 (FM7a Q3·조부모 별세, 후속 199 확장 — 마스터 2026-11-06): 가족 줄이 난 해에 줄 뒤(같은 해)부터 달라지는 플래그 — 떠난 부모의 `_gone`(켜짐), 줄 뒤 꺼지는 형제·조부모 플래그(`familyTick.ts#lineClearedFlags`, 이름을 적은 배열).
+  // ① 꺼지는 플래그를 **요구하는** 사건(사건 수준 `flags`)은 그 해 후보에서 뺀다(R-631) ② 보이는 선택지는 「해 시작 ctx로 보이는 것 ∩ 줄 뒤 ctx로 보이는 것」이다(R-632) — 교집합이라 새로 열리는 선택지가 없다(한 방향). 교집합이 2개 미만인 선택지 사건도 뺀다.
+  // 후보 목록만 줄고 추첨 칸 수는 그대로이며(아래 `draw`), `'exclude'`에서만 켜진다(`legacy`·`setters`는 옛 세계다). `visibleChoices`·`meetsCondition`은 난수를 쓰지 않는 순수 계산이다
+  let afterLine: CondContext | null = null;
+  const afterFlags = rule === 'exclude' ? flagsAfterLine(ctx.flags, fam) : null;
+  if (afterFlags !== null) {
+    afterLine = { ...ctx, flags: afterFlags };
+    for (const flag of lineClearedFlags(fam)) for (const id of flagRequirersOf(pool, flag)) (blocked ??= new Set<string>()).add(id);
+  }
+  const lineCtx = afterLine;
+  const narrowedChoices = (ev: EventDef): ChoiceDef[] => (lineCtx === null ? visibleChoices(ev, ctx) : visibleChoices(ev, ctx).filter((c) => meetsCondition(c.requires, lineCtx)));
   const eligibleAll = eventsForStage(pool, stageOfAge(age)).filter((ev) => isEventEligible(ev, view));
-  const eligible = blocked === null ? eligibleAll : eligibleAll.filter((ev) => !blocked.has(ev.id));
+  if (lineCtx !== null) for (const ev of eligibleAll) if (isChoiceEvent(ev) && narrowedChoices(ev).length < 2) (blocked ??= new Set<string>()).add(ev.id);
+  const blockedIds = blocked;
+  const eligible = blockedIds === null ? eligibleAll : eligibleAll.filter((ev) => !blockedIds.has(ev.id));
 
   // 마일스톤 슬롯 (SPEC-003 IN3, M7a r3): 일반 추첨과 별개로, 창 안의 마일스톤을 한 해에 **여러 개(최대 MILESTONES_PER_YEAR_MAX)** 일으킨다. 창이 일찍 끝나는(급한) 것부터, 끝이 같으면 id 오름차순으로 따져
   // 확률 1 ÷ (창 끝 나이 − 나이 + 1)로 일어나고, 창의 마지막 해(분모 1)는 난수 없이 100%다. 한 해에 몰려도 칸(MILESTONES_PER_YEAR_MAX) 안이면 모두 일어나고, 칸을 넘길 몰림은
@@ -377,16 +392,19 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     picked = forced;
   } else {
     // 후보가 R-561로 줄어 비게 됐다면 원래 후보가 있던 만큼 난수를 한 칸 쓴다(칸 수 불변)
+    // 선택지 칸이 그렇게 비면 그 해의 추첨 칸은 쓴 것으로 본다 — 원래 세계는 선택지를 뽑아 서술 추첨을 하지 않았으므로 서술로 넘어가지 않는다(R-560 「한 칸 규칙」, 강제 사건 칸과 같다, R-633)
+    const slot = { spent: false };
     const draw = (list: EventDef[], full: EventDef[], a?: number, choices?: boolean): EventDef | null => {
       if (list.length === 0 && full.length > 0) {
         rng.next();
+        slot.spent = true;
         return null;
       }
       return pickWeighted(rng, list, ctx, a, choices);
     };
     const isNarrative = (ev: EventDef): boolean => !isChoiceEvent(ev) && !isMilestoneEvent(ev);
     if (rollChoice < choiceChance && canChoice) picked = draw(eligible.filter(isChoiceEvent), eligibleAll.filter(isChoiceEvent), age, true);
-    if (picked === null && rollNarrative < freq.narrative) picked = draw(eligible.filter(isNarrative), eligibleAll.filter(isNarrative));
+    if (picked === null && !slot.spent && rollNarrative < freq.narrative) picked = draw(eligible.filter(isNarrative), eligibleAll.filter(isNarrative));
   }
 
   // 마일스톤 효과·연표 한 줄은 그 해의 일반 사건보다 먼저 적용한다(선택지가 뜨는 해에도 마일스톤 줄은 이미 남는다)
@@ -403,7 +421,9 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   s = applyFamilyChanges(s, fam);
 
   if (picked !== null && isChoiceEvent(picked)) {
-    const visible = visibleChoices(picked, ctx);
+    // 보이는 선택지: 가족 줄이 난 해(`exclude`)에는 해 시작 ctx ∩ 줄 뒤 ctx (R-632). 강제 사건(K2)은 후보에서 뺄 수 없으므로 교집합이 2개 미만이면 해 시작 값을 그대로 쓴다(지금 풀의 강제 사건은 늘 보이는 선택지가 둘이라 닿지 않는다)
+    const narrowed = narrowedChoices(picked);
+    const visible = narrowed.length >= 2 || lineCtx === null ? narrowed : visibleChoices(picked, ctx);
     const pendingState: GameState = {
       ...s,
       rngState: rng.getState(),

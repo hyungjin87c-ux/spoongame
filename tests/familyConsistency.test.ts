@@ -3,8 +3,10 @@ import {
   FAMILY_SYSTEM_FLAGS,
   GENERATION_IDS,
   childLeaveAgeOf,
+  condContextOf,
   famSeedOf,
   flagSettersOf,
+  meetsCondition,
   STATE_WORD_RULES,
   YOUNGER_SIBLING_EVENT,
   CHILD_APART_MIN_AGE,
@@ -66,6 +68,15 @@ interface Tally {
   sameYear: number;
   /** 별세 줄이 난 해에 그 한 분의 플래그를 notFlags로 읽는 사건이 같은 해에 일어난 수 (후속 199 — 0이어야 한다) */
   sameYearReader: number;
+  /** 어린 형제·마지막 조부모가 떠난 해에 그 줄 뒤 꺼진 형제·조부모 플래그를 요구하는 사건이 같은 해에 일어난 수 (R-631 — 0이어야 한다) · 꺼진 줄 해 수(공허 통과 방지) */
+  sameYearCleared: number;
+  clearedYears: number;
+  /** 가족 줄이 난 해에 고른 선택지 중 줄 뒤 ctx로 안 보이는 것의 수 (R-632 — 0이어야 한다) · 점검한 선택 수(공허 통과 방지) */
+  lineChoiceBad: number;
+  lineChoices: number;
+  /** 별세 줄의 「N세」가 보기·카드의 별세 나이와 다른 수 (R-634 (a) — 0이어야 한다) · 점검한 줄 수 */
+  goneAgeBad: number;
+  goneAgeChecked: number;
   seniorAlone: number;
   /** FM6 카드: 배우자·자녀·친구가 보인 판 수 */
   spouse: number;
@@ -76,7 +87,7 @@ interface Tally {
 }
 
 describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
-  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0, sibLost: 0, kidApart: 0, kidWith: 0, atZero: 0, sameYear: 0, sameYearReader: 0, seniorAlone: 0, spouse: 0, child: 0, friend: 0, adultNames: 0 };
+  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0, sibLost: 0, kidApart: 0, kidWith: 0, atZero: 0, sameYear: 0, sameYearReader: 0, sameYearCleared: 0, clearedYears: 0, lineChoiceBad: 0, lineChoices: 0, goneAgeBad: 0, goneAgeChecked: 0, seniorAlone: 0, spouse: 0, child: 0, friend: 0, adultNames: 0 };
   const problems: string[] = [];
   const bad = (where: string, msg: string): void => {
     if (problems.length < 40) problems.push(`${where}: ${msg}`);
@@ -239,6 +250,51 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
                 bad(where, `${h.age}세 별세 줄과 같은 해에 ${goneFlag}를 notFlags로 읽는 사건 ${reader.eventId}가 일어났다`);
               }
             }
+            // R-631 (FM7a Q3·조부모 별세, 마스터 확장 2026-11-06): 어린 형제·마지막 조부모가 떠난 해에 그 줄 뒤(같은 해 안)에 꺼진 형제·조부모 플래그를 요구하는 사건이 같은 해에 일어나지 않는다 — 꺼진 플래그는 해 시작과 해 끝 플래그의 차이로 본다(규칙 코드와 독립)
+            const CLEARS: Readonly<Record<string, readonly string[]>> = { 'fam-sib-lost': ['has_older_sibling', 'has_younger_sibling', 'has_sibling'], 'fam-gp-gone': ['has_grandparent', 'lives_with_grandparent'] };
+            if (CLEARS[h.eventId ?? ''] !== undefined) {
+              const cleared = CLEARS[h.eventId!].filter((x) => before.flags.includes(x) && !state.flags.includes(x));
+              if (cleared.length > 0) tally.clearedYears++;
+              const reader = added.find((x) => x.age === h.age && (EVENT_POOL.byId.get(x.eventId ?? '')?.conditions?.flags ?? []).some((fl) => cleared.includes(fl)));
+              if (reader !== undefined) {
+                tally.sameYearCleared++;
+                bad(where, `${h.age}세 ${h.eventId} 줄과 같은 해에 꺼진 플래그(${cleared.join('·')})를 요구하는 사건 ${reader.eventId}가 일어났다 (R-631)`);
+              }
+            }
+            // R-634 (a): 한 분 별세 줄의 「N세」 = 보기·카드의 별세 나이 (0세 해에서 1세 해로 옮겨진 별세도 줄과 카드가 같은 값이다)
+            if (h.eventId === 'fam-parent-gone') {
+              const m = /(\d+)세에 세상을 떠나셨습니다/.exec(h.text);
+              const whoId = f.l.find((e) => e[0] === 5)![2] === 1 ? 'mother' : 'father';
+              const after = dead ? familyViewOf(state, age + 1) : view;
+              const goneP = after.people.find((x) => x.id === whoId);
+              tally.goneAgeChecked++;
+              if (m === null || goneP === undefined || goneP.state !== 'gone' || goneP.goneAtOwnAge !== Number(m[1])) {
+                tally.goneAgeBad++;
+                bad(where, `${h.age}세 별세 줄의 나이(${m?.[1]})가 보기의 별세 나이(${goneP?.goneAtOwnAge})와 다르다 (R-634)`);
+              } else if (!dead && familyCardOf(state).gone.find((r) => r.key === whoId)?.goneText !== `${m[1]}세에 세상을 떠남`) {
+                tally.goneAgeBad++;
+                bad(where, `${h.age}세 별세 줄의 나이(${m[1]})가 카드의 「N세에 세상을 떠남」과 다르다 (R-634)`);
+              }
+            }
+            // R-632 (선택지 수준 교집합): 가족 줄이 난 해에 고른 선택지는 해 시작 ctx와 줄 뒤 ctx(떠난 부모의 _gone 켜짐 · 꺼진 형제·조부모 플래그 꺼짐) **둘 다**로 보인다 — 줄 뒤 플래그는 해 시작 플래그에서 같은 해 줄들로 계산한다
+            if (h.kind === 'choice' && h.eventId !== undefined && h.age === before.age) {
+              const lineIds = added.filter((x) => x.age === h.age && (x.eventId ?? '').startsWith('fam-')).map((x) => x.eventId);
+              const afterFlags = new Set(before.flags);
+              for (const id of lineIds) for (const x of CLEARS[id ?? ''] ?? []) if (before.flags.includes(x) && !state.flags.includes(x)) afterFlags.delete(x);
+              if (lineIds.includes('fam-parent-gone')) afterFlags.add(f.l.find((e) => e[0] === 5)![2] === 1 ? 'mother_gone' : 'father_gone');
+              if (afterFlags.size !== before.flags.length || [...afterFlags].some((x) => !before.flags.includes(x))) {
+                const ev = EVENT_POOL.byId.get(h.eventId);
+                const ch = ev?.choices?.find((c) => c.label === h.choice || c.parentLabel === h.choice);
+                if (ev !== undefined && ch !== undefined) {
+                  tally.lineChoices++;
+                  const lineCtx = { ...condContextOf(before), flags: afterFlags };
+                  if (!meetsCondition(ch.requires, lineCtx) || !meetsCondition(ch.requires, condContextOf(before))) {
+                    tally.lineChoiceBad++;
+                    bad(where, `${h.age}세 가족 줄이 난 해에 선택지 ${h.eventId}/${ch.id}가 줄 뒤에는 안 보이는데 골라졌다 (R-632)`);
+                  }
+                }
+              }
+            }
             // 가림(4-9절): 모든 가족 줄의 분류가 글자 표와 같고, 분류가 붙은 줄(별세·이혼)은 가림을 켜면 문장이 가려지는 줄이다 (R-560)
             if ((h.eventId ?? '').startsWith('fam-')) {
               const want = FAMILY_LINE_HEAVY[h.eventId!] ?? null;
@@ -331,6 +387,13 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
     expect(tally.kidWith, '자녀가 함께 사는 해').toBeGreaterThan(500);
     expect(tally.seniorAlone, 'senior-alone이 일어난 판').toBeGreaterThan(5);
     expect(tally.atZero + tally.sameYear + tally.sameYearReader, '0세 해 별세·이혼 줄 + 같은 해 겹침(parents_gone 세터 · 한 분 플래그를 notFlags로 읽는 사건)').toBe(0);
+    // R-631·R-632·R-634 (a): 형제·조부모 줄 뒤 같은 해 읽는 사건 0 · 줄 뒤 안 보이는 선택지를 고른 판 0 · 별세 줄의 나이가 보기·카드와 같다 (공허 통과 방지로 점검한 수도 센다)
+    expect(tally.clearedYears, '형제·조부모 플래그가 줄 뒤 꺼진 해').toBeGreaterThan(50);
+    expect(tally.sameYearCleared, '줄 뒤 꺼진 플래그를 요구하는 사건이 같은 해 일어난 수 (R-631)').toBe(0);
+    expect(tally.lineChoices, '가족 줄이 난 해에 점검한 선택지').toBeGreaterThan(20);
+    expect(tally.lineChoiceBad, '줄 뒤 안 보이는 선택지를 고른 수 (R-632)').toBe(0);
+    expect(tally.goneAgeChecked, '별세 줄 나이 점검').toBeGreaterThan(30);
+    expect(tally.goneAgeBad, '별세 줄 나이가 보기·카드와 다른 수 (R-634 (a))').toBe(0);
     expect(tally.plain, '분류 없는 줄(동생 출생·독립)').toBeGreaterThan(100);
     expect(tally.maxLen, `판 끝 family 최대 ${tally.maxLen}자 · 로그 최대 ${tally.maxLog}줄`).toBeLessThanOrEqual(1000);
   });

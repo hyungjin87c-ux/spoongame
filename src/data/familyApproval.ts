@@ -40,6 +40,9 @@ export const FM7A_APPROVALS: readonly TextApproval[] = [
   { id: 'T10', what: '글감 「부모님의 나이듦」 — 남은 분 변형', approved: true, covers: ['note:note-parents-aging'] },
 ];
 
+/** 문장 문서 4절의 번호 — 표에서 하나라도 빠지면 배포 빌드가 막힌다 */
+const REQUIRED_IDS: readonly string[] = ['T01', 'T02', 'T03', 'T04', 'T05', 'T06', 'T07', 'T08', 'T09', 'T10'];
+
 /**
  * 승인 게이트의 문제 목록 (빈 배열이면 통과). `siblingLossEnabled`는 어린 형제의 이른 별세 계획의 스위치(`design.siblingLoss.enabled`)다.
  *  - 승인되지 않은 항목(T06 제외)이 있으면 그 번호를 대며 막는다.
@@ -60,5 +63,6 @@ export function familyApprovalProblems(approvals: readonly TextApproval[], sibli
     }
     problems.push(`${a.id}(${a.what}): 형진 님 승인 전이다 — approved: true가 아니면 배포 빌드가 막힌다 (docs/design/fm7a-event-texts.md 4절)`);
   }
+  for (const id of REQUIRED_IDS) if (!ids.has(id)) problems.push(`${id}: 승인 표에 없다 — 문장 문서(docs/design/fm7a-event-texts.md 4절)의 번호가 표에서 빠지면 배포 빌드가 막힌다`);
   return problems;
 }

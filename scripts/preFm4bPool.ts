@@ -34,10 +34,10 @@ export function k2OnlyPool(): EventPool {
 }
 
 /**
- * FM7a의 원인을 하나씩 켠 풀 (재측정 V6~V8, SPEC-009 완료 기준 11): 영유아·학창은 지금(K2·K4가 켜진) 것이고 청년·중년·노년은 FM7a 전 원문에서 시작해
+ * FM7a의 원인을 하나씩 켠 풀 (재측정 V6~V9, SPEC-009 완료 기준 11): 영유아·학창은 지금(K2·K4가 켜진) 것이고 청년·중년·노년은 FM7a 전 원문에서 시작해
  *  - `fm7aVariantsPool()`: 중년만 지금 것 — 「남은 한 분」 변형 사건 4개와 원본의 한 분 별세 제외 조건(`middle-child-leaves`의 문장 변경은 효과가 같다)
  *  - `fm7aSeniorPool()`: 위 + 노년도 지금 것 — `senior-alone`이 함께 사는 자녀가 있는 판을 거른다(R-586). 청년 「본가」는 문장만 바뀌어 효과가 없다
- * 마지막(V9)은 지금 풀(`eventPool`)이다.
+ * 마지막(V10)은 지금 풀(`eventPool`)이다.
  */
 let cacheVariants: EventPool | null = null;
 let cacheSenior: EventPool | null = null;

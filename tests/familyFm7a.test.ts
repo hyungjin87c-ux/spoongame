@@ -15,9 +15,13 @@ import {
   familyScheduleOf,
   familyViewOf,
   flagBlockersOf,
+  flagRequirersOf,
   flagSettersOf,
+  GRANDPARENT_LINE_FLAGS,
+  SIBLING_LINE_FLAGS,
   generateBirthFromSeed,
   goneAtMyAge,
+  lineClearedFlags,
   parentBirthYear,
   rollParentLife,
   sceneFamilyOf,
@@ -30,7 +34,9 @@ import {
   type ProfileId,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
+import { EVENT_FREQUENCY } from '../src/data/lifeTable';
 import { FAMILY_LINE_ID } from '../src/data/familyLineText';
+import { CLEARED_READER_IDS, GONE_READER_IDS } from '../scripts/familyRemeasureLib';
 import { startLife } from '../scripts/simulateLib';
 import { spreadSeeds } from './helpers/familyGolden';
 import { lifeSteps, seedsFor } from './helpers/familyLife';
@@ -53,7 +59,7 @@ describe('R-618: 별세·이혼 하한 1세 (완료 기준 15)', () => {
     expect(PARENT_GONE_MIN_AGE).toBe(1);
   });
 
-  it('7세대 × 1000판: 부모 별세 계획의 최소 주인공 나이가 1이고(0세 해 없음) 이혼 계획의 최소 나이도 1이다 — 별세 나이 N(d)은 그대로 올려지지 않는다', () => {
+  it('7세대 × 1000판: 부모 별세 계획의 최소 주인공 나이가 1이고(0세 해 없음) 이혼 계획의 최소 나이도 1이다 — 저장된 d는 그대로고 별세 나이 N은 옮겨진 별세만 d + 1이다 (R-634 (a))', () => {
     let lifted = 0;
     let divorces = 0;
     let minGone = Infinity;
@@ -65,17 +71,22 @@ describe('R-618: 별세·이혼 하한 1세 (완료 기준 15)', () => {
         const sc = familyScheduleOf(game);
         const famSeed = famSeedOf(b.peerSeed);
         const [dm, df] = rollParentLife(famSeed, b.character.birthYear, b.report.mother.age, b.report.father.age);
-        // 별세 나이 N은 d 그대로다 (저장된 d = 출생 때 굴린 값)
+        // 저장된 d는 출생 때 굴린 값 그대로다 (별세 나이 N은 아래 `parentGoneOwn` — 옮겨진 별세만 d + 1)
         expect([b.family.p[0].d, b.family.p[1].d], `${gen}/${seed}: 부모 별세 나이 d`).toEqual([dm, df]);
         for (const i of [0, 1] as const) {
           const raw = goneAtMyAge(parentBirthYear(b.character.birthYear, i === 0 ? b.report.mother.age : b.report.father.age), b.family.p[i].d, b.character.birthYear);
           if (!Number.isFinite(sc.parentGoneAt[i])) continue;
           minGone = Math.min(minGone, sc.parentGoneAt[i]);
           expect(sc.parentGoneAt[i], `${gen}/${seed} 부모 ${i}`).toBeGreaterThanOrEqual(1);
+          const d = b.family.p[i].d;
           if (raw === 0) {
             lifted++;
             expect(sc.parentGoneAt[i], `${gen}/${seed}: 0세 해의 별세는 1세 해로 옮긴다`).toBe(1);
-          } else expect(sc.parentGoneAt[i], `${gen}/${seed}: 0세가 아니면 그대로`).toBe(raw);
+            expect(sc.parentGoneOwn[i], `${gen}/${seed}: 옮겨진 별세는 별세 나이 N = d + (at − raw) = d + 1`).toBe(d + 1);
+          } else {
+            expect(sc.parentGoneAt[i], `${gen}/${seed}: 0세가 아니면 그대로`).toBe(raw);
+            expect(sc.parentGoneOwn[i], `${gen}/${seed}: 옮겨지지 않은 별세는 N = d 그대로`).toBe(d);
+          }
         }
         if (sc.firstGone !== null) expect(sc.firstGone.at, `${gen}/${seed}`).toBeGreaterThanOrEqual(1);
         if (sc.divorce !== null) {
@@ -93,7 +104,7 @@ describe('R-618: 별세·이혼 하한 1세 (완료 기준 15)', () => {
     expect(minDivorce, '이혼 계획의 최소 주인공 나이').toBe(1);
   });
 
-  it('줄과 카드가 같은 값을 읽는다: 0세 해에 별세가 있던 판은 1세 해에 줄이 나고(0세 해에는 줄이 없다), 2세부터 카드가 「N세에 세상을 떠남」·「내가 1세였던 해」를 보인다', () => {
+  it('줄과 카드가 같은 값을 읽는다: 0세 해에 별세가 있던 판은 1세 해에 줄이 나고(0세 해에는 줄이 없다), 2세부터 카드가 「N세에 세상을 떠남」·「내가 1세였던 해」를 보인다 — 옮겨진 별세의 N은 d + 1이다 (R-634 (a))', () => {
     let checked = 0;
     GENERATION_IDS.forEach((gen, gi) => {
       for (const seed of spreadSeeds(400, gi)) {
@@ -105,24 +116,49 @@ describe('R-618: 별세·이혼 하한 1세 (완료 기준 15)', () => {
         checked++;
         const who = sc.firstGone.who === 0 ? 'mother' : 'father';
         const d = sc.family.p[sc.firstGone.who].d;
+        const own = d + 1; // 옮겨진 별세: 그 분은 주인공 1세 해의 카드에 d + 1세로 살아 있다가 그 해 줄에서 떠난다 (R-634 (a))
         const at = (age: number): GameState => ({ ...base, age });
         // 0세 해: 줄 없음. 1세 해: 줄 + 카드는 아직 함께 사는 사람
         expect(familyChangesFor(at(0), 0).lines.filter((l) => l.eventId === FAMILY_LINE_ID.parentGone), `${gen}/${seed}: 0세 해`).toHaveLength(0);
         const changes = familyChangesFor(at(1), 1);
         const line = changes.lines.find((l) => l.eventId === FAMILY_LINE_ID.parentGone);
         expect(line, `${gen}/${seed}: 1세 해의 줄`).toBeDefined();
-        expect(line!.text, `${gen}/${seed}`).toContain(`${d}세에 세상을 떠나셨습니다.`);
+        expect(line!.text, `${gen}/${seed}`).toContain(`${own}세에 세상을 떠나셨습니다.`);
+        expect(familyViewOf(at(1)).people.find((p) => p.id === who)!.age, `${gen}/${seed}: 1세 해 카드의 나이 = 줄의 N`).toBe(own);
         expect(familyViewOf(at(1)).people.find((p) => p.id === who)!.state, `${gen}/${seed}`).not.toBe('gone');
         const goneP = familyViewOf(at(2)).people.find((p) => p.id === who)!;
         expect(goneP.state, `${gen}/${seed}`).toBe('gone');
-        expect(goneP.goneAtOwnAge, `${gen}/${seed}: 별세 나이 N은 d 그대로`).toBe(d);
+        expect(goneP.goneAtOwnAge, `${gen}/${seed}: 옮겨진 별세의 N = d + 1`).toBe(own);
         expect(goneP.goneAtMyAge, `${gen}/${seed}: 줄이 난 해 = 카드의 「내가 M세였던 해」`).toBe(1);
         const row = familyCardOf(at(2)).gone.find((r) => r.key === who);
-        expect(row?.goneText, `${gen}/${seed}`).toBe(`${d}세에 세상을 떠남`);
+        expect(row?.goneText, `${gen}/${seed}`).toBe(`${own}세에 세상을 떠남`);
         expect(row?.goneMyText, `${gen}/${seed}`).toBe('내가 1세였던 해');
       }
     });
     expect(checked, '확인한 판').toBeGreaterThan(5);
+  });
+
+  it('옮겨지지 않은 판은 별세 나이 N이 d 그대로다: 줄·카드·보기가 같은 값이고 d는 건드리지 않는다 (R-634 (a) — 해시 L1이 같은 판을 잠근다)', () => {
+    let checked = 0;
+    GENERATION_IDS.forEach((gen, gi) => {
+      for (const seed of spreadSeeds(120, gi)) {
+        const base = bornGame(seed, gen);
+        const sc = familyScheduleOf(base);
+        if (sc.firstGone === null || sc.firstGone.at < 2) continue;
+        const who = sc.firstGone.who === 0 ? 'mother' : 'father';
+        const d = sc.family.p[sc.firstGone.who].d;
+        const raw = goneAtMyAge(sc.parentBy[sc.firstGone.who], d, sc.birthYear);
+        expect(raw, `${gen}/${seed}: 옮겨지지 않은 판`).toBe(sc.firstGone.at);
+        checked++;
+        const at = (age: number): GameState => ({ ...base, age });
+        const line = familyChangesFor(at(sc.firstGone.at), sc.firstGone.at).lines.find((l) => l.eventId === FAMILY_LINE_ID.parentGone);
+        expect(line?.text, `${gen}/${seed}`).toContain(`${d}세에 세상을 떠나셨습니다.`);
+        const goneP = familyViewOf(at(sc.firstGone.at + 1)).people.find((p) => p.id === who)!;
+        expect(goneP.goneAtOwnAge, `${gen}/${seed}`).toBe(d);
+        expect(familyCardOf(at(sc.firstGone.at + 1)).gone.find((r) => r.key === who)?.goneText, `${gen}/${seed}`).toBe(`${d}세에 세상을 떠남`);
+      }
+    });
+    expect(checked, '확인한 판').toBeGreaterThan(300);
   });
 
   it('실제 판을 돌려도 0세 해에는 별세·이혼 줄이 없다 (7세대 × 60판 전수 걸음)', () => {
@@ -286,6 +322,8 @@ describe('별세 해 후보 정리 ②: 별세 줄이 난 해에는 그 한 분�
   it('풀 색인으로 찾는다(사건 id를 박지 않는다): 사건 수준 notFlags가 mother_gone·father_gone을 읽는 사건은 병환·임종 원본과 「아빠/엄마」 어린 시절 사건 셋이고, 변형(flags로 읽음)은 아니다', () => {
     const want = ['infant-care', 'infant-neglect-night', 'middle-parents-care', 'middle-parents-farewell', 'school-early-work'];
     for (const flag of ['mother_gone', 'father_gone']) expect([...flagBlockersOf(EVENT_POOL, flag)].sort(), flag).toEqual(want);
+    // 재측정 도구가 따로 세는 사건 목록(scripts/familyRemeasureLib.ts#GONE_READER_IDS)이 풀과 같다
+    expect([...GONE_READER_IDS].sort(), '재측정 도구의 사건 목록').toEqual(want);
     // 독립 계산: 풀을 직접 훑은 결과와 같다
     const direct = EVENT_POOL.events.filter((e) => (e.conditions?.notFlags ?? []).includes('mother_gone')).map((e) => e.id).sort();
     expect(direct).toEqual(want);
@@ -407,6 +445,366 @@ describe('별세 해 후보 정리 ②: 별세 줄이 난 해에는 그 한 분�
     };
     expect(sameYearCare('legacy'), '안 뺀 세계의 같은 해 병환 원본(공허 통과 방지)').toBeGreaterThan(0);
     expect(sameYearCare('exclude'), '뺀 세계(지금)의 같은 해 병환 원본').toBe(0);
+  });
+});
+
+// ---------- R-631 · R-632 · R-633 (REV-009-FM7a-1, 마스터 확장 2026-11-06) ----------
+
+/** 가족 줄 뒤(같은 해) 꺼지는 형제·조부모 플래그가 있는 걸음(전) — 줄 계산(`familyChangesFor`)이 낸 값으로 고른다. `line`은 어느 쪽 플래그를 보는가 */
+function clearedSteps(line: 'sib' | 'gp', gens: number, perGen: number, count: number): Array<{ before: GameState; cleared: string[]; seed: number; gen: ProfileId }> {
+  const names = line === 'sib' ? SIBLING_LINE_FLAGS : GRANDPARENT_LINE_FLAGS;
+  const out: Array<{ before: GameState; cleared: string[]; seed: number; gen: ProfileId }> = [];
+  for (const [gi, gen] of GENERATION_IDS.slice(0, gens).entries()) {
+    for (const seed of seedsFor(perGen, gi)) {
+      for (const { before } of lifeSteps(seed, gen)) {
+        const cleared = lineClearedFlags(familyChangesFor(before, before.age, EVENT_POOL)).filter((x) => names.includes(x));
+        if (cleared.length > 0) out.push({ before, cleared, seed, gen });
+      }
+      if (out.length >= count) return out;
+    }
+  }
+  return out;
+}
+
+/** 선택지 셋짜리 K18 꼴 사건 — 가운데 선택지만 조건(`requires`)이 있다 (school-teacher-notice 꼴) */
+const noticeEvent = (id: string, stage: EventDef['stages'][number], requires: NonNullable<EventDef['choices']>[number]['requires']): EventDef =>
+  ({
+    id,
+    title: id.slice(0, 8),
+    text: '시험용 사건입니다.',
+    stages: [stage],
+    track: 'common',
+    weight: 1,
+    once: true,
+    choices: [
+      { id: 'accept', label: '시험 받아들인다', result: '시험 결과 가입니다.' },
+      { id: 'ask', label: '시험 의논한다', result: '시험 결과 나입니다.', requires },
+      { id: 'decline', label: '시험 거절한다', result: '시험 결과 다입니다.' },
+    ],
+  }) as unknown as EventDef;
+
+describe('R-631: 어린 형제·마지막 조부모가 떠난 해에는 줄 뒤 꺼지는 플래그를 요구하는 사건을 그 해 후보에서 뺀다 (형제 · 조부모, 후보 목록만 줄고 칸 수 그대로)', () => {
+  it('이름을 적은 배열이 실제로 꺼지는 플래그와 맞다: 형제 줄(fam-sib-lost)·조부모 줄(fam-gp-gone)이 난 해에 clearFlags에 든 플래그는 그 두 배열 안에 있다 (fam.clearFlags 전체를 쓰지 않는다)', () => {
+    expect([...SIBLING_LINE_FLAGS]).toEqual(['has_older_sibling', 'has_younger_sibling', 'has_sibling']);
+    expect([...GRANDPARENT_LINE_FLAGS]).toEqual(['has_grandparent', 'lives_with_grandparent']);
+    const named = new Set<string>([...SIBLING_LINE_FLAGS, ...GRANDPARENT_LINE_FLAGS]);
+    const seen = new Set<string>();
+    let lineYears = 0;
+    for (const [gi, gen] of GENERATION_IDS.slice(0, 4).entries()) {
+      for (const seed of seedsFor(40, gi)) {
+        for (const { before } of lifeSteps(seed, gen)) {
+          const c = familyChangesFor(before, before.age, EVENT_POOL);
+          if (!c.lines.some((l) => l.eventId === FAMILY_LINE_ID.sibLost || l.eventId === FAMILY_LINE_ID.grandGone)) continue;
+          lineYears++;
+          for (const x of c.clearFlags) {
+            seen.add(x);
+            expect(named.has(x), `${gen}/${seed} ${before.age}세: 줄이 난 해에 꺼진 ${x}가 이름 배열에 없다`).toBe(true);
+          }
+          // 이름 배열 ∩ 이 해의 clearFlags가 곧 「줄 뒤 꺼지는 플래그」다(그 줄이 난 해일 때만)
+          const expectSib = c.lines.some((l) => l.eventId === FAMILY_LINE_ID.sibLost) ? SIBLING_LINE_FLAGS.filter((x) => c.clearFlags.includes(x)) : [];
+          const expectGp = c.lines.some((l) => l.eventId === FAMILY_LINE_ID.grandGone) ? GRANDPARENT_LINE_FLAGS.filter((x) => c.clearFlags.includes(x)) : [];
+          expect(lineClearedFlags(c).sort(), `${gen}/${seed} ${before.age}세`).toEqual([...expectSib, ...expectGp].sort());
+        }
+      }
+    }
+    expect(lineYears, '형제·조부모 줄이 난 해(공허 통과 방지)').toBeGreaterThan(50);
+    expect(seen.has('has_grandparent'), '마지막 조부모가 떠나 has_grandparent가 꺼진 해').toBe(true);
+  });
+
+  it('풀 색인으로 찾는다(사건 id를 박지 않는다): 형제·조부모 플래그를 사건 수준 flags로 요구하는 사건은 영유아 형제 사건 셋과 조부모 노래이고, 이름 배열에 든 플래그마다 합성 풀에서도 같다', () => {
+    expect([...flagRequirersOf(EVENT_POOL, 'has_younger_sibling')], 'has_younger_sibling').toContain('infant-sibling-toy');
+    expect([...flagRequirersOf(EVENT_POOL, 'has_older_sibling')], 'has_older_sibling').toContain('infant-follow-sibling');
+    expect([...flagRequirersOf(EVENT_POOL, 'has_sibling')], 'has_sibling').toContain('school-family-priority');
+    expect([...flagRequirersOf(EVENT_POOL, 'has_grandparent')], 'has_grandparent').toContain('infant-grandparent-song');
+    // 독립 계산: 풀을 직접 훑은 결과와 같다
+    for (const flag of [...SIBLING_LINE_FLAGS, ...GRANDPARENT_LINE_FLAGS]) {
+      const direct = EVENT_POOL.events.filter((e) => (e.conditions?.flags ?? []).includes(flag)).map((e) => e.id).sort();
+      expect([...flagRequirersOf(EVENT_POOL, flag)].sort(), flag).toEqual(direct);
+    }
+    // 재측정 도구가 따로 세는 사건 목록(scripts/familyRemeasureLib.ts#CLEARED_READER_IDS)이 풀과 같다
+    const named = new Set<string>([...SIBLING_LINE_FLAGS, ...GRANDPARENT_LINE_FLAGS]);
+    expect([...CLEARED_READER_IDS].sort(), '재측정 도구의 사건 목록').toEqual(EVENT_POOL.events.filter((e) => (e.conditions?.flags ?? []).some((f) => named.has(f))).map((e) => e.id).sort());
+  });
+
+  it('형제: 하나뿐이던 형제가 떠난 해 — 꺼진 형제 플래그를 요구하는 사건을 exclude는 뽑지 않고 legacy는 뽑으며, 후보 목록만 줄어 진행 RNG(추첨 칸 수)는 같다. 별세 해 notFlags 규칙까지만 켠 세계(notflags)는 legacy와 같다(③이 따로 켜진다)', () => {
+    const steps = clearedSteps('sib', 3, 400, 16);
+    expect(steps.length, '형제 플래그가 줄 뒤 꺼지는 걸음').toBeGreaterThanOrEqual(8);
+    const flagsSeen = new Set<string>();
+    let picked = 0;
+    let legacyReader = 0;
+    for (const { before, cleared } of steps) {
+      const stage = stageOfAge(before.age);
+      for (const flag of cleared) {
+        flagsSeen.add(flag);
+        const pool = createEventPool([withConditions(synthetic('x-needs', stage, false), { flags: [flag] }), synthetic('x-plain', stage, false)]);
+        for (let k = 1; k <= 120; k++) {
+          const s = { ...before, rngState: k };
+          const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+          const notflags = withGoneYearRule('notflags', () => stepYear(s, pool));
+          const exclude = stepYear(s, pool);
+          if (legacy.state.pending === null) {
+            expect(exclude.state.pending, `k=${k}`).toBeNull();
+            continue;
+          }
+          picked++;
+          if (legacy.state.pending.eventId === 'x-needs') legacyReader++;
+          expect(notflags.state.pending?.eventId, `k=${k} ${flag}: ③ 없이는 legacy와 같다`).toBe(legacy.state.pending.eventId);
+          expect(exclude.state.pending?.eventId, `k=${k} ${flag}: 꺼진 플래그를 요구하는 사건은 그 해 후보가 아니다`).toBe('x-plain');
+          expect(exclude.state.rngState, `k=${k} ${flag}: 추첨 칸 수 불변`).toBe(legacy.state.rngState);
+        }
+      }
+    }
+    expect(picked, '선택지가 뽑힌 시도').toBeGreaterThan(30);
+    expect(legacyReader, '안 뺀 세계가 그 사건을 뽑은 시도(공허 통과 방지)').toBeGreaterThan(5);
+    expect(flagsSeen.size, '확인한 형제 플래그 종류').toBeGreaterThanOrEqual(2);
+  });
+
+  it('조부모: 마지막 한 분이 떠난 해 — 꺼진 조부모 플래그를 요구하는 사건을 exclude는 뽑지 않고 legacy는 뽑으며 진행 RNG는 같다', () => {
+    const steps = clearedSteps('gp', 7, 40, 10);
+    expect(steps.length, '조부모 플래그가 줄 뒤 꺼지는 걸음').toBeGreaterThanOrEqual(8);
+    let picked = 0;
+    let legacyReader = 0;
+    for (const { before, cleared } of steps) {
+      const stage = stageOfAge(before.age);
+      for (const flag of cleared) {
+        const pool = createEventPool([withConditions(synthetic('x-needs', stage, false), { flags: [flag] }), synthetic('x-plain', stage, false)]);
+        for (let k = 1; k <= 120; k++) {
+          const s = { ...before, rngState: k };
+          const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+          const exclude = stepYear(s, pool);
+          if (legacy.state.pending === null) {
+            expect(exclude.state.pending, `k=${k}`).toBeNull();
+            continue;
+          }
+          picked++;
+          if (legacy.state.pending.eventId === 'x-needs') legacyReader++;
+          expect(exclude.state.pending?.eventId, `k=${k} ${flag}: 꺼진 플래그를 요구하는 사건은 그 해 후보가 아니다`).toBe('x-plain');
+          expect(exclude.state.rngState, `k=${k} ${flag}: 추첨 칸 수 불변`).toBe(legacy.state.rngState);
+        }
+      }
+    }
+    expect(picked, '선택지가 뽑힌 시도').toBeGreaterThan(30);
+    expect(legacyReader, '안 뺀 세계가 그 사건을 뽑은 시도(공허 통과 방지)').toBeGreaterThan(5);
+  });
+
+  it('한 방향만이다: 줄이 안 난 해에는 아무것도 빼지 않고(exclude = legacy), 꺼지지 않은 플래그(형제가 더 있는 판)를 읽는 사건은 줄이 난 해에도 후보다', () => {
+    // 줄이 안 난 해: 별세·조부모·형제 줄이 하나도 없는 걸음은 세 규칙의 결과가 같다
+    let compared = 0;
+    for (const [gi, gen] of GENERATION_IDS.slice(0, 2).entries()) {
+      for (const seed of seedsFor(6, gi)) {
+        for (const { before } of lifeSteps(seed, gen).slice(0, 40)) {
+          const c = familyChangesFor(before, before.age, EVENT_POOL);
+          if (c.lines.some((l) => l.eventId === FAMILY_LINE_ID.sibLost || l.eventId === FAMILY_LINE_ID.grandGone || l.eventId === FAMILY_LINE_ID.parentGone)) continue;
+          const stage = stageOfAge(before.age);
+          const pool = createEventPool([withConditions(synthetic('x-needs', stage, false), { flags: ['has_grandparent'] }), noticeEvent('x-notice', stage, { notFlags: ['mother_gone'] })]);
+          for (let k = 1; k <= 20; k++) {
+            const s = { ...before, rngState: k };
+            const a = withGoneYearRule('legacy', () => stepYear(s, pool));
+            const b = stepYear(s, pool);
+            expect(b.state.pending?.eventId, `${gen}/${seed} ${before.age}세 k=${k}`).toBe(a.state.pending?.eventId);
+            expect(b.state.pending?.choiceIds, `${gen}/${seed} ${before.age}세 k=${k}`).toEqual(a.state.pending?.choiceIds);
+            expect(b.state.rngState).toBe(a.state.rngState);
+            compared++;
+          }
+        }
+      }
+    }
+    expect(compared, '비교한 시도').toBeGreaterThan(500);
+  });
+});
+
+describe('R-632: 가족 줄이 난 해에 보이는 선택지 = 해 시작 ctx로 보이는 것 ∩ 줄 뒤 ctx로 보이는 것 (한 방향 — 새로 열리는 선택지 없음)', () => {
+  it('K18 꼴 합성(school-teacher-notice 꼴): 한 분 별세 줄이 난 해, 떠난 분의 _gone을 notFlags로 읽는 선택지는 exclude에서 안 보이고(legacy에서는 보이고) 사건과 나머지 선택지·진행 RNG는 그대로다', () => {
+    const steps = goneLineStepsAt(20, 100, 6, 7);
+    expect(steps.length).toBeGreaterThanOrEqual(4);
+    let picked = 0;
+    for (const { before, flag } of steps) {
+      const stage = stageOfAge(before.age);
+      const pool = createEventPool([noticeEvent('x-notice', stage, { notFlags: [flag] })]);
+      for (let k = 1; k <= 120; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+        const exclude = stepYear(s, pool);
+        if (legacy.state.pending === null) {
+          expect(exclude.state.pending, `k=${k}`).toBeNull();
+          continue;
+        }
+        picked++;
+        expect(legacy.state.pending.choiceIds, `k=${k}: legacy는 해 시작 ctx로 본다`).toEqual(['accept', 'ask', 'decline']);
+        expect(exclude.state.pending?.eventId, `k=${k}`).toBe('x-notice');
+        expect(exclude.state.pending?.choiceIds, `k=${k}: 줄 뒤 ctx로 안 보이는 선택지는 뺀다`).toEqual(['accept', 'decline']);
+        expect(exclude.state.rngState, `k=${k}: 추첨 칸 수 불변`).toBe(legacy.state.rngState);
+      }
+    }
+    expect(picked, '선택지가 뽑힌 시도').toBeGreaterThan(20);
+  });
+
+  it('교집합이 2개 미만이 되는 선택지 사건은 그해 후보에서 빠지고 칸 수는 그대로다(난수 4칸), 줄 뒤 ctx에서 새로 열리는 선택지는 없다(한 방향)', () => {
+    const steps = goneLineStepsAt(20, 100, 6, 7);
+    let blocked = 0;
+    for (const { before, flag } of steps) {
+      const stage = stageOfAge(before.age);
+      const other = flag === 'mother_gone' ? 'father_gone' : 'mother_gone';
+      // 선택지 둘뿐인 사건: ask가 줄 뒤에 안 보여 하나가 되면 사건이 후보에서 빠진다
+      const two = withConditions(noticeEvent('x-two', stage, { notFlags: [flag] }), {});
+      (two as { choices: unknown[] }).choices = (two.choices ?? []).filter((c) => c.id !== 'decline');
+      const poolTwo = createEventPool([two]);
+      // 떠난 분의 _gone을 **요구하는** 선택지는 해 시작 ctx에서 안 보이므로 줄 뒤에도 새로 열리지 않는다 (교집합)
+      const needs = noticeEvent('x-needs-choice', stage, { flags: [flag] });
+      const poolNeeds = createEventPool([needs]);
+      // 다른 한 분의 플래그를 읽는 선택지는 건드리지 않는다
+      const untouched = noticeEvent('x-untouched', stage, { notFlags: [other] });
+      const poolOther = createEventPool([untouched]);
+      for (let k = 1; k <= 120; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, poolTwo));
+        if (legacy.state.pending !== null) {
+          const exclude = stepYear(s, poolTwo);
+          blocked++;
+          expect(exclude.state.pending, `k=${k}`).toBeNull();
+          expect(exclude.state.seen['x-two'], `k=${k}`).toBeUndefined();
+          if (exclude.state.phase === 'life') {
+            const r = createRng(k);
+            for (let i = 0; i < 4; i++) r.next();
+            expect(exclude.state.rngState, `k=${k}: 칸 수 불변(추첨 둘 · 대신 한 칸 · 해 끝 사망 판정)`).toBe(r.getState());
+          }
+        }
+        for (const pool of [poolNeeds, poolOther]) {
+          const a = withGoneYearRule('legacy', () => stepYear(s, pool));
+          const b = stepYear(s, pool);
+          expect(b.state.pending?.choiceIds, `k=${k}: 새로 열리거나 다른 한 분의 선택지가 바뀌지 않는다`).toEqual(a.state.pending?.choiceIds);
+          expect(b.state.rngState).toBe(a.state.rngState);
+        }
+      }
+    }
+    expect(blocked, '사건이 후보에서 빠진 시도(공허 통과 방지)').toBeGreaterThan(5);
+  });
+
+  it('조부모 줄이 난 해: 꺼진 조부모 플래그를 requires로 읽는 선택지(infant-care의 grandparents 꼴)도 줄 뒤에는 안 보인다', () => {
+    const steps = clearedSteps('gp', 7, 40, 10).filter((st) => st.cleared.includes('has_grandparent'));
+    expect(steps.length).toBeGreaterThanOrEqual(6);
+    let picked = 0;
+    for (const { before } of steps) {
+      const stage = stageOfAge(before.age);
+      const pool = createEventPool([noticeEvent('x-grand', stage, { flags: ['has_grandparent'] })]);
+      for (let k = 1; k <= 120; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+        const exclude = stepYear(s, pool);
+        if (legacy.state.pending === null) {
+          expect(exclude.state.pending, `k=${k}`).toBeNull();
+          continue;
+        }
+        picked++;
+        expect(legacy.state.pending.choiceIds).toEqual(['accept', 'ask', 'decline']);
+        expect(exclude.state.pending?.choiceIds, `k=${k}`).toEqual(['accept', 'decline']);
+        expect(exclude.state.rngState).toBe(legacy.state.rngState);
+      }
+    }
+    expect(picked, '선택지가 뽑힌 시도').toBeGreaterThan(20);
+  });
+
+  it('실제 사건 school-teacher-notice(12~18세): 한 분 별세 줄이 난 해에 「집에 가서 부모님과 의논한다」(ask)가 legacy에서는 골라지고(공허 통과 방지) 지금 규칙에서는 한 번도 골라지지 않는다', () => {
+    const real = EVENT_POOL.byId.get('school-teacher-notice')!;
+    const askDef = real.choices!.find((c) => c.id === 'ask')!;
+    expect(askDef.requires?.notFlags, '원본의 ask는 한 분 별세 플래그를 notFlags로 읽는다').toEqual(['mother_gone', 'father_gone', 'parents_gone']);
+    const steps = goneLineStepsAt(12, 18, 24, 7);
+    expect(steps.length, '주인공 12~18세에 한 분이 떠나는 걸음').toBeGreaterThanOrEqual(8);
+    const chosen = (r: ReturnType<typeof stepYear>, before: GameState): string[] => {
+      if (r.state.pending !== null) return r.state.pending.eventId === real.id ? [...r.state.pending.choiceIds] : [];
+      return r.state.history
+        .slice(before.history.length)
+        .filter((h) => h.eventId === real.id && h.kind === 'choice')
+        .map((h) => real.choices!.find((c) => c.label === h.choice || c.parentLabel === h.choice)?.id ?? '?');
+    };
+    let legacyAsk = 0;
+    let events = 0;
+    for (const { before } of steps) {
+      const filler = narrativeEvent('x-filler', stageOfAge(before.age));
+      const pool = createEventPool([real, filler]);
+      for (let k = 1; k <= 300; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+        const exclude = stepYear(s, pool);
+        const a = chosen(legacy, before);
+        const b = chosen(exclude, before);
+        if (a.length > 0) events++;
+        // 대기 중인 카드면 보이는 선택지 목록에, 흘러간 카드면 고른 선택지에 ask가 있다
+        if (a.includes('ask')) legacyAsk++;
+        expect(b, `k=${k}: 줄이 난 해에는 ask가 보이지도 골라지지도 않는다`).not.toContain('ask');
+      }
+    }
+    expect(events, '그 사건이 일어난 시도').toBeGreaterThan(10);
+    expect(legacyAsk, 'legacy에서 ask가 보이거나 골라진 시도(공허 통과 방지)').toBeGreaterThan(3);
+  });
+});
+
+describe('R-632 가드: 이혼 줄이 켜는 플래그(*_apart)를 읽는 사건·선택지가 풀에 없다 — 줄 뒤 ctx는 이혼 줄을 보지 않는다 (후속 200)', () => {
+  it('이혼 줄(fam-parents-apart)이 난 해에 켜지는 플래그는 mother_apart·father_apart이고, 이 플래그를 사건 수준 conditions·선택지 수준 requires(flags·notFlags)·modifiers·bonuses로 읽는 사건이 풀에 0개다', () => {
+    const APART = ['mother_apart', 'father_apart'];
+    // 코드에서 이름 확인: 실제 판에서 이혼 줄이 난 해의 setFlags에 *_apart가 들어 있다(공허 통과 방지)
+    let divorceYears = 0;
+    const named = new Set<string>();
+    outer: for (const [gi, gen] of GENERATION_IDS.entries()) {
+      for (const seed of seedsFor(60, gi)) {
+        for (const { before } of lifeSteps(seed, gen)) {
+          const c = familyChangesFor(before, before.age, EVENT_POOL);
+          if (!c.lines.some((l) => l.eventId === FAMILY_LINE_ID.parentsApart)) continue;
+          divorceYears++;
+          for (const x of c.setFlags) if (x.endsWith('_apart')) named.add(x);
+          if (divorceYears >= 6) break outer;
+        }
+      }
+    }
+    expect(divorceYears, '이혼 줄이 난 해').toBeGreaterThanOrEqual(3);
+    expect(named.size, '이혼 줄이 켜는 *_apart 플래그(공허 통과 방지)').toBeGreaterThan(0);
+    for (const x of named) expect(APART, `이혼 줄이 켜는 ${x}가 가드 목록에 없다 — 목록을 고친다`).toContain(x);
+    // 풀을 훑는다: 사건·선택지·modifier·bonus가 이 플래그를 읽는 곳
+    const readers: string[] = [];
+    const reads = (c: { flags?: string[]; notFlags?: string[] } | undefined): boolean => [...(c?.flags ?? []), ...(c?.notFlags ?? [])].some((f) => APART.includes(f));
+    for (const ev of EVENT_POOL.events) {
+      if (reads(ev.conditions)) readers.push(`${ev.id} (conditions)`);
+      for (const m of ev.modifiers ?? []) if (reads(m.when)) readers.push(`${ev.id} (modifier)`);
+      for (const b of ev.bonuses ?? []) if (reads(b.when)) readers.push(`${ev.id} (bonus)`);
+      for (const ch of ev.choices ?? []) {
+        if (reads(ch.requires)) readers.push(`${ev.id}/${ch.id} (requires)`);
+        for (const b of ch.bonuses ?? []) if (reads(b.when)) readers.push(`${ev.id}/${ch.id} (bonus)`);
+      }
+    }
+    expect(readers, '이 플래그를 읽는 사건이 생기면 R-632의 줄 뒤 ctx에 이혼 줄을 넣어야 한다(후속 200)').toEqual([]);
+  });
+});
+
+describe('R-633: 선택지 후보가 별세 해 정리로 비면 그 해의 추첨 칸은 쓴 것으로 본다 — 서술 추첨으로 넘어가지 않는다 (R-560 「한 칸 규칙」)', () => {
+  it('「빼는 선택지 사건 하나 + 서술 사건 하나」 풀: 안 뺀 세계가 선택지를 뽑은 해에 뺀 세계는 서술 사건을 뽑지 않고 난수 4칸(추첨 둘 · 비어 버린 선택지 칸 · 해 끝 사망 판정)만 쓴다', () => {
+    const steps = goneLineStepsAt(20, 100, 6, 7);
+    expect(steps.length).toBeGreaterThanOrEqual(4);
+    let blocked = 0;
+    let legacyNarrativeToo = 0;
+    for (const { before, flag } of steps) {
+      const stage = stageOfAge(before.age);
+      const pool = createEventPool([withConditions(synthetic('x-reader', stage, false), { notFlags: [flag] }), narrativeEvent('x-narr', stage)]);
+      for (let k = 1; k <= 200; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+        if (legacy.state.pending === null) continue;
+        const exclude = stepYear(s, pool);
+        blocked++;
+        expect(exclude.state.pending, `k=${k}`).toBeNull();
+        expect(exclude.state.history.slice(before.history.length).map((h) => h.eventId), `k=${k}: 서술 사건으로 넘어가지 않는다`).not.toContain('x-narr');
+        expect(exclude.state.seen['x-narr'], `k=${k}`).toBeUndefined();
+        if (exclude.state.phase !== 'life') continue;
+        const r = createRng(k);
+        for (let i = 0; i < 4; i++) r.next();
+        expect(exclude.state.rngState, `k=${k}: 칸 수 불변`).toBe(r.getState());
+        // 이 난수에서 서술 추첨 값이 서술 빈도 안이었는지 — 고친 규칙이 실제로 막은 시도(공허 통과 방지)
+        const rr = createRng(k);
+        rr.next();
+        if (rr.next() < EVENT_FREQUENCY[stage].narrative) legacyNarrativeToo++;
+      }
+    }
+    expect(blocked, '선택지 후보가 비어 버린 시도').toBeGreaterThan(10);
+    expect(legacyNarrativeToo, '서술 추첨이 닿았을 시도(고치지 않았다면 칸 수가 하나 늘었을 시도)').toBeGreaterThan(3);
   });
 });
 

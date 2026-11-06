@@ -381,3 +381,17 @@
 - **R-634 (b)**: 문서를 고친다(planner). 「0세 해에는 이혼이 일어나지 않는다(판정 하한 1세)」. 코드는 그대로다.
 - **R-635·R-636·R-637**: diff를 적용한다. `family-model.md:506`과 SPEC 5절 2항은 planner가 고친다.
 - **위험도 메모**(배포 뒤 T06 스위치를 끄면 기록과 보기가 어긋남): K6 배포 요청 때 형진 님께 함께 알린다.
+
+## 반영 내역 (developer, 2026-11-06 — 커밋은 마스터가 한다)
+
+| 지적 | 고친 곳 |
+|---|---|
+| R-631 | `src/core/familyAdult.ts#flagRequirersOf` · `src/core/familyTick.ts#SIBLING_LINE_FLAGS·GRANDPARENT_LINE_FLAGS·lineClearedFlags`(마스터 확장: 조부모 플래그, 이름 배열) · `src/core/life.ts#stepYear`(`afterLine`·`blocked`) · `tests/familyFm7a.test.ts` 「R-631: …」 5개 · `tests/familyConsistency.test.ts`(INV `sameYearCleared`) |
+| R-632 | `src/core/familyTick.ts#flagsAfterLine` · `src/core/life.ts#stepYear`(`narrowedChoices` — 해 시작 ∩ 줄 뒤, 2개 미만 사건은 `blocked`) · `tests/familyFm7a.test.ts` 「R-632: …」 4개 · `tests/familyConsistency.test.ts`(INV `lineChoiceBad`) |
+| R-633 | `src/core/life.ts#stepYear`(`slot.spent`, 검수자 diff 그대로) · `tests/familyFm7a.test.ts` 「R-633: …」 |
+| R-634 (a) | `src/core/familyBirth.ts#parentGoneOwnAgeOf` · `src/core/familyView.ts`(`FamilySchedule.parentGoneOwn`, `markGone`) · `tests/familyFm7a.test.ts` 「R-618: …」(옮겨진 N = d + 1 · 옮겨지지 않은 N = d) · `tests/familyConsistency.test.ts`(줄의 N = 보기·카드) — (b)는 planner |
+| R-635 | `scripts/familyRemeasure.ts`·`scripts/familyRemeasureLib.ts`(FM7a 전 비율을 V5 측정값에서 읽는다) |
+| R-636 | `docs/TODO.md` 초기 로드 줄 · `scripts/preFm4bPool.ts` 주석 — `family-model.md:506`·SPEC 5절 2항은 planner |
+| R-637 | `src/data/familyApproval.ts#REQUIRED_IDS` · `tests/familyText.test.ts` 「승인 게이트 (완료 기준 1, RG11 방식)」 |
+
+- 덧붙임: `GoneYearRule`에 `'notflags'`(재측정 전용), `tests/siblingLoss.test.ts`(g)·`tests/infantContent.test.ts`(`PD_AT_8`) 보정, `docs/data/family-remeasure.md` 재생성(세계 V0~V11, 8-4절), `src/data/finalDistribution.ts` 재생성. 자세한 수치는 `ai-log/2026-11-06_SPEC-009_dev-FM7a.md`의 「REV-009-FM7a-1 반영」 절.

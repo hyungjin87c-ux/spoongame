@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   GENERATION_IDS,
   famSeedOf,
+  familyChangesFor,
   familyScheduleOf,
   familyTables,
   familyViewOf,
   generateBirthFromSeed,
   inheritanceAmount,
+  lineClearedFlags,
   sceneFamilyOf,
   sceneInputOf,
   sceneLineOf,
@@ -14,6 +16,7 @@ import {
   siblingLossPlan,
   stepYear,
   survivalCurve,
+  withGoneYearRule,
   type FamilyData,
   type GameState,
   type ProfileId,
@@ -257,8 +260,10 @@ describe('한 판 최대 1건 · 기록 전용 (완료 기준 9 (c)(g))', () => 
     expect(lines, '줄이 난 판').toBeGreaterThan(3);
   });
 
-  it('(g) 진행 RNG를 쓰지 않는다: 줄이 나는 해에 계획이 있어도 없어도 같은 상태에서 한 걸음의 진행 RNG·스탯·자산·본 사건·대기 선택이 같다 (기록 전용 — 줄·플래그·로그만 다르다)', () => {
+  it('(g) 진행 RNG를 쓰지 않는다: 줄이 나는 해에 계획이 있어도 없어도 같은 상태에서 한 걸음의 진행 RNG·스탯·자산·본 사건·대기 선택이 같다 (기록 전용 — 줄·플래그·로그만 다르다). 단 지금 규칙(exclude)에서 줄 뒤 형제 플래그가 꺼지는 해는 R-631·R-632가 그 해 후보·선택지를 줄인다 — 그 해는 ③ 없는 세계(notflags)에서 같다', () => {
     let checked = 0;
+    let same = 0;
+    let touched = 0;
     OLD_GENS.forEach((gen, gi) => {
       for (const seed of seedsFor(120, gi)) {
         const base = startLife(seed, gen);
@@ -269,9 +274,17 @@ describe('한 판 최대 1건 · 기록 전용 (완료 기준 9 (c)(g))', () => 
         const step = steps.find((s) => s.before.age === plan.at);
         if (step === undefined) continue;
         const project = (s: GameState): string => JSON.stringify([s.rngState, s.stats, s.assets, s.seen, s.pending, s.age, s.lastChoiceAge]);
+        // 계획 자체는 진행 RNG·후보를 건드리지 않는다: R-631·R-632(③) 없는 세계(notflags)에서는 늘 같다
+        const onN = withGoneYearRule('notflags', () => stepYear(step.before));
+        const offN = withGoneYearRule('notflags', () => withSiblingLoss(false, () => stepYear(step.before)));
+        expect(project(onN.state), `${gen}/${seed} ${plan.at}세 (③ 없음)`).toBe(project(offN.state));
         const on = stepYear(step.before);
         const off = withSiblingLoss(false, () => stepYear(step.before));
-        expect(project(on.state), `${gen}/${seed} ${plan.at}세`).toBe(project(off.state));
+        // 지금 규칙: 줄 뒤 꺼지는 형제 플래그가 없는 해는 같다. 꺼지는 해는 R-631·R-632가 후보·선택지를 줄여 달라질 수 있다 (후보 목록만 줄고 난수 칸 수 규칙은 그대로)
+        if (lineClearedFlags(familyChangesFor(step.before, plan.at)).length === 0) {
+          expect(project(on.state), `${gen}/${seed} ${plan.at}세`).toBe(project(off.state));
+          same++;
+        } else touched++;
         // 차이는 가족 줄·로그뿐이다
         const added = (r: typeof on): string[] => r.state.history.slice(step.before.history.length).map((h) => h.eventId ?? '');
         expect(added(on)).toContain(FAMILY_LINE_ID.sibLost);
@@ -280,6 +293,8 @@ describe('한 판 최대 1건 · 기록 전용 (완료 기준 9 (c)(g))', () => 
       }
     });
     expect(checked, '확인한 판').toBeGreaterThan(5);
+    expect(same, '지금 규칙에서도 같은 판(형제 플래그가 안 꺼지는 해)').toBeGreaterThan(3);
+    expect(same + touched).toBe(checked);
   });
 
   it('K1: 떠난 형제는 형제 수에서 빠져 상속식 INHERIT ÷ (형제 수 + 1)의 형제 수가 하나 줄고(상속액이 늘고), 계획을 끈 세계는 형제 수가 그대로다', () => {

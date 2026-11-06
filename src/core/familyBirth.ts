@@ -284,11 +284,22 @@ export function parentDivorceRate(year: number): number {
 
 /**
  * 주인공 나이로 본 부모 별세 시점 `[어머니, 아버지]` (101 = 계획 없음 → Infinity). **하한 1세(R-618, FM7a)**: 주인공 0세 해의 별세는 출산 사망으로 읽혀 1세 해로 옮긴다 —
- * 그 분의 별세 나이 N(`p[i].d`)은 그대로이고 `goneAt`(= 주인공 나이로 본 시점)만 올라간다. 줄(`familyChangesFor`)·카드(`markGone`의 「내가 M세였던 해」)·동생 구성(`lastAt`)이 모두 이 값 하나를 읽는다.
+ * 저장된 `p[i].d`는 그대로이고 `goneAt`(= 주인공 나이로 본 시점)이 올라간다 — 별세 나이 N은 옮겨진 별세만 `d + 1`이다(`parentGoneOwnAgeOf`, R-634 (a)). 줄(`familyChangesFor`)·카드(`markGone`의 「내가 M세였던 해」)·동생 구성(`lastAt`)이 모두 이 값들을 읽는다.
  */
 export function parentGoneAtOf(birthYear: number, report: Pick<BirthReport, 'mother' | 'father'>, p: FamilyData['p']): [number, number] {
   const by = [parentBirthYear(birthYear, report.mother.age), parentBirthYear(birthYear, report.father.age)];
   return [0, 1].map((i) => (p[i].d >= NO_DEATH_PLAN ? Infinity : Math.max(PARENT_GONE_MIN_AGE, goneAtMyAge(by[i], p[i].d, birthYear)))) as [number, number];
+}
+
+/**
+ * 별세 줄·카드의 「N세에 세상을 떠남」에 쓰는 그 분의 별세 나이 `[어머니, 아버지]` (R-634 (a), 마스터 결정 2026-11-06): 옮겨지지 않은 판은 저장된 `d` 그대로고,
+ * 0세 해 → 1세 해로 **옮겨진 별세만** `d + (at − raw)`(= `d + 1`)다 — 그 분은 주인공 1세 해의 카드에 `d + 1`세로 살아 있다가 그 해 줄에서 떠나므로 줄·카드의 나이가 같은 해에 맞는다.
+ * 저장된 `p[i].d`·해시 계획은 건드리지 않는다(출생 때 굴린 값). 계획 없음(101)은 Infinity가 아니라 `d` 그대로다.
+ */
+export function parentGoneOwnAgeOf(birthYear: number, report: Pick<BirthReport, 'mother' | 'father'>, p: FamilyData['p']): [number, number] {
+  const by = [parentBirthYear(birthYear, report.mother.age), parentBirthYear(birthYear, report.father.age)];
+  const at = parentGoneAtOf(birthYear, report, p);
+  return [0, 1].map((i) => (Number.isFinite(at[i]) ? p[i].d + (at[i] - goneAtMyAge(by[i], p[i].d, birthYear)) : p[i].d)) as [number, number];
 }
 
 /** 먼저 떠나는 한 분 (같은 해면 아버지가 먼저 — 설계값). 두 번째 분의 별세는 모델이 정하지 않는다 (K3, 4-7절 (1)) */

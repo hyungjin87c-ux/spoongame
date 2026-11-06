@@ -138,7 +138,7 @@ export function familyChangesFor(game: GameState, age: number, pool?: EventPool)
   if (sc.firstGone !== null && sc.firstGone.at === age && !game.flags.includes('parents_gone') && !f.l.some((e) => e[0] === LOG_PARENT_GONE)) {
     const who = sc.firstGone.who === 0 ? 'mother' : 'father';
     if (byId0.get(who)?.state !== 'gone') {
-      // 별세 나이 N은 카드의 「N세에 세상을 떠남」과 같은 값(보기의 `goneAtOwnAge` = 저장된 `d`)이고, 주인공 19세 이하(`EARLY_LOSS_MAX_AGE`)일 때만 아이가 본 것 한 줄이 붙는다 (T01·T02, R-618)
+      // 별세 나이 N은 카드의 「N세에 세상을 떠남」과 같은 값(보기의 `goneAtOwnAge` = 저장된 `d`, 0세 해 → 1세 해로 옮겨진 별세만 `d + 1` — R-634 (a))이고, 주인공 19세 이하(`EARLY_LOSS_MAX_AGE`)일 때만 아이가 본 것 한 줄이 붙는다 (T01·T02, R-618)
       lines.push({ code: LOG_PARENT_GONE, line: entry(age, FAMILY_LINE_ID.parentGone, FAMILY_LINE_TEXT.parentGone(who, byId1.get(who)?.goneAtOwnAge ?? f.p[sc.firstGone.who].d, age <= EARLY_LOSS_MAX_AGE)) });
       log.push([LOG_PARENT_GONE, age, sc.firstGone.who === 0 ? 1 : 2, 0]);
       earlyLoss = { who };
@@ -211,14 +211,48 @@ export function syncPostEventFlags(game: GameState, at: number = game.age): Game
 }
 
 /**
- * 부모 한 분 별세 줄이 난 해의 후보 정리 규칙 (FM7a R-561 + 마스터 결정 후속 199 — 「켜진 해부터」는 별세 줄이 난 그 해를 포함한다):
- *  - `'exclude'` — **지금 판이 쓰는 규칙**이다. 별세 줄이 난 해에는 ① `parents_gone`을 켜는 사건(원본·변형, R-561 — 같은 해에 「어머니가 …」 다음 「부모님이 …」이 이어지는 두 번째 별세를 막는다)과
+ * 가족 줄이 난 해에 줄 뒤(같은 해)부터 꺼지는 플래그 중 후보 정리가 보는 것 (FM7a R-631·R-632): 이름을 적은 배열이다 — `fam.clearFlags` 전체가 아니다.
+ *  - 어린 형제의 이른 별세 줄(`fam-sib-lost`)이 난 해: 마지막 손위·손아래·전체 형제가 떠나면 꺼지는 `has_older_sibling`·`has_younger_sibling`·`has_sibling`
+ *  - 조부모 별세 줄(`fam-gp-gone`)이 난 해: 마지막 한 분이 떠나면 꺼지는 `has_grandparent`, 함께 살던 분이 마지막으로 떠나면 꺼지는 `lives_with_grandparent`
+ * 그 줄이 난 해**이고** 그 플래그가 실제로 이 해의 `clearFlags`에 있을 때만 꺼지는 것으로 센다(형제가 더 있거나 조부모가 더 계시면 안 꺼진다). 사건 후보는 해 시작 플래그로 정해져 이 플래그를 읽는 사건이 줄 뒤에 같은 해 나올 수 있었다.
+ */
+export const SIBLING_LINE_FLAGS: readonly string[] = ['has_older_sibling', 'has_younger_sibling', 'has_sibling'];
+export const GRANDPARENT_LINE_FLAGS: readonly string[] = ['has_grandparent', 'lives_with_grandparent'];
+
+/** 이 해의 가족 줄 뒤에 꺼지는 플래그(위 두 배열 중 실제로 `clearFlags`에 있는 것) */
+export function lineClearedFlags(c: Pick<FamilyChanges, 'lines' | 'clearFlags'>): string[] {
+  const has = (id: string): boolean => c.lines.some((l) => l.eventId === id);
+  const out: string[] = [];
+  if (has(FAMILY_LINE_ID.sibLost)) out.push(...SIBLING_LINE_FLAGS.filter((x) => c.clearFlags.includes(x)));
+  if (has(FAMILY_LINE_ID.grandGone)) out.push(...GRANDPARENT_LINE_FLAGS.filter((x) => c.clearFlags.includes(x)));
+  return out;
+}
+
+/**
+ * 가족 줄이 난 해에 줄 **뒤**(같은 해 안)의 플래그 (R-632): 해 시작 플래그에서 줄 뒤 꺼지는 형제·조부모 플래그(`lineClearedFlags`)를 빼고, 부모 한 분 별세 줄이 났으면 떠난 분의 `mother_gone`/`father_gone`을 더한다.
+ * 달라지는 것이 없으면(그런 줄이 없는 해) null. 난수를 쓰지 않는 순수 계산이다 — `life.ts#stepYear`가 선택지 노출의 교집합과 후보 정리에, 재측정 도구가 같은 해 점검에 쓴다.
+ */
+export function flagsAfterLine(flags: ReadonlySet<string>, c: Pick<FamilyChanges, 'lines' | 'clearFlags' | 'log'>): ReadonlySet<string> | null {
+  const cleared = lineClearedFlags(c);
+  const goneLog = c.lines.some((l) => l.eventId === FAMILY_LINE_ID.parentGone) ? c.log.find((e) => e[0] === LOG_PARENT_GONE) : undefined;
+  if (cleared.length === 0 && goneLog === undefined) return null;
+  const out = new Set(flags);
+  for (const x of cleared) out.delete(x);
+  if (goneLog !== undefined) out.add(goneLog[2] === 1 ? 'mother_gone' : 'father_gone');
+  return out;
+}
+
+/**
+ * 부모 한 분 별세 줄이 난 해의 후보 정리 규칙 (FM7a R-561 + 마스터 결정 후속 199 — 「켜진 해부터」는 별세 줄이 난 그 해를 포함한다 + R-631·R-632):
+ *  - `'exclude'` — **지금 판이 쓰는 규칙**이다. ①②③ 모두. 별세 줄이 난 해에는 ① `parents_gone`을 켜는 사건(원본·변형, R-561 — 같은 해에 「어머니가 …」 다음 「부모님이 …」이 이어지는 두 번째 별세를 막는다)과
  *    ② **그 한 분의 플래그(`mother_gone`·`father_gone`)를 `notFlags`로 읽는 사건**(병환·임종 원본, 「아빠/엄마」 낱말이 든 어린 시절 사건 — 별세 줄 뒤에 같은 해 안에서 나오지 않는다)을 후보에서 뺀다.
  *    ②는 한 방향만이다: 그 플래그를 요구하는 사건(변형)은 그 해에 새로 뽑히지 않는다(해 시작 상태 그대로). 빼는 방식은 모두 후보 목록만 줄고 추첨 칸 수는 그대로다(`life.ts#stepYear`의 `draw`).
+ *    ③ (R-631·R-632, 마스터 2026-11-06; `'notflags'`에는 없다) 어린 형제·조부모 별세 줄이 난 해에는 줄 뒤 꺼지는 형제·조부모 플래그(`lineClearedFlags`)를 **요구하는** 사건도 빼고, 보이는 선택지는 「해 시작 ctx ∩ 줄 뒤 ctx(떠난 부모의 `_gone` 켜짐 · 꺼지는 플래그 꺼짐)」다 — 교집합이 2개 미만인 선택지 사건도 뺀다.
+ *  - `'notflags'` ①②만 한다 — 후속 199를 켠 중간 세계. **재측정 전용**(③의 효과를 따로 잰다).
  *  - `'setters'` ①만 한다 — R-561만 켠 중간 세계. **재측정 전용**(`scripts/familyRemeasure.ts`가 ②의 효과를 따로 잰다).
  *  - `'legacy'` 아무것도 빼지 않는다 — 켜기 전의 규칙. **측정·시험 전용**: 해시 불변 L1 시험(`tests/familyHash.test.ts`)과 재측정이 `withGoneYearRule('legacy', …)`로 옛 세계를 만든다.
  */
-export type GoneYearRule = 'legacy' | 'setters' | 'exclude';
+export type GoneYearRule = 'legacy' | 'setters' | 'notflags' | 'exclude';
 export const GONE_YEAR_RULE: GoneYearRule = 'exclude';
 let activeGoneYearRule: GoneYearRule = GONE_YEAR_RULE;
 
