@@ -503,7 +503,7 @@ export interface FamilyView {
 | `mother_gone` · `father_gone` (**K3**) | 그 분이 먼저(혼자) 세상을 떠남 | 시스템 | 4-7절 (1) | 안 꺼짐 |
 | `mother_apart` · `father_apart` | 이혼·별거로 그 분이 따로 삶 | 시스템 | 4-7절 (2) | 안 꺼짐 |
 | `mother_works` · `father_works` | 지금 일하는 중 | 시스템 | 출생 때 취업이면 | 은퇴·집안일·실직(C) |
-| `lives_with_child` (**R-586, FM7a**) | 보기의 자녀 중 `state: 'with'`가 한 명 이상 — `senior-alone`의 `notFlags`가 읽는다 | 시스템 — **가족 모델이 내는 파생 플래그**(`deriveFamilyFlags`·`FAMILY_SYSTEM_FLAGS`·`MANAGED_FLAGS`, 사건 `effects` 쓰기 금지·읽기 허용). **해 끝(`finishYear` → `syncPostEventFlags`)에 맞춘다**: 사건이 켜는 `has_child`·`child_left`를 읽기 때문(15절) | 자녀가 함께 사는 해(자녀 출생 뒤) | 모든 자녀가 따로 살거나 떠난 해 끝 |
+| `lives_with_child` (**R-586, FM7a**) | 보기의 자녀 중 `state: 'with'`가 한 명 이상 — `senior-alone`의 `notFlags`가 읽는다 | 시스템 — **가족 모델이 내는 파생 플래그**(`deriveFamilyFlags`·`FAMILY_SYSTEM_FLAGS`·`POST_EVENT_FLAGS` — `MANAGED_FLAGS`에는 넣지 않는다(넣으면 해 시작의 `familyChangesFor`가 끈다), 사건 `effects` 쓰기 금지·읽기 허용). **해 끝(`finishYear` → `syncPostEventFlags`)에 맞춘다**: 사건이 켜는 `has_child`·`child_left`를 읽기 때문(15절) | 자녀가 함께 사는 해(자녀 출생 뒤) | 모든 자녀가 따로 살거나 떠난 해 끝 |
 | `sibling_loss_risk` | ~~1969년 이하 출생 판의 12세 미만 형제가 있음 (Q3 사건 조건)~~ **어휘만 두고 내지 않음 — 안 B(해시 계획 + 줄 `fam-sib-lost`, 4-7절 (3))라 사건 조건이 필요 없다** | 시스템(미사용) | 내지 않음 | 내지 않음 |
 | `pet_dog` `pet_cat` `pet_other` (**K10**) | 지금 함께 사는 반려동물 종 | **사건이 켜고 시스템이 끔** | 입양 사건·부모 집 유무 | 이별 해 |
 | `pet_farewell` (**K10**) | 한 번이라도 떠나보냄 | 시스템 | 첫 이별 | 안 꺼짐 |
