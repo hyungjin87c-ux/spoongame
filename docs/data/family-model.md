@@ -263,7 +263,7 @@ export interface FamilyView {
 
 **함께 사는 사람의 정의**(FH5와 같은 집합, 카드·한 줄·그림·대체 글이 이 규칙 하나):
 - `age < 20`: 주인공 + `state ≠ gone`이고 이혼으로 떠나지 않은 부모 + (`c`쪽) 살아 있는 동거 조부모 + `state ≠ gone`이고 자기 나이 < 독립 나이인 형제.
-- `age ≥ 20`: 부모는 `assets.dwelling === 'family' && !moved_home`(또는 `lives_with_parents`)이고 살아 있을 때만, 형제는 그 부모가 함께 사는 경우에 한해 독립 전인 사람만, 조부모는 없음. 배우자는 `married`일 때, 자녀는 `has_child`이고 `child_left`가 아닌 사람(10절). `moved_home`(자식 곁)이면 부모 대신 자녀 쪽이 집이다(그림은 FM5).
+- `age ≥ 20`: 부모는 `assets.dwelling === 'family' && !moved_home`(또는 `lives_with_parents`)이고 살아 있을 때만, 형제는 그 부모가 함께 사는 경우에 한해 독립 전인 사람만, 조부모는 없음. 배우자는 `married`일 때, 자녀는 ~~`has_child`이고 `child_left`가 아닌 사람~~ `has_child`이고 따로 살지 않는 사람 — 따로 삶 ⇔ `ownAge >= 19 && (child_left || ownAge >= leaveAge)`(`leaveAge` 20~30 해시, R-586 FM7a, 15절·10절). `moved_home`(자식 곁)이면 부모 대신 자녀 쪽이 집이다(그림은 FM5).
 - `gone`·`apart`는 어느 경우에도 포함하지 않는다.
 
 ## 4. 항목별 설계 (FA1~FA7)
@@ -503,7 +503,8 @@ export interface FamilyView {
 | `mother_gone` · `father_gone` (**K3**) | 그 분이 먼저(혼자) 세상을 떠남 | 시스템 | 4-7절 (1) | 안 꺼짐 |
 | `mother_apart` · `father_apart` | 이혼·별거로 그 분이 따로 삶 | 시스템 | 4-7절 (2) | 안 꺼짐 |
 | `mother_works` · `father_works` | 지금 일하는 중 | 시스템 | 출생 때 취업이면 | 은퇴·집안일·실직(C) |
-| `sibling_loss_risk` | 1969년 이하 출생 판의 12세 미만 형제가 있음 (Q3 사건 조건) **— 미사용(K20 안 B: 4-7절 (3)의 해시 계획에는 사건 조건이 없다)** | 시스템 | 조건 충족 | 조건 불충족 |
+| `lives_with_child` (**R-586, FM7a**) | 보기의 자녀 중 `state: 'with'`가 한 명 이상 — `senior-alone`의 `notFlags`가 읽는다 | 시스템 — **가족 모델이 내는 파생 플래그**(`deriveFamilyFlags`·`FAMILY_SYSTEM_FLAGS`·`MANAGED_FLAGS`, 사건 `effects` 쓰기 금지·읽기 허용). **해 끝(`finishYear` → `syncPostEventFlags`)에 맞춘다**: 사건이 켜는 `has_child`·`child_left`를 읽기 때문(15절) | 자녀가 함께 사는 해(자녀 출생 뒤) | 모든 자녀가 따로 살거나 떠난 해 끝 |
+| `sibling_loss_risk` | ~~1969년 이하 출생 판의 12세 미만 형제가 있음 (Q3 사건 조건)~~ **어휘만 두고 내지 않음 — 안 B(해시 계획 + 줄 `fam-sib-lost`, 4-7절 (3))라 사건 조건이 필요 없다** | 시스템(미사용) | 내지 않음 | 내지 않음 |
 | `pet_dog` `pet_cat` `pet_other` (**K10**) | 지금 함께 사는 반려동물 종 | **사건이 켜고 시스템이 끔** | 입양 사건·부모 집 유무 | 이별 해 |
 | `pet_farewell` (**K10**) | 한 번이라도 떠나보냄 | 시스템 | 첫 이별 | 안 꺼짐 |
 
@@ -511,7 +512,7 @@ export interface FamilyView {
 
 ### 6-2. 파생 일관성 (INV-7)
 
-`deriveFamilyFlags(view)`가 시스템 소유 플래그 집합을 `FamilyView`에서 계산한다. `enterLife`가 출생 직후 한 번 써서 처음 플래그를 놓고, 이후 `familyChangesFor`는 파생 집합과 현재 플래그의 **차이만** `setFlags`/`clearFlags`로 낸다(사건 소유 플래그는 건드리지 않음). 시험은 `tests/familyConsistency.test.ts`: 판을 끝까지 돌리며 해마다(사망 걸음 포함) `flags ∩ SYSTEM = derive(view, log)` — 평소 7세대 × 90판, `FAMILY_INV_LIVES=1000`이면 7000판(12-2절).
+`deriveFamilyFlags(view)`가 시스템 소유 플래그 집합을 `FamilyView`에서 계산한다. `enterLife`가 출생 직후 한 번 써서 처음 플래그를 놓고, 이후 `familyChangesFor`는 파생 집합과 현재 플래그의 **차이만** `setFlags`/`clearFlags`로 낸다(사건 소유 플래그는 건드리지 않음). **예외 — `lives_with_child`(R-586, FM7a)**: 이 플래그만은 해 시작 상태의 차이가 아니라 **해 끝(`finishYear` → `syncPostEventFlags`)에 동기화**한다. 사건이 켜는 `has_child`·`child_left`(와 자녀 출생 나이)를 읽기 때문이다(15절). 시험은 `tests/familyConsistency.test.ts`: 판을 끝까지 돌리며 해마다(사망 걸음 포함) `flags ∩ SYSTEM = derive(view, log)` — 평소 7세대 × 90판, `FAMILY_INV_LIVES=1000`이면 7000판(12-2절).
 
 ### 6-3. 가족 낱말 → 조건 표 (FA0-3 ④, 13-2절 입력)
 
@@ -648,7 +649,7 @@ export function eraOf(calYear: number, ctx: { regionKey: string; gentle: boolean
 
 - **언제 생기는가(`at`, 주인공 나이)**: 그 플래그를 켜는 사건을 **풀에서 찾아**(`setFlags`로 — 사건 id를 코드에 박지 않는다) 본 나이를 쓴다. 첫 자녀: `has_child`를 켜는 사건 중 `child_late`가 켜진 판은 마지막으로 본 사건(미뤘다가 낳은 사건), 아니면 처음 본 사건. 친구: `close_friend`를 켜는 사건 중 처음 본 나이(이후 같은 플래그를 켜는 사건이 더 나와도 그대로). 배우자: `has_partner`·`married`를 켜는 사건 중 처음 본 나이. 친구를 **잃는** 사건(`close_friend`를 조건으로 요구하는 사건)을 본 판은 플래그가 꺼져도 친구가 있었던 것이다. 사건을 본 나이를 알 수 없는 상태(시험이 플래그를 직접 켠 판)는 `design.adult.fallbackAt`(배우자 24 · 자녀 28 · 친구 12, 주인공 나이가 더 어리면 그 나이)을 쓴다.
 - **배우자**(`married`·`has_partner`·`divorced` 중 하나): 한 명, 성별은 주인공의 반대(K11 — 이름·그림은 혼인 통계가 집계하는 이성 부부), 나이 차(남편 − 아내)는 `FATHER_GAP` 모양(−4~15, 봉우리 2.5, 퍼짐 3.5)에서 판 시드로 뽑는다. **처음 만난 해(`at`)에 배우자는 20세 이상이다**(`design.adult.spouseMinAge` — 표의 나이 차가 그보다 어리게 만들면 출생 연도를 당긴다. 하한이 없던 때는 22세에 만나는 남자 주인공의 판 가운데 약 29%가 17세 이하의 연인을 보였다, R-573). 호칭은 혼인 중 「배우자」, 만나는 중 「연인」(옛 카드의 낱말). 혼인 중이면 함께 살고(`with`) 연인·이혼한 배우자는 따로 산다(`apart`, 이혼은 `apartBy: 'split'`). 배우자의 별세는 만들지 않는다(100세 초과면 상한 규칙).
-- **자녀**(`has_child`): 1~4명(표시 전용 — 경제는 자녀 수를 읽지 않는다, K1·FC5), 수는 첫 자녀를 낳은 해에 따라 가중(`design.adult.childCount`: ~1975 · ~1985 · ~1995 · 그 뒤), 둘째부터는 터울 2~5년이고 주인공 45세까지다. 성별은 반반. 성은 아버지(주인공이 남자면 주인공 성, 여자면 배우자 성). `child_left`면 따로 산다(`apart`). **자녀의 인생 사건은 만들지 않는다.**
+- **자녀**(`has_child`): 1~4명(표시 전용 — 경제는 자녀 수를 읽지 않는다, K1·FC5), 수는 첫 자녀를 낳은 해에 따라 가중(`design.adult.childCount`: ~1975 · ~1985 · ~1995 · 그 뒤), 둘째부터는 터울 2~5년이고 주인공 45세까지다. 성별은 반반. 성은 아버지(주인공이 남자면 주인공 성, 여자면 배우자 성). ~~`child_left`면 따로 산다(`apart`).~~ 자녀는 각자의 독립 나이 `leaveAge`(20~30 해시)에 따로 살고(`apart`), `child_left`는 **그 자녀가 19세 이상일 때만** 독립을 앞당긴다 — `apart = ownAge >= 19 && (child_left || ownAge >= leaveAge)`, 19세 미만 자녀는 `child_left`여도 함께 산다(R-586, FM7a — 15절). **자녀의 인생 사건은 만들지 않는다.**
 - **친구**(`close_friend` 또는 친구를 잃는 사건을 본 판): 1~3명(`design.adult.friendCount`), 나이는 주인공 ±2살, 가족이 아니므로 `FamilyView.people`에 넣지 않고 카드(`familyCardOf`)만 읽는다. `close_friend`가 꺼지면 「멀어진 친구」(사이 「멀어짐」), `friend_back`이면 사이가 한 단계 돌아온다.
 - **이름**: `NameBook`이 만들어진 순서(나이 → 배우자·자녀·친구)대로 장부에 적어, 뒤에 생긴 식구가 주인공·또래(VP3)·가족·앞서 생긴 식구와 겹치지 않게 한다. 풀은 그 사람의 출생 연도 풀이고(자녀가 2020년 뒤에 태어나면 가장 최근 풀 — 설계값).
 - **그림과 한 줄**: 배우자·자녀가 `with`이면 `FamilyView.household`에 들어가 그림의 식구(`SceneMember`)와 아래 한 줄에 같은 사람으로 나온다(FA0-1). 자녀가 태어난 해는 `SceneChange`에 `child-born`이 붙는다. 그림 식구는 최대 7명(주인공 제외) — 부모 둘 + 배우자 + 자녀 4명까지가 자리 안이고 넘치면 형제·조부모부터 뺀다.
@@ -806,7 +807,11 @@ FA0-2·완료 기준 2의 문장 「해시 일치」는 L0·L1에만 적용된�
   - ③ **사건 풀의 `setFlags`·`conditions`**(`has_partner`·`married`·`has_child`·`close_friend`를 켜는 사건) → 식구가 생긴 나이 `at`과 자녀 출생 연도.
   - 공개 전에 지금 값을 고치는 일(R-573·R-588)은 괜찮다. **공개(K6) 뒤 같은 변경은 곧 드리프트**다. 보호 장치 넷: (1) L0F 골든에 `adultSlotsOf` 결과(이름·출생 연도·`at`)를 넣어 ①②③의 무심한 변경이 시험에서 걸리게 한다 — 알아채게 할 뿐 이미 저장된 판을 지키지는 못한다(TODO의 L0F 줄에 조건으로 적었다, 아직 만들지 않았다) (2) 성인기 식구 이름을 사건·인생 기록 문장에 쓰지 않는다 — `tests/familyConsistency.test.ts` 「성인기 식구 이름은 …」 두 시험이 판 끝의 문장과 이름을 견주고, 이름을 읽는 모듈(`adultSlotsOf`·`namesOfFamily` 사용처)이 카드·보기뿐임을 코드에서 고정한다. FM7이 쓰려면 먼저 저장으로 옮긴다 (3) 공개 뒤 이름 풀·`design.adult`·`NAME_KEY`·성인 플래그를 개정하기 전에 「로드 때 `ad`로 스냅샷」을 먼저 한 번 배포한다 (4) 이 절(대가와 한계)을 유지한다. 저장 구조 자체는 Two-way다 — `ad`와 로그 15·16 자리가 예약되어 있고 `SCHEMA_VERSION`은 그대로다.
 - **한계 — 배우자 칸이 하나다 (R-587)**: 새 연인이 옛 연인과 **같은 사람**이다. 헤어진 뒤 새로 만나도 이름·나이가 같고(`youth-meeting-again`), 이혼 뒤 새 연인·재혼(`youth-second-chance`가 중년까지 열린다)도 같은 이름이며 `divorced`의 사이 상한(`cap: 1`) 때문에 사이가 평생 「멀어짐」으로 남는다. 두 번째 사람을 구분하려면 저장이 필요하니 안 A(저장으로 옮김)와 함께 푼다.
-- **한계 — 자녀의 독립이 나이를 보지 않는다 (R-586, FM7 묶음)**: `child_left`(58~64세 사건)가 모든 자녀에게 한꺼번에 걸려 미성년 자녀가 「따로 삶」으로 보일 수 있고, `child_late`로 사건이 빠지면 성인 자녀가 평생 함께 산다(`senior-alone`의 「혼자 사는 집」과 모순). FM7에서 자녀 독립 나이를 해시로 정하고 사건 조건을 보기와 맞춘다.
+- **한계 — ~~자녀의 독립이 나이를 보지 않는다 (R-586, FM7 묶음)~~ → FM7a에서 해소 (2026-11-06)**: ~~`child_left`(58~64세 사건)가 모든 자녀에게 한꺼번에 걸려 미성년 자녀가 「따로 삶」으로 보일 수 있고, `child_late`로 사건이 빠지면 성인 자녀가 평생 함께 산다(`senior-alone`의 「혼자 사는 집」과 모순). FM7에서 자녀 독립 나이를 해시로 정하고 사건 조건을 보기와 맞춘다.~~ **해소 내용** (SPEC-009 「FM7 나눔」 5절이 정본):
+  - 자녀가 「따로 삶」 ⇔ `apart = ownAge >= 19 && (child_left || ownAge >= leaveAge)`. `leaveAge`는 자녀마다 `famHash01(famSeed, ADULT, 40+j, 1)`로 정한 **20~30 해시**(형제 독립과 같은 표, 진행 RNG 불소비·저장 0)다. 19세 미만 자녀는 `child_left`여도 함께 산다. `has_child`·`child_left`의 의미·세터와 경제의 자녀 읽기(`livingEquivalent`)는 그대로다(표시 전용).
+  - 파생 플래그 `lives_with_child`(보기의 자녀 중 한 명 이상이 함께 삶, 6-1절)는 **해 끝(`finishYear`)에 맞춘다** — 사건이 켜는 `has_child`·`child_left`를 읽기 때문이다. 해 시작 상태로 계산하는 `familyChangesFor`로는 INV-7이 해마다 한 해 늦었다.
+  - `lives_with_child`는 `senior-alone`의 `notFlags`에 들어간다(그 해 함께 사는 자녀가 있으면 「혼자 사는 집」이 나오지 않는다). 「비어 가는 방」(`middle-child-leaves`)은 발생·효과·`child_left` 세터를 그대로 두고 본문 첫 문장만 바뀌었다(P안).
+  - **남은 한계**: `child_late` 판에서 카드는 자녀가 「따로 삶」인데 경제는 `livingEquivalent`로 자녀를 계속 센다(표시 전용 원칙 K1 — 건드리지 않았다, SPEC-009 5절 3번).
 - **부모의 학력·집안일(FA2), 부모 집 반려동물(FD22), 이사·실직·병환(대기 C)은 아직 없다**: 카드는 값이 생기면 읽는다(`ParentData.w`·`r`, 로그 12·13) — 지금은 모두 취업·은퇴·반려동물 없음으로 보인다.
 - **자료 공백**: 1940~60년대생의 조부모·부모는 학력·출산·사망 모두 추정·설계값이 크다(`fd-a` 6절). 화면은 접이식 근거 칸에서 항목별로 밝힌다(FA0-4).
 - **기간 단면 근사**(이어짐 확률)와 **모 연령 상한 절단**은 동생 수를 하향 편향시킨다(보고 후 필요 시 나이 계수, 마스터).
