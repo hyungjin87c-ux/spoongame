@@ -1,0 +1,768 @@
+{
+ "note": "가족 값 고정 골든(L0F) — scripts/familyL0fGolden.ts가 만든다. 출생 때 family 저장값·파생 계획·대표 나이 가족 보기 요약·성인기 식구(adultSlotsOf)·사건 풀 배선·표 지문(표·상수·이름 풀)을 얼린다.",
+ "updateRule": "갱신 규칙(One-way): 공개 배포(K6) 뒤에 이 골든을 다시 만드는 것은 이어하던 판의 가족이 바뀌는 One-way 변경이다 — 가족 값 대부분(부모 별세·이혼 계획, 형제 별세, 자녀 독립 나이, 성인기 식구의 이름·출생 연도·at)은 저장하지 않고 출생 때 해시와 표에서 다시 계산하기 때문이다. 그래서 다시 만들기 전에 마스터 승인과 형진 님 확인이 필요하다. 성인 식구 표(이름 풀·design.adult·NAME_KEY·성인 플래그를 켜는 사건)를 바꿀 때는 SPEC-009 FS2 예외 ③대로 「로드 때 family.ad 스냅샷」을 먼저 한 번 배포한다. 다시 만드는 명령은 이 한 곳뿐이다: npm run golden:family -- --write (--write 없이 돌리면 쓰지 않고 달라진 칸만 알려 준다). 시험은 이 파일을 절대 쓰지 않는다. 이 골든은 알아채는 장치일 뿐 이미 저장된 판을 지켜 주지는 못한다.",
+ "meta": {
+  "ages": [0,1,7,19,20,40,65],
+  "spreadSeeds": 3,
+  "adultSeeds": 3,
+  "featureSeeds": [{"gen":"industrial","seed":87,"tag":"loss-o"},{"gen":"industrial","seed":41,"tag":"gone-moved"},{"gen":"boomer","seed":16,"tag":"loss-y"},{"gen":"g86","seed":126,"tag":"loss-o"},{"gen":"genx","seed":57,"tag":"div-m"},{"gen":"genx","seed":123,"tag":"div-f"},{"gen":"genz","seed":26,"tag":"div-f"},{"gen":"alpha","seed":32,"tag":"div-m"},{"gen":"millennial","seed":747,"tag":"gone-moved"}],
+  "requiredTags": ["div-m","div-f","loss-o","loss-y","gone1-m","gone1-f","gone-moved","cohab1","cohab2","sib-y3","sib-o2","gp-before"],
+  "adultScenarios": [{"id":"partner","age":40,"flags":["has_partner"],"seen":{"youth-meeting":23}},{"id":"ex","age":50,"flags":["divorced"],"seen":{"youth-marriage":26,"middle-marriage-crisis":44}},{"id":"kids","age":70,"flags":["married","has_child"],"seen":{"youth-marriage":25,"youth-child":27}},{"id":"young","age":33,"flags":["married","has_child"],"seen":{"youth-marriage":29,"youth-child":31}},{"id":"late","age":80,"flags":["child_late","close_friend","has_child","married"],"seen":{"youth-marriage":28,"youth-child":30,"youth-child-again":36,"school-friend":13}},{"id":"friend","age":25,"flags":["close_friend"],"seen":{"school-friend":12}},{"id":"faded","age":60,"flags":["married"],"seen":{"youth-marriage":28,"school-friend":13,"youth-friend-wedding":30}},{"id":"bare","age":50,"flags":["close_friend","has_child","married"],"seen":{}}],
+  "wiringReads": [{"flag":"has_partner","kind":"set"},{"flag":"married","kind":"set"},{"flag":"has_child","kind":"set"},{"flag":"close_friend","kind":"set"},{"flag":"close_friend","kind":"req"},{"flag":"parents_gone","kind":"set"}]
+ },
+ "wiring": {
+  "has_partner:set": ["youth-approached","youth-matchmaker","youth-meeting","youth-meeting-again","youth-reunion","youth-workplace-romance"],
+  "married:set": ["youth-marriage","youth-marriage-again","youth-second-chance"],
+  "has_child:set": ["youth-child","youth-child-again"],
+  "close_friend:set": ["school-club","school-friend","school-friend-quarrel"],
+  "close_friend:req": ["middle-friend-reunion","senior-old-friend","youth-friend-wedding"],
+  "parents_gone:set": ["middle-parents-farewell","middle-parents-farewell-father-gone","middle-parents-farewell-mother-gone"]
+ },
+ "tables": {
+  "constants": {
+   "FAMILY_SALT": 1178684745,
+   "FAMILY_TAG": {"EMPLOY":1,"EDU":2,"HOMETOWN":3,"GRAND_AGE":4,"GRAND_LIFE":5,"GRAND_SIDE":6,"SIBLINGS":7,"NAMES":8,"HOME":9,"PETS":10,"POSSESS":11,"PARENT_LIFE":12,"ADULT":13,"ERA":14,"DIVORCE":15,"MOVE":16,"SCENE":17,"CLOSE":18,"SIB_LOSS":19},
+   "NAME_KEY": {"mother":1,"father":2,"pgf":3,"pgm":4,"mgf":5,"mgm":6,"older":[11,12,13,14],"younger":[21,22,23,24,25,26,27],"spouse":31,"child":[41,42,43,44],"friend":[51,52,53]},
+   "DIVORCE_AGES": {"min":1,"max":18},
+   "PARENT_GONE_MIN_AGE": 1,
+   "CHILD_APART_MIN_AGE": 19,
+   "GRAND_COHABIT_UNTIL": 19,
+   "EARLY_LOSS_MAX_AGE": 19,
+   "FAMILY_MAX_CHILDREN": 8,
+   "MOTHER_BIRTH_MAX": 49,
+   "YOUNGER_MOTHER_MAX": 45,
+   "FAMILY_AGE_CAP": 100,
+   "NO_DEATH_PLAN": 101,
+   "FAMILY_MAX_AGE": 100,
+   "FAMILY_ADULT_AGE": 20,
+   "FAMILY_DATA_VERSION": 1,
+   "SIBLING_GAP": {"min":2,"max":5},
+   "THIRD_PLUS_SPLIT": [74,19,7]
+  },
+  "fingerprints": {
+   "mortality": "cb9a65bc",
+   "motherAge": "28319249",
+   "household": "2235f520",
+   "divorce": "d8dda8bc",
+   "housing": "b19372d2",
+   "surnames": "940fe4a7",
+   "design.paternalSideShare": "5280b1ac",
+   "design.divorceFatherLeaves": "5980bcb1",
+   "design.maleShare": "5480b4d2",
+   "design.leaveAge": "6d6db604",
+   "design.continueCap": "5880bb1e",
+   "design.home": "8efecc4d",
+   "design.highOrderContinue": "470a3b91",
+   "design.siblingLoss": "2f877650",
+   "design.adult": "e44c670a"
+  },
+  "namePools": [
+   "남 1940-1949 578d9906 n20",
+   "남 1950-1959 786eb5ab n22",
+   "남 1960-1969 c9f9ab9d n22",
+   "남 1970-1979 6cfbe549 n21",
+   "남 1980-1989 41687928 n21",
+   "남 1990-1999 d8c67018 n20",
+   "남 2000-2007 c74be89c n20",
+   "남 2008-2008 225cfaa8 n20",
+   "남 2009-2009 52ff754a n20",
+   "남 2010-2010 8e783a3e n20",
+   "남 2011-2011 960f2ac5 n20",
+   "남 2012-2012 de499b27 n20",
+   "남 2013-2013 48de1494 n20",
+   "남 2014-2014 19b12ee6 n20",
+   "남 2015-2015 0e88c55b n20",
+   "남 2016-2016 bcf6f33b n20",
+   "남 2017-2017 8487966b n20",
+   "남 2018-2018 99f4b073 n20",
+   "남 2019-2019 0a825e33 n20",
+   "남 2020-2020 9d8b3fdb n20",
+   "남 2026-2026 e086e10b n20",
+   "여 1940-1949 1ece7de2 n20",
+   "여 1950-1959 e70778e0 n20",
+   "여 1960-1969 2a9f59ec n20",
+   "여 1970-1979 9084872a n20",
+   "여 1980-1989 7d5b9c07 n21",
+   "여 1990-1999 f64df31a n20",
+   "여 2000-2007 5b4c019b n20",
+   "여 2008-2008 545913e4 n20",
+   "여 2009-2009 0e1a40be n20",
+   "여 2010-2010 cfa7b76e n20",
+   "여 2011-2011 b83bd5bf n20",
+   "여 2012-2012 19ea81db n20",
+   "여 2013-2013 9c82113b n20",
+   "여 2014-2014 e6930b0f n20",
+   "여 2015-2015 5dd91563 n20",
+   "여 2016-2016 a4e4115f n20",
+   "여 2017-2017 ae506a3f n20",
+   "여 2018-2018 2351badf n20",
+   "여 2019-2019 e9de6ed7 n20",
+   "여 2020-2020 cbe68413 n20",
+   "여 2026-2026 e15881a3 n20"
+  ]
+ },
+ "births": {
+  "industrial/1": {
+   "head": "이학수 남 1949년생 · 어머니 27세 아버지 27세 · 3째 · famSeed 1413778485",
+   "tags": "sib-y3 sib-o2",
+   "family": {"v":1,"p":[{"d":93,"n":"최영희"},{"d":74,"n":"이영수"}],"g":[{"a":36,"d":75,"n":"이승철"},{"a":39,"d":70,"n":"강옥순"},{"a":29,"d":76,"n":"최영철"},{"a":27,"d":88,"n":"이순임"}],"c":0,"o":[{"g":1,"k":2,"s":23,"n":"이경자"},{"g":1,"k":4,"s":28,"n":"이점순"}],"y":[{"g":1,"k":3,"s":21,"n":"이정희"},{"g":1,"k":5,"s":29,"n":"이말순"},{"g":1,"k":8,"s":29,"n":"이춘자"},{"g":0,"k":10,"s":26,"n":"이종수"},{"g":0,"k":13,"s":28,"n":"이영만"}],"h":{"k":0,"r":2,"s":1},"l":[]},
+   "plan": "by 1922/1922 · 1886/1883/1893/1895 | gone 66/47 own 93/74 first 부@47 | divorce - | sibLoss - | grandGone 12/4/20/34 | kidLeave 21/27/23/22",
+   "view": [
+    "0|motherw fatherw pgfa pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfa pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfa pgmg70/4 mgfa mgma o1w o2w y1w y2w|sib 2/2/4/4",
+    "19|motherw fatherw pgfg75/12 pgmg70/4 mgfa mgma o1w o2w y1w y2w y3w y4w y5w|sib 2/5/7/7",
+    "20|motherw fatherw pgfg75/12 pgmg70/4 mgfa mgma o1w o2w y1w y2w y3w y4w y5w|sib 2/5/7/7",
+    "40|motherw fatherw pgfg75/12 pgmg70/4 mgfg76/20 mgmg88/34 o1a o2a y1a y2a y3a y4a y5w|sib 2/5/7/7",
+    "65|motherw fatherg74/47 pgfg75/12 pgmg70/4 mgfg76/20 mgmg88/34 o1a o2a y1a y2a y3a y4a y5a|sib 2/5/7/7"
+   ]
+  },
+  "industrial/38": {
+   "head": "김명자 여 1950년생 · 어머니 30세 아버지 26세 · 1째 · famSeed 1848508321",
+   "tags": "cohab1 sib-y3 gp-before",
+   "family": {"v":1,"p":[{"d":52,"n":"박옥순"},{"d":54,"n":"김영호"}],"g":[{"a":28,"d":42,"n":"김성수"},{"a":24,"d":75,"n":"정춘자"},{"a":33,"d":68,"n":"박영식"},{"a":28,"d":45,"n":"장영숙"}],"c":1,"o":[],"y":[{"g":1,"k":2,"s":25,"n":"김명숙"},{"g":1,"k":5,"s":23,"n":"김옥자"},{"g":1,"k":7,"s":21,"n":"김순옥"},{"g":1,"k":10,"s":21,"n":"김영미"},{"g":0,"k":13,"s":21,"n":"김상호"}],"h":{"k":0,"r":1},"l":[]},
+   "plan": "by 1920/1924 · 1896/1900/1887/1892 | gone 22/28 own 52/54 first 모@22 | divorce - | sibLoss - | grandGone -12/25/5/-13 | kidLeave 21/30/26/20",
+   "view": [
+    "0|motherw fatherw pgfg42/-12 pgmw mgfa mgmg45/-13|sib 0/0/0/0",
+    "1|motherw fatherw pgfg42/-12 pgmw mgfa mgmg45/-13|sib 0/0/0/0",
+    "7|motherw fatherw pgfg42/-12 pgmw mgfg68/5 mgmg45/-13 y1w y2w y3w|sib 0/3/3/3",
+    "19|motherw fatherw pgfg42/-12 pgmw mgfg68/5 mgmg45/-13 y1w y2w y3w y4w y5w|sib 0/5/5/5",
+    "20|motherw fatherw pgfg42/-12 pgma mgfg68/5 mgmg45/-13 y1w y2w y3w y4w y5w|sib 0/5/5/5",
+    "40|motherg52/22 fatherw pgfg42/-12 pgmg75/25 mgfg68/5 mgmg45/-13 y1a y2a y3a y4a y5a|sib 0/5/5/5",
+    "65|motherg52/22 fatherw pgfg42/-12 pgmg75/25 mgfg68/5 mgmg45/-13 y1a y2a y3a y4a y5a|sib 0/5/5/5"
+   ]
+  },
+  "industrial/75": {
+   "head": "강영수 남 1943년생 · 어머니 25세 아버지 33세 · 1째 · famSeed 1452684199",
+   "tags": "sib-y3 gp-before",
+   "family": {"v":1,"p":[{"d":51,"n":"이정숙"},{"d":86,"n":"강영호"}],"g":[{"a":28,"d":48,"n":"강종수"},{"a":26,"d":36,"n":"박미자"},{"a":40,"d":43,"n":"이영식"},{"a":38,"d":62,"n":"강순희"}],"c":0,"o":[],"y":[{"g":0,"k":3,"s":28,"n":"강영철"},{"g":1,"k":6,"s":23,"n":"강정순"},{"g":1,"k":8,"s":24,"n":"강영숙"},{"g":1,"k":11,"s":20,"n":"강정희"},{"g":1,"k":13,"s":24,"n":"강정자"},{"g":0,"k":16,"s":29,"n":"강병호"},{"g":0,"k":19,"s":27,"n":"강성철"}],"h":{"k":0,"r":1},"l":[]},
+   "plan": "by 1918/1910 · 1882/1884/1878/1880 | gone 26/53 own 51/86 first 모@26 | divorce - | sibLoss - | grandGone -13/-23/-22/-1 | kidLeave 27/21/30/28",
+   "view": [
+    "0|motherw fatherw pgfg48/-13 pgmg36/-23 mgfg43/-22 mgmg62/-1|sib 0/0/0/0",
+    "1|motherw fatherw pgfg48/-13 pgmg36/-23 mgfg43/-22 mgmg62/-1|sib 0/0/0/0",
+    "7|motherw fatherw pgfg48/-13 pgmg36/-23 mgfg43/-22 mgmg62/-1 y1w y2w|sib 0/2/2/2",
+    "19|motherw fatherw pgfg48/-13 pgmg36/-23 mgfg43/-22 mgmg62/-1 y1w y2w y3w y4w y5w y6w y7w|sib 0/7/7/7",
+    "20|motherw fatherw pgfg48/-13 pgmg36/-23 mgfg43/-22 mgmg62/-1 y1w y2w y3w y4w y5w y6w y7w|sib 0/7/7/7",
+    "40|motherg51/26 fatherw pgfg48/-13 pgmg36/-23 mgfg43/-22 mgmg62/-1 y1a y2a y3a y4a y5a y6w y7w|sib 0/7/7/7",
+    "65|motherg51/26 fatherw pgfg48/-13 pgmg36/-23 mgfg43/-22 mgmg62/-1 y1a y2a y3a y4a y5a y6a y7a|sib 0/7/7/7"
+   ]
+  },
+  "boomer/1000004": {
+   "head": "박영호 남 1955년생 · 어머니 24세 아버지 28세 · 3째 · famSeed 2448384725",
+   "tags": "sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":64,"n":"김명숙"},{"d":80,"n":"박재수"}],"g":[{"a":29,"d":43,"n":"박명수"},{"a":27,"d":65,"n":"조옥자"},{"a":28,"d":60,"n":"김성수"},{"a":22,"d":87,"n":"이복순"}],"c":0,"o":[{"g":1,"k":4,"s":30,"n":"박춘자"},{"g":1,"k":8,"s":24,"n":"박영순"}],"y":[],"h":{"k":0,"r":1,"s":1},"l":[]},
+   "plan": "by 1931/1927 · 1898/1900/1903/1909 | gone 40/52 own 64/80 first 모@40 | divorce - | sibLoss - | grandGone -14/10/8/41 | kidLeave 24/24/24/26",
+   "view": [
+    "0|motherw fatherw pgfg43/-14 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfg43/-14 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfg43/-14 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "19|motherw fatherw pgfg43/-14 pgmg65/10 mgfg60/8 mgma o1w o2a|sib 2/0/2/2",
+    "20|motherw fatherw pgfg43/-14 pgmg65/10 mgfg60/8 mgma o1w o2a|sib 2/0/2/2",
+    "40|motherw fatherw pgfg43/-14 pgmg65/10 mgfg60/8 mgma o1a o2a|sib 2/0/2/2",
+    "65|motherg64/40 fatherw pgfg43/-14 pgmg65/10 mgfg60/8 mgmg87/41 o1a o2a|sib 2/0/2/2"
+   ]
+  },
+  "boomer/1000041": {
+   "head": "김영일 남 1963년생 · 어머니 30세 아버지 32세 · 3째 · famSeed 2886928670",
+   "tags": "loss-y cohab1 sib-y3 sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":89,"n":"이영희"},{"d":90,"n":"김명수"}],"g":[{"a":30,"d":61,"n":"김광수"},{"a":34,"d":77,"n":"이순옥"},{"a":33,"d":63,"n":"이정수"},{"a":27,"d":81,"n":"김춘자"}],"c":1,"o":[{"g":0,"k":5,"s":27,"n":"김영수"},{"g":0,"k":9,"s":28,"n":"김중수"}],"y":[{"g":1,"k":2,"s":24,"n":"김영란"},{"g":1,"k":7,"s":29,"n":"김선희"},{"g":0,"k":12,"s":23,"n":"김상현"}],"h":{"k":0,"r":3},"l":[]},
+   "plan": "by 1933/1931 · 1901/1897/1900/1906 | gone 59/58 own 89/90 first 부@58 | divorce - | sibLoss y1@6(a4) | grandGone -1/11/0/24 | kidLeave 24/24/25/30",
+   "view": [
+    "0|motherw fatherw pgfg61/-1 pgmw mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfg61/-1 pgmw mgfg63/0 mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfg61/-1 pgmw mgfg63/0 mgma o1w o2w y1g4/6 y2w|sib 2/1/3/4",
+    "19|motherw fatherw pgfg61/-1 pgmg77/11 mgfg63/0 mgma o1w o2a y1g4/6 y2w y3w|sib 2/2/4/5",
+    "20|motherw fatherw pgfg61/-1 pgmg77/11 mgfg63/0 mgma o1w o2a y1g4/6 y2w y3w|sib 2/2/4/5",
+    "40|motherw fatherw pgfg61/-1 pgmg77/11 mgfg63/0 mgmg81/24 o1a o2a y1g4/6 y2a y3a|sib 2/2/4/5",
+    "65|motherw fatherg90/58 pgfg61/-1 pgmg77/11 mgfg63/0 mgmg81/24 o1a o2a y1g4/6 y2a y3a|sib 2/2/4/5"
+   ]
+  },
+  "boomer/1000078": {
+   "head": "장미영 여 1961년생 · 어머니 24세 아버지 27세 · 3째 · famSeed 213645219",
+   "tags": "cohab1 sib-y3 sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":71,"n":"정복순"},{"d":86,"n":"장태수"}],"g":[{"a":28,"d":84,"n":"장용수"},{"a":26,"d":75,"n":"김명숙"},{"a":34,"d":46,"n":"정영수"},{"a":27,"d":68,"n":"김미자"}],"c":1,"o":[{"g":0,"k":3,"s":28,"n":"장중수"},{"g":0,"k":5,"s":23,"n":"장기호"}],"y":[{"g":0,"k":5,"s":27,"n":"장영호"},{"g":1,"k":7,"s":20,"n":"장정희"},{"g":0,"k":11,"s":23,"n":"장성욱"}],"h":{"k":0,"r":2},"l":[]},
+   "plan": "by 1937/1934 · 1906/1908/1903/1910 | gone 47/59 own 71/86 first 모@47 | divorce - | sibLoss - | grandGone 29/22/-12/17 | kidLeave 22/27/23/27",
+   "view": [
+    "0|motherw fatherw pgfw pgmw mgfg46/-12 mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfw pgmw mgfg46/-12 mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfw pgmw mgfg46/-12 mgma o1w o2w y1w y2w|sib 2/2/4/4",
+    "19|motherw fatherw pgfw pgmw mgfg46/-12 mgmg68/17 o1w o2a y1w y2w y3w|sib 2/3/5/5",
+    "20|motherw fatherw pgfa pgma mgfg46/-12 mgmg68/17 o1w o2a y1w y2w y3w|sib 2/3/5/5",
+    "40|motherw fatherw pgfg84/29 pgmg75/22 mgfg46/-12 mgmg68/17 o1a o2a y1a y2a y3a|sib 2/3/5/5",
+    "65|motherg71/47 fatherw pgfg84/29 pgmg75/22 mgfg46/-12 mgmg68/17 o1a o2a y1a y2a y3a|sib 2/3/5/5"
+   ]
+  },
+  "g86/2000007": {
+   "head": "최영진 남 1965년생 · 어머니 23세 아버지 30세 · 4째 · famSeed 2898485290",
+   "tags": "cohab2 sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":80,"n":"박영숙"},{"d":66,"n":"최동수"}],"g":[{"a":49,"d":68,"n":"최태수"},{"a":41,"d":47,"n":"박순자"},{"a":30,"d":52,"n":"박영식"},{"a":30,"d":77,"n":"김영순"}],"c":2,"o":[{"g":1,"k":3,"s":27,"n":"최미경"},{"g":0,"k":5,"s":26,"n":"최상철"},{"g":1,"k":7,"s":24,"n":"최경자"}],"y":[{"g":1,"k":4,"s":22,"n":"최정란"},{"g":1,"k":9,"s":24,"n":"최은영"}],"h":{"k":0,"r":2},"l":[]},
+   "plan": "by 1942/1935 · 1886/1894/1912/1912 | gone 57/36 own 80/66 first 부@36 | divorce - | sibLoss - | grandGone -11/-24/-1/24 | kidLeave 26/30/24/28",
+   "view": [
+    "0|motherw fatherw pgfg68/-11 pgmg47/-24 mgfg52/-1 mgmw o1w o2w o3w|sib 3/0/3/3",
+    "1|motherw fatherw pgfg68/-11 pgmg47/-24 mgfg52/-1 mgmw o1w o2w o3w|sib 3/0/3/3",
+    "7|motherw fatherw pgfg68/-11 pgmg47/-24 mgfg52/-1 mgmw o1w o2w o3w y1w|sib 3/1/4/4",
+    "19|motherw fatherw pgfg68/-11 pgmg47/-24 mgfg52/-1 mgmw o1w o2w o3a y1w y2w|sib 3/2/5/5",
+    "20|motherw fatherw pgfg68/-11 pgmg47/-24 mgfg52/-1 mgma o1w o2w o3a y1w y2w|sib 3/2/5/5",
+    "40|motherw fatherg66/36 pgfg68/-11 pgmg47/-24 mgfg52/-1 mgmg77/24 o1a o2a o3a y1a y2a|sib 3/2/5/5",
+    "65|motherw fatherg66/36 pgfg68/-11 pgmg47/-24 mgfg52/-1 mgmg77/24 o1a o2a o3a y1a y2a|sib 3/2/5/5"
+   ]
+  },
+  "g86/2000044": {
+   "head": "박영진 남 1968년생 · 어머니 22세 아버지 31세 · 3째 · famSeed 3200337762",
+   "tags": "sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":91,"n":"이순옥"},{"d":54,"n":"박용수"}],"g":[{"a":32,"d":54,"n":"박명수"},{"a":27,"d":46,"n":"김순희"},{"a":36,"d":73,"n":"이성수"},{"a":38,"d":66,"n":"임영숙"}],"c":0,"o":[{"g":1,"k":3,"s":29,"n":"박영란"},{"g":1,"k":6,"s":22,"n":"박정란"}],"y":[{"g":0,"k":4,"s":23,"n":"박진호"}],"h":{"k":0,"r":3,"s":1},"l":[]},
+   "plan": "by 1946/1937 · 1905/1910/1910/1908 | gone 69/23 own 91/54 first 부@23 | divorce - | sibLoss - | grandGone -9/-12/15/6 | kidLeave 28/23/25/22",
+   "view": [
+    "0|motherw fatherw pgfg54/-9 pgmg46/-12 mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfg54/-9 pgmg46/-12 mgfa mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfg54/-9 pgmg46/-12 mgfa mgmg66/6 o1w o2w y1w|sib 2/1/3/3",
+    "19|motherw fatherw pgfg54/-9 pgmg46/-12 mgfg73/15 mgmg66/6 o1w o2a y1w|sib 2/1/3/3",
+    "20|motherw fatherw pgfg54/-9 pgmg46/-12 mgfg73/15 mgmg66/6 o1w o2a y1w|sib 2/1/3/3",
+    "40|motherw fatherg54/23 pgfg54/-9 pgmg46/-12 mgfg73/15 mgmg66/6 o1a o2a y1a|sib 2/1/3/3",
+    "65|motherw fatherg54/23 pgfg54/-9 pgmg46/-12 mgfg73/15 mgmg66/6 o1a o2a y1a|sib 2/1/3/3"
+   ]
+  },
+  "g86/2000081": {
+   "head": "박영미 여 1969년생 · 어머니 23세 아버지 27세 · 1째 · famSeed 3242071358",
+   "tags": "gone1-m gp-before",
+   "family": {"v":1,"p":[{"d":27,"n":"이영자"},{"d":76,"n":"박종수"}],"g":[{"a":39,"d":67,"n":"박명수"},{"a":34,"d":56,"n":"조춘자"},{"a":34,"d":65,"n":"이광수"},{"a":28,"d":46,"n":"김경자"}],"c":0,"o":[],"y":[{"g":1,"k":3,"s":23,"n":"박은경"}],"h":{"k":0,"r":1},"l":[]},
+   "plan": "by 1946/1942 · 1903/1908/1912/1918 | gone 4/49 own 27/76 first 모@4 | divorce - | sibLoss - | grandGone 1/-5/8/-5 | kidLeave 28/30/25/23",
+   "view": [
+    "0|motherw fatherw pgfa pgmg56/-5 mgfa mgmg46/-5|sib 0/0/0/0",
+    "1|motherw fatherw pgfa pgmg56/-5 mgfa mgmg46/-5|sib 0/0/0/0",
+    "7|motherg27/4 fatherw pgfg67/1 pgmg56/-5 mgfa mgmg46/-5 y1w|sib 0/1/1/1",
+    "19|motherg27/4 fatherw pgfg67/1 pgmg56/-5 mgfg65/8 mgmg46/-5 y1w|sib 0/1/1/1",
+    "20|motherg27/4 fatherw pgfg67/1 pgmg56/-5 mgfg65/8 mgmg46/-5 y1w|sib 0/1/1/1",
+    "40|motherg27/4 fatherw pgfg67/1 pgmg56/-5 mgfg65/8 mgmg46/-5 y1a|sib 0/1/1/1",
+    "65|motherg27/4 fatherw pgfg67/1 pgmg56/-5 mgfg65/8 mgmg46/-5 y1a|sib 0/1/1/1"
+   ]
+  },
+  "genx/3000010": {
+   "head": "강성진 남 1979년생 · 어머니 22세 아버지 24세 · 1째 · famSeed 558540698",
+   "tags": "gp-before",
+   "family": {"v":1,"p":[{"d":95,"n":"박옥자"},{"d":51,"n":"강영호"}],"g":[{"a":36,"d":36,"n":"강광수"},{"a":34,"d":88,"n":"이명숙"},{"a":42,"d":100,"n":"박재수"},{"a":39,"d":75,"n":"김점순"}],"c":0,"o":[],"y":[],"h":{"k":0,"r":3},"l":[]},
+   "plan": "by 1957/1955 · 1919/1921/1915/1918 | gone 73/27 own 95/51 first 부@27 | divorce - | sibLoss - | grandGone -24/30/36/14 | kidLeave 21/25/25/30",
+   "view": [
+    "0|motherw fatherw pgfg36/-24 pgma mgfa mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfg36/-24 pgma mgfa mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfg36/-24 pgma mgfa mgma|sib 0/0/0/0",
+    "19|motherw fatherw pgfg36/-24 pgma mgfa mgmg75/14|sib 0/0/0/0",
+    "20|motherw fatherw pgfg36/-24 pgma mgfa mgmg75/14|sib 0/0/0/0",
+    "40|motherw fatherg51/27 pgfg36/-24 pgmg88/30 mgfg100/36 mgmg75/14|sib 0/0/0/0",
+    "65|motherw fatherg51/27 pgfg36/-24 pgmg88/30 mgfg100/36 mgmg75/14|sib 0/0/0/0"
+   ]
+  },
+  "genx/3000047": {
+   "head": "이미영 여 1976년생 · 어머니 28세 아버지 34세 · 3째 · famSeed 3132131245",
+   "tags": "sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":91,"n":"김순임"},{"d":60,"n":"이영식"}],"g":[{"a":25,"d":44,"n":"이학수"},{"a":25,"d":97,"n":"최정순"},{"a":30,"d":60,"n":"김광수"},{"a":26,"d":71,"n":"최순자"}],"c":0,"o":[{"g":1,"k":5,"s":20,"n":"이영미"},{"g":1,"k":9,"s":28,"n":"이영희"}],"y":[{"g":0,"k":3,"s":25,"n":"이진호"}],"h":{"k":0,"r":2,"s":1},"l":[]},
+   "plan": "by 1948/1942 · 1917/1917/1918/1922 | gone 63/26 own 91/60 first 부@26 | divorce - | sibLoss - | grandGone -15/38/2/17 | kidLeave 26/24/23/29",
+   "view": [
+    "0|motherw fatherw pgfg44/-15 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfg44/-15 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfg44/-15 pgma mgfg60/2 mgma o1w o2w y1w|sib 2/1/3/3",
+    "19|motherw fatherw pgfg44/-15 pgma mgfg60/2 mgmg71/17 o1a o2a y1w|sib 2/1/3/3",
+    "20|motherw fatherw pgfg44/-15 pgma mgfg60/2 mgmg71/17 o1a o2a y1w|sib 2/1/3/3",
+    "40|motherw fatherg60/26 pgfg44/-15 pgmg97/38 mgfg60/2 mgmg71/17 o1a o2a y1a|sib 2/1/3/3",
+    "65|motherw fatherg60/26 pgfg44/-15 pgmg97/38 mgfg60/2 mgmg71/17 o1a o2a y1a|sib 2/1/3/3"
+   ]
+  },
+  "genx/3000084": {
+   "head": "김정희 여 1972년생 · 어머니 26세 아버지 26세 · 1째 · famSeed 2580643681",
+   "tags": "gone1-f gp-before",
+   "family": {"v":1,"p":[{"d":95,"n":"이경자"},{"d":36,"n":"김동수"}],"g":[{"a":24,"d":55,"n":"김학수"},{"a":21,"d":23,"n":"이순희"},{"a":27,"d":46,"n":"이창수"},{"a":26,"d":91,"n":"김춘자"}],"c":0,"o":[],"y":[{"g":0,"k":3,"s":22,"n":"김재훈"}],"h":{"k":0,"r":2,"s":1},"l":[]},
+   "plan": "by 1946/1946 · 1922/1925/1919/1920 | gone 69/10 own 95/36 first 부@10 | divorce - | sibLoss - | grandGone 5/-24/-7/39 | kidLeave 24/26/27/27",
+   "view": [
+    "0|motherw fatherw pgfa pgmg23/-24 mgfg46/-7 mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfa pgmg23/-24 mgfg46/-7 mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfg55/5 pgmg23/-24 mgfg46/-7 mgma y1w|sib 0/1/1/1",
+    "19|motherw fatherg36/10 pgfg55/5 pgmg23/-24 mgfg46/-7 mgma y1w|sib 0/1/1/1",
+    "20|motherw fatherg36/10 pgfg55/5 pgmg23/-24 mgfg46/-7 mgma y1w|sib 0/1/1/1",
+    "40|motherw fatherg36/10 pgfg55/5 pgmg23/-24 mgfg46/-7 mgmg91/39 y1a|sib 0/1/1/1",
+    "65|motherw fatherg36/10 pgfg55/5 pgmg23/-24 mgfg46/-7 mgmg91/39 y1a|sib 0/1/1/1"
+   ]
+  },
+  "millennial/4000013": {
+   "head": "김선영 여 1985년생 · 어머니 32세 아버지 37세 · 1째 · famSeed 368046165",
+   "tags": "gp-before",
+   "family": {"v":1,"p":[{"d":89,"n":"이영희"},{"d":91,"n":"김창수"}],"g":[{"a":28,"d":57,"n":"김영식"},{"a":27,"d":50,"n":"최영자"},{"a":25,"d":71,"n":"이병철"},{"a":21,"d":100,"n":"김옥자"}],"c":0,"o":[],"y":[{"g":0,"k":5,"s":30,"n":"김동현"},{"g":1,"k":8,"s":27,"n":"김예진"}],"h":{"k":0,"r":2,"s":1},"l":[]},
+   "plan": "by 1953/1948 · 1920/1921/1928/1932 | gone 57/54 own 89/91 first 부@54 | divorce - | sibLoss - | grandGone -8/-14/14/47 | kidLeave 30/22/30/28",
+   "view": [
+    "0|motherw fatherw pgfg57/-8 pgmg50/-14 mgfa mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfg57/-8 pgmg50/-14 mgfa mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfg57/-8 pgmg50/-14 mgfa mgma y1w|sib 0/1/1/1",
+    "19|motherw fatherw pgfg57/-8 pgmg50/-14 mgfg71/14 mgma y1w y2w|sib 0/2/2/2",
+    "20|motherw fatherw pgfg57/-8 pgmg50/-14 mgfg71/14 mgma y1w y2w|sib 0/2/2/2",
+    "40|motherw fatherw pgfg57/-8 pgmg50/-14 mgfg71/14 mgma y1a y2a|sib 0/2/2/2",
+    "65|motherw fatherg91/54 pgfg57/-8 pgmg50/-14 mgfg71/14 mgmg100/47 y1a y2a|sib 0/2/2/2"
+   ]
+  },
+  "millennial/4000050": {
+   "head": "김은정 여 1989년생 · 어머니 27세 아버지 28세 · 1째 · famSeed 334737032",
+   "tags": "div-f cohab1 sib-y3",
+   "family": {"v":1,"p":[{"d":95,"n":"정영숙"},{"d":96,"n":"김성철"}],"g":[{"a":24,"d":66,"n":"김영수"},{"a":27,"d":72,"n":"정순자"},{"a":36,"d":89,"n":"정광수"},{"a":32,"d":80,"n":"김옥자"}],"c":1,"o":[],"y":[{"g":1,"k":2,"s":21,"n":"김소연"},{"g":0,"k":4,"s":21,"n":"김승현"},{"g":1,"k":7,"s":25,"n":"김소영"}],"h":{"k":0,"r":4},"l":[]},
+   "plan": "by 1962/1961 · 1937/1934/1926/1930 | gone 68/68 own 95/96 first 부@68 | divorce 부@11 | sibLoss - | grandGone 14/17/26/21 | kidLeave 20/29/23/22",
+   "view": [
+    "0|motherw fatherw pgfw pgmw mgfa mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfw pgmw mgfa mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfw pgmw mgfa mgma y1w y2w y3w|sib 0/3/3/3",
+    "19|motherw fathers pgfg66/14 pgmg72/17 mgfa mgma y1w y2w y3w|sib 0/3/3/3",
+    "20|motherw fathers pgfg66/14 pgmg72/17 mgfa mgma y1w y2w y3w|sib 0/3/3/3",
+    "40|motherw fathers pgfg66/14 pgmg72/17 mgfg89/26 mgmg80/21 y1a y2a y3a|sib 0/3/3/3",
+    "65|motherw fathers pgfg66/14 pgmg72/17 mgfg89/26 mgmg80/21 y1a y2a y3a|sib 0/3/3/3"
+   ]
+  },
+  "millennial/4000087": {
+   "head": "김지혜 여 1988년생 · 어머니 32세 아버지 36세 · 3째 · famSeed 1397042632",
+   "tags": "sib-o2",
+   "family": {"v":1,"p":[{"d":91,"n":"정영순"},{"d":95,"n":"김영환"}],"g":[{"a":39,"d":96,"n":"김성수"},{"a":38,"d":83,"n":"조영숙"},{"a":40,"d":85,"n":"정병철"},{"a":36,"d":93,"n":"임영자"}],"c":0,"o":[{"g":0,"k":3,"s":29,"n":"김민수"},{"g":0,"k":7,"s":29,"n":"김준영"}],"y":[],"h":{"k":0,"r":3},"l":[]},
+   "plan": "by 1956/1952 · 1913/1914/1916/1920 | gone 59/59 own 91/95 first 부@59 | divorce - | sibLoss - | grandGone 21/9/13/25 | kidLeave 23/25/30/22",
+   "view": [
+    "0|motherw fatherw pgfa pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfa pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfa pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "19|motherw fatherw pgfa pgmg83/9 mgfg85/13 mgma o1w o2w|sib 2/0/2/2",
+    "20|motherw fatherw pgfa pgmg83/9 mgfg85/13 mgma o1w o2w|sib 2/0/2/2",
+    "40|motherw fatherw pgfg96/21 pgmg83/9 mgfg85/13 mgmg93/25 o1a o2a|sib 2/0/2/2",
+    "65|motherw fatherg95/59 pgfg96/21 pgmg83/9 mgfg85/13 mgmg93/25 o1a o2a|sib 2/0/2/2"
+   ]
+  },
+  "genz/5000016": {
+   "head": "장도현 남 1997년생 · 어머니 40세 아버지 46세 · 2째 · famSeed 956082930",
+   "tags": "gp-before",
+   "family": {"v":1,"p":[{"d":75,"n":"최현숙"},{"d":100,"n":"장정식"}],"g":[{"a":29,"d":56,"n":"장승철"},{"a":29,"d":55,"n":"박영순"},{"a":27,"d":64,"n":"최영호"},{"a":20,"d":85,"n":"박경자"}],"c":0,"o":[{"g":0,"k":2,"s":26,"n":"장태현"}],"y":[],"h":{"k":0,"r":3,"s":1},"l":[]},
+   "plan": "by 1957/1951 · 1922/1922/1930/1937 | gone 35/54 own 75/100 first 모@35 | divorce - | sibLoss - | grandGone -19/-20/-3/25 | kidLeave 30/20/23/28",
+   "view": [
+    "0|motherw fatherw pgfg56/-19 pgmg55/-20 mgfg64/-3 mgma o1w|sib 1/0/1/1",
+    "1|motherw fatherw pgfg56/-19 pgmg55/-20 mgfg64/-3 mgma o1w|sib 1/0/1/1",
+    "7|motherw fatherw pgfg56/-19 pgmg55/-20 mgfg64/-3 mgma o1w|sib 1/0/1/1",
+    "19|motherw fatherw pgfg56/-19 pgmg55/-20 mgfg64/-3 mgma o1w|sib 1/0/1/1",
+    "20|motherw fatherw pgfg56/-19 pgmg55/-20 mgfg64/-3 mgma o1w|sib 1/0/1/1",
+    "40|motherg75/35 fatherw pgfg56/-19 pgmg55/-20 mgfg64/-3 mgmg85/25 o1a|sib 1/0/1/1",
+    "65|motherg75/35 fatherg100/54 pgfg56/-19 pgmg55/-20 mgfg64/-3 mgmg85/25 o1a|sib 1/0/1/1|부모없음"
+   ]
+  },
+  "genz/5000053": {
+   "head": "이민서 여 2008년생 · 어머니 41세 아버지 42세 · 1째 · famSeed 2657079549",
+   "tags": "gp-before",
+   "family": {"v":1,"p":[{"d":86,"n":"김현숙"},{"d":80,"n":"이성수"}],"g":[{"a":31,"d":91,"n":"이순철"},{"a":27,"d":64,"n":"최정숙"},{"a":27,"d":82,"n":"김영호"},{"a":23,"d":81,"n":"정순자"}],"c":0,"o":[],"y":[],"h":{"k":1,"r":4},"l":[]},
+   "plan": "by 1967/1966 · 1935/1939/1940/1944 | gone 45/38 own 86/80 first 부@38 | divorce - | sibLoss - | grandGone 18/-5/14/17 | kidLeave 23/25/22/20",
+   "view": [
+    "0|motherw fatherw pgfa pgmg64/-5 mgfa mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfa pgmg64/-5 mgfa mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfa pgmg64/-5 mgfa mgma|sib 0/0/0/0",
+    "19|motherw fatherw pgfg91/18 pgmg64/-5 mgfg82/14 mgmg81/17|sib 0/0/0/0",
+    "20|motherw fatherw pgfg91/18 pgmg64/-5 mgfg82/14 mgmg81/17|sib 0/0/0/0",
+    "40|motherw fatherg80/38 pgfg91/18 pgmg64/-5 mgfg82/14 mgmg81/17|sib 0/0/0/0",
+    "65|motherg100/59 fatherg80/38 pgfg91/18 pgmg64/-5 mgfg82/14 mgmg81/17|sib 0/0/0/0|부모없음"
+   ]
+  },
+  "genz/5000090": {
+   "head": "김가은 여 2001년생 · 어머니 32세 아버지 34세 · 2째 · famSeed 1967633401",
+   "tags": "cohab1",
+   "family": {"v":1,"p":[{"d":87,"n":"이경숙"},{"d":88,"n":"김상철"}],"g":[{"a":31,"d":79,"n":"김영철"},{"a":32,"d":100,"n":"최미자"},{"a":29,"d":62,"n":"이태수"},{"a":31,"d":78,"n":"최영순"}],"c":1,"o":[{"g":0,"k":4,"s":23,"n":"김현우"}],"y":[],"h":{"k":0,"r":3},"l":[]},
+   "plan": "by 1969/1967 · 1936/1935/1940/1938 | gone 55/54 own 87/88 first 부@54 | divorce - | sibLoss - | grandGone 14/34/1/15 | kidLeave 26/30/22/22",
+   "view": [
+    "0|motherw fatherw pgfw pgmw mgfa mgma o1w|sib 1/0/1/1",
+    "1|motherw fatherw pgfw pgmw mgfa mgma o1w|sib 1/0/1/1",
+    "7|motherw fatherw pgfw pgmw mgfg62/1 mgma o1w|sib 1/0/1/1",
+    "19|motherw fatherw pgfg79/14 pgmw mgfg62/1 mgmg78/15 o1a|sib 1/0/1/1",
+    "20|motherw fatherw pgfg79/14 pgma mgfg62/1 mgmg78/15 o1a|sib 1/0/1/1",
+    "40|motherw fatherw pgfg79/14 pgmg100/34 mgfg62/1 mgmg78/15 o1a|sib 1/0/1/1",
+    "65|motherw fatherg88/54 pgfg79/14 pgmg100/34 mgfg62/1 mgmg78/15 o1a|sib 1/0/1/1"
+   ]
+  },
+  "alpha/6000019": {
+   "head": "김서현 여 2015년생 · 어머니 31세 아버지 32세 · 1째 · famSeed 4239905993",
+   "tags": "gone1-f gp-before",
+   "family": {"v":1,"p":[{"d":90,"n":"이은영"},{"d":44,"n":"김성진"}],"g":[{"a":33,"d":82,"n":"김영철"},{"a":29,"d":81,"n":"이정숙"},{"a":37,"d":45,"n":"이재수"},{"a":29,"d":97,"n":"김현숙"}],"c":0,"o":[],"y":[{"g":1,"k":5,"s":21,"n":"김지우"}],"h":{"k":0,"r":4},"l":[]},
+   "plan": "by 1984/1983 · 1950/1954/1947/1955 | gone 59/12 own 90/44 first 부@12 | divorce - | sibLoss - | grandGone 17/20/-23/37 | kidLeave 20/24/30/30",
+   "view": [
+    "0|motherw fatherw pgfa pgma mgfg45/-23 mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfa pgma mgfg45/-23 mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfa pgma mgfg45/-23 mgma y1w|sib 0/1/1/1",
+    "19|motherw fatherg44/12 pgfg82/17 pgma mgfg45/-23 mgma y1w|sib 0/1/1/1",
+    "20|motherw fatherg44/12 pgfg82/17 pgma mgfg45/-23 mgma y1w|sib 0/1/1/1",
+    "40|motherw fatherg44/12 pgfg82/17 pgmg81/20 mgfg45/-23 mgmg97/37 y1a|sib 0/1/1/1",
+    "65|motherw fatherg44/12 pgfg82/17 pgmg81/20 mgfg45/-23 mgmg97/37 y1a|sib 0/1/1/1"
+   ]
+  },
+  "alpha/6000056": {
+   "head": "김도윤 남 2016년생 · 어머니 40세 아버지 44세 · 1째 · famSeed 1759521480",
+   "tags": "gp-before",
+   "family": {"v":1,"p":[{"d":67,"n":"최현숙"},{"d":86,"n":"김성민"}],"g":[{"a":39,"d":68,"n":"김재수"},{"a":34,"d":90,"n":"강영자"},{"a":29,"d":86,"n":"최동수"},{"a":28,"d":95,"n":"박영희"}],"c":0,"o":[],"y":[],"h":{"k":1,"r":4},"l":[]},
+   "plan": "by 1976/1972 · 1933/1938/1947/1948 | gone 27/42 own 67/86 first 모@27 | divorce - | sibLoss - | grandGone -15/12/17/27 | kidLeave 22/20/23/25",
+   "view": [
+    "0|motherw fatherw pgfg68/-15 pgma mgfa mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfg68/-15 pgma mgfa mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfg68/-15 pgma mgfa mgma|sib 0/0/0/0",
+    "19|motherw fatherw pgfg68/-15 pgmg90/12 mgfg86/17 mgma|sib 0/0/0/0",
+    "20|motherw fatherw pgfg68/-15 pgmg90/12 mgfg86/17 mgma|sib 0/0/0/0",
+    "40|motherg67/27 fatherw pgfg68/-15 pgmg90/12 mgfg86/17 mgmg95/27|sib 0/0/0/0",
+    "65|motherg67/27 fatherg100/56 pgfg68/-15 pgmg90/12 mgfg86/17 mgmg95/27|sib 0/0/0/0|부모없음"
+   ]
+  },
+  "alpha/6000093": {
+   "head": "김준우 남 2015년생 · 어머니 41세 아버지 45세 · 3째 · famSeed 238984826",
+   "tags": "div-f sib-o2",
+   "family": {"v":1,"p":[{"d":94,"n":"박미숙"},{"d":86,"n":"김정호"}],"g":[{"a":29,"d":81,"n":"김용수"},{"a":23,"d":84,"n":"박정자"},{"a":33,"d":79,"n":"박창수"},{"a":25,"d":92,"n":"정명숙"}],"c":0,"o":[{"g":0,"k":3,"s":26,"n":"김서준"},{"g":0,"k":7,"s":20,"n":"김시우"}],"y":[],"h":{"k":2,"r":5},"l":[]},
+   "plan": "by 1974/1970 · 1941/1947/1941/1949 | gone 53/41 own 94/86 first 부@41 | divorce 부@5 | sibLoss - | grandGone 7/16/5/26 | kidLeave 20/24/22/27",
+   "view": [
+    "0|motherw fatherw pgfa pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfa pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fathers pgfa pgma mgfg79/5 mgma o1w o2w|sib 2/0/2/2",
+    "19|motherw fathers pgfg81/7 pgmg84/16 mgfg79/5 mgma o1w o2a|sib 2/0/2/2",
+    "20|motherw fathers pgfg81/7 pgmg84/16 mgfg79/5 mgma o1w o2a|sib 2/0/2/2",
+    "40|motherw fathers pgfg81/7 pgmg84/16 mgfg79/5 mgmg92/26 o1a o2a|sib 2/0/2/2",
+    "65|motherg100/59 fatherg86/41 pgfg81/7 pgmg84/16 mgfg79/5 mgmg92/26 o1a o2a|sib 2/0/2/2|부모없음"
+   ]
+  },
+  "industrial/87": {
+   "head": "이순철 남 1940년생 · 어머니 27세 아버지 36세 · 3째 · famSeed 107931684",
+   "tags": "loss-o sib-y3 sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":85,"n":"박순옥"},{"d":75,"n":"이영철"}],"g":[{"a":37,"d":59,"n":"이영수"},{"a":35,"d":49,"n":"김순희"},{"a":34,"d":35,"n":"박기수"},{"a":30,"d":30,"n":"김경자"}],"c":0,"o":[{"g":1,"k":4,"s":23,"n":"이명숙"},{"g":0,"k":7,"s":28,"n":"이창수"}],"y":[{"g":0,"k":3,"s":25,"n":"이학수"},{"g":0,"k":5,"s":28,"n":"이광수"},{"g":1,"k":8,"s":29,"n":"이점순"},{"g":0,"k":10,"s":26,"n":"이병호"}],"h":{"k":0,"r":2},"l":[]},
+   "plan": "by 1913/1904 · 1867/1869/1879/1883 | gone 58/39 own 85/75 first 부@39 | divorce - | sibLoss o2@4(a11) | grandGone -14/-22/-26/-27 | kidLeave 30/22/24/26",
+   "view": [
+    "0|motherw fatherw pgfg59/-14 pgmg49/-22 mgfg35/-26 mgmg30/-27 o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfg59/-14 pgmg49/-22 mgfg35/-26 mgmg30/-27 o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfg59/-14 pgmg49/-22 mgfg35/-26 mgmg30/-27 o1w o2g11/4 y1w y2w|sib 1/2/3/4",
+    "19|motherw fatherw pgfg59/-14 pgmg49/-22 mgfg35/-26 mgmg30/-27 o1a o2g11/4 y1w y2w y3w y4w|sib 1/4/5/6",
+    "20|motherw fatherw pgfg59/-14 pgmg49/-22 mgfg35/-26 mgmg30/-27 o1a o2g11/4 y1w y2w y3w y4w|sib 1/4/5/6",
+    "40|motherw fatherg75/39 pgfg59/-14 pgmg49/-22 mgfg35/-26 mgmg30/-27 o1a o2g11/4 y1a y2a y3a y4a|sib 1/4/5/6",
+    "65|motherw fatherg75/39 pgfg59/-14 pgmg49/-22 mgfg35/-26 mgmg30/-27 o1a o2g11/4 y1a y2a y3a y4a|sib 1/4/5/6"
+   ]
+  },
+  "industrial/41": {
+   "head": "박영자 여 1952년생 · 어머니 35세 아버지 41세 · 4째 · famSeed 1192219266",
+   "tags": "gone1-f gone-moved sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":62,"n":"윤순희"},{"d":41,"n":"박기수"}],"g":[{"a":28,"d":67,"n":"박학수"},{"a":23,"d":64,"n":"이영숙"},{"a":36,"d":40,"n":"윤순철"},{"a":37,"d":44,"n":"이순임"}],"c":0,"o":[{"g":0,"k":4,"s":22,"n":"박태수"},{"g":1,"k":8,"s":26,"n":"박옥순"},{"g":1,"k":10,"s":26,"n":"박정자"}],"y":[],"h":{"k":0,"r":3,"s":1},"l":[]},
+   "plan": "by 1917/1911 · 1883/1888/1881/1880 | gone 27/1 own 62/42 first 부@1 | divorce - | sibLoss - | grandGone -2/0/-31/-28 | kidLeave 25/25/28/28",
+   "view": [
+    "0|motherw fatherw pgfg67/-2 pgma mgfg40/-31 mgmg44/-28 o1w o2w o3w|sib 3/0/3/3",
+    "1|motherw fatherw pgfg67/-2 pgmg64/0 mgfg40/-31 mgmg44/-28 o1w o2w o3w|sib 3/0/3/3",
+    "7|motherw fatherg42/1 pgfg67/-2 pgmg64/0 mgfg40/-31 mgmg44/-28 o1w o2w o3w|sib 3/0/3/3",
+    "19|motherw fatherg42/1 pgfg67/-2 pgmg64/0 mgfg40/-31 mgmg44/-28 o1a o2a o3a|sib 3/0/3/3",
+    "20|motherw fatherg42/1 pgfg67/-2 pgmg64/0 mgfg40/-31 mgmg44/-28 o1a o2a o3a|sib 3/0/3/3",
+    "40|motherw fatherg42/1 pgfg67/-2 pgmg64/0 mgfg40/-31 mgmg44/-28 o1a o2a o3a|sib 3/0/3/3",
+    "65|motherw fatherg42/1 pgfg67/-2 pgmg64/0 mgfg40/-31 mgmg44/-28 o1a o2a o3a|sib 3/0/3/3"
+   ]
+  },
+  "boomer/16": {
+   "head": "최성수 남 1960년생 · 어머니 28세 아버지 33세 · 1째 · famSeed 3389495745",
+   "tags": "loss-y sib-y3 gp-before",
+   "family": {"v":1,"p":[{"d":85,"n":"김정순"},{"d":88,"n":"최태수"}],"g":[{"a":45,"d":60,"n":"최영호"},{"a":42,"d":81,"n":"박옥순"},{"a":30,"d":56,"n":"김상철"},{"a":32,"d":79,"n":"이순옥"}],"c":0,"o":[],"y":[{"g":1,"k":3,"s":26,"n":"최영숙"},{"g":0,"k":6,"s":25,"n":"최상호"},{"g":1,"k":11,"s":23,"n":"최현주"}],"h":{"k":0,"r":1},"l":[]},
+   "plan": "by 1932/1927 · 1882/1885/1902/1900 | gone 57/55 own 85/88 first 부@55 | divorce - | sibLoss y2@8(a2) | grandGone -18/6/-2/19 | kidLeave 26/22/21/27",
+   "view": [
+    "0|motherw fatherw pgfg60/-18 pgma mgfg56/-2 mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfg60/-18 pgma mgfg56/-2 mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfg60/-18 pgmg81/6 mgfg56/-2 mgma y1w y2w|sib 0/2/2/2",
+    "19|motherw fatherw pgfg60/-18 pgmg81/6 mgfg56/-2 mgma y1w y2g2/8 y3w|sib 0/2/2/3",
+    "20|motherw fatherw pgfg60/-18 pgmg81/6 mgfg56/-2 mgmg79/19 y1w y2g2/8 y3w|sib 0/2/2/3",
+    "40|motherw fatherw pgfg60/-18 pgmg81/6 mgfg56/-2 mgmg79/19 y1a y2g2/8 y3a|sib 0/2/2/3",
+    "65|motherw fatherg88/55 pgfg60/-18 pgmg81/6 mgfg56/-2 mgmg79/19 y1a y2g2/8 y3a|sib 0/2/2/3"
+   ]
+  },
+  "g86/126": {
+   "head": "김미경 여 1965년생 · 어머니 27세 아버지 32세 · 4째 · famSeed 259846257",
+   "tags": "loss-o gone1-m sib-y3 sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":40,"n":"박영희"},{"d":81,"n":"김병철"}],"g":[{"a":28,"d":75,"n":"김영수"},{"a":26,"d":93,"n":"정영자"},{"a":33,"d":41,"n":"박창수"},{"a":21,"d":84,"n":"임점순"}],"c":0,"o":[{"g":0,"k":2,"s":30,"n":"김진호"},{"g":0,"k":5,"s":29,"n":"김경수"},{"g":0,"k":8,"s":28,"n":"김중수"}],"y":[{"g":1,"k":2,"s":24,"n":"김명숙"},{"g":1,"k":6,"s":25,"n":"김미영"},{"g":0,"k":8,"s":26,"n":"김민석"}],"h":{"k":0,"r":2},"l":[]},
+   "plan": "by 1938/1933 · 1905/1907/1905/1917 | gone 13/49 own 40/81 first 모@13 | divorce - | sibLoss o3@1(a9) | grandGone 15/35/-19/36 | kidLeave 24/28/27/21",
+   "view": [
+    "0|motherw fatherw pgfa pgma mgfg41/-19 mgma o1w o2w o3w|sib 3/0/3/3",
+    "1|motherw fatherw pgfa pgma mgfg41/-19 mgma o1w o2w o3w|sib 3/0/3/3",
+    "7|motherw fatherw pgfa pgma mgfg41/-19 mgma o1w o2w o3g9/1 y1w y2w|sib 2/2/4/5",
+    "19|motherg40/13 fatherw pgfg75/15 pgma mgfg41/-19 mgma o1w o2w o3g9/1 y1w y2w y3w|sib 2/3/5/6",
+    "20|motherg40/13 fatherw pgfg75/15 pgma mgfg41/-19 mgma o1w o2w o3g9/1 y1w y2w y3w|sib 2/3/5/6",
+    "40|motherg40/13 fatherw pgfg75/15 pgmg93/35 mgfg41/-19 mgmg84/36 o1a o2a o3g9/1 y1a y2a y3a|sib 2/3/5/6",
+    "65|motherg40/13 fatherw pgfg75/15 pgmg93/35 mgfg41/-19 mgmg84/36 o1a o2a o3g9/1 y1a y2a y3a|sib 2/3/5/6"
+   ]
+  },
+  "genx/57": {
+   "head": "김성수 남 1977년생 · 어머니 33세 아버지 38세 · 2째 · famSeed 3392116409",
+   "tags": "div-m cohab1 gp-before",
+   "family": {"v":1,"p":[{"d":84,"n":"최순자"},{"d":92,"n":"김상철"}],"g":[{"a":33,"d":62,"n":"김승철"},{"a":29,"d":100,"n":"임정자"},{"a":32,"d":41,"n":"최종수"},{"a":31,"d":55,"n":"김영숙"}],"c":1,"o":[{"g":1,"k":5,"s":29,"n":"김미숙"}],"y":[{"g":0,"k":3,"s":22,"n":"김준영"},{"g":1,"k":8,"s":25,"n":"김은영"}],"h":{"k":0,"r":2},"l":[]},
+   "plan": "by 1944/1939 · 1906/1910/1912/1913 | gone 51/54 own 84/92 first 모@51 | divorce 모@18 | sibLoss - | grandGone -9/33/-24/-9 | kidLeave 24/28/20/27",
+   "view": [
+    "0|motherw fatherw pgfg62/-9 pgmw mgfg41/-24 mgmg55/-9 o1w|sib 1/0/1/1",
+    "1|motherw fatherw pgfg62/-9 pgmw mgfg41/-24 mgmg55/-9 o1w|sib 1/0/1/1",
+    "7|motherw fatherw pgfg62/-9 pgmw mgfg41/-24 mgmg55/-9 o1w y1w|sib 1/1/2/2",
+    "19|mothers fatherw pgfg62/-9 pgmw mgfg41/-24 mgmg55/-9 o1w y1w y2w|sib 1/2/3/3",
+    "20|mothers fatherw pgfg62/-9 pgma mgfg41/-24 mgmg55/-9 o1w y1w y2w|sib 1/2/3/3",
+    "40|mothers fatherw pgfg62/-9 pgmg100/33 mgfg41/-24 mgmg55/-9 o1a y1a y2a|sib 1/2/3/3",
+    "65|motherg84/51 fatherg100/62 pgfg62/-9 pgmg100/33 mgfg41/-24 mgmg55/-9 o1a y1a y2a|sib 1/2/3/3|부모없음"
+   ]
+  },
+  "genx/123": {
+   "head": "이지훈 남 1978년생 · 어머니 33세 아버지 36세 · 3째 · famSeed 1795756827",
+   "tags": "div-f sib-o2 gp-before",
+   "family": {"v":1,"p":[{"d":84,"n":"김정자"},{"d":97,"n":"이영호"}],"g":[{"a":29,"d":52,"n":"이상철"},{"a":25,"d":78,"n":"김순옥"},{"a":31,"d":75,"n":"김영수"},{"a":25,"d":85,"n":"이명숙"}],"c":0,"o":[{"g":0,"k":3,"s":20,"n":"이재훈"},{"g":0,"k":8,"s":21,"n":"이준호"}],"y":[],"h":{"k":0,"r":3,"s":1},"l":[]},
+   "plan": "by 1945/1942 · 1913/1917/1914/1920 | gone 51/61 own 84/97 first 모@51 | divorce 부@7 | sibLoss - | grandGone -13/17/11/27 | kidLeave 28/27/27/20",
+   "view": [
+    "0|motherw fatherw pgfg52/-13 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "1|motherw fatherw pgfg52/-13 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "7|motherw fatherw pgfg52/-13 pgma mgfa mgma o1w o2w|sib 2/0/2/2",
+    "19|motherw fathers pgfg52/-13 pgmg78/17 mgfg75/11 mgma o1a o2a|sib 2/0/2/2",
+    "20|motherw fathers pgfg52/-13 pgmg78/17 mgfg75/11 mgma o1a o2a|sib 2/0/2/2",
+    "40|motherw fathers pgfg52/-13 pgmg78/17 mgfg75/11 mgmg85/27 o1a o2a|sib 2/0/2/2",
+    "65|motherg84/51 fatherg100/64 pgfg52/-13 pgmg78/17 mgfg75/11 mgmg85/27 o1a o2a|sib 2/0/2/2|부모없음"
+   ]
+  },
+  "genz/26": {
+   "head": "이서연 여 2004년생 · 어머니 35세 아버지 35세 · 1째 · famSeed 3546165286",
+   "tags": "div-f",
+   "family": {"v":1,"p":[{"d":87,"n":"김영희"},{"d":76,"n":"이병철"}],"g":[{"a":27,"d":100,"n":"이기수"},{"a":19,"d":97,"n":"윤정자"},{"a":28,"d":87,"n":"김종수"},{"a":27,"d":90,"n":"이정숙"}],"c":0,"o":[],"y":[{"g":0,"k":5,"s":30,"n":"이준우"}],"h":{"k":1,"r":4},"l":[]},
+   "plan": "by 1969/1969 · 1942/1950/1941/1942 | gone 52/41 own 87/76 first 부@41 | divorce 부@6 | sibLoss - | grandGone 38/43/24/28 | kidLeave 24/29/29/28",
+   "view": [
+    "0|motherw fatherw pgfa pgma mgfa mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfa pgma mgfa mgma|sib 0/0/0/0",
+    "7|motherw fathers pgfa pgma mgfa mgma y1w|sib 0/1/1/1",
+    "19|motherw fathers pgfa pgma mgfa mgma y1w|sib 0/1/1/1",
+    "20|motherw fathers pgfa pgma mgfa mgma y1w|sib 0/1/1/1",
+    "40|motherw fathers pgfg100/38 pgma mgfg87/24 mgmg90/28 y1a|sib 0/1/1/1",
+    "65|motherw fatherg76/41 pgfg100/38 pgmg97/43 mgfg87/24 mgmg90/28 y1a|sib 0/1/1/1"
+   ]
+  },
+  "alpha/32": {
+   "head": "김소율 여 2015년생 · 어머니 27세 아버지 36세 · 1째 · famSeed 739414024",
+   "tags": "div-m gp-before",
+   "family": {"v":1,"p":[{"d":85,"n":"강미영"},{"d":71,"n":"김상철"}],"g":[{"a":26,"d":37,"n":"김영호"},{"a":20,"d":90,"n":"이명자"},{"a":38,"d":80,"n":"강종호"},{"a":33,"d":77,"n":"이경숙"}],"c":0,"o":[],"y":[],"h":{"k":1,"r":4},"l":[]},
+   "plan": "by 1988/1979 · 1953/1959/1950/1955 | gone 58/35 own 85/71 first 부@35 | divorce 모@11 | sibLoss - | grandGone -25/34/15/17 | kidLeave 30/22/25/23",
+   "view": [
+    "0|motherw fatherw pgfg37/-25 pgma mgfa mgma|sib 0/0/0/0",
+    "1|motherw fatherw pgfg37/-25 pgma mgfa mgma|sib 0/0/0/0",
+    "7|motherw fatherw pgfg37/-25 pgma mgfa mgma|sib 0/0/0/0",
+    "19|mothers fatherw pgfg37/-25 pgma mgfg80/15 mgmg77/17|sib 0/0/0/0",
+    "20|mothers fatherw pgfg37/-25 pgma mgfg80/15 mgmg77/17|sib 0/0/0/0",
+    "40|mothers fatherg71/35 pgfg37/-25 pgmg90/34 mgfg80/15 mgmg77/17|sib 0/0/0/0",
+    "65|mothers fatherg71/35 pgfg37/-25 pgmg90/34 mgfg80/15 mgmg77/17|sib 0/0/0/0"
+   ]
+  },
+  "millennial/747": {
+   "head": "김경민 남 1994년생 · 어머니 35세 아버지 34세 · 1째 · famSeed 3186359780",
+   "tags": "gone1-f gone-moved gp-before",
+   "family": {"v":1,"p":[{"d":91,"n":"이영숙"},{"d":34,"n":"김종수"}],"g":[{"a":29,"d":70,"n":"김병철"},{"a":27,"d":82,"n":"정영순"},{"a":30,"d":52,"n":"이동수"},{"a":31,"d":65,"n":"강미자"}],"c":0,"o":[],"y":[],"h":{"k":0,"r":2},"l":[]},
+   "plan": "by 1959/1960 · 1931/1933/1929/1928 | gone 56/1 own 91/35 first 부@1 | divorce - | sibLoss - | grandGone 7/21/-13/-1 | kidLeave 25/24/27/26",
+   "view": [
+    "0|motherw fatherw pgfa pgma mgfg52/-13 mgmg65/-1|sib 0/0/0/0",
+    "1|motherw fatherw pgfa pgma mgfg52/-13 mgmg65/-1|sib 0/0/0/0",
+    "7|motherw fatherg35/1 pgfa pgma mgfg52/-13 mgmg65/-1|sib 0/0/0/0",
+    "19|motherw fatherg35/1 pgfg70/7 pgma mgfg52/-13 mgmg65/-1|sib 0/0/0/0",
+    "20|motherw fatherg35/1 pgfg70/7 pgma mgfg52/-13 mgmg65/-1|sib 0/0/0/0",
+    "40|motherw fatherg35/1 pgfg70/7 pgmg82/21 mgfg52/-13 mgmg65/-1|sib 0/0/0/0",
+    "65|motherw fatherg35/1 pgfg70/7 pgmg82/21 mgfg52/-13 mgmg65/-1|sib 0/0/0/0"
+   ]
+  }
+ },
+ "adult": {
+  "industrial/1": {
+   "partner": "spouse 김현숙 여 1952@23",
+   "ex": "spouse 김현숙 여 1953@26",
+   "kids": "spouse 김현숙 여 1953@25 | c1 이재훈 남 1976@27",
+   "young": "spouse 김현숙 여 1953@29 | c1 이민석 남 1980@31",
+   "late": "spouse 김현숙 여 1953@28 | c1 이민석 남 1985@36 | f1 최영식 남 1947@13",
+   "friend": "f1 최영식 남 1947@12",
+   "faded": "spouse 김현숙 여 1953@28 | f1 최영식 남 1947@13",
+   "bare": "spouse 김현숙 여 1953@24 | c1 이재훈 남 1977@28 | f1 최영식 남 1947@12"
+  },
+  "industrial/38": {
+   "partner": "spouse 윤순철 남 1944@23",
+   "ex": "spouse 윤순철 남 1944@26",
+   "kids": "spouse 윤순철 남 1944@25 | c1 윤선희 여 1977@27 | c2 윤재현 남 1981@31",
+   "young": "spouse 윤순철 남 1944@29 | c1 윤민정 여 1981@31",
+   "late": "spouse 윤순철 남 1944@28 | c1 윤민정 여 1986@36 | c2 윤상민 남 1990@40 | f1 박종수 남 1950@13",
+   "friend": "f1 박종수 남 1950@12",
+   "faded": "spouse 윤순철 남 1944@28 | f1 박종수 남 1950@13",
+   "bare": "spouse 윤순철 남 1944@24 | c1 윤선희 여 1978@28 | c2 윤재현 남 1982@32 | f1 박종수 남 1950@12"
+  },
+  "industrial/75": {
+   "partner": "spouse 최순옥 여 1944@23",
+   "ex": "spouse 최순옥 여 1944@26",
+   "kids": "spouse 최순옥 여 1944@25 | c1 강지훈 남 1970@27 | c2 강미경 여 1974@31",
+   "young": "spouse 최순옥 여 1944@29 | c1 강지훈 남 1974@31",
+   "late": "spouse 최순옥 여 1944@28 | c1 강지훈 남 1979@36 | f1 김점순 여 1944@13",
+   "friend": "f1 김점순 여 1944@12",
+   "faded": "spouse 최순옥 여 1944@28 | f1 김점순 여 1944@13",
+   "bare": "spouse 최순옥 여 1944@24 | c1 강지훈 남 1971@28 | c2 강미경 여 1975@32 | f1 김점순 여 1944@12"
+  },
+  "boomer/1000004": {
+   "partner": "spouse 김영자 여 1958@23",
+   "ex": "spouse 김은숙 여 1961@26",
+   "kids": "spouse 김은숙 여 1960@25 | c1 박아름 여 1982@27 | c2 박은주 여 1984@29 | c3 박미영 여 1988@33",
+   "young": "spouse 김은숙 여 1961@29 | c1 박아름 여 1986@31 | c2 박은주 여 1988@33",
+   "late": "spouse 김은숙 여 1961@28 | c1 박혜진 여 1991@36 | c2 박지민 여 1993@38 | f1 김영희 여 1956@13 | f2 김정희 여 1956@13",
+   "friend": "f1 김영희 여 1956@12 | f2 김정희 여 1956@12",
+   "faded": "spouse 김은숙 여 1961@28 | f1 김영희 여 1956@13 | f2 김정희 여 1956@13",
+   "bare": "spouse 김영자 여 1959@24 | c1 박아름 여 1983@28 | c2 박은주 여 1985@30 | c3 박미영 여 1989@34 | f1 김영희 여 1956@12 | f2 김정희 여 1956@12"
+  },
+  "boomer/1000041": {
+   "partner": "spouse 박미숙 여 1966@23",
+   "ex": "spouse 박미숙 여 1969@26",
+   "kids": "spouse 박미숙 여 1968@25 | c1 김수진 여 1990@27",
+   "young": "spouse 박은정 여 1972@29 | c1 김수진 여 1994@31",
+   "late": "spouse 박은정 여 1971@28 | c1 김수진 여 1999@36 | f1 이경숙 여 1962@13 | f2 정미애 여 1962@13",
+   "friend": "f1 이경숙 여 1962@12 | f2 정미애 여 1962@12",
+   "faded": "spouse 박은정 여 1971@28 | f1 이경숙 여 1962@13 | f2 정미애 여 1962@13",
+   "bare": "spouse 박미숙 여 1967@24 | c1 김수진 여 1991@28 | f1 이경숙 여 1962@12 | f2 정미애 여 1962@12"
+  },
+  "boomer/1000078": {
+   "partner": "spouse 박성호 남 1960@23",
+   "ex": "spouse 박성호 남 1960@26",
+   "kids": "spouse 박성호 남 1960@25 | c1 박보라 여 1988@27 | c2 박혜진 여 1991@30",
+   "young": "spouse 박성호 남 1960@29 | c1 박혜영 여 1992@31",
+   "late": "spouse 박성호 남 1960@28 | c1 박혜영 여 1997@36 | f1 김경수 남 1959@13",
+   "friend": "f1 김경수 남 1959@12",
+   "faded": "spouse 박성호 남 1960@28 | f1 김경수 남 1959@13",
+   "bare": "spouse 박성호 남 1960@24 | c1 박보라 여 1989@28 | c2 박혜진 여 1992@31 | f1 김경수 남 1959@12"
+  },
+  "g86/2000007": {
+   "partner": "spouse 김미영 여 1965@23",
+   "ex": "spouse 김미영 여 1965@26",
+   "kids": "spouse 김미영 여 1965@25 | c1 최예진 여 1992@27 | c2 최선영 여 1994@29",
+   "young": "spouse 김미영 여 1965@29 | c1 최예진 여 1996@31 | c2 최선영 여 1998@33",
+   "late": "spouse 김정희 여 1965@28 | c1 최지우 여 2001@36 | c2 최가은 여 2003@38 | f1 박영일 남 1965@13 | f2 김미영 여 1964@13 | f3 이병호 남 1966@13",
+   "friend": "f1 박영일 남 1965@12 | f2 김미영 여 1964@12 | f3 이병호 남 1966@12",
+   "faded": "spouse 김정희 여 1965@28 | f1 박영일 남 1965@13 | f2 김미영 여 1964@13 | f3 이병호 남 1966@13",
+   "bare": "spouse 김정희 여 1965@24 | c1 최예진 여 1993@28 | c2 최선영 여 1995@30 | f1 박영일 남 1965@12 | f2 김미영 여 1964@12 | f3 이병호 남 1966@12"
+  },
+  "g86/2000044": {
+   "partner": "spouse 정은영 여 1971@23",
+   "ex": "spouse 정은영 여 1974@26",
+   "kids": "spouse 정은영 여 1973@25 | c1 박동현 남 1995@27 | c2 박지원 여 2000@32",
+   "young": "spouse 정은영 여 1977@29 | c1 박동현 남 1999@31",
+   "late": "spouse 정은영 여 1976@28 | c1 박현우 남 2004@36 | c2 박서현 여 2009@41 | f1 이미영 여 1966@13",
+   "friend": "f1 이미영 여 1966@12",
+   "faded": "spouse 정은영 여 1976@28 | f1 이미영 여 1966@13",
+   "bare": "spouse 정은영 여 1972@24 | c1 박동현 남 1996@28 | c2 박지원 여 2001@33 | f1 이미영 여 1966@12"
+  },
+  "g86/2000081": {
+   "partner": "spouse 김성수 남 1964@23",
+   "ex": "spouse 김성수 남 1964@26",
+   "kids": "spouse 김성수 남 1964@25 | c1 김준영 남 1996@27 | c2 김서연 여 2001@32",
+   "young": "spouse 김성수 남 1964@29 | c1 김동현 남 2000@31",
+   "late": "spouse 김성수 남 1964@28 | c1 김동현 남 2005@36 | c2 김서연 여 2010@41 | f1 김지연 여 1970@13",
+   "friend": "f1 김지연 여 1970@12",
+   "faded": "spouse 김성수 남 1964@28 | f1 김지연 여 1970@13",
+   "bare": "spouse 김성수 남 1964@24 | c1 김준영 남 1997@28 | c2 김서연 여 2002@33 | f1 김지연 여 1970@12"
+  },
+  "genx/3000010": {
+   "partner": "spouse 이수정 여 1982@23",
+   "ex": "spouse 이수정 여 1985@26",
+   "kids": "spouse 이수정 여 1984@25 | c1 강민지 여 2006@27",
+   "young": "spouse 이수정 여 1988@29 | c1 강가은 여 2010@31",
+   "late": "spouse 이수정 여 1987@28 | c1 강소율 여 2015@36 | f1 정미경 여 1979@13 | f2 이정훈 남 1981@13",
+   "friend": "f1 정미경 여 1979@12 | f2 이정훈 남 1981@12",
+   "faded": "spouse 이수정 여 1987@28 | f1 정미경 여 1979@13 | f2 이정훈 남 1981@13",
+   "bare": "spouse 이수정 여 1983@24 | c1 강민지 여 2007@28 | f1 정미경 여 1979@12 | f2 이정훈 남 1981@12"
+  },
+  "genx/3000047": {
+   "partner": "spouse 김재호 남 1972@23",
+   "ex": "spouse 김재호 남 1972@26",
+   "kids": "spouse 김재호 남 1972@25 | c1 김지은 여 2003@27",
+   "young": "spouse 김재호 남 1972@29 | c1 김지은 여 2007@31",
+   "late": "spouse 김재호 남 1972@28 | c1 김지유 여 2012@36 | f1 임현숙 여 1976@13 | f2 김혜진 여 1974@13 | f3 김성수 남 1978@13",
+   "friend": "f1 임현숙 여 1976@12 | f2 김혜진 여 1974@12 | f3 김성수 남 1978@12",
+   "faded": "spouse 김재호 남 1972@28 | f1 임현숙 여 1976@13 | f2 김혜진 여 1974@13 | f3 김성수 남 1978@13",
+   "bare": "spouse 김재호 남 1972@24 | c1 김지은 여 2004@28 | f1 임현숙 여 1976@12 | f2 김혜진 여 1974@12 | f3 김성수 남 1978@12"
+  },
+  "genx/3000084": {
+   "partner": "spouse 박병철 남 1965@23",
+   "ex": "spouse 박병철 남 1965@26",
+   "kids": "spouse 박병철 남 1965@25 | c1 박가영 여 1999@27",
+   "young": "spouse 박병철 남 1965@29 | c1 박지은 여 2003@31",
+   "late": "spouse 박병철 남 1965@28 | c1 박지원 여 2008@36 | f1 정현주 여 1974@13",
+   "friend": "f1 정현주 여 1974@12",
+   "faded": "spouse 박병철 남 1965@28 | f1 정현주 여 1974@13",
+   "bare": "spouse 박병철 남 1965@24 | c1 박지은 여 2000@28 | f1 정현주 여 1974@12"
+  },
+  "millennial/4000013": {
+   "partner": "spouse 이진호 남 1981@23",
+   "ex": "spouse 이진호 남 1981@26",
+   "kids": "spouse 이진호 남 1981@25 | c1 이현우 남 2012@27",
+   "young": "spouse 이진호 남 1981@29 | c1 이시우 남 2016@31",
+   "late": "spouse 이진호 남 1981@28 | c1 이예준 남 2021@36 | f1 이민정 여 1987@13",
+   "friend": "f1 이민정 여 1987@12",
+   "faded": "spouse 이진호 남 1981@28 | f1 이민정 여 1987@13",
+   "bare": "spouse 이진호 남 1981@24 | c1 이시우 남 2013@28 | f1 이민정 여 1987@12"
+  },
+  "millennial/4000050": {
+   "partner": "spouse 이민수 남 1987@23",
+   "ex": "spouse 이민수 남 1987@26",
+   "kids": "spouse 이민수 남 1987@25 | c1 이선우 남 2016@27",
+   "young": "spouse 이민수 남 1987@29 | c1 이우진 남 2020@31",
+   "late": "spouse 이민수 남 1987@28 | c1 이우진 남 2025@36 | f1 이혜진 여 1987@13 | f2 이진영 남 1991@13",
+   "friend": "f1 이혜진 여 1987@12 | f2 이진영 남 1991@12",
+   "faded": "spouse 이민수 남 1987@28 | f1 이혜진 여 1987@13 | f2 이진영 남 1991@13",
+   "bare": "spouse 이민수 남 1987@24 | c1 이연우 남 2017@28 | f1 이혜진 여 1987@12 | f2 이진영 남 1991@12"
+  },
+  "millennial/4000087": {
+   "partner": "spouse 최상훈 남 1984@23",
+   "ex": "spouse 최상훈 남 1984@26",
+   "kids": "spouse 최상훈 남 1984@25 | c1 최현우 남 2015@27 | c2 최지우 여 2020@32",
+   "young": "spouse 최상훈 남 1984@29 | c1 최준우 남 2019@31",
+   "late": "spouse 최상훈 남 1984@28 | c1 최민준 남 2024@36 | c2 최지우 여 2029@41 | f1 김지영 여 1989@13 | f2 이은지 여 1987@13",
+   "friend": "f1 김지영 여 1989@12 | f2 이은지 여 1987@12",
+   "faded": "spouse 최상훈 남 1984@28 | f1 김지영 여 1989@13 | f2 이은지 여 1987@13",
+   "bare": "spouse 최상훈 남 1984@24 | c1 최준서 남 2016@28 | c2 최지우 여 2021@33 | f1 김지영 여 1989@12 | f2 이은지 여 1987@12"
+  },
+  "genz/5000016": {
+   "partner": "spouse 이서현 여 2000@23",
+   "ex": "spouse 이서현 여 2000@26",
+   "kids": "spouse 이서현 여 2000@25 | c1 장준우 남 2024@27 | c2 장다은 여 2027@30 | c3 장도윤 남 2030@33 | c4 장지우 여 2035@38",
+   "young": "spouse 이서현 여 2000@29 | c1 장준우 남 2028@31",
+   "late": "spouse 이서현 여 2000@28 | c1 장준우 남 2033@36 | c2 장다은 여 2036@39 | c3 장도윤 남 2039@42 | f1 이나래 여 1998@13 | f2 박선영 여 1995@13",
+   "friend": "f1 이나래 여 1998@12 | f2 박선영 여 1995@12",
+   "faded": "spouse 이서현 여 2000@28 | f1 이나래 여 1998@13 | f2 박선영 여 1995@13",
+   "bare": "spouse 이서현 여 2000@24 | c1 장준우 남 2025@28 | c2 장다은 여 2028@31 | c3 장도윤 남 2031@34 | c4 장지우 여 2036@39 | f1 이나래 여 1998@12 | f2 박선영 여 1995@12"
+  },
+  "genz/5000053": {
+   "partner": "spouse 김민재 남 1999@23",
+   "ex": "spouse 김민재 남 1999@26",
+   "kids": "spouse 김민재 남 1999@25 | c1 김지우 여 2035@27 | c2 김건우 남 2037@29",
+   "young": "spouse 김민재 남 1999@29 | c1 김지우 여 2039@31 | c2 김건우 남 2041@33",
+   "late": "spouse 김민재 남 1999@28 | c1 김지우 여 2044@36 | c2 김건우 남 2046@38 | f1 박가은 여 2010@13",
+   "friend": "f1 박가은 여 2010@12",
+   "faded": "spouse 김민재 남 1999@28 | f1 박가은 여 2010@13",
+   "bare": "spouse 김민재 남 1999@24 | c1 김지우 여 2036@28 | c2 김건우 남 2038@30 | f1 박가은 여 2010@12"
+  },
+  "genz/5000090": {
+   "partner": "spouse 이준영 남 1997@23",
+   "ex": "spouse 이준영 남 1997@26",
+   "kids": "spouse 이준영 남 1997@25 | c1 이하준 남 2028@27 | c2 이우진 남 2030@29",
+   "young": "spouse 이준영 남 1997@29 | c1 이하준 남 2032@31 | c2 이우진 남 2034@33",
+   "late": "spouse 이준영 남 1997@28 | c1 이하준 남 2037@36 | c2 이우진 남 2039@38 | f1 김도현 남 1999@13 | f2 이은서 여 2003@13 | f3 박준서 남 2003@13",
+   "friend": "f1 김도현 남 1999@12 | f2 이은서 여 2003@12 | f3 박준서 남 2003@12",
+   "faded": "spouse 이준영 남 1997@28 | f1 김도현 남 1999@13 | f2 이은서 여 2003@13 | f3 박준서 남 2003@13",
+   "bare": "spouse 이준영 남 1997@24 | c1 이하준 남 2029@28 | c2 이우진 남 2031@30 | f1 김도현 남 1999@12 | f2 이은서 여 2003@12 | f3 박준서 남 2003@12"
+  },
+  "alpha/6000019": {
+   "partner": "spouse 박도윤 남 2014@23",
+   "ex": "spouse 박도윤 남 2014@26",
+   "kids": "spouse 박도윤 남 2014@25 | c1 박하은 여 2042@27 | c2 박서진 남 2045@30",
+   "young": "spouse 박도윤 남 2014@29 | c1 박하은 여 2046@31",
+   "late": "spouse 박도윤 남 2014@28 | c1 박하은 여 2051@36 | c2 박서진 남 2054@39 | f1 박주원 남 2016@13 | f2 김지윤 여 2015@13",
+   "friend": "f1 박주원 남 2016@12 | f2 김지윤 여 2015@12",
+   "faded": "spouse 박도윤 남 2014@28 | f1 박주원 남 2016@13 | f2 김지윤 여 2015@13",
+   "bare": "spouse 박도윤 남 2014@24 | c1 박하은 여 2043@28 | c2 박서진 남 2046@31 | f1 박주원 남 2016@12 | f2 김지윤 여 2015@12"
+  },
+  "alpha/6000056": {
+   "partner": "spouse 임수아 여 2018@23",
+   "ex": "spouse 임수아 여 2018@26",
+   "kids": "spouse 임수아 여 2018@25 | c1 김은우 남 2043@27",
+   "young": "spouse 임수아 여 2018@29 | c1 김은우 남 2047@31",
+   "late": "spouse 임수아 여 2018@28 | c1 김은우 남 2052@36 | f1 이소윤 여 2017@13 | f2 김수현 남 2014@13",
+   "friend": "f1 이소윤 여 2017@12 | f2 김수현 남 2014@12",
+   "faded": "spouse 임수아 여 2018@28 | f1 이소윤 여 2017@13 | f2 김수현 남 2014@13",
+   "bare": "spouse 임수아 여 2018@24 | c1 김은우 남 2044@28 | f1 이소윤 여 2017@12 | f2 김수현 남 2014@12"
+  },
+  "alpha/6000093": {
+   "partner": "spouse 조예린 여 2018@23",
+   "ex": "spouse 조소율 여 2019@26",
+   "kids": "spouse 조소율 여 2019@25 | c1 김선우 남 2042@27",
+   "young": "spouse 조소율 여 2019@29 | c1 김선우 남 2046@31",
+   "late": "spouse 조소율 여 2019@28 | c1 김선우 남 2051@36 | f1 박민서 여 2014@13 | f2 이지유 여 2016@13",
+   "friend": "f1 박민서 여 2014@12 | f2 이지유 여 2016@12",
+   "faded": "spouse 조소율 여 2019@28 | f1 박민서 여 2014@13 | f2 이지유 여 2016@13",
+   "bare": "spouse 조소율 여 2019@24 | c1 김선우 남 2043@28 | f1 박민서 여 2014@12 | f2 이지유 여 2016@12"
+  }
+ }
+}
