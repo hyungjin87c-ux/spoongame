@@ -318,7 +318,7 @@
       "weight": 14,
       "once": true,
       "citation": { "present": "c-087", "future": "c-087" },
-      "conditions": { "assets": { "dwelling": ["rent", "jeonse", "own"] }, "notFlags": ["married", "moved_home"] },
+      "conditions": { "assets": { "dwelling": ["rent", "jeonse", "own"] }, "notFlags": ["married", "moved_home", "lives_with_child"] },
       "choices": [
         {
           "id": "go",

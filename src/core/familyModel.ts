@@ -34,6 +34,8 @@ export const FAMILY_TAG = {
   SCENE: 17,
   /** 사이 말의 시드 ±1단계 (SPEC-009 FM6, FC2) */
   CLOSE: 18,
+  /** 어린 형제의 이른 별세(Q3, FM7a): 형제마다 별세 나이 `u`(번호 10+i 위 · 20+j 아래, 부가 0)와 배율 솎기(부가 1). 자녀 독립 나이(R-586)는 ADULT 태그의 번호 40+j를 쓴다 */
+  SIB_LOSS: 19,
 } as const;
 
 /** 전체 자녀 수 상한 (주인공 포함) */
@@ -49,17 +51,27 @@ export const FAMILY_AGE_CAP = 100;
 export const NO_DEATH_PLAN = 101;
 /** 조부모와 함께 살 수 있는 마지막 주인공 나이 (20세 이상은 독립) */
 export const GRAND_COHABIT_UNTIL = 19;
-/** 부모 이혼·별거가 일어날 수 있는 주인공 나이 (0~18, 4-7절 (2)) */
-export const DIVORCE_AGES = { min: 0, max: 18 } as const;
+/**
+ * 부모 이혼·별거가 일어날 수 있는 주인공 나이 (1~18, 4-7절 (2)). 하한 1세(FM7a R-618, 마스터 2026-11-06): 0세 해의 이혼 줄은 한부모 출생으로 읽혀 문장으로는 풀리지 않는다(FA0-5 ①).
+ * 부모 별세도 같은 이유로 주인공 0세 해를 1세 해로 옮긴다(`familyBirth.ts#parentGoneAtOf`) — 별세 나이 N(`d`)은 그대로다.
+ */
+export const DIVORCE_AGES = { min: 1, max: 18 } as const;
+/** 부모 별세 줄이 나올 수 있는 주인공 나이의 하한 (R-618) */
+export const PARENT_GONE_MIN_AGE = 1;
+/** 자녀가 「따로 삶」이 될 수 있는 자녀 나이의 하한 (R-586, FM7a: 만 19세 — 민법상 성년과 맞춘다). `child_left`여도 이 나이 미만 자녀는 함께 산다 */
+export const CHILD_APART_MIN_AGE = 19;
 /** 형제 위 최대 4명, 그림의 식구 수 상한(주인공 제외 7) */
 export const SCENE_MEMBER_MAX = 7;
 
 /**
  * `family.log` 종류 코드 (2-2절): `[종류, 주인공 나이, 대상, 부가]`. 코드는 바꾸지 않는다.
- *  대상 — 동생 출생: `20+j`(아래 동생 y_j, j는 1부터) · 형제 독립: `10+i`(위 o_i) / `20+j` · 조부모 별세: 3 pgf · 4 pgm · 5 mgf · 6 mgm · 부모 한 분 별세: 1 어머니 / 2 아버지 · 이혼: 1 어머니가 떠남 / 2 아버지가 떠남.
+ *  대상 — 동생 출생: `20+j`(아래 동생 y_j, j는 1부터) · 형제 독립: `10+i`(위 o_i) / `20+j` · 형제 이른 별세: `10+i`(위 o_i) / `20+j`, 부가 = 그 형제의 별세 나이 ·
+ *  조부모 별세: 3 pgf · 4 pgm · 5 mgf · 6 mgm · 부모 한 분 별세: 1 어머니 / 2 아버지 · 이혼: 1 어머니가 떠남 / 2 아버지가 떠남.
  */
 export const LOG_SIB_BORN = 1;
 export const LOG_SIB_LEFT = 2;
+/** 어린 형제의 이른 별세(Q3, FM7a) — 코드는 처음부터 3으로 비워 두었다 */
+export const LOG_SIB_LOST = 3;
 export const LOG_GRAND_GONE = 4;
 export const LOG_PARENT_GONE = 5;
 export const LOG_PARENTS_APART = 6;

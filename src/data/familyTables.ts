@@ -51,6 +51,11 @@ export const FAMILY_DESIGN: FamilyDesign = {
     basis: 'design',
     note: '1945년 이전 출생 어머니의 3째 이후 이어짐 확률 — 공표 출산 순위 비중에서 유도한 값은 출산이 많던 코호트의 총 자녀 수를 낮게 만들어(모형 3.0~3.2명 vs FD6 3.4~5.6), 코호트별로 FD6 센서스 평균 출생아 수에 맞춘 설계값(1941~45는 FM4b 검수 R-565로 더했다)',
   },
+  siblingLoss: {
+    value: { enabled: true, scale: 1, maxBirthYear: 1969, sibAge: { min: 1, max: 11 }, heroAge: { min: 1, max: 19 } },
+    basis: 'estimated',
+    note: '어린 형제의 이른 별세(Q3): 1969년 이하 출생 판에서 구성에 있는 형제가 1~11세에 떠날 확률은 부모·조부모와 같은 코호트 생존 곡선(간이생명표 영아·아동 사망확률 — 1970~2024 확인, 1970 앞은 기대수명 척도 외삽 추정)으로 정한다. 배율 1.0(형진 님 2026-11-06 — 실제 생명표 그대로). 한 판 최대 한 명, 기록 전용(스탯·자산 불변). 숫자는 화면에 쓰지 않는다(GE5)',
+  },
   earlyLoss: {
     value: {
       enabled: true,

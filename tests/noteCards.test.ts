@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CITATION_COVERAGE_MIN, ERAS, eraBucketOf, lifeParamsOf, maxAgeOf, type GenerationId, type ProfileId, ERA_BANNED_WORDS, MANUAL_NOTE_ID, NOTE_CAUSE_WORDS, NOTE_EMOTION_WORDS, NOTE_ID_PATTERN, NOTE_LIMITS, NOTE_SAFETY_WORDS, NoteDataError, advanceUntilDecision, calendarYear, citationCoverage, citationFor, citationLinkProblems, connectedCitationIds, consumeNote, createSession, dueNote, lifeLineCount, lintNoteFile, noteCardPoolProblems, noteCount, noteFlagsRead, noteJitterAge, notePromptOf, notePromptProblems, noteQuestion, noteResponse, notesOf, sessionReducer, validateNoteFile, writeNote, type Era, type GameState, type NoteCardDef, type NoteFile, type Session, type SessionAction } from '../src/core';
 import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
+import { noteParentWordProblems } from '../src/core';
 import { NOTE_CARDS, NOTE_FILE_RAW, NOTE_MANUAL } from '../src/data/noteCards';
 import { EVENT_POOL } from '../src/data/events';
 import { generationDef } from '../src/data/generations';
@@ -129,19 +130,22 @@ describe('notes.json: 카드 7종이 설명서 1-3절 표와 같다', () => {
     { where: '④ 기본', get: () => card(ID.romance).prompt, text: '누군가를 만나 마음을 나누는 일에 대해, {이름}에게 떠오르는 생각이 있습니까?', len: 45 },
     { where: '⑤ 기본', get: () => card(ID.illness).prompt, text: '몸이 아팠던 시간을 떠올려 보면, {이름}에게 남아 있는 마음이나 장면이 있습니까?', len: 47 },
     { where: '⑥ 기본', get: () => card(ID.parents).prompt, text: '부모님이 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?', len: 38 },
+    // FM7a(T10, 형진 님 승인 2026-11-06): 한 분이 먼저 떠난 판은 남은 분의 호칭만 바꾼다 — 「홀로 남으신」은 뺐다(상실을 되풀이하지 않는다, R-624)
+    { where: '⑥ mother_gone → 남은 분 아버지', get: () => card(ID.parents).variants![0].prompt, text: '아버지가 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?', len: 38 },
+    { where: '⑥ father_gone → 남은 분 어머니', get: () => card(ID.parents).variants![1].prompt, text: '어머니가 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?', len: 38 },
     { where: '⑦ 기본', get: () => card(ID.midlife).prompt, text: '살아온 시간을 돌아보는 지금, {이름}에게 인생은 어떤 것처럼 느껴집니까?', len: 42 },
     { where: '수동', get: () => NOTE_MANUAL.prompt, text: '지금 {이름}의 마음에 남아 있는 장면이나 생각이 있습니까?', len: 34 },
   ];
 
-  it('질문: 10문장이 designer 최종 문구(copy.md 7-1)와 글자까지 같고, {이름}을 5자로 센 길이가 표와 같다 (한 문장 ≤ 52자)', () => {
+  it('질문: 10문장이 designer 최종 문구(copy.md 7-1)와 글자까지 같고, {이름}을 5자로 센 길이가 표와 같다 (한 문장 ≤ 52자) — FM7a 부모님 글감 변형 2문장(T10, 승인 문서)을 더해 12문장', () => {
     const counted = (p: string) => p.replaceAll('{이름}', '가가가가가').length;
     for (const q of FINAL) {
       expect(q.get(), q.where).toBe(q.text);
       expect(counted(q.text), `${q.where}: ${counted(q.text)}자 (표 ${q.len}자)`).toBe(q.len);
       expect(q.len).toBeLessThanOrEqual(52);
     }
-    expect(FINAL).toHaveLength(10);
-    // 데이터에 있는 모든 질문이 위 10문장뿐이다 (표에 없는 문장이 몰래 늘지 않는다)
+    expect(FINAL).toHaveLength(12);
+    // 데이터에 있는 모든 질문이 위 12문장뿐이다 (표에 없는 문장이 몰래 늘지 않는다)
     const all = [NOTE_MANUAL.prompt, ...NOTE_CARDS.flatMap((c) => [c.prompt, ...(c.variants ?? []).map((v) => v.prompt)])];
     expect(all.sort()).toEqual(FINAL.map((q) => q.text).sort());
     expect(NOTE_MANUAL.topic).toBe('지금의 생각');
@@ -162,9 +166,9 @@ describe('질문 lint (R7·S1~S4·R8)', () => {
     expect(lintNoteFile({ manual: NOTE_MANUAL, cards: [...NOTE_CARDS] })).toEqual([]);
   });
 
-  it('모든 질문(기본·변형·수동 — 10문장): 한 문장, 물음표 하나, 합쇼체 「있습니까?」류 끝, 느낌표·이모지·마침표 없음, 조사는 에게·에게도·의뿐', () => {
+  it('모든 질문(기본·변형·수동 — 12문장): 한 문장, 물음표 하나, 합쇼체 「있습니까?」류 끝, 느낌표·이모지·마침표 없음, 조사는 에게·에게도·의뿐', () => {
     const all = [NOTE_MANUAL.prompt, ...NOTE_CARDS.flatMap((c) => [c.prompt, ...(c.variants ?? []).map((v) => v.prompt)])];
-    expect(all).toHaveLength(10);
+    expect(all).toHaveLength(12);
     for (const p of all) {
       expect(p.match(/\?/g), p).toHaveLength(1);
       expect(p.endsWith('?'), p).toBe(true);
@@ -233,6 +237,28 @@ describe('질문 lint (R7·S1~S4·R8)', () => {
   });
 });
 
+describe('낱말 ↔ 조건 (FM7a, SPEC-009 완료 기준 4): 「부모님」이 든 글감은 한 분이 떠난 뒤에도 뜨면 안 된다', () => {
+  const base = (over: Partial<NoteCardDef> = {}): NoteCardDef => ({ ...card(ID.parents), ...over });
+  const mother = { when: { flags: ['mother_gone'] }, prompt: '아버지가 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?' };
+  const father = { when: { flags: ['father_gone'] }, prompt: '어머니가 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?' };
+
+  it('실제 글감: 부모님 글감 ⑥은 mother_gone·father_gone 변형 둘이 남은 분의 호칭으로 맡아 문제가 없다 (변형 문장에 「부모님」이 없다)', () => {
+    expect(noteParentWordProblems(card(ID.parents))).toEqual([]);
+    expect(card(ID.parents).variants).toEqual([mother, father]);
+    for (const c of NOTE_CARDS) expect(noteParentWordProblems(c), c.id).toEqual([]);
+  });
+
+  it('공허 통과 방지: 변형이 없거나 한쪽만 있으면 걸리고, notFlags 셋이 있으면 변형 없이도 통과하며, 변형 문장에 「부모님」이 있으면 걸린다', () => {
+    expect(noteParentWordProblems(base({ variants: undefined })).join('\n')).toMatch(/mother_gone[\s\S]*father_gone/);
+    expect(noteParentWordProblems(base({ variants: [mother] })).join('\n')).toContain('father_gone');
+    expect(noteParentWordProblems(base({ variants: [father] })).join('\n')).toContain('mother_gone');
+    expect(noteParentWordProblems(base({ variants: undefined, conditions: { parentAge: { min: 65 }, notFlags: ['parents_gone', 'mother_gone', 'father_gone'] } }))).toEqual([]);
+    expect(noteParentWordProblems(base({ variants: [{ ...mother, prompt: '부모님이 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?' }, father] })).join('\n')).toContain('변형 1');
+    // 「부모님」이 없는 글감은 대상이 아니다
+    expect(noteParentWordProblems(card(ID.midlife))).toEqual([]);
+  });
+});
+
 describe('validateNoteFile / noteCardPoolProblems: 데이터 검증이 실제로 잡는다', () => {
   const raw = NOTE_FILE_RAW as NoteFile;
   const clone = (): NoteFile => JSON.parse(JSON.stringify(raw)) as NoteFile;
@@ -285,7 +311,7 @@ describe('validateNoteFile / noteCardPoolProblems: 데이터 검증이 실제로
   it('noteCardPoolProblems: 읽는 플래그가 켜지는지·seenAny/unlessSeen이 실제 이벤트인지·이벤트 id와 겹치지 않는지 (실제 데이터는 0건)', () => {
     expect(noteCardPoolProblems(NOTE_CARDS, EVENT_POOL.events)).toEqual([]);
     expect([...noteFlagsRead(card(ID.romance))].sort()).toEqual(['has_partner', 'married']);
-    expect([...noteFlagsRead(card(ID.parents))]).toEqual(['parents_gone']);
+    expect([...noteFlagsRead(card(ID.parents))].sort()).toEqual(['father_gone', 'mother_gone', 'parents_gone']);
     expect([...noteFlagsRead(card(ID.love))]).toEqual(['first_love']);
     const typo = { ...card(ID.love), variants: [{ when: { flags: ['first_luv'] }, prompt: card(ID.love).prompt }] };
     expect(noteCardPoolProblems([typo], EVENT_POOL.events).join('\n')).toContain('first_luv');

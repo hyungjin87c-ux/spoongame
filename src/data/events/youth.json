@@ -453,15 +453,15 @@
         },
         {
           "id": "parents",
-          "label": "부모님 집에 머문다",
+          "label": "본가에 머문다",
           "result": "집을 나서지 않기로 했습니다. 돈은 아꼈지만 독립은 조금씩 미뤄졌습니다.",
           "effects": { "stats": { "relationships": 1, "happiness": -1 }, "assets": { "net": 400 }, "setFlags": ["lives_with_parents"] },
           "requires": { "assets": { "dwelling": ["family"] } }
         },
         {
           "id": "return",
-          "label": "부모님 집으로 돌아간다",
-          "result": "짐을 싸 부모님 집으로 돌아갔습니다. 한 식탁에 앉는 저녁이 다시 늘었고 살림도 가벼워졌습니다. 독립은 한 걸음 물러섰습니다.",
+          "label": "본가로 돌아간다",
+          "result": "짐을 싸 본가로 돌아갔습니다. 한 식탁에 앉는 저녁이 다시 늘었고 살림도 가벼워졌습니다. 독립은 한 걸음 물러섰습니다.",
           "effects": { "stats": { "relationships": 2, "happiness": -2 }, "assets": { "net": 400 }, "setFlags": ["lives_with_parents"] },
           "requires": { "assets": { "dwelling": ["rent", "jeonse", "own"] }, "notFlags": ["lives_alone"] }
         },

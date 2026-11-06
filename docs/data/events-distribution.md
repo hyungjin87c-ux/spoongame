@@ -6,8 +6,8 @@
 
 ## 1. 총계
 
-- 이벤트 **140개** = 선택지 이벤트 90개 + 서술 이벤트 50개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
-- 시대 전용: 지난 세상 10개 · 지금 세상 6개 · 다가올 세상 4개 / 시대 중립 공용 108개 / 두 시대 공용 12개
+- 이벤트 **144개** = 선택지 이벤트 94개 + 서술 이벤트 50개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
+- 시대 전용: 지난 세상 10개 · 지금 세상 6개 · 다가올 세상 4개 / 시대 중립 공용 112개 / 두 시대 공용 12개
 
 ## 2. 시대 × 생애 단계 × 유형 (그 칸에서 일어날 수 있는 이벤트 수)
 
@@ -18,9 +18,9 @@
 | 영유아 (0~6세) | 16 / 9 | 17 / 15 | 14 / 12 |
 | 학창 (7~19세) | 7 / 15 | 6 / 15 | 7 / 15 |
 | 청년 (20~39세) | 9 / 19 | 8 / 20 | 8 / 21 |
-| 중년 (40~64세) | 7 / 22 | 8 / 23 | 8 / 24 |
+| 중년 (40~64세) | 7 / 26 | 8 / 27 | 8 / 28 |
 | 노년 (65세~) | 5 / 17 | 5 / 17 | 5 / 18 |
-| **합계(칸 합)** | 44 / 82 | 44 / 90 | 42 / 90 |
+| **합계(칸 합)** | 44 / 86 | 44 / 94 | 42 / 94 |
 
 ## 3. 이벤트 목록
 
@@ -133,12 +133,14 @@
 | `youth-job-rejections` | 연락이 없는 날들 | 21~30 | 공용 | 서술 | 지원서를 내고도 연락이 없던 취업 준비 | 읽음 `has_career` `own_business` |
 | `youth-factory-night` | 멈추지 않는 기계 | 20~28 | 지난 전용 | 서술 | 멈추지 않는 공장에서 밤샘 근무를 하던 일 | 읽음 `own_business` `passed_exam` |
 
-### 중년 (40~64세) — 25개
+### 중년 (40~64세) — 29개
 
 | id | 제목 | 나이 | 시대 | 유형 | 모티브 | 플래그 |
 |---|---|---|---|---|---|---|
 | `middle-business` | 함께 가게를 열자는 제안 | 40~52 | 공용 | 선택지 3 | 지인이 함께 가게를 열자고 제안한 일 | 켬 `own_business` / 읽음 `family_business` `has_career` `married` `own_business` |
-| `middle-parents-care` | 부모님의 병환 | 45~62 | 공용 | 선택지 3 | 부모의 병환을 형제들과 나누어 돌보던 일 | 켬 `cared_parents` / 읽음 `parents_gone` |
+| `middle-parents-care` | 부모님의 병환 | 45~62 | 공용 | 선택지 3 | 부모의 병환을 형제들과 나누어 돌보던 일 | 켬 `cared_parents` / 읽음 `father_gone` `mother_gone` `parents_gone` |
+| `middle-parents-care-mother-gone` | 아버지의 병환 | 45~62 | 공용 | 선택지 3 | 어머니를 먼저 보내고 홀로 남은 아버지의 병환을 돌보던 일 | 켬 `cared_parents` / 읽음 `mother_gone` `parents_gone` |
+| `middle-parents-care-father-gone` | 어머니의 병환 | 45~62 | 공용 | 선택지 3 | 아버지를 먼저 보내고 홀로 남은 어머니의 병환을 돌보던 일 | 켬 `cared_parents` / 읽음 `father_gone` `parents_gone` |
 | `middle-health-check` | 검진 결과표 | 40~55 | 공용 | 선택지 2 | 건강검진에서 처음 수치가 나빠진 일 | 켬 `checked_up` `health_ignored` `healthy_habit` |
 | `middle-health-check-later` | 다시 받은 결과 | 53~64 | 공용 | 선택지 3 | 몇 해 뒤 다시 받은 검진 결과가 나빠진 일 | 켬 `healthy_habit` / 읽음 `checked_up` `health_ignored` `healthy_habit` |
 | `middle-health-crisis` | 쓰러진 날 | 48~64 | 공용 | 선택지 2 | 검진 결과를 미루다 갑자기 쓰러진 일 | 켬 `healthy_habit` / 끔 `health_ignored` / 읽음 `health_ignored` |
@@ -155,7 +157,9 @@
 | `middle-friend-reunion` | 오랜 친구의 연락 | 42~58 | 공용 | 선택지 3 | 소식이 끊겼던 오랜 친구의 연락 | 켬 `friend_back` / 끔 `close_friend` / 읽음 `close_friend` |
 | `middle-marriage-crisis` | 서먹해진 식탁 | 42~58 | 공용 | 선택지 3 | 대화가 줄어 서먹해진 부부의 식탁 | 켬 `child_distant` `divorced` / 끔 `has_partner` `married` / 읽음 `has_child` `married` |
 | `middle-hobby` | 늦게 시작한 일 | 42~60 | 공용 | 선택지 3 | 하루가 한숨 돌릴 만해진 뒤 늦게 취미를 시작할지 고민한 일 | 켬 `hobby` |
-| `middle-parents-farewell` | 마지막 인사 | 52~64 | 공용 | 선택지 3 | 부모의 임종 소식을 받고 달려가던 일 | 켬 `parents_gone` / 읽음 `cared_parents` `sibling_close` |
+| `middle-parents-farewell` | 마지막 인사 | 52~64 | 공용 | 선택지 3 | 부모의 임종 소식을 받고 달려가던 일 | 켬 `parents_gone` / 읽음 `cared_parents` `father_gone` `mother_gone` `parents_gone` `sibling_close` |
+| `middle-parents-farewell-mother-gone` | 마지막 인사 | 52~64 | 공용 | 선택지 3 | 홀로 남은 아버지의 임종 소식을 받고 달려가던 일 | 켬 `parents_gone` / 읽음 `cared_parents` `mother_gone` `parents_gone` `sibling_close` |
+| `middle-parents-farewell-father-gone` | 마지막 인사 | 52~64 | 공용 | 선택지 3 | 홀로 남은 어머니의 임종 소식을 받고 달려가던 일 | 켬 `parents_gone` / 읽음 `cared_parents` `father_gone` `parents_gone` `sibling_close` |
 | `middle-debt-guarantee` | 보증을 서 달라는 부탁 | 42~55 | 공용 | 선택지 3 | 가까운 지인이 보증을 서 달라고 한 일 | - |
 | `middle-retirement-prep` | 내려놓을 때를 생각하며 | 55~64 | 공용 | 선택지 3 | 나이 들어 가며 앞으로의 시간을 어떻게 준비할지 고민한 일 | - |
 | `middle-both-working` | 둘이 함께 벌던 시절 | 40~54 | 지금·다가올 전용 | 서술 | 맞벌이로 아이를 키워 낸 바쁜 시절 | 읽음 `child_late` `has_career` `has_child` `married` |
@@ -177,7 +181,7 @@
 | `senior-travel` | 미뤄 둔 여행 | 66~78 | 공용 | 선택지 3 | 젊을 때부터 미뤄 둔 여행을 떠날지 고민한 일 | - |
 | `senior-estranged-child` | 소원해진 자식 | 66~85 | 공용 | 선택지 3 | 연락이 끊긴 자식에게 먼저 전화할지 망설인 일 | 끔 `child_distant` / 읽음 `child_distant` `has_child` |
 | `senior-spouse-care` | 곁을 지키는 일 | 70~90 | 공용 | 선택지 3 | 함께 늙어 온 배우자의 간병을 나누던 일 | 읽음 `married` |
-| `senior-alone` | 혼자 사는 집 | 70~90 | 공용 | 선택지 3 | 혼자 사는 집의 하루 종일 이어지는 고요 | 읽음 `married` `moved_home` |
+| `senior-alone` | 혼자 사는 집 | 70~90 | 공용 | 선택지 3 | 혼자 사는 집의 하루 종일 이어지는 고요 | 읽음 `lives_with_child` `married` `moved_home` |
 | `senior-new-device` | 낯선 기계 | 66~82 | 공용 | 선택지 3 | 세상 일이 작은 기계로 옮겨 가 배우게 된 일 | - |
 | `senior-long-life` | 예상보다 긴 시간 | 72~95 | 다가올 전용 | 선택지 3 | 기대보다 길어진 노년의 시간을 어떻게 쓸지 정하던 일 | - |
 | `senior-last-wishes` | 마지막 정리 | 80~100 | 공용 | 선택지 3 | 이제 정리할 때라며 남길 말을 생각하던 일 | - |
@@ -198,7 +202,7 @@
 | 플래그 | 켜는 이벤트 | 읽는 이벤트 |
 |---|---|---|
 | `broke_up` | `youth-marriage` `youth-marriage-again` `youth-partner-leaves` | `youth-reunion` |
-| `cared_parents` | `middle-parents-care` | `middle-parents-farewell` `senior-gathering` |
+| `cared_parents` | `middle-parents-care` `middle-parents-care-father-gone` `middle-parents-care-mother-gone` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` `senior-gathering` |
 | `checked_up` | `middle-health-check` | `middle-health-check-later` |
 | `child_distant` | `middle-child-school` `middle-marriage-crisis` | `senior-estranged-child` `senior-gathering` `senior-grandchild-visit` `senior-grandchildren` `senior-move-home` |
 | `child_late` | `youth-child-again` | `middle-both-working` `middle-child-grows` `middle-child-leaves` `middle-child-school` `middle-late-child` `senior-gathering` |
@@ -239,14 +243,14 @@
 | `no_child` | `youth-child` `youth-child-again` | `youth-child-again` |
 | `own_business` | `middle-business` `middle-layoff` `youth-startup` | `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-own-shop-year` `senior-retire` `youth-colleague` `youth-factory-night` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-startup` `youth-workplace-romance` |
 | `own_home` | `middle-home-loan` `youth-housing` | `middle-home-loan` `youth-housing` `youth-rent-hike` |
-| `parents_gone` | `middle-parents-farewell` | `infant-care` `infant-neglect-night` `middle-parents-care` `school-early-work` `school-teacher-notice` |
+| `parents_gone` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` | `infant-care` `infant-neglect-night` `middle-parents-care` `middle-parents-care-father-gone` `middle-parents-care-mother-gone` `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` `school-early-work` `school-teacher-notice` |
 | `passed_exam` | `youth-exam-passed` | `middle-layoff` `youth-factory-night` |
 | `promoted` | `middle-career-peak` | - |
 | `renting` | `youth-housing` | `youth-rent-hike` |
 | `reunited` | `youth-reunion` | `youth-second-chance` |
 | `saving_for_school` | `youth-night-study` | `youth-return-school` |
 | `scholar` | `school-scholarship` | `school-exam` |
-| `sibling_close` | `infant-new-sibling` | `middle-parents-farewell` |
+| `sibling_close` | `infant-new-sibling` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` |
 | `skilled_trade` | `school-career-choice` | `school-exam` `youth-first-job` |
 | `stood_up` | `school-bully` | `school-chat-room` |
 | `younger_sibling` | `infant-new-sibling` | `infant-sibling-toy` |

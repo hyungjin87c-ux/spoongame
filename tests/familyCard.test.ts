@@ -639,7 +639,12 @@ describe('카드 모델 (FC1·FC4·FC9·FC10): 줄 순서 · 떠난 사람 글�
     // 연인·이혼·독립은 함께 살지 않는다
     expect(familyViewOf({ ...base, flags: ['has_partner'] }).household).not.toContain('spouse');
     expect(familyViewOf({ ...base, flags: [...base.flags, 'divorced'].filter((f) => f !== 'married').sort() }).household).not.toContain('spouse');
-    expect(familyViewOf({ ...base, flags: [...base.flags, 'child_left'].sort() }).household.some((id) => id.startsWith('c'))).toBe(false);
+    // 자녀의 독립은 나이를 본다(R-586, FM7a): child_left는 19세 이상 자녀만 따로 사는 것으로 앞당긴다 — 6세 자녀는 child_left여도 함께 산다
+    expect(familyViewOf({ ...base, flags: [...base.flags, 'child_left'].sort() }).household.some((id) => id.startsWith('c')), '19세 미만 자녀는 child_left여도 함께 산다').toBe(true);
+    // 70세에는 자녀가 모두 19세 이상이라 child_left이면 모두 따로 산다 (둘째 이후는 주인공 45세까지 태어난다)
+    const grown = craft(61, 'millennial', { age: 70, flags: ['married', 'has_child', 'child_left'], seen: { [CHILD_EVENTS[0]]: 30 } });
+    expect(familyViewOf(grown).household.some((id) => id.startsWith('c')), '독립한 자녀는 그림·함께 사는 사람에서 빠진다').toBe(false);
+    expect(familyViewOf(grown).people.filter((p) => p.role === 'child').every((p) => p.state === 'apart')).toBe(true);
     // 자녀가 태어난 해(30세)에 child-born
     const birthYear = craft(61, 'millennial', { age: 30, flags: ['married', 'has_child'], seen: { [CHILD_EVENTS[0]]: 30 } });
     expect(sceneFamilyOf(birthYear).changed).toContain('child-born');

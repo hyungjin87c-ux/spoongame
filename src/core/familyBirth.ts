@@ -10,10 +10,12 @@ import {
   FAMILY_DATA_VERSION,
   MOTHER_BIRTH_MAX,
   NO_DEATH_PLAN,
+  PARENT_GONE_MIN_AGE,
   YOUNGER_MOTHER_MAX,
   type FamilyData,
   type GrandData,
   type HomeData,
+  type PersonId,
   type SiblingData,
 } from './familyModel';
 import { rollHome } from './familyHome';
@@ -207,6 +209,15 @@ export function leaveAgeOf(famSeed: number, num: number): number {
   return min + Math.floor(famHash01(famSeed, FAMILY_TAG.SIBLINGS, num, 1) * (max - min + 1));
 }
 
+/**
+ * 자녀 독립 나이 (R-586, FM7a): 자녀 번호(`c1`~`c4` → `j` 0~3)마다 형제 독립과 같은 표(`design.leaveAge`, 20~30 균등) 한 줄을 해시로 뽑는다 — `famHash01(famSeed, ADULT, 40+j, 1)`.
+ * 번호는 기존 성인기 해시(배우자 1 · 자녀 수 2 · 친구 3 · 자녀 터울·성별 10+j · 친구 20+j)와 겹치지 않는다. 진행 RNG를 쓰지 않고 저장도 늘리지 않는다.
+ */
+export function childLeaveAgeOf(famSeed: number, j: number): number {
+  const { min, max } = familyTables().design.leaveAge.value;
+  return min + Math.floor(famHash01(famSeed, FAMILY_TAG.ADULT, 40 + j, 1) * (max - min + 1));
+}
+
 /** 위 형제: 옛 계산(`olderSiblingPlan`)과 같은 값을 `family.o`에 옮겨 담는다 (옛 저장 호환과 같은 코드 경로, 1-3절) */
 export function rollOlderSiblings(famSeed: number, siblingSeed: number, report: Pick<BirthReport, 'birthOrder' | 'mother'>): SiblingData[] {
   return olderSiblingPlan(siblingSeed, report).map((o, i) => ({ g: o.gender === 'male' ? 0 : 1, k: o.gap, s: leaveAgeOf(famSeed, i) }));
@@ -271,10 +282,13 @@ export function parentDivorceRate(year: number): number {
   return (d.rate[0] * crudeAt(year)) / crudeAt(d.rateFrom);
 }
 
-/** 주인공 나이로 본 부모 별세 시점 `[어머니, 아버지]` (101 = 계획 없음 → Infinity) */
+/**
+ * 주인공 나이로 본 부모 별세 시점 `[어머니, 아버지]` (101 = 계획 없음 → Infinity). **하한 1세(R-618, FM7a)**: 주인공 0세 해의 별세는 출산 사망으로 읽혀 1세 해로 옮긴다 —
+ * 그 분의 별세 나이 N(`p[i].d`)은 그대로이고 `goneAt`(= 주인공 나이로 본 시점)만 올라간다. 줄(`familyChangesFor`)·카드(`markGone`의 「내가 M세였던 해」)·동생 구성(`lastAt`)이 모두 이 값 하나를 읽는다.
+ */
 export function parentGoneAtOf(birthYear: number, report: Pick<BirthReport, 'mother' | 'father'>, p: FamilyData['p']): [number, number] {
   const by = [parentBirthYear(birthYear, report.mother.age), parentBirthYear(birthYear, report.father.age)];
-  return [0, 1].map((i) => (p[i].d >= NO_DEATH_PLAN ? Infinity : goneAtMyAge(by[i], p[i].d, birthYear))) as [number, number];
+  return [0, 1].map((i) => (p[i].d >= NO_DEATH_PLAN ? Infinity : Math.max(PARENT_GONE_MIN_AGE, goneAtMyAge(by[i], p[i].d, birthYear)))) as [number, number];
 }
 
 /** 먼저 떠나는 한 분 (같은 해면 아버지가 먼저 — 설계값). 두 번째 분의 별세는 모델이 정하지 않는다 (K3, 4-7절 (1)) */
@@ -299,6 +313,34 @@ export function divorcePlan(famSeed: number, birthYear: number, firstGone: { who
     }
   }
   return null;
+}
+
+// ---------- 어린 형제의 이른 별세 계획 (Q3, FM7a — SPEC-009 6절, 안 B: 해시 계획 + 줄 문구 함수) ----------
+
+/**
+ * 어린 형제의 이른 별세 계획: 주인공 나이 `at`의 해에 형제 `id`가 `a`살에 세상을 떠난다(보기에서는 `at + 1`부터 떠난 사람, 줄·로그는 `at`의 해). 계획이 없으면 null.
+ * 부모 별세·이혼처럼 **출생 때 가족 구성(`family`)과 해시만으로 정한다** — 저장을 늘리지 않고 진행 RNG(`rngState`)를 쓰지 않는다. 사건(서술 사건·가중치)이 아니라 계획이라 목표 확률 그대로다(6절 4항).
+ *
+ * 규칙(`design.siblingLoss`, 한 곳): 출생 연도 ≤ 1969 · 구성(`o`·`y`)의 형제마다 **한 번의 해시 `u`**(번호 위 `10+i` · 아래 `20+j`)로 `deathAgeGiven`(부모·조부모 별세와 같은 생존 곡선)을 굴려 별세 나이 `a`를 정하고,
+ * `a`가 1~11(태어난 해에 떠나는 0세는 후보에서 뺀다, R-619)이고 그때 주인공 나이가 1~19(`EARLY_LOSS_MAX_AGE`와 같은 경계)인 형제가 후보다. 후보 가운데 **가장 이른 한 명**(같은 해면 위 형제 → 아래 동생 순서)이 떠난다 — 한 판 최대 1건.
+ * 위 형제는 주인공이 태어났을 때 이미 `k`살이라 별세 나이 `a ≥ k`이고(`a = k`면 주인공이 태어난 해라 후보가 아니다), 아래 동생은 태어난 해(`k`)부터 산다. 배율(`scale`)이 1 미만이면 형제마다 다른 해시 한 번으로 그 비율만 남긴다.
+ */
+export function siblingLossPlan(famSeed: number, birthYear: number, family: Pick<FamilyData, 'o' | 'y'>): { id: PersonId; at: number; a: number } | null {
+  const rule = familyTables().design.siblingLoss.value;
+  if (!rule.enabled || birthYear > rule.maxBirthYear) return null;
+  let best: { id: PersonId; at: number; a: number } | null = null;
+  const consider = (id: PersonId, num: number, s: SiblingData, older: boolean): void => {
+    if (older && s.k > rule.sibAge.max) return; // 이미 12세 이상으로 태어난 해를 맞는 위 형제는 12세 전에 떠날 수 없다 (a ≥ k)
+    if (rule.scale < 1 && !(famHash01(famSeed, FAMILY_TAG.SIB_LOSS, num, 1) < rule.scale)) return;
+    const a = deathAgeGiven(s.g === 0 ? 'male' : 'female', older ? birthYear - s.k : birthYear + s.k, older ? s.k : 0, famHash01(famSeed, FAMILY_TAG.SIB_LOSS, num, 0));
+    if (a < rule.sibAge.min || a > rule.sibAge.max) return;
+    const at = older ? a - s.k : s.k + a; // 형제가 a살인 해의 주인공 나이
+    if (at < rule.heroAge.min || at > rule.heroAge.max) return;
+    if (best === null || at < best.at) best = { id, at, a };
+  };
+  family.o.forEach((s, i) => consider(`o${i + 1}` as PersonId, 11 + i, s, true));
+  family.y.forEach((s, j) => consider(`y${j + 1}` as PersonId, 21 + j, s, false));
+  return best;
 }
 
 // ---------- 전체 ----------

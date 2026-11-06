@@ -1163,6 +1163,8 @@ M6a에서는 이벤트 데이터를 고치지 않았다(`src/data/events/*.json`
 | `middle-layoff` | c-083 | s-084 |
 | `middle-marriage-crisis` | c-096 | s-028 |
 | `middle-parents-care` | c-081 | s-083 |
+| `middle-parents-care-father-gone` | c-081 | s-083 |
+| `middle-parents-care-mother-gone` | c-081 | s-083 |
 | `middle-remote-work` | c-080 | s-082 |
 | `middle-retirement-prep` | c-030 | s-031 |
 | `note-infant-memory` | c-102 | s-101 |

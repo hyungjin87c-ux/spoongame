@@ -53,7 +53,8 @@ describe('이벤트 전환표(문서 부록) ↔ 데이터 (MG2)', () => {
 
   it('문서 부록은 140행이고 파일 순서·이벤트 순서가 src/data/events/*.json과 같다', () => {
     expect(rows).toHaveLength(140);
-    const dataIds = ['./infant.json', './school.json', './youth.json', './middle.json', './senior.json'].flatMap((f) => (EVENT_FILES[f] as { events: Array<{ id: string }> }).events.map((e) => e.id));
+    // FM7a 「남은 한 분」 변형 4개(원본 id + -mother-gone·-father-gone)는 원본의 전환 행을 그대로 쓴다 — 부록 140행은 원본 이벤트의 표다 (변형은 track common · yearRange 없음, 아래 시험이 따로 본다)
+    const dataIds = ['./infant.json', './school.json', './youth.json', './middle.json', './senior.json'].flatMap((f) => (EVENT_FILES[f] as { events: Array<{ id: string }> }).events.map((e) => e.id)).filter((id) => !/-(?:mother|father)-gone$/.test(id));
     expect(rows.map((r) => r.id)).toEqual(dataIds);
   });
 

@@ -95,7 +95,8 @@ describe('문구: copy.md 7-2절과 글자까지 같다 (designer 최종 문구,
     const q = copyMd.slice(copyMd.indexOf('### 7-1.'), copyMd.indexOf('### 7-2.'));
     for (const c of NOTE_CARDS) {
       expect(q, c.id).toContain(c.prompt);
-      for (const v of c.variants ?? []) expect(q, `${c.id} 변형`).toContain(v.prompt);
+      // FM7a(T10, 형진 님 승인 2026-11-06 — docs/design/fm7a-event-texts.md): 부모님 글감의 「남은 한 분」 변형 둘은 designer copy.md가 아니라 승인 문서의 문장이다(tests/familyText.test.ts가 글자를 잠근다)
+      for (const v of c.variants ?? []) if (!/^(?:아버지|어머니)가 예전보다 나이 들었다고/.test(v.prompt)) expect(q, `${c.id} 변형`).toContain(v.prompt);
     }
     expect(q).toContain(NOTE_MANUAL.prompt);
     expect(NOTE_CARDS).toHaveLength(7);

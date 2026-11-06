@@ -33,7 +33,9 @@ import { applyResolved, condContextOf, economyContextOf } from './apply';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
-import { applyFamilyChanges, familyChangesFor } from './familyTick';
+import { FAMILY_LINE_ID } from '../data/familyLineText';
+import { flagSettersOf } from './familyAdult';
+import { applyFamilyChanges, familyChangesFor, goneYearRuleNow, syncPostEventFlags } from './familyTick';
 import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllGone, parentsJustGone, siblingCountOf } from './inherit';
 import type { NoteCardDef } from './noteCards';
 import { consumeNote, dueNote, type NoteMode } from './notes';
@@ -270,17 +272,21 @@ function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: Gam
     const cause = rng.pick(deathCauseCandidates(age, stats.health));
     return {
       died: true,
-      state: {
-        ...s,
-        phase: 'ending',
-        stats,
-        assets: settled,
-        pending: null,
-        paused: false, // 일시정지는 인생 단계에서만 있을 수 있다(저장 검증, DB3) — 일시정지 중 고른 선택이 마지막이었어도 엔딩에는 남지 않는다
-        death: { age, cause },
-        history: appendHistory(history, { age, kind: 'death', text: deathEntryText(cause) }),
-        rngState: rng.getState(),
-      },
+      // 사망 걸음도 그 해의 가족 변화·플래그는 해 끝의 보기(age + 1)로 맞춘다 (R-559, INV-7)
+      state: syncPostEventFlags(
+        {
+          ...s,
+          phase: 'ending',
+          stats,
+          assets: settled,
+          pending: null,
+          paused: false, // 일시정지는 인생 단계에서만 있을 수 있다(저장 검증, DB3) — 일시정지 중 고른 선택이 마지막이었어도 엔딩에는 남지 않는다
+          death: { age, cause },
+          history: appendHistory(history, { age, kind: 'death', text: deathEntryText(cause) }),
+          rngState: rng.getState(),
+        },
+        age + 1,
+      ),
     };
   }
   const newAge = age + 1;
@@ -303,7 +309,8 @@ function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: Gam
       }
     }
   }
-  return { state: next, died: false };
+  // 해 끝에 사건 효과가 모두 반영된 뒤의 파생 플래그(`lives_with_child`, R-586)를 맞춘다 — 사건이 켜는 `has_child`·`child_left`를 읽으므로 해 시작의 `familyChangesFor`로는 한 해 늦다
+  return { state: syncPostEventFlags(next), died: false };
 }
 
 /**
@@ -322,7 +329,14 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
 
   const ctx = condContextOf(state);
   const view = { ...ctx, age, year: calendarYear(state.character.birthYear, age), seen: state.seen };
-  const eligible = eventsForStage(pool, stageOfAge(age)).filter((ev) => isEventEligible(ev, view));
+  // 가족 변화 (SPEC-009 FA7, K2): 이 해에 구성이 정한 변화(조부모·부모 별세, 이혼, 동생 출생, 형제 독립·이른 별세)와 구성이 일으키는 사건. 진행 RNG를 쓰지 않는다. 적용은 마일스톤 줄 바로 뒤, 일반 사건 앞이다(아래).
+  // 후보를 가리는 R-561이 이 결과를 먼저 알아야 해서 후보 추첨 앞에서 부른다(순수 계산이라 순서가 결과를 바꾸지 않는다)
+  const fam = familyChangesFor(state, age, pool);
+  // R-561 (FM7a): 부모 한 분 별세 줄이 난 해에는 `parents_gone`을 켜는 사건(원본·변형 모두)을 그 해 후보에서 뺀다 — 같은 해에 「어머니가 …」 다음 「부모님이 …」이 이어지는 두 번째 별세를 막는다.
+  // 사건 id를 박지 않고 풀의 세터 색인으로 찾는다. 후보 목록만 줄 뿐 추첨 칸 수는 그대로다(아래 `draw` — 목록이 비면 한 칸을 대신 쓴다, R-560 「한 칸 규칙」)
+  const blocked = goneYearRuleNow() === 'exclude' && fam.lines.some((l) => l.eventId === FAMILY_LINE_ID.parentGone) ? new Set(flagSettersOf(pool, 'parents_gone')) : null;
+  const eligibleAll = eventsForStage(pool, stageOfAge(age)).filter((ev) => isEventEligible(ev, view));
+  const eligible = blocked === null ? eligibleAll : eligibleAll.filter((ev) => !blocked.has(ev.id));
 
   // 마일스톤 슬롯 (SPEC-003 IN3, M7a r3): 일반 추첨과 별개로, 창 안의 마일스톤을 한 해에 **여러 개(최대 MILESTONES_PER_YEAR_MAX)** 일으킨다. 창이 일찍 끝나는(급한) 것부터, 끝이 같으면 id 오름차순으로 따져
   // 확률 1 ÷ (창 끝 나이 − 나이 + 1)로 일어나고, 창의 마지막 해(분모 1)는 난수 없이 100%다. 한 해에 몰려도 칸(MILESTONES_PER_YEAR_MAX) 안이면 모두 일어나고, 칸을 넘길 몰림은
@@ -343,8 +357,6 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   const canChoice = (state.lastChoiceAge === null || age - state.lastChoiceAge >= MIN_YEARS_BETWEEN_CHOICES) && choicesSoFar < pacing.hard;
   const choiceChance = freq.choice * (choicesSoFar >= pacing.soft ? pacing.softFactor : 1);
 
-  // 가족 변화 (SPEC-009 FA7, K2): 이 해에 구성이 정한 변화(조부모·부모 별세, 이혼, 동생 출생, 형제 독립)와 구성이 일으키는 사건. 진행 RNG를 쓰지 않는다. 적용은 마일스톤 줄 바로 뒤, 일반 사건 앞이다(아래)
-  const fam = familyChangesFor(state, age, pool);
   const forced = fam.forcedEvent !== undefined ? (pool.byId.get(fam.forcedEvent) ?? null) : null;
 
   let picked: EventDef | null = null;
@@ -353,8 +365,17 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     rng.next();
     picked = forced;
   } else {
-    if (rollChoice < choiceChance && canChoice) picked = pickWeighted(rng, eligible.filter(isChoiceEvent), ctx, age, true);
-    if (picked === null && rollNarrative < freq.narrative) picked = pickWeighted(rng, eligible.filter((ev) => !isChoiceEvent(ev) && !isMilestoneEvent(ev)), ctx);
+    // 후보가 R-561로 줄어 비게 됐다면 원래 후보가 있던 만큼 난수를 한 칸 쓴다(칸 수 불변)
+    const draw = (list: EventDef[], full: EventDef[], a?: number, choices?: boolean): EventDef | null => {
+      if (list.length === 0 && full.length > 0) {
+        rng.next();
+        return null;
+      }
+      return pickWeighted(rng, list, ctx, a, choices);
+    };
+    const isNarrative = (ev: EventDef): boolean => !isChoiceEvent(ev) && !isMilestoneEvent(ev);
+    if (rollChoice < choiceChance && canChoice) picked = draw(eligible.filter(isChoiceEvent), eligibleAll.filter(isChoiceEvent), age, true);
+    if (picked === null && rollNarrative < freq.narrative) picked = draw(eligible.filter(isNarrative), eligibleAll.filter(isNarrative));
   }
 
   // 마일스톤 효과·연표 한 줄은 그 해의 일반 사건보다 먼저 적용한다(선택지가 뜨는 해에도 마일스톤 줄은 이미 남는다)

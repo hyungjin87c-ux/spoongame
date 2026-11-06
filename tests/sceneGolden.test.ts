@@ -12,6 +12,9 @@ import { ALL_ERA_WINDOWS, ERA_GOLDEN_BANDS, ERA_GOLDEN_BIRTHS, ERA_GOLDEN_SEEDS,
  * **FM6 갱신(2026-11-02)**: 장면 189칸 중 76칸의 열쇠 해시를 다시 만들었다(시대의 창 72행은 그대로). 사유 하나 — 「가진 것」(FK2)과 묶인 소품(`prop-antenna`·`prop-ac-unit`·`prop-car`·`prop-ev-charger`)이 이제 그려진다:
  * `sceneInputOf`가 `possessionTiesOf`(집의 순위와 항목 보급률)를 기본으로 읽는다. 일찍 텔레비전·에어컨·승용차를 들인 집에만 나오므로 0~85세 모든 나이에서 칸이 바뀐다 — 달라진 칸은 앞 소품 73 · 뒤+앞 소품 3이고
  * 집 종류·배경·식구 수·반려동물은 한 칸도 달라지지 않았다(골든 판은 플래그가 없어 배우자·자녀 경로는 `tests/familyCard.test.ts`·`sceneFamily.test.ts`가 본다).
+ * **FM7a 갱신(2026-11-06)**: 장면 189칸 중 3칸(`boomer/1000041/9·15·22`)의 식구 수가 하나씩 줄었다(8→7 · 8→7 · 6→5) — 사유 하나: 어린 형제의 이른 별세(Q3, `familyBirth.ts#siblingLossPlan`, 형진 님 승인·배율 1.0)가
+ * 이 판의 아래 동생 `y1`(주인공 2세에 태어남)을 4살에 떠나게 해(주인공 6세의 해, 보기에서는 7세부터 떠난 사람) 그 뒤 나이의 「함께 사는 사람」에서 빠졌다. 같은 변경의 R-618(별세·이혼 하한 1세)·R-586(자녀 독립 나이)은
+ * 이 골든 21판의 칸을 바꾸지 않았다(골든 판은 플래그가 없어 자녀 경로는 `tests/familyCard.test.ts`·`sceneFamily.test.ts`가 본다). 시대의 창 72행은 그대로다. 나머지 186칸은 열쇠 해시까지 같다.
  */
 describe('고정 시드 골든 — 집 그림 sceneOf (7세대 × 3시드 × 9나이)', () => {
   const now = sceneGolden();

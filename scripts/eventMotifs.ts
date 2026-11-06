@@ -102,6 +102,9 @@ export const EVENT_MOTIFS: Record<string, string> = {
   // 중년
   'middle-business': '지인이 함께 가게를 열자고 제안한 일',
   'middle-parents-care': '부모의 병환을 형제들과 나누어 돌보던 일',
+  // FM7a 「남은 한 분」 변형(원본 문장 그대로의 사건 — 한 분이 먼저 떠난 판에서 남은 분 이야기)
+  'middle-parents-care-mother-gone': '어머니를 먼저 보내고 홀로 남은 아버지의 병환을 돌보던 일',
+  'middle-parents-care-father-gone': '아버지를 먼저 보내고 홀로 남은 어머니의 병환을 돌보던 일',
   'middle-health-check': '건강검진에서 처음 수치가 나빠진 일',
   'middle-health-check-later': '몇 해 뒤 다시 받은 검진 결과가 나빠진 일',
   'middle-health-crisis': '검진 결과를 미루다 갑자기 쓰러진 일',
@@ -119,6 +122,8 @@ export const EVENT_MOTIFS: Record<string, string> = {
   'middle-marriage-crisis': '대화가 줄어 서먹해진 부부의 식탁',
   'middle-hobby': '하루가 한숨 돌릴 만해진 뒤 늦게 취미를 시작할지 고민한 일',
   'middle-parents-farewell': '부모의 임종 소식을 받고 달려가던 일',
+  'middle-parents-farewell-mother-gone': '홀로 남은 아버지의 임종 소식을 받고 달려가던 일',
+  'middle-parents-farewell-father-gone': '홀로 남은 어머니의 임종 소식을 받고 달려가던 일',
   'middle-debt-guarantee': '가까운 지인이 보증을 서 달라고 한 일',
   'middle-retirement-prep': '나이 들어 가며 앞으로의 시간을 어떻게 준비할지 고민한 일',
   'middle-both-working': '맞벌이로 아이를 키워 낸 바쁜 시절',

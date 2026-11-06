@@ -819,9 +819,10 @@ describe('상태 어휘 (R-067): 가족·부모님·일터·혼자 같은 말은
   const tail = ' 창밖으로 바람이 지나갔다.';
   const textEv = (head: string, over: Record<string, unknown> = {}) => raw({ text: head + tail, ...over });
 
-  it('규칙 표: 어른 시점 다섯 가지(자식·배우자·부모님·일터·혼자) + 어린 시절 가족 낱말 여덟 가지(조부모·동생·형누나·형제·아버지·어머니·부모님·반려동물, SPEC-009 6-3절)이고, 예외는 아이를 가질지 정하는 두 이벤트·임종 이벤트·동생이 태어나는 사건·떠돌이 강아지 이야기뿐이다', () => {
+  it('규칙 표: 어른 시점 다섯 가지(자식·배우자·부모님·일터·혼자) + 어린 시절 가족 낱말 여덟 가지(조부모·동생·형누나·형제·아버지·어머니·부모님·반려동물, SPEC-009 6-3절)이고, 예외는 아이를 가질지 정하는 두 이벤트·동생이 태어나는 사건·떠돌이 강아지 이야기뿐이다', () => {
     expect(STATE_WORD_RULES.map((r) => r.name.split('(')[0])).toEqual(['자식·손주', '배우자', '부모님', '조부모', '동생', '형·누나·오빠·언니', '형제·남매', '아버지·아빠', '어머니·엄마', '부모님', '반려동물', '일터', '혼자']);
-    expect(STATE_WORD_RULES.flatMap((r) => r.exceptions).sort()).toEqual(['infant-new-sibling', 'middle-parents-farewell', 'school-puppy', 'youth-child', 'youth-child-again']);
+    // FM7a: 임종 이벤트(middle-parents-farewell)는 더 이상 예외가 아니다 — 원본에 notFlags [mother_gone, father_gone, parents_gone]을 달아 어른 시점 「부모님」 규칙을 그대로 지킨다
+    expect(STATE_WORD_RULES.flatMap((r) => r.exceptions).sort()).toEqual(['infant-new-sibling', 'school-puppy', 'youth-child', 'youth-child-again']);
   });
 
   describe('자식·손주 -> has_child', () => {
@@ -868,18 +869,30 @@ describe('상태 어휘 (R-067): 가족·부모님·일터·혼자 같은 말은
     }
   });
 
-  describe('부모님 -> 임종 뒤에는 나오지 않는다 (notFlags parents_gone)', () => {
-    it('중년·노년 이벤트의 "부모님"은 parents_gone이 notFlags에 없으면 걸린다', () => {
+  describe('부모님 -> 한 분이라도 떠난 뒤에는 나오지 않는다 (notFlags parents_gone·mother_gone·father_gone, FM7a)', () => {
+    const THREE = ['parents_gone', 'mother_gone', 'father_gone'];
+    it('중년·노년 이벤트의 "부모님"은 세 플래그가 모두 notFlags에 없으면 걸린다 — parents_gone만으로는 부족하다(한 분이 떠난 뒤에도 나올 수 있다)', () => {
       expect(stateWordProblems(textEv('부모님의 몸이 불편해지셨다.', { stages: ['middle'] })).join('\n')).toContain('parents_gone');
-      expect(stateWordProblems(textEv('부모님의 몸이 불편해지셨다.', { stages: ['middle'], conditions: { notFlags: ['parents_gone'] } }))).toEqual([]);
+      expect(stateWordProblems(textEv('부모님의 몸이 불편해지셨다.', { stages: ['middle'], conditions: { notFlags: ['parents_gone'] } })).join('\n')).toContain('mother_gone');
+      expect(stateWordProblems(textEv('부모님의 몸이 불편해지셨다.', { stages: ['middle'], conditions: { notFlags: THREE } }))).toEqual([]);
       expect(stateWordProblems(textEv('부모님이 떠올랐다.', { stages: ['senior'] })).join('\n')).toContain('parents_gone');
     });
-    it('청년기까지는 부모님이 살아 계시므로 적용하지 않는다 (부모님 집에 머문다)', () => {
-      expect(stateWordProblems(textEv('부모님 집에 머물기로 했다.', { stages: ['youth'] }))).toEqual([]);
+    it('청년 이벤트도 어른 시점이라 같은 규칙을 받는다(성인기 포함 — 「부모님 집」은 「본가」로 바꿨다, T09)', () => {
+      expect(stateWordProblems(textEv('부모님 집에 머물기로 했다.', { stages: ['youth'] })).join('\n')).toContain('부모님');
+      expect(stateWordProblems(textEv('본가에 머물기로 했다.', { stages: ['youth'] }))).toEqual([]);
+      expect(stateWordProblems(textEv('부모님 집에 머물기로 했다.', { stages: ['youth'], conditions: { notFlags: THREE } }))).toEqual([]);
     });
-    it('임종 이벤트(middle-parents-farewell)는 예외이고, 학부모·또래 부모처럼 내 부모가 아닌 말은 걸리지 않는다', () => {
-      expect(stateWordProblems(textEv('부모님이 마지막 숨을 몰아쉬는 날이 왔다.', { id: 'middle-parents-farewell', stages: ['middle'] }))).toEqual([]);
+    it('예외가 없다: 임종 이벤트도 notFlags가 있어야 하고, 「조부모님」·학부모·또래 부모처럼 내 부모가 아닌 말은 걸리지 않는다', () => {
+      expect(stateWordProblems(textEv('부모님이 마지막 숨을 몰아쉬는 날이 왔다.', { id: 'middle-parents-farewell', stages: ['middle'] })).join('\n')).toContain('parents_gone');
+      expect(stateWordProblems(textEv('부모님이 마지막 숨을 몰아쉬는 날이 왔다.', { id: 'middle-parents-farewell', stages: ['middle'], conditions: { notFlags: THREE } }))).toEqual([]);
       expect(stateWordProblems(textEv('학부모 모임이 어색했다.', { stages: ['middle'] }))).toEqual([]);
+      expect(stateWordProblems(textEv('조부모님 이야기가 오갔다.', { stages: ['middle'] }))).toEqual([]);
+    });
+    it('실제 풀: 어른 시점 사건 중 「부모님」이 든 것은 원본 둘뿐이고(임종·병환), 둘 다 세 플래그가 notFlags에 있으며 한 분이 떠난 판에는 변형이 맡는다', () => {
+      const adult = EVENT_POOL.events.filter((e) => e.stages.some((s) => s !== 'infant' && s !== 'school') && /(?<!조)부모님/.test(JSON.stringify(e)));
+      expect(adult.map((e) => e.id).sort()).toEqual(['middle-parents-care', 'middle-parents-farewell']);
+      for (const e of adult) expect([...(e.conditions?.notFlags ?? [])].sort(), e.id).toEqual([...THREE].sort());
+      for (const e of EVENT_POOL.events.filter((x) => /-(?:mother|father)-gone$/.test(x.id))) expect(JSON.stringify(e), e.id).not.toMatch(/(?<!조)부모님/);
     });
   });
 

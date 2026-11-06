@@ -1,14 +1,16 @@
 import type { EventPool } from './events';
 import { applyFlags, applyResolved } from './apply';
 import { YOUNGER_SIBLING_EVENT } from './family';
-import { deriveFamilyFlags } from './familyFlags';
+import { POST_EVENT_FLAGS, deriveFamilyFlags } from './familyFlags';
 import {
+  EARLY_LOSS_MAX_AGE,
   FAMILY_LINE_PREFIX,
   LOG_GRAND_GONE,
   LOG_PARENTS_APART,
   LOG_PARENT_GONE,
   LOG_SIB_BORN,
   LOG_SIB_LEFT,
+  LOG_SIB_LOST,
   type FamilyData,
   type PersonId,
 } from './familyModel';
@@ -109,12 +111,25 @@ export function familyChangesFor(game: GameState, age: number, pool?: EventPool)
     });
   }
 
-  // 4 조부모 별세 (주인공이 태어나기 전에 떠난 분은 줄이 없다)
+  // 3 어린 형제의 이른 별세 (Q3, FM7a — 안 B: 해시 계획 + 줄 문구 함수): 이 해(`at`)에 계획된 형제가 해 끝의 보기에서 떠난 사람이다. 문장의 호칭은 주인공 성별과 그 형제의 종류, 숫자는 그 형제의 별세 나이다.
+  // 스탯·자산 효과는 없다(기록 전용, FA0-8). 계획이 없는 판(1970년 이후 출생·옛 저장 스냅샷·끈 판)은 `sc.siblingLoss`가 null이다.
+  const loss = sc.siblingLoss;
+  if (loss !== null && loss.at === age) {
+    const a = byId0.get(loss.id);
+    const b = byId1.get(loss.id);
+    const target = (loss.id.startsWith('o') ? 10 : 20) + Number(loss.id.slice(1));
+    if (a !== undefined && b !== undefined && a.state !== 'gone' && b.state === 'gone' && b.sibKind !== undefined && !logged(LOG_SIB_LOST, target)) {
+      lines.push({ code: LOG_SIB_LOST, line: entry(age, FAMILY_LINE_ID.sibLost, FAMILY_LINE_TEXT.sibLost(player, b.sibKind, b.goneAtOwnAge ?? loss.a)) });
+      log.push([LOG_SIB_LOST, age, target, loss.a]);
+    }
+  }
+
+  // 4 조부모 별세 (주인공이 태어나기 전에 떠난 분은 줄이 없다). 문장의 별세 나이는 카드의 「N세에 세상을 떠남」과 같은 값(보기의 `goneAtOwnAge`)이고, 함께 살던 분(떠나기 직전 `with`)이면 그 사실을 덧붙인다 (T03·T04)
   (['pgf', 'pgm', 'mgf', 'mgm'] as const).forEach((id, i) => {
     const a = byId0.get(id);
     const b = byId1.get(id);
     if (a === undefined || b === undefined || a.state === 'gone' || b.state !== 'gone' || logged(LOG_GRAND_GONE, 3 + i)) return;
-    lines.push({ code: LOG_GRAND_GONE, line: entry(age, FAMILY_LINE_ID.grandGone, FAMILY_LINE_TEXT.grandGone(i)) });
+    lines.push({ code: LOG_GRAND_GONE, line: entry(age, FAMILY_LINE_ID.grandGone, FAMILY_LINE_TEXT.grandGone(i, b.goneAtOwnAge ?? f.g[i].d, a.state === 'with')) });
     log.push([LOG_GRAND_GONE, age, 3 + i, 0]);
   });
 
@@ -123,7 +138,8 @@ export function familyChangesFor(game: GameState, age: number, pool?: EventPool)
   if (sc.firstGone !== null && sc.firstGone.at === age && !game.flags.includes('parents_gone') && !f.l.some((e) => e[0] === LOG_PARENT_GONE)) {
     const who = sc.firstGone.who === 0 ? 'mother' : 'father';
     if (byId0.get(who)?.state !== 'gone') {
-      lines.push({ code: LOG_PARENT_GONE, line: entry(age, FAMILY_LINE_ID.parentGone, FAMILY_LINE_TEXT.parentGone(who)) });
+      // 별세 나이 N은 카드의 「N세에 세상을 떠남」과 같은 값(보기의 `goneAtOwnAge` = 저장된 `d`)이고, 주인공 19세 이하(`EARLY_LOSS_MAX_AGE`)일 때만 아이가 본 것 한 줄이 붙는다 (T01·T02, R-618)
+      lines.push({ code: LOG_PARENT_GONE, line: entry(age, FAMILY_LINE_ID.parentGone, FAMILY_LINE_TEXT.parentGone(who, byId1.get(who)?.goneAtOwnAge ?? f.p[sc.firstGone.who].d, age <= EARLY_LOSS_MAX_AGE)) });
       log.push([LOG_PARENT_GONE, age, sc.firstGone.who === 0 ? 1 : 2, 0]);
       earlyLoss = { who };
     }
@@ -137,7 +153,8 @@ export function familyChangesFor(game: GameState, age: number, pool?: EventPool)
   }
 
   // 플래그: 해 끝의 보기(+ 이 해에 더해지는 로그)에서 파생한 집합과 지금 플래그의 차이만 낸다 (사건이 소유한 플래그는 건드리지 않는다)
-  const target = new Set([...deriveFamilyFlags(v1, [...f.l, ...log]), ...addFlags]);
+  // `lives_with_child`는 해 끝 규칙이 맞춘다(`syncPostEventFlags` — 사건이 켜는 `has_child`·`child_left`를 읽으므로 해 시작 상태로는 한 해 늦다)
+  const target = new Set([...[...deriveFamilyFlags(v1, [...f.l, ...log])].filter((x) => !POST_EVENT_FLAGS.includes(x)), ...addFlags]);
   const have = new Set(game.flags);
   const setFlags = [...target].filter((x) => !have.has(x)).sort();
   const clearFlags = MANAGED_FLAGS.filter((x) => have.has(x) && !target.has(x));
@@ -179,6 +196,42 @@ export function applyFamilyChanges(game: GameState, c: FamilyChanges): GameState
   const family = s.family === undefined || c.log.length === 0 ? s.family : { ...s.family, l: [...s.family.l, ...c.log] };
   return { ...s, history, ...(family !== undefined ? { family } : {}) };
 }
+
+/**
+ * 한 해의 사건 효과가 끝난 뒤 파생 플래그(`POST_EVENT_FLAGS` — `lives_with_child`, R-586)를 맞춘다. `at`은 보는 나이(보통 해가 끝나 오른 나이 `game.age`, 사망 걸음은 `age + 1`).
+ * `finishYear`가 한 해의 모든 경로(서술·선택·마일스톤 뒤)에서 부르므로 **해마다 `flags ∩ SYSTEM = derive(view, log)`**(INV-7)가 한 해 늦지 않는다. 난수를 쓰지 않는 순수 계산이고, 구형 저장(플래그 없음)은 첫 해 끝에 채워진다.
+ * 가족이 없는 상태(출생 전·옛 시험 상태)와 시험 전용 R1 프로필은 건드리지 않는다.
+ */
+export function syncPostEventFlags(game: GameState, at: number = game.age): GameState {
+  if (game.family === undefined || game.character === null || game.birthReport === null || game.generation === R1_PRESENT) return game;
+  const want = deriveFamilyFlags(familyViewOf(game, at), game.family.l);
+  const set = POST_EVENT_FLAGS.filter((x) => want.has(x) && !game.flags.includes(x));
+  const clear = POST_EVENT_FLAGS.filter((x) => !want.has(x) && game.flags.includes(x));
+  return set.length === 0 && clear.length === 0 ? game : { ...game, flags: applyFlags(game.flags, set, clear) };
+}
+
+/**
+ * R-561 규칙 (FM7a): 부모 한 분 별세 줄이 난 해에 `parents_gone`을 켜는 사건(원본·변형)을 그 해 후보에서 뺄 것인가.
+ *  - `'exclude'` 뺀다 — **지금 판이 쓰는 규칙**이다. 같은 해에 「어머니가 …」 다음 「부모님이 …」이 이어지는 두 번째 별세를 막는다.
+ *  - `'legacy'` 빼지 않는다 — 켜기 전의 규칙. **측정·시험 전용**: 해시 불변 L1 시험(`tests/familyHash.test.ts`)과 재측정(`scripts/familyRemeasure.ts`)이 `withGoneYearRule('legacy', …)`로 옛 세계를 만든다.
+ */
+export type GoneYearRule = 'legacy' | 'exclude';
+export const GONE_YEAR_RULE: GoneYearRule = 'exclude';
+let activeGoneYearRule: GoneYearRule = GONE_YEAR_RULE;
+
+/** 측정·시험 전용: `fn` 동안만 R-561 규칙을 바꾼다(끝나면 되돌린다) */
+export function withGoneYearRule<T>(rule: GoneYearRule, fn: () => T): T {
+  const before = activeGoneYearRule;
+  activeGoneYearRule = rule;
+  try {
+    return fn();
+  } finally {
+    activeGoneYearRule = before;
+  }
+}
+
+/** 지금 쓰는 R-561 규칙 (`life.ts#stepYear`가 읽는다) */
+export const goneYearRuleNow = (): GoneYearRule => activeGoneYearRule;
 
 /** `fam-` 줄인가 (`eventId` 접두어) */
 export const isFamilyLine = (h: Pick<HistoryEntry, 'eventId'>): boolean => h.eventId?.startsWith(FAMILY_LINE_PREFIX) === true;

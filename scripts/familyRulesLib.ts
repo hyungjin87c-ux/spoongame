@@ -40,3 +40,18 @@ export const EARLY_LOSS_HALF: Partial<EarlyLossRule> = {
 export function withLegacyInheritance<T>(fn: () => T): T {
   return withSiblingCountRule('legacy', () => withParentsGoneRule('legacy', fn));
 }
+
+/**
+ * 어린 형제의 이른 별세 계획(Q3, FM7a)의 스위치 `design.siblingLoss.enabled`를 `fn` 동안만 바꾼다 — 측정·시험 전용(앱은 쓰지 않는다. 켜진 채가 배포 값이고,
+ * T06이 승인되지 않으면 `data/familyTables.ts`에서 한 곳만 false로 하고 배포한다). 계획이 있는 세계와 없는 세계의 차이(상속의 형제 수 등)를 나란히 잴 때 쓴다.
+ */
+export function withSiblingLoss<T>(enabled: boolean, fn: () => T): T {
+  const rule = familyTables().design.siblingLoss.value;
+  const before = rule.enabled;
+  rule.enabled = enabled;
+  try {
+    return fn();
+  } finally {
+    rule.enabled = before;
+  }
+}

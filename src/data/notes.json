@@ -75,6 +75,10 @@
       "conditions": { "parentAge": { "min": 65 }, "notFlags": ["parents_gone"] },
       "timing": "asap",
       "prompt": "부모님이 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?",
+      "variants": [
+        { "when": { "flags": ["mother_gone"] }, "prompt": "아버지가 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?" },
+        { "when": { "flags": ["father_gone"] }, "prompt": "어머니가 예전보다 나이 들었다고 느낀 순간이 {이름}에게 있습니까?" }
+      ],
       "noCitation": "D"
     },
     {

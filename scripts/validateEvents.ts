@@ -16,6 +16,9 @@ try {
   const { EVENT_FILES, EVENT_POOL } = await import('../src/data/events');
   const { lintEventData, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems } = await import('../src/core');
   const { NOTE_CARDS, NOTE_MANUAL } = await import('../src/data/noteCards');
+  // FM7a 승인 게이트(SPEC-009 「FM7 나눔」 2절, RG11 방식): 형진 님이 승인하지 않은 무거운 문장(`approved !== true`)이 하나라도 있으면 빌드가 막힌다. T06(어린 형제의 이른 별세)만 계획을 끄면 통과한다
+  const { FM7A_APPROVALS, familyApprovalProblems } = await import('../src/data/familyApproval');
+  const { FAMILY_DESIGN } = await import('../src/data/familyTables');
   // 스키마 검증은 위 import에서 이미 끝났다(통과하지 못하면 throw). 이어서 문구 규칙(어조·길이·시대 소재, QA 사용감 8)을 점검한다.
   // 카드와 인용의 연결(M7b): citation이 가리키는 id가 citations.json에 있고 쓸 수 있으며 금지된 이벤트에 붙지 않았는가 (형태는 위 스키마 검증이 이미 봤다)
   // 기록 카드(M7c, src/data/notes.json): 스키마는 위 import에서 이미 검증됐다(noteCards.ts). 문구 점검(질문 안전 기준·조사·길이·시대 낱말)과 풀 교차 점검(플래그·본 이벤트 id), 인용 연결을 함께 본다.
@@ -26,6 +29,7 @@ try {
     ...noteCardPoolProblems(NOTE_CARDS, EVENT_POOL.events),
     // 어린 시절 부모님 결정(SPEC-005 PD2): 19세 미만에서 일어나는 선택지 이벤트가 분류표에 모두 있고, 표의 id가 모두 실제로 있다 — 새 선택지 이벤트를 분류 없이 추가하면 빌드가 실패한다
     ...parentTableProblems(EVENT_POOL.events),
+    ...familyApprovalProblems(FM7A_APPROVALS, FAMILY_DESIGN.siblingLoss.value.enabled),
   ];
   if (lint.length > 0) {
     console.error('이벤트 문구 점검 실패: 빌드를 중단합니다.');

@@ -56,12 +56,88 @@
       "once": true,
       "heavy": { "kind": "loss" },
       "citation": { "present": "c-081", "future": "c-081" },
-      "conditions": { "notFlags": ["parents_gone"], "parentAge": { "min": 60, "max": 100 } },
+      "conditions": { "notFlags": ["parents_gone", "mother_gone", "father_gone"], "parentAge": { "min": 60, "max": 100 } },
       "choices": [
         {
           "id": "home",
           "label": "직접 모시고 돌본다",
           "result": "부모님을 곁에 모시고 직접 돌보았습니다. 몸은 고되었지만 가까이 있다는 사실이 서로에게 위안이었습니다.",
+          "effects": { "stats": { "health": -4, "relationships": 4, "happiness": -1 }, "assets": { "net": -1200 }, "setFlags": ["cared_parents"] }
+        },
+        {
+          "id": "facility",
+          "label": "전문 시설을 알아본다",
+          "result": "여러 곳을 둘러본 끝에 한 곳을 정했습니다. 면회를 다니며 비용을 감당해 나갔습니다.",
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": -3600 } },
+          "bonuses": [
+            { "when": { "assets": { "netMin": 100000 } }, "effects": { "assets": { "net": 1800 } } },
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 1800 } } }
+          ],
+          "requires": { "assets": { "netMin": 0 } }
+        },
+        {
+          "id": "share",
+          "label": "가족이나 친척과 나누어 맡는다",
+          "result": "순번을 정해 돌아가며 찾아뵈었습니다. 크고 작은 서운함이 오갔지만 결국 서로를 챙겼습니다.",
+          "effects": { "stats": { "relationships": 1, "health": -1 }, "assets": { "net": -1200 } }
+        }
+      ]
+    },
+    {
+      "id": "middle-parents-care-mother-gone",
+      "title": "아버지의 병환",
+      "text": "홀로 남으신 아버지의 몸이 눈에 띄게 약해지셨습니다. 누가, 어디서, 어떻게 돌볼지 가족이나 친척과 이야기를 나눌 때가 왔습니다.",
+      "stages": ["middle"],
+      "track": "common",
+      "ageRange": { "min": 45, "max": 62 },
+      "weight": 15,
+      "once": true,
+      "heavy": { "kind": "loss" },
+      "citation": { "present": "c-081", "future": "c-081" },
+      "conditions": { "flags": ["mother_gone"], "notFlags": ["parents_gone"], "parentAge": { "min": 60, "max": 100 } },
+      "choices": [
+        {
+          "id": "home",
+          "label": "직접 모시고 돌본다",
+          "result": "아버지를 곁에 모시고 직접 돌보았습니다. 몸은 고되었지만 가까이 있다는 사실이 서로에게 위안이었습니다.",
+          "effects": { "stats": { "health": -4, "relationships": 4, "happiness": -1 }, "assets": { "net": -1200 }, "setFlags": ["cared_parents"] }
+        },
+        {
+          "id": "facility",
+          "label": "전문 시설을 알아본다",
+          "result": "여러 곳을 둘러본 끝에 한 곳을 정했습니다. 면회를 다니며 비용을 감당해 나갔습니다.",
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": -3600 } },
+          "bonuses": [
+            { "when": { "assets": { "netMin": 100000 } }, "effects": { "assets": { "net": 1800 } } },
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 1800 } } }
+          ],
+          "requires": { "assets": { "netMin": 0 } }
+        },
+        {
+          "id": "share",
+          "label": "가족이나 친척과 나누어 맡는다",
+          "result": "순번을 정해 돌아가며 찾아뵈었습니다. 크고 작은 서운함이 오갔지만 결국 서로를 챙겼습니다.",
+          "effects": { "stats": { "relationships": 1, "health": -1 }, "assets": { "net": -1200 } }
+        }
+      ]
+    },
+    {
+      "id": "middle-parents-care-father-gone",
+      "title": "어머니의 병환",
+      "text": "홀로 남으신 어머니의 몸이 눈에 띄게 약해지셨습니다. 누가, 어디서, 어떻게 돌볼지 가족이나 친척과 이야기를 나눌 때가 왔습니다.",
+      "stages": ["middle"],
+      "track": "common",
+      "ageRange": { "min": 45, "max": 62 },
+      "weight": 15,
+      "once": true,
+      "heavy": { "kind": "loss" },
+      "citation": { "present": "c-081", "future": "c-081" },
+      "conditions": { "flags": ["father_gone"], "notFlags": ["parents_gone"], "parentAge": { "min": 60, "max": 100 } },
+      "choices": [
+        {
+          "id": "home",
+          "label": "직접 모시고 돌본다",
+          "result": "어머니를 곁에 모시고 직접 돌보았습니다. 몸은 고되었지만 가까이 있다는 사실이 서로에게 위안이었습니다.",
           "effects": { "stats": { "health": -4, "relationships": 4, "happiness": -1 }, "assets": { "net": -1200 }, "setFlags": ["cared_parents"] }
         },
         {
@@ -270,7 +346,7 @@
     {
       "id": "middle-child-leaves",
       "title": "비어 가는 방",
-      "text": "아이가 독립해 집을 떠났습니다. 불 꺼진 방을 지나칠 때마다 걸음이 느려졌습니다.",
+      "text": "집 안의 아이 방이 비어 있었습니다. 불 꺼진 방을 지나칠 때마다 걸음이 느려졌습니다.",
       "stages": ["middle"],
       "track": "common",
       "ageRange": { "min": 58, "max": 64 },
@@ -545,7 +621,77 @@
       "once": true,
       "heavy": { "kind": "loss" },
       "noCitation": "X2",
-      "conditions": { "parentAge": { "min": 65, "max": 100 } },
+      "conditions": { "notFlags": ["parents_gone", "mother_gone", "father_gone"], "parentAge": { "min": 65, "max": 100 } },
+      "choices": [
+        {
+          "id": "stay",
+          "label": "모든 일을 내려놓고 곁을 지킨다",
+          "result": "하던 일을 두고 달려가 지친 몸으로 마지막까지 곁을 지켰습니다. 손을 잡고 있던 온기가 오래 남았습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": -3, "health": -1 }, "assets": { "net": -400 }, "setFlags": ["parents_gone"] },
+          "bonuses": [{ "when": { "flags": ["cared_parents"] }, "effects": { "stats": { "happiness": 3 } } }]
+        },
+        {
+          "id": "late",
+          "label": "정리할 것을 마치고 뒤늦게 도착한다",
+          "result": "이것저것 정리하느라 늦게 도착했습니다. 끝내 하지 못한 말이 오랫동안 가슴에 남았습니다.",
+          "effects": { "stats": { "happiness": -5, "relationships": -1 }, "setFlags": ["parents_gone"] }
+        },
+        {
+          "id": "share",
+          "label": "일가친척과 의논해 치른다",
+          "result": "가족이나 친척과 역할을 나누어 장례를 치렀습니다. 슬픔 한가운데서도 오랜만에 한자리에 모였습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": -2 }, "assets": { "net": -1200 }, "setFlags": ["parents_gone"] },
+          "bonuses": [{ "when": { "flags": ["sibling_close"] }, "effects": { "stats": { "relationships": 2 } } }]
+        }
+      ]
+    },
+    {
+      "id": "middle-parents-farewell-mother-gone",
+      "title": "마지막 인사",
+      "text": "홀로 남으신 아버지가 마지막 숨을 몰아쉬시는 날이 왔습니다. 연락을 받은 것은 평범한 낮이었습니다.",
+      "stages": ["middle"],
+      "track": "common",
+      "ageRange": { "min": 52, "max": 64 },
+      "weight": 18,
+      "once": true,
+      "heavy": { "kind": "loss" },
+      "noCitation": "X2",
+      "conditions": { "flags": ["mother_gone"], "notFlags": ["parents_gone"], "parentAge": { "min": 65, "max": 100 } },
+      "choices": [
+        {
+          "id": "stay",
+          "label": "모든 일을 내려놓고 곁을 지킨다",
+          "result": "하던 일을 두고 달려가 지친 몸으로 마지막까지 곁을 지켰습니다. 손을 잡고 있던 온기가 오래 남았습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": -3, "health": -1 }, "assets": { "net": -400 }, "setFlags": ["parents_gone"] },
+          "bonuses": [{ "when": { "flags": ["cared_parents"] }, "effects": { "stats": { "happiness": 3 } } }]
+        },
+        {
+          "id": "late",
+          "label": "정리할 것을 마치고 뒤늦게 도착한다",
+          "result": "이것저것 정리하느라 늦게 도착했습니다. 끝내 하지 못한 말이 오랫동안 가슴에 남았습니다.",
+          "effects": { "stats": { "happiness": -5, "relationships": -1 }, "setFlags": ["parents_gone"] }
+        },
+        {
+          "id": "share",
+          "label": "일가친척과 의논해 치른다",
+          "result": "가족이나 친척과 역할을 나누어 장례를 치렀습니다. 슬픔 한가운데서도 오랜만에 한자리에 모였습니다.",
+          "effects": { "stats": { "relationships": 3, "happiness": -2 }, "assets": { "net": -1200 }, "setFlags": ["parents_gone"] },
+          "bonuses": [{ "when": { "flags": ["sibling_close"] }, "effects": { "stats": { "relationships": 2 } } }]
+        }
+      ]
+    },
+    {
+      "id": "middle-parents-farewell-father-gone",
+      "title": "마지막 인사",
+      "text": "홀로 남으신 어머니가 마지막 숨을 몰아쉬시는 날이 왔습니다. 연락을 받은 것은 평범한 낮이었습니다.",
+      "stages": ["middle"],
+      "track": "common",
+      "ageRange": { "min": 52, "max": 64 },
+      "weight": 18,
+      "once": true,
+      "heavy": { "kind": "loss" },
+      "noCitation": "X2",
+      "conditions": { "flags": ["father_gone"], "notFlags": ["parents_gone"], "parentAge": { "min": 65, "max": 100 } },
       "choices": [
         {
           "id": "stay",

@@ -4,6 +4,7 @@ import lifeGolden from './fixtures/life-golden.json';
 import { GENERATION_IDS, L0_SEEDS, L1_SEEDS, L1_STRATEGIES, fnv, goldenSeeds, l0Hash, l0Projection, l1Hash } from './helpers/familyGolden';
 import { preFm4bPool } from '../scripts/preFm4bPool';
 import { withEarlyLoss, withLegacyInheritance } from '../scripts/familyRulesLib';
+import { withGoneYearRule } from '../src/core';
 
 /**
  * 가족 모델의 해시 불변 시험 (SPEC-009 FM4a, docs/data/family-model.md 12-1절 — 세 층 중 L0·L1):
@@ -42,10 +43,12 @@ describe('L1 기록 전용 해시 불변 (7세대 × 2전략 × 40판)', () => {
     for (const strategy of L1_STRATEGIES) {
       // FM4b(SPEC-009 A-3, 12-1절): 사건 풀을 바꾸는 K2·K4와 이른 부모 별세 효과는 L1의 대상이 아니다 — 그 셋을 **끈 세계**(FM4b 전 영유아·학창 이벤트 파일 + 효과 끔 + 형제 수 옛 규칙)에서 같은 시드를 돌려,
       // FM6에서 K1(형제 수 새 정의로 상속)과 R-562(「두 분 모두 떠남」을 가족 보기와 같게)를 켰다 — 셋째·넷째 원인이라 `withLegacyInheritance`로 옛 규칙의 세계를 만든다(둘의 영향은 L2 `family-remeasure.md` 3절이 따로 잰다).
+      // FM7a(R-561·R-586·변형 사건): 청년·중년·노년 이벤트 파일 셋은 FM7a 전 원문(`tests/fixtures/pre-fm7a-events`, `preFm4bPool`이 되돌린다)이고 같은 해 겹침 정리(R-561)는 `withGoneYearRule('legacy')`로 끈다 —
+      // 한 분이 먼저 떠난 판에서 사건이 원본이 아니라 변형(`-mother-gone`)으로 나오고 별세 해의 사건 후보가 줄면 사건 id·`seen`·난수 흐름이 달라지는 것이 의도한 변경이라 L1 대상이 아니다(L2: `family-remeasure.md` 7·8절). 새 시스템 플래그 `lives_with_child`는 투영에서 뺀다.
       // 새로 더해진 것(가족 변화 줄 `fam-…`·시스템 플래그·`family.log`·`familyChangesFor` 호출)이 진행 RNG·스탯·자산·플래그·엔딩을 한 글자도 바꾸지 않음(기록 전용)을 변경 전 골든과 대조한다.
       it(`${gen} / ${strategy}: (K2·K4·이른 별세 효과·K1·R-562를 끈 세계) 스탯·자산·플래그·엔딩 판정·진행 RNG·인생 기록이 골든과 같다`, { timeout: 120_000 }, () => {
         const golden = (lifeGolden.cells as Record<string, string>)[`${gen}/${strategy}`];
-        expect(withLegacyInheritance(() => withEarlyLoss(false, () => l1Hash(gen, strategy, goldenSeeds(L1_SEEDS), preFm4bPool())))).toBe(golden);
+        expect(withLegacyInheritance(() => withGoneYearRule('legacy', () => withEarlyLoss(false, () => l1Hash(gen, strategy, goldenSeeds(L1_SEEDS), preFm4bPool()))))).toBe(golden);
       });
     }
   }

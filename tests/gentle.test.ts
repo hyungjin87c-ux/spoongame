@@ -36,8 +36,23 @@ const HEAVY_TABLE: Record<HeavyKind, string[]> = {
 const EXCLUDED = ['school-money-gap', 'youth-factory-night', 'senior-alone', 'middle-lonely-holiday'];
 const BORDERLINE = ['middle-health-check', 'youth-work-pressure', 'school-academy-night'];
 
+/**
+ * FM7a 「남은 한 분」 변형 사건(원본 id + `-mother-gone`·`-father-gone`)은 원본과 **같은 분류**를 가지는 문장 변형이라 부록 D-1 표(원본 23개)와 문서에는 따로 적지 않는다 — 표 ↔ 데이터 대조는 원본만 보고,
+ * 변형 네 개는 아래 시험이 따로 못 박는다(원본의 분류 그대로 `loss`, 가림 연동은 사건이 소유한 `heavy`를 그대로 쓴다).
+ */
+const VARIANT_ID = /-(?:mother|father)-gone$/;
+const VARIANT_IDS = ['middle-parents-care-mother-gone', 'middle-parents-care-father-gone', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'];
+
 describe('heavy 표 ↔ 데이터 (HV2, 완료 기준 11)', () => {
-  const actual = heavyEvents(EVENT_POOL);
+  const all = heavyEvents(EVENT_POOL);
+  const actual = new Map([...all].filter(([id]) => !VARIANT_ID.test(id)));
+
+  it('FM7a 「남은 한 분」 변형 네 개는 원본과 같은 분류(loss)의 표지를 가지고, 표지가 붙은 이벤트는 원본 23개 + 변형 4개다', () => {
+    expect([...all.keys()].filter((id) => VARIANT_ID.test(id)).sort()).toEqual([...VARIANT_IDS].sort());
+    for (const id of VARIANT_IDS) expect(all.get(id), id).toBe(all.get(id.replace(VARIANT_ID, '')));
+    for (const id of VARIANT_IDS) expect(all.get(id), id).toBe('loss');
+    expect(all.size).toBe(27);
+  });
 
   it('표지가 붙은 이벤트는 정확히 23개이고 id·분류가 부록 D-1 표와 같다 (home 3 · school 2 · health 7 · loss 5 · bond 3 · work 3)', () => {
     const expected = new Map<string, HeavyKind>();

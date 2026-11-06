@@ -9,20 +9,22 @@ import {
   siblingCountOf,
   stepYear,
   timingEraOfProfile,
+  withGoneYearRule,
   withParentsGoneRule,
   withSiblingCountRule,
   yearLineCount,
   type EndingGame,
   type EventPool,
   type GameState,
+  type GoneYearRule,
   type ParentsGoneRule,
   type ProfileId,
   type SiblingCountRule,
   type TickCounts,
 } from '../src/core';
 import { eventPool } from '../src/core';
-import { EARLY_LOSS_HALF, withEarlyLoss, withEarlyLossRule } from './familyRulesLib';
-import { k2OnlyPool, preFm4bPool } from './preFm4bPool';
+import { EARLY_LOSS_HALF, withEarlyLoss, withEarlyLossRule, withSiblingLoss } from './familyRulesLib';
+import { fm7aSeniorPool, fm7aVariantsPool, k2OnlyPool, preFm4bPool, preFm7aPool } from './preFm4bPool';
 import { MARGIN_LINES, marginSeeds, meanSe } from './marginsLib';
 import { SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { simulateLife, startLife } from './simulateLib';
@@ -35,12 +37,16 @@ import { spreadSeeds } from '../tests/helpers/familyGolden';
  *   V2 + K4(가족 낱말 사건에 가족 조건 — 지금의 풀)
  *   V3 + 이른 부모 별세 효과 (K1·R-562를 켜기 전 값 — 옛 형제 수 규칙 · 옛 「두 분 모두 떠남」 규칙)
  *   V4 + K1(형제 수 새 정의로 상속) — 형진 님 결정 「실제 형제 수로 나누기」 (FM6에서 켰다)
- *   V5 + R-562(상속·월세 전환이 가족 보기의 「두 분 모두 떠남」과 같은 해에) ← 배포 값 (FM6 판단, 8.1%의 판에서 평균 3.5년 늦던 것)
- * 같은 시드·같은 선택 전략(자동 성향)이라 변이 사이의 차이는 켠 원인에서만 온다(짝지은 표본). 실행: `npm run report:family` (docs/data/family-remeasure.md를 쓴다).
+ *   V5 + R-562(상속·월세 전환이 가족 보기의 「두 분 모두 떠남」과 같은 해에) ← FM6 배포 값 (FM6 판단, 8.1%의 판에서 평균 3.5년 늦던 것) — 이 아래 V2~V5의 청년·중년·노년 이벤트는 FM7a 전 원문이다
+ *   V6 + 「남은 한 분」 변형 사건 4개 · 원본의 한 분 별세 제외 조건 (FM7a, R-564 — 같은 해 겹침 정리 전)
+ *   V7 + R-561(한 분 별세 줄이 난 해에 parents_gone을 켜는 사건을 후보에서 뺀다)
+ *   V8 + R-586(senior-alone이 함께 사는 자녀가 있는 판을 거른다 — 자녀 독립 나이·lives_with_child는 표시 전용이라 경제에는 이 사건 조건만 닿는다)
+ *   V9 + Q3(어린 형제의 이른 별세 — 상속의 형제 수) · 청년 「본가」 문장 ← FM7a 배포 값 (지금 풀)
+ * R-618(별세·이혼 하한 1세)은 코드 상수라 모든 세계(V0~V9)에 같이 들어 있다 — 원인을 따로 가르지 않는다. 같은 시드·같은 선택 전략(자동 성향)이라 변이 사이의 차이는 켠 원인에서만 온다(짝지은 표본). 실행: `npm run report:family` (docs/data/family-remeasure.md를 쓴다).
  */
 
 export interface Variant {
-  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V3h';
+  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 'V7' | 'V8' | 'V9' | 'V3h';
   label: string;
   pool: () => EventPool;
   /** true 배포 값 · false 끔 · 'half' 효과 절반(측정용 대안) */
@@ -48,16 +54,24 @@ export interface Variant {
   rule: SiblingCountRule;
   /** 「두 분 모두 떠남」 규칙 (R-562) */
   goneRule: ParentsGoneRule;
+  /** R-561(같은 해 겹침 정리): legacy 안 뺀다 · exclude 뺀다 (FM7a) */
+  goneYear: GoneYearRule;
+  /** 어린 형제의 이른 별세 계획(Q3)을 켜는가 (FM7a) */
+  sibLoss: boolean;
 }
 
 export const VARIANTS: readonly Variant[] = [
-  { id: 'V0', label: 'FM4a 기준 (FM4b 전 풀 · 효과 끔 · 옛 규칙)', pool: preFm4bPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy' },
-  { id: 'V1', label: '+ K2 (동생 반응 카드 강제)', pool: k2OnlyPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy' },
-  { id: 'V2', label: '+ K4 (가족 낱말 사건에 가족 조건)', pool: eventPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy' },
-  { id: 'V3', label: '+ 이른 부모 별세 효과 (K1·R-562를 켜기 전 값)', pool: eventPool, earlyLoss: true, rule: 'legacy', goneRule: 'legacy' },
-  { id: 'V4', label: '+ K1 켜기 (형제 수 새 정의로 상속)', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'legacy' },
-  { id: 'V5', label: '+ R-562 (「두 분 모두 떠남」을 가족 보기와 같게) ← 배포 값', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'view' },
-  { id: 'V3h', label: '(대안) 이른 별세 효과를 절반으로', pool: eventPool, earlyLoss: 'half', rule: 'legacy', goneRule: 'legacy' },
+  { id: 'V0', label: 'FM4a 기준 (FM4b 전 풀 · 효과 끔 · 옛 규칙)', pool: preFm4bPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
+  { id: 'V1', label: '+ K2 (동생 반응 카드 강제)', pool: k2OnlyPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
+  { id: 'V2', label: '+ K4 (가족 낱말 사건에 가족 조건)', pool: preFm7aPool, earlyLoss: false, rule: 'legacy', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
+  { id: 'V3', label: '+ 이른 부모 별세 효과 (K1·R-562를 켜기 전 값)', pool: preFm7aPool, earlyLoss: true, rule: 'legacy', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
+  { id: 'V4', label: '+ K1 켜기 (형제 수 새 정의로 상속)', pool: preFm7aPool, earlyLoss: true, rule: 'view', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
+  { id: 'V5', label: '+ R-562 (「두 분 모두 떠남」을 가족 보기와 같게) ← FM6 배포 값', pool: preFm7aPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'legacy', sibLoss: false },
+  { id: 'V6', label: '+ 「남은 한 분」 변형 사건 4개 (FM7a, 같은 해 겹침 정리 전)', pool: fm7aVariantsPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'legacy', sibLoss: false },
+  { id: 'V7', label: '+ R-561 (한 분 별세 줄이 난 해의 후보에서 parents_gone 사건을 뺀다)', pool: fm7aVariantsPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: false },
+  { id: 'V8', label: '+ R-586 (senior-alone이 함께 사는 자녀가 있는 판을 거른다)', pool: fm7aSeniorPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: false },
+  { id: 'V9', label: '+ Q3 (어린 형제의 이른 별세) · 「본가」 ← FM7a 배포 값', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
+  { id: 'V3h', label: '(대안) 이른 별세 효과를 절반으로', pool: preFm7aPool, earlyLoss: 'half', rule: 'legacy', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
 ];
 
 export interface LifeRow {
@@ -90,10 +104,24 @@ export interface LifeRow {
   lossAge: number | null;
   /** 성인기 「부모님」 사건·글감이 일어난 나이(`seen`), 안 일어났으면 null — `ADULT_PARENT_IDS` 순서 */
   adultParent: Array<number | null>;
+  /** FM7a: 「남은 한 분」 변형 사건 4개가 일어난 나이(`FM7A_VARIANT_IDS` 순서, 안 일어났으면 null) */
+  variantSeen: Array<number | null>;
+  /** FM7a: 임종 사건(원본 또는 변형)이 일어난 나이 — 없으면 null */
+  farewellAge: number | null;
+  /** FM7a: 한 분 별세 줄이 난 해에 임종 사건도 같은 해에 일어났는가 (R-561이 막는 겹침) */
+  sameYearGone: boolean;
+  /** FM7a: 병환 원본과 그 변형이 한 판에 둘 다 일어났는가 (같은 인용 c-081을 두 번 보는 판 — P5) */
+  careBoth: boolean;
+  /** FM7a: 어린 형제의 이른 별세 줄이 난 판(family.log 종류 3) */
+  siblingLost: boolean;
+  /** FM7a: senior-alone이 일어난 판 */
+  seniorAlone: boolean;
 }
 
-/** 성인기에 「부모님」 낱말이 나오는 사건·글감 (설계 문서 13-2절 FM7 변형 목록) */
+/** 성인기에 「부모님」 낱말이 나오는 사건·글감 (설계 문서 13-2절 FM7 변형 목록 — 원본 기준. FM7a 뒤 youth-housing·note-parents-aging은 문장이 중립이거나 변형이 맡는다) */
 export const ADULT_PARENT_IDS = ['middle-parents-care', 'middle-parents-farewell', 'youth-housing', 'note-parents-aging'] as const;
+/** FM7a 「남은 한 분」 변형 사건 4개 (병환 · 임종 × 어머니가 먼저 떠난 판 · 아버지가 먼저 떠난 판) */
+export const FM7A_VARIANT_IDS = ['middle-parents-care-mother-gone', 'middle-parents-care-father-gone', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'] as const;
 
 /** 줄을 연표 줄과 같은 규칙으로 센다(FA0-7)는 약속에서 가족 줄을 뺀 추정 시간 — 가족 줄만 있는 해는 서술 해에서 조용한 해로, 다른 줄이 있는 해는 줄 대기를 뺀다 */
 function secondsWithoutFamily(final: GameState, counts: TickCounts, era: ReturnType<typeof timingEraOfProfile>): number {
@@ -118,7 +146,7 @@ function secondsWithoutFamily(final: GameState, counts: TickCounts, era: ReturnT
 export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
   const run = <T>(fn: () => T): T => (v.earlyLoss === 'half' ? withEarlyLoss(true, () => withEarlyLossRule(EARLY_LOSS_HALF, fn)) : withEarlyLoss(v.earlyLoss, fn));
   return run(() =>
-    withSiblingCountRule(v.rule, () => withParentsGoneRule(v.goneRule, () => {
+    withGoneYearRule(v.goneYear, () => withSiblingLoss(v.sibLoss, () => withSiblingCountRule(v.rule, () => withParentsGoneRule(v.goneRule, () => {
       const pool = v.pool();
       let s: GameState = startLife(seed, gen);
       let net20: number | null = null;
@@ -156,9 +184,21 @@ export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
         historyLength: s.history.length,
         lossAge: s.family!.l.find((e) => e[0] === 5)?.[1] ?? null,
         adultParent: ADULT_PARENT_IDS.map((id) => s.seen[id] ?? null),
+        variantSeen: FM7A_VARIANT_IDS.map((id) => s.seen[id] ?? null),
+        farewellAge: farewellAgeOf(s),
+        sameYearGone: s.family!.l.some((e) => e[0] === 5 && e[1] === farewellAgeOf(s)),
+        careBoth: s.seen['middle-parents-care'] !== undefined && (s.seen['middle-parents-care-mother-gone'] !== undefined || s.seen['middle-parents-care-father-gone'] !== undefined),
+        siblingLost: s.family!.l.some((e) => e[0] === 3),
+        seniorAlone: s.seen['senior-alone'] !== undefined,
       };
-    })),
+    })))),
   );
+}
+
+/** 임종 사건(원본 또는 변형)이 일어난 나이 */
+function farewellAgeOf(s: GameState): number | null {
+  const ages = ['middle-parents-farewell', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'].map((id) => s.seen[id]).filter((a): a is number => typeof a === 'number');
+  return ages.length === 0 ? null : Math.min(...ages);
 }
 
 export interface TierStats {
@@ -221,10 +261,11 @@ export interface SeniorWorld {
   earlyLoss: boolean;
 }
 
+/** 노년 카드 세계는 모두 FM7a **전**이다(R-555는 K2·K4·이른 별세 효과의 이동을 가르는 표 — FM7a의 이동은 9절이 보고한다) */
 export const SENIOR_WORLDS: readonly SeniorWorld[] = [
   { id: 'S0', label: 'FM4b 전 풀 · 효과 끔', pool: preFm4bPool, earlyLoss: false },
-  { id: 'S2', label: '지금 풀(K2·K4) · 효과 끔', pool: eventPool, earlyLoss: false },
-  { id: 'S3', label: '지금 풀 · 효과 켬 (배포 값)', pool: eventPool, earlyLoss: true },
+  { id: 'S2', label: 'FM7a 전 풀(K2·K4) · 효과 끔', pool: preFm7aPool, earlyLoss: false },
+  { id: 'S3', label: 'FM7a 전 풀 · 효과 켬 (FM6 배포 값)', pool: preFm7aPool, earlyLoss: true },
 ];
 
 /** 판정 표본 한 줄 1000판 · 독립 줄 시드 번호 구간 */
@@ -253,10 +294,14 @@ export function seniorSamples(): SeniorSample[] {
 
 /** 한 세계에서 알파 판마다의 노년 결정 카드 수 */
 export function seniorCards(world: SeniorWorld, sample: SeniorSample): number[] {
-  return withEarlyLoss(world.earlyLoss, () => {
-    const pool = world.pool();
-    return sample.seeds.map((s) => simulateLife(s.seed, 'alpha', s.strategy, pool, { lifeLength: 'short30' }).choicesByStage.senior);
-  });
+  return withGoneYearRule('legacy', () =>
+    withSiblingLoss(false, () =>
+      withEarlyLoss(world.earlyLoss, () => {
+        const pool = world.pool();
+        return sample.seeds.map((s) => simulateLife(s.seed, 'alpha', s.strategy, pool, { lifeLength: 'short30' }).choicesByStage.senior);
+      }),
+    ),
+  );
 }
 
 /** 짝지은 차이(뒤 − 앞)의 평균과 표준오차 */
@@ -268,7 +313,7 @@ export function pairedDiff(a: readonly number[], b: readonly number[]): { diff: 
 export { meanSe };
 
 /** 보고서 끝에 붙는 읽는 법 (정적 글 — 숫자는 위 표에서 읽는다) */
-export const REPORT_NOTES = `## 8. 읽는 법과 한계
+export const REPORT_NOTES = `## 9. 읽는 법과 한계
 
 - **이른 별세 효과의 수용 기준(마스터 결정 2026-11-02, 검수 REV-009-FM4b-1 2절)** — 처음 기준(재력 단계별 20세 시작·최종 순자산 **중앙값** 변화 ≤ 3%)은 지표가 틀렸다. 낮은 재력 단계의 20세 시작 순자산은 학자금 대출 바닥(−150만 원 등)에 모여 있어 중앙값이 한 칸(150만 원) 옮겨 가면 분모 바닥 1,000만 원 기준으로 15%가 나온다(효과 크기와 무관 — 반 크기 변형도 같다). 그래서 **평균**으로 본다: ① 최종 순자산 평균 변화 ≤ 3% ② 20세 시작 평균의 절대 변화 ≤ 150만 원 ③ 단계 순서 뒤바뀜 0 ④ 판정 변화 ≤ 2%p. 중앙값 변화와 효과가 걸린 판만의 차이는 **보고만** 한다(판정에 쓰지 않는다). ②의 5단계는 표본이 작아(세대당 1000판에서 약 146판, 효과가 걸린 판 약 25판, 표준오차 약 34만 원 — 150만 원 기준선이 기댓값 위에 있다) **보고만** 한다(마스터 결정 2026-11-03, REV-009-FM6-1 2절). 다른 기준과 1~4단계는 그대로다.
 - **K2·K4(2절)의 중앙값 흔들림**은 효과가 아니라 난수 흐름이 옮겨 간 잡음이다(같은 사건 풀을 공유하지 않는 세계끼리라 짝지은 표본이어도 사건이 달라진다) — 같은 규칙의 이른 별세 효과(V2 → V3)는 난수 흐름이 같아 짝이 정확하다.
@@ -276,5 +321,6 @@ export const REPORT_NOTES = `## 8. 읽는 법과 한계
 - **R-562(3-2절)** 한 분은 모델이 먼저 별세시키고 다른 분이 100세를 넘으면 가족 보기는 「두 분 모두 떠남」인데 옛 \`parentsAllGone\`은 먼저 떠난 분의 **실제 나이**가 100을 넘을 때까지 거짓이었다 — 상속·월세 전환이 보기보다 평균 3.5년(최대 13년) 늦었다. FM6에서 보기와 같은 해로 맞췄고 \`withParentsGoneRule('legacy')\`가 옛 규칙의 세계를 만든다.
 - **판 길이(4절)**는 자동 성향 선택으로 잰 추정 시간이다(판정에 쓰는 수동 흉내·시대별 표본은 \`tests/simulation.test.ts\`·\`npm run report:time\`). 가족 줄을 뺀 값은 같은 판의 걸음 집계에서 가족 줄만 있는 해를 조용한 해로 바꾸고, 다른 줄이 있는 해는 줄 대기를 뺀 근사다.
 - **노년 카드 평균(5절)** 은 알파 한 세대(2013~2020년생)의 값이다. 시간 모델·판정 임계는 옛 시대 3구간 상수라 알파는 「다가올 세상」 하한 5.00을 쓴다 — 세대별 시간 모델(GM10)에서 다시 정한다.
-- **성인기 「부모님」 사건(7절)** 은 배포 값 세계(V3)에서 모형이 부모 한 분 별세를 알린 판만 센다. 사건 문장은 FM7 변형이 한 분 별세에 맞게 바꾼다(13-2절).
+- **성인기 「부모님」 사건(7절)** 은 모형이 부모 한 분 별세를 알린 판만 센다. FM6까지(V5, FM7a 전)는 사건 문장이 두 분을 말해 46.3%·70.6%였고, FM7a의 「남은 한 분」 변형·원본의 제외 조건(V9)으로 원본 두 사건은 0%가 되었다.
+- **FM7a(8절)** 의 원인별 세계(V5 → V9)는 같은 시드·같은 자동 성향 선택이지만 사건 풀과 규칙이 달라 난수 흐름이 옮겨 가는 판이 있다(K2·K4와 같은 이유 — 중앙값은 보고만 한다). R-618(별세·이혼 하한 1세)은 코드 상수라 V0~V9 모두에 들어 있어 따로 가르지 않았다. 자녀 독립 나이(R-586)는 표시 전용이라 경제에는 \`senior-alone\` 조건만 닿는다.
 `;

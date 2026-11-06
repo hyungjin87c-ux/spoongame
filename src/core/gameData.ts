@@ -96,6 +96,8 @@ export interface FamilyDesign {
   highOrderContinue: DesignValue<Array<{ upTo: number; cap: number; q: number; gapMax: number }>>;
   /** 집 고르기의 설계값 (FM4b, `fd-b-house.md` 10절 마스터 결정) */
   home: DesignValue<HomeDesign>;
+  /** 어린 형제의 이른 별세(Q3, FM7a): 계획을 켜고 끄는 스위치와 확률 배율 — 한 곳 (SPEC-009 6절). `enabled`는 T06 승인(`data/familyApproval.ts`)이 true일 때만 켤 수 있다 */
+  siblingLoss: DesignValue<SiblingLossRule>;
   /** 이른 부모 별세 효과 (4-7절 (1), FA0-8 예외 · A-6 초안 ▲): 주인공 `maxAge` 이하에 한 분이 떠나는 해에만 한 번. `enabled: false`면 기록 전용(측정·시험에서 끈다) */
   earlyLoss: DesignValue<EarlyLossRule>;
   /** 성인기 식구 (FC5·FC6, 10절): 배우자 나이 차 · 자녀 수·터울 · 친구 수 */
@@ -201,6 +203,20 @@ export interface HomeDesign {
   parentOf: Readonly<Record<string, string>>;
   /** 분류·정의가 바뀌어 보간하지 않는 센서스 해 구간: 사이 연도는 가까운 쪽 해의 값(같은 거리면 이른 해) */
   stepSegments: ReadonlyArray<readonly [number, number]>;
+}
+
+/**
+ * 어린 형제의 이른 별세 계획의 조건과 배율 (FM7a, SPEC-009 6절). 형제마다 해시 한 번으로 별세 나이를 정하고(`deathAgeGiven` — 부모·조부모 별세와 같은 생존 곡선) 조건에 드는 가장 이른 한 명이 떠난다.
+ *  - `enabled`: false면 계획이 없다(형제는 떠나지 않는다) — T06 문장이 승인되지 않으면 이것만 끄고 나머지는 그대로 낸다.
+ *  - `scale`: 배율. 1.0 = 실제 생명표 그대로(형진 님 2026-11-06). 1 미만이면 형제마다 해시로 그 비율만 남긴다.
+ *  - `maxBirthYear`: 이 출생 연도 이하 판만 (1969). `sibAge`: 형제 별세 나이 범위(1~11 — 태어난 해에 떠나는 0세는 제외, R-619). `heroAge`: 주인공 나이 범위(1~19 = `EARLY_LOSS_MAX_AGE` 이하).
+ */
+export interface SiblingLossRule {
+  enabled: boolean;
+  scale: number;
+  maxBirthYear: number;
+  sibAge: { min: number; max: number };
+  heroAge: { min: number; max: number };
 }
 
 /** 이른 부모 별세 효과의 수치. `family`는 집안 살림(만 원, 20세 미만이라 `familyFund`로 간다)이고 재력 단계 배율을 곱해 반올림한다 */

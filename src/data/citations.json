@@ -3560,7 +3560,9 @@
       ],
       "note": "지금 세상 전용(R-08). 「응답 가족」은 조사에 응한 가족 구성원이며 돌봄을 맡은 모든 가족이 아니다. 같은 표의 다른 행은 c-082(senior-spouse-care)가 쓴다. 보건복지부 누리집(robots 불허)은 열지 않고 KOSIS에서 읽었다.",
       "usedBy": [
-        "middle-parents-care"
+        "middle-parents-care",
+        "middle-parents-care-father-gone",
+        "middle-parents-care-mother-gone"
       ],
       "verified": true,
       "usable": true,

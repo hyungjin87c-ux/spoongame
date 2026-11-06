@@ -1,8 +1,9 @@
 import { FAMILY_ADULT_AGE, FAMILY_MAX_AGE, type SiblingKind } from './family';
 import { adultSlotsOf, latestSetterAge, namesOfFamily } from './familyAdult';
-import { divorcePlan, firstGoneOf, goneAtMyAge, grandBirthYears, parentBirthYear, parentGoneAtOf } from './familyBirth';
+import { childLeaveAgeOf, divorcePlan, firstGoneOf, goneAtMyAge, grandBirthYears, parentBirthYear, parentGoneAtOf, siblingLossPlan } from './familyBirth';
 export { parentDivorceRate } from './familyBirth';
 import {
+  CHILD_APART_MIN_AGE,
   GRAND_COHABIT_UNTIL,
   GRAND_IDS,
   NO_DEATH_PLAN,
@@ -47,6 +48,8 @@ export interface FamilySchedule {
   firstGone: { who: 0 | 1; at: number } | null;
   /** 부모 이혼·별거: 주인공 나이 `at`의 해에 일어나 `at + 1`부터 한 분이 따로 산다. `leaver` 0 어머니 · 1 아버지 */
   divorce: { at: number; leaver: 0 | 1 } | null;
+  /** 어린 형제의 이른 별세(Q3, FM7a): 주인공 나이 `at`의 해에 형제 `id`가 `a`살에 떠나 `at + 1`부터 떠난 사람으로 보인다. 옛 저장 스냅샷(`lg`)·해당 없는 판은 null */
+  siblingLoss: { id: PersonId; at: number; a: number } | null;
   grandBy: [number, number, number, number];
   grandGoneAt: [number, number, number, number];
 }
@@ -66,9 +69,11 @@ export function familyScheduleOf(game: FamilyGame): FamilySchedule {
   const rawDivorce = divorcePlan(famSeed, Y, firstGone);
   // 옛 저장 스냅샷(`lg`)의 아래 동생은 이미 본 `infant-new-sibling` 나이에서 왔다 — 그보다 앞선 이혼 계획은 없는 것으로 본다 (R-540, 재혼이 없으므로 이혼한 집에 동생이 새로 태어나지 않는다). 사용자가 본 적 없는 값이라 DF25와 부딪치지 않는다
   const divorce = family.lg === 1 && family.y.length > 0 && rawDivorce !== null && rawDivorce.at < family.y[0].k ? null : rawDivorce;
+  // 옛 저장 스냅샷(`lg`)은 이미 본 형제 구성을 바꾸지 않는다(DF25) — 형제가 새로 떠나는 계획은 새로 태어난 판에서만 있다
+  const siblingLoss = family.lg === 1 ? null : siblingLossPlan(famSeed, Y, family);
   const grandBy = grandBirthYears(Y, report.mother.age, report.father.age, family.g);
   const grandGoneAt = grandBy.map((by, i) => (family.g[i].d >= NO_DEATH_PLAN ? Infinity : goneAtMyAge(by, family.g[i].d, Y))) as FamilySchedule['grandGoneAt'];
-  return { family, birthYear: Y, famSeed, parentBy, parentGoneAt, firstGone, divorce, grandBy, grandGoneAt };
+  return { family, birthYear: Y, famSeed, parentBy, parentGoneAt, firstGone, divorce, siblingLoss, grandBy, grandGoneAt };
 }
 
 // ---------- 보기 ----------
@@ -159,8 +164,10 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
     const ownAge = older ? age + s.k : age - s.k;
     if (ownAge < 0) return null; // 아직 태어나지 않았다
     const gender: Gender = s.g === 0 ? 'male' : 'female';
-    const gone = ownAge > FAMILY_MAX_AGE;
-    const independent = ownAge >= s.s;
+    // 어린 형제의 이른 별세(Q3): 줄이 난 해(`at`) 다음 해부터 떠난 사람 — 부모 한 분 별세와 같은 시간 규칙(1-1절). 떠난 나이는 계획의 별세 나이 `a`
+    const lost = sc.siblingLoss !== null && sc.siblingLoss.id === id && age > sc.siblingLoss.at;
+    const gone = ownAge > FAMILY_MAX_AGE || lost;
+    const independent = !lost && ownAge >= s.s;
     const home = !adult || adultHome;
     const person: Person = {
       id,
@@ -174,7 +181,8 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
       older,
     };
     if (independent) person.independent = true;
-    if (gone) markGone(person, FAMILY_MAX_AGE, older ? FAMILY_MAX_AGE - s.k : FAMILY_MAX_AGE + s.k);
+    if (lost) markGone(person, sc.siblingLoss!.a, sc.siblingLoss!.at);
+    else if (gone) markGone(person, FAMILY_MAX_AGE, older ? FAMILY_MAX_AGE - s.k : FAMILY_MAX_AGE + s.k);
     return person;
   };
   f.o.forEach((s, i) => {
@@ -201,8 +209,10 @@ export function familyViewOf(game: FamilyGame, at: number = game.age): FamilyVie
       if (gone) markGone(p, FAMILY_MAX_AGE, sl.birthYear + FAMILY_MAX_AGE - Y);
       people.push(p);
     } else {
-      // 자녀: `child_left`면 따로 산다
-      const p: Person = { ...base, role: 'child', age: ownAge, state: stateOf(gone, flags.includes('child_left'), true) };
+      // 자녀 (R-586, FM7a): 자녀마다 독립 나이(`childLeaveAgeOf`, 20~30 해시 — 형제 독립과 같은 표)에 따로 산다. `child_left`(사건 「비어 가는 방」, 58~64세)는 19세 이상 자녀를 그때부터 따로 사는 것으로 앞당긴다.
+      // 19세 미만 자녀는 `child_left`여도 함께 산다. `has_child`·`child_left`의 의미·세터와 경제의 자녀 읽기(`livingEquivalent`)는 그대로다 — 자녀 독립은 표시 전용(K1)이다
+      const leaves = ownAge >= CHILD_APART_MIN_AGE && (flags.includes('child_left') || ownAge >= childLeaveAgeOf(sc.famSeed, Number(sl.id.slice(1)) - 1));
+      const p: Person = { ...base, role: 'child', age: ownAge, state: stateOf(gone, leaves, true) };
       if (p.state === 'apart') p.apartBy = 'away';
       if (gone) markGone(p, FAMILY_MAX_AGE, sl.birthYear + FAMILY_MAX_AGE - Y);
       people.push(p);

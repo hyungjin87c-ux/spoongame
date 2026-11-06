@@ -1,4 +1,5 @@
 import { bannedWordsFor, TEXT_LIMITS } from './eventLint';
+import { FAMILY_SYSTEM_FLAGS } from './familyFlags';
 import {
   EVENT_ID_PATTERN,
   NOTE_ID_PREFIX,
@@ -276,7 +277,8 @@ export function noteCardPoolProblems(cards: readonly NoteCardDef[], events: read
   for (const ev of events) for (const f of flagsWritten(ev).set) setAnywhere.add(f);
   for (const c of cards) {
     if (ids.has(c.id)) problems.push(`기록 카드 "${c.id}": 같은 id의 이벤트가 있다`);
-    for (const f of noteFlagsRead(c)) if (!setAnywhere.has(f)) problems.push(`기록 카드 "${c.id}": 조건에서 읽는 플래그 "${f}"를 켜는 이벤트가 어디에도 없다 (오타이거나 setFlags가 빠졌다)`);
+    // 시스템 소유 가족 플래그(SPEC-009 6절 — `mother_gone` 같은 것)는 `familyChangesFor`가 켠다: 카드도 이벤트처럼 읽을 수는 있다
+    for (const f of noteFlagsRead(c)) if (!setAnywhere.has(f) && !FAMILY_SYSTEM_FLAGS.includes(f)) problems.push(`기록 카드 "${c.id}": 조건에서 읽는 플래그 "${f}"를 켜는 이벤트가 어디에도 없다 (오타이거나 setFlags가 빠졌다)`);
     const seenIds = [...(c.unlessSeen ?? []), ...(c.triggers ?? []).flatMap((t) => t.seenAny ?? [])];
     for (const id of seenIds) if (!ids.has(id)) problems.push(`기록 카드 "${c.id}": seenAny·unlessSeen의 "${id}"는 이벤트 풀에 없는 id다`);
   }
@@ -324,12 +326,40 @@ export function notePromptProblems(prompt: string, where: string, eras?: readonl
   return out;
 }
 
+/** 내 부모를 가리키는 공손형 「부모님」 (「조부모님」은 따로 본다) */
+const PARENTS_WORD = /(?<!조)부모님/;
+/** 한 분이 먼저 떠난 판을 가르는 시스템 플래그 */
+const ONE_GONE_FLAGS = ['mother_gone', 'father_gone'] as const;
+
+/**
+ * 낱말 ↔ 조건 (SPEC-009 FA0-3 ④, FM7a 완료 기준 4): 기본 질문에 「부모님」(두 분이 계시다는 뜻)이 든 카드는 한 분이 떠난 뒤에도 뜰 수 있으면 안 된다 —
+ * ① 카드 조건 `notFlags`에 `mother_gone`·`father_gone`·`parents_gone`이 모두 있거나 ② `mother_gone`·`father_gone` 각각을 `when.flags`로 잡는 변형이 있고 그 문장에는 「부모님」이 없어야 한다.
+ * 변형 문장에 「부모님」이 있으면 그 변형이 한 분이 떠난 판을 잡는지와 상관없이 다시 걸린다(변형은 다른 사람을 말하려고 있다).
+ */
+export function noteParentWordProblems(c: NoteCardDef): string[] {
+  const out: string[] = [];
+  const notFlags = c.conditions?.notFlags ?? [];
+  const guarded = ['mother_gone', 'father_gone', 'parents_gone'].every((f) => notFlags.includes(f));
+  const coverOf = (flag: string): NoteVariant | undefined => (c.variants ?? []).find((v) => !Array.isArray(v.when) && (v.when.flags ?? []).includes(flag));
+  if (PARENTS_WORD.test(c.prompt) && !guarded) {
+    for (const flag of ONE_GONE_FLAGS) {
+      const v = coverOf(flag);
+      if (v === undefined) out.push(`${c.id} 기본 질문: 「부모님」은 두 분이 계신다는 뜻이라 ${flag}인 판에서도 뜨면 안 된다 — 조건 notFlags에 mother_gone·father_gone·parents_gone을 달거나 ${flag}를 잡는 변형을 둔다`);
+    }
+  }
+  (c.variants ?? []).forEach((v, i) => {
+    if (PARENTS_WORD.test(v.prompt) && !guarded) out.push(`${c.id} 변형 ${i + 1}: 변형 문장에 「부모님」이 있다 — 한 분이 떠난 판의 변형은 남은 분의 호칭을 쓴다`);
+  });
+  return out;
+}
+
 /** 파일 전체의 문구 점검: 카드 질문·변형·수동 질문. `check:events`(빌드)와 `npm test`가 같은 함수를 부른다. */
 export function lintNoteFile(file: NoteFile): string[] {
   const out = notePromptProblems(file.manual.prompt, '수동 기록 질문');
   for (const c of file.cards) {
     out.push(...notePromptProblems(c.prompt, `${c.id} 기본 질문`, c.eras));
     (c.variants ?? []).forEach((v, i) => out.push(...notePromptProblems(v.prompt, `${c.id} 변형 ${i + 1}`, c.eras)));
+    out.push(...noteParentWordProblems(c));
   }
   return out;
 }

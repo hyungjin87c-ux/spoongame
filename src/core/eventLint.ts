@@ -151,7 +151,7 @@ export interface StateWordRule {
 }
 
 const ADULT_STAGES: readonly Stage[] = ['youth', 'middle', 'senior'];
-/** 가족 낱말 규칙(SPEC-009 6-3절)이 적용되는 단계 — 어린 시절. 어른 시점의 「부모님」은 FM7 변형이 맡는다(중년 사건 3개 · 청년 사건) */
+/** 가족 낱말 규칙(SPEC-009 6-3절)이 적용되는 단계 — 어린 시절. 어른 시점의 「부모님」은 아래 별도 규칙(청년·중년·노년, FM7a)이 본다 */
 const CHILD_STAGES: readonly Stage[] = ['infant', 'school'];
 
 export const STATE_WORD_RULES: readonly StateWordRule[] = [
@@ -172,13 +172,14 @@ export const STATE_WORD_RULES: readonly StateWordRule[] = [
     exceptions: [],
   },
   {
-    // "부모"는 학부모·또래 부모처럼 내 부모가 아닌 말에도 쓰이므로 내 부모를 가리키는 "부모님"만 본다.
-    name: '부모님(임종 뒤에는 나오지 않는다)',
-    words: /부모님/,
-    stages: ['middle', 'senior'],
-    forbid: ['parents_gone'],
-    // 임종 이벤트는 임종을 알리는 이벤트이므로 스스로 parents_gone을 켠다.
-    exceptions: ['middle-parents-farewell'],
+    // "부모"는 학부모·또래 부모처럼 내 부모가 아닌 말에도 쓰이므로 내 부모를 가리키는 "부모님"만 본다. 「조부모님」은 조부모 규칙이 본다.
+    // FM7a (SPEC-009 완료 기준 4): 어른 시점(청년·중년·노년)의 「부모님」(공손형)도 한 분이라도 떠난 뒤에는 나오지 않는다 — 두 분이 계신다는 뜻이라서다. 한 분이 떠난 판은 「남은 한 분」 변형 사건(`-mother-gone`·`-father-gone`)·
+    // 변형 문장(`youth-housing`의 「본가」, 글감 변형)이 맡는다. 임종 사건(`middle-parents-farewell`)도 예외가 아니다 — 원본에 `notFlags: [mother_gone, father_gone, parents_gone]`을 달아 이 규칙을 지킨다(예외 목록 비움).
+    name: '부모님(한 분이라도 떠난 뒤에는 나오지 않는다 — 어른 시점)',
+    words: /(?<!조)부모님/,
+    stages: ADULT_STAGES,
+    forbid: ['parents_gone', 'mother_gone', 'father_gone'],
+    exceptions: [],
   },
   // ---------- 가족 낱말 ↔ 조건 (SPEC-009 FA0-3 ④, family-model.md 6-3절 — K4): 어린 시절 사건이 그 시점에 없는 가족을 말하지 않게 한다 ----------
   {
@@ -732,18 +733,33 @@ export function milestoneWindowProblems(events: readonly EventDef[]): string[] {
   return problems;
 }
 
-/** 풀 전체 점검: 이벤트별 문구 + 풀 전체에서 겹치는 제목·본문·결과 + 마일스톤 창 */
+/** 「남은 한 분」 변형 사건 id의 꼬리 (SPEC-009 FM7a K23): 원본 id + `-mother-gone`(남은 분 아버지) · `-father-gone`(남은 분 어머니) */
+export const ONE_GONE_VARIANT_SUFFIX = /-(?:mother|father)-gone$/;
+
+/** 이벤트가 속한 「같은 사건 가족」: 변형이면 원본 id(풀에 원본이 있을 때), 아니면 자기 id */
+function variantFamilyOf(ev: EventDef, ids: ReadonlySet<string>): string {
+  const base = ev.id.replace(ONE_GONE_VARIANT_SUFFIX, '');
+  return base !== ev.id && ids.has(base) ? base : ev.id;
+}
+
+/**
+ * 풀 전체 점검: 이벤트별 문구 + 풀 전체에서 겹치는 제목·본문·결과 + 마일스톤 창.
+ * **같은 원본의 「남은 한 분」 변형끼리·원본과는 문구가 겹쳐도 된다**(FM7a, 승인된 문장 재사용 — 변형은 호칭이 든 문장만 바꾸고 나머지 문장·선택지 결과는 원본 그대로다, T07·T08).
+ */
 export function lintEvents(events: readonly EventDef[]): string[] {
   const problems: string[] = [...milestoneWindowProblems(events)];
-  const seen = new Map<string, string>();
+  const seen = new Map<string, { where: string; family: string }>();
+  const ids = new Set(events.map((e) => e.id));
   for (const ev of events) {
     problems.push(...lintEvent(ev));
+    const family = variantFamilyOf(ev, ids);
     for (const part of textPartsOf(ev)) {
       if (part.kind === 'label') continue; // 라벨은 "먼저 말을 건다"처럼 다른 이벤트와 겹칠 수 있다
       const key = `${part.kind}:${part.value}`;
       const prev = seen.get(key);
-      if (prev !== undefined) problems.push(`${part.where}: 다른 곳(${prev})과 문구가 똑같다 — "${part.value}"`);
-      else seen.set(key, part.where);
+      if (prev !== undefined) {
+        if (prev.family !== family) problems.push(`${part.where}: 다른 곳(${prev.where})과 문구가 똑같다 — "${part.value}"`);
+      } else seen.set(key, { where: part.where, family });
     }
   }
   return problems;

@@ -353,32 +353,47 @@ const GENERAL = lazy(() => populate({}, 700));
 
 const MARRIED_RULES = { 'youth-meeting': 'meet', 'youth-marriage': 'marry' } as const;
 
+/** FM7a: 병환·임종은 한 분이 먼저 떠난 판에서 「남은 한 분」 변형(원본 id + -mother-gone·-father-gone)으로 일어난다 — 같은 사건으로 센다 */
+const CARES = ['middle-parents-care', 'middle-parents-care-mother-gone', 'middle-parents-care-father-gone'];
+const FAREWELLS = ['middle-parents-farewell', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'];
+const firstIndexOf = (l: Life, ids: readonly string[]): number => {
+  const hits = ids.map((id) => indexOfEvent(l, id)).filter((i) => i >= 0);
+  return hits.length === 0 ? -1 : Math.min(...hits);
+};
+const afterCountAny = (lives: readonly Life[], firsts: readonly string[], laters: readonly string[]): number =>
+  lives.filter((l) => {
+    const i = firstIndexOf(l, firsts);
+    return i >= 0 && l.occ.slice(i + 1).some((o) => laters.includes(o.id));
+  }).length;
+
 describe('한 판 안의 모순 0건: 부모님 (R-057) — 임종 뒤에 병환이 나오지 않는다', () => {
   const lives = GENERAL;
 
   it('임종 뒤 병환 0건: 병환 뒤 임종은 일어나지만(표본 15판 이상) 임종 뒤 병환은 한 판도 없다', () => {
     let careThenFarewell = 0;
     for (const l of lives()) {
-      const c = indexOfEvent(l, 'middle-parents-care');
-      const f = indexOfEvent(l, 'middle-parents-farewell');
+      const c = firstIndexOf(l, CARES);
+      const f = firstIndexOf(l, FAREWELLS);
       if (c >= 0 && f >= 0 && c < f) careThenFarewell++;
     }
     expect(careThenFarewell, '병환 뒤 임종이 있는 판').toBeGreaterThanOrEqual(15);
-    expect(afterCount(lives(), 'middle-parents-farewell', 'middle-parents-care')).toBe(0);
+    expect(afterCountAny(lives(), FAREWELLS, CARES)).toBe(0);
   });
 
   it('대조: 병환 이벤트의 닫는 조건을 지우면 같은 시드들에서 임종 뒤 병환이 실제로 나온다 (위 단언이 공허하지 않다)', () => {
     const open = poolWith({ 'middle-parents-care': (e) => ({ ...e, conditions: undefined }) });
-    expect(afterCount(populate({}, 300, open), 'middle-parents-farewell', 'middle-parents-care')).toBeGreaterThan(0);
+    expect(afterCountAny(populate({}, 300, open), FAREWELLS, CARES)).toBeGreaterThan(0);
   });
 
   it('임종을 알리는 이벤트는 어떤 선택으로 끝나도 parents_gone을 켜고, 그 뒤 "부모님"이 들어간 이벤트가 하나도 나오지 않는다', () => {
     const wordsOf = (id: string) => textPartsOf(EVENT_POOL.byId.get(id)!).some((p) => p.value.includes('부모님'));
     const mentioning = EVENT_POOL.events.filter((e) => e.stages.some((s) => s === 'middle' || s === 'senior') && wordsOf(e.id)).map((e) => e.id);
     expect(mentioning).toEqual(expect.arrayContaining(['middle-parents-care', 'middle-parents-farewell']));
+    // FM7a: 「남은 한 분」 변형 문장에는 「부모님」이 없다 (낱말 ↔ 조건 — 한 분이 떠난 판은 변형이 맡는다)
+    for (const id of [...CARES, ...FAREWELLS].filter((x) => /-gone$/.test(x))) expect(mentioning, id).not.toContain(id);
     let farewells = 0;
     for (const l of lives()) {
-      const f = indexOfEvent(l, 'middle-parents-farewell');
+      const f = firstIndexOf(l, FAREWELLS);
       if (f < 0) continue;
       farewells++;
       expect(l.final.flags, `${l.era} ${l.seed}`).toContain('parents_gone');

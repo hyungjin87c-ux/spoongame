@@ -3,7 +3,7 @@ import impactSrc from '../src/core/impact.ts?raw';
 import legacyJson from './fixtures/wealthLegacy.json';
 import { ECONOMY, IMPACT_STEPS } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
-import { IMPACT_KEYS, calendarYear, advanceUntilDecision, applyResolved, applyStatDeltas, autoResolveStep, condContextOf, economyContextOf, impactOfEffects, incomeOf, dwellingWhenParentsGone, inheritanceDue, parentsJustGone, initialAssets, meetsCondition, moneySteps, naturalDeltas, previewChoice, previewPending, resolveChoiceStep, resolveEffects, settleAssets, statSteps, stepYear, visibleChoices, workStateOf, yearlyAssets, type ChoiceDef, type Condition, type Dwelling, type EventDef, type GameState, type ParentWealth, type ResolvedEffects, type ProfileId } from '../src/core';
+import { IMPACT_KEYS, calendarYear, advanceUntilDecision, applyResolved, applyStatDeltas, autoResolveStep, condContextOf, economyContextOf, impactOfEffects, incomeOf, dwellingWhenParentsGone, inheritanceDue, parentsJustGone, initialAssets, meetsCondition, moneySteps, naturalDeltas, previewChoice, previewPending, resolveChoiceStep, resolveEffects, settleAssets, statSteps, stepYear, syncPostEventFlags, visibleChoices, workStateOf, yearlyAssets, type ChoiceDef, type Condition, type Dwelling, type EventDef, type GameState, type ParentWealth, type ResolvedEffects, type ProfileId } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 
@@ -310,8 +310,8 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
           const where = `${era} ${ev.id}/${id} ${p.age}세`;
           // 스탯: 선택 직후 값에 그 해의 자연 변화
           expect(e.stats, where).toEqual(applyStatDeltas(a.stats, naturalDeltas(p.age, p.character!, a.stats, p.birthStats)));
-          // 플래그: 효과가 켜고 끈 그대로
-          expect(e.flags, where).toEqual(a.flags);
+          // 플래그: 효과가 켜고 끈 그대로 — 해 끝에 사건 효과가 모두 반영된 뒤 맞추는 파생 플래그(`lives_with_child`, FM7a R-586 — `syncPostEventFlags`)만 더해질 수 있다
+          expect(e.flags, where).toEqual(syncPostEventFlags({ ...a, assets: e.assets }, a.age + 1).flags);
           if (p.assets !== null) {
             // 20세 이상: 해마다 정산 한 번 (자연 변화로 바뀐 지식을 반영) + 그 해 끝에 부모가 처음 모두 떠났다면 간이 상속(core/inherit.ts — 해 끝 규칙, 선택 적용·영향 표기에는 없다).
             // 기준은 이 해를 시작할 때의 상태(p)이고, 끝 시점은 사망이면 같은 나이·아니면 한 살 많은 나이다.

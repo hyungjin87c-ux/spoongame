@@ -182,7 +182,8 @@ describe('사별 선택지 (r3): 영향 표기에는 상속이 없고, 상속은
       for (const c of choices) for (const b of c.bonuses ?? []) if (sets(b.effects)) mixed.push(`${e.id}/${c.id}: 조건부로 켠다`);
     }
     expect(mixed).toEqual([]);
-    expect(setters).toEqual([FAREWELL]);
+    // FM7a: 켜는 이벤트는 사별 이벤트 원본과 그 「남은 한 분」 변형 둘(문장만 다르고 선택지·효과는 같다)이다 — 변형도 세 선택지가 모두 켠다(위 mixed가 비어 있다)
+    expect(setters).toEqual([FAREWELL, `${FAREWELL}-mother-gone`, `${FAREWELL}-father-gone`]);
   });
 
   it('(a) previewChoice: 작별 장면의 영향 표기에 상속이 없다 — 재력 1·3·5단계가 같은 값(명시 비용뿐)이고 상속 표를 0으로 바꿔도 같다: stay -600·share -1,200은 자산 ▼, late는 순자산 변화가 없어 자산 항목이 없다', () => {

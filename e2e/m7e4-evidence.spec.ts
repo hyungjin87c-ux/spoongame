@@ -6,7 +6,7 @@ import { setRootFontPercent } from './textResize';
 
 /**
  * M7e-4 증거 화면과 단언 (QA-003-M7e FAIL T03a·T03b·L02, R-379, planner content-M7e.md 10절):
- *  - `youth-housing` 결정 카드: 독립 판은 「부모님 집으로 돌아간다」(return)가 보이고 「부모님 집에 머문다」(parents)는 없다 / 가족 집 판은 그 반대 / 독립 판에서 「혼자 먹는 저녁」을 겪었으면 둘 다 없다 (F-1)
+ *  - `youth-housing` 결정 카드: 독립 판은 「본가로 돌아간다」(return)가 보이고 「본가에 머문다」(parents)는 없다 / 가족 집 판은 그 반대 / 독립 판에서 「혼자 먹는 저녁」을 겪었으면 둘 다 없다 (F-1)
  *  - 부모님과 한집에 사는 미혼 판의 인생 기록에는 「혼자 맞는 명절」이 없다 (T03b)
  *  - 고친 라벨 두 개(「무리를 해서라도 뒷받침한다」·「무리를 해서라도 다녀온다」)가 320×568 · 글자 200%에서 낱말 중간에서 끊기지 않는다 (L02, 모든 라벨의 감사는 e2e/m7e4-labels.spec.ts)
  *  - 「따로 살기로 한다」를 고르면 인생 기록에 「따로 꾸리는 살림」 결과가 남는다 (R-379)
@@ -49,15 +49,15 @@ async function findHousing(page: Page, kind: 'independent' | 'family' | 'lonely'
 
 const labelsOf = async (page: Page): Promise<string[]> => page.locator('[data-testid="choice-panel"] .choice__label').allInnerTexts();
 
-test('T03a: 독립 판의 「살 곳을 구하는 일」에는 「부모님 집으로 돌아간다」가 보이고 「부모님 집에 머문다」는 없다 — 가족 집 판은 그 반대', async ({ page }, testInfo) => {
+test('T03a: 독립 판의 「살 곳을 구하는 일」에는 「본가로 돌아간다」가 보이고 「본가에 머문다」는 없다 — 가족 집 판은 그 반대', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 360, height: 740 });
   await startPageHidden(page);
   await page.goto('/');
   for (const [kind, shot, expected, absent] of [
-    ['independent', 'return-card', ['보증금이 낮은 월세방을 구한다', '부모님 집으로 돌아간다', '빚을 내서라도 집을 마련한다'], '부모님 집에 머문다'],
-    ['family', 'housing-family-card', ['보증금이 낮은 월세방을 구한다', '부모님 집에 머문다', '빚을 내서라도 집을 마련한다'], '부모님 집으로 돌아간다'],
+    ['independent', 'return-card', ['보증금이 낮은 월세방을 구한다', '본가로 돌아간다', '빚을 내서라도 집을 마련한다'], '본가에 머문다'],
+    ['family', 'housing-family-card', ['보증금이 낮은 월세방을 구한다', '본가에 머문다', '빚을 내서라도 집을 마련한다'], '본가로 돌아간다'],
   ] as const) {
     const { state, visible } = await findHousing(page, kind);
     expect(visible.length, kind).toBe(3);
@@ -80,7 +80,7 @@ test('T03a: 독립 판의 「살 곳을 구하는 일」에는 「부모님 집�
   expect(await labelsOf(page)).toEqual(['보증금이 낮은 월세방을 구한다', '빚을 내서라도 집을 마련한다']);
 });
 
-test('T03a: 「부모님 집으로 돌아간다」를 고르면 인생 기록에 결과가 남고 이후 주거가 가족 집이다', async ({ page }, testInfo) => {
+test('T03a: 「본가로 돌아간다」를 고르면 인생 기록에 결과가 남고 이후 주거가 가족 집이다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360에서만 실행');
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 360, height: 740 });
@@ -91,9 +91,9 @@ test('T03a: 「부모님 집으로 돌아간다」를 고르면 인생 기록에
   await expect(page.getByTestId('auto')).toBeEnabled();
   await page.getByTestId('choice-return').click();
   const log = page.getByTestId('log');
-  await expect(log).toContainText('짐을 싸 부모님 집으로 돌아갔습니다.');
+  await expect(log).toContainText('짐을 싸 본가로 돌아갔습니다.');
   await expect(log).toContainText('독립은 한 걸음 물러섰습니다.');
-  await expect(log).toContainText('선택: 부모님 집으로 돌아간다');
+  await expect(log).toContainText('선택: 본가로 돌아간다');
   await page.addStyleTag({ content: '.dash-head, .controls-fixed, .site-head { position: static !important; box-shadow: none !important; }' });
   await log.scrollIntoViewIfNeeded();
   await log.screenshot({ path: `${SHOT}-return-log.png` });
@@ -114,7 +114,7 @@ test('T03b: 부모님과 한집에 사는 미혼 판(가족 집)의 인생 기�
          if (s.age >= 61 && s.pending === null) break;
          if (s.pending !== null) {
            const ids = s.pending.choiceIds;
-           // 가족 집에 남는 길(부모님 집에 머문다)을 고르고, 결혼·독립으로 가는 선택은 피한다(마지막 선택지 우선)
+           // 가족 집에 남는 길(본가에 머문다)을 고르고, 결혼·독립으로 가는 선택은 피한다(마지막 선택지 우선)
            const pick = s.pending.eventId === 'youth-housing' && ids.includes('parents') ? 'parents' : ids[(seed + n++) % ids.length];
            s = core.resolveChoice(s, s.pending.key, pick);
          } else s = core.stepYear(s).state;

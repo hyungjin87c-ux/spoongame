@@ -265,7 +265,7 @@ describe('M7e-4 T03b·F-2: 「혼자 맞는 명절」과 「혼자 사는 집」
     expect(holiday.conditions?.notFlags).toEqual(['married']);
     const alone = eventOf('senior-alone');
     expect(alone.conditions?.assets?.dwelling).toEqual(['rent', 'jeonse', 'own']);
-    expect(alone.conditions?.notFlags).toEqual(['married', 'moved_home']);
+    expect(alone.conditions?.notFlags).toEqual(['married', 'moved_home', 'lives_with_child']); // FM7a R-586: 함께 사는 자녀가 있는 판에서는 「혼자 사는 집」이 아니다
     // 조치 없음으로 판정한 「혼자」 서사는 조건을 걸지 않았다 (planner 10-1절 전수)
     expect(eventOf('youth-single-years').conditions?.assets).toBeUndefined();
   });
@@ -345,11 +345,12 @@ describe('M7e-4 T03a: 「살 곳을 구하는 일」 — 부모님 집에 머문
 
   it('return의 라벨·결과·효과, parents는 글자·효과 그대로 (가족 집 판에는 「머문다」가 맞다)', () => {
     const back = choiceOf('youth-housing', 'return');
-    expect(back.label).toBe('부모님 집으로 돌아간다');
-    expect(back.result).toBe('짐을 싸 부모님 집으로 돌아갔습니다. 한 식탁에 앉는 저녁이 다시 늘었고 살림도 가벼워졌습니다. 독립은 한 걸음 물러섰습니다.');
+    // FM7a(T09, 형진 님 승인 2026-11-06): 「부모님 집」 → 「본가」 — 한 분이 떠난 판에서도 틀리지 않는 말(선택지 이름 둘과 결과 한 곳, 모든 판에서)
+    expect(back.label).toBe('본가로 돌아간다');
+    expect(back.result).toBe('짐을 싸 본가로 돌아갔습니다. 한 식탁에 앉는 저녁이 다시 늘었고 살림도 가벼워졌습니다. 독립은 한 걸음 물러섰습니다.');
     expect(back.effects).toEqual({ stats: { relationships: 2, happiness: -2 }, assets: { net: 400 }, setFlags: ['lives_with_parents'] });
     const parents = choiceOf('youth-housing', 'parents');
-    expect(parents.label).toBe('부모님 집에 머문다');
+    expect(parents.label).toBe('본가에 머문다');
     expect(parents.result).toBe('집을 나서지 않기로 했습니다. 돈은 아꼈지만 독립은 조금씩 미뤄졌습니다.');
     expect(parents.effects).toEqual({ stats: { relationships: 1, happiness: -1 }, assets: { net: 400 }, setFlags: ['lives_with_parents'] });
   });
@@ -404,6 +405,8 @@ describe('M7e-4 L02: 선택지 라벨의 어절은 5음절 이하 (번호 원 �
       'youth-night-study/save',
       'middle-child-school/fund',
       'middle-parents-farewell/share',
+      'middle-parents-farewell-mother-gone/share', // FM7a 「남은 한 분」 변형(문장 그대로 — 원본과 같은 라벨)
+      'middle-parents-farewell-father-gone/share',
       'middle-career-peak/accept',
       'middle-layoff/open',
       'senior-illness/treat',

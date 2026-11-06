@@ -9,7 +9,7 @@ import { NOTE_CARDS } from '../src/data/noteCards';
 
 /**
  * 카드와 인용의 연결 (SPEC-003 MD2·EV6, M7b — docs/data/content-M7b.md 1-2·1-4·5절, 마스터 결정 M-1~M-9).
- * 이벤트 JSON의 `citation`(문자열 또는 세상별 객체) / `noCitation`(사유 코드 X1~X6·D) / 2차 대기 목록(`src/data/citationPending.ts`)이 선택지 이벤트 90개를 빠짐없이 덮고,
+ * 이벤트 JSON의 `citation`(문자열 또는 세상별 객체) / `noCitation`(사유 코드 X1~X6·D) / 2차 대기 목록(`src/data/citationPending.ts`)이 선택지 이벤트 94개를 빠짐없이 덮고,
  * 연결된 인용이 그 세상·그 해에 실제로 보일 수 있는지, `usedBy` 역색인이 맞는지, MD2 **1차 게이트**(지금 ≥ 40% · 다가올 ≥ 40% · 지난 ≥ 8%)와 「서로 다른 연결 인용 ≥ 30」을 넘는지 본다.
  * MD2의 70%(지금·다가올)는 **2차 최종 목표**라 여기서 판정하지 않는다 — 이 파일의 임계 시험 이름에 「1차 게이트」가 붙은 이유다.
  */
@@ -26,7 +26,8 @@ const isDeadCell = (id: string, era: Era): boolean => GM4_DEAD_CELLS.includes(`$
 /** content-M7b 1-4절 — 원칙적 무인용 X1~X6 (사람이 적은 기대값. 이 목록의 변경은 마스터 승인, 결정 M-8) */
 const X_EVENTS: Record<string, string[]> = {
   X1: ['infant-fever', 'infant-meal-start', 'middle-health-check', 'middle-health-check-later', 'middle-health-crisis', 'senior-illness', 'senior-illness-later', 'senior-fall', 'senior-diet'],
-  X2: ['middle-parents-farewell', 'senior-last-wishes', 'senior-estranged-child'],
+  // FM7a: 임종 사건의 「남은 한 분」 변형 둘은 원본과 같은 사유(X2)를 그대로 가진다
+  X2: ['middle-parents-farewell', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone', 'senior-last-wishes', 'senior-estranged-child'],
   X3: ['middle-debt-guarantee'],
   X4: ['youth-night-study'],
   X5: ['youth-machine-partner', 'middle-new-skills'],
@@ -38,9 +39,9 @@ const D_EVENTS = [
   'infant-sibling-toy', 'infant-daycare-wait', 'youth-matchmaker', 'infant-hospital-stay',
 ];
 
-describe('선택지 이벤트 90개는 모두 citation / noCitation / 2차 대기 중 하나다 (빠뜨린 카드 0)', () => {
+describe('선택지 이벤트 94개는 모두 citation / noCitation / 2차 대기 중 하나다 (빠뜨린 카드 0)', () => {
   it('선택지 이벤트가 90개이고 서술 이벤트에는 citation·noCitation이 없다', () => {
-    expect(CARDS).toHaveLength(90);
+    expect(CARDS).toHaveLength(94); // FM7a: 「남은 한 분」 변형 사건 4개(care·farewell × 어머니·아버지가 먼저 떠난 판)가 원본의 citation·noCitation을 그대로 가진다
     for (const e of EVENT_POOL.events.filter((x) => x.choices === undefined)) {
       expect(e.citation, e.id).toBeUndefined();
       expect(e.noCitation, e.id).toBeUndefined();
@@ -60,7 +61,7 @@ describe('선택지 이벤트 90개는 모두 citation / noCitation / 2차 대�
       else if (e.noCitation !== undefined) counts.noCitation++;
       else counts.pending++;
     }
-    expect(counts).toEqual({ citation: 45, noCitation: 32, pending: 13 });
+    expect(counts).toEqual({ citation: 47, noCitation: 34, pending: 13 });
   });
 
   it('citation이 가리키는 id는 모두 citations.json에 있고 verified·usable이며, 인용이 금지한 이벤트(usageCaution.forbiddenEvents)에 연결하지 않았다 (근거 없는 인용 0)', () => {
@@ -81,12 +82,12 @@ describe('선택지 이벤트 90개는 모두 citation / noCitation / 2차 대�
 });
 
 describe('원칙적 무인용(X)·자료 없음(D) 목록 (마스터 결정 M-8)', () => {
-  it('noCitation 사유 코드별 카드가 content-M7b 1-4절 목록과 같다 (X1~X6 18개 · D 14개)', () => {
+  it('noCitation 사유 코드별 카드가 content-M7b 1-4절 목록과 같다 (X1~X6 20개 · D 14개)', () => {
     const got: Record<string, string[]> = {};
     for (const e of CARDS) if (e.noCitation !== undefined) (got[e.noCitation] ??= []).push(e.id);
     for (const code of Object.keys(X_EVENTS)) expect((got[code] ?? []).sort(), code).toEqual([...X_EVENTS[code]].sort());
     expect((got.D ?? []).sort()).toEqual([...D_EVENTS].sort());
-    expect(Object.values(X_EVENTS).flat()).toHaveLength(18);
+    expect(Object.values(X_EVENTS).flat()).toHaveLength(20);
   });
 
   it('X 카드는 시대별 등장 카드의 25% 이하다 (새 카드가 들어와도 X를 늘려 비율을 피해 가지 못한다)', () => {
@@ -134,7 +135,7 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
       if (era === 'future' && c.eras.includes('present')) expect(c.eraPrefix?.future, `${e.id} ${id}`).toBe('지금 기준으로는');
       if (era === 'past' && c.kind === 'research') expect(c.eraPrefix?.past, `${e.id} ${id}`).toBeDefined();
     }
-    expect(cells).toBe(88); // 지난 7 + 지금 42 + 다가올 39 (유치원 고르기의 다가올 칸은 이벤트 연도 구간이 2024년까지라 사라졌다 — 연도 구간 변환 MG2)
+    expect(cells).toBe(92); // 지난 7 + 지금 44 + 다가올 41 (FM7a 병환 변형 둘이 지금·다가올 칸을 하나씩 더한다) (유치원 고르기의 다가올 칸은 이벤트 연도 구간이 2024년까지라 사라졌다 — 연도 구간 변환 MG2)
   });
 
   it('연결 칸마다 인용의 유효 연도 범위가 그 카드가 그 세상에서 뜰 수 있는 게임 속 연도 범위와 겹친다 — 연결해 놓고 영원히 안 보이는 칸이 없다', () => {
@@ -165,7 +166,7 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
       expect(v.sourceLine, `${e.id} ${era}`).not.toMatch(/https?:|www\.|doi|pmid/i);
       checked++;
     }
-    expect(checked).toBe(88 - GM4_DEAD_CELLS.length);
+    expect(checked).toBe(92 - GM4_DEAD_CELLS.length);
   });
 
   it('지난 세상은 그 시기보다 늦은 값이 새지 않는다: 지난 세상 칸의 인용이 가진 가장 늦은 연도 이전의 게임 속 연도에서는 보이지 않는다', () => {
@@ -181,11 +182,13 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
     }
   });
 
-  it('한 인용이 여러 카드에 쓰일 때는 한 판에 함께 나올 수 없거나 나이 창이 15년 이상 떨어진 카드뿐이다 (P5) — 지금은 c-011(22~32세 / 52~62세) 한 건', () => {
+  it('한 인용이 여러 카드에 쓰일 때는 한 판에 함께 나올 수 없거나 나이 창이 15년 이상 떨어진 카드뿐이다 (P5) — 지금은 c-011(22~32세 / 52~62세)과, 같은 사건의 「남은 한 분」 변형끼리 나누는 c-081(FM7a) 두 건', () => {
     const index = usedByIndex(EVENT_POOL.events);
     const shared = Object.entries(index).filter(([, ids]) => ids.length > 1);
-    expect(shared.map(([id]) => id)).toEqual(['c-011']);
-    for (const [id, ids] of shared) {
+    expect(shared.map(([id]) => id).sort()).toEqual(['c-011', 'c-081']);
+    // c-081: 병환 사건의 원본과 변형 둘(같은 사건 가족, FM7a K23) — 문장만 다른 한 사건이라 인용을 그대로 나눈다. 원본을 본 뒤 한 분이 떠나 변형이 이어지는 판이 있을 수 있다(작업자 보고: 마스터 결정 필요)
+    expect([...(index['c-081'] ?? [])].sort()).toEqual(['middle-parents-care', 'middle-parents-care-father-gone', 'middle-parents-care-mother-gone']);
+    for (const [id, ids] of shared.filter(([id]) => id !== 'c-081')) {
       const win = ids.map((evId) => {
         const e = EVENT_POOL.byId.get(evId)!;
         return { evId, min: e.ageRange?.min ?? 0, max: e.ageRange?.max ?? 130 };
@@ -230,21 +233,21 @@ describe('usedBy 역색인 (M-5)', () => {
 describe('MD2 1차 게이트 (마스터 결정 M-1: 시대별 정적 연결률 지금 ≥ 40% · 다가올 ≥ 40% · 지난 ≥ 8%) — 70%는 2차 최종 목표', () => {
   const cov = citationCoverage(EVENT_POOL.events);
 
-  it('분모는 시대별 등장 가능한 선택지 카드 수다: 지난 76 · 지금 84 · 다가올 84 (이벤트 연도 구간 변환 MG2 뒤 — 변환 전 다가올 83)', () => {
-    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual([76, 84, 84]);
+  it('분모는 시대별 등장 가능한 선택지 카드 수다: 지난 80 · 지금 88 · 다가올 88 (이벤트 연도 구간 변환 MG2 뒤 — 변환 전 다가올 83. FM7a 변형 4개가 세 시대에 각각 더해졌다)', () => {
+    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual([80, 88, 88]);
   });
 
-  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 39/84 = 46.4% — 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {
+  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 41/88 = 46.6% — 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {
     expect(cov.present.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.present);
-    expect(cov.present.connected).toBe(39);
+    expect(cov.present.connected).toBe(41);
   });
 
-  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 39/84 = 46.4% — 변환 전 40/83)', () => {
+  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 41/88 = 46.6% — 변환 전 40/83)', () => {
     expect(cov.future.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.future);
-    expect(cov.future.connected).toBe(39);
+    expect(cov.future.connected).toBe(41);
   });
 
-  it('1차 게이트: 지난 세상 정적 연결률 ≥ 8% (실제 7/76 = 9.2%) — 약한 인용으로 채우지 않고 구조적 한계(중년·노년 33개는 1970~89 통계와 인생 시기가 겹치지 않는다)를 안고 간다', () => {
+  it('1차 게이트: 지난 세상 정적 연결률 ≥ 8% (실제 7/80 = 8.75% — FM7a 변형 4개가 분모만 늘렸다) — 약한 인용으로 채우지 않고 구조적 한계(중년·노년 33개는 1970~89 통계와 인생 시기가 겹치지 않는다)를 안고 간다', () => {
     expect(cov.past.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.past);
     expect(cov.past.connected).toBe(7);
     expect(cov.past.ids.sort()).toEqual(['infant-new-sibling', 'school-early-work', 'school-exam', 'school-family-priority', 'youth-child', 'youth-first-job', 'youth-marriage']);

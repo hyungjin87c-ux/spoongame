@@ -19,7 +19,7 @@ export async function heavyLifeState(page: Page): Promise<GameState> {
        let farewell = false;
        while (s.phase === 'life' && s.age < 66) {
          if (s.pending !== null) {
-           if (s.pending.eventId === 'middle-parents-farewell') farewell = true;
+           if (s.pending.eventId.startsWith('middle-parents-farewell')) farewell = true; // FM7a: 한 분이 먼저 떠난 판은 「남은 한 분」 변형(-mother-gone·-father-gone)이 임종을 맡는다
            s = core.resolveChoiceStep(s, s.pending.key, s.pending.choiceIds[0]).state;
          } else s = core.stepYear(s).state;
        }

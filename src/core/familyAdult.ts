@@ -70,6 +70,11 @@ function flagIndexOf(pool: EventPool): FlagIndex {
   return built;
 }
 
+/** 이 플래그를 켜는 사건의 id들 (원본·변형 모두 — 효과·선택지 효과·보너스까지 본다). 사건 id를 코드에 박지 않고 풀에서 찾는다 (R-561) */
+export function flagSettersOf(pool: EventPool, flag: string): readonly string[] {
+  return flagIndexOf(pool).setters.get(flag) ?? [];
+}
+
 /** 이 플래그를 켜는 사건 중 이미 본 것의 주인공 나이들 (오름차순) */
 function seenAges(game: Pick<AdultSource, 'seen' | 'age'>, ids: readonly string[] | undefined): number[] {
   return (ids ?? [])

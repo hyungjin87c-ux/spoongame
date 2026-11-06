@@ -38,6 +38,7 @@ const SYSTEM_FLAGS: ReadonlySet<string> = new Set([
   'has_older_sibling',
   'has_younger_sibling',
   'has_sibling',
+  'lives_with_child',
   'mother_gone',
   'father_gone',
   'mother_apart',

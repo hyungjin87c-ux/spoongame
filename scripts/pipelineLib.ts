@@ -338,6 +338,9 @@ export function checkBirthReport(game: GameState, where: string): string[] {
  * applied = 실제로 대조한 규칙 수(공허 통과 방지 — 이벤트가 하나도 안 나온 판만 보면 0이다).
  */
 const ORDER_WORDS = ['첫째', '둘째', '셋째', '넷째', '다섯째 이상'] as const; // 형제 순서 1~5의 서술문 낱말 (구현의 표를 읽지 않고 따로 적었다)
+/** 「남은 한 분」 변형 사건(FM7a)은 원본과 같은 사건이다 — 원본 id로 읽는다 */
+export const baseEventId = (id: string): string => id.replace(/-(?:mother|father)-gone$/, '');
+
 export const FAMILY_RULES = {
   olderParentAtEvent: { 'middle-parents-care': [60, 100], 'middle-parents-farewell': [65, 100] } as Readonly<Record<string, readonly [number, number]>>,
   siblingMotherMax: 45,
@@ -358,7 +361,7 @@ export function checkFamilyRules(game: GameState, where: string, family?: Family
   const older = (age: number) => Math.max(r.mother.age, r.father.age) + age;
   for (const h of game.history) {
     if (h.eventId === undefined) continue;
-    const range = FAMILY_RULES.olderParentAtEvent[h.eventId];
+    const range = FAMILY_RULES.olderParentAtEvent[baseEventId(h.eventId)];
     if (range !== undefined) {
       applied++;
       const o = older(h.age);
@@ -373,7 +376,7 @@ export function checkFamilyRules(game: GameState, where: string, family?: Family
   }
   if (game.flags.includes('parents_gone')) {
     applied++;
-    if (!game.history.some((h) => h.eventId === 'middle-parents-farewell')) bad('사별(parents_gone)인데 임종 사건이 연표에 없다');
+    if (!game.history.some((h) => h.eventId !== undefined && baseEventId(h.eventId) === 'middle-parents-farewell')) bad('사별(parents_gone)인데 임종 사건이 연표에 없다');
   }
   // 식구 카드의 위 형제 (R-330): 누적 나이 차가 어머니의 첫 출산 한도 안이다. 첫째는 위 형제가 없어 대조할 것이 없다(applied에 세지 않는다)
   const olderSiblings = (family ?? familyOf(game)).siblings.filter((s) => s.older);

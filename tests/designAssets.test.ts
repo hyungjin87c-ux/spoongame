@@ -1137,7 +1137,10 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
   });
 
   it('구현 상수가 copy.md 7절과 같다 — notes.json 질문 10문장(카드 7 + 변형 2 + 수동 1, r2 D2·D-87)·라벨 주제 8, NOTE_TEXT 시트 문구·알림 네 문장', () => {
-    const prompts = [...NOTE_CARDS.flatMap((c) => [c.prompt, ...(c.variants ?? []).map((v) => v.prompt)]), NOTE_MANUAL.prompt];
+    // FM7a(T10): 부모님 글감의 「남은 한 분」 변형 둘은 designer copy.md 밖의 승인 문장이다(docs/design/fm7a-event-texts.md, tests/familyText.test.ts) — 이 시험은 designer 10문장만 본다
+    const all = [...NOTE_CARDS.flatMap((c) => [c.prompt, ...(c.variants ?? []).map((v) => v.prompt)]), NOTE_MANUAL.prompt];
+    const prompts = all.filter((p) => !/^(?:아버지|어머니)가 예전보다 나이 들었다고/.test(p));
+    expect(all.length - prompts.length, 'FM7a T10 변형').toBe(2);
     expect(prompts.length).toBe(10);
     expect(new Set(prompts).size).toBe(10);
     for (const p of prompts) expect(QUESTIONS, p).toContain(p);

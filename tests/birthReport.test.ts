@@ -608,6 +608,8 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
     for (const rule of PARENT_EVENTS) {
       const ev = EVENT_POOL.byId.get(rule.id)!;
       expect(ev.conditions?.parentAge, rule.id).toEqual({ min: rule.min, max: rule.max });
+      // FM7a: 「남은 한 분」 변형도 같은 나이 조건이다 (조건 `parentAge`는 두 분 중 큰 쪽을 읽는다 — 알려진 한계)
+      for (const gone of ['mother', 'father']) expect(EVENT_POOL.byId.get(`${rule.id}-${gone}-gone`)!.conditions?.parentAge, `${rule.id}-${gone}-gone`).toEqual({ min: rule.min, max: rule.max });
     }
     // SPEC-009 K2 (FM4b): 동생 반응 카드는 추첨 사건이 아니라 가족 구성이 정한 해에 강제로 일어난다(`trigger: 'family'`) — 첫째만(birthOrder)·어머니 나이 한도(R-268)는 사건 조건이 아니라
     // 구성(`family.y` — 출생 때 첫째의 첫 동생만 · 어머니 나이 ≤ 45 · INV-1 T-FA3d)이 지킨다. 그래서 조건은 지워졌고 나이 창은 구성의 터울(2~5)과 같다.
@@ -675,7 +677,8 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
             expect(r.birthOrder, `${era} 시드 ${seed} 동생 사건`).toBe(1);
             expect(parentAgeAt(r.mother, h.age), `${era} 시드 ${seed} 동생 사건 ${h.age}세 — 어머니 나이 (R-268)`).toBeLessThanOrEqual(45);
           }
-          const rule = PARENT_EVENTS.find((e) => e.id === h.eventId);
+          // FM7a: 「남은 한 분」 변형(원본 id + -mother-gone·-father-gone)은 원본과 같은 나이 조건을 가진다 — 원본 규칙으로 읽는다
+          const rule = PARENT_EVENTS.find((e) => e.id === (h.eventId ?? '').replace(/-(?:mother|father)-gone$/, ''));
           if (rule === undefined) continue;
           seen++;
           const older = olderParent(r, h.age);
@@ -683,7 +686,7 @@ describe('가족 정합 (BR6, CM9): 출생 때 정한 부모 나이·직업·형
           expect(older, `${era} 시드 ${seed} ${rule.id} ${h.age}세`).toBeLessThanOrEqual(rule.max);
         }
         // 사별 플래그: 임종 사건에서만 켜진다(그 사건이 나이 조건을 통과했다는 뜻)
-        if (end.flags.includes('parents_gone')) expect(end.history.some((h) => h.eventId === 'middle-parents-farewell'), `${era} 시드 ${seed}`).toBe(true);
+        if (end.flags.includes('parents_gone')) expect(end.history.some((h) => (h.eventId ?? '').startsWith('middle-parents-farewell')), `${era} 시드 ${seed}`).toBe(true); // FM7a: 원본 또는 「남은 한 분」 변형
         // 출생신고 서술문의 형제 순서와 저장된 순서가 같다
         expect(end.history[0].text).toContain(`${BIRTH_ORDER_LABEL[r.birthOrder]}입니다.`);
       }

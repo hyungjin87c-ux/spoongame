@@ -126,7 +126,10 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
     expect(wrong).toEqual([]);
   });
 
-  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) = 풀 140개 전부', () => {
+  /** FM7a 「남은 한 분」 변형 4개(원본 id + -mother-gone·-father-gone): 원본의 효과·선택지·보너스를 그대로 가진 문장 변형이라 변환표에 따로 적지 않는다 — 원본(`middle-parents-care`·`middle-parents-farewell`)의 행이 곧 변형의 행이다 */
+  const FM7A_VARIANTS = ['middle-parents-care-mother-gone', 'middle-parents-care-father-gone', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'];
+
+  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) + FM7a 변형 4개(원본의 행을 그대로 쓴다) = 풀 144개 전부', () => {
     const inTable = new Set(ROWS.map((r) => r.eventId));
     const unchanged = parseUnchanged();
     expect(unchanged).toHaveLength(37);
@@ -138,8 +141,15 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
       expect(unchanged.includes(id), `${id}가 5-5에 있다`).toBe(false);
       expect(JSON.stringify(eventOf(id)), id).not.toMatch(/"assets"/);
     }
-    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
-    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length);
+    for (const id of FM7A_VARIANTS) {
+      expect(inTable.has(id), `${id}가 변환표에 있다`).toBe(false);
+      expect(unchanged.includes(id), `${id}가 5-5에 있다`).toBe(false);
+      // 효과는 원본과 같은 JSON이다 (문장 외 필드 동일은 tests/familyText.test.ts가 본다)
+      const base = eventOf(id.replace(/-(?:mother|father)-gone$/, ''));
+      expect(JSON.stringify(eventOf(id).choices!.map((c) => [c.id, c.effects, c.bonuses, c.requires])), id).toBe(JSON.stringify(base.choices!.map((c) => [c.id, c.effects, c.bonuses, c.requires])));
+    }
+    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
+    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length);
     for (const id of unchanged) {
       const ev = eventOf(id);
       const effs: Array<Effects | undefined> = [ev.effects, ...(ev.bonuses ?? []).map((b) => b.effects), ...(ev.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];
@@ -281,6 +291,9 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
     ['youth-exam-prep', 'persist', 'assets'],
     ['middle-parents-care', 'facility', 'assets'],
     ['senior-travel', 'go', 'assets'],
+    // FM7a: 병환의 「남은 한 분」 변형 둘은 원본의 시설 선택 조건을 그대로 가진다 (효과·선택지는 문장 외 필드 동일)
+    ['middle-parents-care-mother-gone', 'facility', 'assets'],
+    ['middle-parents-care-father-gone', 'facility', 'assets'],
   ];
 
   it('열 곳이 정확히 이 10개 + M7a 10개다: 자산 또는 부모 재력 조건이 걸린 선택지는 이것뿐이다', () => {
