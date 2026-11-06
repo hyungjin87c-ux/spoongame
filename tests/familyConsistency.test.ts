@@ -64,6 +64,8 @@ interface Tally {
   kidWith: number;
   atZero: number;
   sameYear: number;
+  /** 별세 줄이 난 해에 그 한 분의 플래그를 notFlags로 읽는 사건이 같은 해에 일어난 수 (후속 199 — 0이어야 한다) */
+  sameYearReader: number;
   seniorAlone: number;
   /** FM6 카드: 배우자·자녀·친구가 보인 판 수 */
   spouse: number;
@@ -74,7 +76,7 @@ interface Tally {
 }
 
 describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
-  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0, sibLost: 0, kidApart: 0, kidWith: 0, atZero: 0, sameYear: 0, seniorAlone: 0, spouse: 0, child: 0, friend: 0, adultNames: 0 };
+  const tally: Tally = { lives: 0, born: 0, cards: 0, left: 0, gp: 0, parentGone: 0, apart: 0, checks: 0, heavy: 0, plain: 0, maxLen: 0, maxLog: 0, sibLost: 0, kidApart: 0, kidWith: 0, atZero: 0, sameYear: 0, sameYearReader: 0, seniorAlone: 0, spouse: 0, child: 0, friend: 0, adultNames: 0 };
   const problems: string[] = [];
   const bad = (where: string, msg: string): void => {
     if (problems.length < 40) problems.push(`${where}: ${msg}`);
@@ -228,6 +230,15 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
                 if (!dead && (scene.members.some((m) => m.id === id) || !scene.changed.includes('sib-gone'))) bad(where, `${h.age + 1}세 그림에서 형제 ${id}가 안 빠졌거나 바뀐 때(sib-gone)가 없다`);
               }
             }
+            // 후속 199(완료 기준 3 「켜진 해부터」 = 별세 줄이 난 그 해 포함): 별세 줄이 난 해에는 그 한 분의 플래그(mother_gone·father_gone)를 notFlags로 읽는 사건(병환·임종 원본, 「아빠/엄마」 어린 시절 사건)도 같은 해에 일어나지 않는다
+            if (h.eventId === 'fam-parent-gone') {
+              const goneFlag = f.l.find((e) => e[0] === 5)![2] === 1 ? 'mother_gone' : 'father_gone';
+              const reader = added.find((x) => x.age === h.age && (EVENT_POOL.byId.get(x.eventId ?? '')?.conditions?.notFlags ?? []).includes(goneFlag));
+              if (reader !== undefined) {
+                tally.sameYearReader++;
+                bad(where, `${h.age}세 별세 줄과 같은 해에 ${goneFlag}를 notFlags로 읽는 사건 ${reader.eventId}가 일어났다`);
+              }
+            }
             // 가림(4-9절): 모든 가족 줄의 분류가 글자 표와 같고, 분류가 붙은 줄(별세·이혼)은 가림을 켜면 문장이 가려지는 줄이다 (R-560)
             if ((h.eventId ?? '').startsWith('fam-')) {
               const want = FAMILY_LINE_HEAVY[h.eventId!] ?? null;
@@ -319,7 +330,7 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
     expect(tally.kidApart, '자녀가 따로 사는 해').toBeGreaterThan(500);
     expect(tally.kidWith, '자녀가 함께 사는 해').toBeGreaterThan(500);
     expect(tally.seniorAlone, 'senior-alone이 일어난 판').toBeGreaterThan(5);
-    expect(tally.atZero + tally.sameYear, '0세 해 별세·이혼 줄 + 같은 해 겹침').toBe(0);
+    expect(tally.atZero + tally.sameYear + tally.sameYearReader, '0세 해 별세·이혼 줄 + 같은 해 겹침(parents_gone 세터 · 한 분 플래그를 notFlags로 읽는 사건)').toBe(0);
     expect(tally.plain, '분류 없는 줄(동생 출생·독립)').toBeGreaterThan(100);
     expect(tally.maxLen, `판 끝 family 최대 ${tally.maxLen}자 · 로그 최대 ${tally.maxLog}줄`).toBeLessThanOrEqual(1000);
   });

@@ -186,7 +186,7 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
     const index = usedByIndex(EVENT_POOL.events);
     const shared = Object.entries(index).filter(([, ids]) => ids.length > 1);
     expect(shared.map(([id]) => id).sort()).toEqual(['c-011', 'c-081']);
-    // c-081: 병환 사건의 원본과 변형 둘(같은 사건 가족, FM7a K23) — 문장만 다른 한 사건이라 인용을 그대로 나눈다. 원본을 본 뒤 한 분이 떠나 변형이 이어지는 판이 있을 수 있다(작업자 보고: 마스터 결정 필요)
+    // c-081: 병환 사건의 원본과 변형 둘(같은 사건 가족, FM7a K23) — 문장만 다른 한 사건이라 인용을 그대로 나눈다. 원본을 본 뒤 한 분이 떠나 변형이 이어지는 판이 있을 수 있다(P5와 부딪치는 알려진 겹침 — 마스터 수용, 후속 199)
     expect([...(index['c-081'] ?? [])].sort()).toEqual(['middle-parents-care', 'middle-parents-care-father-gone', 'middle-parents-care-mother-gone']);
     for (const [id, ids] of shared.filter(([id]) => id !== 'c-081')) {
       const win = ids.map((evId) => {

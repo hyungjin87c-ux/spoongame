@@ -37,6 +37,8 @@ export type AdultSource = Pick<GameState, 'age' | 'flags' | 'seen' | 'birthRepor
 interface FlagIndex {
   setters: Map<string, string[]>;
   requirers: Map<string, string[]>;
+  /** 이 플래그가 켜져 있으면 일어나지 않는 사건들(`conditions.notFlags`) */
+  blockers: Map<string, string[]>;
 }
 const indexCache = new WeakMap<EventPool, FlagIndex>();
 
@@ -56,6 +58,7 @@ function flagIndexOf(pool: EventPool): FlagIndex {
   if (hit !== undefined) return hit;
   const setters = new Map<string, string[]>();
   const requirers = new Map<string, string[]>();
+  const blockers = new Map<string, string[]>();
   const push = (m: Map<string, string[]>, flag: string, id: string): void => {
     const list = m.get(flag);
     if (list === undefined) m.set(flag, [id]);
@@ -64,8 +67,9 @@ function flagIndexOf(pool: EventPool): FlagIndex {
   for (const ev of pool.events) {
     for (const e of effectsOf(ev)) for (const f of e.setFlags ?? []) push(setters, f, ev.id);
     for (const f of ev.conditions?.flags ?? []) push(requirers, f, ev.id);
+    for (const f of ev.conditions?.notFlags ?? []) push(blockers, f, ev.id);
   }
-  const built = { setters, requirers };
+  const built = { setters, requirers, blockers };
   indexCache.set(pool, built);
   return built;
 }
@@ -73,6 +77,14 @@ function flagIndexOf(pool: EventPool): FlagIndex {
 /** 이 플래그를 켜는 사건의 id들 (원본·변형 모두 — 효과·선택지 효과·보너스까지 본다). 사건 id를 코드에 박지 않고 풀에서 찾는다 (R-561) */
 export function flagSettersOf(pool: EventPool, flag: string): readonly string[] {
   return flagIndexOf(pool).setters.get(flag) ?? [];
+}
+
+/**
+ * 이 플래그가 켜져 있으면 일어나지 않는 사건의 id들 — **사건 수준** `conditions.notFlags`에 이 플래그가 든 것(선택지 `requires`는 보지 않는다). 사건 id를 코드에 박지 않고 풀에서 찾는다.
+ * 부모 한 분이 떠난 해에 그 `mother_gone`·`father_gone`을 읽는 사건을 그 해 후보에서 빼는 데 쓴다(FM7a, 별세 해 포함 규칙).
+ */
+export function flagBlockersOf(pool: EventPool, flag: string): readonly string[] {
+  return flagIndexOf(pool).blockers.get(flag) ?? [];
 }
 
 /** 이 플래그를 켜는 사건 중 이미 본 것의 주인공 나이들 (오름차순) */

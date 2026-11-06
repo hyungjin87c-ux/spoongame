@@ -42,7 +42,7 @@ describe(`인용 노출률 보고 (프로필별 ${LIVES}판, 자동 성향)`, ()
   it('한 판에서 같은 인용이 두 번 보이는 판은 허용 쌍(c-011: 22~32세 첫 일자리 / 52~62세 아이의 앞날, 나이 창 20년 차이)과 FM7a 병환 변형 쌍(c-081)뿐이다 (P5)', () => {
     for (const r of [...rows, r1]) expect(Object.keys(r.repeatById), `${r.era}`).toEqual(Object.keys(r.repeatById).filter((id) => id === 'c-011' || id === 'c-081'));
     // c-081: 병환 원본(`middle-parents-care`)을 본 뒤 한 분이 먼저 떠나 「남은 한 분」 변형이 이어지는 판 — SPEC-009 K23이 변형은 원본의 인용을 그대로 쓰라고 해서 생긴다(원본↔변형은 한 판에 함께 나올 수 있다).
-    // P5(한 판에서 같은 인용을 두 번 보이지 않는다)와 부딪치는 알려진 겹침이라 **마스터 결정 대기**다 — 그때까지 판 비율의 상한(6%)으로 지켜본다(실제 값: 산업화 0.4% · X 4.7% · 알파 3.6%, `npm run report:citations`)
+    // P5(한 판에서 같은 인용을 두 번 보이지 않는다)와 부딪치는 알려진 겹침인데 **마스터가 수용했다(후속 199)** — 코드는 그대로 두고 판 비율의 상한(6%)으로 지켜본다(실제 값: 산업화 0.4% · X 4.7% · 알파 3.6%, `npm run report:citations`)
     for (const r of rows) expect((r.repeatById['c-081'] ?? 0) / LIVES, `${r.era} c-081 반복 판 비율`).toBeLessThanOrEqual(0.06);
     // 이어지는 카드(체인)는 서로 다른 인용을 쓰므로 한 판의 체인에서 같은 인용이 두 번 뜨지 않는다 — 인용이 한 구간만 가진 산업화 세대는 c-081 말고는 반복이 없다
     expect(Object.keys(by.industrial.repeatById).filter((id) => id !== 'c-081')).toEqual([]);

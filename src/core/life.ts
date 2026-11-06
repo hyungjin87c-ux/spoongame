@@ -34,7 +34,8 @@ import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
-import { flagSettersOf } from './familyAdult';
+import { flagBlockersOf, flagSettersOf } from './familyAdult';
+import { LOG_PARENT_GONE } from './familyModel';
 import { applyFamilyChanges, familyChangesFor, goneYearRuleNow, syncPostEventFlags } from './familyTick';
 import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllGone, parentsJustGone, siblingCountOf } from './inherit';
 import type { NoteCardDef } from './noteCards';
@@ -334,7 +335,17 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   const fam = familyChangesFor(state, age, pool);
   // R-561 (FM7a): 부모 한 분 별세 줄이 난 해에는 `parents_gone`을 켜는 사건(원본·변형 모두)을 그 해 후보에서 뺀다 — 같은 해에 「어머니가 …」 다음 「부모님이 …」이 이어지는 두 번째 별세를 막는다.
   // 사건 id를 박지 않고 풀의 세터 색인으로 찾는다. 후보 목록만 줄 뿐 추첨 칸 수는 그대로다(아래 `draw` — 목록이 비면 한 칸을 대신 쓴다, R-560 「한 칸 규칙」)
-  const blocked = goneYearRuleNow() === 'exclude' && fam.lines.some((l) => l.eventId === FAMILY_LINE_ID.parentGone) ? new Set(flagSettersOf(pool, 'parents_gone')) : null;
+  // 별세 줄이 난 해의 후보 정리(마스터 결정 후속 199 — 「켜진 해부터」는 그 해 포함): ① `parents_gone` 세터(R-561) ② 그 한 분의 `mother_gone`·`father_gone`을 `notFlags`로 읽는 사건(병환·임종 원본, 「아빠/엄마」 어린 시절 사건)을 뺀다.
+  // ②는 한 방향만이다(그 플래그를 요구하는 변형은 해 시작 상태 그대로 그 해에 새로 뽑히지 않는다). 둘 다 id를 박지 않고 풀 색인으로 찾고, `'legacy'`(측정·시험)에서는 꺼진다
+  const rule = goneYearRuleNow();
+  let blocked: Set<string> | null = null;
+  if (rule !== 'legacy' && fam.lines.some((l) => l.eventId === FAMILY_LINE_ID.parentGone)) {
+    blocked = new Set(flagSettersOf(pool, 'parents_gone'));
+    if (rule === 'exclude') {
+      const who = fam.log.find((e) => e[0] === LOG_PARENT_GONE);
+      for (const id of flagBlockersOf(pool, who?.[2] === 1 ? 'mother_gone' : 'father_gone')) blocked.add(id);
+    }
+  }
   const eligibleAll = eventsForStage(pool, stageOfAge(age)).filter((ev) => isEventEligible(ev, view));
   const eligible = blocked === null ? eligibleAll : eligibleAll.filter((ev) => !blocked.has(ev.id));
 

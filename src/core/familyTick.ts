@@ -211,15 +211,18 @@ export function syncPostEventFlags(game: GameState, at: number = game.age): Game
 }
 
 /**
- * R-561 규칙 (FM7a): 부모 한 분 별세 줄이 난 해에 `parents_gone`을 켜는 사건(원본·변형)을 그 해 후보에서 뺄 것인가.
- *  - `'exclude'` 뺀다 — **지금 판이 쓰는 규칙**이다. 같은 해에 「어머니가 …」 다음 「부모님이 …」이 이어지는 두 번째 별세를 막는다.
- *  - `'legacy'` 빼지 않는다 — 켜기 전의 규칙. **측정·시험 전용**: 해시 불변 L1 시험(`tests/familyHash.test.ts`)과 재측정(`scripts/familyRemeasure.ts`)이 `withGoneYearRule('legacy', …)`로 옛 세계를 만든다.
+ * 부모 한 분 별세 줄이 난 해의 후보 정리 규칙 (FM7a R-561 + 마스터 결정 후속 199 — 「켜진 해부터」는 별세 줄이 난 그 해를 포함한다):
+ *  - `'exclude'` — **지금 판이 쓰는 규칙**이다. 별세 줄이 난 해에는 ① `parents_gone`을 켜는 사건(원본·변형, R-561 — 같은 해에 「어머니가 …」 다음 「부모님이 …」이 이어지는 두 번째 별세를 막는다)과
+ *    ② **그 한 분의 플래그(`mother_gone`·`father_gone`)를 `notFlags`로 읽는 사건**(병환·임종 원본, 「아빠/엄마」 낱말이 든 어린 시절 사건 — 별세 줄 뒤에 같은 해 안에서 나오지 않는다)을 후보에서 뺀다.
+ *    ②는 한 방향만이다: 그 플래그를 요구하는 사건(변형)은 그 해에 새로 뽑히지 않는다(해 시작 상태 그대로). 빼는 방식은 모두 후보 목록만 줄고 추첨 칸 수는 그대로다(`life.ts#stepYear`의 `draw`).
+ *  - `'setters'` ①만 한다 — R-561만 켠 중간 세계. **재측정 전용**(`scripts/familyRemeasure.ts`가 ②의 효과를 따로 잰다).
+ *  - `'legacy'` 아무것도 빼지 않는다 — 켜기 전의 규칙. **측정·시험 전용**: 해시 불변 L1 시험(`tests/familyHash.test.ts`)과 재측정이 `withGoneYearRule('legacy', …)`로 옛 세계를 만든다.
  */
-export type GoneYearRule = 'legacy' | 'exclude';
+export type GoneYearRule = 'legacy' | 'setters' | 'exclude';
 export const GONE_YEAR_RULE: GoneYearRule = 'exclude';
 let activeGoneYearRule: GoneYearRule = GONE_YEAR_RULE;
 
-/** 측정·시험 전용: `fn` 동안만 R-561 규칙을 바꾼다(끝나면 되돌린다) */
+/** 측정·시험 전용: `fn` 동안만 별세 해 후보 정리 규칙을 바꾼다(끝나면 되돌린다) */
 export function withGoneYearRule<T>(rule: GoneYearRule, fn: () => T): T {
   const before = activeGoneYearRule;
   activeGoneYearRule = rule;
@@ -230,7 +233,7 @@ export function withGoneYearRule<T>(rule: GoneYearRule, fn: () => T): T {
   }
 }
 
-/** 지금 쓰는 R-561 규칙 (`life.ts#stepYear`가 읽는다) */
+/** 지금 쓰는 별세 해 후보 정리 규칙 (`life.ts#stepYear`가 읽는다) */
 export const goneYearRuleNow = (): GoneYearRule => activeGoneYearRule;
 
 /** `fam-` 줄인가 (`eventId` 접두어) */

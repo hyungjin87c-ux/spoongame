@@ -14,6 +14,7 @@ import {
   familyChangesFor,
   familyScheduleOf,
   familyViewOf,
+  flagBlockersOf,
   flagSettersOf,
   generateBirthFromSeed,
   goneAtMyAge,
@@ -253,6 +254,159 @@ describe('R-561: 한 분 별세 줄이 난 해에는 parents_gone을 켜는 사�
     const exclude = sameYear('exclude');
     expect(legacy, '안 뺀 세계의 같은 해 겹침(공허 통과 방지)').toBeGreaterThan(0);
     expect(exclude, '뺀 세계의 같은 해 겹침').toBe(0);
+  });
+});
+
+// ---------- 별세 해 후보 정리 ② (후속 199) ----------
+
+/** 별세 줄이 난 걸음(전)들 — 주인공 나이 범위로 거른다 */
+function goneLineStepsAt(minAge: number, maxAge: number, count: number, gens: number): Array<{ before: GameState; seed: number; gen: ProfileId; flag: string }> {
+  const out: Array<{ before: GameState; seed: number; gen: ProfileId; flag: string }> = [];
+  for (const [gi, gen] of GENERATION_IDS.slice(0, gens).entries()) {
+    for (const seed of seedsFor(300, gi)) {
+      for (const { before, state } of lifeSteps(seed, gen)) {
+        if (before.age < minAge || before.age > maxAge) continue;
+        if (!state.history.slice(before.history.length).some((h) => h.eventId === FAMILY_LINE_ID.parentGone)) continue;
+        const who = familyScheduleOf(before).firstGone!.who;
+        out.push({ before, seed, gen, flag: who === 0 ? 'mother_gone' : 'father_gone' });
+      }
+      if (out.length >= count) return out;
+    }
+  }
+  return out;
+}
+
+/** 조건을 붙인 시험용 사건 (선택지 둘, 별세 플래그를 notFlags 또는 flags로 읽는다) */
+const withConditions = (ev: EventDef, conditions: NonNullable<EventDef['conditions']>): EventDef => ({ ...ev, conditions }) as EventDef;
+/** 시험용 서술 사건 */
+const narrativeEvent = (id: string, stage: EventDef['stages'][number], conditions?: NonNullable<EventDef['conditions']>): EventDef =>
+  ({ id, title: id.slice(0, 8), text: '시험용 서술입니다.', stages: [stage], track: 'common', weight: 1, once: true, ...(conditions !== undefined ? { conditions } : {}) }) as unknown as EventDef;
+
+describe('별세 해 후보 정리 ②: 별세 줄이 난 해에는 그 한 분의 플래그를 notFlags로 읽는 사건도 그 해 후보에서 뺀다 (후속 199, 완료 기준 3 「켜진 해부터」 = 그 해 포함)', () => {
+  it('풀 색인으로 찾는다(사건 id를 박지 않는다): 사건 수준 notFlags가 mother_gone·father_gone을 읽는 사건은 병환·임종 원본과 「아빠/엄마」 어린 시절 사건 셋이고, 변형(flags로 읽음)은 아니다', () => {
+    const want = ['infant-care', 'infant-neglect-night', 'middle-parents-care', 'middle-parents-farewell', 'school-early-work'];
+    for (const flag of ['mother_gone', 'father_gone']) expect([...flagBlockersOf(EVENT_POOL, flag)].sort(), flag).toEqual(want);
+    // 독립 계산: 풀을 직접 훑은 결과와 같다
+    const direct = EVENT_POOL.events.filter((e) => (e.conditions?.notFlags ?? []).includes('mother_gone')).map((e) => e.id).sort();
+    expect(direct).toEqual(want);
+    expect(want.filter((id) => EVENT_POOL.byId.get(id)!.stages.some((st) => st === 'infant' || st === 'school')), '어린 시절 사건').toEqual(['infant-care', 'infant-neglect-night', 'school-early-work']);
+    // 선택지 수준 requires.notFlags(school-teacher-notice)는 사건 후보가 아니라 선택지 노출이라 이 규칙의 대상이 아니다
+    expect(want).not.toContain('school-teacher-notice');
+  });
+
+  it('후보 목록만 줄고 추첨 칸 수는 그대로다 — 어른 걸음: 후보 둘(읽는 사건 + 보통 사건)이면 뺀 세계(exclude)는 읽는 사건을 뽑지 않고 진행 RNG는 안 뺀 세계와 같다. R-561만 켠 세계(setters)는 읽는 사건을 그대로 뽑는다(규칙이 따로다)', () => {
+    const steps = goneLineStepsAt(20, 100, 6, 7);
+    expect(steps.length, '별세 줄이 나는 어른 걸음').toBeGreaterThanOrEqual(4);
+    let picked = 0;
+    let legacyReader = 0;
+    let settersReader = 0;
+    for (const { before, flag } of steps) {
+      const stage = stageOfAge(before.age);
+      const pool = createEventPool([withConditions(synthetic('x-reader', stage, false), { notFlags: [flag] }), synthetic('x-plain', stage, false)]);
+      for (let k = 1; k <= 120; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+        const setters = withGoneYearRule('setters', () => stepYear(s, pool));
+        const exclude = stepYear(s, pool);
+        if (legacy.state.pending === null) {
+          expect(exclude.state.pending, `k=${k}`).toBeNull();
+          continue;
+        }
+        picked++;
+        if (legacy.state.pending.eventId === 'x-reader') legacyReader++;
+        if (setters.state.pending?.eventId === 'x-reader') settersReader++;
+        expect(setters.state.pending?.eventId, `k=${k}: R-561만 켜면 안 뺀 세계와 같은 사건`).toBe(legacy.state.pending.eventId);
+        expect(exclude.state.pending?.eventId, `k=${k}: 뺀 세계는 읽는 사건을 뽑지 않는다`).toBe('x-plain');
+        expect(exclude.state.rngState, `k=${k}: 추첨 칸 수 불변`).toBe(legacy.state.rngState);
+      }
+    }
+    expect(picked, '선택지가 뽑힌 시도').toBeGreaterThan(20);
+    expect(legacyReader, '안 뺀 세계가 읽는 사건을 뽑은 시도(공허 통과 방지)').toBeGreaterThan(3);
+    expect(settersReader, 'R-561만 켠 세계가 읽는 사건을 뽑은 시도(②는 따로 켠다)').toBeGreaterThan(3);
+  });
+
+  it('한 방향만이다: 그 플래그를 요구하는 사건(flags로 읽음)은 별세 해에 새로 뽑히지 않는다(해 시작 상태 그대로 — 뺄 것도 더할 것도 없다), 다른 한 분의 플래그를 읽는 사건은 건드리지 않는다', () => {
+    const steps = goneLineStepsAt(20, 100, 6, 7);
+    for (const { before, flag } of steps) {
+      const stage = stageOfAge(before.age);
+      const other = flag === 'mother_gone' ? 'father_gone' : 'mother_gone';
+      const pool = createEventPool([withConditions(synthetic('x-needs', stage, false), { flags: [flag] }), withConditions(synthetic('x-other', stage, false), { notFlags: [other] })]);
+      for (let k = 1; k <= 60; k++) {
+        const s = { ...before, rngState: k };
+        for (const rule of ['legacy', 'setters', 'exclude'] as const) {
+          const r = withGoneYearRule(rule, () => stepYear(s, pool));
+          expect(r.state.pending?.eventId, `k=${k} ${rule}: 변형처럼 플래그를 요구하는 사건은 별세 해에 안 뽑힌다`).not.toBe('x-needs');
+        }
+        // 다른 한 분의 플래그를 notFlags로 읽는 사건은 그 해에도 후보다 — 세 규칙에서 같은 결과
+        const a = withGoneYearRule('legacy', () => stepYear(s, pool));
+        const b = stepYear(s, pool);
+        expect(b.state.pending?.eventId, `k=${k}`).toBe(a.state.pending?.eventId);
+        expect(b.state.rngState, `k=${k}`).toBe(a.state.rngState);
+      }
+    }
+  });
+
+  it('후보가 읽는 사건 하나뿐이어서 비는 해에도 칸 수를 쓴다(난수 4칸: 추첨 둘 · 대신 한 칸 · 해 끝 사망 판정) — 어른 걸음', () => {
+    const steps = goneLineStepsAt(20, 100, 6, 7);
+    let blocked = 0;
+    for (const { before, flag } of steps) {
+      const stage = stageOfAge(before.age);
+      const pool = createEventPool([withConditions(synthetic('x-reader', stage, false), { notFlags: [flag] })]);
+      for (let k = 1; k <= 120; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+        if (legacy.state.pending === null) continue;
+        const exclude = stepYear(s, pool);
+        blocked++;
+        expect(exclude.state.pending, `k=${k}`).toBeNull();
+        expect(exclude.state.seen['x-reader'], `k=${k}`).toBeUndefined();
+        if (exclude.state.phase !== 'life') continue;
+        const r = createRng(k);
+        for (let i = 0; i < 4; i++) r.next();
+        expect(exclude.state.rngState, `k=${k}: 칸 수 불변`).toBe(r.getState());
+      }
+    }
+    expect(blocked, '읽는 사건이 후보에서 빠진 시도').toBeGreaterThan(5);
+  });
+
+  it('어린 시절 사건 표본(infant-neglect-night의 조건 notFlags를 그대로 쓴 서술 사건): 별세 해(주인공 1~6세)에는 후보에서 빠지고, 안 뺀 세계는 실제로 뽑으며, 진행 RNG는 같다', () => {
+    const real = EVENT_POOL.byId.get('infant-neglect-night')!;
+    expect(real.stages, '표본은 영유아 사건').toContain('infant');
+    const steps = goneLineStepsAt(1, 6, 8, 3);
+    expect(steps.length, '주인공 1~6세에 한 분이 떠나는 걸음').toBeGreaterThanOrEqual(3);
+    let legacyPicked = 0;
+    for (const { before } of steps) {
+      const stage = stageOfAge(before.age);
+      const pool = createEventPool([narrativeEvent('x-neglect', stage, { notFlags: [...real.conditions!.notFlags!] }), narrativeEvent('x-plain-n', stage)]);
+      for (let k = 1; k <= 120; k++) {
+        const s = { ...before, rngState: k };
+        const legacy = withGoneYearRule('legacy', () => stepYear(s, pool));
+        const exclude = stepYear(s, pool);
+        const added = (r: typeof legacy): string[] => r.state.history.slice(before.history.length).map((h) => h.eventId ?? '');
+        if (added(legacy).includes('x-neglect')) legacyPicked++;
+        expect(added(exclude), `k=${k}: 별세 해에는 그 사건이 후보가 아니다`).not.toContain('x-neglect');
+        expect(exclude.state.rngState, `k=${k}: 추첨 칸 수 불변`).toBe(legacy.state.rngState);
+      }
+    }
+    expect(legacyPicked, '안 뺀 세계가 그 사건을 뽑은 시도(공허 통과 방지)').toBeGreaterThan(3);
+  });
+
+  it('실제 판: 별세 줄과 같은 해에 병환 원본이 일어난 판 — 안 뺀(legacy) 세계에서는 실제로 생기고(완료 기준 3 같은 해 포함이 깨진다), 뺀 세계(지금)는 0건이다 (같은 시드)', () => {
+    const sameYearCare = (rule: 'legacy' | 'exclude'): number => {
+      let n = 0;
+      for (const [gi, gen] of GENERATION_IDS.slice(0, 5).entries()) {
+        for (const seed of seedsFor(160, gi)) {
+          const run = (): GameState => lifeSteps(seed, gen).slice(-1)[0].state;
+          const last = rule === 'legacy' ? withGoneYearRule('legacy', run) : run();
+          const gone = last.family!.l.find((e) => e[0] === 5);
+          const care = last.seen['middle-parents-care'];
+          if (gone !== undefined && care !== undefined && gone[1] === care) n++;
+        }
+      }
+      return n;
+    };
+    expect(sameYearCare('legacy'), '안 뺀 세계의 같은 해 병환 원본(공허 통과 방지)').toBeGreaterThan(0);
+    expect(sameYearCare('exclude'), '뺀 세계(지금)의 같은 해 병환 원본').toBe(0);
   });
 });
 
