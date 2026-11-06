@@ -50,6 +50,40 @@ describe('browserCss: 브라우저가 CSS를 읽는 방식 흉내 (합성 CSS)',
     expect(() => evaluateSupports('(a: b(c(d)))', NO_CONTAINER_QUERIES), '함수 두 겹은 풀지 않고 던진다').toThrow();
   });
 
+  it('@supports selector(:has(*)) (QA-009-FM6-010 F1b): 아는 브라우저는 참, 모르는 브라우저는 거짓, `not`은 뒤집고, 모르는 선택자·조합은 조용히 넘기지 않고 던진다', () => {
+    for (const cond of ['selector(:has(*))', ' selector( :has( * ) ) ', 'selector(:has(.log__jump:focus))']) {
+      expect(evaluateSupports(cond, WITH_CONTAINER_QUERIES), `아는 브라우저: ${cond}`).toBe(true);
+      expect(evaluateSupports(cond, NO_CONTAINER_QUERIES), `모르는 브라우저: ${cond}`).toBe(false);
+      expect(evaluateSupports(`not ${cond.trim()}`, WITH_CONTAINER_QUERIES), `not, 아는 브라우저: ${cond}`).toBe(false);
+      expect(evaluateSupports(`NOT ${cond.trim()}`, NO_CONTAINER_QUERIES), `not, 모르는 브라우저: ${cond}`).toBe(true);
+    }
+    // 기능 집합은 컨테이너 질의와 :has()를 따로 갖는다 — 컨테이너 질의만 아는 집합(Firefox 110~120 꼴)에서는 둘이 갈린다
+    const cqOnly = { containerQueries: true, selectorHas: false };
+    expect(evaluateSupports('selector(:has(*))', cqOnly)).toBe(false);
+    expect(evaluateSupports('(width: 1cqi)', cqOnly)).toBe(true);
+    // 모르는 선택자 함수·빈 :has()·조합·짝이 안 맞는 괄호는 던진다
+    expect(() => evaluateSupports('selector(:is(a, b))', WITH_CONTAINER_QUERIES), '모르는 선택자 함수').toThrow(/selector\(\)/);
+    expect(() => evaluateSupports('selector(.a)', NO_CONTAINER_QUERIES), '함수가 아닌 선택자').toThrow(/selector\(\)/);
+    expect(() => evaluateSupports('selector(:has())', WITH_CONTAINER_QUERIES), '빈 :has()').toThrow();
+    expect(() => evaluateSupports('selector(:has(*)) and selector(:has(a))', WITH_CONTAINER_QUERIES), '조합').toThrow();
+    expect(() => evaluateSupports('selector(:has(*)) or (display: grid)', NO_CONTAINER_QUERIES), '조합').toThrow();
+    expect(() => evaluateSupports('selector(:has(*)', NO_CONTAINER_QUERIES), '닫는 괄호 없음').toThrow();
+  });
+
+  it('QA-009-FM6-010 F1b 실제 소스 CSS: dash.css의 `@supports selector(:has(*))`(알약 위 여백)는 던지지 않고, 아는 브라우저에서만 올라오며 모르는 브라우저에는 기본 12px(var(--sp-3))만 남는다', async () => {
+    const dashCss = await readText('../src/styles/dash.css');
+    const legacy = normalizeCss(cssAppliedBy(dashCss, NO_CONTAINER_QUERIES));
+    const modern = normalizeCss(cssAppliedBy(dashCss, WITH_CONTAINER_QUERIES));
+    // 공허 통과 방지: 소스에 그 @supports 블록이 정확히 하나 있고, 아는 브라우저에서는 두 규칙이 올라온다
+    expect(blocksStartingWith(dashCss, '@supports selector(:has(*))')).toHaveLength(1);
+    expect(modern).toContain('.log__list{scroll-padding-top:calc(var(--log-jump-bottom,0px) + var(--sp-3));}');
+    expect(modern).toContain('.log__list:has(.log__jump:focus){scroll-padding-top:var(--sp-3);}');
+    // 모르는 브라우저: 두 규칙이 함께 빠지고, `@supports` 밖 `.log__list`의 기본 scroll-padding(12px = --sp-3)이 남는다
+    expect(legacy).not.toContain('--log-jump-bottom');
+    expect(legacy).not.toContain(':has(');
+    expect(legacy).toMatch(/\.log__list\{[^}]*scroll-padding:var\(--sp-3\) 0;/);
+  });
+
   it('R-489 실제 소스 CSS: title.css의 모든 @supports 조건을 두 브라우저로 평가해도 던지지 않는다 (e2e-prod 번들 시험이 같은 걸러내기를 쓴다)', async () => {
     const titleCss = await readText('../src/styles/title.css');
     expect(() => cssAppliedBy(titleCss, NO_CONTAINER_QUERIES)).not.toThrow();
