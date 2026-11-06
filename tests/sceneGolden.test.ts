@@ -100,8 +100,10 @@ describe('L0F 보강 — 성인 플래그를 켠 판의 집 그림 sceneAdult (7
 
   it('이 묶음의 갱신 규칙이 파일 머리(noteAdult)와 이 시험 머리 주석에 있다 — One-way · 마스터 승인 · 형진 님 · family.ad 스냅샷 · 명령 한 곳', () => {
     expect(golden.noteAdult).toBe(SCENE_ADULT_RULE);
-    const self = readRepoText('tests/sceneGolden.test.ts') ?? '';
-    expect(self.length).toBeGreaterThan(1000);
+    // 이 시험의 단언 줄(아래 배열)에도 같은 글이 있어 파일 전체를 보면 늘 통과한다 — 첫 블록 주석(머리 주석)만 본다
+    const source = readRepoText('tests/sceneGolden.test.ts') ?? '';
+    const self = source.slice(source.indexOf('/**'), source.indexOf('*/') + 2);
+    expect(self.length, '머리 주석을 읽었다(공허 통과 방지)').toBeGreaterThan(1000);
     for (const phrase of ['One-way', '마스터 승인', '형진 님', 'family.ad', '로드 때', 'npm run golden:scene -- --write', '쓰지 않는다']) {
       expect(golden.noteAdult, phrase).toContain(phrase);
       expect(self, `시험 머리 주석: ${phrase}`).toContain(phrase);
@@ -122,5 +124,6 @@ describe('L0F 보강 — 성인 플래그를 켠 판의 집 그림 sceneAdult (7
     expect(script.length, '스크립트를 읽었다').toBeGreaterThan(1000);
     expect(script).toMatch(/args\.includes\('--write'\)/);
     expect(script.match(new RegExp('write' + String.raw`FileSync\(`, 'g')), '쓰는 줄은 --write 판 안에 하나뿐이다').toHaveLength(1);
+    expect(script, '그 줄은 --write 판의 첫 줄이다').toMatch(new RegExp(String.raw`if \(args\.includes\('--write'\)\) \{\s*` + 'write' + String.raw`FileSync\(`));
   });
 });

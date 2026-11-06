@@ -11,6 +11,14 @@ import {
   FAMILY_TAG,
   GENERATION_IDS,
   GRAND_COHABIT_UNTIL,
+  LOG_GRAND_GONE,
+  LOG_PARENT_GONE,
+  LOG_PARENTS_APART,
+  LOG_PET_IN,
+  LOG_PET_OUT,
+  LOG_SIB_BORN,
+  LOG_SIB_LEFT,
+  LOG_SIB_LOST,
   MOTHER_BIRTH_MAX,
   NAME_KEY,
   NO_DEATH_PLAN,
@@ -309,6 +317,8 @@ export function tablesGolden(): TablesGolden {
   const constants: Record<string, unknown> = {
     FAMILY_SALT,
     FAMILY_TAG,
+    // family.log 종류 코드 — 저장된 로그 항목의 뜻을 정한다("코드는 바꾸지 않는다", familyModel.ts). 바꾸면 이어하던 판이 같은 변화를 다시 알린다
+    LOG_KINDS: { SIB_BORN: LOG_SIB_BORN, SIB_LEFT: LOG_SIB_LEFT, SIB_LOST: LOG_SIB_LOST, GRAND_GONE: LOG_GRAND_GONE, PARENT_GONE: LOG_PARENT_GONE, PARENTS_APART: LOG_PARENTS_APART, PET_IN: LOG_PET_IN, PET_OUT: LOG_PET_OUT },
     NAME_KEY: { ...NAME_KEY, older: [0, 1, 2, 3].map(NAME_KEY.older), younger: [0, 1, 2, 3, 4, 5, 6].map(NAME_KEY.younger), child: [0, 1, 2, 3].map(NAME_KEY.child), friend: [0, 1, 2].map(NAME_KEY.friend) },
     DIVORCE_AGES,
     PARENT_GONE_MIN_AGE,

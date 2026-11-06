@@ -44,7 +44,9 @@ import { GENERATION_IDS, eventPool } from '../src/core';
  *  - 가족 보기: `familyViewOf`의 동거·독립·이혼 뒤 조부모·떠난 사람 규칙, `GRAND_COHABIT_UNTIL`·`FAMILY_MAX_AGE`.
  *  - 성인기 식구: `adultSlotsOf`, `design.adult`(`spouseGap`·`spouseMinAge`·`childCount`·`childGap`·`childLastAge`·`friendCount`·`friendAgeOffset`·`fallbackAt`), `NAME_KEY`·`NameBook`, 이름 풀,
  *    사건 풀에서 위 다섯 플래그를 켜는 `setFlags`와 `close_friend`를 요구하는 `conditions.flags`(배선).
- *  - 걸리지 않는 것: 문구(`familyText`·`familyCardText`), 사건이 일어나는 시점을 정하는 그 밖의 `conditions`(저장된 판은 이미 `seen`을 갖고 있어 소급하지 않는다), 효과 수치, 그림.
+ *  - 걸리지 않는 것: 문구(`familyText`·`familyCardText`), 사건이 일어나는 시점을 정하는 그 밖의 `conditions`(저장된 판은 이미 `seen`을 갖고 있어 소급하지 않는다), 효과 수치, 그림,
+ *    성인기 식구 이름을 거르는 금지 목록(`data/forbiddenNames`·`isRejectedName`) — 표본 이름이 그 목록에 닿지 않으면 알아채지 못한다,
+ *    사이·직업 줄·가진 것·반려동물 이름(SPEC-009 FS2 표: 표시용 파생 값 — `familyCard.test.ts`·장면 골든이 일부만 잠근다).
  *
  * 갱신 규칙(One-way) — 골든 파일 머리 `updateRule`과 같은 말: 공개 배포(K6) 뒤에 이 골든을 다시 만드는 것은 이어하던 판의 가족이 바뀌는 One-way 변경이다 — 가족 값 대부분은 저장하지 않고 출생 때 해시와 표에서 다시 계산하기 때문이다.
  * 그래서 다시 만들기 전에 **마스터 승인과 형진 님 확인**이 필요하다. 성인 식구 표(이름 풀·`design.adult`·`NAME_KEY`·성인 플래그를 켜는 사건)를 바꿀 때는 SPEC-009 FS2 예외 ③대로 「로드 때 `family.ad` 스냅샷」을 **먼저 한 번 배포**한다.
@@ -112,6 +114,7 @@ describe('L0F 가족 값 골든 — 출생 family 저장값 · 파생 계획 · 
     expect(views.some((c) => c.tags.includes('div-f') && c.view.some((v) => / fathers/.test(v))), '아버지가 떠난 이혼 — 보기에 fathers').toBe(true);
     expect(views.some((c) => c.tags.includes('div-m') && c.view.some((v) => /mothers/.test(v))), '어머니가 떠난 이혼 — 보기에 mothers').toBe(true);
     expect(views.some((c) => c.tags.includes('loss-y') && c.view.some((v) => /y\dg\d/.test(v))), '어린 동생 별세 — 보기에 떠난 y').toBe(true);
+    expect(views.some((c) => c.tags.includes('loss-o') && c.view.some((v) => /o\dg\d/.test(v))), '어린 형 별세 — 보기에 떠난 o').toBe(true);
     expect(views.some((c) => c.tags.includes('gone1-m') && c.view.some((v) => /motherg\d/.test(v))), '이른 어머니 별세 — 보기에 떠난 어머니').toBe(true);
   });
 });
@@ -216,9 +219,13 @@ describe('L0F 표 지문 — 표·상수·이름 풀을 직접 얼린다 (표본
 describe('L0F 골든 갱신 규칙과 파일 위생', () => {
   it('골든 파일 머리(updateRule)에 갱신 규칙이 있고 이 시험 머리 주석과 같은 뜻이다', () => {
     expect(G.updateRule).toBe(L0F_UPDATE_RULE);
+    // 이 시험의 단언 줄(아래 배열)에도 같은 글이 있어 파일 전체를 보면 늘 통과한다 — 첫 블록 주석(머리 주석)만 본다
+    const source = raw('./familyGolden.test.ts');
+    const head = source.slice(source.indexOf('/**'), source.indexOf('*/') + 2);
+    expect(head.length, '머리 주석을 읽었다(공허 통과 방지)').toBeGreaterThan(1000);
     for (const phrase of ['One-way', '마스터 승인', '형진 님', 'family.ad', '로드 때', 'npm run golden:family -- --write', '절대 쓰지 않는다']) {
       expect(G.updateRule, phrase).toContain(phrase);
-      expect(raw('./familyGolden.test.ts'), `시험 머리 주석: ${phrase}`).toContain(phrase);
+      expect(head, `시험 머리 주석: ${phrase}`).toContain(phrase);
     }
   });
 
@@ -237,6 +244,8 @@ describe('L0F 골든 갱신 규칙과 파일 위생', () => {
     expect(script).toMatch(/args\.includes\('--write'\)/);
     // 쓰는 줄은 --write 판 안에 하나뿐이다
     expect(script.match(new RegExp('write' + 'FileSync\\(', 'g'))).toHaveLength(1);
+    // 그리고 그 줄이 `if (args.includes('--write')) {` 바로 안쪽이다 (판 밖으로 옮기면 알린다)
+    expect(script).toMatch(new RegExp("if \\(args\\.includes\\('--write'\\)\\) \\{\\s*" + 'write' + 'FileSync\\('));
   });
 
   it('픽스처는 LF만 쓰고 사용자 경로가 없으며 작다(≤ 80KB)', () => {
