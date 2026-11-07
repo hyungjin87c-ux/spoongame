@@ -16,6 +16,7 @@ export * from './economy';
 export * from './inherit';
 export * from './impact';
 export * from './parentDecision';
+export * from './parentSubject';
 export * from './life';
 export * from './gentle';
 export * from './ending';

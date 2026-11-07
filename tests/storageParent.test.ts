@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GAME_KEY, SCHEMA_VERSION, loadGame, parseGame, playToEnd, resolveDelegated, serializeGame, stepYear, type GameState, type HistoryEntry, type StorageLike } from '../src/core';
 import { reviewEnding } from '../src/core/ending';
-import { delegatedSummaryText } from '../src/data/parentDecisionTable';
 import { startLife } from '../scripts/simulateLib';
 import { forcedPending } from './helpers/forcedPending';
 
@@ -182,12 +181,5 @@ describe('T7-3 엔딩의 부모·흘러감 집계 (PD9): 본인 카드 수 N · 
       expect(r.choiceCount + r.delegated.parent + r.delegated.child).toBe(lines.length);
       expect(r.delegated.parent).toBeGreaterThan(0); // 모든 판에 부모님이 정한 일이 있다 (손계산 4.4장)
     }
-  });
-
-  it('엔딩 둘째 줄 문구: 둘 다 있으면 한 문장, 하나만 있으면 그 쪽만, 둘 다 0이면 줄 없음 (한 상수에서 나온다)', () => {
-    expect(delegatedSummaryText(4, 2)).toBe('어린 시절의 큰 결정 가운데 4번은 부모님이 내렸고, 2번은 아이의 일로 흘러갔습니다.');
-    expect(delegatedSummaryText(5, 0)).toBe('어린 시절의 큰 결정 가운데 5번은 부모님이 내렸습니다.');
-    expect(delegatedSummaryText(0, 3)).toBe('어린 시절의 큰 결정 가운데 3번은 아이의 일로 흘러갔습니다.');
-    expect(delegatedSummaryText(0, 0)).toBeNull();
   });
 });

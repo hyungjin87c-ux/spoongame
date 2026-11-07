@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { SPEEDS, bandOfWealth, buildFeedbackUrl, calendarYear, eraRowsOf, famSeedOf, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
+import { SPEEDS, bandOfWealth, buildFeedbackUrl, calendarYear, coParentsFn, eraRowsOf, famSeedOf, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { eventPool } from '../core/gameData';
 import { DASH_TEXT } from '../data/dashText';
@@ -294,6 +294,8 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
   const decision = useDecisionModel(game, pool);
   // 부모님이 정한·흘러간 해의 카드 (PD5): 사람이 고르는 카드(decision)와 같은 해에 뜨지 않는다 — 카드 간격 규칙(2년)이 보장한다
   const parentCard = useParentCardModel(game, tick, pool);
+  // 인생 기록 줄의 부모 결정 도장 주어: 줄의 나이로 그 해 함께 사는 부모(SPEC-011 DS1) — 가족 계획과 나이만 읽는다(현재 플래그를 읽지 않는다). 계획이 같은 동안 한 번만 만든다(저장된 `family`가 없는 손으로 만든 상태는 `game`이 바뀔 때마다)
+  const subjectOf = useMemo(() => coParentsFn(game), [game.family ?? game, game.character, game.birthReport, game.peerSeed, game.seed]);
   // 접힘은 대기 중인 선택지가 있을 때만 뜻이 있다(App이 키로 묶어 두지만 여기서도 못 박는다)
   const isFolded = decision !== null && folded;
   // 카드 틀: 자동 모드 하나가 정한다(M-6) — 꺼짐 = 모달 시트(바깥 inert), 켜짐 = 비모달 인라인. 접었다 다시 열면 그때의 자동 모드에 맞는 틀로 뜬다
@@ -483,7 +485,7 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
           {parentCard !== null ? <ParentCard key={`${parentCard.ev.id}@${parentCard.age}`} model={parentCard} gentle={settings.gentle} /> : null}
           {/* 집과 가족 그림(FH1): 결정 카드 → 이 카드 → (올해 마음 쓸 곳 — SPEC-008, 아직 없음) → 인생 기록. 결정 카드가 떠 있거나 접혀 있어도 그림이 결정 카드를 밀어내지 않는다 */}
           <SceneCard game={game} gentle={settings.gentle} fold={settings.sceneFold === true} onFold={onSceneFold} scene={sceneArt} animate={!fast} />
-          <LogCard history={game.history} live={!fast} gentle={settings.gentle} eraRows={eraRows} />
+          <LogCard history={game.history} live={!fast} gentle={settings.gentle} eraRows={eraRows} subjectOf={subjectOf} />
         </div>
         <div className="col col--right">
           <FamilyCard game={game} />

@@ -39,6 +39,8 @@ export interface FindOpts {
   mustExclude?: string;
   /** 고른 길이 이 id여야 한다 */
   chosen?: string;
+  /** 부모 결정 카드의 그 해 함께 사는 부모 — 두 분이 아닌 판을 찾을 때(SPEC-011 DS1 `coParentsOf`) */
+  subject?: 'both' | 'mother' | 'father';
   /** 카드가 일어나는 나이의 범위 */
   minAge?: number;
   maxAge?: number;
@@ -61,7 +63,8 @@ export async function findDelegatedYear(page: Page, opts: FindOpts = {}): Promis
          if (cap !== null && r.tick.kind === 'resolved' && r.state.phase === 'life' && r.tick.fromAge >= arg.minAge
            && (arg.by === null || r.tick.by === arg.by) && (arg.id === null || r.tick.eventId === arg.id)
            && cap.ids.length >= arg.min && (arg.inc === null || cap.ids.includes(arg.inc)) && (arg.exc === null || !cap.ids.includes(arg.exc))
-           && (arg.chosen === null || r.tick.choiceId === arg.chosen)) {
+           && (arg.chosen === null || r.tick.choiceId === arg.chosen)
+           && (arg.subject === null || core.coParentsOf(s, r.tick.fromAge) === arg.subject)) {
            return { start: s, after: r.state, tick: r.tick, ids: [...cap.ids] };
          }
          s = r.state;
@@ -78,6 +81,7 @@ export async function findDelegatedYear(page: Page, opts: FindOpts = {}): Promis
       inc: opts.mustInclude ?? null,
       exc: opts.mustExclude ?? null,
       chosen: opts.chosen ?? null,
+      subject: opts.subject ?? null,
       minAge: opts.minAge ?? 0,
       maxAge: opts.maxAge ?? 19,
       from: opts.from ?? 1,

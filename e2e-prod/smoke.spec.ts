@@ -243,7 +243,7 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   const history = saved.data.history as Array<{ kind: string; age: number; text: string; by?: 'parent' | 'child' }>;
   // R-489: 연표의 「선택」 줄은 둘로 나뉜다 — 본인이 고른 선택(`by` 없음)과 어린 시절에 부모님이 정한(`by: 'parent'`)·아이의 일로 흘러간(`by: 'child'`) 큰 결정(SPEC-005 PD6). 옛 단언은 `kind === 'choice'` 전부(25)를
   // 이 시험이 누른 선택지 버튼 수(`choices` = 18, 본인이 고른 것)와 비교해 QI5 뒤로 맞지 않았다. 「본인이 고른 선택 수」의 정의는 core/ending.ts#reviewEnding `choiceCount`(= `by`가 없는 선택 줄)이고
-  // 엔딩의 「살아오며 N번의 선택」(data/endingText.ts#choiceCountText)이 그 수다 — 부모·흘러감 줄은 그 수에 들지 않고 따로 「어린 시절의 큰 결정 가운데 …」 줄에서 센다.
+  // 엔딩의 「살아오며 N번의 선택」(data/endingText.ts#choiceCountText)이 그 수다 — 부모·흘러감 줄은 그 수에 들지 않는다(그 횟수를 따로 말하던 「어린 시절의 큰 결정 가운데 …」 줄은 형진 님 요청으로 없앴다, 2026-11-08).
   const choiceEntries = history.filter((h) => h.kind === 'choice');
   const ownEntries = choiceEntries.filter((h) => h.by === undefined);
   const parentEntries = choiceEntries.filter((h) => h.by === 'parent');
@@ -284,10 +284,9 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(page.locator('[data-testid="timeline-picked"]:not([data-by])')).toHaveCount(ownEntries.length);
   await expect(page.locator('[data-testid="timeline-picked"][data-by="parent"]')).toHaveCount(parentEntries.length);
   await expect(page.locator('[data-testid="timeline-picked"][data-by="child"]')).toHaveCount(childEntries.length);
-  // 엔딩의 「살아오며 N번의 선택」은 본인이 고른 선택 수이고, 부모님·흘러감 횟수는 다른 줄에 따로 있다(둘 다 0이면 그 줄이 없다)
+  // 엔딩의 「살아오며 N번의 선택」은 본인이 고른 선택 수이고, 부모님·흘러감 횟수 요약 줄은 없다
   await expect(page.getByTestId('ending-choices')).toHaveText(`살아오며 ${ownEntries.length}번의 선택을 했습니다.`);
-  if (parentEntries.length + childEntries.length > 0) await expect(page.getByTestId('ending-delegated')).toContainText(/부모님이 내렸|아이의 일로 흘러갔/);
-  else await expect(page.getByTestId('ending-delegated')).toHaveCount(0);
+  await expect(page.getByTestId('ending-delegated')).toHaveCount(0);
   // M7e-3: 출발선 범례의 수저 칩(.grade — designer 결정, 막대의 이름표) 한 곳을 뺀 글에서 등급명·느낌표가 없다
   const endingText = (await page.getByTestId('ending-screen').evaluate((el) => {
     const clone = el.cloneNode(true) as HTMLElement;

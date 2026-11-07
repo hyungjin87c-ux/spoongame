@@ -1,6 +1,6 @@
 import type { LifeParams } from '../data/lifeTable';
 import { AUTO_ASSET } from '../data/economyTable';
-import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, FAMILY_NEED_BASE, FIRST_PARENT_HINT, PARENT_CHIP_TEXT, PARENT_DECIDED_TEXT } from '../data/parentDecisionTable';
+import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, FAMILY_NEED_BASE, parentWording } from '../data/parentDecisionTable';
 import { IMPACT_LABEL } from '../data/impactText';
 import {
   EARLY_YEARS_MAX_AGE,
@@ -43,6 +43,7 @@ import { dwellingWhenParentsGone, inheritanceAmount, inheritanceDue, parentsAllG
 import type { NoteCardDef } from './noteCards';
 import { consumeNote, dueNote, type NoteMode } from './notes';
 import { decisionFor, parentChoiceWeights, selfAreaWeightFactor } from './parentDecision';
+import { coParentsFn } from './parentSubject';
 import { eraBucketOf, lifeParamsOf } from './birthProfile';
 import { eventPool } from './gameData';
 import { calendarYear } from './profile';
@@ -559,9 +560,11 @@ export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool:
   const last = r.state.history.filter((h) => h.kind === 'choice' && h.eventId === ev.id).pop();
   const resultText = last?.text ?? choice.result;
   const labelText = last?.choice ?? choice.label;
-  const stamp = by === 'parent' ? PARENT_DECIDED_TEXT : CHILD_FLOW_TEXT;
-  const chip = by === 'parent' ? PARENT_CHIP_TEXT : CHILD_CHIP_TEXT;
-  const chars = chip.length + ev.title.length + ev.text.length + labelText.length + stamp.length + impactReadChars(impact) + resultText.length + (firstParent ? FIRST_PARENT_HINT.length : 0);
+  // 칩·도장·안내의 문구는 그 해 함께 사는 부모(DS1)가 주어인 한 함수에서 나온다(DS2) — 세 주어는 글자 수가 같아 필요량이 주어에 따라 달라지지 않는다
+  const wording = parentWording(by === 'parent' ? coParentsFn(pendingState)(pending.age) : 'both');
+  const stamp = by === 'parent' ? wording.stamp : CHILD_FLOW_TEXT;
+  const chip = by === 'parent' ? wording.chip : CHILD_CHIP_TEXT;
+  const chars = chip.length + ev.title.length + ev.text.length + labelText.length + stamp.length + impactReadChars(impact) + resultText.length + (firstParent ? wording.hint.length : 0);
   const cited = citationFor(ev, eraBucketOf(pendingState.generation, calendarYear(pendingState.character.birthYear, pending.age)), calendarYear(pendingState.character.birthYear, pending.age)) !== null;
   return {
     state: r.state,

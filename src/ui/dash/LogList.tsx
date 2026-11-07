@@ -1,5 +1,6 @@
 import { Component, createRef, type MutableRefObject, type ReactNode, type RefObject, type UIEventHandler } from 'react';
 import { heavyKindOfEntry } from '../../core/gentle';
+import type { CoParents } from '../../core/parentSubject';
 import type { HistoryEntry } from '../../core/types';
 import { DASH_TEXT } from '../../data/dashText';
 import { decidedByText, deciderIconOf } from '../../data/parentDecisionTable';
@@ -56,10 +57,14 @@ interface Props {
   /** 가린 줄(키)이 펼쳐져 있는가 — 펼침은 저장하지 않고 설정이 바뀌면 초기화된다(`useVeilOpen`) */
   veilOpen?: (key: string) => boolean;
   onVeilToggle?: (key: string) => void;
+  /**
+   * 부모 결정 줄의 도장 주어 (SPEC-011 DS1·DS2): 줄의 나이로 그 해에 함께 사는 부모(`coParentsOf`)를 돌려준다 — 저장하지 않고 그릴 때 정한다(옛 저장의 어린 시절 줄도 바르게 읽힌다). 주지 않으면 모든 줄이 두 분(「부모님이」)이다
+   */
+  subjectOf?: (age: number) => CoParents;
 }
 
 /** 기록 줄 한 개의 원문 — 사건 문장, 선택 결과면 「(선택: 라벨)」 또는 결정자 도장 + 라벨. 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
-function EntryText({ h }: { h: HistoryEntry }) {
+function EntryText({ h, subject }: { h: HistoryEntry; subject: CoParents }) {
   return (
     <>
       {h.text}
@@ -69,7 +74,7 @@ function EntryText({ h }: { h: HistoryEntry }) {
           {h.by !== undefined ? (
             // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6): 「(부모님이 이렇게 정했습니다: 라벨)」 · 「(이렇게 흘러갔습니다: 라벨)」 — 글자 + 아이콘으로 본인 선택 줄과 가른다(색에만 의존하지 않는다)
             <em className={`log__by log__by--${h.by}`} data-testid="log-by" data-by={h.by}>
-              <Icon name={deciderIconOf(h.by)} className="icon--xs" />({decidedByText(h.by)}: {h.choice})
+              <Icon name={deciderIconOf(h.by)} className="icon--xs" />({decidedByText(h.by, subject)}: {h.choice})
             </em>
           ) : (
             <em>
@@ -313,7 +318,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
   }
 
   render() {
-    const { rows, live, jump, scrollerRef, onUserScroll, gentle = false, veilOpen, onVeilToggle } = this.props;
+    const { rows, live, jump, scrollerRef, onUserScroll, gentle = false, veilOpen, onVeilToggle, subjectOf } = this.props;
     return (
       <div
         className="log__list"
@@ -340,6 +345,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
             if (isEraRow(row)) return <EraLogRow key={row.key} row={row.era} open={veilOpen?.(row.key) ?? false} onToggle={() => onVeilToggle?.(row.key)} />;
             const { entry: h, key, latest } = row;
             const heavy = gentle ? heavyKindOfEntry(h) : null;
+            const subject: CoParents = h.by === 'parent' && subjectOf !== undefined ? subjectOf(h.age) : 'both';
             const className = `log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${h.kind === 'note' ? ' log__row--note' : ''}${latest ? ' log__row--latest' : ''}`;
             const age = (
               <span className="log__age">
@@ -354,8 +360,8 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
                 <li key={key} className={className} data-kind={h.kind} data-veiled="true" data-testid="log-row">
                   {age}
                   <span className="log__text veil">
-                    <VeiledText kind={heavy} age={h.age} bodyId={`veil-${key}`} open={open} onToggle={() => onVeilToggle?.(key)} stamp={h.by !== undefined ? <VeilStamp by={h.by} open={open} /> : null}>
-                      <EntryText h={h} />
+                    <VeiledText kind={heavy} age={h.age} bodyId={`veil-${key}`} open={open} onToggle={() => onVeilToggle?.(key)} stamp={h.by !== undefined ? <VeilStamp by={h.by} open={open} subject={subject} /> : null}>
+                      <EntryText h={h} subject={subject} />
                     </VeiledText>
                   </span>
                 </li>
@@ -369,7 +375,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
                     // 「나의 기록」 줄(M7c): 라벨 + 사용자 글 — 엔딩 연표와 같은 부품(NoteBody)
                     <NoteBody entry={h} />
                   ) : (
-                    <EntryText h={h} />
+                    <EntryText h={h} subject={subject} />
                   )}
                 </span>
               </li>

@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from 'react';
+import type { CoParents } from '../../core/parentSubject';
 import type { DelegatedBy, HeavyKind } from '../../core/types';
 import { HEAVY_KIND_TEXT, VEIL_TEXT, veilButtonLabel } from '../../data/gentleText';
 import { decidedByText, deciderIconOf } from '../../data/parentDecisionTable';
@@ -83,21 +84,21 @@ export function VeilButton({ open, age, kind, controls, onToggle }: { open: bool
   );
 }
 
-/** 가린 줄 위에 보이는 결정자 도장 「(부모님이 이렇게 정했습니다)」 — 칩·도장 낱말·아이콘은 가리지 않는다(HV8). 라벨은 없다. 펼치면 원문 쪽 도장(라벨 포함)이 대신하므로 `hidden`이다 */
-export function VeilStamp({ by, open }: { by: DelegatedBy; open: boolean }) {
+/** 가린 줄 위에 보이는 결정자 도장 「(부모님이 이렇게 정했습니다)」 — 칩·도장 낱말·아이콘은 가리지 않는다(HV8). 라벨은 없다. 펼치면 원문 쪽 도장(라벨 포함)이 대신하므로 `hidden`이다. 부모 결정의 주어 `subject`는 그 줄 나이에 함께 사는 부모(DS1)이고 주지 않으면 두 분이다 */
+export function VeilStamp({ by, open, subject = 'both' }: { by: DelegatedBy; open: boolean; subject?: CoParents }) {
   return (
     <em className={`log__by log__by--${by}`} data-testid="veil-by" data-by={by} hidden={open}>
-      <Icon name={deciderIconOf(by)} className="icon--xs" />({decidedByText(by)})
+      <Icon name={deciderIconOf(by)} className="icon--xs" />({decidedByText(by, subject)})
     </em>
   );
 }
 
 /** 연표 줄의 결정자 도장 (엔딩 `.tl-picked`와 같은 꼴, 라벨 없이) */
-export function VeilTimelineStamp({ by, open }: { by: DelegatedBy; open: boolean }) {
+export function VeilTimelineStamp({ by, open, subject = 'both' }: { by: DelegatedBy; open: boolean; subject?: CoParents }) {
   return (
     <span className="tl-picked" data-testid="veil-by" data-by={by} hidden={open}>
       <Icon name={deciderIconOf(by)} className="icon--xs" />
-      {decidedByText(by)}
+      {decidedByText(by, subject)}
     </span>
   );
 }

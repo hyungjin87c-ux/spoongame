@@ -30,7 +30,6 @@ import {
   PARENT_DECISION_TABLE,
   decidedByText,
   deciderIconOf,
-  delegatedSummaryText,
 } from '../src/data/parentDecisionTable';
 import { LifeScreen } from '../src/screens/LifeScreen';
 import endingScreenSrc from '../src/screens/EndingScreen.tsx?raw';
@@ -369,16 +368,13 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
   });
 });
 
-describe('새 문자열 lint (설계 문서 3-3절): 칩·도장·안내·엔딩 둘째 줄·parentLabel·parentResult', () => {
+describe('새 문자열 lint (설계 문서 3-3절): 칩·도장·안내·parentLabel·parentResult (엔딩 둘째 줄은 형진 님 요청으로 없어졌다, 2026-11-08)', () => {
   const NEW_STRINGS: Array<[string, string]> = [
     ['PARENT_CHIP_TEXT', PARENT_CHIP_TEXT],
     ['CHILD_CHIP_TEXT', CHILD_CHIP_TEXT],
     ['PARENT_DECIDED_TEXT', PARENT_DECIDED_TEXT],
     ['CHILD_FLOW_TEXT', CHILD_FLOW_TEXT],
     ['FIRST_PARENT_HINT', FIRST_PARENT_HINT],
-    ['엔딩 둘째 줄(부모+흘러감)', delegatedSummaryText(4, 2)!],
-    ['엔딩 둘째 줄(부모만)', delegatedSummaryText(4, 0)!],
-    ['엔딩 둘째 줄(흘러감만)', delegatedSummaryText(0, 2)!],
   ];
   for (const ev of EVENT_POOL.events) for (const c of ev.choices ?? []) for (const k of ['parentLabel', 'parentResult'] as const) if (c[k] !== undefined) NEW_STRINGS.push([`${ev.id}/${c.id}.${k}`, c[k]!]);
 
@@ -388,8 +384,8 @@ describe('새 문자열 lint (설계 문서 3-3절): 칩·도장·안내·엔딩
   const EMOJI_OR_MARK = /[!?！？\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
   const TIER_NAMES = /흙수저|동수저|은수저|금수저|다이아수저|다이아 수저/;
 
-  it('lint 대상이 17개다 (칩 2 + 도장 2 + 안내 1 + 엔딩 3 + parentLabel 5 + parentResult 4 — R-452가 school-scholarship pass의 둘을 더했다; 공허 통과 방지)', () => {
-    expect(NEW_STRINGS.length).toBe(17);
+  it('lint 대상이 14개다 (칩 2 + 도장 2 + 안내 1 + parentLabel 5 + parentResult 4 — R-452가 school-scholarship pass의 둘을 더했다; 엔딩 둘째 줄 3개는 문장이 없어지며 빠졌다; 공허 통과 방지)', () => {
+    expect(NEW_STRINGS.length).toBe(14);
   });
 
   for (const [name, value] of NEW_STRINGS) {
@@ -402,9 +398,9 @@ describe('새 문자열 lint (설계 문서 3-3절): 칩·도장·안내·엔딩
     });
   }
 
-  it('문장은 합쇼체로 끝난다: 도장·안내·엔딩 둘째 줄·parentResult는 「~ㅂ니다.」 종결 (칩은 명사구, parentLabel은 행동 서술 라벨이라 제외)', () => {
+  it('문장은 합쇼체로 끝난다: 도장·안내·parentResult는 「~ㅂ니다.」 종결 (칩은 명사구, parentLabel은 행동 서술 라벨이라 제외)', () => {
     const sentences = NEW_STRINGS.filter(([n]) => n === 'PARENT_DECIDED_TEXT' || n === 'CHILD_FLOW_TEXT' || n === 'FIRST_PARENT_HINT' || n.startsWith('엔딩') || n.endsWith('.parentResult'));
-    expect(sentences.length).toBeGreaterThanOrEqual(8);
+    expect(sentences.length).toBeGreaterThanOrEqual(7);
     for (const [name, value] of sentences) {
       if (name === 'PARENT_DECIDED_TEXT' || name === 'CHILD_FLOW_TEXT') {
         expect(value, name).toMatch(/(습니다|했습니다|갔습니다)$/); // 도장은 마침표 없는 짧은 문구

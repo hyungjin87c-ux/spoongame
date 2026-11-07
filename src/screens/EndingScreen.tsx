@@ -1,11 +1,11 @@
 import type { CSSProperties } from 'react';
-import { COMPARABLE_STATS, displaySeconds, heavyKindOfEntry, isCleanRun, looksStanding, reviewEnding, standingScore, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
+import { COMPARABLE_STATS, displaySeconds, heavyKindOfEntry, isCleanRun, looksStanding, reviewEnding, standingScore, type CoParents, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
 import { profileLabel } from '../core/birthProfile';
 import { reportPlaceLabel } from '../core/birthReport';
 import { BIRTH_TEXT } from '../data/birthReportText';
 import { standingLabel } from '../data/birthText';
 import { VEIL_TEXT } from '../data/gentleText';
-import { decidedByText, deciderIconOf, delegatedSummaryText } from '../data/parentDecisionTable';
+import { decidedByText, deciderIconOf } from '../data/parentDecisionTable';
 import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/dashText';
 import {
   ENDING_HEADINGS,
@@ -112,7 +112,7 @@ function PlayTimeBlock({ play }: { play: PlayRecord }) {
 }
 
 /** 연표 줄 하나의 내용(제목 → 고른 길 → 결과 문장) — 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
-function TimelineBody({ entry }: { entry: HistoryEntry }) {
+function TimelineBody({ entry, subject }: { entry: HistoryEntry; subject: CoParents }) {
   return (
     <>
       {entry.title ? <strong>{entry.title}</strong> : null}
@@ -122,7 +122,7 @@ function TimelineBody({ entry }: { entry: HistoryEntry }) {
             // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6·PD9): 인생 기록 줄과 같은 문구 한 곳 + 아이콘(색에만 의존하지 않는다)
             <>
               <Icon name={deciderIconOf(entry.by)} className="icon--xs" />
-              {decidedByText(entry.by)}: {entry.choice}
+              {decidedByText(entry.by, subject)}: {entry.choice}
             </>
           ) : (
             <>선택: {entry.choice}</>
@@ -134,7 +134,7 @@ function TimelineBody({ entry }: { entry: HistoryEntry }) {
   );
 }
 
-function TimelineItem({ entry, gentle = false, veilId, open = false, onToggle }: { entry: HistoryEntry; gentle?: boolean; veilId?: string; open?: boolean; onToggle?: () => void }) {
+function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = false, onToggle }: { entry: HistoryEntry; /** 부모 결정 줄의 도장 주어 — 그 줄 나이에 함께 사는 부모(SPEC-011 DS1, `review.timeline[].subjects`) */ subject?: CoParents; gentle?: boolean; veilId?: string; open?: boolean; onToggle?: () => void }) {
   // 「나의 기록」 줄(M7c FR9): 인생 기록(LogCard)과 같은 부품 — 라벨 「나의 기록 · {주제}」 + 사용자 글(`<bdi data-user-text>`). 글을 읽는 분기는 없다
   if (entry.kind === 'note') {
     return (
@@ -153,8 +153,8 @@ function TimelineItem({ entry, gentle = false, veilId, open = false, onToggle }:
       <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-veiled="true" data-testid="timeline-entry">
         <span className="log__age">{entry.age}세</span>
         <span className="veil">
-          <VeiledText kind={heavy} age={entry.age} bodyId={`veil-${veilId}`} open={open} onToggle={onToggle ?? (() => undefined)} stamp={entry.by !== undefined ? <VeilTimelineStamp by={entry.by} open={open} /> : null}>
-            <TimelineBody entry={entry} />
+          <VeiledText kind={heavy} age={entry.age} bodyId={`veil-${veilId}`} open={open} onToggle={onToggle ?? (() => undefined)} stamp={entry.by !== undefined ? <VeilTimelineStamp by={entry.by} open={open} subject={subject} /> : null}>
+            <TimelineBody entry={entry} subject={subject} />
           </VeiledText>
         </span>
       </li>
@@ -164,7 +164,7 @@ function TimelineItem({ entry, gentle = false, veilId, open = false, onToggle }:
     <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-testid="timeline-entry">
       <span className="log__age">{entry.age}세</span>
       <span>
-        <TimelineBody entry={entry} />
+        <TimelineBody entry={entry} subject={subject} />
       </span>
     </li>
   );
@@ -185,7 +185,6 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
   useScrollTopOnMount();
   const c = game.character;
   const title = `${c.name}${DASH_TEXT.endingTitleSuffix}`;
-  const delegatedLine = delegatedSummaryText(review.delegated.parent, review.delegated.child);
   const veil = useVeilOpen(gentle);
   return (
     <div className="page ending-page" data-testid="ending-screen">
@@ -226,12 +225,7 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
           <p className="t-muted" data-testid="ending-choices">
             {choiceCountText(review.choiceCount)}
           </p>
-          {/* 어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고 K번은 아이의 일로 흘러갔습니다 (PD9, copy.md 11-1 ③) — 둘 다 0이면 줄이 없다(조기 사망 등) */}
-          {delegatedLine === null ? null : (
-            <p className="t-muted" data-testid="ending-delegated">
-              {delegatedLine}
-            </p>
-          )}
+          {/* 어린 시절 부모 결정·흘러감 횟수 요약 문장(PD9 둘째 줄)은 형진 님 요청으로 없앴다(2026-11-08) — 「N번의 선택」은 본인이 고른 선택만 센다 */}
           {/* 플레이 시간(M8 LM6): 시간 기록이 있는 판에만 — M8 이전 저장은 블록이 없다 */}
           {game.play !== undefined ? <PlayTimeBlock play={game.play} /> : null}
         </section>
@@ -331,7 +325,7 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
               <ol className="timeline">
                 {group.entries.map((e, i) => {
                   const veilId = `tl-${group.stage}-${i}`;
-                  return <TimelineItem key={`${e.age}-${i}`} entry={e} gentle={gentle} veilId={veilId} open={veil.isOpen(veilId)} onToggle={() => veil.toggle(veilId)} />;
+                  return <TimelineItem key={`${e.age}-${i}`} entry={e} subject={group.subjects[i]} gentle={gentle} veilId={veilId} open={veil.isOpen(veilId)} onToggle={() => veil.toggle(veilId)} />;
                 })}
               </ol>
             </div>

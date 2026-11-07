@@ -1,3 +1,4 @@
+import type { CoParents } from '../core/parentSubject';
 import type { ParentingStyle } from '../core/types';
 
 /**
@@ -76,16 +77,57 @@ export const PARENT_DECISION_TABLE: Readonly<Record<string, DecisionRow>> = {
   'school-parttime': row(['money']),
 };
 
-// ---------- 줄 문구 상수 (설계 문서 3-1·3-4·3-5절) ----------
+// ---------- 줄 문구 (설계 문서 3-1·3-4·3-5절 · SPEC-011 DS2 도장 주어) ----------
 
-/** 부모 결정 줄·카드 도장 문구 (마스터 확정) */
-export const PARENT_DECIDED_TEXT = '부모님이 이렇게 정했습니다';
-/** 흘러감 줄·카드 도장 문구 (형진 님 답 M2) */
+/** 흘러감 줄·카드 도장 문구 (형진 님 답 M2) — 주어가 없다 */
 export const CHILD_FLOW_TEXT = '이렇게 흘러갔습니다';
+/** 카드 머리 칩 — 흘러감: 「아이의 일」 (designer 확정 — `docs/design/copy.md` 11-1 ①) */
+export const CHILD_CHIP_TEXT = '아이의 일';
 
-/** 연표 줄·엔딩 연표의 「(…: 라벨)」 앞머리를 만든다 — 줄 형식 `{결과 문장} ({부모님이 이렇게 정했습니다|이렇게 흘러갔습니다}: {고른 길 라벨})`가 이 한 곳에서 나온다 (PD6). 본인이 고른 선택은 `DASH_TEXT.logChoicePrefix`(「선택: 」) */
-export function decidedByText(by: 'parent' | 'child'): string {
-  return by === 'parent' ? PARENT_DECIDED_TEXT : CHILD_FLOW_TEXT;
+/**
+ * 부모 결정 문구의 한 곳 (SPEC-011 DS2, 4절 표): **도장·카드 칩·첫 카드 안내**가 이 함수 하나에서 나온다 — 카드(`ParentCard`)·인생 기록 줄(`LogList`)·엔딩 연표(`EndingScreen`)·가린 줄·가린 카드의 도장(`Veil`)·
+ * 연출 필요량의 글자 수(`life.ts#resolveDelegated`)가 모두 여기서 문구를 가져간다. 엔딩 「생애 기록」 카드의 요약 문장(PD9 「어린 시절의 큰 결정 가운데 N번은 …」)은 형진 님 요청으로 없앴다(2026-11-08) — 그래서 엔딩 요약 주어(DS3)는 없다. 주어는 `core/parentSubject.ts#coParentsOf`가 정한 「그 해에 함께 사는 부모」다.
+ *  - 두 분 `'both'` → 부모님(이) · 어머니만 `'mother'` → 어머니(가) · 아버지만 `'father'` → 아버지(가) · 없음 `'none'`(구조상 도달하지 않는 방어 분기, 결정 K10) → 기본 문구(부모님)
+ *  - **세 주어는 모두 세 글자이고 조사(이·가)를 붙인 앞부분도 네 글자라** 도장·칩·안내의 길이가 같다 — 연출 필요량(`readNeedMs`)과 판 길이가 주어에 따라 달라지지 않는다(tests/parentSubject.test.ts).
+ * 두 분 함께의 문구가 `PARENT_DECIDED_TEXT`·`PARENT_CHIP_TEXT`·`FIRST_PARENT_HINT` 기본 상수로 남는다(소개 Q&A `aboutFaq.ts`가 일반 설명에서 인용한다).
+ * 13이라는 경계(안내의 「열세 살」)는 `SELF_FROM_AGE`와 같아야 한다(tests/parentDecision.test.ts). 확정 문구는 `docs/design/copy.md` 11-1·11-3 + SPEC-011 「DS5 개정안」 8행.
+ */
+export interface ParentWording {
+  /** 주어(조사 없음) — 부모님·어머니·아버지 */
+  subject: string;
+  /** 조사를 붙인 주어 — 부모님이·어머니가·아버지가 */
+  ga: string;
+  /** 도장 「{주어}가 이렇게 정했습니다」 — 부모 결정 줄·카드 도장 (마스터 확정 문구) */
+  stamp: string;
+  /** 카드 머리 칩 「{주어}의 결정」 (설계 문서 3-2절) */
+  chip: string;
+  /** 판의 첫 부모 카드에만 더하는 안내 한 줄 (마스터 승인 Q6, 설계 문서 3-4절 · designer 확정 — `copy.md` 11-1 ②): 담담한 사실 문장, 평가·설교 없음 */
+  hint: string;
+}
+
+const SUBJECT_OF: Readonly<Record<'both' | 'mother' | 'father', { subject: string; ga: string }>> = {
+  both: { subject: '부모님', ga: '부모님이' },
+  mother: { subject: '어머니', ga: '어머니가' },
+  father: { subject: '아버지', ga: '아버지가' },
+};
+
+export function parentWording(co: CoParents = 'both'): ParentWording {
+  const { subject, ga } = SUBJECT_OF[co === 'none' ? 'both' : co];
+  return {
+    subject,
+    ga,
+    stamp: `${ga} 이렇게 정했습니다`,
+    chip: `${subject}의 결정`,
+    hint: `어린 시절의 큰 결정은 ${ga} 내립니다. 열세 살부터는 공부·친구·취미를 직접 고릅니다.`,
+  };
+}
+
+/** 부모 결정 줄·카드 도장 문구 — 두 분 함께의 기본 문구 (마스터 확정) */
+export const PARENT_DECIDED_TEXT = parentWording('both').stamp;
+
+/** 연표 줄·엔딩 연표의 「(…: 라벨)」 앞머리를 만든다 — 줄 형식 `{결과 문장} ({부모님이 이렇게 정했습니다|이렇게 흘러갔습니다}: {고른 길 라벨})`가 이 한 곳에서 나온다 (PD6). 부모의 주어는 `co`(그 줄 나이에 함께 사는 부모, DS1)이고 주지 않으면 두 분이다. 본인이 고른 선택은 `DASH_TEXT.logChoicePrefix`(「선택: 」) */
+export function decidedByText(by: 'parent' | 'child', co: CoParents = 'both'): string {
+  return by === 'parent' ? parentWording(co).stamp : CHILD_FLOW_TEXT;
 }
 
 /**
@@ -97,23 +139,11 @@ export function deciderIconOf(by: 'parent' | 'child'): 'i-by-parent' | 'i-by-chi
   return DECIDER_ICON[by];
 }
 
-/** 카드 머리 칩 — 부모: 설계 문서 3-2절의 문구. 흘러감: 「아이의 일」 (designer 확정 — `docs/design/copy.md` 11-1 ①) */
-export const PARENT_CHIP_TEXT = '부모님의 결정';
-export const CHILD_CHIP_TEXT = '아이의 일';
+/** 카드 머리 칩 — 부모: 두 분 함께의 기본 문구 (설계 문서 3-2절) */
+export const PARENT_CHIP_TEXT = parentWording('both').chip;
 
-/**
- * 판의 첫 부모 카드에만 더하는 안내 한 줄 (마스터 승인 Q6, 설계 문서 3-4절 · 문구는 designer 확정 — `docs/design/copy.md` 11-1 ②): 담담한 사실 문장, 평가·설교 없음.
- * 13이라는 경계는 `SELF_FROM_AGE`와 같아야 한다(tests/parentDecision.test.ts).
- */
-export const FIRST_PARENT_HINT = '어린 시절의 큰 결정은 부모님이 내립니다. 열세 살부터는 공부·친구·취미를 직접 고릅니다.';
-
-/** 엔딩 두 번째 줄 (설계 문서 3-5절 · 문구는 designer 확정 — `docs/design/copy.md` 11-1 ③, 숫자·조사 규칙 11-2). 둘 다 0이면 null(줄을 그리지 않는다) */
-export function delegatedSummaryText(parent: number, child: number): string | null {
-  if (parent > 0 && child > 0) return `어린 시절의 큰 결정 가운데 ${parent}번은 부모님이 내렸고, ${child}번은 아이의 일로 흘러갔습니다.`;
-  if (parent > 0) return `어린 시절의 큰 결정 가운데 ${parent}번은 부모님이 내렸습니다.`;
-  if (child > 0) return `어린 시절의 큰 결정 가운데 ${child}번은 아이의 일로 흘러갔습니다.`;
-  return null;
-}
+/** 판의 첫 부모 카드에만 더하는 안내 한 줄 — 두 분 함께의 기본 문구. 13이라는 경계는 `SELF_FROM_AGE`와 같아야 한다(tests/parentDecision.test.ts). */
+export const FIRST_PARENT_HINT = parentWording('both').hint;
 
 // ---------- 부모 선택 확률 모델 (설계 문서 2절 — 승인 A3~A6) ----------
 

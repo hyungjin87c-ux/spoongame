@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { EraRow } from '../../core/eraWindow';
+import type { CoParents } from '../../core/parentSubject';
 import type { HistoryEntry } from '../../core/types';
 import { DASH_TEXT } from '../../data/dashText';
 import { Glue } from '../Glue';
@@ -29,7 +30,22 @@ import { isAtLogTop, mergeLogRows } from './logOrder';
 
 const NO_ERA: readonly EraRow[] = [];
 
-export function LogCard({ history, live, gentle = false, eraRows = NO_ERA }: { history: readonly HistoryEntry[]; live: boolean; /** 「무거운 장면 가리기」(설정값) */ gentle?: boolean; /** 인생 기록에 끼우는 「시대의 창」 파생 줄(SPEC-009 A-12 — 저장하지 않는다). 승인된 그림이 없으면 비어 있다 */ eraRows?: readonly EraRow[] }) {
+export function LogCard({
+  history,
+  live,
+  gentle = false,
+  eraRows = NO_ERA,
+  subjectOf,
+}: {
+  history: readonly HistoryEntry[];
+  live: boolean;
+  /** 「무거운 장면 가리기」(설정값) */
+  gentle?: boolean;
+  /** 인생 기록에 끼우는 「시대의 창」 파생 줄(SPEC-009 A-12 — 저장하지 않는다). 승인된 그림이 없으면 비어 있다 */
+  eraRows?: readonly EraRow[];
+  /** 부모 결정 줄의 도장 주어(SPEC-011 DS1·DS2): 줄의 나이로 그 해 함께 사는 부모. 주지 않으면 두 분이다 — `LifeScreen`이 판의 가족 계획에서 만든다 */
+  subjectOf?: (age: number) => CoParents;
+}) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const rows = useMemo(() => mergeLogRows(history, eraRows), [history, eraRows]);
   /** 「맨 위로」를 누른 직후 부드럽게 올라가는 중인가 — 그동안 새 줄이 와도 맨 위로 따라간다 */
@@ -92,6 +108,7 @@ export function LogCard({ history, live, gentle = false, eraRows = NO_ERA }: { h
         }
         live={live}
         gentle={gentle}
+        subjectOf={subjectOf}
         veilOpen={veil.isOpen}
         onVeilToggle={veil.toggle}
         scrollerRef={scrollerRef}

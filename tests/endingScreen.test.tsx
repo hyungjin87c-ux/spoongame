@@ -6,7 +6,8 @@ import { profileLabel } from '../src/core/birthProfile';
 import { BIRTH_TEXT } from '../src/data/birthReportText';
 import { standingLabel } from '../src/data/birthText';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
-import { decidedByText, delegatedSummaryText } from '../src/data/parentDecisionTable';
+import * as parentTable from '../src/data/parentDecisionTable';
+import { decidedByText } from '../src/data/parentDecisionTable';
 import { ENDING_HEADINGS, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, journeyText } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { splitStanding, standingPieces } from '../src/ui/KeepStanding';
@@ -82,13 +83,10 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(parent + child, '공허 통과 방지: 어린 시절에 부모님이 정한·흘러간 선택이 있는 판이다').toBeGreaterThan(2);
     expect(text).toContain(`살아오며 ${own}번의 선택을 했습니다.`);
     expect(own + parent + child).toBe(game.history.filter((h) => h.kind === 'choice').length);
-    // 둘째 줄: 어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고 K번은 아이의 일로 흘러갔습니다 (PD9, copy.md 11-1 ③ — K = 0이면 부모 부분만, M = 0이면 흘러감 부분만, 둘 다 0이면 줄 없음)
-    expect(textOf(html.match(/data-testid="ending-delegated">([^]*?)<\/p>/)![1])).toBe(delegatedSummaryText(parent, child));
-    expect(delegatedSummaryText(parent, child)).toBe(
-      child > 0 && parent > 0 ? `어린 시절의 큰 결정 가운데 ${parent}번은 부모님이 내렸고, ${child}번은 아이의 일로 흘러갔습니다.`
-        : parent > 0 ? `어린 시절의 큰 결정 가운데 ${parent}번은 부모님이 내렸습니다.`
-        : `어린 시절의 큰 결정 가운데 ${child}번은 아이의 일로 흘러갔습니다.`,
-    );
+    // 둘째 줄 「어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고, K번은 아이의 일로 흘러갔습니다」(PD9)는 형진 님 요청으로 없앴다(2026-11-08): 줄도, 문장 함수도, 흘러감·부모님 횟수 문장도 화면에 없다
+    expect(html).not.toContain('data-testid="ending-delegated"');
+    expect(textOf(html)).not.toMatch(/큰 결정 가운데|번은 부모님이 내렸|번은 아이의 일로 흘러갔/);
+    expect('delegatedSummaryText' in parentTable).toBe(false);
   });
 
   it('출발선 대비: 재산을 같은 세상 안의 자리로 말하는 문장 하나, 방향 한 줄, 왜 숫자를 빼지 않았는지 설명', () => {

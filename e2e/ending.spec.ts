@@ -62,12 +62,10 @@ interface ReviewOracle {
   journey: string;
   movement: string | null;
   death: string;
-  /** 연표의 선택 줄마다 (고른 길 라벨, 누가 정했나 — 본인이면 undefined). SPEC-005 PD6 */
-  picked: Array<{ choice: string; by?: 'parent' | 'child' }>;
+  /** 연표의 선택 줄마다 (고른 길 라벨, 누가 정했나 — 본인이면 undefined, 표지 문구 — 부모 결정은 그 줄 나이에 함께 사는 부모가 주어, SPEC-011 DS1·DS2). SPEC-005 PD6 */
+  picked: Array<{ choice: string; by?: 'parent' | 'child'; mark: string }>;
   /** 「N번의 선택」의 N = 본인이 고른 선택만 (PD9) */
   choiceCount: number;
-  /** 둘째 줄 「어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고, K번은 아이의 일로 흘러갔습니다」 (copy.md 11-1 ③ — 둘 다 0이면 줄 없음) */
-  delegatedLine: string | null;
 }
 
 /** core가 계산한 회고와 문구 (개발 서버의 실제 모듈을 브라우저에서 불러 같은 코드를 쓴다) */
@@ -76,15 +74,15 @@ async function reviewOracle(page: Page, state: GameState): Promise<ReviewOracle>
     const core = await import('/src/core/index.ts');
     await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
     const text = await import('/src/data/endingText.ts');
+    const table = await import('/src/data/parentDecisionTable.ts');
     const state = ${JSON.stringify(state)};
     const r = core.reviewEnding(state);
     return {
       journey: text.journeyText(r.journey),
       movement: r.journey.kind === 'compared' ? text.MOVEMENT_TEXT[r.journey.movement] : null,
       death: text.deathLineText(state.death),
-      picked: state.history.filter((h) => h.kind === 'choice').map((h) => ({ choice: h.choice, by: h.by })),
+      picked: r.timeline.flatMap((g) => g.entries.map((h, i) => ({ h, subject: g.subjects[i] }))).filter((x) => x.h.kind === 'choice').map((x) => ({ choice: x.h.choice, by: x.h.by, mark: x.h.by === undefined ? '선택' : table.decidedByText(x.h.by, x.subject) })),
       choiceCount: r.choiceCount,
-      delegatedLine: (await import('/src/data/parentDecisionTable.ts')).delegatedSummaryText(r.delegated.parent, r.delegated.child),
     };
   })()`);
 }
@@ -163,10 +161,10 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   expect(oracle.choiceCount).toBe(oracle.picked.filter((p) => p.by === undefined).length);
   expect(oracle.choiceCount).toBeGreaterThan(5);
   const pickedTexts = await page.getByTestId('timeline-picked').allInnerTexts();
-  const MARK = { parent: '부모님이 이렇게 정했습니다', child: '이렇게 흘러갔습니다' } as const;
-  expect(pickedTexts).toEqual(oracle.picked.map((p) => `${p.by === undefined ? '선택' : MARK[p.by]}: ${p.choice}`));
-  if (oracle.delegatedLine === null) await expect(page.getByTestId('ending-delegated')).toHaveCount(0);
-  else await expect(page.getByTestId('ending-delegated')).toHaveText(oracle.delegatedLine);
+  expect(pickedTexts).toEqual(oracle.picked.map((p) => `${p.mark}: ${p.choice}`));
+  // 형진 님 요청(2026-11-08): 「어린 시절의 큰 결정 가운데 M번은 …」 요약 문장은 엔딩에서 없앴다 — 줄도 문장도 없고 「살아오며 N번의 선택」은 그대로다
+  await expect(page.getByTestId('ending-delegated')).toHaveCount(0);
+  await expect(page.getByTestId('ending-screen')).not.toContainText('큰 결정 가운데');
   await expect(page.getByTestId('timeline-infant')).toBeVisible(); // 출생은 영유아 단계의 첫 줄
   // 연표의 첫 줄은 출생신고의 한 줄 서술문과 같은 문장(합쇼체, SPEC-003 BR3·C1) — M3 이전에는 「~로 태어났다」였다
   await expect(page.getByTestId('timeline-entry').first()).toContainText('로 태어났습니다');

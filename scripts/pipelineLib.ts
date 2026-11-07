@@ -42,7 +42,6 @@ import {
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import { HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
 import { JOURNEY_NOTE, MOVEMENT_TEXT, choiceCountText, deathLineText, journeyText, stageHeadingText, startedAtText } from '../src/data/endingText';
-import { delegatedSummaryText } from '../src/data/parentDecisionTable';
 import { expectedMovement, numbersIn, readBand, readEnd } from './endingReadback';
 import { regionsOf, sigunguChoices } from '../src/data/birthStats';
 import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
@@ -563,9 +562,6 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
   if (review.choiceCount !== choiceLines.filter((h) => h.by === undefined).length) bad('선택 수(본인이 고른 것)가 연표의 `by` 없는 선택 기록 수와 다르다');
   if (review.delegated.parent !== choiceLines.filter((h) => h.by === 'parent').length || review.delegated.child !== choiceLines.filter((h) => h.by === 'child').length) bad('부모님이 정한·흘러간 선택 수가 연표의 `by` 기록 수와 다르다');
   if (review.choiceCount + review.delegated.parent + review.delegated.child !== choiceLines.length) bad('본인 + 부모님 + 흘러간 선택 수의 합이 연표의 선택 기록 수와 다르다');
-  const delegatedLine = delegatedSummaryText(review.delegated.parent, review.delegated.child);
-  if ((delegatedLine === null) !== (review.delegated.parent + review.delegated.child === 0)) bad('부모님이 정한·흘러간 선택 줄이 있어야 할 때만 있어야 한다');
-  if (delegatedLine !== null) out.push(...checkPlainText(delegatedLine, `${where} 부모님 결정·흘러감 줄`));
   if (!deepEqual(review.timeline.flatMap((g) => g.entries), game.history)) bad('연표를 단계별로 묶으면 항목이 빠지거나 순서가 바뀐다');
   out.push(...checkPlainText(deathLineText(game.death), `${where} 사망 줄`));
   out.push(...checkPlainText(choiceCountText(review.choiceCount), `${where} 선택 수 줄`));

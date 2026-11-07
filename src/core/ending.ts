@@ -3,6 +3,7 @@ import { STAGE_TABLE } from '../data/lifeTable';
 import { standingOf, wealthBottomPercent, wealthTopPercent, type Standing } from './birth';
 import { wealthMixtureOfGame } from './birthProfile';
 import { stageOfAge } from './events';
+import { coParentsFn, type CoParents } from './parentSubject';
 import { STAGES, type Character, type Death, type GameState, type ProfileId, type HistoryEntry, type ParentWealth, type Stage, type Stats } from './types';
 
 /**
@@ -193,13 +194,18 @@ export interface TimelineGroup {
   stage: Stage;
   /** 이 단계의 연표 항목 (시간순, 하나도 빼지 않는다) */
   entries: readonly HistoryEntry[];
+  /**
+   * `entries`와 같은 길이: 줄마다 그 해에 함께 사는 부모(SPEC-011 DS1 `coParentsOf`) — 부모 결정 줄(`by: 'parent'`)의 도장 주어를 화면이 그리기만 하게 한다. **저장하지 않는 파생값**이다.
+   * 부모 결정 줄이 아닌 줄의 값은 쓰이지 않는다(`'both'`). 주어 함수를 주지 않으면 모두 `'both'`(기존 문구).
+   */
+  subjects: readonly CoParents[];
 }
 
 /**
  * 연표를 생애 단계(영유아·학창·청년·중년·노년)별로 묶는다. 항목은 하나도 버리지 않는다 — 선택한 순간(choice)은 물론 서술 이벤트와 단계 기록도 그대로다.
  * (정상 플레이의 연표는 약 40~50줄이고 최대 약 117줄이다. 요약으로 줄이지 않고 단계 제목으로 나눠 읽게 한다.)
  */
-export function buildTimeline(history: readonly HistoryEntry[]): TimelineGroup[] {
+export function buildTimeline(history: readonly HistoryEntry[], subjectOf?: (age: number) => CoParents): TimelineGroup[] {
   const byStage = new Map<Stage, HistoryEntry[]>();
   for (const h of history) {
     const stage = stageOfAge(h.age);
@@ -207,7 +213,10 @@ export function buildTimeline(history: readonly HistoryEntry[]): TimelineGroup[]
     if (list === undefined) byStage.set(stage, [h]);
     else list.push(h);
   }
-  return STAGES.filter((s) => byStage.has(s)).map((stage) => ({ stage, entries: byStage.get(stage)! }));
+  return STAGES.filter((s) => byStage.has(s)).map((stage) => {
+    const entries = byStage.get(stage)!;
+    return { stage, entries, subjects: entries.map((h) => (h.kind === 'choice' && h.by === 'parent' && subjectOf !== undefined ? subjectOf(h.age) : 'both')) };
+  });
 }
 
 /** 단계 제목에 붙이는 나이 범위: 영유아 0~6세 / 학창 7~19세 / … / 노년 65세~ */
@@ -240,12 +249,17 @@ export interface EndingReview {
   changes: StatChange[];
   /** 본인이 고른 선택의 수 (연표의 선택 기록 중 `by`가 없는 것) — 부모님이 정한·흘러간 선택은 세지 않는다 (SPEC-005 PD9) */
   choiceCount: number;
-  /** 어린 시절의 큰 결정 가운데 부모님이 내린 횟수(`by: 'parent'`)와 아이의 일로 흘러간 횟수(`by: 'child'`) — 엔딩의 둘째 줄 「어린 시절의 큰 결정 가운데 M번은 부모님이 내렸고, K번은 아이의 일로 흘러갔습니다」 (PD9, copy.md 11-1 ③) */
+  /**
+   * 어린 시절의 큰 결정 가운데 부모님이 내린 횟수(`by: 'parent'`)와 아이의 일로 흘러간 횟수(`by: 'child'`). 엔딩 화면은 이 횟수를 문장으로 그리지 않는다(형진 님 요청으로 요약 문장을 없앴다, 2026-11-08) —
+   * 「본인 + 부모님 + 흘러감 = 연표의 선택 줄 수」 불변식과 파이프라인 점검(`scripts/pipelineLib.ts`)이 읽는다.
+   */
   delegated: { parent: number; child: number };
   timeline: TimelineGroup[];
 }
 
 export function reviewEnding(game: EndingGame, table: Record<ProfileId, FinalDistribution> = FINAL_DISTRIBUTION): EndingReview {
+  // 부모 결정 줄의 도장 주어는 줄의 나이로 가족 계획에서 정한다(DS1 — 현재 플래그를 읽지 않아 어른이 된 뒤 그려도 그 해의 값이다)
+  const subjectOf = coParentsFn(game);
   const start = startBandOf(wealthMixtureOfGame(game), game.character.parentWealth);
   let journey: WealthJourney = { kind: 'early', start };
   if (reachedIndependence(game.death.age) && game.assets !== null) {
@@ -260,7 +274,7 @@ export function reviewEnding(game: EndingGame, table: Record<ProfileId, FinalDis
       parent: game.history.reduce((n, h) => (h.kind === 'choice' && h.by === 'parent' ? n + 1 : n), 0),
       child: game.history.reduce((n, h) => (h.kind === 'choice' && h.by === 'child' ? n + 1 : n), 0),
     },
-    timeline: buildTimeline(game.history),
+    timeline: buildTimeline(game.history, subjectOf),
   };
 }
 
