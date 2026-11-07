@@ -29,7 +29,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20 # npm test(3,000여 개)가 로컬에서 약 3~4분(2026-10-20 측정 208초) — CI에서는 느려질 수 있어 넉넉히 둔다
+    timeout-minutes: 75 # npm test 174파일·4,872개가 로컬에서 약 25분(2026-11-07) — CI 러너는 더 느릴 수 있어 3배 가까이 둔다
     steps:
       - uses: actions/checkout@v7
 
