@@ -1,6 +1,6 @@
 # SPEC-011 어린 시절 조르기 (가칭) — 아이는 요구하고 부모가 정한다 · 부모 결정 도장의 주어
 
-- 상태: **초안 r2** (2026-11-07, planner) — 형진 님 답(Q1~Q4)과 마스터 결정(Q5·K1~K10)을 반영했다. **미결 질문 없음.** 형진 님 「확정」 전이다. 확정 전에는 개발을 시작하지 않는다(CLAUDE.md 1-3). 확정 뒤 첫 일은 설계 문서 `docs/data/ask-model.md`(AK0)이고, 마스터가 승인하기 전에는 조르기 코어를 만들지 않는다(도장 주어 DS는 조르기와 독립이라 먼저 할 수 있다).
+- 상태: **확정** (2026-11-07, 형진 님 「확정」 — 후속 203). 초안 r2(planner)에 형진 님 답(Q1~Q4)과 마스터 결정(Q5·K1~K10)을 반영했고 미결 질문은 없었다. 확정 뒤 첫 일은 설계 문서 `docs/data/ask-model.md`(AK0)이고, 마스터가 승인하기 전에는 조르기 코어를 만들지 않는다(도장 주어 DS는 조르기와 독립이라 먼저 할 수 있다).
 - 관련 TODO: docs/TODO.md#SPEC-011 (확정 뒤 마스터가 만든다 — 이 문서는 TODO를 건드리지 않았다). 이 문서가 닫는 줄: TODO 「QA-009-FM7a RECORD 2」(명세 누락 후보 — DS 절).
 - 요청 원문: `ai-log/2026-10-15_SPEC-003_decision.md` 후속 201 「형진 님 새 요청」 + 형진 님 답(2026-11-07, 아래) / 앞선 요청: `docs/spec/requests/2026-10-26_3차피드백.md` 항목 4·질문 6 / 작업 기록: `ai-log/2026-11-07_SPEC-011_spec.md`
 - 읽은 것(코드·문서는 읽기만 했다): SPEC-005 PD1~PD13 · `docs/data/parent-decision-model.md` · `src/core/parentDecision.ts`·`src/data/parentDecisionTable.ts`·`src/core/life.ts`(`stepYear`·`resolveChoiceCore`·`resolveDelegated`)·`src/core/familyCloseness.ts`·`src/core/familyView.ts` · SPEC-009 「FM7 나눔」·`docs/data/family-model.md` 5-1·10-1절 · `src/core/eventLint.ts`(시대어·가족 낱말 규칙) · `src/data/timingTable.ts`(`READ_MODEL`·판정 임계) · `ai-log/2026-11-06_SPEC-009_dev-FM7a.md`(현재 판 길이).
