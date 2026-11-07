@@ -18,7 +18,7 @@
 - `e2e/m7e3-ending.spec.ts:143` 통과(mobile-360).
 
 ## 2. 시험 상수 — `m7b-cite-lines.spec.ts:108` (`EXPECTED_CELLS` 91 → 95)
-- 원자료에서 칸마다 센 결과 95칸(결정 카드 92 + 기록 카드 3). 늘어난 4칸은 FM7a(6661818)의 변형 사건 `middle-parents-care-mother-gone`·`middle-parents-care-father-gone`이 인용 c-081을 지금·다가올 세상에 이은 것(2건 × 2세상). 별세 서술 사건(`middle-parents-farewell-*-gone`)은 선택지가 없어 칸에 들지 않는다.
+- 원자료에서 칸마다 센 결과 95칸(결정 카드 92 + 기록 카드 3). 늘어난 4칸은 FM7a(6661818)의 변형 사건 `middle-parents-care-mother-gone`·`middle-parents-care-father-gone`이 인용 c-081을 지금·다가올 세상에 이은 것(2건 × 2세상). 별세 사건(`middle-parents-farewell-*-gone`)은 선택지(stay·late·share)는 있지만 인용이 없어(`noCitation: "X2"` — 원본 `middle-parents-farewell`과 같다) 칸에 들지 않는다(검수 R-649로 바로잡음).
 - 고침: `EXPECTED_CELLS = 95`와 사유 주석, 오류 문구·제목 칸 수(91 → 95, 결정 카드 88 → 92). 줄바꿈 단언까지 돌았다: 320 인라인 × 글자 100·150·200% 3건 통과.
 - `check:todo`는 제목의 칸 수가 바뀌어도 통과(실패 0·경고 0).
 

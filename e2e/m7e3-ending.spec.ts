@@ -67,6 +67,7 @@ async function expectBar(page: Page, o: BarOracle, label: string): Promise<void>
   expect(g.end!.left, label).toBeGreaterThanOrEqual(g.bar.left - 0.5);
   expect(g.end!.right, label).toBeLessThanOrEqual(g.bar.right + 0.5);
   // 눈으로 읽히는 방향: 띠 오른쪽 밖 = 앞선 자리, 왼쪽 밖 = 뒤쪽, 띠 안·가장자리 = 비슷함 (movementOf의 여유 2점)
+  // 단 0원 이하로 마친 판은 띠 오른쪽 밖이어도 비슷함이다(finalMovementOf, 마스터 결정 2026-11-07) — 아래 same의 위쪽 한계(high + 2)는 그런 판에 맞지 않는다. 지금 'zero' 상태는 알파 2단계([25, 55])라 띠 안이다.
   if (o.movement === 'up') expect(o.score!, label).toBeGreaterThan(o.high);
   if (o.movement === 'down') expect(o.score!, label).toBeLessThan(o.low);
   if (o.movement === 'same') {

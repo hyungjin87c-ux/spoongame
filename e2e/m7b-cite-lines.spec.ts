@@ -37,7 +37,7 @@ const LONG_NAMES: readonly string[] = ['국민노후보장패널조사', '디지
 /**
  * 결정 카드 칸 + 기록 카드 칸 (D-73 ②, 독립 계산과 같아야 한다 — 값이 바뀌면 의도한 변경인지 확인한다).
  * 91 → 95 (2026-11-07, 배포 전 점검): SPEC-009 FM7a(커밋 6661818)의 변형 사건 `middle-parents-care-mother-gone`·`middle-parents-care-father-gone`이 인용 c-081을 지금·다가올 세상에 이어(2건 × 2세상 = 4칸) 결정 카드 칸이 88 → 92가 됐다.
- * 같은 변형의 별세 서술 사건(`middle-parents-farewell-*-gone`)은 선택지가 없어 칸에 들지 않는다. 기록 카드 3칸은 그대로다. 원자료에서 칸마다 센 목록으로 확인한 값이다(그 밖의 증감 없음).
+ * 같은 변형의 별세 사건(`middle-parents-farewell-*-gone`)은 선택지(stay·late·share)는 있지만 인용이 없어(`noCitation: "X2"` — 원본 `middle-parents-farewell`과 같다) 칸에 들지 않는다. 기록 카드 3칸은 그대로다. 원자료에서 칸마다 센 목록으로 확인한 값이다(그 밖의 증감 없음).
  */
 const EXPECTED_CELLS = 95;
 /**

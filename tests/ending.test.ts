@@ -1154,7 +1154,7 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
         if (end >= low && end <= high) {
           tally.inside++;
           if (j.movement !== 'same') wrong.push(`구간 안인데 ${j.movement}: ${where}`);
-        } else if (j.movement === 'same' && l.net <= 0 && end > high) {
+        } else if (j.movement === 'same' && l.net <= 0 && expectedMovement(low, high, end, BAND_GRACE) === 'up') {
           tally.cappedSame++; // 0원 이하 상한(마스터 결정 2026-11-07): 계산상 앞섬이던 판이 비슷함으로 읽힌다 — 여유 밖이어도 정상이다
         } else if (j.movement === 'same') {
           tally.graceSame++;
