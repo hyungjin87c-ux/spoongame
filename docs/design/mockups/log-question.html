@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수저 게임 · 시안 · 인생 기록 결정 줄의 질문 (v0.4.1, SPEC-012 QF4)</title>
+<!-- 시안(정적 HTML, 가짜 데이터 — 1995년생 이서연의 어린 시절 기록 일부): 디자인 시스템 토큰·컴포넌트 스타일(ds.css = 구현 dash.css와 같은 글자, family/family.css = 시대의 창 줄)을 그대로 불러 쓰고,
+     아래 <style>의 「제안」 블록이 결정 줄 규칙만 더한다(developer가 dash.css 인생 기록 블록으로 옮길 글자).
+     주소 끝 ?v=now(지금 그대로) | ?v=1(안 1 — 제목 윗줄만 더하고 아래는 지금 그대로) | ?v=2(안 2 — 제목 → 고른 길 → 결과, 엔딩 연표와 같은 차례. 추천).
+     &theme=dark 다크, &text=200 글자 200%, &open=1 가린 줄을 펼친 채로, &rows=0-4 줄 범위(색인, 촬영용), &old=1 옛 저장(제목 없는 결정 줄) 표본만.
+     문서: docs/design/log-question.md. 촬영·측정: scripts/design/shootLogQuestion.mjs → docs/design/screens/012/log-question-*.png. 외부 요청 0. -->
+<link rel="stylesheet" href="../../../src/styles/tokens.css">
+<link rel="stylesheet" href="ds.css">
+<link rel="stylesheet" href="gm3/gm3.css">
+<link rel="stylesheet" href="family/family.css">
+<style>
+/* ===================== 제안(안 1·안 2 공통, html.lq-on) — 구현은 dash.css 「인생 기록」 블록(.log__text em 아래)에 옮긴다 ===================== */
+/* 결정 줄의 질문 자리 = 사건 제목(HistoryEntry.title). 본문보다 작게 — 크기 12px(--fs-xs, 이보다 작게 쓰지 않는 하한) · 색 보조(--c-text-2, 카드 면 위 8.65:1 / 다크 8.78:1) · 굵기 보통(최신 줄이 굵어져도 제목은 보통).
+   줄 높이는 본문과 같은 1.6(12 × 1.6 = 19.2px)이라 나이 칸(14px, 2px 내림)과 첫 줄 높이가 거의 같다. 제목이 없는 줄(옛 저장)은 이 요소가 없고 지금 모양 그대로다. */
+html.lq-on .log__q { display: block; font-size: var(--fs-xs); line-height: var(--lh-body); color: var(--c-text-2); font-weight: var(--fw-regular); }
+/* 안 2만(html.lq-2): 제목 → 고른 길 → 결과를 세 줄로 쌓는다 — 엔딩 연표(.timeline li > span:last-child, flex column)와 같은 쌓기. 고른 길(em)은 기존 .log__text em 규칙(14px·보조색·정체) 그대로이고 괄호만 없다(연표 .tl-picked와 같은 글). */
+html.lq-2 .log__text--q { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* 시안 전용: 구현 dash.css에 있는 아이콘 작은 크기(ds.css에 없음) */
+svg.icon--xs { width: 14px; height: 14px; }
+/* ===================== 시안 전용 ===================== */
+/* PC(≥ 1180)의 3열 대시보드 가운데 열 폭 = 1200 − 좌우 16 − 양옆 열 300×2 − 간격 16×2 = 536px. 시안은 그 폭의 카드 하나만 둔다 */
+.lq { max-width: calc(536px + 2 * var(--gutter)); margin: 0 auto; padding: var(--sp-4) var(--gutter) var(--sp-8); display: flex; flex-direction: column; gap: var(--sp-4); }
+/* 표본 장이라 인생 기록 영역의 높이 상한·스크롤을 풀어 전 줄을 찍는다(구현은 max-height 520px + 스크롤 그대로) */
+.lq .log__list { max-height: none; overflow: visible; }
+.lq-cap { margin: 0; font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+.lq-cap b { color: var(--c-text); font-weight: var(--fw-bold); }
+</style>
+<script>(function(){var q=new URLSearchParams(location.search);var t=q.get('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);
+var v=q.get('v')||'now';if(v!=='1'&&v!=='2')v='now';var root=document.documentElement;if(v!=='now')root.classList.add('lq-on');if(v==='2')root.classList.add('lq-2');root.setAttribute('data-v',v);
+var text=parseInt(q.get('text')||'',10);if(text>0)root.style.fontSize=text+'%';
+window.LQ={v:v,open:q.get('open')==='1',rows:q.get('rows')||'',old:q.get('old')==='1'};})();</script>
+</head>
+<body class="is-dash">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-by-parent" viewBox="0 0 24 24"><path d="M4 12 12 5l8 7"/><path d="M6.5 10.5V19h11v-8.5"/></symbol>
+<symbol id="i-by-child" viewBox="0 0 24 24"><path d="M3 10c2-2.4 4-2.4 6 0s4 2.4 6 0 4-2.4 6 0"/><path d="M6 16c2-2.4 4-2.4 6 0s4 2.4 6 0"/></symbol>
+<symbol id="i-era" viewBox="0 0 24 24"><rect x="4" y="4.5" width="16" height="15" rx="1.5"/><path d="M12 4.5v15M4 12h16"/></symbol>
+</defs></svg>
+<!-- 살아가기 화면 머리(구현 LifeScreen과 같은 DOM, controls-compact.html과 같은 글자) — 화면의 h1(이름)이 여기 있다. 그 아래 3열 중 가운데 열(인생 기록 카드)만 둔 표본 장이다 -->
+<header class="dash-head"><div class="dash-head__inner">
+  <div class="dash-head__top"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" class="logo logo--header " role="img" aria-label="수저 게임"><path transform="translate(-15.4 -4.1) scale(0.2631)" d="M393.9 41.5C454.7 84.1 471.3 154.2 422.9 223.4C369.6 299.5 303.9 308.6 259 290.8C247 295 238.5 301.5 226.8 318.3L156.8 423.8C136.2 453.3 146.2 471.2 137.6 483.5C123.8 503.2 96.6 508 77 494.2C57.3 480.4 52.5 453.3 66.3 433.6C74.9 421.3 95.2 424.6 115.9 395.1L191 293.3C202.8 276.5 206 266.3 205.9 253.6C173.8 217.5 159.9 152.7 213.1 76.6C261.6 7.4 333.2 -1 393.9 41.5ZM258.36 127.39C260.26 135.17 264.94 143.97 269.4 152.87C273.86 161.76 281.6 170.43 285.11 180.77C288.62 191.12 287.55 203.89 290.45 214.95C293.36 226.01 295.66 242.17 302.52 247.15C309.37 252.13 323.86 249.87 331.59 244.84C339.32 239.8 347.09 228.65 348.9 216.93C350.72 205.21 344.91 189.11 342.45 174.5C339.99 159.9 332.56 144.63 334.13 129.31C335.69 113.99 347.51 96.74 351.84 82.59C356.18 68.44 363.92 50.06 360.12 44.4C356.32 38.74 341.36 43.22 329.05 48.64C316.74 54.05 298.12 67.3 286.27 76.88C274.42 86.47 262.61 97.73 257.96 106.15C253.3 114.56 256.45 119.6 258.36 127.39Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(121.236 23.04) scale(0.819)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></svg>
+    <div class="who"><h1 class="who__name" tabindex="-1" data-testid="life-name">이서연</h1><span class="who__age" data-testid="life-age"><b>17</b>세</span></div></div>
+  <div class="year-row"><span class="num">2012년</span>
+    <div class="year-progress" role="progressbar" aria-label="올해 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62"><div class="year-progress__fill" style="width:62%"></div></div>
+    <span class="year-row__pct num">62%</span></div>
+</div></header>
+<main class="lq">
+  <section class="card log" aria-labelledby="log-t" data-testid="log">
+    <div class="card__head card__head--tight"><h2 id="log-t" class="card__title">인생 기록</h2><span class="t-xs t-faint" id="log-hint">최신순 · 아래로 스크롤하면 지난 기록</span></div>
+    <div class="log__list" role="region" aria-label="인생 기록" aria-describedby="log-hint" tabindex="0" data-testid="log-list">
+      <ol class="log__rows" id="rows" aria-live="off"></ol>
+    </div>
+  </section>
+  <p class="lq-cap" id="cap"></p>
+  <p class="mock-tag">시안 · 가짜 데이터 — 1995년생 이서연, 12세 줄의 「어머니가」는 그 해 함께 사는 부모가 한 분일 때의 주어(SPEC-011 DS1)이고 그 사이의 이별 줄은 이 표본에서 뺐다</p>
+</main>
+<script>
+(function () {
+  var LQ = window.LQ;
+  var ICON = { parent: 'i-by-parent', child: 'i-by-child' };
+  var SUBJECT = { both: '부모님이', mother: '어머니가', father: '아버지가' };
+  var ROWS = [
+    { kind: 'choice', age: 17, title: '입시를 앞둔 해', choice: '지금 성적으로 갈 수 있는 곳에 지원한다', text: '원서를 내고 결과를 기다렸습니다. 큰 기쁨도 큰 후회도 아닌, 조용한 결과였습니다.', latest: true },
+    { kind: 'era', age: 17, year: 2012, line: '공연장 조명 아래 함성이 울렸습니다.' },
+    { kind: 'choice', age: 15, title: '자꾸 눈에 들어오는 사람', choice: '마음속에만 담아 둔다', text: '끝내 말하지 못했습니다. 졸업할 때까지 인사만 나누었고, 그 마음은 책상 앞에서 조용히 가라앉혔습니다.' },
+    { kind: 'choice', age: 12, by: 'parent', subject: 'mother', title: '성적표를 받은 저녁', choice: '방과 후에 따로 배운다', text: '방과 후마다 따로 공부를 더 했습니다. 숙제가 늘었고, 성적도 꾸준히 올랐습니다.' },
+    { kind: 'era', age: 12, year: 2007, line: '학교 앞 분식집에서 떡볶이를 먹었습니다.' },
+    { kind: 'choice', age: 9, by: 'parent', subject: 'both', title: '집 앞의 강아지', choice: '강아지를 집에 들이기로 한다', text: '어른들이 강아지를 집에 들이기로 했습니다. 하루를 마치고 돌아오면 꼬리를 흔드는 존재가 집에 생겼습니다.' },
+    { kind: 'stage', age: 7, text: '학교에 들어갈 나이가 되었습니다.' },
+    { kind: 'era', age: 7, year: 2002, line: '거리마다 붉은 옷이 모여 응원했습니다.' },
+    { kind: 'choice', age: 4, by: 'child', title: '동생이 생겼다', choice: '서운해서 울며 어른에게 매달린다', text: '어른이 동생을 안을 때마다 아이는 울며 매달렸습니다. 한동안 아기처럼 굴었지만 서운한 마음을 말로 풀어놓는 법도 조금씩 익혔습니다.' },
+    { kind: 'choice', age: 3, by: 'parent', subject: 'both', heavy: '건강', title: '한밤의 열', choice: '바로 병원으로 간다', text: '밤길을 달려 병원에 갔습니다. 열은 새벽에 내렸고, 어른들은 아침까지 아이 곁을 지켰습니다.' }
+  ];
+  /* 옛 저장 표본: title이 없는 결정 줄(v0.1.x 일부) — 윗줄 없이 지금 모양 */
+  var OLD = [
+    { kind: 'choice', age: 15, choice: '마음속에만 담아 둔다', text: '끝내 말하지 못했습니다. 졸업할 때까지 인사만 나누었고, 그 마음은 책상 앞에서 조용히 가라앉혔습니다.', latest: true },
+    { kind: 'choice', age: 9, by: 'parent', subject: 'both', choice: '강아지를 집에 들이기로 한다', text: '어른들이 강아지를 집에 들이기로 했습니다. 하루를 마치고 돌아오면 꼬리를 흔드는 존재가 집에 생겼습니다.' }
+  ];
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function icon(name, cls) { return '<svg class="icon ' + cls + '" aria-hidden="true" focusable="false"><use href="#' + name + '"/></svg>'; }
+  function stampText(r) { return r.by === 'parent' ? SUBJECT[r.subject || 'both'] + ' 이렇게 정했습니다' : '이렇게 흘러갔습니다'; }
+  /* 결정 줄의 글 자리 — 변형마다 다른 부분 */
+  function entry(r) {
+    var v = LQ.v;
+    var hasQ = v !== 'now' && !!r.title;
+    /* 안 2의 세 줄 쌓기는 제목이 있는 줄에만 — 제목 없는 옛 줄은 어느 안에서도 지금 모양(결과 문장 + 괄호 안 고른 길) */
+    var stacked = v === '2' && hasQ;
+    var q = hasQ ? '<span class="log__q" data-testid="log-q">' + esc(r.title) + '</span>' : '';
+    var em;
+    if (r.by) {
+      /* (어머니가 이렇게 정했습니다: 라벨) — 지금·안 1은 괄호 꼴, 안 2(쌓기)는 연표처럼 괄호 없이 한 줄 */
+      var inner = icon(ICON[r.by], 'icon--xs') + (stacked ? esc(stampText(r)) + ': ' + esc(r.choice) : '(' + esc(stampText(r)) + ': ' + esc(r.choice) + ')');
+      em = '<em class="log__by log__by--' + r.by + '" data-testid="log-by" data-by="' + r.by + '">' + inner + '</em>';
+    } else {
+      em = '<em' + (stacked ? ' class="log__pick"' : '') + '>' + (stacked ? '선택: ' + esc(r.choice) : '(선택: ' + esc(r.choice) + ')') + '</em>';
+    }
+    if (stacked) return q + em + '<span class="log__result">' + esc(r.text) + '</span>';
+    /* 지금 · 안 1 · (안 2이되 제목 없는 옛 줄): 결과 문장 + 한 칸 + em */
+    return q + esc(r.text) + ' ' + em;
+  }
+  function textClass(r) { return 'log__text' + (LQ.v === '2' && r.title ? ' log__text--q' : ''); }
+  /* 안 2의 .log__text--q는 제목이 있는 줄에만 붙는다(위 stacked와 같은 조건) */
+  function row(r, i) {
+    var age = '<span class="log__age">' + r.age + '세' + (r.kind === 'era' ? '<small class="log__year">' + r.year + '</small>' : '') + '</span>';
+    if (r.kind === 'era') {
+      return '<li class="log__row log__row--tl" data-kind="timeline" data-tl="era" id="log-y' + r.year + '" tabindex="-1" aria-live="off" data-testid="log-row-era">' + age +
+        '<span class="log__text"><span class="log__tl">' + icon('i-era', '') + '<span>시대의 창</span></span><span class="log__sent">' + esc(r.line) + '</span></span></li>';
+    }
+    var cls = 'log__row' + (r.kind === 'stage' ? ' log__row--stage' : '') + (r.latest ? ' log__row--latest' : '');
+    if (r.kind === 'stage') return '<li class="' + cls + '" data-kind="stage" data-testid="log-row">' + age + '<span class="log__text">' + esc(r.text) + '</span></li>';
+    if (r.heavy) {
+      var id = 'veil-' + i;
+      var open = LQ.open;
+      var stamp = r.by ? '<em class="log__by log__by--' + r.by + '" data-testid="veil-by" data-by="' + r.by + '"' + (open ? ' hidden' : '') + '>' + icon(ICON[r.by], 'icon--xs') + '(' + esc(stampText(r)) + ')</em>' : '';
+      return '<li class="' + cls + '" data-kind="choice" data-veiled="true" data-testid="log-row">' + age +
+        '<span class="' + textClass(r) + ' veil"><span class="veil__line"><span class="veil__lead" data-testid="veil-lead"><span class="fit-pair">무거운 일이 있었습니다 <span aria-hidden="true">·</span> ' + esc(r.heavy) + '</span></span>' + stamp +
+        '<button type="button" class="btn btn--ghost btn--sm veil__btn" aria-expanded="' + open + '" aria-controls="' + id + '" aria-label="' + (open ? '접기' : '펼쳐 보기') + ' ' + r.age + '세 ' + esc(r.heavy) + '" data-testid="veil-btn" data-age="' + r.age + '" data-heavy="' + esc(r.heavy) + '">' + (open ? '접기' : '펼쳐 보기') + ' <span class="veil__mark" aria-hidden="true">' + (open ? '▴' : '▾') + '</span></button></span>' +
+        '<span class="veil__body" id="' + id + '"' + (open ? '' : ' hidden') + ' data-testid="veil-body">' + entry(r) + '</span></span></li>';
+    }
+    return '<li class="' + cls + '" data-kind="choice" data-testid="log-row">' + age + '<span class="' + textClass(r) + '">' + entry(r) + '</span></li>';
+  }
+  var src = LQ.old ? OLD : ROWS;
+  if (LQ.rows) { var m = /^(\d+)-(\d+)$/.exec(LQ.rows); if (m) src = src.slice(+m[1], +m[2] + 1); }
+  var html = '';
+  for (var i = 0; i < src.length; i++) html += row(src[i], i);
+  document.getElementById('rows').innerHTML = html;
+  var cap = document.getElementById('cap');
+  var name = LQ.v === 'now' ? '지금 — 결과 문장 (선택: 고른 길). 어떤 일에 대한 결정이었는지는 적히지 않는다' : LQ.v === '1' ? '안 1 — 사건 제목을 작은 윗줄로 더하고, 아래는 지금 그대로(결과 문장 + 괄호 안 고른 길)' : '안 2 — 사건 제목(작게) → 고른 길 → 결과 문장. 엔딩 연표와 같은 차례, 괄호 없음';
+  cap.innerHTML = '<b>' + (LQ.old ? '옛 저장 표본(제목 없는 결정 줄) · ' : '') + name.split(' — ')[0] + '</b> — ' + esc(name.split(' — ')[1]);
+  /* 가린 줄 펼치기·접기 — 구현은 Veil.tsx(useVeilOpen). 여기서는 hidden 토글만 */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.veil__btn'); if (!b) return;
+    var body = document.getElementById(b.getAttribute('aria-controls')); var open = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', String(open)); body.hidden = !open;
+    b.setAttribute('aria-label', (open ? '접기' : '펼쳐 보기') + ' ' + b.getAttribute('data-age') + '세 ' + b.getAttribute('data-heavy'));
+    b.firstChild.nodeValue = (open ? '접기' : '펼쳐 보기') + ' '; b.querySelector('.veil__mark').textContent = open ? '▴' : '▾';
+    var st = b.parentNode.querySelector('[data-testid="veil-by"]'); if (st) st.hidden = open;
+  });
+})();
+</script>
+</body>
+</html>
