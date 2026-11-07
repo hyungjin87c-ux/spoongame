@@ -174,6 +174,18 @@ export function movementOf(band: StartBand, end: Standing, grace: number = BAND_
   return 'same';
 }
 
+/**
+ * 엔딩이 실제로 쓰는 방향: `movementOf`의 결과에 **0원 이하 상한**을 더한 것이다.
+ * 마스터 결정 2026-11-07(배포 전 점검, 결정 C 보강): 최종 순자산이 0원 이하(빚 포함)로 마친 판은 출발선과의 비교가 「앞섬(up)」이 될 수 없다 — 계산상 up이면 「비슷함(same)」으로 읽는다.
+ * 이유: 결정 C(동률 불리, `finalWealthStanding` 주석·copy.md 5-2 ①)가 지키려던 「흙수저가 0원으로 마쳐도 앞섬이 붙지 않는다」를 분포표의 0원 칸이 한 칸 움직이는 일에 흔들리지 않게 규칙으로 고정한다.
+ * 원인은 분포표를 다시 만들 때(8cb3cb1) Z세대·알파 세대의 0원 자리가 하위 27%에서 28%로 옮겨 1단계 출발선([0, 25])의 여유(25 + 2)를 넘은 일이다.
+ * 0원보다 큰 값의 판정, 「뒤쪽(down)」, 자리 문장(`finalWealthStanding`)·점수(`standingScore`)는 바뀌지 않는다 — 이 함수는 방향만 바꾼다.
+ */
+export function finalMovementOf(band: StartBand, end: Standing, net: number, grace: number = BAND_GRACE): Movement {
+  const m = movementOf(band, end, grace);
+  return net <= 0 && m === 'up' ? 'same' : m;
+}
+
 // ---------- 생애 연표 ----------
 
 export interface TimelineGroup {
@@ -237,7 +249,7 @@ export function reviewEnding(game: EndingGame, table: Record<ProfileId, FinalDis
   let journey: WealthJourney = { kind: 'early', start };
   if (reachedIndependence(game.death.age) && game.assets !== null) {
     const end = finalWealthStanding(game.generation, game.assets.net, table);
-    journey = { kind: 'compared', start, end, movement: movementOf(start, end) };
+    journey = { kind: 'compared', start, end, movement: finalMovementOf(start, end, game.assets.net) };
   }
   return {
     journey,

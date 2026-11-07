@@ -48,13 +48,17 @@ export function readEnd(label: string): number {
  *  - 단 (R-095) 구간 바깥에 점수로 가질 수 있는 칸(위쪽 high+1..99, 아래쪽 1..low-1)이 여유보다 넓지 않은 쪽은 그 쪽의 여유가 0이다
  *    — 안 그러면 그 칸이 전부 여유 안이라 그 방향이 영영 나올 수 없다.
  * 칸의 수로 적었다(core는 `high + grace >= 99`로 적는다): 같은 규칙을 다른 식으로 적어 서로를 확인한다.
+ *  - net(최종 순자산, 만 원)을 주면 마스터 결정 2026-11-07(배포 전 점검, 결정 C 보강)을 더한다: 0원 이하로 마친 판은 앞섬이 될 수 없어 앞섬이던 것이 비슷함이다. 주지 않으면 구간·점수만으로 정한다(구간 전수 시험).
  */
-export function expectedMovement(low: number, high: number, score: number, grace: number): Movement {
+export function expectedMovement(low: number, high: number, score: number, grace: number, net?: number): Movement {
   const cellsAbove = Math.max(0, 99 - high);
   const cellsBelow = Math.max(0, low - 1);
   const upGrace = cellsAbove <= grace ? 0 : grace;
   const downGrace = cellsBelow <= grace ? 0 : grace;
   if (score >= low && score <= high) return 'same';
-  if (score > high) return score - high <= upGrace ? 'same' : 'up';
+  if (score > high) {
+    if (net !== undefined && net <= 0) return 'same'; // 0원 이하는 앞섬이 없다 (여유 안이면 원래 비슷함, 여유 밖이어도 비슷함)
+    return score - high <= upGrace ? 'same' : 'up';
+  }
   return low - score <= downGrace ? 'same' : 'down';
 }

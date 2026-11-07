@@ -14,6 +14,7 @@ import {
   createInitialState,
   enterLife,
   finalWealthStanding,
+  finalMovementOf,
   movementOf,
   parseGame,
   playToEnd,
@@ -647,7 +648,7 @@ describe('reviewEnding: 출발선 대비 (R-045 c)', () => {
       expect(j.kind).toBe('compared');
       if (j.kind === 'compared') {
         expect(j.end).toEqual(finalWealthStanding(l.generation, l.assets!.net));
-        expect(j.movement).toBe(movementOf(j.start, j.end));
+        expect(j.movement).toBe(finalMovementOf(j.start, j.end, l.assets!.net));
       }
     }
   });
@@ -998,7 +999,7 @@ describe('방향 판정의 균형 (R-091): 세대 표본 × 재력 단계별 앞
     const out: Tally[] = [1, 2, 3, 4, 5].map(() => ({ n: 0, up: 0, same: 0, down: 0 }));
     for (const l of FINAL_LIVES()[era]) {
       if (!reachedIndependence(l.deathAge)) continue;
-      const m = movementOf(startBandOf(wealthMixtureOfProfile(era), l.parentWealth), finalWealthStanding(era, l.net), grace);
+      const m = finalMovementOf(startBandOf(wealthMixtureOfProfile(era), l.parentWealth), finalWealthStanding(era, l.net), l.net, grace);
       const t = out[l.parentWealth - 1];
       t.n++;
       t[m]++;
@@ -1121,7 +1122,7 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
   });
 
   it('모든 판(세대 표본 3종, 스무 살 넘어 마친 약 12000판)의 reviewEnding 결과: 문장에서 읽은 숫자로 방향을 다시 정하면 같다. 구간 안인데 앞섬/뒤쪽, 구간 밖 여유(2점) 너머인데 비슷함이 0건이다 (천장·바닥 쪽은 여유 0 — R-095)', () => {
-    const tally = { total: 0, inside: 0, graceSame: 0, up: 0, down: 0, ceilingUp: 0 };
+    const tally = { total: 0, inside: 0, graceSame: 0, up: 0, down: 0, ceilingUp: 0, cappedSame: 0 };
     const wrong: string[] = [];
     for (const era of SIM_PROFILES) {
       const base = endingOf(finalDistributionSeed(1), era);
@@ -1146,13 +1147,15 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
         }
         const [low, high] = readBand(m[1]);
         const end = readEnd(m[2]);
-        const want = expectedMovement(low, high, end, BAND_GRACE);
+        const want = expectedMovement(low, high, end, BAND_GRACE, l.net);
         const where = `${era} ${l.parentWealth}단계 순자산 ${l.net}: ${text} → ${MOVEMENT_TEXT[j.movement]}`;
         tally.total++;
         if (j.movement !== want) wrong.push(`${where} (기대 ${want})`);
         if (end >= low && end <= high) {
           tally.inside++;
           if (j.movement !== 'same') wrong.push(`구간 안인데 ${j.movement}: ${where}`);
+        } else if (j.movement === 'same' && l.net <= 0 && end > high) {
+          tally.cappedSame++; // 0원 이하 상한(마스터 결정 2026-11-07): 계산상 앞섬이던 판이 비슷함으로 읽힌다 — 여유 밖이어도 정상이다
         } else if (j.movement === 'same') {
           tally.graceSame++;
           const gap = end > high ? end - high : low - end;
@@ -1160,6 +1163,7 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
         }
         if (j.movement === 'up') {
           tally.up++;
+          if (l.net <= 0) wrong.push(`0원 이하인데 앞섬: ${where}`);
           // 앞섬은 구간 위쪽 끝보다 여유(2점)를 넘어 앞선 것이다. 단 구간 위쪽 끝에서 천장(99)까지 칸이 여유 이내인 구간은 여유가 0이라 끝값을 넘기만 하면 앞섬이다 (R-095)
           const nearCeiling = 99 - high <= BAND_GRACE;
           if (!(end > high) || (!nearCeiling && !(end - high > BAND_GRACE))) wrong.push(`앞섬인데 구간 위쪽 끝(${high})보다 충분히 앞서지 않음: ${where}`);
@@ -1179,6 +1183,8 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
     // 검사가 공허하지 않다: 네 경우가 모두 실제로 있다 (구간 안 / 구간 밖이지만 여유 안 / 앞섬 / 뒤쪽)
     expect(tally.inside).toBeGreaterThan(4000); // 관측 4377 (예전 5000 넘음 — 위가 열린 순자산에서는 구간 안에서 마치는 판이 줄었다)
     expect(tally.graceSame).toBeGreaterThan(200);
+    // 0원 이하 상한(마스터 결정 2026-11-07)이 실제 판에서 일어난다: 계산상 앞섬이던 0원 이하 판이 비슷함으로 읽힌다 (검사가 공허하지 않다)
+    expect(tally.cappedSame).toBeGreaterThan(0);
     expect(tally.up).toBeGreaterThan(1000);
     expect(tally.down).toBeGreaterThan(1000);
     // 여유 안이라 구간 밖인데 비슷함으로 읽히는 판은 전체의 12% 이하다 (여유는 "작은" 여유다)
@@ -1189,6 +1195,105 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
     expect(MOVEMENT_TEXT.up).toContain('앞선');
     expect(MOVEMENT_TEXT.same).toContain('비슷한');
     expect(MOVEMENT_TEXT.down).toContain('뒤쪽');
+  });
+});
+
+describe('0원 이하로 마친 판은 앞섬이 없다 (마스터 결정 2026-11-07, 배포 전 점검, 결정 C 보강): finalMovementOf·reviewEnding', () => {
+  const PROFILES = Object.keys(FINAL_DISTRIBUTION) as ProfileId[];
+  const WEALTHS: readonly ParentWealth[] = [1, 2, 3, 4, 5];
+  const base = lazy(() => endingOf(7, 'alpha'));
+  /** 같은 판의 세대·부모 재력·최종 순자산만 바꾼 엔딩 상태 (스무 살 넘어 마친 판) */
+  const gameOf = (era: ProfileId, wealth: ParentWealth, net: number): EndingGame => {
+    const l = base();
+    return { ...l, generation: era, character: { ...l.character, parentWealth: wealth }, assets: { ...l.assets!, net, debt: Math.max(l.assets!.debt, -net) }, death: { age: 70, cause: '노환' }, age: 70 };
+  };
+  const movementIn = (g: EndingGame, table?: Record<ProfileId, FinalDistribution>): string => {
+    const j = reviewEnding(g, table).journey;
+    return j.kind === 'compared' ? j.movement : 'early';
+  };
+
+  it('프로필 8종 × 재력 1~5단계 × 최종 0원: 앞섬이 아니다 (실제 분포표, reviewEnding)', () => {
+    expect(PROFILES).toHaveLength(8);
+    const wrong: string[] = [];
+    for (const era of PROFILES) {
+      for (const wealth of WEALTHS) {
+        const m = movementIn(gameOf(era, wealth, 0));
+        if (m === 'up' || m === 'early') wrong.push(`${era} ${wealth}단계 0원: ${m}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it('빚(음수)으로 마쳐도 앞섬이 아니다: -1·-100·-5000·-200000만 원 (하한 -20억 원) × 프로필 8종 × 재력 1~5단계', () => {
+    const wrong: string[] = [];
+    for (const era of PROFILES) {
+      for (const wealth of WEALTHS) {
+        for (const net of [-1, -100, -5000, -200_000]) {
+          const m = movementIn(gameOf(era, wealth, net));
+          if (m === 'up' || m === 'early') wrong.push(`${era} ${wealth}단계 ${net}: ${m}`);
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it('규칙의 대조: 0원이 출발선 위쪽 끝(+여유)보다 높은 자리에 있는 표에서는 계산상 앞섬이지만 0원 이하 판은 비슷함이다 — 0원보다 큰 값은 그대로 앞섬이다 (검사가 공허하지 않다)', () => {
+    // 칸 p의 값: 0~59칸은 -100, 60~100칸은 0 → 0원은 「하위 약 59%」 자리, 0원보다 큰 값은 표 밖(상위 1% 안쪽)
+    const q = Array.from({ length: 101 }, (_, p) => (p < 60 ? -100 : 0));
+    const table = tableOfQuantiles(q);
+    const g = (net: number) => gameOf('alpha', 1, net); // 알파 1단계 출발선 [0, 25]
+    const raw = (net: number) => {
+      const j = reviewEnding(g(net), table).journey;
+      return j.kind === 'compared' ? movementOf(j.start, j.end) : 'early';
+    };
+    expect(raw(0)).toBe('up');
+    expect(raw(-50)).toBe('up');
+    expect(movementIn(g(0), table)).toBe('same');
+    expect(movementIn(g(-50), table)).toBe('same');
+    expect(raw(1)).toBe('up');
+    expect(movementIn(g(1), table)).toBe('up'); // 0원보다 크면 바뀌지 않는다
+    expect(movementIn(g(5000), table)).toBe('up');
+  });
+
+  it('finalMovementOf: 가능한 모든 구간(5151가지) × 도착 점수 1~99 × 순자산 {-5, 0, 1, 7} — 0원 이하의 앞섬만 비슷함이 되고 나머지는 movementOf와 같다, 읽는 기준(expectedMovement)과도 같다', () => {
+    const wrong: string[] = [];
+    let capped = 0;
+    for (let low = 0; low <= 100; low++) {
+      for (let high = low; high <= 100; high++) {
+        const band = bandFromRange(low, high);
+        const [readLow, readHigh] = readBand(bandLabel(band));
+        for (let s = 1; s <= 99; s++) {
+          const end = standingAt(s);
+          const raw = movementOf(band, end);
+          for (const net of [-5, 0, 1, 7]) {
+            const m = finalMovementOf(band, end, net);
+            const want = net <= 0 && raw === 'up' ? 'same' : raw;
+            if (m !== want) wrong.push(`[${low}, ${high}] 점수 ${s} 순자산 ${net}: ${m} (기대 ${want})`);
+            if (m !== expectedMovement(readLow, readHigh, s, BAND_GRACE, net)) wrong.push(`[${low}, ${high}] 점수 ${s} 순자산 ${net}: 읽는 기준과 다르다`);
+            if (net <= 0 && raw === 'up') capped++;
+          }
+        }
+      }
+    }
+    expect(wrong.slice(0, 10)).toEqual([]);
+    expect(capped).toBeGreaterThan(10_000); // 상한이 실제로 일하는 칸이 많다 (공허하지 않다)
+  });
+
+  it('0원보다 큰 값의 판정과 뒤쪽·자리 문장은 바뀌지 않는다: 프로필 8종 × 재력 1~5단계 × 순자산 {1, 10, 1000, 100000} — reviewEnding의 방향이 movementOf와 같다', () => {
+    const wrong: string[] = [];
+    for (const era of PROFILES) {
+      for (const wealth of WEALTHS) {
+        for (const net of [1, 10, 1000, 100_000]) {
+          const j = reviewEnding(gameOf(era, wealth, net)).journey;
+          if (j.kind !== 'compared' || j.movement !== movementOf(j.start, j.end)) wrong.push(`${era} ${wealth}단계 ${net}`);
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
+    // 0원 이하의 자리 문장은 그대로다 (방향만 바뀐다): 0원의 도착 자리는 finalWealthStanding과 같고 뒤쪽은 그대로 뒤쪽이다
+    const j0 = reviewEnding(gameOf('alpha', 5, 0)).journey;
+    expect(j0.kind === 'compared' && j0.end).toEqual(finalWealthStanding('alpha', 0));
+    expect(movementIn(gameOf('alpha', 5, 0))).toBe('down'); // 5단계(맨 위)가 0원으로 마치면 뒤쪽이다
   });
 });
 

@@ -338,7 +338,9 @@ test('같은 시드·같은 선택이면 이 버튼으로 켠 판과 도구 줄�
     // 엔딩 화면이 그려진 직후에는 저장 효과가 아직 안 돈 때가 있다(WebKit에서 직전 해의 저장을 읽은 적이 있다) — 저장이 엔딩이 될 때까지 기다린 뒤 읽는다
     await expect.poll(async () => ((await readSave(page)).data as unknown as GameState).phase, { timeout: 10_000 }).toBe('ending');
     const save = (await readSave(page)).data as unknown as GameState & { play: NonNullable<GameState['play']> };
-    const note = (await page.getByTestId('ending-playtime-note').innerText()).replace(/\s+/g, ' ').replace(/\d+분 \d+초/g, 'N분 N초').replace(/\d{2}:\d{2}/g, 'mm:ss');
+    // 시간 숫자를 가린다: 낭독용 「N분 N초」(sr-only)와 눈에 보이는 mm:ss. mm은 **두 자리 이상**이다 — 분은 상한이 없어 100분이 넘으면 「100:05」다(core/playClock.ts#formatPlayTime, copy.md 8-2).
+    // ?__timescale=2000에서는 실제 3초가 가상 100분이라(WebKit 모바일이 느리게 끝난 판에서 일어난다) 두 판의 mm이 두 자리·세 자리로 갈릴 수 있다 — `\d{2}`로만 가리면 세 자리의 앞 숫자 1이 남아 문장이 달라졌다 (2026-11-07 배포 전 점검, 시험 쪽 정규식 문제)
+    const note = (await page.getByTestId('ending-playtime-note').innerText()).replace(/\s+/g, ' ').replace(/\d+분 \d+초/g, 'N분 N초').replace(/\d{2,}:\d{2}/g, 'mm:ss');
     const { play, ...game } = save;
     return { game: game as unknown as Record<string, unknown>, autoUsed: play.auto, clean: play.offSpeed === 0 && play.auto === 0 && play.skips === 0 /* core/playClock.ts#isCleanRun과 같은 정의 — Playwright 로더가 그 모듈의 JSON 가져오기를 읽지 못해 여기서 다시 쓴다 */, note };
   }

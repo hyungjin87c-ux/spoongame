@@ -1,4 +1,4 @@
-import { BAND_GRACE, finalWealthStanding, movementOf, reachedIndependence, standingScore, startBandOf, wealthMixtureOfProfile, type Movement, type ParentWealth } from '../src/core';
+import { BAND_GRACE, finalMovementOf, finalWealthStanding, reachedIndependence, standingScore, startBandOf, wealthMixtureOfProfile, type Movement, type ParentWealth } from '../src/core';
 import { bandLabel } from '../src/data/endingText';
 import { standingLabel } from '../src/data/birthText';
 import { finalLivesOf } from './finalDistributionLib';
@@ -38,9 +38,9 @@ for (const era of SIM_ALL) {
     const t = tallies[l.parentWealth - 1];
     const score = standingScore(end);
     t.n++;
-    t.counts[movementOf(band, end)]++;
-    t.noGrace[movementOf(band, end, 0)]++;
-    if (score < band.low || score > band.high) if (movementOf(band, end) === 'same') t.inGrace++;
+    t.counts[finalMovementOf(band, end, l.net)]++;
+    t.noGrace[finalMovementOf(band, end, l.net, 0)]++;
+    if (score < band.low || score > band.high) if (finalMovementOf(band, end, l.net) === 'same') t.inGrace++;
   }
   const total: Tally = { n: 0, counts: zero(), noGrace: zero(), inGrace: 0 };
   tallies.forEach((t, i) => {

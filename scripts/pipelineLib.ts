@@ -547,7 +547,7 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
     }
     const want = expectedEndScore(era, game.assets?.net ?? 0);
     if (end !== want) bad(`문구에서 읽은 도착 점수 ${end}가 분포표에서 직접 센 ${want}와 다르다 (최종 순자산 ${game.assets?.net ?? 0}만 원): ${text}`);
-    const movement = expectedMovement(read[0], read[1], end, EXPECTED_GRACE);
+    const movement = expectedMovement(read[0], read[1], end, EXPECTED_GRACE, game.assets?.net ?? 0);
     if (movement !== j.movement) bad(`숫자와 판정이 어긋난다: ${text} → ${MOVEMENT_TEXT[j.movement]} (문장의 숫자로는 ${MOVEMENT_TEXT[movement]})`);
     out.push(...checkPlainText(MOVEMENT_TEXT[j.movement], `${where} 방향 문장`));
   }

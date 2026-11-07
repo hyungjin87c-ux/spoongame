@@ -3,7 +3,7 @@ import {
   autoResolveStep,
   eventPool,
   finalWealthStanding,
-  movementOf,
+  finalMovementOf,
   reachedIndependence,
   resolveChoiceStep,
   startBandOf,
@@ -60,7 +60,7 @@ export interface LifeOutcome {
 export function withMovements(era: ProfileId, lives: readonly LifeOutcome[], table: Record<ProfileId, FinalDistribution>): LifeOutcome[] {
   return lives.map((l) => ({
     ...l,
-    movement: l.reached ? movementOf(startBandOf(wealthMixtureOfProfile(era), l.parentWealth), finalWealthStanding(era, l.net, table)) : null,
+    movement: l.reached ? finalMovementOf(startBandOf(wealthMixtureOfProfile(era), l.parentWealth), finalWealthStanding(era, l.net, table), l.net) : null,
   }));
 }
 
@@ -91,7 +91,7 @@ export function playLife(seed: number, era: ProfileId, strategy: Strategy): { sa
   if (s.character === null || s.death === null) throw new Error('playLife: 사망에 도달하지 못했다');
   const reached = reachedIndependence(s.death.age) && s.assets !== null;
   const net = s.assets?.net ?? 0;
-  const movement = reached ? movementOf(startBandOf(wealthMixtureOfProfile(era), s.character.parentWealth), finalWealthStanding(era, net)) : null;
+  const movement = reached ? finalMovementOf(startBandOf(wealthMixtureOfProfile(era), s.character.parentWealth), finalWealthStanding(era, net), net) : null;
   const minNet = Math.min(net, ...out.map((x) => x.net));
   return { samples: out, outcome: { parentWealth: s.character.parentWealth, deathAge: s.death.age, reached, net, minNet, movement } };
 }
