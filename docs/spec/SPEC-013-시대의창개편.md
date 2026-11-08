@@ -1,6 +1,6 @@
 # SPEC-013 시대의 창 대개편 — 큰 사건이 있던 해만 · 사회 사건 서술 · 수저는 둘째 문장만 · 사건이 읽히는 그림(장소 + 물건) · 그림 옆 캡션
 
-- 상태: **초안 r2** (planner, 2026-11-08 — r1 커밋 202bc86 뒤 형진 님 답 Q1~Q4 반영). 형진 님 「확정」 전이다. **확정 전에는 개발·그림 작업을 시작하지 않는다**(CLAUDE.md 1-3). r1의 마스터 질문 Q1~Q4는 모두 답을 받았다(맨 아래 「결정 기록」). **남은 마스터 질문은 없다**(작은 확인 사항 한 가지만 「미결 질문」에 둔다).
+- 상태: **확정** (2026-11-08, 형진 님 「확정」 — 후속 212). 이하 초안 r2 설명: (planner, 2026-11-08 — r1 커밋 202bc86 뒤 형진 님 답 Q1~Q4 반영). 형진 님 「확정」 전이다. **확정 전에는 개발·그림 작업을 시작하지 않는다**(CLAUDE.md 1-3). r1의 마스터 질문 Q1~Q4는 모두 답을 받았다(맨 아래 「결정 기록」). **남은 마스터 질문은 없다**(작은 확인 사항 한 가지만 「미결 질문」에 둔다).
 - 관련 TODO: docs/TODO.md#SPEC-013 (확정 뒤 마스터가 만든다 — 이 문서는 TODO를 건드리지 않았다).
 - 요청 원문: 형진 님 v0.4.1 플레이 피드백(2026-11-08, 마스터 전달 — 결정 로그 후속 205·206·209). 작업 기록: `ai-log/2026-11-08_SPEC-013_spec.md`.
 - 읽은 것(코드·문서는 읽기만 했다): SPEC-012(QF2 한 판 한 번 · QF3 나이 규칙 · 부록 A · 다음 SPEC 예고) · SPEC-010(연표 표 U01~U46 · 구현 규칙 · 예측 근거 규칙 · 그림 수위 · 안 할 것) · SPEC-009 FT3 r4 · `docs/design/era-window.md`(3-1·3-3·11절) · `src/core/eraWindow.ts`(`eraOf`·`stepPick`·`dailyPick`·`eraRowsOf`) · `src/data/eraWindows/d1940~d2100.ts`(장면 id·`years`·`kind`·`line`·`band`·`ages` 전수) · `src/ui/scene/SceneCard.tsx`(`EraCell`·`EraPicBox`·`bandOfWealth` 입력) · `tests/eraWindows.test.ts`(예산 시험 값) · `ai-log/2026-11-05_SPEC-010_dev-c.md`(덩어리 실측) · `qa/reports/QA-012.md`(RECORD 1·2) · `docs/data/family-model.md`(INV-3·INV-5) · `src/core/parentSubject.ts#coParentsOf`.

@@ -1,6 +1,6 @@
 # SPEC-014 결정 줄 질문 문장 — 인생 기록 결정 줄의 질문을 사건 제목에서 「…할까?」 꼴 문장(약 94개)으로
 
-- 상태: **초안 r1** (planner, 2026-11-08). 형진 님 「확정」 전이다. **확정 전에는 개발·문장 작업을 시작하지 않는다**(CLAUDE.md 1-3). 마스터 질문은 맨 아래 「마스터에게 확인 필요」 3개(추천 포함)다.
+- 상태: **확정** (2026-11-08, 형진 님 「확정」 — 후속 212, Q1 (가)·Q2 (나)·Q3 (가) 마스터 추천안). 이하 초안 r1 설명: (planner, 2026-11-08). 형진 님 「확정」 전이다. **확정 전에는 개발·문장 작업을 시작하지 않는다**(CLAUDE.md 1-3). 마스터 질문은 맨 아래 「마스터에게 확인 필요」 3개(추천 포함)다.
 - 관련 TODO: docs/TODO.md#SPEC-014 (확정 뒤 마스터가 만든다 — 이 문서는 TODO를 건드리지 않았다).
 - 요청 원문: 형진 님 v0.4.0 플레이 피드백(SPEC-012 QF4 Q2 (다)) · v0.4.1 뒤 형진 님 답 Q2 (나)(2026-11-08 — 「별도 SPEC-014로 나누고 같은 배포에 싣는다」, SPEC-013 결정 기록). 작업 기록: `ai-log/2026-11-08_SPEC-014_spec.md`.
 - 읽은 것(코드·문서는 읽기만 했다): SPEC-012(QF4 · 완료 기준 8 · 안 할 것 · 다음 SPEC 예고) · SPEC-013(r2 결정 기록 · 순서와 게이트 ⑦) · `docs/design/log-question.md`(제목 윗줄 시안·실측) · `src/core/types.ts#HistoryEntry`·`DELEGATED_BYS` · `src/core/life.ts#resolveChoiceCore`(502~511행)·`resolveDelegated` · `src/core/history.ts#clipEntry`·`appendHistory` · `src/core/storage.ts`(`SCHEMA_VERSION` 9 · `isHistory` 170~172행 · `withValidBy`·`withValidGentleUsed` 선례) · `src/data/lifeTable.ts#HISTORY_LIMITS` · `src/core/events.ts#EventDef` · `src/data/events/*.json`(선택지 이벤트 수) · `src/ui/dash/LogList.tsx`(`EntryText`·67~71행 제목 줄 판정) · `src/screens/EndingScreen.tsx#TimelineBody`(118행) · `src/core/life.ts` 567행(카드 읽기 글자 수가 판 길이 모델 입력).
