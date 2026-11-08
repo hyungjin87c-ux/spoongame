@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수저 게임 · 시안 · 시대의 창 빈 해 종이틀 · 캡션 자리 (SPEC-013 T3, 2026-11-08)</title>
+<!-- 시안(정적 HTML, 가짜 데이터 — 1975년생 한 판의 네 해): 디자인 시스템 토큰·ds.css·구현의 src/styles/family.css(읽기만 — 시안 폴더의 family/family.css는 FM5 전 옛 사본이라 「예측」 칩 규칙이 없다)를 그대로 불러 쓰고, 아래 <style>의 「제안」 블록이 ① 캡션 자리 ② 빈 종이틀 세 안만 더한다(developer가 family.css 「시대의 창」 블록과 SceneCard.tsx#EmptyFrame으로 옮길 글자).
+     주소 끝 ?v=now(지금 그대로 — 점무늬 빈 네모, QA-012 RECORD 1) | ?v=a(안 A 「고른 면」) | ?v=b(안 B 「빈 종이」 — 추천) | ?v=c(안 C 「사진 모서리」).
+     &theme=dark 다크, &text=200 글자 200%, &rows=event,empty,veil,future 카드 고르기(쉼표, 촬영용).
+     그림은 승인 자산에서 그대로 꺼낸 것(era-empty-frame-art.js — buildEraEmptyFrameArt.mjs, 새 그림 0). 문서: docs/design/era-empty-frame.md. 촬영·측정: scripts/design/shootEraEmptyFrame.mjs → docs/design/screens/013/era-empty-frame-*.png. 외부 요청 0. -->
+<link rel="stylesheet" href="../../../src/styles/tokens.css">
+<link rel="stylesheet" href="ds.css">
+<link rel="stylesheet" href="gm3/gm3.css">
+<link rel="stylesheet" href="../../../src/styles/family.css">
+<style>
+/* ===================== 제안 1 · 캡션 자리(모든 안 공통, html.ef-on) — 구현은 family.css 「시대의 창」 블록 =====================
+   창 칸(.era)은 자리·크기가 그대로이고(집 그림이 줄 높이를 정한다, FM2c) 안을 두 칸으로 나눈다: 그림(.era__pic) + 캡션(.era__cap, 사건 해·가린 해만 — 빈 해에는 요소 자체가 없다).
+   캡션 = 사건 이름 명사구 ≤ 14자 · 12px(--fs-xs, 하한) · 보통 굵기 · --c-text-2(면 --c-surface-2 위 라이트 7.88:1 · 다크 8.0:1, 띠 바탕 --c-surface 위 8.65 / 8.78) · 항상 보이는 글자(툴팁 아님) · 창 전체 링크 안.
+   PC(칸 175×140): 캡션이 그림 **아래** 줄 — 그림 상자는 칸 높이 − 캡션 높이(한 줄 23px → 175×117)가 되고 그림(좌표 40×32, slice)은 위아래 약 12px씩(8%) 잘린다. 캡션이 두 줄(14자, 12px에서 168px > 159px)이면 그림이 16px 더 줄어든다 — 칸 높이는 변하지 않는다(완료 기준 7). 그림 SVG는 상자에 절대 배치해 상자의 고유 높이(5:4)가 칸을 키우지 않게 한다.
+   휴대폰 띠(카드 ≤ 480px, 칸 326×80): 그림 100×80은 그대로, 캡션은 그림 **옆** 띠 바탕 위(「예측」 칩이 있으면 그 아래) — 그림·칩을 가리지 않는다(캡션 규격 ④).
+   띠 높이 = max(80px, 3.9rem): 글자 100%에서 80px 그대로, 글자 200%에서는 124.8px(칩 38 + 캡션 두 줄 62 + 여백 14 = 114가 들어간다 — 넘침 0). 내용이 아니라 글자 크기의 식이라 해가 바뀌어도 칸 높이가 같다. */
+html.ef-on .era { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+html.ef-on .era__pic { grid-row: 1; height: auto; min-height: 0; }
+html.ef-on .era__pic > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+html.ef-on .era__cap { grid-row: 2; display: block; min-width: 0; padding: 3px var(--sp-2) 4px; font-size: var(--fs-xs); line-height: 1.3; font-weight: var(--fw-regular); color: var(--c-text-2); word-break: keep-all; overflow-wrap: anywhere; }
+@container scene (max-width: 480px) {
+  html.ef-on .era { height: max(80px, 3.9rem); grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--sp-2); }
+  html.ef-on .era__pic { grid-column: 1; grid-row: 1 / span 2; align-self: start; width: 100px; height: 80px; }
+  /* 「예측」 칩: 띠에서는 겹치는 표가 아니라 그림 옆 둘째 칸의 첫 줄(정적 배치) — PC의 그림 위 왼쪽 표는 그대로 */
+  html.ef-on .era__fc { position: static; grid-column: 2; grid-row: 1; justify-self: start; margin: var(--sp-2) 0 0; }
+  html.ef-on .era__cap { grid-column: 2; grid-row: 2; align-self: start; padding: var(--sp-2) var(--sp-2) 0 0; }
+  html.ef-on .era[data-future='true'] .era__cap { padding-top: var(--sp-1); }
+}
+/* ===================== 제안 2 · 빈 해 종이틀(안 A·B·C) — 구현은 SceneCard.tsx#EmptyFrame + family.css =====================
+   공통: 점무늬 SVG(era-paper 패턴)를 없앤다. 빈 해(.era[data-empty])와 가리기 켠 해(.era[data-hidden], 대체 그림 없음)가 **같은 틀**을 쓴다(Q1 (나)). 칸 바탕은 지금처럼 --c-surface-2(파인 면 = 집 그림 칸과 같은 쟁반).
+   안 A 「고른 면」: 파인 면 그대로, 아무것도 없다. 안 B 「빈 종이」: 파인 면 쟁반 안에 6px 들어간 빈 종이 한 장(--c-surface — 카드 면과 같은 종이색). 안 C 「사진 모서리」: 안 B + 사진첩 모서리 넷(10px 삼각, --c-border-strong — 종이 위 4.02 / 4.29:1) — 「사진이 안 붙은 자리」로 읽힌다.
+   강제 색상: 칸 테두리(.era, 기존)에 더해 종이 한 장은 1px CanvasText 선, 모서리는 CanvasText 면. */
+html.ef-on .era__pic--empty > svg { display: none; }
+.era__sheet, .era__corner { display: none; position: absolute; }
+.era__sheet { inset: 6px; background: var(--c-surface); }
+html[data-v='b'] .era__sheet, html[data-v='c'] .era__sheet { display: block; }
+.era__corner { width: 10px; height: 10px; background: var(--c-border-strong); }
+html[data-v='c'] .era__corner { display: block; }
+.era__corner--tl { top: 6px; left: 6px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.era__corner--tr { top: 6px; right: 6px; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.era__corner--bl { bottom: 6px; left: 6px; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+.era__corner--br { bottom: 6px; right: 6px; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+@media (forced-colors: active) {
+  .era__sheet { border: 1px solid CanvasText; }
+  .era__corner { background: CanvasText; }
+}
+/* ===================== 시안 전용 ===================== */
+/* PC(≥ 1180)의 3열 대시보드 가운데 열 폭 = 536px(log-question.html과 같다). 시안은 그 폭의 그림 카드 넷을 쌓는다 */
+.ef { max-width: calc(536px + 2 * var(--gutter)); margin: 0 auto; padding: var(--sp-4) var(--gutter) var(--sp-8); display: flex; flex-direction: column; gap: var(--sp-4); }
+.ef-cap { margin: 0; font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--c-text-2); }
+.ef-cap b { color: var(--c-text); font-weight: var(--fw-bold); }
+/* 시안의 카드는 그림 띠 + 한 줄만(식구 줄·펼침은 생략 — 칸 모양과 무관) */
+.scene-card .scene__line { margin-top: var(--sp-3); }
+</style>
+<script>(function(){var q=new URLSearchParams(location.search);var t=q.get('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);
+var v=q.get('v')||'now';if(!/^(now|a|b|c)$/.test(v))v='now';var root=document.documentElement;if(v!=='now')root.classList.add('ef-on');root.setAttribute('data-v',v);
+var text=parseInt(q.get('text')||'',10);if(text>0)root.style.fontSize=text+'%';
+window.EF={v:v,rows:(q.get('rows')||'event,empty,veil,future').split(',')};})();</script>
+<script src="era-empty-frame-art.js"></script>
+</head>
+<body class="is-dash">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-ahead" viewBox="0 0 24 24"><path d="M4 12h14"/><path d="M12 6l6 6-6 6"/></symbol>
+</defs></svg>
+<div id="defs-slot"></div>
+<!-- 살아가기 화면 머리(구현 LifeScreen과 같은 DOM, log-question.html과 같은 글자) — 화면의 h1(이름)이 여기 있다. 그 아래 3열 중 가운데 열의 그림 카드만 둔 표본 장이다 -->
+<header class="dash-head"><div class="dash-head__inner">
+  <div class="dash-head__top"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" class="logo logo--header " role="img" aria-label="수저 게임"><path transform="translate(-15.4 -4.1) scale(0.2631)" d="M393.9 41.5C454.7 84.1 471.3 154.2 422.9 223.4C369.6 299.5 303.9 308.6 259 290.8C247 295 238.5 301.5 226.8 318.3L156.8 423.8C136.2 453.3 146.2 471.2 137.6 483.5C123.8 503.2 96.6 508 77 494.2C57.3 480.4 52.5 453.3 66.3 433.6C74.9 421.3 95.2 424.6 115.9 395.1L191 293.3C202.8 276.5 206 266.3 205.9 253.6C173.8 217.5 159.9 152.7 213.1 76.6C261.6 7.4 333.2 -1 393.9 41.5ZM258.36 127.39C260.26 135.17 264.94 143.97 269.4 152.87C273.86 161.76 281.6 170.43 285.11 180.77C288.62 191.12 287.55 203.89 290.45 214.95C293.36 226.01 295.66 242.17 302.52 247.15C309.37 252.13 323.86 249.87 331.59 244.84C339.32 239.8 347.09 228.65 348.9 216.93C350.72 205.21 344.91 189.11 342.45 174.5C339.99 159.9 332.56 144.63 334.13 129.31C335.69 113.99 347.51 96.74 351.84 82.59C356.18 68.44 363.92 50.06 360.12 44.4C356.32 38.74 341.36 43.22 329.05 48.64C316.74 54.05 298.12 67.3 286.27 76.88C274.42 86.47 262.61 97.73 257.96 106.15C253.3 114.56 256.45 119.6 258.36 127.39Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(121.236 23.04) scale(0.819)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></svg>
+    <div class="who"><h1 class="who__name" tabindex="-1" data-testid="life-name">김하늘</h1><span class="who__age" data-testid="life-age"><b>13</b>세</span></div></div>
+  <div class="year-row"><span class="num">1988년</span>
+    <div class="year-progress" role="progressbar" aria-label="올해 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40"><div class="year-progress__fill" style="width:40%"></div></div>
+    <span class="year-row__pct num">40%</span></div>
+</div></header>
+<main class="ef" id="cards"></main>
+<script>
+(function () {
+  var EF = window.EF, ART = window.EF_ART;
+  document.getElementById('defs-slot').innerHTML = ART.defs;
+  /* 네 해(1975년생 한 판): 사건 해 · 빈 해 · 가리기 켠 해(○, 대체 그림 없음) · 미래 사건 해(「예측」 칩 + 캡션) */
+  var ROWS = {
+    event: { year: 1988, age: 13, kind: 'event', pic: 'stadium', dec: '1980', caption: '서울 올림픽', line: '서울에서 올림픽이 열렸습니다.', note: '<b>사건 해</b> — 그림 + 캡션 「서울 올림픽」(명사구 ≤ 14자, 12px). 칸 전체가 인생 기록의 1988년 줄로 가는 링크' },
+    empty: { year: 1989, age: 14, kind: 'empty', caption: null, note: '<b>빈 해</b> — 사건이 없는 해(약 3분의 2). 칸의 자리·크기는 그대로, 안은 빈 종이틀(캡션 없음, 링크 없음)' },
+    veil: { year: 1980, age: 5, kind: 'veil', caption: '가려 둔 장면', note: '<b>가리기 켠 해</b>(○, 대체 그림 없음) — 빈 해와 <b>같은 틀</b> + 캡션 「가려 둔 장면」. 기록 줄은 「펼쳐 보기」로 펼친다' },
+    future: { year: 2035, age: 60, kind: 'event', pic: 'care', dec: '2030', future: true, caption: '돌봄 일손 부족', line: '돌봄 시설이 일손을 구하지 못했습니다.', note: '<b>미래 사건 해</b> — 「예측」 칩 + 캡션이 한 칸에(겹치지 않는 자리 — 캡션 규격 ④)' }
+  };
+  var FRAME = '<span class="era__pic era__pic--empty" aria-hidden="true"><svg viewBox="0 0 40 32" preserveAspectRatio="none" focusable="false"><defs><pattern id="era-paper" width="2.4" height="2.4" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="1.2" r="0.32" fill="var(--c-border)"/></pattern></defs><rect width="40" height="32" fill="url(#era-paper)"/></svg><i class="era__sheet"></i><i class="era__corner era__corner--tl"></i><i class="era__corner era__corner--tr"></i><i class="era__corner era__corner--bl"></i><i class="era__corner era__corner--br"></i></span>';
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function cap(text) { return EF.v === 'now' || text === null ? '' : '<span class="era__cap" data-testid="era-cap" aria-hidden="true">' + esc(text) + '</span>'; }
+  function era(r) {
+    if (r.kind === 'empty') return '<div class="era" id="scene-era-' + r.year + '" data-empty="true" data-hidden="false" data-testid="era">' + FRAME + '</div>';
+    if (r.kind === 'veil') {
+      /* 가려 둔 해: 링크(그해 기록 줄이 있다) + 같은 틀 + 캡션 「가려 둔 장면」(상수 한 곳). 접근 이름은 지금 구현(eraAccessibleName)의 가린 문구 꼴 */
+      return '<a class="era" id="scene-era-' + r.year + '" href="#log-y' + r.year + '" data-era="" data-kind="event" data-hidden="true" data-testid="era" title="가려 둔 장면 — 인생 기록의 ' + r.year + '년 줄로">' + FRAME + cap(r.caption) + '<span class="sr-only">가려 둔 장면. 인생 기록의 ' + r.year + '년 줄로 가기</span></a>';
+    }
+    var fc = r.future ? '<span class="era__fc" data-testid="era-fc" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-ahead"/></svg>예측</span>' : '';
+    /* 접근 이름 = 「캡션. 첫 문장」(Label in Name — 캡션 규격 ⑨) */
+    return '<a class="era" id="scene-era-' + r.year + '" href="#log-y' + r.year + '" data-era="' + r.pic + '" data-kind="event" data-hidden="false" data-dec="' + r.dec + '"' + (r.future ? ' data-future="true"' : '') + ' data-testid="era" title="' + esc(r.caption) + '. ' + esc(r.line) + '">' +
+      '<span class="era__pic" aria-hidden="true"><svg viewBox="0 0 40 32" preserveAspectRatio="xMidYMid slice" focusable="false">' + ART.pieces[r.pic] + '</svg></span>' + fc + cap(r.caption) +
+      '<span class="sr-only">' + esc(r.caption) + '. ' + esc(r.line) + (r.future ? ' 예측.' : '') + ' 인생 기록의 ' + r.year + '년 줄로 가기</span></a>';
+  }
+  function card(key) {
+    var r = ROWS[key];
+    return '<section class="card scene-card" aria-labelledby="scene-title-' + r.year + '" data-fold="false" data-scene-art="ready" data-row="' + key + '" data-testid="family-scene">' +
+      '<h2 id="scene-title-' + r.year + '" class="sr-only">집과 가족 · ' + r.year + '년</h2>' +
+      '<div class="scene"><div class="scene__house">' + ART.house + '<p class="scene__year"><time datetime="' + r.year + '">' + r.year + '년</time></p></div>' + era(r) + '</div>' +
+      '<p class="scene__line">' + r.age + '세, 같은 집에서 식구들과 지냅니다.</p>' +
+      '</section><p class="ef-cap">' + r.note + '</p>';
+  }
+  var html = '';
+  for (var i = 0; i < EF.rows.length; i++) if (ROWS[EF.rows[i]]) html += card(EF.rows[i]);
+  var V = { now: '지금 — 점무늬 빈 네모(QA-012 RECORD 1), 캡션 없음', a: '안 A 「고른 면」 — 파인 면 그대로, 아무것도 없음', b: '안 B 「빈 종이」 — 쟁반 안에 빈 종이 한 장(추천)', c: '안 C 「사진 모서리」 — 빈 종이 + 사진첩 모서리 넷' };
+  html += '<p class="mock-tag">시안 · 가짜 데이터 — ' + V[EF.v] + '. 그림은 승인 자산 그대로(새 그림 0)</p>';
+  document.getElementById('cards').innerHTML = html;
+  document.querySelectorAll('a.era').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); }); });
+})();
+</script>
+</body>
+</html>
