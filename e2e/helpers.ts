@@ -238,7 +238,7 @@ export async function rapidInput(page: Page, method: RapidMethod, target: Locato
 }
 
 /**
- * 페이지의 모든 click(캡처 단계)을 기록한다: window.__clicks = ["next-life", "speed-2", "auto(가드)", "비버튼:MAIN", ...].
+ * 페이지의 모든 click(캡처 단계)을 기록한다: window.__clicks = ["next-life", "speed-2", "auto(가드)", "비버튼:MAIN", ...] — 배속 한 단추는 누른 때 보이던 배속을 붙여 「speed-N」으로 적는다(SPEC-012 QF5).
  * "(가드)"는 그 버튼이 입력 가드로 닫혀 있었다(aria-disabled=true)는 뜻이다. addInitScript라서 새로고침해도 다시 설치된다.
  * 더블탭의 둘째 입력이 어디에 떨어졌는지를 눈으로 확인하는 용도(R-035).
  */
@@ -250,7 +250,7 @@ export async function recordClicks(page: Page): Promise<void> {
       'click',
       (e) => {
         const b = e.target instanceof Element ? e.target.closest('button') : null;
-        const name = b === null ? `비버튼:${(e.target as Element).tagName}` : b.dataset.testid ?? (b.dataset.speed ? `speed-${b.dataset.speed}` : (b.textContent ?? '').trim());
+        const name = b === null ? `비버튼:${(e.target as Element).tagName}` : b.dataset.testid === 'speed' ? `speed-${b.dataset.speed}` : b.dataset.testid ?? (b.textContent ?? '').trim();
         w.__clicks.push(b !== null && b.getAttribute('aria-disabled') === 'true' ? `${name}(가드)` : name);
       },
       true,
@@ -277,7 +277,7 @@ export interface LifeSnapshot {
 
 export async function lifeSnapshot(page: Page): Promise<LifeSnapshot> {
   return page.evaluate(() => ({
-    speed: document.querySelector('[data-speed][aria-pressed="true"]')?.getAttribute('data-speed') ?? null,
+    speed: document.querySelector('[data-testid="speed"]')?.getAttribute('data-speed') ?? null, // 배속 한 단추의 지금 배속(SPEC-012 QF5)
     auto: document.querySelector('[data-testid="auto"]')?.getAttribute('aria-pressed') ?? null,
     // 헤더의 나이 알약 「31세」(M4 대시보드: <b>31</b>세) — 예전에는 <strong>31세</strong>였다
     age: document.querySelector('[data-testid="life-age"]')?.textContent?.trim() ?? '',
@@ -304,13 +304,33 @@ export async function setPageVisible(page: Page, visible: boolean): Promise<void
   }, visible);
 }
 
-/** 포커스된 요소의 data-testid(속도 버튼은 speed-N, 없으면 태그 이름) */
+/** 포커스된 요소의 data-testid(배속 한 단추는 「speed」, 없으면 태그 이름) */
 export async function activeTestId(page: Page): Promise<string> {
   return page.evaluate(() => {
     const a = document.activeElement;
     if (a === null) return 'none';
-    return a.getAttribute('data-testid') ?? (a.getAttribute('data-speed') ? `speed-${a.getAttribute('data-speed')}` : a.tagName);
+    return a.getAttribute('data-testid') ?? a.tagName;
   });
+}
+
+/**
+ * 배속 한 단추(SPEC-012 QF5, designer 안 B): 누를 때마다 1 → 2 → 4 → 8 → 1배다. 「배속 N」 단추를 `target`이 될 때까지 누르고(한 번 누를 때마다 값이 바뀔 때까지 기다린다) 누른 횟수를 돌려준다.
+ * 옛 버튼 넷 시절의 「8배 버튼 누르기」 대신 쓰는 한 곳이다 — 1에서 8까지는 세 번이다.
+ */
+export const SPEED_CYCLE = [1, 2, 4, 8] as const;
+export async function pressSpeedTo(page: Page, target: (typeof SPEED_CYCLE)[number]): Promise<number> {
+  const btn = page.getByTestId('speed');
+  let clicks = 0;
+  for (let guard = 0; guard < SPEED_CYCLE.length; guard++) {
+    const now = Number(await btn.getAttribute('data-speed'));
+    if (now === target) return clicks;
+    const next = SPEED_CYCLE[(SPEED_CYCLE.indexOf(now as (typeof SPEED_CYCLE)[number]) + 1) % SPEED_CYCLE.length];
+    await btn.click();
+    await expect(btn).toHaveAttribute('data-speed', String(next));
+    clicks++;
+  }
+  await expect(btn).toHaveAttribute('data-speed', String(target));
+  return clicks;
 }
 
 export async function readSettings(page: Page): Promise<Settings> {
@@ -453,7 +473,7 @@ export async function tabWalk(page: Page, count: number): Promise<string[]> {
 }
 
 /**
- * 인생 화면 컨트롤 그룹 안에서 Tab으로 포커스를 받을 수 있는 요소를 DOM 순서대로(속도 버튼은 speed-N). disabled 버튼과 tabindex<0 요소는 빠진다 —
+ * 인생 화면 컨트롤 그룹 안에서 Tab으로 포커스를 받을 수 있는 요소를 DOM 순서대로(배속 한 단추는 「speed」). disabled 버튼과 tabindex<0 요소는 빠진다 —
  * 선택지가 뜨든 사라지든 이 목록이 같아야 한다(R-036).
  */
 export async function controlFocusables(page: Page): Promise<string[]> {
@@ -462,9 +482,9 @@ export async function controlFocusables(page: Page): Promise<string[]> {
     if (root === null) return [];
     return [...root.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]')]
       .filter((el) => !(el as HTMLButtonElement).disabled && el.tabIndex >= 0)
-      .map((el) => el.getAttribute('data-testid') ?? (el.getAttribute('data-speed') ? `speed-${el.getAttribute('data-speed')}` : el.tagName));
+      .map((el) => el.getAttribute('data-testid') ?? el.tagName);
   });
 }
 
-/** 진행 줄 그룹의 Tab 순서(DOM 순서)가 이래야 한다: 일시정지 → 속도 4개 → 다음 결정으로 → 자동 모드. 선택지·자동 모드·일시정지와 무관하다. (M4: 일시정지가 맨 앞에 더해졌다) */
-export const CONTROL_TAB_ORDER = ['pause', 'speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto'] as const;
+/** 진행 줄 그룹의 Tab 순서(DOM 순서)가 이래야 한다: 일시정지 → 배속 한 단추 → 다음 결정으로 → 자동 모드(SPEC-012 QF5 — 정지점 7 → 4). 선택지·자동 모드·일시정지와 무관하다. (M4: 일시정지가 맨 앞에 더해졌다) */
+export const CONTROL_TAB_ORDER = ['pause', 'speed', 'skip', 'auto'] as const;

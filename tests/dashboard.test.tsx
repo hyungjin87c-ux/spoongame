@@ -223,18 +223,27 @@ describe('진행 줄 (DB3)', () => {
   const html = render(infant);
   const controls = html.slice(posOf(html, 'data-testid="controls"'), posOf(html, 'data-testid="tools"'));
 
-  it('7개: 일시정지 · 1 · 2 · 4 · 8배 · 다음 결정으로 · 자동 모드, 이 순서', () => {
+  it('4개: 일시정지 · 배속 한 단추(지금 배속) · 다음 결정으로 · 자동 모드, 이 순서 (SPEC-012 QF5 — 배속 넷이 한 단추가 되었다)', () => {
     const labels = buttonsIn(controls).map((b) => b.label);
-    expect(labels).toEqual([DASH_TEXT.pause, ...SPEEDS.map((s) => `${s}${DASH_TEXT.speedUnit}`), DASH_TEXT.skip, DASH_TEXT.autoOff]);
+    expect(labels).toEqual([DASH_TEXT.pause, `1${DASH_TEXT.speedUnit}`, DASH_TEXT.skip, DASH_TEXT.autoOff]);
     expect(SPEEDS).toEqual([1, 2, 4, 8]);
   });
 
-  it('설정의 배속만 눌림(aria-pressed=true)으로 보인다', () => {
-    for (const speed of SPEEDS) {
+  it('배속 한 단추: 글자·data-speed·접근 이름이 설정의 배속을 따르고(1→2→4→8→1배 순환 — 이름은 「배속 N배, 누르면 M배」) aria-pressed는 없다 · 바뀐 값은 role="status"가 읽는다', () => {
+    SPEEDS.forEach((speed, i) => {
+      const next = SPEEDS[(i + 1) % SPEEDS.length];
       const h = render(infant, { settings: { speed } });
-      const pressed = [...h.matchAll(/<button\b[^>]*>/g)].map((m) => m[0]).filter((t) => attr(t, 'data-speed') !== null && attr(t, 'aria-pressed') === 'true');
-      expect(pressed.map((t) => Number(attr(t, 'data-speed'))), `${speed}배`).toEqual([speed]);
-    }
+      const tag = openTag(h, 'speed');
+      expect(attr(tag, 'data-speed'), `${speed}배`).toBe(String(speed));
+      expect(attr(tag, 'aria-pressed'), '값이지 켜짐·꺼짐이 아니라 aria-pressed를 쓰지 않는다').toBeNull();
+      expect(attr(tag, 'aria-label')).toBe(`배속 ${speed}배, 누르면 ${next}배`);
+      expect(attr(tag, 'aria-label'), 'Label in Name: 보이는 글자가 이름에 들어 있다').toContain(`${speed}${DASH_TEXT.speedUnit}`);
+      expect(text(openTagBlock(h, 'speed'))).toBe(`${speed}${DASH_TEXT.speedUnit}`);
+      expect(text(openTagBlock(h, 'speed-status'))).toBe(`배속 ${speed}배`);
+      expect(openTag(h, 'speed-status')).toContain('role="status"');
+      // 배속 버튼은 하나뿐이다(옛 버튼 넷의 data-speed가 따로 있지 않다)
+      expect(h.match(/data-speed="/g) ?? []).toHaveLength(1);
+    });
   });
 
   it('자동 모드: 이름이 「켜짐」으로 바뀌고 눌림이 보이며 「다음 결정으로」는 막힌다', () => {

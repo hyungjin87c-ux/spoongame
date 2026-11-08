@@ -11,6 +11,7 @@ import {
   oracleAuto,
   oracleLife,
   pressBeginToLife,
+  pressSpeedTo,
   quietStart,
   readSave,
   readSettings,
@@ -141,11 +142,11 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
   await expect(page.getByTestId('pause')).toHaveText('다시 진행');
   await page.keyboard.press('Space');
   await expect(page.getByTestId('pause')).toHaveText('일시정지');
-  expect(await tabWalk(page, 2)).toEqual(['speed-1', 'speed-2']);
+  expect(await tabWalk(page, 1)).toEqual(['speed']);
   await page.keyboard.press('Space');
-  await expect(page.locator('[data-speed="2"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('speed')).toHaveAttribute('data-speed', '2'); // 한 단추: 누를 때마다 1 → 2 → 4 → 8 → 1배(SPEC-012 QF5)
   await expect.poll(async () => (await readSettings(page)).speed).toBe(2);
-  expect(await tabWalk(page, 3)).toEqual(['speed-4', 'speed-8', 'skip']);
+  expect(await tabWalk(page, 1)).toEqual(['skip']);
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('choice-panel')).toBeVisible(); // 다음 결정까지 즉시 진행
   await expect.poll(() => activeTestId(page), '버튼이 아니라 선택지 제목으로').toBe('choice-title');
@@ -156,10 +157,10 @@ test('키보드만으로: 선택지 고르기 → 일시정지 → 배속 → �
   await expect.poll(() => activeTestId(page), '접으면 「결정 다시 열기」로').toBe('decision-reopen');
   await notBody('카드 접은 뒤');
 
-  // 3) 도구 줄: 인생 화면 제목 → Tab으로 도구까지 (진행 줄 7개 다음이 도구 5개)
+  // 3) 도구 줄: 인생 화면 제목 → Tab으로 도구까지 (진행 줄 4개 다음이 도구 5개 — SPEC-012 QF5로 정지점 7 → 4)
   await page.getByTestId('life-name').focus();
-  const walk = await tabWalk(page, 12);
-  expect(walk).toEqual(['pause', 'speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit']);
+  const walk = await tabWalk(page, 9);
+  expect(walk).toEqual(['pause', 'speed', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit']);
   // 지금 포커스는 나가기. 거꾸로 올라가 BGM·생각 남기기·다크 모드를 연다
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab'); // tool-dark
@@ -230,16 +231,15 @@ test('연타: 일시정지를 10번 빠르게 눌러도 짝이 맞게 켜지고 
   await settle(page);
   await expect(pause).toHaveText('다시 진행'); // 7번 = 홀수
   await expect.poll(async () => (await readSave(page)).data.paused).toBe(true);
-  // 배속 번갈아 연타
-  const center = async (speed: number) => {
-    const b = (await page.locator(`[data-speed="${speed}"]`).boundingBox())!;
-    return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
-  };
-  const points = new Map([1, 2, 4, 8].map((s) => [s, undefined as { x: number; y: number } | undefined]));
-  for (const s of [1, 2, 4, 8]) points.set(s, await center(s));
-  for (const s of [8, 2, 4, 1, 8, 2]) await page.mouse.click(points.get(s)!.x, points.get(s)!.y);
-  await expect(page.locator('[data-speed="2"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(async () => (await readSettings(page)).speed).toBe(2);
+  // 배속 단추 연타(SPEC-012 QF5: 한 단추 — 같은 자리를 여섯 번 누르면 1 → 2 → 4 → 8 → 1 → 2 → 4)
+  const speedBtn = page.getByTestId('speed');
+  const speedBox = (await speedBtn.boundingBox())!;
+  const speed0 = Number(await speedBtn.getAttribute('data-speed'));
+  const CYCLE = [1, 2, 4, 8];
+  const expectedSpeed = CYCLE[(CYCLE.indexOf(speed0) + 6) % CYCLE.length];
+  for (let i = 0; i < 6; i++) await page.mouse.click(speedBox.x + speedBox.width / 2, speedBox.y + speedBox.height / 2);
+  await expect(speedBtn).toHaveAttribute('data-speed', String(expectedSpeed));
+  await expect.poll(async () => (await readSettings(page)).speed).toBe(expectedSpeed);
 });
 
 test('연타: 「다음 결정으로」를 두 번 눌러도 선택지 한 곳에서만 멈추고, 선택지를 두 번 눌러도 선택은 한 번만 기록된다', async ({ page }) => {
@@ -340,7 +340,7 @@ test('저장 키 격리(DP4): 같은 출처의 다른 프로젝트 키가 있어
   await pressBeginToLife(page);
   // 설정을 바꿔 본다: 배속·BGM·다크·일시정지
   await expect(page.getByTestId('pause')).toBeEnabled();
-  await page.locator('[data-speed="4"]').click();
+  await pressSpeedTo(page, 4); // 배속 한 단추: 1 → 2 → 4
   await page.getByTestId('tool-bgm').click();
   await page.getByTestId('tool-dark').click();
   await page.getByTestId('pause').click();

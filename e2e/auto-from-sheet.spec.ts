@@ -102,13 +102,13 @@ test('(e2) 더블탭: 전환 직후 진행 줄의 배속 버튼은 400ms 동안 
   await recordClicks(page);
   await openSheet(page, { hidden: true });
   const speedBefore = (await readSettings(page)).speed;
-  const speed4 = page.locator('[data-speed="4"]');
+  const speedBtn = page.getByTestId('speed'); // 배속 한 단추(SPEC-012 QF5)
   await page.getByTestId('auto-on-btn').click();
-  const box = (await speed4.boundingBox())!; // 전환 뒤의 자리(스크롤 잠금이 풀리며 가로 자리가 바뀔 수 있다) — 400ms 안이다
+  const box = (await speedBtn.boundingBox())!; // 전환 뒤의 자리(스크롤 잠금이 풀리며 가로 자리가 바뀔 수 있다) — 400ms 안이다
   // 둘째 입력: 시트가 있던 동안 inert였던 진행 줄의 버튼. 좌표 입력이다 — Playwright의 locator.click은 aria-disabled(가드)가 풀릴 때까지 기다려 가드를 우회하기 때문이다
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   await settle(page);
-  expect(await recordedClicks(page), '둘째 입력은 가드에 막힌 배속 버튼이다').toEqual(['auto-on-btn', 'speed-4(가드)']);
+  expect(await recordedClicks(page), '둘째 입력은 가드에 막힌 배속 버튼이다').toEqual(['auto-on-btn', `speed-${speedBefore}(가드)`]);
   expect((await readSettings(page)).speed, '배속이 바뀌지 않았다').toBe(speedBefore);
   await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'inline');
 });

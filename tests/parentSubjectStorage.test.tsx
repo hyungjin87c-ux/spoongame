@@ -81,9 +81,14 @@ describe('v0.4.0 저장 원문 — 열자마자 줄의 나이로 바른 주어 (
       });
 
       if (!f.ending) {
-        it('인생 화면의 기록 줄: 부모 결정 줄 모두 「(그 해 주어가 이렇게 정했습니다: 라벨)」', () => {
+        it('인생 화면의 기록 줄: 부모 결정 줄 모두 「{제목} / 그 해 주어가 이렇게 정했습니다: 라벨 / 결과」 (제목이 없는 옛 줄은 괄호 꼴)', () => {
           const log = plain(renderLife(game).slice(renderLife(game).indexOf('data-testid="log"')));
-          for (const h of parentLines(game)) expect(log, `${h.age}세 줄`).toContain(`${h.text} (${NAME_OF[f.golden[h.age]]} 이렇게 정했습니다: ${h.choice})`);
+          // SPEC-012 QF4: v0.4.0 저장의 줄도 열자마자 저장된 title이 제목으로 나온다(새 필드 0). 제목이 없는 줄이면 지금 모양(괄호)
+          for (const h of parentLines(game)) {
+            const want = h.title ? `${h.title} ${NAME_OF[f.golden[h.age]]} 이렇게 정했습니다: ${h.choice} ${h.text}` : `${h.text} (${NAME_OF[f.golden[h.age]]} 이렇게 정했습니다: ${h.choice})`;
+            expect(log, `${h.age}세 줄`).toContain(want);
+          }
+          expect(parentLines(game).filter((h) => h.title).length, '제목이 있는 줄이 실제로 있다(공허 통과 방지)').toBeGreaterThan(0);
           const singles = Object.values(f.golden).filter((c) => c !== 'both').length;
           const motherLines = (log.match(/어머니가 이렇게 정했습니다: /g) ?? []).length;
           expect(motherLines).toBe(f.name === 'mother-age20' ? singles : 0);

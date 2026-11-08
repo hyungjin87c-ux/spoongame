@@ -255,7 +255,10 @@ test.describe('가린 결정 카드 (HV4 ②⑤, 접근성 확인 사항 (a)(b))
     await expect(row).toHaveCount(1);
     expect(await shown(row)).not.toContain(o.chosenLabel);
     await row.getByTestId('veil-btn').click();
-    await expect(row.getByTestId('veil-body')).toContainText(`(선택: ${o.chosenLabel})`, { useInnerText: true });
+    // SPEC-012 QF4: 펼친 원문은 「사건 제목 → 선택: 고른 길 → 결과」 세 줄(괄호 없음) — 제목도 가린 원문 안이다
+    await expect(row.getByTestId('veil-body')).toContainText(`선택: ${o.chosenLabel}`, { useInnerText: true });
+    await expect(row.getByTestId('veil-body').getByTestId('log-q')).toBeVisible();
+    expect(await shown(row), '펼치기 전에 안 보이던 제목이 펼치면 보인다').toContain(await row.getByTestId('log-q').innerText());
     // 오라클: 같은 상태에서 그 선택지를 수동으로 고른 인생과 같다 (연표 줄 전체)
     const manual = await evalCore<{ choice: string; text: string }>(
       page,

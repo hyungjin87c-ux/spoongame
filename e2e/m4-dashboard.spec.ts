@@ -9,6 +9,7 @@ import {
   findPendingState,
   injectSave,
   lifeState,
+  pressSpeedTo,
   quietStart,
   readSave,
   readSettings,
@@ -255,8 +256,8 @@ test('한 해 도중에 배속을 8배로 바꿔도 진행률 바는 되감기�
   await expect(page.getByTestId('pause')).toBeEnabled();
   await expect.poll(async () => (await samples(page)).at(-1)?.pct ?? 0, { timeout: 20_000 }).toBeGreaterThanOrEqual(30);
   const before = (await samples(page)).at(-1)!;
-  await page.locator('[data-speed="8"]').click();
-  await expect(page.locator('[data-speed="8"]')).toHaveAttribute('aria-pressed', 'true');
+  await pressSpeedTo(page, 8); // 배속 한 단추(SPEC-012 QF5) — 1에서 8까지는 세 번 누른다
+  await expect(page.getByTestId('speed')).toHaveAttribute('data-speed', '8');
   await expect.poll(async () => (await samples(page)).some((s) => s.age === before.age + 1), { timeout: 20_000 }).toBe(true);
   const all = await samples(page);
   const sameYear = all.filter((s) => s.age === before.age).map((s) => s.pct);

@@ -360,10 +360,15 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     // 그 10년의 덩어리가 없으면(2030년대 일상이 없는 풀) 2025년 세트로 돌아가지 않고 빈 틀이다
     expect(eraOf(2032, ctx([ev2025, d2020, d2020b])).pic).toBeNull();
     expect(eraOf(2031, ctx([ev2025])).pic).toBeNull();
-    // 해마다 그 10년 안에서 걸어온다: 3해 연속 같은 그림이 없다
+    // 해마다 그 10년 안에서 걸어온다. SPEC-012 QF2(2027년 이후 같은 장면은 한 판에 한 번)가 옛 「3해 연속 금지」를 대체한다 - 일상 둘은 각각 한 번만 나오고 나머지 해는 빈 틀이다
+    // (옛 단언: 3해 연속 같은 그림이 없다 - 한 번만이 더 강한 규칙이라 그것을 포함한다. 빈 틀끼리의 「이어짐」은 이어진 그림이 아니다)
     for (let seed = 0; seed < 30; seed++) {
       const picks = Array.from({ length: 10 }, (_, i) => eraOf(2030 + i, ctx(pool, { seed, birthYear: 2000 })).pic?.id);
-      for (let i = 2; i < picks.length; i++) expect(picks[i - 2] === picks[i - 1] && picks[i - 1] === picks[i], `시드 ${seed}: ${picks.join(',')}`).toBe(false);
+      const shown = picks.filter((x): x is string => x !== undefined);
+      expect(new Set(shown).size, `시드 ${seed}: 같은 장면이 두 번 나오지 않는다 ${picks.join(',')}`).toBe(shown.length);
+      expect([...shown].sort(), `시드 ${seed}: 2031 사건 + 일상 둘이 한 번씩`).toEqual(['삼십년대', '삼십년대둘', '이천삼십일']);
+      expect(picks[1], '2031은 사건').toBe('이천삼십일');
+      expect(picks.slice(3).every((x) => x === undefined), `시드 ${seed}: 쓸 장면이 남지 않은 해는 빈 틀 ${picks.join(',')}`).toBe(true);
     }
   });
   it('무거운 장면 가리기: 꺼짐(기본)이면 그대로, 켜면 그해 일상 그림으로 바뀌고 줄은 가려진다 — 일상이 없으면 빈 틀', () => {
@@ -431,14 +436,15 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     expect(bandOfWealth(4)).toBe('high');
     expect(bandOfWealth(5)).toBe('high');
   });
-  it('나이대: 나이가 일상의 나이대(ages) 안일 때만 고르고, 맞는 것이 없으면 그 10년의 다른 일상으로 내려간다', () => {
+  it('나이대: 나이가 일상의 나이대(ages) 안일 때만 고르고, 맞는 것이 없으면 그 10년의 나이대 없는 일상으로 내려가고 그것도 없으면 빈 틀이다 (SPEC-012 QF3a - 옛 「풀어서라도」 4단계는 없다)', () => {
     const child = w('교실', [1970, 1970], { kind: 'daily', ages: [7, 12] });
     const adult = w('공단', [1970, 1970], { kind: 'daily', ages: [15, 29] });
     const any = w('연탄', [1971, 1979], { kind: 'daily' });
     expect(eraOf(1970, ctx([child, adult, any], { birthYear: 1961 })).pic?.id, '9세').toBe('교실');
     expect(eraOf(1970, ctx([child, adult, any], { birthYear: 1950 })).pic?.id, '20세').toBe('공단');
     expect(eraOf(1970, ctx([child, adult, any], { birthYear: 1920 })).pic?.id, '50세는 둘 다 안 맞아 그 10년의 나이대 없는 일상').toBe('연탄');
-    expect(eraOf(1970, ctx([child, adult], { birthYear: 1920 })).pic, '맞는 것이 하나도 없으면 나이대를 풀어서라도 그 10년 일상').not.toBeNull();
+    expect(eraOf(1970, ctx([child, adult], { birthYear: 1920 })).pic, '맞는 것이 하나도 없으면 빈 틀 - 나이대를 풀어서 아무 일상을 고르지 않는다(SPEC-012 QF3a가 옛 4단계를 없앴다)').toBeNull();
+    expect(eraOf(1970, ctx([child, adult], { birthYear: 1920 })).line, '줄도 없다').toBeNull();
     expect(['교실', '공단'], '출생 연도를 모르면 나이대를 보지 않는다').toContain(eraOf(1970, ctx([child, adult, any])).pic?.id);
   });
   it('같은 그림을 3해 연속 쓰지 않는다: 후보가 둘 이상이면 어느 시드·구간·출생에서도 이어진 세 해가 같은 그림이 아니다', () => {
@@ -454,8 +460,11 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     // 후보가 하나뿐이면 어쩔 수 없이 이어진다(빈 틀보다 낫다)
     expect(Array.from({ length: 6 }, (_, i) => eraOf(1970 + i, ctx([a], { birthYear: 1950 })).pic?.id)).toEqual(['연탄', '연탄', '연탄', '연탄', '연탄', '연탄']);
   });
-  it('실제 승인 데이터: 1940~2025 어느 해·시드·구간·가리기·출생에서도 같은 그림이 3해 연속 이어지지 않는다', () => {
+  it('실제 승인 데이터: 1940~2025 어느 해·시드·구간·가리기·출생에서도 같은 그림이 3해 연속 이어지지 않는다 - 단 그 해·나이에 맞는(ages) 후보가 그 그림 하나뿐이면 되풀이한다(SPEC-012 QF3a ②)', () => {
     const bands: EraBand[] = ['low', 'mid', 'high'];
+    /** 그 해·나이·구간에 ages에 맞는 일상 후보의 id들(옛 4단계가 없으므로 이 밖의 일상은 후보가 아니다) */
+    const fitting = (y: number, age: number, band: EraBand, gentle: boolean): string[] =>
+      ALL.filter((x) => x.kind === 'daily' && (!gentle || !x.heavy) && x.years[0] <= Math.floor(y / 10) * 10 + 9 && x.years[1] >= Math.floor(y / 10) * 10 && (x.band === undefined || (band !== 'mid' && x.band === band)) && (x.ages === undefined || (age >= x.ages[0] && age <= x.ages[1]))).map((x) => x.id);
     for (const seed of [1, 99, 4242, 123456]) {
       for (const band of bands) {
         for (const gentle of [false, true]) {
@@ -464,7 +473,9 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
             for (let y = birthYear; y <= 2025; y++) picks.push(eraOf(y, ctx(ALL, { seed, band, gentle, birthYear })).pic?.id);
             for (let i = 2; i < picks.length; i++) {
               if (picks[i] === undefined) continue;
-              expect(picks[i - 2] === picks[i - 1] && picks[i - 1] === picks[i], `${seed}/${band}/${gentle}/${birthYear} ${birthYear + i}: ${picks[i]}`).toBe(false);
+              const three = picks[i - 2] === picks[i - 1] && picks[i - 1] === picks[i];
+              // 사건이 이어진 해는 없다(사건은 한 해짜리) - 이어졌다면 일상이고, 그때 맞는 후보가 그 하나뿐이어야 한다
+              if (three) expect(fitting(birthYear + i, i, band, gentle), `${seed}/${band}/${gentle}/${birthYear} ${birthYear + i}: ${picks[i]}가 3해 연속인데 맞는 다른 후보가 있다`).toEqual([picks[i]!]);
             }
           }
         }
@@ -505,21 +516,35 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     expect(y2027.pic!.kind === 'daily' || y2027.pic!.years[0] === 2027, '사건이면 2027년 사건, 아니면 일상').toBe(true);
   });
 
-  it('실제 승인 데이터: 1940~2112 어느 해·구간·나이에서도 승인된 그림이 닿는다 — 빈 틀은 데이터가 안 온 때(덩어리 실패)뿐이다 (묶음 C까지 들어와 2026~2112 모든 해를 잰다 · 규칙별 시험은 tests/eraFuture.test.ts)', () => {
+  it('실제 승인 데이터: 1940~2112 어느 해·구간·나이에서도 빈 틀은 「그 해·나이·구간에 맞는 장면이 없을 때」뿐이다 (SPEC-012 QF3a - 옛 「빈 틀은 데이터가 안 온 때뿐」은 나이 규칙이 대체했다). 2026년·2110년 뒤는 늘 그림이 있다', () => {
     let measured = 0;
+    let blanks = 0;
+    const decadeOf = (y: number): number => Math.floor(Math.min(y, 2109) / 10) * 10;
     for (const band of ['low', 'mid', 'high'] as const) {
       for (const gentle of [false, true]) {
         for (let y = 1940; y <= 2112; y++) {
           for (const birthYear of [y - 3, y - 15, y - 25, y - 45, y - 70]) {
             if (birthYear > y || y - birthYear > 100) continue;
+            const age = y - birthYear;
             const pick = eraOf(y, ctx(ALL, { band, gentle, birthYear, seed: 99 }));
-            expect(pick.pic, `${band}/${gentle}/${y}/${birthYear}년생`).not.toBeNull();
             measured++;
+            if (pick.pic !== null) continue;
+            blanks++;
+            // 빈 틀이면 정말로 맞는 장면이 없다: 그해 사건(나이·구간에 맞는 것)도, 그 10년 일상(나이·구간에 맞는 것)도, 그해를 덮는 끝·기본 장면도 없다. 가리기는 무거운 것을 대신 띄우지 않으므로 무겁지 않은 후보만 센다
+            const fits = (x: EraWindow): boolean => (!gentle || !x.heavy) && (x.ages === undefined || (age >= x.ages[0] && age <= x.ages[1]));
+            const events = ALL.filter((x) => x.kind === 'event' && x.years[0] <= y && x.years[1] >= y && fits(x) && (x.band === undefined || x.band === band));
+            const dailies = y > ERA_LAST_YEAR ? [] : ALL.filter((x) => x.kind === 'daily' && fits(x) && x.years[0] <= decadeOf(y) + 9 && x.years[1] >= decadeOf(y) && (x.band === undefined || (band !== 'mid' && x.band === band)));
+            const bases = ALL.filter((x) => x.kind === 'base' && x.years[0] <= y && x.years[1] >= y);
+            // 2027년 이후의 일상은 「한 판에 한 번」(QF2)으로도 빈다 - 그 규칙은 tests/eraFuture.test.ts가 잰다. 여기서는 2026년 이하만 「맞는 장면이 없다」를 단정한다
+            if (y <= 2026) expect([...events, ...dailies, ...bases].map((x) => x.id), `${band}/${gentle}/${y}/${birthYear}년생(${age}세): 빈 틀인데 맞는 장면이 있다`).toEqual([]);
+            else if (y > ERA_LAST_YEAR) expect(bases.length, `${y}: 끝 장면`).toBe(0);
           }
         }
       }
     }
     expect(measured, '1940~2112 전부 잰다: 구간 3 × 가리기 2 × 173해 × 출생 5(나이 100세 넘는 칸은 뺀다)').toBeGreaterThanOrEqual(3 * 2 * 170 * 4);
+    expect(blanks, '나이 규칙이 일하는 증거: 어린이·어른의 해에 빈 틀이 실제로 있다').toBeGreaterThan(0);
+    for (const y of [2026, 2110, 2111, 2112]) for (const band of ['low', 'mid', 'high'] as const) for (const age of [0, 6, 30, 80]) expect(eraOf(y, ctx(ALL, { band, birthYear: y - age, seed: 99 })).pic, `${y}/${band}/${age}세`).not.toBeNull();
   });
   it('덩어리를 못 받은 판(2060년대 이후 덩어리가 오지 않은 상태): 받지 못한 10년대의 해는 빈 틀이고 줄이 없다 — 2025 세트로 돌아가지 않는다(SPEC-010, QA-009-FM4b F01). 받은 2050년대까지는 그림이 있다', () => {
     const got = DECADES.filter(([d]) => d <= 2050).flatMap(([, data]) => data.windows); // 2060~2100년대 덩어리(끝 장면 포함)가 실패한 판
@@ -528,7 +553,8 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
       expect(pick.pic, `${y}`).toBeNull();
       expect(pick.line, `${y}`).toBeNull();
     }
-    for (const y of [2030, 2044, 2050, 2059]) expect(eraOf(y, ctx(got, { birthYear: y - 30, seed: 99 })).pic, `${y}: 받은 덩어리의 해`).not.toBeNull();
+    // SPEC-012 QF2: 2027년 이후 일상은 한 판에 한 번이라 오래 산 사람의 늦은 해는 비어 있을 수 있다 - 받은 덩어리의 해를 태어난 해로 두어 「데이터가 있으면 그림이 있다」를 본다
+    for (const y of [2030, 2044, 2050, 2059]) expect(eraOf(y, ctx(got, { birthYear: y, seed: 99 })).pic, `${y}: 받은 덩어리의 해`).not.toBeNull();
   });
   it('실제 승인 데이터 · 가리기: 무거운 장면(재난·정치) 20장의 해는 가려지고 그해 일상 그림(1987년은 12월 투표소)으로 바뀐다 — 경제(1997~98)는 가리지 않는다. 2009 철거 현장은 아래 구간에게만 보이므로 아래 구간으로 본다', () => {
     for (const hv of ALL.filter((x) => x.heavy)) {
@@ -552,11 +578,15 @@ describe('eraOf — 순수 고르기 (9-2절 · era-window.md 3-1·8-2)', () => 
     }
     expect(eraOf(1998, ctx(ALL, { gentle: true })).veiled).toBe(false);
     expect(eraOf(1980, ctx(ALL, { gentle: true, birthYear: 1950 })).pic, '1980년대에는 대신 띄울 일상이 있다').not.toBeNull();
-    // 1990년대도 일상이 있다 — 나이대가 안 맞아도(30세) 풀어서라도 그 10년의 일상을 띄운다
-    const nineties = eraOf(1995, ctx(ALL, { gentle: true, birthYear: 1965 }));
+    // 1990년대도 일상이 있다 - 나이대가 맞는 사람(15세)에게는 그 10년의 일상을 띄운다. 30세는 맞는 일상이 없어 대체 그림 없이 가린 틀이다(SPEC-012 QF3a - 옛 「풀어서라도」 4단계는 없다)
+    const nineties = eraOf(1995, ctx(ALL, { gentle: true, birthYear: 1980 }));
     expect(nineties.pic?.kind).toBe('daily');
     expect(nineties.pic?.heavy).toBe(false);
     expect(nineties.line?.id).toBe('era-1995-sampoong-rescue');
+    const thirty = eraOf(1995, ctx(ALL, { gentle: true, birthYear: 1965 }));
+    expect(thirty.veiled).toBe(true);
+    expect(thirty.pic, '30세에게 맞는 1990년대 일상이 없어 그림 없이 가려 둔 틀').toBeNull();
+    expect(thirty.line?.id).toBe('era-1995-sampoong-rescue');
   });
 });
 
@@ -621,12 +651,21 @@ describe('eraOf — 사건의 수저 구간 분기, 2009년 세 갈래 (era-wind
       for (const seed of [1, 99, 4242, 123456]) {
         for (const birthYear of [1944, 1962, 1984, 1991, 2003]) {
           const p = real({ band: bandOfWealth(wealth), seed, birthYear });
+          // SPEC-012 QF3a: 첫 스마트폰(era-2009-first-smartphone)은 13세부터라 2003년생(6세)의 위 구간은 band 없는 5월 조문 줄을 본다(사건도 나이대를 지킨다) - 아래 별도 시험
+          if (id === 'era-2009-first-smartphone' && 2009 - birthYear < 13) continue;
           expect(p.pic?.id, `재력 ${wealth} 시드 ${seed} ${birthYear}년생`).toBe(id);
           expect(p.line?.line).toBe(line);
           expect(p.pic?.heavy).toBe(heavy);
           expect(p.veiled).toBe(false);
         }
       }
+    }
+  });
+  it('실제 승인 데이터 · 2009 위 구간: 6세(2003년생)는 첫 스마트폰(13세부터) 대신 5월 조문 줄을, 13세 이상은 첫 스마트폰을 본다 (SPEC-012 QF3a - 사건도 ages를 지킨다)', () => {
+    for (const seed of [1, 99, 4242]) {
+      expect(real({ band: 'high', seed, birthYear: 2003 }).pic?.id, `6세 ${seed}`).toBe('era-2009-square-mourning-queue');
+      expect(real({ band: 'high', seed, birthYear: 1996 }).pic?.id, `13세 ${seed}`).toBe('era-2009-first-smartphone');
+      expect(real({ band: 'high', seed, birthYear: 1997 }).pic?.id, `12세 ${seed}`).toBe('era-2009-square-mourning-queue');
     }
   });
   it('실제 승인 데이터 · 2009 가리기: 아래·가운데는 무거운 사건 대신 2000년대 일상(무겁지 않음)이 오르고 줄은 가려진 사건 그대로, 위 구간은 가리기와 무관하다', () => {

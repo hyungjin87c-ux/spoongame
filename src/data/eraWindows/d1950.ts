@@ -10,8 +10,8 @@ export const ERA_DECADE: EraDecadeData = {
   windows: [
     { id: 'era-1950-refugee-column', years: [1950, 1951], kind: 'event', topic: '정치', hCode: 'H-B01', line: '전쟁이 나 남쪽으로 피란을 떠났습니다.', heavy: true, approved: true, draw: 'era-1950-refugee-column' },
     { id: 'era-1952-ruins-shanty', years: [1952, 1952], kind: 'event', topic: '정치', hCode: 'H-B01', line: '폐허가 된 거리에 판잣집이 섰습니다.', heavy: true, approved: true, draw: 'era-1952-ruins-shanty' },
-    { id: 'era-1953-tent-school', years: [1953, 1953], kind: 'event', topic: '사회', hCode: 'H-B01', line: '휴전 뒤 천막 교실에서 공부했습니다.', heavy: false, approved: true, draw: 'era-1953-tent-school' },
-    { id: 'era-1954-relief-queue', years: [1954, 1954], kind: 'event', topic: '경제', hCode: 'H-E01', line: '구호물자 배급 줄에 섰습니다.', heavy: false, approved: true, draw: 'era-1954-relief-queue' },
+    { id: 'era-1953-tent-school', years: [1953, 1953], kind: 'event', topic: '사회', hCode: 'H-B01', line: '휴전 뒤 천막 교실에서 공부했습니다.', heavy: false, approved: true, draw: 'era-1953-tent-school', ages: [7, 120] },
+    { id: 'era-1954-relief-queue', years: [1954, 1954], kind: 'event', topic: '경제', hCode: 'H-E01', line: '구호물자 배급 줄에 섰습니다.', heavy: false, approved: true, draw: 'era-1954-relief-queue', ages: [7, 120] },
     { id: 'era-1955-radio-evening', years: [1955, 1955], kind: 'daily', topic: '생활', line: '저녁이면 라디오 앞에 모였습니다.', heavy: false, approved: true, draw: 'era-1955-radio-evening' },
     { id: 'era-1956-alley-marbles', years: [1956, 1956], kind: 'daily', topic: '생활', line: '골목에서 구슬치기를 했습니다.', heavy: false, approved: true, draw: 'era-1956-alley-marbles', ages: [5, 12] },
     { id: 'era-1957-new-roof-tiles', years: [1957, 1957], kind: 'event', topic: '경제', hCode: 'H-E01', line: '동네에 새 기와집이 올라갔습니다.', heavy: false, approved: true, draw: 'era-1957-new-roof-tiles' },

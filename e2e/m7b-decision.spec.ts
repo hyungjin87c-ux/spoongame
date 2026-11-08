@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameState } from '../src/core/types';
-import { KNOWN_SEED, activeTestId, countKind, findPendingState, injectSave, lifeState, oracleLife, rapidInput, readSave, readSettings, setPageVisible, settle, startPageHidden, withPlay } from './helpers';
+import { KNOWN_SEED, activeTestId, countKind, findPendingState, injectSave, lifeState, oracleLife, pressSpeedTo, rapidInput, readSave, readSettings, setPageVisible, settle, startPageHidden, withPlay } from './helpers';
 import { SETTINGS_AUTO, SETTINGS_MANUAL, cardReady, findCardState, openCard } from './m7bStates';
 import { findDelegatedYear, showParentCard } from './parentStates';
 
@@ -159,9 +159,9 @@ test('잠시 덮어 두기: 접힌 띠가 카드 자리에 생기고 포커스�
   expect(countKind(await readSave(page), 'choice')).toBe(chosen(state));
 
   // 컨트롤은 쓸 수 있다 (속도 바꾸기)
-  await expect(page.locator('[data-speed="2"]')).toBeEnabled();
-  await page.locator('[data-speed="2"]').click();
-  await expect(page.locator('[data-speed="2"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('speed')).toBeEnabled();
+  await pressSpeedTo(page, 2); // 배속 한 단추(SPEC-012 QF5): 1 → 2
+  await expect(page.getByTestId('speed')).toHaveAttribute('data-speed', '2');
 
   // 다시 열기: 시트가 같은 선택지로 돌아오고 포커스는 제목으로
   await expect(reopen).toBeEnabled();
@@ -352,10 +352,11 @@ test('수동 모드에서 시간이 흘러 선택지가 뜨면 포커스가 속�
   await injectSave(page, start, '/?__timescale=200', SETTINGS_MANUAL); // 풀리면 선택지가 곧바로 뜬다
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await expect.poll(() => activeTestId(page)).toBe('life-name');
-  const four = page.locator('[data-speed="4"]');
-  await expect(four).toBeEnabled();
-  await four.focus(); // 키보드 사용자가 속도 버튼 사이를 이동 중이다
-  expect(await activeTestId(page)).toBe('speed-4');
+  const speedBtn = page.getByTestId('speed');
+  await expect(speedBtn).toBeEnabled();
+  await speedBtn.focus(); // 키보드 사용자가 배속 단추에 있다(SPEC-012 QF5: 한 단추)
+  expect(await activeTestId(page)).toBe('speed');
+  const speedBefore = (await speedBtn.getAttribute('data-speed'))!;
 
   await setPageVisible(page, true); // 시간이 흐른다 → 선택지가 뜬다
   await expect(page.getByRole('dialog')).toBeVisible();
@@ -364,7 +365,7 @@ test('수동 모드에서 시간이 흘러 선택지가 뜨면 포커스가 속�
   await settle(page);
   expect(countKind(await readSave(page), 'choice')).toBe(0);
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(four, '속도도 바뀌지 않았다').toHaveAttribute('aria-pressed', 'false');
+  await expect(speedBtn, '속도도 바뀌지 않았다').toHaveAttribute('data-speed', speedBefore);
 });
 
 test('나가기 확인 단계를 연 채 「다음 결정으로」로 시트가 뜬 뒤 Esc 한 번은 맨 위(시트) 하나만 처리한다 — 잠시 덮어 두기와 나가기 확인 닫기가 함께 일어나지 않는다 (REV-003-M7b-1 관찰 3)', async ({ page }) => {

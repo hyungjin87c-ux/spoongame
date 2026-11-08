@@ -13,6 +13,7 @@ import {
   oracleAuto,
   oracleDecision,
   oracleLife,
+  pressSpeedTo,
   quietStart,
   readSave,
   readSettings,
@@ -55,10 +56,12 @@ test('출생 → 살아가기 → 인생 화면(대시보드): 이름·나이·�
   for (const key of ['wealth', 'looks']) await expect(page.getByTestId(`stat-${key}`)).toHaveCount(0);
   await expect(page.getByTestId('profile-looks')).toContainText(/상위|하위|가운데쯤/);
   await expect(page.getByTestId('assets-card')).toBeVisible();
-  // 진행 줄 상시 표시: 일시정지 / 1배 / 2배 / 4배 / 8배, 다음 결정으로, 자동 모드 (M4: 일시정지가 더해졌다)
+  // 진행 줄 상시 표시: 일시정지 / 배속 한 단추(1 → 2 → 4 → 8 → 1배, SPEC-012 QF5) / 다음 결정으로 / 자동 모드 (M4: 일시정지가 더해졌다)
   await expect(page.getByTestId('pause')).toBeVisible();
-  for (const label of ['1배', '2배', '4배', '8배']) await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '1배', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('speed')).toBeVisible();
+  await expect(page.getByTestId('speed')).toHaveText('1배');
+  await expect(page.getByTestId('speed')).toHaveAttribute('aria-label', '배속 1배, 누르면 2배');
+  await expect(page.getByTestId('speed')).not.toHaveAttribute('aria-pressed', /.*/); // 값이라 눌림 상태가 아니다
   await expect(page.getByTestId('skip')).toBeVisible();
   await expect(page.getByTestId('auto')).toHaveAttribute('aria-pressed', 'false');
   // M2 자리표시 화면과 처음으로 버튼은 없다
@@ -148,16 +151,19 @@ test('선택지 화면에서 새로고침하면 같은 이벤트·같은 선택�
   }
 });
 
-test('배속 전환: 1/2/4/8배가 눌린 상태로 표시되고 설정에 저장되며 새로고침·새 판에서도 유지된다', async ({ page }) => {
+test('배속 전환: 한 단추가 누를 때마다 1 → 2 → 4 → 8 → 1배로 바뀌어 지금 배속을 글자로 보이고 설정에 저장되며 새로고침·새 판에서도 유지된다 (SPEC-012 QF5)', async ({ page }) => {
   await startFromTitle(page);
+  const speedBtn = page.getByTestId('speed');
+  await expect(speedBtn).toHaveAttribute('data-speed', '1');
   for (const speed of [2, 4, 8]) {
-    await page.getByRole('button', { name: `${speed}배`, exact: true }).click();
-    await expect(page.getByRole('button', { name: `${speed}배`, exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('button', { name: '1배', exact: true })).toHaveAttribute('aria-pressed', 'false');
+    await pressSpeedTo(page, speed as 2 | 4 | 8); // 한 번 누를 때마다 다음 값
+    await expect(speedBtn).toHaveText(`${speed}배`);
+    await expect(speedBtn).toHaveAttribute('aria-label', `배속 ${speed}배, 누르면 ${speed === 8 ? 1 : speed * 2}배`);
+    await expect(speedBtn, '값이지 켜짐·꺼짐이 아니라 aria-pressed가 없다').not.toHaveAttribute('aria-pressed', /.*/);
     await expect.poll(async () => (await readSettings(page)).speed).toBe(speed);
   }
   await page.reload();
-  await expect(page.getByRole('button', { name: '8배', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('speed')).toHaveAttribute('data-speed', '8');
 
   // 게임 저장만 지워 "새 판"을 시작해도 속도 설정은 남는다
   await clearGameSave(page);
@@ -166,7 +172,7 @@ test('배속 전환: 1/2/4/8배가 눌린 상태로 표시되고 설정에 저�
   const settingsRaw = await page.evaluate((k) => localStorage.getItem(k), SETTINGS_KEY);
   expect(JSON.parse(settingsRaw!).data.speed).toBe(8);
   await startFromTitle(page);
-  await expect(page.getByRole('button', { name: '8배', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('speed')).toHaveAttribute('data-speed', '8');
 });
 
 test('다음 결정으로: 연출을 건너뛰고 첫 선택지에서 정확히 멈춘다 (저장도 core 기대값과 같다)', async ({ page }) => {
@@ -217,14 +223,14 @@ for (const vp of [
   { width: 360, height: 640 },
   { width: 360, height: 740 },
 ]) {
-  test(`${vp.width}x${vp.height}: 선택지 3개는 스크롤로 모두 닿고 진행 줄 7개는 늘 화면 안에서 가려지지 않으며 가로 넘침이 없다 (M4: 전수 측정은 e2e/layout.spec.ts)`, async ({ page }, testInfo) => {
+  test(`${vp.width}x${vp.height}: 선택지 3개는 스크롤로 모두 닿고 진행 줄 4개는 늘 화면 안에서 가려지지 않으며 가로 넘침이 없다 (M4: 전수 측정은 e2e/layout.spec.ts)`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize(vp);
     await startPageHidden(page); // 자동 선택 타이머가 카드를 치우지 않게
     await page.goto('/');
     const state = await findPendingState(page, 'alpha', { minChoices: 3 });
     expect(state.pending!.choiceIds.length).toBe(3);
-    // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 진행 줄 7개가 카드와 함께 화면 안에 있다. 수동 모드의 모달 시트는 e2e/layout.spec.ts·m7b-*가 잰다
+    // 자동 모드 켜짐 = 비모달 인라인 카드(M7b): 진행 줄 4개가 카드와 함께 화면 안에 있다. 수동 모드의 모달 시트는 e2e/layout.spec.ts·m7b-*가 잰다
     await injectSave(page, state, '/', { speed: 1, autoMode: true });
     const panel = page.getByTestId('choice-panel');
     await expect(panel).toBeVisible();
@@ -248,7 +254,7 @@ for (const vp of [
       };
     });
     expect(boxes.choices).toHaveLength(3);
-    expect(boxes.controls, '일시정지·1·2·4·8배·다음 결정으로·자동 모드').toHaveLength(7);
+    expect(boxes.controls, '일시정지·배속(한 단추)·다음 결정으로·자동 모드').toHaveLength(4);
     for (const b of [...boxes.choices, ...boxes.controls]) {
       expect(b.left, b.name).toBeGreaterThanOrEqual(0);
       expect(b.right, b.name).toBeLessThanOrEqual(boxes.vw);

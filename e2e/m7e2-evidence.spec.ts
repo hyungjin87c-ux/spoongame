@@ -93,7 +93,8 @@ test.describe('M7e-2 증거 스크린샷 (360×740)', () => {
     const rows = await page.evaluate(() =>
       Array.from(document.querySelectorAll<HTMLElement>('[data-testid="log-row"]')).map((row) => ({
         age: (row.querySelector('.log__age')?.textContent ?? '').trim(),
-        text: (row.querySelector('.log__text')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+        // SPEC-012 QF4: 제목이 있는 결정 줄은 「제목 / 고른 길 / 결과」 세 줄이라 합쇼체 점검은 결과 문장(.log__result)만 본다 — 제목·고른 길 라벨은 문장이 아니다
+        text: (row.querySelector('.log__result')?.textContent ?? row.querySelector('.log__text')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
         kind: row.getAttribute('data-kind') ?? '',
       })),
     );

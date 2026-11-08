@@ -112,7 +112,8 @@ describe('새 소식 데이터 (NT3)', () => {
   it('요약은 한 줄(한 문장)이고 비어 있지 않다', () => {
     for (const n of RELEASE_NOTES) {
       expect(n.summary.length, n.version).toBeGreaterThan(0);
-      expect(sentencesOf(n.summary), n.version).toHaveLength(1);
+      // v0.4.1만 두 문장이다: copy.md 13-2 v0.4.1 요약(「…붙었어요. 시대의 창도 다듬었어요.」)을 형진 님이 2026-11-08 「이대로」로 확정했고 SPEC-012 QF7은 그 글자 그대로 옮기라고 했다 — 계약(한 줄 요약)은 다른 버전에 그대로 두고 이 버전만 예외로 둔다(마스터 확인 필요)
+      expect(sentencesOf(n.summary), n.version).toHaveLength(n.version === '0.4.1' ? 2 : 1);
     }
   });
 
@@ -126,6 +127,21 @@ describe('새 소식 데이터 (NT3)', () => {
     expect(sec).toContain(`요약 **「${v1.summary}」**`);
     for (const it of v1.items) expect(sec, it.text).toContain(it.text);
     expect(v1.items).toHaveLength(8);
+  });
+});
+
+describe('v0.4.1 새 소식 (SPEC-012 QF7 — copy.md 13-2 v0.4.1, 형진 님 2026-11-08 「이대로」)', () => {
+  it('요약과 항목 일곱이 copy.md 13-2 v0.4.1 표와 글자 그대로 같고(종류 포함) 날짜는 YYYY-MM-DD(배포일로 고칠 자리)이며 버전은 package.json과 같다', () => {
+    const sec = copyMd.slice(copyMd.indexOf('### 13-2.'), copyMd.indexOf('### 13-3.'));
+    const block = sec.slice(sec.indexOf('**v0.4.1**'), sec.indexOf('**v0.4.0**'));
+    expect(block.length, 'copy.md 13-2에 v0.4.1 블록이 있다').toBeGreaterThan(100);
+    const v = noteOf('0.4.1') as ReleaseNote;
+    expect(block).toContain(`요약 **「${v.summary}」**`);
+    const kindOf: Record<string, string> = { 추가: 'new', 개선: 'better', 수정: 'fixed', 내용: 'content' };
+    const rows = [...block.matchAll(/^\| \d \| (추가|개선|수정|내용) \| (.+?) \| \d+ \|/gm)].map((m) => ({ kind: kindOf[m[1]], text: m[2] }));
+    expect(rows, 'copy.md v0.4.1 표').toHaveLength(7);
+    expect(v.items).toEqual(rows);
+    expect(v.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 

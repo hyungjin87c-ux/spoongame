@@ -26,7 +26,7 @@ export interface DashMeasure {
   bar: { height: number; ratio: number; position: string; releasedClass: boolean } | null;
   /** 나가기 확인 단계가 열려 있으면 안내문 첫 줄 위끝부터 「돌아가기」 링 아래끝까지의 높이(px), 닫혀 있으면 null */
   ask: { span: number } | null;
-  /** 진행 줄 버튼(pause·speed-N·skip·auto)과 도구 줄 버튼(tool-*) — 누를 수 있는 크기·눌리는 자리·화면 안 */
+  /** 진행 줄 버튼(pause·speed·skip·auto)과 도구 줄 버튼(tool-*) — 누를 수 있는 크기·눌리는 자리·화면 안 (SPEC-012 QF5: 배속은 한 단추) */
   buttons: DashButton[];
   generic: TextResizeMeasure;
 }
@@ -79,7 +79,7 @@ export async function measureDash(page: Page): Promise<DashMeasure> {
       if (!(barFixed && barEl!.contains(b))) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       const r = b.getBoundingClientRect();
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return { id: b.getAttribute('data-testid') ?? (b.getAttribute('data-speed') ? `speed-${b.getAttribute('data-speed')}` : b.tagName), height: r.height, width: r.width, hit: hit !== null && (b === hit || b.contains(hit)), inViewport: r.top >= -0.5 && r.bottom <= vh + 0.5 };
+      return { id: b.getAttribute('data-testid') ?? b.tagName, height: r.height, width: r.width, hit: hit !== null && (b === hit || b.contains(hit)), inViewport: r.top >= -0.5 && r.bottom <= vh + 0.5 };
     });
     window.scrollTo(0, 0);
     return {
@@ -117,9 +117,11 @@ export function dashViolations(m: DashMeasure, label: string): string[] {
   if (wantHeadReleased !== headStatic) out.push(`${label}: 헤더 ${Math.round(m.head.height)}px + 고정 진행 줄 ${Math.round(barHeightCounted)}px = ${Math.round(m.head.height + barHeightCounted)}px (화면 ${m.vh}px의 절반 ${m.vh / 2}px) — ${wantHeadReleased ? '풀려야 하는데 고정이다' : '고정이어야 하는데 풀렸다'}`);
   if (m.head.releasedClass !== headStatic) out.push(`${label}: 헤더 position(${m.head.position})과 head-released 클래스(${m.head.releasedClass})가 어긋난다`);
   // 버튼: 누를 수 있는 크기와 자리
-  if (m.buttons.length < 12) out.push(`${label}: 진행 줄·도구 줄 버튼이 ${m.buttons.length}개뿐이다(12개여야 한다)`);
+  if (m.buttons.length < 9) out.push(`${label}: 진행 줄·도구 줄 버튼이 ${m.buttons.length}개뿐이다(9개여야 한다 — 진행 줄 4 + 도구 줄 5)`);
   for (const b of m.buttons) {
-    if (b.height < 44 - 0.5) out.push(`${label}: ${b.id} 높이 ${Math.round(b.height)}px < 44px`);
+    // SPEC-012 QF5: 진행 줄 버튼의 보이는 높이는 36px(--ctl-h)이고 누르는 영역 44px은 거친 포인터에서 ::before가 채운다(그 실측은 e2e/controls-compact.spec.ts). 모바일의 도구 줄 버튼은 44px, PC 도구 줄은 36px(마우스 기준)
+    const need = m.vw < 960 && b.id.startsWith('tool-') ? 44 : 36;
+    if (b.height < need - 0.5) out.push(`${label}: ${b.id} 높이 ${Math.round(b.height)}px < ${need}px`);
     if (!b.hit) out.push(`${label}: ${b.id} 한가운데에서 다른 요소가 눌린다`);
     if (!b.inViewport) out.push(`${label}: ${b.id}가 화면 밖에 있다`);
   }

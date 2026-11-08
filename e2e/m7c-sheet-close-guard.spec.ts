@@ -129,7 +129,7 @@ async function snapshot(page: Page): Promise<Record<string, unknown>> {
     const q = (s: string) => document.querySelector(s);
     const pressed = (s: string) => q(s)?.getAttribute('aria-pressed') ?? null;
     return {
-      speed: Array.from(document.querySelectorAll('[data-speed]')).find((b) => b.getAttribute('aria-pressed') === 'true')?.getAttribute('data-speed') ?? null,
+      speed: q('[data-testid="speed"]')?.getAttribute('data-speed') ?? null, // 배속 한 단추의 지금 배속(SPEC-012 QF5)
       paused: q('[data-testid="pause"]')?.getAttribute('data-paused') ?? null,
       auto: pressed('[data-testid="auto"]'),
       age: q('[data-testid="life-age"]')?.textContent ?? null,
@@ -167,12 +167,13 @@ async function singleRun(page: Page, w: World, kind: Kind, mode: 'touch' | 'mous
   await tapAt(page, mode, p);
   await page.waitForTimeout(500);
   const snap = await snapshot(page);
-  const two = page.locator('[data-speed="2"]');
-  await two.scrollIntoViewIfNeeded();
-  expect(await two.getAttribute('aria-disabled'), '(d) 한 번 탭하고 500ms가 지난 뒤에는 컨트롤의 가드가 풀려 있다').not.toBe('true');
-  if (mode === 'touch') await two.tap();
-  else await two.click();
-  await expect(two, '(d) 가드 뒤 한 번 누른 배속이 바뀐다').toHaveAttribute('aria-pressed', 'true');
+  const speedBtn = page.getByTestId('speed');
+  await speedBtn.scrollIntoViewIfNeeded();
+  expect(await speedBtn.getAttribute('aria-disabled'), '(d) 한 번 탭하고 500ms가 지난 뒤에는 컨트롤의 가드가 풀려 있다').not.toBe('true');
+  const speedBeforeTap = Number(await speedBtn.getAttribute('data-speed'));
+  if (mode === 'touch') await speedBtn.tap();
+  else await speedBtn.click();
+  await expect(speedBtn, '(d) 가드 뒤 한 번 누른 배속이 다음 값으로 바뀐다(SPEC-012 QF5: 한 단추 1 → 2 → 4 → 8 → 1)').toHaveAttribute('data-speed', String([1, 2, 4, 8][([1, 2, 4, 8].indexOf(speedBeforeTap) + 1) % 4]));
   return snap;
 }
 
@@ -294,10 +295,10 @@ for (const vp of STANDARD_VIEWPORTS.filter((v) => ['360x740-touch', '1280x800', 
 
 // ---------- G1: 닫히는 같은 렌더 ----------
 
-const GUARDED_SELECTORS = ['[data-testid="pause"]', '[data-speed="1"]', '[data-speed="2"]', '[data-speed="4"]', '[data-speed="8"]', '[data-testid="skip"]', '[data-testid="auto"]', '[data-testid="tool-bgm"]', '[data-testid="tool-note"]', '[data-testid="tool-dark"]', '[data-testid="tool-feedback"]', '[data-testid="tool-exit"]'];
+const GUARDED_SELECTORS = ['[data-testid="pause"]', '[data-testid="speed"]', '[data-testid="skip"]', '[data-testid="auto"]', '[data-testid="tool-bgm"]', '[data-testid="tool-note"]', '[data-testid="tool-dark"]', '[data-testid="tool-feedback"]', '[data-testid="tool-exit"]'];
 
 for (const kind of ['manual-keep', 'empty-skip', 'confirm-discard', 'decision-choice', 'inline-choice'] as const) {
-  test(`F-1 G1 ${kind}: 시트(카드)가 DOM에서 사라진 직후 — 그림이 그려지기 전의 첫 관찰에서 — 진행 줄 7개·도구 줄 5개가 이미 aria-disabled다`, async ({ page }) => {
+  test(`F-1 G1 ${kind}: 시트(카드)가 DOM에서 사라진 직후 — 그림이 그려지기 전의 첫 관찰에서 — 진행 줄 4개·도구 줄 5개가 이미 aria-disabled다`, async ({ page }) => {
     test.setTimeout(120_000);
     await startPageHidden(page);
     const w = await buildWorld(page);
@@ -347,16 +348,16 @@ test('F-1 (d) 자동 선택(autoChoose)으로 카드가 사라진 100ms 뒤 배�
       mo.observe(document.body, { childList: true, subtree: true });
     });
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const btn = document.querySelector('[data-speed="1"]') as HTMLElement;
+    const btn = document.querySelector('[data-testid="speed"]') as HTMLElement;
     const guarded = btn.getAttribute('aria-disabled') === 'true';
     btn.click();
     await new Promise((resolve) => setTimeout(resolve, 50));
-    return { skipped: false as const, guarded, pressed: btn.getAttribute('aria-pressed') };
+    return { skipped: false as const, guarded, speed: btn.getAttribute('data-speed') };
   });
   expect(r.skipped, '카드가 자동 선택 전에 사라졌다 — 시험이 늦게 시작했다').toBe(false);
   if (!r.skipped) {
     expect(r.guarded, '자동 선택 100ms 뒤 컨트롤은 가드가 아니다').toBe(false);
-    expect(r.pressed, '그 탭이 먹어 배속이 1배로 바뀌었다').toBe('true');
+    expect(r.speed, '그 탭이 먹어 배속이 2배에서 4배로 바뀌었다(한 단추 1 → 2 → 4 → 8 → 1)').toBe('4');
   }
 });
 
@@ -430,20 +431,18 @@ test('F-1 (d) 평소 배속 연타(100ms 간격 4번)는 마지막 값에 닿는
   await injectSave(page, w.life, '/', OFF);
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await page.waitForTimeout(700); // 화면 진입 가드가 지난 뒤
-  const centers: Record<string, { x: number; y: number }> = {};
-  for (const s of ['1', '2', '4', '8']) {
-    const loc = page.locator(`[data-speed="${s}"]`);
-    await loc.scrollIntoViewIfNeeded();
-    const b = (await loc.boundingBox())!;
-    centers[s] = { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) };
-  }
+  // 배속 한 단추(SPEC-012 QF5): 같은 자리를 100ms 간격으로 네 번 탭하면 1 → 2 → 4 → 8 → 1배다
+  const loc = page.getByTestId('speed');
+  await loc.scrollIntoViewIfNeeded();
+  const b = (await loc.boundingBox())!;
+  const center = { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) };
   await installClickLog(page);
-  for (const s of ['2', '4', '8', '2']) {
-    await page.touchscreen.tap(centers[s].x, centers[s].y);
+  for (let i = 0; i < 4; i++) {
+    await page.touchscreen.tap(center.x, center.y);
     await page.waitForTimeout(100);
   }
   await page.waitForTimeout(200);
-  expect(await page.evaluate(() => Array.from(document.querySelectorAll('[data-speed]')).find((b) => b.getAttribute('aria-pressed') === 'true')?.getAttribute('data-speed')), '마지막으로 누른 2배').toBe('2');
+  expect(await page.evaluate(() => document.querySelector('[data-testid="speed"]')?.getAttribute('data-speed')), '네 번 눌러 한 바퀴를 돌아 1배').toBe('1');
   expect((await readClickLog(page)).length, '네 번 모두 클릭이 됐다').toBe(4);
 });
 

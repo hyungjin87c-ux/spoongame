@@ -36,15 +36,18 @@ const MIN_OVERLAP_PX = 4;
 /** 겹치는 곳을 더블클릭할 때, 버튼 폭의 이 비율 지점도 함께 누른다(R-035: 좌·우 1/4 지점). 겹치지 않는 뷰포트는 이 지점들만 짧게 본다. */
 const FRACTIONS = [1 / 4, 1 / 2, 3 / 4];
 const INITIAL: LifeSnapshot = { speed: '1', auto: 'false', age: '0세', hasChoice: false };
-/** 눌러도 상태가 안 바뀌는 컨트롤(이미 1배속이다): 가드가 막았는지는 landed로 보고, 대조군의 변화 기대에서는 뺀다. */
-const NO_EFFECT_CONTROLS = ['speed-1']; // (M7c: 「생각 남기기」는 보통 버튼이라 눌리면 기록 시트가 열린다 — 변화로 센다)
 /**
- * 뷰포트당 확인할 컨트롤 교집합(너무 오래 걸리지 않게 속도 2·8배, 다음 결정으로, 자동 모드). 속도 4배는 2·8배와 같은 경로라 생략한다.
+ * 눌러도 상태가 안 바뀌는 컨트롤: 가드가 막았는지는 landed로 보고, 대조군의 변화 기대에서는 뺀다. 옛 목록은 「이미 1배속」인 1배 버튼 하나였는데, SPEC-012 QF5로 배속이 한 단추가 되어
+ * 그 단추는 누르면 1 → 2배로 **바뀐다**(변화로 센다) — 그래서 지금은 비어 있다. (M7c: 「생각 남기기」는 보통 버튼이라 눌리면 기록 시트가 열린다 — 변화로 센다)
+ */
+const NO_EFFECT_CONTROLS: string[] = [];
+/**
+ * 뷰포트당 확인할 컨트롤 교집합(너무 오래 걸리지 않게 일시정지, 배속 한 단추, 다음 결정으로, 자동 모드와 도구 줄). 배속은 한 단추라 SPEC-012 QF5 전의 「2·8배」 둘이 하나(`speed`)다.
  * M4: 일시정지와 도구 줄(BGM·생각 남기기·다크 모드·의견 보내기·나가기)이 더해졌다 — 눌리면 일시정지·BGM 켬·테마 바뀜·새 탭·나가기 확인 단계가 생기므로 모두 변화로 센다(생각 남기기는 선택할 수 없는 자리라 변화가 없다 — R-326).
  */
-const PROBED_CONTROLS = ['pause', 'speed-2', 'speed-8', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit'];
-/** 인생 화면에서 입력을 받는 요소 12개의 DOM 순서 (진행 줄 7개 + 도구 줄 5개) */
-const CONTROL_IDS = ['pause', 'speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit'];
+const PROBED_CONTROLS = ['pause', 'speed', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit'];
+/** 인생 화면에서 입력을 받는 요소 9개의 DOM 순서 (진행 줄 4개 + 도구 줄 5개 — SPEC-012 QF5: 배속 넷이 한 단추) */
+const CONTROL_IDS = ['pause', 'speed', 'skip', 'auto', 'tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-exit'];
 
 /**
  * 겹침이 관측돼야 하는 하한(스위트 수준). 이 개발 환경에서 측정한 현재 값(R-087에서 다시 쟀다)은 살아가기 9곳(11곳 중 360x667·360x740만 안 겹친다), 이어하기 3곳(360x320·320x360·480x320)이다.
@@ -89,7 +92,7 @@ async function controlRects(page: Page): Promise<NamedRect[]> {
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>('[data-testid="controls"] button, [data-testid="tools"] button, [data-testid="tools"] a')].map((b) => {
       const r = b.getBoundingClientRect();
-      return { id: b.dataset.testid ?? `speed-${b.dataset.speed}`, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      return { id: b.dataset.testid ?? b.tagName, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
     }),
   );
 }
@@ -379,7 +382,7 @@ test('데스크톱: 하단 고정 「살아가기」 자리와 인생 화면 컨
   }
 
   // 겹치지 않아도 가드는 화면이 막 뜬 순간의 모든 입력(손가락이 조금 옮겨 간 경우)을 막아야 한다: ?__guard=600000(개발 서버 전용 탐침)으로 「막 뜬 순간」을 붙들고
-  // 진행 줄·도구 줄 12개의 한가운데를 차례로 눌러도 상태가 하나도 바뀌지 않고, 모든 버튼 입력이 닫힌 버튼(가드)에 닿으며, 새 탭도 열리지 않는다.
+  // 진행 줄·도구 줄 9개의 한가운데를 차례로 눌러도 상태가 하나도 바뀌지 않고, 모든 버튼 입력이 닫힌 버튼(가드)에 닿으며, 새 탭도 열리지 않는다.
   await page.context().route((url) => url.hostname !== 'localhost', (route) => route.abort());
   await injectSave(page, LIFE_SAVE, '/?__guard=600000', SETTINGS);
   await expect(page.getByTestId('life-screen')).toBeVisible();
@@ -391,7 +394,7 @@ test('데스크톱: 하단 고정 「살아가기」 자리와 인생 화면 컨
   }
   const held = await readTrial(page, { x: 0, y: 0, control: '모든 컨트롤' });
   const clicks = await recordedClicks(page);
-  expect(clicks.length, '12개를 눌렀다').toBeGreaterThanOrEqual(CONTROL_IDS.length - 1); // 의견 보내기(링크)는 버튼이 아니라 비버튼으로 기록된다
+  expect(clicks.length, '9개를 눌렀다').toBeGreaterThanOrEqual(CONTROL_IDS.length - 1); // 의견 보내기(링크)는 버튼이 아니라 비버튼으로 기록된다
   for (const c of clicks) expect(c.endsWith('(가드)') || c.startsWith('비버튼:'), `가드가 닫힌 동안 열린 버튼에 입력이 닿았다: ${c}`).toBe(true);
   expect(isChanged(held), describeTrial(held)).toBe(false);
 });
@@ -420,14 +423,10 @@ test('가드는 화면이 뜰 때 한 번만 걸린다: 플레이 중 배속 버
     page.evaluate(() => ({ opened: (window as unknown as { __opened: boolean }).__opened, reclosed: (window as unknown as { __reclosed: number }).__reclosed }));
   await expect.poll(async () => (await probe()).opened).toBe(true);
 
-  // 배속 버튼 연타: 중간에 닫히면 일부 입력이 무시돼 마지막 값이 되지 않는다
-  const centers = new Map<number, { x: number; y: number }>();
-  for (const s of [1, 2, 4, 8]) {
-    const box = (await page.locator(`[data-speed="${s}"]`).boundingBox())!;
-    centers.set(s, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
-  }
-  for (const s of [8, 4, 1, 8, 4, 2]) await page.mouse.click(centers.get(s)!.x, centers.get(s)!.y);
-  await expect(page.locator('[data-speed="2"]')).toHaveAttribute('aria-pressed', 'true');
+  // 배속 단추 연타(SPEC-012 QF5: 한 단추 — 누를 때마다 1 → 2 → 4 → 8 → 1배): 중간에 닫히면 일부 입력이 무시돼 마지막 값이 어긋난다. 같은 자리를 다섯 번 눌러 1 → 2 → 4 → 8 → 1 → 2가 되어야 한다
+  const speedBox = (await page.getByTestId('speed').boundingBox())!;
+  for (let i = 0; i < 5; i++) await page.mouse.click(speedBox.x + speedBox.width / 2, speedBox.y + speedBox.height / 2);
+  await expect(page.getByTestId('speed')).toHaveAttribute('data-speed', '2');
   await expect.poll(async () => (await readSettings(page)).speed).toBe(2);
 
   // 나이가 계속 오르는 동안(여러 해 진행) 컨트롤은 한 번도 다시 닫히지 않는다

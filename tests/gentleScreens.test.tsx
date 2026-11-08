@@ -143,14 +143,17 @@ describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
     for (const attrs of bodies) expect(attrs).toContain('hidden=""');
   });
 
-  it('원문(펼친 줄)은 설정을 끈 화면과 같은 마크업이다 — 결정 줄은 결과 문장 + 「(선택: 라벨)」, 부모·흘러감 줄은 도장 + 라벨', () => {
+  it('원문(펼친 줄)은 설정을 끈 화면과 같은 마크업이다 — 결정 줄은 「사건 제목 → 선택: 라벨 → 결과 문장」(SPEC-012 QF4), 부모·흘러감 줄은 도장 + 라벨', () => {
     const body = (id: string) => {
       const row = HISTORY.find((h) => h.eventId === id)!;
       return on.match(new RegExp(`<span class="veil__body" id="veil-${row.age}-${row.kind}-${id}-0" hidden="" data-testid="veil-body">([\\s\\S]*?)</span></span></li>`))?.[1] ?? '';
     };
-    expect(visibleText(body('middle-layoff'))).toBe(`${HISTORY[6].text} (선택: ${HISTORY[6].choice})`);
-    expect(visibleText(body('infant-fever'))).toContain(`(${PARENT_DECIDED_TEXT}: ${HISTORY[1].choice})`);
-    expect(visibleText(body('school-bully'))).toContain(`(${CHILD_FLOW_TEXT}: ${HISTORY[2].choice})`);
+    // SPEC-012 QF4: 제목이 있는 결정 줄은 「제목 → 고른 길 → 결과」 세 줄(괄호 없음) — 괄호 꼴은 제목이 없는 줄(옛 저장)에만 남는다. 제목도 `.veil__body` 안이라 가린 줄에서는 함께 가려진다
+    expect(HISTORY[6].title, '표본 줄에 제목이 있다').toBeTruthy();
+    expect(visibleText(body('middle-layoff'))).toBe(`${HISTORY[6].title} ${DASH_TEXT.logChoicePrefix}${HISTORY[6].choice} ${HISTORY[6].text}`);
+    expect(visibleText(body('infant-fever'))).toContain(`${PARENT_DECIDED_TEXT}: ${HISTORY[1].choice}`);
+    expect(visibleText(body('school-bully'))).toContain(`${CHILD_FLOW_TEXT}: ${HISTORY[2].choice}`);
+    expect(visibleText(body('middle-layoff'))).not.toContain('(');
   });
 
   it('옛 v8 저장 표본의 상속 줄(표지 필드 없음)도 켜면 같은 모양으로 가려진다 (M20) — v9는 v8 저장을 열지 않으므로(새 게임 + 안내, SPEC-004 MG1) 표본의 연표 줄을 그대로 그린다', () => {

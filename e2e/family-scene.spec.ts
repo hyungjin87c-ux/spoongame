@@ -421,7 +421,8 @@ test('늦게 온 10년 덩어리(FM5b R-547): 아래에서 지난 기록을 읽�
   const scrollBefore = await list.evaluate((el) => el.scrollTop);
   expect(scrollBefore, '아래에서 읽는 중이어야 한다').toBeGreaterThan(24);
   release();
-  await expect.poll(() => page.locator('[data-tl="era"]').count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(5);
+  // SPEC-012 QF3a(사건·일상 모두 나이 규칙, 맞는 장면이 없으면 빈 해): 1980년생 0~9세에게 맞는 시대 줄은 5개 이상이 아니라 2개쯤으로 줄었다(학교·기기·일 장면은 7·13·20세부터) — 「한꺼번에 끼어든다」를 지키는 데는 2개 이상이면 된다
+  await expect.poll(() => page.locator('[data-tl="era"]').count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
   await page.waitForTimeout(400);
   const after = await topOf();
   expect(Math.abs(after - before), `읽던 줄이 ${before} → ${after}로 밀렸다`).toBeLessThan(2);

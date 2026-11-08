@@ -92,12 +92,13 @@ function render(game: GameState, o: { epoch: number; auto?: boolean; folded?: bo
 }
 
 describe('G3 — 인생 화면의 모든 가드 버튼이 같은 세대 값을 키에 담는다 (서버 렌더)', () => {
-  it('모달 시트(자동 모드 꺼짐): 진행 줄 7개 + 도구 줄 4개 + 의견 보내기 링크는 life-controls:세대, 결정 카드의 선택지와 「잠시 덮어 두기」·자동 고르기 버튼은 선택지키#세대', () => {
+  it('모달 시트(자동 모드 꺼짐): 진행 줄 4개 + 도구 줄 4개 + 의견 보내기 링크는 life-controls:세대, 결정 카드의 선택지와 「잠시 덮어 두기」·자동 고르기 버튼은 선택지키#세대', () => {
     const game = pendingState();
     const pending = game.pending!;
     const r = render(game, { epoch: 3 });
     const controls = r.buttons.filter((k) => k === controlsGuardKey(3));
-    expect(controls, '진행 줄 7개(일시정지·배속 4·다음 결정으로·자동 모드) + 도구 줄 버튼 4개(BGM·생각 남기기·다크 모드·나가기)').toHaveLength(7 + 4);
+    // SPEC-012 QF5: 배속이 한 단추가 되어 진행 줄이 7개 → 4개다(일시정지·배속·다음 결정으로·자동 모드)
+    expect(controls, '진행 줄 4개(일시정지·배속 한 단추·다음 결정으로·자동 모드) + 도구 줄 버튼 4개(BGM·생각 남기기·다크 모드·나가기)').toHaveLength(4 + 4);
     expect(r.feedback, '의견 보내기 링크(<a>)도 같은 키').toEqual([controlsGuardKey(3)]);
     const decision = r.buttons.filter((k) => k === decisionGuardKey(pending, 3));
     expect(decision, '선택지마다 하나 + 「잠시 덮어 두기」 + 「이후 결정을 자동으로 고르게 하기」(r4 UX12)').toHaveLength(pending.choiceIds.length + 2);
@@ -110,7 +111,7 @@ describe('G3 — 인생 화면의 모든 가드 버튼이 같은 세대 값을 �
       const a = render(game, { epoch: 4, ...mode });
       const b = render(game, { epoch: 5, ...mode });
       expect(b.buttons.length, JSON.stringify(mode)).toBe(a.buttons.length);
-      expect(b.buttons.length, JSON.stringify(mode)).toBeGreaterThanOrEqual(12);
+      expect(b.buttons.length, JSON.stringify(mode)).toBeGreaterThanOrEqual(9); // 진행 줄 4 + 도구 줄 4 + 결정 카드 쪽 1 이상(SPEC-012 QF5: 배속 한 단추)
       for (const k of b.buttons) expect(a.buttons, `${JSON.stringify(mode)} ${k}`).not.toContain(k);
       for (const k of b.feedback) expect(a.feedback).not.toContain(k);
     }
@@ -127,7 +128,7 @@ describe('G3 — 인생 화면의 모든 가드 버튼이 같은 세대 값을 �
     expect(inline.buttons.filter((k) => k === decisionGuardKey(pending, 7))).toHaveLength(pending.choiceIds.length + 2); // 선택지 + 「잠시 덮어 두기」 + 끄는 버튼(r4 UX12)
     const strip = render(game, { epoch: 7, folded: true });
     expect(strip.buttons.filter((k) => k === decisionGuardKey(pending, 7)), '접힌 띠에는 「결정 다시 열기」 하나').toHaveLength(1);
-    expect(strip.buttons.filter((k) => k === controlsGuardKey(7))).toHaveLength(11);
+    expect(strip.buttons.filter((k) => k === controlsGuardKey(7))).toHaveLength(8); // 진행 줄 4 + 도구 줄 4
   });
 
   it('LifeScreen은 세대 값 하나(guardEpoch)에서 진행 줄·도구 줄·결정 카드·접힌 띠의 키를 모두 만든다 (원본: 두 컨트롤 묶음과 카드 셋이 같은 값을 받는다)', () => {

@@ -93,7 +93,7 @@ async function measureAll(page: Page, custom?: EventDef): Promise<Metrics[]> {
       const lastBottom = Math.max(...choices.map((b) => b.getBoundingClientRect().bottom));
       const panelHeight = dialog !== null ? dialog.scrollHeight : panel.getBoundingClientRect().height;
       // 시트가 떠 있는 동안 진행 줄·도구 줄은 inert이고 시트 뒤에 있다(M7b) — 가림 점검은 인라인 모드(?mode=inline)에서 한다
-      const controlsOk = dialog !== null ? controls.length === 7 : controls.length === 7 && controls.every((b) => inside(b) && uncovered(b));
+      const controlsOk = dialog !== null ? controls.length === 4 : controls.length === 4 && controls.every((b) => inside(b) && uncovered(b));
       // 2) 스크롤로 닿는가
       let reachable = true;
       for (const b of choices) {
@@ -299,7 +299,7 @@ test('가장 긴(패널이 가장 높은) 실제 이벤트를 실제 앱에서 �
       return { vw, vh, headBottom: sheet.top, barTop: Math.min(vh, sheet.bottom), shown, reached, controls: [...document.querySelectorAll('[data-testid="controls"] button')].map(rect) };
     });
     expect(m.reached).toHaveLength(3);
-    expect(m.controls).toHaveLength(7); // 진행 줄은 시트 뒤에 그대로 있다(가림 점검은 인라인 모드가 한다)
+    expect(m.controls).toHaveLength(4); // 진행 줄(일시정지·배속 한 단추·다음 결정으로·자동 모드, SPEC-012 QF5)은 시트 뒤에 그대로 있다(가림 점검은 인라인 모드가 한다)
     for (const b of [m.shown.title, m.shown.first]) {
       expect(b.top, `${tallest.id} @${vp.height}: ${b.name}이(가) 시트 위로 잘린다`).toBeGreaterThanOrEqual(m.headBottom - 0.5);
       // 제목은 모든 높이에서, 첫 선택지는 360×740에서 시트 안에 온전히 보여야 한다 (640·568의 첫 선택지는 시트 안 스크롤로 닿는지만 본다 — 아래 reached)

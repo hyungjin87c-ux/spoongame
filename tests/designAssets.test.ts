@@ -635,9 +635,12 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
     // M5 경제 모델 시안(economy-m5 — 선택지 영향 줄·자산 카드·엔딩 최종 순자산 줄, 2026-10-17 designer; 「자산 현황」에는 칩을 두지 않는다는 규칙 그대로)은 제외하고 아이콘이 정말 없음을 따로 단언한다
     // M7c 「나의 기록」 줄 표본(note-rows — 인생 기록 카드 + 엔딩 연표 조각, 2026-10-19 designer)도 수저가 나오지 않는 장이라 같은 방식으로 제외하고 아이콘 없음을 단언한다
     // SPEC-005 QI2 비교 화면(title-005-compare — A/B 첫 화면을 iframe으로 나란히 보이는 장, 2026-10-20 designer)도 수저 아이콘이 직접 나오지 않는 장이라 같은 방식으로 제외한다(title-005.html 자체는 띠가 있어 화면 시안으로 센다)
-    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5|note-rows|title-005-compare)\.html$/.test(n));
-    expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장(M7c의 note-rows는 수저 없는 표본 장이라 제외) + SPEC-005 QI2 title-005 1장').toBe(13);
-    for (const bare of ['system', 'economy-m5', 'note-rows', 'title-005-compare']) {
+    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5|note-rows|title-005-compare|log-question)\.html$/.test(n));
+    // SPEC-012 v0.4.1(2026-11-08): designer가 QF5 조작 영역 안 A·B 시안(`controls-compact.html`, 형진 님이 안 B 선택 — 디자인 게이트 통과)을 더했다. 수저 아이콘이 든 화면 시안이라(프로필 카드의 출신 가정 칩)
+    // 이 목록에 들어오고 아래 「칩·띠 안 + 같은 이름」 점검도 그대로 받는다 — 규칙(계약)은 바꾸지 않고 장수만 13 → 14로 맞춘다.
+    // SPEC-012 QF4(2026-11-08): 인생 기록 결정 줄 시안 `log-question.html`은 수저 아이콘이 직접 나오지 않는 표본 장이라(note-rows·title-005-compare의 전례) 위 제외 정규식에 넣고, 아래 「시안이 있고 수저 아이콘 없음」 목록에도 넣는다. `controls-compact.html`은 머리의 수저 칩이 있어 이 목록에 넣을 수 없고 화면 시안으로 센다(그래서 14).
+    expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장(M7c의 note-rows는 수저 없는 표본 장이라 제외) + SPEC-005 QI2 title-005 1장 + SPEC-012 controls-compact 1장').toBe(14);
+    for (const bare of ['system', 'economy-m5', 'note-rows', 'title-005-compare', 'log-question']) {
       expect(mockups[Object.keys(mockups).find((n) => n.endsWith(`/${bare}.html`)) ?? ''] ?? '', `${bare}.html: 시안이 있고 수저 아이콘 없음`).not.toMatch(/<svg class="spoon/);
       expect(Object.keys(mockups).some((n) => n.endsWith(`/${bare}.html`)), `${bare}.html 존재`).toBe(true);
     }
@@ -1337,12 +1340,15 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
   it('M7c D-75: 도구 줄이 있는 모든 시안(dashboard-*·decision-*·note·economy-m5·components)의 「생각 남기기」가 보통 버튼(aria-haspopup="dialog")이고 「준비 중」 알약·지속 비활성이 0이다', () => {
     const mockups = import.meta.glob('../docs/design/mockups/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
     const withTools = Object.entries(mockups).filter(([, html]) => html.includes('data-tool="note"'));
-    expect(withTools.map(([n]) => n.replace(/.*\//, '')).sort()).toEqual(['components.html', 'dashboard-adult.html', 'dashboard-infant.html', 'decision-adult.html', 'decision-infant.html', 'economy-m5.html', 'note.html']);
+    // SPEC-012 v0.4.1: 조작 영역 시안 `controls-compact.html`(QF5)도 도구 줄을 그린다 — 같은 보통 버튼 모양이라 아래 점검을 그대로 받는다(계약은 그대로, 목록에 1장 더)
+    expect(withTools.map(([n]) => n.replace(/.*\//, '')).sort()).toEqual(['components.html', 'controls-compact.html', 'dashboard-adult.html', 'dashboard-infant.html', 'decision-adult.html', 'decision-infant.html', 'economy-m5.html', 'note.html']);
     for (const [name, html] of withTools) {
       const buttons = [...html.matchAll(/<button class="btn btn--tool" type="button" data-tool="note"[^>]*>/g)].map((m) => m[0]);
       expect(buttons.length, name).toBeGreaterThan(0);
       for (const b of buttons) {
-        expect(b, name).toBe('<button class="btn btn--tool" type="button" data-tool="note" aria-haspopup="dialog">');
+        // 조작 영역 시안(controls-compact.html)은 구현의 시험 표지 `data-testid="tool-note"`를 함께 단다 — 그 밖의 속성(보통 버튼 · aria-haspopup="dialog")은 계약 그대로 같다
+        const expected = name.endsWith('controls-compact.html') ? '<button class="btn btn--tool" type="button" data-tool="note" data-testid="tool-note" aria-haspopup="dialog">' : '<button class="btn btn--tool" type="button" data-tool="note" aria-haspopup="dialog">';
+        expect(b, name).toBe(expected);
       }
       expect(html, name).not.toMatch(/class="tool-soon"/); // 알약 요소 0(컴포넌트판 설명 글에 옛 클래스 이름이 적혀 있는 것은 기록)
       expect(html, name).not.toContain('생각 남기기 준비 중');

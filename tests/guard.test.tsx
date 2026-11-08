@@ -277,7 +277,7 @@ function flatten(node: ReactNode, out: ReactElement[] = []): ReactElement[] {
 }
 
 /**
- * R-035·R-036: 인생 화면(대시보드) 진행 줄(일시정지·속도 4개·다음 결정으로·자동 모드)과 도구 줄. (M4: 일시정지가 더해져 6개 → 7개, 도구 줄 다섯 개가 더해졌다)
+ * R-035·R-036: 인생 화면(대시보드) 진행 줄(일시정지·배속 한 단추·다음 결정으로·자동 모드)과 도구 줄. (M4: 일시정지가 더해져 6개 → 7개, 도구 줄 다섯 개가 더해졌다. SPEC-012 QF5: 배속 넷이 한 단추가 되어 진행 줄은 4개)
  * 화면이 뜬 순간(첫 렌더)에는 모두 가드로 닫혀 있고, 가드 키는 상수라 가드가 풀린 뒤 다시 닫히지 않는다(실제 클릭 무시·재폐쇄 없음은 e2e/entry-guard.spec.ts).
  * "다음 결정으로"는 disabled가 아니라 aria-disabled로 막는다 — 선택지가 뜨든 사라지든 컨트롤 그룹의 Tab 순서가 변하지 않도록.
  */
@@ -292,11 +292,12 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
   const tagOf = (html: string, testId: string) => html.match(new RegExp(`<button[^>]*data-testid="${testId}"[^>]*>`))![0];
   const hasRealDisabled = (tag: string) => /\sdisabled(=|\s|>)/.test(tag);
 
-  it('첫 렌더: 진행 줄 7개(일시정지·1/2/4/8배·다음 결정으로·자동 모드)가 모두 aria-disabled=true', () => {
+  it('첫 렌더: 진행 줄 4개(일시정지·배속 한 단추·다음 결정으로·자동 모드)가 모두 aria-disabled=true', () => {
     const controls = controlsOf(render(game));
-    expect(controls.match(/<button/g)).toHaveLength(7);
-    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(7);
-    for (const speed of [1, 2, 4, 8]) expect(controls).toMatch(new RegExp(`data-speed="${speed}"`));
+    expect(controls.match(/<button/g)).toHaveLength(4);
+    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(4);
+    expect(controls).toMatch(/data-speed="1"/); // 배속 한 단추의 data-speed = 지금 배속
+    expect(controls).toContain('data-testid="speed"');
     expect(controls).toContain('data-testid="auto"');
     expect(controls).toContain('data-testid="pause"');
   });
@@ -319,7 +320,7 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
     expect(choiceBlock.match(/<button/g)!.length).toBeGreaterThanOrEqual(2);
     expect(choiceBlock.match(/<button/g)!.length).toBe(choiceBlock.match(/aria-disabled="true"/g)!.length);
     const controls = controlsOf(html);
-    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(7);
+    expect(controls.match(/aria-disabled="true"/g)).toHaveLength(4);
     expect((controls.match(/<button[^>]*>/g) ?? []).filter(hasRealDisabled)).toHaveLength(0);
   });
 
@@ -335,11 +336,11 @@ describe('인생 화면 컨트롤 입력 가드 (R-035)', () => {
     );
   const prop = (el: ReactElement, name: string) => (el.props as Record<string, unknown>)[name];
 
-  it('컨트롤 7개는 모두 같은 상수 guardKey를 쓴다: 나이·선택지·배속·자동 모드·일시정지가 바뀌어도 키가 같아 가드가 다시 걸리지 않는다', () => {
+  it('컨트롤 4개는 모두 같은 상수 guardKey를 쓴다: 나이·선택지·배속·자동 모드·일시정지가 바뀌어도 키가 같아 가드가 다시 걸리지 않는다', () => {
     const variants = [{}, { speed: 8 as const }, { autoMode: true }, { hasPending: true }, { paused: true }, { speed: 4 as const, autoMode: true, hasPending: true, paused: true }];
     for (const v of variants) {
       const buttons = controlsTree(v);
-      expect(buttons, JSON.stringify(v)).toHaveLength(7);
+      expect(buttons, JSON.stringify(v)).toHaveLength(4);
       for (const b of buttons) expect(prop(b, 'guardKey'), JSON.stringify(v)).toBe(CONTROLS_GUARD_KEY);
     }
     // 선택지 버튼의 키(이벤트 인스턴스 키)와 겹치지 않는 값이다 — 선택지 키는 "<이벤트>@<나이>" 모양

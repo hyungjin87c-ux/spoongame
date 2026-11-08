@@ -47,7 +47,7 @@ async function lifeWithDecision(page: Page): Promise<{ start: GameState; decisio
 async function controlsReady(page: Page): Promise<void> {
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await expect(page.getByTestId('auto')).toBeEnabled();
-  await expect(page.locator('[data-speed="8"]')).toBeEnabled();
+  await expect(page.getByTestId('speed')).toBeEnabled();
 }
 
 /** 저장된 설정·진행이 그대로인지(자동 모드 안 켜짐, 같은 선택지가 대기 중, 선택 기록 없음) */
@@ -68,11 +68,12 @@ test('수동 모드: 속도 버튼에 포커스를 둔 채 선택지가 뜨면 �
   await expect(page.getByTestId('life-screen')).toBeVisible();
   await expect.poll(() => activeTestId(page)).toBe('life-name'); // 화면이 뜬 직후의 포커스(R-030)
 
-  // 키보드 사용자가 속도 버튼 사이를 이동 중이다
-  const four = page.locator('[data-speed="4"]');
-  await expect(four).toBeEnabled();
-  await four.focus();
-  expect(await activeTestId(page)).toBe('speed-4');
+  // 키보드 사용자가 배속 단추에 있다(SPEC-012 QF5: 한 단추)
+  const speedBtn = page.getByTestId('speed');
+  await expect(speedBtn).toBeEnabled();
+  await speedBtn.focus();
+  expect(await activeTestId(page)).toBe('speed');
+  const speedBefore = (await speedBtn.getAttribute('data-speed'))!;
 
   await setPageVisible(page, true); // 시간이 흐른다 → 선택지가 뜬다
   const panel = page.getByTestId('choice-panel');
@@ -84,47 +85,45 @@ test('수동 모드: 속도 버튼에 포커스를 둔 채 선택지가 뜨면 �
   // 이때 누른 Space는 제목(버튼이 아님)에 간다 — 속도도 선택도 바뀌지 않는다
   await page.keyboard.press('Space');
   await settle(page);
-  await expect(four).toHaveAttribute('aria-pressed', 'false');
+  await expect(speedBtn).toHaveAttribute('data-speed', speedBefore);
   await expect(panel).toHaveAttribute('data-key', key);
   const save = await readSave(page);
   expect(save.data.pending?.key).toBe(key);
   expect(countKind(save, 'choice')).toBe(0);
 });
 
-// (e1) 재현 경로가 닫혔는지: 자동 모드(비모달 인라인 카드 — 컨트롤이 그대로 닿는다)에서 포커스가 속도 버튼에 있을 때 Tab → Space.
+// (e1) 재현 경로가 닫혔는지: 자동 모드(비모달 인라인 카드 — 컨트롤이 그대로 닿는다)에서 포커스가 배속 단추에 있을 때 Tab → Space.
 // 수동 모드에서는 시트가 컨트롤을 inert로 덮어 이 경로 자체가 없다(포커스가 시트 제목으로 간다 — 위 시험).
-for (const speed of [2, 4, 8] as const) {
-  test(`자동 모드(인라인 카드): 포커스가 ${speed}배 버튼에 있을 때 선택지가 있어도 Tab은 비활성 "다음 결정으로"에 닿고(자동 모드를 건너뛰지 않는다) Space·Enter는 무시된다 — 자동 모드·선택지·연표 불변 (R-036 e1)`, async ({ page }) => {
-    await startPageHidden(page);
-    const { decision } = await lifeWithDecision(page);
-    const key = decision.pending!.key;
-    await injectSave(page, decision, '/?__timescale=200', SETTINGS_AUTO); // 가려진 탭이라 자동 선택 타이머는 걸리지 않는다
-    await controlsReady(page);
-    await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'inline');
-    await page.locator(`[data-speed="${speed}"]`).focus();
-    expect(await activeTestId(page)).toBe(`speed-${speed}`);
+// SPEC-012 QF5: 배속이 한 단추라 옛 「2·4·8배 버튼 각각」 반복이 한 번이 되었다(배속 단추 다음 Tab은 곧바로 「다음 결정으로」).
+test('자동 모드(인라인 카드): 포커스가 배속 단추에 있을 때 선택지가 있어도 Tab은 비활성 "다음 결정으로"에 닿고(자동 모드를 건너뛰지 않는다) Space·Enter는 무시된다 — 자동 모드·선택지·연표 불변 (R-036 e1)', async ({ page }) => {
+  await startPageHidden(page);
+  const { decision } = await lifeWithDecision(page);
+  const key = decision.pending!.key;
+  await injectSave(page, decision, '/?__timescale=200', SETTINGS_AUTO); // 가려진 탭이라 자동 선택 타이머는 걸리지 않는다
+  await controlsReady(page);
+  await expect(page.getByTestId('choice-panel')).toHaveAttribute('data-mode', 'inline');
+  await page.getByTestId('speed').focus();
+  expect(await activeTestId(page)).toBe('speed');
 
-    // Tab: 같은 순서로 남은 속도 버튼들을 지나 "다음 결정으로"에 닿는다 (자동 모드 버튼으로 건너뛰지 않는다)
-    const speedsAfter = [4, 8].filter((s) => s > speed).map((s) => `speed-${s}`);
-    const toSkip = await tabWalk(page, speedsAfter.length + 1);
-    expect(toSkip).toEqual([...speedsAfter, 'skip']);
-    const skip = page.getByTestId('skip');
-    await expect(skip, '누를 수 없는 "다음 결정으로"는 비활성으로 표시된다').toHaveAttribute('aria-disabled', 'true');
-    expect(await skip.evaluate((el: HTMLButtonElement) => el.disabled), 'disabled 속성이 아니다(포커스를 받는다)').toBe(false);
+  // Tab: 곧바로 "다음 결정으로"에 닿는다 (자동 모드 버튼으로 건너뛰지 않는다)
+  const toSkip = await tabWalk(page, 1);
+  expect(toSkip).toEqual(['skip']);
+  const skip = page.getByTestId('skip');
+  await expect(skip, '누를 수 없는 "다음 결정으로"는 비활성으로 표시된다').toHaveAttribute('aria-disabled', 'true');
+  expect(await skip.evaluate((el: HTMLButtonElement) => el.disabled), 'disabled 속성이 아니다(포커스를 받는다)').toBe(false);
 
-    // Space와 Enter는 무시된다
-    await page.keyboard.press('Space');
-    await page.keyboard.press('Enter');
-    await settle(page);
-    await expect(page.getByTestId('auto')).toHaveAttribute('aria-pressed', 'true');
-    expect((await readSave(page)).data.pending?.key, '대기 중인 선택지가 바뀌었다').toBe(key);
-    expect(countKind(await readSave(page), 'choice'), '선택이 연표에 기록됐다').toBe(0);
-    expect(await activeTestId(page), '눌러도 포커스는 그대로').toBe('skip');
+  // Space와 Enter는 무시된다
+  await page.keyboard.press('Space');
+  await page.keyboard.press('Enter');
+  await settle(page);
+  await expect(page.getByTestId('auto')).toHaveAttribute('aria-pressed', 'true');
+  expect((await readSave(page)).data.pending?.key, '대기 중인 선택지가 바뀌었다').toBe(key);
+  expect(countKind(await readSave(page), 'choice'), '선택이 연표에 기록됐다').toBe(0);
+  expect(await activeTestId(page), '눌러도 포커스는 그대로').toBe('skip');
 
-    // 다음 Tab이 자동 모드에 닿는다 (그리고 그 앞에 "다음 결정으로"가 항상 끼어 있다)
-    expect(await tabWalk(page, 1)).toEqual(['auto']);
-  });
-}
+  // 다음 Tab이 자동 모드에 닿는다 (그리고 그 앞에 "다음 결정으로"가 항상 끼어 있다)
+  expect(await tabWalk(page, 1)).toEqual(['auto']);
+});
 
 // (e3) 컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록)는 선택지 등장 전후·자동 모드에서도 같다
 test('컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록과 실제 Tab 이동)는 선택지가 뜨기 전·뜬 뒤·사라진 뒤에 모두 같다 (R-036 e3)', async ({ page }) => {
@@ -132,9 +131,9 @@ test('컨트롤 그룹의 Tab 순서(포커스 가능한 요소 목록과 실제
   const { start } = await lifeWithDecision(page);
   await injectSave(page, start, '/?__timescale=200', SETTINGS_MANUAL);
   await controlsReady(page);
-  const expectedWalk = CONTROL_TAB_ORDER.slice(CONTROL_TAB_ORDER.indexOf('speed-1') + 1); // speed-1에서 시작해 Tab 5번 (M4: 일시정지가 앞에 있어 speed-1은 둘째다)
+  const expectedWalk = CONTROL_TAB_ORDER.slice(CONTROL_TAB_ORDER.indexOf('speed') + 1); // 배속 단추에서 시작해 Tab 2번(다음 결정으로 → 자동 모드, SPEC-012 QF5: 정지점 4)
   const walk = async () => {
-    await page.locator('[data-speed="1"]').focus();
+    await page.getByTestId('speed').focus();
     return tabWalk(page, expectedWalk.length);
   };
 
@@ -186,8 +185,8 @@ test('컨트롤 그룹의 Tab 순서는 (수동·자동) × (선택지 없음·�
       await expect(page.getByTestId('decision-fold')).toBeVisible();
     }
     expect(await controlFocusables(page), label).toEqual([...CONTROL_TAB_ORDER]);
-    await page.locator('[data-speed="1"]').focus();
-    expect(await tabWalk(page, 5), label).toEqual(CONTROL_TAB_ORDER.slice(CONTROL_TAB_ORDER.indexOf('speed-1') + 1));
+    await page.getByTestId('speed').focus();
+    expect(await tabWalk(page, 2), label).toEqual(CONTROL_TAB_ORDER.slice(CONTROL_TAB_ORDER.indexOf('speed') + 1));
     // "다음 결정으로"가 누를 수 없는 때는 정확히 (자동 모드 또는 선택지 있음)
     const blocked = settings.autoMode || state.pending !== null;
     const skip = page.getByTestId('skip');
@@ -215,9 +214,9 @@ for (const key of ['Enter', 'Space'] as const) {
     const expected = await oracleDecision(page, start);
     await injectSave(page, start, '/', SETTINGS_MANUAL);
     await controlsReady(page);
-    // 인생 화면 제목에서 시작해 Tab으로 "다음 결정으로"까지 간다 (M4: 일시정지가 맨 앞이라 여섯 번)
+    // 인생 화면 제목에서 시작해 Tab으로 "다음 결정으로"까지 간다 (일시정지 → 배속 → 다음 결정으로, 세 번 — SPEC-012 QF5로 일곱 정지점이 네 정지점이 되었다)
     expect(await activeTestId(page)).toBe('life-name');
-    expect(await tabWalk(page, 6)).toEqual(['pause', 'speed-1', 'speed-2', 'speed-4', 'speed-8', 'skip']);
+    expect(await tabWalk(page, 3)).toEqual(['pause', 'speed', 'skip']);
     await expect(page.getByTestId('skip')).not.toHaveAttribute('aria-disabled', 'true');
 
     await page.keyboard.press(key);
@@ -315,8 +314,8 @@ test('8배속 + 자동 모드: 선택지가 몇 번 떠도 포커스는 자동 �
   await injectSave(page, start!, '/?__timescale=4', { speed: 8, autoMode: true });
   await controlsReady(page);
 
-  // 키보드 사용자: 8배 버튼에서 Tab → 자동 모드에서는 누를 수 없는 "다음 결정으로"(aria-disabled, 순서에는 그대로) → 자동 모드 버튼
-  await page.locator('[data-speed="8"]').focus();
+  // 키보드 사용자: 배속 단추(8배)에서 Tab → 자동 모드에서는 누를 수 없는 "다음 결정으로"(aria-disabled, 순서에는 그대로) → 자동 모드 버튼
+  await page.getByTestId('speed').focus();
   expect(await tabWalk(page, 2)).toEqual(['skip', 'auto']);
   await expect(page.getByTestId('skip')).toHaveAttribute('aria-disabled', 'true');
 

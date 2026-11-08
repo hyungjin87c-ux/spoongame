@@ -332,7 +332,7 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     return html.slice(html.lastIndexOf('<li', at), html.indexOf('</li>', at));
   };
 
-  it('부모님이 정한 줄: 「{결과 문장} (부모님이 이렇게 정했습니다: {고른 길 라벨})」 — 표지(data-testid="log-by")에 집 글리프가 붙고 문구는 한 상수에서 나온다', () => {
+  it('부모님이 정한 줄: 「{사건 제목} / 부모님이 이렇게 정했습니다: {고른 길 라벨} / {결과 문장}」 — 표지(data-testid="log-by")에 집 글리프가 붙고 문구는 한 상수에서 나온다', () => {
     const d = delegatedYear('infant-fever', 'present', 1, 'dismiss');
     const ev = EVENT_POOL.byId.get('infant-fever')!;
     const choice = ev.choices!.find((c) => c.id === 'dismiss')!;
@@ -342,10 +342,13 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     expect(row).toContain('<svg'); // 아이콘 (색에만 의존하지 않는다)
     expect(row, '결정자 전용 글리프 (R-455)').toContain('href="#i-by-parent"');
     expect(row).not.toMatch(/#i-people|#i-smile/);
-    expect(plain(row)).toContain(`${choice.result} (${PARENT_DECIDED_TEXT}: ${choice.label})`);
+    // SPEC-012 QF4: 제목이 있는 결정 줄은 「사건 제목 → 도장·고른 길 → 결과」 세 줄(괄호 없음 — 괄호 꼴은 제목이 없는 옛 줄에만 남는다)
+    expect(row).toContain('data-testid="log-q"');
+    expect(plain(row)).toContain(`${ev.title} ${PARENT_DECIDED_TEXT}: ${choice.label} ${choice.result}`);
+    expect(plain(row)).not.toContain(`(${PARENT_DECIDED_TEXT}`);
   });
 
-  it('흘러간 줄: 「(이렇게 흘러갔습니다: {고른 길 라벨})」', () => {
+  it('흘러간 줄: 「{사건 제목} / 이렇게 흘러갔습니다: {고른 길 라벨} / {결과 문장}」', () => {
     const d = delegatedYear('infant-new-sibling', 'present', 3, 'sulk');
     const ev = EVENT_POOL.byId.get('infant-new-sibling')!;
     const choice = ev.choices!.find((c) => c.id === 'sulk')!;
@@ -354,17 +357,17 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     expect(row).toContain('<svg');
     expect(row, '결정자 전용 글리프 (R-455)').toContain('href="#i-by-child"');
     expect(row).not.toMatch(/#i-people|#i-smile/);
-    expect(plain(row)).toContain(`${choice.result} (${CHILD_FLOW_TEXT}: ${choice.label})`);
+    expect(plain(row)).toContain(`${ev.title} ${CHILD_FLOW_TEXT}: ${choice.label} ${choice.result}`);
   });
 
-  it('본인이 고른 줄은 지금 그대로 「(선택: …)」이고 표지(log-by)가 없다', () => {
+  it('본인이 고른 줄도 제목이 있으면 「{사건 제목} / 선택: {고른 길} / {결과}」 세 줄이고 표지(log-by)가 없다', () => {
     const base = forcedPending('school-club', 'present', { age: 14 });
     const manual = resolveChoiceStep(base, base.pending!.key, base.pending!.choiceIds[0]).state;
     const ev = EVENT_POOL.byId.get('school-club')!;
     const choice = ev.choices!.find((c) => c.id === base.pending!.choiceIds[0])!;
     const row = rowOf(logHtml(manual), choice.result);
     expect(row).not.toContain('log-by');
-    expect(plain(row)).toContain(`${choice.result} (선택: ${choice.label})`);
+    expect(plain(row)).toContain(`${ev.title} 선택: ${choice.label} ${choice.result}`);
   });
 });
 

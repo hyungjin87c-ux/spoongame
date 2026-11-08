@@ -8,7 +8,7 @@ import { KNOWN_SEED, SETTINGS_KEY, injectSave, lifeState, startPageHidden } from
  *  (1) 라이트·다크·수동 다크(OS 라이트)·수동 라이트(OS 다크)·강제 색상(라이트·다크) 6조합 × 화면 6상태: 글자를 품은 모든 색 바탕 상자를 요소 스크린샷으로 떠서 글자 자리의 **렌더 픽셀** 명도 대비를 잰다
  *      (일반·강제 색상 모두 ≥ 4.5:1 — R-323, QM3-5 (c): 강제 색상의 시스템 색 짝이 모두 4.5 이상이라 3:1로 낮출 이유가 없다. 예전 기준 3:1은 시험 약화였다).
  *      계산된 색이 아니라 픽셀이라 시스템 색이 바탕을 못 덮는 문제도 잡는다(e2e/renderedContrast.ts). 호출자의 **지속 비활성** 버튼(「다음 결정으로」·「생각 남기기」)도 면제 없이 잰다(R-337).
- *  (2) 강제 색상의 상태 표시: 눌린 배속·자동 모드는 이중 테두리, 상태 막대·올해 진행률 바의 채움이 바탕과 구분되고, 수저 칩·얼굴 테두리가 남는다.
+ *  (2) 강제 색상의 상태 표시: 켜진 자동 모드는 이중 테두리, 상태 막대·올해 진행률 바의 채움이 바탕과 구분되고, 수저 칩·얼굴 테두리가 남는다.
  *  (3) R-251(REV-003-M2-5): 밝은 고대비 테마(강제 색상 + OS 라이트)에서 **수동 다크**(`data-theme='dark'`)를 켜도 시스템 색 매핑이 이긴다 — 헤더 로고·선택된 카드 글자·포커스 링이 Canvas 위에서 대비 ≥ 3:1.
  *      대조군: 같은 화면을 강제 색상 블록의 선택자가 `:root` 하나였던 옛 모양의 tokens.css로 열면 같은 측정이 실패한다(시험이 실제로 잡는다).
  * 모든 테스트가 뷰포트를 직접 지정하므로 mobile-360 프로젝트에서만 돈다.
@@ -86,7 +86,7 @@ test('수동 테마 확인: 수동 다크는 OS가 라이트여도 바탕이 다
 // ---------- 강제 색상의 상태 표시 ----------
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`강제 색상(${scheme}) 대시보드: 눌린 배속·자동 모드는 이중 테두리, 상태 막대와 올해 진행률 바의 채움이 바탕과 구분되고 수저 칩·얼굴 테두리가 남는다`, async ({ page }, testInfo) => {
+  test(`강제 색상(${scheme}) 대시보드: 켜진 자동 모드는 이중 테두리, 상태 막대와 올해 진행률 바의 채움이 바탕과 구분되고 수저 칩·얼굴 테두리가 남는다`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize({ width: 360, height: 740 });
     await page.emulateMedia({ colorScheme: scheme, forcedColors: 'active' });
@@ -101,11 +101,11 @@ for (const scheme of ['light', 'dark'] as const) {
         const cs = getComputedStyle(el);
         return { bg: cs.backgroundColor, color: cs.color, borderStyle: cs.borderTopStyle, borderWidth: cs.borderTopWidth };
       }, selector);
-    const pressed = await style('[data-speed="4"]');
-    const plain = await style('[data-speed="1"]');
-    expect(pressed.borderStyle, '눌린 배속은 이중 테두리').toBe('double');
-    expect(plain.borderStyle).toBe('solid');
-    expect((await style('[data-testid="auto"]')).borderStyle, '켜진 자동 모드').toBe('double');
+    // SPEC-012 QF5: 배속은 한 단추라 눌림(aria-pressed) 표시가 없다 — 눌린 쪽은 켜진 자동 모드(이중 테두리 + 배경), 눌리지 않은 쪽은 배속 단추다
+    const pressed = await style('[data-testid="auto"]');
+    const plain = await style('[data-testid="speed"]');
+    expect(pressed.borderStyle, '켜진 자동 모드는 이중 테두리').toBe('double');
+    expect(plain.borderStyle, '배속 단추는 평소 테두리').toBe('solid');
     expect(pressed.bg, '눌린 버튼은 배경 색도 다르다').not.toBe(plain.bg);
     // 상태 막대·진행률 바: 채움이 바탕과 구분된다(사라지지 않는다)
     const fills = await page.evaluate(() => {

@@ -11,7 +11,7 @@ export const ERA_DECADE: EraDecadeData = {
     { id: 'era-1980-may-geumnam-ro', years: [1980, 1980], kind: 'event', topic: '정치', hCode: 'H-B04', line: '5월, 광주에 민주화 시위가 있었습니다.', heavy: true, approved: true, draw: 'era-1980-may-geumnam-ro' },
     { id: 'era-1980s-high-apt-stereo', years: [1980, 1989], kind: 'daily', topic: '생활', line: '거실 전축에서 음악이 흘렀습니다.', heavy: false, approved: true, draw: 'era-1980s-high-apt-stereo', band: 'high' },
     { id: 'era-1980s-low-banjiha-room', years: [1980, 1989], kind: 'daily', topic: '생활', line: '반지하 창으로 지나는 발이 보였습니다.', heavy: false, approved: true, draw: 'era-1980s-low-banjiha-room', band: 'low' },
-    { id: 'era-1981-hillside-village', years: [1981, 1981], kind: 'daily', topic: '생활', line: '달동네 계단을 물지게 지고 올랐습니다.', heavy: false, approved: true, draw: 'era-1981-hillside-village' },
+    { id: 'era-1981-hillside-village', years: [1981, 1981], kind: 'daily', topic: '생활', line: '달동네 계단을 물지게 지고 올랐습니다.', heavy: false, approved: true, draw: 'era-1981-hillside-village', ages: [13, 120] },
     { id: 'era-1982-ballpark-night-r3', years: [1982, 1982], kind: 'event', topic: '스포츠', hCode: 'H-C02', line: '프로야구가 출범했습니다.', heavy: false, approved: true, draw: 'era-1982-ballpark-night-r3' },
     { id: 'era-1984-comic-room-evening', years: [1984, 1984], kind: 'daily', topic: '생활', line: '만화방에서 저녁까지 책을 읽었습니다.', heavy: false, approved: true, draw: 'era-1984-comic-room-evening', ages: [13, 19] },
     { id: 'era-1986-packed-bus', years: [1986, 1986], kind: 'daily', topic: '생활', line: '만원 버스 뒷문에 안내양이 매달렸습니다.', heavy: false, approved: true, draw: 'era-1986-packed-bus' },

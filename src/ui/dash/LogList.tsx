@@ -63,27 +63,47 @@ interface Props {
   subjectOf?: (age: number) => CoParents;
 }
 
-/** 기록 줄 한 개의 원문 — 사건 문장, 선택 결과면 「(선택: 라벨)」 또는 결정자 도장 + 라벨. 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
+/**
+ * 「사건 제목 → 고른 길 → 결과」 세 줄로 쌓는 줄인가 (SPEC-012 QF4, docs/design/log-question.md): 선택지를 고른 줄(`choice` 있음)이고 저장된 `title`이 있는 줄만이다.
+ * 제목이 없는 줄(옛 저장 일부)·서술 줄·단계·나의 기록은 지금 모양 그대로다. 사건 풀을 `eventId`로 조회하지 않는다 — 제목은 `life.ts#resolveChoiceCore`가 이미 저장했다(옛 저장에도 바로 나온다).
+ */
+export function isStackedEntry(h: HistoryEntry): boolean {
+  return h.choice !== undefined && h.choice !== '' && h.title !== undefined && h.title !== '';
+}
+
+/**
+ * 기록 줄 한 개의 원문 — 제목이 있는 결정 줄은 「사건 제목(작게) / 고른 길 / 결과」 세 줄(바깥 `span.log__text--q`가 쌓는다, 괄호 없음),
+ * 그 밖에는 사건 문장 + 선택 결과면 「(선택: 라벨)」 또는 결정자 도장 + 라벨. 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다(가린 줄은 제목도 `.veil__body` 안이라 함께 가려진다)
+ */
 function EntryText({ h, subject }: { h: HistoryEntry; subject: CoParents }) {
+  const stacked = isStackedEntry(h);
+  const wrap = (label: string): string => (stacked ? label : `(${label})`);
+  const pick = h.choice ? (
+    h.by !== undefined ? (
+      // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6): 「부모님이 이렇게 정했습니다: 라벨」 · 「이렇게 흘러갔습니다: 라벨」 (제목 없는 옛 줄은 괄호) — 글자 + 아이콘으로 본인 선택 줄과 가른다(색에만 의존하지 않는다)
+      <em className={`log__by log__by--${h.by}`} data-testid="log-by" data-by={h.by}>
+        <Icon name={deciderIconOf(h.by)} className="icon--xs" />
+        {wrap(`${decidedByText(h.by, subject)}: ${h.choice}`)}
+      </em>
+    ) : (
+      <em>{wrap(`${DASH_TEXT.logChoicePrefix}${h.choice}`)}</em>
+    )
+  ) : null;
+  if (stacked) {
+    return (
+      <>
+        <span className="log__q" data-testid="log-q">
+          {h.title}
+        </span>
+        {pick}
+        <span className="log__result">{h.text}</span>
+      </>
+    );
+  }
   return (
     <>
       {h.text}
-      {h.choice ? (
-        <>
-          {' '}
-          {h.by !== undefined ? (
-            // 부모님이 정한 일·아이의 일로 흘러간 일 (PD6): 「(부모님이 이렇게 정했습니다: 라벨)」 · 「(이렇게 흘러갔습니다: 라벨)」 — 글자 + 아이콘으로 본인 선택 줄과 가른다(색에만 의존하지 않는다)
-            <em className={`log__by log__by--${h.by}`} data-testid="log-by" data-by={h.by}>
-              <Icon name={deciderIconOf(h.by)} className="icon--xs" />({decidedByText(h.by, subject)}: {h.choice})
-            </em>
-          ) : (
-            <em>
-              ({DASH_TEXT.logChoicePrefix}
-              {h.choice})
-            </em>
-          )}
-        </>
-      ) : null}
+      {pick ? <> {pick}</> : null}
     </>
   );
 }
@@ -370,7 +390,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
             return (
               <li key={key} className={className} data-kind={h.kind} data-testid="log-row">
                 {age}
-                <span className="log__text">
+                <span className={`log__text${isStackedEntry(h) ? ' log__text--q' : ''}`}>
                   {h.kind === 'note' ? (
                     // 「나의 기록」 줄(M7c): 라벨 + 사용자 글 — 엔딩 연표와 같은 부품(NoteBody)
                     <NoteBody entry={h} />

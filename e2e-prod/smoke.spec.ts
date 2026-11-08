@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { holdMsFor } from '../src/core/timing';
+import { pressSpeedTo } from '../e2e/helpers';
 import { readThemeBlocks, themeTokens } from '../scripts/checkContrastLib';
 import { BASIS_B, SLIDE_FORMS, UNIT_WORD, VALUE_LINE, forbiddenIn } from '../e2e/carouselForms';
 import { slideCount } from '../e2e/carouselHelpers';
@@ -47,7 +48,9 @@ test('프로덕션 번들: 첫 화면 → 태어나기 → 룰렛 → 출생신�
   await expect(page.getByTestId('title-screen')).toBeVisible();
   await toLifeScreen(page);
   await expect(page.getByTestId('life-age')).toContainText('0세');
-  for (const label of ['1배', '2배', '4배', '8배']) await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+  // SPEC-012 QF5: 배속은 한 단추(1 → 2 → 4 → 8 → 1배) — 지금 배속을 글자로 보이고 접근 이름이 다음 배속을 알린다
+  await expect(page.getByTestId('speed')).toHaveText('1배');
+  await expect(page.getByTestId('speed')).toHaveAttribute('aria-label', '배속 1배, 누르면 2배');
   await expect(page.getByTestId('auto')).toBeVisible();
   // M4 대시보드: 일시정지, 도구 줄 5개, 올해 진행률 바, 프로필·상태·자산·인생 기록·식구·같은 해 태어난 사람들 카드가 제품 번들에서도 그려진다
   await expect(page.getByTestId('pause')).toBeVisible();
@@ -197,7 +200,7 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
 
   const ending = page.getByTestId('ending-screen');
   // 마지막으로 쓴 속도는 다음 판에도 유지된다(SPEC): 8배로 바꿔 두고 끝까지 간다
-  await page.getByRole('button', { name: '8배', exact: true }).click();
+  await pressSpeedTo(page, 8); // SPEC-012 QF5: 한 단추를 세 번 눌러 1 → 2 → 4 → 8배
   const panel = page.getByTestId('choice-panel');
   const skip = page.getByTestId('skip');
   let choices = 0;

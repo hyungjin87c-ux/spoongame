@@ -263,7 +263,7 @@ for (const vp of LOW) {
     expect(await noHorizontalOverflow(page)).toBe(true);
     // 컨트롤 버튼은 한 줄(가로)이거나 두 줄이어도 서로 겹치지 않고 글이 잘리지 않는다
     const buttons = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-testid="controls"] button')].map((b) => ({ text: b.textContent, w: b.scrollWidth - b.clientWidth, h: b.scrollHeight - b.clientHeight, r: b.getBoundingClientRect().toJSON() })));
-    expect(buttons).toHaveLength(7); // 일시정지·1·2·4·8배·다음 결정으로·자동 모드
+    expect(buttons).toHaveLength(4); // 일시정지·배속(한 단추)·다음 결정으로·자동 모드 (SPEC-012 QF5)
     for (const b of buttons) {
       expect(b.w, `${b.text}: 글이 옆으로 잘림`).toBeLessThanOrEqual(1);
       expect(b.h, `${b.text}: 글이 위아래로 잘림`).toBeLessThanOrEqual(1);
@@ -380,7 +380,7 @@ test('저장 실패 안내는 인생 화면에서도 화면 위에 고정되지 
 
 // ---------- 사용감 5: 강제 색상(고대비) ----------
 
-test('강제 색상 모드: 눌린 속도·자동 상태가 눌리지 않은 것과 구분되고, 스탯 막대가 사라지지 않는다 (QA 사용감 5)', async ({ page }) => {
+test('강제 색상 모드: 켜진 자동 모드가 눌리지 않은 단추와 구분되고, 스탯 막대가 사라지지 않는다 (QA 사용감 5)', async ({ page }) => {
   await page.emulateMedia({ forcedColors: 'active' });
   expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches), '강제 색상 모드가 켜졌다').toBe(true);
   await page.goto('/');
@@ -392,13 +392,12 @@ test('강제 색상 모드: 눌린 속도·자동 상태가 눌리지 않은 것
       const cs = getComputedStyle(el);
       return { bg: cs.backgroundColor, color: cs.color, borderStyle: cs.borderTopStyle, borderWidth: cs.borderTopWidth };
     }, selector);
-  const pressed = await style('[data-speed="4"]');
-  const plain = await style('[data-speed="1"]');
+  // SPEC-012 QF5: 배속은 한 단추라 눌림(aria-pressed) 표시가 없다 — 눌린 쪽은 켜진 자동 모드, 눌리지 않은 쪽은 배속 단추다
+  const pressed = await style('[data-testid="auto"]');
+  const plain = await style('[data-testid="speed"]');
   expect(pressed.borderStyle, '눌린 버튼은 이중 테두리').toBe('double');
   expect(plain.borderStyle).toBe('solid');
   expect(pressed.bg, '눌린 버튼은 배경 색도 다르다').not.toBe(plain.bg);
-  const autoOn = await style('[data-testid="auto"]');
-  expect(autoOn.borderStyle).toBe('double');
   // 상태 막대(M4: .meter__track / .meter__fill, 예전 .bar / .bar-fill): 채움이 바탕과 구분된다
   const bar = await page.evaluate(() => {
     const track = document.querySelector('.meter__track') as HTMLElement;

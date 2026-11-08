@@ -140,6 +140,11 @@ interface ControlsProps {
   onPause: (paused: boolean) => void;
 }
 
+/** 배속 한 단추가 다음에 바꿀 값: 1 → 2 → 4 → 8 → 1 (`SPEEDS` 순환, SPEC-012 QF5) */
+export function nextSpeed(speed: Speed): Speed {
+  return SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+}
+
 /** "다음 결정으로"를 누를 수 없는 때: 선택지 대기 중이거나 자동 모드(자동 모드의 선택은 타이머가 한다, R-038) */
 export function isSkipBlocked(autoMode: boolean, hasPending: boolean): boolean {
   return autoMode || hasPending;
@@ -159,15 +164,18 @@ export function skipBlockedReason(autoMode: boolean, hasPending: boolean): strin
 }
 
 /**
- * 진행 줄(일시정지/다시 진행 · 1·2·4·8배 · 다음 결정으로 · 자동 모드). 훅이 없는 순수 표시 컴포넌트라 요소 트리를 그대로 단위 테스트한다(R-005).
- *  - 일시정지 포함 7개 모두 GuardedButton + 상수 키 CONTROLS_GUARD_KEY: 화면이 뜬 직후 INPUT_GUARD_MS 동안 입력을 무시한다(R-035): "살아가기"·"이 탭에서 이어하기"
+ * 진행 줄(일시정지/다시 진행 · 배속 한 단추 · 다음 결정으로 · 자동 모드). 훅이 없는 순수 표시 컴포넌트라 요소 트리를 그대로 단위 테스트한다(R-005).
+ *  - **배속은 한 단추다**(SPEC-012 QF5, designer 안 B `docs/design/controls-compact.md` 4-1): 누를 때마다 1 → 2 → 4 → 8 → 1배(`SPEEDS` 순환, `nextSpeed`). 보이는 글자는 지금 배속(「1배」…「8배」), 접근 가능한 이름은
+ *    「배속 1배, 누르면 2배」(Label in Name), 바뀐 값은 `role="status"` 한 줄 「배속 2배」가 읽는다(`aria-pressed`는 쓰지 않는다 — 켜짐·꺼짐이 아니라 값이다). `data-speed`가 지금 배속 값이다.
+ *  - 일시정지 포함 4개 모두 GuardedButton + 상수 키 CONTROLS_GUARD_KEY: 화면이 뜬 직후 INPUT_GUARD_MS 동안 입력을 무시한다(R-035): "살아가기"·"이 탭에서 이어하기"
  *    더블클릭의 둘째 입력이 같은 좌표의 일시정지/속도/다음 결정으로/자동 모드에 떨어지는 것을 막는다. 키가 상수라 이후 플레이 중에는 다시 닫히지 않는다.
  *  - "다음 결정으로"는 누를 수 없을 때 disabled가 아니라 aria-disabled(포커스는 받고 입력은 무시)다 — 그래야 선택지가 뜨든 사라지든 이 그룹의 Tab 순서가
- *    변하지 않는다. disabled면 Tab 순서에서 빠져, 포커스가 8배 버튼에 있다가 선택지가 뜨면 다음 Tab이 "자동 모드"에 닿아 Space가 자동 모드를 켜 버린다(R-036).
+ *    변하지 않는다. disabled면 Tab 순서에서 빠져, 포커스가 배속 버튼에 있다가 선택지가 뜨면 다음 Tab이 "자동 모드"에 닿아 Space가 자동 모드를 켜 버린다(R-036). Tab 정지점은 일시정지 · 배속 · 다음 결정으로 · 자동 모드 넷이다.
  *  - 일시정지 버튼은 이름이 「일시정지」 ↔ 「다시 진행」으로 바뀐다(아이콘도 교체) — 이름이 상태를 전하므로 aria-pressed를 따로 쓰지 않는다(copy.md).
  */
 export function LifeControls({ speed, autoMode, paused, hasPending, containerRef, guardKey = CONTROLS_GUARD_KEY, onSpeed, onSkip, onAuto, onPause }: ControlsProps) {
   const skipReason = skipBlockedReason(autoMode, hasPending);
+  const next = nextSpeed(speed);
   return (
     <div className="controls-fixed" role="group" aria-label={DASH_TEXT.controlsGroup} data-testid="controls" ref={containerRef}>
       <div className="controls__speed">
@@ -175,12 +183,10 @@ export function LifeControls({ speed, autoMode, paused, hasPending, containerRef
           <Icon name={paused ? 'i-play' : 'i-pause'} className="icon--sm" />
           <span>{paused ? DASH_TEXT.play : DASH_TEXT.pause}</span>
         </GuardedButton>
-        {SPEEDS.map((s) => (
-          <GuardedButton key={s} guardKey={guardKey} className="btn btn--sm" aria-pressed={speed === s} data-speed={s} onClick={() => onSpeed(s)}>
-            {s}
-            {DASH_TEXT.speedUnit}
-          </GuardedButton>
-        ))}
+        <GuardedButton guardKey={guardKey} className="btn btn--sm btn--speed" data-testid="speed" data-speed={speed} aria-label={DASH_TEXT.speedLabel(speed, next)} onClick={() => onSpeed(next)}>
+          {speed}
+          {DASH_TEXT.speedUnit}
+        </GuardedButton>
       </div>
       <div className="controls__more">
         <GuardedButton
@@ -199,6 +205,10 @@ export function LifeControls({ speed, autoMode, paused, hasPending, containerRef
           <span>{autoMode ? DASH_TEXT.autoOn : DASH_TEXT.autoOff}</span>
         </GuardedButton>
       </div>
+      {/* 배속이 바뀐 값을 읽는 영역(안 B): 늘 있는 낭독 영역이라 값이 바뀌는 렌더에서 글자만 바뀌어 읽힌다(처음 그려질 때는 읽지 않는다) */}
+      <span className="sr-only" role="status" data-testid="speed-status">
+        {DASH_TEXT.speedStatus(speed)}
+      </span>
       {/*
         스크린리더가 "다음 결정으로"에 닿았을 때 읽는 사유(R-056). 누를 수 있을 때는 아예 없다.
         hidden이다(R-090): .sr-only(눈에만 안 보임)로 두면 스크린리더의 둘러보기 모드에서 이 문장이 별도 내용으로 한 번 더 읽힌다.

@@ -141,7 +141,7 @@ describe('④ 가린 카드: 무거운 장면 가리기를 켠 채 부모 결정
     });
   }
 
-  it('가린 줄(인생 기록): 「{나이}세 무거운 일이 있었습니다 · {분류} (어머니가 이렇게 정했습니다) 펼쳐 보기」', () => {
+  it('가린 줄(인생 기록): 「{나이}세 무거운 일이 있었습니다 · {분류} (어머니가 이렇게 정했습니다) 펼쳐 보기」 — 제목도 가린 원문 안이다', () => {
     const history: HistoryEntry[] = [
       { age: 0, kind: 'stage', text: '태어났다.' },
       { age: 1, kind: 'choice', title: '열', text: '열이 올랐다.', choice: '병원에 간다', eventId: 'infant-fever', by: 'parent' },
@@ -149,7 +149,9 @@ describe('④ 가린 카드: 무거운 장면 가리기를 켠 채 부모 결정
     const html = renderToStaticMarkup(<LogCard history={history} live={false} gentle subjectOf={() => 'mother'} />);
     const row = plain(html.slice(html.indexOf('data-veiled="true"')));
     expect(row).toContain(`1세 무거운 일이 있었습니다 · ${HEAVY_KIND_TEXT.health} (어머니가 이렇게 정했습니다) 펼쳐 보기`);
-    expect(row).toContain('(어머니가 이렇게 정했습니다: 병원에 간다)'); // 펼친 원문 쪽 도장(라벨 포함, hidden)도 같은 주어
+    // SPEC-012 QF4: 펼친 원문은 「제목 → 도장·고른 길 → 결과」 세 줄(괄호 없음). 제목은 `.veil__body`(hidden) 안이라 접힌 줄에서 함께 가려진다
+    expect(row).toContain('열 어머니가 이렇게 정했습니다: 병원에 간다 열이 올랐다.'); // 펼친 원문 쪽 도장(라벨 포함, hidden)도 같은 주어
+    expect(/<span class="veil__body"[^>]*hidden=""[^>]*>s*<span class="log__q"/.test(html), '제목은 veil__body 안(hidden)에 있다').toBe(true);
     expect(row).not.toContain('부모님이');
   });
 });
@@ -167,10 +169,11 @@ describe('② 인생 기록 줄: 줄의 나이로 그 해의 주어를 그린다
   it('3세(두 분) 줄은 「부모님이」, 7세(아버지만) 줄은 「아버지가」, 흘러감·본인 줄은 그대로', () => {
     const html = renderToStaticMarkup(<LogCard history={history} live={false} subjectOf={subjectOf} />);
     const text = plain(html);
-    expect(text).toContain('열이 올랐다. (부모님이 이렇게 정했습니다: 병원에 간다)');
-    expect(text).toContain('입학 준비를 했다. (아버지가 이렇게 정했습니다: 새로 산다)');
-    expect(text).toContain('동생이 생겼다. (이렇게 흘러갔습니다: 삐친다)');
-    expect(text).toContain('동아리에 들어갔다. (선택: 한다)');
+    // SPEC-012 QF4: 「제목 → 도장·고른 길 → 결과」 세 줄(괄호 없음)
+    expect(text).toContain('열 부모님이 이렇게 정했습니다: 병원에 간다 열이 올랐다.');
+    expect(text).toContain('입학 아버지가 이렇게 정했습니다: 새로 산다 입학 준비를 했다.');
+    expect(text).toContain('동생 이렇게 흘러갔습니다: 삐친다 동생이 생겼다.');
+    expect(text).toContain('동아리 선택: 한다 동아리에 들어갔다.');
     expect(text.match(/부모님이 이렇게/g)).toHaveLength(1);
   });
 
@@ -211,9 +214,9 @@ describe('② 인생 기록 줄: 줄의 나이로 그 해의 주어를 그린다
       />,
     );
     const log = plain(html.slice(html.indexOf('data-testid="log"')));
-    expect(log).toContain('1세의 결과입니다. (부모님이 이렇게 정했습니다: 길1)');
-    expect(log).toContain('2세의 결과입니다. (부모님이 이렇게 정했습니다: 길2)'); // 떠난 해 자체는 두 분이 함께 있던 해다
-    expect(log).toContain('3세의 결과입니다. (어머니가 이렇게 정했습니다: 길3)');
+    expect(log).toContain('일1 부모님이 이렇게 정했습니다: 길1 1세의 결과입니다.');
+    expect(log).toContain('일2 부모님이 이렇게 정했습니다: 길2 2세의 결과입니다.'); // 떠난 해 자체는 두 분이 함께 있던 해다
+    expect(log).toContain('일3 어머니가 이렇게 정했습니다: 길3 3세의 결과입니다.');
     expect(coParentsFn(withLines)(3)).toBe('mother');
   });
 });

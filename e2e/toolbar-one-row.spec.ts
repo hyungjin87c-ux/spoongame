@@ -10,9 +10,9 @@ const runsHere = (projectName: string): boolean => projectName === 'mobile-360' 
 /**
  * 도구 버튼 한 줄 (SPEC-005 r4 UX9·QI9, 완료 기준 1). **형진 님 지시 2026-10-26 「도구줄은 한줄에 나오도록 해줘」 — 마스터 해석: PC 폭(뷰포트 ≥ 960px) 전 구간에서 한 줄, 휴대폰·태블릿(< 960px)은 그대로**
  * (처음 M21은 한 줄을 1180px 이상에서만 보장하고 960~1154px를 두 줄로 두었다 — 이 지시가 그 부분을 바꿨다).
- * 12개 버튼 = 진행 줄 7(일시정지 · 1·2·4·8배 · 다음 결정으로 · 자동 모드) + 도구 줄 5(BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기).
+ * 9개 버튼 = 진행 줄 4(일시정지 · 배속 한 단추 · 다음 결정으로 · 자동 모드) + 도구 줄 5(BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기). (SPEC-012 QF5: 배속 넷이 한 단추가 되어 12개 → 9개)
  *  ① 1180 이상 × 글자 100%(designer r4 규격: 이름 + 아이콘): 12개 버튼의 위쪽 좌표 차 ≤ 2px, 버튼 이름이 줄바꿈되지 않는다. BGM을 켜면 볼륨 줄이, 나가기를 누르면 확인 상자가 12개 버튼 줄 **아래 별도 줄**이고 켜고 끌 때 버튼이 움직이지 않는다.
- *  ② 960~1179 × 글자 100%(압축 모드 ①: 도구 5개를 아이콘만): 같은 단언이 960 · 1024 · 1100에서도 돈다. 도구 버튼은 폭 44px, 이름 글자는 눈에 안 보이고(clip-path) DOM에 그대로 있으며, 마우스 올림·키보드 포커스에서 오른쪽 맞춤 말풍선으로 보이고 화면 밖으로 나가지 않는다.
+ *  ② 960~1179 × 글자 100%(압축 모드 ①: 도구 5개를 아이콘만): 같은 단언이 960 · 1024 · 1100에서도 돈다. 도구 버튼은 폭 36px(SPEC-012 QF5 — 예전 44), 이름 글자는 눈에 안 보이고(clip-path) DOM에 그대로 있으며, 마우스 올림·키보드 포커스에서 오른쪽 맞춤 말풍선으로 보이고 화면 밖으로 나가지 않는다.
  *     960에서 한 줄에 들어가므로(측정: 진행 묶음 581 + 도구 묶음 252 + 간격 16 ≤ 안쪽 폭 928) 압축 모드 ②(진행 묶음 글자 줄이기)는 쓰지 않았다.
  *  ③ 접근 가능한 이름은 어느 폭에서도 같다(960 · 1100 · 1280). 글자 200%: 한 줄을 요구하지 않고 wrap으로 물러나며 가로 넘침 0(1.4.10 reflow). 폭 320 · 글자 200%: 가로 넘침 0px·가려진 포커스 0(CM10).
  *  ④ 폭 360·959(< 960px): 진행 줄은 하단 고정 띠, 도구 줄은 본문 위 한 줄 묶음 — 배치가 r4 이전과 같다(r4 CSS는 `@media (min-width: 960px)` 안에만 있다).
@@ -31,8 +31,8 @@ interface Row {
   nameLines: number;
 }
 
-/** 12개 버튼(진행 줄 7 + 도구 줄 5)의 자리 */
-async function twelve(page: Page): Promise<Row[]> {
+/** 9개 버튼(진행 줄 4 + 도구 줄 5)의 자리 */
+async function nine(page: Page): Promise<Row[]> {
   return page.evaluate(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="controls"] .btn, [data-testid="tools"] .btn'));
     return els.map((el, i) => {
@@ -48,7 +48,7 @@ async function twelve(page: Page): Promise<Row[]> {
         range.selectNodeContents(el);
         for (const q of Array.from(range.getClientRects())) if (q.width > 0.5 && q.height > 0.5) tops.add(Math.round(q.top));
       }
-      return { id: el.getAttribute('data-testid') ?? `speed-${el.getAttribute('data-speed') ?? i}`, top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height, nameLines: tops.size };
+      return { id: el.getAttribute('data-testid') ?? `button-${i}`, top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height, nameLines: tops.size };
     });
   });
 }
@@ -73,11 +73,11 @@ async function openToolbar(page: Page, width: number, height = 800): Promise<voi
 }
 
 for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
-  test(`${width}px · 글자 100%: 12개 버튼이 한 줄(위쪽 좌표 차 ≤ 2px)이고 이름이 줄바꿈되지 않으며 가로 넘침이 없다 (UX9-1)`, async ({ page }, testInfo) => {
+  test(`${width}px · 글자 100%: 9개 버튼이 한 줄(위쪽 좌표 차 ≤ 2px)이고 이름이 줄바꿈되지 않으며 가로 넘침이 없다 (UX9-1)`, async ({ page }, testInfo) => {
     test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
-    const rows = await twelve(page);
-    expect(rows.map((r) => r.id), '12개: 진행 줄 7 + 도구 줄 5').toHaveLength(12);
+    const rows = await nine(page);
+    expect(rows.map((r) => r.id), '9개: 진행 줄 4 + 도구 줄 5').toHaveLength(9);
     expect(spread(rows.map((r) => r.top)), `위쪽 좌표 차(px): ${rows.map((r) => `${r.id}=${Math.round(r.top)}`).join(' ')}`).toBeLessThanOrEqual(2);
     for (const r of rows) {
       expect(r.nameLines, `${r.id}: 이름이 놓인 줄 수`).toBe(1);
@@ -86,18 +86,18 @@ for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
     expect(await noHorizontalOverflow(page), '가로 넘침 0').toBe(true);
   });
 
-  test(`${width}px: BGM을 켜면 볼륨 줄이, 나가기를 누르면 확인 상자가 12개 버튼 줄 아래 별도 줄이고 켜고 끌 때 버튼의 가로 위치 변화가 ≤ 1px이다 (UX9-2)`, async ({ page }, testInfo) => {
+  test(`${width}px: BGM을 켜면 볼륨 줄이, 나가기를 누르면 확인 상자가 9개 버튼 줄 아래 별도 줄이고 켜고 끌 때 버튼의 가로 위치 변화가 ≤ 1px이다 (UX9-2)`, async ({ page }, testInfo) => {
     test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
-    const base = await twelve(page);
+    const base = await nine(page);
     const bottom = Math.max(...base.map((r) => r.bottom));
 
     // BGM 켜기 → 볼륨 줄
     await page.getByTestId('tool-bgm').click();
     const volume = page.getByTestId('bgm-volume');
     await expect(volume).toBeVisible();
-    const withVolume = await twelve(page);
-    expect((await volume.boundingBox())!.y, '볼륨 줄이 12개 버튼 줄 아래').toBeGreaterThanOrEqual(bottom - 1);
+    const withVolume = await nine(page);
+    expect((await volume.boundingBox())!.y, '볼륨 줄이 9개 버튼 줄 아래').toBeGreaterThanOrEqual(bottom - 1);
     withVolume.forEach((r, i) => expect(Math.abs(r.left - base[i].left), `BGM 켠 뒤 ${r.id}의 가로 위치 변화(px)`).toBeLessThanOrEqual(1));
     expect(spread(withVolume.map((r) => r.top)), '켠 뒤에도 한 줄').toBeLessThanOrEqual(2);
 
@@ -105,8 +105,8 @@ for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
     await page.getByTestId('tool-exit').click();
     const ask = page.getByTestId('exit-ask');
     await expect(ask).toBeVisible();
-    const withAsk = await twelve(page);
-    expect((await ask.boundingBox())!.y, '확인 상자가 12개 버튼 줄 아래').toBeGreaterThanOrEqual(bottom - 1);
+    const withAsk = await nine(page);
+    expect((await ask.boundingBox())!.y, '확인 상자가 9개 버튼 줄 아래').toBeGreaterThanOrEqual(bottom - 1);
     expect((await ask.boundingBox())!.y, '확인 상자가 볼륨 줄 아래').toBeGreaterThanOrEqual((await volume.boundingBox())!.y);
     withAsk.forEach((r, i) => expect(Math.abs(r.left - base[i].left), `확인 상자를 연 뒤 ${r.id}의 가로 위치 변화(px)`).toBeLessThanOrEqual(1));
     expect(spread(withAsk.map((r) => r.top)), '확인 상자를 연 뒤에도 한 줄').toBeLessThanOrEqual(2);
@@ -116,7 +116,7 @@ for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
     await expect(ask).toHaveCount(0);
     await page.getByTestId('tool-bgm').click();
     await expect(volume).toHaveCount(0);
-    const back = await twelve(page);
+    const back = await nine(page);
     back.forEach((r, i) => expect(Math.abs(r.left - base[i].left) + Math.abs(r.top - base[i].top), `${r.id}: 끄고 나면 처음 자리`).toBeLessThanOrEqual(1));
   });
 }
@@ -136,12 +136,12 @@ const TOOL_IDS = ['tool-bgm', 'tool-note', 'tool-dark', 'tool-feedback', 'tool-e
 const TOOL_NAMES = ['BGM', '생각 남기기', '다크 모드', '의견 보내기', '나가기'] as const;
 
 for (const width of [960, 1024, 1100, 1179]) {
-  test(`${width}px · 글자 100%: 압축 모드 — 도구 5개는 아이콘만(폭 44px)이고 이름은 DOM에 그대로 있으며 평소에는 눈에 안 보인다. 진행 묶음 글자는 줄이지 않았다 (형진 님 2026-10-26)`, async ({ page }, testInfo) => {
+  test(`${width}px · 글자 100%: 압축 모드 — 도구 5개는 아이콘만(폭 36px — SPEC-012 QF5, 마우스)이고 이름은 DOM에 그대로 있으며 평소에는 눈에 안 보인다. 진행 묶음 글자는 줄이지 않았다 (형진 님 2026-10-26)`, async ({ page }, testInfo) => {
     test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
-    const rows = await twelve(page);
+    const rows = await nine(page);
     expect(rowCount(rows), `${width}px: 한 줄`).toBe(1);
-    for (const r of rows.slice(7)) expect(Math.round(r.right - r.left), `${r.id}: 아이콘만 — 버튼 폭 44px`).toBe(44);
+    for (const r of rows.slice(4)) expect(Math.round(r.right - r.left), `${r.id}: 아이콘만 — 버튼 폭 36px (SPEC-012 QF5: PC 도구 줄 44 → 36, 마우스 기준 — 예전 44)`).toBe(36);
     for (let i = 0; i < 5; i++) {
       const t = await tipState(page, TOOL_IDS[i]);
       expect(t.text, `${TOOL_IDS[i]}: 이름 글자 칸이 DOM에 그대로 있다`).toBe(TOOL_NAMES[i]);
@@ -150,7 +150,7 @@ for (const width of [960, 1024, 1100, 1179]) {
     }
     // 진행 묶음은 글자 그대로(압축 모드 ②를 쓰지 않았다)
     const names = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('[data-testid="controls"] .btn')).map((el) => (el.textContent ?? '').trim().split(' ').filter((x) => x !== '').join(' ')));
-    expect(names).toEqual(['일시정지', '1배', '2배', '4배', '8배', '다음 결정으로', '자동 모드 꺼짐']);
+    expect(names).toEqual(['일시정지', '1배', '다음 결정으로', '자동 모드 꺼짐']);
     expect(await noHorizontalOverflow(page), '가로 넘침 0').toBe(true);
   });
 
@@ -544,14 +544,17 @@ test.describe('주 입력이 터치인 화면(hover: none · pointer: coarse —
         expect(t.position, `${TOOL_IDS[i]}: 이름은 버튼 안에 놓인다(말풍선이 아니다)`).not.toBe('absolute');
         expect(t.buttonWidth, `${TOOL_IDS[i]}: 이름이 들어가 44px보다 넓다`).toBeGreaterThan(60);
       }
-      const rows = await twelve(page);
-      expect(rows, '버튼 12개').toHaveLength(12);
+      const rows = await nine(page);
+      expect(rows, '버튼 9개').toHaveLength(9);
       for (const r of rows) {
         expect(r.left, `${r.id}: 화면 왼쪽 밖으로 나가지 않는다`).toBeGreaterThanOrEqual(-0.5);
         expect(r.right, `${r.id}: 화면 오른쪽 밖으로 나가지 않는다`).toBeLessThanOrEqual(width + 0.5);
-        expect(r.height, `${r.id}: 버튼 높이 44px 이상`).toBeGreaterThanOrEqual(44 - 0.5);
+        // SPEC-012 QF5: 보이는 높이는 진행 줄·도구 줄 모두 36(한 줄), 누르는 높이 44는 아래 ::before가 채운다
+        expect(r.height, `${r.id}: 보이는 높이`).toBeGreaterThanOrEqual(36 - 0.5);
         expect(r.nameLines, `${r.id}: 이름이 한 줄에 놓인다`).toBe(1);
       }
+      const hit = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-testid="controls"] button, [data-testid="tools"] .btn')].map((b) => ({ id: b.dataset.testid, h: parseFloat(getComputedStyle(b, '::before').height) })));
+      for (const h of hit) expect(h.h, `${h.id}: 누르는 높이(::before) 44px 이상 — 터치`).toBeGreaterThanOrEqual(44 - 0.5);
       expect(await noHorizontalOverflow(page), `${width}px: 가로 넘침 0 (wrap으로 물러난다)`).toBe(true);
       if (width === 1179) expect(rowCount(rows), '1179px는 designer r4 규격대로 한 줄').toBe(1);
       // 접근 가능한 이름은 마우스 화면과 같다
@@ -590,42 +593,42 @@ test('한 줄이 되는 최소 폭(UX9-5 기록): 960~1300을 20px씩 훑는다 
   let scanned = 0;
   for (let w = 960; w <= 1300; w += 20) {
     await page.setViewportSize({ width: w, height: 800 });
-    expect(rowCount(await twelve(page)), `${w}px: 줄 수`).toBe(1);
+    expect(rowCount(await nine(page)), `${w}px: 줄 수`).toBe(1);
     expect(await noHorizontalOverflow(page), `${w}px: 가로 넘침 0`).toBe(true);
     scanned++;
   }
   // 문턱 양쪽(1170 · 1179 · 1180 · 1190)도 한 줄 — 압축 모드(≤ 1179)와 r4 규격(≥ 1180)의 경계가 끊기지 않는다
   for (const w of [1170, 1179, 1180, 1190]) {
     await page.setViewportSize({ width: w, height: 800 });
-    expect(rowCount(await twelve(page)), `${w}px: 경계에서도 한 줄`).toBe(1);
+    expect(rowCount(await nine(page)), `${w}px: 경계에서도 한 줄`).toBe(1);
   }
   // 960 미만은 한 줄을 요구하지 않는다(휴대폰·태블릿은 그대로 — 진행 줄은 하단 고정 띠)
   await page.setViewportSize({ width: 959, height: 800 });
-  expect(rowCount(await twelve(page)), '959px: 진행 줄이 하단 띠로 갈라져 한 줄이 아니다').toBeGreaterThanOrEqual(2);
+  expect(rowCount(await nine(page)), '959px: 진행 줄이 하단 띠로 갈라져 한 줄이 아니다').toBeGreaterThanOrEqual(2);
   testInfo.annotations.push({ type: '한 줄 최소 폭', description: `960px 이상 전 구간(${scanned}개 폭을 훑음, 960~1300 20px 단위). 압축 없이 한 줄이 되는 최소 폭은 이전 측정 1160px(designer r4 규격)` });
 });
 
-test('글자 200% × 폭 1000(압축 모드 구간): 한 줄을 요구하지 않고 wrap으로 물러나며 가로 넘침이 없다 — 12개 버튼 모두 눌릴 자리에 있다 (1.4.10 reflow)', async ({ page }, testInfo) => {
+test('글자 200% × 폭 1000(압축 모드 구간): 한 줄을 요구하지 않고 wrap으로 물러나며 가로 넘침이 없다 — 9개 버튼 모두 눌릴 자리에 있다 (1.4.10 reflow)', async ({ page }, testInfo) => {
   test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
   await openToolbar(page, 1000);
   await setRootFontPercent(page, 200);
   expect(await noHorizontalOverflow(page), '1000px × 200%: 가로 넘침 0').toBe(true);
-  const rows = await twelve(page);
-  expect(rows, '버튼 12개').toHaveLength(12);
+  const rows = await nine(page);
+  expect(rows, '버튼 9개').toHaveLength(9);
   for (const r of rows) {
     expect(r.left, `${r.id}: 화면 왼쪽 밖으로 나가지 않는다`).toBeGreaterThanOrEqual(-0.5);
     expect(r.right, `${r.id}: 화면 오른쪽 밖으로 나가지 않는다`).toBeLessThanOrEqual(1000.5);
   }
 });
 
-test('글자 200%: 1280 · 1920에서는 한 줄을 요구하지 않고(컨테이너 질의가 물러난다) 가로 넘침이 없다 — 12개 버튼 모두 눌릴 자리에 있다 (UX9-4, M21)', async ({ page }, testInfo) => {
+test('글자 200%: 1280 · 1920에서는 한 줄을 요구하지 않고(컨테이너 질의가 물러난다) 가로 넘침이 없다 — 9개 버튼 모두 눌릴 자리에 있다 (UX9-4, M21)', async ({ page }, testInfo) => {
   test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
   for (const width of [1280, 1920]) {
     await openToolbar(page, width);
     await setRootFontPercent(page, 200);
     expect(await noHorizontalOverflow(page), `${width}px × 200%: 가로 넘침 0`).toBe(true);
-    const rows = await twelve(page);
-    expect(rows, `${width}px × 200%: 버튼 12개`).toHaveLength(12);
+    const rows = await nine(page);
+    expect(rows, `${width}px × 200%: 버튼 9개`).toHaveLength(9);
     expect(rowCount(rows), `${width}px × 200%: 두 줄 이상(한 줄 비요구)`).toBeGreaterThanOrEqual(2);
     for (const r of rows) {
       expect(r.left, `${r.id}: 화면 왼쪽 밖으로 나가지 않는다`).toBeGreaterThanOrEqual(-0.5);
@@ -647,9 +650,9 @@ test('폭 320 · 글자 200%: 가로 넘침 0px, 가려진 포커스 0 (CM10) �
   for (const id of ['pause', 'skip', 'auto', 'tool-bgm', 'tool-exit']) expect(audit.tabbables, `조작 요소 ${audit.tabbables.join(' → ')}`).toContain(id);
 });
 
-test('Tab 순서·접근 가능한 이름은 그대로다: 진행 줄 7개 → 도구 줄 5개 순서이고 이름이 바뀌지 않았다 — 960 · 1100(압축 모드) · 1280에서 모두 같다 (UX9-4)', async ({ page }, testInfo) => {
+test('Tab 순서·접근 가능한 이름은 그대로다: 진행 줄 4개 → 도구 줄 5개 순서이고 이름이 바뀌지 않았다 — 960 · 1100(압축 모드) · 1280에서 모두 같다 (UX9-4)', async ({ page }, testInfo) => {
   test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
-  const EXPECTED = ['일시정지', '1배', '2배', '4배', '8배', '다음 결정으로', '자동 모드 꺼짐', 'BGM', '생각 남기기', '다크 모드', '의견 보내기(새 탭으로 열립니다)', '나가기'];
+  const EXPECTED = ['일시정지', '배속 1배, 누르면 2배', '다음 결정으로', '자동 모드 꺼짐', 'BGM', '생각 남기기', '다크 모드', '의견 보내기(새 탭으로 열립니다)', '나가기'];
   for (const width of [960, 1100, 1280]) {
     await openToolbar(page, width);
     const names = await page.evaluate(() =>
@@ -689,10 +692,10 @@ for (const width of [360, 959]) {
     expect(m.barBottom, '화면 맨 아래에 붙어 있다').toBe(0);
     expect(m.toolsBelowBar, '도구 줄은 본문 위(진행 줄 위쪽)에 있다').toBe(false);
     expect(m.toolbarContainer, '컨테이너 질의는 960px 이상에서만 건다').toBe('normal');
-    // r4 규칙(간격 8·아이콘 18)이 닿지 않는다: 모바일의 도구 줄 간격은 8px, 아이콘은 지금 크기(18px 아님)
-    expect(m.toolGap).toBe('8px');
-    expect(m.toolIcon, '도구 아이콘 크기는 r4 이전 그대로(22px)').not.toBe('18px');
-    // 진행 줄(고정 띠)의 높이: 360px에서 112px — design-system 16-1 실측(r4 이전과 같음)
-    if (width === 360) expect(m.barHeight, '진행 줄 높이(px)').toBeLessThanOrEqual(120);
+    // r4 규칙(간격 8·아이콘 18)은 모바일에 닿지 않는다. SPEC-012 QF5(조작 영역 안 B)가 모바일의 도구 줄을 조인다: 간격 4px · 아이콘 20px(18px 아님) · 안 여백 2px
+    expect(m.toolGap).toBe('4px');
+    expect(m.toolIcon, '도구 아이콘 크기는 20px(--tool-icon, r4의 18px 아님)').toBe('20px');
+    // 진행 줄(고정 띠)의 높이: 360px에서 48px(한 줄 — 안 B 실측; 옛 112px). 959px도 한 줄이다
+    if (width === 360) expect(Math.abs(m.barHeight - 48), `진행 줄 높이(px) ${m.barHeight}`).toBeLessThanOrEqual(2);
   });
 }

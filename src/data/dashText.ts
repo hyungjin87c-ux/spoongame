@@ -88,6 +88,10 @@ export const DASH_TEXT = {
   autoOff: '자동 모드 꺼짐',
   controlsGroup: '진행 조작',
   speedUnit: '배',
+  /** 배속 한 단추(SPEC-012 QF5, designer 안 B): 접근 가능한 이름 「배속 1배, 누르면 2배」 — 보이는 글자 「1배」가 이름에 들어 있다(Label in Name, WCAG 2.5.3) */
+  speedLabel: (speed: number, next: number): string => `배속 ${speed}배, 누르면 ${next}배`,
+  /** 배속이 바뀐 뒤 `role="status"`가 읽는 한 줄 「배속 2배」 */
+  speedStatus: (speed: number): string => `배속 ${speed}배`,
   toolsGroup: '도구',
 
   // ---------- 도구 줄 (이름은 SPEC·요청 원문 그대로) ----------
