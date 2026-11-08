@@ -1,0 +1,884 @@
+{
+  "measuredAt": "2026-11-08",
+  "round": "r10",
+  "spec": "SPEC-013 T5",
+  "tone": "a",
+  "note": "r10 16조각 = 14장(수정 6 + 새 8) + 두 안 2(1953 열차 없는 안 B · 2002 응원 글자 있는 안). gz는 그림 안쪽 마크업(톤 겹 포함)을 class·use로 바꾼 뒤 gzip, gzBefore는 수정 전 장면(r3·r4·r5)의 같은 셈. decades는 SPEC-013 부록 C 유지 37장(앞 회차 실측 gz) + 이 14장을 10년마다 더하고 defs·CSS·한 줄(장당 220B 어림)을 보탠 보수적 추정 — 정본 수치는 developer의 T6 실측. 예산(마스터 2026-10-28·SPEC-013): 장당 ≤ 2.5KB(군중 무거운 장면 ≤ 3.5KB) · 10년 덩어리 ≤ 24KB · 누적 ≤ 230KB · 한 번에 ≤ 75KB · 14장 평균 ≤ 2,140B▲.",
+  "budget": {
+    "perPicture": 2500,
+    "perPictureCrowdHeavy": 3500,
+    "perDecadeChunk": 24000,
+    "totalLazy": 230000,
+    "perLoad": 75000,
+    "avgTarget": 2140
+  },
+  "pieces": 16,
+  "main": 14,
+  "revised": 6,
+  "new": 8,
+  "variants": 2,
+  "heavy": 3,
+  "comp": {
+    "object": 7,
+    "mixed": 3,
+    "place": 4
+  },
+  "shapesAvg": 114,
+  "shapesMax": 158,
+  "usesAvg": 21,
+  "gzEachAvg": 1692,
+  "gzEachMax": 2145,
+  "gzEachMin": 1080,
+  "gzEachTotal": 23694,
+  "gzBeforeTotal": 8613,
+  "gzRevisedAfter": 9725,
+  "over25": [],
+  "overLimit": [],
+  "avgOverTarget": false,
+  "defsGz": 1573,
+  "cssGz": 1125,
+  "decades": [
+    {
+      "decade": 40,
+      "retained": [
+        "era-1945-liberation-street",
+        "era-1948-polling-queue"
+      ],
+      "r10": [],
+      "pieces": 2,
+      "picsGz": 2941,
+      "estWithDefsLines": 6079,
+      "overMax": false
+    },
+    {
+      "decade": 50,
+      "retained": [],
+      "r10": [
+        "era-1950-refugee-column",
+        "era-1953-tent-school",
+        "era-1959-typhoon-flood-village"
+      ],
+      "pieces": 3,
+      "picsGz": 5862,
+      "estWithDefsLines": 9220,
+      "overMax": false
+    },
+    {
+      "decade": 60,
+      "retained": [
+        "era-1960-april-street"
+      ],
+      "r10": [
+        "era-1961-dawn-tank",
+        "era-1964-airport-farewell",
+        "era-1965-neighbors-tv"
+      ],
+      "pieces": 4,
+      "picsGz": 6226,
+      "estWithDefsLines": 9804,
+      "overMax": false
+    },
+    {
+      "decade": 70,
+      "retained": [
+        "era-1974-subway-platform-r3",
+        "era-1979-autumn-martial-street"
+      ],
+      "r10": [
+        "era-1970-expressway-tollgate",
+        "era-1973-gas-station-queue"
+      ],
+      "pieces": 4,
+      "picsGz": 6603,
+      "estWithDefsLines": 10181,
+      "overMax": false
+    },
+    {
+      "decade": 80,
+      "retained": [
+        "era-1980-may-geumnam-ro",
+        "era-1987-june-street",
+        "era-1988-stadium-flame-r3",
+        "era-1987-polling-station-r3"
+      ],
+      "r10": [
+        "era-1983-reunion-wall-notes"
+      ],
+      "pieces": 5,
+      "picsGz": 10706,
+      "estWithDefsLines": 14504,
+      "overMax": false
+    },
+    {
+      "decade": 90,
+      "retained": [
+        "era-1995-sampoong-rescue",
+        "era-1997-dawn-labor-market",
+        "era-1999-millennium-night"
+      ],
+      "r10": [
+        "era-1998-gold-rings-tray"
+      ],
+      "pieces": 4,
+      "picsGz": 7216,
+      "estWithDefsLines": 10794,
+      "overMax": false
+    },
+    {
+      "decade": 2000,
+      "retained": [
+        "era-2003-subway-entrance-smoke",
+        "era-2009-square-mourning-queue"
+      ],
+      "r10": [
+        "era-2002-worldcup-semifinal",
+        "era-2008-trading-board-blue"
+      ],
+      "pieces": 4,
+      "picsGz": 8894,
+      "estWithDefsLines": 12472,
+      "overMax": false
+    },
+    {
+      "decade": 2010,
+      "retained": [
+        "era-2009-first-smartphone",
+        "era-2014-tilted-ferry-ribbons",
+        "era-2016-candle-winter"
+      ],
+      "r10": [
+        "era-2018-pyeongchang-torch"
+      ],
+      "pieces": 4,
+      "picsGz": 7356,
+      "estWithDefsLines": 10934,
+      "overMax": false
+    },
+    {
+      "decade": 2020,
+      "retained": [
+        "era-2022-alley-tape-flowers",
+        "era-2023-grocery-scale",
+        "era-2026-job-board-waiting"
+      ],
+      "r10": [
+        "era-2020-screening-tent-queue"
+      ],
+      "pieces": 4,
+      "picsGz": 4801,
+      "estWithDefsLines": 8379,
+      "overMax": false
+    },
+    {
+      "decade": 2030,
+      "retained": [
+        "era-2030-basic-income-queue-rain",
+        "era-2030s-care-intake-empty-chairs"
+      ],
+      "r10": [],
+      "pieces": 2,
+      "picsGz": 3010,
+      "estWithDefsLines": 6148,
+      "overMax": false
+    },
+    {
+      "decade": 2040,
+      "retained": [
+        "era-2040-empty-lecture-hall",
+        "era-2044-bci-rehab-waiting"
+      ],
+      "r10": [],
+      "pieces": 2,
+      "picsGz": 2080,
+      "estWithDefsLines": 5218,
+      "overMax": false
+    },
+    {
+      "decade": 2050,
+      "retained": [
+        "era-2050-clinic-glass-outside",
+        "era-2050s-noon-empty-street-speaker"
+      ],
+      "r10": [],
+      "pieces": 2,
+      "picsGz": 2075,
+      "estWithDefsLines": 5213,
+      "overMax": false
+    },
+    {
+      "decade": 2060,
+      "retained": [
+        "era-2060s-empty-village-vines",
+        "era-2065-mind-market-hall"
+      ],
+      "r10": [],
+      "pieces": 2,
+      "picsGz": 4299,
+      "estWithDefsLines": 7437,
+      "overMax": false
+    },
+    {
+      "decade": 2070,
+      "retained": [
+        "era-2070s-school-turned-elder-home",
+        "era-2075-river-two-sides-barrier"
+      ],
+      "r10": [],
+      "pieces": 2,
+      "picsGz": 4282,
+      "estWithDefsLines": 7420,
+      "overMax": false
+    },
+    {
+      "decade": 2080,
+      "retained": [
+        "era-2080s-port-split-two-blocs",
+        "era-2085-plaza-long-queue-ai-towers",
+        "era-2080s-wind-sun-coast-city"
+      ],
+      "r10": [],
+      "pieces": 3,
+      "picsGz": 7022,
+      "estWithDefsLines": 10380,
+      "overMax": false
+    },
+    {
+      "decade": 2090,
+      "retained": [
+        "era-2095-flooded-town-leaving-line"
+      ],
+      "r10": [],
+      "pieces": 1,
+      "picsGz": 2380,
+      "estWithDefsLines": 5298,
+      "overMax": false
+    },
+    {
+      "decade": 2100,
+      "retained": [
+        "era-2100-half-city-demolition-towers",
+        "era-2100s-night-sky-stations-hill",
+        "era-end-horizon"
+      ],
+      "r10": [],
+      "pieces": 3,
+      "picsGz": 4641,
+      "estWithDefsLines": 7999,
+      "overMax": false
+    }
+  ],
+  "lazyEst": 147480,
+  "lazyOver": false,
+  "maxDecadeEst": 14504,
+  "retainedMissingGz": [],
+  "rows": [
+    {
+      "id": "era-1950-refugee-column",
+      "year": 1950,
+      "years": [
+        1950,
+        1950
+      ],
+      "decade": 50,
+      "hCode": "H-B01",
+      "name": "1950년 6월 — 여름 피란 행렬",
+      "kind": "event",
+      "topic": "정치",
+      "heavy": true,
+      "revise": "era-1950-refugee-column",
+      "variantOf": null,
+      "hasText": null,
+      "caption": "6월 전쟁과 피란",
+      "captionChars": 9,
+      "line": "6월, 전쟁이 나 사람들이 남쪽으로 피란을 떠났습니다.",
+      "lineChars": 30,
+      "second": null,
+      "comp": "place",
+      "compLabel": "장소·사람",
+      "object": "보따리·지게·소달구지(앞줄 키 10~12)",
+      "unverified": [],
+      "draws": "한여름 한낮의 흙길 — 먼 산과 푸른 들, 멀리 마을의 검은 연기 둘, 흙먼지 속에 남쪽(화면 오른쪽 아래)으로 내려오는 긴 피란 행렬: 고개 위의 먼 인물 열넷, 가운데의 소달구지와 지게·보따리, 바로 앞의 지게 진 남자·아기 업은 여자·아이·밀짚모자 노인(키 10~12), 길가의 여름 나무. 눈·마른 가지·눈발 0(r3의 겨울 장면을 쓰지 않는다 — T0: 전쟁은 6월).",
+      "ft3": "유지선 ① 시신·피·폭격 순간 0(연기만, 먼 거리) ② 실존 인물 0(뒷모습·옆모습·먼 인물) ③ 군·무기·정당 상징 0 ④ 한 줄은 사실만. 앞줄을 r5b 기준(어깨 너머)으로 당겼다. 사진 모사 0.",
+      "shapes": 120,
+      "uses": 34,
+      "raw": 8884,
+      "gz": 1947,
+      "gzBefore": 2172,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1953-tent-school",
+      "year": 1953,
+      "years": [
+        1953,
+        1953
+      ],
+      "decade": 50,
+      "hCode": "H-B01",
+      "name": "1953년 7월 — 휴전, 돌아오는 사람들과 열차 (안 A)",
+      "kind": "event",
+      "topic": "사회",
+      "heavy": false,
+      "revise": "era-1953-tent-school",
+      "variantOf": null,
+      "hasText": null,
+      "caption": "7월 휴전",
+      "captionChars": 5,
+      "line": "7월, 삼 년을 끈 전쟁이 멈추고 휴전이 되었습니다.",
+      "lineChars": 29,
+      "second": null,
+      "comp": "place",
+      "compLabel": "장소·사람",
+      "object": "귀환 열차·보따리",
+      "unverified": [
+        "귀환 열차"
+      ],
+      "draws": "여름 한낮의 시골 역 — 증기 기관차와 객차 둘(창마다 사람), 열린 문으로 보따리·지게·가방을 이고 내려서는 사람들의 줄, 승강장 앞의 큰 뒷모습 셋(지게·보따리·아이 손), 열차 너머 새로 올린 초가 지붕들과 흰 천막 하나, 집 뼈대를 세우는 사람, 푸른 산. 군인·무기 0.",
+      "ft3": "무겁지 않음(휴전 뒤 돌아옴). 사람은 뒷모습·옆모습·먼 인물(얼굴 0). 역 이름·노선·글자 0. 열차는 「확인 못 한 물건」 표지(사실표 5절) — 열차 없는 안 B를 함께 낸다. 사진 모사 0.",
+      "shapes": 125,
+      "uses": 33,
+      "raw": 9938,
+      "gz": 1950,
+      "gzBefore": 1423,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1953-tent-school-b",
+      "year": 1953,
+      "years": [
+        1953,
+        1953
+      ],
+      "decade": 50,
+      "hCode": "H-B01",
+      "name": "1953년 7월 — 휴전, 돌아오는 길 (안 B · 열차 없음)",
+      "kind": "event",
+      "topic": "사회",
+      "heavy": false,
+      "revise": null,
+      "variantOf": "era-1953-tent-school",
+      "hasText": null,
+      "caption": "7월 휴전",
+      "captionChars": 5,
+      "line": "7월, 삼 년을 끈 전쟁이 멈추고 휴전이 되었습니다.",
+      "lineChars": 29,
+      "second": null,
+      "comp": "place",
+      "compLabel": "장소·사람",
+      "object": "보따리·지게 진 뒷모습 · 다시 세우는 집 뼈대",
+      "unverified": [],
+      "draws": "여름 한낮 — 마을로 돌아가는 흙길, 앞줄 어깨 너머로 보따리·지게·아이를 데리고 마을 쪽으로 걸어 들어가는 식구들의 뒷모습(키 10~12), 길 끝의 마을에는 새로 올린 초가 지붕과 집 뼈대를 세우는 사람들, 흰 천막, 푸른 논과 산. 열차 없음(「확인 못 한 물건」을 쓰지 않는 안). 군인·무기 0.",
+      "ft3": "무겁지 않음. 사람은 뒷모습·먼 인물(얼굴 0). 글자·표지 0. 사진 모사 0.",
+      "shapes": 84,
+      "uses": 21,
+      "raw": 7060,
+      "gz": 1620,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1959-typhoon-flood-village",
+      "year": 1959,
+      "years": [
+        1959,
+        1959
+      ],
+      "decade": 50,
+      "hCode": "H-B02",
+      "name": "1959년 9월 — 물에 잠긴 남쪽 마을",
+      "kind": "event",
+      "topic": "재난",
+      "heavy": true,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "9월 남부 태풍",
+      "captionChars": 8,
+      "line": "9월, 태풍이 남해안을 덮쳐 마을이 물에 잠겼습니다.",
+      "lineChars": 29,
+      "second": null,
+      "comp": "place",
+      "compLabel": "장소·사람",
+      "object": "물에 잠긴 초가 지붕·떠내려가는 널빤지·비",
+      "unverified": [],
+      "draws": "비 내리는 잿빛 오후 — 화면 아래 3분의 2를 채운 흙빛 물, 그 위로 지붕만 남은 초가 여섯과 기운 전봇대·휜 나무, 떠다니는 널빤지·항아리·지붕 짚, 오른쪽 언덕으로 보따리를 이고 아이를 업은 채 오르는 사람들의 줄, 물 위의 작은 배에 탄 두 사람(뒷모습), 사선의 빗줄기.",
+      "ft3": "유지선 ① 휩쓸리는 순간·시신·구조되는 사람 0(현장까지 — 물은 평평, 배와 언덕의 사람들은 안전한 곳) ② 실존 인물 0(뒷모습·옆모습) ④ 한 줄은 사실만(태풍 이름·사망자 수 0). 사진 모사 0.",
+      "shapes": 94,
+      "uses": 16,
+      "raw": 8651,
+      "gz": 1965,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1961-dawn-tank",
+      "year": 1961,
+      "years": [
+        1961,
+        1961
+      ],
+      "decade": 60,
+      "hCode": "H-B03",
+      "name": "1961년 5월 새벽 — 거리의 군인 열(탱크 없음)",
+      "kind": "event",
+      "topic": "정치",
+      "heavy": true,
+      "revise": "era-1961-dawn-tank",
+      "variantOf": null,
+      "hasText": null,
+      "caption": "5월 새벽의 군",
+      "captionChars": 8,
+      "line": "5월 새벽, 군인들이 서울의 주요 기관을 차지했습니다.",
+      "lineChars": 30,
+      "second": null,
+      "comp": "place",
+      "compLabel": "장소·사람",
+      "object": "군인 열(탱크 뺌)",
+      "unverified": [],
+      "draws": "아직 어두운 새벽의 도심 — 석조 건물 앞 거리를 메운 군인 열(뒷모습·철모, 건물 쪽을 본다) 세 줄과 보도의 군인 열, 켜진 가로등, 셔터 내린 상가, 빈 전찻길, 동쪽 하늘의 옅은 빛, 오른쪽 앞 보도에서 멀찍이 바라보는 출근길 시민 셋과 자전거, 왼쪽 멀리 두 사람. r4의 탱크 한 대는 뺐다(T0: 출처에 병력만).",
+      "ft3": "유지선 ② 실존 인물(군 지휘부) 얼굴·이름 0(군인은 뒷모습·철모, 시민도 뒷모습·먼 인물) ③ 정당 상징·구호 0 ① 총격·피 0(소총은 멘 채, 군과 시민 사이 거리 둠·접촉 0) ④ 한 줄은 사실만. 차량·무기 장비 0(탱크 제거). 사진 모사 0.",
+      "shapes": 139,
+      "uses": 77,
+      "raw": 11063,
+      "gz": 1766,
+      "gzBefore": 1507,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1964-airport-farewell",
+      "year": 1963,
+      "years": [
+        1963,
+        1963
+      ],
+      "decade": 60,
+      "hCode": "H-E14",
+      "name": "1963년 12월 — 독일로 떠나는 광부, 트렁크",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "revise": "era-1964-airport-farewell",
+      "variantOf": null,
+      "hasText": null,
+      "caption": "독일로 떠난 광부",
+      "captionChars": 9,
+      "line": "12월, 광부들이 일자리를 찾아 독일로 떠났습니다.",
+      "lineChars": 28,
+      "second": {
+        "low": "집에서도 먼 나라 일자리 소식에 귀를 기울였습니다.",
+        "mid": "집에서는 떠나는 이웃을 배웅하러 나갔습니다.",
+        "high": "집에서는 신문으로 그 소식을 읽는 정도였습니다."
+      },
+      "comp": "mixed",
+      "compLabel": "섞음(물건 앞 + 장소 뒤)",
+      "object": "가죽 트렁크 둘(앞, 화면 폭의 절반)",
+      "unverified": [
+        "가방(트렁크)"
+      ],
+      "draws": "12월 공항 — 바로 앞 바닥의 큰 가죽 트렁크 둘(띠·모서리 쇠·손잡이)과 그 위의 보따리, 곁에 선 외투 입은 떠나는 이의 뒷모습, 철망 울타리 너머 손수건을 흔드는 배웅 인파, 활주로의 프로펠러 여객기와 트랩을 오르는 줄, 관제탑·격납고, 마른 가지의 겨울 나무와 흐린 하늘. 해를 1964 → 1963으로(T0: 1진 출국 12-21).",
+      "ft3": "사람은 뒷모습·먼 인물(얼굴 0). 항공사 표지·국기·글자 0(기체는 빈 면, 트렁크 꼬리표는 빈 종이). 파견을 미화·평가하지 않음(사실만). 트렁크는 「확인 못 한 물건」 표지. 사진 모사 0.",
+      "shapes": 100,
+      "uses": 23,
+      "raw": 8841,
+      "gz": 1791,
+      "gzBefore": 1429,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1965-neighbors-tv",
+      "year": 1969,
+      "years": [
+        1969,
+        1969
+      ],
+      "decade": 60,
+      "hCode": "H-C01",
+      "name": "1969년 7월 — 텔레비전 속의 달",
+      "kind": "event",
+      "topic": "문화",
+      "heavy": false,
+      "revise": "era-1965-neighbors-tv",
+      "variantOf": null,
+      "hasText": null,
+      "caption": "달 착륙",
+      "captionChars": 4,
+      "line": "7월, 달에 첫발을 디딘 사람이 텔레비전에 나왔습니다.",
+      "lineChars": 30,
+      "second": {
+        "low": "집에서는 라디오로만 그 소식을 들었습니다.",
+        "mid": "집에서는 이웃집 마루에 모여 텔레비전을 봤습니다.",
+        "high": "집에서는 안방 텔레비전 앞에 식구들이 모였습니다."
+      },
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "다리 달린 텔레비전 — 화면 속 달 표면·착륙선·우주복 사람(색 블록)",
+      "unverified": [],
+      "draws": "저녁 이웃집 마루 — 화면이 화면 폭의 절반인 다리 달린 흑백 텔레비전, 화면 안은 검은 하늘·회색 달 표면·다리 넷의 착륙선·흰 우주복 사람 하나(얼굴 없는 헬멧)와 멀리 둥근 지구, 텔레비전을 둘러싸고 앉은 이웃들의 큰 뒷머리(앞줄 어깨 너머), 처마의 전구, 댓돌의 신발. 일상 → 사건(형진 님 승인 문장 「텔레비전에 나왔습니다」).",
+      "ft3": "모두 뒷모습(얼굴 0). 화면에 글자·방송사 표지 0(그림만 — 깃발 0). 상표 0. 생중계·공휴일을 말하지 않는다(T0 부분). 사진 모사 0.",
+      "shapes": 67,
+      "uses": 15,
+      "raw": 5303,
+      "gz": 1080,
+      "gzBefore": 1013,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1970-expressway-tollgate",
+      "year": 1970,
+      "years": [
+        1970,
+        1970
+      ],
+      "decade": 70,
+      "hCode": "H-E05",
+      "name": "1970년 7월 — 고속도로 요금소",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "경부고속도로 개통",
+      "captionChars": 9,
+      "line": "7월, 서울과 부산을 잇는 고속도로가 뚫렸습니다.",
+      "lineChars": 27,
+      "second": null,
+      "comp": "mixed",
+      "compLabel": "섞음(물건 앞 + 장소 뒤)",
+      "object": "요금소 차단기(앞, 흰·붉은 띠)와 요금소 부스 · 달리는 차",
+      "unverified": [],
+      "draws": "한여름 한낮 — 바로 앞 왼쪽의 요금소 부스와 올라간 차단기(흰·붉은 띠, 글자 0), 부스 안의 근무자 뒷모습, 지붕 캐노피와 빈 간판, 화면 가운데로 뻗어 산 사이로 사라지는 넓은 4차선 도로, 달리는 승용차 셋과 버스 한 대, 가드레일과 푸른 산.",
+      "ft3": "사람은 뒷모습·옆모습(얼굴 0). 간판·표지판·번호판 글자 0(빈 판). 차량은 일반형(실존 모델 모사 0). 사업을 평가하지 않음(사실만). 사진 모사 0.",
+      "shapes": 70,
+      "uses": 1,
+      "raw": 5233,
+      "gz": 1256,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1973-gas-station-queue",
+      "year": 1973,
+      "years": [
+        1973,
+        1973
+      ],
+      "decade": 70,
+      "hCode": "H-E06",
+      "name": "1973년 10월 — 주유소 앞의 기름통 줄",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "석유 파동",
+      "captionChars": 5,
+      "line": "10월, 기름값이 크게 올라 물가가 뛰기 시작했습니다.",
+      "lineChars": 30,
+      "second": null,
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "주유기와 노즐(앞, 화면 높이의 절반) · 기름통·양동이 줄",
+      "unverified": [
+        "주유소 줄"
+      ],
+      "draws": "가을 오후의 주유소 — 바로 앞 왼쪽의 큰 주유기(빈 계기판)와 손에 쥔 노즐, 바닥에 길게 늘어선 기름통·양동이 아홉(빈 통), 통을 들고 선 사람들의 줄(옆모습), 오른쪽 길에서 기다리는 승용차 넷, 지붕 캐노피의 빈 간판, 노란 은행나무. 「석유 파동」은 통과 줄로 읽힌다.",
+      "ft3": "사람은 뒷모습·옆모습(얼굴 0). 간판·계기판·상호·숫자 0(빈 면). 주유소 줄은 「확인 못 한 물건」 표지(사실표 5절). 평가어 0. 사진 모사 0.",
+      "shapes": 128,
+      "uses": 15,
+      "raw": 10000,
+      "gz": 1852,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1983-reunion-wall-notes",
+      "year": 1983,
+      "years": [
+        1983,
+        1983
+      ],
+      "decade": 80,
+      "hCode": "H-S05",
+      "name": "1983년 여름 — 벽을 덮은 쪽지",
+      "kind": "event",
+      "topic": "사회",
+      "heavy": false,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "이산가족 찾기",
+      "captionChars": 7,
+      "line": "6월, 헤어진 가족을 찾는 생방송이 가을까지 이어졌습니다.",
+      "lineChars": 32,
+      "second": null,
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "벽을 가득 덮은 빈 종이쪽지(화면의 3분의 2)와 가슴의 빈 종이판",
+      "unverified": [],
+      "draws": "여름 저녁 방송국 앞 광장 — 화면 위 3분의 2를 덮은 벽과 줄에 매단 수백 장의 빈 종이쪽지(흰·노란 종이, 조금씩 기운), 벽 앞에 서서 쪽지를 읽거나 손을 뻗는 사람들의 뒷모습, 가슴에 빈 종이판을 건 두 사람, 바닥에 앉은 노인, 선풍기·물통, 뒤로 보이는 건물 유리와 가로등.",
+      "ft3": "사람은 뒷모습·먼 인물(얼굴 0). 쪽지·종이판·건물에 글자·방송사 이름·로고 0(빈 종이). 사진 모사 0.",
+      "shapes": 158,
+      "uses": 15,
+      "raw": 11441,
+      "gz": 1617,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-1998-gold-rings-tray",
+      "year": 1998,
+      "years": [
+        1998,
+        1998
+      ],
+      "decade": 90,
+      "hCode": "H-S08",
+      "name": "1998년 1월 — 금반지 쟁반",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "금 모으기",
+      "captionChars": 5,
+      "line": "집집마다 금을 모아 내놓았습니다.",
+      "lineChars": 18,
+      "second": {
+        "low": "집에서는 반지 하나를 들고 줄에 섰습니다.",
+        "mid": "집에서는 장롱 속 금반지 몇 개를 내놓았습니다.",
+        "high": "집에서는 패물함에서 금붙이를 여럿 골라 냈습니다."
+      },
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "금반지가 담긴 쟁반(앞, 화면 폭의 3분의 2) · 저울",
+      "unverified": [],
+      "draws": "겨울 은행 창구 — 바로 앞 탁자 위 흰 천을 깐 쟁반에 수북한 금반지 서른 남짓(옆으로 누운 고리, 빛 반사), 곁의 작은 저울과 빈 봉투, 탁자 너머 창구 직원의 뒷모습과 외투·목도리 차림으로 선 사람들의 줄(반지 하나를 쥔 손), 벽의 빈 현수막과 형광등. 돌반지·돈·숫자 0.",
+      "ft3": "사람은 뒷모습·옆모습(얼굴 0). 은행 이름·현수막·봉투·저울에 글자·숫자·로고 0(빈 면). 돌반지는 확인 못 해 그리지 않았다(r3) — 반지만. 사진 모사 0.",
+      "shapes": 149,
+      "uses": 7,
+      "raw": 13037,
+      "gz": 1864,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2002-worldcup-semifinal",
+      "year": 2002,
+      "years": [
+        2002,
+        2002
+      ],
+      "decade": 2000,
+      "hCode": "H-C08",
+      "name": "2002년 6월 — 축구공과 붉은 거리 (글자 없는 안)",
+      "kind": "event",
+      "topic": "스포츠",
+      "heavy": false,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "월드컵 4강",
+      "captionChars": 6,
+      "line": "우리나라가 월드컵 4강에 올라 온 나라가 떠들썩했습니다.",
+      "lineChars": 31,
+      "second": null,
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "축구공(앞, 화면 높이의 3분의 1) · 붉은 티셔츠 인파 · 뿔 머리띠 · 큰 화면의 초록 운동장",
+      "unverified": [
+        "공식 마스코트(그리지 않음)"
+      ],
+      "draws": "6월 밤의 광장 — 바로 앞 보도의 큰 축구공(흰 바탕·검은 오각형), 붉은 티셔츠를 입고 팔을 든 뒷모습 인파(뿔 머리띠·태극기), 빌딩 벽의 큰 화면에 뜬 초록 운동장과 작은 선수들, 밤 빌딩의 켜진 창. 티셔츠는 붉은색뿐(응원단 엠블럼·문구 0), 공식 마스코트는 「확인 못 한 물건」이라 그리지 않았다. 글자 있는 안은 같은 그림 + 흰 천의 「대한민국」 한 줄.",
+      "ft3": "사람은 뒷모습(얼굴 0). FIFA·대회 로고·응원단 엠블럼·상호·방송사 표지 0, 공은 흰·검 일반형(대회 공 모사 0). 글자 0(이 안). 사진 모사 0.",
+      "shapes": 129,
+      "uses": 31,
+      "raw": 10400,
+      "gz": 2145,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2002-worldcup-semifinal-text",
+      "year": 2002,
+      "years": [
+        2002,
+        2002
+      ],
+      "decade": 2000,
+      "hCode": "H-C08",
+      "name": "2002년 6월 — 축구공과 붉은 거리 (응원 글자 있는 안)",
+      "kind": "event",
+      "topic": "스포츠",
+      "heavy": false,
+      "revise": null,
+      "variantOf": "era-2002-worldcup-semifinal",
+      "hasText": "대한민국",
+      "caption": "월드컵 4강",
+      "captionChars": 6,
+      "line": "우리나라가 월드컵 4강에 올라 온 나라가 떠들썩했습니다.",
+      "lineChars": 31,
+      "second": null,
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "축구공 · 붉은 티셔츠 인파 · 큰 화면 · 흰 천의 응원 글자 「대한민국」",
+      "unverified": [
+        "공식 마스코트(그리지 않음)"
+      ],
+      "draws": "글자 없는 안과 같은 그림에 인파 위로 펼친 흰 천 하나 — 「대한민국」 네 글자(붉은색, 글꼴은 게임 글꼴). 응원단 이름·상표 문구(예: 영어 구호)는 쓰지 않았다.",
+      "ft3": "글자 없는 안과 같다 + 그림 안 글자 한 줄(「대한민국」 — 형진 님이 이 안을 고르면 T2 생성기의 사건 id별 허용 목록에 넣는다, SPEC-013 완료 기준 9-1). 응원단 엠블럼·상표 문구 0.",
+      "shapes": 131,
+      "uses": 31,
+      "raw": 10720,
+      "gz": 2327,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2008-trading-board-blue",
+      "year": 2008,
+      "years": [
+        2008,
+        2008
+      ],
+      "decade": 2000,
+      "hCode": "H-E09",
+      "name": "2008년 가을 — 파랗게 물든 전광판",
+      "kind": "event",
+      "topic": "경제",
+      "heavy": false,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "세계 금융위기",
+      "captionChars": 7,
+      "line": "9월, 미국에서 시작된 금융위기가 온 세계로 번졌습니다.",
+      "lineChars": 31,
+      "second": {
+        "low": "집에서는 일감이 줄어 씀씀이를 더 줄였습니다.",
+        "mid": "집에서는 펀드 통장을 한참 열어 보지 않았습니다.",
+        "high": "집에서는 환율이 올라 해외 송금을 미뤘습니다."
+      },
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "전광판(화면 위 3분의 2 — 파란 막대 칸, 숫자 0) · 모니터",
+      "unverified": [
+        "전광판"
+      ],
+      "draws": "증권사 객장 — 화면 위 3분의 2를 채운 검은 전광판에 줄줄이 켜진 파란 막대 칸(하락 색, 붉은 칸은 드물게), 그 아래 책상의 모니터 셋도 파란 화면, 의자에 앉아 올려다보는 사람들의 뒷모습 두 줄, 서서 보는 두 사람, 형광등. 숫자·회사 이름 0.",
+      "ft3": "사람은 뒷모습(얼굴 0). 전광판·모니터에 숫자·종목·회사 이름 0(색 막대만). 전광판은 「확인 못 한 물건」 표지(사실표 5절). 사진 모사 0.",
+      "shapes": 152,
+      "uses": 13,
+      "raw": 13160,
+      "gz": 2076,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2018-pyeongchang-torch",
+      "year": 2018,
+      "years": [
+        2018,
+        2018
+      ],
+      "decade": 2010,
+      "hCode": "H-C11",
+      "name": "2018년 2월 — 눈 덮인 경기장의 성화봉",
+      "kind": "event",
+      "topic": "스포츠",
+      "heavy": false,
+      "revise": null,
+      "variantOf": null,
+      "hasText": null,
+      "caption": "평창 동계 올림픽",
+      "captionChars": 9,
+      "line": "2월, 강원도 평창에서 동계 올림픽이 열렸습니다.",
+      "lineChars": 27,
+      "second": null,
+      "comp": "object",
+      "compLabel": "물건 초점",
+      "object": "성화봉(앞, 화면 높이의 절반 — 흰 몸통·금띠·불꽃) · 흰 호랑이 마스코트 · 눈 덮인 관중석과 성화대",
+      "unverified": [],
+      "draws": "2월 밤의 눈 덮인 경기장 — 바로 앞 오른쪽, 흰 옷을 입은 주자가 든 손 위의 큰 성화봉(흰 몸통·금띠 둘·불꽃), 왼쪽의 흰 호랑이 마스코트(흰 몸·검은 줄무늬·둥근 귀·꼬리, 팔을 든 뒷모습, 얼굴 0), 뒤로 관중이 가득한 눈 덮인 원형 관중석, 높은 성화대의 불, 흰 산과 밤하늘의 눈송이. 오륜·대회 엠블럼 0.",
+      "ft3": "사람은 뒷모습·옆모습(얼굴 0). 오륜기·대회 공식 로고·휘장·상호 0. 마스코트는 「실물과 최대한 같게」(Q4 — 흰 호랑이의 색·줄무늬·귀·비례)이되 공식 그림을 베끼지 않고 새로 구성(얼굴 없음). 성화봉은 흰 몸통·금띠의 비례만. 사진 모사 0.",
+      "shapes": 68,
+      "uses": 4,
+      "raw": 5024,
+      "gz": 1194,
+      "gzBefore": null,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    },
+    {
+      "id": "era-2020-screening-tent-queue",
+      "year": 2020,
+      "years": [
+        2020,
+        2020
+      ],
+      "decade": 2020,
+      "hCode": "H-S14",
+      "name": "2020년 봄 — 마스크, 선별진료소 앞",
+      "kind": "event",
+      "topic": "감염병",
+      "heavy": false,
+      "revise": "era-2020-screening-tent-queue",
+      "variantOf": null,
+      "hasText": null,
+      "caption": "코로나19",
+      "captionChars": 5,
+      "line": "1월, 새 감염병이 들어와 온 나라가 마스크를 썼습니다.",
+      "lineChars": 31,
+      "second": {
+        "low": "집에서는 식구가 하던 가게가 오래 비었습니다.",
+        "mid": "집에서는 식탁이 일터와 교실이 되었습니다.",
+        "high": "집에서는 택배 상자가 현관에 매일 쌓였습니다."
+      },
+      "comp": "mixed",
+      "compLabel": "섞음(물건 앞 + 장소 뒤)",
+      "object": "흰 마스크(앞줄 두 사람 — 화면 높이의 절반) · 마스크 상자",
+      "unverified": [],
+      "draws": "봄의 병원 주차장 — 바로 앞 어깨 너머로 큰 옆모습 둘(흰 마스크가 얼굴의 절반, 귀끈)과 손에 든 마스크 상자, 뒤로 흰 천막 셋과 방호복 둘, 바닥 간격 표시를 따라 띄어 선 마스크 쓴 줄, 빈 안내판, 멀리 아파트와 가로수. r5의 장면에 마스크를 앞으로 당겼다(섞음 구도).",
+      "ft3": "감염병 장면(○ 아님 — 가리기 대상 밖). 사람은 옆모습·마스크·방호복(얼굴 0 — 마스크 위도 머리 덩이뿐). 병원 이름·보호 표장·글자 0. 사진 모사 0.",
+      "shapes": 97,
+      "uses": 13,
+      "raw": 7220,
+      "gz": 1191,
+      "gzBefore": 1069,
+      "over25": false,
+      "overLimit": false,
+      "approved": false
+    }
+  ]
+}
