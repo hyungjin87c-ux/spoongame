@@ -1,0 +1,17 @@
+import { chromium, newPage, inject } from './lib.mjs';
+import { readFileSync } from 'node:fs';
+const raw = JSON.parse(readFileSync('tests/fixtures/save-v040-both-age20.json', 'utf8')).data;
+const { browser, page, errors } = await newPage(chromium, { width: 1000, height: 800 });
+const st = { ...raw, paused: true }; delete st.play;
+await inject(page, st, { speed: 1, autoMode: false, noteCards: false });
+await page.getByTestId('life-screen').waitFor({ state: 'visible' });
+await page.waitForTimeout(500);
+await page.getByTestId('tool-note').hover();
+await page.waitForTimeout(400);
+const vis = async () => page.evaluate(() => { const s = document.querySelector('[data-testid=tool-note] > span:not(.sr-only)'); const cs = getComputedStyle(s); return { clip: cs.clipPath, off: document.querySelector('.controls__tools').hasAttribute('data-tip-off'), tipRect: Math.round(s.getBoundingClientRect().width) + 'x' + Math.round(s.getBoundingClientRect().height) }; });
+const a = await vis();
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+const b = await vis();
+console.log(`1000px 말풍선: 호버 ${JSON.stringify(a)} → Esc ${JSON.stringify(b)} errors ${errors.length}`);
+await browser.close();
