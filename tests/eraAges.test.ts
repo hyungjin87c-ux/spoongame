@@ -3,10 +3,10 @@ import { eraOf, eraRowsOf, type EraBand, type EraContext, type EraWindow } from 
 import { REAL_WINDOWS } from './helpers/eraFutureData';
 
 /**
- * SPEC-012 QF3 시대의 창 나이 규칙 (정밀 QF3a 코어 + 경량 QF3b 데이터, 부록 A 「A 표」 17줄).
+ * SPEC-012 QF3 시대의 창 나이 규칙 (정밀 QF3a 코어 + 경량 QF3b 데이터, 부록 A 「A 표」 18줄).
  *  - QF3a: ① 사건도 `ages`를 지킨다 ② 일상의 옛 4단계(나이를 풀어서 그 10년의 아무 일상)가 없다 — 어느 해·나이·구간·가리기에서도 고른 장면(`pic`·`line`)의 `ages`가 그 나이를 포함하고, 맞는 장면이 없으면 빈 틀이고 줄이 없다
  *    ③ 출생 연도 없는 호출은 나이를 보지 않는다 ④ 전 구간(1940~2109)에 적용한다.
- *  - QF3b: `scripts/genEraWindows.ts#AGES_FIX`가 「A 표」 17줄의 최소 나이를 달고 `npm run gen:era`가 데이터를 다시 만든다. 줄 문장·그림·`years`·`band`는 그대로다.
+ *  - QF3b: `scripts/genEraWindows.ts#AGES_FIX`가 「A 표」 18줄의 최소 나이를 달고 `npm run gen:era`가 데이터를 다시 만든다. 줄 문장·그림·`years`·`band`는 그대로다.
  * 부록 A는 기획자 초안이다 — reviewer 전수 판독과 마스터 확인 전이다(이 표가 바뀌면 이 시험의 표와 `AGES_FIX`를 같이 고친다).
  */
 
@@ -16,7 +16,7 @@ const ctxOf = (windows: readonly EraWindow[], over: Partial<EraContext> = {}): E
 /** SPEC-012 부록 A 「A 표」 (id → 최소 나이, 끝은 기존 관례 120) */
 const APPENDIX_A: Readonly<Record<string, number>> = {
   'era-1946-well-side': 7,
-  'era-1948-polling-queue': 20,
+  'era-1948-polling-queue': 21,
   'era-1953-tent-school': 7,
   'era-1954-relief-queue': 7,
   'era-1970s-low-kerosene-room': 13,
@@ -32,6 +32,7 @@ const APPENDIX_A: Readonly<Record<string, number>> = {
   'era-2021-empty-classroom-online': 7,
   'era-2024-chat-bubbles': 13,
   'era-2025-timetable-desk': 7,
+  'era-2000s-tteokbokki-stand': 7, // 마스터 2026-11-08: B 표에서 A 표로 옮김(학교 앞 분식집)
 };
 /** SPEC-012 전에 이미 `ages`가 있던 장면(일상 15 + FU8의 물류센터 1) — 이 묶음이 건드리지 않는다 */
 const BEFORE: Readonly<Record<string, readonly [number, number]>> = {
@@ -53,9 +54,9 @@ const BEFORE: Readonly<Record<string, readonly [number, number]>> = {
 };
 const byId = (id: string): EraWindow => REAL_WINDOWS.find((w) => w.id === id)!;
 
-describe('QF3b 부록 A 「A 표」 17줄의 최소 나이 (데이터)', () => {
-  it('17줄 모두 ages가 [최소, 120]이고, 줄 문장·종류·years·band는 그대로 승인된 값이다', () => {
-    expect(Object.keys(APPENDIX_A).length).toBe(17);
+describe('QF3b 부록 A 「A 표」 18줄의 최소 나이 (데이터)', () => {
+  it('18줄 모두 ages가 [최소, 120]이고, 줄 문장·종류·years·band는 그대로 승인된 값이다', () => {
+    expect(Object.keys(APPENDIX_A).length).toBe(18);
     for (const [id, min] of Object.entries(APPENDIX_A)) {
       const w = byId(id);
       expect(w, id).toBeDefined();
@@ -68,32 +69,32 @@ describe('QF3b 부록 A 「A 표」 17줄의 최소 나이 (데이터)', () => {
     expect(byId('era-2009-first-smartphone')).toMatchObject({ kind: 'event', band: 'high' });
     expect(byId('era-1970s-low-kerosene-room')).toMatchObject({ kind: 'daily', band: 'low' });
   });
-  it('ages가 있는 장면은 이 표의 17줄 + 이미 있던 16장뿐이다(다른 장면에 ages를 더하지 않았고 이미 있던 값을 바꾸지 않았다) — B 표 10줄은 그대로 둔다', () => {
+  it('ages가 있는 장면은 이 표의 18줄 + 이미 있던 16장뿐이다(다른 장면에 ages를 더하지 않았고 이미 있던 값을 바꾸지 않았다) — B 표 9줄은 그대로 둔다', () => {
     const expected = new Map<string, readonly [number, number]>([...Object.entries(BEFORE), ...Object.entries(APPENDIX_A).map(([id, min]) => [id, [min, 120]] as const)]);
     const got = new Map(REAL_WINDOWS.filter((w) => w.ages !== undefined).map((w) => [w.id, w.ages!] as const));
     expect([...got.keys()].sort()).toEqual([...expected.keys()].sort());
     for (const [id, ages] of expected) expect(got.get(id), id).toEqual(ages);
-    expect(got.size).toBe(32);
-    // B 표(경계 10줄, 기획자 제안 「그대로 둔다」): ages가 없다
-    for (const id of ['era-1950-refugee-column', 'era-1964-airport-farewell', 'era-1966-slow-train-platform', 'era-1999-millennium-night', 'era-2000s-tteokbokki-stand', 'era-2010s-high-airport-departure', 'era-2015-mask-queue-pharmacy', 'era-2018-phone-chart', 'era-2020-screening-tent-queue', 'era-2020s-kiosk-queue']) {
+    expect(got.size).toBe(33);
+    // B 표(경계 9줄 — 떡볶이집은 A 표로 옮겼다, 기획자 제안 「그대로 둔다」): ages가 없다
+    for (const id of ['era-1950-refugee-column', 'era-1964-airport-farewell', 'era-1966-slow-train-platform', 'era-1999-millennium-night', 'era-2010s-high-airport-departure', 'era-2015-mask-queue-pharmacy', 'era-2018-phone-chart', 'era-2020-screening-tent-queue', 'era-2020s-kiosk-queue']) {
       expect(byId(id), id).toBeDefined();
       expect(byId(id).ages, `${id}: B 표는 그대로`).toBeUndefined();
     }
   });
-  it('AGES_FIX(scripts/genEraWindows.ts)가 이 표와 같다: 17줄이 모두 있고 값이 같다 — 생성 파일을 직접 고치지 않는다', () => {
+  it('AGES_FIX(scripts/genEraWindows.ts)가 이 표와 같다: 18줄이 모두 있고 값이 같다 — 생성 파일을 직접 고치지 않는다', () => {
     const sources = import.meta.glob('../scripts/genEraWindows.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
     const text = Object.values(sources)[0];
     const block = /const AGES_FIX[^=]*= \{([\s\S]*?)\n\};/.exec(text)?.[1] ?? '';
     for (const [id, min] of Object.entries(APPENDIX_A)) expect(block, id).toContain(`'${id}': [${min}, 120]`);
     // 이미 있던 물류센터 줄도 그대로
     expect(block).toContain("'era-2020s-low-logistics-dawn': [19, 100]");
-    expect((block.match(/^\s*'era-[^']+': \[\d+, \d+\]/gm) ?? []).length).toBe(18);
+    expect((block.match(/^\s*'era-[^']+': \[\d+, \d+\]/gm) ?? []).length).toBe(19);
   });
 });
 
 describe('QF3a 나이 규칙 (코어)', () => {
   it('① 사건도 ages를 지킨다 — 나이가 밖이면 그 사건은 후보가 아니라 같은 해 다른 사건 → 일상 순서로 내려간다', () => {
-    const adultEvent: EraWindow = { id: '투표', years: [1948, 1948], kind: 'event', topic: '시험', line: '투표소에 줄을 섰습니다.', heavy: false, approved: true, draw: '투표', ages: [20, 120] };
+    const adultEvent: EraWindow = { id: '투표', years: [1948, 1948], kind: 'event', topic: '시험', line: '투표소에 줄을 섰습니다.', heavy: false, approved: true, draw: '투표', ages: [21, 120] };
     const plainEvent: EraWindow = { id: '시장', years: [1948, 1948], kind: 'event', topic: '시험', line: '장이 섰습니다.', heavy: false, approved: true, draw: '시장' };
     const daily: EraWindow = { id: '창가', years: [1940, 1949], kind: 'daily', topic: '시험', line: '창가에 앉았습니다.', heavy: false, approved: true, draw: '창가' };
     for (const seed of [1, 99, 4242]) {
@@ -103,9 +104,9 @@ describe('QF3a 나이 규칙 (코어)', () => {
       expect(eraOf(1948, ctxOf([adultEvent, daily], { seed, birthYear: 1943 })).pic?.id, `5세 ${seed}: 사건이 모두 나이 밖이면 일상`).toBe('창가');
       expect(eraOf(1948, ctxOf([adultEvent], { seed, birthYear: 1943 })).pic, `5세 ${seed}: 일상도 없으면 빈 틀`).toBeNull();
       expect(eraOf(1948, ctxOf([adultEvent], { seed, birthYear: 1943 })).line).toBeNull();
-      // 20세 경계
-      expect(eraOf(1948, ctxOf([adultEvent], { seed, birthYear: 1929 })).pic, `19세 ${seed}`).toBeNull();
-      expect(eraOf(1948, ctxOf([adultEvent], { seed, birthYear: 1928 })).pic?.id, `20세 ${seed}`).toBe('투표');
+      // 21세 경계(1948년 제헌 선거의 선거권 — 마스터 2026-11-08)
+      expect(eraOf(1948, ctxOf([adultEvent], { seed, birthYear: 1928 })).pic, `20세 ${seed}`).toBeNull();
+      expect(eraOf(1948, ctxOf([adultEvent], { seed, birthYear: 1927 })).pic?.id, `21세 ${seed}`).toBe('투표');
     }
   });
   it('수저 구간 사건(band)도 나이를 지킨다: 위 구간의 6세는 band 사건 대신 band 없는 사건을 본다', () => {
@@ -159,7 +160,7 @@ describe('QF3 전 해·나이·구간·가리기 전수 (실제 데이터 140장
     expect(withAges, '공허하지 않다: ages 있는 장면이 실제로 고르기에 닿는다').toBeGreaterThan(1000);
   }, 120_000);
 
-  it('부록 A 17줄은 최소 나이 미만의 어떤 해·구간·가리기·시드에서도 pic·line으로 나오지 않는다 (그 장면의 모든 해 × 나이 0~최소−1 × 구간 3 × 가리기 2 × 시드 4)', () => {
+  it('부록 A 18줄은 최소 나이 미만의 어떤 해·구간·가리기·시드에서도 pic·line으로 나오지 않는다 (그 장면의 모든 해 × 나이 0~최소−1 × 구간 3 × 가리기 2 × 시드 4)', () => {
     let checked = 0;
     for (const [id, min] of Object.entries(APPENDIX_A)) {
       const w = byId(id);
@@ -177,11 +178,11 @@ describe('QF3 전 해·나이·구간·가리기 전수 (실제 데이터 140장
     expect(checked).toBeGreaterThan(1500);
   }, 60_000);
 
-  it('나이가 맞으면 그 줄이 나온다(줄이 지워진 것이 아니라 나이대가 붙은 것이다): 2000년 13세는 피시방, 2001년 13세는 휴대전화, 1948년 20세는 투표소 (그해 사건의 구간 분기가 없는 줄)', () => {
+  it('나이가 맞으면 그 줄이 나온다(줄이 지워진 것이 아니라 나이대가 붙은 것이다): 2000년 13세는 피시방, 2001년 13세는 휴대전화, 1948년 21세는 투표소 (그해 사건의 구간 분기가 없는 줄)', () => {
     for (const band of BANDS) for (const seed of [1, 99, 4242]) {
       expect(eraOf(2000, ctxOf(REAL_WINDOWS, { band, seed, birthYear: 1987 })).pic?.id, `2000/${band}/${seed}`).toBe('era-2000-pc-bang');
       expect(eraOf(2001, ctxOf(REAL_WINDOWS, { band, seed, birthYear: 1988 })).pic?.id, `2001/${band}/${seed}`).toBe('era-2001-folder-phones-stop');
-      expect(eraOf(1948, ctxOf(REAL_WINDOWS, { band, seed, birthYear: 1928 })).pic?.id, `1948/${band}/${seed}`).toBe('era-1948-polling-queue');
+      expect(eraOf(1948, ctxOf(REAL_WINDOWS, { band, seed, birthYear: 1927 })).pic?.id, `1948/${band}/${seed}`).toBe('era-1948-polling-queue');
     }
   });
 });
@@ -192,8 +193,9 @@ describe('QF3 형진 님 사례 — 1995년생 5세(2000)·6세(2001)', () => {
     for (const band of BANDS) for (const gentle of [false, true]) for (const seed of SEEDS) {
       for (const [year, age] of [[2000, 5], [2001, 6]] as const) {
         const p = eraOf(year, ctxOf(REAL_WINDOWS, { band, gentle, seed, birthYear: 1995 }));
-        expect(p.pic?.id, `${year}/${age}세 ${band}/${gentle}/${seed}: 창`).not.toMatch(/pc-bang|folder-phones/);
-        expect(p.line?.id, `${year}/${age}세 ${band}/${gentle}/${seed}: 줄`).not.toMatch(/pc-bang|folder-phones/);
+        // 떡볶이집 일상이 7세부터가 되어(부록 A 18줄, 마스터 2026-11-08) 2000·2001년의 5~6세는 맞는 장면이 없으면 빈 해다 — 그래서 id가 없을 수 있다(빈 문자열로 비교)
+        expect(p.pic?.id ?? '', `${year}/${age}세 ${band}/${gentle}/${seed}: 창`).not.toMatch(/pc-bang|folder-phones/);
+        expect(p.line?.id ?? '', `${year}/${age}세 ${band}/${gentle}/${seed}: 줄`).not.toMatch(/pc-bang|folder-phones/);
       }
       const rows = eraRowsOf(1995, 12, ctxOf(REAL_WINDOWS, { band, gentle, seed }));
       for (const r of rows.filter((x) => x.age <= 12)) expect(r.line, `${band}/${gentle}/${seed} ${r.age}세`).not.toMatch(/피시방|휴대전화/);

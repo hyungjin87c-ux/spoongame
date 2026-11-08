@@ -112,8 +112,7 @@ describe('새 소식 데이터 (NT3)', () => {
   it('요약은 한 줄(한 문장)이고 비어 있지 않다', () => {
     for (const n of RELEASE_NOTES) {
       expect(n.summary.length, n.version).toBeGreaterThan(0);
-      // v0.4.1만 두 문장이다: copy.md 13-2 v0.4.1 요약(「…붙었어요. 시대의 창도 다듬었어요.」)을 형진 님이 2026-11-08 「이대로」로 확정했고 SPEC-012 QF7은 그 글자 그대로 옮기라고 했다 — 계약(한 줄 요약)은 다른 버전에 그대로 두고 이 버전만 예외로 둔다(마스터 확인 필요)
-      expect(sentencesOf(n.summary), n.version).toHaveLength(n.version === '0.4.1' ? 2 : 1);
+      expect(sentencesOf(n.summary), n.version).toHaveLength(1);
     }
   });
 

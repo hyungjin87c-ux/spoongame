@@ -250,7 +250,7 @@ export interface EndingReview {
   /** 본인이 고른 선택의 수 (연표의 선택 기록 중 `by`가 없는 것) — 부모님이 정한·흘러간 선택은 세지 않는다 (SPEC-005 PD9) */
   choiceCount: number;
   /**
-   * 어린 시절의 큰 결정 가운데 부모님이 내린 횟수(`by: 'parent'`)와 아이의 일로 흘러간 횟수(`by: 'child'`). 엔딩 화면은 이 횟수를 문장으로 그리지 않는다(형진 님 요청으로 요약 문장을 없앴다, 2026-11-08) —
+   * 어린 시절 결정 중 부모가 정한 횟수(`by: 'parent'`)와 아이의 일로 흘러간 횟수(`by: 'child'`). 엔딩 화면은 이 횟수를 문장으로 그리지 않는다(형진 님 요청으로 PD9 둘째 줄을 없앴다, 2026-11-08) —
    * 「본인 + 부모님 + 흘러감 = 연표의 선택 줄 수」 불변식과 파이프라인 점검(`scripts/pipelineLib.ts`)이 읽는다.
    */
   delegated: { parent: number; child: number };

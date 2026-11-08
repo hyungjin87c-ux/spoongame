@@ -13,7 +13,7 @@ export const ERA_DECADE: EraDecadeData = {
     { id: 'era-2000s-low-goshiwon', years: [2000, 2009], kind: 'daily', topic: '생활', line: '고시원 방에 책상과 침대만 있었습니다.', heavy: false, approved: true, draw: 'era-2000s-low-goshiwon', band: 'low' },
     { id: 'era-2000s-minihompy-room', years: [2000, 2009], kind: 'daily', topic: '생활', line: '미니홈피 배경음악을 골랐습니다.', heavy: false, approved: true, draw: 'era-2000s-minihompy-room', ages: [13, 29] },
     { id: 'era-2000s-night-convenience', years: [2000, 2009], kind: 'daily', topic: '생활', line: '편의점 밤 근무를 섰습니다.', heavy: false, approved: true, draw: 'era-2000s-night-convenience', ages: [20, 29] },
-    { id: 'era-2000s-tteokbokki-stand', years: [2000, 2009], kind: 'daily', topic: '생활', line: '학교 앞 분식집에서 떡볶이를 먹었습니다.', heavy: false, approved: true, draw: 'era-2000s-tteokbokki-stand' },
+    { id: 'era-2000s-tteokbokki-stand', years: [2000, 2009], kind: 'daily', topic: '생활', line: '학교 앞 분식집에서 떡볶이를 먹었습니다.', heavy: false, approved: true, draw: 'era-2000s-tteokbokki-stand', ages: [7, 120] },
     { id: 'era-2001-folder-phones-stop', years: [2001, 2001], kind: 'event', topic: '문화', hCode: 'H-C07', line: '버스를 기다리며 휴대전화를 열었습니다.', heavy: false, approved: true, draw: 'era-2001-folder-phones-stop', ages: [13, 120] },
     { id: 'era-2002-street-cheering', years: [2002, 2002], kind: 'event', topic: '스포츠', hCode: 'H-C08', line: '거리마다 붉은 옷이 모여 응원했습니다.', heavy: false, approved: true, draw: 'era-2002-street-cheering' },
     { id: 'era-2003-subway-entrance-smoke', years: [2003, 2003], kind: 'event', topic: '재난', hCode: 'H-B07', line: '지하철역에서 큰불이 났습니다.', heavy: true, approved: true, draw: 'era-2003-subway-entrance-smoke' },

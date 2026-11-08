@@ -107,7 +107,7 @@ for (const vp of STANDARD_VIEWPORTS) {
 test.describe('M4 고정 해제가 실제로 일어나는 곳 (공허 통과 방지)', () => {
   // 규칙 검사가 늘 「고정」만 보고 통과하지 않도록, 낮은 화면·큰 글자에서 헤더·진행 줄 해제가 관측되는지 직접 본다
   // SPEC-012 QF5(조작 영역 안 B): 하단 진행 줄이 112 → 48px로 줄어 옛 낮은 화면(667×375·320×256)에서는 헤더(약 95px) + 진행 줄(48px) = 약 143px가 화면의 절반 이하라 더는 풀리지 않는다(규칙은 그대로 —
-  // 풀림이 실제로 일어나는 곳을 더 낮은 화면(667×260·320×160)으로 옮겼다). 667×375는 「이제 둘 다 고정」으로 바뀐 동작을 지킨다.
+  // 풀림이 실제로 일어나는 곳을 더 낮은 화면(667×260·320×170)으로 옮겼다). 667×375는 「이제 둘 다 고정」으로 바뀐 동작을 지킨다.
   test('667x375 가로: 헤더(약 95px) + 고정 진행 줄(약 48px, SPEC-012 QF5)이 화면의 절반(187px) 이하라 둘 다 고정이다 — 옛 112px 진행 줄에서는 헤더가 풀렸다', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
     await page.setViewportSize({ width: 667, height: 375 });
@@ -129,7 +129,7 @@ test.describe('M4 고정 해제가 실제로 일어나는 곳 (공허 통과 방
     expect(m.head!.releasedClass, '헤더가 풀렸다').toBe(true);
     expect(m.head!.position).toBe('static');
     expect(m.bar!.position, '진행 줄은 절반 이하라 고정').toBe('fixed');
-    testInfo.annotations.push({ type: '측정', description: `헤더 ${Math.round(m.head!.height)}px + 진행 줄 ${Math.round(m.bar!.height)}px / 화면 375px` });
+    testInfo.annotations.push({ type: '측정', description: `헤더 ${Math.round(m.head!.height)}px + 진행 줄 ${Math.round(m.bar!.height)}px / 화면 260px` });
   });
 
   test('320x256 (1280 창의 400%) 글자 100%: 진행 줄(폭 320이라 둘째 줄로 접혀 약 92px, SPEC-012 QF5)은 절반(128px) 이하라 고정이고 헤더는 합이 절반을 넘어 풀린다. 글자 200%는 아주 낮은 320x170에서 진행 줄(약 95px)이 절반을 넘어 풀린다', async ({ page }, testInfo) => {

@@ -12,7 +12,7 @@ export const ERA_DECADE: EraDecadeData = {
     { id: 'era-1942-outdoor-class', years: [1941, 1944], kind: 'daily', topic: '생활', line: '나무 그늘에서 수업을 했습니다.', heavy: false, approved: true, draw: 'era-1942-outdoor-class', ages: [7, 12] },
     { id: 'era-1945-liberation-street', years: [1945, 1945], kind: 'event', topic: '정치', hCode: 'H-B12', line: '8월, 거리가 태극기로 가득 찼습니다.', heavy: true, approved: true, draw: 'era-1945-liberation-street' },
     { id: 'era-1946-well-side', years: [1946, 1947], kind: 'daily', topic: '생활', line: '우물가에서 물을 길어 왔습니다.', heavy: false, approved: true, draw: 'era-1946-well-side', ages: [7, 120] },
-    { id: 'era-1948-polling-queue', years: [1948, 1948], kind: 'event', topic: '정치', hCode: 'H-B12', line: '5월, 첫 선거 투표소에 줄을 섰습니다.', heavy: true, approved: true, draw: 'era-1948-polling-queue', ages: [20, 120] },
+    { id: 'era-1948-polling-queue', years: [1948, 1948], kind: 'event', topic: '정치', hCode: 'H-B12', line: '5월, 첫 선거 투표소에 줄을 섰습니다.', heavy: true, approved: true, draw: 'era-1948-polling-queue', ages: [21, 120] },
     { id: 'era-1949-market-day', years: [1949, 1949], kind: 'daily', topic: '생활', line: '장날이면 장터가 붐볐습니다.', heavy: false, approved: true, draw: 'era-1949-market-day', ages: [20, 120] },
   ],
   art: {

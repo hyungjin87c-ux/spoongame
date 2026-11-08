@@ -282,7 +282,7 @@ function atAge(age: number): GameState {
   return { ...base, age, paused: true, history, assets: { net: 5000, income: 4500, debt: 0, incomeAdj: 0, dwelling: 'rent' }, familyFund: 0 };
 }
 
-test('표 끝 뒤(R-601·R-602, 실제 데이터): 2111년 판의 창은 링크 없는 끝 장면이고, 인생 기록은 2110년에 끝 줄 한 번(칩 없음)뿐 — 2111년 줄은 없고 2109년 줄에는 칩이 있다', async ({ page }) => {
+test('표 끝 뒤(R-601·R-602, 실제 데이터): 2111년 판의 창은 링크 없는 끝 장면이고, 인생 기록은 2110년에 끝 줄 한 번(칩 없음)뿐 — 2111년 줄은 없고 표 안 마지막 해들의 줄에는 칩이 있다', async ({ page }) => {
   await injectSave(page, atAge(95), FAST, MANUAL);
   const era = page.locator('#scene-era');
   // 끝 장면은 2100년대 덩어리에 있다(d2110.ts 없음) — 덩어리가 오면 그림이 선다
@@ -299,7 +299,9 @@ test('표 끝 뒤(R-601·R-602, 실제 데이터): 2111년 판의 창은 링크 
   await expect(page.locator('#log-y2110')).toContainText('한 세기가 흘러 연표가 끝났습니다.');
   expect(await page.locator('#log-y2110 .chip--fc, #log-y2110 .log__basis, #log-y2110 .log__tlrow').count(), '끝 줄에는 칩도 근거 종류도 없다').toBe(0);
   await expect(page.locator('#log-y2111')).toHaveCount(0);
-  await expect(page.locator('#log-y2109').getByTestId('chip-fc'), '표 안의 마지막 해는 예측 줄이다').toBeVisible();
+  // SPEC-012 QF2(2027~2109의 같은 장면은 한 판에 한 번, 쓸 장면이 남지 않은 해는 줄 없음): 2109년이 비어 있을 수 있다 — 2109년 줄이 있으면 예측 줄이고, 표 안의 마지막 10년(2100~2109)에는 예측 줄이 늘 있다
+  if ((await page.locator('#log-y2109').count()) > 0) await expect(page.locator('#log-y2109').getByTestId('chip-fc'), '2109년 줄이 있으면 예측 줄이다').toBeVisible();
+  expect(await page.locator('[id^="log-y210"]:not(#log-y2110) [data-testid="chip-fc"]').count(), '표 안의 마지막 10년에도 예측 줄이 있다').toBeGreaterThan(0);
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 

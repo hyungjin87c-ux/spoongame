@@ -184,6 +184,33 @@ describe('FU1 고르기: 2026~2109도 그해 표를 따른다', () => {
       }
     }
   }, 60_000);
+  // REV-012 R-656: 위 시험은 합성 표(SYNTH)라 실제 승인 데이터의 `years` 폭(사건이 여러 해에 걸침·일상 구간이 10년과 어긋남)을 못 본다 — 같은 걷기를 REAL_WINDOWS로 한 번 더 돈다.
+  // 후보 = 그해 사건(years가 그해를 덮는 것) + 그 10년 일상(years[0] ≤ 10년의 끝 && years[1] ≥ 10년의 시작). 2027~2029년은 2020년대 일상이 그 10년 일상이라 후보에 들어간다.
+  it('실제 승인 데이터(REAL_WINDOWS)로 걸어도 2027~2109의 빈 틀은 그 해의 후보(그해 사건·그 10년 일상)가 모두 쓰였거나 나이·구간·가리기에 맞지 않을 때뿐이다', () => {
+    let empties = 0;
+    for (const band of BANDS) {
+      for (const gentle of [false, true]) {
+        for (const birth of [1990, 2005, 2020]) {
+          const used = new Set<string>();
+          for (let y = Math.max(2027, birth); y <= 2109; y++) {
+            const pick = eraOf(y, ctxOf(REAL_WINDOWS, { band, gentle, birthYear: birth, seed: 99 }));
+            const age = y - birth;
+            if (pick.pic === null) {
+              empties++;
+              const decade = Math.floor(y / 10) * 10;
+              const fits = (x: EraWindow): boolean => !used.has(x.id) && (!gentle || !x.heavy) && (x.ages === undefined || (age >= x.ages[0] && age <= x.ages[1]));
+              const events = REAL_WINDOWS.filter((x) => x.kind === 'event' && x.years[0] <= y && x.years[1] >= y && fits(x) && (x.band === undefined || x.band === band));
+              const dailies = REAL_WINDOWS.filter((x) => x.kind === 'daily' && x.years[0] <= decade + 9 && x.years[1] >= decade && fits(x) && (x.band === undefined || (band !== 'mid' && x.band === band)));
+              expect([...events, ...dailies].map((x) => x.id), `${band}/${gentle}/${birth}년생 ${y}년(${age}세): 빈 틀인데 쓸 장면이 남아 있다(실제 데이터)`).toEqual([]);
+            }
+            if (pick.pic !== null) used.add(pick.pic.id);
+            if (pick.line !== null) used.add(pick.line.id);
+          }
+        }
+      }
+    }
+    expect(empties, '공허 통과 방지: 실제 데이터로 걸어도 빈 해가 실제로 관측된다').toBeGreaterThan(0);
+  }, 60_000);
   it('사건이 있는 해는 사건 그림, 없는 해는 그 10년의 일상 그림이고 sourceYear는 그해다 (옛 「2025 세트 반복」이 아니다)', () => {
     for (const w of FUTURE_NO_END.filter((x) => x.kind === 'event' && x.band === undefined && x.years[0] >= 2026)) {
       // 같은 해에 band 사건이 짝으로 있는 해(2026·2030·2044·2050·2065·2075·2085·2095)는 아래 「사건 band 규칙」 시험이 맡는다

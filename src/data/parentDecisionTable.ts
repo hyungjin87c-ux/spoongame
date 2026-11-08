@@ -86,7 +86,7 @@ export const CHILD_CHIP_TEXT = '아이의 일';
 
 /**
  * 부모 결정 문구의 한 곳 (SPEC-011 DS2, 4절 표): **도장·카드 칩·첫 카드 안내**가 이 함수 하나에서 나온다 — 카드(`ParentCard`)·인생 기록 줄(`LogList`)·엔딩 연표(`EndingScreen`)·가린 줄·가린 카드의 도장(`Veil`)·
- * 연출 필요량의 글자 수(`life.ts#resolveDelegated`)가 모두 여기서 문구를 가져간다. 엔딩 「생애 기록」 카드의 요약 문장(PD9 「어린 시절의 큰 결정 가운데 N번은 …」)은 형진 님 요청으로 없앴다(2026-11-08) — 그래서 엔딩 요약 주어(DS3)는 없다. 주어는 `core/parentSubject.ts#coParentsOf`가 정한 「그 해에 함께 사는 부모」다.
+ * 연출 필요량의 글자 수(`life.ts#resolveDelegated`)가 모두 여기서 문구를 가져간다. 엔딩 「생애 기록」 카드의 요약 문장(PD9 둘째 줄)은 형진 님 요청으로 없앴다(2026-11-08) — 그래서 엔딩 요약 주어(DS3)는 없다. 주어는 `core/parentSubject.ts#coParentsOf`가 정한 「그 해에 함께 사는 부모」다.
  *  - 두 분 `'both'` → 부모님(이) · 어머니만 `'mother'` → 어머니(가) · 아버지만 `'father'` → 아버지(가) · 없음 `'none'`(구조상 도달하지 않는 방어 분기, 결정 K10) → 기본 문구(부모님)
  *  - **세 주어는 모두 세 글자이고 조사(이·가)를 붙인 앞부분도 네 글자라** 도장·칩·안내의 길이가 같다 — 연출 필요량(`readNeedMs`)과 판 길이가 주어에 따라 달라지지 않는다(tests/parentSubject.test.ts).
  * 두 분 함께의 문구가 `PARENT_DECIDED_TEXT`·`PARENT_CHIP_TEXT`·`FIRST_PARENT_HINT` 기본 상수로 남는다(소개 Q&A `aboutFaq.ts`가 일반 설명에서 인용한다).
