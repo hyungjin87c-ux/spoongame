@@ -819,10 +819,11 @@ describe('상태 어휘 (R-067): 가족·부모님·일터·혼자 같은 말은
   const tail = ' 창밖으로 바람이 지나갔다.';
   const textEv = (head: string, over: Record<string, unknown> = {}) => raw({ text: head + tail, ...over });
 
-  it('규칙 표: 어른 시점 다섯 가지(자식·배우자·부모님·일터·혼자) + 어린 시절 가족 낱말 여덟 가지(조부모·동생·형누나·형제·아버지·어머니·부모님·반려동물, SPEC-009 6-3절)이고, 예외는 아이를 가질지 정하는 두 이벤트·동생이 태어나는 사건·떠돌이 강아지 이야기뿐이다', () => {
+  it('규칙 표: 어른 시점 다섯 가지(자식·배우자·부모님·일터·혼자) + 어린 시절 가족 낱말 여덟 가지(조부모·동생·형누나·형제·아버지·어머니·부모님·반려동물, SPEC-009 6-3절)이고, 예외는 아이를 가질지 정하는 두 이벤트·동생이 태어나는 사건·떠돌이 강아지 이야기와 강아지 조르기 두 사건(SPEC-011)뿐이다', () => {
     expect(STATE_WORD_RULES.map((r) => r.name.split('(')[0])).toEqual(['자식·손주', '배우자', '부모님', '조부모', '동생', '형·누나·오빠·언니', '형제·남매', '아버지·아빠', '어머니·엄마', '부모님', '반려동물', '일터', '혼자']);
     // FM7a: 임종 이벤트(middle-parents-farewell)는 더 이상 예외가 아니다 — 원본에 notFlags [mother_gone, father_gone, parents_gone]을 달아 어른 시점 「부모님」 규칙을 그대로 지킨다
-    expect(STATE_WORD_RULES.flatMap((r) => r.exceptions).sort()).toEqual(['infant-new-sibling', 'school-puppy', 'youth-child', 'youth-child-again']);
+    expect(STATE_WORD_RULES.flatMap((r) => r.exceptions).sort()).toEqual(['ask-pet-a', 'ask-pet-b', 'infant-new-sibling', 'school-puppy', 'youth-child', 'youth-child-again']);
+    // SPEC-011 L7: 조르기 사건 ask-pet-a·ask-pet-b는 입양 전 이야기라 school-puppy와 같은 이유로 면제한다 (대신 askProblems가 이미 반려동물이 있는 판에서는 나오지 않는 notFlags를 요구한다 — tests/askLint.test.ts)
   });
 
   describe('자식·손주 -> has_child', () => {

@@ -1,5 +1,6 @@
 import { DEFAULT_COOLDOWN, STAGE_TABLE } from '../data/lifeTable';
 import { LIMITS } from '../data/economyTable';
+import { ASK_CHOICE_IDS, ASK_EFFECTS, ASK_KIND_INFO, isAskKind, type AskKind } from '../data/askTable';
 import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
 import { FAMILY_SYSTEM_FLAGS } from './familyFlags';
 import {
@@ -129,6 +130,12 @@ export interface ChoiceDef {
   parentLabel?: string;
   /** 부모가 정하는 카드에서만 `result` 대신 쓰는 결과 문구 (위와 같다). `parentResult ?? result` */
   parentResult?: string;
+  /**
+   * 조르기 사건(`ask`)의 선택지에서만 쓰는 **거절 결과 문장** (SPEC-011 AK2, `docs/data/ask-model.md` 1-2절): `result` = 들어주기, `askDenied` = 안 들어주기(`beg`·`tantrum`, 사이는 안 나빠진다),
+   * `askStrained` = 안 들어주기 + 사이 나빠짐(`tantrum`만). 문장만 데이터에 두고 **갈래별 효과는 데이터에 쓰지 않는다**(코드 표 `ASK_EFFECTS` 한 곳, 결정 AQ1). 거절 문장은 한 사건의 모든 판에 같은 글이다.
+   */
+  askDenied?: string;
+  askStrained?: string;
   effects?: Effects;
   bonuses?: Bonus[];
   /** 이 조건을 만족할 때만 선택지가 보인다 */
@@ -156,6 +163,16 @@ export interface EventDef {
    * `createEventPool`이 채운다. 인용·시간 모델이 연도 축으로 바뀌면(GM10) 없어진다.
    */
   eras?: Era[];
+  /**
+   * 어린 시절 조르기 사건 표지 (SPEC-011 AK2, `docs/data/ask-model.md` 1-2절): `{ kind: 'toy' | 'lessons' | 'pet' }`. 이 사건은 아이가 「조른다 · 떼를 쓴다 · 참는다」를 고르는 카드이고(선택지 id `beg`·`tantrum`·`endure` 고정),
+   * 분류표의 영역은 `['ask']` 하나다(결정자 R1a — 나이와 무관하게 본인). 들어주기은 재력 단계 × 부모와의 사이로 정해진다(`core/ask.ts`). 선택 필드 — 없으면 일반 사건이다. 저장 대상이 아니다(데이터에서 읽는다).
+   */
+  ask?: { kind: AskKind };
+  /**
+   * **파생 필드**(데이터에 쓰지 않는다 — `eras`와 같은 방식): `ask`가 있는 사건마다 **같은 종류의 다른 조르기 사건 id**. `createEventPool`이 채우고 `isEventEligible`이 그중 하나라도 이미 본 적(`seen`)이 있으면 후보에서 뺀다 —
+   * 시대 경계를 넘는 판에서 같은 종류의 다른 시대 사건이 또 뜨지 않게 한다(한 종류 최대 1장·판당 최대 3장, 새 저장 이름 없음 — 결정 AQ2). `seen`은 카드가 뜰 때 기록되므로 해결 전 새로고침에도 같은 종류가 다시 뜨지 않는다.
+   */
+  askPeers?: string[];
   weight: number;
   once: boolean;
   /** once가 아닐 때 같은 이벤트가 다시 나오기까지의 최소 년수 (기본 DEFAULT_COOLDOWN) */
@@ -220,10 +237,15 @@ export interface EventPool {
 /** 이벤트 목록 → 풀. id가 겹치면 throw. 개별 이벤트의 형태 검증은 validateEventFiles가 한다. */
 export function createEventPool(input: readonly EventDef[]): EventPool {
   const byId = new Map<string, EventDef>();
-  // 파생 `eras`를 채운다(yearRange가 있는 이벤트만; 세 시대 모두에 걸치면 필드 없음). 입력 객체는 건드리지 않는다
+  // 조르기 사건의 종류별 id 목록(입력 순서) — 파생 `askPeers`의 재료
+  const askByKind = new Map<AskKind, string[]>();
+  for (const ev of input) if (ev.ask !== undefined) askByKind.set(ev.ask.kind, [...(askByKind.get(ev.ask.kind) ?? []), ev.id]);
+  // 파생 `eras`(yearRange가 있는 이벤트만; 세 시대 모두에 걸치면 필드 없음)와 `askPeers`(조르기 사건만 — 같은 종류의 다른 사건 id)를 채운다. 입력 객체는 건드리지 않는다
   const events = input.map((ev) => {
     const eras = erasOfYearRange(ev.yearRange, reachableYears(ev));
-    return eras === undefined ? ev : { ...ev, eras };
+    const askPeers = ev.ask === undefined ? undefined : (askByKind.get(ev.ask.kind) ?? []).filter((id) => id !== ev.id);
+    if (eras === undefined && askPeers === undefined) return ev;
+    return { ...ev, ...(eras === undefined ? {} : { eras }), ...(askPeers === undefined ? {} : { askPeers }) };
   });
   for (const ev of events) {
     if (byId.has(ev.id)) throw new Error(`createEventPool: 이벤트 id가 겹친다 (${ev.id})`);
@@ -335,6 +357,8 @@ export function isEventEligible(ev: EventDef, view: EligibilityView): boolean {
     if (ev.once) return false;
     if (view.age - last < (ev.cooldown ?? DEFAULT_COOLDOWN)) return false;
   }
+  // 조르기: 같은 종류의 다른 사건을 이미 본 판에서는 나오지 않는다 (한 종류 최대 1장 — 파생 필드 `askPeers`, SPEC-011 AK2)
+  if (ev.askPeers !== undefined && ev.askPeers.some((id) => lastSeenAge(view.seen, id) !== undefined)) return false;
   if (!meetsCondition(ev.conditions, view)) return false;
   if (isChoiceEvent(ev) && visibleChoices(ev, view).length < 2) return false;
   return true;
@@ -645,12 +669,14 @@ function checkBonuses(v: unknown, path: string, p: Problems): void {
 
 function checkChoice(c: unknown, path: string, p: Problems): void {
   if (!isObj(c)) return void p.add(path, '선택지 객체여야 한다');
-  checkKeys(c, ['id', 'label', 'result', 'parentLabel', 'parentResult', 'effects', 'bonuses', 'requires'], ['id', 'label', 'result'], path, p);
+  checkKeys(c, ['id', 'label', 'result', 'parentLabel', 'parentResult', 'askDenied', 'askStrained', 'effects', 'bonuses', 'requires'], ['id', 'label', 'result'], path, p);
   if (typeof c.id !== 'string' || !CHOICE_ID_PATTERN.test(c.id)) p.add(`${path}.id`, '소문자·숫자·하이픈(예: study-alone)이어야 한다');
   if (c.label !== undefined) checkText(c.label, `${path}.label`, 1, 40, p);
   if (c.result !== undefined) checkText(c.result, `${path}.result`, 6, 300, p);
   if (c.parentLabel !== undefined) checkText(c.parentLabel, `${path}.parentLabel`, 1, 40, p);
   if (c.parentResult !== undefined) checkText(c.parentResult, `${path}.parentResult`, 6, 300, p);
+  if (c.askDenied !== undefined) checkText(c.askDenied, `${path}.askDenied`, 6, 300, p);
+  if (c.askStrained !== undefined) checkText(c.askStrained, `${path}.askStrained`, 6, 300, p);
   if (c.effects !== undefined) checkEffects(c.effects, `${path}.effects`, p);
   if (c.bonuses !== undefined) checkBonuses(c.bonuses, `${path}.bonuses`, p);
   checkTotalDelta(c.effects, c.bonuses, path, p);
@@ -659,7 +685,7 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
 
 const EVENT_KEYS = [
   'id', 'title', 'text', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
-  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy',
+  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy', 'ask',
 ] as const;
 
 /** 단계가 덮는 나이 구간 [시작, 끝] (노년은 상한 없음) */
@@ -808,6 +834,57 @@ function checkYearRange(ev: Obj, path: string, p: Problems): void {
 const FIRST_BIRTH_YEAR_FOR_RANGE = 1940;
 const LAST_BIRTH_YEAR_FOR_RANGE = 2020;
 
+/**
+ * 어린 시절 조르기 사건의 모양 (SPEC-011 AK2, `docs/data/ask-model.md` 1-2·1-6절 L1~L3): `ask: { kind }` 하나(종류는 `toy`·`lessons`·`pet`)이고, 선택지가 정확히 `beg`·`tantrum`·`endure`(이 순서, `requires` 없음)이며,
+ * `beg`·`tantrum`은 효과 필드(`effects`·`bonuses`·`parentLabel`·`parentResult`)가 없고(갈래별 효과는 코드 표 `ASK_EFFECTS` 한 곳 — 결정 AQ1) 거절 문장 `askDenied`가 있고 `tantrum`만 `askStrained`가 있다. `endure`는 일반 선택지라 효과가 있다.
+ * `once: true` · `track: 'common'` · `stages: ['infant','school']` · 나이 범위가 종류 한계 안(`toy` 4~12 · `lessons`·`pet` 5~12) · `heavy` 없음 · `trigger`·`milestone` 없음. `ask` 없이 `askDenied`·`askStrained`를 쓰면 오류다.
+ * 문장·가중·`endure` 효과 일치·같은 종류 안 `yearRange` 겹침 같은 점검은 eventLint가 한다(여기는 데이터 모양만 본다).
+ */
+function checkAsk(ev: Obj, path: string, p: Problems): void {
+  const choices = Array.isArray(ev.choices) ? (ev.choices as unknown[]) : [];
+  if (ev.ask === undefined) {
+    choices.forEach((c, i) => {
+      if (!isObj(c)) return;
+      for (const k of ['askDenied', 'askStrained']) if (c[k] !== undefined) p.add(`${path}.choices[${i}].${k}`, 'ask 사건(ask 필드가 있는 사건)의 선택지에서만 쓴다');
+    });
+    return;
+  }
+  const at = `${path}.ask`;
+  if (!isObj(ev.ask)) return void p.add(at, '{ "kind": "toy" | "lessons" | "pet" } 객체여야 한다');
+  checkKeys(ev.ask, ['kind'], ['kind'], at, p);
+  if (ev.ask.kind === undefined) return;
+  if (!isAskKind(ev.ask.kind)) return void p.add(`${at}.kind`, `종류(${Object.keys(ASK_KIND_INFO).join(', ')}) 중 하나여야 한다 (지금 ${JSON.stringify(ev.ask.kind)})`);
+  const info = ASK_KIND_INFO[ev.ask.kind];
+  if (ev.once !== true) p.add(at, 'ask 사건은 once:true여야 한다 (한 종류 최대 1장)');
+  if (ev.track !== 'common') p.add(at, 'ask 사건은 track이 "common"이어야 한다');
+  if (ev.heavy !== undefined) p.add(at, 'ask 사건에는 heavy(무거운 장면 표지)를 쓰지 않는다');
+  if (ev.milestone !== undefined || ev.trigger !== undefined) p.add(at, 'ask 사건에는 milestone·trigger를 쓰지 않는다');
+  const stages = Array.isArray(ev.stages) ? (ev.stages as unknown[]) : [];
+  if (stages.length !== 2 || !stages.includes('infant') || !stages.includes('school')) p.add(`${path}.stages`, 'ask 사건의 stages는 ["infant", "school"]여야 한다 (4~12세에 걸친다)');
+  const r = ev.ageRange;
+  if (!isObj(r) || !isInt(r.min) || !isInt(r.max)) p.add(`${path}.ageRange`, `ask 사건은 ageRange의 min과 max가 모두 있어야 한다 (${ev.ask.kind}은 ${info.ageMin}~${info.ageMax}세 안)`);
+  else if (r.min < info.ageMin || r.max > info.ageMax) p.add(`${path}.ageRange`, `${ev.ask.kind} 사건의 나이 범위는 ${info.ageMin}~${info.ageMax}세 안이어야 한다 (지금 ${r.min}~${r.max})`);
+  if (choices.length !== ASK_CHOICE_IDS.length || !ASK_CHOICE_IDS.every((id, i) => isObj(choices[i]) && (choices[i] as Obj).id === id)) {
+    return void p.add(`${path}.choices`, `ask 사건의 선택지는 정확히 ${ASK_CHOICE_IDS.join(', ')} 셋이고 이 순서다 (지금 ${choices.map((c) => (isObj(c) ? String(c.id) : '?')).join(', ')})`);
+  }
+  choices.forEach((raw, i) => {
+    const c = raw as Obj;
+    const cp = `${path}.choices[${i}](${String(c.id)})`;
+    if (c.requires !== undefined) p.add(cp, 'ask 사건의 세 선택지는 어느 판에서도 항상 보인다 (requires를 쓰지 않는다)');
+    if (c.id === 'endure') {
+      for (const k of ['askDenied', 'askStrained']) if (c[k] !== undefined) p.add(`${cp}.${k}`, '참는다(endure)는 확정 결과라 거절 문장이 없다');
+      if (c.effects === undefined) p.add(cp, '참는다(endure)는 일반 선택지라 effects가 있어야 한다 (코드 표 ASK_EFFECTS의 endure 행과 같게)');
+      return;
+    }
+    for (const k of ['effects', 'bonuses', 'parentLabel', 'parentResult']) {
+      if (c[k] !== undefined) p.add(`${cp}.${k}`, `조른다·떼쓴다의 갈래별 효과·문구는 데이터에 쓰지 않는다 (효과는 코드 표 ASK_EFFECTS 한 곳이 정한다 — ${k})`);
+    }
+    if (c.askDenied === undefined) p.add(cp, '거절 문장 askDenied가 필요하다');
+    if (c.id === 'tantrum' && c.askStrained === undefined) p.add(cp, '사이 나빠짐 문장 askStrained가 필요하다 (떼쓰기만)');
+    if (c.id === 'beg' && c.askStrained !== undefined) p.add(`${cp}.askStrained`, '조른다(beg)는 사이가 나빠지지 않아 askStrained가 없다 (떼쓰기만)');
+  });
+}
+
 function checkEvent(ev: unknown, path: string, p: Problems): void {
   if (!isObj(ev)) return void p.add(path, '이벤트 객체여야 한다');
   checkKeys(ev, EVENT_KEYS, ['id', 'title', 'text', 'stages', 'weight', 'once', 'track'], path, p);
@@ -899,6 +976,7 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
 
   checkCitationFields(ev, path, p);
   checkHeavy(ev, path, p);
+  checkAsk(ev, path, p);
 
   const hasChoices = ev.choices !== undefined;
   if (hasChoices) {
@@ -968,6 +1046,11 @@ export function flagsWritten(ev: EventDef): { set: Set<string>; clear: Set<strin
   for (const c of ev.choices ?? []) {
     effectsFlags(c.effects, set, clear);
     for (const b of c.bonuses ?? []) effectsFlags(b.effects, set, clear);
+  }
+  // 조르기 사건의 들어주기·사이 나빠짐 갈래는 코드 표(`ASK_EFFECTS`)가 켜는 플래그다 — 데이터에 쓰이지 않으므로 여기서 함께 센다 (읽는 플래그 교차 검증이 놓치지 않게)
+  if (ev.ask !== undefined) {
+    effectsFlags(ASK_EFFECTS[`granted-${ev.ask.kind}`], set, clear);
+    effectsFlags(ASK_EFFECTS.strained, set, clear);
   }
   return { set, clear };
 }

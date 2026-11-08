@@ -38,6 +38,14 @@ export const FAMILY_TAG = {
   SIB_LOSS: 19,
 } as const;
 
+/**
+ * 어린 시절 조르기 판정 해시 태그 (SPEC-011 AK3, `docs/data/ask-model.md` 2-3절 「`FAMILY_TAG.ASK = 20`」): `famHash01(가족 시드, 20, 종류 번호, 나이×2+칸)`.
+ * 값은 설계 문서 그대로 20(`FAMILY_TAG`의 마지막 `SIB_LOSS = 19` 다음)이고 기존 태그와 겹치지 않는다(tests/askCard.test.ts). **`FAMILY_TAG` 객체 안에 두지 않은 이유**: L0F 가족 골든(`tests/fixtures/family-golden.json`)이
+ * `FAMILY_TAG` 객체 전체를 값 그대로 얼려 두어(`tables.constants.FAMILY_TAG`) 키 하나만 더해도 골든이 달라진다 — 골든 재생성은 One-way라 마스터 승인·형진 님 확인이 필요하다(familyGolden.test.ts 머리 주석).
+ * 해시 값은 어느 쪽에 두어도 같다. 마스터가 골든 재생성을 승인하면 `FAMILY_TAG.ASK`로 옮길 수 있다(숫자는 바꾸지 않는다). 바꾸지 않는다 — 알려진 시드의 결과가 바뀐다.
+ */
+export const FAMILY_TAG_ASK = 20;
+
 /** 전체 자녀 수 상한 (주인공 포함) */
 export const FAMILY_MAX_CHILDREN = 8;
 /** 모델이 새로 만드는 출산(조부모의 부모 출산)의 어머니 나이 상한 (추정 ▲, 1-1절) */

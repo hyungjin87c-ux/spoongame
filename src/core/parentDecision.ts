@@ -1,6 +1,8 @@
 import { eventPool } from './gameData';
+import { ASK_KIND_INFO } from '../data/askTable';
 import {
   ALL_SELF_FROM_AGE,
+  ASK_AREA,
   DECISION_AREAS,
   FAMILY_NEED_BASE,
   PARENT_AREAS,
@@ -41,7 +43,8 @@ export function decisionRowOf(eventId: string): DecisionRow | undefined {
 
 /**
  * 그 해(`age`) 그 결정 카드를 누가 정하는가 (SPEC-005 PD2 — 설계 문서 1-2절). 아래 순서로 첫 번째 맞는 줄을 쓴다.
- *  R1 `age ≥ 19` → 본인 / R2 영역에 `reaction` → 흘러감 / R3 `childActUntil`이 있고 `age ≤` 그 값 → 흘러감 / R4 `age ≤ 12` → 부모 / R5 13~18세: 부모 영역이 하나라도 있으면 부모, 없으면 본인.
+ *  R1 `age ≥ 19` → 본인 / **R1a 영역에 `ask`(아이의 요구 — SPEC-011 조르기) → 나이와 무관하게 본인** / R2 영역에 `reaction` → 흘러감 / R3 `childActUntil`이 있고 `age ≤` 그 값 → 흘러감 / R4 `age ≤ 12` → 부모 / R5 13~18세: 부모 영역이 하나라도 있으면 부모, 없으면 본인.
+ * R1a는 조르기 사건(4~12세에만 일어난다)을 사람이 고르는 카드로 만든다 — 영역 `ask`는 단독으로만 쓰고, 부모 영역·`reaction`과 함께 쓰지 않는다(`parentTableProblems` ④).
  * 나이는 결정 카드가 일어나는 그 해의 나이(`pending.age`)다. 나이 < 0·정수가 아닌 나이는 throw. 19세 이상은 표를 보지 않는다(청년 이상 58장은 표에 없고 모두 본인).
  * 표에 없는 이벤트 id를 19세 미만에서 물으면 throw한다 — 빌드의 lint(scripts/validateEvents.ts)가 먼저 막는다.
  */
@@ -158,7 +161,7 @@ export function isPreAdultChoice(ev: EventDef): boolean {
 }
 
 /**
- * 분류표 ↔ 이벤트 데이터 점검 (SPEC-005 PD2 검증 ①②③): ① 19세 미만에서 일어날 수 있는 모든 선택지 이벤트가 표에 있다(새 선택지 이벤트를 분류 없이 추가하면 실패) ② 표의 이벤트 id가 모두 실제 선택지 이벤트이고 19세 미만에서 일어난다
+ * 분류표 ↔ 이벤트 데이터 점검 (SPEC-005 PD2 검증 ①②③ + SPEC-011 AK1 ④ 조르기): ① 19세 미만에서 일어날 수 있는 모든 선택지 이벤트가 표에 있다(새 선택지 이벤트를 분류 없이 추가하면 실패) ② 표의 이벤트 id가 모두 실제 선택지 이벤트이고 19세 미만에서 일어난다
  * ③ 영역 코드가 알려진 코드이고, 13~18세 본인 결정 이벤트는 영역이 `study·friends·hobby`뿐이다(`childActUntil`은 0~18의 정수). 문제 목록(빈 배열이면 통과).
  */
 export function parentTableProblems(events: readonly EventDef[], table: Readonly<Record<string, DecisionRow>> = PARENT_DECISION_TABLE): string[] {
@@ -181,6 +184,17 @@ export function parentTableProblems(events: readonly EventDef[], table: Readonly
     if (row.childActUntil !== undefined && !(Number.isInteger(row.childActUntil) && row.childActUntil >= 0 && row.childActUntil < ALL_SELF_FROM_AGE)) {
       problems.push(`${id}: childActUntil은 0~${ALL_SELF_FROM_AGE - 1}의 정수여야 한다 (${row.childActUntil})`);
     }
+    // ④ 조르기(SPEC-011 AK1): 영역이 정확히 ['ask']인 행 ⇔ 사건에 `ask` 필드가 있다, 나이 범위가 종류 한계 안(toy 4~12 · lessons·pet 5~12)
+    const isAskRow = row.areas.includes(ASK_AREA);
+    if (isAskRow && (row.areas.length !== 1 || row.childActUntil !== undefined)) problems.push(`${id}: 영역 ask(아이의 요구)는 다른 영역·childActUntil과 함께 쓰지 않는다 (영역이 정확히 ['ask'])`);
+    if (isAskRow && ev.ask === undefined) problems.push(`${id}: 분류표 영역이 ask인데 사건에 ask 필드(종류)가 없다`);
+    if (!isAskRow && ev.ask !== undefined) problems.push(`${id}: 사건에 ask 필드가 있는데 분류표 영역이 ['ask']가 아니다`);
+    if (ev.ask !== undefined) {
+      const info = ASK_KIND_INFO[ev.ask.kind];
+      const ages = possibleAgesOf(ev);
+      if (info === undefined) problems.push(`${id}: 알 수 없는 조르기 종류다 (${String(ev.ask.kind)})`);
+      else if (ages.length === 0 || ages[0] < info.ageMin || ages[ages.length - 1] > info.ageMax) problems.push(`${id}: ${ev.ask.kind} 조르기 사건은 ${info.ageMin}~${info.ageMax}세에만 일어나야 한다 (지금 ${ages.length === 0 ? '없음' : `${ages[0]}~${ages[ages.length - 1]}세`})`);
+    }
     // ③ 13~18세에 본인이 고르는 나이가 있다면 영역은 공부·친구·취미뿐이다 (R5가 부모 영역이 있으면 부모로 가르므로 어긋나면 코드 오류)
     for (const a of possibleAgesOf(ev)) {
       if (a < SELF_FROM_AGE || a >= ALL_SELF_FROM_AGE) continue;
@@ -193,9 +207,10 @@ export function parentTableProblems(events: readonly EventDef[], table: Readonly
   return problems;
 }
 
-/** 표 한 줄과 나이로 결정자를 구한다 (R1~R5 — `deciderOf`가 쓰는 같은 규칙, 표 밖 id를 점검하는 곳에서 쓴다) */
+/** 표 한 줄과 나이로 결정자를 구한다 (R1~R5와 R1a — `deciderOf`가 쓰는 같은 규칙, 표 밖 id를 점검하는 곳에서 쓴다) */
 function deciderFromRow(row: DecisionRow, age: number): Decider {
-  if (age >= ALL_SELF_FROM_AGE) return 'self';
+  if (age >= ALL_SELF_FROM_AGE) return 'self'; // R1
+  if (row.areas.includes(ASK_AREA)) return 'self'; // R1a — 아이의 요구(조르기)는 나이와 무관하게 본인
   if (row.areas.includes('reaction')) return 'child';
   if (row.childActUntil !== undefined && age <= row.childActUntil) return 'child';
   if (age < SELF_FROM_AGE) return 'parent';

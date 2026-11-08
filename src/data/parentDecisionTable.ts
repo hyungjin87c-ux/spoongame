@@ -1,5 +1,6 @@
 import type { CoParents } from '../core/parentSubject';
 import type { ParentingStyle } from '../core/types';
+import { ASK_AREA } from './askTable';
 
 /**
  * 어린 시절 부모님 결정 표 (SPEC-005 PD1·PD2·PD4, 설계 문서 docs/data/parent-decision-model.md — PD0 승인 2026-10-20 A1~A17·Q1~Q8).
@@ -19,9 +20,15 @@ export const REACTION_AREA = 'reaction' as const;
 
 export type ParentArea = (typeof PARENT_AREAS)[number];
 export type SelfArea = (typeof SELF_AREAS)[number];
-export type DecisionArea = ParentArea | SelfArea | typeof REACTION_AREA;
+/**
+ * 아이의 요구 (SPEC-011 AK1, `docs/data/ask-model.md` 1-1절): 어린 시절 조르기 사건(`ask` 필드가 있는 사건) — **나이와 무관하게 본인**이 고른다(결정자 규칙 R1a, R1 바로 뒤). `PARENT_AREAS`·`SELF_AREAS`·`reaction`과 별개의 영역이고
+ * **다른 영역과 함께 쓰지 않는다**(영역이 정확히 `['ask']`). 조르기 사건은 4~12세에만 일어나 13~18세 규칙(R5)은 닿지 않고, `selfAreaWeightFactor`가 13세 미만에서 1이라 PD13 ×2.0도 곱해지지 않는다.
+ */
+export { ASK_AREA };
 
-export const DECISION_AREAS: readonly DecisionArea[] = [...PARENT_AREAS, ...SELF_AREAS, REACTION_AREA];
+export type DecisionArea = ParentArea | SelfArea | typeof REACTION_AREA | typeof ASK_AREA;
+
+export const DECISION_AREAS: readonly DecisionArea[] = [...PARENT_AREAS, ...SELF_AREAS, REACTION_AREA, ASK_AREA];
 
 export interface DecisionRow {
   /** 영역 표지(하나 이상) */

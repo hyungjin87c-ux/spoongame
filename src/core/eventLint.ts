@@ -1,3 +1,4 @@
+import { ASK_EFFECTS, ASK_WEIGHT_LADDER } from '../data/askTable';
 import { MAX_VISIBLE_CHOICES, MILESTONES_PER_YEAR_MAX, type ChoiceDef, type Condition, type EventDef, type Range } from './events';
 import { STAT_KEYS, type Effects, type Era, type Stage } from './types';
 
@@ -241,7 +242,9 @@ export const STATE_WORD_RULES: readonly StateWordRule[] = [
     stages: CHILD_STAGES,
     requireAny: ['pet_dog', 'pet_cat', 'pet_other'],
     // 집 앞에 서성이던 떠돌이 강아지 이야기(SPEC-009 5-1절 — 입양 전)라 우리 집 반려동물이 아니다. 입양 플래그(K10)는 FM7이 `keep` 선택에 단다
-    exceptions: ['school-puppy'],
+    // 조르기 사건(SPEC-011 L7): 강아지를 `조른다`는 입양 전 이야기라 `school-puppy`와 같은 이유로 면제한다 — 입양은 들어주기 갈래가 `pet_dog`를 켠 뒤에 일어나고, 그 전에는 우리 집 반려동물이 아니다.
+    // 대신 `askProblems`가 반려동물 조르기 사건(`ask.kind === 'pet'`)에 이미 반려동물이 있는 판(`pet_dog`·`pet_cat`·`pet_other`)에서는 나오지 않는 조건(notFlags)을 요구한다
+    exceptions: ['school-puppy', 'ask-pet-a', 'ask-pet-b'],
   },
   {
     name: '일터(무직 판에는 나오지 않는다)',
@@ -504,6 +507,9 @@ export function textPartsOf(ev: EventDef): TextPart[] {
     // 부모가 정하는 카드의 문구(SPEC-005 PD11): 라벨·결과와 같은 규칙으로 점검한다
     if (c.parentLabel !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).parentLabel`, kind: 'label', value: c.parentLabel });
     if (c.parentResult !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).parentResult`, kind: 'result', value: c.parentResult });
+    // 조르기 사건의 거절 문장(SPEC-011 AK2): 결과와 같은 규칙으로 점검한다
+    if (c.askDenied !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).askDenied`, kind: 'result', value: c.askDenied });
+    if (c.askStrained !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).askStrained`, kind: 'result', value: c.askStrained });
   });
   return parts;
 }
@@ -697,9 +703,94 @@ export function lintEvent(ev: EventDef): string[] {
   problems.push(...stateWordProblems(ev));
   problems.push(...choiceBalanceProblems(ev));
   problems.push(...visibleChoiceProblems(ev));
+  problems.push(...askProblems(ev));
   // 반복: 한 판에서 같은 문구가 되풀이되지 않도록 반복 이벤트는 간격을 길게 둔다
   if (!ev.once && (ev.cooldown ?? 0) < MIN_REPEAT_COOLDOWN) {
     problems.push(`${ev.id}: once:false 이벤트는 cooldown이 ${MIN_REPEAT_COOLDOWN}년 이상이어야 한다 (같은 문구가 가까이서 되풀이되지 않게. 지금 ${ev.cooldown ?? '생략(기본값)'})`);
+  }
+  return problems;
+}
+
+// ---------- 어린 시절 조르기 (SPEC-011 AK2, docs/data/ask-model.md 1-6절 L2~L7) ----------
+
+/**
+ * L5 조르기 사건의 모든 글에 쓰지 않는 가족 낱말 (한 분만 사는 판·형제 없는 판과 모순을 막는다 — 어른은 「어른」·「집안 어른」 또는 주어 생략).
+ * 「형」은 인형·형편의 글자이기도 해서 낱말의 시작이고 조사가 바로 붙는 경우만 본다.
+ */
+const ASK_FAMILY_WORDS = /부모|엄마|아빠|어머니|아버지|동생|조부모|할머니|할아버지|형제|남매|(?<![가-힣])(?:형|누나|언니|오빠)(?=[이가을를은는의도와과에께만]|$|[\s,.])/;
+
+/**
+ * L6 거절 문장(`askDenied`·`askStrained`)에 쓰지 않는 말 — 원인 단정(형편·가난·돈이 없·여유·비싸·「~해서」·「~때문」 꼴)과 평가·설교(거절은 모든 판에 같은 글이라 형편을 말하지 않는다, PD5-c·design-system 11-4).
+ * 목록은 출발점이고 reviewer의 문장 전수 판독이 최종이다(새 낱말은 더하기만). 게임 글꼴 조각(s0~s2)에 없는 글자는 소스에 그대로 쓰지 못해(tests/fonts.test.tsx) 유니코드 이스케이프로 적는다 — 「버」 뒤의 이스케이프가 그 낱말의 둘째 글자다.
+ */
+const ASK_REASON_WORDS = /형편|가난|돈이 없|돈이 부족|돈이 모자|여유|비싸|비싼|때문|해서(?=[\s,.]|$)|버\uB987|철없|철이 없|잘못|못된|야 합니다|마땅/;
+
+function canonicalEffects(e: Effects | undefined): unknown {
+  if (e === undefined) return null;
+  const sortObj = (o: object | undefined): unknown => (o === undefined ? undefined : Object.fromEntries(Object.entries(o).sort(([x], [y]) => x.localeCompare(y))));
+  return {
+    stats: sortObj(e.stats),
+    assets: sortObj(e.assets),
+    family: e.family,
+    setFlags: e.setFlags === undefined ? undefined : [...e.setFlags].sort(),
+    clearFlags: e.clearFlags === undefined ? undefined : [...e.clearFlags].sort(),
+  };
+}
+const sameEffects = (a: Effects | undefined, b: Effects): boolean => JSON.stringify(canonicalEffects(a)) === JSON.stringify(canonicalEffects(b));
+
+/**
+ * 조르기 사건 하나의 점검 (`ask`가 없으면 빈 배열): L2 `endure.effects` = 코드 표 `ASK_EFFECTS.endure`(bonuses·requires 없음) · L3 가중이 사다리(11절) 안 · L4 `noCitation`은 `'D'` 하나(`citation`과 함께 쓰는 것은 기존 규칙이 막는다) ·
+ * L5 모든 글에 가족 낱말 없음 · L6 거절 문장에 원인 단정·평가어·설교 없음 · L7 반려동물(`pet`) 사건은 `conditions.notFlags`에 `pet_dog`·`pet_cat`·`pet_other`가 모두 있다. (모양·나이·단계·효과 필드 구성은 스키마 검증 `checkAsk`가 본다.)
+ */
+export function askProblems(ev: EventDef): string[] {
+  if (ev.ask === undefined) return [];
+  const problems: string[] = [];
+  const endure = ev.choices?.find((c) => c.id === 'endure');
+  if (endure !== undefined) {
+    if (!sameEffects(endure.effects, ASK_EFFECTS.endure)) problems.push(`${ev.id}.choices(endure): 참는다의 효과가 코드 표 ASK_EFFECTS의 endure 행(${JSON.stringify(ASK_EFFECTS.endure)})과 다르다 — 지금 ${JSON.stringify(endure.effects ?? null)}`);
+    if (endure.bonuses !== undefined || endure.requires !== undefined) problems.push(`${ev.id}.choices(endure): 참는다는 보너스·requires 없는 확정 결과다`);
+  }
+  const ladder = ASK_WEIGHT_LADDER[ev.ask.kind];
+  if (ladder !== undefined && (ev.weight < ladder.min || ev.weight > ladder.max)) {
+    problems.push(`${ev.id}: ${ev.ask.kind} 조르기 사건의 가중 ${ev.weight}가 사다리(${ladder.min}~${ladder.max}, ask-model 11절) 밖이다 — 범위 밖은 마스터 승인`);
+  }
+  if (ev.noCitation !== undefined && ev.noCitation !== 'D') problems.push(`${ev.id}: 조르기 사건의 noCitation은 'D' 하나다 (원칙적 무인용 X1~X6은 이 사건에 맞지 않는다 — 지금 ${ev.noCitation})`);
+  for (const part of textPartsOf(ev)) {
+    const m = ASK_FAMILY_WORDS.exec(part.value);
+    if (m !== null) problems.push(`${part.where}: 조르기 사건의 글에 가족 낱말 「${m[0]}」이 있다 — 한 분만 계신 판·형제 없는 판과 모순이다 (어른은 「어른」·「집안 어른」 또는 주어 생략) — "${part.value}"`);
+  }
+  (ev.choices ?? []).forEach((c, i) => {
+    for (const [key, value] of [['askDenied', c.askDenied], ['askStrained', c.askStrained]] as const) {
+      if (value === undefined) continue;
+      const m = ASK_REASON_WORDS.exec(value);
+      if (m !== null) problems.push(`${ev.id}.choices[${i}](${c.id}).${key}: 거절 문장에 원인 단정·평가어·설교(「${m[0]}」)가 있다 — 거절은 이유를 말하지 않고 모든 판에 같은 글이다 — "${value}"`);
+    }
+  });
+  if (ev.ask.kind === 'pet') {
+    const need = ['pet_dog', 'pet_cat', 'pet_other'];
+    const have = ev.conditions?.notFlags ?? [];
+    const missing = need.filter((f) => !have.includes(f));
+    if (missing.length > 0) problems.push(`${ev.id}: 반려동물 조르기 사건은 conditions.notFlags에 ${need.join(', ')}가 모두 있어야 한다 (이미 반려동물이 있는 판에서는 나오지 않는다) — 빠진 것 ${missing.join(', ')}`);
+  }
+  return problems;
+}
+
+/**
+ * 풀 전체 조르기 점검 (L3 일부): **같은 종류의 조르기 사건은 `yearRange`가 겹치지 않는다** — 어느 해에도 한 종류의 후보가 한 사건뿐이라 「종류별 가중이 곧 사건 가중」이다(ask-model 1-3절).
+ * `yearRange`가 없으면 모든 연도라 같은 종류의 다른 사건과 반드시 겹친다.
+ */
+export function askPoolProblems(events: readonly EventDef[]): string[] {
+  const problems: string[] = [];
+  const asks = events.filter((e) => e.ask !== undefined);
+  for (let i = 0; i < asks.length; i++) {
+    for (let j = i + 1; j < asks.length; j++) {
+      const a = asks[i];
+      const b = asks[j];
+      if (a.ask!.kind !== b.ask!.kind) continue;
+      const lo = Math.max(a.yearRange?.from ?? -Infinity, b.yearRange?.from ?? -Infinity);
+      const hi = Math.min(a.yearRange?.to ?? Infinity, b.yearRange?.to ?? Infinity);
+      if (lo <= hi) problems.push(`${a.id}·${b.id}: 같은 종류(${a.ask!.kind})의 조르기 사건 yearRange가 겹친다 — 어느 해에도 한 종류의 후보는 한 사건이어야 한다`);
+    }
   }
   return problems;
 }
@@ -747,7 +838,7 @@ function variantFamilyOf(ev: EventDef, ids: ReadonlySet<string>): string {
  * **같은 원본의 「남은 한 분」 변형끼리·원본과는 문구가 겹쳐도 된다**(FM7a, 승인된 문장 재사용 — 변형은 호칭이 든 문장만 바꾸고 나머지 문장·선택지 결과는 원본 그대로다, T07·T08).
  */
 export function lintEvents(events: readonly EventDef[]): string[] {
-  const problems: string[] = [...milestoneWindowProblems(events)];
+  const problems: string[] = [...milestoneWindowProblems(events), ...askPoolProblems(events)];
   const seen = new Map<string, { where: string; family: string }>();
   const ids = new Set(events.map((e) => e.id));
   for (const ev of events) {

@@ -42,6 +42,7 @@
 | `noCitation` | | 이 카드에 **어느 세상에서도 인용을 붙이지 않는** 사유 코드 — `X1` 의료·응급·진단 / `X2` 임종·가족 갈등의 존엄 / `X3` 재무·법률 행위 / `X4` 낙인 위험 / `X5` 다가올 세상 상상 전용 / `X6` 양육 방식 가치판단 유도(**원칙적 무인용 X1~X6**, 시대별 등장 카드의 25% 이하, 목록 변경은 마스터 승인) / `D` 맞는 자료가 없어 서술 장면으로 둔 카드. `citation`과 함께 쓰지 않는다. 선택지 이벤트 90개는 `citation`·`noCitation` 중 하나를 가져야 한다 — 단 2차 수집 대기 카드(T-01~T-13 정서·관계)는 `src/data/citationPending.ts`에 칸 단위로 적어 두고 두 필드를 아직 쓰지 않는다(`tests/citationLink.test.ts`가 90개 전수를 점검). |
 | `heavy` | | **무거운 장면 표지**(SPEC-005 HV2): `{ "kind": "home" \| "school" \| "health" \| "loss" \| "bond" \| "work" }`. 설정 「무거운 장면 가리기」가 켜지면 이 이벤트의 **글**(제목·본문·선택지·결과·인용)이 화면에서 가려진다 — 사건·효과·확률·난수·플래그는 그대로다(방식 A). 서술·선택지 이벤트에 쓰고 마일스톤에는 쓰지 않는다. 판정 기준은 아래 11절. |
 | `trigger` | | `"family"`이면 **가족 구성이 일으키는 사건**(SPEC-009 K2, FM4b): 일반 추첨·마일스톤 후보가 아니고 `conditions`·`weight`·`modifiers`는 읽히지 않는다 — `life.ts#stepYear`의 강제 슬롯이 `familyChangesFor`가 정한 해(`family.y[0].k`, 첫째의 첫 동생)에 선택지 간격·페이싱을 무시하고 일으킨다. **선택지 이벤트·`once:true`·`ageRange` 필수**(구성의 터울과 같은 창)이고 마일스톤과 함께 쓰지 못한다. 지금은 `infant-new-sibling` 하나. |
+| `ask` | | **어린 시절 조르기 사건 표지**(SPEC-011 AK2): `{ "kind": "toy" | "lessons" | "pet" }`(장난감·게임기 / 예체능·배움 / 강아지). 아이가 「조른다 · 떼를 쓴다 · 참는다」를 고르는 카드이고 분류표의 영역은 `["ask"]` 하나다(나이와 무관하게 본인이 고른다 — 결정자 R1a). 선택지 id `beg`·`tantrum`·`endure`가 고정이다. 선택 필드 — 자세한 규칙은 아래 12절. |
 
 **마일스톤 슬롯** (`src/core/life.ts#stepYear`): 해마다 일반 추첨(선택지 → 서술)과 별개로, 그 나이·시대에 일어날 수 있는 `milestone: true` 이벤트를 **한 해에 여러 개(칸 `MILESTONES_PER_YEAR_MAX` = 3개까지)** 일으킨다(M7a r3 — 걸음마와 첫 말이 모두 1세). 창이 일찍 끝나는(급한) 것부터, 끝이 같으면 id 오름차순으로 확률 1 ÷ (창 끝 나이 − 나이 + 1)로 따지고, 창의 마지막 해는 난수 없이 100%다(난수는 확률이 1보다 작은 후보를 따질 때만 쓴다). 연표에는 **id 오름차순**으로 남는다(같은 해 걸음마 → 첫 말, 그 뒤 일반 사건 — 한 해 세 줄). 마일스톤은 일반 추첨 후보에서 빠지고, 그 해의 일반 사건이 선택지여도 마일스톤 줄은 이미 연표에 남는다(`TickInfo.milestoneIds`). **한 해에 마감되는 마일스톤이 칸 수를 넘으면**(같은 시대에서 창 끝이 같은 마일스톤이 4개 이상) 그 해에 일부가 못 일어나 100% 보장이 깨지므로 풀 점검(`milestoneWindowProblems`, `npm run check:events`)이 잡는다 — 둘·셋이 같은 해에 끝나는 것은 괜찮다(r2까지의 「창 끝이 같으면 안 된다」는 사라졌다). **창의 모든 나이가 `stages`에 덮여야 한다**(스키마 검증 — 6~7세 창에 `stages: ["infant"]`이면 7세가 비어 100%가 조용히 깨진다). 지금 마일스톤: `infant-vaccine`(0세) · `infant-first-steps`(1세) · `infant-first-word`(1세). 그 전에 사망한 판은 제외한다.
 
@@ -283,3 +284,33 @@ npm run sim:infant            # 영유아(0~7세) 지표 — 빈 해 평균·최
 **이벤트 밖의 기록 줄.** `eventId`가 없는 기록 줄 가운데 무거운 것은 줄을 만드는 쪽의 **상수**로 잡는다(`src/core/gentle.ts#HEAVY_LINES_WITHOUT_EVENT` — 지금은 상속 줄 「부모님이 남기신 재산을 물려받았습니다.」(`INHERIT_NOTE_TEXT`) 하나, 분류 `loss`). 줄에 필드를 더하지 않으므로 저장 스키마는 v8 그대로이고, 이 변경 이전에 저장된 판의 줄도 똑같이 가려진다.
 
 시험(`tests/gentle.test.ts`)이 표지 23개의 목록과 데이터를 대조하고, 제외 4개(`school-money-gap`·`youth-factory-night`·`senior-alone`·`middle-lonely-holiday`)·경계 3개(`middle-health-check`·`youth-work-pressure`·`school-academy-night`)에 표지가 **없음**을 단언한다. 표지를 더하거나 빼려면 이 표와 시험의 목록을 함께 고치고 reviewer 판독을 거친다.
+
+## 12. 어린 시절 조르기 (`ask`·`askDenied`·`askStrained`, SPEC-011 AK2 — 설계 `docs/data/ask-model.md` 1-2·1-4·1-6절, 마스터 승인 2026-11-07)
+
+아이가 부모에게 장난감·예체능·강아지를 요구하는 카드다. 사건은 일반 선택지 이벤트이되 선택 필드 `ask`가 붙고, **갈래별 효과는 데이터에 쓰지 않는다** — 들어줌·거절·사이 나빠짐의 효과는 코드 표 `ASK_EFFECTS`(`src/data/askTable.ts`) 한 곳이 정한다(결정 AQ1). 데이터에는 **문장**만 둔다.
+
+```jsonc
+{
+  "id": "ask-toy-b", "title": "<≤16>", "text": "<상황 ≤74, 주어 없음>",
+  "stages": ["infant", "school"], "ageRange": { "min": 4, "max": 12 },
+  "yearRange": { "from": 1980, "to": 2000 },
+  "track": "common", "weight": 45, "once": true, "noCitation": "D",
+  "ask": { "kind": "toy" },
+  "choices": [
+    { "id": "beg",     "label": "<조른다 꼴>",    "result": "<들어줌>", "askDenied": "<안 들어줌>" },
+    { "id": "tantrum", "label": "<떼를 쓴다 꼴>", "result": "<들어줌>", "askDenied": "<안 들어줌 — 사이 안 나빠짐>", "askStrained": "<안 들어줌 — 사이 나빠짐>" },
+    { "id": "endure",  "label": "<참는다 꼴>",    "result": "<참음>", "effects": { "stats": { "happiness": -1 } } }
+  ]
+}
+```
+
+- **`ask: { kind }`**: 종류는 `toy`(나이 4~12) · `lessons`(5~12) · `pet`(5~12, 강아지만). 이 필드가 있으면 분류표의 영역이 정확히 `["ask"]`여야 한다(결정자 R1a: 나이와 무관하게 본인 — `parentTableProblems` 점검 ④가 양방향으로 본다). 저장 대상이 아니다(데이터에서 읽는다).
+- **선택지는 정확히 `beg`(조른다) · `tantrum`(떼를 쓴다) · `endure`(참는다), 이 순서**, `requires` 없음(세 길이 어느 판에서도 항상 보인다).
+  - 문장 필드: `result` = **들어줌**, `askDenied` = **안 들어줌**(`beg`·`tantrum` — 사이는 안 나빠진다), `askStrained` = **안 들어줌 + 사이 나빠짐**(`tantrum`만). `endure`는 `result`(참음)뿐이다. `askDenied`·`askStrained`는 `ask` 사건의 선택지에서만 쓸 수 있고 길이(6~300자)·문구 규칙은 `result`와 같다(권장 최대 84자, 합쇼체).
+  - `beg`·`tantrum`에는 `effects`·`bonuses`·`parentLabel`·`parentResult`가 **있으면 빌드 실패**다 — 갈래별 효과는 `ASK_EFFECTS`가 정하고, 어느 갈래가 일어나는지는 `core/ask.ts`의 판정(재력 단계 × 부모와의 사이, 해시 난수)이 정한다.
+  - **`endure`만 일반 선택지**라 `effects`를 데이터에 쓰되 코드 표의 `endure` 행(`{ "stats": { "happiness": -1 } }`)과 **같아야 한다**(eventLint, 보너스·`requires` 없음).
+- **사건 모양 규칙(스키마 검증)**: `once: true` · `track: "common"` · `stages: ["infant", "school"]` · `ageRange`의 min·max가 모두 있고 종류 한계 안 · `heavy`·`milestone`·`trigger` 없음.
+- **lint 규칙**(`eventLint#askProblems`·`askPoolProblems`): ① `noCitation`은 `"D"` 하나(원칙적 무인용 X1~X6은 맞지 않는다 — 맞는 인용이 있으면 `citation`을 달고 `noCitation`은 쓰지 않는다) ② 가중이 사다리 안 — 장난감·예체능 25~70, 강아지 15~45(승인 값 45·40·30, 설계 문서 11절) ③ **같은 종류의 조르기 사건은 `yearRange`가 겹치지 않는다**(어느 해에도 한 종류의 후보는 한 사건뿐) ④ **모든 글**(제목·본문·라벨·결과·`askDenied`·`askStrained`)에 가족 낱말(부모님·부모·엄마·아빠·어머니·아버지·동생·형·누나·언니·오빠·조부모·할머니·할아버지·형제·남매)이 없다 — 한 분만 계신 판·형제 없는 판과 모순을 막는다(어른은 「어른」·「집안 어른」 또는 주어 생략) ⑤ **거절 문장**(`askDenied`·`askStrained`)에 원인 단정(형편·가난·돈이 없·여유·비싸·「~해서」·「~때문」)·평가어·설교가 없다 — 거절은 이유를 말하지 않고 모든 판에 같은 글이다 ⑥ 반려동물(`pet`) 사건은 `conditions.notFlags`에 `pet_dog`·`pet_cat`·`pet_other`가 모두 있다(이미 반려동물이 있는 판에서는 나오지 않는다). 「강아지」는 반려동물 상태 어휘 규칙의 예외 id `ask-pet-a`·`ask-pet-b`에서만 조건 없이 쓸 수 있다(입양 전 이야기 — `school-puppy`와 같은 이유). 그 밖의 문구 규칙·시대어(`bannedWordsFor`)는 모든 사건과 같고 **완화가 없다**(결정 K3).
+- **한 종류 최대 1장·판당 최대 3장 — 파생 필드 `askPeers`**(데이터에 쓰지 않는다 — 쓰면 「알 수 없는 항목」 오류): `createEventPool`이 `ask`가 있는 사건마다 같은 종류의 다른 사건 id 목록을 채우고(`eras`와 같은 방식), `isEventEligible`이 그중 하나라도 이미 본 적(`seen`)이 있으면 후보에서 뺀다. 시대 경계(2000/2001 등)를 넘는 판에서 같은 종류의 다른 시대 사건이 또 뜨지 않게 한다. 새 저장 이름이 없다. `seen`은 카드가 뜰 때 기록되므로 해결 전 새로고침에도 같은 종류가 다시 뜨지 않는다.
+- **플래그**: 들어줌(`pet`)은 `pet_dog`를, 떼쓰기 거절 + 사이 나빠짐은 `parent_strained`를 코드 표가 켠다. 데이터에는 이 플래그가 쓰이지 않으므로 `flagsWritten`이 `ask` 사건의 표 플래그를 함께 센다(읽는 플래그 교차 검증). 해결 경로(`askOutcomeOf`)·사이 비용은 AK4·AK5다.
+- 시험: `tests/askLint.test.ts`(스키마·lint·`askPeers`) · `tests/askClassification.test.ts`(영역·R1a·점검 ④) · `tests/askCard.test.ts`·`askCardNone.test.ts`(판정) · `tests/askDoc.test.ts`(설계 문서 기계 판독 블록 ↔ `askTable.ts`).
