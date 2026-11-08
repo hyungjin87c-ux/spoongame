@@ -5,6 +5,7 @@
 - 시안: `docs/design/mockups/controls-compact.html` — `?v=now`(지금) · `?v=a`(안 A) · `?v=b`(안 B), `&theme=dark` · `&text=200`. 제안 CSS는 이 파일의 `<style>`(developer가 `dash.css`로 옮길 글자).
 - 촬영·측정: `scripts/design/shootControlsCompact.mjs` → `docs/design/screens/012/controls-compact-360.png`(지금 · 안 A · 안 B 나란히) · `controls-compact-pc.png`(1280·1024, 지금 ↔ 안 B) · `controls-compact-measure.json`(아래 표의 원본). 넘침 0, 300 KB 초과 0.
 - `src/`·`tests/`는 읽기만 했다. 커밋하지 않았다.
+- **r2(2026-11-08, QF8 문서 정합 — REV-012-1 R-654)**: 형진 님이 **안 B**를 고르고 구현이 검수 승인됐다(`dash.css` 71~98·544~556·622~640행, `e2e/controls-compact.spec.ts`). 거친 포인터 `::before`의 **−4px는 패딩 상자 기준이라 누르는 높이가 40px**이었다 — 2절·5절·6절과 시안의 식을 구현 식 `calc(-1 * (var(--hit) - var(--ctl-h)) / 2 - 2px)`(= −6px)로 고쳤다. 확정 규격은 `design-system.md` **19절**, 버튼 이름 규칙은 `copy.md` 2절 진행 줄 행.
 
 ## 0. 한눈에
 
@@ -39,7 +40,7 @@
 | 토큰 | 값 | 뜻 | 지금 |
 |---|---|---|---|
 | `--ctl-h` | **36px** | 진행 줄 버튼 보이는 높이(모바일·PC 같음) | 44 |
-| 누르는 높이(거친 포인터) | **44px** | `.controls-fixed .btn::before { inset: -4px 0 }` — `position: relative` 버튼의 가상 요소라 그 자리를 누르면 버튼이 눌린다 | 44 |
+| 누르는 높이(거친 포인터) | **44px** | `.controls-fixed .btn::before { top: calc(-1 * (var(--hit) - var(--ctl-h)) / 2 - 2px); bottom: 같은 식 }`(= **−6px**) — `position: relative` 버튼의 가상 요소라 그 자리를 누르면 버튼이 눌린다. **패딩 상자 기준(테두리 2px) — −4px면 누르는 높이 40px**(r1의 `inset: -4px 0`은 테두리 밖 2px뿐이었다, R-654) | 44 |
 | `--ctl-gap` | **6px** | 같은 줄 버튼 사이 | 8 |
 | `--ctl-row-gap` | **8px** | 줄 사이(그대로) — 36 + 8 = 44라 위아래로 넓힌 누르는 영역이 이웃 줄과 **겹치지 않는다**(맞닿기만) | 8 |
 | `--ctl-pad-y` | **6px** | 하단 띠 안쪽 위·아래 여백(아래는 + safe-area) | 8 |
@@ -100,7 +101,7 @@ DOM 불변, CSS만. 1열 [일시정지(아이콘 + 이름) · 1배 · 2배 · 4�
 
 | 항목 | 결과 |
 |---|---|
-| 누르는 표적(터치) | 보이는 36 + `::before` 위아래 4 = **44 × ≥ 44**(가로는 가장 좁은 버튼이 44). 실측 `getComputedStyle(btn, '::before')` top/bottom −4px(터치 컨텍스트, `pointer: coarse`). 줄 사이 8이라 이웃 줄과 겹침 0 |
+| 누르는 표적(터치) | 보이는 36 + `::before` **테두리 밖** 위아래 4 = **44 × ≥ 44**(가로는 가장 좁은 버튼이 44). `::before`의 top/bottom은 **패딩 상자 기준(테두리 2px)**이라 값은 **−6px**(`calc(-1 * (var(--hit) - var(--ctl-h)) / 2 - 2px)`) — r1 시안의 −4px는 누르는 높이 40px이었다(R-654; 구현 실측 `getComputedStyle(b, '::before').height` ≥ 44, `e2e/controls-compact.spec.ts`). 줄 사이 8이라 이웃 줄과 겹침 0(맞닿기만) |
 | 누르는 표적(마우스) | 36 × ≥ 41 — WCAG 2.5.8(AA) 24px 이상, 프로젝트 선례 `btn--sm` 32·`nav-btn` 28 |
 | 글자 200% × 360·320 | 넘침 0(측정 스크립트 ①②), 띠 ≤ 50%(안 B 12.9%·안 A 24.6%)라 고정 해제 없음. 버튼 글자 28px은 `min-height` 36을 넘겨 38로 늘어난다(잘림 0) |
 | 대비 | 색 토큰·글자 크기 불변 — 재계산 없음. 켜짐 막대 3px은 색 반전과 함께 쓰여 비색 단서 유지 |
@@ -110,10 +111,10 @@ DOM 불변, CSS만. 1열 [일시정지(아이콘 + 이름) · 1배 · 2배 · 4�
 
 ## 6. developer 인계
 
-1. **CSS**: `mockups/controls-compact.html`의 `<style>` 「제안(안 A·B 공통)」 블록을 `dash.css`의 `.controls-fixed`·`.controls__tools` 자리와 `< 960`·`≥ 960`·`960~1179` 블록에 옮긴다. `html.cc`·`html.cc-b` 접두사는 시안 전용이라 떼고 쓴다. 토큰은 2절 표(이름은 `tokens.css`에 더하거나 `dash.css` 안 지역 변수로).
+1. **CSS**: `mockups/controls-compact.html`의 `<style>` 「제안(안 A·B 공통)」 블록을 `dash.css`의 `.controls-fixed`·`.controls__tools` 자리와 `< 960`·`≥ 960`·`960~1179` 블록에 옮긴다. `html.cc`·`html.cc-b` 접두사는 시안 전용이라 떼고 쓴다. 토큰은 2절 표(이름은 `tokens.css`에 더하거나 `dash.css` 안 지역 변수로). **거친 포인터 `::before`의 top/bottom은 `calc(-1 * (var(--hit) - var(--ctl-h)) / 2 - 2px)`(= −6px)** — 패딩 상자 기준(테두리 2px) — −4px면 누르는 높이 40px(R-654, 구현과 같은 식).
 2. **안 B DOM**(`LifeScreen.tsx#LifeControls`): `SPEEDS.map` 버튼 넷 → 버튼 하나 `className="btn btn--sm btn--speed" data-testid="speed" data-speed={speed} aria-label={`배속 ${speed}배, 누르면 ${next}배`} onClick={() => onSpeed(next)}` + 글자 `{speed}배` + `role="status"` 한 줄. 모바일 아이콘 숨김은 CSS(4-2). `isSkipBlocked`·`skipBlockedReason`·`SKIP_REASON_ID` 불변.
 3. **시험 영향**: `data-speed`·배속 버튼을 보는 시험 `tests/`·`e2e/` 약 20파일(`dashboard`·`guard`·`life-focus`·`m4-*`·`m7b-decision`·`m7c-sheet-close-guard`·`entry-guard`·`polish`·`toolbar-one-row`·`helpers` 등 — `data-speed|speed-|onSpeed` grep 24파일 71곳, `src` 포함). 한 단추이면 「8배 누르기」는 「세 번 누르기」 도우미로 바꾼다. `e2e/toolbar-one-row.spec.ts`의 한 줄 문턱은 재측정.
-4. **문서**: 확정 뒤 `design-system.md`에 「조작 줄 조임(v0.4.1)」 절(2절 표 + 4-1·4-2)과 16-1 측정표 갱신, `copy.md` 2절 버튼 이름 행에 배속 단추 이름 규칙 한 줄. `diff-*`는 이번에 만들지 않았다(구현 뒤 차이가 생기면 그때).
+4. **문서**: 확정 뒤 `design-system.md`에 「조작 줄 조임(v0.4.1)」 절(2절 표 + 4-1·4-2)과 16-1 측정표 갱신, `copy.md` 2절 버튼 이름 행에 배속 단추 이름 규칙 한 줄. `diff-*`는 이번에 만들지 않았다(구현 뒤 차이가 생기면 그때). — **반영 완료(2026-11-08 QF8)**: `design-system.md` 19절 + 16-1 끝 「v0.4.1 갱신」, `copy.md` 2절 진행 줄 행.
 5. **레인**: 안 A는 CSS만이라 **경량**, 안 B는 UI 화면 + 시험 변경이라 **표준**.
 
 ## 7. 형진 님이 정하실 것

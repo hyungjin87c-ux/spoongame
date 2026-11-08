@@ -24,7 +24,7 @@
 }
 /* ===================== 제안(안 A·B 공통, html.cc) — 구현은 dash.css의 같은 자리(.controls-fixed·.controls__tools 블록)에 옮긴다 ===================== */
 html.cc {
-  --ctl-h: 36px;        /* 진행 줄 버튼 보이는 높이 (지금 44 = --hit) — 거친 포인터에서는 ::before로 위아래 4px씩 넓혀 누르는 높이 44 */
+  --ctl-h: 36px;        /* 진행 줄 버튼 보이는 높이 (지금 44 = --hit) — 거친 포인터에서는 ::before로 테두리 밖 위아래 4px씩(패딩 상자 기준 -6px) 넓혀 누르는 높이 44 */
   --ctl-gap: 6px;       /* 같은 줄 버튼 사이 (지금 8) */
   --ctl-row-gap: 8px;   /* 줄 사이 (지금 8 그대로 — 36 + 8 = 44라 위아래로 넓힌 누르는 영역이 겹치지 않는다) */
   --ctl-pad-y: 6px;     /* 하단 띠 안쪽 위·아래 여백 (지금 8) */
@@ -37,8 +37,9 @@ html.cc .controls-fixed .btn { position: relative; min-height: var(--ctl-h); pad
 html.cc .controls__speed, html.cc .controls__more { gap: var(--ctl-gap); }
 html.cc .controls-fixed .btn[aria-pressed='true'] { box-shadow: inset 0 -3px 0 currentColor; }   /* 켜짐 막대 4 → 3 (높이 비례) */
 @media (pointer: coarse) {
-  /* 보이는 36 + 위아래 4 = 누르는 44(--hit). 가로는 버튼이 44 이상이라 넓히지 않는다 */
-  html.cc .controls-fixed .btn::before { content: ''; position: absolute; left: 0; right: 0; top: -4px; bottom: -4px; }
+  /* 보이는 36 + 테두리 밖 위아래 4 = 누르는 44(--hit). 가로는 버튼이 44 이상이라 넓히지 않는다.
+     top·bottom은 패딩 상자 기준(테두리 2px) — -4px면 누르는 높이 40px이라 구현 식 calc(-1 * (--hit - --ctl-h) / 2 - 2px) = -6px(REV-012-1 R-654, dash.css와 같은 식) */
+  html.cc .controls-fixed .btn::before { content: ''; position: absolute; left: 0; right: 0; top: calc(-1 * (var(--hit) - var(--ctl-h)) / 2 - 2px); bottom: calc(-1 * (var(--hit) - var(--ctl-h)) / 2 - 2px); }
 }
 @media (max-width: 959px) {
   html.cc .controls-fixed { padding: var(--ctl-pad-y) var(--gutter) calc(var(--ctl-pad-y) + env(safe-area-inset-bottom)); }
