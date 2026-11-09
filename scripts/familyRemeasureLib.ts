@@ -29,7 +29,7 @@ import {
 } from '../src/core';
 import { eventPool } from '../src/core';
 import { EARLY_LOSS_HALF, withEarlyLoss, withEarlyLossRule, withSiblingLoss } from './familyRulesLib';
-import { fm7aSeniorPool, fm7aShippedPool, fm7aVariantsPool, k2OnlyPool, preFm4bPool, preFm7aPool } from './preFm4bPool';
+import { fm7aSeniorPool, fm7aShippedBeforeCompPool, fm7aShippedPool, fm7aVariantsPool, k2OnlyPool, preFm4bPool, preFm7aPool } from './preFm4bPool';
 import { MARGIN_LINES, marginSeeds, meanSe } from './marginsLib';
 import { SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { simulateLife, startLife } from './simulateLib';
@@ -49,12 +49,13 @@ import { spreadSeeds } from '../tests/helpers/familyGolden';
  *   V9 + R-631·R-632(가족 줄이 난 해: 형제·조부모 별세 줄 뒤 꺼지는 형제·조부모 플래그를 요구하는 사건을 빼고, 형제·조부모·부모 한 분 별세 줄이 난 해의 보이는 선택지를 해 시작 ctx ∩ 줄 뒤 ctx로 줄인다 — 'exclude')
  *   V10 + R-586(senior-alone이 함께 사는 자녀가 있는 판을 거른다 — 자녀 독립 나이·lives_with_child는 표시 전용이라 경제에는 이 사건 조건만 닿는다)
  *   V11 + Q3(어린 형제의 이른 별세 — 상속의 형제 수) · 청년 「본가」 문장 ← FM7a 배포 값 (지금 풀에서 조르기 사건만 뺀 것)
- *   V12 + 어린 시절 조르기(SPEC-011 AK10 — 4~12세 조르기 7사건이 본인 카드로 더해진 지금 풀, 반려동물은 꺼짐)
+ *   V11s V11과 같은 규칙 · 영유아·학창 이벤트 파일만 조르기 보정(결정 3) 전 원문 — 완료 기준 18의 비교 기준(조르기와 보정이 들어오기 전 배포 값)
+ *   V12 + 어린 시절 조르기(SPEC-011 AK10 — 4~12세 조르기 7사건이 본인 카드로 더해지고 남은 부모·흘러감 카드 효과 +1 보정(결정 3)이 들어간 지금 풀, 반려동물은 꺼짐)
  * R-618(별세·이혼 하한 1세)은 코드 상수라 모든 세계(V0~V12)에 같이 들어 있다 — 원인을 따로 가르지 않는다. 같은 시드·같은 선택 전략(자동 성향)이라 변이 사이의 차이는 켠 원인에서만 온다(짝지은 표본). 실행: `npm run report:family` (docs/data/family-remeasure.md를 쓴다).
  */
 
 export interface Variant {
-  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 'V7' | 'V8' | 'V9' | 'V10' | 'V11' | 'V12' | 'V3h';
+  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 'V7' | 'V8' | 'V9' | 'V10' | 'V11' | 'V11s' | 'V12' | 'V3h';
   label: string;
   pool: () => EventPool;
   /** true 배포 값 · false 끔 · 'half' 효과 절반(측정용 대안) */
@@ -81,7 +82,8 @@ export const VARIANTS: readonly Variant[] = [
   { id: 'V9', label: '+ R-631·R-632 (가족 줄이 난 해: 꺼지는 플래그를 요구하는 사건 · 안 보일 선택지를 뺀다)', pool: fm7aVariantsPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: false },
   { id: 'V10', label: '+ R-586 (senior-alone이 함께 사는 자녀가 있는 판을 거른다)', pool: fm7aSeniorPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: false },
   { id: 'V11', label: '+ Q3 (어린 형제의 이른 별세) · 「본가」 ← FM7a 배포 값', pool: fm7aShippedPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
-  { id: 'V12', label: '+ 어린 시절 조르기 (SPEC-011 — 4~12세 조르기 7사건)', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
+  { id: 'V11s', label: '(기준) V11에서 영유아·학창 이벤트만 조르기 보정(결정 3) 전 원문', pool: fm7aShippedBeforeCompPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
+  { id: 'V12', label: '+ 어린 시절 조르기 (SPEC-011 — 4~12세 조르기 7사건) + 남은 부모·흘러감 카드 효과 +1 보정(결정 3)', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
   { id: 'V3h', label: '(대안) 이른 별세 효과를 절반으로', pool: preFm7aPool, earlyLoss: 'half', rule: 'legacy', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
 ];
 

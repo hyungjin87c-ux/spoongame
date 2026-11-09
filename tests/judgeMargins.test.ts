@@ -27,9 +27,16 @@ import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, marginReport, pr
  * 더 큰 사실: **독립 줄에서는 FM4b 전 풀도 4.903(−3.3 SE)으로 이미 하한 5.00 아래**였다. 판정 표본의 4.987은 운이 좋은 시드 줄이었고, 알파의 모집단 노년 평균은 하한 아래에 있다(지금 풀 4.854 ± 0.029, 하한까지 −5.0 SE).
  * 그래서 −2.5 SE는 판정 표본에 대한 수용(크기는 약 0.05장 — 플레이에서 느낄 수 없다)이고, 알파에 5.00(마스터 결정 M-3, 옛 「다가올 세상」 구간)을 쓰는 것이 맞지 않는다. 세대별 시간 모델(GM10)에서 알파의 노년 하한을 다시 정한다(docs/TODO.md).
  */
-const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number }> = [{ metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -2.5 }];
+/**
+ * `lineOnly`: 합친 표본은 3 SE 이상인데 줄별(1000판) 표본 한 칸만 2 SE 아래로 내려간 **표본 잡음**이라 줄별 경보에서만 예외로 둔다(합친 판정은 그대로 3 SE를 지킨다).
+ * **SPEC-011 AK10(2026-11-09, 마스터 결정)**: `노년(65세+) 결정 카드 평균 / genx / sim:1000 · 수동 흉내`(1.9 SE) — 조르기 사건이 풀에 들어와 난수 흐름이 옮겨 가며 이 한 칸의 표본 평균이 하한 4.72 쪽으로 조금 붙었다(합친 4줄은 3 SE 이상).
+ */
+const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number; lineOnly?: boolean }> = [
+  { metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -2.5 },
+  { metric: '노년(65세+) 결정 카드 평균', era: 'genx', floor: -2.5, lineOnly: true },
+];
 /** 합친 표본은 `floor`(−2.5 SE), 줄별 표본은 그보다 1.5 SE 더 넓은 잡음을 인정한다(줄 하나는 표본이 4분의 1이라 SE가 두 배다) */
-const isKnownUnder3 = (u: { metric: string; era: string; margin: number }): boolean => KNOWN_UNDER3.some((k) => k.metric === u.metric && k.era === u.era && u.margin >= k.floor);
+const isKnownUnder3 = (u: { metric: string; era: string; margin: number }, line = false): boolean => KNOWN_UNDER3.some((k) => (line || k.lineOnly !== true) && k.metric === u.metric && k.era === u.era && u.margin >= k.floor);
 
 describe('30분 모드 판정 임계는 모든 표본 줄에서 측정값과 3 SE 이상 떨어져 있다 (시대 × 전략 × 시드 줄: 시험 · sim:1000)', () => {
   it('새 판정 지표 전부(카드 평균 하·상한, 하드−1↑, 5% 분위, 70세+ 중 20장 미만, 노년, 영유아, 시대별 시간 하·상한, 95% 분위, 느린 독자) + 세 시대 평균 시간의 여유가 합친 4줄 표본으로 3 SE 이상이다 (줄별 값은 보고)', () => {
@@ -38,9 +45,9 @@ describe('30분 모드 판정 임계는 모든 표본 줄에서 측정값과 3 S
     // 판정: 합친 4줄(프로필마다 4000판)에서 3 SE 미만인 칸 0 — 단 보고한 차이(KNOWN_UNDER3)는 보고한 한계 안이면 통과로 센다
     expect(report.under3.filter((u) => !isKnownUnder3(u)).map((u) => `${u.metric} / ${u.era} (${u.margin.toFixed(1)} SE)`)).toEqual([]);
     // 보고한 차이는 아직 3 SE 미만이어야 한다(여유가 생기면 목록에서 뺀다)
-    for (const k of KNOWN_UNDER3) expect(report.under3.some((u) => u.metric === k.metric && u.era === k.era), `${k.metric} / ${k.era}가 3 SE 안으로 들어왔다 — KNOWN_UNDER3에서 뺀다`).toBe(true);
+    for (const k of KNOWN_UNDER3.filter((x) => x.lineOnly !== true)) expect(report.under3.some((u) => u.metric === k.metric && u.era === k.era), `${k.metric} / ${k.era}가 3 SE 안으로 들어왔다 — KNOWN_UNDER3에서 뺀다`).toBe(true);
     // 줄별(1000판) 3 SE 미만 칸은 보고만 한다 — 다만 2 SE 아래로 내려가면(모집단 값이 임계에 닿아 간다는 뜻) 알린다
-    expect(report.lineUnder3.filter((u) => u.margin < 2 && !isKnownUnder3({ ...u, margin: u.margin + 1.5 })).map((u) => `${u.metric} / ${u.era} / ${u.line} (${u.margin.toFixed(1)} SE)`)).toEqual([]);
+    expect(report.lineUnder3.filter((u) => u.margin < 2 && !isKnownUnder3({ ...u, margin: u.margin + 1.5 }, true)).map((u) => `${u.metric} / ${u.era} / ${u.line} (${u.margin.toFixed(1)} SE)`)).toEqual([]);
     // 공허 통과 방지: 줄별 칸은 시대 3 × 줄 4 = 12개 + 합친 칸 3개이고, 합친 칸은 네 줄의 판을 모두 담는다
     expect(report.cells.filter((c) => c.line.id !== POOLED_LINE.id)).toHaveLength(12);
     const pooled = report.cells.filter((c) => c.line.id === POOLED_LINE.id);
@@ -50,12 +57,13 @@ describe('30분 모드 판정 임계는 모든 표본 줄에서 측정값과 3 S
     expect(MARGIN_LINES.map((l) => l.id)).toEqual(['test-random', 'test-auto', 'sim-manual', 'sim-auto']);
   }, 300_000);
 
-  it('임계 값 자체: 카드 평균 구간 23.3~29, 노년 하한 3.95 / 4.72 / 5.0, 시대별 시간 25.5~36.5분 (바뀌면 위 여유 시험과 timingTable.ts 주석의 계산을 함께 다시 한다)', () => {
+  it('임계 값 자체: 카드 평균 구간 23.3~29, 노년 하한 3.95 / 4.72 / 5.0, 시대별 시간 25.5~37.5분 (바뀌면 위 여유 시험과 timingTable.ts 주석의 계산을 함께 다시 한다)', () => {
     expect(LIFE_LENGTH_MODES.short30.cards.meanLow).toBe(23.3);
     expect(LIFE_LENGTH_MODES.short30.cards.meanHigh).toBe(29);
     expect(SENIOR_CHOICE_MEAN_MIN).toEqual({ past: 3.95, present: 4.72, future: 5 });
     // 상단 34.5 → 36.5: SPEC-005 r4 마스터 결정 M24(2026-10-26, 형진 님 「플레이시간은 몰입의 결과」) — 하단 25.5와 3 SE 규칙은 그대로다 (timingTable.ts timeMin 주석)
-    expect(ERA_TIME_BAND).toEqual({ low: 25.5, high: 36.5 });
+    // 상단 36.5 → 37.5: SPEC-011 Q1(2026-11-09, 어린 시절 조르기 — 형진 님 「내용을 줄이지 않고 임계를 올린다」, 실측 세 시대 평균 35.29분) — `timeMin.modelHigh` 35 → 36
+    expect(ERA_TIME_BAND).toEqual({ low: 25.5, high: 37.5 });
   });
 });
 

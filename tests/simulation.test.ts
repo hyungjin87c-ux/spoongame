@@ -309,13 +309,14 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
         }
       });
 
-      it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~36.5분 — M24로 상단을 올렸다) 안, 세 시대 평균이 27~35분, 판 하나하나의 95%가 40분 이하이고 최대 45분 이하', () => {
+      it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~37.5분 — M24·SPEC-011 Q1로 상단을 올렸다) 안, 세 시대 평균이 27~36분, 판 하나하나의 95%가 41분 이하이고 최대 45분 이하', () => {
         let sum = 0;
         for (const era of SIM_PROFILES) {
           const r = reportsOf()[era];
           expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeGreaterThanOrEqual(mode.timeMin.modelLow - 1.5);
           expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeLessThanOrEqual(mode.timeMin.modelHigh + 1.5);
-          expect(r.minutes1x.p95, `${era}: 1배속 95% 분위(분)`).toBeLessThanOrEqual(40);
+          // SPEC-011 Q1(2026-11-09): 95% 분위 한도 40 → 41 (scripts/marginsLib.ts#TIME_P95_LIMIT_MIN과 같은 값 — 조르기가 판 시간을 +0.65분 늘려 genx·alpha가 39.7~40.0분이 됐다)
+          expect(r.minutes1x.p95, `${era}: 1배속 95% 분위(분)`).toBeLessThanOrEqual(41);
           expect(r.minutes1x.max, `${era}: 1배속 최대(분)`).toBeLessThanOrEqual(45);
           sum += r.minutes1x.mean;
         }
@@ -546,14 +547,20 @@ describe('밸런스 (R-045 b): 행복·관계는 출생값에 종속되지 않�
     expect(b.correlation.relationships).toBeLessThan(0.45);
   });
 
-  it('부모 재력 단계별 최종 행복·관계 평균의 차이가 작다 (표본이 충분한 1~4단계 사이 행복 10 이하 · 관계 6 이하)', () => {
-    const b = balanceLazy();
+  /**
+   * **SPEC-011 AK10(2026-11-09, 마스터 결정 — 한도 10은 그대로, 시험만 고친다)**: 이 단언은 1000판 × 3세대 고정 시드 표본에서 재력 4단계 n이 282뿐이라(평균의 표준오차 0.56) 단계 차가 우연히 출렁였다 —
+   * 조르기를 넣은 뒤 10.73으로 한도를 넘었지만 4000판 × 3세대(4단계 n 1172, SE 0.28)에서는 **9.44**(조르기 없는 풀 같은 방식 8.15)다. 기대 격차가 한도 안이라 이 단언만 4000판 표본으로 안정시킨다.
+   * 단계별 판이 500 이상인 단계만 센다(4000판 표본의 5단계 n=236은 제외 — 제목의 「표본이 충분한 1~4단계」 그대로). 한도 10은 그대로고, 하한 7(조르기 없는 풀 8.15 아래로 지나치게 내려가면 표본이 비었다는 뜻)을 더해 공허 통과를 막는다.
+   */
+  it('부모 재력 단계별 최종 행복·관계 평균의 차이가 작다 (표본이 충분한 1~4단계 사이 행복 10 이하 · 관계 6 이하) — 4000판 × 3세대 표본', { timeout: 300_000 }, () => {
+    const b = balanceOf(SIM_PROFILES.flatMap((era) => simulateMany(era, 4000, 'random')));
     // SPEC-005 QI5(마스터 결정 — 설계 문서 9절 2번): 표본 필터를 제목이 말하는 「표본이 충분한 1~4단계」에 맞춰 `n >= 200`으로 했다. 예전 `n >= 60`은 재력 5단계(세 시대 합쳐 약 80판, 평균의 표준오차 약 1.3)까지 끼워
     // 고정 시드 줄에서는 부모 결정과 상관없이 단계 차가 8.87 ↔ 10.72로 출렁였다. 한도 10은 그대로다. 독립 표본 12000판(시드 1001~5000)에서 PD 전/후 단계 차는 9.02 / 8.90으로 같았다.
-    const big = b.tiers.filter((t) => t.n >= 200);
+    const big = b.tiers.filter((t) => t.n >= 500);
     expect(big.map((t) => t.tier)).toEqual([1, 2, 3, 4]);
     const spread = (key: 'happiness' | 'relationships') => Math.max(...big.map((t) => t.mean[key])) - Math.min(...big.map((t) => t.mean[key]));
     expect(spread('happiness')).toBeLessThanOrEqual(10);
+    expect(spread('happiness'), '표본이 비지 않았다(조르기 없는 풀 8.15 · 지금 9.44)').toBeGreaterThanOrEqual(7);
     expect(spread('relationships')).toBeLessThanOrEqual(6);
   });
 

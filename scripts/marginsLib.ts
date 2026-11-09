@@ -17,8 +17,8 @@ import { SIM_PROFILES, simulateLife, type LifeSummary, type Strategy } from './s
  *  - sim:1000: `npm run sim:1000`이 쓰는 줄 (`pipelineSeed(i, era, 전략, 'short30')`) — 수동 흉내(manual = random), 자동 성향(auto)
  *    파이프라인은 세션 reducer 경로와 playToEnd 경로의 인생이 같음을 점검하므로(`runPipelineLife`) 같은 시드의 playToEnd 결과가 곧 sim:1000의 칸 값이다.
  *
- * SE 정의: 평균 지표 = 판 단위 표준편차 ÷ √판 수. 비율 지표 = Agresti-Coull(비율 0이어도 SE가 0이 되지 않는다). 분위 지표(5% 분위 ≥ 16, 95% 분위 ≤ 40분)는 같은 뜻의 비율로 바꿔 쓴다
- * (5% 분위 ≥ 16 ⇔ 16장 미만 판 ≤ 5%, 95% 분위 ≤ 40분 ⇔ 40분 초과 판 ≤ 5%). 세 시대 평균 시간의 SE = √(세 시대 SE² 합) ÷ 3.
+ * SE 정의: 평균 지표 = 판 단위 표준편차 ÷ √판 수. 비율 지표 = Agresti-Coull(비율 0이어도 SE가 0이 되지 않는다). 분위 지표(5% 분위 ≥ 16, 95% 분위 ≤ 41분 — SPEC-011 Q1로 40 → 41)는 같은 뜻의 비율로 바꿔 쓴다
+ * (5% 분위 ≥ 16 ⇔ 16장 미만 판 ≤ 5%, 95% 분위 ≤ 41분 ⇔ 41분 초과 판 ≤ 5%). 세 시대 평균 시간의 SE = √(세 시대 SE² 합) ÷ 3.
  */
 
 export type MarginStrategy = Extract<Strategy, 'auto' | 'random'>;
@@ -147,16 +147,22 @@ export const CARD_METRICS: readonly MarginMetric[] = [
   meanMetric('infant7', '영유아(0~7세) 결정 카드 평균', `≥ ${INFANT_CHOICE_MEAN_MIN}`, infantCards, () => INFANT_CHOICE_MEAN_MIN, 'min'),
 ];
 
+/**
+ * 판 시간 95% 분위 한도(분) — 「40분 초과 판 ≤ 5%」. **SPEC-011 Q1(2026-11-09): 40 → 41** — 형진 님 「내용을 줄이지 않고 임계를 올린다」와 같은 결정(마스터 지시): 어린 시절 조르기가 판 시간을 +0.65분 늘려 genx·alpha의 95% 분위가
+ * 39.7~40.0분이 되어 줄별 표본에서 한도에 붙었다(합친 4줄은 3.9~4.7 SE로 통과, 줄별 0.1~1.9 SE 경보). `tests/simulation.test.ts`의 「95%가 41분 이하」와 같은 값이다. 최댓값 한도 45분은 그대로다.
+ */
+export const TIME_P95_LIMIT_MIN = 41;
+
 export const TIME_METRICS: readonly MarginMetric[] = [
   meanMetric('time-low', '시대별 모델 시간(분) ≥ 하한', `≥ ${ERA_TIME_BAND.low}분`, minutesOf, () => ERA_TIME_BAND.low, 'min'),
   meanMetric('time-high', '시대별 모델 시간(분) ≤ 상한', `≤ ${ERA_TIME_BAND.high}분`, minutesOf, () => ERA_TIME_BAND.high, 'max'),
   {
     id: 'time-p95',
-    label: '판 시간 95% 분위 (40분 초과 판 ≤ 5%와 같은 뜻)',
-    limit: '95% 분위 ≤ 40분',
+    label: `판 시간 95% 분위 (${TIME_P95_LIMIT_MIN}분 초과 판 ≤ 5%와 같은 뜻)`,
+    limit: `95% 분위 ≤ ${TIME_P95_LIMIT_MIN}분`,
     of: (lives) => {
       const mins = lives.map(minutesOf);
-      const hits = mins.filter((m) => m > 40).length;
+      const hits = mins.filter((m) => m > TIME_P95_LIMIT_MIN).length;
       const se = propSe(hits, mins.length);
       return { value: quantile(mins, 95), se: null, margin: (0.05 - hits / mins.length) / se, digits: 1 };
     },

@@ -9,6 +9,10 @@ import { ASK_PET_ENABLED } from '../askTable';
  *
  * **예외 하나 — `ask-pet.json`**(어린 시절 조르기의 강아지 2사건, SPEC-011 AK9): 스위치 `ASK_PET_ENABLED`(`src/data/askTable.ts`)가 꺼져 있으면 이벤트 목록에 들어가지 않는다
  * (번들에도 들어가지 않는다 — 아래 두 glob 가운데 반려동물 파일만 따로 불러 스위치가 거짓이면 상수 접기로 사라진다). 이번 배포(v0.5.0)는 꺼져 있다.
+ *
+ * **JSON에는 주석을 달 수 없어 여기에 적는다 — `infant.json`·`school.json`의 선택지 효과 50곳(21개 사건)은 SPEC-011 AK10 결정 3(형진 님 2026-11-09 「보정한다」)으로 +1 했다**:
+ * 조르기가 부모·흘러감 카드를 판당 약 1.6장 대신해 20세 평균 지식·관계가 내려간 몫을 남은 카드가 메운다(설계 문서 `docs/data/ask-model.md` 11절 사다리 4번의 사용 기록에 규칙 넷·올리지 않은 9곳·사유).
+ * 보정 전 원문은 `tests/fixtures/pre-ask-comp-events/`(재측정 기준 V11s)에 얼려 두었다. 이 효과를 또 바꾸면 `tests/stat20Guard.test.ts#PD_AT_20`·`tests/infantContent.test.ts`의 `PD_AT_8`·`tests/rngSnapshot.test.ts`를 함께 다시 잰다.
  */
 const BASE_FILES: Readonly<Record<string, unknown>> = import.meta.glob(['./*.json', '!./ask-pet.json'], { eager: true, import: 'default' });
 const PET_FILES: Readonly<Record<string, unknown>> = import.meta.glob('./ask-pet.json', { eager: true, import: 'default' });

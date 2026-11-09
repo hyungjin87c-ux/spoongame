@@ -77,7 +77,7 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
     expect(fw.text).toBe('아이가 처음으로 낱말 하나를 말했습니다. 곁에 있던 어른들이 한참을 웃었습니다.'); // r3: 「또렷한 말」은 2세 이상의 장면이라 월령 주장 없이 낱말 하나로
     expect(lintEvent(fw)).toEqual([]); // 합쇼체 · 새 길이 한도 — 같은 해의 다른 마일스톤 줄과 어체가 섞이지 않는다
     const tell = ev('infant-stories').choices!.find((c) => c.id === 'tell')!;
-    expect(tell.effects?.stats?.education).toBe(1); // r1 3 → 2, r3 2 → 1 (20세 평균 지식 +2 이하 가드, 마스터 결정 r2-1)
+    expect(tell.effects?.stats?.education).toBe(2); // r1 3 → 2, r3 2 → 1 (20세 평균 지식 +2 이하 가드, 마스터 결정 r2-1), SPEC-011 AK10 결정 3(형진 님 2026-11-09 「보정한다」)에서 영유아 카드의 양의 지식·관계 효과를 +1 해 1 → 2 (사다리 4번 — 20세 평균은 조르기 전 기준선 ±0.3 안, tests/stat20Guard.test.ts)
     expect(tell.result).toBe('머리맡에서 지어낸 이야기가 매일 밤 이어졌습니다. 아이는 이야기 속 사람들의 이름을 외웠습니다.'); // r3: 영유아 기존 9개를 합쇼체로 다시 썼다(뜻 그대로)
     const sib = ev('infant-new-sibling');
     // SPEC-009 K2 (FM4b): 가족 구성이 정한 해에 강제로 일어난다 — 추첨 조건(첫째·어머니 나이)은 구성이 지키고, 나이 창은 구성의 터울(2~5)이다
@@ -94,7 +94,7 @@ describe('목록: 신규 28개와 기존 3건의 변경 (docs/data/content-M7a-i
     expect(sib.choices!.find((c) => c.id === 'grandma')!.effects?.stats?.health).toBe(1); // 지배 쌍 해소: grandma에 건강 +1
     expect(sib.choices!.find((c) => c.id === 'grandma')!.effects?.stats?.relationships).toBe(1); // r3: 관계 +2 → +1 (help·notice와의 균형)
     const help = sib.choices!.find((c) => c.id === 'help')!;
-    expect(help.effects?.stats).toEqual({ relationships: 3, happiness: -1 }); // r3(O06): 안기고 싶은 마음을 참는 대가 — 행복 +1 → −1
+    expect(help.effects?.stats).toEqual({ relationships: 4, happiness: -1 }); // r3(O06): 안기고 싶은 마음을 참는 대가 — 행복 +1 → −1. 관계 3 → 4는 SPEC-011 AK10 결정 3(형진 님 2026-11-09 「보정한다」, 사다리 4번)
     expect(help.result).toContain('안기고 싶은 마음은 속으로 참았지만');
     const notice = sib.choices!.find((c) => c.id === 'notice')!;
     expect(notice.label).toBe('일부러 장난을 쳐서 눈길을 끈다');
@@ -511,10 +511,15 @@ describe('r2: 영유아 콘텐츠가 스탯을 크게 올리지 않는다 (마�
    * industrial 지식 +0.001 · 건강 −0.173 · 행복 −0.293 · 관계 −0.823 / genx −0.015 · −0.163 · −0.166 · −0.831 / alpha −0.108 · −0.111 · −0.015 · −0.797 (옛 값 industrial [16.7296, 72.259, 45.6395, 54.2603] · genx [17.1242, 72.5421, 47.9126, 56.2617] · alpha [17.8505, 72.4826, 49.5688, 55.8411]).
    * 표본 3종 모두 한도 안이고 마스터 승인 대상(한도 초과)이 아니다. 설계 문서 3-3절 손계산(20세 행복 −0.7 · 지식 +0.5 · 관계 −0.1)과 견주면 관계가 크게 아래로 움직였다 — 조르기가 부모 결정·흘러감 카드 판당 약 1.6장을 대신해 그 카드들의 (합리적인 쪽이 더 잘 뽑히는) 관계 이득이 줄어서다(report:ask 「카드 이동」).
    */
+  /**
+   * **SPEC-011 AK10 결정 3 보정 기준선 (2026-11-09, 형진 님 「보정한다」)**: 조르기로 줄어든 부모·흘러감 카드의 몫을 되돌리려 영유아 카드의 양의 관계·지식 선택지 효과를 +1 했다(설계 문서 `ask-model.md` 11절 사다리 4번).
+   * 같은 함수·같은 표본으로 다시 쟀다 — 조르기 전 기준선(위 옛 값)과의 차이 industrial 지식 +0.54 · 건강 −0.20 · 행복 −0.33 · 관계 +0.08 / genx +0.50 · −0.18 · −0.18 · +0.13 / alpha +0.48 · −0.13 · 0.00 · +0.42.
+   * 한도 +2 / +3은 이 기준선 대비 그대로다. 8세에는 지식이 조르기 전보다 조금 높고(영유아 카드 보정 몫만 있고 학창기 카드 손실이 아직 없다) 20세에는 조르기 전과 ±0.3 안이다(`tests/stat20Guard.test.ts`).
+   */
   const PD_AT_8: Record<string, [number, number, number, number]> = {
-    industrial: [16.7303, 72.0861, 45.3465, 53.4372],
-    genx: [17.1095, 72.3792, 47.747, 55.4312],
-    alpha: [17.743, 72.3712, 49.5534, 55.0447],
+    industrial: [17.2704, 72.0567, 45.3091, 54.3385],
+    genx: [17.6215, 72.3618, 47.7336, 56.3939],
+    alpha: [18.3291, 72.3498, 49.5654, 56.263],
   };
   const LIMIT = [2, 2, 2, 3];
   const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;

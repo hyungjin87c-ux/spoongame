@@ -5,6 +5,8 @@ import school from '../tests/fixtures/pre-fm4b-events/school.json';
 import youth from '../tests/fixtures/pre-fm7a-events/youth.json';
 import middle from '../tests/fixtures/pre-fm7a-events/middle.json';
 import senior from '../tests/fixtures/pre-fm7a-events/senior.json';
+import infantBeforeComp from '../tests/fixtures/pre-ask-comp-events/infant.json';
+import schoolBeforeComp from '../tests/fixtures/pre-ask-comp-events/school.json';
 
 /**
  * FM4b **전**의 이벤트 풀 (SPEC-009 K2·K4 측정용): 영유아·학창 이벤트 파일 둘을 FM4a 시점(커밋 73e9754)의 원문으로 되돌리고, **청년·중년·노년 파일 셋은 FM7a 전(커밋 a6b55e0)의 원문**으로 되돌린다
@@ -22,6 +24,7 @@ void _askPetFile;
 
 let cache: EventPool | null = null;
 let cacheShipped: EventPool | null = null;
+let cacheShippedBeforeComp: EventPool | null = null;
 let cacheFm7a: EventPool | null = null;
 
 export function preFm4bPool(): EventPool {
@@ -35,6 +38,16 @@ export function preFm4bPool(): EventPool {
 export function fm7aShippedPool(): EventPool {
   if (cacheShipped === null) cacheShipped = createEventPool(validateEventFiles({ ...BASE_FILES }));
   return cacheShipped;
+}
+
+/**
+ * 조르기 **보정 전** 배포 값의 풀 (재측정 V11s, SPEC-011 AK10 결정 3 — 형진 님 2026-11-09 「보정한다」): `fm7aShippedPool`과 같되 영유아·학창 이벤트 파일 둘을 **보정 전 원문**(커밋 d02054d — 남은 부모·흘러감 카드의 관계·지식 효과 +1을 하기 전)으로 되돌린다.
+ * 완료 기준 18은 「조르기 사건과 그 보정이 들어와 배포 값에서 얼마나 움직였나」이므로 비교 기준(V11s)은 보정 전 배포 값이어야 한다 — 지금 파일로 만든 V11은 보정이 양쪽에 같이 들어 있어 보정의 몫이 상쇄된다.
+ * V6~V11(FM7a 원인 비교)은 지금 파일을 그대로 쓴다(그 비교는 보정과 무관하고 양쪽이 같은 영유아·학창 파일을 쓴다).
+ */
+export function fm7aShippedBeforeCompPool(): EventPool {
+  if (cacheShippedBeforeComp === null) cacheShippedBeforeComp = createEventPool(validateEventFiles({ ...BASE_FILES, './infant.json': infantBeforeComp, './school.json': schoolBeforeComp }));
+  return cacheShippedBeforeComp;
 }
 
 /** FM7a **전**의 풀 (재측정 V2~V5용): 지금 풀에서 청년·중년·노년 파일 셋만 FM7a 전 원문으로 되돌린다 — FM4b의 K2·K4는 켜진 채다 */
