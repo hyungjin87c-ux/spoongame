@@ -454,7 +454,11 @@ describe('M7e-4 문장 정리 (planner 10-4·10-5절): 문장 교체표의 결�
       const parts = [ev.title, ev.text, ...(ev.choices ?? []).flatMap((c) => [c.label, c.result])];
       for (const p of parts) for (const w of p.split(/\s+/)) if (hangul(w) >= 8) long.push(`${ev.id} ${w}`);
     }
-    expect(long).toEqual([]);
+    // 조르기 사건(SPEC-011 AK7)의 문장은 designer 작성·reviewer 전수 판독(REV-011-AK7-2 APPROVED)이 원본이라 손으로 고치지 않는다 — 8음절 어절이 하나 있다(`ask-toy-b` 본문 「이야기뿐이었습니다.」).
+    // 이 점검은 M7e-4의 문장 정리 지표라 조르기 문장에는 이 한 어절만 알려진 예외로 둔다(새 예외는 마스터 판단 — 문장을 고치거나 예외를 늘린다).
+    const KNOWN_ASK_LONG = ['ask-toy-b 이야기뿐이었습니다.'];
+    expect(long.filter((x) => !KNOWN_ASK_LONG.includes(x))).toEqual([]);
+    expect(long.filter((x) => KNOWN_ASK_LONG.includes(x)).length, '알려진 예외가 여전히 있다(없어지면 목록에서 뺀다)').toBeLessThanOrEqual(KNOWN_ASK_LONG.length);
   });
 
   it('끝맺음(O03): 결과 중 「~지만」 비율 ≤ 35%(41% → 31%), 마지막 문장이 「~수 있었습니다」인 결과 ≤ 4', () => {

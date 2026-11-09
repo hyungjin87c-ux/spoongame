@@ -1076,8 +1076,10 @@ describe('방향 판정의 균형 (R-091): 세대 표본 × 재력 단계별 앞
     expect(startBandOf(wealthMixtureOfProfile('industrial'), 4).high).toBe(99);
     expect(t.n, `past 4단계 표본`).toBeGreaterThanOrEqual(100);
     expect(t.up, `past 4단계 ${row(t)}`).toBe(0);
-    expect(share(t, 'same'), `past 4단계 ${row(t)}`).toBeGreaterThanOrEqual(0.25); // 관측 35% (예전 재산 스탯 시절 83% — 위가 열린 순자산에서는 같은 구간에 머무는 판이 줄었다)
-    expect(share(t, 'down'), `past 4단계 ${row(t)}`).toBeLessThanOrEqual(0.75); // 관측 65%
+    // SPEC-011 AK10(2026-11-09): 어린 시절 조르기가 집안 살림을 −100~−300만 원씩 쓰고 행복·사이를 조금 깎아 산업화 세대 4단계의 비슷함이 24.6% · 뒤쪽 75.4%로 내려왔다(그 전 관측 35% · 65% — 시험 하한 25% · 상한 75%에 걸쳤다).
+    // 앞섬 0(천장)이라는 이 시험의 요점은 그대로이고 한도만 20% · 80%로 옮겼다 — 비슷함이 20% 아래·뒤쪽이 80% 위로 가면 쏠림이다. 값은 `ending` 비율 표 이동(AK10 이동 표)에 적었다.
+    expect(share(t, 'same'), `past 4단계 ${row(t)}`).toBeGreaterThanOrEqual(0.2); // 관측 24.6% (조르기 전 35% — 예전 재산 스탯 시절 83% — 위가 열린 순자산에서는 같은 구간에 머무는 판이 줄었다)
+    expect(share(t, 'down'), `past 4단계 ${row(t)}`).toBeLessThanOrEqual(0.8); // 관측 75.4% (조르기 전 65%)
   }, 180_000);
 
   it('알파 세대 4단계 "상위 3~17% 사이"(구간 [83, 97]): 구간 위쪽 끝 + 여유가 천장에 닿아 여유가 0이라 상위 2%·1%에 이른 판은 앞섬이다 — 0%가 아니고 3% 이상 15% 이하 (R-095)', () => {

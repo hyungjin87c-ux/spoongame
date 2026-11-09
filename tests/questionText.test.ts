@@ -34,16 +34,19 @@ const ALL = new Map<string, string>();
 for (const stage of DOC_FILES) for (const [id, q] of approved(stage)) ALL.set(id, q);
 
 describe('QS3 ① 94개 전부 있다', () => {
-  const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined);
+  // 승인 문서(question-text-*.md)가 다루는 것은 2026-11-08의 94개다. 조르기 사건 7개(SPEC-011 AK7)의 질문은 `docs/design/copy.md` 20절이 원본이고 `tests/askEvents.test.ts`가 글자 단위로 대조한다
+  const askEvents = EVENT_POOL.events.filter((e) => e.ask !== undefined);
+  const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined && e.ask === undefined);
 
-  it('선택지 이벤트 94개(영유아 15 · 학창 17 · 청년 22 · 중년 22 · 노년 18)에 question이 있고 서술 이벤트에는 없다', () => {
+  it('선택지 이벤트 94개(영유아 15 · 학창 17 · 청년 22 · 중년 22 · 노년 18)에 question이 있고 서술 이벤트에는 없다 — 조르기 사건 7개도 question이 있다', () => {
     expect(choiceEvents).toHaveLength(94);
-    for (const e of choiceEvents) expect(typeof e.question, e.id).toBe('string');
+    expect(askEvents).toHaveLength(7);
+    for (const e of [...choiceEvents, ...askEvents]) expect(typeof e.question, e.id).toBe('string');
     for (const e of EVENT_POOL.events.filter((x) => x.choices === undefined)) expect(e.question, e.id).toBeUndefined();
     for (const stage of DOC_FILES) {
       const key = Object.keys(EVENT_FILES).find((k) => k.endsWith('/' + stage + '.json'))!;
-      const events = (EVENT_FILES[key] as { events: Array<{ choices?: unknown; question?: string }> }).events;
-      expect(events.filter((e) => e.choices !== undefined && e.question !== undefined), stage).toHaveLength(COUNTS[stage]);
+      const events = (EVENT_FILES[key] as { events: Array<{ choices?: unknown; question?: string; ask?: unknown }> }).events;
+      expect(events.filter((e) => e.choices !== undefined && e.question !== undefined && e.ask === undefined), stage).toHaveLength(COUNTS[stage]);
     }
   });
 
@@ -82,9 +85,9 @@ describe('QS3 ③ 문장 규칙(완료 기준 1·7)', () => {
     }
   });
 
-  it('94개가 서로 다르다 (공허 통과 방지: 94개)', () => {
-    expect(qs).toHaveLength(94);
-    expect(new Set(qs.map((x) => x.q)).size).toBe(94);
+  it('101개(94 + 조르기 7)가 서로 다르다 (공허 통과 방지)', () => {
+    expect(qs).toHaveLength(101);
+    expect(new Set(qs.map((x) => x.q)).size).toBe(101);
   });
 
   it('사람 주어·평가어·계층어·시대 판단어·숫자 0건 (검사기가 실제로 잡는지 합성 사례로 확인)', () => {

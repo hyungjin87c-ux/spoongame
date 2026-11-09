@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import docSrc from '../docs/data/parent-decision-model.md?raw';
 import type { ParentingStyle } from '../src/core';
+import { ASK_PET_ENABLED } from '../src/data/askTable';
 import { PARENT_DECISION_TABLE, PARENT_FIT, PARENT_MODEL, PARENT_PRIORITY, type DecisionArea } from '../src/data/parentDecisionTable';
 
 /**
@@ -10,6 +11,8 @@ import { PARENT_DECISION_TABLE, PARENT_FIT, PARENT_MODEL, PARENT_PRIORITY, type 
 
 interface DocRow {
   id: string;
+  /** 넷째 칸 `pet` — 반려동물 조르기 행(스위치 `ASK_PET_ENABLED`가 꺼지면 코드 표에 없다, SPEC-011 AK9) */
+  pet: boolean;
   areas: DecisionArea[];
   childActUntil?: number;
 }
@@ -22,19 +25,23 @@ function parseBlock(): DocRow[] {
     const line = raw.trim();
     if (line === '' || line.startsWith('#')) continue;
     const cells = line.split('|').map((c) => c.trim());
-    if (cells.length !== 3) throw new Error(`열이 3개가 아니다: ${line}`);
+    if (cells.length !== 3 && !(cells.length === 4 && cells[3] === 'pet')) throw new Error(`열이 3개(반려동물 행은 넷째 칸 pet)가 아니다: ${line}`);
     const [id, areas, until] = cells;
-    rows.push({ id, areas: areas.split(',').map((a) => a.trim()) as DecisionArea[], ...(until === '-' ? {} : { childActUntil: Number(until) }) });
+    rows.push({ id, pet: cells.length === 4, areas: areas.split(',').map((a) => a.trim()) as DecisionArea[], ...(until === '-' ? {} : { childActUntil: Number(until) }) });
   }
   return rows;
 }
 
 describe('T1b 설계 문서 기계 판독 블록 = 코드 분류표 (PD2)', () => {
-  const rows = parseBlock();
+  const all = parseBlock();
+  // 반려동물 행은 스위치가 꺼지면 코드 표에 없다 — 그때는 시험이 건너뛴다(SPEC-011 AK9)
+  const rows = all.filter((r) => ASK_PET_ENABLED || !r.pet);
 
-  it('블록이 32줄이다 (문서의 헤더 주석은 건너뛴다)', () => {
-    expect(rows).toHaveLength(32);
-    expect(new Set(rows.map((r) => r.id)).size).toBe(32);
+  it('블록이 41줄이다(32 + 조르기 9) — 반려동물 2줄은 `pet` 표지, 스위치가 꺼지면 코드 표는 39줄 (문서의 헤더 주석은 건너뛴다)', () => {
+    expect(all).toHaveLength(41);
+    expect(new Set(all.map((r) => r.id)).size).toBe(41);
+    expect(all.filter((r) => r.pet).map((r) => r.id)).toEqual(['ask-pet-a', 'ask-pet-b']);
+    expect(rows).toHaveLength(ASK_PET_ENABLED ? 41 : 39);
   });
 
   it('행마다 같다: 이벤트 id 순서·영역 목록·childActUntil이 코드와 문서에서 한 글자도 다르지 않다', () => {

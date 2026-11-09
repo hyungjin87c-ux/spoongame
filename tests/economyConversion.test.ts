@@ -1,3 +1,4 @@
+import { ASK_PET_ENABLED, askEventIdsFor } from '../src/data/askTable';
 import { describe, expect, it } from 'vitest';
 import docSrc from '../docs/data/economy-model.md?raw';
 import legacyJson from './fixtures/wealthLegacy.json';
@@ -129,7 +130,7 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
   /** FM7a 「남은 한 분」 변형 4개(원본 id + -mother-gone·-father-gone): 원본의 효과·선택지·보너스를 그대로 가진 문장 변형이라 변환표에 따로 적지 않는다 — 원본(`middle-parents-care`·`middle-parents-farewell`)의 행이 곧 변형의 행이다 */
   const FM7A_VARIANTS = ['middle-parents-care-mother-gone', 'middle-parents-care-father-gone', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'];
 
-  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) + FM7a 변형 4개(원본의 행을 그대로 쓴다) = 풀 144개 전부', () => {
+  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) + FM7a 변형 4개(원본의 행을 그대로 쓴다) = 풀 144개 + 조르기 7개 전부', () => {
     const inTable = new Set(ROWS.map((r) => r.eventId));
     const unchanged = parseUnchanged();
     expect(unchanged).toHaveLength(37);
@@ -148,8 +149,14 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
       const base = eventOf(id.replace(/-(?:mother|father)-gone$/, ''));
       expect(JSON.stringify(eventOf(id).choices!.map((c) => [c.id, c.effects, c.bonuses, c.requires])), id).toBe(JSON.stringify(base.choices!.map((c) => [c.id, c.effects, c.bonuses, c.requires])));
     }
-    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
-    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length);
+    // 조르기 사건(SPEC-011 AK7)은 표에도 5-5에도 없다 — 20세 미만 새 사건이고 집안 살림 효과는 코드 표 `ASK_EFFECTS`가 정한다(데이터에는 `endure`의 행복뿐, `assets`·`family` 없음)
+    const askIds = askEventIdsFor(ASK_PET_ENABLED);
+    for (const id of askIds) {
+      expect(inTable.has(id), `${id}가 변환표에 있다`).toBe(false);
+      expect(JSON.stringify(eventOf(id).choices!.map((c) => c.effects)), id).not.toMatch(/"assets"|"family"/);
+    }
+    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS, ...askIds])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
+    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length + askIds.length);
     for (const id of unchanged) {
       const ev = eventOf(id);
       const effs: Array<Effects | undefined> = [ev.effects, ...(ev.bonuses ?? []).map((b) => b.effects), ...(ev.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];

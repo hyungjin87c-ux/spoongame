@@ -1,6 +1,6 @@
 import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { calendarYear, citationFor, heavyKindOfEvent, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
+import { calendarYear, citationFor, heavyKindOfEvent, isAskRollChoice, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
 import type { ImpactItem } from '../../core/impact';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
 import { insightFor } from '../../data/citationInsights';
@@ -12,7 +12,7 @@ import { GuardedButton } from '../GuardedButton';
 import { useScrollLock } from '../useScrollLock';
 import type { LifeGame } from './Cards';
 import { CitationBox } from './CitationBox';
-import { ImpactHint, ImpactLine } from './Impact';
+import { ImpactFixedLine, ImpactHint, ImpactLine } from './Impact';
 
 /**
  * 중대 결정 카드 (SPEC-003 MD1, M7b — 문구·DOM·전환은 docs/design/copy.md 6절, CSS는 styles/dash.css 「중대 결정 카드」, 시안 mockups/decision-{adult,infant}.html).
@@ -155,7 +155,8 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, o
                   </span>
                   <span className="choice__body">
                     <span className="choice__label">{c.label}</span>
-                    <ImpactLine items={impactOf(c.id)} />
+                    {/* 조르기 카드(SPEC-011 AK8): 조른다·떼를 쓴다는 영향 줄 대신 고정 한 줄, 참는다는 지금의 영향 줄(행복 ▼) */}
+                    {isAskRollChoice(ev, c.id) ? <ImpactFixedLine /> : <ImpactLine items={impactOf(c.id)} />}
                   </span>
                 </GuardedButton>
               ))}

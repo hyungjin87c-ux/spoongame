@@ -1,6 +1,6 @@
 import type { CoParents } from '../core/parentSubject';
 import type { ParentingStyle } from '../core/types';
-import { ASK_AREA } from './askTable';
+import { ASK_AREA, ASK_EVENT_IDS, ASK_PET_ENABLED, ASK_PET_EVENT_IDS } from './askTable';
 
 /**
  * 어린 시절 부모님 결정 표 (SPEC-005 PD1·PD2·PD4, 설계 문서 docs/data/parent-decision-model.md — PD0 승인 2026-10-20 A1~A17·Q1~Q8).
@@ -45,7 +45,7 @@ export const ALL_SELF_FROM_AGE = 19;
 const row = (areas: readonly DecisionArea[], childActUntil?: number): DecisionRow => (childActUntil === undefined ? { areas } : { areas, childActUntil });
 
 /**
- * 32장 분류표 (설계 문서 1-3절). 키 순서는 문서의 기계 판독 블록과 같다.
+ * 32장 분류표 (설계 문서 1-3절) + 조르기 사건 7행(반려동물 켜짐 9행, SPEC-011 AK7). 키 순서는 문서의 기계 판독 블록과 같다.
  * 부모가 정하는 카드 24장 · 흘러감이 있는 카드 7장(`infant-new-sibling`·`infant-sibling-toy`·`school-family-priority` 전 구간 + 12세 이하 `school-friend`·`school-bully`·`school-friend-quarrel`·`school-teacher-notice`)
  * · 본인이 고르는 구간이 있는 카드 9장.
  */
@@ -82,6 +82,9 @@ export const PARENT_DECISION_TABLE: Readonly<Record<string, DecisionRow>> = {
   'school-scholarship': row(['money', 'school']),
   'school-exam': row(['school', 'money']),
   'school-parttime': row(['money']),
+  // 어린 시절 조르기(SPEC-011 AK1·AK7): 영역 `ask`(단독) — R1a가 나이와 무관하게 본인으로 만든다. 반려동물 둘은 스위치 `ASK_PET_ENABLED`가 켜졌을 때만 있다(AK9, 꺼짐이면 이 표에도 없다)
+  ...Object.fromEntries(ASK_EVENT_IDS.map((id) => [id, row([ASK_AREA])])),
+  ...(ASK_PET_ENABLED ? Object.fromEntries(ASK_PET_EVENT_IDS.map((id) => [id, row([ASK_AREA])])) : {}),
 };
 
 // ---------- 줄 문구 (설계 문서 3-1·3-4·3-5절 · SPEC-011 DS2 도장 주어) ----------
@@ -233,4 +236,11 @@ export const SELF_AREA_WEIGHT: number = 2;
 
 // ---------- 시험이 쓰는 집계 (설계 문서 1-3절 「집계」) ----------
 
-export const PARENT_TABLE_COUNTS = { parentCards: 24, childCards: 7, selfCards: 9, selfCards13to18: 6 } as const;
+/**
+ * 집계 — `askCards`는 조르기 사건 수(반려동물 켜짐 9 · 꺼짐 7), `selfCards`는 본인이 고르는 구간이 있는 카드(기존 9 + 조르기). 스위치를 인자로 받아 시험이 켜짐·꺼짐을 모두 본다.
+ */
+export const parentTableCountsFor = (petEnabled: boolean): { parentCards: 24; childCards: 7; selfCards: number; selfCards13to18: 6; askCards: number } => {
+  const askCards = petEnabled ? ASK_EVENT_IDS.length + ASK_PET_EVENT_IDS.length : ASK_EVENT_IDS.length;
+  return { parentCards: 24, childCards: 7, selfCards: 9 + askCards, selfCards13to18: 6, askCards };
+};
+export const PARENT_TABLE_COUNTS = parentTableCountsFor(ASK_PET_ENABLED);

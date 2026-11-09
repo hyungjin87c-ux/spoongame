@@ -16,6 +16,7 @@ import {
   SELF_FROM_AGE,
   parentFitOf,
 } from '../src/data/parentDecisionTable';
+import { ASK_PET_ENABLED } from '../src/data/askTable';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 
 /**
@@ -58,6 +59,15 @@ const EXPECTED: Readonly<Record<string, ReadonlyArray<readonly [number, number, 
   'school-scholarship': [[15, 18, 'parent'], [19, 19, 'self']],
   'school-exam': [[16, 18, 'parent'], [19, 19, 'self']],
   'school-parttime': [[16, 18, 'parent'], [19, 19, 'self']],
+  // 어린 시절 조르기(SPEC-011 AK1·AK7): 영역 `ask` → 나이와 무관하게 본인(R1a). 데이터 나이 범위 전부 — 장난감 4~12 · 예체능 5~12 (반려동물 5~12는 스위치가 켜질 때만 표에 있다)
+  'ask-toy-a': [[4, 12, 'self']],
+  'ask-toy-b': [[4, 12, 'self']],
+  'ask-toy-c': [[4, 12, 'self']],
+  'ask-toy-d': [[4, 12, 'self']],
+  'ask-lessons-a': [[5, 12, 'self']],
+  'ask-lessons-b': [[5, 12, 'self']],
+  'ask-lessons-c': [[5, 12, 'self']],
+  ...(ASK_PET_ENABLED ? { 'ask-pet-a': [[5, 12, 'self']], 'ask-pet-b': [[5, 12, 'self']] } : {}),
 };
 
 const expectedAt = (id: string, age: number): Who | undefined => EXPECTED[id].find(([a, b]) => age >= a && age <= b)?.[2];
@@ -65,8 +75,8 @@ const expectedAt = (id: string, age: number): Who | undefined => EXPECTED[id].fi
 describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
   const preAdult = EVENT_POOL.events.filter(isPreAdultChoice);
 
-  it('① 19세 미만에서 일어날 수 있는 선택지 이벤트 32장이 표의 키와 정확히 같다: 누락도 남는 키도 없다', () => {
-    expect(preAdult).toHaveLength(32);
+  it('① 19세 미만에서 일어날 수 있는 선택지 이벤트 39장(32 + 조르기 7, 반려동물 켜짐이면 41)이 표의 키와 정확히 같다: 누락도 남는 키도 없다', () => {
+    expect(preAdult).toHaveLength(ASK_PET_ENABLED ? 41 : 39);
     expect(preAdult.map((e) => e.id).sort()).toEqual(Object.keys(PARENT_DECISION_TABLE).sort());
     expect(Object.keys(EXPECTED).sort()).toEqual(Object.keys(PARENT_DECISION_TABLE).sort());
     expect(parentTableProblems(EVENT_POOL.events)).toEqual([]);
@@ -112,7 +122,7 @@ describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
     expect(parentTableProblems(EVENT_POOL.events, { ...PARENT_DECISION_TABLE, 'school-friend': { areas: ['friends'], childActUntil: 25 } }).some((p) => p.includes('childActUntil'))).toBe(true);
   });
 
-  it('② 32장 전수 × 데이터 나이 범위의 모든 나이에서 deciderOf가 설계 문서 1-3절의 「나이별 결정자」와 같다', () => {
+  it('② 39장 전수 × 데이터 나이 범위의 모든 나이에서 deciderOf가 설계 문서 1-3절의 「나이별 결정자」와 같다', () => {
     for (const ev of preAdult) {
       const ages = possibleAgesOf(ev);
       expect(ages.length, ev.id).toBeGreaterThan(0);
@@ -124,9 +134,13 @@ describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
     }
   });
 
-  it('② 나이 경계 12·13·18·19: 32장 전수의 규칙 값 (데이터 밖 나이도 규칙대로 값이 나온다)', () => {
+  it('② 나이 경계 12·13·18·19: 39장 전수의 규칙 값 (데이터 밖 나이도 규칙대로 값이 나온다 — 조르기 행은 R1a라 늘 본인)', () => {
     for (const id of Object.keys(PARENT_DECISION_TABLE)) {
       const row = PARENT_DECISION_TABLE[id];
+      if (row.areas.includes('ask')) {
+        for (const a of [3, 4, 12, 13, 18, 19]) expect(deciderOf(id, a), `${id}@${a}`).toBe('self');
+        continue;
+      }
       const hasParent = row.areas.some((a) => (PARENT_AREAS as readonly string[]).includes(a));
       const reaction = row.areas.includes('reaction');
       expect(deciderOf(id, 19), `${id}@19`).toBe('self');
@@ -146,12 +160,13 @@ describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
     for (const [id, row] of selfAt) for (const a of row.areas) expect((SELF_AREAS as readonly string[]).includes(a), `${id}: ${a}`).toBe(true);
   });
 
-  it('④ 집계: 부모가 정하는 카드 24 · 흘러감이 있는 카드 7 · 본인 구간이 있는 카드 9 · 13~18세 본인 카드 6', () => {
+  it('④ 집계: 부모가 정하는 카드 24 · 흘러감이 있는 카드 7 · 본인 구간이 있는 카드 9 + 조르기(16, 반려동물 켜짐이면 18) · 13~18세 본인 카드 6 · 조르기 `askCards`', () => {
     const kinds = (id: string): Set<Who> => new Set(possibleAgesOf(EVENT_POOL.byId.get(id)!).map((a) => deciderOf(id, a)));
     const ids = Object.keys(PARENT_DECISION_TABLE);
     expect(ids.filter((id) => kinds(id).has('parent'))).toHaveLength(PARENT_TABLE_COUNTS.parentCards);
     expect(ids.filter((id) => kinds(id).has('child'))).toHaveLength(PARENT_TABLE_COUNTS.childCards);
     expect(ids.filter((id) => kinds(id).has('self'))).toHaveLength(PARENT_TABLE_COUNTS.selfCards);
+    expect(ids.filter((id) => PARENT_DECISION_TABLE[id].areas.includes('ask'))).toHaveLength(PARENT_TABLE_COUNTS.askCards);
     const self13to18 = ids.filter((id) => possibleAgesOf(EVENT_POOL.byId.get(id)!).some((a) => a >= 13 && a <= 18 && deciderOf(id, a) === 'self'));
     expect(self13to18).toHaveLength(PARENT_TABLE_COUNTS.selfCards13to18);
     expect(ids.filter((id) => kinds(id).has('child')).sort()).toEqual(['infant-new-sibling', 'infant-sibling-toy', 'school-bully', 'school-family-priority', 'school-friend', 'school-friend-quarrel', 'school-teacher-notice']);
@@ -182,7 +197,7 @@ describe('T2 deciderOf 규칙 불변 (R1~R5)', () => {
   it('R4 0~12세는 (흘러감이 아니면) 부모, R5 13~18세는 부모 영역이 있으면 부모 · 공부/친구/취미뿐이면 본인', () => {
     for (const id of ids) {
       const row = PARENT_DECISION_TABLE[id];
-      if (row.areas.includes('reaction')) continue;
+      if (row.areas.includes('reaction') || row.areas.includes('ask')) continue; // 조르기(R1a)는 위 시험이 본다
       for (let a = 0; a <= 12; a++) if (row.childActUntil === undefined || a > row.childActUntil) expect(deciderOf(id, a), `${id}@${a}`).toBe('parent');
       const hasParent = row.areas.some((x) => (PARENT_AREAS as readonly string[]).includes(x));
       for (let a = 13; a <= 18; a++) expect(deciderOf(id, a), `${id}@${a}`).toBe(hasParent ? 'parent' : 'self');

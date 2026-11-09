@@ -34,6 +34,7 @@ const ALLOWED: Record<string, string> = {
   './parentDecision.test.ts': '분류표에 있는 부모 결정 사건만 읽는다(조르기는 본인 카드)',
   '../scripts/baseline004Lib.ts': '옛 기준선 도구 — 이벤트가 켜는 플래그 목록만 센다(데이터 효과의 플래그, `ASK_EFFECTS` 플래그는 사건 데이터에 없다)',
   '../scripts/parentReportLib.ts': '부모 결정·흘러감 카드의 관찰자(`observe`)만 읽는다 — 조르기 카드는 본인 카드라 닿지 않는다',
+  '../scripts/askReportLib.ts': '조르기 보고 도구 — 기대 행복 최대 전략이 조르기가 아닌 카드의 행복을 데이터 효과로 읽고, 조르기 갈래 선택지는 `askBranchProbs`·`ASK_EFFECTS`로 읽는다(AK10)',
   '../scripts/realismL0Lib.ts': '정석 선택자의 플래그 읽기 — 조르기 갈래 선택지는 정석 플래그(`married` 등)를 켜지 않는다',
 };
 

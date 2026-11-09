@@ -1,0 +1,63 @@
+{
+  "note": "어린 시절 조르기 가운데 강아지 2사건 — 스위치 ASK_PET_ENABLED(src/data/askTable.ts)가 꺼져 있는 동안 이벤트 목록에 들어가지 않는다. 모티브로만 새로 쓴 글이다(문장 원본 docs/design/copy.md 20절). 작성법: docs/data/events-schema.md 12절",
+  "events": [
+    {
+      "id": "ask-pet-a",
+      "title": "강아지를 키우고 싶다",
+      "text": "이웃집에서 강아지가 태어났습니다. 한 마리 데려다 키우고 싶다는 마음이 날마다 커졌습니다.",
+      "question": "이웃집에서 태어난 강아지, 데려다 키우자고 할까?",
+      "stages": ["infant", "school"],
+      "yearRange": { "to": 2000 },
+      "track": "common",
+      "ageRange": { "min": 5, "max": 12 },
+      "weight": 30,
+      "once": true,
+      "conditions": {
+        "notFlags": ["pet_dog", "pet_cat", "pet_other"]
+      },
+      "noCitation": "D",
+      "ask": { "kind": "pet" },
+      "choices": [
+        { "id": "beg", "label": "조른다", "result": "조른 끝에 강아지를 집에 들이기로 했습니다. 작은 상자에 담겨 온 날, 밤새 그 옆에서 잠들었습니다.", "askDenied": "며칠을 졸랐지만 어른은 고개를 저었습니다. 이웃집 앞을 지날 때마다 담 너머를 기웃거렸습니다." },
+        { "id": "tantrum", "label": "떼를 쓴다", "result": "울고 버틴 끝에 강아지를 들이기로 했습니다. 처음 며칠은 밖에서 돌아오자마자 그 곁으로 달려갔습니다.", "askDenied": "저녁 내내 울어도 강아지는 그 집에 남았습니다. 이웃집 강아지가 우는 소리를 들으며 잠들었습니다.", "askStrained": "울고 버텼지만 대답은 바뀌지 않았습니다. 그 뒤 며칠, 집안 어른이 불러도 대답이 늦었습니다." },
+        {
+          "id": "endure",
+          "label": "참는다",
+          "result": "키우고 싶다는 말을 꺼내지 않았습니다. 이웃집 강아지를 담 너머로 바라보는 것으로 대신했습니다.",
+          "effects": {
+            "stats": { "happiness": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ask-pet-b",
+      "title": "강아지를 들이고 싶다",
+      "text": "길에서 산책하는 강아지들을 볼 때마다 걸음이 멈췄습니다. 함께 사는 강아지가 있었으면 하는 마음이 커졌습니다.",
+      "question": "산책길마다 눈이 가는 강아지, 들이자고 해 볼까?",
+      "stages": ["infant", "school"],
+      "yearRange": { "from": 2001 },
+      "track": "common",
+      "ageRange": { "min": 5, "max": 12 },
+      "weight": 30,
+      "once": true,
+      "conditions": {
+        "notFlags": ["pet_dog", "pet_cat", "pet_other"]
+      },
+      "noCitation": "D",
+      "ask": { "kind": "pet" },
+      "choices": [
+        { "id": "beg", "label": "조른다", "result": "조른 끝에 강아지를 집에 들이기로 했습니다. 처음 온 날 밤은 작은 숨소리를 들으며 잠들었습니다.", "askDenied": "여러 번 말을 꺼냈지만 어른은 들어주지 않았습니다. 산책길의 강아지를 보면 한참을 서 있었습니다." },
+        { "id": "tantrum", "label": "떼를 쓴다", "result": "울고 버틴 끝에 강아지를 들이기로 했습니다. 밖에서 돌아오면 가장 먼저 그 곁으로 갔습니다.", "askDenied": "산책길에 주저앉아 울어도 돌아오는 길에 강아지는 없었습니다. 그날 밤은 강아지 사진만 오래 들여다봤습니다.", "askStrained": "울고 버텼지만 대답은 그대로였습니다. 그 뒤 한동안 집안 어른과 함께 있는 시간이 줄었습니다." },
+        {
+          "id": "endure",
+          "label": "참는다",
+          "result": "들이고 싶다는 말을 꺼내지 않았습니다. 산책길의 강아지를 눈으로만 따라갔습니다.",
+          "effects": {
+            "stats": { "happiness": -1 }
+          }
+        }
+      ]
+    }
+  ]
+}

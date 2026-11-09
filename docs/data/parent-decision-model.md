@@ -5,7 +5,7 @@
 - 읽은 코드·데이터(수치의 근거): `src/core/life.ts`(`stepYear`·`resolveChoiceStep`·`autoChoiceWeights`·`AUTO_PRIORITY`·`FAMILY_NEED_BASE`), `src/core/timing.ts`, `src/data/timingTable.ts`, `src/data/economyTable.ts`(`AUTO_ASSET`·`support`), `src/data/birthTable.ts`(`ERA_CONFIG`), `src/data/birthCompare.ts`(`PRIVATE_EDU_BAND_BY_WEALTH`), `src/data/events/infant.json`·`school.json`(선택지 이벤트 32장 전수), `src/data/koreaStats.json`·`citations.json`, `tests/stat20Guard.test.ts`·`tests/pacing.test.ts`, `docs/data/content-M8.md`·`events-stats-basis.md`·`economy-model.md`, `ai-log/2026-10-19_SPEC-003_dev-M8.md`.
 - 표기: **▲** = 기획자 설계 제안값(근거가 되는 공식 통계·연구가 없는 값 — 화면에는 통계처럼 보이지 않게 쓰지 않는다). **s-0xx / c-0xx** = `events-stats-basis.md`·`citations.json`의 근거 행. **손계산** = 이 문서를 쓰며 기획자가 직접 계산한 추정으로, 구현 뒤 `npm run report:parent`(신설)·`report:time`의 실측이 대체한다. **[승인 A#]** = 마스터가 승인할 ▲ 값(맨 끝 7절), **[확인 Q#]** = 기획자가 스스로 정하지 않고 올린 항목(7절 끝).
 - 이 문서가 **확정하려는 것**: 32장 최종 분류표, 부모·흘러감의 선택 확률 모델 구조와 시작값, 문구·카드 구성 원칙, 시간 모델·경제 영향의 계산과 시험 설계. **확정하지 않는 것**: 새 문구의 실제 글(designer·`copy.md`), 카드 화면 시안, 구현 코드.
-- **개정 표지 (SPEC-011 AK0 승인 2026-11-07)**: 4~12세에 아이가 요구하는 조르기 카드(영역 `ask`, 규칙 R1a — SPEC-011, 설계 문서 `docs/data/ask-model.md`)가 본인 카드로 더해져 아래 곳을 개정했다 — 0절 1·4항 · 1-1 「본인」 행 · 1-2 판정 규칙(R1a) · 1-3 집계 · 1-6 합계 · 2-8 · 2-9(K6) · 3-1 · 3-5(N) · 4-8(실측 머리 주석) · 5절 T1 ④·T2. **옛 문장은 취소선(~~…~~)으로 남겼다.** 기계 판독 블록(5절 끝)의 조르기 9행은 코드 표와 같은 변경에서만 더한다(AK1 — `tests/parentDecisionDoc.test.ts`가 행마다 같음을 보므로 지금은 32행 그대로). ~~부모 결정 도장 **주어**(두 분 부모님 · 한 분 어머니/아버지, SPEC-011 DS)의 문장 개정은 DS 구현이 검수 승인된 뒤에 한다(개정안은 SPEC-011 「DS5 개정안」).~~ **→ 반영 완료(SPEC-011 DS / SPEC-012 2026-11-08, DS 구현 검수 승인 REV-012-1 뒤 planner)**: 부모 결정 도장·칩·안내의 **주어**(그 해 함께 사는 부모 — 두 분 부모님 · 한 분 어머니/아버지, SPEC-011 DS) 한 줄을 3-1·3-2·3-4에 더했고, **엔딩 둘째 줄(PD9의 요약 문장)은 삭제 표지**를 3-5에 달았다(형진 님 요청 2026-11-08, SPEC-011 DS3·SPEC-012 QF1). 같은 때 1-1 부모 행·1-5절 시험 줄·5절 T6·T7과 7절 A10에도 표지를 달았다. 0절·1-2·2-8은 AK0 승인 때(2026-11-07) 이미 고쳐져 이번에 바뀐 곳이 없다. 옛 문장은 취소선으로 남겼다.
+- **개정 표지 (SPEC-011 AK0 승인 2026-11-07)**: 4~12세에 아이가 요구하는 조르기 카드(영역 `ask`, 규칙 R1a — SPEC-011, 설계 문서 `docs/data/ask-model.md`)가 본인 카드로 더해져 아래 곳을 개정했다 — 0절 1·4항 · 1-1 「본인」 행 · 1-2 판정 규칙(R1a) · 1-3 집계 · 1-6 합계 · 2-8 · 2-9(K6) · 3-1 · 3-5(N) · 4-8(실측 머리 주석) · 5절 T1 ④·T2. **옛 문장은 취소선(~~…~~)으로 남겼다.** 기계 판독 블록(5절 끝)의 조르기 9행은 코드 표와 같은 변경에서만 더한다(AK1 — `tests/parentDecisionDoc.test.ts`가 행마다 같음을 본다). **→ 반영 완료(SPEC-011 AK7, 2026-11-09)**: 블록이 41줄이 됐다 — 장난감·예체능 7줄과 반려동물 2줄(넷째 칸 `pet`, 스위치 `ASK_PET_ENABLED`가 꺼져 있으면 코드 표는 39줄이고 시험이 `pet` 줄을 건너뛴다). ~~부모 결정 도장 **주어**(두 분 부모님 · 한 분 어머니/아버지, SPEC-011 DS)의 문장 개정은 DS 구현이 검수 승인된 뒤에 한다(개정안은 SPEC-011 「DS5 개정안」).~~ **→ 반영 완료(SPEC-011 DS / SPEC-012 2026-11-08, DS 구현 검수 승인 REV-012-1 뒤 planner)**: 부모 결정 도장·칩·안내의 **주어**(그 해 함께 사는 부모 — 두 분 부모님 · 한 분 어머니/아버지, SPEC-011 DS) 한 줄을 3-1·3-2·3-4에 더했고, **엔딩 둘째 줄(PD9의 요약 문장)은 삭제 표지**를 3-5에 달았다(형진 님 요청 2026-11-08, SPEC-011 DS3·SPEC-012 QF1). 같은 때 1-1 부모 행·1-5절 시험 줄·5절 T6·T7과 7절 A10에도 표지를 달았다. 0절·1-2·2-8은 AK0 승인 때(2026-11-07) 이미 고쳐져 이번에 바뀐 곳이 없다. 옛 문장은 취소선으로 남겼다.
 
 ---
 
@@ -470,12 +470,13 @@ PD12 분포 시험 결과(×2.0): 수저 단조(비용 합 확률, 5단계 − 1
 
 **회귀 범위**: 4-6·4-7절의 파일 전부 + `npm test`·`typecheck`·`build`·`e2e`·`e2e:prod`·`sim:1000`·`check:*`. 시험은 "측정값 − 3 SE" 임계를 쓰고 *통과시키려고 임계를 내리지 않는다*.
 
-**기계 판독 블록 (T1b가 읽는다 — 이 블록만 고치면 문서와 코드가 어긋난다)** — SPEC-011 AK0 승인 2026-11-07: 조르기 사건 9행(`ask-toy-a`~`ask-toy-d` · `ask-lessons-a`~`ask-lessons-c` · `ask-pet-a`·`ask-pet-b`, 영역 `ask`, `childActUntil` 없음 — 목록은 `docs/data/ask-model.md` 1-5절)과 머리 주석의 영역 코드 안내(`ask`)는 **코드 표와 같은 변경(AK1)에서만** 더한다. 지금 블록은 32행 그대로다(문서가 앞서면 `tests/parentDecisionDoc.test.ts`가 깨진다).
+**기계 판독 블록 (T1b가 읽는다 — 이 블록만 고치면 문서와 코드가 어긋난다)** — SPEC-011 AK0 승인 2026-11-07: 조르기 사건 9행(`ask-toy-a`~`ask-toy-d` · `ask-lessons-a`~`ask-lessons-c` · `ask-pet-a`·`ask-pet-b`, 영역 `ask`, `childActUntil` 없음 — 목록은 `docs/data/ask-model.md` 1-5절)과 머리 주석의 영역 코드 안내(`ask`)는 **코드 표와 같은 변경(AK1)에서만** 더한다 — **AK7에서 더했다**(2026-11-09, 블록 41줄: 32 + 조르기 9, 반려동물 2줄은 `pet` 표지로 스위치가 꺼지면 건너뜀).
 
 ```parent-table
 # parent-decision-table v1
 # id | areas(영역 코드, 쉼표) | childActUntil(없으면 -)
-# 코드: care health money school move home (부모 영역) / study friends hobby (본인 영역) / reaction (아이 반응 — 전 나이 흘러감)
+# 코드: care health money school move home (부모 영역) / study friends hobby (본인 영역) / reaction (아이 반응 — 전 나이 흘러감) / ask (아이의 요구 — SPEC-011, 나이와 무관하게 본인)
+# 넷째 칸 `pet`: 반려동물 조르기 행 — 스위치 ASK_PET_ENABLED가 꺼져 있으면 코드 표에 없고 시험이 건너뛴다 (SPEC-011 AK9)
 infant-care | care | -
 infant-fever | health | -
 infant-stories | care | -
@@ -508,6 +509,15 @@ school-first-love | friends | -
 school-scholarship | money,school | -
 school-exam | school,money | -
 school-parttime | money | -
+ask-toy-a | ask | -
+ask-toy-b | ask | -
+ask-toy-c | ask | -
+ask-toy-d | ask | -
+ask-lessons-a | ask | -
+ask-lessons-b | ask | -
+ask-lessons-c | ask | -
+ask-pet-a | ask | - | pet
+ask-pet-b | ask | - | pet
 ```
 
 ---

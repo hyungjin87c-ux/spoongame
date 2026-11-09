@@ -310,3 +310,25 @@ describe('AK2 종류당 1장 — createEventPool의 askPeers 파생 필드 + isE
   });
 
 });
+
+describe('AK7 REAL_NAMES 더하기 — 게임기·장난감 상표 10개 (AQ7, R-659): 강화이고 K3과 충돌하지 않는다', () => {
+  const BRANDS = ['닌텐도', '패미컴', '게임보이', '플레이스테이션', '엑스박스', '포켓몬', '레고', '바비', '다마고치', '슈퍼마리오'];
+  const textOf = (text: string): string[] => lintEvent(askEvent('ask-toy-x', 'toy', { text })).filter((p) => p.includes('실제 상호'));
+
+  it('상표 10개가 모두 걸린다 (사건 본문에 한 개씩)', () => {
+    for (const brand of BRANDS) {
+      const found = textOf(`또래들이 ${brand}를 가지고 놀았습니다. 옆에서 구경만 했습니다.`);
+      expect(found.length, brand).toBeGreaterThan(0);
+      expect(found.join(' '), brand).toContain(brand.startsWith('바비') ? '바비' : brand);
+    }
+  });
+
+  it('「바비 인형」은 걸리고 「바비큐」는 통과한다 — 낱말 뒤가 「큐」일 때만 지운다', () => {
+    expect(textOf('또래들이 바비 인형을 가지고 놀았습니다. 옆에서 구경만 했습니다.').length).toBeGreaterThan(0);
+    expect(textOf('또래들이 마당에서 바비큐를 구웠습니다. 옆에서 구경만 했습니다.')).toEqual([]);
+  });
+
+  it('상표가 아닌 흔한 장난감 낱말은 걸리지 않는다 (딱지·구슬·인형·조립·변신·태블릿)', () => {
+    expect(textOf('딱지와 구슬, 인형, 조립 장난감, 변신 장난감이 있었습니다. 옆에서 구경만 했습니다.')).toEqual([]);
+  });
+});

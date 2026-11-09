@@ -1,3 +1,4 @@
+import { ASK_PET_ENABLED, askEventIdsFor } from '../src/data/askTable';
 import { describe, expect, it } from 'vitest';
 import citationsRaw from '../src/data/citations.json?raw';
 import { syncedCitationsText } from '../scripts/syncCitationsLib';
@@ -37,11 +38,13 @@ const X_EVENTS: Record<string, string[]> = {
 const D_EVENTS = [
   'infant-first-birthday', 'school-first-love', 'school-teacher-notice', 'school-supplies', 'youth-reunion', 'youth-second-chance', 'youth-meeting-again', 'youth-approached', 'youth-workplace-romance', 'senior-memoir',
   'infant-sibling-toy', 'infant-daycare-wait', 'youth-matchmaker', 'infant-hospital-stay',
+  // SPEC-011 AK7: 어린 시절 조르기 사건은 모두 맞는 자료가 없는 서술 장면(D, 결정 K8·AQ3) — 반려동물 둘은 스위치(`ASK_PET_ENABLED`)가 꺼져 풀에 없다
+  ...askEventIdsFor(ASK_PET_ENABLED),
 ];
 
 describe('선택지 이벤트 94개는 모두 citation / noCitation / 2차 대기 중 하나다 (빠뜨린 카드 0)', () => {
   it('선택지 이벤트가 90개이고 서술 이벤트에는 citation·noCitation이 없다', () => {
-    expect(CARDS).toHaveLength(94); // FM7a: 「남은 한 분」 변형 사건 4개(care·farewell × 어머니·아버지가 먼저 떠난 판)가 원본의 citation·noCitation을 그대로 가진다
+    expect(CARDS).toHaveLength(94 + askEventIdsFor(ASK_PET_ENABLED).length); // 94 = 기존 90 + FM7a 변형 4 · 조르기 7(반려동물 켜짐이면 9)을 더했다 — FM7a: 「남은 한 분」 변형 사건 4개(care·farewell × 어머니·아버지가 먼저 떠난 판)가 원본의 citation·noCitation을 그대로 가진다
     for (const e of EVENT_POOL.events.filter((x) => x.choices === undefined)) {
       expect(e.citation, e.id).toBeUndefined();
       expect(e.noCitation, e.id).toBeUndefined();
@@ -61,7 +64,7 @@ describe('선택지 이벤트 94개는 모두 citation / noCitation / 2차 대�
       else if (e.noCitation !== undefined) counts.noCitation++;
       else counts.pending++;
     }
-    expect(counts).toEqual({ citation: 47, noCitation: 34, pending: 13 });
+    expect(counts).toEqual({ citation: 47, noCitation: 34 + askEventIdsFor(ASK_PET_ENABLED).length, pending: 13 });
   });
 
   it('citation이 가리키는 id는 모두 citations.json에 있고 verified·usable이며, 인용이 금지한 이벤트(usageCaution.forbiddenEvents)에 연결하지 않았다 (근거 없는 인용 0)', () => {
@@ -82,7 +85,7 @@ describe('선택지 이벤트 94개는 모두 citation / noCitation / 2차 대�
 });
 
 describe('원칙적 무인용(X)·자료 없음(D) 목록 (마스터 결정 M-8)', () => {
-  it('noCitation 사유 코드별 카드가 content-M7b 1-4절 목록과 같다 (X1~X6 20개 · D 14개)', () => {
+  it('noCitation 사유 코드별 카드가 content-M7b 1-4절 목록과 같다 (X1~X6 20개 · D 14개 + 조르기 7개)', () => {
     const got: Record<string, string[]> = {};
     for (const e of CARDS) if (e.noCitation !== undefined) (got[e.noCitation] ??= []).push(e.id);
     for (const code of Object.keys(X_EVENTS)) expect((got[code] ?? []).sort(), code).toEqual([...X_EVENTS[code]].sort());
@@ -234,20 +237,21 @@ describe('MD2 1차 게이트 (마스터 결정 M-1: 시대별 정적 연결률 �
   const cov = citationCoverage(EVENT_POOL.events);
 
   it('분모는 시대별 등장 가능한 선택지 카드 수다: 지난 80 · 지금 88 · 다가올 88 (이벤트 연도 구간 변환 MG2 뒤 — 변환 전 다가올 83. FM7a 변형 4개가 세 시대에 각각 더해졌다)', () => {
-    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual([80, 88, 88]);
+    // 조르기 사건(AK7)이 분모만 늘린다(분자는 그대로 — 인용 없음 D): 지난 toy-a·toy-b·lessons-a 3 · 지금 toy-c·toy-d·lessons-b 3 · 다가올 toy-d·lessons-c 2. 반려동물을 켜면 지난 +1 · 지금 +1 · 다가올 +1(설계 문서 9절 [84, 92, 91])
+    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual(ASK_PET_ENABLED ? [84, 92, 91] : [83, 91, 90]);
   });
 
-  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 41/88 = 46.6% — 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {
+  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 41/91 = 45.1% — 조르기 3장이 분모만 늘렸다. 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {
     expect(cov.present.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.present);
     expect(cov.present.connected).toBe(41);
   });
 
-  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 41/88 = 46.6% — 변환 전 40/83)', () => {
+  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 41/90 = 45.6% — 조르기 2장이 분모만 늘렸다. 변환 전 40/83)', () => {
     expect(cov.future.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.future);
     expect(cov.future.connected).toBe(41);
   });
 
-  it('1차 게이트: 지난 세상 정적 연결률 ≥ 8% (실제 7/80 = 8.75% — FM7a 변형 4개가 분모만 늘렸다) — 약한 인용으로 채우지 않고 구조적 한계(중년·노년 33개는 1970~89 통계와 인생 시기가 겹치지 않는다)를 안고 간다', () => {
+  it('1차 게이트: 지난 세상 정적 연결률 ≥ 8% (실제 7/83 = 8.43% — FM7a 변형 4개와 조르기 3장이 분모만 늘렸다, 설계 문서 9절 여유 0.33%p 안) — 약한 인용으로 채우지 않고 구조적 한계(중년·노년 33개는 1970~89 통계와 인생 시기가 겹치지 않는다)를 안고 간다', () => {
     expect(cov.past.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.past);
     expect(cov.past.connected).toBe(7);
     expect(cov.past.ids.sort()).toEqual(['infant-new-sibling', 'school-early-work', 'school-exam', 'school-family-priority', 'youth-child', 'youth-first-job', 'youth-marriage']);

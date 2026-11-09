@@ -29,7 +29,7 @@ import {
 } from '../src/core';
 import { eventPool } from '../src/core';
 import { EARLY_LOSS_HALF, withEarlyLoss, withEarlyLossRule, withSiblingLoss } from './familyRulesLib';
-import { fm7aSeniorPool, fm7aVariantsPool, k2OnlyPool, preFm4bPool, preFm7aPool } from './preFm4bPool';
+import { fm7aSeniorPool, fm7aShippedPool, fm7aVariantsPool, k2OnlyPool, preFm4bPool, preFm7aPool } from './preFm4bPool';
 import { MARGIN_LINES, marginSeeds, meanSe } from './marginsLib';
 import { SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { simulateLife, startLife } from './simulateLib';
@@ -48,12 +48,13 @@ import { spreadSeeds } from '../tests/helpers/familyGolden';
  *   V8 + 별세 해 notFlags 규칙(후속 199 — 그 해 별세한 한 분의 mother_gone·father_gone을 notFlags로 읽는 사건도 후보에서 뺀다 — 'notflags')
  *   V9 + R-631·R-632(가족 줄이 난 해: 형제·조부모 별세 줄 뒤 꺼지는 형제·조부모 플래그를 요구하는 사건을 빼고, 형제·조부모·부모 한 분 별세 줄이 난 해의 보이는 선택지를 해 시작 ctx ∩ 줄 뒤 ctx로 줄인다 — 'exclude')
  *   V10 + R-586(senior-alone이 함께 사는 자녀가 있는 판을 거른다 — 자녀 독립 나이·lives_with_child는 표시 전용이라 경제에는 이 사건 조건만 닿는다)
- *   V11 + Q3(어린 형제의 이른 별세 — 상속의 형제 수) · 청년 「본가」 문장 ← FM7a 배포 값 (지금 풀)
- * R-618(별세·이혼 하한 1세)은 코드 상수라 모든 세계(V0~V11)에 같이 들어 있다 — 원인을 따로 가르지 않는다. 같은 시드·같은 선택 전략(자동 성향)이라 변이 사이의 차이는 켠 원인에서만 온다(짝지은 표본). 실행: `npm run report:family` (docs/data/family-remeasure.md를 쓴다).
+ *   V11 + Q3(어린 형제의 이른 별세 — 상속의 형제 수) · 청년 「본가」 문장 ← FM7a 배포 값 (지금 풀에서 조르기 사건만 뺀 것)
+ *   V12 + 어린 시절 조르기(SPEC-011 AK10 — 4~12세 조르기 7사건이 본인 카드로 더해진 지금 풀, 반려동물은 꺼짐)
+ * R-618(별세·이혼 하한 1세)은 코드 상수라 모든 세계(V0~V12)에 같이 들어 있다 — 원인을 따로 가르지 않는다. 같은 시드·같은 선택 전략(자동 성향)이라 변이 사이의 차이는 켠 원인에서만 온다(짝지은 표본). 실행: `npm run report:family` (docs/data/family-remeasure.md를 쓴다).
  */
 
 export interface Variant {
-  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 'V7' | 'V8' | 'V9' | 'V10' | 'V11' | 'V3h';
+  id: 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 'V7' | 'V8' | 'V9' | 'V10' | 'V11' | 'V12' | 'V3h';
   label: string;
   pool: () => EventPool;
   /** true 배포 값 · false 끔 · 'half' 효과 절반(측정용 대안) */
@@ -79,7 +80,8 @@ export const VARIANTS: readonly Variant[] = [
   { id: 'V8', label: '+ 별세 해 notFlags 규칙 (그 해 별세한 한 분의 플래그를 notFlags로 읽는 사건도 뺀다 — 후속 199)', pool: fm7aVariantsPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'notflags', sibLoss: false },
   { id: 'V9', label: '+ R-631·R-632 (가족 줄이 난 해: 꺼지는 플래그를 요구하는 사건 · 안 보일 선택지를 뺀다)', pool: fm7aVariantsPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: false },
   { id: 'V10', label: '+ R-586 (senior-alone이 함께 사는 자녀가 있는 판을 거른다)', pool: fm7aSeniorPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: false },
-  { id: 'V11', label: '+ Q3 (어린 형제의 이른 별세) · 「본가」 ← FM7a 배포 값', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
+  { id: 'V11', label: '+ Q3 (어린 형제의 이른 별세) · 「본가」 ← FM7a 배포 값', pool: fm7aShippedPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
+  { id: 'V12', label: '+ 어린 시절 조르기 (SPEC-011 — 4~12세 조르기 7사건)', pool: eventPool, earlyLoss: true, rule: 'view', goneRule: 'view', goneYear: 'exclude', sibLoss: true },
   { id: 'V3h', label: '(대안) 이른 별세 효과를 절반으로', pool: preFm7aPool, earlyLoss: 'half', rule: 'legacy', goneRule: 'legacy', goneYear: 'legacy', sibLoss: false },
 ];
 
@@ -394,7 +396,7 @@ export function pairedDiff(a: readonly number[], b: readonly number[]): { diff: 
 export { meanSe };
 
 /** 보고서 끝에 붙는 읽는 법 (정적 글 — 숫자는 위 표에서 읽는다) */
-export const REPORT_NOTES = `## 9. 읽는 법과 한계
+export const REPORT_NOTES = `## 11. 읽는 법과 한계
 
 - **이른 별세 효과의 수용 기준(마스터 결정 2026-11-02, 검수 REV-009-FM4b-1 2절)** — 처음 기준(재력 단계별 20세 시작·최종 순자산 **중앙값** 변화 ≤ 3%)은 지표가 틀렸다. 낮은 재력 단계의 20세 시작 순자산은 학자금 대출 바닥(−150만 원 등)에 모여 있어 중앙값이 한 칸(150만 원) 옮겨 가면 분모 바닥 1,000만 원 기준으로 15%가 나온다(효과 크기와 무관 — 반 크기 변형도 같다). 그래서 **평균**으로 본다: ① 최종 순자산 평균 변화 ≤ 3% ② 20세 시작 평균의 절대 변화 ≤ 150만 원 ③ 단계 순서 뒤바뀜 0 ④ 판정 변화 ≤ 2%p. 중앙값 변화와 효과가 걸린 판만의 차이는 **보고만** 한다(판정에 쓰지 않는다). ②의 5단계는 표본이 작아(세대당 1000판에서 약 146판, 효과가 걸린 판 약 25판, 표준오차 약 34만 원 — 150만 원 기준선이 기댓값 위에 있다) **보고만** 한다(마스터 결정 2026-11-03, REV-009-FM6-1 2절). 다른 기준과 1~4단계는 그대로다.
 - **K2·K4(2절)의 중앙값 흔들림**은 효과가 아니라 난수 흐름이 옮겨 간 잡음이다(같은 사건 풀을 공유하지 않는 세계끼리라 짝지은 표본이어도 사건이 달라진다) — 같은 규칙의 이른 별세 효과(V2 → V3)는 난수 흐름이 같아 짝이 정확하다.

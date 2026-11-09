@@ -9,6 +9,8 @@ import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
  * 같은 시드·같은 이벤트 풀에서 `check:economy`(지금 세상 무작위 6000판 · 자동 2000판) · 분포표(4000판) · `report:time`(1000판) 값이 **연도 축 배선 전에 얼린** 스냅숏과 줄 단위로 같다.
  * 스냅숏은 `tests/fixtures/r1-economy-snapshot.json`(커밋 e1bc33f의 코드로 `scripts/freezeR1Snapshot.ts`가 만들었다). 표본 전체는 해시로, 표·목표 19개·가드·사망 시점 표·분포표 분위수·시간 모델은 값 그대로 대조한다.
  * 이 시험은 이벤트 변환(MG2)·신규 이벤트를 넣기 **전에** 통과시킨다(순서 제약, N27).
+ * **SPEC-011 AK10(2026-11-09) 갱신 — `reportTime` 블록만**: 읽는 시간 모델 상수 `READ_MODEL.citeExposure·insightExposure`의 「지금」 값을 어린 시절 조르기(인용 없는 본인 카드)에 맞춰 재측정해 내렸고(`src/data/timingTable.ts`), 판 시간 모델은 그 상수를 읽으므로
+ * 스냅숏의 `reportTime`(시간 요약 — 판 시간 분·상수 최솟값)만 현재 코드로 다시 뽑았다. 경제 항(무작위 6000판·자동 2000판·분포표 4000판)은 한 글자도 바뀌지 않았다 — 이 시험이 보는 항등(경제 배선)은 그대로다.
  */
 
 const frozen = snapshotJson as unknown as R1Snapshot;

@@ -65,7 +65,8 @@ describe('이벤트 전환표(문서 부록) ↔ 데이터 (MG2)', () => {
       expect(ev, r.id).toBeDefined();
       expect(ev!.yearRange, r.id).toEqual(r.yearRange);
     }
-    expect(EVENT_POOL.events.filter((e) => e.yearRange !== undefined)).toHaveLength(33);
+    // 조르기 사건 7개(SPEC-011 AK7)는 전환표가 아니라 `ask.json`의 새 사건이다 — 시대 구간은 `tests/askEvents.test.ts`가 본다
+    expect(EVENT_POOL.events.filter((e) => e.yearRange !== undefined && e.ask === undefined)).toHaveLength(33);
   });
 
   it('track이 문서와 한 줄씩 같고 standard 17 · common 123이다', () => {

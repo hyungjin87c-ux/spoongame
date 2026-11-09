@@ -89,3 +89,26 @@ export const ASK_WEIGHT_LADDER: Readonly<Record<AskKind, { min: number; max: num
 };
 
 export const isAskKind = (v: unknown): v is AskKind => (ASK_KINDS as readonly unknown[]).includes(v);
+
+/**
+ * 반려동물 조르기 사건 스위치 (SPEC-011 AK9, 설계 문서 7절): **한 곳**. 꺼짐이면 ① 이벤트 목록에 별도 파일 `src/data/events/ask-pet.json`이 들어가지 않고(`events/index.ts`)
+ * ② 분류표의 반려동물 두 행이 없고 ③ 설계 문서 기계 판독 블록의 `pet` 표지 행을 시험이 건너뛰며 ④ `PARENT_TABLE_COUNTS`가 반려동물 없이 센다. 장난감·예체능 사건은 독립이다.
+ * **이번 배포(v0.5.0)는 FM7b 반려동물 묶음(입양 관찰·`fam-pet-in/out`·수명)이 함께 나가지 않아 꺼 둔다(마스터 결정 2026-11-09).** 출시 뒤에는 끄지 않는다 — 끄면 `pending`·`seen`·`pet_dog` 판과 정합이 깨진다
+ * (켜는 것은 FM7b와 같은 배포일 때만, 그때 `school-puppy`의 `notFlags`·새 소식 6번 문구도 같이 바꾼다).
+ */
+export const ASK_PET_ENABLED: boolean = false;
+
+/** 조르기 사건 id — 장난감·예체능 7개(항상) · 강아지 2개(`ASK_PET_ENABLED`일 때만, 별도 파일 `ask-pet.json`) */
+export const ASK_EVENT_IDS = ['ask-toy-a', 'ask-toy-b', 'ask-toy-c', 'ask-toy-d', 'ask-lessons-a', 'ask-lessons-b', 'ask-lessons-c'] as const;
+export const ASK_PET_EVENT_IDS = ['ask-pet-a', 'ask-pet-b'] as const;
+/** 스위치에 따른 조르기 사건 id 목록 (스위치를 인자로 받아 시험이 꺼짐·켜짐을 모두 본다) */
+export const askEventIdsFor = (petEnabled: boolean): readonly string[] => (petEnabled ? [...ASK_EVENT_IDS, ...ASK_PET_EVENT_IDS] : [...ASK_EVENT_IDS]);
+
+/** 선택지 라벨은 아홉 사건 모두 같다 (`docs/design/copy.md` 20-2 — 확정) */
+export const ASK_CHOICE_LABELS: Readonly<Record<'beg' | 'tantrum' | 'endure', string>> = { beg: '조른다', tantrum: '떼를 쓴다', endure: '참는다' };
+
+/**
+ * 조른다·떼를 쓴다 선택지의 영향 줄 자리에 나오는 **고정 한 줄** (SPEC-011 AK8, 148행, `docs/design/copy.md` 20-2 확정): 들어줄지는 해시와 확률이 정해 화면에 방향·숫자를 말하지 않는다(G4).
+ * 참는다에는 지금의 영향 줄(「행복 ▼」)이 그대로 나온다. 상수 한 곳 — 화면의 글자와 영향 줄의 접근 가능한 이름이 모두 이것이다.
+ */
+export const ASK_UNKNOWN_IMPACT_TEXT = '들어주실지는 알 수 없습니다';

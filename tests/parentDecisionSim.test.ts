@@ -45,6 +45,12 @@ const natural = lazy(() => {
   for (const st of STRATEGIES) out[st] = Object.fromEntries(SIM_PROFILES.map((era) => [era, sampleYoung(era, LIVES, st)])) as Record<ProfileId, YoungLife[]>;
   return out;
 });
+/**
+ * **SPEC-011 AK10**: 알파 세대의 돌봄 카드 표본은 단계당 900판이다 — 조르기 카드가 4~12세 선택지 칸을 나눠 써서 `school-after-hours`(7세 부모 카드) 등 7~10세 부모 카드의 판당 등장이 줄어
+ * 단계당 300판 표본의 1단계 관측이 14로 내려갔다(기준 40 — 「표본을 늘려 통과한다」, 완료 기준 18). 표의 값은 선택 **확률** 평균이라 표본을 늘려도 값은 같고 관측 수만 는다.
+ */
+const CARE_ALPHA_PER_TIER = 900;
+const careAlpha = lazy(() => sampleYoungByTier('alpha', CARE_ALPHA_PER_TIER, 'random'));
 const tiered = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, sampleYoungByTier(era, PER_TIER, 'random')])) as Record<ProfileId, Record<ParentWealth, YoungLife[]>>);
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -293,14 +299,15 @@ describe('T5 ①② 구조: 결정자 표지가 100% 맞고, 부모·흘러감 �
   });
 });
 
-describe('T5 ③ 판당 카드 수: 부모 결정 + 흘러감 합이 SPEC의 4.5~7장 안이다 (손계산 5.9)', () => {
-  it('세 시대 × 두 전략 모두: 합 4.5 ≤ 평균 ≤ 7 · 부모 ≥ 3.5 · 흘러감 ≥ 0.8 (측정 부모 4.5~4.7 · 흘러감 1.3~1.4 · 합 5.9~6.0)', () => {
+describe('T5 ③ 판당 카드 수: 부모 결정 + 흘러감 합이 3.8~7장 안이다 (손계산 5.9 → 조르기가 칸을 나눠 쓴 뒤 약 3.9, SPEC-011 5절)', () => {
+  // SPEC-011 AK10: 조르기 사건 7개(4~12세 본인 카드, 판당 약 1.5장)가 선택지 칸을 나눠 써서 부모+흘러감이 5.96 → 4.38장(7세대 표본, report:ask 「카드 이동」)으로 줄었다 — 설계 문서 5-1절 손계산 약 4.0과 같은 크기다.
+  it('세 시대 × 두 전략 모두: 합 3.8 ≤ 평균 ≤ 7 · 부모 ≥ 3.0 · 흘러감 ≥ 0.8 (측정 부모 3.3~3.5 · 흘러감 1.0~1.1 · 합 4.3~4.5; 조르기 전은 부모 4.5~4.7 · 흘러감 1.3~1.4 · 합 5.9~6.0)', () => {
     for (const st of STRATEGIES) {
       for (const era of SIM_PROFILES) {
         const c = cardCounts(natural()[st][era]);
-        expect(c.parent + c.child, `${era} ${st} 합`).toBeGreaterThanOrEqual(4.5);
+        expect(c.parent + c.child, `${era} ${st} 합`).toBeGreaterThanOrEqual(3.8);
         expect(c.parent + c.child, `${era} ${st} 합`).toBeLessThanOrEqual(7);
-        expect(c.parent, `${era} ${st} 부모`).toBeGreaterThanOrEqual(3.5);
+        expect(c.parent, `${era} ${st} 부모`).toBeGreaterThanOrEqual(3.0);
         expect(c.child, `${era} ${st} 흘러감`).toBeGreaterThanOrEqual(0.8);
       }
     }
@@ -388,7 +395,7 @@ describe('T5 ⑦ 통계 보정 판정 2곳 (지금 세상, 차 ≤ 15%p): 사교
  * (300판 표와 1000판 표가 1%p 안에서 같다). 격차 = 1단계 − 카드가 일어나는 가장 높은 단계(`noise.hush`는 재력 5단계에 카드가 없어 1 − 4단계, 나머지는 1 − 5단계).
  */
 describe('R-454 돌봄 선택지 낙인 점검 (설계 문서 2-5절·6-3절·10-9): 수저에 따른 비율 표, 아픈 아이를 넘기는 선택(fever.dismiss)의 1단계 대 5단계 격차 ≤ 8%p, 세 카드(after-hours.alone·noise.hush·stories.alone)의 격차 ≤ 25%p', () => {
-  const rowsOf = (era: ProfileId) => Object.fromEntries(careRows(tiered()[era]).map((r) => [r.name, r]));
+  const rowsOf = (era: ProfileId) => Object.fromEntries(careRows(era === 'alpha' ? careAlpha() : tiered()[era]).map((r) => [r.name, r]));
 
   it('표가 다섯 선택지 × 수저 5단계 × 양육 방식 4가지로 나온다 — fever.dismiss는 세 시대 모든 단계에 관측이 충분하고, 지금 세상은 다섯 선택지가 모두 관측된다 (공허 통과 방지)', () => {
     expect(CARE_CHOICES.map((c) => c.name)).toEqual(['fever.dismiss', 'after-hours.alone', 'stories.alone', 'screen.free', 'noise.hush']);

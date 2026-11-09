@@ -58,11 +58,11 @@ describe('설계 문서 기계 판독 블록 = 코드 표 (askTable.ts)', () => 
     }
   });
 
-  it('EVENT: 9줄 — 종류가 알려진 값이고 가중이 사다리 안이다 (사건 데이터와의 대조는 AK7), 종류별 가중은 45·40·30', () => {
+  it('EVENT: 9줄 — 종류가 알려진 값이고 가중이 사다리 안이다 (사건 데이터와의 대조는 AK7), 종류별 가중은 60·55·30 (AK10 실측 조정 — 반려동물이 꺼진 이번 배포의 장난감·예체능은 사다리 위쪽, 설계 문서 1-3절 「가중 조정 기록」)', () => {
     const events = of('EVENT');
     expect(events).toHaveLength(9);
     expect(new Set(events.map((r) => r[1])).size).toBe(9);
-    const weightByKind: Record<string, number> = { toy: 45, lessons: 40, pet: 30 };
+    const weightByKind: Record<string, number> = { toy: 60, lessons: 55, pet: 30 };
     for (const r of events) {
       const kind = r[2] as AskKind;
       expect(ASK_KINDS).toContain(kind);

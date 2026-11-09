@@ -12,23 +12,40 @@ import senior from '../tests/fixtures/pre-fm7a-events/senior.json';
  * 이 풀에서는 동생 반응 카드가 옛 추첨 사건이고(`trigger` 없음 → 강제 슬롯이 일어나지 않는다) 가족 낱말 사건에 가족 조건이 없다 — 분포 재측정(`scripts/familyRemeasure.ts`)이 「원인별로 하나씩 켜는」 기준 세계이고,
  * 해시 불변 L1 시험(`tests/familyHash.test.ts`)이 「가족 줄·시스템 플래그·로그는 기록 전용」을 같은 풀·같은 시드로 잠근다. 앱·검증은 이 풀을 쓰지 않는다.
  */
+/**
+ * 어린 시절 조르기 사건 파일(`ask.json`, SPEC-011 AK7)은 이 옛 세계들에 **들어가지 않는다** — 해시 불변 L1·분포 재측정이 「가족 모델·FM7a 전·후」의 한 가지 원인만 바꾼 세계를 견주는 것이라, 조르기 사건이 풀에 들어와 같은 시드의 인생이 달라지는 것은
+ * 이 비교의 대상이 아니다(조르기의 영향은 `npm run report:ask`·`tests/askSim.test.ts`가 따로 본다). 그래서 지금 파일 묶음에서 조르기 파일만 뺀다.
+ */
+const { './ask.json': _askFile, './ask-pet.json': _askPetFile, ...BASE_FILES } = EVENT_FILES as Record<string, unknown>;
+void _askFile;
+void _askPetFile;
+
 let cache: EventPool | null = null;
+let cacheShipped: EventPool | null = null;
 let cacheFm7a: EventPool | null = null;
 
 export function preFm4bPool(): EventPool {
-  if (cache === null) cache = createEventPool(validateEventFiles({ ...EVENT_FILES, './infant.json': infant, './school.json': school, './youth.json': youth, './middle.json': middle, './senior.json': senior }));
+  if (cache === null) cache = createEventPool(validateEventFiles({ ...BASE_FILES, './infant.json': infant, './school.json': school, './youth.json': youth, './middle.json': middle, './senior.json': senior }));
   return cache;
+}
+
+/**
+ * FM7a 배포 값의 풀 (재측정 V11): 지금 풀에서 **조르기 사건 파일만 뺀 것** — 어린 시절 조르기(SPEC-011)는 V12가 따로 더해 그 영향을 한 칸으로 본다.
+ */
+export function fm7aShippedPool(): EventPool {
+  if (cacheShipped === null) cacheShipped = createEventPool(validateEventFiles({ ...BASE_FILES }));
+  return cacheShipped;
 }
 
 /** FM7a **전**의 풀 (재측정 V2~V5용): 지금 풀에서 청년·중년·노년 파일 셋만 FM7a 전 원문으로 되돌린다 — FM4b의 K2·K4는 켜진 채다 */
 export function preFm7aPool(): EventPool {
-  if (cacheFm7a === null) cacheFm7a = createEventPool(validateEventFiles({ ...EVENT_FILES, './youth.json': youth, './middle.json': middle, './senior.json': senior }));
+  if (cacheFm7a === null) cacheFm7a = createEventPool(validateEventFiles({ ...BASE_FILES, './youth.json': youth, './middle.json': middle, './senior.json': senior }));
   return cacheFm7a;
 }
 
 /** K2만 켠 풀: 옛 풀에서 동생 반응 카드(`infant-new-sibling`)만 지금 정의(`trigger: "family"`)로 바꾼다 — 사건 조건·낱말 조건(K4)은 옛 그대로 */
 export function k2OnlyPool(): EventPool {
-  const now = createEventPool(validateEventFiles({ ...EVENT_FILES })).byId.get('infant-new-sibling')!;
+  const now = createEventPool(validateEventFiles({ ...BASE_FILES })).byId.get('infant-new-sibling')!;
   const old = preFm4bPool();
   return createEventPool(old.events.map((e) => (e.id === now.id ? now : e)));
 }
@@ -43,11 +60,11 @@ let cacheVariants: EventPool | null = null;
 let cacheSenior: EventPool | null = null;
 
 export function fm7aVariantsPool(): EventPool {
-  if (cacheVariants === null) cacheVariants = createEventPool(validateEventFiles({ ...EVENT_FILES, './youth.json': youth, './senior.json': senior }));
+  if (cacheVariants === null) cacheVariants = createEventPool(validateEventFiles({ ...BASE_FILES, './youth.json': youth, './senior.json': senior }));
   return cacheVariants;
 }
 
 export function fm7aSeniorPool(): EventPool {
-  if (cacheSenior === null) cacheSenior = createEventPool(validateEventFiles({ ...EVENT_FILES, './youth.json': youth }));
+  if (cacheSenior === null) cacheSenior = createEventPool(validateEventFiles({ ...BASE_FILES, './youth.json': youth }));
   return cacheSenior;
 }

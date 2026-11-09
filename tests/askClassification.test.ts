@@ -1,25 +1,28 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { decisionFor, deciderOf, isClassified, parentTableProblems, selfAreaWeightFactor, type EventDef } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { ASK_AREA, DECISION_AREAS, PARENT_AREAS, PARENT_DECISION_TABLE, PARENT_TABLE_COUNTS, SELF_AREAS, SELF_AREA_WEIGHT, type DecisionRow } from '../src/data/parentDecisionTable';
+import { ASK_PET_ENABLED, askEventIdsFor } from '../src/data/askTable';
+import { ASK_AREA, DECISION_AREAS, PARENT_AREAS, PARENT_DECISION_TABLE, PARENT_TABLE_COUNTS, SELF_AREAS, SELF_AREA_WEIGHT, parentTableCountsFor, type DecisionRow } from '../src/data/parentDecisionTable';
 import { askEvent } from './helpers/askEvents';
 
 /**
  * 조르기 분류 (SPEC-011 AK1 — `docs/data/ask-model.md` 1-1·1-5절, 완료 기준 3의 코어 부분): 영역 `ask` · 결정자 규칙 R1a · `parentTableProblems` 점검 ④.
  *
- * **분류표 실제 행 9개·`PARENT_TABLE_COUNTS`(`selfCards` 18 · `askCards` 9)·PD0 기계 판독 블록 9행은 사건 데이터(AK7)와 같은 변경에서 더한다** — 표에 있는 id는 모두 실제 선택지 이벤트여야 하는 점검 ②가
+ * **분류표 실제 행(AK7 — 장난감·예체능 7행, 반려동물 2행은 스위치 `ASK_PET_ENABLED`가 켜졌을 때만)·`PARENT_TABLE_COUNTS`(`askCards`)·PD0 기계 판독 블록은 사건 데이터(AK7)와 같은 변경에서 더했다.** 아래는 AK1 때 쓰던 설명이다 — — 표에 있는 id는 모두 실제 선택지 이벤트여야 하는 점검 ②가
  * 사건 없이 행만 더하면 빌드를 막기 때문이다(dev 로그 「결정이 필요한 것」). 그래서 이 파일은 설계 문서 1-3절의 사건 id 9개를 **임시 행으로 표에 끼워** 규칙(R1a·가중·집계 방향)을 시험하고, 점검 ④는 합성 표·합성 사건으로 본다.
  * 끼운 행은 파일이 끝나면 지운다(`afterAll`) — 실제 표는 바뀌지 않는다.
  */
 
-const ASK_IDS = ['ask-toy-a', 'ask-toy-b', 'ask-toy-c', 'ask-toy-d', 'ask-lessons-a', 'ask-lessons-b', 'ask-lessons-c', 'ask-pet-a', 'ask-pet-b'] as const;
+const ASK_IDS = askEventIdsFor(true); // 규칙 값은 반려동물 둘까지 아홉 사건 모두 본다
+/** 스위치가 꺼져 있으면 실제 표에 없는 반려동물 행 — 규칙 시험을 위해 임시로만 끼우고 끝나면 지운다 */
+const TEMP_IDS = ASK_IDS.filter((id) => !(id in PARENT_DECISION_TABLE));
 const TABLE = PARENT_DECISION_TABLE as Record<string, DecisionRow>;
 
 beforeAll(() => {
-  for (const id of ASK_IDS) TABLE[id] = { areas: [ASK_AREA] };
+  for (const id of TEMP_IDS) TABLE[id] = { areas: [ASK_AREA] };
 });
 afterAll(() => {
-  for (const id of ASK_IDS) delete TABLE[id];
+  for (const id of TEMP_IDS) delete TABLE[id];
 });
 
 describe('AK1 영역 ask — 단독 영역, 부모·본인·흘러감 영역과 별개', () => {
@@ -31,11 +34,14 @@ describe('AK1 영역 ask — 단독 영역, 부모·본인·흘러감 영역과 
     expect((SELF_AREAS as readonly string[]).includes('ask')).toBe(false);
   });
 
-  it('실제 분류표는 이 단계에서 그대로다 — 32행, 집계 24·7·9·6 (조르기 9행·askCards는 AK7에서 더한다)', () => {
-    expect(ASK_IDS.every((id) => isClassified(id))).toBe(true); // 임시 행이 끼워진 동안은 분류돼 있다 (실제 표에는 없다)
-    const real = Object.keys(TABLE).filter((id) => !(ASK_IDS as readonly string[]).includes(id));
-    expect(real).toHaveLength(32);
-    expect(PARENT_TABLE_COUNTS).toEqual({ parentCards: 24, childCards: 7, selfCards: 9, selfCards13to18: 6 });
+  it('실제 분류표: 32행 + 조르기 사건 행 — 스위치 꺼짐 39행(집계 24·7·16·6 · askCards 7), 켜짐 41행(24·7·18·6 · askCards 9)', () => {
+    expect(ASK_IDS.every((id) => isClassified(id))).toBe(true); // 임시 행이 끼워진 동안은 아홉 사건 모두 분류돼 있다
+    const real = Object.keys(TABLE).filter((id) => !TEMP_IDS.includes(id));
+    expect(real).toHaveLength(ASK_PET_ENABLED ? 41 : 39);
+    expect(real.filter((id) => TABLE[id].areas.includes(ASK_AREA)).sort()).toEqual([...askEventIdsFor(ASK_PET_ENABLED)].sort());
+    expect(PARENT_TABLE_COUNTS).toEqual(parentTableCountsFor(ASK_PET_ENABLED));
+    expect(parentTableCountsFor(false)).toEqual({ parentCards: 24, childCards: 7, selfCards: 16, selfCards13to18: 6, askCards: 7 });
+    expect(parentTableCountsFor(true)).toEqual({ parentCards: 24, childCards: 7, selfCards: 18, selfCards13to18: 6, askCards: 9 });
   });
 });
 
@@ -143,9 +149,9 @@ describe('AK1 parentTableProblems 점검 ④ — 영역 [ask] ⇔ 사건의 ask 
     expect(problems.join('\n')).toContain('분류표에 있지만 실제 선택지 이벤트가 아니다');
   });
 
-  it('실제 풀·실제 표는 문제가 없다 (조르기 사건이 아직 없고 임시 행은 풀에 없는 id라 여기서는 제외하고 본다)', () => {
-    const real = Object.fromEntries(Object.entries(TABLE).filter(([id]) => !(ASK_IDS as readonly string[]).includes(id)));
+  it('실제 풀·실제 표는 문제가 없다 — 풀의 조르기 사건은 스위치가 가리키는 7개(켜짐이면 9개)이고 표 행과 일대일이다 (임시 반려동물 행은 풀에 없는 id라 제외하고 본다)', () => {
+    const real = Object.fromEntries(Object.entries(TABLE).filter(([id]) => !TEMP_IDS.includes(id)));
     expect(parentTableProblems(EVENT_POOL.events, real)).toEqual([]);
-    expect(EVENT_POOL.events.filter((e) => e.ask !== undefined)).toHaveLength(0);
+    expect(EVENT_POOL.events.filter((e) => e.ask !== undefined).map((e) => e.id).sort()).toEqual([...askEventIdsFor(ASK_PET_ENABLED)].sort());
   });
 });

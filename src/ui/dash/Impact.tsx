@@ -1,5 +1,6 @@
 import type { ImpactItem } from '../../core/impact';
 import { Glue } from '../Glue';
+import { ASK_UNKNOWN_IMPACT_TEXT } from '../../data/askTable';
 import { IMPACT_HINT, IMPACT_LABEL, impactSentence, impactSymbols, impactTone } from '../../data/impactText';
 
 /**
@@ -21,6 +22,20 @@ export function ImpactLine({ items }: { items: readonly ImpactItem[] }) {
           <span className="sr-only">{impactSentence(it)}</span>
         </span>
       ))}
+    </span>
+  );
+}
+
+/**
+ * 조른다·떼를 쓴다 선택지의 영향 줄 자리의 **고정 한 줄** (SPEC-011 AK8, `docs/design/copy.md` 20-2): 「들어주실지는 알 수 없습니다」. 들어줄지는 해시와 확률이 정해 화면에 방향·숫자가 없다(G4).
+ * 새 줄 종류가 아니다 — 영향 줄(`.impact`) 자리에 같은 글자 크기·색으로 앉고, 항목 점(「·」)과 줄바꿈 금지만 뺐다(글자 200%·360px에서 한 줄이 넘치면 어절에서 접힌다). 눈에 보이는 글자가 그대로 스크린리더 이름이다.
+ */
+export function ImpactFixedLine({ text = ASK_UNKNOWN_IMPACT_TEXT }: { text?: string }) {
+  return (
+    <span className="impact impact--fixed" data-testid="impact-fixed">
+      <span className="impact__item impact__item--fixed">
+        <Glue text={text} />
+      </span>
     </span>
   );
 }

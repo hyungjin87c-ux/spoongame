@@ -349,8 +349,8 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     'middle-health-check', 'middle-new-skills', 'senior-retire', 'senior-gathering', 'senior-illness',
   ];
 
-  it('파일 5개(생애 단계별)가 모두 읽히고 스키마 검증을 통과해 풀에 들어 있다 (로드 시점에 검증하므로 잘못된 데이터면 이 import에서 이미 실패한다)', () => {
-    expect(Object.keys(EVENT_FILES).sort()).toEqual(['./infant.json', './middle.json', './school.json', './senior.json', './youth.json']);
+  it('파일 5개(생애 단계별)가 모두 읽히고 스키마 검증을 통과해 풀에 들어 있다 (로드 시점에 검증하므로 잘못된 데이터면 이 import에서 이미 실패한다 — 조르기 `ask.json`이 더해져 파일은 6개, 반려동물 `ask-pet.json`은 스위치가 꺼져 없다)', () => {
+    expect(Object.keys(EVENT_FILES).sort()).toEqual(['./ask.json', './infant.json', './middle.json', './school.json', './senior.json', './youth.json']);
     expect(() => validateEventFiles(EVENT_FILES)).not.toThrow();
     expect(events.length).toBe(Object.values(EVENT_FILES).reduce((n: number, f) => n + (f as { events: unknown[] }).events.length, 0));
   });
@@ -391,8 +391,8 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     }
   });
 
-  it('연도 구간(yearRange)이 있는 이벤트는 33개(MG2)이고 구간 없는 공통 이벤트가 대부분이다 — 파생 시대 구간으로 보면 옛 시대 전용이 각각 있다 (R-045 d → SPEC-004 MG2)', () => {
-    expect(events.filter((e) => e.yearRange !== undefined)).toHaveLength(33);
+  it('연도 구간(yearRange)이 있는 이벤트는 40개(MG2 33 + 조르기 7)이고 구간 없는 공통 이벤트가 대부분이다 — 파생 시대 구간으로 보면 옛 시대 전용이 각각 있다 (R-045 d → SPEC-004 MG2)', () => {
+    expect(events.filter((e) => e.yearRange !== undefined)).toHaveLength(33 + 7);
     expect(events.filter((e) => e.yearRange === undefined).length).toBeGreaterThan(events.length / 2);
     // 옛 `eras`는 yearRange에서 파생된다(데이터에 쓰지 않는다): 한 구간에만 걸치는 이벤트
     const only = (era: Era) => events.filter((e) => e.eras !== undefined && e.eras.length === 1 && e.eras[0] === era);
@@ -404,10 +404,10 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     expect(new Set(events.filter((e) => e.yearRange !== undefined).flatMap((e) => e.stages)).size).toBeGreaterThanOrEqual(4);
   });
 
-  it('track: 144개 모두 달려 있고 standard 17 · common 127 · assembled 0이다 (MG2, 기존 이벤트에 assembled는 없다 — 알파 신규 전용. FM7a 「남은 한 분」 변형 사건 4개는 common)', () => {
+  it('track: 151개 모두 달려 있고 standard 17 · common 134 · assembled 0이다 (MG2, 조르기 7개는 common, 기존 이벤트에 assembled는 없다 — 알파 신규 전용. FM7a 「남은 한 분」 변형 사건 4개는 common)', () => {
     const count = (t: string) => events.filter((e) => e.track === t).length;
     expect(events.every((e) => e.track !== undefined)).toBe(true);
-    expect([count('standard'), count('common'), count('assembled')]).toEqual([17, 127, 0]);
+    expect([count('standard'), count('common'), count('assembled')]).toEqual([17, 134, 0]);
   });
 
   it('0세에도 일어날 수 있는 이벤트가 있다 (SPEC-003 IN1, M7a): 첫 해가 늘 빈 해가 아니다 — 첫 예방접종(마일스톤)이 모든 판의 0세에 일어난다. 옛 시험은 「0세는 후보 0개」였다 (e2e·스모크가 기대던 「첫 해는 선택지 없이 조용히 지나간다」는 M7a로 사라졌다)', () => {
@@ -942,9 +942,9 @@ describe('인용 연결 필드 citation · noCitation (M7b)', () => {
 
   it('실제 풀: 선택지 이벤트 94개(FM7a 「남은 한 분」 변형 4개 포함) 각각이 citation·noCitation 중 하나이거나 2차 대기 목록에 있다 (자세한 대조는 tests/citationLink.test.ts)', () => {
     const cards = EVENT_POOL.events.filter(isChoiceEvent);
-    expect(cards).toHaveLength(94);
+    expect(cards).toHaveLength(94 + 7); // + 조르기 7(반려동물은 스위치 꺼짐) — 모두 noCitation D
     const withField = cards.filter((e) => e.citation !== undefined || e.noCitation !== undefined);
-    expect(withField).toHaveLength(81); // 나머지 13개는 T-01~T-13 2차 대기 (변형 4개는 원본의 citation·noCitation을 그대로 가진다)
+    expect(withField).toHaveLength(81 + 7); // 나머지 13개는 T-01~T-13 2차 대기 (변형 4개는 원본의 citation·noCitation을 그대로 가진다)
     for (const e of cards) expect(e.citation !== undefined && e.noCitation !== undefined, e.id).toBe(false);
   });
 });

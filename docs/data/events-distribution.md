@@ -6,8 +6,8 @@
 
 ## 1. 총계
 
-- 이벤트 **144개** = 선택지 이벤트 94개 + 서술 이벤트 50개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
-- 시대 전용: 지난 세상 10개 · 지금 세상 6개 · 다가올 세상 4개 / 시대 중립 공용 112개 / 두 시대 공용 12개
+- 이벤트 **151개** = 선택지 이벤트 101개 + 서술 이벤트 50개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
+- 시대 전용: 지난 세상 13개 · 지금 세상 8개 · 다가올 세상 5개 / 시대 중립 공용 112개 / 두 시대 공용 13개
 
 ## 2. 시대 × 생애 단계 × 유형 (그 칸에서 일어날 수 있는 이벤트 수)
 
@@ -15,21 +15,28 @@
 
 | 생애 단계 | 지난 세상 | 지금 세상 | 다가올 세상 |
 |---|---|---|---|
-| 영유아 (0~6세) | 16 / 9 | 17 / 15 | 14 / 12 |
-| 학창 (7~19세) | 7 / 15 | 6 / 15 | 7 / 15 |
+| 영유아 (0~6세) | 16 / 12 | 17 / 18 | 14 / 14 |
+| 학창 (7~19세) | 7 / 18 | 6 / 18 | 7 / 17 |
 | 청년 (20~39세) | 9 / 19 | 8 / 20 | 8 / 21 |
 | 중년 (40~64세) | 7 / 26 | 8 / 27 | 8 / 28 |
 | 노년 (65세~) | 5 / 17 | 5 / 17 | 5 / 18 |
-| **합계(칸 합)** | 44 / 86 | 44 / 94 | 42 / 94 |
+| **합계(칸 합)** | 44 / 92 | 44 / 100 | 42 / 98 |
 
 ## 3. 이벤트 목록
 
 유형: 서술 = 선택지 없이 효과만 / 선택지 = 2~3개 중 선택. 플래그: 켬 = 이 이벤트의 선택·효과가 켜는 것 / 읽음 = 조건·선택지 노출·보너스·확률 배수에서 읽는 것.
 
-### 영유아 (0~6세) — 35개
+### 영유아 (0~6세) — 42개
 
 | id | 제목 | 나이 | 시대 | 유형 | 모티브 | 플래그 |
 |---|---|---|---|---|---|---|
+| `ask-toy-a` | 문방구 앞에서 | 4~12 | 지난 전용 | 선택지 3 | 문방구 앞에서 딱지와 구슬을 갖고 싶어 서성이던 아이 | 켬 `parent_strained` |
+| `ask-toy-b` | 변신 장난감 | 4~12 | 지난 전용 | 선택지 3 | 진열장의 변신 장난감을 사 달라고 조르던 일 | 켬 `parent_strained` |
+| `ask-toy-c` | 휴대용 게임기 | 4~12 | 지금 전용 | 선택지 3 | 또래가 꺼내는 휴대용 게임기를 부러워하던 일 | 켬 `parent_strained` |
+| `ask-toy-d` | 손안의 태블릿 | 4~12 | 지금·다가올 전용 | 선택지 3 | 또래 손의 태블릿을 어깨너머로 보던 일 | 켬 `parent_strained` |
+| `ask-lessons-a` | 피아노와 태권도 | 5~12 | 지난 전용 | 선택지 3 | 동네 교실과 도장에 다니는 또래가 부럽던 일 | 켬 `parent_strained` |
+| `ask-lessons-b` | 다니고 싶은 학원 | 5~12 | 지금 전용 | 선택지 3 | 또래가 다니는 예체능 학원에 가고 싶던 일 | 켬 `parent_strained` |
+| `ask-lessons-c` | 코딩과 로봇 교실 | 5~12 | 다가올 전용 | 선택지 3 | 코딩과 로봇 교실에 다니는 또래를 보며 배우고 싶던 일 | 켬 `parent_strained` |
 | `infant-first-word` | 첫 말 | 1~1 | 공용 | 서술 | 아이의 첫 말에 온 가족이 웃던 일 | - |
 | `infant-care` | 맡겨지는 낮 | 1~5 | 공용 | 선택지 3 | 맞벌이 부모가 아이를 어디에 맡길지 정하는 일 | 켬 `childcare_set` `grandparent_close` / 읽음 `childcare_set` `father_gone` `has_grandparent` `mother_gone` `parents_gone` |
 | `infant-fever` | 한밤의 열 | 1~5 | 공용 | 선택지 3 | 한밤에 아이가 열이 올라 병원에 갈지 망설이던 일 | - |
@@ -243,6 +250,7 @@
 | `no_child` | `youth-child` `youth-child-again` | `youth-child-again` |
 | `own_business` | `middle-business` `middle-layoff` `youth-startup` | `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-own-shop-year` `senior-retire` `youth-colleague` `youth-factory-night` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-startup` `youth-workplace-romance` |
 | `own_home` | `middle-home-loan` `youth-housing` | `middle-home-loan` `youth-housing` `youth-rent-hike` |
+| `parent_strained` | `ask-lessons-a` `ask-lessons-b` `ask-lessons-c` `ask-toy-a` `ask-toy-b` `ask-toy-c` `ask-toy-d` | - |
 | `parents_gone` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` | `infant-care` `infant-neglect-night` `middle-parents-care` `middle-parents-care-father-gone` `middle-parents-care-mother-gone` `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` `school-early-work` `school-teacher-notice` |
 | `passed_exam` | `youth-exam-passed` | `middle-layoff` `youth-factory-night` |
 | `promoted` | `middle-career-peak` | - |

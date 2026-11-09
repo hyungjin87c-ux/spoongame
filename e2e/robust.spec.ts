@@ -240,7 +240,9 @@ test('자동 모드가 켜져 있으면 선택지를 잠깐 보여 준 뒤 성�
   await expect.poll(async () => (await readSave(page)).data.history.filter((h) => h.kind === 'choice' && h.eventId === decision.pending!.eventId).length).toBe(1);
   const auto = await evalCore<GameState>(page, 'return core.autoResolveStep(arg, arg.pending.key).state;', decision);
   const entry = (await readSave(page)).data.history.find((h) => h.kind === 'choice' && h.eventId === decision.pending!.eventId)!;
-  expect(entry).toEqual(auto.history[auto.history.length - 1]); // core의 자동 선택과 같은 선택지를 골랐다
+  // 선택 줄은 그 해의 줄이지 마지막 줄이 아니다 — 조르기 카드(SPEC-011)처럼 어린 나이에 뜬 카드는 해가 넘어가며 단계 줄(「학교에 들어갈 나이가 되었습니다.」)이 뒤에 붙는다
+  const expectedEntry = auto.history.filter((h) => h.kind === 'choice' && h.eventId === decision.pending!.eventId).pop();
+  expect(entry).toEqual(expectedEntry); // core의 자동 선택과 같은 선택지를 골랐다
 });
 
 test('탭이 가려져 있는 동안은 진행이 멈추고, 다시 보이면 이어진다', async ({ page }) => {
