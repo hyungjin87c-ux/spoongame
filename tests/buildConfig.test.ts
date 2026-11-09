@@ -47,6 +47,7 @@ describe('vite-node 선언 (R-049)', () => {
     // sim:1000(세 시대 × 두 전략 × 1000판 전체 파이프라인 수치 보고, SPEC-001 M6)은 M6에서 더했다
     // check:motifs(소재 목록 점검 — 형식·금지 패턴·원문 겹침, SPEC-003 M6c)는 M6c에서 더했다
     // check:citations·gen:citations(citations.json의 usedBy를 이벤트 JSON의 citation에서 만들어 맞는지 확인·재생성)·report:citations(시대별 정적 연결률·노출률 보고, SPEC-003 M7b)는 M7b에서 더했다
+    // check:era-art(시대의 창 그림 대기 목록이 비어야 통과하는 배포 게이트 — scripts/checkEraArt.ts, SPEC-013 T2)는 SPEC-013에서 더했다
     // check:basis·gen:basis(근거 문서·CSV를 JSON에서 다시 만들어 맞는지 확인·재생성, SPEC-003 M6a-r2 R-148)는 M6a 검수 반영에서 더했다
     // check:economy(경제 모델 밸런스 점검 — 연령대별 순자산·부채·소득을 통계 목표와 견줌, SPEC-003 M5 EC7)는 M5 2a에서 더했다
     // sim:infant(영유아 0~7세 지표 보고 — 빈 해·기록 줄·선택지·마일스톤, SPEC-003 M7a IN2)는 M7a에서 더했다
@@ -59,7 +60,7 @@ describe('vite-node 선언 (R-049)', () => {
     // golden:family(L0F 가족 골든 tests/fixtures/family-golden.json 만들기 — --write가 있어야만 쓰고, 없으면 달라진 칸만 알린다. 공개 뒤에는 One-way, SPEC-009 K6 직전·FS2 예외 ①)는 L0F에서 더했다
     // report:parent(부모 결정 보고 — 판당 부모·흘러감·본인 카드 수, 13~18세 본인 카드 0장 비율, 수저별 선택 분포, SPEC-005 QI5 PD12·TM3·PD13)는 QI5에서 더했다
     // report:family(가족 변화 재측정 보고 — 조기 상실 효과·자녀 수·K1 영향·판 시간, docs/data/family-remeasure.md, SPEC-009 FM4b)는 FM4b에서 더했다
-    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:events', 'check:motifs', 'check:todo', 'gen:art', 'gen:basis', 'gen:citations', 'gen:era', 'gen:family', 'golden:family', 'golden:scene', 'report:citations', 'report:family', 'report:notes', 'report:parent', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
+    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:era-art', 'check:events', 'check:motifs', 'check:todo', 'gen:art', 'gen:basis', 'gen:citations', 'gen:era', 'gen:family', 'golden:family', 'golden:scene', 'report:citations', 'report:family', 'report:notes', 'report:parent', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
   });
 });
 

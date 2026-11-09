@@ -14,6 +14,7 @@ import { ERA_DECADE as D2030 } from '../src/data/eraWindows/d2030';
 import { ERA_DECADE as D2010 } from '../src/data/eraWindows/d2010';
 
 /**
+ * **SPEC-013 T7 개정**: 창의 접근 이름·툴팁이 「캡션. (예측.) 첫 문장 둘째 문장 그해 기록으로」로 바뀌었고(`eraAccessibleName`) 사건이 없는 해(2027~2029·2025 등)의 창은 빈 종이틀이라, 「예측」 표를 보는 해는 사건이 있는 해(2030·2035·2040·2044)로 옮겼다. 사건이 없는 해에는 표도 없다.
  * SPEC-010 FU3 「예측」 칩 · 미래 톤 · FU11 예측 근거 보기 — 화면 시험 (서버 렌더 + CSS 원문). 실제 폭·접기 동작·가로 넘침·강제 색상은 `e2e/era-chip.spec.ts`가 본다.
  *  - 인생 기록의 시대 줄(`EraLogRow`): 2027년부터 칩(색·글자·아이콘 세 겹)과 근거 종류 글자, 2026년 줄과 끝 줄에는 없다. 칩은 해로 정한다.
  *  - 시대의 창 칸(`SceneCard`): 2027년부터 작은 「예측」 표(안 B)와 `data-future`, 접근 이름 「예측: …」. 2026년 이하는 그대로. `data-dec`은 그해의 10년대(2026년 뒤를 모두 2020년대로 두던 것을 고쳤다).
@@ -136,7 +137,7 @@ describe('예측 근거 보기 (FU11)', () => {
 });
 
 describe('시대의 창 칸의 「예측」 표 · 미래 톤 · 접근 이름 (FU3 안 B, 구현 규칙 7)', () => {
-  it('2030년: 링크 하나에 data-future="true"·data-dec="2030"(2020년대가 아니다) · 그림 상자 뒤의 형제로 작은 「예측」 표(아이콘 #i-ahead + 글자, 시각용 aria-hidden) · 접근 이름·툴팁 「시대의 창 · 예측: <문장> …」', () => {
+  it('2030년: 링크 하나에 data-future="true"·data-dec="2030"(2020년대가 아니다) · 그림 상자 뒤의 형제로 작은 「예측」 표(아이콘 #i-ahead + 글자, 시각용 aria-hidden) · 접근 이름·툴팁 「<캡션>. 예측. <첫 문장> <둘째 문장> …」', () => {
     const g = lifeAt(2030, 14);
     expect(sceneInputOf(g).state.calYear).toBe(2030);
     const out = html(g, EARLY);
@@ -144,30 +145,32 @@ describe('시대의 창 칸의 「예측」 표 · 미래 톤 · 접근 이름 (
     expect(out).toContain('data-future="true"');
     expect(out).toContain('data-dec="2030"');
     const a = out.slice(out.indexOf('<a class="era"'), out.indexOf('</a>') + 4);
-    const line = /title="시대의 창 · 예측: ([^"]+)"/.exec(a)![1];
-    expect(['AI가 일을 맡자 재교육이 붐볐습니다.', 'AI를 가진 쪽에 투자가 몰렸습니다.', '기본소득 시범에 신청 줄이 길었습니다.']).toContain(line);
-    expect(a).toContain(`<span class="sr-only">시대의 창 · 예측: ${line} 그해 기록으로</span>`);
-    expect(a).toMatch(/<\/span><span class="era__fc" data-testid="era-fc" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-ahead"><\/use><\/svg>예측<\/span><span class="sr-only">/);
+    const line = /title="기본소득 시범\. 예측\. ([^"]+)"/.exec(a)![1];
+    expect(line.startsWith('기본소득 시범에 신청 줄이 길었습니다. 집에')).toBe(true); // 첫 문장 + 고른 구간의 둘째 문장
+    expect(a).toContain(`<span class="sr-only">기본소득 시범. 예측. ${line} 그해 기록으로</span>`);
+    expect(a).toContain('<span class="era__cap" data-testid="era-caption" aria-hidden="true">기본소득 시범</span>');
+    expect(a).toMatch(/<\/span><span class="era__fc" data-testid="era-fc" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-ahead"><\/use><\/svg>예측<\/span><span class="era__cap" data-testid="era-caption" aria-hidden="true">[^<]+<\/span><span class="sr-only">/);
     // 표는 그림 상자(.era__pic) 안이 아니라 형제다 — 그림 모서리 잘림·필터에서 벗어난다
     expect(a.indexOf('era__fc')).toBeGreaterThan(a.indexOf('</svg></span>'));
     expect((out.match(/<a /g) ?? []).length, '초점 정지점 1').toBe(1);
   });
 
-  it('2027·2028·2029년도 예측이다(표 · data-future) · 2026년은 사실이라 표도 data-future도 없고 data-dec는 2020 · 2025년 이하도 그대로', () => {
-    for (const y of [2027, 2028, 2029]) {
+  it('사건이 있는 미래의 해(2030·2035)도 예측이다(표 · data-future) · 2027~2029는 사건이 없어 빈 종이틀이다(표·링크 없음) · 2026년은 사실이라 표도 data-future도 없고 data-dec는 2020 · 2025년 이하도 그대로', () => {
+    for (const y of [2027, 2028, 2029]) expect(html(lifeAt(y, 12), EARLY), `${y}`).toMatch(/<div class="era" id="scene-era" data-empty="true"/);
+    for (const y of [2030, 2035]) {
       const out = html(lifeAt(y, 12), EARLY);
       expect(out, `${y}`).toContain('data-future="true"');
       expect(out, `${y}`).toContain('data-testid="era-fc"');
-      expect(out, `${y}`).toContain('data-dec="2020"');
-      expect(out, `${y}`).toContain('시대의 창 · 예측: ');
+      expect(out, `${y}`).toContain(`data-dec="${Math.floor(y / 10) * 10}"`);
+      expect(out, `${y}`).toMatch(/title="[^"]+\. 예측\. /);
     }
     const y26 = html(lifeAt(2026, 12), EARLY);
     expect(y26).toContain('data-dec="2020"');
     expect(y26).not.toContain('data-future');
     expect(y26).not.toContain('era__fc');
-    expect(y26).toContain('title="시대의 창 · ');
+    expect(y26).toContain('title="AI와 일자리. AI가 퍼지며');
     expect(y26).not.toContain('예측');
-    const y25 = html(lifeAt(2025, 12), EARLY);
+    const y25 = html(lifeAt(2023, 12), EARLY);
     expect(y25).toContain('data-dec="2020"');
     expect(y25).not.toContain('data-future');
     expect(y25).not.toContain('era__fc');
@@ -175,8 +178,8 @@ describe('시대의 창 칸의 「예측」 표 · 미래 톤 · 접근 이름 (
 
   it('data-dec는 그해의 10년대다: 2030년대는 2030, 표 끝(2109)은 2100 — 필터가 있는 10년대(1940~2000)와 달리 톤 규칙이 없다', () => {
     const wins: EraWindow[] = [
-      { id: '삼십', years: [2039, 2039], kind: 'event', topic: '시험', line: '삼십 한 줄입니다.', heavy: false, approved: true, draw: '삼십', basis: 'official' },
-      { id: '백', years: [2109, 2109], kind: 'event', topic: '시험', line: '백 한 줄입니다.', heavy: false, approved: true, draw: '백', basis: 'official' },
+      { id: '삼십', years: [2039, 2039], kind: 'event', topic: '시험', line: '삼십 한 줄입니다.', heavy: false, approved: true, draw: '삼십', caption: '삼십 캡션', basis: 'official' },
+      { id: '백', years: [2109, 2109], kind: 'event', topic: '시험', line: '백 한 줄입니다.', heavy: false, approved: true, draw: '백', caption: '백 캡션', basis: 'official' },
     ];
     const MARK = '<rect x="0" y="0" width="40" height="32" fill="var(--c-scene-sky,#dfe6ed)"/>';
     const era = { windows: wins, art: { 삼십: MARK, 백: MARK } };
@@ -190,13 +193,13 @@ describe('시대의 창 칸의 「예측」 표 · 미래 톤 · 접근 이름 (
 });
 
 describe('표 끝 뒤의 창: 줄이 없는 칸은 링크가 아니라 그림만 (REV-010-CORE-1 R-601)', () => {
-  const END: EraWindow = { id: '끝', years: [ERA_LAST_YEAR + 1, ERA_LAST_YEAR + 21], kind: 'base', topic: '안내', line: '여기서부터는 그려진 연표가 없습니다.', heavy: false, approved: true, draw: '끝' };
+  const END: EraWindow = { id: '끝', years: [ERA_LAST_YEAR + 1, ERA_LAST_YEAR + 21], kind: 'base', topic: '안내', line: '여기서부터는 그려진 연표가 없습니다.', heavy: false, approved: true, draw: '끝', caption: '' };
   const MARK = '<rect x="0" y="0" width="40" height="32" fill="var(--c-scene-sky,#dfe6ed)"/>';
   const era = { windows: [END], art: { 끝: MARK } };
 
   it('2111년: 링크(<a>)가 0이다 — 눌러도 갈 줄이 없다. 그림만 role=img로 있고 「그해 기록으로」를 읽지 않으며, 예측 표·미래 톤도 없다', () => {
     const out = html(lifeAt(2111, 90), era);
-    expect(out).toMatch(/<div class="era" id="scene-era" data-end="true" data-era="끝" data-kind="base" data-hidden="false" data-dec="2100" role="img" aria-label="시대의 창 · 여기서부터는 그려진 연표가 없습니다\." title="시대의 창 · 여기서부터는 그려진 연표가 없습니다\.">/);
+    expect(out).toMatch(/<div class="era" id="scene-era" data-end="true" data-era="끝" data-kind="base" data-hidden="false" data-dec="2100" role="img" aria-label="여기서부터는 그려진 연표가 없습니다\." title="여기서부터는 그려진 연표가 없습니다\.">/);
     expect((out.match(/<a /g) ?? []).length, '이 카드의 링크 0').toBe(0);
     expect(out).not.toContain('#log-y');
     expect(out).not.toContain('그해 기록으로');
@@ -240,11 +243,11 @@ describe('CSS 원문과 아이콘 (FU3·FU6, 시안 인계 원문 그대로)', (
 
   it('창 표 CSS: 창 칸의 왼쪽 위 카드 면 꼬리표 + 휴대폰 띠(카드 ≤ 480px)에서는 그림 옆 띠 바탕 위(left: 100px + 간격) · .era는 position: relative', async () => {
     const c = await css();
-    expect(c).toMatch(/\.era \{ position: relative; display: block;/);
+    expect(c).toMatch(/\.era \{ position: relative; display: grid; grid-template-rows: minmax\(0, 1fr\) auto;/);
     expect(c).toContain('.era__fc { position: absolute; top: var(--sp-1); left: var(--sp-1); display: inline-flex; align-items: center; gap: 3px; padding: 0 5px; border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-era); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; white-space: nowrap; }');
     expect(c).toContain('.era__fc .icon { width: 12px; height: 12px; stroke-width: 2.6; }');
     const q = /@container scene \(max-width: 480px\) \{[\s\S]*?\n\}/.exec(c)![0];
-    expect(q).toContain('.era__fc { top: var(--sp-2); left: calc(100px + var(--sp-2)); }');
+    expect(q).toContain('.era__fc { position: static; grid-column: 2; grid-row: 1; justify-self: start; margin: var(--sp-2) 0 0; }'); // 띠에서는 그림 옆 둘째 칸의 첫 줄(정적 배치, SPEC-013 T3 — 캡션이 그 아래)
   });
 
   it('미래 톤 「밑그림」: 라이트 saturate(.5) contrast(.92) brightness(1.06), 다크 saturate(.55) brightness(.94) — 해(data-future)로 정하고 2026년 이하에는 닿지 않으며 그림 상자 안 svg에만 걸린다(창 표 아이콘은 제외)', async () => {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { bandOfWealth, eraDecadeOf, eraOf, isForecastYear, type EraPick, type EraWindow } from '../../core/eraWindow';
 import { petPhrases, sceneInputOf, sceneKey, sceneLineOf, sceneOf, scenePetsText, sceneRowsOf, type SceneSpec } from '../../core/scene';
 import type { FamilyGame } from '../../core/familyView';
-import { eraAccessibleName, eraTitle, SCENE_TEXT } from '../../data/sceneText';
+import { eraAccessibleName, eraTitle, SCENE_TEXT, type EraSpoken } from '../../data/sceneText';
 import { useReducedMotion } from '../hooks';
 import { FitList, FitPair } from '../FitPair';
 import { Icon } from '../Brand';
@@ -17,7 +17,8 @@ import type { SceneArt } from './useFamilyArt';
  * 구성: 그림 띠(왼쪽 집 그림 : 오른쪽 「시대의 창」 = 2 : 1, 휴대폰은 집 아래 80px 띠) → 아래 한 줄 → 펼침 「함께 사는 사람」 · 「그림 접기」.
  *  - 집 그림은 `role="img"`이고 대체 글은 연도 표 + 아래 한 줄 + 반려동물 문장(`aria-labelledby`)이다. 그림에만 있는 정보는 없다(FH6). 연도 표 「1988년」은 집 그림 오른쪽 위의 HTML이다(그림 안 글자 0).
  *  - 그림 덩어리(`familyArt`)가 오기 전·실패한 동안에는 **크기가 고정된 자리 틀**만 보이고 아래 한 줄·펼침(글)이 먼저 보인다(FH9). 실패하면 「다시 불러오기」가 나온다.
- *  - 시대의 창: 그해에 승인된 그림이 없으면(1990년대 대부분·2000년 이후 등) 연도 표만 있는 빈 틀이다. 있으면 칸 전체가 그해 인생 기록 줄로 가는 링크 하나(초점 정지점 1, FT5). 「무거운 장면 가리기」(`settings.gentle`)가 켜지면 무거운 장면(재난·정치)은 그해 일상 그림으로, 없으면 빈 틀로. 고르기는 `core/eraWindow.ts#eraOf`(출생 연도·수저 구간·나이대를 본다).
+ *  - 시대의 창(SPEC-013 T3): 굵직한 사건이 있던 해에는 그림 + **항상 보이는 캡션**(사건 이름, 그림 아래 — 휴대폰 띠는 그림 옆)이고 칸 전체가 그해 인생 기록 줄로 가는 링크 하나(초점 정지점 1, FT5, 접근 이름 「캡션. 첫 문장 …」)다.
+ *    사건이 없는 해(약 3분의 2)에도 **칸의 자리·크기는 그대로**이고 안은 그림 없는 **빈 종이틀**(연도 표만, 캡션 없음, 링크 없음)이다. 「무거운 장면 가리기」(`settings.gentle`)가 켜지면 무거운 사건(재난·정치)은 대체 사건 그림(1987 12월 투표)이 있으면 그 그림과 캡션, 없으면 빈 해와 같은 틀 + 캡션 「가려 둔 장면」이다. 고르기는 `core/eraWindow.ts#eraOf`(출생 연도·수저 구간).
  *  - 바뀌는 해(구성이 달라진 해)에는 짧은 교차 페이드, 움직임 줄이기·빠른 진행(4배속 이상·자동 모드)이면 즉시 교체한다. 변화의 내용은 인생 기록 문장이 알린다 — 그림은 `aria-live`를 쓰지 않는다(이중 낭독 방지).
  *  - 접으면(`fold`) 그림이 사라지고 아래 한 줄·펼침만 남는다. 접힘은 설정에 저장된다(`settings.sceneFold`).
  */
@@ -75,18 +76,11 @@ function EraPic({ pick, art, inst }: { pick: EraPick; art: Readonly<Record<strin
   );
 }
 
-/** 빈 틀: 종이 질감 바탕 한 칸 (장식 — 연도 표만 있는 모습) */
+/** 빈 틀 「빈 종이」(SPEC-013 T3, 형진 님 선택 안 B — `docs/design/era-empty-frame.md`): 파인 면 쟁반 안에 6px 들어간 빈 종이 한 장. 빈 해와 가리기 켠 해(대체 그림 없음)가 같은 틀이다. 장식이라 읽히지 않는다 */
 function EmptyFrame() {
   return (
     <span className="era__pic era__pic--empty" aria-hidden="true">
-      <svg viewBox="0 0 40 32" preserveAspectRatio="none" focusable="false">
-        <defs>
-          <pattern id="era-paper" width="2.4" height="2.4" patternUnits="userSpaceOnUse">
-            <circle cx="1.2" cy="1.2" r="0.32" fill="var(--c-border)" />
-          </pattern>
-        </defs>
-        <rect width="40" height="32" fill="url(#era-paper)" />
-      </svg>
+      <i className="era__sheet" />
     </span>
   );
 }
@@ -109,7 +103,7 @@ function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: n
   const shown = pick.pic !== null && art[pick.pic.draw] !== undefined ? pick.pic : null;
   const key = shown?.id ?? (pick.veiled ? 'veiled' : 'none');
   const prev = usePrevWhileSwapping(pick, key, animate && !reduced);
-  // 링크가 있는 칸: 그림이 있거나, 가려 둔 해(그림 없이 틀만) — 그해 기록 줄이 있다. 줄도 그림도 없으면 링크 없는 빈 틀이다
+  // 링크가 있는 칸: 그림이 있거나, 가려 둔 해(그림 없이 빈 틀만) — 그해 기록 줄이 있다. 줄도 그림도 없으면(사건이 없는 해) 링크 없는 빈 종이틀이다
   const linked = shown !== null || (pick.veiled && pick.line !== null);
   if (!linked) {
     return (
@@ -118,19 +112,24 @@ function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: n
       </div>
     );
   }
-  const text = shown !== null ? shown.line : null;
-  // 톤 A의 10년대 번호(필터는 1940~2000년대에만 있다) — 2026년 이후도 그 해의 10년대다(옛 `min(해, 2025)`는 2026년 뒤를 모두 2020년대로 두었다)
+  // 톤 A의 10년대 번호(필터는 1940~2000년대에만 있다) — 2026년 이후도 그 해의 10년대다
   const dec = shown === null ? undefined : eraDecadeOf(year);
   // 「예측」은 해로 정한다(그림으로 정하지 않는다) — 칩 표·미래 톤(밑그림)이 같은 판단이다 (SPEC-010 구현 규칙 4·7)
   const forecast = isForecastYear(year);
-  // 줄이 없는 칸(2111년부터의 끝 장면, SPEC-010 구현 규칙 3)은 갈 곳이 없으니 링크가 아니라 그림만이다 (REV-010-CORE-1 R-601)
+  // 줄이 없는 칸(2111년부터의 끝 장면, SPEC-010 구현 규칙 3)은 갈 곳이 없으니 링크가 아니라 그림만이다 (REV-010-UI-1 R-601) — 캡션 없음
   if (shown !== null && pick.line === null) {
+    const name = eraTitle({ caption: null, line: shown.line, second: null });
     return (
-      <div className="era" id="scene-era" data-end="true" data-era={shown.id} data-kind={shown.kind} data-hidden="false" data-dec={dec} role="img" aria-label={eraTitle(text, false)} title={eraTitle(text, false)}>
+      <div className="era" id="scene-era" data-end="true" data-era={shown.id} data-kind={shown.kind} data-hidden="false" data-dec={dec} role="img" aria-label={name} title={name}>
         <EraPicBox shown={shown} prev={prev} pick={pick} art={art} />
       </div>
     );
   }
+  // 보이는 캡션: 그림이 있으면 그 사건의 캡션(가린 해의 대체 그림이면 그 그림의 캡션), 그림 없이 가린 해는 「가려 둔 장면」(상수 한 곳). 끝 줄(2110, 빈 캡션)은 캡션이 없다
+  const caption = shown !== null ? pick.caption : SCENE_TEXT.eraVeiled;
+  const visibleCaption = caption !== null && caption !== '' ? caption : null;
+  // 줄의 첫 문장은 가린 해에는 말하지 않는다(가려진 줄의 문장이 가린 장면의 내용을 먼저 말하지 않게). 둘째 문장은 가린 해에 없다
+  const spoken: EraSpoken = { caption: visibleCaption, line: pick.veiled || pick.line === null ? null : pick.line.line, second: pick.second };
   return (
     <a
       className="era"
@@ -141,17 +140,22 @@ function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: n
       data-hidden={shown === null ? 'true' : 'false'}
       data-dec={dec}
       data-future={forecast ? 'true' : undefined}
-      title={eraTitle(text, shown === null, forecast)}
+      title={eraTitle(spoken, forecast)}
       onClick={(e) => onEraClick(e, year, reduced)}
     >
-      <EraPicBox shown={shown} prev={prev} pick={pick} art={art} />
+      {shown === null ? <EmptyFrame /> : <EraPicBox shown={shown} prev={prev} pick={pick} art={art} />}
       {forecast ? (
         <span className="era__fc" data-testid="era-fc" aria-hidden="true">
           <Icon name="i-ahead" />
           {SCENE_TEXT.forecast}
         </span>
       ) : null}
-      <span className="sr-only">{eraAccessibleName(text, shown === null, forecast)}</span>
+      {visibleCaption === null ? null : (
+        <span className="era__cap" data-testid="era-caption" aria-hidden="true">
+          {visibleCaption}
+        </span>
+      )}
+      <span className="sr-only">{eraAccessibleName(spoken, forecast)}</span>
     </a>
   );
 }

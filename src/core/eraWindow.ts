@@ -3,30 +3,24 @@ import { FAMILY_TAG } from './familyModel';
 import { famHash01 } from './familyRng';
 
 /**
- * 「시대의 창」 — 그해를 대표하는 장면 그림 한 장과 인생 기록의 「시대의 창」 줄 (SPEC-009 FM5, FT1~FT6, `docs/data/family-model.md` 9절, `docs/design/family-scene.md` 5절, `docs/design/era-window.md` 3-1·8-2절).
+ * 「시대의 창」 — 굵직한 사건이 있던 해의 그림 한 장 + 캡션 + 인생 기록의 「시대의 창」 줄 (SPEC-013 T1 「시대의 창 대개편」 — 이전 SPEC-009 FM5 · SPEC-010 · SPEC-012 QF2·QF3의 고르기 규칙을 대체한다. 설계 기록 `docs/design/era-window.md`).
  *
- *  - 창에는 **그림만** 있다(FM2d). 그해를 나타내는 문장 `line`은 접근 이름이자 인생 기록의 `data-tl="era"` 줄이다.
+ *  - **사건만**: `eraOf`는 `kind: 'event'` 장면(과 2110~ 끝 장면)만 고른다. 사건은 **한 해짜리**(`years: [y, y]`)이고 사건이 없는 해는 `pic`·`line` 모두 `null`(빈 해 — 화면은 창 칸 안에 빈 종이틀)이다.
+ *    일상 장면·`dailyPick`·같은 그림 3해 연속 금지·「한 판에 한 번」(`used`)·사건 `ages`·수저 구간 `band` 변주는 없다(같은 `id`가 한 판에 두 번 나오지 않는 것은 사건이 한 해뿐이라 규칙이 아니라 데이터 단언이다 — `tests/eraEvents.test.ts`).
+ *  - 창에는 그림 + **캡션**(`caption` — 사건 이름 명사구)이 있고, 인생 기록의 시대 줄은 **첫 문장**(`line`, 사회 사실 한 줄) + **둘째 문장**(`second` — ★ 사건만, 같은 사건이 그 집에 닿은 모습)이다.
+ *    둘째 문장은 부모 재력 구간(`bandOfWealth`)으로 아래·가운데·위 셋 중 하나를 고르고, 아이 행동이 들어간 문장은 `secondAges`가 나이 밖일 때 **둘째 문장만 빠진다**(첫 문장은 모든 나이에 읽힌다 — 0세 포함). 코어는 부모 정보를 읽지 않는다(둘째 문장의 주어는 집·식구, INV-5).
  *  - **승인한 것만 데이터에 들어온다**(FT3, RG11 방식): `EraWindow.approved`의 타입이 `true`뿐이라 `false`를 쓰면 `npm run typecheck`(= build의 첫 단계)가 막고, `tests/eraWindows.test.ts`가 데이터 파일을 한 번 더 점검한다.
- *    FM5b에서 형진 님이 승인한 43장(r3 15 + 1987년 12월 1 + r4 27)이, 시대의 창 r5 반영(2026-11-02)에서 나머지 51장(r5 40 + r5b 11 = 합 94장)이 들어왔다(`scripts/genEraWindows.ts`가 designer 조각에서 `data/eraWindows/d<10년대>.ts`를 만든다). 승인된 그림이 없는 해의 창은 빈 틀이다.
- *  - 순수 함수다(`Date`·`Math.random` 없음): 한 해에 후보가 둘이면 `famHash01(판 시드, ERA, 연도, salt)`로 하나 — 같은 판에서는 늘 같은 그림이다.
- *    사건이 둘이면 무거운 쪽, 사건이 없는 해는 그 10년 일상 중 수저 구간(`band`)·나이대(`ages`)에 맞는 것이고 같은 그림을 3해 연속 쓰지 않는다(그 10년의 첫 해부터 같은 규칙으로 걸어와 정한다).
- *    사건에도 수저 구간 분기가 있다(era-window.md 10-1절, 2009년 세 갈래): 같은 구간의 `band` 사건 → `band` 없는 사건(무거운 쪽 먼저) → 일상(구간 변주 먼저). 가운데 구간은 `band` 사건을 보지 않는다.
+ *    데이터 파일은 `scripts/genEraWindows.ts`가 사건 표(`scripts/eraEvents.ts` — 승인된 문장·캡션)와 designer 조각에서 만든다. 승인된 그림이 아직 없는 사건은 임시 그림을 쓰고(`tests/helpers/eraEventsTable.ts#PENDING_ART`), 배포 전에 그 목록이 비어야 한다(`npm run check:era-art`).
+ *  - 순수 함수다(`Date`·`Math.random` 없음). 같은 해에 사건이 둘이면 무거운 쪽(1987 6월 시위 > 12월 투표소), 둘 다 무겁지 않으면 `famHash01(판 시드, ERA, 연도, salt)`로 하나(지금 데이터에는 없다 — 방어 코드).
+ *  - **가리기**(`gentle`): 고른 사건이 `heavy`이면 `veiled` — 같은 해에 무겁지 않은 사건 그림이 있으면(1987 12월 투표) 그 그림과 그 캡션을 창에 띄우고, 없으면 그림 없이 빈 해와 같은 틀 + 캡션 「가려 둔 장면」(화면이 정한다)이다. 인생 기록 줄은 가려진 무거운 사건 그대로다(`.veil` 부품이 가린다).
  *  - 인생 기록의 시대 줄은 **저장하지 않는 파생 줄**이다(A-12): 인생 기록을 그릴 때 해마다 `eraOf`로 만든다. 그래서 판 길이 모델·`yearLineCount`·저장 크기에 닿지 않는다.
- *
- * **SPEC-010 미래 연표 (코어)**: 표는 2026~2109년으로 이어진다(`ERA_LAST_YEAR` 2109). 2026년 이후도 1940~2025년과 같은 순서로 그해 표를 따른다 — 사건(수저 구간 `band` 사건 먼저) → 그 10년의 일상 → 기본 장면.
- *  - 2025 세트를 반복하지 않는다(옛 「전망 구간」 규칙은 SPEC-010이 대체했다). 2110년은 끝 줄 한 번, 2111년부터는 끝 장면(그림만)이다 — `eraOf`의 `endPick`.
- *  - **승인된 그림이 아직 없는 해**(데이터가 오지 않은 10년대, 받지 못한 덩어리)의 창은 **빈 틀**이고 인생 기록에는 그 해의 줄이 없다. 2025 세트로 돌아가지 않는다 — 돌아가면 받지 못한 덩어리가 「예측」 줄처럼 보이는 거짓이 된다.
- *    (옛 동작: 2026년 이후는 2025년의 일상 한 세트를 해마다 되풀이했고 QA-009-FM4b F01이 그 쌓임을 짚었다. 지금 실제 데이터는 2020년대 덩어리까지라 2030년 이후 창이 비는 것이 의도한 중간 상태다 — 2026~2029년은 사건이 오기 전까지 2020년대 일상을 본다.)
- *  - 나이 규칙(SPEC-012 QF3a가 SPEC-010 FU2의 「4단계」를 대체했다): **사건도 `ages`를 지킨다**(출생 연도를 아는 고르기에서 나이가 `ages` 밖이면 그 사건은 후보가 아니고, 같은 해 다른 사건 → 일상 순서로 내려간다).
- *    일상의 옛 4단계(나이를 풀어서 그 10년의 아무 일상)는 **없다** — 어느 해·나이·구간·가리기에서도 고른 장면(`pic`·`line`)의 `ages`가 그 나이를 포함하고, 맞는 장면이 없으면 빈 틀이고 줄이 없다.
- *    출생 연도 없는 호출은 나이를 보지 않는다. 전 구간(1940~2109)에 적용한다. `tests/eraAges.test.ts`가 해·나이·구간·가리기 전수로 지킨다.
- *  - **미래의 같은 장면은 한 판에 한 번(SPEC-012 QF2)**: 2027~2109년(`isForecastYear`)의 일상 장면은 같은 `id`를 한 판(그 사람이 사는 동안)에 한 번만 고른다 — 창 그림과 인생 기록 줄 모두. 이미 쓴 장면은 같은 10년의 이후 해에서 후보가 아니고,
- *    후보가 남지 않는 해는 빈 틀이고 줄이 없다(빈 해 허용). 가리기의 대체 그림도 같은 규칙이고 창에 그림으로 보인 장면도 쓴 것으로 센다. 상태 없이 정한다: 그 10년의 첫 해(출생이 2027년 이후이면 출생 해)부터 걸어와 쓴 장면을 센다.
- *    2026년 이하의 고르기(같은 그림 3해 연속 금지 포함)는 그대로다. SPEC-010 완료 기준 1(빈 틀 0)·3(3해 연속 0)은 이 규칙이 대체한다.
+ *  - 표는 1940~2109년이고(`ERA_LAST_YEAR`) 2110년은 끝 줄 한 번, 2111년부터는 끝 장면(그림만)이다 — `endPick`. 승인된 그림이 없는 해(데이터가 안 온 10년대)의 창은 빈 해이고 줄이 없다(2025 세트로 돌아가지 않는다).
+ *  - 2027년 이후 사건은 「예측」 칩(`isForecastYear`)과 근거(`basis`·`foresight`, SPEC-010)가 따른다.
  */
 
-export type EraKind = 'event' | 'daily' | 'base';
-/** 수저 구간: 아래 둘(흙·동수저) / 가운데 / 위 둘(은·금수저) — 계층 변주 그림이 어느 구간에게 보이는가 (era-window.md 8-2) */
+/** 장면 종류: 사건 하나뿐이고 `base`는 2110~ 끝 장면 한 장이다(일상 장면은 SPEC-013이 없앴다) */
+export type EraKind = 'event' | 'base';
+/** 수저 구간: 아래 둘(흙·동수저) / 가운데 / 위 둘(은·금수저) — 둘째 문장이 어느 구간의 것인가 (SPEC-013 T1 4) */
 export type EraBand = 'low' | 'mid' | 'high';
 /** 2027년 이후 장면의 근거 종류 (SPEC-010 구현 규칙 4): 공식 전망 바탕 / 전문가 전망 바탕 / 가상 시나리오. 화면 글은 `data/sceneText.ts`(FU3) */
 export type EraBasis = 'official' | 'expert' | 'scenario';
@@ -58,25 +52,32 @@ export interface EraForesightNote {
 export interface EraForesight {
   /**
    * 한두 건. 근거 후보가 없는 줄은 이 객체를 두지 않는다(근거 종류 글자만 보인다) — 단, **근거가 없는 수저별 「먼저」 줄**(U12·U20, 마스터 2026-11-04)은 `notes`가 빈 목록이고 `byBand: true`인 칸으로
-   * 「수저별 차이는 게임의 설정입니다.」 한 줄만 보인다(소개 문장 없이).
+   * 「수저별 차이는 게임의 설정입니다.」 한 줄만 보인다(소개 문장 없이). SPEC-013 이후 그런 줄은 데이터에 없다(수저 변주 그림 폐지) — 타입만 남아 있다.
    */
   notes: readonly EraForesightNote[];
   /** 부유한 쪽이 먼저 누린다는 장면(수저별 「먼저」 줄) — 칸 끝에 「수저별 차이는 게임의 설정입니다.」를 덧붙인다. `notes`가 비면 이 켜짐이 필수다 */
   byBand?: true;
 }
 
+/** 수저 둘째 문장 셋 (★ 사건만 — 아래·가운데·위 셋 모두 필수) */
+export interface EraSecond {
+  low: string;
+  mid: string;
+  high: string;
+}
+
 export interface EraWindow {
   id: string;
-  /** 사건은 [연도, 연도], 생활 장면은 같은 10년 안의 범위 */
+  /** 사건은 [연도, 연도] 한 해, 예외는 2110~2130을 덮는 끝 장면(`base`) 하나 */
   years: readonly [number, number];
-  /** event 그해의 사건 · daily 그 시대의 생활 장면 · base 사건·시대 주장이 없는 기본 장면 */
+  /** event 그해의 사건 · base 사건·시대 주장이 없는 끝 장면 */
   kind: EraKind;
   topic: string;
   /** SPEC-004 부록 A 연표 사건 코드 (kind가 event일 때) */
   hCode?: string;
   /** 지역 사건(부록 B)이면 시도 줄임 이름 */
   regionKey?: string;
-  /** 인생 기록 줄의 문장 = 칸의 접근 이름 = 말풍선 글. ≤ `ERA_LINE_MAX`자, 평가어 없음 */
+  /** 인생 기록 줄의 첫 문장 = 사회 사실 한 줄(≤ `ERA_FIRST_MAX`자, 평가어 없음). 칸의 접근 이름에도 들어간다 */
   line: string;
   /** 재난·정치에 가까운 무거운 장면 — 「무거운 장면 가리기」 대상 (경제·감염병은 대상 밖, 형진 님 결정) */
   heavy: boolean;
@@ -84,26 +85,30 @@ export interface EraWindow {
   approved: true;
   /** 그림 조각 id (40×32 좌표계) — 같은 10년대 파일의 `art`에 마크업이 있다 */
   draw: string;
-  /**
-   * 계층 변주: 이 수저 구간(low·high)의 플레이어에게만 보인다. 없으면 모든 구간 (`mid`는 변주를 보지 않는다).
-   * 일상(`daily`)은 그 구간에게 먼저 보이는 변주이고, **사건(`event`)에도 쓴다**(2009년: 철거 현장 low · 첫 스마트폰 high, era-window.md 10-1절) — 그 구간의 플레이어는 같은 해의 `band` 없는 사건 대신 이것을 본다.
-   */
-  band?: 'low' | 'high';
-  /** 나이대 [처음, 마지막] (일상·사건 장면 — SPEC-012 QF3a부터 사건도 지킨다). 없으면 모두 */
-  ages?: readonly [number, number];
+  /** 창 옆·아래에 항상 보이는 사건 이름 명사구(≤ `ERA_CAPTION_MAX`자, 서술어·마침표 없음). 끝 장면은 빈 글자 */
+  caption: string;
+  /** 수저 둘째 문장(★ 사건만) — 같은 사건이 그 집에 닿은 모습. 주어는 집·식구, 부모를 가리키는 말 0 */
+  second?: EraSecond;
+  /** 둘째 문장에 아이·어른 행동이 있으면 그 나이대 [처음, 마지막] — 나이 밖에서는 둘째 문장만 빠진다. 없으면 모든 나이 */
+  secondAges?: readonly [number, number];
   /**
    * 근거 종류 (SPEC-010). 2027~2109년 장면에는 **필수**(`tests/eraFuture.test.ts`가 잡는다), 2026년(사실)·끝 장면·2025년 이하에는 없다.
    * 근거가 약해 확실성이 「낮음」인 것 단독은 출처가 공식·전문가여도 `scenario`로 내려 적는다(SPEC-010 「표기 규칙」). 글꼴 조각 밖 글자는 소스에 쓰지 않는다(주석 포함) — `tests/fonts.test.tsx`가 센다.
    */
   basis?: EraBasis;
   /**
-   * 예측 근거 보기 글 (SPEC-010 FU11). 2027년 이후 장면에만, 근거 후보가 있는 장면(과 근거 없는 수저별 「먼저」 줄의 안내 칸)에만 있다(그 밖의 후보 없는 줄은 근거 종류 글자만). 생성 파일이 `scripts/eraForesightNotes.ts`에서 싣는다.
+   * 예측 근거 보기 글 (SPEC-010 FU11). 2027년 이후 장면에만, 근거 후보가 있는 장면에만 있다(그 밖의 후보 없는 줄은 근거 종류 글자만). 생성 파일이 `scripts/eraForesightNotes.ts`에서 싣는다.
    */
   foresight?: EraForesight;
 }
 
-/** 시대 줄 문장의 글자 수 상한 (360px에서 2줄 안 — 본문 16px) */
-export const ERA_LINE_MAX = 22;
+/**
+ * 문장 글자 수 상한(공백·쉼표·마침표 포함, SPEC-013 T1 6 — 옛 `ERA_LINE_MAX` 22를 대체): 첫 문장 32 · 둘째 문장 28 · 캡션 14. 근거: 형진 님 문체 예 「우리나라가 월드컵 4강에 올라 온 나라가 떠들썩했습니다.」가 31자.
+ * 캡션 14자는 PC 칸(175px, 12px 글자)에서 13자까지 한 줄이고 14자는 두 줄이다(`docs/design/era-empty-frame.md` 1절). 360px·글자 200% 점검은 e2e `era-caption`이 한다.
+ */
+export const ERA_FIRST_MAX = 32;
+export const ERA_SECOND_MAX = 28;
+export const ERA_CAPTION_MAX = 14;
 /**
  * 시대의 창 표가 있는 해의 범위 (SPEC-010): 1940~2109. 2109년은 2100년대 10년 덩어리가 끝나는 해이고, **2110년은 끝 줄 한 번**, 2111년부터는 끝 장면(그림만)이다.
  * 승인된 묶음까지만 담는 부분 배포는 하지 않는다(마스터 M3) — 그래서 이 값을 낮추는 일은 없다.
@@ -130,9 +135,9 @@ export interface EraContext {
   seed: number;
   /** 지금까지 받은 시대의 창 데이터(10년 덩어리의 합) */
   windows: readonly EraWindow[];
-  /** 출생 연도 — 있으면 해마다 나이를 알아 나이대(`ages`)에 맞는 장면(사건·일상)만 고른다(SPEC-012 QF3a). 없으면 나이대를 보지 않는다. 2027년 이후 「한 판에 한 번」은 출생 해부터 센다 */
+  /** 출생 연도 — 있으면 해마다 나이를 알아 둘째 문장의 나이대(`secondAges`)를 본다. 없으면 나이를 보지 않는다 */
   birthYear?: number;
-  /** 수저 구간(`bandOfWealth`) — 없으면 가운데 */
+  /** 수저 구간(`bandOfWealth`) — 둘째 문장을 고른다. 없으면 가운데 */
   band?: EraBand;
 }
 
@@ -142,14 +147,18 @@ export function bandOfWealth(wealth: number): EraBand {
 }
 
 export interface EraPick {
-  /** 칸에 띄울 그림. 없으면 빈 틀 */
+  /** 칸에 띄울 그림. 없으면 빈 틀(빈 해, 또는 가린 해의 대체 그림이 없을 때) */
   pic: EraWindow | null;
-  /** 인생 기록 줄의 문장을 낳는 장면(가린 해에는 가려진 무거운 장면 자체). 없으면 줄이 없다 */
+  /** 인생 기록 줄의 첫 문장을 낳는 사건(가린 해에는 가려진 무거운 사건 자체). 없으면 줄이 없다 */
   line: EraWindow | null;
-  /** `line`이 무거운 장면이고 가리기가 켜져 있다 — 칸은 그림 없이(또는 그해 일상으로), 줄은 가리기 부품이 문장을 가린다 */
+  /** `line`이 무거운 사건이고 가리기가 켜져 있다 — 칸은 대체 그림(없으면 빈 틀 + 「가려 둔 장면」), 줄은 가리기 부품이 첫 문장을 가린다 */
   veiled: boolean;
   /** 후보를 찾은 해 (2110 뒤는 `ERA_LAST_YEAR` — 끝 장면) */
   sourceYear: number;
+  /** 고른 구간의 둘째 문장 — ★ 사건이고 나이가 `secondAges` 안일 때만(가린 해에는 없다) */
+  second: string | null;
+  /** 칸에 띄운 그림의 캡션(가린 해의 대체 그림이면 그 그림의 캡션). 그림이 없으면 null — 가린 해의 「가려 둔 장면」은 화면이 정한다 */
+  caption: string | null;
 }
 
 const inYears = (w: EraWindow, y: number): boolean => w.approved === true && y >= w.years[0] && y <= w.years[1];
@@ -168,120 +177,48 @@ function pickOne(cands: readonly EraWindow[], seed: number, calYear: number, sal
   return sorted[Math.min(sorted.length - 1, Math.floor(famHash01(seed, FAMILY_TAG.ERA, calYear, salt) * sorted.length))];
 }
 
-/** 사건이 둘 이상이면 무거운 쪽만 남긴다 (era-window.md 3-1 ①: 1987 6월 > 12월 투표소) */
+/** 사건이 둘 이상이면 무거운 쪽만 남긴다 (1987 6월 > 12월 투표소) */
 function heavyFirst(list: readonly EraWindow[]): readonly EraWindow[] {
   const heavy = list.filter((w) => w.heavy);
   return heavy.length > 0 ? heavy : list;
 }
 
-/** 나이대(`ages`)에 맞는가 — 나이를 모르면(출생 연도 없는 호출) 보지 않는다 (SPEC-012 QF3a: 사건·일상 모두) */
-const ageFits = (w: EraWindow, age: number | null): boolean => w.ages === undefined || age === null || (age >= w.ages[0] && age <= w.ages[1]);
-
-/** 직전 두 해에 같은 그림이 이어졌으면 그 그림은 이번에 쓰지 않는다(같은 그림 3해 연속 금지) */
-const wouldRepeat = (w: EraWindow, recent: readonly string[]): boolean => recent.length === 2 && recent[0] === w.id && recent[1] === w.id;
-
-/**
- * 사건이 없는 해(또는 가리기로 무거운 사건을 바꾸는 해)의 일상 그림. 그 10년의 일상 후보를 차례로 본다(era-window.md 8-2):
- *  ① 수저 구간 변주(`band`가 플레이어 구간과 같은 것) → ② 그해를 덮는 일상 → ③ 그 10년의 다른 일상. 각 단계에서 나이대(`ages`)에 맞고 3해 연속이 되지 않는 것만 쓴다.
- * 단계 안에서 후보가 둘 이상이면 시드로 하나. `calm`이면 무거운 일상은 쓰지 않는다. 일상이 없으면 기본 장면(`base`), 그것도 없으면 null.
- * **SPEC-012 QF3a: 옛 ④단계(나이대를 풀어서 그 10년의 아무 일상)는 없다** — 나이에 맞는 일상이 없으면 빈 틀이다(`ages` 밖 장면으로 건너뛰지 않는다). 맞는 후보가 하나뿐이고 3해 연속이 되면 그 하나를 되풀이한다(2026년 이하).
- * **SPEC-012 QF2: `used`(이 판에서 이미 쓴 장면 id)가 있으면 그 장면은 어느 단계에서도 후보가 아니다** — 2027년 이후 해만 준다(2026년 이하는 `null`이라 지금과 같다). 후보가 남지 않으면 빈 틀이다.
- */
-function dailyPick(y: number, ctx: EraContext, recent: readonly string[], calm: boolean, age: number | null, used: ReadonlySet<string> | null): EraWindow | null {
-  const decade = Math.floor(y / 10) * 10;
-  const ok = (w: EraWindow): boolean => w.approved === true && (!calm || !w.heavy) && (used === null || !used.has(w.id));
-  const inDecade = ctx.windows.filter((w) => w.kind === 'daily' && ok(w) && w.years[0] <= decade + 9 && w.years[1] >= decade);
-  const ageOk = (w: EraWindow): boolean => ageFits(w, age);
-  const band = ctx.band ?? 'mid';
-  const plain = inDecade.filter((w) => w.band === undefined);
-  const tiers: Array<readonly EraWindow[]> = [
-    band === 'mid' ? [] : inDecade.filter((w) => w.band === band && ageOk(w)),
-    plain.filter((w) => inYears(w, y) && ageOk(w)),
-    plain.filter(ageOk),
-  ];
-  let repeated: readonly EraWindow[] | null = null;
-  for (const tier of tiers) {
-    if (tier.length === 0) continue;
-    const fresh = tier.filter((w) => !wouldRepeat(w, recent));
-    if (fresh.length > 0) return pickOne(fresh, ctx.seed, y, 2);
-    repeated ??= tier;
-  }
-  if (repeated !== null) return pickOne(repeated, ctx.seed, y, 2);
-  return pickOne(
-    ctx.windows.filter((w) => w.kind === 'base' && ok(w) && inYears(w, y)),
-    ctx.seed,
-    y,
-    3,
-  );
-}
-
 /** 사건 후보에서 하나: 출생 시도의 지역 사건 먼저, 없으면 전국 사건. 각각 무거운 쪽 먼저, 둘 다 무겁지 않으면 시드로 하나 */
-function pickEvent(pool: readonly EraWindow[], regionKey: string, seed: number, y: number): EraWindow | null {
+function pickEvent(pool: readonly EraWindow[], regionKey: string, seed: number, y: number, salt: number): EraWindow | null {
   const regional = pool.filter((w) => w.regionKey !== undefined && w.regionKey === regionKey);
   const national = pool.filter((w) => w.regionKey === undefined);
-  return pickOne(heavyFirst(regional), seed, y, 1) ?? pickOne(heavyFirst(national), seed, y, 1);
+  return pickOne(heavyFirst(regional), seed, y, salt) ?? pickOne(heavyFirst(national), seed, y, salt);
 }
 
-/** 한 해의 고르기. `recent`는 걸어오며 정해진 직전 두 해의 그림 id. 2026년 이후도 같은 순서다(SPEC-010 — 「2026년 이후는 사건을 쓰지 않는다」 분기를 없앴다) */
-function stepPick(y: number, ctx: EraContext, recent: readonly string[], used: ReadonlySet<string> | null): EraPick {
-  const age = ctx.birthYear === undefined ? null : y - ctx.birthYear;
-  // 사건도 나이대(`ages`)를 지킨다(SPEC-012 QF3a) — 밖이면 후보가 아니라 같은 해 다른 사건 → 일상 순서로 내려간다
-  const live = ctx.windows.filter((w) => inYears(w, y) && ageFits(w, age));
-  const events = live.filter((w) => w.kind === 'event');
-  // 사건의 수저 구간 분기(era-window.md 10-1절): `band` 없는 사건은 모두가 보고, `band`가 있는 사건은 그 구간만 본다(가운데 구간은 `band` 사건을 보지 않는다)
-  const band = ctx.band ?? 'mid';
-  const seen = events.filter((w) => w.band === undefined || w.band === band);
-  const sameBand = seen.filter((w) => w.band !== undefined);
-  const plainEvents = seen.filter((w) => w.band === undefined);
-  // ① 같은 구간의 `band` 사건 → ② `band` 없는 사건(무거운 쪽 먼저)
-  const chosenEvent = pickEvent(sameBand, ctx.regionKey, ctx.seed, y) ?? pickEvent(plainEvents, ctx.regionKey, ctx.seed, y);
-  if (chosenEvent !== null) {
-    if (ctx.gentle && chosenEvent.heavy) {
-      // 같은 해에 무겁지 않은 사건 그림이 따로 있으면(1987년: 6월 시위 ↔ 12월 투표소) 가린 해의 대체 그림으로 쓴다(FM5b 마스터 결정 2026-10-28). 줄은 가려진 무거운 사건 그대로다. 없으면 그 10년의 (무겁지 않은) 일상
-      const calmEvents = seen.filter((w) => !w.heavy);
-      const alt = pickOne(calmEvents.filter((w) => w.regionKey !== undefined && w.regionKey === ctx.regionKey), ctx.seed, y, 4) ?? pickOne(calmEvents.filter((w) => w.regionKey === undefined), ctx.seed, y, 4);
-      return { pic: alt ?? dailyPick(y, ctx, recent, true, age, used), line: chosenEvent, veiled: true, sourceYear: y };
-    }
-    return { pic: chosenEvent, line: chosenEvent, veiled: false, sourceYear: y };
-  }
-  const chosen = dailyPick(y, ctx, recent, false, age, used);
-  if (chosen === null) return { pic: null, line: null, veiled: false, sourceYear: y };
-  if (ctx.gentle && chosen.heavy) return { pic: dailyPick(y, ctx, recent, true, age, used), line: chosen, veiled: true, sourceYear: y };
-  return { pic: chosen, line: chosen, veiled: false, sourceYear: y };
+/** 고른 구간의 둘째 문장: ★ 사건만, `secondAges`가 있고 나이가 밖이면 없다. 나이를 모르는(출생 연도 없는) 호출은 나이를 보지 않는다 */
+function secondOf(w: EraWindow, band: EraBand, age: number | null): string | null {
+  if (w.second === undefined) return null;
+  if (w.secondAges !== undefined && age !== null && (age < w.secondAges[0] || age > w.secondAges[1])) return null;
+  return w.second[band];
 }
 
 /**
- * 그해의 창. 고르는 순서(era-window.md 3-1·8-2·10-1): ① 내 수저 구간의 `band` 사건(2009년 철거 현장·첫 스마트폰) ② `band` 없는 사건 — 출생 시도의 지역 사건 먼저, 전국 연표 사건(둘이면 무거운 쪽) ③ 그 10년의 일상(수저 구간 변주 먼저, 나이대, 같은 그림 3해 연속 금지) ④ 기본 장면 — 승인된 후보만.
- * 가운데 구간은 ①을 보지 않는다(`band` 사건은 아래·위 구간에게만). 2026~2109년도 이 순서 그대로다(SPEC-010) — 승인된 후보가 없는 해(데이터가 안 온 10년대)는 빈 틀이다.
- * 가리기(`gentle`)가 켜져 있고 고른 장면이 `heavy`이면 `veiled`: 칸에는 그해의 (무겁지 않은) 일상을 띄우고 — 없으면 빈 틀 — 인생 기록 줄은 `.veil` 부품이 문장을 가린다.
- * 「3해 연속 금지」(2026년 이하)와 「한 판에 한 번」(2027년 이후, SPEC-012 QF2)은 상태 없이 정한다: 그 10년의 첫 해부터 해마다 같은 규칙으로 걸어와 직전 두 해의 그림과 이미 쓴 장면을 안다(같은 입력 → 같은 출력).
- * 「한 번만」은 `ERA_ACTUAL_LAST_YEAR` 뒤의 해에서 세고, 출생 해가 그보다 뒤이면 출생 해부터 센다(태어나기 전 해에 장면을 쓰지 않는다).
- * 표 끝 뒤(2110~)는 걸어오지 않고 `endPick`이 정한다.
+ * 그해의 창. 고르는 순서: 그해 사건 — 출생 시도의 지역 사건 먼저, 전국 사건(둘이면 무거운 쪽). 사건이 없는 해는 빈 해(`pic`·`line` null).
+ * 가리기(`gentle`)가 켜져 있고 고른 사건이 `heavy`이면 `veiled`: 같은 해에 무겁지 않은 사건 그림이 있으면 그것이 대체 그림이고(`pic`) 없으면 빈 틀이다. 인생 기록 줄은 `.veil` 부품이 첫 문장을 가린다.
+ * 해마다 독립이다 — 이전 해를 걸어오지 않는다(같은 입력 → 같은 출력). 표 끝 뒤(2110~)는 `endPick`이 정한다.
  */
 export function eraOf(calYear: number, ctx: EraContext): EraPick {
   if (calYear > ERA_LAST_YEAR) return endPick(calYear, ctx);
-  let start = Math.max(ERA_FIRST_YEAR, Math.floor(calYear / 10) * 10);
-  if (calYear < start) start = calYear;
-  let recent: string[] = [];
-  let pick: EraPick = { pic: null, line: null, veiled: false, sourceYear: calYear };
-  // 2027년 이후 「한 판에 한 번」: 세기 시작하는 해(= 예측 해 중 첫 해, 출생이 더 뒤이면 출생 해). 그 앞 해는 쓴 장면을 세지 않는다
-  const countFrom = Math.max(ERA_ACTUAL_LAST_YEAR + 1, ctx.birthYear ?? -Infinity);
-  const used = new Set<string>();
-  for (let y = start; y <= calYear; y++) {
-    const counting = isForecastYear(y) && y >= countFrom;
-    pick = stepPick(y, ctx, recent, counting ? used : null);
-    recent = [...recent, pick.pic?.id ?? ''].slice(-2);
-    if (counting) {
-      if (pick.pic !== null) used.add(pick.pic.id);
-      if (pick.line !== null) used.add(pick.line.id);
-    }
+  const events = ctx.windows.filter((w) => w.kind === 'event' && inYears(w, calYear));
+  const chosen = pickEvent(events, ctx.regionKey, ctx.seed, calYear, 1);
+  if (chosen === null) return { pic: null, line: null, veiled: false, sourceYear: calYear, second: null, caption: null };
+  if (ctx.gentle && chosen.heavy) {
+    // 같은 해에 무겁지 않은 사건 그림이 따로 있으면(1987년: 6월 시위 ↔ 12월 투표소) 가린 해의 대체 그림이다(FM5b 마스터 결정 2026-10-28). 줄은 가려진 무거운 사건 그대로다
+    const alt = pickEvent(events.filter((w) => !w.heavy), ctx.regionKey, ctx.seed, calYear, 4);
+    return { pic: alt, line: chosen, veiled: true, sourceYear: calYear, second: null, caption: alt === null ? null : alt.caption };
   }
-  return { ...pick, sourceYear: calYear };
+  const age = ctx.birthYear === undefined ? null : calYear - ctx.birthYear;
+  return { pic: chosen, line: chosen, veiled: false, sourceYear: calYear, second: secondOf(chosen, ctx.band ?? 'mid', age), caption: chosen.caption };
 }
 
 /**
  * 표 끝 뒤의 해(`calYear > ERA_LAST_YEAR`, SPEC-010 구현 규칙 3): 창은 끝 장면(`kind: 'base'`, 승인된 것 중 그해를 덮는 것) 한 장, 줄은 **`ERA_LAST_YEAR + 1`년에만** 그 장면의 문장 한 줄 — 2111년부터는 줄이 없다
- * (`eraRowsOf`는 `line`이 null인 해를 건너뛴다). 끝 줄·끝 장면에는 칩이 없다. 끝 장면이 아직 오지 않았거나 못 받았으면 빈 틀이다(다른 빈 틀과 같은 동작). 무겁지 않아 가리기와 무관하다.
+ * (`eraRowsOf`는 `line`이 null인 해를 건너뛴다). 끝 줄·끝 장면에는 칩·캡션·둘째 문장이 없다. 끝 장면이 아직 오지 않았거나 못 받았으면 빈 틀이다(다른 빈 해와 같은 동작). 무겁지 않아 가리기와 무관하다.
  */
 function endPick(calYear: number, ctx: EraContext): EraPick {
   const end = pickOne(
@@ -290,14 +227,17 @@ function endPick(calYear: number, ctx: EraContext): EraPick {
     calYear,
     3,
   );
-  return { pic: end, line: end !== null && calYear === ERA_LAST_YEAR + 1 ? end : null, veiled: false, sourceYear: ERA_LAST_YEAR };
+  return { pic: end, line: end !== null && calYear === ERA_LAST_YEAR + 1 ? end : null, veiled: false, sourceYear: ERA_LAST_YEAR, second: null, caption: null };
 }
 
 export interface EraRow {
   /** 줄 id의 뒤쪽: `log-y<year>` */
   year: number;
   age: number;
+  /** 첫 문장 (사회 사실 한 줄). 가린 해에는 줄 자체에 들어 있고 화면이 `.veil` 부품으로 가린다 */
   line: string;
+  /** 둘째 문장(★ 사건만, 고른 구간의 것·나이 밖이면 없음) — 첫 문장 뒤에 같은 줄로 이어진다 */
+  second?: string;
   heavy: boolean;
   veiled: boolean;
   /** 「예측」 칩이 붙는 줄 (SPEC-010): `year > ERA_ACTUAL_LAST_YEAR`이고 끝 줄이 아니다. 칩은 **해**로 정하지 그림으로 정하지 않는다 */
@@ -309,7 +249,7 @@ export interface EraRow {
 }
 
 /**
- * 인생 기록의 시대 줄들 (저장하지 않는 파생 줄, A-12). 출생부터 지금 나이까지 해마다 `eraOf`가 줄을 낳는 해만 담는다 — 승인된 그림이 없으면 빈 목록.
+ * 인생 기록의 시대 줄들 (저장하지 않는 파생 줄, A-12). 출생부터 지금 나이까지 해마다 `eraOf`가 줄을 낳는 해(사건이 있던 해)만 담는다 — 승인된 그림이 없으면 빈 목록.
  * 가린 해(`veiled`)의 문장은 줄 자체에는 들어 있지만 화면이 `.veil` 부품으로 가린다(가림은 화면이 지금의 설정값으로 정한다 — 줄마다 가렸는지는 어디에도 저장하지 않는다).
  */
 export function eraRowsOf(birthYear: number, ageNow: number, ctx: EraContext): EraRow[] {
@@ -325,6 +265,7 @@ export function eraRowsOf(birthYear: number, ageNow: number, ctx: EraContext): E
       year,
       age,
       line: pick.line.line,
+      ...(pick.second !== null ? { second: pick.second } : {}),
       heavy: pick.line.heavy,
       veiled: pick.veiled,
       forecast,

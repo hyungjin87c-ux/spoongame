@@ -2,7 +2,7 @@ import type { EraDecadeData } from './types';
 
 /**
  * 시대의 창 10년 하위 덩어리 (SPEC-009 FM5, 마스터 결정: 판 하나가 한 번에 받는 양 ≤ 75KB). 그림 덩어리 `familyArt`와 따로, **필요한 10년대를 필요할 때 하나씩** 받는다 — 주인공이 사는 동안 지나는 10년대가 많아야 열 개라
- * 덩어리 하나는 작고(승인된 140장 기준 7~22KB gzip, 한 10년 덩어리 ≤ 24KB), 판의 첫 구간만 받고 나이가 들며 이어받는다. 받지 못해도 게임은 계속되고 창이 빈 틀로 남는다.
+ * 덩어리 하나는 작고(SPEC-013 이후 사건 51장 기준 3~11KB gzip — 옛 140장은 7~22KB, 한 10년 덩어리 ≤ 24KB), 판의 첫 구간만 받고 나이가 들며 이어받는다. 받지 못해도 게임은 계속되고 창이 빈 틀로 남는다.
  * 이 파일은 `familyArt`와 함께 지연 로드되며 첫 화면은 닿지 않는다(`tests/lazyBoundary.test.ts`).
  */
 export const ERA_DECADE_LOADERS: Readonly<Record<number, () => Promise<EraDecadeData>>> = {

@@ -25,6 +25,9 @@ import { GENERATION_IDS } from '../src/core';
  * 시대 줄·창은 저장하지 않는 파생값이라 Two-way다. **`scene` 189칸·`sceneAdult` 98칸·가족 골든(L0F)은 한 글자도 바뀌지 않았다**(git diff는 `era` 행뿐). 같은 변경의 QF2(2027년 이후 한 판에 한 번)는 이 골든(출생~2025, 94장)에 닿지 않는다 —
  * QF2를 끈 채로 돌려도 달라진 칸이 같은 66개였다. 2027년 이후는 `tests/eraFuture.test.ts`가 잰다.
  *
+ * **SPEC-013 갱신(2026-11-08, 시대의 창 대개편)**: `era` 72행 전부(시드 2 × 구간 3 × 가리기 2 × 출생 6)를 다시 만들었다 — 사유 하나: 시대의 창이 「사건이 있던 해만」으로 바뀌어(일상 장면·수저 변주·나이 규칙 퇴역, 사건 33장 + 가리기 대체 1장) 해마다 그림 번호표(`eraIds`)가 94장에서 33장으로, 칸 값이 사건 해 외에는 빈 해(`00.`)로 바뀌었다.
+ * 해 칸 3,528개(72행) 가운데 3,460칸이 달라졌고(나머지 68칸은 옛 규칙에서도 빈 해) 10년대별로 1940년대 72 · 1950년대 120 · 1960년대 216 · 1970년대 252 · 1980년대 432 · 1990년대 540 · 2000년대 676 · 2010년대 720 · 2020년대 432다(1940~2020년대 전부). 자세한 목록은 dev 로그(`ai-log/2026-11-08_SPEC-013_dev.md`)에도 적었다. 시대 줄·창은 저장하지 않는 파생값이라 Two-way다. **`scene` 189칸·`sceneAdult` 98칸·가족 골든(L0F)은 한 글자도 바뀌지 않았다**(git diff는 `eraIds`·`era` 행뿐).
+ *
  * 갱신 규칙(One-way) — 파일의 `noteAdult`와 같은 말: `sceneAdult`를 공개 배포(K6) 뒤에 다시 만드는 것은 이어하던 판의 배우자·자녀 그림이 바뀌는 One-way 변경이다 — 배우자·자녀는 저장하지 않고 플래그·`seen`·표에서 다시 계산하기 때문이다(`adultSlotsOf`).
  * 그래서 **마스터 승인과 형진 님 확인**이 필요하고, 성인 식구 표(이름 풀·`design.adult`·`NAME_KEY`·성인 플래그를 켜는 사건)를 바꿀 때는 「로드 때 `family.ad` 스냅샷」을 먼저 한 번 배포한다(SPEC-009 FS2 예외 ③).
  * 다시 만드는 명령은 `npm run golden:scene -- --write` 한 곳이다(`--write` 없이 돌리면 쓰지 않고 달라진 칸만 알려 준다 — L0F에서 `golden:family`와 같은 규칙으로 맞췄다). 쓰면 이 파일 전체를 다시 쓰므로 기존 `scene`·`era` 칸이 바뀌지 않았는지 git diff로 본다. **이 시험은 골든을 절대 쓰지 않는다.** 짝이 되는 시험은 `tests/familyGolden.test.ts`(가족 값 · `adultSlotsOf`).
@@ -45,11 +48,11 @@ describe('고정 시드 골든 — 집 그림 sceneOf (7세대 × 3시드 × 9�
 
 describe('고정 시드 골든 — 시대의 창 eraOf (시드 2 × 수저 구간 3 × 가리기 2 × 출생 6, 출생~2025)', () => {
   const now = eraGolden();
-  it('골든이 정한 칸과 같고, 그림 번호표(승인된 94장)가 같다', () => {
+  it('골든이 정한 칸과 같고, 그림 번호표(사건 33장)가 같다', () => {
     expect(golden.eraSeeds).toEqual([...ERA_GOLDEN_SEEDS]);
     expect(golden.eraBands).toEqual([...ERA_GOLDEN_BANDS]);
     expect(golden.eraBirths).toEqual([...ERA_GOLDEN_BIRTHS]);
-    expect(ALL_ERA_WINDOWS.length).toBe(94);
+    expect(ALL_ERA_WINDOWS.length).toBe(33); // SPEC-013: 사건 32건(1945~2023) + 1987 대체 1장
     expect(now.ids).toEqual(golden.eraIds);
     expect(Object.keys(now.rows).sort()).toEqual(Object.keys(golden.era).sort());
   });
@@ -61,7 +64,7 @@ describe('고정 시드 골든 — 시대의 창 eraOf (시드 2 × 수저 구�
     const rows = Object.entries(golden.era);
     for (const [k, line] of rows) {
       const pics = (line.match(/\d\d[.v]/g) ?? []).filter((c) => c.slice(0, 2) !== '00').length;
-      // 승인된 그림이 1940~2025 모든 해에 닿으므로(94장) 어느 출생이든 그림이 있는 해가 있어야 한다 — 2003년생도 (2003~2025)
+      // 사건이 1945~2023에 있으므로(33장) 어느 출생이든 그림이 있는 해가 있어야 한다 — 2003년생도 (2003~2025: 2003·2008·2009·2010·2014·2016·2018·2020·2022·2023)
       expect(pics, k).toBeGreaterThan(0);
       if (k.includes('/plain/')) expect(line.includes('v'), k).toBe(false);
     }

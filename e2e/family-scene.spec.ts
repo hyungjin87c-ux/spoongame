@@ -126,7 +126,8 @@ test('승인된 그림(시대의 창 r5 반영): 2016년 판의 창에 겨울 �
   await expect(era).toHaveAttribute('data-era', 'era-2016-candle-winter', { timeout: 15_000 });
   await expect(era).toHaveAttribute('data-dec', '2010');
   await expect(era).toHaveAttribute('href', '#log-y2016');
-  await expect(era).toHaveAccessibleName(/시대의 창 · 겨울 밤마다 광장에 촛불이 모였습니다\. 그해 기록으로/);
+  await expect(era).toHaveAccessibleName(/겨울 촛불 광장\. 겨울 밤마다 광장에 촛불이 모였습니다\. 그해 기록으로/);
+  await expect(era.getByTestId('era-caption'), 'SPEC-013: 항상 보이는 캡션').toHaveText('겨울 촛불 광장');
   expect(await page.locator('#scene-era svg rect').count(), '도형이 있다 — 빈 틀이 아니다').toBeGreaterThan(30);
   const filter = await page.locator('#scene-era svg').first().evaluate((el) => getComputedStyle(el).filter);
   expect(filter, '2010년대는 톤 필터 없음').toBe('none');
@@ -334,7 +335,7 @@ test('승인된 그림(FM5b): 1980년 무렵 판의 창에 금남로 그림이 �
   // 톤 A: 1980년대 필터(세피아 .18)
   const filter = await page.locator('#scene-era svg').first().evaluate((el) => getComputedStyle(el).filter);
   expect(filter).toContain('sepia(0.18)');
-  await expect(era).toHaveAccessibleName(/시대의 창 · 5월, 광주에 민주화 시위가 있었습니다\. 그해 기록으로/);
+  await expect(era).toHaveAccessibleName(/5월 광주 시위\. 5월, 광주에 민주화 시위가 있었습니다\. 그해 기록으로/);
   const b = (await era.boundingBox())!;
   expect(b.width).toBeGreaterThan(90);
   expect(await noHorizontalOverflow(page)).toBe(true);
@@ -349,7 +350,7 @@ test('승인된 그림 · 다크: 같은 그림이 다크 토큰으로 칠해지
   expect(filter).toContain('sepia(0.08)');
 });
 
-test('무거운 장면 가리기(FM5b): 꺼짐이면 1980년 금남로 그림과 원문 시대 줄, 켜면 그해 일상 그림으로 바뀌고 시대 줄은 가려진다(펼쳐 보기)', async ({ page }) => {
+test('무거운 장면 가리기(FM5b·SPEC-013): 꺼짐이면 1980년 금남로 그림과 원문 시대 줄, 켜면 그림 없는 종이틀 + 캡션 「가려 둔 장면」으로 바뀌고 시대 줄은 가려진다(펼쳐 보기)', async ({ page }) => {
   await injectSave(page, era1980(), FAST, { ...MANUAL, gentle: false });
   await expect(page.locator('#scene-era')).toHaveAttribute('data-era', 'era-1980-may-geumnam-ro', { timeout: 15_000 });
   const row = page.locator('#log-y1980');
@@ -357,10 +358,12 @@ test('무거운 장면 가리기(FM5b): 꺼짐이면 1980년 금남로 그림과
   await expect(row).not.toHaveAttribute('data-veiled', 'true');
   await injectSave(page, era1980(), FAST, { ...MANUAL, gentle: true });
   const era = page.locator('#scene-era');
-  await expect(era).toHaveAttribute('data-kind', 'daily', { timeout: 15_000 });
-  await expect(era).toHaveAttribute('data-dec', '1980');
-  expect(await era.getAttribute('data-era')).not.toBe('era-1980-may-geumnam-ro');
-  expect(await page.locator('#scene-era svg rect').count(), '일상 그림이 오른다').toBeGreaterThan(20);
+  await expect(era).toHaveAttribute('data-hidden', 'true', { timeout: 15_000 });
+  expect(await era.getAttribute('data-era')).toBe(''); // 사건 그림이 아니다(대체 사건 그림이 없다)
+  await expect(era.getByTestId('era-caption')).toHaveText('가려 둔 장면');
+  await expect(era).toHaveAccessibleName(/^가려 둔 장면\. 그해 기록으로$/);
+  expect(await page.locator('#scene-era svg rect').count(), '그림이 없다 — 빈 해와 같은 종이틀').toBe(0);
+  await expect(page.locator('#scene-era .era__sheet')).toHaveCount(1);
   const veiled = page.locator('#log-y1980');
   await expect(veiled).toHaveAttribute('data-veiled', 'true');
   await expect(veiled.getByTestId('veil-btn')).toBeVisible();

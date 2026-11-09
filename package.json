@@ -20,6 +20,7 @@
     "check:events": "vite-node scripts/validateEvents.ts",
     "check:dist": "vite-node scripts/checkFinalDistribution.ts",
     "check:todo": "vite-node scripts/checkTodoEvidence.ts",
+    "check:era-art": "vite-node scripts/checkEraArt.ts",
     "check:motifs": "vite-node scripts/validateMotifs.ts",
     "check:basis": "vite-node scripts/checkBasis.ts",
     "check:economy": "vite-node scripts/economyCheck.ts",

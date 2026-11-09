@@ -1,33 +1,39 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import type { EraForesightNote } from '../src/core/eraWindow';
+import { ERA_EVENTS } from './eraEvents';
 import { FORESIGHT_NOTES } from './eraForesightNotes';
 
 /**
- * 시대의 창 10년 덩어리 만들기 (SPEC-009 FM5b · 시대의 창 r5 반영 · SPEC-010 FU5 묶음 A·B·C): 형진 님이 승인한 **140장**(r3 16 + r4 27 + r5 40 + r5b 11 + r6 12 + r7 14 + r9 20, `docs/design/era-window.md` 「승인 표기」 — 2026-10-28·11-02·11-03·11-05)의 designer 조각 SVG를 읽어
- * `src/data/eraWindows/d<10년대>.ts`를 다시 만든다. designer 파일(`docs/design/mockups/family/pieces/era-r3·era-r4·era-r5·era-r5b·era-r6·era-r7·era-r9/`, `era-window-r3·r4·r5·r5b·r6·r7·r9-budget.json`)은 읽기만 한다. r8(묶음 C 18장)은 2026-11-04 형진 님 피드백으로 폐기돼 읽지 않는다.
+ * 시대의 창 10년 덩어리 만들기 (SPEC-013 T2 「시대의 창 대개편」 — 이전 SPEC-009 FM5b · SPEC-010 FU5의 140장 일상·수저 변주 구성을 대체했다).
  *
- *  - r5의 49장 가운데 r5b로 **다시 그린 9장**은 r5판을 쓰지 않는다(같은 id — r5b가 r5를 덮는다, era-window.md 10-6절 ①). r5에서 가져오는 것은 나머지 40장(사건 20 · 일상 12 · 계층 변주 8)이고,
- *    r5b 11장은 다시 그린 9장 + 2009 새 그림 2장(철거 현장 `band: 'low'` · 첫 스마트폰 `band: 'high'`, 10-1절)이다.
- *  - r6(SPEC-010 묶음 A, 2026~2039 12장 U01~U12)과 r7(묶음 B, 2040~2059 14장 U13~U26)과 r9(묶음 C, 2060~2109 + 끝 장면 20장 U27~U46)는 미래 연표다: 행의 `basis`(2027년 이후 필수, 2026은 없음)를 `EraWindow.basis`로 싣고, 예측 근거 보기 글(FU11)은 `scripts/eraForesightNotes.ts`에서 장면 `foresight`로 싣는다(근거 글은 10년 덩어리에 함께 — 초기 로드에 안 들어간다).
- *  - 한 줄 문장·연도·종류·무거움·수저 구간·나이대는 designer 실측 JSON의 행에서 가져온다(문장은 era-window.md 문장 표 그대로, 1958년은 r4b의 「보릿고개에는 나물로 끼니를 이었습니다.」). r5b 행은 `years`가 없어 `year` 한 해로 읽는다.
+ * **입구는 사건 표 `scripts/eraEvents.ts`**(형진 님이 승인한 첫 문장·둘째 문장·캡션 49건 + 1987 대체 그림 1건)와 형진 님이 승인한 **designer 조각 140장**(r3 16 + r4 27 + r5 40 + r5b 11 + r6 12 + r7 14 + r9 20, `docs/design/era-window.md` 「승인 표기」)이다.
+ * 이 파일은 사건 표의 사건마다 `piece`(조각 id)의 SVG를 읽어 `src/data/eraWindows/d<10년대>.ts`를 다시 만든다. 사건 49 + 1987 대체 1 + 끝 장면 1 = **51장**이 들어가고, 나머지 89장(일상 59 전부 · 목록 밖 사건 그림 · 미래 수저 변주 짝)은 **퇴역**이다 — designer 파일은 지우지 않는다(되살리기가 싸다).
+ * designer 파일(`docs/design/mockups/family/pieces/era-r3·r4·r5·r5b·r6·r7·r9/`, `era-window-r3·r4·r5·r5b·r6·r7·r9-budget.json`)은 읽기만 한다. r8(묶음 C 18장)은 2026-11-04 형진 님 피드백으로 폐기돼 읽지 않는다.
+ *
+ *  - 사건 표의 행은 한 해짜리 사건이다(`years: [해, 해]`). 장면 id는 표의 `id`(재사용·수정 그림은 조각 id 그대로, 새 그림은 사건 id), 그림은 표의 `piece`다. 임시 그림(`pending: true` — 새 그림 8장·수정 6장이 아직 없을 때)의 `topic`·`hCode`는 사건의 것을 표에서 가져온다.
+ *  - r5의 49장 가운데 r5b로 **다시 그린 9장**은 r5판을 쓰지 않는다(같은 id — r5b가 r5를 덮는다, era-window.md 10-6절 ①).
+ *  - 미래 사건(2027년 이후)은 조각 행의 `basis`(필수)를 `EraWindow.basis`로 싣고, 예측 근거 보기 글(FU11)은 `scripts/eraForesightNotes.ts`에서 장면 `foresight`로 싣는다(근거 글은 10년 덩어리에 함께 — 초기 로드에 안 들어간다). 퇴역한 조각의 근거 글은 버린다.
  *  - 조각 SVG에서 `<style>`(토큰 색 규칙)은 버린다 — 규칙은 `src/styles/family.css`에 한 번 있다. 반복 무늬(`<pattern>`)와 사람 `<symbol>`은 **10년 덩어리마다 한 번** `defs`에 모으고(조각이 실제로 참조하는 것만), 조각에는 도형만 남긴다.
  *  - r3 조각의 본문은 색을 `fill="var(--c-scene-…)"`로 갖고 있어 r4와 같은 `class`(e-·es-)로 바꾼다(한 요소에 채움·선 토큰이 둘이면 class 하나로 합친다). 도형은 한 개도 바꾸지 않는다. defs(무늬·심볼)는 designer 그대로다.
- *  - 연도 조정 5건(아래 `TRIM`): 같은 해에 그 해 한정 일상이 있거나 다른 사건이 따로 있는 사건의 범위에서 그 해를 뺀다 — 안 그러면 「사건이 있는 해는 사건 그림」 규칙에 가려 그 일상(1955·1956·1958·1965·1967)이 가리기를 켠 때밖에 안 보이고,
- *    1997 새벽 인력시장(r5)이 금 모으기(1997~98)에 가려진다.
- *  - 끝 장면(r9 U46 `era-end-horizon`, `kind: 'base'`, `years [2110, 2130]`)만 10년을 넘는다: **`decade`를 2100으로 고정**한다(SPEC-010 구현 규칙 3, R-602 — 안 그러면 `d2110.ts`가 생겨 영영 요청되지 않는다). 끝 장면은 `basis`·근거 글이 없다(칩 없음).
+ *  - **그림 안 글자 단언**(SPEC-013 T2·Q4): 조각에는 글자 요소(`<text>`·`<tspan>`)가 없어야 한다 — 단, 사건 id별 허용 문구 목록(`ART_TEXT_ALLOWED`)에 있는 글자만 예외다(형진 님이 시안에서 승인한 응원 문구 같은 짧은 글자). 목록이 비면 글자 0이다(지금 0건).
+ *  - 끝 장면(r9 U46 `era-end-horizon`, `kind: 'base'`, `years [2110, 2130]`)만 10년을 넘는다: **`decade`를 2100으로 고정**한다(SPEC-010 구현 규칙 3, R-602 — 안 그러면 `d2110.ts`가 생겨 영영 요청되지 않는다). 끝 장면은 `basis`·근거 글·캡션이 없다(칩 없음, 캡션 빈 글자).
  * 실행: `npm run gen:era`. 점검만: `--check` (파일을 쓰지 않고 지금 파일과 같은지 본다).
  */
 
 const PIECES = 'docs/design/mockups/family/pieces/';
 const FAMILY = 'docs/design/mockups/family/';
-/** 승인된 장수 가드 (R-551): r3 16 · r4 27 · r5 40(49 − r5b로 다시 그린 9) · r5b 11 · r6 12(SPEC-010 묶음 A U01~U12, 2026-11-03 승인) · r7 14(묶음 B U13~U26, 2026-11-03 승인) · r9 20(묶음 C U27~U46, 2026-11-05 승인 — 끝 장면 U46 포함, r8 18장은 폐기) = 140. 형진 님이 승인한 뒤에만 이 수를 고친다 */
+/** 승인된 조각 장수 가드 (R-551): r3 16 · r4 27 · r5 40(49 − r5b로 다시 그린 9) · r5b 11 · r6 12 · r7 14 · r9 20(끝 장면 포함) = 140. 형진 님이 승인한 뒤에만 이 수를 고친다 */
 const APPROVED = { r3: 16, r4: 27, r5: 40, r5b: 11, r6: 12, r7: 14, r9: 20 } as const;
-const APPROVED_TOTAL = APPROVED.r3 + APPROVED.r4 + APPROVED.r5 + APPROVED.r5b + APPROVED.r6 + APPROVED.r7 + APPROVED.r9;
-/** 미래 연표 묶음(SPEC-010): 행의 `basis`와 근거 글(FU11)이 있는 묶음 */
-const FUTURE_KEYS: ReadonlySet<string> = new Set(['r6', 'r7', 'r9']);
+/** 데이터에 들어가는 장면 수 (SPEC-013 부록 C): 사건 49 + 1987 대체 1 + 끝 장면 1 */
+const WINDOWS_TOTAL = 51;
 /** 끝 장면(SPEC-010 구현 규칙 3, R-602): 표 끝(2110~)을 덮는 `kind: 'base'` 한 장 — 10년 덩어리 번호는 2100으로 고정하고 `basis`·근거 글이 없다 */
 const END_SCENE = { id: 'era-end-horizon', years: [2110, 2130] as const, decade: 2100 } as const;
+/**
+ * 그림 안에 넣어도 되는 글자(사건 id → 허용 문구 목록, SPEC-013 T2·Q4): 형진 님이 시안에서 승인한 응원 문구 같은 짧은 글자만. 목록이 비어 있으면(없는 id 포함) 그 그림은 글자 0이다.
+ * 숫자·상호·간판 글자·정당 구호·인명·공식 엠블럼은 어떤 경우에도 허용 목록에 넣지 않는다(허용 목록은 형진 님 승인 뒤에만 고친다). 지금은 승인된 글자가 0건이다.
+ */
+const ART_TEXT_ALLOWED: Readonly<Record<string, readonly string[]>> = {};
 const SOURCES = [
   { key: 'r3', dir: `${PIECES}era-r3/`, meta: `${FAMILY}era-window-r3-budget.json`, convert: true },
   { key: 'r4', dir: `${PIECES}era-r4/`, meta: `${FAMILY}era-window-r4-budget.json`, convert: false },
@@ -37,6 +43,7 @@ const SOURCES = [
   { key: 'r7', dir: `${PIECES}era-r7/`, meta: `${FAMILY}era-window-r7-budget.json`, convert: false },
   { key: 'r9', dir: `${PIECES}era-r9/`, meta: `${FAMILY}era-window-r9-budget.json`, convert: false },
 ] as const;
+type SourceKey = (typeof SOURCES)[number]['key'];
 const DIR4 = SOURCES[1].dir;
 const OUT_DIR = 'src/data/eraWindows/';
 const check = process.argv.includes('--check');
@@ -52,53 +59,10 @@ interface Row {
   topic: string;
   hCode?: string | null;
   heavy: boolean;
-  band?: 'low' | 'high' | null;
-  ageBand?: string | null;
   line: string;
   /** r6~(미래 연표): 근거 종류 (2027년 이후 필수, 2026은 null) */
   basis?: 'official' | 'expert' | 'scenario' | null;
 }
-
-/** 사건 범위에서 뺄 해 (이유: 위 설명). 키는 designer 조각 id */
-const TRIM: Readonly<Record<string, [number, number]>> = {
-  'era-1998-gold-drive-queue': [1998, 1998], // 1997은 새벽 인력시장(r5)이 보이고, 1998은 금 모으기 ↔ 역 광장 급식 줄(둘 다 무겁지 않아 시드로 하나)
-  'era-1954-relief-queue': [1954, 1954], // 1955 라디오 · 1956 구슬치기 일상이 보이게
-  'era-1957-new-roof-tiles': [1957, 1957], // 1958 보릿고개(r4b, 형진 님 결정)가 보이게 — 1959는 그 10년 일상
-  'era-1962-two-shift-gate': [1962, 1962], // 1963 방직·1964 공항 사건과 겹치고, 1965 이웃집 TV 일상이 보이게
-  'era-1966-slow-train-platform': [1966, 1966], // 1967 아궁이 부엌 일상이 보이게
-};
-
-/**
- * 나이대 보정 (SPEC-010 FU8): designer 실측 JSON의 `ageBand`가 「모두」인데 어른의 개인 행동을 서술해 어린이 기록에 나오면 안 되는 일상 줄에 `ages`를 단다. 키는 designer 조각 id.
- * designer 파일(JSON)은 읽기만 하므로 고치지 않고 여기서 덮는다 — 이 파일이 생성 파일 `d<10년대>.ts`의 정본 입구다. JSON 행이 이미 나이대를 가진 줄에는 쓰지 않는다(조용히 덮어쓰지 않으려고 만들 때 막는다).
- * 달라지는 칸: 2020~2025년 어려운 쪽(`band: 'low'`) 19세 미만(실제로는 가리기를 켠 2022년) — 이 줄이 더는 어린이에게 오르지 않는다. 골든의 출생 연도에는 이 칸이 없어 `scene-golden.json`은 그대로다(`tests/eraFuture.test.ts` 「FU8가 바꾸는 조합은…」).
- */
-const AGES_FIX: Readonly<Record<string, [number, number]>> = {
-  'era-2020s-low-logistics-dawn': [19, 100], // 「새벽 셔틀을 타고 물류센터로 갔습니다.」 — QA-009-FM4b F01: 14세(2030년) 기록에 나왔다
-  // ---- SPEC-012 QF3b (2026-11-08): 부록 A 「A 표」 18줄의 최소 나이(마스터 2026-11-08: 투표는 21세부터, 떡볶이집 일상은 7세부터를 더했다) — 주인공이 직접 한 일처럼 읽히는 줄은 그 일을 할 수 있는 가장 어린 나이부터 보인다(취학 전 0~6세에는 학교·공부·일·기기·투표·밤샘 줄이 없다).
-  // 기준: 7세(학교·심부름·학습) · 13세(기기·게임·방송·시험·집안일) · 20세(일)·21세(투표), 끝은 기존 관례 120. **줄 문장·그림·years·band는 바꾸지 않는다**(문장 수정은 형진 님 사건별 승인 대상 — 이 표는 `ages` 값만 더한다).
-  // 이 표는 기획자 초안이다 — reviewer 전수 판독(1940~2026 장면 96장 중 B 표 10줄의 경계 결정 포함)과 마스터 확인 전이고, 판독 결과로 줄을 더하거나 빼면 여기만 고친다(`tests/eraAges.test.ts`가 이 표와 데이터가 같은지 본다).
-  'era-1946-well-side': [7, 120], // 「우물가에서 물을 길어 왔습니다.」 일상 1946~47
-  'era-1948-polling-queue': [21, 120], // 「5월, 첫 선거 투표소에 줄을 섰습니다.」 사건 1948 — 투표(1948년 제헌 선거의 선거권은 만 21세 — 마스터 2026-11-08 바꿈, 초안은 20)
-  'era-1953-tent-school': [7, 120], // 「휴전 뒤 천막 교실에서 공부했습니다.」 사건 1953
-  'era-1954-relief-queue': [7, 120], // 「구호물자 배급 줄에 섰습니다.」 사건 1954
-  'era-1970s-low-kerosene-room': [13, 120], // 「셋방 부엌의 석유곤로로 밥을 지었습니다.」 일상 1970년대 아래 구간
-  'era-1972-briquette-dawn': [13, 120], // 「새벽마다 연탄을 갈았습니다.」 일상 1972
-  'era-1981-hillside-village': [13, 120], // 「달동네 계단을 물지게 지고 올랐습니다.」 일상 1981
-  'era-1990s-high-newtown-living': [7, 120], // 「거실 컴퓨터로 숙제를 했습니다.」 일상 1990년대 위 구간
-  'era-1993-exam-gate-dawn': [13, 120], // 「시험 날 교문 밖에 부모가 섰습니다.」 사건 1993
-  'era-2000-pc-bang': [13, 120], // 「피시방에서 밤새 게임을 했습니다.」 사건 2000 — 형진 님이 짚은 줄(5세 기록에 나왔다)
-  'era-2001-folder-phones-stop': [13, 120], // 「버스를 기다리며 휴대전화를 열었습니다.」 사건 2001 — 형진 님이 짚은 줄(6세 기록에 나왔다)
-  'era-2009-first-smartphone': [13, 120], // 「첫 스마트폰이 손에 들어왔습니다.」 사건 2009 위 구간
-  'era-2019-vertical-video': [13, 120], // 「세로 화면 앞에서 방송을 켰습니다.」 사건 2019
-  'era-2020s-wfh-table': [7, 120], // 「식탁에서 일하고 수업을 들었습니다.」 일상 2020년대
-  'era-2021-empty-classroom-online': [7, 120], // 「빈 교실에서 화면 수업을 했습니다.」 사건 2021
-  'era-2024-chat-bubbles': [13, 120], // 「화면 속 상대와 대화를 했습니다.」 사건 2024
-  'era-2025-timetable-desk': [7, 120], // 「책상 위 시간표가 빽빽했습니다.」 일상 2020년대(아래 줄은 기존)
-  'era-2000s-tteokbokki-stand': [7, 120], // 「학교 앞 분식집에서 떡볶이를 먹었습니다.」 일상 2000년대 — 마스터 2026-11-08이 B 표에서 A 표로 옮김(학교 앞 분식집은 취학 뒤 장면) // 「책상 위 시간표가 빽빽했습니다.」 사건 2025
-};
-const agesFixUsed = new Set<string>();
-const foresightUsed = new Set<string>();
 
 const TOKENS = new Set([
   'sky', 'far', 'far2', 'ground', 'ground2', 'wall', 'wall2', 'roof', 'roof2', 'wood', 'clay', 'ink', 'shade', 'glass', 'green',
@@ -171,28 +135,24 @@ const noteLit = (n: EraForesightNote): string =>
   ].join(', ')} }`;
 const foresightLit = (f: { notes: readonly EraForesightNote[]; byBand?: true }): string => `{ notes: [${f.notes.map(noteLit).join(', ')}]${f.byBand === true ? ', byBand: true' : ''} }`;
 
-const AGES = (ageBand: string | null | undefined): [number, number] | undefined => {
-  if (ageBand === null || ageBand === undefined || ageBand === '모두') return undefined;
-  const m = /\((\d+)~(\d+)?\)/.exec(ageBand);
-  if (m === null) throw new Error(`나이대를 읽지 못했다: ${ageBand}`);
-  return [Number(m[1]), m[2] === undefined ? 120 : Number(m[2])];
-};
-
 const decadeOfYear = (y: number): number => Math.floor(y / 10) * 10;
 
 interface Built {
   window: string;
   start: number;
   id: string;
+  /** 그림 조각 id — `art`의 열쇠 */
+  draw: string;
   decade: number;
   body: string;
   piece: Piece;
 }
 
+// ---------------------------------------------------------------- 조각 행 읽기 (designer 실측 JSON — 읽기만)
 const rowsOf = (metaPath: string): Row[] => (JSON.parse(readFileSync(metaPath, 'utf-8')) as { rows: Row[] }).rows;
 // r5b가 다시 그린 장면은 r5판을 쓰지 않는다 (같은 id — r5b가 r5를 덮는다)
 const redrawn = new Set(rowsOf(SOURCES[3].meta).map((r) => r.id));
-const built: Built[] = [];
+const rowOf = new Map<string, { row: Row; src: (typeof SOURCES)[number] }>();
 for (const src of SOURCES) {
   const all = rowsOf(src.meta);
   const rows = src.key === 'r5' ? all.filter((r) => !redrawn.has(r.id)) : all;
@@ -200,72 +160,91 @@ for (const src of SOURCES) {
     const dropped = all.length - rows.length;
     if (dropped !== 9) throw new Error(`r5에서 r5b로 다시 그려 뺄 장면이 ${dropped}장이다 (era-window.md 10-2절: 9장)`);
   }
-  // 승인 게이트(R-551): designer JSON의 행이 곧 승인은 아니다 — 형진 님이 승인한 장수(era-window.md 「승인 표기」: r3 16 · r4 27 · r5 40 · r5b 11 · r6 12 · r7 14 · r9 20)와 같아야 만든다
-  const approvedCount = APPROVED[src.key];
+  // 승인 게이트(R-551): designer JSON의 행이 곧 승인은 아니다 — 형진 님이 승인한 장수(era-window.md 「승인 표기」)와 같아야 만든다
+  const approvedCount = APPROVED[src.key as SourceKey];
   if (rows.length !== approvedCount) throw new Error(`${src.meta}: 행 ${rows.length}개 ≠ 승인된 ${approvedCount}장 — 승인 뒤에만 이 수를 고친다`);
   for (const r of rows) {
-    const piece = readPiece(`${src.dir}${r.id}.svg`, src.convert);
-    const years = TRIM[r.id] ?? r.years ?? (r.year === undefined ? undefined : ([r.year, r.year] as [number, number]));
-    if (years === undefined) throw new Error(`${r.id}: 연도가 없다`);
-    // 끝 장면(U46)만 10년을 넘는다 — 덩어리는 2100년대로 고정(R-602). 그 밖의 `base`는 만들지 않는다
-    const isEnd = r.kind === 'base';
-    if (isEnd && (r.id !== END_SCENE.id || years[0] !== END_SCENE.years[0] || years[1] !== END_SCENE.years[1])) throw new Error(`${r.id}: kind base는 끝 장면(${END_SCENE.id} ${END_SCENE.years.join('~')}) 하나뿐이다`);
-    const decade = isEnd ? END_SCENE.decade : decadeOfYear(years[0]);
-    if (!isEnd && decadeOfYear(years[1]) !== decade) throw new Error(`${r.id}: 10년을 넘는다`);
-    const fix = AGES_FIX[r.id];
-    if (fix !== undefined && AGES(r.ageBand) !== undefined) throw new Error(`${r.id}: designer 행에 이미 나이대가 있어 AGES_FIX로 덮지 않는다 (${r.ageBand})`);
-    if (fix !== undefined) agesFixUsed.add(r.id);
-    const ages = fix ?? AGES(r.ageBand);
-    // 근거 종류(SPEC-010): 2027년 이후 장면에는 필수, 2026년(사실)에는 없다. 예측 근거 보기 글(FU11)은 2027년 이후 장면에만
-    // 끝 장면(base)은 2110년 이후라도 예측이 아니라 안내라서 basis가 없다
-    if (FUTURE_KEYS.has(src.key) && ((years[0] >= 2027 && !isEnd) !== (r.basis !== null && r.basis !== undefined))) throw new Error(`${r.id}: basis는 2027년 이후 예측 장면에만 있어야 한다 (${years[0]}년, kind ${r.kind}, basis ${String(r.basis)})`);
-    if (!FUTURE_KEYS.has(src.key) && r.basis !== undefined && r.basis !== null) throw new Error(`${r.id}: 이전 묶음 행에 basis가 있다`);
-    const foresight = FORESIGHT_NOTES[r.id];
-    if (foresight !== undefined) {
-      if (years[0] < 2027 || isEnd) throw new Error(`${r.id}: 예측 근거 글은 2027년 이후 예측 장면에만 둔다(2026년 줄·끝 장면에는 칩이 없어 근거 칸도 없다)`);
-      // 근거 글은 한두 건. 근거 후보가 없는 수저별 「먼저」 줄(U12·U20)만 notes 0건 + byBand인 안내 칸을 둔다(마스터 2026-11-04)
-      if (foresight.notes.length > 2 || foresight.notes.length < (foresight.byBand === true ? 0 : 1)) throw new Error(`${r.id}: 근거 글은 한두 건이다 (notes 0건이면 byBand가 필수다)`);
-      if (foresight.notes.length === 0 && r.band !== 'high') throw new Error(`${r.id}: 근거 없는 안내 칸(notes 0건)은 부유한 쪽 「먼저」 줄에만 둔다`);
-      foresightUsed.add(r.id);
-    }
-    const fields: string[] = [
-      `id: ${q(r.id)}`,
-      `years: [${years[0]}, ${years[1]}]`,
-      `kind: ${q(r.kind)}`,
-      `topic: ${q(r.topic)}`,
-      ...(r.hCode && r.kind === "event" ? [`hCode: ${q(r.hCode)}`] : []), // 연표 사건 코드는 사건에만 (EraWindow.hCode)
-      `line: ${q(r.line)}`,
-      `heavy: ${r.heavy ? 'true' : 'false'}`,
-      'approved: true',
-      `draw: ${q(r.id)}`,
-      ...(r.band === 'low' || r.band === 'high' ? [`band: ${q(r.band)}`] : []),
-      ...(ages !== undefined ? [`ages: [${ages[0]}, ${ages[1]}]`] : []),
-      ...(r.basis ? [`basis: ${q(r.basis)}`] : []),
-      ...(foresight !== undefined ? [`foresight: ${foresightLit(foresight)}`] : []),
-    ];
-    built.push({ window: `    { ${fields.join(', ')} },`, start: years[0], id: r.id, decade, body: piece.body, piece });
+    if (rowOf.has(r.id)) throw new Error(`${r.id}: 조각 행 id가 겹친다`);
+    rowOf.set(r.id, { row: r, src });
   }
 }
 
-// 나이대 보정과 근거 글은 모두 쓰였다 (id가 바뀌어 조용히 사라지는 일을 막는다)
-for (const id of Object.keys(AGES_FIX)) if (!agesFixUsed.has(id)) throw new Error(`AGES_FIX의 ${id}에 맞는 장면이 없다`);
-for (const id of Object.keys(FORESIGHT_NOTES)) if (!foresightUsed.has(id)) throw new Error(`FORESIGHT_NOTES의 ${id}에 맞는 장면이 없다`);
+// ---------------------------------------------------------------- 사건 표 → 장면
+const built: Built[] = [];
+const usedPieces = new Set<string>();
+const usedForesight = new Set<string>();
 
-// 승인 장수 합과 id 유일성 (R-551): r3 16 + r4 27 + r5 40 + r5b 11 + r6 12 + r7 14 + r9 20 = 140
-if (built.length !== APPROVED_TOTAL) throw new Error(`만든 장면 ${built.length}장 ≠ 승인된 ${APPROVED_TOTAL}장`);
-if (new Set(built.map((b) => b.id)).size !== built.length) throw new Error("장면 id가 겹친다");
-// 2009년 세 갈래(era-window.md 10-1절): 아래 철거 현장 · 위 첫 스마트폰 · 가운데는 band 없는 5월 조문 줄
-for (const [id, band] of [["era-2009-demolition-fire", "low"], ["era-2009-first-smartphone", "high"], ["era-2009-square-mourning-queue", undefined]] as const) {
-  const mine = built.find((b) => b.id === id);
-  if (mine === undefined || mine.window.includes("band:") !== (band !== undefined) || (band !== undefined && !mine.window.includes(`band: '${band}'`))) throw new Error(`2009년 세 갈래가 다르다: ${id}`);
+function addWindow(opts: {
+  id: string;
+  years: readonly [number, number];
+  piece: string;
+  topic: string;
+  hCode?: string;
+  line: string;
+  caption: string;
+  heavy: boolean;
+  second?: readonly [string, string, string];
+  isEnd: boolean;
+}): void {
+  const hit = rowOf.get(opts.piece);
+  if (hit === undefined) throw new Error(`${opts.id}: 조각 ${opts.piece}이(가) 승인된 140장에 없다`);
+  const { row, src } = hit;
+  if (usedPieces.has(opts.piece)) throw new Error(`${opts.id}: 조각 ${opts.piece}을(를) 두 사건이 쓴다 (조각은 사건과 일대일)`);
+  usedPieces.add(opts.piece);
+  const piece = readPiece(`${src.dir}${opts.piece}.svg`, src.convert);
+  // 그림 안 글자 단언: 글자 요소는 사건 id별 허용 목록의 글자만(목록이 비면 0)
+  const texts = [...piece.body.matchAll(/<(?:text|tspan)\b[^>]*>([^<]*)</g)].map((m) => m[1]);
+  const allowed = ART_TEXT_ALLOWED[opts.id] ?? [];
+  for (const t of texts) if (!allowed.includes(t)) throw new Error(`${opts.id}: 그림 안 글자 「${t}」는 형진 님이 승인한 허용 문구가 아니다 (그림 안 글자 0 — 허용 목록 ART_TEXT_ALLOWED)`);
+  const start = opts.years[0];
+  const decade = opts.isEnd ? END_SCENE.decade : decadeOfYear(start);
+  if (!opts.isEnd && decadeOfYear(opts.years[1]) !== decade) throw new Error(`${opts.id}: 10년을 넘는다`);
+  // 근거 종류(SPEC-010): 2027년 이후 사건에는 필수, 2026년 이하·끝 장면에는 없다. 예측 근거 보기 글(FU11)은 2027년 이후 사건에만
+  const isFuture = start >= 2027 && !opts.isEnd;
+  if (isFuture !== (row.basis !== null && row.basis !== undefined)) throw new Error(`${opts.id}: basis는 2027년 이후 예측 사건에만 있어야 한다 (${start}년, basis ${String(row.basis)})`);
+  const foresight = FORESIGHT_NOTES[opts.piece];
+  if (foresight !== undefined) {
+    if (!isFuture) throw new Error(`${opts.id}: 예측 근거 글은 2027년 이후 예측 사건에만 둔다(2026년 줄·끝 장면에는 칩이 없어 근거 칸도 없다)`);
+    if (foresight.notes.length > 2 || foresight.notes.length < (foresight.byBand === true ? 0 : 1)) throw new Error(`${opts.id}: 근거 글은 한두 건이다 (notes 0건이면 byBand가 필수다)`);
+    usedForesight.add(opts.piece);
+  }
+  const fields: string[] = [
+    `id: ${q(opts.id)}`,
+    `years: [${opts.years[0]}, ${opts.years[1]}]`,
+    `kind: ${q(opts.isEnd ? 'base' : 'event')}`,
+    `topic: ${q(opts.topic)}`,
+    ...(opts.hCode !== undefined ? [`hCode: ${q(opts.hCode)}`] : []),
+    `line: ${q(opts.line)}`,
+    `heavy: ${opts.heavy ? 'true' : 'false'}`,
+    'approved: true',
+    `draw: ${q(opts.piece)}`,
+    `caption: ${q(opts.caption)}`,
+    ...(opts.second !== undefined ? [`second: { low: ${q(opts.second[0])}, mid: ${q(opts.second[1])}, high: ${q(opts.second[2])} }`] : []),
+    ...(isFuture ? [`basis: ${q(row.basis as string)}`] : []),
+    ...(foresight !== undefined ? [`foresight: ${foresightLit(foresight)}`] : []),
+  ];
+  built.push({ window: `    { ${fields.join(', ')} },`, start, id: opts.id, draw: opts.piece, decade, body: piece.body, piece });
 }
 
-// 문장 표와 r4b 문장 대조 (1958 · 1961 · 1970년대 셋방 · 1980년대 반지하)
-const r4b = (JSON.parse(readFileSync('docs/design/mockups/family/era-window-r4b-budget.json', 'utf-8')) as { rows: Array<{ id: string; line: string }> }).rows;
-for (const row of r4b) {
-  const mine = built.find((b) => b.id === row.id);
-  if (mine === undefined || !mine.window.includes(q(row.line))) throw new Error(`r4b 문장과 다르다: ${row.id}`);
+for (const e of ERA_EVENTS) {
+  const hit = rowOf.get(e.piece);
+  if (hit === undefined) throw new Error(`${e.no}: 조각 ${e.piece}이(가) 승인된 140장에 없다`);
+  const own = e.piece === e.id; // 그 사건의 자기 조각이면 조각 행의 분류·사건 코드를 따른다
+  const hCode = e.hCode ?? (own && hit.row.kind === 'event' && hit.row.hCode ? hit.row.hCode : undefined);
+  addWindow({ id: e.id, years: [e.year, e.year], piece: e.piece, topic: e.topic ?? hit.row.topic, hCode, line: e.line, caption: e.caption, heavy: e.heavy, second: e.second, isEnd: false });
 }
+// 끝 장면(U46) — 조각 행의 문장 그대로, 캡션 없음
+{
+  const end = rowOf.get(END_SCENE.id);
+  if (end === undefined || end.row.kind !== 'base') throw new Error('끝 장면(era-end-horizon)이 승인된 조각에 없다');
+  addWindow({ id: END_SCENE.id, years: END_SCENE.years, piece: END_SCENE.id, topic: end.row.topic, line: end.row.line, caption: '', heavy: false, isEnd: true });
+}
+
+// 근거 글은 모두 쓰였거나 퇴역한 조각의 것이다 (id가 바뀌어 조용히 사라지는 일을 막는다)
+for (const id of Object.keys(FORESIGHT_NOTES)) if (!usedForesight.has(id) && !rowOf.has(id)) throw new Error(`FORESIGHT_NOTES의 ${id}에 맞는 조각이 없다`);
+// 장수와 id 유일성 (R-551)
+if (built.length !== WINDOWS_TOTAL) throw new Error(`만든 장면 ${built.length}장 ≠ ${WINDOWS_TOTAL}장 (사건 49 + 1987 대체 1 + 끝 장면 1)`);
+if (new Set(built.map((b) => b.id)).size !== built.length) throw new Error('장면 id가 겹친다');
 
 // 공유 defs의 순서는 r4 조각의 순서(패턴 12 → 사람 심볼 15)
 const canonical = readPiece(`${DIR4}era-1940-choga-yard.svg`, false).order;
@@ -292,12 +271,12 @@ for (const decade of decades) {
   for (const b of mine) for (const id of refsOf(b.body)) visit(id);
   const ordered = [...canonical.filter((id) => need.has(id)), ...[...need].filter((id) => !canonical.includes(id))];
   const defs = `<defs>${ordered.map((id) => defsText.get(id)!).join('')}</defs>`;
-  const art = mine.map((b) => `    ${q(b.id)}: ${q(b.body)},`).join('\n');
+  const art = mine.map((b) => `    ${q(b.draw)}: ${q(b.body)},`).join('\n');
   const text = `import type { EraDecadeData } from './types';
 
 /**
- * 시대의 창 ${decade}년대 덩어리 — **생성 파일**이다(\`npm run gen:era\` = scripts/genEraWindows.ts). 직접 고치지 않는다: 그림은 designer 조각(docs/design/mockups/family/pieces/era-r3·r4·r5·r5b${decade >= 2020 ? '·r6' : ''}${decade >= 2040 ? '·r7' : ''}${decade >= 2060 ? '·r9' : ''})에서, 문장·연도는 designer 실측 JSON에서${decade >= 2020 ? ', 예측 근거 글은 scripts/eraForesightNotes.ts에서' : ''} 온다.
- * 장면 ${mine.length}장은 모두 형진 님이 승인했다(\`approved: true\` — 타입이 \`true\`뿐이라 미승인은 들어올 수 없다, FT3 「승인한 것만」).${decade >= 2020 ? ' 2027년 이후 장면의 \`basis\`(근거 종류)·\`foresight\`(예측 근거 보기 글)는 SPEC-010이 싣는다.' : ''} \`defs\`는 이 10년 덩어리의 그림이 함께 쓰는 반복 무늬·사람 심볼로 덩어리마다 한 번만 둔다.
+ * 시대의 창 ${decade}년대 덩어리 — **생성 파일**이다(\`npm run gen:era\` = scripts/genEraWindows.ts). 직접 고치지 않는다: 문장·캡션·둘째 문장은 사건 표(scripts/eraEvents.ts — 형진 님이 승인한 값)에서, 그림은 designer 조각(docs/design/mockups/family/pieces/era-r3·r4·r5·r5b${decade >= 2020 ? '·r6' : ''}${decade >= 2040 ? '·r7' : ''}${decade >= 2060 ? '·r9' : ''})에서${decade >= 2020 ? ', 예측 근거 글은 scripts/eraForesightNotes.ts에서' : ''} 온다.
+ * 장면 ${mine.length}장은 모두 승인된 사건이다(\`approved: true\` — 타입이 \`true\`뿐이라 미승인은 들어올 수 없다, FT3 「승인한 것만」). 새 그림이 아직 없는 사건은 지금 승인 그림을 임시로 쓴다(tests/helpers/eraEventsTable.ts#PENDING_ART).${decade >= 2020 ? ' 2027년 이후 장면의 \`basis\`(근거 종류)·\`foresight\`(예측 근거 보기 글)는 SPEC-010이 싣는다.' : ''} \`defs\`는 이 10년 덩어리의 그림이 함께 쓰는 반복 무늬·사람 심볼로 덩어리마다 한 번만 둔다.
  * 색은 \`class\`(\`e-<토큰>\` 따위)뿐이고 규칙은 styles/family.css의 토큰 규칙이다.
  */
 export const ERA_DECADE: EraDecadeData = {
@@ -322,7 +301,7 @@ for (const o of outputs) {
   if (check) {
     const now = readFileSync(path, 'utf-8');
     if (now !== o.text) {
-      console.error(`${path}가 designer 조각과 다르다 — npm run gen:era로 다시 만든다`);
+      console.error(`${path}가 사건 표·designer 조각과 다르다 — npm run gen:era로 다시 만든다`);
       bad++;
     }
   } else writeFileSync(path, o.text, 'utf-8');

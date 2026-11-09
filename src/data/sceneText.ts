@@ -69,11 +69,32 @@ export function foresightLines(f: EraForesight): string[] {
   return [...f.notes.map(foresightText), ...(f.byBand === true ? [SCENE_TEXT.foresightByBand] : [])];
 }
 
-/** 시대의 창 접근 이름 = 「시대의 창 · {문장} 그해 기록으로」, 말풍선 글 = 「시대의 창 · {문장}」 */
-export function eraAccessibleName(line: string | null, veiled: boolean, forecast = false): string {
-  const what = veiled || line === null ? SCENE_TEXT.eraVeiled : line;
-  return `${SCENE_TEXT.eraName} · ${forecast ? `${SCENE_TEXT.forecast}: ` : ''}${what} ${SCENE_TEXT.eraGo}`;
+/** 시대의 창 칸이 읽어 주는 내용(SPEC-013 T3): 보이는 캡션 + 예측이면 「예측.」 + 첫 문장 + 둘째 문장(있으면) — 가린 해에는 가린 사건의 문장을 말하지 않는다 */
+export interface EraSpoken {
+  /** 보이는 캡션(가린 해의 「가려 둔 장면」 포함). 없으면 null */
+  caption: string | null;
+  /** 첫 문장 (가린 해에는 null — 문장이 가려져 있다) */
+  line: string | null;
+  /** 둘째 문장 (없으면 null) */
+  second: string | null;
 }
-export function eraTitle(line: string | null, veiled: boolean, forecast = false): string {
-  return `${SCENE_TEXT.eraName} · ${forecast ? `${SCENE_TEXT.forecast}: ` : ''}${veiled || line === null ? SCENE_TEXT.eraVeiled : line}`;
+
+function eraSpokenText({ caption, line, second }: EraSpoken, forecast: boolean): string {
+  const parts: string[] = [];
+  if (caption !== null) parts.push(`${caption}.`);
+  if (forecast) parts.push(`${SCENE_TEXT.forecast}.`);
+  if (line !== null) parts.push(line);
+  if (second !== null) parts.push(second);
+  return parts.join(' ');
+}
+
+/**
+ * 시대의 창 접근 이름 = 「캡션. (예측.) 첫 문장 둘째 문장 그해 기록으로」 (SPEC-013 T3 — 보이는 캡션 글자를 이름이 그대로 담는다, Label in Name). 가린 해는 캡션 「가려 둔 장면」 뒤에 문장이 없다.
+ * 창의 말풍선(`title`) = 같은 글에서 「그해 기록으로」를 뺀 것.
+ */
+export function eraAccessibleName(spoken: EraSpoken, forecast = false): string {
+  return `${eraSpokenText(spoken, forecast)} ${SCENE_TEXT.eraGo}`;
+}
+export function eraTitle(spoken: EraSpoken, forecast = false): string {
+  return eraSpokenText(spoken, forecast);
 }

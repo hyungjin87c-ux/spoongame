@@ -26,6 +26,7 @@ import { ERA_DECADE as D2020 } from '../src/data/eraWindows/d2020';
 import type { YearClock } from '../src/ui/useYearClock';
 
 /**
+ * **SPEC-013 T7 개정**: 시대의 창 칸이 「사건이 있던 해만 그림 + 캡션, 그 밖의 해는 빈 종이틀」로 바뀌었다 — 일상 그림(가리기 대체 일상 포함)·수저 구간 변주 그림(2009 세 갈래·1973 셋방/양옥)·덩어리 없는 해의 일상 시험은 사건 해·빈 해·가리기(대체 사건 그림 또는 빈 틀 + 「가려 둔 장면」)·접근 이름 시험으로 바꿨다.
  * 집과 가족 그림 카드 서버 렌더 시험 (SPEC-009 FM5, FH1·FH3·FH6·FH9·FT1~FT6): 구조·대체 글·연도 표·시대의 창 빈 틀(미승인 그림 0)·「무거운 장면 가리기」·접기·로딩/실패 상태·가운데 열 순서를 본다.
  * 실제 브라우저가 있어야 하는 것(2:1·띠 배치의 실측 폭, 접기 저장, 360 가로 넘침, 다크, 그림 덩어리 요청 차단)은 `e2e/family-scene.spec.ts`가 본다.
  */
@@ -109,42 +110,51 @@ describe('시대의 창 칸 — 승인된 그림 0장이면 빈 틀 (FT3)', () =
     expect(out).not.toContain('<a class="era"');
     expect(out).not.toContain('#log-y');
     expect(out).toContain('era__pic era__pic--empty');
+    expect(out).toContain('<i class="era__sheet"></i>'); // 빈 종이틀 안 B(SPEC-013 T3 — 점무늬 없음)
+    expect(out).not.toContain('era-paper');
+    expect(out).not.toContain('era__cap'); // 빈 해에는 캡션 요소가 없다
     expect(out).toContain('aria-hidden="true"'); // 빈 틀은 장식
     expect(text(out)).not.toContain('시대의 창');
   });
 
-  const approved = (id: string, years: [number, number], over: Partial<EraWindow> = {}): EraWindow => ({ id, years, kind: 'event', topic: '시험', line: `${id} 한 줄입니다.`, heavy: false, approved: true, draw: id, ...over });
+  const approved = (id: string, years: [number, number], over: Partial<EraWindow> = {}): EraWindow => ({ id, years, kind: 'event', topic: '시험', line: `${id} 한 줄입니다.`, heavy: false, approved: true, draw: id, caption: `${id} 캡션`, ...over });
   const MARKUP = '<rect x="0" y="0" width="40" height="32" fill="var(--c-scene-sky,#dfe6ed)"/>';
   const year = sceneInputOf(g).state.calYear;
 
-  it('승인된 그림이 있으면 칸 전체가 그해 줄로 가는 링크 하나다: href="#log-y<연도>" · title = 시대의 창 · 문장 · 접근 이름(sr-only) · 그림은 aria-hidden', () => {
+  it('승인된 그림이 있으면 칸 전체가 그해 줄로 가는 링크 하나다: href="#log-y<연도>" · title = 캡션. 문장 · 보이는 캡션 글자(era__cap, 시각용) · 접근 이름(sr-only)이 캡션을 담는다 · 그림은 aria-hidden', () => {
     const w = approved('시험장면', [year, year]);
     const out = html(g, { s: scene({ era: { windows: [w], art: { 시험장면: MARKUP } } }) });
     expect(out).toContain(`<a class="era" id="scene-era" href="#log-y${year}"`);
     expect(out).toContain('data-era="시험장면"');
-    expect(out).toContain('title="시대의 창 · 시험장면 한 줄입니다."');
-    expect(out).toContain('<span class="sr-only">시대의 창 · 시험장면 한 줄입니다. 그해 기록으로</span>');
+    expect(out).toContain('title="시험장면 캡션. 시험장면 한 줄입니다."');
+    expect(out).toContain('<span class="era__cap" data-testid="era-caption" aria-hidden="true">시험장면 캡션</span>');
+    expect(out).toContain('<span class="sr-only">시험장면 캡션. 시험장면 한 줄입니다. 그해 기록으로</span>');
     expect(out).toMatch(/<span class="era__pic" aria-hidden="true">[\s\S]*<svg viewBox="0 0 40 32"/);
     expect((out.match(/<a /g) ?? []).length, '이 카드의 링크는 시대의 창 하나뿐(초점 정지점 1 — 펼침·접기는 버튼)').toBe(1);
   });
 
-  it('무거운 장면 가리기: 꺼짐이면 사건 그림 그대로, 켜면 그해 일상 그림으로 — 일상이 없으면 그림 없이 틀만(가려 둔 장면)', () => {
+  it('무거운 장면 가리기: 꺼짐이면 사건 그림 그대로, 켜면 같은 해의 무겁지 않은 사건 그림(12월 투표)과 그 캡션으로 — 없으면 빈 해와 같은 종이틀 + 캡션 「가려 둔 장면」(문장은 어디에도 없다)', () => {
     const heavy = approved('큰사건', [year, year], { heavy: true, line: '큰 사건입니다.' });
-    const daily = approved('일상', [year - 5, year + 5], { kind: 'daily', line: '평범한 하루였습니다.' });
-    const data = { windows: [heavy, daily], art: { 큰사건: MARKUP, 일상: MARKUP } };
+    const alt = approved('대체', [year, year], { line: '평범한 날입니다.', caption: '12월 투표' });
+    const data = { windows: [heavy, alt], art: { 큰사건: MARKUP, 대체: MARKUP } };
     const off = html(g, { gentle: false, s: scene({ era: data }) });
     expect(off).toContain('data-era="큰사건"');
-    expect(off).toContain('title="시대의 창 · 큰 사건입니다."');
+    expect(off).toContain('title="큰사건 캡션. 큰 사건입니다."');
     const on = html(g, { gentle: true, s: scene({ era: data }) });
-    expect(on).toContain('data-era="일상"');
-    expect(on).toContain('title="시대의 창 · 평범한 하루였습니다."');
+    expect(on).toContain('data-era="대체"');
+    expect(on).toContain('data-hidden="false"'); // 대체 그림이 있어 그림이 오른다
+    expect(on).toContain('<span class="era__cap" data-testid="era-caption" aria-hidden="true">12월 투표</span>');
+    expect(on).toContain('title="12월 투표."'); // 가린 해에는 가려진 사건의 문장을 말하지 않는다
     expect(on).not.toContain('큰 사건입니다.');
     const veiled = html(g, { gentle: true, s: scene({ era: { windows: [heavy], art: { 큰사건: MARKUP } } }) });
     expect(veiled).toContain('data-hidden="true"');
-    expect(veiled).toContain('title="시대의 창 · 가려 둔 장면"');
-    expect(veiled).toContain('시대의 창 · 가려 둔 장면 그해 기록으로');
+    expect(veiled).toContain('title="가려 둔 장면."');
+    expect(veiled).toContain('<span class="era__cap" data-testid="era-caption" aria-hidden="true">가려 둔 장면</span>');
+    expect(veiled).toContain('가려 둔 장면. 그해 기록으로');
+    expect(veiled).toContain('<i class="era__sheet"></i>'); // 빈 해와 같은 틀
     expect(veiled).not.toContain('큰 사건입니다.');
     expect(veiled).not.toMatch(/<svg viewBox="0 0 40 32"/);
+    expect((veiled.match(/<a /g) ?? []).length, '가려 둔 해에도 링크는 하나(그해 기록으로)').toBe(1);
   });
 
   it('미승인 그림(approved가 true가 아님)은 칸에 오르지 않는다 — 고르기가 한 번 더 막는다', () => {
@@ -241,8 +251,8 @@ describe('CSS 규칙 (family-scene.md 5-1절 — PC 2:1 · 휴대폰 80px 띠 ·
     expect(css).toMatch(/\.scene__svg \{[^}]*aspect-ratio: 640 \/ 256; max-height: 25vh;/);
     const q = css.slice(css.indexOf('@container scene (max-width: 480px)'));
     expect(q).toContain('.scene { grid-template-columns: minmax(0, 1fr); }');
-    expect(q).toContain('.era { height: 80px; background: var(--c-surface); }'); // R-553 ① A안: 띠 바탕 = 카드 바탕(--c-surface)
-    expect(q).toMatch(/\.era__pic \{ width: 100px; height: 80px;/);
+    expect(q).toContain('.era { height: max(80px, 3.9rem); grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--sp-2); background: var(--c-surface); }'); // R-553 ① A안: 띠 바탕 = 카드 바탕(--c-surface), SPEC-013 T3: 글자 크기의 식(3.9rem)이라 해가 바뀌어도 높이가 같다
+    expect(q).toMatch(/\.era__pic \{ grid-column: 1; grid-row: 1 \/ span 2; align-self: start; width: 100px; height: 80px; \}/);
     expect(css).toContain(".scene-card[data-fold='true'] .scene { display: none; }");
     expect(css).toContain('.scene-card { padding-top: 0; overflow: hidden; container-type: inline-size; container-name: scene; }');
   });
@@ -274,15 +284,16 @@ describe('시대의 창 칸 — 승인된 그림이 칸에 오른다 (FM5b · �
   }
   const era = (): SceneArt['era'] => mergeEraData([D1940, D1950, D1960, D1970, D1980, D1990, D2000, D2010, D2020]);
 
-  it('1980년: 금남로 그림이 링크 하나로 오른다 — 톤 A 필터용 data-dec, 그림은 aria-hidden, 접근 이름은 문장, 그림 안은 class 색·사람 심볼 참조(<use>)뿐(<style> 없음)', () => {
+  it('1980년: 금남로 그림이 링크 하나로 오른다 — 톤 A 필터용 data-dec, 그림은 aria-hidden, 접근 이름은 「캡션. 문장」, 그림 안은 class 색·사람 심볼 참조(<use>)뿐(<style> 없음)', () => {
     const g = lifeInYear(1980);
     expect(sceneInputOf(g).state.calYear).toBe(1980);
     const out = html(g, { s: scene({ era: era() }) });
     expect(out).toContain('<a class="era" id="scene-era" href="#log-y1980"');
     expect(out).toContain('data-era="era-1980-may-geumnam-ro"');
     expect(out).toContain('data-dec="1980"');
-    expect(out).toContain('title="시대의 창 · 5월, 광주에 민주화 시위가 있었습니다."');
-    expect(out).toContain('<span class="sr-only">시대의 창 · 5월, 광주에 민주화 시위가 있었습니다. 그해 기록으로</span>');
+    expect(out).toContain('title="5월 광주 시위. 5월, 광주에 민주화 시위가 있었습니다."');
+    expect(out).toContain('<span class="era__cap" data-testid="era-caption" aria-hidden="true">5월 광주 시위</span>');
+    expect(out).toContain('<span class="sr-only">5월 광주 시위. 5월, 광주에 민주화 시위가 있었습니다. 그해 기록으로</span>');
     const pic = out.slice(out.indexOf('<span class="era__pic"'), out.indexOf('</a>'));
     expect(pic).toContain('aria-hidden="true"');
     expect(pic).toMatch(/<pattern id="era-era-dots"/); // 반복 무늬는 이 10년 덩어리 defs에 한 번(인스턴스 접두어 era-)
@@ -291,80 +302,80 @@ describe('시대의 창 칸 — 승인된 그림이 칸에 오른다 (FM5b · �
     expect((out.match(/<a /g) ?? []).length, '초점 정지점 1').toBe(1);
   });
 
-  it('1958년: 보릿고개 장면이 오르고 문장이 접근 이름이다', () => {
-    const out = html(lifeInYear(1958), { s: scene({ era: era() }) });
-    expect(out).toContain('data-era="era-1958-barley-spring"');
-    expect(out).toContain('data-dec="1950"');
-    expect(out).toContain('title="시대의 창 · 보릿고개에는 나물로 끼니를 이었습니다."');
-    // r4 그림은 사람을 심볼 참조로 그린다: 심볼은 10년 덩어리 defs에 한 번, 조각에는 <use href> + 색 변수 class
-    const pic = out.slice(out.indexOf('<span class="era__pic"'), out.indexOf('</a>'));
-    expect(pic).toMatch(/<symbol id="era-ps"/);
-    expect(pic).toMatch(/<use href="#era-p[a-z]+"[^>]*class="[^"]*(et|eb|eh|ek)-/);
-    expect(pic).not.toMatch(/<style/);
+  it('1997년: 외환위기 그림 + 캡션, 접근 이름에 첫 문장과 고른 구간의 둘째 문장이 이어진다 — 부모 재력 1·2는 일터, 3은 월급, 4·5는 달라진 게 없었다', () => {
+    const g = lifeInYear(1997);
+    const withWealth = (w: 1 | 2 | 3 | 4 | 5): GameState => ({ ...g, character: { ...g.character!, parentWealth: w } }) as GameState;
+    const expected: Array<[1 | 2 | 3 | 4 | 5, string]> = [
+      [1, '집에서는 다니던 일터가 문을 닫았습니다.'],
+      [2, '집에서는 다니던 일터가 문을 닫았습니다.'],
+      [3, '집에서는 월급이 줄어 씀씀이를 줄였습니다.'],
+      [4, '집에서는 크게 달라진 게 없었습니다.'],
+      [5, '집에서는 크게 달라진 게 없었습니다.'],
+    ];
+    for (const [w, second] of expected) {
+      const out = html(withWealth(w), { s: scene({ era: era() }) });
+      expect(out, `재력 ${w}`).toContain('data-era="era-1997-dawn-labor-market"'); // 같은 그림 — 수저는 둘째 문장만 가른다
+      expect(out, `재력 ${w}`).toContain(`title="외환위기. 11월, 외환위기가 닥쳐 나라가 구제금융을 요청했습니다. ${second}"`);
+    }
   });
 
-  it('가리기를 켜면 1980년은 무거운 사건 대신 그해 일상 그림으로 바뀐다 — 같은 10년의 필터, 접근 이름은 일상의 문장, 금남로 문장은 어디에도 없다', () => {
+  it('사건이 없는 해는 빈 종이틀이다 — 링크도 그림도 캡션도 없고 칸 안에 종이 한 장(era__sheet)뿐이다(1958·1992·2025 …) · 일상으로 내려가지 않는다', () => {
+    for (const y of [1958, 1992, 2025]) {
+      const out = html(lifeInYear(y), { s: scene({ era: era() }) });
+      expect(out, `${y}`).toMatch(/<div class="era" id="scene-era" data-empty="true" data-hidden="false">/);
+      expect(out, `${y}`).not.toContain('<a class="era"');
+      expect(out, `${y}`).not.toContain('era__cap');
+      expect(out, `${y}`).toContain('<i class="era__sheet"></i>');
+      expect(out, `${y}`).not.toContain('data-kind="daily"');
+    }
+  });
+
+  it('가리기를 켜면 1980년은 무거운 사건 대신 그림 없는 종이틀 + 캡션 「가려 둔 장면」이다(대체 사건 그림 없음) — 금남로 문장·캡션은 어디에도 없고, 1987년은 12월 투표 그림과 캡션이 대체한다', () => {
     const g = lifeInYear(1980);
     const off = html(g, { gentle: false, s: scene({ era: era() }) });
     const on = html(g, { gentle: true, s: scene({ era: era() }) });
     expect(off).toContain('data-era="era-1980-may-geumnam-ro"');
-    const m = /data-era="(era-198[^"]*)"/.exec(on);
-    expect(m, '일상 그림').not.toBeNull();
-    expect(m![1]).not.toBe('era-1980-may-geumnam-ro');
-    expect(on).toContain('data-dec="1980"');
-    expect(on).toContain('data-kind="daily"');
+    expect(on).toContain('data-hidden="true"');
+    expect(on).toContain('<span class="era__cap" data-testid="era-caption" aria-hidden="true">가려 둔 장면</span>');
+    expect(on).toContain('<i class="era__sheet"></i>');
     expect(on).not.toContain('광주');
     expect(on).not.toContain('금남로');
+    const g87 = lifeInYear(1987);
+    expect(html(g87, { gentle: false, s: scene({ era: era() }) })).toContain('data-era="era-1987-june-street"');
+    const on87 = html(g87, { gentle: true, s: scene({ era: era() }) });
+    expect(on87).toContain('data-era="era-1987-polling-station-r3"');
+    expect(on87).toContain('>12월 직선제 투표</span>');
+    expect(on87).not.toContain('6월 거리 시위');
+    expect(on87).not.toContain('시위');
   });
 
-  it('그 10년 덩어리가 아직 오지 않은 해(1992 — 1990년대 덩어리 없이)는 빈 틀이다 — 링크도 그림도 없다. 덩어리가 오면 그 10년의 일상이 오른다(94장 모두 승인되어 데이터가 있는 해는 빈 틀이 없다)', () => {
-    const g = lifeInYear(1992);
-    const without = html(g, { s: scene({ era: mergeEraData([D1940, D1950, D1960, D1970, D1980]) }) });
+  it('그 10년 덩어리가 아직 오지 않은 해(1988 — 1980년대 덩어리 없이)는 빈 틀이다 — 링크도 그림도 없다. 덩어리가 오면 그 사건 그림이 오른다', () => {
+    const g = lifeInYear(1988);
+    const without = html(g, { s: scene({ era: mergeEraData([D1940, D1950, D1960, D1970]) }) });
     expect(without).toMatch(/<div class="era" id="scene-era" data-empty="true"/);
     expect(without).not.toContain('<a class="era"');
     const withIt = html(g, { s: scene({ era: era() }) });
-    expect(withIt).toMatch(/data-era="era-1990s-[a-z-]+"/);
-    expect(withIt).toContain('data-dec="1990"');
-    expect(withIt).toContain('data-kind="daily"');
+    expect(withIt).toContain('data-era="era-1988-stadium-flame-r3"');
+    expect(withIt).toContain('data-dec="1980"');
+    expect(withIt).toContain('data-kind="event"');
   });
 
-  it('2009년 세 갈래: 부모 재력 1·2는 1월 철거 현장, 3은 5월 광장의 조문 줄, 4·5는 첫 스마트폰이 칸에 오른다 — 줄 글은 승인 표기 그대로, 톤 필터용 data-dec는 2000', () => {
+  it('2009년: 수저 구간과 무관하게 5월 광장의 조문 줄 하나다(옛 2009년 세 갈래는 폐지) — 줄 글은 승인 표기 그대로, 톤 필터용 data-dec는 2000, 가리기를 켜면 빈 종이틀', () => {
     const g = lifeInYear(2009);
     expect(sceneInputOf(g).state.calYear).toBe(2009);
-    const withWealth = (w: 1 | 2 | 3 | 4 | 5): GameState => ({ ...g, character: { ...g.character!, parentWealth: w } }) as GameState;
-    const expected: Array<[1 | 2 | 3 | 4 | 5, string, string]> = [
-      [1, 'era-2009-demolition-fire', '1월, 철거 현장에서 불이 났습니다.'],
-      [2, 'era-2009-demolition-fire', '1월, 철거 현장에서 불이 났습니다.'],
-      [3, 'era-2009-square-mourning-queue', '5월, 광장에 조문 줄이 길었습니다.'],
-      [4, 'era-2009-first-smartphone', '첫 스마트폰이 손에 들어왔습니다.'],
-      [5, 'era-2009-first-smartphone', '첫 스마트폰이 손에 들어왔습니다.'],
-    ];
-    for (const [w, id, line] of expected) {
-      const out = html(withWealth(w), { s: scene({ era: era() }) });
-      expect(out, `재력 ${w}`).toContain(`data-era="${id}"`);
-      expect(out, `재력 ${w}`).toContain(`title="시대의 창 · ${line}"`);
+    for (const w of [1, 2, 3, 4, 5] as const) {
+      const out = html({ ...g, character: { ...g.character!, parentWealth: w } } as GameState, { s: scene({ era: era() }) });
+      expect(out, `재력 ${w}`).toContain('data-era="era-2009-square-mourning-queue"');
+      expect(out, `재력 ${w}`).toContain('title="5월 광장 조문 줄. 5월, 광장에 조문 줄이 길었습니다."');
       expect(out, `재력 ${w}`).toContain('data-dec="2000"');
     }
-    // 가리기: 철거 현장·조문 줄(무거움)은 그해 일상으로 바뀌고(문장도 가려져 어디에도 없다), 위 구간의 스마트폰은 무겁지 않아 가리지 않는다
-    const gentle = (w: 1 | 3 | 5): string => html(withWealth(w), { gentle: true, s: scene({ era: era() }) });
-    expect(gentle(1)).toContain('data-kind="daily"');
-    expect(gentle(1)).not.toContain('철거');
-    expect(gentle(3)).toContain('data-kind="daily"');
-    expect(gentle(3)).not.toContain('조문');
-    expect(gentle(5)).toContain('data-era="era-2009-first-smartphone"');
+    const gentle = html(g, { gentle: true, s: scene({ era: era() }) });
+    expect(gentle).toContain('data-hidden="true"');
+    expect(gentle).not.toContain('조문');
   });
 
   it('같은 판·같은 해는 늘 같은 그림이다(같은 입력 → 같은 출력)', () => {
-    const g = lifeInYear(1975);
+    const g = lifeInYear(1988);
     expect(html(g, { s: scene({ era: era() }) })).toBe(html(g, { s: scene({ era: era() }) }));
-  });
-
-  it('수저 구간 변주: 같은 1973년이라도 아래 구간(부모 재력 1·2)은 셋방, 위 구간(4·5)은 양옥 거실이 오른다', () => {
-    const g = lifeInYear(1973);
-    const wealthy = { ...g, character: { ...g.character!, parentWealth: 5 as const } } as GameState;
-    const poor = { ...g, character: { ...g.character!, parentWealth: 1 as const } } as GameState;
-    // 그림 카드의 수저 구간은 sceneInputOf의 wealth(부모 재력)에서 온다
-    expect(html(poor, { s: scene({ era: era() }) })).toContain('data-era="era-1970s-low-kerosene-room"');
-    expect(html(wealthy, { s: scene({ era: era() }) })).toContain('data-era="era-1970s-high-piano-living"');
   });
 });
