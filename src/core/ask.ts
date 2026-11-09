@@ -1,11 +1,11 @@
-import { ASK_BASE, ASK_CLOSENESS_BASE, ASK_KIND_INFO, ASK_MODEL, type AskChoiceId, type AskKind } from '../data/askTable';
+import { ASK_BASE, ASK_CLOSENESS_BASE, ASK_EFFECTS, ASK_KIND_INFO, ASK_MODEL, type AskChoiceId, type AskEffectKey, type AskKind } from '../data/askTable';
 import type { EventDef } from './events';
 import { FAMILY_TAG_ASK } from './familyModel';
 import { famHash01, famSeedOf } from './familyRng';
 import { closenessOf } from './familyCloseness';
 import { coParentsOf } from './parentSubject';
 import type { FamilyGame } from './familyView';
-import type { GameState } from './types';
+import type { Effects, GameState } from './types';
 
 /**
  * 어린 시절 조르기 판정 (SPEC-011 AK3, 설계 문서 docs/data/ask-model.md 2절 — AK0 승인 2026-11-07). **순수 함수**: 진행 RNG(`rngState`)·`Date`·`Math.random`을 읽지도 쓰지도 않는다.
@@ -74,4 +74,73 @@ export function askRolls(state: Pick<AskState, 'pending' | 'age' | 'peerSeed' | 
   const age = askAgeOf(state);
   const famSeed = famSeedOf(state.peerSeed ?? state.seed);
   return { u1: famHash01(famSeed, FAMILY_TAG_ASK, no, age * 2), u2: famHash01(famSeed, FAMILY_TAG_ASK, no, age * 2 + 1) };
+}
+
+/**
+ * 사이 비용 확률 `s(C) = clamp(0.50 + 0.10 × (3 − C), 0.20, 0.80)` (SPEC-011 AK5, 설계 문서 4-1절): 떼쓰기가 **거절당했을 때** 사이가 나빠질 확률. 사이가 먼 부모일수록 높다
+ * (`C = 1` 0.70 · `C = 3` 0.50 · `C = 5` 0.30). `C`는 들어줄 확률과 같은 `askCloseness`다 — 순수 함수, 진행 RNG를 읽지 않는다.
+ */
+export function askStrainChance(state: AskState, age: number = askAgeOf(state)): number {
+  const c = askCloseness(state, age);
+  return clamp(ASK_MODEL.strainBase + ASK_MODEL.strainStep * (ASK_CLOSENESS_BASE - c), ASK_MODEL.strainMin, ASK_MODEL.strainMax);
+}
+
+/**
+ * 한 선택이 닿을 수 있는 갈래와 그 확률 (SPEC-011 AK4·AK6, 설계 문서 3-1·5-3절): 합이 1이다. 확정 결과인 `endure`는 갈래 하나(확률 1).
+ *  - 조른다: 들어주기 `p` · 거절 `1 − p`
+ *  - 떼쓴다: 들어주기 `p` · 거절+사이 나빠짐 `(1 − p) × s(C)` · 거절 `(1 − p) × (1 − s(C))`
+ * 자동 모드의 기대 효과 가중(`life.ts#autoChoiceWeights`)과 시험이 읽고, 실제 해결(`askOutcomeOf`)은 같은 `p`·`s`로 해시 `u1`·`u2`를 견줘 한 갈래를 고른다 — 그래서 갈래 빈도가 이 확률과 같다.
+ */
+export function askBranchProbs(state: AskState, ev: Pick<EventDef, 'id' | 'ask'>, choiceId: AskChoiceId): Array<{ key: AskEffectKey; prob: number }> {
+  const kind = kindOf(ev);
+  if (choiceId === 'endure') return [{ key: 'endure', prob: 1 }];
+  const p = askGrantChance(state, ev, choiceId);
+  const granted = { key: `granted-${kind}` as const, prob: p };
+  if (choiceId === 'beg') return [granted, { key: 'denied-beg', prob: 1 - p }];
+  const s = askStrainChance(state);
+  return [granted, { key: 'strained', prob: (1 - p) * s }, { key: 'denied-tantrum', prob: (1 - p) * (1 - s) }];
+}
+
+/** 해결 결과: 일어난 갈래 · 그 갈래의 효과(`ASK_EFFECTS` 한 곳) · 연표 줄의 결과 문장 (`resolveChoiceCore`가 일반 선택과 같은 경로로 적용한다) */
+export interface AskOutcome {
+  branch: AskEffectKey;
+  effects: Effects;
+  /** 연표 줄·카드의 결과 문장: 들어주기 `result` · 거절 `askDenied` · 거절+사이 나빠짐 `askStrained` · 참는다 `result` */
+  text: string;
+}
+
+/**
+ * 조르기 선택의 **해결 한 곳** (SPEC-011 AK4 — 갈래·효과·문장): `askRolls`의 `u1`로 들어주기을, 떼쓰기가 거절당했으면 `u2`로 사이 나빠짐을 정한다
+ * (`u1 < p` → 들어주기, 아니면 거절 · 떼쓰기 거절은 `u2 < s(C)`이면 사이 나빠짐 — AK5). 효과는 코드 표 `ASK_EFFECTS`에서 읽고 사건 데이터는 문장만 준다(결정 AQ1).
+ * `endure`는 확정 결과이고 난수를 읽지 않는다. 선택지 연타·새로고침에도 같은 값이다(해시). 진행 RNG(`rngState`)를 읽지도 쓰지도 않는다.
+ * `state`는 **해결 전 상태**(`pending`이 있는 상태)다 — `p`·`s`의 사이 `C`가 효과 적용 전의 플래그를 읽는다.
+ */
+export function askOutcomeOf(state: AskState, ev: Pick<EventDef, 'id' | 'ask' | 'choices'>, choiceId: AskChoiceId): AskOutcome {
+  const choice = ev.choices?.find((c) => c.id === choiceId);
+  if (choice === undefined) throw new Error(`askOutcomeOf: 선택지를 찾을 수 없다 (${ev.id}/${choiceId})`);
+  const need = (text: string | undefined, field: string): string => {
+    if (text === undefined) throw new Error(`askOutcomeOf: 문장 필드가 없다 (${ev.id}/${choiceId}.${field})`);
+    return text;
+  };
+  const kind = kindOf(ev);
+  let branch: AskEffectKey;
+  if (choiceId === 'endure') branch = 'endure';
+  else {
+    const { u1, u2 } = askRolls(state, ev);
+    if (u1 < askGrantChance(state, ev, choiceId)) branch = `granted-${kind}`;
+    else if (choiceId === 'beg') branch = 'denied-beg';
+    else branch = u2 < askStrainChance(state) ? 'strained' : 'denied-tantrum';
+  }
+  const text = branch === 'strained' ? need(choice.askStrained, 'askStrained') : branch === 'denied-beg' || branch === 'denied-tantrum' ? need(choice.askDenied, 'askDenied') : choice.result;
+  return { branch, effects: ASK_EFFECTS[branch], text };
+}
+
+/**
+ * 조르기 사건의 **갈래 선택지**(조른다·떼쓴다)인가 (SPEC-011 AK4 — 정적 효과를 읽는 시험·스크립트의 한 곳 규칙).
+ * 이 선택지는 데이터에 효과 필드가 없다(갈래별 효과는 코드 표 `ASK_EFFECTS`, 결정 AQ1). 그래서 풀 전체의 선택지 `effects`·`bonuses`를 훑어 점수·영향·플래그를 읽는 코드는
+ * 이 선택지를 「효과 0」으로 읽으면 안 된다 — 거르거나(`tests/helpers/askChoice.ts#resolvedChoiceEffects`처럼) 일어난 갈래의 `ASK_EFFECTS`·`askBranchProbs` 기대값을 읽는다.
+ * 참는다(`endure`)는 일반 선택지라 데이터 `effects`를 그대로 읽는다.
+ */
+export function isAskRollChoice(ev: Pick<EventDef, 'ask'>, choiceId: string): boolean {
+  return ev.ask !== undefined && choiceId !== 'endure';
 }

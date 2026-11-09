@@ -96,6 +96,7 @@ export const FAMILY_DESIGN: FamilyDesign = {
         { flag: 'sibling_close', who: ['sibling'], delta: 1, note: '동생이 생겼을 때 곁에서 챙긴 일 — 관계 +3' },
         { flag: 'grandparent_close', who: ['grandparent'], delta: 1, floor: 4, note: '조부모가 돌봐 주었다 — 관계 +3 (켜진 판의 조부모 사이는 「가까움」 이상)' },
         { flag: 'cared_parents', who: ['mother', 'father'], delta: 1, note: '부모를 직접 돌봤다 — 관계 +4' },
+        { flag: 'parent_strained', who: ['mother', 'father'], delta: -1, note: '떼를 쓰다 거절당해 서먹해졌다 — 관계 −1 (어린 시절, 평생 유지)' },
         { flag: 'child_distant', who: ['child'], delta: -2, note: '자녀와 서먹해졌다 — 관계 −3' },
         { flag: 'child_left', who: ['child'], delta: -1, note: '자녀가 독립해 떠났다 — 관계 −2' },
         { flag: 'friend_back', who: ['friend'], delta: 1, note: '친구가 곁으로 돌아왔다 — 관계 +5' },

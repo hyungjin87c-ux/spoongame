@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { AUTO_EXPONENT_LIMIT, STAGES, advanceYear, applyStatDeltas, autoChoiceWeights, autoResolveStep, birthFadeDelta, createEventPool, naturalDeltas, playToEnd, resolveChoice, resolveEffects, stageOf, type Character, type EventDef, type GameState, type Stats } from '../src/core';
+import { AUTO_EXPONENT_LIMIT, STAGES, advanceYear, applyStatDeltas, autoChoiceWeights, autoResolveStep, birthFadeDelta, createEventPool, naturalDeltas, playToEnd, resolveChoice, stageOf, type Character, type EventDef, type GameState, type Stats } from '../src/core';
 import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FREQUENCY, MIN_YEARS_BETWEEN_CHOICES, MOOD_DRIFT } from '../src/data/lifeTable';
 import { LIFE_LENGTH_MODES } from '../src/data/timingTable';
 import { SIM_PROFILES, chooserFor, correlation, startLife } from '../scripts/simulateLib';
+import { expectedStat } from './helpers/askChoice';
 
 /**
  * 한 판의 선택지 수 조절(페이싱)은 인생 길이 모드 표에 있다(M8, data/timingTable.ts#LIFE_LENGTH_MODES) — 이 시험은 30분 모드(기본)의 표를 읽고, 상한 시험은 표 값을 **시험 안에서만** 낮춰 끼운다
@@ -38,9 +39,8 @@ function moodChooser(sign: 1 | -1) {
     let best = s.pending!.choiceIds[0];
     let bestValue = -Infinity;
     for (const id of s.pending!.choiceIds) {
-      const c = ev.choices!.find((x) => x.id === id)!;
-      const r = resolveEffects(c.effects, c.bonuses, { character: s.character!, stats: s.stats, flags: new Set(s.flags) });
-      const value = sign * ((r.stats.happiness ?? 0) + (r.stats.relationships ?? 0));
+      // 조르기 갈래 선택지(조른다·떼쓴다)는 데이터 효과가 없어 갈래 확률로 가중한 기대값을 읽는다 (한 곳 규칙 `tests/helpers/askChoice.ts`)
+      const value = sign * (expectedStat(s, ev, id, 'happiness') + expectedStat(s, ev, id, 'relationships'));
       if (value > bestValue) {
         bestValue = value;
         best = id;

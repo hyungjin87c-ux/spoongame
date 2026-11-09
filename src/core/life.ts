@@ -1,4 +1,5 @@
 import type { LifeParams } from '../data/lifeTable';
+import { ASK_EFFECTS } from '../data/askTable';
 import { AUTO_ASSET } from '../data/economyTable';
 import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, FAMILY_NEED_BASE, parentWording } from '../data/parentDecisionTable';
 import { IMPACT_LABEL } from '../data/impactText';
@@ -30,8 +31,10 @@ import {
   type CondContext,
   type EventDef,
   type EventPool,
+  type ResolvedEffects,
 } from './events';
 import { applyResolved, condContextOf, economyContextOf } from './apply';
+import { askBranchProbs, askOutcomeOf, type AskRollChoice } from './ask';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
@@ -495,7 +498,10 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
   if (ev === undefined || choice === undefined) throw new Error(`resolveChoice: 이벤트/선택지를 찾을 수 없다 (${pending.eventId}/${choiceId})`);
 
   const ctx = condContextOf(state);
-  let s = applyResolved(state, resolveEffects(choice.effects, choice.bonuses, ctx));
+  // 조르기 사건의 조른다·떼쓴다(SPEC-011 AK4): 갈래(들어주기·거절·사이 나빠짐)는 해시 `u1`·`u2`로, 효과는 코드 표 `ASK_EFFECTS`에서, 문장은 그 갈래의 선택지 필드에서 온다 — 한 함수 `askOutcomeOf`.
+  // 해결 전 상태(`pending`이 있는 `state`)를 넘긴다(사이 `C`가 효과 적용 전 플래그를 읽는다). 이 밖의 경로(효과 적용·플래그·`lastChoiceAge`·연표·난수 한 칸)는 일반 선택과 같다. 참는다(`endure`)는 일반 선택지라 데이터 `effects`로 해결한다.
+  const ask = ev.ask !== undefined && choiceId !== 'endure' ? askOutcomeOf(state, ev, choiceId as AskRollChoice) : null;
+  let s = applyResolved(state, ask !== null ? resolveEffects(ask.effects, undefined, ctx) : resolveEffects(choice.effects, choice.bonuses, ctx));
   s = {
     ...s,
     pending: null,
@@ -503,7 +509,7 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
       age: pending.age,
       kind: 'choice',
       title: ev.title,
-      text: by === 'parent' ? (choice.parentResult ?? choice.result) : choice.result,
+      text: ask !== null ? ask.text : by === 'parent' ? (choice.parentResult ?? choice.result) : choice.result,
       choice: by === 'parent' ? (choice.parentLabel ?? choice.label) : choice.label,
       eventId: ev.id,
       // 질문 문장(SPEC-014 QS1): 이 한 곳에서 본인 선택·부모 결정·흘러감 세 경로가 같은 값을 적는다. 사건에 `question`이 없으면 키를 만들지 않는다(옛 줄과 같은 모양). 난수·효과에는 닿지 않는다.
@@ -614,10 +620,8 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = eventPool(
     state.assets === null
       ? 1 + (50 - FAMILY_NEED_BASE[state.character.parentWealth - 1]) / 100
       : 1 + Math.min(AUTO_ASSET.needCap, Math.max(0, -state.assets.net) / AUTO_ASSET.needSpan);
-  const weights = pending.choiceIds.map((id) => {
-    const choice = ev.choices?.find((c) => c.id === id);
-    if (choice === undefined) throw new Error(`autoChoiceWeights: 선택지를 찾을 수 없다 (${id})`);
-    const eff = resolveEffects(choice.effects, choice.bonuses, ctx);
+  // 효과 하나의 점수: 스탯 변화 × 성향 × 절실함 + 자산·집안 살림 환산
+  const scoreOf = (eff: ResolvedEffects): number => {
     let score = 0;
     for (const [key, delta] of Object.entries(eff.stats) as [StatKey, number][]) {
       const need = 1 + (50 - state.stats[key]) / 100; // 이미 높은 스탯보다 낮은 스탯이 더 절실하다(0.5~1.5)
@@ -625,7 +629,17 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = eventPool(
     }
     // 자산 점수(Δ순자산 + 3×Δ연 현금흐름)와 집안 살림을 옛 「점수」 크기로 환산해 더한다(EC6: 부채 판에서는 자산을 깎는 선택에서 멀어진다).
     const money = impactOfEffects(state, eff).detail;
-    score += (money.assetScore / AUTO_ASSET.pointMan + money.dFamily / AUTO_ASSET.familyPointMan) * priority.wealth * moneyNeed;
+    return score + (money.assetScore / AUTO_ASSET.pointMan + money.dFamily / AUTO_ASSET.familyPointMan) * priority.wealth * moneyNeed;
+  };
+  const weights = pending.choiceIds.map((id) => {
+    const choice = ev.choices?.find((c) => c.id === id);
+    if (choice === undefined) throw new Error(`autoChoiceWeights: 선택지를 찾을 수 없다 (${id})`);
+    let score = 0;
+    if (ev.ask !== undefined && id !== 'endure') {
+      // 조르기 사건의 조른다·떼쓴다(SPEC-011 AK6 ①): 갈래별 효과(`ASK_EFFECTS`)의 점수를 갈래 확률(`askBranchProbs` — 들어주기 `p`, 떼쓰기는 거절 중 `s(C)`로 사이 나빠짐)로 가중 평균한다.
+      // 순수·결정론이고 해시 `u1`·`u2`를 읽지 않는다(실제 해결과는 같은 `p`·`s`를 쓸 뿐 갈래는 뽑지 않는다). 참는다는 일반 선택지라 아래 일반 경로(데이터 `effects`)다.
+      for (const { key, prob } of askBranchProbs(state, ev, id as AskRollChoice)) score += prob * scoreOf(resolveEffects(ASK_EFFECTS[key], undefined, ctx));
+    } else score = scoreOf(resolveEffects(choice.effects, choice.bonuses, ctx));
     // 점수가 비정상적으로 커져도 가중치가 Infinity·0이 되지 않게 지수를 제한한다(R-046: 데이터 검증이 합산 상한을 두지만 런타임도 방어한다).
     return Math.exp(Math.max(-AUTO_EXPONENT_LIMIT, Math.min(AUTO_EXPONENT_LIMIT, score / AUTO_TEMPERATURE)));
   });
@@ -647,7 +661,7 @@ export function autoResolveStep(state: GameState, key: string, pool: EventPool =
 
 /**
  * 흘러감의 선택 확률 (SPEC-005 PD4-8, 승인 A9): `autoChoiceWeights`를 그대로 쓴다(이름 붙인 별칭) — 아이 성향 = `AUTO_PRIORITY[양육 방식]` × 현재 스탯의 절실함, 형편 = `moneyNeed(수저)`와 보이는 선택지, `T = 6`, ε 없음.
- * 그래서 자동 모드와 수동 모드가 같은 어린 시절을 갖고, 같은 상태에서 `autoResolveStep`과 상태 전체가 같다.
+ * 그래서 **흘러감 카드는** 자동 모드와 수동 모드가 같은 선택을 하고(4~12세 조르기 카드는 본인이 고르므로 판 전체의 어린 시절은 같지 않다 — SPEC-011), 같은 상태에서 `autoResolveStep`과 상태 전체가 같다.
  */
 export const childFlowWeights = autoChoiceWeights;
 

@@ -14,7 +14,6 @@ import {
   playToEnd,
   resolveChoice,
   resolveChoiceStep,
-  resolveEffects,
   stepYear,
   serializeGame,
   type GameState,
@@ -30,6 +29,7 @@ import { EVENT_FREQUENCY, HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeT
 import { AUTO_CHOICE_MS, HOLD_MS, INFANT_CHOICE_MEAN_MIN, JUMP_OVERHEAD_SEC, LIFE_LENGTH_MODES, READ_MODEL, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { SIM_PROFILES, balanceOf, chooserFor, encounterTable, reportOf, simulateLife, simulateMany, startLife, type LifeSummary, type Strategy } from '../scripts/simulateLib';
 import { syntheticEvents, syntheticPool } from '../scripts/syntheticPool';
+import { expectedStat } from './helpers/askChoice';
 
 /**
  * 헤드리스 시뮬레이션: UI 없이 core 순수 함수만으로 인생을 끝까지 돌린다.
@@ -593,9 +593,8 @@ describe('밸런스 (R-045 b): 행복·관계는 출생값에 종속되지 않�
       let best = s.pending!.choiceIds[0];
       let bestV = -Infinity;
       for (const id of s.pending!.choiceIds) {
-        const c = ev.choices!.find((x) => x.id === id)!;
-        const r = resolveEffects(c.effects, c.bonuses, { character: s.character!, stats: s.stats, flags: new Set(s.flags) });
-        const v = r.stats.education ?? 0;
+        // 조르기 갈래 선택지(조른다·떼쓴다)는 데이터 효과가 없어 갈래 확률로 가중한 기대값을 읽는다 (한 곳 규칙 `tests/helpers/askChoice.ts`)
+        const v = expectedStat(s, ev, id, 'education');
         if (v > bestV) {
           bestV = v;
           best = id;

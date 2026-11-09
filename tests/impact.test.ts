@@ -3,9 +3,11 @@ import impactSrc from '../src/core/impact.ts?raw';
 import legacyJson from './fixtures/wealthLegacy.json';
 import { ECONOMY, IMPACT_STEPS } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
-import { IMPACT_KEYS, calendarYear, advanceUntilDecision, applyResolved, applyStatDeltas, autoResolveStep, condContextOf, economyContextOf, impactOfEffects, incomeOf, dwellingWhenParentsGone, inheritanceDue, parentsJustGone, initialAssets, meetsCondition, moneySteps, naturalDeltas, previewChoice, previewPending, resolveChoiceStep, resolveEffects, settleAssets, statSteps, stepYear, syncPostEventFlags, visibleChoices, workStateOf, yearlyAssets, type ChoiceDef, type Condition, type Dwelling, type EventDef, type GameState, type ParentWealth, type ResolvedEffects, type ProfileId } from '../src/core';
+import { IMPACT_KEYS, isAskRollChoice, calendarYear, advanceUntilDecision, applyResolved, applyStatDeltas, autoResolveStep, condContextOf, economyContextOf, impactOfEffects, incomeOf, dwellingWhenParentsGone, inheritanceDue, parentsJustGone, initialAssets, meetsCondition, moneySteps, naturalDeltas, previewChoice, previewPending, resolveChoiceStep, resolveEffects, settleAssets, statSteps, stepYear, syncPostEventFlags, visibleChoices, workStateOf, yearlyAssets, type ChoiceDef, type Condition, type Dwelling, type EventDef, type GameState, type ParentWealth, type ResolvedEffects, type ProfileId } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
+import { ASK_EFFECTS } from '../src/data/askTable';
+import { resolvedChoiceEffects } from './helpers/askChoice';
 
 /**
  * 선택지 영향 표기 데이터 (SPEC-003 M5 EC5, docs/data/economy-model.md 7절): 항목·방향·칸 수·스크린리더 문장 키.
@@ -245,6 +247,8 @@ describe('20세 미만: 집안 살림이 있고, 자산은 없고, 부채는 독
     for (const e of youngEvents) {
       const effs = [e.effects, ...(e.bonuses ?? []).map((b) => b.effects), ...(e.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];
       for (const f of effs) for (const name of f?.setFlags ?? []) flags.add(name);
+      // 조르기 사건(SPEC-011 AK4)의 갈래 효과는 데이터가 아니라 코드 표에 있다 — 그 표가 켜는 플래그(`pet_dog`·`parent_strained`)도 같은 잠금 안에 둔다
+      if (e.ask !== undefined) for (const row of Object.values(ASK_EFFECTS)) for (const name of row.setFlags ?? []) flags.add(name);
     }
     expect(flags.has('college'), 'school-exam이 college를 켠다').toBe(true);
     expect(flags.size, '20세 미만 이벤트가 켜는 플래그 수(공허 통과 방지)').toBeGreaterThan(10);
@@ -304,8 +308,9 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
       for (const p of lives(era, 60)) {
         const ev = EVENT_POOL.byId.get(p.pending!.eventId)!;
         for (const id of p.pending!.choiceIds) {
+          // 조르기 사건의 조른다·떼쓴다는 데이터 효과가 없다 — 일어난 갈래의 표 효과를 읽는다(한 곳 규칙 `tests/helpers/askChoice.ts`, 갈래 판정은 tests/askResolve.test.ts)
           const choice = ev.choices!.find((c) => c.id === id)!;
-          const a = applyResolved(p, resolveEffects(choice.effects, choice.bonuses, condContextOf(p)));
+          const a = applyResolved(p, resolvedChoiceEffects(p, ev, id));
           const e = resolveChoiceStep(p, p.pending!.key, id).state;
           const where = `${era} ${ev.id}/${id} ${p.age}세`;
           // 스탯: 선택 직후 값에 그 해의 자연 변화
@@ -333,8 +338,12 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
             expect(e.assets, where).toBeNull();
             expect(e.familyFund, where).toBe(a.familyFund);
           }
-          // 표기가 말하는 순자산·부채 변화는 applyResolved 결과 그대로다
+          // 표기가 말하는 순자산·부채 변화는 applyResolved 결과 그대로다 (조르기 갈래 선택지는 영향 줄이 없고 고정 한 줄이 대신한다 — 표기가 비어 있음만 본다, PD8)
           const impact = previewChoice(p, choice);
+          if (isAskRollChoice(ev, id)) {
+            expect(impact.items, where).toEqual([]);
+            continue;
+          }
           if (p.assets !== null) {
             expect(impact.detail.dNet, where).toBe(a.assets!.net - p.assets.net);
             expect(impact.detail.dDebt, where).toBe(a.assets!.debt - p.assets.debt);
@@ -470,6 +479,9 @@ describe('표기 기준 지배 점검 (R-352, E11, M7e-3 E-10): 같은 이벤트
     let states = 0;
     for (const ev of EVENT_POOL.events) {
       if ((ev.choices ?? []).length < 2) continue;
+      // 조르기 사건(SPEC-011)은 조른다·떼쓴다에 영향 줄이 없고 고정 한 줄이 대신한다 — 화면 영향 줄로 견주는 이 점검의 대상이 아니다(영향 줄 없는 쪽이 「지배」로 읽힌다).
+      // 세 길이 서로 지배하지 않는 것은 기대 행복 표(`docs/data/ask-model.md` 3-2절)와 `tests/askAuto.test.ts`의 지배 방지(한 선택지 ≤ 90%)가 본다.
+      if (ev.ask !== undefined) continue;
       if (onlyEvent !== undefined && ev.id !== onlyEvent) continue;
       const variants: Array<Variant | undefined> = withVariants ? variantsOf(ev) : [undefined];
       for (const variant of variants) {

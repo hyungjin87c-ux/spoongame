@@ -30,6 +30,7 @@ import {
   type GameState,
   type ProfileId,
 } from '../src/core';
+import { ASK_EFFECTS } from '../src/data/askTable';
 import { OCCUPATION_LABEL } from '../src/data/birthReportTable';
 import { EVENT_POOL } from '../src/data/events';
 import { FAMILY_CARD_TEXT, CLOSENESS_LABEL, JOB_LINE_LABEL } from '../src/data/familyCardText';
@@ -271,7 +272,8 @@ describe('사이 말 (FC2): closenessOf — 호칭 기본값 + 양육 방식 + �
     let compared = 0;
     for (const r of rules) {
       // 「꺼져 있을 때」 규칙(close_friend)은 그 플래그를 **끄는** 사건이, 그 밖에는 **켜는** 사건이 방향을 정한다
-      const all = EVENT_POOL.events.flatMap((ev) => [ev.effects, ...(ev.choices ?? []).map((c) => c.effects)]);
+      // 사건 데이터의 효과 + 조르기 갈래의 효과 표(`ASK_EFFECTS` — `parent_strained`를 켜는 갈래가 데이터가 아니라 이 표에 있다, SPEC-011 AK5·결정 AQ1)
+      const all = [...EVENT_POOL.events.flatMap((ev) => [ev.effects, ...(ev.choices ?? []).map((c) => c.effects)]), ...Object.values(ASK_EFFECTS)];
       const effects = all.filter((e) => (r.when === 'off' ? e?.clearFlags?.includes(r.flag) : e?.setFlags?.includes(r.flag)));
       if (effects.length === 0) continue; // 시스템이 켜는 플래그(별거 등)는 사건이 없다
       const rel = effects.reduce((n, e) => n + (e?.stats?.relationships ?? 0), 0);
@@ -279,7 +281,12 @@ describe('사이 말 (FC2): closenessOf — 호칭 기본값 + 양육 방식 + �
       expect(Math.sign(rel), `${r.flag}: 표 방향 ${dir}, 사건의 관계 점수 ${rel}`).toBe(dir);
       compared++;
     }
-    expect(compared, '사건이 켜는 플래그 규칙이 여럿 비교됐다').toBeGreaterThanOrEqual(7);
+    expect(compared, '사건이 켜는 플래그 규칙이 여럿 비교됐다').toBeGreaterThanOrEqual(8);
+    // parent_strained(떼쓰다 거절당해 서먹함 −1)의 방향은 그 플래그를 켜는 표 갈래의 관계 점수(−1)와 같다 — 데이터가 아니라 ASK_EFFECTS가 켜므로 표를 함께 읽어야 비교된다
+    const strained = rules.find((r) => r.flag === 'parent_strained')!;
+    expect(strained, 'CLOSENESS_FLAGS에 parent_strained 줄이 있다').toBeDefined();
+    expect([strained.who, strained.delta]).toEqual([['mother', 'father'], -1]);
+    expect(Object.values(ASK_EFFECTS).filter((e) => e.setFlags?.includes('parent_strained')).map((e) => Math.sign(e.stats?.relationships ?? 0))).toEqual([-1]);
     // 표의 모든 플래그는 형식에 맞고 호칭은 알려진 것이다
     for (const r of rules) {
       expect(r.flag).toMatch(/^[a-z][a-z0-9_]{0,38}$/);
