@@ -1,0 +1,130 @@
+{
+  "measuredAt": "2026-11-09",
+  "problems": [],
+  "notes": [
+    {
+      "view": "1280",
+      "events": 15,
+      "eventIds": [
+        "era-1950-refugee-column",
+        "era-1953-tent-school",
+        "era-1959-typhoon-flood-village",
+        "era-1961-dawn-tank",
+        "era-1964-airport-farewell",
+        "era-1965-neighbors-tv",
+        "era-1970-expressway-tollgate",
+        "era-1973-gas-station-queue",
+        "era-1983-reunion-wall-notes",
+        "era-1988-stadium-flame-r3",
+        "era-1998-gold-rings-tray",
+        "era-2002-worldcup-semifinal",
+        "era-2008-trading-board-blue",
+        "era-2018-pyeongchang-torch",
+        "era-2020-screening-tent-queue"
+      ],
+      "variants": 1,
+      "ba": 10,
+      "zooms": 16,
+      "pcCells": 16,
+      "pcSize": [
+        175,
+        140
+      ],
+      "pcPic": [
+        173,
+        115
+      ],
+      "phoneCells": 16,
+      "phoneSize": [
+        326,
+        80
+      ],
+      "phonePic": [
+        100,
+        78
+      ],
+      "caps": 32,
+      "capsInside": true,
+      "capsOverPic": 0,
+      "usesChecked": 120,
+      "emptyUse": 0,
+      "fontSizes": [
+        12,
+        14,
+        16,
+        22,
+        28
+      ],
+      "approveBoxes": 16,
+      "docH": 14162
+    },
+    {
+      "sheet": [
+        "era-r11-sheet.jpg 1152KB",
+        "era-r11-sheet-2.jpg 723KB"
+      ]
+    },
+    {
+      "view": "360 only=cards",
+      "events": 15,
+      "phoneCells": 16,
+      "phoneSize": [
+        326,
+        80
+      ],
+      "caps": 16,
+      "capsInside": true,
+      "capsOverPic": 0,
+      "docH": 7032
+    },
+    {
+      "file": "era-r11-cards-360.jpg",
+      "kb": 280,
+      "h": 7032
+    },
+    {
+      "view": "360 only=cards&theme=dark 다크",
+      "events": 15,
+      "phoneCells": 16,
+      "phoneSize": [
+        326,
+        80
+      ],
+      "caps": 16,
+      "capsInside": true,
+      "capsOverPic": 0,
+      "docH": 7032
+    },
+    {
+      "file": "era-r11-cards-360-dark.jpg",
+      "kb": 294,
+      "h": 7032
+    },
+    {
+      "view": "360 only=cards 글자 200%",
+      "events": 15,
+      "phoneCells": 16,
+      "phoneSize": [
+        326,
+        80
+      ],
+      "caps": 16,
+      "capsInside": true,
+      "capsOverPic": 0,
+      "docH": 16718
+    },
+    {
+      "view": "360 only=cards 강제 색상",
+      "events": 15,
+      "phoneCells": 16,
+      "phoneSize": [
+        326,
+        80
+      ],
+      "caps": 16,
+      "capsInside": true,
+      "capsOverPic": 0,
+      "docH": 7032
+    }
+  ]
+}

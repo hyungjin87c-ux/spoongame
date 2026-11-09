@@ -404,3 +404,5 @@ export const VARIANTS = [
 export const ALL16 = [...REVISED, ...NEW8, ...VARIANTS].sort((a, b) => a.year - b.year || a.id.localeCompare(b.id));
 export const MAIN14 = [...REVISED, ...NEW8].sort((a, b) => a.year - b.year);
 export const COMP_LABEL = SEC.comp;
+/** r11이 다시 쓰는 소품(출력에는 영향 없음) */
+export const H10 = { strawWalker, oxCart, dirtRoad, coach, steamLoco, frameHouse, trunk, legTv, bigMask, gasPump, hose, jerryCan, bucket, noteWall, ring, football, horns, redCrowd, pitchScreen, quoteBoard, torch, whiteTiger, stadiumStands, controlTower, propPlane };
