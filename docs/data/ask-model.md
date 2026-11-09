@@ -120,7 +120,7 @@ ask-pet-b | ask | -
 | L2 | 선택지가 정확히 `beg`·`tantrum`·`endure`(이 순서), `requires` 없음, `beg`·`tantrum`에 효과 필드 없음, `askDenied`(beg·tantrum)·`askStrained`(tantrum만) 있음, `endure.effects` = 표의 `endure` 행 | 빌드 실패 |
 | L3 | `once: true` · `track: 'common'` · `stages: ['infant','school']` · 나이 범위가 종류 한계 안 · `heavy` 없음 · 가중이 사다리(11절) 안 · `yearRange`가 같은 종류 안에서 겹치지 않음 | 빌드 실패 |
 | L4 | `citation`이 있으면 `noCitation` 없음(기존 규칙), `noCitation`은 `'D'`(X1~X6 금지 — 원칙적 무인용 코드는 이 사건에 맞지 않는다) | 빌드 실패 |
-| L5 | 조르기 사건의 **모든 글**(제목·본문·라벨·결과·`askDenied`·`askStrained`)에 「부모님·부모·엄마·아빠·어머니·아버지·동생·형·누나·언니·오빠·조부모·할머니·할아버지·형제·남매」가 없다(신규 lint 한 줄 — `ask`가 있는 사건만 대상) | 점검 실패 |
+| L5 | 조르기 사건의 **모든 글**(제목·본문·라벨·결과·`askDenied`·`askStrained`)에 「부모님·부모·엄마·아빠·어머니·아버지·동생·형·누나·언니·오빠·조부모·할머니·할아버지·형제·남매」가 없다(신규 lint 한 줄 — `ask`가 있는 사건만 대상). (낱말 경계 — 인형·형편 제외: 「형·누나·언니·오빠」는 앞이 한글이 아니고 뒤가 조사·끝일 때만 걸린다, `ASK_FAMILY_WORDS` — REV-011-AK7-1 판정 3, 2026-11-09) | 점검 실패 |
 | L6 | `askDenied`·`askStrained`에 원인 단정(형편·가난·돈이 없·여유·비싸·「~해서/~때문에」 꼴)·평가어·설교가 없다. 거절 문장은 한 사건의 모든 판에 같은 글이다(동적 문장 없음) | 점검 실패 |
 | L7 | `pet` 사건은 `conditions.notFlags`에 `pet_dog`·`pet_cat`·`pet_other`가 모두 있다. `STATE_WORD_RULES`의 「반려동물(함께 사는 판에서만)」 예외 목록에 `ask-pet-a`·`ask-pet-b`를 더한다(입양 전 이야기라 `school-puppy`와 같은 이유 — 이유를 주석으로) | 점검 실패 |
 | L8 | 기존 `TEXT_LIMITS`(제목 16·본문 74·라벨 24·결과 84·한 문장 52), 합쇼체, 느낌표·이모지·반말·수저 단계 이름·`REAL_NAMES`·달력 연도 | 기존 규칙 그대로 |
