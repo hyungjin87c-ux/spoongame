@@ -47,7 +47,7 @@
 | 2 | 28~40 | 상위 71~90% (하위 11~30%) | 20.3% | 하위 10~30% |
 | 1 | 0~27 | 상위 91% 이하(하위 10% 이내) | 9.9% | 하위 10% |
 
-`LOOKS_TIER_MIN_SCORE = [0, 28, 41, 60, 72]`. `scripts/design/checkFaceTiers.ts`와 `tests/designAssets.test.ts`가 0~100점 전부에서 `looksTopPercent` 기준과 같은지 확인한다. 얼굴 단계가 다섯이라 프로필의 「외모 상위/하위 약 N%」 문구와 한눈에 이어진다(단계 이름은 화면에 쓰지 않는다 — 문구는 `standingLabel`이 정한다).
+`LOOKS_TIER_MIN_SCORE = [0, 28, 41, 60, 72]`. `scripts/design/checkFaceTiers.ts`와 `tests/designAssets.test.ts`가 0~100점 전부에서 `looksTopPercent` 기준과 같은지 확인한다. 얼굴 단계가 다섯이라 **외모 글의 첫 문장(첫인상 수식구)과 1:1로 이어진다**(단계 이름·점수·퍼센트는 화면에 쓰지 않는다 — **v0.5.0 SPEC-015부터 문구는 `looksText`(`src/data/looksText.ts`)가 정한다**: 5 「이목구비가 뚜렷하고 잘생긴/예쁜」 · 4 「이목구비가 반듯한」 · 3 「편안한 인상의」 · 2 「순한 인상의」 · 1 「수수한 인상의」 — 같은 `looksTierOf` 경계라 그림과 글의 단계가 어긋날 자리가 없다. 둘째 문장의 특징 낱말은 단계와 무관하거나(B군·피부) 5·1단계만 그림이 바꾸는 두 신호(머리숱·이목구비 선명도)와 같은 방향(A군 둘째 축)이다. 낱말 표 정본 `appearance-text-draft.md`, 문구 규칙 `copy.md` 2절 「외모 값」 행. 광대·얼굴형 낱말 7개는 **보류(출생·엔딩 같은 문장 규칙)** — 형진 님 결정 대기). ~~프로필의 「외모 상위/하위 약 N%」 문구와 한눈에 이어진다(문구는 `standingLabel`이 정한다)~~
 
 ## 4. 단계별 파라미터 표 (`TIER_PARAMS`) — **단조 규칙의 근거**
 

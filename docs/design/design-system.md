@@ -1041,7 +1041,7 @@ CSS는 `title-005.css` 「QI4 전망 차트」 블록(12-3의 `.chip--proj`·`li
 
 | 항목 | 값 | 근거 |
 |---|---|---|
-| 요소 | 제목이 있는 결정 줄(`HistoryEntry.title` + `choice`)만 `span.log__text.log__text--q` > `span.log__q[data-testid=log-q]`(제목) → `em`(고른 길 — 「선택: {라벨}」 / `[아이콘] {주어}가 이렇게 정했습니다: {라벨}` / `[아이콘] 이렇게 흘러갔습니다: {라벨}`, **괄호 없음**) → `span.log__result`(결과 문장) | 엔딩 연표 `.timeline li > span:last-child`와 같은 쌓기. 제목 없는 옛 줄은 「{결과} (선택: {라벨})」 괄호 꼴 그대로(`copy.md` 2절·11-3). 서술·단계·나의 기록 줄은 제목을 그리지 않는다. `eventId`로 사건 풀을 조회하지 않는다 |
+| 요소 | 제목이 있는 결정 줄(`HistoryEntry.title` + `choice`)만 `span.log__text.log__text--q` > `span.log__q[data-testid=log-q]`(제목 — **v0.5.0 SPEC-014 QS2: `question`이 있으면 질문 문장, 없으면 제목**, `history.ts#entryHeadline`, 문구 규칙 `copy.md` 19절) → `em`(고른 길 — 「선택: {라벨}」 / `[아이콘] {주어}가 이렇게 정했습니다: {라벨}` / `[아이콘] 이렇게 흘러갔습니다: {라벨}`, **괄호 없음**) → `span.log__result`(결과 문장) | 엔딩 연표 `.timeline li > span:last-child`와 같은 쌓기. 제목 없는 옛 줄은 「{결과} (선택: {라벨})」 괄호 꼴 그대로(`copy.md` 2절·11-3). 서술·단계·나의 기록 줄은 제목을 그리지 않는다. `eventId`로 사건 풀을 조회하지 않는다 |
 | 제목 글자 | `--fs-xs` 12px · `--lh-body` 1.6(19.2px) | 프로젝트 하한. 인생 기록 안 선례 `.log__year`·`.log__tl`·`.log__note-label` 12px. 나이 칸(14 × 1.6)과 첫 줄 높이가 거의 같아 나이와 제목이 나란히 선다 |
 | 제목 색 · 굵기 | `--c-text-2` · `--fw-regular`(**최신 줄 `.log__row--latest`가 굵어도 보통**) | 면 위 **8.65**(라이트) / **8.78**(다크) — `contrast-report.md` 「보조 설명」 쌍, 새 쌍 0. 「나이 · 제목 · 고른 길」이 한 식구(보조색)로 묶이고 결과 문장(본문색)만 앞으로 나온다 |
 | 세 줄 사이 | `gap: 2px`(`.log__text--q` flex column, `min-width: 0`) | 줄 사이(`.log__row` 12px 여백 + 1px 선)보다 분명히 좁아 한 덩어리로 읽힌다. 글자 200%에서도 2px |
@@ -1066,3 +1066,42 @@ CSS는 `title-005.css` 「QI4 전망 차트」 블록(12-3의 `.chip--proj`·`li
 
 - 인생 기록 전체는 한 판 30~40 결정 줄 기준 약 +600~800px(360)·+800px(1280) 길어지나 영역은 `max-height 520px` 스크롤이라 화면은 커지지 않고, 보던 줄 위치 보정(`LogList.tsx`)은 실제 밀린 거리를 재므로 영향 없다.
 - design-taste 전·후(`inspect.mjs --app` 1280·360): 조작 줄 0 FAIL · 3 WARN 같음(`palette-cream`·`heavy-borders` 확정 토큰 · `ragged-row` 기존 3열) / 기록 줄 0 FAIL · 2 WARN 같음(`palette-cream` · 표본 장의 `unused-canvas`). 새 경고 0, `--allow` 0 — `ai-log/2026-11-08_SPEC-012_design.md` 1·2회차.
+
+## 20. v0.5.0 — 시대의 창 캡션 · 빈 종이 · 가린 해 (SPEC-013 T3 캡션 규격 — 2026-11-09 designer, T8 디자인 문서 몫. 형진 님 선택 **안 B 「빈 종이」**(`era-empty-frame.md` 추천안, 구현 990f2bd), 문장·캡션 `era-text-r1.md`(승인 2026-11-08), 규칙 요약 `era-window.md` 15절. 구현 `src/styles/family.css` 「시대의 창」 블록(`.era`·`.era__pic`·`.era__cap`·`.era__sheet`·`.era__fc`, 컨테이너 쿼리 `scene ≤ 480px`), `src/data/sceneText.ts#eraAccessibleName`·`SCENE_TEXT.eraVeiled`, 상한 `src/core/eraWindow.ts#ERA_FIRST_MAX/ERA_SECOND_MAX/ERA_CAPTION_MAX`. 새 색 토큰 0(그림 토큰 red·gold 2는 18절 그림 쪽) · 새 대비 쌍 0 · 새 글꼴·자산 0)
+
+### 20-1. 캡션 `.era__cap` — 창 칸 안, 그림과 같은 시선 안의 작은 글자
+
+| 항목 | 값 | 근거 |
+|---|---|---|
+| 무엇 | 사건 이름 **명사구** ≤ 14자(`ERA_CAPTION_MAX`; 서술어·마침표·연도 0, 「예측」 글자 0) — 사건마다 하나(`scripts/eraEvents.ts` `caption`). 가린 해는 **「가려 둔 장면」**(`SCENE_TEXT.eraVeiled`, 상수 한 곳). 빈 해는 **없음** | SPEC-013 캡션 규격 · G4 |
+| 글자 | `--fs-xs` 12px · `line-height: 1.3` · `--fw-regular` · `--c-text-2` · `word-break: keep-all; overflow-wrap: anywhere` | 프로젝트 하한 12px 그대로(작은 글자이되 줄이지 않는다). 기록 줄 제목 `.log__q`(19-5)와 같은 글자 — 「보조 글자」 한 식구 |
+| 대비 | 파인 면 `--c-surface-2` 위 **7.53 / 7.61**(라이트/다크) · 띠 바탕 `--c-surface` 위 **8.65 / 8.78** | `contrast-report.md` 「보조 설명」 쌍 — 규격 ⑧ ≥ 4.5, 새 쌍 0 |
+| PC(카드 536, 칸 175×140) | 캡션은 그림 **아래** 줄(`grid-template-rows: minmax(0,1fr) auto`, `grid-row: 2`, `padding: 3px var(--sp-2) 4px`). 그림 상자 = 칸 − 캡션 ≈ 175×118(한 줄) — 그림(좌표 40×32, `slice`)은 위아래 약 8%씩 잘린다. 한 줄 ≤ **13자**(13 × 12 = 156 ≤ 159px), 14자는 두 줄(상자 175×102) | `era-empty-frame.md` 1절 측정. 승인 캡션 49건은 모두 ≤ 13자(가장 긴 것 「12월 직선제 투표」 10자) |
+| 휴대폰 띠(카드 ≤ 480, 칸 326×80) | 그림 100×80 그대로(첫 열, 두 줄 걸침), 캡션은 그림 **옆** 둘째 열(`grid-column: 2; grid-row: 2; align-self: start; padding: var(--sp-2) var(--sp-2) 0 0`, 폭 약 218px — 18자까지 한 줄). 「예측」 칩이 있으면 칩이 둘째 열 첫 줄(정적 배치), 캡션은 그 아래(`padding-top: var(--sp-1)`) | 규격 ④ 그림·칩 가림 0 — 측정 단언 통과 |
+| 칸 높이(휴대폰) | `height: max(80px, 3.9rem)` — 글자 100%에서 80px, 200%에서 124.8px(칩 38 + 캡션 두 줄 62 + 여백 14). **내용이 아니라 글자 크기의 식**이라 사건 해·빈 해·가린 해·미래 해의 칸 높이가 같다(화면이 흔들리지 않는다) | 완료 기준 7 「칸 크기 불변」 |
+| 항상 보이는 글자 | 툴팁·hover 없음(터치에서 안 보인다). 창 전체 링크(`a.era`) 안에 있어 누르면 인생 기록의 그 줄로 가는 동작 불변(초점 정지점 1) | 규격 ②③ · FT5 |
+| 접근 이름 | **「{캡션}. (예측.) {첫 문장} {둘째 문장} 그해 기록으로」**(`eraAccessibleName`) — 보이는 캡션 글자를 이름이 그대로 담는다(Label in Name). 가린 해는 「가려 둔 장면. 그해 기록으로」(가린 사건의 문장을 말하지 않는다) | 규격 ⑨ · SPEC-013 T3 1 |
+| 전환 | 해가 바뀔 때 그림과 같은 교차 페이드(`.era__prev` `scene-fade-out var(--dur-slow)`), 움직임 줄이기에서는 전환 없음 | 규격 ⑤ · 7절 |
+| 강제 색상 | 글자 CanvasText — 위치·크기로 구분, 색에 의존 0. 그림은 `forced-color-adjust: none` 그대로 | 규격 ⑧ · 8절 |
+
+### 20-2. 빈 종이 `.era__sheet` (안 B) · 가린 해
+
+| 항목 | 값 |
+|---|---|
+| 빈 해 | 칸(`.era[data-empty='true']`)은 파인 면 `--c-surface-2` 그대로, 안에 **`<i class="era__sheet">`** 한 장 — `position: absolute; inset: 6px; background: var(--c-surface)`(카드 면과 같은 종이색, 장식 0). 연도 표 `.scene__year` 그대로, 캡션·링크 없음(초점 정지점 0). 점무늬 네모(`era-paper` 패턴)는 `src/` 0건 |
+| 다크 | 종이색 면이 파인 면보다 한 단 밝다(1.15:1 단차 — 「빈 종이」로만 읽히면 된다, 글자 없음) |
+| 강제 색상 | 종이에 `border: 1px solid CanvasText` — 면 색이 사라져도 「종이 한 장」이 보인다 |
+| 가린 해(○ 사건, 대체 그림 없음) | 빈 해와 **같은 종이** + 캡션 「가려 둔 장면」(`[data-hidden='true']`). 링크는 그대로(그해의 가린 줄로 간다 — 줄은 `.veil` + 「펼쳐 보기」) |
+| 로딩 틀 | 10년 덩어리가 아직 안 온 해는 파인 면만(종이 없음) — 「못 온 것」과 「없는 것」이 구분된다(안 A를 버린 이유) |
+| 측정 | 네 해(사건·빈·가림·미래)의 창 칸 크기 같음: 360 띠 **326×80** · 1280 **175×140**. 넘침 0 · 캡션↔칩↔그림 겹침 0 · 360 글자 200% 넘침 0(`era-empty-frame-measure.json`) |
+
+### 20-3. 글 상한 (SPEC-013 T1 6 — 옛 `ERA_LINE_MAX` 22를 대체)
+
+| 글 | 상한 | 화면 자리 |
+|---|---|---|
+| 첫 문장 `ERA_FIRST_MAX` | 32자 | 인생 기록 시대 줄 본문 · 창 접근 이름 |
+| 둘째 문장 `ERA_SECOND_MAX` | 28자 | 시대 줄에서 첫 문장 뒤에 이어지는 보조 글자(같은 줄) · 접근 이름 |
+| 캡션 `ERA_CAPTION_MAX` | 14자(PC 한 줄 13자) | 창 칸 `.era__cap` |
+
+- 근거: 형진 님 문체 예 「우리나라가 월드컵 4강에 올라 온 나라가 떠들썩했습니다.」 = 31자. 수치는 구현 실측(360px·글자 200%)과 함께 확정 — 승인 49건은 모두 상한 안(`era-text-r1.md` 11절).
+- design-taste 전·후: 캡션·빈 종이 시안 검사는 `era-empty-frame.md`(0 FAIL · 기존 WARN `palette-cream`·`heavy-borders` — 확정 토큰). 이번 T8 문서 작업은 화면 시안이 없어 검사를 돌리지 않았다(지시).
