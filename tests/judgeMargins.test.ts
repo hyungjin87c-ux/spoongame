@@ -29,11 +29,11 @@ import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, marginReport, pr
  */
 /**
  * `lineOnly`: 합친 표본은 3 SE 이상인데 줄별(1000판) 표본 한 칸만 2 SE 아래로 내려간 **표본 잡음**이라 줄별 경보에서만 예외로 둔다(합친 판정은 그대로 3 SE를 지킨다).
- * **SPEC-011 AK10(2026-11-09, 마스터 결정)**: `노년(65세+) 결정 카드 평균 / genx / sim:1000 · 수동 흉내`(1.9 SE) — 조르기 사건이 풀에 들어와 난수 흐름이 옮겨 가며 이 한 칸의 표본 평균이 하한 4.72 쪽으로 조금 붙었다(합친 4줄은 3 SE 이상).
+ * **SPEC-011 AK10(2026-11-09, 마스터 결정)**: `노년(65세+) 결정 카드 평균 / genx / sim:1000 · 수동 흉내`(1.9 SE) — 조르기 사건이 풀에 들어와 난수 흐름이 옮겨 가며 이 한 칸의 표본 평균이 하한 4.72 쪽으로 조금 붙었다(합친 4줄은 3 SE 이상). 줄 단위 허용은 1.5 SE까지다(`floor` 3 − 1.5).
  */
 const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number; lineOnly?: boolean }> = [
   { metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -2.5 },
-  { metric: '노년(65세+) 결정 카드 평균', era: 'genx', floor: -2.5, lineOnly: true },
+  { metric: '노년(65세+) 결정 카드 평균', era: 'genx', floor: 3, lineOnly: true },
 ];
 /** 합친 표본은 `floor`(−2.5 SE), 줄별 표본은 그보다 1.5 SE 더 넓은 잡음을 인정한다(줄 하나는 표본이 4분의 1이라 SE가 두 배다) */
 const isKnownUnder3 = (u: { metric: string; era: string; margin: number }, line = false): boolean => KNOWN_UNDER3.some((k) => (line || k.lineOnly !== true) && k.metric === u.metric && k.era === u.era && u.margin >= k.floor);

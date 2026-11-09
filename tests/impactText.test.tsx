@@ -154,9 +154,15 @@ describe('선택지 버튼 이름과 안내 한 줄 (copy.md 4-3·4-4)', () => {
     expect(IMPACT_HINT.symbols).toBe('▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.');
     expect(IMPACT_HINT.symbolsSr).toBe('위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.');
     // 색의 뜻을 설명하는 셋째 문장은 없다 (r2 마스터 결정 3)
-    expect(Object.keys(IMPACT_HINT)).toEqual(['lead', 'symbols', 'symbolsSr']);
+    expect(Object.keys(IMPACT_HINT)).toEqual(['lead', 'leadAsk', 'symbols', 'symbolsSr']);
+    // R-676 (copy.md 20-2): 조르기 카드에서만 쓰는 첫 문장 — 둘째 문장은 같다
+    expect(IMPACT_HINT.leadAsk('이서연')).toBe('들어줄지는 어른이 정하고, 아래 글씨는 참을 때 이서연에게 생기는 변화입니다.');
+    const askHtml = renderToStaticMarkup(<ImpactHint name="이서연" ask />);
+    expect(askHtml).toContain('들어줄지는 어른이 정하고, 아래 글씨는 참을 때 이서연에게 생기는 변화입니다.');
+    expect(askHtml).not.toContain('선택지 아래 글씨는');
     const html = renderToStaticMarkup(<ImpactHint name="이서연" />);
     expect(html).toContain('class="decision__hint"');
+    expect(html).not.toContain('들어줄지는');
     expect(html).toMatch(/<span aria-hidden="true">▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다\.<\/span>/);
     expect(html).toMatch(/<span class="sr-only">위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다\.<\/span>/);
   });

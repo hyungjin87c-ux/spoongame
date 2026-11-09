@@ -12,6 +12,7 @@ import { ASK_PET_ENABLED } from '../askTable';
  *
  * **JSON에는 주석을 달 수 없어 여기에 적는다 — `infant.json`·`school.json`의 선택지 효과 50곳(21개 사건)은 SPEC-011 AK10 결정 3(형진 님 2026-11-09 「보정한다」)으로 +1 했다**:
  * 조르기가 부모·흘러감 카드를 판당 약 1.6장 대신해 20세 평균 지식·관계가 내려간 몫을 남은 카드가 메운다(설계 문서 `docs/data/ask-model.md` 11절 사다리 4번의 사용 기록에 규칙 넷·올리지 않은 9곳·사유).
+ * 규칙에 걸리나 올리지 않은 곳: 문서의 9곳 외에 `school-club/sports`·`books`(규칙 ② 해당이나 빠뜨림 — 배포 뒤 재측정 때 판단), `school-family-priority`는 규칙 ③·④ 대상 아님(전 구간을 흘러감으로 보지 않음). 값은 바꾸지 않았다.
  * 보정 전 원문은 `tests/fixtures/pre-ask-comp-events/`(재측정 기준 V11s)에 얼려 두었다. 이 효과를 또 바꾸면 `tests/stat20Guard.test.ts#PD_AT_20`·`tests/infantContent.test.ts`의 `PD_AT_8`·`tests/rngSnapshot.test.ts`를 함께 다시 잰다.
  */
 const BASE_FILES: Readonly<Record<string, unknown>> = import.meta.glob(['./*.json', '!./ask-pet.json'], { eager: true, import: 'default' });

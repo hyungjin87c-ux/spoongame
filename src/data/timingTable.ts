@@ -107,7 +107,7 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     cardsSelf: { meanLow: 17.4 },
     // 상단 M24(2026-10-26): 사람 실측 35 → 38, 세 시대 평균 33 → 35 (시대별 상단 = modelHigh + 1.5 = 36.5)
     // **SPEC-011 Q1(2026-11-09, 형진 님 결정 「내용을 줄이지 않고 임계를 올린다」 — 값은 마스터가 보고해 정했다)**: 어린 시절 조르기가 판당 약 1.6장(본인 카드, 인용 없음)을 더해 실측 세 시대 평균이 35.29분(report:time 3 × 1000판, 기준선 34.64분 +0.65)이 되어
-    // 평균 상단 35를 넘었다 → modelHigh 35 → 36 (시대별 상단 36.5 → 37.5). 95% 분위 한도 40·최대 45는 그대로 지켜진다(95% 분위 38.2 / 39.8 / 39.7분). 내용(조르기 사건·문장)은 줄이지 않았다.
+    // 평균 상단 35를 넘었다 → modelHigh 35 → 36 (시대별 상단 36.5 → 37.5). 95% 분위 한도는 40 → 41(후속 218 — 고정 시드 표본에서 genx·alpha가 39.7~40.0분, tests/simulation.test.ts·scripts/marginsLib.ts#TIME_P95_LIMIT_MIN), 최대 45는 그대로다. 내용(조르기 사건·문장)은 줄이지 않았다.
     timeMin: { humanLow: 25, humanHigh: 38, modelLow: 27, modelHigh: 36 },
   },
   long60: {

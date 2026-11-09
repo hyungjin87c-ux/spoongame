@@ -256,13 +256,13 @@ function withValidBy(state: GameState): GameState {
   return changed ? { ...state, history } : state;
 }
 
+/** 질문 문장에 있을 수 없는 줄바꿈 등 제어 문자 (게임이 만든 한 줄 글) */
+const ASCII_CONTROL = /[\u0000-\u001f\u007f]/;
+
 /**
  * 연표 줄의 `question`(SPEC-014 QS1 — 결정 줄의 질문 문장)은 **선택 필드**라 이상한 값이 판을 버리게 하지 않는다 — `kind: 'choice'`가 아니거나, 문자열이 아니거나, 비었거나, `maxQuestionLength`를 넘거나, 위험한 글자(`hasHiddenControl`)가 있으면
  * **그 필드만 버린다**(옛 줄에는 처음부터 없고, 열 때 채우지 않는다 — save → load → save가 바이트 그대로다). 줄을 새로 만들지 않고, 버릴 필드가 없으면 같은 객체를 돌려준다.
  */
-/** 질문 문장에 있을 수 없는 줄바꿈 등 제어 문자 (게임이 만든 한 줄 글) */
-const ASCII_CONTROL = /[\u0000-\u001f\u007f]/;
-
 function withValidQuestion(state: GameState): GameState {
   const has = (h: object) => Object.prototype.hasOwnProperty.call(h, 'question');
   if (!state.history.some(has)) return state;

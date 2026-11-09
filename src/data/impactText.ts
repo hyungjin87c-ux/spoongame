@@ -79,6 +79,8 @@ export function choiceAccessibleName(label: string, items: readonly ImpactItem[]
 export const IMPACT_HINT = {
   // M7e-3 (copy.md 5-2 ②, QA-003-M5 O01): 「지금 … 일어날」은 모두 올해 일어나는 것으로 읽혀 「자산 ▼」 선택의 31%가 해 끝에 순자산이 늘어나는 것과 어긋났다. 「이 선택만으로」가 「해마다의 소득·생활비는 따로」를 함의한다.
   lead: (name: string): string => `선택지 아래 글씨는 이 선택만으로 ${name}에게 생기는 변화입니다.`,
+  // R-676 (copy.md 20-2, designer 결정 ②): 조르기 카드(`ev.ask`)에서만 쓰는 첫 문장 — 조른다·떼를 쓴다 아래는 변화가 아니라 고정 한 줄이라 「변화」가 가리키는 것을 참을 때로 좁힌다. 둘째 문장은 그대로다.
+  leadAsk: (name: string): string => `들어줄지는 어른이 정하고, 아래 글씨는 참을 때 ${name}에게 생기는 변화입니다.`,
   symbols: '▲는 늘어남, ▼는 줄어듦이며 표시가 많을수록 변화가 큽니다.',
   symbolsSr: '위쪽 세모는 늘어남, 아래쪽 세모는 줄어듦이며 표시가 많을수록 변화가 큽니다.',
 } as const;

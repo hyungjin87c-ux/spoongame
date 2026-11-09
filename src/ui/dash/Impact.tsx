@@ -41,10 +41,10 @@ export function ImpactFixedLine({ text = ASK_UNKNOWN_IMPACT_TEXT }: { text?: str
 }
 
 /** 선택지 묶음 아래 안내 한 줄: 첫 문장은 그대로 읽히고, 둘째 문장(기호 설명)은 눈에 보이는 글자가 aria-hidden이며 스크린리더에는 대체 글자가 읽힌다 (copy.md 4-4) */
-export function ImpactHint({ name }: { name: string }) {
+export function ImpactHint({ name, ask = false }: { name: string; ask?: boolean }) {
   return (
     <p className="decision__hint" data-testid="choice-hint">
-      <Glue text={IMPACT_HINT.lead(name)} /> <span aria-hidden="true">{IMPACT_HINT.symbols}</span>
+      <Glue text={ask ? IMPACT_HINT.leadAsk(name) : IMPACT_HINT.lead(name)} /> <span aria-hidden="true">{IMPACT_HINT.symbols}</span>
       <span className="sr-only">{IMPACT_HINT.symbolsSr}</span>
     </p>
   );

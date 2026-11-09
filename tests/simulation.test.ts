@@ -556,11 +556,12 @@ describe('밸런스 (R-045 b): 행복·관계는 출생값에 종속되지 않�
     const b = balanceOf(SIM_PROFILES.flatMap((era) => simulateMany(era, 4000, 'random')));
     // SPEC-005 QI5(마스터 결정 — 설계 문서 9절 2번): 표본 필터를 제목이 말하는 「표본이 충분한 1~4단계」에 맞춰 `n >= 200`으로 했다. 예전 `n >= 60`은 재력 5단계(세 시대 합쳐 약 80판, 평균의 표준오차 약 1.3)까지 끼워
     // 고정 시드 줄에서는 부모 결정과 상관없이 단계 차가 8.87 ↔ 10.72로 출렁였다. 한도 10은 그대로다. 독립 표본 12000판(시드 1001~5000)에서 PD 전/후 단계 차는 9.02 / 8.90으로 같았다.
+    // SPEC-011 AK10: 표본을 4000판 × 3세대로 늘리며 필터를 `n >= 500`으로 올렸다(위 JSDoc) — 위 `n >= 200`은 옛 기록이다.
     const big = b.tiers.filter((t) => t.n >= 500);
     expect(big.map((t) => t.tier)).toEqual([1, 2, 3, 4]);
     const spread = (key: 'happiness' | 'relationships') => Math.max(...big.map((t) => t.mean[key])) - Math.min(...big.map((t) => t.mean[key]));
     expect(spread('happiness')).toBeLessThanOrEqual(10);
-    expect(spread('happiness'), '표본이 비지 않았다(조르기 없는 풀 8.15 · 지금 9.44)').toBeGreaterThanOrEqual(7);
+    expect(spread('happiness'), '표본이 비지 않았다(조르기 없는 풀 8.15 · 조르기 9.44 · 보정 뒤 9.30)').toBeGreaterThanOrEqual(7);
     expect(spread('relationships')).toBeLessThanOrEqual(6);
   });
 

@@ -161,7 +161,7 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, o
                 </GuardedButton>
               ))}
             </div>
-            {anyImpact ? <ImpactHint name={name} /> : null}
+            {anyImpact ? <ImpactHint name={name} ask={ev.ask !== undefined} /> : null}
           </>
         )}
         {/* 자동 모드 안내: 정적 문장이다(role=status 아님 — 자동 선택 때마다 낭독되지 않게, content-M7b 4-3) */}

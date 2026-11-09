@@ -76,6 +76,20 @@ describe('조르기 카드: 조른다·떼를 쓴다는 고정 한 줄, 참는�
     });
   }
 
+  it('안내 한 줄(R-676, copy.md 20-2): 조르기 카드의 첫 문장은 leadAsk이고, 일반 선택 카드는 지금의 lead 그대로다', () => {
+    const hint = (html: string) => {
+      const at = html.indexOf('data-testid="choice-hint"');
+      expect(at).toBeGreaterThan(-1);
+      return text(html.slice(at, html.indexOf('</p>', at)));
+    };
+    const ask = hint(render(state));
+    expect(ask).toMatch(/들어줄지는 어른이 정하고, 아래 글씨는 참을 때 \S+에게 생기는 변화입니다\./);
+    expect(ask).not.toContain('선택지 아래 글씨는');
+    const plain = hint(render(plainCardState()));
+    expect(plain).toMatch(/선택지 아래 글씨는 이 선택만으로 \S+에게 생기는 변화입니다\./);
+    expect(plain).not.toContain('들어줄지는');
+  });
+
   it('고정 한 줄은 새 줄 종류가 아니다: 영향 줄과 같은 .impact 안에 앉고, 일반 선택 카드에는 나오지 않는다', () => {
     const html = render(state);
     expect(html).toContain('class="impact impact--fixed"');
