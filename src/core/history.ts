@@ -18,6 +18,7 @@ export function clipEntry(e: HistoryEntry): HistoryEntry {
   const out: HistoryEntry = { ...e, text: clip(e.text, HISTORY_LIMITS.maxTextLength) };
   if (e.title !== undefined) out.title = clip(e.title, HISTORY_LIMITS.maxTitleLength);
   if (e.choice !== undefined) out.choice = clip(e.choice, HISTORY_LIMITS.maxChoiceLength);
+  if (e.question !== undefined) out.question = clip(e.question, HISTORY_LIMITS.maxQuestionLength);
   return out;
 }
 
@@ -36,4 +37,13 @@ export function appendHistory(history: readonly HistoryEntry[], entry: HistoryEn
     next.splice(i, 1);
   }
   return next;
+}
+
+/**
+ * 결정 줄의 윗줄 글 (SPEC-014 QS2): 그때의 질문 문장(`question`)이 있으면 그것을, 없으면 사건 제목(`title`)을, 둘 다 없으면 `undefined`.
+ * 인생 기록(LogList)과 엔딩 연표(TimelineBody)가 같은 규칙을 쓴다 — 옛 저장의 줄은 `question`이 없어 제목으로 보인다(열 때 채우지 않는다).
+ */
+export function entryHeadline(e: HistoryEntry): string | undefined {
+  if (e.question !== undefined && e.question !== '') return e.question;
+  return e.title !== undefined && e.title !== '' ? e.title : undefined;
 }

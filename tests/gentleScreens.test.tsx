@@ -5,6 +5,7 @@ import {
   type ProfileId,
   autoResolveStep,
   buildCarousel,
+  entryHeadline,
   heavyKindOfEntry,
   heavyKindOfEvent,
   playToEnd,
@@ -405,8 +406,8 @@ describe('엔딩: 연표의 가린 줄 + 맨 위 한 줄 (HV4 ④·HV6·HV8·R-4
     // 가린 연표 줄: 안내 + 펼쳐 보기, 펼치면 제목 → 고른 길 → 결과 문장 (hidden 요소 안에 있다)
     const body = [...on.matchAll(/<span class="veil__body" id="(veil-tl-[^"]+)" hidden="" data-testid="veil-body">([\s\S]*?)<\/span><\/span><\/li>/g)];
     expect(body.length).toBe(heavy.length);
-    const first = heavy.find((h) => h.title !== undefined)!;
-    expect(body.some((b) => b[2].includes(`<strong>${first.title}</strong>`) && b[2].includes(first.text))).toBe(true);
+    const first = heavy.find((h) => entryHeadline(h) !== undefined)!;
+    expect(body.some((b) => b[2].includes(`<strong>${entryHeadline(first)}</strong>`) && b[2].includes(first.text))).toBe(true);
   });
 
   it('사망 줄과 엔딩 맨 위 사망 문장은 원인 낱말까지 그대로 보인다 (R-470) — 20세 미만 「갑작스러운 병」·「사고」 포함', () => {

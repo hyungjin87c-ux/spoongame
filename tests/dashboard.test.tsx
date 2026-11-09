@@ -2,13 +2,12 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import { DEFAULT_SETTINGS, IMPACT_KEYS, R1_PRESENT, SPEEDS, advanceUntilDecision, calendarYear, currentHomeOf, educationLabel, familyCardOf, familyViewOf, peersOf, sceneInputOf, previewPending, resolveChoice, stepYear, wealthMixtureOfGame, type GameState, type Settings } from '../src/core';
-import { looksStanding } from '../src/core/birth';
+import { looksText } from '../src/data/looksText';
 import { reportPlaceLabel } from '../src/core/birthReport';
 import { startBandOf } from '../src/core/ending';
 import { formatMan } from '../src/core/format';
 import { PEER_STATUS_LABEL, peersNow } from '../src/core/peerNow';
-import { DASHBOARD_PEERS_SHIPPED, BIRTH_TEXT, GRADE_NAME, genderLabel, peersNoteText, yearMonthText } from '../src/data/birthReportText';
-import { standingLabel } from '../src/data/birthText';
+import { DASHBOARD_PEERS_SHIPPED, GRADE_NAME, genderLabel, peersNoteText, yearMonthText } from '../src/data/birthReportText';
 import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, statusHelpText } from '../src/data/dashText';
 import { EVENT_POOL } from '../src/data/events';
 import { choiceAccessibleName } from '../src/data/impactText';
@@ -371,7 +370,7 @@ describe('프로필 카드 (DB9)', () => {
     expect(home).toContain(gradeStem(c.parentWealth));
     expect(flat(openTagBlock(home, 'grade-range'))).toBe(nospace(`(${bandLabel(startBandOf(wealthMixtureOfGame(infant), c.parentWealth))})`));
     expect(flat(openTagBlock(card, 'profile-edu'))).toBe(nospace(educationLabel(infant.age, infant.flags)));
-    expect(flat(openTagBlock(card, 'profile-looks'))).toBe(nospace(`${BIRTH_TEXT.looksSub} ${standingLabel(looksStanding(c.looks))}`)); // M7e-3: 값 앞에 「또래 사이에서」
+    expect(flat(openTagBlock(card, 'profile-looks'))).toBe(nospace(looksText(c, 'profile', infant.age, infant.seed))); // SPEC-015 AP3: 이목구비 글의 첫 문장만(퍼센트·「또래 사이에서」 없음)
   });
 
   it('얼굴은 나이에 맞는 연령대로 바뀐다 (0세 영아 → 31세 청년)', () => {
@@ -386,7 +385,7 @@ describe('프로필 카드 (DB9)', () => {
       expect(t).not.toMatch(/(?<!\d)97(?!\d)/);
       expect(t).not.toMatch(/외모\s*\d/);
     }
-    expect(text(openTagBlock(sectionOf(render(infant), 'profile-card'), 'profile-looks'))).toMatch(/^또래 사이에서 (상위|하위|가운데쯤)/); // M7e-3: 「또래 사이에서 상위 약 N%」
+    expect(text(openTagBlock(sectionOf(render(infant), 'profile-card'), 'profile-looks'))).toMatch(/^.+ 아이입니다\.$/); // SPEC-015 AP3: 0세 프로필은 「…한 아이입니다.」 첫 문장만
   });
 });
 

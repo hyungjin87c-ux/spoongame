@@ -132,6 +132,8 @@
   --c-scene-pet: #a98c66;
   --c-scene-pet2: #4a453d;
   --c-scene-face: #4a362c;
+  --c-scene-red: #c6302b;
+  --c-scene-gold: #d9a62e;
   --c-era: #6d2f4e;
   --c-era-soft: #f4e3ec;
 
@@ -283,6 +285,8 @@
     --c-scene-pet: #b89c78;
     --c-scene-pet2: #c9c3b8;
     --c-scene-face: #4a362c;
+    --c-scene-red: #e2574d;
+    --c-scene-gold: #e6b63c;
     --c-era: #f5a8d6;
     --c-era-soft: #3a2434;
     --shadow-1: none;
@@ -376,6 +380,8 @@
   --c-scene-pet: #b89c78;
   --c-scene-pet2: #c9c3b8;
   --c-scene-face: #4a362c;
+  --c-scene-red: #e2574d;
+  --c-scene-gold: #e6b63c;
   --c-era: #f5a8d6;
   --c-era-soft: #3a2434;
   --shadow-1: none;

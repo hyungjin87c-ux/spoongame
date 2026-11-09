@@ -1,6 +1,5 @@
 import { wealthMixtureOfGame } from '../../core/birthProfile';
 import { Fragment, useMemo, useState } from 'react';
-import { looksStanding } from '../../core/birth';
 import { formatMan } from '../../core/format';
 import { reportPlaceLabel } from '../../core/birthReport';
 import { startBandOf } from '../../core/ending';
@@ -9,8 +8,8 @@ import { currentHomeOf, sceneInputOf } from '../../core/scene';
 import { peersNow } from '../../core/peerNow';
 import { educationLabel } from '../../core/profile';
 import type { Character, BirthReport, GameState, ProfileId } from '../../core/types';
-import { BIRTH_TEXT, genderLabel, yearMonthText } from '../../data/birthReportText';
-import { standingLabel } from '../../data/birthText';
+import { genderLabel, yearMonthText } from '../../data/birthReportText';
+import { looksText } from '../../data/looksText';
 import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, amountsConverted, statusHelpText } from '../../data/dashText';
 import { bandLabel } from '../../data/endingText';
 import { FAMILY_CARD_TEXT } from '../../data/familyCardText';
@@ -66,8 +65,8 @@ export function ProfileCard({ game }: { game: LifeGame }) {
         <dd data-testid="profile-edu">{educationLabel(game.age, game.flags)}</dd>
         <dt>{DASH_TEXT.profileLooks}</dt>
         <dd data-testid="profile-looks">
-          {/* 외모는 점수가 아니라 「상위/하위 약 N%」 한 가지로만 (R-135) */}
-          <small>{BIRTH_TEXT.looksSub}</small> {standingLabel(looksStanding(c.looks))}
+          {/* 외모는 점수·퍼센트가 아니라 이목구비 글의 첫 문장만 (SPEC-015 AP3) — 출생신고·엔딩과 같은 인물의 같은 글 */}
+          {looksText(c, 'profile', game.age, game.seed)}
         </dd>
       </dl>
     </section>

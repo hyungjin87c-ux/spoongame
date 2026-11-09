@@ -27,6 +27,7 @@
 | `id` | O | 소문자로 시작, 소문자·숫자·하이픈 2~48자 (`school-exam`). 저장 파일에 남으므로 **한 번 쓴 id는 바꾸지 않는다**. 예약어(`constructor`·`prototype` 등 `Object.prototype`의 속성 이름)는 쓸 수 없다(R-046). **`note-`로 시작하는 id도 쓸 수 없다** — 기록 카드(`src/data/notes.json`, SPEC-003 M7c)가 본 이벤트 기록 `seen`에 같은 접두의 키를 쓴다(`tests/noteCards.test.ts`). |
 | `title` | O | 1~30자(권장 16자 이하, 7절). 연표·선택지 제목에 쓰인다. |
 | `text` | O | 10~400자(권장 74자 이하, 7절). 서술 이벤트는 사건 문구, 선택지 이벤트는 상황 설명. |
+| `question` | 선택지 이벤트 필수 | **결정 줄 질문 문장**(SPEC-014): 그 사건의 갈림길을 되묻는 「…할까?」 한 문장, 사건당 하나(모든 선택지가 같다), 4~30자, 「까?」로 끝나고 물음표는 맨 끝 하나. 사람 주어·평가어·계층어·숫자·제목에 물음표만 붙인 꼴·선택지 문구 반복 0, 94개가 서로 달라야 한다(`core/eventLint.ts#questionProblems`, `npm run check:events`). 서술 이벤트(선택지 없음)에는 쓰지 않는다. `resolveChoiceCore`가 인생 기록 줄(`HistoryEntry.question`)에 적고 인생 기록·엔딩 연표의 윗줄이 제목보다 먼저 쓴다. 선택지 카드 문구에는 닿지 않는다. 승인 문장: `docs/design/question-text-*.md`. |
 | `stages` | O | `infant`(영유아 0~6) · `school`(학창 7~19, 7세는 학창 단계지만 영유아 빈도표를 쓴다 — M7a, `EARLY_YEARS_MAX_AGE`) · `youth`(청년 20~39) · `middle`(중년 40~64) · `senior`(노년 65~) 중 하나 이상. |
 | `ageRange` | | `{ "min": 10, "max": 16 }` 단계 안에서 나이를 더 좁힌다. `stages`와 겹치지 않으면 오류(영원히 안 일어나므로). |
 | `eras` | | `past`·`present`·`future` 중 일부. 없으면 모든 시대. **시대 차이는 이 필터와 `ERA_CONFIG` 계수로만** 만든다. 시대 소재 규칙은 7절. |

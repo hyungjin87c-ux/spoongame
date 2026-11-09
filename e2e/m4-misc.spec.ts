@@ -375,7 +375,8 @@ for (const looks of [88, 97]) {
     const textOf = async (testId: string) => (await page.getByTestId(testId).innerText()).replace(/\s+/g, ' ');
     const standalone = new RegExp(`(?<![\\d,.])${looks}(?![\\d,.]|%)`);
     expect(await textOf('life-screen')).not.toMatch(standalone);
-    expect(await textOf('profile-looks')).toMatch(/^또래 사이에서 (상위|하위)/);
+    expect(await textOf('profile-looks')).toMatch(/ (아이|얼굴)입니다\.$/); // SPEC-015: 이목구비 글 첫 문장만(0~6세 「아이」·7세~ 「얼굴」) — 퍼센트·「또래 사이에서」 없음
+    expect(await textOf('profile-looks')).not.toMatch(/%|또래|상위|하위/);
     // 엔딩
     const ended = await oracleAuto(page, { ...life, age: 0, history: life.history, character: life.character });
     expect(ended.phase).toBe('ending');
@@ -393,7 +394,8 @@ for (const looks of [88, 97]) {
     await expect(page.getByTestId('rebirth')).toBeEnabled();
     const ending = await textOf('ending-screen');
     expect(ending).not.toMatch(lkPattern);
-    expect(await textOf('final-looks')).toMatch(/(상위|하위)/);
+    expect(await textOf('final-looks')).toMatch(/얼굴이었습니다\. .+\.$/); // SPEC-015: 이목구비 글 두 문장
+    expect(await textOf('final-looks')).not.toMatch(/%|또래|상위|하위/);
     expect(ending).not.toMatch(/외모\s*\d/);
   });
 }

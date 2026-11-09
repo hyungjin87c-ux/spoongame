@@ -833,6 +833,40 @@ function variantFamilyOf(ev: EventDef, ids: ReadonlySet<string>): string {
   return base !== ev.id && ids.has(base) ? base : ev.id;
 }
 
+/** 질문 문장에 쓰지 않는 사람 주어(주격·주제 조사가 붙은 꼴만 본다 — 「나가 볼까」·「아이를 가질까」·「부모님의 몸」은 주어가 아니다), 평가·도덕어, 계층어, 시대 판단어 (SPEC-014 규칙 3·6) */
+const QUESTION_SUBJECT = /(?:^|[\s,])(?:내가|나는|우리(?:가|는)|아이(?:가|는)|부모(?:가|는)|부모님(?:이|은|께서))(?=[\s,?])/;
+const QUESTION_BANNED = /옳|착하|올바르|잘못|가난|부자|요즘|옛날|\d/;
+
+/**
+ * 결정 줄 질문 문장 점검 (SPEC-014 QS1·QS3, 완료 기준 1·7 — `npm run check:events`가 부른다): 선택지 이벤트마다 `question`이 있고(서술 이벤트에는 없다),
+ * 「…할까?」 한 문장·≤ 30자(형태는 스키마 검증이 이미 본다), 사건끼리 서로 다르고, 사람 주어·평가어·계층어·시대 판단어·숫자가 없고, 제목에 물음표만 붙인 꼴이나 선택지 문구 그대로가 아니다.
+ */
+export function questionProblems(events: readonly EventDef[]): string[] {
+  const problems: string[] = [];
+  const seen = new Map<string, string>();
+  for (const ev of events) {
+    const q = ev.question;
+    if (ev.choices === undefined) {
+      if (q !== undefined) problems.push(`${ev.id}.question: 서술 이벤트(선택지 없음)에는 질문 문장이 없다`);
+      continue;
+    }
+    if (q === undefined) {
+      problems.push(`${ev.id}.question: 선택지 이벤트에는 질문 문장(「…할까?」)이 있어야 한다`);
+      continue;
+    }
+    const prev = seen.get(q);
+    if (prev !== undefined) problems.push(`${ev.id}.question: ${prev}와 질문이 똑같다 — "${q}"`);
+    else seen.set(q, ev.id);
+    if (QUESTION_SUBJECT.test(q)) problems.push(`${ev.id}.question: 사람 주어(나·우리·아이·부모)를 쓰지 않는다 — "${q}"`);
+    const banned = QUESTION_BANNED.exec(q);
+    if (banned !== null) problems.push(`${ev.id}.question: 평가·계층·시대 판단어나 숫자(「${banned[0]}」)를 쓰지 않는다 — "${q}"`);
+    const body = q.replace(/\?$/, '');
+    if (body === ev.title || `${ev.title}?` === q) problems.push(`${ev.id}.question: 제목에 물음표만 붙인 꼴이다 — 갈림길이 보여야 한다`);
+    for (const c of ev.choices) if (body === c.label) problems.push(`${ev.id}.question: 선택지 문구(${c.id})를 그대로 반복했다`);
+  }
+  return problems;
+}
+
 /**
  * 풀 전체 점검: 이벤트별 문구 + 풀 전체에서 겹치는 제목·본문·결과 + 마일스톤 창.
  * **같은 원본의 「남은 한 분」 변형끼리·원본과는 문구가 겹쳐도 된다**(FM7a, 승인된 문장 재사용 — 변형은 호칭이 든 문장만 바꾸고 나머지 문장·선택지 결과는 원본 그대로다, T07·T08).

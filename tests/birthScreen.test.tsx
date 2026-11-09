@@ -5,6 +5,7 @@ import { PARENT_WEALTHS, R1_PRESENT, beginBirth, birthSentence, createInitialSta
 import { profileLabel } from '../src/core/birthProfile';
 import { BIRTH_TEXT, DASHBOARD_PEERS_SHIPPED, GRADE_NAME, REPORT_NOTES, genLine, genderLabel, housingText, orderText, peersNoteText, yearMonthText, yearNoteText } from '../src/data/birthReportText';
 import { lifeGapLine } from '../src/data/birthCompare';
+import { looksText } from '../src/data/looksText';
 import { DASH_TEXT } from '../src/data/dashText';
 import { placeLabel, regionLabelAt } from '../src/data/regionNames';
 import { OCCUPATION_LABEL } from '../src/data/birthReportTable';
@@ -36,7 +37,7 @@ function render(era: ProfileId, seed: number) {
   const born = enterBirth(beginBirth(createInitialState(seed), era));
   const c = born.character!;
   const r = born.birthReport!;
-  const html = renderToStaticMarkup(<BirthScreen generation={era} character={c} report={r} peerSeed={born.peerSeed!} regionPicked={born.regionPicked === true} onNext={() => {}} />);
+  const html = renderToStaticMarkup(<BirthScreen generation={era} character={c} report={r} peerSeed={born.peerSeed!} seed={born.seed} regionPicked={born.regionPicked === true} onNext={() => {}} />);
   const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const field = (id: string): string => {
     const m = new RegExp(`data-testid="birth-field-${id}"><dt>[^<]*</dt><dd data-testid="[^"]*">([^]*?)</dd>`).exec(html);
@@ -99,11 +100,13 @@ describe('출생신고 문서 구성과 값 (BR1·BR2)', () => {
     }
   });
 
-  it('외모는 점수가 아니라 「상위/하위 약 N%」(또래 사이에서)뿐이다 — 「N점」·「소득 N분위」가 화면 어디에도 없다 (R-135, 완료 기준 4)', () => {
+  it('외모는 점수도 퍼센트도 아니라 이목구비 글 두 문장이다(SPEC-015 AP3) — 「N점」·「소득 N분위」·「또래 사이에서」가 외모 칸에 없다 (R-135, 완료 기준 4)', () => {
     for (const era of PROFILES) {
       for (let seed = 1; seed <= 60; seed++) {
-        const { field, text } = render(era, seed * 29);
-        expect(field('looks')).toMatch(/^또래 사이에서 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|가운데쯤)$/);
+        const { field, text, c, born } = render(era, seed * 29);
+        expect(field('looks')).toBe(looksText(c, 'birth', 0, born.seed)); // 저장된 시드에서 다시 만든 글 — 새로 고쳐도 같다
+        expect(field('looks')).toMatch(/^.+ 아기입니다\. .+\.$/);
+        expect(field('looks')).not.toMatch(/%|또래|상위|하위|가운데쯤/);
         expect(text).not.toMatch(/외모\s*\d+\s*점/);
         expect(text).not.toMatch(/소득\s*\d\s*분위/);
         expect(text).not.toMatch(/접속자|!/);
@@ -184,14 +187,15 @@ describe('같은 해 태어난 사람들 (VP3)', () => {
 });
 
 describe('서류 격자 — 「태어난 곳」은 두 칸을 쓴다 (R-281)', () => {
-  it('「태어난 곳」 칸에만 span-2 표시가 있고(수저·교육방식은 wide 한 줄), CSS는 그 칸이 두 칸(좁은 화면 2열에서는 한 줄 전체, 넓은 화면 3열에서는 3분의 2)을 쓰게 한다', () => {
+  it('「태어난 곳」 칸에만 span-2 표시가 있고(수저·외모·교육방식은 wide 한 줄), CSS는 그 칸이 두 칸(좁은 화면 2열에서는 한 줄 전체, 넓은 화면 3열에서는 3분의 2)을 쓰게 한다', () => {
     for (const era of PROFILES) {
       const { html } = render(era, 29);
       const classOf = (id: string) => new RegExp(`<div(?: class="([^"]*)")? data-testid="birth-field-${id}">`).exec(html)?.[1];
       expect(classOf('place'), `${era}: 태어난 곳`).toBe('span-2');
       expect(classOf('wealth')).toBe('wide');
       expect(classOf('parenting')).toBe('wide');
-      for (const id of ['gender', 'month', 'mother', 'father', 'housing', 'weight', 'order', 'looks']) expect(classOf(id), `${era}: ${id}`).toBeUndefined();
+      expect(classOf('looks'), `${era}: 외모(이목구비 글 두 문장, SPEC-015 AP3)`).toBe('wide');
+      for (const id of ['gender', 'month', 'mother', 'father', 'housing', 'weight', 'order']) expect(classOf(id), `${era}: ${id}`).toBeUndefined();
     }
     const css = docCss.replace(/\/\*[^]*?\*\//g, '');
     expect(/\.doc__grid \.span-2 \{([^}]*)\}/.exec(css)![1]).toMatch(/grid-column:\s*span 2/);

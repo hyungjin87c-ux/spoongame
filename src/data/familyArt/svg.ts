@@ -11,6 +11,7 @@ export const SCENE_LIGHT = {
   ink: '#2b2a27', shade: 'rgba(38,50,74,0.2)', glass: '#fbf3d4', green: '#6e8a5b',
   cloth1: '#26324a', cloth2: '#8a6a14', cloth3: '#f7f2e8', cloth4: '#6c7f9e',
   skin: '#f1c9a5', hair: '#2b2420', hairw: '#d6d2ca', pet: '#a98c66', pet2: '#4a453d', face: '#4a362c',
+  red: '#c6302b', gold: '#d9a62e', // r11(SPEC-013 T5, 마스터 승인 2026-11-08): 붉은 옷·금반지 같은 빨강과 금색
 } as const;
 export type SceneToken = keyof typeof SCENE_LIGHT;
 

@@ -183,7 +183,7 @@ export const MORTALITY = {
  * 상한 300 (SPEC-003 DB12 ▲, M4): 해마다 이벤트가 둘 이상 생기는 새 콘텐츠(영유아 사건·자유 기록 — M7)와 인생 기록 화면의 「쌓이는 줄」에 맞춰 160에서 올렸다.
  * 최악 판 저장 크기(모든 줄이 이 파일의 길이 상한을 꽉 채운 300줄)는 tests/storageLife.test.ts가 200KB 이하임을 단언한다.
  */
-export const HISTORY_LIMITS = { maxEntries: 300, maxTextLength: 400, maxTitleLength: 60, maxChoiceLength: 80 };
+export const HISTORY_LIMITS = { maxEntries: 300, maxTextLength: 400, maxTitleLength: 60, maxChoiceLength: 80, maxQuestionLength: 60 };
 
 /** 저장 검증 한도: 본 이벤트 목록 / 플래그 개수 */
 export const STATE_LIMITS = { maxSeen: 400, maxFlags: 200, maxFlagLength: 40, maxCauseLength: 40 };

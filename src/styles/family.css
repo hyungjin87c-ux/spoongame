@@ -62,6 +62,8 @@ a.era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 .e-pet{fill:var(--c-scene-pet)}.es-pet{stroke:var(--c-scene-pet)}.et-pet{--t:var(--c-scene-pet)}.eb-pet{--b:var(--c-scene-pet)}.eh-pet{--h:var(--c-scene-pet)}.ek-pet{--k:var(--c-scene-pet)}
 .e-pet2{fill:var(--c-scene-pet2)}.es-pet2{stroke:var(--c-scene-pet2)}.et-pet2{--t:var(--c-scene-pet2)}.eb-pet2{--b:var(--c-scene-pet2)}.eh-pet2{--h:var(--c-scene-pet2)}.ek-pet2{--k:var(--c-scene-pet2)}
 .e-face{fill:var(--c-scene-face)}.es-face{stroke:var(--c-scene-face)}.et-face{--t:var(--c-scene-face)}.eb-face{--b:var(--c-scene-face)}.eh-face{--h:var(--c-scene-face)}.ek-face{--k:var(--c-scene-face)}
+.e-red{fill:var(--c-scene-red)}.es-red{stroke:var(--c-scene-red)}.et-red{--t:var(--c-scene-red)}.eb-red{--b:var(--c-scene-red)}.eh-red{--h:var(--c-scene-red)}.ek-red{--k:var(--c-scene-red)}
+.e-gold{fill:var(--c-scene-gold)}.es-gold{stroke:var(--c-scene-gold)}.et-gold{--t:var(--c-scene-gold)}.eb-gold{--b:var(--c-scene-gold)}.eh-gold{--h:var(--c-scene-gold)}.ek-gold{--k:var(--c-scene-gold)}
 
 /* ===== 톤 A 「바랜 인쇄물」 (era-window.md 2절): 10년대별 세피아 → 바랜 컬러 → 선명, 2000년대부터 망점·종이 겹이 없다(그 겹은 그림 안에 10년대별 불투명도로 들어 있다). 2010년대~는 필터 없음.
    다크는 같은 필터를 약하게(1990년대~는 없음). 집 그림은 종이 오림 그대로(필터 없음) — 같은 손으로 그린 옛 사진첩으로 읽힌다. 강제 색상 모드는 `.era__pic svg`의 forced-color-adjust: none 그대로. ===== */

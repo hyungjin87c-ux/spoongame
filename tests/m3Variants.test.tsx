@@ -17,7 +17,7 @@ import { WORD_BREAK_EXTRAS, WORD_BREAK_EXTRA_IDS, wordBreakExtraState } from '..
  */
 
 function render(state: GameState): string {
-  return renderToStaticMarkup(<BirthScreen generation={state.generation!} character={state.character!} report={state.birthReport!} peerSeed={state.peerSeed!} onNext={() => {}} />);
+  return renderToStaticMarkup(<BirthScreen generation={state.generation!} character={state.character!} report={state.birthReport!} peerSeed={state.peerSeed!} seed={state.seed} onNext={() => {}} />);
 }
 const strip = (html: string): string => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 const compareRows = (html: string): number => (html.match(/data-testid="compare-row"/g) ?? []).length;

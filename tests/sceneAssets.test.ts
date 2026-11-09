@@ -114,7 +114,7 @@ describe('색은 디자인 토큰뿐 (FH6 — 하드코딩 색 0)', () => {
     ...GROUPS.flatMap((g) => (['f', 'm'] as const).flatMap((sex) => ERAS.flatMap((e) => [0, 1, 2].map((v): [string, string] => [`fig-${g}-${sex}-${e}#${v}`, figureMarkup(g, sex, e, { v })])))),
   ];
 
-  it('모든 조각의 fill·stroke는 none 이거나 var(--c-scene-<이름>, <라이트 값>)이고, 이름이 승인된 토큰(25개)이며 기본값이 라이트 값과 같다', () => {
+  it('모든 조각의 fill·stroke는 none 이거나 var(--c-scene-<이름>, <라이트 값>)이고, 이름이 승인된 토큰(27개)이며 기본값이 라이트 값과 같다', () => {
     let n = 0;
     for (const [id, markup] of allMarkups) {
       for (const m of markup.matchAll(COLOR_ATTR)) {
@@ -131,17 +131,17 @@ describe('색은 디자인 토큰뿐 (FH6 — 하드코딩 색 0)', () => {
     expect(n).toBeGreaterThan(1000);
   });
 
-  it('tokens.css: --c-scene-* 25개(디자인 문서는 24개라 적었지만 시안의 팔레트는 25개다)가 라이트·다크 두 블록(미디어쿼리·data-theme)에 있고 라이트 값은 조각의 기본값과 같다. --c-era·--c-era-soft는 세 곳 + 강제 색상', () => {
+  it('tokens.css: --c-scene-* 27개(디자인 문서는 24개라 적었지만 시안의 팔레트는 25개였고, r11이 red·gold를 더해 27개다)가 라이트·다크 두 블록(미디어쿼리·data-theme)에 있고 라이트 값은 조각의 기본값과 같다. --c-era·--c-era-soft는 세 곳 + 강제 색상', () => {
     const names = Object.keys(SCENE_LIGHT);
-    expect(names.length).toBe(25);
+    expect(names.length).toBe(27);
     const light = themeTokens(blocks, 'light');
     const dark = themeTokens(blocks, 'dark');
     for (const n of names) {
       expect(light[`--c-scene-${n}`], `라이트 --c-scene-${n}`).toBe(SCENE_LIGHT[n as keyof typeof SCENE_LIGHT]);
       expect(dark[`--c-scene-${n}`], `다크 --c-scene-${n}`).toBeTypeOf('string');
     }
-    expect(Object.keys(blocks.darkAttr).filter((k) => k.startsWith('--c-scene-')).length).toBe(25);
-    expect(Object.keys(blocks.darkMedia).filter((k) => k.startsWith('--c-scene-')).length).toBe(25);
+    expect(Object.keys(blocks.darkAttr).filter((k) => k.startsWith('--c-scene-')).length).toBe(27);
+    expect(Object.keys(blocks.darkMedia).filter((k) => k.startsWith('--c-scene-')).length).toBe(27);
     for (const n of names) expect(blocks.darkMedia[`--c-scene-${n}`], `두 다크 블록이 어긋난다: ${n}`).toBe(blocks.darkAttr[`--c-scene-${n}`]);
     expect(light['--c-era']).toBe('#6d2f4e');
     expect(light['--c-era-soft']).toBe('#f4e3ec');
@@ -235,15 +235,15 @@ describe('마크업 → React 노드 (CR-UI: dangerouslySetInnerHTML 없음)', (
 });
 
 describe('그림 조각의 색 class와 토큰 규칙 (FM5b R-549)', () => {
-  it('색 토큰 이름 25개(sceneTables)가 그림 덩어리의 라이트 값 표(SCENE_LIGHT)와 이름·순서가 같다 — class 허용 목록과 CSS 규칙이 이 이름에서 나온다', () => {
+  it('색 토큰 이름 27개(sceneTables)가 그림 덩어리의 라이트 값 표(SCENE_LIGHT)와 이름·순서가 같다 — class 허용 목록과 CSS 규칙이 이 이름에서 나온다', () => {
     expect([...SCENE_TOKEN_NAMES]).toEqual(Object.keys(SCENE_LIGHT));
-    expect(SCENE_TOKEN_NAMES.length).toBe(25);
-    expect(ALLOWED_CLASSES.size).toBe(25 * 6);
+    expect(SCENE_TOKEN_NAMES.length).toBe(27);
+    expect(ALLOWED_CLASSES.size).toBe(27 * 6);
     for (const c of ['e-sky', 'es-ink', 'et-cloth3', 'eb-cloth1', 'eh-hair', 'ek-roof2']) expect(ALLOWED_CLASSES.has(c), c).toBe(true);
     for (const c of ['e-nope', 'ex-sky', 'sky', 'btn', 'scene__svg', 'e-sky e-ink']) expect(ALLOWED_CLASSES.has(c), c).toBe(false);
   });
 
-  it('family.css의 토큰 규칙 블록이 25개 × 6가지(채움·선·윗옷·아래·머리·모자) 전부 있고 값은 --c-scene-* 토큰이다 — 하드코딩 색(#rrggbb) 0', async () => {
+  it('family.css의 토큰 규칙 블록이 27개 × 6가지(채움·선·윗옷·아래·머리·모자) 전부 있고 값은 --c-scene-* 토큰이다 — 하드코딩 색(#rrggbb) 0', async () => {
     const css = await readText('../src/styles/family.css');
     const expected = SCENE_TOKEN_NAMES.map(
       (k) => `.e-${k}{fill:var(--c-scene-${k})}.es-${k}{stroke:var(--c-scene-${k})}.et-${k}{--t:var(--c-scene-${k})}.eb-${k}{--b:var(--c-scene-${k})}.eh-${k}{--h:var(--c-scene-${k})}.ek-${k}{--k:var(--c-scene-${k})}`,

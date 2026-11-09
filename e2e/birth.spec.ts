@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { SPOON_NAME, expectedLooksLabel } from '../tests/helpers/standingExpectations';
+import { SPOON_NAME } from '../tests/helpers/standingExpectations';
+import { looksText } from '../src/data/looksText';
 import { allowedGivenNames, loadRawNames } from './rawNames';
 import {
   KNOWN_SEED,
@@ -134,8 +135,8 @@ for (const era of GENS) {
     expect(await field(page, 'siblings')).toMatch(/^위로 (없음|(형|누나|오빠|언니) \d명(, (형|누나|오빠|언니) \d명)*)$/);
     // 집안 형편: 「흙수저(하위 25% 안쪽)」 형식 = 수저 이름 + 세대 전체 기준 섞음 비율에서 만든 구간 (R-170, D4-48 — 연도를 드러내지 않는다)
     expect((await field(page, 'wealth')).replace(/\s+/g, '')).toBe((await expectedWealthLineOf(page, era, c.parentWealth)).replace(/\s+/g, ''));
-    // 외모: 점수가 아니라 「상위/하위 약 N%」 (R-135), 교육방식
-    expect(await field(page, 'looks')).toContain(expectedLooksLabel(c.looks));
+    // 외모: 점수·퍼센트가 아니라 이목구비 글 두 문장(SPEC-015 AP3, 저장된 시드에서 다시 만든 글), 교육방식
+    expect(await field(page, 'looks')).toBe(looksText(c, 'birth', 0, save.data.seed));
     expect(await field(page, 'parenting')).toContain(PARENTING_LABELS[c.parenting]);
 
     // 이름: 성(1글자) 뒤의 이름이 그 출생 연도·성별의 원자료 풀에 있다
@@ -164,11 +165,6 @@ for (const era of GENS) {
   });
 }
 
-/** 문구 안의 "N%" 숫자들 */
-function percentsIn(text: string): number[] {
-  return [...text.matchAll(/(\d+)%/g)].map((m) => Number(m[1]));
-}
-
 for (const era of GENS) {
   test(`${GENERATIONS[era].name}: 집안 형편 5단계가 「수저 이름(구간)」 표와 같고(점 5개 중 N개), 어디에도 50%를 넘는 「상위/하위 약 N%」가 없다 (R-018·R-170)`, async ({ page }) => {
     test.setTimeout(60_000);
@@ -190,24 +186,22 @@ for (const era of GENS) {
   });
 }
 
-test('외모 순위 표현: 0·10·23·49·50·51·90·100점이 전수 열거 기준값과 같고, 「N점」·50 초과 숫자(「상위 약 94%」 같은 표현)가 없다 (R-018·R-135)', async ({ page }) => {
+test('외모 서술(SPEC-015): 0·10·23·49·50·51·90·100점이 저장된 시드에서 다시 만든 글과 같고, 퍼센트·「또래 사이에서」·「N점」이 외모 칸에 없다', async ({ page }) => {
   test.setTimeout(60_000);
   await injectSave(page, birthState(KNOWN_SEED, 'alpha', 3, 50));
   for (const looks of [0, 10, 23, 49, 50, 51, 90, 100]) {
-    await replaceSaveAndReload(page, birthState(KNOWN_SEED, 'alpha', 3, looks));
+    const state = birthState(KNOWN_SEED, 'alpha', 3, looks);
+    await replaceSaveAndReload(page, state);
     const shown = await field(page, 'looks');
-    expect(shown, `${looks}점`).toContain(expectedLooksLabel(looks));
-    for (const n of percentsIn(shown)) expect(n, `${looks}점: ${shown}`).toBeLessThanOrEqual(50);
-    expect(shown).not.toMatch(/약 (0|100)%/);
+    expect(shown, `${looks}점`).toBe(looksText(state.character!, 'birth', 0, state.seed));
+    expect(shown, `${looks}점`).toMatch(/ 아기입니다\. .+\.$/);
+    expect(shown, `${looks}점`).not.toMatch(/%|또래|상위|하위|가운데쯤/);
     expect(await page.getByTestId('birth-screen').innerText(), `${looks}점`).not.toMatch(/외모\s*\d+\s*점|\b\d+점\b/);
   }
-  // 중앙(50점)은 퍼센트 없이 전용 문구, 양 끝은 "N% 안쪽"
-  await replaceSaveAndReload(page, birthState(KNOWN_SEED, 'alpha', 3, 50));
-  expect(await field(page, 'looks')).toBe('또래 사이에서 가운데쯤');
-  await replaceSaveAndReload(page, birthState(KNOWN_SEED, 'alpha', 3, 100));
-  expect(await field(page, 'looks')).toBe('또래 사이에서 상위 1% 안쪽');
-  await replaceSaveAndReload(page, birthState(KNOWN_SEED, 'alpha', 3, 0));
-  expect(await field(page, 'looks')).toBe('또래 사이에서 하위 1% 안쪽');
+  // 새로 고쳐도 같은 글이다(글은 저장하지 않고 같은 시드에서 다시 만든다)
+  const before = await field(page, 'looks');
+  await page.reload();
+  expect(await field(page, 'looks')).toBe(before);
 });
 
 test('출생신고 화면에서 새로고침해도 같은 출생신고 (다시 뽑히지 않는다, 연타 포함)', async ({ page }) => {

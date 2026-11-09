@@ -514,7 +514,7 @@ function Game({ boot }: { boot: Boot }) {
       />
     );
   } else if (game.phase === 'birth' && game.generation && game.character && game.birthReport && game.peerSeed !== null) {
-    screen = <BirthScreen generation={game.generation} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} regionPicked={game.regionPicked === true} family={game.family} onNext={() => dispatch({ type: 'enterLife' })} />;
+    screen = <BirthScreen generation={game.generation} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} seed={game.seed} regionPicked={game.regionPicked === true} family={game.family} onNext={() => dispatch({ type: 'enterLife' })} />;
   } else if (game.phase === 'life' && game.character && game.generation && game.birthReport && game.peerSeed !== null) {
     screen = (
       <LifeScreen

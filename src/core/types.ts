@@ -210,6 +210,11 @@ export interface HistoryEntry {
   choice?: string;
   eventId?: string;
   /**
+   * 그때의 질문 문장 (`kind: 'choice'`에만 허용, SPEC-014 QS1): 선택지 이벤트의 `question`(「…할까?」 꼴, 사건당 하나)을 `resolveChoiceCore`가 줄에 한 번 적는다 — 본인 선택·부모 결정·흘러감이 모두 같은 값이다.
+   * 인생 기록·엔딩 연표의 윗줄은 이 값을 먼저 쓰고 없으면 `title`을 쓴다. 선택 필드라 저장 스키마는 v9 그대로다 — 옛 줄(v0.4.1 이전)은 소급하지 않고, 값이 이상하면 판을 버리지 않고 그 필드만 버린다(core/storage.ts#withValidQuestion).
+   */
+  question?: string;
+  /**
    * 누가 정한 선택인가 (`kind: 'choice'`에만 허용, SPEC-005 PD6·SV1): `'parent'` 부모님이 정했다 · `'child'` 아이의 일로 흘러갔다. 없으면 본인이 고른 선택이다.
    * 선택 필드라 저장 스키마는 v8 그대로다 — 값이 이상하면 판을 버리지 않고 그 필드만 버린다(core/storage.ts#withValidBy).
    */

@@ -342,9 +342,9 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     expect(row).toContain('<svg'); // 아이콘 (색에만 의존하지 않는다)
     expect(row, '결정자 전용 글리프 (R-455)').toContain('href="#i-by-parent"');
     expect(row).not.toMatch(/#i-people|#i-smile/);
-    // SPEC-012 QF4: 제목이 있는 결정 줄은 「사건 제목 → 도장·고른 길 → 결과」 세 줄(괄호 없음 — 괄호 꼴은 제목이 없는 옛 줄에만 남는다)
+    // SPEC-012 QF4 · SPEC-014 QS2(윗줄은 질문 문장이 먼저, 제목은 옛 줄): 윗줄이 있는 결정 줄은 「사건 제목 → 도장·고른 길 → 결과」 세 줄(괄호 없음 — 괄호 꼴은 제목이 없는 옛 줄에만 남는다)
     expect(row).toContain('data-testid="log-q"');
-    expect(plain(row)).toContain(`${ev.title} ${PARENT_DECIDED_TEXT}: ${choice.label} ${choice.result}`);
+    expect(plain(row)).toContain(`${ev.question} ${PARENT_DECIDED_TEXT}: ${choice.label} ${choice.result}`);
     expect(plain(row)).not.toContain(`(${PARENT_DECIDED_TEXT}`);
   });
 
@@ -357,7 +357,7 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     expect(row).toContain('<svg');
     expect(row, '결정자 전용 글리프 (R-455)').toContain('href="#i-by-child"');
     expect(row).not.toMatch(/#i-people|#i-smile/);
-    expect(plain(row)).toContain(`${ev.title} ${CHILD_FLOW_TEXT}: ${choice.label} ${choice.result}`);
+    expect(plain(row)).toContain(`${ev.question} ${CHILD_FLOW_TEXT}: ${choice.label} ${choice.result}`);
   });
 
   it('본인이 고른 줄도 제목이 있으면 「{사건 제목} / 선택: {고른 길} / {결과}」 세 줄이고 표지(log-by)가 없다', () => {
@@ -367,7 +367,7 @@ describe('인생 기록 줄: 세 가지 표지가 글자 + 아이콘으로 구�
     const choice = ev.choices!.find((c) => c.id === base.pending!.choiceIds[0])!;
     const row = rowOf(logHtml(manual), choice.result);
     expect(row).not.toContain('log-by');
-    expect(plain(row)).toContain(`${ev.title} 선택: ${choice.label} ${choice.result}`);
+    expect(plain(row)).toContain(`${ev.question} 선택: ${choice.label} ${choice.result}`);
   });
 });
 

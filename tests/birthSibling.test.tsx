@@ -12,7 +12,7 @@ import { BirthScreen } from '../src/screens/BirthScreen';
 function render(gen: ProfileId, seed: number, withFamily: boolean) {
   const born = enterBirth(beginBirth(createInitialState(seed), gen));
   const html = renderToStaticMarkup(
-    <BirthScreen generation={gen} character={born.character!} report={born.birthReport!} peerSeed={born.peerSeed!} family={withFamily ? born.family : undefined} onNext={() => {}} />,
+    <BirthScreen generation={gen} character={born.character!} report={born.birthReport!} peerSeed={born.peerSeed!} seed={born.seed} family={withFamily ? born.family : undefined} onNext={() => {}} />,
   );
   const m = /data-testid="birth-field-siblings"><dt>([^<]*)<\/dt><dd data-testid="birth-siblings">([^]*?)<\/dd>/.exec(html);
   return { born, html, label: m?.[1] ?? null, text: m === null ? null : m[2].replace(/<[^>]+>/g, '').trim(), fields: html.match(/data-testid="birth-field-/g)?.length ?? 0 };

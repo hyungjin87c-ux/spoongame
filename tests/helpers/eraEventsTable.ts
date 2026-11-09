@@ -38,7 +38,7 @@ export const ERA_EVENT_TABLE: readonly EraEventRow[] = [
   r('P14', 'era-1980-may-geumnam-ro', 1980, 'reuse', '○'),
   r('P15', 'era-1983-reunion-broadcast', 1983, 'new'),
   r('P16', 'era-1987-june-street', 1987, 'reuse', '○'),
-  r('P17', 'era-1988-stadium-flame-r3', 1988, 'reuse'),
+  r('P17', 'era-1988-stadium-flame-r3', 1988, 'fix'), // r11: 재사용 → 수정(오륜·호돌이)
   r('P18', 'era-1995-sampoong-rescue', 1995, 'reuse', '○'),
   r('P19', 'era-1997-dawn-labor-market', 1997, 'reuse', '★'),
   r('P20', 'era-1998-gold-rings', 1998, 'new', '★'),
@@ -81,25 +81,31 @@ export const END_ID = 'era-end-horizon';
 export const WINDOW_COUNT = 51;
 
 /**
- * **그림 대기 목록**(SPEC-013 T2): 승인된 그림이 아직 없어 **임시 그림**을 쓰는 사건 14건 — 새 8장(`new`)은 가장 가까운 승인 그림을, 수정 6장(`fix`)은 지금 승인 그림 그대로를 쓴다.
- * 키는 사건 id, `piece`는 지금 쓰는 임시 조각 id. designer가 새·수정 그림을 내서 형진 님이 승인하면 그 사건을 이 목록에서 지우고 `scripts/eraEvents.ts`의 `pending`·`piece`를 바꾼다.
- * **배포 전에 이 목록이 비어야 한다** — `npm run check:era-art`(= `scripts/checkEraArt.ts`)가 비어 있지 않으면 실패하고, 시험은 `ERA_ART_GATE=1`로 같은 단언을 건다(평소에는 건너뜀). 부분 배포 금지(SPEC-013 순서와 게이트).
+ * **그림 대기 목록**(SPEC-013 T2): 승인된 그림이 아직 없어 **임시 그림**을 쓰는 사건. 2026-11-09 **r11로 비었다** — 형진 님이 15장(수정 7 + 새 8)을 모두 승인했고(1953은 안 A) 사건 표(`scripts/eraEvents.ts`)의 `pending`·임시 `piece`가 모두 실제 그림으로 바뀌었다.
+ * 앞으로 새 그림을 기다리는 사건이 생기면 키를 사건 id로, `piece`를 지금 쓰는 임시 조각 id로 다시 적는다. **배포 전에 이 목록이 비어야 한다** — `npm run check:era-art`(= `scripts/checkEraArt.ts`)가 비어 있지 않으면 실패하고, 시험은 `ERA_ART_GATE=1`로 같은 단언을 건다(평소에는 건너뜀). 부분 배포 금지(SPEC-013 순서와 게이트).
  */
-export const PENDING_ART: Readonly<Record<string, { piece: string; work: 'new' | 'fix' }>> = {
-  'era-1950-refugee-column': { piece: 'era-1950-refugee-column', work: 'fix' }, // P03 눈길 → 여름 피란으로 고칠 그림(지금은 눈길)
-  'era-1953-tent-school': { piece: 'era-1953-tent-school', work: 'fix' }, // P04 천막 교실 → 휴전이 읽히게(돌아오는 피란민)
-  'era-1961-dawn-tank': { piece: 'era-1961-dawn-tank', work: 'fix' }, // P07 탱크를 뺀다(지금은 탱크가 있다)
-  'era-1964-airport-farewell': { piece: 'era-1964-airport-farewell', work: 'fix' }, // P08 파독 광부 — 트렁크 클로즈업
-  'era-1965-neighbors-tv': { piece: 'era-1965-neighbors-tv', work: 'fix' }, // P09 달 착륙 — TV 화면에 달
-  'era-2020-screening-tent-queue': { piece: 'era-2020-screening-tent-queue', work: 'fix' }, // P30 마스크를 앞에
-  'era-1959-south-typhoon': { piece: 'era-1952-ruins-shanty', work: 'new' }, // P05 물에 잠긴 마을
-  'era-1970-expressway': { piece: 'era-1968-road-works', work: 'new' }, // P10 요금소·달리는 차
-  'era-1973-oil-shock': { piece: 'era-1972-briquette-dawn', work: 'new' }, // P11 주유소 줄
-  'era-1983-reunion-broadcast': { piece: 'era-1954-relief-queue', work: 'new' }, // P15 벽 가득 붙은 종이쪽지
-  'era-1998-gold-rings': { piece: 'era-1998-gold-drive-queue', work: 'new' }, // P20 금반지 쟁반
-  'era-2002-world-cup': { piece: 'era-2002-street-cheering', work: 'new' }, // P22 축구공·붉은 티셔츠·마스코트
-  'era-2008-financial-crisis': { piece: 'era-2018-phone-chart', work: 'new' }, // P24 전광판·모니터
-  'era-2018-pyeongchang': { piece: 'era-2012-concert-lights', work: 'new' }, // P29 성화봉·마스코트
+export const PENDING_ART: Readonly<Record<string, { piece: string; work: 'new' | 'fix' }>> = {};
+
+/**
+ * **r11로 들어온 그림 15장**(형진 님 승인 2026-11-09, `docs/design/mockups/family/pieces/era-r11/`): 사건 id → 실제 조각 id. 수정(`fix`) 7 + 새(`new`) 8 = 부록 A에서 `art`가 `reuse`가 아닌 15건과 같다(1988은 재사용에서 수정으로 바뀌었다).
+ * 1953은 안 A(`era-1953-tent-school` = 군사분계선의 철조망), 안 B(`era-1953-tent-school-b`)는 쓰지 않는다.
+ */
+export const ART_R11: Readonly<Record<string, { piece: string; work: 'new' | 'fix' }>> = {
+  'era-1950-refugee-column': { piece: 'era-1950-refugee-column', work: 'fix' },
+  'era-1953-tent-school': { piece: 'era-1953-tent-school', work: 'fix' },
+  'era-1961-dawn-tank': { piece: 'era-1961-dawn-tank', work: 'fix' },
+  'era-1964-airport-farewell': { piece: 'era-1964-airport-farewell', work: 'fix' },
+  'era-1965-neighbors-tv': { piece: 'era-1965-neighbors-tv', work: 'fix' },
+  'era-1988-stadium-flame-r3': { piece: 'era-1988-stadium-flame-r3', work: 'fix' },
+  'era-2020-screening-tent-queue': { piece: 'era-2020-screening-tent-queue', work: 'fix' },
+  'era-1959-south-typhoon': { piece: 'era-1959-typhoon-flood-village', work: 'new' },
+  'era-1970-expressway': { piece: 'era-1970-expressway-tollgate', work: 'new' },
+  'era-1973-oil-shock': { piece: 'era-1973-gas-station-queue', work: 'new' },
+  'era-1983-reunion-broadcast': { piece: 'era-1983-reunion-wall-notes', work: 'new' },
+  'era-1998-gold-rings': { piece: 'era-1998-gold-rings-tray', work: 'new' },
+  'era-2002-world-cup': { piece: 'era-2002-worldcup-semifinal', work: 'new' },
+  'era-2008-financial-crisis': { piece: 'era-2008-trading-board-blue', work: 'new' },
+  'era-2018-pyeongchang': { piece: 'era-2018-pyeongchang-torch', work: 'new' },
 };
 
 /** 퇴역한 조각 id(데이터에 없어야 한다) 가운데 일상 59 전부와 부록 C의 사건 그림은 디자이너 JSON에 남아 있다 — 시험은 일상(`daily`)이 데이터에 0건인지와 임시 그림 밖의 퇴역 조각이 없는지를 본다 */

@@ -179,10 +179,10 @@ export const SCENE_RULES = {
  */
 export const ERA_BAND_RULES = { lowMaxWealth: 2, highMinWealth: 4, basis: '설계값' } as const;
 
-/** 시대의 창·집 그림 조각이 쓰는 색 토큰 이름 25개 (`--c-scene-*`). 그림 조각의 `class` 허용 목록(`ui/svgNodes.tsx`)과 `styles/family.css`의 토큰 규칙이 이 이름에서 나온다 — `tests/sceneAssets.test.ts`가 `familyArt/svg.ts#SCENE_LIGHT`·CSS와 대조한다 */
+/** 시대의 창·집 그림 조각이 쓰는 색 토큰 이름 27개(r11이 red·gold를 더했다) (`--c-scene-*`). 그림 조각의 `class` 허용 목록(`ui/svgNodes.tsx`)과 `styles/family.css`의 토큰 규칙이 이 이름에서 나온다 — `tests/sceneAssets.test.ts`가 `familyArt/svg.ts#SCENE_LIGHT`·CSS와 대조한다 */
 export const SCENE_TOKEN_NAMES = [
   'sky', 'far', 'far2', 'ground', 'ground2', 'wall', 'wall2', 'roof', 'roof2', 'wood', 'clay', 'ink', 'shade', 'glass', 'green',
-  'cloth1', 'cloth2', 'cloth3', 'cloth4', 'skin', 'hair', 'hairw', 'pet', 'pet2', 'face',
+  'cloth1', 'cloth2', 'cloth3', 'cloth4', 'skin', 'hair', 'hairw', 'pet', 'pet2', 'face', 'red', 'gold',
 ] as const;
 
 // ---------------------------------------------------------------- 식구 몸 기하 (family-scene 2-5절 — 얼굴 시스템 ageGroupOf와 같은 경계)

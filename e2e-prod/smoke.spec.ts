@@ -280,8 +280,8 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   else await expect(page.getByTestId('ending-movement')).toHaveCount(0);
   // 재산 스탯은 없어졌다(M5 2a, 저장 v8) — 최종 순자산 줄은 2b에서 더해진다
   for (const key of ['education', 'health', 'happiness', 'relationships']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
-  // 바뀐 기대(M4): 외모는 점수 숫자가 아니라 「상위/하위 약 N%」 한 가지로만 (R-135)
-  await expect(page.getByTestId('final-looks')).toContainText(/상위|하위|가운데쯤/);
+  // 바뀐 기대(SPEC-015): 외모는 점수·퍼센트가 아니라 이목구비 글 두 문장
+  await expect(page.getByTestId('final-looks')).toHaveText(/얼굴이었습니다\. .+\.$/);
   await expect(page.getByTestId('timeline-entry')).toHaveCount(history.length);
   // 고른 길 표시(`timeline-picked`)는 모든 선택 줄에 붙는다: 본인이 고른 선택은 `data-by`가 없고, 부모님이 정한·흘러간 줄은 `data-by`가 있다(R-489)
   await expect(page.locator('[data-testid="timeline-picked"]:not([data-by])')).toHaveCount(ownEntries.length);

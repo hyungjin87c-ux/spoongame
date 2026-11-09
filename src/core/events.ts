@@ -173,6 +173,11 @@ export interface EventDef {
    * 시대 경계를 넘는 판에서 같은 종류의 다른 시대 사건이 또 뜨지 않게 한다(한 종류 최대 1장·판당 최대 3장, 새 저장 이름 없음 — 결정 AQ2). `seen`은 카드가 뜰 때 기록되므로 해결 전 새로고침에도 같은 종류가 다시 뜨지 않는다.
    */
   askPeers?: string[];
+  /**
+   * 결정 줄 질문 문장 (SPEC-014 QS1): 선택지 이벤트의 상황을 되묻는 「…할까?」 한 문장(사건당 하나, 그 사건의 모든 선택지가 같다, ≤ 30자). 선택지 이벤트만 쓴다.
+   * `resolveChoiceCore`가 인생 기록 줄(`HistoryEntry.question`)에 적고, 인생 기록·엔딩 연표의 윗줄이 제목보다 먼저 쓴다. 선택지 카드의 질문 자리(「어떻게 하겠습니까?」)와 카드 읽기 글자 수에는 닿지 않는다.
+   */
+  question?: string;
   weight: number;
   once: boolean;
   /** once가 아닐 때 같은 이벤트가 다시 나오기까지의 최소 년수 (기본 DEFAULT_COOLDOWN) */
@@ -684,9 +689,22 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
 }
 
 const EVENT_KEYS = [
-  'id', 'title', 'text', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
+  'id', 'title', 'text', 'question', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
   'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy', 'ask',
 ] as const;
+
+/** 질문 문장의 길이 상한 (SPEC-014 규칙 2 — 윗줄 12px·360px에서 한 줄 약 19자, 두 줄 안) */
+export const QUESTION_MAX_CHARS = 30;
+
+/** `question`의 형태: 선택지 이벤트에만, 한 문장, 「…ㄹ까?」로 끝나고 물음표는 맨 끝 하나 (SPEC-014 규칙 1·2). 모든 선택지 이벤트에 있는지·서로 다른지는 `eventLint.ts#questionProblems`가 본다. */
+function checkQuestion(ev: Obj, path: string, p: Problems): void {
+  if (ev.question === undefined) return;
+  const at = `${path}.question`;
+  checkText(ev.question, at, 4, QUESTION_MAX_CHARS, p);
+  if (typeof ev.question !== 'string') return;
+  if (ev.choices === undefined) p.add(at, '질문 문장은 선택지 이벤트에만 쓴다 (서술 이벤트는 결정 줄이 없다)');
+  if (!/까\?$/.test(ev.question) || ev.question.indexOf('?') !== ev.question.length - 1) p.add(at, '「…할까?」 꼴이어야 한다 — 「까?」로 끝나고 물음표는 맨 끝에 하나뿐이다');
+}
 
 /** 단계가 덮는 나이 구간 [시작, 끝] (노년은 상한 없음) */
 function stageSpan(stage: Stage): [number, number] {
@@ -893,6 +911,7 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
   else if (ev.id.startsWith(NOTE_ID_PREFIX)) p.add(`${path}.id`, `「${NOTE_ID_PREFIX}」로 시작하는 id는 기록 카드(notes.json) 전용 예약이라 이벤트 id로 쓸 수 없다 (본 이벤트 기록 seen에서 둘의 키가 섞이지 않게)`);
   if (ev.title !== undefined) checkText(ev.title, `${path}.title`, 1, 30, p);
   if (ev.text !== undefined) checkText(ev.text, `${path}.text`, 10, 400, p);
+  checkQuestion(ev, path, p);
   if (ev.stages !== undefined) checkEnumList(ev.stages, STAGES, `${path}.stages`, p);
   checkMoneyKinds(ev, path, p);
   if (ev.track !== undefined && !(EVENT_TRACKS as readonly unknown[]).includes(ev.track)) p.add(`${path}.track`, `${EVENT_TRACKS.join(' · ')} 중 하나여야 한다`);

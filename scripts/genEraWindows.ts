@@ -24,14 +24,20 @@ import { FORESIGHT_NOTES } from './eraForesightNotes';
 const PIECES = 'docs/design/mockups/family/pieces/';
 const FAMILY = 'docs/design/mockups/family/';
 /** 승인된 조각 장수 가드 (R-551): r3 16 · r4 27 · r5 40(49 − r5b로 다시 그린 9) · r5b 11 · r6 12 · r7 14 · r9 20(끝 장면 포함) = 140. 형진 님이 승인한 뒤에만 이 수를 고친다 */
-const APPROVED = { r3: 16, r4: 27, r5: 40, r5b: 11, r6: 12, r7: 14, r9: 20 } as const;
+const APPROVED = { r3: 16, r4: 27, r5: 40, r5b: 11, r6: 12, r7: 14, r9: 20, r11: 15 } as const;
+/** r11(2026-11-09 승인 15장 — 수정 7 + 새 8)이 다시 그려 **옛 조각을 덮는** 장수: 1950·1953·1961·1963(1964 조각)·1969(1965 조각)·2020 + 1988(r3). 옛 조각 7장은 쓰지 않는다 */
+const R11_OVERRIDES = 7;
 /** 데이터에 들어가는 장면 수 (SPEC-013 부록 C): 사건 49 + 1987 대체 1 + 끝 장면 1 */
 const WINDOWS_TOTAL = 51;
 /** 끝 장면(SPEC-010 구현 규칙 3, R-602): 표 끝(2110~)을 덮는 `kind: 'base'` 한 장 — 10년 덩어리 번호는 2100으로 고정하고 `basis`·근거 글이 없다 */
 const END_SCENE = { id: 'era-end-horizon', years: [2110, 2130] as const, decade: 2100 } as const;
 /**
  * 그림 안에 넣어도 되는 글자(사건 id → 허용 문구 목록, SPEC-013 T2·Q4): 형진 님이 시안에서 승인한 응원 문구 같은 짧은 글자만. 목록이 비어 있으면(없는 id 포함) 그 그림은 글자 0이다.
- * 숫자·상호·간판 글자·정당 구호·인명·공식 엠블럼은 어떤 경우에도 허용 목록에 넣지 않는다(허용 목록은 형진 님 승인 뒤에만 고친다). 지금은 승인된 글자가 0건이다.
+ * 숫자·상호·간판 글자·정당 구호·인명·공식 엠블럼은 어떤 경우에도 허용 목록에 넣지 않는다(허용 목록은 형진 님 승인 뒤에만 고친다). 지금은 승인된 글자가 0건이다(2002는 글자 없는 안으로 확정).
+ *
+ * **「공식 엠블럼 0」의 예외 두 건 — 형진 님 결정 2026-11-08(r11 그림, 2026-11-09 승인)**: 1988 서울 올림픽(`era-1988-stadium-flame-r3`: 오륜 깃발 + 마스코트 호돌이)과 2018 평창(`era-2018-pyeongchang-torch`: 오륜 깃발 + 마스코트 수호랑)의 그림에는
+ * 오륜과 대회 마스코트가 **그림으로** 들어 있다(글자 요소가 아니라 도형이라 이 글자 단언이 막지 않는다). 오륜·마스코트의 권리는 IOC에 있어 상표·저작권 문제 제기 위험이 남는다(`docs/design/era-art-r1.md` r11 3절) —
+ * 문제 제기가 오면 그 그림 한 장만 오륜 없는 형태·일반형 호랑이로 바꾼다(Two-way). 이 두 사건 id 밖의 그림에는 공식 엠블럼·마스코트를 넣지 않는다.
  */
 const ART_TEXT_ALLOWED: Readonly<Record<string, readonly string[]>> = {};
 const SOURCES = [
@@ -42,6 +48,8 @@ const SOURCES = [
   { key: 'r6', dir: `${PIECES}era-r6/`, meta: `${FAMILY}era-window-r6-budget.json`, convert: false },
   { key: 'r7', dir: `${PIECES}era-r7/`, meta: `${FAMILY}era-window-r7-budget.json`, convert: false },
   { key: 'r9', dir: `${PIECES}era-r9/`, meta: `${FAMILY}era-window-r9-budget.json`, convert: false },
+  // r11: 형진 님이 2026-11-09 15장을 전부 승인(1953은 안 A, 안 B `era-1953-tent-school-b`는 쓰지 않는다) — 수정 7은 같은 id의 옛 조각을 덮고 새 8은 사건 전용 id를 갖는다
+  { key: 'r11', dir: `${PIECES}era-r11/`, meta: `${FAMILY}era-window-r11-budget.json`, convert: false },
 ] as const;
 type SourceKey = (typeof SOURCES)[number]['key'];
 const DIR4 = SOURCES[1].dir;
@@ -66,7 +74,7 @@ interface Row {
 
 const TOKENS = new Set([
   'sky', 'far', 'far2', 'ground', 'ground2', 'wall', 'wall2', 'roof', 'roof2', 'wood', 'clay', 'ink', 'shade', 'glass', 'green',
-  'cloth1', 'cloth2', 'cloth3', 'cloth4', 'skin', 'hair', 'hairw', 'pet', 'pet2', 'face',
+  'cloth1', 'cloth2', 'cloth3', 'cloth4', 'skin', 'hair', 'hairw', 'pet', 'pet2', 'face', 'red', 'gold',
 ]);
 
 /** fill/stroke 토큰 → class (in place), 한 요소에 class가 둘이 되면 하나로 합친다 */
@@ -152,22 +160,33 @@ interface Built {
 const rowsOf = (metaPath: string): Row[] => (JSON.parse(readFileSync(metaPath, 'utf-8')) as { rows: Row[] }).rows;
 // r5b가 다시 그린 장면은 r5판을 쓰지 않는다 (같은 id — r5b가 r5를 덮는다)
 const redrawn = new Set(rowsOf(SOURCES[3].meta).map((r) => r.id));
+// r11이 다시 그린 장면(같은 id)도 옛 조각을 덮는다 — 안 B(`variantOf`가 있는 행)는 승인되지 않아 읽지 않는다
+const r11Rows = rowsOf(SOURCES[7].meta).filter((r) => !(r as { variantOf?: string | null }).variantOf);
+const r11Ids = new Set(r11Rows.map((r) => r.id));
+let r11Dropped = 0;
 const rowOf = new Map<string, { row: Row; src: (typeof SOURCES)[number] }>();
 for (const src of SOURCES) {
-  const all = rowsOf(src.meta);
-  const rows = src.key === 'r5' ? all.filter((r) => !redrawn.has(r.id)) : all;
+  const all = src.key === 'r11' ? r11Rows : rowsOf(src.meta);
+  let rows = src.key === 'r5' ? all.filter((r) => !redrawn.has(r.id)) : all;
   if (src.key === 'r5') {
     const dropped = all.length - rows.length;
     if (dropped !== 9) throw new Error(`r5에서 r5b로 다시 그려 뺄 장면이 ${dropped}장이다 (era-window.md 10-2절: 9장)`);
   }
-  // 승인 게이트(R-551): designer JSON의 행이 곧 승인은 아니다 — 형진 님이 승인한 장수(era-window.md 「승인 표기」)와 같아야 만든다
+  // 승인 게이트(R-551): designer JSON의 행이 곧 승인은 아니다 — 형진 님이 승인한 장수(era-window.md 「승인 표기」)와 같아야 만든다 (r11이 덮는 옛 조각을 빼기 전의 장수)
   const approvedCount = APPROVED[src.key as SourceKey];
   if (rows.length !== approvedCount) throw new Error(`${src.meta}: 행 ${rows.length}개 ≠ 승인된 ${approvedCount}장 — 승인 뒤에만 이 수를 고친다`);
+  // r11이 다시 그린 장면(같은 id)은 옛 조각을 덮는다 — 옛 조각은 쓰지 않는다
+  if (src.key !== 'r11') {
+    const kept = rows.filter((r) => !r11Ids.has(r.id));
+    r11Dropped += rows.length - kept.length;
+    rows = kept;
+  }
   for (const r of rows) {
     if (rowOf.has(r.id)) throw new Error(`${r.id}: 조각 행 id가 겹친다`);
     rowOf.set(r.id, { row: r, src });
   }
 }
+if (r11Dropped !== R11_OVERRIDES) throw new Error(`r11이 덮은 옛 조각이 ${r11Dropped}장이다 (기대 ${R11_OVERRIDES}장: 1950·1953·1961·1963·1969·2020·1988)`);
 
 // ---------------------------------------------------------------- 사건 표 → 장면
 const built: Built[] = [];

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ERA_CAPTION_MAX, ERA_FIRST_MAX, ERA_SECOND_MAX, type EraWindow } from '../src/core/eraWindow';
 import { ERA_EVENTS } from '../scripts/eraEvents';
-import { ALT_1987_ID, END_ID, ERA_EVENT_TABLE, PENDING_ART, REAL_EVENTS, REAL_WINDOWS, RETIRED_PIECES, WINDOW_COUNT, realById } from './helpers/eraEventsTable';
+import { ALT_1987_ID, ART_R11, END_ID, ERA_EVENT_TABLE, PENDING_ART, REAL_EVENTS, REAL_WINDOWS, RETIRED_PIECES, REAL_DECADES, WINDOW_COUNT, realById } from './helpers/eraEventsTable';
+const art = (draw: string): string => REAL_DECADES.map(([, d]) => d.art[draw]).find((x) => x !== undefined) ?? '';
 import { ALARM_WORDS, COMPANY_NAMES_EXTRA, COMPANY_NAMES_FROM_DOC, PARTY_NAMES, actionWordsIn, lineViolations } from './helpers/eraFutureForbidden';
 
 /**
@@ -78,7 +79,7 @@ describe('부록 A 표와 데이터 (T7 · 완료 기준 2·3·4·9)', () => {
     for (const e of entries) {
       const row = ERA_EVENT_TABLE.find((r) => r.no === e.no)!;
       expect({ id: e.id, year: e.year, heavy: e.heavy, star: e.second !== undefined }, e.no).toEqual({ id: row.id, year: row.year, heavy: row.heavy, star: row.star });
-      expect(e.pending === true, `${e.no} 임시 그림 표지`).toBe(row.art !== 'reuse');
+      expect(e.pending === true, `${e.no} 임시 그림 표지(r11로 모두 실제 그림이 들어와 0건)`).toBe(false);
     }
     expect(ERA_EVENTS.length).toBe(50);
   });
@@ -217,41 +218,49 @@ describe('문장 규칙 (T4 · 완료 기준 5·8)', () => {
   });
 });
 
-describe('그림 구성과 대기 목록 (T2 · 부록 C · 완료 기준 9)', () => {
-  it('유지 43장 = 재사용 37 + 수정 6, 새 8 — 표의 art 종류 수 (재사용 37은 1987 대체·끝 장면 포함)', () => {
+describe('그림 구성과 대기 목록 (T2 · 부록 C · 완료 기준 9 · r11 통합 2026-11-09)', () => {
+  it('유지 43장 = 재사용 36(1988이 수정으로 바뀌었다) + 수정 7, 새 8 — 표의 art 종류 수 (재사용은 1987 대체·끝 장면 포함)', () => {
     const n = (k: string): number => ERA_EVENT_TABLE.filter((r) => r.art === k).length;
-    expect([n('reuse') + 2, n('fix'), n('new')]).toEqual([37, 6, 8]); // 사건 재사용 35 + 1987 대체 1 + 끝 장면 1
+    expect([n('reuse') + 2, n('fix'), n('new')]).toEqual([36, 7, 8]); // 사건 재사용 34 + 1987 대체 1 + 끝 장면 1
     expect(n('reuse') + n('fix') + n('new')).toBe(49);
   });
 
-  it('그림 대기 목록(PENDING_ART)은 표의 수정 6 + 새 8 = 14건과 같고, 사건 표 입구의 임시 그림 표지·조각 id가 같다 — 임시 그림은 지금 승인된 그림이다', () => {
-    const pendingRows = ERA_EVENT_TABLE.filter((r) => r.art !== 'reuse');
-    expect(Object.keys(PENDING_ART).sort()).toEqual(pendingRows.map((r) => r.id).sort());
-    expect(Object.keys(PENDING_ART).length).toBe(14);
-    for (const row of pendingRows) {
-      expect(PENDING_ART[row.id].work, row.id).toBe(row.art);
-      expect(realById(row.id).draw, `${row.id}: 임시 그림`).toBe(PENDING_ART[row.id].piece);
-      expect(ERA_EVENTS.find((e) => e.id === row.id)!.piece, row.id).toBe(PENDING_ART[row.id].piece);
+  it('그림 대기 목록(PENDING_ART)은 비었고, 사건 표 입구에 임시 그림 표지(pending)가 하나도 없다 — r11 15장(수정 7 + 새 8)이 모두 실제 그림으로 들어왔다', () => {
+    expect(Object.keys(PENDING_ART)).toEqual([]);
+    expect(ERA_EVENTS.filter((e) => e.pending === true).map((e) => e.id)).toEqual([]);
+  });
+
+  it('r11 그림 15장: 표에서 art가 재사용이 아닌 15건이 ART_R11과 같고, 사건 표 입구·데이터가 모두 그 조각을 쓴다 (1953은 안 A, 안 B는 안 쓴다)', () => {
+    const drawn = ERA_EVENT_TABLE.filter((r) => r.art !== 'reuse');
+    expect(Object.keys(ART_R11).sort()).toEqual(drawn.map((r) => r.id).sort());
+    expect(Object.keys(ART_R11)).toHaveLength(15);
+    for (const row of drawn) {
+      expect(ART_R11[row.id].work, row.id).toBe(row.art);
+      expect(realById(row.id).draw, `${row.id}: 데이터의 그림`).toBe(ART_R11[row.id].piece);
+      expect(ERA_EVENTS.find((e) => e.id === row.id)!.piece, row.id).toBe(ART_R11[row.id].piece);
     }
     // 재사용 그림은 자기 조각 그대로
     for (const row of ERA_EVENT_TABLE.filter((r) => r.art === 'reuse')) expect(realById(row.id).draw, row.id).toBe(row.id);
     expect(realById(ALT_1987_ID).draw).toBe(ALT_1987_ID);
+    expect(REAL_WINDOWS.some((w) => w.draw === 'era-1953-tent-school-b')).toBe(false);
   });
 
-  it('퇴역한 조각은 데이터에 없다 — 임시 그림으로 쓰는 것(그림 대기 목록)만 예외다', () => {
-    const temp = new Set(Object.values(PENDING_ART).map((v) => v.piece));
+  it('r11 그림에는 글자가 없다(2002는 글자 없는 안) — 그림 조각 마크업에 text·tspan이 0이고, 그림 안 글자 허용 목록(ART_TEXT_ALLOWED)은 비어 있다', () => {
+    for (const id of Object.values(ART_R11).map((v) => v.piece)) expect(art(id), id).not.toMatch(/<text|<tspan/);
+  });
+
+  it('퇴역한 조각은 데이터에 없다 — 임시 그림 예외도 이제 없다(그림 대기 0건)', () => {
     const draws = new Set(REAL_WINDOWS.map((w) => w.draw));
-    for (const id of RETIRED_PIECES) if (!temp.has(id)) expect(draws.has(id), `${id}: 퇴역한 그림`).toBe(false);
-    // 임시 그림 중 새 그림 8장 대신 쓰는 퇴역 조각 8개는 그림 대기가 끝나면 빠진다
-    expect([...temp].filter((p) => RETIRED_PIECES.includes(p)).length).toBe(8);
+    for (const id of RETIRED_PIECES) expect(draws.has(id), `${id}: 퇴역한 그림`).toBe(false);
+    expect(Object.values(PENDING_ART).length).toBe(0);
   });
 
   // 배포 전 게이트(`npm run check:era-art`와 같다): 평소에는 건너뛴다. 배포 때 `ERA_ART_GATE=1 npm test`로 켠다
-  it.runIf((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.ERA_ART_GATE === '1')('배포 게이트: 그림 대기 0건 — 새 그림 8장·수정 6장이 모두 승인되어 들어왔다', () => {
+  it.runIf((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.ERA_ART_GATE === '1')('배포 게이트: 그림 대기 0건 — 새 그림·수정 그림이 모두 승인되어 들어왔다', () => {
     expect(Object.keys(PENDING_ART)).toEqual([]);
   });
 
-  it('데이터의 모든 장면은 approved: true이고 조각 마크업이 있으며(그림 안 글자 요소 0), 임시 그림 14장도 승인된 조각이다', () => {
+  it('데이터의 모든 장면은 approved: true이고 조각 마크업이 있으며(그림 안 글자 요소 0), 그림은 모두 승인된 조각이다', () => {
     for (const w of REAL_WINDOWS) expect(w.approved as boolean, w.id).toBe(true);
     const sources = import.meta.glob('../src/data/eraWindows/d????.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
     for (const [path, src] of Object.entries(sources)) expect(src, `${path}: 그림 안 글자 0(허용 목록이 비어 있다)`).not.toMatch(/<text|<tspan/);

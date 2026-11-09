@@ -14,7 +14,7 @@ export {}; // 모듈로 취급해 최상위 await를 쓴다
 try {
   await import('../src/data/installAll'); // 지연 로드 데이터(이벤트 풀·출생 연도 표·인용 테이블)를 정적으로 놓는다 — core의 기본 인자가 읽는다(MG8)
   const { EVENT_FILES, EVENT_POOL } = await import('../src/data/events');
-  const { lintEventData, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems } = await import('../src/core');
+  const { lintEventData, questionProblems, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems } = await import('../src/core');
   const { NOTE_CARDS, NOTE_MANUAL } = await import('../src/data/noteCards');
   // FM7a 승인 게이트(SPEC-009 「FM7 나눔」 2절, RG11 방식): 형진 님이 승인하지 않은 무거운 문장(`approved !== true`)이 하나라도 있으면 빌드가 막힌다. T06(어린 형제의 이른 별세)만 계획을 끄면 통과한다
   const { FM7A_APPROVALS, familyApprovalProblems } = await import('../src/data/familyApproval');
@@ -24,6 +24,7 @@ try {
   // 기록 카드(M7c, src/data/notes.json): 스키마는 위 import에서 이미 검증됐다(noteCards.ts). 문구 점검(질문 안전 기준·조사·길이·시대 낱말)과 풀 교차 점검(플래그·본 이벤트 id), 인용 연결을 함께 본다.
   const lint = [
     ...lintEventData(EVENT_POOL.events, EVENT_FILES),
+    ...questionProblems(EVENT_POOL.events), // 결정 줄 질문 문장(SPEC-014): 선택지 이벤트마다 있고 규칙·유일을 지킨다
     ...citationLinkProblems(EVENT_POOL.events, undefined, NOTE_CARDS),
     ...lintNoteFile({ manual: NOTE_MANUAL, cards: [...NOTE_CARDS] }),
     ...noteCardPoolProblems(NOTE_CARDS, EVENT_POOL.events),

@@ -506,6 +506,8 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
       text: by === 'parent' ? (choice.parentResult ?? choice.result) : choice.result,
       choice: by === 'parent' ? (choice.parentLabel ?? choice.label) : choice.label,
       eventId: ev.id,
+      // 질문 문장(SPEC-014 QS1): 이 한 곳에서 본인 선택·부모 결정·흘러감 세 경로가 같은 값을 적는다. 사건에 `question`이 없으면 키를 만들지 않는다(옛 줄과 같은 모양). 난수·효과에는 닿지 않는다.
+      ...(ev.question !== undefined ? { question: ev.question } : {}),
       ...(by !== undefined ? { by } : {}),
     }),
   };

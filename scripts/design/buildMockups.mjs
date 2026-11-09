@@ -28,6 +28,8 @@ import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, SYSTEM_TITLE, SYSTEM_TITLE_CHARS, st
 import { STAGE_ENTRY_TEXT } from '../../src/data/lifeTable.ts';
 import { buildComparison, compareShown, lifeGapLine } from '../../src/data/birthCompare.ts';
 import { OCCUPATION_LABEL } from '../../src/data/birthReportTable.ts';
+/** 옛 시안(SPEC-015 이전)의 외모 보조 문구 — 앱에서는 없어졌고(looksSub 삭제) 이 옛 시안 생성기만 글자로 갖는다 */
+const OLD_LOOKS_SUB = '또래 사이에서';
 import { BIRTH_TEXT, GRADE_NAME, REPORT_NOTES, ROULETTE_TEXT, ROULETTE_TITLE_CHARS, formatKg, genderLabel, housingText, orderText, parentingDocText, regionOddsNote, yearMonthText } from '../../src/data/birthReportText.ts';
 import { PARENTING_LABEL, standingLabel } from '../../src/data/birthText.ts';
 import { ERA_CONFIG } from '../../src/data/birthTable.ts';
@@ -450,7 +452,7 @@ function birthMain({ era, character: c, report, peerSeed }) {
     ${field(L.housing, esc(housingText(report.housing)))}
     ${field(L.weight, `${esc(weight)} <span class="cell-sub">(${esc(weightRank)})</span>`)}
     ${field(L.order, esc(orderText(report.birthOrder)))}
-    ${field(L.looks, `${esc(looks)} <span class="cell-sub">${esc(BIRTH_TEXT.looksSub)}</span>`)}
+    ${field(L.looks, `${esc(looks)} <span class="cell-sub">${esc(OLD_LOOKS_SUB)}</span>`)}
     ${field(L.parenting, `${esc(PARENTING_LABEL[c.parenting])} <span class="cell-sub">${esc(parentingDocText(c.parenting, c.parentWealth))}</span>`, 'wide')}
   </dl>`;
   const people = `<ul class="people">${peers
@@ -1053,7 +1055,7 @@ function endingMain({ era, c, month, death, net, choiceCount, entries, note = ''
       ${note}` : ''}
     </div></section>
   <section class="card stack stack--sm ending-stats" aria-labelledby="ending-stats-title"><h2 id="ending-stats-title" class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>${meter('health', 41)}${meter('happy', 72)}${meter('knowledge', 66)}${meter('relation', 80)}${finalNet}
-    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd><small>${esc(BIRTH_TEXT.looksSub)}</small> ${keepStandingHtml(standingLabel(looksStanding(c.looks)))}</dd></dl></section>
+    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd><small>${esc(OLD_LOOKS_SUB)}</small> ${keepStandingHtml(standingLabel(looksStanding(c.looks)))}</dd></dl></section>
   <section class="card" aria-labelledby="ending-timeline-title"><h2 id="ending-timeline-title" class="card__title card__title--gap">${esc(ENDING_HEADINGS.timeline)}</h2>${timeline}</section>
   <section class="rebirth"><button class="btn btn--primary btn--lg btn--block" type="button">${esc(REBIRTH_LABEL)}</button><p class="t-sm t-muted">${glueHtml(REBIRTH_NOTE)}</p></section>
   ${MOCK_TAG}
@@ -1220,7 +1222,7 @@ const econEnding = ({ era, birth, net, tail }) => {
   <section class="card stack stack--sm ending-stats" aria-labelledby="ending-stats-title"><h2 id="ending-stats-title" class="card__title">${esc(ENDING_HEADINGS.stats)}</h2>
     ${meter('health', tail[0])}${meter('happy', tail[1])}${meter('knowledge', tail[2])}${meter('relation', tail[3])}
     ${html(FinalNetLine, { era, net })}
-    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd><small>${esc(BIRTH_TEXT.looksSub)}</small> ${tail[4]}</dd></dl>
+    <dl class="facts"><dt>${esc(DASH_TEXT.profileLooks)}</dt><dd><small>${esc(OLD_LOOKS_SUB)}</small> ${tail[4]}</dd></dl>
   </section>`;
 };
 function economyPage() {

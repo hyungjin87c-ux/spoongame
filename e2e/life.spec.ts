@@ -54,7 +54,7 @@ test('출생 → 살아가기 → 인생 화면(대시보드): 이름·나이·�
     await expect(page.getByTestId(`stat-${key}`)).toBeVisible();
   }
   for (const key of ['wealth', 'looks']) await expect(page.getByTestId(`stat-${key}`)).toHaveCount(0);
-  await expect(page.getByTestId('profile-looks')).toContainText(/상위|하위|가운데쯤/);
+  await expect(page.getByTestId('profile-looks')).toHaveText(/ 아이입니다\.$/); // SPEC-015: 0세 프로필은 이목구비 글의 첫 문장만
   await expect(page.getByTestId('assets-card')).toBeVisible();
   // 진행 줄 상시 표시: 일시정지 / 배속 한 단추(1 → 2 → 4 → 8 → 1배, SPEC-012 QF5) / 다음 결정으로 / 자동 모드 (M4: 일시정지가 더해졌다)
   await expect(page.getByTestId('pause')).toBeVisible();

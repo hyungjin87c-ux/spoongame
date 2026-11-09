@@ -1,9 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { bandFromRange, finalWealthStanding, formatMan, formatWon, looksStanding, playToEnd, R1_PRESENT, reviewEnding, startBandOf, wealthMixtureOfProfile, type EndingGame, type EndingReview, type ProfileId } from '../src/core';
+import { bandFromRange, finalWealthStanding, formatMan, formatWon, playToEnd, R1_PRESENT, reviewEnding, startBandOf, wealthMixtureOfProfile, type EndingGame, type EndingReview, type ProfileId } from '../src/core';
 import { genLine } from '../src/data/birthReportText';
 import { profileLabel } from '../src/core/birthProfile';
-import { BIRTH_TEXT } from '../src/data/birthReportText';
+import { looksText } from '../src/data/looksText';
 import { standingLabel } from '../src/data/birthText';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import * as parentTable from '../src/data/parentDecisionTable';
@@ -104,9 +104,11 @@ describe('엔딩 화면: 구성과 순서', () => {
     for (const key of ['education', 'health', 'happiness', 'relationships'] as const) {
       expect(html).toMatch(new RegExp(`data-testid="final-${key}">${game.stats[key]}<`));
     }
-    // 바뀐 기대(M4): 예전에는 외모 막대에 원점수(「외모 53」)가 있었다. 엔딩 어디에도 원점수가 없고 「상위/하위 약 N%」(또는 가운데 문구)만 있다.
+    // 바뀐 기대(M4): 예전에는 외모 막대에 원점수(「외모 53」)가 있었다. 엔딩 어디에도 원점수가 없고 외모 글(SPEC-015)만 있다.
     const looksCell = html.match(/data-testid="final-looks">([^]*?)<\/dd>/)![1];
-    expect(textOf(looksCell)).toBe(`${BIRTH_TEXT.looksSub} ${standingLabel(looksStanding(game.character.looks))}`); // M7e-3: 값 앞에 「또래 사이에서」
+    expect(textOf(looksCell)).toBe(looksText(game.character, 'ending', game.death.age, game.seed)); // SPEC-015 AP3: 이목구비 글 두 문장(과거형), 퍼센트·「또래 사이에서」 없음
+    expect(textOf(looksCell)).toMatch(/얼굴이었습니다\. .+\.$/);
+    expect(textOf(looksCell)).not.toMatch(/%|또래|상위|하위|가운데쯤/);
     expect(textOf(html)).not.toMatch(/외모\s*\d+\s*점/);
     expect(html).not.toMatch(/data-stat="looks"/);
     expect(html).not.toMatch(new RegExp(`data-testid="final-looks">\\s*${game.character.looks}\\s*<`));

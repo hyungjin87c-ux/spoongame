@@ -255,7 +255,7 @@ describe('「남은 한 분」 변형 사건 (T07·T08, 완료 기준 3)', () =>
   const full = (ev: EventDef): string => {
     const o = JSON.parse(JSON.stringify(ev)) as EventDef;
     for (const ch of o.choices ?? []) if (ch.id === 'home') ch.result = '';
-    return JSON.stringify({ ...o, id: '', title: '', text: '', conditions: { parentAge: o.conditions?.parentAge } });
+    return JSON.stringify({ ...o, id: '', title: '', text: '', question: '', conditions: { parentAge: o.conditions?.parentAge } });
   };
 
   it('변형 4개가 풀에 있고 원본은 그대로 있으며 이름이 원본 id + -mother-gone·-father-gone이다', () => {
@@ -357,6 +357,8 @@ describe('FM7a가 건드린 사건은 이 목록뿐이다 (FM7a 전 원문과 �
             a.forEach((c, i) => {
               for (const ck of new Set([...Object.keys(c), ...Object.keys(b[i] ?? {})])) if (JSON.stringify(c[ck]) !== JSON.stringify(b[i]?.[ck])) diff.push(`${String(c.id)}.${ck}`);
             });
+          } else if (k === 'question') {
+            // SPEC-014: 질문 문장은 FM7a 이후에 모든 선택지 사건에 더해졌다 — FM7a가 건드린 사건 목록과 무관하다
           } else if (JSON.stringify(old[k]) !== JSON.stringify(cur[k])) diff.push(k);
         }
         if (diff.length > 0) out.set(old.id, diff.sort());

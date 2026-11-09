@@ -14,6 +14,7 @@ import {
   type ProfileId,
 } from '../src/core';
 import { MIDDLE_LABEL, standingLabel } from '../src/data/birthText';
+import { looksText } from '../src/data/looksText';
 import { GRADE_NAME } from '../src/data/birthReportText';
 import { bandLabel } from '../src/data/endingText';
 import { startBandOf } from '../src/core/ending';
@@ -259,7 +260,7 @@ describe('출생신고 화면은 core의 결과만 그린다 (BirthScreen 서버
   const html = (era: Era, wealth: Character['parentWealth'], looks: number): string => {
     const profile = PROFILE_OF_TABLE[era];
     const character: Character = { name: '김민준', gender: 'male', birthYear: profile === R1_PRESENT ? 2026 : profile === 'industrial' ? 1950 : 1975, parentWealth: wealth, parenting: 'free', looks };
-    return renderToStaticMarkup(<BirthScreen generation={profile} character={character} report={sampleReport()} peerSeed={PEER_SEED} onNext={() => {}} />);
+    return renderToStaticMarkup(<BirthScreen generation={profile} character={character} report={sampleReport()} peerSeed={PEER_SEED} seed={PEER_SEED} onNext={() => {}} />);
   };
   /** 그 칸(dd)의 글: 태그를 걷어 낸 텍스트. 줄바꿈 기회 표시(<wbr>, 「다이아몬드<wbr>수저」)는 눈에 보이는 공백이 아니라서 먼저 지운다(R-262: 좁은 칩에서 이름을 두 줄로 나누려고 모든 크기에 둔다). */
   const field = (markup: string, testId: string): string => {
@@ -280,12 +281,12 @@ describe('출생신고 화면은 core의 결과만 그린다 (BirthScreen 서버
     }
   });
 
-  it('외모 0~100점 전부: 「외모」 칸은 「상위/하위 약 N%」(전수 열거 기준값)뿐이고 점수(N점)가 어디에도 없다 (R-135)', () => {
+  it('외모 0~100점 전부: 「외모」 칸은 이목구비 글(SPEC-015 AP3)이고 퍼센트·점수(N점)가 어디에도 없다 (R-135) — 출생 체중의 퍼센트 칸은 따로 남는다', () => {
     for (let l = 0; l <= 100; l++) {
       const markup = html('present', 3, l);
       const text = field(markup, 'birth-looks');
-      expect(text.startsWith(`또래 사이에서 ${expectedLooksLabel(l)}`), `${l}점: ${text}`).toBe(true); // M7e-3: 값 앞에 「또래 사이에서」
-      for (const n of percentsIn(text)) expect(n, text).toBeLessThanOrEqual(50);
+      expect(text, `${l}점`).toBe(looksText({ looks: l, gender: 'male' }, 'birth', 0, PEER_SEED)); // 같은 시드·같은 외모값이면 같은 글
+      expect(text, `${l}점`).not.toMatch(/%|또래|상위|하위|가운데쯤/);
       expect(markup.replace(/<[^>]+>/g, ' '), `${l}점`).not.toMatch(/외모\s*\d+\s*점/);
     }
   });

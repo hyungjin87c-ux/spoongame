@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameState, GenerationId } from '../src/core/types';
-import { expectedLooksLabel } from '../tests/helpers/standingExpectations';
+import { looksText } from '../src/data/looksText';
 import {
   KNOWN_SEED,
   RAPID_METHODS,
@@ -148,8 +148,8 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
 
   // 최종 스탯: 마지막 값. 처음 값은 학력·행복·관계에만 (재산 스탯은 없어졌고 최종 순자산 줄은 M5 2b에서 화면에 더해진다)
   for (const key of ['education', 'health', 'happiness', 'relationships'] as const) await expect(page.getByTestId(`final-${key}`)).toHaveText(String(save.stats[key]));
-  // M4(R-135): 외모는 원점수가 아니라 「상위/하위 약 N%」 한 가지로만 보인다(얼굴 그림 옆). 원점수 숫자는 화면 어디에도 없다.
-  await expect(page.getByTestId('final-looks')).toContainText(expectedLooksLabel(c.looks));
+  // SPEC-015 AP3(M4 R-135 이후): 외모는 점수·퍼센트가 아니라 이목구비 글 두 문장(과거형)이다. 원점수 숫자는 화면 어디에도 없다.
+  await expect(page.getByTestId('final-looks')).toHaveText(looksText(c, 'ending', save.death!.age, save.seed));
   expect(await page.getByTestId('final-looks').innerText()).not.toMatch(/(?<![\d.])\d+\s*점/);
   for (const key of ['education', 'happiness', 'relationships'] as const) await expect(page.getByTestId(`started-${key}`)).toHaveText(`처음 ${save.birthStats![key]}`);
   for (const key of ['wealth', 'health', 'looks']) await expect(page.getByTestId(`started-${key}`)).toHaveCount(0);

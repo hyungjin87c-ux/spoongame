@@ -1,5 +1,6 @@
 import { Component, createRef, type MutableRefObject, type ReactNode, type RefObject, type UIEventHandler } from 'react';
 import { heavyKindOfEntry } from '../../core/gentle';
+import { entryHeadline } from '../../core/history';
 import type { CoParents } from '../../core/parentSubject';
 import type { HistoryEntry } from '../../core/types';
 import { DASH_TEXT } from '../../data/dashText';
@@ -64,11 +65,11 @@ interface Props {
 }
 
 /**
- * 「사건 제목 → 고른 길 → 결과」 세 줄로 쌓는 줄인가 (SPEC-012 QF4, docs/design/log-question.md): 선택지를 고른 줄(`choice` 있음)이고 저장된 `title`이 있는 줄만이다.
+ * 「윗줄(질문 → 없으면 사건 제목) → 고른 길 → 결과」 세 줄로 쌓는 줄인가 (SPEC-012 QF4, SPEC-014 QS2, docs/design/log-question.md): 선택지를 고른 줄(`choice` 있음)이고 저장된 `question`·`title` 중 하나가 있는 줄만이다.
  * 제목이 없는 줄(옛 저장 일부)·서술 줄·단계·나의 기록은 지금 모양 그대로다. 사건 풀을 `eventId`로 조회하지 않는다 — 제목은 `life.ts#resolveChoiceCore`가 이미 저장했다(옛 저장에도 바로 나온다).
  */
 export function isStackedEntry(h: HistoryEntry): boolean {
-  return h.choice !== undefined && h.choice !== '' && h.title !== undefined && h.title !== '';
+  return h.choice !== undefined && h.choice !== '' && entryHeadline(h) !== undefined;
 }
 
 /**
@@ -93,7 +94,7 @@ function EntryText({ h, subject }: { h: HistoryEntry; subject: CoParents }) {
     return (
       <>
         <span className="log__q" data-testid="log-q">
-          {h.title}
+          {entryHeadline(h)}
         </span>
         {pick}
         <span className="log__result">{h.text}</span>

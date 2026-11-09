@@ -61,6 +61,8 @@ import type { GenerationId } from './types';
  *     `eventId`가 없는 상속 줄의 표지는 줄에 필드를 더하지 않고 글자 상수로 잡는다(core/gentle.ts) — 이 변경 이전에 저장된 판의 상속 줄도 같다(M20).)
  * (SPEC-005 QI5: 게임 스키마는 v8 그대로다 — 연표 줄에 **선택 필드 `by`**(`'parent'` 부모님이 정했다 · `'child'` 아이의 일로 흘러갔다, `kind: 'choice'`에만)가 더해졌다. 없으면 본인이 고른 선택이다. 다른 값이거나 선택 줄이 아니면 판을 버리지 않고 그 필드만 버린다(`withValidBy`).
  *     저장에 부모 영역·흘러감 카드가 대기(`pending`) 중이면 열자마자 그 해 안에서 부모님이 정한·흘러간 선택으로 처리한다(`settleDelegatedPending`, PD10).)
+ * (SPEC-014 QS1: 게임 스키마는 v9 그대로다 — 연표 줄에 **선택 필드 `question`**(그때의 질문 문장 「…할까?」, `kind: 'choice'`에만, ≤ 60자)이 더해졌다. 없으면 옛 줄이라 화면이 제목(`title`)으로 보이고 열 때 채우지 않는다.
+ *     다른 모양이면 판을 버리지 않고 그 필드만 버린다(`withValidQuestion`). 새 저장을 `question`을 모르는 앱이 열어도 열린다(`validHistoryEntry`가 모르는 필드를 막지 않는다).)
  * (M8: 게임 스키마는 v8 그대로다 — 판 상태에 **선택 필드 `play`**(플레이 시간 기록, core/playClock.ts)가 더해졌다. 없으면 시간을 재지 않은 판이고, 값이 이상하면 판을 버리지 않고 그 필드만 버린다(`withValidPlay`). 진행 중인 판을 잃지 않으려고 올리지 않았다, LD-6.)
  */
 export const GAME_KEY = 'suzeo-game:save';
@@ -249,6 +251,29 @@ function withValidBy(state: GameState): GameState {
     changed = true;
     const rest = { ...h } as Record<string, unknown>;
     delete rest.by;
+    return rest as unknown as HistoryEntry;
+  });
+  return changed ? { ...state, history } : state;
+}
+
+/**
+ * 연표 줄의 `question`(SPEC-014 QS1 — 결정 줄의 질문 문장)은 **선택 필드**라 이상한 값이 판을 버리게 하지 않는다 — `kind: 'choice'`가 아니거나, 문자열이 아니거나, 비었거나, `maxQuestionLength`를 넘거나, 위험한 글자(`hasHiddenControl`)가 있으면
+ * **그 필드만 버린다**(옛 줄에는 처음부터 없고, 열 때 채우지 않는다 — save → load → save가 바이트 그대로다). 줄을 새로 만들지 않고, 버릴 필드가 없으면 같은 객체를 돌려준다.
+ */
+/** 질문 문장에 있을 수 없는 줄바꿈 등 제어 문자 (게임이 만든 한 줄 글) */
+const ASCII_CONTROL = /[\u0000-\u001f\u007f]/;
+
+function withValidQuestion(state: GameState): GameState {
+  const has = (h: object) => Object.prototype.hasOwnProperty.call(h, 'question');
+  if (!state.history.some(has)) return state;
+  let changed = false;
+  const history = state.history.map((h) => {
+    if (!has(h)) return h;
+    const q: unknown = (h as { question?: unknown }).question;
+    if (h.kind === 'choice' && typeof q === 'string' && q.length > 0 && !ASCII_CONTROL.test(q) && optString(q, HISTORY_LIMITS.maxQuestionLength)) return h;
+    changed = true;
+    const rest = { ...h } as Record<string, unknown>;
+    delete rest.question;
     return rest as unknown as HistoryEntry;
   });
   return changed ? { ...state, history } : state;
@@ -496,7 +521,7 @@ export function parseGame(raw: string | null, poolArg?: EventPool): GameState | 
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
-  return withValidFamily(withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidBy(state), pool)))))));
+  return withValidFamily(withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidQuestion(withValidBy(state)), pool)))))));
 }
 
 /**

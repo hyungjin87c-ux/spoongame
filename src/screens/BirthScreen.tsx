@@ -1,5 +1,4 @@
 import { useMemo, useRef, type ReactNode } from 'react';
-import { looksStanding } from '../core/birth';
 import { wealthMixtureOfGame } from '../core/birthProfile';
 import { birthSentence, reportPlaceLabel, weightStanding } from '../core/birthReport';
 import { startBandOf } from '../core/ending';
@@ -10,6 +9,7 @@ import { yearBasisOf } from '../core/generationMixture';
 import { R1_PRESENT, type BirthReport, type Character, type ProfileId } from '../core/types';
 import { buildComparison, compareShown, lifeGapLine } from '../data/birthCompare';
 import { PARENTING_LABEL, standingLabel } from '../data/birthText';
+import { looksText } from '../data/looksText';
 import { BIRTH_TEXT, REPORT_NOTES, formatKg, genderLabel, housingText, orderText, parentingDocText, yearMonthText, yearNoteText } from '../data/birthReportText';
 import { profileLabel } from '../core/birthProfile';
 import { bandLabel } from '../data/endingText';
@@ -31,7 +31,7 @@ import { useFocusOnChange } from '../ui/useFocus';
  * - 값은 모두 저장된 출생 결과(`character`·`birthReport`)에서 읽는다 — 화면은 계산하지 않고 core의 결과를 문구로 그리기만 한다(R-018). 새로고침해도 같은 출생신고다(R-021).
  * - 집안 형편 = 수저 칩 + `bandLabel(startBandOf(세대 전체 기준의 섞은 값, wealth))`(「흙수저(하위 25% 안쪽)」, R-170, D4-48) 한 함수의 출력. 통계 소득 5분위라고 쓰지 않는다.
  * - **출생 연도는 여기서 처음 드러난다**(SPEC-004 GS6): 이름 옆 「세대」 칸의 「{세대 이름} · {연도}년생」과 첫 문장·「출생 연월」 칸. 각주가 연도 가중을 알린다.
- * - 외모는 점수(N점)로 적지 않는다 — `standingLabel(looksStanding)`의 「상위/하위 약 N%」만(R-135, 옛 출생 화면의 「외모 N점」은 없어졌다).
+ * - 외모는 점수(N점)도 퍼센트도 적지 않는다 — 이목구비 글 두 문장(`data/looksText.ts#looksText`, SPEC-015 AP3, 한 줄 전체 칸). 글은 저장하지 않고 판의 최초 시드(`seed`)에서 다시 만든다 — 프로필·엔딩과 같은 인물의 같은 글.
  * - 「살아가기」는 입력 가드(진입 직후 0.4초, R-014)와 연타 방어(reducer가 birth 단계에서만 받는다)를 가진다(BR7).
  */
 
@@ -40,6 +40,8 @@ interface Props {
   character: Character;
   report: BirthReport;
   peerSeed: number;
+  /** 판의 최초 시드(`Game.seed`) — 외모 글의 둘째 문장 낱말을 갈라내는 시드다(저장된 값, 새 필드 없음) */
+  seed: number;
   /** 시도를 직접 골라 시작한 판인가 (수저 구간을 줄어든 연도 집합으로 센다, RG2) */
   regionPicked?: boolean;
   /** 가족 구성 (SPEC-009 FM4a) — 있으면 「형제자매」 칸을 보인다(위 형제만, B-1 기본값 — `data/birthSiblingText.ts#BIRTH_SIBLING_DISPLAY`). 없는 옛 상태는 칸이 없다 */
@@ -72,7 +74,7 @@ function Field({ id, label, wide, span2, children }: { id: string; label: string
   );
 }
 
-export function BirthScreen({ generation, character: c, report, peerSeed, regionPicked = false, family, onNext }: Props) {
+export function BirthScreen({ generation, character: c, report, peerSeed, seed, regionPicked = false, family, onNext }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const barRef = useRef<HTMLDivElement>(null);
   useThemeSurface();
@@ -85,7 +87,7 @@ export function BirthScreen({ generation, character: c, report, peerSeed, region
   // 수저 구간은 룰렛 표와 같은 섞은 값으로 센다(D4-48) — 직접 고른 시도로 연도가 줄었으면 줄어든 집합으로
   const band = bandLabel(startBandOf(wealthMixtureOfGame({ generation, regionPicked, birthReport: report }), c.parentWealth));
   const yearBasis = r1 ? null : yearBasisOf(generation);
-  const looks = standingLabel(looksStanding(c.looks));
+  const looks = looksText(c, 'birth', 0, seed);
   const weight = `${formatKg(report.birthWeightKg)}`;
   const weightRank = standingLabel(weightStanding(report.birthWeightKg, c.gender));
   const peers = useMemo(() => peersOf(peerSeed, c.birthYear, report.month, c.name), [peerSeed, c.birthYear, c.name, report.month]);
@@ -164,8 +166,8 @@ export function BirthScreen({ generation, character: c, report, peerSeed, region
                   {birthSiblingLine(family, c.gender)}
                 </Field>
               )}
-              <Field id="looks" label={BIRTH_TEXT.gridLabels.looks}>
-                <span className="cell-sub">{BIRTH_TEXT.looksSub}</span> {looks}
+              <Field id="looks" label={BIRTH_TEXT.gridLabels.looks} wide>
+                {looks}
               </Field>
               <Field id="parenting" label={BIRTH_TEXT.gridLabels.parenting} wide>
                 {PARENTING_LABEL[c.parenting]} <span className="cell-sub">{parentingDocText(c.parenting, c.parentWealth)}</span>

@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
-import { COMPARABLE_STATS, displaySeconds, heavyKindOfEntry, isCleanRun, looksStanding, reviewEnding, standingScore, type CoParents, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
+import { COMPARABLE_STATS, displaySeconds, entryHeadline, heavyKindOfEntry, isCleanRun, reviewEnding, standingScore, type CoParents, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
 import { profileLabel } from '../core/birthProfile';
 import { reportPlaceLabel } from '../core/birthReport';
-import { BIRTH_TEXT } from '../data/birthReportText';
+import { looksText } from '../data/looksText';
 import { standingLabel } from '../data/birthText';
 import { VEIL_TEXT } from '../data/gentleText';
 import { decidedByText, deciderIconOf } from '../data/parentDecisionTable';
@@ -111,11 +111,12 @@ function PlayTimeBlock({ play }: { play: PlayRecord }) {
   );
 }
 
-/** 연표 줄 하나의 내용(제목 → 고른 길 → 결과 문장) — 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
+/** 연표 줄 하나의 내용(질문 또는 제목 → 고른 길 → 결과 문장) — 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
 function TimelineBody({ entry, subject }: { entry: HistoryEntry; subject: CoParents }) {
+  const headline = entryHeadline(entry); // 질문 문장 우선, 없으면 제목 (SPEC-014 QS2)
   return (
     <>
-      {entry.title ? <strong>{entry.title}</strong> : null}
+      {headline !== undefined ? <strong>{headline}</strong> : null}
       {entry.choice ? (
         <span className="tl-picked" data-testid="timeline-picked" data-by={entry.by}>
           {entry.by !== undefined ? (
@@ -301,8 +302,8 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
           <dl className="facts">
             <dt>{DASH_TEXT.profileLooks}</dt>
             <dd data-testid="final-looks">
-              {/* 외모: 점수가 아니라 「상위/하위 약 N%」만 (R-135) */}
-              <small>{BIRTH_TEXT.looksSub}</small> {standingLabel(looksStanding(c.looks))}
+              {/* 외모: 점수·퍼센트가 아니라 이목구비 글 두 문장 (SPEC-015 AP3) — 출생신고·프로필과 같은 인물의 같은 글(과거형) */}
+              {looksText(c, 'ending', game.death.age, game.seed)}
             </dd>
           </dl>
         </section>
