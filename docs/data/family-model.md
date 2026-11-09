@@ -507,6 +507,7 @@ export interface FamilyView {
 | `sibling_loss_risk` | ~~1969년 이하 출생 판의 12세 미만 형제가 있음 (Q3 사건 조건)~~ **어휘만 두고 내지 않음 — 안 B(해시 계획 + 줄 `fam-sib-lost`, 4-7절 (3))라 사건 조건이 필요 없다** | 시스템(미사용) | 내지 않음 | 내지 않음 |
 | `pet_dog` `pet_cat` `pet_other` (**K10**) | 지금 함께 사는 반려동물 종 | **사건이 켜고 시스템이 끔** | 입양 사건·부모 집 유무 | 이별 해 |
 | `pet_farewell` (**K10**) | 한 번이라도 떠나보냄 | 시스템 | 첫 이별 | 안 꺼짐 |
+| `parent_strained` (**SPEC-011 AK5**) | 어린 시절 떼를 쓰다 거절당해 부모(어머니·아버지)와 서먹해짐 — `CLOSENESS_FLAGS`에서 관계 −1(`src/data/familyTables.ts`, `cared_parents` 줄 뒤) | **사건이 켬**(조르기 `tantrum` 거절 + 사이 나빠짐 갈래, 코드 표 `ASK_EFFECTS` — 시스템 소유 아님) | 떼쓰기 거절 + `u2 < s(C)` | 안 꺼짐(평생 유지). 되돌림은 성인기 `cared_parents`(부모 +1)가 같은 판에서 켜질 때의 기존 표 효과뿐. **5단계(「아주 가까움」) 부모는 `closenessOf`가 합산(기본 4 + 양육 기울임 + 시드) 뒤 마지막에 한 번만 1~5로 자르므로 −1이 흡수되어 사이 말이 그대로일 수 있다**(5단계 부모의 약 20%, 전체 부모의 약 5% — 1~4단계는 정확히 한 단계 내려가고 1에서 멈춘다. 결정 AK5-1, 마스터 2026-11-09) |
 
 기존 플래그(`parents_gone` `cared_parents` `grandparent_close` `sibling_close` `lives_with_parents` `moved_home` `child_distant` `child_left` `has_child` `married` …)는 **의미·세터 불변**.
 
