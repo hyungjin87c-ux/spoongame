@@ -91,10 +91,12 @@ describe('첫 화면 구성 (FS1 · GS11 1부)', () => {
     for (let i = 1; i < at.length; i++) expect(at[i], `${order[i - 1]} → ${order[i]}`).toBeGreaterThan(at[i - 1]);
   });
 
-  it('게임명 「수저 게임」이 제목(h1)의 읽히는 글자로 있고, 로고는 워드마크(글자) 하나가 장식으로 들어 있다 — 세로·가로 로고(심볼 + 워드마크)는 없다 (SPEC-005 로고 결정)', () => {
+  it('게임명 「수저 게임」이 제목(h1)의 읽히는 글자로 있고, 로고는 가로 결합 로고(정식 심볼 + 워드마크) 하나가 장식으로 들어 있다 — 세로 로고는 없다 (SPEC-016 H2 안 B, 형진 님 2026-11-10; 이전 SPEC-005는 워드마크만)', () => {
     expect(html).toMatch(/<h1[^>]*data-testid="title-heading"[^>]*><span class="sr-only">수저 게임<\/span>/);
-    expect(html).toMatch(/<span class="logo-wrap logo--word" data-testid="title-logo-word" aria-hidden="true">/);
-    expect(html.match(/viewBox="0 0 425 100"/g)?.length).toBe(1); // 워드마크 하나
+    expect(html).toMatch(/<span class="logo-wrap logo--row" data-testid="title-logo-word" aria-hidden="true">/);
+    expect(html.match(/viewBox="0 0 443\.8 128"/g)?.length).toBe(1); // 가로 결합 로고(logo-a.svg) 하나
+    expect(html).not.toContain('viewBox="0 0 425 100"'); // 워드마크만 있던 옛 머리는 아니다
+    expect(html).not.toContain('logo--word');
     expect(html).not.toContain('title-logo-stacked');
     expect(html).not.toContain('title-logo-row');
   });

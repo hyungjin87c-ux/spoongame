@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * 원시 HTML 삽입 점검 (SPEC-003 FR4: 사용자 입력을 HTML로 넣는 길은 없다, REV-003-M2-1 R-216).
  * 로고·아이콘 스프라이트는 디자이너가 넘긴 SVG 파일이라 인라인으로 넣어야 CSS 변수(색)를 읽는다 — 그래서 `ui/Brand.tsx` 한 곳에서만 `dangerouslySetInnerHTML`을 쓰고,
- * 그 값은 `ui/brandAssets.ts`가 `?raw`로 가져온 우리 저장소의 파일 내용 상수(3개: 스프라이트 1 + 로고 2 — SPEC-003 M3에서 첫 화면 밖 모든 화면의 헤더 로고 `LOGO_HEADER_SVG`가 더해졌다, DS1. SPEC-005 QI3에서 첫 화면의 세로·가로 로고 둘이 워드마크 하나 `LOGO_WORDMARK_SVG`로 바뀌었다, D5-01)뿐이다. 그 밖의 `src/` 어디에도 원시 HTML 삽입이 없어야 한다.
+ * 그 값은 `ui/brandAssets.ts`가 `?raw`로 가져온 우리 저장소의 파일 내용 상수(3개: 스프라이트 1 + 로고 2 — SPEC-003 M3에서 첫 화면 밖 모든 화면의 헤더 로고 `LOGO_HEADER_SVG`가 더해졌다, DS1. SPEC-005 QI3에서 첫 화면의 세로·가로 로고 둘이 워드마크 하나 `LOGO_WORDMARK_SVG`로 바뀌었고, SPEC-016 H2에서 그 워드마크가 가로 결합 로고 `LOGO_ROW_SVG`로 바뀌었다 — 상수는 그대로 3개)뿐이다. 그 밖의 `src/` 어디에도 원시 HTML 삽입이 없어야 한다.
  * 새로 쓸 일이 생기면 이 허용 목록을 일부러 고쳐야 하므로 리뷰에서 눈에 띈다.
  */
 
@@ -16,7 +16,7 @@ const files = Object.entries(sources).map(([path, raw]) => ({ file: path.replace
 
 /** 허용: dangerouslySetInnerHTML은 이 파일에서만, 값은 이 상수만 */
 const ALLOWED_FILE = 'ui/Brand.tsx';
-const ALLOWED_CONSTANTS = ['SPRITE_SVG', 'LOGO_WORDMARK_SVG', 'LOGO_HEADER_SVG'];
+const ALLOWED_CONSTANTS = ['SPRITE_SVG', 'LOGO_ROW_SVG', 'LOGO_HEADER_SVG'];
 
 const HTML_SINKS = /\.innerHTML\b|\bouterHTML\b|insertAdjacentHTML|document\.write|createContextualFragment|\beval\(|new Function\(/;
 

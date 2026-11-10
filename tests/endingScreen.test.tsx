@@ -161,7 +161,10 @@ describe('엔딩 화면: 구성과 순서', () => {
 
   it('다시 태어나기 버튼은 하나뿐이다: GuardedButton이라 첫 렌더에는 aria-disabled(가드), 안내 문구가 곁에 있다', () => {
     expect((html.match(/data-testid="rebirth"/g) ?? []).length).toBe(1);
-    expect((html.match(/<button/g) ?? []).length).toBe(1);
+    // SPEC-016: 머리글 로고가 「첫 화면으로」 버튼이 됐다(눌러도 한 번 묻는 확인 단계가 열릴 뿐) — 버튼은 그 로고 하나 + 다시 태어나기 하나, 열린 확인 상자는 처음에 없다
+    expect((html.match(/<button/g) ?? []).length).toBe(2);
+    expect((html.match(/<button[^>]*data-testid="logo-home"/g) ?? []).length).toBe(1);
+    expect(html).not.toContain('data-testid="ending-home-ask"');
     const button = html.match(/<button[^>]*data-testid="rebirth"[^>]*>다시 태어나기<\/button>/)![0];
     expect(button).toContain('aria-disabled="true"');
     expect(textOf(html)).toContain(REBIRTH_NOTE);
@@ -283,7 +286,8 @@ describe('엔딩 화면: 금지된 것이 없다 (SPEC "안 할 것" · 등급�
       // (M4: 공통 헤더 로고·얼굴·아이콘이 인라인 <svg>라 svg는 더는 금지 목록이 아니다 — 공유·링크·이미지 파일·캔버스·소리가 없다는 뜻은 그대로다)
       expect(html).not.toMatch(/<a[\s>]|<img|<canvas|<audio|<video|navigator\.share/);
       expect(textOf(html)).not.toMatch(/공유|SNS|트위터|인스타|카카오톡|복사|저장하기|이미지로/);
-      expect((html.match(/<button/g) ?? []).length).toBe(1); // 다시 태어나기 하나뿐
+      expect((html.match(/<button/g) ?? []).length).toBe(2); // 다시 태어나기 하나 + 머리글 로고(SPEC-016: 「첫 화면으로」 버튼 — 공유·복사 같은 다른 버튼은 없다)
+      expect(html.match(/<button[^>]*data-testid="(?:rebirth|logo-home)"/g) ?? []).toHaveLength(2);
     }
   });
 

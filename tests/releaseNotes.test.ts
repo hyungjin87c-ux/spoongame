@@ -132,7 +132,10 @@ describe('새 소식 데이터 (NT3)', () => {
 describe('v0.5.0 새 소식 (v0.5.0 배포 — copy.md 13-2 v0.5.0, 형진 님 2026-11-10 승인 · 결정 로그 후속 219)', () => {
   it('요약과 항목 여덟이 copy.md 13-2 v0.5.0 표와 글자 그대로 같고(종류 포함) 날짜는 2026-11-10이며 버전은 package.json과 같다', () => {
     const sec = copyMd.slice(copyMd.indexOf('### 13-2.'), copyMd.indexOf('### 13-3.'));
-    const block = sec.slice(sec.indexOf('**v0.5.0**'), sec.indexOf('**v0.4.1**'));
+    // 블록 끝 = v0.5.0 다음에 나오는 다음 버전 머리글(SPEC-016: designer가 v0.5.1 초안 블록을 v0.5.0과 v0.4.1 사이에 더했다 — 그 표의 행이 v0.5.0 행으로 세어지지 않게)
+    const start = sec.indexOf('**v0.5.0**');
+    const next = sec.slice(start + 10).search(/\*\*v0\.\d+\.\d+\*\*/);
+    const block = sec.slice(start, next < 0 ? undefined : start + 10 + next);
     expect(block.length, 'copy.md 13-2에 v0.5.0 블록이 있다').toBeGreaterThan(100);
     const v = noteOf('0.5.0') as ReleaseNote;
     expect(block).toContain(`요약 **「${v.summary}」**`);

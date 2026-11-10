@@ -147,11 +147,11 @@ test('첫 화면 구성(FS1·GS11): 로고 → 한 줄 설명 → 세대 고르�
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 
-test('로고(DS1): 게임명 워드마크 글자 높이 ≥ 40px — 두 폭 모두 워드마크(글자)만(SPEC-005 D5-01 A안), 제목(h1)의 읽히는 글자는 「수저 게임」', async ({ page }) => {
+test('로고(DS1): 게임명 워드마크 글자 높이 ≥ 40px — 두 폭 모두 가로 결합 로고(심볼 + 워드마크, SPEC-016 H2 안 B; 이전 SPEC-005 D5-01은 워드마크만), 제목(h1)의 읽히는 글자는 「수저 게임」', async ({ page }) => {
   await page.goto('/');
   const visibleId = 'title-logo-word';
   await expect(page.getByTestId(visibleId)).toBeVisible();
-  await expect(page.getByTestId('title-logo-stacked')).toHaveCount(0); // 세로·가로 로고(심볼 + 워드마크)는 없다
+  await expect(page.getByTestId('title-logo-stacked')).toHaveCount(0); // 세로 로고는 없다
   await expect(page.getByTestId('title-logo-row')).toHaveCount(0);
   const m = await page.evaluate((id) => {
     const svg = document.querySelector(`[data-testid="${id}"] svg`) as SVGSVGElement;
@@ -1815,7 +1815,8 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     await expect(page.getByTestId('title-screen')).toBeVisible();
     const c = await page.evaluate(() => {
       const css = (el: Element, prop: string) => getComputedStyle(el).getPropertyValue(prop) || (getComputedStyle(el) as unknown as Record<string, string>)[prop];
-      const logoPath = document.querySelector('[data-testid="title-logo-word"] svg path')!; // 워드마크는 선(stroke)으로 그린다
+      const logoPath = document.querySelector('[data-testid="title-logo-word"] svg g path')!; // 워드마크는 선(stroke)으로 그린다 (SPEC-016 H2: 가로 결합 로고 — 심볼은 `svg > path`, 글자는 `svg > g`)
+      const symbolPath = document.querySelector('[data-testid="title-logo-word"] svg > path')!; // 정식 심볼은 면(fill)으로 그린다
       return {
         body: getComputedStyle(document.body).backgroundColor,
         page: getComputedStyle(document.querySelector('.title-page')!).backgroundColor,
@@ -1824,6 +1825,7 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
         btnText: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).color,
         card: getComputedStyle(document.querySelector('.carousel')!).backgroundColor, // 평면 카드(D4-55): 면(--c-surface) 하나
         logo: getComputedStyle(logoPath).stroke,
+        symbol: getComputedStyle(symbolPath).fill,
         scheme: css(document.documentElement, 'color-scheme'),
       };
     });
@@ -1835,6 +1837,7 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     expect(c.btnBg, '주요 버튼 = --c-brand 다크').toBe(dark('--c-brand'));
     expect(c.btnText).toBe(dark('--c-on-brand'));
     expect(c.logo, '로고 = --c-logo 다크(크림색)').toBe(dark('--c-logo'));
+    expect(c.symbol, '로고 심볼 = --c-logo 다크(크림색)').toBe(dark('--c-logo'));
     expect(dark('--c-bg'), '다크 바탕은 라이트 바탕과 다르다(공허 통과 방지)').not.toBe((await tokenColors(page, 'light'))('--c-bg'));
     expect(await noHorizontalOverflow(page)).toBe(true);
     await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀려 버튼이 흐리지 않은 모습으로 찍는다
@@ -1862,13 +1865,15 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
       body: getComputedStyle(document.body).backgroundColor,
       btnBg: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).backgroundColor,
       btnText: getComputedStyle(document.querySelector('[data-testid="start-birth"]')!).color,
-      logo: getComputedStyle(document.querySelector('[data-testid="title-logo-word"] svg path')!).stroke, // 워드마크는 선(stroke)으로 그린다
+      logo: getComputedStyle(document.querySelector('[data-testid="title-logo-word"] svg g path')!).stroke, // 워드마크는 선(stroke)으로 그린다
+      symbol: getComputedStyle(document.querySelector('[data-testid="title-logo-word"] svg > path')!).fill, // 정식 심볼은 면(fill)으로 그린다 (SPEC-016 H2)
     }));
     const light = await tokenColors(page, 'light');
     expect(c.body).toBe(light('--c-bg'));
     expect(c.btnBg).toBe(light('--c-brand'));
     expect(c.btnText).toBe(light('--c-on-brand'));
     expect(c.logo).toBe(light('--c-logo'));
+    expect(c.symbol).toBe(light('--c-logo'));
     await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀려 버튼이 흐리지 않은 모습으로 찍는다
     await page.screenshot({ path: `${SHOTS}/dev-M2-title-${projectKey(testInfo.project.name)}.png` });
     if (testInfo.project.name === 'mobile-360') await page.screenshot({ path: `${SHOTS}/dev-M2-title-mobile-full.png`, fullPage: true });
@@ -1881,7 +1886,8 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     const s = await page.evaluate(() => {
       const card = (id: string) => getComputedStyle(document.querySelector(`[data-testid="${id}"]`)!.closest('.gen-row')!);
       const btn = getComputedStyle(document.querySelector('[data-testid="start-birth"]')!);
-      const logo = document.querySelector('[data-testid="title-logo-word"] svg path')!;
+      const logo = document.querySelector('[data-testid="title-logo-word"] svg g path')!;
+      const symbol = document.querySelector('[data-testid="title-logo-word"] svg > path')!;
       return {
         selectedBg: card('gen-random').backgroundColor,
         plainBg: card('gen-genx').backgroundColor,
@@ -1891,6 +1897,7 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
         btnBorder: btn.borderTopStyle,
         btnWidth: parseFloat(btn.borderTopWidth),
         logoFill: getComputedStyle(logo).stroke,
+        symbolFill: getComputedStyle(symbol).fill,
         bodyBg: getComputedStyle(document.body).backgroundColor,
       };
     });
@@ -1901,6 +1908,8 @@ test.describe('색 구성표(DB6 기반·CM4)', () => {
     expect(s.btnBorder).toBe('solid');
     expect(s.btnWidth).toBeGreaterThanOrEqual(3);
     expect(s.logoFill, '로고가 보인다(투명이 아니다)').not.toBe('rgba(0, 0, 0, 0)');
+    expect(s.symbolFill, '로고 심볼이 보인다(투명이 아니다)').not.toBe('rgba(0, 0, 0, 0)');
+    expect(s.symbolFill, '로고 심볼 = 시스템 글자색(강제 색상)').toBe(s.logoFill);
     expect(await noHorizontalOverflow(page)).toBe(true);
     await expect(page.getByTestId('start-birth')).toBeEnabled(); // 입력 가드가 풀려 버튼이 흐리지 않은 모습으로 찍는다
     if (testInfo.project.name === 'mobile-360') await page.screenshot({ path: `${SHOTS}/dev-M2-title-mobile-forced.png` });

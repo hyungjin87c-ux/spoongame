@@ -9,11 +9,14 @@ import iconsRaw from '../assets/icons/ui-icons.svg?raw';
 import spoonGradesRaw from '../assets/icons/spoon-grades.svg?raw';
 import deciderRaw from '../assets/icons/decider-icons.svg?raw';
 import sceneIconsRaw from '../assets/icons/scene-icons.svg?raw';
-import wordmarkRaw from '../assets/brand/wordmark.svg?raw';
+import logoRowRaw from '../assets/logo-a.svg?raw';
 import logoHeaderRaw from '../assets/brand/a/logo-header.svg?raw';
 
-/** 첫 화면의 게임명 로고(SPEC-005 D5-01 A안): 워드마크(「수저 게임」 글자)만 — 두 폭 모두 같은 것이고 왼쪽 정렬 머리 줄의 제목이다. 세로 로고·가로 로고(심볼 + 워드마크)는 쓰지 않는다 */
-export const LOGO_WORDMARK_SVG: string = wordmarkRaw;
+/**
+ * 첫 화면의 게임명 로고(SPEC-016 H2, 형진 님 2026-11-10 안 B): 가로 결합 로고(`logo-a.svg` — 정식 심볼 왼쪽 + 워드마크). 두 폭 모두 같은 것이고 왼쪽 정렬 머리 줄의 제목이다.
+ * 이전(SPEC-005 D5-01)에는 워드마크(`brand/wordmark.svg`)만 썼다 — 그 자산 파일은 그대로 두고 상수만 바뀌었다.
+ */
+export const LOGO_ROW_SVG: string = logoRowRaw;
 /** 첫 화면 밖 모든 화면의 헤더 로고(단순화 심볼 + 워드마크, 높이 40px, DS1 워드마크 글자 높이 ≥ 22px) */
 export const LOGO_HEADER_SVG: string = logoHeaderRaw;
 /**

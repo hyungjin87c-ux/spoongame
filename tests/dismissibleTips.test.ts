@@ -93,7 +93,7 @@ describe('훅 연결', () => {
   it('도구 줄(LifeTools)이 그룹 요소 ref로 훅을 부른다', () => {
     expect(lifeScreenSrc).toContain("import { useDismissibleTips } from '../ui/dismissibleTips';");
     expect(lifeScreenSrc).toContain('useDismissibleTips(toolsRef);');
-    expect(lifeScreenSrc).toMatch(/className="controls__tools"[^>]*data-testid="tools" ref=\{toolsRef\}/);
+    expect(lifeScreenSrc).toMatch(/className="controls__tools"[^>]*data-testid="tools"[^>]*ref=\{toolsRef\}/); // SPEC-016 H5: 그룹 요소에 `data-bgm`(BGM 켠 때만)이 testid와 ref 사이에 들어갔다 — 훅이 묶는 요소는 그대로 그 그룹이다
   });
 
   it('Esc만 받고(다른 키는 무시) 이벤트를 막지 않는다 — 시트 닫기·나가기 확인 닫기와 겹치지 않는다', () => {

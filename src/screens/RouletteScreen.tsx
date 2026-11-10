@@ -37,13 +37,15 @@ interface Props {
   onFinishSpin: () => void;
   /** 「출생신고 보기」 */
   onNext: () => void;
+  /** 헤더 로고를 누르면 첫 화면으로 (SPEC-016 H1 — App이 `openTitle`을 보낸다). 없으면 로고는 그림이다 */
+  onHome?: () => void;
 }
 
 /** 세대 뽑기 단계의 릴이 멈추는 시각(ms) — 0.8~1.5초 안(GS3 ▲). 총 연출 4~6초는 이 뒤의 두 릴이 지킨다 */
 const DRAW_STOP_MS = 1200;
 const DRAW_TITLE_CHARS = longestWordLength([ROULETTE_GEN_TEXT.drawTitle]) + 1;
 
-export function RouletteScreen({ game, spin, onFinishSpin, onNext }: Props) {
+export function RouletteScreen({ game, spin, onFinishSpin, onNext, onHome }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const barRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -88,7 +90,7 @@ export function RouletteScreen({ game, spin, onFinishSpin, onNext }: Props) {
     return (
       <div className="page roulette-page is-spinning" data-testid="roulette-screen" data-state="draw">
         <Sprite />
-        <SiteHead name={ROULETTE_TEXT.headName} />
+        <SiteHead name={ROULETTE_TEXT.headName} onHome={onHome} />
         <main className="roulette">
           <div className="roulette__lead">
             <h1 className="t-title" ref={headingRef} tabIndex={-1} data-testid="roulette-heading" style={{ '--title-chars': DRAW_TITLE_CHARS } as CSSProperties}>
@@ -134,7 +136,7 @@ export function RouletteScreen({ game, spin, onFinishSpin, onNext }: Props) {
   return (
     <div className={`page roulette-page${playing ? ' is-spinning' : ''}`} data-testid="roulette-screen" data-state={playing ? 'spinning' : 'result'}>
       <Sprite />
-      <SiteHead name={ROULETTE_TEXT.headName} />
+      <SiteHead name={ROULETTE_TEXT.headName} onHome={onHome} />
       <main className="roulette">
         <div className="roulette__lead">
           {/* 제목 글자 크기 상한(QM3-2): 가장 긴 낱말(「정해졌습니다」)이 어떤 폭·글자 크기에서도 한 줄에 들어가도록 줄 폭 ÷ 글자 수로 정한다 — doc.css `.roulette__lead .t-title` */}

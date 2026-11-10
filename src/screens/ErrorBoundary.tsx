@@ -31,11 +31,19 @@ export class ErrorBoundary extends Component<Props, BoundaryState> {
     window.location.assign(window.location.pathname);
   };
 
+  /**
+   * 헤더 로고 → 페이지 다시 열기 (SPEC-016 H1·Q2 (가)): 오류 화면은 앱(세션) 바깥이라 `dispatch`가 없다 — 저장은 **지우지 않고** 주소의 쿼리만 떼어 다시 연다. 저장된 판이 열리고(첫 화면 단계면 첫 화면),
+   * 오류가 그 저장 때문이면 이 화면이 다시 뜰 수 있다(그때의 탈출구는 아래 「저장 지우고 새로 시작」).
+   */
+  private home = () => {
+    window.location.assign(window.location.pathname);
+  };
+
   render() {
     if (!this.state.failed) return this.props.children;
     return (
       <div className="page" data-testid="error-screen">
-        <SiteHead name={ERROR_HEAD_NAME} />
+        <SiteHead name={ERROR_HEAD_NAME} onHome={this.home} />
         <main className="system" data-state="error">
           <section className="card">
             {/* 제목 글자 크기 상한(R-321, QM3-2): 밀린 화면과 같은 칸 수 — dash.css 「제목 글자 크기 상한」 */}

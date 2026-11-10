@@ -11,7 +11,7 @@ const runsHere = (projectName: string): boolean => projectName === 'mobile-360' 
  * 도구 버튼 한 줄 (SPEC-005 r4 UX9·QI9, 완료 기준 1). **형진 님 지시 2026-10-26 「도구줄은 한줄에 나오도록 해줘」 — 마스터 해석: PC 폭(뷰포트 ≥ 960px) 전 구간에서 한 줄, 휴대폰·태블릿(< 960px)은 그대로**
  * (처음 M21은 한 줄을 1180px 이상에서만 보장하고 960~1154px를 두 줄로 두었다 — 이 지시가 그 부분을 바꿨다).
  * 9개 버튼 = 진행 줄 4(일시정지 · 배속 한 단추 · 다음 결정으로 · 자동 모드) + 도구 줄 5(BGM · 생각 남기기 · 다크 모드 · 의견 보내기 · 나가기). (SPEC-012 QF5: 배속 넷이 한 단추가 되어 12개 → 9개)
- *  ① 1180 이상 × 글자 100%(designer r4 규격: 이름 + 아이콘): 12개 버튼의 위쪽 좌표 차 ≤ 2px, 버튼 이름이 줄바꿈되지 않는다. BGM을 켜면 볼륨 줄이, 나가기를 누르면 확인 상자가 12개 버튼 줄 **아래 별도 줄**이고 켜고 끌 때 버튼이 움직이지 않는다.
+ *  ① 1180 이상 × 글자 100%(designer r4 규격: 이름 + 아이콘): 12개 버튼의 위쪽 좌표 차 ≤ 2px, 버튼 이름이 줄바꿈되지 않는다. BGM을 켜면(SPEC-016 H5, 형진 님 2026-11-10) 볼륨 막대 + 숫자가 **BGM 칸 바로 오른쪽 같은 줄**에 서고 줄이 늘지 않으며 BGM 말고는 어느 버튼도 움직이지 않는다(오른쪽 맞춤 묶음이라 BGM만 막대 폭만큼 왼쪽으로 비킨다). 나가기를 누르면 확인 상자는 버튼 줄 **아래 별도 줄**이다.
  *  ② 960~1179 × 글자 100%(압축 모드 ①: 도구 5개를 아이콘만): 같은 단언이 960 · 1024 · 1100에서도 돈다. 도구 버튼은 폭 36px(SPEC-012 QF5 — 예전 44), 이름 글자는 눈에 안 보이고(clip-path) DOM에 그대로 있으며, 마우스 올림·키보드 포커스에서 오른쪽 맞춤 말풍선으로 보이고 화면 밖으로 나가지 않는다.
  *     960에서 한 줄에 들어가므로(측정: 진행 묶음 581 + 도구 묶음 252 + 간격 16 ≤ 안쪽 폭 928) 압축 모드 ②(진행 묶음 글자 줄이기)는 쓰지 않았다.
  *  ③ 접근 가능한 이름은 어느 폭에서도 같다(960 · 1100 · 1280). 글자 200%: 한 줄을 요구하지 않고 wrap으로 물러나며 가로 넘침 0(1.4.10 reflow). 폭 320 · 글자 200%: 가로 넘침 0px·가려진 포커스 0(CM10).
@@ -86,20 +86,34 @@ for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
     expect(await noHorizontalOverflow(page), '가로 넘침 0').toBe(true);
   });
 
-  test(`${width}px: BGM을 켜면 볼륨 줄이, 나가기를 누르면 확인 상자가 9개 버튼 줄 아래 별도 줄이고 켜고 끌 때 버튼의 가로 위치 변화가 ≤ 1px이다 (UX9-2)`, async ({ page }, testInfo) => {
+  test(`${width}px: BGM을 켜면 볼륨 막대·숫자가 BGM 칸 바로 오른쪽 같은 줄에 서고(줄이 늘지 않는다) BGM 말고는 어느 버튼도 움직이지 않으며, 나가기를 누르면 확인 상자가 버튼 줄 아래 별도 줄이다 (UX9-2 · SPEC-016 H5)`, async ({ page }, testInfo) => {
     test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     await openToolbar(page, width);
     const base = await nine(page);
     const bottom = Math.max(...base.map((r) => r.bottom));
+    const at = (rows: Row[], id: string): Row => rows.find((r) => r.id === id)!;
 
-    // BGM 켜기 → 볼륨 줄
+    // BGM 켜기 → 볼륨 막대가 BGM 오른쪽, 생각 남기기 왼쪽의 같은 줄 (SPEC-016 H5: 예전에는 버튼 줄 아래 별도 줄이었다)
     await page.getByTestId('tool-bgm').click();
     const volume = page.getByTestId('bgm-volume');
     await expect(volume).toBeVisible();
+    await expect(page.getByTestId('bgm-volume-input')).toBeVisible();
+    await expect(volume.locator('output')).toHaveText(/^\d+%$/); // 보이는 글자는 숫자(「30%」)뿐
     const withVolume = await nine(page);
-    expect((await volume.boundingBox())!.y, '볼륨 줄이 9개 버튼 줄 아래').toBeGreaterThanOrEqual(bottom - 1);
-    withVolume.forEach((r, i) => expect(Math.abs(r.left - base[i].left), `BGM 켠 뒤 ${r.id}의 가로 위치 변화(px)`).toBeLessThanOrEqual(1));
+    const vb = (await volume.boundingBox())!;
+    const bgm = at(withVolume, 'tool-bgm');
+    const note = at(withVolume, 'tool-note');
+    expect(vb.x, '볼륨 막대는 BGM 칸 오른쪽').toBeGreaterThanOrEqual(bgm.right - 1);
+    expect(vb.x + vb.width, '볼륨 막대는 생각 남기기 칸 왼쪽').toBeLessThanOrEqual(note.left + 1);
+    expect(Math.abs(vb.y + vb.height / 2 - (bgm.top + bgm.height / 2)), '같은 줄(세로 가운데 차 ≤ 3px)').toBeLessThanOrEqual(3);
+    expect(vb.y + vb.height, '따로 한 줄을 차지하지 않는다(버튼 줄 아래로 내려가지 않는다)').toBeLessThanOrEqual(bottom + 1);
     expect(spread(withVolume.map((r) => r.top)), '켠 뒤에도 한 줄').toBeLessThanOrEqual(2);
+    withVolume.forEach((r, i) => {
+      if (r.id === 'tool-bgm') return;
+      expect(Math.abs(r.left - base[i].left), `BGM 켠 뒤 ${r.id}의 가로 위치 변화(px) — BGM만 비킨다`).toBeLessThanOrEqual(1);
+    });
+    expect(bgm.left, 'BGM만 막대 폭만큼 왼쪽으로 비킨다').toBeLessThan(at(base, 'tool-bgm').left - 20);
+    expect(await noHorizontalOverflow(page), '켠 뒤에도 가로 넘침 0').toBe(true);
 
     // 나가기 → 확인 상자
     await page.getByTestId('tool-exit').click();
@@ -107,8 +121,7 @@ for (const width of [960, 1024, 1100, 1180, 1280, 1366, 1920]) {
     await expect(ask).toBeVisible();
     const withAsk = await nine(page);
     expect((await ask.boundingBox())!.y, '확인 상자가 9개 버튼 줄 아래').toBeGreaterThanOrEqual(bottom - 1);
-    expect((await ask.boundingBox())!.y, '확인 상자가 볼륨 줄 아래').toBeGreaterThanOrEqual((await volume.boundingBox())!.y);
-    withAsk.forEach((r, i) => expect(Math.abs(r.left - base[i].left), `확인 상자를 연 뒤 ${r.id}의 가로 위치 변화(px)`).toBeLessThanOrEqual(1));
+    withAsk.forEach((r, i) => expect(Math.abs(r.left - withVolume[i].left), `확인 상자를 연 뒤 ${r.id}의 가로 위치 변화(px)`).toBeLessThanOrEqual(1));
     expect(spread(withAsk.map((r) => r.top)), '확인 상자를 연 뒤에도 한 줄').toBeLessThanOrEqual(2);
 
     // 돌아가기 → 닫으면 처음 자리
@@ -303,13 +316,12 @@ function overlapCenter(a: Box, b: Box): { x: number; y: number } | null {
 }
 
 /**
- * QA의 36곳 격자 (C-C-bgm-slider): 볼륨 슬라이더 위·가운데·아래(+ 말풍선과 겹치는 띠 안쪽) × 슬라이더 왼쪽 끝·BGM 말풍선 왼쪽·가운데·오른쪽·슬라이더 가운데·오른쪽 끝
+ * QA의 36곳 격자 (C-C-bgm-slider, SPEC-016 H5 개정): 볼륨 슬라이더 상자 안 6 × 6 — 가로는 왼쪽 끝~오른쪽 끝(양끝 2px 안쪽 포함), 세로는 위끝 1px 안~아래끝 1px 안.
+ * 예전 격자는 BGM 말풍선이 덮던 슬라이더 위쪽 띠를 겨냥했다. 막대가 BGM 칸 오른쪽 같은 줄로 옮겨 말풍선(버튼 아래 이름표)이 막대와 겹치지 않으므로, 겹치지 않는다는 단언(`overlapCenter` null)으로 바꾸고 격자는 막대 전체를 훑는다.
  */
-function gridOver(tip: Box, slider: Box): Array<[number, number]> {
-  const oTop = Math.max(tip.top, slider.top);
-  const oBottom = Math.min(tip.bottom, slider.bottom);
-  const xs = [slider.left + 2, tip.left + 2, (tip.left + tip.right) / 2, tip.right - 2, (slider.left + slider.right) / 2, slider.right - 2];
-  const ys = [slider.top + 1, oTop + 1, (oTop + oBottom) / 2, oBottom - 1, (slider.top + slider.bottom) / 2, slider.bottom - 1];
+function gridOver(slider: Box): Array<[number, number]> {
+  const xs = Array.from({ length: 6 }, (_, i) => slider.left + 2 + ((slider.right - slider.left - 4) * i) / 5);
+  const ys = Array.from({ length: 6 }, (_, i) => slider.top + 1 + ((slider.bottom - slider.top - 2) * i) / 5);
   return ys.flatMap((y) => xs.map((x): [number, number] => [x, y]));
 }
 
@@ -324,7 +336,7 @@ async function tabToBgm(page: Page): Promise<void> {
 }
 
 for (const width of [960, 1024, 1100, 1179]) {
-  test(`${width}px · C-C-bgm-slider: BGM을 마우스로 켠 직후 볼륨 줄 위쪽 36곳을 눌러도 BGM이 유지되고 볼륨이 바뀐다 — 눌린 말풍선은 그 자리에서 숨는다 (UX9-6 1·3번)`, async ({ page }, testInfo) => {
+  test(`${width}px · C-C-bgm-slider: BGM을 마우스로 켠 직후 볼륨 막대 위 36곳을 눌러도 BGM이 유지되고 볼륨이 바뀐다 — 눌린 말풍선은 그 자리에서 숨는다 (UX9-6 1·3번)`, async ({ page }, testInfo) => {
     test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     test.setTimeout(120_000);
     await openToolbar(page, width);
@@ -333,38 +345,37 @@ for (const width of [960, 1024, 1100, 1179]) {
     const left: number[] = [];
     const right: number[] = [];
     let points = 0;
-    let overlapped = 0;
     for (let n = 0; n < 36; n++) {
-      // 매번 처음 상태: 꺼져 있는 BGM을 마우스로 눌러 켠다 — 포인터는 버튼 위에 남는다
+      // 매번 처음 상태: 꺼져 있는 BGM을 마우스로 눌러 켠다
       await bgm.click();
       await expect(bgm).toHaveAttribute('aria-pressed', 'true');
       await expect(slider).toBeVisible();
       await settle(page);
-      expect(await bgm.evaluate((el) => el.matches(':hover')), '포인터는 눌린 버튼 위에 남아 있다').toBe(true);
+      // SPEC-016 H5: 켜면 BGM 칸이 막대 폭만큼 왼쪽으로 비켜(오른쪽 맞춤 묶음) 포인터는 더 이상 버튼 위가 아니다 — 예전의 「포인터는 눌린 버튼 위에 남는다」는 전제는 바뀌었다
+      expect(await bgm.evaluate((el) => el.matches(':hover')), 'BGM 칸이 비켜 포인터는 버튼 위가 아니다').toBe(false);
       const tip = await tipInfo(page, 'tool-bgm');
-      expect(tip.clip, '누른 직후 BGM 말풍선은 포인터가 버튼 위에 있어도 숨는다 (focusin이 거두지 않는다)').toBe('inset(50%)');
+      expect(tip.clip, '누른 직후 BGM 말풍선은 숨어 있다').toBe('inset(50%)');
       const sliderBox = await boxOf(page, '[data-testid="bgm-volume-input"]');
-      const grid = gridOver(tip.box, sliderBox);
+      expect(overlapCenter(tip.box, sliderBox), 'BGM 말풍선은 볼륨 막대와 겹치지 않는다(막대가 BGM 칸 오른쪽 같은 줄이다)').toBeNull();
+      const grid = gridOver(sliderBox);
       const [x, y] = grid[n];
       points++;
-      if (y >= Math.max(tip.box.top, sliderBox.top) && y <= Math.min(tip.box.bottom, sliderBox.bottom) && x >= tip.box.left && x <= tip.box.right) overlapped++;
-      expect(await hitsInside(page, x, y, 'bgm-volume'), `(${Math.round(x)}, ${Math.round(y)})는 볼륨 줄이 받는다(말풍선이 아니다)`).toBe(true);
+      expect(await hitsInside(page, x, y, 'bgm-volume'), `(${Math.round(x)}, ${Math.round(y)})는 볼륨 막대가 받는다(말풍선이 아니다)`).toBe(true);
       await page.mouse.click(x, y);
       await expect(bgm, `(${Math.round(x)}, ${Math.round(y)}) 클릭 뒤에도 BGM이 켜져 있다`).toHaveAttribute('aria-pressed', 'true');
       await expect(slider).toBeVisible();
       const value = Number(await slider.inputValue());
-      if (x === sliderBox.left + 2) left.push(value);
-      if (x === sliderBox.right - 2) right.push(value);
+      if (n % 6 === 0) left.push(value);
+      if (n % 6 === 5) right.push(value);
       // 다음 판을 위해 끈다(버튼 가운데를 눌러 끈다 — 이것도 마우스로 누른 것이라 말풍선은 거둬진다)
       await bgm.click();
       await expect(bgm).toHaveAttribute('aria-pressed', 'false');
     }
     expect(points, '격자 36곳').toBe(36);
-    expect(overlapped, '말풍선이 덮던 자리(슬라이더 위쪽 띠 × 말풍선 가로 폭)가 격자에 포함된다').toBeGreaterThanOrEqual(3);
     expect(Math.max(...left), `볼륨이 실제로 바뀐다: 왼쪽 끝 값(${left.join(',')}) < 오른쪽 끝 값(${right.join(',')})`).toBeLessThan(Math.min(...right));
   });
 
-  test(`${width}px · C-C-bgm-focus: 키보드 포커스로만 보이는 BGM 말풍선은 포인터를 받지 않아 볼륨 줄 클릭이 BGM을 끄지 않는다 — 올리면 다시 받는다 (UX9-6 2번)`, async ({ page }, testInfo) => {
+  test(`${width}px · C-C-bgm-focus: 키보드 포커스로만 보이는 BGM 말풍선은 포인터를 받지 않아 볼륨 막대 클릭이 BGM을 끄지 않는다 — 올리면 다시 받는다 (UX9-6 2번)`, async ({ page }, testInfo) => {
     test.skip(!runsHere(testInfo.project.name), '뷰포트를 직접 지정하므로 mobile-360(WebKit은 webkit-mobile-360)에서만 실행');
     test.setTimeout(120_000);
     await openToolbar(page, width);
@@ -380,12 +391,11 @@ for (const width of [960, 1024, 1100, 1179]) {
     expect(focusOnly.clip, '키보드로 눌러도 포커스 표시 말풍선은 그대로 보인다(Esc로만 숨는다)').toBe('none');
     expect(focusOnly.pe, '포커스로만 보이는 말풍선은 포인터를 받지 않는다').toBe('none');
     const sliderBox = await boxOf(page, '[data-testid="bgm-volume-input"]');
-    const spot = overlapCenter(focusOnly.box, sliderBox);
-    expect(spot, '말풍선이 볼륨 줄 위쪽과 겹치는 자리가 있다(시험이 허공을 치지 않는다)').not.toBeNull();
-    for (const [x, y] of gridOver(focusOnly.box, sliderBox)) {
+    expect(overlapCenter(focusOnly.box, sliderBox), '말풍선은 볼륨 막대와 겹치지 않는다(막대가 BGM 칸 오른쪽 같은 줄이다 — SPEC-016 H5)').toBeNull();
+    for (const [x, y] of gridOver(sliderBox)) {
       await tabToBgm(page); // 슬라이더를 눌러 포커스가 옮겨 갔으니 다시 키보드로 BGM에 돌아온다
       expect((await tipInfo(page, 'tool-bgm')).clip, '포커스로 보인다').toBe('none');
-      expect(await hitsInside(page, x, y, 'bgm-volume'), `(${Math.round(x)}, ${Math.round(y)})는 볼륨 줄이 받는다`).toBe(true);
+      expect(await hitsInside(page, x, y, 'bgm-volume'), `(${Math.round(x)}, ${Math.round(y)})는 볼륨 막대가 받는다`).toBe(true);
       await page.mouse.click(x, y);
       await expect(bgm, `(${Math.round(x)}, ${Math.round(y)}) 클릭 뒤에도 BGM이 켜져 있다`).toHaveAttribute('aria-pressed', 'true');
     }
@@ -470,25 +480,26 @@ for (const width of [960, 1024, 1100, 1179]) {
     const tip = await tipInfo(page, 'tool-bgm');
     expect(tip.clip, '올리면 보인다').toBe('none');
     expect(tip.pe, '올림 상태의 말풍선은 포인터를 받는다').toBe('auto');
+    // SPEC-016 H5: 볼륨 막대가 BGM 칸 오른쪽 같은 줄로 옮겨 말풍선이 막대를 덮지 않는다 — 시험은 말풍선 자체의 한가운데를 겨눈다
     const sliderBox = await boxOf(page, '[data-testid="bgm-volume-input"]');
-    const spot = overlapCenter(tip.box, sliderBox);
-    expect(spot, '올려 둔 BGM 말풍선이 볼륨 줄 위쪽을 덮는다(알려진 동작)').not.toBeNull();
+    expect(overlapCenter(tip.box, sliderBox), '말풍선은 볼륨 막대와 겹치지 않는다').toBeNull();
+    const spot = { x: (tip.box.left + tip.box.right) / 2, y: (tip.box.top + tip.box.bottom) / 2 };
     // 버튼에서 말풍선으로 건너가는 동안 끊기지 않는다
     const bb = (await bgm.boundingBox())!;
     await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
-    await page.mouse.move(spot!.x, spot!.y, { steps: 20 });
+    await page.mouse.move(spot.x, spot.y, { steps: 20 });
     expect((await tipInfo(page, 'tool-bgm')).clip, '말풍선 위에 포인터가 있어도 보인다').toBe('none');
-    expect(await hitsInside(page, spot!.x, spot!.y, 'tool-bgm'), '그 자리는 말풍선(버튼의 이름표)이 받는다').toBe(true);
+    expect(await hitsInside(page, spot.x, spot.y, 'tool-bgm'), '그 자리는 말풍선(버튼의 이름표)이 받는다').toBe(true);
     // Esc로는 숨는다
     await page.keyboard.press('Escape');
     expect((await tipInfo(page, 'tool-bgm')).clip, 'Esc로 숨는다').toBe('inset(50%)');
     await page.mouse.move(1, 1);
     await bgm.hover();
     await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
-    await page.mouse.move(spot!.x, spot!.y, { steps: 20 });
+    await page.mouse.move(spot.x, spot.y, { steps: 20 });
     expect((await tipInfo(page, 'tool-bgm')).clip, '다시 올리면 보인다').toBe('none');
     // 이름표를 누르면 그 버튼이 눌린다 (PASS 기대 — 결함이 아니다)
-    await page.mouse.click(spot!.x, spot!.y);
+    await page.mouse.click(spot.x, spot.y);
     await expect(bgm, '말풍선을 누르면 같은 버튼(BGM)이 눌린다').toHaveAttribute('aria-pressed', 'false');
   });
 

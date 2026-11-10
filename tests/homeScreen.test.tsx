@@ -227,9 +227,10 @@ describe('GM4 2차 ④ 접는 선: 1280×800 왼쪽 열 끝 < 하단 띠 (CSS �
     expect(css).toMatch(/\.slots-bottom \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
     expect(css).toContain('.slots-bottom > .slot--small { grid-column: 1 / -1; }');
   });
-  it('제목 워드마크 --logo-h: 좁은 화면 64px · ≥ 960px 84px (GS11 제목 확대), 「한 판 약 30분」 줄·수저 다섯 자루 줄은 없다', () => {
-    expect(css).toContain('.hero .logo--word { --logo-h: 64px;');
-    expect(css).toContain('.hero .logo--word { --logo-h: 84px; }');
+  it('제목 로고(가로 결합 로고) --logo-h: 좁은 화면 88px · ≥ 960px 108px (SPEC-016 H2 안 B — 이전 GS11은 워드마크 64/84px), 「한 판 약 30분」 줄·수저 다섯 자루 줄은 없다', () => {
+    expect(css).toContain('.hero .logo--row { --logo-h: 88px;');
+    expect(css).toContain('.hero .logo--row { --logo-h: 108px; }');
+    expect(css).not.toContain('.logo--word');
     expect(html).not.toContain('hero__time');
     expect(visibleTextOf(html)).not.toContain('한 판 약 30분');
   });

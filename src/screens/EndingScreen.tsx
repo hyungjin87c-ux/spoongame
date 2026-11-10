@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { COMPARABLE_STATS, displaySeconds, entryHeadline, heavyKindOfEntry, isCleanRun, reviewEnding, standingScore, type CoParents, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
 import { profileLabel } from '../core/birthProfile';
 import { reportPlaceLabel } from '../core/birthReport';
@@ -10,6 +10,7 @@ import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/da
 import {
   ENDING_HEADINGS,
   ENDING_HEAD_LABEL,
+  ENDING_HOME_ASK,
   endingBornText,
   JOURNEY_NOTE,
   JOURNEY_BAR_LEGEND,
@@ -43,6 +44,9 @@ import { useScrollTopOnMount, useThemeSurface } from '../ui/useBottomBar';
 
 /** 화면 전환 직후 입력 가드의 키: 마지막 선택·"다음 결정으로"를 누른 손가락의 둘째 입력이 "다시 태어나기"에 떨어지지 않게 한다. */
 export const ENDING_GUARD_KEY = 'ending';
+
+/** 로고 확인 단계의 두 버튼이 같은 순간에 뜨므로 한 키를 같이 쓴다 (인생 화면 나가기 확인 단계와 같다) */
+export const ENDING_HOME_GUARD_KEY = 'ending-home';
 
 /** 공통 헤더의 화면 이름 (DS1, copy.md 엔딩 행) */
 export const ENDING_HEAD_NAME = '엔딩';
@@ -187,11 +191,64 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
   const c = game.character;
   const title = `${c.name}${DASH_TEXT.endingTitleSuffix}`;
   const veil = useVeilOpen(gentle);
+
+  // 헤더 로고 → 한 번 묻고 첫 화면 (SPEC-016 H1, 형진 님 2026-11-10): 엔딩은 `hasProgress` 밖이라 `openTitle`이 움직이지 않고, 끝난 판이라 첫 화면으로 가면 「다시 태어나기」와 같이 새 판이 된다(이 인생의 기록은 사라진다).
+  // 그래서 인생 화면 「나가기」와 같은 모양의 확인 단계(`.exit-ask`)를 한 번 거치고, 확정은 같은 `onRebirth`다(reducer는 ending에서만 받아 연타에도 새 판은 하나). 취소·Esc는 엔딩 그대로 두고 로고로 포커스를 돌려준다. 새 액션·저장 필드 없음.
+  const [homeAsk, setHomeAsk] = useState(false);
+  const logoRef = useRef<HTMLButtonElement>(null);
+  // 열린 채 로고를 다시 누르면 새로 열지 않고 포커스만 안전한 쪽으로 다시 가져온다(상자는 하나뿐, title-ci.md 3-6 동작 4)
+  const openHomeAsk = () => {
+    if (homeAsk) cancelRef.current?.focus({ preventScroll: true });
+    else setHomeAsk(true);
+  };
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef(false);
+  const closeHomeAsk = () => {
+    returnFocus.current = true;
+    setHomeAsk(false);
+  };
+  useEffect(() => {
+    if (!homeAsk) {
+      if (returnFocus.current) {
+        returnFocus.current = false;
+        logoRef.current?.focus();
+      }
+      return;
+    }
+    cancelRef.current?.focus({ preventScroll: true }); // 열리면 안전한 쪽(계속 보기)으로
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        returnFocus.current = true;
+        setHomeAsk(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [homeAsk]);
+
   return (
     <div className="page ending-page" data-testid="ending-screen">
       <Sprite />
-      <SiteHead name={ENDING_HEAD_NAME} />
+      <SiteHead name={ENDING_HEAD_NAME} onHome={openHomeAsk} homeRef={logoRef} />
       <main className="ending">
+        {homeAsk ? (
+          <div className="exit-ask" role="group" aria-labelledby="ending-home-ask-t" data-testid="ending-home-ask">
+            <p className="exit-ask__title" id="ending-home-ask-t" role="alert" data-testid="ending-home-ask-title">
+              {ENDING_HOME_ASK.title}
+            </p>
+            <p className="t-sm t-muted">
+              <Glue text={ENDING_HOME_ASK.sub} />
+            </p>
+            <div className="exit-ask__actions">
+              <GuardedButton guardKey={ENDING_HOME_GUARD_KEY} className="btn btn--secondary" data-testid="ending-home-yes" onClick={onRebirth}>
+                {ENDING_HOME_ASK.yes}
+              </GuardedButton>
+              <GuardedButton ref={cancelRef} guardKey={ENDING_HOME_GUARD_KEY} className="btn btn--primary" data-testid="ending-home-no" onClick={closeHomeAsk}>
+                {ENDING_HOME_ASK.no}
+              </GuardedButton>
+            </div>
+          </div>
+        ) : null}
         {/* 이 판은 무거운 장면 가리기를 켠 채 살았다 (HV6): 기준은 설정이 아니라 **판의 기록**(`gentleUsed` — 판 도중 한 번이라도 켜졌으면 참)이라 설정이 꺼져 있어도 보인다. 의견 보내기 주소·플레이 시간에는 싣지 않는다 */}
         {game.gentleUsed === true ? (
           <p className="ending__gentle" data-testid="ending-gentle">

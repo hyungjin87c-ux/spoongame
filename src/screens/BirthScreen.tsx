@@ -47,6 +47,8 @@ interface Props {
   /** 가족 구성 (SPEC-009 FM4a) — 있으면 「형제자매」 칸을 보인다(위 형제만, B-1 기본값 — `data/birthSiblingText.ts#BIRTH_SIBLING_DISPLAY`). 없는 옛 상태는 칸이 없다 */
   family?: FamilyData;
   onNext: () => void;
+  /** 헤더 로고를 누르면 첫 화면으로 (SPEC-016 H1 — App이 `openTitle`을 보낸다). 없으면 로고는 그림이다 */
+  onHome?: () => void;
 }
 
 /** 서술문 끝의 「(3.3kg은 상위 약 38%)」를 따로 묶는다: 줄에 안 들어가면 통째로 다음 줄로 내려가고, 묶음 자체가 한 줄보다 길 때(큰 글자·320px)만 안에서 줄이 바뀐다 */
@@ -74,7 +76,7 @@ function Field({ id, label, wide, span2, children }: { id: string; label: string
   );
 }
 
-export function BirthScreen({ generation, character: c, report, peerSeed, seed, regionPicked = false, family, onNext }: Props) {
+export function BirthScreen({ generation, character: c, report, peerSeed, seed, regionPicked = false, family, onNext, onHome }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const barRef = useRef<HTMLDivElement>(null);
   useThemeSurface();
@@ -99,7 +101,7 @@ export function BirthScreen({ generation, character: c, report, peerSeed, seed, 
   return (
     <div className="page birth-page" data-testid="birth-screen">
       <Sprite />
-      <SiteHead name={BIRTH_TEXT.headName} />
+      <SiteHead name={BIRTH_TEXT.headName} onHome={onHome} />
       <main className="doc-page">
         <article className="doc" aria-labelledby="doc-title">
           <div className="doc__band">

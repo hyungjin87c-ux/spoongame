@@ -11,7 +11,7 @@ import { SCENE_PIECES } from '../src/data/sceneTables';
 import { SCENE_TEXT } from '../src/data/sceneText';
 import { resolvePiece } from '../src/ui/scene/SceneSvg';
 import type { LifeGame } from '../src/ui/dash/Cards';
-import { SceneCard } from '../src/ui/scene/SceneCard';
+import { EraCard, SceneCard } from '../src/ui/scene/SceneCard';
 import type { SceneArt } from '../src/ui/scene/useFamilyArt';
 import { mergeEraData } from '../src/ui/scene/useFamilyArt';
 import { ERA_DECADE as D1940 } from '../src/data/eraWindows/d1940';
@@ -41,8 +41,11 @@ function life(seed: number, gen: 'alpha' | 'industrial' | 'genx' = 'alpha', age 
   for (let i = 0; i < 200 && g.phase === 'life' && g.age < age; i++) g = g.pending ? { ...g, pending: null } : stepYear(g).state;
   return g;
 }
-const html = (g: GameState, o: { fold?: boolean; gentle?: boolean; s?: SceneArt } = {}): string =>
-  renderToStaticMarkup(<SceneCard game={g} gentle={o.gentle ?? false} fold={o.fold ?? false} onFold={noop} scene={o.s ?? scene()} animate={false} />);
+// SPEC-016 H4: 시대의 창은 집과 가족 그림 카드에서 떨어져 나가 따로 카드(`EraCard`)가 됐다 — 이 시험의 `html`은 두 카드의 마크업을 이어 붙인 것이라 (집 그림 + 시대의 창) 예전 단언이 그대로 두 카드를 함께 본다.
+// 집 그림 카드만 보려면 `houseHtml`, 시대의 창 카드만 보려면 `eraHtml`.
+const houseHtml = (g: GameState, o: { fold?: boolean; s?: SceneArt } = {}): string => renderToStaticMarkup(<SceneCard game={g} fold={o.fold ?? false} onFold={noop} scene={o.s ?? scene()} animate={false} />);
+const eraHtml = (g: GameState, o: { gentle?: boolean; s?: SceneArt } = {}): string => renderToStaticMarkup(<EraCard game={g} gentle={o.gentle ?? false} scene={o.s ?? scene()} animate={false} />);
+const html = (g: GameState, o: { fold?: boolean; gentle?: boolean; s?: SceneArt } = {}): string => houseHtml(g, o) + eraHtml(g, o);
 const text = (h: string): string => h.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
 describe('집과 가족 그림 카드 — 구조와 대체 글 (FH3·FH6)', () => {
@@ -114,7 +117,11 @@ describe('시대의 창 칸 — 승인된 그림 0장이면 빈 틀 (FT3)', () =
     expect(out).not.toContain('era-paper');
     expect(out).not.toContain('era__cap'); // 빈 해에는 캡션 요소가 없다
     expect(out).toContain('aria-hidden="true"'); // 빈 틀은 장식
-    expect(text(out)).not.toContain('시대의 창');
+    // SPEC-016 H4: 카드 제목 「시대의 창」은 이제 따로 카드의 보이는 제목이다 — 빈 칸(.era) **안**에는 글자가 하나도 없다는 단언으로 옮겼다(예전: 카드 전체에 「시대의 창」 글자 없음)
+    const cell = /<div class="era"[^>]*>([\s\S]*?)<\/div>/.exec(out);
+    expect(cell, '.era 빈 칸').not.toBeNull();
+    expect(text(cell![1])).toBe('');
+    expect(text(eraHtml(g))).toContain('시대의 창'); // 카드 제목(h2)
   });
 
   const approved = (id: string, years: [number, number], over: Partial<EraWindow> = {}): EraWindow => ({ id, years, kind: 'event', topic: '시험', line: `${id} 한 줄입니다.`, heavy: false, approved: true, draw: id, caption: `${id} 캡션`, ...over });
@@ -239,20 +246,27 @@ describe('가운데 열 순서와 설정 (FH1) — 결정 카드 → 집과 가�
   });
 });
 
-describe('CSS 규칙 (family-scene.md 5-1절 — PC 2:1 · 휴대폰 80px 띠 · 25vh · 접기 · 움직임 줄이기)', () => {
+describe('CSS 규칙 (family-scene.md 5-1절, SPEC-016 H4 개정 — 집 그림 전폭·비율 640/256·25vh · 시대의 창 따로 카드(PC 5:4 큰 그림 · 휴대폰 80px 띠) · 접기 · 움직임 줄이기)', () => {
   async function readText(relative: string): Promise<string> {
     const spec = 'node:fs';
     const fs = (await import(/* @vite-ignore */ spec)) as { readFileSync(path: URL, encoding: 'utf-8'): string };
     return fs.readFileSync(new URL(relative, import.meta.url), 'utf-8');
   }
-  it('family.css: 집 : 창 = 2fr : 1fr, 8px 사이, 그림 높이 폭÷2.5 · 최대 25vh, 휴대폰(카드 480px 이하)은 1열 + 창 띠 80px(그림 100×80)', async () => {
+  it('family.css: 집 그림은 카드 전폭 1열(시대의 창이 나갔다) · 비율 640/256 그대로 · 높이 상한 25vh(상한에 걸리면 폭이 줄고 양옆은 하늘·땅 배경) / 시대의 창 카드는 PC 5:4 그림 + 캡션 줄 두 줄 높이 예약, 휴대폰(< 960px)은 띠 80px(그림 100×80) + 집 그림 카드 바로 아래(order -1)', async () => {
     const css = await readText('../src/styles/family.css');
-    expect(css).toContain('.scene { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--sp-2);');
-    expect(css).toMatch(/\.scene__svg \{[^}]*aspect-ratio: 640 \/ 256; max-height: 25vh;/);
-    const q = css.slice(css.indexOf('@container scene (max-width: 480px)'));
-    expect(q).toContain('.scene { grid-template-columns: minmax(0, 1fr); }');
-    expect(q).toContain('.era { height: max(80px, 3.9rem); grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--sp-2); background: var(--c-surface); }'); // R-553 ① A안: 띠 바탕 = 카드 바탕(--c-surface), SPEC-013 T3: 글자 크기의 식(3.9rem)이라 해가 바뀌어도 높이가 같다
-    expect(q).toMatch(/\.era__pic \{ grid-column: 1; grid-row: 1 \/ span 2; align-self: start; width: 100px; height: 80px; \}/);
+    expect(css).toContain('.scene { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch;');
+    expect(css).toMatch(/\.scene__svg \{[^}]*width: min\(100%, calc\(25vh \* 2\.5\)\);[^}]*aspect-ratio: 640 \/ 256;/); // 25vh 상한은 폭 식에 들어 있다(비율 고정)
+    expect(css).toMatch(/\.scene__house \{[^}]*linear-gradient\(to bottom, var\(--c-scene-sky\) 78%, var\(--c-scene-ground\) 78%\)/); // 양옆 남는 자리 = .scene__ph와 같은 색
+    expect(css).toMatch(/\.scene__ph \{ background: linear-gradient\(to bottom, var\(--c-scene-sky\) 78%, var\(--c-scene-ground\) 78%\); \}/);
+    // 시대의 창 따로 카드 (PC)
+    expect(css).toContain('.era-card .era__pic { aspect-ratio: 5 / 4; height: auto; }');
+    expect(css).toContain('grid-template-rows: auto minmax(var(--era-cap-min), auto);'); // 캡션이 없는 해에도 칸 크기가 같다
+    const q = css.slice(css.indexOf('@media (max-width: 959px) {\n  .era-card'));
+    expect(q).toContain('.era-card { order: -1;');
+    expect(q).toContain('.era-card .era { margin: 0; height: max(80px, 3.9rem); grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--sp-2); background: var(--c-surface); }'); // R-553 ① A안: 띠 바탕 = 카드 바탕(--c-surface), SPEC-013 T3: 글자 크기의 식(3.9rem)이라 해가 바뀌어도 높이가 같다
+    expect(q).toMatch(/\.era-card \.era__pic \{ grid-column: 1; grid-row: 1 \/ span 2; align-self: start; width: 100px; height: 80px; aspect-ratio: auto; \}/);
+    // 접기(Q6)는 집 그림에만 걸린다 — 시대의 창 카드에는 접기 규칙이 없다
+    expect(css).not.toMatch(/\.era-card\[data-fold/);
     expect(css).toContain(".scene-card[data-fold='true'] .scene { display: none; }");
     expect(css).toContain('.scene-card { padding-top: 0; overflow: hidden; container-type: inline-size; container-name: scene; }');
   });

@@ -153,3 +153,16 @@ export function breakdownParts(): readonly [string, string, string] {
 
 export const REBIRTH_LABEL = '다시 태어나기';
 export const REBIRTH_NOTE = '첫 화면의 세대 선택으로 돌아갑니다. 다시 태어나면 이 인생의 기록은 사라집니다.';
+
+/**
+ * 엔딩 헤더 로고 확인 단계 (SPEC-016 H1, 형진 님 2026-11-10 「한 번 묻고 첫 화면」): 인생 화면 「나가기」 확인 단계(`DASH_TEXT.exitAsk`…)와 같은 모양 — 제목 · 한 줄 설명 · [확정 · 돌아가기].
+ * 확정은 「다시 태어나기」(`REBIRTH_LABEL`)와 **같은 결과**(새 판의 첫 화면, 이 인생의 기록은 다시 볼 수 없다 — `rebirth` 액션)라 설명이 그 사실을 말한다. 안전한 쪽 「계속 보기」가 기본 버튼이고 먼저 포커스를 받는다.
+ * 문구는 designer 확정(2026-11-10, `docs/design/title-ci.md` 3-6절 · `copy.md` 2절 「엔딩 · 로고 확인 단계」 행)이다 — 이 상수 한 곳에만 있다.
+ * 질문 첫머리 「엔딩을 닫고」는 결과가 다른 두 확인창(인생 화면은 돌아올 수 있다)의 `alert` 낭독이 같지 않게 한 것이고, 보조 첫 문장은 `REBIRTH_NOTE`의 첫 문장 그대로다.
+ */
+export const ENDING_HOME_ASK = {
+  title: '엔딩을 닫고 첫 화면으로 나갈까요?',
+  sub: '첫 화면의 세대 선택으로 돌아갑니다. 이 인생의 기록은 다시 볼 수 없습니다.',
+  yes: '첫 화면으로 나가기',
+  no: '계속 보기',
+} as const;

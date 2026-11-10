@@ -8,15 +8,15 @@
 .scene-card[data-fold='true'] { padding-top: var(--sp-4); }
 .scene-card[data-fold='true'] .scene { display: none; }
 .scene-card[data-fold='true'] .scene__note { display: none; }
-/* 배치(형진 님 결정 FM2c·FM2d): 왼쪽 집 그림 : 오른쪽 「시대의 창」 = 2 : 1. 둘 사이 8px은 카드 바탕. 줄 높이는 집 그림이 정한다 */
-.scene { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--sp-2); align-items: stretch; margin: 0 calc(-1 * var(--sp-4)); }
-.scene__house { position: relative; min-width: 0; background: var(--c-surface-2); overflow: hidden; }
-/* 높이: 폭 ÷ 2.5, 화면 높이의 25%를 넘지 않는다(FH1). 넘으면 양옆을 조금 잘라 보인다(preserveAspectRatio slice — 안전 영역 x 20~620) */
-.scene__svg { display: block; width: 100%; aspect-ratio: 640 / 256; max-height: 25vh; forced-color-adjust: none; }
+/* 배치(SPEC-016 H4, 형진 님 2026-11-10 · Q5): 시대의 창이 따로 칸(`.era-card`)으로 나갔다 — 집 그림이 카드 폭 전체를 쓴다(예전 FM2c·FM2d는 집 그림 2 : 시대의 창 1). 그림 자체는 그대로고 비율(640/256)대로 커진다(아래 `.scene__svg`) */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; margin: 0 calc(-1 * var(--sp-4)); }
+.scene__house { position: relative; min-width: 0; background: linear-gradient(to bottom, var(--c-scene-sky) 78%, var(--c-scene-ground) 78%); overflow: hidden; } /* 그림이 높이 상한에 걸려 폭을 다 못 채우면 양옆 남는 자리는 장면의 하늘·땅 배경(`.scene__ph`와 같은 색, Q5) */
+/* 크기(SPEC-016 Q5, 형진 님 2026-11-10): 칸 폭을 다 쓰고 비율 640/256 그대로 커진다 — 높이는 화면 높이의 25%를 넘지 않는다(FH1 상한 그대로). 상한에 걸리면 그림의 폭이 줄어(높이 25vh × 2.5) 가운데에 서고 양옆은 `.scene__house`의 하늘·땅 배경이다 — 그림은 자르지도 늘리지도 않는다 */
+.scene__svg { display: block; width: min(100%, calc(25vh * 2.5)); margin: 0 auto; aspect-ratio: 640 / 256; forced-color-adjust: none; }
 /* 그림 덩어리가 오기 전·오지 못한 동안의 자리 틀: 크기가 그림과 같아 레이아웃 이동 0 (FH9). 하늘과 땅 두 면 */
 .scene__ph { background: linear-gradient(to bottom, var(--c-scene-sky) 78%, var(--c-scene-ground) 78%); }
 /* 바뀌는 해의 교차 페이드(FH4): 이전 그림을 위에 겹쳐 두고 그것만 사라지게 한다. 움직임 줄이기·빠른 진행이면 이 요소 자체가 만들어지지 않는다 */
-.scene__svg--prev { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; pointer-events: none; animation: scene-fade-out var(--dur-slow) var(--ease) both; }
+.scene__svg--prev { position: absolute; top: 0; left: 50%; transform: translateX(-50%); margin: 0; height: 100%; aspect-ratio: auto; pointer-events: none; animation: scene-fade-out var(--dur-slow) var(--ease) both; }
 @keyframes scene-fade-out { from { opacity: 1; } to { opacity: 0; } }
 /* 연도 표 — 집 그림 오른쪽 위. 그림 안 글자가 아니라 HTML(종이 꼬리표): 바탕은 카드 면 색이라 어느 하늘·지붕 위에서도 글자 대비가 토큰 그대로. 강제 색상은 Canvas/CanvasText + 1px 테두리 */
 .scene__year { position: absolute; top: var(--sp-2); right: var(--sp-2); margin: 0; padding: 2px var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: 1.4; font-variant-numeric: tabular-nums; color: var(--c-text); background: var(--c-surface); border-radius: var(--r-sm); white-space: nowrap; }
@@ -96,17 +96,25 @@ a.era:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 /* 「예측」 표 — 시대의 창 칸(안 B, 형진 님 승인: 줄과 창 양쪽, FM2d 「창에는 그림만」의 작은 예외 하나). 연도 표 `.scene__year`와 같은 카드 면 색 꼬리표 문법 — 어느 하늘 위에서도 대비가 토큰 그대로(글자/카드 면 9.53·8.79). 그림 상자의 형제(링크 안)라 그림에 가려지거나 잘리지 않는다 */
 .era__fc { position: absolute; top: var(--sp-1); left: var(--sp-1); display: inline-flex; align-items: center; gap: 3px; padding: 0 5px; border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-era); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; white-space: nowrap; }
 .era__fc .icon { width: 12px; height: 12px; stroke-width: 2.6; }
-/* 휴대폰(카드 폭 ≤ 480px — 360에서 카드 326px): 집 그림은 전폭(326×130), 시대의 창은 그 아래 **가로 띠 80px**(5:4 그림 100×80을 왼쪽에, 나머지는 띠 바탕 --c-surface — 카드 바탕과 같아 「카드 위에 놓인 그림 한 장」으로 읽힌다, R-553 ① A안).
-   가려 둔·빈 칸(`.era[data-hidden]`·`[data-empty]`)의 `--c-surface-2` 네모는 그대로라 「그림 없음」과 구분된다. 띠 합계 130 + 8 + 80 = 218px */
-@container scene (max-width: 480px) {
-  .scene { grid-template-columns: minmax(0, 1fr); }
-  /* 띠 높이 = max(80px, 3.9rem): 글자 100%에서 80px 그대로, 글자 200%에서는 124.8px(칩 38 + 캡션 두 줄 62 + 여백 14가 들어간다) — 내용이 아니라 글자 크기의 식이라 해가 바뀌어도 칸 높이가 같다 */
-  .era { height: max(80px, 3.9rem); grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--sp-2); background: var(--c-surface); }
-  .era__pic { grid-column: 1; grid-row: 1 / span 2; align-self: start; width: 100px; height: 80px; }
+/* ===== 시대의 창 따로 칸 (SPEC-016 H4, 형진 님 2026-11-10) — `.era-card`(ui/scene/SceneCard.tsx#EraCard) =====
+   PC(≥ 960px 3열): 오른쪽 열 맨 위(식구 카드 위). 그림은 칸 폭을 다 쓰고(5:4 = 그림 좌표계 40×32, 잘림 0) 캡션이 그 아래다. 카드 틀은 기존 카드(`.card` — 테두리·둥근 모서리·그림자·패딩 16)이고 그림은 카드 가장자리까지 번진다(집 그림과 같은 방식).
+   칸의 크기는 해가 바뀌어도 그대로다(SPEC-013 완료 기준 7): 그림은 비율 고정이고, 캡션 줄은 캡션이 없는 해에도 두 줄 높이를 비워 둔다(식구 카드가 해마다 밀리지 않게). 글자 크기가 커지면 --fs-sm이 rem이라 같이 커진다. */
+.era-card { padding-bottom: 0; overflow: hidden; --era-cap-min: calc(var(--fs-sm) * 2.6 + var(--sp-2) + var(--sp-3)); }
+.era-card .era { margin: 0 calc(-1 * var(--sp-4)); grid-template-rows: auto minmax(var(--era-cap-min), auto); }
+.era-card .era__pic { aspect-ratio: 5 / 4; height: auto; }
+.era-card .era__cap { padding: var(--sp-2) var(--sp-4) var(--sp-3); font-size: var(--fs-sm); line-height: 1.3; }
+.era-card .era__fc { top: var(--sp-2); left: var(--sp-2); }
+/* 접기(「그림 접기」, `settings.sceneFold`)는 집 그림에만 걸린다 — 시대의 창 칸은 접어도 계속 보인다(SPEC-016 Q6) */
+/* 휴대폰(1열, < 960px): 집과 가족 그림 카드 바로 아래 **가로 띠 80px**(5:4 그림 100×80을 왼쪽에, 캡션은 그 오른쪽 — 예전 그림 띠 아래 칸과 같은 모양, R-553 ① A안). 가려 둔·빈 칸의 `--c-surface-2` 네모는 그대로라 「그림 없음」과 구분된다.
+   띠 높이 = max(80px, 3.9rem): 글자 200%에서는 124.8px(칩 38 + 캡션 두 줄 62 + 여백 14가 들어간다) — 내용이 아니라 글자 크기의 식이라 해가 바뀌어도 같다. 오른쪽 열 칸들이 풀려(`display: contents`, dash.css) 이 카드가 집 그림 카드 바로 다음(order -1)에 선다 */
+@media (max-width: 959px) {
+  .era-card { order: -1; padding-bottom: var(--sp-4); }
+  .era-card .era { margin: 0; height: max(80px, 3.9rem); grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--sp-2); background: var(--c-surface); }
+  .era-card .era__pic { grid-column: 1; grid-row: 1 / span 2; align-self: start; width: 100px; height: 80px; aspect-ratio: auto; }
   /* 「예측」 표는 100×80 그림을 가리지 않게 그림 옆 둘째 칸의 첫 줄(정적 배치)이고, 캡션은 그 아래(칩이 없으면 첫 줄) — 그림·칩을 가리지 않는다 */
-  .era__fc { position: static; grid-column: 2; grid-row: 1; justify-self: start; margin: var(--sp-2) 0 0; }
-  .era__cap { grid-column: 2; grid-row: 2; align-self: start; padding: var(--sp-2) var(--sp-2) 0 0; }
-  .era[data-future='true'] .era__cap { padding-top: var(--sp-1); }
+  .era-card .era__fc { position: static; grid-column: 2; grid-row: 1; justify-self: start; margin: var(--sp-2) 0 0; }
+  .era-card .era__cap { grid-column: 2; grid-row: 2; align-self: start; padding: var(--sp-2) var(--sp-2) 0 0; font-size: var(--fs-xs); }
+  .era-card .era[data-future='true'] .era__cap { padding-top: var(--sp-1); }
 }
 .scene__line { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); line-height: var(--lh-normal, 1.5); color: var(--c-text); font-weight: var(--fw-bold); word-break: keep-all; overflow-wrap: anywhere; }
 .scene__note { margin: var(--sp-2) 0 0; font-size: var(--fs-sm); color: var(--c-text-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }

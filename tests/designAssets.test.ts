@@ -635,14 +635,16 @@ describe('심볼·로고 SVG 파일 (DS1·DS2, 확정 A안)', () => {
     // M5 경제 모델 시안(economy-m5 — 선택지 영향 줄·자산 카드·엔딩 최종 순자산 줄, 2026-10-17 designer; 「자산 현황」에는 칩을 두지 않는다는 규칙 그대로)은 제외하고 아이콘이 정말 없음을 따로 단언한다
     // M7c 「나의 기록」 줄 표본(note-rows — 인생 기록 카드 + 엔딩 연표 조각, 2026-10-19 designer)도 수저가 나오지 않는 장이라 같은 방식으로 제외하고 아이콘 없음을 단언한다
     // SPEC-005 QI2 비교 화면(title-005-compare — A/B 첫 화면을 iframe으로 나란히 보이는 장, 2026-10-20 designer)도 수저 아이콘이 직접 나오지 않는 장이라 같은 방식으로 제외한다(title-005.html 자체는 띠가 있어 화면 시안으로 센다)
-    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5|note-rows|title-005-compare|log-question|era-empty-frame)\.html$/.test(n));
+    const screens = Object.entries(mockups).filter(([n]) => !/\/(components|spoon-sizes|symbols|faces|faces-all|system|economy-m5|note-rows|title-005-compare|log-question|era-empty-frame|title-ci)\.html$/.test(n));
     // SPEC-012 v0.4.1(2026-11-08): designer가 QF5 조작 영역 안 A·B 시안(`controls-compact.html`, 형진 님이 안 B 선택 — 디자인 게이트 통과)을 더했다. 수저 아이콘이 든 화면 시안이라(프로필 카드의 출신 가정 칩)
     // 이 목록에 들어오고 아래 「칩·띠 안 + 같은 이름」 점검도 그대로 받는다 — 규칙(계약)은 바꾸지 않고 장수만 13 → 14로 맞춘다.
     // SPEC-012 QF4(2026-11-08): 인생 기록 결정 줄 시안 `log-question.html`은 수저 아이콘이 직접 나오지 않는 표본 장이라(note-rows·title-005-compare의 전례) 위 제외 정규식에 넣고, 아래 「시안이 있고 수저 아이콘 없음」 목록에도 넣는다. `controls-compact.html`은 머리의 수저 칩이 있어 이 목록에 넣을 수 없고 화면 시안으로 센다(그래서 14).
     // SPEC-013 T3(2026-11-08): designer가 시대의 창 빈 해 종이틀·캡션 자리 시안 `era-empty-frame.html`을 더했다 — 살아가기 화면 머리(이름·나이·연도 줄)와 그림 카드 넷만 그린 표본 장이고 수저 칩·수저 아이콘(`<svg class="spoon`)이 한 개도 없다(파일에서 확인).
     // 그래서 수저 아이콘이 나오는 화면 시안이 아니라 위 제외 정규식(note-rows·title-005-compare·log-question의 전례)과 아래 「시안이 있고 수저 아이콘 없음」 목록에 넣는다. 규칙(계약)은 그대로이고 장수는 14에 머문다(R-190 시안 수 15 ≠ 14 → 14).
+    // SPEC-016(2026-11-10): designer가 첫 화면 CI 시안 `title-ci.html`을 더했다 — 첫 화면 머리(로고 세 안·링크 상태 시트)와 하단 띠를 그린 장이지만 수저 아이콘(`<svg class="spoon`)·수저 칩이 한 개도 없다(파일에서 확인: 0개).
+    // 이 시험의 대상은 수저 아이콘이 나오는 화면 시안이라 `title-ci`는 위 제외 정규식(era-empty-frame의 전례)과 아래 「시안이 있고 수저 아이콘 없음」 목록에 넣는다. 규칙(계약)과 기대 수 14는 그대로다 — 단언을 약하게 하지 않았다.
     expect(screens.length, '화면 시안 수(수저 아이콘이 나오는 화면): M4까지 12장(M7c의 note-rows는 수저 없는 표본 장이라 제외) + SPEC-005 QI2 title-005 1장 + SPEC-012 controls-compact 1장').toBe(14);
-    for (const bare of ['system', 'economy-m5', 'note-rows', 'title-005-compare', 'log-question', 'era-empty-frame']) {
+    for (const bare of ['system', 'economy-m5', 'note-rows', 'title-005-compare', 'log-question', 'era-empty-frame', 'title-ci']) {
       expect(mockups[Object.keys(mockups).find((n) => n.endsWith(`/${bare}.html`)) ?? ''] ?? '', `${bare}.html: 시안이 있고 수저 아이콘 없음`).not.toMatch(/<svg class="spoon/);
       expect(Object.keys(mockups).some((n) => n.endsWith(`/${bare}.html`)), `${bare}.html 존재`).toBe(true);
     }

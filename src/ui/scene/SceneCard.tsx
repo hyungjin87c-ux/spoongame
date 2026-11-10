@@ -14,21 +14,20 @@ import type { SceneArt } from './useFamilyArt';
 /**
  * 집과 가족 그림 카드 (SPEC-009 FH1~FH6·FT1~FT6, FM5; 시안 `docs/design/mockups/family/dashboard-family.html`, 규칙 `docs/design/family-scene.md` 1·5절).
  *
- * 구성: 그림 띠(왼쪽 집 그림 : 오른쪽 「시대의 창」 = 2 : 1, 휴대폰은 집 아래 80px 띠) → 아래 한 줄 → 펼침 「함께 사는 사람」 · 「그림 접기」.
+ * 구성: 집 그림(카드 폭 전체 — SPEC-016 H4부터 시대의 창이 따로 칸이라 빈 자리만큼 넓어졌고 **높이는 그대로**) → 아래 한 줄 → 펼침 「함께 사는 사람」 · 「그림 접기」.
+ * 시대의 창은 이 카드가 아니라 **따로 카드**(`EraCard`, 같은 파일): PC(≥ 960px 3열)는 오른쪽 열 맨 위 식구 카드 위, 휴대폰(1열)은 집과 가족 그림 카드 바로 아래다(LifeScreen·dash.css `.col--right`).
  *  - 집 그림은 `role="img"`이고 대체 글은 연도 표 + 아래 한 줄 + 반려동물 문장(`aria-labelledby`)이다. 그림에만 있는 정보는 없다(FH6). 연도 표 「1988년」은 집 그림 오른쪽 위의 HTML이다(그림 안 글자 0).
  *  - 그림 덩어리(`familyArt`)가 오기 전·실패한 동안에는 **크기가 고정된 자리 틀**만 보이고 아래 한 줄·펼침(글)이 먼저 보인다(FH9). 실패하면 「다시 불러오기」가 나온다.
- *  - 시대의 창(SPEC-013 T3): 굵직한 사건이 있던 해에는 그림 + **항상 보이는 캡션**(사건 이름, 그림 아래 — 휴대폰 띠는 그림 옆)이고 칸 전체가 그해 인생 기록 줄로 가는 링크 하나(초점 정지점 1, FT5, 접근 이름 「캡션. 첫 문장 …」)다.
+ *  - 시대의 창(SPEC-013 T3, SPEC-016 H4부터 `EraCard`): 굵직한 사건이 있던 해에는 그림 + **항상 보이는 캡션**(사건 이름, 그림 아래 — 휴대폰 띠는 그림 옆)이고 칸 전체가 그해 인생 기록 줄로 가는 링크 하나(초점 정지점 1, FT5, 접근 이름 「캡션. 첫 문장 …」)다.
  *    사건이 없는 해(약 3분의 2)에도 **칸의 자리·크기는 그대로**이고 안은 그림 없는 **빈 종이틀**(연도 표만, 캡션 없음, 링크 없음)이다. 「무거운 장면 가리기」(`settings.gentle`)가 켜지면 무거운 사건(재난·정치)은 대체 사건 그림(1987 12월 투표)이 있으면 그 그림과 캡션, 없으면 빈 해와 같은 틀 + 캡션 「가려 둔 장면」이다. 고르기는 `core/eraWindow.ts#eraOf`(출생 연도·수저 구간).
  *  - 바뀌는 해(구성이 달라진 해)에는 짧은 교차 페이드, 움직임 줄이기·빠른 진행(4배속 이상·자동 모드)이면 즉시 교체한다. 변화의 내용은 인생 기록 문장이 알린다 — 그림은 `aria-live`를 쓰지 않는다(이중 낭독 방지).
- *  - 접으면(`fold`) 그림이 사라지고 아래 한 줄·펼침만 남는다. 접힘은 설정에 저장된다(`settings.sceneFold`).
+ *  - 접으면(`fold`) 집 그림이 사라지고 아래 한 줄·펼침만 남는다. 시대의 창 카드는 접어도 계속 보인다(SPEC-016 Q6 — 접기는 집 그림에만). 접힘은 설정에 저장된다(`settings.sceneFold`) — 새 설정·저장 필드 없음.
  */
 
 export type SceneGame = FamilyGame;
 
 interface Props {
   game: SceneGame;
-  /** 「무거운 장면 가리기」(설정값) */
-  gentle: boolean;
   fold: boolean;
   onFold: (fold: boolean) => void;
   /** 바뀌는 해의 교차 페이드를 쓸 것인가 — 빠른 진행(4배속 이상·자동 모드)이면 끈다 */
@@ -160,20 +159,40 @@ function EraCell({ pick, year, art, animate, reduced }: { pick: EraPick; year: n
   );
 }
 
+// ---------------------------------------------------------------- 시대의 창 카드 (SPEC-016 H4)
+
+/** 시대의 창 따로 칸 (SPEC-016 H4, 형진 님 2026-11-10): 집 그림 옆 작은 칸이던 시대의 창을 떼어 낸 카드. 그림이 칸 폭을 다 쓰고(PC 오른쪽 열 맨 위 — 식구 카드 위) 휴대폰은 집 그림 카드 아래 띠다.
+ * 그림·캡션·「예측」 칩·링크(그해 기록으로)·빈 종이틀·가린 해 「가려 둔 장면」·접근 이름은 SPEC-013 그대로(`EraCell`). 제목은 기존 문구 「시대의 창」(`SCENE_TEXT.eraName`).
+ * 집 그림의 접기(`settings.sceneFold`)는 이 카드에 걸리지 않는다(Q6) — 접어도 계속 보인다. */
+export function EraCard({ game, gentle, scene, animate = true }: { game: SceneGame; gentle: boolean; scene: SceneArt; animate?: boolean }) {
+  const reduced = useReducedMotion();
+  const { era } = scene;
+  const input = useMemo(() => sceneInputOf(game), [game.age, game.flags, game.assets, game.family, game.seed, game.peerSeed, game.birthReport, game.character, game.seen]);
+  const calYear = input.state.calYear;
+  const birthYear = calYear - input.state.me.age;
+  const band = bandOfWealth(input.wealth);
+  const pick = useMemo(() => eraOf(calYear, { regionKey: input.region, gentle, seed: input.seed, windows: era.windows, birthYear, band }), [calYear, birthYear, band, input.region, input.seed, gentle, era.windows]);
+  return (
+    <section className="card era-card" id="era-card" aria-labelledby="era-title" data-testid="era-card">
+      <h2 id="era-title" className="card__title card__title--gap">
+        {SCENE_TEXT.eraName}
+      </h2>
+      <EraCell pick={pick} year={calYear} art={era.art} animate={animate} reduced={reduced} />
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------- 카드
 
-export function SceneCard({ game, gentle, fold, onFold, scene, animate = true }: Props) {
+export function SceneCard({ game, fold, onFold, scene, animate = true }: Props) {
   const reduced = useReducedMotion();
-  const { art, status, retry, era } = scene;
+  const { art, status, retry } = scene;
   const input = useMemo(() => sceneInputOf(game), [game.age, game.flags, game.assets, game.family, game.seed, game.peerSeed, game.birthReport, game.character, game.seen]);
   const spec = useMemo(() => sceneOf(input), [input]);
   const line = sceneLineOf(input);
   const petsText = scenePetsText(spec.pets);
   const { rows, more } = sceneRowsOf(input);
   const calYear = input.state.calYear;
-  const birthYear = calYear - input.state.me.age;
-  const band = bandOfWealth(input.wealth);
-  const pick = useMemo(() => eraOf(calYear, { regionKey: input.region, gentle, seed: input.seed, windows: era.windows, birthYear, band }), [calYear, birthYear, band, input.region, input.seed, gentle, era.windows]);
   const swapKey = useMemo(() => sceneKey(spec), [spec]);
   const prevSpec = usePrevWhileSwapping<SceneSpec>(spec, swapKey, animate && !reduced && art !== null);
   const phrases = petPhrases(spec.pets);
@@ -205,7 +224,6 @@ export function SceneCard({ game, gentle, fold, onFold, scene, animate = true }:
             <time dateTime={String(calYear)}>{SCENE_TEXT.year(calYear)}</time>
           </p>
         </div>
-        <EraCell pick={pick} year={calYear} art={era.art} animate={animate} reduced={reduced} />
       </div>
       {status === 'failed' && !fold ? (
         <p className="scene__note" role="status" data-testid="scene-art-failed">

@@ -12,7 +12,7 @@ import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, useDecisionM
 import { LogCard } from '../ui/dash/LogCard';
 import { ParentCard, useParentCardModel } from '../ui/dash/ParentCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
-import { SceneCard } from '../ui/scene/SceneCard';
+import { EraCard, SceneCard } from '../ui/scene/SceneCard';
 import { useSceneArt } from '../ui/scene/useFamilyArt';
 import { Glue } from '../ui/Glue';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
@@ -118,6 +118,8 @@ interface Props {
   onTheme: (theme: ThemeChoice) => void;
   /** 확인 단계를 거친 뒤에만 불린다 (일시정지 상태로 저장하고 첫 화면으로) */
   onExit: () => void;
+  /** 헤더 로고를 누르면 확인 없이 첫 화면으로 (SPEC-016 H1) — App이 「나가기」와 같은 `openTitle`을 보낸다(일시정지로 저장, 「이어서 살기」로 같은 해). 없으면 로고는 그림이다. 헤더는 겹창이 열린 동안 `inert`라 로고도 닿지 않는다 */
+  onHome?: () => void;
   /** 가상 인구 계산에 쓸 시각(에포크 분). 없으면 이 기기의 시계. 테스트가 고정값을 넣는다. */
   minute?: number;
   /** 의견 보내기 주소를 만들 저장소 주소·빌드 표기(테스트 주입). 없으면 빌드 설정의 값. */
@@ -249,12 +251,29 @@ function LifeTools({ guardKey, settings, dark, feedbackUrl, exitButtonRef, noteB
   const toolsRef = useRef<HTMLDivElement>(null);
   useDismissibleTips(toolsRef);
   return (
-    <div className="controls__tools" role="group" aria-label={DASH_TEXT.toolsGroup} data-testid="tools" ref={toolsRef}>
+    <div className="controls__tools" role="group" aria-label={DASH_TEXT.toolsGroup} data-testid="tools" data-bgm={settings.bgm.on ? 'on' : undefined} ref={toolsRef}>
       <GuardedButton guardKey={guardKey} className="btn btn--tool" aria-pressed={settings.bgm.on} data-testid="tool-bgm" onClick={() => onBgm({ on: !settings.bgm.on })}>
         <Icon name="i-music" />
         <span>{DASH_TEXT.toolBgm}</span>
         <span className="sr-only">{settings.bgm.on ? DASH_TEXT.toolOn : ''}</span>
       </GuardedButton>
+      {/* BGM 볼륨 (SPEC-016 H5, Q7): BGM이 켜졌을 때만 BGM 칸 바로 오른쪽에 작은 막대 + 숫자(따로 한 줄을 차지하지 않는다). 보이는 글자는 숫자뿐이고 「BGM 볼륨」은 접근 이름(읽기 전용 글자)이다 */}
+      {settings.bgm.on ? (
+        <label className="volume" data-testid="bgm-volume">
+          <span className="sr-only">{DASH_TEXT.bgmVolume}</span>
+          <input
+            type="range"
+            min={BGM_VOLUME_MIN}
+            max={BGM_VOLUME_MAX}
+            step={BGM_VOLUME_STEP}
+            value={settings.bgm.volume}
+            aria-valuetext={`${settings.bgm.volume}%`}
+            onChange={(e) => onBgm({ volume: Number(e.target.value) })}
+            data-testid="bgm-volume-input"
+          />
+          <output>{settings.bgm.volume}%</output>
+        </label>
+      ) : null}
       {/* 생각 남기기(M7c, D-75): 보통 버튼 — 누르면 기록 시트가 열린다(모달이라 `aria-haspopup="dialog"`). 결정 시트가 열려 있는 동안은 도구 줄 전체가 inert라 누를 수 없고, 접힌 띠·일시정지·자동 모드에서는 연다(content-M7c 5-4절) */}
       <GuardedButton ref={noteButtonRef} guardKey={guardKey} className="btn btn--tool" aria-haspopup="dialog" data-testid="tool-note" onClick={onNote}>
         <Icon name="i-pencil" />
@@ -279,7 +298,7 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onSceneFold = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onSceneFold = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, onHome, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const pool = poolProp ?? eventPool(); // 이벤트 풀은 「태어나기」 뒤에 불러온다(MG8) — 인생 화면이 열릴 때는 이미 놓여 있다
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -396,7 +415,7 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
       <header className="dash-head" ref={headRef} data-testid="dash-head" {...inert}>
         <div className="dash-head__inner">
           <div className="dash-head__top">
-            <HeaderLogo />
+            <HeaderLogo onHome={onHome} />
             <div className="who">
               <h1 className="who__name" ref={headingRef} tabIndex={-1} data-testid="life-name">
                 {c.name}
@@ -440,22 +459,6 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
             onNote={onOpenNote}
             onExitOpen={() => onExitOpen(true)}
           />
-          {settings.bgm.on ? (
-            <label className="volume" data-testid="bgm-volume">
-              <span>{DASH_TEXT.bgmVolume}</span>
-              <input
-                type="range"
-                min={BGM_VOLUME_MIN}
-                max={BGM_VOLUME_MAX}
-                step={BGM_VOLUME_STEP}
-                value={settings.bgm.volume}
-                aria-valuetext={`${settings.bgm.volume}%`}
-                onChange={(e) => onBgm({ volume: Number(e.target.value) })}
-                data-testid="bgm-volume-input"
-              />
-              <output>{settings.bgm.volume}%</output>
-            </label>
-          ) : null}
           {exitOpen ? (
             <div className="exit-ask" role="group" aria-labelledby="exit-ask-t" data-testid="exit-ask" ref={exitBoxRef}>
               <p className="exit-ask__title" id="exit-ask-t" role="alert" data-testid="exit-ask-title" ref={exitTitleRef}>
@@ -494,10 +497,12 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
           {/* 부모님이 정한·흘러간 카드: 인생 기록 바로 위(LR5 b — [결정 카드 또는 접힌 띠 → 부모 결정 카드 → 인생 기록]). 비모달이라 포커스·inert와 무관하다 */}
           {parentCard !== null ? <ParentCard key={`${parentCard.ev.id}@${parentCard.age}`} model={parentCard} gentle={settings.gentle} /> : null}
           {/* 집과 가족 그림(FH1): 결정 카드 → 이 카드 → (올해 마음 쓸 곳 — SPEC-008, 아직 없음) → 인생 기록. 결정 카드가 떠 있거나 접혀 있어도 그림이 결정 카드를 밀어내지 않는다 */}
-          <SceneCard game={game} gentle={settings.gentle} fold={settings.sceneFold === true} onFold={onSceneFold} scene={sceneArt} animate={!fast} />
+          <SceneCard game={game} fold={settings.sceneFold === true} onFold={onSceneFold} scene={sceneArt} animate={!fast} />
           <LogCard history={game.history} live={!fast} gentle={settings.gentle} eraRows={eraRows} subjectOf={subjectOf} />
         </div>
         <div className="col col--right">
+          {/* 시대의 창 따로 칸 (SPEC-016 H4): PC는 오른쪽 열 맨 위(식구 위), 휴대폰은 이 열이 풀려(`display: contents`) 집과 가족 그림 카드 바로 아래로 온다(dash.css) */}
+          <EraCard game={game} gentle={settings.gentle} scene={sceneArt} animate={!fast} />
           <FamilyCard game={game} />
           <PeersNowCard game={game} />
         </div>

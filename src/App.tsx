@@ -478,6 +478,10 @@ function Game({ boot }: { boot: Boot }) {
     finish();
   }, [setSuperseded, written]);
 
+  // 헤더 로고 → 첫 화면 (SPEC-016 H1): 룰렛·출생신고·인생의 로고는 **확인 없이** 기존 「나가기」와 같은 길(`openTitle`)로 첫 화면을 연다 — 판은 지우지 않고 첫 화면의 「이어서 살기」(`resume`)로 같은 판이 돌아온다(새 액션·새 저장 필드 없음).
+  // reducer가 연타를 막는다(`showTitle`이 이미 켜졌으면 같은 세션을 돌려준다). 엔딩은 `hasProgress` 밖이라 `openTitle`이 아니라 엔딩 화면이 로고에 한 번 묻는 확인 단계를 두고 확정이 기존 `rebirth`(`onRebirth`)로 이어진다(SPEC-016 Q1 — 형진 님 결정 2026-11-10, 새 액션 없음).
+  const goHome = useCallback(() => dispatch({ type: 'openTitle' }), [dispatch]);
+
   let screen;
   // 모든 화면이 새 디자인이다(첫 화면·룰렛·출생신고·대시보드·엔딩·밀린 화면·오류 화면) — 시스템의 라이트·다크를 따르거나 설정의 수동 선택을 따른다. 옛 화면을 라이트로 고정하던 장치는 M4에서 없어졌다.
   if (superseded) {
@@ -511,10 +515,11 @@ function Game({ boot }: { boot: Boot }) {
         spin={spin}
         onFinishSpin={() => dispatch({ type: 'finishSpin' })}
         onNext={() => dispatch({ type: 'enterBirth' })}
+        onHome={goHome}
       />
     );
   } else if (game.phase === 'birth' && game.generation && game.character && game.birthReport && game.peerSeed !== null) {
-    screen = <BirthScreen generation={game.generation} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} seed={game.seed} regionPicked={game.regionPicked === true} family={game.family} onNext={() => dispatch({ type: 'enterLife' })} />;
+    screen = <BirthScreen generation={game.generation} character={game.character} report={game.birthReport} peerSeed={game.peerSeed} seed={game.seed} regionPicked={game.regionPicked === true} family={game.family} onNext={() => dispatch({ type: 'enterLife' })} onHome={goHome} />;
   } else if (game.phase === 'life' && game.character && game.generation && game.birthReport && game.peerSeed !== null) {
     screen = (
       <LifeScreen
@@ -542,6 +547,11 @@ function Game({ boot }: { boot: Boot }) {
         onChoose={(key, choiceId) => {
           dispatch({ type: 'choose', key, choiceId });
           bumpGuard(); // 사용자가 결정 시트(또는 인라인 카드)에서 고른 순간 — 사라지는 카드 자리의 컨트롤에 같은 렌더에서 가드 (F-1)
+        }}
+        onHome={() => {
+          // 로고도 「나가기」와 같다: 확인 단계 상태를 정리하고(겹창이 열려 있으면 헤더가 inert라 사실상 닿지 않는다) 일시정지로 저장하며 첫 화면을 연다.
+          setExitAsk(false);
+          goHome();
         }}
         onSkip={() => {
           // 「다음 결정으로」 횟수(깨끗한 판 표시용): reducer가 실제로 움직이는 조건과 같을 때만 센다

@@ -176,7 +176,7 @@ async function rendered(page: Page) {
       const rect = path.getBoundingClientRect();
       if (rect.width < 1 || rect.height < 1) continue; // 보이지 않는 로고는 건너뛴다
       const cs = getComputedStyle(path);
-      // 헤더 로고는 면(fill)으로, 첫 화면 워드마크(SPEC-005 D5-01 A안)는 선(stroke)으로 그린다 — 칠해진 쪽의 색을 잰다
+      // 헤더 로고·첫 화면 로고의 심볼은 면(fill)으로, 첫 화면 로고의 워드마크(글자)는 선(stroke)으로 그린다 — 칠해진 쪽의 색을 잰다(첫 화면은 SPEC-016 H2 가로 결합 로고라 둘 다 있다)
       const paint = cs.fill !== 'none' ? cs.fill : cs.stroke;
       const fill = parse(paint);
       if (fill === null || fill.a === 0) continue;

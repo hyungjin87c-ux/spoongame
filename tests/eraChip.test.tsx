@@ -7,7 +7,7 @@ import { loadFamilyArt } from '../src/data/familyArtLoader';
 import type { FamilyArt } from '../src/data/sceneTables';
 import { SPRITE_SVG } from '../src/ui/brandAssets';
 import { EraLogRow } from '../src/ui/dash/EraRow';
-import { SceneCard } from '../src/ui/scene/SceneCard';
+import { EraCard } from '../src/ui/scene/SceneCard';
 import { mergeEraData, type SceneArt } from '../src/ui/scene/useFamilyArt';
 import { ERA_DECADE as D2020 } from '../src/data/eraWindows/d2020';
 import { ERA_DECADE as D2030 } from '../src/data/eraWindows/d2030';
@@ -24,8 +24,9 @@ import { ERA_DECADE as D2010 } from '../src/data/eraWindows/d2010';
 const art: FamilyArt = await loadFamilyArt();
 const noop = () => undefined;
 const scene = (era: SceneArt['era']): SceneArt => ({ art, status: 'ready', retry: noop, era });
+// SPEC-016 H4: 시대의 창은 따로 카드(`EraCard`)다 — 이 시험이 보는 것은 그 카드의 마크업이다.
 const html = (g: GameState, era: SceneArt['era'], gentle = false): string =>
-  renderToStaticMarkup(<SceneCard game={g} gentle={gentle} fold={false} onFold={noop} scene={scene(era)} animate={false} />);
+  renderToStaticMarkup(<EraCard game={g} gentle={gentle} scene={scene(era)} animate={false} />);
 
 /** 달력 연도가 `calYear`, 나이가 `age`인 알파 판 (출생 연도를 맞춰 쓴다) */
 function lifeAt(calYear: number, age: number, seed = 5): GameState {
@@ -241,13 +242,14 @@ describe('CSS 원문과 아이콘 (FU3·FU6, 시안 인계 원문 그대로)', (
     expect(chip).not.toContain('--c-accent');
   });
 
-  it('창 표 CSS: 창 칸의 왼쪽 위 카드 면 꼬리표 + 휴대폰 띠(카드 ≤ 480px)에서는 그림 옆 띠 바탕 위(left: 100px + 간격) · .era는 position: relative', async () => {
+  it('창 표 CSS: 창 칸의 왼쪽 위 카드 면 꼬리표 + 휴대폰 띠(1열 < 960px, SPEC-016 H4 따로 카드)에서는 그림 옆 띠 바탕 위(left: 100px + 간격) · .era는 position: relative', async () => {
     const c = await css();
     expect(c).toMatch(/\.era \{ position: relative; display: grid; grid-template-rows: minmax\(0, 1fr\) auto;/);
     expect(c).toContain('.era__fc { position: absolute; top: var(--sp-1); left: var(--sp-1); display: inline-flex; align-items: center; gap: 3px; padding: 0 5px; border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-era); font-size: var(--fs-xs); font-weight: var(--fw-bold); line-height: 1.6; white-space: nowrap; }');
     expect(c).toContain('.era__fc .icon { width: 12px; height: 12px; stroke-width: 2.6; }');
-    const q = /@container scene \(max-width: 480px\) \{[\s\S]*?\n\}/.exec(c)![0];
-    expect(q).toContain('.era__fc { position: static; grid-column: 2; grid-row: 1; justify-self: start; margin: var(--sp-2) 0 0; }'); // 띠에서는 그림 옆 둘째 칸의 첫 줄(정적 배치, SPEC-013 T3 — 캡션이 그 아래)
+    // SPEC-016 H4: 시대의 창이 따로 카드가 되어 휴대폰 띠 규칙이 `@container scene`(집 그림 카드 폭)에서 `@media (max-width: 959px)`(1열) 안의 `.era-card` 규칙으로 옮겨 갔다 — 같은 값이다
+    const q = /@media \(max-width: 959px\) \{\n  \.era-card[\s\S]*?\n\}/.exec(c)![0];
+    expect(q).toContain('.era-card .era__fc { position: static; grid-column: 2; grid-row: 1; justify-self: start; margin: var(--sp-2) 0 0; }'); // 띠에서는 그림 옆 둘째 칸의 첫 줄(정적 배치, SPEC-013 T3 — 캡션이 그 아래)
   });
 
   it('미래 톤 「밑그림」: 라이트 saturate(.5) contrast(.92) brightness(1.06), 다크 saturate(.55) brightness(.94) — 해(data-future)로 정하고 2026년 이하에는 닿지 않으며 그림 상자 안 svg에만 걸린다(창 표 아이콘은 제외)', async () => {

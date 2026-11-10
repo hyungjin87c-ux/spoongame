@@ -20,6 +20,19 @@
 .site-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--gutter); border-bottom: 1px solid var(--c-border); background: var(--c-bg); min-height: 56px; }
 .site-head .logo-wrap { --logo-h: var(--logo-h-header); flex: none; }
 .site-head__name { font-size: var(--fs-sm); color: var(--c-text-2); }
+/* (아래 블록은 SPEC-016 H1에서 title.css에 두었다가 doc.css로 옮겼다 — title.css는 `tests/barRelease.test.ts`가 첫 `@media (forced-colors: active)` 앞뒤를 가르는 계약이고 `:hover` 수를 세는 시험이 있어, 첫 화면 밖 머리글 규칙은 머리글(`.site-head`)이 있는 이 파일에 둔다) */
+/* 헤더 로고 링크 (SPEC-016 H1): 그림은 40px 그대로, 눌림 영역만 --hit 44px로 넓힌다 — 위아래 -2px 여백이 늘어난 높이를 상쇄해 헤더 높이는 그대로다. 초점 링은 `.page :focus-visible`(위)과 같은 규칙이다. 상태 모양(호버·누름·강제 색상)은 designer의 docs/design/title-ci.md 3-2 그대로(아래). */
+.logo-link { display: inline-flex; align-items: center; flex: none; max-width: 100%; min-width: var(--hit); min-height: var(--hit); margin: -2px 0; padding: 0; border: 0; border-radius: var(--r-sm); background: none; color: inherit; font: inherit; cursor: pointer; }
+/* 머리글 로고 링크 상태 (SPEC-016, docs/design/title-ci.md 3-2): 호버 = 면 한 단, 누름 = 쪽빛 옅은 면, 포커스 = 공통 링, 강제 색상 = 점선(호버)·실선(누름)·Highlight(포커스). 로고 색은 바꾸지 않는다(R-130) */
+.logo-link { transition: background var(--dur) var(--ease); }
+.logo-link:hover { background: var(--c-surface-2); }
+.logo-link:active { background: var(--c-brand-soft); }
+.logo-link:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+@media (forced-colors: active) {
+  .logo-link:hover { outline: 2px dashed CanvasText; outline-offset: 2px; }
+  .logo-link:active { outline: 2px solid CanvasText; outline-offset: 2px; }
+  .logo-link:focus-visible { outline: 3px solid Highlight; }
+}
 
 /* ---------- 짧은 쌍 「A · B」(ui/FitPair.tsx): 한 줄에 들어가면 한 줄, 아니면 기호 없이 두 줄 ---------- */
 .fit-pair { display: block; position: relative; min-width: 0; }

@@ -3,7 +3,7 @@ import type { GameState } from '../src/core/types';
 import { KNOWN_SEED, SETTINGS_KEY, findPendingState, injectSave, lifeState, noHorizontalOverflow, readSave, skipRoulette, toBirthReport } from './helpers';
 
 /**
- * 집과 가족 그림 카드 · 시대의 창 칸 · 인생 기록 시대 줄 (SPEC-009 FM5, FH1·FH4·FH6·FH9·FT1~FT6). 실제 브라우저(Chromium) — desktop(1280×800)과 mobile-360 두 프로젝트에서 돈다.
+ * 집과 가족 그림 카드 · 시대의 창 칸 · 인생 기록 시대 줄 (SPEC-009 FM5, FH1·FH4·FH6·FH9·FT1~FT6). 실제 브라우저(Chromium) — desktop(1280×800)과 mobile-360 두 프로젝트에서 돈다. SPEC-016 H4부터 시대의 창은 따로 카드(PC 오른쪽 열 맨 위 · 휴대폰은 집 그림 카드 아래)다.
  * 구조·문구·접근성 속성은 tests/sceneCard.test.tsx(서버 렌더)가 보고, 여기서는 **실제 폭·연속 동작**을 본다: PC 2:1 · 360 띠(80px) 배치, 접기 저장, 해가 바뀔 때 그림·연도 표, 가로 넘침 0, 다크, 움직임 줄이기,
  * 그림 덩어리 요청 실패·재시도, 시대의 창 덩어리를 못 받았을 때의 빈 틀(승인 94장이 1940~2025 모든 해에 닿으므로 데이터가 있는 판에는 빈 틀이 없다), 승인된 그림이 있는 해(1980년 무렵·2016년)의 창(FM5b): 톤 A 필터·색 class 규칙이 실제로 칠해지는지, 가리기, 창 → 그해 줄 이동, 늦게 온 10년 덩어리가 읽던 자리를 밀지 않는지.
  */
@@ -63,42 +63,61 @@ test('태어나기 → 살아가기: 집과 가족 그림 카드가 인생 기�
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 
-test('배치(FM2d): PC는 집 : 시대의 창 = 2 : 1(둘 사이 8px, 높이가 같다), 휴대폰(카드 480px 이하)은 집 전폭 + 그 아래 창 띠 80px(그림 100×80)', async ({ page }) => {
+test('배치(SPEC-016 H4·Q5): 집 그림은 카드 전폭(비율 640/256, 높이 ≤ 25vh — 상한에 걸리면 폭이 줄고 양옆은 하늘·땅 배경), 시대의 창은 따로 카드 — PC는 오른쪽 열 맨 위(식구 카드 위, 5:4 큰 그림), 휴대폰은 집 그림 카드 바로 아래 80px 띠(그림 100×80)', async ({ page }) => {
   await injectSave(page, still(), FAST, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
   // 시대의 창 덩어리(10년대 묶음)는 집 그림과 따로 도착한다 — 빈 틀(data-empty)이 그림 있는 칸으로 바뀐 뒤에 잰다
   await expect(page.locator('#scene-era')).not.toHaveAttribute('data-empty', 'true');
   await expect(page.locator('#scene-era .era__pic')).toBeVisible();
-  const vw = page.viewportSize()!.width;
   const house = await box(page, '[data-testid="scene-house"]');
+  const svg = await box(page, '[data-testid="scene-house"] svg.scene__svg');
   const era = await box(page, '#scene-era');
+  const eraCard = await box(page, '[data-testid="era-card"]');
   const card = await box(page, '[data-testid="family-scene"]');
-  if (card.width > 480) {
-    expect(era.x, '창은 집 오른쪽').toBeGreaterThan(house.x + house.width - 1);
-    expect(Math.abs(era.x - (house.x + house.width) - 8), '사이 8px').toBeLessThan(1);
-    expect(Math.abs(house.width / era.width - 2), `집 ${house.width} : 창 ${era.width}`).toBeLessThan(0.03);
-    expect(Math.abs(house.height - era.height), '같은 높이').toBeLessThan(1);
-    // 5:4 창(그림 좌표계 40×32)
-    expect(Math.abs(era.width / era.height - 1.25), '창 5:4').toBeLessThan(0.05);
+  // 집 그림: 카드 전폭의 칸(카드 테두리 1px씩 안쪽) 안에 비율 640/256으로 서고, 높이는 화면 높이의 25%를 넘지 않는다. 폭이 칸보다 좁으면(상한에 걸림) 가운데에 선다
+  expect(Math.abs(house.width - (card.width - 2)), '집 그림 칸은 카드 전폭').toBeLessThan(1);
+  expect(Math.abs(svg.width / svg.height - 2.5), '그림 비율 640/256').toBeLessThan(0.03);
+  const vh = page.viewportSize()!.height;
+  expect(svg.height, '집 그림 높이 ≤ 25vh(FH1)').toBeLessThanOrEqual(vh * 0.25 + 1);
+  expect(svg.width, '그림은 칸을 넘지 않는다').toBeLessThanOrEqual(house.width + 1);
+  expect(Math.abs(svg.x - house.x - (house.width - svg.width) / 2), '그림은 칸 가운데').toBeLessThan(1);
+  const capped = svg.width < house.width - 1;
+  if (capped) {
+    // 상한에 걸려 양옆이 남으면 그 자리는 하늘·땅 배경(.scene__ph와 같은 색 — 칸 배경이 같은 그라데이션)
+    const bg = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="scene-house"]')!).backgroundImage);
+    expect(bg).toContain('linear-gradient');
+  }
+  const family = await box(page, '[data-testid="family-card"]');
+  if (card.width > 480 && page.viewportSize()!.width >= 960) {
+    // PC 3열: 시대의 창 카드가 오른쪽 열 맨 위, 식구 카드 위. 그림이 칸 폭을 다 쓰고 5:4다
+    expect(eraCard.x, '시대의 창 카드는 가운데 열 오른쪽').toBeGreaterThan(card.x + card.width - 1);
+    expect(Math.abs(eraCard.x - family.x), '식구 카드와 같은 열').toBeLessThan(1);
+    expect(Math.abs(eraCard.width - family.width), '식구 카드와 같은 폭').toBeLessThan(1);
+    expect(eraCard.y + eraCard.height, '식구 카드 위').toBeLessThanOrEqual(family.y + 1);
+    expect(family.y - (eraCard.y + eraCard.height), '식구 카드 바로 위(카드 간격)').toBeLessThan(24);
+    const pic = await box(page, '#scene-era .era__pic');
+    expect(Math.abs(pic.width - (eraCard.width - 2)), '그림이 카드 폭을 다 쓴다').toBeLessThan(1);
+    expect(Math.abs(pic.width / pic.height - 1.25), '그림 5:4').toBeLessThan(0.05);
+    expect(era.width, '창(링크)도 카드 폭').toBeGreaterThan(eraCard.width - 4);
   } else {
-    expect(era.y, '창 띠는 집 아래').toBeGreaterThanOrEqual(house.y + house.height - 1);
+    // 휴대폰(1열): 집 그림 카드 바로 아래 — 사이에 다른 카드가 없다. 80px 띠(그림 100×80)
+    expect(eraCard.y, '집 그림 카드 아래').toBeGreaterThanOrEqual(card.y + card.height - 1);
+    expect(eraCard.y - (card.y + card.height), '집 그림 카드 바로 아래(카드 간격)').toBeLessThan(24);
+    expect(family.y, '식구 카드는 그 뒤').toBeGreaterThan(eraCard.y);
     expect(Math.abs(era.height - 80), '띠 높이 80').toBeLessThan(1);
     const pic = await box(page, '#scene-era .era__pic');
     expect(Math.abs(pic.width - 100)).toBeLessThan(1);
     expect(Math.abs(pic.height - 80)).toBeLessThan(1);
-    expect(Math.abs(house.width - (card.width - 2)), '집 그림은 카드 전폭(카드 테두리 1px씩 안쪽)').toBeLessThan(1);
     // R-553 ① A안: 띠 바탕이 카드 바탕(--c-surface)과 같다 — 그림 옆 빈 자리가 「카드 위에 놓인 그림 한 장」으로 읽힌다
     const bg = await page.evaluate(() => {
       const css = (el: Element | null): string => (el === null ? '' : getComputedStyle(el).backgroundColor);
-      return { era: css(document.querySelector('#scene-era')), card: css(document.querySelector('[data-testid="family-scene"]')) };
+      return { era: css(document.querySelector('#scene-era')), card: css(document.querySelector('[data-testid="era-card"]')) };
     });
     expect(bg.era, '띠 바탕은 카드 바탕과 같다').toBe(bg.card);
   }
-  // 집 그림 높이 ≤ 25vh(FH1)
-  const vh = page.viewportSize()!.height;
-  expect(house.height).toBeLessThanOrEqual(vh * 0.25 + 1);
+  // 카드 제목은 기존 문구 「시대의 창」
+  await expect(page.getByRole('heading', { name: '시대의 창', level: 2 })).toBeVisible();
   expect(await noHorizontalOverflow(page)).toBe(true);
-  expect(vw).toBeGreaterThan(0);
 });
 
 test('시대의 창 덩어리를 받지 못한 판(2016년, 2010년대 덩어리 요청 차단)의 창은 빈 틀이다: 링크도 그림도 없고, 인생 기록에 시대 줄(data-tl="era")이 없다 — 연도 표만 보인다', async ({ page }) => {
@@ -134,7 +153,7 @@ test('승인된 그림(시대의 창 r5 반영): 2016년 판의 창에 겨울 �
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 
-test('「그림 접기」: 그림(집 + 시대의 창)이 사라지고 아래 한 줄·펼침만 남는다 — 설정에 저장되어 새로고침해도 접혀 있고, 「그림 펼치기」로 돌아온다', async ({ page }) => {
+test('「그림 접기」: 집 그림이 사라지고 아래 한 줄·펼침만 남는다 — 시대의 창 카드는 접어도 계속 보인다(SPEC-016 Q6). 설정에 저장되어 새로고침해도 접혀 있고, 「그림 펼치기」로 돌아온다', async ({ page }) => {
   await injectSave(page, still(), FAST, MANUAL);
   await expect(sceneCard(page)).toHaveAttribute('data-scene-art', 'ready', { timeout: 15_000 });
   const fold = page.getByTestId('scene-fold');
@@ -144,6 +163,7 @@ test('「그림 접기」: 그림(집 + 시대의 창)이 사라지고 아래 �
   await fold.click();
   await expect(sceneCard(page)).toHaveAttribute('data-fold', 'true');
   await expect(page.getByTestId('scene-pic')).toBeHidden();
+  await expect(page.getByTestId('era-card'), '접기는 집 그림에만 — 시대의 창 카드는 그대로').toBeVisible();
   await expect(fold).toHaveText('그림 펼치기');
   await expect(fold).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByTestId('scene-line')).toHaveText(line!);
@@ -154,6 +174,7 @@ test('「그림 접기」: 그림(집 + 시대의 창)이 사라지고 아래 �
   await page.reload();
   await expect(sceneCard(page)).toHaveAttribute('data-fold', 'true');
   await expect(page.getByTestId('scene-pic')).toBeHidden();
+  await expect(page.getByTestId('era-card')).toBeVisible();
   await page.getByTestId('scene-fold').click();
   await expect(sceneCard(page)).toHaveAttribute('data-fold', 'false');
   await expect(page.getByTestId('scene-pic')).toBeVisible();

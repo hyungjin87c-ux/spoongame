@@ -201,8 +201,8 @@ html.bar-released .page-end-space { display: none; }
 .title__main { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
 .title__notice { padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--c-notice-bg); color: var(--c-on-notice); font-size: var(--fs-sm); }
 .hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-4); }
-.hero .logo--word { --logo-h: 64px; max-width: 100%; } /* SPEC-004 GS11 · D4-60: 제목을 더 크게 — 좁은 화면 52 → 64px(글자 획 상자 51px, 폭 272px ≤ 360의 328·320의 288) */
-/* 머리 줄 (SPEC-005 D5-01 A안·D5-04): 로고는 워드마크만이고(좁은 화면 52px → 글자 높이 41px로 DS1 ≥ 40px, 넓은 화면 64px → 51px) 머리 아래 글은 두 폭 모두 **왼쪽 정렬**이다 — 로고 줄 아래의 일러스트 배너(좁은 화면)·한 줄 설명·수저 띠가 한 축을 쓴다 */
+.hero .logo--row { --logo-h: 88px; max-width: 100%; } /* SPEC-016 H2 안 B 가로 결합 로고(logo-a.svg 443.8×128) — 좁은 화면 88px(글자 획 상자 42px ≥ 40, 심볼 88px, 폭 305px ≤ 360의 328; 320에서는 칸 폭 288px에 맞춰 83px로 줄어 획 상자 39px — 마스터 허용) */
+/* 머리 줄 (SPEC-005 D5-01 A안·D5-04): 로고는 SPEC-016 H2부터 가로 결합 로고(심볼 + 워드마크 — 좁은 화면 88px, 넓은 화면 108px)이고 머리 아래 글은 두 폭 모두 **왼쪽 정렬**이다 — 로고 줄 아래의 일러스트 배너(좁은 화면)·한 줄 설명·수저 띠가 한 축을 쓴다 */
 .hero--005 { align-items: stretch; text-align: left; gap: var(--sp-3); }
 .hero--005 h1 { min-width: 0; }
 .hero__tag { font-size: var(--fs-md); line-height: var(--lh-body); font-weight: var(--fw-regular); color: var(--c-text-2); max-width: 30em; } /* SPEC-004 GM4 (GS11): 부제 16/1.6 · 굵기는 제목에만 — 벤치마킹 8곳 (docs/design/benchmark-004.md 3절) */
@@ -368,7 +368,7 @@ html.bar-released .page-end-space { display: none; }
   .title__main, .hero { gap: var(--sp-4); }
   .hero { align-items: flex-start; text-align: left; }
   .hero__tag { max-width: none; }
-  .hero .logo--word { --logo-h: 84px; } /* 64 → 84px(글자 획 상자 66px, 폭 357px — 왼쪽 열 안) */
+  .hero .logo--row { --logo-h: 108px; } /* 넓은 화면 108px(글자 획 상자 51px, 폭 374px — 왼쪽 열 안) */
   .hero--005 { gap: var(--sp-3); }
   /* 1280×800: 왼쪽 열(큰 슬롯 → 인생 길이 → 설정 줄)이 하단 띠 위에 다 들어가도록 세로 간격을 한 단 줄인다 — 큰 슬롯 카드가 8장(SPEC-004)이 되면 스크롤이 생기지만 띠가 포커스를 가리지 않는다(scroll-padding, CM10) */
   .slots-bottom { gap: var(--sp-2); }
