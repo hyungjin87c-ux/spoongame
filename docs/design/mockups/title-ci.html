@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko" data-v="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수저 게임 · 시안 · 첫 화면 CI(SPEC-016)</title>
+<!-- 첫 화면 CI 시안 세 안 (2026-11-10 designer, 형진 님 요청 「첫 화면에 수저 게임 CI가 없다」). 글은 docs/design/title-ci.md.
+     구현 CSS(src/styles/tokens.css · fonts.css · title.css)를 그대로 읽어 실제 첫 화면과 같은 바탕 위에 머리만 바꿔 보인다 — 세대 목록·통계 카드·「태어나기」 띠는 구현 구조·문구 그대로(통계 카드의 선 그래프만 11점으로 간추린 정적 그림).
+     주소 질의: ?v=a|b|c|link (기본 a) · theme=dark · state=saved
+       a = 세로 로고(brand/a/logo-stacked.svg — 정식 심볼 위, 워드마크 아래)로 큰 워드마크를 바꾼다
+       b = 가로 결합 로고(logo-a.svg — 정식 심볼 왼쪽 + 워드마크)로 큰 워드마크를 바꾼다
+       c = 첫 화면 맨 위에 다른 화면과 같은 머리글(logo-header.svg 40px + 화면 이름)을 두고 큰 워드마크는 그대로
+       link = 머리글 로고 링크의 네 상태(기본·호버·포커스·누름)와 첫 화면의 로고(링크 아님)를 나란히
+     새 그림 자산 0 — 기존 brand 자산 셋을 인라인(SVG 안의 var(--c-logo)가 다크·강제 색상 토큰을 읽는다). 외부 요청 0. -->
+<link rel="stylesheet" href="../../../src/styles/tokens.css">
+<link rel="stylesheet" href="../../../src/styles/fonts.css">
+<link rel="stylesheet" href="../../../src/styles/title.css">
+<script>(function(){var q=new URLSearchParams(location.search);var r=document.documentElement;var v=q.get('v');r.setAttribute('data-v',/^(a|b|c|link)$/.test(v||'')?v:'a');var t=q.get('theme');if(t==='dark'||t==='light')r.setAttribute('data-theme',t);r.setAttribute('data-state',q.get('state')==='saved'?'saved':'new');
+/* 시안 전용 흉내(구현은 src/ui/barRelease.ts): 하단 띠 높이를 --bar-h로 */
+document.addEventListener('DOMContentLoaded',function(){var bar=document.querySelector('.bottom-bar');if(!bar)return;r.classList.add('has-bottom-bar');function apply(){r.style.setProperty('--bar-h',bar.offsetHeight+'px');}apply();if(window.ResizeObserver)new ResizeObserver(apply).observe(bar);
+document.querySelectorAll('.gen-row input').forEach(function(i){i.addEventListener('change',function(){document.querySelectorAll('.gen-row').forEach(function(l){l.classList.toggle('is-selected',l.contains(i)&&i.checked);});});});
+document.querySelectorAll('.seg input').forEach(function(i){i.addEventListener('change',function(){i.closest('.seg').querySelectorAll('.seg__opt').forEach(function(o){o.classList.toggle('is-selected',o.contains(i));});});});});})();</script>
+<style>
+/* 시안 전용 — 구현에 옮길 규칙은 title-ci.md 3절의 블록만 */
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--c-bg); color: var(--c-text); font-family: var(--font-sans); font-size: var(--fs-md); line-height: var(--lh-body); display: flex; flex-direction: column; min-height: 100vh; }
+/* 안별 머리: data-v 가 고른 것만 보인다 */
+.hero__brand { display: none; }
+[data-v='a'] .hero__brand--a, [data-v='b'] .hero__brand--b, [data-v='c'] .hero__brand--c { display: block; }
+.site-head { display: none; }
+[data-v='c'] .site-head--c { display: flex; }
+/* ── 안 A: 세로 로고. 좁은 화면 176px(워드마크 획 상자 실측 41px ≥ 40 — DS1, 폭 220px), 넓은 화면 236px(54px, 폭 294px) — logo-stacked.svg 309.3×248, 워드마크 0.72H, 심볼 ≥ 48 정식 */
+.hero .logo--stack { --logo-h: 176px; }
+/* ── 안 B: 가로 결합 로고. 좁은 화면 88px(워드마크 획 상자 실측 42px ≥ 40, 심볼 88px ≥ 48 정식, 폭 305px ≤ 360의 328 — 320에서는 폭 288에 맞춰 83px로 줄어 획 상자 39px), 넓은 화면 108px(52px, 폭 374px) — logo-a.svg 443.8×128, 워드마크 0.768H */
+.hero .logo--row { --logo-h: 88px; }
+@media (min-width: 960px) {
+  .hero .logo--stack { --logo-h: 236px; }
+  .hero .logo--row { --logo-h: 108px; }
+}
+/* ── 안 C: 다른 화면과 같은 머리글(src/styles/doc.css `.site-head` 세 규칙 그대로) + 큰 워드마크 유지 */
+.site-head { align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--gutter); border-bottom: 1px solid var(--c-border); background: var(--c-bg); min-height: 56px; }
+.site-head .logo-wrap { --logo-h: var(--logo-h-header); flex: none; }
+.site-head__name { font-size: var(--fs-sm); color: var(--c-text-2); }
+.site-head__inner { width: 100%; max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+/* ── 로고 링크(첫 화면 밖 모든 머리글 — title-ci.md 3절): 로고 색은 바꾸지 않고(R-130) 뒤 면 한 단·포커스 링·누름 면으로 상태를 보인다.
+   누르는 영역 = 로고 40px + 위아래 2px·좌우 4px(44px, WCAG 2.5.8) — 음수 바깥 여백으로 배치는 그대로 */
+.logo-link { display: inline-flex; align-items: center; margin: -2px -4px; padding: 2px 4px; min-height: var(--hit); border-radius: var(--r-sm); color: inherit; text-decoration: none; cursor: pointer; transition: background var(--dur) var(--ease); }
+.logo-link:hover, .logo-link.is-hover { background: var(--c-surface-2); }
+.logo-link:active, .logo-link.is-active { background: var(--c-brand-soft); }
+.logo-link:focus-visible, .logo-link.is-focus { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.logo-link.is-focus.is-hover { background: var(--c-surface-2); }
+@media (forced-colors: active) {
+  /* 강제 색상은 면을 지운다 — 호버는 점선, 누름은 실선 테두리(모양), 포커스는 공통 링(Highlight) */
+  .logo-link:hover, .logo-link.is-hover { outline: 2px dashed CanvasText; outline-offset: 2px; }
+  .logo-link:active, .logo-link.is-active { outline: 2px solid CanvasText; outline-offset: 2px; }
+  .logo-link:focus-visible, .logo-link.is-focus { outline: 3px solid Highlight; }
+}
+/* ── 통계 카드(시안용 정적 슬라이드): 구현 .slide--gen 의 글자·격자 규칙은 title.css 가 가지고, 여기엔 그림 크기만 */
+.gchart { aspect-ratio: 460 / 220; }
+/* ── 상태 시트(?v=link) */
+.states { max-width: 1120px; margin: 0 auto; padding: var(--sp-6) var(--gutter) var(--sp-10); display: none; flex-direction: column; gap: var(--sp-5); }
+[data-v='link'] .states { display: flex; }
+[data-v='link'] .title, [data-v='link'] .bottom-bar, [data-v='link'] .page-end-space { display: none; }
+.states h1 { font-size: var(--fs-xl); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
+.states p { max-width: 40em; color: var(--c-text-2); font-size: var(--fs-sm); }
+.state { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: var(--sp-3); align-items: start; }
+.state__name { font-size: var(--fs-sm); font-weight: var(--fw-bold); padding-top: var(--sp-3); }
+.state .site-head { display: flex; border: 1px solid var(--c-border); border-radius: var(--r-md); }
+.state .hero { padding: var(--sp-3) var(--gutter); border: 1px solid var(--c-border); border-radius: var(--r-md); }
+.state .hero .logo--row { --logo-h: 88px; }
+@media (max-width: 479px) { .state { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); } .state__name { padding-top: 0; } }
+/* 시안 표지 */
+.mock-tag { display: inline-block; font-size: var(--fs-xs); color: var(--c-text-3); border: 1px dashed var(--c-border-strong); border-radius: var(--r-sm); padding: 0 var(--sp-2); }
+</style>
+</head>
+<body class="theme-surface">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-forward" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</defs></svg>
+
+<!-- ── 안 C 머리글: 다른 화면(룰렛·출생신고·인생·엔딩)과 같은 .site-head. 첫 화면에서는 로고가 링크가 아니다(자기 화면) — title-ci.md 3-4 -->
+<header class="site-head site-head--c" data-mock="c-head">
+  <div class="site-head__inner">
+    <span class="logo-wrap logo--header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" role="img" aria-label="수저 게임 로고 (헤더용, 수저 게임 심볼 「담긴 땅」 (작은 크기용 단순화))"><path transform="translate(-15.4 -4.1) scale(0.2631)" d="M393.9 41.5C454.7 84.1 471.3 154.2 422.9 223.4C369.6 299.5 303.9 308.6 259 290.8C247 295 238.5 301.5 226.8 318.3L156.8 423.8C136.2 453.3 146.2 471.2 137.6 483.5C123.8 503.2 96.6 508 77 494.2C57.3 480.4 52.5 453.3 66.3 433.6C74.9 421.3 95.2 424.6 115.9 395.1L191 293.3C202.8 276.5 206 266.3 205.9 253.6C173.8 217.5 159.9 152.7 213.1 76.6C261.6 7.4 333.2 -1 393.9 41.5ZM258.36 127.39C260.26 135.17 264.94 143.97 269.4 152.87C273.86 161.76 281.6 170.43 285.11 180.77C288.62 191.12 287.55 203.89 290.45 214.95C293.36 226.01 295.66 242.17 302.52 247.15C309.37 252.13 323.86 249.87 331.59 244.84C339.32 239.8 347.09 228.65 348.9 216.93C350.72 205.21 344.91 189.11 342.45 174.5C339.99 159.9 332.56 144.63 334.13 129.31C335.69 113.99 347.51 96.74 351.84 82.59C356.18 68.44 363.92 50.06 360.12 44.4C356.32 38.74 341.36 43.22 329.05 48.64C316.74 54.05 298.12 67.3 286.27 76.88C274.42 86.47 262.61 97.73 257.96 106.15C253.3 114.56 256.45 119.6 258.36 127.39Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(121.236 23.04) scale(0.819)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></svg></span>
+    <span class="site-head__name">첫 화면</span>
+  </div>
+</header>
+
+<div class="title-page">
+<div class="title">
+  <main class="title__main">
+    <header class="hero hero--005">
+      <h1>
+        <span class="sr-only">수저 게임</span>
+        <!-- 안 A: 세로 로고 brand/a/logo-stacked.svg 인라인 -->
+        <span class="hero__brand hero__brand--a logo-wrap logo--stack" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 309.3 248" focusable="false"><path transform="translate(82.7 -7.1) scale(0.30069999999999997)" d="M386.6 45.7C438.4 81.9 452.5 141.6 411.3 200.5C365.9 265.3 310 273 269 256.1C258.9 259.6 251.7 265.1 241.6 279.5L148.8 415.9C113.6 466.2 117.2 487.4 102.5 508.4C92.2 523.2 71.8 526.8 57 516.4C42.2 506.1 38.7 485.7 49 470.9C63.7 449.9 84.9 446.1 120.1 395.8L216.5 261.9C226.6 247.6 229.4 238.9 229.2 228.2C199.2 195.5 187.3 140.3 232.7 75.5C274 16.6 334.9 9.4 386.6 45.7ZM265.74 104.44C267.49 105.89 269.96 107.33 271 109.19C272.03 111.04 271.6 113.57 271.95 115.57C272.3 117.58 273.47 119.33 273.08 121.23C272.69 123.12 270.63 124.86 269.61 126.94C268.59 129.03 266.68 131.92 266.95 133.72C267.22 135.53 269.36 137.29 271.23 137.76C273.1 138.23 275.9 136.38 278.19 136.55C280.48 136.71 283.19 137.75 284.98 138.75C286.77 139.74 287.81 141.01 288.93 142.52C290.06 144.03 291.14 146.1 291.74 147.8C292.33 149.51 293.12 151.61 292.52 152.75C291.92 153.89 289.31 153.63 288.14 154.66C286.97 155.68 285.51 157.3 285.5 158.91C285.5 160.51 287.37 162.48 288.13 164.3C288.89 166.11 289.88 167.94 290.07 169.79C290.26 171.65 289.66 173.42 289.28 175.4C288.89 177.39 288.3 179.59 287.74 181.71C287.19 183.83 286.05 185.98 285.97 188.12C285.88 190.27 287 192.49 287.23 194.58C287.47 196.67 286.79 199.4 287.38 200.68C287.96 201.96 289.25 202.37 290.73 202.28C292.2 202.19 294.36 200.84 296.24 200.15C298.13 199.45 300.09 198.87 302.02 198.09C303.95 197.31 305.87 196.32 307.8 195.45C309.72 194.59 311.66 193.57 313.57 192.92C315.49 192.28 317.49 192.22 319.26 191.57C321.04 190.92 322.79 189.97 324.23 189.04C325.67 188.1 326.84 187.35 327.9 185.96C328.95 184.57 329.81 182.56 330.55 180.68C331.29 178.81 332.08 176.42 332.33 174.71C332.57 172.99 332.2 172.13 332.03 170.38C331.85 168.63 331.49 166.42 331.26 164.19C331.04 161.95 331.13 159.39 330.68 156.96C330.23 154.54 329.5 152.1 328.57 149.63C327.63 147.17 326.35 144.79 325.08 142.19C323.8 139.6 322.52 136.79 320.93 134.05C319.33 131.32 317.55 128.48 315.52 125.81C313.48 123.13 310.66 120.19 308.69 118C306.72 115.81 304.25 114.69 303.7 112.65C303.14 110.61 304.12 107.99 305.34 105.76C306.56 103.52 308.7 101.41 311.03 99.23C313.37 97.06 316.58 95.05 319.35 92.71C322.12 90.36 325.31 88.01 327.67 85.16C330.03 82.3 331.84 78.61 333.53 75.58C335.23 72.55 336.05 69.55 337.84 66.99C339.63 64.43 342.6 62.14 344.28 60.22C345.96 58.31 347.89 57.58 347.92 55.5C347.95 53.42 345.99 49.4 344.45 47.77C342.91 46.13 340.83 44.77 338.68 45.68C336.52 46.58 334.13 50.79 331.54 53.19C328.96 55.59 326.43 58.41 323.16 60.08C319.9 61.76 315.23 61.76 311.93 63.24C308.63 64.71 306.23 67.76 303.38 68.92C300.52 70.08 297.7 68.75 294.8 70.2C291.9 71.65 289.07 75.46 285.96 77.6C282.84 79.75 279.3 80.9 276.11 83.07C272.92 85.23 269.41 87.66 266.81 90.57C264.21 93.49 260.69 98.22 260.51 100.54C260.33 102.85 263.99 103 265.74 104.44ZM282.8 219.6a6.9 4.2 0 1 0 13.9 0a6.9 4.2 0 1 0 -13.9 0ZM349.8 144.1a2.7 2.7 0 1 0 5.5 0a2.7 2.7 0 1 0 -5.5 0ZM364.9 148.9a1.6 1.6 0 1 0 3.3 0a1.6 1.6 0 1 0 -3.3 0Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(8.68 172) scale(0.72)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></svg></span>
+        <!-- 안 B: 가로 결합 로고 src/assets/logo-a.svg 인라인 -->
+        <span class="hero__brand hero__brand--b logo-wrap logo--row" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 443.8 128" focusable="false"><path transform="translate(-11.1 -6) scale(0.25660000000000005)" d="M386.6 45.7C438.4 81.9 452.5 141.6 411.3 200.5C365.9 265.3 310 273 269 256.1C258.9 259.6 251.7 265.1 241.6 279.5L148.8 415.9C113.6 466.2 117.2 487.4 102.5 508.4C92.2 523.2 71.8 526.8 57 516.4C42.2 506.1 38.7 485.7 49 470.9C63.7 449.9 84.9 446.1 120.1 395.8L216.5 261.9C226.6 247.6 229.4 238.9 229.2 228.2C199.2 195.5 187.3 140.3 232.7 75.5C274 16.6 334.9 9.4 386.6 45.7ZM265.74 104.44C267.49 105.89 269.96 107.33 271 109.19C272.03 111.04 271.6 113.57 271.95 115.57C272.3 117.58 273.47 119.33 273.08 121.23C272.69 123.12 270.63 124.86 269.61 126.94C268.59 129.03 266.68 131.92 266.95 133.72C267.22 135.53 269.36 137.29 271.23 137.76C273.1 138.23 275.9 136.38 278.19 136.55C280.48 136.71 283.19 137.75 284.98 138.75C286.77 139.74 287.81 141.01 288.93 142.52C290.06 144.03 291.14 146.1 291.74 147.8C292.33 149.51 293.12 151.61 292.52 152.75C291.92 153.89 289.31 153.63 288.14 154.66C286.97 155.68 285.51 157.3 285.5 158.91C285.5 160.51 287.37 162.48 288.13 164.3C288.89 166.11 289.88 167.94 290.07 169.79C290.26 171.65 289.66 173.42 289.28 175.4C288.89 177.39 288.3 179.59 287.74 181.71C287.19 183.83 286.05 185.98 285.97 188.12C285.88 190.27 287 192.49 287.23 194.58C287.47 196.67 286.79 199.4 287.38 200.68C287.96 201.96 289.25 202.37 290.73 202.28C292.2 202.19 294.36 200.84 296.24 200.15C298.13 199.45 300.09 198.87 302.02 198.09C303.95 197.31 305.87 196.32 307.8 195.45C309.72 194.59 311.66 193.57 313.57 192.92C315.49 192.28 317.49 192.22 319.26 191.57C321.04 190.92 322.79 189.97 324.23 189.04C325.67 188.1 326.84 187.35 327.9 185.96C328.95 184.57 329.81 182.56 330.55 180.68C331.29 178.81 332.08 176.42 332.33 174.71C332.57 172.99 332.2 172.13 332.03 170.38C331.85 168.63 331.49 166.42 331.26 164.19C331.04 161.95 331.13 159.39 330.68 156.96C330.23 154.54 329.5 152.1 328.57 149.63C327.63 147.17 326.35 144.79 325.08 142.19C323.8 139.6 322.52 136.79 320.93 134.05C319.33 131.32 317.55 128.48 315.52 125.81C313.48 123.13 310.66 120.19 308.69 118C306.72 115.81 304.25 114.69 303.7 112.65C303.14 110.61 304.12 107.99 305.34 105.76C306.56 103.52 308.7 101.41 311.03 99.23C313.37 97.06 316.58 95.05 319.35 92.71C322.12 90.36 325.31 88.01 327.67 85.16C330.03 82.3 331.84 78.61 333.53 75.58C335.23 72.55 336.05 69.55 337.84 66.99C339.63 64.43 342.6 62.14 344.28 60.22C345.96 58.31 347.89 57.58 347.92 55.5C347.95 53.42 345.99 49.4 344.45 47.77C342.91 46.13 340.83 44.77 338.68 45.68C336.52 46.58 334.13 50.79 331.54 53.19C328.96 55.59 326.43 58.41 323.16 60.08C319.9 61.76 315.23 61.76 311.93 63.24C308.63 64.71 306.23 67.76 303.38 68.92C300.52 70.08 297.7 68.75 294.8 70.2C291.9 71.65 289.07 75.46 285.96 77.6C282.84 79.75 279.3 80.9 276.11 83.07C272.92 85.23 269.41 87.66 266.81 90.57C264.21 93.49 260.69 98.22 260.51 100.54C260.33 102.85 263.99 103 265.74 104.44ZM282.8 219.6a6.9 4.2 0 1 0 13.9 0a6.9 4.2 0 1 0 -13.9 0ZM349.8 144.1a2.7 2.7 0 1 0 5.5 0a2.7 2.7 0 1 0 -5.5 0ZM364.9 148.9a1.6 1.6 0 1 0 3.3 0a1.6 1.6 0 1 0 -3.3 0Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(122.411 25.6) scale(0.768)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></svg></span>
+        <!-- 안 C: 큰 워드마크 그대로(brand/wordmark.svg — 지금 구현과 같다) -->
+        <span class="hero__brand hero__brand--c logo-wrap logo--word" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 425 100" focusable="false"><g transform="translate(6.5 0) scale(1)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></svg></span>
+      </h1>
+      <p class="hero__tag">다른 세대, 다른 삶, <span class="nowrap">같은 대한민국</span></p>
+      <p class="hero__span">세대를 바꿔 가며 그 시절의 한 사람으로 살아 봐요.</p>
+    </header>
+
+    <fieldset class="slot slot--big slot--gen8"><legend class="group-title">어느 세대로 살아보고 싶으세요?</legend>
+      <div class="gen-list" role="radiogroup" aria-label="태어날 세대">
+        <label class="gen-row is-selected"><input type="radio" name="gen" value="random" checked aria-labelledby="gen-name-random" aria-describedby="gen-desc-random"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-random">랜덤 세대</span></span><span class="gen-row__desc" id="gen-desc-random">일곱 세대 가운데 하나를 같은 확률로 뽑아요</span></span><span class="sr-only">선택됨</span></label>
+        <label class="gen-row"><input type="radio" name="gen" value="industrial" aria-labelledby="gen-name-industrial gen-meta-industrial" aria-describedby="gen-desc-industrial"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-industrial">산업화 세대 · 전후 세대</span><span class="gen-row__meta" id="gen-meta-industrial"><span class="nowrap">1940~1954년생</span> · <span class="nowrap">올해 72~86세</span></span></span><span class="gen-row__desc" id="gen-desc-industrial">6·25전쟁, 전후 복구, 산업화의 시기를 지나온 세대</span></span></label>
+        <label class="gen-row"><input type="radio" name="gen" value="boomer" aria-labelledby="gen-name-boomer gen-meta-boomer" aria-describedby="gen-desc-boomer"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-boomer">베이비붐 세대</span><span class="gen-row__meta" id="gen-meta-boomer"><span class="nowrap">1955~1963년생</span> · <span class="nowrap">올해 63~71세</span></span></span><span class="gen-row__desc" id="gen-desc-boomer">과밀 학급, 고교 평준화, 산업화의 시기를 지나온 세대</span></span></label>
+        <label class="gen-row"><input type="radio" name="gen" value="g86" aria-labelledby="gen-name-g86 gen-meta-g86" aria-describedby="gen-desc-g86"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-g86">86세대</span><span class="gen-row__meta" id="gen-meta-g86"><span class="nowrap">1960~1969년생</span> · <span class="nowrap">올해 57~66세</span></span></span><span class="gen-row__desc" id="gen-desc-g86">직선제 개헌, 3저 호황, 신도시의 시기를 지나온 세대</span></span></label>
+        <label class="gen-row"><input type="radio" name="gen" value="genx" aria-labelledby="gen-name-genx gen-meta-genx" aria-describedby="gen-desc-genx"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-genx">X세대</span><span class="gen-row__meta" id="gen-meta-genx"><span class="nowrap">1970~1980년생</span> · <span class="nowrap">올해 46~56세</span></span></span><span class="gen-row__desc" id="gen-desc-genx">노래방, PC통신, 외환위기의 시기를 지나온 세대</span></span></label>
+        <label class="gen-row"><input type="radio" name="gen" value="millennial" aria-labelledby="gen-name-millennial gen-meta-millennial" aria-describedby="gen-desc-millennial"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-millennial">밀레니얼 세대</span><span class="gen-row__meta" id="gen-meta-millennial"><span class="nowrap">1981~1996년생</span> · <span class="nowrap">올해 30~45세</span></span></span><span class="gen-row__desc" id="gen-desc-millennial">개인 홈페이지, 스마트폰, 글로벌 금융위기의 시기를 지나온 세대</span></span></label>
+        <label class="gen-row"><input type="radio" name="gen" value="genz" aria-labelledby="gen-name-genz gen-meta-genz" aria-describedby="gen-desc-genz"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-genz">Z세대</span><span class="gen-row__meta" id="gen-meta-genz"><span class="nowrap">1997~2012년생</span> · <span class="nowrap">올해 14~29세</span></span></span><span class="gen-row__desc" id="gen-desc-genz">스마트폰, 숏폼 영상, 코로나19의 시기를 지나온 세대</span></span></label>
+        <label class="gen-row"><input type="radio" name="gen" value="alpha" aria-labelledby="gen-name-alpha gen-meta-alpha" aria-describedby="gen-desc-alpha"><span class="gen-row__mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span class="gen-row__body"><span class="gen-row__line"><span class="gen-row__name" id="gen-name-alpha">알파 세대</span><span class="gen-row__meta" id="gen-meta-alpha"><span class="nowrap">2013~2020년생</span> · <span class="nowrap">올해 6~13세</span></span></span><span class="gen-row__desc" id="gen-desc-alpha">대화형 인공지능, 학령인구 감소, 고교학점제의 시기에 자라는 세대<span class="gen-row__note"> 2026년부터는 공식 전망을 바탕으로 한 이야기예요</span></span></span></label>
+      </div>
+      <details class="disclosure slot__fold"><summary>세대 범위는 자료마다 조금씩 달라요</summary><p>다른 세대의 시간을 살아 보며 서로의 사정을 이해해 봐요. 이 게임은 위 범위를 써요. 1960~1963년생은 베이비붐 세대와 86세대 어느 쪽으로도 살아볼 수 있어요. 출생 연도는 고른 세대의 범위 안에서 룰렛이 뽑아요.</p></details>
+    </fieldset>
+
+    <div class="slots-bottom">
+      <fieldset class="slot slot--small slot--region">
+        <legend class="group-title group-title--inline">태어나는 시도</legend>
+        <div class="seg" role="radiogroup" aria-label="태어나는 시도를 정하는 방법">
+          <label class="seg__opt is-selected"><input type="radio" name="regmode" value="roulette" checked><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><span>룰렛에 맡기기</span><span class="sr-only">선택됨</span></label>
+          <label class="seg__opt"><input type="radio" name="regmode" value="pick"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><span>직접 고르기</span></label>
+        </div>
+        <p class="seg__hint seg__hint--roulette">룰렛은 그해 <span class="keep-phrase">시·도별</span> 출생아·인구 비율대로 돌아요.</p>
+      </fieldset>
+      <fieldset class="slot slot--small">
+        <legend class="group-title group-title--inline">인생 길이</legend>
+        <div class="seg" role="radiogroup" aria-label="인생 길이">
+          <label class="seg__opt is-selected"><input type="radio" name="len" checked><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><span>약 30분</span><span class="sr-only">선택됨</span></label>
+          <label class="seg__opt is-disabled"><input type="radio" name="len" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><span>약 1시간</span><span class="seg__meta">준비 중</span></label>
+        </div>
+        <p class="seg__hint">평균 수명까지 사는 시간이에요. 생각을 적는 시간은 뺐고, 나가도 <span class="keep-phrase">이 기기에</span> 남아요.</p>
+      </fieldset>
+      <div class="slot slot--setting">
+        <button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="gentle-name" aria-describedby="gentle-desc">
+          <span class="switch__track" aria-hidden="true"><span class="switch__thumb"></span></span>
+          <span class="switch__text"><span class="switch__name" id="gentle-name">무거운 장면 가리기</span><span class="switch__state" aria-hidden="true">꺼짐</span><span class="switch__desc" id="gentle-desc">아픈 일이나 이별 같은 장면의 글만 가려요. 일어나는 일은 같아요.</span></span>
+        </button>
+      </div>
+      <div class="slot slot--setting">
+        <details class="disclosure origin" id="origin"><summary>내가 실제로 태어난 시도 <span class="tag origin__cur">밝히지 않음</span></summary>
+          <div class="origin__body"><label><span class="sr-only">내가 실제로 태어난 시도</span><select class="origin__select"><option>밝히지 않음</option><option>서울</option><option>부산</option><option>경기</option></select></label><button type="button" class="btn btn--ghost btn--sm">지우기</button><p class="origin__desc">이 기기에만 남고 밖으로 나가지 않아요.</p></div>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <aside class="title__side">
+    <section class="card carousel carousel--005" aria-roledescription="캐러셀" aria-label="한국 사회 통계 캐러셀">
+      <h2 class="sr-only">한국 사회 통계</h2>
+      <div class="carousel__nav">
+        <button class="nav-btn carousel__prev" type="button" aria-label="이전 지표"><span class="nav-btn__box"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg></span></button>
+        <span class="carousel__status num" aria-hidden="true">1 / 21</span>
+        <button class="nav-btn carousel__next" type="button" aria-label="다음 지표"><span class="nav-btn__box"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-forward"/></svg></span></button>
+        <button class="nav-btn carousel__pause" type="button" aria-label="자동 넘김 일시정지"><span class="nav-btn__box"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-pause"/></svg></span></button>
+      </div>
+      <div class="carousel__viewport" role="group" tabindex="0" aria-label="통계 슬라이드. 왼쪽·오른쪽 화살표 키로 넘길 수 있습니다.">
+        <div class="slides">
+          <article class="slide slide--gen is-active" aria-roledescription="슬라이드" aria-label="1/21 고른 세대는 한 해에 몇 명이 태어났을까?, 출생아 수(1970~2020년)">
+            <h3 class="slide__insight">고른 세대는 한 해에 몇 명이 태어났을까?</h3>
+            <p class="slide__official gen-chart__gen"><b>어느 세대든</b> · 1940~2020년생</p>
+            <p class="slide__value num"><span class="slide__num">64만<span class="slide__unit">명</span></span></p>
+            <p class="gen-chart__bigsub">한 해 평균 · 1970~2020년</p>
+            <!-- 시안용 정적 그림: 구현은 koreaStats.json 의 1970~2020년 51점을 그린다. 여기서는 1970·71·75·80·85·90·95·2000·05·10·15·20년 12점(국가데이터처 인구동향조사 출생아 수)만 — 모양 비교용 -->
+            <svg class="gchart" viewBox="0 0 460 220" role="img" aria-label="출생아 수 1970~2020년 꺾은선 그래프. 1971년 102만 명에서 2020년 27만 명으로 줄어듦">
+              <g class="grid"><line x1="44" y1="30" x2="450" y2="30"/><line x1="44" y1="80" x2="450" y2="80"/><line x1="44" y1="130" x2="450" y2="130"/></g>
+              <line class="axis" x1="44" y1="180" x2="450" y2="180"/>
+              <g><text x="38" y="34" text-anchor="end">120만</text><text x="38" y="84" text-anchor="end">80만</text><text x="38" y="134" text-anchor="end">40만</text><text x="38" y="184" text-anchor="end">0</text></g>
+              <text class="gchart__none" x="70" y="166">연간 통계 없음</text>
+              <path class="gchart__line gchart__line--span" d="M196 54 L201 52 L221 71 L246 72 L271 98 L297 99 L322 91 L348 100 L373 125 L399 121 L424 126 L450 146"/>
+              <circle class="gchart__dot" cx="201" cy="52" r="4"/>
+              <text class="gchart__peak" x="178" y="44">1971년 102만</text>
+              <g><text x="80" y="206" text-anchor="middle">1940</text><text x="181" y="206" text-anchor="middle">1960</text><text x="297" y="206" text-anchor="middle">1980</text><text x="399" y="206" text-anchor="middle">2000</text><text x="440" y="206" text-anchor="middle">2020</text></g>
+            </svg>
+            <dl class="gen-chart__nums"><div><dt>올해 나이</dt><dd><span class="gen-chart__val num">6~86세</span></dd></div><div><dt>태어난 해의 기대수명</dt><dd><span class="gen-chart__val num">62.3~83.5세</span><small>1970·2020년생</small></dd></div></dl>
+            <details class="gen-chart__table"><summary>표로 보기</summary></details>
+            <p class="slide__meta">출처: 국가데이터처 인구동향조사 출생아 수(1970~2020년)와 생명표 기대수명(1970~2024년), 2026-10-15 조회. 1969년까지는 공식 연간 출생 통계가 없어 비워 두었어요.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <footer class="title-foot title-foot--r4">
+    <div class="foot-cols">
+      <section><h2>이 게임은</h2><p>태어날 집도, 땅도, 해도 고를 수 없는 한국 인생 시뮬레이션이에요. 룰렛이 정한 집안 형편과 시대 속에서 한 사람의 삶을 해마다 따라가며, 출발선의 차이가 선택과 결과에 어떻게 닿는지 느껴 봐요.</p></section>
+      <section><h2>왜 만들었나</h2><p>「80억분의 1」을 한국 사정에 맞게 다시 만들어 보고 싶었어요. 부모와 자녀, 이웃 세대가 서로의 시절을 살아 보며 이야기 나누고 서로를 이해하길 바라며 만들었어요. 「80억분의 1」과는 관계없는 개인 프로젝트예요.</p></section>
+      <section><h2>무엇이 실제 자료인가</h2><p>통계 그래프와 태어날 때의 바탕 수치는 국가데이터처, 행정안전부, 교육부, 기상청의 공개 자료에서 옮겼어요. 수저 단계가 나올 확률, 선택지의 효과 같은 게임 속 확률과 수치는 게임을 위해 정한 설계값이에요. 사연과 인물은 만들어 낸 이야기예요.</p></section>
+    </div>
+    <p class="foot-small foot-links"><a href="#">소개</a> <span aria-hidden="true">·</span> <a href="#">개인정보 처리방침</a> <span aria-hidden="true">·</span> <a href="#">이용 안내</a> <span aria-hidden="true">·</span> <a href="#">새 소식</a></p>
+    <p class="foot-small foot-op"><span class="nowrap">운영자 cottonchild</span> <span aria-hidden="true">·</span> <span class="num">v0.5.1</span></p>
+    <p class="foot-small"><span class="mock-tag">시안 — 머리 로고만 비교. 통계 카드의 그림은 간추린 정적 그림, 하단은 줄였음</span></p>
+  </footer>
+</div>
+<div class="page-end-space"></div>
+<div class="bottom-bar"><button class="btn btn--primary btn--lg" type="button">태어나기</button></div>
+
+<!-- ── ?v=link: 머리글 로고 링크 네 상태 + 첫 화면(링크 아님) -->
+<section class="states" aria-label="로고 링크 상태">
+  <h1>머리글 로고 링크 — 상태</h1>
+  <p>첫 화면 밖 모든 화면의 머리글(룰렛·출생신고·인생·엔딩·밀린 화면·오류 화면). 로고 색은 바꾸지 않고 뒤 면과 링으로 상태를 보인다. 접근 이름 「수저 게임, 첫 화면으로」. 누르면 확인 없이 첫 화면으로.</p>
+  <div class="state"><span class="state__name">기본</span><header class="site-head"><a class="logo-link" href="#" aria-label="수저 게임, 첫 화면으로"><span class="logo-wrap logo--header" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" focusable="false"><use href="#logo-header-sym"/></svg></span></a><span class="site-head__name">인생</span></header></div>
+  <div class="state"><span class="state__name">호버</span><header class="site-head"><a class="logo-link is-hover" href="#" aria-label="수저 게임, 첫 화면으로"><span class="logo-wrap logo--header" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" focusable="false"><use href="#logo-header-sym"/></svg></span></a><span class="site-head__name">인생</span></header></div>
+  <div class="state"><span class="state__name">키보드 포커스</span><header class="site-head"><a class="logo-link is-focus" href="#" aria-label="수저 게임, 첫 화면으로"><span class="logo-wrap logo--header" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" focusable="false"><use href="#logo-header-sym"/></svg></span></a><span class="site-head__name">인생</span></header></div>
+  <div class="state"><span class="state__name">누름</span><header class="site-head"><a class="logo-link is-active" href="#" aria-label="수저 게임, 첫 화면으로"><span class="logo-wrap logo--header" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.1 128" focusable="false"><use href="#logo-header-sym"/></svg></span></a><span class="site-head__name">인생</span></header></div>
+  <div class="state"><span class="state__name">첫 화면(링크 아님)</span><header class="hero hero--005"><h1><span class="sr-only">수저 게임</span><span class="logo-wrap logo--row" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 443.8 128" focusable="false"><use href="#logo-row-sym"/></svg></span></h1><p class="hero__tag">다른 세대, 다른 삶, 같은 대한민국</p></header></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+    <symbol id="logo-header-sym" viewBox="0 0 464.1 128"><path transform="translate(-15.4 -4.1) scale(0.2631)" d="M393.9 41.5C454.7 84.1 471.3 154.2 422.9 223.4C369.6 299.5 303.9 308.6 259 290.8C247 295 238.5 301.5 226.8 318.3L156.8 423.8C136.2 453.3 146.2 471.2 137.6 483.5C123.8 503.2 96.6 508 77 494.2C57.3 480.4 52.5 453.3 66.3 433.6C74.9 421.3 95.2 424.6 115.9 395.1L191 293.3C202.8 276.5 206 266.3 205.9 253.6C173.8 217.5 159.9 152.7 213.1 76.6C261.6 7.4 333.2 -1 393.9 41.5ZM258.36 127.39C260.26 135.17 264.94 143.97 269.4 152.87C273.86 161.76 281.6 170.43 285.11 180.77C288.62 191.12 287.55 203.89 290.45 214.95C293.36 226.01 295.66 242.17 302.52 247.15C309.37 252.13 323.86 249.87 331.59 244.84C339.32 239.8 347.09 228.65 348.9 216.93C350.72 205.21 344.91 189.11 342.45 174.5C339.99 159.9 332.56 144.63 334.13 129.31C335.69 113.99 347.51 96.74 351.84 82.59C356.18 68.44 363.92 50.06 360.12 44.4C356.32 38.74 341.36 43.22 329.05 48.64C316.74 54.05 298.12 67.3 286.27 76.88C274.42 86.47 262.61 97.73 257.96 106.15C253.3 114.56 256.45 119.6 258.36 127.39Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(121.236 23.04) scale(0.819)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></symbol>
+    <symbol id="logo-row-sym" viewBox="0 0 443.8 128"><path transform="translate(-11.1 -6) scale(0.2566)" d="M386.6 45.7C438.4 81.9 452.5 141.6 411.3 200.5C365.9 265.3 310 273 269 256.1C258.9 259.6 251.7 265.1 241.6 279.5L148.8 415.9C113.6 466.2 117.2 487.4 102.5 508.4C92.2 523.2 71.8 526.8 57 516.4C42.2 506.1 38.7 485.7 49 470.9C63.7 449.9 84.9 446.1 120.1 395.8L216.5 261.9C226.6 247.6 229.4 238.9 229.2 228.2C199.2 195.5 187.3 140.3 232.7 75.5C274 16.6 334.9 9.4 386.6 45.7ZM265.74 104.44C267.49 105.89 269.96 107.33 271 109.19C272.03 111.04 271.6 113.57 271.95 115.57C272.3 117.58 273.47 119.33 273.08 121.23C272.69 123.12 270.63 124.86 269.61 126.94C268.59 129.03 266.68 131.92 266.95 133.72C267.22 135.53 269.36 137.29 271.23 137.76C273.1 138.23 275.9 136.38 278.19 136.55C280.48 136.71 283.19 137.75 284.98 138.75C286.77 139.74 287.81 141.01 288.93 142.52C290.06 144.03 291.14 146.1 291.74 147.8C292.33 149.51 293.12 151.61 292.52 152.75C291.92 153.89 289.31 153.63 288.14 154.66C286.97 155.68 285.51 157.3 285.5 158.91C285.5 160.51 287.37 162.48 288.13 164.3C288.89 166.11 289.88 167.94 290.07 169.79C290.26 171.65 289.66 173.42 289.28 175.4C288.89 177.39 288.3 179.59 287.74 181.71C287.19 183.83 286.05 185.98 285.97 188.12C285.88 190.27 287 192.49 287.23 194.58C287.47 196.67 286.79 199.4 287.38 200.68C287.96 201.96 289.25 202.37 290.73 202.28C292.2 202.19 294.36 200.84 296.24 200.15C298.13 199.45 300.09 198.87 302.02 198.09C303.95 197.31 305.87 196.32 307.8 195.45C309.72 194.59 311.66 193.57 313.57 192.92C315.49 192.28 317.49 192.22 319.26 191.57C321.04 190.92 322.79 189.97 324.23 189.04C325.67 188.1 326.84 187.35 327.9 185.96C328.95 184.57 329.81 182.56 330.55 180.68C331.29 178.81 332.08 176.42 332.33 174.71C332.57 172.99 332.2 172.13 332.03 170.38C331.85 168.63 331.49 166.42 331.26 164.19C331.04 161.95 331.13 159.39 330.68 156.96C330.23 154.54 329.5 152.1 328.57 149.63C327.63 147.17 326.35 144.79 325.08 142.19C323.8 139.6 322.52 136.79 320.93 134.05C319.33 131.32 317.55 128.48 315.52 125.81C313.48 123.13 310.66 120.19 308.69 118C306.72 115.81 304.25 114.69 303.7 112.65C303.14 110.61 304.12 107.99 305.34 105.76C306.56 103.52 308.7 101.41 311.03 99.23C313.37 97.06 316.58 95.05 319.35 92.71C322.12 90.36 325.31 88.01 327.67 85.16C330.03 82.3 331.84 78.61 333.53 75.58C335.23 72.55 336.05 69.55 337.84 66.99C339.63 64.43 342.6 62.14 344.28 60.22C345.96 58.31 347.89 57.58 347.92 55.5C347.95 53.42 345.99 49.4 344.45 47.77C342.91 46.13 340.83 44.77 338.68 45.68C336.52 46.58 334.13 50.79 331.54 53.19C328.96 55.59 326.43 58.41 323.16 60.08C319.9 61.76 315.23 61.76 311.93 63.24C308.63 64.71 306.23 67.76 303.38 68.92C300.52 70.08 297.7 68.75 294.8 70.2C291.9 71.65 289.07 75.46 285.96 77.6C282.84 79.75 279.3 80.9 276.11 83.07C272.92 85.23 269.41 87.66 266.81 90.57C264.21 93.49 260.69 98.22 260.51 100.54C260.33 102.85 263.99 103 265.74 104.44ZM282.8 219.6a6.9 4.2 0 1 0 13.9 0a6.9 4.2 0 1 0 -13.9 0ZM349.8 144.1a2.7 2.7 0 1 0 5.5 0a2.7 2.7 0 1 0 -5.5 0ZM364.9 148.9a1.6 1.6 0 1 0 3.3 0a1.6 1.6 0 1 0 -3.3 0Z" fill-rule="nonzero" style="fill:var(--c-logo,#26324A)"/><g transform="translate(122.411 25.6) scale(0.768)" fill="none" style="stroke:var(--c-logo,#26324A)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><g><path d="M50 13C47 32 38 46 12 60"/><path d="M44 31C53 44 68 54 88 59"/><path d="M12 74H88"/><path d="M50 74V90"/></g><g transform="translate(100 0)"><path d="M11 24H51"/><path d="M31 27C30 42 25 54 11 64"/><path d="M30 41C37 52 44 58 52 64"/><path d="M84 13V90"/><path d="M62 54H82"/></g><g transform="translate(220 0)"><path d="M11 26H40V72"/><path d="M50 52H63"/><path d="M64 13V90"/><path d="M88 13V90"/></g><g transform="translate(316 0)"><path d="M15 29a16 16 0 1 0 32 0a16 16 0 1 0 -32 0Z"/><path d="M84 13V50"/><path d="M14 62H84V92H14Z"/></g></g></symbol>
+  </defs></svg>
+</section>
+</div>
+</body>
+</html>
