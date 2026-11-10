@@ -284,16 +284,19 @@ describe('CSS 규칙 (family-scene.md 5-1절, SPEC-016 H4 개정 — 집 그림 
   });
   it('SPEC-016 H4 r2 높이 맞춤: PC(≥ 960px)에서만 시대의 창 카드가 `--era-card-h`(집 카드의 실제 높이)를 받고, 그림은 남는 높이에 맞춰 5:4 그대로 줄어 가운데에 선다 · 변수가 없으면(data-paired 없음) 자연 높이 그대로 · 휴대폰 80px 띠는 건드리지 않는다 · LifeScreen이 훅을 부른다', async () => {
     const css = await readText('../src/styles/family.css');
-    const pcStart = css.indexOf('@media (min-width: 960px) {\n  .era-card[data-paired');
+    const pcStart = css.indexOf('@media (min-width: 960px) {\n  /*');
     expect(pcStart).toBeGreaterThan(-1);
-    const pc = css.slice(pcStart, css.indexOf('\n}', pcStart) + 2);
+    const supportsAt = css.indexOf('  @supports (width: 1cqw) {\n', pcStart);
+    expect(supportsAt, '컨테이너 단위(cqw)는 @supports (width: 1cqw) 안에만 있다(모르는 브라우저는 규칙 전체가 빠져 자연 높이 — e2e-prod smoke ⑤)').toBeGreaterThan(pcStart);
+    const pc = css.slice(supportsAt, css.indexOf('\n  }', supportsAt) + 4);
     expect(pc).toBe(
-      '@media (min-width: 960px) {\n' +
-        "  .era-card[data-paired='true'] { display: flex; flex-direction: column; height: var(--era-card-h); }\n" +
-        "  .era-card[data-paired='true'] > .era { flex: 1 1 0; min-height: 0; container-type: size; grid-template-rows: minmax(0, 1fr) minmax(var(--era-cap-min), auto); }\n" +
-        "  .era-card[data-paired='true'] .era__pic { width: auto; height: min(100%, 80cqw); aspect-ratio: 5 / 4; justify-self: center; }\n" +
-        '}',
+      '  @supports (width: 1cqw) {\n' +
+        "    .era-card[data-paired='true'] { display: flex; flex-direction: column; height: var(--era-card-h); }\n" +
+        "    .era-card[data-paired='true'] > .era { flex: 1 1 0; min-height: 0; container-type: size; grid-template-rows: minmax(0, 1fr) minmax(var(--era-cap-min), auto); }\n" +
+        "    .era-card[data-paired='true'] .era__pic { width: auto; height: min(100%, 80cqw); aspect-ratio: 5 / 4; justify-self: center; }\n" +
+        '  }',
     ); // 캡션 두 줄 예약(--era-cap-min)은 그대로, 비율 5/4 고정(자르지 않는다), 변수가 없으면 이 규칙은 닿지 않는다
+    expect(css.slice(css.indexOf('/* PC(≥ 960px)에서 시대의 창 카드의 높이'), supportsAt).replace(/\/\*[^]*?\*\//g, ''), '@supports 밖에는 선언이 없다').not.toMatch(/cqw|container-type|--era-card-h/);
     const phoneStart = css.indexOf('@media (max-width: 959px) {\n  .era-card');
     expect(phoneStart).toBeGreaterThan(-1);
     expect(css.slice(phoneStart, css.indexOf('\n}', phoneStart) + 2)).not.toContain('--era-card-h'); // 휴대폰 규칙은 높이 맞춤과 무관하다
