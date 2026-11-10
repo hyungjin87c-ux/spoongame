@@ -35,11 +35,10 @@ export function usePairedEraHeight(rootRef: RefObject<HTMLElement>): void {
       era.setAttribute('data-paired', 'true');
     };
     sync();
-    if (typeof ResizeObserver === 'undefined') return;
-    const watch = new ResizeObserver(sync);
-    watch.observe(scene);
+    const watch = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(sync);
+    if (watch !== null) watch.observe(scene);
     return () => {
-      watch.disconnect();
+      if (watch !== null) watch.disconnect();
       era.style.removeProperty('--era-card-h');
       era.removeAttribute('data-paired');
     };

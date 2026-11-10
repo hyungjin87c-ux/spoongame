@@ -99,7 +99,7 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
 /* BGM 볼륨 (SPEC-016 H5, Q7 — 형진 님 2026-11-10): 도구 줄 안 BGM 칸 바로 오른쪽의 작은 막대 + 숫자(BGM이 켜졌을 때만 있다). 예전에는 도구 줄 아래 한 줄(`flex-basis: 100%`)이었다. 이름 「BGM 볼륨」은 읽기 전용 글자(`.sr-only`)이고 눈에 보이는 글자는 숫자뿐이다.
    막대 폭 5.5rem(글자를 키우면 같이 커진다), 숫자 칸 2.6em(「100%」가 들어간다 — tabular-nums). 줄 높이는 버튼이 정한다: 막대는 가운데 정렬(`align-self`)이라 줄이 높아지지 않는다. 나가기 확인 단계(`.exit-ask`)는 아래 별도 줄 그대로. */
 .volume { display: flex; flex: none; align-items: center; align-self: center; gap: var(--sp-2); font-size: var(--fs-sm); }
-.volume input[type='range'] { flex: none; width: 5.5rem; min-width: 0; margin: 0; min-height: 24px; accent-color: var(--c-brand); }
+.volume input[type='range'] { flex: none; width: 5.5rem; min-width: 0; margin: calc((24px - var(--hit)) / 2) 0; min-height: var(--hit); accent-color: var(--c-brand); }
 .volume output { min-width: 2.6em; text-align: right; font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
 .exit-ask { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); }
 .exit-ask__title { font-weight: var(--fw-bold); }
