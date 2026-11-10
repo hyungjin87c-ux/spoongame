@@ -541,7 +541,7 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
   .dash-head__top { flex: none; }
   .year-row { flex: 1; }
   .toolbar__inner { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4); }
-  .toolbar__inner > .volume, .toolbar__inner > .exit-ask { flex-basis: 100%; }
+  .toolbar__inner > .exit-ask { flex-basis: 100%; }
   .controls-fixed { flex-direction: row; align-items: center; gap: var(--sp-3); }
   /* 넓은 화면: 진행 줄은 도구 줄 안의 보통 행 — 버튼은 자연 폭(좁은 화면의 flex-basis 0 분배를 푼다) */
   .controls__speed { display: flex; gap: var(--ctl-gap); }

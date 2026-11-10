@@ -129,6 +129,23 @@ describe('새 소식 데이터 (NT3)', () => {
   });
 });
 
+describe('v0.5.1 새 소식 (SPEC-016 — copy.md 13-2 v0.5.1, 마스터 지정 날짜 2026-11-10)', () => {
+  it('요약과 항목 넷이 copy.md 13-2 v0.5.1 표와 글자 그대로 같고(종류 포함) 날짜는 2026-11-10이며 버전은 package.json과 같다', () => {
+    const sec = copyMd.slice(copyMd.indexOf('### 13-2.'), copyMd.indexOf('### 13-3.'));
+    const start = sec.indexOf('**v0.5.1**');
+    const next = sec.slice(start + 10).search(/\*\*v0\.\d+\.\d+\*\*/);
+    const block = sec.slice(start, next < 0 ? undefined : start + 10 + next);
+    expect(block.length, 'copy.md 13-2에 v0.5.1 블록이 있다').toBeGreaterThan(100);
+    const v = noteOf('0.5.1') as ReleaseNote;
+    expect(block).toContain(`요약 **「${v.summary}」**`);
+    const kindOf: Record<string, string> = { 추가: 'new', 개선: 'better', 수정: 'fixed', 내용: 'content' };
+    const rows = [...block.matchAll(/^\| \d \| (추가|개선|수정|내용) \| (.+?) \| \d+ \|/gm)].map((m) => ({ kind: kindOf[m[1]], text: m[2] }));
+    expect(rows, 'copy.md v0.5.1 표').toHaveLength(4);
+    expect(v.items).toEqual(rows);
+    expect(v.date).toBe('2026-11-10');
+  });
+});
+
 describe('v0.5.0 새 소식 (v0.5.0 배포 — copy.md 13-2 v0.5.0, 형진 님 2026-11-10 승인 · 결정 로그 후속 219)', () => {
   it('요약과 항목 여덟이 copy.md 13-2 v0.5.0 표와 글자 그대로 같고(종류 포함) 날짜는 2026-11-10이며 버전은 package.json과 같다', () => {
     const sec = copyMd.slice(copyMd.indexOf('### 13-2.'), copyMd.indexOf('### 13-3.'));

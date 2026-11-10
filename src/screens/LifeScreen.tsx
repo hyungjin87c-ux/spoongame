@@ -13,6 +13,7 @@ import { LogCard } from '../ui/dash/LogCard';
 import { ParentCard, useParentCardModel } from '../ui/dash/ParentCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
 import { EraCard, SceneCard } from '../ui/scene/SceneCard';
+import { usePairedEraHeight } from '../ui/scene/usePairedEraHeight';
 import { useSceneArt } from '../ui/scene/useFamilyArt';
 import { Glue } from '../ui/Glue';
 import { useExitAskFit, useForceReleaseRef } from '../ui/exitAsk';
@@ -306,6 +307,7 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
   const choiceTitleRef = useRef<HTMLHeadingElement>(null);
   const foldOpenRef = useRef<HTMLButtonElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
+  const dashRef = useRef<HTMLElement>(null);
   const exitButtonRef = useRef<HTMLButtonElement>(null);
   const noteButtonRef = useRef<HTMLButtonElement>(null);
   const exitCancelRef = useRef<HTMLButtonElement>(null);
@@ -315,6 +317,8 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
   const dark = isDarkApplied(settings.theme, systemDark);
   useThemeSurface();
   useScrollTopOnMount();
+  // PC(≥ 960px): 시대의 창 카드 높이 = 집과 가족 그림 카드 높이 (SPEC-016 H4 r2) — 집 카드의 실제 높이를 재서 CSS 변수로 알린다
+  usePairedEraHeight(dashRef);
   // 나가기 확인 단계가 열려 있을 때 안내문 첫 줄~「돌아가기」와 고정 요소(헤더·진행 줄)가 한 화면에 못 들어가면 두 고정 요소를 푼다(QA-003-M4 O03, ui/exitAsk.ts)
   const forceRelease = useForceReleaseRef();
   const bottomBar = useBottomBar(controlsRef, forceRelease);
@@ -480,7 +484,7 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
         </div>
       </div>
 
-      <main className="dash" {...inert}>
+      <main className="dash" ref={dashRef} {...inert}>
         <div className="col col--left">
           <ProfileCard game={game} />
           <StatusCard stats={game.stats} generation={game.generation} />

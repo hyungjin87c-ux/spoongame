@@ -202,8 +202,9 @@ test('자동 모드로 끝까지 진행해 사망(엔딩 화면)에 도달하고
   expect(save.data.death).not.toBeNull();
   expect(save.data).toEqual(await oracleAuto(page, start));
   await expect(page.getByTestId('ending-death')).toContainText(`${save.data.death!.age}세`);
-  // 엔딩 화면의 버튼은 "다시 태어나기" 하나뿐이다 (엔딩 자체의 검증은 e2e/ending.spec.ts)
-  await expect(page.getByRole('button')).toHaveCount(1);
+  // 엔딩 화면의 버튼은 머리글 로고(SPEC-016 H1 — 누르면 확인 단계) + "다시 태어나기" 둘뿐이다 (엔딩 자체의 검증은 e2e/ending.spec.ts)
+  await expect(page.getByRole('button')).toHaveCount(2);
+  await expect(page.getByTestId('logo-home')).toHaveCount(1);
   await expect(page.getByTestId('rebirth')).toHaveText('다시 태어나기');
   expect(await noHorizontalOverflow(page)).toBe(true);
   expect(countKind(save, 'death')).toBe(1);

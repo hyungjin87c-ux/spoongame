@@ -89,14 +89,16 @@ test('배치(SPEC-016 H4·Q5): 집 그림은 카드 전폭(비율 640/256, 높�
   }
   const family = await box(page, '[data-testid="family-card"]');
   if (card.width > 480 && page.viewportSize()!.width >= 960) {
-    // PC 3열: 시대의 창 카드가 오른쪽 열 맨 위, 식구 카드 위. 그림이 칸 폭을 다 쓰고 5:4다
+    // PC 3열: 시대의 창 카드가 오른쪽 열 맨 위, 식구 카드 위. 그림은 5:4다(폭은 집 카드와 같아지도록 남는 높이에 맞춘다)
     expect(eraCard.x, '시대의 창 카드는 가운데 열 오른쪽').toBeGreaterThan(card.x + card.width - 1);
     expect(Math.abs(eraCard.x - family.x), '식구 카드와 같은 열').toBeLessThan(1);
     expect(Math.abs(eraCard.width - family.width), '식구 카드와 같은 폭').toBeLessThan(1);
     expect(eraCard.y + eraCard.height, '식구 카드 위').toBeLessThanOrEqual(family.y + 1);
     expect(family.y - (eraCard.y + eraCard.height), '식구 카드 바로 위(카드 간격)').toBeLessThan(24);
     const pic = await box(page, '#scene-era .era__pic');
-    expect(Math.abs(pic.width - (eraCard.width - 2)), '그림이 카드 폭을 다 쓴다').toBeLessThan(1);
+    // 높이 맞춤(SPEC-016 H4 r2): 시대의 창 카드가 집 카드와 같은 높이가 되어 그림은 남는 높이에 맞춰 5:4 그대로 줄고 가운데에 선다(폭 ≤ 카드 폭 — 상세는 e2e/era-card-height.spec.ts)
+    expect(pic.width, '그림이 카드 폭 안').toBeLessThanOrEqual(eraCard.width - 2 + 1);
+    expect(Math.abs(eraCard.height - card.height), '두 카드 높이가 같다').toBeLessThanOrEqual(1);
     expect(Math.abs(pic.width / pic.height - 1.25), '그림 5:4').toBeLessThan(0.05);
     expect(era.width, '창(링크)도 카드 폭').toBeGreaterThan(eraCard.width - 4);
   } else {

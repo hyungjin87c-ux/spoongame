@@ -244,6 +244,18 @@ describe('가운데 열 순서와 설정 (FH1) — 결정 카드 → 집과 가�
     expect(screen(life(12, 'alpha', 4), { sceneFold: true })).toContain('data-fold="true"');
     expect(screen(life(12, 'alpha', 4))).toContain('data-fold="false"');
   });
+  it('SPEC-016 H4: 시대의 창(#scene-era)은 인생 화면에 한 번만 있고 집과 가족 그림 카드 안이 아니라 오른쪽 열 맨 위(식구 카드 앞)에 있다 — 접어도 같다', () => {
+    for (const sceneFold of [false, true]) {
+      const out = screen(life(12, 'alpha', 4), { sceneFold });
+      expect((out.match(/id="scene-era"/g) ?? []).length, `sceneFold=${sceneFold}`).toBe(1);
+      const house = out.slice(out.indexOf('data-testid="family-scene"'), out.indexOf('data-testid="log"'));
+      expect(house).not.toContain('scene-era');
+      const right = out.slice(out.indexOf('col col--right'));
+      const era = right.indexOf('data-testid="era-card"');
+      expect(era).toBeGreaterThan(-1);
+      expect(era).toBeLessThan(right.indexOf('data-testid="family-card"'));
+    }
+  });
 });
 
 describe('CSS 규칙 (family-scene.md 5-1절, SPEC-016 H4 개정 — 집 그림 전폭·비율 640/256·25vh · 시대의 창 따로 카드(PC 5:4 큰 그림 · 휴대폰 80px 띠) · 접기 · 움직임 줄이기)', () => {
@@ -269,6 +281,28 @@ describe('CSS 규칙 (family-scene.md 5-1절, SPEC-016 H4 개정 — 집 그림 
     expect(css).not.toMatch(/\.era-card\[data-fold/);
     expect(css).toContain(".scene-card[data-fold='true'] .scene { display: none; }");
     expect(css).toContain('.scene-card { padding-top: 0; overflow: hidden; container-type: inline-size; container-name: scene; }');
+  });
+  it('SPEC-016 H4 r2 높이 맞춤: PC(≥ 960px)에서만 시대의 창 카드가 `--era-card-h`(집 카드의 실제 높이)를 받고, 그림은 남는 높이에 맞춰 5:4 그대로 줄어 가운데에 선다 · 변수가 없으면(data-paired 없음) 자연 높이 그대로 · 휴대폰 80px 띠는 건드리지 않는다 · LifeScreen이 훅을 부른다', async () => {
+    const css = await readText('../src/styles/family.css');
+    const pcStart = css.indexOf('@media (min-width: 960px) {\n  .era-card[data-paired');
+    expect(pcStart).toBeGreaterThan(-1);
+    const pc = css.slice(pcStart, css.indexOf('\n}', pcStart) + 2);
+    expect(pc).toBe(
+      '@media (min-width: 960px) {\n' +
+        "  .era-card[data-paired='true'] { display: flex; flex-direction: column; height: var(--era-card-h); }\n" +
+        "  .era-card[data-paired='true'] > .era { flex: 1 1 0; min-height: 0; container-type: size; grid-template-rows: minmax(0, 1fr) minmax(var(--era-cap-min), auto); }\n" +
+        "  .era-card[data-paired='true'] .era__pic { width: auto; height: min(100%, 80cqw); aspect-ratio: 5 / 4; justify-self: center; }\n" +
+        '}',
+    ); // 캡션 두 줄 예약(--era-cap-min)은 그대로, 비율 5/4 고정(자르지 않는다), 변수가 없으면 이 규칙은 닿지 않는다
+    const phoneStart = css.indexOf('@media (max-width: 959px) {\n  .era-card');
+    expect(phoneStart).toBeGreaterThan(-1);
+    expect(css.slice(phoneStart, css.indexOf('\n}', phoneStart) + 2)).not.toContain('--era-card-h'); // 휴대폰 규칙은 높이 맞춤과 무관하다
+    const hook = await readText('../src/ui/scene/usePairedEraHeight.ts');
+    expect(hook).toContain("era.style.setProperty('--era-card-h'");
+    expect(hook).toContain("scene.setAttribute('data-fold', 'false')"); // 접힌 채여도 펼친 때의 높이를 잰다(Q6)
+    const life = await readText('../src/screens/LifeScreen.tsx');
+    expect(life).toContain('usePairedEraHeight(dashRef);');
+    expect(life).toContain('ref={dashRef}');
   });
   it('움직임 줄이기: 교차 페이드와 줄 강조 애니메이션이 media(prefers-reduced-motion)와 data-motion="reduce" 둘 다에서 꺼진다(강조 면만 남는다)', async () => {
     const css = await readText('../src/styles/family.css');
