@@ -619,11 +619,14 @@
 - [x] R-676 조르기 카드에 `ImpactHint`(「…생기는 변화입니다」)가 나오는데 고정 한 줄 「들어주실지는 알 수 없습니다」는 변화가 아님 — designer ② 결정(copy.md 20-2), 조르기 카드만 첫 문장 교체 — 근거: src/data/impactText.ts#IMPACT_HINT.leadAsk, src/ui/dash/Impact.tsx#ImpactHint(ask), src/ui/dash/DecisionCard.tsx, tests/impactText.test.tsx, tests/askCardScreen.test.tsx
 
 ## SPEC-016 로고 홈 (확정 2026-11-10 형진 님, 배포 단위 v0.5.1 — 먼저 배포한 뒤 v0.5.0 플레이테스트. 명세: docs/spec/SPEC-016-로고홈.md · 기록: ai-log/2026-11-10_SPEC-016_spec.md — **체크는 검수·QA 뒤 마스터가 한다**)
-- [ ] H1 로고 → 첫 화면 링크(표준) — 룰렛·출생신고·인생은 기존 `openTitle` 재사용(묻지 않음) · 엔딩·밀린·오류 화면은 열린 질문 Q1·Q2 마스터 결정 후 · 룰렛 도중·출생신고·엔딩 상태는 작업자가 Q3 확인 표에 기록
-- [ ] H2 첫 화면 CI(표준 · 디자인 게이트) — designer 시안 2~3개 → 형진 님 선택 → 구현 · 첫 화면 로고 누름은 기본 「아무 일 없음」(Q4)
-- [ ] H3 검수(sonnet)·QA(해당 화면, src 변경이 끝난 뒤)·새 소식 v0.5.1(designer)·배포 v0.5.1(표준) — H1·H2·H4·H5를 한 회차에 묶는다
-- [ ] H4 시대의 창 따로 칸(표준, 형진 님 확정 2026-11-10 · 시안 없이 바로 구현, 배포 전 스크린샷 확인) — 집 그림 옆 작은 창을 떼어 PC 3열 오른쪽 열 맨 위(식구 위) 큰 칸 · 휴대폰은 집 그림 바로 아래 · 집·가족 그림은 높이 그대로 빈 자리만큼 넓게 · SPEC-013 캡션·빈 종이틀·가린 해·링크·접근 이름 유지 · 새 설정·저장 필드 없음
-- [ ] H5 BGM 볼륨 막대 위치(표준, 같은 확정) — 도구 줄 아래 한 줄 대신 BGM 버튼 바로 오른쪽에 작은 막대 + 숫자(%), BGM 켰을 때만 · 접근 이름 「BGM 볼륨」 유지 · 휴대폰 조작 줄 넘침 0
+- [x] H1 로고 → 첫 화면 링크(표준) — 룰렛·출생신고·인생은 기존 `openTitle` 재사용(묻지 않음) · 엔딩은 한 번 묻고 첫 화면(형진 님) · 밀린 화면은 그림 그대로 — 근거: src/ui/Brand.tsx#HeaderLogo, src/data/endingText.ts#ENDING_HOME_ASK, src/screens/EndingScreen.tsx, tests/logoHome.test.tsx "onHome이 있으면 로고는 버튼이고", e2e/logo-home.spec.ts "Space로도 열린다", docs/review/REV-016-1.md·REV-016-3.md, qa/reports/QA-016.md
+- [x] H2 첫 화면 CI(표준 · 디자인 게이트) — designer 시안 A·B·C → 형진 님 B(가로 결합 로고) → 구현 · 첫 화면 로고 누름은 「아무 일 없음」(Q4) — 근거: src/ui/brandAssets.ts#LOGO_ROW_SVG, docs/design/title-ci.md, e2e/logo-ci-era-bgm.spec.ts "글자 200% · 320px: 로고가 넘치지 않는다", qa/reports/QA-016.md
+- [ ] H3 검수(sonnet)·QA(해당 화면, src 변경이 끝난 뒤)·새 소식 v0.5.1(designer)·배포 v0.5.1(표준) — H1·H2·H4·H5를 한 회차에 묶는다 · 검수 docs/review/REV-016-1.md~REV-016-3.md APPROVED · QA qa/reports/QA-016.md PASS · 새 소식 src/data/releaseNotes.ts v0.5.1 — 배포 확인 뒤 체크
+- [x] H4 시대의 창 따로 칸(표준, 형진 님 확정 2026-11-10 · 시안 없이 바로 구현, 배포 전 스크린샷 확인) — 집 그림 옆 작은 창을 떼어 PC 3열 오른쪽 열 맨 위(식구 위) 큰 칸 · 휴대폰은 집 그림 바로 아래 · 집·가족 그림은 칸 폭만큼 넓게(PC 높이 140→200px, R-679 (A)) · PC 시대의 창 카드 높이 = 집 그림 카드(형진 님) · SPEC-013 캡션·빈 종이틀·가린 해·링크·접근 이름 유지 · 새 설정·저장 필드 없음 — 근거: src/ui/scene/SceneCard.tsx#EraCard, src/ui/scene/usePairedEraHeight.ts#usePairedEraHeight, tests/sceneCard.test.tsx "SPEC-016 H4: 시대의 창(#scene-era)은 인생 화면에 한 번만", e2e/era-card-height.spec.ts "사건 있는 해(1980)와 빈 해(1977)에서 시대의 창 카드의 높이가 같다", qa/reports/QA-016.md
+- [x] H5 BGM 볼륨 막대 위치(표준, 같은 확정) — PC는 BGM 버튼 바로 오른쪽에 작은 막대 + 숫자(%), BGM 켰을 때만 · 휴대폰은 도구 줄 아래 한 줄(형진 님) · 접근 이름 「BGM 볼륨」 유지 · 눌림 44px · 휴대폰 조작 줄 넘침 0 — 근거: src/styles/dash.css(.volume), src/screens/LifeScreen.tsx, e2e/bgm-volume-hit.spec.ts "360px 휴대폰: 볼륨 막대 눌림 영역은 그대로 44px 이상이다", qa/reports/QA-016.md 「재확인(762d014)」
+- [ ] (후속, 낮음) R-684 SPEC-016 완료 기준 19에 「함께 사는 사람」 펼침 중 높이 유지 문장 · `life-layout.spec.ts` → `e2e/era-card-height.spec.ts` 정정(기획자) — docs/review/REV-016-2.md
+- [ ] (후속, 낮음) REV-016-2 선택 제안: e2e/era-card-height.spec.ts 「그림 접기」에 scrollY 불변 단언 · copy.md 13-2 v0.5.1 3번 행 사실 칸 「높이 그대로」 정정 · REV-016-3: dash.css 휴대폰 볼륨 음수 margin 이유 주석
+- [ ] (후속, 낮음) R-681 (a) 휴대폰 Tab 순서(BGM → 막대 → 생각 남기기)가 시각 순서와 다름 — 알려진 한계
 
-## SPEC-017 엔딩 첫 장면 · 사망 기록 문서 · 공유 카드 (**초안 — 형진 님 확정 전**, 2026-11-10 형진 님 「지금 기획부터」 · 개발은 v0.5.0 플레이테스트 뒤 · SPEC-007에서 첫 묶음을 떼어 온 것. 명세: docs/spec/SPEC-017-엔딩첫장면과공유.md · 기록: ai-log/2026-11-10_SPEC-017_spec.md · 형진 님께 묻는 질문 Q1~Q10 명세 맨 아래)
+## SPEC-017 엔딩 첫 장면 · 사망 기록 문서 · 공유 카드 (**확정 2026-11-10** — Q9 다·나머지 추천대로, 후속 223 · v0.6.0 첫 장면+서류 / v0.6.1 공유 · CRITICAL 4건은 Codex 먼저, 2026-11-10 형진 님 「지금 기획부터」 · 개발은 v0.5.0 플레이테스트 뒤 · SPEC-007에서 첫 묶음을 떼어 온 것. 명세: docs/spec/SPEC-017-엔딩첫장면과공유.md · 기록: ai-log/2026-11-10_SPEC-017_spec.md · 형진 님께 묻는 질문 Q1~Q10 명세 맨 아래)
 - [ ] SPEC-017 초안 확정 대기 — E1 엔딩 첫 장면(표준·디자인 게이트) · E2 사망 기록 문서(표준·디자인 게이트) · E3 공유 카드 화면(표준·디자인 게이트) · E4 공유 모듈 지연 로딩·개인정보 0(정밀) · E5 검수·QA·배포(표준) — 삶의 유형·서버·추모관·원작 문구·사인 통계(같은 원인 비율)는 안 함
