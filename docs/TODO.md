@@ -617,3 +617,8 @@
 - [x] AP5 검수·QA·배포(표준) — 검수(sonnet) → QA(해당 화면) → 배포(opus 묶음 검수로 대신) — 근거: docs/review/REV-013-015-011-1.md(APPROVED), qa/reports/QA-013-015-011.md(PASS 30 · FAIL 0), npm run check:era-art(대기 0), src/data/releaseNotes.ts v0.5.0, package.json 0.5.0, main ffe18e7 Pages 배포 성공(2026-11-10, 라이브 번들에 0.5.0·ffe18e7 확인)
 - [ ] R-678 외모 둘째 문장이 4단계 수식구와 같은 낱말을 쓰는 경우(「이목구비가 반듯한 …」 뒤 「이마가 반듯합니다.」) — 플레이테스트 뒤 designer가 「단계 수식구와 같은 낱말의 둘째 문장 제외」 여부 결정(REV-013-015-011-1, `src/data/looksText.ts:34,78`, 지금 코드 그대로)
 - [x] R-676 조르기 카드에 `ImpactHint`(「…생기는 변화입니다」)가 나오는데 고정 한 줄 「들어주실지는 알 수 없습니다」는 변화가 아님 — designer ② 결정(copy.md 20-2), 조르기 카드만 첫 문장 교체 — 근거: src/data/impactText.ts#IMPACT_HINT.leadAsk, src/ui/dash/Impact.tsx#ImpactHint(ask), src/ui/dash/DecisionCard.tsx, tests/impactText.test.tsx, tests/askCardScreen.test.tsx
+
+## SPEC-016 로고 홈 (확정 2026-11-10 형진 님, 배포 단위 v0.5.1 — 먼저 배포한 뒤 v0.5.0 플레이테스트. 명세: docs/spec/SPEC-016-로고홈.md · 기록: ai-log/2026-11-10_SPEC-016_spec.md — **체크는 검수·QA 뒤 마스터가 한다**)
+- [ ] H1 로고 → 첫 화면 링크(표준) — 룰렛·출생신고·인생은 기존 `openTitle` 재사용(묻지 않음) · 엔딩·밀린·오류 화면은 열린 질문 Q1·Q2 마스터 결정 후 · 룰렛 도중·출생신고·엔딩 상태는 작업자가 Q3 확인 표에 기록
+- [ ] H2 첫 화면 CI(표준 · 디자인 게이트) — designer 시안 2~3개 → 형진 님 선택 → 구현 · 첫 화면 로고 누름은 기본 「아무 일 없음」(Q4)
+- [ ] H3 검수(sonnet)·QA(해당 화면, src 변경이 끝난 뒤)·새 소식 v0.5.1(designer)·배포 v0.5.1(표준)
