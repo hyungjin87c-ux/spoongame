@@ -142,6 +142,8 @@ function Node({ n }: { n: FaceNode }) {
 
 구현하면 `faceNodes`에 `era` 선택 인자를 더하고 `HAIR[era][ageGroup][gender]`를 읽게 하면 된다. 이번 SPEC 범위에는 없다.
 
+- **2026-11-10 후속(SPEC-018 후보, 결정 후속 225 Q8)**: 이 절의 「시대」 대신 **달력 10년대 × 나이대 × 성별** 표로 고르는 시안을 `face-v2.md`에 두었다(외모 단계 표현 안 A/B/C/AB·시대 유행 층·층 함수 구조·크기·지연 로드). 시안 `mockups/face-v2.html`, 생성기 `scripts/design/faceV2Lib.mjs`(현행 열은 이 파일의 `faceSvg`와 80조합 바이트 동일). 확정 전이라 `faceLayers.ts`는 그대로다.
+
 ## 9. 알려진 한계
 
 - 정면 평면 그림이라 표정은 한 가지(담담한 미소)다. 감정 변화를 보이고 싶다면 입 곡선만 바꾸는 `mood` 인자를 더하면 된다(범위 밖).
