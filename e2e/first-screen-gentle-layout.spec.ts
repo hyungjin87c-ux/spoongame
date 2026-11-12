@@ -54,7 +54,7 @@ for (const vp of [
       };
       for (const [k, v] of Object.entries(m)) expect(v, `${k}가 화면에 있다`).not.toBeNull();
       expect(await page.evaluate(() => scrollY), '스크롤 0').toBe(0);
-      // 복원(GM4 2차 ④): 설정 줄(스위치)·왼쪽 열 끝이 하단 띠 위에 든다 — 세대 목록 창(PC 하한 9rem · 100vh − 37.5rem = 200px)과 설정 둘(무거운 장면 가리기·내 출신 시도)을 한 줄에 놓은 값이다
+      // 복원(GM4 2차 ④): 설정 줄(스위치)·왼쪽 열 끝이 하단 띠 위에 든다 — 세대 목록 창(PC 하한 8rem · 100vh − 39rem = 176px — SPEC-016 로고 +24px 보정 뒤)과 설정 둘(무거운 장면 가리기·내 출신 시도)을 한 줄에 놓은 값이다
       expect(m.slot!.bottom, `설정 줄(스위치) 아래끝 ${Math.round(m.slot!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
       expect(m.main!.bottom, `왼쪽 열 끝 ${Math.round(m.main!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
       expect(m.life!.bottom, '인생 길이가 설정 줄 위(작은 슬롯 → 설정 줄, HS3 ③)').toBeLessThanOrEqual(m.slot!.y + 1);

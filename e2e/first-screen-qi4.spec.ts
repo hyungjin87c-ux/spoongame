@@ -92,7 +92,7 @@ for (const state of ['new', 'continue'] as const) {
     await expect(page.getByTestId('start-birth').or(page.getByTestId('resume'))).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const m = { main: await rectOf(page, '.title__main'), bar: await rectOf(page, '[data-testid="bottom-bar"]'), life: await rectOf(page, '[data-testid="life-length-group"]') };
-    // 복원(GM4 2차 ④): 1차에서 「인생 길이까지」로 줄여 두었던 단언을 되돌렸다 — 세대 목록 창(PC 하한 9rem · 식 100vh − 37.5rem)과 설정 둘을 한 줄에 놓아 왼쪽 열 끝이 띠 위에 든다
+    // 복원(GM4 2차 ④): 1차에서 「인생 길이까지」로 줄여 두었던 단언을 되돌렸다 — 세대 목록 창(PC 하한 8rem · 식 100vh − 39rem — SPEC-016 로고 +24px 보정 뒤)과 설정 둘을 한 줄에 놓아 왼쪽 열 끝이 띠 위에 든다
     expect(m.main!.bottom, `왼쪽 열 끝 ${Math.round(m.main!.bottom)} < 띠 위끝 ${Math.round(m.bar!.y)}`).toBeLessThan(m.bar!.y);
     expect(m.life!.bottom).toBeLessThan(m.bar!.y);
     expect(await noHorizontalOverflow(page)).toBe(true);

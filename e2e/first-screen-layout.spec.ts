@@ -117,9 +117,9 @@ test('배치 1280x800 · 이어서 살기 띠(120px): 인생 길이가 띠 위�
 // ---------- 세대 목록 창 높이 (GS1, design-system 17-11-5) ----------
 
 for (const [w, h, expected, kind] of [
-  [1280, 800, 200, 'desktop'], //            PC clamp(9rem, 100vh − 37.5rem, 24rem) = 800 − 600 (GM4 2차 ④: 왼쪽 열 끝 < 하단 띠 복원 — 이전 288)
+  [1280, 800, 176, 'desktop'], //            PC clamp(8rem, 100vh − 39rem, 24rem) = 800 − 624 (SPEC-016 H2 로고 +24px 보정 — 이전 37.5rem·200, GM4 2차 ④: 왼쪽 열 끝 < 하단 띠)
   [1920, 1080, 384, 'desktop'], //           상한 24rem
-  [1280, 640, 144, 'desktop'], //            PC 하한 9rem (640 − 600 = 40 < 144) — 폭이 넓어 줄이 접히지 않는 PC에서만 내렸다(좁은 화면은 12rem 그대로)
+  [1280, 640, 128, 'desktop'], //            PC 하한 8rem (640 − 624 = 16 < 128) — 폭이 넓어 줄이 접히지 않는 PC에서만 내렸다(좁은 화면은 12rem 그대로). 9rem → 8rem: 이어서 살기 띠에서 SPEC-016 로고 +24px 보정(결정 후속 235)
   [360, 740, 308, 'mobile'], //              모바일 clamp(12rem, 100svh − 27rem, 24rem) = 740 − 432
   [320, 568, 192, 'mobile'], //              하한
 ] as const) {
@@ -163,7 +163,9 @@ for (const vp of [
         images: document.querySelectorAll('img').length,
       };
     });
-    expect(m.glyphH, `워드마크 글자 높이 ${m.glyphH}px ≥ 40 (DS1)`).toBeGreaterThanOrEqual(40);
+    // DS1 ≥ 40px. 단 폭 320은 39px까지(결정 후속 235): SPEC-016 H2 가로 결합 로고(443.8×128)가 칸 폭 288px에 맞춰 83px로 줄어 획 상자가 39.4px가 된다 — 360 이상은 그대로 40
+    const glyphMin = vp.width <= 320 ? 39 : 40;
+    expect(m.glyphH, `워드마크 글자 높이 ${m.glyphH}px ≥ ${glyphMin} (DS1${vp.width <= 320 ? ' · 폭 320 예외' : ''})`).toBeGreaterThanOrEqual(glyphMin);
     expect(m.logo.x, '로고가 왼쪽 정렬').toBeLessThan(20);
     expect(m.images, '그림(img)이 없다').toBe(0);
     expect(m.tag.y, '한 줄 설명은 로고 줄 아래').toBeGreaterThanOrEqual(m.logo.bottom - 1);

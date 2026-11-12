@@ -210,12 +210,15 @@ async function ensureJumpPill(page: Page): Promise<void> {
   if ((await page.getByTestId('log-jump').count()) > 0 && !(await sheetOpen())) return;
   await page.getByTestId('log-list').evaluate((el) => el.scrollTo({ top: 220, behavior: 'instant' }));
   for (let i = 0; i < 80 && ((await page.getByTestId('log-jump').count()) === 0 || (await sheetOpen())); i++) {
-    // 선택지가 떠 있으면 첫 선택지를, 아니면 「다음 결정으로」를 누른다(입력 가드 중이면 눌리지 않고 다음 바퀴에 다시)
-    await page.evaluate(() => {
-      const choice = document.querySelector('[data-testid="choice-panel"] button[data-testid^="choice-"]') as HTMLElement | null;
-      const skip = document.querySelector('[data-testid="skip"]') as HTMLElement | null;
-      (choice ?? skip)?.click();
-    });
+    // 선택지가 떠 있으면 첫 선택지를, 아니면 「다음 결정으로」를 누른다. 선택지는 시트가 열린 직후 입력 가드(0.4초)로 잠겨 있다 — **풀릴 때까지 기다린 뒤** 누른다.
+    // (옛 꼴은 잠긴 동안 쉬지 않고 눌러 가드가 풀리지 않았다. SPEC-018 3b 뒤 시드 777 판은 50세 다음 첫 「다음 결정으로」가 곧바로 53세 결정 시트를 열어 이 경로를 탔다 — 앱은 0.6초 뒤 풀린다, T3 2026-11-12)
+    const choice = page.locator('[data-testid="choice-panel"] button[data-testid^="choice-"]').first();
+    if ((await choice.count()) > 0) {
+      await expect(choice, '선택지 입력 가드가 풀린다').not.toHaveAttribute('aria-disabled', 'true', { timeout: 5_000 });
+      await choice.evaluate((el) => (el as HTMLElement).click());
+    } else {
+      await page.evaluate(() => (document.querySelector('[data-testid="skip"]') as HTMLElement | null)?.click());
+    }
     await settleDash(page);
   }
   await expect(page.getByTestId('log-jump'), '알약이 떴다').toHaveCount(1);

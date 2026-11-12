@@ -100,6 +100,8 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
    막대 폭 5.5rem(글자를 키우면 같이 커진다), 숫자 칸 2.6em(「100%」가 들어간다 — tabular-nums). 줄 높이는 버튼이 정한다: 막대는 가운데 정렬(`align-self`)이라 줄이 높아지지 않는다. 나가기 확인 단계(`.exit-ask`)는 아래 별도 줄 그대로. */
 .volume { display: flex; flex: none; align-items: center; align-self: center; gap: var(--sp-2); font-size: var(--fs-sm); }
 .volume input[type='range'] { flex: none; width: 5.5rem; min-width: 0; margin: calc((24px - var(--hit)) / 2) 0; min-height: var(--hit); accent-color: var(--c-brand); }
+/* CM10(SPEC-016 H5 뒤): 볼륨 막대의 맞힘 상자(44px)는 음수 여백으로 줄 위아래로 10px씩 나가 이미 막대보다 크다 — 링을 바깥으로 2px 더 띄우면 도구 줄이 머리 바로 아래일 때 링 위끝이 고정 머리(dash-head)에 1px 겹친다. 이 막대만 링 간격 0 */
+.volume input[type='range']:focus-visible { outline-offset: 0; }
 .volume output { min-width: 2.6em; text-align: right; font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
 .exit-ask { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border: 2px solid var(--c-border-strong); border-radius: var(--r-md); background: var(--c-surface); }
 .exit-ask__title { font-weight: var(--fw-bold); }

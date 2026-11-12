@@ -174,7 +174,7 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   const tops = await page.evaluate(() => ['ending-journey-section', 'ending-stats', 'ending-timeline', 'rebirth'].map((id) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect().top + window.scrollY));
   expect(tops).toEqual([...tops].sort((a, b) => a - b));
 
-  // 금지된 것: 등급명·느낌표·이모지, 링크·이미지·공유, 가로 넘침. 버튼은 "다시 태어나기" 하나뿐
+  // 금지된 것: 등급명·느낌표·이모지, 링크·이미지·공유, 가로 넘침. 버튼은 "다시 태어나기"와 머리의 로고(첫 화면으로, SPEC-016 H1) 둘뿐
   const text = await endingTextWithoutChip(page);
   expect(text).not.toMatch(FORBIDDEN);
   // 수저 칩은 출발선 범례(dd) 한 곳에만 있다 — 문장·막대·다른 카드에는 등급명이 없다
@@ -183,7 +183,10 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   expect(text).not.toMatch(/공유|SNS|복사|이미지로 저장/);
   // M4: 공통 헤더의 로고·얼굴 그림·아이콘이 svg라 svg는 세지 않는다. 링크·이미지·캔버스·소리·영상은 여전히 0.
   expect(await page.locator('a, img, canvas, audio, video').count()).toBe(0);
-  await expect(page.getByRole('button')).toHaveCount(1);
+  // SPEC-016 H1(v0.5.1): 엔딩 머리의 로고가 「첫 화면으로」 버튼이 됐다(누르면 확인 단계 — e2e/logo-home.spec.ts). 그 밖의 버튼(공유·복사 등)은 여전히 없다 — 두 버튼을 이름으로 센다
+  await expect(page.getByRole('button')).toHaveCount(2);
+  await expect(page.getByTestId('logo-home')).toBeVisible();
+  await expect(page.getByRole('button').and(page.getByTestId('rebirth'))).toHaveCount(1);
   expect(await noHorizontalOverflow(page)).toBe(true);
   expect(countOf(save, 'death')).toBe(1);
 });

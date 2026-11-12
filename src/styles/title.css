@@ -457,7 +457,9 @@ html.bar-released .page-end-space { display: none; }
 /* 창 높이(r3): 줄이 두 줄(≈ 51px)이 되어 r2 값(PC −34rem · 모바일 −29rem)이면 1280×800에서 4.8줄 — 2rem씩 늘려 PC 288px(5.6줄) · 360×740 308px(≈ 5줄, 긴 이름 줄 포함). 상한 24rem(1920에서 8줄 전부 = 7 × 53 + 70 = 441 > 384라 7.3줄 — 마지막 줄이 반쯤 보여 스크롤을 알린다) */
 /* PC(≥ 960px)의 창 높이 (GM4 2차 ④ — 1280×800 「왼쪽 열 끝 < 하단 띠」 복원): 하한 9rem · 식 100vh − 37.5rem(= 800 → 200px, 이전 288px) · 상한 24rem. 이어서 살기 띠(120px)·확인 단계 띠는 아래 식이 그만큼 더 줄인다(−(띠 − 68px)).
    폭이 넓어 줄이 두세 줄로 접히지 않으므로 하한을 12rem에서 9rem으로 내려도 글자 200%에서 한 줄이 창보다 커지지 않는다(그 하한은 좁은 화면에 그대로 있다). 값 근거: 1280×800 왼쪽 열(제목 84px · 설명 두 줄 · 목록 · 접이식 · 태어나는 시도 · 인생 길이 · 설정 둘이 한 줄) 끝 724 < 띠 732, 이어서 살기 띠 672 < 680. */
-@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(9rem, 100vh - 37.5rem - var(--bar-h, 68px) + 68px, 24rem); } }
+/* SPEC-016 H2(가로 결합 로고)가 넓은 화면 로고를 84 → 108px(+24px)로 키우면서 이 식을 같이 줄이지 않아 1280×800 왼쪽 열 끝이 748 > 띠 732로 띠에 가렸다(v0.5.1, e2e first-screen-qi4·gentle-layout가 잡음) — 식을 37.5rem → 39rem(−24px)으로 보정해 원래 여유(끝 724 < 732, 이어서 살기 672 < 680)로 되돌린다(1280×800 창 176px ≈ 3.4줄, 마지막 줄이 반쯤 보여 스크롤을 알린다) */
+/* 이어서 살기 띠(120px)에서는 식이 PC 하한 9rem(144px)에 걸려 보정이 4px만 먹었다(왼쪽 열 끝 692 > 띠 680) — 하한을 8rem(128px ≈ 2.5줄)으로 내려 676 < 680. 폭이 넓은 PC라 줄이 접히지 않고, rem이라 글자 200%에서도 창이 한 줄보다 크다 */
+@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(8rem, 100vh - 39rem - var(--bar-h, 68px) + 68px, 24rem); } }
 @media (prefers-reduced-motion: no-preference) { .gen-list { scroll-behavior: smooth; } }
 :root[data-motion='reduce'] .gen-list { scroll-behavior: auto; }
 /* flex: none — 세로 flex 컨테이너(max-height) 안에서 min-height를 준 항목은 flex-shrink로 44px까지 눌린다(첫 측정에서 두 줄 글이 다음 줄과 겹쳤다). 줄은 제 높이를 갖고 목록이 스크롤한다 */
