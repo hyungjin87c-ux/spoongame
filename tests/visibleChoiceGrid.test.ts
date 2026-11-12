@@ -116,3 +116,21 @@ describe('기존 사건은 격자 검사 대상이 아니다', () => {
     }
   });
 });
+
+describe('[CX-003-005] 여러 분야 + 직업 id 조건: 격자가 각 직업의 실제 분야로 칸을 만든다', () => {
+  // Codex 재현: 사건 조건 job { field: [clerk, service], id: [clerk-corp, svc-crew] }, 공통 1 + clerk 분야만 보이는 선택지 2
+  const e = one(
+    ev({
+      id: 'test-multi-field',
+      conditions: { job: { field: ['clerk', 'service'], id: ['clerk-corp', 'svc-crew'] } },
+      choices: [ch('common'), ch('clerk-a', { requires: { job: { field: ['clerk'] } } }), ch('clerk-b', { requires: { job: { field: ['clerk'] } } })],
+    }),
+  );
+
+  it('서비스 분야 직업(svc-crew) 칸에서 공통 1개만 보이는 것을 잡아 빌드를 막는다(옛 격자는 첫 분야 clerk를 붙여 10칸 모두 3개로 보고했다)', () => {
+    const g = visibleChoiceGrid(e);
+    expect(g.min).toBe(1);
+    expect(g.minCell).toContain('svc-crew');
+    expect(visibleChoiceGridProblems(e).length).toBeGreaterThan(0);
+  });
+});

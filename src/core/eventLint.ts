@@ -13,6 +13,7 @@ import {
   type EventDef,
   type Range,
 } from './events';
+import { jobIndexOf } from './jobIndex';
 import { looksChannelBounds } from './looks';
 import { APT_KEYS, APT_TIERS, TEMPER_IDS, type AptKey, type AptTier, type TemperId } from './personaKinds';
 import { OCCUPATIONS, PARENT_WEALTHS, STAT_KEYS, type Effects, type Era, type Occupation, type ParentWealth, type Stage } from './types';
@@ -577,7 +578,14 @@ function gridCells(ev: EventDef): GridCell[] {
     const fields = new Set<Occupation>();
     for (const c of conds) for (const f of c.job?.field ?? []) fields.add(f);
     for (const f of fields) jobs.push({ field: f });
-    for (const c of conds) for (const id of c.job?.id ?? []) jobs.push({ field: (c.job?.field?.[0] ?? OCCUPATIONS[1]) as Occupation, id });
+    // 직업 id 칸은 그 직업의 **실제 분야**를 코어 직업 색인에서 얻는다 [CX-003-005] — 조건에 적힌 첫 분야를 붙이면 둘째 이후 분야의 직업 칸을 빠뜨린다. 색인에 없는 id는 조건의 분야마다 한 칸씩(최악을 놓치지 않게)
+    for (const c of conds) {
+      for (const id of c.job?.id ?? []) {
+        const known = jobIndexOf(id)?.field;
+        const fieldsOf: readonly Occupation[] = known !== undefined ? [known] : c.job?.field?.length ? c.job.field : [OCCUPATIONS[1]];
+        for (const f of fieldsOf) jobs.push({ field: f, id });
+      }
+    }
   }
   const temperList: readonly TemperId[] = usesTemper ? TEMPER_IDS : [TEMPER_IDS[0]];
   const tierCombos: Array<Record<AptKey, AptTier>> = [Object.fromEntries(APT_KEYS.map((k) => [k, 'mid'])) as Record<AptKey, AptTier>];

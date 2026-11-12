@@ -45,7 +45,7 @@ export const PERSONA_TABLE = {
     candidatesShown: [3],
     trackWindow: [19, 24],
     trackEnd: [35],
-    triesMax: [9],
+    triesMax: [16],
     composeWeightRange: [0.01, 10000],
     hireYearFloor: [0.75],
     hireYearCap: [1.1],

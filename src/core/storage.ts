@@ -7,7 +7,7 @@ import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from '.
 import { isValidBirthReport } from './birthReport';
 import { ensureFamily, withValidFamily } from './familyStorage';
 import { JOB_FIELDS, jobIndexInYear, jobIndexOf } from './jobIndex';
-import { readPersona, type PersonaState } from './persona';
+import { personaSwitchOn, readPersona, type PersonaState } from './persona';
 import { isValidStat } from './stats';
 import { resolveDelegated } from './life';
 import { decisionFor } from './parentDecision';
@@ -360,7 +360,8 @@ function jobPendingMatches(p: { eventId: string; choiceIds: string[]; age?: numb
 
 function pendingMatchesPool(p: { eventId: string; choiceIds: string[]; age?: number }, pool: EventPool, persona: PersonaState | null = null, birthYear: number | null = null): boolean {
   const ev = pool.byId.get(p.eventId);
-  if (ev?.pick !== undefined) return jobPendingMatches(p, ev.pick.kind, persona, birthYear);
+  // 맞춤 인생 스위치를 끈 채 열면 진로 카드 대기는 풀어 그 해를 중립(맞춤 인생 없음)으로 다시 진행한다 [CX-003-004] — v0.5.1 파서와 같은 동작이고, 끈 판에서 새 맞춤 직업·합격 소득이 생기거나 다른 확률로 판정되지 않는다(저장된 `persona`는 그대로 둔다)
+  if (ev?.pick !== undefined) return personaSwitchOn() && jobPendingMatches(p, ev.pick.kind, persona, birthYear);
   if (ev === undefined || !isChoiceEvent(ev)) return false;
   const known = new Set((ev.choices ?? []).map((c) => c.id));
   return p.choiceIds.every((id) => known.has(id));

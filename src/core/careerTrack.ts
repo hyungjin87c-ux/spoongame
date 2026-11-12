@@ -26,6 +26,8 @@ export type JobPickKind = keyof typeof JOB_PICK_EVENT;
 
 /** 진로 트랙이 끝나는 나이 (이 나이를 넘기면 트랙을 닫는다 — 자동 배정은 없다) */
 export const TRACK_END_AGE = M('trackEnd');
+/** 분야 카드 창의 끝 나이(24) — 학업이 끝나지 않았어도 이 나이에는 분야 카드를 낸다. 대학 지원을 먼저 추첨하는 규칙(`life.ts#stepYear`, 결정 후속 234)도 이 나이 전까지만 쓴다 */
+export const TRACK_WINDOW_END = MM('trackWindow')[1];
 /** 보이는 후보 수 (구형 파서의 대기 선택지 2~3개 안) */
 export const CANDIDATES_SHOWN = M('candidatesShown');
 const POOL_MAX = M('candidatesMax');
@@ -277,6 +279,8 @@ export function applyProbOf(i: ApplyInput): { pFirst: number; p: number } {
 
 /** 판정 난수: 키는 나이가 아니라 **지원 순번(`tries`)** — 지원 나이를 옮겨도 n번째 지원의 난수는 같다(다시 뽑기 방지) */
 export const applyRollOf = (famSeed: number, tries: number): number => personaHash(famSeed, 60, tries);
+// [CX-003-003] 저장 범위 `triesMax`는 35세까지 가능한 지원 수(세부 카드 20~35세 = 16번)를 담는다 — 9에서 멈춰 11번째 지원부터 열 번째 난수를 다시 쓰던 것을 막는다. 첫 10번의 키(0~9)는 그대로다.
+// 재지원 가산은 `min(tries, triesFree)`·`retryBonusCap`으로 따로 묶여 있어 범위를 넓혀도 확률은 같다
 
 /** 이 상태에서 이 직업에 지원하면: 확률·난수·합격 여부 (`tries ≥ 3`이고 입문이면 p = 1, `HIREYEAR`와 무관) */
 export function jobApplyOf(state: GameState, job: JobDef, age: number): { p: number; guaranteed: boolean; roll: number; pass: boolean } {
@@ -319,8 +323,10 @@ export interface PickOutcome {
  */
 export function careerIncomeOf(state: GameState, job: Pick<JobDef, 'setFlags'>): number {
   const [base, family, edu, early, trade] = MM('careerIncome');
-  if ((job.setFlags ?? []).includes('family_business')) return family;
   const ctx = condContextOf(state);
+  // 옛 카드가 뜨는 조건(`notFlags: has_career·own_business`)도 그대로 옮긴다 [CX-003-001]: 이미 일자리가 있거나(옛 첫 일 카드를 v0.5.1에서 풀었거나, 모르는 직업 id를 정리한 뒤 다시 합격) 사업을 하면 첫 일 소득을 다시 주지 않는다 — 한 판에 한 번
+  if (!meetsCondition({ notFlags: ['has_career', 'own_business'] }, ctx)) return 0;
+  if ((job.setFlags ?? []).includes('family_business')) return family;
   return base + (meetsCondition({ stats: { education: { min: 70 } } }, ctx) ? edu : 0) + (meetsCondition({ flags: ['early_work'] }, ctx) ? early : 0) + (meetsCondition({ flags: ['skilled_trade'] }, ctx) ? trade : 0);
 }
 

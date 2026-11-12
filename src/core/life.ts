@@ -40,7 +40,7 @@ import { askBranchProbs, askOutcomeOf, type AskRollChoice } from './ask';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { actPullOf, autoPriorityMul, personaOf } from './persona';
-import { careerCardOf, jobPickOutcome, jobPickWeights, pickChoicesOf } from './careerTrack';
+import { TRACK_WINDOW_END, careerCardOf, jobPickOutcome, jobPickWeights, pickChoicesOf } from './careerTrack';
 import { personaOnChoice, personaOnFamilyLines, personaOnNarrative, personaOnYearEnd } from './personaLife';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
@@ -212,6 +212,8 @@ export interface TickInfo {
   eventId?: string;
   /** 그 해 인생 기록에 남은 가족 변화 줄(`fam-…`, SPEC-009 FA7)의 id들(종류 코드 오름차순). 이벤트 풀의 id가 아니라서 `eventId`와 따로 둔다 — 줄은 판 길이 모델이 연표 줄과 같은 규칙으로 센다(`lines`) */
   familyIds?: string[];
+  /** 진로 카드(`pick` 사건, SPEC-018 PL4)가 열린 선택 틱이면 true — 보고 도구의 페이싱 집계(`careerCards`)가 엔진의 `choicesSoFar`와 같은 정의(사건의 `pick`)를 읽게 한다 [CX-003-007] */
+  career?: true;
   /** 그 해 마일스톤 슬롯에서 일어난 이벤트 id들(id 오름차순) (SPEC-003 IN3, M7a r3 — 일반 사건과 별개 줄이라 한 해 연표에 여러 줄이 남을 수 있다: 1세는 걸음마 + 첫 말 + 일반 사건 최대 3줄 이상) */
   milestoneIds?: string[];
   /**
@@ -405,13 +407,30 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   const forced = fam.forcedEvent !== undefined ? (pool.byId.get(fam.forcedEvent) ?? null) : null;
   // 진로 트랙(SPEC-018 PL4, 설계 4-1절): 맞춤 인생이 켜진 판에서 학업이 끝난 해부터 35세까지 분야 카드(G4)·세부 직업 카드(G5)를 **강제 슬롯**으로 낸다 — 일반 선택지 간격(2년)·페이싱 하드 상한을 받지 않는다.
   // 가족 강제 사건이 있는 해는 한 해 밀린다. 카드는 `choicesSoFar`(연표 선택 줄)에 세되 진로 카드는 한 장만 센다(위)
-  const track = forced === null && ctx.persona ? careerCardOf(state, pool, age) : null;
+  // 학업 결정이 아직 열린 해 [결정 후속 234, CX-003-002]: 분야 카드가 열리는 해에 `college`를 켜는 사건(대학 지원 — 사건 id를 박지 않고 풀 색인으로 찾는다)이 이 해의 후보이면
+  // 일반 선택지 추첨을 맞춤 인생이 없는 판과 같은 조건(간격·페이싱·확률·후보)으로 먼저 돌린다 — 대학 지원이 뽑히면 그것을 내고(분야 카드는 다음 해 이후로), 다른 사건이 뽑히거나 추첨이 없으면 분야 카드를 낸다.
+  // 그래서 19세 고졸 진로 시작과 19세의 마지막 입시가 함께 남는다(3b까지는 19세 분야 카드가 그 자리를 늘 차지했다). 난수는 어느 쪽이든 한 칸이다(`pickWeighted` 한 번 = 진로 카드의 대체 한 칸)
+  const due = forced === null && ctx.persona ? careerCardOf(state, pool, age) : null;
+  let examFirst: EventDef | null = null;
+  let trackRngSpent = false;
+  if (due !== null && due.ev.pick?.kind === 'field' && age < TRACK_WINDOW_END && rollChoice < choiceChance && canChoice) {
+    const setters = flagSettersOf(pool, 'college');
+    const choiceList = eligible.filter(isChoiceEvent);
+    if (choiceList.some((ev) => setters.includes(ev.id))) {
+      const drawn = pickWeighted(rng, choiceList, ctx, age, true);
+      trackRngSpent = true;
+      if (drawn !== null && setters.includes(drawn.id)) examFirst = drawn;
+    }
+  }
+  const track = examFirst !== null ? null : due;
 
   let picked: EventDef | null = null;
   if (track !== null) {
-    // 일반 추첨 한 번(`pickWeighted`)을 대신해 난수를 한 번 소비해 이후 수열의 칸을 맞춘다 (`persona`가 있는 판에서만 — 없는 판의 수열은 그대로다)
-    rng.next();
+    // 일반 추첨 한 번(`pickWeighted`)을 대신해 난수를 한 번 소비해 이후 수열의 칸을 맞춘다 (`persona`가 있는 판에서만 — 없는 판의 수열은 그대로다). 위 학업 결정 추첨이 이미 한 칸을 썼으면 더 쓰지 않는다
+    if (!trackRngSpent) rng.next();
     picked = track.ev;
+  } else if (examFirst !== null) {
+    picked = examFirst;
   } else if (forced !== null) {
     // 구성이 정한 해: 첫째의 첫 동생 반응 카드를 선택지 간격·페이싱과 무관하게 띄우고 그 해 일반 추첨은 건너뛴다. 추첨 한 번(`pickWeighted`)을 대신해 난수를 한 번 소비해 이후 수열의 칸을 맞춘다 (7-2절 2)
     rng.next();
@@ -452,7 +471,7 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     // 진로 카드: 후보 id는 카드가 열릴 때 한 번 정해 `pending.choiceIds`에 저장한다(스냅샷) — 사람이 고르는 카드(`self`)라 부모·흘러감 위임이 없다
     return {
       state: { ...s, rngState: rng.getState(), seen: { ...s.seen, [picked.id]: age }, lastChoiceAge: age, pending: { eventId: picked.id, key: `${picked.id}@${age}`, age, choiceIds: [...track.ids] } },
-      tick: { kind: 'choice', fromAge: age, eventId: picked.id, ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
+      tick: { kind: 'choice', fromAge: age, eventId: picked.id, career: true, ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
     };
   }
 
@@ -768,7 +787,7 @@ function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): vo
     return;
   }
   counts[tick.kind]++;
-  if (tick.kind === 'choice' && tick.eventId !== undefined && tick.eventId.startsWith('job-pick-')) counts.careerCards = (counts.careerCards ?? 0) + 1;
+  if (tick.kind === 'choice' && tick.career === true) counts.careerCards = (counts.careerCards ?? 0) + 1; // 엔진과 같은 정의(사건의 `pick`) [CX-003-007]
   if (tick.kind === 'narrative' || tick.kind === 'resolved') counts.extraLines += Math.max(0, (tick.lines ?? 1) - 1);
 }
 

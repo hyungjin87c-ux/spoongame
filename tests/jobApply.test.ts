@@ -128,7 +128,7 @@ describe('입문 보장: tries ≥ 3이면 open은 합격(p = 1, HIREYEAR 무관
   });
 });
 
-describe('해결: 합격해도 tries를 되돌리지 않는다, 불합격은 tries + 1(상한 9)', () => {
+describe('해결: 합격해도 tries를 되돌리지 않는다, 불합격은 tries + 1(상한 16 — CX-003-003)', () => {
   it('합격: hired + 플래그, tries 유지', () => {
     const s0 = runToJobCard(5, 'detail');
     const open = JOB_TABLE.jobs.find((j) => j.field === s0.persona!.job!.field && j.open === true)!;
@@ -140,7 +140,7 @@ describe('해결: 합격해도 tries를 되돌리지 않는다, 불합격은 tri
     expect(o.effects!.setFlags).toEqual(expect.arrayContaining(['has_career', 'job_picked']));
   });
 
-  it('불합격: tries + 1, 상태는 field 그대로(since 유지), 효과 없음, 상한 9', () => {
+  it('불합격: tries + 1, 상태는 field 그대로(since 유지), 효과 없음, 상한 16', () => {
     let hit = 0;
     for (let seed = 1; seed <= 60 && hit < 3; seed++) {
       const s0 = runToJobCard(seed, 'detail');
@@ -152,8 +152,11 @@ describe('해결: 합격해도 tries를 되돌리지 않는다, 불합격은 tri
       expect(o.persona.tries).toBe((s0.persona!.tries ?? 0) + 1);
       expect(o.persona.job).toEqual(s0.persona!.job);
       expect(o.effects).toBeUndefined();
-      const capped = jobPickOutcome({ ...s0, stats: { ...s0.stats, education: 0 }, persona: { ...s0.persona!, tries: 9 } }, 'detail', selective.id, s0.age);
-      if (!capped.passed) expect(capped.persona.tries).toBe(9);
+      // 9에서 멈추지 않는다(옛 상한 9는 11번째 지원부터 같은 난수를 다시 썼다 — CX-003-003). 상한은 16(20~35세 세부 카드 16번)
+      const past9 = jobPickOutcome({ ...s0, stats: { ...s0.stats, education: 0 }, persona: { ...s0.persona!, tries: 9 } }, 'detail', selective.id, s0.age);
+      if (!past9.passed) expect(past9.persona.tries).toBe(10);
+      const capped = jobPickOutcome({ ...s0, stats: { ...s0.stats, education: 0 }, persona: { ...s0.persona!, tries: 16 } }, 'detail', selective.id, s0.age);
+      if (!capped.passed) expect(capped.persona.tries).toBe(16);
     }
     expect(hit).toBeGreaterThan(0);
   });

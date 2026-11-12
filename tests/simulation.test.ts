@@ -283,7 +283,8 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
           // 알파의 노년 평균은 하한 5.00에 닿아 있다(GM4 보고, judgeMargins.test.ts) — FM4b의 K2(동생 반응 카드 강제)가 측정을 4.997로 옮겼다. 이 이동은 잡음이 아니라 구조적이다(docs/data/family-remeasure.md 5절: 같은 시드 짝지은 차이 −0.06, 독립 줄에서도 같은 방향 −0.05)
           // 이고 알파의 모집단 평균은 하한 아래다(독립 줄 4.85). 하한(마스터 결정 M-3)은 그대로 두고 이 한 칸에만 허용 폭 0.05를 인정한다(보고) — 세대별 시간 모델(GM10)에서 알파 하한을 다시 정한다(docs/TODO.md)
           // SPEC-018 3b(결정 후속 233 D6): 맞춤 인생을 켜면 이 표본의 알파 노년이 4.997 → 4.91로 내려가 허용 폭을 0.05 → 0.10으로 넓혔다(judgeMargins.test.ts의 알파 한계와 같은 사유) — 굶긴 상태 검출(아래 옛 페이싱 4.54)과는 여전히 0.36 넘게 떨어져 있다
-          const seniorAllowance = era === 'alpha' ? 0.1 : 0;
+          // CX-003-002 보정(결정 후속 234): 19세 대학 지원을 되살리자 이 표본의 알파 노년이 4.91 → 4.85로 더 내려가 0.10 → 0.20으로 넓혔다. 켠 판 대 끈 판 600판 짝 측정: 노년 4.90 대 4.98(−0.08) · 19~39세 결정 카드 8.24 대 6.67(+1.57, 진로 카드) — 노년 사건 구성도 바뀐다(모임·유산 ↑, 병·홀로 ↓). GM10에서 알파 하한을 다시 정할 때 이 허용 폭을 거둔다
+          const seniorAllowance = era === 'alpha' ? 0.2 : 0;
           expect(m.senior + seniorAllowance, `${who} ${era} 노년`).toBeGreaterThanOrEqual(SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(era)]);
           const total = STAGES.reduce((a, s) => a + m[s], 0);
           for (const s of STAGES) expect(m[s] / total, `${who} ${era} ${s}`).toBeLessThan(0.4);

@@ -24,6 +24,8 @@ import {
   type PersonaState,
 } from '../src/core';
 import { startLife } from '../scripts/simulateLib';
+import { JOB_TABLE } from '../src/data/jobs';
+import { jobIndexInYear } from '../src/core/jobIndex';
 import { ch, ev, poolOf, withPending } from './helpers/personaTest';
 
 // 출하 값은 3b단계에서 켰다(`personaSwitchShipped.test.ts`가 본다). 이 파일은 「끈 판」의 의미(6-3절)를 시험하므로 스위치를 끈 경로로 고정한다
@@ -126,6 +128,27 @@ describe('스위치가 꺼져 있을 때의 진로 트랙 (3a단계, 설계 6-3�
     const r = stepYear(none);
     expect(r.state.pending?.eventId.startsWith('job-pick-') ?? false).toBe(false);
     expect(r.state.persona).toEqual(none.persona);
+  });
+
+  it('[CX-003-004] 켠 판에서 열려 있던 진로 카드 대기는 끈 채 열면 풀린다 — 같은 해를 중립으로 다시 진행하고 새 맞춤 직업·합격 소득이 생기지 않는다(v0.5.1 파서와 같은 동작)', () => {
+    for (const kind of ['field', 'detail'] as const) {
+      let base: GameState = startLife(20, 'millennial');
+      for (let i = 0; i < 200 && base.phase === 'life' && !(base.age === 20 && base.pending === null); i++) base = base.pending === null ? stepYear(base).state : resolveChoiceStep(base, base.pending.key, base.pending.choiceIds[0]).state;
+      expect(base.age).toBe(20);
+      const year = base.character!.birthYear + 20;
+      const ids = kind === 'field' ? ['clerk', 'service', 'machine'] : JOB_TABLE.jobs.filter((j) => j.field === 'clerk' && jobIndexInYear(j.id, year)).slice(0, 3).map((j) => j.id);
+      expect(ids.length, `${kind} 후보`).toBeGreaterThanOrEqual(2);
+      const eventId = kind === 'field' ? 'job-pick-field' : 'job-pick-detail';
+      const persona: PersonaState = kind === 'field' ? stored() : { ...stored(), job: { field: 'clerk', since: 19 } };
+      const open: GameState = { ...base, persona, seen: { ...base.seen, [eventId]: 20 }, lastChoiceAge: 20, pending: { eventId, key: `${eventId}@20`, age: 20, choiceIds: ids } };
+      const back = parseGame(serializeGame(open))!;
+      expect(back.pending, `${kind}: 대기가 풀린다`).toBeNull();
+      expect(back.persona, `${kind}: 저장된 persona는 그대로`).toEqual(persona);
+      const next = stepYear(back).state;
+      expect(next.pending?.eventId.startsWith('job-pick-') ?? false, `${kind}: 다시 진로 카드가 뜨지 않는다`).toBe(false);
+      expect(next.persona!.job, `${kind}: 맞춤 직업이 새로 생기지 않는다`).toEqual(persona.job);
+      expect(next.flags.includes('job_picked'), `${kind}: 합격 플래그 없음`).toBe(false);
+    }
   });
 
   it('이미 합격한 판은 job·has_career·jobMul이 유지된다 — 소득이 끊기지 않는다', () => {

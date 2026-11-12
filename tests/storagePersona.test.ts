@@ -108,7 +108,7 @@ describe('이상한 persona는 persona만 버리고 판은 산다', () => {
     ['g 41', (p) => (p.g = [41, 0, 0, 0, 0])],
     ['v 2', (p) => (p.v = 2)],
     ['v 없음', (p) => delete p.v],
-    ['tries 10', (p) => (p.tries = 10)],
+    ['tries 17', (p) => (p.tries = 17)], // 저장 범위 0..16 [CX-003-003]
     ['tries −1', (p) => (p.tries = -1)],
     ['advUsed 13', (p) => (p.advUsed = 13)],
     ['roleUsed 13', (p) => (p.roleUsed = 13)],

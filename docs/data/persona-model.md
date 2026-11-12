@@ -322,7 +322,7 @@ persona?: {
   w: [N개 정수 5..95],       // 기질 세기
   shown: 0..N-1,             // 지금 두드러진 기질(완충 상태를 이어 가려고 저장)
   g: [K개 정수 0..40],       // 적성 키움 — 저장 검증 범위 0..40은 v=1에 고정(성장 상한 GMAX 25~35와 별개, 2절)
-  tries?: 0..9,              // 지원 불합격 횟수 = 지원 순번(합격해도 0으로 되돌리지 않는다 — 지원 난수 키 (60, tries))
+  tries?: 0..16,             // 지원 불합격 횟수 = 지원 순번(합격해도 0으로 되돌리지 않는다 — 지원 난수 키 (60, tries)). [CX-003-003] 범위 0..9 → 0..16: 세부 카드 20~35세 16번을 모두 다른 키로(옛 9에서 멈추면 11번째부터 열 번째 난수를 다시 썼다). 재지원 가산은 min(tries, 3)이라 확률은 같다
   advUsed?: 0..12,           // 역경으로 실제 적용한 |Δ| 합 (1-3 ⑦)
   roleUsed?: 0..12,          // 본보기로 실제 적용한 합 (1-3 ⑦)
   job?: { field: Occupation, id?: string, since: 나이 }
@@ -434,7 +434,7 @@ MODEL | roleUsedMax | 12
 MODEL | candidatesShown | 3
 MODEL | trackWindow | 19 24
 MODEL | trackEnd | 35
-MODEL | triesMax | 9
+MODEL | triesMax | 16
 MODEL | composeWeightRange | 0.01 10000
 MODEL | hireYearFloor | 0.75
 MODEL | hireYearCap | 1.10

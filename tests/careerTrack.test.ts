@@ -113,7 +113,9 @@ describe('강제 슬롯 — 일반 선택지 규칙을 받지 않는다', () => 
     const f = runToJobCard(9, 'field');
     expect(f.pending!.choiceIds).toHaveLength(3);
     expect(new Set(f.pending!.choiceIds).size).toBe(3);
-    expect(f.pending!.key).toBe('job-pick-field@19');
+    // 카드 나이: 학업이 끝난 다음 해 — 19세 대학 지원을 먼저 추첨하게 된 뒤(CX-003-002) 시드 9는 대학을 가 23세에 연다. 키 모양만 본다
+    expect(f.pending!.age).toBeGreaterThanOrEqual(19);
+    expect(f.pending!.key).toBe(`job-pick-field@${f.pending!.age}`);
   });
 });
 

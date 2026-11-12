@@ -102,7 +102,7 @@ describe('표 ↔ 코드 상수', () => {
   it('저장 범위 값: 세기 5~95 · 키움 저장 0~40(성장 상한 30과 별개) · 예산 12 · 지원 9회', () => {
     expect([M('wMin'), M('wMax')]).toEqual([[5], [95]]);
     expect([M('gStoreMax'), M('gMax')]).toEqual([[40], [30]]);
-    expect([M('advLifeCap'), M('roleUsedMax'), M('triesMax')]).toEqual([[12], [12], [9]]);
+    expect([M('advLifeCap'), M('roleUsedMax'), M('triesMax')]).toEqual([[12], [12], [16]]); // triesMax 9 → 16 [CX-003-003]
     expect(M('roleStep')[0] as number).toBe(3);
     expect((M('roleLifeCap')[0] as number) * (M('roleStep')[0] as number)).toBe(M('roleUsedMax')[0]);
   });

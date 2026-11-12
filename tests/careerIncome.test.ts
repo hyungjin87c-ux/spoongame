@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { EVENT_POOL } from '../src/data/events';
 import { JOB_TABLE } from '../src/data/jobs';
 import { PERSONA_TABLE as T } from '../src/data/personaTable';
-import { careerIncomeOf, jobPickOutcome, type GameState } from '../src/core';
+import { autoResolveStep, careerIncomeOf, jobPickOutcome, parseGame, resolveChoiceStep, serializeGame, stepYear, type GameState } from '../src/core';
+import { startLife } from '../scripts/simulateLib';
 import { runToJobCard } from './helpers/careerTest';
 
 vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: true }));
@@ -69,5 +70,44 @@ describe('careerIncomeOf · jobPickOutcome', () => {
     expect(r.effects!.assets!.income).toBe(careerIncomeOf(s, open));
     expect(r.effects!.stats).toBeUndefined();
     expect(r.effects!.setFlags).toEqual(expect.arrayContaining(['has_career', 'job_picked']));
+  });
+});
+
+describe('[CX-003-001] 첫 일 소득은 한 판에 한 번 — 옛 카드의 조건(notFlags has_career·own_business)도 옮긴다', () => {
+  const s0 = runToJobCard(5, 'detail');
+  const general = JOB_TABLE.jobs.find((j) => j.setFlags === undefined || !j.setFlags.includes('family_business'))!;
+  const familyJob = JOB_TABLE.jobs.find((j) => j.setFlags?.includes('family_business'))!;
+
+  it('이미 has_career(옛 첫 일 카드를 풀었거나 다시 합격)거나 own_business면 0 — 옛 카드도 그 판에는 뜨지 않았다', () => {
+    expect(old.conditions?.notFlags).toEqual(['has_career', 'own_business']);
+    for (const flag of ['has_career', 'own_business']) {
+      expect(careerIncomeOf(withState(s0, { education: 90, flags: [flag, 'early_work'] }), general), flag).toBe(0);
+      expect(careerIncomeOf(withState(s0, { flags: [flag] }), familyJob), `${flag} 가업`).toBe(0);
+    }
+  });
+
+  it('모르는 직업 id를 정리한 뒤 다시 합격해도 incomeAdj가 늘지 않는다 (Codex 재현: 밀레니얼 시드 4)', () => {
+    let s: GameState = startLife(4, 'millennial');
+    for (let i = 0; i < 400 && s.phase === 'life' && s.persona?.job?.id === undefined; i++) s = s.pending === null ? stepYear(s).state : autoResolveStep(s, s.pending.key).state;
+    expect(s.persona?.job?.id, '첫 합격').toBeDefined();
+    const paid = s.assets!.incomeAdj;
+    expect(paid).toBeGreaterThan(0);
+    const raw = JSON.parse(serializeGame(s));
+    raw.data.persona.job.id = 'removed-job';
+    let back = parseGame(JSON.stringify(raw))!;
+    expect(back.persona!.job!.id, '모르는 id는 지워져 field로').toBeUndefined();
+    expect(back.flags).toEqual(expect.arrayContaining(['has_career', 'job_picked']));
+    back = { ...back, persona: { ...back.persona!, tries: 3 } }; // 입문 합격 보장으로 다시 합격시킨다
+    let before: number | null = null;
+    for (let i = 0; i < 40 && back.phase === 'life' && back.persona?.job?.id === undefined; i++) {
+      if (back.pending === null) { back = stepYear(back).state; continue; }
+      const ev = EVENT_POOL.byId.get(back.pending.eventId)!;
+      const pickOpen = ev.pick?.kind === 'detail' ? back.pending.choiceIds.find((id) => JOB_TABLE.byId.get(id)?.hire === 'open') : undefined;
+      before = back.assets!.incomeAdj;
+      back = resolveChoiceStep(back, back.pending.key, pickOpen ?? back.pending.choiceIds[0]).state;
+    }
+    expect(back.persona?.job?.id, '다시 합격').toBeDefined();
+    expect(back.assets!.incomeAdj, '다시 합격한 해결이 첫 일 소득을 더하지 않는다').toBe(before);
+    expect(paid, '첫 합격에서는 받았다').toBeGreaterThan(0);
   });
 });
