@@ -460,11 +460,23 @@ html.bar-released .page-end-space { display: none; }
 /* SPEC-016 H2(가로 결합 로고)가 넓은 화면 로고를 84 → 108px(+24px)로 키우면서 이 식을 같이 줄이지 않아 1280×800 왼쪽 열 끝이 748 > 띠 732로 띠에 가렸다(v0.5.1, e2e first-screen-qi4·gentle-layout가 잡음) — 식을 37.5rem → 39rem(−24px)으로 보정해 원래 여유(끝 724 < 732, 이어서 살기 672 < 680)로 되돌린다(1280×800 창 176px ≈ 3.4줄, 마지막 줄이 반쯤 보여 스크롤을 알린다) */
 /* 이어서 살기 띠(120px)에서는 식이 PC 하한 9rem(144px)에 걸려 보정이 4px만 먹었다(왼쪽 열 끝 692 > 띠 680) — 하한을 8rem(128px ≈ 2.5줄)으로 내려 676 < 680. 폭이 넓은 PC라 줄이 접히지 않고, rem이라 글자 200%에서도 창이 한 줄보다 크다 */
 @media (min-width: 960px) { .gen-list { --gen-list-h: clamp(8rem, 100vh - 39rem - var(--bar-h, 68px) + 68px, 24rem); } }
+/* 세대 목록 스크롤 막대 (형진 님 2026-11-12 「너무 얇다」): 마우스 환경에서 Windows 11 크롬의 겹쳐 그리는 얇은 막대 대신 폭 14px 막대(손잡이 10px)를 늘 보인다 — 길은 파인 면(--c-surface-2), 손잡이는 컨트롤 경계색(--c-border-strong, 인접색과 3:1 이상).
+   크로뮴·사파리는 ::-webkit-scrollbar, 파이어폭스는 표준 속성(굵기는 auto가 가장 굵다). 터치 기기는 겹쳐 그리는 막대 그대로다 */
+@media (hover: hover) and (pointer: fine) {
+  @supports selector(::-webkit-scrollbar) {
+    .gen-list::-webkit-scrollbar { width: 14px; }
+    .gen-list::-webkit-scrollbar-track { background: var(--c-surface-2); }
+    .gen-list::-webkit-scrollbar-thumb { min-height: 40px; border: 2px solid var(--c-surface-2); border-radius: 7px; background: var(--c-border-strong); }
+    .gen-list::-webkit-scrollbar-thumb:hover { background: var(--c-text-2); }
+  }
+  @supports not selector(::-webkit-scrollbar) { .gen-list { scrollbar-width: auto; scrollbar-color: var(--c-border-strong) var(--c-surface-2); } }
+}
 @media (prefers-reduced-motion: no-preference) { .gen-list { scroll-behavior: smooth; } }
 :root[data-motion='reduce'] .gen-list { scroll-behavior: auto; }
 /* flex: none — 세로 flex 컨테이너(max-height) 안에서 min-height를 준 항목은 flex-shrink로 44px까지 눌린다(첫 측정에서 두 줄 글이 다음 줄과 겹쳤다). 줄은 제 높이를 갖고 목록이 스크롤한다 */
 /* 오른쪽 안쪽 여백 8px — 메타(「올해 6~86세」)가 목록 끝선에 붙거나 마지막 글자가 잘리지 않게(마스터 지적 2026-10-27, 360 선택 줄) */
-.gen-row { position: relative; flex: none; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; column-gap: var(--sp-3); min-height: var(--hit); padding: 6px var(--sp-2) 7px 0; border-top: 1px solid var(--c-border); scroll-snap-align: start; scroll-margin-block: 1px; cursor: pointer; color: var(--c-text); }
+/* 동그라미와 세대 이름 사이 12 → 16px (형진 님 2026-11-12 「간격이 너무 좁다」) */
+.gen-row { position: relative; flex: none; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; column-gap: var(--sp-4); min-height: var(--hit); padding: 6px var(--sp-2) 7px 0; border-top: 1px solid var(--c-border); scroll-snap-align: start; scroll-margin-block: 1px; cursor: pointer; color: var(--c-text); }
 .gen-row:first-child { border-top: 0; }
 .gen-row input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .gen-row__mark { width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; border: 2px solid var(--c-border-strong); display: grid; place-items: center; background: var(--c-surface); }
