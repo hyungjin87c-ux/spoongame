@@ -3,6 +3,7 @@ import { BIRTH_YEAR_TABLES } from './birthYearData';
 import { CITATION_TABLE } from './citationsAccess';
 import { EVENT_POOL } from './events';
 import { FAMILY_TABLES } from './familyTables';
+import { JOB_TABLE } from './jobs';
 import { NAMES_API } from './names';
 
 /**
@@ -10,4 +11,4 @@ import { NAMES_API } from './names';
  * import하면 이벤트 풀이 첫 화면 덩어리에 들어가기 때문이다(`tests/lazyBoundary.test.ts`가 앱 쪽 import 그래프를 잠근다).
  * vitest는 `tests/setup.ts`가, 스크립트는 `scripts/*`가 import한다.
  */
-installGameData({ eventPool: EVENT_POOL, birthYears: BIRTH_YEAR_TABLES, citations: CITATION_TABLE, names: NAMES_API, family: FAMILY_TABLES });
+installGameData({ eventPool: EVENT_POOL, birthYears: BIRTH_YEAR_TABLES, citations: CITATION_TABLE, names: NAMES_API, family: FAMILY_TABLES, jobs: JOB_TABLE });

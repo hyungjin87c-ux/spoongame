@@ -79,6 +79,9 @@ export const EVENT_MOTIFS: Record<string, string> = {
   'youth-military': '입대 날짜에 짐을 싸서 집을 나서던 일',
   'youth-work-pressure': '퇴근 뒤에도 일이 이어지던 직장 생활',
   'youth-first-job': '일자리를 고르는 기준을 정하던 일',
+  // 진로 트랙의 동적 후보 카드(SPEC-018 PL4)
+  'job-pick-field': '어떤 길로 갈지 마음을 정하던 일',
+  'job-pick-detail': '마음에 둔 일자리의 문을 두드려 보던 일',
   'youth-meeting': '아는 사람이 소개해 준 자리에 나갈지 고민한 일',
   'youth-marriage': '결혼 이야기가 나올 때 대답을 정하던 일',
   'youth-marriage-again': '미룬 결혼 이야기를 다시 꺼내게 된 일',

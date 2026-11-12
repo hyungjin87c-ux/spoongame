@@ -326,3 +326,10 @@ npm run sim:infant            # 영유아(0~7세) 지표 — 빈 해 평균·최
 - **격자 하한**: `temper`·`apt`·`job`·`tailored`를 쓰는 선택지 사건은 「조건 없는 선택지 ≥ 2」 대신 **수저 1~5 × 적성 단계 × 기질 6 × 연도 경계(−1·0·+1) × 맞춤 인생 없는 중립**의 모든 칸에서 보이는 선택지가 2~3개여야 한다(`eventLint#visibleChoiceGrid`). 공통 1개 + 수저 형편별 고유 2개씩(정의 5개)이 한 꼴이다.
 - **합성 가중 범위**: `weight × modifiers`(외모·시대 채널 포함)의 모든 조합 곱의 최악·최선이 [0.01, 10000] 안이어야 한다(`eventLint#eventWeightBounds`).
 - 외모(`looks`)를 조건에 쓰는 lint는 3단계(PL16)가 더한다.
+
+## 14. 진로 트랙 카드 필드 (SPEC-018 PL4 — 설계 `docs/data/persona-model.md` 4·4-1·6-4절)
+
+- **`pick: { kind: "field" | "detail" }`**: 진로 트랙의 **동적 후보 카드**(분야 카드 `job-pick-field` · 세부 직업 카드 `job-pick-detail`, `src/data/events/career.json`). 정의 `choices`가 없고(선택지·효과·보너스·`once`·`trigger`·`milestone`·`ask`·`heavy`·인용·`question`을 함께 쓰면 빌드 실패) `isEventEligible`가 늘 거짓이다 — 일반 추첨 후보가 아니라 `life.ts#stepYear`의 **진로 트랙 강제 슬롯**이 낸다(`persona`가 켜진 판, 학업이 끝난 해부터 35세까지). 후보는 카드가 열릴 때 `core/careerTrack.ts`가 정하고 안정 id(분야 id·직업 id) 2~3개를 `pending.choiceIds`에 저장한다. 렌더·영향 줄·해결·자동 선택·복원은 모두 `pickChoicesOf`(공통 인터페이스) 한 곳을 거친다. 일반 반복 린트(`once:false`는 `cooldown ≥ 15`)는 이 사건의 예외이고, 전용 린트 `pickEventProblems`가 사건 id·후보 격자(모든 연도 × 분야에서 후보 ≥ 3·입문 ≥ 1)·네 번째 지원 나이를 본다.
+- **`retiredWith: "persona"`**: 대체된 옛 사건 표지 — 맞춤 인생이 켜진 판에서는 일어나지 않는다(`youth-first-job` — 진로 트랙이 같은 플래그를 켠다). `persona`가 없는 판(구형 저장·스위치 끔)은 동작이 같다. 선택지 이벤트에만 쓴다.
+- 직업 표(`src/data/jobs.json`)는 이벤트 파일이 아니다 — 지연 로딩 덩어리(`GameData.jobs`)이고 형태는 `core/jobs.ts#jobTableProblems`(`check:events`가 부른다)가 본다. 파서가 읽는 id·분야·연도 색인은 코어 `core/jobIndex.ts`에 따로 있고 본 표와의 일치를 `check:events`·`tests/jobTable.test.ts`가 잠근다. 직업 id는 One-way(삭제·재사용 금지).
+- 시험: `tests/careerTrack.test.ts` · `tests/pickChoices.test.tsx` · `tests/jobTable.test.ts` · `tests/jobWage.test.ts` · `tests/jobApply.test.ts` · `tests/eraTables.test.ts` · `tests/storagePersona.test.ts`(직업 카드 대기 절).

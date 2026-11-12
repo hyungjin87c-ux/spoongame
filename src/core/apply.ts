@@ -1,4 +1,6 @@
 import { applyAssetEffects, clampFamilyFund, regionClassOf, type EconomyContext } from './economy';
+import { isGameDataReady, jobTable } from './gameData';
+import { jobMulOf } from './jobs';
 import type { CondContext, ResolvedEffects } from './events';
 import { personaViewOf } from './persona';
 import { applyStatDeltas } from './stats';
@@ -38,6 +40,10 @@ export function condContextOf(state: GameState): CondContext {
 export function economyContextOf(state: GameState): EconomyContext {
   if (state.character === null || state.generation === null) throw new Error('economyContextOf: 캐릭터/세대가 없다');
   const birthYear = state.character.birthYear;
+  // 직업 소득 배수(SPEC-018 PL4, 설계 5절): 진로 트랙에서 합격한 직업(`persona.job.id`)의 `jobMul` — **소득 조회 연도**(= 이 해의 달력 연도, 취업 판정 연도와 다르다)로 매년 읽는다.
+  // 저장된 `persona`를 직접 읽는다(스위치를 꺼도 이미 확정된 소득은 유지 — 6-3절). 직업이 없거나 모르면(콘텐츠 삭제) 키를 두지 않는다 = 1
+  const jobId = state.persona?.job?.id;
+  const job = jobId !== undefined && isGameDataReady() ? jobTable().byId.get(jobId) : undefined;
   // 시험 전용 R1 프로필은 항등 스위치(forceR1)를 켜 같은 배선을 지난다(EY17 ②) — 세대 판은 연도 규칙이 아직 없어 늘 항등이다(GM4)
   return {
     age: state.age,
@@ -48,6 +54,7 @@ export function economyContextOf(state: GameState): EconomyContext {
     birthYear,
     regionClass: regionClassOf(state.birthReport?.region),
     forceR1: state.generation === R1_PRESENT,
+    ...(job !== undefined ? { jobMul: jobMulOf(job, birthYear + state.age) } : {}),
   };
 }
 

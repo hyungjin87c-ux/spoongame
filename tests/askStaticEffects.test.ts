@@ -23,6 +23,8 @@ const ALLOWED: Record<string, string> = {
   './familyCard.test.ts': '사이 표 방향 시험 — 사건 효과와 `ASK_EFFECTS`를 함께 읽는다(AK5)',
   './helpers/askChoice.ts': '한 곳 규칙의 구현 — 조르기 갈래 선택지는 `askOutcomeOf`·`askBranchProbs`로 읽는다',
   './helpers/eligibilityGolden.ts': '기존 사건 자격 골든의 지문 계산 — 정적 필드를 해시로 견줄 뿐 점수·영향으로 읽지 않는다(조르기 갈래는 효과 없음으로 같은 방식 기록)',
+  './careerTrack.test.ts': '진로 카드(`pick`)의 첫 일 카드 플래그 대응만 읽는다 — 이름을 적은 사건(`youth-first-job`)과 진로 후보의 `setFlags`, 조르기 갈래 선택지가 아니다',
+  './pickChoices.test.tsx': '진로 카드(`pick`)의 동적 후보가 정적 효과를 갖지 않음(`undefined`)을 단언한다 — 조르기 갈래 선택지가 아니다',
   './economyConversion.test.ts': '이름을 적은 사건·고정 목록(`unchanged` 등)만 읽는다 — 조르기 사건은 돈(`assets`·`family`) 변환표에 없고 집안 살림 지출은 `ASK_EFFECTS`가 정한다(AK7이 사건 id 집합 단언을 갱신한다)',
   './events.test.ts': '이름을 적은 사건(`school-tutoring` 등)의 효과만 읽는다',
   './familyFm7a.test.ts': '`has_child`를 켜는 사건을 찾는다 — 조르기 사건은 그 플래그를 켜지 않는다',

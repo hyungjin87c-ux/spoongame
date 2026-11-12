@@ -438,6 +438,22 @@ MODEL | hireYearCap | 1.10
 MODEL | hireYearUref | 8.36
 MODEL | faceExceptionUntil | 2016
 MODEL | seedCoefByV | 1 0.7
+# r4.1 3a단계 추가: 2단계 코드 상수를 블록으로 올림(값 불변) + 진로 트랙·지원 판정 값
+MODEL | envDriftP | 0.5
+MODEL | envDriftAges | 3 18
+MODEL | investAges | 4 18
+MODEL | schoolAges | 6 18
+MODEL | investQCap | 0.6
+MODEL | affMulRange | 0.8 1.3
+MODEL | tpMulRange | 0.8 1.25
+MODEL | advWCap | 0.8
+MODEL | dampSpan | 40
+MODEL | adversityMaxAge | 18
+MODEL | aptDelta | -0.08 0 0.10
+MODEL | eduHireCoef | 0.15
+MODEL | relHireMin | 60
+MODEL | studyEndAges | 18 22
+MODEL | jobLikeScale | 6
 TEMPER | curious | 0
 TEMPER | steady | 1
 TEMPER | driven | 2
@@ -542,6 +558,12 @@ LOOKERA | wage:all | 1.0
 HIRE | open | 0.85
 HIRE | normal | 0.60
 HIRE | selective | 0.40
+# HIREYEAR | 연도 구간 | 연도별 취업 문턱(a=1) — youth-employment-stats.md 4-2절 표 그대로, 범위 밖(1980 앞·2025 뒤)은 1.00
+HIREYEAR | 1980-1989 | 0.85 0.95 0.98 1.07 1.10 1.05 1.09 1.10 1.10 1.10
+HIREYEAR | 1990-1999 | 1.10 1.10 1.10 1.10 1.10 1.10 1.10 1.10 0.75 0.75
+HIREYEAR | 2000-2009 | 1.03 1.06 1.10 1.05 1.02 1.05 1.06 1.10 1.10 1.05
+HIREYEAR | 2010-2019 | 1.06 1.10 1.10 1.05 0.93 0.92 0.85 0.85 0.88 0.94
+HIREYEAR | 2020-2025 | 0.93 1.07 1.10 1.10 1.10 1.10
 ```
 
 (**▲ 구분**: `INVESTMUL`·`DRIFT`·`BORN*`·`ADV`·`ROLE`·`ACT*`·`TP`·`AFF`와 `HIRE`·`craft`·`people` 투자·수저 3 수준은 ▲ 설계값이다. 근거가 생겨 ▲를 지운 값: `INVEST`의 `study`·`art`·`sport` 수저 기울기(후보 B, `private-education-stats.md` 완료 — 단 2007년 이전 동일 비율 가정만 ▲) · `LOOKW`·`LOOKK`·`LOOKZ`(`persona-research.md` 4-3 + 형진 님 지정 연애 k = 0.70, 2026-11-11). 방향의 근거: `BORN*`·`ADV`·`ROLE`·`DRIFT` = persona-research.md 2절(완료, 크기는 「작다~중간」 등급만). 방향 중 SPEC 형진 님 예시에서 온 것은 「수저가 낮을수록 예술·운동 투자 확률이 낮다」와 「외모가 교우·연애·취업에 영향」이다. `LOOKW.friend`의 0.925·1.075는 소수 셋째 자리까지 그대로 두는 값이다. **r4 추가 구분**: `LOOKERA`의 1996~2019 칸은 확정 k의 배율 1.0이고 ▲ 아닌 값, ~1995 연애 0.8·2020~ 일반 0.8·2020~ 연애 1.0은 ▲(수집 필요, 4C-5). `actPullCap`·`composeWeightRange`·`hireYearFloor`는 안전장치 값 ▲이고, `candidatesShown`·`trackWindow`·`trackEnd`·`triesMax`·`gStoreMax`·`roleUsedMax`는 설계·저장 규칙 값이다. `HIREYEAR`는 `koreaStats.json`의 청년 고용률 식이고 2015년 이전은 수집 필요.)

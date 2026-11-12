@@ -261,7 +261,8 @@ describe('모든 이벤트에 닿을 수 있다: 네 가지 선택 전략으로 
 
   it('조건이 어긋나 영원히 열리지 않는 이벤트가 없다', () => {
     const { hit } = covered();
-    const missing = EVENT_POOL.events.filter((e) => (hit.get(e.id) ?? 0) < 1).map((e) => e.id);
+    // 진로 트랙 카드(`pick`, SPEC-018 PL4)는 `PERSONA_ENABLED`가 켜진 판에서만 나온다 — 스위치 출하 값은 꺼짐이라 이 표본에는 없다. 켠 판의 도달은 tests/careerTrack.test.ts가 본다(스위치를 켜는 3b단계에서 이 예외를 거두고 표본을 다시 본다)
+    const missing = EVENT_POOL.events.filter((e) => e.pick === undefined && (hit.get(e.id) ?? 0) < 1).map((e) => e.id);
     expect(missing).toEqual([]);
   });
 

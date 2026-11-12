@@ -69,6 +69,8 @@ export interface EconomyContext {
   regionClass: RegionClass;
   /** R1 항등 스위치 (EY17 ②, 시험·스크립트 전용) */
   forceR1?: boolean;
+  /** 직업 소득 배수 `jobMul` (SPEC-018 PL4, 설계 5절 — `core/jobs.ts#jobMulOf`): 없으면 1(구형·직업 전 소득은 변경 전과 같다) */
+  jobMul?: number;
 }
 
 const clampInt = (v: number, lo: number, hi: number): number => {
@@ -100,7 +102,7 @@ export function incomeOf(ctx: EconomyContext, incomeAdj: number): number {
   const state = workStateOf(ctx.flags, ctx.age);
   const curve = laborCurve(ctx.age);
   const base = (state === 'working' || state === 'business') && ctx.age < ECONOMY.floorBelowAge ? Math.max(ECONOMY.fullTimeFloor, curve) : curve;
-  const labor = base * educationMultiplier(ctx.education) * ECONOMY.state[state] * factorsOf(ctx).income;
+  const labor = base * educationMultiplier(ctx.education) * ECONOMY.state[state] * factorsOf(ctx).income * (ctx.jobMul ?? 1);
   const spouse = ctx.flags.has('married') ? ECONOMY.spouseIncome : 1;
   const adj = incomeAdj * (ctx.age >= ECONOMY.pension.fromAge ? ECONOMY.pension.adjFade : 1);
   const pension = ctx.age >= ECONOMY.pension.fromAge ? ECONOMY.pension.amount : 0;

@@ -14,7 +14,8 @@ export {}; // 모듈로 취급해 최상위 await를 쓴다
 try {
   await import('../src/data/installAll'); // 지연 로드 데이터(이벤트 풀·출생 연도 표·인용 테이블)를 정적으로 놓는다 — core의 기본 인자가 읽는다(MG8)
   const { EVENT_FILES, EVENT_POOL } = await import('../src/data/events');
-  const { lintEventData, questionProblems, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems } = await import('../src/core');
+  const { lintEventData, questionProblems, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems, pickEventProblems, jobTableProblems, JOB_INDEX } = await import('../src/core');
+  const { JOB_TABLE } = await import('../src/data/jobs');
   const { NOTE_CARDS, NOTE_MANUAL } = await import('../src/data/noteCards');
   // FM7a 승인 게이트(SPEC-009 「FM7 나눔」 2절, RG11 방식): 형진 님이 승인하지 않은 무거운 문장(`approved !== true`)이 하나라도 있으면 빌드가 막힌다. T06(어린 형제의 이른 별세)만 계획을 끄면 통과한다
   const { FM7A_APPROVALS, familyApprovalProblems } = await import('../src/data/familyApproval');
@@ -31,6 +32,12 @@ try {
     // 어린 시절 부모님 결정(SPEC-005 PD2): 19세 미만에서 일어나는 선택지 이벤트가 분류표에 모두 있고, 표의 id가 모두 실제로 있다 — 새 선택지 이벤트를 분류 없이 추가하면 빌드가 실패한다
     ...parentTableProblems(EVENT_POOL.events),
     ...familyApprovalProblems(FM7A_APPROVALS, FAMILY_DESIGN.siblingLoss.value.enabled),
+    // 맞춤 인생 진로 트랙(SPEC-018 PL4): 직업 표 형태(입문·대면·조건 금지)·진로 카드 사건·후보 격자(모든 연도 × 분야)·파서용 id 색인과 본 표의 일치
+    ...jobTableProblems(JOB_TABLE.jobs),
+    ...pickEventProblems(EVENT_POOL.events, JOB_TABLE),
+    ...(JSON.stringify(JOB_INDEX.map((x) => [x.id, x.field, x.from ?? null, x.to ?? null])) === JSON.stringify(JOB_TABLE.jobs.map((j) => [j.id, j.field, j.yearRange?.from ?? null, j.yearRange?.to ?? null]))
+      ? []
+      : ['직업 id 색인(core/jobIndex.ts)이 직업 표(data/jobs.json)와 다르다 — id·분야·연도 구간·순서가 같아야 한다']),
   ];
   if (lint.length > 0) {
     console.error('이벤트 문구 점검 실패: 빌드를 중단합니다.');

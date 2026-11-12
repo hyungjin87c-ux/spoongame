@@ -13,9 +13,9 @@ let pending: Promise<void> | null = null;
 export function loadGameData(): Promise<void> {
   if (isGameDataReady()) return Promise.resolve();
   if (pending !== null) return pending;
-  pending = Promise.all([import('./events'), import('./birthYearData'), import('./citationsAccess'), import('./names'), import('./familyTables')])
-    .then(([events, years, citations, names, family]) => {
-      installGameData({ eventPool: events.EVENT_POOL, birthYears: years.BIRTH_YEAR_TABLES, citations: citations.CITATION_TABLE, names: names.NAMES_API, family: family.FAMILY_TABLES });
+  pending = Promise.all([import('./events'), import('./birthYearData'), import('./citationsAccess'), import('./names'), import('./familyTables'), import('./jobs')])
+    .then(([events, years, citations, names, family, jobs]) => {
+      installGameData({ eventPool: events.EVENT_POOL, birthYears: years.BIRTH_YEAR_TABLES, citations: citations.CITATION_TABLE, names: names.NAMES_API, family: family.FAMILY_TABLES, jobs: jobs.JOB_TABLE });
     })
     .catch((e: unknown) => {
       pending = null; // 실패하면 다시 시도할 수 있게 푼다

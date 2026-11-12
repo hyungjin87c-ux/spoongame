@@ -278,7 +278,8 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     }
     expect(hits).toEqual({
       // (SPEC-005 QI3: core/carousel.ts의 기준 줄 「{분모 문구} · {연도}년 기준」 조립은 없어졌다 — 연도는 공식 통계명 줄 「합계출산율(2025년)」로 옮겼고 기준 줄에는 분모만 남는다)
-      'core/events.ts': 1, // 개발자용 점검 메시지(「standard · common · assembled 중 하나여야 한다」)
+      'core/events.ts': 2, // 개발자용 점검 메시지(「standard · common · assembled 중 하나여야 한다」 · SPEC-018 적성 조건 형식 안내)
+      'core/eventLint.ts': 4, // 개발자용 점검 메시지 — SPEC-018 격자 하한 lint의 칸 이름(수저 · 기질 · 적성 · 직업)
       'core/glue.ts': 1, // splitPair의 분해 기호
       // SPEC-004 GM4 2차: 첫 장 세대 그래프의 짧은 쌍 — 큰 값 아래 「한 해 평균 · {첫해}~{끝해}년」(core/genChart.ts, ui/Glue 묶음) · 가리킴 글자 「{연도}년 · {값}만 명」(data/genChartText.ts, 그림 안 한 줄) · (세대 줄 「{세대 이름} · {범위}년생」은 `.pair--meta` 마크업이라 글자 안에 「 · 」가 없다 — ui/GenSlide.tsx) ·
       // 개인정보 처리방침·이용 안내의 머리 줄 「… (법률 검토 전 초안 · {날짜})」(data/policyText.ts, 항목 둘) · 캐러셀 손 넘김 알림 「{i} / {N} · {표제어}」(ui/StatsCarousel.tsx — 화면에 안 보이는 읽기 전용 글자)

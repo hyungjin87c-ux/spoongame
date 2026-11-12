@@ -36,6 +36,7 @@
       "ageRange": { "min": 22, "max": 32 },
       "weight": 24,
       "once": true,
+      "retiredWith": "persona",
       "citation": { "past": "c-091", "present": "c-011", "future": "c-011" },
       "conditions": { "notFlags": ["has_career", "own_business"] },
       "choices": [

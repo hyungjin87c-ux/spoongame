@@ -357,6 +357,8 @@ describe('FM7a가 건드린 사건은 이 목록뿐이다 (FM7a 전 원문과 �
             a.forEach((c, i) => {
               for (const ck of new Set([...Object.keys(c), ...Object.keys(b[i] ?? {})])) if (JSON.stringify(c[ck]) !== JSON.stringify(b[i]?.[ck])) diff.push(`${String(c.id)}.${ck}`);
             });
+          } else if (k === 'retiredWith') {
+            // SPEC-018 PL4: 옛 첫 일 카드(`youth-first-job`)에 대체 표지 `retiredWith`가 더해졌다 — 글·조건·효과는 그대로라 FM7a가 건드린 사건 목록과 무관하다
           } else if (k === 'question') {
             // SPEC-014: 질문 문장은 FM7a 이후에 모든 선택지 사건에 더해졌다 — FM7a가 건드린 사건 목록과 무관하다
           } else if (JSON.stringify(old[k]) !== JSON.stringify(cur[k])) diff.push(k);

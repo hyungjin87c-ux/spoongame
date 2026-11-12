@@ -7,6 +7,7 @@ import {
   createInitialState,
   enterBirth,
   enterLife,
+  economyContextOf,
   eventWeight,
   generateBirthFromSeed,
   meetsCondition,
@@ -94,5 +95,44 @@ describe('스위치가 꺼져 있는 동안', () => {
     const [e] = poolOf([ev({ id: 'test-mod', modifiers: [{ when: { temper: ['warm'] }, weight: 5 }, { when: { tailored: true }, weight: 2 }], choices: [ch('a'), ch('b')] })]).events;
     const s = withStored(startLife(2, 'genz'));
     expect(eventWeight(e, condContextOf(s))).toBe(1);
+  });
+});
+
+describe('스위치가 꺼져 있을 때의 진로 트랙 (3a단계, 설계 6-3절)', () => {
+  const hiredPersona = (): PersonaState => ({ ...stored(), job: { field: 'clerk', id: 'clerk-bank', since: 22 }, tries: 1 });
+  const at30 = (): GameState => {
+    let s: GameState = startLife(4, 'millennial');
+    for (let i = 0; i < 200 && s.phase === 'life' && s.age < 30; i++) s = s.pending === null ? stepYear(s).state : resolveChoiceStep(s, s.pending.key, s.pending.choiceIds[0]).state;
+    return { ...s, pending: null, flags: [...new Set([...s.flags, 'has_career', 'job_picked'])].sort(), persona: hiredPersona() };
+  };
+
+  it('persona가 없는 판은 35세까지 진로 카드가 없고 옛 첫 일 카드가 그대로 나온다', () => {
+    let first = 0;
+    for (let seed = 1; seed <= 25; seed++) {
+      let s: GameState = startLife(seed, 'millennial');
+      for (let i = 0; i < 500 && s.phase === 'life' && s.age <= 36; i++) s = s.pending === null ? stepYear(s).state : resolveChoiceStep(s, s.pending.key, s.pending.choiceIds[0]).state;
+      expect(Object.keys(s.seen).some((k) => k.startsWith('job-pick-')), `seed ${seed}`).toBe(false);
+      if (s.seen['youth-first-job'] !== undefined) first++;
+    }
+    expect(first).toBeGreaterThan(0); // 옛 카드는 살아 있다(retiredWith는 persona가 켜진 판에서만 거둔다)
+  });
+
+  it('저장된 persona가 있어도 스위치가 꺼져 있으면 진로 트랙이 멈춘다(켠 판에서 끄는 경우)', () => {
+    const none: GameState = { ...startLife(5, 'millennial'), age: 19, persona: stored() };
+    const r = stepYear(none);
+    expect(r.state.pending?.eventId.startsWith('job-pick-') ?? false).toBe(false);
+    expect(r.state.persona).toEqual(none.persona);
+  });
+
+  it('이미 합격한 판은 job·has_career·jobMul이 유지된다 — 소득이 끊기지 않는다', () => {
+    const s = at30();
+    const back = parseGame(serializeGame(s))!;
+    expect(back.persona!.job).toEqual({ field: 'clerk', id: 'clerk-bank', since: 22 });
+    expect(back.flags).toEqual(expect.arrayContaining(['has_career', 'job_picked']));
+    const withJob = economyContextOf(back);
+    expect(withJob.jobMul).toBeGreaterThan(0);
+    const { persona: _p, ...bare } = back;
+    void _p;
+    expect('jobMul' in economyContextOf(bare as GameState)).toBe(false); // persona가 없는 판은 1
   });
 });

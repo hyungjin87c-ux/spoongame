@@ -40,6 +40,7 @@ import { askBranchProbs, askOutcomeOf, type AskRollChoice } from './ask';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { actPullOf, autoPriorityMul, personaOf } from './persona';
+import { careerCardOf, jobPickOutcome, jobPickWeights, pickChoicesOf } from './careerTrack';
 import { personaOnChoice, personaOnFamilyLines, personaOnNarrative, personaOnYearEnd } from './personaLife';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
@@ -394,9 +395,16 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   const choiceChance = freq.choice * (choicesSoFar >= pacing.soft ? pacing.softFactor : 1);
 
   const forced = fam.forcedEvent !== undefined ? (pool.byId.get(fam.forcedEvent) ?? null) : null;
+  // 진로 트랙(SPEC-018 PL4, 설계 4-1절): 맞춤 인생이 켜진 판에서 학업이 끝난 해부터 35세까지 분야 카드(G4)·세부 직업 카드(G5)를 **강제 슬롯**으로 낸다 — 일반 선택지 간격(2년)·페이싱 하드 상한을 받지 않는다.
+  // 가족 강제 사건이 있는 해는 한 해 밀린다. 카드는 `choicesSoFar`(연표 선택 줄)에 센다
+  const track = forced === null && ctx.persona ? careerCardOf(state, pool, age) : null;
 
   let picked: EventDef | null = null;
-  if (forced !== null) {
+  if (track !== null) {
+    // 일반 추첨 한 번(`pickWeighted`)을 대신해 난수를 한 번 소비해 이후 수열의 칸을 맞춘다 (`persona`가 있는 판에서만 — 없는 판의 수열은 그대로다)
+    rng.next();
+    picked = track.ev;
+  } else if (forced !== null) {
     // 구성이 정한 해: 첫째의 첫 동생 반응 카드를 선택지 간격·페이싱과 무관하게 띄우고 그 해 일반 추첨은 건너뛴다. 추첨 한 번(`pickWeighted`)을 대신해 난수를 한 번 소비해 이후 수열의 칸을 맞춘다 (7-2절 2)
     rng.next();
     picked = forced;
@@ -431,6 +439,14 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   s = applyFamilyChanges(s, fam);
   // 가족 변화 줄 중 무거운 장면(부모·조부모 별세·부모 이혼·어린 형제 별세)은 아동기 역경의 입력이다 (풀에도 seen에도 없는 줄 — 설계 1-3절 ②)
   s = personaOnFamilyLines(s, fam.lines, age);
+
+  if (picked !== null && track !== null && picked === track.ev) {
+    // 진로 카드: 후보 id는 카드가 열릴 때 한 번 정해 `pending.choiceIds`에 저장한다(스냅샷) — 사람이 고르는 카드(`self`)라 부모·흘러감 위임이 없다
+    return {
+      state: { ...s, rngState: rng.getState(), seen: { ...s.seen, [picked.id]: age }, lastChoiceAge: age, pending: { eventId: picked.id, key: `${picked.id}@${age}`, age, choiceIds: [...track.ids] } },
+      tick: { kind: 'choice', fromAge: age, eventId: picked.id, ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
+    };
+  }
 
   if (picked !== null && isChoiceEvent(picked)) {
     // 보이는 선택지: 가족 줄이 난 해(`exclude`)에는 해 시작 ctx ∩ 줄 뒤 ctx (R-632). 강제 사건(K2)은 후보에서 뺄 수 없으므로 교집합이 2개 미만이면 해 시작 값을 그대로 쓴다(지금 풀의 강제 사건은 늘 보이는 선택지가 둘이라 닿지 않는다)
@@ -504,22 +520,26 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
   if (state.phase !== 'life' || pending === null || pending.key !== key || !pending.choiceIds.includes(choiceId)) return noop(state);
   if (state.character === null || state.generation === null) return noop(state);
   const ev = pool.byId.get(pending.eventId);
-  const choice = ev?.choices?.find((c) => c.id === choiceId);
+  // 선택지는 공통 인터페이스 `pickChoicesOf` 하나로 푼다 — 정의 선택지(일반 사건)도 저장된 후보 id(진로 카드)도 같은 길이다 (SPEC-018 PL4)
+  const choice = ev === undefined ? undefined : pickChoicesOf(state, pending, pool).find((c) => c.id === choiceId);
   if (ev === undefined || choice === undefined) throw new Error(`resolveChoice: 이벤트/선택지를 찾을 수 없다 (${pending.eventId}/${choiceId})`);
+  // 진로 카드의 결과(분야 → field 상태, 세부 직업 → 지원 판정): 효과는 합격 때의 플래그뿐이고 상태 전이는 `persona`에 적는다
+  const career = ev.pick === undefined ? null : jobPickOutcome(state, ev.pick.kind, choiceId, pending.age);
 
   const ctx = condContextOf(state);
   // 조르기 사건의 조른다·떼쓴다(SPEC-011 AK4): 갈래(들어주기·거절·사이 나빠짐)는 해시 `u1`·`u2`로, 효과는 코드 표 `ASK_EFFECTS`에서, 문장은 그 갈래의 선택지 필드에서 온다 — 한 함수 `askOutcomeOf`.
   // 해결 전 상태(`pending`이 있는 `state`)를 넘긴다(사이 `C`가 효과 적용 전 플래그를 읽는다). 이 밖의 경로(효과 적용·플래그·`lastChoiceAge`·연표·난수 한 칸)는 일반 선택과 같다. 참는다(`endure`)는 일반 선택지라 데이터 `effects`로 해결한다.
   const ask = ev.ask !== undefined && choiceId !== 'endure' ? askOutcomeOf(state, ev, choiceId as AskRollChoice) : null;
-  let s = applyResolved(state, ask !== null ? resolveEffects(ask.effects, undefined, ctx) : resolveEffects(choice.effects, choice.bonuses, ctx));
+  let s = applyResolved(state, ask !== null ? resolveEffects(ask.effects, undefined, ctx) : career !== null ? resolveEffects(career.effects, undefined, ctx) : resolveEffects(choice.effects, choice.bonuses, ctx));
   s = {
     ...s,
+    ...(career !== null ? { persona: career.persona } : {}),
     pending: null,
     history: appendHistory(s.history, {
       age: pending.age,
       kind: 'choice',
       title: ev.title,
-      text: ask !== null ? ask.text : by === 'parent' ? (choice.parentResult ?? choiceResultOf(choice, ctx)) : choiceResultOf(choice, ctx),
+      text: ask !== null ? ask.text : career !== null ? career.text : by === 'parent' ? (choice.parentResult ?? choiceResultOf(choice, ctx)) : choiceResultOf(choice, ctx),
       choice: by === 'parent' ? (choice.parentLabel ?? choice.label) : choice.label,
       eventId: ev.id,
       // 질문 문장(SPEC-014 QS1): 이 한 곳에서 본인 선택·부모 결정·흘러감 세 경로가 같은 값을 적는다. 사건에 `question`이 없으면 키를 만들지 않는다(옛 줄과 같은 모양). 난수·효과에는 닿지 않는다.
@@ -631,6 +651,8 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = eventPool(
   const persona = personaOf(state);
   const mul = persona === null ? null : autoPriorityMul(persona);
   const priority = mul === null ? base : { wealth: base.wealth * mul.wealth, education: base.education * mul.education, health: base.health * mul.health, happiness: base.happiness * mul.happiness, relationships: base.relationships * mul.relationships };
+  // 진로 카드(SPEC-018 PL4): 같은 후보·점수 × exp(소득 호감 × 돈 성향 / T) — 입문 합격이 보장된 때(`tries ≥ 3`)는 그 후보를 고른다. 렌더·해결과 같은 `pickChoicesOf`의 후보 id를 쓴다
+  if (ev.pick !== undefined) return jobPickWeights(state, pending, pool, priority.wealth, AUTO_TEMPERATURE);
   // 돈 항의 절실함: 순자산이 음수일수록 커진다(1 ~ 1 + needCap). 20세 미만은 재력 단계로 정한다.
   const moneyNeed =
     state.assets === null

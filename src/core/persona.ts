@@ -1,6 +1,7 @@
 import { PERSONA_ENABLED } from '../data/personaSwitch';
 import { PERSONA_TABLE as T, type PersonaTableRows } from '../data/personaTable';
 import { FAMILY_TAG_PERSONA } from './familyModel';
+import { jobIndexOf } from './jobIndex';
 import { famHash01, famSeedOf } from './familyRng';
 import { APT_KEYS, ROLE_KINDS, TEMPER_IDS, type ActKind, type AptKey, type AptTier, type RoleKind, type TemperId } from './personaKinds';
 import { OCCUPATIONS, type DelegatedBy, type GameState, type HeavyKind, type Occupation, type ParentWealth, type ParentingStyle } from './types';
@@ -34,22 +35,22 @@ const W_MIN = M('wMin');
 const W_MAX = M('wMax');
 const GMAX = M('gMax');
 const G_STORE_MAX = M('gStoreMax');
-/** 양의 변화량 감쇠의 폭: `실제Δ = round(Δ × (1 − max(0, w − 60)/40))` — 80에서 절반, 95에서 8분의 1 (1-3절) */
-const DAMP_SPAN = 40;
-/** 해마다(나이 3~18) 양육 방식이 기질 1~2개를 +1 하는 해시 문턱 (사다리 ④ 0.3~0.6, 설계값 ▲) */
-const ENV_DRIFT_P = 0.5;
-const ENV_DRIFT_AGES: readonly [number, number] = [3, 18];
-const INVEST_AGES: readonly [number, number] = [4, 18];
-const SCHOOL_AGES: readonly [number, number] = [6, 18];
-const ADVERSITY_MAX_AGE = 18;
+/** 양의 변화량 감쇠의 폭: `실제Δ = round(Δ × (1 − max(0, w − 60)/40))` — 80에서 절반, 95에서 8분의 1 (1-3절, 9절 블록 `dampSpan`) */
+const DAMP_SPAN = M('dampSpan');
+/** 해마다(나이 3~18) 양육 방식이 기질 1~2개를 +1 하는 해시 문턱 (사다리 ④ 0.3~0.6, 설계값 ▲ — 9절 블록 `envDriftP`) */
+const ENV_DRIFT_P = M('envDriftP');
+const ENV_DRIFT_AGES = MM('envDriftAges');
+const INVEST_AGES = MM('investAges');
+const SCHOOL_AGES = MM('schoolAges');
+const ADVERSITY_MAX_AGE = M('adversityMaxAge');
 /** 부모 투자 확률 상한 `clamp(INVEST_Q × INVEST_MUL, 0, 0.6)` (2절) */
-const INVEST_Q_CAP = 0.6;
+const INVEST_Q_CAP = M('investQCap');
 /** 적성 키움의 기질 친화 곱수 범위 `m_k` (2절) */
-const AFF_MUL: readonly [number, number] = [0.8, 1.3];
+const AFF_MUL = MM('affMulRange');
 /** 자동 모드 기질 보정 곱 `m_key` 범위 (1-4절) */
-const TP_MUL: readonly [number, number] = [0.8, 1.25];
+const TP_MUL = MM('tpMulRange');
 /** 지지가 있을 때 W 확률의 상한 (1-3절 ③) */
-const ADV_W_CAP = 0.8;
+const ADV_W_CAP = M('advWCap');
 
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n));
 /** 0에서 먼 쪽으로 반올림(양수·음수 대칭) */
@@ -104,6 +105,9 @@ export const personaSwitchOn = (): boolean => PERSONA_ENABLED;
 
 /** 맞춤 인생 해시: `famHash01(가족 시드, 21, a, b)` — 진행 난수를 쓰지 않는다 */
 const hash = (famSeed: number, a: number, b: number): number => famHash01(famSeed, FAMILY_TAG_PERSONA, a, b);
+
+/** 맞춤 인생 해시(공개): 지원 판정 `(60, tries)`·직업 후보 추첨 `(50|51, …)` 등 3단계가 같은 해시를 쓴다 */
+export const personaHash = hash;
 
 function utf8Bytes(text: string): number[] {
   const out: number[] = [];
@@ -281,7 +285,7 @@ export function settleShown(w: readonly number[], shown: number, famSeed: number
 const SHARED_ORDER = ['v', 'born', 'w', 'shown', 'g', 'tries', 'advUsed', 'roleUsed', 'job'] as const;
 
 /** 필드 순서를 고정하고 0인 선택 필드를 뺀다(같은 값 → 같은 바이트) */
-function canonical(p: PersonaState): PersonaState {
+export function canonical(p: PersonaState): PersonaState {
   const out: Record<string, unknown> = {};
   for (const key of SHARED_ORDER) {
     const val = p[key];
@@ -407,7 +411,8 @@ export function readPersona(raw: unknown): PersonaState | null {
     if (!isObj(j) || Object.keys(j).some((k) => k !== 'field' && k !== 'id' && k !== 'since')) return null;
     if (!inInt(j.since, 0, 110)) return null;
     if ((OCCUPATIONS as readonly unknown[]).includes(j.field)) {
-      job = { field: j.field as Occupation, ...(typeof j.id === 'string' && JOB_ID_PATTERN.test(j.id) ? { id: j.id } : {}), since: j.since };
+      // 모르는 직업 id(콘텐츠 삭제·손상)는 `id`만 지워 field 상태로 되돌린다 — `has_career`·`job_picked`는 유지되고 `jobMul`은 1이다(6-4절)
+      job = { field: j.field as Occupation, ...(typeof j.id === 'string' && JOB_ID_PATTERN.test(j.id) && jobIndexOf(j.id) !== undefined ? { id: j.id } : {}), since: j.since };
     }
   }
   return canonical({

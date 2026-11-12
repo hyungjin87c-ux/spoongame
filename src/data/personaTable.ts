@@ -52,6 +52,21 @@ export const PERSONA_TABLE = {
     hireYearUref: [8.36],
     faceExceptionUntil: [2016],
     seedCoefByV: [1, 0.7],
+    envDriftP: [0.5],
+    envDriftAges: [3, 18],
+    investAges: [4, 18],
+    schoolAges: [6, 18],
+    investQCap: [0.6],
+    affMulRange: [0.8, 1.3],
+    tpMulRange: [0.8, 1.25],
+    advWCap: [0.8],
+    dampSpan: [40],
+    adversityMaxAge: [18],
+    aptDelta: [-0.08, 0, 0.1],
+    eduHireCoef: [0.15],
+    relHireMin: [60],
+    studyEndAges: [18, 22],
+    jobLikeScale: [6],
   },
   TEMPER: {
     curious: [0],
@@ -184,6 +199,14 @@ export const PERSONA_TABLE = {
     open: [0.85],
     normal: [0.6],
     selective: [0.4],
+  },
+  /** 연도별 취업 문턱 `HIREYEAR` (a = 1) — `youth-employment-stats.md` 4-2절 표 그대로. 범위 밖(1980 앞·2025 뒤)은 1.00 */
+  HIREYEAR: {
+    '1980-1989': [0.85, 0.95, 0.98, 1.07, 1.1, 1.05, 1.09, 1.1, 1.1, 1.1],
+    '1990-1999': [1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 0.75, 0.75],
+    '2000-2009': [1.03, 1.06, 1.1, 1.05, 1.02, 1.05, 1.06, 1.1, 1.1, 1.05],
+    '2010-2019': [1.06, 1.1, 1.1, 1.05, 0.93, 0.92, 0.85, 0.85, 0.88, 0.94],
+    '2020-2025': [0.93, 1.07, 1.1, 1.1, 1.1, 1.1],
   },
 } as const;
 

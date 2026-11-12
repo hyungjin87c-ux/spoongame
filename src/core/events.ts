@@ -251,6 +251,16 @@ export interface EventDef {
    * 서술 이벤트와 선택지 이벤트에 쓸 수 있고 마일스톤에는 쓰지 않는다. 저장 대상이 아니다(데이터에서 읽는다).
    */
   heavy?: { kind: HeavyKind };
+  /**
+   * 동적 후보 카드 (SPEC-018 PL4, 설계 4절 `[CX-002-001·002]`): `{ kind: 'field' | 'detail' }` — 진로 트랙의 분야 카드(`job-pick-field`)·세부 직업 카드(`job-pick-detail`) 전용.
+   * 정의 `choices`가 없고 **일반 추첨 후보도 아니다**(`isEventEligible`가 거짓 — `trigger` 사건 전례). 후보는 카드가 열릴 때 `core/careerTrack.ts`가 정하고 안정 id를 `pending.choiceIds`에 저장한다.
+   * 렌더·영향 줄·해결·자동 선택·복원은 모두 `pickChoicesOf` 하나를 거친다. 서술 이벤트처럼 보이지만 `once`가 아니고 간격·반복 린트의 예외다(전용 린트 `pickEventProblems`가 따로 본다).
+   */
+  pick?: { kind: 'field' | 'detail' };
+  /**
+   * 대체된 옛 사건 표지 (SPEC-018 PL4, 설계 4절 `[CX-002-002]`): `'persona'`이면 **맞춤 인생이 켜진 판에서는 일어나지 않는다**(진로 트랙이 대신한다 — `youth-first-job`). `persona`가 없는 판(구형 저장·스위치 끔)은 동작이 같다(골든 대상).
+   */
+  retiredWith?: 'persona';
 }
 
 /**
@@ -454,6 +464,8 @@ export function lastSeenAge(seen: Readonly<Record<string, number>>, id: string):
 
 export function isEventEligible(ev: EventDef, view: EligibilityView): boolean {
   if (ev.trigger !== undefined) return false; // 가족 구성이 일으키는 사건은 일반 추첨 후보가 아니다 (K2)
+  if (ev.pick !== undefined) return false; // 진로 트랙 카드는 전용 예약 경로가 낸다 (SPEC-018 PL4)
+  if (ev.retiredWith === 'persona' && view.persona) return false; // 맞춤 인생이 켜진 판에서는 진로 트랙이 대신한다
   if (!ev.stages.includes(stageOfAge(view.age))) return false;
   if (!inRange(view.age, ev.ageRange)) return false;
   if (!inYearRange(view.year, ev.yearRange)) return false;
@@ -832,7 +844,7 @@ function checkVariants(v: unknown, path: string, min: number, max: number, p: Pr
 
 const EVENT_KEYS = [
   'id', 'title', 'text', 'textVariants', 'role', 'question', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
-  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy', 'ask',
+  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy', 'ask', 'pick', 'retiredWith',
 ] as const;
 
 /** 질문 문장의 길이 상한 (SPEC-014 규칙 2 — 윗줄 12px·360px에서 한 줄 약 19자, 두 줄 안) */
@@ -1143,6 +1155,7 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
   checkCitationFields(ev, path, p);
   checkHeavy(ev, path, p);
   checkAsk(ev, path, p);
+  checkPick(ev, path, p);
 
   const hasChoices = ev.choices !== undefined;
   if (hasChoices) {
@@ -1177,6 +1190,23 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
     if (ev.bonuses !== undefined) checkBonuses(ev.bonuses, `${path}.bonuses`, p);
     checkTotalDelta(ev.effects, ev.bonuses, path, p);
   }
+}
+
+/** `pick`(동적 후보 카드)·`retiredWith`(대체된 옛 사건)의 형태 (SPEC-018 PL4): `pick`은 선택지·효과·보너스·`trigger`·`milestone`·`once`·`ask`와 함께 쓰지 않고, `retiredWith`는 `"persona"`뿐이며 선택지 이벤트에만 쓴다 */
+function checkPick(ev: Obj, path: string, p: Problems): void {
+  if (ev.retiredWith !== undefined) {
+    if (ev.retiredWith !== 'persona') p.add(`${path}.retiredWith`, '"persona"만 쓸 수 있다');
+    if (ev.choices === undefined) p.add(`${path}.retiredWith`, '대체되는 옛 사건은 선택지 이벤트여야 한다');
+  }
+  if (ev.pick === undefined) return;
+  const at = `${path}.pick`;
+  if (!isObj(ev.pick)) return void p.add(at, '{ "kind": "field" | "detail" } 객체여야 한다');
+  checkKeys(ev.pick, ['kind'], ['kind'], at, p);
+  if (ev.pick.kind !== 'field' && ev.pick.kind !== 'detail') p.add(`${at}.kind`, '"field" 또는 "detail"이어야 한다');
+  if (ev.choices !== undefined) p.add(at, 'pick 사건은 정의 choices가 없다 (후보는 카드가 열릴 때 정해진다)');
+  if (ev.effects !== undefined || ev.bonuses !== undefined) p.add(at, 'pick 사건은 효과·보너스가 없다 (결과는 지원 판정이 정한다)');
+  for (const k of ['trigger', 'milestone', 'ask', 'heavy', 'citation', 'noCitation', 'question', 'retiredWith'] as const) if (ev[k] !== undefined) p.add(at, `pick 사건에는 ${k}를 쓰지 않는다`);
+  if (ev.once === true) p.add(`${path}.once`, 'pick 사건은 once가 아니다 — 진로 트랙 상태가 카드를 정한다');
 }
 
 /** 날것 데이터에서 맞춤 조건(`temper`·`apt`·`job`·`tailored`)을 쓰는지 본다 — 형태 검증 단계라 타입 변환 전의 값을 읽는다 */

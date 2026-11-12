@@ -1,0 +1,27 @@
+{
+  "note": "모티브로만 새로 쓴 글입니다. 진로 트랙의 동적 후보 카드(SPEC-018 PL4) — 후보는 카드가 열릴 때 core/careerTrack.ts가 정하고 이 파일에는 본문·제목만 있다(문장 다듬기는 PL5).",
+  "events": [
+    {
+      "id": "job-pick-field",
+      "title": "어떤 길로 갈지 정한 해",
+      "text": "이제 일을 정해야 할 때가 되었습니다. 마음이 가는 길이 몇 갈래로 보입니다.",
+      "stages": ["school", "youth"],
+      "track": "common",
+      "ageRange": { "min": 19, "max": 35 },
+      "weight": 1,
+      "once": false,
+      "pick": { "kind": "field" }
+    },
+    {
+      "id": "job-pick-detail",
+      "title": "일자리의 문을 두드린 해",
+      "text": "마음에 둔 길 안에서 일할 곳을 골랐습니다. 이제 문을 두드릴 차례입니다.",
+      "stages": ["school", "youth"],
+      "track": "common",
+      "ageRange": { "min": 19, "max": 35 },
+      "weight": 1,
+      "once": false,
+      "pick": { "kind": "detail" }
+    }
+  ]
+}

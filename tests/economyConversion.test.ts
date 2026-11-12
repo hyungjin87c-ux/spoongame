@@ -130,7 +130,7 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
   /** FM7a 「남은 한 분」 변형 4개(원본 id + -mother-gone·-father-gone): 원본의 효과·선택지·보너스를 그대로 가진 문장 변형이라 변환표에 따로 적지 않는다 — 원본(`middle-parents-care`·`middle-parents-farewell`)의 행이 곧 변형의 행이다 */
   const FM7A_VARIANTS = ['middle-parents-care-mother-gone', 'middle-parents-care-father-gone', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'];
 
-  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) + FM7a 변형 4개(원본의 행을 그대로 쓴다) = 풀 144개 + 조르기 7개 전부', () => {
+  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) + FM7a 변형 4개(원본의 행을 그대로 쓴다) = 풀 144개 + 조르기 7개 + 진로 카드 2개(SPEC-018 PL4) 전부', () => {
     const inTable = new Set(ROWS.map((r) => r.eventId));
     const unchanged = parseUnchanged();
     expect(unchanged).toHaveLength(37);
@@ -155,8 +155,16 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
       expect(inTable.has(id), `${id}가 변환표에 있다`).toBe(false);
       expect(JSON.stringify(eventOf(id).choices!.map((c) => c.effects)), id).not.toMatch(/"assets"|"family"/);
     }
-    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS, ...askIds])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
-    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length + askIds.length);
+    // 진로 트랙 카드(SPEC-018 PL4)도 표에도 5-5에도 없다 — 정의 선택지·효과가 없는 동적 후보 카드(`pick`)라 옛 재산 변환이 있을 수 없다(결과는 지원 판정이 정한다)
+    const careerIds = EVENT_POOL.events.filter((e) => e.pick !== undefined).map((e) => e.id);
+    expect(careerIds).toEqual(['job-pick-field', 'job-pick-detail']);
+    for (const id of careerIds) {
+      expect(inTable.has(id), `${id}가 변환표에 있다`).toBe(false);
+      expect(eventOf(id).choices, id).toBeUndefined();
+      expect(JSON.stringify(eventOf(id)), id).not.toMatch(/"assets"|"family"|"effects"/);
+    }
+    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS, ...askIds, ...careerIds])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
+    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length + askIds.length + careerIds.length);
     for (const id of unchanged) {
       const ev = eventOf(id);
       const effs: Array<Effects | undefined> = [ev.effects, ...(ev.bonuses ?? []).map((b) => b.effects), ...(ev.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];

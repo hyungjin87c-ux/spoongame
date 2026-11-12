@@ -1,5 +1,6 @@
 import { IMPACT_STEPS } from '../data/economyTable';
 import { applyResolved, condContextOf, economyContextOf } from './apply';
+import { pickChoicesOf } from './careerTrack';
 import { cashFlowOf, initialAssets } from './economy';
 import { resolveEffects, type ChoiceDef, type EventPool, type ResolvedEffects } from './events';
 import { STAT_KEYS, type GameState, type StatKey } from './types';
@@ -113,8 +114,10 @@ export function previewPending(state: GameState, pool: EventPool): Array<{ choic
   if (state.phase !== 'life' || pending === null || state.character === null) return null;
   const ev = pool.byId.get(pending.eventId);
   if (ev === undefined) return null;
+  // 선택지는 공통 인터페이스 `pickChoicesOf`로 푼다(진로 카드의 후보 id도 같은 길 — 효과가 없어 영향 줄이 비어 있다)
+  const choices = pickChoicesOf(state, pending, pool);
   return pending.choiceIds.map((id) => {
-    const choice = ev.choices?.find((c) => c.id === id);
+    const choice = choices.find((c) => c.id === id);
     if (choice === undefined) throw new Error(`previewPending: 선택지를 찾을 수 없다 (${pending.eventId}/${id})`);
     return { choiceId: id, impact: previewChoice(state, choice) };
   });

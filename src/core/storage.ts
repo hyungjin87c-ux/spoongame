@@ -6,7 +6,8 @@ import { eventPool, isGameDataReady } from './gameData';
 import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
 import { isValidBirthReport } from './birthReport';
 import { ensureFamily, withValidFamily } from './familyStorage';
-import { readPersona } from './persona';
+import { JOB_FIELDS, jobIndexInYear, jobIndexOf } from './jobIndex';
+import { readPersona, type PersonaState } from './persona';
 import { isValidStat } from './stats';
 import { resolveDelegated } from './life';
 import { decisionFor } from './parentDecision';
@@ -343,8 +344,23 @@ function pendingShapeOk(v: unknown, age: number, seen: Record<string, number>): 
   return Array.isArray(ids) && ids.length >= 2 && ids.length <= 3 && new Set(ids).size === ids.length && ids.every((id) => typeof id === 'string');
 }
 
-function pendingMatchesPool(p: { eventId: string; choiceIds: string[] }, pool: EventPool): boolean {
+/**
+ * 진로 카드(`pick` 사건)의 대기 대조 (SPEC-018 PL4, 설계 6-4절): 정적 `choices` 대신 직업 색인·`persona.job` 상태·연도로 맞춘다 — ① `persona.job` 상태가 카드 종류와 맞는다
+ * (분야 카드 ↔ 직업 없음, 세부 카드 ↔ field 상태) ② 모든 id가 색인에 있고(분야 카드는 분야 id, 세부 카드는 그 `field`의 직업 id) ③ 카드 나이의 달력 연도가 각 직업의 `yearRange` 안이다.
+ * `persona`가 손상으로 버려졌으면(null) 어긋난 것이다. 하나라도 어긋나면 `stale-pending`(그 카드만 풀고 이어간다 — 다음 진행에서 진로 트랙이 같은 상태로 새 후보를 만든다).
+ */
+function jobPendingMatches(p: { eventId: string; choiceIds: string[]; age?: number }, kind: 'field' | 'detail', persona: PersonaState | null, birthYear: number | null): boolean {
+  if (persona === null || birthYear === null || typeof p.age !== 'number') return false;
+  if (kind === 'field') return persona.job === undefined && p.choiceIds.every((id) => (JOB_FIELDS as readonly string[]).includes(id));
+  const job = persona.job;
+  if (job === undefined || job.id !== undefined) return false;
+  const year = birthYear + p.age;
+  return p.choiceIds.every((id) => jobIndexOf(id)?.field === job.field && jobIndexInYear(id, year));
+}
+
+function pendingMatchesPool(p: { eventId: string; choiceIds: string[]; age?: number }, pool: EventPool, persona: PersonaState | null = null, birthYear: number | null = null): boolean {
   const ev = pool.byId.get(p.eventId);
+  if (ev?.pick !== undefined) return jobPendingMatches(p, ev.pick.kind, persona, birthYear);
   if (ev === undefined || !isChoiceEvent(ev)) return false;
   const known = new Set((ev.choices ?? []).map((c) => c.id));
   return p.choiceIds.every((id) => known.has(id));
@@ -426,7 +442,10 @@ function checkGameState(v: unknown, pool: EventPool): GameVerdict {
     if (v.death !== null) return 'invalid';
     if (pending !== null) {
       if (!pendingShapeOk(pending, age, seen)) return 'invalid';
-      if (!pendingMatchesPool(pending, pool)) return 'stale-pending';
+      // 진로 카드는 `persona`를 먼저 검증한 값(손상이면 null)과 출생 연도로 대조한다
+      const persona = readPersona((v as { persona?: unknown }).persona);
+      const birthYear = (v.character as Character | null)?.birthYear ?? null;
+      if (!pendingMatchesPool(pending as { eventId: string; choiceIds: string[]; age?: number }, pool, (v as { phase?: unknown }).phase === 'title' ? null : persona, birthYear)) return 'stale-pending';
     }
   } else {
     // ending

@@ -929,7 +929,8 @@ export function lintEvent(ev: EventDef): string[] {
   problems.push(...weightBoundsProblems(ev));
   problems.push(...askProblems(ev));
   // 반복: 한 판에서 같은 문구가 되풀이되지 않도록 반복 이벤트는 간격을 길게 둔다
-  if (!ev.once && (ev.cooldown ?? 0) < MIN_REPEAT_COOLDOWN) {
+  // 진로 카드(`pick`)는 반복 린트의 예외 종류다 — 진로 트랙 상태가 카드를 정한다(설계 4-1절). 대신 `pickEventProblems`가 따로 본다
+  if (!ev.once && ev.pick === undefined && (ev.cooldown ?? 0) < MIN_REPEAT_COOLDOWN) {
     problems.push(`${ev.id}: once:false 이벤트는 cooldown이 ${MIN_REPEAT_COOLDOWN}년 이상이어야 한다 (같은 문구가 가까이서 되풀이되지 않게. 지금 ${ev.cooldown ?? '생략(기본값)'})`);
   }
   return problems;

@@ -1,6 +1,6 @@
 import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { calendarYear, citationFor, heavyKindOfEvent, isAskRollChoice, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
+import { calendarYear, citationFor, heavyKindOfEvent, isAskRollChoice, pickChoicesOf, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
 import type { ImpactItem } from '../../core/impact';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
 import { insightFor } from '../../data/citationInsights';
@@ -61,10 +61,11 @@ export function useDecisionModel(game: LifeGame, pool: EventPool): DecisionModel
   const cite = useMemo(() => (ev ? citationFor(ev, eraBucketOf(game.generation, year), year) : null), [ev, game.generation, year]);
   return useMemo(() => {
     if (!pending || !ev) return null;
-    const choices = pending.choiceIds.map((id) => ev.choices?.find((c) => c.id === id)).filter((c): c is ChoiceDef => c !== undefined);
+    // 선택지는 공통 인터페이스 `pickChoicesOf`로 푼다 — 정의 선택지도, 진로 카드의 저장된 후보 id(직업 이름·분야 이름)도 같은 길이다 (SPEC-018 PL4)
+    const choices: ChoiceDef[] = pickChoicesOf(game, pending, pool);
     const impactOf = (id: string): ImpactItem[] => previews?.find((p) => p.choiceId === id)?.impact.items ?? [];
     return { pending, ev, choices, impactOf, anyImpact: choices.some((c) => impactOf(c.id).length > 0), cite, year, age: game.age, name: game.character.name, heavy: heavyKindOfEvent(ev) };
-  }, [pending, ev, previews, cite, year, game.age, game.character.name]);
+  }, [game, pool, pending, ev, previews, cite, year, game.age, game.character.name]);
 }
 
 /** 가드 키: 카드 인스턴스 + 접기·다시 열기 횟수 */

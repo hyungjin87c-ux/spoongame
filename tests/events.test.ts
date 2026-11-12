@@ -350,7 +350,7 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
   ];
 
   it('파일 5개(생애 단계별)가 모두 읽히고 스키마 검증을 통과해 풀에 들어 있다 (로드 시점에 검증하므로 잘못된 데이터면 이 import에서 이미 실패한다 — 조르기 `ask.json`이 더해져 파일은 6개, 반려동물 `ask-pet.json`은 스위치가 꺼져 없다)', () => {
-    expect(Object.keys(EVENT_FILES).sort()).toEqual(['./ask.json', './infant.json', './middle.json', './school.json', './senior.json', './youth.json']);
+    expect(Object.keys(EVENT_FILES).sort()).toEqual(['./ask.json', './career.json', './infant.json', './middle.json', './school.json', './senior.json', './youth.json']); // 3a단계: 진로 트랙의 동적 후보 카드 `career.json`(SPEC-018 PL4)이 더해졌다
     expect(() => validateEventFiles(EVENT_FILES)).not.toThrow();
     expect(events.length).toBe(Object.values(EVENT_FILES).reduce((n: number, f) => n + (f as { events: unknown[] }).events.length, 0));
   });
@@ -404,10 +404,10 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
     expect(new Set(events.filter((e) => e.yearRange !== undefined).flatMap((e) => e.stages)).size).toBeGreaterThanOrEqual(4);
   });
 
-  it('track: 151개 모두 달려 있고 standard 17 · common 134 · assembled 0이다 (MG2, 조르기 7개는 common, 기존 이벤트에 assembled는 없다 — 알파 신규 전용. FM7a 「남은 한 분」 변형 사건 4개는 common)', () => {
+  it('track: 153개 모두 달려 있고 standard 17 · common 136 · assembled 0이다 (3a단계: 진로 카드 2개 common) (MG2, 조르기 7개는 common, 기존 이벤트에 assembled는 없다 — 알파 신규 전용. FM7a 「남은 한 분」 변형 사건 4개는 common)', () => {
     const count = (t: string) => events.filter((e) => e.track === t).length;
     expect(events.every((e) => e.track !== undefined)).toBe(true);
-    expect([count('standard'), count('common'), count('assembled')]).toEqual([17, 134, 0]);
+    expect([count('standard'), count('common'), count('assembled')]).toEqual([17, 136, 0]);
   });
 
   it('0세에도 일어날 수 있는 이벤트가 있다 (SPEC-003 IN1, M7a): 첫 해가 늘 빈 해가 아니다 — 첫 예방접종(마일스톤)이 모든 판의 0세에 일어난다. 옛 시험은 「0세는 후보 0개」였다 (e2e·스모크가 기대던 「첫 해는 선택지 없이 조용히 지나간다」는 M7a로 사라졌다)', () => {
@@ -419,7 +419,8 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
   });
 
   it('모든 이벤트는 한 판에 한 번만 나온다(once:true) — 같은 문구가 한 판에서 되풀이되지 않는다 (QA 사용감 7)', () => {
-    expect(events.filter((e) => !e.once).map((e) => e.id)).toEqual([]);
+    // 진로 트랙의 동적 후보 카드(`pick`, SPEC-018 PL4)는 once가 아닌 예외 종류다 — 상태 전이가 카드를 정하고 전용 린트(`pickEventProblems`)가 따로 본다
+    expect(events.filter((e) => !e.once && e.pick === undefined).map((e) => e.id)).toEqual([]);
   });
 
   it('문구 점검을 통과한다: 느낌표·이모지·URL·달력 연도·실제 이름·구어체·길이·시대 소재 — `npm run check:events`(= 빌드)와 같은 함수 (QA 사용감 8)', () => {

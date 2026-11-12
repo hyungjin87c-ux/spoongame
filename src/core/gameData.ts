@@ -1,4 +1,5 @@
 import type { EventPool } from './events';
+import type { JobTable } from './jobs';
 import type { CitationRecord } from '../data/citationsAccess';
 import type { BirthYearTables } from './generationMixture';
 import type { Gender } from './types';
@@ -239,6 +240,8 @@ export interface GameData {
   names: NamesApi;
   /** 가족 모델의 표 (SPEC-009 FM4a `familyData`) — 첫 화면은 쓰지 않아 지연 로드 덩어리에 들어간다 */
   family: FamilyTables;
+  /** 세부 직업 표 (SPEC-018 PL4 `jobs.json`) — 첫 화면은 쓰지 않아 지연 로드 덩어리에 들어간다. 파서가 읽는 id 색인은 코어의 `jobIndex.ts`에 따로 있다 */
+  jobs: JobTable;
 }
 
 let installed: GameData | null = null;
@@ -281,4 +284,9 @@ export function namesApi(): NamesApi {
 
 export function familyTables(): FamilyTables {
   return gameData().family;
+}
+
+/** 지금 놓인 세부 직업 표 */
+export function jobTable(): JobTable {
+  return gameData().jobs;
 }
