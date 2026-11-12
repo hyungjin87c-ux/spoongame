@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EVENT_POOL } from '../src/data/events';
 import { JOB_TABLE } from '../src/data/jobs';
+import { PERSONA_TABLE } from '../src/data/personaTable';
 import { lifeModeOf } from '../src/data/timingTable';
 import {
   TRACK_END_AGE,
+  careerDrawKey,
   careerKindDue,
   careerStateOf,
   condContextOf,
   isEventEligible,
+  jobCandidates,
   jobPickOutcome,
   stepYear,
   studyEndAgeOf,
@@ -224,5 +227,40 @@ describe('persona 없는 판', () => {
     void _p;
     const s = playUntil(bare as GameState, (x) => x.age > 36);
     expect(Object.keys(s.seen).some((k) => k.startsWith('job-pick-'))).toBe(false);
+  });
+});
+
+describe('후보 추첨 키 — 나이·지원 순번이 다른 카드가 같은 키를 쓰지 않는다 [CX-003-101]', () => {
+  const triesMax = PERSONA_TABLE.MODEL.triesMax[0];
+  const orders = PERSONA_TABLE.MODEL.candidatesMax[0]; // 한 카드에서 뽑는 차례는 보이는 수(3)를 넘지 않는다 — 풀 상한으로 넉넉히 잡는다
+
+  it('나이 0~120 × 지원 순번 0~triesMax × 뽑는 차례에서 키가 모두 다르다 (옛 식은 (30, 10)과 (31, 0)이 같았다)', () => {
+    const seen = new Map<number, string>();
+    for (let age = 0; age <= 120; age++)
+      for (let tries = 0; tries <= triesMax; tries++)
+        for (let order = 0; order < orders; order++) {
+          const key = careerDrawKey(age, tries, order);
+          const at = `(${age}, ${tries}, ${order})`;
+          expect(seen.get(key), `${at}의 키 ${key}`).toBeUndefined();
+          seen.set(key, at);
+        }
+  });
+
+  it('순번 0~9의 키는 그대로다(나이×100 + tries×10 + 순서 — 이미 나온 카드의 후보가 바뀌지 않는다)', () => {
+    for (let age = 0; age <= 120; age++)
+      for (let tries = 0; tries <= 9; tries++)
+        for (let order = 0; order < orders; order++) expect(careerDrawKey(age, tries, order)).toBe(age * 100 + tries * 10 + order);
+  });
+
+  it('재현 상태(30세 tries 10 · 31세 tries 0, 같은 가족 시드·같은 그 해 상태)에서 세부 후보 추첨이 같은 난수를 공유하지 않는다', () => {
+    const s0 = runToJobCard(21565, 'detail');
+    const ctx = condContextOf(s0);
+    const field = s0.persona!.job!.field;
+    let same = 0;
+    for (let famSeed = 1; famSeed <= 40; famSeed++) {
+      const at = (age: number, tries: number) => jobCandidates({ table: JOB_TABLE, field, year: 2020, age, tries, ctx, famSeed }).map((c) => c.id);
+      if (JSON.stringify(at(30, 10)) === JSON.stringify(at(31, 0))) same++;
+    }
+    expect(same, '40개 가족 시드 중 후보가 똑같이 나온 수').toBeLessThan(40);
   });
 });

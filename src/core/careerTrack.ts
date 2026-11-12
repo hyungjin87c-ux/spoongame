@@ -123,8 +123,19 @@ export interface CandidateInput {
   famSeed: number;
 }
 
-/** 키 `(태그 50 분야 · 51 세부, 나이×100 + tries×10 + 순서)` — 순서 = 뽑는 차례 (설계 1-2절) */
-const drawKey = (age: number, tries: number, order: number): number => age * 100 + tries * 10 + order;
+/** 지원 순번이 이 값 이상이면 넓은 키 범위를 쓴다 (`tries×10`이 나이 자리로 넘치기 시작하는 곳) */
+const DRAW_KEY_WIDE_FROM = 10;
+/** 넓은 키 범위의 시작 — 좁은 식의 최댓값(나이 120 × 100 + 99)보다 크다 */
+const DRAW_KEY_WIDE_BASE = 100_000;
+
+/**
+ * 키 `(태그 50 분야 · 51 세부, 나이×100 + tries×10 + 순서)` — 순서 = 뽑는 차례 (설계 1-2절).
+ * [CX-003-101] `tries ≥ 10`은 `100000 + 나이×1000 + tries×10 + 순서`로 따로 둔다 — 좁은 식에서 (30세, 10)과 (31세, 0)이 같은 키를 쓰던 것을 막는다.
+ * 순번 0~9의 키는 그대로다(이미 나온 카드의 후보가 바뀌지 않는다). 겹치지 않음은 `careerTrack.test.ts`가 나이 0~120 × 0~`triesMax` × 뽑는 차례로 잠근다.
+ */
+export const careerDrawKey = (age: number, tries: number, order: number): number =>
+  tries < DRAW_KEY_WIDE_FROM ? age * 100 + tries * 10 + order : DRAW_KEY_WIDE_BASE + age * 1000 + tries * 10 + order;
+const drawKey = careerDrawKey;
 
 /** 가중치에 비례해 한 개를 고른다(해시 `u` 하나 — 진행 난수를 쓰지 않는다). 가중치 합이 0이면 첫째 */
 function pickByHash<X>(items: readonly X[], weights: readonly number[], u: number): number {
