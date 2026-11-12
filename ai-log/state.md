@@ -3,7 +3,7 @@
 - 갱신: 2026-11-12 · 배포: **v0.5.1**(main 6dcb7f8, 라이브 번들 확인) · 작업 브랜치: spec-011(문서 커밋은 main보다 앞섬 — 다음 배포 때 함께)
 - 운영 구조 **v2 적용**(74c3fcd, 결정 `ai-log/decisions-2026-11.md` 후속 224): 마스터 단독 기본 · FAST/STANDARD/CRITICAL · CRITICAL은 Codex 먼저 · 지표 `ai-log/metrics.md`
 - SPEC-018 「맞춤 인생」: v0.6.0(M1 기질·적성·갈림길·직업·외모 영향·밀레니얼) → v0.6.1(초점·돈 쓰기·얼굴) → v0.7.0 X·Z → v0.8.x SPEC-017
-- 설계 `docs/data/persona-model.md` **r3 승인 완료**(후속 228·229 — 기질 가·적성 이름·INVEST_Q B·외모 연애 k 0.70·사업 제안 외모 가중 제거·기존 연애 계단도 표준 표로)
+- 설계 `docs/data/persona-model.md` **r4 승인 완료**(후속 228~230 — 기질 가·적성 이름·INVEST_Q B·외모 연애 k 0.70·CX-002 반영 진로 트랙·4C 시대). Codex 처리 `docs/review/codex/CX-002-SPEC-018-design/resolution.md`
 - 진행 중: CX-002 처리 완료(설계 r4, 후속 230 — 진로 트랙·4C 시대 반영) · 청년 실업률 연도 통계 수집(HIREYEAR) · **IMG-001 얼굴 이미지 재작업(형진 님, 현실 반영)** · 소재 창고 요청
 - 다음: PL1~PL4·PL16 구현(골든 먼저, T3) → CX-003 Codex 코드 검증(진로 트랙 첫 질문) → 콘텐츠 PL5·PL6·PL17
 - 효율화 과제(하나씩 승인): 시험 단계 npm 스크립트 · 자동 스크린샷 추적 정리 · 문서 분리 · 구현 종속 시험 전환
