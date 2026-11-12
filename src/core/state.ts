@@ -100,7 +100,7 @@ export function beginBirth(
   // 랜덤 세대: 난수 1번으로 세대를 먼저 뽑고(같은 시드 → 같은 세대), 이어서 그 세대의 출생 결과를 정한다
   const fromRandom = choice === 'random';
   const generation: ProfileId = choice === 'random' ? pickRandomGeneration(rng) : choice;
-  const { character, stats, report, peerSeed, family } = generateBirth(rng, { generation, regionPick });
+  const { character, stats, report, peerSeed, family, persona } = generateBirth(rng, { generation, regionPick });
   const next: GameState = {
     ...state,
     phase: 'roulette',
@@ -125,10 +125,12 @@ export function beginBirth(
     rngState: rng.getState(),
   };
   // 선택 필드는 참일 때만 쓴다(없는 판의 저장은 그대로)
-  const { regionPicked: _p, fromRandom: _f, ...rest } = next;
+  const { regionPicked: _p, fromRandom: _f, persona: _q, ...rest } = next;
   void _p;
   void _f;
-  return { ...rest, ...(regionPick !== null ? { regionPicked: true as const } : {}), ...(fromRandom ? { fromRandom: true as const } : {}) };
+  void _q;
+  // 기질·적성(SPEC-018 PL1): 룰렛 단계에서 확정해 저장에 남긴다(룰렛 도중·직후 새로고침에도 같은 값). 스위치가 꺼져 있으면 필드가 없다
+  return { ...rest, ...(regionPick !== null ? { regionPicked: true as const } : {}), ...(fromRandom ? { fromRandom: true as const } : {}), ...(persona !== undefined ? { persona } : {}) };
 }
 
 /**

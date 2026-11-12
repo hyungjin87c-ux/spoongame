@@ -33,6 +33,8 @@ export * from './population';
 export * from './progress';
 export * from './profile';
 export * from './family';
+export * from './persona';
+export * from './personaLife';
 export * from './familyModel';
 export * from './familyRng';
 export * from './familyLife';

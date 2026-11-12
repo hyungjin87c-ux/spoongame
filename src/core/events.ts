@@ -3,6 +3,8 @@ import { LIMITS } from '../data/economyTable';
 import { ASK_CHOICE_IDS, ASK_EFFECTS, ASK_KIND_INFO, isAskKind, type AskKind } from '../data/askTable';
 import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
 import { FAMILY_SYSTEM_FLAGS } from './familyFlags';
+import type { PersonaView } from './persona';
+import { ACT_KINDS, APT_KEYS, APT_TIERS, ROLE_KINDS, TEMPER_IDS, type ActKind, type AptKey, type AptTier, type RoleKind, type TemperId } from './personaKinds';
 import {
   DWELLINGS,
   ERAS,
@@ -10,6 +12,7 @@ import {
   GENDERS,
   HEAVY_KINDS,
   HOUSINGS,
+  OCCUPATIONS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
   STAGES,
@@ -23,6 +26,7 @@ import {
   type Gender,
   type HeavyKind,
   type Housing,
+  type Occupation,
   type ParentingStyle,
   type Stage,
   type StatKey,
@@ -104,6 +108,18 @@ export interface Condition {
   flags?: string[];
   /** 하나도 설정돼 있지 않아야 한다 */
   notFlags?: string[];
+  /**
+   * 지금 가장 두드러진 기질 중 하나 (SPEC-018 PL3, `docs/data/persona-model.md` 3절). 이 판에 `persona`가 없거나(구형 저장·스위치 끔) 모르면 **맞지 않는다**(가족 조건과 같다) — 부정 조건은 만들지 않는다.
+   */
+  temper?: TemperId[];
+  /** 적성 축별 단계(low·mid·high) 중 하나 — 적힌 축이 모두 맞아야 한다(AND). 단계만 읽고 숫자는 보이지 않는다. `persona`가 없으면 맞지 않는다 */
+  apt?: Partial<Record<AptKey, AptTier[]>>;
+  /** 진로 트랙의 직업: 분야(`field`) 또는 세부 직업 id(`id`) 중 적은 것이 모두 맞아야 한다. 직업이 없거나 `persona`가 없으면 맞지 않는다 (3단계가 직업을 채운다) */
+  job?: { field?: Occupation[]; id?: string[] };
+  /** 달력 연도(= 출생 연도 + 나이) 구간 — 자격·가중·선택지 가시성·보너스·문장 변주가 **같은 연도**를 읽는다(`condContextOf`가 채운다). 모르면 맞지 않는다 */
+  year?: Range;
+  /** `true`이면 이 판에 `persona`(맞춤 인생)가 있어야 한다 — 구형 저장·스위치 끈 판은 맞지 않는다 */
+  tailored?: true;
 }
 
 /** 조건이 맞을 때 효과를 더한다(부모 재력·교육방식·외모 같은 캐릭터 속성을 효과에 반영하는 방법). */
@@ -118,11 +134,29 @@ export interface Modifier {
   weight: number;
 }
 
+/**
+ * 문장 변주 (SPEC-018 PL3, 설계 3절): `when`이 맞으면 기본 글 대신 `text`를 보인다. 사건·선택지당 최대 `MAX_TEXT_VARIANTS`(3)개, **먼저 맞는 것이 이긴다**.
+ * **글만** 바꾼다 — 효과·선택지·확률은 바꿀 수 없다. 카드가 만들어질 때(해결 때) 고르고 연표 줄에는 최종 글이 적힌다. 라벨 변주는 없다.
+ */
+export interface TextVariant {
+  when: Condition;
+  text: string;
+}
+
+/** 사건·선택지 하나의 문장 변주 수 상한 */
+export const MAX_TEXT_VARIANTS = 3;
+
 export interface ChoiceDef {
   id: string;
   label: string;
   /** 고른 뒤 보여 주는 결과 문구 */
   result: string;
+  /** 결과 문구의 변주 (먼저 맞는 것이 이긴다, 효과는 그대로) — 부모가 정하는 카드의 `parentResult`는 변주하지 않는다 */
+  resultVariants?: TextVariant[];
+  /** 활동 표지 (SPEC-018 PL1): 고르면 기질·적성이 약하게 움직인다 — 갱신 값은 코드 표 `ACT`·`ACTAPT` 한 곳(데이터에 값을 쓰지 않는다). 부모가 정한·흘러간 카드는 절반 */
+  act?: ActKind;
+  /** 본보기 어른 표지 (SPEC-018 PL1): 존경하는 어른을 겪는 선택이면 그 어른의 기질 쪽으로 약하게 움직인다 */
+  role?: RoleKind;
   /**
    * 부모가 정하는 카드에서만 라벨 대신 쓰는 문구 (SPEC-005 PD11 처리 (b)) — 선택지 라벨이 아이의 행동이라 「부모님이 이렇게 정했습니다」와 어긋날 때만 둔다
    * (`school-puppy` 세 선택지, `school-academy-night`의 `friends`, `school-scholarship`의 `pass` — 3장·9개 문자열, R-452). 본인·흘러감 결정에서는 쓰지 않는다. 기록 줄·카드·엔딩은 `parentLabel ?? label`.
@@ -146,6 +180,10 @@ export interface EventDef {
   id: string;
   title: string;
   text: string;
+  /** 본문의 변주 (SPEC-018 PL3, 먼저 맞는 것이 이긴다 — 글만 바뀐다) */
+  textVariants?: TextVariant[];
+  /** 본보기 어른 표지 — **서술 사건(선택지 없음)만** 쓴다 (선택지 이벤트는 선택지마다 `role`) */
+  role?: RoleKind;
   stages: Stage[];
   ageRange?: Range;
   /**
@@ -283,6 +321,10 @@ export interface CondContext {
   family?: CondFamilyInfo | null;
   /** 자산 현황 (assets 조건에 필요). 20세 미만은 null이고, 모르면(undefined) 그 조건은 맞지 않는다. */
   assets?: Assets | null;
+  /** 달력 연도 (`year` 조건에 필요). 모르면 그 조건은 맞지 않는다. `condContextOf`가 채운다 — 자격(`stepYear`의 `view.year`)과 같은 값이다 (SPEC-018 보충 6) */
+  year?: number;
+  /** 기질·적성 보기 (`temper`·`apt`·`job`·`tailored` 조건에 필요). `null`·없음 = 맞춤 인생이 없는 판(중립) — 그 조건은 맞지 않는다 */
+  persona?: PersonaView | null;
 }
 
 const inRange = (value: number, r: Range | undefined): boolean =>
@@ -324,8 +366,66 @@ export function meetsCondition(cond: Condition | undefined, ctx: CondContext): b
   if (cond.gender && !cond.gender.includes(ctx.character.gender)) return false;
   if (cond.flags && !cond.flags.every((f) => ctx.flags.has(f))) return false;
   if (cond.notFlags && cond.notFlags.some((f) => ctx.flags.has(f))) return false;
+  if (cond.year !== undefined && (ctx.year === undefined || !inRange(ctx.year, cond.year))) return false;
+  if (cond.tailored === true && !ctx.persona) return false;
+  if (cond.temper !== undefined || cond.apt !== undefined || cond.job !== undefined) {
+    // 기질·적성·직업 조건: `persona`가 없거나 모르면 맞지 않는다 (안 일어나는 쪽이 안전하다 — 가족 조건과 같다)
+    const persona = ctx.persona;
+    if (!persona) return false;
+    if (cond.temper !== undefined && !cond.temper.includes(persona.shown)) return false;
+    if (cond.apt !== undefined) {
+      for (const key of APT_KEYS) {
+        const tiers = cond.apt[key];
+        if (tiers !== undefined && !tiers.includes(persona.tiers[key])) return false;
+      }
+    }
+    if (cond.job !== undefined) {
+      const job = persona.job;
+      if (job === undefined) return false;
+      if (cond.job.field !== undefined && !cond.job.field.includes(job.field)) return false;
+      if (cond.job.id !== undefined && (job.id === undefined || !cond.job.id.includes(job.id))) return false;
+    }
+  }
   return true;
 }
+
+/** 문장 변주를 고른다: 먼저 맞는 것이 이긴다(맞는 것이 없으면 기본 글). 글만 고르고 효과·확률에는 닿지 않는다 */
+export function variantText(base: string, variants: readonly TextVariant[] | undefined, ctx: CondContext): string {
+  if (variants !== undefined) for (const v of variants) if (meetsCondition(v.when, ctx)) return v.text;
+  return base;
+}
+
+/** 이 판에서 사건 본문으로 보이는 글 (`textVariants` 반영) */
+export const eventTextOf = (ev: Pick<EventDef, 'text' | 'textVariants'>, ctx: CondContext): string => variantText(ev.text, ev.textVariants, ctx);
+
+/** 이 판에서 선택지 결과로 보이는 글 (`resultVariants` 반영) */
+export const choiceResultOf = (choice: Pick<ChoiceDef, 'result' | 'resultVariants'>, ctx: CondContext): string => variantText(choice.result, choice.resultVariants, ctx);
+
+/** 맞춤 인생 조건(`temper`·`apt`·`job`·`tailored`)을 쓰는 조건인가 — 이 조건을 쓰는 사건은 「조건 없는 선택지 ≥ 2」 대신 격자 하한 검사(`eventLint#visibleChoiceGridProblems`)를 받는다 (설계 3절) */
+export function isPersonaCondition(c: Condition | undefined): boolean {
+  return c !== undefined && (c.temper !== undefined || c.apt !== undefined || c.job !== undefined || c.tailored !== undefined);
+}
+
+/** 사건이 가진 모든 조건(사건 조건·모디파이어·보너스·선택지 requires·선택지 보너스·문장 변주의 when) */
+export function eventConditions(ev: EventDef): Condition[] {
+  const out: Condition[] = [];
+  const add = (c: Condition | undefined): void => {
+    if (c !== undefined) out.push(c);
+  };
+  add(ev.conditions);
+  for (const m of ev.modifiers ?? []) add(m.when);
+  for (const b of ev.bonuses ?? []) add(b.when);
+  for (const v of ev.textVariants ?? []) add(v.when);
+  for (const c of ev.choices ?? []) {
+    add(c.requires);
+    for (const b of c.bonuses ?? []) add(b.when);
+    for (const v of c.resultVariants ?? []) add(v.when);
+  }
+  return out;
+}
+
+/** 이 사건이 맞춤 인생 조건을 하나라도 쓰는가 */
+export const usesPersonaCondition = (ev: EventDef): boolean => eventConditions(ev).some(isPersonaCondition);
 
 /** 지금 보이는 선택지(requires를 만족하는 것). 순서는 이벤트에 적힌 순서 그대로. */
 export function visibleChoices(ev: EventDef, ctx: CondContext): ChoiceDef[] {
@@ -413,6 +513,8 @@ export const FLAG_PATTERN = /^[a-z][a-z0-9_]{0,38}$/;
 export const NOTE_ID_PREFIX = 'note-';
 export const EVENT_ID_PATTERN = /^[a-z][a-z0-9-]{1,47}$/;
 const CHOICE_ID_PATTERN = /^[a-z][a-z0-9-]{0,31}$/;
+/** 직업 id 형식 (`persona.job.id`·`Condition.job.id`, 3단계 `jobs.json`의 id) */
+const JOB_ID_PATTERN = /^[a-z][a-z0-9_-]{0,47}$/;
 const MAX_AGE_ABS = 110;
 const MAX_EFFECT_DELTA = 50;
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
@@ -430,10 +532,10 @@ export const MIN_MODIFIER_WEIGHT = 0.1;
 export const MAX_MODIFIER_WEIGHT = 10;
 export const MAX_MODIFIERS = 6;
 /**
- * 선택지 수: 정의는 최대 4개, 같은 상태에서 보이는 것은 최대 3개(최소 2개 — 조건 없는 선택지가 2개 이상). 정의가 3개를 넘는 이벤트(infant-new-sibling: 플래그 유무로 grandma·notice가 배타)는
+ * 선택지 수: 정의는 최대 6개(SPEC-018 PL3 — 4에서 올렸다), 같은 상태에서 보이는 것은 최대 3개(최소 2개 — 조건 없는 선택지가 2개 이상, 맞춤 조건을 쓰는 사건은 대신 격자 하한). 정의가 3개를 넘는 이벤트(infant-new-sibling: 플래그 유무로 grandma·notice가 배타)는
  * 서로 같이 보일 수 없는 선택지가 있을 때만 쓸 수 있다 — lint가 「동시에 보일 수 있는 선택지의 최대 수 ≤ 3」을 점검한다(eventLint#visibleChoiceProblems).
  */
-export const MAX_DEFINED_CHOICES = 4;
+export const MAX_DEFINED_CHOICES = 6;
 export const MAX_VISIBLE_CHOICES = 3;
 /** 한 해에 일어날 수 있는 마일스톤의 최대 수 (life.ts#stepYear). 창 끝이 이른 것부터, 같으면 id 오름차순으로 칸을 채우고 연표에는 id 오름차순으로 남긴다. */
 export const MILESTONES_PER_YEAR_MAX = 3;
@@ -551,7 +653,7 @@ function checkAssetCondition(v: unknown, path: string, p: Problems): void {
 
 function checkCondition(v: unknown, path: string, p: Problems): void {
   if (!isObj(v)) return void p.add(path, '조건 객체여야 한다');
-  checkKeys(v, ['stats', 'looks', 'parentWealth', 'assets', 'birthOrder', 'parentAge', 'motherAge', 'parenting', 'gender', 'housing', 'flags', 'notFlags'], [], path, p);
+  checkKeys(v, ['stats', 'looks', 'parentWealth', 'assets', 'birthOrder', 'parentAge', 'motherAge', 'parenting', 'gender', 'housing', 'flags', 'notFlags', 'temper', 'apt', 'job', 'year', 'tailored'], [], path, p);
   if (Object.keys(v).length === 0) p.add(path, '빈 조건이다 (항목을 쓰거나 조건 자체를 빼야 한다)');
   if (v.stats !== undefined) {
     if (!isObj(v.stats)) p.add(`${path}.stats`, '{ 스탯이름: { min, max } } 객체여야 한다');
@@ -572,6 +674,30 @@ function checkCondition(v: unknown, path: string, p: Problems): void {
   if (v.parenting !== undefined) checkEnumList(v.parenting, PARENTING_STYLES, `${path}.parenting`, p);
   if (v.gender !== undefined) checkEnumList(v.gender, GENDERS, `${path}.gender`, p);
   if (v.housing !== undefined) checkEnumList(v.housing, HOUSINGS, `${path}.housing`, p);
+  if (v.temper !== undefined) checkEnumList(v.temper, TEMPER_IDS, `${path}.temper`, p);
+  if (v.apt !== undefined) {
+    if (!isObj(v.apt) || Object.keys(v.apt).length === 0) p.add(`${path}.apt`, `{ 적성축: [단계, ...] } 객체여야 한다 (축: ${APT_KEYS.join(', ')} · 단계: ${APT_TIERS.join(', ')}, 하나 이상)`);
+    else {
+      for (const [k, tiers] of Object.entries(v.apt)) {
+        if (!(APT_KEYS as readonly string[]).includes(k)) p.add(`${path}.apt.${k}`, `알 수 없는 적성축 (허용: ${APT_KEYS.join(', ')})`);
+        else checkEnumList(tiers, APT_TIERS, `${path}.apt.${k}`, p);
+      }
+    }
+  }
+  if (v.job !== undefined) {
+    if (!isObj(v.job) || Object.keys(v.job).length === 0) p.add(`${path}.job`, '{ field?: [분야...], id?: [직업 id...] } 객체여야 한다 (하나 이상)');
+    else {
+      checkKeys(v.job, ['field', 'id'], [], `${path}.job`, p);
+      if (v.job.field !== undefined) checkEnumList(v.job.field, OCCUPATIONS, `${path}.job.field`, p);
+      if (v.job.id !== undefined) {
+        if (!Array.isArray(v.job.id) || v.job.id.length === 0 || new Set(v.job.id).size !== v.job.id.length || !v.job.id.every((x: unknown) => typeof x === 'string' && JOB_ID_PATTERN.test(x))) {
+          p.add(`${path}.job.id`, '비어 있지 않은 직업 id 배열(소문자·숫자·하이픈·밑줄, 중복 없음)이어야 한다');
+        }
+      }
+    }
+  }
+  if (v.year !== undefined) checkRange(v.year, `${path}.year`, 1900, 2300, p);
+  if (v.tailored !== undefined && v.tailored !== true) p.add(`${path}.tailored`, 'true여야 한다 (부정 조건은 만들지 않는다)');
   const flagsOk = v.flags === undefined ? true : checkFlagList(v.flags, `${path}.flags`, p);
   const notOk = v.notFlags === undefined ? true : checkFlagList(v.notFlags, `${path}.notFlags`, p);
   if (flagsOk && notOk && Array.isArray(v.flags) && Array.isArray(v.notFlags)) {
@@ -674,7 +800,7 @@ function checkBonuses(v: unknown, path: string, p: Problems): void {
 
 function checkChoice(c: unknown, path: string, p: Problems): void {
   if (!isObj(c)) return void p.add(path, '선택지 객체여야 한다');
-  checkKeys(c, ['id', 'label', 'result', 'parentLabel', 'parentResult', 'askDenied', 'askStrained', 'effects', 'bonuses', 'requires'], ['id', 'label', 'result'], path, p);
+  checkKeys(c, ['id', 'label', 'result', 'resultVariants', 'act', 'role', 'parentLabel', 'parentResult', 'askDenied', 'askStrained', 'effects', 'bonuses', 'requires'], ['id', 'label', 'result'], path, p);
   if (typeof c.id !== 'string' || !CHOICE_ID_PATTERN.test(c.id)) p.add(`${path}.id`, '소문자·숫자·하이픈(예: study-alone)이어야 한다');
   if (c.label !== undefined) checkText(c.label, `${path}.label`, 1, 40, p);
   if (c.result !== undefined) checkText(c.result, `${path}.result`, 6, 300, p);
@@ -686,10 +812,26 @@ function checkChoice(c: unknown, path: string, p: Problems): void {
   if (c.bonuses !== undefined) checkBonuses(c.bonuses, `${path}.bonuses`, p);
   checkTotalDelta(c.effects, c.bonuses, path, p);
   if (c.requires !== undefined) checkCondition(c.requires, `${path}.requires`, p);
+  if (c.resultVariants !== undefined) checkVariants(c.resultVariants, `${path}.resultVariants`, 6, 300, p);
+  if (c.act !== undefined && !(ACT_KINDS as readonly unknown[]).includes(c.act)) p.add(`${path}.act`, `활동 표지(${ACT_KINDS.join(', ')}) 중 하나여야 한다`);
+  if (c.role !== undefined && !(ROLE_KINDS as readonly unknown[]).includes(c.role)) p.add(`${path}.role`, `본보기 표지(${ROLE_KINDS.join(', ')}) 중 하나여야 한다`);
+}
+
+/** 문장 변주 목록의 형태: 1~`MAX_TEXT_VARIANTS`개, 각각 `{ when, text }` — `when`은 조건 문법 그대로, 글 길이는 본문·결과와 같은 범위 */
+function checkVariants(v: unknown, path: string, min: number, max: number, p: Problems): void {
+  if (!Array.isArray(v) || v.length === 0) return void p.add(path, '비어 있지 않은 배열이어야 한다');
+  if (v.length > MAX_TEXT_VARIANTS) p.add(path, `문장 변주는 최대 ${MAX_TEXT_VARIANTS}개다 (지금 ${v.length}개)`);
+  v.forEach((x: unknown, i: number) => {
+    const vp = `${path}[${i}]`;
+    if (!isObj(x)) return void p.add(vp, '{ when, text } 객체여야 한다');
+    checkKeys(x, ['when', 'text'], ['when', 'text'], vp, p);
+    if (x.when !== undefined) checkCondition(x.when, `${vp}.when`, p);
+    if (x.text !== undefined) checkText(x.text, `${vp}.text`, min, max, p);
+  });
 }
 
 const EVENT_KEYS = [
-  'id', 'title', 'text', 'question', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
+  'id', 'title', 'text', 'textVariants', 'role', 'question', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
   'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy', 'ask',
 ] as const;
 
@@ -911,6 +1053,11 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
   else if (ev.id.startsWith(NOTE_ID_PREFIX)) p.add(`${path}.id`, `「${NOTE_ID_PREFIX}」로 시작하는 id는 기록 카드(notes.json) 전용 예약이라 이벤트 id로 쓸 수 없다 (본 이벤트 기록 seen에서 둘의 키가 섞이지 않게)`);
   if (ev.title !== undefined) checkText(ev.title, `${path}.title`, 1, 30, p);
   if (ev.text !== undefined) checkText(ev.text, `${path}.text`, 10, 400, p);
+  if (ev.textVariants !== undefined) checkVariants(ev.textVariants, `${path}.textVariants`, 10, 400, p);
+  if (ev.role !== undefined) {
+    if (!(ROLE_KINDS as readonly unknown[]).includes(ev.role)) p.add(`${path}.role`, `본보기 표지(${ROLE_KINDS.join(', ')}) 중 하나여야 한다`);
+    if (ev.choices !== undefined) p.add(`${path}.role`, '사건 단위 role은 서술 이벤트(선택지 없음)만 쓴다 — 선택지 이벤트는 선택지마다 role을 둔다');
+  }
   checkQuestion(ev, path, p);
   if (ev.stages !== undefined) checkEnumList(ev.stages, STAGES, `${path}.stages`, p);
   checkMoneyKinds(ev, path, p);
@@ -1017,7 +1164,8 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
         }
       });
       // 조건 없는 선택지가 2개 이상이거나(항상 2개 이상 보인다), 1개 + 가족 플래그로만 갈리는 선택지로 2개 이상이다(그 가족이 없는 판에서는 이벤트가 후보에서 빠진다, K4)
-      if (unconditional < 2 && !(unconditional >= 1 && unconditional + familyGated >= 2)) p.add(`${path}.choices`, `조건(requires) 없는 선택지가 2개 이상 있어야 한다 (항상 2개 이상 보여야 한다. 지금 ${unconditional}개)`);
+      // 맞춤 조건(temper·apt·job·tailored)을 쓰는 사건은 이 규칙 대신 격자 하한(수저 × 적성 단계 × 기질 × 연도 경계 × 중립에서 보이는 선택지 2~3개)을 eventLint가 본다 — 설계 3절 `[CX-002-003]`. trigger 사건은 지금 규칙 그대로다
+      if (unconditional < 2 && !(unconditional >= 1 && unconditional + familyGated >= 2) && !(ev.trigger === undefined && rawUsesPersona(ev))) p.add(`${path}.choices`, `조건(requires) 없는 선택지가 2개 이상 있어야 한다 (항상 2개 이상 보여야 한다. 지금 ${unconditional}개)`);
       // 강제 슬롯은 isEventEligible을 거치지 않는다 — 보이는 선택지가 1개면 대기 저장이 깨진다(pendingShapeOk)
       else if (ev.trigger !== undefined && unconditional < 2) p.add(`${path}.choices`, `trigger 사건은 조건 없는 선택지가 2개 이상이어야 한다 (지금 ${unconditional}개)`);
     }
@@ -1029,6 +1177,24 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
     if (ev.bonuses !== undefined) checkBonuses(ev.bonuses, `${path}.bonuses`, p);
     checkTotalDelta(ev.effects, ev.bonuses, path, p);
   }
+}
+
+/** 날것 데이터에서 맞춤 조건(`temper`·`apt`·`job`·`tailored`)을 쓰는지 본다 — 형태 검증 단계라 타입 변환 전의 값을 읽는다 */
+function rawUsesPersona(ev: Obj): boolean {
+  const conds: unknown[] = [ev.conditions];
+  const addAll = (list: unknown, key: string): void => {
+    for (const x of Array.isArray(list) ? (list as unknown[]) : []) if (isObj(x)) conds.push(x[key]);
+  };
+  addAll(ev.modifiers, 'when');
+  addAll(ev.bonuses, 'when');
+  addAll(ev.textVariants, 'when');
+  for (const c of Array.isArray(ev.choices) ? (ev.choices as unknown[]) : []) {
+    if (!isObj(c)) continue;
+    conds.push(c.requires);
+    addAll(c.bonuses, 'when');
+    addAll(c.resultVariants, 'when');
+  }
+  return conds.some((c) => isObj(c) && (c.temper !== undefined || c.apt !== undefined || c.job !== undefined || c.tailored !== undefined));
 }
 
 // ---------- 플래그 교차 검증 ----------
@@ -1044,9 +1210,11 @@ export function flagsRead(ev: EventDef): Set<string> {
   flagsInCondition(ev.conditions, out);
   for (const m of ev.modifiers ?? []) flagsInCondition(m.when, out);
   for (const b of ev.bonuses ?? []) flagsInCondition(b.when, out);
+  for (const v of ev.textVariants ?? []) flagsInCondition(v.when, out);
   for (const c of ev.choices ?? []) {
     flagsInCondition(c.requires, out);
     for (const b of c.bonuses ?? []) flagsInCondition(b.when, out);
+    for (const v of c.resultVariants ?? []) flagsInCondition(v.when, out);
   }
   return out;
 }

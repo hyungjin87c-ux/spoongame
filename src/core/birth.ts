@@ -6,6 +6,7 @@ import { orderSharesOf, rollBirthReport } from './birthReport';
 import { rollFamilyBirth } from './familyBirth';
 import { famSeedOf } from './familyRng';
 import type { FamilyData } from './familyModel';
+import { personaBirthOf, personaSwitchOn, type PersonaState } from './persona';
 import { pickBirthYear } from './generationMixture';
 import { createRng, forkRng, mixSeed, type Rng } from './rng';
 import { standingOf, type Standing } from './standing';
@@ -177,6 +178,11 @@ export interface BirthResult {
    * 그래서 위 필드(character·stats·report·peerSeed)와 `rngState`는 가족 모델이 생기기 전과 같다(tests/familyHash.test.ts L0).
    */
   family: FamilyData;
+  /**
+   * 기질·적성 (SPEC-018 PL1, 설계 1-2절): 같은 호출에서 `peerSeed` 파생 해시로 배정한다 — 진행 RNG를 쓰지 않아 위 필드와 `rngState`는 그대로다(tests/personaBirth.test.ts L0).
+   * 롤백 스위치 `PERSONA_ENABLED`가 꺼져 있으면 필드가 없다(변경 전과 같은 결과). `beginBirth`가 상태에 그대로 옮긴다 — 룰렛 도중·직후 새로고침에도 같은 값이다.
+   */
+  persona?: PersonaState;
 }
 
 /**
@@ -218,7 +224,8 @@ export function generateBirth(rng: Rng, target: ProfileId | BirthTarget): BirthR
   // 식구 이름은 주인공·또래(VP3)와 겹치지 않아야 한다(FA0-6) — 또래는 출생신고가 보이는 것과 같은 함수로 구한다
   const avoidNames = [name, ...peersOf(peerSeed, birthYear, report.month, name).map((p) => p.name)];
   const family = rollFamilyBirth(famSeedOf(peerSeed), { birthYear, gender, report, parentWealth, orderShares: orderSharesOf(tilt, report.region, birthYear), siblingSeed: peerSeed, name, avoidNames });
-  return { character: { name, gender, birthYear, parentWealth, parenting, looks }, stats, report, peerSeed, family };
+  const persona = personaSwitchOn() ? personaBirthOf(famSeedOf(peerSeed), parenting, parentWealth) : undefined;
+  return { character: { name, gender, birthYear, parentWealth, parenting, looks }, stats, report, peerSeed, family, ...(persona !== undefined ? { persona } : {}) };
 }
 
 /** 시드에서 바로 출생 결과를 만든다(테스트·시뮬레이션용). */

@@ -1,5 +1,6 @@
 import type { CurrentRegionName } from '../data/regionKeys';
 import type { FamilyData } from './familyModel';
+import type { PersonaState } from './persona';
 
 /**
  * 저장되는 화면 단계. SPEC-003 FS1: title → roulette → birth → life → ending. 별도 시대 선택 단계(eraSelect)는 없어졌다 — 세상·인생 길이는 첫 화면(title)에서 고른다.
@@ -336,6 +337,11 @@ export interface GameState {
    * 없는 판(v0.3.0까지의 저장)은 `ensureFamily`가 옛 계산 결과를 스냅샷으로 삼아 채운다.
    */
   family?: FamilyData;
+  /**
+   * 기질·적성 (선택 필드 — SPEC-018 PL1·PL2, `docs/data/persona-model.md` 6-1절): 기질 세기 6개·두드러진 기질·적성 키움 5개·적용 예산(`advUsed`·`roleUsed`)·(3단계) 지원 횟수와 직업 상태. 「태어나기」에서 한 번 배정된다(`core/persona.ts#personaBirthOf`).
+   * 저장 스키마는 v9 그대로이고 값이 이상하면 판을 버리지 않고 이 필드만 버린다(`core/storage.ts#withValidPersona`) — 필드가 없는 판은 중립이다(맞춤 효과 없음). 스위치 `PERSONA_ENABLED`가 꺼져 있으면 새 판에는 만들지 않는다.
+   */
+  persona?: PersonaState;
 }
 
 export const SPEEDS = [1, 2, 4, 8] as const;

@@ -18,6 +18,8 @@ import {
 import { deathCauseCandidates, deathEntryText } from '../data/lifeText';
 import { lifeModeOf } from '../data/timingTable';
 import {
+  choiceResultOf,
+  eventTextOf,
   eventWeight,
   isChoiceEvent,
   isEventEligible,
@@ -37,6 +39,8 @@ import { applyResolved, condContextOf, economyContextOf } from './apply';
 import { askBranchProbs, askOutcomeOf, type AskRollChoice } from './ask';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
+import { actPullOf, autoPriorityMul, personaOf } from './persona';
+import { personaOnChoice, personaOnFamilyLines, personaOnNarrative, personaOnYearEnd } from './personaLife';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
 import { flagBlockersOf, flagRequirersOf, flagSettersOf } from './familyAdult';
@@ -256,7 +260,9 @@ const inheritanceLine = (age: number): HistoryEntry => ({ age, kind: 'event', te
  * 상속은 선택의 효과가 아니라 해 끝 규칙이다: 원인이 사건(`parents_gone`)이든 나이 상한(어머니·아버지 모두 100세 초과)이든 이 함수 한 곳에서 한 번 더한다(영향 표기에 들어가지 않는다).
  * 연표 한 줄은 그 해 사건·선택 기록 바로 뒤에 남는다(나이 상한으로 처음 떠나는 해는 한 살 많은 나이의 줄).
  */
-function finishYear(s: GameState, rng: Rng, before: GameState = s): { state: GameState; died: boolean } {
+function finishYear(s0: GameState, rng: Rng, before: GameState = s0): { state: GameState; died: boolean } {
+  // 맞춤 인생(SPEC-018 PL1·PL2)의 해 끝 갱신(양육 방식의 지속 영향·학교·부모 투자): 일반 진행과 선택 해결이 같이 부르는 이 경로에서 한 해에 한 번 — 난수를 쓰지 않는다. 맞춤 인생이 없으면 같은 상태다
+  const s = personaOnYearEnd(s0);
   if (s.character === null || s.generation === null) throw new Error('finishYear: 캐릭터/세대가 없다');
   const age = s.age;
   const life = lifeParamsOf(s.generation, s.character.birthYear);
@@ -418,11 +424,13 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     s = {
       ...s,
       seen: { ...s.seen, [milestone.id]: age },
-      history: appendHistory(s.history, { age, kind: 'event', title: milestone.title, text: milestone.text, eventId: milestone.id }),
+      history: appendHistory(s.history, { age, kind: 'event', title: milestone.title, text: eventTextOf(milestone, ctx), eventId: milestone.id }),
     };
   }
   const milestoneIds = chosenMilestones.map((m) => m.id);
   s = applyFamilyChanges(s, fam);
+  // 가족 변화 줄 중 무거운 장면(부모·조부모 별세·부모 이혼·어린 형제 별세)은 아동기 역경의 입력이다 (풀에도 seen에도 없는 줄 — 설계 1-3절 ②)
+  s = personaOnFamilyLines(s, fam.lines, age);
 
   if (picked !== null && isChoiceEvent(picked)) {
     // 보이는 선택지: 가족 줄이 난 해(`exclude`)에는 해 시작 ctx ∩ 줄 뒤 ctx (R-632). 강제 사건(K2)은 후보에서 뺄 수 없으므로 교집합이 2개 미만이면 해 시작 값을 그대로 쓴다(지금 풀의 강제 사건은 늘 보이는 선택지가 둘이라 닿지 않는다)
@@ -450,8 +458,10 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     s = {
       ...s,
       seen: { ...s.seen, [picked.id]: age },
-      history: appendHistory(s.history, { age, kind: 'event', title: picked.title, text: picked.text, eventId: picked.id }),
+      history: appendHistory(s.history, { age, kind: 'event', title: picked.title, text: eventTextOf(picked, ctx), eventId: picked.id }),
     };
+    // 서술 사건이 적용되는 자리에서 본보기(`role`)·역경(`heavy`)을 한 번 적용한다
+    s = personaOnNarrative(s, picked, age);
   }
   const { state: next, died } = finishYear(s, rng, state);
   const lines = yearLineCount(next.history, age); // 이 해의 줄 수(마일스톤 + 일반 사건 + 해 끝 규칙의 상속 줄이 이 나이에 붙었다면 그것도) — 단계 줄은 세지 않는다
@@ -509,7 +519,7 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
       age: pending.age,
       kind: 'choice',
       title: ev.title,
-      text: ask !== null ? ask.text : by === 'parent' ? (choice.parentResult ?? choice.result) : choice.result,
+      text: ask !== null ? ask.text : by === 'parent' ? (choice.parentResult ?? choiceResultOf(choice, ctx)) : choiceResultOf(choice, ctx),
       choice: by === 'parent' ? (choice.parentLabel ?? choice.label) : choice.label,
       eventId: ev.id,
       // 질문 문장(SPEC-014 QS1): 이 한 곳에서 본인 선택·부모 결정·흘러감 세 경로가 같은 값을 적는다. 사건에 `question`이 없으면 키를 만들지 않는다(옛 줄과 같은 모양). 난수·효과에는 닿지 않는다.
@@ -517,6 +527,8 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
       ...(by !== undefined ? { by } : {}),
     }),
   };
+  // 맞춤 인생: 고른 선택지의 활동·본보기와 사건의 역경을 한 번 적용한다(대기 중에는 적용하지 않는다 — 해결 때만). 효과·난수·연표에는 닿지 않는다
+  s = personaOnChoice(s, ev, choice, by, pending.age);
   // 선택을 하나 해결할 때마다 난수를 정확히 한 번 먼저 소비한다. 이 한 번의 난수는 자동 선택이 선택지를 고르는 데 쓰고(autoResolveStep) 부모님이 정하는·아이의 일로 흘러가는 선택도 같다(resolveDelegated),
   // 수동 선택에서는 버린다. 그래서 같은 상태에서 같은 선택지를 고르면 자동이었든 수동이었든 부모였든 난수 수열이 똑같이 한 칸 나아가
   // 이후 인생이 완전히 같다(R-039). (난수는 stepYear 이후 해마다 finishYear가 한 번씩 쓴다 — 선택 한 번에 한 번이 더해질 뿐이다.)
@@ -614,7 +626,11 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = eventPool(
   const ev = pool.byId.get(pending.eventId);
   if (ev === undefined) throw new Error(`autoChoiceWeights: 이벤트를 찾을 수 없다 (${pending.eventId})`);
   const ctx = condContextOf(state);
-  const priority = AUTO_PRIORITY[state.character.parenting];
+  const base = AUTO_PRIORITY[state.character.parenting];
+  // 기질 보정(SPEC-018 PL1, 1-4절): `persona`가 있으면 성향 표의 다섯 키에 `m_key`(0.8~1.25)를 곱한다. 없으면(구형 저장·스위치 끔) 곱 1 — 변경 전과 비트 단위로 같다
+  const persona = personaOf(state);
+  const mul = persona === null ? null : autoPriorityMul(persona);
+  const priority = mul === null ? base : { wealth: base.wealth * mul.wealth, education: base.education * mul.education, health: base.health * mul.health, happiness: base.happiness * mul.happiness, relationships: base.relationships * mul.relationships };
   // 돈 항의 절실함: 순자산이 음수일수록 커진다(1 ~ 1 + needCap). 20세 미만은 재력 단계로 정한다.
   const moneyNeed =
     state.assets === null
@@ -640,6 +656,8 @@ export function autoChoiceWeights(state: GameState, pool: EventPool = eventPool(
       // 순수·결정론이고 해시 `u1`·`u2`를 읽지 않는다(실제 해결과는 같은 `p`·`s`를 쓸 뿐 갈래는 뽑지 않는다). 참는다는 일반 선택지라 아래 일반 경로(데이터 `effects`)다.
       for (const { key, prob } of askBranchProbs(state, ev, id as AskRollChoice)) score += prob * scoreOf(resolveEffects(ASK_EFFECTS[key], undefined, ctx));
     } else score = scoreOf(resolveEffects(choice.effects, choice.bonuses, ctx));
+    // 활동 끌림: `act`가 있는 선택지에 기질 세기에 따른 점수를 더한다 — 합산 뒤 ±4로 자른다(`actPullOf`, 한 후보 몫 ≤ 60%)
+    if (persona !== null && choice.act !== undefined) score += actPullOf(persona, choice.act);
     // 점수가 비정상적으로 커져도 가중치가 Infinity·0이 되지 않게 지수를 제한한다(R-046: 데이터 검증이 합산 상한을 두지만 런타임도 방어한다).
     return Math.exp(Math.max(-AUTO_EXPONENT_LIMIT, Math.min(AUTO_EXPONENT_LIMIT, score / AUTO_TEMPERATURE)));
   });

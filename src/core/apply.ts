@@ -1,5 +1,6 @@
 import { applyAssetEffects, clampFamilyFund, regionClassOf, type EconomyContext } from './economy';
 import type { CondContext, ResolvedEffects } from './events';
+import { personaViewOf } from './persona';
 import { applyStatDeltas } from './stats';
 import { R1_PRESENT, type GameState } from './types';
 
@@ -27,6 +28,9 @@ export function condContextOf(state: GameState): CondContext {
     age: state.age,
     family: r === null ? null : { birthOrder: r.birthOrder, motherBirthAge: r.mother.age, fatherBirthAge: r.father.age, housing: r.housing },
     assets: state.assets,
+    // 달력 연도와 기질·적성 보기: 자격(`stepYear`의 view)·가중·선택지 가시성·보너스·문장 변주가 **같은 값**을 읽는다 (SPEC-018 PL3 보충 6). 맞춤 인생이 없으면 persona는 null(중립)
+    year: state.character.birthYear + state.age,
+    persona: personaViewOf(state),
   };
 }
 

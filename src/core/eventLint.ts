@@ -1,6 +1,20 @@
 import { ASK_EFFECTS, ASK_WEIGHT_LADDER } from '../data/askTable';
-import { MAX_VISIBLE_CHOICES, MILESTONES_PER_YEAR_MAX, type ChoiceDef, type Condition, type EventDef, type Range } from './events';
-import { STAT_KEYS, type Effects, type Era, type Stage } from './types';
+import {
+  MAX_EFFECTIVE_WEIGHT,
+  MAX_TEXT_VARIANTS,
+  MAX_VISIBLE_CHOICES,
+  MILESTONES_PER_YEAR_MAX,
+  MIN_EFFECTIVE_WEIGHT,
+  eventConditions,
+  inYearRange,
+  usesPersonaCondition,
+  type ChoiceDef,
+  type Condition,
+  type EventDef,
+  type Range,
+} from './events';
+import { APT_KEYS, APT_TIERS, TEMPER_IDS, type AptKey, type AptTier, type TemperId } from './personaKinds';
+import { OCCUPATIONS, PARENT_WEALTHS, STAT_KEYS, type Effects, type Era, type Occupation, type ParentWealth, type Stage } from './types';
 
 /**
  * 이벤트 문구 점검 (어조·길이·시대 소재·상태 어휘·선택지 균형). React·DOM과 무관한 순수 모듈.
@@ -433,6 +447,18 @@ export function conditionsCompatible(conds: ReadonlyArray<Condition | undefined>
     }
     if (c.assets?.netMin !== undefined) netMin = Math.max(netMin, c.assets.netMin);
     if (c.assets?.netMax !== undefined) netMax = Math.min(netMax, c.assets.netMax);
+    // 맞춤 인생 조건(SPEC-018 PL3): 기질·적성 단계·직업 분야/id의 허용 목록이 겹치지 않거나 연도 범위가 겹치지 않으면 같이 보일 수 없다
+    const personaLists: Array<[string, readonly string[] | undefined]> = [['temper', c.temper], ['job.field', c.job?.field], ['job.id', c.job?.id]];
+    for (const key of APT_KEYS) personaLists.push([`apt.${key}`, c.apt?.[key]]);
+    for (const [key, list] of personaLists) {
+      if (list === undefined) continue;
+      const prev = key in lists ? lists[key] : new Set<string>(list);
+      lists[key] = prev === null ? null : new Set([...prev].filter((x) => list.includes(x)));
+    }
+    if (c.year !== undefined) {
+      const prev = 'year' in ranges ? ranges.year : {};
+      ranges.year = prev === null ? null : intersectRange(prev, c.year);
+    }
   }
   for (const f of need) if (forbid.has(f)) return false;
   if (Object.values(ranges).some((r) => r === null)) return false;
@@ -486,6 +512,198 @@ export function visibleChoiceProblems(ev: EventDef): string[] {
   return most > MAX_VISIBLE_CHOICES ? [`${ev.id}: 같은 상태에서 선택지가 ${most}개까지 동시에 보일 수 있다 — 어떤 상태에서도 ${MAX_VISIBLE_CHOICES}개 이하여야 한다. 넘치는 선택지는 서로 배타인 requires(같은 플래그의 flags 대 notFlags 등)를 둔다`] : [];
 }
 
+// ---------- 맞춤 조건 사건의 선택지 격자 하한 (SPEC-018 PL3, 설계 3절 `[CX-002-003]`) ----------
+
+const GRID_CONDITION_KEYS: readonly string[] = ['parentWealth', 'temper', 'apt', 'job', 'year', 'tailored'];
+const NEUTRAL_YEAR = 2000;
+
+/** 격자의 한 칸: 수저 · 맞춤 인생이 있는가 · 기질 · 적성 단계 · 직업 · 달력 연도 */
+interface GridCell {
+  wealth: ParentWealth;
+  persona: boolean;
+  temper: TemperId;
+  tiers: Readonly<Record<AptKey, AptTier>>;
+  job: { field: Occupation; id?: string } | null;
+  year: number;
+}
+
+const describeCell = (c: GridCell): string =>
+  `수저 ${c.wealth} · ${c.persona ? `기질 ${c.temper} · 적성 ${APT_KEYS.map((k) => `${k}:${c.tiers[k]}`).join(',')}${c.job === null ? '' : ` · 직업 ${c.job.id ?? c.job.field}`}` : '맞춤 인생 없음(중립)'} · ${c.year}년`;
+
+/** 격자 칸이 이 조건의 **격자 축**(수저·기질·적성·직업·연도·맞춤 여부)을 만족하는가 — 다른 축(플래그·스탯·자산 등)은 보지 않는다 */
+function gridMeets(cond: Condition | undefined, c: GridCell): boolean {
+  if (cond === undefined) return true;
+  if (cond.parentWealth !== undefined) {
+    if ((cond.parentWealth.min !== undefined && c.wealth < cond.parentWealth.min) || (cond.parentWealth.max !== undefined && c.wealth > cond.parentWealth.max)) return false;
+  }
+  if (cond.year !== undefined && ((cond.year.min !== undefined && c.year < cond.year.min) || (cond.year.max !== undefined && c.year > cond.year.max))) return false;
+  if (cond.tailored === true && !c.persona) return false;
+  if (cond.temper !== undefined || cond.apt !== undefined || cond.job !== undefined) {
+    if (!c.persona) return false;
+    if (cond.temper !== undefined && !cond.temper.includes(c.temper)) return false;
+    for (const key of APT_KEYS) if (cond.apt?.[key] !== undefined && !cond.apt[key]!.includes(c.tiers[key])) return false;
+    if (cond.job !== undefined) {
+      if (c.job === null) return false;
+      if (cond.job.field !== undefined && !cond.job.field.includes(c.job.field)) return false;
+      if (cond.job.id !== undefined && (c.job.id === undefined || !cond.job.id.includes(c.job.id))) return false;
+    }
+  }
+  return true;
+}
+
+/** 이 조건에 격자 밖의 축(플래그·스탯·자산·외모·양육 방식 등)이 하나라도 있는가 — 있으면 최악의 경우에는 그 선택지를 숨은 것으로 센다 */
+const hasNonGridKey = (cond: Condition | undefined): boolean => cond !== undefined && Object.keys(cond).some((k) => !GRID_CONDITION_KEYS.includes(k));
+
+/** 사건이 격자에서 훑을 연도: 그 사건의 모든 `year`·`yearRange` 경계 −1·0·+1 (경계가 없으면 한 해) — 사건이 실제로 일어날 수 있는 연도만 */
+function gridYears(ev: EventDef): number[] {
+  const bounds = new Set<number>();
+  const add = (r: { from?: number; to?: number; min?: number; max?: number } | undefined): void => {
+    for (const b of [r?.from, r?.to, r?.min, r?.max]) if (b !== undefined) for (const d of [-1, 0, 1]) bounds.add(b + d);
+  };
+  add(ev.yearRange);
+  for (const c of eventConditions(ev)) add(c.year);
+  const years = bounds.size === 0 ? [NEUTRAL_YEAR] : [...bounds].sort((a, b) => a - b);
+  return years.filter((y) => inYearRange(y, ev.yearRange));
+}
+
+/** 격자 칸을 만든다: 사건이 쓰는 축만 펼치고(안 쓰는 축은 한 값으로 접는다) 맞춤 인생이 없는 칸(중립)을 더한다 */
+function gridCells(ev: EventDef): GridCell[] {
+  const conds = eventConditions(ev);
+  const usesTemper = conds.some((c) => c.temper !== undefined);
+  const aptAxes = APT_KEYS.filter((k) => conds.some((c) => c.apt?.[k] !== undefined));
+  const jobs: Array<GridCell['job']> = [null];
+  if (conds.some((c) => c.job !== undefined)) {
+    const fields = new Set<Occupation>();
+    for (const c of conds) for (const f of c.job?.field ?? []) fields.add(f);
+    for (const f of fields) jobs.push({ field: f });
+    for (const c of conds) for (const id of c.job?.id ?? []) jobs.push({ field: (c.job?.field?.[0] ?? OCCUPATIONS[1]) as Occupation, id });
+  }
+  const temperList: readonly TemperId[] = usesTemper ? TEMPER_IDS : [TEMPER_IDS[0]];
+  const tierCombos: Array<Record<AptKey, AptTier>> = [Object.fromEntries(APT_KEYS.map((k) => [k, 'mid'])) as Record<AptKey, AptTier>];
+  for (const axis of aptAxes) {
+    const next: Array<Record<AptKey, AptTier>> = [];
+    for (const base of tierCombos) for (const tier of APT_TIERS) next.push({ ...base, [axis]: tier });
+    tierCombos.length = 0;
+    tierCombos.push(...next);
+  }
+  const cells: GridCell[] = [];
+  for (const year of gridYears(ev)) {
+    for (const wealth of PARENT_WEALTHS) {
+      cells.push({ wealth, persona: false, temper: TEMPER_IDS[0], tiers: tierCombos[0], job: null, year });
+      for (const temper of temperList) for (const tiers of tierCombos) for (const job of jobs) cells.push({ wealth, persona: true, temper, tiers, job, year });
+    }
+  }
+  return cells.filter((c) => gridMeets(ev.conditions, c));
+}
+
+export interface VisibleChoiceGrid {
+  /** 훑은 칸 수(사건 조건을 만족하는 칸만) */
+  cells: number;
+  /** 어느 칸에서도 보이는 선택지 수의 최소 — 격자 밖 축의 조건이 걸린 선택지는 숨은 것으로 센다(최악) */
+  min: number;
+  minCell: string;
+  /** 보이는 선택지 수의 최대 — 격자 밖 축의 조건은 맞는 것으로 센다(최악의 과다 노출) */
+  max: number;
+  maxCell: string;
+}
+
+/**
+ * 선택지 격자 (설계 3절 `[CX-002-003]`): **수저 1~5 × 적성 단계(축마다 low·mid·high) × 기질 6 × 그 사건의 `yearRange`·`year` 경계 연도(−1·0·+1) × 맞춤 인생 없는 중립 상태** 전부에서
+ * `visibleChoices`가 몇 개인지의 최소·최대. 사건이 쓰는 축만 펼친다. 사건 조건(`conditions`)을 만족하지 못하는 칸은 그 사건이 일어날 수 없는 칸이라 제외한다.
+ * 선택지를 하나만 보이거나 아무것도 못 보이는 칸이 있으면 사건이 추첨에서 사라지므로 빌드가 막힌다(`visibleChoiceGridProblems`).
+ */
+export function visibleChoiceGrid(ev: EventDef): VisibleChoiceGrid {
+  const choices = ev.choices ?? [];
+  const cells = gridCells(ev);
+  let min = Infinity;
+  let max = -Infinity;
+  let minCell = '';
+  let maxCell = '';
+  for (const cell of cells) {
+    const lo = choices.filter((c) => !hasNonGridKey(c.requires) && gridMeets(c.requires, cell)).length;
+    const hi = choices.filter((c) => gridMeets(c.requires, cell)).length;
+    if (lo < min) {
+      min = lo;
+      minCell = describeCell(cell);
+    }
+    if (hi > max) {
+      max = hi;
+      maxCell = describeCell(cell);
+    }
+  }
+  return { cells: cells.length, min: cells.length === 0 ? 0 : min, minCell, max: cells.length === 0 ? 0 : max, maxCell };
+}
+
+/** 격자에서 보이는 선택지의 최소 수 (`visibleChoiceGrid(ev).min`) */
+export const minVisibleChoices = (ev: EventDef): number => visibleChoiceGrid(ev).min;
+
+/**
+ * 맞춤 조건(`temper`·`apt`·`job`·`tailored`)을 쓰는 선택지 사건은 「조건 없는 선택지 ≥ 2」 대신 격자 하한을 받는다: 모든 칸에서 보이는 선택지가 **2~3개**여야 한다.
+ * 0~1개가 되는 칸이 있으면 그 사건은 그 판에서 추첨에서 사라지고(`isEventEligible`), 4개 이상이면 카드가 선택지 3개를 한 화면에 담지 못한다. `trigger`·`pick` 사건은 이 검사 대상이 아니다(각자의 규칙).
+ */
+export function visibleChoiceGridProblems(ev: EventDef): string[] {
+  if (ev.choices === undefined || ev.trigger !== undefined || !usesPersonaCondition(ev)) return [];
+  const g = visibleChoiceGrid(ev);
+  const out: string[] = [];
+  if (g.min < 2) out.push(`${ev.id}: 선택지 격자에서 보이는 선택지가 ${g.min}개인 칸이 있다 (${g.minCell}) — 어느 수저·적성·기질·연도·중립 상태에서도 2~3개가 보여야 한다. 조건 없는 선택지를 두거나 형편별 고유 선택지를 늘린다`);
+  if (g.max > MAX_VISIBLE_CHOICES) out.push(`${ev.id}: 선택지 격자에서 ${g.max}개가 동시에 보이는 칸이 있다 (${g.maxCell}) — 어떤 상태에서도 ${MAX_VISIBLE_CHOICES}개 이하여야 한다`);
+  return out;
+}
+
+// ---------- 문장 변주 · 합성 가중 (SPEC-018 PL3) ----------
+
+/**
+ * 문장 변주(`textVariants`·`resultVariants`)의 의미 점검: ① 사건·선택지당 `MAX_TEXT_VARIANTS` 이하(스키마도 막는다) ② `when`이 사건 `conditions`(선택지 변주는 그 선택지 `requires`까지)와 **양립**한다 —
+ * 같이 맞을 수 없으면 그 변주는 영원히 안 보인다 ③ 같은 `when` 변주가 둘이면 뒤의 것은 영원히 안 보인다. 글 자체의 규칙(합쇼체·길이·시대어·느낌표·이모지)은 `textPartsOf`가 변주 글까지 내보내 `lintEvent`가 본다.
+ * 변주 사이의 의미 반전·서열화는 기계가 못 가려 reviewer·designer 몫이다.
+ */
+export function variantProblems(ev: EventDef): string[] {
+  const out: string[] = [];
+  const check = (where: string, variants: ReadonlyArray<{ when: Condition }> | undefined, context: ReadonlyArray<Condition | undefined>): void => {
+    if (variants === undefined) return;
+    if (variants.length > MAX_TEXT_VARIANTS) out.push(`${where}: 문장 변주가 ${variants.length}개다 (최대 ${MAX_TEXT_VARIANTS}개)`);
+    const seen = new Set<string>();
+    variants.forEach((v, i) => {
+      if (!conditionsCompatible([...context, v.when])) out.push(`${where}[${i}]: when이 사건·선택지 조건과 같이 맞을 수 없어 이 변주는 보이지 않는다`);
+      const key = JSON.stringify(v.when);
+      if (seen.has(key)) out.push(`${where}[${i}]: 앞의 변주와 when이 같아 이 변주는 보이지 않는다`);
+      seen.add(key);
+    });
+  };
+  check(`${ev.id}.textVariants`, ev.textVariants, [ev.conditions]);
+  for (const c of ev.choices ?? []) check(`${ev.id}.choices(${c.id}).resultVariants`, c.resultVariants, [ev.conditions, c.requires]);
+  return out;
+}
+
+/**
+ * 합성 가중의 최악 곱: `weight`와 `modifiers`의 모든 조합(서로 같이 맞을 수 있는 조건의 부분집합만, `conditionsCompatible`) 곱의 최솟값·최댓값. `extra`는 모디파이어 밖에서 곱해지는 채널
+ * (외모 영향 `LOOKW`·시대 배율 `LOOKERA` 등 — 3단계가 채운다)의 `[최소 배수, 최대 배수]`로, 최솟값은 가장 작은 쪽을 최댓값은 가장 큰 쪽을 곱한다.
+ */
+export function eventWeightBounds(ev: EventDef, extra: ReadonlyArray<readonly [number, number]> = []): { min: number; max: number } {
+  const mods = ev.modifiers ?? [];
+  let min = Infinity;
+  let max = -Infinity;
+  for (let mask = 0; mask < 1 << mods.length; mask++) {
+    const chosen = mods.filter((_, i) => (mask & (1 << i)) !== 0);
+    if (chosen.length > 0 && !conditionsCompatible([ev.conditions, ...chosen.map((m) => m.when)])) continue;
+    const product = chosen.reduce((w, m) => w * m.weight, ev.weight);
+    min = Math.min(min, product);
+    max = Math.max(max, product);
+  }
+  const lo = extra.reduce((w, [a, b]) => w * Math.min(a, b), 1);
+  const hi = extra.reduce((w, [a, b]) => w * Math.max(a, b), 1);
+  return { min: min * lo, max: max * hi };
+}
+
+/** 합성 가중이 [`MIN_EFFECTIVE_WEIGHT`(0.01), `MAX_EFFECTIVE_WEIGHT`(10000)] 밖이 될 수 있으면 막는다 (설계 3절 `[CX-002 보충 3]` — `check:events`에 들어간다) */
+export function weightBoundsProblems(ev: EventDef, extra: ReadonlyArray<readonly [number, number]> = []): string[] {
+  const b = eventWeightBounds(ev, extra);
+  const out: string[] = [];
+  if (b.min < MIN_EFFECTIVE_WEIGHT) out.push(`${ev.id}: 합성 가중의 최솟값이 ${b.min}로 ${MIN_EFFECTIVE_WEIGHT} 아래가 될 수 있다 (weight × 모디파이어 × 외모·시대 채널의 모든 조합 곱)`);
+  if (b.max > MAX_EFFECTIVE_WEIGHT) out.push(`${ev.id}: 합성 가중의 최댓값이 ${b.max}로 ${MAX_EFFECTIVE_WEIGHT}을 넘을 수 있다 (weight × 모디파이어 × 외모·시대 채널의 모든 조합 곱)`);
+  return out;
+}
+
 // ---------- 점검 ----------
 
 export interface TextPart {
@@ -501,9 +719,12 @@ export function textPartsOf(ev: EventDef): TextPart[] {
     { where: `${ev.id}.title`, kind: 'title', value: ev.title },
     { where: `${ev.id}.text`, kind: 'text', value: ev.text },
   ];
+  // 문장 변주(SPEC-018 PL3): 본문·결과와 같은 규칙으로 점검한다(합쇼체·길이·시대어·느낌표·이모지 — 그 사건의 시대·단계로)
+  (ev.textVariants ?? []).forEach((v, i) => parts.push({ where: `${ev.id}.textVariants[${i}]`, kind: 'text', value: v.text }));
   (ev.choices ?? []).forEach((c, i) => {
     parts.push({ where: `${ev.id}.choices[${i}](${c.id}).label`, kind: 'label', value: c.label });
     parts.push({ where: `${ev.id}.choices[${i}](${c.id}).result`, kind: 'result', value: c.result });
+    (c.resultVariants ?? []).forEach((v, j) => parts.push({ where: `${ev.id}.choices[${i}](${c.id}).resultVariants[${j}]`, kind: 'result', value: v.text }));
     // 부모가 정하는 카드의 문구(SPEC-005 PD11): 라벨·결과와 같은 규칙으로 점검한다
     if (c.parentLabel !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).parentLabel`, kind: 'label', value: c.parentLabel });
     if (c.parentResult !== undefined) parts.push({ where: `${ev.id}.choices[${i}](${c.id}).parentResult`, kind: 'result', value: c.parentResult });
@@ -703,6 +924,9 @@ export function lintEvent(ev: EventDef): string[] {
   problems.push(...stateWordProblems(ev));
   problems.push(...choiceBalanceProblems(ev));
   problems.push(...visibleChoiceProblems(ev));
+  problems.push(...visibleChoiceGridProblems(ev));
+  problems.push(...variantProblems(ev));
+  problems.push(...weightBoundsProblems(ev));
   problems.push(...askProblems(ev));
   // 반복: 한 판에서 같은 문구가 되풀이되지 않도록 반복 이벤트는 간격을 길게 둔다
   if (!ev.once && (ev.cooldown ?? 0) < MIN_REPEAT_COOLDOWN) {

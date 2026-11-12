@@ -6,6 +6,7 @@ import { eventPool, isGameDataReady } from './gameData';
 import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
 import { isValidBirthReport } from './birthReport';
 import { ensureFamily, withValidFamily } from './familyStorage';
+import { readPersona } from './persona';
 import { isValidStat } from './stats';
 import { resolveDelegated } from './life';
 import { decisionFor } from './parentDecision';
@@ -201,6 +202,21 @@ function withValidPlay(state: GameState): GameState {
   if (play !== undefined) return { ...state, play };
   const rest = { ...state } as Record<string, unknown>;
   delete rest.play;
+  return rest as unknown as GameState;
+}
+
+/**
+ * 판의 `persona`(SPEC-018 PL1·PL2 — 기질·적성, 설계 6-1절)는 **선택 필드**라 이상한 값이 판을 버리게 하지 않는다 — 모양·길이·정수·범위가 틀리거나(`readPersona`), 모르는 키·`v`가 있거나, 출생 이후(룰렛·출생신고·인생·엔딩) 단계가 아닌 판에 있으면
+ * **그 필드만 버린다**(중립으로 돌아간다 — 자동 모드 보정 1·맞춤 조건 불성립). 필드가 없는 저장(이 변경 이전의 모든 판)은 그대로 유효하다(저장 스키마는 v9 그대로). 직업 `field`가 모르는 값이면 `job`만 지운다(6-4절).
+ * 값이 멀쩡하면 같은 객체를 돌려준다(저장 → 읽기 → 저장이 바이트 그대로). 스위치 `PERSONA_ENABLED`가 꺼져 있어도 저장된 `persona`는 지우지 않고 통과시킨다.
+ */
+function withValidPersona(state: GameState): GameState {
+  if (!Object.prototype.hasOwnProperty.call(state, 'persona')) return state;
+  const raw: unknown = (state as { persona?: unknown }).persona;
+  const persona = state.phase === 'title' ? null : readPersona(raw);
+  if (persona !== null) return JSON.stringify(persona) === JSON.stringify(raw) ? state : { ...state, persona };
+  const rest = { ...state } as Record<string, unknown>;
+  delete rest.persona;
   return rest as unknown as GameState;
 }
 
@@ -521,7 +537,8 @@ export function parseGame(raw: string | null, poolArg?: EventPool): GameState | 
   const verdict = checkGameState(data, pool);
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
-  return withValidFamily(withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidQuestion(withValidBy(state)), pool)))))));
+  // `persona`는 부모·흘러감 대기를 풀기 전에 먼저 검증한다 — 그 해결(`settleDelegatedPending`)이 기질을 갱신하므로 손상된 값을 읽지 않게 한다
+  return withValidFamily(withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidPersona(withValidQuestion(withValidBy(state))), pool)))))));
 }
 
 /**

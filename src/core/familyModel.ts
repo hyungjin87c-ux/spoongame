@@ -46,6 +46,12 @@ export const FAMILY_TAG = {
  */
 export const FAMILY_TAG_ASK = 20;
 
+/**
+ * 맞춤 인생(기질·적성) 해시 태그 (SPEC-018 PL1, `docs/data/persona-model.md` 1-2절): `famHash01(가족 시드, 21, 하위 키, 부가)` — `FAMILY_TAG_ASK`와 같은 이유로 `FAMILY_TAG` 객체 **밖**에 둔다(가족 골든 불변).
+ * 값 21은 `FAMILY_TAG_ASK = 20` 다음이며 어떤 태그와도 겹치지 않는다. 설계 문서 9절 블록의 `MODEL | hashTag`와 같은 값이다(tests/personaDoc.test.ts). **바꾸지 않는다** — 알려진 시드의 기질·적성이 달라진다.
+ */
+export const FAMILY_TAG_PERSONA = 21;
+
 /** 전체 자녀 수 상한 (주인공 포함) */
 export const FAMILY_MAX_CHILDREN = 8;
 /** 모델이 새로 만드는 출산(조부모의 부모 출산)의 어머니 나이 상한 (추정 ▲, 1-1절) */

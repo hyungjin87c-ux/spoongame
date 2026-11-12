@@ -37,7 +37,7 @@
 | `conditions` | | 발생 조건(아래 3절). 모두 맞아야(AND) 후보가 된다. |
 | `modifiers` | | `[{ "when": 조건, "weight": 배수 }]` 조건이 맞으면 가중치에 배수를 곱한다(**0.1 이상 10 이하**, 이벤트당 **최대 6개**, 모두 맞거나 모두 안 맞는 최악의 곱도 0.01~10000 안). **외모 → 연애·결혼·사업 이벤트 확률**, 부모 재력·교육방식 → 노출 확률은 이렇게 반영한다. |
 | `effects`, `bonuses` | | **서술 이벤트(선택지 없음)** 의 효과(4절). `bonuses`는 최대 8개. |
-| `choices` | | **선택지 이벤트**. 정의 2~4개, 같은 상태에서 보이는 것은 2~3개(M7a r3 — 아래 5절). 아래 5절. `choices`를 쓰면 이벤트 단위 `effects`/`bonuses`는 쓰지 않는다. |
+| `choices` | | **선택지 이벤트**. 정의 2~6개(SPEC-018 PL3에서 4 → 6), 같은 상태에서 보이는 것은 2~3개(M7a r3 — 아래 5절·13절). 아래 5절. `choices`를 쓰면 이벤트 단위 `effects`/`bonuses`는 쓰지 않는다. |
 | `milestone` | | `true`면 **마일스톤 이벤트**(SPEC-003 IN3, M7a): 첫 예방접종·첫 걸음마·첫 말처럼 정한 나이 창(`ageRange`) 안에서 **모든 판에** 일어난다. **서술 이벤트·`once:true`·`ageRange`의 `min`과 `max`가 모두 있어야 한다**(어기면 로드할 때 오류). 일반 추첨과 **별개 슬롯**이라 그 해의 일반 사건과 함께 연표에 한 줄을 남기고(한 해 두 줄), 창의 마지막 해에는 100%다 — 아래 「마일스톤 슬롯」. |
 | `citation` | | **중대 결정 카드의 인용 연결**(SPEC-003 MD2, M7b — 선택지 이벤트만). 인용 id 문자열 `"c-006"` = 이 카드가 뜨는 모든 세상에서 같은 인용, 객체 `{ "past": "c-033", "present": "c-006", "future": "c-006" }` = 세상마다 다른 인용(적히지 않은 세상은 인용 없음, 키는 이 이벤트가 뜨는 세상만). id는 `src/data/citations.json`의 `verified`·`usable` 인용이어야 하고(`check:events`가 점검) 그 인용의 `eras`에 그 세상이 있어야 화면에 보인다. 다가올 세상은 인용의 머리말 「지금 기준으로는」, 지난 세상의 시대 무관 연구는 「지금의 연구로는」이 붙고, 지난 세상 통계는 인용의 `validFromYear`보다 이른 게임 속 연도에서는 보이지 않는다. `citations.json`의 `usedBy`는 이 필드의 **역색인**이라 사람이 쓰지 않는다(`npm run gen:citations`, 어긋나면 `npm run check:citations`가 실패). |
 | `noCitation` | | 이 카드에 **어느 세상에서도 인용을 붙이지 않는** 사유 코드 — `X1` 의료·응급·진단 / `X2` 임종·가족 갈등의 존엄 / `X3` 재무·법률 행위 / `X4` 낙인 위험 / `X5` 다가올 세상 상상 전용 / `X6` 양육 방식 가치판단 유도(**원칙적 무인용 X1~X6**, 시대별 등장 카드의 25% 이하, 목록 변경은 마스터 승인) / `D` 맞는 자료가 없어 서술 장면으로 둔 카드. `citation`과 함께 쓰지 않는다. 선택지 이벤트 90개는 `citation`·`noCitation` 중 하나를 가져야 한다 — 단 2차 수집 대기 카드(T-01~T-13 정서·관계)는 `src/data/citationPending.ts`에 칸 단위로 적어 두고 두 필드를 아직 쓰지 않는다(`tests/citationLink.test.ts`가 90개 전수를 점검). |
@@ -103,7 +103,7 @@
 ```
 - `id`(소문자로 시작, 소문자·숫자·하이픈 1~32자, 이벤트 안에서 유일) · `label` 1~40자(권장 24자 이하, **라벨의 어절은 5음절 이하** — 번호 원 옆 라벨 칸이 약 164px이고 글자 200%에서 음절당 약 32px라 6음절 어절이 칸을 넘는다, QA-003-M7e L02·M7e-4: `tests/m7eContent.test.ts` 「M7e-4 L02」가 풀 전체를 점검하고 5음절 어절 라벨 감시 목록 20개를 지키며, `e2e/m7e4-labels.spec.ts`가 모든 선택지 이벤트를 320×568·360×740 × 글자 150·200%로 낱말 끊김 감사한다) · `result` 6~300자(권장 84자 이하, 고른 뒤 사건 기록에 남는 문구)는 필수.
 - `requires`가 있으면 조건을 만족할 때만 선택지가 **보인다**. 화면에는 항상 2~3개가 보여야 하므로 **`requires`가 없는 선택지가 2개 이상** 있어야 한다.
-- **정의는 최대 4개, 같은 상태에서 보이는 것은 최대 3개**(M7a r3, 마스터 결정 13-M ①): 정의가 3개를 넘는 이벤트는 서로 **같이 보일 수 없는** 선택지가 있어야 한다 — `infant-new-sibling`의 `grandma`(`requires.flags: ["grandparent_close"]`)와 `notice`(`requires.notFlags: ["grandparent_close"]`)가 서로 배타라 플래그가 있으면 help·sulk·grandma, 없으면 help·sulk·notice가 늘 3개 보인다. lint(`eventLint#visibleChoiceProblems`)가 「같은 상태에서 동시에 보일 수 있는 선택지의 최대 수 ≤ 3」을 점검한다(플래그 flags/notFlags 충돌·재력·형제 순서·나이·스탯·순자산 범위·양육 방식·성별·사는 집의 허용 목록이 겹치지 않을 때만 함께 못 보인다고 본다 — 확실하지 않으면 함께 보일 수 있는 것으로 센다). 선택지 균형(지배) 점검은 정의된 모든 쌍을 비교한다.
+- **정의는 최대 6개(SPEC-018 PL3 — 처음 4개, M7a r3에서 올린 값에서 다시 올렸다), 같은 상태에서 보이는 것은 최대 3개**(M7a r3, 마스터 결정 13-M ①): 정의가 3개를 넘는 이벤트는 서로 **같이 보일 수 없는** 선택지가 있어야 한다 — `infant-new-sibling`의 `grandma`(`requires.flags: ["grandparent_close"]`)와 `notice`(`requires.notFlags: ["grandparent_close"]`)가 서로 배타라 플래그가 있으면 help·sulk·grandma, 없으면 help·sulk·notice가 늘 3개 보인다. lint(`eventLint#visibleChoiceProblems`)가 「같은 상태에서 동시에 보일 수 있는 선택지의 최대 수 ≤ 3」을 점검한다(플래그 flags/notFlags 충돌·재력·형제 순서·나이·스탯·순자산 범위·양육 방식·성별·사는 집의 허용 목록이 겹치지 않을 때만 함께 못 보인다고 본다 — 확실하지 않으면 함께 보일 수 있는 것으로 센다). 선택지 균형(지배) 점검은 정의된 모든 쌍을 비교한다.
 - **돈이 드는 선택지 게이팅 (SPEC-003 EC4)**: 큰돈이 드는 선택지는 `requires`에 자산·부모 재력 조건을 건다 — 지금 10개 — 부모 재력 조건 5개(`infant-care/home` · `infant-stories/book` · `school-tutoring/tutor` · `school-exam/retry` · `youth-first-job/family`)와 순자산 조건 5개(`youth-exam-prep/persist` 순자산 −5000 이상 · `middle-parents-care/facility` · `middle-child-school/fund` · `middle-layoff/open` 0 이상 · `senior-travel/go` 5000 이상, 만 원). 근거는 `docs/data/economy-model.md` 6절(EC4)이다. 게이트가 닫혀도 `requires` 없는 선택지가 2개 이상 남는다.
 - 선택지는 이벤트가 일어난 순간 보이는 목록이 정해져 **저장 상태에 들어간다**(새로고침해도 같은 선택지).
 
@@ -315,3 +315,14 @@ npm run sim:infant            # 영유아(0~7세) 지표 — 빈 해 평균·최
 - **한 종류 최대 1장·판당 최대 3장 — 파생 필드 `askPeers`**(데이터에 쓰지 않는다 — 쓰면 「알 수 없는 항목」 오류): `createEventPool`이 `ask`가 있는 사건마다 같은 종류의 다른 사건 id 목록을 채우고(`eras`와 같은 방식), `isEventEligible`이 그중 하나라도 이미 본 적(`seen`)이 있으면 후보에서 뺀다. 시대 경계(2000/2001 등)를 넘는 판에서 같은 종류의 다른 시대 사건이 또 뜨지 않게 한다. 새 저장 이름이 없다. `seen`은 카드가 뜰 때 기록되므로 해결 전 새로고침에도 같은 종류가 다시 뜨지 않는다.
 - **플래그**: 들어줌(`pet`)은 `pet_dog`를, 떼쓰기 거절 + 사이 나빠짐은 `parent_strained`를 코드 표가 켠다. 데이터에는 이 플래그가 쓰이지 않으므로 `flagsWritten`이 `ask` 사건의 표 플래그를 함께 센다(읽는 플래그 교차 검증). 해결 경로(`askOutcomeOf` — `src/core/ask.ts`)와 사이 비용(`askStrainChance`)은 AK4·AK5에서 구현했다(2026-11-09).
 - 시험: `tests/askLint.test.ts`(스키마·lint·`askPeers`) · `tests/askClassification.test.ts`(영역·R1a·점검 ④) · `tests/askCard.test.ts`·`askCardNone.test.ts`(판정) · `tests/askDoc.test.ts`(설계 문서 기계 판독 블록 ↔ `askTable.ts`).
+
+## 13. 맞춤 인생 필드 (SPEC-018 PL1·PL3 — 설계 `docs/data/persona-model.md` 1·3절)
+
+조건·선택지·문장 변주에 아래가 더해졌다. **새 필드가 없는 기존 사건은 모든 판에서 이전과 같다**(골든 `tests/personaCondition.test.ts`·`tests/eligibilityGoldenBoundary.test.ts`). 값(갱신 크기·확률)은 데이터에 쓰지 않는다 — 코드 표 한 곳(`src/data/personaTable.ts` = 설계 9절 블록).
+
+- **`Condition` 새 필드**(`conditions`·`requires`·`modifiers.when`·`bonuses.when`·변주 `when` 어디서나): `temper`(지금 두드러진 기질 목록) · `apt`(축별 단계 목록, 적힌 축은 모두 맞아야 한다) · `job`(`field`·`id`) · `year`(달력 연도 구간) · `tailored: true`(이 판에 맞춤 인생이 있다). **모르거나 없으면 맞지 않는다**(구형 저장·스위치 끔은 `persona`가 없다). 부정 조건은 없다. `year`는 자격·가중·선택지 가시성·보너스·문장 변주가 같은 연도를 읽는다.
+- **선택지 `act`**(`sport social read art make study work alone`)·**`role`**(`teacher relative neighbor coach boss`)·서술 사건 `role`: 표지만 적는다. 고르면 기질·적성이 약하게 움직인다.
+- **문장 변주** `textVariants`(사건 본문)·`resultVariants`(선택지 결과): `[{ when, text }]` 최대 3개, 먼저 맞는 것이 이긴다, **글만** 바뀐다. 변주도 본문·결과와 같은 문구 규칙(합쇼체·길이·시대어·느낌표·이모지)을 받는다. `when`이 사건 조건과 양립하지 않거나 앞의 변주와 같으면 lint가 막는다.
+- **격자 하한**: `temper`·`apt`·`job`·`tailored`를 쓰는 선택지 사건은 「조건 없는 선택지 ≥ 2」 대신 **수저 1~5 × 적성 단계 × 기질 6 × 연도 경계(−1·0·+1) × 맞춤 인생 없는 중립**의 모든 칸에서 보이는 선택지가 2~3개여야 한다(`eventLint#visibleChoiceGrid`). 공통 1개 + 수저 형편별 고유 2개씩(정의 5개)이 한 꼴이다.
+- **합성 가중 범위**: `weight × modifiers`(외모·시대 채널 포함)의 모든 조합 곱의 최악·최선이 [0.01, 10000] 안이어야 한다(`eventLint#eventWeightBounds`).
+- 외모(`looks`)를 조건에 쓰는 lint는 3단계(PL16)가 더한다.
