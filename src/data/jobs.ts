@@ -1,4 +1,5 @@
-import { createJobTable, jobTableProblems, type JobDef, type JobTable } from '../core/jobs';
+import { createJobTable, type JobDef, type JobTable } from '../core/jobs';
+import { jobTableProblems } from '../core/jobValidate';
 import raw from './jobs.json';
 
 /**

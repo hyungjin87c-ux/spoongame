@@ -1,4 +1,5 @@
-import { createEventPool, validateEventFiles, type EventPool } from '../../core/events';
+import { createEventPool, type EventPool } from '../../core/events';
+import { validateEventFiles } from '../../core/eventValidate';
 import { ASK_PET_ENABLED } from '../askTable';
 
 /**

@@ -257,7 +257,7 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
   const stripComments = (src: string): string => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
   const files = Object.entries(sources).map(([path, raw]) => ({ file: path.replace('../src/', ''), code: stripComments(raw) }));
 
-  it("join(' · ')·join('·')·join(' / ')은 개발자용 점검 메시지(core/eventLint.ts 2곳 · core/events.ts 1곳)와 룰렛 지역 표 주석의 시·도 이름 나열 한 곳(copy.md 16-x 「{이름·이름}」) 말고 어디에도 없다 — 화면 글자를 가운뎃점·빗금으로 잇는 목록 조립이 없다", () => {
+  it("join(' · ')·join('·')·join(' / ')은 개발자용 점검 메시지(core/eventLint.ts 2곳 · core/eventValidate.ts 1곳 — SPEC-018 T3에서 events.ts의 이벤트 파일 검증을 옮겼다)와 룰렛 지역 표 주석의 시·도 이름 나열 한 곳(copy.md 16-x 「{이름·이름}」) 말고 어디에도 없다 — 화면 글자를 가운뎃점·빗금으로 잇는 목록 조립이 없다", () => {
     const hits: Record<string, number> = {};
     for (const f of files) {
       const n = [...f.code.matchAll(/\.join\(\s*(['"`])\s*[·/—]\s*\1\s*\)/g)].length;
@@ -266,7 +266,7 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     // data/birthReportText.ts: 지역 표 주석 「세대 범위 도중에 생긴 {이름·이름}의 몫은…」의 짧은 시·도 이름 나열(SPEC-004 GS6, 시안 문구 그대로)
     // core/scene.ts: 집과 가족 그림의 아래 한 줄 「부모님·누나 둘·할머니와 함께」(SPEC-009 FH3 — 함께 사는 사람 낱말을 가운뎃점으로 잇는 것이 시안·문구 정본이다. 화면은 한 줄 규칙(40자, 360px에서 두 줄까지)과 word-break: keep-all로 그리며 말줄임 없이 길면 낱말을 줄인다)
     // ui/FitPair.tsx: `FitList`(SPEC-009 FM4b — 집과 가족 그림 아래 한 줄 「{사는 곳} · {집 낱말} · {함께 사는 사람}」, 항목 셋 고정)의 보이지 않는 탐침 글자 `data-text`(aria-hidden, DOM 글자에 안 들어간다) — 화면 글자 조립이 아니다. 한 줄에 안 들어가면 기호 없이 항목마다 줄이다
-    expect(hits).toEqual({ 'core/eventLint.ts': 2, 'core/events.ts': 1, 'core/scene.ts': 1, 'data/birthReportText.ts': 1, 'ui/FitPair.tsx': 1 });
+    expect(hits).toEqual({ 'core/eventLint.ts': 2, 'core/eventValidate.ts': 1, 'core/scene.ts': 1, 'data/birthReportText.ts': 1, 'ui/FitPair.tsx': 1 });
     expect(files.length, '공허 통과 방지: src 전체를 읽었다').toBeGreaterThan(40);
   });
 
@@ -278,7 +278,8 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
     }
     expect(hits).toEqual({
       // (SPEC-005 QI3: core/carousel.ts의 기준 줄 「{분모 문구} · {연도}년 기준」 조립은 없어졌다 — 연도는 공식 통계명 줄 「합계출산율(2025년)」로 옮겼고 기준 줄에는 분모만 남는다)
-      'core/events.ts': 2, // 개발자용 점검 메시지(「standard · common · assembled 중 하나여야 한다」 · SPEC-018 적성 조건 형식 안내)
+      'core/events.ts': 1, // 개발자용 점검 메시지(SPEC-018 적성 조건 형식 안내 — 기록 카드도 쓰는 조건 검사라 events.ts에 남았다)
+      'core/eventValidate.ts': 1, // 개발자용 점검 메시지(「standard · common · assembled 중 하나여야 한다」 — 이벤트 파일 검증, SPEC-018 T3에서 옮김)
       'core/eventLint.ts': 4, // 개발자용 점검 메시지 — SPEC-018 격자 하한 lint의 칸 이름(수저 · 기질 · 적성 · 직업)
       'core/glue.ts': 1, // splitPair의 분해 기호
       // SPEC-004 GM4 2차: 첫 장 세대 그래프의 짧은 쌍 — 큰 값 아래 「한 해 평균 · {첫해}~{끝해}년」(core/genChart.ts, ui/Glue 묶음) · 가리킴 글자 「{연도}년 · {값}만 명」(data/genChartText.ts, 그림 안 한 줄) · (세대 줄 「{세대 이름} · {범위}년생」은 `.pair--meta` 마크업이라 글자 안에 「 · 」가 없다 — ui/GenSlide.tsx) ·

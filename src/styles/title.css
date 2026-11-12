@@ -461,15 +461,11 @@ html.bar-released .page-end-space { display: none; }
 /* 이어서 살기 띠(120px)에서는 식이 PC 하한 9rem(144px)에 걸려 보정이 4px만 먹었다(왼쪽 열 끝 692 > 띠 680) — 하한을 8rem(128px ≈ 2.5줄)으로 내려 676 < 680. 폭이 넓은 PC라 줄이 접히지 않고, rem이라 글자 200%에서도 창이 한 줄보다 크다 */
 @media (min-width: 960px) { .gen-list { --gen-list-h: clamp(8rem, 100vh - 39rem - var(--bar-h, 68px) + 68px, 24rem); } }
 /* 세대 목록 스크롤 막대 (형진 님 2026-11-12 「너무 얇다」): 마우스 환경에서 Windows 11 크롬의 겹쳐 그리는 얇은 막대 대신 폭 14px 막대(손잡이 10px)를 늘 보인다 — 길은 파인 면(--c-surface-2), 손잡이는 컨트롤 경계색(--c-border-strong, 인접색과 3:1 이상).
-   크로뮴·사파리는 ::-webkit-scrollbar, 파이어폭스는 표준 속성(굵기는 auto가 가장 굵다). 터치 기기는 겹쳐 그리는 막대 그대로다 */
+   크로뮴·사파리만 ::-webkit-scrollbar로 그린다(표준 속성 scrollbar-width·scrollbar-color를 걸면 크로뮴이 이 규칙을 버리므로 쓰지 않는다 — 파이어폭스는 기본 막대 그대로). 터치 기기는 겹쳐 그리는 막대 그대로다 */
 @media (hover: hover) and (pointer: fine) {
-  @supports selector(::-webkit-scrollbar) {
-    .gen-list::-webkit-scrollbar { width: 14px; }
-    .gen-list::-webkit-scrollbar-track { background: var(--c-surface-2); }
-    .gen-list::-webkit-scrollbar-thumb { min-height: 40px; border: 2px solid var(--c-surface-2); border-radius: 7px; background: var(--c-border-strong); }
-    .gen-list::-webkit-scrollbar-thumb:hover { background: var(--c-text-2); }
-  }
-  @supports not selector(::-webkit-scrollbar) { .gen-list { scrollbar-width: auto; scrollbar-color: var(--c-border-strong) var(--c-surface-2); } }
+  .gen-list::-webkit-scrollbar { width: 14px; }
+  .gen-list::-webkit-scrollbar-track { background: var(--c-surface-2); }
+  .gen-list::-webkit-scrollbar-thumb { min-height: 40px; border: 2px solid var(--c-surface-2); border-radius: 7px; background: var(--c-border-strong); }
 }
 @media (prefers-reduced-motion: no-preference) { .gen-list { scroll-behavior: smooth; } }
 :root[data-motion='reduce'] .gen-list { scroll-behavior: auto; }

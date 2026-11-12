@@ -219,8 +219,9 @@ describe('copy.md 9절 문구와 구현 상수 (CM-C)', () => {
 });
 
 describe('GM4 2차 ④ 접는 선: 1280×800 왼쪽 열 끝 < 하단 띠 (CSS 값 — 실측은 e2e/first-screen-qi4.spec.ts·first-screen-gentle-layout.spec.ts)', () => {
-  it('PC 세대 목록 창: 하한 9rem · 식 100vh − 37.5rem − (띠 − 68px) · 상한 24rem, 좁은 화면 식(하한 12rem)은 그대로다', () => {
-    expect(css).toContain('@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(9rem, 100vh - 37.5rem - var(--bar-h, 68px) + 68px, 24rem); } }');
+  // 결정 후속 235(2026-11-12): SPEC-016 H2 로고 +24px 보정 — 식 37.5rem → 39rem, PC 하한 9rem → 8rem(이어서 살기 띠)
+  it('PC 세대 목록 창: 하한 8rem · 식 100vh − 39rem − (띠 − 68px) · 상한 24rem, 좁은 화면 식(하한 12rem)은 그대로다', () => {
+    expect(css).toContain('@media (min-width: 960px) { .gen-list { --gen-list-h: clamp(8rem, 100vh - 39rem - var(--bar-h, 68px) + 68px, 24rem); } }');
     expect(css).toMatch(/\.gen-list \{ --gen-list-h: clamp\(12rem, 100svh - 27rem - var\(--bar-h, 68px\) \+ 68px, 24rem\);/);
   });
   it('설정 둘(무거운 장면 가리기 · 내 출신 시도)은 PC에서 한 줄 두 칸이고 태어나는 시도·인생 길이는 전체 폭이다', () => {

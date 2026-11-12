@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import lifeSrc from '../src/core/life.ts?raw';
 import sessionSrc from '../src/core/session.ts?raw';
 import eventsSrc from '../src/core/events.ts?raw';
+import eventValidateSrc from '../src/core/eventValidate.ts?raw'; // 이벤트 파일 검증은 SPEC-018 T3에서 events.ts에서 옮겼다(초기 로드) — 같은 소스 점검을 받는다
 import statsSrc from '../src/core/stats.ts?raw';
 import timingSrc from '../src/core/timing.ts?raw';
 import historySrc from '../src/core/history.ts?raw';
@@ -87,7 +88,7 @@ describe('스탯 범위 정책 (한 곳: core/stats.ts, R-024)', () => {
   });
 
   it('범위 숫자(0·100)를 직접 쓰는 곳은 stats.ts 하나뿐이다: 진행 로직 소스가 clamp를 직접 구현하지 않는다', () => {
-    for (const src of [lifeSrc, sessionSrc, eventsSrc]) expect(src).not.toMatch(/Math\.(min|max)\(\s*100|Math\.max\(\s*0\s*,\s*Math\.min/);
+    for (const src of [lifeSrc, sessionSrc, eventsSrc, eventValidateSrc]) expect(src).not.toMatch(/Math\.(min|max)\(\s*100|Math\.max\(\s*0\s*,\s*Math\.min/);
     expect(statsSrc).toContain('STAT_MAX');
   });
 
@@ -100,7 +101,7 @@ describe('스탯 범위 정책 (한 곳: core/stats.ts, R-024)', () => {
 describe('core 순수성: 진행 루프에 React·타이머·Date·Math.random이 없다', () => {
   it('life·events·session·stats·timing·history 소스 (주석 제외)', () => {
     const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    for (const raw of [lifeSrc, sessionSrc, eventsSrc, statsSrc, timingSrc, historySrc]) {
+    for (const raw of [lifeSrc, sessionSrc, eventsSrc, eventValidateSrc, statsSrc, timingSrc, historySrc]) {
       const src = stripComments(raw);
       expect(src.length).toBeGreaterThan(500); // 주석 제거가 소스를 통째로 지우지 않았다
       expect(src).not.toMatch(/Math\.random|Date\.now|new Date|performance\.now|setTimeout|setInterval|requestAnimationFrame|from 'react'|document\.|window\./);
