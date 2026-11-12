@@ -21,6 +21,7 @@ const READS = /\b(c|ch|choice|x|cc|k)\.(effects|bonuses)\b|choices[^;]*\)\.effec
 const ALLOWED: Record<string, string> = {
   './impact.test.ts': '풀 전체 읽기 — `resolvedChoiceEffects`(실제 효과)로 읽고 갈래 선택지는 영향 줄이 비어 있음만 본다 · 20세 미만 플래그 잠금은 `ASK_EFFECTS` 플래그를 함께 센다',
   './familyCard.test.ts': '사이 표 방향 시험 — 사건 효과와 `ASK_EFFECTS`를 함께 읽는다(AK5)',
+  './careerIncome.test.ts': '이름을 적은 한 사건(`youth-first-job`의 stable·family 선택지)만 읽어 진로 합격 소득 상수와 같음을 잠근다 — 조르기 사건이 아니고 풀 전체를 훑지 않는다(SPEC-018 결정 후속 233)',
   './helpers/askChoice.ts': '한 곳 규칙의 구현 — 조르기 갈래 선택지는 `askOutcomeOf`·`askBranchProbs`로 읽는다',
   './helpers/eligibilityGolden.ts': '기존 사건 자격 골든의 지문 계산 — 정적 필드를 해시로 견줄 뿐 점수·영향으로 읽지 않는다(조르기 갈래는 효과 없음으로 같은 방식 기록)',
   './careerTrack.test.ts': '진로 카드(`pick`)의 첫 일 카드 플래그 대응만 읽는다 — 이름을 적은 사건(`youth-first-job`)과 진로 후보의 `setFlags`, 조르기 갈래 선택지가 아니다',

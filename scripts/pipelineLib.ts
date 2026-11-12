@@ -21,6 +21,7 @@ import {
   timingEraOfProfile,
   parseGame,
   peersOf,
+  pickChoicesOf,
   playToEnd,
   reviewEnding,
   serializeGame,
@@ -445,7 +446,10 @@ export function checkTransition(prev: GameState, next: GameState, kind: 'single'
       // PD12 ②: 19세 미만에서 pending이 부모님이 정하거나 흘러가는 카드로 열린 판은 없다 — 그런 카드는 그 해 안에서 즉시 해결된다(PD3)
       if (decisionFor(p.eventId, p.age) !== 'self') bad(`부모님이 정하거나 아이의 일로 흘러가는 카드(${p.eventId}@${p.age})가 pending으로 열렸다 (PD3·PD12 ②)`);
       if (p.key !== `${p.eventId}@${p.age}`) bad(`대기 키 불일치 ${p.key}`);
-      if (ev === undefined || ev.choices === undefined) bad(`대기 중인 이벤트 ${p.eventId}가 풀의 선택지 이벤트가 아니다`);
+      if (ev !== undefined && ev.pick !== undefined) {
+        // 진로 카드(SPEC-018 PL4): 정의 선택지가 없고 후보는 안정 id(분야·직업) — 저장된 id가 모두 공통 인터페이스 `pickChoicesOf`로 풀려야 한다(모르는 id 0)
+        if (pickChoicesOf(next, p, eventPool()).length !== p.choiceIds.length) bad(`진로 카드 대기 후보 ${p.choiceIds.join(',')} 중 풀리지 않는 id가 있다`);
+      } else if (ev === undefined || ev.choices === undefined) bad(`대기 중인 이벤트 ${p.eventId}가 풀의 선택지 이벤트가 아니다`);
       else {
         const known = new Set(ev.choices.map((c: { id: string }) => c.id));
         if (!p.choiceIds.every((id) => known.has(id))) bad('대기 선택지가 이벤트의 것이 아니다');
@@ -573,8 +577,13 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
   }
   // 같은 이벤트가 두 번 나오지 않는다 (한 판에 한 번만)
   // (가족 변화 줄 `fam-…`은 판마다 여러 번 나오는 줄 종류 이름이라 센 대상이 아니다 — 같은 대상의 중복은 `family.log`가 막고 tests/familyConsistency.test.ts가 센다)
-  const ids = game.history.filter((h) => h.eventId !== undefined && !h.eventId.startsWith('fam-')).map((h) => h.eventId!);
+  // (진로 카드 `pick`(SPEC-018 PL4)은 세부 직업 카드가 불합격이면 다음 해 다시 뜨는 반복 사건이라 따로 센다: 분야 카드는 한 번, 진로 카드는 한 해에 한 장)
+  const isPick = (id: string): boolean => eventPool().byId.get(id)?.pick !== undefined;
+  const ids = game.history.filter((h) => h.eventId !== undefined && !h.eventId.startsWith('fam-') && !isPick(h.eventId)).map((h) => h.eventId!);
   if (new Set(ids).size !== ids.length) bad('연표에 같은 이벤트가 두 번 나온다');
+  const pickLines = game.history.filter((h) => h.eventId !== undefined && isPick(h.eventId));
+  if (pickLines.filter((h) => eventPool().byId.get(h.eventId!)!.pick!.kind === 'field').length > 1) bad('연표에 분야 카드가 두 번 나온다');
+  if (new Set(pickLines.map((h) => h.age)).size !== pickLines.length) bad('연표에 진로 카드가 한 해에 두 장 나온다');
   return out;
 }
 
