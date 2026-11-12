@@ -104,10 +104,9 @@
       "noCitation": "D",
       "conditions": { "notFlags": ["left_school"] },
       "modifiers": [
-        { "when": { "looks": { "min": 70 } }, "weight": 2 },
-        { "when": { "looks": { "max": 30 } }, "weight": 0.6 },
         { "when": { "parenting": ["strict"] }, "weight": 0.7 }
       ],
+      "looksChannel": "romance",
       "choices": [
         {
           "id": "confess",
@@ -115,8 +114,7 @@
           "result": "쪽지를 건넸습니다. 답을 듣기까지 며칠 동안 아무것도 손에 잡히지 않았습니다.",
           "effects": { "stats": { "happiness": 2, "relationships": 3 }, "setFlags": ["first_love"] },
           "bonuses": [
-            { "when": { "looks": { "min": 70 } }, "effects": { "stats": { "happiness": 3, "relationships": 2 } } },
-            { "when": { "looks": { "max": 30 } }, "effects": { "stats": { "happiness": -3 } } }
+            { "when": { "looks": { "min": 70 } }, "effects": { "stats": { "happiness": 3, "relationships": 2 } } }
           ]
         },
         {

@@ -66,3 +66,27 @@ describe('eventWeightBounds', () => {
     }
   });
 });
+
+describe('외모 채널 곱을 포함한 합성 가중 (PL16)', () => {
+  it('looksChannel이 있는 사건은 채널 곱(연애 ×0.30~×1.70)까지 곱해 범위를 본다 — 같은 모디파이어라도 채널이 없으면 통과한다', () => {
+    const mods = [{ when: when({ stats: { health: { min: 50 } } }), weight: 0.2 }, { when: when({ flags: ['married'] }), weight: 0.5 }];
+    const plain = base({ weight: 0.1, modifiers: mods }); // 0.1 × 0.2 × 0.5 = 0.01 (경계 통과)
+    expect(weightBoundsProblems(plain)).toEqual([]);
+    expect(lintEvent(plain).join('\n')).not.toContain('합성 가중의 최솟값');
+    const withChannel = { ...plain, looksChannel: 'romance' as const }; // × 0.30 → 0.003
+    expect(lintEvent(withChannel).join('\n')).toContain('합성 가중의 최솟값');
+    const top = base({ weight: 7000, modifiers: [{ when: when({ flags: ['married'] }), weight: 1.2 }], looksChannel: 'romance' }); // 7000 × 1.2 × 1.7 = 14280
+    expect(lintEvent(top).join('\n')).toContain('10000을 넘을');
+  });
+
+  it('풀의 모든 연애 채널 사건은 채널 곱까지 곱해도 [0.01, 10000] 안이다', () => {
+    const channeled = EVENT_POOL.events.filter((e) => e.looksChannel !== undefined);
+    expect(channeled.length).toBe(5);
+    for (const e of channeled) {
+      const b = eventWeightBounds(e, [[0.3, 1.7]]);
+      expect(b.min, e.id).toBeGreaterThanOrEqual(MIN_EFFECTIVE_WEIGHT);
+      expect(b.max, e.id).toBeLessThanOrEqual(MAX_EFFECTIVE_WEIGHT);
+      expect(lintEvent(e).filter((m) => m.includes('합성 가중')), e.id).toEqual([]);
+    }
+  });
+});

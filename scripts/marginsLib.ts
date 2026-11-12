@@ -1,4 +1,4 @@
-import { totalCards, timingEraOfProfile, type ProfileId } from '../src/core';
+import { pacingCards, totalCards, timingEraOfProfile, type ProfileId } from '../src/core';
 import { INFANT_CHOICE_MEAN_MIN, LIFE_LENGTH_MODES, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { infantLives } from './infantMetricsLib';
 import { pipelineSeed } from './pipelineLib';
@@ -130,7 +130,7 @@ export const CARD_METRICS: readonly MarginMetric[] = [
   // 본인이 읽고 고르는 카드 c_self의 평균 하한 (SPEC-005 TM5): 총 카드 수 구간(23.3~29)은 그대로이고 c_self 하한을 따로 둔다 — 측정값 − 3 SE 규칙(LD-9)
   meanMetric('cards-self-low', '본인 카드 c_self 평균 ≥ 하한', `≥ ${mode.cardsSelf.meanLow}장`, (l) => l.counts.choice, () => mode.cardsSelf.meanLow, 'min'),
   meanMetric('cards-high', '결정 카드 평균 ≤ 상한', `≤ ${mode.cards.meanHigh}장`, (l) => totalCards(l.counts), () => mode.cards.meanHigh, 'max'),
-  shareMetric('near-cap', '하드−1 이상인 판 비율 (%)', `≤ ${mode.cards.nearCapShareMax * 100}%`, (lives) => [...lives], (l) => totalCards(l.counts) >= mode.pacing.hard - 1, mode.cards.nearCapShareMax),
+  shareMetric('near-cap', '하드−1 이상인 판 비율 (%)', `≤ ${mode.cards.nearCapShareMax * 100}%`, (lives) => [...lives], (l) => pacingCards(l.counts) >= mode.pacing.hard - 1, mode.cards.nearCapShareMax),
   {
     id: 'p05',
     label: '5% 분위 (16장 미만 판 ≤ 5%와 같은 뜻)',
@@ -221,7 +221,7 @@ export function marginReport(count: number, lines: readonly MarginLine[] = MARGI
     for (const era of SIM_PROFILES) {
       onProgress?.(`${line.label} / ${era}`);
       const lives = marginLives(line, era, count);
-      for (const l of lives) if (totalCards(l.counts) > mode.pacing.hard) problems.push(`${line.id}/${era} 시드 ${l.seed}: 결정 카드 ${totalCards(l.counts)}장이 하드 상한을 넘었다`);
+      for (const l of lives) if (pacingCards(l.counts) > mode.pacing.hard) problems.push(`${line.id}/${era} 시드 ${l.seed}: 결정 카드 ${totalCards(l.counts)}장이 하드 상한을 넘었다`);
       cells.push({ line, era, lives });
     }
   }

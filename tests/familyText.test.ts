@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LOOKS_BUSINESS_EVENTS, LOOKS_EXCEPTION_EVENTS } from './helpers/looksExceptions';
 import { TEXT_LIMITS, condContextOf, isEventEligible, type EventDef, type GameState, type SiblingKind } from '../src/core';
 import { EVENT_FILES, EVENT_POOL } from '../src/data/events';
 import { FM7A_APPROVALS, familyApprovalProblems, type TextApproval } from '../src/data/familyApproval';
@@ -355,10 +356,16 @@ describe('FM7a가 건드린 사건은 이 목록뿐이다 (FM7a 전 원문과 �
             const b = (cur.choices ?? []) as Array<Record<string, unknown>>;
             if (a.length !== b.length) diff.push('choices 개수');
             a.forEach((c, i) => {
-              for (const ck of new Set([...Object.keys(c), ...Object.keys(b[i] ?? {})])) if (JSON.stringify(c[ck]) !== JSON.stringify(b[i]?.[ck])) diff.push(`${String(c.id)}.${ck}`);
+              for (const ck of new Set([...Object.keys(c), ...Object.keys(b[i] ?? {})])) {
+            // SPEC-018 PL16: 사업 제안 2곳의 선택지 `start` 외모 소득 보너스를 뺐다 — 가족 문장·조건과 무관하다
+            if (ck === 'bonuses' && c.id === 'start' && LOOKS_BUSINESS_EVENTS.includes(old.id)) continue;
+            if (JSON.stringify(c[ck]) !== JSON.stringify(b[i]?.[ck])) diff.push(`${String(c.id)}.${ck}`);
+          }
             });
           } else if (k === 'retiredWith') {
             // SPEC-018 PL4: 옛 첫 일 카드(`youth-first-job`)에 대체 표지 `retiredWith`가 더해졌다 — 글·조건·효과는 그대로라 FM7a가 건드린 사건 목록과 무관하다
+          } else if (k === 'looksChannel' || (k === 'modifiers' && LOOKS_EXCEPTION_EVENTS.includes(old.id))) {
+            // SPEC-018 PL16: 외모 영향 예외 7개 사건의 외모 항(표준 표 채널·외모 modifiers 삭제)이 더해졌다 — FM7a가 건드린 사건 목록과 무관하다
           } else if (k === 'question') {
             // SPEC-014: 질문 문장은 FM7a 이후에 모든 선택지 사건에 더해졌다 — FM7a가 건드린 사건 목록과 무관하다
           } else if (JSON.stringify(old[k]) !== JSON.stringify(cur[k])) diff.push(k);

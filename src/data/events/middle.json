@@ -14,8 +14,6 @@
       "citation": { "present": "c-078", "future": "c-078" },
       "conditions": { "flags": ["has_career"], "notFlags": ["own_business"] },
       "modifiers": [
-        { "when": { "looks": { "min": 65 } }, "weight": 2.5 },
-        { "when": { "looks": { "max": 30 } }, "weight": 0.4 },
         { "when": { "stats": { "education": { "min": 60 } } }, "weight": 1.3 }
       ],
       "choices": [
@@ -27,7 +25,6 @@
           "bonuses": [
             { "when": { "parentWealth": { "min": 4 } }, "effects": { "assets": { "net": 6000 } } },
             { "when": { "stats": { "education": { "min": 70 } } }, "effects": { "assets": { "income": 1500 } } },
-            { "when": { "looks": { "min": 70 } }, "effects": { "assets": { "income": 1000 } } },
             { "when": { "flags": ["family_business"] }, "effects": { "assets": { "income": 1250 } } }
           ]
         },

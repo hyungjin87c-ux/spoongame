@@ -390,13 +390,21 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   // 선택지는 간격을 두고, 한 판의 선택지 수 조절(페이싱)을 따른다. 지금까지 푼 선택지 수는 연표의 선택 기록 수다.
   // 페이싱은 **판의 인생 길이 모드**가 정한다(SPEC-003 LM2·LM3, data/timingTable.ts#LIFE_LENGTH_MODES) — 설정이 아니라 판의 값을 읽어 첫 화면에서 설정을 바꿔도 진행 중인 판이 흔들리지 않는다.
   const pacing = lifeModeOf(state.lifeLength).pacing;
-  const choicesSoFar = state.history.reduce((n, h) => (h.kind === 'choice' ? n + 1 : n), 0);
+  // 진로 카드(`pick`)는 페이싱 예산에 **한 장만** 센다 — 대체한 옛 첫 일 카드 1장 몫이다: `선택 줄 수 − max(0, 진로 카드 줄 수 − 1)` [결정 후속 233]. persona 없는 판은 진로 카드가 없어 불변이다
+  let careerLines = 0;
+  let choiceLines = 0;
+  for (const h of state.history) {
+    if (h.kind !== 'choice') continue;
+    choiceLines++;
+    if (h.eventId !== undefined && pool.byId.get(h.eventId)?.pick !== undefined) careerLines++;
+  }
+  const choicesSoFar = choiceLines - Math.max(0, careerLines - 1);
   const canChoice = (state.lastChoiceAge === null || age - state.lastChoiceAge >= MIN_YEARS_BETWEEN_CHOICES) && choicesSoFar < pacing.hard;
   const choiceChance = freq.choice * (choicesSoFar >= pacing.soft ? pacing.softFactor : 1);
 
   const forced = fam.forcedEvent !== undefined ? (pool.byId.get(fam.forcedEvent) ?? null) : null;
   // 진로 트랙(SPEC-018 PL4, 설계 4-1절): 맞춤 인생이 켜진 판에서 학업이 끝난 해부터 35세까지 분야 카드(G4)·세부 직업 카드(G5)를 **강제 슬롯**으로 낸다 — 일반 선택지 간격(2년)·페이싱 하드 상한을 받지 않는다.
-  // 가족 강제 사건이 있는 해는 한 해 밀린다. 카드는 `choicesSoFar`(연표 선택 줄)에 센다
+  // 가족 강제 사건이 있는 해는 한 해 밀린다. 카드는 `choicesSoFar`(연표 선택 줄)에 세되 진로 카드는 한 장만 센다(위)
   const track = forced === null && ctx.persona ? careerCardOf(state, pool, age) : null;
 
   let picked: EventDef | null = null;
@@ -725,6 +733,8 @@ export interface TickCounts {
   deathDelegated: number;
   /** 부모님이 정한·흘러간 해의 연출 대기가 기본 결과 대기(+ 줄 대기)보다 카드 읽기 필요량 때문에 더 길어진 몫의 합(ms, 1배속, 모드 계수 포함) — `holdTotalMs`가 더한다 */
   delegatedExtraMs: number;
+  /** 진로 카드(`pick`, SPEC-018 PL4) 줄 수 — `choice`에 이미 들어 있다. 진로 카드가 없는 판은 키가 없다(옛 집계·얼린 스냅숏과 같은 모양). 페이싱 예산에는 한 장만 센다(`pacingCards`, 결정 후속 233) */
+  careerCards?: number;
 }
 
 export function emptyCounts(): TickCounts {
@@ -734,6 +744,11 @@ export function emptyCounts(): TickCounts {
 /** 판의 결정 카드 총수 = 본인이 고른 카드 + 부모님이 정한 카드 + 흘러간 카드 (+ 같은 해 사망한 위임 카드) — 연표의 선택 줄 수와 같다. 총 카드 수 판정 구간(23.3~29)과 페이싱 하드 상한은 이 값이다 */
 export function totalCards(c: TickCounts): number {
   return c.choice + c.parent + c.child + c.deathDelegated;
+}
+
+/** 페이싱 예산이 세는 카드 수 = `totalCards − max(0, 진로 카드 − 1)` (`stepYear`의 `choicesSoFar`와 같은 규칙, 결정 후속 233). 하드 상한·하드−1 판정은 이 값이다 */
+export function pacingCards(c: TickCounts): number {
+  return totalCards(c) - Math.max(0, (c.careerCards ?? 0) - 1);
 }
 
 function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): void {
@@ -753,6 +768,7 @@ function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): vo
     return;
   }
   counts[tick.kind]++;
+  if (tick.kind === 'choice' && tick.eventId !== undefined && tick.eventId.startsWith('job-pick-')) counts.careerCards = (counts.careerCards ?? 0) + 1;
   if (tick.kind === 'narrative' || tick.kind === 'resolved') counts.extraLines += Math.max(0, (tick.lines ?? 1) - 1);
 }
 

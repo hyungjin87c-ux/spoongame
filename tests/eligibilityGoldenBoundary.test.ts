@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createEventPool, eventPool, type EventDef } from '../src/core';
 import {
+  LOOKS_ALLOWED,
+  LOOKS_EXCEPTION_EVENTS,
   cellDiffs,
   formatDiffs,
   isBoundaryCell,
@@ -12,6 +14,9 @@ import {
 } from './helpers/eligibilityGolden';
 import { loadGrid, loadProgress } from './helpers/eligibilityGoldenLoad';
 
+// 골든은 「persona 없는 판 = 옛 저장·스위치를 끈 판」의 동치를 지킨다 — 맞춤 인생 스위치를 끈 경로로 고정한다(3b단계에서 출하 값을 켠 뒤에도 이 시험의 의미는 그대로다)
+vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: false }));
+
 /**
  * 기존 사건 자격 골든 대조 — 경계 칸·진행 표본 (SPEC-018 1단계, docs/data/persona-model.md 3절 `[CX-002-004]`).
  * 골든(`tests/fixtures/eligibility-golden*.json`)은 **변경 전 코드**(커밋 SHA는 파일의 `meta.baseSha`)에서 `npm run gen:golden`이 만들었다. 변경 전 코드에서만 생성하고 **재생성은 마스터 승인**(One-way에 가깝다).
@@ -19,10 +24,10 @@ import { loadGrid, loadProgress } from './helpers/eligibilityGoldenLoad';
  * 이 파일은 (1) 경계 연도·나이 칸(`yearRange`·`ageRange` 경계 −1·0·+1)만 따로 빠르게 견주고 — 10년 간격 격자만으로는 `yearRange.from`을 2016→2017로 바꾸는 변이를 못 잡는다(Codex CX-002-004) —
  * (2) `stepYear`·자동 선택으로 끝까지 돌린 진행 표본(해마다 후보·가중·고른 사건·대기 선택지·난수 상태)을 견준다.
  *
- * 허용된 필드별 차이(`ALLOWED`)는 `tests/personaCondition.test.ts`와 같은 규칙이다 — 1단계에서는 비어 있고 완전 일치가 통과 조건이다.
- * 진행 표본의 「natural」(외모 자연값) 판은 PL16에서 외모 항이 바뀌면 달라질 수 있어, 그때 허용 규칙(외모 항이 닿는 사건이 후보에 있는 판)을 따로 적는다. 「neutral50」(외모 50 고정) 판은 끝까지 한 줄도 달라지면 안 된다.
+ * 허용된 필드별 차이(`ALLOWED` = `LOOKS_ALLOWED`)는 `tests/personaCondition.test.ts`와 같은 목록이다(3b단계 PL16 — 설계 4B 예외 7개 사건의 외모 항만).
+ * 진행 표본의 「natural」(외모 자연값) 판은 외모 표준 표 때문에 달라질 수 있다 — 처음 달라지는 해에 예외 목록 사건이 후보에 있어야 한다(그 앞은 한 줄도 같다). 「neutral50」(외모 50 고정) 판은 끝까지 한 줄도 달라지면 안 된다.
  */
-const ALLOWED: readonly AllowedDiff[] = [];
+const ALLOWED: readonly AllowedDiff[] = LOOKS_ALLOWED;
 
 const grid = loadGrid();
 const progress = loadProgress();
@@ -82,11 +87,12 @@ describe('기존 사건 자격 골든 — 진행 표본(stepYear·자동 선택)
     }
   });
 
-  it('모든 표본 판이 해마다(후보·가중·고른 사건·선택지·난수 상태) 골든과 같다', { timeout: 120_000 }, () => {
+  it('외모 50 고정(neutral50) 판은 해마다(후보·가중·고른 사건·선택지·난수 상태) 골든과 한 줄도 다르지 않다', { timeout: 120_000 }, () => {
     const problems: string[] = [];
     for (const [key, golden] of Object.entries(progress.lives)) {
       const [gen, seed, kind] = key.split('/');
-      const now = progressTrace(Number(seed), gen as never, kind === 'neutral50' ? 50 : undefined, pool);
+      if (kind !== 'neutral50') continue;
+      const now = progressTrace(Number(seed), gen as never, 50, pool);
       const n = Math.max(golden.length, now.length);
       for (let i = 0; i < n; i++) {
         if (golden[i] !== now[i]) {
@@ -95,6 +101,29 @@ describe('기존 사건 자격 골든 — 진행 표본(stepYear·자동 선택)
         }
       }
     }
-    expect(problems, `진행 표본이 골든과 달라진 판 ${problems.length}개\n${problems.slice(0, 8).join('\n')}`).toEqual([]);
+    expect(problems, `neutral50 진행 표본이 골든과 달라진 판 ${problems.length}개\n${problems.slice(0, 8).join('\n')}`).toEqual([]);
+  });
+
+  it('외모 자연값(natural) 판은 처음 달라지는 줄에서 예외 목록 사건이 후보에 있다(whenLooksNot50 — 그 앞은 한 줄도 같다)', { timeout: 120_000 }, () => {
+    const problems: string[] = [];
+    let differing = 0;
+    for (const [key, golden] of Object.entries(progress.lives)) {
+      const [gen, seed, kind] = key.split('/');
+      if (kind !== 'natural') continue;
+      const touched: boolean[] = [];
+      const now = progressTrace(Number(seed), gen as never, undefined, pool, touched);
+      const n = Math.max(golden.length, now.length);
+      for (let i = 0; i < n; i++) {
+        if (golden[i] === now[i]) continue;
+        differing++;
+        // 처음 달라지는 줄 i는 그 해 후보에 예외 목록 사건이 있는 해여야 한다(외모 표준 표는 그 사건의 가중만 바꾼다)
+        if (touched[i] !== true) problems.push(`  - ${key} · ${i}번째 줄 (예외 사건이 후보에 없는데 달라졌다)\n      골든: ${golden[i] ?? '(없음)'}\n      지금: ${now[i] ?? '(없음)'}`);
+        break;
+      }
+    }
+    expect(problems, `natural 진행 표본이 허용 밖에서 달라진 판 ${problems.length}개\n${problems.slice(0, 8).join('\n')}`).toEqual([]);
+    // 공허 통과 방지: 외모 표준 표가 실제로 어떤 자연 판의 진행을 바꾸었다(바뀐 판이 하나도 없으면 이 규칙이 아무것도 보지 않는다)
+    expect(differing).toBeGreaterThan(0);
+    expect(LOOKS_EXCEPTION_EVENTS.length).toBe(7);
   });
 });

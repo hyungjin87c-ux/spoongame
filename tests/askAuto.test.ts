@@ -39,7 +39,11 @@ const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.m
 
 function stateAt(kind: AskKind, i: number, over: { parenting?: ParentingStyle; wealth?: ParentWealth; peerSeed?: number } = {}): GameState {
   const age = AGE_MIN[kind] + (i % (13 - AGE_MIN[kind]));
-  return askPendingState(EV[kind], { seed: 1 + (i % 9), peerSeed: (i + 1) * 7919, parenting: PARENTINGS[i % 4], wealth: WEALTHS[(i >> 2) % 5], age, ...over });
+  const s = askPendingState(EV[kind], { seed: 1 + (i % 9), peerSeed: (i + 1) * 7919, parenting: PARENTINGS[i % 4], wealth: WEALTHS[(i >> 2) % 5], age, ...over });
+  // 아래 독립 계산은 기질 보정(`autoPriorityMul`, SPEC-018 PL1)을 모르는 persona 없는 판의 식이다 — 스위치를 켠 뒤(3b)에도 이 시험은 갈래 식 자체를 보도록 persona를 뗀다. 기질 보정은 `personaAuto.test.ts`가 본다
+  const { persona: _persona, ...bare } = s;
+  void _persona;
+  return bare as GameState;
 }
 
 /** 독립 계산: 설계 문서 5-3절 — 갈래 효과의 점수를 갈래 확률로 가중 평균해 exp(점수 / 6) */

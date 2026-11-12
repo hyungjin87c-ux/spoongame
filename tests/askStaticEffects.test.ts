@@ -24,6 +24,8 @@ const ALLOWED: Record<string, string> = {
   './helpers/askChoice.ts': '한 곳 규칙의 구현 — 조르기 갈래 선택지는 `askOutcomeOf`·`askBranchProbs`로 읽는다',
   './helpers/eligibilityGolden.ts': '기존 사건 자격 골든의 지문 계산 — 정적 필드를 해시로 견줄 뿐 점수·영향으로 읽지 않는다(조르기 갈래는 효과 없음으로 같은 방식 기록)',
   './careerTrack.test.ts': '진로 카드(`pick`)의 첫 일 카드 플래그 대응만 읽는다 — 이름을 적은 사건(`youth-first-job`)과 진로 후보의 `setFlags`, 조르기 갈래 선택지가 아니다',
+  './looksEffect.test.ts': '이름을 적은 사업 제안 사건(`youth-startup`·`middle-business`)의 선택지 효과만 읽는다 — 외모 단계 사이에 효과가 같음을 본다(3b PL16), 조르기 갈래 선택지가 아니다',
+  './personaCondition.test.ts': '이름을 적은 사업 제안 사건의 `start` 선택지 보너스에 외모 항이 없음만 읽는다(3b PL16 골든 예외 목록) — 조르기 갈래 선택지가 아니다',
   './pickChoices.test.tsx': '진로 카드(`pick`)의 동적 후보가 정적 효과를 갖지 않음(`undefined`)을 단언한다 — 조르기 갈래 선택지가 아니다',
   './economyConversion.test.ts': '이름을 적은 사건·고정 목록(`unchanged` 등)만 읽는다 — 조르기 사건은 돈(`assets`·`family`) 변환표에 없고 집안 살림 지출은 `ASK_EFFECTS`가 정한다(AK7이 사건 id 집합 단언을 갱신한다)',
   './events.test.ts': '이름을 적은 사건(`school-tutoring` 등)의 효과만 읽는다',

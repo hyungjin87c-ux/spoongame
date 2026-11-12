@@ -432,8 +432,11 @@ describe('이벤트 데이터(src/data/events/*.json): 60개 이상, 시대·단
       for (const id of ids) {
         const ev = EVENT_POOL.byId.get(id);
         expect(ev, `${group}: ${id}가 풀에 없다`).toBeDefined();
-        const reflectsLooks = (ev!.modifiers ?? []).some((m) => m.when.looks !== undefined) || ev!.conditions?.looks !== undefined;
-        expect(reflectsLooks, `${group}: ${id}에 외모 모디파이어/조건이 없다`).toBe(true);
+        // 3b(PL16): 연애·소개·재회 5곳은 외모 modifiers 대신 표준 표 채널(`looksChannel`)을 쓴다 — 외모 직접 반영은 같다
+        const reflectsLooks = (ev!.modifiers ?? []).some((m) => m.when.looks !== undefined) || ev!.conditions?.looks !== undefined || ev!.looksChannel !== undefined;
+        // 사업 제안(`business`)은 외모 가중을 뺐다(3b PL16, 설계 4B 사업 제안 k = 0 — 외모가 사업 제안 빈도를 바꾼다는 근거가 없다). 연애·결혼은 그대로 외모를 직접 반영한다
+        if (group === 'business') expect(reflectsLooks, `${group}: ${id}는 외모 가중을 뺐다`).toBe(false);
+        else expect(reflectsLooks, `${group}: ${id}에 외모 모디파이어/조건이 없다`).toBe(true);
       }
     }
     // 결혼에도 직접 반영: 결혼 이벤트의 외모 높음 배수가 1보다 크고 낮음 배수가 1보다 작다
@@ -827,19 +830,20 @@ describe('생애 단계와 이벤트 후보 판정', () => {
 });
 
 describe('확률 가중치와 효과에 캐릭터 속성이 반영된다', () => {
-  it('eventWeight: 외모 모디파이어가 연애 이벤트 확률을 바꾼다 (외모 높음 ×2, 낮음 ×0.6, 보통 ×1)', () => {
+  it('eventWeight: 외모가 연애 이벤트 확률을 바꾼다 (표준 표 LOOKW.romance: 1단계 ×0.30 · 2단계 ×0.65 · 3단계 ×1 · 4단계 ×1.35 · 5단계 ×1.70) — 3b에서 옛 ×2/×0.6 계단을 표준 표로 옮겼다', () => {
     const love = EVENT_POOL.byId.get('school-first-love')!;
     const w = (looks: number) => eventWeight(love, ctx({ character: { looks } }));
     expect(w(50)).toBe(love.weight);
-    expect(w(70)).toBe(love.weight * 2);
-    expect(w(100)).toBe(love.weight * 2);
-    expect(w(30)).toBeCloseTo(love.weight * 0.6, 10);
-    expect(w(0)).toBeCloseTo(love.weight * 0.6, 10);
+    expect(w(65)).toBeCloseTo(love.weight * 1.35, 10); // 4단계(60~71)
+    expect(w(70)).toBeCloseTo(love.weight * 1.35, 10);
+    expect(w(100)).toBeCloseTo(love.weight * 1.7, 10); // 5단계(72~)
+    expect(w(30)).toBeCloseTo(love.weight * 0.65, 10); // 2단계(28~40)
+    expect(w(0)).toBeCloseTo(love.weight * 0.3, 10); // 1단계(~27)
   });
 
   it('여러 모디파이어는 곱해진다 (소개 이벤트: 외모 높음 배수 x 첫사랑 플래그 배수 — 배수는 데이터에서 읽는다)', () => {
     const meet = EVENT_POOL.byId.get('youth-meeting')!;
-    const high = meet.modifiers!.find((m) => m.when.looks?.min !== undefined)!.weight;
+    const high = 1.7; // 외모 5단계의 표준 표 연애 곱수(LOOKW.romance, 3b — 점수 80은 5단계)
     const love = meet.modifiers!.find((m) => m.when.flags?.includes('first_love'))!.weight;
     expect(high).toBeGreaterThan(1);
     expect(eventWeight(meet, ctx({ character: { looks: 80 }, flags: ['first_love'] }))).toBeCloseTo(meet.weight * high * love, 10);

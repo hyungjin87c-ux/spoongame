@@ -33,6 +33,7 @@ export * from './population';
 export * from './progress';
 export * from './profile';
 export * from './family';
+export * from './looks';
 export * from './persona';
 export * from './personaLife';
 export * from './jobIndex';

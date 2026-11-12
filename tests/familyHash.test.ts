@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import birthGolden from './fixtures/birth-golden.json';
 import lifeGolden from './fixtures/life-golden.json';
 import { GENERATION_IDS, L0_SEEDS, L1_SEEDS, L1_STRATEGIES, fnv, goldenSeeds, l0Hash, l0Projection, l1Hash } from './helpers/familyGolden';
 import { preFm4bPool } from '../scripts/preFm4bPool';
 import { withEarlyLoss, withLegacyInheritance } from '../scripts/familyRulesLib';
 import { withGoneYearRule } from '../src/core';
+
+// 이 골든은 맞춤 인생 이전의 인생을 얼린 것이다 — 「persona 없는 판 = 옛 저장·스위치를 끈 판」 경로로 고정한다(SPEC-018 3b에서 출하 값을 켠 뒤에도). 켠 판의 진행은 별도 시험이 본다
+vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: false }));
 
 /**
  * 가족 모델의 해시 불변 시험 (SPEC-009 FM4a, docs/data/family-model.md 12-1절 — 세 층 중 L0·L1):

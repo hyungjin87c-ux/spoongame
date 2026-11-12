@@ -3,6 +3,7 @@ import { LIMITS } from '../data/economyTable';
 import { ASK_CHOICE_IDS, ASK_EFFECTS, ASK_KIND_INFO, isAskKind, type AskKind } from '../data/askTable';
 import { STAT_MAX, STAT_MIN, addDeltas, type StatDeltas } from './stats';
 import { FAMILY_SYSTEM_FLAGS } from './familyFlags';
+import { LOOKS_CHANNELS, looksChannelMult, type LooksChannel } from './looks';
 import type { PersonaView } from './persona';
 import { ACT_KINDS, APT_KEYS, APT_TIERS, ROLE_KINDS, TEMPER_IDS, type ActKind, type AptKey, type AptTier, type RoleKind, type TemperId } from './personaKinds';
 import {
@@ -261,6 +262,11 @@ export interface EventDef {
    * 대체된 옛 사건 표지 (SPEC-018 PL4, 설계 4절 `[CX-002-002]`): `'persona'`이면 **맞춤 인생이 켜진 판에서는 일어나지 않는다**(진로 트랙이 대신한다 — `youth-first-job`). `persona`가 없는 판(구형 저장·스위치 끔)은 동작이 같다(골든 대상).
    */
   retiredWith?: 'persona';
+  /**
+   * 외모 영향 채널 (SPEC-018 PL16, 설계 4B): `'romance'`(연애·소개·첫 만남) · `'friend'`(교우). 있으면 `eventWeight`가 `modifiers` 곱 뒤에 표준 표 `LOOKW[채널][외모 단계]`를 곱한다
+   * (시대 배율 `LOOKERA`는 맞춤 인생이 있는 판에서만). 외모는 가중에만 닿고 자격·선택지를 막지 않는다. 표준 표는 `persona`가 없는 판·스위치를 끈 판에도 적용한다(밸런스 변경, F11).
+   */
+  looksChannel?: LooksChannel;
 }
 
 /**
@@ -485,6 +491,7 @@ export function isEventEligible(ev: EventDef, view: EligibilityView): boolean {
 export function eventWeight(ev: EventDef, ctx: CondContext): number {
   let w = ev.weight;
   for (const m of ev.modifiers ?? []) if (meetsCondition(m.when, ctx)) w *= m.weight;
+  if (ev.looksChannel !== undefined) w *= looksChannelMult(ev.looksChannel, ctx.character.looks, ctx.year, ctx.persona !== undefined && ctx.persona !== null);
   return w;
 }
 
@@ -844,7 +851,7 @@ function checkVariants(v: unknown, path: string, min: number, max: number, p: Pr
 
 const EVENT_KEYS = [
   'id', 'title', 'text', 'textVariants', 'role', 'question', 'stages', 'ageRange', 'yearRange', 'track', 'weight', 'once', 'cooldown',
-  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy', 'ask', 'pick', 'retiredWith',
+  'conditions', 'modifiers', 'effects', 'bonuses', 'choices', 'milestone', 'trigger', 'citation', 'noCitation', 'heavy', 'ask', 'pick', 'retiredWith', 'looksChannel',
 ] as const;
 
 /** 질문 문장의 길이 상한 (SPEC-014 규칙 2 — 윗줄 12px·360px에서 한 줄 약 19자, 두 줄 안) */
@@ -1198,6 +1205,7 @@ function checkPick(ev: Obj, path: string, p: Problems): void {
     if (ev.retiredWith !== 'persona') p.add(`${path}.retiredWith`, '"persona"만 쓸 수 있다');
     if (ev.choices === undefined) p.add(`${path}.retiredWith`, '대체되는 옛 사건은 선택지 이벤트여야 한다');
   }
+  if (ev.looksChannel !== undefined && !(LOOKS_CHANNELS as readonly unknown[]).includes(ev.looksChannel)) p.add(`${path}.looksChannel`, `${LOOKS_CHANNELS.map((c) => `"${c}"`).join(' 또는 ')}여야 한다`);
   if (ev.pick === undefined) return;
   const at = `${path}.pick`;
   if (!isObj(ev.pick)) return void p.add(at, '{ "kind": "field" | "detail" } 객체여야 한다');
@@ -1205,7 +1213,7 @@ function checkPick(ev: Obj, path: string, p: Problems): void {
   if (ev.pick.kind !== 'field' && ev.pick.kind !== 'detail') p.add(`${at}.kind`, '"field" 또는 "detail"이어야 한다');
   if (ev.choices !== undefined) p.add(at, 'pick 사건은 정의 choices가 없다 (후보는 카드가 열릴 때 정해진다)');
   if (ev.effects !== undefined || ev.bonuses !== undefined) p.add(at, 'pick 사건은 효과·보너스가 없다 (결과는 지원 판정이 정한다)');
-  for (const k of ['trigger', 'milestone', 'ask', 'heavy', 'citation', 'noCitation', 'question', 'retiredWith'] as const) if (ev[k] !== undefined) p.add(at, `pick 사건에는 ${k}를 쓰지 않는다`);
+  for (const k of ['trigger', 'milestone', 'ask', 'heavy', 'citation', 'noCitation', 'question', 'retiredWith', 'looksChannel'] as const) if (ev[k] !== undefined) p.add(at, `pick 사건에는 ${k}를 쓰지 않는다`);
   if (ev.once === true) p.add(`${path}.once`, 'pick 사건은 once가 아니다 — 진로 트랙 상태가 카드를 정한다');
 }
 

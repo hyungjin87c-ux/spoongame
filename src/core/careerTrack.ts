@@ -1,5 +1,6 @@
 import { PERSONA_TABLE as T } from '../data/personaTable';
 import { condContextOf } from './apply';
+import { jobLookTerm } from './looks';
 import { jobTable } from './gameData';
 import { JOB_FIELDS } from './jobIndex';
 import { FIELD_NAMES, eraWOf, hireYearOf, jobInYear, jobMulOf, type JobDef, type JobHire, type JobTable } from './jobs';
@@ -251,7 +252,7 @@ export interface ApplyInput {
   stretch: boolean;
   /** `HIREYEAR[판정 연도]` — 첫 지원 항에만 곱한다 */
   hireYear: number;
-  /** 외모 곱 `kJob × z` — **3a는 0**(자리만 — 3b가 값을 적용한다) */
+  /** 외모 곱 `kJob × z` (`looks.ts#jobLookTerm` — SPEC-018 PL16, 설계 4B). 없으면 0 */
   lookTerm?: number;
   /** 지금까지의 지원 순번(`persona.tries`) */
   tries: number;
@@ -291,6 +292,8 @@ export function jobApplyOf(state: GameState, job: JobDef, age: number): { p: num
     ...(job.fitApt !== undefined && ctx.persona ? { aptTier: ctx.persona.tiers[job.fitApt] } : {}),
     stretch: !meetsCondition(job.when, ctx),
     hireYear: hireYearOf(state.character.birthYear + age),
+    // 외모 항(PL16): 직업의 `lookSens`·지원 나이의 달력 연도·외모 단계. 일반 직종의 시대 배율(2020~ 0.8)은 맞춤 인생이 있는 판에서만 곱한다
+    lookTerm: jobLookTerm(job.lookSens, state.character.looks, state.character.birthYear + age, ctx.persona !== undefined && ctx.persona !== null),
     tries,
     relationships: state.stats.relationships,
   });
@@ -309,6 +312,18 @@ export interface PickOutcome {
   passed?: boolean;
 }
 
+/**
+ * 합격 소득 이전 [결정 후속 233]: 옛 첫 일 카드 `youth-first-job`이 합격과 같은 자리에서 준 평생 소득 가산(`assets.income` → `incomeAdj`)의 소득 몫만 옮긴다 —
+ * 일반 직업은 `stable`의 +800에 지식 ≥ 70 +600 · `early_work` +400 · `skilled_trade` +400, `family_business` 직업은 `family`의 +1,600(보너스 없음). 조건은 옛 카드 `bonuses.when`과 같은 판정(`meetsCondition`).
+ * 값은 9절 `MODEL careerIncome`(`youth-first-job`의 값과 같다는 시험이 잠근다). 행복·관계는 옮기지 않는다(PL6).
+ */
+export function careerIncomeOf(state: GameState, job: Pick<JobDef, 'setFlags'>): number {
+  const [base, family, edu, early, trade] = MM('careerIncome');
+  if ((job.setFlags ?? []).includes('family_business')) return family;
+  const ctx = condContextOf(state);
+  return base + (meetsCondition({ stats: { education: { min: 70 } } }, ctx) ? edu : 0) + (meetsCondition({ flags: ['early_work'] }, ctx) ? early : 0) + (meetsCondition({ flags: ['skilled_trade'] }, ctx) ? trade : 0);
+}
+
 /** 진로 카드를 해결한 결과: 분야 → `field` 상태 / 세부 직업 → 지원 판정(합격 `hired` · 불합격 `tries + 1`, 상태 유지) */
 export function jobPickOutcome(state: GameState, kind: JobPickKind, choiceId: string, age: number, table: JobTable = jobTable()): PickOutcome {
   const p = state.persona;
@@ -322,7 +337,7 @@ export function jobPickOutcome(state: GameState, kind: JobPickKind, choiceId: st
   if (r.pass) {
     return {
       persona: canonical({ ...p, job: { field: job.field, id: job.id, since: age } }),
-      effects: { setFlags: ['has_career', 'job_picked', ...(job.setFlags ?? [])] },
+      effects: { assets: { income: careerIncomeOf(state, job) }, setFlags: ['has_career', 'job_picked', ...(job.setFlags ?? [])] },
       text: CAREER_TEXT.pass,
       passed: true,
     };

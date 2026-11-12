@@ -17,6 +17,16 @@ function lazy<T>(compute: () => T): () => T {
   return () => (cache ??= { value: compute() }).value;
 }
 
+/**
+ * 옛 저장(`persona` 없는 판) 시작 — SPEC-018 3b에서 맞춤 인생 스위치를 켠 뒤, **옛 첫 일 카드(`youth-first-job`)·고시 준비 같은 옛 흐름**을 보는 시험은 이 시작을 쓴다.
+ * 켠 판에서는 진로 트랙이 옛 카드를 대신하고 `has_career`가 일찍 켜져 옛 흐름의 표본이 달라진다(의도된 변화 — 켠 판의 진로 흐름은 `careerTrack.test.ts`·`personaSwitchShipped.test.ts`가 본다). 옛 저장은 계속 이 흐름으로 이어진다(6-3절).
+ */
+const startLegacy = (seed: number, era: ProfileId): GameState => {
+  const { persona: _persona, ...rest } = startLife(seed, era);
+  void _persona;
+  return rest as GameState;
+};
+
 /** 지정한 이벤트에서는 지정한 선택지를 고르고(그 이벤트의 보이는 선택지에 있을 때), 나머지는 무작위로 고른다. */
 function forced(rules: Record<string, string>, seed: number) {
   const rng = createRng(seed ^ 0x51ed270b);
@@ -40,12 +50,12 @@ interface Tally {
 }
 
 /** 세 시대 x 시드로 forced 규칙대로 플레이하고, cond를 만족한 판 중 hitIf를 만족한 판의 수를 센다. */
-function tally(rules: Record<string, string>, cond: (f: GameState) => boolean, hitIf: (f: GameState) => boolean, perEra = 160): Tally {
+function tally(rules: Record<string, string>, cond: (f: GameState) => boolean, hitIf: (f: GameState) => boolean, perEra = 160, legacy = false): Tally {
   const t: Tally = { n: 0, hit: 0 };
   for (const era of ERAS) {
     for (let i = 1; i <= perEra; i++) {
       const seed = i * 7919 + 13;
-      const f = playToEnd(startLife(seed, era), forced(rules, seed)).state;
+      const f = playToEnd(legacy ? startLegacy(seed, era) : startLife(seed, era), forced(rules, seed)).state;
       if (!cond(f)) continue;
       t.n++;
       if (hitIf(f)) t.hit++;
@@ -168,6 +178,8 @@ describe('일·학업·건강: 선택이 이후 이벤트를 연다 (R-045 e)', 
       { 'youth-exam-prep': 'persist' },
       (f) => chose(f, 'youth-exam-prep', 'persist'),
       (f) => saw(f, 'youth-exam-passed', 'youth-exam-failed'),
+      160,
+      true, // 옛 저장 흐름: 켠 판은 진로 트랙이 `has_career`를 먼저 켜 고시 준비가 덜 열린다(위 `startLegacy`)
     );
     expect(t.n).toBeGreaterThan(100);
     expect(t.hit / t.n).toBeGreaterThanOrEqual(0.9);
@@ -178,7 +190,9 @@ describe('일·학업·건강: 선택이 이후 이벤트를 연다 (R-045 e)', 
       { 'youth-exam-prep': 'persist' },
       (f) => saw(f, 'youth-exam-failed'),
       (f) => saw(f, 'youth-first-job'),
-      2000, // M5(EC4): 준비를 이어 가는 선택이 순자산 −5000 이상일 때만 보이고 이벤트 흐름이 조금 달라져, 500판에서는 불합격 판이 57개뿐이라 표본 오차(±7%p)가 기준(50%)에 걸려 흔들렸다(47%) — 판 수를 늘려 같은 기준을 안정적으로 본다
+      2000,
+      true, // 옛 저장 흐름(위 `startLegacy`) — 켠 판에서는 첫 일자리 카드가 진로 트랙이다
+      // M5(EC4): 준비를 이어 가는 선택이 순자산 −5000 이상일 때만 보이고 이벤트 흐름이 조금 달라져, 500판에서는 불합격 판이 57개뿐이라 표본 오차(±7%p)가 기준(50%)에 걸려 흔들렸다(47%) — 판 수를 늘려 같은 기준을 안정적으로 본다
     );
     expect(t.n).toBeGreaterThan(50);
     expect(t.hit / t.n).toBeGreaterThanOrEqual(0.5);
@@ -261,9 +275,28 @@ describe('모든 이벤트에 닿을 수 있다: 네 가지 선택 전략으로 
 
   it('조건이 어긋나 영원히 열리지 않는 이벤트가 없다', () => {
     const { hit } = covered();
-    // 진로 트랙 카드(`pick`, SPEC-018 PL4)는 `PERSONA_ENABLED`가 켜진 판에서만 나온다 — 스위치 출하 값은 꺼짐이라 이 표본에는 없다. 켠 판의 도달은 tests/careerTrack.test.ts가 본다(스위치를 켜는 3b단계에서 이 예외를 거두고 표본을 다시 본다)
-    const missing = EVENT_POOL.events.filter((e) => e.pick === undefined && (hit.get(e.id) ?? 0) < 1).map((e) => e.id);
+    // 3b: 스위치를 켠 뒤라 진로 트랙 카드(`pick`)도 이 표본에서 닿는다(3a의 `pick` 예외를 거뒀다). 반대로 맞춤 인생이 켜진 판에서는 대체된 옛 사건(`retiredWith: 'persona'` — `youth-first-job`)이 일어나지 않는다 —
+    // 그 옛 사건의 도달은 옛 저장(`persona` 없는 판)이 맡고 아래 `reachedLegacy`가 따로 본다
+    const missing = EVENT_POOL.events.filter((e) => e.retiredWith === undefined && (hit.get(e.id) ?? 0) < 1).map((e) => e.id);
     expect(missing).toEqual([]);
+  });
+
+  it('켠 판에서 진로 트랙 카드(pick)는 모든 표본 전략에서 닿고, 대체된 옛 사건(retiredWith)은 옛 저장(persona 없는 판)에서 여전히 닿는다', () => {
+    const { hit } = covered();
+    const picks = EVENT_POOL.events.filter((e) => e.pick !== undefined).map((e) => e.id);
+    expect(picks.length).toBeGreaterThan(0);
+    for (const id of picks) expect(hit.get(id) ?? 0, id).toBeGreaterThan(100);
+    const retired = EVENT_POOL.events.filter((e) => e.retiredWith !== undefined).map((e) => e.id);
+    expect(retired).toEqual(['youth-first-job']);
+    const reachedLegacy = new Set<string>();
+    for (const era of GENERATION_IDS) {
+      for (let i = 1; i <= 60; i++) {
+        const seed = i * 7919 + 13;
+        const f = playToEnd(startLegacy(seed, era), chooserFor('random', seed)).state;
+        for (const id of Object.keys(f.seen)) reachedLegacy.add(id);
+      }
+    }
+    for (const id of retired) expect(reachedLegacy.has(id), `${id}: 옛 저장에서 닿는다`).toBe(true);
   });
 
   it('연도 구간(yearRange)이 걸린 이벤트는 그 연도 밖에서는 나오지 않는다 (달력 연도 격리)', () => {
@@ -297,8 +330,8 @@ interface Life {
 }
 
 /** playToEnd와 같은 진행에 "이벤트가 일어난 순간의 플래그"를 기록한다 (진행 규칙은 같은 core 함수를 쓴다) */
-function trace(seed: number, era: Era, chooser: (s: GameState) => string, pool: EventPool = EVENT_POOL): Life {
-  let s = startLife(seed, era);
+function trace(seed: number, era: Era, chooser: (s: GameState) => string, pool: EventPool = EVENT_POOL, legacy = false): Life {
+  let s = legacy ? startLegacy(seed, era) : startLife(seed, era);
   const occ: Occurrence[] = [];
   for (let i = 0; s.phase === 'life'; i++) {
     if (i > 1000) throw new Error(`${era} ${seed}: 진행이 끝나지 않는다`);
@@ -322,12 +355,12 @@ function trace(seed: number, era: Era, chooser: (s: GameState) => string, pool: 
   return { seed, era, parentWealth: s.character!.parentWealth, final: s, occ };
 }
 
-function populate(rules: Record<string, string>, perEra: number, pool: EventPool = EVENT_POOL, eras: readonly Era[] = ERAS): Life[] {
+function populate(rules: Record<string, string>, perEra: number, pool: EventPool = EVENT_POOL, eras: readonly Era[] = ERAS, legacy = false): Life[] {
   const out: Life[] = [];
   for (const era of eras) {
     for (let i = 1; i <= perEra; i++) {
       const seed = i * 7919 + 13;
-      out.push(trace(seed, era, forced(rules, seed), pool));
+      out.push(trace(seed, era, forced(rules, seed), pool, legacy));
     }
   }
   return out;
@@ -628,8 +661,9 @@ describe('한 판 안의 모순 0건: 일·집 상태 (R-065) — 가업·시험
   const lives = GENERAL;
 
   it('가업을 이은 판(family_business)과 시험에 합격한 판(passed_exam)에는 정리 해고(middle-layoff)가 나오지 않는다', () => {
-    const family = populate({ 'youth-first-job': 'family' }, 400).filter((l) => l.final.flags.includes('family_business'));
-    const passed = populate({ 'youth-exam-prep': 'persist' }, 400).filter((l) => l.final.flags.includes('passed_exam'));
+    // 옛 첫 일 카드(`family` 선택지)·고시 준비 흐름이라 옛 저장(`persona` 없는 판)으로 돌린다 — 켠 판에서는 진로 트랙의 `sales-family`가 같은 플래그를 켠다(`careerTrack.test.ts` 대응표)
+    const family = populate({ 'youth-first-job': 'family' }, 400, EVENT_POOL, ERAS, true).filter((l) => l.final.flags.includes('family_business'));
+    const passed = populate({ 'youth-exam-prep': 'persist' }, 400, EVENT_POOL, ERAS, true).filter((l) => l.final.flags.includes('passed_exam'));
     expect(family.length).toBeGreaterThanOrEqual(30);
     expect(passed.length).toBeGreaterThanOrEqual(30);
     for (const l of [...family, ...passed]) expect(occurred(l, 'middle-layoff'), `${l.era} ${l.seed}`).toBe(false);
@@ -790,7 +824,8 @@ describe('한 판 안의 모순 0건: 직장 없이 사업을 시작한 판 (R-0
       const o = l.occ.find((x) => x.id === 'youth-startup');
       return o !== undefined && o.choice === 'start' && !o.flags.includes('has_career');
     });
-  const lives = lazy(() => startedWithoutJob(populate(RULES, 500)));
+  // 직장 없이 사업을 시작한 판은 옛 저장 흐름(옛 첫 일 카드·`has_career` 늦게 켜짐)에서 표본이 나온다 — 켠 판은 진로 트랙이 일찍 `has_career`를 켠다(위 `startLegacy`)
+  const lives = lazy(() => startedWithoutJob(populate(RULES, 500, EVENT_POOL, ERAS, true)));
 
   it('사업을 시작한 뒤에는 첫 일자리 고르기·지원서 소식 없음·쪼개진 일자리·공장 밤샘이 한 판도 나오지 않는다 (표본 60판 이상)', () => {
     expect(lives().length, '직장 없이 사업을 시작한 판').toBeGreaterThanOrEqual(60);
@@ -826,7 +861,7 @@ describe('한 판 안의 모순 0건: 직장 없이 사업을 시작한 판 (R-0
       'youth-gig-work': (e) => ({ ...e, conditions: { notFlags: ['has_career'] } }),
       'youth-factory-night': (e) => ({ ...e, conditions: { parentWealth: { max: 3 } } }),
     });
-    const control = startedWithoutJob(populate(RULES, 500, old));
+    const control = startedWithoutJob(populate(RULES, 500, old, ERAS, true));
     const hits: Record<string, number> = {};
     for (const l of control) {
       const i = indexOfEvent(l, 'youth-startup');

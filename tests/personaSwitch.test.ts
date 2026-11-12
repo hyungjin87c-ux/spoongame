@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PERSONA_ENABLED } from '../src/data/personaSwitch';
 import {
   autoChoiceWeights,
@@ -8,6 +8,7 @@ import {
   enterBirth,
   enterLife,
   economyContextOf,
+  eventPool,
   eventWeight,
   generateBirthFromSeed,
   meetsCondition,
@@ -25,9 +26,12 @@ import {
 import { startLife } from '../scripts/simulateLib';
 import { ch, ev, poolOf, withPending } from './helpers/personaTest';
 
+// 출하 값은 3b단계에서 켰다(`personaSwitchShipped.test.ts`가 본다). 이 파일은 「끈 판」의 의미(6-3절)를 시험하므로 스위치를 끈 경로로 고정한다
+vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: false }));
+
 /**
- * 롤백 스위치 `PERSONA_ENABLED` (SPEC-018 PL1, 설계 6-3절 — `ASK_PET_ENABLED` 전례). **이 파일은 mock 없이 코드가 출하하는 값 그대로 돌린다.**
- * 2단계에서 스위치는 꺼져 있다(`src/data/personaSwitch.ts` 머리 주석): 새 판은 `persona`를 만들지 않고, 맞춤 효과(갱신·`tailored` 조건·자동 모드 보정)는 없으며,
+ * 롤백 스위치 `PERSONA_ENABLED` (SPEC-018 PL1, 설계 6-3절 — `ASK_PET_ENABLED` 전례). **이 파일은 스위치를 끈 경로(mock)로 돌린다** — 3b단계에서 출하 값을 켰으므로 「끄면 어떻게 되는가」를 여기서 잠근다.
+ * 스위치를 끄면(`src/data/personaSwitch.ts` 머리 주석): 새 판은 `persona`를 만들지 않고, 맞춤 효과(갱신·`tailored` 조건·자동 모드 보정)는 없으며,
  * 인생은 변경 전과 같다(기존 골든이 따로 잠근다). **저장된 persona는 지우지 않고 통과시킨다**(켠 판에서 끄는 경우·롤백).
  */
 
@@ -35,7 +39,7 @@ const stored = (): PersonaState => personaBirthOf(personaFamSeedOf(777), 'free',
 const withStored = (s: GameState): GameState => ({ ...s, persona: stored() });
 
 describe('스위치가 꺼져 있는 동안', () => {
-  it('출하 값은 꺼짐이다', () => {
+  it('이 파일의 스위치는 mock으로 꺼져 있다(출하 값은 personaSwitchShipped.test.ts가 켜짐으로 잠근다)', () => {
     expect(PERSONA_ENABLED).toBe(false);
   });
 
@@ -134,5 +138,44 @@ describe('스위치가 꺼져 있을 때의 진로 트랙 (3a단계, 설계 6-3�
     const { persona: _p, ...bare } = back;
     void _p;
     expect('jobMul' in economyContextOf(bare as GameState)).toBe(false); // persona가 없는 판은 1
+  });
+});
+
+describe('스위치를 끈 판의 외모 영향 (3b단계 PL16, 설계 4B 중립 판 F11 · 6-3절)', () => {
+  const eventPoolOf = (id: string) => eventPool().byId.get(id)!;
+  const youthMeeting = () => eventPoolOf('youth-meeting');
+  const ctxAt = (gen: 'boomer' | 'millennial', looks: number, age: number, persona: boolean) => {
+    const s = { ...startLife(11, gen, { looks }), age };
+    return condContextOf(persona ? withStored(s) : s);
+  };
+
+  it('외모 새 표(LOOKW)는 끈 판에도 적용된다: persona가 없든 저장돼 있든 연애 가중이 외모 5단계 ×1.7 / 1단계 ×0.3이다', () => {
+    const e = youthMeeting();
+    for (const persona of [false, true]) {
+      const mid = eventWeight(e, ctxAt('millennial', 50, 26, persona));
+      expect(eventWeight(e, ctxAt('millennial', 90, 26, persona)) / mid, `persona ${persona}`).toBeCloseTo(1.7, 12);
+      expect(eventWeight(e, ctxAt('millennial', 10, 26, persona)) / mid, `persona ${persona}`).toBeCloseTo(0.3, 12);
+    }
+  });
+
+  it('시대 배율 LOOKERA는 꺼진다: 1995년 이전 판도 표 값 그대로(0.8배 폭을 곱하지 않는다)', () => {
+    const e = youthMeeting();
+    const c5 = ctxAt('boomer', 90, 25, true);
+    expect(c5.year!).toBeLessThanOrEqual(1995);
+    expect(eventWeight(e, c5) / eventWeight(e, ctxAt('boomer', 50, 25, true))).toBeCloseTo(1.7, 12);
+  });
+
+  it('사업 제안의 외모 가중·소득 보너스 삭제도 끈 판에 적용된다(외모 단계 사이에 같다)', () => {
+    for (const id of ['youth-startup', 'middle-business']) {
+      const e = eventPoolOf(id);
+      const w = [10, 50, 90].map((l) => eventWeight(e, ctxAt('millennial', l, 30, false)));
+      expect(new Set(w).size, id).toBe(1);
+    }
+  });
+
+  it('이미 hired인 판은 스위치를 꺼도 jobMul(외모 ±3% 항 포함)이 유지된다 — 소득이 끊기지 않는다', () => {
+    const base = { ...startLife(4, 'millennial'), age: 30 };
+    const hired = (looks: number): GameState => ({ ...base, character: { ...base.character!, looks }, persona: { ...stored(), job: { field: 'clerk', id: 'clerk-bank', since: 22 }, tries: 1 } });
+    expect(economyContextOf(hired(90)).jobMul! / economyContextOf(hired(10)).jobMul!).toBeCloseTo(1.03 / 0.97, 6);
   });
 });

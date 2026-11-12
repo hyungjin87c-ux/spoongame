@@ -6,10 +6,12 @@ import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FILES } from '../src/data/events';
 import { FAMILY_SYSTEM_FLAGS, type ChoiceDef, type EventDef, type ProfileId } from '../src/core';
 import { economySeed } from '../scripts/economyCheckLib';
+import { LOOKS_BUSINESS_EVENTS } from './helpers/looksExceptions';
 import { startLife } from '../scripts/simulateLib';
 import { M7A_NEW_EVENT_IDS, M7A_WEALTH_GATES } from './helpers/m7a';
 import { playDecisions } from './helpers/decisions';
 import type { Effects } from '../src/core/types';
+import type { GameState } from '../src/core';
 
 /**
  * 이벤트 변환 (SPEC-003 M5 EC3, docs/data/economy-model.md 5절): 옛 `stats.wealth`가 새 효과(`assets`·`family`)로 옮겨졌다.
@@ -88,7 +90,7 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
     expect(new Set(ROWS.map((r) => r.eventId)).size).toBe(75);
     expect(ROWS.length).toBeGreaterThan(120);
     expect(ROWS.filter((r) => r.choiceId === null).length).toBeGreaterThanOrEqual(9); // 서술 이벤트 행
-    expect(ROWS.some((r) => r.bonuses.length >= 4)).toBe(true);
+    expect(ROWS.some((r) => r.bonuses.length >= 3)).toBe(true); // 3b(PL16): 사업 제안의 외모 소득 보너스를 뺀 뒤 가장 긴 줄이 보너스 4개 → 3개
   });
 
   it('모든 행의 기본 효과와 보너스 효과가 표의 「새 효과」와 같다 (키·값·순서)', () => {
@@ -226,11 +228,14 @@ describe('옛 재산 효과와의 대응 (tests/fixtures/wealthLegacy.json: 변�
       };
       if (l.base != null) check(l.base, moneyOf(target.effects), `${l.event}/${l.choice ?? '-'} 기본`);
       for (const b of l.bonuses ?? []) {
-        const bonus = (target.bonuses ?? [])[b.idx];
+        // SPEC-018 PL16(3b): 사업 제안 2곳의 외모 소득 보너스는 뺐다(설계 4B, 외모 영향 k = 0) — 얼린 자료의 그 항은 건너뛰고, 그 뒤 항의 번호는 앞의 빠진 항 수만큼 당겨 읽는다
+        if (LOOKS_BUSINESS_EVENTS.includes(l.event) && (b as { when?: { looks?: unknown } }).when?.looks !== undefined) continue;
+        const shift = (l.bonuses ?? []).filter((x) => LOOKS_BUSINESS_EVENTS.includes(l.event) && (x as { when?: { looks?: unknown } }).when?.looks !== undefined && x.idx < b.idx).length;
+        const bonus = (target.bonuses ?? [])[b.idx - shift];
         check(b.wealth, moneyOf(bonus?.effects), `${l.event}/${l.choice ?? '-'} 보너스[${b.idx}]`);
       }
     }
-    expect(checked).toBe(171);
+    expect(checked).toBe(169); // 171 − 사업 제안 2곳의 외모 소득 보너스 2항(3b PL16)
     expect(wrong).toEqual([]);
   });
 
@@ -347,7 +352,10 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
     for (const era of ['industrial', 'alpha', 'alpha'] as ProfileId[]) {
       for (let i = 1; i <= 300; i++) {
         // SPEC-005: 어린 시절의 카드는 부모님이 정하거나 아이의 일로 흘러가 `pending`이 되지 않는다 — 고르기 직전의 대기 상태를 playDecisions가 모두 넘긴다
-        playDecisions(startLife(economySeed(i), era), (p) => {
+        // 옛 첫 일 카드(`youth-first-job`)의 보이는 선택지 수를 본다 — 맞춤 인생을 켠 판은 진로 트랙이 그 카드를 대신하므로(SPEC-018 3b) 옛 저장(`persona` 없는 판)으로 돌린다
+        const { persona: _persona, ...legacyStart } = startLife(economySeed(i), era);
+        void _persona;
+        playDecisions(legacyStart as GameState, (p) => {
           const m = counts.get(p.pending!.eventId) ?? new Map<number, number>();
           m.set(p.pending!.choiceIds.length, (m.get(p.pending!.choiceIds.length) ?? 0) + 1);
           counts.set(p.pending!.eventId, m);

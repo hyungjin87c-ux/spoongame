@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EVENT_POOL } from '../src/data/events';
+import { JOB_TABLE } from '../src/data/jobs';
 import {
   EventDataError,
   MAX_DEFINED_CHOICES,
@@ -14,6 +15,8 @@ import {
   isEventEligible,
   lintEvent,
   lintEvents,
+  looksGateProblems,
+  jobTableProblems,
   meetsCondition,
   personaViewOf,
   resolveEffects,
@@ -307,5 +310,52 @@ describe('기존 사건은 새 규칙에 닿지 않는다', () => {
     expect(EVENT_POOL.events.some(usesPersonaCondition)).toBe(false);
     expect(EVENT_POOL.events.every((e) => e.textVariants === undefined && e.role === undefined)).toBe(true);
     expect(lintEvents(EVENT_POOL.events)).toEqual([]);
+  });
+});
+
+describe('외모 lint (PL16, 설계 3절 「외모 가림 금지」): looks는 조건·선택지 requires·직업 when에 쓰지 않는다', () => {
+  const base = (over: Record<string, unknown>): EventDef => poolOf([ev({ id: 'test-lk', choices: [ch('a'), ch('b')], ...over })]).byId.get('test-lk')!;
+
+  it('사건 conditions의 looks는 빌드가 막는다(허용 목록 youth-approached 한 곳 말고)', () => {
+    const e = base({ conditions: { looks: { min: 60 } } });
+    expect(looksGateProblems(e).join('\n')).toContain('자격 조건');
+    expect(lintEvent(e).join('\n')).toContain('looks를 자격 조건에');
+  });
+
+  it('선택지 requires의 looks는 빌드가 막는다(허용 목록 없음)', () => {
+    const e = base({ choices: [ch('a'), ch('b'), ch('c', { requires: { looks: { min: 70 } } })] });
+    expect(looksGateProblems(e).join('\n')).toContain('선택지 조건');
+    expect(lintEvent(e).join('\n')).toContain('looks를 선택지 조건에');
+  });
+
+  it('허용 목록은 youth-approached 한 곳뿐이고 그 사건은 지금도 통과한다 — 풀 전체의 외모 자격 조건은 그 한 곳이다', () => {
+    const withCond = EVENT_POOL.events.filter((e) => e.conditions?.looks !== undefined).map((e) => e.id);
+    expect(withCond).toEqual(['youth-approached']);
+    expect(looksGateProblems(EVENT_POOL.byId.get('youth-approached')!)).toEqual([]);
+    expect(looksGateProblems({ ...EVENT_POOL.byId.get('youth-approached')!, id: 'youth-approached-copy' })).not.toEqual([]); // 이름이 다르면 허용이 아니다
+    const withRequires = EVENT_POOL.events.filter((e) => (e.choices ?? []).some((c) => c.requires?.looks !== undefined));
+    expect(withRequires).toEqual([]);
+  });
+
+  it('modifiers·bonuses·문장 변주 when에서의 looks는 허용된다(가중·효과·글만 바꾼다)', () => {
+    const e = base({
+      modifiers: [{ when: { looks: { min: 70 } }, weight: 1.5 }],
+      bonuses: undefined,
+      choices: [ch('a', { bonuses: [{ when: { looks: { max: 30 } }, effects: { stats: { happiness: -1 } } }], resultVariants: [{ when: { looks: { min: 70 } }, text: '밝은 얼굴로 하루를 마쳤습니다.' }] }), ch('b')],
+    });
+    expect(looksGateProblems(e)).toEqual([]);
+    expect(lintEvent(e).filter((m) => m.includes('looks'))).toEqual([]);
+  });
+
+  it('직업 when의 looks는 직업 표 점검이 막는다(성별도 막는다)', () => {
+    const j = { ...JOB_TABLE.jobs.find((x) => x.when === undefined && x.open !== true)!, id: 'x-job', when: { looks: { min: 60 } } };
+    expect(jobTableProblems([j]).join('\n')).toContain('looks');
+    expect(jobTableProblems([{ ...j, when: { gender: ['female' as const] } }]).join('\n')).toContain('gender');
+  });
+
+  it('looksChannel은 romance·friend만 받는다(스키마)', () => {
+    expect(problemsOf([ev({ id: 'test-ch', looksChannel: 'romance', choices: [ch('a'), ch('b')] })])).toBe('');
+    expect(problemsOf([ev({ id: 'test-ch', looksChannel: 'friend', choices: [ch('a'), ch('b')] })])).toBe('');
+    expect(problemsOf([ev({ id: 'test-ch', looksChannel: 'job', choices: [ch('a'), ch('b')] })])).toContain('looksChannel');
   });
 });

@@ -54,7 +54,7 @@ export function economyContextOf(state: GameState): EconomyContext {
     birthYear,
     regionClass: regionClassOf(state.birthReport?.region),
     forceR1: state.generation === R1_PRESENT,
-    ...(job !== undefined ? { jobMul: jobMulOf(job, birthYear + state.age) } : {}),
+    ...(job !== undefined ? { jobMul: jobMulOf(job, birthYear + state.age, state.character.looks) } : {}),
   };
 }
 

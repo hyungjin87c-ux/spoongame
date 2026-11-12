@@ -6,11 +6,13 @@ import {
   estimatePlaySeconds,
   extraLineMsFor,
   holdMsFor,
+  pickChoicesOf,
   playToEnd,
   previewPending,
   readSecFor,
   stageOfAge,
   totalCards,
+  pacingCards,
   type Chooser,
   type ProfileId,
   eraBucketOf,
@@ -94,7 +96,8 @@ export function featureOf(s: GameState, pool: EventPool): CardFeature | null {
   if (pending === null || s.character === null || s.generation === null) return null;
   const ev = pool.byId.get(pending.eventId);
   if (ev === undefined) return null;
-  const shown = pending.choiceIds.map((id) => ev.choices?.find((c) => c.id === id)).filter((c) => c !== undefined);
+  // 보인 선택지는 공통 인터페이스 `pickChoicesOf`로 푼다(SPEC-018 설계 4절) — 진로 카드(`pick`)는 정의 `choices`가 없고 후보 이름(분야·직업)이 라벨이다
+  const shown = pickChoicesOf(s, pending, pool);
   const previews = previewPending(s, pool) ?? [];
   let impactChars = 0;
   let impactItems = 0;
@@ -111,7 +114,7 @@ export function featureOf(s: GameState, pool: EventPool): CardFeature | null {
     age: s.age,
     titleLen: len(ev.title),
     textLen: len(ev.text),
-    labelLens: shown.map((c) => len(c!.label)),
+    labelLens: shown.map((c) => len(c.label)),
     resultLen: 0,
     impactChars,
     impactItems,
@@ -159,7 +162,7 @@ export function measureLife(seed: number, era: ProfileId, strategy: Strategy, li
   if (c.parent + c.child + c.deathDelegated !== choiceRows.length - ownRows.length) problems.push(`${tag}: 부모 ${c.parent} + 흘러감 ${c.child} + 같은 해 사망 ${c.deathDelegated} ≠ 연표의 by 있는 선택 ${choiceRows.length - ownRows.length}`);
   if (totalCards(c) !== choiceRows.length) problems.push(`${tag}: 카드 총수 ${totalCards(c)} ≠ 연표 선택 ${choiceRows.length}`);
   if (final.lifeLength !== lifeLength) problems.push(`${tag}: 판의 인생 길이가 ${final.lifeLength}다`);
-  if (totalCards(c) > lifeModeOf(lifeLength).pacing.hard) problems.push(`${tag}: 결정 카드 ${totalCards(c)}장이 하드 상한 ${lifeModeOf(lifeLength).pacing.hard}을 넘었다`);
+  if (pacingCards(c) > lifeModeOf(lifeLength).pacing.hard) problems.push(`${tag}: 페이싱 카드 ${pacingCards(c)}장(진로 카드는 한 장)이 하드 상한 ${lifeModeOf(lifeLength).pacing.hard}을 넘었다`);
   if (c.extraLines < 0) problems.push(`${tag}: 둘째 줄 수가 음수다`);
   // 결과 문장 글자 수는 카드(본인이 고른 것만 잰다)와 같은 순서의 **본인 선택 줄**에 짝지운다 — 위임 줄(`by`)까지 섞인 `choiceRows`로 짝지으면 QI5 뒤 색인이 어긋난다(R-458).
   if (cards.length !== ownRows.length) problems.push(`${tag}: 카드 측정 ${cards.length}개와 본인 선택 줄 ${ownRows.length}개의 길이가 달라 결과 글자 수를 짝지을 수 없다`);
@@ -274,6 +277,7 @@ export function summarize(era: ProfileId, lifeLength: LifeLength, lives: readonl
   const modeHard = lifeModeOf(lifeLength).pacing.hard;
   const hard = Number.isFinite(modeHard) ? modeHard : hardRef;
   const choice = lives.map((l) => totalCards(l.counts));
+  const pacingChoice = lives.map((l) => pacingCards(l.counts)); // 하드 상한·하드−1 판정용(진로 카드는 한 장)
   const choiceSelf = lives.map((l) => l.counts.choice);
   const min = (sec: (l: LifeMeasure) => number) => distStats(lives.map((l) => sec(l) / 60));
   const slow = { speed: 1 as const, skipToDecision: false };
@@ -299,9 +303,9 @@ export function summarize(era: ProfileId, lifeLength: LifeLength, lives: readonl
     extraLines: mean(lives.map((l) => l.counts.extraLines)),
     cards: distStats(choice),
     hard,
-    overHard: choice.filter((x) => x > hard).length,
-    nearCapPct: (choice.filter((x) => x >= hard - 1).length / lives.length) * 100,
-    atCapPct: (choice.filter((x) => x >= hard).length / lives.length) * 100,
+    overHard: pacingChoice.filter((x) => x > hard).length,
+    nearCapPct: (pacingChoice.filter((x) => x >= hard - 1).length / lives.length) * 100,
+    atCapPct: (pacingChoice.filter((x) => x >= hard).length / lives.length) * 100,
     byStage,
     upTo7: mean(lives.map((l) => l.cardsUpTo7)),
     longLives: long.length,

@@ -9,6 +9,7 @@ import {
   createSession,
   parseGame,
   parseSettings,
+  resolveChoice,
   serializeGame,
   serializeSettings,
   sessionReducer,
@@ -140,7 +141,8 @@ describe('일시정지 (세션)', () => {
     const p = pausedLife().game;
     expect(parseGame(serializeGame(p))).toEqual(p);
     let g = setPaused(p, false);
-    for (let i = 0; i < 300 && g.phase === 'life'; i++) g = g.pending ? { ...g, pending: null } : stepYear(g).state;
+    // 대기 카드는 첫 선택지로 풀어 나이를 올린다 — 카드를 풀지 않고 비우기만 하면 켠 판의 진로 카드(강제 슬롯, 2년 간격을 받지 않는다)가 같은 나이에 다시 떠 나이가 오르지 않는다(SPEC-018 3b)
+    for (let i = 0; i < 300 && g.phase === 'life'; i++) g = g.pending ? resolveChoice(g, g.pending.key, g.pending.choiceIds[0]) : stepYear(g).state;
     expect(g.phase).toBe('ending');
     expect(g.paused).toBe(false);
   });

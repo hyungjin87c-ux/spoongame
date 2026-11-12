@@ -26,6 +26,7 @@ import {
 } from '../../src/core';
 import { STAGE_TABLE } from '../../src/data/lifeTable';
 import { startLife } from '../../scripts/simulateLib';
+import { LOOKS_BUSINESS_EVENTS, LOOKS_EXCEPTION_EVENTS, LOOKS_ROMANCE_EVENTS } from './looksExceptions';
 
 /**
  * 기존 사건 자격 골든(SPEC-018 1단계, docs/data/persona-model.md 3절 `[CX-002-004]`)의 격자·표본 정의와 비교 도구.
@@ -489,7 +490,7 @@ export const progressSeeds = (n: number, gi: number, offset: number): number[] =
  * `나이|후보수|후보 id 해시|후보 가중 해시|틱 종류|사건 id|(위임 by:선택)|대기 선택지(쉼표)>고른 선택지|진행 난수 상태`
  * 후보는 그 해 시작 상태에서 `isEventEligible`을 통과하는 풀의 사건(R-561 등 걸러내기 전), 가중은 `eventWeight`(ctx)다.
  */
-export function progressTrace(seed: number, generation: ProfileId, looks: number | undefined, pool: EventPool = eventPool()): string[] {
+export function progressTrace(seed: number, generation: ProfileId, looks: number | undefined, pool: EventPool = eventPool(), touched?: boolean[]): string[] {
   let s: GameState = startLife(seed, generation, looks === undefined ? {} : { looks });
   const lines: string[] = [];
   for (let guard = 0; s.phase === 'life' && guard < 1000; guard++) {
@@ -522,6 +523,8 @@ export function progressTrace(seed: number, generation: ProfileId, looks: number
     const t = r.tick;
     const by = t.by === undefined ? '' : `${t.by}:${t.choiceId ?? ''}`;
     const pend = r.state.pending === null ? '' : r.state.pending.choiceIds.join(',');
+    // 외모 표준 표(PL16 예외 목록)가 닿는 사건이 그 해 후보에 있었는가 — 자연 외모 판의 허용 규칙이 읽는다
+    touched?.push(cands.some((e) => LOOKS_EXCEPTION_EVENTS.includes(e.id)));
     lines.push(`${age}|${ids.length}|${fnv32(ids.join(','))}|${fnv32(wts.join(','))}|${t.kind}|${t.eventId ?? ''}|${by}|${pend}`);
     if (r.state.pending === null) lines[lines.length - 1] += `|${(r.state.rngState >>> 0).toString(16)}`;
     s = r.state;
@@ -580,6 +583,59 @@ export interface AllowedDiff {
   event: string;
   path: string;
   whenLooksNot50?: boolean;
+}
+
+/**
+ * 설계 4B 「기존 사건 예외」 — 외모 표준 표(`LOOKW`)로 옮긴 연애·소개·재회 5곳과 외모 가중·소득 보너스를 뺀 사업 제안 2곳 (SPEC-018 PL16, 설계 persona-model.md 4B `[CX-002-004]`).
+ * 이 목록이 골든 허용 차이의 전부다: 예외 사건의 외모 `modifiers` 항(사건 단위가 아니라 필드 단위), 사업 선택지의 외모 `bonuses` 항, 그 결과로 달라지는 칸(외모 50이 아닌 칸의 `w`·`dw`·사업 `fx`).
+ * 결혼 사슬 4건·`school-mirror`·`youth-approached`·`youth-meeting`/`school-first-love`의 선택지 외모 보너스는 이 목록에 없다(변경 0 — 골든 그대로 대조).
+ */
+export { LOOKS_BUSINESS_EVENTS, LOOKS_EXCEPTION_EVENTS, LOOKS_ROMANCE_EVENTS };
+
+export const LOOKS_ALLOWED: readonly AllowedDiff[] = [
+  // 첫사랑 `confess`의 「looks ≤ 30 → 행복 −3」 보너스 삭제 [결정 후속 233, 설계 4B ②] — 연애 가중 0.30배와 겹치는 이중 감점. ≥ 70 보너스·`youth-meeting` +1은 그대로(골든과 대조)
+  { event: 'school-first-love', path: 'static.choices.confess.bonuses' },
+  { event: 'school-first-love', path: 'cell.fx.confess', whenLooksNot50: true },
+  ...LOOKS_ROMANCE_EVENTS.flatMap((event): AllowedDiff[] => [
+    { event, path: 'static.modifiers' },
+    { event, path: 'cell.w', whenLooksNot50: true },
+    { event, path: 'cell.dw', whenLooksNot50: true },
+  ]),
+  ...LOOKS_BUSINESS_EVENTS.flatMap((event): AllowedDiff[] => [
+    { event, path: 'static.modifiers' },
+    { event, path: 'static.choices.start.bonuses' },
+    { event, path: 'cell.w', whenLooksNot50: true },
+    { event, path: 'cell.dw', whenLooksNot50: true },
+    { event, path: 'cell.fx.start', whenLooksNot50: true },
+  ]),
+];
+
+/** 정적 정의에서 외모 항만 뺀다: 예외 사건의 `modifiers`(외모 항)·사업 선택지 `start`의 `bonuses`(외모 항). 빈 배열은 없는 것으로 본다. 나머지는 그대로 남아 골든과 정확히 같아야 한다 */
+export function withoutLooksTerms(id: string, s: Record<string, unknown>): Record<string, unknown> {
+  const out = JSON.parse(JSON.stringify(s)) as Record<string, unknown>;
+  const hasLooks = (x: unknown): boolean => JSON.stringify((x as { when?: unknown })?.when ?? null).includes('"looks"');
+  if (Array.isArray(out.modifiers)) {
+    const keep = (out.modifiers as unknown[]).filter((m) => !hasLooks(m));
+    if (keep.length > 0) out.modifiers = keep;
+    else delete out.modifiers;
+  }
+  if (id === 'school-first-love') {
+    const confess = (out.choices as Record<string, { bonuses?: unknown[] }> | undefined)?.confess;
+    if (confess?.bonuses !== undefined) {
+      const keep = confess.bonuses.filter((b) => !JSON.stringify((b as { when?: unknown }).when ?? null).includes('"max":30'));
+      if (keep.length > 0) confess.bonuses = keep;
+      else delete confess.bonuses;
+    }
+  }
+  if (LOOKS_BUSINESS_EVENTS.includes(id)) {
+    const start = (out.choices as Record<string, { bonuses?: unknown[] }> | undefined)?.start;
+    if (start?.bonuses !== undefined) {
+      const keep = start.bonuses.filter((b) => !hasLooks(b));
+      if (keep.length > 0) start.bonuses = keep;
+      else delete start.bonuses;
+    }
+  }
+  return out;
 }
 
 export interface Diff {

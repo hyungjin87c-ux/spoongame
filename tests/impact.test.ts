@@ -307,6 +307,8 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
     for (const era of SIM_PROFILES) {
       for (const p of lives(era, 60)) {
         const ev = EVENT_POOL.byId.get(p.pending!.eventId)!;
+        // 진로 카드(`pick`)는 정의 효과가 없고 결과가 지원 판정(합격 시 플래그)이라 이 「표기 = 실제」 전수에서 빼고 `pickChoices.test.tsx`·`careerTrack.test.ts`가 본다(3b: 스위치를 켠 판에 나온다)
+        if (ev.pick !== undefined) continue;
         for (const id of p.pending!.choiceIds) {
           // 조르기 사건의 조른다·떼쓴다는 데이터 효과가 없다 — 일어난 갈래의 표 효과를 읽는다(한 곳 규칙 `tests/helpers/askChoice.ts`, 갈래 판정은 tests/askResolve.test.ts)
           const choice = ev.choices!.find((c) => c.id === id)!;
@@ -356,7 +358,7 @@ describe('표기 = 선택이 실제로 하는 일 (숨은 효과 0): 표기가 �
   }, 120_000);
 
   it('previewPending: 대기 중인 선택지의 보이는 선택지마다 영향을 낸다 · 선택지가 없거나 인생이 아니면 null', () => {
-    const p = lives('alpha', 3).find((s) => s.assets !== null)!;
+    const p = lives('alpha', 3).find((s) => s.assets !== null && EVENT_POOL.byId.get(s.pending!.eventId)!.pick === undefined)!; // 진로 카드(pick)는 pickChoices.test.tsx가 본다
     const out = previewPending(p, EVENT_POOL)!;
     expect(out.map((o) => o.choiceId)).toEqual(p.pending!.choiceIds);
     const ev = EVENT_POOL.byId.get(p.pending!.eventId)!;

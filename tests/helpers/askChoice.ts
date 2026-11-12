@@ -11,9 +11,11 @@ import { ASK_EFFECTS, type AskChoiceId } from '../../src/data/askTable';
  */
 
 export function resolvedChoiceEffects(state: GameState, ev: EventDef, choiceId: string): ResolvedEffects {
+  const ctx = condContextOf(state);
+  // 진로 카드(`pick`, SPEC-018 PL4)는 정의 선택지·효과가 없다 — 합격하면 플래그(`has_career`…)만 켜고 스탯·돈은 움직이지 않는다(`careerTrack.ts#jobPickOutcome`). 스탯 기대값·점수 전략에서는 효과 0이다
+  if (ev.pick !== undefined) return resolveEffects(undefined, undefined, ctx);
   const c = ev.choices?.find((x) => x.id === choiceId);
   if (c === undefined) throw new Error(`선택지가 없다: ${ev.id}/${choiceId}`);
-  const ctx = condContextOf(state);
   if (isAskRollChoice(ev, choiceId)) return resolveEffects(askOutcomeOf(state, ev, choiceId as AskChoiceId).effects, undefined, ctx);
   return resolveEffects(c.effects, c.bonuses, ctx);
 }

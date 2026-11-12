@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { JOB_TABLE } from '../src/data/jobs';
-import { educationMultiplier, economyContextOf, incomeOf, flightMult, jobMulOf, occMultOf, type GameState } from '../src/core';
+import { educationMultiplier, economyContextOf, incomeOf, flightMult, jobMulOf, occMultOf, wageLookMult, type GameState } from '../src/core';
 import { runToJobCard, playUntil } from './helpers/careerTest';
 import { lifeAt } from './helpers/personaTest';
 import { startLife } from '../scripts/simulateLib';
@@ -113,7 +113,7 @@ describe('경제 입력과 소득', () => {
     const birth = s.character!.birthYear;
     for (const age of [25, 33, 41]) {
       const ctx = economyContextOf({ ...s, age });
-      expect(ctx.jobMul).toBeCloseTo(jobMulOf(job, birth + age), 12);
+      expect(ctx.jobMul).toBeCloseTo(jobMulOf(job, birth + age, s.character!.looks), 12); // 3b: 외모 항(±3%)이 곱해진다
     }
   });
 
@@ -131,5 +131,53 @@ describe('경제 입력과 소득', () => {
     expect(doubled).toBeGreaterThan(base * 1.9);
     expect(doubled).toBeLessThan(base * 2.1);
     expect(incomeOf({ ...ctx, jobMul: 0.5 }, 0)).toBeLessThan(base);
+  });
+});
+
+describe('입사 뒤 임금의 외모 항: jobMul × (1 + 0.03·z) — 3b단계 (PL16, 설계 4B·5절 ④)', () => {
+  const LOOKS = [10, 35, 50, 65, 90];
+  const anchor = JOB_TABLE.byId.get('clerk-bank')!;
+
+  it('jobMulOf(job, year, looks) = 외모 없는 값 × (1 + 0.03·z), 3단계(z = 0)는 같다 — 상하한 안에서', () => {
+    const base = jobMulOf(anchor, 2015);
+    expect(base).toBeGreaterThan(0.6);
+    expect(base).toBeLessThan(2.3);
+    for (const looks of LOOKS) expect(jobMulOf(anchor, 2015, looks), `looks ${looks}`).toBeCloseTo(base * wageLookMult(looks), 12);
+    expect(jobMulOf(anchor, 2015, 50)).toBe(base);
+    expect(jobMulOf(anchor, 2015, 100) / jobMulOf(anchor, 2015, 0)).toBeCloseTo(1.03 / 0.97, 12);
+  });
+
+  it('최대 ±3%: 모든 직업 × 연도(1940~2100) × 외모 0~100에서 외모 없는 값의 0.97~1.03배 안이거나 상하한에 걸린다', () => {
+    for (const j of JOB_TABLE.jobs) {
+      for (let y = 1940; y <= 2100; y += 3) {
+        const base = jobMulOf(j, y);
+        for (const looks of [0, 30, 50, 70, 100]) {
+          const m = jobMulOf(j, y, looks);
+          expect(m, `${j.id}/${y}/${looks}`).toBeGreaterThanOrEqual(0.5);
+          expect(m, `${j.id}/${y}/${looks}`).toBeLessThanOrEqual(2.5);
+          expect(m / base, `${j.id}/${y}/${looks}`).toBeGreaterThanOrEqual(0.97 - 1e-12);
+          expect(m / base, `${j.id}/${y}/${looks}`).toBeLessThanOrEqual(1.03 + 1e-12);
+        }
+      }
+    }
+  });
+
+  it('상한 2.5·하한 0.5에서는 외모 항으로도 넘지 않는다(자른다)', () => {
+    expect(jobMulOf({ wage: [9, 9, 9, 9], eduRef: 0 }, 2025, 100)).toBe(2.5);
+    expect(jobMulOf({ wage: [0.01, 0.01, 0.01, 0.01], eduRef: 50 }, 2025, 0)).toBe(0.5);
+  });
+
+  it('경제 입력: hired 판의 jobMul은 그 판의 외모로 5단계가 1단계보다 높다(같은 직업·같은 해)', () => {
+    const s = playUntil(runToJobCard(3, 'field'), (x) => x.persona?.job?.id !== undefined);
+    const at = (looks: number): number => economyContextOf({ ...s, age: 35, character: { ...s.character!, looks } }).jobMul!;
+    expect(at(90)).toBeGreaterThan(at(10));
+    expect(at(90) / at(10)).toBeCloseTo(1.03 / 0.97, 6);
+    expect(at(50)).toBeCloseTo(jobMulOf(JOB_TABLE.byId.get(s.persona!.job!.id!)!, s.character!.birthYear + 35), 12);
+  });
+
+  it('persona가 없는 판은 jobMul이 없다 = 1 (외모 항도 없다)', () => {
+    const { persona: _p, ...bare } = lifeAt(2, 30);
+    void _p;
+    expect('jobMul' in economyContextOf({ ...(bare as GameState), character: { ...(bare as GameState).character!, looks: 100 } })).toBe(false);
   });
 });

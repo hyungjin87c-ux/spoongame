@@ -5,7 +5,7 @@ import eventsSrc from '../src/core/events.ts?raw';
 import statsSrc from '../src/core/stats.ts?raw';
 import timingSrc from '../src/core/timing.ts?raw';
 import historySrc from '../src/core/history.ts?raw';
-import { AUTO_TEMPERATURE, DEFAULT_SETTINGS, lifeParamsOf, PARENTING_STYLES, PARENT_WEALTHS, STAT_MAX, STAT_MIN, addDeltas, advanceUntilDecision, advanceYear, appendHistory, applyFlags, applyStatDeltas, autoChoiceWeights, autoResolveStep, clampStat, createEventPool, createInitialState, createRng, consumeNote, createSession, deathChance, dueNote, emptyCounts, economyContextOf, educationGrowthPerYear, initialAssets, isValidStat, loadGame, maxAgeOf, naturalDeltas, parseGame, playToEnd, resolveChoice, resolveChoiceStep, saveGame, serializeGame, sessionReducer, stepYear, totalCards, type Character, type EventPool, type GameState, type HistoryEntry, type StorageLike, type ProfileId } from '../src/core';
+import { AUTO_TEMPERATURE, DEFAULT_SETTINGS, lifeParamsOf, PARENTING_STYLES, PARENT_WEALTHS, STAT_MAX, STAT_MIN, addDeltas, advanceUntilDecision, advanceYear, appendHistory, applyFlags, applyStatDeltas, autoChoiceWeights, autoResolveStep, clampStat, createEventPool, createInitialState, createRng, consumeNote, createSession, deathChance, dueNote, emptyCounts, economyContextOf, educationGrowthPerYear, initialAssets, isValidStat, loadGame, maxAgeOf, naturalDeltas, parseGame, pickChoicesOf, playToEnd, resolveChoice, resolveChoiceStep, saveGame, serializeGame, sessionReducer, stepYear, totalCards, type Character, type EventPool, type GameState, type HistoryEntry, type StorageLike, type ProfileId } from '../src/core';
 import { validateTrackedEventFiles as validateEventFiles } from './helpers/withTracks';
 import { EVENT_POOL } from '../src/data/events';
 import { HISTORY_LIMITS } from '../src/data/lifeTable';
@@ -310,8 +310,12 @@ describe('선택지 이벤트: 대기 → 선택 → 효과·연표·플래그',
       for (let i = 0; i < 400 && s.phase === 'life'; i++) {
         s = advanceUntilDecision(s).state;
         if (s.phase !== 'life' || !s.pending) break;
-        if (last !== null) expect(s.pending.age - last, `seed ${seed}`).toBeGreaterThanOrEqual(2);
-        last = s.pending.age;
+        // 진로 카드(`pick`)는 2년 간격을 받지 않는 강제 슬롯이다(설계 4-1, 3a) — 일반 선택지 사이의 간격만 본다
+        const isPick = EVENT_POOL.byId.get(s.pending.eventId)?.pick !== undefined;
+        if (!isPick) {
+          if (last !== null) expect(s.pending.age - last, `seed ${seed}`).toBeGreaterThanOrEqual(2);
+          last = s.pending.age;
+        }
         s = resolveChoice(s, s.pending.key, s.pending.choiceIds[0]);
       }
     }
@@ -624,7 +628,10 @@ describe('자동 모드: 성향 기반 선택', () => {
   const decisionFor = (character: Partial<Character>, stats: Partial<GameState['stats']> = {}) => {
     for (let seed = 1; seed < 500; seed++) {
       const d = advanceUntilDecision(life(seed, 'alpha', character), pool).state;
-      if (d.pending) return { ...d, stats: { ...d.stats, ...stats } };
+      // 아래 가중치 식은 기질 보정(`autoPriorityMul`, SPEC-018 PL1)을 모르는 persona 없는 판의 식이다 — 켠 뒤(3b)에도 식 자체를 보도록 persona를 뗀다. 기질 보정은 `personaAuto.test.ts`가 본다
+      const { persona: _persona, ...bare } = d;
+      void _persona;
+      if (d.pending) return { ...(bare as GameState), stats: { ...d.stats, ...stats } };
     }
     throw new Error('결정을 찾지 못했다');
   };
@@ -682,7 +689,8 @@ describe('자동 모드: 성향 기반 선택', () => {
   function pickedId(before: GameState, after: GameState, p: EventPool): string {
     const label = [...after.history].reverse().find((h) => h.kind === 'choice')!.choice;
     const ev = p.byId.get(before.pending!.eventId)!;
-    const matches = ev.choices!.filter((c) => c.label === label && before.pending!.choiceIds.includes(c.id));
+    // 진로 카드(`pick`)는 정의 선택지가 없고 후보가 `pickChoicesOf`에서 나온다(SPEC-018 3b)
+    const matches = (ev.pick !== undefined ? pickChoicesOf(before, before.pending!, p) : ev.choices!).filter((c) => c.label === label && before.pending!.choiceIds.includes(c.id));
     expect(matches, `선택 문구 "${label}"`).toHaveLength(1);
     return matches[0].id;
   }

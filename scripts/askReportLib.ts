@@ -100,8 +100,9 @@ export function runAskLife(start: GameState, seed: number, strategy: AskStrategy
         let v: number;
         if (ev.ask !== undefined && cid !== 'endure') v = askBranchProbs(s, ev, cid as AskChoiceId).reduce((n, x) => n + x.prob * (ASK_EFFECTS[x.key].stats?.happiness ?? 0), 0);
         else {
-          const c = ev.choices!.find((x) => x.id === cid)!;
-          v = resolveEffects(c.effects, c.bonuses, condContextOf(s)).stats.happiness ?? 0;
+          // 진로 카드(`pick`, SPEC-018 PL4)는 정의 선택지·효과가 없다 — 행복은 움직이지 않는다
+          const c = ev.pick !== undefined ? undefined : ev.choices!.find((x) => x.id === cid)!;
+          v = c === undefined ? 0 : (resolveEffects(c.effects, c.bonuses, condContextOf(s)).stats.happiness ?? 0);
         }
         if (v > bestV + 1e-12) {
           bestV = v;

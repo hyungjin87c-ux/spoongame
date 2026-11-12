@@ -7,6 +7,7 @@ import {
   cardReadNeedMs,
   emptyCounts,
   estimatePlaySeconds,
+  eventPool,
   extraLineMsFor,
   holdDelayMs,
   holdMsFor,
@@ -415,7 +416,9 @@ describe('읽는 시간 모델 ↔ 실제 데이터 (완료 기준 4): 글자 �
     near(pool.narrativeBody, 52, 0.15);
   });
 
-  const lives = (era: Era) => measureMany(REP[era], 300, 'random', 'short30');
+  // 상수는 현재 게임(현재 이벤트 풀)의 읽는 양을 모형화한다 — 「지금」(R1 프로필)도 현재 풀로 잰다(SPEC-018 3b, 결정 후속 233). 얼린 R1 풀(`scripts/r1EventPool.ts`)은 R1 경제 스냅숏 항등용이고 진로 카드가 없어
+  // 상수의 출처인 `report:citations`(현재 풀)와 어긋났다(무작위 풀이 노출률 얼린 풀 0.429 · 현재 풀 0.282, 자동 0.304). 산업화·알파는 원래 현재 풀이다
+  const lives = (era: Era) => measureMany(REP[era], 300, 'random', 'short30', eventPool());
 
   it('뜬 카드(시대별 300판): 보인 선택지 수와 영향 줄 글자 수가 READ_MODEL과 ±10% 안이고 불변식 위반이 없다', () => {
     for (const era of ERAS as readonly Era[]) {

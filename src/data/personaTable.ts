@@ -67,6 +67,8 @@ export const PERSONA_TABLE = {
     relHireMin: [60],
     studyEndAges: [18, 22],
     jobLikeScale: [6],
+    /** 합격 소득 이전 [결정 후속 233]: 일반 직업 기본 · 가업 직업 · 지식 ≥ 70 · `early_work` · `skilled_trade` (만 원, 옛 `youth-first-job`의 stable·family·보너스 값) */
+    careerIncome: [800, 1600, 600, 400, 400],
   },
   TEMPER: {
     curious: [0],

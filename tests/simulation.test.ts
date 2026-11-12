@@ -23,6 +23,7 @@ import {
   type TickCounts,
   emptyCounts,
   totalCards,
+  pacingCards,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
 import { EVENT_FREQUENCY, HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
@@ -281,7 +282,8 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
           expect(m.middle, `${who} ${era} 중년`).toBeGreaterThanOrEqual(5);
           // 알파의 노년 평균은 하한 5.00에 닿아 있다(GM4 보고, judgeMargins.test.ts) — FM4b의 K2(동생 반응 카드 강제)가 측정을 4.997로 옮겼다. 이 이동은 잡음이 아니라 구조적이다(docs/data/family-remeasure.md 5절: 같은 시드 짝지은 차이 −0.06, 독립 줄에서도 같은 방향 −0.05)
           // 이고 알파의 모집단 평균은 하한 아래다(독립 줄 4.85). 하한(마스터 결정 M-3)은 그대로 두고 이 한 칸에만 허용 폭 0.05를 인정한다(보고) — 세대별 시간 모델(GM10)에서 알파 하한을 다시 정한다(docs/TODO.md)
-          const seniorAllowance = era === 'alpha' ? 0.05 : 0;
+          // SPEC-018 3b(결정 후속 233 D6): 맞춤 인생을 켜면 이 표본의 알파 노년이 4.997 → 4.91로 내려가 허용 폭을 0.05 → 0.10으로 넓혔다(judgeMargins.test.ts의 알파 한계와 같은 사유) — 굶긴 상태 검출(아래 옛 페이싱 4.54)과는 여전히 0.36 넘게 떨어져 있다
+          const seniorAllowance = era === 'alpha' ? 0.1 : 0;
           expect(m.senior + seniorAllowance, `${who} ${era} 노년`).toBeGreaterThanOrEqual(SENIOR_CHOICE_MEAN_MIN[timingEraOfProfile(era)]);
           const total = STAGES.reduce((a, s) => a + m[s], 0);
           for (const s of STAGES) expect(m[s] / total, `${who} ${era} ${s}`).toBeLessThan(0.4);
@@ -386,7 +388,7 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
             for (const l of longLives()[era]) {
               expect(l.final.phase, `${era} 시드 ${l.seed}`).toBe('ending');
               expect(l.final.lifeLength).toBe('long60');
-              expect(totalCards(l.counts)).toBeLessThanOrEqual(hard);
+              expect(pacingCards(l.counts)).toBeLessThanOrEqual(hard);
             }
           }
         });
@@ -472,9 +474,11 @@ describe('한 판에서 같은 문구가 되풀이되지 않는다 (QA 사용감
       for (let i = 1; i <= 150; i++) {
         const seed = i * 7919 + 13;
         const final = playToEnd(startLife(seed, era), chooserFor('random', seed)).state;
-        const ids = final.history.filter((h) => h.eventId !== undefined && !h.eventId.startsWith('fam-')).map((h) => h.eventId!); // 가족 변화 줄(fam-…)은 줄 종류 이름이라 여러 번 나온다
+        // 진로 카드(`pick`, SPEC-018 PL4 — 3b에서 켠 판에 나온다)는 지원이 불합격이면 같은 카드가 다음 해 다시 뜨는 반복 사건이다(진로 트랙 상태가 카드를 정한다) — 같은 문구 반복 점검에서 뺀다
+        const isPick = (id: string | undefined): boolean => id !== undefined && EVENT_POOL.byId.get(id)?.pick !== undefined;
+        const ids = final.history.filter((h) => h.eventId !== undefined && !h.eventId.startsWith('fam-') && !isPick(h.eventId)).map((h) => h.eventId!); // 가족 변화 줄(fam-…)은 줄 종류 이름이라 여러 번 나온다
         expect(new Set(ids).size, `${era} seed ${seed}: 이벤트 id 중복`).toBe(ids.length);
-        const texts = final.history.filter((h) => h.kind === 'event' || h.kind === 'choice').map((h) => `${h.title}|${h.text}`);
+        const texts = final.history.filter((h) => (h.kind === 'event' || h.kind === 'choice') && !isPick(h.eventId)).map((h) => `${h.title}|${h.text}`);
         expect(new Set(texts).size, `${era} seed ${seed}: 같은 문구 반복`).toBe(texts.length);
       }
     }
@@ -524,11 +528,15 @@ describe('외모 구간별 평생 조우율 (R-044): 외모가 연애·결혼·�
     expect(high.marriedPct - low.marriedPct).toBeGreaterThanOrEqual(6);
   });
 
-  it('사업 이벤트를 만나는 비율도 외모가 높을수록 높다 (높음-낮음 15%p 이상)', () => {
-    const [low, mid, high] = rowsOf();
-    expect(low.businessPct).toBeLessThan(mid.businessPct);
-    expect(mid.businessPct).toBeLessThan(high.businessPct);
-    expect(high.businessPct - low.businessPct).toBeGreaterThanOrEqual(15);
+  // 3b(SPEC-018 PL16, 설계 4B 사업 제안 외모 가중 제거 k = 0): 외모가 사업 제안 빈도를 바꾼다는 근거를 찾지 못해 `youth-startup`·`middle-business`의 외모 가중·소득 보너스를 뺐다 — 옛 「외모가 높을수록 높다」는 의도적으로 사라졌다.
+  // 대신 직접 반영이 없음을 본다: 외모 modifiers가 없고(`looksEffect.test.ts`가 같은 상태의 가중이 단계 사이에 같음을 본다) 세 구간 모두 사업 이벤트를 만난다. 구간 사이의 작은 차이는 연애·결혼 경로의 간접 효과(같은 시드의 난수 흐름)다.
+  it('사업 이벤트는 외모의 직접 가중이 없다(k = 0): 외모 modifiers·보너스가 없고, 세 구간 모두 사업 이벤트를 만난다', () => {
+    for (const id of ['youth-startup', 'middle-business']) {
+      const ev = EVENT_POOL.byId.get(id)!;
+      expect(JSON.stringify(ev.modifiers ?? []), id).not.toContain('"looks"');
+      expect(JSON.stringify(ev.choices ?? []), id).not.toContain('"looks"');
+    }
+    for (const r of rowsOf()) expect(r.businessPct, `외모 ${r.looks}`).toBeGreaterThanOrEqual(50);
   });
 
   it('외모가 낮아도 연애·결혼 이벤트를 만날 길은 막혀 있지 않다 (낮음 구간도 연애 70% 이상, 결혼 이벤트 30% 이상)', () => {

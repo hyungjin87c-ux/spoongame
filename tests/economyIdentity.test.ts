@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { r1Runner } from '../scripts/r1Runner';
 import { R1_SNAPSHOT_PARAMS, buildR1Snapshot, type R1Snapshot } from '../scripts/r1SnapshotLib';
 import snapshotJson from './fixtures/r1-economy-snapshot.json';
 import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
+
+// 얼린 스냅숏은 맞춤 인생 이전의 인생이다 — 항등 시험의 뜻(연도 축 경제 배선이 값을 바꾸지 않는다)을 지키려고 「persona 없는 판 = 옛 저장·스위치를 끈 판」 경로로 고정한다(SPEC-018 3b에서 출하 값을 켠 뒤에도).
+// 켠 판의 경제는 `economyBalance`·`check:economy`가 본다(켠 상태 측정은 dev 로그 3b단계 절)
+vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: false }));
 
 /**
  * R1 항등 시험 (SPEC-004 EY17 ② — 마스터 결정 N21·N27): 연도 축 경제 배선(`economyFactors`의 `forceR1`) 뒤에도
@@ -11,6 +15,7 @@ import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
  * 이 시험은 이벤트 변환(MG2)·신규 이벤트를 넣기 **전에** 통과시킨다(순서 제약, N27).
  * **SPEC-011 AK10(2026-11-09) 갱신 — `reportTime` 블록만**: 읽는 시간 모델 상수 `READ_MODEL.citeExposure·insightExposure`의 「지금」 값을 어린 시절 조르기(인용 없는 본인 카드)에 맞춰 재측정해 내렸고(`src/data/timingTable.ts`), 판 시간 모델은 그 상수를 읽으므로
  * 스냅숏의 `reportTime`(시간 요약 — 판 시간 분·상수 최솟값)만 현재 코드로 다시 뽑았다. 경제 항(무작위 6000판·자동 2000판·분포표 4000판)은 한 글자도 바뀌지 않았다 — 이 시험이 보는 항등(경제 배선)은 그대로다.
+ * **SPEC-018 3b 갱신(2026-11-12, 결정 후속 233) — `reportTime` 블록만**: 읽는 시간 모델 상수 `READ_MODEL`의 `chars`(visibleLabels·impactPerChoice·title)·`citeExposure`·`insightExposure` 「지금」 값을 진로 카드 재측정으로 바꿔 읽는 시간 추정(low·median·high·upper·fastMin·constantMin)이 달라졌다 — 표본·재산·가드·분포표는 그대로 같다.
  */
 
 const frozen = snapshotJson as unknown as R1Snapshot;

@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { R1_PRESENT, autoResolveStep, stepYear, type GameState, type ProfileId } from '../src/core';
 import { poolOf, startLife } from '../scripts/simulateLib';
+
+// 이 스냅샷은 맞춤 인생 이전의 난수 흐름을 얼린 것이다 — 「persona 없는 판 = 옛 저장·스위치를 끈 판」 경로로 고정한다(SPEC-018 3b에서 출하 값을 켠 뒤에도). 켠 판의 난수 흐름은 persona 시험들이 본다
+vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: false }));
 
 /**
  * 난수 흐름 스냅샷 (REV-003-M5-1 관찰 6, SPEC-003 「20세 전 인생은 개편 전과 같은 난수 흐름」): 고정 시드 12판(세 시대 × 시드 4개)의 출생 결과와 19세가 된 순간의 상태를 글자 그대로 얼려 둔다.
@@ -34,6 +37,11 @@ import { poolOf, startLife } from '../scripts/simulateLib';
  * 사유: 조르기가 대신한 부모·흘러감 카드의 몫을 되돌리려 남은 카드의 선택지 효과 +1을 했다(영유아 카드의 양의 관계·지식 값, 학창 카드의 관계 값 — 설계 문서 `docs/data/ask-model.md` 11절 사다리 4번, 21개 사건 50곳). 고르는 선택지·난수 소비는 효과 점수에 따라
  * 부모 확률이 조금 달라 일부 판에서 같은 난수로 다른 선택지가 뽑힐 수 있으나 이 13판에서는 그런 판이 없었다(연표·플래그가 같다). 값은 위와 같은 방식(`startLife` → 19세까지 자동 진행, 풀은 `poolOf(프로필)`)으로 다시 뽑았다.
  */
+/**
+ * **SPEC-018 3b 갱신(2026-11-12, PL16 외모 표준 표 — 중립 판에도 적용 F11)**: 산업화 시드 11의 `at19` 하나가 달라졌다(집안 살림 −1110 → −510, 지식 60 → 59, 행복 43 → 44, 플래그 8 → 9 — `rngState`·연표 줄 수·본 이벤트 수·건강·관계는 그대로).
+ * 사유: 이 판의 외모는 40(2단계)이라 첫사랑(`school-first-love`)의 가중이 옛 계단(×1)에서 표준 표 `LOOKW.romance`의 2단계 ×0.65로 바뀌어 같은 난수로 같은 연표 길이에 다른 사건이 뽑혔다 — 의도한 변경이다(설계 4B 예외 목록). 나머지 16판은 그대로다.
+ * 이 시험은 맞춤 인생 스위치를 끈 경로로 고정한다(위 `vi.mock`).
+ */
 interface Snapshot {
   profile: ProfileId;
   seed: number;
@@ -46,7 +54,7 @@ const SNAPSHOTS: Snapshot[] = [
     { profile: 'r1-present', seed: 222, birth: {name:'조하린',gender:'female',birthYear:2026,parentWealth:2,parenting:'strict',looks:13,stats:{education:6,health:60,happiness:46,relationships:49},rngState:4167085124,birthOrder:1,region:'충남'}, at19: {age:19,rngState:4095567627,history:18,familyFund:-750,stats:{education:70,health:59,happiness:47,relationships:59},flags:4,seen:16} },
     { profile: 'r1-present', seed: 3333, birth: {name:'박시윤',gender:'male',birthYear:2026,parentWealth:1,parenting:'strict',looks:66,stats:{education:5,health:79,happiness:36,relationships:44},rngState:4167088235,birthOrder:1,region:'대전'}, at19: {age:19,rngState:2831899398,history:19,familyFund:1350,stats:{education:44,health:79,happiness:39,relationships:55},flags:5,seen:17} },
     { profile: 'r1-present', seed: 44444, birth: {name:'이도현',gender:'male',birthYear:2026,parentWealth:2,parenting:'free',looks:52,stats:{education:4,health:69,happiness:56,relationships:56},rngState:4167129346,birthOrder:1,region:'세종'}, at19: {age:19,rngState:1632210366,history:18,familyFund:300,stats:{education:41,health:72,happiness:63,relationships:68},flags:4,seen:16} },
-    { profile: 'industrial', seed: 11, birth: {name:'박옥순',gender:'female',birthYear:1947,parentWealth:3,parenting:'strict',looks:40,stats:{education:8,health:77,happiness:44,relationships:50},rngState:4167084913,birthOrder:2,region:'강원'}, at19: {age:19,rngState:368494593,history:26,familyFund:-1110,stats:{education:60,health:81,happiness:43,relationships:67},flags:8,seen:19} },
+    { profile: 'industrial', seed: 11, birth: {name:'박옥순',gender:'female',birthYear:1947,parentWealth:3,parenting:'strict',looks:40,stats:{education:8,health:77,happiness:44,relationships:50},rngState:4167084913,birthOrder:2,region:'강원'}, at19: {age:19,rngState:368494593,history:26,familyFund:-510,stats:{education:59,health:81,happiness:44,relationships:67},flags:9,seen:19} },
     { profile: 'industrial', seed: 222, birth: {name:'조정자',gender:'female',birthYear:1943,parentWealth:2,parenting:'strict',looks:13,stats:{education:6,health:60,happiness:46,relationships:49},rngState:4167085124,birthOrder:3,region:'경북'}, at19: {age:19,rngState:4095567627,history:18,familyFund:-550,stats:{education:59,health:62,happiness:49,relationships:55},flags:5,seen:15} },
     { profile: 'industrial', seed: 3333, birth: {name:'박학수',gender:'male',birthYear:1943,parentWealth:1,parenting:'strict',looks:66,stats:{education:5,health:79,happiness:36,relationships:44},rngState:4167088235,birthOrder:2,region:'충남'}, at19: {age:19,rngState:2831899398,history:25,familyFund:450,stats:{education:39,health:80,happiness:46,relationships:60},flags:6,seen:17} },
     { profile: 'industrial', seed: 44444, birth: {name:'이정수',gender:'male',birthYear:1948,parentWealth:2,parenting:'helicopter',looks:52,stats:{education:7,health:69,happiness:46,relationships:58},rngState:4167129346,birthOrder:2,region:'전북'}, at19: {age:19,rngState:1632210366,history:23,familyFund:200,stats:{education:56,health:74,happiness:61,relationships:66},flags:8,seen:16} },

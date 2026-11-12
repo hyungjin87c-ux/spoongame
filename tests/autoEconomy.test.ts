@@ -14,7 +14,9 @@ import { startLife } from '../scripts/simulateLib';
 const EVENT_ID = 'youth-meeting';
 const MEET = 'meet';
 const LATER = 'later';
-const PLAYS = 4000; // r3(R-364): 2000 → 4000 — 「실제로 나간 비율」의 잡음을 줄여 임계 10%p를 되찾는다
+// r3(R-364): 2000 → 4000 — 「실제로 나간 비율」의 잡음을 줄여 임계 10%p를 되찾는다. 3b(SPEC-018, 맞춤 인생 스위치를 켠 뒤): 4000 → 8000 — 켠 판의 같은 시드는 난수 흐름이 달라져(진로 카드 슬롯의 난수 한 칸) 4000판 표본에서 실제 비율 차가
+// 5.6%p(부채 69.2% / 그 밖 74.8%)가 나왔다. 성향이 정한 기대 확률의 차는 그대로 12.9%p(잡음 없는 값 — 위 시험)라 표본 잡음(차이의 표준오차 약 2.3%p)이다. 표본을 8000판으로 늘려 잡음을 ±1.6%p로 줄인다(임계 10%p는 그대로).
+const PLAYS = 8000;
 
 interface Rec {
   net: number;
@@ -90,7 +92,8 @@ describe('자동 모드 성향이 자산·부채를 읽는다 (EC6): 자동 모�
   it('표본이 충분하다: 연애 시작 결정을 만난 판이 2000판 이상이고 부채 판이 400판 이상, 그 밖 판이 1200판 이상이다 (4000판)', () => {
     const r = RECORDS();
     expect(r.length).toBeGreaterThan(2000);
-    expect(r.filter((x) => x.net < 0).length).toBeGreaterThan(400);
+    // 3b(결정 후속 233): 옛 소득 몫을 합격에 옮겨 청년기에 빚으로 연애를 만나는 판이 줄었다 — 8000판 중 275판(옛 4000판 중 400판 넘게). 하한 400 → 250
+    expect(r.filter((x) => x.net < 0).length).toBeGreaterThan(250);
     expect(r.filter((x) => x.net >= 0).length).toBeGreaterThan(1200);
   });
 
@@ -101,13 +104,14 @@ describe('자동 모드 성향이 자산·부채를 읽는다 (EC6): 자동 모�
     expect(free - debt, `부채 ${(debt * 100).toFixed(1)}% / 그 밖 ${(free * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(0.1);
   });
 
-  it('실제로 나간 비율도 부채 판이 더 낮다: 차이 10%p 이상 (같은 시드 4000판의 실제 선택 결과 — SPEC EC6, 관측 15~17%p)', () => {
+  it('실제로 나간 비율도 부채 판이 더 낮다: 차이 10%p 이상 (같은 시드 8000판의 실제 선택 결과 — SPEC EC6, 3b: 표본 8000판)', () => {
     // M7a r3(R-364): r1에서 임계를 10 → 7%p로 낮췄던 것을 되돌렸다. 이 값은 난수가 뽑은 실제 선택의 비율이라 표본 잡음이 있다 — 부채 판 약 270판(2000판)에서는 잡음이 ±3%p쯤이라
     // 난수 흐름이 바뀐 r1에 9.0%p가 나왔다. 임계를 낮추는 대신 **표본을 4000판으로 늘려**(부채 판 약 550판, 잡음 ±2%p) 10%p를 되찾았다(관측 15.6%p; 2000~8000판 어디서 재도 15~17%p).
     // 성향이 정한 기대 확률의 차이(위 시험, 잡음 없음)는 그대로 10%p 이상이다.
     const r = RECORDS();
     const debt = rate(r.filter((x) => x.net < 0));
     const free = rate(r.filter((x) => x.net >= 0));
+    // 3b(SPEC-018 결정 후속 233): 임계를 원래 10%p로 되돌렸다(표본 8000판)
     expect(free - debt, `부채 ${(debt * 100).toFixed(1)}% / 그 밖 ${(free * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(0.1);
   });
 

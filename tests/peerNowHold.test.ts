@@ -9,6 +9,7 @@ import {
   PEER_STATUS_LABEL,
   peerStatusSeries,
   peersNow,
+  resolveChoice,
   stepYear,
   type ParentWealth,
   type PeerStatus,
@@ -185,7 +186,8 @@ describe('한 해짜리 끼임 0: 새 상태는 최소 2년 유지한다 (QA-003
           peersNow(g).forEach((p, k) => {
             if (labels[k].length === g.age) labels[k].push(p.status); // 나이마다 한 번만
           });
-          g = g.pending ? { ...g, pending: null } : stepYear(g).state;
+          // 대기 카드는 첫 선택지로 풀어 나이를 올린다 — 카드를 풀지 않고 비우기만 하면 켠 판의 진로 카드(강제 슬롯, 2년 간격을 받지 않는다)가 같은 나이에 다시 떠 나이가 오르지 않는다(SPEC-018 3b)
+          g = g.pending ? resolveChoice(g, g.pending.key, g.pending.choiceIds[0]) : stepYear(g).state;
         }
         labels.forEach((series, k) => {
           seen += series.length;

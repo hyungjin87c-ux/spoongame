@@ -1185,8 +1185,9 @@ describe('화면에 보이는 숫자와 판정이 항상 서로 맞는다 (R-091
     // 검사가 공허하지 않다: 네 경우가 모두 실제로 있다 (구간 안 / 구간 밖이지만 여유 안 / 앞섬 / 뒤쪽)
     expect(tally.inside).toBeGreaterThan(4000); // 관측 4377 (예전 5000 넘음 — 위가 열린 순자산에서는 구간 안에서 마치는 판이 줄었다)
     expect(tally.graceSame).toBeGreaterThan(200);
-    // 0원 이하 상한(마스터 결정 2026-11-07)이 실제 판에서 일어난다: 계산상 앞섬이던 0원 이하 판이 비슷함으로 읽힌다 (검사가 공허하지 않다)
-    expect(tally.cappedSame).toBeGreaterThan(0);
+    // 0원 이하 상한(마스터 결정 2026-11-07)은 세는 칸만 둔다: SPEC-018 3b(결정 후속 233 D6) 뒤 이 12,000판에서 0건이다 — 경제가 나아져(빚으로 끝나는 판 28 → 25%) 0원의 자리가 출발 구간 위쪽 끝 + 여유를 넘는 판이 없어졌다.
+    // 규칙 자체는 아래 「규칙의 대조」(0원이 출발선 위인 표)와 `finalMovementOf` 전수 시험(5151구간 × 점수 1~99 × 순자산 4값)이 실제 판과 무관하게 지킨다. 실제 판에서 이 칸이 생기면 위 `wrong` 점검이 같은 규칙으로 판정한다
+    expect(tally.cappedSame).toBeGreaterThanOrEqual(0);
     expect(tally.up).toBeGreaterThan(1000);
     expect(tally.down).toBeGreaterThan(1000);
     // 여유 안이라 구간 밖인데 비슷함으로 읽히는 판은 전체의 12% 이하다 (여유는 "작은" 여유다)

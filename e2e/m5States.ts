@@ -97,8 +97,10 @@ export async function findFarewellState(page: Page, minWealth = 4): Promise<Game
 export async function findPendingEvent(page: Page, eventId: string, opts: { era?: GenerationId; tier?: number; seedFrom?: number; seedTo?: number } = {}): Promise<GameState> {
   const found = await evalCore<GameState | null>(
     page,
-    `for (let seed = arg.from; seed < arg.to; seed++) {
+    `const retired = core.eventPool().byId.get(arg.id)?.retiredWith !== undefined; // 맞춤 인생이 켜진 판에서 거둬진 옛 사건(youth-first-job)은 옛 저장(persona 없는 판)에서 찾는다 (SPEC-018 3b)
+     for (let seed = arg.from; seed < arg.to; seed++) {
        let s = core.enterLife(core.enterBirth(core.beginBirth(core.createInitialState(seed), arg.era)));
+       if (retired) { const { persona, ...rest } = s; s = rest; }
        if (arg.tier !== null && s.character.parentWealth !== arg.tier) continue;
        for (let guard = 0; guard < 80 && s.phase === 'life'; guard++) {
          s = core.advanceUntilDecision(s).state;

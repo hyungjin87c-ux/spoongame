@@ -141,7 +141,9 @@ export function lifeModeOf(lifeLength: LifeLength | null | undefined): LifeLengt
  * 사람의 r은 사람 실측이 정한다(LM7) — 이 값은 출발점이고 실측 뒤 `median`을 보정한다(content-M8.md 6-3절).
  */
 export const READ_MODEL = {
-  chars: { title: 8.1, body: 52.0, label: 12.4, visibleLabels: 2.7, impactPerChoice: 9.3, impactWeight: 0.5, ask: 10 },
+  // SPEC-018 3b 재측정 2026-11-12(결정 후속 233): 진로 카드(판당 약 2.5장 — 후보 이름 3개, 영향 줄·인용 없음)가 더해졌다. 측정 도구가 진로 카드의 보인 선택지를 `pickChoicesOf`로 풀고(옛 측정은 0개로 셌다) 「지금」도 현재 풀로 잰
+  // 무작위 300판(산업화 · 지금(R1 프로필, 현재 풀) · 알파): visibleLabels 2.771 · 2.784 · 2.781(옛 2.7), impactPerChoice 7.254 · 7.261 · 7.272(옛 9.3 — 영향 줄 없는 후보 3개), title 8.722 · 8.911 · 8.914(옛 8.1). PL6 직업 카드 문구 뒤 다시 잰다
+  chars: { title: 8.85, body: 52.0, label: 12.4, visibleLabels: 2.78, impactPerChoice: 7.26, impactWeight: 0.5, ask: 10 },
   cpm: { low: 700, median: 600, high: 500 },
   chooseSec: { low: 5, median: 10, high: 15 },
   citeSec: { low: 7, median: 10, high: 13 },
@@ -149,7 +151,8 @@ export const READ_MODEL = {
    * **SPEC-011 AK10 재측정 (2026-11-09)**: 어린 시절 조르기 카드(인용 없음 D, 판당 약 1.5장)가 본인 카드에 더해져 「지금」(시험 전용 R1 프로필) 노출률이 0.51 → **0.45**(측정 0.448, `report:citations` 자동 성향 1000판)로 내려갔다 —
    * 시험(`tests/timeModel.test.ts`)이 측정과 ±5%p를 지키는 유일한 시대다. 「다가올」(대표 알파 세대)도 같은 사유로 0.47 → **0.44**(측정 0.438)로 함께 내렸다 — 모델이 「다가올 ≤ 지금」을 지키려면 같은 방향으로 움직여야 한다(`readSecFor`). 「지난」은 이 시험의 측정 대상이 아니고 조르기와 무관한 옛 드리프트(대표 산업화 측정 0.153)라 그대로 두었다.
    */
-  citeExposure: { past: 0.1, present: 0.45, future: 0.44 } as Readonly<Record<Era, number>>,
+    // SPEC-018 3b 재측정 2026-11-12: 진로 카드 판당 약 2.4장, 인용·풀이 없음 — 「지금」 0.45 → 0.38(측정 0.383) · 「다가올」 0.44 → 0.37(같은 방향으로 함께 — `다가올 ≤ 지금`). PL6 직업 카드 문구 뒤 다시 잰다
+  citeExposure: { past: 0.1, present: 0.38, future: 0.37 } as Readonly<Record<Era, number>>,
   /**
    * SPEC-005 r4 (v0.2.1) — 읽는 줄이 둘 늘었다. ① `chars.ask`: 선택지 앞의 공통 질문 한 줄(UX10) 「어떻게 하겠습니까?」 = 10자(공백·물음표 포함, `DASH_TEXT.choiceAsk`와 같다 — tests/timeModel.test.ts). 본인이 고르는 카드마다 한 줄씩 읽는다.
    * ② 인용 박스 안 풀이 한 줄(UX14): `insight.chars` = 확정 32문장의 평균 글자 수에 가까운 51.1(실제 평균은 합 1,637 ÷ 32 = 51.16이고 copy.md 15-6은 소수 첫째 자리 반올림 51.2로 적는다 — 상수는 51.1을 그대로 두고 tests/timeModel.test.ts가 ±1% 안인지 대조한다, 차이 0.11%. `data/citationInsights.ts`), `insightExposure` = 본인이 고르는 카드 가운데 풀이 줄이 보인 몫 — 인용이 보이는 카드의 대부분이다
@@ -157,8 +160,8 @@ export const READ_MODEL = {
    * 풀이는 요약·출처와 달리 한 문장 전부를 읽는 글이라 글자 수 ÷ 분당 글자 수만 더한다(인용 읽기의 「숫자 해석 1.5초」 같은 가산 없음). 마스터 결정 M24(2026-10-26, 형진 님 「플레이시간은 몰입의 결과」)로 이 두 줄이 더하는 약 1분을 판정 구간 상단을 올려 받는다 — `LIFE_LENGTH_MODES.short30.timeMin` 주석.
    */
   insight: { chars: 51.1 },
-  /** SPEC-011 AK10 재측정(2026-11-09): 「지금」 0.44 → 0.38(측정 0.376 — 조르기 카드는 인용·풀이가 없다) · 「다가올」 0.41 → 0.39(측정 0.389). 위 `citeExposure`와 같은 사유, 풀이 노출률은 인용 노출률 이하여야 한다 */
-  insightExposure: { past: 0.09, present: 0.38, future: 0.39 } as Readonly<Record<Era, number>>,
+  /** SPEC-018 3b 재측정 2026-11-12: 진로 카드 판당 약 2.4장, 인용·풀이 없음 — 「지금」 0.38 → 0.30(측정: 자동 성향 1000판 0.304 · 무작위 300판(현재 풀) 0.282) · 「다가올」 0.39 → 0.31(같은 방향). PL6 직업 카드 문구 뒤 다시 잰다. 이전: SPEC-011 AK10 재측정(2026-11-09): 「지금」 0.44 → 0.38(측정 0.376 — 조르기 카드는 인용·풀이가 없다) · 「다가올」 0.41 → 0.39(측정 0.389). 위 `citeExposure`와 같은 사유, 풀이 노출률은 인용 노출률 이하여야 한다 */
+  insightExposure: { past: 0.09, present: 0.3, future: 0.31 } as Readonly<Record<Era, number>>,
   upperFactor: 1.2,
 };
 

@@ -60,10 +60,10 @@ function render(game: GameState, o: Opts = {}): string {
   );
 }
 
-/** 선택지 없이 나이만 올린다(화면 시험용 — 효과는 건너뛴다) */
+/** 선택지를 첫 선택지로 풀며 나이만 올린다(화면 시험용). 대기 카드는 첫 선택지로 풀어 나이를 올린다 — 카드를 풀지 않고 비우기만 하면 켠 판의 진로 카드(강제 슬롯, 2년 간격을 받지 않는다)가 같은 나이에 다시 떠 나이가 오르지 않는다(SPEC-018 3b) */
 function ageTo(g: GameState, age: number): GameState {
   let s = g;
-  for (let i = 0; i < 300 && s.phase === 'life' && s.age < age; i++) s = s.pending ? { ...s, pending: null } : stepYear(s).state;
+  for (let i = 0; i < 300 && s.phase === 'life' && s.age < age; i++) s = s.pending ? resolveChoice(s, s.pending.key, s.pending.choiceIds[0]) : stepYear(s).state;
   return s;
 }
 /** 선택지가 떠 있는 상태를 찾는다 */

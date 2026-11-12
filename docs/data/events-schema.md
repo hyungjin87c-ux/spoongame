@@ -325,7 +325,7 @@ npm run sim:infant            # 영유아(0~7세) 지표 — 빈 해 평균·최
 - **문장 변주** `textVariants`(사건 본문)·`resultVariants`(선택지 결과): `[{ when, text }]` 최대 3개, 먼저 맞는 것이 이긴다, **글만** 바뀐다. 변주도 본문·결과와 같은 문구 규칙(합쇼체·길이·시대어·느낌표·이모지)을 받는다. `when`이 사건 조건과 양립하지 않거나 앞의 변주와 같으면 lint가 막는다.
 - **격자 하한**: `temper`·`apt`·`job`·`tailored`를 쓰는 선택지 사건은 「조건 없는 선택지 ≥ 2」 대신 **수저 1~5 × 적성 단계 × 기질 6 × 연도 경계(−1·0·+1) × 맞춤 인생 없는 중립**의 모든 칸에서 보이는 선택지가 2~3개여야 한다(`eventLint#visibleChoiceGrid`). 공통 1개 + 수저 형편별 고유 2개씩(정의 5개)이 한 꼴이다.
 - **합성 가중 범위**: `weight × modifiers`(외모·시대 채널 포함)의 모든 조합 곱의 최악·최선이 [0.01, 10000] 안이어야 한다(`eventLint#eventWeightBounds`).
-- 외모(`looks`)를 조건에 쓰는 lint는 3단계(PL16)가 더한다.
+- 외모(`looks`) 가림 금지 lint(3b단계 PL16): 사건 `conditions`·선택지 `requires`에 `looks`를 쓰면 빌드가 막힌다(허용 목록 `youth-approached` 한 곳, `eventLint#looksGateProblems`). 직업 `when`은 `jobTableProblems`가 막는다. `modifiers`·`bonuses`·변주 `when`은 허용.
 
 ## 14. 진로 트랙 카드 필드 (SPEC-018 PL4 — 설계 `docs/data/persona-model.md` 4·4-1·6-4절)
 
@@ -333,3 +333,11 @@ npm run sim:infant            # 영유아(0~7세) 지표 — 빈 해 평균·최
 - **`retiredWith: "persona"`**: 대체된 옛 사건 표지 — 맞춤 인생이 켜진 판에서는 일어나지 않는다(`youth-first-job` — 진로 트랙이 같은 플래그를 켠다). `persona`가 없는 판(구형 저장·스위치 끔)은 동작이 같다. 선택지 이벤트에만 쓴다.
 - 직업 표(`src/data/jobs.json`)는 이벤트 파일이 아니다 — 지연 로딩 덩어리(`GameData.jobs`)이고 형태는 `core/jobs.ts#jobTableProblems`(`check:events`가 부른다)가 본다. 파서가 읽는 id·분야·연도 색인은 코어 `core/jobIndex.ts`에 따로 있고 본 표와의 일치를 `check:events`·`tests/jobTable.test.ts`가 잠근다. 직업 id는 One-way(삭제·재사용 금지).
 - 시험: `tests/careerTrack.test.ts` · `tests/pickChoices.test.tsx` · `tests/jobTable.test.ts` · `tests/jobWage.test.ts` · `tests/jobApply.test.ts` · `tests/eraTables.test.ts` · `tests/storagePersona.test.ts`(직업 카드 대기 절).
+
+## 15. 외모 채널 `looksChannel` (SPEC-018 PL16 — 설계 `docs/data/persona-model.md` 4B·4C-1절)
+
+- **`looksChannel: "romance" | "friend"`**: 사건의 가중에 표준 표 `LOOKW[채널][외모 단계]`(연애 0.30 / 0.65 / 1.0 / 1.35 / 1.70 · 교우 0.85 / 0.925 / 1.0 / 1.075 / 1.15)를 `modifiers` 곱 뒤에 곱한다(`eventWeight`). 값은 코드 표 `personaTable.ts`(= 설계 9절 블록)만 읽고 사건 데이터에는 쓰지 않는다. 시대 배율 `LOOKERA`는 맞춤 인생이 있는 판(스위치 켬 + `persona`)에서만 곱한다(1995년 이전 연애 ×0.8).
+- 표준 표는 `persona`가 없는 옛 저장·스위치를 끈 판에도 적용한다(밸런스 변경, F11). 외모는 가중에만 닿고 자격·선택지를 막지 않는다. `pick` 사건에는 쓰지 않는다.
+- 쓰는 사건(설계 4B 예외 목록): `school-first-love` · `youth-meeting` · `youth-meeting-again` · `youth-matchmaker` · `youth-workplace-romance`(연애 5). 사업 제안 2곳(`youth-startup` · `middle-business`)은 외모 가중·소득 보너스를 뺐고 채널이 없다. 결혼 결정 4곳은 종전 외모 `modifiers` 그대로다.
+- 합성 가중 범위 검사는 채널의 최악·최선 곱(`looksChannelBounds`)을 곱해 본다.
+- 시험: `tests/looksEffect.test.ts` · `tests/personaCondition.test.ts`(골든 허용 목록) · `tests/weightBounds.test.ts` · `tests/eventLintPersona.test.ts`.

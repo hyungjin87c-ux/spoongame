@@ -3,6 +3,7 @@ import { educationMultiplier } from './economy';
 import type { Condition, YearRange } from './events';
 import { inYearRange } from './events';
 import type { AptKey } from './personaKinds';
+import { wageLookMult } from './looks';
 import type { Occupation } from './types';
 
 /**
@@ -122,10 +123,14 @@ export function occMultOf(job: Pick<JobDef, 'wage' | 'wageKind' | 'sizeMul'>, ye
   return base * (job.sizeMul ?? 1);
 }
 
-/** 소득 배수 `jobMul` (5절): `clamp((occMult ÷ 대표 학력 배수)^k, lo, hi)`, 지수 k = 0.8 · 범위 0.5~2.5 */
-export function jobMulOf(job: Pick<JobDef, 'wage' | 'wageKind' | 'sizeMul' | 'eduRef'>, year: number): number {
+/**
+ * 소득 배수 `jobMul` (5절): `clamp((occMult ÷ 대표 학력 배수)^k × 외모 항, lo, hi)`, 지수 k = 0.8 · 범위 0.5~2.5.
+ * **외모 항(④, PL16)**: `looks`를 주면 입사 뒤 임금에 `× (1 + 0.03·z)` 한 항을 곱하고 상하한 안에서 자른다(없으면 1 — 자동 선택의 소득 호감처럼 사람과 무관한 비교).
+ */
+export function jobMulOf(job: Pick<JobDef, 'wage' | 'wageKind' | 'sizeMul' | 'eduRef'>, year: number, looks?: number): number {
   const [lo, hi] = T.MODEL.jobMulRange;
-  return clamp(Math.pow(occMultOf(job, year) / educationMultiplier(job.eduRef), T.MODEL.jobMulExp[0]), lo, hi);
+  const raw = Math.pow(occMultOf(job, year) / educationMultiplier(job.eduRef), T.MODEL.jobMulExp[0]);
+  return clamp(looks === undefined ? raw : raw * wageLookMult(looks), lo, hi);
 }
 
 // ---------- 연도별 취업 문턱 ----------

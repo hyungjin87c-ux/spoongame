@@ -13,6 +13,7 @@ import {
   type EventDef,
   type Range,
 } from './events';
+import { looksChannelBounds } from './looks';
 import { APT_KEYS, APT_TIERS, TEMPER_IDS, type AptKey, type AptTier, type TemperId } from './personaKinds';
 import { OCCUPATIONS, PARENT_WEALTHS, STAT_KEYS, type Effects, type Era, type Occupation, type ParentWealth, type Stage } from './types';
 
@@ -704,6 +705,21 @@ export function weightBoundsProblems(ev: EventDef, extra: ReadonlyArray<readonly
   return out;
 }
 
+/**
+ * 외모 가림 금지 (SPEC-018 PL16, 설계 3절): `looks`는 `modifiers`·`bonuses`·문장 변주 `when`과 지원 확률에만 쓴다. 사건 `conditions`·선택지 `requires`에 쓰면 외모 때문에 길이 막히므로 빌드가 막힌다.
+ * 허용 목록 한 곳: `youth-approached`(`conditions.looks ≥ 60`, 골든 불변 — 마스터 승인). 직업 `when`은 `jobs.ts#jobTableProblems`가 같은 규칙으로 막는다.
+ */
+export const LOOKS_CONDITION_ALLOWED: readonly string[] = ['youth-approached'];
+
+export function looksGateProblems(ev: EventDef): string[] {
+  const out: string[] = [];
+  if (ev.conditions?.looks !== undefined && !LOOKS_CONDITION_ALLOWED.includes(ev.id)) out.push(`${ev.id}.conditions: looks를 자격 조건에 쓰지 않는다 (외모로 길을 막지 않는다 — modifiers·bonuses·변주 when만)`);
+  for (const c of ev.choices ?? []) {
+    if (c.requires?.looks !== undefined) out.push(`${ev.id}.choices(${c.id}).requires: looks를 선택지 조건에 쓰지 않는다 (외모로 길을 막지 않는다)`);
+  }
+  return out;
+}
+
 // ---------- 점검 ----------
 
 export interface TextPart {
@@ -926,7 +942,8 @@ export function lintEvent(ev: EventDef): string[] {
   problems.push(...visibleChoiceProblems(ev));
   problems.push(...visibleChoiceGridProblems(ev));
   problems.push(...variantProblems(ev));
-  problems.push(...weightBoundsProblems(ev));
+  problems.push(...weightBoundsProblems(ev, ev.looksChannel === undefined ? [] : [looksChannelBounds(ev.looksChannel)]));
+  problems.push(...looksGateProblems(ev));
   problems.push(...askProblems(ev));
   // 반복: 한 판에서 같은 문구가 되풀이되지 않도록 반복 이벤트는 간격을 길게 둔다
   // 진로 카드(`pick`)는 반복 린트의 예외 종류다 — 진로 트랙 상태가 카드를 정한다(설계 4-1절). 대신 `pickEventProblems`가 따로 본다

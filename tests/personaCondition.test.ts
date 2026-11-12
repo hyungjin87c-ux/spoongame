@@ -1,7 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { eventPool } from '../src/core';
-import { cellDiffs, formatDiffs, parseKey, staticDiffs, staticOf, withoutAllowed, type AllowedDiff, type Diff } from './helpers/eligibilityGolden';
+import {
+  LOOKS_ALLOWED,
+  LOOKS_BUSINESS_EVENTS,
+  LOOKS_EXCEPTION_EVENTS,
+  LOOKS_ROMANCE_EVENTS,
+  cellDiffs,
+  formatDiffs,
+  parseKey,
+  staticDiffs,
+  staticOf,
+  withoutAllowed,
+  withoutLooksTerms,
+  type AllowedDiff,
+  type Diff,
+} from './helpers/eligibilityGolden';
 import { loadGrid } from './helpers/eligibilityGoldenLoad';
+
+// 골든은 「`persona` 없는 판 = 옛 저장·스위치를 끈 판」의 동치를 지킨다 — 맞춤 인생 스위치를 끈 경로로 고정한다(3b단계에서 출하 값을 켠 뒤에도 이 시험의 의미는 그대로다)
+vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: false }));
 
 /**
  * 기존 사건 자격 골든 대조 — 사건 격자 (SPEC-018 1단계, docs/data/persona-model.md 3절 `[CX-002-004]`).
@@ -11,10 +28,11 @@ import { loadGrid } from './helpers/eligibilityGoldenLoad';
  * 골든은 사건마다 정적 정의(자격·가중·효과가 읽는 필드)와 칸(연도 × 나이 × 상태 × 본 기록)별 출력(자격·`eventWeight`·추첨 가중·결정자·보이는 선택지 id 순서·선택지별 효과 해시)을 담는다.
  * 시험은 골든의 입력을 지금 코드에 넣어 **필드별로** 견준다. 달라진 곳은 사건·칸·필드가 그대로 메시지에 나온다.
  *
- * 허용된 필드별 차이(`ALLOWED`): 설계 4B절 「기존 사건 예외」 7개 사건(`school-first-love`·`youth-meeting`·`youth-meeting-again`·`youth-matchmaker`·`youth-workplace-romance`·`youth-startup`·`middle-business`)의
- * **외모 항**만 PL16에서 바뀐다 — 그때 사건 id와 허용 필드 경로(예: `static.modifiers` · `cell.w` + `whenLooksNot50`)를 여기에 적는다. 1단계(변경 전)에서는 비어 있고 **완전 일치가 통과 조건**이다.
+ * **3b단계(PL16)**: 스위치 출하 값이 켜졌지만 이 시험은 스위치를 끈 경로(mock)로 고정한다. 허용된 필드별 차이(`ALLOWED` = `LOOKS_ALLOWED`)는 설계 4B절 「기존 사건 예외」 7개 사건
+ * (`school-first-love`·`youth-meeting`·`youth-meeting-again`·`youth-matchmaker`·`youth-workplace-romance`·`youth-startup`·`middle-business`)의
+ * **외모 항**만이다 — 예외 사건의 외모 `modifiers` 항, 사업 2곳의 외모 소득 보너스, 그 결과로 달라지는 칸(외모 50이 아닌 칸의 `w`·`dw`·사업 `fx`). 외모 50(중립) 칸은 한 칸도 달라지면 안 된다.
  */
-const ALLOWED: readonly AllowedDiff[] = [];
+const ALLOWED: readonly AllowedDiff[] = LOOKS_ALLOWED;
 
 const grid = loadGrid();
 const pool = eventPool();
@@ -59,7 +77,43 @@ describe('기존 사건 자격 골든 — 사건 격자', () => {
     expect(left, formatDiffs(left)).toEqual([]);
   });
 
-  it('허용 목록은 지금 비어 있다(1단계: 완전 일치)', () => {
-    expect(ALLOWED).toEqual([]);
+  it('예외 사건도 외모 항을 뺀 나머지 정적 정의는 골든과 정확히 같다(같은 사건의 다른 가중·선택지·효과·보너스는 계속 대조한다)', () => {
+    const diffs: Diff[] = [];
+    for (const id of LOOKS_EXCEPTION_EVENTS) {
+      const g = grid.events[id];
+      const ev = pool.byId.get(id);
+      expect(g, id).toBeDefined();
+      expect(ev, id).toBeDefined();
+      diffs.push(...staticDiffs(id, withoutLooksTerms(id, g.static), withoutLooksTerms(id, staticOf(ev!))));
+    }
+    expect(diffs, formatDiffs(diffs)).toEqual([]);
+  });
+
+  it('외모 항이 실제로 바뀌었다(공허 통과 방지): 연애 5곳은 외모 modifiers가 없고 looksChannel이 romance, 사업 2곳은 외모 modifiers·소득 보너스가 없다', () => {
+    for (const id of LOOKS_ROMANCE_EVENTS) {
+      const ev = pool.byId.get(id)!;
+      expect(ev.looksChannel, id).toBe('romance');
+      expect(JSON.stringify(ev.modifiers ?? []), id).not.toContain('"looks"');
+    }
+    for (const id of LOOKS_BUSINESS_EVENTS) {
+      const ev = pool.byId.get(id)!;
+      expect(ev.looksChannel, id).toBeUndefined();
+      expect(JSON.stringify(ev.modifiers ?? []), id).not.toContain('"looks"');
+      expect(JSON.stringify(ev.choices!.find((c) => c.id === 'start')!.bonuses ?? []), id).not.toContain('"looks"');
+    }
+  });
+
+  it('허용 목록은 설계 4B 예외뿐이다: 7개 사건·필드 단위(외모 modifiers · 사업 start 보너스 · 외모 50이 아닌 칸의 w·dw·사업 fx), 결혼 사슬·school-mirror·youth-approached는 없다', () => {
+    expect(new Set(ALLOWED.map((a) => a.event))).toEqual(new Set(LOOKS_EXCEPTION_EVENTS));
+    expect(LOOKS_EXCEPTION_EVENTS.length).toBe(7);
+    expect([...new Set(ALLOWED.map((a) => a.path))].sort()).toEqual(['cell.dw', 'cell.fx.confess', 'cell.fx.start', 'cell.w', 'static.choices.confess.bonuses', 'static.choices.start.bonuses', 'static.modifiers']);
+    // 칸 차이는 전부 「외모가 50이 아닌 칸」만 허용한다(외모 50 = 중립 판은 한 칸도 달라지면 안 된다)
+    for (const a of ALLOWED.filter((x) => x.path.startsWith('cell.'))) expect(a.whenLooksNot50, `${a.event} ${a.path}`).toBe(true);
+    for (const banned of ['youth-marriage', 'youth-marriage-again', 'youth-reunion', 'youth-second-chance', 'school-mirror', 'youth-approached']) {
+      expect(
+        ALLOWED.some((a) => a.event === banned),
+        banned,
+      ).toBe(false);
+    }
   });
 });
