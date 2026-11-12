@@ -26,6 +26,7 @@
     "check:economy": "vite-node scripts/economyCheck.ts",
     "gen:basis": "vite-node scripts/checkBasis.ts --write",
     "gen:family": "vite-node scripts/genFamilyTables.ts",
+    "gen:golden": "vite-node scripts/genEligibilityGolden.ts",
     "gen:art": "vite-node scripts/genFamilyArt.ts",
     "gen:era": "vite-node scripts/genEraWindows.ts",
     "golden:scene": "vite-node scripts/sceneGolden.ts",
