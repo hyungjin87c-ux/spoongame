@@ -1,19 +1,20 @@
 import { wealthMixtureOfGame } from '../../core/birthProfile';
 import { Fragment, useMemo, useState } from 'react';
-import { formatMan } from '../../core/format';
+import { ageText, formatMan } from '../../core/format';
 import { reportPlaceLabel } from '../../core/birthReport';
 import { startBandOf } from '../../core/ending';
 import { familyCardOf, type CardRow } from '../../core/familyCard';
 import { currentHomeOf, sceneInputOf } from '../../core/scene';
 import { peersNow } from '../../core/peerNow';
 import { educationLabel } from '../../core/profile';
-import type { Character, BirthReport, GameState, ProfileId } from '../../core/types';
+import type { AgeView, Character, BirthReport, GameState, ProfileId } from '../../core/types';
 import { genderLabel, yearMonthText } from '../../data/birthReportText';
 import { looksText } from '../../data/looksText';
 import { ASSETS_AMOUNTS_SHIPPED, DASH_TEXT, STATUS_LABEL, STATUS_ORDER, amountsConverted, statusHelpText } from '../../data/dashText';
 import { bandLabel } from '../../data/endingText';
 import { FAMILY_CARD_TEXT } from '../../data/familyCardText';
 import { placeLabel, regionLabelAt } from '../../data/regionNames';
+import { useAgeView } from '../ageView';
 import { Icon } from '../Brand';
 import { Face } from '../Face';
 import { FitList, FitPair } from '../FitPair';
@@ -181,7 +182,14 @@ const ROW_TESTID: Readonly<Record<CardRow['role'], string>> = {
 };
 
 /** 사람 한 줄: 호칭(dt) — 이름 · 나이(dd) 아래에 사이 · 직업 · (따로 삶). 떠난 사람은 이름 아래에 「N세에 세상을 떠남」(글자로 — 색·취소선에 기대지 않는다, FC4) */
+/** 떠난 사람 줄의 글자 — 별세 나이를 나이 보기에 맞춘다(SPEC-019). 재료가 없으면(옛 모양) 만 나이 기준 글자 그대로 */
+function goneTextOf(r: CardRow, view: AgeView): string {
+  if (r.goneOwnAge === undefined) return r.goneText ?? FAMILY_CARD_TEXT.goneAt(r.age, view);
+  return r.goneBeforeMe === true ? FAMILY_CARD_TEXT.goneBeforeMe(r.goneOwnAge, view) : FAMILY_CARD_TEXT.goneAt(r.goneOwnAge, view);
+}
+
 function PersonRow({ r, expanded }: { r: CardRow; expanded: boolean }) {
+  const view = useAgeView();
   const gone = r.state === 'gone';
   const items = gone
     ? []
@@ -190,10 +198,10 @@ function PersonRow({ r, expanded }: { r: CardRow; expanded: boolean }) {
     <>
       <dt>{r.label}</dt>
       <dd data-testid={ROW_TESTID[r.role]} data-state={r.state}>
-        <span className="family-who">{gone ? r.name : `${r.name} ${r.age}${DASH_TEXT.ageSuffix}`}</span>
+        <span className="family-who">{gone ? r.name : `${r.name} ${ageText(r.age, view)}`}</span>
         {gone ? (
           <small>
-            <FitList flow items={[r.goneText ?? FAMILY_CARD_TEXT.goneAt(r.age), ...(expanded && r.goneMyText !== undefined ? [r.goneMyText] : [])]} />
+            <FitList flow items={[goneTextOf(r, view), ...(expanded && r.goneMyAge !== undefined ? [FAMILY_CARD_TEXT.goneMyAge(r.goneMyAge, view)] : [])]} />
           </small>
         ) : (
           <small>

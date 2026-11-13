@@ -1,5 +1,6 @@
+import { displayAge } from '../core/format';
 import type { SiblingKind } from '../core/family';
-import type { Gender, HeavyKind } from '../core/types';
+import type { AgeView, Gender, HeavyKind } from '../core/types';
 import { siblingLabel } from './familyText';
 
 /**
@@ -72,3 +73,20 @@ export const FAMILY_LINE_HEAVY: Readonly<Record<string, HeavyKind>> = {
   [FAMILY_LINE_ID.parentsApart]: 'home',
   [FAMILY_LINE_ID.sibLost]: 'loss',
 };
+
+/** 줄 문장 속 사람 나이(별세 나이)를 나이 보기로 읽는 세 줄 — 조부모 별세 · 부모 별세는 「N세에」, 어린 형제 별세는 「N살이던」으로 시작한다 (나이 차 「N살 위인」은 차이라 바꾸지 않는다) */
+const AGE_IN_LINE: Readonly<Record<string, RegExp>> = {
+  [FAMILY_LINE_ID.grandGone]: /(\d+)세에 세상을 떠나셨습니다/,
+  [FAMILY_LINE_ID.parentGone]: /(\d+)세에 세상을 떠나셨습니다/,
+  [FAMILY_LINE_ID.sibLost]: /^(\d+)살이던/,
+};
+
+/**
+ * 가족 변화 줄의 화면 글자 (SPEC-019). 줄 문장은 만들 때 기록(`HistoryEntry.text`)에 굳기 때문에 — **저장 형식은 그대로** 두고 — 보여 줄 때만 문장 속 별세 나이를 나이 보기에 맞춘다.
+ * 저장된 글자는 게임 나이(태어난 해 0)이고, 한국 나이는 +1(`displayAge`)이다. 가족 변화 줄이 아니거나 나이 자리를 못 찾으면 글자 그대로다.
+ */
+export function familyLineViewText(eventId: string | undefined, text: string, view: AgeView): string {
+  const re = eventId === undefined ? undefined : AGE_IN_LINE[eventId];
+  if (re === undefined) return text;
+  return text.replace(re, (whole, n: string) => whole.replace(n, String(displayAge(Number(n), view))));
+}

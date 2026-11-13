@@ -80,7 +80,7 @@ async function reviewOracle(page: Page, state: GameState): Promise<ReviewOracle>
     return {
       journey: text.journeyText(r.journey),
       movement: r.journey.kind === 'compared' ? text.MOVEMENT_TEXT[r.journey.movement] : null,
-      death: text.deathLineText(state.death),
+      death: text.deathLineText(state.death, 'korean'),
       picked: r.timeline.flatMap((g) => g.entries.map((h, i) => ({ h, subject: g.subjects[i] }))).filter((x) => x.h.kind === 'choice').map((x) => ({ choice: x.h.choice, by: x.h.by, mark: x.h.by === undefined ? '선택' : table.decidedByText(x.h.by, x.subject) })),
       choiceCount: r.choiceCount,
     };
@@ -133,7 +133,7 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   // M7e-3(R-327): 머리는 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (출생 문장은 연표의 첫 줄이 말한다)
   await expect(page.getByTestId('ending-era')).toHaveText('생애 기록'); // 세대 표기는 아래 `ending-gen`(「{세대 이름} · {연도}년생」)이 맡는다 (SPEC-004 GS9)
   await expect(page.getByTestId('ending-gen')).toContainText(`${c.birthYear}년생`);
-  await expect(page.getByTestId('ending-span')).toHaveText(new RegExp(`^${c.birthYear}년( \\d{1,2}월)? ~ ${c.birthYear + save.death!.age}년 · ${save.death!.age}세$`));
+  await expect(page.getByTestId('ending-span')).toHaveText(new RegExp(`^${c.birthYear}년( \\d{1,2}월)? ~ ${c.birthYear + save.death!.age}년 · ${save.death!.age + 1}세$`)); // 화면은 한국 나이(+1, SPEC-019)
   await expect(page.getByTestId('ending-death')).toHaveText(oracle.death);
   await expect(page.getByTestId('ending-choices')).toContainText(`${oracle.choiceCount}번의 선택`);
 
@@ -234,7 +234,7 @@ test('스무 살 전에 끝난 인생: 도착 자리를 말하지 않고 집안 
   await page.goto('/');
   await injectSave(page, early, '/');
   await expect(page.getByTestId('ending-screen')).toBeVisible();
-  await expect(page.getByTestId('ending-death')).toHaveText('9세에 세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.');
+  await expect(page.getByTestId('ending-death')).toHaveText('10세에 세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.');
   // R-083: 출발선만 담담하게 — 게임 용어("내가 가진 것")도, 윗줄이 이미 말한 "생이 끝났다"도 되풀이하지 않는다
   await expect(page.getByTestId('ending-journey')).toHaveText(/^.+의 집에서 태어났습니다\.$/);
   await expect(page.getByTestId('ending-journey')).toHaveText(BAND_SENTENCE); // R-091: 20세 전 사망 줄도 구간 표현
@@ -443,7 +443,7 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   expect(fresh.flags).toEqual([]);
   expect(JSON.stringify(fresh)).not.toContain(ended.character!.name);
   // 설정은 그대로. M4: 설정 봉투 v3에 BGM(꺼짐·볼륨 30)과 테마(시스템)가 더해져 기본값이 함께 저장된다 — 값은 바뀌지 않는다.
-  expect(await readSettings(page)).toEqual({ ...SETTINGS_CHOSEN, bgm: { on: false, volume: 30 }, theme: 'system', noteCards: false, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then' }); // 주입 봉투는 e2e 기본(기록 카드 꺼짐)이다 — 앱 기본이 아니다. 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘(가림 꺼짐·본 소식 없음)도 함께 저장된다 — 값은 바뀌지 않는다
+  expect(await readSettings(page)).toEqual({ ...SETTINGS_CHOSEN, bgm: { on: false, volume: 30 }, theme: 'system', noteCards: false, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then', ageView: 'korean' }); // 주입 봉투는 e2e 기본(기록 카드 꺼짐)이다 — 앱 기본이 아니다. 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘(가림 꺼짐·본 소식 없음)도 함께 저장된다 — 값은 바뀌지 않는다
 
   // 새로고침해도 첫 화면에서 이어진다 (엔딩이 되살아나지 않는다)
   await page.reload();
@@ -467,7 +467,7 @@ test('다시 태어나기: 새 시드의 새 판이 첫 화면(마지막에 고�
   const snap = await lifeSnapshot(page);
   expect(snap.speed).toBe('8');
   expect(snap.auto).toBe('true');
-  expect(snap.age).toBe('0세');
+  expect(snap.age).toBe('1세');
   expect(snap.hasChoice).toBe(false);
 });
 

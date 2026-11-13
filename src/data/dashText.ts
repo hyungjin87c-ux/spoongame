@@ -79,7 +79,17 @@ export const DASH_TEXT = {
   /** 올해 진행률 바의 접근 가능한 이름 */
   yearProgressLabel: '올해 진행률',
   yearSuffix: '년',
-  ageSuffix: '세',
+  /**
+   * 나이 보기 (SPEC-019, copy.md 「나이 보기」 절): 헤더 알약은 한국 나이 「24세」 · 만 나이 「만 23세」(「만」은 헤더 알약과 엔딩 머리에만). 알약의 화면 읽기 이름은 「한국 나이 24세」/「만 나이 23세」.
+   * 전환 글자 버튼은 지금과 반대 기준을 적고(한국 나이일 때 「만 나이」, 만 나이일 때 「한국 나이」) 읽기 이름은 「만 나이로 보기」/「한국 나이로 보기」다(보이는 글자가 이름의 앞머리 — WCAG 2.5.3).
+   */
+  ageUnit: '세',
+  ageManMark: '만 ',
+  ageViewPillName: (view: 'korean' | 'man', shownAge: string): string => `${view === 'korean' ? '한국 나이' : '만 나이'} ${shownAge}`,
+  ageSwitchToMan: '만 나이',
+  ageSwitchToKorean: '한국 나이',
+  ageSwitchToManName: '만 나이로 보기',
+  ageSwitchToKoreanName: '한국 나이로 보기',
   progressPausedValue: '일시정지 중',
   pause: '일시정지',
   play: '다시 진행',

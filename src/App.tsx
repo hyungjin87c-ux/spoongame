@@ -44,6 +44,7 @@ import { SupersededScreen } from './screens/SupersededScreen';
 import { TitleScreen } from './screens/TitleScreen';
 import { TITLE_TEXT } from './data/titleText';
 import { loadGameData } from './data/gameData';
+import { AgeViewContext } from './ui/ageView';
 import { useApplyTheme } from './ui/theme';
 import { FOLD_INITIAL, autoChooseArmed, foldCard as foldState, isFolded, leaveLife, reopenCard as reopenState, type FoldState } from './ui/decisionFold';
 import { useBgm } from './ui/useBgm';
@@ -563,6 +564,7 @@ function Game({ boot }: { boot: Boot }) {
         onPause={(paused) => dispatch({ type: 'setPaused', paused })}
         onBgm={(bgm) => dispatch({ type: 'setBgm', bgm })}
         onTheme={(theme) => dispatch({ type: 'setTheme', theme })}
+        onAgeView={(ageView) => dispatch({ type: 'setAgeView', ageView })}
         onExit={() => {
           // 확인 단계를 거쳐 나간다: 일시정지 상태로 저장하고(reducer가 paused를 켠다) 첫 화면을 다시 연다. 새로고침하면 저장된 화면(대시보드)이 멈춘 채 복원된다(C3).
           setExitAsk(false);
@@ -591,7 +593,7 @@ function Game({ boot }: { boot: Boot }) {
           저장하지 못했습니다. 이 화면을 닫으면 진행이 사라질 수 있습니다.
         </p>
       ) : null}
-      {screen}
+      <AgeViewContext.Provider value={settings.ageView}>{screen}</AgeViewContext.Provider>
     </>
   );
 }

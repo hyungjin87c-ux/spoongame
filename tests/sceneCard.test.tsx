@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import { DEFAULT_SETTINGS, advanceUntilDecision, createInitialState, generateBirthFromSeed, stepYear, type GameState, type Settings } from '../src/core';
+import { ageText } from '../src/core/format';
 import type { EraWindow } from '../src/core/eraWindow';
 import { petPhrases, sceneInputOf, sceneLineOf, sceneOf, scenePetsText, sceneRowsOf } from '../src/core/scene';
 import { LifeScreen } from '../src/screens/LifeScreen';
@@ -78,7 +79,7 @@ describe('집과 가족 그림 카드 — 구조와 대체 글 (FH3·FH6)', () =
   it('펼침 「함께 사는 사람」: 그림과 같은 집합(주인공 「나」 포함), 반려동물 줄, 「가족과 삶 열기」 — details/summary(키보드로 열린다)', () => {
     const { rows } = sceneRowsOf(input);
     expect(out).toMatch(/<details class="scene__more" id="scene-more"[^>]*><summary>함께 사는 사람<\/summary>/);
-    for (const r of rows) expect(text(out)).toContain(`${r.label} · ${r.age}세`);
+    for (const r of rows) expect(text(out)).toContain(`${r.label} · ${ageText(r.age, 'korean')}`); // 한국 나이가 기본(SPEC-019)
     expect(out).toContain('가족과 삶 열기');
     expect(out).toContain('data-testid="scene-open-family"');
   });

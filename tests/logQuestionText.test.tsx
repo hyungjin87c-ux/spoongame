@@ -6,6 +6,7 @@ import { EVENT_POOL } from '../src/data/events';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { isStackedEntry } from '../src/ui/dash/LogList';
 import { LogCard } from '../src/ui/dash/LogCard';
+import { inAgeView } from './helpers/ageView';
 import { chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
@@ -16,7 +17,7 @@ import { chooserFor, startLife } from '../scripts/simulateLib';
  */
 
 const plain = (s: string): string => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-const render = (history: HistoryEntry[], gentle = false): string => renderToStaticMarkup(<LogCard history={history} live={false} gentle={gentle} />);
+const render = (history: HistoryEntry[], gentle = false): string => renderToStaticMarkup(inAgeView(<LogCard history={history} live={false} gentle={gentle} />)); // 이 파일은 저장된 게임 나이를 그대로 읽는다(SPEC-019: 만 나이 맥락)
 const rows = (html: string): string[] => html.split('<li ').slice(1).map((r) => '<li ' + r.slice(0, r.indexOf('</li>')));
 
 const HISTORY: HistoryEntry[] = [

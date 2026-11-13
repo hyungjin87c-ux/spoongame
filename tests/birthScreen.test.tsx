@@ -67,8 +67,8 @@ describe('출생신고 문서 구성과 값 (BR1·BR2)', () => {
         expect(field('month')).toBe(yearMonthText(c.birthYear, r.month));
         expect(field('place')).toBe(reportPlaceLabel(r, c.birthYear));
         if (era !== R1_PRESENT) expect(r.sigungu, '세대 판은 시도까지만').toBeUndefined();
-        expect(field('mother')).toBe(`${r.mother.age}세 · ${OCCUPATION_LABEL[r.mother.job]}`);
-        expect(field('father')).toBe(`${r.father.age}세 · ${OCCUPATION_LABEL[r.father.job]}`);
+        expect(field('mother')).toBe(`${r.mother.age + 1}세 · ${OCCUPATION_LABEL[r.mother.job]}`);
+        expect(field('father')).toBe(`${r.father.age + 1}세 · ${OCCUPATION_LABEL[r.father.job]}`);
         expect(field('housing')).toBe(housingText(r.housing));
         expect(field('weight')).toContain(`${r.birthWeightKg.toFixed(1)}kg`);
         expect(field('order')).toBe(orderText(r.birthOrder));

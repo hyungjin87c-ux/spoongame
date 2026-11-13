@@ -54,7 +54,7 @@ function citeBox(view, { insight = null } = {}) {
   return `<div class="cite" data-testid="cite" data-citation="${view.id}"><p class="cite__kind">${esc(DASH_TEXT.citeKindLabel[view.kind])}</p><p class="cite__text" data-testid="cite-text">${glueHtml(view.text)}</p><p class="cite__src" data-testid="cite-src"><span class="keep-phrase">${esc(view.sourceWho)}</span> ${glueHtml(view.sourceTitle)}</p>${ins}</div>`;
 }
 const head = ({ year, age }) =>
-  `<div class="decision__head"><span class="decision__kind">${esc(DASH_TEXT.choiceKind)}</span><div class="row"><span class="decision__when" data-testid="decision-when">${fitPair(`${year}${DASH_TEXT.yearSuffix}`, `${age}${DASH_TEXT.ageSuffix}`, { hideSeparator: true })}</span><button class="btn btn--ghost btn--sm decision__fold" type="button" data-testid="decision-fold-btn">${esc(DASH_TEXT.foldCard)} <span aria-hidden="true">${esc(DASH_TEXT.foldMark)}</span></button></div></div>`;
+  `<div class="decision__head"><span class="decision__kind">${esc(DASH_TEXT.choiceKind)}</span><div class="row"><span class="decision__when" data-testid="decision-when">${fitPair(`${year}${DASH_TEXT.yearSuffix}`, `${age}${DASH_TEXT.ageUnit}`, { hideSeparator: true })}</span><button class="btn btn--ghost btn--sm decision__fold" type="button" data-testid="decision-fold-btn">${esc(DASH_TEXT.foldCard)} <span aria-hidden="true">${esc(DASH_TEXT.foldMark)}</span></button></div></div>`;
 /** 카드 맨 끝: 자동 모드 안내(M-13 그대로) + r4 버튼 + 보조 한 줄. 가린 카드에는 안내 문장만(M22) */
 function autoSet(auto, { veiled = false } = {}) {
   const note = `<p class="decision__auto" data-testid="auto-note">${esc(auto ? DASH_TEXT.autoNoteOn : DASH_TEXT.autoNoteOff)}</p>`;
@@ -112,7 +112,7 @@ function dashHead({ age, year, progress, pending, auto, inert, bgm = false, exit
     : '';
   return `<header class="dash-head"${i}><div class="dash-head__inner">
     <div class="dash-head__top">${headerLogo()}
-      <div class="who"><h1 class="who__name" tabindex="-1" data-testid="life-name">${HERO.name}</h1><span class="who__age" data-testid="life-age"><b>${age}</b>${T.ageSuffix}</span></div></div>
+      <div class="who"><h1 class="who__name" tabindex="-1" data-testid="life-name">${HERO.name}</h1><span class="who__age" data-testid="life-age"><b>${age}</b>${T.ageUnit}</span></div></div>
     <div class="year-row"><span class="num">${year}${T.yearSuffix}</span>
       <div class="year-progress" role="progressbar" aria-label="${T.yearProgressLabel}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><div class="year-progress__fill" style="width:${progress}%"></div></div>
       <span class="year-row__pct num">${progress}%</span></div>

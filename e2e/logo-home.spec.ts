@@ -184,7 +184,7 @@ test.describe('로고 → 첫 화면 → 이어서 살기 (완료 기준 2·3, Q
     const viaLogo = await readSave(page);
     await resume(page);
     await expect(page.getByTestId('life-screen')).toBeVisible();
-    await expect(page.getByTestId('life-age')).toContainText(`${before.data.age}세`);
+    await expect(page.getByTestId('life-age')).toContainText(`${before.data.age + 1}세`);
     await expect(page.getByTestId('pause')).toHaveAttribute('data-paused', 'true');
     const after = await readSave(page);
     expect(core(after), '이어서 살기는 저장을 더 바꾸지 않는다').toEqual(core(viaLogo));
@@ -279,11 +279,11 @@ test.describe('상태별 눌림 (완료 기준 4)', () => {
     await pressLogo(page);
     const age = (await readSave(page)).data.age; // 첫 화면이 열린 순간의 나이(그 사이 시계가 한 해를 넘겼을 수 있어 저장에서 읽는다)
     await resume(page);
-    await expect(page.getByTestId('life-age')).toContainText(`${age}세`);
+    await expect(page.getByTestId('life-age')).toContainText(`${age + 1}세`);
     await expect(page.getByTestId('pause')).toHaveAttribute('data-paused', 'true');
     // 멈춘 채라 해가 흐르지 않는다
     await page.waitForTimeout(1200);
-    await expect(page.getByTestId('life-age')).toContainText(`${age}세`);
+    await expect(page.getByTestId('life-age')).toContainText(`${age + 1}세`);
     expect(errors).toEqual([]);
   });
 

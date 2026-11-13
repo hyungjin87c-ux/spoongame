@@ -11,7 +11,6 @@ export const SCENE_TEXT = {
   /** 펼침 단추 */
   more: '함께 사는 사람',
   moreOthers: (n: number): string => `그 밖에 ${n}명`,
-  ageSuffix: '세',
   openFamily: '가족과 삶 열기',
   fold: '그림 접기',
   unfold: '그림 펼치기',

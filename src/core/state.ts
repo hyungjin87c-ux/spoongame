@@ -36,6 +36,8 @@ export const DEFAULT_SETTINGS: Settings = {
   lived: [],
   homeRegion: null,
   moneyView: 'then',
+  // SPEC-019: 나이 보기 — 한국 나이가 기본이다(설정 버전은 6 그대로, 없는 옛 설정도 이 값으로 읽힌다)
+  ageView: 'korean',
 };
 
 /** 새 게임의 초기 상태. 시드는 주입한다(테스트·재현용). */

@@ -46,7 +46,7 @@ async function startFromTitle(page: Page, url = '/') {
 test('출생 → 살아가기 → 인생 화면(대시보드): 이름·나이·학력·상태 4개·외모 순위·진행 컨트롤이 보이고 자리표시와 "처음으로"는 없다 (R-021, M4)', async ({ page }) => {
   await startFromTitle(page);
   await expect(page.getByTestId('life-name')).toBeVisible();
-  await expect(page.getByTestId('life-age')).toContainText('0세');
+  await expect(page.getByTestId('life-age')).toContainText('1세');
   // 바뀐 기대(M4): 옛 「단계」 줄(life-stage 「영유아」)은 프로필 카드의 학력(0세는 「취학 전」)으로, 스탯 5개+외모 줄은 상태 바 4개(건강·행복·지식·관계)로 바뀌었다.
   // 재산은 자산 현황 자리(경제 모델 M5)로, 외모는 점수 줄이 아니라 얼굴 그림과 「상위/하위 약 N%」 한 가지로만 드러난다(R-135).
   await expect(page.getByTestId('profile-edu')).toHaveText('취학 전');
@@ -201,7 +201,7 @@ test('자동 모드로 끝까지 진행해 사망(엔딩 화면)에 도달하고
   expect(save.data.phase).toBe('ending');
   expect(save.data.death).not.toBeNull();
   expect(save.data).toEqual(await oracleAuto(page, start));
-  await expect(page.getByTestId('ending-death')).toContainText(`${save.data.death!.age}세`);
+  await expect(page.getByTestId('ending-death')).toContainText(`${save.data.death!.age + 1}세`);
   // 엔딩 화면의 버튼은 머리글 로고(SPEC-016 H1 — 누르면 확인 단계) + "다시 태어나기" 둘뿐이다 (엔딩 자체의 검증은 e2e/ending.spec.ts)
   await expect(page.getByRole('button')).toHaveCount(2);
   await expect(page.getByTestId('logo-home')).toHaveCount(1);
@@ -297,7 +297,7 @@ test('인생 기록(M4, 최신순 SPEC-005 LR1): 줄이 최신순으로 쌓여 �
     return row.top >= box.top - 1 && row.bottom <= box.bottom + 1; // 기록 영역 안에서 마지막(가장 오래된) 줄이 보인다(영역 자체가 쪽 화면에 있는지는 상관없다)
   });
   expect(lastVisibleInList).toBe(true);
-  await expect(page.getByTestId('life-age')).toContainText(`${mid.age}세`);
+  await expect(page.getByTestId('life-age')).toContainText(`${mid.age + 1}세`);
   expect(await noHorizontalOverflow(page)).toBe(true);
 });
 

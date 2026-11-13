@@ -1,3 +1,5 @@
+import type { AgeView } from './types';
+
 /** 화면에 쓰는 숫자 표기 (순수 함수, 로캘에 기대지 않는다). 통계 값의 공식 표기(자릿수·단위)는 data/koreaStatsAccess.ts의 formatNumber·formatWithUnit이 맡는다. */
 
 /** 천 단위 쉼표: 51284 → "51,284" (반올림한 정수로) */
@@ -36,4 +38,28 @@ export function formatWon(won: number): string {
  */
 export function formatMan(man: number): string {
   return formatWon(man * 10_000);
+}
+
+/**
+ * 사람의 나이를 화면 숫자로 바꾸는 **단 하나의 정의** (SPEC-019). 입력은 게임 나이(태어난 해 0 — `GameState.age`·가족 나이·별세 나이 모두)이고,
+ * 한국 나이는 +1(태어난 해 1세), 만 나이는 그대로다. 화면 코드는 사람 나이에 「세」를 직접 붙이지 않고 아래 함수를 거친다(tests/ageViewLint.test.ts).
+ * 통계의 나이(연령 구간·기대수명·인구 구성)는 만 나이 기준이라 이 함수를 거치지 않는다.
+ */
+export function displayAge(age: number, view: AgeView): number {
+  return view === 'korean' ? age + 1 : age;
+}
+
+/** 「24세」 — 목록·카드·문장에 쓰는 나이 (「만」은 붙이지 않는다) */
+export function ageText(age: number, view: AgeView): string {
+  return `${displayAge(age, view)}세`;
+}
+
+/** 헤더 알약·엔딩 머리의 나이: 한국 나이는 「24세」, 만 나이는 「만 23세」 */
+export function ageHeadText(age: number, view: AgeView): string {
+  return view === 'man' ? `만 ${ageText(age, view)}` : ageText(age, view);
+}
+
+/** 나이 구간: 「7~19세」, `to`가 null이면 「65세~」 */
+export function ageRangeText(from: number, to: number | null, view: AgeView): string {
+  return to === null ? `${displayAge(from, view)}세~` : `${displayAge(from, view)}~${displayAge(to, view)}세`;
 }

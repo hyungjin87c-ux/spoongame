@@ -1,8 +1,10 @@
 import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type FocusEvent, type MouseEvent } from 'react';
 import { NOTE_LIMITS, calendarYear, citationFor, liveGraphemes, noteQuestion, sanitizeLive, type NoteCardDef } from '../../core';
+import { ageText } from '../../core/format';
 import { titleCharsFor } from '../../data/dashText';
 import { NOTE_TEXT } from '../../data/noteSheetText';
+import { useAgeView } from '../ageView';
 import { FitPair } from '../FitPair';
 import { Glue } from '../Glue';
 import { GuardedButton } from '../GuardedButton';
@@ -55,6 +57,7 @@ interface Msg {
 
 export function NoteSheet({ via, card, game, count, cardsOn, guardKey, onSave, onDismiss, onToggleCards }: NoteSheetProps) {
   useScrollLock();
+  const view = useAgeView();
   const full = count >= NOTE_LIMITS.total;
   const limit = Math.min(LIMIT, card?.maxLength ?? LIMIT);
   const question = noteQuestion(card, game);
@@ -253,7 +256,7 @@ export function NoteSheet({ via, card, game, count, cardsOn, guardKey, onSave, o
             {NOTE_TEXT.kind}
           </span>
           <span className="sheet__age" data-testid="note-when">
-            <FitPair a={`${year}년`} b={`${game.age}세`} hideSeparator />
+            <FitPair a={`${year}년`} b={ageText(game.age, view)} hideSeparator />
           </span>
         </div>
         <div className="sheet__body">

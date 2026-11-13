@@ -1,4 +1,5 @@
-import type { Death, Stage } from '../core/types';
+import { ageHeadText, ageRangeText, ageText } from '../core/format';
+import type { AgeView, Death, Stage } from '../core/types';
 import type { Movement, StartBand, WealthJourney } from '../core/ending';
 import { stageRangeOf } from '../core/ending';
 import { yearMonthText } from './birthReportText';
@@ -21,8 +22,8 @@ export const ENDING_HEADINGS = {
 } as const;
 
 /** "83세에 세상을 떠났습니다. 원인은 노환이었습니다." (원인 낱말의 받침에 따라 「이었습니다」·「였습니다」, lifeText.ts#causeSentenceText) */
-export function deathLineText(death: Death): string {
-  return `${death.age}세에 세상을 떠났습니다. ${causeSentenceText(death.cause)}`;
+export function deathLineText(death: Death, view: AgeView): string {
+  return `${ageText(death.age, view)}에 세상을 떠났습니다. ${causeSentenceText(death.cause)}`;
 }
 
 /** 선택의 순간 수 한 줄 */
@@ -95,15 +96,15 @@ export const FINAL_NET_TEXT = {
   early: '스무 살이 되기 전이라 자산을 세지 않았습니다.',
 } as const;
 
-/** 엔딩 머리 (M7e-3, R-327, copy.md 5-4): 라벨 「{세상} · 생애 기록」과 셋째 줄 「{출생 연월} ~ {사망 연도}년 · {나이}세」 */
+/** 엔딩 머리 (M7e-3, R-327, copy.md 5-4): 라벨 「{세상} · 생애 기록」과 셋째 줄 「{출생 연월} ~ {사망 연도}년 · {나이}세」(만 나이는 「만 {나이}세」, SPEC-019) */
 export const ENDING_HEAD_LABEL = '생애 기록';
 
 /** 엔딩 머리 둘째 줄의 태어난 곳 (GS9): 「경기도 안양시에서 태어남」 꼴 — 세대 판은 그 해의 행정구역 이름 */
 export function endingBornText(place: string): string {
   return `${place}에서 태어남`;
 }
-export function endingSpanText(birthYear: number, month: number | null, deathYear: number, age: number): string {
-  return `${month === null ? `${birthYear}년` : yearMonthText(birthYear, month)} ~ ${deathYear}년 · ${age}세`;
+export function endingSpanText(birthYear: number, month: number | null, deathYear: number, age: number, view: AgeView): string {
+  return `${month === null ? `${birthYear}년` : yearMonthText(birthYear, month)} ~ ${deathYear}년 · ${ageHeadText(age, view)}`;
 }
 
 /** 출발선 막대의 범례·축 글자 (copy.md 5-4): 막대 안의 축은 aria-hidden이고 막대의 aria-label이 글로 말한다 */
@@ -125,9 +126,9 @@ export function startedAtText(from: number): string {
 }
 
 /** 연표 단계 제목: "학창 · 7~19세", "노년 · 65세~" */
-export function stageHeadingText(stage: Stage): string {
+export function stageHeadingText(stage: Stage, view: AgeView): string {
   const { from, to } = stageRangeOf(stage);
-  return `${STAGE_TABLE[stage].label} · ${to === null ? `${from}세~` : `${from}~${to}세`}`;
+  return `${STAGE_TABLE[stage].label} · ${ageRangeText(from, to, view)}`;
 }
 
 /**

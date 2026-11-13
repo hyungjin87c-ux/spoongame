@@ -47,7 +47,7 @@ async function recordProgress(page: Page): Promise<void> {
       const ageEl = document.querySelector('[data-testid="life-age"]');
       if (bar === null || ageEl === null) return;
       const pct = Number(bar.getAttribute('aria-valuenow'));
-      const age = Number((ageEl.textContent ?? '').split('세')[0]);
+      const age = Number((ageEl.textContent ?? '').split('세')[0]) - 1; // 화면은 한국 나이(+1, SPEC-019) — 저장의 게임 나이로 되돌린다
       const last = w.__prog[w.__prog.length - 1];
       if (last === undefined || last.pct !== pct || last.age !== age) w.__prog.push({ age, pct, text: document.querySelector('[data-testid="year-pct"]')?.textContent ?? '', t: performance.now() });
     };
@@ -741,7 +741,7 @@ test('이전 버전(v6) 인생 저장은 새 게임으로 시작하고 첫 화�
   await expect(page.getByTestId('old-save-notice')).toHaveText('이전 버전에서 저장된 판은 이어서 할 수 없어 새 게임으로 시작합니다.');
   await expect(page.getByTestId('resume')).toHaveCount(0);
   expect((await readSave(page)).version).toBe(SAVE_VERSION);
-  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, generation: 'random', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then' }); // v2 설정의 옛 era는 버리고 세대는 기본값(랜덤)이다 (SPEC-004 MG1) // 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘이 기본값으로 함께 저장된다
+  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, generation: 'random', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then', ageView: 'korean' }); // v2 설정의 옛 era는 버리고 세대는 기본값(랜덤)이다 (SPEC-004 MG1) // 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘이 기본값으로 함께 저장된다
 });
 
 // ---------- DB1: 열 배치 ----------

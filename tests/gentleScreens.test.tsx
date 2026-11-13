@@ -19,6 +19,7 @@ import {
 } from '../src/core';
 import { DASH_TEXT } from '../src/data/dashText';
 import { EVENT_POOL } from '../src/data/events';
+import { familyLineViewText } from '../src/data/familyLineText';
 import { HEAVY_KIND_TEXT, HEAVY_SLIDE_TEXT, VEIL_TEXT, veilButtonLabel } from '../src/data/gentleText';
 import { INHERIT_NOTE_TEXT } from '../src/data/lifeTable';
 import { deathEntryText } from '../src/data/lifeText';
@@ -114,10 +115,10 @@ describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
     for (const t of [HISTORY[0].text, HISTORY[3].text, HISTORY[5].text, HISTORY[9].text]) expect(shown).toContain(t);
     // 가린 줄의 글자 모양 (스크린리더가 읽는 글자 — 기호 「·」·「▾」는 aria-hidden)
     const rows = [...on.matchAll(/<li class="log__row[^"]*" data-kind="[a-z]+" data-veiled="true"[^>]*>([\s\S]*?)<\/li>/g)].map((m) => visibleText(m[0], { ariaHidden: true }));
-    expect(rows).toContain(`57세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.loss} 펼쳐 보기`); // 상속 줄 + 임종 줄 — 같은 모양
-    expect(rows).toContain(`24세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.work} 펼쳐 보기`);
-    expect(rows).toContain(`1세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.health} (${PARENT_DECIDED_TEXT}) 펼쳐 보기`); // 도장은 보인다(HV8)
-    expect(rows).toContain(`10세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.school} (${CHILD_FLOW_TEXT}) 펼쳐 보기`);
+    expect(rows).toContain(`58세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.loss} 펼쳐 보기`); // 상속 줄 + 임종 줄 — 같은 모양
+    expect(rows).toContain(`25세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.work} 펼쳐 보기`);
+    expect(rows).toContain(`2세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.health} (${PARENT_DECIDED_TEXT}) 펼쳐 보기`); // 도장은 보인다(HV8)
+    expect(rows).toContain(`11세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.school} (${CHILD_FLOW_TEXT}) 펼쳐 보기`);
   });
 
   it('버튼: aria-expanded=false · aria-controls가 원문 요소(hidden)를 가리킨다 · 접근 가능한 이름은 「펼쳐 보기 {나이}세 {분류}」(보이는 글자가 앞머리)', () => {
@@ -127,7 +128,7 @@ describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
       expect(on, `${controls}: 원문 요소가 hidden`).toMatch(new RegExp(`<span class="veil__body" id="${controls}" hidden="" data-testid="veil-body">`));
       expect(label.startsWith(VEIL_TEXT.open)).toBe(true);
     }
-    expect(buttons.map((b) => b[2])).toContain(veilButtonLabel(false, 55, HEAVY_KIND_TEXT.work));
+    expect(buttons.map((b) => b[2])).toContain(veilButtonLabel(false, 55, HEAVY_KIND_TEXT.work, 'korean'));
     // 같은 id가 두 줄에 없다 (한 문서 안에서 유일)
     const ids = buttons.map((b) => b[1]);
     expect(new Set(ids).size).toBe(ids.length);
@@ -165,7 +166,7 @@ describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
     expect(inherit).toHaveLength(1);
     expect(visibleText(html)).not.toContain(INHERIT_NOTE_TEXT);
     expect(visibleText(renderLog(game.history, false))).toContain(INHERIT_NOTE_TEXT);
-    expect(visibleText(html, { ariaHidden: true })).toContain(`${inherit[0].age}세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.loss} 펼쳐 보기`);
+    expect(visibleText(html, { ariaHidden: true })).toContain(`${inherit[0].age + 1}세 무거운 일이 있었습니다 ${HEAVY_KIND_TEXT.loss} 펼쳐 보기`);
   });
 
   it('줄 키가 가림과 무관하다: 켜도 줄의 DOM 순서·개수는 그대로(최신순 유지)', () => {
@@ -402,7 +403,7 @@ describe('엔딩: 연표의 가린 줄 + 맨 위 한 줄 (HV4 ④·HV6·HV8·R-4
     expect(off).not.toContain('data-veiled');
     const shown = visibleText(on);
     for (const h of heavy) expect(shown, `${h.eventId ?? '상속 줄'}: 문장`).not.toContain(h.text);
-    for (const h of heavy) expect(visibleText(off)).toContain(h.text);
+    for (const h of heavy) expect(visibleText(off)).toContain(familyLineViewText(h.eventId, h.text, 'korean')); // 가족 변화 줄의 별세 나이는 한국 나이로 읽힌다(SPEC-019)
     // 가린 연표 줄: 안내 + 펼쳐 보기, 펼치면 제목 → 고른 길 → 결과 문장 (hidden 요소 안에 있다)
     const body = [...on.matchAll(/<span class="veil__body" id="(veil-tl-[^"]+)" hidden="" data-testid="veil-body">([\s\S]*?)<\/span><\/span><\/li>/g)];
     expect(body.length).toBe(heavy.length);
@@ -416,7 +417,7 @@ describe('엔딩: 연표의 가린 줄 + 맨 위 한 줄 (HV4 ④·HV6·HV8·R-4
       const on = render(g, true);
       const off = render(g, false);
       expect(visibleText(on)).toContain(deathEntryText(cause));
-      expect(visibleText(on)).toContain(`${age}세에 세상을 떠났습니다`);
+      expect(visibleText(on)).toContain(`${age + 1}세에 세상을 떠났습니다`);
       const deathLine = (html: string) => html.match(/<p data-testid="ending-death">[\s\S]*?<\/p>/)![0];
       expect(deathLine(on)).toBe(deathLine(off));
       expect(on).toContain(`data-kind="death"`);

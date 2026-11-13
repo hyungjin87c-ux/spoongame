@@ -835,11 +835,11 @@ describe('엔딩 문구 (data/endingText.ts): 담담하고 R-018 표현 규칙�
   });
 
   it('사망·선택 수·단계 제목', () => {
-    expect(deathLineText({ age: 83, cause: '노환' })).toBe('83세에 세상을 떠났습니다. 원인은 노환이었습니다.'); // M7e-3: 합쇼체 (copy.md 5-3)
-    expect(deathLineText({ age: 12, cause: '사고' })).toBe('12세에 세상을 떠났습니다. 원인은 사고였습니다.'); // 받침이 없으면 「였습니다」
+    expect(deathLineText({ age: 83, cause: '노환' }, 'man')).toBe('83세에 세상을 떠났습니다. 원인은 노환이었습니다.'); // M7e-3: 합쇼체 (copy.md 5-3)
+    expect(deathLineText({ age: 12, cause: '사고' }, 'man')).toBe('12세에 세상을 떠났습니다. 원인은 사고였습니다.'); // 받침이 없으면 「였습니다」
     expect(choiceCountText(22)).toBe('살아오며 22번의 선택을 했습니다.');
     expect(choiceCountText(0)).toBe('선택을 내려야 하는 순간이 오기 전이었습니다.');
-    expect(STAGES.map(stageHeadingText)).toEqual(['영유아 · 0~6세', '학창 · 7~19세', '청년 · 20~39세', '중년 · 40~64세', '노년 · 65세~']);
+    expect(STAGES.map((s) => stageHeadingText(s, 'man'))).toEqual(['영유아 · 0~6세', '학창 · 7~19세', '청년 · 20~39세', '중년 · 40~64세', '노년 · 65세~']);
   });
 
   it('모든 문구에 느낌표·이모지·등급명(흙/동/은/금/다이아 수저)이 없다', () => {
@@ -850,11 +850,11 @@ describe('엔딩 문구 (data/endingText.ts): 담담하고 R-018 표현 규칙�
       REBIRTH_NOTE,
       choiceCountText(0),
       choiceCountText(9),
-      deathLineText({ age: 3, cause: '사고' }),
+      deathLineText({ age: 3, cause: '사고' }, 'man'),
       journeyText({ kind: 'early', start: bandFromRange(55, 83) }),
       journeyText({ kind: 'compared', start: bandFromRange(0, 30), end: top(20), movement: 'up' }),
       journeyText({ kind: 'compared', start: bandFromRange(25, 55), end: bottom(20), movement: 'same' }),
-      ...STAGES.map(stageHeadingText),
+      ...STAGES.map((s) => stageHeadingText(s, 'man')),
     ];
     for (const t of texts) {
       expect(t, t).not.toMatch(/[!！]/);

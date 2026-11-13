@@ -66,6 +66,11 @@ html.head-released.has-sticky-head { scroll-padding-top: var(--sp-3); }
 .who__name { font-weight: var(--fw-bold); white-space: nowrap; font-size: var(--fs-md); line-height: var(--lh-snug); }
 .who__age { display: inline-flex; align-items: baseline; gap: 2px; padding: 2px var(--sp-3); border-radius: var(--r-pill); background: var(--c-brand-soft); color: var(--c-on-brand-soft); border: 1.5px solid var(--c-brand); font-weight: var(--fw-bold); font-size: var(--fs-sm); white-space: nowrap; }
 .who__age b { font-size: var(--fs-xl); line-height: 1.1; font-variant-numeric: tabular-nums; }
+/* 나이 보기 전환 글자 버튼(SPEC-019, 안 A): 알약 오른쪽의 작은 글자 버튼 — 보이는 글자는 작지만 누르는 영역은 위아래·옆으로 넓혀 44px(--hit, ::before — `.log__basis--btn`과 같은 방법). 한국 나이일 때 「만 나이」, 만 나이일 때 「한국 나이」(지금과 반대 기준).
+   `.who`가 flex-wrap이라 좁은 폭(360px·글자 200%)에서 알약과 함께 이름 아래 줄로 내려간다 — 잘리지 않는다 */
+.who__age-switch { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: var(--hit); margin: 0; padding: 0 var(--sp-1); border: 0; background: none; font: inherit; font-size: var(--fs-xs); line-height: var(--lh-snug); font-weight: var(--fw-bold); color: var(--c-text-2); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; cursor: pointer; }
+.who__age-switch::before { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: max(100%, var(--hit)); transform: translateY(-50%); }
+.who__age-switch:hover { color: var(--c-text); }
 .year-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); font-size: var(--fs-sm); color: var(--c-text-2); }
 .year-row__pct { font-variant-numeric: tabular-nums; font-weight: var(--fw-bold); color: var(--c-text); min-width: 2.6em; text-align: right; }
 /* 조작 영역 토큰(SPEC-012 QF5, designer 안 B 2절): 진행 줄 버튼 보이는 높이 36(누르는 높이 44 — 거친 포인터의 ::before 위아래 4px), 같은 줄 간격 6, 줄 사이 8(36 + 8 = 44라 넓힌 누르는 영역이 겹치지 않는다),

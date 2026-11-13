@@ -10,6 +10,7 @@ import { parseGame, type HistoryEntry } from '../src/core';
 import { DASH_TEXT } from '../src/data/dashText';
 import { isStackedEntry } from '../src/ui/dash/LogList';
 import { LogCard } from '../src/ui/dash/LogCard';
+import { inAgeView } from './helpers/ageView';
 
 /**
  * SPEC-012 QF4 · 완료 기준 8 — 인생 기록 결정 줄의 질문 자리 = 사건 제목(`HistoryEntry.title`, 새 필드 없음 · docs/design/log-question.md 안 2).
@@ -20,7 +21,7 @@ import { LogCard } from '../src/ui/dash/LogCard';
  */
 
 const plain = (s: string): string => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-const render = (history: HistoryEntry[], gentle = false): string => renderToStaticMarkup(<LogCard history={history} live={false} gentle={gentle} />);
+const render = (history: HistoryEntry[], gentle = false): string => renderToStaticMarkup(inAgeView(<LogCard history={history} live={false} gentle={gentle} />)); // 이 파일은 저장된 게임 나이를 그대로 읽는다(SPEC-019: 만 나이 맥락)
 const rows = (html: string): string[] => html.split('<li ').slice(1).map((r) => '<li ' + r.slice(0, r.indexOf('</li>')));
 
 const HISTORY: HistoryEntry[] = [

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { familyLineViewText } from '../src/data/familyLineText';
 import type { GameState, HistoryEntry } from '../src/core/types';
 import { KNOWN_SEED, evalCore, findPendingState, injectSave, lifeState, noHorizontalOverflow, readSave, settle, startPageHidden, withoutPlay } from './helpers';
 import { describeWordBreak, measureWordBreaks } from './lineBreaks';
@@ -95,8 +96,8 @@ test('LR1 순서: 새 판을 진행하면 줄이 위가 최신으로 쌓인다 �
   expect(dom).toHaveLength(history.length);
   dom.forEach((d, i) => {
     const h = history[history.length - 1 - i];
-    expect([d.kind, d.age], `${i}번째 줄`).toEqual([h.kind, h.age]);
-    expect(d.text, `${i}번째 줄의 글`).toContain(h.text.slice(0, 12));
+    expect([d.kind, d.age - 1], `${i}번째 줄`).toEqual([h.kind, h.age]);
+    expect(d.text, `${i}번째 줄의 글`).toContain(familyLineViewText(h.eventId, h.text, 'korean').slice(0, 12)); // 가족 변화 줄의 별세 나이는 한국 나이로 읽힌다(SPEC-019)
   });
   const ages = dom.map((d) => d.age);
   expect(ages, '나이는 위에서 아래로 늘지 않는다').toEqual([...ages].sort((a, b) => b - a));
@@ -115,9 +116,9 @@ test('LR1 순서: 새 판을 진행하면 줄이 위가 최신으로 쌓인다 �
   const recordItems = items.filter((it) => !it.includes('시대의 창'));
   expect(recordItems.length, '시대 줄을 뺀 항목 수 = 저장된 줄 수').toBe(history.length);
   const latest = history.at(-1)!;
-  expect(recordItems[0], '첫 항목이 가장 최근 줄(나이)').toContain(`${latest.age}세`);
+  expect(recordItems[0], '첫 항목이 가장 최근 줄(나이)').toContain(`${latest.age + 1}세`);
   expect(recordItems[0], '첫 항목이 가장 최근 줄(글)').toContain(latest.text.slice(0, 8));
-  expect(recordItems.at(-1)!, '마지막 항목은 출생').toContain('0세');
+  expect(recordItems.at(-1)!, '마지막 항목은 출생').toContain('1세');
   // live region 속성이 유지된다
   const ol = page.locator('[data-testid="log-list"] > ol');
   await expect(ol).toHaveAttribute('aria-live', 'polite');

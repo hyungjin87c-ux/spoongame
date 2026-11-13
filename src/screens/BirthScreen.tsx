@@ -2,6 +2,7 @@ import { useMemo, useRef, type ReactNode } from 'react';
 import { wealthMixtureOfGame } from '../core/birthProfile';
 import { birthSentence, reportPlaceLabel, weightStanding } from '../core/birthReport';
 import { startBandOf } from '../core/ending';
+import { ageText } from '../core/format';
 import type { FamilyData } from '../core/familyModel';
 import { BIRTH_SIBLING_TEXT, birthSiblingLine } from '../data/birthSiblingText';
 import { peersOf } from '../core/peers';
@@ -15,6 +16,7 @@ import { profileLabel } from '../core/birthProfile';
 import { bandLabel } from '../data/endingText';
 import { getRegionFootnote } from '../data/koreaStatsAccess';
 import { placeLabel, regionLabelAt } from '../data/regionNames';
+import { useAgeView } from '../ui/ageView';
 import { SiteHead, Sprite } from '../ui/Brand';
 import { FitPair } from '../ui/FitPair';
 import { Glue } from '../ui/Glue';
@@ -77,6 +79,7 @@ function Field({ id, label, wide, span2, children }: { id: string; label: string
 }
 
 export function BirthScreen({ generation, character: c, report, peerSeed, seed, regionPicked = false, family, onNext, onHome }: Props) {
+  const view = useAgeView();
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   const barRef = useRef<HTMLDivElement>(null);
   useThemeSurface();
@@ -149,10 +152,10 @@ export function BirthScreen({ generation, character: c, report, peerSeed, seed, 
                 <GradeLine grade={c.parentWealth} range={`(${band})`} size="lg" />
               </Field>
               <Field id="mother" label={BIRTH_TEXT.gridLabels.mother}>
-                <FitPair a={`${report.mother.age}세`} b={OCCUPATION_LABEL[report.mother.job]} />
+                <FitPair a={ageText(report.mother.age, view)} b={OCCUPATION_LABEL[report.mother.job]} />
               </Field>
               <Field id="father" label={BIRTH_TEXT.gridLabels.father}>
-                <FitPair a={`${report.father.age}세`} b={OCCUPATION_LABEL[report.father.job]} />
+                <FitPair a={ageText(report.father.age, view)} b={OCCUPATION_LABEL[report.father.job]} />
               </Field>
               <Field id="housing" label={BIRTH_TEXT.gridLabels.housing}>
                 {housingText(report.housing)}

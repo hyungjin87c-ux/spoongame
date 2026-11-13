@@ -1,4 +1,5 @@
-import type { HeavyKind } from '../core/types';
+import { ageText } from '../core/format';
+import type { AgeView, HeavyKind } from '../core/types';
 
 /**
  * 「무거운 장면 가리기」의 화면 문구 (SPEC-005 QI6 HV2~HV8) — 한 곳에 모았다. 문구는 모두 docs/design/copy.md 12절의 확정 글이다(R-124): 글자 그대로 옮겼고 새로 쓴 문장은 없다.
@@ -55,6 +56,6 @@ export const VEIL_TEXT = {
 } as const;
 
 /** 접근 가능한 이름 (copy.md 12-2): 보이는 글자 「펼쳐 보기」가 이름의 앞머리 (WCAG 2.5.3). 한 목록에 같은 버튼이 여럿이라 나이와 분류로 맥락을 붙인다. */
-export function veilButtonLabel(open: boolean, age: number, kindName: string): string {
-  return `${open ? VEIL_TEXT.close : VEIL_TEXT.open} ${age}세 ${kindName}`;
+export function veilButtonLabel(open: boolean, age: number, kindName: string, view: AgeView): string {
+  return `${open ? VEIL_TEXT.close : VEIL_TEXT.open} ${ageText(age, view)} ${kindName}`;
 }

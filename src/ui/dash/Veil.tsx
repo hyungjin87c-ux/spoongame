@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from 'react';
+import { useAgeView } from '../ageView';
 import type { CoParents } from '../../core/parentSubject';
 import type { DelegatedBy, HeavyKind } from '../../core/types';
 import { HEAVY_KIND_TEXT, VEIL_TEXT, veilButtonLabel } from '../../data/gentleText';
@@ -69,13 +70,14 @@ export function VeilLead({ kind }: { kind: HeavyKind }) {
  * 「펼쳐 보기 ▾」 ↔ 「접기 ▴」 (copy.md 12-2): `aria-expanded`·`aria-controls`, 접근 가능한 이름 「펼쳐 보기 {나이}세 {분류}」(보이는 글자가 이름의 앞머리 — WCAG 2.5.3). 기호는 aria-hidden(상태는 aria-expanded가 전한다).
  */
 export function VeilButton({ open, age, kind, controls, onToggle }: { open: boolean; age: number; kind: HeavyKind; controls: string; onToggle: () => void }) {
+  const view = useAgeView();
   return (
     <button
       type="button"
       className="btn btn--ghost btn--sm veil__btn"
       aria-expanded={open}
       aria-controls={controls}
-      aria-label={veilButtonLabel(open, age, HEAVY_KIND_TEXT[kind])}
+      aria-label={veilButtonLabel(open, age, HEAVY_KIND_TEXT[kind], view)}
       data-testid="veil-btn"
       onClick={onToggle}
     >

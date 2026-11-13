@@ -38,7 +38,7 @@ test('수동 모드: 카드는 모달 시트로 뜨고(role=dialog·aria-modal·
   // 머리: ◆ 중대 결정 · 「{연도}년 · {나이}세」 · 「잠시 덮어 두기」
   await expect(dialog.locator('.decision__kind')).toHaveText('중대 결정');
   const year = state.character!.birthYear + state.age;
-  expect(await text(page, 'decision-when')).toBe(`${year}년 · ${state.age}세`);
+  expect(await text(page, 'decision-when')).toBe(`${year}년 · ${state.age + 1}세`);
   await expect(page.getByTestId('decision-fold-btn')).toHaveAccessibleName('잠시 덮어 두기');
 
   // 제목(h2) → 상황 → 인용 박스 → 선택지 → 영향 안내 → 자동 모드 안내
@@ -91,7 +91,7 @@ test('연구 인용: 「연구」 라벨 + 저자 성만의 출처 줄(「Teti �
   // K11: 머리 「{연도}년 · {나이}세」의 가운뎃점은 접근성 트리에서 숨는다 — 화면은 그대로 「 · 」
   const when = page.getByTestId('parent-when');
   await expect(when.locator('span[aria-hidden="true"]:not(.fit-pair__probe)')).toHaveText('·');
-  expect(await text(page, 'parent-when')).toBe(`${y.start.character!.birthYear + y.tick.fromAge}년 · ${y.tick.fromAge}세`);
+  expect(await text(page, 'parent-when')).toBe(`${y.start.character!.birthYear + y.tick.fromAge}년 · ${y.tick.fromAge + 1}세`);
   // 비모달: 인용 박스가 있어도 카드에는 링크·버튼이 없다 (아이콘 <use href>는 링크가 아니다)
   expect(await card.locator('a, button, [role="button"]').count()).toBe(0);
 });

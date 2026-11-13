@@ -666,6 +666,7 @@ describe('설정은 게임과 독립', () => {
       lived: [],
       homeRegion: null,
       moneyView: 'then',
+      ageView: 'korean', // SPEC-019: 한국 나이가 기본
     };
     expect(loadSettings(memoryStorage())).toEqual(expected);
     expect(DEFAULT_SETTINGS).toEqual(expected); // M4: BGM은 꺼짐·볼륨 낮음(30), 테마는 시스템 설정을 따름 / M7c: 자동 기록 카드는 켜짐 / SPEC-005: 가림 꺼짐·새 소식 안 봄 / SPEC-004 MG1: 처음 방문의 세대 선택은 「랜덤 세대」(GS4)
@@ -673,7 +674,7 @@ describe('설정은 게임과 독립', () => {
 
   it('설정 저장 왕복 (배속·자동 모드·태어날 세대·인생 길이·살아본 세대·출신 시도·금액 보기)', () => {
     const st = memoryStorage();
-    const custom = { speed: 8, autoMode: true, generation: 'genx', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false, gentle: true, notesSeen: '0.2.0', lived: ['industrial', 'alpha'], homeRegion: '부산', moneyView: 'now' } as const;
+    const custom = { speed: 8, autoMode: true, generation: 'genx', lifeLength: 'short30', bgm: { on: true, volume: 55 }, theme: 'dark', noteCards: false, gentle: true, notesSeen: '0.2.0', lived: ['industrial', 'alpha'], homeRegion: '부산', moneyView: 'now', ageView: 'man' } as const;
     saveSettings(st, { ...custom, lived: [...custom.lived] });
     expect(loadSettings(st)).toEqual({ ...custom, lived: [...custom.lived] });
   });

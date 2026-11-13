@@ -213,7 +213,7 @@ test('해가 바뀌면 그림과 연도 표가 바뀐다: 0세(업힌 아기) �
   await expect(page.getByTestId('pause')).toHaveAttribute('data-paused', 'true');
   await page.waitForTimeout(700); // 교차 페이드가 끝나 겹친 이전 그림이 사라질 때까지
   await expect(page.locator('.scene__year time')).not.toHaveAttribute('datetime', first!);
-  const age = Number((await page.getByTestId('life-age').locator('b').textContent())!);
+  const age = Number((await page.getByTestId('life-age').locator('b').textContent())!) - 1; // 화면은 한국 나이(+1, SPEC-019) — 게임 나이로 되돌린다
   const yearNow = Number(await page.locator('.scene__year time').getAttribute('datetime'));
   expect(yearNow).toBe(2016 + age); // lifeState의 출생 연도 2016
   // 3세를 넘으면 업힌 아기 조각은 없고 주인공은 유아 이상 조각이다

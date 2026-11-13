@@ -59,7 +59,7 @@ describe('LR1 순서: 화면만 뒤집고 저장 순서는 그대로', () => {
   it('렌더 결과(DOM 순서)가 곧 화면 순서다: 나이가 위에서 아래로 늘지 않고, 첫 줄이 굵게(latest), 끝 줄이 출생이다', () => {
     const rows = rowsOf(renderLog(BASE));
     expect(rows).toHaveLength(BASE.length);
-    expect(rows.map((r) => Number(/^(\d+)세/.exec(plain(r.html))![1]))).toEqual([7, 7, 2, 2, 0]);
+    expect(rows.map((r) => Number(/^(\d+)세/.exec(plain(r.html))![1]))).toEqual([8, 8, 3, 3, 1]); // 한국 나이 기본(SPEC-019): 게임 나이 + 1
     expect(rows.map((r) => r.cls.includes('log__row--latest'))).toEqual([true, false, false, false, false]);
     expect(rows.at(-1)!.kind).toBe('stage');
     expect(plain(rows[0].html)).toContain('준비물을 샀습니다.');

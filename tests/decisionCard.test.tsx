@@ -111,13 +111,13 @@ describe('모달 시트 (자동 모드 꺼짐)', () => {
     const head = html.slice(html.indexOf('class="decision__head"'), html.indexOf('class="decision__body"'));
     expect(text(head)).toContain('중대 결정');
     const year = calendarYear(withCite.character!.birthYear, withCite.age);
-    expect(text(head.slice(head.indexOf('decision__when')))).toContain(`${year}년 · ${withCite.age}세`);
+    expect(text(head.slice(head.indexOf('decision__when')))).toContain(`${year}년 · ${withCite.age + 1}세`);
     expect(head).toContain('data-testid="decision-fold-btn"');
     // K11: 보이는 모양은 「{연도}년 · {나이}세」지만 가운뎃점은 접근성 트리에서 숨긴다 — 낭독은 「{연도}년 {나이}세」, 양옆 공백은 밖에 있어 붙지 않는다
     const whenAt = head.indexOf('>', head.indexOf('decision__when')) + 1;
     const when = head.slice(whenAt, head.indexOf('</span></span>', whenAt) + 14);
     expect(when).toContain('<span aria-hidden="true">·</span>');
-    expect(when.replace(/<span aria-hidden="true">[^<]*<\/span>/g, '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()).toBe(`${year}년 ${withCite.age}세`);
+    expect(when.replace(/<span aria-hidden="true">[^<]*<\/span>/g, '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()).toBe(`${year}년 ${withCite.age + 1}세`);
     expect(when).toMatch(/년<\/?[^>]*> ?<span aria-hidden="true">·<\/span> ?<?/);
     expect(head).toMatch(/잠시 덮어 두기 <span aria-hidden="true">▾<\/span>/);
   });

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { SPEEDS, bandOfWealth, buildFeedbackUrl, calendarYear, coParentsFn, eraRowsOf, famSeedOf, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
-import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
+import { ageText, displayAge } from '../core/format';
+import { BGM_VOLUME_MAX, BGM_VOLUME_MIN, type AgeView } from '../core/types';
 import { eventPool } from '../core/gameData';
 import { DASH_TEXT } from '../data/dashText';
 import { BUILD_LABEL, REPO_URL } from '../buildInfo';
+import { AgeViewContext } from '../ui/ageView';
 import { HeaderLogo, Icon, Sprite } from '../ui/Brand';
 import { FeedbackLink } from '../ui/FeedbackLink';
 import { GuardedButton } from '../ui/GuardedButton';
@@ -117,6 +119,8 @@ interface Props {
   onPause: (paused: boolean) => void;
   onBgm: (bgm: Partial<BgmSettings>) => void;
   onTheme: (theme: ThemeChoice) => void;
+  /** 헤더의 나이 보기 전환 「만 나이」/「한국 나이」 (SPEC-019, 설정에 저장) */
+  onAgeView?: (view: AgeView) => void;
   /** 확인 단계를 거친 뒤에만 불린다 (일시정지 상태로 저장하고 첫 화면으로) */
   onExit: () => void;
   /** 헤더 로고를 누르면 확인 없이 첫 화면으로 (SPEC-016 H1) — App이 「나가기」와 같은 `openTitle`을 보낸다(일시정지로 저장, 「이어서 살기」로 같은 해). 없으면 로고는 그림이다. 헤더는 겹창이 열린 동안 `inert`라 로고도 닿지 않는다 */
@@ -299,7 +303,7 @@ const NOOP = () => undefined;
 /** React 18은 `inert` 불리언 속성을 모른다 — 빈 문자열 속성으로 건다(켜져 있을 때만; 끄면 속성 자체가 없다). 시트가 떠 있는 동안 바깥 전부에 거는 값이다 */
 const INERT = { inert: '' } as Record<string, string>;
 
-export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onSceneFold = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, onHome, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
+export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock, exitOpen, onExitOpen, folded = false, guardEpoch = 0, onFold = NOOP, onReopen = NOOP, veilOpened = false, onVeilOpen = NOOP, onAutoPick = NOOP, onAutoFromCard = NOOP, autoStatus = null, noteSheet = null, onOpenNote = NOOP, onNoteSave = NOOP, onNoteDismiss = NOOP, onNoteCards = NOOP, onSceneFold = NOOP, onAgeView = NOOP, onChoose, onSkip, onSpeed, onAuto, onPause, onBgm, onTheme, onExit, onHome, repoUrl = REPO_URL, buildLabel = BUILD_LABEL }: Props) {
   const pool = poolProp ?? eventPool(); // 이벤트 풀은 「태어나기」 뒤에 불러온다(MG8) — 인생 화면이 열릴 때는 이미 놓여 있다
   const c = game.character;
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -410,6 +414,7 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
   };
 
   return (
+    <AgeViewContext.Provider value={settings.ageView}>
     <div className="page dash-page" data-testid="life-screen">
       <Sprite />
       {/* 자동 고르기 버튼의 전환 문장 (UX12-3 ④): 카드 밖 한 곳에 늘 있는 낭독 영역 — 시트가 사라지거나 생기는 렌더에서 글자만 바뀐다(처음부터 있던 영역이라 낭독된다). 눈에는 보이지 않고, 전환 뒤 App이 비운다(자동 선택마다 읽히지 않게, content-M7b 4-3) */}
@@ -424,10 +429,21 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
               <h1 className="who__name" ref={headingRef} tabIndex={-1} data-testid="life-name">
                 {c.name}
               </h1>
-              <span className="who__age" data-testid="life-age">
-                <b>{game.age}</b>
-                {DASH_TEXT.ageSuffix}
+              {/* 나이 알약 (SPEC-019): 한국 나이는 「24세」, 만 나이는 「만 23세」. 화면 읽기 이름은 「한국 나이 24세」/「만 나이 23세」 */}
+              <span className="who__age" data-testid="life-age" role="img" aria-label={DASH_TEXT.ageViewPillName(settings.ageView, ageText(game.age, settings.ageView))}>
+                {settings.ageView === 'man' ? DASH_TEXT.ageManMark : null}
+                <b>{displayAge(game.age, settings.ageView)}</b>
+                {DASH_TEXT.ageUnit}
               </span>
+              <button
+                type="button"
+                className="who__age-switch"
+                data-testid="age-switch"
+                aria-label={settings.ageView === 'korean' ? DASH_TEXT.ageSwitchToManName : DASH_TEXT.ageSwitchToKoreanName}
+                onClick={() => onAgeView(settings.ageView === 'korean' ? 'man' : 'korean')}
+              >
+                {settings.ageView === 'korean' ? DASH_TEXT.ageSwitchToMan : DASH_TEXT.ageSwitchToKorean}
+              </button>
             </div>
           </div>
           <YearRow year={calendarYear(c.birthYear, game.age)} clock={clock} paused={game.paused} />
@@ -533,5 +549,6 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
         />
       ) : null}
     </div>
+    </AgeViewContext.Provider>
   );
 }

@@ -567,10 +567,10 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
   if (review.delegated.parent !== choiceLines.filter((h) => h.by === 'parent').length || review.delegated.child !== choiceLines.filter((h) => h.by === 'child').length) bad('부모님이 정한·흘러간 선택 수가 연표의 `by` 기록 수와 다르다');
   if (review.choiceCount + review.delegated.parent + review.delegated.child !== choiceLines.length) bad('본인 + 부모님 + 흘러간 선택 수의 합이 연표의 선택 기록 수와 다르다');
   if (!deepEqual(review.timeline.flatMap((g) => g.entries), game.history)) bad('연표를 단계별로 묶으면 항목이 빠지거나 순서가 바뀐다');
-  out.push(...checkPlainText(deathLineText(game.death), `${where} 사망 줄`));
+  out.push(...checkPlainText(deathLineText(game.death, 'korean'), `${where} 사망 줄`));
   out.push(...checkPlainText(choiceCountText(review.choiceCount), `${where} 선택 수 줄`));
   out.push(...checkPlainText(JOURNEY_NOTE, `${where} 안내`));
-  for (const g of review.timeline) out.push(...checkPlainText(stageHeadingText(g.stage), `${where} 단계 제목`));
+  for (const g of review.timeline) out.push(...checkPlainText(stageHeadingText(g.stage, 'korean'), `${where} 단계 제목`));
   for (const h of game.history) {
     const line = `${h.title ?? ''} ${h.text} ${h.choice ?? ''}`;
     if (/[!！]/.test(line) || EMOJI.test(line)) bad(`연표에 느낌표·이모지가 있다: ${line}`);
