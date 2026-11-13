@@ -4,8 +4,8 @@
 |---|---|
 | 리뷰 ID | CX-004 (2회차) |
 | 유형 | **A 구현 감사**(삭제의 정확성) + 짧은 **B**(엔딩·출생 화면 확인) |
-| 대상 브랜치 | `review/CX-004-r2` (대상 커밋 `<삭제 커밋 SHA 40자>` 위에 이 요청서만) |
-| 비교 기준 | `eede085`(1회차 대상) → `<대상 SHA>` |
+| 대상 브랜치 | `review/CX-004-r2` (대상 커밋 `29731c4c419beb1339f6fcff33a0ca38361f1306` 위에 이 요청서만) |
+| 비교 기준 | `eede085`(1회차 대상) → `29731c4` |
 | 레인 | CRITICAL — 핵심 통계 삭제·`core/ending.ts` 공개 인터페이스 변경·시험 삭제 |
 | 작성 | Claude Code 마스터, 2026-11-13 |
 
@@ -20,7 +20,7 @@
 - 함께 바뀐 것: FAQ 문장 하나(`src/data/aboutFaq.ts` — 없어진 기능을 말하지 않게), R1 경제 스냅숏의 판 끝 해시 두 개(`tests/fixtures/r1-economy-snapshot.json` — 해시 입력에서 이동 판정 칸이 빠졌다는 설명), `docs/TODO.md`의 닫힌 줄 근거 표지(지운 파일·심볼 표시).
 
 ## 3. 시험 결과 (작성자 측)
-- T0 통과(`typecheck`·`check:events`·`check:todo`·`check:motifs`·`check:era-art`). 전체 `npm test`: <확정>. e2e: 엔딩을 여는 spec 22개 통과(개발 기록), `e2e:prod` 33 통과 · 첫 로딩 Chromium 390,252 B · WebKit 394,354 B(전 394,726 · 398,777).
+- T0 통과(`typecheck`·`check:events`·`check:todo`·`check:motifs`·`check:era-art`). 전체 `npm test`: **226파일 · 5,558 통과 · 건너뜀 2 · todo 1, 실패 0**. e2e: 엔딩을 여는 spec 22개 통과(개발 기록), `e2e:prod` 33 통과 · 첫 로딩 Chromium 390,252 B · WebKit 394,354 B(전 394,726 · 398,777).
 
 ## 4. 검증 질문
 1. **남길 것을 건드렸는가**: 수저 구간 글자(룰렛·출생신고·프로필), 출생 화면 백분위, 엔딩 최종 스탯의 처음 값 비교, 최종 순자산 줄(20세 전후·자산 없음), 연표·플레이 시간·사망 줄이 삭제 전과 같은가(`eede085`과 같은 시드·같은 저장으로 대조).
