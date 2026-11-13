@@ -70,7 +70,7 @@
 ### 1-4. 자동 모드와의 관계 (`autoChoiceWeights`)
 
 - 보정 곱 `m_key = clamp(1 + Σ_t TP[t][key] × (w_t − 50)/100, 0.8, 1.25)`를 `AUTO_PRIORITY[양육 방식]`의 5키에 곱한다(`TP` 9절, ▲).
-- **활동 끌림**: `act` 선택지 점수에 `ACT_PULL × Σ_t (w_t − 50)/50 × ACT_SHIFT[act][t]/5`(`ACT_PULL = 4`▲). **끌림은 여섯 항의 합이라 합산 뒤 `clamp(합, −4, +4)`로 자른다**(상한 `actPullCap = 4`▲, 하한은 대칭으로 −4 — 판단). 상한에서 가중 `exp(4/6) ≈ ×1.95`(T = 6) — 기존 점수가 같은 세 후보 중 한 후보가 받는 몫 ≈ 49%(손계산, 60% 아래). 자르기 전에는 Codex 반례로 세기 벡터 `[40,76,95,87,5,64]`에서 +7.87(→ ×3.7, 한 후보 65.0%)·직접 극단 벡터 +9.36까지 나왔다 `[CX-002-008]`. 자동·흘러감과 **부모 결정**이 쓴다 — 부모 결정(`parentChoiceWeights`)은 맞춤 판에서만 같은 끌림을 점수에 더하고 부모 온도 8로 퍼진다(**결정 후속 237 ①**, 「아이가 좋아하는 쪽을 시킨다」 — 19세 미만 카드가 부모 결정이라 8(c)가 0이 되던 것을 막는다). 직업 카드의 `jobPickWeights`에는 `act`가 없어 해당 없음. **60% 가드 시험**: ① 기질 극단 벡터(`w` 5·95 조합 전부) ② 같은 활동 20회 반복 뒤 벡터(Codex 반례 재현) ③ 세 후보 기대 가중(같은 기존 점수 · 한 후보만 활동 일치)에서 한 후보의 자동 선택 몫 ≤ 60%.
+- **활동 끌림**: `act` 선택지 점수에 `ACT_PULL × Σ_t (w_t − 50)/50 × ACT_SHIFT[act][t]/5`(`ACT_PULL = 8`▲ — 사다리 최대, 2026-11-13 4에서 올림). **끌림은 여섯 항의 합이라 합산 뒤 `clamp(합, −4, +4)`로 자른다**(상한 `actPullCap = 4`▲, 하한은 대칭으로 −4 — 판단). 상한에서 가중 `exp(4/6) ≈ ×1.95`(T = 6) — 기존 점수가 같은 세 후보 중 한 후보가 받는 몫 ≈ 49%(손계산, 60% 아래). 자르기 전에는 Codex 반례로 세기 벡터 `[40,76,95,87,5,64]`에서 +7.87(→ ×3.7, 한 후보 65.0%)·직접 극단 벡터 +9.36까지 나왔다 `[CX-002-008]`. 자동·흘러감과 **부모 결정**이 쓴다 — 부모 결정(`parentChoiceWeights`)은 맞춤 판에서만 같은 끌림을 점수에 더하고 부모 온도 8로 퍼진다(**결정 후속 237 ①**, 「아이가 좋아하는 쪽을 시킨다」 — 19세 미만 카드가 부모 결정이라 8(c)가 0이 되던 것을 막는다). 직업 카드의 `jobPickWeights`에는 `act`가 없어 해당 없음. **60% 가드 시험**: ① 기질 극단 벡터(`w` 5·95 조합 전부) ② 같은 활동 20회 반복 뒤 벡터(Codex 반례 재현) ③ 세 후보 기대 가중(같은 기존 점수 · 한 후보만 활동 일치)에서 한 후보의 자동 선택 몫 ≤ 60%.
 - **중립 불변**: `persona`가 없으면 `m_key = 1`·끌림 0 — 구형 저장·`PERSONA_ENABLED = false`의 자동 결과는 변경 전과 **비트 단위로 같다**. R-039(`autoResolveStep` = 수동 선택과 상태 전체가 같음)는 같은 함수라 유지. 조르기 `ask` 경로의 `scoreOf`도 같은 `priority`를 읽는다.
 
 ---
@@ -390,6 +390,8 @@ persona?: {
 
 ## 7. 튜닝 사다리와 시험 (⑦)
 
+**사다리 이동 기록**: 2026-11-13 `ACT_PULL` 4 → **8**·`actPullCap` 4 → **5**(사다리 최대 — 결정 후속 251 ②, 형진 님 「추천대로」). PL5 갈림길의 기질 총변동거리(완료 기준 8(c), ▲ 0.15)가 G1 0.07~0.09·G2 0.08~0.14·G3 0.05~0.06이었다. 사다리 최대에서 G2는 0.15~0.23으로 기준을 넘고, G1 0.13~0.14·G3 0.10~0.11은 미달로 남아 보고한다(`ai-log/2026-11-13_SPEC-018_PL5-measure.md`). 60% 가드는 상한 5에서 exp(5/6) ≈ 2.30배 → 몫 ≈ 53.5%(손계산)라 안이다.
+
 **사다리**(재승인 없이, 움직이면 dev 로그와 이 절에 기록): ① `ACT_PULL` 2~8 ② 완충 `H` 4~10 ③ `ACT_SHIFT`·`ACT_APT` ±1(행 합 제약 유지) ④ `ENV_DRIFT` 확률 0.3~0.6 ⑤ `GMAX` 25~35(저장 범위 0..40은 `v = 1`에 고정 — 불러온 `g > GMAX`는 보존) · **싹 계수 0.7은 「버전 올림 필요」 — 사다리 밖**(`persona.v`를 올리고 옛 `v`는 옛 계수, [CX-002-007]) ⑥ `INVEST_Q` ±0.05(수저 단조, 기준값은 후보 B — 5칸의 사다리 밖 이동은 2-1절에서 승인 완료) ⑦ `TP`·`AFF` ±0.1 ⑧ 후보 상한 5·하한 3 고정 ⑨ **`BORNM`·`BORNN` ±0.05(범위 0.9~1.15 / 0.95~1.1 유지)** ⑩ **`ADV` 확률 ±0.1, 지지 가산 0.2~0.4** ⑪ 본보기 +3(2~4) ⑫ **`LOOKW.friend` ±0.05(단조 유지)·`LOOKK` ±0.02(연구 범위 안), 구간 연도는 2016·2017·2019 근거 안 — `LOOKW.romance`(형진 님 지정 k = 0.70)는 사다리 밖, 움직이려면 형진 님 승인** ⑬ `jobMul` 지수 `k` 0.6~1.0·승무원 캡 1.0~1.4 ⑭ **`actPullCap` 3~5(합산 뒤 clamp)** ⑮ **4C ▲ 값**: `LOOKERA`의 ▲ 칸(0.6~1.0, 밀레니얼 구간 1996~2019는 사다리 밖 — 확정 k 불변) · `HIREYEAR` 하한 0.85(승인 사항 — 통계가 넘는 하락이면 형진 님께). **범위 밖은 승인**: 유형 수·id, 해시 태그·키, 출생 분포 구조, 입력 추가, 외모를 조건(길 막기)으로 쓰는 변경.
 
 **시험 목록**(신설 제안): `personaDoc.test.ts`(9절 블록 ↔ 코드) · `personaBirth.test.ts`(L0 불변·분포 ±▲·수저 간 차이) · `personaShift.test.ts`(활동·감쇠·상하한·완충·역경 경로·지지·본보기 상한·격자) · `personaStereotype.test.ts`(1-3 ⑤ ⓓ 보고) · `personaApt.test.ts` · `personaCondition.test.ts`(자격 불변 골든) · `eventLintPersona.test.ts`(변주·양립·외모 조건 금지 lint·허용 목록) · `jobTable.test.ts`(후보 3~5·`yearRange`·`open`·막다른 길 0·`wageRef` 대응) · `jobWage.test.ts`(5절 식·승무원 캡·`jobMul` 범위·구형 1) · `jobApply.test.ts`(4B 판정·`tries ≥ 3`·경계) · `looksEffect.test.ts`(방향·시대·예외 목록·연애 반대 사례 사건 존재) · `storagePersona.test.ts` · `personaAuto.test.ts`(R-039·중립 불변·끌림 상한 60% 가드) · **(r4 추가)** `careerTrack.test.ts`(4-1 상태 전이·예약 조건·네 번째 지원 도달·`pick` 린트·판 길이 셈) · `pickChoices.test.ts`(`pickChoicesOf` 공통 인터페이스 — 렌더·해결·자동·복원이 같은 결과) · `eligibilityGoldenBoundary.test.ts`(경계 연도 −1·0·+1·필드별 차이·`stepYear` 표본) · `visibleChoiceGrid.test.ts`(`minVisibleChoices`·격자 하한) · `weightBounds.test.ts`(합성 가중 0.01~10000) · `personaBudget.test.ts`(`advUsed`·`roleUsed`·갱신 세 지점·가림 켬끔 동치) · `personaVersion.test.ts`(`SEEDCOEF[v]`·`g` 0..40 양방향 로드) · `eraTables.test.ts`(`LOOKERA`·`HIREYEAR` 값·입문 보장 불변). 기존 시험은 지우지 않는다.
@@ -443,7 +445,7 @@ MODEL | gMax | 30
 MODEL | seedCoef | 0.7
 MODEL | tierMid | 35
 MODEL | tierHigh | 65
-MODEL | actPull | 4
+MODEL | actPull | 8
 MODEL | partialWeight | 0.5
 MODEL | candidatesMax | 5
 MODEL | candidatesMin | 3
@@ -463,7 +465,7 @@ MODEL | relBonus | 0.06
 MODEL | stretchPenalty | 0.15
 MODEL | pRange | 0.10 0.95
 MODEL | gStoreMax | 40
-MODEL | actPullCap | 4
+MODEL | actPullCap | 5
 MODEL | roleUsedMax | 12
 MODEL | candidatesShown | 3
 MODEL | trackWindow | 19 27

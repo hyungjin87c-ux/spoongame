@@ -38,25 +38,29 @@ describe('성향 표 보정 곱 m_key', () => {
   });
 });
 
-describe('활동 끌림: 합산 뒤 ±4로 자른다', () => {
-  it('Codex 반례 벡터 [40,76,95,87,5,64]는 자르기 전에 +7.87까지 나온다 — 자른 뒤에는 4다', () => {
+// 끌림 세기·상한은 설계 표 값을 읽는다(사다리 이동 — 2026-11-13 `actPull` 4 → 8 · `actPullCap` 4 → 5, 결정 후속 251 ②)
+const PULL = PERSONA_TABLE.MODEL.actPull[0];
+const CAP = PERSONA_TABLE.MODEL.actPullCap[0];
+
+describe('활동 끌림: 합산 뒤 ±상한(actPullCap)으로 자른다', () => {
+  it('Codex 반례 벡터 [40,76,95,87,5,64]는 자르기 전에 끌림 4 기준 +7.87까지 나온다 — 자른 뒤에는 상한이다', () => {
     const v = [40, 76, 95, 87, 5, 64];
     const raw = (act: (typeof ACT_KINDS)[number]): number => {
       const row = PERSONA_TABLE.ACT[act] as readonly number[];
-      return 4 * v.reduce((a, x, t) => a + ((x - 50) / 50) * (row[t] / 5), 0);
+      return PULL * v.reduce((a, x, t) => a + ((x - 50) / 50) * (row[t] / 5), 0);
     };
     const worst = Math.max(...ACT_KINDS.map(raw));
-    expect(worst).toBeGreaterThan(7.5); // 반례 재현(설계가 적은 +7.87)
-    expect(Math.max(...ACT_KINDS.map((a) => actPullOf(w(v), a)))).toBe(4);
+    expect(worst * (4 / PULL)).toBeGreaterThan(7.5); // 반례 재현(설계가 적은 끌림 4 기준 +7.87)
+    expect(Math.max(...ACT_KINDS.map((a) => actPullOf(w(v), a)))).toBe(CAP);
   });
 
-  it('어느 벡터(5·95의 64조합)·어느 활동에서도 −4 ~ +4다', () => {
+  it('어느 벡터(5·95의 64조합)·어느 활동에서도 −상한 ~ +상한이다', () => {
     for (let mask = 0; mask < 64; mask++) {
       const v = Array.from({ length: 6 }, (_, i) => ((mask >> i) & 1 ? 95 : 5));
       for (const act of ACT_KINDS) {
         const pull = actPullOf(w(v), act);
-        expect(pull).toBeGreaterThanOrEqual(-4);
-        expect(pull).toBeLessThanOrEqual(4);
+        expect(pull).toBeGreaterThanOrEqual(-CAP);
+        expect(pull).toBeLessThanOrEqual(CAP);
       }
     }
   });
@@ -87,8 +91,8 @@ describe('60% 가드: 세 후보 중 한 후보의 자동 선택 몫 ≤ 60%', (
       for (const act of ACT_KINDS) worst = Math.max(worst, shareOf(act, withW(v)));
     }
     expect(worst).toBeLessThanOrEqual(0.6);
-    // 상한 +4에서 가중 exp(4/6) ≈ 1.95배 → 몫 ≈ 49% (손계산, 60% 아래)
-    expect(worst).toBeCloseTo(Math.exp(4 / T) / (Math.exp(4 / T) + 2), 6);
+    // 상한에서 가중 exp(CAP/6) — 상한 5면 ≈ 2.30배 → 몫 ≈ 53.5% (손계산, 60% 아래)
+    expect(worst).toBeCloseTo(Math.exp(CAP / T) / (Math.exp(CAP / T) + 2), 6);
   });
 
   it('② 같은 활동 20회 반복 뒤 벡터(Codex 반례 재현)', () => {
