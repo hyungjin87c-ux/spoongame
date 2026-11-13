@@ -4,7 +4,6 @@ import { NOTE_LIMITS, calendarYear, citationFor, liveGraphemes, noteQuestion, sa
 import { ageText } from '../../core/format';
 import { titleCharsFor } from '../../data/dashText';
 import { NOTE_TEXT } from '../../data/noteSheetText';
-import { useAgeView } from '../ageView';
 import { FitPair } from '../FitPair';
 import { Glue } from '../Glue';
 import { GuardedButton } from '../GuardedButton';
@@ -57,7 +56,6 @@ interface Msg {
 
 export function NoteSheet({ via, card, game, count, cardsOn, guardKey, onSave, onDismiss, onToggleCards }: NoteSheetProps) {
   useScrollLock();
-  const view = useAgeView();
   const full = count >= NOTE_LIMITS.total;
   const limit = Math.min(LIMIT, card?.maxLength ?? LIMIT);
   const question = noteQuestion(card, game);
@@ -256,7 +254,7 @@ export function NoteSheet({ via, card, game, count, cardsOn, guardKey, onSave, o
             {NOTE_TEXT.kind}
           </span>
           <span className="sheet__age" data-testid="note-when">
-            <FitPair a={`${year}년`} b={ageText(game.age, view)} hideSeparator />
+            <FitPair a={`${year}년`} b={ageText(game.age)} hideSeparator />
           </span>
         </div>
         <div className="sheet__body">

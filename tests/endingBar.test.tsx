@@ -136,13 +136,13 @@ describe('엔딩 범례와 머리 (R-327)', () => {
       // 세대·출생 연도는 머리의 「{세대} · {연도}년생」 줄이 처음 보인다 (GS9·GD2)
       expect(textOf(/data-testid="ending-gen">([^]*?)<\/p>/.exec(html)![1])).toContain(genLine(profileLabel(era), g.character.birthYear));
       const c = g.character;
-      expect(textOf(/data-testid="ending-span">([^]*?)<\/p>/.exec(html)![1])).toBe(endingSpanText(c.birthYear, g.birthReport!.month, c.birthYear + g.death.age, g.death.age, 'korean'));
+      expect(textOf(/data-testid="ending-span">([^]*?)<\/p>/.exec(html)![1])).toBe(endingSpanText(c.birthYear, g.birthReport!.month, c.birthYear + g.death.age, g.death.age));
       expect(textOf(/data-testid="ending-span">([^]*?)<\/p>/.exec(html)![1])).toMatch(/^\d{4}년 \d{1,2}월 ~ \d{4}년 · \d+세$/);
       expect(html).not.toContain('data-testid="ending-born"');
     }
-    expect(endingSpanText(2026, 1, 2110, 84, 'korean')).toBe('2026년 1월 ~ 2110년 · 85세');
-    expect(endingSpanText(2026, null, 2110, 84, 'korean')).toBe('2026년 ~ 2110년 · 85세');
-    expect(endingSpanText(2026, 1, 2110, 84, 'man')).toBe('2026년 1월 ~ 2110년 · 만 84세'); // 엔딩 머리는 만 나이일 때만 「만」(SPEC-019)
+    expect(endingSpanText(2026, 1, 2110, 84)).toBe('2026년 1월 ~ 2110년 · 85세');
+    expect(endingSpanText(2026, null, 2110, 84)).toBe('2026년 ~ 2110년 · 85세');
+    expect(endingSpanText(2026, 1, 2110, 84)).not.toContain('만'); // 엔딩 머리에도 「만」 표기가 없다(SPEC-019 r2 — 만 나이는 인생 화면 헤더에만)
   });
 });
 

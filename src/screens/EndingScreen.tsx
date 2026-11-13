@@ -39,7 +39,6 @@ import { GuardedButton } from '../ui/GuardedButton';
 import { FinalNetLine } from '../ui/dash/FinalNet';
 import { NoteBody } from '../ui/dash/NoteText';
 import { VeiledText, VeilTimelineStamp, useVeilOpen } from '../ui/dash/Veil';
-import { useAgeView } from '../ui/ageView';
 import { KeepStanding } from '../ui/KeepStanding';
 import { PlayTime } from '../ui/PlayTime';
 import { useFocusOnChange } from '../ui/useFocus';
@@ -120,7 +119,6 @@ function PlayTimeBlock({ play }: { play: PlayRecord }) {
 
 /** 연표 줄 하나의 내용(질문 또는 제목 → 고른 길 → 결과 문장) — 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다 */
 function TimelineBody({ entry, subject }: { entry: HistoryEntry; subject: CoParents }) {
-  const view = useAgeView();
   const headline = entryHeadline(entry); // 질문 문장 우선, 없으면 제목 (SPEC-014 QS2)
   return (
     <>
@@ -138,18 +136,17 @@ function TimelineBody({ entry, subject }: { entry: HistoryEntry; subject: CoPare
           )}
         </span>
       ) : null}
-      <span className="tl-text">{familyLineViewText(entry.eventId, entry.text, view)}</span>
+      <span className="tl-text">{familyLineViewText(entry.eventId, entry.text)}</span>
     </>
   );
 }
 
 function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = false, onToggle }: { entry: HistoryEntry; /** 부모 결정 줄의 도장 주어 — 그 줄 나이에 함께 사는 부모(SPEC-011 DS1, `review.timeline[].subjects`) */ subject?: CoParents; gentle?: boolean; veilId?: string; open?: boolean; onToggle?: () => void }) {
-  const view = useAgeView();
   // 「나의 기록」 줄(M7c FR9): 인생 기록(LogCard)과 같은 부품 — 라벨 「나의 기록 · {주제}」 + 사용자 글(`<bdi data-user-text>`). 글을 읽는 분기는 없다
   if (entry.kind === 'note') {
     return (
       <li className="is-note" data-kind="note" data-testid="timeline-entry">
-        <span className="log__age">{ageText(entry.age, view)}</span>
+        <span className="log__age">{ageText(entry.age)}</span>
         <span>
           <NoteBody entry={entry} textClassName="tl-text" />
         </span>
@@ -161,7 +158,7 @@ function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = 
     // 가린 줄 (HV4 ④): 인생 기록 줄과 같은 부품 — 안내 「무거운 일이 있었습니다 · {분류}」 + [결정자 도장] + 「펼쳐 보기」, 펼치면 제목 → 고른 길 → 결과 문장. 사망 줄은 heavy가 아니라 여기 오지 않는다(원인 낱말까지 그대로, R-470)
     return (
       <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-veiled="true" data-testid="timeline-entry">
-        <span className="log__age">{ageText(entry.age, view)}</span>
+        <span className="log__age">{ageText(entry.age)}</span>
         <span className="veil">
           <VeiledText kind={heavy} age={entry.age} bodyId={`veil-${veilId}`} open={open} onToggle={onToggle ?? (() => undefined)} stamp={entry.by !== undefined ? <VeilTimelineStamp by={entry.by} open={open} subject={subject} /> : null}>
             <TimelineBody entry={entry} subject={subject} />
@@ -172,7 +169,7 @@ function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = 
   }
   return (
     <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-testid="timeline-entry">
-      <span className="log__age">{ageText(entry.age, view)}</span>
+      <span className="log__age">{ageText(entry.age)}</span>
       <span>
         <TimelineBody entry={entry} subject={subject} />
       </span>
@@ -190,7 +187,6 @@ function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = 
  * `role="img"` + 함수 조합 `aria-label`)와 **범례**(출발선 = 수저 칩 + 「({구간})」, 마지막 = 자리), 합쇼체 문장. 막대의 숫자는 모두 구현 함수에서 온다(`startBandOf`의 low·high, `standingScore(end)`).
  */
 export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gentle = false }: Props) {
-  const view = useAgeView();
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
   useThemeSurface();
   useScrollTopOnMount();
@@ -279,13 +275,13 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
               {game.birthReport === null ? null : <span>{endingBornText(reportPlaceLabel(game.birthReport, c.birthYear))}</span>}
             </p>
             <p className="t-muted" data-testid="ending-span">
-              <Glue text={endingSpanText(c.birthYear, game.birthReport === null ? null : game.birthReport.month, c.birthYear + game.death.age, game.death.age, view)} hideSeparator />
+              <Glue text={endingSpanText(c.birthYear, game.birthReport === null ? null : game.birthReport.month, c.birthYear + game.death.age, game.death.age)} hideSeparator />
             </p>
           </div>
         </div>
 
         <section className="card stack stack--sm" aria-label={DASH_TEXT.endingSummaryLabel}>
-          <p data-testid="ending-death">{deathLineText(game.death, view)}</p>
+          <p data-testid="ending-death">{deathLineText(game.death)}</p>
           <p className="t-muted" data-testid="ending-choices">
             {choiceCountText(review.choiceCount)}
           </p>
@@ -384,7 +380,7 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
           {review.timeline.map((group) => (
             <div className="tl-group" key={group.stage} data-testid={`timeline-${group.stage}`}>
               <h3>
-                <Glue text={stageHeadingText(group.stage, view)} />
+                <Glue text={stageHeadingText(group.stage)} />
               </h3>
               <ol className="timeline">
                 {group.entries.map((e, i) => {

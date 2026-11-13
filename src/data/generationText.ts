@@ -1,5 +1,5 @@
 import { ageRangeText } from '../core/format';
-import type { AgeView, GenerationChoice, GenerationId } from '../core/types';
+import type { GenerationChoice, GenerationId } from '../core/types';
 import { GENERATION_CONFIG } from './generationConfig';
 import { ALL_GENERATIONS_RANGE, GENERATIONS } from './generations';
 import { CURRENT_REGION_NAMES, REGION_KEYS, type CurrentRegionName, type RegionKey } from './regionKeys';
@@ -57,9 +57,9 @@ export const GEN_TEXT = {
 } as const;
 
 /** 한 줄의 접근 가능한 이름 재료: 세대 이름 + 메타(`{범위}년생 · 올해 N~M세`). 「랜덤 세대」 줄은 메타가 없다 */
-export function genMetaText(from: number, to: number, view: AgeView): { range: string; age: string } {
+export function genMetaText(from: number, to: number): { range: string; age: string } {
   // 올해 나이 = 올해 − 태어난 해(만 나이 기준, 게임 나이와 같은 셈) → 한국 나이는 +1 (SPEC-019)
-  return { range: `${from}~${to}년생`, age: `올해 ${ageRangeText(NOW_YEAR - to, NOW_YEAR - from, view)}` };
+  return { range: `${from}~${to}년생`, age: `올해 ${ageRangeText(NOW_YEAR - to, NOW_YEAR - from)}` };
 }
 
 export interface GenRowText {
@@ -98,7 +98,7 @@ export function formalNames(keys: readonly RegionKey[]): string {
 export type { GenerationId };
 
 /** 목록 한 줄의 메타 글자 「{범위}년생 · 올해 N~M세」 — 나이는 나이 보기(SPEC-019)를 따른다 */
-export function genMetaLine(meta: { from: number; to: number }, view: AgeView): string {
-  const m = genMetaText(meta.from, meta.to, view);
+export function genMetaLine(meta: { from: number; to: number }): string {
+  const m = genMetaText(meta.from, meta.to);
   return `${m.range} · ${m.age}`;
 }

@@ -1,4 +1,4 @@
-import { Component, createRef, type ContextType, type MutableRefObject, type ReactNode, type RefObject, type UIEventHandler } from 'react';
+import { Component, createRef, type MutableRefObject, type ReactNode, type RefObject, type UIEventHandler } from 'react';
 import { heavyKindOfEntry } from '../../core/gentle';
 import { entryHeadline } from '../../core/history';
 import type { CoParents } from '../../core/parentSubject';
@@ -7,7 +7,6 @@ import { ageText } from '../../core/format';
 import { DASH_TEXT } from '../../data/dashText';
 import { familyLineViewText } from '../../data/familyLineText';
 import { decidedByText, deciderIconOf } from '../../data/parentDecisionTable';
-import { AgeViewContext, useAgeView } from '../ageView';
 import { Icon } from '../Brand';
 import { revealTopOfTallFocus } from '../focusReveal';
 import { NoteBody } from './NoteText';
@@ -80,7 +79,6 @@ export function isStackedEntry(h: HistoryEntry): boolean {
  * 그 밖에는 사건 문장 + 선택 결과면 「(선택: 라벨)」 또는 결정자 도장 + 라벨. 가린 줄의 펼친 원문도 이 부품이라 설정을 끈 화면과 같다(가린 줄은 제목도 `.veil__body` 안이라 함께 가려진다)
  */
 function EntryText({ h, subject }: { h: HistoryEntry; subject: CoParents }) {
-  const view = useAgeView();
   const stacked = isStackedEntry(h);
   const wrap = (label: string): string => (stacked ? label : `(${label})`);
   const pick = h.choice ? (
@@ -101,13 +99,13 @@ function EntryText({ h, subject }: { h: HistoryEntry; subject: CoParents }) {
           {entryHeadline(h)}
         </span>
         {pick}
-        <span className="log__result">{familyLineViewText(h.eventId, h.text, view)}</span>
+        <span className="log__result">{familyLineViewText(h.eventId, h.text)}</span>
       </>
     );
   }
   return (
     <>
-      {familyLineViewText(h.eventId, h.text, view)}
+      {familyLineViewText(h.eventId, h.text)}
       {pick ? <> {pick}</> : null}
     </>
   );
@@ -136,9 +134,6 @@ interface Place {
 }
 
 export class LogList extends Component<Props, Record<string, never>, Snapshot | null> {
-  /** 나이 보기 (SPEC-019): 줄 나이 열이 맥락의 값을 읽는다 */
-  static contextType = AgeViewContext;
-  declare context: ContextType<typeof AgeViewContext>;
   private readonly olRef = createRef<HTMLOListElement>();
   private readonly slotRef = createRef<HTMLDivElement>();
   private place: Place | null = null;
@@ -376,7 +371,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
             const subject: CoParents = h.by === 'parent' && subjectOf !== undefined ? subjectOf(h.age) : 'both';
             const className = `log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${h.kind === 'note' ? ' log__row--note' : ''}${latest ? ' log__row--latest' : ''}`;
             const age = (
-              <span className="log__age">{ageText(h.age, this.context)}</span>
+              <span className="log__age">{ageText(h.age)}</span>
             );
             if (heavy !== null) {
               // 가린 줄 (HV4 ①③ 서술·결정·부모): 나이 열은 보통 줄과 같고, 글 자리에 안내 + [결정자 도장] + 「펼쳐 보기」, 원문은 `hidden`

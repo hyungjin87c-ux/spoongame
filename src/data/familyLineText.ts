@@ -1,6 +1,6 @@
 import { displayAge } from '../core/format';
 import type { SiblingKind } from '../core/family';
-import type { AgeView, Gender, HeavyKind } from '../core/types';
+import type { Gender, HeavyKind } from '../core/types';
 import { siblingLabel } from './familyText';
 
 /**
@@ -85,8 +85,8 @@ const AGE_IN_LINE: Readonly<Record<string, RegExp>> = {
  * 가족 변화 줄의 화면 글자 (SPEC-019). 줄 문장은 만들 때 기록(`HistoryEntry.text`)에 굳기 때문에 — **저장 형식은 그대로** 두고 — 보여 줄 때만 문장 속 별세 나이를 나이 보기에 맞춘다.
  * 저장된 글자는 게임 나이(태어난 해 0)이고, 한국 나이는 +1(`displayAge`)이다. 가족 변화 줄이 아니거나 나이 자리를 못 찾으면 글자 그대로다.
  */
-export function familyLineViewText(eventId: string | undefined, text: string, view: AgeView): string {
+export function familyLineViewText(eventId: string | undefined, text: string): string {
   const re = eventId === undefined ? undefined : AGE_IN_LINE[eventId];
   if (re === undefined) return text;
-  return text.replace(re, (whole, n: string) => whole.replace(n, String(displayAge(Number(n), view))));
+  return text.replace(re, (whole, n: string) => whole.replace(n, String(displayAge(Number(n)))));
 }

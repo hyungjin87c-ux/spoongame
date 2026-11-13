@@ -80,16 +80,11 @@ export const DASH_TEXT = {
   yearProgressLabel: '올해 진행률',
   yearSuffix: '년',
   /**
-   * 나이 보기 (SPEC-019, copy.md 「나이 보기」 절): 헤더 알약은 한국 나이 「24세」 · 만 나이 「만 23세」(「만」은 헤더 알약과 엔딩 머리에만). 알약의 화면 읽기 이름은 「한국 나이 24세」/「만 나이 23세」.
-   * 전환 글자 버튼은 지금과 반대 기준을 적고(한국 나이일 때 「만 나이」, 만 나이일 때 「한국 나이」) 읽기 이름은 「만 나이로 보기」/「한국 나이로 보기」다(보이는 글자가 이름의 앞머리 — WCAG 2.5.3).
+   * 나이 (SPEC-019 r2, copy.md 21절): 사람 나이는 모든 화면에서 한국 나이(게임 나이 + 1)다. 유일한 예외는 인생 화면 헤더 — 알약 「24세」 옆에 작은 글자로 만 나이 「만 23세」를 늘 붙인다(버튼 아님).
+   * 알약 묶음의 화면 읽기 이름은 둘을 한 번에 「한국 나이 24세, 만 23세」.
    */
   ageUnit: '세',
-  ageManMark: '만 ',
-  ageViewPillName: (view: 'korean' | 'man', shownAge: string): string => `${view === 'korean' ? '한국 나이' : '만 나이'} ${shownAge}`,
-  ageSwitchToMan: '만 나이',
-  ageSwitchToKorean: '한국 나이',
-  ageSwitchToManName: '만 나이로 보기',
-  ageSwitchToKoreanName: '한국 나이로 보기',
+  agePairName: (korean: string, man: string): string => `한국 나이 ${korean}, ${man}`,
   progressPausedValue: '일시정지 중',
   pause: '일시정지',
   play: '다시 진행',
@@ -184,7 +179,7 @@ export const DASH_TEXT = {
   assetsTitle: '자산 현황',
   /** 20세 미만 (copy.md): 수저 칩 없음 */
   /** M7e-3 (copy.md 5-2 ③, QA-003-M5 O02): 셋째 문장이 선택지의 「집안 살림」 뜻을 푼다 — 「집안 형편」(변하지 않는 5단계)과 「집안 살림」(선택이 쌓는 값)을 가른다 */
-  assetsYoung: '자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다. 선택지에 보이는 「집안 살림」은 살림에 보태거나 축낸 몫을 모아 둔 값이고, 스무 살이 되면 내 자산과 부채로 합쳐집니다.',
+  assetsYoung: '자산은 독립하는 해부터 셉니다. 지금은 집안 형편을 따릅니다. 선택지에 보이는 「집안 살림」은 살림에 보태거나 축낸 몫을 모아 둔 값이고, 독립하면 내 자산과 부채로 합쳐집니다.',
   /** 20세 이후 (copy.md 4-5절): 이름 셋 — 「(가구)」를 붙이지 않는다(M-3) */
   assetsNet: '순자산',
   assetsIncome: '연 소득',

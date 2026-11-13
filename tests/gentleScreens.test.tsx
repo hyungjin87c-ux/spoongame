@@ -128,7 +128,7 @@ describe('인생 기록: 가린 줄 (HV4 ①③, 화면 규칙 (A))', () => {
       expect(on, `${controls}: 원문 요소가 hidden`).toMatch(new RegExp(`<span class="veil__body" id="${controls}" hidden="" data-testid="veil-body">`));
       expect(label.startsWith(VEIL_TEXT.open)).toBe(true);
     }
-    expect(buttons.map((b) => b[2])).toContain(veilButtonLabel(false, 55, HEAVY_KIND_TEXT.work, 'korean'));
+    expect(buttons.map((b) => b[2])).toContain(veilButtonLabel(false, 55, HEAVY_KIND_TEXT.work));
     // 같은 id가 두 줄에 없다 (한 문서 안에서 유일)
     const ids = buttons.map((b) => b[1]);
     expect(new Set(ids).size).toBe(ids.length);
@@ -403,7 +403,7 @@ describe('엔딩: 연표의 가린 줄 + 맨 위 한 줄 (HV4 ④·HV6·HV8·R-4
     expect(off).not.toContain('data-veiled');
     const shown = visibleText(on);
     for (const h of heavy) expect(shown, `${h.eventId ?? '상속 줄'}: 문장`).not.toContain(h.text);
-    for (const h of heavy) expect(visibleText(off)).toContain(familyLineViewText(h.eventId, h.text, 'korean')); // 가족 변화 줄의 별세 나이는 한국 나이로 읽힌다(SPEC-019)
+    for (const h of heavy) expect(visibleText(off)).toContain(familyLineViewText(h.eventId, h.text)); // 가족 변화 줄의 별세 나이는 한국 나이로 읽힌다(SPEC-019)
     // 가린 연표 줄: 안내 + 펼쳐 보기, 펼치면 제목 → 고른 길 → 결과 문장 (hidden 요소 안에 있다)
     const body = [...on.matchAll(/<span class="veil__body" id="(veil-tl-[^"]+)" hidden="" data-testid="veil-body">([\s\S]*?)<\/span><\/span><\/li>/g)];
     expect(body.length).toBe(heavy.length);

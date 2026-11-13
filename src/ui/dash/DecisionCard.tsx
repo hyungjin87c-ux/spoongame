@@ -6,7 +6,6 @@ import { ageText } from '../../core/format';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
 import { insightFor } from '../../data/citationInsights';
 import { HEAVY_KIND_TEXT, VEIL_TEXT } from '../../data/gentleText';
-import { useAgeView } from '../ageView';
 import { FitPair } from '../FitPair';
 import { revealTopOfTallCard } from '../focusReveal';
 import { Glue } from '../Glue';
@@ -99,7 +98,6 @@ interface CardProps {
  */
 export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, onAutoSwitch, veiled = false, onOpenVeil, onAutoPick }: CardProps) {
   const { pending, ev, choices, impactOf, anyImpact, cite, year, age, name } = model;
-  const view = useAgeView();
   const guardKey = decisionGuardKey(pending, epoch);
   const kind = veiled ? model.heavy : null;
   const kindName = kind === null ? '' : HEAVY_KIND_TEXT[kind];
@@ -109,7 +107,7 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, o
         <span className="decision__kind">{DASH_TEXT.choiceKind}</span>
         <div className="row">
           <span className="decision__when" data-testid="decision-when">
-            <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={ageText(age, view)} hideSeparator />
+            <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={ageText(age)} hideSeparator />
           </span>
           <GuardedButton guardKey={guardKey} className="btn btn--ghost btn--sm decision__fold" data-testid="decision-fold-btn" onClick={onFold}>
             {DASH_TEXT.foldCard} <span aria-hidden="true">{DASH_TEXT.foldMark}</span>

@@ -51,7 +51,7 @@ describe('FM7a 줄·변형 카드의 가림 연동 (완료 기준 10)', () => {
   it('끄면 모든 줄이 원문이고, 켜면 FM7a 줄·변형 결과 줄의 문장이 한 글자도 보이지 않고 「무거운 일이 있었습니다 · {분류}」만 보인다 (분류가 없는 줄은 그대로)', () => {
     const history = [...PLAIN, ...ROWS];
     const off = visibleText(render(history, false));
-    for (const h of history) expect(off, `끈 상태: ${h.eventId}`).toContain(familyLineViewText(h.eventId, h.text, 'korean')); // 별세 나이는 한국 나이로 읽힌다(SPEC-019)
+    for (const h of history) expect(off, `끈 상태: ${h.eventId}`).toContain(familyLineViewText(h.eventId, h.text)); // 별세 나이는 한국 나이로 읽힌다(SPEC-019)
     const html = render(history, true);
     const on = visibleText(html);
     for (const h of ROWS) {

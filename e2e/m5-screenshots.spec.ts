@@ -194,7 +194,7 @@ test('엔딩 최종 순자산 줄 · 스무 살 전에 끝난 인생: 금액도 
   await page.goto('/');
   const ended = await findEarlyDeath(page);
   await injectSave(page, ended, '/', { speed: 1, autoMode: false });
-  await expect(page.getByTestId('final-net-none')).toHaveText('스무 살이 되기 전이라 자산을 세지 않았습니다.');
+  await expect(page.getByTestId('final-net-none')).toHaveText('독립하기 전이라 자산을 세지 않았습니다.');
   await flowFixed(page);
   await page.getByTestId('ending-stats').screenshot({ path: `${SHOTS}/dev-M5-ending-final-net-early.png` });
 });

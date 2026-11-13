@@ -4,7 +4,6 @@ import { petPhrases, sceneInputOf, sceneKey, sceneLineOf, sceneOf, scenePetsText
 import type { FamilyGame } from '../../core/familyView';
 import { eraAccessibleName, eraTitle, SCENE_TEXT, type EraSpoken } from '../../data/sceneText';
 import { ageText } from '../../core/format';
-import { useAgeView } from '../ageView';
 import { useReducedMotion } from '../hooks';
 import { FitList, FitPair } from '../FitPair';
 import { Icon } from '../Brand';
@@ -187,7 +186,6 @@ export function EraCard({ game, gentle, scene, animate = true }: { game: SceneGa
 // ---------------------------------------------------------------- 카드
 
 export function SceneCard({ game, fold, onFold, scene, animate = true }: Props) {
-  const view = useAgeView();
   const reduced = useReducedMotion();
   const { art, status, retry } = scene;
   const input = useMemo(() => sceneInputOf(game), [game.age, game.flags, game.assets, game.family, game.seed, game.peerSeed, game.birthReport, game.character, game.seen]);
@@ -250,7 +248,7 @@ export function SceneCard({ game, fold, onFold, scene, animate = true }: Props) 
           <ul className="scene__people" data-testid="scene-people">
             {rows.map((r, i) => (
               <li key={i} data-self={r.self ? 'true' : undefined}>
-                <FitPair a={r.label} b={ageText(r.age, view)} />
+                <FitPair a={r.label} b={ageText(r.age)} />
               </li>
             ))}
             {more > 0 ? <li>{SCENE_TEXT.moreOthers(more)}</li> : null}

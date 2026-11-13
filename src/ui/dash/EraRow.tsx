@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ageText } from '../../core/format';
-import { useAgeView } from '../ageView';
 import type { EraRow } from '../../core/eraWindow';
 import { VEIL_TEXT, veilButtonLabel } from '../../data/gentleText';
 import { SCENE_TEXT, foresightButtonName, foresightLines, forecastReadName } from '../../data/sceneText';
@@ -64,7 +63,6 @@ function SecondSentence({ second }: { second: string | undefined }) {
 }
 
 export function EraLogRow({ row, open, onToggle }: { row: EraRow; open: boolean; onToggle: () => void }) {
-  const view = useAgeView();
   const bodyId = `veil-era-${row.year}`;
   const whyId = `why-era-${row.year}`;
   const [whyOpen, setWhyOpen] = useState(false);
@@ -74,7 +72,7 @@ export function EraLogRow({ row, open, onToggle }: { row: EraRow; open: boolean;
   return (
     <li className="log__row log__row--tl" data-kind="timeline" data-tl="era" id={`log-y${row.year}`} tabIndex={-1} aria-live="off" data-veiled={row.veiled ? 'true' : undefined} data-testid="log-row-era">
       <span className="log__age">
-        {ageText(row.age, view)}
+        {ageText(row.age)}
         <small className="log__year">{row.year}</small>
       </span>
       <span className="log__text">
@@ -103,7 +101,7 @@ export function EraLogRow({ row, open, onToggle }: { row: EraRow; open: boolean;
                 className="btn btn--ghost btn--sm veil__btn"
                 aria-expanded={open}
                 aria-controls={bodyId}
-                aria-label={veilButtonLabel(open, row.age, SCENE_TEXT.eraVeilKind, view)}
+                aria-label={veilButtonLabel(open, row.age, SCENE_TEXT.eraVeilKind)}
                 data-testid="veil-btn"
                 onClick={onToggle}
               >

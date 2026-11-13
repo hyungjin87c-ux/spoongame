@@ -224,7 +224,7 @@ test('증거 화면 2: 선택지 안내 줄 · 20세 미만 자산 카드 · 단
   await openImpactScreen(page, 'impact-young');
   await page.addStyleTag({ content: '.dash-head, .controls-fixed, .site-head { position: static !important; box-shadow: none !important; }' });
   await expect(page.getByTestId('choice-hint')).toBeVisible();
-  await expect(page.getByTestId('assets-note')).toContainText('자산은 스무 살부터 셉니다.');
+  await expect(page.getByTestId('assets-note')).toContainText('자산은 독립하는 해부터 셉니다.');
   await page.getByTestId('choice-panel').scrollIntoViewIfNeeded();
   await page.getByTestId('choice-panel').screenshot({ path: `${SHOT}-choice-hint.png` });
   await page.getByTestId('assets-card').scrollIntoViewIfNeeded();

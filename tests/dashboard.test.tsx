@@ -177,7 +177,7 @@ describe('헤더: 로고 · 이름 · 나이 · 올해 진행률 (DB2)', () => {
     expect(head).toContain('data-testid="header-logo"');
     expect(head).toMatch(/role="img" aria-label="수저 게임 로고/);
     expect(text(head)).toContain(adult.character!.name);
-    expect(flat(openTagBlock(head, 'life-age'))).toBe(ageText(adult.age, 'korean'));
+    expect(flat(openTagBlock(head, 'life-age'))).toBe(ageText(adult.age));
     expect(flat(openTagBlock(head, 'life-year'))).toBe(`${calendarYear(adult.character!.birthYear, adult.age)}${DASH_TEXT.yearSuffix}`);
   });
 
@@ -626,7 +626,7 @@ describe('인생 기록 (DB12·DB14)', () => {
       // 화면의 i번째 줄 = 저장 순서(시간순)의 뒤에서 i번째 — 저장 순서는 그대로이고 화면만 뒤집었다
       const h = adult.history[adult.history.length - 1 - i];
       expect(m[2]).toBe(h.kind);
-      expect(text(m[3]).startsWith(ageText(h.age, 'korean'))).toBe(true);
+      expect(text(m[3]).startsWith(ageText(h.age))).toBe(true);
       expect(m[1].includes('log__row--latest'), `${i}번째 줄`).toBe(i === 0);
       expect(m[1].includes('log__row--stage')).toBe(h.kind === 'stage');
     });

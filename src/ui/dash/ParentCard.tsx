@@ -6,7 +6,6 @@ import { ageText } from '../../core/format';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
 import { HEAVY_KIND_TEXT, VEIL_TEXT } from '../../data/gentleText';
 import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, deciderIconOf, parentWording } from '../../data/parentDecisionTable';
-import { useAgeView } from '../ageView';
 import { FitPair } from '../FitPair';
 import { Icon } from '../Brand';
 import type { LifeGame } from './Cards';
@@ -84,7 +83,6 @@ export function ParentCard({ model, gentle = false }: { model: ParentCardModel; 
     if (opened && !wasOpened.current) titleRef.current?.focus({ preventScroll: true });
     wasOpened.current = opened;
   }, [opened]);
-  const view = useAgeView();
   const kindName = heavy === null ? '' : HEAVY_KIND_TEXT[heavy];
   return (
     <section className={`card decision decision--parent${by === 'child' ? ' decision--child' : ''}`} aria-labelledby="pc-title" data-testid="parent-card" data-by={by} data-key={`${ev.id}@${age}`} data-veiled={veiled ? 'true' : undefined}>
@@ -94,7 +92,7 @@ export function ParentCard({ model, gentle = false }: { model: ParentCardModel; 
           <span>{chip}</span>
         </span>
         <span className="decision__when" data-testid="parent-when">
-          <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={ageText(age, view)} hideSeparator />
+          <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={ageText(age)} hideSeparator />
         </span>
       </div>
       <div className="decision__body">

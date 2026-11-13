@@ -71,7 +71,7 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
     const add = (where: string, text: string) => out.push({ where, text });
     // 사망 줄·연표 사망 줄: 원인 후보 8개(받침 있는 낱말·없는 낱말 모두)와 여러 나이
     for (const age of [5, 30, 59, 84]) for (const health of [10, 80]) for (const cause of deathCauseCandidates(age, health)) {
-      add(`deathLineText(${age}세·${cause})`, deathLineText({ age, cause }, 'man'));
+      add(`deathLineText(${age}세·${cause})`, deathLineText({ age, cause }));
       add(`deathEntryText(${cause})`, deathEntryText(cause));
     }
     for (const n of [0, 1, 27]) add(`choiceCountText(${n})`, choiceCountText(n));
@@ -128,8 +128,8 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
   });
 
   it('원인 낱말의 받침에 따라 「이었습니다」·「였습니다」가 갈린다 (copy.md 5-3): 노환이었 · 사고였 · 갑작스러운 병이었 · 조용한 잠이었 · 병세 악화였', () => {
-    expect(deathLineText({ age: 84, cause: '노환' }, 'man')).toBe('84세에 세상을 떠났습니다. 원인은 노환이었습니다.');
-    expect(deathLineText({ age: 17, cause: '사고' }, 'man')).toBe('17세에 세상을 떠났습니다. 원인은 사고였습니다.');
+    expect(deathLineText({ age: 84, cause: '노환' })).toBe('85세에 세상을 떠났습니다. 원인은 노환이었습니다.');
+    expect(deathLineText({ age: 17, cause: '사고' })).toBe('18세에 세상을 떠났습니다. 원인은 사고였습니다.');
     expect(deathEntryText('갑작스러운 병')).toBe('세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.');
     expect(deathEntryText('조용한 잠')).toBe('세상을 떠났습니다. 원인은 조용한 잠이었습니다.');
     expect(deathEntryText('병세 악화')).toBe('세상을 떠났습니다. 원인은 병세 악화였습니다.');

@@ -3,9 +3,8 @@ import type { GameState } from '../src/core/types';
 import { evalCore, injectSave, noHorizontalOverflow, readSettings, withoutPlay } from './helpers';
 
 /**
- * 나이 보기 전환 (SPEC-019): 한국 나이가 기본이고(헤더 「24세」), 알약 오른쪽 글자 버튼으로 만 나이(「만 23세」)로 바꾼다.
- * 한 번 누르면 헤더·인생 기록 줄·가족 카드가 함께 바뀌고, 새로고침해도 유지되며, 키보드로도 조작된다. 통계·게임 결과는 그대로다.
- * desktop(1280×800)과 mobile-360 두 프로젝트에서 돈다 — 360px에서 헤더가 넘치지 않는지도 본다.
+ * 나이 표시 (SPEC-019 r2): 사람 나이는 모든 화면에서 한국 나이(게임 나이 + 1)이고, 인생 화면 헤더의 알약(「24세」) 옆에만 작은 글자 「만 23세」가 늘 붙는다.
+ * 전환 버튼도 설정도 없다 — 새로고침해도 같다. desktop(1280×800)과 mobile-360 두 프로젝트에서 돈다. 360px에서 헤더가 넘치지 않는지(이름이 긴 경우 포함)도 본다.
  */
 
 const MANUAL = { speed: 1, autoMode: false, noteCards: false } as const;
@@ -47,90 +46,60 @@ const ageNumbers = async (page: Page): Promise<number[]> => {
   });
 };
 
-test('기본은 한국 나이: 헤더 「N+1세」 · 읽기 이름 「한국 나이 N+1세」 · 전환 버튼 「만 나이」(이름 「만 나이로 보기」) · 누르는 영역 44px · 가로 넘침 0', async ({ page }) => {
+
+test('헤더: 알약은 한국 나이 「N+1세」, 옆에 작은 「만 N세」, 읽기 이름은 한 번에 「한국 나이 N+1세, 만 N세」 · 전환 버튼 없음 · 가로 넘침 0', async ({ page }) => {
   const game = await openLife(page);
-  const pill = page.getByTestId('life-age');
-  await expect(pill).toHaveText(`${game.age + 1}세`);
-  await expect(pill).toHaveAccessibleName(`한국 나이 ${game.age + 1}세`);
-  const sw = page.getByTestId('age-switch');
-  await expect(sw).toHaveText('만 나이');
-  await expect(sw).toHaveAccessibleName('만 나이로 보기');
-  // 누르는 영역: 보이는 글자는 작아도 ::before가 위아래로 넓혀 44px (거친 포인터와 상관없이 항상)
-  const hit = await sw.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    const before = getComputedStyle(el, '::before');
-    return { w: r.width, h: Math.max(r.height, parseFloat(before.height) || 0) };
+  await expect(page.getByTestId('life-age')).toHaveText(`${game.age + 1}세`);
+  const man = page.getByTestId('life-age-man');
+  await expect(man).toHaveText(`만 ${game.age}세`);
+  const group = page.locator('.who__ages');
+  await expect(group).toHaveAccessibleName(`한국 나이 ${game.age + 1}세, 만 ${game.age}세`);
+  // 버튼이 아니다: 머리글 안에 나이 전환 버튼·링크가 없고, 누른다고 바뀌는 것이 없다
+  await expect(page.getByTestId('age-switch')).toHaveCount(0);
+  await expect(page.getByTestId('dash-head').getByRole('button', { name: /나이/ })).toHaveCount(0);
+  await man.click({ force: true });
+  await expect(page.getByTestId('life-age')).toHaveText(`${game.age + 1}세`);
+  await expect(man).toHaveText(`만 ${game.age}세`);
+  // 작은 글자(보조 글): 알약 숫자보다 작다
+  const sizes = await page.evaluate(() => {
+    const px = (id: string) => parseFloat(getComputedStyle(document.querySelector(`[data-testid="${id}"] b, [data-testid="${id}"]`)!).fontSize);
+    return { pill: px('life-age'), man: px('life-age-man') };
   });
-  expect(hit.h).toBeGreaterThanOrEqual(44);
-  expect(hit.w).toBeGreaterThanOrEqual(44);
-  // 알약 오른쪽(같은 줄이면) 또는 줄바꿈으로 함께 내려간다 — 어느 쪽이든 화면 안이고 넘치지 않는다
-  const box = (await sw.boundingBox())!;
-  const vw = page.viewportSize()!.width;
+  expect(sizes.man).toBeLessThan(sizes.pill);
+  // 화면 안, 가로 넘침 0
+  const box = (await man.boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width).toBeLessThanOrEqual(vw);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
   expect(await noHorizontalOverflow(page)).toBe(true);
-  expect((await readSettings(page)).ageView).toBe('korean');
 });
 
-test('한 번 누르면 헤더·기록 줄·가족 카드가 함께 만 나이로 바뀌고, 새로고침해도 유지되며, 다시 누르면 한국 나이로 돌아온다', async ({ page }) => {
+test('목록의 나이는 모두 한국 나이이고 「만」이 붙지 않는다: 인생 기록 줄 · 가족 카드', async ({ page }) => {
   const game = await openLife(page);
-  const lastRowAge = page.getByTestId('log-row').first().locator('.log__age');
   const lastHist = game.history[game.history.length - 1];
-  await expect(lastRowAge).toHaveText(`${lastHist.age + 1}세`);
-  const koreanFamily = await ageNumbers(page);
-  expect(koreanFamily.length, '가족 카드에 나이가 보이는 사람이 있다').toBeGreaterThan(0);
+  await expect(page.getByTestId('log-row').first().locator('.log__age')).toHaveText(`${lastHist.age + 1}세`);
+  expect((await ageNumbers(page)).length, '가족 카드에 나이가 보이는 사람이 있다').toBeGreaterThan(0);
+  const body = await page.getByTestId('life-screen').innerText();
+  expect(body.match(/만\s*\d+세/g) ?? [], '「만 N세」는 헤더 한 곳뿐').toHaveLength(1);
+});
 
-  await page.getByTestId('age-switch').click();
-  const pill = page.getByTestId('life-age');
-  await expect(pill).toHaveText(`만 ${game.age}세`);
-  await expect(pill).toHaveAccessibleName(`만 나이 ${game.age}세`);
-  const sw = page.getByTestId('age-switch');
-  await expect(sw).toHaveText('한국 나이');
-  await expect(sw).toHaveAccessibleName('한국 나이로 보기');
-  await expect(lastRowAge).toHaveText(`${lastHist.age}세`); // 목록에는 「만」을 붙이지 않는다
-  expect(await ageNumbers(page), '가족 카드의 나이가 모두 한 살씩 줄었다').toEqual(koreanFamily.map((n) => n - 1));
-  await expect.poll(async () => (await readSettings(page)).ageView).toBe('man');
-  expect(await noHorizontalOverflow(page)).toBe(true);
-
-  // 새로고침 후에도 만 나이
+test('새로고침해도 같다: 한국 나이 + 작은 만 나이, 설정에는 나이 칸이 없다', async ({ page }) => {
+  const game = await openLife(page);
   await page.reload();
   await expect(page.getByTestId('life-screen')).toBeVisible();
-  await expect(page.getByTestId('life-age')).toHaveText(`만 ${game.age}세`);
-  await expect(page.getByTestId('age-switch')).toHaveText('한국 나이');
-  expect(await ageNumbers(page)).toEqual(koreanFamily.map((n) => n - 1));
-
-  // 다시 누르면 한국 나이
-  await page.getByTestId('age-switch').click();
   await expect(page.getByTestId('life-age')).toHaveText(`${game.age + 1}세`);
-  await expect.poll(async () => (await readSettings(page)).ageView).toBe('korean');
+  await expect(page.getByTestId('life-age-man')).toHaveText(`만 ${game.age}세`);
+  expect('ageView' in (await readSettings(page))).toBe(false);
 });
 
-test('키보드로 조작된다: 버튼에 포커스를 두고 Enter · Space로 전환하고, 전환 뒤에도 포커스가 버튼에 남으며 포커스 표시가 보인다', async ({ page }) => {
-  const game = await openLife(page);
-  const sw = page.getByTestId('age-switch');
-  await sw.focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByTestId('life-age')).toHaveText(`만 ${game.age}세`);
-  await expect(sw).toBeFocused();
-  await page.keyboard.press('Space');
-  await expect(page.getByTestId('life-age')).toHaveText(`${game.age + 1}세`);
-  await expect(sw).toBeFocused();
-  const outline = await sw.evaluate((el) => getComputedStyle(el).outlineStyle);
-  expect(outline).not.toBe('none');
-});
-
-test('이름이 길어도 헤더가 넘치지 않는다: 알약과 버튼이 이름 아래로 함께 내려가거나 한 줄에 놓이고, 두 기준 모두 가로 넘침 0', async ({ page }) => {
+test('이름이 길어도 헤더가 넘치지 않는다: 알약 묶음이 이름 아래로 내려가거나 한 줄에 놓인다', async ({ page }) => {
   await openLife(page);
-  // 가장 긴 이름을 흉내 낸다: 이름 글자만 바꾼다(저장 검증이 이름 풀을 보므로 저장은 건드리지 않는다). 전환으로 헤더가 다시 그려져도 이름 글자는 React가 건드리지 않는다
+  // 가장 긴 이름을 흉내 낸다: 이름 글자만 바꾼다(저장 검증이 이름 풀을 보므로 저장은 건드리지 않는다)
   await page.getByTestId('life-name').evaluate((el) => {
     el.textContent = '가나다라마바사아자차';
   });
   expect(await noHorizontalOverflow(page)).toBe(true);
-  await page.getByTestId('age-switch').click(); // 「한국 나이」 글자가 더 길고 알약은 「만 N세」가 된다
-  await expect(page.getByTestId('age-switch')).toHaveText('한국 나이');
-  expect(await noHorizontalOverflow(page)).toBe(true);
   const head = (await page.getByTestId('dash-head').boundingBox())!;
-  for (const id of ['life-name', 'life-age', 'age-switch']) {
+  for (const id of ['life-name', 'life-age', 'life-age-man']) {
     const b = (await page.getByTestId(id).boundingBox())!;
     expect(b.x, id).toBeGreaterThanOrEqual(head.x - 1);
     expect(b.x + b.width, id).toBeLessThanOrEqual(head.x + head.width + 1);

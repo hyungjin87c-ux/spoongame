@@ -741,7 +741,7 @@ test('이전 버전(v6) 인생 저장은 새 게임으로 시작하고 첫 화�
   await expect(page.getByTestId('old-save-notice')).toHaveText('이전 버전에서 저장된 판은 이어서 할 수 없어 새 게임으로 시작합니다.');
   await expect(page.getByTestId('resume')).toHaveCount(0);
   expect((await readSave(page)).version).toBe(SAVE_VERSION);
-  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, generation: 'random', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then', ageView: 'korean' }); // v2 설정의 옛 era는 버리고 세대는 기본값(랜덤)이다 (SPEC-004 MG1) // 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘이 기본값으로 함께 저장된다
+  expect(await readSettings(page)).toEqual({ speed: 4, autoMode: true, generation: 'random', lifeLength: 'short30', bgm: { on: false, volume: 30 }, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then' }); // v2 설정의 옛 era는 버리고 세대는 기본값(랜덤)이다 (SPEC-004 MG1) // 설정 v5(SPEC-005 QI6·QI7)의 새 필드 둘이 기본값으로 함께 저장된다
 });
 
 // ---------- DB1: 열 배치 ----------

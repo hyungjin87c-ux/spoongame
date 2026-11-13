@@ -86,7 +86,7 @@ describe('세대·인생 길이 선택 (GS4·FS5)', () => {
     s = send(s, { type: 'setGeneration', generation: 'genx' });
     s = send(s, { type: 'setLifeLength', lifeLength: 'short30' });
     // (M4: 설정에 BGM·테마가 더해졌다 / M7c: 자동 기록 카드 켬/끔 / SPEC-005 SV2: 무거운 장면 가리기 꺼짐·새 소식 본 버전 없음 — 세상·인생 길이를 고르는 일이 그 기본값도 건드리지 않는다)
-    expect(s.settings).toEqual({ speed: 8, autoMode: true, generation: 'genx', lifeLength: 'short30', bgm: DEFAULT_BGM, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then', ageView: 'korean' });
+    expect(s.settings).toEqual({ speed: 8, autoMode: true, generation: 'genx', lifeLength: 'short30', bgm: DEFAULT_BGM, theme: 'system', noteCards: true, gentle: false, notesSeen: '', lived: [], homeRegion: null, moneyView: 'then' });
   });
 });
 

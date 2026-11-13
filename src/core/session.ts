@@ -14,8 +14,6 @@ import {
   GENERATION_IDS,
   SPEEDS,
   THEMES,
-  AGE_VIEWS,
-  type AgeView,
   isLifeLengthSelectable,
   type BgmSettings,
   type GameState,
@@ -117,8 +115,6 @@ export type SessionAction =
   | { type: 'setBgm'; bgm: Partial<BgmSettings> }
   /** 인생 화면 도구 줄: 화면 테마 수동 선택 */
   | { type: 'setTheme'; theme: ThemeChoice }
-  /** 나이 보기 전환 (SPEC-019): 설정만 바꾼다 — 게임 상태·tick은 그대로 */
-  | { type: 'setAgeView'; ageView: AgeView }
   /** 기록 시트의 「1. 적어두고 살기」: cardId는 지금 뜰 차례인 자동 카드 id 또는 null(「생각 남기기」 수동 기록). expectCount는 열 때의 기록 수(연타 방어). */
   | { type: 'saveNote'; cardId: string | null; text: string; expectCount?: number }
   /** 기록 시트의 「2. 마음속에 담고 살기」: 지금 뜰 차례인 자동 카드를 소비한다(저장 없음) */
@@ -304,8 +300,6 @@ function reduceSession(s: Session, a: SessionAction, poolArg: EventPool | undefi
     }
     case 'setTheme':
       return !(THEMES as readonly string[]).includes(a.theme) || a.theme === s.settings.theme ? s : { ...s, settings: { ...s.settings, theme: a.theme } };
-    case 'setAgeView':
-      return !(AGE_VIEWS as readonly string[]).includes(a.ageView) || a.ageView === s.settings.ageView ? s : { ...s, settings: { ...s.settings, ageView: a.ageView } };
     case 'saveNote': {
       if (s.showTitle) return s;
       const game = writeNote(s.game, { cardId: a.cardId, text: a.text, expectCount: a.expectCount });

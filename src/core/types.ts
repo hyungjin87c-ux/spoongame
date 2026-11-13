@@ -395,11 +395,6 @@ export interface Settings {
   /** 금액 보기 (EY11, 설정 스키마 v6): `then` 당시 화폐(기본) / `now` 지금 가치. GM10이 자산 카드에 쓴다 — 지금은 읽고 저장만 한다 */
   moneyView: MoneyView;
   /**
-   * 나이 보기 (SPEC-019, 설정 스키마 v6 그대로 — 버전을 올리지 않는다): `korean` 한국 나이(기본, 태어난 해 1세) / `man` 만 나이(게임 나이 그대로).
-   * 화면 숫자만 바꾼다 — 게임 나이(`GameState.age`)·저장된 판·통계의 나이는 그대로다. 없거나 알 수 없는 값은 읽을 때 기본(`korean`)이다.
-   */
-  ageView: AgeView;
-  /**
    * 집과 가족 그림을 접었는가 (SPEC-009 FH1). 접으면 그림(집 그림 + 시대의 창)이 사라지고 아래 한 줄·펼침만 남는다. 설정에 저장되어 새 판에도 유지된다.
    * **선택 필드**: 접었을 때만 `true`로 있고 펼침은 필드가 없다 — 옛 설정(이 필드 없음)은 그대로 읽히고, 접은 적 없는 설정은 모양이 변하지 않는다. 설정 스키마 버전은 올리지 않는다.
    */
@@ -410,9 +405,6 @@ export interface Settings {
 export const MONEY_VIEWS = ['then', 'now'] as const;
 export type MoneyView = (typeof MONEY_VIEWS)[number];
 
-/** 나이 보기 기준 (SPEC-019): 한국 나이(기본) / 만 나이 */
-export const AGE_VIEWS = ['korean', 'man'] as const;
-export type AgeView = (typeof AGE_VIEWS)[number];
 
 /** 인생 화면이 읽는 재생 설정(배속·자동 모드). Settings의 일부다. */
 export type PlaySettings = Pick<Settings, 'speed' | 'autoMode'>;

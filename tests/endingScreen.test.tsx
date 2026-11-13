@@ -238,14 +238,14 @@ describe('엔딩 「최종 순자산」 줄 (M5 2b, copy.md 4-6절 · design-sys
     expect(valueOf(FINAL_NET(render(withNet(game, 123_456))))).toBe('12억 3,456만 원');
   });
 
-  it('스무 살 전에 끝난 인생: 금액도 자리도 없이 한 문장만 — 「스무 살이 되기 전이라 자산을 세지 않았습니다.」 (시대와 무관, 태그 없음)', () => {
+  it('스무 살 전에 끝난 인생: 금액도 자리도 없이 한 문장만 — 「독립하기 전이라 자산을 세지 않았습니다.」 (시대와 무관, 태그 없음)', () => {
     for (const era of SIM_PROFILES) {
       const base = endingOf(2024, era);
       const early: EndingGame = { ...base, age: 15, assets: null, death: { ...base.death, age: 15 } };
       const html = render(early);
       const block = FINAL_NET(html);
       expect(block, era).toContain('<dl class="final-net final-net--early" data-testid="final-net">');
-      expect(textOf(block), era).toBe('최종 순자산 스무 살이 되기 전이라 자산을 세지 않았습니다.');
+      expect(textOf(block), era).toBe('최종 순자산 독립하기 전이라 자산을 세지 않았습니다.');
       expect(block).toContain('class="final-net__none"');
       expect(block).not.toContain('final-net__value');
       expect(block).not.toContain('final-net__standing');

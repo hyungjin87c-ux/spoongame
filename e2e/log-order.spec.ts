@@ -97,7 +97,7 @@ test('LR1 순서: 새 판을 진행하면 줄이 위가 최신으로 쌓인다 �
   dom.forEach((d, i) => {
     const h = history[history.length - 1 - i];
     expect([d.kind, d.age - 1], `${i}번째 줄`).toEqual([h.kind, h.age]);
-    expect(d.text, `${i}번째 줄의 글`).toContain(familyLineViewText(h.eventId, h.text, 'korean').slice(0, 12)); // 가족 변화 줄의 별세 나이는 한국 나이로 읽힌다(SPEC-019)
+    expect(d.text, `${i}번째 줄의 글`).toContain(familyLineViewText(h.eventId, h.text).slice(0, 12)); // 가족 변화 줄의 별세 나이는 한국 나이로 읽힌다(SPEC-019)
   });
   const ages = dom.map((d) => d.age);
   expect(ages, '나이는 위에서 아래로 늘지 않는다').toEqual([...ages].sort((a, b) => b - a));

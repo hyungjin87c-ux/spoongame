@@ -22,7 +22,6 @@ import {
   HISTORY_KINDS,
   LIFE_LENGTHS,
   MONEY_VIEWS,
-  AGE_VIEWS,
   PARENTING_STYLES,
   PARENT_WEALTHS,
   PHASES,
@@ -478,8 +477,6 @@ function readSettings(v: unknown): Settings | null {
     homeRegion: isCurrentRegionName(v.homeRegion) ? v.homeRegion : null,
     moneyView: isOneOf(MONEY_VIEWS, v.moneyView) ? (v.moneyView as Settings['moneyView']) : DEFAULT_SETTINGS.moneyView,
     // 아직 고를 수 없는 인생 길이(1차에서는 「약 1시간」)가 저장돼 있으면 고를 수 있는 값(약 30분)으로 읽는다(R-202)
-    // SPEC-019 나이 보기: 없거나 알 수 없는 값이면 한국 나이(기본) — 설정 버전은 올리지 않는다(v0.5.1로 되돌려도 다른 설정을 잃지 않게)
-    ageView: isOneOf(AGE_VIEWS, v.ageView) ? (v.ageView as Settings['ageView']) : DEFAULT_SETTINGS.ageView,
     lifeLength: isOneOf(LIFE_LENGTHS, v.lifeLength) ? selectableLifeLength(v.lifeLength as Settings['lifeLength']) : DEFAULT_SETTINGS.lifeLength,
     // v3 필드: 없거나 형태가 어긋나면 그 필드만 기본값으로 채운다(이미 고른 다른 설정을 잃지 않는다)
     bgm: readBgm(v.bgm),

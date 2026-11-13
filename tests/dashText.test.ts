@@ -77,7 +77,7 @@ describe('상태 도움말과 자산 (R-333 → M5 2b)', () => {
     expect(DASH_TEXT.assetsNote).toBe('순자산은 가진 것에서 부채를 뺀 값입니다. 0보다 작으면 부채가 가진 것보다 많다는 뜻입니다.');
     expect(DASH_TEXT.assetsNote).not.toContain('빚');
     // M7e-3 (copy.md 5-2 ③, QA-003-M5 O02): 셋째 문장이 선택지의 「집안 살림」 뜻을 푼다
-    expect(DASH_TEXT.assetsYoung).toBe('자산은 스무 살부터 셉니다. 지금은 집안 형편을 따릅니다. 선택지에 보이는 「집안 살림」은 살림에 보태거나 축낸 몫을 모아 둔 값이고, 스무 살이 되면 내 자산과 부채로 합쳐집니다.');
+    expect(DASH_TEXT.assetsYoung).toBe('자산은 독립하는 해부터 셉니다. 지금은 집안 형편을 따릅니다. 선택지에 보이는 「집안 살림」은 살림에 보태거나 축낸 몫을 모아 둔 값이고, 독립하면 내 자산과 부채로 합쳐집니다.');
     expect(Object.keys(DASH_TEXT)).not.toContain('assetsSoon');
     expect(JSON.stringify(DASH_TEXT)).not.toContain('아직 준비 중입니다');
   });
