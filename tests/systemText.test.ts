@@ -140,9 +140,10 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
   });
 
   it('copy.md 5-3의 새 문안과 글자까지 같다: 단계 진입·선택 수·출발선·방향', () => {
-    expect(STAGE_ENTRY_TEXT.youth).toBe('스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.');
-    expect(STAGE_ENTRY_TEXT.middle).toBe('어느덧 마흔이 되었습니다.');
-    expect(STAGE_ENTRY_TEXT.senior).toBe('예순다섯이 되었습니다. 일에서 한 걸음 물러설 나이입니다.');
+    // SPEC-019 r2(결정 후속 241): 한국 나이 화면에 맞춰 「넘겼습니다」
+    expect(STAGE_ENTRY_TEXT.youth).toBe('스무 살을 넘겼습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.');
+    expect(STAGE_ENTRY_TEXT.middle).toBe('어느덧 마흔을 넘겼습니다.');
+    expect(STAGE_ENTRY_TEXT.senior).toBe('예순다섯을 넘겼습니다. 일에서 한 걸음 물러설 나이입니다.');
     expect(choiceCountText(27)).toBe('살아오며 27번의 선택을 했습니다.');
     expect(choiceCountText(0)).toBe('선택을 내려야 하는 순간이 오기 전이었습니다.');
     const start = bandFromRange(0, 25);

@@ -229,10 +229,10 @@ test('증거 화면 2: 선택지 안내 줄 · 20세 미만 자산 카드 · 단
   await page.getByTestId('choice-panel').screenshot({ path: `${SHOT}-choice-hint.png` });
   await page.getByTestId('assets-card').scrollIntoViewIfNeeded();
   await page.getByTestId('assets-card').screenshot({ path: `${SHOT}-assets-young.png` });
-  // 20세 이상: 인생 기록의 단계 진입 줄 (「스무 살이 되었습니다. …」)
+  // 20세 이상: 인생 기록의 단계 진입 줄 (「스무 살을 넘겼습니다. …」 — SPEC-019 r2)
   await openImpactScreen(page, 'impact-adult');
   await page.addStyleTag({ content: '.dash-head, .controls-fixed, .site-head { position: static !important; box-shadow: none !important; }' });
-  const stage = page.locator('[data-testid="log-row"][data-kind="stage"]').filter({ hasText: '스무 살이 되었습니다' });
+  const stage = page.locator('[data-testid="log-row"][data-kind="stage"]').filter({ hasText: '스무 살을 넘겼습니다' });
   await expect(stage).toHaveCount(1);
   await expect(stage).toContainText('이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.');
   await stage.scrollIntoViewIfNeeded();

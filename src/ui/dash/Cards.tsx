@@ -7,6 +7,8 @@ import { familyCardOf, type CardRow } from '../../core/familyCard';
 import { currentHomeOf, sceneInputOf } from '../../core/scene';
 import { peersNow } from '../../core/peerNow';
 import { educationLabel } from '../../core/profile';
+import { studyPlanOf } from '../../core/careerTrack';
+import { personaOf } from '../../core/persona';
 import type { Character, BirthReport, GameState, ProfileId } from '../../core/types';
 import { genderLabel, yearMonthText } from '../../data/birthReportText';
 import { looksText } from '../../data/looksText';
@@ -62,7 +64,8 @@ export function ProfileCard({ game }: { game: LifeGame }) {
           <GradeLine grade={c.parentWealth} range={`(${bandLabel(startBandOf(wealthMixtureOfGame(game), c.parentWealth))})`} />
         </dd>
         <dt>{DASH_TEXT.profileEdu}</dt>
-        <dd data-testid="profile-edu">{educationLabel(game.age, game.flags)}</dd>
+        {/* 맞춤 판은 재수·병역을 반영한 학업 일정으로 재학·졸업을 가른다(결정 후속 239) — 없는 판은 19세 입학 4년 그대로 */}
+        <dd data-testid="profile-edu">{educationLabel(game.age, game.flags, personaOf(game) !== null ? studyPlanOf(game) : undefined)}</dd>
         <dt>{DASH_TEXT.profileLooks}</dt>
         <dd data-testid="profile-looks">
           {/* 외모는 점수·퍼센트가 아니라 이목구비 글의 첫 문장만 (SPEC-015 AP3) — 출생신고·엔딩과 같은 인물의 같은 글 */}

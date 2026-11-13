@@ -74,7 +74,7 @@ const HISTORY: HistoryEntry[] = [
   { age: 0, kind: 'stage', text: '2026년 1월, 경기도 화성시의 형편이 빠듯한 가정에서 3.3kg 여자아이로 태어났습니다. 첫째입니다.' },
   decided('infant-fever', 'dismiss', 1, 'parent'),
   decided('school-bully', ev('school-bully').choices![0].id, 10, 'child'),
-  { age: 20, kind: 'stage', text: '스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.' },
+  { age: 20, kind: 'stage', text: '스무 살을 넘겼습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.' },
   narrative('youth-job-rejections', 24),
   decided('middle-health-check', ev('middle-health-check').choices![0].id, 50),
   decided('middle-layoff', ev('middle-layoff').choices![0].id, 55),

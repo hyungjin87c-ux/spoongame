@@ -560,7 +560,7 @@ test.describe('가려지지 않는 것 (HV8·R-471) — 켠 상태에서도 그�
     await expect(page.getByTestId('assets-card')).toBeVisible();
     // 단계 줄·출생 줄은 가려지지 않는다
     const rows = page.getByTestId('log').getByTestId('log-row');
-    await expect(rows.filter({ hasText: '어느덧 마흔이 되었습니다' }).first()).toBeVisible();
+    await expect(rows.filter({ hasText: '어느덧 마흔을 넘겼습니다' }).first()).toBeVisible();
     await expect(page.getByTestId('log').locator('[data-kind="stage"][data-veiled]')).toHaveCount(0);
     // 같은 판에서 가린 줄은 있다(비교 대상이 공허하지 않다)
     await expect(page.getByTestId('log').locator('[data-veiled="true"]')).not.toHaveCount(0);
