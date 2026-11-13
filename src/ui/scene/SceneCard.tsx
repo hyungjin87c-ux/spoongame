@@ -3,6 +3,7 @@ import { bandOfWealth, eraDecadeOf, eraOf, isForecastYear, type EraPick, type Er
 import { petPhrases, sceneInputOf, sceneKey, sceneLineOf, sceneOf, scenePetsText, sceneRowsOf, type SceneSpec } from '../../core/scene';
 import type { FamilyGame } from '../../core/familyView';
 import { eraAccessibleName, eraTitle, SCENE_TEXT, type EraSpoken } from '../../data/sceneText';
+import { ageText } from '../../core/format';
 import { useReducedMotion } from '../hooks';
 import { FitList, FitPair } from '../FitPair';
 import { Icon } from '../Brand';
@@ -247,7 +248,7 @@ export function SceneCard({ game, fold, onFold, scene, animate = true }: Props) 
           <ul className="scene__people" data-testid="scene-people">
             {rows.map((r, i) => (
               <li key={i} data-self={r.self ? 'true' : undefined}>
-                <FitPair a={r.label} b={`${r.age}${SCENE_TEXT.ageSuffix}`} />
+                <FitPair a={r.label} b={ageText(r.age)} />
               </li>
             ))}
             {more > 0 ? <li>{SCENE_TEXT.moreOthers(more)}</li> : null}

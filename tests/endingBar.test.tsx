@@ -140,8 +140,9 @@ describe('엔딩 범례와 머리 (R-327)', () => {
       expect(textOf(/data-testid="ending-span">([^]*?)<\/p>/.exec(html)![1])).toMatch(/^\d{4}년 \d{1,2}월 ~ \d{4}년 · \d+세$/);
       expect(html).not.toContain('data-testid="ending-born"');
     }
-    expect(endingSpanText(2026, 1, 2110, 84)).toBe('2026년 1월 ~ 2110년 · 84세');
-    expect(endingSpanText(2026, null, 2110, 84)).toBe('2026년 ~ 2110년 · 84세');
+    expect(endingSpanText(2026, 1, 2110, 84)).toBe('2026년 1월 ~ 2110년 · 85세');
+    expect(endingSpanText(2026, null, 2110, 84)).toBe('2026년 ~ 2110년 · 85세');
+    expect(endingSpanText(2026, 1, 2110, 84)).not.toContain('만'); // 엔딩 머리에도 「만」 표기가 없다(SPEC-019 r2 — 만 나이는 인생 화면 헤더에만)
   });
 });
 

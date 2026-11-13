@@ -126,8 +126,8 @@ for (const era of GENS) {
     expect(await field(page, 'month')).toBe(`${c.birthYear}년 ${r.month}월`);
     expect((await field(page, 'place')).replace(/\s+/g, '')).toBe((await expectedPlace(page, r.region, c.birthYear)).replace(/\s+/g, ''));
     // 「A · B」 쌍은 줄 폭에 따라 한 줄 또는 두 줄이고 가운뎃점은 CSS가 그린다 → 글자만 비교한다
-    expect(await field(page, 'mother')).toMatch(new RegExp(`^${r.mother.age}세 (${JOB_LABELS.join('|')})$`));
-    expect(await field(page, 'father')).toMatch(new RegExp(`^${r.father.age}세 (${JOB_LABELS.join('|')})$`));
+    expect(await field(page, 'mother')).toMatch(new RegExp(`^${r.mother.age + 1}세 (${JOB_LABELS.join('|')})$`));
+    expect(await field(page, 'father')).toMatch(new RegExp(`^${r.father.age + 1}세 (${JOB_LABELS.join('|')})$`));
     expect(HOUSING_LABELS).toContain(await field(page, 'housing'));
     expect(await field(page, 'weight')).toMatch(new RegExp(`^${r.birthWeightKg.toFixed(1)}kg \\([^()]+\\)$`));
     expect(ORDER_LABELS).toContain(await field(page, 'order'));

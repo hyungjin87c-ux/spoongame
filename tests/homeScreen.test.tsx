@@ -85,7 +85,7 @@ describe('세대 목록 마크업 (GS1·GS2·GS4·GS10): 한 열 라디오 줄 8
     expect(random).not.toContain('gen-row__meta');
     expect(html.match(/class="gen-row__meta"/g)?.length).toBe(7);
     // 메타는 Glue 묶음이다: 「범위 · 나이」가 한 묶음(keep-phrase)이고 안의 숫자+단위는 줄바꿈 금지(nowrap) — 「·」가 줄 끝에 혼자 남지 않는다
-    for (const [id, text] of [['genx', '1970~1980년생 · 올해 46~56세'], ['alpha', '2013~2020년생 · 올해 6~13세']]) {
+    for (const [id, text] of [['genx', '1970~1980년생 · 올해 47~57세'], ['alpha', '2013~2020년생 · 올해 7~14세']]) {
       const start = html.indexOf(`id="gen-meta-${id}">`) + `id="gen-meta-${id}">`.length;
       expect(start, id).toBeGreaterThan(0);
       const meta = html.slice(start, html.indexOf('<span class="gen-row__desc"', start));

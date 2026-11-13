@@ -2,6 +2,7 @@ import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { calendarYear, citationFor, coParentsFn, heavyKindOfEvent, type CitationView, type CoParents, type EventDef, type EventPool, type TickInfo } from '../../core';
 import type { ImpactItem } from '../../core/impact';
+import { ageText } from '../../core/format';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
 import { HEAVY_KIND_TEXT, VEIL_TEXT } from '../../data/gentleText';
 import { CHILD_CHIP_TEXT, CHILD_FLOW_TEXT, deciderIconOf, parentWording } from '../../data/parentDecisionTable';
@@ -91,7 +92,7 @@ export function ParentCard({ model, gentle = false }: { model: ParentCardModel; 
           <span>{chip}</span>
         </span>
         <span className="decision__when" data-testid="parent-when">
-          <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={`${age}${DASH_TEXT.ageSuffix}`} hideSeparator />
+          <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={ageText(age)} hideSeparator />
         </span>
       </div>
       <div className="decision__body">

@@ -35,7 +35,7 @@ const SWEEP_TIMEOUT_MS = 240_000;
 const MIN_OVERLAP_PX = 4;
 /** 겹치는 곳을 더블클릭할 때, 버튼 폭의 이 비율 지점도 함께 누른다(R-035: 좌·우 1/4 지점). 겹치지 않는 뷰포트는 이 지점들만 짧게 본다. */
 const FRACTIONS = [1 / 4, 1 / 2, 3 / 4];
-const INITIAL: LifeSnapshot = { speed: '1', auto: 'false', age: '0세', hasChoice: false };
+const INITIAL: LifeSnapshot = { speed: '1', auto: 'false', age: '1세', hasChoice: false };
 /**
  * 눌러도 상태가 안 바뀌는 컨트롤: 가드가 막았는지는 landed로 보고, 대조군의 변화 기대에서는 뺀다. 옛 목록은 「이미 1배속」인 1배 버튼 하나였는데, SPEC-012 QF5로 배속이 한 단추가 되어
  * 그 단추는 누르면 1 → 2배로 **바뀐다**(변화로 센다) — 그래서 지금은 비어 있다. (M7c: 「생각 남기기」는 보통 버튼이라 눌리면 기록 시트가 열린다 — 변화로 센다)

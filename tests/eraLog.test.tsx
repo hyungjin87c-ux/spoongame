@@ -78,7 +78,7 @@ describe('EraLogRow — 줄의 구조(세 겹 구분)', () => {
     expect(out).toContain('data-tl="era"');
     expect(out).toContain('id="log-y1988"');
     expect(out).toContain('tabindex="-1"');
-    expect(out).toMatch(/<span class="log__age">16세<small class="log__year">1988<\/small><\/span>/);
+    expect(out).toMatch(/<span class="log__age">17세<small class="log__year">1988<\/small><\/span>/);
     expect(out).toContain('<use href="#i-era"');
     expect(out).toMatch(/<span class="log__tl">[\s\S]*<span>시대의 창<\/span><\/span>/);
     expect(out).toContain('<span class="log__sent">서울에서 올림픽이 열렸습니다.</span>');

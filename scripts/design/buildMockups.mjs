@@ -545,7 +545,7 @@ function dashHead({ age, year, progress, paused, pending = false, auto = false, 
   const inertAttr = inert ? ' inert' : '';
   return `<header class="dash-head"${inertAttr}><div class="dash-head__inner">
     <div class="dash-head__top">${headerLogo()}
-      <div class="who"><span class="who__name">${HERO.name}</span><span class="who__age"><b>${age}</b>${T.ageSuffix}</span></div></div>
+      <div class="who"><span class="who__name">${HERO.name}</span><span class="who__age"><b>${age}</b>${T.ageUnit}</span></div></div>
     <div class="year-row"><span class="num">${year}${T.yearSuffix}</span>
       <div class="year-progress" role="progressbar" aria-label="${T.yearProgressLabel}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"${paused ? ` aria-valuetext="${progress}%, ${T.progressPausedValue}"` : ''}><div class="year-progress__fill" style="width:${progress}%"></div></div>
       <span class="year-row__pct num">${progress}%</span></div>
@@ -685,7 +685,7 @@ function decisionInner({ ev, year, age, era = 'present', choices, auto }) {
     .join('\n        ');
   const anyImpact = choices.some(([, spec]) => spec);
   const cite = citationFor(ev, era, year);
-  return `<div class="decision__head"><span class="decision__kind">${esc(T.choiceKind)}</span><div class="row"><span class="decision__when">${fitPair(`${year}${T.yearSuffix}`, `${age}${T.ageSuffix}`)}</span><button class="btn btn--ghost btn--sm decision__fold" type="button" data-testid="decision-fold-btn">${esc(T.foldCard)} <span aria-hidden="true">${esc(T.foldMark)}</span></button></div></div>
+  return `<div class="decision__head"><span class="decision__kind">${esc(T.choiceKind)}</span><div class="row"><span class="decision__when">${fitPair(`${year}${T.yearSuffix}`, `${age}${T.ageUnit}`)}</span><button class="btn btn--ghost btn--sm decision__fold" type="button" data-testid="decision-fold-btn">${esc(T.foldCard)} <span aria-hidden="true">${esc(T.foldMark)}</span></button></div></div>
     <div class="decision__body">
       <h2 id="dc-title" class="decision__title" tabindex="-1" style="--title-chars:${titleCharsFor(ev.title)}" data-testid="choice-title">${esc(ev.title)}</h2>
       <p class="decision__text" data-testid="choice-text">${esc(ev.text)}</p>

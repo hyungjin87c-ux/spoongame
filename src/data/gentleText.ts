@@ -1,3 +1,4 @@
+import { ageText } from '../core/format';
 import type { HeavyKind } from '../core/types';
 
 /**
@@ -56,5 +57,5 @@ export const VEIL_TEXT = {
 
 /** 접근 가능한 이름 (copy.md 12-2): 보이는 글자 「펼쳐 보기」가 이름의 앞머리 (WCAG 2.5.3). 한 목록에 같은 버튼이 여럿이라 나이와 분류로 맥락을 붙인다. */
 export function veilButtonLabel(open: boolean, age: number, kindName: string): string {
-  return `${open ? VEIL_TEXT.close : VEIL_TEXT.open} ${age}세 ${kindName}`;
+  return `${open ? VEIL_TEXT.close : VEIL_TEXT.open} ${ageText(age)} ${kindName}`;
 }

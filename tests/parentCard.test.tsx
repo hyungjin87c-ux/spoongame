@@ -181,7 +181,7 @@ describe('부모님이 정한 카드: 비모달·구성·문구 (PD5·PD8, 설�
     const at = html.indexOf('data-testid="parent-when"');
     const when = plain(html.slice(at, html.indexOf('</div>', at)));
     expect(when).toContain(`${calendarYear(parent.before.character!.birthYear, 1)}년`);
-    expect(when).toContain('1세');
+    expect(when).toContain('2세'); // 한국 나이 기본(SPEC-019): 게임 나이 1세 = 2세
   });
 
   it('첫 부모 카드에만 안내 한 줄이 붙는다 (Q6): 앞선 부모 결정이 있으면 붙지 않는다', () => {

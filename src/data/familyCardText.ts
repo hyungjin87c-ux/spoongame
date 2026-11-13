@@ -1,4 +1,5 @@
 import type { Gender, Occupation } from '../core/types';
+import { ageText } from '../core/format';
 import type { JobLine } from '../core/familyJobs';
 import type { SiblingKind } from '../core/family';
 import { OCCUPATION_LABEL } from './birthReportTable';
@@ -55,11 +56,11 @@ export const FAMILY_CARD_TEXT = {
   basisKind: { official: '확인', calc: '확인(환산)', estimated: '추정', design: '설계값' } as const,
   nothing: '없음',
   /** 「N세에 세상을 떠남」 */
-  goneAt: (ownAge: number): string => `${ownAge}세에 세상을 떠남`,
+  goneAt: (ownAge: number): string => `${ageText(ownAge)}에 세상을 떠남`,
   /** 주인공이 태어나기 전에 떠난 분 */
-  goneBeforeMe: (ownAge: number): string => `내가 태어나기 전에 세상을 떠남(${ownAge}세)`,
+  goneBeforeMe: (ownAge: number): string => `내가 태어나기 전에 세상을 떠남(${ageText(ownAge)})`,
   /** 펼치면 붙는 한 줄 */
-  goneMyAge: (myAge: number): string => `내가 ${myAge}세였던 해`,
+  goneMyAge: (myAge: number): string => `내가 ${ageText(myAge)}였던 해`,
   petSpecies: { dog: '개', cat: '고양이', other: '반려동물' } as const,
   petWith: '함께 삶',
   petGone: (years: number | undefined): string => (years === undefined ? '곁을 떠남' : `${years}년을 함께하고 곁을 떠남`),

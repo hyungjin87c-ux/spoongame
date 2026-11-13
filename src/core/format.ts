@@ -37,3 +37,27 @@ export function formatWon(won: number): string {
 export function formatMan(man: number): string {
   return formatWon(man * 10_000);
 }
+
+/**
+ * 사람의 나이를 화면 숫자로 바꾸는 **단 하나의 정의** (SPEC-019 r2). 입력은 게임 나이(태어난 해 0 — `GameState.age`·가족 나이·별세 나이 모두)이고,
+ * 화면은 늘 **한국 나이**(+1, 태어난 해 1세)다. 화면 코드는 사람 나이에 「세」를 직접 붙이지 않고 아래 함수를 거친다(tests/ageViewLint.test.ts).
+ * 유일한 예외는 인생 화면 헤더 알약 옆의 작은 「만 N세」(`manAgeText`, 게임 나이 그대로). 통계의 나이(연령 구간·기대수명·인구 구성)는 만 나이 기준이라 이 함수를 거치지 않는다.
+ */
+export function displayAge(age: number): number {
+  return age + 1;
+}
+
+/** 「24세」 — 한국 나이 (목록·카드·문장·헤더 알약) */
+export function ageText(age: number): string {
+  return `${displayAge(age)}세`;
+}
+
+/** 헤더 알약 옆의 작은 글자 「만 23세」 — 게임 나이 그대로(만 나이). 이 한 곳 말고는 「만」 표기가 없다 */
+export function manAgeText(age: number): string {
+  return `만 ${age}세`;
+}
+
+/** 나이 구간: 「8~20세」, `to`가 null이면 「66세~」 */
+export function ageRangeText(from: number, to: number | null): string {
+  return to === null ? `${displayAge(from)}세~` : `${displayAge(from)}~${displayAge(to)}세`;
+}

@@ -3,7 +3,9 @@ import { heavyKindOfEntry } from '../../core/gentle';
 import { entryHeadline } from '../../core/history';
 import type { CoParents } from '../../core/parentSubject';
 import type { HistoryEntry } from '../../core/types';
+import { ageText } from '../../core/format';
 import { DASH_TEXT } from '../../data/dashText';
+import { familyLineViewText } from '../../data/familyLineText';
 import { decidedByText, deciderIconOf } from '../../data/parentDecisionTable';
 import { Icon } from '../Brand';
 import { revealTopOfTallFocus } from '../focusReveal';
@@ -97,13 +99,13 @@ function EntryText({ h, subject }: { h: HistoryEntry; subject: CoParents }) {
           {entryHeadline(h)}
         </span>
         {pick}
-        <span className="log__result">{h.text}</span>
+        <span className="log__result">{familyLineViewText(h.eventId, h.text)}</span>
       </>
     );
   }
   return (
     <>
-      {h.text}
+      {familyLineViewText(h.eventId, h.text)}
       {pick ? <> {pick}</> : null}
     </>
   );
@@ -369,10 +371,7 @@ export class LogList extends Component<Props, Record<string, never>, Snapshot | 
             const subject: CoParents = h.by === 'parent' && subjectOf !== undefined ? subjectOf(h.age) : 'both';
             const className = `log__row${h.kind === 'stage' ? ' log__row--stage' : ''}${h.kind === 'note' ? ' log__row--note' : ''}${latest ? ' log__row--latest' : ''}`;
             const age = (
-              <span className="log__age">
-                {h.age}
-                {DASH_TEXT.ageSuffix}
-              </span>
+              <span className="log__age">{ageText(h.age)}</span>
             );
             if (heavy !== null) {
               // 가린 줄 (HV4 ①③ 서술·결정·부모): 나이 열은 보통 줄과 같고, 글 자리에 안내 + [결정자 도장] + 「펼쳐 보기」, 원문은 `hidden`

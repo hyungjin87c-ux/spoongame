@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { COMPARABLE_STATS, displaySeconds, entryHeadline, heavyKindOfEntry, isCleanRun, reviewEnding, standingScore, type CoParents, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
 import { profileLabel } from '../core/birthProfile';
+import { ageText } from '../core/format';
 import { reportPlaceLabel } from '../core/birthReport';
 import { looksText } from '../data/looksText';
 import { standingLabel } from '../data/birthText';
+import { familyLineViewText } from '../data/familyLineText';
 import { VEIL_TEXT } from '../data/gentleText';
 import { decidedByText, deciderIconOf } from '../data/parentDecisionTable';
 import { DASH_TEXT, STATUS_LABEL, STATUS_ORDER, titleCharsFor } from '../data/dashText';
@@ -134,7 +136,7 @@ function TimelineBody({ entry, subject }: { entry: HistoryEntry; subject: CoPare
           )}
         </span>
       ) : null}
-      <span className="tl-text">{entry.text}</span>
+      <span className="tl-text">{familyLineViewText(entry.eventId, entry.text)}</span>
     </>
   );
 }
@@ -144,7 +146,7 @@ function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = 
   if (entry.kind === 'note') {
     return (
       <li className="is-note" data-kind="note" data-testid="timeline-entry">
-        <span className="log__age">{entry.age}세</span>
+        <span className="log__age">{ageText(entry.age)}</span>
         <span>
           <NoteBody entry={entry} textClassName="tl-text" />
         </span>
@@ -156,7 +158,7 @@ function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = 
     // 가린 줄 (HV4 ④): 인생 기록 줄과 같은 부품 — 안내 「무거운 일이 있었습니다 · {분류}」 + [결정자 도장] + 「펼쳐 보기」, 펼치면 제목 → 고른 길 → 결과 문장. 사망 줄은 heavy가 아니라 여기 오지 않는다(원인 낱말까지 그대로, R-470)
     return (
       <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-veiled="true" data-testid="timeline-entry">
-        <span className="log__age">{entry.age}세</span>
+        <span className="log__age">{ageText(entry.age)}</span>
         <span className="veil">
           <VeiledText kind={heavy} age={entry.age} bodyId={`veil-${veilId}`} open={open} onToggle={onToggle ?? (() => undefined)} stamp={entry.by !== undefined ? <VeilTimelineStamp by={entry.by} open={open} subject={subject} /> : null}>
             <TimelineBody entry={entry} subject={subject} />
@@ -167,7 +169,7 @@ function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = 
   }
   return (
     <li className={entry.kind === 'choice' ? 'is-choice' : undefined} data-kind={entry.kind} data-testid="timeline-entry">
-      <span className="log__age">{entry.age}세</span>
+      <span className="log__age">{ageText(entry.age)}</span>
       <span>
         <TimelineBody entry={entry} subject={subject} />
       </span>

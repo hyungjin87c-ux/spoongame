@@ -2,6 +2,7 @@ import { useMemo, useRef, type ReactNode } from 'react';
 import { wealthMixtureOfGame } from '../core/birthProfile';
 import { birthSentence, reportPlaceLabel, weightStanding } from '../core/birthReport';
 import { startBandOf } from '../core/ending';
+import { ageText } from '../core/format';
 import type { FamilyData } from '../core/familyModel';
 import { BIRTH_SIBLING_TEXT, birthSiblingLine } from '../data/birthSiblingText';
 import { peersOf } from '../core/peers';
@@ -149,10 +150,10 @@ export function BirthScreen({ generation, character: c, report, peerSeed, seed, 
                 <GradeLine grade={c.parentWealth} range={`(${band})`} size="lg" />
               </Field>
               <Field id="mother" label={BIRTH_TEXT.gridLabels.mother}>
-                <FitPair a={`${report.mother.age}세`} b={OCCUPATION_LABEL[report.mother.job]} />
+                <FitPair a={ageText(report.mother.age)} b={OCCUPATION_LABEL[report.mother.job]} />
               </Field>
               <Field id="father" label={BIRTH_TEXT.gridLabels.father}>
-                <FitPair a={`${report.father.age}세`} b={OCCUPATION_LABEL[report.father.job]} />
+                <FitPair a={ageText(report.father.age)} b={OCCUPATION_LABEL[report.father.job]} />
               </Field>
               <Field id="housing" label={BIRTH_TEXT.gridLabels.housing}>
                 {housingText(report.housing)}

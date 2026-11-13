@@ -190,11 +190,11 @@ test('세대 고르기(GS1·GS2·GS4·GS10): 한 열 라디오 줄 8개(첫 줄 
   // 줄 순서·이름: 랜덤 세대 → 산업화 → 베이비붐 → 86 → X → 밀레니얼 → Z → 알파
   const names = await page.locator('[data-testid="gen-list"] .gen-row__name').evaluateAll((els) => els.map((el) => (el.textContent ?? '').replace(/\s+/g, ' ').trim()));
   expect(names.map((n) => n.replace(/ ?살아봄$/, ''))).toEqual(['랜덤 세대', ...GEN_LIST.map((g) => g[1])]);
-  // 메타(오른쪽, 12px): 세대 줄에만 있고 값은 범위에서 계산한 「{from}~{to}년생 · 올해 {2026-to}~{2026-from}세」 — 랜덤 줄에는 없다
+  // 메타(오른쪽, 12px): 세대 줄에만 있고 값은 범위에서 계산한 「{from}~{to}년생 · 올해 {2026-to+1}~{2026-from+1}세」(한국 나이 기본, SPEC-019) — 랜덤 줄에는 없다
   await expect(page.locator('[data-testid="gen-row-random"] .gen-row__meta')).toHaveCount(0);
   for (const [id, , from, to] of GEN_LIST) {
     const meta = page.locator(`[data-testid="gen-row-${id}"] .gen-row__meta`);
-    await expect(meta, id).toHaveText(`${from}~${to}년생 · 올해 ${2026 - to}~${2026 - from}세`);
+    await expect(meta, id).toHaveText(`${from}~${to}년생 · 올해 ${2026 - to + 1}~${2026 - from + 1}세`);
     await expect(page.locator(`[data-testid="gen-row-${id}"] .gen-row__desc`), `${id} 소개`).not.toHaveText('');
   }
   await expect(page.locator('[data-testid="gen-row-alpha"] .gen-row__desc')).toContainText('2026년부터는 공식 전망을 바탕으로 한 이야기예요');
@@ -1792,7 +1792,7 @@ test('버튼·카드의 접근 가능한 이름: 라디오는 카드 글, 캐러
   await page.goto('/');
   await expect(page.getByRole('radio', { name: /랜덤 세대/ })).toBeChecked();
   // 세대 줄의 이름 = 세대 이름 + 메타(「{범위}년생 · 올해 N~M세」)
-  await expect(page.getByRole('radio', { name: /X세대 1970~1980년생 · 올해 46~56세/ })).not.toBeChecked();
+  await expect(page.getByRole('radio', { name: /X세대 1970~1980년생 · 올해 47~57세/ })).not.toBeChecked();
   await expect(page.getByRole('radio', { name: /약 30분/ })).toBeChecked();
   await expect(page.getByRole('button', { name: '이전 지표' })).toBeVisible();
   await expect(page.getByRole('button', { name: '다음 지표' })).toBeVisible();

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { SPEEDS, bandOfWealth, buildFeedbackUrl, calendarYear, coParentsFn, eraRowsOf, famSeedOf, feedbackFieldsOf, noteCount, type BgmSettings, type EventPool, type NoteCardDef, type Settings, type Speed, type ThemeChoice, type TickInfo } from '../core';
+import { ageText, displayAge, manAgeText } from '../core/format';
 import { BGM_VOLUME_MAX, BGM_VOLUME_MIN } from '../core/types';
 import { eventPool } from '../core/gameData';
 import { DASH_TEXT } from '../data/dashText';
@@ -424,9 +425,15 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
               <h1 className="who__name" ref={headingRef} tabIndex={-1} data-testid="life-name">
                 {c.name}
               </h1>
-              <span className="who__age" data-testid="life-age">
-                <b>{game.age}</b>
-                {DASH_TEXT.ageSuffix}
+              {/* 나이 (SPEC-019 r2): 알약은 한국 나이 「24세」, 그 옆에 작은 글자로 만 나이 「만 23세」를 늘 붙인다(버튼 아님). 화면 읽기 이름은 둘을 한 번에 「한국 나이 24세, 만 23세」 */}
+              <span className="who__ages" role="img" aria-label={DASH_TEXT.agePairName(ageText(game.age), manAgeText(game.age))}>
+                <span className="who__age" data-testid="life-age">
+                  <b>{displayAge(game.age)}</b>
+                  {DASH_TEXT.ageUnit}
+                </span>
+                <small className="who__man" data-testid="life-age-man">
+                  {manAgeText(game.age)}
+                </small>
               </span>
             </div>
           </div>

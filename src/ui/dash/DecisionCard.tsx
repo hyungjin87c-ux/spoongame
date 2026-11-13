@@ -2,6 +2,7 @@ import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { calendarYear, citationFor, heavyKindOfEvent, isAskRollChoice, pickChoicesOf, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
 import type { ImpactItem } from '../../core/impact';
+import { ageText } from '../../core/format';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
 import { insightFor } from '../../data/citationInsights';
 import { HEAVY_KIND_TEXT, VEIL_TEXT } from '../../data/gentleText';
@@ -106,7 +107,7 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, o
         <span className="decision__kind">{DASH_TEXT.choiceKind}</span>
         <div className="row">
           <span className="decision__when" data-testid="decision-when">
-            <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={`${age}${DASH_TEXT.ageSuffix}`} hideSeparator />
+            <FitPair a={`${year}${DASH_TEXT.yearSuffix}`} b={ageText(age)} hideSeparator />
           </span>
           <GuardedButton guardKey={guardKey} className="btn btn--ghost btn--sm decision__fold" data-testid="decision-fold-btn" onClick={onFold}>
             {DASH_TEXT.foldCard} <span aria-hidden="true">{DASH_TEXT.foldMark}</span>

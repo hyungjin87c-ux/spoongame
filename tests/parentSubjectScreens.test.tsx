@@ -148,7 +148,7 @@ describe('④ 가린 카드: 무거운 장면 가리기를 켠 채 부모 결정
     ];
     const html = renderToStaticMarkup(<LogCard history={history} live={false} gentle subjectOf={() => 'mother'} />);
     const row = plain(html.slice(html.indexOf('data-veiled="true"')));
-    expect(row).toContain(`1세 무거운 일이 있었습니다 · ${HEAVY_KIND_TEXT.health} (어머니가 이렇게 정했습니다) 펼쳐 보기`);
+    expect(row).toContain(`2세 무거운 일이 있었습니다 · ${HEAVY_KIND_TEXT.health} (어머니가 이렇게 정했습니다) 펼쳐 보기`);
     // SPEC-012 QF4: 펼친 원문은 「제목 → 도장·고른 길 → 결과」 세 줄(괄호 없음). 제목은 `.veil__body`(hidden) 안이라 접힌 줄에서 함께 가려진다
     expect(row).toContain('열 어머니가 이렇게 정했습니다: 병원에 간다 열이 올랐다.'); // 펼친 원문 쪽 도장(라벨 포함, hidden)도 같은 주어
     expect(/<span class="veil__body"[^>]*hidden=""[^>]*>s*<span class="log__q"/.test(html), '제목은 veil__body 안(hidden)에 있다').toBe(true);

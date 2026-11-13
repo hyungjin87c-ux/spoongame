@@ -48,7 +48,7 @@ describe('QS2 entryHeadline: 질문 → 제목 → 없음', () => {
 
 describe('QS2 ① 인생 기록: 질문 우선, 없으면 제목', () => {
   const list = rows(render(HISTORY));
-  const rowOf = (age: number) => list.find((r) => new RegExp(`<span class="log__age">${age}세`).test(r))!;
+  const rowOf = (age: number) => list.find((r) => new RegExp(`<span class="log__age">${age + 1}세`).test(r))!;
   const headOf = (r: string) => /<span class="log__q" data-testid="log-q">([^<]*)<\/span>/.exec(r)?.[1];
 
   it('질문이 있는 줄(본인·부모·흘러감)의 log-q 는 질문이고 제목이 아니다', () => {
@@ -59,9 +59,9 @@ describe('QS2 ① 인생 기록: 질문 우선, 없으면 제목', () => {
   });
 
   it('차례는 질문 → 고른 길 → 결과, 도장·data-by·세 줄 쌓기 클래스는 그대로', () => {
-    expect(plain(rowOf(14))).toBe('14세 동아리에 들어갈까 말까? 선택: 한다 동아리에 들어갔다.');
-    expect(plain(rowOf(5))).toBe('5세 입학 전에 무엇을 시킬까? 부모님이 이렇게 정했습니다: 새로 산다 입학을 준비했다.');
-    expect(plain(rowOf(7))).toBe('7세 동생에게 쏠린 눈, 어떻게 할까? 이렇게 흘러갔습니다: 삐친다 동생이 생겼다.');
+    expect(plain(rowOf(14))).toBe('15세 동아리에 들어갈까 말까? 선택: 한다 동아리에 들어갔다.');
+    expect(plain(rowOf(5))).toBe('6세 입학 전에 무엇을 시킬까? 부모님이 이렇게 정했습니다: 새로 산다 입학을 준비했다.');
+    expect(plain(rowOf(7))).toBe('8세 동생에게 쏠린 눈, 어떻게 할까? 이렇게 흘러갔습니다: 삐친다 동생이 생겼다.');
     expect(rowOf(5)).toContain('data-testid="log-by"');
     expect(rowOf(5)).toContain('data-by="parent"');
     expect(rowOf(7)).toContain('data-by="child"');
@@ -70,9 +70,9 @@ describe('QS2 ① 인생 기록: 질문 우선, 없으면 제목', () => {
 
   it('질문이 없는 옛 줄은 제목 그대로, 둘 다 없으면 윗줄 없이 괄호 꼴이다', () => {
     expect(headOf(rowOf(15))).toBe('옛 줄 제목');
-    expect(plain(rowOf(15))).toBe('15세 옛 줄 제목 선택: 넘긴다 질문이 없는 옛 줄이다.');
+    expect(plain(rowOf(15))).toBe('16세 옛 줄 제목 선택: 넘긴다 질문이 없는 옛 줄이다.');
     expect(rowOf(16)).not.toContain('log-q');
-    expect(plain(rowOf(16))).toBe('16세 제목도 질문도 없는 줄이다. (부모님이 이렇게 정했습니다: 맡긴다)');
+    expect(plain(rowOf(16))).toBe('17세 제목도 질문도 없는 줄이다. (부모님이 이렇게 정했습니다: 맡긴다)');
     expect(headOf(rowOf(17))).toBe('질문만 있는 줄, 어떻게 할까?');
   });
 });

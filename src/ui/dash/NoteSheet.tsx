@@ -1,6 +1,7 @@
 import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type FocusEvent, type MouseEvent } from 'react';
 import { NOTE_LIMITS, calendarYear, citationFor, liveGraphemes, noteQuestion, sanitizeLive, type NoteCardDef } from '../../core';
+import { ageText } from '../../core/format';
 import { titleCharsFor } from '../../data/dashText';
 import { NOTE_TEXT } from '../../data/noteSheetText';
 import { FitPair } from '../FitPair';
@@ -253,7 +254,7 @@ export function NoteSheet({ via, card, game, count, cardsOn, guardKey, onSave, o
             {NOTE_TEXT.kind}
           </span>
           <span className="sheet__age" data-testid="note-when">
-            <FitPair a={`${year}년`} b={`${game.age}세`} hideSeparator />
+            <FitPair a={`${year}년`} b={ageText(game.age)} hideSeparator />
           </span>
         </div>
         <div className="sheet__body">

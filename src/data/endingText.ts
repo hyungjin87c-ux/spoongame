@@ -1,3 +1,4 @@
+import { ageRangeText, ageText } from '../core/format';
 import type { Death, Stage } from '../core/types';
 import type { Movement, StartBand, WealthJourney } from '../core/ending';
 import { stageRangeOf } from '../core/ending';
@@ -22,7 +23,7 @@ export const ENDING_HEADINGS = {
 
 /** "83세에 세상을 떠났습니다. 원인은 노환이었습니다." (원인 낱말의 받침에 따라 「이었습니다」·「였습니다」, lifeText.ts#causeSentenceText) */
 export function deathLineText(death: Death): string {
-  return `${death.age}세에 세상을 떠났습니다. ${causeSentenceText(death.cause)}`;
+  return `${ageText(death.age)}에 세상을 떠났습니다. ${causeSentenceText(death.cause)}`;
 }
 
 /** 선택의 순간 수 한 줄 */
@@ -81,7 +82,7 @@ export const MOVEMENT_TEXT: Record<Movement, string> = {
 };
 
 /** 왜 숫자를 빼서 견주지 않았는가 (R-045 c) */
-export const JOURNEY_NOTE = '재산은 어릴 때는 집안 형편이고 스무 살부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세대 안의 자리로 견주었습니다.';
+export const JOURNEY_NOTE = '재산은 어릴 때는 집안 형편이고 독립한 뒤부터는 내가 가진 것이라, 숫자를 빼서 견주지 않고 같은 세대 안의 자리로 견주었습니다.';
 
 /**
  * 엔딩 「최종 순자산」 줄의 문구 (SPEC-003 M5, docs/design/copy.md 4-6절): M4의 「재산」 미터(0~100)와 스무 살 전의 이름 「집안 형편」을 대신한다. 금액은 `formatWon` 출력 그대로(「약」 없음, 음수 U+2212),
@@ -92,10 +93,10 @@ export const FINAL_NET_TEXT = {
   /** 지난·다가올 세상에서만 금액 바로 아래에 붙는 태그 */
   basis: '지금 가치로 환산',
   /** 스무 살 전에 끝난 인생: 자리를 말하지 않는다 */
-  early: '스무 살이 되기 전이라 자산을 세지 않았습니다.',
+  early: '독립하기 전이라 자산을 세지 않았습니다.',
 } as const;
 
-/** 엔딩 머리 (M7e-3, R-327, copy.md 5-4): 라벨 「{세상} · 생애 기록」과 셋째 줄 「{출생 연월} ~ {사망 연도}년 · {나이}세」 */
+/** 엔딩 머리 (M7e-3, R-327, copy.md 5-4): 라벨 「{세상} · 생애 기록」과 셋째 줄 「{출생 연월} ~ {사망 연도}년 · {나이}세」(한국 나이, SPEC-019) */
 export const ENDING_HEAD_LABEL = '생애 기록';
 
 /** 엔딩 머리 둘째 줄의 태어난 곳 (GS9): 「경기도 안양시에서 태어남」 꼴 — 세대 판은 그 해의 행정구역 이름 */
@@ -103,7 +104,7 @@ export function endingBornText(place: string): string {
   return `${place}에서 태어남`;
 }
 export function endingSpanText(birthYear: number, month: number | null, deathYear: number, age: number): string {
-  return `${month === null ? `${birthYear}년` : yearMonthText(birthYear, month)} ~ ${deathYear}년 · ${age}세`;
+  return `${month === null ? `${birthYear}년` : yearMonthText(birthYear, month)} ~ ${deathYear}년 · ${ageText(age)}`;
 }
 
 /** 출발선 막대의 범례·축 글자 (copy.md 5-4): 막대 안의 축은 aria-hidden이고 막대의 aria-label이 글로 말한다 */
@@ -127,7 +128,7 @@ export function startedAtText(from: number): string {
 /** 연표 단계 제목: "학창 · 7~19세", "노년 · 65세~" */
 export function stageHeadingText(stage: Stage): string {
   const { from, to } = stageRangeOf(stage);
-  return `${STAGE_TABLE[stage].label} · ${to === null ? `${from}세~` : `${from}~${to}세`}`;
+  return `${STAGE_TABLE[stage].label} · ${ageRangeText(from, to)}`;
 }
 
 /**

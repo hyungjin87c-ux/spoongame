@@ -145,7 +145,7 @@ describe('두 화면이 같은 부품을 쓴다 (D3, FR4·FR9)', () => {
     // 시간순: 나이가 줄어들지 않는다
     const ages = items.map((li) => Number(/<span class="log__age">(\d+)세<\/span>/.exec(li)![1]));
     expect(ages).toEqual([...ages].sort((a, b) => a - b));
-    expect(ages).toEqual(notes.map((n) => n.age));
+    expect(ages).toEqual(notes.map((n) => n.age + 1));
     // 같은 부품: 같은 줄을 인생 기록(LogCard)에 그린 것과 라벨·글 요소가 같다
     const logHtml = renderToStaticMarkup(<LogCard history={game.history} live={false} />);
     // 인생 기록은 최신순(SPEC-005 LR1)이라 뒤집어 연표(시간순)와 같은 순서로 맞대어 본다

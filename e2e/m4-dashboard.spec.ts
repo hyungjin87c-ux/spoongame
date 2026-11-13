@@ -47,7 +47,7 @@ async function recordProgress(page: Page): Promise<void> {
       const ageEl = document.querySelector('[data-testid="life-age"]');
       if (bar === null || ageEl === null) return;
       const pct = Number(bar.getAttribute('aria-valuenow'));
-      const age = Number((ageEl.textContent ?? '').split('세')[0]);
+      const age = Number((ageEl.textContent ?? '').split('세')[0]) - 1; // 화면은 한국 나이(+1, SPEC-019) — 저장의 게임 나이로 되돌린다
       const last = w.__prog[w.__prog.length - 1];
       if (last === undefined || last.pct !== pct || last.age !== age) w.__prog.push({ age, pct, text: document.querySelector('[data-testid="year-pct"]')?.textContent ?? '', t: performance.now() });
     };

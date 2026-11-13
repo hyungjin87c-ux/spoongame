@@ -511,7 +511,7 @@ test('대기 중인 선택지가 실제 이벤트와 맞지 않는 저장: 모�
     await expect(page.getByTestId('life-screen')).toBeVisible();
     await expect(page.getByTestId('choice-panel')).toHaveCount(0); // 대기는 풀렸다
     await expect(page.getByTestId('life-name')).toHaveText(decision.character!.name); // 같은 인물
-    await expect(page.getByTestId('life-age')).toContainText(`${decision.age}세`);
+    await expect(page.getByTestId('life-age')).toContainText(`${decision.age + 1}세`);
     // 이어서 진행된다 (R-066: 예전 단언 `age >= decision.age`는 항상 참이었다). 컨트롤의 입력 가드(0.4초)가 풀린 것을 확인한 뒤 "다음 결정으로"를 누르면
     // 풀린 해가 다시 진행된다. 선택지는 최소 2년 간격이라 같은 해에는 다시 뜨지 않으므로 저장의 나이가 실제로 오르거나(새 선택지가 뜨면 다른 key), 그 사이 사망해 엔딩이 된다.
     // 클릭이 가드에 먹히거나 진행이 멈춰 있으면 나이가 그대로라 이 단언이 실패한다.

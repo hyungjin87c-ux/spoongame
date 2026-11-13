@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { ageText } from '../../core/format';
 import type { EraRow } from '../../core/eraWindow';
-import { DASH_TEXT } from '../../data/dashText';
 import { VEIL_TEXT, veilButtonLabel } from '../../data/gentleText';
 import { SCENE_TEXT, foresightButtonName, foresightLines, forecastReadName } from '../../data/sceneText';
 import { Icon } from '../Brand';
@@ -72,8 +72,7 @@ export function EraLogRow({ row, open, onToggle }: { row: EraRow; open: boolean;
   return (
     <li className="log__row log__row--tl" data-kind="timeline" data-tl="era" id={`log-y${row.year}`} tabIndex={-1} aria-live="off" data-veiled={row.veiled ? 'true' : undefined} data-testid="log-row-era">
       <span className="log__age">
-        {row.age}
-        {DASH_TEXT.ageSuffix}
+        {ageText(row.age)}
         <small className="log__year">{row.year}</small>
       </span>
       <span className="log__text">

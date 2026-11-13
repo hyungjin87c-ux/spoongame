@@ -171,12 +171,12 @@ describe('세대 목록 (GS1·GS2·GS10 — 한 열 스크롤 라디오 8줄)', 
     expect(genRow(html, 'random')).not.toContain('gen-row__meta');
     for (const g of GENERATIONS) {
       const row = genRow(html, g.id);
-      const meta = genMetaText(g.birth.from, g.birth.to);
+      const meta = genMetaText(g.birth.from, g.birth.to); // 한국 나이(SPEC-019)
       expect(text(row)).toContain(`${meta.range} · ${meta.age}`);
       expect(plain(row)).toContain(g.label);
     }
-    expect(genMetaText(1940, 1954)).toEqual({ range: '1940~1954년생', age: '올해 72~86세' });
-    expect(genMetaText(2013, 2020)).toEqual({ range: '2013~2020년생', age: '올해 6~13세' });
+    expect(genMetaText(1940, 1954)).toEqual({ range: '1940~1954년생', age: '올해 73~87세' });
+    expect(genMetaText(2013, 2020)).toEqual({ range: '2013~2020년생', age: '올해 7~14세' });
   });
 
   it('줄의 접근 가능한 이름은 이름 + 메타이고(aria-labelledby), 소개는 aria-describedby로 같은 글자를 읽힌다', () => {

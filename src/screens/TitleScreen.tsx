@@ -8,7 +8,7 @@ import { GENERATION_IDS, LIFE_LENGTHS, isLifeLengthSelectable, type GenerationCh
 import { BUILD_LABEL } from '../buildInfo';
 import { APP_VERSION, REPO_URL } from '../buildInfo';
 import { buildAboutFaq } from '../data/aboutFaq';
-import { GEN_ROWS, GEN_TEXT, REGION_CHIP_NAMES, formalNames, type GenRowText } from '../data/generationText';
+import { GEN_ROWS, GEN_TEXT, REGION_CHIP_NAMES, formalNames, genMetaLine, type GenRowText } from '../data/generationText';
 import { CURRENT_REGION_NAMES, REGION_KEYS, type CurrentRegionName } from '../data/regionKeys';
 import { RELEASE_NOTES } from '../data/releaseNotes';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT } from '../data/titleText';
@@ -135,7 +135,7 @@ function GenRow({ row, checked, lived, guardReady, onSelect }: GenRowProps) {
           ) : null}
           {row.meta === null ? null : (
             <span className="gen-row__meta" id={`gen-meta-${id}`}>
-              <Glue text={`${row.meta.range} · ${row.meta.age}`} />
+              <Glue text={genMetaLine(row.meta)} />
             </span>
           )}
         </span>

@@ -291,13 +291,13 @@ describe('가운뎃점·빗금으로 목록을 잇는 곳 점검 (QM2-10 c: revi
       // SPEC-004: 세대 이름과 연도의 짧은 쌍 「{세대} · {연도}년생」(출생신고 머리, GD2 엔딩 꼴)·세대 목록의 표제 「산업화 세대 · 전후 세대」(GD1 표 이름)·내 출신 칩 「내 출신 시도 · {시도}」 — 항목이 고정된 짧은 쌍이고 ui/Glue·FitPair로 그린다
       'data/birthReportText.ts': 1,
       'data/generations.ts': 1,
-      'data/generationText.ts': 1,
+      'data/generationText.ts': 2,
       // SPEC-005 QI6: 가린 자살률 슬라이드의 표제어 「무거운 주제 · 마음 건강 통계」(copy.md 12-1) — 고정된 짧은 쌍 한 곳. 슬라이드가 ui/Glue(hideSeparator)로 그려 「·」가 줄 가장자리에 서지 않고 낭독에서 빠진다
       // (결정 카드·접힌 띠·부모 카드의 「무거운 주제 · {분류}」는 문구를 조립하지 않고 ui/FitPair의 두 항목으로 그린다)
       'data/gentleText.ts': 1,
       'data/endingText.ts': 2, // 엔딩 연표의 단계 줄: 단계 · 나이 범위, 엔딩 머리 셋째 줄: 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (M7e-3 — 둘 다 엔딩 화면이 ui/Glue로 그린다)
       // 첫 화면 세대 목록 줄의 메타 「{범위}년생 · 올해 N~M세」 (SPEC-004 GS1, 시안 `.gen-row` — 두 항목을 nowrap으로 따로 묶어 그린다)
-      'screens/TitleScreen.tsx': 1,
+      // (SPEC-019부터 나이 보기를 따르려고 이 조립이 TitleScreen에서 data/generationText.ts#genMetaLine으로 옮겼다 — 아래 generationText.ts는 내 출신 칩 + 이 메타 두 곳)
       // SPEC-003 M4 대시보드: 인생 기록 머리 보조 「시간순 · 위로 스크롤하면 지난 기록」과 새 줄 버튼 「새 기록 N개 · 맨 아래로」 — 둘 다 항목이 둘로 고정된 짧은 쌍이고 ui/Glue 묶음(.keep-phrase)으로 그려 기호가 줄 가장자리에 혼자 남지 않는다(copy.md 대시보드 행, 11-4절).
       'data/dashText.ts': 2,
       'data/koreaStatsAccess.ts': 2, // 「통계 기준: {연도}년 · 마지막 갱신 {날짜}」, 카드 출처 줄(화면에 쓰이지 않는 접근자 값)

@@ -35,7 +35,7 @@ const HISTORY: HistoryEntry[] = [
 
 describe('QF4 ① 제목이 있는 결정 줄: 제목 → 고른 길 → 결과, 괄호 없음', () => {
   const list = rows(render(HISTORY));
-  const rowOf = (age: number) => list.find((r) => new RegExp(`<span class="log__age">${age}세`).test(r))!;
+  const rowOf = (age: number) => list.find((r) => new RegExp(`<span class="log__age">${age + 1}세`).test(r))!;
 
   it('본인 선택 · 부모 결정 · 흘러감 모두 log-q가 하나이고 글자가 title과 같다', () => {
     for (const [age, title] of [[5, '입학 전'], [7, '동생'], [14, '동아리']] as const) {
@@ -47,9 +47,9 @@ describe('QF4 ① 제목이 있는 결정 줄: 제목 → 고른 길 → 결과,
   });
 
   it('차례는 제목 → 고른 길(도장·「선택: 」) → 결과이고 괄호가 없다', () => {
-    expect(plain(rowOf(14))).toBe(`14세 동아리 ${DASH_TEXT.logChoicePrefix}한다 동아리에 들어갔다.`);
-    expect(plain(rowOf(5))).toBe('5세 입학 전 부모님이 이렇게 정했습니다: 새로 산다 입학을 준비했다.');
-    expect(plain(rowOf(7))).toBe('7세 동생 이렇게 흘러갔습니다: 삐친다 동생이 생겼다.');
+    expect(plain(rowOf(14))).toBe(`15세 동아리 ${DASH_TEXT.logChoicePrefix}한다 동아리에 들어갔다.`);
+    expect(plain(rowOf(5))).toBe('6세 입학 전 부모님이 이렇게 정했습니다: 새로 산다 입학을 준비했다.');
+    expect(plain(rowOf(7))).toBe('8세 동생 이렇게 흘러갔습니다: 삐친다 동생이 생겼다.');
     for (const age of [5, 7, 14]) expect(plain(rowOf(age)), `${age}세`).not.toMatch(/[()]/);
     // 도장 표지·아이콘은 그대로
     expect(rowOf(5)).toContain('data-testid="log-by"');
@@ -71,18 +71,18 @@ describe('QF4 ① 제목이 있는 결정 줄: 제목 → 고른 길 → 결과,
 
 describe('QF4 ② 제목이 없는 줄·서술 줄·단계는 지금 모양', () => {
   const list = rows(render(HISTORY));
-  const rowOf = (age: number) => list.find((r) => new RegExp(`<span class="log__age">${age}세`).test(r))!;
+  const rowOf = (age: number) => list.find((r) => new RegExp(`<span class="log__age">${age + 1}세`).test(r))!;
 
   it('제목 없는 결정 줄은 「결과 (선택: 고른 길)」 괄호 꼴 그대로이고 log-q가 없다', () => {
-    expect(plain(rowOf(15))).toBe(`15세 제목 없는 옛 줄이다. (${DASH_TEXT.logChoicePrefix}넘긴다)`);
+    expect(plain(rowOf(15))).toBe(`16세 제목 없는 옛 줄이다. (${DASH_TEXT.logChoicePrefix}넘긴다)`);
     expect(rowOf(15)).not.toContain('log-q');
     expect(rowOf(15)).not.toContain('log__text--q');
-    expect(plain(rowOf(16))).toBe('16세 제목 없는 도장 줄이다. (부모님이 이렇게 정했습니다: 맡긴다)');
+    expect(plain(rowOf(16))).toBe('17세 제목 없는 도장 줄이다. (부모님이 이렇게 정했습니다: 맡긴다)');
   });
 
   it('서술 줄(kind: event)·단계 줄은 제목을 그리지 않는다 — log-q 0', () => {
     expect(rowOf(3)).not.toContain('log-q');
-    expect(plain(rowOf(3))).toBe('3세 비가 오는 날이었다.');
+    expect(plain(rowOf(3))).toBe('4세 비가 오는 날이었다.');
     expect(rowOf(0)).not.toContain('log-q');
     expect(rows(render(HISTORY)).filter((r) => r.includes('log-q'))).toHaveLength(3);
   });

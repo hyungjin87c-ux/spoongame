@@ -126,7 +126,7 @@ describe('시트 틀 (자동 카드, 인용 있는 ①): 대화상자·머리·�
     const when = inner(html, 'note-when');
     expect(when).toContain('<span aria-hidden="true">·</span>');
     const read = when.replace(/<span[^>]*aria-hidden="true"[^>]*>[^<]*<\/span>/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-    expect(read).toMatch(/^\d{4}년 5세$/);
+    expect(read).toMatch(/^\d{4}년 6세$/);
   });
 
   it('질문(h2): id=nc-title · tabindex=-1(열릴 때 포커스를 받는다) · --title-chars는 질문에서 계산한 값', () => {

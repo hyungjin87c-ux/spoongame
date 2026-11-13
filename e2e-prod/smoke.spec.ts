@@ -47,7 +47,7 @@ test('프로덕션 번들: 첫 화면 → 태어나기 → 룰렛 → 출생신�
   await expect(page).toHaveTitle('수저 게임');
   await expect(page.getByTestId('title-screen')).toBeVisible();
   await toLifeScreen(page);
-  await expect(page.getByTestId('life-age')).toContainText('0세');
+  await expect(page.getByTestId('life-age')).toContainText('1세');
   // SPEC-012 QF5: 배속은 한 단추(1 → 2 → 4 → 8 → 1배) — 지금 배속을 글자로 보이고 접근 이름이 다음 배속을 알린다
   await expect(page.getByTestId('speed')).toHaveText('1배');
   await expect(page.getByTestId('speed')).toHaveAttribute('aria-label', '배속 1배, 누르면 2배');
@@ -395,7 +395,7 @@ test('개발 탐침 쿼리(?__timescale·__guard·__crash·__quota)는 프로덕
   // __timescale=1000: 1배속의 첫 한 해(M7a 이후 0세에는 첫 예방접종이 늘 일어나 조용한 해보다 길 수 있다 — 아래 하한은 조용한 해 연출 대기 — HOLD_MS.quiet × 30분 모드 계수, M8 — 기준)가 실제로 그만큼 걸린다. 탐침이 먹혔다면 수 ms 만에 나이가 오르거나 선택지가 뜬다.
   const shownAt = Date.now();
   await expect
-    .poll(() => page.evaluate(() => !document.querySelector('[data-testid="life-age"]')?.textContent?.includes('0세') || document.querySelector('[data-testid="choice-panel"]') !== null), {
+    .poll(() => page.evaluate(() => !document.querySelector('[data-testid="life-age"]')?.textContent?.includes('1세') || document.querySelector('[data-testid="choice-panel"]') !== null), {
       timeout: 15_000,
     })
     .toBe(true);

@@ -405,5 +405,6 @@ export interface Settings {
 export const MONEY_VIEWS = ['then', 'now'] as const;
 export type MoneyView = (typeof MONEY_VIEWS)[number];
 
+
 /** 인생 화면이 읽는 재생 설정(배속·자동 모드). Settings의 일부다. */
 export type PlaySettings = Pick<Settings, 'speed' | 'autoMode'>;

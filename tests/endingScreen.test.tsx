@@ -52,7 +52,7 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect(gen).toContain('<span aria-hidden="true">·</span>');
     expect(span).toContain('<span aria-hidden="true">·</span>');
     expect(readOf(gen)).toContain(`${profileLabel(game.generation)} ${game.character.birthYear}년생`);
-    expect(readOf(span)).toBe(`${game.character.birthYear}년 ${game.birthReport!.month}월 ~ ${game.character.birthYear + game.death.age}년 ${game.death.age}세`);
+    expect(readOf(span)).toBe(`${game.character.birthYear}년 ${game.birthReport!.month}월 ~ ${game.character.birthYear + game.death.age}년 ${game.death.age + 1}세`);
   });
 
   it('공통 헤더(DS1): 게임명 로고와 화면 이름 「엔딩」이 있고, 옛 <h1>수저 게임</h1>은 없다 — h1은 하나뿐이다 (M4)', () => {
@@ -72,10 +72,10 @@ describe('엔딩 화면: 구성과 순서', () => {
     const text = textOf(html);
     const c = game.character;
     // M7e-3(R-327, copy.md 5-4): 머리 셋째 줄 = 「{출생 연월} ~ {사망 연도}년 · {나이}세」 (예전 「2026년, 여자아이로 태어났다.」 줄은 없어졌다)
-    expect(textOf(html.match(/data-testid="ending-span">([^]*?)<\/p>/)![1])).toBe(`${c.birthYear}년 ${game.birthReport!.month}월 ~ ${c.birthYear + game.death.age}년 · ${game.death.age}세`);
+    expect(textOf(html.match(/data-testid="ending-span">([^]*?)<\/p>/)![1])).toBe(`${c.birthYear}년 ${game.birthReport!.month}월 ~ ${c.birthYear + game.death.age}년 · ${game.death.age + 1}세`);
     expect(html).not.toContain('data-testid="ending-born"');
     // 합쇼체 (copy.md 5-3): 「84세에 세상을 떠났습니다. 원인은 노환이었습니다.」 — 원인 낱말의 받침에 따라 「이었습니다」·「였습니다」
-    expect(textOf(html.match(/data-testid="ending-death">([^]*?)<\/p>/)![1])).toBe(`${game.death.age}세에 세상을 떠났습니다. 원인은 ${game.death.cause}${/[가-힣]/.test(game.death.cause) && (game.death.cause.charCodeAt(game.death.cause.length - 1) - 0xac00) % 28 !== 0 ? '이었' : '였'}습니다.`);
+    expect(textOf(html.match(/data-testid="ending-death">([^]*?)<\/p>/)![1])).toBe(`${game.death.age + 1}세에 세상을 떠났습니다. 원인은 ${game.death.cause}${/[가-힣]/.test(game.death.cause) && (game.death.cause.charCodeAt(game.death.cause.length - 1) - 0xac00) % 28 !== 0 ? '이었' : '였'}습니다.`);
     // 「N번의 선택」은 본인이 고른 선택만 센다(by 없는 choice 줄) — 부모님이 정한 일·흘러간 일은 따로 한 줄이다 (SPEC-005 PD9)
     const own = game.history.filter((h) => h.kind === 'choice' && h.by === undefined).length;
     const parent = game.history.filter((h) => h.kind === 'choice' && h.by === 'parent').length;
@@ -140,7 +140,7 @@ describe('엔딩 화면: 구성과 순서', () => {
     // 단계 제목이 순서대로 있다
     // (단계 제목은 ui/Glue 묶음으로 그려져 숫자+단위 둘레에 span이 낀다 — 태그를 뺀 글자로 찾는다)
     const plain = textOf(html);
-    const heads = ['영유아 · 0~6세', '학창 · 7~19세', '청년 · 20~39세', '중년 · 40~64세', '노년 · 65세~'].map((h) => plain.indexOf(h));
+    const heads = ['영유아 · 1~7세', '학창 · 8~20세', '청년 · 21~40세', '중년 · 41~65세', '노년 · 66세~'].map((h) => plain.indexOf(h));
     expect(heads.every((i) => i > -1)).toBe(true);
     expect(heads).toEqual([...heads].sort((a, b) => a - b));
     // 출생이 맨 앞, 사망이 맨 뒤
@@ -151,7 +151,7 @@ describe('엔딩 화면: 구성과 순서', () => {
   it('엔딩 연표는 시간순(위가 처음) 그대로이고 제목 옆에 「태어날 때부터 차례로」가 있다 — 살아가기 화면의 인생 기록은 최신순이라 두 화면의 순서가 다르다 (SPEC-005 LR6, 마스터 결정 M1)', () => {
     const ages = [...html.matchAll(/data-testid="timeline-entry"><span class="log__age">(\d+)세/g)].map((m) => Number(m[1]));
     expect(ages).toHaveLength(game.history.length);
-    expect(ages, '저장 순서(시간순) 그대로').toEqual(game.history.map((h) => h.age));
+    expect(ages, '저장 순서(시간순) 그대로').toEqual(game.history.map((h) => h.age + 1));
     expect(ages).toEqual([...ages].sort((a, b) => a - b));
     expect(ENDING_HEADINGS.timelineOrder).toBe('태어날 때부터 차례로');
     // 제목(h2)과 같은 머리 줄 안에 있고, 연표 본문(첫 단계 묶음)보다 앞이다
@@ -238,14 +238,14 @@ describe('엔딩 「최종 순자산」 줄 (M5 2b, copy.md 4-6절 · design-sys
     expect(valueOf(FINAL_NET(render(withNet(game, 123_456))))).toBe('12억 3,456만 원');
   });
 
-  it('스무 살 전에 끝난 인생: 금액도 자리도 없이 한 문장만 — 「스무 살이 되기 전이라 자산을 세지 않았습니다.」 (시대와 무관, 태그 없음)', () => {
+  it('스무 살 전에 끝난 인생: 금액도 자리도 없이 한 문장만 — 「독립하기 전이라 자산을 세지 않았습니다.」 (시대와 무관, 태그 없음)', () => {
     for (const era of SIM_PROFILES) {
       const base = endingOf(2024, era);
       const early: EndingGame = { ...base, age: 15, assets: null, death: { ...base.death, age: 15 } };
       const html = render(early);
       const block = FINAL_NET(html);
       expect(block, era).toContain('<dl class="final-net final-net--early" data-testid="final-net">');
-      expect(textOf(block), era).toBe('최종 순자산 스무 살이 되기 전이라 자산을 세지 않았습니다.');
+      expect(textOf(block), era).toBe('최종 순자산 독립하기 전이라 자산을 세지 않았습니다.');
       expect(block).toContain('class="final-net__none"');
       expect(block).not.toContain('final-net__value');
       expect(block).not.toContain('final-net__standing');
