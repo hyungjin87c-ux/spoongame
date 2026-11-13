@@ -420,7 +420,8 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
         expect(a.checks.names).toBe(2); // 첫 판 + 다시 태어난 판
         expect(a.checks.rebirths).toBe(1);
         expect(a.checks.endingTexts).toBe(1);
-        expect(a.checks.transitions).toBeGreaterThan(30);
+        // 이 시드 줄의 판이 일찍 세상을 떠날 수도 있다(정상 결과 — SPEC-018 PL5·병역 뒤 g86/수동 흉내 판이 22세 사망, 걸음 21) — 걸음 수는 수명에 맞춰 본다
+        expect(a.checks.transitions).toBeGreaterThan(Math.min(30, a.deathAge - 5));
         expect(runPipelineLife({ seed, era, strategy, stepSerialize: false })).toEqual(a);
         const every = runPipelineLife({ seed, era, strategy, stepSerialize: true });
         expect(every.problems).toEqual([]);
