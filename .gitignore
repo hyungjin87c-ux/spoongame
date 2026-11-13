@@ -21,3 +21,6 @@ qa/results/m7b/samples-*.jsonl
 
 # Codex 이미지 생성 원본(납품본만 저장소에 — docs/design/codex/README.md)
 docs/design/codex/**/raw/
+
+# 하위 에이전트 작업 트리(Claude Code isolation worktree)
+.claude/worktrees/

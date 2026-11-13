@@ -50,15 +50,25 @@ describe('[CX-003-002] 19세: 진로 분야 카드와 마지막 입시가 함께
     expect(field, '19세 고졸 분야 카드').toBeGreaterThan(10);
   });
 
-  it('Codex 재현 상태(밀레니얼 시드 4, 19세 2014년): 켠 판도 school-exam@19를 낸다', () => {
-    const s = at19(4, 'millennial')!;
-    expect(s.character!.birthYear + 19).toBe(2014);
+  // Codex 재현 상태는 밀레니얼 시드 4(19세 2014년)였다. 병역 일정(결정 후속 239) 뒤 남자는 19세에 분야 카드가 열리지 않아 이 겹침이 여자 판에만 남고, 큰 갈림길 슬롯(후속 241)이 수열을 바꿔
+  // 시드 4는 더 이상 그 상태가 아니다 — 같은 상태(19세 · 분야 카드가 열릴 해 · 대학 지원이 아직 후보)를 시드 1~220에서 처음 찾은 판으로 본다
+  const repro = (): GameState => {
+    for (let seed = 1; seed <= 220; seed++) {
+      const s = at19(seed, 'millennial');
+      if (s === null || s.persona === undefined || s.character!.gender === 'male') continue;
+      if (stepYear(s).state.pending?.eventId === 'school-exam') return s;
+    }
+    throw new Error('19세 대학 지원이 남은 여자 판을 찾지 못했다');
+  };
+
+  it('Codex 재현 상태(19세 · 여자 · 분야 카드가 열릴 해): 켠 판도 school-exam@19를 낸다', () => {
+    const s = repro();
     const r = stepYear(s).state;
     expect(r.pending?.eventId).toBe('school-exam');
   });
 
   it('대학 지원을 고르면(apply) 학업이 이어져 분야 카드는 대학을 마친 뒤로 미뤄진다', () => {
-    const s = at19(4, 'millennial')!;
+    const s = repro();
     const r = stepYear(s).state;
     expect(r.pending?.choiceIds).toContain('apply');
     let t = autoResolveStep(r, r.pending!.key).state;

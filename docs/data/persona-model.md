@@ -466,7 +466,7 @@ MODEL | gStoreMax | 40
 MODEL | actPullCap | 4
 MODEL | roleUsedMax | 12
 MODEL | candidatesShown | 3
-MODEL | trackWindow | 19 24
+MODEL | trackWindow | 19 27
 MODEL | trackEnd | 35
 MODEL | triesMax | 16
 MODEL | composeWeightRange | 0.01 10000
@@ -490,6 +490,10 @@ MODEL | aptDelta | -0.08 0 0.10
 MODEL | eduHireCoef | 0.15
 MODEL | relHireMin | 60
 MODEL | studyEndAges | 18 22
+MODEL | serviceStart | 20
+MODEL | serviceYears | 2
+MODEL | slotLessons | 10
+MODEL | slotHighPick | 15
 MODEL | jobLikeScale | 6
 MODEL | careerIncome | 800 1600 600 400 400
 TEMPER | curious | 0

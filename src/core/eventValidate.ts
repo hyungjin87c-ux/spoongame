@@ -430,11 +430,11 @@ function checkEvent(ev: unknown, path: string, p: Problems): void {
   }
 }
 
-/** `pick`(동적 후보 카드)·`retiredWith`(대체된 옛 사건)의 형태 (SPEC-018 PL4): `pick`은 선택지·효과·보너스·`trigger`·`milestone`·`once`·`ask`와 함께 쓰지 않고, `retiredWith`는 `"persona"`뿐이며 선택지 이벤트에만 쓴다 */
+/** `pick`(동적 후보 카드)·`retiredWith`(대체된 옛 사건)의 형태 (SPEC-018 PL4): `pick`은 선택지·효과·보너스·`trigger`·`milestone`·`once`·`ask`와 함께 쓰지 않고, `retiredWith`는 `"persona"`뿐이다(선택지·서술 사건 모두 — 결정 후속 239) */
 function checkPick(ev: Obj, path: string, p: Problems): void {
   if (ev.retiredWith !== undefined) {
     if (ev.retiredWith !== 'persona') p.add(`${path}.retiredWith`, '"persona"만 쓸 수 있다');
-    if (ev.choices === undefined) p.add(`${path}.retiredWith`, '대체되는 옛 사건은 선택지 이벤트여야 한다');
+    // 서술 사건도 쓸 수 있다(결정 후속 239 — `youth-military`는 맞춤 판에서 강제 서술 슬롯이 대신한다). 동적 후보 카드(`pick`)에는 쓰지 않는다(아래)
   }
   if (ev.looksChannel !== undefined && !(LOOKS_CHANNELS as readonly unknown[]).includes(ev.looksChannel)) p.add(`${path}.looksChannel`, `${LOOKS_CHANNELS.map((c) => `"${c}"`).join(' 또는 ')}여야 한다`);
   if (ev.pick === undefined) return;

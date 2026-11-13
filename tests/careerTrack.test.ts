@@ -14,7 +14,9 @@ import {
   jobPickOutcome,
   stepYear,
   studyEndAgeOf,
+  studyPlanOf,
   trackOpenAgeOf,
+  TRACK_WINDOW_END,
   type GameState,
   type PersonaState,
 } from '../src/core';
@@ -30,6 +32,8 @@ vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: true }));
  */
 
 const withJob = (s: GameState, job: PersonaState['job']): GameState => ({ ...s, persona: { ...s.persona!, ...(job === undefined ? {} : { job }) } });
+/** 여자로 바꾼 판 — 병역 일정(결정 후속 239)이 없는 기본 일정(고졸 19 · 대졸 23)을 보는 시험이 쓴다 */
+const asFemale = (s: GameState): GameState => ({ ...s, character: { ...s.character!, gender: 'female' } });
 const noJob = (s: GameState): GameState => {
   const { job: _j, ...rest } = s.persona!;
   void _j;
@@ -44,23 +48,23 @@ describe('학업 종료 나이와 분야 카드 열림 나이', () => {
     expect(trackOpenAgeOf([])).toBe(19);
     expect(trackOpenAgeOf(['college'])).toBe(23);
   });
-  it('열림 나이는 19~24세 창 안이다(상한 24)', () => {
+  it('열림 나이는 19~27세 창 안이다(상한 27 — 결정 후속 239로 24에서 넓힘, 병역·재수 일정 격자는 tests/studyPlan.test.ts)', () => {
     for (const f of [[], ['college']]) {
       expect(trackOpenAgeOf(f)).toBeGreaterThanOrEqual(19);
-      expect(trackOpenAgeOf(f)).toBeLessThanOrEqual(24);
+      expect(trackOpenAgeOf(f)).toBeLessThanOrEqual(TRACK_WINDOW_END);
     }
   });
 });
 
 describe('예약 조건 careerKindDue', () => {
-  const base = lifeAt(3, 19);
+  const base = asFemale(lifeAt(3, 19)); // 남자는 복무 뒤에 열린다(tests/studyPlan.test.ts) — 기본 일정은 여자 판으로 본다
   it('persona가 없으면(구형 저장·스위치 끔) 트랙이 없다', () => {
     const { persona: _p, ...bare } = base;
     void _p;
     expect(careerKindDue(bare as GameState, 24)).toBeNull();
   });
   it('none: 열림 나이 앞은 없고, 열림 나이부터 35세까지 분야 카드다', () => {
-    expect(careerKindDue(noJob(lifeAt(3, 18)), 18)).toBeNull();
+    expect(careerKindDue(noJob(asFemale(lifeAt(3, 18))), 18)).toBeNull();
     expect(careerKindDue(noJob(base), 19)).toBe('field');
     expect(careerKindDue(noJob(base), TRACK_END_AGE)).toBe('field');
     expect(careerKindDue(noJob(base), TRACK_END_AGE + 1)).toBeNull(); // 35세를 넘기면 닫힌다 — 자동 배정 없음
@@ -88,12 +92,12 @@ describe('예약 조건 careerKindDue', () => {
 describe('강제 슬롯 — 일반 선택지 규칙을 받지 않는다', () => {
   it('분야 카드 다음 해 세부 카드가 바로 뜬다(2년 간격을 받지 않음), 카드를 낸 해의 lastChoiceAge는 갱신된다', () => {
     const f = runToJobCard(5, 'field');
-    expect(f.age).toBe(19);
-    expect(f.lastChoiceAge).toBe(19);
-    expect(f.seen['job-pick-field']).toBe(19);
+    const at = f.age; // 분야 카드를 연 나이(학업·병역 일정에 따라 다르다 — 결정 후속 239)
+    expect(f.lastChoiceAge).toBe(at);
+    expect(f.seen['job-pick-field']).toBe(at);
     const next = playUntil(f, (s) => isJobCard(s, 'detail'));
-    expect(next.age).toBe(20);
-    expect(next.lastChoiceAge).toBe(20);
+    expect(next.age).toBe(at + 1);
+    expect(next.lastChoiceAge).toBe(at + 1);
   });
 
   it('연표의 선택 줄에 남아 choicesSoFar에 센다', () => {
@@ -105,7 +109,7 @@ describe('강제 슬롯 — 일반 선택지 규칙을 받지 않는다', () => 
   });
 
   it('pacing.hard를 채운 판에서도 카드가 막히지 않는다', () => {
-    const s = noJob(lifeAt(4, 19));
+    const s = noJob(asFemale(lifeAt(4, 19)));
     const hard = lifeModeOf(s.lifeLength).pacing.hard;
     const padded = { ...s, history: Array.from({ length: hard }, (_, i) => ({ age: 10, kind: 'choice' as const, text: `선택 ${i}`, title: '시험', choice: '고른다' })) };
     const r = stepYear(padded);
@@ -127,7 +131,7 @@ describe('상태 전이와 지원 순번', () => {
     const f0 = runToJobCard(1, 'field');
     const field = f0.pending!.choiceIds[0];
     const picked = playUntil(f0, (x) => x.persona?.job !== undefined, () => field);
-    expect(picked.persona!.job).toMatchObject({ field, since: 19 });
+    expect(picked.persona!.job).toMatchObject({ field, since: f0.pending!.age }); // 분야 카드를 연 나이(남자는 복무 뒤 — 결정 후속 239)
     expect(picked.persona!.job!.id).toBeUndefined();
     const hired = playUntil(picked, (x) => x.persona?.job?.id !== undefined);
     expect(hired.persona!.job!.id).toBeDefined();
@@ -141,27 +145,23 @@ describe('상태 전이와 지원 순번', () => {
     for (let seed = 1; seed <= 60; seed++) {
       const s = playUntil(startLife(seed, 'millennial'), (x) => x.persona?.job?.id !== undefined);
       if (s.phase !== 'life') continue; // 35세 전에 세상을 떠난 판(드묾)
-      const open = trackOpenAgeOf(s.flags);
+      const open = studyPlanOf(s).trackOpen; // 병역·재수를 반영한 열림 나이(결정 후속 239)
       expect(s.persona!.job!.since, `seed ${seed}`).toBeLessThanOrEqual(open + 4);
       expect(s.persona!.job!.since, `seed ${seed}`).toBeLessThanOrEqual(TRACK_END_AGE);
     }
   });
 
   it('보장 후보를 계속 피해 35세를 넘기는 판은 카드가 더 나오지 않고 job이 없는 채로 남는다(자동 배정 없음)', () => {
-    const avoid = (s: GameState): string | null => {
-      const ids = s.pending!.choiceIds;
-      if (s.pending!.eventId === 'job-pick-field') return ids[0];
-      return ids.find((id) => JOB_TABLE.byId.get(id)?.hire !== 'open') ?? ids[0];
-    };
-    // 입문이 아닌 직업만 고르면 지원마다 확률이라 운이 나쁘면 35세까지 계속 떨어진다 — 시드를 훑어 그런 판을 찾는다
-    let found: GameState | null = null;
-    for (let seed = 1; seed <= 500 && found === null; seed++) {
-      const s = playUntil(startLife(seed, 'millennial'), (x) => x.age > TRACK_END_AGE + 1, avoid, 900);
-      if (s.phase === 'life' && s.persona!.job?.id === undefined) found = s;
-    }
-    expect(found, '조건에 맞는 판을 500시드 안에서 찾지 못했다').not.toBeNull();
-    expect(isJobCard(found!)).toBe(false);
-    expect(found!.history.filter((h) => h.eventId?.startsWith('job-pick-') && h.age > TRACK_END_AGE)).toHaveLength(0);
+    // 예전에는 입문이 아닌 직업만 골라 35세까지 떨어진 판을 시드로 찾았다 — 병역·재수 일정(결정 후속 239) 뒤 500시드 안에 그런 판이 없어, 그 상태(36세 · 분야만 정함 · 불합격 여러 번)를 직접 만든다
+    const s0 = playUntil(startLife(3, 'millennial'), (x) => x.age > TRACK_END_AGE);
+    expect(s0.phase).toBe('life');
+    const p = s0.persona!;
+    const field = { ...s0, pending: null, flags: s0.flags.filter((f) => f !== 'has_career' && f !== 'job_picked'), persona: { ...p, tries: 9, job: { field: p.job!.field, since: 30 } } } as GameState;
+    expect(careerKindDue(field, s0.age)).toBeNull();
+    const after = playUntil(field, (x) => x.age > s0.age + 3 || isJobCard(x));
+    expect(isJobCard(after)).toBe(false);
+    expect(after.persona!.job?.id).toBeUndefined();
+    expect(after.history.filter((h) => h.eventId?.startsWith('job-pick-') && h.age > TRACK_END_AGE)).toHaveLength(0);
   });
 
   it('지원 난수는 나이가 아니라 tries로 정해진다: 지원 나이가 달라도 같은 tries의 합격 여부가 같다', () => {

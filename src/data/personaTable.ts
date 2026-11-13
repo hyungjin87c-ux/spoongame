@@ -43,7 +43,7 @@ export const PERSONA_TABLE = {
     actPullCap: [4],
     roleUsedMax: [12],
     candidatesShown: [3],
-    trackWindow: [19, 24],
+    trackWindow: [19, 27],
     trackEnd: [35],
     triesMax: [16],
     composeWeightRange: [0.01, 10000],
@@ -66,6 +66,12 @@ export const PERSONA_TABLE = {
     eduHireCoef: [0.15],
     relHireMin: [60],
     studyEndAges: [18, 22],
+    /** 병역 [결정 후속 239]: 대학에 가지 않은 남자의 복무 시작 나이(게임 나이 20 = 한국 나이 21) · 복무 해 수 */
+    serviceStart: [20],
+    serviceYears: [2],
+    /** 큰 갈림길 강제 슬롯 [결정 후속 241]: G1 `school-lessons` 게임 10세(한국 11세) · G2 `school-high-pick` 게임 15세(한국 16세, 중3) */
+    slotLessons: [10],
+    slotHighPick: [15],
     jobLikeScale: [6],
     /** 합격 소득 이전 [결정 후속 233]: 일반 직업 기본 · 가업 직업 · 지식 ≥ 70 · `early_work` · `skilled_trade` (만 원, 옛 `youth-first-job`의 stable·family·보너스 값) */
     careerIncome: [800, 1600, 600, 400, 400],

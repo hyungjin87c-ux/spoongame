@@ -691,6 +691,8 @@ export function cellDiffs(ev: EventDef, key: string, golden: Cell, desc: StateDe
 export const PL5_ALLOWED: readonly AllowedDiff[] = [
   { event: 'school-exam', path: 'static.choiceOrder.3' },
   { event: 'school-exam', path: 'static.choices.night' },
+  // 결정 후속 239: 재수(`retry`)의 맞춤 판 전용 보너스 `{ when: { tailored }, effects: { setFlags: ['exam_retry'] } }` — 맞춤 인생이 없는 판에서는 맞지 않아 효과·칸이 그대로다
+  { event: 'school-exam', path: 'static.choices.retry.bonuses.1' },
 ];
 
 export function withoutAllowed(diffs: Diff[], allowed: readonly AllowedDiff[]): Diff[] {

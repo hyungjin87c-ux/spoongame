@@ -158,7 +158,10 @@
           "label": "한 해 더 준비한다",
           "result": "한 해를 더 책상 앞에서 보냈습니다. 친구들이 먼저 떠난 자리에 혼자 남은 기분이 들었습니다.",
           "effects": { "stats": { "education": 7, "happiness": -4 }, "family": -450, "setFlags": ["college"] },
-          "bonuses": [{ "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "happiness": 1 }, "family": 450 } }],
+          "bonuses": [
+            { "when": { "parentWealth": { "min": 4 } }, "effects": { "stats": { "happiness": 1 }, "family": 450 } },
+            { "when": { "tailored": true }, "effects": { "setFlags": ["exam_retry"] } }
+          ],
           "requires": { "parentWealth": { "min": 2 } }
         },
         {
@@ -522,7 +525,7 @@
           "id": "housework",
           "act": "work",
           "label": "집에 와서 집안일을 거든다",
-          "result": "친구들이 저마다 배우러 갈 때 집으로 돌아와 빨래를 개고 쌀을 씻었습니다. 손이 빨라졌습니다.",
+          "result": "친구들이 저마다 배우러 갈 때 집으로 돌아와 빨래를 개고 설거지를 했습니다. 손이 빨라졌습니다.",
           "resultVariants": [
             { "when": { "apt": { "art": ["high"] } }, "text": "친구들이 저마다 배우러 갈 때 집으로 돌아와 집안일을 거들었습니다. 일을 마치면 달력 뒷면에 그림을 그렸습니다." }
           ],
@@ -533,7 +536,7 @@
           "id": "lesson",
           "act": "art",
           "label": "악기나 발레를 따로 배운다",
-          "result": "일주일에 두 번 선생님 댁을 찾아가 따로 배웠습니다. 발표회 날에는 온 가족이 객석에 앉았습니다.",
+          "result": "일주일에 두 번 선생님을 찾아가 따로 배웠습니다. 발표회 날에는 온 가족이 객석에 앉았습니다.",
           "effects": { "stats": { "happiness": 2, "education": 1, "relationships": 1 }, "family": -900 },
           "requires": { "parentWealth": { "min": 4 }, "apt": { "art": ["mid", "high"] } }
         },
@@ -562,7 +565,7 @@
       "question": "원서를 쓰는 중학교 마지막 해, 어디로 갈까?",
       "stages": ["school"],
       "track": "common",
-      "ageRange": { "min": 14, "max": 15 },
+      "ageRange": { "min": 15, "max": 15 },
       "weight": 24,
       "once": true,
       "citation": { "present": "c-075", "future": "c-075" },

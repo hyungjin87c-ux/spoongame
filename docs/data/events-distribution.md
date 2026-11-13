@@ -83,7 +83,7 @@
 | `school-friend` | 전학 온 아이 | 8~13 | 공용 | 선택지 3 | 전학생에게 먼저 말을 걸지 고민한 일 | 켬 `close_friend` / 읽음 `left_school` |
 | `school-tutoring` | 성적표를 받은 저녁 | 10~16 | 공용 | 선택지 3 | 성적표를 받고 공부 방법을 가족과 정하던 저녁 | 읽음 `left_school` |
 | `school-first-love` | 자꾸 눈에 들어오는 사람 | 15~19 | 공용 | 선택지 2 | 같은 반 아이를 좋아하게 된 첫 감정 | 켬 `first_love` / 읽음 `left_school` |
-| `school-exam` | 입시를 앞둔 해 | 16~19 | 공용 | 선택지 4 | 입시 앞에서 지원·재수·취업 사이의 갈림길 | 켬 `college` `early_work` / 읽음 `left_school` `mentor_teacher` `scholar` `skilled_trade` |
+| `school-exam` | 입시를 앞둔 해 | 16~19 | 공용 | 선택지 4 | 입시 앞에서 지원·재수·취업 사이의 갈림길 | 켬 `college` `early_work` `exam_retry` / 읽음 `left_school` `mentor_teacher` `scholar` `skilled_trade` |
 | `school-early-work` | 어려워진 집안 형편 | 13~16 | 지난 전용 | 선택지 2 | 집안이 기울어 학교와 일 사이에서 고민하던 일 | 읽음 `father_gone` `left_school` `mother_gone` `parents_gone` |
 | `school-bully` | 교실의 한 아이 | 9~15 | 공용 | 선택지 3 | 교실의 따돌림을 곁에서 보게 된 일 | 켬 `stood_up` / 읽음 `left_school` |
 | `school-club` | 방과 후의 모임 | 11~17 | 공용 | 선택지 3 | 방과 후 어디에 어울릴지 정하던 일 | 켬 `close_friend` / 읽음 `left_school` |
@@ -94,7 +94,7 @@
 | `school-family-priority` | 먼저 가야 할 사람 | 12~17 | 지난 전용 | 선택지 3 | 형제 많은 집에서 학비 순서가 정해지던 일 | 켬 `early_work` `fought_for_school` `left_school` / 읽음 `has_sibling` `left_school` |
 | `school-career-choice` | 갈림길 앞에서 | 14~17 | 공용 | 선택지 3 | 공부를 계속할지 기술을 배울지 정하던 갈림길 | 켬 `skilled_trade` / 읽음 `left_school` |
 | `school-lessons` | 오후를 보낼 곳 | 9~12 | 공용 | 선택지 6 | 학교가 끝난 오후를 학원·운동·집안일 중 어디서 보내는지가 집집마다 달랐던 일 | 읽음 `left_school` |
-| `school-high-pick` | 고등학교 원서 | 14~15 | 공용 | 선택지 6 | 중학교 마지막 해 일반고·실업계·특목고·예고 원서를 앞에 둔 갈림길 | 켬 `skilled_trade` / 읽음 `left_school` |
+| `school-high-pick` | 고등학교 원서 | 15~15 | 공용 | 선택지 6 | 중학교 마지막 해 일반고·실업계·특목고·예고 원서를 앞에 둔 갈림길 | 켬 `skilled_trade` / 읽음 `left_school` |
 | `school-parttime` | 처음 번 돈 | 16~19 | 공용 | 선택지 3 | 용돈이 모자라 처음 일을 해 보던 일 | 읽음 `left_school` |
 | `school-puppy` | 집 앞의 강아지 | 8~14 | 공용 | 선택지 3 | 집 앞의 떠돌이 강아지를 데려올지 망설인 일 | - |
 | `school-mirror` | 또래의 눈길 | 12~16 | 공용 | 서술 | 또래 사이에서 겉모습 이야기가 오가던 시기 | - |
@@ -225,6 +225,7 @@
 | `divorced` | `middle-marriage-crisis` | - |
 | `early_work` | `school-exam` `school-family-priority` | `youth-first-job` |
 | `exam_prep` | `youth-exam-prep` | `youth-exam-failed` `youth-exam-passed` |
+| `exam_retry` | `school-exam` | - |
 | `failed_exam` | `youth-exam-failed` | - |
 | `family_business` | `youth-first-job` | `middle-business` `middle-layoff` |
 | `first_love` | `school-first-love` | `youth-meeting` |

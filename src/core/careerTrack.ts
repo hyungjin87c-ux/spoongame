@@ -26,7 +26,7 @@ export type JobPickKind = keyof typeof JOB_PICK_EVENT;
 
 /** 진로 트랙이 끝나는 나이 (이 나이를 넘기면 트랙을 닫는다 — 자동 배정은 없다) */
 export const TRACK_END_AGE = M('trackEnd');
-/** 분야 카드 창의 끝 나이(24) — 학업이 끝나지 않았어도 이 나이에는 분야 카드를 낸다. 대학 지원을 먼저 추첨하는 규칙(`life.ts#stepYear`, 결정 후속 234)도 이 나이 전까지만 쓴다 */
+/** 분야 카드 창의 끝 나이(27 — 결정 후속 239로 24에서 넓힘) — 학업·복무가 끝나지 않았어도 이 나이에는 분야 카드를 낸다. 대학 지원을 먼저 추첨하는 규칙(`life.ts#stepYear`, 결정 후속 234)도 이 나이 전까지만 쓴다 */
 export const TRACK_WINDOW_END = MM('trackWindow')[1];
 /** 보이는 후보 수 (구형 파서의 대기 선택지 2~3개 안) */
 export const CANDIDATES_SHOWN = M('candidatesShown');
@@ -56,8 +56,8 @@ export function careerStateOf(p: Pick<PersonaState, 'job'>): CareerState {
 }
 
 /**
- * 학업이 끝난 나이: `college` 플래그(`school-exam` 결과)가 있으면 대학 4년을 마친 22세, 없으면 고등학교를 마친 18세. (경제의 「학생 상태」는 25세까지지만 그것은 대학원·군 복무를 아우른 소득 계수이고,
- * 진로 트랙은 졸업 해를 기준으로 한다 — 설계 4-1절의 「학업이 끝난 다음 해」, 설계에 정확한 규칙이 없어 이렇게 확정했다.)
+ * 학업이 끝난 나이(병역·재수를 모르는 기본값): `college` 플래그(`school-exam` 결과)가 있으면 대학 4년을 마친 22세, 없으면 고등학교를 마친 18세. (경제의 「학생 상태」는 25세까지지만 그것은 대학원·군 복무를 아우른 소득 계수이고,
+ * 진로 트랙은 졸업 해를 기준으로 한다.) 게임 나이는 연 나이다 — 22세 = 한국 나이 23세 4학년. 판의 실제 일정은 `studyPlanOf`(입시 나이·재수·남자 병역)가 정한다.
  */
 export function studyEndAgeOf(flags: readonly string[] | ReadonlySet<string>): number {
   const has = flags instanceof Set ? flags.has('college') : (flags as readonly string[]).includes('college');
@@ -65,10 +65,91 @@ export function studyEndAgeOf(flags: readonly string[] | ReadonlySet<string>): n
   return has ? college : noCollege;
 }
 
-/** 분야 카드(G4)가 열리는 나이: `max(19, 학업이 끝난 다음 해)`, 24세에는 학업이 끝나지 않았어도 연다(19~24세 창) */
+/** 분야 카드(G4)가 열리는 기본 나이(병역·재수를 모름): `max(19, 학업이 끝난 다음 해)`, 창 끝(27)에서 자른다 */
 export function trackOpenAgeOf(flags: readonly string[] | ReadonlySet<string>): number {
   const [lo, hi] = MM('trackWindow');
   return clamp(studyEndAgeOf(flags) + 1, lo, hi);
+}
+
+/**
+ * 큰 갈림길 강제 슬롯 [결정 후속 241]: 맞춤 판에서 이 나이(게임 나이)부터 그 사건이 그 해 후보(`eligible` — 자격·나이 범위·`once`·연도·가족 줄 거름을 모두 통과)이면
+ * 일반 추첨 대신 낸다. 무작위 추첨으로 더 일찍 나왔으면(`once`) 다시 나오지 않는다. 사건 나이 범위를 넘기면 그 판에는 없다.
+ */
+export const GATE_SLOTS: ReadonlyArray<{ event: string; age: number }> = [
+  { event: 'school-lessons', age: M('slotLessons') },
+  { event: 'school-high-pick', age: M('slotHighPick') },
+];
+
+/**
+ * 강제 슬롯 사건 id — 이 사건들은 **덧붙는 카드**다(결정 후속 243): 일반 추첨 후보에서 빠지고, 낸 해에 `lastChoiceAge`를 갱신하지 않으며, 페이싱 예산(`choicesSoFar`)에 세지 않는다.
+ * 그래서 다른 학창 카드(13~18세 본인 카드 등)·노년 카드의 칸을 빼앗지 않는다.
+ */
+export const GATE_SLOT_EVENTS: ReadonlySet<string> = new Set(GATE_SLOTS.map((s) => s.event));
+
+/** 이 해에 강제 슬롯으로 낼 큰 갈림길 사건 (없으면 null) — 부르는 쪽이 맞춤 판·가족 강제 사건·병역 슬롯을 먼저 본다 */
+export function gateSlotOf(age: number, eligible: readonly EventDef[]): EventDef | null {
+  for (const slot of GATE_SLOTS) {
+    if (age < slot.age) continue;
+    const ev = eligible.find((e) => e.id === slot.event);
+    if (ev !== undefined) return ev;
+  }
+  return null;
+}
+
+/** 재수 표지 — 맞춤 판에서만 `school-exam/retry`의 보너스(`when: { tailored }`)가 켠다 [결정 후속 239] */
+export const EXAM_RETRY_FLAG = 'exam_retry';
+/** 병역 서술 사건 (맞춤 판의 남자는 강제 슬롯으로 한 번 겪는다 — 무작위 추첨에서는 `retiredWith`로 빠진다) */
+export const MILITARY_EVENT = 'youth-military';
+const EXAM_EVENT = 'school-exam';
+
+/** 판의 학업·병역 일정 (설계 4-1-2절, 결정 후속 239) */
+export interface StudyPlan {
+  /** 대학 입학 나이 — 대학에 가지 않으면 null */
+  entry: number | null;
+  /** 학교를 마친 나이: 대학 `entry + 3`(남자는 복무 해 수만큼 늦다), 고졸 18 */
+  studyEnd: number;
+  /** 남자의 복무 시작 계획 나이(대학생 `entry + 1` · 비대학 `serviceStart` 20) — 여자는 null */
+  serviceStart: number | null;
+  /** 실제 복무를 시작한 나이(`seen['youth-military']`) — 아직이거나 여자면 null */
+  served: number | null;
+  /** 분야 카드(G4)가 열리는 나이(창 19~27로 자름). 복무 전인 남자는 창 끝 전에는 열리지 않는다(`careerKindDue`) */
+  trackOpen: number;
+}
+
+/**
+ * 판의 학업·병역 일정 — 순수 함수, 저장 필드 없음(연표·플래그·`seen`·성별에서 다시 계산한다). 맞춤 판의 진로 트랙만 읽는다.
+ *  - 입학 `entry` = `max(19, 입시 나이 + 1) + 재수(exam_retry ? 1 : 0)` — 입시 나이는 연표의 `school-exam` 선택 줄(없으면 18로 본다)
+ *  - 여자: G4 = `(대학 끝 ?? 18) + 1`
+ *  - 남자: 대학생은 1학년을 마치고(`entry + 1`) 입대해 G4 = `max(대학 끝 + 복무 + 1, 실제 입대 + 복무)`, 비대학은 20세 입대해 G4 = `입대 + 복무`
+ */
+export function studyPlanOf(s: Pick<GameState, 'flags' | 'history' | 'seen' | 'character'>): StudyPlan {
+  const flags = new Set(s.flags);
+  const [lo, hi] = MM('trackWindow');
+  const [noCollege, collegeEnd22] = MM('studyEndAges');
+  const years = M('serviceYears');
+  const examAge = s.history.find((h) => h.kind === 'choice' && h.eventId === EXAM_EVENT)?.age;
+  const baseEntry = collegeEnd22 - 3; // 19
+  const entry = flags.has('college') ? Math.max(baseEntry, (examAge ?? baseEntry - 1) + 1) + (flags.has(EXAM_RETRY_FLAG) ? 1 : 0) : null;
+  const collegeEnd = entry === null ? null : entry + 3;
+  const male = s.character?.gender === 'male';
+  if (!male) return { entry, studyEnd: collegeEnd ?? noCollege, serviceStart: null, served: null, trackOpen: clamp((collegeEnd ?? noCollege) + 1, lo, hi) };
+  const serviceStart = entry !== null ? entry + 1 : M('serviceStart');
+  const seenAt = s.seen[MILITARY_EVENT];
+  const served = seenAt === undefined ? null : seenAt;
+  const back = (served ?? serviceStart) + years;
+  const open = collegeEnd !== null ? Math.max(collegeEnd + years + 1, back) : back;
+  return { entry, studyEnd: collegeEnd === null ? noCollege : collegeEnd + years, serviceStart, served, trackOpen: clamp(open, lo, hi) };
+}
+
+/**
+ * 이 해에 강제 슬롯으로 낼 병역 서술 사건(맞춤 판의 남자, 아직 복무하지 않았고 계획 나이 이상). 없으면 null. 가족 강제 사건과 겹치는지는 부르는 쪽이 본다 — 그 해는 한 해 밀린다.
+ * 사건의 `ageRange`(20~24)·추첨 자격은 보지 않는다(강제 슬롯). 진로 카드가 대기 중일 수 없는 나이다(복무 전 남자는 G4가 열리지 않는다).
+ */
+export function militaryDueOf(state: GameState, pool: EventPool, age: number): EventDef | null {
+  if (personaOf(state) === null || state.character?.gender !== 'male') return null;
+  const plan = studyPlanOf(state);
+  if (plan.served !== null || plan.serviceStart === null || age < plan.serviceStart) return null;
+  return pool.byId.get(MILITARY_EVENT) ?? null;
 }
 
 /** 이 해에 예약된 진로 카드의 종류 (없으면 null). 가족 강제 사건과 겹치는지는 부르는 쪽이 본다 — 그 해는 한 해 밀린다 */
@@ -76,7 +157,12 @@ export function careerKindDue(state: GameState, age: number): JobPickKind | null
   const p = personaOf(state);
   if (p === null || state.peerSeed === null || state.character === null || age > TRACK_END_AGE) return null;
   const s = careerStateOf(p);
-  if (s === 'none') return age >= trackOpenAgeOf(state.flags) ? 'field' : null;
+  if (s === 'none') {
+    // 학업·병역 일정(결정 후속 239): 복무 전인 남자는 창 끝(27)이 오기 전에는 열지 않는다
+    const plan = studyPlanOf(state);
+    if (plan.serviceStart !== null && plan.served === null && age < TRACK_WINDOW_END) return null;
+    return age >= plan.trackOpen ? 'field' : null;
+  }
   if (s === 'field') return age >= (p.job as { since: number }).since + 1 ? 'detail' : null;
   return null;
 }

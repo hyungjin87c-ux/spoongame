@@ -57,7 +57,7 @@ const EXPECTED: Readonly<Record<string, ReadonlyArray<readonly [number, number, 
   'school-career-choice': [[14, 17, 'parent']],
   // SPEC-018 PL5(결정 후속 237): 맞춤 판 전용 G1·G2 — 모두 부모(R4·R5)
   'school-lessons': [[9, 12, 'parent']],
-  'school-high-pick': [[14, 15, 'parent']],
+  'school-high-pick': [[15, 15, 'parent']], // 결정 후속 241: 「중학교 마지막 해」 15세 하나(강제 슬롯)
   'school-first-love': [[15, 19, 'self']],
   'school-scholarship': [[15, 18, 'parent'], [19, 19, 'self']],
   'school-exam': [[16, 18, 'parent'], [19, 19, 'self']],

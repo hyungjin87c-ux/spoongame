@@ -1175,6 +1175,8 @@ M6a에서는 이벤트 데이터를 고치지 않았다(`src/data/events/*.json`
 | `school-early-work` | c-100 | s-090 |
 | `school-exam` | c-074, c-101 | s-077, s-090 |
 | `school-family-priority` | c-097 | s-001 |
+| `school-high-pick` | c-075 | s-078 |
+| `school-lessons` | c-007 | s-026 |
 | `school-parttime` | c-017 | s-032 |
 | `school-scholarship` | c-010 | s-033 |
 | `school-tutoring` | c-006 | s-011 |

@@ -11,6 +11,7 @@
       "ageRange": { "min": 20, "max": 24 },
       "weight": 40,
       "once": true,
+      "retiredWith": "persona",
       "conditions": { "gender": ["male"] },
       "effects": { "stats": { "health": 2, "relationships": 3, "happiness": -2 } }
     },

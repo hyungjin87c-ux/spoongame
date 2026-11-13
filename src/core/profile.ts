@@ -42,7 +42,13 @@ export const EDUCATION_AGES = { elementaryFrom: 7, middleFrom: 13, highFrom: 16,
  * `early_work`(대학에 가지 않고 일함)는 19세부터 「고등학교 졸업 후 취업」. 플래그가 정해지기 전의 나이(예: 16세에 대학 진학이 정해졌어도 19세 전)에는 나이가 정한 학교 단계를 보인다 —
  * 그래서 어떤 나이에도 모순되는 단계(예: 5세의 「대학교 재학」)가 나오지 않는다. 플래그가 하나도 없이 19세를 넘으면 「고등학교 졸업」이다.
  */
-export function educationStage(age: number, flags: readonly string[]): EducationStage {
+/** 맞춤 판의 학업 일정(`careerTrack.ts#studyPlanOf`의 입학·학교를 마친 나이) — 주면 재수·병역을 반영한다 [결정 후속 239] */
+export interface EducationPlan {
+  entry: number | null;
+  studyEnd: number;
+}
+
+export function educationStage(age: number, flags: readonly string[], plan?: EducationPlan): EducationStage {
   const has = (f: string) => flags.includes(f);
   if (has('left_school')) return 'leftSchool';
   const a = Number.isFinite(age) ? Math.max(0, Math.floor(age)) : 0;
@@ -50,12 +56,16 @@ export function educationStage(age: number, flags: readonly string[]): Education
   if (a < EDUCATION_AGES.middleFrom) return 'elementary';
   if (a < EDUCATION_AGES.highFrom) return 'middleSchool';
   if (a < EDUCATION_AGES.highUntil) return 'highSchool';
-  if (has('college')) return a < EDUCATION_AGES.highUntil + EDUCATION_AGES.collegeYears ? 'collegeEnrolled' : 'collegeGraduated';
+  if (has('college')) {
+    // 맞춤 판: 입학 전(재수 중)은 고등학교 졸업, 학교를 마친 나이(남자는 복무 2년 포함)까지 재학 — 없으면 19세 입학 4년(옛 규칙)
+    if (plan !== undefined && plan.entry !== null) return a < plan.entry ? 'highGraduated' : a <= plan.studyEnd ? 'collegeEnrolled' : 'collegeGraduated';
+    return a < EDUCATION_AGES.highUntil + EDUCATION_AGES.collegeYears ? 'collegeEnrolled' : 'collegeGraduated';
+  }
   return has('early_work') ? 'highGraduatedWorking' : 'highGraduated';
 }
 
-export function educationLabel(age: number, flags: readonly string[]): string {
-  return EDUCATION_LABEL[educationStage(age, flags)];
+export function educationLabel(age: number, flags: readonly string[], plan?: EducationPlan): string {
+  return EDUCATION_LABEL[educationStage(age, flags, plan)];
 }
 
 // ---------- 머리의 연도 ----------

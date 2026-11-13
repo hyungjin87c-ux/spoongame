@@ -118,7 +118,8 @@ describe('기존 사건 자격 골든 — 사건 격자', () => {
     }
   });
   it('PL5 허용은 school-exam의 맞춤 전용 선택지 night 하나뿐이다: 정적 정의만(칸 차이 허용 0), 그 선택지는 tailored를 요구해 맞춤 인생이 없는 판에서 보이지 않는다 [결정 후속 237]', () => {
-    expect(PL5_ALLOWED.map((a) => a.event)).toEqual(['school-exam', 'school-exam']);
+    expect(PL5_ALLOWED.map((a) => a.event)).toEqual(['school-exam', 'school-exam', 'school-exam']);
+    expect(pool.byId.get('school-exam')!.choices!.find((c) => c.id === 'retry')!.bonuses![1].when).toEqual({ tailored: true });
     expect(PL5_ALLOWED.every((a) => a.path.startsWith('static.'))).toBe(true);
     const night = pool.byId.get('school-exam')!.choices!.find((c) => c.id === 'night')!;
     expect(night.requires?.tailored).toBe(true);

@@ -40,7 +40,7 @@ import { askBranchProbs, askOutcomeOf, type AskRollChoice } from './ask';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { actPullOf, autoPriorityMul, personaOf } from './persona';
-import { TRACK_WINDOW_END, careerCardOf, jobPickOutcome, jobPickWeights, pickChoicesOf } from './careerTrack';
+import { GATE_SLOT_EVENTS, TRACK_WINDOW_END, careerCardOf, gateSlotOf, jobPickOutcome, jobPickWeights, militaryDueOf, pickChoicesOf } from './careerTrack';
 import { personaOnChoice, personaOnFamilyLines, personaOnNarrative, personaOnYearEnd } from './personaLife';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
@@ -397,6 +397,7 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   let choiceLines = 0;
   for (const h of state.history) {
     if (h.kind !== 'choice') continue;
+    if (h.eventId !== undefined && GATE_SLOT_EVENTS.has(h.eventId)) continue; // 큰 갈림길 강제 슬롯 카드는 덧붙는 카드라 페이싱 예산에 세지 않는다 [결정 후속 243]
     choiceLines++;
     if (h.eventId !== undefined && pool.byId.get(h.eventId)?.pick !== undefined) careerLines++;
   }
@@ -410,12 +411,16 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   // 학업 결정이 아직 열린 해 [결정 후속 234, CX-003-002]: 분야 카드가 열리는 해에 `college`를 켜는 사건(대학 지원 — 사건 id를 박지 않고 풀 색인으로 찾는다)이 이 해의 후보이면
   // 일반 선택지 추첨을 맞춤 인생이 없는 판과 같은 조건(간격·페이싱·확률·후보)으로 먼저 돌린다 — 대학 지원이 뽑히면 그것을 내고(분야 카드는 다음 해 이후로), 다른 사건이 뽑히거나 추첨이 없으면 분야 카드를 낸다.
   // 그래서 19세 고졸 진로 시작과 19세의 마지막 입시가 함께 남는다(3b까지는 19세 분야 카드가 그 자리를 늘 차지했다). 난수는 어느 쪽이든 한 칸이다(`pickWeighted` 한 번 = 진로 카드의 대체 한 칸)
-  const due = forced === null && ctx.persona ? careerCardOf(state, pool, age) : null;
+  // 병역(결정 후속 239, 설계 4-1-2): 맞춤 판의 남자는 계획 나이에 `youth-military`를 강제 서술 슬롯으로 한 번 겪는다 — 가족 강제 사건이 있는 해는 한 해 밀린다. 복무 전에는 진로 카드가 열리지 않아 둘이 겹치지 않는다
+  const military = forced === null && ctx.persona ? militaryDueOf(state, pool, age) : null;
+  // 큰 갈림길 강제 슬롯(결정 후속 241): 맞춤 판의 G1(10세~)·G2(15세)가 그 해 후보이면 일반 추첨 대신 낸다 — 진로 카드(19세~)와 나이가 겹치지 않는다
+  const gateSlot = forced === null && military === null && ctx.persona ? gateSlotOf(age, eligible) : null;
+  const due = forced === null && military === null && gateSlot === null && ctx.persona ? careerCardOf(state, pool, age) : null;
   let examFirst: EventDef | null = null;
   let trackRngSpent = false;
   if (due !== null && due.ev.pick?.kind === 'field' && age < TRACK_WINDOW_END && rollChoice < choiceChance && canChoice) {
     const setters = flagSettersOf(pool, 'college');
-    const choiceList = eligible.filter(isChoiceEvent);
+    const choiceList = eligible.filter((ev) => isChoiceEvent(ev) && !GATE_SLOT_EVENTS.has(ev.id));
     if (choiceList.some((ev) => setters.includes(ev.id))) {
       const drawn = pickWeighted(rng, choiceList, ctx, age, true);
       trackRngSpent = true;
@@ -435,6 +440,14 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     // 구성이 정한 해: 첫째의 첫 동생 반응 카드를 선택지 간격·페이싱과 무관하게 띄우고 그 해 일반 추첨은 건너뛴다. 추첨 한 번(`pickWeighted`)을 대신해 난수를 한 번 소비해 이후 수열의 칸을 맞춘다 (7-2절 2)
     rng.next();
     picked = forced;
+  } else if (military !== null) {
+    // 병역 강제 슬롯: 가족 강제 사건과 같이 일반 추첨 한 번 몫의 난수를 한 칸 쓴다(맞춤 판에서만 — 없는 판의 수열 불변)
+    rng.next();
+    picked = military;
+  } else if (gateSlot !== null) {
+    // 큰 갈림길 강제 슬롯: 일반 추첨 한 번 몫의 난수를 한 칸 쓰고 선택지 카드로 낸다(간격·페이싱을 받지 않는다 — 진로 카드와 같다). 아래 선택지 경로가 보이는 선택지·결정자(부모)를 정한다
+    rng.next();
+    picked = gateSlot;
   } else {
     // 후보가 R-561로 줄어 비게 됐다면 원래 후보가 있던 만큼 난수를 한 칸 쓴다(칸 수 불변)
     // 선택지 칸이 그렇게 비면 그 해의 추첨 칸은 쓴 것으로 본다 — 원래 세계는 선택지를 뽑아 서술 추첨을 하지 않았으므로 서술로 넘어가지 않는다(R-560 「한 칸 규칙」, 강제 사건 칸과 같다, R-633)
@@ -448,7 +461,9 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
       return pickWeighted(rng, list, ctx, a, choices);
     };
     const isNarrative = (ev: EventDef): boolean => !isChoiceEvent(ev) && !isMilestoneEvent(ev);
-    if (rollChoice < choiceChance && canChoice) picked = draw(eligible.filter(isChoiceEvent), eligibleAll.filter(isChoiceEvent), age, true);
+    // 큰 갈림길 강제 슬롯 사건(G1·G2)은 일반 추첨 후보가 아니다 — 슬롯으로만 나온다 [결정 후속 243]
+    const drawable = (ev: EventDef): boolean => isChoiceEvent(ev) && !GATE_SLOT_EVENTS.has(ev.id);
+    if (rollChoice < choiceChance && canChoice) picked = draw(eligible.filter(drawable), eligibleAll.filter(drawable), age, true);
     if (picked === null && !slot.spent && rollNarrative < freq.narrative) picked = draw(eligible.filter(isNarrative), eligibleAll.filter(isNarrative));
   }
 
@@ -483,7 +498,8 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
       ...s,
       rngState: rng.getState(),
       seen: { ...s.seen, [picked.id]: age },
-      lastChoiceAge: age,
+      // 큰 갈림길 강제 슬롯 카드는 2년 간격을 갱신하지 않는다(덧붙는 카드 — 다음 해 일반 선택을 막지 않는다) [결정 후속 243]
+      lastChoiceAge: picked === gateSlot ? s.lastChoiceAge : age,
       pending: { eventId: picked.id, key: `${picked.id}@${age}`, age, choiceIds: visible.map((c) => c.id) },
     };
     // 어린 시절(0~18세)의 큰 결정은 부모님이 정하거나(`parent`) 아이의 일로 흘러간다(`child`) — 사람이 고르지 않는 카드는 pending을 만들지 않고(저장되지 않는다) 이 해 안에서 즉시 해결한다 (PD3).

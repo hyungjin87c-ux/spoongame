@@ -312,14 +312,15 @@ describe('T5 ③ 판당 카드 수: 부모 결정 + 흘러감 합이 3.8~7장 �
   // SPEC-011 AK10: 조르기 사건 7개(4~12세 본인 카드, 판당 약 1.5장)가 선택지 칸을 나눠 써서 부모+흘러감이 5.96 → 4.38장(7세대 표본, report:ask 「카드 이동」)으로 줄었다 — 설계 문서 5-1절 손계산 약 4.0과 같은 크기다.
   // SPEC-018 PL5(결정 후속 237 뒤, 2026-11-13): 맞춤 판의 새 부모 카드 G1(9~12세, 1990년부터)·G2(14~15세)가 칸을 나눠 써 알파의 흘러감이 0.75장으로 줄었다(산업화 1.09 · X 1.01) — 하한 0.8 → 0.7(마스터, 결정 후속 240).
   // 측정(두 전략 같음): 부모 산업화 3.17 · X 3.24 · 알파 3.64 / 흘러감 1.09 · 1.01 · 0.75
-  it('세 시대 × 두 전략 모두: 합 3.8 ≤ 평균 ≤ 7 · 부모 ≥ 3.0 · 흘러감 ≥ 0.7 (PL5 뒤 측정 부모 3.17~3.64 · 흘러감 0.75~1.09 · 합 4.26~4.40; 조르기 전은 부모 4.5~4.7 · 흘러감 1.3~1.4 · 합 5.9~6.0)', () => {
+  // 큰 갈림길 강제 슬롯(결정 후속 241 — G1 10세·G2 15세) 뒤 알파 흘러감 0.679 → 하한 0.6(마스터, 결정 후속 242)
+  it('세 시대 × 두 전략 모두: 합 3.8 ≤ 평균 ≤ 7 · 부모 ≥ 3.0 · 흘러감 ≥ 0.6 (PL5 뒤 측정 부모 3.17~3.64 · 흘러감 0.75~1.09 · 합 4.26~4.40; 조르기 전은 부모 4.5~4.7 · 흘러감 1.3~1.4 · 합 5.9~6.0)', () => {
     for (const st of STRATEGIES) {
       for (const era of SIM_PROFILES) {
         const c = cardCounts(natural()[st][era]);
         expect(c.parent + c.child, `${era} ${st} 합`).toBeGreaterThanOrEqual(3.8);
         expect(c.parent + c.child, `${era} ${st} 합`).toBeLessThanOrEqual(7);
         expect(c.parent, `${era} ${st} 부모`).toBeGreaterThanOrEqual(3.0);
-        expect(c.child, `${era} ${st} 흘러감`).toBeGreaterThanOrEqual(0.7);
+        expect(c.child, `${era} ${st} 흘러감`).toBeGreaterThanOrEqual(0.6);
       }
     }
   });
@@ -349,11 +350,12 @@ describe('T5 ④ 수저 단조: 재력이 높을수록 비용이 큰 선택지�
 
 describe('T5 ⑤ 양육 방식: 엄격·헬리콥터 부모가 자유·방임 부모보다 학력 효과가 가장 큰 선택지를 더 자주 고른다', () => {
   for (const era of SIM_PROFILES) {
-    it(`${era}: 차가 +8%p 이상이다 (SPEC 기준 +3%p▲ — 측정 11~17%p에서 측정값 − 3 SE로 올렸다)`, () => {
+    // 결정 후속 242: 맞춤 판의 새 부모 카드(G1·G2 강제 슬롯)는 아이의 활동 끌림(기질)이 부모 점수에 들어가 양육 방식 차가 섞인다 — 알파 6.4%p(엄격·헬리콥터 42.5% 대 자유·방임 36.1%)로 내려와 하한을 8 → 5(SPEC 기준 +3%p 위)로 낮췄다
+    it(`${era}: 차가 +5%p 이상이다 (SPEC 기준 +3%p▲ — 측정 11~17%p에서 측정값 − 3 SE로 8을 두었다가 PL5 강제 슬롯 뒤 알파 6.4%p라 5로)`, () => {
       const g = parentingGap(natural().random[era]);
       expect(g.cards, `${era} 카드 수`).toBeGreaterThanOrEqual(5);
       expect(g.n, `${era} 관측 수`).toBeGreaterThan(500);
-      expect(g.gap, `${era}: 엄격·헬리콥터 ${(g.front * 100).toFixed(1)}% 대 자유·방임 ${(g.back * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(8);
+      expect(g.gap, `${era}: 엄격·헬리콥터 ${(g.front * 100).toFixed(1)}% 대 자유·방임 ${(g.back * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(5);
     });
   }
 });

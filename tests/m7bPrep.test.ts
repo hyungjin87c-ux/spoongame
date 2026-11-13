@@ -249,7 +249,8 @@ describe('M7b 준비 2차: 새 인용 c-074~c-099', () => {
     };
     for (const [id, ev] of Object.entries(want)) {
       // FM7a: c-081(병환)은 「남은 한 분」 변형 둘이 원본의 인용을 그대로 쓴다 (SPEC-009 K23)
-      expect(cite(id).usedBy, id).toEqual(id === 'c-081' ? [ev, `${ev}-father-gone`, `${ev}-mother-gone`] : [ev]);
+      // c-075는 SPEC-018 PL5의 새 G2(`school-high-pick`)도 쓴다 — 옛 G2와 한 판에 함께 나오지 않는다(맞춤 판 유무, citationLink.test P5)
+      expect(cite(id).usedBy, id).toEqual(id === 'c-081' ? [ev, `${ev}-father-gone`, `${ev}-mother-gone`] : id === 'c-075' ? [ev, 'school-high-pick'] : [ev]);
       expect(EVENT_IDS.has(ev), `${id} ${ev}`).toBe(true);
     }
     // R-396: 1989년 값이 든 c-089·c-090은 연결하지 않고(후보), 1980년 값만 쓰는 변형 c-100·c-101이 그 카드에 연결됐다
