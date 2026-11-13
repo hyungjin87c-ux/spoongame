@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { displayAge } from '../src/core/format';
 import { holdMsFor } from '../src/core/timing';
 import { pressSpeedTo } from '../e2e/helpers';
 import { readThemeBlocks, themeTokens } from '../scripts/checkContrastLib';
@@ -261,7 +262,7 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(page.getByTestId('error-screen')).toHaveCount(0);
 
   // 엔딩 회고(제품 번들): 사망 한 줄·출발선 대비(같은 세상 안의 자리)·최종 스탯·연표(선택한 순간이 빠짐없이)
-  await expect(page.getByTestId('ending-death')).toContainText(`${saved.data.death.age}세에 세상을 떠났습니다`);
+  await expect(page.getByTestId('ending-death')).toContainText(`${displayAge(saved.data.death.age)}세에 세상을 떠났습니다`); // 화면은 한국 나이(SPEC-019)
   await expect(page.getByTestId('ending-journey')).toContainText('의 집에서 태어');
   // 이 판의 플레이 시간(M8 LM6, 완료 기준 16 스모크): 제품 번들에서 저장된 기록(play)이 엔딩에 mm:ss로 보이고(표시값 = 버킷별 초 버림 뒤 합), 8배속과 「다음 결정으로」를 쓴 판이라 짧게 잡힌다는 문장이 있다.
   // 이어하기 횟수(resumes)는 화면에 없다.
