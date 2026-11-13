@@ -122,7 +122,7 @@ describe('notes.json: 카드 7종이 설명서 1-3절 표와 같다', () => {
 
   /** designer의 최종 문구 (docs/design/copy.md 7-1절, 2026-10-19; ④ 이별 변형은 M7c r2 D2로 삭제) — 사람이 옮겨 적은 기대값. 글자 수는 {이름}을 5자로 센 값(이름 최대 길이, T01) */
   const FINAL: Array<{ where: string; get: () => string; text: string; len: number }> = [
-    { where: '① 기본', get: () => card(ID.infant).prompt, text: '다섯 살 무렵을 떠올려 보면, {이름}에게 기억나는 장면이나 느낌이 있습니까?', len: 44 },
+    { where: '① 기본', get: () => card(ID.infant).prompt, text: '여섯 살 무렵을 떠올려 보면, {이름}에게 기억나는 장면이나 느낌이 있습니까?', len: 44 },
     { where: '② 기본', get: () => card(ID.teen).prompt, text: '누군가가 부럽거나 샘이 났던 순간이 {이름}에게도 있습니까?', len: 34 },
     { where: '③ first_love', get: () => card(ID.love).variants![0].prompt, text: '마음을 전했던 그때를 떠올려 보면, {이름}에게 남아 있는 장면이나 느낌이 있습니까?', len: 48 },
     { where: '③ 기본', get: () => card(ID.love).prompt, text: '처음 누군가에게 마음이 갔던 기억이 {이름}에게 있습니까?', len: 33 },
@@ -157,7 +157,7 @@ describe('notes.json: 카드 7종이 설명서 1-3절 표와 같다', () => {
     const all = [NOTE_MANUAL.prompt, ...NOTE_CARDS.flatMap((c) => [c.prompt, ...(c.variants ?? []).map((v) => v.prompt)])].join(' | ');
     for (const old of ['이던 때', '있었습니까', '쏠렸던', '만나고', '{이름}에게 마음에']) expect(all, old).not.toContain(old);
     expect(NOTE_MANUAL.prompt).toContain('{이름}의 마음에');
-    expect(card(ID.infant).prompt).toContain('다섯 살 무렵');
+    expect(card(ID.infant).prompt).toContain('여섯 살 무렵');
   });
 });
 
@@ -548,7 +548,7 @@ describe('dueNote 표 시험: 카드별 조건·시기·변형·창', () => {
 
   it('noteQuestion: 변형 선택과 {이름} 채우기, 수동 기록은 고정 질문', () => {
     const g = stateAt(5);
-    expect(noteQuestion(card(ID.infant), g)).toBe(`다섯 살 무렵을 떠올려 보면, ${g.character!.name}에게 기억나는 장면이나 느낌이 있습니까?`);
+    expect(noteQuestion(card(ID.infant), g)).toBe(`여섯 살 무렵을 떠올려 보면, ${g.character!.name}에게 기억나는 장면이나 느낌이 있습니까?`);
     expect(noteQuestion(null, g)).toBe(`지금 ${g.character!.name}의 마음에 남아 있는 장면이나 생각이 있습니까?`);
     expect(noteQuestion(card(ID.infant), g)).not.toContain('{');
   });

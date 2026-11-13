@@ -96,9 +96,3 @@ export function formalNames(keys: readonly RegionKey[]): string {
 }
 
 export type { GenerationId };
-
-/** 목록 한 줄의 메타 글자 「{범위}년생 · 올해 N~M세」 — 나이는 나이 보기(SPEC-019)를 따른다 */
-export function genMetaLine(meta: { from: number; to: number }): string {
-  const m = genMetaText(meta.from, meta.to);
-  return `${m.range} · ${m.age}`;
-}

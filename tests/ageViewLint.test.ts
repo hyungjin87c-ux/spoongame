@@ -62,7 +62,7 @@ describe('나이 표시는 함수 한 곳만 거친다 (SPEC-019)', () => {
       ['ParentCard.tsx', /ageText\(/],
       ['NoteSheet.tsx', /ageText\(/],
       ['SceneCard.tsx', /ageText\(/],
-      ['TitleScreen.tsx', /genMetaLine\(/],
+      ['TitleScreen.tsx', /genMetaText\(/],
     ];
     for (const [file, re] of must) expect(entries.find((e) => e.file === file)?.code ?? '', file).toMatch(re);
   });

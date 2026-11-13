@@ -88,10 +88,12 @@ export interface HeavyRow {
   by: string | null;
 }
 
+/** 무거운 줄의 **화면 글자**(SPEC-019 — 가족 변화 줄의 별세 나이는 보여 줄 때 한국 나이로 바뀐다, `familyLineViewText`). `age`는 게임 나이 그대로(메시지용) */
 export async function heavyRowsOf(page: Page, game: GameState): Promise<HeavyRow[]> {
   return evalCore<HeavyRow[]>(
     page,
-    `return arg.history.map((h) => ({ h, k: core.heavyKindOfEntry(h) })).filter((x) => x.k !== null).map(({ h, k }) => ({ age: h.age, kind: h.kind, text: h.text, choice: h.choice ?? null, heavyKind: k, by: h.by ?? null }));`,
+    `const fl = await import('/src/data/familyLineText.ts');
+     return arg.history.map((h) => ({ h, k: core.heavyKindOfEntry(h) })).filter((x) => x.k !== null).map(({ h, k }) => ({ age: h.age, kind: h.kind, text: fl.familyLineViewText(h.eventId, h.text), choice: h.choice ?? null, heavyKind: k, by: h.by ?? null }));`,
     { history: game.history },
   );
 }

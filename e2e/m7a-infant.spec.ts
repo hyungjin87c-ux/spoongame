@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { displayAge } from '../src/core/format';
 import type { GameState } from '../src/core/types';
 import { INTENDED_BREAK_WORDS } from './intendedBreaks';
 import { auditFocus } from './focusObscured';
@@ -100,7 +101,7 @@ test('인생 기록: 마일스톤 줄이 연표에 있고, 1세처럼 같은 나
   const rows = await readLogRows(page);
   const vaccine = state.history.find((h) => h.eventId === 'infant-vaccine')!;
   expect(vaccine, '연표에 첫 예방접종 줄이 있다').toBeDefined();
-  expect(rows.some((r) => r.age === `${vaccine.age}세` && r.text.includes(vaccine.text.slice(0, 18))), '인생 기록 화면에 첫 예방접종 줄이 보인다').toBe(true);
+  expect(rows.some((r) => r.age === `${displayAge(vaccine.age)}세` && r.text.includes(vaccine.text.slice(0, 18))), '인생 기록 화면에 첫 예방접종 줄이 보인다').toBe(true);
   // 같은 나이 줄이 둘 이상인 해 — 화면에서도 같은 나이 알약이 두 줄
   const perAge = new Map<string, number>();
   for (const r of rows) if (r.kind === 'event' || r.kind === 'choice') perAge.set(r.age, (perAge.get(r.age) ?? 0) + 1);
@@ -233,7 +234,7 @@ test.describe('증거 스크린샷 (360×740)', () => {
       const entry = state.history.find((h) => scene.ids.includes(h.eventId ?? ''))!;
       await shotLog(page, state, `dev-M7a-${scene.file}`);
       const rows = await readLogRows(page);
-      expect(rows.some((r) => r.age === `${entry.age}세` && r.text.includes(entry.text.slice(0, 18))), `${entry.eventId} 줄이 인생 기록에 보인다`).toBe(true);
+      expect(rows.some((r) => r.age === `${displayAge(entry.age)}세` && r.text.includes(entry.text.slice(0, 18))), `${entry.eventId} 줄이 인생 기록에 보인다`).toBe(true);
     });
   }
 });
@@ -282,7 +283,7 @@ test.describe('r3 증거 스크린샷 (360×740)', () => {
     expect(lines[1].eventId).toBe('infant-first-word');
     await shotLog(page, state, 'dev-M7a-r3-year1-three-lines');
     const rows = await readLogRows(page);
-    expect(rows.filter((r) => r.age === '1세' && (r.kind === 'event' || r.kind === 'choice')).length, '화면의 1세 줄').toBeGreaterThanOrEqual(3);
+    expect(rows.filter((r) => r.age === `${displayAge(1)}세` && (r.kind === 'event' || r.kind === 'choice')).length, '화면의 1세(게임 나이) 줄 — 화면은 한국 나이(SPEC-019)').toBeGreaterThanOrEqual(3);
   });
 
   for (const [flag, include, exclude] of [

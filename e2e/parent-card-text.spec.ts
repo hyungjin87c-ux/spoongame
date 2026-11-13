@@ -32,6 +32,15 @@ async function longestDelegated(page: Page, n: number): Promise<LongDelegated[]>
   return evalCore<LongDelegated[]>(
     page,
     `const data = await import('/src/data/events/index.ts');
+     const gens = await import('/src/data/generationConfig.ts');
+     // 사건이 그 세대 판에 나올 수 있는 해가 있어야 한다(yearRange — SPEC-018 PL5 G1은 1990년부터라 산업화 판에는 없다)
+     const reachable = (ev, era, ages) => {
+       const yr = ev.yearRange;
+       if (yr === undefined) return true;
+       const b = gens.GENERATION_CONFIG[era].birth;
+       const lo = b.from + Math.min(...ages), hi = b.to + Math.max(...ages);
+       return hi >= (yr.from ?? -Infinity) && lo <= (yr.to ?? Infinity);
+     };
      const best = new Map();
      for (const ev of data.EVENT_POOL.events) {
        if (ev.choices === undefined) continue;
@@ -40,6 +49,7 @@ async function longestDelegated(page: Page, n: number): Promise<LongDelegated[]>
        if (who === undefined) continue;
        for (const era of ['industrial', 'alpha', 'genz']) {
          if (ev.eras !== undefined && !ev.eras.includes(era)) continue;
+         if (!reachable(ev, era, ages)) continue;
          const age = ages.find((a) => core.decisionFor(ev.id, a) !== 'self');
          const cite = core.citationFor(ev, era, core.calendarYear(2026, age));
          const per = ev.choices.map((c) => ({ id: c.id, len: (who === 'parent' ? (c.parentLabel ?? c.label) : c.label).length + (who === 'parent' ? (c.parentResult ?? c.result) : c.result).length }));

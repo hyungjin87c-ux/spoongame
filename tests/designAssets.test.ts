@@ -1202,7 +1202,7 @@ describe('M7c 자유 기록 「생각 남기기」 시트 계약 (designer 산�
     expect(base).toContain('<span class="sheet__kind sheet__kind--note" id="nc-kind">생각 남기기</span>');
     expect(base).toMatch(/<span class="sheet__age"><span class="fit-pair" data-split="false" data-a="2031년" data-b="5세" data-hide-sep="true">/);
     expect(base).toContain('2031년 <span aria-hidden="true">·</span> 5세');
-    expect(base).toMatch(/<h2 id="nc-title" class="sheet__title" tabindex="-1" style="--title-chars:\d+">다섯 살 무렵을 떠올려 보면, 이서연에게 기억나는 장면이나 느낌이 있습니까\?<\/h2>/);
+    expect(base).toMatch(/<h2 id="nc-title" class="sheet__title" tabindex="-1" style="--title-chars:\d+">여섯 살 무렵을 떠올려 보면, 이서연에게 기억나는 장면이나 느낌이 있습니까\?<\/h2>/);
     expect(base).toContain('data-citation="c-102"><p class="cite__kind">연구</p>');
     expect(base).toMatch(/<textarea id="note-input" class="field__input" rows="3" dir="auto" autocomplete="off" spellcheck="false" maxlength="4000" data-user-text [^>]*aria-describedby="note-hint note-count-sr"><\/textarea>/);
     expect(base).not.toMatch(/maxlength="140"/);

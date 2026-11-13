@@ -8,11 +8,12 @@ import { GENERATION_IDS, LIFE_LENGTHS, isLifeLengthSelectable, type GenerationCh
 import { BUILD_LABEL } from '../buildInfo';
 import { APP_VERSION, REPO_URL } from '../buildInfo';
 import { buildAboutFaq } from '../data/aboutFaq';
-import { GEN_ROWS, GEN_TEXT, REGION_CHIP_NAMES, formalNames, genMetaLine, type GenRowText } from '../data/generationText';
+import { GEN_ROWS, GEN_TEXT, REGION_CHIP_NAMES, formalNames, genMetaText, type GenRowText } from '../data/generationText';
 import { CURRENT_REGION_NAMES, REGION_KEYS, type CurrentRegionName } from '../data/regionKeys';
 import { RELEASE_NOTES } from '../data/releaseNotes';
 import { LIFE_LENGTH_TEXT, NOT_READY_TEXT, TITLE_TEXT } from '../data/titleText';
 import { Icon, Sprite, TitleWordmark } from '../ui/Brand';
+import { FitPair } from '../ui/FitPair';
 import { Glue } from '../ui/Glue';
 import { GuardedButton, useInputGuard } from '../ui/GuardedButton';
 import { InfoPanel, type InfoSection } from '../ui/InfoPanel';
@@ -101,6 +102,7 @@ interface GenRowProps {
  */
 function GenRow({ row, checked, lived, guardReady, onSelect }: GenRowProps) {
   const id = row.id;
+  const meta = row.meta === null ? null : genMetaText(row.meta.from, row.meta.to);
   return (
     <label className={`gen-row${checked ? ' is-selected' : ''}`} data-testid={`gen-row-${id}`}>
       <input
@@ -133,9 +135,10 @@ function GenRow({ row, checked, lived, guardReady, onSelect }: GenRowProps) {
               {GEN_TEXT.lived}
             </span>
           ) : null}
-          {row.meta === null ? null : (
+          {meta === null ? null : (
             <span className="gen-row__meta" id={`gen-meta-${id}`}>
-              <Glue text={genMetaLine(row.meta)} />
+              {/* 「{범위}년생 · 올해 N~M세」 — 한 줄에 안 들어가면 기호 없이 두 줄(FitPair, QM2-10 규칙 3): 좁은 폭(320 · 글자 200%)에서 「·」가 줄 끝에 남지 않는다 */}
+              <FitPair a={meta.range} b={meta.age} />
             </span>
           )}
         </span>

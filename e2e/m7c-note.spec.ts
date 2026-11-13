@@ -40,11 +40,11 @@ test('자동 카드(5세): 로드와 동시에 모달 시트가 뜨고 포커스
   const dialog = page.getByRole('dialog');
   await expect(dialog).toHaveCount(1);
   await expect(dialog).toHaveAttribute('aria-modal', 'true');
-  await expect(dialog, '이름 = 종류 + 질문').toHaveAccessibleName(/^생각 남기기 .*다섯 살 무렵/);
+  await expect(dialog, '이름 = 종류 + 질문').toHaveAccessibleName(/^생각 남기기 .*여섯 살 무렵/);
   await expect(page.getByTestId('note-title')).toBeFocused();
   expect(await activeTestId(page)).toBe('note-title');
-  await expect(page.getByTestId('note-title')).toContainText('다섯 살 무렵');
-  await expect(page.getByTestId('note-when'), '「{연도}년 · {나이}세」 — 좁은 폭이면 기호 없이 두 줄').toContainText('5세');
+  await expect(page.getByTestId('note-title')).toContainText('여섯 살 무렵');
+  await expect(page.getByTestId('note-when'), '「{연도}년 · {나이}세」 — 좁은 폭이면 기호 없이 두 줄 · 나이는 한국 나이(게임 나이 5 → 6세, SPEC-019)').toContainText('6세');
   await expect(page.getByTestId('cite'), '카드 ①만 인용 박스').toBeVisible();
   await expect(input(page)).toBeVisible();
   await expect(input(page)).toHaveAccessibleName('남길 글');
