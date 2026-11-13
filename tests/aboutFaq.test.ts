@@ -14,7 +14,6 @@ import {
 import { commaList } from '../src/core/glue';
 import { REPORT_NOTES, ROULETTE_TEXT } from '../src/data/birthReportText';
 import { DASH_TEXT } from '../src/data/dashText';
-import { JOURNEY_BAR_LEGEND } from '../src/data/endingText';
 import { ECONOMY } from '../src/data/economyTable';
 import { EVENT_POOL } from '../src/data/events';
 import { VEIL_TEXT } from '../src/data/gentleText';
@@ -139,7 +138,7 @@ describe('소개 Q&A: 근거 대응 (FQ3 — 주장 ⇔ 코드·시험)', () => 
     expect(LIFE_LENGTH_TEXT.short30.title.endsWith('분'), '조사 「이에요」는 받침 없는 「분」 뒤에서 고정이 아니라 받침 있는 말 뒤 형태다').toBe(true);
   });
 
-  it('Q2 수저 다섯 단계·룰렛이 정함·시작할 때/독립할 때 달라짐·선택지가 달라짐·부모가 돈이 드는 길을 고르는 정도·엔딩의 출발선 비교 ⇔ 수저 띠 이름·PARENT_WEALTHS·beginBirth·ECONOMY.support·requires·FAMILY_NEED_BASE', () => {
+  it('Q2 수저 다섯 단계·룰렛이 정함·시작할 때/독립할 때 달라짐·선택지가 달라짐·부모가 돈이 드는 길을 고르는 정도·엔딩에서 돌아보는 것(최종 순자산·연표) ⇔ 수저 띠 이름·PARENT_WEALTHS·beginBirth·ECONOMY.support·requires·FAMILY_NEED_BASE', () => {
     const a = byId('spoon').answer;
     expect(a[0]).toBe(`수저는 태어날 때 받은 집안 형편을 ${spoonNames().join(', ')}의 ${nativeCount(PARENT_WEALTHS.length)} 단계로 부르는 이름이에요. 태어날 때 룰렛이 정해요.`);
     expect(PARENT_WEALTHS).toHaveLength(5);
@@ -156,10 +155,9 @@ describe('소개 Q&A: 근거 대응 (FQ3 — 주장 ⇔ 코드·시험)', () => 
     // 어린 시절 부모님이 돈이 드는 길을 고르는 정도: 집안 형편이 좋을수록 돈 항의 절실함이 줄어든다 (FAMILY_NEED_BASE 단조 감소)
     for (let i = 1; i < FAMILY_NEED_BASE.length; i++) expect(FAMILY_NEED_BASE[i]).toBeGreaterThan(FAMILY_NEED_BASE[i - 1]);
     expect(a[1]).toContain('독립할 때 받는 부모님의 도움');
-    expect(a[2]).toContain('출발선과 최종 순자산을 견줘 볼 수 있어요');
-    // 엔딩에서 출발선과 최종 순자산(마지막 자리)을 견준다 — 엔딩 막대 범례 낱말
-    expect(JOURNEY_BAR_LEGEND.start).toBe('출발선');
-    expect(a[2]).toContain('최종 순자산');
+    expect(a[2]).toContain('엔딩에서는 마지막 상태와 순자산, 지나온 생애 연표를 돌아볼 수 있어요'); // 엔딩 출발선 카드 삭제(결정 후속 256)에 맞춰 문구를 바꿨다 — 없어진 「견줘 보기」를 말하지 않는다
+    expect(a.join(' ')).not.toContain('견줘');
+    expect(a[2]).toContain('순자산'); // 엔딩의 최종 순자산 줄(FinalNetLine)은 남는다
   });
 
   it('Q3 출처 기관·이름 출처·설계값 표기 ⇔ 푸터 출처 줄의 기관 나열(CarouselData.orgs)·names.json 출처·출생신고의 「설계값(통계가 아님)」', () => {

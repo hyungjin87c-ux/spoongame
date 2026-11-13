@@ -76,7 +76,7 @@ for (const size of SIZES) {
         if (percent !== 100) await setRootFontPercent(page, percent);
         const label = `${size.width}x${size.height}/${percent}%/${screen}`;
         const m = await measureTextResize(page);
-        // 엔딩 첫머리의 출발선 문장(#ending-journey)도 모두 단언한다 — 「상위 3~17% 사이의」가 320px·글자 200%에서 상자를 넘던 결함은 M7a r2에서 고쳤다(ui/KeepStanding#standingPieces, e2e/ending.spec.ts)
+        // (엔딩 첫머리의 출발선 문장 #ending-journey 단언은 카드 삭제와 함께 없어졌다 — 결정 후속 256)
         const violations = textResizeViolations(m, label);
         expect(violations, `루트 글자 ${m.rootFontPx}px`).toEqual([]);
         const words = await measureWordBreaks(page, { scope: scopeOf(screen) });

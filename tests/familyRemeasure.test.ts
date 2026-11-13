@@ -5,7 +5,7 @@ import { VARIANTS, measureVariant, mean, tierStats, type LifeRow } from '../scri
 /**
  * 분포 재측정 시험 (SPEC-009 FM4b, `docs/data/family-model.md` 12-1절 L2): 해시 L1은 K2·K4·이른 부모 별세 효과를 끈 세계에서만 지키므로(tests/familyHash.test.ts), 켠 세계의 **분포**는 여기서 같은 시드로 짝지어 지킨다.
  * 큰 표본의 보고(7세대 × 2000판, 표와 해석)는 `docs/data/family-remeasure.md` (`npm run report:family -- 2000 --write`) — 이 시험은 그보다 작은 고정 표본(세대당 300판)으로 합격 기준 중 **표본이 작아도 흔들리지 않는 것**만 단언한다:
- *   ① 최종 순자산 평균 변화 ≤ 3% ② 단계 순서 뒤바뀜 0 (20세 시작·최종 순자산 평균) ③ 엔딩 방향 판정 분포 변화 ≤ 2%p (전체) ④ 효과가 걸린 판 비율이 걸리는 이유(19세 이하 부모 별세)와 맞다.
+ *   ① 최종 순자산 평균 변화 ≤ 3% ② 단계 순서 뒤바뀜 0 (20세 시작·최종 순자산 평균) ③ (엔딩 방향 판정 분포 변화 ≤ 2%p는 결정 후속 256으로 걷었다) ④ 효과가 걸린 판 비율이 걸리는 이유(19세 이하 부모 별세)와 맞다.
  * ①의 20세 시작 평균 절대 변화 ≤ 150만 원은 5단계 표본이 작아 걸린 판 수에 크게 흔들리므로 큰 표본 보고서(`scripts/familyRemeasure.ts#passes`, 1절)가 판정한다. 중앙값은 보고만 한다(마스터 결정 2026-11-02).
  */
 const PER_GEN = 300;
@@ -41,10 +41,6 @@ describe('이른 부모 별세 효과의 분포 (V2 → V3, 같은 시드 짝)',
     }
   });
 
-  it('③ 엔딩 방향 판정 분포 변화 ≤ 2%p (전체 판)', () => {
-    const share = (rows: LifeRow[], k: LifeRow['movement']): number => (100 * rows.filter((r) => r.movement === k).length) / rows.length;
-    for (const k of ['up', 'same', 'down', 'early'] as const) expect(Math.abs(share(v3, k) - share(v2, k)), k).toBeLessThanOrEqual(2);
-  });
   it('① 재력 단계별 최종 순자산 평균 변화 ≤ 3% (분모 바닥 1,000만 원, scripts/familyRemeasure.ts#rel과 같은 정의)', () => {
     for (const t of [1, 2, 3, 4, 5]) {
       const a = tierStats(v2, t).meanFinalNet;

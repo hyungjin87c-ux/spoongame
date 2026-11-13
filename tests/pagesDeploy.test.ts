@@ -147,7 +147,7 @@ describe('README', () => {
 
   it('검증 명령과 문서 지도가 실제 스크립트·폴더와 맞는다', () => {
     const pkg = JSON.parse(pkgRaw) as { scripts: Record<string, string> };
-    for (const name of ['typecheck', 'test', 'build', 'e2e', 'e2e:prod', 'check:todo', 'check:dist', 'sim:1000']) {
+    for (const name of ['typecheck', 'test', 'build', 'e2e', 'e2e:prod', 'check:todo', 'sim:1000']) {
       expect(pkg.scripts[name], `package.json scripts.${name}`).toBeTruthy();
       expect(readme, name).toContain(`npm ${name === 'test' ? '' : 'run '}${name}`);
     }

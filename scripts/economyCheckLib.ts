@@ -2,18 +2,12 @@ import {
   R1_PRESENT,
   autoResolveStep,
   eventPool,
-  finalWealthStanding,
-  finalMovementOf,
   reachedIndependence,
   resolveChoiceStep,
-  startBandOf,
   stepYear,
-  type FinalDistribution,
   type GameState,
-  type Movement,
   type ParentWealth,
   type ProfileId,
-  wealthMixtureOfProfile,
 } from '../src/core';
 import { LIMITS } from '../src/data/economyTable';
 import { SIM_SAMPLE, chooserFor, poolOf, startLife, type Strategy } from './simulateLib';
@@ -43,7 +37,7 @@ export interface Sample {
 }
 
 /**
- * 한 판의 끝: 부모 재력(출발)·사망 나이·사망 시점 순자산(만 원, 엔딩이 읽는 값)·평생 가장 낮았던 순자산·엔딩 방향(앞섬/비슷함/뒤쪽, 스무 살 넘어 마친 판만).
+ * 한 판의 끝: 부모 재력(출발)·사망 나이·사망 시점 순자산(만 원, 엔딩이 읽는 값)·평생 가장 낮았던 순자산. (엔딩의 「출발선 대비」 방향 판정은 2026-11-13 삭제, 결정 후속 256.)
  * 사망 시점 순자산은 사망한 해의 정산까지 끝난 값이라 마지막 줄(사망 나이가 시작될 때의 값)과 다를 수 있다.
  */
 export interface LifeOutcome {
@@ -53,15 +47,6 @@ export interface LifeOutcome {
   reached: boolean;
   net: number;
   minNet: number;
-  movement: Movement | null;
-}
-
-/** 분포표를 주어 판들의 엔딩 방향을 다시 정한다(표를 바꿔 본다: 튜닝 도구용) */
-export function withMovements(era: ProfileId, lives: readonly LifeOutcome[], table: Record<ProfileId, FinalDistribution>): LifeOutcome[] {
-  return lives.map((l) => ({
-    ...l,
-    movement: l.reached ? finalMovementOf(startBandOf(wealthMixtureOfProfile(era), l.parentWealth), finalWealthStanding(era, l.net, table), l.net) : null,
-  }));
 }
 
 /** 한 판을 끝까지 돌려 20세부터의 줄과 끝(LifeOutcome)을 모은다 (core/life.ts#playToEnd와 같은 걸음 — 걸음 사이에 자산을 읽는 것만 다르다) */
@@ -91,9 +76,8 @@ export function playLife(seed: number, era: ProfileId, strategy: Strategy): { sa
   if (s.character === null || s.death === null) throw new Error('playLife: 사망에 도달하지 못했다');
   const reached = reachedIndependence(s.death.age) && s.assets !== null;
   const net = s.assets?.net ?? 0;
-  const movement = reached ? finalMovementOf(startBandOf(wealthMixtureOfProfile(era), s.character.parentWealth), finalWealthStanding(era, net), net) : null;
   const minNet = Math.min(net, ...out.map((x) => x.net));
-  return { samples: out, outcome: { parentWealth: s.character.parentWealth, deathAge: s.death.age, reached, net, minNet, movement } };
+  return { samples: out, outcome: { parentWealth: s.character.parentWealth, deathAge: s.death.age, reached, net, minNet } };
 }
 
 /** 한 판의 20세부터의 줄만 */
@@ -296,14 +280,12 @@ export interface Guard {
 
 const byWealth = (rows: readonly Sample[], w: ParentWealth): Sample[] => rows.filter((r) => r.parentWealth === w);
 
-/** 엔딩 쪽 가드의 한계 (15-4절): 사망 시점 순자산<0 비율(%) 지난·지금 ≤ 25, 다가올 ≤ 35 · 하한에 닿은 판 0% · 지금 세상 4단계 「뒤쪽」 ≤ 50%, 5단계 ≤ 70% · 자동 모드 40대 ≤ 수동의 1.5배, 앞섬 ≤ 45% */
+/** 엔딩 쪽 가드의 한계 (15-4절): 사망 시점 순자산<0 비율(%) 지난·지금 ≤ 25, 다가올 ≤ 35 · 하한에 닿은 판 0% · 자동 모드 40대 ≤ 수동의 1.5배 (「뒤쪽」·「앞섬」 가드는 엔딩 출발선 대비 삭제와 함께 뺐다, 결정 후속 256) */
 export const END_LIMITS = {
   /** 사망 시점 순자산<0 비율 상한(%) — R1 때 지난·지금 25, 다가올 35였다. 세대 판은 연도 축 경제(GM10) 전까지 모두 R1 「지금 세상」 모형이라 25 하나다 */
   negativeShare: 25,
   floorShare: 0,
-  downShare: { 4: 50, 5: 70 } as Record<number, number>,
   autoNet40Ratio: 1.5,
-  autoUpShare: 45,
 } as const;
 
 const reachedLives = (lives: readonly LifeOutcome[]): LifeOutcome[] => lives.filter((l) => l.reached);
@@ -312,16 +294,6 @@ const lifeTier = (lives: readonly LifeOutcome[], w: ParentWealth): LifeOutcome[]
 /** 사망 시점 순자산 단계별 중앙값(재력 1~5) */
 export function deathNetMedians(lives: readonly LifeOutcome[]): number[] {
   return ([1, 2, 3, 4, 5] as const).map((w) => median(reachedLives(lifeTier(lives, w)).map((l) => l.net)));
-}
-
-/** 단계별 엔딩 방향 비율(%) — 앞섬/비슷함/뒤쪽 */
-export function movementShares(lives: readonly LifeOutcome[]): Record<Movement, number> {
-  const r = reachedLives(lives);
-  return {
-    up: sharePct(r, (l) => l.movement === 'up'),
-    same: sharePct(r, (l) => l.movement === 'same'),
-    down: sharePct(r, (l) => l.movement === 'down'),
-  };
 }
 
 /**
@@ -470,12 +442,12 @@ export function guardsOf(era: ProfileId, rows: readonly Sample[], lives: readonl
   const neg20 = sharePct(bandRows(rows, 20, 29), (x) => x.net < 0);
   // M-2의 근거(통계: 가구주 29세 이하 순자산 중앙값 5,000만 원 > 0)는 지금 세상 것이라 다른 시대는 참고로만 본다
   out.push({ id: 'm2-young', label: '20~29세 순자산<0 비율 ≤ 60% (M-2)', value: `${neg20.toFixed(1)}%`, metric: neg20, ok: neg20 <= 60, reference: era !== R1_PRESENT });
-  if (lives.length > 0) out.push(...endingGuardsOf(era, lives));
+  if (lives.length > 0) out.push(...endingGuardsOf(lives));
   return out;
 }
 
 /** 엔딩(사망 시점 순자산) 가드 (15-4절) */
-export function endingGuardsOf(era: ProfileId, lives: readonly LifeOutcome[]): Guard[] {
+export function endingGuardsOf(lives: readonly LifeOutcome[]): Guard[] {
   const out: Guard[] = [];
   const reached = reachedLives(lives);
   const neg = sharePct(reached, (l) => l.net < 0);
@@ -491,22 +463,10 @@ export function endingGuardsOf(era: ProfileId, lives: readonly LifeOutcome[]): G
     ok: med.every((m, i) => i === 0 || m > med[i - 1]),
     parts: med.slice(1).map((m, i) => m - med[i]),
   });
-  // 엔딩 방향은 지금 세상이 판정 기준이다(다른 시대는 참고)
-  for (const w of [4, 5] as const) {
-    const down = sharePct(reachedLives(lifeTier(lives, w)), (l) => l.movement === 'down');
-    out.push({
-      id: `end-down${w}`,
-      label: `${w}단계 엔딩 「뒤쪽」 ≤ ${END_LIMITS.downShare[w]}%`,
-      value: `${down.toFixed(1)}%`,
-      metric: down,
-      ok: down <= END_LIMITS.downShare[w],
-      reference: era !== R1_PRESENT,
-    });
-  }
   return out;
 }
 
-/** 자동 모드 가드 (15-4절, EC6 우선): 40대 순자산 중앙값 ≤ 수동 흉내의 1.5배 · 엔딩 「앞섬」 ≤ 45%. manual·auto는 같은 시대의 표본 */
+/** 자동 모드 가드 (15-4절, EC6 우선): 40대 순자산 중앙값 ≤ 수동 흉내의 1.5배 (엔딩 「앞섬」 가드는 삭제, 결정 후속 256). manual·auto는 같은 시대의 표본 */
 export function autoGuardsOf(
   manual: { rows: readonly Sample[]; lives: readonly LifeOutcome[] },
   auto: { rows: readonly Sample[]; lives: readonly LifeOutcome[] },
@@ -514,7 +474,6 @@ export function autoGuardsOf(
   const m = statsOfBand(manual.rows, band('b40')).netMedian;
   const a = statsOfBand(auto.rows, band('b40')).netMedian;
   const ratio = a / m;
-  const up = movementShares(auto.lives).up;
   return [
     {
       id: 'auto-net40',
@@ -523,7 +482,6 @@ export function autoGuardsOf(
       metric: ratio,
       ok: m > 0 ? ratio <= END_LIMITS.autoNet40Ratio : a <= 0,
     },
-    { id: 'auto-up', label: `자동 모드 엔딩 「앞섬」 ≤ ${END_LIMITS.autoUpShare}%`, value: `${up.toFixed(1)}%`, metric: up, ok: up <= END_LIMITS.autoUpShare },
   ];
 }
 

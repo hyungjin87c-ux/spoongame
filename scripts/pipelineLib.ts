@@ -40,10 +40,8 @@ import {
   type Settings,
   type Stats,
 } from '../src/core';
-import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import { HISTORY_LIMITS, STATE_LIMITS } from '../src/data/lifeTable';
-import { JOURNEY_NOTE, MOVEMENT_TEXT, choiceCountText, deathLineText, journeyText, stageHeadingText, startedAtText } from '../src/data/endingText';
-import { expectedMovement, numbersIn, readBand, readEnd } from './endingReadback';
+import { choiceCountText, deathLineText, stageHeadingText, startedAtText } from '../src/data/endingText';
 import { regionsOf, sigunguChoices } from '../src/data/birthStats';
 import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
 
@@ -56,7 +54,7 @@ import { chooserFor, distOf, startLife, type Dist } from './simulateLib';
  * 난수는 시드 RNG뿐이다(Math.random·Date 없음) — 같은 인자면 같은 판이 나온다.
  *
  * 불변식 위반과 예외는 throw하지 않고 **모아서** 돌려준다(problems). 한 판이 깨져도 나머지 판을 계속 돌려 몇 건이 어디서 깨졌는지 보고하기 위해서다.
- * 점검의 기준은 구현을 거치지 않는 독립 계산이다: 이름은 원자료 JSON을 직접 읽고, 엔딩 문장은 화면에 적힌 숫자만 다시 읽는다(scripts/endingReadback.ts).
+ * 점검의 기준은 구현을 거치지 않는 독립 계산이다: 이름은 원자료 JSON을 직접 읽고, 엔딩의 출발선 대비(도착 자리·이동 판정) 점검은 2026-11-13 삭제와 함께 걷었다(결정 후속 256).
  */
 
 export type PipelineStrategy = 'auto' | 'manual';
@@ -119,7 +117,7 @@ const RAW_JOBS = ['manager', 'professional', 'clerk', 'service', 'sales', 'agri'
 const RAW_HOUSINGS = ['own', 'rent', 'free'];
 const SENTENCE_FORMAT = /^\d{4}년 \d{1,2}월, .+의 .+ 가정에서 \d\.\dkg (남자아이|여자아이)로 태어났습니다\. (첫째|둘째|셋째|넷째|다섯째 이상)입니다\. \(\d\.\dkg은 (상위 약 \d+%|하위 약 \d+%|상위 1% 안쪽|하위 1% 안쪽|가운데쯤)\)$/;
 
-// ---------- 독립 기준: 엔딩 ----------
+// ---------- 독립 기준: 출발선 구간(룰렛·출생신고·프로필의 수저 구간) ----------
 
 /**
  * 세대 7종 × 재력 5단계의 출발선 구간 [low, high] (아래에서부터 센 백분위): 세대 전체 섞음 비율(`tests/fixtures/gm3-mixture-reference.json`의 `gens[세대].wealth` — 시안 생성기가 낸 독립 기준값)의 누적.
@@ -131,35 +129,11 @@ export const EXPECTED_START_BANDS: Record<GenerationId, ReadonlyArray<readonly [
     return [g, MIXTURE[g].wealth.map((w) => [acc, (acc += w)] as const)];
   }),
 ) as unknown as Record<GenerationId, ReadonlyArray<readonly [low: number, high: number]>>;
-/** 구간 밖 여유(점수): tests/ending.test.ts가 BAND_GRACE === 2를 따로 확인한다 */
-export const EXPECTED_GRACE = 2;
-
-/** 스무 살(청년 단계 진입, SPEC 생애 단계) 전에 끝난 인생은 도착 자리를 말하지 않는다 */
+/** 스무 살(청년 단계 진입, SPEC 생애 단계) 전에 끝난 인생은 엔딩의 최종 순자산 줄에 금액이 없다 */
 const INDEPENDENCE_AGE = 20;
 
 const EMOJI = /\p{Extended_Pictographic}/u;
 const GRADE_NAMES = /(흙|동|은|금|다이아)\s*수저|다이아/;
-
-/**
- * 분포표(FINAL_DISTRIBUTION)에서 직접 센 도착 점수 (core의 shareAtLeast/standingOf를 부르지 않는다): 이 값 이상 비율 ≤ 50이면 상위(점수 100 - N), 아니면 이 값 **미만** 비율 ≤ 50이면 하위(점수 N, M7e-3 동률 불리),
- * 둘 다 50 초과면 가운데쯤(50). N은 반올림하되 1% 미만은 1 (약 0%를 말하지 않는다).
- */
-/** 최종 순자산(만 원)의 도착 점수. 분위수표 101칸에서 직접 센다 — 이 값 이상인 칸 수 ÷ 101 = 이 값 이상 비율. */
-export function expectedEndScore(era: ProfileId, wealth: number): number {
-  const quantiles = FINAL_DISTRIBUTION[era].quantiles;
-  let atLeast = 0;
-  let below = 0;
-  for (const q of quantiles) {
-    if (q >= wealth) atLeast++;
-    if (q < wealth) below++;
-  }
-  const top = (atLeast * 100) / quantiles.length;
-  const bottom = (below * 100) / quantiles.length;
-  const n = (share: number) => (share < 1 ? 1 : Math.round(share));
-  if (top <= 50) return 100 - n(top);
-  if (bottom <= 50) return n(bottom);
-  return 50;
-}
 
 // ---------- 점검 도우미 (위반 목록을 돌려준다) ----------
 
@@ -493,68 +467,12 @@ function checkPlainText(text: string, where: string): string[] {
 }
 
 /**
- * 엔딩 한 벌의 점검(review는 점검 대상 회고 — 기본은 reviewEnding(game), 테스트가 일부러 틀린 회고를 넣어 점검이 잡는지 본다): 회고가 사실과 맞고, 화면에 나가는 문장이 규칙을 지키며, 출발선 대비 문장의 숫자와 판정이 서로 맞는다.
- *  - 출발선 구간: 문장에서 읽은 구간 = 판정에 쓰는 band = 가중치 표에서 손으로 계산한 구간
- *  - 도착 점수: 문장에서 읽은 점수 = 분포표를 직접 세어 구한 점수
- *  - 방향: 문장에서 읽은 숫자로 다시 정한 방향 = reviewEnding의 방향 (구간 안이면 비슷함, 밖은 여유 2점 이내까지 비슷함 — 천장·바닥 쪽은 여유 0)
- *  - 문장 규칙: 느낌표·이모지·등급명 없음, 출발선 대비 문장의 모든 숫자는 1~50, 약 0%·약 100%·0~·~100 없음
+ * 엔딩 한 벌의 점검(review는 점검 대상 회고 — 기본은 reviewEnding(game), 테스트가 일부러 틀린 회고를 넣어 점검이 잡는지 본다): 회고가 사실과 맞고, 화면에 나가는 문장이 규칙을 지키며, 연표가 빠짐없다.
+ *  - 문장 규칙: 느낌표·이모지·등급명 없음
  */
 export function checkEnding(game: EndingGame, where: string, review: EndingReview = reviewEnding(game)): string[] {
   const out: string[] = [];
   const bad = (msg: string) => out.push(`${where}: ${msg}`);
-  const era = game.generation;
-  const j = review.journey;
-  const expectedBand = EXPECTED_START_BANDS[era as GenerationId][game.character.parentWealth - 1];
-
-  if (j.kind !== (game.death.age < INDEPENDENCE_AGE ? 'early' : 'compared')) bad(`사망 나이 ${game.death.age}인데 회고가 ${j.kind}이다`);
-  const text = journeyText(j);
-  out.push(...checkPlainText(text, `${where} 출발선 대비`));
-  for (const p of numbersIn(text)) if (p < 1 || p > 50) bad(`출발선 대비 문장에 1~50 밖의 숫자 ${p}: ${text}`);
-  if (/약 (0|100)%|(^|[^\d])0~|~100|100%/.test(text)) bad(`출발선 대비 문장에 0·100 끝값: ${text}`);
-
-  let label: string;
-  let endLabel: string | null = null;
-  if (j.kind === 'early') {
-    const m = /^(.+)의 집에서 태어났습니다\.$/.exec(text);
-    if (m === null) {
-      bad(`20세 전 사망 문장의 모양이 다르다: ${text}`);
-      return out;
-    }
-    label = m[1];
-  } else {
-    const m = /^(.+)의 집에서 태어나, (.+)의 형편으로 생을 마쳤습니다\.$/.exec(text);
-    if (m === null) {
-      bad(`출발선 대비 문장의 모양이 다르다: ${text}`);
-      return out;
-    }
-    label = m[1];
-    endLabel = m[2];
-  }
-  let read: [number, number];
-  try {
-    read = readBand(label);
-  } catch (e) {
-    bad((e as Error).message);
-    return out;
-  }
-  if (read[0] !== j.start.low || read[1] !== j.start.high) bad(`문구에서 읽은 구간 [${read}]이 판정에 쓰는 band [${j.start.low}, ${j.start.high}]와 다르다: ${text}`);
-  if (read[0] !== expectedBand[0] || read[1] !== expectedBand[1]) bad(`문구에서 읽은 구간 [${read}]이 ${era} ${game.character.parentWealth}단계의 구간 [${expectedBand}]과 다르다: ${text}`);
-
-  if (j.kind === 'compared' && endLabel !== null) {
-    let end: number;
-    try {
-      end = readEnd(endLabel);
-    } catch (e) {
-      bad((e as Error).message);
-      return out;
-    }
-    const want = expectedEndScore(era, game.assets?.net ?? 0);
-    if (end !== want) bad(`문구에서 읽은 도착 점수 ${end}가 분포표에서 직접 센 ${want}와 다르다 (최종 순자산 ${game.assets?.net ?? 0}만 원): ${text}`);
-    const movement = expectedMovement(read[0], read[1], end, EXPECTED_GRACE, game.assets?.net ?? 0);
-    if (movement !== j.movement) bad(`숫자와 판정이 어긋난다: ${text} → ${MOVEMENT_TEXT[j.movement]} (문장의 숫자로는 ${MOVEMENT_TEXT[movement]})`);
-    out.push(...checkPlainText(MOVEMENT_TEXT[j.movement], `${where} 방향 문장`));
-  }
-
   // 나머지 회고: 처음 → 마지막 원값, 선택 수, 연표
   if (review.changes.length !== 3) bad(`처음 → 마지막 항목이 ${review.changes.length}개다`);
   for (const c of review.changes) {
@@ -569,7 +487,6 @@ export function checkEnding(game: EndingGame, where: string, review: EndingRevie
   if (!deepEqual(review.timeline.flatMap((g) => g.entries), game.history)) bad('연표를 단계별로 묶으면 항목이 빠지거나 순서가 바뀐다');
   out.push(...checkPlainText(deathLineText(game.death), `${where} 사망 줄`));
   out.push(...checkPlainText(choiceCountText(review.choiceCount), `${where} 선택 수 줄`));
-  out.push(...checkPlainText(JOURNEY_NOTE, `${where} 안내`));
   for (const g of review.timeline) out.push(...checkPlainText(stageHeadingText(g.stage), `${where} 단계 제목`));
   for (const h of game.history) {
     const line = `${h.title ?? ''} ${h.text} ${h.choice ?? ''}`;
@@ -613,7 +530,8 @@ export interface PipelineLife {
   steps: number;
   minutes1x: number;
   minutesFast: number;
-  journey: 'early' | 'up' | 'same' | 'down' | 'none';
+  /** 엔딩 종류: 20세 전 사망 / 20세 넘어 마침 / 끝까지 가지 못함 */
+  ending: 'early' | 'adult' | 'none';
   /** 점검 횟수 (보고용) */
   checks: { names: number; roundTrips: number; transitions: number; duplicateInputs: number; rebirths: number; endingTexts: number; familyRules: number };
 }
@@ -642,7 +560,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
   const problems: string[] = [];
   const checks = { names: 0, roundTrips: 0, transitions: 0, duplicateInputs: 0, rebirths: 0, endingTexts: 0, familyRules: 0 };
   const tag = `${era}/${strategy} 시드 ${seed}`;
-  const result: PipelineLife = { seed, era, strategy, problems, threw: false, name: '', deathAge: -1, choices: 0, steps: 0, minutes1x: 0, minutesFast: 0, journey: 'none', checks };
+  const result: PipelineLife = { seed, era, strategy, problems, threw: false, name: '', deathAge: -1, choices: 0, steps: 0, minutes1x: 0, minutesFast: 0, ending: 'none', checks };
   const MAX_STEPS = 1500;
 
   try {
@@ -804,8 +722,7 @@ export function runPipelineLife(opts: PipelineOptions): PipelineLife {
     checks.roundTrips++;
     problems.push(...restored.problems);
     if (restored.problems.length === 0 && !deepEqual(reviewEnding(restored.restored as EndingGame), reviewEnding(endingGame))) problems.push(`${tag}: 복원한 엔딩의 회고가 다르다`);
-    const review = reviewEnding(endingGame);
-    result.journey = review.journey.kind === 'early' ? 'early' : review.journey.movement;
+    result.ending = endingGame.death.age < INDEPENDENCE_AGE ? 'early' : 'adult';
     // 엔딩에서는 진행·선택 입력이 모두 무시된다
     for (const a of [{ type: 'advance', fromAge: ended.age }, { type: 'skip' }, { type: 'autoChoose', key: 'x@1' }, { type: 'enterLife' }, { type: 'begin' }, { type: 'resume' }, { type: 'openTitle' }] as const) {
       if (reduceIgnoringNotes(session, a) !== session) problems.push(`${tag}: 엔딩에서 ${a.type} 입력이 무시되지 않았다`);
@@ -893,8 +810,8 @@ export interface CellReport {
   minutes1x: Dist;
   minutesFast: Dist;
   checks: PipelineLife['checks'];
-  /** 판 단위 결과: 20세 전 사망 / 앞섬 / 비슷함 / 뒤쪽 판 수 */
-  journeys: Record<'early' | 'up' | 'same' | 'down' | 'none', number>;
+  /** 판 단위 결과: 20세 전 사망 / 20세 넘어 마침 / 끝까지 못 간 판 수 */
+  endings: Record<'early' | 'adult' | 'none', number>;
   distinctNames: number;
   /** 매 걸음 저장→복원을 한 판 수 */
   stepSerializedLives: number;
@@ -922,12 +839,12 @@ export function runPipelineCell(era: GenerationId, strategy: PipelineStrategy, p
     params.onLife?.(life);
   }
   const checks = { names: 0, roundTrips: 0, transitions: 0, duplicateInputs: 0, rebirths: 0, endingTexts: 0, familyRules: 0 };
-  const journeys = { early: 0, up: 0, same: 0, down: 0, none: 0 };
+  const endings = { early: 0, adult: 0, none: 0 };
   const problems: string[] = [];
   let problemCount = 0;
   for (const l of lives) {
     for (const k of Object.keys(checks) as Array<keyof typeof checks>) checks[k] += l.checks[k];
-    journeys[l.journey]++;
+    endings[l.ending]++;
     problemCount += l.problems.length;
     for (const p of l.problems) if (problems.length < 20) problems.push(p);
   }
@@ -947,7 +864,7 @@ export function runPipelineCell(era: GenerationId, strategy: PipelineStrategy, p
     minutes1x: dist((l) => l.minutes1x),
     minutesFast: dist((l) => l.minutesFast),
     checks,
-    journeys,
+    endings,
     distinctNames: new Set(lives.map((l) => l.name)).size,
     stepSerializedLives: every > 0 ? Math.floor(params.lives / every) : 0,
   };

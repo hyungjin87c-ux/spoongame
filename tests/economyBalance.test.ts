@@ -21,7 +21,6 @@ import {
   mean,
   measureEconomy,
   median,
-  movementShares,
   percentile,
   playLife,
   samplesOfLife,
@@ -51,13 +50,12 @@ const REPORT = lazy((): EconomyReport => measureEconomy(6000, 'random'));
 const AUTO_REPORT = lazy((): EconomyReport => measureEconomy(2000, 'auto'));
 
 /** 판마다의 끝을 손으로 만든다 */
-const life = (parentWealth: 1 | 2 | 3 | 4 | 5, net: number, movement: LifeOutcome['movement'] = 'same', over: Partial<LifeOutcome> = {}): LifeOutcome => ({
+const life = (parentWealth: 1 | 2 | 3 | 4 | 5, net: number, over: Partial<LifeOutcome> = {}): LifeOutcome => ({
   parentWealth,
   deathAge: 80,
   reached: true,
   net,
   minNet: Math.min(0, net),
-  movement,
   ...over,
 });
 
@@ -139,11 +137,10 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
     expect(BANDS.map((b) => b.label)).toEqual(expect.arrayContaining(['60~64', '65~79', '80 이상']));
   });
 
-  it('playLife: 한 판의 끝 — 사망 시점 순자산·평생 가장 낮은 순자산·스무 살 넘어 마쳤는가·엔딩 방향 · 같은 시드는 같은 값', () => {
+  it('playLife: 한 판의 끝 — 사망 시점 순자산·평생 가장 낮은 순자산·스무 살 넘어 마쳤는가 · 같은 시드는 같은 값', () => {
     const a = playLife(economySeed(5), R1_PRESENT, 'random');
     expect(a.outcome.reached).toBe(a.outcome.deathAge >= 20);
     expect(a.outcome.minNet).toBeLessThanOrEqual(a.outcome.net);
-    expect(a.outcome.movement === null).toBe(!a.outcome.reached);
     expect(a.samples.length).toBeGreaterThan(0);
     expect(playLife(economySeed(5), R1_PRESENT, 'random')).toEqual(a);
     expect(a.samples).toEqual(samplesOfLife(economySeed(5), R1_PRESENT, 'random'));
@@ -151,7 +148,7 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
 
   it("R1 end-g3는 알려진 차이가 아니다 (SPEC-005 QI5가 1·2단계 0 = 0 동률을 0 < 1,251(PD13 ×2.0 최종값)로 되돌려 KNOWN_GUARD_GAPS에서 뺐다): 엄격한 순서만 통과이고, 어느 인접 단계의 사망 시점 순자산 중앙값이 같거나 뒤집혀도 어긋남이다", () => {
     expect(KNOWN_GUARD_GAPS[`${R1_PRESENT}:end-g3`], '목록에서 뺐다 — 다시 동률이 되면 마스터 보고와 함께 다시 올린다').toBeUndefined();
-    const guardFor = (nets: number[]) => Object.fromEntries(endingGuardsOf(R1_PRESENT, nets.map((n, i) => life((i + 1) as 1, n))).map((x) => [x.id, x]))['end-g3'];
+    const guardFor = (nets: number[]) => Object.fromEntries(endingGuardsOf(nets.map((n, i) => life((i + 1) as 1, n))).map((x) => [x.id, x]))['end-g3'];
     const passes = (nets: number[]) => guardFor(nets).ok;
     expect(guardFor([0, 0, 5, 9, 30]).parts).toEqual([0, 5, 4, 21]);
     expect(passes([0, 616, 1000, 2000, 5000]), '엄격한 순서').toBe(true);
@@ -165,42 +162,35 @@ describe('경제 밸런스 도구 (scripts/economyCheckLib.ts): 작은 표본을
     expect(passes([0, 0, 0, 9, 30]), '1·2·3단계가 모두 같다').toBe(false);
   });
 
-  it('엔딩 가드 도구: deathNetMedians·movementShares·endingGuardsOf를 손으로 만든 판으로 점검한다', () => {
-    const lives = [life(1, -100), life(1, 0), life(1, 100), life(2, 500), life(3, 1000), life(4, 5000, 'down'), life(5, 9000, 'down'), life(5, 8000, 'up'), life(5, 7000, 'down', { reached: false, movement: null })];
+  it('엔딩 가드 도구: deathNetMedians·endingGuardsOf를 손으로 만든 판으로 점검한다', () => {
+    const lives = [life(1, -100), life(1, 0), life(1, 100), life(2, 500), life(3, 1000), life(4, 5000), life(5, 9000), life(5, 8000), life(5, 7000, { reached: false })];
     expect(deathNetMedians(lives)).toEqual([0, 500, 1000, 5000, 8500]);
-    const sh = movementShares(lives);
-    expect(sh.down).toBeCloseTo((2 * 100) / 8, 10); // 스무 살 전에 마친 판은 세지 않는다
-    expect(sh.up).toBeCloseTo(100 / 8, 10);
-    const g = (profile: ProfileId) => Object.fromEntries(endingGuardsOf(profile, lives).map((x) => [x.id, x]));
-    expect(g(R1_PRESENT)['end-negative'].ok).toBe(true); // 1/8 = 12.5%
-    expect(g(R1_PRESENT)['end-floor'].ok).toBe(true);
-    expect(g(R1_PRESENT)['end-g3'].ok).toBe(true);
-    expect(g(R1_PRESENT)['end-down4'].ok).toBe(false); // 4단계 1판 중 1판이 뒤쪽 = 100%
-    expect(g(R1_PRESENT)['end-down4'].reference).toBe(false);
-    expect(g('industrial')['end-down4'].reference).toBe(true); // 엔딩 방향은 R1(통계가 지금 세상 것)만 판정
-    expect(g(R1_PRESENT)['end-down5'].ok).toBe(true); // 5단계 2판 중 1판 = 50%
+    const g = () => Object.fromEntries(endingGuardsOf(lives).map((x) => [x.id, x]));
+    expect(g()['end-negative'].ok).toBe(true); // 1/8 = 12.5% (스무 살 전에 마친 판은 세지 않는다)
+    expect(g()['end-floor'].ok).toBe(true);
+    expect(g()['end-g3'].ok).toBe(true);
+    expect(Object.keys(g()).sort(), '엔딩 방향(뒤쪽) 가드는 결정 후속 256으로 없어졌다').toEqual(['end-floor', 'end-g3', 'end-negative']);
     // 위반을 잡는다: 하한(-20억)에 닿은 판 · 중앙값이 같은 두 단계 · 음수 비율
-    const floorHit = [...lives, life(1, -150000, 'same', { minNet: -200000 })];
-    expect(Object.fromEntries(endingGuardsOf(R1_PRESENT, floorHit).map((x) => [x.id, x]))['end-floor'].ok).toBe(false);
+    const floorHit = [...lives, life(1, -150000, { minNet: -200000 })];
+    expect(Object.fromEntries(endingGuardsOf(floorHit).map((x) => [x.id, x]))['end-floor'].ok).toBe(false);
     const tie = [life(1, 0), life(2, 0), life(3, 1), life(4, 2), life(5, 3)];
-    expect(Object.fromEntries(endingGuardsOf(R1_PRESENT, tie).map((x) => [x.id, x]))['end-g3'].ok).toBe(false);
+    expect(Object.fromEntries(endingGuardsOf(tie).map((x) => [x.id, x]))['end-g3'].ok).toBe(false);
     const negs = Array.from({ length: 10 }, (_, i) => life(((i % 5) + 1) as 1, i < 4 ? -1 : 1));
-    const negGuard = (profile: ProfileId) => Object.fromEntries(endingGuardsOf(profile, negs).map((x) => [x.id, x]))['end-negative'];
-    expect(negGuard(R1_PRESENT).ok).toBe(false); // 40% > 25%
-    expect(negGuard('alpha').ok).toBe(false); // 세대 판도 같은 한계(연도 축 경제 GM10 전까지 모두 R1 모형이라 25 하나다)
+    const negGuard = Object.fromEntries(endingGuardsOf(negs).map((x) => [x.id, x]))['end-negative'];
+    expect(negGuard.ok).toBe(false); // 40% > 25% (세대 판도 같은 한계 — 연도 축 경제 GM10 전까지 모두 R1 모형이라 25 하나다)
     expect(END_LIMITS.negativeShare).toBe(25);
   });
 
-  it('자동 모드 가드 도구: 40대 순자산 중앙값 비 ≤ 1.5배 · 엔딩 「앞섬」 ≤ 45%', () => {
+  it('자동 모드 가드 도구: 40대 순자산 중앙값 비 ≤ 1.5배 (엔딩 「앞섬」 가드는 결정 후속 256으로 없어졌다)', () => {
     const rows = (net: number): Sample[] => Array.from({ length: 30 }, (_, i) => ({ age: 40 + (i % 10), parentWealth: 3, net, debt: 0, income: 0 }));
-    const lives = (ups: number, n = 20): LifeOutcome[] => Array.from({ length: n }, (_, i) => life(3, 1000, i < ups ? 'up' : 'same'));
-    const manual = { rows: rows(1000), lives: lives(0) };
-    const ok = autoGuardsOf(manual, { rows: rows(1500), lives: lives(9) });
-    expect(ok.map((g) => g.ok)).toEqual([true, true]); // 1.5배, 45%는 경계 포함
-    const bad = autoGuardsOf(manual, { rows: rows(1501), lives: lives(10) });
-    expect(bad.map((g) => g.ok)).toEqual([false, false]);
+    const lives = (n = 20): LifeOutcome[] => Array.from({ length: n }, () => life(3, 1000));
+    const manual = { rows: rows(1000), lives: lives() };
+    const ok = autoGuardsOf(manual, { rows: rows(1500), lives: lives() });
+    expect(ok.map((g) => g.ok)).toEqual([true]); // 1.5배는 경계 포함
+    const bad = autoGuardsOf(manual, { rows: rows(1501), lives: lives() });
+    expect(bad.map((g) => g.ok)).toEqual([false]);
     expect(END_LIMITS.autoNet40Ratio).toBe(1.5);
-    expect(END_LIMITS.autoUpShare).toBe(45);
+    expect(Object.keys(END_LIMITS).sort()).toEqual(['autoNet40Ratio', 'floorShare', 'negativeShare']);
   });
 
   it('조건 통과율 도구(R-354): conditionPasses·judgeConditions를 손으로 만든 표본으로 점검한다 — 허용 폭은 옛 통과율의 ±15%(100% 상한), 수용한 곳은 판정하지 않는다', () => {
@@ -344,7 +334,7 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 시험 전용 R1 
     expect(ret.rate).toBeLessThan(70);
   });
 
-  it('엔딩 가드 (15-4절): 순자산 하한(-20억)에 닿은 판 0% · 재력 단계별 사망 시점 순자산 중앙값 1 < 2 < 3 < 4 < 5 (R1·대표 세대, 엄격 — 보고한 차이 제외) · R1 4단계 「뒤쪽」 ≤ 50%, 5단계 ≤ 70% (보고한 차이 제외)', () => {
+  it('엔딩 가드 (15-4절): 순자산 하한(-20억)에 닿은 판 0% · 재력 단계별 사망 시점 순자산 중앙값 1 < 2 < 3 < 4 < 5 (R1·대표 세대, 엄격 — 보고한 차이 제외) (R1 「뒤쪽」 가드는 결정 후속 256으로 없어졌다)', () => {
     const r = REPORT();
     for (const era of ECONOMY_PROFILES) {
       const g = (id: string) => r.guards[era].find((x) => x.id === id)!;
@@ -361,20 +351,8 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 시험 전용 R1 
         expect(gap.limit(g('end-g3').metric, g('end-g3')), `${gap.why}: 지금 ${g('end-g3').value}`).toBe(true);
       }
     }
-    const present = (id: string) => r.guards[R1_PRESENT].find((x) => x.id === id)!;
-    const down4 = KNOWN_GUARD_GAPS[`${R1_PRESENT}:end-down4`];
-    if (down4 === undefined) expect(present('end-down4').ok, `R1 4단계 뒤쪽 ${present('end-down4').value}`).toBe(true);
-    else {
-      expect(present('end-down4').ok, 'R1 4단계 뒤쪽이 통과했다 — KNOWN_GUARD_GAPS에서 뺀다').toBe(false);
-      expect(down4.limit(present('end-down4').metric), `${down4.why}: 지금 ${present('end-down4').value}`).toBe(true);
-    }
-    const down5 = KNOWN_GUARD_GAPS[`${R1_PRESENT}:end-down5`];
-    if (down5 === undefined) expect(present('end-down5').ok, `R1 5단계 뒤쪽 ${present('end-down5').value}`).toBe(true);
-    else {
-      expect(present('end-down5').ok, 'R1 5단계 뒤쪽이 통과했다 — KNOWN_GUARD_GAPS에서 뺀다').toBe(false);
-      expect(down5.limit(present('end-down5').metric), `${down5.why}: 지금 ${present('end-down5').value}`).toBe(true);
-    }
-    expect(present('end-down4').reference).toBeFalsy();
+    // R1 4·5단계 「뒤쪽」 가드(end-down4·5)는 엔딩 출발선 대비 삭제와 함께 없어졌다(결정 후속 256) — 가드 목록에 남아 있지 않다
+    expect(r.guards[R1_PRESENT].map((x) => x.id).filter((id) => id.startsWith('end-down'))).toEqual([]);
   }, 180_000);
 
   it('사망 시점 순자산<0 비율 (15-4절: ≤ 25% — 세대 판은 연도 축 경제 GM10 전까지 R1 모형이라 같은 한계): 보고한 차이(KNOWN_GUARD_GAPS)는 보고한 한계 안이고 아직 어긋나 있다 — 한계 안으로 들어오면 목록에서 뺀다', () => {
@@ -396,13 +374,12 @@ describe('경제 밸런스 측정 (무작위 선택 6000판 × 시험 전용 R1 
     }
   }, 180_000);
 
-  it('자동 모드 가드 (15-4절, EC6 우선): 자동 2000판 × (R1과 대표 세대 셋)의 40대 순자산 중앙값이 수동 흉내의 1.5배 이하이고 엔딩 「앞섬」이 45% 이하다', () => {
+  it('자동 모드 가드 (15-4절, EC6 우선): 자동 2000판 × (R1과 대표 세대 셋)의 40대 순자산 중앙값이 수동 흉내의 1.5배 이하이다 (엔딩 「앞섬」 가드는 결정 후속 256으로 없어졌다)', () => {
     const manual = REPORT();
     const auto = AUTO_REPORT();
     for (const era of ECONOMY_PROFILES) {
       const gs = autoGuardsOf({ rows: manual.rows[era], lives: manual.lives[era] }, { rows: auto.rows[era], lives: auto.lives[era] });
       expect(gs.filter((g) => !g.ok).map((g) => `${g.label}: ${g.value}`), era).toEqual([]);
-      expect(movementShares(auto.lives[era]).up, era).toBeLessThanOrEqual(45);
     }
   }, 240_000);
 });

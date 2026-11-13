@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { COMPARABLE_STATS, displaySeconds, entryHeadline, heavyKindOfEntry, isCleanRun, reviewEnding, standingScore, type CoParents, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
+import { COMPARABLE_STATS, displaySeconds, entryHeadline, heavyKindOfEntry, isCleanRun, reviewEnding, reachedIndependence, type CoParents, type EndingGame, type EndingReview, type HistoryEntry, type PlayTime as PlayRecord, type StatKey } from '../core';
 import { profileLabel } from '../core/birthProfile';
 import { ageText } from '../core/format';
 import { reportPlaceLabel } from '../core/birthReport';
 import { looksText } from '../data/looksText';
-import { standingLabel } from '../data/birthText';
 import { familyLineViewText } from '../data/familyLineText';
 import { VEIL_TEXT } from '../data/gentleText';
 import { decidedByText, deciderIconOf } from '../data/parentDecisionTable';
@@ -14,19 +13,13 @@ import {
   ENDING_HEAD_LABEL,
   ENDING_HOME_ASK,
   endingBornText,
-  JOURNEY_NOTE,
-  JOURNEY_BAR_LEGEND,
-  MOVEMENT_TEXT,
   PLAYTIME_TEXT,
   REBIRTH_LABEL,
   REBIRTH_NOTE,
-  bandLabel,
   breakdownParts,
   choiceCountText,
   deathLineText,
   endingSpanText,
-  journeyBarLabel,
-  journeyText,
   stageHeadingText,
   startedAtText,
 } from '../data/endingText';
@@ -34,12 +27,10 @@ import { SiteHead, Icon, Sprite } from '../ui/Brand';
 import { Face } from '../ui/Face';
 import { FitPair } from '../ui/FitPair';
 import { Glue } from '../ui/Glue';
-import { GradeChip } from '../ui/Grade';
 import { GuardedButton } from '../ui/GuardedButton';
 import { FinalNetLine } from '../ui/dash/FinalNet';
 import { NoteBody } from '../ui/dash/NoteText';
 import { VeiledText, VeilTimelineStamp, useVeilOpen } from '../ui/dash/Veil';
-import { KeepStanding } from '../ui/KeepStanding';
 import { PlayTime } from '../ui/PlayTime';
 import { useFocusOnChange } from '../ui/useFocus';
 import { useScrollTopOnMount, useThemeSurface } from '../ui/useBottomBar';
@@ -179,12 +170,12 @@ function TimelineItem({ entry, subject = 'both', gentle = false, veilId, open = 
 
 /**
  * 엔딩: 담담한 회고 (SPEC-001 "엔딩", 새 디자인 틀은 SPEC-003 M4 — 시안 docs/design/mockups/ending.html). 공통 헤더(DS1: 게임명 로고 + 화면 이름 「엔딩」) 아래 위에서 아래로 —
- * 누구의 인생이었나(마지막 나이의 얼굴·시대·출생·사망), 출발선에서 마지막까지(같은 세상 안의 자리), 최종 스탯, 생애 연표, 다시 태어나기.
+ * 누구의 인생이었나(마지막 나이의 얼굴·시대·출생·사망), 최종 스탯, 생애 연표, 다시 태어나기.
  * 계산(자리·방향·연표 묶기)은 core/ending.ts의 순수 함수가 하고, 이 화면은 결과를 그리기만 한다. 사망 상태는 저장돼 있어 새로고침해도 그대로다.
  * 외모는 어디에도 원점수가 없다 — 얼굴 그림과 「상위/하위 약 N%」 글자만(R-135, M4 완료 기준). 회고·연표 문구는 endingText.ts·lifeText.ts의 함수 출력 그대로다.
  *
- * M7e-3(REV-003-M4-1 R-327, docs/design/copy.md 5-3·5-4, diff-003.md D-41~D-46): 새 디자인 — 머리 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」, 출발선 카드의 **출발선 막대**(구간 띠 + 50% 눈금 + 마지막 마름모,
- * `role="img"` + 함수 조합 `aria-label`)와 **범례**(출발선 = 수저 칩 + 「({구간})」, 마지막 = 자리), 합쇼체 문장. 막대의 숫자는 모두 구현 함수에서 온다(`startBandOf`의 low·high, `standingScore(end)`).
+ * M7e-3(REV-003-M4-1 R-327, docs/design/copy.md 5-3·5-4, diff-003.md D-41~D-46): 새 디자인 — 머리 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」, 합쇼체 문장.
+ * 2026-11-13: 「출발선에서 마지막까지」 카드(출발선 막대·범례·도착 자리 문장·이동 판정)는 삭제했다(결정 후속 256). 최종 순자산 줄은 「20세 넘어 마친 판이고 자산이 있음」일 때만 금액을 보인다.
  */
 export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gentle = false }: Props) {
   const headingRef = useFocusOnChange<HTMLHeadingElement>();
@@ -290,62 +281,6 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
           {game.play !== undefined ? <PlayTimeBlock play={game.play} /> : null}
         </section>
 
-        <section className="card" aria-labelledby="ending-journey-title" data-testid="ending-journey-section">
-          <h2 id="ending-journey-title" className="card__title card__title--gap">
-            {ENDING_HEADINGS.journey}
-          </h2>
-          <div className="journey">
-            {/* 출발선 막대: 선(0 = 하위 끝, 100 = 상위 끝) 위에 출발선 구간 띠(네모) · 50% 눈금 · 마지막 마름모. 글자 크기와 무관한 px 그림이고, 읽기용 설명은 aria-label이 글로 말한다 (R-191(d)) */}
-            <div className="journey__bar" role="img" aria-label={journeyBarLabel(review.journey)} data-testid="ending-bar">
-              <div className="journey__track">
-                <span className="journey__band" style={{ '--from': `${review.journey.start.low}%`, '--to': `${review.journey.start.high}%` } as CSSProperties} />
-                <span className="journey__mid" />
-                {review.journey.kind === 'compared' ? <span className="journey__end" style={{ '--at': `${standingScore(review.journey.end)}%` } as CSSProperties} data-testid="ending-bar-end" /> : null}
-              </div>
-              <div className="journey__axis" aria-hidden="true">
-                <span>{JOURNEY_BAR_LEGEND.axisLow}</span>
-                <span>{JOURNEY_BAR_LEGEND.axisHigh}</span>
-              </div>
-            </div>
-            <dl className="journey__legend" data-testid="ending-legend">
-              <div>
-                <dt>
-                  <i className="journey__key journey__key--band" aria-hidden="true" />
-                  {JOURNEY_BAR_LEGEND.start}
-                </dt>
-                <dd className="grade-line">
-                  <GradeChip grade={c.parentWealth} />
-                  <span className="grade-line__range" data-testid="grade-range">
-                    <Glue text={`(${bandLabel(review.journey.start)})`} />
-                  </span>
-                </dd>
-              </div>
-              {review.journey.kind === 'compared' ? (
-                <div>
-                  <dt>
-                    <i className="journey__key journey__key--end" aria-hidden="true" />
-                    {JOURNEY_BAR_LEGEND.end}
-                  </dt>
-                  <dd data-testid="ending-legend-end">
-                    <KeepStanding text={standingLabel(review.journey.end)} />
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
-            <p data-testid="ending-journey">
-              <KeepStanding text={journeyText(review.journey)} />
-            </p>
-            {review.journey.kind === 'compared' ? (
-              <>
-                <p data-testid="ending-movement">{MOVEMENT_TEXT[review.journey.movement]}</p>
-                <p className="t-xs t-faint" data-testid="ending-note">
-                  <Glue text={JOURNEY_NOTE} />
-                </p>
-              </>
-            ) : null}
-          </div>
-        </section>
-
         <section className="card stack stack--sm ending-stats" aria-labelledby="ending-stats-title" data-testid="ending-stats">
           <h2 id="ending-stats-title" className="card__title">
             {ENDING_HEADINGS.stats}
@@ -357,7 +292,7 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
             return <FinalMeter key={key} stat={key} label={STATUS_LABEL[key]} value={game.stats[key]} tone={tone} icon={icon} started={started} />;
           })}
           {/* 「재산」 막대 자리: 최종 순자산 한 줄(M5) — 위끝 1px 선이 네 막대와 가른다 */}
-          <FinalNetLine generation={game.generation} net={review.journey.kind === 'compared' && game.assets !== null ? game.assets.net : null} />
+          <FinalNetLine generation={game.generation} net={reachedIndependence(game.death.age) && game.assets !== null ? game.assets.net : null} />
           <dl className="facts">
             <dt>{DASH_TEXT.profileLooks}</dt>
             <dd data-testid="final-looks">

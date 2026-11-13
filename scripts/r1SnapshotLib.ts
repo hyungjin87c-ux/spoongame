@@ -1,10 +1,10 @@
 import { R1_PRESENT } from '../src/core';
-import { BANDS, TARGETS, autoGuardsOf, deathNetMedians, guardsOf, movementShares, statsOfBand, type LifeOutcome, type Sample } from './economyCheckLib';
-import type { FinalDistribution } from '../src/core';
+import { BANDS, TARGETS, autoGuardsOf, deathNetMedians, guardsOf, statsOfBand, type LifeOutcome, type Sample } from './economyCheckLib';
 
 /**
  * R1 경제 스냅숏 (SPEC-004 EY17 ① — 마스터 결정 N21·N27). 경제를 연도 축으로 바꾸기 **전에** 지금(R1) 코드의 `npm run check:economy` 값을 줄 단위로 얼려 두고,
  * 연도 축 배선(`economyFactors`의 `forceR1`)이 들어간 뒤에도 같은 값이 나오는지 `tests/economyIdentity.test.ts`가 대조한다(② 항등 시험).
+ * 2026-11-13(결정 후속 256): 엔딩 「출발선 대비」 삭제로 이동 판정(`movement`)·최종 순자산 분위수표·그 가드(`end-down4·5`, `auto-up`)는 스냅숏에서 걷었다 — 나머지 값은 그대로이고 `livesHash`만 이동 판정 칸이 빠진 줄로 다시 얼렸다.
  * 이 파일은 **값을 모으는 일**만 한다 — 판을 돌리는 쪽(`scripts/freezeR1Snapshot.ts`, 시험)이 `R1Runner`를 주면 같은 모양의 JSON을 돌려준다.
  * 모든 값은 소수 그대로(JSON 숫자는 배정밀도가 그대로 오간다) 담고 비교는 정확히 같아야 통과한다. 표본 전체는 FNV-1a 32비트 해시로 얼린다(줄 하나라도 다르면 해시가 달라진다).
  */
@@ -12,8 +12,6 @@ import type { FinalDistribution } from '../src/core';
 export interface R1Runner {
   /** 지금 세상(R1 present)의 무작위 선택·자동 모드 표본 — `scripts/economyCheck.ts`와 같은 시드(`economySeed`) */
   collect(plays: number, strategy: 'random' | 'auto'): { rows: Sample[]; lives: LifeOutcome[] };
-  /** 지금 세상의 분포표(`scripts/finalDistributionLib.ts`와 같은 시드 줄) */
-  finalDistribution(simulated: number): FinalDistribution;
   /** `npm run report:time`의 「현재 설정」 지금 세상 한 줄(짧은 모드, 무작위 선택) */
   timeSummary(lives: number): Record<string, unknown>;
 }
@@ -21,12 +19,11 @@ export interface R1Runner {
 export interface R1SnapshotParams {
   plays: number;
   autoPlays: number;
-  finalDistributionPlays: number;
   timeLives: number;
 }
 
 /** 얼린 표본의 크기 — 이 값을 바꾸면 스냅숏을 다시 얼려야 한다(tests/economyIdentity.test.ts가 같은 값을 쓴다) */
-export const R1_SNAPSHOT_PARAMS: R1SnapshotParams = { plays: 6000, autoPlays: 2000, finalDistributionPlays: 4000, timeLives: 1000 };
+export const R1_SNAPSHOT_PARAMS: R1SnapshotParams = { plays: 6000, autoPlays: 2000, timeLives: 1000 };
 
 /** FNV-1a 32비트 (조각 문자열을 이어 붙여 센다 — 큰 문자열을 만들지 않는다) */
 export class Fnv {
@@ -50,13 +47,7 @@ export function hashRows(rows: readonly Sample[]): string {
 
 export function hashLives(lives: readonly LifeOutcome[]): string {
   const f = new Fnv();
-  for (const l of lives) f.add(`${l.parentWealth},${l.deathAge},${l.reached ? 1 : 0},${l.net},${l.minNet},${l.movement ?? '-'};`);
-  return f.hex();
-}
-
-export function hashNumbers(values: readonly number[]): string {
-  const f = new Fnv();
-  for (const v of values) f.add(`${v},`);
+  for (const l of lives) f.add(`${l.parentWealth},${l.deathAge},${l.reached ? 1 : 0},${l.net},${l.minNet};`);
   return f.hex();
 }
 
@@ -80,10 +71,9 @@ function deathTable(lives: readonly LifeOutcome[]): unknown {
   return {
     reached: reached.length,
     medians: deathNetMedians(lives),
-    movement: movementShares(lives),
     perTier: ([1, 2, 3, 4, 5] as const).map((w) => {
       const tier = reached.filter((l) => l.parentWealth === w);
-      return { wealth: w, n: tier.length, movement: movementShares(tier) };
+      return { wealth: w, n: tier.length };
     }),
   };
 }
@@ -95,14 +85,12 @@ export interface R1Snapshot {
   params: R1SnapshotParams;
   random: { rows: number; rowsHash: string; livesHash: string; bands: unknown[]; wealth: unknown[]; targets: Array<{ id: string; value: number }>; guards: unknown[]; death: unknown };
   auto: { rows: number; rowsHash: string; livesHash: string; band40: unknown; guards: unknown[] };
-  finalDistribution: { simulated: number; lives: number; quantilesHash: string; quantiles: number[] };
   reportTime: Record<string, unknown>;
 }
 
 export function buildR1Snapshot(runner: R1Runner, frozen: R1Snapshot['frozen'], params: R1SnapshotParams = R1_SNAPSHOT_PARAMS): R1Snapshot {
   const random = runner.collect(params.plays, 'random');
   const auto = runner.collect(params.autoPlays, 'auto');
-  const dist = runner.finalDistribution(params.finalDistributionPlays);
   const band40 = BANDS.find((b) => b.id === 'b40')!;
   return clean({
     schema: 1 as const,
@@ -125,7 +113,6 @@ export function buildR1Snapshot(runner: R1Runner, frozen: R1Snapshot['frozen'], 
       band40: bandTable(auto.rows).find((b) => (b as { id: string }).id === band40.id),
       guards: autoGuardsOf({ rows: random.rows, lives: random.lives }, { rows: auto.rows, lives: auto.lives }).map((g) => ({ id: g.id, value: g.value, metric: g.metric, ok: g.ok })),
     },
-    finalDistribution: { simulated: dist.simulated, lives: dist.lives, quantilesHash: hashNumbers(dist.quantiles), quantiles: [...dist.quantiles] },
     reportTime: runner.timeSummary(params.timeLives),
   });
 }

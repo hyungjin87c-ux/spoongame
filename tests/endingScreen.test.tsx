@@ -1,14 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { bandFromRange, finalWealthStanding, formatMan, formatWon, playToEnd, R1_PRESENT, reviewEnding, startBandOf, wealthMixtureOfProfile, type EndingGame, type EndingReview, type ProfileId } from '../src/core';
+import { formatMan, formatWon, playToEnd, R1_PRESENT, type EndingGame, type ProfileId } from '../src/core';
 import { genLine } from '../src/data/birthReportText';
 import { profileLabel } from '../src/core/birthProfile';
 import { looksText } from '../src/data/looksText';
-import { standingLabel } from '../src/data/birthText';
-import { FINAL_DISTRIBUTION } from '../src/data/finalDistribution';
 import * as parentTable from '../src/data/parentDecisionTable';
 import { decidedByText } from '../src/data/parentDecisionTable';
-import { ENDING_HEADINGS, MOVEMENT_TEXT, REBIRTH_LABEL, REBIRTH_NOTE, journeyText } from '../src/data/endingText';
+import { ENDING_HEADINGS, REBIRTH_LABEL, REBIRTH_NOTE } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
 import { splitStanding, standingPieces } from '../src/ui/KeepStanding';
 import { SIM_PROFILES, chooserFor, startLife } from '../scripts/simulateLib';
@@ -28,12 +26,13 @@ describe('엔딩 화면: 구성과 순서', () => {
   const game = endingOf(2024, 'alpha');
   const html = render(game);
 
-  it('위에서 아래로: 이름(제목) → 출생·사망 → 출발선에서 마지막까지 → 최종 스탯 → 생애 연표 → 다시 태어나기', () => {
-    const marks = ['data-testid="ending-name"', 'data-testid="ending-death"', 'data-testid="ending-journey"', 'data-testid="ending-stats"', 'data-testid="ending-timeline"', 'data-testid="rebirth"'];
+  it('위에서 아래로: 이름(제목) → 출생·사망 → 최종 스탯 → 생애 연표 → 다시 태어나기 (「출발선에서 마지막까지」 카드는 결정 후속 256으로 삭제했다)', () => {
+    const marks = ['data-testid="ending-name"', 'data-testid="ending-death"', 'data-testid="ending-stats"', 'data-testid="ending-timeline"', 'data-testid="rebirth"'];
     const at = marks.map((m) => html.indexOf(m));
     for (const i of at) expect(i).toBeGreaterThan(-1);
     expect(at).toEqual([...at].sort((a, b) => a - b));
-    expect(html).toContain(ENDING_HEADINGS.journey);
+    expect('journey' in ENDING_HEADINGS).toBe(false);
+    expect(html).not.toContain('data-testid="ending-journey-section"');
     expect(html).toContain(ENDING_HEADINGS.stats);
     expect(html).toContain(ENDING_HEADINGS.timeline);
   });
@@ -89,14 +88,12 @@ describe('엔딩 화면: 구성과 순서', () => {
     expect('delegatedSummaryText' in parentTable).toBe(false);
   });
 
-  it('출발선 대비: 재산을 같은 세상 안의 자리로 말하는 문장 하나, 방향 한 줄, 왜 숫자를 빼지 않았는지 설명', () => {
-    const review = reviewEnding(game);
+  it('출발선 대비 카드는 없다: 막대·범례·도착 자리 문장·이동 판정·안내 줄이 모두 빠졌다 (결정 후속 256)', () => {
     const text = textOf(html);
-    expect(review.journey.kind).toBe('compared');
-    expect(text).toContain(journeyText(review.journey));
-    expect(html).toContain('data-testid="ending-movement"');
-    expect(html).toContain('data-testid="ending-note"');
-    expect(text).toContain('숫자를 빼서 견주지 않고 같은 세대 안의 자리로 견주었습니다');
+    for (const id of ['ending-journey-section', 'ending-journey', 'ending-bar', 'ending-bar-end', 'ending-movement', 'ending-legend', 'ending-legend-end', 'ending-note']) expect(html, id).not.toContain(`data-testid="${id}"`);
+    expect(text).not.toContain('형편으로 생을 마쳤습니다');
+    expect(text).not.toContain('숫자를 빼서 견주지 않고');
+    expect(text).not.toMatch(/출발선보다|출발선과 비슷한/);
   });
 
   it('최종 스탯: 지식(학력)·건강·행복·관계의 마지막 값과 외모(「상위/하위 약 N%」)가 있다. "처음 N"은 지식·행복·관계에만 붙는다 (건강·외모는 원값 비교 금지) — 외모는 원점수 없이 순위 문구만 (R-135, M4). 재산 막대는 재산 스탯이 없어지면서 임시로 빠졌다(SPEC-003 M5 2a) — 최종 순자산 줄은 2b에서 화면에 더해진다', () => {
@@ -221,19 +218,18 @@ describe('엔딩 「최종 순자산」 줄 (M5 2b, copy.md 4-6절 · design-sys
     }
   });
 
-  it('경계: 음수는 U+2212 「−」로 시작하고 「빚」으로 바꿔 쓰지 않으며, 0은 「0원」이다 — 자리는 이 줄이 아니라 출발선 카드(막대·범례)가 분포표로 말한다 (M7e-3)', () => {
+  it('경계: 음수는 U+2212 「−」로 시작하고 「빚」으로 바꿔 쓰지 않으며, 0은 「0원」이다 — 자리(백분위)는 어디에서도 말하지 않는다 (M7e-3, 출발선 카드는 결정 후속 256으로 삭제)', () => {
     const game = endingOf(2024, 'alpha');
     const neg = render(withNet(game, -1200));
     expect(valueOf(FINAL_NET(neg))).toBe('−1,200만 원');
     expect(valueOf(FINAL_NET(neg))!.startsWith('−')).toBe(true);
     expect(textOf(FINAL_NET(neg))).not.toContain('빚');
     expect(textOf(FINAL_NET(neg))).not.toContain('같은 세상 안에서');
-    // 자리는 출발선 카드의 범례(「마지막」)에 있다
-    expect(textOf(neg.match(/data-testid="ending-legend-end">([^]*?)<\/dd>/)![1])).toBe(standingLabel(finalWealthStanding('alpha', -1200)));
+    expect(neg).not.toContain('ending-legend-end');
     const zero = render(withNet(game, 0));
     expect(valueOf(FINAL_NET(zero))).toBe('0원');
     expect(textOf(FINAL_NET(zero))).not.toContain('같은 세상 안에서');
-    expect(textOf(zero.match(/data-testid="ending-legend-end">([^]*?)<\/dd>/)![1])).toBe(standingLabel(finalWealthStanding('alpha', 0)));
+    expect(zero).not.toContain('ending-legend-end');
     expect(valueOf(FINAL_NET(render(withNet(game, -199_999))))).toBe('−19억 9,999만 원');
     expect(valueOf(FINAL_NET(render(withNet(game, 123_456))))).toBe('12억 3,456만 원');
   });
@@ -254,7 +250,7 @@ describe('엔딩 「최종 순자산」 줄 (M5 2b, copy.md 4-6절 · design-sys
     }
   });
 
-  it('금액을 말하는 곳은 이 줄뿐이다: 엔딩의 다른 문장(출발선·도착 자리·연표)에는 만 원 단위 금액이 없다 (D8 — 인생 기록에 금액 접미 없음)', () => {
+  it('금액을 말하는 곳은 이 줄뿐이다: 엔딩의 다른 문장(연표 따위)에는 만 원 단위 금액이 없다 (D8 — 인생 기록에 금액 접미 없음)', () => {
     const html = render(endingOf(2024, 'alpha'));
     const outside = html.replace(FINAL_NET(html), '');
     expect(textOf(outside)).not.toMatch(/d만 원|d억/);
@@ -264,19 +260,14 @@ describe('엔딩 「최종 순자산」 줄 (M5 2b, copy.md 4-6절 · design-sys
 describe('엔딩 화면: 금지된 것이 없다 (SPEC "안 할 것" · 등급명 · 어조)', () => {
   const games = SIM_PROFILES.flatMap((era) => [11, 222, 3333, 44444].map((seed) => endingOf(seed, era, seed % 2 === 0 ? 'auto' : 'random')));
 
-  it('느낌표·이모지가 어디에도 없고, 등급명(흙/동/은/금/다이아 수저)은 문장에 없다 — 출발선 막대의 범례 수저 칩(출발선)에만 있다 (M7e-3, R-327)', () => {
+  it('느낌표·이모지가 어디에도 없고, 등급명(흙/동/은/금/다이아 수저)은 어디에도 없다 — 출발선 카드(수저 칩 범례)가 삭제돼 엔딩에는 수저 칩도 없다 (결정 후속 256)', () => {
     for (const g of games) {
       const html = render(g);
       const text = textOf(html);
       expect(text, `${g.generation} ${g.seed}`).not.toMatch(/[!！]/);
       expect(text, `${g.generation} ${g.seed}`).not.toMatch(EMOJI);
-      // 범례(.journey__legend)를 빼면 등급명이 없다: 회고 문장·사망 줄·연표 어디에도 「흙수저」가 쓰이지 않는다
-      const outsideLegend = textOf(html.replace(/<dl class="journey__legend"[^]*?<\/dl>/, ''));
-      expect(outsideLegend, `${g.generation} ${g.seed}`).not.toMatch(GRADE_NAMES);
-      // 범례의 수저 칩은 이 인물의 부모 재력 단계 칩 하나다 (출발선)
-      const legend = html.match(/<dl class="journey__legend"[^]*?<\/dl>/)![0];
-      expect(legend, `${g.generation} ${g.seed}`).toContain(`data-grade="${g.character.parentWealth}"`);
-      expect((legend.match(/class="grade grade--\d/g) ?? []).length, `${g.generation} ${g.seed}`).toBe(1);
+      expect(text, `${g.generation} ${g.seed}`).not.toMatch(GRADE_NAMES);
+      expect(html, `${g.generation} ${g.seed}`).not.toMatch(/class="grade grade--\d/);
     }
   });
 
@@ -291,7 +282,7 @@ describe('엔딩 화면: 금지된 것이 없다 (SPEC "안 할 것" · 등급�
     }
   });
 
-  it('퍼센트 숫자는 50을 넘지 않고 "약 0%"·"약 100%"·"0~"·"~100"이 없다 (R-018, 출발선 구간 R-091)', () => {
+  it('퍼센트 숫자는 50을 넘지 않고 "약 0%"·"약 100%"가 없다 (R-018 — 엔딩의 백분위 문장은 결정 후속 256으로 없어졌고, 외모 글 따위의 퍼센트만 남았다)', () => {
     for (const g of games) {
       const text = textOf(render(g));
       // 구간 표현("상위 8~28% 사이")의 앞 숫자도 센다: "N%"만이 아니라 "A~B%"의 A와 B 모두
@@ -300,9 +291,6 @@ describe('엔딩 화면: 금지된 것이 없다 (SPEC "안 할 것" · 등급�
         if (m[2] !== undefined) expect(Number(m[2]), text).toBeLessThanOrEqual(50);
       }
       expect(text).not.toMatch(/약 (0|100)%/);
-      // 출발선 구간 문장에만 건다 (연표의 단계 제목 "영유아 · 0~6세"는 나이 범위다)
-      const journey = textOf(render(g).match(/data-testid="ending-journey">([^]*?)<\/p>/)![1]);
-      expect(journey).not.toMatch(/(^|[^\d])0~|~100/);
     }
   });
 });
@@ -312,15 +300,12 @@ describe('엔딩 화면: 스무 살 전에 끝난 인생', () => {
   const young: EndingGame = { ...base, age: 9, death: { age: 9, cause: '갑작스러운 병' }, history: base.history.filter((h) => h.age < 9).concat([{ age: 9, kind: 'death', text: '세상을 떠났다. 원인: 갑작스러운 병.' }]) };
   const html = render(young);
 
-  it('도착 자리·방향·설명 대신 출발선(집안 형편)만 말한다 (재산 막대는 2a에서 임시로 빠졌다)', () => {
-    expect(html).not.toContain('data-testid="ending-movement"');
-    expect(html).not.toContain('data-testid="ending-note"');
+  it('도착 자리·방향·출발선 문장 없이 금액 줄에 안내 한 줄뿐이다 (출발선 카드는 결정 후속 256으로 삭제)', () => {
+    for (const id of ['ending-journey-section', 'ending-journey', 'ending-movement', 'ending-note', 'ending-bar']) expect(html, id).not.toContain(`data-testid="${id}"`);
     const text = textOf(html);
-    // R-083: 출발선만 담담하게 — 게임 용어("내가 가진 것")도, 윗줄이 이미 말한 "생이 끝났다"도 되풀이하지 않는다
-    const journey = textOf(html.match(/data-testid="ending-journey">([^]*?)<\/p>/)![1]);
-    expect(journey).toMatch(/^.+의 집에서 태어났습니다\.$/);
-    expect(journey).not.toMatch(/내가 가진 것|생이 끝|견줄|스무 살/);
     expect(text).not.toContain('형편으로 생을 마쳤습니다');
+    expect(text).not.toMatch(/의 집에서 태어났습니다/);
+    expect(html).toContain('data-testid="final-net-none"');
     // 재산 막대는 M5 2a에서 임시로 빠졌다(재산 스탯이 없어졌다): 「재산」이든 「집안 형편」이든 막대가 없다. 2b가 20세 전은 「집안 살림」, 20세부터는 「최종 순자산」 줄로 되살린다.
     expect(html).not.toMatch(/<span class="meter__label">(재산|집안 형편)<\/span>/);
   });
@@ -378,59 +363,4 @@ describe('순위 표현은 줄이 바뀌어도 쪼개지지 않는다 (ui/KeepSt
     }
   });
 
-  it('엔딩의 출발선 대비 문장: 순위 표현이 nowrap span으로 감싸지고 글은 그대로다', () => {
-    const g = endingOf(71284, 'alpha');
-    const html = render(g);
-    const review = reviewEnding(g);
-    expect(review.journey.kind).toBe('compared');
-    const journeyHtml = html.match(/data-testid="ending-journey">([^]*?)<\/p>/)![1];
-    const parts = splitStanding(journeyText(review.journey));
-    const units = (parts.length - 1) / 2; // 홀수 칸 = 순위 표현(덩어리)
-    expect(units).toBeGreaterThanOrEqual(2);
-    // 넓은 덩어리(「상위 3~17% 사이의」)는 숫자 구간과 뒤쪽 낱말 둘로 감싼다(standingPieces) — 조각 수의 합이 nowrap span 수다
-    const pieces = parts.filter((_, i) => i % 2 === 1).flatMap(standingPieces).length;
-    expect((journeyHtml.match(/<span class="nowrap">/g) ?? []).length).toBe(pieces);
-    expect(journeyHtml.replace(/<[^>]+>/g, '')).toBe(journeyText(review.journey));
-  });
-});
-
-describe('엔딩 화면: 출발선이 재력 단계의 구간으로 보인다 (R-091)', () => {
-  const base = endingOf(2024, 'alpha');
-  /** 지금 세상의 부모 재력 단계(1~5)와 최종 순자산(만 원)으로 회고를 만들어 그린다 */
-  const html = (wealth: 1 | 2 | 3 | 4 | 5, final: number) => {
-    const game: EndingGame = { ...base, character: { ...base.character, parentWealth: wealth }, assets: { ...base.assets!, net: final, debt: Math.max(base.assets!.debt, -final) } };
-    return { html: render(game), review: reviewEnding(game) };
-  };
-  const journeyOf = (h: string) => textOf(h.match(/data-testid="ending-journey">([^]*?)<\/p>/)![1]);
-  const movementTextOf = (h: string) => textOf(h.match(/data-testid="ending-movement">([^]*?)<\/p>/)![1]);
-
-  it('지금 세상 다섯 단계: 출발선 문구가 구간이고, 방향 문장이 그 아래에 이어진다 (맨 아래·가운데·한쪽 절반·맨 위)', () => {
-    const labels = ['하위 25% 안쪽의 집에서 태어나, ', '하위 25% 선과 상위 45% 선 사이의 집에서 태어나, ', '상위 17~45% 사이의 집에서 태어나, ', '상위 3~17% 사이의 집에서 태어나, ', '상위 3% 안쪽의 집에서 태어나, '];
-    for (let w = 1; w <= 5; w++) {
-      const { html: h, review } = html(w as 1, 5000);
-      const journey = journeyOf(h);
-      expect(journey.startsWith(labels[w - 1]), `${w}단계: ${journey}`).toBe(true);
-      expect(journey.endsWith('의 형편으로 생을 마쳤습니다.'), journey).toBe(true);
-      expect(review.journey.kind).toBe('compared');
-      if (review.journey.kind === 'compared') expect(movementTextOf(h)).toBe(MOVEMENT_TEXT[review.journey.movement]);
-    }
-  });
-
-  it('같은 구간에서 도착만 달라지면 방향만 달라진다: 지금 세상 3단계(상위 17~45% 사이)에서 최종 순자산이 분위수표의 5번째(뒤쪽) / 70번째(비슷함) / 95번째(앞섬) 백분위 값일 때', () => {
-    const q = FINAL_DISTRIBUTION.alpha.quantiles;
-    const verdict = (final: number) => {
-      const r = html(3, final).review as EndingReview;
-      return r.journey.kind === 'compared' ? r.journey.movement : 'early';
-    };
-    expect(verdict(q[5])).toBe('down');
-    expect(verdict(q[70])).toBe('same');
-    expect(verdict(q[95])).toBe('up');
-  });
-
-  it('20세 전 사망의 출발선도 같은 구간 표현이다', () => {
-    const game: EndingGame = { ...base, age: 9, death: { age: 9, cause: '갑작스러운 병' }, character: { ...base.character, parentWealth: 2 } };
-    expect(journeyOf(render(game))).toBe('하위 25% 선과 상위 45% 선 사이의 집에서 태어났습니다.');
-    expect(journeyText({ kind: 'early', start: startBandOf(wealthMixtureOfProfile('alpha'), 4) })).toBe('상위 3~17% 사이의 집에서 태어났습니다.');
-    expect(journeyText({ kind: 'early', start: bandFromRange(0, 25) })).toBe('하위 25% 안쪽의 집에서 태어났습니다.');
-  });
 });

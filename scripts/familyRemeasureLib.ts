@@ -10,7 +10,6 @@ import {
   inheritanceAmount,
   lineClearedFlags,
   meetsCondition,
-  reviewEnding,
   siblingCountOf,
   stepYear,
   timingEraOfProfile,
@@ -18,7 +17,6 @@ import {
   withParentsGoneRule,
   withSiblingCountRule,
   yearLineCount,
-  type EndingGame,
   type EventPool,
   type GameState,
   type GoneYearRule,
@@ -95,8 +93,6 @@ export interface LifeRow {
   net20: number | null;
   /** 판이 끝났을 때 순자산(만 원), 20세 전에 끝난 판은 null */
   finalNet: number | null;
-  /** 엔딩 방향 판정(up·same·down), 스무 살 전에 끝나면 early */
-  movement: 'up' | 'same' | 'down' | 'early';
   deathAge: number;
   /** 19세 이하에 부모 한 분이 떠났는가(이른 별세 효과 대상) */
   earlyLoss: boolean;
@@ -217,8 +213,6 @@ export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
       }
       if (s.phase !== 'ending' || s.death === null) throw new Error(`${gen}/${seed}: 사망에 도달하지 못했다`);
       const tier = s.character!.parentWealth;
-      const review = reviewEnding(s as EndingGame);
-      const movement = review.journey.kind === 'compared' ? review.journey.movement : 'early';
       const reached = s.death.age >= 20 && s.assets !== null;
       const era = timingEraOfProfile(gen);
       const legacy = siblingCountOf(s, 'legacy');
@@ -229,7 +223,6 @@ export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
         tier,
         net20,
         finalNet: reached ? s.assets!.net : null,
-        movement,
         deathAge: s.death.age,
         earlyLoss: s.family!.l.some((e) => e[0] === 5 && e[1] <= 19),
         siblingsLegacy: legacy,
@@ -293,7 +286,6 @@ export interface TierStats {
   meanNet20: number;
   meanFinalNet: number;
   nFinal: number;
-  movement: { up: number; same: number; down: number; early: number };
 }
 
 export const median = (xs: readonly number[]): number => {
@@ -305,8 +297,6 @@ export const mean = (xs: readonly number[]): number => (xs.length === 0 ? 0 : xs
 
 export function tierStats(rows: readonly LifeRow[], tier: number): TierStats {
   const t = rows.filter((r) => r.tier === tier);
-  const m = { up: 0, same: 0, down: 0, early: 0 };
-  for (const r of t) m[r.movement]++;
   return {
     n: t.length,
     medianNet20: median(t.filter((r) => r.net20 !== null).map((r) => r.net20!)),
@@ -314,7 +304,6 @@ export function tierStats(rows: readonly LifeRow[], tier: number): TierStats {
     meanNet20: mean(t.filter((r) => r.net20 !== null).map((r) => r.net20!)),
     meanFinalNet: mean(t.filter((r) => r.finalNet !== null).map((r) => r.finalNet!)),
     nFinal: t.filter((r) => r.finalNet !== null).length,
-    movement: m,
   };
 }
 

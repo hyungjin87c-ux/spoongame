@@ -40,14 +40,13 @@ for (const mode of MODES) {
       const t0 = Date.now();
       const r = runPipelineCell(era, strategy, { lives, stepSerializeEvery: every, lifeLength: mode });
       reports.push(r);
-      const j = r.journeys;
       console.log(`[${mode} / ${era} / ${strategy === 'auto' ? '자동 모드' : '수동 흉내'}] ${r.lives}판, 위반이 있는 판 ${r.failedLives}, 예외 ${r.exceptions}, 위반 메시지 ${r.problemCount}건 (${f((Date.now() - t0) / 1000)}초)`);
       console.log(dist('사망 나이', r.deathAge));
       console.log(dist('결정 카드 수', r.choices));
       console.log(dist('1배속 수동(분, 중앙)', r.minutes1x));
       console.log(dist('8배속+다음결정(분,중앙)', r.minutesFast));
       console.log(`    카드 평균 ${f(r.choices.mean, 2)}장 — 모드 구간 ${m.cards.meanLow}~${m.cards.meanHigh}장 ${cardsIn(r, m) ? '안' : '밖'}${m.selectable ? '' : ' (보고만)'} | 모델 시간 평균 ${f(r.minutes1x.mean)}분 — 모드 구간 ${m.timeMin.modelLow - 1.5}~${m.timeMin.modelHigh + 1.5}분(시대별) ${timeIn(r, m) ? '안' : '밖'}${m.selectable ? '' : ' (보고만)'}`);
-      console.log(`    엔딩 회고: 20세 전 사망 ${j.early} / 앞섬 ${j.up} / 비슷함 ${j.same} / 뒤쪽 ${j.down}${j.none > 0 ? ` / 끝까지 못 감 ${j.none}` : ''} | 서로 다른 이름 ${r.distinctNames}개`);
+      console.log(`    엔딩 회고: 20세 전 사망 ${r.endings.early} / 20세 넘어 마침 ${r.endings.adult}${r.endings.none > 0 ? ` / 끝까지 못 감 ${r.endings.none}` : ''} | 서로 다른 이름 ${r.distinctNames}개`);
       console.log(
         `    점검: 이름 ${r.checks.names}회, 걸음 불변식 ${r.checks.transitions}회, 저장→복원 ${r.checks.roundTrips}회(매 걸음 저장한 판 ${r.stepSerializedLives}), 연타 입력 ${r.checks.duplicateInputs}회, 엔딩 문장 ${r.checks.endingTexts}판, 다시 태어나기 ${r.checks.rebirths}회, 가족 규칙 ${r.checks.familyRules}회\n`,
       );

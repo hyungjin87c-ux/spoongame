@@ -18,7 +18,6 @@
     "sim:1000": "vite-node scripts/simulate1000.ts",
     "sim:infant": "vite-node scripts/infantMetrics.ts",
     "check:events": "vite-node scripts/validateEvents.ts",
-    "check:dist": "vite-node scripts/checkFinalDistribution.ts",
     "check:todo": "vite-node scripts/checkTodoEvidence.ts",
     "check:era-art": "vite-node scripts/checkEraArt.ts",
     "check:motifs": "vite-node scripts/validateMotifs.ts",

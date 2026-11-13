@@ -62,7 +62,7 @@ describe('vite-node 선언 (R-049)', () => {
     // report:family(가족 변화 재측정 보고 — 조기 상실 효과·자녀 수·K1 영향·판 시간, docs/data/family-remeasure.md, SPEC-009 FM4b)는 FM4b에서 더했다
     // report:persona(맞춤 인생 보고 — 갈림길 G1~G5의 수저 1·5 짝 비교·노출·기질 총변동거리·진로 일정, SPEC-018 완료 기준 8·9, 결정 후속 239·241)는 PL5에서 더했다
     // gen:golden(기존 사건 자격 골든 tests/fixtures/eligibility-golden*.json 만들기 — 변경 전 코드에서 한 번, SPEC-018 1단계 2cb6630)은 SPEC-018 1단계에서 더했다
-    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:dist', 'check:economy', 'check:era-art', 'check:events', 'check:motifs', 'check:todo', 'gen:art', 'gen:basis', 'gen:citations', 'gen:era', 'gen:family', 'gen:golden', 'golden:family', 'golden:scene', 'report:ask', 'report:citations', 'report:family', 'report:notes', 'report:parent', 'report:persona', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
+    expect(users.map(([name]) => name).sort()).toEqual(['build', 'check:basis', 'check:citations', 'check:economy', 'check:era-art', 'check:events', 'check:motifs', 'check:todo', 'gen:art', 'gen:basis', 'gen:citations', 'gen:era', 'gen:family', 'gen:golden', 'golden:family', 'golden:scene', 'report:ask', 'report:citations', 'report:family', 'report:notes', 'report:parent', 'report:persona', 'report:time', 'sim', 'sim:1000', 'sim:infant']);
   });
 });
 

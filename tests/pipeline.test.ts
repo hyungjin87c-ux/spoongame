@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BAND_GRACE,
   R1_PRESENT,
   advanceYear,
   autoResolveStep,
   familyOf,
-  finalWealthStanding,
   lifeParamsOf,
   maxAgeOf,
   playToEnd,
   reviewEnding,
-  standingScore,
   startBandOf,
   wealthMixtureOfProfile,
   type EndingGame,
@@ -25,7 +22,6 @@ import { HISTORY_LIMITS } from '../src/data/lifeTable';
 import { SIM_ALL, SIM_PROFILES, startLife } from '../scripts/simulateLib';
 import {
   EXPECTED_BIRTH_YEARS,
-  EXPECTED_GRACE,
   EXPECTED_START_BANDS,
   FAMILY_RULES,
   PIPELINE_STRATEGIES,
@@ -37,7 +33,6 @@ import {
   checkStats,
   checkTransition,
   deepEqual,
-  expectedEndScore,
   pipelineSeed,
   roundTrip,
   runPipelineCell,
@@ -335,45 +330,10 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
     const review = reviewEnding(game);
     it('정상 엔딩은 위반이 없다', () => {
       expect(game.phase).toBe('ending');
-      expect(review.journey.kind).toBe('compared');
       expect(checkEnding(game, 'x')).toEqual([]);
     });
 
-    it('방향이 문장의 숫자와 어긋나면 잡는다 (판정 뒤집기)', () => {
-      if (review.journey.kind !== 'compared') throw new Error('테스트 전제');
-      const j = review.journey;
-      for (const wrong of (['up', 'same', 'down'] as const).filter((m) => m !== j.movement)) {
-        const problems = checkEnding(game, 'x', { ...review, journey: { ...j, movement: wrong } });
-        expect(problems.join(), `방향 ${j.movement} → ${wrong}`).toContain('숫자와 판정이 어긋난다');
-      }
-    });
-
-    it('판정에 쓰는 구간이 문장에 말한 구간과 다르면 잡는다 (R-096 증상: 화면은 "하위 1% 안쪽", 판정은 [0, 0])', () => {
-      if (review.journey.kind !== 'compared') throw new Error('테스트 전제');
-      const j = review.journey;
-      const old = { low: 0, high: 0, kind: 'bottom' as const, percent: 1 }; // 올려 말하기 전의 band
-      const problems = checkEnding(game, 'x', { ...review, journey: { ...j, start: old } });
-      expect(problems.join()).toContain('판정에 쓰는 band');
-      // 문장의 구간이 재력 단계의 구간과 다른 경우도 잡는다
-      const other = { low: 0, high: 7, kind: 'bottom' as const, percent: 7 };
-      expect(checkEnding(game, 'x', { ...review, journey: { ...j, start: other } }).join()).toContain('단계의 구간');
-    });
-
-    it('도착 자리가 분포표에서 직접 센 값과 다르면 잡는다', () => {
-      if (review.journey.kind !== 'compared') throw new Error('테스트 전제');
-      const j = review.journey;
-      const wrongEnd = { kind: 'top' as const, percent: standingScore(j.end) === 93 ? 8 : 7, within: false }; // 실제 자리가 아닌 다른 자리
-      expect(checkEnding(game, 'x', { ...review, journey: { ...j, end: wrongEnd } }).join()).toContain('분포표에서 직접 센');
-    });
-
-    it('스무 살 전 사망과 회고 종류가 어긋나면 잡는다 (사망 나이 9인데 compared, 사망 나이 70인데 early)', () => {
-      const young: EndingGame = { ...game, age: 9, death: { age: 9, cause: '사고' } };
-      expect(checkEnding(young, 'x', review).join()).toContain('compared');
-      const early = reviewEnding(young);
-      expect(early.journey.kind).toBe('early');
-      expect(checkEnding(young, 'x', early)).toEqual([]);
-      expect(checkEnding(game, 'x', early).join()).toContain('early');
-    });
+    // (방향·구간·도착 자리·회고 종류가 문장과 어긋나면 잡는 점검 네 개는 엔딩 「출발선 대비」 삭제와 함께 걷었다 — 결정 후속 256)
 
     it('연표를 단계별로 묶은 것이 연표와 다르거나 선택 수가 틀리면 잡는다', () => {
       const dropped = { ...review, timeline: review.timeline.map((g, i) => (i === 0 ? { ...g, entries: g.entries.slice(1) } : g)) };
@@ -387,7 +347,7 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
     });
   });
 
-  it('기준 표(EXPECTED_*)는 구현 값과 같다: 출발선 구간 15개·여유 2점·세대별 출생 연도, 도착 점수(분포표를 직접 센 값)는 일곱 세대 × 재산 0~100 전부에서 구현과 같다', () => {
+  it('기준 표(EXPECTED_*)는 구현 값과 같다: 출발점의 수저 구간 15개·세대별 출생 연도', () => {
     for (const era of SIM_ALL as readonly GenerationId[]) {
       const mixture = wealthMixtureOfProfile(era);
       for (let w = 1; w <= 5; w++) {
@@ -395,9 +355,7 @@ describe('점검 도구 시험 (대조군): 일부러 틀린 입력을 넣으면
         expect([b.low, b.high], `${era} ${w}단계`).toEqual([...EXPECTED_START_BANDS[era][w - 1]]);
       }
       expect(EXPECTED_BIRTH_YEARS[era], era).toEqual({ min: GENERATION_CONFIG[era].birth.from, max: GENERATION_CONFIG[era].birth.to });
-      for (let v = 0; v <= 100; v++) expect(expectedEndScore(era, v), `${era} 재산 ${v}`).toBe(standingScore(finalWealthStanding(era, v)));
     }
-    expect(EXPECTED_GRACE).toBe(BAND_GRACE);
   });
 
   it('pipelineSeed: 세대·전략마다 다른 시드 줄이고, uint32이며, 같은 인자면 같다', () => {
@@ -469,17 +427,12 @@ describe('1000판 전체 파이프라인 (SPEC-001 M6): 대표 세대 셋(산업
           expect(r.checks.duplicateInputs).toBeGreaterThan(LIVES * 40);
           expect(r.stepSerializedLives).toBe(LIVES / EVERY);
           // 모두 사망에 도달했고 사망 나이는 시대 상한 이하
-          expect(r.journeys.none, '끝까지 가지 못한 판').toBe(0);
+          expect(r.endings.none, '끝까지 가지 못한 판').toBe(0);
           expect(r.deathAge.max).toBeLessThanOrEqual(maxAgeOf(lifeParamsOf(era, 2000)));
           expect(r.deathAge.min).toBeGreaterThanOrEqual(0);
-          // 엔딩 회고의 세 방향이 모두 실제로 나왔다 (공허한 통과가 아니다)
-          // 측정(M5 r3·r4, `npm run sim:1000` — 분포표는 수동 흉내로 만든다): 여섯 칸(세 시대 × 자동·수동 흉내) 모두 앞섬 250~325·비슷함 390~447·뒤쪽 270~337(1000판 중).
-          // 2a에서는 자동 모드가 돈에 무게를 둔 선택을 해 앞섬 약 52%·비슷함 27~31%였고 그래서 하한을 200으로 낮췄다. r2의 자동 모드 가드(앞섬 ≤ 45%, 관측 26~32%)가 그 근거를 없애
-          // 하한을 300으로 되돌렸다(R-356). 앞섬·뒤쪽의 하한은 관측의 절반 이하인 100이다.
-          expect(r.journeys.up).toBeGreaterThan(100);
-          expect(r.journeys.same).toBeGreaterThan(300);
-          expect(r.journeys.down).toBeGreaterThan(100);
-          expect(r.journeys.up + r.journeys.same + r.journeys.down + r.journeys.early).toBe(LIVES);
+          // 20세 넘어 마친 판과 20세 전에 끝난 판의 합이 판 수다 (엔딩 방향 세 가지의 하한 점검은 결정 후속 256으로 걷었다)
+          expect(r.endings.adult + r.endings.early, '엔딩 종류 합').toBe(LIVES);
+          expect(r.endings.adult, '20세 넘어 마친 판이 대부분이다').toBeGreaterThan(LIVES * 0.5);
           // 서로 다른 인물이 나온다 (같은 인물만 반복하지 않는다)
           expect(r.distinctNames).toBeGreaterThan(100);
           // 시간·카드 수 판정은 여기서 하지 않는다 (M8, 마스터 결정 LD-12 — SPEC-001의 「판당 20~25개 · 1배속 수동 최대 30분」은 기준의 교체로 모드별 구간이 됐다): 이 칸은 시드 짝홀로 두 모드를 섞어 돌려 한 모드의 구간으로 판정할 수 없다.
@@ -499,7 +452,7 @@ describe('1000판 전체 파이프라인 (SPEC-001 M6): 대표 세대 셋(산업
     expect(all.reduce((a, r) => a + r.lives, 0)).toBe(6000);
     expect(all.reduce((a, r) => a + r.problemCount, 0)).toBe(0);
     expect(all.reduce((a, r) => a + r.exceptions, 0)).toBe(0);
-    expect(all.reduce((a, r) => a + r.journeys.early, 0)).toBeGreaterThan(0); // 스무 살 전 사망 문장 경로도 실제로 점검했다
+    expect(all.reduce((a, r) => a + r.endings.early, 0)).toBeGreaterThan(0); // 스무 살 전 사망 문장 경로도 실제로 점검했다
     // 이름: 세 세대 모두 다양한 이름이 나왔다
     expect(all.reduce((a, r) => a + r.checks.names, 0)).toBe(12000);
   }, 240_000);

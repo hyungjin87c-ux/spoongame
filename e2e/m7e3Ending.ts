@@ -3,8 +3,8 @@ import type { GameState } from '../src/core/types';
 import { KNOWN_SEED, lifeState, oracleAuto, oracleLife } from './helpers';
 
 /**
- * 엔딩 새 디자인(SPEC-003 M7e-3)의 e2e 공통 상태·오라클·좌표 측정. e2e/m7e3-ending.spec.ts(형태·포커스·증거 화면)와 e2e/m7e3-ending-colors.spec.ts(색)가 함께 쓴다.
- * 오라클은 개발 서버의 실제 모듈(core/ending.ts·data/endingText.ts)을 브라우저에서 불러 같은 코드로 계산한다.
+ * 엔딩 새 디자인(SPEC-003 M7e-3)의 e2e 공통 상태. e2e/m7e3-ending.spec.ts(형태·포커스·증거 화면)가 쓴다.
+ * 2026-11-13(결정 후속 256): 출발선 막대의 오라클(`barOracle`)·좌표 측정(`geometry`)과 색 시험(m7e3-ending-colors.spec.ts)은 막대 삭제와 함께 걷었다. 상태 만들기만 남았다.
  */
 
 export type Wealth = 1 | 2 | 3 | 4 | 5;
@@ -50,82 +50,4 @@ export async function stateOf(page: Page, kind: Kind, base?: GameState): Promise
   if (kind === 'ahead') return withFinal(ended, 1, 150000);
   if (kind === 'behind') return withFinal(ended, 4, -3000);
   return withFinal(ended, 2, 0);
-}
-
-export interface BarOracle {
-  kind: 'early' | 'compared';
-  wealth: number;
-  low: number;
-  high: number;
-  bandLabel: string;
-  endLabel: string | null;
-  score: number | null;
-  movement: 'up' | 'same' | 'down' | null;
-  movementText: string | null;
-  ariaLabel: string;
-  journeyText: string;
-}
-
-/** core·data가 계산한 값 */
-export async function barOracle(page: Page, state: GameState): Promise<BarOracle> {
-  if (page.url() === 'about:blank') await page.goto('/'); // 스무 살 전 상태는 앱을 열지 않고 만들어진다 — 모듈을 불러오려면 앱 페이지가 열려 있어야 한다
-  return page.evaluate<BarOracle>(`(async () => {
-    const core = await import('/src/core/index.ts');
-    await (await import('/src/data/gameData.ts')).loadGameData(); // MG8: 지연 로드 덩어리를 먼저 불러온다
-    const text = await import('/src/data/endingText.ts');
-    const birth = await import('/src/data/birthText.ts');
-    const state = ${JSON.stringify(state)};
-    const j = core.reviewEnding(state).journey;
-    const compared = j.kind === 'compared';
-    return {
-      kind: j.kind,
-      wealth: state.character.parentWealth,
-      low: j.start.low,
-      high: j.start.high,
-      bandLabel: text.bandLabel(j.start),
-      endLabel: compared ? birth.standingLabel(j.end) : null,
-      score: compared ? core.standingScore(j.end) : null,
-      movement: compared ? j.movement : null,
-      movementText: compared ? text.MOVEMENT_TEXT[j.movement] : null,
-      ariaLabel: text.journeyBarLabel(j),
-      journeyText: text.journeyText(j),
-    };
-  })()`);
-}
-
-export interface Box {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-  width: number;
-  height: number;
-}
-export interface Geometry {
-  bar: Box;
-  track: Box;
-  band: Box;
-  mid: Box;
-  end: Box | null;
-  card: Box;
-  vw: number;
-}
-
-export async function geometry(page: Page): Promise<Geometry> {
-  return page.evaluate(() => {
-    const box = (el: Element | null): Box | null => {
-      if (el === null) return null;
-      const b = el.getBoundingClientRect();
-      return { left: b.left, right: b.right, top: b.top, bottom: b.bottom, width: b.width, height: b.height };
-    };
-    return {
-      bar: box(document.querySelector('[data-testid="ending-bar"]'))!,
-      track: box(document.querySelector('.journey__track'))!,
-      band: box(document.querySelector('.journey__band'))!,
-      mid: box(document.querySelector('.journey__mid'))!,
-      end: box(document.querySelector('[data-testid="ending-bar-end"]')),
-      card: box(document.querySelector('[data-testid="ending-journey-section"]'))!,
-      vw: document.documentElement.clientWidth,
-    };
-  });
 }

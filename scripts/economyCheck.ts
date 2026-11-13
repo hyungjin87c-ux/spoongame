@@ -1,5 +1,5 @@
 import { R1_PRESENT, type ProfileId } from '../src/core';
-import { BANDS, CONDITION_TOLERANCE, ECONOMY_PROFILES, KNOWN_GAPS, KNOWN_GUARD_GAPS, autoGuardsOf, deathNetMedians, judgeConditions, measureEconomy, movementShares, statsOfBand, type EconomyReport } from './economyCheckLib';
+import { BANDS, CONDITION_TOLERANCE, ECONOMY_PROFILES, KNOWN_GAPS, KNOWN_GUARD_GAPS, autoGuardsOf, deathNetMedians, judgeConditions, measureEconomy, statsOfBand, type EconomyReport } from './economyCheckLib';
 
 /**
  * 경제 모델 밸런스 점검 (SPEC-003 EC7, docs/data/economy-model.md 9절).  실행: npm run check:economy
@@ -69,22 +69,20 @@ for (const r of random.targets) {
   else if (!r.ok) fail(`${t.label} ${f1(r.value)} (허용 ${f1(r.lo)} ~ ${f1(r.hi)})`);
 }
 
-// 사망 시점 순자산(엔딩이 읽는 값) 분포: 재력 단계별 중앙값·음수 비율과 엔딩 방향 (15-4절)
+// 사망 시점 순자산(엔딩이 읽는 값) 분포: 재력 단계별 중앙값·음수 비율 (15-4절; 엔딩 방향 열은 결정 후속 256으로 삭제)
 for (const era of ECONOMY_PROFILES) {
   const lives = random.lives[era].filter((l) => l.reached);
   console.log(`\n### ${era} — 사망 시점 순자산 (스무 살 넘어 마친 ${lives.length}판, 만 원)`);
-  console.log('| 재력 | 판 수 | 중앙값 | p10 | p90 | 순자산<0(%) | 앞섬(%) | 비슷함(%) | 뒤쪽(%) |');
-  console.log('|---|---|---|---|---|---|---|---|---|');
+  console.log('| 재력 | 판 수 | 중앙값 | p10 | p90 | 순자산<0(%) |');
+  console.log('|---|---|---|---|---|---|');
   const med = deathNetMedians(random.lives[era]);
   for (const w of [1, 2, 3, 4, 5] as const) {
     const l = lives.filter((x) => x.parentWealth === w);
     const nets = l.map((x) => x.net).sort((p, q) => p - q);
     const at = (p: number): number => (nets.length === 0 ? NaN : nets[Math.round((p / 100) * (nets.length - 1))]);
-    const m = movementShares(l);
-    console.log(`| ${w} | ${l.length} | ${f0(med[w - 1])} | ${f0(at(10))} | ${f0(at(90))} | ${f1((l.filter((x) => x.net < 0).length * 100) / l.length)} | ${f1(m.up)} | ${f1(m.same)} | ${f1(m.down)} |`);
+    console.log(`| ${w} | ${l.length} | ${f0(med[w - 1])} | ${f0(at(10))} | ${f0(at(90))} | ${f1((l.filter((x) => x.net < 0).length * 100) / l.length)} |`);
   }
-  const all = movementShares(lives);
-  console.log(`| 전체 | ${lives.length} | ${f0(lives.map((x) => x.net).sort((p, q) => p - q)[lives.length >> 1])} | | | ${f1((lives.filter((x) => x.net < 0).length * 100) / lives.length)} | ${f1(all.up)} | ${f1(all.same)} | ${f1(all.down)} |`);
+  console.log(`| 전체 | ${lives.length} | ${f0(lives.map((x) => x.net).sort((p, q) => p - q)[lives.length >> 1])} | | | ${f1((lives.filter((x) => x.net < 0).length * 100) / lives.length)} |`);
 }
 
 console.log('\n## 설계 가드');

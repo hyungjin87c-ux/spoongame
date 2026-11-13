@@ -4,24 +4,17 @@ import {
   PARENT_WEALTHS,
   R1_PRESENT,
   bandFromRange,
-  finalWealthStanding,
   splitSentences,
-  standingOf,
-  startBandOf,
   toneOf,
-  wealthMixtureOfProfile,
   type ProfileId,
-  type Standing,
-  type WealthJourney,
 } from '../src/core';
 import { PARENTING_STYLES } from '../src/core/types';
 import { parentingDocText } from '../src/data/birthReportText';
-import { FINAL_NET_TEXT, JOURNEY_NOTE, MOVEMENT_TEXT, bandLabel, choiceCountText, deathLineText, journeyBarLabel, journeyText } from '../src/data/endingText';
+import { FINAL_NET_TEXT, bandLabel, choiceCountText, deathLineText } from '../src/data/endingText';
 import { INHERIT_NOTE_TEXT, STAGE_ENTRY_TEXT } from '../src/data/lifeTable';
 import { deathCauseCandidates, deathEntryText } from '../src/data/lifeText';
 import { DASH_TEXT, statusHelpText } from '../src/data/dashText';
 import { IMPACT_HINT } from '../src/data/impactText';
-import { standingLabel } from '../src/data/birthText';
 import endingTextSrc from '../src/data/endingText.ts?raw';
 import lifeTextSrc from '../src/data/lifeText.ts?raw';
 import lifeTableSrc from '../src/data/lifeTable.ts?raw';
@@ -59,13 +52,6 @@ function stripComments(src: string): string {
 const HAERA_IN_STRING = /['"`][^'"`\n]*[가-힣](?<!니)다\.(?=\s|['"`]|\$\{|$)[^'"`\n]*['"`]/;
 
 describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서술 문장은 문장마다 합쇼체다', () => {
-  const STANDINGS: Standing[] = [
-    { kind: 'top', percent: 23, within: false },
-    { kind: 'top', percent: 1, within: true },
-    { kind: 'bottom', percent: 38, within: false },
-    { kind: 'bottom', percent: 1, within: true },
-    { kind: 'middle' },
-  ];
   const sentencesOfSystem = (): Array<{ where: string; text: string }> => {
     const out: Array<{ where: string; text: string }> = [];
     const add = (where: string, text: string) => out.push({ where, text });
@@ -75,20 +61,8 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
       add(`deathEntryText(${cause})`, deathEntryText(cause));
     }
     for (const n of [0, 1, 27]) add(`choiceCountText(${n})`, choiceCountText(n));
-    // 출발선 문장: 일곱 세대와 시험 전용 R1 × 재력 5단계 × 도착 자리 갈래, 스무 살 전
+    // (출발선 대비 문장·방향 문장·막대 이름은 엔딩 「출발선 대비」 삭제와 함께 걷었다 — 결정 후속 256)
     const PROFILES: readonly ProfileId[] = [...GENERATION_IDS, R1_PRESENT];
-    for (const era of PROFILES) for (const wealth of PARENT_WEALTHS) {
-      const start = startBandOf(wealthMixtureOfProfile(era), wealth);
-      add(`journeyText(early·${era}·${wealth})`, journeyText({ kind: 'early', start }));
-      for (const end of STANDINGS) {
-        const j: WealthJourney = { kind: 'compared', start, end, movement: 'same' };
-        add(`journeyText(${era}·${wealth}·${standingLabel(end)})`, journeyText(j));
-        // (막대의 aria-label — 「출발선 하위 25% 안쪽, 마지막 상위 약 48%.」 — 은 읽기용 **이름**이라 R2의 라벨 쪽이다. M7e-4부터 방향 문장은 aria-label에 없다. 예전에는 끝 문장(방향)만 MOVEMENT_TEXT로 본다)
-        expect(journeyBarLabel(j)).toBe(`출발선 ${bandLabel(start)}, 마지막 ${standingLabel(end)}.`); // M7e-4: 방향 문장은 aria-label에 없다
-      }
-    }
-    for (const [k, v] of Object.entries(MOVEMENT_TEXT)) add(`MOVEMENT_TEXT.${k}`, v);
-    add('JOURNEY_NOTE', JOURNEY_NOTE);
     add('FINAL_NET_TEXT.early', FINAL_NET_TEXT.early);
     for (const [k, v] of Object.entries(STAGE_ENTRY_TEXT)) add(`STAGE_ENTRY_TEXT.${k}`, v);
     add('INHERIT_NOTE_TEXT', INHERIT_NOTE_TEXT);
@@ -104,9 +78,9 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
     return out;
   };
 
-  it('모아 둔 문장이 공허하지 않다: 100개 이상, 사망 원인 8갈래 모두 포함', () => {
+  it('모아 둔 문장이 공허하지 않다: 60개 이상, 사망 원인 8갈래 모두 포함', () => {
     const all = sentencesOfSystem();
-    expect(all.length).toBeGreaterThan(100);
+    expect(all.length).toBeGreaterThan(60); // 출발선 대비 문장 약 250개가 빠져 100 → 60 (결정 후속 256), 현재 74개
     const causes = new Set<string>();
     for (const age of [5, 30, 59, 84]) for (const health of [10, 80]) for (const c of deathCauseCandidates(age, health)) causes.add(c);
     expect(causes.size).toBe(8);
@@ -123,7 +97,7 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
         if (t !== 'hapsyo') wrong.push(`${where}: ${i + 1}번째 문장이 ${t} — ${text}`);
       });
     }
-    expect(n, '점검한 문장 수').toBeGreaterThan(150);
+    expect(n, '점검한 문장 수').toBeGreaterThan(70); // 150 → 70 (결정 후속 256)
     expect(wrong).toEqual([]);
   });
 
@@ -139,17 +113,14 @@ describe('시스템 문구 어체 (1): 함수·상수가 실제로 만드는 서
     }
   });
 
-  it('copy.md 5-3의 새 문안과 글자까지 같다: 단계 진입·선택 수·출발선·방향', () => {
+  it('copy.md 5-3의 새 문안과 글자까지 같다: 단계 진입·선택 수·수저 구간', () => {
     // SPEC-019 r2(결정 후속 241): 한국 나이 화면에 맞춰 「넘겼습니다」
     expect(STAGE_ENTRY_TEXT.youth).toBe('스무 살을 넘겼습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.');
     expect(STAGE_ENTRY_TEXT.middle).toBe('어느덧 마흔을 넘겼습니다.');
     expect(STAGE_ENTRY_TEXT.senior).toBe('예순다섯을 넘겼습니다. 일에서 한 걸음 물러설 나이입니다.');
     expect(choiceCountText(27)).toBe('살아오며 27번의 선택을 했습니다.');
     expect(choiceCountText(0)).toBe('선택을 내려야 하는 순간이 오기 전이었습니다.');
-    const start = bandFromRange(0, 25);
-    expect(journeyText({ kind: 'early', start })).toBe('하위 25% 안쪽의 집에서 태어났습니다.');
-    expect(journeyText({ kind: 'compared', start, end: standingOf(40, 60), movement: 'up' })).toBe('하위 25% 안쪽의 집에서 태어나, 상위 약 40%의 형편으로 생을 마쳤습니다.');
-    expect(MOVEMENT_TEXT).toEqual({ up: '출발선보다 앞선 자리입니다.', same: '출발선과 비슷한 자리입니다.', down: '출발선보다 뒤쪽 자리입니다.' });
+    expect(bandLabel(bandFromRange(0, 25))).toBe('하위 25% 안쪽'); // 룰렛·출생신고·프로필의 수저 구간 글자는 그대로다
     expect(bandLabel(bandFromRange(25, 55))).toBe('하위 25% 선과 상위 45% 선 사이');
   });
 });
@@ -195,12 +166,4 @@ describe('시스템 문구 어체 (2): 문구 파일의 소스에는 해라체 �
   });
 });
 
-describe('0원·동률 규칙 (M7e-3, 마스터 결정 C: 동률 불리)', () => {
-  it('하위는 「미만」 비율이라 같은 금액으로 마친 인생을 내 아래로 세지 않는다 — 0원이 현행(≤)보다 낮은 하위 자리(또는 가운데쯤이 아닌 하위)로 읽힌다', () => {
-    for (const era of [...GENERATION_IDS, R1_PRESENT] as ProfileId[]) {
-      const zero = finalWealthStanding(era, 0);
-      // 0원은 어느 세대에서도 「앞선 위쪽」이 아니라 하위로 읽힌다(빚으로 마친 사람보다 낫지만 같은 0원끼리 위아래가 없다)
-      expect(zero.kind, `${era}: 0원`).toBe('bottom');
-    }
-  });
-});
+// (0원·동률 규칙 — 도착 자리를 분위수표 「미만」 비율로 세던 finalWealthStanding의 시험 — 은 엔딩 「출발선 대비」 삭제와 함께 걷었다, 결정 후속 256)

@@ -1,6 +1,5 @@
 import { R1_PRESENT } from '../src/core';
 import { collectLives } from './economyCheckLib';
-import { buildEraDistribution } from './finalDistributionLib';
 import { r1EventPool } from './r1EventPool';
 import type { R1Runner } from './r1SnapshotLib';
 import { measureMany, summarize } from './timeReportLib';
@@ -12,7 +11,6 @@ import { LIFE_LENGTH_MODES } from '../src/data/timingTable';
  */
 export const r1Runner: R1Runner = {
   collect: (plays, strategy) => collectLives(R1_PRESENT, plays, strategy),
-  finalDistribution: (simulated) => buildEraDistribution(R1_PRESENT, simulated),
   timeSummary: (lives) => {
     const s = summarize(R1_PRESENT, 'short30', measureMany(R1_PRESENT, lives, 'random', 'short30', r1EventPool()), LIFE_LENGTH_MODES.short30.pacing.hard);
     return JSON.parse(JSON.stringify(s)) as Record<string, unknown>;

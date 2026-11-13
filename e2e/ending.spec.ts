@@ -29,19 +29,17 @@ import {
 import { measureTextResize, setRootFontPercent, textResizeViolations } from './textResize';
 
 /**
- * 엔딩 (SPEC-001 M5): 담담한 회고(생애 연표·최종 스탯·출발선 대비)와 "다시 태어나기".
+ * 엔딩 (SPEC-001 M5): 담담한 회고(생애 연표·최종 스탯)와 "다시 태어나기". 「출발선 대비」 카드(막대·도착 자리·이동 판정)는 2026-11-13 삭제했다(결정 후속 256) — 없다는 것만 잠근다.
  * 계산은 core/ending.ts의 순수 함수가 하고, 여기서는 실제 브라우저에서 (1) 보이는 것이 core의 회고와 같은지, (2) 새로고침해도 그대로인지,
  * (3) 다시 태어나기가 새 시드의 첫 화면(마지막에 고른 세상·인생 길이가 그대로 눌려 있다)으로 가고 설정을 유지하는지, (4) 더블탭·3연타가 첫 화면을 건너뛰거나 세상·인생 길이 선택을 바꾸지 않는지(R-030 M5 몫),
  * (5) 키보드만으로 되는지, (6) 긴 연표·20세 전 사망이 360px에서 읽히는지를 본다.
  */
 
 const SETTINGS = { speed: 8, autoMode: true } as const;
-/** 엔딩 출발선 문장의 구간 표현 (R-091): 하위 N% 안쪽 / 상위 N% 안쪽 / 상위 A~B% 사이 / 하위 A%와 상위 B% 사이 (끝에 "의 집에서 태어" 가 이어진다) */
-const BAND_SENTENCE = /^(하위 \d+% 안쪽|상위 \d+% 안쪽|상위 \d+~\d+% 사이|하위 \d+~\d+% 사이|하위 \d+% 선과 상위 \d+% 선 사이)의 집에서 태어(났|나, )/;
 /** 등급명(흙/동/은/금/다이아 수저)·느낌표·이모지 */
 const FORBIDDEN = /(흙|동|은|금|다이아)\s*수저|다이아|[!！]|\p{Extended_Pictographic}/u;
 
-/** 화면 글에서 수저 칩(.grade — 출발선 범례의 이름표 한 곳, M7e-3 copy.md 5-4)의 글자를 뺀 글: 등급명 금지는 칩 밖의 문장에 대한 규칙이다 */
+/** 화면 글에서 수저 칩(.grade)의 글자를 뺀 글: 엔딩에는 수저 칩이 없지만(출발선 범례 삭제, 결정 후속 256) 같은 함수를 그대로 쓴다 */
 async function endingTextWithoutChip(page: Page): Promise<string> {
   return page.evaluate(() => {
     const clone = document.querySelector('[data-testid="ending-screen"]')!.cloneNode(true) as HTMLElement;
@@ -59,8 +57,6 @@ async function endedState(page: Page, seed = KNOWN_SEED, era: GenerationId = 'al
 }
 
 interface ReviewOracle {
-  journey: string;
-  movement: string | null;
   death: string;
   /** 연표의 선택 줄마다 (고른 길 라벨, 누가 정했나 — 본인이면 undefined, 표지 문구 — 부모 결정은 그 줄 나이에 함께 사는 부모가 주어, SPEC-011 DS1·DS2). SPEC-005 PD6 */
   picked: Array<{ choice: string; by?: 'parent' | 'child'; mark: string }>;
@@ -78,8 +74,6 @@ async function reviewOracle(page: Page, state: GameState): Promise<ReviewOracle>
     const state = ${JSON.stringify(state)};
     const r = core.reviewEnding(state);
     return {
-      journey: text.journeyText(r.journey),
-      movement: r.journey.kind === 'compared' ? text.MOVEMENT_TEXT[r.journey.movement] : null,
       death: text.deathLineText(state.death),
       picked: r.timeline.flatMap((g) => g.entries.map((h, i) => ({ h, subject: g.subjects[i] }))).filter((x) => x.h.kind === 'choice').map((x) => ({ choice: x.h.choice, by: x.h.by, mark: x.h.by === undefined ? '선택' : table.decidedByText(x.h.by, x.subject) })),
       choiceCount: r.choiceCount,
@@ -114,7 +108,7 @@ async function visualLines(page: Page, selector: string): Promise<string[][]> {
 
 // ---------- 엔딩 화면의 내용 ----------
 
-test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·출발선 대비가 보이고 core의 회고와 같다. 등급명·감탄사가 없고 가로로 넘치지 않는다', async ({ page }) => {
+test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯이 보이고 core의 회고와 같다. 출발선 대비 카드는 없다. 등급명·감탄사가 없고 가로로 넘치지 않는다', async ({ page }) => {
   await page.goto('/');
   const found = await findPendingState(page, 'alpha');
   const start = await oracleLife(page, found.seed, 'alpha');
@@ -137,14 +131,11 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   await expect(page.getByTestId('ending-death')).toHaveText(oracle.death);
   await expect(page.getByTestId('ending-choices')).toContainText(`${oracle.choiceCount}번의 선택`);
 
-  // 출발선 대비: 같은 세상 안의 자리 문장 + 방향 + 설명
-  await expect(page.getByTestId('ending-journey')).toHaveText(oracle.journey);
-  expect(oracle.journey).toMatch(/의 집에서 태어나, .+의 형편으로 생을 마쳤습니다\.$/);
-  expect(oracle.journey, '출발선은 재력 단계의 구간 표현 (R-091)').toMatch(BAND_SENTENCE);
-  await expect(page.getByTestId('ending-movement')).toHaveText(oracle.movement!);
-  await expect(page.getByTestId('ending-note')).toContainText('같은 세대 안의 자리로 견주었습니다');
-  for (const m of oracle.journey.matchAll(/(\d+)%/g)) expect(Number(m[1])).toBeLessThanOrEqual(50);
-  expect(oracle.journey).not.toMatch(/약 (0|100)%/);
+  // 출발선 대비 카드는 없다 (결정 후속 256): 막대·범례·도착 자리 문장·이동 판정·안내 줄
+  for (const id of ['ending-journey-section', 'ending-journey', 'ending-bar', 'ending-legend', 'ending-movement', 'ending-note']) await expect(page.getByTestId(id), id).toHaveCount(0);
+  await expect(page.getByTestId('ending-screen')).not.toContainText('출발선');
+  // 최종 순자산 줄은 20세 넘어 마친 판에 금액이 있다
+  await expect(page.getByTestId('final-net-value')).toBeVisible();
 
   // 최종 스탯: 마지막 값. 처음 값은 학력·행복·관계에만 (재산 스탯은 없어졌고 최종 순자산 줄은 M5 2b에서 화면에 더해진다)
   for (const key of ['education', 'health', 'happiness', 'relationships'] as const) await expect(page.getByTestId(`final-${key}`)).toHaveText(String(save.stats[key]));
@@ -170,16 +161,15 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯·�
   await expect(page.getByTestId('timeline-entry').first()).toContainText('로 태어났습니다');
   await expect(page.getByTestId('timeline-entry').last()).toContainText('세상을 떠났습니다');
 
-  // 위에서 아래로: 출발선 대비 → 최종 스탯 → 연표 → 다시 태어나기
-  const tops = await page.evaluate(() => ['ending-journey-section', 'ending-stats', 'ending-timeline', 'rebirth'].map((id) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect().top + window.scrollY));
+  // 위에서 아래로: 최종 스탯 → 연표 → 다시 태어나기
+  const tops = await page.evaluate(() => ['ending-stats', 'ending-timeline', 'rebirth'].map((id) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect().top + window.scrollY));
   expect(tops).toEqual([...tops].sort((a, b) => a - b));
 
   // 금지된 것: 등급명·느낌표·이모지, 링크·이미지·공유, 가로 넘침. 버튼은 "다시 태어나기"와 머리의 로고(첫 화면으로, SPEC-016 H1) 둘뿐
   const text = await endingTextWithoutChip(page);
   expect(text).not.toMatch(FORBIDDEN);
-  // 수저 칩은 출발선 범례(dd) 한 곳에만 있다 — 문장·막대·다른 카드에는 등급명이 없다
-  await expect(page.locator('.ending .grade')).toHaveCount(1);
-  await expect(page.getByTestId('ending-legend').locator('.grade')).toHaveCount(1);
+  // 수저 칩도 없다 — 출발선 범례가 삭제돼 엔딩에는 등급명을 말하는 곳이 없다
+  await expect(page.locator('.ending .grade')).toHaveCount(0);
   expect(text).not.toMatch(/공유|SNS|복사|이미지로 저장/);
   // M4: 공통 헤더의 로고·얼굴 그림·아이콘이 svg라 svg는 세지 않는다. 링크·이미지·캔버스·소리·영상은 여전히 0.
   expect(await page.locator('a, img, canvas, audio, video').count()).toBe(0);
@@ -199,13 +189,13 @@ test('엔딩 화면은 새로고침해도 그대로다: 같은 회고, 저장 �
   const ended = await endedState(page);
   await injectSave(page, ended, '/?__timescale=2000', SETTINGS);
   await expect(page.getByTestId('ending-screen')).toBeVisible();
-  const journey = await page.getByTestId('ending-journey').innerText();
+  const death = await page.getByTestId('ending-death').innerText();
   const before = (await readSave(page)).data;
   expect(before).toEqual(ended);
   for (let i = 0; i < 3; i++) {
     await page.reload();
     await expect(page.getByTestId('ending-screen')).toBeVisible();
-    await expect(page.getByTestId('ending-journey')).toHaveText(journey);
+    await expect(page.getByTestId('ending-death')).toHaveText(death);
     await expect(page.getByTestId('timeline-entry')).toHaveCount(ended.history.length);
     await expect(page.getByTestId('error-screen')).toHaveCount(0);
   }
@@ -217,7 +207,7 @@ test('엔딩 화면은 새로고침해도 그대로다: 같은 회고, 저장 �
   await expect(page.getByTestId('life-screen')).toHaveCount(0);
 });
 
-test('스무 살 전에 끝난 인생: 도착 자리를 말하지 않고 집안 형편만 말한다 (재산이 아직 집안 형편이다)', async ({ page }) => {
+test('스무 살 전에 끝난 인생: 최종 순자산 줄에 금액 없이 안내 한 줄뿐이고 출발선 문장도 없다 (재산이 아직 집안 형편이다)', async ({ page }) => {
   const base = lifeState(KNOWN_SEED);
   const early: GameState = {
     ...base,
@@ -235,13 +225,11 @@ test('스무 살 전에 끝난 인생: 도착 자리를 말하지 않고 집안 
   await injectSave(page, early, '/');
   await expect(page.getByTestId('ending-screen')).toBeVisible();
   await expect(page.getByTestId('ending-death')).toHaveText('10세에 세상을 떠났습니다. 원인은 갑작스러운 병이었습니다.');
-  // R-083: 출발선만 담담하게 — 게임 용어("내가 가진 것")도, 윗줄이 이미 말한 "생이 끝났다"도 되풀이하지 않는다
-  await expect(page.getByTestId('ending-journey')).toHaveText(/^.+의 집에서 태어났습니다\.$/);
-  await expect(page.getByTestId('ending-journey')).toHaveText(BAND_SENTENCE); // R-091: 20세 전 사망 줄도 구간 표현
-  await expect(page.getByTestId('ending-journey')).toHaveText((await reviewOracle(page, early)).journey);
-  await expect(page.getByTestId('ending-journey')).not.toContainText(/내가 가진 것|생이 끝|견줄|스무 살/);
-  await expect(page.getByTestId('ending-journey')).not.toContainText('형편으로 생을 마쳤다');
-  await expect(page.getByTestId('ending-movement')).toHaveCount(0);
+  // 출발선 대비 카드가 없다 (결정 후속 256) — 20세 전에도 「…의 집에서 태어났습니다」 문장은 없다
+  for (const id of ['ending-journey-section', 'ending-journey', 'ending-movement', 'ending-bar']) await expect(page.getByTestId(id), id).toHaveCount(0);
+  await expect(page.getByTestId('ending-screen')).not.toContainText('의 집에서 태어났습니다');
+  await expect(page.getByTestId('final-net-none')).toHaveText('독립하기 전이라 자산을 세지 않았습니다.');
+  await expect(page.getByTestId('final-net-value')).toHaveCount(0);
   // 재산 막대는 M5 2a에서 임시로 빠졌다(재산 스탯 폐지) — 「재산」이든 「집안 형편」이든 막대가 없다. 2b가 20세 전은 「집안 살림」 줄로 되살린다.
   await expect(page.getByTestId('ending-stats')).not.toContainText(/재산|집안 형편/);
   await expect(page.getByTestId('final-health')).toBeVisible();
@@ -299,88 +287,37 @@ test('엔딩의 제목·문장은 단어 중간에서 끊기지 않고 한 글�
   await page.setViewportSize({ width: 360, height: 740 });
   await injectSave(page, ended, '/');
   await expect(page.getByTestId('ending-screen')).toBeVisible();
-  const groups = await visualLines(page, 'h1, h2, .ending__head p, [data-testid="ending-journey"], [data-testid="ending-movement"], [data-testid="ending-note"]');
+  const groups = await visualLines(page, 'h1, h2, .ending__head p, [data-testid="ending-death"], [data-testid="ending-choices"]');
   expect(groups.length).toBeGreaterThan(6);
   for (const lines of groups) {
     if (lines.length < 2) continue;
     for (const line of lines) expect(line.length, `한 글자 줄: ${lines.join(' / ')}`).toBeGreaterThan(1);
   }
-  const wordBreak = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="ending-journey"]')!).wordBreak);
+  const wordBreak = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="ending-death"]')!).wordBreak);
   expect(wordBreak).toBe('keep-all');
-  // 순위 표현("상위 약 23%의")이 "%"와 조사 사이에서 쪼개져 "의"가 다음 줄 맨 앞에 오지 않는다 (ui/KeepStanding)
-  const journey = (await visualLines(page, '[data-testid="ending-journey"]'))[0];
-  for (const line of journey) expect(line, `줄머리의 조사: ${journey.join(' / ')}`).not.toMatch(/^[의%]/);
-  // 줄바꿈 없는 덩어리(.nowrap) 수는 문장이 말하는 순위 표현의 조각 수다 — 같은 규칙(KeepStanding)에서 구한다. 넓은 구간 표현("상위 3~17% 사이의")은 숫자 구간과 뒤쪽 낱말 두 조각이다(M7a r2: 320px·글자 200% 넘침 수정)
-  const units = await page.evaluate<number>(`(async () => {
-    const { splitStanding, standingPieces } = await import('/src/ui/KeepStanding.tsx');
-    return splitStanding(document.querySelector('[data-testid="ending-journey"]').textContent).filter((_, i) => i % 2 === 1).flatMap(standingPieces).length;
-  })()`);
-  expect(units).toBeGreaterThanOrEqual(2);
-  expect(await page.locator('[data-testid="ending-journey"] .nowrap').count()).toBe(units);
 });
 
-test('출발선 구간 문장(맨 아래·가운데·한쪽 절반·맨 위 단계 × 360px·320px): 숫자 중간에서 끊기지 않고, 조사가 줄머리에 오지 않으며, 덩어리가 화면 밖으로 나가지 않는다 (R-091)', async ({ page }) => {
-  const ended = await endedState(page);
-  const labels: string[] = [];
-  for (const [wealth, final] of [
-    [1, 12000],
-    [2, 0],
-    [3, -3000],
-    [4, 80000],
-    [5, 3000],
-  ] as const) {
-    // 최종 순자산(만 원) — 음수이면 불변식(debt ≥ −net)을 지키도록 부채를 맞춘다
-    const assets = { ...ended.assets!, net: final, debt: Math.max(ended.assets!.debt, -final) };
-    const state: GameState = { ...ended, character: { ...ended.character!, parentWealth: wealth }, assets };
-    const oracle = await reviewOracle(page, state);
-    expect(oracle.journey).toMatch(BAND_SENTENCE);
-    labels.push(`${wealth}단계: ${oracle.journey}`);
-    for (const width of [360, 320]) {
-      await page.setViewportSize({ width, height: 740 });
-      await injectSave(page, state, '/');
-      await expect(page.getByTestId('ending-screen')).toBeVisible();
-      await expect(page.getByTestId('ending-journey')).toHaveText(oracle.journey);
-      await expect(page.getByTestId('ending-movement')).toHaveText(oracle.movement!);
-      expect(await noHorizontalOverflow(page), `${wealth}단계 ${width}px 가로 넘침`).toBe(true);
-      const journey = (await visualLines(page, '[data-testid="ending-journey"]'))[0];
-      for (const line of journey) {
-        expect(line.length, `한 글자 줄 ${width}px: ${journey.join(' / ')}`).toBeGreaterThan(1);
-        expect(line, `줄머리의 조사 ${width}px: ${journey.join(' / ')}`).not.toMatch(/^[의%와]/);
-      }
-      // 한 덩어리(.nowrap)는 줄 하나 안에 온전히 들어간다: 자기 부모 폭을 넘지 않는다
-      const overflowing = await page.evaluate(() => {
-        const box = document.querySelector<HTMLElement>('[data-testid="ending-journey"]')!.getBoundingClientRect();
-        return [...document.querySelectorAll<HTMLElement>('[data-testid="ending-journey"] .nowrap')].filter((el) => el.getBoundingClientRect().right > box.right + 1).map((el) => el.textContent);
-      });
-      expect(overflowing, `${wealth}단계 ${width}px`).toEqual([]);
-    }
-  }
-  expect(new Set(labels.map((l) => l.split('의 집에서')[0])).size, labels.join(' / ')).toBe(5); // 다섯 단계의 출발선 구간 표현이 모두 다르다
-});
-
-// M7a r2 (CM11·QM3-1): 출발선 문장(#ending-journey)의 구간 표현 「상위 3~17% 사이의」가 320px·글자 200%에서 문장 상자(287px)보다 넓어(318px) 삐져나가던 결함의 단언.
-// 수정 전에는 「글자 잘림 — P#ending-journey: 글자 318 > 상자 287」이었다(qa/screenshots/003/dev-M7a-r2-ending-journey-before.png). 이제 숫자 구간과 뒤쪽 낱말 사이에서 줄이 바뀐다(ui/KeepStanding#standingPieces).
-const JOURNEY_SIZES = [
+// M7a r2 (CM11·QM3-1)의 글자 크기 시험: 원래는 출발선 문장(#ending-journey)의 구간 표현이 320px·글자 200%에서 삐져나가던 결함의 단언이었다. 그 카드는 삭제됐고(결정 후속 256),
+// 엔딩 나머지가 320×568·360×740 × 글자 100·150·200%에서 상자를 넘지 않는지만 남긴다.
+const TEXT_SIZES = [
   { width: 320, height: 568 },
   { width: 360, height: 740 },
 ] as const;
-const JOURNEY_PERCENTS = [100, 150, 200] as const;
+const TEXT_PERCENTS = [100, 150, 200] as const;
 
-test('출발선 구간 문장(1~5단계) × 320×568·360×740 × 글자 100·150·200%: 상자를 넘는 글자 0·가로 넘침 0·덩어리가 상자 밖으로 나가지 않고 조사가 줄머리에 오지 않는다 (CM11·QM3-1, M7a r2)', async ({ page }, testInfo) => {
+test('엔딩 × 320×568·360×740 × 글자 100·150·200%: 상자를 넘는 글자 0·가로 넘침 0 (CM11·QM3-1, M7a r2 — 출발선 문장 부분은 결정 후속 256으로 걷었다)', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-360', '뷰포트를 직접 지정하므로 mobile-360에서만 실행');
   test.setTimeout(240_000);
   const ended = await endedState(page);
   for (const [wealth, final] of [
     [1, 12000],
-    [2, 0],
     [3, -3000],
-    [4, 80000],
     [5, 3000],
   ] as const) {
     const assets = { ...ended.assets!, net: final, debt: Math.max(ended.assets!.debt, -final) };
     const state: GameState = { ...ended, character: { ...ended.character!, parentWealth: wealth }, assets };
-    for (const size of JOURNEY_SIZES) {
-      for (const percent of JOURNEY_PERCENTS) {
+    for (const size of TEXT_SIZES) {
+      for (const percent of TEXT_PERCENTS) {
         await page.setViewportSize(size);
         await injectSave(page, state, '/');
         await expect(page.getByTestId('ending-screen')).toBeVisible();
@@ -389,20 +326,6 @@ test('출발선 구간 문장(1~5단계) × 320×568·360×740 × 글자 100·15
         const violations = textResizeViolations(await measureTextResize(page), label);
         expect(violations, label).toEqual([]);
         expect(await noHorizontalOverflow(page), `${label} 가로 넘침`).toBe(true);
-        const journey = (await visualLines(page, '[data-testid="ending-journey"]'))[0];
-        for (const line of journey) {
-          expect(line.length, `한 글자 줄 ${label}: ${journey.join(' / ')}`).toBeGreaterThan(1);
-          expect(line, `줄머리의 조사 ${label}: ${journey.join(' / ')}`).not.toMatch(/^[의%와]/);
-        }
-        const overflowing = await page.evaluate(() => {
-          const box = document.querySelector<HTMLElement>('[data-testid="ending-journey"]')!.getBoundingClientRect();
-          return [...document.querySelectorAll<HTMLElement>('[data-testid="ending-journey"] .nowrap')].filter((el) => el.getBoundingClientRect().right > box.right + 1).map((el) => el.textContent);
-        });
-        expect(overflowing, label).toEqual([]);
-        if (wealth === 4 && size.width === 320 && percent === 200) {
-          await page.getByTestId('ending-journey-section').scrollIntoViewIfNeeded();
-          await page.getByTestId('ending-journey-section').screenshot({ path: 'qa/screenshots/003/dev-M7a-r2-ending-journey-after.png' });
-        }
       }
     }
   }

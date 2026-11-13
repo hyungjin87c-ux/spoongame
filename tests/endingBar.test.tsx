@@ -1,19 +1,18 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { PARENT_WEALTHS, finalWealthStanding, playToEnd, reviewEnding, standingScore, startBandOf, wealthMixtureOfProfile, type EndingGame, type GenerationId, type ProfileId } from '../src/core';
+import { PARENT_WEALTHS, playToEnd, reviewEnding, startBandOf, wealthMixtureOfProfile, type EndingGame, type GenerationId, type ProfileId } from '../src/core';
 import { genLine } from '../src/data/birthReportText';
 import { profileLabel } from '../src/core/birthProfile';
-import { standingLabel } from '../src/data/birthText';
-import { ENDING_HEAD_LABEL, JOURNEY_BAR_LEGEND, MOVEMENT_TEXT, bandLabel, endingSpanText, journeyBarLabel } from '../src/data/endingText';
+import { ENDING_HEAD_LABEL, endingSpanText } from '../src/data/endingText';
 import { EndingScreen } from '../src/screens/EndingScreen';
-import { EXPECTED_START_BANDS } from '../scripts/pipelineLib';
+import { EXPECTED_START_BANDS, roundTrip } from '../scripts/pipelineLib';
 import { SIM_PROFILES } from '../scripts/simulateLib';
 import { chooserFor, startLife } from '../scripts/simulateLib';
 
 /**
- * 엔딩 새 디자인 (SPEC-003 M7e-3, REV-003-M4-1 R-327, docs/design/copy.md 5-4): 머리 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」, 출발선 막대(구간 띠 + 50% 눈금 + 마지막 마름모),
- * 범례(출발선 = 수저 칩 + 「({구간})」, 마지막 = 자리), 읽기용 이름(role="img" aria-label = 함수 조합). 막대의 숫자는 모두 구현 함수(startBandOf·standingScore)에서 오고, 이 시험은 손으로 적은 표
- * (scripts/pipelineLib.ts#EXPECTED_START_BANDS — 재력 가중치 누적을 따로 계산한 값)와 대조한다. 색·넘침·글자 크기·강제 색상은 e2e/m7e3-ending.spec.ts가 실제 브라우저로 본다.
+ * 엔딩 화면 시험 (SPEC-003 M7e-3 머리 + 결정 후속 256 삭제 잠금). 머리 「{세상} · 생애 기록」 + 「{출생 연월} ~ {사망 연도}년 · {나이}세」는 그대로이고,
+ * 출발선 막대·범례·도착 자리·이동 판정(R-327)은 2026-11-13에 삭제했다 — 이 파일은 그것이 **없다**는 것과, 남긴 것(최종 순자산 줄·수저 구간 함수·저장을 다시 열어도 같은 회고)을 잠근다.
+ * (파일 이름의 「Bar」는 옛 막대 시험에서 온 것이다.)
  */
 
 /** vitest는 CSS의 ?raw 가져오기를 빈 문자열로 돌려주므로 파일 시스템으로 읽는다(tests/contrast.test.ts와 같은 방법) */
@@ -32,30 +31,24 @@ const textOf = (html: string) => html.replace(/<\/?(?:span|strong|em)[^>]*>/g, '
 function gameWith(base: EndingGame, wealth: 1 | 2 | 3 | 4 | 5, net: number): EndingGame {
   return { ...base, character: { ...base.character, parentWealth: wealth }, assets: { ...base.assets!, net, debt: Math.max(base.assets!.debt, -net) } };
 }
-const attr = (html: string, name: string): string => new RegExp(`${name}="([^"]*)"`).exec(html)![1];
-const barOf = (html: string): string => html.slice(html.indexOf('<div class="journey__bar"'), html.indexOf('</div></div>', html.indexOf('<div class="journey__bar"')) + 12);
 
-describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으로 적은 구간표와 같다 (R-327)', () => {
+describe('엔딩에 「출발선 대비」 카드가 없다 (결정 후속 256, 2026-11-13 삭제): 막대·범례·도착 자리·이동 판정·안내 줄', () => {
   const bases = Object.fromEntries(SIM_PROFILES.map((era) => [era, endingOf(2024, era)])) as Record<ProfileId, EndingGame>;
 
-  it('세 시대 × 재력 5단계 × 도착 자리(분위수표의 5·50·95번째 칸 순자산): 띠의 --from·--to는 손으로 계산한 구간과 같고, 마름모 --at은 도착 점수(standingScore)다', () => {
+  it('세 시대 × 재력 5단계 × 20세 넘어 마친 판: 출발선 카드의 마크업·testid·문구가 하나도 없다', () => {
     let checked = 0;
     for (const era of SIM_PROFILES) {
       for (const wealth of PARENT_WEALTHS) {
         for (const net of [-3000, 0, 5000, 90000]) {
-          const g = gameWith(bases[era], wealth, net);
-          const html = render(g);
-          const bar = barOf(html);
-          const [low, high] = EXPECTED_START_BANDS[era as GenerationId][wealth - 1];
-          const band = /<span class="journey__band" style="([^"]*)"/.exec(bar)![1];
-          expect(band, `${era} ${wealth}단계`).toBe(`--from:${low}%;--to:${high}%`);
-          const review = reviewEnding(g);
-          expect(review.journey.kind).toBe('compared');
-          if (review.journey.kind !== 'compared') continue;
-          const at = /<span class="journey__end" style="--at:(\d+)%"/.exec(bar)![1];
-          expect(Number(at), `${era} ${wealth}단계 순자산 ${net}`).toBe(standingScore(finalWealthStanding(era, net)));
-          expect(Number(at)).toBeGreaterThanOrEqual(1);
-          expect(Number(at)).toBeLessThanOrEqual(99);
+          const html = render(gameWith(bases[era], wealth, net));
+          for (const id of ['ending-journey-section', 'ending-journey', 'ending-bar', 'ending-bar-end', 'ending-movement', 'ending-legend', 'ending-legend-end', 'ending-note']) {
+            expect(html, `${era} ${wealth}단계 ${id}`).not.toContain(`data-testid="${id}"`);
+          }
+          expect(html).not.toContain('journey');
+          expect(html).not.toContain('출발선보다');
+          expect(html).not.toContain('출발선과 비슷한');
+          expect(html).not.toContain('출발선에서 마지막까지');
+          expect(html).not.toContain('형편으로 생을 마쳤습니다');
           checked++;
         }
       }
@@ -63,7 +56,26 @@ describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으�
     expect(checked).toBe(3 * 5 * 4);
   });
 
-  it('구현 함수와 손으로 적은 표가 같다: startBandOf의 low·high가 모든 시대·단계에서 EXPECTED_START_BANDS와 같고, 0 ≤ low ≤ high ≤ 100이다', () => {
+  it('최종 순자산 줄: 20세 넘어 마친 판에만 금액이 있고(final-net-value), 20세 전에 끝난 판에는 금액 없이 안내 한 줄(final-net-none)뿐이다', () => {
+    for (const era of SIM_PROFILES) {
+      const base = bases[era];
+      expect(base.death.age, `${era} 기준 판은 20세 넘어 마쳤다`).toBeGreaterThanOrEqual(20);
+      const adult = render(gameWith(base, 3, 20000));
+      expect(adult).toContain('data-testid="final-net"');
+      expect(adult).toContain('data-testid="final-net-value"');
+      expect(adult).not.toContain('data-testid="final-net-none"');
+      const young: EndingGame = { ...base, age: 9, assets: null, character: { ...base.character, parentWealth: 2 }, death: { ...base.death, age: 9, cause: '사고' } };
+      const html = render(young);
+      expect(html).toContain('data-testid="final-net"');
+      expect(html).toContain('data-testid="final-net-none"');
+      expect(html).not.toContain('data-testid="final-net-value"');
+      // 20세 넘어 마쳤어도 자산이 없는 상태(이어 받은 저장 따위)면 금액을 그리지 않는다
+      const noAssets = render({ ...base, assets: null });
+      expect(noAssets).not.toContain('data-testid="final-net-value"');
+    }
+  });
+
+  it('구현 함수와 손으로 적은 표가 같다: startBandOf의 low·high가 모든 시대·단계에서 EXPECTED_START_BANDS와 같고, 0 ≤ low ≤ high ≤ 100이다 (룰렛·출생신고·프로필의 수저 구간이 쓰는 함수 — 엔딩에서는 안 쓰지만 남긴다)', () => {
     for (const era of SIM_PROFILES) {
       for (const wealth of PARENT_WEALTHS) {
         const b = startBandOf(wealthMixtureOfProfile(era), wealth);
@@ -75,59 +87,19 @@ describe('엔딩 출발선 막대: 기하는 구현 함수가 정하고, 손으�
     }
   });
 
-  it('막대는 읽기용 이름 하나를 가진다: role="img" + aria-label = 「출발선 {구간}, 마지막 {자리}.」 (함수 조합 — 방향 문장은 바로 아래 문장이 읽는다, M7e-4 관찰 7), 축 글자(하위·상위)는 aria-hidden이다', () => {
+  it('엔딩 회고(reviewEnding)는 저장하지 않고 열 때마다 계산한다: 같은 판을 저장했다 다시 열어도 같은 회고이고, 회고에 출발선 대비(journey)가 없다', () => {
     for (const era of SIM_PROFILES) {
-      const g = gameWith(bases[era], 3, 20000);
-      const html = render(g);
-      const review = reviewEnding(g);
-      expect(review.journey.kind).toBe('compared');
-      if (review.journey.kind !== 'compared') continue;
-      expect((html.match(/role="img" aria-label="출발선/g) ?? []).length, era).toBe(1);
-      const label = attr(/<div class="journey__bar"[^>]*>/.exec(html)![0], 'aria-label');
-      expect(label).toBe(journeyBarLabel(review.journey));
-      expect(label).toBe(`출발선 ${bandLabel(review.journey.start)}, 마지막 ${standingLabel(review.journey.end)}.`);
-      // 방향 문장은 aria-label에 없고(스크린리더 중복 제거) 그 아래 문장 한 곳에만 있다
-      for (const m of Object.values(MOVEMENT_TEXT)) expect(label, m).not.toContain(m);
-      expect(html).toContain(`data-testid="ending-movement">${MOVEMENT_TEXT[review.journey.movement]}</p>`);
-      expect(html).toContain('<div class="journey__axis" aria-hidden="true"><span>하위</span><span>상위</span></div>');
-      expect(html).toContain('<span class="journey__mid"></span>');
-    }
-  });
-
-  it('스무 살 전에 끝난 인생: 띠만 그리고 마름모·「마지막」 줄이 없다. 읽기용 이름은 「출발선 {구간}.」', () => {
-    for (const era of SIM_PROFILES) {
-      const base = bases[era];
-      const young: EndingGame = { ...base, age: 9, assets: null, character: { ...base.character, parentWealth: 2 }, death: { ...base.death, age: 9, cause: '사고' } };
-      const html = render(young);
-      expect(html).not.toContain('journey__end"');
-      expect(html).not.toContain('journey__key--end');
-      expect(html).not.toContain('data-testid="ending-legend-end"');
-      expect(html).toContain('journey__band');
-      const label = attr(/<div class="journey__bar"[^>]*>/.exec(html)![0], 'aria-label');
-      expect(label).toBe(`출발선 ${bandLabel(startBandOf(wealthMixtureOfProfile(era), 2))}.`);
-      expect(label).not.toContain('마지막');
+      const game = bases[era];
+      const reopened = roundTrip(game, `${era} 엔딩 저장`);
+      expect(reopened.problems, era).toEqual([]);
+      expect(reviewEnding(reopened.restored as EndingGame), era).toEqual(reviewEnding(game));
+      expect(Object.keys(reviewEnding(game)).sort(), era).toEqual(['changes', 'choiceCount', 'delegated', 'timeline']);
+      expect(JSON.stringify(game)).not.toContain('journey');
     }
   });
 });
 
-describe('엔딩 범례와 머리 (R-327)', () => {
-  const base = endingOf(2024, 'alpha');
-
-  it('범례: 출발선 = 수저 칩(이 인물의 부모 재력 단계) + 「({구간})」, 마지막 = 자리 글자. 표식 두 개는 aria-hidden이고 모양이 다르다(띠 모양 · 마름모)', () => {
-    for (const wealth of PARENT_WEALTHS) {
-      const g = gameWith(base, wealth, 8000);
-      const html = render(g);
-      const legend = /<dl class="journey__legend"[^>]*>[^]*?<\/dl>/.exec(html)![0];
-      expect(legend).toContain(`data-grade="${wealth}"`);
-      expect(textOf(/data-testid="grade-range">([^]*?)<\/dd>/.exec(legend)![1])).toBe(`(${bandLabel(startBandOf(wealthMixtureOfProfile('alpha'), wealth))})`);
-      expect(legend).toContain('<i class="journey__key journey__key--band" aria-hidden="true"></i>');
-      expect(legend).toContain('<i class="journey__key journey__key--end" aria-hidden="true"></i>');
-      expect(textOf(legend)).toContain(JOURNEY_BAR_LEGEND.start);
-      expect(textOf(legend)).toContain(JOURNEY_BAR_LEGEND.end);
-      expect(textOf(/data-testid="ending-legend-end">([^]*?)<\/dd>/.exec(legend)![1])).toBe(standingLabel(finalWealthStanding('alpha', 8000)));
-    }
-  });
-
+describe('엔딩 머리 (R-327)', () => {
   it('머리: 라벨 「{세상} · 생애 기록」(Glue)과 셋째 줄 「{출생 연월} ~ {사망 연도}년 · {나이}세」 — 예전 출생 줄은 없다', () => {
     for (const era of SIM_PROFILES) {
       const g = endingOf(7, era);
@@ -146,36 +118,16 @@ describe('엔딩 범례와 머리 (R-327)', () => {
   });
 });
 
-describe('엔딩 막대 CSS (dash.css): 시안 ds.css 블록을 글자 그대로 옮겼고 색은 토큰만 쓰며 강제 색상 다섯 줄이 있다', () => {
-  const rule = (sel: string): string => {
-    const i = dashCss.indexOf(`${sel} {`);
-    expect(i, sel).toBeGreaterThan(-1);
-    return dashCss.slice(i, dashCss.indexOf('}', i) + 1);
-  };
-
-  it('띠(left/width = --from/--to)·마름모(left = --at)·가운데 눈금·축·범례·표식 규칙이 있다', () => {
-    expect(rule('.journey__band')).toMatch(/left: var\(--from, 0%\)/);
-    expect(rule('.journey__band')).toMatch(/width: calc\(var\(--to, 0%\) - var\(--from, 0%\)\)/);
-    expect(rule('.journey__end')).toMatch(/left: var\(--at, 50%\)/);
-    expect(rule('.journey__mid')).toMatch(/left: 50%/);
-    expect(rule('.journey__track')).toMatch(/margin: 0 12px/);
-    expect(rule('.journey__legend > div')).toMatch(/flex-wrap: wrap/);
-    expect(rule('.journey__key')).toMatch(/border: 2px solid var\(--c-brand\)/);
-    expect(rule('.journey__key--end')).toMatch(/transform: rotate\(45deg\)/);
-  });
-
-  it('색 값을 직접 적지 않는다(토큰만): 막대 규칙 본문에 16진 색이 없다. 자리 글자 규칙 .final-net__standing은 없어졌다', () => {
-    const block = dashCss.slice(dashCss.indexOf('.journey {'), dashCss.indexOf('.journey__key--end'));
-    expect(block.length).toBeGreaterThan(500);
-    expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+describe('엔딩 CSS (dash.css): 출발선 막대 규칙(.journey*)이 없고, 최종 순자산 줄 규칙은 남아 있다', () => {
+  it('.journey* 규칙·강제 색상 줄이 없다', () => {
+    expect(dashCss).not.toContain('.journey');
+    expect(dashCss).not.toContain('엔딩 출발선 막대');
     expect(dashCss).not.toContain('.final-net__standing');
   });
 
-  it('강제 색상(forced-colors): 선·눈금·띠 테두리는 CanvasText, 띠 안은 Canvas, 마름모는 CanvasText 채움 + Canvas 테두리 — 다섯 줄', () => {
-    const forced = dashCss.slice(dashCss.indexOf('@media (forced-colors: active)', dashCss.indexOf('강제 색상(고대비)')));
-    expect(forced).toMatch(/\.journey__track::before \{ background: CanvasText; \}/);
-    expect(forced).toMatch(/\.journey__mid \{ border-left-color: CanvasText; \}/);
-    expect(forced).toMatch(/\.journey__band, \.journey__key \{ background: Canvas; border-color: CanvasText; \}/);
-    expect(forced).toMatch(/\.journey__end, \.journey__key--end \{ forced-color-adjust: none; background: CanvasText; border-color: Canvas; \}/);
+  it('최종 순자산 줄(.final-net)과 연표(.timeline) 규칙은 그대로다', () => {
+    expect(dashCss).toContain('.final-net {');
+    expect(dashCss).toContain('.final-net__value');
+    expect(dashCss).toContain('.timeline li {');
   });
 });

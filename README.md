@@ -36,7 +36,6 @@ npm run dev
 | `npm run e2e` | 개발 서버(5199)에 대한 Playwright e2e |
 | `npm run e2e:prod` | 빌드 후 프로덕션 번들(4199)에 대한 Playwright 스모크 |
 | `npm run check:todo` | `docs/TODO.md`의 완료 근거(파일·테스트)가 실제로 있는지 전수 대조 |
-| `npm run check:dist` | 최종 재산 분포표가 최신인지 확인 |
 | `npm run sim:1000` | 시대 3 × 전략 2 × 인생 길이 모드 2 × 1000판(12000판) 시뮬레이션 수치 보고 |
 
 Playwright를 처음 쓰면 `npx playwright install chromium`이 한 번 필요합니다.

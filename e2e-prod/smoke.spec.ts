@@ -261,9 +261,9 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(page.getByTestId('ending-screen')).toBeVisible();
   await expect(page.getByTestId('error-screen')).toHaveCount(0);
 
-  // 엔딩 회고(제품 번들): 사망 한 줄·출발선 대비(같은 세상 안의 자리)·최종 스탯·연표(선택한 순간이 빠짐없이)
+  // 엔딩 회고(제품 번들): 사망 한 줄·최종 스탯·연표(선택한 순간이 빠짐없이) — 출발선 대비 카드는 2026-11-13 삭제(결정 후속 256)
   await expect(page.getByTestId('ending-death')).toContainText(`${displayAge(saved.data.death.age)}세에 세상을 떠났습니다`); // 화면은 한국 나이(SPEC-019)
-  await expect(page.getByTestId('ending-journey')).toContainText('의 집에서 태어');
+  for (const id of ['ending-journey-section', 'ending-journey', 'ending-bar', 'ending-legend', 'ending-movement']) await expect(page.getByTestId(id), id).toHaveCount(0);
   // 이 판의 플레이 시간(M8 LM6, 완료 기준 16 스모크): 제품 번들에서 저장된 기록(play)이 엔딩에 mm:ss로 보이고(표시값 = 버킷별 초 버림 뒤 합), 8배속과 「다음 결정으로」를 쓴 판이라 짧게 잡힌다는 문장이 있다.
   // 이어하기 횟수(resumes)는 화면에 없다.
   const play = saved.data.play as { hold: number; decide: number; skips: number; resumes: number } | undefined;
@@ -276,9 +276,9 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   await expect(page.getByTestId('ending-playtime')).toContainText('이 판의 플레이 시간');
   await expect(page.getByTestId('ending-playtime-note')).toContainText('짧게 잡힙니다');
   await expect(page.getByTestId('ending-playtime-note')).toContainText('이 기기에만 저장됩니다.');
-  // 방향 문장은 스무 살(독립) 이후 사망한 판에만 있다(core/ending.ts#reviewEnding — 그 전이면 `early`). 시드가 무작위라 드물게(약 0.2%) 일찍 떠난 판이 걸린다
-  if (saved.data.death.age >= 20) await expect(page.getByTestId('ending-movement')).toBeVisible();
-  else await expect(page.getByTestId('ending-movement')).toHaveCount(0);
+  // 최종 순자산 금액은 스무 살(독립) 이후 사망한 판에만 있다(그 전이면 안내 한 줄). 시드가 무작위라 드물게(약 0.2%) 일찍 떠난 판이 걸린다
+  if (saved.data.death.age >= 20) await expect(page.getByTestId('final-net-value')).toBeVisible();
+  else await expect(page.getByTestId('final-net-none')).toBeVisible();
   // 재산 스탯은 없어졌다(M5 2a, 저장 v8) — 최종 순자산 줄은 2b에서 더해진다
   for (const key of ['education', 'health', 'happiness', 'relationships']) await expect(page.getByTestId(`final-${key}`)).toBeVisible();
   // 바뀐 기대(SPEC-015): 외모는 점수·퍼센트가 아니라 이목구비 글 두 문장
@@ -291,14 +291,14 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   // 엔딩의 「살아오며 N번의 선택」은 본인이 고른 선택 수이고, 부모님·흘러감 횟수 요약 줄은 없다
   await expect(page.getByTestId('ending-choices')).toHaveText(`살아오며 ${ownEntries.length}번의 선택을 했습니다.`);
   await expect(page.getByTestId('ending-delegated')).toHaveCount(0);
-  // M7e-3: 출발선 범례의 수저 칩(.grade — designer 결정, 막대의 이름표) 한 곳을 뺀 글에서 등급명·느낌표가 없다
+  // 등급명·느낌표가 없다 (수저 칩도 없다 — 출발선 범례 삭제, 결정 후속 256)
   const endingText = (await page.getByTestId('ending-screen').evaluate((el) => {
     const clone = el.cloneNode(true) as HTMLElement;
     clone.querySelectorAll('.grade').forEach((n) => n.remove());
     return clone.textContent ?? '';
   })).replace(/\s+/g, ' ');
   expect(endingText).not.toMatch(/(흙|동|은|금|다이아)\s*수저|다이아|!/);
-  await expect(page.locator('[data-testid="ending-legend"] .grade')).toHaveCount(1);
+  await expect(page.locator('.ending .grade')).toHaveCount(0);
 
   // 다시 태어나기: 새 시드의 새 판, 첫 화면(기본 지금 세상·약 30분), 설정(8배) 유지, 포커스는 새 화면 제목
   const settingsBefore = await page.evaluate(() => localStorage.getItem('suzeo-game:settings'));
