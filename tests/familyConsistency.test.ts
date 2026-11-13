@@ -23,7 +23,7 @@ import {
   type ProfileId,
 } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
-import { FAMILY_LINE_HEAVY } from '../src/data/familyLineText';
+import { FAMILY_LINE_HEAVY, familyLineViewText } from '../src/data/familyLineText';
 import { lifeSteps, seedsFor } from './helpers/familyLife';
 
 /**
@@ -271,7 +271,8 @@ describe('INV 전수: 7세대 × 판 × 해마다 (playToEnd)', () => {
               if (m === null || goneP === undefined || goneP.state !== 'gone' || goneP.goneAtOwnAge !== Number(m[1])) {
                 tally.goneAgeBad++;
                 bad(where, `${h.age}세 별세 줄의 나이(${m?.[1]})가 보기의 별세 나이(${goneP?.goneAtOwnAge})와 다르다 (R-634)`);
-              } else if (!dead && familyCardOf(state).gone.find((r) => r.key === whoId)?.goneText !== `${m[1]}세에 세상을 떠남`) {
+              } else if (!dead && familyCardOf(state).gone.find((r) => r.key === whoId)?.goneText !== `${/(\d+)세에 세상을 떠나셨습니다/.exec(familyLineViewText(h.eventId, h.text))![1]}세에 세상을 떠남`) {
+                // SPEC-019 r2: 저장된 줄은 게임 나이, 화면은 한국 나이 — 화면에 보이는 줄(`familyLineViewText`)과 카드의 숫자가 같아야 한다
                 tally.goneAgeBad++;
                 bad(where, `${h.age}세 별세 줄의 나이(${m[1]})가 카드의 「N세에 세상을 떠남」과 다르다 (R-634)`);
               }

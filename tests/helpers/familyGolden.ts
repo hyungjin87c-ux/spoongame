@@ -58,8 +58,16 @@ export function l0Hash(gen: ProfileId, seeds: readonly number[]): string {
   return fnv(seeds.map((s) => l0Projection(s, gen)).join('\n'));
 }
 
+/** 단계 진입 줄의 옛 문구 (SPEC-019 r2 전 — 골든이 만들어진 때의 글) */
+const LEGACY_STAGE_TEXT: Readonly<Record<string, string>> = {
+  '스무 살을 넘겼습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.': '스무 살이 되었습니다. 이제부터는 집안 형편이 아니라 내가 가진 것으로 살아갑니다.',
+  '어느덧 마흔을 넘겼습니다.': '어느덧 마흔이 되었습니다.',
+  '예순다섯을 넘겼습니다. 일에서 한 걸음 물러설 나이입니다.': '예순다섯이 되었습니다. 일에서 한 걸음 물러설 나이입니다.',
+};
+
 export function l1Projection(final: GameState): string {
-  const history = final.history.filter((h) => !(h.eventId ?? '').startsWith('fam-')).map((h) => [h.age, h.kind, h.text, h.eventId ?? '', h.choice ?? '', h.title ?? '']);
+  // 단계 진입 줄은 문구만 바뀌었다(SPEC-019 r2, 결정 후속 241 — 한국 나이 화면에 맞춰 「되었습니다」 → 「넘겼습니다」): 옛 문구로 되돌려 대조한다(진행·RNG·효과와 무관한 글자)
+  const history = final.history.filter((h) => !(h.eventId ?? '').startsWith('fam-')).map((h) => [h.age, h.kind, h.kind === 'stage' ? (LEGACY_STAGE_TEXT[h.text] ?? h.text) : h.text, h.eventId ?? '', h.choice ?? '', h.title ?? '']);
   // `younger_sibling`은 사건(옛 동생 반응 카드)이 켜던 플래그인데 FM4b부터 시스템이 상태 줄 동생에게도 더하기만 한다 — 옛 세계와 견주려고 사건을 겪은 판에서만 센다
   const flags = final.flags.filter((f) => !SYSTEM_FLAGS.has(f) && (f !== 'younger_sibling' || final.seen['infant-new-sibling'] !== undefined));
   return JSON.stringify([final.stats, final.assets, final.familyFund, flags, final.age, final.death, final.rngState, final.seen, history]);

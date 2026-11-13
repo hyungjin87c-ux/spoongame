@@ -177,7 +177,7 @@
           "act": "work",
           "label": "일하며 다닐 수 있는 대학에 지원한다",
           "result": "낮에는 일하고 해가 지면 학교로 향했습니다. 일터와 강의실을 오가는 날들이 이어졌습니다.",
-          "effects": { "stats": { "education": 3, "happiness": -1 }, "family": 450, "setFlags": ["college"] },
+          "effects": { "stats": { "education": 2, "happiness": -1 }, "family": 450, "setFlags": ["college"] },
           "requires": { "parentWealth": { "max": 1 }, "tailored": true }
         }
       ]
@@ -518,7 +518,7 @@
           "resultVariants": [
             { "when": { "apt": { "sport": ["high"] } }, "text": "수업이 끝난 교실에 남아 학교가 여는 수업을 하나 더 들었습니다. 운동장에서 뛰는 모습이 체육 선생님 눈에 띄었습니다." }
           ],
-          "effects": { "stats": { "education": 3 }, "family": -50 },
+          "effects": { "stats": { "education": 2 }, "family": -50 },
           "requires": { "parentWealth": { "max": 3 } }
         },
         {
@@ -545,7 +545,7 @@
           "act": "study",
           "label": "영어와 수학을 배우러 몇 곳을 다닌다",
           "result": "데리러 오는 차가 하루에 두 번 집 앞에 섰습니다. 저녁은 차 안에서 김밥으로 때우는 날이 많았습니다.",
-          "effects": { "stats": { "education": 5, "happiness": -3, "health": -1 }, "family": -700 },
+          "effects": { "stats": { "education": 3, "happiness": -3, "health": -1 }, "family": -700 },
           "requires": { "parentWealth": { "min": 4 } }
         },
         {
@@ -579,7 +579,7 @@
           "resultVariants": [
             { "when": { "parentWealth": { "max": 3 }, "apt": { "art": ["high"] } }, "text": "버스로 몇 정거장 떨어진 학교에 다니게 되었습니다. 미술 선생님이 방과 후에 그림을 봐 주시곤 했습니다." }
           ],
-          "effects": { "stats": { "education": 3, "relationships": 2 }, "family": -150 }
+          "effects": { "stats": { "education": 1, "relationships": 2 }, "family": -150 }
         },
         {
           "id": "vocational",
@@ -594,7 +594,7 @@
           "act": "work",
           "label": "일을 하며 다닐 수 있는 학교를 고른다",
           "result": "낮에는 일하고 저녁에는 수업을 들었습니다. 졸린 눈으로 받아 적은 공책이 한 권씩 쌓였습니다.",
-          "effects": { "stats": { "education": 1, "health": -2, "happiness": -2 }, "family": 900 },
+          "effects": { "stats": { "health": -2, "happiness": -2 }, "family": 900 },
           "requires": { "parentWealth": { "max": 2 }, "apt": { "sport": ["low", "mid"] } }
         },
         {
@@ -610,7 +610,7 @@
           "act": "study",
           "label": "시험을 치르는 고등학교를 준비한다",
           "result": "입시 반 수업을 따로 들으며 한 해를 보냈습니다. 합격자 명단을 확인하던 날 손끝이 떨렸습니다.",
-          "effects": { "stats": { "education": 7, "happiness": -3 }, "family": -900 },
+          "effects": { "stats": { "education": 4, "happiness": -3 }, "family": -900 },
           "bonuses": [{ "when": { "apt": { "study": ["high"] } }, "effects": { "stats": { "education": 2 } } }],
           "requires": { "parentWealth": { "min": 4 } }
         },
@@ -619,7 +619,7 @@
           "act": "art",
           "label": "예술 고등학교 실기를 준비한다",
           "result": "실기 시험 날까지 연습실 불을 늦게까지 켜 두었습니다. 같은 꿈을 꾸는 아이들을 그곳에서 처음 만났습니다.",
-          "effects": { "stats": { "happiness": 2, "education": 2, "relationships": 1 }, "family": -1200 },
+          "effects": { "stats": { "happiness": 2, "education": 1, "relationships": 1 }, "family": -1200 },
           "bonuses": [{ "when": { "apt": { "art": ["high"] } }, "effects": { "stats": { "happiness": 2 } } }],
           "requires": { "parentWealth": { "min": 4 } }
         }

@@ -131,8 +131,9 @@ describe('R-618: 별세·이혼 하한 1세 (완료 기준 15)', () => {
         expect(goneP.goneAtOwnAge, `${gen}/${seed}: 옮겨진 별세의 N = d + 1`).toBe(own);
         expect(goneP.goneAtMyAge, `${gen}/${seed}: 줄이 난 해 = 카드의 「내가 M세였던 해」`).toBe(1);
         const row = familyCardOf(at(2)).gone.find((r) => r.key === who);
-        expect(row?.goneText, `${gen}/${seed}`).toBe(`${own}세에 세상을 떠남`);
-        expect(row?.goneMyText, `${gen}/${seed}`).toBe('내가 1세였던 해');
+        // SPEC-019 r2: 카드 문장은 한국 나이(게임 나이 + 1) — 줄(화면 변환 `familyLineViewText`)과 같은 수다
+        expect(row?.goneText, `${gen}/${seed}`).toBe(`${own + 1}세에 세상을 떠남`);
+        expect(row?.goneMyText, `${gen}/${seed}`).toBe('내가 2세였던 해');
       }
     });
     expect(checked, '확인한 판').toBeGreaterThan(5);
@@ -155,7 +156,7 @@ describe('R-618: 별세·이혼 하한 1세 (완료 기준 15)', () => {
         expect(line?.text, `${gen}/${seed}`).toContain(`${d}세에 세상을 떠나셨습니다.`);
         const goneP = familyViewOf(at(sc.firstGone.at + 1)).people.find((p) => p.id === who)!;
         expect(goneP.goneAtOwnAge, `${gen}/${seed}`).toBe(d);
-        expect(familyCardOf(at(sc.firstGone.at + 1)).gone.find((r) => r.key === who)?.goneText, `${gen}/${seed}`).toBe(`${d}세에 세상을 떠남`);
+        expect(familyCardOf(at(sc.firstGone.at + 1)).gone.find((r) => r.key === who)?.goneText, `${gen}/${seed}`).toBe(`${d + 1}세에 세상을 떠남`); // SPEC-019 r2: 카드는 한국 나이
       }
     });
     expect(checked, '확인한 판').toBeGreaterThan(300);

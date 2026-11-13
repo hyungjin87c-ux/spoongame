@@ -214,6 +214,8 @@ export interface TickInfo {
   familyIds?: string[];
   /** 진로 카드(`pick` 사건, SPEC-018 PL4)가 열린 선택 틱이면 true — 보고 도구의 페이싱 집계(`careerCards`)가 엔진의 `choicesSoFar`와 같은 정의(사건의 `pick`)를 읽게 한다 [CX-003-007] */
   career?: true;
+  /** 큰 갈림길 강제 슬롯 카드(G1·G2, 결정 후속 241·243)가 난 틱이면 true — 덧붙는 카드라 보고 도구의 페이싱 집계(`gateCards`)가 엔진의 `choicesSoFar`처럼 빼고 센다 */
+  gate?: true;
   /** 그 해 마일스톤 슬롯에서 일어난 이벤트 id들(id 오름차순) (SPEC-003 IN3, M7a r3 — 일반 사건과 별개 줄이라 한 해 연표에 여러 줄이 남을 수 있다: 1세는 걸음마 + 첫 말 + 일반 사건 최대 3줄 이상) */
   milestoneIds?: string[];
   /**
@@ -413,7 +415,7 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   // 그래서 19세 고졸 진로 시작과 19세의 마지막 입시가 함께 남는다(3b까지는 19세 분야 카드가 그 자리를 늘 차지했다). 난수는 어느 쪽이든 한 칸이다(`pickWeighted` 한 번 = 진로 카드의 대체 한 칸)
   // 병역(결정 후속 239, 설계 4-1-2): 맞춤 판의 남자는 계획 나이에 `youth-military`를 강제 서술 슬롯으로 한 번 겪는다 — 가족 강제 사건이 있는 해는 한 해 밀린다. 복무 전에는 진로 카드가 열리지 않아 둘이 겹치지 않는다
   const military = forced === null && ctx.persona ? militaryDueOf(state, pool, age) : null;
-  // 큰 갈림길 강제 슬롯(결정 후속 241): 맞춤 판의 G1(10세~)·G2(15세)가 그 해 후보이면 일반 추첨 대신 낸다 — 진로 카드(19세~)와 나이가 겹치지 않는다
+  // 큰 갈림길 강제 슬롯(결정 후속 241·244): 맞춤 판의 G1(10~12세)·G2(15세) — 그 해 일반 추첨이 선택 카드를 뽑지 않았을 때 그 자리에 낸다(아래). 진로 카드(19세~)와 나이가 겹치지 않는다
   const gateSlot = forced === null && military === null && ctx.persona ? gateSlotOf(age, eligible) : null;
   const due = forced === null && military === null && gateSlot === null && ctx.persona ? careerCardOf(state, pool, age) : null;
   let examFirst: EventDef | null = null;
@@ -444,10 +446,6 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     // 병역 강제 슬롯: 가족 강제 사건과 같이 일반 추첨 한 번 몫의 난수를 한 칸 쓴다(맞춤 판에서만 — 없는 판의 수열 불변)
     rng.next();
     picked = military;
-  } else if (gateSlot !== null) {
-    // 큰 갈림길 강제 슬롯: 일반 추첨 한 번 몫의 난수를 한 칸 쓰고 선택지 카드로 낸다(간격·페이싱을 받지 않는다 — 진로 카드와 같다). 아래 선택지 경로가 보이는 선택지·결정자(부모)를 정한다
-    rng.next();
-    picked = gateSlot;
   } else {
     // 후보가 R-561로 줄어 비게 됐다면 원래 후보가 있던 만큼 난수를 한 칸 쓴다(칸 수 불변)
     // 선택지 칸이 그렇게 비면 그 해의 추첨 칸은 쓴 것으로 본다 — 원래 세계는 선택지를 뽑아 서술 추첨을 하지 않았으므로 서술로 넘어가지 않는다(R-560 「한 칸 규칙」, 강제 사건 칸과 같다, R-633)
@@ -465,6 +463,9 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     const drawable = (ev: EventDef): boolean => isChoiceEvent(ev) && !GATE_SLOT_EVENTS.has(ev.id);
     if (rollChoice < choiceChance && canChoice) picked = draw(eligible.filter(drawable), eligibleAll.filter(drawable), age, true);
     if (picked === null && !slot.spent && rollNarrative < freq.narrative) picked = draw(eligible.filter(isNarrative), eligibleAll.filter(isNarrative));
+    // 큰 갈림길 강제 슬롯(결정 후속 241·244): 일반 추첨은 그대로 돌리고, 그 해 추첨이 **선택 카드를 뽑지 않았을 때만**(서술 장면이거나 빈 해) 그 자리에 G1·G2를 낸다 —
+    // 다른 선택 카드(조르기·13~18세 본인 카드 등)의 칸을 빼앗지 않는다. 난수는 일반 추첨이 쓴 그대로다. 선택 카드가 뽑힌 해는 넘기고 사건 나이 범위 안의 다음 해에 다시 본다(G1 10~12세 · G2 15세)
+    if (gateSlot !== null && (picked === null || !isChoiceEvent(picked))) picked = gateSlot;
   }
 
   // 마일스톤 효과·연표 한 줄은 그 해의 일반 사건보다 먼저 적용한다(선택지가 뜨는 해에도 마일스톤 줄은 이미 남는다)
@@ -505,7 +506,11 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     // 어린 시절(0~18세)의 큰 결정은 부모님이 정하거나(`parent`) 아이의 일로 흘러간다(`child`) — 사람이 고르지 않는 카드는 pending을 만들지 않고(저장되지 않는다) 이 해 안에서 즉시 해결한다 (PD3).
     // 해결은 사람이 고른 선택과 **같은 경로**(`resolveChoiceCore`)라 효과·플래그·간격·연표·카드 수 조절이 그대로 적용된다. 본인 카드(`self`)만 지금처럼 pending에서 멈춘다.
     const who = decisionFor(picked.id, age);
-    if (who !== 'self') return resolveDelegated(pendingState, who, pool, milestoneIds, observe);
+    if (who !== 'self') {
+      const r = resolveDelegated(pendingState, who, pool, milestoneIds, observe);
+      // 큰 갈림길 강제 슬롯 카드는 덧붙는 카드라 틱에 표지를 단다(보고 도구의 페이싱 집계 — 결정 후속 243)
+      return picked === gateSlot && r.tick.kind !== 'none' ? { ...r, tick: { ...r.tick, gate: true } } : r;
+    }
     return {
       state: pendingState,
       tick: { kind: 'choice', fromAge: age, eventId: picked.id, ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
@@ -770,6 +775,8 @@ export interface TickCounts {
   delegatedExtraMs: number;
   /** 진로 카드(`pick`, SPEC-018 PL4) 줄 수 — `choice`에 이미 들어 있다. 진로 카드가 없는 판은 키가 없다(옛 집계·얼린 스냅숏과 같은 모양). 페이싱 예산에는 한 장만 센다(`pacingCards`, 결정 후속 233) */
   careerCards?: number;
+  /** 큰 갈림길 강제 슬롯 카드(G1·G2) 수 — 부모 카드라 `parent`(사망한 해는 `deathDelegated`)에 이미 들어 있다. 슬롯 카드가 없는 판은 키가 없다. 페이싱 예산에는 세지 않는다(`pacingCards`, 결정 후속 243) */
+  gateCards?: number;
 }
 
 export function emptyCounts(): TickCounts {
@@ -781,13 +788,14 @@ export function totalCards(c: TickCounts): number {
   return c.choice + c.parent + c.child + c.deathDelegated;
 }
 
-/** 페이싱 예산이 세는 카드 수 = `totalCards − max(0, 진로 카드 − 1)` (`stepYear`의 `choicesSoFar`와 같은 규칙, 결정 후속 233). 하드 상한·하드−1 판정은 이 값이다 */
+/** 페이싱 예산이 세는 카드 수 = `totalCards − max(0, 진로 카드 − 1) − 강제 슬롯 카드` (`stepYear`의 `choicesSoFar`와 같은 규칙, 결정 후속 233·243). 하드 상한·하드−1 판정은 이 값이다 */
 export function pacingCards(c: TickCounts): number {
-  return totalCards(c) - Math.max(0, (c.careerCards ?? 0) - 1);
+  return totalCards(c) - Math.max(0, (c.careerCards ?? 0) - 1) - (c.gateCards ?? 0);
 }
 
 function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): void {
   if (tick.kind === 'none') return;
+  if (tick.gate === true) counts.gateCards = (counts.gateCards ?? 0) + 1; // 엔진과 같은 정의(강제 슬롯 사건) [결정 후속 243]
   if (tick.by !== undefined) {
     // 부모님이 정한·흘러간 해: 사망한 해는 사망으로만 세고(카드를 그리지 않는다), 아니면 결과 해처럼 줄 대기를 세되 연출 대기가 읽기 필요량에 묶인 몫을 따로 더한다
     if (tick.kind === 'death') {

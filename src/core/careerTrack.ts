@@ -72,8 +72,8 @@ export function trackOpenAgeOf(flags: readonly string[] | ReadonlySet<string>): 
 }
 
 /**
- * 큰 갈림길 강제 슬롯 [결정 후속 241]: 맞춤 판에서 이 나이(게임 나이)부터 그 사건이 그 해 후보(`eligible` — 자격·나이 범위·`once`·연도·가족 줄 거름을 모두 통과)이면
- * 일반 추첨 대신 낸다. 무작위 추첨으로 더 일찍 나왔으면(`once`) 다시 나오지 않는다. 사건 나이 범위를 넘기면 그 판에는 없다.
+ * 큰 갈림길 강제 슬롯 [결정 후속 241·244]: 맞춤 판에서 이 나이(게임 나이)부터 그 사건이 그 해 후보(`eligible` — 자격·나이 범위·`once`·연도·가족 줄 거름을 모두 통과)이고
+ * 그 해 일반 추첨이 선택 카드를 뽑지 않았으면(`life.ts#stepYear`) 그 자리에 낸다. 사건 나이 범위를 넘기면 그 판에는 없다.
  */
 export const GATE_SLOTS: ReadonlyArray<{ event: string; age: number }> = [
   { event: 'school-lessons', age: M('slotLessons') },
@@ -149,7 +149,9 @@ export function militaryDueOf(state: GameState, pool: EventPool, age: number): E
   if (personaOf(state) === null || state.character?.gender !== 'male') return null;
   const plan = studyPlanOf(state);
   if (plan.served !== null || plan.serviceStart === null || age < plan.serviceStart) return null;
-  return pool.byId.get(MILITARY_EVENT) ?? null;
+  // 무작위 추첨에서 빠진(`retiredWith: persona`) 풀에서만 강제 슬롯이 대신한다 — 그렇지 않은 풀(옛 사건 파일 등)은 지금처럼 무작위로만 나와 두 번 겪는 일이 없다
+  const ev = pool.byId.get(MILITARY_EVENT);
+  return ev?.retiredWith === 'persona' ? ev : null;
 }
 
 /** 이 해에 예약된 진로 카드의 종류 (없으면 null). 가족 강제 사건과 겹치는지는 부르는 쪽이 본다 — 그 해는 한 해 밀린다 */

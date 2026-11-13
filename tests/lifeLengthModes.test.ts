@@ -88,7 +88,9 @@ describe('LM3 모드 고정: 엔진은 설정이 아니라 판의 인생 길이�
 
   it('판의 인생 길이가 long60이면 long60 표의 페이싱을, short30이면 short30 표의 페이싱을 쓴다 (같은 시드·같은 선택이라도 표가 다르면 카드 수가 갈린다)', () => {
     // 표가 막는 것은 일반 선택 카드다 — 진로 카드(`pick`)는 강제 슬롯이라 `pacing.hard`를 받지 않고 예산에는 한 장만 센다(SPEC-018 3b, 결정 후속 233: `선택 줄 수 − max(0, 진로 카드 줄 수 − 1)`). 그래서 일반 카드만 센다
-    const cards = (mode: LifeLength) => playToEnd(startLife(77, 'alpha', { lifeLength: mode }), chooserFor('random', 77)).state.history.filter((h) => h.kind === 'choice' && !(h.eventId ?? '').startsWith('job-pick-')).length;
+    // 큰 갈림길 강제 슬롯 카드(G1 `school-lessons`·G2 `school-high-pick`, 결정 후속 243)도 덧붙는 카드라 표가 막지 않는다 — 함께 뺀다
+    const GATE = new Set(['school-lessons', 'school-high-pick']);
+    const cards = (mode: LifeLength) => playToEnd(startLife(77, 'alpha', { lifeLength: mode }), chooserFor('random', 77)).state.history.filter((h) => h.kind === 'choice' && !(h.eventId ?? '').startsWith('job-pick-') && !GATE.has(h.eventId ?? '')).length;
     const base = { short30: cards('short30'), long60: cards('long60') };
     expect(base.short30).toBeGreaterThan(5);
     // long60의 표만 hard 1로 조이면 long60 판만 1장으로 줄고, short30 판은 그대로다
