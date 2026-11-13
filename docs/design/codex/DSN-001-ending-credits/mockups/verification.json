@@ -1,0 +1,357 @@
+{
+  "browser": "157.0.8103.51",
+  "checks": [
+    {
+      "label": "360-light-start",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-light-mid",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-light-end",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-dark-start",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-dark-mid",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-dark-end",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-light-start",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-light-mid",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-light-end",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-dark-start",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-dark-mid",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-dark-end",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-light-reduce",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "360-dark-reduce",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "1280-light-reduce",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "1280-dark-reduce",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "industrial",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "early-death",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "few-family",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "gentle",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "320-light-100",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "320-light-200",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "320-dark-100",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "320-dark-200",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "360-light-100",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-light-200",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "360-dark-100",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "360-dark-200",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "1280-light-100",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-light-200",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "1280-dark-100",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "1280-dark-200",
+      "overflow": 0,
+      "clipped": [],
+      "list": "true"
+    },
+    {
+      "label": "forced-light",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "forced-dark",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "320-long-name",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "index.html-360",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "index.html-1280",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "ending-entry.html-360",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    },
+    {
+      "label": "ending-entry.html-1280",
+      "overflow": 0,
+      "clipped": [],
+      "list": false
+    }
+  ],
+  "characters": 286,
+  "fontMissing": [],
+  "errors": [],
+  "external": [],
+  "shots": [
+    {
+      "file": "credits-1280-dark-end.png",
+      "bytes": 55893
+    },
+    {
+      "file": "credits-1280-dark-mid.png",
+      "bytes": 66648
+    },
+    {
+      "file": "credits-1280-dark-reduce.png",
+      "bytes": 122054
+    },
+    {
+      "file": "credits-1280-dark-start.png",
+      "bytes": 47935
+    },
+    {
+      "file": "credits-1280-light-end.png",
+      "bytes": 50389
+    },
+    {
+      "file": "credits-1280-light-mid.png",
+      "bytes": 64985
+    },
+    {
+      "file": "credits-1280-light-reduce.png",
+      "bytes": 104848
+    },
+    {
+      "file": "credits-1280-light-start.png",
+      "bytes": 48832
+    },
+    {
+      "file": "credits-320-dark-text200.png",
+      "bytes": 27292
+    },
+    {
+      "file": "credits-360-dark-end.png",
+      "bytes": 32774
+    },
+    {
+      "file": "credits-360-dark-forced.png",
+      "bytes": 37350
+    },
+    {
+      "file": "credits-360-dark-mid.png",
+      "bytes": 41272
+    },
+    {
+      "file": "credits-360-dark-reduce.png",
+      "bytes": 101904
+    },
+    {
+      "file": "credits-360-dark-start.png",
+      "bytes": 25249
+    },
+    {
+      "file": "credits-360-light-early-death.png",
+      "bytes": 48379
+    },
+    {
+      "file": "credits-360-light-end.png",
+      "bytes": 29988
+    },
+    {
+      "file": "credits-360-light-few-family.png",
+      "bytes": 83602
+    },
+    {
+      "file": "credits-360-light-forced.png",
+      "bytes": 37350
+    },
+    {
+      "file": "credits-360-light-gentle.png",
+      "bytes": 110112
+    },
+    {
+      "file": "credits-360-light-industrial.png",
+      "bytes": 112716
+    },
+    {
+      "file": "credits-360-light-mid.png",
+      "bytes": 40429
+    },
+    {
+      "file": "credits-360-light-reduce.png",
+      "bytes": 87119
+    },
+    {
+      "file": "credits-360-light-start.png",
+      "bytes": 23803
+    },
+    {
+      "file": "current-ending-1280-light.png",
+      "bytes": 82621
+    },
+    {
+      "file": "entry-1280-light.png",
+      "bytes": 28050
+    },
+    {
+      "file": "entry-360-light.png",
+      "bytes": 21444
+    }
+  ],
+  "interaction": {
+    "scroll": 16,
+    "focus": "solid",
+    "veilRevealReplay": true,
+    "pageDownPause": true
+  },
+  "at": "2026-11-13T11:28:12.190Z",
+  "finalCaptureAt": "2026-11-13T11:32:54.120Z"
+}
