@@ -36,9 +36,18 @@ import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, marginReport, pr
  * **SPEC-018 3b(2026-11-12, 결정 후속 233 D6)**: 맞춤 인생을 켜면 X세대 노년이 4.97 → 4.90장(약 0.07장, 알파와 같은 방향)으로 내려가 `sim:1000` 두 줄(수동 흉내 1.1 SE · 자동 성향 0.8 SE)이 하한 위에 남은 채 1.5 SE 아래로 붙었다(합친 4줄은 3 SE 이상) — 줄 단위 허용을 0.5 SE까지로 넓힌다(`floor` 2 − 1.5).
  * **CX-003-002 보정(결정 후속 234)**: 19세 대학 지원을 되살린 뒤 `sim:1000 · 자동 성향` 줄이 0.5 SE 미만(하한 위)으로 더 붙었다 — 줄 단위 허용을 「하한 아래로 내려가지 않음」(0 SE, `floor` 1.5 − 1.5)으로 정한다. 줄 평균이 하한 4.72 아래로 내려가면 여전히 실패한다(합친 4줄은 3 SE 이상).
  */
+/**
+ * **SPEC-018 PL5·병역·강제 슬롯·기질 끌림(2026-11-13, 결정 후속 251 ③ — 형진 님 「추천대로」: 판 길이는 내용을 줄이지 않고 보고)**: 세 시대 평균 시간이 상한 36분 쪽으로 붙어
+ * 여유가 2.0 SE가 되었다(상한 안 — 넘지는 않는다). SPEC-018 완료 기준 6(평균 ≤ 36분 · 95% ≤ 41분, 넘으면 보고)에 따라 한계를 1.5 SE로 둔다 — 1.5 SE 아래로 붙으면 여전히 실패한다.
+ * 같은 까닭으로 줄별 두 칸을 보고로 돌린다(합친 판정은 위 한계 그대로): `세 시대 평균 시간 / 시험 · 자동 성향`(−0.9 SE — 이 한 줄의 평균이 상한을 약 1 SE 넘는다, 허용은 −1.5 SE까지 = `floor` 0 − 1.5)과
+ * `읽기 「높음」(느린 독자) / alpha / 시험 · 자동 성향`(0.7 SE — 상한 안, 허용은 「상한을 넘지 않음」 0 SE까지 = `floor` 1.5 − 1.5). 판 길이 보고(형진 님)에 줄별 값을 함께 적는다.
+ */
 const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number; lineOnly?: boolean }> = [
+  { metric: '세 시대 평균 시간 (위)', era: '평균', floor: 1.5 },
   { metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -7.0 },
   { metric: '노년(65세+) 결정 카드 평균', era: 'genx', floor: 1.5, lineOnly: true },
+  { metric: '세 시대 평균 시간 (위)', era: '평균', floor: 0, lineOnly: true },
+  { metric: '읽기 「높음」(느린 독자) 평균 시간(분)', era: 'alpha', floor: 1.5, lineOnly: true },
 ];
 /** 합친 표본은 `floor`(알파 노년 −7.0 SE), 줄별 표본은 그보다 1.5 SE 더 넓은 잡음을 인정한다(줄 하나는 표본이 4분의 1이라 SE가 두 배다) */
 const isKnownUnder3 = (u: { metric: string; era: string; margin: number }, line = false): boolean => KNOWN_UNDER3.some((k) => (line || k.lineOnly !== true) && k.metric === u.metric && k.era === u.era && u.margin >= k.floor);
