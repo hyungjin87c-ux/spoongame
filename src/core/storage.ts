@@ -3,7 +3,7 @@ import { generationDef } from '../data/generations';
 import { HISTORY_LIMITS, LIFE_PARAMS_PLACEHOLDER, STAGE_TABLE, STATE_LIMITS } from '../data/lifeTable';
 import { isCurrentRegionName } from '../data/regionKeys';
 import { eventPool, isGameDataReady } from './gameData';
-import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, type EventPool } from './events';
+import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, isPersonaCondition, type EventPool } from './events';
 import { isValidBirthReport } from './birthReport';
 import { ensureFamily, withValidFamily } from './familyStorage';
 import { JOB_FIELDS, jobIndexInYear, jobIndexOf } from './jobIndex';
@@ -363,6 +363,13 @@ function pendingMatchesPool(p: { eventId: string; choiceIds: string[]; age?: num
   // 맞춤 인생 스위치를 끈 채 열면 진로 카드 대기는 풀어 그 해를 중립(맞춤 인생 없음)으로 다시 진행한다 [CX-003-004] — v0.5.1 파서와 같은 동작이고, 끈 판에서 새 맞춤 직업·합격 소득이 생기거나 다른 확률로 판정되지 않는다(저장된 `persona`는 그대로 둔다)
   if (ev?.pick !== undefined) return personaSwitchOn() && jobPendingMatches(p, ev.pick.kind, persona, birthYear);
   if (ev === undefined || !isChoiceEvent(ev)) return false;
+  // 맞춤 인생 전용 카드(사건 조건에 맞춤 조건 — G1 `school-lessons`·G2 `school-high-pick`)나 맞춤 전용 선택지(`requires`에 맞춤 조건 — G3 `night`)가 든 대기를
+  // 맞춤 인생이 꺼진 채(스위치 끔·`persona` 버려짐) 열면 그 카드를 푼다 [SPEC-018 PL5, 결정 후속 237] — 진로 카드(CX-003-004)와 같은 규칙이라 끈 판에는 맞춤 선택지가 한 장도 보이지 않는다.
+  // 맞춤 조건이 없는 대기(옛 카드·`night`가 없는 G3)는 그대로 둔다
+  if (!(personaSwitchOn() && persona !== null)) {
+    if (isPersonaCondition(ev.conditions)) return false;
+    if (p.choiceIds.some((id) => isPersonaCondition(ev.choices?.find((c) => c.id === id)?.requires))) return false;
+  }
   const known = new Set((ev.choices ?? []).map((c) => c.id));
   return p.choiceIds.every((id) => known.has(id));
 }

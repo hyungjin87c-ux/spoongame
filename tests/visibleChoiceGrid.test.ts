@@ -109,10 +109,19 @@ describe('worstCaseVisibleChoiceIds·maxVisibleChoices가 새 조건을 이해�
 });
 
 describe('기존 사건은 격자 검사 대상이 아니다', () => {
-  it('풀의 모든 기존 선택지 사건: 맞춤 조건을 쓰지 않아 격자 문제가 없고, 지금 규칙(조건 없는 선택지 2개 이상 등)은 그대로다', () => {
+  const PL5 = new Set(['school-exam', 'school-lessons', 'school-high-pick']); // SPEC-018 PL5(결정 후속 237)
+  it('풀의 모든 기존 선택지 사건: 맞춤 조건을 쓰지 않아 격자 문제가 없고, 지금 규칙(조건 없는 선택지 2개 이상 등)은 그대로다 — PL5 갈림길 3곳만 격자 검사를 받고 통과한다', () => {
     for (const e of EVENT_POOL.events) {
-      expect(usesPersonaCondition(e), e.id).toBe(false);
+      expect(usesPersonaCondition(e), e.id).toBe(PL5.has(e.id));
       expect(visibleChoiceGridProblems(e), e.id).toEqual([]);
+    }
+  });
+
+  it('PL5 갈림길의 격자: 어느 수저·적성·연도·중립 칸에서도 보이는 선택지가 2~3개 (content-018-PL5.md 2절 — 수저 1·5 짝 비교는 report:persona가 잰다)', () => {
+    for (const id of PL5) {
+      const g = visibleChoiceGrid(EVENT_POOL.byId.get(id)!);
+      expect(g.min, `${id} ${g.minCell}`).toBeGreaterThanOrEqual(2);
+      expect(g.max, `${id} ${g.maxCell}`).toBeLessThanOrEqual(3);
     }
   });
 });

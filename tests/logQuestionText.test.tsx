@@ -119,12 +119,7 @@ describe('QS2 ③ 엔딩 연표: 같은 규칙', () => {
     expect(choices.length, '공허 통과 방지').toBeGreaterThan(5);
     for (const h of choices) {
       const ev = EVENT_POOL.byId.get(h.eventId!)!;
-      // 진로 카드(`pick`, SPEC-018 PL4)는 스키마가 `question`을 금한다(events-schema.md — 문장은 PL5) — 질문 없는 줄의 규칙(제목을 굵게)을 따른다
-      if (ev.pick !== undefined) {
-        expect(h.question, `${h.age}세 진로 카드`).toBeUndefined();
-        expect(timeline, `${h.age}세`).toContain(`<strong>${h.title}</strong>`);
-        continue;
-      }
+      // 진로 카드(`pick`)도 PL5(결정 후속 237)부터 질문 문장이 있어 같은 규칙(질문을 굵게)을 따른다
       const q = ev.question!;
       expect(h.question).toBe(q);
       expect(timeline, `${h.age}세`).toContain(`<strong>${q}</strong>`);

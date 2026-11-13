@@ -683,6 +683,16 @@ export function cellDiffs(ev: EventDef, key: string, golden: Cell, desc: StateDe
 }
 
 /** 허용 목록에 걸리는 차이를 뺀다 */
+/**
+ * SPEC-018 PL5(결정 후속 237) — 옛 사건에 더한 **맞춤 인생 전용 선택지**: `school-exam`의 `night`(`requires: { parentWealth ≤ 1, tailored }`). 맞춤 인생이 없는 판에서는 `tailored`가 맞지 않아
+ * 보이지 않으므로 칸(자격·가중·보이는 선택지·효과)은 한 칸도 달라지지 않는다 — 허용은 정적 정의의 그 선택지와 선택지 순서의 넷째 자리뿐이다(`cell.*` 허용 없음).
+ * `act` 표지·`retiredWith`는 정적 정의(`staticOf`)가 담지 않는 맞춤 인생 전용 필드라 이 목록에 없다.
+ */
+export const PL5_ALLOWED: readonly AllowedDiff[] = [
+  { event: 'school-exam', path: 'static.choiceOrder.3' },
+  { event: 'school-exam', path: 'static.choices.night' },
+];
+
 export function withoutAllowed(diffs: Diff[], allowed: readonly AllowedDiff[]): Diff[] {
   return diffs.filter((d) => !allowed.some((a) => a.event === d.event && (d.field === a.path || d.field.startsWith(`${a.path}.`)) && (a.whenLooksNot50 !== true || d.looks !== 50)));
 }

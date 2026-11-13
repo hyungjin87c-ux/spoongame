@@ -54,7 +54,9 @@ describe('이벤트 전환표(문서 부록) ↔ 데이터 (MG2)', () => {
   it('문서 부록은 140행이고 파일 순서·이벤트 순서가 src/data/events/*.json과 같다', () => {
     expect(rows).toHaveLength(140);
     // FM7a 「남은 한 분」 변형 4개(원본 id + -mother-gone·-father-gone)는 원본의 전환 행을 그대로 쓴다 — 부록 140행은 원본 이벤트의 표다 (변형은 track common · yearRange 없음, 아래 시험이 따로 본다)
-    const dataIds = ['./infant.json', './school.json', './youth.json', './middle.json', './senior.json'].flatMap((f) => (EVENT_FILES[f] as { events: Array<{ id: string }> }).events.map((e) => e.id)).filter((id) => !/-(?:mother|father)-gone$/.test(id));
+    // SPEC-018 PL5(결정 후속 237)의 새 사건 2개(G1·G2)는 MG2 전환 뒤에 생긴 맞춤 판 전용 사건이라 전환표(옛 140개의 기록) 밖이다
+    const PL5_NEW = ['school-lessons', 'school-high-pick'];
+    const dataIds = ['./infant.json', './school.json', './youth.json', './middle.json', './senior.json'].flatMap((f) => (EVENT_FILES[f] as { events: Array<{ id: string }> }).events.map((e) => e.id)).filter((id) => !/-(?:mother|father)-gone$/.test(id) && !PL5_NEW.includes(id));
     expect(rows.map((r) => r.id)).toEqual(dataIds);
   });
 
@@ -66,7 +68,8 @@ describe('이벤트 전환표(문서 부록) ↔ 데이터 (MG2)', () => {
       expect(ev!.yearRange, r.id).toEqual(r.yearRange);
     }
     // 조르기 사건 7개(SPEC-011 AK7)는 전환표가 아니라 `ask.json`의 새 사건이다 — 시대 구간은 `tests/askEvents.test.ts`가 본다
-    expect(EVENT_POOL.events.filter((e) => e.yearRange !== undefined && e.ask === undefined)).toHaveLength(33);
+    // PL5 G1(`school-lessons`, 1990년부터)도 전환표 밖의 새 사건이다
+    expect(EVENT_POOL.events.filter((e) => e.yearRange !== undefined && e.ask === undefined && e.id !== 'school-lessons')).toHaveLength(33);
   });
 
   it('track이 문서와 한 줄씩 같고 standard 17 · common 123이다', () => {

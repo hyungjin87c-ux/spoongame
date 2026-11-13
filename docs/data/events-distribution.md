@@ -6,8 +6,8 @@
 
 ## 1. 총계
 
-- 이벤트 **153개** = 선택지 이벤트 101개 + 서술 이벤트 52개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
-- 시대 전용: 지난 세상 13개 · 지금 세상 8개 · 다가올 세상 5개 / 시대 중립 공용 114개 / 두 시대 공용 13개
+- 이벤트 **155개** = 선택지 이벤트 103개 + 서술 이벤트 52개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
+- 시대 전용: 지난 세상 13개 · 지금 세상 8개 · 다가올 세상 5개 / 시대 중립 공용 116개 / 두 시대 공용 13개
 
 ## 2. 시대 × 생애 단계 × 유형 (그 칸에서 일어날 수 있는 이벤트 수)
 
@@ -16,11 +16,11 @@
 | 생애 단계 | 지난 세상 | 지금 세상 | 다가올 세상 |
 |---|---|---|---|
 | 영유아 (0~6세) | 16 / 12 | 17 / 18 | 14 / 14 |
-| 학창 (7~19세) | 9 / 18 | 8 / 18 | 9 / 17 |
+| 학창 (7~19세) | 9 / 20 | 8 / 20 | 9 / 19 |
 | 청년 (20~39세) | 11 / 19 | 10 / 20 | 10 / 21 |
 | 중년 (40~64세) | 7 / 26 | 8 / 27 | 8 / 28 |
 | 노년 (65세~) | 5 / 17 | 5 / 17 | 5 / 18 |
-| **합계(칸 합)** | 48 / 92 | 48 / 100 | 46 / 98 |
+| **합계(칸 합)** | 48 / 94 | 48 / 102 | 46 / 100 |
 
 ## 3. 이벤트 목록
 
@@ -73,17 +73,17 @@
 | `infant-early-lessons` | 취학 전의 시간표 | 5~6 | 지금·다가올 전용 | 선택지 3 | 입학 전에 무엇을 시킬지 고민하던 부모 | - |
 | `infant-first-book` | 처음 읽은 책 | 6~7 | 공용 | 서술 | 글자를 짚어 가며 처음 책 한 권을 읽은 날 | - |
 
-### 학창 (7~19세) — 28개
+### 학창 (7~19세) — 30개
 
 | id | 제목 | 나이 | 시대 | 유형 | 모티브 | 플래그 |
 |---|---|---|---|---|---|---|
-| `job-pick-field` | 어떤 길로 갈지 정한 해 | 19~35 | 공용 | 서술 | 어떤 길로 갈지 마음을 정하던 일 | - |
-| `job-pick-detail` | 일자리의 문을 두드린 해 | 19~35 | 공용 | 서술 | 마음에 둔 일자리의 문을 두드려 보던 일 | - |
+| `job-pick-field` | 일의 갈래를 정할 때 | 19~35 | 공용 | 서술 | 어떤 길로 갈지 마음을 정하던 일 | - |
+| `job-pick-detail` | 이력서를 내던 해 | 19~35 | 공용 | 서술 | 마음에 둔 일자리의 문을 두드려 보던 일 | - |
 | `school-lunch` | 각자의 점심 | 8~16 | 지난 전용 | 서술 | 도시락 반찬에 집안 형편이 드러나던 교실 | 읽음 `left_school` |
 | `school-friend` | 전학 온 아이 | 8~13 | 공용 | 선택지 3 | 전학생에게 먼저 말을 걸지 고민한 일 | 켬 `close_friend` / 읽음 `left_school` |
 | `school-tutoring` | 성적표를 받은 저녁 | 10~16 | 공용 | 선택지 3 | 성적표를 받고 공부 방법을 가족과 정하던 저녁 | 읽음 `left_school` |
 | `school-first-love` | 자꾸 눈에 들어오는 사람 | 15~19 | 공용 | 선택지 2 | 같은 반 아이를 좋아하게 된 첫 감정 | 켬 `first_love` / 읽음 `left_school` |
-| `school-exam` | 입시를 앞둔 해 | 16~19 | 공용 | 선택지 3 | 입시 앞에서 지원·재수·취업 사이의 갈림길 | 켬 `college` `early_work` / 읽음 `left_school` `mentor_teacher` `scholar` `skilled_trade` |
+| `school-exam` | 입시를 앞둔 해 | 16~19 | 공용 | 선택지 4 | 입시 앞에서 지원·재수·취업 사이의 갈림길 | 켬 `college` `early_work` / 읽음 `left_school` `mentor_teacher` `scholar` `skilled_trade` |
 | `school-early-work` | 어려워진 집안 형편 | 13~16 | 지난 전용 | 선택지 2 | 집안이 기울어 학교와 일 사이에서 고민하던 일 | 읽음 `father_gone` `left_school` `mother_gone` `parents_gone` |
 | `school-bully` | 교실의 한 아이 | 9~15 | 공용 | 선택지 3 | 교실의 따돌림을 곁에서 보게 된 일 | 켬 `stood_up` / 읽음 `left_school` |
 | `school-club` | 방과 후의 모임 | 11~17 | 공용 | 선택지 3 | 방과 후 어디에 어울릴지 정하던 일 | 켬 `close_friend` / 읽음 `left_school` |
@@ -93,6 +93,8 @@
 | `school-academy-night` | 늦은 밤의 학원가 | 11~18 | 지금·다가올 전용 | 선택지 3 | 친구들이 저녁을 학원에서 보내기 시작하던 밤 | - |
 | `school-family-priority` | 먼저 가야 할 사람 | 12~17 | 지난 전용 | 선택지 3 | 형제 많은 집에서 학비 순서가 정해지던 일 | 켬 `early_work` `fought_for_school` `left_school` / 읽음 `has_sibling` `left_school` |
 | `school-career-choice` | 갈림길 앞에서 | 14~17 | 공용 | 선택지 3 | 공부를 계속할지 기술을 배울지 정하던 갈림길 | 켬 `skilled_trade` / 읽음 `left_school` |
+| `school-lessons` | 오후를 보낼 곳 | 9~12 | 공용 | 선택지 6 | 학교가 끝난 오후를 학원·운동·집안일 중 어디서 보내는지가 집집마다 달랐던 일 | 읽음 `left_school` |
+| `school-high-pick` | 고등학교 원서 | 14~15 | 공용 | 선택지 6 | 중학교 마지막 해 일반고·실업계·특목고·예고 원서를 앞에 둔 갈림길 | 켬 `skilled_trade` / 읽음 `left_school` |
 | `school-parttime` | 처음 번 돈 | 16~19 | 공용 | 선택지 3 | 용돈이 모자라 처음 일을 해 보던 일 | 읽음 `left_school` |
 | `school-puppy` | 집 앞의 강아지 | 8~14 | 공용 | 선택지 3 | 집 앞의 떠돌이 강아지를 데려올지 망설인 일 | - |
 | `school-mirror` | 또래의 눈길 | 12~16 | 공용 | 서술 | 또래 사이에서 겉모습 이야기가 오가던 시기 | - |
@@ -240,7 +242,7 @@
 | `job_changed` | `middle-career-peak` `youth-colleague` | - |
 | `laid_off` | `middle-layoff` | `middle-job-again` |
 | `late_learner` | `youth-night-study` `youth-return-school` | - |
-| `left_school` | `school-family-priority` | `school-bully` `school-career-choice` `school-club` `school-early-work` `school-exam` `school-family-priority` `school-first-love` `school-friend` `school-friend-quarrel` `school-long-walk` `school-lunch` `school-parttime` `school-scholarship` `school-teacher-notice` `school-tutoring` |
+| `left_school` | `school-family-priority` | `school-bully` `school-career-choice` `school-club` `school-early-work` `school-exam` `school-family-priority` `school-first-love` `school-friend` `school-friend-quarrel` `school-high-pick` `school-lessons` `school-long-walk` `school-lunch` `school-parttime` `school-scholarship` `school-teacher-notice` `school-tutoring` |
 | `lives_alone` | `youth-lonely-city` | `youth-housing` |
 | `lives_with_parents` | `youth-housing` | `youth-lonely-city` |
 | `marriage_waited` | `youth-marriage` | `youth-marriage-again` |
@@ -261,7 +263,7 @@
 | `saving_for_school` | `youth-night-study` | `youth-return-school` |
 | `scholar` | `school-scholarship` | `school-exam` |
 | `sibling_close` | `infant-new-sibling` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` |
-| `skilled_trade` | `school-career-choice` | `school-exam` `youth-first-job` |
+| `skilled_trade` | `school-career-choice` `school-high-pick` | `school-exam` `youth-first-job` |
 | `stood_up` | `school-bully` | `school-chat-room` |
 | `younger_sibling` | `infant-new-sibling` | `infant-sibling-toy` |
 

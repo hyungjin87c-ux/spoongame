@@ -86,9 +86,14 @@ describe('[CX-003-001] 첫 일 소득은 한 판에 한 번 — 옛 카드의 �
     }
   });
 
-  it('모르는 직업 id를 정리한 뒤 다시 합격해도 incomeAdj가 늘지 않는다 (Codex 재현: 밀레니얼 시드 4)', () => {
-    let s: GameState = startLife(4, 'millennial');
-    for (let i = 0; i < 400 && s.phase === 'life' && s.persona?.job?.id === undefined; i++) s = s.pending === null ? stepYear(s).state : autoResolveStep(s, s.pending.key).state;
+  it('모르는 직업 id를 정리한 뒤 다시 합격해도 incomeAdj가 늘지 않는다 (Codex 재현: 밀레니얼 시드 4 — PL5 뒤 시드 4는 21세 「한 곳에 자리 잡을 길」로 첫 일 소득을 먼저 받아 진로 합격 몫이 0이므로, 첫 합격에서 소득을 받는 첫 시드를 쓴다)', () => {
+    const firstHire = (seed: number): GameState => {
+      let s: GameState = startLife(seed, 'millennial');
+      for (let i = 0; i < 400 && s.phase === 'life' && s.persona?.job?.id === undefined; i++) s = s.pending === null ? stepYear(s).state : autoResolveStep(s, s.pending.key).state;
+      return s;
+    };
+    let s: GameState = firstHire(4);
+    for (let seed = 5; seed <= 60 && !(s.persona?.job?.id !== undefined && (s.assets?.incomeAdj ?? 0) > 0); seed++) s = firstHire(seed);
     expect(s.persona?.job?.id, '첫 합격').toBeDefined();
     const paid = s.assets!.incomeAdj;
     expect(paid).toBeGreaterThan(0);

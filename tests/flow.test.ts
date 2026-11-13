@@ -287,7 +287,8 @@ describe('모든 이벤트에 닿을 수 있다: 네 가지 선택 전략으로 
     expect(picks.length).toBeGreaterThan(0);
     for (const id of picks) expect(hit.get(id) ?? 0, id).toBeGreaterThan(100);
     const retired = EVENT_POOL.events.filter((e) => e.retiredWith !== undefined).map((e) => e.id);
-    expect(retired).toEqual(['youth-first-job']);
+    // PL5(결정 후속 237): 옛 「갈림길 앞에서」(`school-career-choice`)도 맞춤 판에서는 새 G2 `school-high-pick`이 대신한다
+    expect(retired).toEqual(['school-career-choice', 'youth-first-job']);
     const reachedLegacy = new Set<string>();
     for (const era of GENERATION_IDS) {
       for (let i = 1; i <= 60; i++) {

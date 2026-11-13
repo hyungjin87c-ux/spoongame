@@ -55,6 +55,9 @@ const EXPECTED: Readonly<Record<string, ReadonlyArray<readonly [number, number, 
   'school-family-priority': [[12, 17, 'child']],
   'school-early-work': [[13, 16, 'parent']],
   'school-career-choice': [[14, 17, 'parent']],
+  // SPEC-018 PL5(결정 후속 237): 맞춤 판 전용 G1·G2 — 모두 부모(R4·R5)
+  'school-lessons': [[9, 12, 'parent']],
+  'school-high-pick': [[14, 15, 'parent']],
   'school-first-love': [[15, 19, 'self']],
   'school-scholarship': [[15, 18, 'parent'], [19, 19, 'self']],
   'school-exam': [[16, 18, 'parent'], [19, 19, 'self']],
@@ -75,8 +78,8 @@ const expectedAt = (id: string, age: number): Who | undefined => EXPECTED[id].fi
 describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
   const preAdult = EVENT_POOL.events.filter(isPreAdultChoice);
 
-  it('① 19세 미만에서 일어날 수 있는 선택지 이벤트 39장(32 + 조르기 7, 반려동물 켜짐이면 41)이 표의 키와 정확히 같다: 누락도 남는 키도 없다', () => {
-    expect(preAdult).toHaveLength(ASK_PET_ENABLED ? 41 : 39);
+  it('① 19세 미만에서 일어날 수 있는 선택지 이벤트 41장(32 + PL5 2 + 조르기 7, 반려동물 켜짐이면 43)이 표의 키와 정확히 같다: 누락도 남는 키도 없다', () => {
+    expect(preAdult).toHaveLength(ASK_PET_ENABLED ? 43 : 41);
     expect(preAdult.map((e) => e.id).sort()).toEqual(Object.keys(PARENT_DECISION_TABLE).sort());
     expect(Object.keys(EXPECTED).sort()).toEqual(Object.keys(PARENT_DECISION_TABLE).sort());
     expect(parentTableProblems(EVENT_POOL.events)).toEqual([]);
@@ -122,7 +125,7 @@ describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
     expect(parentTableProblems(EVENT_POOL.events, { ...PARENT_DECISION_TABLE, 'school-friend': { areas: ['friends'], childActUntil: 25 } }).some((p) => p.includes('childActUntil'))).toBe(true);
   });
 
-  it('② 39장 전수 × 데이터 나이 범위의 모든 나이에서 deciderOf가 설계 문서 1-3절의 「나이별 결정자」와 같다', () => {
+  it('② 41장 전수 × 데이터 나이 범위의 모든 나이에서 deciderOf가 설계 문서 1-3절의 「나이별 결정자」와 같다', () => {
     for (const ev of preAdult) {
       const ages = possibleAgesOf(ev);
       expect(ages.length, ev.id).toBeGreaterThan(0);
@@ -134,7 +137,7 @@ describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
     }
   });
 
-  it('② 나이 경계 12·13·18·19: 39장 전수의 규칙 값 (데이터 밖 나이도 규칙대로 값이 나온다 — 조르기 행은 R1a라 늘 본인)', () => {
+  it('② 나이 경계 12·13·18·19: 41장 전수의 규칙 값 (데이터 밖 나이도 규칙대로 값이 나온다 — 조르기 행은 R1a라 늘 본인)', () => {
     for (const id of Object.keys(PARENT_DECISION_TABLE)) {
       const row = PARENT_DECISION_TABLE[id];
       if (row.areas.includes('ask')) {
@@ -160,7 +163,7 @@ describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
     for (const [id, row] of selfAt) for (const a of row.areas) expect((SELF_AREAS as readonly string[]).includes(a), `${id}: ${a}`).toBe(true);
   });
 
-  it('④ 집계: 부모가 정하는 카드 24 · 흘러감이 있는 카드 7 · 본인 구간이 있는 카드 9 + 조르기(16, 반려동물 켜짐이면 18) · 13~18세 본인 카드 6 · 조르기 `askCards`', () => {
+  it('④ 집계: 부모가 정하는 카드 26(PL5 +2) · 흘러감이 있는 카드 7 · 본인 구간이 있는 카드 9 + 조르기(16, 반려동물 켜짐이면 18) · 13~18세 본인 카드 6 · 조르기 `askCards`', () => {
     const kinds = (id: string): Set<Who> => new Set(possibleAgesOf(EVENT_POOL.byId.get(id)!).map((a) => deciderOf(id, a)));
     const ids = Object.keys(PARENT_DECISION_TABLE);
     expect(ids.filter((id) => kinds(id).has('parent'))).toHaveLength(PARENT_TABLE_COUNTS.parentCards);
@@ -295,7 +298,7 @@ describe('T4 부모 확률 모델 격자 (parentChoiceWeights — 순수 함수,
   }
   const cells = grid.map((spec) => ({ spec, state: stateAt(spec) })).filter((c): c is { spec: Spec; state: GameState } => c.state !== null);
 
-  it('격자가 충분히 크고 부모가 정하는 카드 24장이 모두 들어 있다', () => {
+  it('격자가 충분히 크고 부모가 정하는 카드 26장(PL5 +2)이 모두 들어 있다', () => {
     expect(PARENT_EVENTS).toHaveLength(PARENT_TABLE_COUNTS.parentCards);
     expect(cells.length).toBeGreaterThan(20000);
   });

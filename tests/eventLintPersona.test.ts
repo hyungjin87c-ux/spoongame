@@ -306,8 +306,8 @@ describe('conditionsCompatible가 새 조건을 이해한다', () => {
 });
 
 describe('기존 사건은 새 규칙에 닿지 않는다', () => {
-  it('풀의 모든 기존 사건에는 맞춤 조건·변주가 없고 lint는 그대로 통과한다', () => {
-    expect(EVENT_POOL.events.some(usesPersonaCondition)).toBe(false);
+  it('풀의 모든 기존 사건에는 맞춤 조건·변주가 없고 lint는 그대로 통과한다 — 예외는 SPEC-018 PL5(결정 후속 237)가 고른 갈림길 3곳(G1·G2 새 사건, G3 school-exam의 맞춤 전용 선택지)뿐', () => {
+    expect(EVENT_POOL.events.filter(usesPersonaCondition).map((e) => e.id).sort()).toEqual(['school-exam', 'school-high-pick', 'school-lessons']);
     expect(EVENT_POOL.events.every((e) => e.textVariants === undefined && e.role === undefined)).toBe(true);
     expect(lintEvents(EVENT_POOL.events)).toEqual([]);
   });

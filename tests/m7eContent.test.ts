@@ -414,6 +414,13 @@ describe('M7e-4 L02: 선택지 라벨의 어절은 5음절 이하 (번호 원 �
       'senior-estranged-child/wait',
       'senior-long-life/rest',
       'senior-memoir/tell',
+      // SPEC-018 PL5(결정 후속 237) 새 라벨: 태권도장에 · 스케이트를 · 고등학교에(3) · 특기생으로 · 고등학교를 — 모두 5음절(6음절 0)
+      'school-lessons/dojang',
+      'school-lessons/sportclub',
+      'school-high-pick/general',
+      'school-high-pick/vocational',
+      'school-high-pick/athlete',
+      'school-high-pick/exam',
     ].sort());
   });
 });

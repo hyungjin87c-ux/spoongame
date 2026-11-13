@@ -36,7 +36,10 @@ describe('[CX-003-002] 19세: 진로 분야 카드와 마지막 입시가 함께
       const off = stepYear(bare as GameState).state;
       if (off.pending?.eventId === 'school-exam') {
         paired++;
-        expect(on.pending, `시드 ${seed}: 대학 지원 대기`).toEqual(off.pending);
+        // PL5(결정 후속 237): 맞춤 판의 수저 1은 맞춤 전용 선택지 `night`(일하며 다닐 수 있는 대학)가 하나 더 보인다 — 그 id만 빼고 같은 카드·같은 후보다
+        const onPending = on.pending === null ? null : { ...on.pending, choiceIds: on.pending.choiceIds.filter((id) => id !== 'night') };
+        expect(onPending, `시드 ${seed}: 대학 지원 대기`).toEqual(off.pending);
+        if (on.pending!.choiceIds.includes('night')) expect(s.character!.parentWealth, `시드 ${seed}: night는 수저 1에서만`).toBe(1);
         expect(on.rngState, `시드 ${seed}: 난수 상태`).toBe(off.rngState);
       }
       if (on.pending?.eventId === 'school-exam') exam++;

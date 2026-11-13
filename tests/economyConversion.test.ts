@@ -132,7 +132,7 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
   /** FM7a 「남은 한 분」 변형 4개(원본 id + -mother-gone·-father-gone): 원본의 효과·선택지·보너스를 그대로 가진 문장 변형이라 변환표에 따로 적지 않는다 — 원본(`middle-parents-care`·`middle-parents-farewell`)의 행이 곧 변형의 행이다 */
   const FM7A_VARIANTS = ['middle-parents-care-mother-gone', 'middle-parents-care-father-gone', 'middle-parents-farewell-mother-gone', 'middle-parents-farewell-father-gone'];
 
-  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) + FM7a 변형 4개(원본의 행을 그대로 쓴다) = 풀 144개 + 조르기 7개 + 진로 카드 2개(SPEC-018 PL4) 전부', () => {
+  it('표에 없는 이벤트에는 옛 재산 변환이 없다: 표의 75개 + 재산과 무관한 37개 + M7a 신규 28개(변환이 아니라 처음부터 집안 살림 효과) + FM7a 변형 4개(원본의 행을 그대로 쓴다) = 풀 144개 + 조르기 7개 + 진로 카드 2개(SPEC-018 PL4) + PL5 새 사건 2개 전부', () => {
     const inTable = new Set(ROWS.map((r) => r.eventId));
     const unchanged = parseUnchanged();
     expect(unchanged).toHaveLength(37);
@@ -165,8 +165,15 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
       expect(eventOf(id).choices, id).toBeUndefined();
       expect(JSON.stringify(eventOf(id)), id).not.toMatch(/"assets"|"family"|"effects"/);
     }
-    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS, ...askIds, ...careerIds])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
-    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length + askIds.length + careerIds.length);
+    // SPEC-018 PL5(결정 후속 237)의 새 사건 2개(G1·G2)도 표에도 5-5에도 없다 — 20세 미만 새 사건이라 처음부터 집안 살림 효과(`family`)만 쓰고 자산 효과는 없다
+    const pl5Ids = ['school-lessons', 'school-high-pick'];
+    for (const id of pl5Ids) {
+      expect(inTable.has(id), `${id}가 변환표에 있다`).toBe(false);
+      expect(unchanged.includes(id), `${id}가 5-5에 있다`).toBe(false);
+      expect(JSON.stringify(eventOf(id)), id).not.toMatch(/"assets"/);
+    }
+    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS, ...askIds, ...careerIds, ...pl5Ids])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
+    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length + askIds.length + careerIds.length + pl5Ids.length);
     for (const id of unchanged) {
       const ev = eventOf(id);
       const effs: Array<Effects | undefined> = [ev.effects, ...(ev.bonuses ?? []).map((b) => b.effects), ...(ev.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];
@@ -325,7 +332,9 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
         if (money || c.requires?.parentWealth !== undefined) found.push(`${ev.id}/${c.id}`);
       }
     // M7a(영유아·7세)가 더한 부모 재력 문턱 10개는 따로 센다(tests/infantContent.test.ts가 문안 규칙을 본다)
-    const all = [...GATES.map(([e, c]) => `${e}/${c}`), ...M7A_WEALTH_GATES.map(([e, c]) => `${e}/${c}`)];
+    // SPEC-018 PL5(결정 후속 237): 맞춤 판 갈림길의 수저 문턱(자금 조건이 아니라 「형편별로 보이는 길」 — 격자 검사가 2~3개를 지킨다)도 따로 센다
+    const PL5_WEALTH_GATES = ['school-exam/night', 'school-high-pick/arts', 'school-high-pick/athlete', 'school-high-pick/exam', 'school-high-pick/nightwork', 'school-high-pick/vocational', 'school-lessons/academies', 'school-lessons/afterschool', 'school-lessons/housework', 'school-lessons/lesson', 'school-lessons/sportclub'];
+    const all = [...GATES.map(([e, c]) => `${e}/${c}`), ...M7A_WEALTH_GATES.map(([e, c]) => `${e}/${c}`), ...PL5_WEALTH_GATES];
     expect(found.sort()).toEqual(all.sort());
   });
 
@@ -367,7 +376,8 @@ describe('EC4 자금 조건 선택지: 기존 6개 + 새 4개 = 10개 (D15) + M7
       expect([...m.keys()].sort(), `${e}: 대기 상태에서 관측한 보이는 선택지 수`).toEqual([2, 3]);
       expect(m.get(2)!, `${e}: 2개`).toBeGreaterThanOrEqual(5);
       expect(m.get(3)!, `${e}: 3개`).toBeGreaterThanOrEqual(5);
-      expect(ev(e).choices, `${e}는 선택지가 3개인 이벤트(게이트 하나)`).toHaveLength(3);
+      // school-exam은 PL5의 맞춤 판 전용 `night`가 더해져 정의가 4개다(이 표본은 맞춤 인생이 없는 옛 저장이라 night는 보이지 않는다 — 위 관측 [2, 3] 그대로)
+      expect(ev(e).choices!.filter((x) => x.requires?.tailored !== true), `${e}는 선택지가 3개인 이벤트(게이트 하나)`).toHaveLength(3);
     }
   }, 180_000);
 

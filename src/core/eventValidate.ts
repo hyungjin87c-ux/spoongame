@@ -152,13 +152,13 @@ const EVENT_KEYS = [
 /** 질문 문장의 길이 상한 (SPEC-014 규칙 2 — 윗줄 12px·360px에서 한 줄 약 19자, 두 줄 안) */
 export const QUESTION_MAX_CHARS = 30;
 
-/** `question`의 형태: 선택지 이벤트에만, 한 문장, 「…ㄹ까?」로 끝나고 물음표는 맨 끝 하나 (SPEC-014 규칙 1·2). 모든 선택지 이벤트에 있는지·서로 다른지는 `eventLint.ts#questionProblems`가 본다. */
+/** `question`의 형태: 선택지 이벤트(정의 `choices` 또는 동적 후보 `pick` — SPEC-018 PL5)에만, 한 문장, 「…ㄹ까?」로 끝나고 물음표는 맨 끝 하나 (SPEC-014 규칙 1·2). 모든 선택지 이벤트에 있는지·서로 다른지는 `eventLint.ts#questionProblems`가 본다. */
 function checkQuestion(ev: Obj, path: string, p: Problems): void {
   if (ev.question === undefined) return;
   const at = `${path}.question`;
   checkText(ev.question, at, 4, QUESTION_MAX_CHARS, p);
   if (typeof ev.question !== 'string') return;
-  if (ev.choices === undefined) p.add(at, '질문 문장은 선택지 이벤트에만 쓴다 (서술 이벤트는 결정 줄이 없다)');
+  if (ev.choices === undefined && ev.pick === undefined) p.add(at, '질문 문장은 선택지 이벤트에만 쓴다 (서술 이벤트는 결정 줄이 없다 — 동적 후보 카드 `pick`은 선택 카드다)');
   if (!/까\?$/.test(ev.question) || ev.question.indexOf('?') !== ev.question.length - 1) p.add(at, '「…할까?」 꼴이어야 한다 — 「까?」로 끝나고 물음표는 맨 끝에 하나뿐이다');
 }
 
@@ -444,7 +444,8 @@ function checkPick(ev: Obj, path: string, p: Problems): void {
   if (ev.pick.kind !== 'field' && ev.pick.kind !== 'detail') p.add(`${at}.kind`, '"field" 또는 "detail"이어야 한다');
   if (ev.choices !== undefined) p.add(at, 'pick 사건은 정의 choices가 없다 (후보는 카드가 열릴 때 정해진다)');
   if (ev.effects !== undefined || ev.bonuses !== undefined) p.add(at, 'pick 사건은 효과·보너스가 없다 (결과는 지원 판정이 정한다)');
-  for (const k of ['trigger', 'milestone', 'ask', 'heavy', 'citation', 'noCitation', 'question', 'retiredWith', 'looksChannel'] as const) if (ev[k] !== undefined) p.add(at, `pick 사건에는 ${k}를 쓰지 않는다`);
+  // `question`은 쓸 수 있다(SPEC-018 PL5 — 인생 기록·엔딩 연표의 윗줄, `resolveChoiceCore`가 줄에 적는다)
+  for (const k of ['trigger', 'milestone', 'ask', 'heavy', 'citation', 'noCitation', 'retiredWith', 'looksChannel'] as const) if (ev[k] !== undefined) p.add(at, `pick 사건에는 ${k}를 쓰지 않는다`);
   if (ev.once === true) p.add(`${path}.once`, 'pick 사건은 once가 아니다 — 진로 트랙 상태가 카드를 정한다');
 }
 

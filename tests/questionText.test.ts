@@ -30,23 +30,28 @@ function approved(stage: (typeof DOC_FILES)[number]): Map<string, string> {
   return out;
 }
 
+/** SPEC-018 PL5의 새 선택지 사건(질문 원본은 `docs/data/content-018-PL5.md`) */
+const PL5_NEW = ['school-lessons', 'school-high-pick'];
+
 const ALL = new Map<string, string>();
 for (const stage of DOC_FILES) for (const [id, q] of approved(stage)) ALL.set(id, q);
 
 describe('QS3 ① 94개 전부 있다', () => {
-  // 승인 문서(question-text-*.md)가 다루는 것은 2026-11-08의 94개다. 조르기 사건 7개(SPEC-011 AK7)의 질문은 `docs/design/copy.md` 20절이 원본이고 `tests/askEvents.test.ts`가 글자 단위로 대조한다
+  // 승인 문서(question-text-*.md)가 다루는 것은 2026-11-08의 94개다. 조르기 사건 7개(SPEC-011 AK7)의 질문은 `docs/design/copy.md` 20절이 원본이고 `tests/askEvents.test.ts`가 글자 단위로 대조한다.
+  // SPEC-018 PL5(결정 후속 237)의 새 사건 2개(G1·G2)와 진로 카드 2개(`pick`)의 질문은 `docs/data/content-018-PL5.md` 3절이 원본이다 — 아래 「PL5」 묶음이 글자 단위로 대조한다
   const askEvents = EVENT_POOL.events.filter((e) => e.ask !== undefined);
-  const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined && e.ask === undefined);
+  const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined && e.ask === undefined && !PL5_NEW.includes(e.id));
 
   it('선택지 이벤트 94개(영유아 15 · 학창 17 · 청년 22 · 중년 22 · 노년 18)에 question이 있고 서술 이벤트에는 없다 — 조르기 사건 7개도 question이 있다', () => {
     expect(choiceEvents).toHaveLength(94);
     expect(askEvents).toHaveLength(7);
     for (const e of [...choiceEvents, ...askEvents]) expect(typeof e.question, e.id).toBe('string');
-    for (const e of EVENT_POOL.events.filter((x) => x.choices === undefined)) expect(e.question, e.id).toBeUndefined();
+    // 서술 사건에는 질문이 없다 — 진로 카드(`pick`, 정의 선택지 없음)는 PL5부터 선택 카드로서 질문을 갖는다(아래 「PL5」 묶음)
+    for (const e of EVENT_POOL.events.filter((x) => x.choices === undefined && x.pick === undefined)) expect(e.question, e.id).toBeUndefined();
     for (const stage of DOC_FILES) {
       const key = Object.keys(EVENT_FILES).find((k) => k.endsWith('/' + stage + '.json'))!;
-      const events = (EVENT_FILES[key] as { events: Array<{ choices?: unknown; question?: string; ask?: unknown }> }).events;
-      expect(events.filter((e) => e.choices !== undefined && e.question !== undefined && e.ask === undefined), stage).toHaveLength(COUNTS[stage]);
+      const events = (EVENT_FILES[key] as { events: Array<{ id: string; choices?: unknown; question?: string; ask?: unknown }> }).events;
+      expect(events.filter((e) => e.choices !== undefined && e.question !== undefined && e.ask === undefined && !PL5_NEW.includes(e.id)), stage).toHaveLength(COUNTS[stage]);
     }
   });
 
@@ -85,9 +90,9 @@ describe('QS3 ③ 문장 규칙(완료 기준 1·7)', () => {
     }
   });
 
-  it('101개(94 + 조르기 7)가 서로 다르다 (공허 통과 방지)', () => {
-    expect(qs).toHaveLength(101);
-    expect(new Set(qs.map((x) => x.q)).size).toBe(101);
+  it('105개(94 + 조르기 7 + PL5 새 사건 2 + 진로 카드 2)가 서로 다르다 (공허 통과 방지)', () => {
+    expect(qs).toHaveLength(105);
+    expect(new Set(qs.map((x) => x.q)).size).toBe(105);
   });
 
   it('사람 주어·평가어·계층어·시대 판단어·숫자 0건 (검사기가 실제로 잡는지 합성 사례로 확인)', () => {
@@ -152,5 +157,21 @@ describe('QS1 스키마: question 의 모양', () => {
       msg = e instanceof Error ? e.message : String(e);
     }
     expect(msg).toContain('선택지 이벤트에만');
+  });
+});
+
+describe('PL5 질문 문장: 확정 문서(content-018-PL5.md 3절)와 글자 단위로 같다 [결정 후속 237]', () => {
+  const doc = fs.readFileSync(new URL('../docs/data/content-018-PL5.md', import.meta.url), 'utf-8');
+  const want: Array<[string, string]> = [
+    ['school-lessons', '학교가 끝난 오후, 무엇을 할까?'],
+    ['school-high-pick', '원서를 쓰는 중학교 마지막 해, 어디로 갈까?'],
+    ['job-pick-field', '무슨 일을 할지 정할 때, 어느 길로 갈까?'],
+    ['job-pick-detail', '마음에 둔 분야에서, 어느 직무에 지원할까?'],
+  ];
+  it('네 사건의 question이 문서에 굵게 적힌 문장과 같다', () => {
+    for (const [id, q] of want) {
+      expect(EVENT_POOL.byId.get(id)?.question, id).toBe(q);
+      expect(doc, `${id}: 문서에 굵은 질문이 있다`).toContain(`**${q}**`);
+    }
   });
 });

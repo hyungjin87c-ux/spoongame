@@ -1096,7 +1096,8 @@ export function questionProblems(events: readonly EventDef[]): string[] {
   const seen = new Map<string, string>();
   for (const ev of events) {
     const q = ev.question;
-    if (ev.choices === undefined) {
+    // 동적 후보 카드(`pick`, SPEC-018 PL5)도 선택 카드다 — 정의 선택지가 없을 뿐 질문 문장을 갖는다
+    if (ev.choices === undefined && ev.pick === undefined) {
       if (q !== undefined) problems.push(`${ev.id}.question: 서술 이벤트(선택지 없음)에는 질문 문장이 없다`);
       continue;
     }
@@ -1112,7 +1113,7 @@ export function questionProblems(events: readonly EventDef[]): string[] {
     if (banned !== null) problems.push(`${ev.id}.question: 평가·계층·시대 판단어나 숫자(「${banned[0]}」)를 쓰지 않는다 — "${q}"`);
     const body = q.replace(/\?$/, '');
     if (body === ev.title || `${ev.title}?` === q) problems.push(`${ev.id}.question: 제목에 물음표만 붙인 꼴이다 — 갈림길이 보여야 한다`);
-    for (const c of ev.choices) if (body === c.label) problems.push(`${ev.id}.question: 선택지 문구(${c.id})를 그대로 반복했다`);
+    for (const c of ev.choices ?? []) if (body === c.label) problems.push(`${ev.id}.question: 선택지 문구(${c.id})를 그대로 반복했다`);
   }
   return problems;
 }

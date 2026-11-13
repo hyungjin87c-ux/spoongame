@@ -15,6 +15,7 @@ import {
   type DecisionRow,
 } from '../data/parentDecisionTable';
 import { condContextOf } from './apply';
+import { actPullOf, personaOf } from './persona';
 import { isChoiceEvent, resolveEffects, stageOfAge, type EventDef, type EventPool } from './events';
 import { STAT_KEYS, type GameState, type ParentWealth, type StatKey } from './types';
 
@@ -22,8 +23,8 @@ import { STAT_KEYS, type GameState, type ParentWealth, type StatKey } from './ty
  * 어린 시절 부모님 결정 (SPEC-005 PD1~PD4·PD13, 설계 문서 docs/data/parent-decision-model.md — PD0 승인 2026-10-20). **순수 함수**: 난수·시각을 쓰지 않는다(`Date`·`Math.random` 없음).
  *
  *  - `deciderOf(eventId, age)`: 그 해 그 결정 카드를 누가 정하는가 — `'parent'` 부모님 / `'child'` 흘러감(아이의 반응·행동이 선택지라 아이의 성향·형편으로 정해짐) / `'self'` 본인.
- *  - `parentChoiceWeights(state, pool)`: 부모의 선택지 확률(2절). 입력은 수저 단계·양육 방식·형제 순서·집안 살림 잔액·아이의 현재 스탯·나이뿐이다 —
- *    부모 직업·부모 나이·성별·이름·지역·외모는 입력이 아니다(마스터 결정 M4, 시험이 격자로 잠근다).
+ *  - `parentChoiceWeights(state, pool)`: 부모의 선택지 확률(2절). 입력은 수저 단계·양육 방식·형제 순서·집안 살림 잔액·아이의 현재 스탯·나이, 그리고 **맞춤 인생 판에서만 아이의 활동 끌림**(SPEC-018 PL5 결정 후속 237 ① — 「아이가 좋아하는 쪽을 시킨다」, `act`가 붙은 선택지만)이다 —
+ *    부모 직업·부모 나이·성별·이름·지역·외모는 입력이 아니다(마스터 결정 M4, 시험이 격자로 잠근다). 맞춤 인생이 없는 판(구형 저장·스위치 끔)과 `act`가 없는 카드는 변경 전과 비트 단위로 같다.
  *  - 흘러감의 확률은 `autoChoiceWeights`를 그대로 쓴다(`life.ts#childFlowWeights`, 승인 A9).
  */
 
@@ -104,6 +105,7 @@ export interface ChoiceWeights {
  *
  *   스탯항 = Σ_k Δ_j.stats[k] × PARENT_PRIORITY[양육 방식][k] × need_k        need_k = 1 + (50 − 스탯_k) / 100  (0.5~1.5)
  *   돈항   = (Δ_j.family / 150) × PARENT_PRIORITY[양육 방식].wealth × M        M = moneyNeed(수저) × siblingFactor(형제 순서) × balanceFactor(집안 살림 잔액)
+ *   끌림항 = actPullOf(기질 세기, act_j)   — 맞춤 인생 판이고 선택지에 `act`가 있을 때만(자동 모드와 같은 값, ±4로 잘림). 부모 온도 T_p = 8이 자동(6)보다 퍼져 같은 끌림도 약하게 작동한다
  *   w_j    = ε / n + (1 − ε) × fit_j × exp(clamp(S_j / T_p, ±40)) / Σ_i fit_i × exp(clamp(S_i / T_p, ±40))
  *
  * `Δ_j`는 영향 줄과 같은 실제 효과(`resolveEffects`)이고, 20세 미만이라 자산 항은 없다. `fit_j`(`PARENT_FIT`)는 가중치에만 곱하고 선택지의 효과를 바꾸지 않는다.
@@ -122,6 +124,7 @@ export function parentChoiceWeights(state: GameState, pool: EventPool = eventPoo
   const money = moneyNeedOf(parentWealth) * siblingFactor(order) * balanceFactor(state.familyFund);
   const limit = PARENT_MODEL.exponentLimit;
   const n = pending.choiceIds.length;
+  const persona = personaOf(state); // 맞춤 인생이 없거나 스위치가 꺼졌으면 null — 끌림항 0
   const raw = pending.choiceIds.map((id) => {
     const choice = ev.choices?.find((c) => c.id === id);
     if (choice === undefined) throw new Error(`parentChoiceWeights: 선택지를 찾을 수 없다 (${id})`);
@@ -134,6 +137,7 @@ export function parentChoiceWeights(state: GameState, pool: EventPool = eventPoo
       score += delta * priority[key] * need;
     }
     score += (eff.family / PARENT_MODEL.moneyPoint) * priority.wealth * money;
+    if (persona !== null && choice.act !== undefined) score += actPullOf(persona, choice.act); // 아이의 활동 끌림(결정 후속 237 ①)
     return parentFitOf(ev.id, id) * Math.exp(Math.max(-limit, Math.min(limit, score / PARENT_MODEL.temperature)));
   });
   const total = raw.reduce((a, b) => a + b, 0);

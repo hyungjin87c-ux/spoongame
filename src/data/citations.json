@@ -268,7 +268,9 @@
         {"token":"300만 원","kind":"label","a":1},
         {"token":"52.8%","kind":"ref","a":1}
       ],
-      "usedBy": [],
+      "usedBy": [
+        "school-lessons"
+      ],
       "candidateFor": [
         "SA1",
         "BR5"
@@ -3270,7 +3272,8 @@
       ],
       "note": "지금 세상 전용(R-02). KOSIS 표와 교육부 2025-11-25 보도자료의 값(55.2%)이 같다. 「직업계고」는 특성화고·마이스터고·일반고 직업반의 합이다. 졸업자 수(59,661명)는 분모(진학자 등을 뺐는지)를 확인하지 못해 문장에서 뺐다 — 졸업자 수와 취업률을 붙여 쓰면 「59,661명 중 55.2%」로 읽힌다(REV-003-M7b-1 R-391). 졸업자 수 합계 대조는 tests/m7bPrep.test.ts에 남아 있다.",
       "usedBy": [
-        "school-career-choice"
+        "school-career-choice",
+        "school-high-pick"
       ],
       "verified": true,
       "usable": true,

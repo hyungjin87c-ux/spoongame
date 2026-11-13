@@ -1188,10 +1188,11 @@ describe('M7a r3 lint 보강: 옛 철자 · 금액 문장 · 마침표 뒤 띄�
       expect(conditionsCompatible([{ assets: { netMin: 5000 } }, { assets: { netMax: 1000 } }])).toBe(false);
     });
 
-    it('실제 풀: 모든 선택지 이벤트에서 동시에 보이는 선택지가 3개 이하이고, 정의가 4개인 것은 infant-new-sibling·youth-housing뿐이다 (플래그 있음·없음 모두 3개)', () => {
+    it('실제 풀: 모든 선택지 이벤트에서 동시에 보이는 선택지가 3개 이하이고, 정의가 4개인 것은 infant-new-sibling·school-exam·youth-housing뿐이다 (플래그 있음·없음 모두 3개)', () => {
       for (const e of EVENT_POOL.events.filter((x) => x.choices !== undefined)) expect(maxVisibleChoices(e), e.id).toBeLessThanOrEqual(3);
       // 정의가 4개인 이벤트는 둘뿐이다 (M7e-4: youth-housing이 가족 집 판의 「머문다」와 독립 판의 「돌아간다」를 가르며 4개가 되었다 — 둘은 assets.dwelling 목록이 서로 배타)
-      expect(EVENT_POOL.events.filter((x) => x.choices?.length === 4).map((x) => x.id).sort()).toEqual(['infant-new-sibling', 'youth-housing']);
+      // SPEC-018 PL5(결정 후속 237): school-exam에 맞춤 판 수저 1 전용 `night`(requires parentWealth ≤ 1 · tailored)가 더해졌다 — retry(≥ 2)와 배타라 어느 칸에서도 3개
+      expect(EVENT_POOL.events.filter((x) => x.choices?.length === 4).map((x) => x.id).sort()).toEqual(['infant-new-sibling', 'school-exam', 'youth-housing']);
       const sib = EVENT_POOL.byId.get('infant-new-sibling')!;
       expect(sib.choices).toHaveLength(4);
       expect(maxVisibleChoices(sib)).toBe(3);

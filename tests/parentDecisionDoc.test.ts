@@ -37,11 +37,11 @@ describe('T1b 설계 문서 기계 판독 블록 = 코드 분류표 (PD2)', () =
   // 반려동물 행은 스위치가 꺼지면 코드 표에 없다 — 그때는 시험이 건너뛴다(SPEC-011 AK9)
   const rows = all.filter((r) => ASK_PET_ENABLED || !r.pet);
 
-  it('블록이 41줄이다(32 + 조르기 9) — 반려동물 2줄은 `pet` 표지, 스위치가 꺼지면 코드 표는 39줄 (문서의 헤더 주석은 건너뛴다)', () => {
-    expect(all).toHaveLength(41);
-    expect(new Set(all.map((r) => r.id)).size).toBe(41);
+  it('블록이 43줄이다(32 + PL5 2 + 조르기 9) — 반려동물 2줄은 `pet` 표지, 스위치가 꺼지면 코드 표는 41줄 (문서의 헤더 주석은 건너뛴다)', () => {
+    expect(all).toHaveLength(43);
+    expect(new Set(all.map((r) => r.id)).size).toBe(43);
     expect(all.filter((r) => r.pet).map((r) => r.id)).toEqual(['ask-pet-a', 'ask-pet-b']);
-    expect(rows).toHaveLength(ASK_PET_ENABLED ? 41 : 39);
+    expect(rows).toHaveLength(ASK_PET_ENABLED ? 43 : 41);
   });
 
   it('행마다 같다: 이벤트 id 순서·영역 목록·childActUntil이 코드와 문서에서 한 글자도 다르지 않다', () => {

@@ -5,6 +5,7 @@ import {
   LOOKS_BUSINESS_EVENTS,
   LOOKS_EXCEPTION_EVENTS,
   LOOKS_ROMANCE_EVENTS,
+  PL5_ALLOWED,
   cellDiffs,
   formatDiffs,
   parseKey,
@@ -30,9 +31,9 @@ vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: false }));
  *
  * **3b단계(PL16)**: 스위치 출하 값이 켜졌지만 이 시험은 스위치를 끈 경로(mock)로 고정한다. 허용된 필드별 차이(`ALLOWED` = `LOOKS_ALLOWED`)는 설계 4B절 「기존 사건 예외」 7개 사건
  * (`school-first-love`·`youth-meeting`·`youth-meeting-again`·`youth-matchmaker`·`youth-workplace-romance`·`youth-startup`·`middle-business`)의
- * **외모 항**만이다 — 예외 사건의 외모 `modifiers` 항, 사업 2곳의 외모 소득 보너스, 그 결과로 달라지는 칸(외모 50이 아닌 칸의 `w`·`dw`·사업 `fx`). 외모 50(중립) 칸은 한 칸도 달라지면 안 된다.
+ * **외모 항**과, PL5(결정 후속 237)가 `school-exam`에 더한 맞춤 인생 전용 선택지 `night`의 정적 정의(`PL5_ALLOWED` — 칸 차이 허용 없음)뿐이다 — 예외 사건의 외모 `modifiers` 항, 사업 2곳의 외모 소득 보너스, 그 결과로 달라지는 칸(외모 50이 아닌 칸의 `w`·`dw`·사업 `fx`). 외모 50(중립) 칸은 한 칸도 달라지면 안 된다.
  */
-const ALLOWED: readonly AllowedDiff[] = LOOKS_ALLOWED;
+const ALLOWED: readonly AllowedDiff[] = [...LOOKS_ALLOWED, ...PL5_ALLOWED];
 
 const grid = loadGrid();
 const pool = eventPool();
@@ -104,16 +105,24 @@ describe('기존 사건 자격 골든 — 사건 격자', () => {
   });
 
   it('허용 목록은 설계 4B 예외뿐이다: 7개 사건·필드 단위(외모 modifiers · 사업 start 보너스 · 외모 50이 아닌 칸의 w·dw·사업 fx), 결혼 사슬·school-mirror·youth-approached는 없다', () => {
-    expect(new Set(ALLOWED.map((a) => a.event))).toEqual(new Set(LOOKS_EXCEPTION_EVENTS));
+    expect(new Set(LOOKS_ALLOWED.map((a) => a.event))).toEqual(new Set(LOOKS_EXCEPTION_EVENTS));
     expect(LOOKS_EXCEPTION_EVENTS.length).toBe(7);
-    expect([...new Set(ALLOWED.map((a) => a.path))].sort()).toEqual(['cell.dw', 'cell.fx.confess', 'cell.fx.start', 'cell.w', 'static.choices.confess.bonuses', 'static.choices.start.bonuses', 'static.modifiers']);
+    expect([...new Set(LOOKS_ALLOWED.map((a) => a.path))].sort()).toEqual(['cell.dw', 'cell.fx.confess', 'cell.fx.start', 'cell.w', 'static.choices.confess.bonuses', 'static.choices.start.bonuses', 'static.modifiers']);
     // 칸 차이는 전부 「외모가 50이 아닌 칸」만 허용한다(외모 50 = 중립 판은 한 칸도 달라지면 안 된다)
-    for (const a of ALLOWED.filter((x) => x.path.startsWith('cell.'))) expect(a.whenLooksNot50, `${a.event} ${a.path}`).toBe(true);
+    for (const a of LOOKS_ALLOWED.filter((x) => x.path.startsWith('cell.'))) expect(a.whenLooksNot50, `${a.event} ${a.path}`).toBe(true);
     for (const banned of ['youth-marriage', 'youth-marriage-again', 'youth-reunion', 'youth-second-chance', 'school-mirror', 'youth-approached']) {
       expect(
         ALLOWED.some((a) => a.event === banned),
         banned,
       ).toBe(false);
     }
+  });
+  it('PL5 허용은 school-exam의 맞춤 전용 선택지 night 하나뿐이다: 정적 정의만(칸 차이 허용 0), 그 선택지는 tailored를 요구해 맞춤 인생이 없는 판에서 보이지 않는다 [결정 후속 237]', () => {
+    expect(PL5_ALLOWED.map((a) => a.event)).toEqual(['school-exam', 'school-exam']);
+    expect(PL5_ALLOWED.every((a) => a.path.startsWith('static.'))).toBe(true);
+    const night = pool.byId.get('school-exam')!.choices!.find((c) => c.id === 'night')!;
+    expect(night.requires?.tailored).toBe(true);
+    // 옛 선택지 셋은 순서·정의가 그대로다(위 정적 대조가 choiceOrder.0~2와 apply·retry·work를 계속 본다)
+    expect(pool.byId.get('school-exam')!.choices!.slice(0, 3).map((c) => c.id)).toEqual(['apply', 'retry', 'work']);
   });
 });

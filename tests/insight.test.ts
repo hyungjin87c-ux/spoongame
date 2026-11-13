@@ -179,9 +179,10 @@ describe('대상 ↔ 데이터: 본인이 고르는 카드에 연결된 인용 3
     expect(targets).toEqual([...Object.keys(INSIGHT_BY_ID), ...INSIGHT_OMITTED].sort());
   });
 
-  it('부모·흘러감 전용 카드에만 연결된 인용(13개)에는 풀이가 없다 — 풀이를 달 일이 없다 (M23)', () => {
+  it('부모·흘러감 전용 카드에만 연결된 인용(14개 — PL5 G1의 c-007이 더해졌다)에는 풀이가 없다 — 풀이를 달 일이 없다 (M23)', () => {
     const parentOnly = [...USERS.parentOnly.keys()].filter((id) => !USERS.self.has(id));
-    expect(parentOnly).toHaveLength(13);
+    expect(parentOnly).toHaveLength(14);
+    expect(parentOnly).toContain('c-007');
     for (const id of parentOnly) expect(insightFor(id), id).toBeNull();
   });
 

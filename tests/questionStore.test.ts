@@ -45,11 +45,11 @@ describe('QS1 ① resolveChoiceCore 세 경로가 같은 question 을 적는다'
     expect(choices.length, '공허 통과 방지').toBeGreaterThan(20);
     for (const h of choices) {
       expect(h.question, `${h.age}세 ${h.eventId}`).toBe(questionOf(h.eventId));
-      // 진로 카드(`pick`, SPEC-018 PL4)는 스키마가 `question`을 금한다(events-schema.md — 문장은 PL5): 키가 없다(옛 줄과 같은 모양)
-      if (isPick(h.eventId)) expect(Object.prototype.hasOwnProperty.call(h, 'question'), `${h.age}세 진로 카드`).toBe(false);
-      else expect(typeof h.question).toBe('string');
+      // 진로 카드(`pick`)도 PL5(결정 후속 237)부터 질문 문장을 갖는다 — 다른 결정 줄과 같은 규칙
+      expect(typeof h.question, `${h.age}세 ${h.eventId}`).toBe('string');
     }
-    expect(choices.filter((h) => !isPick(h.eventId)).length, '질문이 있는 결정 줄 (공허 통과 방지)').toBeGreaterThan(20);
+    expect(choices.filter((h) => !isPick(h.eventId)).length, '질문이 있는 일반 결정 줄 (공허 통과 방지)').toBeGreaterThan(20);
+    expect(choices.filter((h) => isPick(h.eventId)).length, '질문이 있는 진로 카드 줄 (공허 통과 방지)').toBeGreaterThan(0);
   });
 
   it('본인 선택 · 부모 결정 · 흘러감 줄이 모두 있고(by 없음 · parent · child) 모두 question 이 같은 규칙으로 들어간다', () => {

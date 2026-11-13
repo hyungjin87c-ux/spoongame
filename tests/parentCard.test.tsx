@@ -8,6 +8,7 @@ import {
   cardReadNeedMs,
   citationFor,
   decisionFor,
+  eraBucketOf,
   holdMsFor,
   possibleAgesOf,
   previewChoice,
@@ -445,7 +446,9 @@ describe('카드 필요량 불변식 (PD5-d, 설계 문서 4-3절): 연출 대�
             if (d.tick.kind !== 'resolved') continue; // 사망한 해는 카드를 그리지 않는다
             const html = cardHtml(d.game, d.tick);
             const result = d.game.history.filter((h) => h.eventId === eventId).pop()!.text;
-            const hasCite = citationFor(ev, era, calendarYear(d.before.character!.birthYear, age)) !== null;
+            // 카드(ParentCard)와 틱은 그 판 세대의 시대 구간(`eraBucketOf`)으로 인용을 찾는다 — 시험의 세상 이름(`era`)은 시작 상태를 찾는 힌트라 세대 구간과 다를 수 있다(PL5 G1: 알파 9세 = 다가올 세상)
+            const year = calendarYear(d.before.character!.birthYear, age);
+            const hasCite = citationFor(ev, eraBucketOf(d.before.generation, year), year) !== null;
             if (hasCite) cited++;
             const need = cardReadNeedMs(renderedChars(html) + result.length, hasCite);
             const where = `${eventId}/${choice.id} ${era} ${age}세`;

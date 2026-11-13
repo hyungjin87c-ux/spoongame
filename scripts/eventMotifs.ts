@@ -55,6 +55,8 @@ export const EVENT_MOTIFS: Record<string, string> = {
   'school-academy-night': '친구들이 저녁을 학원에서 보내기 시작하던 밤',
   'school-family-priority': '형제 많은 집에서 학비 순서가 정해지던 일',
   'school-career-choice': '공부를 계속할지 기술을 배울지 정하던 갈림길',
+  'school-lessons': '학교가 끝난 오후를 학원·운동·집안일 중 어디서 보내는지가 집집마다 달랐던 일',
+  'school-high-pick': '중학교 마지막 해 일반고·실업계·특목고·예고 원서를 앞에 둔 갈림길',
   'school-parttime': '용돈이 모자라 처음 일을 해 보던 일',
   'school-puppy': '집 앞의 떠돌이 강아지를 데려올지 망설인 일',
   // 어린 시절 조르기 (SPEC-011 AK7 — 문방구·진열대·교실 앞에서 갖고 싶은 것을 말하던 아이의 장면. 강아지 2사건은 스위치가 켜질 때 더한다)

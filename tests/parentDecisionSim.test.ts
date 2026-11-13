@@ -57,14 +57,19 @@ const tiered = lazy(() => Object.fromEntries(SIM_PROFILES.map((era) => [era, sam
 // T3 동치·결정론
 // ---------------------------------------------------------------------------------------------------------------------
 
-/** 연표 줄의 `by`와 (부모일 때만 달라질 수 있는) 선택 문구를 가린 상태 — 동치 비교용 */
-function normalized(state: GameState, maskText: boolean): unknown {
+/**
+ * 연표 줄의 `by`와 (부모일 때만 달라질 수 있는) 선택 문구를 가린 상태 — 동치 비교용.
+ * `maskGrowth`: 활동 표지(`act`)가 있는 선택지는 맞춤 판에서 기질·적성이 움직이는데, 부모가 정한·흘러간 카드는 그 폭이 **절반**이다(설계 persona-model.md 1-3절 ①, M5) —
+ * 그 차이(`persona.w`·`g`·`shown`)만 가리고 나머지(`persona`의 다른 필드 포함)는 그대로 견준다(SPEC-018 PL5가 G1~G3에 `act`를 처음 붙였다).
+ */
+function normalized(state: GameState, maskText: boolean, maskGrowth = false): unknown {
   const history = state.history.map((h, i) => {
     const { by: _by, ...rest } = h as HistoryEntry & { by?: unknown };
     void _by;
     return maskText && i === state.history.length - 1 ? { ...rest, text: '', choice: '' } : rest;
   });
-  return { ...state, history };
+  const persona = maskGrowth && state.persona !== undefined ? { ...state.persona, w: null, g: null, shown: null } : state.persona;
+  return { ...state, history, ...(persona !== undefined ? { persona } : {}) };
 }
 
 interface Capture {
@@ -103,9 +108,10 @@ function playAndCapture(seed: number, era: ProfileId, strategy: Strategy, onYear
 describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
   const SEEDS = 40;
 
-  it('① 부모님이 정한 해는 같은 상태에서 그 선택지를 수동으로 고른 것과 같다: 연표 줄의 by(와 parentLabel/parentResult가 있는 카드의 문구)만 빼고 상태 전체가 같다', () => {
+  it('① 부모님이 정한 해는 같은 상태에서 그 선택지를 수동으로 고른 것과 같다: 연표 줄의 by(와 parentLabel/parentResult가 있는 카드의 문구, 맞춤 판 `act` 카드의 절반 성장)만 빼고 상태 전체가 같다', () => {
     let checked = 0;
     let labeled = 0;
+    let grown = 0;
     for (const era of SIM_PROFILES) {
       for (let i = 1; i <= SEEDS; i++) {
         const seed = seedOf(i);
@@ -117,7 +123,9 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
           const choice = ev.choices!.find((x) => x.id === c.choiceId)!;
           const hasParentText = choice.parentLabel !== undefined || choice.parentResult !== undefined;
           if (hasParentText) labeled++;
-          expect(normalized(c.after, hasParentText), `${era} 시드 ${seed} ${key}/${c.choiceId}`).toEqual(normalized(manual, hasParentText));
+          const growth = choice.act !== undefined && c.before.persona !== undefined;
+          if (growth) grown++;
+          expect(normalized(c.after, hasParentText, growth), `${era} 시드 ${seed} ${key}/${c.choiceId}`).toEqual(normalized(manual, hasParentText, growth));
           // by 표지와 틱
           expect(c.after.history.filter((h) => h.eventId === ev.id).pop()?.by).toBe('parent');
           expect(c.tick.by).toBe('parent');
@@ -130,6 +138,7 @@ describe('T3 동치·결정론 (설계 문서 5절 T3)', () => {
     }
     expect(checked, '대조한 부모 해 수(공허 통과 방지)').toBeGreaterThan(300);
     expect(labeled, 'parentLabel/parentResult가 있는 카드도 한 번 이상 대조했다').toBeGreaterThan(0);
+    expect(grown, '맞춤 판의 `act` 카드(PL5 G1~G3)도 한 번 이상 대조했다').toBeGreaterThan(0);
   });
 
   it('② 흘러감은 autoResolveStep과 상태 전체가 같다 (by 표지만 다르다)', () => {
@@ -301,14 +310,16 @@ describe('T5 ①② 구조: 결정자 표지가 100% 맞고, 부모·흘러감 �
 
 describe('T5 ③ 판당 카드 수: 부모 결정 + 흘러감 합이 3.8~7장 안이다 (손계산 5.9 → 조르기가 칸을 나눠 쓴 뒤 약 3.9, SPEC-011 5절)', () => {
   // SPEC-011 AK10: 조르기 사건 7개(4~12세 본인 카드, 판당 약 1.5장)가 선택지 칸을 나눠 써서 부모+흘러감이 5.96 → 4.38장(7세대 표본, report:ask 「카드 이동」)으로 줄었다 — 설계 문서 5-1절 손계산 약 4.0과 같은 크기다.
-  it('세 시대 × 두 전략 모두: 합 3.8 ≤ 평균 ≤ 7 · 부모 ≥ 3.0 · 흘러감 ≥ 0.8 (측정 부모 3.3~3.5 · 흘러감 1.0~1.1 · 합 4.3~4.5; 조르기 전은 부모 4.5~4.7 · 흘러감 1.3~1.4 · 합 5.9~6.0)', () => {
+  // SPEC-018 PL5(결정 후속 237 뒤, 2026-11-13): 맞춤 판의 새 부모 카드 G1(9~12세, 1990년부터)·G2(14~15세)가 칸을 나눠 써 알파의 흘러감이 0.75장으로 줄었다(산업화 1.09 · X 1.01) — 하한 0.8 → 0.7(마스터, 결정 후속 240).
+  // 측정(두 전략 같음): 부모 산업화 3.17 · X 3.24 · 알파 3.64 / 흘러감 1.09 · 1.01 · 0.75
+  it('세 시대 × 두 전략 모두: 합 3.8 ≤ 평균 ≤ 7 · 부모 ≥ 3.0 · 흘러감 ≥ 0.7 (PL5 뒤 측정 부모 3.17~3.64 · 흘러감 0.75~1.09 · 합 4.26~4.40; 조르기 전은 부모 4.5~4.7 · 흘러감 1.3~1.4 · 합 5.9~6.0)', () => {
     for (const st of STRATEGIES) {
       for (const era of SIM_PROFILES) {
         const c = cardCounts(natural()[st][era]);
         expect(c.parent + c.child, `${era} ${st} 합`).toBeGreaterThanOrEqual(3.8);
         expect(c.parent + c.child, `${era} ${st} 합`).toBeLessThanOrEqual(7);
         expect(c.parent, `${era} ${st} 부모`).toBeGreaterThanOrEqual(3.0);
-        expect(c.child, `${era} ${st} 흘러감`).toBeGreaterThanOrEqual(0.8);
+        expect(c.child, `${era} ${st} 흘러감`).toBeGreaterThanOrEqual(0.7);
       }
     }
   });
