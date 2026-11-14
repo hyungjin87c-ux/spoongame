@@ -1,0 +1,481 @@
+{
+  "generatedAt": "2026-11-13T21:35:48.496Z",
+  "screenshots": [
+    {
+      "file": "up-360-light-end.png",
+      "bytes": 24180,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "same-360-light-end.png",
+      "bytes": 23294,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "down-360-light-end.png",
+      "bytes": 25106,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "early-360-light-end.png",
+      "bytes": 22432,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "up-360-light-start.png",
+      "bytes": 24130,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "up-360-light-mid.png",
+      "bytes": 24188,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "reduce-360-light.png",
+      "bytes": 26444,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "up-360-dark-end.png",
+      "bytes": 24517,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "same-360-dark-end.png",
+      "bytes": 23654,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "down-360-dark-end.png",
+      "bytes": 25478,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "early-360-dark-end.png",
+      "bytes": 22695,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "up-360-dark-start.png",
+      "bytes": 24492,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "up-360-dark-mid.png",
+      "bytes": 24537,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "reduce-360-dark.png",
+      "bytes": 26846,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "up-1280-light-end.png",
+      "bytes": 39888,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "same-1280-light-end.png",
+      "bytes": 36858,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "down-1280-light-end.png",
+      "bytes": 42739,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "early-1280-light-end.png",
+      "bytes": 38818,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "up-1280-light-start.png",
+      "bytes": 39917,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "up-1280-light-mid.png",
+      "bytes": 39970,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "reduce-1280-light.png",
+      "bytes": 43009,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "up-1280-dark-end.png",
+      "bytes": 40213,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "same-1280-dark-end.png",
+      "bytes": 37162,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "down-1280-dark-end.png",
+      "bytes": 43113,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "early-1280-dark-end.png",
+      "bytes": 39141,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "up-1280-dark-start.png",
+      "bytes": 40168,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "up-1280-dark-mid.png",
+      "bytes": 40239,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "reduce-1280-dark.png",
+      "bytes": 43298,
+      "width": 1280,
+      "fullPage": false
+    },
+    {
+      "file": "full-360-light-start.png",
+      "bytes": 26404,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "full-360-light-choice.png",
+      "bytes": 40568,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "full-360-light-closing.png",
+      "bytes": 25413,
+      "width": 360,
+      "fullPage": false
+    },
+    {
+      "file": "industrial-1280-light-full.png",
+      "bytes": 168892,
+      "width": 1280,
+      "fullPage": true
+    },
+    {
+      "file": "motion-three-1280-light.png",
+      "bytes": 162686,
+      "width": 1280,
+      "fullPage": true
+    },
+    {
+      "file": "motion-three-1280-dark.png",
+      "bytes": 165340,
+      "width": 1280,
+      "fullPage": true
+    },
+    {
+      "file": "index-1280-light.png",
+      "bytes": 118708,
+      "width": 1280,
+      "fullPage": true
+    },
+    {
+      "file": "gentle-360-light-list.png",
+      "bytes": 140201,
+      "width": 360,
+      "fullPage": true
+    },
+    {
+      "file": "reduce-320-200pct.png",
+      "bytes": 254109,
+      "width": 320,
+      "fullPage": true
+    },
+    {
+      "file": "reduce-360-forced-colors.png",
+      "bytes": 24232,
+      "width": 360,
+      "fullPage": false
+    }
+  ],
+  "cases": [
+    {
+      "id": "millennial-low",
+      "width": 360,
+      "theme": "light",
+      "fact": "흙수저로 태어나 동수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 흙수저로 태어나 동수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "few-family",
+      "width": 360,
+      "theme": "light",
+      "fact": "은수저로 태어나 은수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 은수저로 태어나 은수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "millennial-high",
+      "width": 360,
+      "theme": "light",
+      "fact": "다이아몬드수저로 태어나 금수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 다이아몬드수저로 태어나 금수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "early-death",
+      "width": 360,
+      "theme": "light",
+      "fact": "동수저로 태어났습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 동수저로 태어났습니다.\n  - paragraph: 마칠 때의 수저는 추산하지 않았습니다."
+    },
+    {
+      "id": "millennial-low",
+      "width": 360,
+      "theme": "dark",
+      "fact": "흙수저로 태어나 동수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 흙수저로 태어나 동수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "few-family",
+      "width": 360,
+      "theme": "dark",
+      "fact": "은수저로 태어나 은수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 은수저로 태어나 은수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "millennial-high",
+      "width": 360,
+      "theme": "dark",
+      "fact": "다이아몬드수저로 태어나 금수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 다이아몬드수저로 태어나 금수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "early-death",
+      "width": 360,
+      "theme": "dark",
+      "fact": "동수저로 태어났습니다.",
+      "geometry": {
+        "scroll": 360,
+        "view": 360,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 동수저로 태어났습니다.\n  - paragraph: 마칠 때의 수저는 추산하지 않았습니다."
+    },
+    {
+      "id": "millennial-low",
+      "width": 1280,
+      "theme": "light",
+      "fact": "흙수저로 태어나 동수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 흙수저로 태어나 동수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "few-family",
+      "width": 1280,
+      "theme": "light",
+      "fact": "은수저로 태어나 은수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 은수저로 태어나 은수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "millennial-high",
+      "width": 1280,
+      "theme": "light",
+      "fact": "다이아몬드수저로 태어나 금수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 다이아몬드수저로 태어나 금수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "early-death",
+      "width": 1280,
+      "theme": "light",
+      "fact": "동수저로 태어났습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 동수저로 태어났습니다.\n  - paragraph: 마칠 때의 수저는 추산하지 않았습니다."
+    },
+    {
+      "id": "millennial-low",
+      "width": 1280,
+      "theme": "dark",
+      "fact": "흙수저로 태어나 동수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 흙수저로 태어나 동수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "few-family",
+      "width": 1280,
+      "theme": "dark",
+      "fact": "은수저로 태어나 은수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 은수저로 태어나 은수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "millennial-high",
+      "width": 1280,
+      "theme": "dark",
+      "fact": "다이아몬드수저로 태어나 금수저로 마쳤습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 다이아몬드수저로 태어나 금수저로 마쳤습니다.\n  - paragraph: 가구주 연령대별 통계를 바탕으로 추산했습니다.\n  - group: 추산 기준"
+    },
+    {
+      "id": "early-death",
+      "width": 1280,
+      "theme": "dark",
+      "fact": "동수저로 태어났습니다.",
+      "geometry": {
+        "scroll": 1280,
+        "view": 1280,
+        "overflow": []
+      },
+      "accessible": "- region \"태어나고 마칠 때\":\n  - heading \"태어나고 마칠 때\" [level=2]\n  - paragraph: 동수저로 태어났습니다.\n  - paragraph: 마칠 때의 수저는 추산하지 않았습니다."
+    }
+  ],
+  "checks": [
+    {
+      "animationMidMix": 0.509374999995033
+    },
+    "Live OS reduced motion replaces fade with static pair",
+    "data-motion=reduce disables playback",
+    "data-motion=normal restores playback",
+    "Manual wheel pauses; no automatic resume",
+    "Escape returns focus to invoking button; replay focuses title",
+    "Replay registers new scene observer; offscreen pause",
+    "Gentle closed DOM omits source; explicit expansion; replay resets",
+    {
+      "zoom200": {
+        "scroll": 320,
+        "view": 320,
+        "overflow": []
+      }
+    },
+    "Return button remains within viewport at 200%",
+    "Forced colors: two names and 5 dots each remain"
+  ],
+  "errors": [],
+  "extra": {
+    "fontCoverage": {
+      "uniqueHangul": 290,
+      "weights": [
+        400,
+        700
+      ],
+      "missing": {
+        "400": [],
+        "700": []
+      }
+    },
+    "timing": {
+      "at04": 0,
+      "at34": 1,
+      "after5seconds": "finished"
+    },
+    "unchangedPicturesAtMidpoint": [
+      "few-family",
+      "early-death"
+    ],
+    "tokenReferencesChecked": 40
+  },
+  "finalAudit": {
+    "timestamp": "2026-11-13T21:41:17.053Z",
+    "samplesAndViewModel": "6 exact",
+    "planTranscripts": "6 exact",
+    "matrix": "4 cases × 2 widths × 2 themes",
+    "pngCount": 38,
+    "maxPNG": 254109,
+    "keyboard": "Space/Enter toggle; Tab pause; visible return button works"
+  }
+}
