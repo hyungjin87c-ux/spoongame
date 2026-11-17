@@ -42,12 +42,20 @@ import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, marginReport, pr
  * 같은 까닭으로 줄별 두 칸을 보고로 돌린다(합친 판정은 위 한계 그대로): `세 시대 평균 시간 / 시험 · 자동 성향`(−0.9 SE — 이 한 줄의 평균이 상한을 약 1 SE 넘는다, 허용은 −1.5 SE까지 = `floor` 0 − 1.5)과
  * `읽기 「높음」(느린 독자) / alpha / 시험 · 자동 성향`(0.7 SE — 상한 안, 허용은 「상한을 넘지 않음」 0 SE까지 = `floor` 1.5 − 1.5). 판 길이 보고(형진 님)에 줄별 값을 함께 적는다.
  */
+/**
+ * **SPEC-018 G2 「같은 해에 함께」(2026-11-17, 결정 후속 255·262 ⑤·263 ②)**: 판당 부모 카드 약 0.36장이 더해져 세 시대 평균이 35.93 → 36.09 ± 0.03분(합친 4줄, 시대마다 4000판)으로 이전 상한 36을 넘었고,
+ * 형진 님 결정 263 ②로 상한이 36 → 36.5분(`timeMin.modelHigh`)이 되었다. 새 상한까지 여유가 약 13 SE라 `세 시대 평균 시간 (위) / 평균`(합친 줄 · 이전 한계 1.5 SE)은 「여유가 생기면 목록에서 뺀다」 규칙대로 뺐다.
+ * 줄별 보고 줄(`lineOnly`, 이전 한계 0 SE)도 새 상한에서 줄 평균(최대 36.21분)까지 약 4 SE라 함께 뺐다.
+ * 같은 측정에서 `읽기 「높음」(느린 독자) 평균 시간(분) / alpha`(한계 40분 그대로)가 합친 4줄 39.82분 · 2.7 SE로 상한 안이지만 3 SE 밑이고, 줄별 `판 시간 95% 분위 / alpha`(한계 41분 그대로)가
+ * 시험 · 수동 흉내 1.9 SE · 시험 · 자동 성향 1.2 SE다(합친 4줄 4.8 SE). 이 둘은 결정 후속 263의 지시 목록 밖이라 **목록에 올리지 않았다** — 이 시험은 그 칸들로 실패하고, 처리안은 마스터에게 보고했다(ai-log/2026-11-17_SPEC-018_G2-dev.md 7절).
+ * → 마스터 판단(2026-11-17, 결정 후속 251 ③ 전례 — 상한 안의 「3 SE 미만」은 보고로 돌린다): 둘을 `KNOWN_UNDER3`에 올렸다. 느린 독자 알파는 합친 판정 한계 1.5 SE · 줄별 0 SE(상한을 넘지 않음), 알파 95% 분위는 줄별 한계 1.5 SE. 상한 40·41분은 그대로이고 v0.6.1 통합 측정 뒤 형진 님께 다시 보고한다.
+ */
 const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number; lineOnly?: boolean }> = [
-  { metric: '세 시대 평균 시간 (위)', era: '평균', floor: 1.5 },
   { metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -7.0 },
   { metric: '노년(65세+) 결정 카드 평균', era: 'genx', floor: 1.5, lineOnly: true },
-  { metric: '세 시대 평균 시간 (위)', era: '평균', floor: 0, lineOnly: true },
-  { metric: '읽기 「높음」(느린 독자) 평균 시간(분)', era: 'alpha', floor: 1.5, lineOnly: true },
+  { metric: '읽기 「높음」(느린 독자) 평균 시간(분)', era: 'alpha', floor: 1.5 },
+  { metric: '읽기 「높음」(느린 독자) 평균 시간(분)', era: 'alpha', floor: 0, lineOnly: true },
+  { metric: '판 시간 95% 분위 (41분 초과 판 ≤ 5%와 같은 뜻)', era: 'alpha', floor: 1.5, lineOnly: true },
 ];
 /** 합친 표본은 `floor`(알파 노년 −7.0 SE), 줄별 표본은 그보다 1.5 SE 더 넓은 잡음을 인정한다(줄 하나는 표본이 4분의 1이라 SE가 두 배다) */
 const isKnownUnder3 = (u: { metric: string; era: string; margin: number }, line = false): boolean => KNOWN_UNDER3.some((k) => (line || k.lineOnly !== true) && k.metric === u.metric && k.era === u.era && u.margin >= k.floor);

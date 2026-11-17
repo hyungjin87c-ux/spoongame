@@ -20,12 +20,12 @@ const quietToNarrativeSec = ((HOLD_MS.narrative - HOLD_MS.quiet) * scale) / 1000
 /** 결정 카드 1장이 더하는 시간(분) — content-M8 2-6절(spec-005-baseline 3절 인용): 카드 1장 ≈ 0.52분 */
 const CARD_MIN = 0.52;
 
-console.log(`# 판 길이 (1배속 수동, 읽기 중앙, 모드 ${mode.label}, ${lives}판, 시드 i×7919+13, 수동 흉내) — M24 구간: 세 시대 평균 ${mode.timeMin.modelLow}~${mode.timeMin.modelHigh}분, 시대별 ${mode.timeMin.modelLow - 1.5}~${mode.timeMin.modelHigh + 1.5}분`);
+console.log(`# 판 길이 (1배속 수동, 읽기 중앙, 모드 ${mode.label}, ${lives}판, 시드 i×7919+13, 수동 흉내) — M24 구간: 세 시대 평균 ${mode.timeMin.modelLow}~${mode.timeMin.modelHigh}분, 시대별 ${mode.timeMin.modelLow - 1.5}~${mode.timeMin.eraHigh}분`);
 console.log(`연출 계수 ${scale} · 조용한 해 ${f((HOLD_MS.quiet * scale) / 1000)}초 · 서술 해 ${f((HOLD_MS.narrative * scale) / 1000)}초 · 한 줄 더할 때마다 +${f(extraLineSec)}초 · 조용한 해 → 서술 해 +${f(quietToNarrativeSec)}초`);
 console.log('\n| 시대 | 사망 나이 | 조용한 해 수 q | 조용한 해 비율 | c_self · c_total | **중앙(분)** ± SE | 상한까지 여유(분) | 읽기 낮음 | 읽기 높음 |');
 console.log('|---|---:|---:|---:|---|---:|---:|---:|---:|');
 const meanMed = sums.reduce((a, s) => a + s.median.mean, 0) / sums.length;
-const upperEra = mode.timeMin.modelHigh + 1.5;
+const upperEra = mode.timeMin.eraHigh;
 for (const s of sums) {
   const se = s.median.se;
   console.log(`| ${s.era} | ${f(s.deathAge, 1)} | ${f(s.q, 1)} | ${f((s.q / s.deathAge) * 100, 0)}% | ${f(s.cSelf)} · ${f(s.c)} | **${f(s.median.mean)}** ± ${f(se, 2)} | ${f(upperEra - s.median.mean)} | ${f(s.low.mean)} | ${f(s.high.mean)} |`);

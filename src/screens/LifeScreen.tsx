@@ -9,9 +9,9 @@ import { HeaderLogo, Icon, Sprite } from '../ui/Brand';
 import { FeedbackLink } from '../ui/FeedbackLink';
 import { GuardedButton } from '../ui/GuardedButton';
 import { AssetsCard, FamilyCard, PeersNowCard, ProfileCard, StatusCard, type LifeGame } from '../ui/dash/Cards';
-import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, useDecisionModel } from '../ui/dash/DecisionCard';
+import { DecisionCard, DecisionFold, DecisionInline, DecisionSheet, decisionGuardKey, useDecisionModel } from '../ui/dash/DecisionCard';
 import { LogCard } from '../ui/dash/LogCard';
-import { ParentCard, useParentCardModel } from '../ui/dash/ParentCard';
+import { LEAD_SHEET_DESCRIBED_BY, ParentCard, useLeadCardModel, useParentCardModel } from '../ui/dash/ParentCard';
 import { NoteSheet } from '../ui/dash/NoteSheet';
 import { EraCard, SceneCard } from '../ui/scene/SceneCard';
 import { usePairedEraHeight } from '../ui/scene/usePairedEraHeight';
@@ -328,6 +328,9 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
   const decision = useDecisionModel(game, pool);
   // 부모님이 정한·흘러간 해의 카드 (PD5): 사람이 고르는 카드(decision)와 같은 해에 뜨지 않는다 — 카드 간격 규칙(2년)이 보장한다
   const parentCard = useParentCardModel(game, tick, pool);
+  // 같은 해 원서 카드(G2 「같은 해에 함께」, 결정 후속 255·262·263): 15세 본인 카드가 대기 중이거나(수동 = 시트 안 요약형, 자동·접힘 = 가운데 열 맨 위 전체형) 그 해 카드도 부모·흘러감인 결과 연출 동안(두 장 쌓기, 위 카드).
+  // 틱에서만 파생된다 — 새로고침하면 다시 뜨지 않고 연표 줄만 남는다(PD7-5). 한 곳에만 그린다
+  const leadCard = useLeadCardModel(game, tick, pool);
   // 인생 기록 줄의 부모 결정 도장 주어: 줄의 나이로 그 해 함께 사는 부모(SPEC-011 DS1) — 가족 계획과 나이만 읽는다(현재 플래그를 읽지 않는다). 계획이 같은 동안 한 번만 만든다(저장된 `family`가 없는 손으로 만든 상태는 `game`이 바뀔 때마다)
   const subjectOf = useMemo(() => coParentsFn(game), [game.family ?? game, game.character, game.birthReport, game.peerSeed, game.seed]);
   // 접힘은 대기 중인 선택지가 있을 때만 뜻이 있다(App이 키로 묶어 두지만 여기서도 못 박는다)
@@ -498,6 +501,9 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
           <AssetsCard age={game.age} assets={game.assets} generation={game.generation} />
         </div>
         <div className="col col--center">
+          {/* 같은 해 원서 카드(G2) 전체형 — SPEC-005 LR5 (b) 예외(결정 후속 262·263): 결정 카드 **위**에 둔다(연표 순서 「G2 → 그 해 카드」). 시트가 열려 있으면 시트 안 요약형이 맡아 여기에는 그리지 않는다.
+              비모달이라 포커스를 가져가지 않는다. 한 열(≤ 959px)에서는 `.decision--parent { order: -1 }`이라 DOM 순서대로 맨 위에 쌓인다 */}
+          {leadCard !== null && !sheetOpen ? <ParentCard key={`lead:${leadCard.ev.id}@${leadCard.age}`} model={leadCard} gentle={settings.gentle} variant="lead" /> : null}
           {/* 카드 자리: 접히면 접힌 띠, 자동 모드면 인라인 카드. 모달 시트는 아래(이 형제들 바깥)에서 그린다 */}
           {decision !== null && isFolded ? <DecisionFold model={decision} epoch={guardEpoch} openRef={foldOpenRef} onReopen={onReopen} veiled={veiled} /> : null}
           {decision !== null && !isFolded && settings.autoMode ? (
@@ -521,7 +527,11 @@ export function LifeScreen({ game, settings, pool: poolProp, tick = null, clock,
       <div className="page-end-space" {...inert} />
       {/* 모달 시트: 바깥(헤더·도구 줄·main·본문 끝 여백)이 모두 inert인 동안만 있다 — aria-modal만으로는 Tab이 뒤로 샌다(design-system.md 11-10) */}
       {sheetOpen ? (
-        <DecisionSheet model={decision} onFold={onFold} veiled={veiled}>
+        <DecisionSheet model={decision} onFold={onFold} veiled={veiled} describedBy={leadCard !== null ? LEAD_SHEET_DESCRIBED_BY : undefined}>
+          {/* PD8 (a) 예외(결정 후속 262·263 ③): 시트 맨 위에 원서 요약 카드 — 누를 것은 「자세히 보기」 하나(결정 카드와 같은 입력 가드 키). 시트 이름·첫 포커스·Esc·접기는 결정 카드 그대로 */}
+          {leadCard !== null ? (
+            <ParentCard key={`lead:${leadCard.ev.id}@${leadCard.age}`} model={leadCard} gentle={settings.gentle} variant="lead-compact" guardKey={decisionGuardKey(decision.pending, guardEpoch)} />
+          ) : null}
           <DecisionCard model={decision} auto={false} epoch={guardEpoch} titleRef={choiceTitleRef} onFold={onFold} onChoose={onChoose} onAutoSwitch={onAutoFromCard} veiled={veiled} onOpenVeil={onVeilOpen} onAutoPick={onAutoPick} />
         </DecisionSheet>
       ) : null}

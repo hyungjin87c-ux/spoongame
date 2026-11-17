@@ -21,6 +21,7 @@ import {
   noteResponse,
   parseOpened,
   parseSettings,
+  pendingLeadOf,
   playBucketOf,
   playNotBehind,
   saveGame,
@@ -29,6 +30,7 @@ import {
   serializeGame,
   serializeSettings,
   sessionReducer,
+  tickReadNeedMs,
   type GameState,
   type PlayTime,
   type Session,
@@ -439,7 +441,8 @@ function Game({ boot }: { boot: Boot }) {
   // 연출 대기 = HOLD_MS × 이 판의 인생 길이 모드 계수 + 한 해 둘째 줄부터의 줄 대기 (SPEC-003 LM2·LM3) — 설정(settings.lifeLength)이 아니라 **판의 값**(game.lifeLength)을 읽는다.
   // 새로고침 직후(tick 없음)에는 조용한 해 값으로 대기한다.
   // 부모님이 정한·흘러간 해(tick.by)는 카드 읽기 필요량(tick.readNeedMs)이 기본 결과 대기보다 길면 필요량만큼 기다린다 — 느린 독자가 카드와 결과 문장을 다 읽기 전에 해가 넘어가지 않는다 (SPEC-005 PD5-d, core/timing.ts#holdMsFor)
-  const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE, { mode: game.lifeLength, lines: tick?.lines, readNeedMs: tick?.readNeedMs });
+  // 같은 해에 원서 카드(G2)가 먼저 난 위임 동반 해(결정 후속 255·262 (2))는 두 카드의 필요량 합(`tickReadNeedMs` — `count()`의 판 길이 모델과 같은 함수)까지 기다린다
+  const hold = holdDelayMs(tick?.kind ?? null, settings.speed, TIME_SCALE, { mode: game.lifeLength, lines: tick?.lines, readNeedMs: tick === null ? undefined : tickReadNeedMs(tick) });
   const clock = useYearClock({
     resetKey: `${game.age}|${lifeLineCount(game.history)}|${game.pending?.key ?? ''}`, // 기록(note) 줄은 세지 않는다 — 「생각 남기기」 한 줄이 올해 진행률을 되감지 않게(M7c 5-3절)
     durationMs: game.pending !== null ? null : hold,
@@ -449,13 +452,14 @@ function Game({ boot }: { boot: Boot }) {
 
   // 자동 모드: 선택지를 잠깐 보여 준 뒤 성향대로 고른다. 해제하면 타이머가 정리되고 선택지는 그대로 남는다. 일시정지·나가기 확인 중에는 고르지 않는다(reducer도 막는다).
   // 카드를 접은 동안에도 고르지 않는다(M7b U3(a)) — 접기는 「지금 내가 보고 있다」는 신호다. 다시 열면 효과가 다시 돌아 `AUTO_CHOICE_MS` 뒤부터 센다(접힌 시간은 세지 않는다).
+  // 같은 해 원서 카드(G2)를 단 15세 본인 카드(결정 후속 262 (4))는 지연이 max(`AUTO_CHOICE_MS`, 원서 카드 읽기 필요량) ÷ 배속이다 — `pendingLeadOf(game, tick)`가 그 카드를 고르고, 틱이 바뀌면 효과가 다시 돈다.
   useEffect(() => {
     if (!autoChooseArmed({ autoMode: settings.autoMode, hasPending: game.pending !== null, superseded, visible, showTitle, paused: game.paused, exitAsk, folded, noteOpen })) return;
     const key = game.pending?.key;
     if (key === undefined) return;
-    const id = window.setTimeout(() => dispatch({ type: 'autoChoose', key }), autoChoiceDelayMs(settings.speed, TIME_SCALE));
+    const id = window.setTimeout(() => dispatch({ type: 'autoChoose', key }), autoChoiceDelayMs(settings.speed, TIME_SCALE, pendingLeadOf(game, tick)?.readNeedMs ?? 0));
     return () => window.clearTimeout(id);
-  }, [settings.autoMode, settings.speed, game.pending, game.paused, exitAsk, folded, noteOpen, superseded, visible, showTitle]);
+  }, [settings.autoMode, settings.speed, game.pending, game.phase, tick, game.paused, exitAsk, folded, noteOpen, superseded, visible, showTitle]);
 
   // 밀린 탭의 「이어받기」가 지연 덩어리를 받지 못했을 때의 안내 (R-516) — 밀린 화면에 그대로 남아 다시 누를 수 있다
   const [takeOverFailed, setTakeOverFailed] = useState(false);

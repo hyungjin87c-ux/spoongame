@@ -21,9 +21,9 @@ if (!Number.isInteger(lives) || lives < 1 || !Number.isInteger(every) || every <
 
 const MODES: readonly LifeLength[] = ['short30', 'long60'];
 const f = (n: number, d = 1) => n.toFixed(d);
-/** 카드 평균이 모드의 판정 구간 안인가 / 모델 시간 평균이 모드의 판정 구간(시대별: modelLow − 1.5 ~ modelHigh + 1.5, tests/simulation.test.ts와 같다) 안인가 */
+/** 카드 평균이 모드의 판정 구간 안인가 / 모델 시간 평균이 모드의 판정 구간(시대별: modelLow − 1.5 ~ eraHigh — 결정 후속 263 ②부터 modelHigh + 1.5와 갈라진 필드, tests/simulation.test.ts와 같다) 안인가 */
 const cardsIn = (r: CellReport, m: (typeof LIFE_LENGTH_MODES)[LifeLength]): boolean => r.choices.mean >= m.cards.meanLow && r.choices.mean <= m.cards.meanHigh;
-const timeIn = (r: CellReport, m: (typeof LIFE_LENGTH_MODES)[LifeLength]): boolean => r.minutes1x.mean >= m.timeMin.modelLow - 1.5 && r.minutes1x.mean <= m.timeMin.modelHigh + 1.5;
+const timeIn = (r: CellReport, m: (typeof LIFE_LENGTH_MODES)[LifeLength]): boolean => r.minutes1x.mean >= m.timeMin.modelLow - 1.5 && r.minutes1x.mean <= m.timeMin.eraHigh;
 const dist = (label: string, d: Dist, digits = 1) => `    ${label.padEnd(24)} 평균 ${f(d.mean, digits).padStart(6)} | 최소 ${f(d.min, digits).padStart(6)} | 5% ${f(d.p05, digits).padStart(6)} | 중앙 ${f(d.p50, digits).padStart(6)} | 95% ${f(d.p95, digits).padStart(6)} | 최대 ${f(d.max, digits).padStart(6)}`;
 
 console.log(`1000판 전체 파이프라인: 세대 ${ERAS.length}개 × 전략 ${PIPELINE_STRATEGIES.length}개(자동 모드 / 무작위 수동 흉내) × 인생 길이 ${MODES.length}개 × ${lives}판 = ${ERAS.length * PIPELINE_STRATEGIES.length * MODES.length * lives}판`);
@@ -45,7 +45,7 @@ for (const mode of MODES) {
       console.log(dist('결정 카드 수', r.choices));
       console.log(dist('1배속 수동(분, 중앙)', r.minutes1x));
       console.log(dist('8배속+다음결정(분,중앙)', r.minutesFast));
-      console.log(`    카드 평균 ${f(r.choices.mean, 2)}장 — 모드 구간 ${m.cards.meanLow}~${m.cards.meanHigh}장 ${cardsIn(r, m) ? '안' : '밖'}${m.selectable ? '' : ' (보고만)'} | 모델 시간 평균 ${f(r.minutes1x.mean)}분 — 모드 구간 ${m.timeMin.modelLow - 1.5}~${m.timeMin.modelHigh + 1.5}분(시대별) ${timeIn(r, m) ? '안' : '밖'}${m.selectable ? '' : ' (보고만)'}`);
+      console.log(`    카드 평균 ${f(r.choices.mean, 2)}장 — 모드 구간 ${m.cards.meanLow}~${m.cards.meanHigh}장 ${cardsIn(r, m) ? '안' : '밖'}${m.selectable ? '' : ' (보고만)'} | 모델 시간 평균 ${f(r.minutes1x.mean)}분 — 모드 구간 ${m.timeMin.modelLow - 1.5}~${m.timeMin.eraHigh}분(시대별) ${timeIn(r, m) ? '안' : '밖'}${m.selectable ? '' : ' (보고만)'}`);
       console.log(`    엔딩 회고: 20세 전 사망 ${r.endings.early} / 20세 넘어 마침 ${r.endings.adult}${r.endings.none > 0 ? ` / 끝까지 못 감 ${r.endings.none}` : ''} | 서로 다른 이름 ${r.distinctNames}개`);
       console.log(
         `    점검: 이름 ${r.checks.names}회, 걸음 불변식 ${r.checks.transitions}회, 저장→복원 ${r.checks.roundTrips}회(매 걸음 저장한 판 ${r.stepSerializedLives}), 연타 입력 ${r.checks.duplicateInputs}회, 엔딩 문장 ${r.checks.endingTexts}판, 다시 태어나기 ${r.checks.rebirths}회, 가족 규칙 ${r.checks.familyRules}회\n`,
@@ -72,7 +72,7 @@ console.log(
   const lo = (xs: number[]) => Math.min(...xs);
   const hi = (xs: number[]) => Math.max(...xs);
   console.log(
-    `30분 모드 판정 구간 밖 칸: ${out.length} / ${cells.length}${out.length > 0 ? ` — ${out.map((r) => `${r.era}/${r.strategy === 'auto' ? '자동' : '수동'}(카드 ${f(r.choices.mean, 2)}장 ${cardsIn(r, m30) ? '안' : '밖'}, 시간 ${f(r.minutes1x.mean, 2)}분 ${timeIn(r, m30) ? '안' : '밖'})`).join(', ')}` : ''} | 칸 평균 범위: 카드 ${f(lo(cells.map((r) => r.choices.mean)), 2)}~${f(hi(cells.map((r) => r.choices.mean)), 2)}장(구간 ${m30.cards.meanLow}~${m30.cards.meanHigh}), 모델 시간 ${f(lo(cells.map((r) => r.minutes1x.mean)), 2)}~${f(hi(cells.map((r) => r.minutes1x.mean)), 2)}분(시대별 구간 ${m30.timeMin.modelLow - 1.5}~${m30.timeMin.modelHigh + 1.5})`,
+    `30분 모드 판정 구간 밖 칸: ${out.length} / ${cells.length}${out.length > 0 ? ` — ${out.map((r) => `${r.era}/${r.strategy === 'auto' ? '자동' : '수동'}(카드 ${f(r.choices.mean, 2)}장 ${cardsIn(r, m30) ? '안' : '밖'}, 시간 ${f(r.minutes1x.mean, 2)}분 ${timeIn(r, m30) ? '안' : '밖'})`).join(', ')}` : ''} | 칸 평균 범위: 카드 ${f(lo(cells.map((r) => r.choices.mean)), 2)}~${f(hi(cells.map((r) => r.choices.mean)), 2)}장(구간 ${m30.cards.meanLow}~${m30.cards.meanHigh}), 모델 시간 ${f(lo(cells.map((r) => r.minutes1x.mean)), 2)}~${f(hi(cells.map((r) => r.minutes1x.mean)), 2)}분(시대별 구간 ${m30.timeMin.modelLow - 1.5}~${m30.timeMin.eraHigh})`,
   );
 }
 if (failed > 0 || exceptions > 0 || problemCount > 0) {

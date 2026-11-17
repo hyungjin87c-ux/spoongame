@@ -1329,3 +1329,61 @@ article.credits-record[data-veiled="true"]
 7. 끝 장의 제목 태그(`h2` 「생애 기록」) · 문서 끝 단추 묶음(시안에는 띠의 단추뿐이었다).
 8. 초점 링 간격 2px(공통) · 진입부의 작은 머리글 없음 · 진입부 제목 `--fs-xl`.
 9. 좁은 화면에서 문서의 왼쪽 가장자리(`--sp-6` 24px — plan-2 9절)와 머리 띠·조작 띠의 가장자리(`--gutter` 16px)가 8px 어긋난다 — 정본 값을 따랐다. 하나로 맞출지는 구현 화면을 보고 정한다.
+
+## 22. v0.6.1 — 같은 해 원서 카드(G2 덧카드) · 시트 안 요약 카드 (SPEC-018 G2 「같은 해에 함께」 — 2026-11-17 developer. 근거 결정 후속 255·262 「G2 화면」 (1)~(4)·263 ③④ · 시안 `mockups/g2-together/g2-together.html`(A1 · B · C, 샷 같은 폴더) · 구현 `src/ui/dash/ParentCard.tsx`(`variant` · `leadCardModel`) · `src/screens/LifeScreen.tsx` · `src/styles/dash.css` 「같은 해 원서 카드」 블록 · `src/App.tsx`(대기 · 자동 지연). 문구 `copy.md` 23절. 새 색 토큰 0 · 새 대비 쌍 0 · 새 글꼴 조각 0 · 새 아이콘 0)
+
+### 22-1. 언제 · 어디에
+
+맞춤 판 15세에 일반 추첨이 선택 카드를 뽑은 해에도 G2 「고등학교 원서」가 같은 해에 먼저 부모 결정으로 해결된다(후속 255). 그 해 화면에 부모 카드(G2)와 그 해 카드가 함께 있다 — SPEC-005 LR5 (b)·PD8 (a)의 예외(후속 262·263).
+
+| 상태 | 자리 | 모양 |
+|---|---|---|
+| A 수동 · 그 해 카드가 본인 카드 | 결정 시트(`.sheet`) 안 맨 위, 결정 카드 머리 앞 | **요약형** `.lead-card--compact` |
+| A 접힘(「잠시 덮어 두기」 · Esc 뒤) | 가운데 열 맨 위, 접힌 띠 앞 | 전체형(지금 부모 카드 그대로) |
+| C 자동 모드 | 가운데 열 맨 위, 인라인 결정 카드 앞 | 전체형 |
+| B 그 해 카드도 부모 · 흘러감 | 가운데 열 맨 위, 그 해 부모 카드 앞(두 장 쌓기) | 전체형 두 장 |
+
+- 「다음 결정으로」로 15세 본인 카드에 도착해도 A와 같다(틱이 같다).
+- 한 곳에만 그린다: 시트가 열려 있으면 가운데 열에는 없다.
+- 틱에서만 파생한다(`leadCardModel`): 새로고침 · 나가기 뒤 이어하기 · 다른 탭 이어받기에서는 다시 뜨지 않고 인생 기록 줄만 남는다(PD7-5). 고르면(결과 틱) 사라진다.
+- 한 열(≤ 959px): 원서 카드는 `.decision--parent`라 `order: -1`이고 DOM 순서대로 [원서 카드 → 인라인 카드 · 접힌 띠 · 그 해 부모 카드] 순으로 맨 위에 쌓인다(새 규칙 없음).
+
+### 22-2. DOM
+
+- 루트 `section.card.decision.decision--parent.lead-card`(요약형은 `.lead-card--compact` 추가), `data-testid="lead-card"`, `aria-labelledby="lc-title"`. 안쪽 testid는 `lead-` 접두(`lead-chip` · `lead-when` · `lead-title` · `lead-text` · `lead-pick` · `lead-label` · `lead-stamp` · `lead-impact` · `lead-cite` · `lead-hint` · `lead-more`), id는 `lc-` 접두(`lc-chip` · `lc-title` · `lc-text` · `lc-label` · `lc-stamp` · `lc-cite` · `lc-hint`). 지금 부모 카드의 `pc-title` · `parent-card` · `impact` · `cite`는 그대로라 B에서 두 장이 겹치지 않는다.
+- 요약형 순서(DOM = 읽기 순서): 머리 [칩 `#lc-chip` · 「자세히 보기」] → 제목 `h2#lc-title` → (상황 `#lc-text`) → 고른 길 `#lc-label` → (도장 `#lc-stamp`) → 영향 줄 → (인용 `#lc-cite`) → (첫 부모 카드 안내 `#lc-hint`). 괄호는 펼치기 전 `hidden`이다. 연도 · 나이 머리는 없다(바로 아래 결정 카드 머리와 같은 해).
+- 「자세히 보기」: `button.btn.btn--ghost.btn--sm.lead-card__more`, `aria-expanded`, `aria-controls`(숨긴 요소의 id — 인용 · 안내가 없으면 그 id는 뺀다), 꼬리 `span.lead-card__mark[aria-hidden]` 「▾」. 결정 카드 선택지와 같은 입력 가드 키(`decisionGuardKey`, 400ms). 펼침은 카드의 지역 상태 — 저장하지 않고, 접었다 다시 열거나 틱이 바뀌면 닫힌다.
+- 시트: `div.sheet[role=dialog]`에 `aria-describedby="lc-chip lc-title lc-label"`(원서 카드가 있을 때만). 이름(`aria-labelledby="dc-title"`) · 첫 포커스(결정 카드 제목) · Esc · 「잠시 덮어 두기」는 지금 그대로.
+
+### 22-3. 규격 (`dash.css` — 시안 「G2 덧카드」 블록과 같은 글자)
+
+| 대상 | 값 |
+|---|---|
+| `.sheet > .lead-card` | `margin: var(--sp-3) var(--sp-4) 0` |
+| `.lead-card--compact` | `border-radius: var(--r-md)` · 그림자 없음 · 테두리와 왼쪽 5px 놋쇠 막대는 `.decision--parent` 그대로 |
+| `.lead-card--compact > .decision__head` | `padding: var(--sp-2) var(--sp-2) 0 var(--sp-3)` · 아래 선 없음 |
+| `.lead-card--compact > .decision__body` | `padding: 0 var(--sp-3) var(--sp-3)` · `gap: var(--sp-2)` |
+| 제목 · 고른 길 | `--fs-md`(16px) — 전체형의 제목 상한 식(`--title-chars`)은 요약형에 걸지 않는다 · 고른 길 상하 여백 2px, 쪽빛 4px 막대 그대로 |
+| `.lead-card__more` | 글자 굵기 보통 · 줄어들지 않음 · 펼치면 꼬리 180° 회전 |
+| `.lead-card [hidden]` | `display: none` |
+| 강제 색상 | `.lead-card__more { border-color: CanvasText }`(나머지는 13-4 부모 카드 규칙 그대로) |
+
+전체형(A 접힘 · B · C)은 `.decision--parent` 그대로이고 더하는 규칙이 없다(`.lead-card`는 시험 · 측정 갈고리).
+
+### 22-4. 시간
+
+- B: 결과 연출 대기 = max(결과 기본 대기 + 줄 대기, 두 카드 읽기 필요량의 합) — `tickReadNeedMs`(판 길이 모델 `count()`와 같은 함수).
+- C: 자동 선택 지연 = max(`AUTO_CHOICE_MS` 3초, 원서 카드 읽기 필요량) ÷ 배속 — `autoChoiceDelayMs(speed, timeScale, pendingLeadOf(game, tick)?.readNeedMs)`. 원서 카드가 보이는 글 양(전체형)과 지연이 맞는다.
+- A(수동): 시계가 멈춰 있어 강제 대기 0.
+
+### 22-5. 접근성
+
+- 낭독: 시트가 열리면 이름(결정 카드 제목) 다음에 설명으로 칩 · 제목 · 고른 길이 한 번 읽힌다. G2 기록 줄은 시트가 뜨기 전에 붙고 바깥이 `inert`라 `aria-live`로 읽히지 않으므로 설명이 그 몫을 한다.
+- 초점: 원서 카드는 초점을 가져가지 않는다(지금 부모 카드 규칙). 시트에서 Shift+Tab은 「잠시 덮어 두기」를 거쳐 「자세히 보기」로 간다. 눌러도 초점은 단추에 남는다.
+- 색만으로 가르지 않는다: 집 글리프 · 「부모님의 결정」 칩 · 「중대 결정」 머리 · 테두리. 대비 쌍은 13-2절의 기존 것뿐이다.
+
+### 22-6. 시안과 다르게 정한 곳
+
+1. 판의 첫 부모 카드 안내(`firstParent`)가 원서 카드에 붙는 판에서 요약형은 그 안내를 펼친 영역 끝에 `hidden`으로 두고 `aria-controls`에 `lc-hint`를 더한다(시안 8절 「펼친 영역 끝」을 id로 옮김).
+2. 시안의 대안 블록(A2 한 줄 띠 `.lead-card--strip` · A0 측정용 `.lead-card--in-sheet`)은 옮기지 않았다 — 고르지 않은 안이다.
+3. 무거운 장면 가리기: `school-high-pick`에는 `heavy` 표지가 없다. 가림 분기는 지금 부모 카드 규칙을 그대로 따르고, 가린 요약형에는 「자세히 보기」를 두지 않는다(가린 카드의 「펼쳐서 읽기」 하나).

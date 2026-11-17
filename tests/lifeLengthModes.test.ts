@@ -54,7 +54,10 @@ describe('LIFE_LENGTH_MODES 표의 불변식 (완료 기준 1)', () => {
   it('30분 모드의 카드 수 판정 구간은 마스터 확정(2026-10-20)의 23.3~29(M-3으로 하한을 내림), 사람 실측 25~35분이고, 약 1시간은 2차의 45~55장·50~70분이다', () => {
     expect(LIFE_LENGTH_MODES.short30.cards).toEqual({ meanLow: 23.3, meanHigh: 29, nearCapShareMax: 0.1 });
     // M24(SPEC-005 r4 마스터 결정, 2026-10-26 — 형진 님 「플레이시간 적당, 몰입이 중요」): 상단만 올렸다(사람 실측 35 → 38, 세 시대 평균 33 → 35, 시대별 34.5 → 36.5). 하단 25 / 27은 그대로.
-    expect(LIFE_LENGTH_MODES.short30.timeMin).toEqual({ humanLow: 25, humanHigh: 38, modelLow: 27, modelHigh: 36 }); // SPEC-011 Q1(2026-11-09): modelHigh 35 → 36
+    // SPEC-011 Q1(2026-11-09): modelHigh 35 → 36.
+    // 결정 후속 263 ②(2026-11-17): modelHigh 이전 값 36 → 36.5 · 측정값 세 시대 평균 36.09 ± 0.03분(합친 4줄, 시대마다 4000판; G2 「같은 해에 함께」 뒤) · 시대별 상한은 새 필드 eraHigh 37.5(이전 modelHigh + 1.5 = 37.5 그대로)
+    expect(LIFE_LENGTH_MODES.short30.timeMin).toEqual({ humanLow: 25, humanHigh: 38, modelLow: 27, modelHigh: 36.5, eraHigh: 37.5 });
+    expect(LIFE_LENGTH_MODES.long60.timeMin.eraHigh).toBe(LIFE_LENGTH_MODES.long60.timeMin.modelHigh + 1.5); // long60은 닫혀 있어 이전 계산 그대로
     expect(LIFE_LENGTH_MODES.long60.cards.meanLow).toBe(45);
     expect(LIFE_LENGTH_MODES.long60.cards.meanHigh).toBe(55);
     expect(LIFE_LENGTH_MODES.long60.timeMin.humanLow).toBe(50);

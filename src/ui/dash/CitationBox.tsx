@@ -12,14 +12,23 @@ import { Glue } from '../Glue';
  * **풀이 줄**(SPEC-005 r4 UX14·QI14, copy.md 15-4): `insight`가 있으면 출처 줄 뒤에 한 문장을 더한다. **화면에는 「풀이」 라벨이 없다**(형진 님 2026-10-26) — 문장만 색·굵기로 요약·출처와 구분하고(styles/dash.css 「r4 구현 변경 — 풀이」), 스크린리더에게만 눈에 안 보이는 접두 「풀이:」(`.sr-only`)를 읽는다. 없으면 요소 자체가 없다(빈 줄 0). **호출자가 넘긴 값만** 그린다 —
  * 본인이 고르는 중대 결정 카드(`DecisionCard`)만 `insightFor(인용 id)`를 넘기고, 부모 결정·흘러감 카드(`ParentCard`)와 기록 카드(`NoteSheet`)는 넘기지 않는다(M23·UX14-2 — 같은 부품, 호출자가 정한다, PD8 (b)).
  */
-export function CitationBox({ view, insight = null }: { view: CitationView; insight?: string | null }) {
+export function CitationBox({ view, insight = null, testId = 'cite', id, hidden }: {
+  view: CitationView;
+  insight?: string | null;
+  /** 시험 갈고리 접두 — 같은 화면의 원서 카드(G2)는 `lead-cite`(결정 후속 262). 안쪽은 `{접두}-text`·`{접두}-src` */
+  testId?: string;
+  /** 원서 요약 카드의 「자세히 보기」가 가리키는 id(`aria-controls`) */
+  id?: string;
+  /** 원서 요약 카드에서 펼치기 전 — 숨겨도 DOM 순서(= 읽기 순서)는 그대로 */
+  hidden?: boolean;
+}) {
   return (
-    <div className="cite" data-testid="cite" data-citation={view.id}>
+    <div className="cite" data-testid={testId} data-citation={view.id} id={id} hidden={hidden}>
       <p className="cite__kind">{DASH_TEXT.citeKindLabel[view.kind]}</p>
-      <p className="cite__text" data-testid="cite-text">
+      <p className="cite__text" data-testid={`${testId}-text`}>
         <Glue text={view.text} />
       </p>
-      <p className="cite__src" data-testid="cite-src">
+      <p className="cite__src" data-testid={`${testId}-src`}>
         <span className="keep-phrase">
           {latinRuns(view.sourceWho).map((run, i) =>
             run.latin ? (

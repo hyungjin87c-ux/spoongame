@@ -94,8 +94,8 @@ const highMinutesOf = (l: LifeSummary): number => l.seconds1xHigh / 60;
 const infantCards = (l: LifeSummary): number => l.final.history.filter((h) => h.kind === 'choice' && h.age <= 7).length;
 
 const mode = LIFE_LENGTH_MODES.short30;
-/** 시대별 모델 시간 판정 구간 (tests/simulation.test.ts — modelLow − 1.5 ~ modelHigh + 1.5) */
-export const ERA_TIME_BAND = { low: mode.timeMin.modelLow - 1.5, high: mode.timeMin.modelHigh + 1.5 };
+/** 시대별 모델 시간 판정 구간 (tests/simulation.test.ts — modelLow − 1.5 ~ eraHigh — 결정 후속 263 ②부터 modelHigh + 1.5와 갈라진 필드) */
+export const ERA_TIME_BAND = { low: mode.timeMin.modelLow - 1.5, high: mode.timeMin.eraHigh };
 
 /** 평균 ≥ 하한 / 평균 ≤ 상한 꼴 */
 const meanMetric = (id: string, label: string, limit: string, pick: (l: LifeSummary) => number, bound: (era: ProfileId) => number, dir: 'min' | 'max', digits = 2): MarginMetric => ({

@@ -285,6 +285,19 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 .parent-pick__label { font-size: var(--fs-lg); line-height: var(--lh-snug); font-weight: var(--fw-bold); }
 .parent-pick__stamp { align-self: flex-start; max-width: 100%; padding: 2px var(--sp-3); border: 1.5px solid var(--c-text-2); border-radius: var(--r-sm); color: var(--c-text-2); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
 .parent-hint { font-size: var(--fs-sm); color: var(--c-text-2); }
+/* 같은 해 원서 카드(G2 덧카드 .lead-card — SPEC-018 G2 「같은 해에 함께」, 결정 후속 262·263 ③④, 시안 docs/design/mockups/g2-together/의 「G2 덧카드」 블록을 같은 글자로 옮겼다. 새 토큰 0 · 새 색 쌍 0).
+   전체형(자동 모드·접힌 띠 위·부모 카드 두 장)은 .decision--parent 그대로 — 더하는 규칙이 없다(클래스 .lead-card는 시험·측정의 갈고리).
+   시트 안 요약형 .lead-card--compact: 결정 시트 맨 위, 머리 줄 [칩 · 「자세히 보기」] → 제목(16px) → 고른 길(16px, 쪽빛 막대) → 영향 줄. 펼치면 상황 문장·도장·인용이 전체 카드와 같은 자리에 나온다(숨김은 hidden 속성 — DOM 순서 = 읽기 순서) */
+.sheet > .lead-card { margin: var(--sp-3) var(--sp-4) 0; }
+.lead-card--compact { border-radius: var(--r-md); box-shadow: none; }
+.lead-card--compact > .decision__head { padding: var(--sp-2) var(--sp-2) 0 var(--sp-3); border-bottom: 0; }
+.lead-card--compact > .decision__body { padding: 0 var(--sp-3) var(--sp-3); gap: var(--sp-2); }
+.lead-card--compact .decision__title { font-size: var(--fs-md); }
+.lead-card--compact .parent-pick { padding-block: 2px; }
+.lead-card--compact .parent-pick__label { font-size: var(--fs-md); }
+.lead-card__more { flex: none; font-weight: var(--fw-regular); }
+.lead-card__more[aria-expanded='true'] .lead-card__mark { display: inline-block; transform: rotate(180deg); }
+.lead-card [hidden] { display: none; }
 /* 인생 기록 줄의 표지(PD6): 「(부모님이 이렇게 정했습니다: 라벨)」·「(이렇게 흘러갔습니다: 라벨)」 — 앞의 작은 아이콘 + 글자. 본인 선택 줄 「(선택: …)」과 글자·아이콘으로 가른다 */
 .log__by .icon, .tl-picked .icon { display: inline-block; vertical-align: -2px; margin-right: 4px; }
 /* 인용 박스(MD2·EV6): 옅은 쪽빛 면 + 놋쇠 왼쪽 막대(「사람이 남긴 것」의 색, 1절). 줄 순서 = **종류 라벨**(.cite__kind 「통계」/「연구」 — citations.json kind에서. U12 결정: 지표 이름이 아니라 자료의 종류라 QM2-11(제목이 약속한 값) 대상이 아니다)
@@ -649,6 +662,7 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
   .decision--parent, .parent-pick { border-color: CanvasText; }
   .parent-pick__stamp { border-color: CanvasText; color: CanvasText; }
   .parent-chip .icon { color: CanvasText; }
+  .lead-card__more { border-color: CanvasText; } /* 원서 요약 카드의 「자세히 보기」(결정 후속 263 ④) — 시안 g2-together 강제 색상 한 줄 */
   .cite { background: Canvas; color: CanvasText; border-color: CanvasText; }
   .choice__no { border-color: CanvasText; color: CanvasText; }
   .meter__track, .year-progress { border-color: CanvasText; background: Canvas; }

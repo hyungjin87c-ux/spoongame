@@ -58,8 +58,11 @@ export interface LifeLengthMode {
    * 예측 평균 18.8장 ±0.6(설계 문서 4-2절)보다 높은 값은 쓰지 않는다. 읽기 시간(r)이 이 카드에만 붙으므로 c_self가 줄면 판 시간이 짧아진다 — 그 하한을 지키는 시험이다.
    */
   cardsSelf: { meanLow: number };
-  /** 시간 목표(분): 사람 실측 허용 구간 / 헤드리스 모델 평균 허용 구간 (long60은 2차 판정) */
-  timeMin: { humanLow: number; humanHigh: number; modelLow: number; modelHigh: number };
+  /**
+   * 시간 목표(분): 사람 실측 허용 구간 / 헤드리스 모델 평균 허용 구간(세 시대 평균) / 시대별 모델 평균 상한 `eraHigh` (long60은 2차 판정).
+   * 시대별 하한은 `modelLow − 1.5`로 계산한다. 시대별 상한은 결정 후속 263 ②(세 시대 평균 상한만 36 → 36.5, 시대별 37.5는 그대로)부터 `modelHigh + 1.5`와 갈라져 따로 둔다.
+   */
+  timeMin: { humanLow: number; humanHigh: number; modelLow: number; modelHigh: number; eraHigh: number };
 }
 
 /**
@@ -108,7 +111,10 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     // 상단 M24(2026-10-26): 사람 실측 35 → 38, 세 시대 평균 33 → 35 (시대별 상단 = modelHigh + 1.5 = 36.5)
     // **SPEC-011 Q1(2026-11-09, 형진 님 결정 「내용을 줄이지 않고 임계를 올린다」 — 값은 마스터가 보고해 정했다)**: 어린 시절 조르기가 판당 약 1.6장(본인 카드, 인용 없음)을 더해 실측 세 시대 평균이 35.29분(report:time 3 × 1000판, 기준선 34.64분 +0.65)이 되어
     // 평균 상단 35를 넘었다 → modelHigh 35 → 36 (시대별 상단 36.5 → 37.5). 95% 분위 한도는 40 → 41(후속 218 — 고정 시드 표본에서 genx·alpha가 39.7~40.0분, tests/simulation.test.ts·scripts/marginsLib.ts#TIME_P95_LIMIT_MIN), 최대 45는 그대로다. 내용(조르기 사건·문장)은 줄이지 않았다.
-    timeMin: { humanLow: 25, humanHigh: 38, modelLow: 27, modelHigh: 36 },
+    // **결정 후속 263 ②(2026-11-17, 형진 님 「추천대로 해줘」 — 후속 262 ⑤ 「내용은 줄이지 않고 판정 임계를 올린다」, 합쳐 1.5분 안)**: SPEC-018 G2 「같은 해에 함께」(후속 255)가 판당 부모 카드 약 0.36장을 더해
+    // 세 시대 평균이 상한을 넘었다 → modelHigh 이전 값 36 → 36.5. 측정값: 세 시대 평균 35.93 ± 0.03 → 36.09 ± 0.03분(`npm run report:time -- 1000 --only=margins`, 합친 4줄 시대마다 4000판; 시험 표본 36.14분).
+    // 시대별 상한 37.5(`eraHigh` — 지금까지 modelHigh + 1.5로 계산하던 값을 그대로 옮겼다)·95% 분위 41·최대 45는 그대로다. 근거: ai-log/2026-11-17_SPEC-018_G2-dev.md 3-3절. v0.6.1 통합 측정 뒤 한 번 더 보고한다.
+    timeMin: { humanLow: 25, humanHigh: 38, modelLow: 27, modelHigh: 36.5, eraHigh: 37.5 },
   },
   long60: {
     label: '약 1시간',
@@ -118,7 +124,7 @@ export const LIFE_LENGTH_MODES: Record<LifeLength, LifeLengthMode> = {
     pacing: { soft: 24, softFactor: 0.3, hard: 30 }, // 2차 착수 때 정한다 — 1차는 30분 모드와 같은 값(임시)
     cards: { meanLow: 45, meanHigh: 55, nearCapShareMax: 0.1 },
     cardsSelf: { meanLow: 0 }, // 1시간 모드는 닫혀 있다 — c_self는 2차 착수 때 정한다
-    timeMin: { humanLow: 50, humanHigh: 70, modelLow: 52, modelHigh: 68 },
+    timeMin: { humanLow: 50, humanHigh: 70, modelLow: 52, modelHigh: 68, eraHigh: 69.5 }, // eraHigh = 지금까지의 계산 modelHigh + 1.5 그대로(결정 후속 263 ②에서 필드로 갈랐다)
   },
 };
 

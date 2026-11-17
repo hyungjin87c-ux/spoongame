@@ -9,10 +9,10 @@ import { IMPACT_HINT, IMPACT_LABEL, impactSentence, impactSymbols, impactTone } 
  * 눈에 보이는 「자산 ▼▼▼」은 aria-hidden이고, 스크린리더는 항목마다 합쇼체 문장(`.sr-only`)을 듣는다. 기호의 색은 이로움·해로움(`impactTone`, 부채만 반대)이고 보조 표시다.
  * 변화가 없으면(항목 0개) 요소를 그리지 않는다.
  */
-export function ImpactLine({ items }: { items: readonly ImpactItem[] }) {
+export function ImpactLine({ items, testId = 'impact' }: { items: readonly ImpactItem[]; /** 시험 갈고리 — 같은 화면에 원서 카드(G2)의 영향 줄이 함께 있을 때 겹치지 않게 `lead-impact`(결정 후속 262) */ testId?: string }) {
   if (items.length === 0) return null;
   return (
-    <span className="impact" data-testid="impact">
+    <span className="impact" data-testid={testId}>
       {items.map((it) => (
         <span className="impact__item" key={it.key} data-key={it.key} data-direction={it.direction} data-steps={it.steps}>
           <span className="impact__show" aria-hidden="true">

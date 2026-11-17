@@ -374,24 +374,19 @@ describe('T5 ⑥ 지배 방지: 어떤 (카드 × 수저 × 양육) 칸에서도
 });
 
 describe('T5 ⑦ 통계 보정 판정 2곳 (지금 세상, 차 ≤ 15%p): 사교육 소득별 참여율 · 육아휴직 어머니 사용률', () => {
-  it('사교육: school-tutoring·school-academy-night의 참여 선택지 확률이 소득별(수저 1~5단계) 공식 참여율 52.8·64.2·74.9·83.1·84.9%와 15%p 안이다 (측정 최대 tutoring 11.9 · academy-night 14.2)', () => {
+  it('사교육: school-tutoring·school-academy-night의 참여 선택지 확률이 소득별(수저 1~5단계) 공식 참여율 52.8·64.2·74.9·83.1·84.9%와 15%p 안이다 (측정 최대 tutoring 11.4 · academy-night 14.9)', () => {
     const rows = privateEducationRows(tiered().alpha);
     expect(rows).toHaveLength(2);
     expect(OFFICIAL.privateEdu).toEqual([52.8, 64.2, 74.9, 83.1, 84.9]);
-    // 알려진 예외(결정 후속 251 ①, 2026-11-13 — 보고함): SPEC-018 PL5의 G1 「오후를 보낼 곳」(10세 빈 해 강제 슬롯)에서 학원·레슨을 고른 넉넉한 집 아이는 학업·행복이 미리 움직여
-    // 뒤의 「늦은 밤의 학원가」 참여 확률이 내려갔다(5단계 69.8% 대 공식 84.9%, 차 15.09%p). G1 사교육을 참여로 합쳐 세는 정의는 넉넉한 집이 100%로 넘쳐 맞지 않아(측정 4·5단계 차 16.9·15.1, 1단계 25.5) 정의는 그대로 두고,
-    // 이 두 칸만 한계 16%p로 둔다 — 한계를 넘거나, 15%p 안으로 들어오면 이 예외를 지운다
-    const KNOWN_PE: Record<string, { tiers: number[]; limit: number }> = { 'school-academy-night (many + one)': { tiers: [4, 5], limit: 16 } };
+    // 알려진 예외 `KNOWN_PE`(결정 후속 251 ①, 2026-11-13 — `school-academy-night` 4·5단계 한계 16%p, 당시 5단계 차 15.09%p)는 지웠다(결정 후속 263 알림, 2026-11-17):
+    // SPEC-018 G2 「같은 해에 함께」(후속 255) 뒤 측정 4·5단계 차 14.2 · 14.9%p로 모두 15%p 안에 들어와 이 시험 주석의 삭제 조건(「15%p 안으로 들어오면 이 예외를 지운다」)이 충족됐다.
+    // 측정: `npm run report:parent` calibration 알파 1~5단계 차 14.1 · 2.3 · 6.2 · 14.2 · 14.9%p, tutoring 최대 11.4%p — ai-log/2026-11-17_SPEC-018_G2-dev.md 3-5절. 다시 15%p를 넘으면 보고한다.
     for (const r of rows) {
       r.byTier.forEach((t, i) => {
         expect(t.n, `${r.label} ${t.tier}단계 관측`).toBeGreaterThanOrEqual(30);
-        const known = KNOWN_PE[r.label]?.tiers.includes(t.tier) ? KNOWN_PE[r.label] : undefined;
-        expect(r.diffs[i]!, `${r.label} ${t.tier}단계 시뮬 ${t.share!.toFixed(1)}% 대 공식 ${OFFICIAL.privateEdu[i]}%`).toBeLessThanOrEqual(known?.limit ?? OFFICIAL.tolerancePp);
+        expect(r.diffs[i]!, `${r.label} ${t.tier}단계 시뮬 ${t.share!.toFixed(1)}% 대 공식 ${OFFICIAL.privateEdu[i]}%`).toBeLessThanOrEqual(OFFICIAL.tolerancePp);
       });
     }
-    // 예외가 아직 필요한지(공허 방지): 예외 칸 가운데 하나는 기본 한계 15%p를 넘는다 — 모두 들어오면 위 예외를 지운다
-    const ex = rows.find((r) => r.label in KNOWN_PE)!;
-    expect(KNOWN_PE[ex.label].tiers.some((tier) => ex.diffs[tier - 1]! > OFFICIAL.tolerancePp), '예외 칸이 모두 15%p 안으로 들어왔다 — KNOWN_PE를 지운다').toBe(true);
   });
 
   it('육아휴직: 한 사람 이상 일을 쉬는 선택(one + share)의 가구 비율이 어머니 사용률 72.2%와 15%p 안이다 (측정 60.0%, 차 12.2%p)', () => {

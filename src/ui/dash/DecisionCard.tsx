@@ -198,7 +198,21 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, o
 }
 
 /** 모달 시트 (자동 모드 꺼짐). 바깥을 `inert`로 두는 일은 이 시트를 렌더하는 LifeScreen이 한다 — React 트리에서 시트가 그 형제들 바깥에 있어야 한다 */
-export function DecisionSheet({ model, onFold, children, veiled = false }: { model: DecisionModel; onFold: () => void; children: ReactNode; /** 가린 카드(무거운 장면 가리기) — 표지만 단다 */ veiled?: boolean }) {
+export function DecisionSheet({
+  model,
+  onFold,
+  children,
+  veiled = false,
+  describedBy,
+}: {
+  model: DecisionModel;
+  onFold: () => void;
+  children: ReactNode;
+  /** 가린 카드(무거운 장면 가리기) — 표지만 단다 */
+  veiled?: boolean;
+  /** 대화상자 설명(`aria-describedby`) — 시트 맨 위에 같은 해 원서 요약 카드(G2)가 있을 때 그 칩·제목·고른 길(결정 후속 262·263, 시안 6절). 이름·첫 포커스는 결정 카드 그대로 */
+  describedBy?: string;
+}) {
   // 시트가 떠 있는 동안 문서 스크롤을 잠근다(M7c T1 — 기록 시트와 열린 시트 수를 같이 센다, ui/useScrollLock.ts)
   useScrollLock();
   // Esc = 잠시 덮어 두기 (U7). 스크림 탭은 접기와 같게 처리하지 않는다 — 다시 열기 더블탭의 둘째 입력이 새 시트의 스크림에 떨어져 곧바로 접히는 일을 막는다(D-56은 선택)
@@ -213,7 +227,7 @@ export function DecisionSheet({ model, onFold, children, veiled = false }: { mod
   }, [onFold]);
   return (
     <div className="overlay" data-testid="decision-overlay">
-      <div className="sheet decision decision--sheet" role="dialog" aria-modal="true" aria-labelledby="dc-title" data-testid="choice-panel" data-mode="sheet" data-key={model.pending.key} data-veiled={veiled ? 'true' : undefined}>
+      <div className="sheet decision decision--sheet" role="dialog" aria-modal="true" aria-labelledby="dc-title" aria-describedby={describedBy} data-testid="choice-panel" data-mode="sheet" data-key={model.pending.key} data-veiled={veiled ? 'true' : undefined}>
         {children}
       </div>
     </div>

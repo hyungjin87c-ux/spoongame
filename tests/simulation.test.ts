@@ -312,12 +312,14 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
         }
       });
 
-      it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~37.5분 — M24·SPEC-011 Q1로 상단을 올렸다) 안, 세 시대 평균이 27~36분, 판 하나하나의 95%가 41분 이하이고 최대 45분 이하', () => {
+      // 결정 후속 263 ②(2026-11-17): 세 시대 평균 상한 이전 값 36 → 36.5분(`timeMin.modelHigh`). 측정값 이 시험 표본 36.1433분(G2 「같은 해에 함께」 뒤, 3세대 × REPORT_SEEDS · 무작위),
+      // 합친 4줄 36.09 ± 0.03분(시대마다 4000판) — ai-log/2026-11-17_SPEC-018_G2-dev.md 3-3절. 시대별 상한은 `timeMin.eraHigh` 37.5 그대로(이전에는 modelHigh + 1.5로 계산했다).
+      it('1배속 수동(읽는 시간 중앙): 시대별 모델 평균이 모드 구간(25.5~37.5분 — M24·SPEC-011 Q1로 상단을 올렸다) 안, 세 시대 평균이 27~36.5분(후속 263 ②), 판 하나하나의 95%가 41분 이하이고 최대 45분 이하', () => {
         let sum = 0;
         for (const era of SIM_PROFILES) {
           const r = reportsOf()[era];
           expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeGreaterThanOrEqual(mode.timeMin.modelLow - 1.5);
-          expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeLessThanOrEqual(mode.timeMin.modelHigh + 1.5);
+          expect(r.minutes1x.mean, `${era}: 1배속 평균(분)`).toBeLessThanOrEqual(mode.timeMin.eraHigh);
           // SPEC-011 Q1(2026-11-09): 95% 분위 한도 40 → 41 (scripts/marginsLib.ts#TIME_P95_LIMIT_MIN과 같은 값 — 조르기가 판 시간을 +0.65분 늘려 genx·alpha가 39.7~40.0분이 됐다)
           expect(r.minutes1x.p95, `${era}: 1배속 95% 분위(분)`).toBeLessThanOrEqual(41);
           expect(r.minutes1x.max, `${era}: 1배속 최대(분)`).toBeLessThanOrEqual(45);

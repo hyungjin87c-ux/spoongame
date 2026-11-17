@@ -121,7 +121,7 @@ for (const mode of modes) {
     // 연출 계수 k별 모델 시간: k는 count() 안의 `delegatedExtraMs`(필요량이 기본 대기보다 긴 몫)에도 들어가므로 k마다 다시 잰다. 모드 표를 잠시 덮어쓰고 되돌린다.
     const saved = LIFE_LENGTH_MODES[mode].holdScale;
     try {
-      console.log(`\n### 연출 계수 k별 1배속 수동 예상 (분, 읽기 중앙) — 판정: 시대별 ${m.timeMin.modelLow - 1.5}~${m.timeMin.modelHigh + 1.5} · 세 시대 평균 ${m.timeMin.modelLow}~${m.timeMin.modelHigh} (M24)`);
+      console.log(`\n### 연출 계수 k별 1배속 수동 예상 (분, 읽기 중앙) — 판정: 시대별 ${m.timeMin.modelLow - 1.5}~${m.timeMin.eraHigh} · 세 시대 평균 ${m.timeMin.modelLow}~${m.timeMin.modelHigh} (M24)`);
       console.log('| k | 지난 | 지금 | 다가올 | 세 시대 평균 | 부모 해 연장(초/판) 지·지·다 | 판정 |');
       console.log('|---|---:|---:|---:|---:|---|---|');
       // 후보 k: 사다리 + 현재 값(R-497 — 예전에는 현재 값 1.6875를 리터럴로 적었다. 현재 값이 바뀌면 표가 알아서 따라가고 사다리와 겹치면 한 번만 나온다)
@@ -131,7 +131,7 @@ for (const mode of modes) {
         const meds = sums.map((x) => x.median.mean);
         const avg = meds.reduce((a, b) => a + b, 0) / meds.length;
         // 시대별 구간 = 평균 구간 ± 1.5분. LM7b(연출 계수가 TM4 상한 1.45를 넘었다)부터 위쪽 끝도 본다.
-        const ok = meds.every((x) => x >= m.timeMin.modelLow - 1.5 && x <= m.timeMin.modelHigh + 1.5) && avg >= m.timeMin.modelLow && avg <= m.timeMin.modelHigh;
+        const ok = meds.every((x) => x >= m.timeMin.modelLow - 1.5 && x <= m.timeMin.eraHigh) && avg >= m.timeMin.modelLow && avg <= m.timeMin.modelHigh;
         console.log(`| ${k}${k === saved ? ' (현재)' : ''} | ${meds.map((x) => f(x, 2)).join(' | ')} | ${f(avg, 2)} | ${sums.map((x) => f(x.delegatedExtraSec, 0)).join(' · ')} | ${ok ? '통과' : '**미달**'} |`);
       }
     } finally {
