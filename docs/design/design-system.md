@@ -1114,3 +1114,218 @@ CSS는 `title-005.css` 「QI4 전망 차트」 블록(12-3의 `.chip--proj`·`li
 ### 20-4. v0.5.1 — 시대의 창 따로 칸 (SPEC-016 r2 H4, 형진 님 확정 2026-11-10 — 시안 없이 구현, 배포 전 마스터 스크린샷 확인)
 
 - 집 그림 옆의 작은 창(`.era`, `scene ≤ 480px` 컨테이너 쿼리)을 떼어 **자기 칸**(`#scene-era` 한 번만)으로: **PC 3열은 오른쪽 열 맨 위(식구 카드 위)** 에 큰 칸(가로 ≥ 오른쪽 열 폭의 90%▲, 세로 ≥ 지금 창 높이), **휴대폰(1열)은 집 그림 카드 바로 아래**(DOM도 그림 카드 뒤·인생 기록 앞), 두 칸이 가로로 나란하지 않다. **집·가족 그림 칸(`scene__house`)은 높이 그대로**, 창이 비운 폭만큼 넓게(채우는 방식은 SPEC Q5 — ▲ (가) 그림은 크기·비율 그대로 가운데, 양옆은 칸 배경 `--c-scene-*` 바탕; 그림 자산·합성 코드 변경 0). 창 안의 그림·캡션 `.era__cap`(20-1)·빈 종이 `.era__sheet`(20-2)·가린 해·「예측」 칩·링크 `#log-y{해}`·접근 이름·색 토큰 `--c-era*`(18-3)은 **위치와 칸 크기만 바뀌고 그대로**. 접힘(`sceneFold`)과의 관계는 SPEC Q6(▲ (가) 창 칸은 접힘과 무관하게 보임). 새 토큰·새 색 쌍·새 자산 0. 구현 뒤 스크린샷(PC 1280·휴대폰 360 × 라이트·다크, 사건 해·빈 해·가린 해)은 developer가 `docs/design/screens/016/`에 남기고, designer가 20-1 캡션 규격(PC 그림 아래 / 휴대폰 그림 옆 — 칸이 커지면 컨테이너 쿼리 분기가 바뀔 수 있다)과 대조한다.
+
+## 21. v0.6.1 — 「이 삶의 이름들」 화면 규격 (SPEC-022 EC1 이름 크레딧 — 2026-11-17 designer. 근거 명세 EC1 1~11항 · `docs/design/codex/DSN-001-ending-credits/plan-2.md` 9절 「화면 규격」 · `plan.md` 7·8절 · 시안 `mockups/credits-2.html`·`credits-2.css`·`ending-entry.html` · 샷 `shots-2/`. 문구 `copy.md` 22절. 새 색 토큰 0 · 새 대비 쌍 0 · 새 글꼴·그림·음원 0. 수저 변화 장면(EC2)의 규격은 이 절에 없다 — v0.6.1의 이 화면에는 그 장면이 없다)
+
+회고 화면(`EndingScreen`)에서 버튼으로 여는 **한 장의 읽는 문서**다. 눈에 보이는 모양의 정본은 시안이고, 이 절은 ① 시안의 값을 기존 토큰으로 옮긴 대응(21-3) ② 시안이 그리지 않은 세 곳 — 조작 띠 · 진입부 상태 · 가림 줄(21-5) ③ 구현이 쓸 클래스 이름(21-6)을 정한다. 띠 높이·줄 수처럼 숫자로 적은 값은 2026-11-17 규격 확인용 표본(저장소에 올리지 않는 작업 폴더, 크로뮴)의 실측이며 구현 e2e가 다시 잰다.
+
+### 21-1. 화면 구조
+
+```text
+div.page.ending-page                      기존 그대로 — 바탕·글꼴·낱말 끊김·초점 링을 물려준다
+├ header.site-head                        기존 SiteHead: 헤더 로고 40px + 화면 이름 「이름과 시간」
+├ main.ending[hidden]                     회고 본문(열린 동안 숨김 — 명세 EC1 7항)
+└ main.credits[data-testid=credits-screen][data-bar]
+   ├ div.credits-bar                      조작 띠(21-5 ①) — DOM은 여기, 화면에서는 아래에 고정
+   │  └ div.credits-bar-row > div.credits-bar-flow(자동 흐름이 가능한 판만) + div.credits-bar-nav
+   ├ div.credits-frame                    컨테이너 쿼리의 기준 칸
+   │  └ div.credits-doc                   두 단 / 한 단
+   │     ├ div.credits-who                머리 장: p.credits-kicker · h1.credits-name[tabindex=-1] · p.credits-years · p.credits-born · p.credits-gentle(있을 때)
+   │     └ div.credits-chapters
+   │        ├ section.credits-chapter     가족과 친구: h2 + ul.credits-roll > li.credits-person
+   │        ├ section.credits-chapter     기록에 남은 선택: h2 + article.credits-record(많아야 넷)
+   │        ├ section.credits-chapter     그 시절의 기록: h2 + article.credits-record(많아야 셋)
+   │        └ section.credits-end         끝 장: h2.credits-kicker · p.credits-end-name · p.credits-end-line · div.credits-end-actions
+   └ div.credits-end-space[aria-hidden]   띠 높이만큼의 끝 여백
+```
+
+- **장 순서 = 읽기 순서 = DOM 순서**: 머리 → 가족과 친구 → 기록에 남은 선택 → 그 시절의 기록 → 끝. 없는 장은 섹션째 없다(빈 제목·「없음」 0). 문서는 처음부터 다 그려져 있고, 줄을 화면에 들어올 때 만들지 않는다.
+- **제목 뼈대**: `h1` = 이름(진입 초점, 링 없음 — 공통 규칙) · `h2` = 장 제목 넷(끝 장은 「생애 기록」) · `h3` = 선택의 질문 줄. 화면 제목 「이 삶의 이름들」은 `h1` 위의 작은 글자(`p`)다. 끝 장은 시안과 **태그만** 다르다(시안 `p` 「생애 기록」 + `h2` 이름 → `h2` 「생애 기록」 + `p` 이름) — 제목 목록에 같은 이름이 두 번 나오지 않게 한 것이고 눈에 보이는 모양은 같다.
+- **머리 띠**: 앱 공용 `SiteHead` 그대로다. 새 머리 띠를 만들지 않고 `credits.css`에 `.site-head` 규칙을 적지 않는다. 화면 이름 「이름과 시간」은 모든 폭에서 보인다(시안은 좁은 화면에서 숨겼다). 시안 머리 띠의 닫는 단추는 두지 않는다 — 닫기는 조작 띠에 늘 있고 로고가 닫는 길 넷 가운데 하나다(명세 7항).
+- **스크롤 영역은 문서(창)** 다. 자체 스크롤 상자를 만들지 않는다 — 11-1의 고정 띠 패턴(`--bar-h`·`scroll-padding`)이 그대로 서고, 명세 7항의 이동거리는 문서의 값이다.
+- `.credits`는 `.page` 안에 둔다. 바탕 `--c-bg` · 글꼴 `--font-sans` · `word-break: keep-all` + `overflow-wrap: anywhere` · 초점 링(`.page :focus-visible`)을 물려받으므로 `credits.css`는 글꼴과 초점 링을 다시 선언하지 않는다.
+
+### 21-2. 폭별 배치 — 넓은 화면 두 단 · 좁은 화면 한 단
+
+| | 넓은 화면(두 단) | 좁은 화면(한 단) |
+|---|---|---|
+| 조건 | `.credits-frame` 폭 ≥ **60em**(`@container` — 글자 100%에서 960px = 5절 기준 폭) | 그 미만. em 문턱이라 글자를 키우면 함께 커진다 — 1280px도 글자 약 130%부터 한 단이고 150%·200%는 늘 한 단이다 |
+| 격자 `.credits-doc` | `max-width: var(--w-page)` 가운데 · `grid-template-columns: 1fr 2fr` · `gap: var(--sp-10)` · 안쪽 `var(--sp-10) var(--sp-8) 0` | 블록으로 쌓는다 · 안쪽 `var(--sp-8) var(--sp-6) 0` |
+| 머리 장 `.credits-who` | `position: sticky; top: var(--sp-10); align-self: start` — 읽는 동안 이름이 머문다 | 흐름 그대로 · 아래 `--sp-10` |
+| 기록 칸 `.credits-chapters` | `max-width: var(--w-doc)` | 전폭 |
+| 장 사이 `.credits-chapter` | 아래 안쪽 `--sp-10` + 1px `--c-border` + 아래 바깥 `--sp-10` | 같은 꼴, 값은 `--sp-9` |
+| 명단 이름 | `--fs-xl` | `--fs-lg` |
+| 조작 띠 | 한 줄(21-5 ①) | 21-5 ① 표 |
+
+- 문턱을 뷰포트 px가 아니라 **컨테이너 em**으로 둔 까닭: 글자를 키운 넓은 화면에서 왼쪽 칸(1/3)에 큰 이름과 출생 문장이 못 들어가고, 머무는 머리 장이 화면보다 길어지면 아래쪽이 가려진다. 시안은 스크립트로 글자 크기를 재 머묾을 풀었는데(`data-zoom`), 규격은 같은 일을 CSS 하나로 한다(11-6·11-7과 같은 방법).
+- 컨테이너는 `.credits-frame`이다 — `.credits`에 `container-type`을 걸면 고정 띠의 기준이 뷰포트가 아니라 그 상자가 되므로 띠 밖의 칸에 건다. 컨테이너 쿼리를 모르는 브라우저는 한 단으로 본다(11-6 폴백).
+
+### 21-3. 토큰 — 시안 `credits-2.css`의 값 → 기존 토큰 (새 토큰·새 색 0)
+
+시안은 이미 `tokens.css`의 이름을 쓴다. 아래는 자리마다 쓰는 토큰과, 시안이 토큰 밖 값으로 적었거나 앱 부품과 달랐던 것을 어디로 옮겼는지다(「같음」 = 시안 값 그대로).
+
+| 자리 | 시안 | 규격 | 비고 |
+|---|---|---|---|
+| 바탕 · 본문 | `--c-bg` · `--c-text` · `--fs-md` / `--lh-body` | 같음(`.page`가 준다) | 15.01 / 14.64 |
+| 화면 제목 작은 글자(`.eyebrow`) | `--fs-sm` · `--c-text-3` | 같음 | 5.48 / 6.62. 끝 장의 「생애 기록」도 같은 글자 |
+| 인물 이름 | `--fs-display` · 700 · `--c-brand` · 줄 높이 `--lh-snug` · 여백 `--sp-5 0`(좁은 화면 `--sp-4 0`) | 같음. 줄 높이만 **`--lh-tight`**(plan.md 7절 1.25) + 글자 크기 상한(21-4) | 11.98 / 10.07 |
+| 생몰 연도 | `--fs-lg` · `tabular-nums` | 같음 | |
+| 출생 사실 | `--c-text-2` · 위 `--sp-7`(좁은 화면 `--sp-5`) · 글줄 폭 18em | 같음(18em은 두 단에서만 — 글줄 폭이라 em 그대로) | 8.21 / 9.76 |
+| 가림 안내 줄 | `--fs-sm` · `--c-text-3` · 위 `--sp-5` | 같음 | 회고의 `.ending__gentle`(왼쪽 선)과 다른 모양 — 시안 그대로 |
+| 장 제목 `h2` | `--fs-xl` · 700 · `--lh-snug` · `--c-brand` · 아래 `--sp-7` | 같음 | |
+| 명단 간격 | 줄 `--sp-6` · 칸 `--sp-8`(좁은 화면 `--sp-6`) | 같음 | 칸 수는 21-4 |
+| 호칭 · 이름 | 호칭 `--fs-sm` `--c-text-3` 아래 `--sp-1` · 이름 `--fs-xl`(좁은 화면 `--fs-lg`) 400 | 같음 | 이름 굵기 400(시안 2회차 그대로) |
+| 기록 사이 · 메타 줄 | 기록 사이 `--sp-8` · 메타 `--fs-sm` `--c-text-3` 아래 `--sp-3` | 같음 | 단계 줄과 「본인이 정한 일」이 메타 줄 |
+| 질문 `h3` · 고른 길 · 결과 | `--fs-lg` 700 `--lh-snug` · `--c-text-2` 여백 `--sp-3 0 --sp-2` · `--lh-body` | 같음 | |
+| 끝 장 | 가운데 정렬 · 안쪽 `--sp-7 0 --sp-10` · 이름 `--fs-3xl` 700 `--c-brand` 여백 `--sp-5 0` · 끝 문장 `--c-text-2` | 같음(좁은 화면 아래 `--sp-9`) + 단추 묶음(21-5 ①) | |
+| 머리 띠 | `min-height: 72px`(좁은 화면 64px) · 안쪽 `--sp-3 --sp-8` | 앱 공용 `.site-head`(56px · `--sp-2 --gutter`) | px 값 → 공용 부품 |
+| 단추 | 1px `--c-border-strong` · `--r-sm` · 면 `--c-surface` · 400 | 기존 `.btn` 계열(2px · `--r-md` · 700): 띠 `.btn--secondary.btn--sm` · 끝 장 `.btn--primary.btn--lg` + `.btn--secondary` · 가림 `.btn--ghost.btn--sm` | 테두리 3.81 / 4.77 |
+| 조작 띠 | 고정 · 면 `--c-bg` · 위 1px `--c-border` · 안쪽 `--sp-3 --sp-8`(좁은 화면 `--sp-2 --sp-4`) · `--z-bar` | 고정 · 면 `--c-bg` · 위끝 `--shadow-bar` · 안쪽 `--sp-2 --gutter`(640px부터 좌우 `--sp-8`) · `--z-bar` | 선은 테두리가 아니라 그림자(11-2) |
+| 띠의 상태 글자 | `--fs-sm`(좁은 화면 `--fs-xs`) | **없음** | 단추 글자가 상태를 말한다(`copy.md` 22-4) |
+| 본문 끝 여백 | 160px · 170px · 12rem | `calc(var(--bar-h) + var(--sp-2))` — 잰 띠 높이 | 11-1 「고정값을 적지 않고 잰다」 |
+| 두 단 문턱 | `max-width: 700px` | 컨테이너 60em(21-2) | |
+| 초점 링 | 3px `--c-focus` · 간격 4px | 3px `--c-focus` · 간격 2px(공통 규칙) | 5.57 / 8.58 |
+| 가림 펼침 | `summary`의 링크색 글자 | 단추(21-5 ③) | |
+
+- 글자 크기는 여섯(`--fs-sm` · `--fs-md` · `--fs-lg` · `--fs-xl` · `--fs-3xl` · `--fs-display`), 굵기는 400·700, 색은 바탕 하나 · 글자 셋(`--c-text`·`-2`·`-3`) · 쪽빛 하나다. 14px보다 작은 글자는 없다.
+
+### 21-4. 명단 · 기록 줄 · 긴 이름
+
+- **명단 칸 수**: `ul.credits-roll`은 **많아야 두 칸**이고, 칸이 7em(본문 글자 기준 — 다섯 글자 이름·호칭이 한 줄에 드는 폭)보다 좁아지면 한 칸이 된다: `grid-template-columns: repeat(auto-fit, minmax(min(100%, max(7em, calc((100% - 칸 간격) / 2))), 1fr))`. 표본: 폭 320·360 × 글자 100% 두 칸 → 200% 한 칸, 1280 두 칸. 시안의 고정 두 칸은 320 × 200%에서 호칭이 낱말 안에서 끊겼다(11-8).
+- **한 사람** = `li.credits-person` > `span.credits-role`(호칭, 위) + `span.credits-person-name`(이름, 아래), 둘 다 블록. 가운뎃점은 그리지 않는다. 이름이 없는 사람은 호칭 줄만 둔다(빈 칸·줄표 0). 시안의 `dl`/`dt`/`dd`를 목록으로 바꾼 것은 호칭만 있는 줄이 `dt` 홀로 남으면 문서 구조가 깨지기 때문이다 — 눈에 보이는 모양은 같다. 사람 수·별세·사이로 글자 크기·색·순서를 바꾸지 않는다.
+- 명단 줄은 가운뎃점을 그리지 않으므로 화면에 보이는 글자가 줄 문자열보다 사람마다 석 자(「 · 」) 적다. 글자 수 대조(완료 기준 10)는 줄 문자열을 기준으로 삼는다.
+- **긴 이름**: 명단의 이름은 줄바꿈한다. `text-overflow: ellipsis` · `white-space: nowrap` · 줄 수 자르기(`line-clamp`)를 쓰지 않는다. 이름을 줄이거나 글자 크기를 사람마다 달리하지 않는다.
+- **인물 이름(`h1`)의 글자 크기 상한**(11-8의 제목 상한과 같은 방법): `font-size: max(var(--fs-2xl), min(var(--fs-display), calc(100cqi / var(--title-chars))))`, 컨테이너 = `.credits-who`, `--title-chars` = `titleCharsFor(이름)`(기존). `cqi`를 모르는 브라우저는 `--fs-3xl`. 표본: 다섯 글자 이름이 폭 320 × 글자 100%·200%에서 한 줄이다.
+- **구분 기호**(11-4): 「{단계} · {연도}년 · {나이}세」 · 「고른 길 · {choice}」 · 「{출생 연도} — {사망 연도}」는 `ui/Glue.tsx`로 묶어 기호가 줄 끝·첫머리에 혼자 남지 않게 한다. 가림 안내 쌍은 `FitPair hideSeparator`(14-2 그대로).
+
+### 21-5. 시안에 없는 세 곳
+
+#### ① 조작 띠 `.credits-bar`
+
+- **단추와 순서**(DOM = Tab 순서 = 왼쪽에서 오른쪽): 흐름 묶음 `.credits-bar-flow`[「일시정지」↔「이어 보기」 · 「목록으로 보기」] → 나가는 묶음 `.credits-bar-nav`[「처음부터 보기」 · 「기록으로 돌아가기」]. 흐름 묶음은 자동 흐름이 가능한 판에만 그린다(명세 7항) — 정지 목록에는 나가는 묶음 둘뿐이다. 닫는 단추가 늘 맨 끝이다.
+- **모양**: 모두 `.btn.btn--secondary.btn--sm`. 띠에는 주 단추 색을 쓰지 않는다 — 이 화면의 주 단추는 문서 끝의 「기록으로 돌아가기」 하나다. 높이 `min-height: var(--hit)`(44px), 이름 안 줄바꿈은 낱말 단위로 허용(6절 「나가기 확인 단계」의 네 속성 `white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2)`), 단추 `flex: 1 1 auto; min-width: min-content`, 사이 `--sp-2`.
+- **접힘 모양**(가로 스크롤로 풀지 않는다 — 11-3):
+
+| 폭 · 글자 | 정지 목록(단추 둘) | 자동 흐름(단추 넷) |
+|---|---|---|
+| 640px 이상 | 한 줄, 오른쪽 끝 · 60px | 한 줄 — 흐름 묶음 왼쪽 끝, 나가는 묶음 오른쪽 끝(`margin-inline-start: auto`) · 60px |
+| 320~639px · 100% | 한 줄, 두 단추가 폭을 나눠 갖는다 · 60px | **두 줄 — 묶음마다 한 줄**(`flex: 1 1 100%`) · 112px(320×568의 20% · 360×740의 15%) |
+| 320·360px · 149% | — | 세 줄(흐름 묶음 한 줄 + 나가는 묶음 두 줄) · 약 167px(29% · 23%) |
+| 320·360px · 200% | **두 줄 — 한 줄에 하나** · 약 131px(23% · 18%) | 규칙상 없다(글자 150%부터 정지 목록 — 명세 7항). CSS는 넷이어도 깨지지 않게 둔다: 네 줄 · 약 254px(320×568의 45%), 넘침 0 |
+
+- **본문을 가리지 않는 방법** — 11-1·11-2의 패턴 그대로다.
+  1. 띠의 실제 높이를 재서 `--bar-h`로 알린다(`ui/barRelease.ts#watchBarRelease` — 높이는 단추 수·폭·글자 크기마다 달라 고정값을 적지 않는다).
+  2. 문서 끝에 `.credits-end-space { height: calc(var(--bar-h, 112px) + var(--sp-2)) }` — 끝 장의 단추 묶음이 띠 위에 다 보인다(표본: 「처음부터 보기」 아랫변과 띠 윗변 사이 56px 이상). 명세 7항의 이동거리에는 이 여백이 든다.
+  3. 문서 루트의 `scroll-padding-bottom: calc(var(--bar-h) + var(--sp-3))`(기존 `html.has-bottom-bar` 규칙) — 키보드 초점(「펼쳐 보기」·끝 장 단추)이 띠 밑으로 숨지 않는다(CM10).
+  4. 띠가 작은 뷰포트 높이(`100svh`)의 절반을 넘으면 고정을 푼다(11-2). 풀린 띠는 **DOM 자리 — 머리 띠 바로 아래**에 `position: static`으로 놓이고(아래끝 선 `box-shadow: 0 1px 0 var(--c-border-strong)`), 끝 여백은 숨긴다. 표본: 320×256 × 글자 200%에서 131px(51%)이라 풀린다.
+  5. 상태는 **`.credits[data-bar='released']`** 로 건다 — `credits.css`의 선택자는 `.credits`로 시작해야 하고, 전역 클래스 이름 `bar-released`는 이 파일에 쓸 수 없다(완료 기준 18).
+- 띠를 DOM에서 문서 앞에 두는 까닭: 초점이 `h1`에서 시작해 문서가 끊기지 않고 읽히고, 문서 끝의 두 단추 바로 뒤에 같은 단추가 한 번 더 읽히지 않는다. 풀렸을 때도 눈에 보이는 순서와 Tab 순서가 같다.
+- **문서 끝의 단추 묶음** `.credits-end-actions`: 끝 문장 아래 `--sp-7`, 세로 쌓기 `gap: var(--sp-3)`, `max-width: 20em` 가운데 — 주 단추 `.btn.btn--primary.btn--lg` 「기록으로 돌아가기」 위, 보조 `.btn.btn--secondary` 「처음부터 보기」 아래. 이름 안 줄바꿈은 띠와 같은 네 속성.
+- 띠에 상태 글자·`aria-live`·묶음 이름(`aria-label`)을 두지 않는다(새 문구 0). 강제 색상에서는 그림자가 사라지므로 고정 띠 `border-top: 1px solid CanvasText`, 풀린 띠는 같은 선을 아래끝에 둔다.
+
+#### ② 진입부의 받는 중 · 실패 · 다시 시도 (회고 화면)
+
+- **자리와 구조**: `main.ending` 안, 「사망과 선택」 카드 바로 아래 · 최종 스탯 위(명세 1항). `section.ending__names[aria-labelledby]` > `h2.ending__names-title` 「이 삶의 이름들」 → `p.t-muted` 설명 → 버튼 `.btn.btn--primary.ending__names-open`(`data-testid="ending-credits-open"`) → (실패 때만) `p.ending__names-fail[role="alert"]`.
+- **모양**: 카드가 아니라 **선 둘 사이의 띠**다(시안 `ending-entry.html`) — 위 `2px solid var(--c-brand)`, 아래 `1px solid var(--c-border)`, 안쪽 `var(--sp-6) 0`, 왼쪽 정렬 세로 쌓기 `gap: var(--sp-2)`. 제목 `--fs-xl` · 700 · `--c-brand` · `--lh-snug`, 설명 `--c-text-2`. 시안과 다른 곳: 작은 머리글 「이름과 시간」 없음(명세 1항의 세 요소 — 같은 낱말이 설명 줄에 있다), 제목 `--fs-2xl` → `--fs-xl`(회고의 `h1`이 `--fs-2xl`이라 한 단 아래), 위아래 여백 `--sp-8`·`--sp-9` → `--sp-6`(바깥 간격은 `.ending`의 `gap`이 준다), 링크 모양 단추 → `.btn.btn--primary`(크기는 보통 — 가장 큰 단추는 「다시 태어나기」 그대로).
+- 이 규칙들은 `credits.css`가 아니라 **첫 덩어리의 엔딩 스타일**(`dash.css`)에 둔다 — 누르기 전에 보이는 자리다. 규칙은 넷 안쪽으로(첫 로딩 증가 한도 — 명세 9항).
+- **상태 셋 — 단추의 자리·크기는 변하지 않는다**:
+
+| 상태 | 단추 글자 · 속성 | 단추 모양 | 오류 문구 |
+|---|---|---|---|
+| 기본 | 「이 삶의 이름들 보기」 | 주 단추 | 없음 |
+| 받는 중 | 「불러오는 중」 · `aria-busy="true"` `aria-disabled="true"` | 전역 규칙 `.btn[aria-disabled='true']`의 0.55 흐림 그대로(첫 화면 받는 중과 같은 과도 상태 — 불투명도 규칙을 새로 적지 않는다) | 없음(앞선 실패의 문구는 지운다) |
+| 실패 | 「다시 시도」 | 주 단추(흐림 없음 — 누를 수 있다) | **단추 아래** 한 문단, `--fs-sm` · `--c-text` |
+
+  - **상자 불변**: 세 상태에서 단추의 섹션 안 위치·폭·높이가 같다(차 1px 이하 — 320·360·1280 × 글자 100·200%). 방법은 **자리잡이 겹침**이다: 단추를 `display: inline-grid`로 두고, 기본 문구를 `aria-hidden` + `visibility: hidden` 자리잡이로 남긴 채 지금 글자를 같은 칸(`grid-area: 1 / 1`)에 겹친다. 폭은 640px 미만 `inline-size: 100%`, 640px부터 `min-inline-size: 12em`. 폭 320 × 글자 200%에서는 기본 문구가 두 줄이라 단추도 두 줄 높이(표본 97px)이고, 짧은 글자도 그 상자 가운데에 선다.
+  - **오류 문구가 단추 아래인 까닭**: 위에 두면 단추가 한 줄만큼 내려가 다시 누르려던 자리가 어긋난다. 아래에 두면 단추는 그대로이고 그 아래 카드만 문구 높이만큼 내려간다(표본: 360 두 줄 +53px · 1280 한 줄 +31px).
+  - 뜻은 글자가 전한다 — 실패를 붉은색·아이콘·테두리로 표시하지 않는다(`--c-down`은 영향 줄 기호의 색이다).
+- **오류 화면**(열린 화면 안에서 줄 모델·렌더 예외 — 명세 9항 오류 경계): `main.credits` > `div.credits-fail` > `h1.credits-fail-title[tabindex=-1]` 「이 삶의 이름들」(`--fs-xl` · 700 · `--c-brand`, 초점) → `p[role="alert"]` 오류 문구 → `div.credits-fail-actions`[`.btn.btn--primary` 「다시 시도」 · `.btn.btn--secondary` 「기록으로 돌아가기」]. 한 열 왼쪽 정렬, `max-width: var(--w-doc)` 가운데, 안쪽 `var(--sp-9) var(--sp-6)`, 세로 `gap: var(--sp-4)`. 단추 줄은 `flex-wrap`(640px 미만은 폭을 나눠 갖고 글자 200%에서는 한 줄에 하나). 조작 띠와 끝 여백은 그리지 않는다. 머리 띠의 화면 이름은 「이름과 시간」 그대로다.
+
+#### ③ 열린 화면 안의 가림 줄 `.credits-veil`
+
+14절의 원칙 그대로다 — 가린 자리는 **글자(안내 + 분류) + 단추**로만 말하고 점선·회색 상자·흐림을 쓰지 않는다. 전역 `.veil`·`.veil__btn`은 쓰지 않는다(누르는 높이가 32px이고, 그 부품은 닫힌 원문을 `hidden`으로 DOM에 둔다 — 명세 5항).
+
+```text
+article.credits-record[data-veiled="true"]
+├ p.credits-meta                 「{단계} · {연도}년 · {나이}세」       가리지 않는다
+├ p.credits-meta                 「본인이 정한 일」(선택만)             가리지 않는다
+├ div.credits-veil
+│  ├ p.credits-veil-lead         FitPair 「무거운 일이 있었습니다」·{분류} hideSeparator
+│  └ button.btn.btn--ghost.btn--sm.credits-veil-btn[aria-expanded]     「펼쳐 보기 ▾」 ↔ 「접기 ▴」
+└ div.credits-veil-body#id       펼친 때만 만든다 — 닫힌 동안 이 노드가 없다
+```
+
+- **배치**: 안내 → 그 아래 단추(줄 머리에 왼쪽 정렬, 사이 `--sp-2`) → 그 아래 원문(위 `--sp-3`). 단추가 안내와 원문 **사이**에 있어 펼쳐도 단추 자리가 변하지 않는다 — 같은 자리를 다시 누르면 접힌다. 14-2처럼 단추를 줄의 오른쪽 끝으로 보내지 않는다(읽는 문서의 왼쪽 가장자리를 지킨다).
+- **글자**: 안내 `--fs-md` · `--c-text-2`(8.21 / 9.76), 단추 `--fs-sm` · 400 · 글자 `--c-text` · 테두리 `--c-border-strong`. 단추 높이 **`--hit` 44px**(명세 8항 — 기록 줄의 32px 단추와 다르다). 기호 「▾」「▴」는 `aria-hidden`.
+- **펼친 원문**: 가리지 않은 줄과 같은 글자·같은 꼴이다 — 선택은 `h3.credits-q` → `p.credits-pick` → `p.credits-result`, 시대는 원문 한 문단. 펼친 줄은 가림을 끈 화면의 그 줄과 같다.
+- **속성**: 단추에 `aria-expanded`, `aria-controls`는 펼친 때만 건다. 접근성 이름은 `veilButtonLabel`(나이·분류만 — `copy.md` 22-5). 펼침·접힘에 전환(높이·페이드)이 없고 초점은 단추에 그대로 있다. 펼치면 자동 흐름이 멈춘다(명세 5·7항).
+- 글자 200% × 폭 320: 안내 쌍은 기호 없이 두 줄, 단추는 그 아래 줄, 넘침 0.
+
+### 21-6. 클래스 이름표 — 컨테이너 `.credits` 하나와 `credits-` 접두어 (10절 1항의 예외)
+
+`src/styles/credits.css`는 버튼을 누른 뒤에 받는 지연 CSS다. 한 번 받으면 문서에 남아 회고와 다음 판 화면에도 걸리므로 **모든 규칙을 `.credits` 아래로 한정**하고 새 이름은 `credits-`로 시작한다(명세 8항 · 완료 기준 18). 시안의 `.card` · `.dot` · `.dots` · `.notice` · `.on` · `.page` · `.people` · `.site-head` · `.spoon`은 앱 전역 클래스와 이름이 같아 그대로 옮기지 않는다. 단수 `.credit`은 첫 화면 푸터가 쓰고 있어 쓰지 않는다.
+
+| 시안(`credits-2.css` · `credits-2.mjs`) | 새 이름 | 비고 |
+|---|---|---|
+| `.site-head` · `.brand` · `#skip` | 없음 | 앱 공용 `SiteHead`를 쓴다(정의하지 않는다). 머리 띠의 닫는 단추 없음 |
+| `.page`(`main#credits`) | `.credits`(컨테이너, `data-testid="credits-screen"`) · `.credits-frame` · `.credits-doc` | 상태 속성 `data-bar` |
+| `.identity` | `.credits-who` | |
+| `.eyebrow` | `.credits-kicker` | 머리의 화면 제목 · 끝 장 제목 |
+| `.identity h1` · `.years` · `.intro` · `.notice` | `.credits-name` · `.credits-years` · `.credits-born` · `.credits-gentle` | |
+| `.chapters` · `.chapter` | `.credits-chapters` · `.credits-chapter` | |
+| `.people` · `.person` · `dt` · `dd` | `.credits-roll` · `.credits-person` · `.credits-role` · `.credits-person-name` | `dl` → `ul`(21-4) |
+| `.record` · `.meta` · `h3` · `.answer` · `.result` | `.credits-record` · `.credits-meta` · `.credits-q` · `.credits-pick` · `.credits-result` | |
+| `details` · `summary` | `.credits-veil` · `.credits-veil-lead` · `.credits-veil-btn` · `.credits-veil-body` | 21-5 ③ |
+| `.closing`과 그 안의 `h2` · 끝 문장 | `.credits-end` · `.credits-end-name` · `.credits-end-line` · `.credits-end-actions` | |
+| `.controls` · `#status` | `.credits-bar` · `.credits-bar-row` · `.credits-bar-flow` · `.credits-bar-nav` | 상태 글자 없음 |
+| `.primary` | 기존 `.btn.btn--primary` | 전역 단추 클래스는 **쓰기만** 한다 |
+| `html[data-zoom="large"]` | 없음 | 컨테이너 em 문턱(21-2)과 `data-bar`가 대신한다 |
+| 없음 | `.credits-end-space` · `.credits-fail` · `.credits-fail-title` · `.credits-fail-actions` | 새로 생긴 자리 |
+| `.review`(시안의 회고 흉내) | 없음 | 실제 `EndingScreen` — 진입부는 `.ending__names` · `.ending__names-title` · `.ending__names-open` · `.ending__names-fail`(첫 덩어리의 엔딩 스타일, 21-5 ②) |
+| `.spoon-scene` · `.spoon-visual` · `.spoon-stage` · `.spoon` · `.endpoints` · `.endpoint` · `.endpoint-label` · `.grade-name` · `.dots` · `.dot` · `.on` · `.fact` · `.basis` · `.basis-detail` | **v0.6.1에 없음** | 수저 변화 장면의 것 — 그 구현 때 `credits-` 접두어로 정한다 |
+| `.catalog` · `.cards` · `.card` · `.links` · `.studies` · `.study` · `.frames` · `.frame` | 옮기지 않는다 | 시안 목록 장 전용 |
+
+- `credits.css` 안에서 전역 클래스(`.btn` · `.site-head` · `.card` …)를 선택자로 다시 꾸미지 않는다. 띠·끝 장의 단추에 줄바꿈 속성을 줄 때도 `.credits .credits-bar-row .btn`처럼 `.credits`로 시작한다.
+- 이 파일에는 `#`색 · `rgb(` · `hsl(` · 글꼴 이름 · 400·700 밖 굵기 · `opacity` · `transition` · `animation`이 없다(강제 색상의 시스템 색 낱말 제외).
+
+### 21-7. 움직임
+
+- 이 화면의 연출은 **자동 흐름 하나**다 — 문서 스크롤 위치의 **선형 이동**(시간 → 위치 순수 함수). 가속·감속, 페이드, 확대, 시차 이동, 화면 전환, 배경·글자 색 변화가 없고, 줄이 화면에 들어올 때 나타나는 효과도 없다. 처음·끝의 정지 시간, 길이 식, 속도 상한, 자동/정지 판정의 수치는 **명세 EC1 7항**이 정본이고 이 절은 다시 정하지 않는다.
+- 움직임 줄이기(OS 설정 · `data-motion=reduce`)와 글자 150% 이상(명세 7항의 판정)은 **정지 목록**이다 — 같은 문서를 같은 배치로 그리고 띠에 흐름 묶음만 없다. 넓은 화면의 머리 장 머묾(`position: sticky`)은 연출이 아니라 배치라 움직임 줄이기에서도 그대로이고, 글자가 커져 한 단이 되면 풀린다(21-2).
+- 가림 펼침·접힘, 진입부의 상태 바뀜, 띠의 고정·풀림은 즉시 바뀐다(전환 없음). 단추의 hover 색 전환은 전역 `.btn`의 `--dur` 그대로다.
+- 7절 「허용되는 연출」에 이 화면의 자동 흐름이 더해진다(근거는 이 절이다).
+
+### 21-8. 격자에서 지킬 것 — 폭 320 · 360 · 1280 × 라이트 · 다크 · 강제 색상 × 글자 100 · 200%
+
+| 지킬 것 | 기준 | 표본 실측 |
+|---|---|---|
+| 가로 넘침 | 문서·요소 넘침 0(10절 9항의 규칙) — 가장 긴 이름 · 21명 판 포함 | 18칸 모두 0 |
+| 긴 이름 | 줄임표 0 · 낱말 안 끊김 0. 인물 이름은 한 줄(상한), 명단 이름은 칸이 좁으면 한 칸 배치 | 다섯 글자 이름 한 줄 · 명단 여러 줄 0 |
+| 가려진 본문 | 끝 장 단추가 띠 위에 다 보인다 · 초점 대상이 띠 밑에 숨지 않는다 | 끝 여백 56px 이상 · 초점 가림 0 |
+| 띠 높이 | 작은 뷰포트 높이의 50% 이하(넘으면 풀린다) | 21-5 ① 표(8~29%) |
+| 조작 크기 | 모든 단추 높이 44px 이상(띠 · 끝 장 · 가림 · 진입부 · 오류 화면) | 최저 44px(글자 200%에서 54px 이상) |
+| 초점 | 3px `--c-focus` 링이 보인다. 진입 초점은 `h1`(링 없음) | 공통 규칙 |
+| 단 수 | 1280 × 100% 두 단 · 그 밖(좁은 화면 · 글자 150% 이상) 한 단 | 1280 × 200% 한 단 |
+| 명단 칸 수 | 100% 두 칸 · 좁은 화면 200% 한 칸 | 320 · 360 × 200% 한 칸 |
+| 장 제목 | 두 줄 이하 | 320 × 200%에서 두 줄 |
+| 진입부 단추 | 세 상태에서 자리·폭·높이 같음 | 모든 칸에서 차 0px |
+| 색에 기대지 않기 | 다크·강제 색상에서 뜻이 그대로 — 가림 = 글자 + 단추, 실패 = 문장, 멈춤 = 단추 글자 | |
+
+### 21-9. 대비 · 다크 · 강제 색상
+
+- 모두 `--c-bg` 위의 기존 토큰 짝이고 값은 21-3 비고(라이트 / 다크, `contrast-report.md`의 행)다. 주 단추는 `--c-on-brand` / `--c-brand`(기존 행), 단추 면 위 글자는 `--c-text` / `--c-surface`. 장 사이 선 `--c-border`는 장식이다(장 제목과 여백이 구획을 말한다). **새 짝 0 — `checkContrast` 변경 없음.**
+- 다크: 토큰만 바뀐다. 띠의 위끝 선은 `--shadow-bar`가 다크에서 1px 선이 된다.
+- 강제 색상: 글자 `CanvasText`, 단추는 공통 규칙(테두리 `CanvasText` · 주 단추 3px), 띠의 선은 21-5 ①의 테두리, 진입부의 두 선도 `CanvasText`로 남는다. 받는 중 단추는 공통 규칙의 `GrayText`.
+- 색은 바탕 하나 · 글자 하나(농도 셋) · 쪽빛 하나다. 붉은색·초록색·놋쇠색·수저 재질색을 쓰지 않는다.
+
+### 21-10. 시안과 다르게 정한 곳 (한눈에)
+
+1. 머리 띠 = 앱 공용 `SiteHead`(닫는 단추 없음 · 화면 이름 늘 보임).
+2. 띠의 상태 글자 없음 · 단추는 `.btn` 계열 · 띠는 DOM에서 문서 앞.
+3. 본문 끝 여백 = 잰 띠 높이(시안은 고정값이라 낮은 화면에서 끝 장 이름이 띠에 가렸다).
+4. 두 단 문턱 = 컨테이너 60em(시안 700px + 스크립트).
+5. 명단은 좁으면 한 칸 · `dl` → `ul` · 인물 이름 글자 크기 상한 · 줄 높이 `--lh-tight`.
+6. 가림은 `details`가 아니라 `button[aria-expanded]` + 기존 문구 · 안내는 보조색.
+7. 끝 장의 제목 태그(`h2` 「생애 기록」) · 문서 끝 단추 묶음(시안에는 띠의 단추뿐이었다).
+8. 초점 링 간격 2px(공통) · 진입부의 작은 머리글 없음 · 진입부 제목 `--fs-xl`.
+9. 좁은 화면에서 문서의 왼쪽 가장자리(`--sp-6` 24px — plan-2 9절)와 머리 띠·조작 띠의 가장자리(`--gutter` 16px)가 8px 어긋난다 — 정본 값을 따랐다. 하나로 맞출지는 구현 화면을 보고 정한다.
