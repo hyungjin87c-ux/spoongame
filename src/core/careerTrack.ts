@@ -75,10 +75,35 @@ export function trackOpenAgeOf(flags: readonly string[] | ReadonlySet<string>): 
  * 큰 갈림길 강제 슬롯 [결정 후속 241·244]: 맞춤 판에서 이 나이(게임 나이)부터 그 사건이 그 해 후보(`eligible` — 자격·나이 범위·`once`·연도·가족 줄 거름을 모두 통과)이고
  * 그 해 일반 추첨이 선택 카드를 뽑지 않았으면(`life.ts#stepYear`) 그 자리에 낸다. 사건 나이 범위를 넘기면 그 판에는 없다.
  */
-export const GATE_SLOTS: ReadonlyArray<{ event: string; age: number }> = [
+export const GATE_SLOTS: ReadonlyArray<{ event: string; age: number; together?: true }> = [
   { event: 'school-lessons', age: M('slotLessons') },
-  { event: 'school-high-pick', age: M('slotHighPick') },
+  { event: 'school-high-pick', age: M('slotHighPick'), together: true },
 ];
+
+/**
+ * 「같은 해에 함께」 [결정 후속 255]: `together` 슬롯(G2)은 그 해 일반 추첨이 **선택 카드**를 뽑은 해에도 그 카드 앞에서 먼저(부모 결정, 해를 닫지 않고) 해결된다(`life.ts#stepYear`의 동반 갈래).
+ * 빈 해·서술 해 규칙(후속 244)·가족 강제 해·병역 슬롯 우선(후속 241 ②)은 그대로다. **되돌리기 표지**: `false`이면 동반 갈래가 늘 서지 않아 엔진 변경 전과 같다(얼린 맞춤 판 해시가 증명한다, `tests/gateTogether.test.ts`).
+ * 표 값이 아니라 규칙 표지라 `personaTable`의 MODEL 행이 아니다(전례 `GONE_YEAR_RULE`).
+ */
+export const GATE_TOGETHER = true;
+let activeGateTogether: boolean = GATE_TOGETHER;
+
+/** 측정·시험 전용: `fn` 동안만 「같은 해에 함께」 표지를 바꾼다(끝나면 되돌린다) */
+export function withGateTogether<T>(on: boolean, fn: () => T): T {
+  const before = activeGateTogether;
+  activeGateTogether = on;
+  try {
+    return fn();
+  } finally {
+    activeGateTogether = before;
+  }
+}
+
+/** 지금 쓰는 「같은 해에 함께」 표지 (`life.ts#stepYear`가 읽는다) */
+export const gateTogetherNow = (): boolean => activeGateTogether;
+
+/** 이 슬롯 사건이 「같은 해에 함께」 슬롯인가 (`GATE_SLOTS`의 `together`) */
+export const togetherSlot = (eventId: string): boolean => GATE_SLOTS.some((s) => s.event === eventId && s.together === true);
 
 /**
  * 강제 슬롯 사건 id — 이 사건들은 **덧붙는 카드**다(결정 후속 243): 일반 추첨 후보에서 빠지고, 낸 해에 `lastChoiceAge`를 갱신하지 않으며, 페이싱 예산(`choicesSoFar`)에 세지 않는다.

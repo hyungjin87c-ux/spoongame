@@ -93,8 +93,10 @@ function playAndCapture(seed: number, era: ProfileId, strategy: Strategy, onYear
       continue;
     }
     let seen: { state: GameState; by: 'parent' | 'child'; choiceId: string } | null = null;
+    // 한 걸음에 관찰이 둘일 수 있다(15세 「같은 해에 함께」, 결정 후속 255): 덧카드(G2)의 관찰(`lead: true`)은 해를 닫지 않는 앞 절반이라 이 동치(해 하나 = 수동 해결 하나)의 대상이 아니다 —
+    // 그 해 카드 X의 관찰만 모은다(덧카드는 닫기 법칙으로 `tests/gateTogether.test.ts`가 대조한다). 변수 하나에 덮어쓰면 본인 동반 해에서 G2 관찰과 X 대기 상태가 짝지어 깨진다
     const r = stepYear(s, EVENT_POOL, (e) => {
-      seen = { state: e.state, by: e.by, choiceId: e.choiceId };
+      if (e.lead !== true) seen = { state: e.state, by: e.by, choiceId: e.choiceId };
     });
     if (seen !== null) {
       const c = seen as { state: GameState; by: 'parent' | 'child'; choiceId: string };

@@ -82,7 +82,7 @@ export const PARENT_DECISION_TABLE: Readonly<Record<string, DecisionRow>> = {
   'school-scholarship': row(['money', 'school']),
   'school-exam': row(['school', 'money']),
   'school-parttime': row(['money']),
-  // SPEC-018 PL5(맞춤 인생 판만 — `tailored`): G1 배움 9~12세는 부모(R4), G2 진학 14~15세는 옛 「갈림길 앞에서」와 같은 영역이라 부모(R5)
+  // SPEC-018 PL5(맞춤 인생 판만 — `tailored`): G1 배움 9~12세는 부모(R4), G2 진학 15세는 옛 「갈림길 앞에서」와 같은 영역이라 부모(R5)
   'school-lessons': row(['school', 'money']),
   'school-high-pick': row(['school']),
   // 어린 시절 조르기(SPEC-011 AK1·AK7): 영역 `ask`(단독) — R1a가 나이와 무관하게 본인으로 만든다. 반려동물 둘은 스위치 `ASK_PET_ENABLED`가 켜졌을 때만 있다(AK9, 꺼짐이면 이 표에도 없다)
@@ -241,7 +241,7 @@ export const SELF_AREA_WEIGHT: number = 2;
 
 /**
  * 집계 — `askCards`는 조르기 사건 수(반려동물 켜짐 9 · 꺼짐 7), `selfCards`는 본인이 고르는 구간이 있는 카드(기존 9 + 조르기). 스위치를 인자로 받아 시험이 켜짐·꺼짐을 모두 본다.
- * `parentCards` 26 = 기존 24 + SPEC-018 PL5의 맞춤 판 전용 부모 카드 2장(G1 `school-lessons` 9~12세 · G2 `school-high-pick` 14~15세, 결정 후속 237).
+ * `parentCards` 26 = 기존 24 + SPEC-018 PL5의 맞춤 판 전용 부모 카드 2장(G1 `school-lessons` 9~12세 · G2 `school-high-pick` 15세, 결정 후속 237).
  */
 export const parentTableCountsFor = (petEnabled: boolean): { parentCards: 26; childCards: 7; selfCards: number; selfCards13to18: 6; askCards: number } => {
   const askCards = petEnabled ? ASK_EVENT_IDS.length + ASK_PET_EVENT_IDS.length : ASK_EVENT_IDS.length;

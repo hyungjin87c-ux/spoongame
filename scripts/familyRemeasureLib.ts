@@ -196,7 +196,9 @@ export function runLife(v: Variant, gen: ProfileId, seed: number): LifeRow {
               if (id !== undefined && (pool.byId.get(id)?.conditions?.flags ?? []).some((f) => cleared.includes(f)) && !sameYearCleared.includes(id)) sameYearCleared.push(id);
             }
             const pick = r.state.pending !== null ? { eventId: r.state.pending.eventId, ids: r.state.pending.choiceIds } : r.tick.choiceId !== undefined && r.tick.eventId !== undefined ? { eventId: r.tick.eventId, ids: [r.tick.choiceId] } : null;
-            if (pick !== null) {
+            // 같은 해에 먼저 난 덧카드(G2, 결정 후속 255)가 고른 선택지도 같은 방식으로 견준다(틱의 `lead` — 최상위는 그 해 카드 X의 것이다)
+            const picks = [...(pick !== null ? [pick] : []), ...(r.tick.lead !== undefined ? [{ eventId: r.tick.lead.eventId, ids: [r.tick.lead.choiceId] }] : [])];
+            for (const pick of picks) {
               const def = pool.byId.get(pick.eventId);
               for (const cid of pick.ids) {
                 const ch = def?.choices?.find((c) => c.id === cid);

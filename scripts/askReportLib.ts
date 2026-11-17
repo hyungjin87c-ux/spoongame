@@ -82,6 +82,9 @@ export function runAskLife(start: GameState, seed: number, strategy: AskStrategy
       const r = stepYear(s, pool);
       if (r.tick.by === 'parent') parentCards++;
       else if (r.tick.by === 'child') childCards++;
+      // 같은 해에 먼저 난 덧카드(G2 「같은 해에 함께」, 결정 후속 255)는 틱의 `lead`다 — 최상위 `by`는 그 해 카드 X의 것이라 따로 센다
+      if (r.tick.lead?.by === 'parent') parentCards++;
+      else if (r.tick.lead?.by === 'child') childCards++;
       s = r.state;
       continue;
     }

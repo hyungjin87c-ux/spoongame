@@ -69,9 +69,11 @@ export interface LifeObs {
 export interface Age15Obs {
   /** G2 `school-high-pick`이 그 해 났는가(`seen[G2] === 15`) */
   shown: boolean;
-  /** G2가 났을 때 그 결정자(`tick.by` 없으면 본인) */
+  /** G2가 났을 때 그 결정자 — 「함께」 해(`tick.lead`)는 덧카드의 결정자, 그 밖에는 `tick.by`(없으면 본인) */
   g2By: 'parent' | 'child' | 'self' | null;
-  /** G2가 났을 때: 같은 해 일반 추첨이 서술 장면을 뽑았으면 그 장면을 G2가 대신한 것 — 반사실 걸음(G2를 `once`로 막고 같은 상태에서 한 해 더 돌린 틱)으로 가른다 */
+  /** G2가 「같은 해에 함께」 났는가(결정 후속 255 — 틱의 `lead`): 그 해 일반 추첨이 선택 카드를 뽑아 G2가 그 카드 앞에서 먼저 해결된 해. 이때 `choiceCard`는 그 해 카드 X다 */
+  together: boolean;
+  /** G2가 났을 때: 같은 해 일반 추첨이 서술 장면을 뽑았으면 그 장면을 G2가 대신한 것 — 반사실 걸음(G2를 `once`로 막고 같은 상태에서 한 해 더 돌린 틱)으로 가른다. 「함께」 해에는 서술 장면이 없어 판정하지 않는다(false) */
   g2Replaced: boolean | null;
   /** 가족 강제 사건이 그 해 있었는가(`familyChangesFor(...).forcedEvent`) */
   forced: boolean;
@@ -80,14 +82,14 @@ export interface Age15Obs {
   /** G2가 그 해 후보 자격을 통과하는가(`isEventEligible` — 가족 줄 거름은 못 본다) */
   eligible: boolean;
   leftSchool: boolean;
-  /** 그 해 걸음이 선택 카드를 냈는가(본인 대기 · 부모·흘러감 즉시 해결) — G2 자신은 제외 */
+  /** 그 해 걸음이 선택 카드를 냈는가(본인 대기 · 부모·흘러감 즉시 해결) — G2 혼자 난 해는 제외, 「함께」 해는 X */
   choiceCard: { id: string; by: 'parent' | 'child' | 'self' } | null;
   /** 그 해 사망(걸음 또는 본인 카드 해결에서 `death`) */
   died: boolean;
 }
 
 /**
- * 15세 해의 서로 겹치지 않는 갈래(우선순위 위에서부터): ⓐ G2가 났다 · ⓔ2 15세 해 사망(G2 없음) · ⓓ 가족 강제 사건 해 · ⓕ3 병역·진로 슬롯 · ⓕ1·2 자격 없음 ·
+ * 15세 해의 서로 겹치지 않는 갈래(우선순위 위에서부터): ⓐ G2가 났다(ⓐ1 빈 해 · ⓐ2 서술 대신 · ⓐ3 같은 해에 함께 — 결정 후속 255, 그 해 카드의 결정자별) · ⓔ2 15세 해 사망(G2 없음) · ⓓ 가족 강제 사건 해 · ⓕ3 병역·진로 슬롯 · ⓕ1·2 자격 없음 ·
  * ⓑ 일반 추첨이 선택 카드를 뽑아 G2가 넘어갔다(결정자별) · ⓕ4 그 밖(자격은 있는데 안 났다 — 가족 줄 거름 등). ⓔ1 15세 전 사망은 a15가 null.
  */
 export const AGE15_BRANCHES = [
@@ -103,11 +105,15 @@ export const AGE15_BRANCHES = [
   'ⓕ2 G2 자격 없음 · 그 밖 사유',
   'ⓕ3 병역·진로 슬롯 해(점검)',
   'ⓕ4 자격은 있는데 안 남(가족 줄 거름 등)',
+  'ⓐ3a G2 함께 · 그 해 카드 본인',
+  'ⓐ3b G2 함께 · 그 해 카드 부모',
+  'ⓐ3c G2 함께 · 그 해 카드 흘러감',
 ] as const;
 
 export function age15Branch(l: LifeObs): (typeof AGE15_BRANCHES)[number] {
   const a = l.a15;
   if (a === null) return AGE15_BRANCHES[6];
+  if (a.shown && a.together) return a.choiceCard?.by === 'parent' ? AGE15_BRANCHES[13] : a.choiceCard?.by === 'child' ? AGE15_BRANCHES[14] : AGE15_BRANCHES[12];
   if (a.shown) return a.g2Replaced === true ? AGE15_BRANCHES[1] : AGE15_BRANCHES[0];
   if (a.died) return AGE15_BRANCHES[7];
   if (a.forced) return AGE15_BRANCHES[5];
@@ -129,7 +135,7 @@ export function age15Table(lives: readonly LifeObs[]): { n: number; rows: Array<
     counts.set(b, (counts.get(b) ?? 0) + 1);
     const a = l.a15;
     if (a?.shown === true && a.g2By !== null) g2By[a.g2By]++;
-    if (b.startsWith('ⓑ') && a?.choiceCard) ids.set(a.choiceCard.id, (ids.get(a.choiceCard.id) ?? 0) + 1);
+    if ((b.startsWith('ⓑ') || b.startsWith('ⓐ3')) && a?.choiceCard) ids.set(a.choiceCard.id, (ids.get(a.choiceCard.id) ?? 0) + 1);
     if (a?.shown !== true && l.gates.G2 !== undefined && l.gates.G2.age !== 15) g2OtherAge++;
     if (a?.died === true && a.shown) diedWithCard++;
   }
@@ -146,16 +152,19 @@ function observeAge15(pre: GameState, r: ReturnType<typeof stepYear>, pool: Even
   const eligible = ev !== undefined && isEventEligible(ev, { ...ctx, age, year: calendarYear(pre.character!.birthYear, age), seen: pre.seen });
   const shown = pre.seen[G2_ID] === undefined && r.state.seen[G2_ID] === age;
   const t = r.tick;
+  // 「같은 해에 함께」(결정 후속 255): 틱의 `lead`가 G2 덧카드다 — 최상위 `by`·`eventId`는 그 해 카드 X의 것이라 G2의 결정자·반사실 판정에 쓰면 안 된다
+  const together = shown && t.lead !== undefined;
   let g2Replaced: boolean | null = null;
-  if (shown) {
+  if (shown && !together) {
     // 반사실: G2를 once로 막은 같은 상태에서 한 해 — 일반 추첨이 서술 장면을 뽑았으면 그 장면(마일스톤 아님)이 G2에 자리를 내준 것
     const cf = stepYear({ ...pre, seen: { ...pre.seen, [G2_ID]: 0 } }, pool);
     g2Replaced = cf.tick.eventId !== undefined && !(cf.tick.milestoneIds ?? []).includes(cf.tick.eventId);
   }
-  const choiceCard = !shown && (t.kind === 'choice' || t.by !== undefined) && t.eventId !== undefined ? { id: t.eventId, by: (t.by ?? 'self') as 'parent' | 'child' | 'self' } : null;
+  const choiceCard = (!shown || together) && (t.kind === 'choice' || t.by !== undefined) && t.eventId !== undefined ? { id: t.eventId, by: (t.by ?? 'self') as 'parent' | 'child' | 'self' } : null;
   return {
     shown,
-    g2By: shown ? ((t.by ?? 'self') as 'parent' | 'child' | 'self') : null,
+    g2By: shown ? (together ? t.lead!.by : ((t.by ?? 'self') as 'parent' | 'child' | 'self')) : null,
+    together,
     g2Replaced,
     forced: familyChangesFor(pre, age, pool).forcedEvent !== undefined,
     militaryOrCareer: militaryDueOf(pre, pool, age) !== null || t.career === true,
@@ -202,13 +211,13 @@ export function playObserve(start: GameState, seed: number, untilAge = 36, pool:
       s = resolved.state;
       continue;
     }
-    let seen: { state: GameState; by: 'parent' | 'child'; ids: readonly string[]; weights: readonly number[]; choiceId: string } | null = null;
+    // 한 걸음에 관찰이 둘일 수 있다(15세 「같은 해에 함께」 — 덧카드 G2, 그 뒤 그 해 카드 X): 변수 하나에 덮어쓰면 G2 갈림길 관찰이 빠지므로 호출마다 쌓는다
+    const seen: Array<{ state: GameState; by: 'parent' | 'child'; ids: readonly string[]; weights: readonly number[]; choiceId: string }> = [];
     const r = stepYear(s, pool, (e) => {
-      seen = e;
+      seen.push(e);
     });
     if (s.age === 15 && a15 === null) a15 = observeAge15(s, r, pool);
-    if (seen !== null) {
-      const e = seen as { state: GameState; by: 'parent' | 'child'; ids: readonly string[]; weights: readonly number[]; choiceId: string };
+    for (const e of seen) {
       const g = GATE_OF.get(e.state.pending!.eventId);
       if (g !== undefined && gates[g] === undefined) gates[g] = { age: e.state.pending!.age, by: e.by, ids: [...e.ids], weights: [...e.weights], chosen: e.choiceId, tiers: tiersNow(e.state) };
     }

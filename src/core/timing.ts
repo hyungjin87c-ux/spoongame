@@ -1,5 +1,5 @@
 import { AUTO_CHOICE_MS, HOLD_MS, JUMP_OVERHEAD_SEC, READ_MODEL, lifeModeOf } from '../data/timingTable';
-import type { TickCounts, TickKind } from './life';
+import type { TickCounts, TickInfo, TickKind } from './life';
 import type { Era, LifeLength, Speed } from './types';
 
 /** 시간 모델과 연출 시간 계산(순수 함수). 타이머 자체는 UI 계층에만 있다. */
@@ -26,6 +26,15 @@ export const CARD_NEED = { marginSec: 3 } as const;
 export function cardReadNeedMs(chars: number, cited: boolean): number {
   const sec = (Math.max(0, chars) / READ_MODEL.cpm.high) * 60 + CARD_NEED.marginSec + (cited ? READ_MODEL.citeSec.high : 0);
   return Math.round(sec * 1000);
+}
+
+/**
+ * 부모님이 정한·흘러간 해의 틱이 한 연출에 쌓는 카드 읽기 필요량(ms): 그 해 카드 X의 `readNeedMs` + 같은 해 덧카드(G2, `lead`)가 있으면 그 필요량 — 덧카드가 없으면 `readNeedMs` 그대로(결정 후속 255).
+ * `count()`와 화면의 연출 대기가 같이 쓴다. 필요량이 없는 틱(사람이 고른 결과·서술)은 undefined.
+ */
+export function tickReadNeedMs(tick: Pick<TickInfo, 'readNeedMs' | 'lead'>): number | undefined {
+  if (tick.readNeedMs === undefined) return undefined;
+  return tick.readNeedMs + (tick.lead?.readNeedMs ?? 0);
 }
 
 /** 한 줄 더할 때마다 더하는 대기(ms, 1배속) = extraLineMs × 모드 계수 */
@@ -69,9 +78,9 @@ export function holdDelayMs(kind: TickKind | null, speed: Speed, timeScale = 1, 
   return Math.max(0, base / speed / timeScale);
 }
 
-/** 자동 모드가 선택지를 고르기까지의 지연(ms) */
-export function autoChoiceDelayMs(speed: Speed, timeScale = 1): number {
-  return Math.max(0, AUTO_CHOICE_MS / speed / timeScale);
+/** 자동 모드가 선택지를 고르기까지의 지연(ms) = max(기본 지연, 같은 해 덧카드(G2)의 읽기 필요량 `needMs`) ÷ 배속 ÷ 시간 배율 — `needMs`가 없으면 지금 값(결정 후속 255) */
+export function autoChoiceDelayMs(speed: Speed, timeScale = 1, needMs = 0): number {
+  return Math.max(0, Math.max(AUTO_CHOICE_MS, needMs) / speed / timeScale);
 }
 
 export interface PlayMode {
@@ -120,7 +129,8 @@ export function holdTotalMs(counts: TickCounts, mode?: LifeLength | null): numbe
  * mode는 판의 인생 길이, era는 읽는 시간의 인용 노출률을 고른다.
  */
 export function estimatePlaySeconds(counts: TickCounts, play: PlayMode, mode: LifeLength | null | undefined, era: Era, level: ReadLevel = 'median', extraSec = 0): number {
-  const reading = counts.choice * readSecFor(era, level);
+  // 본인 동반 해에 결정 카드와 함께 읽는 덧카드(G2, 결정 후속 255)의 필요량 몫 — 덧카드가 없는 판은 0
+  const reading = counts.choice * readSecFor(era, level) + (counts.leadReadMs ?? 0) / 1000;
   if (play.skipToDecision) return reading + (counts.choice + 1) * JUMP_OVERHEAD_SEC + extraSec;
   return holdTotalMs(counts, mode) / 1000 / play.speed + reading + extraSec;
 }

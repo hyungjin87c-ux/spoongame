@@ -782,11 +782,11 @@ describe('자동 모드: 성향 기반 선택', () => {
         expect(r.state.phase, `${era} ${seed}`).toBe('ending');
         expect(r.state.pending).toBeNull();
         // 선택지 수 = 해결된 선택 + (선택 직후 곧바로 사망한 경우는 사망 걸음으로 집계). SPEC-005부터 본인이 고르는 카드(`counts.choice` = c_self)와 부모님이 정한·흘러간 카드(`by`)를 나눠 센다 —
-        // 합(totalCards)이 연표의 선택 줄 수이고, 본인 몫은 `by` 없는 줄, 위임 몫(parent + child + 같은 해 사망한 위임)은 `by` 있는 줄이다.
+        // 합(totalCards)이 연표의 선택 줄 수이고, 본인 몫은 `by` 없는 줄, 위임 몫(parent + child + 같은 해 사망한 위임 + 같은 해에 먼저 난 덧카드 `leadCards`, 결정 후속 255)은 `by` 있는 줄이다.
         const lines = r.state.history.filter((h) => h.kind === 'choice');
         expect(totalCards(r.counts), `${era} ${seed}`).toBe(lines.length);
         expect(r.counts.choice, `${era} ${seed}`).toBe(lines.filter((h) => h.by === undefined).length);
-        expect(r.counts.parent + r.counts.child + r.counts.deathDelegated, `${era} ${seed}`).toBe(lines.filter((h) => h.by !== undefined).length);
+        expect(r.counts.parent + r.counts.child + r.counts.deathDelegated + (r.counts.leadCards ?? 0), `${era} ${seed}`).toBe(lines.filter((h) => h.by !== undefined).length);
       }
     }
   });
@@ -810,10 +810,10 @@ describe('다음 결정으로 (advanceUntilDecision)', () => {
             // 부모님이 정한·흘러간 해(parent·child)도 pending 없이 지나간 해다 (SPEC-005 PD3)
             expect(r.state.age - startAge).toBe(r.counts.quiet + r.counts.narrative + r.counts.parent + r.counts.child);
             decisions++;
-            delegated += r.counts.parent + r.counts.child;
+            delegated += r.counts.parent + r.counts.child + (r.counts.leadCards ?? 0); // 같은 해에 먼저 난 덧카드(G2, 결정 후속 255)도 `by` 있는 줄이다
             s = resolveChoice(r.state, r.state.pending.key, r.state.pending.choiceIds[0]);
           } else {
-            delegated += r.counts.parent + r.counts.child + r.counts.deathDelegated;
+            delegated += r.counts.parent + r.counts.child + r.counts.deathDelegated + (r.counts.leadCards ?? 0);
             s = r.state;
           }
         }

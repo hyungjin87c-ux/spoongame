@@ -54,7 +54,7 @@ const printAge15 = (title: string, lives: readonly LifeObs[]): void => {
   }
   console.log(`| 합 | ${t.rows.reduce((x, r) => x + r.count, 0)} | |`);
   console.log(`\n- G2가 난 판의 결정자 부모/흘러감/본인: ${t.g2By.parent}/${t.g2By.child}/${t.g2By.self} · G2가 15세가 아닌 나이에 난 판: ${t.g2OtherAge} · G2가 났는데 그 해 사망한 판: ${t.diedWithCard}`);
-  console.log(`- ⓑ가 보여 준 선택 카드 id(판): ${t.choiceIds.map(([id, c]) => `${id} ${c}`).join(' · ') || '-'}`);
+  console.log(`- ⓑ(·ⓐ3)가 보여 준 선택 카드 id(판): ${t.choiceIds.map(([id, c]) => `${id} ${c}`).join(' · ') || '-'}`);
 };
 const NEED_A: Record<Gate, number> = { G1: 2, G2: 2, G3: 1, G4: 1, G5: 1 };
 const NEED_B: Record<Gate, number> = { G1: 0.3, G2: 0.3, G3: 0.2, G4: 0.2, G5: 0.2 };

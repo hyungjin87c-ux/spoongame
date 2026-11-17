@@ -48,7 +48,7 @@ export interface FindOpts {
   to?: number;
 }
 
-/** 조건에 맞는 부모님이 정한 / 흘러간 해를 찾는다. 앱 페이지가 열려 있어야 한다(같은 origin에서 core 모듈을 불러온다). */
+/** 조건에 맞는 부모님이 정한 / 흘러간 해를 찾는다. 앱 페이지가 열려 있어야 한다(같은 origin에서 core 모듈을 불러온다). 같은 해에 덧카드(G2 「같은 해에 함께」, 결정 후속 255 — 틱의 `lead`)가 붙은 해는 카드가 둘이라 기본으로 건너뛴다(그 해는 `e2e/gate-together.spec.ts`가 다룬다). */
 export async function findDelegatedYear(page: Page, opts: FindOpts = {}): Promise<DelegatedYear> {
   const found = await evalCore<(Omit<DelegatedYear, 'label' | 'title'>) | null>(
     page,
@@ -60,7 +60,7 @@ export async function findDelegatedYear(page: Page, opts: FindOpts = {}): Promis
          if (s.pending !== null) { s = core.autoResolveStep(s, s.pending.key).state; continue; }
          let cap = null;
          const r = core.stepYear(s, undefined, (e) => { cap = e; });
-         if (cap !== null && r.tick.kind === 'resolved' && r.state.phase === 'life' && r.tick.fromAge >= arg.minAge
+         if (cap !== null && r.tick.lead === undefined && r.tick.kind === 'resolved' && r.state.phase === 'life' && r.tick.fromAge >= arg.minAge
            && (arg.by === null || r.tick.by === arg.by) && (arg.id === null || r.tick.eventId === arg.id)
            && cap.ids.length >= arg.min && (arg.inc === null || cap.ids.includes(arg.inc)) && (arg.exc === null || !cap.ids.includes(arg.exc))
            && (arg.chosen === null || r.tick.choiceId === arg.chosen)

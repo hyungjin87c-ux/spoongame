@@ -348,6 +348,8 @@ function trace(seed: number, era: Era, chooser: (s: GameState) => string, pool: 
       const r = stepYear(s, pool);
       // 마일스톤(M7a)은 그 해의 일반 사건과 별개 줄이다(한 해에 여러 개일 수 있다, r3) — tick.milestoneIds를 모두 세고, 일반 사건(tick.eventId가 마일스톤이 아닌 것)을 따로 센다
       for (const id of r.tick.milestoneIds ?? []) occ.push({ id, age: s.age, flags: s.flags, after: r.state.flags });
+      // 같은 해에 먼저 해결된 덧카드(G2 「같은 해에 함께」, 결정 후속 255): 틱의 `lead`는 그 해 카드(X)보다 앞에서 일어난 사건이다 — 사람이 고르지 않은(부모) 선택이라 틱의 choiceId로 센다
+      if (r.tick.lead !== undefined) occ.push({ id: r.tick.lead.eventId, age: s.age, flags: s.flags, after: r.state.flags, choice: r.tick.lead.choiceId });
       if ((r.tick.kind === 'narrative' || r.tick.kind === 'death') && r.tick.eventId !== undefined && !(r.tick.milestoneIds ?? []).includes(r.tick.eventId)) occ.push({ id: r.tick.eventId, age: s.age, flags: s.flags, after: r.state.flags, ...(r.tick.choiceId !== undefined ? { choice: r.tick.choiceId } : {}) });
       // 부모님이 정한·아이의 일로 흘러간 선택(SPEC-005 PD3)은 pending 없이 그 해 안에서 해결된다 — 사람이 고른 선택과 같이 「일어난 순간」으로 센다. 고른 선택지는 틱의 choiceId(규칙으로 고르게 할 수 없다 — 모델이 고른다)
       else if (r.tick.kind === 'resolved' && r.tick.by !== undefined && r.tick.eventId !== undefined) occ.push({ id: r.tick.eventId, age: s.age, flags: s.flags, after: r.state.flags, choice: r.tick.choiceId });

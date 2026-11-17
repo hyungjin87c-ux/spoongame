@@ -40,7 +40,7 @@ import { askBranchProbs, askOutcomeOf, type AskRollChoice } from './ask';
 import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { actPullOf, autoPriorityMul, personaOf } from './persona';
-import { GATE_SLOT_EVENTS, TRACK_WINDOW_END, careerCardOf, gateSlotOf, jobPickOutcome, jobPickWeights, militaryDueOf, pickChoicesOf } from './careerTrack';
+import { GATE_SLOT_EVENTS, TRACK_WINDOW_END, careerCardOf, gateSlotOf, gateTogetherNow, jobPickOutcome, jobPickWeights, militaryDueOf, pickChoicesOf, togetherSlot } from './careerTrack';
 import { personaOnChoice, personaOnFamilyLines, personaOnNarrative, personaOnYearEnd } from './personaLife';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
@@ -58,7 +58,7 @@ import { calendarYear } from './profile';
 import { citationFor } from './citations';
 import { createRng, type Rng } from './rng';
 import { applyStatDeltas, type StatDeltas } from './stats';
-import { cardReadNeedMs, holdMsFor } from './timing';
+import { cardReadNeedMs, holdMsFor, tickReadNeedMs } from './timing';
 import { PARENT_WEALTHS, type Character, type DelegatedBy, type GameState, type HistoryEntry, type LifeLength, type Stage, type StatKey, type Stats } from './types';
 
 /**
@@ -214,7 +214,7 @@ export interface TickInfo {
   familyIds?: string[];
   /** 진로 카드(`pick` 사건, SPEC-018 PL4)가 열린 선택 틱이면 true — 보고 도구의 페이싱 집계(`careerCards`)가 엔진의 `choicesSoFar`와 같은 정의(사건의 `pick`)를 읽게 한다 [CX-003-007] */
   career?: true;
-  /** 큰 갈림길 강제 슬롯 카드(G1·G2, 결정 후속 241·243)가 난 틱이면 true — 덧붙는 카드라 보고 도구의 페이싱 집계(`gateCards`)가 엔진의 `choicesSoFar`처럼 빼고 센다 */
+  /** 큰 갈림길 강제 슬롯 카드(G1·G2, 결정 후속 241·243)가 난 틱이면 true — 덧붙는 카드라 보고 도구의 페이싱 집계(`gateCards`)가 엔진의 `choicesSoFar`처럼 빼고 센다. G2가 그 해 선택 카드 앞에서 먼저 해결된 「같은 해에 함께」 해(결정 후속 255)는 이 표지가 아니라 `lead`가 맡는다(최상위 `gate`는 G2 혼자 난 해에만) */
   gate?: true;
   /** 그 해 마일스톤 슬롯에서 일어난 이벤트 id들(id 오름차순) (SPEC-003 IN3, M7a r3 — 일반 사건과 별개 줄이라 한 해 연표에 여러 줄이 남을 수 있다: 1세는 걸음마 + 첫 말 + 일반 사건 최대 3줄 이상) */
   milestoneIds?: string[];
@@ -236,6 +236,27 @@ export interface TickInfo {
   readNeedMs?: number;
   /** `by === 'parent'`인 `resolved` 틱: 이 판의 첫 부모 카드인가 — 안내 한 줄이 붙는다(PD5-f, 마스터 승인 Q6) */
   firstParent?: boolean;
+  /**
+   * 이 걸음에서 **해를 닫지 않고 먼저 해결된 덧카드**(G2 「같은 해에 함께」, 결정 후속 255). 실리는 틱: 본인 동반 해 = `choice` 틱 / 위임 동반 해 = `resolved` 틱(사망이면 `death`).
+   * 최상위 필드(`eventId`·`by`·`choiceId`·`impact`·`readNeedMs`·`lines`·`gate`)의 뜻은 그대로 그 해 일반 추첨 카드 X의 것이다 — 동반 틱에는 최상위 `gate`가 붙지 않는다. 틱은 저장하지 않는다.
+   */
+  lead?: LeadCard;
+}
+
+/** 같은 해에 먼저 해결된 덧카드(G2)의 값 — 값은 `resolveDelegated`가 계산하는 그대로다(영향 줄은 해결 전 상태, 필요량은 결과 문장 포함) */
+export interface LeadCard {
+  eventId: string;
+  by: DelegatedBy;
+  choiceId: string;
+  impact: ImpactItem[];
+  readNeedMs: number;
+  firstParent?: true;
+}
+
+/** 화면 모델과 자동 선택 지연이 같이 쓰는 순수 판정: 이 `choice` 틱이 덧카드를 달고 있고 그 해 결정 카드가 아직 대기 중이면 그 덧카드, 아니면 null */
+export function pendingLeadOf(game: Pick<GameState, 'phase' | 'pending'>, tick: TickInfo | null): LeadCard | null {
+  if (tick === null || tick.kind !== 'choice' || tick.lead === undefined || game.phase !== 'life') return null;
+  return game.pending?.key === `${tick.eventId}@${tick.fromAge}` ? tick.lead : null;
 }
 
 /**
@@ -415,7 +436,7 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
   // 그래서 19세 고졸 진로 시작과 19세의 마지막 입시가 함께 남는다(3b까지는 19세 분야 카드가 그 자리를 늘 차지했다). 난수는 어느 쪽이든 한 칸이다(`pickWeighted` 한 번 = 진로 카드의 대체 한 칸)
   // 병역(결정 후속 239, 설계 4-1-2): 맞춤 판의 남자는 계획 나이에 `youth-military`를 강제 서술 슬롯으로 한 번 겪는다 — 가족 강제 사건이 있는 해는 한 해 밀린다. 복무 전에는 진로 카드가 열리지 않아 둘이 겹치지 않는다
   const military = forced === null && ctx.persona ? militaryDueOf(state, pool, age) : null;
-  // 큰 갈림길 강제 슬롯(결정 후속 241·244): 맞춤 판의 G1(10~12세)·G2(15세) — 그 해 일반 추첨이 선택 카드를 뽑지 않았을 때 그 자리에 낸다(아래). 진로 카드(19세~)와 나이가 겹치지 않는다
+  // 큰 갈림길 강제 슬롯(결정 후속 241·244·255): 맞춤 판의 G1(10~12세)·G2(15세) — 그 해 일반 추첨이 선택 카드를 뽑지 않았을 때 그 자리에 낸다(아래). G2만은 선택 카드가 뽑힌 해에도 그 카드 앞에서 같은 해에 먼저 해결한다(`leadGate`). 진로 카드(19세~)와 나이가 겹치지 않는다
   const gateSlot = forced === null && military === null && ctx.persona ? gateSlotOf(age, eligible) : null;
   const due = forced === null && military === null && gateSlot === null && ctx.persona ? careerCardOf(state, pool, age) : null;
   let examFirst: EventDef | null = null;
@@ -464,9 +485,12 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     if (rollChoice < choiceChance && canChoice) picked = draw(eligible.filter(drawable), eligibleAll.filter(drawable), age, true);
     if (picked === null && !slot.spent && rollNarrative < freq.narrative) picked = draw(eligible.filter(isNarrative), eligibleAll.filter(isNarrative));
     // 큰 갈림길 강제 슬롯(결정 후속 241·244): 일반 추첨은 그대로 돌리고, 그 해 추첨이 **선택 카드를 뽑지 않았을 때만**(서술 장면이거나 빈 해) 그 자리에 G1·G2를 낸다 —
-    // 다른 선택 카드(조르기·13~18세 본인 카드 등)의 칸을 빼앗지 않는다. 난수는 일반 추첨이 쓴 그대로다. 선택 카드가 뽑힌 해는 넘기고 사건 나이 범위 안의 다음 해에 다시 본다(G1 10~12세 · G2 15세)
+    // 다른 선택 카드(조르기·13~18세 본인 카드 등)의 칸을 빼앗지 않는다. 난수는 일반 추첨이 쓴 그대로다. 선택 카드가 뽑힌 해는 G1은 넘기고 사건 나이 범위 안의 다음 해에 다시 본다(G1 10~12세). G2는 15~15라 다음 해가 없어 같은 해에 함께 낸다(후속 255 — 아래 `leadGate`)
     if (gateSlot !== null && (picked === null || !isChoiceEvent(picked))) picked = gateSlot;
   }
+
+  // 같은 해에 함께(결정 후속 255): 슬롯 후보가 「함께」 슬롯(G2)이고 그 해 일반 추첨이 **선택 카드**를 뽑았으면(위 G2 대체 줄이 바꾸지 않은 해 — 빈 해·서술 해는 picked = gateSlot이라 늘 null) 그 카드 앞에서 G2를 먼저 해결한다
+  const leadGate: EventDef | null = gateSlot !== null && picked !== null && picked !== gateSlot && isChoiceEvent(picked) && gateTogetherNow() && togetherSlot(gateSlot.id) ? gateSlot : null;
 
   // 마일스톤 효과·연표 한 줄은 그 해의 일반 사건보다 먼저 적용한다(선택지가 뜨는 해에도 마일스톤 줄은 이미 남는다)
   let s: GameState = state;
@@ -495,9 +519,30 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     // 보이는 선택지: 가족 줄이 난 해(`exclude`)에는 해 시작 ctx ∩ 줄 뒤 ctx (R-632). 강제 사건(K2)은 후보에서 뺄 수 없으므로 교집합이 2개 미만이면 해 시작 값을 그대로 쓴다(지금 풀의 강제 사건은 늘 보이는 선택지가 둘이라 닿지 않는다)
     const narrowed = narrowedChoices(picked);
     const visible = narrowed.length >= 2 || lineCtx === null ? narrowed : visibleChoices(picked, ctx);
+    // 난수 위치는 상태가 든다: 선택 갈래는 아래에서 `rng`를 다시 쓰지 않는다
+    let rngAt = rng.getState();
+    let lead: LeadCard | undefined;
+    if (leadGate !== null) {
+      // G2 덧카드(결정 후속 255): X의 대기 상태를 만들기 전에 부모 결정으로 해결한다 — 해를 닫지 않고(나이·사망 굴림 없음) 선택 한 칸만 쓴다. 보이는 선택지는 빈 해 G2와 같은 식(해 시작 ctx ∩ 줄 뒤 ctx)이다.
+      // X의 영향 줄과 실제 효과는 G2가 적용된 뒤의 같은 대기 상태를 읽는다(EC5)
+      const gNarrowed = narrowedChoices(leadGate);
+      const gVisible = gNarrowed.length >= 2 || lineCtx === null ? gNarrowed : visibleChoices(leadGate, ctx);
+      const gateState: GameState = {
+        ...s,
+        rngState: rngAt,
+        seen: { ...s.seen, [leadGate.id]: age },
+        pending: { eventId: leadGate.id, key: `${leadGate.id}@${age}`, age, choiceIds: gVisible.map((c) => c.id) },
+      };
+      const g = resolveLeadGate(gateState, pool, observe);
+      if (g !== null) {
+        s = g.state;
+        rngAt = g.state.rngState;
+        lead = g.lead;
+      }
+    }
     const pendingState: GameState = {
       ...s,
-      rngState: rng.getState(),
+      rngState: rngAt,
       seen: { ...s.seen, [picked.id]: age },
       // 큰 갈림길 강제 슬롯 카드는 2년 간격을 갱신하지 않는다(덧붙는 카드 — 다음 해 일반 선택을 막지 않는다) [결정 후속 243]
       lastChoiceAge: picked === gateSlot ? s.lastChoiceAge : age,
@@ -509,11 +554,12 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     if (who !== 'self') {
       const r = resolveDelegated(pendingState, who, pool, milestoneIds, observe);
       // 큰 갈림길 강제 슬롯 카드는 덧붙는 카드라 틱에 표지를 단다(보고 도구의 페이싱 집계 — 결정 후속 243)
-      return picked === gateSlot && r.tick.kind !== 'none' ? { ...r, tick: { ...r.tick, gate: true } } : r;
+      if (picked === gateSlot && r.tick.kind !== 'none') return { ...r, tick: { ...r.tick, gate: true } };
+      return lead !== undefined && r.tick.kind !== 'none' ? { ...r, tick: { ...r.tick, lead } } : r;
     }
     return {
       state: pendingState,
-      tick: { kind: 'choice', fromAge: age, eventId: picked.id, ...(milestoneIds.length > 0 ? { milestoneIds } : {}) },
+      tick: { kind: 'choice', fromAge: age, eventId: picked.id, ...(milestoneIds.length > 0 ? { milestoneIds } : {}), ...(lead !== undefined ? { lead } : {}) },
     };
   }
 
@@ -563,7 +609,7 @@ export function resolveChoiceStep(state: GameState, key: string, choiceId: strin
  * `by === 'parent'`이면 연표 줄에 `parentLabel ?? label`·`parentResult ?? result`를 쓴다(선택지 문구가 아이의 행동이라 「부모님이 정했습니다」와 어긋나는 카드만 `parentLabel`·`parentResult`가 있다, PD11).
  * 틱의 `by`·`choiceId`는 UI가 비모달 카드를 그리는 데 쓴다(영향 줄·필요량은 `resolveDelegated`가 해결 전 상태로 계산해 덧붙인다).
  */
-function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool: EventPool, by?: DelegatedBy): StepResult {
+function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool: EventPool, by?: DelegatedBy, keepYear = false): StepResult {
   const pending = state.pending;
   if (state.phase !== 'life' || pending === null || pending.key !== key || !pending.choiceIds.includes(choiceId)) return noop(state);
   if (state.character === null || state.generation === null) return noop(state);
@@ -604,6 +650,8 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
   // 지금의 단순함(저장 스키마·복원 규칙 그대로)을 지키려고 같은 수열에서 한 칸을 예약하는 쪽을 골랐다.
   const rng = createRng(state.rngState);
   rng.next();
+  // 해를 닫지 않는 해결(G2 덧카드, 결정 후속 255): 나이·해 끝 갱신·사망 굴림 없이 선택 한 칸만 쓰고 돌려준다. 위 문장은 일반 해결과 한 줄도 다르지 않다(닫기 법칙 — 해를 닫는 몫은 `closeChoiceYear`와 같은 `finishYear`다)
+  if (keepYear) return { state: { ...s, rngState: rng.getState() }, tick: { kind: 'resolved', fromAge: pending.age, eventId: ev.id, ...(by !== undefined ? { by, choiceId } : {}) } };
   const { state: next, died } = finishYear(s, rng, state);
   const lines = yearLineCount(next.history, pending.age); // 이 해의 마일스톤 줄들 + 방금 남긴 결과 줄 (+ 이 나이에 붙은 상속 줄)
   return {
@@ -616,7 +664,7 @@ function resolveChoiceCore(state: GameState, key: string, choiceId: string, pool
  * 부모님이 정한·흘러간 선택을 **관찰**하는 함수 (SPEC-005 PD12 시뮬레이션 — `scripts/parentReportLib.ts`): 고르기 직전의 대기 상태와 그 상태의 선택지 확률·실제로 고른 선택지를 받는다.
  * 읽기만 하며 인생을 바꾸지 않는다(주지 않으면 아무 일도 없다 — 화면은 쓰지 않는다).
  */
-export type DelegatedObserver = (e: { state: GameState; by: DelegatedBy; ids: readonly string[]; weights: readonly number[]; choiceId: string }) => void;
+export type DelegatedObserver = (e: { state: GameState; by: DelegatedBy; ids: readonly string[]; weights: readonly number[]; choiceId: string; lead?: true }) => void;
 
 /** 느린 독자가 카드를 읽는 글자 수에 들어가는 영향 줄 글자: 항목 이름 + 기호(칸 수) — 설계 문서 4-3절 「영향 줄」 */
 export function impactReadChars(items: readonly ImpactItem[]): number {
@@ -630,6 +678,11 @@ export function impactReadChars(items: readonly ImpactItem[]): number {
  * 흘러감은 `autoResolveStep`과 상태 전체가 같다. 영향 줄은 **해결 전 상태**로 계산해 틱에 담는다.
  */
 export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool: EventPool = eventPool(), milestoneIds: readonly string[] = [], observe?: DelegatedObserver): StepResult {
+  return delegatedCore(pendingState, by, pool, milestoneIds, observe, false);
+}
+
+/** `resolveDelegated`의 본문 — `keepYear`이면 해를 닫지 않고(`resolveChoiceCore`의 조기 반환) 관찰자에 `lead: true`를 단다. 문장 순서는 옮기지 않았다 */
+function delegatedCore(pendingState: GameState, by: DelegatedBy, pool: EventPool, milestoneIds: readonly string[], observe: DelegatedObserver | undefined, keepYear: boolean): StepResult {
   const pending = pendingState.pending;
   if (pending === null || pendingState.character === null || pendingState.generation === null) return noop(pendingState);
   const w = by === 'parent' ? parentChoiceWeights(pendingState, pool) : childFlowWeights(pendingState, pool);
@@ -638,10 +691,10 @@ export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool:
   const ev = pool.byId.get(pending.eventId);
   const choice = ev?.choices?.find((c) => c.id === choiceId);
   if (ev === undefined || choice === undefined) throw new Error(`resolveDelegated: 이벤트/선택지를 찾을 수 없다 (${pending.eventId}/${choiceId})`);
-  observe?.({ state: pendingState, by, ids: w.ids, weights: w.weights, choiceId });
+  observe?.({ state: pendingState, by, ids: w.ids, weights: w.weights, choiceId, ...(keepYear ? { lead: true as const } : {}) });
   const impact = previewChoice(pendingState, choice).items;
   const firstParent = by === 'parent' && !pendingState.history.some((h) => h.by === 'parent');
-  const r = resolveChoiceCore(pendingState, pending.key, choiceId, pool, by);
+  const r = resolveChoiceCore(pendingState, pending.key, choiceId, pool, by, keepYear);
   const withMilestones = milestoneIds.length > 0 ? { milestoneIds: [...milestoneIds] } : {};
   if (r.tick.kind !== 'resolved') return { ...r, tick: { ...r.tick, ...withMilestones } }; // 사망한 해: 카드는 그리지 않고 기록 줄만 남는다 (설계 문서 3-2절)
   // 카드 읽기 필요량: 카드의 모든 글(칩·제목·상황·고른 길·도장·영향 줄) + 그 해 결과 문장 (+ 첫 부모 카드의 안내 한 줄) — 느린 독자(500자/분) + 인용 박스가 있으면 13초 + 여유 3초
@@ -658,6 +711,29 @@ export function resolveDelegated(pendingState: GameState, by: DelegatedBy, pool:
     state: r.state,
     tick: { ...r.tick, ...withMilestones, impact, readNeedMs: cardReadNeedMs(chars, cited), ...(firstParent ? { firstParent: true } : {}) },
   };
+}
+
+/**
+ * G2 「같은 해에 함께」(결정 후속 255)의 덧카드를 **해를 닫지 않고** 해결한다(엔진 경로이자 시험 진입점): 대기 상태 `P`(덧카드가 막 만들어진 상태)와 같은 결정자 표(`decisionFor`)·같은 확률·같은 해결 경로를 쓰되
+ * 선택 한 칸만 쓰고 멈춘다. 결정자가 본인이거나 해결할 수 없으면 null(그 해는 덧카드 없이 v0.6.0과 같다).
+ */
+export function resolveLeadGate(P: GameState, pool: EventPool = eventPool(), observe?: DelegatedObserver): { state: GameState; lead: LeadCard } | null {
+  const pending = P.pending;
+  if (pending === null) return null;
+  const by = decisionFor(pending.eventId, pending.age);
+  if (by === 'self') return null;
+  const r = delegatedCore(P, by, pool, [], observe, true);
+  const t = r.tick;
+  if (t.kind !== 'resolved' || t.eventId === undefined || t.choiceId === undefined || t.impact === undefined || t.readNeedMs === undefined) return null;
+  return { state: r.state, lead: { eventId: t.eventId, by, choiceId: t.choiceId, impact: t.impact, readNeedMs: t.readNeedMs, ...(t.firstParent === true ? { firstParent: true as const } : {}) } };
+}
+
+/**
+ * **시험·측정 전용**(엔진은 부르지 않는다): `resolveLeadGate`가 돌려준 상태에서 해를 닫는다 — `resolveDelegated(P, by).state`와 같아야 한다(닫기 법칙, `tests/gateTogether.test.ts`).
+ * 전제: `finishYear`와 하위는 `s.rngState`를 읽지 않고 끝에서 덮어쓰며, `createRng(getState())`는 정확히 이어진다.
+ */
+export function closeChoiceYear(settled: GameState, before: GameState): GameState {
+  return finishYear(settled, createRng(settled.rngState), before).state;
 }
 
 export function resolveChoice(state: GameState, key: string, choiceId: string, pool: EventPool = eventPool()): GameState {
@@ -777,6 +853,10 @@ export interface TickCounts {
   careerCards?: number;
   /** 큰 갈림길 강제 슬롯 카드(G1·G2) 수 — 부모 카드라 `parent`(사망한 해는 `deathDelegated`)에 이미 들어 있다. 슬롯 카드가 없는 판은 키가 없다. 페이싱 예산에는 세지 않는다(`pacingCards`, 결정 후속 243) */
   gateCards?: number;
+  /** 같은 해에 먼저 난 덧카드(G2 「같은 해에 함께」, 결정 후속 255) 수 — 해 수에도 `parent`·`child`·`deathDelegated`에도 들어가지 않는다(`totalCards`가 더한다). `gateCards`에도 센다. 덧카드가 없는 판은 키가 없다 */
+  leadCards?: number;
+  /** 본인 동반 해에 결정 카드와 함께 읽는 덧카드의 읽기 필요량 합(ms, Σ `lead.readNeedMs`) — `estimatePlaySeconds`의 읽기 항이 더한다. 본인 동반 해가 없는 판은 키가 없다 */
+  leadReadMs?: number;
 }
 
 export function emptyCounts(): TickCounts {
@@ -785,7 +865,7 @@ export function emptyCounts(): TickCounts {
 
 /** 판의 결정 카드 총수 = 본인이 고른 카드 + 부모님이 정한 카드 + 흘러간 카드 (+ 같은 해 사망한 위임 카드) — 연표의 선택 줄 수와 같다. 총 카드 수 판정 구간(23.3~29)과 페이싱 하드 상한은 이 값이다 */
 export function totalCards(c: TickCounts): number {
-  return c.choice + c.parent + c.child + c.deathDelegated;
+  return c.choice + c.parent + c.child + c.deathDelegated + (c.leadCards ?? 0);
 }
 
 /** 페이싱 예산이 세는 카드 수 = `totalCards − max(0, 진로 카드 − 1) − 강제 슬롯 카드` (`stepYear`의 `choicesSoFar`와 같은 규칙, 결정 후속 233·243). 하드 상한·하드−1 판정은 이 값이다 */
@@ -796,6 +876,12 @@ export function pacingCards(c: TickCounts): number {
 function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): void {
   if (tick.kind === 'none') return;
   if (tick.gate === true) counts.gateCards = (counts.gateCards ?? 0) + 1; // 엔진과 같은 정의(강제 슬롯 사건) [결정 후속 243]
+  // 같은 해 덧카드(결정 후속 255): `by` 갈래의 사망 조기 `return`보다 앞에서 센다(위임 동반 해 사망 판에서도 by 줄 불변식이 서도록). 엔진의 `choicesSoFar`가 G2 줄을 빼는 것과 같은 정의라 `gateCards`에도 센다
+  if (tick.lead !== undefined) {
+    counts.leadCards = (counts.leadCards ?? 0) + 1;
+    counts.gateCards = (counts.gateCards ?? 0) + 1;
+    if (tick.kind === 'choice') counts.leadReadMs = (counts.leadReadMs ?? 0) + tick.lead.readNeedMs;
+  }
   if (tick.by !== undefined) {
     // 부모님이 정한·흘러간 해: 사망한 해는 사망으로만 세고(카드를 그리지 않는다), 아니면 결과 해처럼 줄 대기를 세되 연출 대기가 읽기 필요량에 묶인 몫을 따로 더한다
     if (tick.kind === 'death') {
@@ -806,7 +892,7 @@ function count(counts: TickCounts, tick: TickInfo, mode?: LifeLength | null): vo
     counts[tick.by]++;
     counts.extraLines += Math.max(0, (tick.lines ?? 1) - 1);
     const base = holdMsFor('resolved', { mode, lines: tick.lines }) as number;
-    const held = holdMsFor('resolved', { mode, lines: tick.lines, readNeedMs: tick.readNeedMs }) as number;
+    const held = holdMsFor('resolved', { mode, lines: tick.lines, readNeedMs: tickReadNeedMs(tick) }) as number;
     counts.delegatedExtraMs += Math.max(0, held - base);
     return;
   }

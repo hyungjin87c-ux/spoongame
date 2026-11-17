@@ -159,7 +159,15 @@ export function measureLife(seed: number, era: ProfileId, strategy: Strategy, li
   const ownRows = choiceRows.filter((h) => h.by === undefined);
   // 불변식 (EK5): 본인이 고른 카드(c_self) = 카드 측정 수 = 결정 틱 수 = 연표의 `by` 없는 선택 줄, 위임 몫(parent + child + 같은 해 사망한 위임) = `by` 있는 줄, 합 = 연표의 선택 줄 = 판의 카드 총수
   if (cards.length !== c.choice || ownRows.length !== c.choice) problems.push(`${tag}: 본인 카드 ${cards.length} / 결정 틱 ${c.choice} / 연표 본인 선택 ${ownRows.length}이 서로 다르다`);
-  if (c.parent + c.child + c.deathDelegated !== choiceRows.length - ownRows.length) problems.push(`${tag}: 부모 ${c.parent} + 흘러감 ${c.child} + 같은 해 사망 ${c.deathDelegated} ≠ 연표의 by 있는 선택 ${choiceRows.length - ownRows.length}`);
+  // 같은 해에 먼저 난 덧카드(G2, 결정 후속 255)는 `leadCards`가 따로 센다 — 해 수에도 parent·child에도 들어가지 않는 부모 줄이다
+  const lead = c.leadCards ?? 0;
+  if (c.parent + c.child + c.deathDelegated + lead !== choiceRows.length - ownRows.length) problems.push(`${tag}: 부모 ${c.parent} + 흘러감 ${c.child} + 같은 해 사망 ${c.deathDelegated} + 덧카드 ${lead} ≠ 연표의 by 있는 선택 ${choiceRows.length - ownRows.length}`);
+  // 한 나이에 선택 줄이 둘인 해는 덧카드 해뿐이다: 그 수 = leadCards(≤ 1)이고, 그 나이의 첫 선택 줄은 G2 · 부모다(해결은 걸음당 최대 한 번이라 지금까지 한 나이에 선택 줄은 하나)
+  const rowsByAge = new Map<number, typeof choiceRows>();
+  for (const h of choiceRows) rowsByAge.set(h.age, [...(rowsByAge.get(h.age) ?? []), h]);
+  const doubled = [...rowsByAge.values()].filter((rows) => rows.length >= 2);
+  if (doubled.length !== lead || lead > 1) problems.push(`${tag}: 선택 줄이 둘인 나이 ${doubled.length}개 ≠ 덧카드 ${lead}(≤ 1)`);
+  for (const rows of doubled) if (rows[0].eventId !== 'school-high-pick' || rows[0].by !== 'parent') problems.push(`${tag}: 선택 줄이 둘인 나이의 첫 줄이 G2·부모가 아니다 (${rows[0].eventId}/${rows[0].by})`);
   if (totalCards(c) !== choiceRows.length) problems.push(`${tag}: 카드 총수 ${totalCards(c)} ≠ 연표 선택 ${choiceRows.length}`);
   if (final.lifeLength !== lifeLength) problems.push(`${tag}: 판의 인생 길이가 ${final.lifeLength}다`);
   if (pacingCards(c) > lifeModeOf(lifeLength).pacing.hard) problems.push(`${tag}: 페이싱 카드 ${pacingCards(c)}장(진로 카드는 한 장)이 하드 상한 ${lifeModeOf(lifeLength).pacing.hard}을 넘었다`);
