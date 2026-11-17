@@ -3,6 +3,7 @@ import { startLife } from './simulateLib';
 import {
   GATE_KEYS,
   GATES,
+  age15Table,
   aptitudeSpread,
   careerSchedule,
   deciders,
@@ -18,6 +19,7 @@ import {
   unseenRate,
   visibleSets,
   type Gate,
+  type LifeObs,
 } from './personaReportLib';
 
 /**
@@ -40,6 +42,20 @@ if (!Number.isInteger(n) || n < 1) {
 }
 const f = (x: number, d = 2): string => x.toFixed(d);
 const pct = (x: number, d = 1): string => (x * 100).toFixed(d);
+/** 15세 동반 분해 표(결정 후속 255 기준선): 갈래별 판 수 · 몫 ± 표준오차(%) — 갈래 합 = 판 수 */
+const printAge15 = (title: string, lives: readonly LifeObs[]): void => {
+  const t = age15Table(lives);
+  console.log(`\n#### 15세 해 갈래 — ${title} (판 ${t.n})\n`);
+  console.log('| 갈래 | 판 | 몫 ± 표준오차 |');
+  console.log('|---|---:|---:|');
+  for (const r of t.rows) {
+    const p = t.n ? r.count / t.n : 0;
+    console.log(`| ${r.label} | ${r.count} | ${pct(p)}% ± ${pct(Math.sqrt((p * (1 - p)) / Math.max(1, t.n)))} |`);
+  }
+  console.log(`| 합 | ${t.rows.reduce((x, r) => x + r.count, 0)} | |`);
+  console.log(`\n- G2가 난 판의 결정자 부모/흘러감/본인: ${t.g2By.parent}/${t.g2By.child}/${t.g2By.self} · G2가 15세가 아닌 나이에 난 판: ${t.g2OtherAge} · G2가 났는데 그 해 사망한 판: ${t.diedWithCard}`);
+  console.log(`- ⓑ가 보여 준 선택 카드 id(판): ${t.choiceIds.map(([id, c]) => `${id} ${c}`).join(' · ') || '-'}`);
+};
 const NEED_A: Record<Gate, number> = { G1: 2, G2: 2, G3: 1, G4: 1, G5: 1 };
 const NEED_B: Record<Gate, number> = { G1: 0.3, G2: 0.3, G3: 0.2, G4: 0.2, G5: 0.2 };
 
@@ -77,15 +93,22 @@ if (only.has('natural') && natural !== null) {
   let newSeen = 0;
   let oldSeen = 0;
   let both = 0;
+  const onLives: LifeObs[] = [];
   for (let i = 1; i <= n; i++) {
     const s = startLife(seedOf(i), 'millennial');
     const on = playObserve(s, seedOf(i), 20);
     const off = playObserve(overridden(s, { neutral: true }), seedOf(i), 20);
     both++;
+    onLives.push(on);
     if (on.seen.has('school-high-pick')) newSeen++;
     if (off.seen.has('school-career-choice')) oldSeen++;
   }
-  console.log(`- G2 노출: 맞춤 판 새 G2 ${pct(newSeen / both)}% · 같은 시드 맞춤 없는 판 옛 G2 ${pct(oldSeen / both)}% (분모 ${both} — 1절 2 「새 G2 미노출률 ≤ 옛 G2」)\n`);
+  console.log(`- G2 노출: 맞춤 판 새 G2 ${pct(newSeen / both)}% · 같은 시드 맞춤 없는 판 옛 G2 ${pct(oldSeen / both)}% (분모 ${both} — 1절 2 「새 G2 미노출률 ≤ 옛 G2」)`);
+  console.log('\n### 15세 동반 분해 (게임 나이 15세 해에 무슨 일이 있었는가 — 서로 겹치지 않는 갈래, 분류 우선순위는 `age15Branch` 참고)');
+  printAge15('G2 노출 줄과 같은 표본(시드 i×7919+13, 수저 전체, 20세까지)', onLives);
+  printAge15('자연 집단 수저 1', natural[1]);
+  printAge15('자연 집단 수저 5', natural[5]);
+  console.log('');
 }
 
 if (only.has('temper')) {

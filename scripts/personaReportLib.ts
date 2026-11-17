@@ -2,7 +2,12 @@ import {
   APT_KEYS,
   TEMPER_IDS,
   autoChoiceWeights,
+  calendarYear,
+  condContextOf,
   createRng,
+  familyChangesFor,
+  isEventEligible,
+  militaryDueOf,
   personaViewOf,
   resolveChoiceStep,
   stepYear,
@@ -56,6 +61,109 @@ export interface LifeObs {
   college: boolean;
   hiredBy35: boolean;
   aliveAt35: boolean;
+  /** 게임 나이 15세 해(G2 슬롯 나이)에 무슨 일이 있었는가 — 15세 해에 닿기 전에 죽었으면 null (`age15Branch`) */
+  a15: Age15Obs | null;
+}
+
+/** 게임 나이 15세 해 한 걸음의 관찰 — 판 진행에 쓰이지 않는다(읽기 전용 계산만) */
+export interface Age15Obs {
+  /** G2 `school-high-pick`이 그 해 났는가(`seen[G2] === 15`) */
+  shown: boolean;
+  /** G2가 났을 때 그 결정자(`tick.by` 없으면 본인) */
+  g2By: 'parent' | 'child' | 'self' | null;
+  /** G2가 났을 때: 같은 해 일반 추첨이 서술 장면을 뽑았으면 그 장면을 G2가 대신한 것 — 반사실 걸음(G2를 `once`로 막고 같은 상태에서 한 해 더 돌린 틱)으로 가른다 */
+  g2Replaced: boolean | null;
+  /** 가족 강제 사건이 그 해 있었는가(`familyChangesFor(...).forcedEvent`) */
+  forced: boolean;
+  /** 병역 슬롯 · 진로 카드가 그 해 열렸는가(15세에는 닿지 않는다 — 점검용) */
+  militaryOrCareer: boolean;
+  /** G2가 그 해 후보 자격을 통과하는가(`isEventEligible` — 가족 줄 거름은 못 본다) */
+  eligible: boolean;
+  leftSchool: boolean;
+  /** 그 해 걸음이 선택 카드를 냈는가(본인 대기 · 부모·흘러감 즉시 해결) — G2 자신은 제외 */
+  choiceCard: { id: string; by: 'parent' | 'child' | 'self' } | null;
+  /** 그 해 사망(걸음 또는 본인 카드 해결에서 `death`) */
+  died: boolean;
+}
+
+/**
+ * 15세 해의 서로 겹치지 않는 갈래(우선순위 위에서부터): ⓐ G2가 났다 · ⓔ2 15세 해 사망(G2 없음) · ⓓ 가족 강제 사건 해 · ⓕ3 병역·진로 슬롯 · ⓕ1·2 자격 없음 ·
+ * ⓑ 일반 추첨이 선택 카드를 뽑아 G2가 넘어갔다(결정자별) · ⓕ4 그 밖(자격은 있는데 안 났다 — 가족 줄 거름 등). ⓔ1 15세 전 사망은 a15가 null.
+ */
+export const AGE15_BRANCHES = [
+  'ⓐ1 G2 났다 · 빈 해(그 해 일반 추첨이 아무것도 안 뽑음)',
+  'ⓐ2 G2 났다 · 서술 장면을 G2가 대신함',
+  'ⓑ1 선택 카드가 뽑혀 G2 넘어감 · 본인 카드',
+  'ⓑ2 선택 카드가 뽑혀 G2 넘어감 · 부모 카드',
+  'ⓑ3 선택 카드가 뽑혀 G2 넘어감 · 흘러감',
+  'ⓓ 가족 강제 사건 해(G2 슬롯 없음)',
+  'ⓔ1 15세 해 전에 사망',
+  'ⓔ2 15세 해에 사망(G2 없음)',
+  'ⓕ1 G2 자격 없음 · left_school',
+  'ⓕ2 G2 자격 없음 · 그 밖 사유',
+  'ⓕ3 병역·진로 슬롯 해(점검)',
+  'ⓕ4 자격은 있는데 안 남(가족 줄 거름 등)',
+] as const;
+
+export function age15Branch(l: LifeObs): (typeof AGE15_BRANCHES)[number] {
+  const a = l.a15;
+  if (a === null) return AGE15_BRANCHES[6];
+  if (a.shown) return a.g2Replaced === true ? AGE15_BRANCHES[1] : AGE15_BRANCHES[0];
+  if (a.died) return AGE15_BRANCHES[7];
+  if (a.forced) return AGE15_BRANCHES[5];
+  if (a.militaryOrCareer) return AGE15_BRANCHES[10];
+  if (!a.eligible) return a.leftSchool ? AGE15_BRANCHES[8] : AGE15_BRANCHES[9];
+  if (a.choiceCard !== null) return a.choiceCard.by === 'self' ? AGE15_BRANCHES[2] : a.choiceCard.by === 'parent' ? AGE15_BRANCHES[3] : AGE15_BRANCHES[4];
+  return AGE15_BRANCHES[11];
+}
+
+/** 15세 해 갈래 표: 갈래별 판 수(합 = 판 수) · G2가 난 판의 결정자 · G2가 15세가 아닌 나이에 난 판 · ⓑ가 보여 준 카드 id 분포 · G2가 났는데 그 해 사망한 판 */
+export function age15Table(lives: readonly LifeObs[]): { n: number; rows: Array<{ label: string; count: number }>; g2By: Record<'parent' | 'child' | 'self', number>; g2OtherAge: number; choiceIds: Array<[string, number]>; diedWithCard: number } {
+  const counts = new Map<string, number>(AGE15_BRANCHES.map((b) => [b, 0]));
+  const g2By = { parent: 0, child: 0, self: 0 };
+  const ids = new Map<string, number>();
+  let g2OtherAge = 0;
+  let diedWithCard = 0;
+  for (const l of lives) {
+    const b = age15Branch(l);
+    counts.set(b, (counts.get(b) ?? 0) + 1);
+    const a = l.a15;
+    if (a?.shown === true && a.g2By !== null) g2By[a.g2By]++;
+    if (b.startsWith('ⓑ') && a?.choiceCard) ids.set(a.choiceCard.id, (ids.get(a.choiceCard.id) ?? 0) + 1);
+    if (a?.shown !== true && l.gates.G2 !== undefined && l.gates.G2.age !== 15) g2OtherAge++;
+    if (a?.died === true && a.shown) diedWithCard++;
+  }
+  return { n: lives.length, rows: AGE15_BRANCHES.map((label) => ({ label, count: counts.get(label) ?? 0 })), g2By, g2OtherAge, choiceIds: [...ids].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1)), diedWithCard };
+}
+
+const G2_ID = GATES.G2;
+
+/** 게임 나이 15세 해 걸음 하나를 관찰한다 — `pre`는 걸음 직전(대기 없음) 상태, `r`은 그 걸음 결과. 난수·상태를 바꾸지 않는다(반사실 걸음은 복사본에서 돌린다) */
+function observeAge15(pre: GameState, r: ReturnType<typeof stepYear>, pool: EventPool): Age15Obs {
+  const age = pre.age;
+  const ev = pool.byId.get(G2_ID);
+  const ctx = condContextOf(pre);
+  const eligible = ev !== undefined && isEventEligible(ev, { ...ctx, age, year: calendarYear(pre.character!.birthYear, age), seen: pre.seen });
+  const shown = pre.seen[G2_ID] === undefined && r.state.seen[G2_ID] === age;
+  const t = r.tick;
+  let g2Replaced: boolean | null = null;
+  if (shown) {
+    // 반사실: G2를 once로 막은 같은 상태에서 한 해 — 일반 추첨이 서술 장면을 뽑았으면 그 장면(마일스톤 아님)이 G2에 자리를 내준 것
+    const cf = stepYear({ ...pre, seen: { ...pre.seen, [G2_ID]: 0 } }, pool);
+    g2Replaced = cf.tick.eventId !== undefined && !(cf.tick.milestoneIds ?? []).includes(cf.tick.eventId);
+  }
+  const choiceCard = !shown && (t.kind === 'choice' || t.by !== undefined) && t.eventId !== undefined ? { id: t.eventId, by: (t.by ?? 'self') as 'parent' | 'child' | 'self' } : null;
+  return {
+    shown,
+    g2By: shown ? ((t.by ?? 'self') as 'parent' | 'child' | 'self') : null,
+    g2Replaced,
+    forced: familyChangesFor(pre, age, pool).forcedEvent !== undefined,
+    militaryOrCareer: militaryDueOf(pre, pool, age) !== null || t.career === true,
+    eligible,
+    leftSchool: pre.flags.includes('left_school'),
+    choiceCard,
+    died: t.kind === 'death',
+  };
 }
 
 /** 시험 전용 덮어쓰기: 수저 · 출생 기질(두드러진 기질 65, 나머지 32) · 맞춤 인생 없음 */
@@ -79,6 +187,7 @@ export function playObserve(start: GameState, seed: number, untilAge = 36, pool:
   let s = start;
   const gates: Partial<Record<Gate, GateObs>> = {};
   let tiers15: Record<string, AptTier> | null = null;
+  let a15: Age15Obs | null = null;
   const tiersNow = (x: GameState): Record<string, AptTier> | null => (personaViewOf(x)?.tiers as Record<string, AptTier> | undefined) ?? null;
   for (let guard = 0; guard < 2000 && s.phase === 'life' && s.age <= untilAge; guard++) {
     if (s.age === 15 && tiers15 === null) tiers15 = tiersNow(s);
@@ -88,13 +197,16 @@ export function playObserve(start: GameState, seed: number, untilAge = 36, pool:
       const g = GATE_OF.get(s.pending.eventId);
       const total = w.weights.reduce((x, y) => x + y, 0); // 자동 가중은 합이 1이 아니다(`weightedIndex`가 합으로 나눈다) — 확률로 맞춘다
       if (g !== undefined && gates[g] === undefined) gates[g] = { age: s.pending.age, by: 'self', ids: [...w.ids], weights: w.weights.map((x) => x / total), chosen: id, tiers: tiersNow(s) };
-      s = resolveChoiceStep(s, s.pending.key, id, pool).state;
+      const resolved = resolveChoiceStep(s, s.pending.key, id, pool);
+      if (a15 !== null && s.pending.age === 15 && resolved.tick.kind === 'death') a15.died = true; // 15세 해 본인 카드 해결에서 죽은 판
+      s = resolved.state;
       continue;
     }
     let seen: { state: GameState; by: 'parent' | 'child'; ids: readonly string[]; weights: readonly number[]; choiceId: string } | null = null;
     const r = stepYear(s, pool, (e) => {
       seen = e;
     });
+    if (s.age === 15 && a15 === null) a15 = observeAge15(s, r, pool);
     if (seen !== null) {
       const e = seen as { state: GameState; by: 'parent' | 'child'; ids: readonly string[]; weights: readonly number[]; choiceId: string };
       const g = GATE_OF.get(e.state.pending!.eventId);
@@ -116,6 +228,7 @@ export function playObserve(start: GameState, seed: number, untilAge = 36, pool:
     college: s.flags.includes('college'),
     hiredBy35: s.persona?.job?.id !== undefined,
     aliveAt35: s.age >= 35 || s.phase === 'life',
+    a15,
   };
 }
 
