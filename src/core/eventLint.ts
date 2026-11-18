@@ -14,6 +14,8 @@ import {
   type Range,
 } from './events';
 import { jobIndexOf } from './jobIndex';
+import { FOCUS_K_MAX, FOCUS_TABLE } from '../data/focusTable';
+import { SELF_AREA_WEIGHT } from '../data/parentDecisionTable';
 import { looksChannelBounds } from './looks';
 import { APT_KEYS, APT_TIERS, TEMPER_IDS, type AptKey, type AptTier, type TemperId } from './personaKinds';
 import { OCCUPATIONS, PARENT_WEALTHS, STAT_KEYS, type Effects, type Era, type Occupation, type ParentWealth, type Stage } from './types';
@@ -710,6 +712,21 @@ export function weightBoundsProblems(ev: EventDef, extra: ReadonlyArray<readonly
   const out: string[] = [];
   if (b.min < MIN_EFFECTIVE_WEIGHT) out.push(`${ev.id}: 합성 가중의 최솟값이 ${b.min}로 ${MIN_EFFECTIVE_WEIGHT} 아래가 될 수 있다 (weight × 모디파이어 × 외모·시대 채널의 모든 조합 곱)`);
   if (b.max > MAX_EFFECTIVE_WEIGHT) out.push(`${ev.id}: 합성 가중의 최댓값이 ${b.max}로 ${MAX_EFFECTIVE_WEIGHT}을 넘을 수 있다 (weight × 모디파이어 × 외모·시대 채널의 모든 조합 곱)`);
+  return out;
+}
+
+/**
+ * 추첨 가중의 합성 최악 곱 (SPEC-018 PL10, 설계 `docs/data/focus-spend-model.md` 2-2절): 초점 표에 행이 있는(= `pickWeighted`가 `focusFactor`를 곱하는) 모든 사건에 `weightBoundsProblems`를
+ * **자기 영역 `SELF_AREA_WEIGHT`(13~18세 본인 카드) × 초점 `FOCUS_K_MAX`**까지 더해 건다. 두 채널의 최소 배수가 1이라 최솟값은 기존 그대로(곱이 가중을 줄이지 않는다), 최댓값이 `MAX_EFFECTIVE_WEIGHT`를 넘는 사건이 있으면 곱을 낮추지 않고 막아 보고한다.
+ */
+export function pickWeightProblems(events: readonly EventDef[], table: Readonly<Record<string, readonly string[]>> = FOCUS_TABLE): string[] {
+  const out: string[] = [];
+  for (const ev of events) {
+    if (!Object.prototype.hasOwnProperty.call(table, ev.id)) continue;
+    const extra: Array<readonly [number, number]> = [[1, SELF_AREA_WEIGHT], [1, FOCUS_K_MAX]];
+    if (ev.looksChannel !== undefined) extra.push(looksChannelBounds(ev.looksChannel));
+    out.push(...weightBoundsProblems(ev, extra).map((m) => m + ' [추첨 가중: × 자기 영역·초점 곱 포함]'));
+  }
   return out;
 }
 

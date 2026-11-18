@@ -14,7 +14,7 @@ export {}; // 모듈로 취급해 최상위 await를 쓴다
 try {
   await import('../src/data/installAll'); // 지연 로드 데이터(이벤트 풀·출생 연도 표·인용 테이블)를 정적으로 놓는다 — core의 기본 인자가 읽는다(MG8)
   const { EVENT_FILES, EVENT_POOL } = await import('../src/data/events');
-  const { lintEventData, questionProblems, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems, pickEventProblems, jobTableProblems, JOB_INDEX } = await import('../src/core');
+  const { lintEventData, questionProblems, citationLinkProblems, lintNoteFile, noteCardPoolProblems, parentTableProblems, focusTableProblems, pickWeightProblems, pickEventProblems, jobTableProblems, JOB_INDEX } = await import('../src/core');
   const { JOB_TABLE } = await import('../src/data/jobs');
   const { NOTE_CARDS, NOTE_MANUAL } = await import('../src/data/noteCards');
   // FM7a 승인 게이트(SPEC-009 「FM7 나눔」 2절, RG11 방식): 형진 님이 승인하지 않은 무거운 문장(`approved !== true`)이 하나라도 있으면 빌드가 막힌다. T06(어린 형제의 이른 별세)만 계획을 끄면 통과한다
@@ -31,6 +31,9 @@ try {
     ...noteCardPoolProblems(NOTE_CARDS, EVENT_POOL.events),
     // 어린 시절 부모님 결정(SPEC-005 PD2): 19세 미만에서 일어나는 선택지 이벤트가 분류표에 모두 있고, 표의 id가 모두 실제로 있다 — 새 선택지 이벤트를 분류 없이 추가하면 빌드가 실패한다
     ...parentTableProblems(EVENT_POOL.events),
+    // 올해의 초점(SPEC-018 PL10): 표지 대상 사건이 표에 모두 있고(없으면 빈 배열 []) 표의 id·주제가 올바르다 — 새 사건이 표지를 잊거나 죽은 표지가 남으면 빌드가 실패한다 · 합성 추첨 가중(자기 영역 × 초점 곱 포함)이 상한 안이다
+    ...focusTableProblems(EVENT_POOL.events),
+    ...pickWeightProblems(EVENT_POOL.events),
     ...familyApprovalProblems(FM7A_APPROVALS, FAMILY_DESIGN.siblingLoss.value.enabled),
     // 맞춤 인생 진로 트랙(SPEC-018 PL4): 직업 표 형태(입문·대면·조건 금지)·진로 카드 사건·후보 격자(모든 연도 × 분야)·파서용 id 색인과 본 표의 일치
     ...jobTableProblems(JOB_TABLE.jobs),

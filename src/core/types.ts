@@ -342,6 +342,24 @@ export interface GameState {
    * 저장 스키마는 v9 그대로이고 값이 이상하면 판을 버리지 않고 이 필드만 버린다(`core/storage.ts#withValidPersona`) — 필드가 없는 판은 중립이다(맞춤 효과 없음). 스위치 `PERSONA_ENABLED`가 꺼져 있으면 새 판에는 만들지 않는다.
    */
   persona?: PersonaState;
+  /**
+   * 올해의 초점 (선택 필드 — SPEC-018 PL10, `docs/data/focus-spend-model.md` 6절): `id`는 지금 초점(주제 번호 0 공부·1 일·2 관계·3 건강·4 취미·5 돈, 없으면 「초점 없음」),
+   * `sec`는 마지막으로 묻기를 마친(고르거나 넘긴) 구간 번호(0 = 13~19 · 1 = 20~39 · 2 = 40~64 · 3 = 65+). **`persona` 밖의 최상위 필드**다 — `readPersona`가 모르는 키를 만나면 기질·적성 전체를 버리기 때문이다.
+   * 저장 스키마는 v9 그대로이고 값이 이상하면 판을 버리지 않고 이 필드만 버린다(`core/storage.ts#withValidFocus`). 추첨의 가중에만 닿고 결과(스탯·돈)에는 닿지 않는다(`core/focus.ts`).
+   */
+  focus?: FocusState;
+}
+
+/** 초점 주제 번호 — 저장에 들어가는 One-way 번호(`FOCUS_TOPICS`의 색인) */
+export type FocusId = 0 | 1 | 2 | 3 | 4 | 5;
+/** 구간 번호 — 저장에 들어가는 One-way 번호(`FOCUS_SECTIONS` = 13·20·40·65 시작) */
+export type FocusSection = 0 | 1 | 2 | 3;
+/** 초점 주제 코드(표 `src/data/focusTable.ts`용 — 저장되지 않는다) */
+export type FocusCode = 'learn' | 'work' | 'bond' | 'health' | 'hobby' | 'money';
+/** 저장 모양: 필드 순서 `id, sec`, `id`가 없으면 키를 뺀다 */
+export interface FocusState {
+  id?: FocusId;
+  sec: FocusSection;
 }
 
 export const SPEEDS = [1, 2, 4, 8] as const;

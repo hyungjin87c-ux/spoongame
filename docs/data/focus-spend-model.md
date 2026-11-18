@@ -425,7 +425,7 @@ T0(typecheck·`check:events`에 표 게이트 포함·린트형 시험) · T1(�
 주 주제 하나는 필수이고 보조는 선택이다. `-`는 「주제 없음」(표에 `[]`). 분류는 **제목 기준 초안**(1-5절)이라 마스터·형진 님 검토 후 확정한다.
 
 ```focus-table
-# focus-table v1 (r1 초안 2026-11-18). 행 형식: 키 | 채널 | 값들
+# focus-table v2 (r2 2026-11-18 — Q6 기준으로 사건 본문을 읽고 다시 분류). 행 형식: 키 | 채널 | 값들
 MODEL | topics | learn work bond health hobby money
 MODEL | topicNo | 0 1 2 3 4 5
 MODEL | sections | 13 20 40 65
@@ -445,33 +445,33 @@ MODEL | dominanceSumDiff | 1.5
 MODEL | dominanceSEMul | 2
 MODEL | dominanceSumBand | 3.0
 # 13~19세 (school.json)
-EVENT | school-lunch | bond
+EVENT | school-lunch | -
 EVENT | school-friend | bond
-EVENT | school-tutoring | learn money
+EVENT | school-tutoring | learn
 EVENT | school-first-love | bond
 EVENT | school-exam | learn
-EVENT | school-early-work | work money
-EVENT | school-bully | bond
-EVENT | school-club | hobby
+EVENT | school-early-work | -
+EVENT | school-bully | -
+EVENT | school-club | hobby bond
 EVENT | school-teacher-notice | learn
 EVENT | school-scholarship | learn money
-EVENT | school-friend-quarrel | bond
-EVENT | school-academy-night | learn money
-EVENT | school-family-priority | money bond
+EVENT | school-friend-quarrel | -
+EVENT | school-academy-night | learn
+EVENT | school-family-priority | -
 EVENT | school-parttime | work money
 EVENT | school-puppy | bond
-EVENT | school-mirror | bond
-EVENT | school-money-gap | money
-EVENT | school-chat-room | bond
-EVENT | school-academy-talk | learn
-EVENT | school-virtual-class | learn
+EVENT | school-mirror | -
+EVENT | school-money-gap | -
+EVENT | school-chat-room | -
+EVENT | school-academy-talk | -
+EVENT | school-virtual-class | -
 EVENT | school-long-walk | -
 # 20~39세 (youth.json)
-EVENT | youth-work-pressure | work
+EVENT | youth-work-pressure | -
 EVENT | youth-meeting | bond
 EVENT | youth-marriage | bond
 EVENT | youth-marriage-again | bond
-EVENT | youth-partner-leaves | bond
+EVENT | youth-partner-leaves | -
 EVENT | youth-reunion | bond
 EVENT | youth-second-chance | bond
 EVENT | youth-meeting-again | bond
@@ -479,77 +479,78 @@ EVENT | youth-matchmaker | bond
 EVENT | youth-approached | bond
 EVENT | youth-child | bond
 EVENT | youth-child-again | bond
-EVENT | youth-workplace-romance | bond work
+EVENT | youth-workplace-romance | bond
 EVENT | youth-housing | money
 EVENT | youth-exam-prep | learn work
-EVENT | youth-exam-passed | work
-EVENT | youth-exam-failed | work
-EVENT | youth-friend-wedding | bond money
-EVENT | youth-colleague | work bond
+EVENT | youth-exam-passed | -
+EVENT | youth-exam-failed | -
+EVENT | youth-friend-wedding | bond
+EVENT | youth-colleague | -
 EVENT | youth-startup | work money
 EVENT | youth-night-study | learn work
 EVENT | youth-return-school | learn
-EVENT | youth-rent-hike | money
-EVENT | youth-gig-work | work money
+EVENT | youth-rent-hike | -
+EVENT | youth-gig-work | work
 EVENT | youth-machine-partner | work
-EVENT | youth-lonely-city | bond
-EVENT | youth-single-years | bond
-EVENT | youth-job-rejections | work
-EVENT | youth-factory-night | work health
+EVENT | youth-lonely-city | -
+EVENT | youth-single-years | -
+EVENT | youth-job-rejections | -
+EVENT | youth-factory-night | -
 # 40~64세 (middle.json)
 EVENT | middle-business | work money
-EVENT | middle-parents-care | bond money
-EVENT | middle-parents-care-mother-gone | bond money
-EVENT | middle-parents-care-father-gone | bond money
+EVENT | middle-parents-care | -
+EVENT | middle-parents-care-mother-gone | -
+EVENT | middle-parents-care-father-gone | -
 EVENT | middle-health-check | health
 EVENT | middle-health-check-later | health
-EVENT | middle-health-crisis | health
+EVENT | middle-health-crisis | -
 EVENT | middle-new-skills | work learn
-EVENT | middle-remote-work | work
-EVENT | middle-child-school | bond money
-EVENT | middle-child-leaves | bond
-EVENT | middle-child-grows | bond
-EVENT | middle-late-child | bond
+EVENT | middle-remote-work | -
+EVENT | middle-child-school | bond
+EVENT | middle-child-leaves | -
+EVENT | middle-child-grows | -
+EVENT | middle-late-child | -
 EVENT | middle-home-loan | money
 EVENT | middle-career-peak | work
-EVENT | middle-layoff | work money
+EVENT | middle-layoff | -
 EVENT | middle-job-again | work
 EVENT | middle-friend-reunion | bond
-EVENT | middle-marriage-crisis | bond
+EVENT | middle-marriage-crisis | -
 EVENT | middle-hobby | hobby
-EVENT | middle-parents-farewell | bond
-EVENT | middle-parents-farewell-mother-gone | bond
-EVENT | middle-parents-farewell-father-gone | bond
-EVENT | middle-debt-guarantee | money
+EVENT | middle-parents-farewell | -
+EVENT | middle-parents-farewell-mother-gone | -
+EVENT | middle-parents-farewell-father-gone | -
+EVENT | middle-debt-guarantee | -
 EVENT | middle-retirement-prep | money work
-EVENT | middle-both-working | work money
-EVENT | middle-back-pain | health
-EVENT | middle-lonely-holiday | bond
-EVENT | middle-own-shop-year | work
+EVENT | middle-both-working | -
+EVENT | middle-back-pain | -
+EVENT | middle-lonely-holiday | -
+EVENT | middle-own-shop-year | -
 # 65세 이후 (senior.json)
-EVENT | senior-retire | work
+EVENT | senior-retire | -
 EVENT | senior-gathering | bond hobby
-EVENT | senior-illness | health
-EVENT | senior-illness-later | health
+EVENT | senior-illness | -
+EVENT | senior-illness-later | -
 EVENT | senior-grandchildren | bond
 EVENT | senior-estate | money
 EVENT | senior-move-home | money bond
 EVENT | senior-travel | hobby
 EVENT | senior-estranged-child | bond
-EVENT | senior-spouse-care | bond health
+EVENT | senior-spouse-care | -
 EVENT | senior-alone | bond
-EVENT | senior-new-device | learn hobby
-EVENT | senior-long-life | money health
-EVENT | senior-last-wishes | bond money
-EVENT | senior-old-friend | bond
-EVENT | senior-fall | health
+EVENT | senior-new-device | learn
+EVENT | senior-long-life | work learn
+EVENT | senior-last-wishes | -
+EVENT | senior-old-friend | -
+EVENT | senior-fall | -
 EVENT | senior-classmates | bond hobby
 EVENT | senior-diet | health
 EVENT | senior-memoir | hobby
-EVENT | senior-stairs | health
-EVENT | senior-photo | bond
-EVENT | senior-grandchild-visit | bond
-EVENT | senior-quiet-pride | work
+EVENT | senior-stairs | -
+EVENT | senior-photo | -
+EVENT | senior-grandchild-visit | -
+EVENT | senior-quiet-pride | -
+
 ```
 
 - 표에 **넣지 않은** 사건(제외 계열, 1-2절): `school-career-choice`·`school-high-pick`·`school-lessons`(13세 전)·`youth-military`·`youth-first-job`·`job-pick-field`·`job-pick-detail`·7세 전용·조르기·영유아 사건.

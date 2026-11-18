@@ -36,6 +36,7 @@ export * from './profile';
 export * from './family';
 export * from './looks';
 export * from './persona';
+export * from './focus';
 export * from './personaLife';
 export * from './jobIndex';
 export * from './jobs';
