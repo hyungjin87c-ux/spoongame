@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { FOCUS_GOLDEN_ERAS, FOCUS_GOLDEN_STRATEGIES, focusCell, type FocusCell } from './helpers/focusGolden';
+import { playToEnd, withFocusEnabled, type GameState } from '../src/core';
+import { startLife } from '../scripts/simulateLib';
+import { FOCUS_GOLDEN_ERAS, FOCUS_GOLDEN_STRATEGIES, focusCell, focusSeedOf, type FocusCell } from './helpers/focusGolden';
+import { SAVE_SAMPLES, continuedHash } from './helpers/focusSaves';
 
 /**
  * 올해의 초점 골든 ① (SPEC-018 PL10, 설계 `docs/data/focus-spend-model.md` 4절) — **초점 코드를 넣기 전** 커밋에서 변경 전 코드로 얼렸다(CX-006 공정 이탈 재발 방지).
@@ -23,4 +26,61 @@ describe('focusRng ① 얼린 맞춤 켠 판 (초점 없음 = 변경 전)', () =
       });
     }
   }
+});
+
+/**
+ * ③④ 옛 저장을 열어 끝까지 이어 간 결과 (설계 4절): 값은 초점 코드를 넣기 **전** 트리의 `life.ts`·`storage.ts`·`session.ts`로 얼렸다(`tests/helpers/focusSaves.ts`).
+ * 옛 저장 4개(출생 직후·20대·노년·가족 별세, `persona` 없음)와 `persona`는 있고 `focus`만 없는 v0.6.0 모양 맞춤 판 4개 — 초점 없는 저장은 변경 전과 바이트로 같다.
+ */
+const SAVES_FROZEN: Readonly<Record<string, string>> = {
+  'v030-age0': 'd5c6cd9d',
+  'v030-age20': '1bb3a838',
+  'v030-age65': '50632ce0',
+  'v040-father-ended': 'ce0063f1',
+  'v060-persona-age14-millennial': '41413c57',
+  'v060-persona-age25-industrial': '1c595c78',
+  'v060-persona-age45-alpha': '379fa0f8',
+  'v060-persona-age70-genx': '1f993b7c',
+};
+
+describe('focusRng ③④ 얼린 저장 샘플을 열어 이어 간 결과 (초점 없음 = 변경 전)', () => {
+  for (const [name, raw] of SAVE_SAMPLES) {
+    it(name, { timeout: 120_000 }, () => {
+      expect(continuedHash(raw())).toBe(SAVES_FROZEN[name]);
+    });
+  }
+});
+
+/**
+ * ② 스위치 끔 = 초점 없음: 저장된 `focus`가 있어도(통과·보존) `FOCUS_ENABLED`가 꺼지면 추첨이 닿지 않아 결과가 초점 없는 판과 같다. 켜면 다르다(공허 통과 방지).
+ */
+describe('focusRng ② FOCUS_ENABLED 끔 = 초점 없음', () => {
+  const run = (seed: number, focus: GameState['focus'], on: boolean): string => {
+    const s0 = startLife(seed, 'millennial');
+    const start: GameState = focus === undefined ? s0 : { ...s0, focus };
+    return withFocusEnabled(on, () => JSON.stringify(playToEnd(start)));
+  };
+
+  it('끈 채 저장된 초점(관계, 모든 구간을 마침)이 있는 판은 40판 모두 초점 없는 판과 같다 (저장된 focus 필드만 다르다)', () => {
+    for (let i = 1; i <= 40; i++) {
+      const seed = focusSeedOf(i);
+      const withFocus = JSON.parse(run(seed, { id: 2, sec: 3 }, false)) as { state: Record<string, unknown> };
+      const plain = JSON.parse(run(seed, undefined, false)) as { state: Record<string, unknown> };
+      expect(withFocus.state.focus, `시드 ${seed}: 통과·보존`).toEqual({ id: 2, sec: 3 });
+      delete withFocus.state.focus;
+      expect(withFocus, `시드 ${seed}`).toEqual(plain);
+    }
+  });
+
+  it('켠 채에서는 초점이 닿아 적어도 한 판은 결과가 달라진다', () => {
+    let differs = 0;
+    for (let i = 1; i <= 40; i++) {
+      const seed = focusSeedOf(i);
+      const a = JSON.parse(run(seed, { id: 2, sec: 3 }, true)) as { state: Record<string, unknown> };
+      const b = JSON.parse(run(seed, undefined, true)) as { state: Record<string, unknown> };
+      delete a.state.focus;
+      if (JSON.stringify(a) !== JSON.stringify(b)) differs++;
+    }
+    expect(differs).toBeGreaterThan(0);
+  });
 });

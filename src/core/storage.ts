@@ -7,6 +7,7 @@ import { EVENT_ID_PATTERN, FLAG_PATTERN, isChoiceEvent, isPersonaCondition, type
 import { isValidBirthReport } from './birthReport';
 import { ensureFamily, withValidFamily } from './familyStorage';
 import { JOB_FIELDS, jobIndexInYear, jobIndexOf } from './jobIndex';
+import { focusSectionOf } from './focus';
 import { personaSwitchOn, readPersona, type PersonaState } from './persona';
 import { isValidStat } from './stats';
 import { resolveDelegated } from './life';
@@ -40,7 +41,7 @@ import { cleanNoteForLoad, isInvisibleOnly } from './noteText';
 import { readPlay } from './playClock';
 import { DEFAULT_SETTINGS } from './state';
 import { VERSION_PATTERN } from './build';
-import type { GenerationId } from './types';
+import type { FocusId, FocusSection, FocusState, GenerationId } from './types';
 
 /**
  * 게임 진행과 설정은 별도 키. 스키마(또는 저장 검증 규칙)가 바뀌면 SCHEMA_VERSION을 올린다.
@@ -218,6 +219,34 @@ function withValidPersona(state: GameState): GameState {
   if (persona !== null) return JSON.stringify(persona) === JSON.stringify(raw) ? state : { ...state, persona };
   const rest = { ...state } as Record<string, unknown>;
   delete rest.persona;
+  return rest as unknown as GameState;
+}
+
+/**
+ * 판의 `focus`(SPEC-018 PL10 — 올해의 초점, 설계 `docs/data/focus-spend-model.md` 6-2절)는 **`persona` 밖의 선택 필드**라 이상한 값이 판을 버리게 하지 않고 `persona`도 건드리지 않는다 — **`focus`만 버린다**:
+ * 객체가 아님·모르는 키·`id`가 0~5 정수가 아님(6 이상 = 모르는 주제 포함)·`sec`이 0~3 정수가 아님·`sec`이 지금 나이의 구간보다 큼(미래 — 13세 전이면 구간이 없어 늘 미래)·`phase`가 첫 화면·`persona`가 없음(구형 판 또는 `persona`가 버려졌다).
+ * 스위치 `PERSONA_ENABLED`가 꺼져 있으면 `persona`가 없어도 통과·보존한다. `id`가 지금 구간 목록에 없는 것은 **버리지 않는다**(효과만 없다 — 다음 구간에 목록에 다시 들어오면 이어진다). 멀쩡하면 같은 객체를 돌려준다(필드 순서 `id, sec`로 맞춘다).
+ * 이 함수는 `withValidPersona` **뒤**에 돈다(`persona`가 버려졌는지 본다).
+ */
+function withValidFocus(state: GameState): GameState {
+  if (!Object.prototype.hasOwnProperty.call(state, 'focus')) return state;
+  const raw: unknown = (state as { focus?: unknown }).focus;
+  const keep = (): GameState | null => {
+    if (state.phase === 'title' || !isObj(raw) || (state.persona === undefined && personaSwitchOn())) return null;
+    const keys = Object.keys(raw);
+    if (keys.some((k) => k !== 'id' && k !== 'sec')) return null;
+    const { id, sec } = raw as { id?: unknown; sec?: unknown };
+    if (!isInt(sec) || sec < 0 || sec > 3) return null;
+    if (id !== undefined && !(isInt(id) && id >= 0 && id <= 5)) return null;
+    const section = focusSectionOf(state.age);
+    if (section === null || sec > section) return null;
+    const focus: FocusState = id === undefined ? { sec: sec as FocusSection } : { id: id as FocusId, sec: sec as FocusSection };
+    return JSON.stringify(focus) === JSON.stringify(raw) ? state : { ...state, focus };
+  };
+  const kept = keep();
+  if (kept !== null) return kept;
+  const rest = { ...state } as Record<string, unknown>;
+  delete rest.focus;
   return rest as unknown as GameState;
 }
 
@@ -565,7 +594,7 @@ export function parseGame(raw: string | null, poolArg?: EventPool): GameState | 
   if (verdict === 'invalid') return null;
   const state = verdict === 'stale-pending' ? { ...(data as GameState), pending: null } : (data as GameState);
   // `persona`는 부모·흘러감 대기를 풀기 전에 먼저 검증한다 — 그 해결(`settleDelegatedPending`)이 기질을 갱신하므로 손상된 값을 읽지 않게 한다
-  return withValidFamily(withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidPersona(withValidQuestion(withValidBy(state))), pool)))))));
+  return withValidFocus(withValidFamily(withValidRegionPicked(withValidFromRandom(withValidGentleUsed(withValidPlay(withCleanNotes(settleDelegatedPending(withValidPersona(withValidQuestion(withValidBy(state))), pool))))))));
 }
 
 /**

@@ -1,6 +1,7 @@
 import { isGameDataReady, eventPool } from './gameData';
 import type { EventPool } from './events';
 import { advanceUntilDecision, autoResolveStep, resolveChoiceStep, stepYear, type RunResult, type TickInfo } from './life';
+import { setFocus } from './focus';
 import { consumeNote, dueNote, noteResponse, writeNote, type NoteMode } from './notes';
 import { VERSION_PATTERN } from './build';
 import { playEqual, playNotBehind, readPlay } from './playClock';
@@ -16,6 +17,7 @@ import {
   THEMES,
   isLifeLengthSelectable,
   type BgmSettings,
+  type FocusId,
   type GameState,
   type GenerationChoice,
   type GenerationId,
@@ -94,6 +96,11 @@ export type SessionAction =
   | { type: 'beginNew'; seed: number; regionPick?: string | null }
   /** 첫 화면: 「무거운 장면 가리기」 켜기·끄기(설정에 저장). 진행 중인 판(룰렛~인생)에서 켜면 그 판의 `gentleUsed`가 참이 된다(SPEC-005 HV3). */
   | { type: 'setGentle'; on: boolean }
+  /**
+   * 올해의 초점 고르기·바꾸기(SPEC-018 PL10, 설계 5-4절 7번): 주제 번호 = 그 초점, `null` = 「없음」(초점을 끈다), 생략 = 「넘기기」(지금 값을 두고 구간만 마친다). **진행을 일으키지 않는다** —
+   * `pending`이 열려 있어도·자동 모드 중에도 받고 효과는 다음 추첨부터다. 목록에 없는 값·바뀌는 것이 없는 입력·맞춤 판이 아니거나 인생 단계가 아니거나 스위치(`FOCUS_ENABLED`)가 꺼진 때는 무시한다(`core/focus.ts#setFocus`).
+   */
+  | { type: 'setFocus'; focus?: FocusId | null }
   /** 가린 결정 카드의 「이번에는 자동으로 고르기」: 자동 모드와 상관없이 지금의 자동 선택 성향으로 대기 중인 선택지를 한 번 고른다(SPEC-005 HV4 ②). */
   | { type: 'autoPick'; key: string }
   /** 새 소식 패널을 열었다: 마지막으로 본 버전(`notesSeen`)을 갱신한다(SPEC-005 NT4). */
@@ -237,6 +244,11 @@ function reduceSession(s: Session, a: SessionAction, poolArg: EventPool | undefi
       if (typeof a.on !== 'boolean') return s;
       // 설정만 바꾼다(tick은 그대로 — 인생과 무관). 판 도중 켜면 `sessionReducer`의 `markGentleUsed`가 그 판에 표지를 붙인다
       return a.on === s.settings.gentle ? s : { ...s, settings: { ...s.settings, gentle: a.on } };
+    }
+    case 'setFocus': {
+      if (s.showTitle) return s; // 첫 화면을 다시 연 동안 늦게 온 입력
+      const game = setFocus(s.game, a.focus, pool());
+      return game === s.game ? s : { ...s, game }; // tick은 그대로(연출 시간 결정용 걸음은 초점과 무관하다)
     }
     case 'seeNotes':
       return typeof a.version !== 'string' || a.version === s.settings.notesSeen || !VERSION_PATTERN.test(a.version) ? s : { ...s, settings: { ...s.settings, notesSeen: a.version } };

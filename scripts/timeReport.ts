@@ -3,6 +3,7 @@ import { STAGE_TABLE } from '../src/data/lifeTable';
 import { INFANT_CHOICE_MEAN_MIN, LIFE_LENGTH_MODES, READ_MODEL, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
 import { NOTE_CARDS } from '../src/data/noteCards';
 import { EVENT_POOL } from '../src/data/events';
+import { printFocusTime } from './focusReport';
 import { infantLives, summarizeInfant } from './infantMetricsLib';
 import { infantMargins, marginReport } from './marginsLib';
 import { runNoteSchedule } from './noteScheduleLib';
@@ -26,7 +27,7 @@ import {
 
 /**
  * 시간 모델 보고 (SPEC-003 LM2·LM4·LM7, M8 — docs/data/content-M8.md 6-5절): **판정이 아니라 보고**다. 불변식 위반(해 수 합·카드 수·인생 길이 고정·하드 상한)이 하나라도 있으면 종료 코드 1.
- * 실행: npm run report:time [-- 판수=1000] [--strategy=random|auto] [--mode=short30|long60|both] [--only=current,natural,legacy,chars,notes,infant,margins,candidates] [--cands=soft:hard[:빈도+],…]
+ * 실행: npm run report:time [-- 판수=1000] [--strategy=random|auto] [--mode=short30|long60|both] [--only=current,natural,legacy,chars,notes,infant,margins,candidates,focus] [--cands=soft:hard[:빈도+],…]
  *   current    현재 설정(모드 표의 페이싱)의 판당 결정 카드 수 분포와 시간 (시대별 · 읽기 수준별)
  *   natural    페이싱을 끈 자연 분포 (soft = hard = 무한) — 이 풀·빈도의 한계
  *   legacy     M8 이전 모델 재현 (페이싱 23/0.3/26, 연출 계수 1, 읽기 18초) — 문서 1-3절 표와 맞는지
@@ -35,6 +36,7 @@ import {
  *   infant     영유아(0~7세) 수치 (sim:infant와 같은 정의)
  *   margins    판정 여유 표 (REV-003-M8-1 R-415, LD-9) — 시대 × 전략(수동 흉내·자동 성향) × 시드 줄(시험 / sim:1000)별 모델 시간·카드 평균(± SE)과 새 판정 지표 전부의 여유(표준오차 배수). 기본에서 빠진다(오래 걸림)
  *   hold       연출 계수 k별 1배속 수동 예상(읽기 중앙, 시대별·세 시대 평균) — 부모님이 정한·흘러간 해의 연출 대기(카드 읽기 필요량)를 센 새 모델의 손계산 표(설계 문서 4-4절·SPEC TM2)를 실측으로 대체한다. 기본에서 빠진다(k마다 다시 잰다)
+ *   focus      올해의 초점(SPEC-018 PL10, 설계 7절) 팔 7(없음 + 주제 6)별 판 길이 — `--era=millennial|industrial|alpha|all`. 기본에서 빠진다
  *   candidates 페이싱 후보 비교 표 (content-M8.md 2-4절 ③) — 오래 걸려 기본에서 빠진다. --cands=25:28,29:33:0.05 처럼 후보를 직접 주면 그것만 잰다(soft:hard[:청년·중년·노년 빈도에 더할 값], 소프트 계수는 0.3)
  */
 const args = process.argv.slice(2);
@@ -267,6 +269,12 @@ for (const mode of modes) {
       );
     }
   }
+}
+
+if (only.has('focus')) {
+  // 올해의 초점(SPEC-018 PL10, 설계 7절): 팔 7(없음 + 주제 6)별 판 길이 — `--era=millennial|industrial|alpha|all`(기본 밀레니얼). 기본에서 빠진다
+  const era = flag('era') ?? 'millennial';
+  printFocusTime(era === 'all' ? ['millennial', 'industrial', 'alpha'] : [era as ProfileId], lives);
 }
 
 console.log('\n(풀 이벤트 수:', EVENT_POOL.events.length, '/ 단계 이름:', STAGES.map((s) => STAGE_TABLE[s].label).join('·'), ')');

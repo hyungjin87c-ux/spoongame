@@ -41,6 +41,7 @@ import { initialAssets, settleAssets, yearlyAssets } from './economy';
 import { appendHistory } from './history';
 import { actPullOf, autoPriorityMul, personaOf } from './persona';
 import { GATE_SLOT_EVENTS, TRACK_WINDOW_END, careerCardOf, gateSlotOf, gateTogetherNow, jobPickOutcome, jobPickWeights, militaryDueOf, pickChoicesOf, togetherSlot } from './careerTrack';
+import { focusEffectiveOf, focusFactor } from './focus';
 import { personaOnChoice, personaOnFamilyLines, personaOnNarrative, personaOnYearEnd } from './personaLife';
 import { impactOfEffects, previewChoice, type ImpactItem } from './impact';
 import { FAMILY_LINE_ID } from '../data/familyLineText';
@@ -59,7 +60,7 @@ import { citationFor } from './citations';
 import { createRng, type Rng } from './rng';
 import { applyStatDeltas, type StatDeltas } from './stats';
 import { cardReadNeedMs, holdMsFor, tickReadNeedMs } from './timing';
-import { PARENT_WEALTHS, type Character, type DelegatedBy, type GameState, type HistoryEntry, type LifeLength, type Stage, type StatKey, type Stats } from './types';
+import { PARENT_WEALTHS, type Character, type DelegatedBy, type FocusId, type GameState, type HistoryEntry, type LifeLength, type Stage, type StatKey, type Stats } from './types';
 
 /**
  * 인생 진행 루프(순수 함수). React·타이머·Date·Math.random을 쓰지 않고 시드 RNG만 쓴다.
@@ -181,10 +182,11 @@ function eventsForStage(pool: EventPool, stage: Stage): readonly EventDef[] {
   return index[stage];
 }
 
-function pickWeighted(rng: Rng, list: readonly EventDef[], ctx: CondContext, age = 0, choices = false): EventDef | null {
+function pickWeighted(rng: Rng, list: readonly EventDef[], ctx: CondContext, age = 0, choices = false, focus: FocusId | null = null): EventDef | null {
   if (list.length === 0) return null;
   // PD13: 13~18세에 본인이 고르는 선택지 카드의 추첨 가중에 `SELF_AREA_WEIGHT`(기본 1)를 곱한다 — 서술 이벤트·부모/흘러감 카드·19세 이상은 1이다
-  return list[rng.weightedIndex(list.map((ev) => eventWeight(ev, ctx) * (choices ? selfAreaWeightFactor(ev.id, age) : 1)))];
+  // SPEC-018 PL10: 올해의 초점 곱 — 초점 없음이면 `focusFactor`가 리터럴 1이라 가중 배열이 변경 전과 같다(설계 4절). 곱은 여기 한 곳이고 난수 소비는 그대로다(`weightedIndex`는 가중과 무관하게 한 칸)
+  return list[rng.weightedIndex(list.map((ev) => eventWeight(ev, ctx) * (choices ? selfAreaWeightFactor(ev.id, age) : 1) * focusFactor(ev.id, focus)))];
 }
 
 // ---------- 한 해 진행 ----------
@@ -361,6 +363,8 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
 
   const rng = createRng(state.rngState);
   const age = state.age;
+  // 올해의 초점(SPEC-018 PL10): 맨 앞에서 한 번 계산해 이 해의 모든 추첨(`pickWeighted`)이 같은 값을 읽는다. 없으면 `null` — 곱 1
+  const focus = focusEffectiveOf(state, age, pool);
   // 0~7세는 영유아 빈도표를 쓴다(SPEC-003 M7a: 7세는 학창 단계지만 영유아기와 같은 빈도 — EARLY_YEARS_MAX_AGE)
   const freq = age <= EARLY_YEARS_MAX_AGE ? EVENT_FREQUENCY.infant : EVENT_FREQUENCY[stageOfAge(age)];
   const rollChoice = rng.next();
@@ -445,7 +449,7 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
     const setters = flagSettersOf(pool, 'college');
     const choiceList = eligible.filter((ev) => isChoiceEvent(ev) && !GATE_SLOT_EVENTS.has(ev.id));
     if (choiceList.some((ev) => setters.includes(ev.id))) {
-      const drawn = pickWeighted(rng, choiceList, ctx, age, true);
+      const drawn = pickWeighted(rng, choiceList, ctx, age, true, focus);
       trackRngSpent = true;
       if (drawn !== null && setters.includes(drawn.id)) examFirst = drawn;
     }
@@ -477,7 +481,7 @@ export function stepYear(state: GameState, pool: EventPool = eventPool(), observ
         slot.spent = true;
         return null;
       }
-      return pickWeighted(rng, list, ctx, a, choices);
+      return pickWeighted(rng, list, ctx, a, choices, focus);
     };
     const isNarrative = (ev: EventDef): boolean => !isChoiceEvent(ev) && !isMilestoneEvent(ev);
     // 큰 갈림길 강제 슬롯 사건(G1·G2)은 일반 추첨 후보가 아니다 — 슬롯으로만 나온다 [결정 후속 243]
