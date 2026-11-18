@@ -663,12 +663,13 @@
 - [ ] (이어지는 일) SPEC-020 설계 r4: 가상자산 상한 B′3(그해 소득의 3% · 모은 돈의 10% — 구현 때 25% 게이트(▲24-b 포함)와 격차 분모를 다시 잰다, 후속 261) · SPEC-022가 넘긴 것(맨 끝 절 「넘길 것」 1·2·6·7·8) · 보유·투자는 재설계 뒤(v0.6.1 → 경제식 재설계 → 보유·투자 → v0.7.0, 후속 261 B) · 「한 번 쓰기」도 경제식 재설계 뒤 첫 묶음으로 옮겼다(후속 262 ①)
 
 ## SPEC-018 맞춤 인생 — v0.6.1 몫(후속 255·246·262 · 명세: docs/spec/SPEC-018-맞춤인생.md · v0.6.1 = G2 같은 해 · 이름 크레딧(SPEC-022 EC1, 위 절) · 초점 · 교제 카드 + 반대 사례 하나 — 돈 쓰기는 경제식 재설계 뒤)
-- [ ] **G2 「고등학교 원서를 같은 해에 함께」 [CRITICAL]** — 구현 전 기록 `ai-log/2026-11-17_SPEC-018_G2-plan.md`, 완료 기준은 그 7절 1~16, 순서는 8절
-  - [ ] 엔진 — 얼린 표본 시험 ① 커밋 먼저(다른 v0.6.1 엔진·콘텐츠보다 앞) → 엔진 ② (`GATE_TOGETHER` 표지 · `life.ts` · `timing.ts` · 측정 도구 4종 · 시험)
-  - [ ] 화면 시안 — designer 시안(휴대폰 높이 포함)과 변경 전후 캡처를 형진 님께 먼저 보이고 확정(후속 262 G2 화면 (1)~(4))
-  - [ ] 화면 — `ParentCard`·`LifeScreen`·`App`·`dash.css`·`e2e/gate-together.spec.ts` (확정 뒤)
-  - [ ] 측정·판 길이 보고 — 판 길이 임계 ③ 커밋 전 형진 님 보고(두 번: G2 측정 뒤 · v0.6.1 통합 측정 뒤, 합쳐 +1.5분 넘으면 다시 묻는다) · 20세 스탯 누적 · T5 ⑦ · `check:economy`
-  - [ ] T3 → Codex G2 단독 감사 CX-006(`resolution.md`까지)
+- [x] **G2 「고등학교 원서를 같은 해에 함께」 [CRITICAL]** — 구현 전 기록 `ai-log/2026-11-17_SPEC-018_G2-plan.md`, 완료 기준은 그 7절 1~16, 순서는 8절 — 근거: 엔진 커밋 1026d447 · 화면·기준값 커밋 f285373 · Codex `docs/review/codex/CX-006-SPEC-018-G2-together/resolution.md`
+  - [x] 엔진 — 얼린 표본 시험 ① 커밋 먼저(다른 v0.6.1 엔진·콘텐츠보다 앞) → 엔진 ② (`GATE_TOGETHER` 표지 · `life.ts` · `timing.ts` · 측정 도구 4종 · 시험) — 근거: `src/core/careerTrack.ts#GATE_TOGETHER` · `src/core/life.ts#resolveLeadGate` · `scripts/gateTogetherReport.ts` · `tests/gateTogether.test.ts`(커밋 1026d447). 공정 이탈: 얼린 표본 ①을 엔진과 같은 커밋에 넣었다 — Codex가 실제 c09afd6 소스와 420판 바이트 대조로 따로 확인(CX-006 resolution 2절)
+  - [x] 화면 시안 — designer 시안(휴대폰 높이 포함)과 변경 전후 캡처를 형진 님께 먼저 보이고 확정(후속 262 G2 화면 (1)~(4)) — 근거: `docs/design/mockups/g2-together/g2-together.html`(A1·B·C, 커밋 62ff3a44) · 형진 님 확정 후속 262 · 263 ③④
+  - [x] 화면 — `ParentCard`·`LifeScreen`·`App`·`dash.css`·`e2e/gate-together.spec.ts` (확정 뒤) — 근거: `src/ui/dash/ParentCard.tsx` · `src/screens/LifeScreen.tsx` · `tests/leadCard.test.tsx` · `e2e/gate-together.spec.ts`(커밋 f285373)
+  - [x] 측정·판 길이 보고 — 판 길이 임계 ③ 커밋 전 형진 님 보고(두 번: G2 측정 뒤 · v0.6.1 통합 측정 뒤, 합쳐 +1.5분 넘으면 다시 묻는다) · 20세 스탯 누적 · T5 ⑦ · `check:economy` — 근거: 첫 보고 후속 263 ②(`src/data/timingTable.ts` 상한 36.5분) · 느린 독자 40 → 40.5분 후속 264(`scripts/marginsLib.ts#READER_HIGH_LIMIT_MIN`) · `tests/stat20Guard.test.ts` · `tests/parentDecisionSim.test.ts` · `scripts/economyCheckLib.ts`. 두 번째 보고(v0.6.1 통합 측정 뒤)는 아래 CX-007 줄에서 한다
+  - [x] T3 → Codex G2 단독 감사 CX-006(`resolution.md`까지) — 근거: `docs/review/codex/CX-006-SPEC-018-G2-together/findings.md` · `docs/review/codex/CX-006-SPEC-018-G2-together/resolution.md`(CX-006-001 수정 · `tests/judgeMargins.test.ts`)
+  - [ ] (후속, 낮음) `scripts/gateTogetherReport.ts`의 `age <= 20` 종료 경계 — 「20세 도달」과 「20세 해를 마친 생존」 중 무엇으로 셀지 정해 주석에 적는다(CX-006 확인 사항, 지정 표본에서는 차이 0)
 - [ ] **초점 [CRITICAL]** — 사건 확률만 반영 · 13세에 처음, 20·40·65세에 다시 묻는다(후속 262 ②③)
   - [ ] PL9 설계 문서 `docs/data/focus-spend-model.md`(초점 몫만 — 돈 쓰기 몫은 재설계 뒤)
   - [ ] PL10 코어 — 확률 곱·저장·구간 경계(결과 스탯·돈 불변)
@@ -679,5 +680,5 @@
   - [ ] 문구 게이트 — designer → reviewer 낙인 판독 → 형진 님 확인
   - [ ] 데이터·시험 — 사건 데이터·골든·lint(외모·성별이 조건·가중에 없음)·새 카드가 외모 1·5 결혼 비·수저 1·5 비를 0.02 넘게 나쁘게 하지 않는다
 - [ ] 외모 1단계 35세 결혼율 같은 정의 재측정·보고 — F10 보고 값과 정의가 다른 10.7%를 같은 정의로 다시 재서 원인·대안과 함께 형진 님께(후속 262 알림)
-- [ ] v0.6.1 묶음 Codex A+B CX-007(G2·초점·교제 카드·이름 크레딧) → 배포 전 T3 → 형진 님 승인 배포 → 플레이테스트
+- [ ] v0.6.1 묶음 Codex A+B CX-007(G2·초점·교제 카드·이름 크레딧 + CX-006-001 수정의 재검증) → 배포 전 T3 → 형진 님 승인 배포 → 플레이테스트 — 통합 측정 뒤 판 길이 두 번째 보고에 느린 독자 줄별 값을 함께 적는다(후속 264)
 - [ ] (이어지는 일) PL6 직업별 직장 사건·문장 변주와 PL17 나머지(높은 단계의 「외모로만 보이는 피로」 등)는 경제식 재설계 배포에 싣는다 — 재설계와 병렬로 준비(후속 262 ④)
