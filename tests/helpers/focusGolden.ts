@@ -1,4 +1,5 @@
 import { playToEnd, totalCards, type ProfileId } from '../../src/core';
+import { preRomancePool } from './preRomancePool';
 import { startLife, chooserFor, type Strategy } from '../../scripts/simulateLib';
 import { fnv } from './familyGolden';
 
@@ -30,7 +31,7 @@ export function focusCell(era: ProfileId, strategy: Strategy): FocusCell {
   let age = 0;
   for (let i = 1; i <= FOCUS_GOLDEN_SEEDS; i++) {
     const seed = focusSeedOf(i);
-    const r = playToEnd(startLife(seed, era), chooserFor(strategy, seed));
+    const r = playToEnd(startLife(seed, era), chooserFor(strategy, seed), preRomancePool()); // PL17-R 전 풀로 고정(얼린 값 불변)
     parts.push(JSON.stringify([r.state, r.counts, r.last]));
     if (i <= FOCUS_RNG_COLUMN) rng.push(r.state.rngState);
     cards += totalCards(r.counts);

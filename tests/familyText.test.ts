@@ -390,7 +390,12 @@ describe('FM7a가 건드린 사건은 이 목록뿐이다 (FM7a 전 원문과 �
       'middle-parents-farewell-father-gone': ['(새 사건)'],
       'middle-parents-farewell-mother-gone': ['(새 사건)'],
       'senior-alone': ['conditions'],
+      // SPEC-018 PL17-R +4(카드 3 · 서술 1): 새 사건 — 기존 사건의 글·조건은 바뀌지 않는다
+      'youth-date-budget': ['(새 사건)'],
+      'youth-hobby-circle': ['(새 사건)'],
       'youth-housing': ['parents.label', 'return.label', 'return.result'],
+      'youth-late-word': ['(새 사건)'],
+      'youth-two-news': ['(새 사건)'],
     });
   });
 

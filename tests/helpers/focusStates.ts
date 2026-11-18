@@ -1,10 +1,9 @@
 import { it } from 'vitest';
-import { autoResolveStep, eventPool, focusChoicesOf, focusSectionOf, stepYear, withFocusEnabled, type FocusId, type GameState, type ProfileId } from '../../src/core';
+import { autoResolveStep, eventPool, focusChoicesOf, focusSectionOf, stepYear, withFocusEnabled, type EventPool, type FocusId, type GameState, type ProfileId } from '../../src/core';
 import { startLife } from '../../scripts/simulateLib';
 
 /** 올해의 초점 시험용 상태 만들기 — 자동 선택으로 `age`세가 되는 첫 걸음 직전(대기 없음)의 인생 상태 */
-export function lifeStateAt(seed: number, era: ProfileId, age: number): GameState {
-  const pool = eventPool();
+export function lifeStateAt(seed: number, era: ProfileId, age: number, pool: EventPool = eventPool()): GameState {
   let s = startLife(seed, era);
   for (let guard = 0; guard < 400 && s.phase === 'life'; guard++) {
     if (s.pending === null && s.age >= age) return s;

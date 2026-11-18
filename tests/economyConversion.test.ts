@@ -172,8 +172,15 @@ describe('변환표(5-D)와 이벤트 데이터가 한 줄씩 같다', () => {
       expect(unchanged.includes(id), `${id}가 5-5에 있다`).toBe(false);
       expect(JSON.stringify(eventOf(id)), id).not.toMatch(/"assets"/);
     }
-    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS, ...askIds, ...careerIds, ...pl5Ids])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
-    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length + askIds.length + careerIds.length + pl5Ids.length);
+    // SPEC-018 PL17-R +4(카드 3 · 서술 1)(결정 후속 265): 20세 이상 새 사건 — 표에도 5-5에도 없고 처음부터 새 경제 단위(`assets.net`)로 썼다(옛 재산 스탯 효과 없음)
+    const pl17rIds = ['youth-date-budget', 'youth-two-news', 'youth-late-word', 'youth-hobby-circle'];
+    for (const id of pl17rIds) {
+      expect(inTable.has(id), `${id}가 변환표에 있다`).toBe(false);
+      expect(unchanged.includes(id), `${id}가 5-5에 있다`).toBe(false);
+      expect(JSON.stringify(eventOf(id)), id).not.toMatch(/"wealth"/);
+    }
+    expect(new Set([...inTable, ...unchanged, ...M7A_NEW_EVENT_IDS, ...FM7A_VARIANTS, ...askIds, ...careerIds, ...pl5Ids, ...pl17rIds])).toEqual(new Set(EVENT_POOL.events.map((e) => e.id)));
+    expect(EVENT_POOL.events).toHaveLength(112 + M7A_NEW_EVENT_IDS.length + FM7A_VARIANTS.length + askIds.length + careerIds.length + pl5Ids.length + pl17rIds.length);
     for (const id of unchanged) {
       const ev = eventOf(id);
       const effs: Array<Effects | undefined> = [ev.effects, ...(ev.bonuses ?? []).map((b) => b.effects), ...(ev.choices ?? []).flatMap((c) => [c.effects, ...(c.bonuses ?? []).map((b) => b.effects)])];

@@ -32,6 +32,9 @@ function approved(stage: (typeof DOC_FILES)[number]): Map<string, string> {
 
 /** SPEC-018 PL5의 새 선택지 사건(질문 원본은 `docs/data/content-018-PL5.md`) */
 const PL5_NEW = ['school-lessons', 'school-high-pick'];
+/** SPEC-018 PL17-R(교제 카드 A·B · 반대 사례, 결정 후속 265): 질문의 원본은 `docs/data/review-018-romance-means.md` 7절이다 — `tests/romanceMeans.test.ts`가 글자 단위로 대조한다(승인 문서 94개 밖) */
+const PL17R_NEW = ['youth-date-budget', 'youth-two-news', 'youth-hobby-circle'];
+const NOT_IN_APPROVED_DOC = [...PL5_NEW, ...PL17R_NEW];
 
 const ALL = new Map<string, string>();
 for (const stage of DOC_FILES) for (const [id, q] of approved(stage)) ALL.set(id, q);
@@ -40,7 +43,7 @@ describe('QS3 ① 94개 전부 있다', () => {
   // 승인 문서(question-text-*.md)가 다루는 것은 2026-11-08의 94개다. 조르기 사건 7개(SPEC-011 AK7)의 질문은 `docs/design/copy.md` 20절이 원본이고 `tests/askEvents.test.ts`가 글자 단위로 대조한다.
   // SPEC-018 PL5(결정 후속 237)의 새 사건 2개(G1·G2)와 진로 카드 2개(`pick`)의 질문은 `docs/data/content-018-PL5.md` 3절이 원본이다 — 아래 「PL5」 묶음이 글자 단위로 대조한다
   const askEvents = EVENT_POOL.events.filter((e) => e.ask !== undefined);
-  const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined && e.ask === undefined && !PL5_NEW.includes(e.id));
+  const choiceEvents = EVENT_POOL.events.filter((e) => e.choices !== undefined && e.ask === undefined && !NOT_IN_APPROVED_DOC.includes(e.id));
 
   it('선택지 이벤트 94개(영유아 15 · 학창 17 · 청년 22 · 중년 22 · 노년 18)에 question이 있고 서술 이벤트에는 없다 — 조르기 사건 7개도 question이 있다', () => {
     expect(choiceEvents).toHaveLength(94);
@@ -51,7 +54,7 @@ describe('QS3 ① 94개 전부 있다', () => {
     for (const stage of DOC_FILES) {
       const key = Object.keys(EVENT_FILES).find((k) => k.endsWith('/' + stage + '.json'))!;
       const events = (EVENT_FILES[key] as { events: Array<{ id: string; choices?: unknown; question?: string; ask?: unknown }> }).events;
-      expect(events.filter((e) => e.choices !== undefined && e.question !== undefined && e.ask === undefined && !PL5_NEW.includes(e.id)), stage).toHaveLength(COUNTS[stage]);
+      expect(events.filter((e) => e.choices !== undefined && e.question !== undefined && e.ask === undefined && !NOT_IN_APPROVED_DOC.includes(e.id)), stage).toHaveLength(COUNTS[stage]);
     }
   });
 
@@ -90,9 +93,9 @@ describe('QS3 ③ 문장 규칙(완료 기준 1·7)', () => {
     }
   });
 
-  it('105개(94 + 조르기 7 + PL5 새 사건 2 + 진로 카드 2)가 서로 다르다 (공허 통과 방지)', () => {
-    expect(qs).toHaveLength(105);
-    expect(new Set(qs.map((x) => x.q)).size).toBe(105);
+  it('108개(94 + 조르기 7 + PL5 새 사건 2 + 진로 카드 2 + PL17-R +3(교제 카드 A·B · 반대 사례))가 서로 다르다 (공허 통과 방지)', () => {
+    expect(qs).toHaveLength(108);
+    expect(new Set(qs.map((x) => x.q)).size).toBe(108);
   });
 
   it('사람 주어·평가어·계층어·시대 판단어·숫자 0건 (검사기가 실제로 잡는지 합성 사례로 확인)', () => {

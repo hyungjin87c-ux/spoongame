@@ -482,7 +482,7 @@
           "resultVariants": [
             { "when": { "assets": { "netMin": 12000 } }, "text": "머뭇거리는 기색을 보고 말없이 동네 가게로 바꾸었습니다. 상대는 바뀐 곳을 보고도 아무것도 묻지 않았습니다." }
           ],
-          "effects": { "assets": { "net": -50 }, "setFlags": ["unspoken"] },
+          "effects": { "setFlags": ["unspoken"] },
           "bonuses": [
             { "when": { "assets": { "netMax": 11999 } }, "effects": { "setFlags": ["unspoken_money"] } },
             { "when": { "assets": { "netMin": 12000 } }, "effects": { "setFlags": ["missed_signal"] } }
@@ -515,7 +515,7 @@
           "resultVariants": [
             { "when": { "flags": ["has_career"] }, "text": "상대는 한참 머뭇거리다 또 떨어졌다고 털어놓았습니다. 그날 내 소식은 꺼내지 않았습니다." }
           ],
-          "effects": { "stats": { "relationships": 1 } },
+          "effects": { "stats": { "relationships": 1, "happiness": -1 } },
           "bonuses": [
             { "when": { "notFlags": ["has_career"] }, "effects": { "setFlags": ["unspoken", "kept_news"] } }
           ]
@@ -524,7 +524,7 @@
           "id": "both",
           "label": "내 소식도 꺼내 같이 이야기한다",
           "result": "서로 미뤄 둔 이야기를 다 꺼냈습니다. 반가운 소식과 아쉬운 소식이 한 식탁에 함께 놓였습니다.",
-          "effects": { "stats": { "relationships": 2, "happiness": -1 } }
+          "effects": { "stats": { "relationships": 2, "happiness": -2 } }
         },
         {
           "id": "later",
@@ -590,7 +590,7 @@
           "act": "social",
           "label": "모임 사람들과 고르게 어울린다",
           "result": "누구와 특별히 가까워지지는 않았지만 모임이 있는 주말이 기다려졌습니다. 일이 생기면 먼저 연락할 사람이 몇 생겼습니다.",
-          "effects": { "stats": { "relationships": 2, "happiness": 1 }, "assets": { "net": -50 } }
+          "effects": { "stats": { "relationships": 2, "happiness": 1 } }
         },
         {
           "id": "pause",

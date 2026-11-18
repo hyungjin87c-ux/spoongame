@@ -6,8 +6,8 @@
 
 ## 1. 총계
 
-- 이벤트 **155개** = 선택지 이벤트 103개 + 서술 이벤트 52개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
-- 시대 전용: 지난 세상 13개 · 지금 세상 8개 · 다가올 세상 5개 / 시대 중립 공용 116개 / 두 시대 공용 13개
+- 이벤트 **159개** = 선택지 이벤트 106개 + 서술 이벤트 53개 (SPEC 최소 60개). 파일 5개(생애 단계별), 모든 이벤트는 한 판에 한 번만 나온다(once).
+- 시대 전용: 지난 세상 13개 · 지금 세상 8개 · 다가올 세상 5개 / 시대 중립 공용 120개 / 두 시대 공용 13개
 
 ## 2. 시대 × 생애 단계 × 유형 (그 칸에서 일어날 수 있는 이벤트 수)
 
@@ -17,10 +17,10 @@
 |---|---|---|---|
 | 영유아 (0~6세) | 16 / 12 | 17 / 18 | 14 / 14 |
 | 학창 (7~19세) | 9 / 20 | 8 / 20 | 9 / 19 |
-| 청년 (20~39세) | 11 / 19 | 10 / 20 | 10 / 21 |
+| 청년 (20~39세) | 12 / 22 | 11 / 23 | 11 / 24 |
 | 중년 (40~64세) | 7 / 26 | 8 / 27 | 8 / 28 |
 | 노년 (65세~) | 5 / 17 | 5 / 17 | 5 / 18 |
-| **합계(칸 합)** | 48 / 94 | 48 / 102 | 46 / 100 |
+| **합계(칸 합)** | 49 / 97 | 49 / 105 | 47 / 103 |
 
 ## 3. 이벤트 목록
 
@@ -108,7 +108,7 @@
 | `school-after-hours` | 학교가 끝난 뒤 | 7~7 | 지금·다가올 전용 | 선택지 3 | 일터에서 돌아올 어른이 없는 방과 후 | - |
 | `school-first-walk` | 처음 걷는 등굣길 | 7~7 | 지난 전용 | 서술 | 이웃 아이들과 처음 학교까지 걸어가던 길 | - |
 
-### 청년 (20~39세) — 31개
+### 청년 (20~39세) — 35개
 
 | id | 제목 | 나이 | 시대 | 유형 | 모티브 | 플래그 |
 |---|---|---|---|---|---|---|
@@ -127,6 +127,10 @@
 | `youth-child` | 아이를 맞을 것인가 | 27~39 | 공용 | 선택지 3 | 결혼 몇 해 뒤 아이를 가질지 이야기하던 일 | 켬 `child_postponed` `has_child` `no_child` / 읽음 `married` |
 | `youth-child-again` | 늦어진 이야기 | 33~44 | 공용 | 선택지 2 | 미뤄 둔 아이 문제를 다시 이야기하게 된 일 | 켬 `child_late` `has_child` `no_child` / 끔 `child_postponed` / 읽음 `child_postponed` `has_child` `married` `no_child` |
 | `youth-workplace-romance` | 같은 팀의 사람 | 24~38 | 공용 | 선택지 2 | 같은 팀 사람과 가까워지던 일 | 켬 `has_partner` / 읽음 `has_career` `has_partner` `married` `own_business` |
+| `youth-date-budget` | 약속 장소를 고르는 날 | 22~33 | 공용 | 선택지 3 | 주말 약속 장소를 두고 이번 달 형편을 말할지 말지 망설이던 일 | 켬 `missed_signal` `unspoken` `unspoken_money` / 읽음 `has_partner` `lives_with_parents` `married` `parents_gone` |
+| `youth-two-news` | 같은 주에 온 소식 | 22~31 | 공용 | 선택지 3 | 면접과 마감과 상대의 할 말이 같은 주에 겹친 일 | 켬 `kept_news` `unspoken` / 읽음 `has_career` `has_partner` `lives_with_parents` `married` `own_business` `parents_gone` |
+| `youth-late-word` | 늦게 꺼낸 이야기 | 23~36 | 공용 | 서술 | 미뤄 두었던 이야기를 한참 뒤에 마주 앉아 꺼낸 일 | 끔 `kept_news` `missed_signal` `unspoken` `unspoken_money` / 읽음 `has_partner` `kept_news` `missed_signal` `unspoken` `unspoken_money` |
+| `youth-hobby-circle` | 주말마다 가는 모임 | 22~34 | 공용 | 선택지 3 | 주말마다 나가던 모임에서 자주 마주친 사람과 가까워지던 일 | 켬 `has_partner` / 읽음 `has_partner` `married` |
 | `youth-housing` | 살 곳을 구하는 일 | 22~36 | 공용 | 선택지 4 | 가진 돈과 원하는 집 사이에서 살 곳을 정하던 일 | 켬 `lives_with_parents` `own_home` `renting` / 읽음 `lives_alone` `married` `own_home` |
 | `youth-exam-prep` | 길어지는 준비 | 21~30 | 공용 | 선택지 3 | 안정된 자리를 위해 시험 준비를 이어 가던 일 | 켬 `exam_prep` `gave_up_exam` `has_career` / 읽음 `has_career` |
 | `youth-exam-passed` | 합격 소식 | 23~38 | 공용 | 서술 | 오랜 시험 준비 끝에 합격 소식을 받은 일 | 켬 `has_career` `passed_exam` / 끔 `exam_prep` / 읽음 `exam_prep` |
@@ -233,30 +237,32 @@
 | `friend_back` | `middle-friend-reunion` | `middle-lonely-holiday` |
 | `gave_up_exam` | `youth-exam-prep` | - |
 | `grandparent_close` | `infant-care` `infant-daycare-wait` | `infant-grandparent-song` `infant-new-sibling` `senior-gathering` |
-| `has_career` | `middle-job-again` `youth-exam-passed` `youth-exam-prep` `youth-first-job` `youth-gig-work` | `middle-both-working` `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-new-skills` `middle-remote-work` `youth-colleague` `youth-exam-prep` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-machine-partner` `youth-startup` `youth-work-pressure` `youth-workplace-romance` |
+| `has_career` | `middle-job-again` `youth-exam-passed` `youth-exam-prep` `youth-first-job` `youth-gig-work` | `middle-both-working` `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-new-skills` `middle-remote-work` `youth-colleague` `youth-exam-prep` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-machine-partner` `youth-startup` `youth-two-news` `youth-work-pressure` `youth-workplace-romance` |
 | `has_child` | `youth-child` `youth-child-again` | `middle-both-working` `middle-child-grows` `middle-child-leaves` `middle-child-school` `middle-late-child` `middle-marriage-crisis` `senior-estate` `senior-estranged-child` `senior-gathering` `senior-grandchild-visit` `senior-grandchildren` `senior-move-home` `youth-child-again` |
-| `has_partner` | `youth-approached` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-reunion` `youth-workplace-romance` | `youth-approached` `youth-marriage` `youth-marriage-again` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-partner-leaves` `youth-reunion` `youth-second-chance` `youth-single-years` `youth-workplace-romance` |
+| `has_partner` | `youth-approached` `youth-hobby-circle` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-reunion` `youth-workplace-romance` | `youth-approached` `youth-date-budget` `youth-hobby-circle` `youth-late-word` `youth-marriage` `youth-marriage-again` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-partner-leaves` `youth-reunion` `youth-second-chance` `youth-single-years` `youth-two-news` `youth-workplace-romance` |
 | `health_ignored` | `middle-health-check` | `middle-health-check-later` `middle-health-crisis` |
 | `healthy_habit` | `middle-health-check` `middle-health-check-later` `middle-health-crisis` | `middle-back-pain` `middle-health-check-later` `senior-stairs` |
 | `hobby` | `middle-hobby` | `senior-gathering` |
 | `in_care` | `senior-move-home` | `senior-gathering` `senior-grandchildren` |
 | `job_changed` | `middle-career-peak` `youth-colleague` | - |
+| `kept_news` | `youth-two-news` | `youth-late-word` |
 | `laid_off` | `middle-layoff` | `middle-job-again` |
 | `late_learner` | `youth-night-study` `youth-return-school` | - |
 | `left_school` | `school-family-priority` | `school-bully` `school-career-choice` `school-club` `school-early-work` `school-exam` `school-family-priority` `school-first-love` `school-friend` `school-friend-quarrel` `school-high-pick` `school-lessons` `school-long-walk` `school-lunch` `school-parttime` `school-scholarship` `school-teacher-notice` `school-tutoring` |
 | `lives_alone` | `youth-lonely-city` | `youth-housing` |
-| `lives_with_parents` | `youth-housing` | `youth-lonely-city` |
+| `lives_with_parents` | `youth-housing` | `youth-date-budget` `youth-lonely-city` `youth-two-news` |
 | `marriage_waited` | `youth-marriage` | `youth-marriage-again` |
 | `marriage_waited_twice` | `youth-marriage-again` | `youth-partner-leaves` |
-| `married` | `youth-marriage` `youth-marriage-again` `youth-second-chance` | `middle-both-working` `middle-business` `middle-lonely-holiday` `middle-marriage-crisis` `senior-alone` `senior-spouse-care` `youth-approached` `youth-child` `youth-child-again` `youth-housing` `youth-lonely-city` `youth-marriage` `youth-marriage-again` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-partner-leaves` `youth-rent-hike` `youth-reunion` `youth-second-chance` `youth-single-years` `youth-workplace-romance` |
+| `married` | `youth-marriage` `youth-marriage-again` `youth-second-chance` | `middle-both-working` `middle-business` `middle-lonely-holiday` `middle-marriage-crisis` `senior-alone` `senior-spouse-care` `youth-approached` `youth-child` `youth-child-again` `youth-date-budget` `youth-hobby-circle` `youth-housing` `youth-lonely-city` `youth-marriage` `youth-marriage-again` `youth-matchmaker` `youth-meeting` `youth-meeting-again` `youth-partner-leaves` `youth-rent-hike` `youth-reunion` `youth-second-chance` `youth-single-years` `youth-two-news` `youth-workplace-romance` |
 | `mentor_teacher` | `school-teacher-notice` | `school-exam` |
 | `met_intro` | `youth-matchmaker` `youth-meeting` | `youth-meeting-again` |
+| `missed_signal` | `youth-date-budget` | `youth-late-word` |
 | `moved_home` | `senior-move-home` | `senior-alone` `senior-illness-later` |
 | `no_child` | `youth-child` `youth-child-again` | `youth-child-again` |
-| `own_business` | `middle-business` `middle-layoff` `youth-startup` | `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-own-shop-year` `senior-retire` `youth-colleague` `youth-factory-night` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-startup` `youth-workplace-romance` |
+| `own_business` | `middle-business` `middle-layoff` `youth-startup` | `middle-business` `middle-career-peak` `middle-job-again` `middle-layoff` `middle-own-shop-year` `senior-retire` `youth-colleague` `youth-factory-night` `youth-first-job` `youth-gig-work` `youth-job-rejections` `youth-startup` `youth-two-news` `youth-workplace-romance` |
 | `own_home` | `middle-home-loan` `youth-housing` | `middle-home-loan` `youth-housing` `youth-rent-hike` |
 | `parent_strained` | `ask-lessons-a` `ask-lessons-b` `ask-lessons-c` `ask-toy-a` `ask-toy-b` `ask-toy-c` `ask-toy-d` | - |
-| `parents_gone` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` | `infant-care` `infant-neglect-night` `middle-parents-care` `middle-parents-care-father-gone` `middle-parents-care-mother-gone` `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` `school-early-work` `school-teacher-notice` |
+| `parents_gone` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` | `infant-care` `infant-neglect-night` `middle-parents-care` `middle-parents-care-father-gone` `middle-parents-care-mother-gone` `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` `school-early-work` `school-teacher-notice` `youth-date-budget` `youth-two-news` |
 | `passed_exam` | `youth-exam-passed` | `middle-layoff` `youth-factory-night` |
 | `promoted` | `middle-career-peak` | - |
 | `renting` | `youth-housing` | `youth-rent-hike` |
@@ -266,5 +272,7 @@
 | `sibling_close` | `infant-new-sibling` | `middle-parents-farewell` `middle-parents-farewell-father-gone` `middle-parents-farewell-mother-gone` |
 | `skilled_trade` | `school-career-choice` `school-high-pick` | `school-exam` `youth-first-job` |
 | `stood_up` | `school-bully` | `school-chat-room` |
+| `unspoken` | `youth-date-budget` `youth-two-news` | `youth-late-word` |
+| `unspoken_money` | `youth-date-budget` | `youth-late-word` |
 | `younger_sibling` | `infant-new-sibling` | `infant-sibling-toy` |
 

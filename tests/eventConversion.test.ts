@@ -55,7 +55,8 @@ describe('이벤트 전환표(문서 부록) ↔ 데이터 (MG2)', () => {
     expect(rows).toHaveLength(140);
     // FM7a 「남은 한 분」 변형 4개(원본 id + -mother-gone·-father-gone)는 원본의 전환 행을 그대로 쓴다 — 부록 140행은 원본 이벤트의 표다 (변형은 track common · yearRange 없음, 아래 시험이 따로 본다)
     // SPEC-018 PL5(결정 후속 237)의 새 사건 2개(G1·G2)는 MG2 전환 뒤에 생긴 맞춤 판 전용 사건이라 전환표(옛 140개의 기록) 밖이다
-    const PL5_NEW = ['school-lessons', 'school-high-pick'];
+    // + SPEC-018 PL17-R(결정 후속 265) 새 사건 4개(카드 3 · 서술 1)도 MG2 전환 뒤에 생겼다 — 전환표 밖
+    const PL5_NEW = ['school-lessons', 'school-high-pick', 'youth-date-budget', 'youth-two-news', 'youth-late-word', 'youth-hobby-circle'];
     const dataIds = ['./infant.json', './school.json', './youth.json', './middle.json', './senior.json'].flatMap((f) => (EVENT_FILES[f] as { events: Array<{ id: string }> }).events.map((e) => e.id)).filter((id) => !/-(?:mother|father)-gone$/.test(id) && !PL5_NEW.includes(id));
     expect(rows.map((r) => r.id)).toEqual(dataIds);
   });

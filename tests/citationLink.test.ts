@@ -38,13 +38,15 @@ const X_EVENTS: Record<string, string[]> = {
 const D_EVENTS = [
   'infant-first-birthday', 'school-first-love', 'school-teacher-notice', 'school-supplies', 'youth-reunion', 'youth-second-chance', 'youth-meeting-again', 'youth-approached', 'youth-workplace-romance', 'senior-memoir',
   'infant-sibling-toy', 'infant-daycare-wait', 'youth-matchmaker', 'infant-hospital-stay',
+  // SPEC-018 PL17-R(결정 후속 265): 교제 카드 A·B · 외모 반대 사례 — 정서·관계 장면, 맞는 자료 없음(D)
+  'youth-date-budget', 'youth-two-news', 'youth-hobby-circle',
   // SPEC-011 AK7: 어린 시절 조르기 사건은 모두 맞는 자료가 없는 서술 장면(D, 결정 K8·AQ3) — 반려동물 둘은 스위치(`ASK_PET_ENABLED`)가 꺼져 풀에 없다
   ...askEventIdsFor(ASK_PET_ENABLED),
 ];
 
 describe('선택지 이벤트 94개는 모두 citation / noCitation / 2차 대기 중 하나다 (빠뜨린 카드 0)', () => {
   it('선택지 이벤트가 90개이고 서술 이벤트에는 citation·noCitation이 없다', () => {
-    expect(CARDS).toHaveLength(96 + askEventIdsFor(ASK_PET_ENABLED).length); // 96 = 기존 90 + FM7a 변형 4 + SPEC-018 PL5 새 사건 2(G1 `school-lessons` 지금 c-007 · G2 `school-high-pick` 지금·다가올 c-075) · 조르기 7(반려동물 켜짐이면 9)을 더했다 — FM7a: 「남은 한 분」 변형 사건 4개(care·farewell × 어머니·아버지가 먼저 떠난 판)가 원본의 citation·noCitation을 그대로 가진다
+    expect(CARDS).toHaveLength(99 + askEventIdsFor(ASK_PET_ENABLED).length); // 99 = PL17-R +3(교제 카드 A·B · 반대 사례 — D) + 기존 90 + FM7a 변형 4 + SPEC-018 PL5 새 사건 2(G1 `school-lessons` 지금 c-007 · G2 `school-high-pick` 지금·다가올 c-075) · 조르기 7(반려동물 켜짐이면 9)을 더했다 — FM7a: 「남은 한 분」 변형 사건 4개(care·farewell × 어머니·아버지가 먼저 떠난 판)가 원본의 citation·noCitation을 그대로 가진다
     for (const e of EVENT_POOL.events.filter((x) => x.choices === undefined)) {
       expect(e.citation, e.id).toBeUndefined();
       expect(e.noCitation, e.id).toBeUndefined();
@@ -64,7 +66,7 @@ describe('선택지 이벤트 94개는 모두 citation / noCitation / 2차 대�
       else if (e.noCitation !== undefined) counts.noCitation++;
       else counts.pending++;
     }
-    expect(counts).toEqual({ citation: 49, noCitation: 34 + askEventIdsFor(ASK_PET_ENABLED).length, pending: 13 }); // citation 47 + PL5 G1·G2
+    expect(counts).toEqual({ citation: 49, noCitation: 37 + askEventIdsFor(ASK_PET_ENABLED).length, pending: 13 }); // PL17-R noCitation D +3 · citation 47 + PL5 G1·G2
   });
 
   it('citation이 가리키는 id는 모두 citations.json에 있고 verified·usable이며, 인용이 금지한 이벤트(usageCaution.forbiddenEvents)에 연결하지 않았다 (근거 없는 인용 0)', () => {
@@ -138,7 +140,7 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
       if (era === 'future' && c.eras.includes('present')) expect(c.eraPrefix?.future, `${e.id} ${id}`).toBe('지금 기준으로는');
       if (era === 'past' && c.kind === 'research') expect(c.eraPrefix?.past, `${e.id} ${id}`).toBeDefined();
     }
-    expect(cells).toBe(95); // PL5 +3(G1 지금 · G2 지금·다가올) — 그 전: 92 = 지난 7 + 지금 44 + 다가올 41 (FM7a 병환 변형 둘이 지금·다가올 칸을 하나씩 더한다) (유치원 고르기의 다가올 칸은 이벤트 연도 구간이 2024년까지라 사라졌다 — 연도 구간 변환 MG2)
+    expect(cells).toBe(95); // PL17-R는 citation 없음(D)이라 칸 변화 0 · PL5 +3(G1 지금 · G2 지금·다가올) — 그 전: 92 = 지난 7 + 지금 44 + 다가올 41 (FM7a 병환 변형 둘이 지금·다가올 칸을 하나씩 더한다) (유치원 고르기의 다가올 칸은 이벤트 연도 구간이 2024년까지라 사라졌다 — 연도 구간 변환 MG2)
   });
 
   it('연결 칸마다 인용의 유효 연도 범위가 그 카드가 그 세상에서 뜰 수 있는 게임 속 연도 범위와 겹친다 — 연결해 놓고 영원히 안 보이는 칸이 없다', () => {
@@ -243,7 +245,7 @@ describe('MD2 1차 게이트 (마스터 결정 M-1: 시대별 정적 연결률 �
 
   it('분모는 시대별 등장 가능한 선택지 카드 수다: 지난 80 · 지금 88 · 다가올 88 (이벤트 연도 구간 변환 MG2 뒤 — 변환 전 다가올 83. FM7a 변형 4개가 세 시대에 각각 더해졌다) + 조르기 + PL5 새 사건 2(세 시대 각각 +2)', () => {
     // 조르기 사건(AK7)이 분모만 늘린다(분자는 그대로 — 인용 없음 D): 지난 toy-a·toy-b·lessons-a 3 · 지금 toy-c·toy-d·lessons-b 3 · 다가올 toy-d·lessons-c 2. 반려동물을 켜면 지난 +1 · 지금 +1 · 다가올 +1(설계 문서 9절 [84, 92, 91])
-    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual(ASK_PET_ENABLED ? [86, 94, 93] : [85, 93, 92]); // PL5 +2씩(G1 1990년부터 · G2 모든 시대)
+    expect([cov.past.total, cov.present.total, cov.future.total]).toEqual(ASK_PET_ENABLED ? [89, 97, 96] : [88, 96, 95]); // PL17-R +3씩(교제 카드 A·B · 반대 사례 — 모든 시대) · PL5 +2씩(G1 1990년부터 · G2 모든 시대)
   });
 
   it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 43/93 = 46.2% — PL5 G1·G2 +2. 그 전 41/91, 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {

@@ -34,6 +34,7 @@ import {
 import { lifeModeOf } from '../src/data/timingTable';
 import { startLife, chooserFor, type Strategy } from '../scripts/simulateLib';
 import { fnv } from './helpers/familyGolden';
+import { preRomancePool } from './helpers/preRomancePool';
 import { listRepoTextFiles, readRepoText } from './helpers/repoFiles';
 
 /**
@@ -55,7 +56,7 @@ function cellHash(gen: ProfileId, strategy: Strategy): string {
   const parts: string[] = [];
   for (let i = 1; i <= SEEDS; i++) {
     const seed = seedOf(i);
-    const r = playToEnd(startLife(seed, gen), chooserFor(strategy, seed));
+    const r = playToEnd(startLife(seed, gen), chooserFor(strategy, seed), preRomancePool()); // PL17-R 전 풀로 고정(얼린 값 불변)
     parts.push(JSON.stringify([r.state, r.counts, r.last]));
   }
   return fnv(parts.join('\n'));

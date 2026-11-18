@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EVENT_POOL } from '../src/data/events';
 import { FOCUS_TABLE } from '../src/data/focusTable';
-import { LOOKS_CONDITION_ALLOWED, condContextOf, isEventEligible, lintEvent, visibleChoiceGrid, visibleChoiceGridProblems, type Condition, type EventDef, type GameState } from '../src/core';
+import { LOOKS_CONDITION_ALLOWED, condContextOf, isEventEligible, lintEvent, playToEnd, visibleChoiceGrid, visibleChoiceGridProblems, type Condition, type EventDef, type GameState } from '../src/core';
 import { NEW_ALL, NEW_CARDS, NEW_CIRCLE, sample } from '../scripts/romanceReportLib';
-import { startLife } from '../scripts/simulateLib';
+import { chooserFor, startLife } from '../scripts/simulateLib';
+import { wiringGolden } from './helpers/familyL0f';
+import { preRomancePool } from './helpers/preRomancePool';
 
 vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: true }));
 
@@ -240,5 +242,36 @@ describe('맞춤 판에서는 실제로 나온다 (닫힌 사건이 아님)', ()
     const seen = (id: string): number => lives.filter((l) => l.seenNew[id] !== undefined).length;
     expect(seen(NEW_CIRCLE)).toBeGreaterThan(0);
     expect(seen('youth-date-budget')).toBeGreaterThan(0);
+  });
+});
+
+describe('맞춤 없는 판은 데이터 전과 바이트 동일 · 가족 배선은 「골든 + youth-hobby-circle」 (마스터 판단 2026-11-18)', () => {
+  it('맞춤 인생이 없는 판은 새 사건 넷을 뺀 풀과 넣은 풀에서 전 생애 결과(상태·카운트·마지막 틱)가 글자까지 같다 — 세대 3 × 시드 25 × 전략 2', () => {
+    const full = EVENT_POOL;
+    const pre = preRomancePool();
+    for (const gen of ['millennial', 'industrial', 'alpha'] as const) {
+      for (const strategy of ['auto', 'first'] as const) {
+        for (let i = 1; i <= 25; i++) {
+          const seed = i * 7919 + 13;
+          const s0 = startLife(seed, gen);
+          const { persona: _p, ...rest } = s0;
+          void _p;
+          const start = rest as GameState;
+          const a = playToEnd(start, chooserFor(strategy, seed), full);
+          const b = playToEnd(start, chooserFor(strategy, seed), pre);
+          expect(JSON.stringify([a.state, a.counts, a.last]), `${gen}/${strategy}/${seed}`).toBe(JSON.stringify([b.state, b.counts, b.last]));
+        }
+      }
+    }
+  });
+  // 같은 요구를 이미 잠그는 시험(이 시험과 별개): tests/rngSnapshot.test.ts · tests/familyHash.test.ts · tests/eligibilityGoldenBoundary.test.ts · tests/personaCondition.test.ts
+
+  it('가족 배선: 지금 풀의 배선은 얼린 골든(PL17-R 전 풀) + youth-hobby-circle의 has_partner 하나뿐이다', () => {
+    const now = wiringGolden(EVENT_POOL);
+    const was = wiringGolden();
+    for (const key of Object.keys(was)) {
+      const want = key === 'has_partner:set' ? [...was[key], 'youth-hobby-circle'].sort() : was[key];
+      expect(now[key], key).toEqual(want);
+    }
   });
 });

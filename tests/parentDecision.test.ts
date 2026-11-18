@@ -85,9 +85,9 @@ describe('T1 분류표 = 데이터 일치 (PD2 검증 ①②③④)', () => {
     expect(parentTableProblems(EVENT_POOL.events)).toEqual([]);
   });
 
-  it('① 청년 이상 62장(FM7a 「남은 한 분」 변형 4장 포함)은 표에 없다 (모두 본인) — 그리고 표 밖 이벤트도 19세 이상이면 throw하지 않는다', () => {
+  it('① 청년 이상 65장(FM7a 「남은 한 분」 변형 4장 + PL17-R 교제 카드 A·B·반대 사례 3장 포함)은 표에 없다 (모두 본인) — 그리고 표 밖 이벤트도 19세 이상이면 throw하지 않는다', () => {
     const adult = EVENT_POOL.events.filter((e) => isChoiceEvent(e) && !isPreAdultChoice(e));
-    expect(adult).toHaveLength(62);
+    expect(adult).toHaveLength(65) /* 62 + PL17-R +3(교제 카드 A·B · 반대 사례 — 모두 본인) */;
     for (const ev of adult) {
       expect(PARENT_DECISION_TABLE[ev.id], ev.id).toBeUndefined();
       for (const a of possibleAgesOf(ev)) expect(deciderOf(ev.id, a), `${ev.id}@${a}`).toBe('self');

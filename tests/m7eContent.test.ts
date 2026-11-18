@@ -421,6 +421,10 @@ describe('M7e-4 L02: 선택지 라벨의 어절은 5음절 이하 (번호 원 �
       'school-high-pick/vocational',
       'school-high-pick/athlete',
       'school-high-pick/exam',
+      // SPEC-018 PL17-R(결정 후속 265 Q9 — 문구 확정본, 7절 r2): 이야기부터(listen) · 이야기한다(both) · 한잔하자고(stay) — 모두 5음절(6음절 0). 라벨을 줄이지 않고 감시 목록에 더한다
+      'youth-two-news/listen',
+      'youth-two-news/both',
+      'youth-hobby-circle/stay',
     ].sort());
   });
 });

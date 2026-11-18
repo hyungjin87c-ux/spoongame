@@ -27,7 +27,6 @@ import {
   adultSlotsOf,
   childLeaveAgeOf,
   createInitialState,
-  eventPool,
   familyNamePool,
   familyScheduleOf,
   familyTables,
@@ -36,6 +35,7 @@ import {
   flagSettersOf,
   generateBirthFromSeed,
   namesApi,
+  type EventPool,
   type FamilyData,
   type FamilySchedule,
   type FamilyView,
@@ -45,6 +45,7 @@ import {
 } from '../../src/core';
 import { SIBLING_GAP, THIRD_PLUS_SPLIT } from '../../src/data/birthReportTable';
 import { fnv, spreadSeeds } from './familyGolden';
+import { preRomancePool } from './preRomancePool';
 
 /**
  * L0F 가족 골든의 표본·투영·직렬화 (SPEC-009 K6 직전, TODO 「L0F 가족 골든」 · FS2 예외 ①). 시험(`tests/familyGolden.test.ts`)과 다시 만드는 스크립트(`scripts/familyL0fGolden.ts`)가 같은 이 파일을 쓴다 —
@@ -251,8 +252,8 @@ export const WIRING_READS: ReadonlyArray<{ flag: string; kind: 'set' | 'req' }> 
   { flag: 'parents_gone', kind: 'set' },
 ];
 
-export function wiringGolden(): Record<string, string[]> {
-  const pool = eventPool();
+export function wiringGolden(pool: EventPool = preRomancePool()): Record<string, string[]> {
+  // 골든은 PL17-R(교제 카드·반대 사례 — `youth-hobby-circle`이 has_partner를 켠다) 전 풀의 배선이다 — 새 배선은 `romanceMeans.test.ts`가 「골든 + youth-hobby-circle」로 따로 잠근다
   const out: Record<string, string[]> = {};
   for (const { flag, kind } of WIRING_READS) out[`${flag}:${kind}`] = [...(kind === 'set' ? flagSettersOf(pool, flag) : flagRequirersOf(pool, flag))].sort();
   return out;
