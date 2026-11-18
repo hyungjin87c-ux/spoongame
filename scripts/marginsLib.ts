@@ -153,6 +153,13 @@ export const CARD_METRICS: readonly MarginMetric[] = [
  */
 export const TIME_P95_LIMIT_MIN = 41;
 
+/**
+ * 읽기 「높음」(느린 독자, 500자/분) 시대별 평균 시간 상한(분). **결정 후속 264(2026-11-18, 형진 님 「추천대로」): 40 → 40.5** — G2 「같은 해에 함께」(후속 255)로 판당 부모 카드
+ * 약 0.36장이 더해져 알파의 느린 독자 평균이 합친 4줄 39.82 ± 0.06분, 줄별 최대 40.15 ± 0.12분(시험 · 자동 성향 — 40분을 −1.2 SE 넘음)이 됐다(Codex CX-006-001).
+ * 세 시대 평균 상한 36 → 36.5분(후속 263 ②)과 같은 원인·같은 폭이고 내용은 줄이지 않는다. `tests/simulation.test.ts`의 「높음 평균 ≤ 40.5분」과 같은 값이다.
+ */
+export const READER_HIGH_LIMIT_MIN = 40.5;
+
 export const TIME_METRICS: readonly MarginMetric[] = [
   meanMetric('time-low', '시대별 모델 시간(분) ≥ 하한', `≥ ${ERA_TIME_BAND.low}분`, minutesOf, () => ERA_TIME_BAND.low, 'min'),
   meanMetric('time-high', '시대별 모델 시간(분) ≤ 상한', `≤ ${ERA_TIME_BAND.high}분`, minutesOf, () => ERA_TIME_BAND.high, 'max'),
@@ -173,7 +180,7 @@ export const TIME_METRICS: readonly MarginMetric[] = [
     limit: '≤ 45분',
     of: (lives) => ({ value: Math.max(...lives.map(minutesOf)), se: null, margin: null, digits: 1 }),
   },
-  meanMetric('time-reader-high', '읽기 「높음」(느린 독자) 평균 시간(분)', '≤ 40분', highMinutesOf, () => 40, 'max'),
+  meanMetric('time-reader-high', '읽기 「높음」(느린 독자) 평균 시간(분)', `≤ ${READER_HIGH_LIMIT_MIN}분`, highMinutesOf, () => READER_HIGH_LIMIT_MIN, 'max'),
 ];
 
 export const ALL_METRICS: readonly MarginMetric[] = [...CARD_METRICS, ...TIME_METRICS];

@@ -329,12 +329,13 @@ describe('시간 모델 (연도당 연출 시간 · 선택지 빈도 · 읽는 �
         expect(sum / SIM_PROFILES.length, '세 시대 평균(분)').toBeLessThanOrEqual(mode.timeMin.modelHigh);
       });
 
-      it('읽는 시간 수준별 보고 (판정 아님 — 사람 실측이 정한다): 낮음 < 중앙 < 높음 < 상한, 높음의 세 시대 평균이 40분을 넘지 않는다', () => {
+      it('읽는 시간 수준별 보고 (판정 아님 — 사람 실측이 정한다): 낮음 < 중앙 < 높음 < 상한, 높음의 시대별 평균이 40.5분을 넘지 않는다', () => {
         for (const era of SIM_PROFILES) {
           const r = reportsOf()[era];
           expect(r.minutes1xHigh.mean).toBeGreaterThan(r.minutes1x.mean);
           expect(r.minutes1xUpper.mean).toBeGreaterThan(r.minutes1xHigh.mean);
-          expect(r.minutes1xHigh.mean, `${era}: 높음(느린 독자) 평균(분)`).toBeLessThanOrEqual(40);
+          // 결정 후속 264(2026-11-18): 40 → 40.5 (scripts/marginsLib.ts#READER_HIGH_LIMIT_MIN과 같은 값 — G2 「같은 해에 함께」로 알파 느린 독자 평균이 39.82분, 줄별 최대 40.15분이 됐다, Codex CX-006-001)
+          expect(r.minutes1xHigh.mean, `${era}: 높음(느린 독자) 평균(분)`).toBeLessThanOrEqual(40.5);
         }
       });
 

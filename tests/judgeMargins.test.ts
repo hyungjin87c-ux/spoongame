@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LIFE_LENGTH_MODES, SENIOR_CHOICE_MEAN_MIN } from '../src/data/timingTable';
-import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, marginReport, propSe, meanSe } from '../scripts/marginsLib';
+import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, READER_HIGH_LIMIT_MIN, TIME_P95_LIMIT_MIN, marginReport, propSe, meanSe } from '../scripts/marginsLib';
 
 /**
  * 30분 모드 판정 임계의 여유 (LD-9, REV-003-M8-1 R-415, 마스터 결정 M-3 2026-10-20): 새 판정 지표의 임계는 **측정값에서 표준오차(SE) 3배 이상** 떨어져 있어야 한다.
@@ -48,17 +48,22 @@ import { ALL_METRICS, ERA_TIME_BAND, MARGIN_LINES, POOLED_LINE, marginReport, pr
  * 줄별 보고 줄(`lineOnly`, 이전 한계 0 SE)도 새 상한에서 줄 평균(최대 36.21분)까지 약 4 SE라 함께 뺐다.
  * 같은 측정에서 `읽기 「높음」(느린 독자) 평균 시간(분) / alpha`(한계 40분 그대로)가 합친 4줄 39.82분 · 2.7 SE로 상한 안이지만 3 SE 밑이고, 줄별 `판 시간 95% 분위 / alpha`(한계 41분 그대로)가
  * 시험 · 수동 흉내 1.9 SE · 시험 · 자동 성향 1.2 SE다(합친 4줄 4.8 SE). 이 둘은 결정 후속 263의 지시 목록 밖이라 **목록에 올리지 않았다** — 이 시험은 그 칸들로 실패하고, 처리안은 마스터에게 보고했다(ai-log/2026-11-17_SPEC-018_G2-dev.md 7절).
- * → 마스터 판단(2026-11-17, 결정 후속 251 ③ 전례 — 상한 안의 「3 SE 미만」은 보고로 돌린다): 둘을 `KNOWN_UNDER3`에 올렸다. 느린 독자 알파는 합친 판정 한계 1.5 SE · 줄별 0 SE(상한을 넘지 않음), 알파 95% 분위는 줄별 한계 1.5 SE. 상한 40·41분은 그대로이고 v0.6.1 통합 측정 뒤 형진 님께 다시 보고한다.
+ * → 마스터 판단(2026-11-17, 결정 후속 251 ③ 전례 — 상한 안의 「3 SE 미만」은 보고로 돌린다): 둘을 `KNOWN_UNDER3`에 올렸다. 알파 95% 분위는 줄별 `floor` 1.5(실제 여유 ≥ 0 SE = 41분 초과 판이 5%를 넘지 않음).
+ * **Codex CX-006-001 정정(2026-11-18, 결정 후속 264)**: 그때 느린 독자 알파 줄별 줄을 `floor` 0으로 넣어 「상한을 넘지 않음」이라고 적었지만, 줄별 판정은 실제 여유에 1.5 SE를 더해 비교하므로
+ * 실제로는 −1.5 SE까지 허용해 40분을 넘는 줄(시험 · 자동 성향 40.15 ± 0.12분, −1.22 SE)을 통과시켰다. 형진 님 결정 264로 느린 독자 상한이 40 → 40.5분(`READER_HIGH_LIMIT_MIN`)이 되어
+ * 합친 4줄(39.82 ± 0.06)은 약 11 SE, 가장 붙은 줄도 약 2.9 SE가 됐다 — 느린 독자 두 줄(합친·줄별)은 목록에서 뺐다. 줄별 예외의 실제 뜻은 아래 「줄별 예외의 실제 뜻」 시험이 고정한다.
  */
 const KNOWN_UNDER3: ReadonlyArray<{ metric: string; era: string; floor: number; lineOnly?: boolean }> = [
   { metric: '노년(65세+) 결정 카드 평균', era: 'alpha', floor: -7.0 },
   { metric: '노년(65세+) 결정 카드 평균', era: 'genx', floor: 1.5, lineOnly: true },
-  { metric: '읽기 「높음」(느린 독자) 평균 시간(분)', era: 'alpha', floor: 1.5 },
-  { metric: '읽기 「높음」(느린 독자) 평균 시간(분)', era: 'alpha', floor: 0, lineOnly: true },
   { metric: '판 시간 95% 분위 (41분 초과 판 ≤ 5%와 같은 뜻)', era: 'alpha', floor: 1.5, lineOnly: true },
 ];
-/** 합친 표본은 `floor`(알파 노년 −7.0 SE), 줄별 표본은 그보다 1.5 SE 더 넓은 잡음을 인정한다(줄 하나는 표본이 4분의 1이라 SE가 두 배다) */
+/** 합친 표본은 `floor`(알파 노년 −7.0 SE)를 실제 여유와 그대로 견준다. 줄별 표본은 그보다 `LINE_SLACK_SE`(1.5 SE) 더 넓은 잡음을 인정한다(줄 하나는 표본이 4분의 1이라 SE가 두 배다) */
 const isKnownUnder3 = (u: { metric: string; era: string; margin: number }, line = false): boolean => KNOWN_UNDER3.some((k) => (line || k.lineOnly !== true) && k.metric === u.metric && k.era === u.era && u.margin >= k.floor);
+/** 줄별 예외의 덧여유: 줄별 칸은 실제 여유에 이만큼 더해 `floor`와 견준다 — `floor` 1.5 = 실제 여유 ≥ 0 SE(임계를 넘지 않음), `floor` 0 = 실제 −1.5 SE(임계를 넘는 줄도 통과)이다 */
+const LINE_SLACK_SE = 1.5;
+/** 줄별 경보: 줄별(1000판) 칸이 2 SE 아래로 내려갔고 보고한 줄별 예외로도 덮이지 않는다 */
+const lineAlert = (u: { metric: string; era: string; margin: number }): boolean => u.margin < 2 && !isKnownUnder3({ ...u, margin: u.margin + LINE_SLACK_SE }, true);
 
 describe('30분 모드 판정 임계는 모든 표본 줄에서 측정값과 3 SE 이상 떨어져 있다 (시대 × 전략 × 시드 줄: 시험 · sim:1000)', () => {
   it('새 판정 지표 전부(카드 평균 하·상한, 하드−1↑, 5% 분위, 70세+ 중 20장 미만, 노년, 영유아, 시대별 시간 하·상한, 95% 분위, 느린 독자) + 세 시대 평균 시간의 여유가 합친 4줄 표본으로 3 SE 이상이다 (줄별 값은 보고)', () => {
@@ -69,7 +74,7 @@ describe('30분 모드 판정 임계는 모든 표본 줄에서 측정값과 3 S
     // 보고한 차이는 아직 3 SE 미만이어야 한다(여유가 생기면 목록에서 뺀다)
     for (const k of KNOWN_UNDER3.filter((x) => x.lineOnly !== true)) expect(report.under3.some((u) => u.metric === k.metric && u.era === k.era), `${k.metric} / ${k.era}가 3 SE 안으로 들어왔다 — KNOWN_UNDER3에서 뺀다`).toBe(true);
     // 줄별(1000판) 3 SE 미만 칸은 보고만 한다 — 다만 2 SE 아래로 내려가면(모집단 값이 임계에 닿아 간다는 뜻) 알린다
-    expect(report.lineUnder3.filter((u) => u.margin < 2 && !isKnownUnder3({ ...u, margin: u.margin + 1.5 }, true)).map((u) => `${u.metric} / ${u.era} / ${u.line} (${u.margin.toFixed(1)} SE)`)).toEqual([]);
+    expect(report.lineUnder3.filter(lineAlert).map((u) => `${u.metric} / ${u.era} / ${u.line} (${u.margin.toFixed(1)} SE)`)).toEqual([]);
     // 공허 통과 방지: 줄별 칸은 시대 3 × 줄 4 = 12개 + 합친 칸 3개이고, 합친 칸은 네 줄의 판을 모두 담는다
     expect(report.cells.filter((c) => c.line.id !== POOLED_LINE.id)).toHaveLength(12);
     const pooled = report.cells.filter((c) => c.line.id === POOLED_LINE.id);
@@ -78,6 +83,36 @@ describe('30분 모드 판정 임계는 모든 표본 줄에서 측정값과 3 S
     expect(ALL_METRICS.length).toBeGreaterThanOrEqual(12);
     expect(MARGIN_LINES.map((l) => l.id)).toEqual(['test-random', 'test-auto', 'sim-manual', 'sim-auto']);
   }, 300_000);
+
+  it('줄별 예외의 실제 뜻 (Codex CX-006-001): 줄별 예외는 임계를 넘는 줄(실제 여유 < 0 SE)을 통과시키지 않는다 — 0은 허용, −0.01은 경보', () => {
+    // 지금 줄별 예외는 모두 「임계를 넘지 않음」까지다. 임계를 넘는 줄을 보고로 돌리려면(floor < 1.5) 형진 님 결정과 이 시험을 함께 바꾼다
+    for (const k of KNOWN_UNDER3.filter((x) => x.lineOnly === true)) expect(k.floor, `${k.metric} / ${k.era}`).toBeGreaterThanOrEqual(LINE_SLACK_SE);
+    const p95 = '판 시간 95% 분위 (41분 초과 판 ≤ 5%와 같은 뜻)';
+    const senior = '노년(65세+) 결정 카드 평균';
+    expect(lineAlert({ metric: p95, era: 'alpha', margin: 0 })).toBe(false);
+    expect(lineAlert({ metric: p95, era: 'alpha', margin: -0.01 })).toBe(true);
+    expect(lineAlert({ metric: senior, era: 'genx', margin: 0 })).toBe(false);
+    expect(lineAlert({ metric: senior, era: 'genx', margin: -0.01 })).toBe(true);
+    // 느린 독자에는 예외가 없다: 줄별 2 SE 미만이면 바로 경보 — CX-006-001의 줄(이전 상한 40분에서 −1.22 SE)은 경보다
+    const reader = '읽기 「높음」(느린 독자) 평균 시간(분)';
+    expect(lineAlert({ metric: reader, era: 'alpha', margin: -1.220990917 })).toBe(true);
+    expect(lineAlert({ metric: reader, era: 'alpha', margin: 1.99 })).toBe(true);
+    expect(lineAlert({ metric: reader, era: 'alpha', margin: 2 })).toBe(false);
+    // 예외는 적힌 시대에만 닿는다
+    expect(lineAlert({ metric: p95, era: 'genx', margin: 0.5 })).toBe(true);
+    // 합친 판정은 줄별 예외를 쓰지 않고, 합친 예외는 floor를 덧여유 없이 그대로 견준다
+    expect(isKnownUnder3({ metric: p95, era: 'alpha', margin: 2.9 })).toBe(false);
+    expect(isKnownUnder3({ metric: senior, era: 'alpha', margin: -7.0 })).toBe(true);
+    expect(isKnownUnder3({ metric: senior, era: 'alpha', margin: -7.01 })).toBe(false);
+    // 지표 이름이 바뀌면 예외가 조용히 빠지지 않게: 목록의 지표는 모두 실제 지표 이름이다
+    const labels = new Set(ALL_METRICS.map((m) => m.label));
+    for (const k of KNOWN_UNDER3) expect(labels.has(k.metric), k.metric).toBe(true);
+  });
+
+  it('느린 독자 상한 40.5분 · 95% 분위 한도 41분 (결정 후속 264 · SPEC-011 Q1 — tests/simulation.test.ts와 같은 값)', () => {
+    expect(READER_HIGH_LIMIT_MIN).toBe(40.5);
+    expect(TIME_P95_LIMIT_MIN).toBe(41);
+  });
 
   it('임계 값 자체: 카드 평균 구간 23.3~29, 노년 하한 3.95 / 4.72 / 5.0, 시대별 시간 25.5~37.5분 (바뀌면 위 여유 시험과 timingTable.ts 주석의 계산을 함께 다시 한다)', () => {
     expect(LIFE_LENGTH_MODES.short30.cards.meanLow).toBe(23.3);
