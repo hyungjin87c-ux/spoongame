@@ -165,7 +165,7 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯이 
   const tops = await page.evaluate(() => ['ending-stats', 'ending-timeline', 'rebirth'].map((id) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect().top + window.scrollY));
   expect(tops).toEqual([...tops].sort((a, b) => a - b));
 
-  // 금지된 것: 등급명·느낌표·이모지, 링크·이미지·공유, 가로 넘침. 버튼은 "다시 태어나기"와 머리의 로고(첫 화면으로, SPEC-016 H1) 둘뿐
+  // 금지된 것: 등급명·느낌표·이모지, 링크·이미지·공유, 가로 넘침. 버튼은 "다시 태어나기"·머리의 로고(첫 화면으로, SPEC-016 H1)·「이 삶의 이름들 보기」(SPEC-022 EC1) 셋뿐
   const text = await endingTextWithoutChip(page);
   expect(text).not.toMatch(FORBIDDEN);
   // 수저 칩도 없다 — 출발선 범례가 삭제돼 엔딩에는 등급명을 말하는 곳이 없다
@@ -173,8 +173,9 @@ test('자동 모드로 사망까지 → 엔딩 화면: 연표·최종 스탯이 
   expect(text).not.toMatch(/공유|SNS|복사|이미지로 저장/);
   // M4: 공통 헤더의 로고·얼굴 그림·아이콘이 svg라 svg는 세지 않는다. 링크·이미지·캔버스·소리·영상은 여전히 0.
   expect(await page.locator('a, img, canvas, audio, video').count()).toBe(0);
-  // SPEC-016 H1(v0.5.1): 엔딩 머리의 로고가 「첫 화면으로」 버튼이 됐다(누르면 확인 단계 — e2e/logo-home.spec.ts). 그 밖의 버튼(공유·복사 등)은 여전히 없다 — 두 버튼을 이름으로 센다
-  await expect(page.getByRole('button')).toHaveCount(2);
+  // SPEC-016 H1(v0.5.1): 엔딩 머리의 로고가 「첫 화면으로」 버튼이 됐다(누르면 확인 단계 — e2e/logo-home.spec.ts). 그 밖의 버튼(공유·복사 등)은 여전히 없다. SPEC-022 EC1로 진입 버튼이 하나 늘어 셋이다 — 보호하던 요구는 「버튼은 logo-home·ending-credits-open·rebirth 셋뿐」을 testid로 세어 그대로 지킨다
+  await expect(page.getByRole('button')).toHaveCount(3);
+  await expect(page.getByRole('button').and(page.locator('[data-testid="logo-home"], [data-testid="ending-credits-open"], [data-testid="rebirth"]'))).toHaveCount(3);
   await expect(page.getByTestId('logo-home')).toBeVisible();
   await expect(page.getByRole('button').and(page.getByTestId('rebirth'))).toHaveCount(1);
   expect(await noHorizontalOverflow(page)).toBe(true);
@@ -484,6 +485,8 @@ test('키보드만으로 엔딩 → 다시 태어나기: Tab으로 버튼에 닿
     await expect(page.getByTestId('ending-screen')).toBeVisible();
     await expect(page.getByTestId('rebirth')).toBeEnabled();
     await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('H1'); // 제목에 포커스
+    await page.keyboard.press('Tab'); // SPEC-022 EC1: 사망·선택 카드 아래 「이 삶의 이름들 보기」 진입 버튼이 첫 정지점이다(보호하던 요구 — 연표·스탯은 Tab 정지점이 아니다 — 는 그대로)
+    expect(await activeTestId(page)).toBe('ending-credits-open');
     await page.keyboard.press('Tab'); // 연표는 Tab 정지점이 아니다: 다음이 바로 버튼
     expect(await activeTestId(page)).toBe('rebirth');
     await page.keyboard.press(key);

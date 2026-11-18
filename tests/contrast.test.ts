@@ -18,6 +18,7 @@ const tokensCss = await readText('../src/styles/tokens.css');
 const docCss = await readText('../src/styles/doc.css');
 const titleCss = await readText('../src/styles/title.css');
 const dashCss = await readText('../src/styles/dash.css');
+const creditsCss = await readText('../src/styles/credits.css');
 const blocks = readThemeBlocks(tokensCss);
 
 /** 규칙 하나의 본문 (주석을 뺀 CSS에서) */
@@ -146,6 +147,11 @@ describe('title.css·dash.css의 opacity 규칙 잠금 (D-26, designer 제안 �
       expect(rules.length).toBeGreaterThan(0);
     });
   }
+
+  it('credits.css(SPEC-022 EC1 「이 삶의 이름들」, 지연 CSS)에는 opacity 규칙이 없다 — v0.6.1의 이 화면에는 페이드·흐림이 없고(가림 = 글자 + 단추, 멈춤 = 단추 글자), 모든 글자는 토큰 색 그대로 대비 표(contrast-report.md)의 쌍이다. 불투명도 규칙이 생기면 이 시험이 깨지므로 표에 이유와 함께 올린다', () => {
+    expect(creditsCss.length).toBeGreaterThan(1000); // 공허 통과 방지
+    expect(readOpacityRules(creditsCss)).toEqual([]);
+  });
 
   it('조용히 끼어드는 규칙을 실제로 잡는다(공허 통과 방지): 합성 CSS에 새 불투명도 규칙을 더하면 표에 없는 규칙으로 읽힌다', () => {
     const rules = readOpacityRules(`${dashCss}

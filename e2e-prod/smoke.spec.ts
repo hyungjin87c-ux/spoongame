@@ -17,11 +17,12 @@ import { NO_CONTAINER_QUERIES, WITH_CONTAINER_QUERIES, cssAppliedBy } from '../t
 
 const GAME_KEY = 'suzeo-game:save';
 /** 개발 전용 탐침 쿼리 이름. 제품 번들에는 문자열째 없어야 한다. */
-const PROBES = ['__timescale', '__guard', '__crash', '__quota', '__exit', '__playTime'] as const;
+// SPEC-022 EC1: `__creditsThrow`(이 삶의 이름들 오류 경계 탐침)가 더해졌고, `__spoon`(EC2 11항)은 v0.6.1 제품 번들에 없다는 것만 본다 — 첫 덩어리뿐 아니라 이 삶의 이름들 버튼을 누른 뒤 받는 지연 덩어리 응답 본문도 아래 엔딩 시험이 본다
+const PROBES = ['__timescale', '__guard', '__crash', '__quota', '__exit', '__playTime', '__creditsThrow', '__spoon'] as const;
 /** 개발 전용 하니스가 window에 다는 이름(harness/layout.tsx). 하니스가 번들에 섞이면 이 문자열이 보인다 (R-071). */
 const HARNESS_GLOBALS = ['__layout'] as const;
 /** 하니스 페이지에만 있는 문구 (harness/guard.html · harness/layout.html의 title) */
-const HARNESS_MARKERS = ['GuardedButton 하니스', '선택지 레이아웃 하니스', '/harness/guard.tsx', '/harness/layout.tsx'] as const;
+const HARNESS_MARKERS = ['GuardedButton 하니스', '선택지 레이아웃 하니스', '이 삶의 이름들 하니스', '/harness/guard.tsx', '/harness/layout.tsx', '/harness/credits.tsx'] as const;
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -196,6 +197,13 @@ test('프로덕션 번들: 다크 모드 버튼은 수동 선택을 저장해 �
 test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되풀이해 사망(엔딩 화면)까지 가고, 다시 태어나기로 새 판의 첫 화면까지 간다 — 타이머를 기다리지 않고 제품 번들에서 엔진 전체가 돈다 (R-051, M5)', async ({ page }) => {
   test.setTimeout(180_000);
   const errors = trackErrors(page);
+  // SPEC-022 EC1: 첫 화면부터 엔딩 회고가 뜰 때까지, 그리고 이 삶의 이름들 버튼을 누른 뒤 받은 js·css 응답 본문을 모은다(덩어리 이름이 아니라 본문 표지로 가린다)
+  const bodies: Array<{ url: string; type: 'js' | 'css'; body: Promise<string> }> = [];
+  page.on('response', (res) => {
+    const u = new URL(res.url());
+    const m = /\.(js|css)$/.exec(u.pathname);
+    if (m !== null && u.origin === new URL(page.url()).origin) bodies.push({ url: res.url(), type: m[1] as "js" | "css", body: res.text().catch(() => "") });
+  });
   await page.goto('/');
   await toLifeScreen(page);
 
@@ -299,6 +307,34 @@ test('프로덕션 번들: "다음 결정으로" → 첫 선택지 선택을 되
   })).replace(/\s+/g, ' ');
   expect(endingText).not.toMatch(/(흙|동|은|금|다이아)\s*수저|다이아|!/);
   await expect(page.locator('.ending .grade')).toHaveCount(0);
+
+  // SPEC-022 EC1 「이 삶의 이름들」(제품 번들): 누르기 전까지 받은 모든 js·css 응답 본문에 이 화면의 표지가 0이고, 연타 뒤 그 표지를 담은 js 응답이 1(css 덩어리도 1)이다.
+  // 열고 닫는 동안 오류가 없고 저장 바이트가 같으며, 받은 js 응답 본문에 개발 탐침(__creditsThrow·__spoon)이 없다. 수저 장면·등급명은 이 화면 전체 글에 없다(v0.6.1)
+  const CREDITS_MARKS = ['기록에 남은 선택', '의 생애 기록을 마쳤습니다.'] as const;
+  const CREDITS_CSS_MARK = '.credits-bar';
+  const resolved = await Promise.all(bodies.map(async (b) => ({ ...b, text: await b.body })));
+  for (const b of resolved) {
+    for (const mark of CREDITS_MARKS) expect(b.text, `${b.url}에 이 삶의 이름들 표지 「${mark}」가 있다(버튼 전)`).not.toContain(mark);
+    expect(b.text, `${b.url}(버튼 전)에 .credits-bar가 있다`).not.toContain(CREDITS_CSS_MARK);
+  }
+  const seqBefore = bodies.length;
+  const raw0 = await page.evaluate((k) => localStorage.getItem(k), GAME_KEY);
+  await expect(page.getByTestId('ending-credits-open')).toBeEnabled();
+  await page.getByTestId('ending-credits-open').dblclick();
+  await expect(page.getByTestId('credits-screen')).toBeVisible();
+  await expect(page.getByTestId('credits-name')).toBeFocused();
+  const after = await Promise.all(bodies.slice(seqBefore).map(async (b) => ({ ...b, text: await b.body })));
+  expect(after.filter((b) => b.type === 'js' && CREDITS_MARKS.every((m) => b.text.includes(m))), '이 삶의 이름들 표지를 담은 js 응답은 버튼 뒤에 하나').toHaveLength(1);
+  expect(after.filter((b) => b.type === 'css' && b.text.includes(CREDITS_CSS_MARK)), 'credits.css 덩어리는 버튼 뒤에 하나').toHaveLength(1);
+  for (const b of after.filter((x) => x.type === 'js')) for (const probe of ['__creditsThrow', '__spoon']) expect(b.text, `${b.url}에 ${probe}가 있다`).not.toContain(probe);
+  const creditsText = (await page.getByTestId('credits-screen').innerText()).replace(/\s+/g, ' ');
+  expect(creditsText).not.toMatch(/(흙|동|은|금|다이아)\s*수저|다이아/);
+  await expect(page.getByTestId('credits-spoon')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('credits-screen')).toHaveCount(0);
+  await expect(page.getByTestId('ending-credits-open')).toBeFocused();
+  expect(await page.evaluate((k) => localStorage.getItem(k), GAME_KEY), '이 삶의 이름들을 여닫아도 저장 바이트가 같다').toBe(raw0);
+  await expect(page.getByTestId('error-screen')).toHaveCount(0);
 
   // 다시 태어나기: 새 시드의 새 판, 첫 화면(기본 지금 세상·약 30분), 설정(8배) 유지, 포커스는 새 화면 제목
   const settingsBefore = await page.evaluate(() => localStorage.getItem('suzeo-game:settings'));
@@ -422,7 +458,7 @@ test('제품 번들 파일에 개발 탐침 문자열이 없고, 개발 전용 �
   }
   // R-071: 하니스 두 페이지(guard.html · layout.html) 모두 제공되지 않는다. vite preview는 없는 경로에 index.html을 돌려주므로,
   // 404이거나 앱의 index.html과 똑같은 내용이면 "제공되지 않음"이다 — 하니스 문구·스크립트 경로는 어디에도 없어야 한다.
-  for (const path of ['/harness/guard.html', '/harness/layout.html']) {
+  for (const path of ['/harness/guard.html', '/harness/layout.html', '/harness/credits.html']) {
     const res = await request.get(path);
     const text = await res.text();
     for (const marker of HARNESS_MARKERS) expect(text, `${path}에 하니스 문구 "${marker}"가 있다`).not.toContain(marker);

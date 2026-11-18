@@ -718,6 +718,15 @@ html.sheet-open { overflow: hidden; padding-right: var(--scrollbar-w, 0px); }
 @media (forced-colors: active) {
   .ending__gentle { border-left-color: CanvasText; }
 }
+/* 「이 삶의 이름들」 진입부(SPEC-022 EC1 1항, design-system.md 21-5 ②): 카드가 아니라 선 둘 사이의 띠. 단추는 기본 문구를 보이지 않는 자리잡이로 겹쳐 두어 받는 중·실패에도 자리·크기가 같다(640px 미만 전폭) */
+.ending__names { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-6) 0; border-top: 2px solid var(--c-brand); border-bottom: 1px solid var(--c-border); }
+.ending__names-title { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: var(--lh-snug); color: var(--c-brand); }
+.ending__names-open { display: inline-grid; inline-size: 100%; }
+.ending__names-open > span { grid-area: 1 / 1; }
+.ending__names-open > span:first-child { visibility: hidden; }
+.ending__names-fail { margin: 0; font-size: var(--fs-sm); }
+@media (min-width: 640px) { .ending__names-open { inline-size: auto; min-inline-size: 12em; } }
+@media (forced-colors: active) { .ending__names { border-color: CanvasText; } }
 
 /* ---------- SPEC-004 GM4: 엔딩 머리의 세대 표기 (GS9·GD2 — docs/design/mockups/gm3/gm3.css 「엔딩 머리」를 옮겼다) ----------
    머리 이름 아래 한 줄: 「{세대} · {연도}년생」(연도가 드러나는 자리) — 시나리오 줄(PJ4)과 「같은 사건, 다른 자리」 카드(RG4)는 SPEC-004의 다음 단계다. */

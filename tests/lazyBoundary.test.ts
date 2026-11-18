@@ -93,6 +93,14 @@ const HEAVY = [
   'src/data/eraWindows/index.ts',
   'src/data/eraWindows/d1940.ts',
   'src/data/eraWindows/d2020.ts',
+  // 「이 삶의 이름들」 덩어리(SPEC-022 EC1 9항): 화면·줄 모델·허용 목록·고정 문구·자동 흐름·지연 CSS는 회고의 버튼을 누른 뒤에만 받는다. 로더(src/credits/loader.ts)만 첫 덩어리에 있다
+  'src/credits/CreditsScreen.tsx',
+  'src/credits/model.ts',
+  'src/credits/allowlist.ts',
+  'src/credits/text.ts',
+  'src/credits/timing.ts',
+  'src/credits/useCreditsFlow.ts',
+  'src/styles/credits.css',
 ] as const;
 
 describe('앱 진입점(main.tsx)의 정적 import 그래프 (MG8)', () => {
@@ -133,12 +141,30 @@ describe('앱 진입점(main.tsx)의 정적 import 그래프 (MG8)', () => {
         if (e.isDirectory()) walk(`${p}/`);
         else if (/\.(ts|tsx)$/.test(p) && p !== 'src/data/familyArtLoader.ts') {
           const code = fs.readFileSync(at(`${ROOT}${p}`), 'utf-8').replace(/\/\*[^]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-          if (/loadFamilyArt\(|loadEraDecade\(/.test(code)) callers.push(p);
+          if (/\bloadFamilyArt\b|\bloadEraDecade\b/.test(code)) callers.push(p); // 호출뿐 아니라 함수를 값으로 넘기는 사용(`.map(loadEraDecade)`)도 잡는다
         }
       }
     };
     walk('src/');
-    expect(callers).toEqual(['src/ui/scene/useFamilyArt.ts']);
+    // SPEC-022 EC1: 「이 삶의 이름들」 로더(회고의 버튼을 누른 뒤에만 부른다) 파일 하나가 늘었다 — 보호하던 요구(첫 화면·유휴 중 미리 받기 없음, main.tsx 정적 그래프에 닿지 않음)는 그대로다
+    expect(callers.sort()).toEqual(['src/credits/loader.ts', 'src/ui/scene/useFamilyArt.ts']);
+  });
+
+  it('「이 삶의 이름들」 로더(src/credits/loader.ts)는 동적 import()로만 화면 덩어리를 부르고, 로더를 부르는 곳은 회고 화면(EndingScreen.tsx)뿐이다 (SPEC-022 EC1 9항)', () => {
+    const source = fs.readFileSync(at(`${ROOT}src/credits/loader.ts`), 'utf-8');
+    expect(staticImports(source).filter((p) => p.includes('CreditsScreen') || p.includes('model') || p.includes('allowlist'))).toEqual([]);
+    expect(source).toMatch(/import\('\.\/CreditsScreen'\)/);
+    const callers: string[] = [];
+    const walk = (dir: string): void => {
+      for (const e of fs.readdirSync(at(`${ROOT}${dir}`), { withFileTypes: true })) {
+        const p = `${dir}${e.name}`;
+        if (e.isDirectory()) walk(`${p}/`);
+        else if (/\.(ts|tsx)$/.test(p) && p !== 'src/credits/loader.ts' && /credits\/loader/.test(fs.readFileSync(at(`${ROOT}${p}`), 'utf-8').replace(/\/\*[^]*?\*\//g, '').replace(/\/\/.*$/gm, ''))) callers.push(p);
+      }
+    };
+    walk('src/');
+    expect(callers).toEqual(['src/screens/EndingScreen.tsx']);
+    expect(graph.has('src/credits/loader.ts'), '로더는 첫 덩어리에 있다').toBe(true);
   });
 
   it('src 안에서 installAll.ts를 부르는 파일이 없다 — 시험·스크립트·하니스 전용이다', () => {

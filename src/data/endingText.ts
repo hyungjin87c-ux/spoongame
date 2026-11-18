@@ -127,3 +127,17 @@ export const ENDING_HOME_ASK = {
   yes: '첫 화면으로 나가기',
   no: '계속 보기',
 } as const;
+
+/**
+ * 「이 삶의 이름들」 진입부·머리 띠 화면 이름·오류 문구 (SPEC-022 EC1 1·9항, docs/design/copy.md 22-1·22-2절 — 글자 그대로). 누르기 전의 회고 화면에 보이므로 첫 덩어리 쪽 상수다.
+ * 열린 화면의 나머지 문구는 버튼을 누른 뒤 받는 덩어리(`src/credits/text.ts`)에 있다. 받는 중·다시 시도 글자는 첫 화면과 같은 `TITLE_TEXT.loading`·`loadRetry`를 쓴다.
+ */
+export const CREDITS_ENTRY_TEXT = {
+  title: '이 삶의 이름들',
+  note: '이름과 시간을 다시 펼칩니다.',
+  open: '이 삶의 이름들 보기',
+  /** 덩어리 로드 실패·줄 모델·렌더 예외 공통 — 원인을 단정하지 않는다 */
+  fail: '이 삶의 이름들을 펼치지 못했습니다. 생애 기록은 그대로 있습니다.',
+  /** 머리 띠(`SiteHead`)의 화면 이름 */
+  headName: '이름과 시간',
+} as const;

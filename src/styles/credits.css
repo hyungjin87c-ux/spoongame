@@ -1,0 +1,91 @@
+/* ============================================================================
+   「이 삶의 이름들」 화면 (SPEC-022 EC1 8항 · docs/design/design-system.md 21절 — 시안 docs/design/codex/DSN-001-ending-credits/mockups/credits-2.css)
+   버튼을 누른 뒤에 받는 **지연 CSS 덩어리**다(`main.tsx`가 아니라 `src/credits/CreditsScreen.tsx`가 import한다). 한 번 받으면 문서에 남아 회고와 다음 판 화면에도 걸리므로
+   **모든 규칙은 컨테이너 클래스 `.credits` 아래**로 한정하고 새 클래스는 `credits-` 접두어를 쓴다(전역 클래스 이름과 겹치지 않는다 — tests/fonts.test.tsx가 잠근다).
+   새 색·글꼴·그림·불투명도·전환·애니메이션이 없다 — `tokens.css`의 토큰만 쓴다(강제 색상의 시스템 색 낱말 제외). 바탕·글꼴·낱말 끊김·초점 링은 바깥 `.page`가 물려준다.
+   ============================================================================ */
+
+/* ---------- 문서 ---------- */
+.credits .credits-frame { container: credits-frame / inline-size; }
+.credits .credits-doc { max-width: var(--w-page); margin: 0 auto; padding: var(--sp-8) var(--sp-6) 0; }
+.credits .credits-who { container: credits-who / inline-size; margin-bottom: var(--sp-10); }
+.credits .credits-chapters { min-width: 0; }
+.credits .credits-kicker { margin: 0; font-size: var(--fs-sm); font-weight: var(--fw-regular); line-height: var(--lh-body); color: var(--c-text-3); }
+.credits .credits-name { margin: var(--sp-4) 0; font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: var(--lh-tight); color: var(--c-brand); }
+@supports (width: 1cqi) {
+  .credits .credits-name { font-size: max(var(--fs-2xl), min(var(--fs-display), calc(100cqi / var(--title-chars, 6)))); }
+}
+.credits .credits-years { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
+.credits .credits-born { margin-top: var(--sp-5); color: var(--c-text-2); }
+.credits .credits-gentle { margin-top: var(--sp-5); font-size: var(--fs-sm); color: var(--c-text-3); }
+
+/* 장: 아래 안쪽 여백 + 1px 선 + 아래 바깥 여백 — 장 제목이 구획을 말한다 */
+.credits .credits-chapter { padding-bottom: var(--sp-9); margin-bottom: var(--sp-9); border-bottom: 1px solid var(--c-border); }
+.credits .credits-chapter > h2 { margin-bottom: var(--sp-7); font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: var(--lh-snug); color: var(--c-brand); }
+
+/* 명단: 많아야 두 칸, 칸이 7em보다 좁아지면 한 칸. 긴 이름은 줄바꿈하고 줄임표·줄 수 자르기를 쓰지 않는다 */
+.credits .credits-roll { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(7em, calc((100% - var(--sp-6)) / 2))), 1fr)); gap: var(--sp-6); }
+.credits .credits-person { min-width: 0; }
+.credits .credits-role { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); color: var(--c-text-3); }
+.credits .credits-person-name { display: block; font-size: var(--fs-lg); font-weight: var(--fw-regular); }
+
+/* 기록 줄 */
+.credits .credits-record + .credits-record { margin-top: var(--sp-8); }
+.credits .credits-meta { margin-bottom: var(--sp-3); font-size: var(--fs-sm); color: var(--c-text-3); }
+.credits .credits-q { margin: var(--sp-3) 0 var(--sp-2); font-size: var(--fs-lg); font-weight: var(--fw-bold); line-height: var(--lh-snug); }
+.credits .credits-pick { margin: var(--sp-3) 0 var(--sp-2); color: var(--c-text-2); }
+.credits .credits-result { line-height: var(--lh-body); }
+
+/* 가림 줄: 글자(안내 + 분류) + 단추 — 점선·회색 상자·흐림을 쓰지 않는다. 단추가 안내와 원문 사이에 있어 펼쳐도 자리가 변하지 않는다 */
+.credits .credits-veil { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
+.credits .credits-veil-lead { color: var(--c-text-2); }
+.credits .credits-veil-btn { min-height: var(--hit); font-weight: var(--fw-regular); }
+.credits .credits-veil-body { margin-top: var(--sp-3); }
+
+/* 끝 장 */
+.credits .credits-end { padding: var(--sp-7) 0 var(--sp-10); text-align: center; }
+.credits .credits-end-name { margin: var(--sp-5) 0; font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: var(--lh-snug); color: var(--c-brand); }
+.credits .credits-end-line { color: var(--c-text-2); }
+.credits .credits-end-actions { display: flex; flex-direction: column; gap: var(--sp-3); max-width: 20em; margin: var(--sp-7) auto 0; }
+.credits .credits-end-actions .btn { white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2); }
+
+/* 끝 여백 = 잰 띠 높이(--bar-h, ui/barRelease.ts) — 끝 장의 단추가 띠 위에 다 보인다. 띠가 풀리면 없다 */
+.credits .credits-end-space { height: calc(var(--bar-h, 112px) + var(--sp-2)); }
+.credits[data-bar='released'] .credits-end-space { display: none; }
+
+/* ---------- 조작 띠: DOM은 문서 앞, 화면에서는 아래에 고정. 작은 뷰포트 높이의 절반을 넘으면 고정을 풀고 DOM 자리(머리 띠 아래)에 놓인다 ---------- */
+.credits .credits-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-bar); padding: var(--sp-2) var(--gutter); background: var(--c-bg); box-shadow: var(--shadow-bar); }
+.credits[data-bar='released'] .credits-bar { position: static; box-shadow: 0 1px 0 var(--c-border-strong); }
+.credits .credits-bar-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); max-width: var(--w-page); margin: 0 auto; }
+.credits .credits-bar-flow, .credits .credits-bar-nav { display: flex; flex-wrap: wrap; flex: 1 1 100%; gap: var(--sp-2); }
+.credits .credits-bar-row .btn { flex: 1 1 auto; min-width: min-content; white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2); }
+
+/* ---------- 오류 화면(덩어리 로드 밖 — 줄 모델·렌더 예외): 제목 → 문구 → 단추 둘 ---------- */
+.credits .credits-fail { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-4); max-width: var(--w-doc); margin: 0 auto; padding: var(--sp-9) var(--sp-6); }
+.credits .credits-fail-title { font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: var(--lh-snug); color: var(--c-brand); }
+.credits .credits-fail-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+.credits .credits-fail-actions .btn { flex: 1 1 auto; white-space: normal; word-break: keep-all; overflow-wrap: normal; padding-block: var(--sp-2); }
+
+/* ---------- 넓은 화면(컨테이너 폭 ≥ 60em): 두 단 — 이름이 읽는 동안 머문다. em 문턱이라 글자를 키우면 함께 커져 한 단이 된다 ---------- */
+@container credits-frame (min-width: 60em) {
+  .credits .credits-doc { display: grid; grid-template-columns: 1fr 2fr; gap: var(--sp-10); padding: var(--sp-10) var(--sp-8) 0; }
+  .credits .credits-who { position: sticky; top: var(--sp-10); align-self: start; margin-bottom: 0; }
+  .credits .credits-born { max-width: 18em; margin-top: var(--sp-7); }
+  .credits .credits-chapters { max-width: var(--w-doc); }
+  .credits .credits-chapter { padding-bottom: var(--sp-10); margin-bottom: var(--sp-10); }
+  .credits .credits-roll { grid-template-columns: repeat(auto-fit, minmax(min(100%, max(7em, calc((100% - var(--sp-8)) / 2))), 1fr)); column-gap: var(--sp-8); }
+  .credits .credits-person-name { font-size: var(--fs-xl); }
+}
+
+@media (min-width: 640px) {
+  .credits .credits-bar { padding-inline: var(--sp-8); }
+  .credits .credits-bar-flow, .credits .credits-bar-nav { flex: 0 1 auto; }
+  .credits .credits-bar-nav { margin-inline-start: auto; }
+  .credits .credits-bar-row .btn { flex: 0 1 auto; }
+}
+
+/* ---------- 강제 색상: 그림자가 사라지므로 띠의 선을 시스템 색 테두리로 ---------- */
+@media (forced-colors: active) {
+  .credits .credits-bar { border-top: 1px solid CanvasText; }
+  .credits[data-bar='released'] .credits-bar { border-top: 0; border-bottom: 1px solid CanvasText; }
+}

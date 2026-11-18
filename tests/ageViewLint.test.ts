@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 /**
- * 나이 표시는 함수 한 곳만 거친다 (SPEC-019): 화면 코드(`src/screens`·`src/ui`·`src/data/*Text.ts`)가 사람의 나이에 「세」·「살」을 **바로** 붙이면
+ * 나이 표시는 함수 한 곳만 거친다 (SPEC-019): 화면 코드(`src/screens`·`src/ui`·`src/credits`·`src/data/*Text.ts`)가 사람의 나이에 「세」·「살」을 **바로** 붙이면
  * 한국 나이/만 나이 전환을 따르지 않는 곳이 생긴다. 사람 나이는 `core/format.ts`의 `ageText`·`ageHeadText`·`ageRangeText`(또는 `displayAge`)를 거친다.
  * 통계의 나이(연령 구간·기대수명·인구 구성 슬라이드)와 나이 차이(터울·「N살 위」)는 만 나이·차이라 허용 목록에 이유와 함께 둔다.
  */
@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 const sources = {
   ...(import.meta.glob('../src/screens/*.tsx', { query: '?raw', import: 'default', eager: true }) as Record<string, string>),
   ...(import.meta.glob('../src/ui/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>),
+  ...(import.meta.glob('../src/credits/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>), // SPEC-022 EC1 「이 삶의 이름들」(줄 모델·화면)
   ...(import.meta.glob('../src/data/*Text.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>),
 };
 

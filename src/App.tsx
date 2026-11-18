@@ -58,11 +58,13 @@ import { useYearClock } from './ui/useYearClock';
  *  - ?__quota : 저장이 항상 실패하는 저장소 (저장 실패 안내 e2e, R-006)
  *  - ?__timescale=N : 연출 시간을 N배 빠르게 (e2e가 실제 30분을 기다리지 않게). 플레이 시간 타이머는 연출(hold)에 흐른 시간에 N을 곱해 모델 시간으로 센다(core/playClock.ts#AccrueContext)
  *  - ?__crash : 렌더 중 예외 (ErrorBoundary 탈출구 e2e)
+ *  - ?__creditsThrow : 「이 삶의 이름들」 줄 모델 계산이 예외를 던진다 (이 화면의 자기 오류 경계 e2e — SPEC-022 EC1 9항, 읽는 곳은 이 파일뿐)
  *  - ?__exit : 진행 중인 저장이 있어도 첫 화면을 다시 연 상태로 시작한다 (「나가기」(M4)가 같은 상태를 만든다 — 첫 화면의 「이어서 살기」 e2e)
  *  - window.__playTime() : 플레이 시간 타이머가 지금까지 쌓은 기록을 저장하지 않고 읽는다 (e2e/m8-playtime — 저장으로 읽으면 수동적인 시간(idle)만 바뀐 기록은 쓰지 않으므로 R-417 이후 읽을 수 없다)
  */
 const PROBE_QUOTA = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__quota');
 const PROBE_CRASH = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__crash');
+const PROBE_CREDITS_THROW = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__creditsThrow');
 const PROBE_EXIT = import.meta.env.DEV && new URLSearchParams(window.location.search).has('__exit');
 const TIME_SCALE = import.meta.env.DEV ? readTimeScale() : 1;
 
@@ -581,6 +583,7 @@ function Game({ boot }: { boot: Boot }) {
         game={{ ...game, character: game.character, death: game.death, generation: game.generation, birthStats: game.birthStats }}
         onRebirth={() => dispatch({ type: 'rebirth', seed: newSeed() })}
         gentle={settings.gentle}
+        creditsThrow={PROBE_CREDITS_THROW}
       />
     );
   } else {
