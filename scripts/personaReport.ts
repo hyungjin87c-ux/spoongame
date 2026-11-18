@@ -1,7 +1,7 @@
 import { GENERATION_IDS, TEMPER_IDS, type ProfileId } from '../src/core';
 import { printFocusPersona } from './focusReport';
 import { printRomance } from './romanceReport';
-import { setTune } from './romanceReportLib';
+import { romanceRichBoundary, setTune } from './romanceReportLib';
 import { startLife } from './simulateLib';
 import {
   GATE_KEYS,
@@ -171,5 +171,5 @@ if (only.has('romance')) {
       stay: flag('stay') === undefined ? undefined : Number(flag('stay')),
     });
   }
-  printRomance(n, { net: Number(flag('net') ?? 3000), pool: poolArg as 'none' | 'cards' | 'all', f10: Number(flag('f10') ?? 1000), parts: new Set((flag('parts') ?? 'A,B,C,D,E').split(',')) });
+  printRomance(n, { net: Number(flag('net') ?? romanceRichBoundary() ?? 3000), pool: poolArg as 'none' | 'cards' | 'all', f10: Number(flag('f10') ?? 1000), parts: new Set((flag('parts') ?? 'A,B,C,D,E').split(',')) });
 }

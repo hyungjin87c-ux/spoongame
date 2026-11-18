@@ -18,12 +18,13 @@ import {
   type PoolKind,
   type RomObs,
   r35,
+  romanceRichBoundary,
   val,
 } from './romanceReportLib';
 
 /**
  * `report:persona -- --only=romance` 본체 (SPEC-018 PL17-R, 검토안 5절). 판정이 아니라 보고 — 0.02 판정은 숫자를 그대로 보여 준다.
- * 옵션: `--net=3000`(「넉넉함」 경계 ▲ 만 원, 22세 순자산 덮어쓰기는 ▲의 1/3 · 2배) · `--pool=none|cards|all`(짝 비교에 쓸 풀, 기본 all) · `--f10=1000`(F10 정의 판수).
+ * 옵션: `--net=만 원`(「넉넉함」 경계 — **기본은 데이터의 경계**(`romanceRichBoundary`, 지금 12,000 — Codex CX-007-002), 데이터 전 기준선은 3,000. 22세 순자산 덮어쓰기는 ▲의 1/3 · 2배) · `--pool=none|cards|all`(짝 비교에 쓸 풀, 기본 all) · `--f10=1000`(F10 정의 판수).
  */
 const pct = (x: number): string => (x * 100).toFixed(1);
 const fmtChain = (c: Chain): string => `${fmtRate(c.partner)} | ${fmtRate(c.married)} | ${fmtRate(c.child)} | ${fmtRate(c.withYears)}`;
@@ -32,7 +33,7 @@ const GENDERS = ['female', 'male'] as const;
 export function printRomance(n: number, opts: { net: number; pool: PoolKind; f10: number; parts: ReadonlySet<string> }): void {
   const present = newEventsPresent();
   console.log(`## 교제 카드 측정 (PL17-R) — 밀레니얼 · 시드 i×7919+13 · 판수 ${n} · 40세까지 자동 진행`);
-  console.log(`- 데이터에 있는 새 사건: ${present.length === 0 ? '없음(기준선 — 세 풀은 같은 풀)' : present.join(' · ')} · ▲ 경계 ${opts.net}만 원 · 짝 비교 풀 「${POOL_LABEL[opts.pool]}」`);
+  console.log(`- 데이터에 있는 새 사건: ${present.length === 0 ? '없음(기준선 — 세 풀은 같은 풀)' : present.join(' · ')} · ▲ 경계 ${opts.net}만 원${romanceRichBoundary() === null ? '' : opts.net === romanceRichBoundary() ? '(데이터의 경계)' : ` — **데이터의 경계 ${romanceRichBoundary()}만 원과 다름(탐색용)**`} · 짝 비교 풀 「${POOL_LABEL[opts.pool]}」`);
   console.log('- 분모: 35세 열(교제·결혼)은 36세가 된 해에 닿은 판 · 출산은 41세에 닿은 판. 교제 = `has_partner`·`married`·`divorced`가 켜진 적, 결혼 = `married`·`divorced`가 켜진 적, 출산 = `has_child`.\n');
 
   const has = (k: string): boolean => opts.parts.has(k);

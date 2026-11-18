@@ -12,6 +12,16 @@ import { startLife } from './simulateLib';
 export const NEW_CARDS = ['youth-date-budget', 'youth-two-news', 'youth-late-word'] as const;
 export const NEW_CIRCLE = 'youth-hobby-circle';
 export const NEW_ALL = [...NEW_CARDS, NEW_CIRCLE] as const;
+/**
+ * 데이터에 들어간 「넉넉함」 경계(만 원) — 카드 A `youth-date-budget`의 본문 변주 조건 `assets.netMin`을 그대로 읽는다(Codex CX-007-002: 보고 기본값 3,000이 데이터의 12,000과 달랐다).
+ * 사건이 없거나 조건이 없으면(기준선 측정 — 데이터 전) `null`.
+ */
+export function romanceRichBoundary(): number | null {
+  const ev = EVENT_POOL.byId.get('youth-date-budget');
+  const v = ev?.textVariants?.find((x) => x.when?.assets?.netMin !== undefined);
+  return v?.when?.assets?.netMin ?? null;
+}
+
 export type PoolKind = 'none' | 'cards' | 'all';
 export const POOL_KINDS: readonly PoolKind[] = ['none', 'cards', 'all'];
 export const POOL_LABEL: Record<PoolKind, string> = { none: '없음', cards: '교제 카드 A·B·후속', all: '교제 카드 + 반대 사례' };

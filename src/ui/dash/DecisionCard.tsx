@@ -1,6 +1,6 @@
 import { eraBucketOf } from '../../core/birthProfile';
 import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { calendarYear, citationFor, heavyKindOfEvent, isAskRollChoice, pickChoicesOf, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type HeavyKind, type PendingChoice } from '../../core';
+import { calendarYear, citationFor, condContextOf, eventTextOf, heavyKindOfEvent, isAskRollChoice, pickChoicesOf, previewPending, type CitationView, type ChoiceDef, type EventDef, type EventPool, type GameState, type HeavyKind, type PendingChoice } from '../../core';
 import type { ImpactItem } from '../../core/impact';
 import { ageText } from '../../core/format';
 import { DASH_TEXT, titleCharsFor } from '../../data/dashText';
@@ -39,6 +39,11 @@ import { ImpactFixedLine, ImpactHint, ImpactLine } from './Impact';
 export interface DecisionModel {
   pending: PendingChoice;
   ev: EventDef;
+  /**
+   * 카드 본문 — 사건의 `textVariants`를 대기 중인 판의 조건 문맥으로 적용한 글(`decisionTextOf`). 변주가 없거나 맞는 변주가 없으면 `ev.text`와 같다.
+   * Codex CX-007-001: 선택 카드에 본문 변주를 처음 넣은 교제 카드(SPEC-018 PL17-R)에서 화면이 `ev.text`만 그려, 결과·연표의 변주와 엇갈렸다.
+   */
+  text: string;
   choices: ChoiceDef[];
   /** 선택지 하나의 영향 줄 항목 (core/impact.ts — 인생 진행이 선택을 적용하는 코드와 같은 코드로 미리 계산한다, 숨은 효과 0) */
   impactOf: (choiceId: string) => ImpactItem[];
@@ -53,6 +58,14 @@ export interface DecisionModel {
   heavy: HeavyKind | null;
 }
 
+/**
+ * 선택 카드 본문: 사건의 본문 변주(`textVariants`)를 대기 중인 판의 조건 문맥(`condContextOf`)으로 고른다 — 서술 사건이 연표에 남기는 글(`core/life.ts`의 `eventTextOf`)과 같은 함수다.
+ * 대기 중에는 그 해의 상태가 바뀌지 않으므로(선택을 고르기 전) 카드가 뽑힌 때와 같은 문맥이다.
+ */
+export function decisionTextOf(game: GameState, ev: EventDef): string {
+  return eventTextOf(ev, condContextOf(game));
+}
+
 /** 대기 중인 선택지가 있으면 카드 모델을, 없으면 null. 영향·인용은 대기 중인 선택지와 상태가 같은 동안 다시 계산하지 않는다 */
 export function useDecisionModel(game: LifeGame, pool: EventPool): DecisionModel | null {
   const pending = game.pending;
@@ -65,7 +78,7 @@ export function useDecisionModel(game: LifeGame, pool: EventPool): DecisionModel
     // 선택지는 공통 인터페이스 `pickChoicesOf`로 푼다 — 정의 선택지도, 진로 카드의 저장된 후보 id(직업 이름·분야 이름)도 같은 길이다 (SPEC-018 PL4)
     const choices: ChoiceDef[] = pickChoicesOf(game, pending, pool);
     const impactOf = (id: string): ImpactItem[] => previews?.find((p) => p.choiceId === id)?.impact.items ?? [];
-    return { pending, ev, choices, impactOf, anyImpact: choices.some((c) => impactOf(c.id).length > 0), cite, year, age: game.age, name: game.character.name, heavy: heavyKindOfEvent(ev) };
+    return { pending, ev, text: decisionTextOf(game, ev), choices, impactOf, anyImpact: choices.some((c) => impactOf(c.id).length > 0), cite, year, age: game.age, name: game.character.name, heavy: heavyKindOfEvent(ev) };
   }, [game, pool, pending, ev, previews, cite, year, game.age, game.character.name]);
 }
 
@@ -97,7 +110,7 @@ interface CardProps {
  * 질문은 선택지 묶음 `.choices-list`의 첫 자식이다(묶음 이름 = 질문). 가린 카드는 안내 한 줄·버튼 둘·자동 모드 안내만이다(질문·풀이·자동 고르기 버튼 없음).
  */
 export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, onAutoSwitch, veiled = false, onOpenVeil, onAutoPick }: CardProps) {
-  const { pending, ev, choices, impactOf, anyImpact, cite, year, age, name } = model;
+  const { pending, ev, text, choices, impactOf, anyImpact, cite, year, age, name } = model;
   const guardKey = decisionGuardKey(pending, epoch);
   const kind = veiled ? model.heavy : null;
   const kindName = kind === null ? '' : HEAVY_KIND_TEXT[kind];
@@ -140,7 +153,7 @@ export function DecisionCard({ model, auto, epoch, titleRef, onFold, onChoose, o
               {ev.title}
             </h2>
             <p className="decision__text" data-testid="choice-text">
-              {ev.text}
+              {text}
             </p>
             {cite !== null ? <CitationBox view={cite} insight={insightFor(cite.id)} /> : null}
             <div className="choices-list" role="group" aria-labelledby="dc-ask">
