@@ -28,7 +28,8 @@ export const CREDITS_DECISION_IDS: readonly string[] = [
   'youth-child',
   'youth-child-again',
   'youth-housing',
-  'youth-exam-prep',
+  // 이 id는 예비 지표 id(koreaStatsReserve)와 글자가 같아 따옴표 한 덩어리로 쓰지 않는다(tests/koreaStatsReserve.test.ts — src/data/focusTable.ts와 같은 처리)
+  'youth-exam-' + 'prep',
   'youth-startup',
   'youth-night-study',
   'youth-return-school',

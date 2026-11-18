@@ -673,7 +673,7 @@
   - [ ] (후속, 낮음) `scripts/gateTogetherReport.ts`의 `age <= 20` 종료 경계 — 「20세 도달」과 「20세 해를 마친 생존」 중 무엇으로 셀지 정해 주석에 적는다(CX-006 확인 사항, 지정 표본에서는 차이 0)
 - [ ] **초점 [CRITICAL]** — 사건 확률만 반영 · 13세에 처음, 20·40·65세에 다시 묻는다(후속 262 ②③)
   - [x] PL9 설계 문서 `docs/data/focus-spend-model.md`(초점 몫만 — 돈 쓰기 몫은 재설계 뒤) — 근거: `docs/data/focus-spend-model.md` 12-2절(형진 님 승인 2026-11-18, 결정 후속 265)
-  - [ ] PL10 코어 — 확률 곱·저장·구간 경계(결과 스탯·돈 불변)
+  - [ ] PL10 코어 — 확률 곱·저장·구간 경계(결과 스탯·돈 불변) — **구현 끝(커밋 ff2d52e5 골든 → 468b7e8e · 38a08317 · 8e8ca1d7), 측정 미달 칸 처리·CX-007 뒤 체크** — 구현 근거: `src/core/focus.ts`(focusFactor·focusEffectiveOf·setFocus·focusTableProblems) · `life.ts#pickWeighted`·`stepYear` · `storage.ts#withValidFocus` · `session.ts` setFocus · `src/data/focusTable.ts` · 시험 focusDoc·focusTable·focusWeight·focusSections·focusInvariant·focusPacing·storageFocus·sessionFocus·focusRng(골든 `ff2d52e5`) · 기록 `ai-log/2026-11-18_SPEC-018_PL10-dev.md` (측정 미달 칸·표 재분류 마스터 판정 대기)
   - [ ] PL12 화면 시안 — 초점 고르기(진행을 막지 않음, designer 시안 → 형진 님 선택)
 - [ ] **교제 카드 + 외모 반대 사례 하나 [CRITICAL]** — 근거 `docs/data/review-018-romance-means.md`(후속 246·262 ④)
   - [ ] 구조 — 카드 2장 + 후속 서술 1줄 + 반대 사례 하나(`tailored`·일반 선택 칸·결혼 사슬 불변)
