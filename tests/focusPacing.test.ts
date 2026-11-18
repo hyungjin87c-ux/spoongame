@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { autoResolveStep, eventPool, focusEffectiveOf, setFocus, stepYear, totalCards, type FocusId, type GameState } from '../src/core';
 import { playFocusLife, focusSeedOf } from '../scripts/focusReportLib';
-import { lifeStateAt, listOf } from './helpers/focusStates';
+import { itFocusOn, lifeStateAt, listOf } from './helpers/focusStates';
 
 /**
  * 판당 카드 수·난수 소비 불변 (SPEC-018 PL10, 설계 2-3절): 초점은 이미 정해진 카드 안에서 「어느 사건」만 바꾼다.
@@ -20,7 +20,7 @@ const categoryOf = (kind: string): string => (kind === 'choice' || kind === 'res
 const finish = (s: GameState): GameState => (s.pending === null ? s : autoResolveStep(s, s.pending.key, pool).state);
 
 describe('focusPacing ① 한 해 차분 — 카드 범주·난수 소비가 초점과 무관하다', () => {
-  it('20시드 × 구간 안팎 나이 × 그 구간의 모든 초점: 카드 범주·나이·해를 마친 뒤 rngState가 초점 없음과 같다', () => {
+  itFocusOn('20시드 × 구간 안팎 나이 × 그 구간의 모든 초점: 카드 범주·나이·해를 마친 뒤 rngState가 초점 없음과 같다', () => {
     let compared = 0;
     let decision = 0;
     for (let i = 1; i <= 20; i++) {
@@ -47,7 +47,7 @@ describe('focusPacing ① 한 해 차분 — 카드 범주·난수 소비가 초
     expect(decision, '결정 카드가 나온 해를 포함한다').toBeGreaterThan(30);
   });
 
-  it('초점이 닿은 해에는 뽑힌 사건이 달라지는 칸이 있다 (곱이 실제로 작동한다)', () => {
+  itFocusOn('초점이 닿은 해에는 뽑힌 사건이 달라지는 칸이 있다 (곱이 실제로 작동한다)', () => {
     let changed = 0;
     for (let i = 1; i <= 40 && changed === 0; i++) {
       for (const age of [14, 16, 22, 26, 44, 50, 66, 70]) {

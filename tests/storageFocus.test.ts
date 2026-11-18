@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, vi } from 'vitest';
 import { SCHEMA_VERSION, parseGame, parseOpened, serializeGame, setFocus, type GameState } from '../src/core';
 import { createInitialState } from '../src/core';
-import { lifeStateAt, listOf } from './helpers/focusStates';
+import { itFocusOn, lifeStateAt, listOf } from './helpers/focusStates';
 
 vi.mock('../src/data/personaSwitch', () => ({ PERSONA_ENABLED: true }));
 
@@ -20,7 +20,7 @@ const mutate = (s: GameState, fn: (data: Record<string, unknown>) => void): stri
 };
 
 describe('저장 모양', () => {
-  it('SCHEMA_VERSION 9 그대로, 최상위 필드 focus는 `id, sec` 순서이고 id가 없으면 키가 없다', () => {
+  itFocusOn('SCHEMA_VERSION 9 그대로, 최상위 필드 focus는 `id, sec` 순서이고 id가 없으면 키가 없다', () => {
     expect(SCHEMA_VERSION).toBe(9);
     const s = base();
     expect(s.focus).toBeDefined();
@@ -33,18 +33,18 @@ describe('저장 모양', () => {
     expect(JSON.stringify(none.focus)).toBe('{"sec":1}');
   });
 
-  it('크기는 작다 (약 20B)', () => {
+  itFocusOn('크기는 작다 (약 20B)', () => {
     expect(JSON.stringify(base().focus).length).toBeLessThanOrEqual(20);
   });
 
-  it('저장 → 읽기 → 저장이 바이트 그대로다 (멀쩡한 값은 같은 객체)', () => {
+  itFocusOn('저장 → 읽기 → 저장이 바이트 그대로다 (멀쩡한 값은 같은 객체)', () => {
     const raw = serializeGame(base());
     const back = parseGame(raw)!;
     expect(serializeGame(back)).toBe(raw);
     expect(back.focus).toEqual(base().focus);
   });
 
-  it('필드 순서가 뒤집힌 값은 표준 순서로 맞춘다 (같은 값 → 같은 바이트)', () => {
+  itFocusOn('필드 순서가 뒤집힌 값은 표준 순서로 맞춘다 (같은 값 → 같은 바이트)', () => {
     const s = base();
     const raw = mutate(s, (d) => {
       d.focus = { sec: s.focus!.sec, id: s.focus!.id };
@@ -52,7 +52,7 @@ describe('저장 모양', () => {
     expect(serializeGame(parseGame(raw)!)).toBe(serializeGame(s));
   });
 
-  it('필드가 없는 저장(이 변경 이전의 모든 판)은 그대로 유효하다', () => {
+  itFocusOn('필드가 없는 저장(이 변경 이전의 모든 판)은 그대로 유효하다', () => {
     const s = lifeStateAt(11, 'millennial', 25);
     expect('focus' in s).toBe(false);
     const back = parseGame(serializeGame(s))!;
@@ -65,7 +65,7 @@ describe('6-2절 표: 이상한 값은 focus만 버리고 persona·판은 산다
   const s = base();
   const personaBefore = JSON.stringify(s.persona);
   const dropped = (name: string, fn: (d: Record<string, unknown>) => void): void => {
-    it(name, () => {
+    itFocusOn(name, () => {
       const back = parseGame(mutate(s, fn));
       expect(back, '판은 열린다').not.toBeNull();
       expect('focus' in back!, 'focus만 버려진다').toBe(false);
@@ -115,7 +115,7 @@ describe('6-2절 표: 이상한 값은 focus만 버리고 persona·판은 산다
     d.focus = { id: 1, sec: 2 };
   });
 
-  it('id가 있지만 지금 구간 목록에 없으면 보존한다 (효과만 없다) — 25세에 건강(3)', () => {
+  itFocusOn('id가 있지만 지금 구간 목록에 없으면 보존한다 (효과만 없다) — 25세에 건강(3)', () => {
     expect(listOf(s)).not.toContain(3);
     const back = parseGame(mutate(s, (d) => {
       d.focus = { id: 3, sec: 1 };
@@ -123,14 +123,14 @@ describe('6-2절 표: 이상한 값은 focus만 버리고 persona·판은 산다
     expect(back.focus).toEqual({ id: 3, sec: 1 });
   });
 
-  it('id가 없는 {sec}만 있는 값도 유효하다 (「없음」을 고른 판)', () => {
+  itFocusOn('id가 없는 {sec}만 있는 값도 유효하다 (「없음」을 고른 판)', () => {
     const back = parseGame(mutate(s, (d) => {
       d.focus = { sec: 1 };
     }))!;
     expect(back.focus).toEqual({ sec: 1 });
   });
 
-  it('sec이 지금 구간과 같거나 작으면 유효하다 (25세에 sec 0·1)', () => {
+  itFocusOn('sec이 지금 구간과 같거나 작으면 유효하다 (25세에 sec 0·1)', () => {
     for (const sec of [0, 1]) {
       const back = parseGame(mutate(s, (d) => {
         d.focus = { id: 2, sec };
@@ -141,14 +141,14 @@ describe('6-2절 표: 이상한 값은 focus만 버리고 persona·판은 산다
 });
 
 describe('phase·persona·13세 전', () => {
-  it('첫 화면(title) 단계의 판에 있으면 버린다', () => {
+  itFocusOn('첫 화면(title) 단계의 판에 있으면 버린다', () => {
     const t = { ...createInitialState(5), focus: { id: 1, sec: 0 } } as GameState;
     const back = parseGame(serializeGame(t));
     expect(back).not.toBeNull();
     expect('focus' in back!).toBe(false);
   });
 
-  it('13세 전(구간 없음)의 판에 있으면 버린다', () => {
+  itFocusOn('13세 전(구간 없음)의 판에 있으면 버린다', () => {
     const young = lifeStateAt(11, 'millennial', 8);
     expect(young.age).toBeLessThan(13);
     const back = parseGame(serializeGame({ ...young, focus: { id: 1, sec: 0 } }));
@@ -156,7 +156,7 @@ describe('phase·persona·13세 전', () => {
     expect('focus' in back!).toBe(false);
   });
 
-  it('persona가 없는 판(구형 저장 또는 persona가 버려졌다)이면 버린다', () => {
+  itFocusOn('persona가 없는 판(구형 저장 또는 persona가 버려졌다)이면 버린다', () => {
     const s = base();
     const noPersona = mutate(s, (d) => {
       delete d.persona;
@@ -171,7 +171,7 @@ describe('phase·persona·13세 전', () => {
     expect('focus' in back).toBe(false);
   });
 
-  it('persona가 멀쩡하고 focus만 손상이면 persona는 살아 있다 (모르는 키·미래 sec 모두)', () => {
+  itFocusOn('persona가 멀쩡하고 focus만 손상이면 persona는 살아 있다 (모르는 키·미래 sec 모두)', () => {
     const s = base();
     for (const bad of [{ id: 1, sec: 1, zzz: 0 }, { id: 1, sec: 3 }, 'x']) {
       const back = parseGame(mutate(s, (d) => {
@@ -182,7 +182,7 @@ describe('phase·persona·13세 전', () => {
     }
   });
 
-  it('엔딩 단계의 판도 유효한 focus는 보존한다', () => {
+  itFocusOn('엔딩 단계의 판도 유효한 focus는 보존한다', () => {
     const s = base();
     const ended = { ...s, phase: 'ending' as const, pending: null };
     const back = parseGame(serializeGame(ended));
@@ -192,7 +192,7 @@ describe('phase·persona·13세 전', () => {
 });
 
 describe('구형 파서 경로: 최상위의 모르는 키는 통과·보존된다', () => {
-  it('모르는 최상위 키가 있어도 판이 열리고 persona가 유지되며 키가 보존된다', () => {
+  itFocusOn('모르는 최상위 키가 있어도 판이 열리고 persona가 유지되며 키가 보존된다', () => {
     const s = lifeStateAt(11, 'millennial', 25);
     const back = parseGame(mutate(s, (d) => {
       d.futureField = { a: 1 };
@@ -202,7 +202,7 @@ describe('구형 파서 경로: 최상위의 모르는 키는 통과·보존된�
     expect(JSON.stringify(back!.persona)).toBe(JSON.stringify(s.persona));
   });
 
-  it('parseOpened도 focus를 지우지 않는다 (가족 채우기와 독립)', () => {
+  itFocusOn('parseOpened도 focus를 지우지 않는다 (가족 채우기와 독립)', () => {
     const s = base();
     expect(parseOpened(serializeGame(s))!.focus).toEqual(s.focus);
   });

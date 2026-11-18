@@ -1,4 +1,5 @@
-import { autoResolveStep, eventPool, focusChoicesOf, focusSectionOf, stepYear, type FocusId, type GameState, type ProfileId } from '../../src/core';
+import { it } from 'vitest';
+import { autoResolveStep, eventPool, focusChoicesOf, focusSectionOf, stepYear, withFocusEnabled, type FocusId, type GameState, type ProfileId } from '../../src/core';
 import { startLife } from '../../scripts/simulateLib';
 
 /** 올해의 초점 시험용 상태 만들기 — 자동 선택으로 `age`세가 되는 첫 걸음 직전(대기 없음)의 인생 상태 */
@@ -29,3 +30,11 @@ export function listOf(s: GameState): readonly FocusId[] {
   const sec = focusSectionOf(s.age);
   return sec === null || s.character === null ? [] : focusChoicesOf(s.character.birthYear, sec);
 }
+
+/**
+ * 켠 상태의 초점 계약 시험: 출하 값 `FOCUS_ENABLED`가 `false`여도(결정 후속 268 — 사건을 채운 뒤 켠다) 시험 몸통 한 번 동안만 켠다
+ * (`core/focus.ts#withFocusEnabled`, 동기 시험만). 끈 상태의 계약은 `tests/focusRngOff.test.ts`와 각 시험의 `withFocusEnabled(false, …)`가 본다.
+ */
+export const itFocusOn = (name: string, fn: () => void, timeout?: number): void => {
+  it(name, () => withFocusEnabled(true, fn), timeout);
+};

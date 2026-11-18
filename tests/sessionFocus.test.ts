@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect } from 'vitest';
 import { autoResolveStep, createInitialState, createSession, eventPool, focusPromptDue, sessionReducer, stepYear, withFocusEnabled, type FocusId, type GameState, type Session, type SessionAction } from '../src/core';
-import { lifeStateAt, listOf, pendingStateFrom } from './helpers/focusStates';
+import { itFocusOn, lifeStateAt, listOf, pendingStateFrom } from './helpers/focusStates';
 
 /**
  * 세션 액션 setFocus (SPEC-018 PL10, 설계 5절): 진행을 일으키지 않고, 연타해도 한 번이며(멱등), 서로 다른 값은 마지막 값이 이긴다. `pending` 중에도 자동 모드 중에도 받는다.
@@ -13,7 +13,7 @@ const sessionOf = (game: GameState, auto = false): Session => createSession(game
 describe('sessionFocus — 고르기·바꾸기', () => {
   const at13 = lifeStateAt(21, 'millennial', 13);
 
-  it('13세: 목록이 있고 「고르기 가능」이다 — 고르면 {id, sec 0}이 되고 진행(나이·대기·틱)은 그대로다', () => {
+  itFocusOn('13세: 목록이 있고 「고르기 가능」이다 — 고르면 {id, sec 0}이 되고 진행(나이·대기·틱)은 그대로다', () => {
     expect(at13.age).toBe(13);
     expect(focusPromptDue(at13, pool)).toBe(true);
     const list = listOf(at13);
@@ -29,7 +29,7 @@ describe('sessionFocus — 고르기·바꾸기', () => {
     expect(focusPromptDue(s1.game, pool)).toBe(false);
   });
 
-  it('멱등: 같은 값을 연타하면 두 번째부터 같은 세션 객체다', () => {
+  itFocusOn('멱등: 같은 값을 연타하면 두 번째부터 같은 세션 객체다', () => {
     const f = listOf(at13)[0];
     const s1 = reduce(sessionOf(at13), { type: 'setFocus', focus: f });
     const s2 = reduce(s1, { type: 'setFocus', focus: f });
@@ -38,7 +38,7 @@ describe('sessionFocus — 고르기·바꾸기', () => {
     expect(s3).toBe(s1);
   });
 
-  it('마지막 값이 이긴다: 서로 다른 값을 연타하면 마지막 값만 남고 sec은 변하지 않는다', () => {
+  itFocusOn('마지막 값이 이긴다: 서로 다른 값을 연타하면 마지막 값만 남고 sec은 변하지 않는다', () => {
     const list = listOf(at13);
     let s = sessionOf(at13);
     const seq: FocusId[] = [list[0], list[1], list[0], list[list.length - 1], list[1]];
@@ -46,7 +46,7 @@ describe('sessionFocus — 고르기·바꾸기', () => {
     expect(s.game.focus).toEqual({ id: seq[seq.length - 1], sec: 0 });
   });
 
-  it('「없음」(null)은 초점을 끄고 구간은 마친 것으로 한다 — 고르지 않기와 다르다', () => {
+  itFocusOn('「없음」(null)은 초점을 끄고 구간은 마친 것으로 한다 — 고르지 않기와 다르다', () => {
     const f = listOf(at13)[0];
     const chosen = reduce(sessionOf(at13), { type: 'setFocus', focus: f });
     const none = reduce(chosen, { type: 'setFocus', focus: null });
@@ -58,7 +58,7 @@ describe('sessionFocus — 고르기·바꾸기', () => {
     expect(focusPromptDue(none.game, pool)).toBe(false);
   });
 
-  it('「넘기기」(focus 생략): 지금 값을 두고 구간만 마친다 — 처음이면 초점 없음으로, 이미 고른 값은 유지', () => {
+  itFocusOn('「넘기기」(focus 생략): 지금 값을 두고 구간만 마친다 — 처음이면 초점 없음으로, 이미 고른 값은 유지', () => {
     const skipped = reduce(sessionOf(at13), { type: 'setFocus' });
     expect(skipped.game.focus).toEqual({ sec: 0 });
     expect(focusPromptDue(skipped.game, pool)).toBe(false);
@@ -67,7 +67,7 @@ describe('sessionFocus — 고르기·바꾸기', () => {
     expect(keep.game.focus).toEqual({ id: f, sec: 0 });
   });
 
-  it('다음 구간(20세)이 되면 다시 「고르기 가능」이 되고 직전 초점이 이어진다', () => {
+  itFocusOn('다음 구간(20세)이 되면 다시 「고르기 가능」이 되고 직전 초점이 이어진다', () => {
     const f = listOf(at13)[0];
     let s = reduce(sessionOf(at13), { type: 'setFocus', focus: f }).game;
     for (let guard = 0; guard < 40 && s.age < 20; guard++) s = s.pending !== null ? autoResolveStep(s, s.pending.key, pool).state : stepYear(s, pool).state;
@@ -78,7 +78,7 @@ describe('sessionFocus — 고르기·바꾸기', () => {
     expect(next.focus!.sec).toBe(1);
   });
 
-  it('목록에 없는 값(13세에 건강)·변조된 입력은 무시한다 — 같은 세션 객체', () => {
+  itFocusOn('목록에 없는 값(13세에 건강)·변조된 입력은 무시한다 — 같은 세션 객체', () => {
     expect(listOf(at13)).not.toContain(3);
     const s0 = sessionOf(at13);
     expect(reduce(s0, { type: 'setFocus', focus: 3 })).toBe(s0);
@@ -90,7 +90,7 @@ describe('sessionFocus — 고르기·바꾸기', () => {
 });
 
 describe('sessionFocus — 상태별', () => {
-  it('pending이 열린 동안에도 받고 열린 카드는 바뀌지 않는다', () => {
+  itFocusOn('pending이 열린 동안에도 받고 열린 카드는 바뀌지 않는다', () => {
     const p = pendingStateFrom(33, 'millennial', 20)!;
     expect(p.pending).not.toBeNull();
     const f = listOf(p)[0];
@@ -99,7 +99,7 @@ describe('sessionFocus — 상태별', () => {
     expect(s1.game.pending).toBe(p.pending);
   });
 
-  it('자동 모드가 켜진 채에도 받고, 자동 선택은 그대로 진행한다 (초점을 고르지 않는다)', () => {
+  itFocusOn('자동 모드가 켜진 채에도 받고, 자동 선택은 그대로 진행한다 (초점을 고르지 않는다)', () => {
     const p = pendingStateFrom(34, 'millennial', 20)!;
     const f = listOf(p)[0];
     const s0 = sessionOf(p, true);
@@ -116,7 +116,7 @@ describe('sessionFocus — 상태별', () => {
     expect(g.focus).toBeUndefined();
   });
 
-  it('advance와 섞어도 이중 진행이 없다: setFocus가 나이를 올리지 않고 advance는 한 해만 간다', () => {
+  itFocusOn('advance와 섞어도 이중 진행이 없다: setFocus가 나이를 올리지 않고 advance는 한 해만 간다', () => {
     const g = lifeStateAt(36, 'millennial', 14);
     const f = listOf(g)[0];
     let s = sessionOf(g);
@@ -130,7 +130,7 @@ describe('sessionFocus — 상태별', () => {
     expect(again.game.age).toBe(adv.game.age);
   });
 
-  it('인생 단계가 아니면 무시한다 (첫 화면·엔딩)', () => {
+  itFocusOn('인생 단계가 아니면 무시한다 (첫 화면·엔딩)', () => {
     const title = sessionOf(createInitialState(1));
     expect(reduce(title, { type: 'setFocus', focus: 0 })).toBe(title);
     let g = lifeStateAt(37, 'millennial', 30);
@@ -141,7 +141,7 @@ describe('sessionFocus — 상태별', () => {
     expect(focusPromptDue(g, pool)).toBe(false);
   });
 
-  it('13세 전과 맞춤 판이 아닌 판(persona 없음)은 무시한다', () => {
+  itFocusOn('13세 전과 맞춤 판이 아닌 판(persona 없음)은 무시한다', () => {
     const young = lifeStateAt(38, 'millennial', 9);
     expect(young.age).toBeLessThan(13);
     expect(reduce(sessionOf(young), { type: 'setFocus', focus: 0 }).game.focus).toBeUndefined();
@@ -153,13 +153,13 @@ describe('sessionFocus — 상태별', () => {
     expect(focusPromptDue(bare as unknown as GameState, pool)).toBe(false);
   });
 
-  it('첫 화면을 다시 연 동안(showTitle)의 늦은 입력은 무시한다', () => {
+  itFocusOn('첫 화면을 다시 연 동안(showTitle)의 늦은 입력은 무시한다', () => {
     const g = lifeStateAt(39, 'millennial', 20);
     const s0 = { ...sessionOf(g), showTitle: true };
     expect(reduce(s0, { type: 'setFocus', focus: listOf(g)[0] })).toBe(s0);
   });
 
-  it('스위치(FOCUS_ENABLED)를 끄면 setFocus가 무시되고 저장된 값은 지워지지 않는다', () => {
+  itFocusOn('스위치(FOCUS_ENABLED)를 끄면 setFocus가 무시되고 저장된 값은 지워지지 않는다', () => {
     const g = lifeStateAt(40, 'millennial', 20);
     const f = listOf(g)[0];
     const on = reduce(sessionOf(g), { type: 'setFocus', focus: f });

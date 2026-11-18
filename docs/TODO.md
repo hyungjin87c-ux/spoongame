@@ -674,7 +674,9 @@
 - [ ] **초점 [CRITICAL]** — 사건 확률만 반영 · 13세에 처음, 20·40·65세에 다시 묻는다(후속 262 ②③)
   - [x] PL9 설계 문서 `docs/data/focus-spend-model.md`(초점 몫만 — 돈 쓰기 몫은 재설계 뒤) — 근거: `docs/data/focus-spend-model.md` 12-2절(형진 님 승인 2026-11-18, 결정 후속 265)
   - [ ] PL10 코어 — 확률 곱·저장·구간 경계(결과 스탯·돈 불변) — **구현 끝(커밋 ff2d52e5 골든 → 468b7e8e · 38a08317 · 8e8ca1d7), 측정 미달 칸 처리·CX-007 뒤 체크** — 구현 근거: `src/core/focus.ts`(focusFactor·focusEffectiveOf·setFocus·focusTableProblems) · `life.ts#pickWeighted`·`stepYear` · `storage.ts#withValidFocus` · `session.ts` setFocus · `src/data/focusTable.ts` · 시험 focusDoc·focusTable·focusWeight·focusSections·focusInvariant·focusPacing·storageFocus·sessionFocus·focusRng(골든 `ff2d52e5`) · 기록 `ai-log/2026-11-18_SPEC-018_PL10-dev.md` (측정 미달 칸·표 재분류 마스터 판정 대기)
-  - [ ] PL12 화면 시안 — 초점 고르기(진행을 막지 않음, designer 시안 → 형진 님 선택)
+  - [x] PL12 화면 시안 — 초점 고르기(진행을 막지 않음, designer 시안 → 형진 님 선택) — 근거: `docs/design/mockups/focus/focus.html`(안 A) · `docs/design/copy.md` 24절 · `docs/design/design-system.md` 23절 · 결정 후속 266
+  - [ ] PL12 화면 구현 — **경제식 재설계 배포에 초점을 켤 때 함께**(결정 후속 268). v0.6.1에는 `FOCUS_ENABLED = false`로 코어만 들어간다
+  - [ ] 「다가가는 일」 사건 보강(결정 후속 268) — 13~19세 일·취미·건강 · 20~39세 건강·취미 · 중년 관계·건강 · 노년 건강·일(2027년 이후 해는 미래 콘텐츠 원칙, 후속 265) → 같은 측정(노출 비 · 한 번도 못 만나는 판 · 지배 · 손해 · 판 길이) 다시 → 켜기
 - [ ] **교제 카드 + 외모 반대 사례 하나 [CRITICAL]** — 근거 `docs/data/review-018-romance-means.md`(후속 246·262 ④)
   - [ ] 구조 — 카드 2장 + 후속 서술 1줄 + 반대 사례 하나(`tailored`·일반 선택 칸·결혼 사슬 불변)
   - [ ] `report:persona --only=romance` 측정 — 노출률·보이는 선택지·있는 풀 / 없는 풀 짝 비교(가중·「넉넉함」 경계 순자산은 이 측정으로 정한다)
