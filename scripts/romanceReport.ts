@@ -107,8 +107,8 @@ export function printRomance(n: number, opts: { net: number; pool: PoolKind; f10
   console.log('### D. 새 사건 노출 · 자동 선택 분포 · 결정자 (풀 「교제 카드 + 반대 사례」, 자연 판)\n');
   if (present.length === 0) console.log('- 새 사건이 데이터에 없다.\n');
   else {
-    console.log('| 사건 | 노출(36세까지 산 판) | 선택지 집합(판 수) | 자동 선택 분포 | 결정자 |');
-    console.log('|---|---:|---|---|---|');
+    console.log('| 사건 | 노출(36세까지 산 판) | 선택지 집합(판 수) | 자동 선택 분포 | 결정자 | 뜬 때 순자산 ≥ ▲ · 근무 · 평균 나이 |');
+    console.log('|---|---:|---|---|---|---|');
     for (const id of present) {
       const cs = natural.flatMap((l) => l.cards.filter((c) => c.id === id));
       const sets = new Map<string, number>();
@@ -120,7 +120,10 @@ export function printRomance(n: number, opts: { net: number; pool: PoolKind; f10
         by.set(c.by, (by.get(c.by) ?? 0) + 1);
       }
       const fmt = (m: Map<string, number>): string => [...m].map(([k, v]) => `${k} ${v}`).join(' / ') || '-';
-      console.log(`| ${id} | ${fmtRate(exposure(natural, id))} | ${fmt(sets)} | ${fmt(picks)} | ${fmt(by)} |`);
+      const rich = cs.filter((c) => c.net >= opts.net).length;
+      const work = cs.filter((c) => c.career).length;
+      const age = cs.reduce((x, c) => x + c.age, 0) / (cs.length || 1);
+      console.log(`| ${id} | ${fmtRate(exposure(natural, id))} | ${fmt(sets)} | ${fmt(picks)} | ${fmt(by)} | ${pct(rich / (cs.length || 1))}% · ${pct(work / (cs.length || 1))}% · ${age.toFixed(1)} (${cs.length}) |`);
     }
     console.log('');
   }

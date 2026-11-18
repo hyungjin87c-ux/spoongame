@@ -35,6 +35,9 @@ export interface CardObs {
   by: 'self' | 'parent' | 'child';
   ids: string[];
   chosen: string;
+  /** 카드가 뜬 때 순자산(만 원) · 근무 여부 — 「넉넉함」 경계 ▲를 가르는 근거 */
+  net: number;
+  career: boolean;
 }
 
 export interface RomObs {
@@ -132,12 +135,12 @@ export function playRomance(start: GameState, seed: number, pool: EventPool, o: 
     if (s.pending !== null) {
       const w = autoChoiceWeights(s, pool)!;
       const id = w.ids[createRng(s.rngState).weightedIndex(w.weights)];
-      if (isNew(s.pending.eventId)) obs.cards.push({ id: s.pending.eventId, age: s.pending.age, by: 'self', ids: [...w.ids], chosen: id });
+      if (isNew(s.pending.eventId)) obs.cards.push({ id: s.pending.eventId, age: s.pending.age, by: 'self', ids: [...w.ids], chosen: id, net: s.assets?.net ?? 0, career: s.flags.includes('has_career') });
       s = resolveChoiceStep(s, s.pending.key, id, pool).state;
       continue;
     }
     const r = stepYear(s, pool, (e) => {
-      if (isNew(e.state.pending!.eventId)) obs.cards.push({ id: e.state.pending!.eventId, age: e.state.pending!.age, by: e.by, ids: [...e.ids], chosen: e.choiceId });
+      if (isNew(e.state.pending!.eventId)) obs.cards.push({ id: e.state.pending!.eventId, age: e.state.pending!.age, by: e.by, ids: [...e.ids], chosen: e.choiceId, net: e.state.assets?.net ?? 0, career: e.state.flags.includes('has_career') });
     });
     s = r.state;
   }
