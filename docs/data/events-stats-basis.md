@@ -1198,6 +1198,7 @@ M6a에서는 이벤트 데이터를 고치지 않았다(`src/data/events/*.json`
 | `youth-rent-hike` | c-094 | s-063 |
 | `youth-return-school` | c-095 | s-061 |
 | `youth-startup` | c-077 | s-080 |
+| `youth-two-news` | c-011, c-091 | s-010, s-091 |
 
 ## 6. 규칙 확인
 

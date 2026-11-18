@@ -38,8 +38,8 @@ const X_EVENTS: Record<string, string[]> = {
 const D_EVENTS = [
   'infant-first-birthday', 'school-first-love', 'school-teacher-notice', 'school-supplies', 'youth-reunion', 'youth-second-chance', 'youth-meeting-again', 'youth-approached', 'youth-workplace-romance', 'senior-memoir',
   'infant-sibling-toy', 'infant-daycare-wait', 'youth-matchmaker', 'infant-hospital-stay',
-  // SPEC-018 PL17-R(결정 후속 265): 교제 카드 A·B · 외모 반대 사례 — 정서·관계 장면, 맞는 자료 없음(D)
-  'youth-date-budget', 'youth-two-news', 'youth-hobby-circle',
+  // SPEC-018 PL17-R(결정 후속 265): 교제 카드 A · 외모 반대 사례 — 정서·관계 장면, 맞는 자료 없음(D) (카드 B youth-two-news는 youth-first-job의 인용 짝 c-091·c-011을 이어받아 D가 아니다)
+  'youth-date-budget', 'youth-hobby-circle',
   // SPEC-011 AK7: 어린 시절 조르기 사건은 모두 맞는 자료가 없는 서술 장면(D, 결정 K8·AQ3) — 반려동물 둘은 스위치(`ASK_PET_ENABLED`)가 꺼져 풀에 없다
   ...askEventIdsFor(ASK_PET_ENABLED),
 ];
@@ -66,7 +66,7 @@ describe('선택지 이벤트 94개는 모두 citation / noCitation / 2차 대�
       else if (e.noCitation !== undefined) counts.noCitation++;
       else counts.pending++;
     }
-    expect(counts).toEqual({ citation: 49, noCitation: 37 + askEventIdsFor(ASK_PET_ENABLED).length, pending: 13 }); // PL17-R noCitation D +3 · citation 47 + PL5 G1·G2
+    expect(counts).toEqual({ citation: 50, noCitation: 36 + askEventIdsFor(ASK_PET_ENABLED).length, pending: 13 }); // PL17-R: noCitation D +2(교제 카드 A · 반대 사례) · citation +1(youth-two-news가 youth-first-job의 인용 짝을 이어받음) · citation 47 + PL5 G1·G2
   });
 
   it('citation이 가리키는 id는 모두 citations.json에 있고 verified·usable이며, 인용이 금지한 이벤트(usageCaution.forbiddenEvents)에 연결하지 않았다 (근거 없는 인용 0)', () => {
@@ -140,7 +140,7 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
       if (era === 'future' && c.eras.includes('present')) expect(c.eraPrefix?.future, `${e.id} ${id}`).toBe('지금 기준으로는');
       if (era === 'past' && c.kind === 'research') expect(c.eraPrefix?.past, `${e.id} ${id}`).toBeDefined();
     }
-    expect(cells).toBe(95); // PL17-R는 citation 없음(D)이라 칸 변화 0 · PL5 +3(G1 지금 · G2 지금·다가올) — 그 전: 92 = 지난 7 + 지금 44 + 다가올 41 (FM7a 병환 변형 둘이 지금·다가올 칸을 하나씩 더한다) (유치원 고르기의 다가올 칸은 이벤트 연도 구간이 2024년까지라 사라졌다 — 연도 구간 변환 MG2)
+    expect(cells).toBe(98); // PL17-R: youth-two-news가 youth-first-job의 인용 짝을 이어받음 — 지난 +1 · 지금 +1 · 다가올 +1 (+3) · PL5 +3(G1 지금 · G2 지금·다가올) — 그 전: 92 = 지난 7 + 지금 44 + 다가올 41 (FM7a 병환 변형 둘이 지금·다가올 칸을 하나씩 더한다) (유치원 고르기의 다가올 칸은 이벤트 연도 구간이 2024년까지라 사라졌다 — 연도 구간 변환 MG2)
   });
 
   it('연결 칸마다 인용의 유효 연도 범위가 그 카드가 그 세상에서 뜰 수 있는 게임 속 연도 범위와 겹친다 — 연결해 놓고 영원히 안 보이는 칸이 없다', () => {
@@ -171,7 +171,7 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
       expect(v.sourceLine, `${e.id} ${era}`).not.toMatch(/https?:|www\.|doi|pmid/i);
       checked++;
     }
-    expect(checked).toBe(95 - GM4_DEAD_CELLS.length);
+    expect(checked).toBe(98 - GM4_DEAD_CELLS.length);
   });
 
   it('지난 세상은 그 시기보다 늦은 값이 새지 않는다: 지난 세상 칸의 인용이 가진 가장 늦은 연도 이전의 게임 속 연도에서는 보이지 않는다', () => {
@@ -190,7 +190,7 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
   it('한 인용이 여러 카드에 쓰일 때는 한 판에 함께 나올 수 없거나 나이 창이 15년 이상 떨어진 카드뿐이다 (P5) — 지금은 c-011(22~32세 / 52~62세), 같은 사건의 「남은 한 분」 변형끼리 나누는 c-081(FM7a), 맞춤 판 유무로 갈리는 옛·새 진학 카드의 c-075(PL5) 세 건', () => {
     const index = usedByIndex(EVENT_POOL.events);
     const shared = Object.entries(index).filter(([, ids]) => ids.length > 1);
-    expect(shared.map(([id]) => id).sort()).toEqual(['c-011', 'c-075', 'c-081']);
+    expect(shared.map(([id]) => id).sort()).toEqual(['c-011', 'c-075', 'c-081', 'c-091']); // c-091 = PL17-R youth-first-job(맞춤 판에서 빠짐 — retiredWith persona)와 youth-two-news(맞춤 판 전용)는 한 판에 함께 나오지 않는다;
     // c-075: 옛 「갈림길 앞에서」(`retiredWith: persona` — 맞춤 판에서는 추첨에서 빠진다)와 새 「고등학교 원서」(`tailored` — 맞춤 판에서만 나온다)는 한 판에 함께 나오지 않는다 [SPEC-018 PL5, 결정 후속 237]
     // (스위치를 판 도중에 껐다 켜는 비상 롤백만 예외 — content-018-PL5.md 1절 7 (다), 허용·기록)
     expect([...(index['c-075'] ?? [])].sort()).toEqual(['school-career-choice', 'school-high-pick']);
@@ -204,6 +204,11 @@ describe('연결된 인용이 그 세상·그 해에 실제로 보일 수 있다
         return { evId, min: e.ageRange?.min ?? 0, max: e.ageRange?.max ?? 130 };
       });
       for (let i = 0; i < win.length; i++) for (let j = i + 1; j < win.length; j++) {
+        // PL17-R: 맞춤 판에서 빠지는 옛 카드(retiredWith persona)와 맞춤 판 전용 카드(tailored)는 한 판에 함께 나오지 않는다 — youth-first-job ↔ youth-two-news(c-011·c-091 짝을 이어받음)
+        const a = EVENT_POOL.byId.get(win[i].evId)!;
+        const b = EVENT_POOL.byId.get(win[j].evId)!;
+        const exclusive = (x: typeof a, y: typeof a): boolean => x.retiredWith === 'persona' && y.conditions?.tailored === true;
+        if (exclusive(a, b) || exclusive(b, a)) continue;
         const gap = Math.max(win[j].min - win[i].max, win[i].min - win[j].max);
         expect(gap, `${id}: ${win[i].evId} ↔ ${win[j].evId}`).toBeGreaterThanOrEqual(15);
       }
@@ -248,20 +253,20 @@ describe('MD2 1차 게이트 (마스터 결정 M-1: 시대별 정적 연결률 �
     expect([cov.past.total, cov.present.total, cov.future.total]).toEqual(ASK_PET_ENABLED ? [89, 97, 96] : [88, 96, 95]); // PL17-R +3씩(교제 카드 A·B · 반대 사례 — 모든 시대) · PL5 +2씩(G1 1990년부터 · G2 모든 시대)
   });
 
-  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 43/93 = 46.2% — PL5 G1·G2 +2. 그 전 41/91, 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {
+  it('1차 게이트: 지금 세상 정적 연결률 ≥ 40% (실제 44/96 = 45.8% — PL17-R +3 분모 · +1 분자(youth-two-news). 43/93 = 46.2% — PL5 G1·G2 +2. 그 전 41/91, 변환 전 42/84, 어린 아이 카드 3칸은 보이는 해가 없어 세지 않는다)', () => {
     expect(cov.present.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.present);
-    expect(cov.present.connected).toBe(43);
+    expect(cov.present.connected).toBe(44);
   });
 
-  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 42/92 = 45.7% — PL5 G2 +1 · G1은 분모만(c-007은 지금 세상 전용). 그 전 41/90, 변환 전 40/83)', () => {
+  it('1차 게이트: 다가올 세상 정적 연결률 ≥ 40% (실제 43/95 = 45.3% — PL17-R +3 분모 · +1 분자(youth-two-news). 42/92 = 45.7% — PL5 G2 +1 · G1은 분모만(c-007은 지금 세상 전용). 그 전 41/90, 변환 전 40/83)', () => {
     expect(cov.future.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.future);
-    expect(cov.future.connected).toBe(42);
+    expect(cov.future.connected).toBe(43);
   });
 
-  it('1차 게이트: 지난 세상 정적 연결률 ≥ 8% (실제 7/85 = 8.24% — PL5 G1·G2가 분모만 +2, 그 전 7/83 = 8.43%. FM7a 변형 4개와 조르기 3장도 분모만 늘렸다, 여유 0.24%p) — 약한 인용으로 채우지 않고 구조적 한계(중년·노년 33개는 1970~89 통계와 인생 시기가 겹치지 않는다)를 안고 간다', () => {
+  it('1차 게이트: 지난 세상 정적 연결률 ≥ 8% (실제 8/88 = 9.09% — PL17-R youth-two-news가 youth-first-job의 인용 짝(c-091)을 이어받음: 분모 +3 · 분자 +1. 그 전 7/85 = 8.24% — PL5 G1·G2가 분모만 +2, 그 전 7/83 = 8.43%. FM7a 변형 4개와 조르기 3장도 분모만 늘렸다, 여유 0.24%p) — 약한 인용으로 채우지 않고 구조적 한계(중년·노년 33개는 1970~89 통계와 인생 시기가 겹치지 않는다)를 안고 간다', () => {
     expect(cov.past.rate).toBeGreaterThanOrEqual(CITATION_COVERAGE_MIN.past);
-    expect(cov.past.connected).toBe(7);
-    expect(cov.past.ids.sort()).toEqual(['infant-new-sibling', 'school-early-work', 'school-exam', 'school-family-priority', 'youth-child', 'youth-first-job', 'youth-marriage']);
+    expect(cov.past.connected).toBe(8);
+    expect(cov.past.ids.sort()).toEqual(['infant-new-sibling', 'school-early-work', 'school-exam', 'school-family-priority', 'youth-child', 'youth-first-job', 'youth-marriage', 'youth-two-news']);
   });
 
   it('1차 게이트 임계 상수는 마스터 결정 그대로다 (지금 0.4 · 다가올 0.4 · 지난 0.08) — 2차 목표 70%와 섞지 않는다', () => {

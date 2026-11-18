@@ -505,7 +505,7 @@
       "ageRange": { "min": 22, "max": 31 },
       "weight": 9,
       "once": true,
-      "noCitation": "D",
+      "citation": { "past": "c-091", "present": "c-011", "future": "c-011" },
       "conditions": { "flags": ["has_partner"], "notFlags": ["married", "own_business"], "tailored": true },
       "choices": [
         {

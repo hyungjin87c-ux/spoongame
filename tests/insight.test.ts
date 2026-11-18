@@ -186,8 +186,8 @@ describe('대상 ↔ 데이터: 본인이 고르는 카드에 연결된 인용 3
     for (const id of parentOnly) expect(insightFor(id), id).toBeNull();
   });
 
-  it('공유 인용 c-011은 두 장면(youth-first-job · middle-child-school)에 같은 한 문장이다 (마스터 결정 ① — 인용 하나에 한 문장)', () => {
-    expect([...(USERS.self.get('c-011') ?? [])].sort()).toEqual(['middle-child-school', 'youth-first-job']);
+  it('공유 인용 c-011은 세 장면(youth-first-job · middle-child-school · youth-two-news — PL17-R: youth-two-news가 youth-first-job의 인용 짝을 이어받음)에 같은 한 문장이다 (마스터 결정 ① — 인용 하나에 한 문장)', () => {
+    expect([...(USERS.self.get('c-011') ?? [])].sort()).toEqual(['middle-child-school', 'youth-first-job', 'youth-two-news']);
     expect(Object.keys(INSIGHT_BY_ID).filter((id) => id === 'c-011')).toHaveLength(1);
   });
 

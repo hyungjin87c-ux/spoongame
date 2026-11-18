@@ -437,7 +437,8 @@
       ],
       "usedBy": [
         "middle-child-school",
-        "youth-first-job"
+        "youth-first-job",
+        "youth-two-news"
       ],
       "candidateFor": [
         "SA3",
@@ -4036,7 +4037,8 @@
       ],
       "note": "지난 세상 전용(P-02). 표의 단위는 천 명이라 scale 1000을 둔다. 1980년 4,547천 명·1989년 5,010천 명도 같은 표에 있다.",
       "usedBy": [
-        "youth-first-job"
+        "youth-first-job",
+        "youth-two-news"
       ],
       "verified": true,
       "usable": true,
