@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { activeTestId, injectSave, readSettings, titleState } from './helpers';
 import { measureTextResize, setRootFontPercent, textResizeViolations } from './textResize';
+import { RELEASE_NOTES } from '../src/data/releaseNotes';
+
+/** 지금 버전과 바로 앞 버전 — 배포마다 이 파일을 고치지 않도록 데이터에서 읽는다(맨 위가 지금 버전, tests/releaseNotes.test.ts가 package.json과 같음을 잠근다) */
+const CURRENT = RELEASE_NOTES[0].version;
+const PREVIOUS = RELEASE_NOTES[1].version;
+const CURRENT_RE = CURRENT.replace(/\./g, '\\.');
 
 /**
  * 정보 패널 「새 소식과 소개」 (SPEC-005 QI7 NT4·NT5·FQ1, 완료 기준 12): 첫 화면 푸터의 두 링크가 같은 패널을 연다.
@@ -36,35 +42,39 @@ test.describe('열기 (NT4·NT5)', () => {
     // 바깥(본문·본문 끝 여백·하단 띠)은 inert, 문서 스크롤은 잠긴다
     expect(await page.locator('.title[inert], .page-end-space[inert], .bottom-bar[inert]').count()).toBe(3);
     expect(await page.evaluate(() => document.documentElement.classList.contains('sheet-open'))).toBe(true);
-    // 새 소식: 최신이 위(v0.6.0 → v0.5.1 → v0.5.0 → v0.4.1 → v0.4.0 → v0.3.0 → v0.2.1 → v0.2.0 → v0.1.0), 최신 3개 펼침(아홉 버전 중 뒤의 여섯은 접힘), 항목 종류는 글자 칩
+    // 새 소식: 최신이 위(v0.6.1 → v0.6.0 → v0.5.1 → v0.5.0 → v0.4.1 → v0.4.0 → v0.3.0 → v0.2.1 → v0.2.0 → v0.1.0), 최신 3개 펼침(열 버전 중 뒤의 일곱은 접힘), 항목 종류는 글자 칩
     const versions = page.getByTestId('info-version');
-    await expect(versions).toHaveCount(9);
-    await expect(versions.nth(0)).toHaveAttribute('data-version', '0.6.0');
-    await expect(versions.nth(1)).toHaveAttribute('data-version', '0.5.1');
-    await expect(versions.nth(2)).toHaveAttribute('data-version', '0.5.0');
-    await expect(versions.nth(3)).toHaveAttribute('data-version', '0.4.1');
-    await expect(versions.nth(4)).toHaveAttribute('data-version', '0.4.0');
-    await expect(versions.nth(5)).toHaveAttribute('data-version', '0.3.0');
-    await expect(versions.nth(6)).toHaveAttribute('data-version', '0.2.1');
-    await expect(versions.nth(7)).toHaveAttribute('data-version', '0.2.0');
-    await expect(versions.nth(8)).toHaveAttribute('data-version', '0.1.0');
-    expect(await versions.evaluateAll((els) => els.map((e) => (e as HTMLDetailsElement).open))).toEqual([true, true, true, false, false, false, false, false, false]);
-    await expect(versions.nth(0)).toContainText('태어날 때 기질과 재능을 받고, 어떤 활동을 하며 크느냐에 따라 조금씩 달라져요.');
-    await expect(versions.nth(0)).toContainText('나이는 모두 한국 나이로 보여요.');
-    await expect(versions.nth(1)).toContainText('화면 위쪽 로고를 누르면 첫 화면으로 가요.');
-    await expect(versions.nth(1)).toContainText('시대의 창이 집 그림에서 떨어져 큰 칸이 됐어요.');
-    await expect(versions.nth(2)).toContainText('시대의 창이 해마다가 아니라 굵직한 사건이 있던 해에만 나와요.');
-    await expect(versions.nth(2)).toContainText('어린 시절에 장난감·배움을 조르거나 떼를 쓰거나 참을 수 있어요.');
-    await expect(versions.nth(3)).toContainText('모바일에서 아래 조작 버튼이 한 줄로 작아졌고, 배속은 한 단추를 눌러 1·2·4·8배로 바꿔요.');
-    await expect(versions.nth(3)).toContainText('인생 기록의 결정 줄에 그때의 상황 제목이 작게 붙고, 고른 길이 결과 앞에 와요.');
-    await expect(versions.nth(4)).toContainText('결정 카드 아래에 집과 식구 그림이 생겼어요.');
-    await expect(versions.nth(4)).toContainText('드물게 어린 형제와의 이별까지 가족의 큰일이 기록·카드·그림에 함께 나타나요.');
-    await expect(versions.nth(5)).toContainText('첫 화면에서 「태어날 세상」 대신 세대 일곱과 「랜덤 세대」 중 하나를 골라요.');
-    await expect(versions.nth(6)).toContainText('결정 카드의 통계·연구 아래에 풀이 한 줄이 생겼어요.');
-    await expect(versions.nth(0).locator('.note-kind').first()).toHaveText('추가'); // v0.6.0
-    await expect(versions.nth(1).locator('.note-kind').first()).toHaveText('추가'); // v0.5.1
-    await expect(versions.nth(2).locator('.note-kind').first()).toHaveText('개선'); // v0.5.0
-    await expect(versions.nth(4).locator('.note-kind').first()).toHaveText('추가'); // v0.4.0
+    await expect(versions).toHaveCount(RELEASE_NOTES.length);
+    await expect(versions.nth(0)).toHaveAttribute('data-version', '0.6.1');
+    await expect(versions.nth(1)).toHaveAttribute('data-version', '0.6.0');
+    await expect(versions.nth(2)).toHaveAttribute('data-version', '0.5.1');
+    await expect(versions.nth(3)).toHaveAttribute('data-version', '0.5.0');
+    await expect(versions.nth(4)).toHaveAttribute('data-version', '0.4.1');
+    await expect(versions.nth(5)).toHaveAttribute('data-version', '0.4.0');
+    await expect(versions.nth(6)).toHaveAttribute('data-version', '0.3.0');
+    await expect(versions.nth(7)).toHaveAttribute('data-version', '0.2.1');
+    await expect(versions.nth(8)).toHaveAttribute('data-version', '0.2.0');
+    await expect(versions.nth(9)).toHaveAttribute('data-version', '0.1.0');
+    expect(await versions.evaluateAll((els) => els.map((e) => (e as HTMLDetailsElement).open))).toEqual([true, true, true, false, false, false, false, false, false, false]);
+    await expect(versions.nth(0)).toContainText('엔딩 회고에서 「이 삶의 이름들 보기」를 누르면');
+    await expect(versions.nth(0)).toContainText('밀레니얼 세대의 얼굴 그림을 새로 그렸어요.');
+    await expect(versions.nth(1)).toContainText('태어날 때 기질과 재능을 받고, 어떤 활동을 하며 크느냐에 따라 조금씩 달라져요.');
+    await expect(versions.nth(1)).toContainText('나이는 모두 한국 나이로 보여요.');
+    await expect(versions.nth(2)).toContainText('화면 위쪽 로고를 누르면 첫 화면으로 가요.');
+    await expect(versions.nth(2)).toContainText('시대의 창이 집 그림에서 떨어져 큰 칸이 됐어요.');
+    await expect(versions.nth(3)).toContainText('시대의 창이 해마다가 아니라 굵직한 사건이 있던 해에만 나와요.');
+    await expect(versions.nth(3)).toContainText('어린 시절에 장난감·배움을 조르거나 떼를 쓰거나 참을 수 있어요.');
+    await expect(versions.nth(4)).toContainText('모바일에서 아래 조작 버튼이 한 줄로 작아졌고, 배속은 한 단추를 눌러 1·2·4·8배로 바꿔요.');
+    await expect(versions.nth(4)).toContainText('인생 기록의 결정 줄에 그때의 상황 제목이 작게 붙고, 고른 길이 결과 앞에 와요.');
+    await expect(versions.nth(5)).toContainText('결정 카드 아래에 집과 식구 그림이 생겼어요.');
+    await expect(versions.nth(5)).toContainText('드물게 어린 형제와의 이별까지 가족의 큰일이 기록·카드·그림에 함께 나타나요.');
+    await expect(versions.nth(6)).toContainText('첫 화면에서 「태어날 세상」 대신 세대 일곱과 「랜덤 세대」 중 하나를 골라요.');
+    await expect(versions.nth(7)).toContainText('결정 카드의 통계·연구 아래에 풀이 한 줄이 생겼어요.');
+    await expect(versions.nth(0).locator('.note-kind').first()).toHaveText('추가'); // v0.6.1
+    await expect(versions.nth(1).locator('.note-kind').first()).toHaveText('추가'); // v0.6.0
+    await expect(versions.nth(2).locator('.note-kind').first()).toHaveText('추가'); // v0.5.1
+    await expect(versions.nth(3).locator('.note-kind').first()).toHaveText('개선'); // v0.5.0
+    await expect(versions.nth(5).locator('.note-kind').first()).toHaveText('추가'); // v0.4.0
     // 소개: 질문 9개(SPEC-004 GS11에서 가상 인구 질문이 없어졌다), 모두 접힘
     const faq = page.getByTestId('faq-item');
     await expect(faq).toHaveCount(9);
@@ -243,7 +253,7 @@ test.describe('「새」 표시와 notesSeen (NT4, 설정 v5)', () => {
     await page.getByTestId('info-close').click();
     await expect(panel(page)).toHaveCount(0);
     await expect(page.getByTestId('news-badge')).toHaveCount(0);
-    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe('0.6.0');
+    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe(CURRENT);
     await page.reload();
     await expect(page.getByTestId('title-screen')).toBeVisible();
     await expect(page.getByTestId('news-badge')).toHaveCount(0);
@@ -254,7 +264,7 @@ test.describe('「새」 표시와 notesSeen (NT4, 설정 v5)', () => {
     await expect(page.getByTestId('news-badge')).toBeVisible();
     await page.getByTestId('link-intro').click();
     await expect(panel(page)).toBeVisible();
-    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe('0.6.0');
+    await expect.poll(async () => (await readSettings(page)).notesSeen).toBe(CURRENT);
   });
 
   test('이전 버전을 본 사람(notesSeen 0.1.0·0.2.0·0.2.1)에게는 뜨고, 현재 버전을 본 사람에게는 안 뜬다', async ({ page }) => {
@@ -275,6 +285,9 @@ test.describe('「새」 표시와 notesSeen (NT4, 설정 v5)', () => {
     await openTitle(page, { notesSeen: '0.5.1' });
     await expect(page.getByTestId('news-badge')).toBeVisible(); // 직전 버전 0.5.1까지 본 사람에게도 뜬다 (v0.6.0)
     await openTitle(page, { notesSeen: '0.6.0' });
+    await expect(page.getByTestId('news-badge')).toBeVisible(); // 직전 버전 0.6.0까지 본 사람에게도 뜬다 (v0.6.1)
+    expect(PREVIOUS).toBe('0.6.0');
+    await openTitle(page, { notesSeen: CURRENT });
     await expect(page.getByTestId('news-badge')).toHaveCount(0);
     await expect(page.getByTestId('link-news')).toBeVisible();
   });
@@ -337,7 +350,7 @@ test.describe('소개 Q&A와 의견 보내기 (FQ1·N2)', () => {
     expect(`${url.origin}${url.pathname}`).toBe('https://github.com/hyungjin87c-ux/spoongame/issues/new');
     expect(url.searchParams.get('template')).toBe('feedback.yml');
     const screen = url.searchParams.get('screen')!;
-    expect(screen).toMatch(/^첫 화면, v0\.6\.0 \((?:[0-9a-f]{7}\+?|개발 빌드)\)$/);
+    expect(screen).toMatch(new RegExp(`^첫 화면, v${CURRENT_RE} \\((?:[0-9a-f]{7}\\+?|개발 빌드)\\)$`));
     expect([...url.searchParams.keys()].sort()).toEqual(['screen', 'template']); // 이름·기록이 들어갈 자리는 없다
     // 입력 가드(열린 직후 0.4초)가 풀린 뒤 누르면 새 탭이 열린다
     await expect(link).not.toHaveAttribute('aria-disabled', 'true');
@@ -410,14 +423,14 @@ test.describe('한 줄 구분 목록 (R-493·D5-77)', () => {
     });
     expect(boxes.kinds, '공허 통과 방지: 종류 글자 칸이 실제로 있다').toBeGreaterThanOrEqual(8);
     // 제목의 「버전 2」는 R-493 당시 개수다(옛 기록이 이 제목을 가리켜 그대로 둔다). v0.6.0부터 새 소식 버전은 9개(v0.5.1부터 8개)이고(v0.5.0부터 7개, v0.4.1부터 6개, v0.4.0부터 5개, v0.3.0부터 4개였다), 이 시험은 개수를 세어 맞춘다.
-    expect(boxes.vers, '공허 통과 방지: 새 소식 버전 상자가 실제로 있다(v0.6.0·v0.5.1·v0.5.0·v0.4.1·v0.4.0·v0.3.0·v0.2.1·v0.2.0·v0.1.0)').toBe(9);
-    expect(boxes.total, '버전 9 + 질문 9 + 종류 글자 칸').toBe(boxes.vers + 9 + boxes.kinds);
+    expect(boxes.vers, '공허 통과 방지: 새 소식 버전 상자가 실제로 있다(데이터의 버전 수 — v0.6.1부터 10개)').toBe(RELEASE_NOTES.length);
+    expect(boxes.total, '버전(데이터 수) + 질문 9 + 종류 글자 칸').toBe(boxes.vers + 9 + boxes.kinds);
     expect(boxes.boxed, '테두리 상자는 0').toBe(0);
     expect(boxes.kindBorders, '종류 글자 칸에는 테두리가 없다').toBe(0);
     const border = await resolveColor(page, 'var(--c-border)');
     for (const selector of ['.info__ver', '.faq__item']) {
       const rows = await rowsOf(page, selector);
-      expect(rows.length, `${selector} 행 수`).toBe(selector === '.info__ver' ? 9 : 9);
+      expect(rows.length, `${selector} 행 수`).toBe(selector === '.info__ver' ? RELEASE_NOTES.length : 9); // 질문은 9개 그대로
       rows.forEach((r, i) => {
         expect(r.others, `${selector} ${i + 1}번째: 구분줄 말고 다른 변에 테두리가 없다`).toBe(0);
         expect(r.top, `${selector} ${i + 1}번째: 윗줄`).toBe(i === 0 ? '0px' : '1px');
