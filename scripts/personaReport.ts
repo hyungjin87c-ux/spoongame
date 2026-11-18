@@ -1,5 +1,6 @@
 import { GENERATION_IDS, TEMPER_IDS, type ProfileId } from '../src/core';
 import { printFocusPersona } from './focusReport';
+import { printRomance } from './romanceReport';
 import { startLife } from './simulateLib';
 import {
   GATE_KEYS,
@@ -25,11 +26,12 @@ import {
 
 /**
  * 맞춤 인생 보고 (SPEC-018 완료 기준 8·9 · 결정 후속 239 진로 일정, 설계 `persona-model.md` 8-1절): **판정이 아니라 보고**다 — 기준(▲)을 넘지 못하면 계수를 비틀지 않고 숫자를 보고한다.
- * 실행: npm run report:persona [-- 판수=1000] [--only=pairs,natural,temper,table,schedule,focus] [--era=millennial]
+ * 실행: npm run report:persona [-- 판수=1000] [--only=pairs,natural,temper,table,schedule,focus,romance] [--era=millennial]
  *   pairs     ① 짝 시드(수저만 1·5) — 8(a) 한쪽에만 보이는 id 수 · (b) Jaccard 거리
  *   natural   ② 자연 집단(수저 1·5) — 미노출률 · 결정자별 분모 · (e) 지배 · 9 적성 폭 · G2 대 옛 G2 미노출
  *   temper    ③ 기질 짝(수저 1·5 각각, 기질 6) — 8(c) 총변동거리
  *   table     (f) 칸(수저·적성 단계)별 보이는 id 집합 — content-018-PL5.md 2절 표와 대조
+ *   romance   교제 카드·반대 사례(SPEC-018 PL17-R, 검토안 5절): 22~33세 순자산 분포 · 같은 시드 조건 하나 짝 · 세 풀(없음/교제 카드/카드+반대 사례) · 새 사건 노출 · 외모 1단계 결혼율 재측정 · `--net=3000 --pool=all --f10=1000` · 기본에서 빠진다
  *   focus     올해의 초점(SPEC-018 PL10, 설계 `focus-spend-model.md` 2-5절 ①~⑧): 팔 7(없음 + 주제 6) × 판 · `--era=millennial|industrial|alpha|all`(기본 밀레니얼) · 기본에서 빠진다
  *   schedule  진로 일정(결정 후속 239) — 성별 × 대학별 첫 분야 카드 나이 · 병역 줄 나이 · 35세 직업 확정
  * 밀레니얼, 시드 i × 7919 + 13, 36세까지 자동 진행.
@@ -153,4 +155,13 @@ if (only.has('focus')) {
     process.exit(2);
   }
   printFocusPersona(eras, n);
+}
+
+if (only.has('romance')) {
+  const poolArg = flag('pool') ?? 'all';
+  if (!['none', 'cards', 'all'].includes(poolArg)) {
+    console.error('사용법: --pool=none|cards|all');
+    process.exit(2);
+  }
+  printRomance(n, { net: Number(flag('net') ?? 3000), pool: poolArg as 'none' | 'cards' | 'all', f10: Number(flag('f10') ?? 1000) });
 }
