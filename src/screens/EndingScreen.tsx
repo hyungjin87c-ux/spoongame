@@ -318,7 +318,7 @@ export function EndingScreen({ game, onRebirth, review = reviewEnding(game), gen
           </p>
         ) : null}
         <div className="ending__head">
-          <Face age={game.death.age} gender={c.gender} looks={c.looks} large />
+          <Face age={game.death.age} gender={c.gender} looks={c.looks} birthYear={c.birthYear} large />
           {/* 텍스트 칸: 제목 글자 크기 상한의 컨테이너다(R-320·R-321 — 얼굴 타일이 아니라 이 칸만 flex로 늘어난다, dash.css `.ending__who`) */}
           <div className="ending__who">
             <p className="label" data-testid="ending-era">

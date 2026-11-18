@@ -38,7 +38,7 @@ export function ProfileCard({ game }: { game: LifeGame }) {
   return (
     <section className="card profile" aria-label={DASH_TEXT.profileLabel} data-testid="profile-card">
       <div className="profile__top">
-        <Face age={game.age} gender={c.gender} looks={c.looks} large />
+        <Face age={game.age} gender={c.gender} looks={c.looks} birthYear={c.birthYear} large />
         <div>
           <p className="profile__name" data-testid="profile-name">
             {c.name}
