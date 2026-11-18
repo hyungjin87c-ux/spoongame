@@ -233,8 +233,25 @@ describe('길을 막지 않는다 — 연애는 어느 외모 단계에서도 �
     }
   });
 
-  // 이번 단계(3b)는 확률·효과만 — 반대 사례 사건 존재 시험은 콘텐츠(문장 designer 문구 → reviewer 낙인 판독 → 형진 님 확인)가 들어오는 PL17에서 이 자리를 채운다(설계 4B PL17 연결)
-  it.todo('PL17 반대 사례 사건: 외모 1~2단계여도 붙임성·적성·취미 모임으로 풀리는 사건 ⓐ와 외모 4~5단계여도 외모로만 보이는 피로를 겪는 사건 ⓑ가 각 1개 이상 있다');
+  // 반대 사례 ⓐ(외모 낮은 단계도 붙임성·모임으로 풀리는 사건)는 PL17-R이 `youth-hobby-circle`로 채웠다(결정 후속 265). 반대 사례 ⓑ(외모 높은 단계의 「외모로만 보이는 피로」)는 경제식 재설계 배포에 싣는다(후속 262 ④) — 그때까지 자리만 둔다.
+  it('PL17-R 반대 사례 ⓐ youth-hobby-circle: 외모 1~5단계 모두 같은 자격·같은 가중(외모 곱·조건·변주 0)이고, stay가 짝(has_partner)을 맺는다', () => {
+    const ev = byId('youth-hobby-circle');
+    expect(ev.looksChannel).toBeUndefined();
+    expect(ev.modifiers).toBeUndefined();
+    const flagsBase = new Set<string>();
+    for (const gen of ['millennial', 'boomer', 'genz'] as const) {
+      const rows = LOOKS_OF_TIER.map((looks) => {
+        const ctx = { ...ctxFor(gen, looks, 27), flags: flagsBase };
+        const e = isEventEligible(ev, { ...ctx, age: 27, year: ctx.year!, seen: {} });
+        return [e, eventWeight(ev, ctx)];
+      });
+      expect(new Set(rows.map((r) => JSON.stringify(r))).size, gen).toBe(1);
+      expect(rows[0][0], gen).toBe(true);
+    }
+    expect(ev.choices!.find((c) => c.id === 'stay')!.effects!.setFlags).toContain('has_partner');
+  });
+
+  it.todo('PL17 반대 사례 ⓑ: 외모 4~5단계여도 외모로만 보이는 피로를 겪는 사건이 1개 이상 있다 (경제식 재설계 배포 — 후속 262 ④)');
 });
 
 describe('외모 함수 — 취업·임금 (4B·5절)', () => {

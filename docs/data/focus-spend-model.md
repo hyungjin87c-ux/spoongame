@@ -480,6 +480,10 @@ EVENT | youth-approached | bond
 EVENT | youth-child | bond
 EVENT | youth-child-again | bond
 EVENT | youth-workplace-romance | bond
+EVENT | youth-date-budget | bond
+EVENT | youth-two-news | bond
+EVENT | youth-late-word | -
+EVENT | youth-hobby-circle | hobby bond
 EVENT | youth-housing | money
 EVENT | youth-exam-prep | learn work
 EVENT | youth-exam-passed | -

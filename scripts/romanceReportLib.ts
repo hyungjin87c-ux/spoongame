@@ -1,4 +1,4 @@
-import { autoChoiceWeights, createEventPool, createRng, resolveChoiceStep, stepYear, type EventPool, type GameState, type ParentWealth } from '../src/core';
+import { autoChoiceWeights, createEventPool, createRng, resolveChoiceStep, stepYear, type EventDef, type EventPool, type GameState, type ParentWealth } from '../src/core';
 import { EVENT_POOL } from '../src/data/events';
 import { startLife } from './simulateLib';
 
@@ -16,13 +16,35 @@ export type PoolKind = 'none' | 'cards' | 'all';
 export const POOL_KINDS: readonly PoolKind[] = ['none', 'cards', 'all'];
 export const POOL_LABEL: Record<PoolKind, string> = { none: '없음', cards: '교제 카드 A·B·후속', all: '교제 카드 + 반대 사례' };
 
+/** 시험 전용 덮어쓰기(가중·반대 사례 `stay` 관계 효과): 데이터 값을 바꾸지 않고 풀만 다시 만든다 — 가중 후보를 병렬로 견주려는 것이다. 없으면 데이터 그대로 */
+export interface Tune {
+  /** 새 사건 id → 가중 */
+  weights?: Partial<Record<string, number>>;
+  /** `youth-hobby-circle/stay`의 관계 효과 */
+  stay?: number;
+}
+let tune: Tune = {};
+export const setTune = (t: Tune): void => {
+  tune = t;
+  poolCache.clear();
+};
+const tuned = (e: EventDef): EventDef => {
+  const w = tune.weights?.[e.id];
+  let out = w === undefined ? e : { ...e, weight: w };
+  if (e.id === NEW_CIRCLE && tune.stay !== undefined) {
+    out = { ...out, choices: out.choices!.map((c) => (c.id === 'stay' ? { ...c, effects: { ...c.effects, stats: { ...c.effects!.stats, relationships: tune.stay } } } : c)) };
+  }
+  return out;
+};
+
 const poolCache = new Map<PoolKind, EventPool>();
 /** 풀 덮어쓰기(조르기 대조 `poolWithoutAsk`와 같은 방법): 새 사건 id를 거른 풀 */
 export function romancePool(kind: PoolKind): EventPool {
   const hit = poolCache.get(kind);
   if (hit !== undefined) return hit;
   const drop: readonly string[] = kind === 'none' ? NEW_ALL : kind === 'cards' ? [NEW_CIRCLE] : [];
-  const pool = drop.length === 0 ? EVENT_POOL : createEventPool(EVENT_POOL.events.filter((e) => !drop.includes(e.id)));
+  const changed = tune.stay !== undefined || (tune.weights !== undefined && Object.keys(tune.weights).length > 0);
+  const pool = drop.length === 0 && !changed ? EVENT_POOL : createEventPool(EVENT_POOL.events.filter((e) => !drop.includes(e.id)).map(tuned));
   poolCache.set(kind, pool);
   return pool;
 }

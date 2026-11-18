@@ -37,10 +37,12 @@ const ALLOWED: Record<string, string> = {
   './infantContent.test.ts': '고정 목록(`NEW` 사건 id)의 효과만 읽는다',
   './inherit.test.ts': '작별 장면 등 이름을 적은 사건과 `parents_gone`을 켜는 사건 찾기 — 조르기 사건은 그 플래그를 켜지 않는다',
   './m7eContent.test.ts': '이름을 적은 사건의 효과만 읽는다',
+  './romanceMeans.test.ts': '이름을 적은 교제 카드 넷(`youth-*`)의 플래그·관계 효과만 읽는다(PL17-R) — 조르기 사건이 아니다',
   './parentDecision.test.ts': '분류표에 있는 부모 결정 사건만 읽는다(조르기는 본인 카드)',
   '../scripts/baseline004Lib.ts': '옛 기준선 도구 — 이벤트가 켜는 플래그 목록만 센다(데이터 효과의 플래그, `ASK_EFFECTS` 플래그는 사건 데이터에 없다)',
   '../scripts/parentReportLib.ts': '부모 결정·흘러감 카드의 관찰자(`observe`)만 읽는다 — 조르기 카드는 본인 카드라 닿지 않는다',
   '../scripts/askReportLib.ts': '조르기 보고 도구 — 기대 행복 최대 전략이 조르기가 아닌 카드의 행복을 데이터 효과로 읽고, 조르기 갈래 선택지는 `askBranchProbs`·`ASK_EFFECTS`로 읽는다(AK10)',
+  '../scripts/romanceReportLib.ts': '교제 카드 측정 도구(PL17-R) — 이름을 적은 `youth-hobby-circle`의 `stay` 관계 효과만 덮어쓴다(시험 전용 풀) — 조르기 사건이 아니다',
   '../scripts/realismL0Lib.ts': '정석 선택자의 플래그 읽기 — 조르기 갈래 선택지는 정석 플래그(`married` 등)를 켜지 않는다',
 };
 

@@ -1,6 +1,7 @@
 import { GENERATION_IDS, TEMPER_IDS, type ProfileId } from '../src/core';
 import { printFocusPersona } from './focusReport';
 import { printRomance } from './romanceReport';
+import { setTune } from './romanceReportLib';
 import { startLife } from './simulateLib';
 import {
   GATE_KEYS,
@@ -31,7 +32,7 @@ import {
  *   natural   ② 자연 집단(수저 1·5) — 미노출률 · 결정자별 분모 · (e) 지배 · 9 적성 폭 · G2 대 옛 G2 미노출
  *   temper    ③ 기질 짝(수저 1·5 각각, 기질 6) — 8(c) 총변동거리
  *   table     (f) 칸(수저·적성 단계)별 보이는 id 집합 — content-018-PL5.md 2절 표와 대조
- *   romance   교제 카드·반대 사례(SPEC-018 PL17-R, 검토안 5절): 22~33세 순자산 분포 · 같은 시드 조건 하나 짝 · 세 풀(없음/교제 카드/카드+반대 사례) · 새 사건 노출 · 외모 1단계 결혼율 재측정 · `--net=3000 --pool=all --f10=1000` · 기본에서 빠진다
+ *   romance   교제 카드·반대 사례(SPEC-018 PL17-R, 검토안 5절): 22~33세 순자산 분포 · 같은 시드 조건 하나 짝 · 세 풀(없음/교제 카드/카드+반대 사례) · 새 사건 노출 · 외모 1단계 결혼율 재측정 · `--net=3000 --pool=all --f10=1000 --parts=A,B,C,D,E --w=가,나,후,모임 --stay=3` · 기본에서 빠진다
  *   focus     올해의 초점(SPEC-018 PL10, 설계 `focus-spend-model.md` 2-5절 ①~⑧): 팔 7(없음 + 주제 6) × 판 · `--era=millennial|industrial|alpha|all`(기본 밀레니얼) · 기본에서 빠진다
  *   schedule  진로 일정(결정 후속 239) — 성별 × 대학별 첫 분야 카드 나이 · 병역 줄 나이 · 35세 직업 확정
  * 밀레니얼, 시드 i × 7919 + 13, 36세까지 자동 진행.
@@ -163,5 +164,12 @@ if (only.has('romance')) {
     console.error('사용법: --pool=none|cards|all');
     process.exit(2);
   }
-  printRomance(n, { net: Number(flag('net') ?? 3000), pool: poolArg as 'none' | 'cards' | 'all', f10: Number(flag('f10') ?? 1000) });
+  const w = (flag('w') ?? '').split(',').map(Number);
+  if (flag('w') !== undefined || flag('stay') !== undefined) {
+    setTune({
+      weights: flag('w') === undefined ? undefined : { 'youth-date-budget': w[0], 'youth-two-news': w[1], 'youth-late-word': w[2], 'youth-hobby-circle': w[3] },
+      stay: flag('stay') === undefined ? undefined : Number(flag('stay')),
+    });
+  }
+  printRomance(n, { net: Number(flag('net') ?? 3000), pool: poolArg as 'none' | 'cards' | 'all', f10: Number(flag('f10') ?? 1000), parts: new Set((flag('parts') ?? 'A,B,C,D,E').split(',')) });
 }

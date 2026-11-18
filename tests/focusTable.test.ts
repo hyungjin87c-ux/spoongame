@@ -12,10 +12,10 @@ const table = FOCUS_TABLE as Record<string, readonly FocusCode[]>;
 const without = (id: string): Record<string, readonly FocusCode[]> => Object.fromEntries(Object.entries(table).filter(([k]) => k !== id));
 
 describe('focusTable 게이트', () => {
-  it('통과: 실제 풀과 실제 표는 문제가 없고, 표지 대상은 표와 정확히 일치한다 (102개)', () => {
+  it('통과: 실제 풀과 실제 표는 문제가 없고, 표지 대상은 표와 정확히 일치한다 (106개)', () => {
     expect(focusTableProblems(events, table)).toEqual([]);
     const taggable = events.filter(focusTaggable).map((e) => e.id);
-    expect(taggable).toHaveLength(102);
+    expect(taggable).toHaveLength(106);
     expect([...taggable].sort()).toEqual(Object.keys(table).sort());
   });
 

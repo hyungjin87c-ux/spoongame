@@ -66,8 +66,8 @@ describe('focusDoc — 설계 문서 11절 기계 판독 블록 = 코드', () =>
     const ev = rows.filter((r) => r.key === 'EVENT');
     expect(ev.map((r) => r.channel)).toEqual(Object.keys(FOCUS_TABLE));
     for (const r of ev) expect(r.values[0] === '-' ? [] : r.values, r.channel).toEqual([...FOCUS_TABLE[r.channel]]);
-    expect(ev).toHaveLength(102);
-    expect(new Set(ev.map((r) => r.channel)).size).toBe(102);
+    expect(ev).toHaveLength(106);
+    expect(new Set(ev.map((r) => r.channel)).size).toBe(106);
   });
 
   it('변이 점검: 문서 블록의 한 줄을 바꾸면 이 대조가 실패한다 (공허 통과 방지)', () => {

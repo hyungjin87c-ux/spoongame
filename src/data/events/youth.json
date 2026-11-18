@@ -438,6 +438,170 @@
       ]
     },
     {
+      "id": "youth-date-budget",
+      "title": "약속 장소를 고르는 날",
+      "text": "주말 약속을 앞두고 상대가 가 보고 싶다던 가게의 차림표를 찾아보았습니다. 이번 달 남은 생활비가 먼저 떠올랐습니다.",
+      "textVariants": [
+        { "when": { "assets": { "netMin": 12000 } }, "text": "주말 약속을 앞두고 요즘 이름난 가게를 찾아 두었습니다. 상대는 한참 뒤에야 좋다고 짧게 답했습니다." }
+      ],
+      "question": "주말 약속 장소, 그대로 둘까 바꿀까?",
+      "stages": ["youth"],
+      "track": "common",
+      "ageRange": { "min": 22, "max": 33 },
+      "weight": 9,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "flags": ["has_partner"], "notFlags": ["married"], "tailored": true },
+      "choices": [
+        {
+          "id": "go",
+          "label": "그 가게로 그대로 간다",
+          "result": "그날은 웃으며 먹었습니다. 돌아오는 길에 이번 달 남은 날을 손가락으로 셌습니다.",
+          "resultVariants": [
+            { "when": { "assets": { "netMin": 12000 } }, "text": "즐겁게 먹고 나왔습니다. 상대가 차림표를 오래 들여다본 것은 그때는 마음에 남지 않았습니다." }
+          ],
+          "effects": { "stats": { "happiness": 1 }, "assets": { "net": -150 } },
+          "bonuses": [
+            { "when": { "assets": { "netMin": 12000 } }, "effects": { "setFlags": ["unspoken", "missed_signal"] } }
+          ]
+        },
+        {
+          "id": "talk",
+          "label": "마음에 걸리는 것을 말하고 다시 고른다",
+          "result": "이번 달 사정을 털어놓았습니다. 상대는 잠시 말이 없다가 집 앞 분식집을 골랐습니다. 그날 저녁은 조금 어색했고 이야기는 길었습니다.",
+          "resultVariants": [
+            { "when": { "assets": { "netMin": 12000 } }, "text": "상대가 머뭇거린 것 같다고 말하고 함께 다시 골랐습니다. 동네 국숫집에서 요즘 일을 하나 더 한다는 이야기를 들었습니다." },
+            { "when": { "parentWealth": { "max": 2 }, "notFlags": ["lives_with_parents", "parents_gone"] }, "text": "이번 달 사정과 본가에 보태는 생활비 이야기를 처음 꺼냈습니다. 상대는 집 앞 분식집을 골랐습니다. 저녁은 조금 어색했고 이야기는 길었습니다." }
+          ],
+          "effects": { "stats": { "relationships": 2, "happiness": -1 }, "assets": { "net": -50 } }
+        },
+        {
+          "id": "switch",
+          "label": "이유는 말하지 않고 다른 곳으로 바꾼다",
+          "result": "간단한 곳에서 만났습니다. 상대는 무슨 일이 있느냐고 묻다가 그만두었습니다.",
+          "resultVariants": [
+            { "when": { "assets": { "netMin": 12000 } }, "text": "머뭇거리는 기색을 보고 말없이 동네 가게로 바꾸었습니다. 상대는 바뀐 곳을 보고도 아무것도 묻지 않았습니다." }
+          ],
+          "effects": { "assets": { "net": -50 }, "setFlags": ["unspoken"] },
+          "bonuses": [
+            { "when": { "assets": { "netMax": 11999 } }, "effects": { "setFlags": ["unspoken_money"] } },
+            { "when": { "assets": { "netMin": 12000 } }, "effects": { "setFlags": ["missed_signal"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "youth-two-news",
+      "title": "같은 주에 온 소식",
+      "text": "면접이 있는 주에 아르바이트하던 곳에서 마감까지 남아 달라는 부탁을 받았습니다. 상대도 그 주에 꼭 할 말이 있다고 했습니다.",
+      "textVariants": [
+        { "when": { "flags": ["has_career"] }, "text": "처음 맡은 일이 좋게 마무리된 주였습니다. 상대는 요즘 답이 짧았고, 만나자는 말에 일정을 자꾸 미뤘습니다." },
+        { "when": { "year": { "min": 2020 } }, "text": "카메라 앞에서 보는 면접이 잡힌 주였습니다. 아르바이트하던 곳에서는 마감까지 남아 달라고 했고, 상대도 할 말이 있다고 했습니다." },
+        { "when": { "year": { "max": 2009 } }, "text": "입사 시험을 앞둔 주에 아르바이트하던 곳에서 마감까지 남아 달라는 부탁을 받았습니다. 상대도 그 주에 할 말이 있다고 했습니다." }
+      ],
+      "question": "소식이 겹친 주, 무엇부터 할까?",
+      "stages": ["youth"],
+      "track": "common",
+      "ageRange": { "min": 22, "max": 31 },
+      "weight": 9,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "flags": ["has_partner"], "notFlags": ["married", "own_business"], "tailored": true },
+      "choices": [
+        {
+          "id": "listen",
+          "label": "상대 이야기부터 듣는다",
+          "result": "상대는 가고 싶던 곳에서 연락이 왔다며 조심스럽게 웃었습니다. 축하를 건네고 돌아와서야 내 결과를 짧게 적어 보냈습니다.",
+          "resultVariants": [
+            { "when": { "flags": ["has_career"] }, "text": "상대는 한참 머뭇거리다 또 떨어졌다고 털어놓았습니다. 그날 내 소식은 꺼내지 않았습니다." }
+          ],
+          "effects": { "stats": { "relationships": 1 } },
+          "bonuses": [
+            { "when": { "notFlags": ["has_career"] }, "effects": { "setFlags": ["unspoken", "kept_news"] } }
+          ]
+        },
+        {
+          "id": "both",
+          "label": "내 소식도 꺼내 같이 이야기한다",
+          "result": "서로 미뤄 둔 이야기를 다 꺼냈습니다. 반가운 소식과 아쉬운 소식이 한 식탁에 함께 놓였습니다.",
+          "effects": { "stats": { "relationships": 2, "happiness": -1 } }
+        },
+        {
+          "id": "later",
+          "label": "약속을 미루고 맡은 일부터 끝낸다",
+          "result": "마감까지 남아 일을 끝냈습니다. 상대의 이야기는 다음 주에 전화로 들었습니다.",
+          "resultVariants": [
+            { "when": { "flags": ["has_career"] }, "text": "맡은 일을 마무리하느라 약속을 두 번 미뤘습니다. 상대가 그 주에 또 떨어졌다는 것은 몇 주 뒤에야 알았습니다." },
+            { "when": { "parentWealth": { "max": 2 }, "notFlags": ["lives_with_parents", "parents_gone"] }, "text": "마감까지 남아 일을 끝냈습니다. 주말에는 본가 일을 도우러 가느라 상대의 이야기는 전화로 들었습니다." }
+          ],
+          "effects": { "stats": { "health": -2, "relationships": -1 }, "assets": { "net": 200 } }
+        }
+      ]
+    },
+    {
+      "id": "youth-late-word",
+      "title": "늦게 꺼낸 이야기",
+      "text": "미뤄 두었던 이야기를 늦게나마 마주 앉아 꺼냈습니다. 그날 저녁은 생각보다 길었습니다.",
+      "textVariants": [
+        { "when": { "flags": ["unspoken_money"] }, "text": "한참 뒤 그날 가게를 바꾼 이유를 털어놓았습니다. 상대는 그럴 줄 알았다며 자기 사정도 꺼냈습니다." },
+        { "when": { "flags": ["missed_signal"] }, "text": "주말에 타라고 빌려준 자전거로 요즘 일하러 다닌다고 상대가 먼저 말했습니다. 그날 머뭇거리던 모습이 다르게 떠올랐습니다." },
+        { "when": { "flags": ["kept_news"] }, "text": "그 주의 결과를 이번에는 마주 앉아 다시 이야기했습니다. 상대는 그날 축하만 받은 것이 마음에 걸렸다고 했습니다." }
+      ],
+      "stages": ["youth"],
+      "track": "common",
+      "ageRange": { "min": 23, "max": 36 },
+      "weight": 30,
+      "once": true,
+      "conditions": { "flags": ["unspoken", "has_partner"], "tailored": true },
+      "effects": { "stats": { "relationships": 1 }, "clearFlags": ["unspoken", "unspoken_money", "missed_signal", "kept_news"] }
+    },
+    {
+      "id": "youth-hobby-circle",
+      "title": "주말마다 가는 모임",
+      "text": "주말마다 동네 책 모임에 나간 지 몇 달이 되었습니다. 끝나고 의자를 정리할 때면 늘 마지막까지 남는 사람이 있었습니다.",
+      "textVariants": [
+        { "when": { "apt": { "sport": ["high"] } }, "text": "주말마다 동네 산악 모임을 따라 산에 오른 지 몇 달이 되었습니다. 내려오는 길에 늘 걸음을 맞춰 걷는 사람이 있었습니다." },
+        { "when": { "apt": { "art": ["high"] } }, "text": "주말마다 동네 합창 모임에 나간 지 몇 달이 되었습니다. 연습이 끝나면 악보를 함께 정리하는 사람이 있었습니다." },
+        { "when": { "apt": { "craft": ["high"] } }, "text": "주말마다 목공 모임에서 작은 가구를 만든 지 몇 달이 되었습니다. 공구를 주고받다가 이야기를 트게 된 사람이 있었습니다." }
+      ],
+      "question": "모임에서 자주 마주친 사람, 따로 만나 볼까?",
+      "stages": ["youth"],
+      "track": "common",
+      "ageRange": { "min": 22, "max": 34 },
+      "weight": 9,
+      "once": true,
+      "noCitation": "D",
+      "conditions": { "notFlags": ["has_partner", "married"], "tailored": true },
+      "choices": [
+        {
+          "id": "stay",
+          "act": "social",
+          "label": "끝나고 따로 차 한잔하자고 한다",
+          "result": "모임이 끝나고 근처에서 차를 마셨습니다. 돌아가는 길이 같아 이야기가 길어졌고, 그 뒤로 모임 밖에서도 만났습니다.",
+          "resultVariants": [
+            { "when": { "temper": ["warm"] }, "text": "모임에서 먼저 말을 거는 쪽은 늘 나였습니다. 그날도 내가 차를 청했고, 그 뒤로 모임 밖에서도 만났습니다." },
+            { "when": { "temper": ["quiet"] }, "text": "말을 꺼내기까지 몇 주가 걸렸습니다. 상대는 기다렸다는 듯 웃었고, 그 뒤로 모임 밖에서도 만났습니다." },
+            { "when": { "temper": ["steady"] }, "text": "몇 달 동안 한 번도 빠지지 않은 것을 상대도 알고 있었습니다. 차를 청하자 바로 좋다고 했고, 그 뒤로 모임 밖에서도 만났습니다." }
+          ],
+          "effects": { "stats": { "relationships": 3, "happiness": 2 }, "assets": { "net": -100 }, "setFlags": ["has_partner"] }
+        },
+        {
+          "id": "keep",
+          "act": "social",
+          "label": "모임 사람들과 고르게 어울린다",
+          "result": "누구와 특별히 가까워지지는 않았지만 모임이 있는 주말이 기다려졌습니다. 일이 생기면 먼저 연락할 사람이 몇 생겼습니다.",
+          "effects": { "stats": { "relationships": 2, "happiness": 1 }, "assets": { "net": -50 } }
+        },
+        {
+          "id": "pause",
+          "act": "work",
+          "label": "한동안 쉬며 내 일에 집중한다",
+          "result": "한동안 모임에 나가지 않았습니다. 가끔 전해 듣는 모임 소식에 다음 계절을 기약했습니다.",
+          "effects": { "stats": { "happiness": -1 }, "assets": { "net": 100 } }
+        }
+      ]
+    },
+    {
       "id": "youth-housing",
       "title": "살 곳을 구하는 일",
       "text": "살 곳을 새로 구해야 했습니다. 가진 돈과 원하는 곳 사이의 거리가 멀었습니다.",
