@@ -37,7 +37,7 @@ describe('focusWeight — 곱 한 번 · 유한 · 양수 · 기존 이상 · �
     for (const f of FOCI) expect(focusFactor('no-such-event', f)).toBe(1);
   });
 
-  it('여러 주제 곱 1회: 주제가 둘인 사건에서 둘 중 어느 쪽 초점이든 K이고 K²가 아니다', () => {
+  it('여러 주제 곱 1회: 주제가 둘인 사건에서 둘 중 어느 쪽 초점이든 K이고 K를 두 번 곱하지 않는다', () => {
     const two = Object.keys(FOCUS_TABLE).filter((id) => focusTopicsOf(id).length === 2);
     expect(two.length).toBeGreaterThan(10);
     for (const id of two) for (const t of focusTopicsOf(id)) expect(focusFactor(id, t), `${id}/${t}`).toBe(FOCUS_K);

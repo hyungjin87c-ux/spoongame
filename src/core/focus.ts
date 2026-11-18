@@ -50,7 +50,7 @@ const TOPIC_IDS: ReadonlyMap<string, readonly FocusId[]> = new Map(Object.entrie
 export const focusTopicsOf = (eventId: string): readonly FocusId[] => TOPIC_IDS.get(eventId) ?? [];
 
 /**
- * 추첨 가중에 곱하는 배수 (설계 2-1절): 초점 없음·모르는 사건·주제가 다르면 리터럴 `1`, 사건의 주제 중 하나라도 초점이면 `FOCUS_K`(주제 둘이 모두 초점이어도 한 번 — k²가 아니다).
+ * 추첨 가중에 곱하는 배수 (설계 2-1절): 초점 없음·모르는 사건·주제가 다르면 리터럴 `1`, 사건의 주제 중 하나라도 초점이면 `FOCUS_K`(주제 둘이 모두 초점이어도 한 번 — K를 두 번 곱하지 않는다).
  * `x * 1`은 IEEE에서 `x`와 같다 — 초점 없는 판의 가중 배열은 변경 전과 같다.
  */
 export function focusFactor(eventId: string, focus: FocusId | null): number {

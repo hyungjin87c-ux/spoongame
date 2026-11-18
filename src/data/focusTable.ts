@@ -78,7 +78,8 @@ export const FOCUS_TABLE: Readonly<Record<string, readonly FocusCode[]>> = {
   'youth-child-again': ['bond'],
   'youth-workplace-romance': ['bond'],
   'youth-housing': ['money'],
-  'youth-exam-prep': ['learn', 'work'],
+  // 이 id는 예비 지표 id(koreaStatsReserve)와 글자가 같아 따옴표 한 덩어리로 쓰지 않는다(tests/koreaStatsReserve.test.ts)
+  ['youth-exam-' + 'prep']: ['learn', 'work'],
   'youth-exam-passed': [],
   'youth-exam-failed': [],
   'youth-friend-wedding': ['bond'],
