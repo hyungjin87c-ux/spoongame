@@ -133,9 +133,9 @@ export const FOCUS_TABLE: Readonly<Record<string, readonly FocusCode[]>> = {
   'senior-estate': ['money'],
   'senior-move-home': ['money', 'bond'],
   'senior-travel': ['hobby'],
-  'senior-estranged-child': ['bond'],
+  'senior-estranged-child': [], // 마스터 판정(2026-11-18): 소원함(heavy) 자체가 닥쳐오는 일 — 관계 초점이 끌어오지 않는다
   'senior-spouse-care': [],
-  'senior-alone': ['bond'],
+  'senior-alone': [], // 마스터 판정(2026-11-18): 외로움(heavy)이 닥쳐오는 일 — 관계 초점이 끌어오지 않는다
   'senior-new-device': ['learn'],
   'senior-long-life': ['work', 'learn'],
   'senior-last-wishes': [],

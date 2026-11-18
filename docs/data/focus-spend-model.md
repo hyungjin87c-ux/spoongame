@@ -535,9 +535,9 @@ EVENT | senior-grandchildren | bond
 EVENT | senior-estate | money
 EVENT | senior-move-home | money bond
 EVENT | senior-travel | hobby
-EVENT | senior-estranged-child | bond
+EVENT | senior-estranged-child | -
 EVENT | senior-spouse-care | -
-EVENT | senior-alone | bond
+EVENT | senior-alone | -
 EVENT | senior-new-device | learn
 EVENT | senior-long-life | work learn
 EVENT | senior-last-wishes | -
