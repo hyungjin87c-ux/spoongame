@@ -60,7 +60,8 @@ export interface DecisionModel {
 
 /**
  * 선택 카드 본문: 사건의 본문 변주(`textVariants`)를 대기 중인 판의 조건 문맥(`condContextOf`)으로 고른다 — 서술 사건이 연표에 남기는 글(`core/life.ts`의 `eventTextOf`)과 같은 함수다.
- * 대기 중에는 그 해의 상태가 바뀌지 않으므로(선택을 고르기 전) 카드가 뽑힌 때와 같은 문맥이다.
+ * 문맥은 대기 상태(그 해 선택을 고르기 전)의 것이고, 고른 뒤의 결과 문장(`core/life.ts`의 `condContextOf(대기 상태)`)과 같은 문맥이다.
+ * 추첨 때의 문맥과는 다를 수 있다 — 같은 해 G2 원서(15세)·가족 사건이 추첨 뒤에 먼저 적용된다(Codex CX-007 회차 2 관찰). 지금 본문 변주가 있는 선택 사건(교제 카드 셋, 22세 이상)의 조건은 그 사이에 바뀌지 않는다.
  */
 export function decisionTextOf(game: GameState, ev: EventDef): string {
   return eventTextOf(ev, condContextOf(game));
